@@ -609,7 +609,7 @@ dos_attr_parse(SMBCCTX *context,
         } attr_strings;
 
         /* Determine whether to use old-style or new-style attribute names */
-        if (context->full_time_names) {
+        if (context->internal->full_time_names) {
                 /* new-style names */
                 attr_strings.create_time_attr = "CREATE_TIME";
                 attr_strings.access_time_attr = "ACCESS_TIME";
@@ -759,7 +759,7 @@ cacl_get(SMBCCTX *context,
         } excl_attr_strings;
 
         /* Determine whether to use old-style or new-style attribute names */
-        if (context->full_time_names) {
+        if (context->internal->full_time_names) {
                 /* new-style names */
                 attr_strings.create_time_attr = "CREATE_TIME";
                 attr_strings.access_time_attr = "ACCESS_TIME";
@@ -1689,7 +1689,7 @@ SMBC_setxattr_ctx(SMBCCTX *context,
         } attr_strings;
         TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;  /* Best I can think of ... */
 		TALLOC_FREE(frame);
@@ -1721,7 +1721,7 @@ SMBC_setxattr_ctx(SMBCCTX *context,
         }
 
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->user);
+		user = talloc_strdup(frame, context->config.user);
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -1893,7 +1893,7 @@ SMBC_setxattr_ctx(SMBCCTX *context,
         }
 
         /* Determine whether to use old-style or new-style attribute names */
-        if (context->full_time_names) {
+        if (context->internal->full_time_names) {
                 /* new-style names */
                 attr_strings.create_time_attr = "system.dos_attr.CREATE_TIME";
                 attr_strings.access_time_attr = "system.dos_attr.ACCESS_TIME";
@@ -1984,7 +1984,7 @@ SMBC_getxattr_ctx(SMBCCTX *context,
         } attr_strings;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
                 errno = EINVAL;  /* Best I can think of ... */
 		TALLOC_FREE(frame);
@@ -2015,7 +2015,7 @@ SMBC_getxattr_ctx(SMBCCTX *context,
         }
 
         if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->user);
+		user = talloc_strdup(frame, context->config.user);
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -2041,7 +2041,7 @@ SMBC_getxattr_ctx(SMBCCTX *context,
         }
 
         /* Determine whether to use old-style or new-style attribute names */
-        if (context->full_time_names) {
+        if (context->internal->full_time_names) {
                 /* new-style names */
                 attr_strings.create_time_attr = "system.dos_attr.CREATE_TIME";
                 attr_strings.access_time_attr = "system.dos_attr.ACCESS_TIME";
@@ -2118,7 +2118,7 @@ SMBC_removexattr_ctx(SMBCCTX *context,
 	char *path = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
                 errno = EINVAL;  /* Best I can think of ... */
 		TALLOC_FREE(frame);
@@ -2149,7 +2149,7 @@ SMBC_removexattr_ctx(SMBCCTX *context,
         }
 
         if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->user);
+		user = talloc_strdup(frame, context->config.user);
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -2270,7 +2270,7 @@ SMBC_listxattr_ctx(SMBCCTX *context,
                 ;
         const char * supported;
 
-        if (context->full_time_names) {
+        if (context->internal->full_time_names) {
                 supported = supported_new;
                 retsize = sizeof(supported_new);
         } else {

@@ -41,6 +41,15 @@ SMBCCTX *
 smbc_new_context(void)
 {
     SMBCCTX *context;
+
+    /*
+     * All newly added context fields should be placed in SMBC_internal_data,
+     * not directly in SMBCCTX.
+     */
+#   undef OLD
+#   define OLD(field)      context->field
+#   undef NEW
+#   define NEW(field)      context->internal->field
     
     context = SMB_MALLOC_P(SMBCCTX);
     if (!context) {
@@ -48,66 +57,73 @@ smbc_new_context(void)
         return NULL;
     }
     
-    
-    /* Initialize the context and establish reasonable defaults */
     ZERO_STRUCTP(context);
+
+    context->internal = SMB_MALLOC_P(struct SMBC_internal_data);
+    if (!context->internal) {
+        SAFE_FREE(context);
+        errno = ENOMEM;
+        return NULL;
+    }
+
+    /* Initialize the context and establish reasonable defaults */
+    ZERO_STRUCTP(context->internal);
     
-    context->debug            = 0;
-    context->timeout          = 20000; /* 20 seconds */
+    OLD(config.debug)              = 0;
+    OLD(config.timeout)            = 20000; /* 20 seconds */
     
-    context->full_time_names           = False;
-    context->share_mode                = SMBC_SHAREMODE_DENY_NONE;
-    context->smb_encryption_level      = 0;
-    context->browse_max_lmb_count      = 3;    /* # LMBs to query */
-    context->urlencode_readdir_entries = False;
-    context->one_share_per_server      = False;
-    context->use_kerberos              = False;
-    context->fallback_after_kerberos   = False;
-    context->no_auto_anonymous_login   = False;
+    NEW(full_time_names)           = False;
+    NEW(share_mode)                = SMBC_SHAREMODE_DENY_NONE;
+    NEW(smb_encryption_level)      = 0;
+    NEW(browse_max_lmb_count)      = 3;    /* # LMBs to query */
+    NEW(urlencode_readdir_entries) = False;
+    NEW(one_share_per_server)      = False;
     
-    context->server.get_auth_data_fn        = SMBC_get_auth_data;
-    context->server.check_server_fn         = SMBC_check_server;
-    context->server.remove_unused_server_fn = SMBC_remove_unused_server;
+    OLD(server.get_auth_data_fn)        = SMBC_get_auth_data;
+    OLD(server.check_server_fn)         = SMBC_check_server;
+    OLD(server.remove_unused_server_fn) = SMBC_remove_unused_server;
     
-    context->cache.server_cache_data        = NULL;
-    context->cache.add_cached_server_fn     = SMBC_add_cached_server;
-    context->cache.get_cached_server_fn     = SMBC_get_cached_server;
-    context->cache.remove_cached_server_fn  = SMBC_remove_cached_server;
-    context->cache.purge_cached_server_fn   = SMBC_purge_cached_servers;
+    OLD(cache.server_cache_data)        = NULL;
+    OLD(cache.add_cached_server_fn)     = SMBC_add_cached_server;
+    OLD(cache.get_cached_server_fn)     = SMBC_get_cached_server;
+    OLD(cache.remove_cached_server_fn)  = SMBC_remove_cached_server;
+    OLD(cache.purge_cached_servers_fn)  = SMBC_purge_cached_servers;
     
-    context->posix_emu.open_fn             = SMBC_open_ctx;
-    context->posix_emu.creat_fn            = SMBC_creat_ctx;
-    context->posix_emu.read_fn             = SMBC_read_ctx;
-    context->posix_emu.write_fn            = SMBC_write_ctx;
-    context->posix_emu.close_fn            = SMBC_close_ctx;
-    context->posix_emu.unlink_fn           = SMBC_unlink_ctx;
-    context->posix_emu.rename_fn           = SMBC_rename_ctx;
-    context->posix_emu.lseek_fn            = SMBC_lseek_ctx;
-    context->posix_emu.ftruncate_fn        = SMBC_ftruncate_ctx;
-    context->posix_emu.stat_fn             = SMBC_stat_ctx;
-    context->posix_emu.fstat_fn            = SMBC_fstat_ctx;
-    context->posix_emu.opendir_fn          = SMBC_opendir_ctx;
-    context->posix_emu.closedir_fn         = SMBC_closedir_ctx;
-    context->posix_emu.readdir_fn          = SMBC_readdir_ctx;
-    context->posix_emu.getdents_fn         = SMBC_getdents_ctx;
-    context->posix_emu.mkdir_fn            = SMBC_mkdir_ctx;
-    context->posix_emu.rmdir_fn            = SMBC_rmdir_ctx;
-    context->posix_emu.telldir_fn          = SMBC_telldir_ctx;
-    context->posix_emu.lseekdir_fn         = SMBC_lseekdir_ctx;
-    context->posix_emu.fstatdir_fn         = SMBC_fstatdir_ctx;
-    context->posix_emu.chmod_fn            = SMBC_chmod_ctx;
-    context->posix_emu.utimes_fn           = SMBC_utimes_ctx;
-    context->posix_emu.setxattr_fn         = SMBC_setxattr_ctx;
-    context->posix_emu.getxattr_fn         = SMBC_getxattr_ctx;
-    context->posix_emu.removexattr_fn      = SMBC_removexattr_ctx;
-    context->posix_emu.listxattr_fn        = SMBC_listxattr_ctx;
+    OLD(posix_emu.open_fn)               = SMBC_open_ctx;
+    OLD(posix_emu.creat_fn)              = SMBC_creat_ctx;
+    OLD(posix_emu.read_fn)               = SMBC_read_ctx;
+    OLD(posix_emu.write_fn)              = SMBC_write_ctx;
+    OLD(posix_emu.close_fn)              = SMBC_close_ctx;
+    OLD(posix_emu.unlink_fn)             = SMBC_unlink_ctx;
+    OLD(posix_emu.rename_fn)             = SMBC_rename_ctx;
+    OLD(posix_emu.lseek_fn)              = SMBC_lseek_ctx;
+    NEW(posix_emu.ftruncate_fn)          = SMBC_ftruncate_ctx;
+    OLD(posix_emu.stat_fn)               = SMBC_stat_ctx;
+    OLD(posix_emu.fstat_fn)              = SMBC_fstat_ctx;
+    OLD(posix_emu.opendir_fn)            = SMBC_opendir_ctx;
+    OLD(posix_emu.closedir_fn)           = SMBC_closedir_ctx;
+    OLD(posix_emu.readdir_fn)            = SMBC_readdir_ctx;
+    OLD(posix_emu.getdents_fn)           = SMBC_getdents_ctx;
+    OLD(posix_emu.mkdir_fn)              = SMBC_mkdir_ctx;
+    OLD(posix_emu.rmdir_fn)              = SMBC_rmdir_ctx;
+    OLD(posix_emu.telldir_fn)            = SMBC_telldir_ctx;
+    OLD(posix_emu.lseekdir_fn)           = SMBC_lseekdir_ctx;
+    OLD(posix_emu.fstatdir_fn)           = SMBC_fstatdir_ctx;
+    OLD(posix_emu.chmod_fn)              = SMBC_chmod_ctx;
+    OLD(posix_emu.utimes_fn)             = SMBC_utimes_ctx;
+    OLD(posix_emu.setxattr_fn)           = SMBC_setxattr_ctx;
+    OLD(posix_emu.getxattr_fn)           = SMBC_getxattr_ctx;
+    OLD(posix_emu.removexattr_fn)        = SMBC_removexattr_ctx;
+    OLD(posix_emu.listxattr_fn)          = SMBC_listxattr_ctx;
     
-    context->printing.open_print_job_fn   = SMBC_open_print_job_ctx;
-    context->printing.print_file_fn       = SMBC_print_file_ctx;
-    context->printing.list_print_jobs_fn  = SMBC_list_print_jobs_ctx;
-    context->printing.unlink_print_job_fn = SMBC_unlink_print_job_ctx;
+    OLD(printing.open_print_job_fn)      = SMBC_open_print_job_ctx;
+    OLD(printing.print_file_fn)          = SMBC_print_file_ctx;
+    OLD(printing.list_print_jobs_fn)     = SMBC_list_print_jobs_ctx;
+    OLD(printing.unlink_print_job_fn)    = SMBC_unlink_print_job_ctx;
     
     return context;
+#undef OLD
+#undef NEW
 }
 
 /*
@@ -130,20 +146,20 @@ smbc_free_context(SMBCCTX *context,
         SMBCFILE * f;
         DEBUG(1,("Performing aggressive shutdown.\n"));
         
-        f = context->files;
+        f = context->internal->files;
         while (f) {
             (context->posix_emu.close_fn)(context, f);
             f = f->next;
         }
-        context->files = NULL;
+        context->internal->files = NULL;
         
         /* First try to remove the servers the nice way. */
-        if (context->cache.purge_cached_server_fn(context)) {
+        if (context->cache.purge_cached_servers_fn(context)) {
             SMBCSRV * s;
             SMBCSRV * next;
             DEBUG(1, ("Could not purge all servers, "
                       "Nice way shutdown failed.\n"));
-            s = context->servers;
+            s = context->internal->servers;
             while (s) {
                 DEBUG(1, ("Forced shutdown: %p (fd=%d)\n",
                           s, s->cli->fd));
@@ -151,28 +167,28 @@ smbc_free_context(SMBCCTX *context,
                 (context->cache.remove_cached_server_fn)(context,
                                                          s);
                 next = s->next;
-                DLIST_REMOVE(context->servers, s);
+                DLIST_REMOVE(context->internal->servers, s);
                 SAFE_FREE(s);
                 s = next;
             }
-            context->servers = NULL;
+            context->internal->servers = NULL;
         }
     }
     else {
         /* This is the polite way */
-        if ((context->cache.purge_cached_server_fn)(context)) {
+        if ((context->cache.purge_cached_servers_fn)(context)) {
             DEBUG(1, ("Could not purge all servers, "
                       "free_context failed.\n"));
             errno = EBUSY;
             return 1;
         }
-        if (context->servers) {
+        if (context->internal->servers) {
             DEBUG(1, ("Active servers in context, "
                       "free_context failed.\n"));
             errno = EBUSY;
             return 1;
         }
-        if (context->files) {
+        if (context->internal->files) {
             DEBUG(1, ("Active files in context, "
                       "free_context failed.\n"));
             errno = EBUSY;
@@ -181,9 +197,9 @@ smbc_free_context(SMBCCTX *context,
     }
     
     /* Things we have to clean up */
-    SAFE_FREE(context->workgroup);
-    SAFE_FREE(context->netbios_name);
-    SAFE_FREE(context->user);
+    SAFE_FREE(context->config.workgroup);
+    SAFE_FREE(context->config.netbios_name);
+    SAFE_FREE(context->config.user);
     
     DEBUG(3, ("Context %p successfully freed\n", context));
     SAFE_FREE(context);
@@ -219,7 +235,7 @@ smbc_option_set(SMBCCTX *context,
          * Log to standard error instead of standard output.
          */
         option_value.b = (bool) va_arg(ap, int);
-        context->debug_stderr = option_value.b;
+        context->internal->debug_stderr = option_value.b;
         
     } else if (strcmp(option_name, "full_time_names") == 0) {
         /*
@@ -231,7 +247,7 @@ smbc_option_set(SMBCCTX *context,
          * CREATE_TIME.)
          */
         option_value.b = (bool) va_arg(ap, int);
-        context->full_time_names = option_value.b;
+        context->internal->full_time_names = option_value.b;
         
     } else if (strcmp(option_name, "open_share_mode") == 0) {
         /*
@@ -239,7 +255,7 @@ smbc_option_set(SMBCCTX *context,
          * SMBC_open_ctx().  The default is SMBC_SHAREMODE_DENY_NONE.
          */
         option_value.i = va_arg(ap, int);
-        context->share_mode = (smbc_share_mode) option_value.i;
+        context->internal->share_mode = (smbc_share_mode) option_value.i;
         
     } else if (strcmp(option_name, "user_data") == 0) {
         /*
@@ -247,7 +263,7 @@ smbc_option_set(SMBCCTX *context,
          * with smbc_option_get()
          */
         option_value.v = va_arg(ap, void *);
-        context->user_data = option_value.v;
+        context->internal->user_data = option_value.v;
     } else if (strcmp(option_name, "smb_encrypt_level") == 0) {
         /*
          * Save an encoded value for encryption level.
@@ -255,11 +271,11 @@ smbc_option_set(SMBCCTX *context,
          */
         option_value.s = va_arg(ap, const char *);
         if (strcmp(option_value.s, "none") == 0) {
-            context->smb_encryption_level = 0;
+            context->internal->smb_encryption_level = 0;
         } else if (strcmp(option_value.s, "request") == 0) {
-            context->smb_encryption_level = 1;
+            context->internal->smb_encryption_level = 1;
         } else if (strcmp(option_value.s, "require") == 0) {
-            context->smb_encryption_level = 2;
+            context->internal->smb_encryption_level = 2;
         }
     } else if (strcmp(option_name, "browse_max_lmb_count") == 0) {
         /*
@@ -280,7 +296,7 @@ smbc_option_set(SMBCCTX *context,
          * variable is probably somewhere around 3. (Default: 3).
          */
         option_value.i = va_arg(ap, int);
-        context->browse_max_lmb_count = option_value.i;
+        context->internal->browse_max_lmb_count = option_value.i;
         
     } else if (strcmp(option_name, "urlencode_readdir_entries") == 0) {
         /*
@@ -307,7 +323,7 @@ smbc_option_set(SMBCCTX *context,
          * For backwards compatibility, this option defaults to False.
          */
         option_value.b = (bool) va_arg(ap, int);
-        context->urlencode_readdir_entries = option_value.b;
+        context->internal->urlencode_readdir_entries = option_value.b;
         
     } else if (strcmp(option_name, "one_share_per_server") == 0) {
         /*
@@ -321,19 +337,31 @@ smbc_option_set(SMBCCTX *context,
          * and issuing a new TREE CONNECT when the share is accessed.
          */
         option_value.b = (bool) va_arg(ap, int);
-        context->one_share_per_server = option_value.b;
+        context->options.one_share_per_server = option_value.b;
         
     } else if (strcmp(option_name, "use_kerberos") == 0) {
         option_value.b = (bool) va_arg(ap, int);
-        context->use_kerberos = option_value.b;
+        if (option_value.b) {
+            context->flags.bits |= SMB_CTX_FLAG_USE_KERBEROS;
+        } else {
+            context->flags.bits &= ~SMB_CTX_FLAG_USE_KERBEROS;
+        }
         
     } else if (strcmp(option_name, "fallback_after_kerberos") == 0) {
         option_value.b = (bool) va_arg(ap, int);
-        context->fallback_after_kerberos = option_value.b;
+        if (option_value.b) {
+            context->flags.bits |= SMB_CTX_FLAG_FALLBACK_AFTER_KERBEROS;
+        } else {
+            context->flags.bits &= ~SMB_CTX_FLAG_FALLBACK_AFTER_KERBEROS;
+        }
         
     } else if (strcmp(option_name, "no_auto_anonymous_login") == 0) {
         option_value.b = (bool) va_arg(ap, int);
-        context->no_auto_anonymous_login = option_value.b;
+        if (option_value.b) {
+            context->flags.bits |= SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON;
+        } else {
+            context->flags.bits &= ~SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON;
+        }
     }
     
     va_end(ap);
@@ -347,14 +375,16 @@ void *
 smbc_option_get(SMBCCTX *context,
                 char *option_name)
 {
+    int             bits;
+
     if (strcmp(option_name, "debug_stderr") == 0) {
         /*
          * Log to standard error instead of standard output.
          */
 #if defined(__intptr_t_defined) || defined(HAVE_INTPTR_T)
-        return (void *) (intptr_t) context->debug_stderr;
+        return (void *) (intptr_t) context->internal->debug_stderr;
 #else
-        return (void *) context->debug_stderr;
+        return (void *) context->internal->debug_stderr;
 #endif
         
     } else if (strcmp(option_name, "full_time_names") == 0) {
@@ -367,9 +397,9 @@ smbc_option_get(SMBCCTX *context,
          * CREATE_TIME.)
          */
 #if defined(__intptr_t_defined) || defined(HAVE_INTPTR_T)
-        return (void *) (intptr_t) context->full_time_names;
+        return (void *) (intptr_t) context->internal->full_time_names;
 #else
-        return (void *) context->full_time_names;
+        return (void *) context->internal->full_time_names;
 #endif
         
     } else if (strcmp(option_name, "user_data") == 0) {
@@ -377,13 +407,13 @@ smbc_option_get(SMBCCTX *context,
          * Return the user data handle which was saved by the user
          * with smbc_option_set()
          */
-        return context->user_data;
+        return context->internal->user_data;
         
     } else if (strcmp(option_name, "smb_encrypt_level") == 0) {
         /*
          * Return the current smb encrypt negotiate option as a string.
          */
-        switch (context->smb_encryption_level) {
+        switch (context->internal->smb_encryption_level) {
         case 0:
             return (void *) "none";
         case 1:
@@ -402,7 +432,7 @@ smbc_option_get(SMBCCTX *context,
         SMBCSRV *s;
         unsigned int num_servers = 0;
         
-        for (s = context->servers; s; s = s->next) {
+        for (s = context->internal->servers; s; s = s->next) {
             num_servers++;
             if (s->cli->trans_enc_state == NULL) {
                 return (void *)false;
@@ -433,9 +463,9 @@ smbc_option_get(SMBCCTX *context,
          * variable is probably somewhere around 3. (Default: 3).
          */
 #if defined(__intptr_t_defined) || defined(HAVE_INTPTR_T)
-        return (void *) (intptr_t) context->browse_max_lmb_count;
+        return (void *) (intptr_t) context->internal->browse_max_lmb_count;
 #else
-        return (void *) context->browse_max_lmb_count;
+        return (void *) context->internal->browse_max_lmb_count;
 #endif
         
     } else if (strcmp(option_name, "urlencode_readdir_entries") == 0) {
@@ -463,9 +493,9 @@ smbc_option_get(SMBCCTX *context,
          * For backwards compatibility, this option defaults to False.
          */
 #if defined(__intptr_t_defined) || defined(HAVE_INTPTR_T)
-        return (void *) (intptr_t) context->urlencode_readdir_entries;
+        return (void *)(intptr_t) context->internal->urlencode_readdir_entries;
 #else
-        return (void *) (bool) context->urlencode_readdir_entries;
+        return (void *) (bool) context->internal->urlencode_readdir_entries;
 #endif
         
     } else if (strcmp(option_name, "one_share_per_server") == 0) {
@@ -480,30 +510,43 @@ smbc_option_get(SMBCCTX *context,
          * and issuing a new TREE CONNECT when the share is accessed.
          */
 #if defined(__intptr_t_defined) || defined(HAVE_INTPTR_T)
-        return (void *) (intptr_t) context->one_share_per_server;
+        return (void *) (intptr_t) context->internal->one_share_per_server;
 #else
-        return (void *) (bool) context->one_share_per_server;
+        return (void *) (bool) context->internal->one_share_per_server;
 #endif
         
     } else if (strcmp(option_name, "use_kerberos") == 0) {
+        bits = context->flags.bits;
 #if defined(__intptr_t_defined) || defined(HAVE_INTPTR_T)
-        return (void *) (intptr_t) context->use_kerberos;
+        return (context->flags.bits & SMB_CTX_FLAG_USE_KERBEROS
+                ? (void *) (intptr_t) 1
+                : (void *) (intptr_t) 0);
 #else
-        return (void *) (bool) context->use_kerberos;
+        return (context->flags.bits & SMB_CTX_FLAG_USE_KERBEROS
+                ? (void *) (bool) 1
+                : (void *) (bool) 0);
 #endif
         
     } else if (strcmp(option_name, "fallback_after_kerberos") == 0) {
 #if defined(__intptr_t_defined) || defined(HAVE_INTPTR_T)
-        return (void *) (intptr_t) context->fallback_after_kerberos;
+        return (context->flags.bits & SMB_CTX_FLAG_FALLBACK_AFTER_KERBEROS
+                ? (void *) (intptr_t) 1
+                : (void *) (intptr_t) 0);
 #else
-        return (void *) (bool) context->fallback_after_kerberos;
+        return (context->flags.bits & SMB_CTX_FLAG_FALLBACK_AFTER_KERBEROS
+                ? (void *) (bool) 1
+                : (void *) (bool) 0);
 #endif
         
     } else if (strcmp(option_name, "no_auto_anonymous_login") == 0) {
 #if defined(__intptr_t_defined) || defined(HAVE_INTPTR_T)
-        return (void *) (intptr_t) context->no_auto_anonymous_login;
+        return (context->flags.bits & SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON
+                ? (void *) (intptr_t) 1
+                : (void *) (intptr_t) 0);
 #else
-        return (void *) (bool) context->no_auto_anonymous_login;
+        return (context->flags.bits & SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON
+                ? (void *) (bool) 1
+                : (void *) (bool) 0);
 #endif
     }
     
@@ -532,13 +575,13 @@ smbc_init_context(SMBCCTX *context)
     }
     
     /* Do not initialise the same client twice */
-    if (context->initialized) {
+    if (context->internal->initialized) {
         return 0;
     }
     
     if (!context->server.get_auth_data_fn ||
-        context->debug < 0 ||
-        context->debug > 100) {
+        context->config.debug < 0 ||
+        context->config.debug > 100) {
         
         errno = EINVAL;
         return NULL;
@@ -554,12 +597,12 @@ smbc_init_context(SMBCCTX *context)
         TALLOC_CTX *frame = talloc_stackframe();
         
         /* Set this to what the user wants */
-        DEBUGLEVEL = context->debug;
+        DEBUGLEVEL = context->config.debug;
         
         load_case_tables();
         
         setup_logging("libsmbclient", True);
-        if (context->debug_stderr) {
+        if (context->internal->debug_stderr) {
             dbf = x_stderr;
             x_setbuf(x_stderr, NULL);
         }
@@ -630,24 +673,24 @@ smbc_init_context(SMBCCTX *context)
         TALLOC_FREE(frame);
     }
     
-    if (!context->user) {
+    if (!context->config.user) {
         /*
          * FIXME: Is this the best way to get the user info?
          */
         user = getenv("USER");
         /* walk around as "guest" if no username can be found */
-        if (!user) context->user = SMB_STRDUP("guest");
-        else context->user = SMB_STRDUP(user);
+        if (!user) context->config.user = SMB_STRDUP("guest");
+        else context->config.user = SMB_STRDUP(user);
     }
     
-    if (!context->netbios_name) {
+    if (!context->config.netbios_name) {
         /*
          * We try to get our netbios name from the config. If that
          * fails we fall back on constructing our netbios name from
          * our hostname etc
          */
         if (global_myname()) {
-            context->netbios_name = SMB_STRDUP(global_myname());
+            context->config.netbios_name = SMB_STRDUP(global_myname());
         }
         else {
             /*
@@ -655,39 +698,39 @@ smbc_init_context(SMBCCTX *context)
              * lazy for the moment
              */
             pid = sys_getpid();
-            context->netbios_name = (char *)SMB_MALLOC(17);
-            if (!context->netbios_name) {
+            context->config.netbios_name = (char *)SMB_MALLOC(17);
+            if (!context->config.netbios_name) {
                 errno = ENOMEM;
                 return NULL;
             }
-            slprintf(context->netbios_name, 16,
-                     "smbc%s%d", context->user, pid);
+            slprintf(context->config.netbios_name, 16,
+                     "smbc%s%d", context->config.user, pid);
         }
     }
     
-    DEBUG(1, ("Using netbios name %s.\n", context->netbios_name));
+    DEBUG(1, ("Using netbios name %s.\n", context->config.netbios_name));
     
-    if (!context->workgroup) {
+    if (!context->config.workgroup) {
         if (lp_workgroup()) {
-            context->workgroup = SMB_STRDUP(lp_workgroup());
+            context->config.workgroup = SMB_STRDUP(lp_workgroup());
         }
         else {
             /* TODO: Think about a decent default workgroup */
-            context->workgroup = SMB_STRDUP("samba");
+            context->config.workgroup = SMB_STRDUP("samba");
         }
     }
     
-    DEBUG(1, ("Using workgroup %s.\n", context->workgroup));
+    DEBUG(1, ("Using workgroup %s.\n", context->config.workgroup));
     
     /* shortest timeout is 1 second */
-    if (context->timeout > 0 && context->timeout < 1000)
-        context->timeout = 1000;
+    if (context->config.timeout > 0 && context->config.timeout < 1000)
+        context->config.timeout = 1000;
     
     /*
      * FIXME: Should we check the function pointers here?
      */
     
-    context->initialized = True;
+    context->internal->initialized = True;
     
     return context;
 }
@@ -705,56 +748,56 @@ smbc_version(void)
 char *
 smbc_getNetbiosName(SMBCCTX *c)
 {
-    return c->netbios_name;
+    return c->config.netbios_name;
 }
 
 /** Set the netbios name used for making connections */
 void
 smbc_setNetbiosName(SMBCCTX *c, char * netbios_name)
 {
-    c->netbios_name = netbios_name;
+    c->config.netbios_name = netbios_name;
 }
 
 /** Get the workgroup used for making connections */
 char *
 smbc_getWorkgroup(SMBCCTX *c)
 {
-    return c->workgroup;
+    return c->config.workgroup;
 }
 
 /** Set the workgroup used for making connections */
 void
 smbc_setWorkgroup(SMBCCTX *c, char * workgroup)
 {
-    c->workgroup = workgroup;
+    c->config.workgroup = workgroup;
 }
 
 /** Get the username used for making connections */
 char *
 smbc_getUser(SMBCCTX *c)
 {
-    return c->user;
+    return c->config.user;
 }
 
 /** Set the username used for making connections */
 void
 smbc_setUser(SMBCCTX *c, char * user)
 {
-    c->user = user;
+    c->config.user = user;
 }
 
 /** Get the debug level */
 int
 smbc_getDebug(SMBCCTX *c)
 {
-    return c->debug;
+    return c->config.debug;
 }
 
 /** Set the debug level */
 void
 smbc_setDebug(SMBCCTX *c, int debug)
 {
-    c->debug = debug;
+    c->config.debug = debug;
 }
 
 /**
@@ -764,7 +807,7 @@ smbc_setDebug(SMBCCTX *c, int debug)
 int
 smbc_getTimeout(SMBCCTX *c)
 {
-    return c->timeout;
+    return c->config.timeout;
 }
 
 /**
@@ -774,7 +817,7 @@ smbc_getTimeout(SMBCCTX *c)
 void
 smbc_setTimeout(SMBCCTX *c, int timeout)
 {
-    c->timeout = timeout;
+    c->config.timeout = timeout;
 }
 
 /** Get the function for obtaining authentication data */
@@ -886,7 +929,7 @@ smbc_setFunctionRemoveCachedServer(SMBCCTX *c,
 smbc_purge_cached_srv_fn
 smbc_getFunctionPurgeCachedServers(SMBCCTX *c)
 {
-    return c->cache.purge_cached_server_fn;
+    return c->cache.purge_cached_servers_fn;
 }
 
 /**
@@ -896,7 +939,7 @@ smbc_getFunctionPurgeCachedServers(SMBCCTX *c)
 void
 smbc_setFunctionPurgeCachedServers(SMBCCTX *c, smbc_purge_cached_srv_fn fn)
 {
-    c->cache.purge_cached_server_fn = fn;
+    c->cache.purge_cached_servers_fn = fn;
 }
 
 /**
@@ -1014,13 +1057,13 @@ smbc_setFunctionFstat(SMBCCTX *c, smbc_fstat_fn fn)
 smbc_ftruncate_fn
 smbc_getFunctionFtruncate(SMBCCTX *c)
 {
-    return c->posix_emu.ftruncate_fn;
+    return c->internal->posix_emu.ftruncate_fn;
 }
 
 void
 smbc_setFunctionFtruncate(SMBCCTX *c, smbc_ftruncate_fn fn)
 {
-    c->posix_emu.ftruncate_fn = fn;
+    c->internal->posix_emu.ftruncate_fn = fn;
 }
 
 smbc_close_fn
