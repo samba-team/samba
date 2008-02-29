@@ -143,6 +143,14 @@ _PUBLIC_ NTSTATUS odb_rename(struct odb_lock *lck, const char *path)
 }
 
 /*
+  get back the path of an open file
+*/
+_PUBLIC_ NTSTATUS odb_get_path(struct odb_lock *lck, const char **path)
+{
+	return ops->odb_get_path(lck, path);
+}
+
+/*
   update delete on close flag on an open file
 */
 _PUBLIC_ NTSTATUS odb_set_delete_on_close(struct odb_lock *lck, bool del_on_close)
