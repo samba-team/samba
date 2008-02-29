@@ -50,29 +50,10 @@ struct pvfs_file *pvfs_find_fd(struct pvfs_state *pvfs,
 */
 static int pvfs_dir_handle_destructor(struct pvfs_file_handle *h)
 {
-	int open_count;
-	char *path = NULL;
-
-	if (h->name->stream_name == NULL && 
-	    pvfs_delete_on_close_set(h->pvfs, h, &open_count, &path) &&
-	    open_count == 1) {
-		NTSTATUS status;
-		status = pvfs_xattr_unlink_hook(h->pvfs, path);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("Warning: xattr unlink hook failed for '%s' - %s\n",
-				 path, nt_errstr(status)));
-		}
-		if (rmdir(path) != 0) {
-			DEBUG(0,("pvfs_dir_handle_destructor: failed to rmdir '%s' - %s\n", 
-				 path, strerror(errno)));
-		}
-	}
-
-	talloc_free(path);
-
 	if (h->have_opendb_entry) {
 		struct odb_lock *lck;
 		NTSTATUS status;
+		const char *delete_path = NULL;
 
 		lck = odb_lock(h, h->pvfs->odb_context, &h->odb_locking_key);
 		if (lck == NULL) {
@@ -80,10 +61,22 @@ static int pvfs_dir_handle_destructor(struct pvfs_file_handle *h)
 			return 0;
 		}
 
-		status = odb_close_file(lck, h);
+		status = odb_close_file(lck, h, &delete_path);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("Unable to remove opendb entry for '%s' - %s\n", 
+			DEBUG(0,("Unable to remove opendb entry for '%s' - %s\n",
 				 h->name->full_name, nt_errstr(status)));
+		}
+
+		if (h->name->stream_name == NULL && delete_path) {
+			status = pvfs_xattr_unlink_hook(h->pvfs, delete_path);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0,("Warning: xattr unlink hook failed for '%s' - %s\n",
+					 delete_path, nt_errstr(status)));
+			}
+			if (rmdir(delete_path) != 0) {
+				DEBUG(0,("pvfs_dir_handle_destructor: failed to rmdir '%s' - %s\n",
+					 delete_path, strerror(errno)));
+			}
 		}
 
 		talloc_free(lck);
@@ -410,9 +403,6 @@ cleanup_delete:
 */
 static int pvfs_handle_destructor(struct pvfs_file_handle *h)
 {
-	int open_count;
-	char *path = NULL;
-
 	/* the write time is no longer sticky */
 	if (h->sticky_write_time) {
 		NTSTATUS status;
@@ -441,32 +431,10 @@ static int pvfs_handle_destructor(struct pvfs_file_handle *h)
 		h->fd = -1;
 	}
 
-	if (h->name->stream_name == NULL && 
-	    h->open_completed &&
-	    pvfs_delete_on_close_set(h->pvfs, h, &open_count, &path) &&
-	    open_count == 1) {
-		NTSTATUS status;
-		status = pvfs_xattr_unlink_hook(h->pvfs, path);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("Warning: xattr unlink hook failed for '%s' - %s\n",
-				 path, nt_errstr(status)));
-		}
-		if (unlink(path) != 0) {
-			DEBUG(0,("pvfs_close: failed to delete '%s' - %s\n", 
-				 path, strerror(errno)));
-		} else {
-			notify_trigger(h->pvfs->notify_context, 
-				       NOTIFY_ACTION_REMOVED, 
-				       FILE_NOTIFY_CHANGE_FILE_NAME,
-				       path);
-		}
-	}
-
-	talloc_free(path);
-
 	if (h->have_opendb_entry) {
 		struct odb_lock *lck;
 		NTSTATUS status;
+		const char *delete_path = NULL;
 
 		lck = odb_lock(h, h->pvfs->odb_context, &h->odb_locking_key);
 		if (lck == NULL) {
@@ -474,10 +442,28 @@ static int pvfs_handle_destructor(struct pvfs_file_handle *h)
 			return 0;
 		}
 
-		status = odb_close_file(lck, h);
+		status = odb_close_file(lck, h, &delete_path);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Unable to remove opendb entry for '%s' - %s\n", 
 				 h->name->full_name, nt_errstr(status)));
+		}
+
+		if (h->name->stream_name == NULL &&
+		    h->open_completed && delete_path) {
+			status = pvfs_xattr_unlink_hook(h->pvfs, delete_path);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0,("Warning: xattr unlink hook failed for '%s' - %s\n",
+					 delete_path, nt_errstr(status)));
+			}
+			if (unlink(delete_path) != 0) {
+				DEBUG(0,("pvfs_close: failed to delete '%s' - %s\n",
+					 delete_path, strerror(errno)));
+			} else {
+				notify_trigger(h->pvfs->notify_context,
+					       NOTIFY_ACTION_REMOVED,
+					       FILE_NOTIFY_CHANGE_FILE_NAME,
+					       delete_path);
+			}
 		}
 
 		talloc_free(lck);
@@ -574,7 +560,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		status = pvfs_locking_key(parent, req, &locking_key);
 		NT_STATUS_NOT_OK_RETURN(status);
 		status = odb_get_delete_on_close(pvfs->odb_context, &locking_key, 
-						 &del_on_close, NULL, NULL);
+						 &del_on_close);
 		NT_STATUS_NOT_OK_RETURN(status);
 		if (del_on_close) {
 			return NT_STATUS_DELETE_PENDING;
@@ -1738,14 +1724,13 @@ NTSTATUS pvfs_can_stat(struct pvfs_state *pvfs,
 /*
   determine if delete on close is set on 
 */
-bool pvfs_delete_on_close_set(struct pvfs_state *pvfs, struct pvfs_file_handle *h, 
-			      int *open_count, char **path)
+bool pvfs_delete_on_close_set(struct pvfs_state *pvfs, struct pvfs_file_handle *h)
 {
 	NTSTATUS status;
 	bool del_on_close;
 
 	status = odb_get_delete_on_close(pvfs->odb_context, &h->odb_locking_key, 
-					 &del_on_close, open_count, path);
+					 &del_on_close);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("WARNING: unable to determine delete on close status for open file\n"));
 		return false;

@@ -272,6 +272,8 @@ extern int 		mprMemcpy(char *dest, int destMax, const char *src, int nbytes);
 
 extern void mprSetCtx(void *ctx);
 extern void *mprMemCtx(void);
+struct loadparm_context;
+extern struct loadparm_context *mprLpCtx(void);
 
 /* This function needs to be provided by anyone using ejs */
 void ejs_exception(const char *reason);

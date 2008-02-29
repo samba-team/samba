@@ -93,8 +93,8 @@ static int do_share_checks(struct loadparm_context *lp_ctx, const char *cname, c
 	for (s=0;s<lp_numservices(lp_ctx);s++) {
 		struct loadparm_service *service = lp_servicebynum(lp_ctx, s);
 		if (service != NULL) {
-			const char **deny_list = lp_hostsdeny(service);
-			const char **allow_list = lp_hostsallow(service);
+			const char **deny_list = lp_hostsdeny(service, lp_default_service(lp_ctx));
+			const char **allow_list = lp_hostsallow(service, lp_default_service(lp_ctx));
 			int i;
 			if(deny_list) {
 				for (i=0; deny_list[i]; i++) {
@@ -139,7 +139,7 @@ static int do_share_checks(struct loadparm_context *lp_ctx, const char *cname, c
 					return(1);
 			}
 			if (!parameter_name) {
-				lp_dump_one(stdout, show_defaults, service);
+				lp_dump_one(stdout, show_defaults, service, lp_default_service(lp_ctx));
 			} else {
 				ret = !lp_dump_a_parameter(lp_ctx, service, parameter_name, stdout);
 			}
@@ -154,8 +154,8 @@ static int do_share_checks(struct loadparm_context *lp_ctx, const char *cname, c
 		for (s=0;s<lp_numservices(lp_ctx);s++) {
 			struct loadparm_service *service = lp_servicebynum(lp_ctx, s);
 			if (service != NULL) {
-				if (allow_access(NULL, lp_hostsdeny(NULL), lp_hostsallow(NULL), cname, caddr)
-				    && allow_access(NULL, lp_hostsdeny(service), lp_hostsallow(service), cname, caddr)) {
+				if (allow_access(NULL, lp_hostsdeny(NULL, lp_default_service(lp_ctx)), lp_hostsallow(NULL, lp_default_service(lp_ctx)), cname, caddr)
+				    && allow_access(NULL, lp_hostsdeny(service, lp_default_service(lp_ctx)), lp_hostsallow(service, lp_default_service(lp_ctx)), cname, caddr)) {
 					fprintf(stderr,"Allow connection from %s (%s) to %s\n",
 						   cname,caddr,lp_servicename(service));
 				} else {

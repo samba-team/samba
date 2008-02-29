@@ -123,6 +123,7 @@ _PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
 {
 	codepoint_t c1=0, c2=0;
 	size_t size1, size2;
+	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 
 	/* handle null ptr comparisons to simplify the use in qsort */
 	if (s1 == s2) return 0;
@@ -130,8 +131,8 @@ _PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
 	if (s2 == NULL) return 1;
 
 	while (*s1 && *s2) {
-		c1 = next_codepoint(lp_iconv_convenience(global_loadparm), s1, &size1);
-		c2 = next_codepoint(lp_iconv_convenience(global_loadparm), s2, &size2);
+		c1 = next_codepoint(iconv_convenience, s1, &size1);
+		c2 = next_codepoint(iconv_convenience, s2, &size2);
 
 		s1 += size1;
 		s2 += size2;
@@ -207,6 +208,7 @@ _PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
 {
 	codepoint_t c1=0, c2=0;
 	size_t size1, size2;
+	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 
 	/* handle null ptr comparisons to simplify the use in qsort */
 	if (s1 == s2) return 0;
@@ -216,8 +218,8 @@ _PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
 	while (*s1 && *s2 && n) {
 		n--;
 
-		c1 = next_codepoint(lp_iconv_convenience(global_loadparm), s1, &size1);
-		c2 = next_codepoint(lp_iconv_convenience(global_loadparm), s2, &size2);
+		c1 = next_codepoint(iconv_convenience, s1, &size1);
+		c2 = next_codepoint(iconv_convenience, s2, &size2);
 
 		s1 += size1;
 		s2 += size2;
@@ -480,6 +482,7 @@ _PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 {
 	size_t size=0;
 	char *dest;
+	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 
 	/* this takes advantage of the fact that upper/lower can't
 	   change the length of a character by more than 1 byte */
@@ -490,12 +493,12 @@ _PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 
 	while (*src) {
 		size_t c_size;
-		codepoint_t c = next_codepoint(lp_iconv_convenience(global_loadparm), src, &c_size);
+		codepoint_t c = next_codepoint(iconv_convenience, src, &c_size);
 		src += c_size;
 
 		c = tolower_w(c);
 
-		c_size = push_codepoint(lp_iconv_convenience(global_loadparm), dest+size, c);
+		c_size = push_codepoint(iconv_convenience, dest+size, c);
 		if (c_size == -1) {
 			talloc_free(dest);
 			return NULL;
@@ -520,6 +523,7 @@ _PUBLIC_ char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
 {
 	size_t size=0;
 	char *dest;
+	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 	
 	if (!src) {
 		return NULL;
@@ -534,12 +538,12 @@ _PUBLIC_ char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
 
 	while (*src) {
 		size_t c_size;
-		codepoint_t c = next_codepoint(lp_iconv_convenience(global_loadparm), src, &c_size);
+		codepoint_t c = next_codepoint(iconv_convenience, src, &c_size);
 		src += c_size;
 
 		c = toupper_w(c);
 
-		c_size = push_codepoint(lp_iconv_convenience(global_loadparm), dest+size, c);
+		c_size = push_codepoint(iconv_convenience, dest+size, c);
 		if (c_size == -1) {
 			talloc_free(dest);
 			return NULL;
@@ -563,6 +567,7 @@ _PUBLIC_ char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
 _PUBLIC_ void strlower_m(char *s)
 {
 	char *d;
+	struct smb_iconv_convenience *iconv_convenience;
 
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
@@ -576,12 +581,14 @@ _PUBLIC_ void strlower_m(char *s)
 	if (!*s)
 		return;
 
+	iconv_convenience = lp_iconv_convenience(global_loadparm);
+
 	d = s;
 
 	while (*s) {
 		size_t c_size, c_size2;
-		codepoint_t c = next_codepoint(lp_iconv_convenience(global_loadparm), s, &c_size);
-		c_size2 = push_codepoint(lp_iconv_convenience(global_loadparm), d, tolower_w(c));
+		codepoint_t c = next_codepoint(iconv_convenience, s, &c_size);
+		c_size2 = push_codepoint(iconv_convenience, d, tolower_w(c));
 		if (c_size2 > c_size) {
 			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strlower_m\n",
 				 c, tolower_w(c), (int)c_size, (int)c_size2));
@@ -599,6 +606,7 @@ _PUBLIC_ void strlower_m(char *s)
 _PUBLIC_ void strupper_m(char *s)
 {
 	char *d;
+	struct smb_iconv_convenience *iconv_convenience;
 
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
@@ -612,12 +620,14 @@ _PUBLIC_ void strupper_m(char *s)
 	if (!*s)
 		return;
 
+	iconv_convenience = lp_iconv_convenience(global_loadparm);
+
 	d = s;
 
 	while (*s) {
 		size_t c_size, c_size2;
-		codepoint_t c = next_codepoint(lp_iconv_convenience(global_loadparm), s, &c_size);
-		c_size2 = push_codepoint(lp_iconv_convenience(global_loadparm), d, toupper_w(c));
+		codepoint_t c = next_codepoint(iconv_convenience, s, &c_size);
+		c_size2 = push_codepoint(iconv_convenience, d, toupper_w(c));
 		if (c_size2 > c_size) {
 			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strupper_m\n",
 				 c, toupper_w(c), (int)c_size, (int)c_size2));

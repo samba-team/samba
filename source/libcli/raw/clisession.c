@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/filesys.h"
+#include "param/param.h"
 
 #define SETUP_REQUEST_SESSION(cmd, wct, buflen) do { \
 	req = smbcli_request_setup_session(session, cmd, wct, buflen); \
@@ -51,6 +52,9 @@ struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport,
 	}
 	session->pid = (uint16_t)getpid();
 	session->vuid = UID_FIELD_INVALID;
+	session->options.lanman_auth = lp_client_lanman_auth(global_loadparm);
+	session->options.ntlmv2_auth = lp_client_ntlmv2_auth(global_loadparm);
+	session->options.plaintext_auth = lp_client_plaintext_auth(global_loadparm);
 	
 	capabilities = transport->negotiate.capabilities;
 

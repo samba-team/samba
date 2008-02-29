@@ -8,7 +8,6 @@ localPolicyFlags: 0
 primaryGroupID: 516
 accountExpires: 9223372036854775807
 sAMAccountName: ${NETBIOSNAME}$
-sAMAccountType: 805306369
 operatingSystem: Samba
 operatingSystemVersion: 4.0
 dNSHostName: ${DNSNAME}
@@ -33,7 +32,6 @@ description: DNS Service Account
 userAccountControl: 514
 accountExpires: 9223372036854775807
 sAMAccountName: dns
-sAMAccountType: 805306368
 servicePrincipalName: DNS/${DNSDOMAIN}
 isCriticalSystemObject: TRUE
 sambaPassword:: ${DNSPASS_B64}

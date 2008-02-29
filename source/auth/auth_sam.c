@@ -226,7 +226,9 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 {
 	struct samr_Password *lm_pwd, *nt_pwd;
 	NTSTATUS nt_status;
-	uint16_t acct_flags = samdb_result_acct_flags(msgs[0], "userAccountControl");
+	struct ldb_dn *domain_dn = samdb_result_dn(sam_ctx, mem_ctx, msgs_domain_ref[0], "nCName", NULL);
+
+	uint16_t acct_flags = samdb_result_acct_flags(sam_ctx, mem_ctx, msgs[0], domain_dn);
 	
 	/* Quit if the account was locked out. */
 	if (acct_flags & ACB_AUTOLOCK) {

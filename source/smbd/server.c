@@ -282,8 +282,6 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		exit(1);
 	}
 
-	share_init();
-
 	gensec_init(cmdline_lp_ctx); /* FIXME: */
 
 	ntptr_init(cmdline_lp_ctx);	/* FIXME: maybe run this in the initialization function 

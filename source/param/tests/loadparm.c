@@ -129,7 +129,7 @@ static bool test_lp_parm_bytes(struct torture_context *tctx)
 static bool test_lp_do_service_parameter(struct torture_context *tctx)
 {
 	struct loadparm_context *lp_ctx = loadparm_init(tctx);
-	struct loadparm_service *service = lp_add_service(lp_ctx, &sDefault, "foo");
+	struct loadparm_service *service = lp_add_service(lp_ctx, lp_default_service(lp_ctx), "foo");
 	torture_assert(tctx, lp_do_service_parameter(lp_ctx, service, 
 						     "some:thing", "foo"), "lp_set_option failed");
 	torture_assert_str_equal(tctx, lp_parm_string(lp_ctx, service, "some", "thing"), "foo",
@@ -140,7 +140,7 @@ static bool test_lp_do_service_parameter(struct torture_context *tctx)
 static bool test_lp_service(struct torture_context *tctx)
 {
 	struct loadparm_context *lp_ctx = loadparm_init(tctx);
-	struct loadparm_service *service = lp_add_service(lp_ctx, &sDefault, "foo");
+	struct loadparm_service *service = lp_add_service(lp_ctx, lp_default_service(lp_ctx), "foo");
 	torture_assert(tctx, service == lp_service(lp_ctx, "foo"), "invalid service");
 	return true;
 }

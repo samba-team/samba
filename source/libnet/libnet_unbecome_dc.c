@@ -267,7 +267,8 @@ static void unbecomeDC_send_cldap(struct libnet_UnbecomeDC_state *s)
 	s->cldap.io.in.acct_control	= -1;
 	s->cldap.io.in.version		= 6;
 
-	s->cldap.sock = cldap_socket_init(s, s->libnet->event_ctx);
+	s->cldap.sock = cldap_socket_init(s, s->libnet->event_ctx,
+					  lp_iconv_convenience(s->libnet->lp_ctx));
 	if (composite_nomem(s->cldap.sock, c)) return;
 
 	req = cldap_netlogon_send(s->cldap.sock, &s->cldap.io);

@@ -31,6 +31,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "torture/util.h"
 #include "param/param.h"
+#include "libcli/resolve/resolve.h"
 
 #define BASEDIR "\\composite"
 
@@ -161,6 +162,7 @@ static bool test_fetchfile(struct smbcli_state *cli, struct torture_context *tct
 	io2.in.credentials = cmdline_credentials;
 	io2.in.workgroup  = lp_workgroup(tctx->lp_ctx);
 	io2.in.filename = fname;
+	io2.in.resolve_ctx = lp_resolve_context(tctx->lp_ctx);
 	lp_smbcli_options(tctx->lp_ctx, &io2.in.options);
 
 	printf("testing parallel fetchfile with %d ops\n", torture_numops);

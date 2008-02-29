@@ -29,14 +29,19 @@ function basic_tests(ldb, gc_ldb, base_dn, configuration_dn, schema_dn)
 {
 	println("Running basic tests");
 
+	ldb.del("cn=ldaptestcomputer,cn=computers," + base_dn);
+	ldb.del("cn=ldaptestcomputer3,cn=computers," + base_dn);
+	ldb.del("cn=ldaptest2computer,cn=computers," + base_dn);
 	ldb.del("cn=ldaptestuser,cn=users," + base_dn);
 	ldb.del("cn=ldaptestuser2,cn=users," + base_dn);
 	ldb.del("cn=ldaptestuser3,cn=users," + base_dn);
 	ldb.del("cn=ldaptestuser4,cn=users," + base_dn);
 	ldb.del("cn=ldaptestuser5,cn=users," + base_dn);
 	ldb.del("CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn);
+	ldb.del("cn=ldaptestuser7,cn=users," + base_dn);
 	ldb.del("CN=ldaptestcontainer2," + base_dn);
 	ldb.del("cn=ldaptestgroup,cn=users," + base_dn);
+	ldb.del("cn=ldaptestgroup2,cn=users," + base_dn);
 
 	println("Testing group add with invalid member");
 	var ok = ldb.add("
@@ -127,7 +132,7 @@ displayname: ldap testy
 		ok = ldb.del("cn=ldaptest2computer,cn=computers," + base_dn);
 		if (ok.error != 0) {
 			println(ok.errstr);
-			assert(ok.error == 0);
+		//	assert(ok.error == 0);
 		}
 		ok = ldb.add("
 dn: cn=ldaptest2computer,cn=computers," + base_dn + "
@@ -141,6 +146,113 @@ displayname: ldap testy
 			assert(ok.error == 0);
 		}
 	}
+
+	var ok = ldb.add("
+dn: cn=ldaptestcomputer3,cn=computers," + base_dn + "
+objectClass: computer
+cn: LDAPtest2COMPUTER
+");
+	if (ok.error != 34) {
+		println("Did not reject invalid RDN compared with DN: " + ok.errstr);
+		assert(ok.error == 34);
+	}
+
+	var ok = ldb.add("
+dn: cn=ldaptestcomputer3,cn=computers," + base_dn + "
+objectClass: computer
+cn: LDAPtestCOMPUTER3
+sAMAccountType: 805306368
+");
+
+	if (ok.error != 53) {
+		println("Did not reject invalid 'sAMAccountType: 805306368': " + ok.errstr);
+		assert(ok.error == 53);
+	}
+
+	var ok = ldb.add("
+dn: cn=ldaptestcomputer3,cn=computers," + base_dn + "
+objectClass: computer
+cn: LDAPtestCOMPUTER3
+userAccountControl: 0
+");
+
+	if (ok.error != 53) {
+		println("Did not reject invalid 'userAccountControl: 0': " + ok.errstr);
+		assert(ok.error == 53);
+	}
+
+	var ok = ldb.add("
+dn: cn=ldaptestuser7,cn=users," + base_dn + "
+objectClass: user
+cn: LDAPtestuser7
+userAccountControl: 0
+");
+
+	if (ok.error != 53) {
+		println("Did not reject invalid 'userAccountControl: 0': " + ok.errstr);
+		assert(ok.error == 53);
+	}
+
+	var ok = ldb.add("
+dn: cn=ldaptestuser7,cn=users," + base_dn + "
+objectClass: user
+cn: LDAPtestuser7
+userAccountControl: 2
+");
+
+	if (ok.error != 0) {
+		println("Did not accept 'userAccountControl: 2': " + ok.errstr);
+		assert(ok.error == 0);
+	}
+
+	    ldb.del("cn=ldaptestuser7,cn=users," + base_dn);
+
+	var ok = ldb.add("
+dn: cn=ldaptestcomputer3,cn=computers," + base_dn + "
+objectclass: computer
+cN: LDAPtestCOMPUTER3
+");
+	if (ok.error != 0) {
+		ok = ldb.del("cn=ldaptestcomputer3,cn=computers," + base_dn);
+		if (ok.error != 0) {
+			println(ok.errstr);
+			assert(ok.error == 0);
+		}
+		ok = ldb.add("
+dn: cn=ldaptestcomputer3,cn=computers," + base_dn + "
+objectClass: computer
+cn: LDAPtestCOMPUTER3
+");
+		if (ok.error != 0) {
+			println(ok.errstr);
+			assert(ok.error == 0);
+		}
+	}
+
+	println("Testing ldb.search for (&(cn=ldaptestcomputer3)(objectClass=user))");
+	var res = ldb.search("(&(cn=ldaptestcomputer3)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (&(cn=ldaptestcomputer3)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
+
+	assert(res.msgs[0].dn == ("CN=ldaptestcomputer3,CN=Computers," + base_dn));
+	assert(res.msgs[0].cn == "ldaptestcomputer3");
+	assert(res.msgs[0].name == "ldaptestcomputer3");
+	assert(res.msgs[0].objectClass[0] == "top");
+	assert(res.msgs[0].objectClass[1] == "person");
+	assert(res.msgs[0].objectClass[2] == "organizationalPerson");
+	assert(res.msgs[0].objectClass[3] == "user");
+	assert(res.msgs[0].objectClass[4] == "computer");
+	assert(res.msgs[0].objectGUID != undefined);
+	assert(res.msgs[0].whenCreated != undefined);
+	assert(res.msgs[0].objectCategory == ("CN=Computer,CN=Schema,CN=Configuration," + base_dn));
+	assert(res.msgs[0].primaryGroupID == 513);
+	assert(res.msgs[0].sAMAccountType == 805306368);
+	assert(res.msgs[0].userAccountControl == 546);
+
+	    ldb.del(res.msgs[0].dn);
 
 	    println("Testing attribute or value exists behaviour");
 	    ok = ldb.modify("
@@ -374,6 +486,13 @@ sn: ldap user2
 		assert(res.msgs.length == 2);
 	}
 
+	var res = ldb.search("(&(anr=testy ldap)(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 2) {
+		println("Found only " + res.msgs.length + " for (&(anr=\"testy ldap\")(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 2);
+	}
+
 // Testing ldb.search for (&(anr=ldap)(objectClass=user))
 	var res = ldb.search("(&(anr=ldap)(objectClass=user))");
 	if (res.error != 0 || res.msgs.length != 4) {
@@ -546,6 +665,38 @@ member: cn=ldaptestuser3,cn=users," + base_dn + "
 	assert(res.msgs[0].dn == ("CN=ldaptestUSER3,CN=Users," + base_dn));
 	assert(res.msgs[0].cn == "ldaptestUSER3");
 	assert(res.msgs[0].name == "ldaptestUSER3");
+
+	println("Testing ldb.search for (&(&(cn=ldaptestuser3)(userAccountControl=*))(objectClass=user))");
+	var res = ldb.search("(&(&(cn=ldaptestuser3)(userAccountControl=*))(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (&(cn=ldaptestuser3)(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
+
+	assert(res.msgs[0].dn == ("CN=ldaptestUSER3,CN=Users," + base_dn));
+	assert(res.msgs[0].cn == "ldaptestUSER3");
+	assert(res.msgs[0].name == "ldaptestUSER3");
+
+	println("Testing ldb.search for (&(&(cn=ldaptestuser3)(userAccountControl=546))(objectClass=user))");
+	var res = ldb.search("(&(&(cn=ldaptestuser3)(userAccountControl=546))(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 1) {
+		println("Could not find (&(&(cn=ldaptestuser3)(userAccountControl=546))(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 1);
+	}
+
+	assert(res.msgs[0].dn == ("CN=ldaptestUSER3,CN=Users," + base_dn));
+	assert(res.msgs[0].cn == "ldaptestUSER3");
+	assert(res.msgs[0].name == "ldaptestUSER3");
+
+	println("Testing ldb.search for (&(&(cn=ldaptestuser3)(userAccountControl=547))(objectClass=user))");
+	var res = ldb.search("(&(&(cn=ldaptestuser3)(userAccountControl=547))(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 0) {
+		println("Should not find (&(&(cn=ldaptestuser3)(userAccountControl=547))(objectClass=user))");
+		assert(res.error == 0);
+		assert(res.msgs.length == 0);
+	}
 
 // This is a Samba special, and does not exist in real AD
 //	println("Testing ldb.search for (dn=CN=ldaptestUSER3,CN=Users," + base_dn + ")");
@@ -840,7 +991,7 @@ objectClass: user
 	assert(res.msgs[0].whenCreated != undefined);
 	assert(res.msgs[0].objectCategory == ("CN=Person,CN=Schema,CN=Configuration," + base_dn));
 	assert(res.msgs[0].sAMAccountType == 805306368);
-//	assert(res[0].userAccountControl == 546);
+	assert(res.msgs[0].userAccountControl == 546);
 	assert(res.msgs[0].memberOf[0] == ("CN=ldaptestgroup2,CN=Users," + base_dn));
 	assert(res.msgs[0].memberOf.length == 1);
  
@@ -901,7 +1052,7 @@ objectClass: user
 	println("Testing ldb.search for (&(cn=ldaptestcomputer)(objectClass=user))");
 	var res = ldb.search("(&(cn=ldaptestcomputer)(objectClass=user))");
 	if (res.error != 0 || res.msgs.length != 1) {
-		println("Could not find (&(cn=ldaptestuser)(objectClass=user))");
+		println("Could not find (&(cn=ldaptestcomputer)(objectClass=user))");
 		assert(res.error == 0);
 		assert(res.msgs.length == 1);
 	}
@@ -916,12 +1067,9 @@ objectClass: user
 	assert(res.msgs[0].objectClass[4] == "computer");
 	assert(res.msgs[0].objectGUID != undefined);
 	assert(res.msgs[0].whenCreated != undefined);
-	assert(res.msgs[0].objectCategory == ("CN=Computer,CN=Schema,CN=Configuration," + base_dn));
-	assert(res.msgs[0].primaryGroupID == 513);
-//	assert(res.msgs[0].sAMAccountType == 805306368);
-//	assert(res.msgs[0].userAccountControl == 546);
-	assert(res.msgs[0].memberOf[0] == ("CN=ldaptestgroup2,CN=Users," + base_dn));
-	assert(res.msgs[0].memberOf.length == 1);
+	assert(res.msgs[0].objectCategory == "cn=Computer,cn=Schema,cn=Configuration," + base_dn);
+	assert(res.msgs[0].sAMAccountType == 805306368);
+	assert(res.msgs[0].userAccountControl == 546);
 
 	println("Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))");
 	var res2 = ldb.search("(&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))");
@@ -1023,7 +1171,7 @@ objectClass: user
 	assert(res.msgs[0].whenCreated != undefined);
 	assert(res.msgs[0].objectCategory == "cn=Computer,cn=Schema,cn=Configuration," + base_dn);
 	assert(res.msgs[0].sAMAccountType == 805306369);
-//	assert(res.msgs[0].userAccountControl == 4098);
+	assert(res.msgs[0].userAccountControl == 4096);
 
 
    	ok = ldb.del(res.msgs[0].dn);
