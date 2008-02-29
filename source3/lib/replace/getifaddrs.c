@@ -44,13 +44,14 @@
 
 void rep_freeifaddrs(struct ifaddrs *ifp)
 {
-	free(ifp->ifa_name);
-	free(ifp->ifa_addr);
-	free(ifp->ifa_netmask);
-	free(ifp->ifa_dstaddr);
-	if (ifp->ifa_next != NULL)
+	if (ifp != NULL) {
+		free(ifp->ifa_name);
+		free(ifp->ifa_addr);
+		free(ifp->ifa_netmask);
+		free(ifp->ifa_dstaddr);
 		freeifaddrs(ifp->ifa_next);
-	free(ifp);
+		free(ifp);
+	}
 }
 
 static struct sockaddr *sockaddr_dup(struct sockaddr *sa)
