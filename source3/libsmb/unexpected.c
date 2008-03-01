@@ -22,7 +22,7 @@
 
 static TDB_CONTEXT *tdbd = NULL;
 
-/* the key type used in the unexpeceted packet database */
+/* the key type used in the unexpected packet database */
 struct unexpected_key {
 	enum packet_type packet_type;
 	time_t timestamp;
@@ -32,7 +32,7 @@ struct unexpected_key {
 /****************************************************************************
  All unexpected packets are passed in here, to be stored in a unexpected
  packet database. This allows nmblookup and other tools to receive packets
- erroneoously sent to the wrong port by broken MS systems.
+ erroneously sent to the wrong port by broken MS systems.
 **************************************************************************/
 
 void unexpected_packet(struct packet_struct *p)
