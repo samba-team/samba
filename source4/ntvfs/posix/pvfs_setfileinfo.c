@@ -171,10 +171,7 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = pvfs_do_rename(pvfs, name, name2->full_name);
-	if (NT_STATUS_IS_OK(status)) {
-		status = odb_rename(lck, name2->full_name);
-	}
+	status = pvfs_do_rename(pvfs, lck, name, name2->full_name);
 	talloc_free(lck);
 	NT_STATUS_NOT_OK_RETURN(status);
 	if (NT_STATUS_IS_OK(status)) {

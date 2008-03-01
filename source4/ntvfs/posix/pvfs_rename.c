@@ -28,15 +28,21 @@
 /*
   do a file rename, and send any notify triggers
 */
-NTSTATUS pvfs_do_rename(struct pvfs_state *pvfs, const struct pvfs_filename *name1, 
+NTSTATUS pvfs_do_rename(struct pvfs_state *pvfs,
+			struct odb_lock *lck,
+			const struct pvfs_filename *name1,
 			const char *name2)
 {
 	const char *r1, *r2;
 	uint32_t mask;
+	NTSTATUS status;
 
 	if (rename(name1->full_name, name2) == -1) {
 		return pvfs_map_errno(pvfs, errno);
 	}
+
+	status = odb_rename(lck, name2);
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	if (name1->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
 		mask = FILE_NOTIFY_CHANGE_DIR_NAME;
@@ -315,11 +321,7 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = pvfs_do_rename(pvfs, name1, fname2);
-
-	if (NT_STATUS_IS_OK(status)) {
-		status = odb_rename(lck, fname2);
-	}
+	status = pvfs_do_rename(pvfs, lck, name1, fname2);
 
 failed:
 	talloc_free(mem_ctx);
@@ -448,9 +450,9 @@ static NTSTATUS pvfs_rename_mv(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	status = pvfs_do_rename(pvfs, name1, name2->full_name);
-	if (NT_STATUS_IS_OK(status)) {
-		status = odb_rename(lck, name2->full_name);
+	status = pvfs_do_rename(pvfs, lck, name1, name2->full_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 	
 	return NT_STATUS_OK;
@@ -532,10 +534,7 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 	case RENAME_FLAG_RENAME:
 		status = pvfs_access_check_parent(pvfs, req, name2, SEC_DIR_ADD_FILE);
 		NT_STATUS_NOT_OK_RETURN(status);
-		status = pvfs_do_rename(pvfs, name1, name2->full_name);
-		if (NT_STATUS_IS_OK(status)) {
-			status = odb_rename(lck, name2->full_name);
-		}
+		status = pvfs_do_rename(pvfs, lck, name1, name2->full_name);
 		NT_STATUS_NOT_OK_RETURN(status);
 		break;
 
