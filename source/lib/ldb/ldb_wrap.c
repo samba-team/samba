@@ -3113,52 +3113,6 @@ SWIGINTERN ldb_error ldb_search_ex(ldb *self,TALLOC_CTX *mem_ctx,ldb_dn *base,en
             *OUT = res;
             return ret;
         }
-SWIGINTERN ldb_error ldb_add__SWIG_1(ldb *self,PyObject *py_msg){
-            ldb_error ret;
-            int dict_pos, msg_pos;
-            PyObject *key, *value;
-            ldb_msg_element *msgel;
-            ldb_msg *msg = NULL;
-
-            if (PyDict_Check(py_msg)) {
-                msg = ldb_msg_new(NULL);
-                msg->elements = talloc_zero_array(msg, struct ldb_message_element, PyDict_Size(py_msg));
-                msg_pos = dict_pos = 0;
-                while (PyDict_Next(py_msg, &dict_pos, &key, &value)) {
-                    if (!strcmp(PyString_AsString(key), "dn")) {
-                        if (ldb_dn_from_pyobject(msg, value, self, &msg->dn) != 0) {
-                            return 80;
-                        }
-                    } else {
-                        msgel = ldb_msg_element_from_pyobject(msg->elements, value, 0, PyString_AsString(key));
-                        if (msgel == NULL) {
-                            SWIG_exception(SWIG_TypeError, "unable to import element");
-                            return 80;
-                        }
-                        memcpy(&msg->elements[msg_pos], msgel, sizeof(*msgel));
-                        msg_pos++;
-                    }
-                }
-
-                if (msg->dn == NULL) {
-                    SWIG_exception(SWIG_TypeError, "no dn set");
-                    return 80;
-                }
-
-                msg->num_elements = msg_pos;
-            } else {
-                if (SWIG_ConvertPtr(py_msg, (void **)&msg, SWIGTYPE_p_ldb_message, 0) != 0)
-                    return 80;
-            }
-
-            ret = ldb_add(self, msg);
-
-            talloc_free(msg);
-            return ret;
-
-            fail:
-            return 80;
-        }
 SWIGINTERN PyObject *ldb_schema_format_value(ldb *self,char const *element_name,PyObject *val){
         	const struct ldb_schema_attribute *a;
         	struct ldb_val old_val;
@@ -4733,27 +4687,61 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_Ldb_add__SWIG_0(PyObject *SWIGUNUSEDPARM(self), int nobjs, PyObject **swig_obj) {
+SWIGINTERN PyObject *_wrap_Ldb_add(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   ldb_msg *arg2 = (ldb_msg *) 0 ;
   ldb_error result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "add_msg", NULL 
+  };
   
-  if ((nobjs < 2) || (nobjs > 2)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:Ldb_add",kwnames,&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_add" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
-  res2 = SWIG_ConvertPtr(swig_obj[1], &argp2,SWIGTYPE_p_ldb_message, 0 |  0 );
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_add" "', argument " "2"" of type '" "ldb_msg *""'"); 
+  {
+    ldb_error ret;
+    int dict_pos, msg_pos;
+    PyObject *key, *value;
+    ldb_msg_element *msgel;
+    
+    if (PyDict_Check(obj1)) {
+      arg2 = ldb_msg_new(NULL);
+      arg2->elements = talloc_zero_array(arg2, struct ldb_message_element, PyDict_Size(obj1));
+      msg_pos = dict_pos = 0;
+      while (PyDict_Next(obj1, &dict_pos, &key, &value)) {
+        if (!strcmp(PyString_AsString(key), "dn")) {
+          if (ldb_dn_from_pyobject(arg2, value, obj0, &arg2->dn) != 0) {
+            SWIG_exception(SWIG_TypeError, "unable to import dn object");
+          }
+        } else {
+          msgel = ldb_msg_element_from_pyobject(arg2->elements, value, 0, PyString_AsString(key));
+          if (msgel == NULL) {
+            SWIG_exception(SWIG_TypeError, "unable to import element");
+          }
+          memcpy(&arg2->elements[msg_pos], msgel, sizeof(*msgel));
+          msg_pos++;
+        }
+      }
+      
+      if (arg2->dn == NULL) {
+        SWIG_exception(SWIG_TypeError, "no dn set");
+      }
+      
+      arg2->num_elements = msg_pos;
+    } else {
+      if (SWIG_ConvertPtr(obj1, (void **)&arg2, SWIGTYPE_p_ldb_message, 0) != 0) {
+        SWIG_exception(SWIG_TypeError, "unable to convert ldb message");
+      }
+    }
   }
-  arg2 = (ldb_msg *)(argp2);
   if (arg1 == NULL)
   SWIG_exception(SWIG_ValueError, 
     "ldb context must be non-NULL");
@@ -4768,64 +4756,6 @@ SWIGINTERN PyObject *_wrap_Ldb_add__SWIG_0(PyObject *SWIGUNUSEDPARM(self), int n
   resultobj = Py_None;
   return resultobj;
 fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Ldb_add__SWIG_1(PyObject *SWIGUNUSEDPARM(self), int nobjs, PyObject **swig_obj) {
-  PyObject *resultobj = 0;
-  ldb *arg1 = (ldb *) 0 ;
-  PyObject *arg2 = (PyObject *) 0 ;
-  ldb_error result;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  
-  if ((nobjs < 2) || (nobjs > 2)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_add" "', argument " "1"" of type '" "ldb *""'"); 
-  }
-  arg1 = (ldb *)(argp1);
-  arg2 = swig_obj[1];
-  if (arg1 == NULL)
-  SWIG_exception(SWIG_ValueError, 
-    "ldb context must be non-NULL");
-  result = ldb_add__SWIG_1(arg1,arg2);
-  if (result != 0) {
-    PyErr_SetObject(PyExc_LdbError, Py_BuildValue((char *)"(i,s)", result, ldb_strerror(result)));
-    SWIG_fail;
-  }
-  resultobj = Py_None;
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_Ldb_add(PyObject *self, PyObject *args) {
-  int argc;
-  PyObject *argv[3];
-  
-  if (!(argc = SWIG_Python_UnpackTuple(args,"Ldb_add",0,2,argv))) SWIG_fail;
-  --argc;
-  if (argc == 2) {
-    int _v = 0;
-    {
-      void *vptr = 0;
-      int res = SWIG_ConvertPtr(argv[1], &vptr, SWIGTYPE_p_ldb_message, 0);
-      _v = SWIG_CheckState(res);
-    }
-    if (!_v) goto check_1;
-    return _wrap_Ldb_add__SWIG_0(self, argc, argv);
-  }
-check_1:
-  
-  if (argc == 2) {
-    return _wrap_Ldb_add__SWIG_1(self, argc, argv);
-  }
-  
-fail:
-  SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number of arguments for overloaded function 'Ldb_add'.\n  Possible C/C++ prototypes are:\n""    add(ldb *,ldb_msg *)\n""    add(ldb *,PyObject *)\n");
   return NULL;
 }
 
@@ -5729,7 +5659,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"Ldb_delete", (PyCFunction) _wrap_Ldb_delete, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Ldb_rename", (PyCFunction) _wrap_Ldb_rename, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Ldb_parse_control_strings", (PyCFunction) _wrap_Ldb_parse_control_strings, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Ldb_add", _wrap_Ldb_add, METH_VARARGS, NULL},
+	 { (char *)"Ldb_add", (PyCFunction) _wrap_Ldb_add, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Ldb_modify", (PyCFunction) _wrap_Ldb_modify, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Ldb_get_config_basedn", (PyCFunction)_wrap_Ldb_get_config_basedn, METH_O, NULL},
 	 { (char *)"Ldb_get_root_basedn", (PyCFunction)_wrap_Ldb_get_root_basedn, METH_O, NULL},
