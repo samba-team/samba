@@ -928,9 +928,8 @@ NTSTATUS libnet_join_ok(const char *netbios_domain_name,
 			const char *machine_name,
 			const char *dc_name)
 {
-	uint32_t neg_flags = NETLOGON_NEG_AUTH2_FLAGS |
+	uint32_t neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS |
 			     NETLOGON_NEG_SCHANNEL;
-	/* FIXME: NETLOGON_NEG_SELECT_AUTH2_FLAGS */
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
