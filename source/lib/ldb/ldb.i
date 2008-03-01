@@ -548,7 +548,6 @@ PyObject *PyExc_LdbError;
 };
 
 %typemap(in,numinputs=1) ldb_msg *add_msg {
-    ldb_error ret;
     int dict_pos, msg_pos;
     PyObject *key, *value;
     ldb_msg_element *msgel;
@@ -559,7 +558,8 @@ PyObject *PyExc_LdbError;
         msg_pos = dict_pos = 0;
         while (PyDict_Next($input, &dict_pos, &key, &value)) {
             if (!strcmp(PyString_AsString(key), "dn")) {
-                if (ldb_dn_from_pyobject($1, value, $self, &$1->dn) != 0) {
+                /* using argp0 (magic SWIG value) here is a hack */
+                if (ldb_dn_from_pyobject($1, value, argp1, &$1->dn) != 0) {
                     SWIG_exception(SWIG_TypeError, "unable to import dn object");
                 }
             } else {

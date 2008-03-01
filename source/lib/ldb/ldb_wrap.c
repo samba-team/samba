@@ -4707,7 +4707,6 @@ SWIGINTERN PyObject *_wrap_Ldb_add(PyObject *SWIGUNUSEDPARM(self), PyObject *arg
   }
   arg1 = (ldb *)(argp1);
   {
-    ldb_error ret;
     int dict_pos, msg_pos;
     PyObject *key, *value;
     ldb_msg_element *msgel;
@@ -4718,7 +4717,8 @@ SWIGINTERN PyObject *_wrap_Ldb_add(PyObject *SWIGUNUSEDPARM(self), PyObject *arg
       msg_pos = dict_pos = 0;
       while (PyDict_Next(obj1, &dict_pos, &key, &value)) {
         if (!strcmp(PyString_AsString(key), "dn")) {
-          if (ldb_dn_from_pyobject(arg2, value, obj0, &arg2->dn) != 0) {
+          /* using argp0 (magic SWIG value) here is a hack */
+          if (ldb_dn_from_pyobject(arg2, value, argp1, &arg2->dn) != 0) {
             SWIG_exception(SWIG_TypeError, "unable to import dn object");
           }
         } else {
