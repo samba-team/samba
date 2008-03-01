@@ -1046,7 +1046,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	DEBUG(1,("getting file %s of size %.0f as %s ",
 		 rname, (double)size, lname));
 
-	status = cli_pull(targetcli, fnum, start, size, 1024*1024,
+	status = cli_pull(targetcli, fnum, start, size, io_bufsize,
 			  writefile_sink, (void *)&handle, &nread);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "parallel_read returned %s\n",
