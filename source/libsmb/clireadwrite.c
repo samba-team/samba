@@ -444,27 +444,175 @@ NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
 	return result;
 }
 
-static NTSTATUS cli_read_sink(char *buf, size_t n, void *priv)
+/****************************************************************************
+Issue a single SMBread and don't wait for a reply.
+****************************************************************************/
+
+static bool cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
+			   size_t size, int i)
 {
-	char **pbuf = (char **)priv;
-	memcpy(*pbuf, buf, n);
-	*pbuf += n;
-	return NT_STATUS_OK;
+	bool bigoffset = False;
+
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
+
+	if ((SMB_BIG_UINT)offset >> 32)
+		bigoffset = True;
+
+	cli_set_message(cli->outbuf,bigoffset ? 12 : 10,0,True);
+
+	SCVAL(cli->outbuf,smb_com,SMBreadX);
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SCVAL(cli->outbuf,smb_vwv0,0xFF);
+	SSVAL(cli->outbuf,smb_vwv2,fnum);
+	SIVAL(cli->outbuf,smb_vwv3,offset);
+	SSVAL(cli->outbuf,smb_vwv5,size);
+	SSVAL(cli->outbuf,smb_vwv6,size);
+	SSVAL(cli->outbuf,smb_vwv7,(size >> 16));
+	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
+
+	if (bigoffset) {
+		SIVAL(cli->outbuf,smb_vwv10,(((SMB_BIG_UINT)offset)>>32) & 0xffffffff);
+	}
+
+	return cli_send_smb(cli);
 }
 
-ssize_t cli_read(struct cli_state *cli, int fnum, char *buf,
-		 off_t offset, size_t size)
-{
-	NTSTATUS status;
-	ssize_t ret;
+/****************************************************************************
+  Read size bytes at offset offset using SMBreadX.
+****************************************************************************/
 
-	status = cli_pull(cli, fnum, offset, size, size,
-			  cli_read_sink, &buf, &ret);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-		return -1;
+ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size)
+{
+	char *p;
+	size_t size2;
+	size_t readsize;
+	ssize_t total = 0;
+	/* We can only do direct reads if not signing or encrypting. */
+	bool direct_reads = !client_is_signing_on(cli) && !cli_encryption_on(cli);
+
+	if (size == 0)
+		return 0;
+
+	/*
+	 * Set readsize to the maximum size we can handle in one readX,
+	 * rounded down to a multiple of 1024.
+	 */
+
+	if (client_is_signing_on(cli) == false &&
+			cli_encryption_on(cli) == false &&
+			(cli->posix_capabilities & CIFS_UNIX_LARGE_READ_CAP)) {
+		readsize = CLI_SAMBA_MAX_POSIX_LARGE_READX_SIZE;
+	} else if (cli->capabilities & CAP_LARGE_READX) {
+		if (cli->is_samba) {
+			readsize = CLI_SAMBA_MAX_LARGE_READX_SIZE;
+		} else {
+			readsize = CLI_WINDOWS_MAX_LARGE_READX_SIZE;
+		}
+	} else {
+		readsize = (cli->max_xmit - (smb_size+32)) & ~1023;
 	}
-	return ret;
+
+	while (total < size) {
+		readsize = MIN(readsize, size-total);
+
+		/* Issue a read and receive a reply */
+
+		if (!cli_issue_read(cli, fnum, offset, readsize, 0))
+			return -1;
+
+		if (direct_reads) {
+			if (!cli_receive_smb_readX_header(cli))
+				return -1;
+		} else {
+			if (!cli_receive_smb(cli))
+				return -1;
+		}
+
+		/* Check for error.  Make sure to check for DOS and NT
+                   errors. */
+
+                if (cli_is_error(cli)) {
+			bool recoverable_error = False;
+                        NTSTATUS status = NT_STATUS_OK;
+                        uint8 eclass = 0;
+			uint32 ecode = 0;
+
+                        if (cli_is_nt_error(cli))
+                                status = cli_nt_error(cli);
+                        else
+                                cli_dos_error(cli, &eclass, &ecode);
+
+			/*
+			 * ERRDOS ERRmoredata or STATUS_MORE_ENRTIES is a
+			 * recoverable error, plus we have valid data in the
+			 * packet so don't error out here.
+			 */
+
+                        if ((eclass == ERRDOS && ecode == ERRmoredata) ||
+                            NT_STATUS_V(status) == NT_STATUS_V(STATUS_MORE_ENTRIES))
+				recoverable_error = True;
+
+			if (!recoverable_error)
+                                return -1;
+		}
+
+		/* size2 is the number of bytes the server returned.
+		 * Might be zero. */
+		size2 = SVAL(cli->inbuf, smb_vwv5);
+		size2 |= (((unsigned int)(SVAL(cli->inbuf, smb_vwv7))) << 16);
+
+		if (size2 > readsize) {
+			DEBUG(5,("server returned more than we wanted!\n"));
+			return -1;
+		} else if (size2 < 0) {
+			DEBUG(5,("read return < 0!\n"));
+			return -1;
+		}
+
+		if (size2) {
+			/* smb_vwv6 is the offset in the packet of the returned
+			 * data bytes. Only valid if size2 != 0. */
+
+			if (!direct_reads) {
+				/* Copy data into buffer */
+				p = smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_vwv6);
+				memcpy(buf + total, p, size2);
+			} else {
+				/* Ensure the remaining data matches the return size. */
+				ssize_t toread = smb_len_large(cli->inbuf) - SVAL(cli->inbuf,smb_vwv6);
+
+				/* Ensure the size is correct. */
+				if (toread != size2) {
+					DEBUG(5,("direct read logic fail toread (%d) != size2 (%u)\n",
+						(int)toread, (unsigned int)size2 ));
+					return -1;
+				}
+
+				/* Read data directly into buffer */
+				toread = cli_receive_smb_data(cli,buf+total,size2);
+				if (toread != size2) {
+					DEBUG(5,("direct read read failure toread (%d) != size2 (%u)\n",
+						(int)toread, (unsigned int)size2 ));
+					return -1;
+				}
+			}
+		}
+
+		total += size2;
+		offset += size2;
+
+		/*
+		 * If the server returned less than we asked for we're at EOF.
+		 */
+
+		if (size2 < readsize)
+			break;
+	}
+
+	return total;
 }
 
 #if 0  /* relies on client_receive_smb(), now a static in libsmb/clientgen.c */
