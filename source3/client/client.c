@@ -964,20 +964,12 @@ static int cmd_echo(void)
  Get a file from rname to lname
 ****************************************************************************/
 
-static NTSTATUS writefile_sink(char *buf, size_t n, void *priv)
-{
-	int *pfd = (int *)priv;
-	if (writefile(*pfd, buf, n) == -1) {
-		return map_nt_error_from_unix(errno);
-	}
-	return NT_STATUS_OK;
-}
-
 static int do_get(const char *rname, const char *lname_in, bool reget)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	int handle = 0, fnum;
 	bool newhandle = false;
+	char *data = NULL;
 	struct timeval tp_start;
 	int read_size = io_bufsize;
 	uint16 attr;
@@ -988,7 +980,6 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	struct cli_state *targetcli = NULL;
 	char *targetname = NULL;
 	char *lname = NULL;
-	NTSTATUS status;
 
 	lname = talloc_strdup(ctx, lname_in);
 	if (!lname) {
@@ -1047,14 +1038,35 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	DEBUG(1,("getting file %s of size %.0f as %s ",
 		 rname, (double)size, lname));
 
-	status = cli_pull(targetcli, fnum, start, size, 1024*1024,
-			  writefile_sink, (void *)&handle, &nread);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "parallel_read returned %s\n",
-			  nt_errstr(status));
+	if(!(data = (char *)SMB_MALLOC(read_size))) {
+		d_printf("malloc fail for size %d\n", read_size);
 		cli_close(targetcli, fnum);
 		return 1;
 	}
+
+	while (1) {
+		int n = cli_read(targetcli, fnum, data, nread + start, read_size);
+
+		if (n <= 0)
+			break;
+
+		if (writefile(handle,data, n) != n) {
+			d_printf("Error writing local file\n");
+			rc = 1;
+			break;
+		}
+
+		nread += n;
+	}
+
+	if (nread + start < size) {
+		DEBUG (0, ("Short read when getting file %s. Only got %ld bytes.\n",
+			    rname, (long)nread));
+
+		rc = 1;
+	}
+
+	SAFE_FREE(data);
 
 	if (!cli_close(targetcli, fnum)) {
 		d_printf("Error %s closing remote file\n",cli_errstr(cli));
