@@ -43,7 +43,7 @@ static bool grepable = false;
 static char *cmdstr = NULL;
 static const char *cmd_ptr = NULL;
 
-static int io_bufsize = 64512;
+static int io_bufsize = 524288;
 
 static int name_type = 0x20;
 extern int max_protocol;
