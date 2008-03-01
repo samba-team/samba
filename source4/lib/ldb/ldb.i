@@ -547,6 +547,43 @@ PyObject *PyExc_LdbError;
     talloc_free($1);
 };
 
+%typemap(in,numinputs=1) ldb_msg *add_msg {
+    ldb_error ret;
+    int dict_pos, msg_pos;
+    PyObject *key, *value;
+    ldb_msg_element *msgel;
+
+    if (PyDict_Check($input)) {
+        $1 = ldb_msg_new(NULL);
+        $1->elements = talloc_zero_array($1, struct ldb_message_element, PyDict_Size($input));
+        msg_pos = dict_pos = 0;
+        while (PyDict_Next($input, &dict_pos, &key, &value)) {
+            if (!strcmp(PyString_AsString(key), "dn")) {
+                if (ldb_dn_from_pyobject($1, value, $self, &$1->dn) != 0) {
+                    SWIG_exception(SWIG_TypeError, "unable to import dn object");
+                }
+            } else {
+                msgel = ldb_msg_element_from_pyobject($1->elements, value, 0, PyString_AsString(key));
+                if (msgel == NULL) {
+                    SWIG_exception(SWIG_TypeError, "unable to import element");
+                }
+                memcpy(&$1->elements[msg_pos], msgel, sizeof(*msgel));
+                msg_pos++;
+            }
+        }
+
+        if ($1->dn == NULL) {
+            SWIG_exception(SWIG_TypeError, "no dn set");
+        }
+
+        $1->num_elements = msg_pos;
+    } else {
+        if (SWIG_ConvertPtr($input, (void **)&$1, SWIGTYPE_p_ldb_message, 0) != 0) {
+            SWIG_exception(SWIG_TypeError, "unable to convert ldb message");
+        }
+    }
+}
+
 /* Top-level ldb operations */
 typedef struct ldb_context {
     %extend {
@@ -604,53 +641,6 @@ typedef struct ldb_context {
         struct ldb_control **parse_control_strings(TALLOC_CTX *mem_ctx, 
                                                    const char * const*control_strings);
         ldb_error add(ldb_msg *add_msg);
-        ldb_error add(PyObject *py_msg) 
-        {
-            ldb_error ret;
-            int dict_pos, msg_pos;
-            PyObject *key, *value;
-            ldb_msg_element *msgel;
-            ldb_msg *msg = NULL;
-
-            if (PyDict_Check(py_msg)) {
-                msg = ldb_msg_new(NULL);
-                msg->elements = talloc_zero_array(msg, struct ldb_message_element, PyDict_Size(py_msg));
-                msg_pos = dict_pos = 0;
-                while (PyDict_Next(py_msg, &dict_pos, &key, &value)) {
-                    if (!strcmp(PyString_AsString(key), "dn")) {
-                        if (ldb_dn_from_pyobject(msg, value, $self, &msg->dn) != 0) {
-                            return LDB_ERR_OTHER;
-                        }
-                    } else {
-                        msgel = ldb_msg_element_from_pyobject(msg->elements, value, 0, PyString_AsString(key));
-                        if (msgel == NULL) {
-                            SWIG_exception(SWIG_TypeError, "unable to import element");
-                            return LDB_ERR_OTHER;
-                        }
-                        memcpy(&msg->elements[msg_pos], msgel, sizeof(*msgel));
-                        msg_pos++;
-                    }
-                }
-
-                if (msg->dn == NULL) {
-                    SWIG_exception(SWIG_TypeError, "no dn set");
-                    return LDB_ERR_OTHER;
-                }
-
-                msg->num_elements = msg_pos;
-            } else {
-                if (SWIG_ConvertPtr(py_msg, (void **)&msg, SWIGTYPE_p_ldb_message, 0) != 0)
-                    return LDB_ERR_OTHER;
-            }
-
-            ret = ldb_add($self, msg);
-
-            talloc_free(msg);
-            return ret;
-
-            fail:
-            return LDB_ERR_OTHER;
-        }
         ldb_error modify(ldb_msg *message);
         ldb_dn *get_config_basedn();
         ldb_dn *get_root_basedn();
