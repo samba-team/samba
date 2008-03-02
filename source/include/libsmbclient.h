@@ -142,7 +142,7 @@ struct smbc_dirent
 
 /*
  * Valid values for the option "open_share_mode", when calling
- * smbc_option_set()
+ * smbc_setOptionOpenShareMode()
  */
 typedef enum smbc_share_mode
 {
@@ -1010,35 +1010,15 @@ int smbc_free_context(SMBCCTX * context, int shutdown_ctx);
 
 
 /**@ingroup misc
- * Each time the context structure is changed, we have binary backward
- * compatibility issues.  Instead of modifying the public portions of the
- * context structure to add new options, instead, we put them in the internal
- * portion of the context structure and provide a set function for these new
- * options.
  *
- * @param context   A pointer to a SMBCCTX obtained from smbc_new_context()
- *
- * @param option_name
- *                  The name of the option for which the value is to be set
- *
- * @param option_value
- *                  The new value of the option being set
- *
+ * @DEPRECATED.  Use smbc_setOption*() functions instead.
  */
 void
 smbc_option_set(SMBCCTX *context,
                 char *option_name,
                 ... /* option_value */);
 /*
- * Retrieve the current value of an option
- *
- * @param context   A pointer to a SMBCCTX obtained from smbc_new_context()
- *
- * @param option_name
- *                  The name of the option for which the value is to be
- *                  retrieved
- *
- * @return          The value of the specified option.
+ * @DEPRECATED.  Use smbc_getOption*() functions instead.
  */
 void *
 smbc_option_get(SMBCCTX *context,
