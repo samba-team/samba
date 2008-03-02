@@ -35,10 +35,10 @@ struct smbc_server_cache {
 	char *workgroup;
 	char *username;
 	SMBCSRV *server;
-	
+        
 	struct smbc_server_cache *next, *prev;
 };
-	
+
 
 
 /*
@@ -54,51 +54,51 @@ SMBC_add_cached_server(SMBCCTX * context,
                        const char * username)
 {
 	struct smbc_server_cache * srvcache = NULL;
-
+        
 	if (!(srvcache = SMB_MALLOC_P(struct smbc_server_cache))) {
 		errno = ENOMEM;
 		DEBUG(3, ("Not enough space for server cache allocation\n"));
 		return 1;
 	}
-       
+        
 	ZERO_STRUCTP(srvcache);
-
+        
 	srvcache->server = newsrv;
-
+        
 	srvcache->server_name = SMB_STRDUP(server);
 	if (!srvcache->server_name) {
 		errno = ENOMEM;
 		goto failed;
 	}
-
+        
 	srvcache->share_name = SMB_STRDUP(share);
 	if (!srvcache->share_name) {
 		errno = ENOMEM;
 		goto failed;
 	}
-
+        
 	srvcache->workgroup = SMB_STRDUP(workgroup);
 	if (!srvcache->workgroup) {
 		errno = ENOMEM;
 		goto failed;
 	}
-
+        
 	srvcache->username = SMB_STRDUP(username);
 	if (!srvcache->username) {
 		errno = ENOMEM;
 		goto failed;
 	}
-
+        
 	DLIST_ADD((context->cache.server_cache_data), srvcache);
 	return 0;
-
- failed:
+        
+failed:
 	SAFE_FREE(srvcache->server_name);
 	SAFE_FREE(srvcache->share_name);
 	SAFE_FREE(srvcache->workgroup);
 	SAFE_FREE(srvcache->username);
 	SAFE_FREE(srvcache);
-	
+        
 	return 1;
 }
 
@@ -117,19 +117,19 @@ SMBC_get_cached_server(SMBCCTX * context,
                        const char * user)
 {
 	struct smbc_server_cache * srv = NULL;
-	
+        
 	/* Search the cache lines */
 	for (srv = context->cache.server_cache_data; srv; srv = srv->next) {
-
+                
 		if (strcmp(server,srv->server_name)  == 0 &&
 		    strcmp(workgroup,srv->workgroup) == 0 &&
 		    strcmp(user, srv->username)  == 0) {
-
+                        
                         /* If the share name matches, we're cool */
                         if (strcmp(share, srv->share_name) == 0) {
                                 return srv->server;
                         }
-
+                        
                         /*
                          * We only return an empty share name or the attribute
                          * server on an exact match (which would have been
@@ -137,7 +137,7 @@ SMBC_get_cached_server(SMBCCTX * context,
                          */
                         if (*share == '\0' || strcmp(share, "*IPC$") == 0)
                                 continue;
-
+                        
                         /*
                          * Never return an empty share name or the attribute
                          * server if it wasn't what was requested.
@@ -145,7 +145,7 @@ SMBC_get_cached_server(SMBCCTX * context,
                         if (*srv->share_name == '\0' ||
                             strcmp(srv->share_name, "*IPC$") == 0)
                                 continue;
-
+                        
                         /*
                          * If we're only allowing one share per server, then
                          * a connection to the server (other than the
@@ -164,7 +164,7 @@ SMBC_get_cached_server(SMBCCTX * context,
                                         context->cache.remove_cached_server_fn(context, srv->server);
                                         continue;
                                 }
-
+                                
                                 /*
                                  * Save the new share name.  We've
                                  * disconnected from the old share, and are
@@ -179,13 +179,13 @@ SMBC_get_cached_server(SMBCCTX * context,
                                         context->cache.remove_cached_server_fn(context, srv->server);
                                         continue;
                                 }
-
-
+                                
+                                
                                 return srv->server;
                         }
                 }
 	}
-
+        
 	return NULL;
 }
 
@@ -200,10 +200,10 @@ SMBC_remove_cached_server(SMBCCTX * context,
                           SMBCSRV * server)
 {
 	struct smbc_server_cache * srv = NULL;
-	
+        
 	for (srv = context->cache.server_cache_data; srv; srv = srv->next) {
 		if (server == srv->server) { 
-
+                        
 			/* remove this sucker */
 			DLIST_REMOVE(context->cache.server_cache_data, srv);
 			SAFE_FREE(srv->server_name);
@@ -229,13 +229,13 @@ SMBC_purge_cached_servers(SMBCCTX * context)
 	struct smbc_server_cache * srv;
 	struct smbc_server_cache * next;
 	int could_not_purge_all = 0;
-
+        
 	for (srv = context->cache.server_cache_data,
                      next = (srv ? srv->next :NULL);
              srv;
              srv = next,
                      next = (srv ? srv->next : NULL)) {
-
+                
 		if (SMBC_remove_unused_server(context, srv->server)) {
 			/* could not be removed */
 			could_not_purge_all = 1;
