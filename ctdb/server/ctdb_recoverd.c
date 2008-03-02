@@ -44,6 +44,7 @@ struct ctdb_recoverd {
 	int rec_file_fd;
 	uint32_t recmaster;
 	uint32_t num_active;
+	struct ctdb_node_map *nodemap;
 	uint32_t last_culprit;
 	uint32_t culprit_counter;
 	struct timeval first_recover_time;
@@ -1665,7 +1666,7 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 /*
   force the start of the election process
  */
-static void force_election(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx, uint32_t pnn, 
+static void force_election(struct ctdb_recoverd *rec, uint32_t pnn, 
 			   struct ctdb_node_map *nodemap)
 {
 	int ret;
@@ -2034,12 +2035,58 @@ ctdb_recoverd_get_pnn_lock(struct ctdb_recoverd *rec)
 static void ctdb_update_pnn_count(struct event_context *ev, struct timed_event *te, 
 				  struct timeval t, void *p)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
+	int i, count;
+	struct ctdb_recoverd *rec     = talloc_get_type(p, struct ctdb_recoverd);
+	struct ctdb_context *ctdb     = rec->ctdb;
+	struct ctdb_node_map *nodemap = rec->nodemap;
 
 	ctdb_recoverd_write_pnn_connect_count(rec);
 
-	event_add_timed(rec->ctdb->ev, rec->ctdb, timeval_current_ofs(60, 0), 
-				ctdb_update_pnn_count, rec);
+	event_add_timed(rec->ctdb->ev, rec->ctdb,
+		timeval_current_ofs(ctdb->tunable.reclock_ping_period, 0), 
+		ctdb_update_pnn_count, rec);
+
+	/* check if there is a split cluster and yeld the recmaster role
+	   it the other half of the cluster is larger 
+	*/
+	DEBUG(DEBUG_DEBUG, ("CHECK FOR SPLIT CLUSTER\n"));
+	if (rec->nodemap == NULL) {
+		return;
+	}
+	if (rec->rec_file_fd == -1) {
+		return;
+	}
+	/* only test this if we think we are the recmaster */
+	if (ctdb->pnn != rec->recmaster) {
+		DEBUG(DEBUG_DEBUG, ("We are not recmaster, skip test\n"));
+		return;
+	}
+	if (ctdb->recovery_lock_fd == -1) {
+		return;
+	}
+	for (i=0; i<nodemap->num; i++) {
+		/* we dont need to check ourself */
+		if (nodemap->nodes[i].pnn == ctdb->pnn) {
+			continue;
+		}
+		/* dont check nodes that are connected to us */
+		if (!(nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED)) {
+			continue;
+		}
+		/* check if the node is "connected" and how connected it it */
+		count = ctdb_read_pnn_lock(rec->rec_file_fd, nodemap->nodes[i].pnn);
+		if (count < 0) {
+			continue;
+		}
+		/* check if that node is more connected that us */
+		if (count > rec->num_active) {
+			DEBUG(DEBUG_ERR, ("DISCONNECTED Node %u is more connected than we are, yielding recmaster role\n", nodemap->nodes[i].pnn));
+			close(ctdb->recovery_lock_fd);
+			ctdb->recovery_lock_fd = -1;
+			force_election(rec, ctdb->pnn, rec->nodemap);
+			return;
+		}
+	}
 }
 
 /*
@@ -2090,8 +2137,9 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_VACUUM_FETCH, vacuum_fetch_handler, rec);
 
 	/* update the reclock pnn file connected count on a regular basis */
-	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(60, 0), 
-				ctdb_update_pnn_count, rec);
+	event_add_timed(ctdb->ev, ctdb,
+		timeval_current_ofs(ctdb->tunable.reclock_ping_period, 0), 
+		ctdb_update_pnn_count, rec);
 
 again:
 	if (mem_ctx) {
@@ -2160,11 +2208,17 @@ again:
 
 
 	/* get number of nodes */
-	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, &nodemap);
+	if (rec->nodemap) {
+		talloc_free(rec->nodemap);
+		rec->nodemap = NULL;
+		nodemap=NULL;
+	}
+	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), pnn, rec, &rec->nodemap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to get nodemap from node %u\n", pnn));
 		goto again;
 	}
+	nodemap = rec->nodemap;
 
 	/* check which node is the recovery master */
 	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(), pnn, &rec->recmaster);
@@ -2175,7 +2229,7 @@ again:
 
 	if (rec->recmaster == (uint32_t)-1) {
 		DEBUG(DEBUG_NOTICE,(__location__ " Initial recovery master set - forcing election\n"));
-		force_election(rec, mem_ctx, pnn, nodemap);
+		force_election(rec, pnn, nodemap);
 		goto again;
 	}
 	
@@ -2232,14 +2286,14 @@ again:
 
 	if (j == nodemap->num) {
 		DEBUG(DEBUG_ERR, ("Recmaster node %u not in list. Force reelection\n", rec->recmaster));
-		force_election(rec, mem_ctx, pnn, nodemap);
+		force_election(rec, pnn, nodemap);
 		goto again;
 	}
 
 	/* if recovery master is disconnected we must elect a new recmaster */
 	if (nodemap->nodes[j].flags & NODE_FLAGS_DISCONNECTED) {
 		DEBUG(DEBUG_NOTICE, ("Recmaster node %u is disconnected. Force reelection\n", nodemap->nodes[j].pnn));
-		force_election(rec, mem_ctx, pnn, nodemap);
+		force_election(rec, pnn, nodemap);
 		goto again;
 	}
 
@@ -2255,7 +2309,7 @@ again:
 
 	if (remote_nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 		DEBUG(DEBUG_NOTICE, ("Recmaster node %u no longer available. Force reelection\n", nodemap->nodes[j].pnn));
-		force_election(rec, mem_ctx, pnn, nodemap);
+		force_election(rec, pnn, nodemap);
 		goto again;
 	}
 
@@ -2317,7 +2371,7 @@ again:
 	ret = update_local_flags(rec, nodemap);
 	if (ret == MONITOR_ELECTION_NEEDED) {
 		DEBUG(DEBUG_NOTICE,("update_local_flags() called for a re-election.\n"));
-		force_election(rec, mem_ctx, pnn, nodemap);
+		force_election(rec, pnn, nodemap);
 		goto again;
 	}
 	if (ret != MONITOR_OK) {
@@ -2355,7 +2409,7 @@ again:
 		/* can not happen */
 		goto again;
 	case MONITOR_ELECTION_NEEDED:
-		force_election(rec, mem_ctx, pnn, nodemap);
+		force_election(rec, pnn, nodemap);
 		goto again;
 	case MONITOR_OK:
 		break;

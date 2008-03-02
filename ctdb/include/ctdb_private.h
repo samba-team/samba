@@ -90,6 +90,7 @@ struct ctdb_tunable {
 	uint32_t enable_bans;
 	uint32_t deterministic_public_ips;
 	uint32_t disable_when_unhealthy;
+	uint32_t reclock_ping_period;
 };
 
 /*

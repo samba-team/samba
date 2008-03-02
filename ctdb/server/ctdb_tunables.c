@@ -46,6 +46,7 @@ static const struct {
 	{ "EnableBans",           1,  offsetof(struct ctdb_tunable, enable_bans) },
 	{ "DeterministicIPs",     1,  offsetof(struct ctdb_tunable, deterministic_public_ips) },
 	{ "DisableWhenUnhealthy", 0,  offsetof(struct ctdb_tunable, disable_when_unhealthy) },
+	{ "ReclockPingPeriod",   60, offsetof(struct ctdb_tunable,  reclock_ping_period) },
 };
 
 /*
