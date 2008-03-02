@@ -1016,6 +1016,7 @@ void
 smbc_option_set(SMBCCTX *context,
                 char *option_name,
                 ... /* option_value */);
+
 /*
  * @DEPRECATED.  Use smbc_getOption*() functions instead.
  */
