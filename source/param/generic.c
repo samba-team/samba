@@ -259,11 +259,8 @@ int param_use(struct loadparm_context *lp_ctx, struct param_context *ctx)
 				struct loadparm_service *service = 
 							lp_service(lp_ctx, section->name);
 				if (service == NULL)
-					service = lp_add_service(lp_ctx, &sDefault, section->name);
-				lp_do_service_parameter(lp_ctx, 
-							service,
-							param->key,
-							param->value);
+					service = lp_add_service(lp_ctx, lp_default_service(lp_ctx), section->name);
+				lp_do_service_parameter(lp_ctx, service, param->key, param->value);
 			}
 		}
 	}

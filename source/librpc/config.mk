@@ -4,8 +4,7 @@
 VERSION = 0.0.1
 SO_VERSION = 0
 PC_FILE = ndr.pc
-PUBLIC_HEADERS = ndr/libndr.h
-PUBLIC_PROTO_HEADER = ndr/libndr_proto.h
+PRIVATE_PROTO_HEADER = ndr/libndr_proto.h
 OBJ_FILES = \
 		ndr/ndr.o \
 		ndr/ndr_basic.o \
@@ -15,6 +14,8 @@ PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBTALLOC LIBSAMBA-UTIL CHARSET EXT_NSL \
 					  LIBSAMBA-CONFIG
 # End SUBSYSTEM LIBNDR
 ################################################
+
+PUBLIC_HEADERS += librpc/ndr/libndr.h
 
 #################################
 # Start BINARY ndrdump
@@ -29,10 +30,11 @@ PRIVATE_DEPENDENCIES = \
 		POPT_SAMBA \
 		NDR_TABLE \
 		LIBSAMBA-ERRORS
-MANPAGE = tools/ndrdump.1
 # FIXME: ndrdump shouldn't have to depend on RPC...
 # End BINARY ndrdump
 #################################
+
+MANPAGES += librpc/tools/ndrdump.1
 
 ################################################
 # Start SUBSYSTEM NDR_COMPRESSION
@@ -46,8 +48,9 @@ PUBLIC_DEPENDENCIES = LIBCOMPRESSION LIBSAMBA-ERRORS LIBNDR
 
 [SUBSYSTEM::NDR_SECURITY]
 OBJ_FILES = gen_ndr/ndr_security.o ndr/ndr_sec_helper.o 
-PUBLIC_HEADERS = gen_ndr/security.h
 PUBLIC_DEPENDENCIES = NDR_MISC LIBSECURITY
+
+PUBLIC_HEADERS += librpc/gen_ndr/security.h
 
 [SUBSYSTEM::NDR_AUDIOSRV]
 OBJ_FILES = gen_ndr/ndr_audiosrv.o
@@ -79,8 +82,9 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY
 
 [SUBSYSTEM::NDR_MISC]
 OBJ_FILES = gen_ndr/ndr_misc.o ndr/ndr_misc.o
-PUBLIC_HEADERS = gen_ndr/misc.h gen_ndr/ndr_misc.h
 PUBLIC_DEPENDENCIES = LIBNDR
+
+PUBLIC_HEADERS += librpc/gen_ndr/misc.h librpc/gen_ndr/ndr_misc.h
 
 [SUBSYSTEM::NDR_ROT]
 OBJ_FILES = gen_ndr/ndr_rot.o
@@ -88,8 +92,9 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_ORPC
 
 [SUBSYSTEM::NDR_LSA]
 OBJ_FILES = gen_ndr/ndr_lsa.o
-PUBLIC_HEADERS = gen_ndr/lsa.h
 PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY
+
+PUBLIC_HEADERS += librpc/gen_ndr/lsa.h
 
 [SUBSYSTEM::NDR_DFS]
 OBJ_FILES = gen_ndr/ndr_dfs.o
@@ -125,8 +130,9 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY
 
 [SUBSYSTEM::NDR_SAMR]
 OBJ_FILES = gen_ndr/ndr_samr.o
-PUBLIC_HEADERS = gen_ndr/samr.h gen_ndr/ndr_samr.h gen_ndr/ndr_samr_c.h
 PUBLIC_DEPENDENCIES = LIBNDR NDR_MISC NDR_LSA NDR_SECURITY
+
+PUBLIC_HEADERS += $(addprefix librpc/, gen_ndr/samr.h gen_ndr/ndr_samr.h gen_ndr/ndr_samr_c.h)
 
 [SUBSYSTEM::NDR_NFS4ACL]
 OBJ_FILES = gen_ndr/ndr_nfs4acl.o
@@ -150,13 +156,15 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_SVCCTL NDR_SECURITY
 
 [SUBSYSTEM::NDR_SVCCTL]
 OBJ_FILES = gen_ndr/ndr_svcctl.o
-PUBLIC_HEADERS = gen_ndr/ndr_svcctl.h gen_ndr/svcctl.h
 PUBLIC_DEPENDENCIES = LIBNDR NDR_MISC
+
+PUBLIC_HEADERS += $(addprefix librpc/, gen_ndr/ndr_svcctl.h gen_ndr/svcctl.h)
 
 [SUBSYSTEM::NDR_ATSVC]
 OBJ_FILES = gen_ndr/ndr_atsvc.o
-PUBLIC_HEADERS = gen_ndr/atsvc.h gen_ndr/ndr_atsvc.h
 PUBLIC_DEPENDENCIES = LIBNDR
+
+PUBLIC_HEADERS += $(addprefix librpc/, gen_ndr/atsvc.h gen_ndr/ndr_atsvc.h)
 
 [SUBSYSTEM::NDR_EVENTLOG]
 OBJ_FILES = gen_ndr/ndr_eventlog.o
@@ -232,8 +240,9 @@ PUBLIC_DEPENDENCIES = LIBNDR
 
 [SUBSYSTEM::NDR_NETLOGON]
 OBJ_FILES = gen_ndr/ndr_netlogon.o
-PUBLIC_HEADERS = gen_ndr/netlogon.h
 PUBLIC_DEPENDENCIES = LIBNDR NDR_SAMR NDR_LSA NDR_SECURITY
+
+PUBLIC_HEADERS += $(addprefix librpc/, gen_ndr/netlogon.h)
 
 [SUBSYSTEM::NDR_TRKWKS]
 OBJ_FILES = gen_ndr/ndr_trkwks.o
@@ -265,8 +274,9 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_NBT
 
 [SUBSYSTEM::NDR_NBT]
 OBJ_FILES = gen_ndr/ndr_nbt.o
-PUBLIC_HEADERS = gen_ndr/nbt.h
 PUBLIC_DEPENDENCIES = LIBNDR NDR_MISC NDR_NBT_BUF NDR_SVCCTL NDR_SECURITY
+
+PUBLIC_HEADERS += librpc/gen_ndr/nbt.h
 
 [SUBSYSTEM::NDR_WINSREPL]
 OBJ_FILES = gen_ndr/ndr_winsrepl.o
@@ -274,15 +284,22 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_NBT
 
 [SUBSYSTEM::NDR_WINBIND]
 OBJ_FILES = gen_ndr/ndr_winbind.o
-PUBLIC_HEADERS = gen_ndr/winbind.h
 PUBLIC_DEPENDENCIES = LIBNDR NDR_NETLOGON
 
-mkinclude ../heimdal_build/perl_path_wrapper.sh ../librpc/idl-deps.pl librpc/idl/*.idl|
+PUBLIC_HEADERS += librpc/gen_ndr/winbind.h
+
+librpc/idl-deps:
+	./librpc/idl-deps.pl librpc/idl/*.idl >$@
+
+clean:: 
+	rm -f librpc/idl-deps
+
+include librpc/idl-deps
 
 librpc/gen_ndr/tables.c: $(IDL_NDR_PARSE_H_FILES)
-	@echo Generating librpc/gen_ndr/tables.c
-	@$(PERL) $(srcdir)/librpc/tables.pl --output=librpc/gen_ndr/tables.c $(IDL_NDR_PARSE_H_FILES) > librpc/gen_ndr/tables.x
-	mv librpc/gen_ndr/tables.x librpc/gen_ndr/tables.c
+	@echo Generating $@
+	@$(PERL) $(srcdir)/librpc/tables.pl --output=$@ $^ > librpc/gen_ndr/tables.x
+	@mv librpc/gen_ndr/tables.x $@
 
 [SUBSYSTEM::NDR_TABLE]
 OBJ_FILES = ndr/ndr_table.o gen_ndr/tables.o
@@ -364,13 +381,15 @@ PUBLIC_DEPENDENCIES = dcerpc NDR_SRVSVC
 
 [SUBSYSTEM::RPC_NDR_SVCCTL]
 OBJ_FILES = gen_ndr/ndr_svcctl_c.o
-PUBLIC_HEADERS = gen_ndr/ndr_svcctl_c.h
 PUBLIC_DEPENDENCIES = dcerpc NDR_SVCCTL
+
+PUBLIC_HEADERS += librpc/gen_ndr/ndr_svcctl_c.h
 
 [SUBSYSTEM::dcerpc_atsvc]
 OBJ_FILES = gen_ndr/ndr_atsvc_c.o
-PUBLIC_HEADERS = gen_ndr/ndr_atsvc_c.h
 PUBLIC_DEPENDENCIES = dcerpc NDR_ATSVC
+
+PUBLIC_HEADERS += librpc/gen_ndr/ndr_atsvc_c.h
 
 [SUBSYSTEM::RPC_NDR_EVENTLOG]
 OBJ_FILES = gen_ndr/ndr_eventlog_c.o
@@ -451,7 +470,8 @@ PUBLIC_DEPENDENCIES = dcerpc NDR_KEYSVC
 [SUBSYSTEM::NDR_DCERPC]
 OBJ_FILES = gen_ndr/ndr_dcerpc.o
 PUBLIC_DEPENDENCIES = LIBNDR NDR_MISC
-PUBLIC_HEADERS = gen_ndr/dcerpc.h gen_ndr/ndr_dcerpc.h
+
+PUBLIC_HEADERS += $(addprefix librpc/, gen_ndr/dcerpc.h gen_ndr/ndr_dcerpc.h)
 
 ################################################
 # Start SUBSYSTEM dcerpc
@@ -459,10 +479,7 @@ PUBLIC_HEADERS = gen_ndr/dcerpc.h gen_ndr/ndr_dcerpc.h
 VERSION = 0.0.1
 SO_VERSION = 0
 PC_FILE = dcerpc.pc
-PUBLIC_HEADERS = rpc/dcerpc.h \
-			gen_ndr/mgmt.h gen_ndr/ndr_mgmt.h gen_ndr/ndr_mgmt_c.h \
-			gen_ndr/epmapper.h gen_ndr/ndr_epmapper.h gen_ndr/ndr_epmapper_c.h
-PUBLIC_PROTO_HEADER = rpc/dcerpc_proto.h
+PRIVATE_PROTO_HEADER = rpc/dcerpc_proto.h
 OBJ_FILES = \
 		rpc/dcerpc.o \
 		rpc/dcerpc_auth.o \
@@ -483,6 +500,11 @@ PRIVATE_DEPENDENCIES = \
 PUBLIC_DEPENDENCIES = CREDENTIALS 
 # End SUBSYSTEM dcerpc
 ################################################
+
+PUBLIC_HEADERS += $(addprefix librpc/, rpc/dcerpc.h \
+			gen_ndr/mgmt.h gen_ndr/ndr_mgmt.h gen_ndr/ndr_mgmt_c.h \
+			gen_ndr/epmapper.h gen_ndr/ndr_epmapper.h gen_ndr/ndr_epmapper_c.h)
+
 
 [MODULE::RPC_EJS_ECHO]
 INIT_FUNCTION = ejs_init_rpcecho

@@ -36,9 +36,10 @@ OBJ_FILES = \
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-UTIL CHARSET TDR_REGF LIBLDB \
 		RPC_NDR_WINREG LDB_WRAP
-PUBLIC_HEADERS = registry.h hive.h patchfile.h
 # End MODULE registry_ldb
 ################################################
+
+PUBLIC_HEADERS += $(addprefix lib/registry/, registry.h hive.h patchfile.h)
 
 [SUBSYSTEM::registry_common]
 PUBLIC_DEPENDENCIES = registry
@@ -52,9 +53,10 @@ INSTALLDIR = BINDIR
 OBJ_FILES = tools/regdiff.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-CONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS
-MANPAGE = man/regdiff.1
 # End BINARY regdiff
 ################################################
+
+MANPAGES += lib/registry/man/regdiff.1
 
 ################################################
 # Start BINARY regpatch
@@ -64,9 +66,10 @@ OBJ_FILES = tools/regpatch.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-CONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS \
 		registry_common
-MANPAGE = man/regpatch.1
 # End BINARY regpatch
 ################################################
+
+MANPAGES += lib/registry/man/regpatch.1
 
 ################################################
 # Start BINARY regshell
@@ -76,9 +79,10 @@ OBJ_FILES = tools/regshell.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS \
 		SMBREADLINE registry_common
-MANPAGE = man/regshell.1
 # End BINARY regshell
 ################################################
+
+MANPAGES += lib/registry/man/regshell.1
 
 ################################################
 # Start BINARY regtree
@@ -88,9 +92,10 @@ OBJ_FILES = tools/regtree.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS \
 		registry_common
-MANPAGE = man/regtree.1
 # End BINARY regtree
 ################################################
+
+MANPAGES += lib/registry/man/regtree.1
 
 [SUBSYSTEM::torture_registry]
 PRIVATE_DEPENDENCIES = registry

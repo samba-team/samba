@@ -94,6 +94,7 @@ struct nbt_name_request {
 struct nbt_name_socket {
 	struct socket_context *sock;
 	struct event_context *event_ctx;
+	struct smb_iconv_convenience *iconv_convenience;
 
 	/* a queue of requests pending to be sent */
 	struct nbt_name_request *send_queue;

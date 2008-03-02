@@ -6,18 +6,20 @@ OBJ_FILES = loadparm.o \
 			../lib/version.o
 PUBLIC_DEPENDENCIES = LIBSAMBA-UTIL 
 PRIVATE_DEPENDENCIES = DYNCONFIG LIBREPLACE_EXT CHARSET
-PUBLIC_PROTO_HEADER = proto.h
-PUBLIC_HEADERS = param.h
+PRIVATE_PROTO_HEADER = proto.h
+
+PUBLIC_HEADERS += param/param.h
 
 #################################
 # Start SUBSYSTEM share
 [SUBSYSTEM::share]
-PUBLIC_HEADERS = share.h
-PUBLIC_PROTO_HEADER = share_proto.h
+PRIVATE_PROTO_HEADER = share_proto.h
 OBJ_FILES = share.o
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
 # End SUBSYSTEM share
 #################################
+
+PUBLIC_HEADERS += param/share.h
 
 ################################################
 # Start MODULE share_classic

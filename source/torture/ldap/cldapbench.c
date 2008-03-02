@@ -51,7 +51,7 @@ static void request_handler(struct cldap_request *req)
 */
 static bool bench_cldap(struct torture_context *tctx, const char *address)
 {
-	struct cldap_socket *cldap = cldap_socket_init(tctx, NULL);
+	struct cldap_socket *cldap = cldap_socket_init(tctx, NULL, lp_iconv_convenience(tctx->lp_ctx));
 	int num_sent=0;
 	struct timeval tv = timeval_current();
 	bool ret = true;

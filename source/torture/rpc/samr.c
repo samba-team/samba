@@ -416,11 +416,6 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 	TEST_USERINFO_INT(21, logon_hours.bits[3], 21, logon_hours.bits[3], 4, 
 			  SAMR_FIELD_LOGON_HOURS);
 
-	if (torture_setting_bool(tctx, "samba4", false)) {
-		printf("skipping Set Account Flag tests against Samba4\n");
-		return ret;
-	}
-
 	TEST_USERINFO_INT_EXP(16, acct_flags, 5, acct_flags, 
 			      (base_acct_flags  | ACB_DISABLED | ACB_HOMDIRREQ), 
 			      (base_acct_flags  | ACB_DISABLED | ACB_HOMDIRREQ | user_extra_flags), 
@@ -1989,9 +1984,12 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 			  const char *base_acct_name, enum torture_samr_choice which_ops)
 {
 	char *password = NULL;
+	struct samr_QueryUserInfo q;
+	NTSTATUS status;
 
 	bool ret = true;
 	int i;
+	uint32_t rid;
 	const uint32_t password_fields[] = {
 		SAMR_FIELD_PASSWORD,
 		SAMR_FIELD_PASSWORD2,
@@ -1999,6 +1997,11 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 		0
 	};
 	
+	status = test_LookupName(p, tctx, domain_handle, base_acct_name, &rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = false;
+	}
+
 	switch (which_ops) {
 	case TORTURE_SAMR_USER_ATTRIBUTES:
 		if (!test_QuerySecurity(p, tctx, user_handle)) {
@@ -2090,6 +2093,29 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 		if (!test_ChangePassword(p, tctx, base_acct_name, domain_handle, &password)) {
 			ret = false;
 		}	
+
+		q.in.user_handle = user_handle;
+		q.in.level = 5;
+		
+		status = dcerpc_samr_QueryUserInfo(p, tctx, &q);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryUserInfo level %u failed - %s\n", 
+			       q.in.level, nt_errstr(status));
+			ret = false;
+		} else {
+			uint32_t expected_flags = (base_acct_flags | ACB_PWNOTREQ | ACB_DISABLED);
+			if ((q.out.info->info5.acct_flags) != expected_flags) {
+				printf("QuerUserInfo level 5 failed, it returned 0x%08x when we expected flags of 0x%08x\n",
+				       q.out.info->info5.acct_flags, 
+				       expected_flags);
+				ret = false;
+			}
+			if (q.out.info->info5.rid != rid) {
+				printf("QuerUserInfo level 5 failed, it returned %u when we expected rid of %u\n",
+				       q.out.info->info5.rid, rid);
+
+			}
+		}
 
 		break;
 	case TORTURE_SAMR_OTHER:
@@ -2667,10 +2693,14 @@ static bool test_CreateUser2(struct dcerpc_pipe *p, struct torture_context *tctx
 				       q.in.level, nt_errstr(status));
 				ret = false;
 			} else {
-				if ((q.out.info->info5.acct_flags & acct_flags) != acct_flags) {
+				uint32_t expected_flags = (acct_flags | ACB_PWNOTREQ | ACB_DISABLED);
+				if (acct_flags == ACB_NORMAL) {
+					expected_flags |= ACB_PW_EXPIRED;
+				}
+				if ((q.out.info->info5.acct_flags) != expected_flags) {
 					printf("QuerUserInfo level 5 failed, it returned 0x%08x when we expected flags of 0x%08x\n",
 					       q.out.info->info5.acct_flags, 
-					       acct_flags);
+					       expected_flags);
 					ret = false;
 				} 
 				switch (acct_flags) {
@@ -3887,7 +3917,6 @@ static bool test_GroupList(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			for (j=0; j<num_names; j++) {
 				if (names[j] == NULL)
 					continue;
-				/* Hmm. No strequal in samba4 */
 				if (strequal(names[j], name)) {
 					names[j] = NULL;
 					found = true;

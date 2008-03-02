@@ -92,7 +92,7 @@ static NTSTATUS cldapd_add_socket(struct cldapd_server *cldapd, struct loadparm_
 	NTSTATUS status;
 
 	/* listen for unicasts on the CLDAP port (389) */
-	cldapsock = cldap_socket_init(cldapd, cldapd->task->event_ctx);
+	cldapsock = cldap_socket_init(cldapd, cldapd->task->event_ctx, lp_iconv_convenience(cldapd->task->lp_ctx));
 	NT_STATUS_HAVE_NO_MEMORY(cldapsock);
 
 	socket_address = socket_address_from_strings(cldapsock, cldapsock->sock->backend_name, 

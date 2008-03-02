@@ -1,41 +1,27 @@
 # Dependencies command
 DEPENDS = $(CC) -M -MG -MP -MT $(<:.c=.o) -MT $@ \
-    $(CFLAGS) `$(PERL) $(srcdir)/script/cflags.pl $@` \
-    $(CPPFLAGS) $(FIRST_PREREQ) -o $@
+    $(CFLAGS) $(CPPFLAGS) $< -o $@
 # Dependencies for host objects
 HDEPENDS = $(CC) -M -MG -MP -MT $(<:.c=.ho) -MT $@ \
-    $(HOSTCC_FLAGS) `$(PERL) $(srcdir)/script/cflags.pl $@` \
-    $(CPPFLAGS) $(FIRST_PREREQ) -o $@
+    $(HOSTCC_FLAGS) $(CPPFLAGS) $< -o $@
 # Dependencies for precompiled headers
 PCHDEPENDS = $(CC) -M -MG -MT include/includes.h.gch -MT $@ \
-    $(CFLAGS) $(CPPFLAGS) $(FIRST_PREREQ) -o $@
-
-# $< is broken in older BSD versions:
-# when $@ is foo/bar.o, $< could be torture/foo/bar.c
-# if it also exists. So better use $* which is foo/bar
-# and append .c manually to get foo/bar.c
-#
-# If we have GNU Make, it is safe to use $<, which also lets
-# building with $srcdir != $builddir work.
+    $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 # Run a static analysis checker
-CHECK = $(CC_CHECKER) $(CFLAGS) `$(PERL) $(srcdir)/script/cflags.pl $@` \
-    $(PICFLAG) $(CPPLAGS) -c $(FIRST_PREREQ) -o $@
+CHECK = $(CC_CHECKER) $(CFLAGS) $(PICFLAG) $(CPPLAGS) -c $< -o $@
 
 # Run the configured compiler
 COMPILE = $(CC) $(CFLAGS) $(PICFLAG) \
-          `$(PERL) $(srcdir)/script/cflags.pl $@` \
 		  $(CPPFLAGS) \
-		  -c $(FIRST_PREREQ) -o $@
+		  -c $< -o $@
 
 # Run the compiler for the build host
-HCOMPILE = $(HOSTCC) $(HOSTCC_FLAGS) `$(PERL) $(srcdir)/script/cflags.pl $@` \
-	 $(CPPFLAGS) -c $(FIRST_PREREQ) -o $@
+HCOMPILE = $(HOSTCC) $(HOSTCC_FLAGS) $(CPPFLAGS) -c $< -o $@
 
 # Precompile headers
 PCHCOMPILE = @$(CC) -Ilib/replace \
-    $(CFLAGS) `$(PERL) $(srcdir)/script/cflags.pl $@` \
-    $(PICFLAG) $(CPPFLAGS) -c $(FIRST_PREREQ) -o $@
+    $(CFLAGS) $(PICFLAG) $(CPPFLAGS) -c $< -o $@
 
 # Partial linking
 PARTLINK = @$(PROG_LD) -r
@@ -100,6 +86,13 @@ check:: test
 unused_macros:
 	$(srcdir)/script/find_unused_macros.pl `find . -name "*.[ch]"` | sort
 
+# Create a static library
+%.a:
+	@echo Linking $@
+	@rm -f $@
+	@mkdir -p $(@D)
+	@$(STLD) $(STLD_FLAGS) $@ $^
+
 ###############################################################################
 # File types
 ###############################################################################
@@ -127,8 +120,10 @@ include/includes.d: include/includes.h
 	@-mkdir -p `dirname $@`
 	@$(COMPILE) && exit 0 ; \
 		echo "The following command failed:" 1>&2;\
-		echo "$(COMPILE)" 1>&2;\
 		$(COMPILE) >/dev/null 2>&1
+
+
+#		echo "$(COMPILE)" 1>&2;\
 
 .c.ho:
 	@echo "Compiling $< with host compiler"
@@ -166,9 +161,6 @@ DOCBOOK_MANPAGE_URL = http://docbook.sourceforge.net/release/xsl/current/manpage
 
 .8.xml.8:
 	$(XSLTPROC) -o $@ $(DOCBOOK_MANPAGE_URL) $<
-
-DEP_FILES = $(patsubst %.ho,%.hd,$(patsubst %.o,%.d,$(ALL_OBJS))) \
-		   include/includes.d
 
 dist:: idl_full manpages configure distclean 
 

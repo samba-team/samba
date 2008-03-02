@@ -22,17 +22,23 @@ mkinclude crypto/config.mk
 OBJ_FILES = compression/mszip.o
 
 [SUBSYSTEM::GENCACHE]
-PUBLIC_HEADERS = gencache/gencache.h
 OBJ_FILES = gencache/gencache.o
 PRIVATE_DEPENDENCIES = TDB_WRAP
 
+
+PUBLIC_HEADERS += lib/gencache/gencache.h
+
 [SUBSYSTEM::LDB_WRAP]
-PUBLIC_HEADERS = ldb_wrap.h
 OBJ_FILES = ldb_wrap.o
 PUBLIC_DEPENDENCIES = LIBLDB
 PRIVATE_DEPENDENCIES = LDBSAMBA UTIL_LDB
 
+
+PUBLIC_HEADERS += lib/ldb_wrap.h
+
 [SUBSYSTEM::TDB_WRAP]
-PUBLIC_HEADERS = tdb_wrap.h
 OBJ_FILES = tdb_wrap.o
 PUBLIC_DEPENDENCIES = LIBTDB
+
+
+PUBLIC_HEADERS += lib/tdb_wrap.h

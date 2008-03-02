@@ -174,10 +174,11 @@ static void stream_new_connection(struct event_context *ev,
 	srv_conn->server_id	= server_id;
 	srv_conn->ops           = stream_socket->ops;
 	srv_conn->event.ctx	= ev;
+	srv_conn->lp_ctx	= lp_ctx;
 	srv_conn->event.fde	= event_add_fd(ev, srv_conn, socket_get_fd(sock),
 					       0, stream_io_handler_fde, srv_conn);
 
-	if (!socket_check_access(sock, "smbd", lp_hostsallow(NULL), lp_hostsdeny(NULL))) {
+	if (!socket_check_access(sock, "smbd", lp_hostsallow(NULL, lp_default_service(lp_ctx)), lp_hostsdeny(NULL, lp_default_service(lp_ctx)))) {
 		stream_terminate_connection(srv_conn, "denied by access rules");
 		return;
 	}

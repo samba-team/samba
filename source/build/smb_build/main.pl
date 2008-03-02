@@ -10,8 +10,6 @@ use smb_build::header;
 use smb_build::input;
 use smb_build::config_mk;
 use smb_build::output;
-use smb_build::env;
-use smb_build::cflags;
 use smb_build::summary;
 use smb_build::config;
 use strict;
@@ -56,7 +54,7 @@ foreach my $key (values %$OUTPUT) {
 	$mkenv->MergedObj($key) if grep(/MERGED_OBJ/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->StaticLibrary($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	if (defined($key->{PC_FILE})) {
-		push(@{$mkenv->{pc_files}}, "$key->{BASEDIR}/$key->{PC_FILE}");
+		$mkenv->output("PC_FILES += $key->{BASEDIR}/$key->{PC_FILE}\n");
 	} 
 	$mkenv->SharedLibraryPrimitives($key) if ($key->{TYPE} eq "LIBRARY") and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
@@ -68,10 +66,8 @@ foreach my $key (values %$OUTPUT) {
 								   $key->{TYPE} eq "PYTHON") and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->PythonFiles($key) if defined($key->{PYTHON_FILES});
-	$mkenv->Manpage($key) if defined($key->{MANPAGE});
-	$mkenv->Header($key) if defined($key->{PUBLIC_HEADERS});
-	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER}) or 
-					 defined($key->{PUBLIC_PROTO_HEADER});
+	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER});
+	$mkenv->CFlags($key);
 }
 
 foreach my $key (values %$OUTPUT) {
@@ -88,16 +84,6 @@ foreach my $key (values %$OUTPUT) {
 $mkenv->write("data.mk");
 header::create_smb_build_h($OUTPUT, "include/build.h");
 
-cflags::create_cflags($OUTPUT, $config::config{srcdir},
-		    $config::config{builddir}, "extra_cflags.txt");
-
 summary::show($OUTPUT, \%config::config);
-
-if ($shared_libs_used) {
-	print <<EOF;
-To run binaries without installing, set the following environment variable:
-	$config::config{LIB_PATH_VAR}=$config::config{builddir}/bin/shared
-EOF
-}
 
 1;

@@ -147,11 +147,13 @@ PUBLIC_DEPENDENCIES = \
 		LIBTALLOC
 PRIVATE_DEPENDENCIES = \
 		SOCKET_WRAPPER
-MANPAGE = man/ldb.3
-PUBLIC_HEADERS = include/ldb.h include/ldb_errors.h
 #
 # End SUBSYSTEM ldb
 ################################################
+
+PUBLIC_HEADERS += $(ldbdir)/include/ldb.h $(ldbdir)/include/ldb_errors.h
+
+MANPAGES += $(ldbdir)/man/ldb.3
 
 ################################################
 # Start BINARY ldbtest
@@ -167,7 +169,6 @@ PRIVATE_DEPENDENCIES = \
 # Start BINARY oLschema2ldif
 [BINARY::oLschema2ldif]
 INSTALLDIR = BINDIR
-MANPAGE = man/oLschema2ldif.1
 OBJ_FILES= \
 		tools/convert.o \
 		tools/oLschema2ldif.o
@@ -176,11 +177,12 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY oLschema2ldif
 ################################################
 
+MANPAGES += $(ldbdir)/man/oLschema2ldif.1
+
 ################################################
 # Start BINARY  ad2oLschema
 [BINARY::ad2oLschema]
 INSTALLDIR = BINDIR
-MANPAGE = man/ad2oLschema.1
 OBJ_FILES= \
 		tools/convert.o \
 		tools/ad2oLschema.o
@@ -189,6 +191,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ad2oLschema
 ################################################
 
+MANPAGES += $(ldbdir)/man/ad2oLschema.1
 
 mkinclude tools/config.mk
 mkinclude ldb_ildap/config.mk

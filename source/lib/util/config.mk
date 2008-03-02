@@ -1,15 +1,6 @@
 [SUBSYSTEM::LIBSAMBA-UTIL]
 #VERSION = 0.0.1
 #SO_VERSION = 0
-PUBLIC_HEADERS = util.h \
-				 attr.h \
-				 byteorder.h \
-				 data_blob.h \
-				 debug.h \
-				 mutex.h \
-				 safe_string.h \
-				 time.h \
-				 xfile.h
 OBJ_FILES = xfile.o \
 		debug.o \
 		fault.o \
@@ -33,10 +24,21 @@ PUBLIC_DEPENDENCIES = \
 		SOCKET_WRAPPER EXT_NSL \
 		CHARSET EXECINFO
 
+PUBLIC_HEADERS += $(addprefix lib/util/, util.h \
+				 attr.h \
+				 byteorder.h \
+				 data_blob.h \
+				 debug.h \
+				 mutex.h \
+				 safe_string.h \
+				 time.h \
+				 xfile.h)
+
 [SUBSYSTEM::ASN1_UTIL]
-PUBLIC_PROTO_HEADER = asn1_proto.h
-PUBLIC_HEADERS = asn1.h
+PRIVATE_PROTO_HEADER = asn1_proto.h
 OBJ_FILES = asn1.o
+
+PUBLIC_HEADERS += lib/util/asn1.h
 
 [SUBSYSTEM::UNIX_PRIVS]
 PRIVATE_PROTO_HEADER = unix_privs.h
@@ -45,7 +47,7 @@ OBJ_FILES = unix_privs.o
 ################################################
 # Start SUBSYSTEM WRAP_XATTR
 [SUBSYSTEM::WRAP_XATTR]
-PUBLIC_PROTO_HEADER = wrap_xattr.h
+PRIVATE_PROTO_HEADER = wrap_xattr.h
 OBJ_FILES = \
 		wrap_xattr.o
 PUBLIC_DEPENDENCIES = XATTR
@@ -54,13 +56,13 @@ PUBLIC_DEPENDENCIES = XATTR
 ################################################
 
 [SUBSYSTEM::UTIL_TDB]
-PUBLIC_PROTO_HEADER = util_tdb.h
+PRIVATE_PROTO_HEADER = util_tdb.h
 OBJ_FILES = \
 		util_tdb.o
 PUBLIC_DEPENDENCIES = LIBTDB
 
 [SUBSYSTEM::UTIL_LDB]
-PUBLIC_PROTO_HEADER = util_ldb.h
+PRIVATE_PROTO_HEADER = util_ldb.h
 OBJ_FILES = \
 			util_ldb.o
 PUBLIC_DEPENDENCIES = LIBLDB

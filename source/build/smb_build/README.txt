@@ -1,6 +1,5 @@
 The Samba Build System
-----------------------
-----------------------
+======================
 
 The build system basically has two main parts: the autoconf-generated 
 shell scripts which check for availability of functions and libraries 
@@ -29,7 +28,7 @@ EXT_LIB:
 BINARY:
 	a BINARY means a executable binary file.
 	(e.g. 'smbtorture' or 'ldbedit')
-	a BINARY typicly has only commandline handling and basic 
+	a BINARY typically has only commandline handling and basic 
 	functionality code in it and depends on the functions of
 	SUBSYSTEM's (REQUIRED_SUBSYSTEMS).
 
@@ -50,8 +49,6 @@ input.pm - Input validation
 main.pm - Main
 makefile.pm - Makefile generation
 output.pm - Dependency calculation
-header.pm - build.h generation
-cflags.pm - Generates cflags.txt for file-specific cflags
 
 Layout
 -------

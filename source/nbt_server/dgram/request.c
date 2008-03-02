@@ -73,7 +73,9 @@ NTSTATUS nbtd_dgram_setup(struct nbtd_interface *iface, const char *bind_address
 
 	if (strcmp("0.0.0.0", iface->netmask) != 0) {
 		/* listen for broadcasts on port 138 */
-		bcast_dgmsock = nbt_dgram_socket_init(iface, nbtsrv->task->event_ctx);
+		bcast_dgmsock = nbt_dgram_socket_init(iface, 
+						      nbtsrv->task->event_ctx,
+						      lp_iconv_convenience(nbtsrv->task->lp_ctx));
 		if (!bcast_dgmsock) {
 			talloc_free(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
@@ -100,7 +102,8 @@ NTSTATUS nbtd_dgram_setup(struct nbtd_interface *iface, const char *bind_address
 	}
 
 	/* listen for unicasts on port 138 */
-	iface->dgmsock = nbt_dgram_socket_init(iface, nbtsrv->task->event_ctx);
+	iface->dgmsock = nbt_dgram_socket_init(iface, nbtsrv->task->event_ctx,
+					       lp_iconv_convenience(nbtsrv->task->lp_ctx));
 	if (!iface->dgmsock) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;

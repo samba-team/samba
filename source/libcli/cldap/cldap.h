@@ -73,6 +73,7 @@ struct cldap_request {
 struct cldap_socket {
 	struct socket_context *sock;
 	struct event_context *event_ctx;
+	struct smb_iconv_convenience *iconv_convenience;
 
 	/* the fd event */
 	struct fd_event *fde;
@@ -111,7 +112,8 @@ struct cldap_search {
 };
 
 struct cldap_socket *cldap_socket_init(TALLOC_CTX *mem_ctx, 
-				       struct event_context *event_ctx);
+				       struct event_context *event_ctx, 
+				       struct smb_iconv_convenience *iconv_convenience);
 NTSTATUS cldap_set_incoming_handler(struct cldap_socket *cldap,
 				    void (*handler)(struct cldap_socket *, struct ldap_message *, 
 						    struct socket_address *),

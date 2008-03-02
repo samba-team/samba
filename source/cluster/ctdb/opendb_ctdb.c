@@ -409,10 +409,12 @@ static NTSTATUS odb_ctdb_open_file_pending(struct odb_lock *lck, void *private)
 /*
   remove a opendb entry
 */
-static NTSTATUS odb_ctdb_close_file(struct odb_lock *lck, void *file_handle)
+static NTSTATUS odb_ctdb_close_file(struct odb_lock *lck, void *file_handle,
+				    const char **_delete_path)
 {
 	struct odb_context *odb = lck->odb;
 	struct opendb_file file;
+	const char *delete_path = NULL;
 	int i;
 	NTSTATUS status;
 
@@ -448,6 +450,15 @@ static NTSTATUS odb_ctdb_close_file(struct odb_lock *lck, void *file_handle)
 	file.num_pending = 0;
 
 	file.num_entries--;
+
+	if (file.num_entries == 0 && file.delete_on_close) {
+		delete_path = talloc_strdup(lck, file.path);
+		NT_STATUS_HAVE_NO_MEMORY(delete_path);
+	}
+
+	if (_delete_path) {
+		*_delete_path = delete_path;
+	}
 	
 	return odb_push_record(lck, &file);
 }
@@ -532,6 +543,25 @@ static NTSTATUS odb_ctdb_rename(struct odb_lock *lck, const char *path)
 }
 
 /*
+  get the path of an open file
+*/
+static NTSTATUS odb_ctdb_get_path(struct odb_lock *lck, const char **path)
+{
+	struct opendb_file file;
+	NTSTATUS status;
+
+	*path = NULL;
+
+	status = odb_pull_record(lck, &file);
+	/* we don't ignore NT_STATUS_OBJECT_NAME_NOT_FOUND here */
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	*path = file.path;
+
+	return NT_STATUS_OK;
+}
+
+/*
   update delete on close flag on an open file
 */
 static NTSTATUS odb_ctdb_set_delete_on_close(struct odb_lock *lck, bool del_on_close)
@@ -552,12 +582,13 @@ static NTSTATUS odb_ctdb_set_delete_on_close(struct odb_lock *lck, bool del_on_c
   people still have the file open
 */
 static NTSTATUS odb_ctdb_get_delete_on_close(struct odb_context *odb, 
-					    DATA_BLOB *key, bool *del_on_close, 
-					    int *open_count, char **path)
+					    DATA_BLOB *key, bool *del_on_close)
 {
 	NTSTATUS status;
 	struct opendb_file file;
 	struct odb_lock *lck;
+
+	(*del_on_close) = false;
 
 	lck = odb_lock(odb, odb, key);
 	NT_STATUS_HAVE_NO_MEMORY(lck);
@@ -565,7 +596,6 @@ static NTSTATUS odb_ctdb_get_delete_on_close(struct odb_context *odb,
 	status = odb_pull_record(lck, &file);
 	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
 		talloc_free(lck);
-		(*del_on_close) = false;
 		return NT_STATUS_OK;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
@@ -574,16 +604,6 @@ static NTSTATUS odb_ctdb_get_delete_on_close(struct odb_context *odb,
 	}
 
 	(*del_on_close) = file.delete_on_close;
-	if (open_count != NULL) {
-		(*open_count) = file.num_entries;
-	}
-	if (path != NULL) {
-		*path = talloc_strdup(odb, file.path);
-		NT_STATUS_HAVE_NO_MEMORY(*path);
-		if (file.num_entries == 1 && file.entries[0].delete_on_close) {
-			(*del_on_close) = true;
-		}
-	}
 
 	talloc_free(lck);
 
@@ -652,6 +672,7 @@ static const struct opendb_ops opendb_ctdb_ops = {
 	.odb_close_file          = odb_ctdb_close_file,
 	.odb_remove_pending      = odb_ctdb_remove_pending,
 	.odb_rename              = odb_ctdb_rename,
+	.odb_get_path            = odb_ctdb_get_path,
 	.odb_set_delete_on_close = odb_ctdb_set_delete_on_close,
 	.odb_get_delete_on_close = odb_ctdb_get_delete_on_close,
 	.odb_can_open            = odb_ctdb_can_open,

@@ -2526,6 +2526,7 @@ typedef struct param_section param_section;
 typedef struct param_opt param_opt;
 
 SWIGINTERN loadparm_context *new_loadparm_context(TALLOC_CTX *mem_ctx){ return loadparm_init(mem_ctx); }
+SWIGINTERN struct loadparm_service *loadparm_context_default_service(loadparm_context *self){ return lp_default_service(self); }
 
 SWIGINTERN swig_type_info*
 SWIG_pchar_descriptor(void)
@@ -2742,9 +2743,9 @@ SWIGINTERN PyObject *loadparm_context_get(loadparm_context *self,char const *par
             return Py_None;
         }
 SWIGINTERN void delete_loadparm_context(loadparm_context *self){ talloc_free(self); }
-SWIGINTERN char const *loadparm_service_volume_label(loadparm_service *self){ return volume_label(self); }
-SWIGINTERN char const *loadparm_service_printername(loadparm_service *self){ return lp_printername(self); }
-SWIGINTERN int loadparm_service_maxprintjobs(loadparm_service *self){ return lp_maxprintjobs(self); }
+SWIGINTERN char const *loadparm_service_volume_label(loadparm_service *self,struct loadparm_service *sDefault){ return volume_label(self, sDefault); }
+SWIGINTERN char const *loadparm_service_printername(loadparm_service *self,struct loadparm_service *sDefault){ return lp_printername(self, sDefault); }
+SWIGINTERN int loadparm_service_maxprintjobs(loadparm_service *self,struct loadparm_service *sDefault){ return lp_maxprintjobs(self, sDefault); }
 SWIGINTERN param *new_param(TALLOC_CTX *mem_ctx){ return param_init(mem_ctx); }
 SWIGINTERN int param_set(param *self,char const *parameter,PyObject *ob,char const *section_name){
             struct param_opt *opt = param_get_add(self, parameter, section_name);
@@ -2793,6 +2794,34 @@ SWIGINTERN PyObject *_wrap_new_LoadParm(PyObject *SWIGUNUSEDPARM(self), PyObject
   if (!SWIG_Python_UnpackTuple(args,"new_LoadParm",0,0,0)) SWIG_fail;
   result = (loadparm_context *)new_loadparm_context(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_loadparm_context, SWIG_POINTER_NEW |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_LoadParm_default_service(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  loadparm_context *arg1 = (loadparm_context *) 0 ;
+  struct loadparm_service *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self", NULL 
+  };
+  
+  arg1 = loadparm_init(NULL);
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:LoadParm_default_service",kwnames,&obj0)) SWIG_fail;
+  if (obj0) {
+    res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "LoadParm_default_service" "', argument " "1"" of type '" "loadparm_context *""'"); 
+    }
+    arg1 = (loadparm_context *)(argp1);
+  }
+  result = (struct loadparm_service *)loadparm_context_default_service(arg1);
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_loadparm_service, 0 |  0 );
   return resultobj;
 fail:
   return NULL;
@@ -3241,22 +3270,33 @@ SWIGINTERN PyObject *LoadParm_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject 
   return SWIG_Python_InitShadowInstance(args);
 }
 
-SWIGINTERN PyObject *_wrap_loadparm_service_volume_label(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_loadparm_service_volume_label(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   loadparm_service *arg1 = (loadparm_service *) 0 ;
+  struct loadparm_service *arg2 = (struct loadparm_service *) 0 ;
   char *result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject *swig_obj[1] ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "sDefault", NULL 
+  };
   
-  if (!args) SWIG_fail;
-  swig_obj[0] = args;
-  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_loadparm_service, 0 |  0 );
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:loadparm_service_volume_label",kwnames,&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_service, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "loadparm_service_volume_label" "', argument " "1"" of type '" "loadparm_service *""'"); 
   }
   arg1 = (loadparm_service *)(argp1);
-  result = (char *)loadparm_service_volume_label(arg1);
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_loadparm_service, 0 |  0 );
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "loadparm_service_volume_label" "', argument " "2"" of type '" "struct loadparm_service *""'"); 
+  }
+  arg2 = (struct loadparm_service *)(argp2);
+  result = (char *)loadparm_service_volume_label(arg1,arg2);
   resultobj = SWIG_FromCharPtr((const char *)result);
   return resultobj;
 fail:
@@ -3264,22 +3304,33 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_loadparm_service_printername(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_loadparm_service_printername(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   loadparm_service *arg1 = (loadparm_service *) 0 ;
+  struct loadparm_service *arg2 = (struct loadparm_service *) 0 ;
   char *result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject *swig_obj[1] ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "sDefault", NULL 
+  };
   
-  if (!args) SWIG_fail;
-  swig_obj[0] = args;
-  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_loadparm_service, 0 |  0 );
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:loadparm_service_printername",kwnames,&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_service, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "loadparm_service_printername" "', argument " "1"" of type '" "loadparm_service *""'"); 
   }
   arg1 = (loadparm_service *)(argp1);
-  result = (char *)loadparm_service_printername(arg1);
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_loadparm_service, 0 |  0 );
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "loadparm_service_printername" "', argument " "2"" of type '" "struct loadparm_service *""'"); 
+  }
+  arg2 = (struct loadparm_service *)(argp2);
+  result = (char *)loadparm_service_printername(arg1,arg2);
   resultobj = SWIG_FromCharPtr((const char *)result);
   return resultobj;
 fail:
@@ -3287,22 +3338,33 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_loadparm_service_maxprintjobs(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_loadparm_service_maxprintjobs(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   loadparm_service *arg1 = (loadparm_service *) 0 ;
+  struct loadparm_service *arg2 = (struct loadparm_service *) 0 ;
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject *swig_obj[1] ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "sDefault", NULL 
+  };
   
-  if (!args) SWIG_fail;
-  swig_obj[0] = args;
-  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_loadparm_service, 0 |  0 );
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:loadparm_service_maxprintjobs",kwnames,&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_service, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "loadparm_service_maxprintjobs" "', argument " "1"" of type '" "loadparm_service *""'"); 
   }
   arg1 = (loadparm_service *)(argp1);
-  result = (int)loadparm_service_maxprintjobs(arg1);
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_loadparm_service, 0 |  0 );
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "loadparm_service_maxprintjobs" "', argument " "2"" of type '" "struct loadparm_service *""'"); 
+  }
+  arg2 = (struct loadparm_service *)(argp2);
+  result = (int)loadparm_service_maxprintjobs(arg1,arg2);
   resultobj = SWIG_From_int((int)(result));
   return resultobj;
 fail:
@@ -4078,6 +4140,7 @@ SWIGINTERN PyObject *Swig_var_default_config_get(void) {
 
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"new_LoadParm", (PyCFunction)_wrap_new_LoadParm, METH_NOARGS, NULL},
+	 { (char *)"LoadParm_default_service", (PyCFunction) _wrap_LoadParm_default_service, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_load", (PyCFunction) _wrap_LoadParm_load, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_load_default", (PyCFunction) _wrap_LoadParm_load_default, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm___len__", (PyCFunction) _wrap_LoadParm___len__, METH_VARARGS | METH_KEYWORDS, NULL},
@@ -4091,9 +4154,9 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"delete_LoadParm", (PyCFunction) _wrap_delete_LoadParm, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_swigregister", LoadParm_swigregister, METH_VARARGS, NULL},
 	 { (char *)"LoadParm_swiginit", LoadParm_swiginit, METH_VARARGS, NULL},
-	 { (char *)"loadparm_service_volume_label", (PyCFunction)_wrap_loadparm_service_volume_label, METH_O, NULL},
-	 { (char *)"loadparm_service_printername", (PyCFunction)_wrap_loadparm_service_printername, METH_O, NULL},
-	 { (char *)"loadparm_service_maxprintjobs", (PyCFunction)_wrap_loadparm_service_maxprintjobs, METH_O, NULL},
+	 { (char *)"loadparm_service_volume_label", (PyCFunction) _wrap_loadparm_service_volume_label, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"loadparm_service_printername", (PyCFunction) _wrap_loadparm_service_printername, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"loadparm_service_maxprintjobs", (PyCFunction) _wrap_loadparm_service_maxprintjobs, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"loadparm_service_swigregister", loadparm_service_swigregister, METH_VARARGS, NULL},
 	 { (char *)"new_ParamFile", (PyCFunction)_wrap_new_ParamFile, METH_NOARGS, NULL},
 	 { (char *)"ParamFile_get_section", (PyCFunction) _wrap_ParamFile_get_section, METH_VARARGS | METH_KEYWORDS, NULL},

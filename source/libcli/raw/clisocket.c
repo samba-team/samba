@@ -33,6 +33,7 @@ struct sock_connect_state {
 	const char *host_name;
 	int num_ports;
 	uint16_t *ports;
+	const char *socket_options;
 	struct smbcli_socket *result;
 };
 
@@ -80,6 +81,7 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 	for (i=0;ports[i];i++) {
 		state->ports[i] = atoi(ports[i]);
 	}
+	state->socket_options = lp_socket_options(global_loadparm);
 
 	ctx = socket_connect_multi_send(state, host_addr,
 					state->num_ports, state->ports,
@@ -108,7 +110,7 @@ static void smbcli_sock_connect_recv_conn(struct composite_context *ctx)
 	if (!composite_is_ok(state->ctx)) return;
 
 	state->ctx->status =
-		socket_set_option(sock, lp_socket_options(global_loadparm), NULL);
+		socket_set_option(sock, state->socket_options, NULL);
 	if (!composite_is_ok(state->ctx)) return;
 
 
