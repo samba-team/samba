@@ -40,7 +40,7 @@ SMBC_check_server(SMBCCTX * context,
 {
         socklen_t size;
         struct sockaddr addr;
-
+        
         size = sizeof(addr);
         return (getpeername(server->cli->fd, &addr, &size) == -1);
 }
@@ -56,12 +56,12 @@ SMBC_remove_unused_server(SMBCCTX * context,
                           SMBCSRV * srv)
 {
 	SMBCFILE * file;
-
+        
 	/* are we being fooled ? */
 	if (!context || !context->internal->initialized || !srv) {
                 return 1;
         }
-	
+        
 	/* Check all open files/directories for a relation with this server */
 	for (file = context->internal->files; file; file = file->next) {
 		if (file->srv == srv) {
@@ -72,16 +72,16 @@ SMBC_remove_unused_server(SMBCCTX * context,
 			return 1;
 		}
 	}
-
+        
 	DLIST_REMOVE(context->internal->servers, srv);
-
+        
 	cli_shutdown(srv->cli);
 	srv->cli = NULL;
-
+        
 	DEBUG(3, ("smbc_remove_usused_server: %p removed.\n", srv));
-
+        
 	(context->cache.remove_cached_server_fn)(context, srv);
-
+        
         SAFE_FREE(srv);
 	return 0;
 }
@@ -101,21 +101,21 @@ SMBC_call_auth_fn(TALLOC_CTX *ctx,
 	fstring workgroup;
 	fstring username;
 	fstring password;
-
+        
 	strlcpy(workgroup, *pp_workgroup, sizeof(workgroup));
 	strlcpy(username, *pp_username, sizeof(username));
 	strlcpy(password, *pp_password, sizeof(password));
-
+        
         (context->server.get_auth_data_fn)(
                 server, share,
                 workgroup, sizeof(workgroup),
                 username, sizeof(username),
                 password, sizeof(password));
-
+        
 	TALLOC_FREE(*pp_workgroup);
 	TALLOC_FREE(*pp_username);
 	TALLOC_FREE(*pp_password);
-
+        
 	*pp_workgroup = talloc_strdup(ctx, workgroup);
 	*pp_username = talloc_strdup(ctx, username);
 	*pp_password = talloc_strdup(ctx, password);
@@ -144,23 +144,23 @@ SMBC_find_server(TALLOC_CTX *ctx,
 {
         SMBCSRV *srv;
         int auth_called = 0;
-
- check_server_cache:
-
+        
+check_server_cache:
+        
 	srv = (context->cache.get_cached_server_fn)(context,
                                                     server, share,
                                                     *pp_workgroup,
                                                     *pp_username);
-
+        
 	if (!auth_called && !srv && (!*pp_username || !(*pp_username)[0] ||
-				!*pp_password || !(*pp_password)[0])) {
+                                     !*pp_password || !(*pp_password)[0])) {
 		SMBC_call_auth_fn(ctx, context, server, share,
-				pp_workgroup, pp_username, pp_password);
-
+                                  pp_workgroup, pp_username, pp_password);
+                
 		if (!pp_workgroup || !pp_username || !pp_password) {
 			return NULL;
 		}
-
+                
 		/*
                  * However, smbc_auth_fn may have picked up info relating to
                  * an existing connection, so try for an existing connection
@@ -168,9 +168,9 @@ SMBC_find_server(TALLOC_CTX *ctx,
                  */
 		auth_called = 1;
 		goto check_server_cache;
-
+                
 	}
-
+        
 	if (srv) {
 		if ((context->server.check_server_fn)(context, srv)) {
 			/*
@@ -189,17 +189,17 @@ SMBC_find_server(TALLOC_CTX *ctx,
 				(context->cache.remove_cached_server_fn)(context,
                                                                          srv);
 			}
-
+                        
 			/*
                          * Maybe there are more cached connections to this
                          * server
                          */
 			goto check_server_cache;
 		}
-
+                
 		return srv;
  	}
-
+        
         return NULL;
 }
 
@@ -234,25 +234,25 @@ SMBC_server(TALLOC_CTX *ctx,
         int port_try_next;
         const char *username_used;
  	NTSTATUS status;
-
+        
 	zero_addr(&ss);
 	ZERO_STRUCT(c);
-
+        
 	if (server[0] == 0) {
 		errno = EPERM;
 		return NULL;
 	}
-
+        
         /* Look for a cached connection */
         srv = SMBC_find_server(ctx, context, server, share,
-                          pp_workgroup, pp_username, pp_password);
-
+                               pp_workgroup, pp_username, pp_password);
+        
         /*
          * If we found a connection and we're only allowed one share per
          * server...
          */
-        if (srv && *share != '\0' && context->internal->one_share_per_server) {
-
+        if (srv && *share != '\0' && context->options.one_share_per_server) {
+                
                 /*
                  * ... then if there's no current connection to the share,
                  * connect to it.  SMBC_find_server(), or rather the function
@@ -264,8 +264,10 @@ SMBC_server(TALLOC_CTX *ctx,
                 if (srv->cli->cnum == (uint16) -1) {
                         /* Ensure we have accurate auth info */
 			SMBC_call_auth_fn(ctx, context, server, share,
-				pp_workgroup, pp_username, pp_password);
-
+                                          pp_workgroup,
+                                          pp_username,
+                                          pp_password);
+                        
 			if (!*pp_workgroup || !*pp_username || !*pp_password) {
 				errno = ENOMEM;
 				cli_shutdown(srv->cli);
@@ -274,17 +276,17 @@ SMBC_server(TALLOC_CTX *ctx,
                                                                          srv);
 				return NULL;
 			}
-
+                        
 			/*
 			 * We don't need to renegotiate encryption
 			 * here as the encryption context is not per
 			 * tid.
 			 */
-
+                        
 			if (!cli_send_tconX(srv->cli, share, "?????",
-						*pp_password,
-						strlen(*pp_password)+1)) {
-
+                                            *pp_password,
+                                            strlen(*pp_password)+1)) {
+                                
                                 errno = SMBC_errno(context, srv->cli);
                                 cli_shutdown(srv->cli);
 				srv->cli = NULL;
@@ -292,7 +294,7 @@ SMBC_server(TALLOC_CTX *ctx,
                                                                          srv);
                                 srv = NULL;
                         }
-
+                        
                         /*
                          * Regenerate the dev value since it's based on both
                          * server and share
@@ -303,51 +305,51 @@ SMBC_server(TALLOC_CTX *ctx,
                         }
                 }
         }
-
+        
         /* If we have a connection... */
         if (srv) {
-
+                
                 /* ... then we're done here.  Give 'em what they came for. */
                 return srv;
         }
-
+        
         /* If we're not asked to connect when a connection doesn't exist... */
         if (! connect_if_not_found) {
                 /* ... then we're done here. */
                 return NULL;
         }
-
+        
 	if (!*pp_workgroup || !*pp_username || !*pp_password) {
 		errno = ENOMEM;
 		return NULL;
 	}
-
+        
 	make_nmb_name(&calling, context->config.netbios_name, 0x0);
 	make_nmb_name(&called , server, 0x20);
-
+        
 	DEBUG(4,("SMBC_server: server_n=[%s] server=[%s]\n", server_n, server));
-
+        
 	DEBUG(4,(" -> server_n=[%s] server=[%s]\n", server_n, server));
-
- again:
-
+        
+again:
+        
 	zero_addr(&ss);
-
+        
 	/* have to open a new connection */
 	if ((c = cli_initialise()) == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
-
+        
 	if (context->flags.bits & SMB_CTX_FLAG_USE_KERBEROS) {
 		c->use_kerberos = True;
 	}
 	if (context->flags.bits & SMB_CTX_FLAG_FALLBACK_AFTER_KERBEROS) {
 		c->fallback_after_kerberos = True;
 	}
-
+        
 	c->timeout = context->config.timeout;
-
+        
         /*
          * Force use of port 139 for first try if share is $IPC, empty, or
          * null, so browse lists can work
@@ -359,15 +361,15 @@ SMBC_server(TALLOC_CTX *ctx,
                 port_try_first = 445;
                 port_try_next = 139;
         }
-
+        
         c->port = port_try_first;
-
+        
 	status = cli_connect(c, server_n, &ss);
 	if (!NT_STATUS_IS_OK(status)) {
-
+                
                 /* First connection attempt failed.  Try alternate port. */
                 c->port = port_try_next;
-
+                
                 status = cli_connect(c, server_n, &ss);
 		if (!NT_STATUS_IS_OK(status)) {
 			cli_shutdown(c);
@@ -375,33 +377,36 @@ SMBC_server(TALLOC_CTX *ctx,
 			return NULL;
 		}
 	}
-
+        
 	if (!cli_session_request(c, &calling, &called)) {
 		cli_shutdown(c);
 		if (strcmp(called.name, "*SMBSERVER")) {
 			make_nmb_name(&called , "*SMBSERVER", 0x20);
 			goto again;
 		} else {  /* Try one more time, but ensure we don't loop */
-
+                        
 			/* Only try this if server is an IP address ... */
-
+                        
 			if (is_ipaddress(server) && !tried_reverse) {
 				fstring remote_name;
 				struct sockaddr_storage rem_ss;
-
+                                
 				if (!interpret_string_addr(&rem_ss, server,
-							NI_NUMERICHOST)) {
+                                                           NI_NUMERICHOST)) {
 					DEBUG(4, ("Could not convert IP address "
-						"%s to struct sockaddr_storage\n",
-						server));
+                                                  "%s to struct sockaddr_storage\n",
+                                                  server));
 					errno = ETIMEDOUT;
 					return NULL;
 				}
-
+                                
 				tried_reverse++; /* Yuck */
-
-				if (name_status_find("*", 0, 0, &rem_ss, remote_name)) {
-					make_nmb_name(&called, remote_name, 0x20);
+                                
+				if (name_status_find("*", 0, 0,
+                                                     &rem_ss, remote_name)) {
+					make_nmb_name(&called,
+                                                      remote_name,
+                                                      0x20);
 					goto again;
 				}
 			}
@@ -409,64 +414,66 @@ SMBC_server(TALLOC_CTX *ctx,
 		errno = ETIMEDOUT;
 		return NULL;
 	}
-
+        
 	DEBUG(4,(" session request ok\n"));
-
+        
 	if (!cli_negprot(c)) {
 		cli_shutdown(c);
 		errno = ETIMEDOUT;
 		return NULL;
 	}
-
+        
         username_used = *pp_username;
-
+        
 	if (!NT_STATUS_IS_OK(cli_session_setup(c, username_used,
-					       *pp_password, strlen(*pp_password),
-					       *pp_password, strlen(*pp_password),
+					       *pp_password,
+                                               strlen(*pp_password),
+					       *pp_password,
+                                               strlen(*pp_password),
 					       *pp_workgroup))) {
-
+                
                 /* Failed.  Try an anonymous login, if allowed by flags. */
                 username_used = "";
-
+                
                 if ((context->flags.bits &
                      SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON) ||
                     !NT_STATUS_IS_OK(cli_session_setup(c, username_used,
                                                        *pp_password, 1,
                                                        *pp_password, 0,
                                                        *pp_workgroup))) {
-
+                        
                         cli_shutdown(c);
                         errno = EPERM;
                         return NULL;
                 }
 	}
-
+        
 	DEBUG(4,(" session setup ok\n"));
-
+        
 	if (!cli_send_tconX(c, share, "?????",
 			    *pp_password, strlen(*pp_password)+1)) {
 		errno = SMBC_errno(context, c);
 		cli_shutdown(c);
 		return NULL;
 	}
-
+        
 	DEBUG(4,(" tconx ok\n"));
-
+        
 	if (context->internal->smb_encryption_level) {
 		/* Attempt UNIX smb encryption. */
 		if (!NT_STATUS_IS_OK(cli_force_encryption(c,
-						username_used,
-						*pp_password,
-						*pp_workgroup))) {
-
+                                                          username_used,
+                                                          *pp_password,
+                                                          *pp_workgroup))) {
+                        
 			/*
 			 * context->smb_encryption_level == 1
 			 * means don't fail if encryption can't be negotiated,
 			 * == 2 means fail if encryption can't be negotiated.
 			 */
-
+                        
 			DEBUG(4,(" SMB encrypt failed\n"));
-
+                        
 			if (context->internal->smb_encryption_level == 2) {
 	                        cli_shutdown(c);
 				errno = EPERM;
@@ -475,25 +482,25 @@ SMBC_server(TALLOC_CTX *ctx,
 		}
 		DEBUG(4,(" SMB encrypt ok\n"));
 	}
-
+        
 	/*
 	 * Ok, we have got a nice connection
 	 * Let's allocate a server structure.
 	 */
-
+        
 	srv = SMB_MALLOC_P(SMBCSRV);
 	if (!srv) {
 		errno = ENOMEM;
 		goto failed;
 	}
-
+        
 	ZERO_STRUCTP(srv);
 	srv->cli = c;
 	srv->dev = (dev_t)(str_checksum(server) ^ str_checksum(share));
         srv->no_pathinfo = False;
         srv->no_pathinfo2 = False;
         srv->no_nt_session = False;
-
+        
 	/* now add it to the cache (internal or external)  */
 	/* Let the cache function set errno if it wants to */
 	errno = 0;
@@ -509,19 +516,19 @@ SMBC_server(TALLOC_CTX *ctx,
 		}
 		goto failed;
 	}
-
+        
 	DEBUG(2, ("Server connect ok: //%s/%s: %p\n",
 		  server, share, srv));
-
+        
 	DLIST_ADD(context->internal->servers, srv);
 	return srv;
-
- failed:
+        
+failed:
 	cli_shutdown(c);
 	if (!srv) {
 		return NULL;
 	}
-
+        
 	SAFE_FREE(srv);
 	return NULL;
 }
@@ -545,32 +552,34 @@ SMBC_attr_server(TALLOC_CTX *ctx,
 	struct rpc_pipe_client *pipe_hnd;
         NTSTATUS nt_status;
 	SMBCSRV *ipc_srv=NULL;
-
+        
         /*
          * See if we've already created this special connection.  Reference
          * our "special" share name '*IPC$', which is an impossible real share
          * name due to the leading asterisk.
          */
         ipc_srv = SMBC_find_server(ctx, context, server, "*IPC$",
-                              pp_workgroup, pp_username, pp_password);
+                                   pp_workgroup, pp_username, pp_password);
         if (!ipc_srv) {
-
+                
                 /* We didn't find a cached connection.  Get the password */
 		if (!*pp_password || (*pp_password)[0] == '\0') {
                         /* ... then retrieve it now. */
 			SMBC_call_auth_fn(ctx, context, server, share,
-				pp_workgroup, pp_username, pp_password);
+                                          pp_workgroup,
+                                          pp_username,
+                                          pp_password);
 			if (!*pp_workgroup || !*pp_username || !*pp_password) {
 				errno = ENOMEM;
 				return NULL;
 			}
                 }
-
+                
                 flags = 0;
                 if (context->flags.bits & SMB_CTX_FLAG_USE_KERBEROS) {
                         flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
                 }
-
+                
                 zero_addr(&ss);
                 nt_status = cli_full_connection(&ipc_cli,
 						global_myname(), server,
@@ -586,23 +595,23 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                         errno = ENOTSUP;
                         return NULL;
                 }
-
+                
 		if (context->internal->smb_encryption_level) {
 			/* Attempt UNIX smb encryption. */
 			if (!NT_STATUS_IS_OK(cli_force_encryption(ipc_cli,
-						*pp_username,
-						*pp_password,
-						*pp_workgroup))) {
-
+                                                                  *pp_username,
+                                                                  *pp_password,
+                                                                  *pp_workgroup))) {
+                                
 				/*
 				 * context->smb_encryption_level ==
 				 * 1 means don't fail if encryption can't be
 				 * negotiated, == 2 means fail if encryption
 				 * can't be negotiated.
 				 */
-
+                                
 				DEBUG(4,(" SMB encrypt failed on IPC$\n"));
-
+                                
 				if (context->internal->smb_encryption_level == 2) {
 		                        cli_shutdown(ipc_cli);
 					errno = EPERM;
@@ -611,49 +620,49 @@ SMBC_attr_server(TALLOC_CTX *ctx,
 			}
 			DEBUG(4,(" SMB encrypt ok on IPC$\n"));
 		}
-
+                
                 ipc_srv = SMB_MALLOC_P(SMBCSRV);
                 if (!ipc_srv) {
                         errno = ENOMEM;
                         cli_shutdown(ipc_cli);
                         return NULL;
                 }
-
+                
                 ZERO_STRUCTP(ipc_srv);
                 ipc_srv->cli = ipc_cli;
-
+                
                 pipe_hnd = cli_rpc_pipe_open_noauth(ipc_srv->cli,
                                                     PI_LSARPC,
                                                     &nt_status);
                 if (!pipe_hnd) {
-                    DEBUG(1, ("cli_nt_session_open fail!\n"));
-                    errno = ENOTSUP;
-                    cli_shutdown(ipc_srv->cli);
-                    free(ipc_srv);
-                    return NULL;
+                        DEBUG(1, ("cli_nt_session_open fail!\n"));
+                        errno = ENOTSUP;
+                        cli_shutdown(ipc_srv->cli);
+                        free(ipc_srv);
+                        return NULL;
                 }
-
+                
                 /*
                  * Some systems don't support
                  * SEC_RIGHTS_MAXIMUM_ALLOWED, but NT sends 0x2000000
                  * so we might as well do it too.
                  */
-
+                
                 nt_status = rpccli_lsa_open_policy(
-                    pipe_hnd,
-                    talloc_tos(),
-                    True,
-                    GENERIC_EXECUTE_ACCESS,
-                    &ipc_srv->pol);
-
+                        pipe_hnd,
+                        talloc_tos(),
+                        True,
+                        GENERIC_EXECUTE_ACCESS,
+                        &ipc_srv->pol);
+                
                 if (!NT_STATUS_IS_OK(nt_status)) {
-                    errno = SMBC_errno(context, ipc_srv->cli);
-                    cli_shutdown(ipc_srv->cli);
-                    return NULL;
+                        errno = SMBC_errno(context, ipc_srv->cli);
+                        cli_shutdown(ipc_srv->cli);
+                        return NULL;
                 }
-
+                
                 /* now add it to the cache (internal or external) */
-
+                
                 errno = 0;      /* let cache function set errno if it likes */
                 if ((context->cache.add_cached_server_fn)(context, ipc_srv,
                                                           server,
@@ -668,9 +677,9 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                         free(ipc_srv);
                         return NULL;
                 }
-
+                
                 DLIST_ADD(context->internal->servers, ipc_srv);
         }
-
+        
         return ipc_srv;
 }

@@ -50,24 +50,24 @@ SMBC_errno(SMBCCTX *context,
            struct cli_state *c)
 {
 	int ret = cli_errno(c);
-	
+        
         if (cli_is_dos_error(c)) {
                 uint8 eclass;
                 uint32 ecode;
-
+                
                 cli_dos_error(c, &eclass, &ecode);
                 
                 DEBUG(3,("smbc_error %d %d (0x%x) -> %d\n", 
                          (int)eclass, (int)ecode, (int)ecode, ret));
         } else {
                 NTSTATUS status;
-
+                
                 status = cli_nt_error(c);
-
+                
                 DEBUG(3,("smbc errno %s -> %d\n",
                          nt_errstr(status), ret));
         }
-
+        
 	return ret;
 }
 
