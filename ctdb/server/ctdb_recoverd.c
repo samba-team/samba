@@ -44,6 +44,7 @@ struct ctdb_recoverd {
 	int rec_file_fd;
 	uint32_t recmaster;
 	uint32_t num_active;
+	uint32_t num_connected;
 	struct ctdb_node_map *nodemap;
 	uint32_t last_culprit;
 	uint32_t culprit_counter;
@@ -1968,7 +1969,7 @@ static enum monitor_result verify_recmaster(struct ctdb_context *ctdb, struct ct
 static void
 ctdb_recoverd_write_pnn_connect_count(struct ctdb_recoverd *rec)
 {
-	const char count = rec->num_active;
+	const char count = rec->num_connected;
 	struct ctdb_context *ctdb = talloc_get_type(rec->ctdb, struct ctdb_context);
 
 	if (pwrite(rec->rec_file_fd, &count, 1, ctdb->pnn) == -1) {
@@ -2079,7 +2080,7 @@ static void ctdb_update_pnn_count(struct event_context *ev, struct timed_event *
 			continue;
 		}
 		/* check if that node is more connected that us */
-		if (count > rec->num_active) {
+		if (count > rec->num_connected) {
 			DEBUG(DEBUG_ERR, ("DISCONNECTED Node %u is more connected than we are, yielding recmaster role\n", nodemap->nodes[i].pnn));
 			close(ctdb->recovery_lock_fd);
 			ctdb->recovery_lock_fd = -1;
@@ -2269,10 +2270,14 @@ again:
 	rec->node_flags = nodemap->nodes[pnn].flags;
 
 	/* count how many active nodes there are */
-	rec->num_active = 0;
+	rec->num_active    = 0;
+	rec->num_connected = 0;
 	for (i=0; i<nodemap->num; i++) {
 		if (!(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
 			rec->num_active++;
+		}
+		if (!(nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED)) {
+			rec->num_connected++;
 		}
 	}
 
