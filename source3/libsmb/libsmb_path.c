@@ -31,13 +31,13 @@
 static int 
 hex2int( unsigned int _char )
 {
-    if ( _char >= 'A' && _char <='F')
-	return _char - 'A' + 10;
-    if ( _char >= 'a' && _char <='f')
-	return _char - 'a' + 10;
-    if ( _char >= '0' && _char <='9')
-	return _char - '0';
-    return -1;
+        if ( _char >= 'A' && _char <='F')
+                return _char - 'A' + 10;
+        if ( _char >= 'a' && _char <='f')
+                return _char - 'a' + 10;
+        if ( _char >= '0' && _char <='9')
+                return _char - '0';
+        return -1;
 }
 
 /*
@@ -60,19 +60,19 @@ urldecode_talloc(TALLOC_CTX *ctx, char **pp_dest, const char *src)
 	int err_count = 0;
 	size_t newlen = 1;
 	char *p, *dest;
-
+        
 	if (old_length == 0) {
 		return 0;
 	}
-
+        
 	*pp_dest = NULL;
 	for (i = 0; i < old_length; ) {
 		unsigned char character = src[i++];
-
+                
 		if (character == '%') {
 			int a = i+1 < old_length ? hex2int(src[i]) : -1;
 			int b = i+1 < old_length ? hex2int(src[i+1]) : -1;
-
+                        
 			/* Replace valid sequence */
 			if (a != -1 && b != -1) {
 				/* Replace valid %xx sequence with %dd */
@@ -87,20 +87,20 @@ urldecode_talloc(TALLOC_CTX *ctx, char **pp_dest, const char *src)
 		}
 		newlen++;
 	}
-
+        
 	dest = TALLOC_ARRAY(ctx, char, newlen);
 	if (!dest) {
 		return err_count;
 	}
-
+        
 	err_count = 0;
 	for (p = dest, i = 0; i < old_length; ) {
                 unsigned char character = src[i++];
-
+                
                 if (character == '%') {
                         int a = i+1 < old_length ? hex2int(src[i]) : -1;
                         int b = i+1 < old_length ? hex2int(src[i+1]) : -1;
-
+                        
                         /* Replace valid sequence */
                         if (a != -1 && b != -1) {
                                 /* Replace valid %xx sequence with %dd */
@@ -115,7 +115,7 @@ urldecode_talloc(TALLOC_CTX *ctx, char **pp_dest, const char *src)
                 }
                 *p++ = character;
         }
-
+        
         *p = '\0';
 	*pp_dest = dest;
         return err_count;
@@ -129,7 +129,7 @@ SMBC_urldecode(char *dest,
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *pdest;
 	int ret = urldecode_talloc(frame, &pdest, src);
-
+        
 	if (pdest) {
 		strlcpy(dest, pdest, max_dest_len);
 	}
@@ -151,9 +151,9 @@ SMBC_urlencode(char *dest,
                int max_dest_len)
 {
         char hex[] = "0123456789ABCDEF";
-
+        
         for (; *src != '\0' && max_dest_len >= 3; src++) {
-
+                
                 if ((*src < '0' &&
                      *src != '-' &&
                      *src != '.') ||
@@ -172,10 +172,10 @@ SMBC_urlencode(char *dest,
                         max_dest_len--;
                 }
         }
-
+        
         *dest++ = '\0';
         max_dest_len--;
-
+        
         return max_dest_len;
 }
 
@@ -196,9 +196,9 @@ SMBC_urlencode(char *dest,
  *
  *                  The method of locating the list of workgroups varies
  *                  depending upon the setting of the context variable
- *                  context->browse_max_lmb_count.  This value determines
- *                  the maximum number of local master browsers to query
- *                  for the list of workgroups.  In order to ensure that
+ *                  context->options.browse_max_lmb_count.  This value
+ *                  determines the maximum number of local master browsers to
+ *                  query for the list of workgroups.  In order to ensure that
  *                  a complete list of workgroups is obtained, all master
  *                  browsers must be queried, but if there are many
  *                  workgroups, the time spent querying can begin to add up.
@@ -234,75 +234,75 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 	const char *p;
 	char *q, *r;
 	int len;
-
+        
 	/* Ensure these returns are at least valid pointers. */
 	*pp_server = talloc_strdup(ctx, "");
 	*pp_share = talloc_strdup(ctx, "");
 	*pp_path = talloc_strdup(ctx, "");
 	*pp_user = talloc_strdup(ctx, "");
 	*pp_password = talloc_strdup(ctx, "");
-
+        
 	if (!*pp_server || !*pp_share || !*pp_path ||
-			!*pp_user || !*pp_password) {
+            !*pp_user || !*pp_password) {
 		return -1;
 	}
-
+        
         /*
          * Assume we wont find an authentication domain to parse, so default
          * to the workgroup in the provided context.
          */
 	if (pp_workgroup != NULL) {
 		*pp_workgroup =
-                    talloc_strdup(ctx, context->config.workgroup);
+                        talloc_strdup(ctx, context->config.workgroup);
 	}
-
+        
 	if (pp_options) {
 		*pp_options = talloc_strdup(ctx, "");
 	}
 	s = talloc_strdup(ctx, fname);
-
+        
 	/* see if it has the right prefix */
 	len = strlen(smbc_prefix);
 	if (strncmp(s,smbc_prefix,len) || (s[len] != '/' && s[len] != 0)) {
                 return -1; /* What about no smb: ? */
         }
-
+        
 	p = s + len;
-
+        
 	/* Watch the test below, we are testing to see if we should exit */
-
+        
 	if (strncmp(p, "//", 2) && strncmp(p, "\\\\", 2)) {
                 DEBUG(1, ("Invalid path (does not begin with smb://"));
 		return -1;
 	}
-
+        
 	p += 2;  /* Skip the double slash */
-
+        
         /* See if any options were specified */
         if ((q = strrchr(p, '?')) != NULL ) {
                 /* There are options.  Null terminate here and point to them */
                 *q++ = '\0';
-
+                
                 DEBUG(4, ("Found options '%s'", q));
-
+                
 		/* Copy the options */
 		if (*pp_options != NULL) {
 			TALLOC_FREE(*pp_options);
 			*pp_options = talloc_strdup(ctx, q);
 		}
 	}
-
+        
 	if (*p == '\0') {
 		goto decoding;
 	}
-
+        
 	if (*p == '/') {
 		int wl = strlen(context->config.workgroup);
-
+                
 		if (wl > 16) {
 			wl = 16;
 		}
-
+                
 		*pp_server = talloc_strdup(ctx, context->config.workgroup);
 		if (!*pp_server) {
 			return -1;
@@ -310,27 +310,27 @@ SMBC_parse_path(TALLOC_CTX *ctx,
                	*pp_server[wl] = '\0';
 		return 0;
 	}
-
+        
 	/*
 	 * ok, its for us. Now parse out the server, share etc.
 	 *
 	 * However, we want to parse out [[domain;]user[:password]@] if it
 	 * exists ...
 	 */
-
+        
 	/* check that '@' occurs before '/', if '/' exists at all */
 	q = strchr_m(p, '@');
 	r = strchr_m(p, '/');
 	if (q && (!r || q < r)) {
 		char *userinfo = NULL;
 		const char *u;
-
+                
 		next_token_no_ltrim_talloc(ctx, &p, &userinfo, "@");
 		if (!userinfo) {
 			return -1;
 		}
 		u = userinfo;
-
+                
 		if (strchr_m(u, ';')) {
 			char *workgroup;
 			next_token_no_ltrim_talloc(ctx, &u, &workgroup, ";");
@@ -341,7 +341,7 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 				*pp_workgroup = workgroup;
 			}
 		}
-
+                
 		if (strchr_m(u, ':')) {
 			next_token_no_ltrim_talloc(ctx, &u, pp_user, ":");
 			if (!*pp_user) {
@@ -358,27 +358,27 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 			}
 		}
 	}
-
+        
 	if (!next_token_talloc(ctx, &p, pp_server, "/")) {
 		return -1;
 	}
-
+        
 	if (*p == (char)0) {
 		goto decoding;  /* That's it ... */
 	}
-
+        
 	if (!next_token_talloc(ctx, &p, pp_share, "/")) {
 		return -1;
 	}
-
+        
         /*
          * Prepend a leading slash if there's a file path, as required by
          * NetApp filers.
          */
         if (*p != '\0') {
 		*pp_path = talloc_asprintf(ctx,
-					"\\%s",
-					p);
+                                           "\\%s",
+                                           p);
         } else {
 		*pp_path = talloc_strdup(ctx, "");
 	}
@@ -386,15 +386,15 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 		return -1;
 	}
 	string_replace(*pp_path, '/', '\\');
-
- decoding:
-
+        
+decoding:
+        
 	(void) urldecode_talloc(ctx, pp_path, *pp_path);
 	(void) urldecode_talloc(ctx, pp_server, *pp_server);
 	(void) urldecode_talloc(ctx, pp_share, *pp_share);
 	(void) urldecode_talloc(ctx, pp_user, *pp_user);
 	(void) urldecode_talloc(ctx, pp_password, *pp_password);
-
+        
 	return 0;
 }
 

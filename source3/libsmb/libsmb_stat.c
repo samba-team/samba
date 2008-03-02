@@ -33,18 +33,18 @@
 
 static ino_t
 generate_inode(SMBCCTX *context,
-           const char *name)
+               const char *name)
 {
 	if (!context || !context->internal->initialized) {
-
+                
 		errno = EINVAL;
 		return -1;
-
+                
 	}
-
+        
 	if (!*name) return 2; /* FIXME, why 2 ??? */
 	return (ino_t)str_checksum(name);
-
+        
 }
 
 /*
@@ -54,26 +54,26 @@ generate_inode(SMBCCTX *context,
 
 static int
 setup_stat(SMBCCTX *context,
-                struct stat *st,
-                char *fname,
-                SMB_OFF_T size,
-                int mode)
+           struct stat *st,
+           char *fname,
+           SMB_OFF_T size,
+           int mode)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	
+        
 	st->st_mode = 0;
-
+        
 	if (IS_DOS_DIR(mode)) {
 		st->st_mode = SMBC_DIR_MODE;
 	} else {
 		st->st_mode = SMBC_FILE_MODE;
 	}
-
+        
 	if (IS_DOS_ARCHIVE(mode)) st->st_mode |= S_IXUSR;
 	if (IS_DOS_SYSTEM(mode)) st->st_mode |= S_IXGRP;
 	if (IS_DOS_HIDDEN(mode)) st->st_mode |= S_IXOTH;
 	if (!IS_DOS_READONLY(mode)) st->st_mode |= S_IWUSR;
-
+        
 	st->st_size = size;
 #ifdef HAVE_STAT_ST_BLKSIZE
 	st->st_blksize = 512;
@@ -86,20 +86,20 @@ setup_stat(SMBCCTX *context,
 #endif
 	st->st_uid = getuid();
 	st->st_gid = getgid();
-
+        
 	if (IS_DOS_DIR(mode)) {
 		st->st_nlink = 2;
 	} else {
 		st->st_nlink = 1;
 	}
-
+        
 	if (st->st_ino == 0) {
 		st->st_ino = generate_inode(context, fname);
 	}
-	
+        
 	TALLOC_FREE(frame);
 	return True;  /* FIXME: Is this needed ? */
-
+        
 }
 
 /*
@@ -125,37 +125,37 @@ SMBC_stat_ctx(SMBCCTX *context,
 	uint16 mode = 0;
 	SMB_INO_T ino = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
-
+        
 	if (!context || !context->internal->initialized) {
-
+                
 		errno = EINVAL;  /* Best I can think of ... */
 		TALLOC_FREE(frame);
 		return -1;
 	}
-
+        
 	if (!fname) {
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
 	}
-
+        
 	DEBUG(4, ("smbc_stat(%s)\n", fname));
-
+        
 	if (SMBC_parse_path(frame,
-				context,
-				fname,
-				&workgroup,
-				&server,
-				&share,
-				&path,
-				&user,
-				&password,
-				NULL)) {
+                            context,
+                            fname,
+                            &workgroup,
+                            &server,
+                            &share,
+                            &path,
+                            &user,
+                            &password,
+                            NULL)) {
 		errno = EINVAL;
 		TALLOC_FREE(frame);
                 return -1;
         }
-
+        
 	if (!user || user[0] == (char)0) {
 		user = talloc_strdup(frame,context->config.user);
 		if (!user) {
@@ -164,15 +164,15 @@ SMBC_stat_ctx(SMBCCTX *context,
 			return -1;
 		}
 	}
-
+        
 	srv = SMBC_server(frame, context, True,
                           server, share, &workgroup, &user, &password);
-
+        
 	if (!srv) {
 		TALLOC_FREE(frame);
 		return -1;  /* errno set by SMBC_server */
 	}
-
+        
 	if (!SMBC_getatr(context, srv, path, &mode, &size,
 			 NULL,
                          &access_time_ts,
@@ -183,19 +183,19 @@ SMBC_stat_ctx(SMBCCTX *context,
 		TALLOC_FREE(frame);
 		return -1;
 	}
-
+        
 	st->st_ino = ino;
-
+        
 	setup_stat(context, st, (char *) fname, size, mode);
-
+        
 	set_atimespec(st, access_time_ts);
 	set_ctimespec(st, change_time_ts);
 	set_mtimespec(st, write_time_ts);
 	st->st_dev   = srv->dev;
-
+        
 	TALLOC_FREE(frame);
 	return 0;
-
+        
 }
 
 /*
@@ -221,41 +221,41 @@ SMBC_fstat_ctx(SMBCCTX *context,
 	struct cli_state *targetcli = NULL;
 	SMB_INO_T ino = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
-
+        
 	if (!context || !context->internal->initialized) {
-
+                
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
 	}
-
+        
 	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
 	}
-
+        
 	if (!file->file) {
 		TALLOC_FREE(frame);
 		return (context->posix_emu.fstatdir_fn)(context, file, st);
 	}
-
+        
 	/*d_printf(">>>fstat: parsing %s\n", file->fname);*/
 	if (SMBC_parse_path(frame,
-				context,
-				file->fname,
-				NULL,
-				&server,
-				&share,
-				&path,
-				&user,
-				&password,
-				NULL)) {
+                            context,
+                            file->fname,
+                            NULL,
+                            &server,
+                            &share,
+                            &path,
+                            &user,
+                            &password,
+                            NULL)) {
                 errno = EINVAL;
 		TALLOC_FREE(frame);
                 return -1;
         }
-
+        
 	/*d_printf(">>>fstat: resolving %s\n", path);*/
 	if (!cli_resolve_path(frame, "", file->srv->cli, path,
                               &targetcli, &targetpath)) {
@@ -264,39 +264,39 @@ SMBC_fstat_ctx(SMBCCTX *context,
 		return -1;
 	}
 	/*d_printf(">>>fstat: resolved path as %s\n", targetpath);*/
-
+        
 	if (!cli_qfileinfo(targetcli, file->cli_fd, &mode, &size,
                            NULL,
                            &access_time_ts,
                            &write_time_ts,
                            &change_time_ts,
                            &ino)) {
-
+                
 		time_t change_time, access_time, write_time;
-
+                
 		if (!cli_getattrE(targetcli, file->cli_fd, &mode, &size,
-				&change_time, &access_time, &write_time)) {
-
+                                  &change_time, &access_time, &write_time)) {
+                        
 			errno = EINVAL;
 			TALLOC_FREE(frame);
 			return -1;
 		}
-
+                
 		change_time_ts = convert_time_t_to_timespec(change_time);
 		access_time_ts = convert_time_t_to_timespec(access_time);
 		write_time_ts = convert_time_t_to_timespec(write_time);
 	}
-
+        
 	st->st_ino = ino;
-
+        
 	setup_stat(context, st, file->fname, size, mode);
-
+        
 	set_atimespec(st, access_time_ts);
 	set_ctimespec(st, change_time_ts);
 	set_mtimespec(st, write_time_ts);
 	st->st_dev = file->srv->dev;
-
+        
 	TALLOC_FREE(frame);
 	return 0;
-
+        
 }

@@ -109,22 +109,13 @@ main(int argc, char * argv[])
 
     /* Set mandatory options (is that a contradiction in terms?) */
     smbc_setDebug(context, debug);
-#if 0
     if (context_auth) {
-        context->callbacks.auth_fn = NULL;
-        smbc_option_set(context,
-                        "auth_function",
-                        (void *) get_auth_data_with_context_fn);
-        smbc_option_set(context, "user_data", "hello world");
+        smbc_setFunctionAuthDataWithContext(context,
+                                            get_auth_data_with_context_fn);
+        smbc_setOptionUserData(context, "hello world");
     } else {
-        context->callbacks.auth_fn =
-            (no_auth ? no_auth_data_fn : get_auth_data_fn);
+        smbc_setFunctionAuthData(context, get_auth_data_fn);
     }
-#else
-#warning "temporarily remove setting alternate auth function"
-    smbc_setFunctionAuthData(context, 
-                             (no_auth ? no_auth_data_fn : get_auth_data_fn));
-#endif
 
     /* If we've been asked to log to stderr instead of stdout, ... */
     if (debug_stderr) {

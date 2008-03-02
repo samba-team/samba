@@ -111,23 +111,23 @@ struct _SMBCFILE {
 struct SMBC_internal_data {
 
 	/* True when this handle is initialized */
-	bool            initialized;
+	bool                                    initialized;
 
 #if 0 /* Left in libsmbclient.h for backward compatibility */
         /* Netbios name used for making connections */
-        char *          netbios_name;
+        char *                                  netbios_name;
 
         /* Workgroup used for making connections */
-        char *          workgroup;
+        char *                                  workgroup;
 
         /* Username used for making connections */
-        char *          user;
+        char *                                  user;
 
         /* Debug level */
-        int             debug;
+        int                                     debug;
 
         /* Connection timeout value */
-        int             timeout;
+        int                                     timeout;
 #endif
 
         /* dirent pointer location
@@ -141,22 +141,22 @@ struct SMBC_internal_data {
          * According to <linux/limits.h>, NAME_MAX is 255.  Is it longer
          * anyplace else?
          */
-	char            dirent[1024];
+	char                                    dirent[1024];
 
 	/*
          * server connection list
 	 */
-	SMBCSRV *       servers;
+	SMBCSRV *                               servers;
 	
 	/*
          * open file/dir list
 	 */
-	SMBCFILE *      files;
+	SMBCFILE *                              files;
 
         /*
          * Log to standard error instead of the more typical standard output
          */
-        bool            debug_stderr;
+        bool                                    debug_stderr;
 
         /*
          * Support "Create Time" in get/set with the *xattr() functions, if
@@ -165,27 +165,34 @@ struct SMBC_internal_data {
          * CREATE_TIME.  Default is FALSE, i.e.  to use the old-style shorter
          * names and to not support CREATE time, for backward compatibility.
          */
-        bool            full_time_names;
+        bool                                    full_time_names;
 
         /*
          * The share mode of a file being opened.  To match POSIX semantics
          * (and maintain backward compatibility), DENY_NONE is the default.
          */
-        smbc_share_mode share_mode;
+        smbc_share_mode                         share_mode;
+
+        /*
+         * Authentication function which includes the context.  This will be
+         * used if set; otherwise context->callbacks.auth_fn() will be used.
+         */
+        smbc_get_auth_data_with_context_fn      auth_fn_with_context;
 
         /*
          * An opaque (to this library) user data handle which can be set
          * and retrieved with smbc_option_set() and smbc_option_get().
          */
-        void *          user_data;
+        void *                                  user_data;
 
         /*
          * Should we attempt UNIX smb encryption ? 
          * Set to 0 if we should never attempt, set to 1 if
          * encryption requested, set to 2 if encryption required.
          */
-        int             smb_encryption_level;
+        smbc_smb_encrypt_level                  smb_encryption_level;
 
+#if 0 /* Left in libsmbclient.h for backward compatibility */
         /*
          * From how many local master browsers should the list of
          * workgroups be retrieved?  It can take up to 12 minutes or
@@ -203,7 +210,7 @@ struct SMBC_internal_data {
          * networks with many workgroups, a suitable value for this
          * variable is probably somewhere around 3. (Default: 3).
          */
-        int             browse_max_lmb_count;
+        int                                     browse_max_lmb_count;
 
         /*
          * There is a difference in the desired return strings from
@@ -228,7 +235,7 @@ struct SMBC_internal_data {
          *
          * For backwards compatibility, this option defaults to False.
          */
-        bool            urlencode_readdir_entries;
+        bool                                    urlencode_readdir_entries;
 
         /*
          * Some Windows versions appear to have a limit to the number
@@ -240,15 +247,14 @@ struct SMBC_internal_data {
          * avoided by using only a single connection to each server,
          * and issuing a new TREE CONNECT when the share is accessed.
          */
-        bool            one_share_per_server;
+        bool                                    one_share_per_server;
 
-#if 0 /* Left in libsmbclient.h (flags) for backward compatibility */
         /* Kerberos-related flags */
-        bool            use_kerberos;
-        bool            fallback_after_kerberos;
+        bool                                    use_kerberos;
+        bool                                    fallback_after_kerberos;
 
         /* Don't try to do automatic anonymous login */
-        bool            no_auto_anonymous_login;
+        bool                                    no_auto_anonymous_login;
 
         /* Server-related functions */
         struct

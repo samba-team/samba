@@ -41,39 +41,39 @@ SMBC_open_print_job_ctx(SMBCCTX *context,
 	char *password = NULL;
 	char *path = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
-
+        
 	if (!context || !context->internal->initialized) {
-
+                
                 errno = EINVAL;
 		TALLOC_FREE(frame);
                 return NULL;
         }
-
+        
         if (!fname) {
                 errno = EINVAL;
 		TALLOC_FREE(frame);
                 return NULL;
         }
-
+        
         DEBUG(4, ("SMBC_open_print_job_ctx(%s)\n", fname));
-
+        
         if (SMBC_parse_path(frame,
-				context,
-				fname,
-				NULL,
-				&server,
-				&share,
-				&path,
-				&user,
-				&password,
-				NULL)) {
+                            context,
+                            fname,
+                            NULL,
+                            &server,
+                            &share,
+                            &path,
+                            &user,
+                            &password,
+                            NULL)) {
                 errno = EINVAL;
 		TALLOC_FREE(frame);
                 return NULL;
         }
-
+        
         /* What if the path is empty, or the file exists? */
-
+        
 	TALLOC_FREE(frame);
         return (context->posix_emu.open_fn)(context, fname, O_WRONLY, 666);
 }
@@ -98,77 +98,79 @@ SMBC_print_file_ctx(SMBCCTX *c_file,
         int tot_bytes = 0;
         char buf[4096];
 	TALLOC_CTX *frame = talloc_stackframe();
-
+        
         if (!c_file || !c_file->internal->initialized ||
             !c_print || !c_print->internal->initialized) {
-
+                
                 errno = EINVAL;
 		TALLOC_FREE(frame);
                 return -1;
-
+                
         }
-
+        
         if (!fname && !printq) {
-
+                
                 errno = EINVAL;
 		TALLOC_FREE(frame);
                 return -1;
-
+                
         }
-
+        
         /* Try to open the file for reading ... */
-
-        if ((long)(fid1 = smbc_getFunctionOpen(c_file)(c_file, fname, O_RDONLY, 0666)) < 0) {
+        
+        if ((long)(fid1 = smbc_getFunctionOpen(c_file)(c_file, fname,
+                                                       O_RDONLY, 0666)) < 0) {
                 DEBUG(3, ("Error, fname=%s, errno=%i\n", fname, errno));
 		TALLOC_FREE(frame);
                 return -1;  /* smbc_open sets errno */
         }
-
+        
         /* Now, try to open the printer file for writing */
-
-        if ((long)(fid2 = smbc_getFunctionOpenPrintJob(c_print)(c_print, printq)) < 0) {
-
+        
+        if ((long)(fid2 = smbc_getFunctionOpenPrintJob(c_print)(c_print,
+                                                                printq)) < 0) {
+                
                 saverr = errno;  /* Save errno */
                 smbc_getFunctionClose(c_file)(c_file, fid1);
                 errno = saverr;
 		TALLOC_FREE(frame);
                 return -1;
-
+                
         }
-
+        
         while ((bytes = smbc_getFunctionRead(c_file)(c_file, fid1,
                                                      buf, sizeof(buf))) > 0) {
-
+                
                 tot_bytes += bytes;
-
+                
                 if ((smbc_getFunctionWrite(c_print)(c_print, fid2,
                                                     buf, bytes)) < 0) {
-
+                        
                         saverr = errno;
                         smbc_getFunctionClose(c_file)(c_file, fid1);
                         smbc_getFunctionClose(c_print)(c_print, fid2);
                         errno = saverr;
-
+                        
                 }
-
+                
         }
-
+        
         saverr = errno;
-
-        smbc_getFunctionClose(c_file)(c_file, fid1);  /* We have to close these anyway */
+        
+        smbc_getFunctionClose(c_file)(c_file, fid1);
         smbc_getFunctionClose(c_print)(c_print, fid2);
-
+        
         if (bytes < 0) {
-
+                
                 errno = saverr;
 		TALLOC_FREE(frame);
                 return -1;
-
+                
         }
-
+        
 	TALLOC_FREE(frame);
         return tot_bytes;
-
+        
 }
 
 /*
@@ -188,37 +190,37 @@ SMBC_list_print_jobs_ctx(SMBCCTX *context,
 	char *workgroup = NULL;
 	char *path = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
-
+        
 	if (!context || !context->internal->initialized) {
-
+                
                 errno = EINVAL;
 		TALLOC_FREE(frame);
                 return -1;
         }
-
+        
         if (!fname) {
                 errno = EINVAL;
 		TALLOC_FREE(frame);
                 return -1;
         }
-
+        
         DEBUG(4, ("smbc_list_print_jobs(%s)\n", fname));
-
+        
         if (SMBC_parse_path(frame,
-				context,
-				fname,
-				&workgroup,
-				&server,
-				&share,
-				&path,
-				&user,
-				&password,
-				NULL)) {
+                            context,
+                            fname,
+                            &workgroup,
+                            &server,
+                            &share,
+                            &path,
+                            &user,
+                            &password,
+                            NULL)) {
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
         }
-
+        
         if (!user || user[0] == (char)0) {
 		user = talloc_strdup(frame, context->config.user);
 		if (!user) {
@@ -227,25 +229,25 @@ SMBC_list_print_jobs_ctx(SMBCCTX *context,
 			return -1;
 		}
 	}
-
+        
         srv = SMBC_server(frame, context, True,
                           server, share, &workgroup, &user, &password);
-
+        
         if (!srv) {
 		TALLOC_FREE(frame);
                 return -1;  /* errno set by SMBC_server */
         }
-
+        
         if (cli_print_queue(srv->cli,
                             (void (*)(struct print_job_info *))fn) < 0) {
                 errno = SMBC_errno(context, srv->cli);
 		TALLOC_FREE(frame);
                 return -1;
         }
-
+        
 	TALLOC_FREE(frame);
         return 0;
-
+        
 }
 
 /*
@@ -266,37 +268,37 @@ SMBC_unlink_print_job_ctx(SMBCCTX *context,
 	char *path = NULL;
         int err;
 	TALLOC_CTX *frame = talloc_stackframe();
-
+        
 	if (!context || !context->internal->initialized) {
-
+                
                 errno = EINVAL;
 		TALLOC_FREE(frame);
                 return -1;
         }
-
+        
         if (!fname) {
                 errno = EINVAL;
 		TALLOC_FREE(frame);
                 return -1;
         }
-
+        
         DEBUG(4, ("smbc_unlink_print_job(%s)\n", fname));
-
+        
         if (SMBC_parse_path(frame,
-				context,
-				fname,
-				&workgroup,
-				&server,
-				&share,
-				&path,
-				&user,
-				&password,
-				NULL)) {
+                            context,
+                            fname,
+                            &workgroup,
+                            &server,
+                            &share,
+                            &path,
+                            &user,
+                            &password,
+                            NULL)) {
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
         }
-
+        
         if (!user || user[0] == (char)0) {
 		user = talloc_strdup(frame, context->config.user);
 		if (!user) {
@@ -305,30 +307,30 @@ SMBC_unlink_print_job_ctx(SMBCCTX *context,
 			return -1;
 		}
 	}
-
+        
         srv = SMBC_server(frame, context, True,
                           server, share, &workgroup, &user, &password);
-
+        
         if (!srv) {
-
+                
 		TALLOC_FREE(frame);
                 return -1;  /* errno set by SMBC_server */
-
+                
         }
-
+        
         if ((err = cli_printjob_del(srv->cli, id)) != 0) {
-
+                
                 if (err < 0)
                         errno = SMBC_errno(context, srv->cli);
                 else if (err == ERRnosuchprintjob)
                         errno = EINVAL;
 		TALLOC_FREE(frame);
                 return -1;
-
+                
         }
-
+        
 	TALLOC_FREE(frame);
         return 0;
-
+        
 }
 
