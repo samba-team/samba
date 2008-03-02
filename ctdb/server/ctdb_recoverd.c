@@ -42,6 +42,7 @@ struct ban_state {
 struct ctdb_recoverd {
 	struct ctdb_context *ctdb;
 	int rec_file_fd;
+	uint32_t recmaster;
 	uint32_t num_active;
 	uint32_t last_culprit;
 	uint32_t culprit_counter;
@@ -2046,7 +2047,7 @@ static void ctdb_update_pnn_count(struct event_context *ev, struct timed_event *
  */
 static void monitor_cluster(struct ctdb_context *ctdb)
 {
-	uint32_t pnn, recmaster;
+	uint32_t pnn;
 	TALLOC_CTX *mem_ctx=NULL;
 	struct ctdb_node_map *nodemap=NULL;
 	struct ctdb_node_map *remote_nodemap=NULL;
@@ -2166,13 +2167,13 @@ again:
 	}
 
 	/* check which node is the recovery master */
-	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(), pnn, &recmaster);
+	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(), pnn, &rec->recmaster);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to get recmaster from node %u\n", pnn));
 		goto again;
 	}
 
-	if (recmaster == (uint32_t)-1) {
+	if (rec->recmaster == (uint32_t)-1) {
 		DEBUG(DEBUG_NOTICE,(__location__ " Initial recovery master set - forcing election\n"));
 		force_election(rec, mem_ctx, pnn, nodemap);
 		goto again;
@@ -2183,7 +2184,7 @@ again:
 	*/
 	if (nodemap->nodes[pnn].flags & NODE_FLAGS_BANNED) {
 		if (rec->banned_nodes[pnn] == NULL) {
-			if (recmaster == pnn) {
+			if (rec->recmaster == pnn) {
 				DEBUG(DEBUG_NOTICE,("Local ctdb daemon on recmaster thinks this node is BANNED but the recovery master disagrees. Unbanning the node\n"));
 
 				ctdb_unban_node(rec, pnn);
@@ -2196,7 +2197,7 @@ again:
 		}
 	} else {
 		if (rec->banned_nodes[pnn] != NULL) {
-			if (recmaster == pnn) {
+			if (rec->recmaster == pnn) {
 				DEBUG(DEBUG_NOTICE,("Local ctdb daemon on recmaster does not think this node is BANNED but the recovery master disagrees. Unbanning the node\n"));
 
 				ctdb_unban_node(rec, pnn);
@@ -2224,13 +2225,13 @@ again:
 
 	/* verify that the recmaster node is still active */
 	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].pnn==recmaster) {
+		if (nodemap->nodes[j].pnn==rec->recmaster) {
 			break;
 		}
 	}
 
 	if (j == nodemap->num) {
-		DEBUG(DEBUG_ERR, ("Recmaster node %u not in list. Force reelection\n", recmaster));
+		DEBUG(DEBUG_ERR, ("Recmaster node %u not in list. Force reelection\n", rec->recmaster));
 		force_election(rec, mem_ctx, pnn, nodemap);
 		goto again;
 	}
@@ -2307,7 +2308,7 @@ again:
 	/* if we are not the recmaster then we do not need to check
 	   if recovery is needed
 	 */
-	if (pnn != recmaster) {
+	if (pnn != rec->recmaster) {
 		goto again;
 	}
 
