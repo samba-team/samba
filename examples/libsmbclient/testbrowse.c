@@ -120,7 +120,7 @@ main(int argc, char * argv[])
     /* If we've been asked to log to stderr instead of stdout, ... */
     if (debug_stderr) {
         /* ... then set the option to do so */
-        smbc_option_set(context, "debug_to_stderr", 1);
+        smbc_setOptionDebugToStderr(context, 1);
     }
 	
     /* Initialize the context using the previously specified options */
@@ -196,7 +196,7 @@ get_auth_data_with_context_fn(SMBCCTX * context,
 {
     printf("Authenticating with context 0x%lx", context);
     if (context != NULL) {
-        char *user_data = smbc_option_get(context, "user_data");
+        char *user_data = smbc_getOptionUserData(context);
         printf(" with user data %s", user_data);
     }
     printf("\n");

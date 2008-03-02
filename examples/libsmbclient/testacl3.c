@@ -28,7 +28,7 @@ int main(int argc, char * argv[])
     smbc_init(get_auth_data_fn, debug); 
     
     context = smbc_set_context(NULL);
-    smbc_option_set(context, "full_time_names", 1);
+    smbc_setOptionFullTimeNames(context, 1);
     
     for (;;)
     {
