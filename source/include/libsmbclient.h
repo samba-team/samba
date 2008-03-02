@@ -687,7 +687,7 @@ smbc_setOptionNoAutoAnonymousLogin(SMBCCTX *c, smbc_bool b);
 smbc_get_auth_data_fn smbc_getFunctionAuthData(SMBCCTX *c);
 
 /** Set the function for obtaining authentication data */
-void smbc_setFunctionAuthData(SMBCCTX *c, smbc_get_auth_data_fn f);
+void smbc_setFunctionAuthData(SMBCCTX *c, smbc_get_auth_data_fn fn);
 
 /** Get the new-style authentication function which includes the context. */
 smbc_get_auth_data_with_context_fn
@@ -696,39 +696,39 @@ smbc_getFunctionAuthDataWithContext(SMBCCTX *c);
 /** Set the new-style authentication function which includes the context. */
 void
 smbc_setFunctionAuthDataWithContext(SMBCCTX *c,
-                                  smbc_get_auth_data_with_context_fn fn);
+                                    smbc_get_auth_data_with_context_fn fn);
 
 /** Get the function for checking if a server is still good */
 smbc_check_server_fn smbc_getFunctionCheckServer(SMBCCTX *c);
 
 /** Set the function for checking if a server is still good */
-void smbc_setFunctionCheckServer(SMBCCTX *c, smbc_check_server_fn f);
+void smbc_setFunctionCheckServer(SMBCCTX *c, smbc_check_server_fn fn);
 
 /** Get the function for removing a server if unused */
 smbc_remove_unused_server_fn smbc_getFunctionRemoveUnusedServer(SMBCCTX *c);
 
 /** Set the function for removing a server if unused */
 void smbc_setFunctionRemoveUnusedServer(SMBCCTX *c,
-                                        smbc_remove_unused_server_fn f);
+                                        smbc_remove_unused_server_fn fn);
 
 /** Get the function for adding a cached server */
 smbc_add_cached_srv_fn smbc_getFunctionAddCachedServer(SMBCCTX *c);
 
 /** Set the function for adding a cached server */
-void smbc_setFunctionAddCachedServer(SMBCCTX *c, smbc_add_cached_srv_fn f);
+void smbc_setFunctionAddCachedServer(SMBCCTX *c, smbc_add_cached_srv_fn fn);
 
 /** Get the function for server cache lookup */
 smbc_get_cached_srv_fn smbc_getFunctionGetCachedServer(SMBCCTX *c);
 
 /** Set the function for server cache lookup */
-void smbc_setFunctionGetCachedServer(SMBCCTX *c, smbc_get_cached_srv_fn f);
+void smbc_setFunctionGetCachedServer(SMBCCTX *c, smbc_get_cached_srv_fn fn);
 
 /** Get the function for server cache removal */
 smbc_remove_cached_srv_fn smbc_getFunctionRemoveCachedServer(SMBCCTX *c);
 
 /** Set the function for server cache removal */
 void smbc_setFunctionRemoveCachedServer(SMBCCTX *c,
-                                        smbc_remove_cached_srv_fn f);
+                                        smbc_remove_cached_srv_fn fn);
 
 /**
  * Get the function for server cache purging.  This function tries to
@@ -741,7 +741,7 @@ smbc_purge_cached_srv_fn smbc_getFunctionPurgeCachedServers(SMBCCTX *c);
  * remove all cached servers (e.g. on disconnect)
  */
 void smbc_setFunctionPurgeCachedServers(SMBCCTX *c,
-                                        smbc_purge_cached_srv_fn f);
+                                        smbc_purge_cached_srv_fn fn);
 
 /** Get the function to store private data of the server cache */
 struct smbc_server_cache * smbc_getServerCacheData(SMBCCTX *c);
@@ -762,7 +762,7 @@ typedef SMBCFILE * (*smbc_open_fn)(SMBCCTX *c,
                                    int flags,
                                    mode_t mode);
 smbc_open_fn smbc_getFunctionOpen(SMBCCTX *c);
-void smbc_setFunctionOpen(SMBCCTX *c, smbc_open_fn f);
+void smbc_setFunctionOpen(SMBCCTX *c, smbc_open_fn fn);
 
 typedef SMBCFILE * (*smbc_creat_fn)(SMBCCTX *c,
                                     const char *path,
@@ -775,56 +775,56 @@ typedef ssize_t (*smbc_read_fn)(SMBCCTX *c,
                                 void *buf,
                                 size_t count);
 smbc_read_fn smbc_getFunctionRead(SMBCCTX *c);
-void smbc_setFunctionRead(SMBCCTX *c, smbc_read_fn f);
+void smbc_setFunctionRead(SMBCCTX *c, smbc_read_fn fn);
 
 typedef ssize_t (*smbc_write_fn)(SMBCCTX *c,
                                  SMBCFILE *file,
                                  void *buf,
                                  size_t count);
 smbc_write_fn smbc_getFunctionWrite(SMBCCTX *c);
-void smbc_setFunctionWrite(SMBCCTX *c, smbc_write_fn f);
+void smbc_setFunctionWrite(SMBCCTX *c, smbc_write_fn fn);
 
 typedef int (*smbc_unlink_fn)(SMBCCTX *c,
                               const char *fname);
 smbc_unlink_fn smbc_getFunctionUnlink(SMBCCTX *c);
-void smbc_setFunctionUnlink(SMBCCTX *c, smbc_unlink_fn f);
+void smbc_setFunctionUnlink(SMBCCTX *c, smbc_unlink_fn fn);
 
 typedef int (*smbc_rename_fn)(SMBCCTX *ocontext,
                               const char *oname,
                               SMBCCTX *ncontext,
                               const char *nname);
 smbc_rename_fn smbc_getFunctionRename(SMBCCTX *c);
-void smbc_setFunctionRename(SMBCCTX *c, smbc_rename_fn f);
+void smbc_setFunctionRename(SMBCCTX *c, smbc_rename_fn fn);
 
 typedef off_t (*smbc_lseek_fn)(SMBCCTX *c,
                                SMBCFILE * file,
                                off_t offset,
                                int whence);
 smbc_lseek_fn smbc_getFunctionLseek(SMBCCTX *c);
-void smbc_setFunctionLseek(SMBCCTX *c, smbc_lseek_fn f);
+void smbc_setFunctionLseek(SMBCCTX *c, smbc_lseek_fn fn);
 
 typedef int (*smbc_stat_fn)(SMBCCTX *c,
                             const char *fname,
                             struct stat *st);
 smbc_stat_fn smbc_getFunctionStat(SMBCCTX *c);
-void smbc_setFunctionStat(SMBCCTX *c, smbc_stat_fn f);
+void smbc_setFunctionStat(SMBCCTX *c, smbc_stat_fn fn);
 
 typedef int (*smbc_fstat_fn)(SMBCCTX *c,
                              SMBCFILE *file,
                              struct stat *st);
 smbc_fstat_fn smbc_getFunctionFstat(SMBCCTX *c);
-void smbc_setFunctionFstat(SMBCCTX *c, smbc_fstat_fn f);
+void smbc_setFunctionFstat(SMBCCTX *c, smbc_fstat_fn fn);
 
 typedef int (*smbc_ftruncate_fn)(SMBCCTX *c,
                                  SMBCFILE *f,
                                  off_t size);
 smbc_ftruncate_fn smbc_getFunctionFtruncate(SMBCCTX *c);
-void smbc_setFunctionFtruncate(SMBCCTX *c, smbc_ftruncate_fn f);
+void smbc_setFunctionFtruncate(SMBCCTX *c, smbc_ftruncate_fn fn);
 
 typedef int (*smbc_close_fn)(SMBCCTX *c,
                              SMBCFILE *file);
 smbc_close_fn smbc_getFunctionClose(SMBCCTX *c);
-void smbc_setFunctionClose(SMBCCTX *c, smbc_close_fn f);
+void smbc_setFunctionClose(SMBCCTX *c, smbc_close_fn fn);
 
 
 
@@ -837,52 +837,52 @@ void smbc_setFunctionClose(SMBCCTX *c, smbc_close_fn f);
 typedef SMBCFILE * (*smbc_opendir_fn)(SMBCCTX *c,
                                       const char *fname);
 smbc_opendir_fn smbc_getFunctionOpendir(SMBCCTX *c);
-void smbc_setFunctionOpendir(SMBCCTX *c, smbc_opendir_fn f);
+void smbc_setFunctionOpendir(SMBCCTX *c, smbc_opendir_fn fn);
 
 typedef int (*smbc_closedir_fn)(SMBCCTX *c,
                                 SMBCFILE *dir);
 smbc_closedir_fn smbc_getFunctionClosedir(SMBCCTX *c);
-void smbc_setFunctionClosedir(SMBCCTX *c, smbc_closedir_fn f);
+void smbc_setFunctionClosedir(SMBCCTX *c, smbc_closedir_fn fn);
 
 typedef struct smbc_dirent * (*smbc_readdir_fn)(SMBCCTX *c,
                                                 SMBCFILE *dir);
 smbc_readdir_fn smbc_getFunctionReaddir(SMBCCTX *c);
-void smbc_setFunctionReaddir(SMBCCTX *c, smbc_readdir_fn f);
+void smbc_setFunctionReaddir(SMBCCTX *c, smbc_readdir_fn fn);
 
 typedef int (*smbc_getdents_fn)(SMBCCTX *c,
                                 SMBCFILE *dir,
                                 struct smbc_dirent *dirp,
                                 int count);
 smbc_getdents_fn smbc_getFunctionGetdents(SMBCCTX *c);
-void smbc_setFunctionGetdents(SMBCCTX *c, smbc_getdents_fn f);
+void smbc_setFunctionGetdents(SMBCCTX *c, smbc_getdents_fn fn);
 
 typedef int (*smbc_mkdir_fn)(SMBCCTX *c,
                              const char *fname,
                              mode_t mode);
 smbc_mkdir_fn smbc_getFunctionMkdir(SMBCCTX *c);
-void smbc_setFunctionMkdir(SMBCCTX *c, smbc_mkdir_fn f);
+void smbc_setFunctionMkdir(SMBCCTX *c, smbc_mkdir_fn fn);
 
 typedef int (*smbc_rmdir_fn)(SMBCCTX *c,
                              const char *fname);
 smbc_rmdir_fn smbc_getFunctionRmdir(SMBCCTX *c);
-void smbc_setFunctionRmdir(SMBCCTX *c, smbc_rmdir_fn f);
+void smbc_setFunctionRmdir(SMBCCTX *c, smbc_rmdir_fn fn);
 
 typedef off_t (*smbc_telldir_fn)(SMBCCTX *c,
                                  SMBCFILE *dir);
 smbc_telldir_fn smbc_getFunctionTelldir(SMBCCTX *c);
-void smbc_setFunctionTelldir(SMBCCTX *c, smbc_telldir_fn f);
+void smbc_setFunctionTelldir(SMBCCTX *c, smbc_telldir_fn fn);
 
 typedef int (*smbc_lseekdir_fn)(SMBCCTX *c,
                                 SMBCFILE *dir,
                                 off_t offset);
 smbc_lseekdir_fn smbc_getFunctionLseekdir(SMBCCTX *c);
-void smbc_setFunctionLseekdir(SMBCCTX *c, smbc_lseekdir_fn f);
+void smbc_setFunctionLseekdir(SMBCCTX *c, smbc_lseekdir_fn fn);
 
 typedef int (*smbc_fstatdir_fn)(SMBCCTX *c,
                                 SMBCFILE *dir,
                                 struct stat *st);
 smbc_fstatdir_fn smbc_getFunctionFstatdir(SMBCCTX *c);
-void smbc_setFunctionFstatdir(SMBCCTX *c, smbc_fstatdir_fn f);
+void smbc_setFunctionFstatdir(SMBCCTX *c, smbc_fstatdir_fn fn);
 
 
 
@@ -896,13 +896,13 @@ typedef int (*smbc_chmod_fn)(SMBCCTX *c,
                              const char *fname,
                              mode_t mode);
 smbc_chmod_fn smbc_getFunctionChmod(SMBCCTX *c);
-void smbc_setFunctionChmod(SMBCCTX *c, smbc_chmod_fn f);
+void smbc_setFunctionChmod(SMBCCTX *c, smbc_chmod_fn fn);
 
 typedef int (*smbc_utimes_fn)(SMBCCTX *c,
                               const char *fname,
                               struct timeval *tbuf);
 smbc_utimes_fn smbc_getFunctionUtimes(SMBCCTX *c);
-void smbc_setFunctionUtimes(SMBCCTX *c, smbc_utimes_fn f);
+void smbc_setFunctionUtimes(SMBCCTX *c, smbc_utimes_fn fn);
 
 typedef int (*smbc_setxattr_fn)(SMBCCTX *context,
                                 const char *fname,
@@ -911,7 +911,7 @@ typedef int (*smbc_setxattr_fn)(SMBCCTX *context,
                                 size_t size,
                                 int flags);
 smbc_setxattr_fn smbc_getFunctionSetxattr(SMBCCTX *c);
-void smbc_setFunctionSetxattr(SMBCCTX *c, smbc_setxattr_fn f);
+void smbc_setFunctionSetxattr(SMBCCTX *c, smbc_setxattr_fn fn);
 
 typedef int (*smbc_getxattr_fn)(SMBCCTX *context,
                                 const char *fname,
@@ -919,20 +919,20 @@ typedef int (*smbc_getxattr_fn)(SMBCCTX *context,
                                 const void *value,
                                 size_t size);
 smbc_getxattr_fn smbc_getFunctionGetxattr(SMBCCTX *c);
-void smbc_setFunctionGetxattr(SMBCCTX *c, smbc_getxattr_fn f);
+void smbc_setFunctionGetxattr(SMBCCTX *c, smbc_getxattr_fn fn);
 
 typedef int (*smbc_removexattr_fn)(SMBCCTX *context,
                                    const char *fname,
                                    const char *name);
 smbc_removexattr_fn smbc_getFunctionRemovexattr(SMBCCTX *c);
-void smbc_setFunctionRemovexattr(SMBCCTX *c, smbc_removexattr_fn f);
+void smbc_setFunctionRemovexattr(SMBCCTX *c, smbc_removexattr_fn fn);
 
 typedef int (*smbc_listxattr_fn)(SMBCCTX *context,
                                  const char *fname,
                                  char *list,
                                  size_t size);
 smbc_listxattr_fn smbc_getFunctionListxattr(SMBCCTX *c);
-void smbc_setFunctionListxattr(SMBCCTX *c, smbc_listxattr_fn f);
+void smbc_setFunctionListxattr(SMBCCTX *c, smbc_listxattr_fn fn);
 
 
 
@@ -947,27 +947,27 @@ typedef int (*smbc_print_file_fn)(SMBCCTX *c_file,
                                   SMBCCTX *c_print,
                                   const char *printq);
 smbc_print_file_fn smbc_getFunctionPrintFile(SMBCCTX *c);
-void smbc_setFunctionPrintFile(SMBCCTX *c, smbc_print_file_fn f);
+void smbc_setFunctionPrintFile(SMBCCTX *c, smbc_print_file_fn fn);
 
 typedef SMBCFILE * (*smbc_open_print_job_fn)(SMBCCTX *c,
                                              const char *fname);
 smbc_open_print_job_fn smbc_getFunctionOpenPrintJob(SMBCCTX *c);
 void smbc_setFunctionOpenPrintJob(SMBCCTX *c,
-                                  smbc_open_print_job_fn f);
+                                  smbc_open_print_job_fn fn);
 
 typedef int (*smbc_list_print_jobs_fn)(SMBCCTX *c,
                                        const char *fname,
                                        smbc_list_print_job_fn fn);
 smbc_list_print_jobs_fn smbc_getFunctionListPrintJobs(SMBCCTX *c);
 void smbc_setFunctionListPrintJobs(SMBCCTX *c,
-                                   smbc_list_print_jobs_fn f);
+                                   smbc_list_print_jobs_fn fn);
 
 typedef int (*smbc_unlink_print_job_fn)(SMBCCTX *c,
                                         const char *fname,
                                         int id);
 smbc_unlink_print_job_fn smbc_getFunctionUnlinkPrintJob(SMBCCTX *c);
 void smbc_setFunctionUnlinkPrintJob(SMBCCTX *c,
-                                    smbc_unlink_print_job_fn f);
+                                    smbc_unlink_print_job_fn fn);
 
 
 /**@ingroup misc
