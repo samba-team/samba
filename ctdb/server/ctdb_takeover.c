@@ -706,6 +706,19 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 		}
 	}
 
+	/* verify that the assigned nodes can serve that public ip
+	   and set it to -1 if not
+	*/
+	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+		if (tmp_ip->pnn == -1) {
+			continue;
+		}
+		if (can_node_serve_ip(ctdb, tmp_ip->pnn, tmp_ip) != 0) {
+			/* this node can not serve this ip. */
+			tmp_ip->pnn = -1;
+		}
+	}
+
 
 	/* now we must redistribute all public addresses with takeover node
 	   -1 among the nodes available
