@@ -6,32 +6,21 @@
 #  Released under the GNU GPL
 
 package smb_build::makefile;
-use smb_build::env;
 use smb_build::output;
 use File::Basename;
 use strict;
 
-use base 'smb_build::env';
 use Cwd 'abs_path';
 
 sub new($$$)
 {
 	my ($myname, $config, $mkfile) = @_;
-	my $self = new smb_build::env($config);
-	
+	my $self = {};
+
 	bless($self, $myname);
 
-	$self->{manpages} = [];
-	$self->{sbin_progs} = [];
-	$self->{bin_progs} = [];
-	$self->{static_libs} = [];
-	$self->{python_dsos} = [];
-	$self->{python_pys} = [];
-	$self->{shared_libs} = [];
-	$self->{headers} = [];
-	$self->{plugins} = [];
-	$self->{pc_files} = [];
-	$self->{proto_headers} = [];
+	$self->_set_config($config);
+
 	$self->{output} = "";
 
 	$self->{mkfile} = $mkfile;
@@ -41,12 +30,30 @@ sub new($$$)
 	$self->output("################################################\n");
 	$self->output("\n");
 
-	if (!$self->{automatic_deps}) {
-		$self->output("ALL_PREDEP = proto\n");
-		$self->output(".NOTPARALLEL:\n");
+	return $self;
+}
+
+sub _set_config($$)
+{
+	my ($self, $config) = @_;
+
+	$self->{config} = $config;
+
+	if (not defined($self->{config}->{srcdir})) {
+		$self->{config}->{srcdir} = '.';
 	}
 
-	return $self;
+	if (not defined($self->{config}->{builddir})) {
+		$self->{config}->{builddir}  = '.';
+	}
+
+	if ($self->{config}->{prefix} eq "NONE") {
+		$self->{config}->{prefix} = $self->{config}->{ac_default_prefix};
+	}
+
+	if ($self->{config}->{exec_prefix} eq "NONE") {
+		$self->{config}->{exec_prefix} = $self->{config}->{prefix};
+	}
 }
 
 sub output($$)
@@ -66,23 +73,17 @@ sub _prepare_mk_files($)
 		push (@tmp, $_);
 	}
 
-	if ($self->{gnu_make}) {
-		$self->output("
+	$self->output("
 ifneq (\$(MAKECMDGOALS),clean)
 ifneq (\$(MAKECMDGOALS),distclean)
 ifneq (\$(MAKECMDGOALS),realdistclean)
 ");
-	}
-
 	$self->output("MK_FILES = " . array2oneperline(\@tmp) . "\n");
-
-	if ($self->{gnu_make}) {
-		$self->output("
+	$self->output("
 endif
 endif
 endif
 ");
-	}
 }
 
 sub array2oneperline($)
@@ -129,10 +130,9 @@ sub SharedModule($$)
 	$sane_subsystem =~ s/^lib//;
 	
 	if ($ctx->{TYPE} eq "PYTHON") {
-		push (@{$self->{python_dsos}}, 
-			"$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
+		$self->output("PYTHON_DSOS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
 	} else {
-		push (@{$self->{plugins}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
+		$self->output("PLUGINS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
 		$self->output("installplugins:: $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
 		$self->output("\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
 		$self->output("\t\@mkdir -p \$(DESTDIR)\$(modulesdir)/$sane_subsystem/\n");
@@ -220,36 +220,27 @@ sub SharedLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
-	push (@{$self->{shared_libs}}, $ctx->{RESULT_SHARED_LIBRARY}) if (defined($ctx->{SO_VERSION}));
+	$self->output("SHARED_LIBS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n") if (defined($ctx->{SO_VERSION}));
 
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
-	my $soarg = "";
-	my $lns = "";
-	if ($self->{config}->{SONAMEFLAG} ne "#" and defined($ctx->{LIBRARY_SONAME})) {
-		$soarg = "$self->{config}->{SONAMEFLAG}$ctx->{LIBRARY_SONAME}";
-		if ($ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
-			$lns .= "\n\t\@test \$($ctx->{NAME}_VERSION) = \$($ctx->{NAME}_SOVERSION) || ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
-		}
-	}
-
-	if (defined($ctx->{LIBRARY_SONAME})) {
-		$lns .= "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}";
-	}
-
 	$self->output(<< "__EOD__"
-#
 $ctx->{RESULT_SHARED_LIBRARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
-	\@mkdir -p $ctx->{SHAREDDIR}
+	\@mkdir -p \$(\@D)
 	\@\$(SHLD) \$(LDFLAGS) \$(SHLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$($ctx->{NAME}\_FULL_OBJ_LIST) \\
 		\$($ctx->{NAME}_LINK_FLAGS) \\
-		$soarg$lns
+		\$(if \$(SONAMEFLAG), \$(SONAMEFLAG)$ctx->{LIBRARY_SONAME})
 __EOD__
 );
-	$self->output("\n");
+	if ($ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
+		$self->output("\t\@test \$($ctx->{NAME}_VERSION) = \$($ctx->{NAME}_SOVERSION) || ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}\n");
+	}
+	$self->output("ifdef $ctx->{NAME}_SOVERSION\n");
+	$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}\n");
+	$self->output("endif\n");
 }
 
 sub MergedObj($$)
@@ -263,7 +254,7 @@ sub MergedObj($$)
 #
 $ctx->{RESULT_MERGED_OBJ}: \$($ctx->{NAME}_OBJ_LIST)
 	\@echo Partially linking \$@
-	\@mkdir -p bin/mergedobj
+	\@mkdir -p \$(\@D)
 	\$(PARTLINK) -o \$@ \$($ctx->{NAME}_OBJ_LIST)
 
 __EOD__
@@ -276,43 +267,23 @@ sub StaticLibrary($$)
 
 	return unless (defined($ctx->{OBJ_FILES}));
 
-	push (@{$self->{static_libs}}, $ctx->{RESULT_STATIC_LIBRARY}) if ($ctx->{TYPE} eq "LIBRARY");
+	$self->output("STATIC_LIBS += $ctx->{TARGET_STATIC_LIBRARY}\n") if ($ctx->{TYPE} eq "LIBRARY");
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 
-	$self->output(<< "__EOD__"
-#
-$ctx->{RESULT_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)
-	\@echo Linking \$@
-	\@rm -f \$@
-	\@mkdir -p $ctx->{STATICDIR}
-	\@\$(STLD) \$(STLD_FLAGS) \$@ \$($ctx->{NAME}_FULL_OBJ_LIST)
-
-__EOD__
-);
-}
-
-sub Header($$)
-{
-	my ($self,$ctx) = @_;
-
-	foreach (@{$ctx->{PUBLIC_HEADERS}}) {
-		push (@{$self->{headers}}, output::add_dir_str($ctx->{BASEDIR}, $_));
-	}
+	$self->output("$ctx->{RESULT_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)\n");
 }
 
 sub Binary($$)
 {
 	my ($self,$ctx) = @_;
 
-	my $extradir = "";
-
 	unless (defined($ctx->{INSTALLDIR})) {
 	} elsif ($ctx->{INSTALLDIR} eq "SBINDIR") {
-		push (@{$self->{sbin_progs}}, $ctx->{RESULT_BINARY});
+		$self->output("SBIN_PROGS += bin/$ctx->{BINARY}\n");
 	} elsif ($ctx->{INSTALLDIR} eq "BINDIR") {
-		push (@{$self->{bin_progs}}, $ctx->{RESULT_BINARY});
+		$self->output("BIN_PROGS += bin/$ctx->{BINARY}\n");
 	}
 
 	$self->output("binaries:: $ctx->{TARGET_BINARY}\n");
@@ -350,108 +321,86 @@ sub PythonFiles($$)
 	foreach (@{$ctx->{PYTHON_FILES}}) {
 		my $target = "bin/python/".basename($_);
 		my $source = output::add_dir_str($ctx->{BASEDIR}, $_);
-		$self->output("$target: $source\n" .
-					  "\tmkdir -p \$(builddir)/bin/python\n" .
-		              "\tcp $source \$@\n\n");
-		push (@{$self->{python_pys}}, $target);
+		$self->output("$target: $source\n\n");
+		$self->output("PYTHON_PYS += $target\n");
 	}
-}
-
-sub Manpage($$)
-{
-	my ($self,$ctx) = @_;
-
-	my $path = output::add_dir_str($ctx->{BASEDIR}, $ctx->{MANPAGE});
-	push (@{$self->{manpages}}, $path);
 }
 
 sub ProtoHeader($$)
 {
 	my ($self,$ctx) = @_;
 
-	my $target = "";
-	my $comment = "Creating ";
+	my $priv = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PRIVATE_PROTO_HEADER});
+	$self->output("PROTO_HEADERS += $priv\n");
 
-	my $priv = undef;
-	my $pub = undef;
-
-	if (defined($ctx->{PRIVATE_PROTO_HEADER})) {
-		$priv = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PRIVATE_PROTO_HEADER});
-		$target .= $priv;
-		$comment .= $priv;
-		if (defined($ctx->{PUBLIC_PROTO_HEADER})) {
-			$comment .= " and ";
-			$target.= " ";
-		}
-		push (@{$self->{proto_headers}}, $priv);
-	} else {
-		$ctx->{PRIVATE_PROTO_HEADER} = $ctx->{PUBLIC_PROTO_HEADER};
-		$priv = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PRIVATE_PROTO_HEADER});
-	}
-
-	if (defined($ctx->{PUBLIC_PROTO_HEADER})) {
-		$pub = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PUBLIC_PROTO_HEADER});
-		$comment .= $pub;
-		$target .= $pub;
-		push (@{$self->{proto_headers}}, $pub);
-	} else {
-		$ctx->{PUBLIC_PROTO_HEADER} = $ctx->{PRIVATE_PROTO_HEADER};
-		$pub = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PUBLIC_PROTO_HEADER});
-	}
-
-	$self->output("$pub: $ctx->{MK_FILE} \$($ctx->{NAME}_OBJ_LIST:.o=.c) \$(srcdir)/script/mkproto.pl\n");
-	$self->output("\t\@echo \"$comment\"\n");
-	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --srcdir=\$(srcdir) --builddir=\$(builddir) --private=$priv --public=$pub \$($ctx->{NAME}_OBJ_LIST)\n\n");
+	$self->output("$priv: $ctx->{MK_FILE} \$($ctx->{NAME}_OBJ_LIST:.o=.c) \$(srcdir)/script/mkproto.pl\n");
+	$self->output("\t\@echo \"Creating \$@\"\n");
+	$self->output("\t\@mkdir -p \$(\@D)\n");
+	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --srcdir=\$(srcdir) --builddir=\$(builddir) --all=\$@ \$($ctx->{NAME}_OBJ_LIST)\n\n");
 }
 
 sub write($$)
 {
 	my ($self, $file) = @_;
 
-	$self->output("MANPAGES = " . array2oneperline($self->{manpages})."\n");
-	$self->output("BIN_PROGS = " . array2oneperline($self->{bin_progs}) . "\n");
-	$self->output("SBIN_PROGS = " . array2oneperline($self->{sbin_progs}) . "\n");
-	$self->output("STATIC_LIBS = " . array2oneperline($self->{static_libs}) . "\n");
-	$self->output("SHARED_LIBS = " . array2oneperline($self->{shared_libs}) . "\n");
-	$self->output("PYTHON_DSOS = " . array2oneperline($self->{python_dsos}) . "\n");
-	$self->output("PYTHON_PYS = " . array2oneperline($self->{python_pys}) . "\n");
-	$self->output("PUBLIC_HEADERS = " . array2oneperline($self->{headers}) . "\n");
-	$self->output("PC_FILES = " . array2oneperline($self->{pc_files}) . "\n");
 	$self->output("ALL_OBJS = " . array2oneperline($self->{all_objs}) . "\n");
-	$self->output("PROTO_HEADERS = " . array2oneperline($self->{proto_headers}) .  "\n");
-	$self->output("PLUGINS = " . array2oneperline($self->{plugins}) . "\n");
 
 	$self->_prepare_mk_files();
 
 	$self->output($self->{mkfile});
-
-	if ($self->{automatic_deps}) {
-		$self->output("
-ifneq (\$(MAKECMDGOALS),clean)
-ifneq (\$(MAKECMDGOALS),distclean)
-ifneq (\$(MAKECMDGOALS),realdistclean)
-ifneq (\$(SKIP_DEP_FILES),yes)
--include \$(DEP_FILES)
-endif
-endif
-endif
-endif
-
-ifneq (\$(SKIP_DEP_FILES),yes)
-clean::
-	\@echo Removing dependency files
-	\@find . -name '*.d' -o -name '*.hd' | xargs rm -f
-endif
-");
-	} else {
-		$self->output("include \$(srcdir)/static_deps.mk\n");
-	}
 
 	open(MAKEFILE,">$file") || die ("Can't open $file\n");
 	print MAKEFILE $self->{output};
 	close(MAKEFILE);
 
 	print __FILE__.": creating $file\n";
+}
+
+my $sort_available = eval "use sort 'stable'; return 1;";
+$sort_available = 0 unless defined($sort_available);
+
+sub by_path {
+	return  1 if($a =~ m#^\-I/#);
+    	return -1 if($b =~ m#^\-I/#);
+	return  0;
+}
+
+sub CFlags($$)
+{
+	my ($self, $key) = @_;
+
+	my $srcdir = $self->{config}->{srcdir};
+	my $builddir = $self->{config}->{builddir};
+
+	my $src_ne_build = ($srcdir ne $builddir) ? 1 : 0;
+
+	return unless defined ($key->{OBJ_LIST});
+	return unless defined ($key->{FINAL_CFLAGS});
+	return unless (@{$key->{FINAL_CFLAGS}} > 0);
+
+	my @sorted_cflags = @{$key->{FINAL_CFLAGS}};
+	if ($sort_available) {
+		@sorted_cflags = sort by_path @{$key->{FINAL_CFLAGS}};
+	}
+
+	# Rewrite CFLAGS so that both the source and the build
+	# directories are in the path.
+	my @cflags = ();
+	foreach my $flag (@sorted_cflags) {
+		if($src_ne_build) {
+				if($flag =~ m#^-I([^/].*$)#) {
+					my $dir = $1;
+					$dir =~ s#^\$\((?:src|build)dir\)/?##;
+				push(@cflags, "-I$builddir/$dir", "-I$srcdir/$dir");
+					next;
+				}
+		}
+		push(@cflags, $flag);
+	}
+	
+	my $cflags = join(' ', @cflags);
+
+	$self->output("\$(patsubst %.ho,%.d,\$(key->{NAME}_OBJ_LIST:.o=.d)) \$($key->{NAME}_OBJ_LIST): CFLAGS+= $cflags\n");
 }
 
 1;

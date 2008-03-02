@@ -46,7 +46,8 @@
 
 /* Function prototypes */
 struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx, 
-					     struct event_context *event_ctx);
+					     struct event_context *event_ctx,
+                         struct smb_iconv_convenience *iconv_convenience);
 
 enum nbt_name_type {
 	NBT_NAME_CLIENT=0x00,

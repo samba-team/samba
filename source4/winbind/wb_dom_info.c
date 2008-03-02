@@ -71,6 +71,7 @@ struct composite_context *wb_get_dom_info_send(TALLOC_CTX *mem_ctx,
 			   lp_nbt_port(service->task->lp_ctx),
 			   domain_name, NBT_NAME_LOGON, 
 			   dom_sid, 
+			   lp_iconv_convenience(service->task->lp_ctx),
 			   lp_resolve_context(service->task->lp_ctx), 
 			   service->task->event_ctx, 
 			   service->task->msg_ctx);

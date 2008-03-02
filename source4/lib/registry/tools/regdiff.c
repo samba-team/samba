@@ -126,7 +126,7 @@ int main(int argc, const char **argv)
 
 	poptFreeContext(pc);
 
-	error = reg_dotreg_diff_save(ctx, outputfile, &callbacks,
+	error = reg_dotreg_diff_save(ctx, outputfile, lp_iconv_convenience(cmdline_lp_ctx), &callbacks,
 				     &callback_data);
 	if (!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Problem saving registry diff to '%s': %s\n",

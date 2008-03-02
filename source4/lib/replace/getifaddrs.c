@@ -44,13 +44,14 @@
 
 void rep_freeifaddrs(struct ifaddrs *ifp)
 {
-	free(ifp->ifa_name);
-	free(ifp->ifa_addr);
-	free(ifp->ifa_netmask);
-	free(ifp->ifa_dstaddr);
-	if (ifp->ifa_next != NULL)
+	if (ifp != NULL) {
+		free(ifp->ifa_name);
+		free(ifp->ifa_addr);
+		free(ifp->ifa_netmask);
+		free(ifp->ifa_dstaddr);
 		freeifaddrs(ifp->ifa_next);
-	free(ifp);
+		free(ifp);
+	}
 }
 
 static struct sockaddr *sockaddr_dup(struct sockaddr *sa)
@@ -109,38 +110,33 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 
 	/* Loop through interfaces, looking for given IP address */
 	for (i=n-1; i>=0; i--) {
-		if (ioctl(fd, SIOCGIFADDR, &ifr[i]) != 0) {
+		if (ioctl(fd, SIOCGIFFLAGS, &ifr[i]) == -1) {
 			freeifaddrs(*ifap);
+			return -1;
 		}
 
 		curif = calloc(1, sizeof(struct ifaddrs));
+		curif->ifa_name = strdup(ifr[i].ifr_name);
+		curif->ifa_flags = ifr[i].ifr_flags;
+		curif->ifa_dstaddr = NULL;
+		curif->ifa_data = NULL;
+		curif->ifa_next = NULL;
+
+		curif->ifa_addr = NULL;
+		if (ioctl(fd, SIOCGIFADDR, &ifr[i]) != -1) {
+			curif->ifa_addr = sockaddr_dup(&ifr[i].ifr_addr);
+		}
+
+		curif->ifa_netmask = NULL;
+		if (ioctl(fd, SIOCGIFNETMASK, &ifr[i]) != -1) {
+			curif->ifa_netmask = sockaddr_dup(&ifr[i].ifr_addr);
+		}
+
 		if (lastif == NULL) {
 			*ifap = curif;
 		} else {
 			lastif->ifa_next = curif;
 		}
-
-		curif->ifa_name = strdup(ifr[i].ifr_name);
-		curif->ifa_addr = sockaddr_dup(&ifr[i].ifr_addr);
-		curif->ifa_dstaddr = NULL;
-		curif->ifa_data = NULL;
-		curif->ifa_next = NULL;
-		curif->ifa_netmask = NULL;
-
-		if (ioctl(fd, SIOCGIFFLAGS, &ifr[i]) != 0) {
-			freeifaddrs(*ifap);
-			return -1;
-		}  
-
-		curif->ifa_flags = ifr[i].ifr_flags;
-
-		if (ioctl(fd, SIOCGIFNETMASK, &ifr[i]) != 0) {
-			freeifaddrs(*ifap);
-			return -1;
-		}  
-
-		curif->ifa_netmask = sockaddr_dup(&ifr[i].ifr_addr);
-
 		lastif = curif;
 	}
 
@@ -361,34 +357,5 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 {
 	errno = ENOSYS;
 	return -1;
-}
-#endif
-
-#ifdef AUTOCONF_TEST
-/* this is the autoconf driver to test getifaddrs() */
-
- int main()
-{
-	struct ifaddrs *ifs = NULL;
-	int ret;
-	
-	ret = getifaddrs(&ifs);
-	if (ret != 0) {
-		perror("getifaddrs() failed");
-		return 1;
-	}
-
-	while (ifs) {
-		printf("%-10s ", ifs->ifa_name);
-		if (ifs->ifa_addr != NULL && 
-		    ifs->ifa_addr->sa_family == AF_INET) {
-			printf("IP=%s ", inet_ntoa(((struct sockaddr_in *)ifs->ifa_addr)->sin_addr));
-			if (ifs->ifa_netmask != NULL)
-				printf("NETMASK=%s", inet_ntoa(((struct sockaddr_in *)ifs->ifa_netmask)->sin_addr));
-		}
-		printf("\n");
-		ifs = ifs->ifa_next;
-	}
-	return 0;
 }
 #endif

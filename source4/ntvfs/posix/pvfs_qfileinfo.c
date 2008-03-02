@@ -368,7 +368,7 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* update the file information */
-	status = pvfs_resolve_name_fd(pvfs, h->fd, h->name);
+	status = pvfs_resolve_name_handle(pvfs, h);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -380,7 +380,7 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 	switch (info->generic.level) {
 	case RAW_FILEINFO_STANDARD_INFO:
 	case RAW_FILEINFO_STANDARD_INFORMATION:
-		if (pvfs_delete_on_close_set(pvfs, h, NULL, NULL)) {
+		if (pvfs_delete_on_close_set(pvfs, h)) {
 			info->standard_info.out.delete_pending = 1;
 			info->standard_info.out.nlink--;
 		}
@@ -388,7 +388,7 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_FILEINFO_ALL_INFO:
 	case RAW_FILEINFO_ALL_INFORMATION:
-		if (pvfs_delete_on_close_set(pvfs, h, NULL, NULL)) {
+		if (pvfs_delete_on_close_set(pvfs, h)) {
 			info->all_info.out.delete_pending = 1;
 			info->all_info.out.nlink--;
 		}
@@ -407,7 +407,7 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
-		if (pvfs_delete_on_close_set(pvfs, h, NULL, NULL)) {
+		if (pvfs_delete_on_close_set(pvfs, h)) {
 			info->all_info2.out.delete_pending = 1;
 			info->all_info2.out.nlink--;
 		}

@@ -143,7 +143,7 @@ static void pam_auth_crap_recv_logon(struct composite_context *ctx)
 	if (!composite_is_ok(state->ctx)) return;
 
 	ndr_err = ndr_push_struct_blob(
-		&tmp_blob, state, lp_iconv_convenience(global_loadparm), 
+		&tmp_blob, state, lp_iconv_convenience(state->lp_ctx), 
 		state->req->out.validation.sam3,
 		(ndr_push_flags_fn_t)ndr_push_netr_SamInfo3);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

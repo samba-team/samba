@@ -150,7 +150,7 @@ struct composite_context *smb_composite_fetchfile_send(struct smb_composite_fetc
 	state->connect->in.options	= io->in.options;
 
 	state->creq = smb_composite_connect_send(state->connect, state, 
-						 lp_resolve_context(global_loadparm), event_ctx);
+						 io->in.resolve_ctx, event_ctx);
 	if (state->creq == NULL) goto failed;
 
 	state->creq->async.private_data = c;

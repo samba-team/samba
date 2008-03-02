@@ -49,6 +49,8 @@ struct wrepl_socket {
 
 	/* remember if we need to free the wrepl_socket at the end of wrepl_socket_dead() */
 	bool free_skipped;
+
+	struct smb_iconv_convenience *iconv_convenience;
 };
 
 struct wrepl_send_ctrl {

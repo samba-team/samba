@@ -856,20 +856,17 @@ static int test_strptime(void)
 	return libreplace_test_strptime();
 }
 
+extern int getifaddrs_test(void);
+
 static int test_getifaddrs(void)
 {
-	struct ifaddrs *ifa;
-	int ret;
 
 	printf("test: getifaddrs\n");
 
-	ret = getifaddrs(&ifa);
-	if (ret != 0) {
+	if (getifaddrs_test() != 0) {
 		printf("failure: getifaddrs\n");
 		return false;
 	}
-
-	freeifaddrs(ifa);
 
 	printf("success: getifaddrs\n");
 	return true;

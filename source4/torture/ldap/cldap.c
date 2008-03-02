@@ -38,7 +38,7 @@
 */
 static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 {
-	struct cldap_socket *cldap = cldap_socket_init(tctx, NULL);
+	struct cldap_socket *cldap = cldap_socket_init(tctx, NULL, lp_iconv_convenience(tctx->lp_ctx));
 	NTSTATUS status;
 	struct cldap_netlogon search, empty_search;
 	union nbt_cldap_netlogon n1;
@@ -244,7 +244,7 @@ static void cldap_dump_results(struct cldap_search *search)
 */
 static bool test_cldap_generic(struct torture_context *tctx, const char *dest)
 {
-	struct cldap_socket *cldap = cldap_socket_init(tctx, NULL);
+	struct cldap_socket *cldap = cldap_socket_init(tctx, NULL, lp_iconv_convenience(tctx->lp_ctx));
 	NTSTATUS status;
 	struct cldap_search search;
 	const char *attrs1[] = { "currentTime", "highestCommittedUSN", NULL };

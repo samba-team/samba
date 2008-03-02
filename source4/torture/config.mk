@@ -3,8 +3,7 @@
 SO_VERSION = 0
 VERSION = 0.0.1
 PC_FILE = torture.pc
-PUBLIC_HEADERS = torture.h ui.h
-PUBLIC_PROTO_HEADER = proto.h
+PRIVATE_PROTO_HEADER = proto.h
 OBJ_FILES = \
 		torture.o \
 		ui.o
@@ -13,6 +12,8 @@ PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-UTIL \
 		LIBTALLOC \
 		LIBPOPT
+
+PUBLIC_HEADERS += torture/torture.h torture/ui.h
 
 [SUBSYSTEM::TORTURE_UTIL]
 OBJ_FILES = util_smb.o util_provision.o
@@ -314,9 +315,10 @@ PRIVATE_DEPENDENCIES = \
 		dcerpc \
 		LIBCLI_SMB \
 		SMBREADLINE
-MANPAGE = man/smbtorture.1
 # End BINARY smbtorture
 #################################
+
+MANPAGES += torture/man/smbtorture.1
 
 #################################
 # Start BINARY gentest
@@ -332,9 +334,10 @@ PRIVATE_DEPENDENCIES = \
 		POPT_CREDENTIALS \
 		LIBCLI_SMB \
 		LIBCLI_RAW
-MANPAGE = man/gentest.1
 # End BINARY gentest
 #################################
+
+MANPAGES += torture/man/gentest.1
 
 #################################
 # Start BINARY masktest
@@ -349,9 +352,10 @@ PRIVATE_DEPENDENCIES = \
 		POPT_SAMBA \
 		POPT_CREDENTIALS \
 		LIBCLI_SMB
-MANPAGE = man/masktest.1
 # End BINARY masktest
 #################################
+
+MANPAGES += torture/man/masktest.1
 
 #################################
 # Start BINARY locktest
@@ -366,9 +370,10 @@ PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-UTIL \
 		LIBCLI_SMB \
 		LIBSAMBA-CONFIG
-MANPAGE = man/locktest.1
 # End BINARY locktest
 #################################
+
+MANPAGES += torture/man/locktest.1
 
 COV_TARGET = test
 

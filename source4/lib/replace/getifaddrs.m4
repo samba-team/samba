@@ -49,7 +49,11 @@ AC_TRY_RUN([
 #define AUTOCONF_TEST 1
 #define SOCKET_WRAPPER_NOT_REPLACE
 #include "$libreplacedir/replace.c"
-#include "$libreplacedir/getifaddrs.c"],
+#include "$libreplacedir/inet_ntop.c"
+#include "$libreplacedir/snprintf.c"
+#include "$libreplacedir/getifaddrs.c"
+#define getifaddrs_test main
+#include "$libreplacedir/test/getifaddrs.c"],
            libreplace_cv_HAVE_IFACE_GETIFADDRS=yes,libreplace_cv_HAVE_IFACE_GETIFADDRS=no,libreplace_cv_HAVE_IFACE_GETIFADDRS=cross)])
 if test x"$libreplace_cv_HAVE_IFACE_GETIFADDRS" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_GETIFADDRS,1,[Whether iface getifaddrs is available])
@@ -67,10 +71,15 @@ AC_TRY_RUN([
 #undef _XOPEN_SOURCE_EXTENDED
 #define SOCKET_WRAPPER_NOT_REPLACE
 #include "$libreplacedir/replace.c"
-#include "$libreplacedir/getifaddrs.c"],
+#include "$libreplacedir/inet_ntop.c"
+#include "$libreplacedir/snprintf.c"
+#include "$libreplacedir/getifaddrs.c"
+#define getifaddrs_test main
+#include "$libreplacedir/test/getifaddrs.c"],
            libreplace_cv_HAVE_IFACE_AIX=yes,libreplace_cv_HAVE_IFACE_AIX=no,libreplace_cv_HAVE_IFACE_AIX=cross)])
 if test x"$libreplace_cv_HAVE_IFACE_AIX" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_AIX,1,[Whether iface AIX is available])
+	old_LIBS="$old_LIBS $LIBS"
 fi
 fi
 
@@ -83,10 +92,15 @@ AC_TRY_RUN([
 #define AUTOCONF_TEST 1
 #define SOCKET_WRAPPER_NOT_REPLACE
 #include "$libreplacedir/replace.c"
-#include "$libreplacedir/getifaddrs.c"],
+#include "$libreplacedir/inet_ntop.c"
+#include "$libreplacedir/snprintf.c"
+#include "$libreplacedir/getifaddrs.c"
+#define getifaddrs_test main
+#include "$libreplacedir/test/getifaddrs.c"],
            libreplace_cv_HAVE_IFACE_IFCONF=yes,libreplace_cv_HAVE_IFACE_IFCONF=no,libreplace_cv_HAVE_IFACE_IFCONF=cross)])
 if test x"$libreplace_cv_HAVE_IFACE_IFCONF" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_IFCONF,1,[Whether iface ifconf is available])
+	old_LIBS="$old_LIBS $LIBS"
 fi
 fi
 
@@ -98,10 +112,15 @@ AC_TRY_RUN([
 #define AUTOCONF_TEST 1
 #define SOCKET_WRAPPER_NOT_REPLACE
 #include "$libreplacedir/replace.c"
-#include "$libreplacedir/getifaddrs.c"],
+#include "$libreplacedir/inet_ntop.c"
+#include "$libreplacedir/snprintf.c"
+#include "$libreplacedir/getifaddrs.c"
+#define getifaddrs_test main
+#include "$libreplacedir/test/getifaddrs.c"],
            libreplace_cv_HAVE_IFACE_IFREQ=yes,libreplace_cv_HAVE_IFACE_IFREQ=no,libreplace_cv_HAVE_IFACE_IFREQ=cross)])
 if test x"$libreplace_cv_HAVE_IFACE_IFREQ" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_IFREQ,1,[Whether iface ifreq is available])
+	old_LIBS="$old_LIBS $LIBS"
 fi
 fi
 

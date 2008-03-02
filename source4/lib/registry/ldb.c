@@ -36,7 +36,9 @@ struct ldb_key_data
 	int subkey_count, value_count;
 };
 
-static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, 
+				 struct smb_iconv_convenience *iconv_convenience,
+				 struct ldb_message *msg,
 				 const char **name, uint32_t *type,
 				 DATA_BLOB *data)
 {
@@ -57,7 +59,7 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 	{
 	case REG_SZ:
 	case REG_EXPAND_SZ:
-		data->length = convert_string_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), CH_UTF8, CH_UTF16,
+		data->length = convert_string_talloc(mem_ctx, iconv_convenience, CH_UTF8, CH_UTF16,
 						     val->data, val->length,
 						     (void **)&data->data);
 		break;
@@ -281,7 +283,7 @@ static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, struct hive_key *k,
 	if (idx >= kd->value_count)
 		return WERR_NO_MORE_ITEMS;
 
-	reg_ldb_unpack_value(mem_ctx, kd->values[idx],
+	reg_ldb_unpack_value(mem_ctx, lp_iconv_convenience(global_loadparm), kd->values[idx],
 			     name, data_type, data);
 
 	return WERR_OK;
@@ -310,7 +312,7 @@ static WERROR ldb_get_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 	if (res->count == 0)
 		return WERR_BADFILE;
 
-	reg_ldb_unpack_value(mem_ctx, res->msgs[0], NULL, data_type, data);
+	reg_ldb_unpack_value(mem_ctx, lp_iconv_convenience(global_loadparm), res->msgs[0], NULL, data_type, data);
 
 	return WERR_OK;
 }
@@ -696,7 +698,9 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 
 			if (max_valbufsize != NULL) {
 				DATA_BLOB data;
-				reg_ldb_unpack_value(mem_ctx, kd->values[i], NULL, 
+				reg_ldb_unpack_value(mem_ctx, 
+						     lp_iconv_convenience(global_loadparm),
+						     kd->values[i], NULL, 
 						     NULL, &data);
 				*max_valbufsize = MAX(*max_valbufsize, data.length);
 				talloc_free(data.data);

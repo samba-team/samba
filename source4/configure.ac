@@ -78,6 +78,8 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb >= 0.9.1,
 			AC_DEFINE_UNQUOTED(LDB_MODULESDIR, "${LDB_MODULESDIR}" , [ldb Modules directory])
 		fi
 		])
+		ldbdir=lib/ldb
+		AC_SUBST(ldbdir)
 		m4_include(lib/ldb/sqlite3.m4)
 		m4_include(lib/ldb/libldb.m4)
 		SMB_INCLUDE_MK(lib/ldb/config.mk)
@@ -226,3 +228,12 @@ AC_FOREACH([AC_Var], m4_defn([_AC_SUBST_VARS]), [
 AC_Var = $AC_Var])
 $MAKE_SETTINGS
 CEOF
+
+if test $USESHARED = true
+then
+	echo "To run binaries without installing, set the following environment variable:"
+	echo "$ac_cv_LIB_PATH_VAR=$builddir/bin/shared"
+fi
+
+echo
+echo "To build Samba, run $ac_cv_path_MAKE"

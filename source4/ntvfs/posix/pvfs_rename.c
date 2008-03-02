@@ -28,15 +28,21 @@
 /*
   do a file rename, and send any notify triggers
 */
-NTSTATUS pvfs_do_rename(struct pvfs_state *pvfs, const struct pvfs_filename *name1, 
+NTSTATUS pvfs_do_rename(struct pvfs_state *pvfs,
+			struct odb_lock *lck,
+			const struct pvfs_filename *name1,
 			const char *name2)
 {
 	const char *r1, *r2;
 	uint32_t mask;
+	NTSTATUS status;
 
 	if (rename(name1->full_name, name2) == -1) {
 		return pvfs_map_errno(pvfs, errno);
 	}
+
+	status = odb_rename(lck, name2);
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	if (name1->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
 		mask = FILE_NOTIFY_CHANGE_DIR_NAME;
@@ -134,12 +140,12 @@ static const char *pvfs_resolve_wildcard_component(TALLOC_CTX *mem_ctx,
   resolve a wildcard rename pattern.
 */
 static const char *pvfs_resolve_wildcard(TALLOC_CTX *mem_ctx, 
+					 struct smb_iconv_convenience *iconv_convenience,
 					 const char *fname, 
 					 const char *pattern)
 {
 	const char *base1, *base2;
 	const char *ext1, *ext2;
-	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 	char *p;
 
 	/* break into base part plus extension */
@@ -181,6 +187,84 @@ static const char *pvfs_resolve_wildcard(TALLOC_CTX *mem_ctx,
 }
 
 /*
+  retry an rename after a sharing violation
+*/
+static void pvfs_retry_rename(struct pvfs_odb_retry *r,
+			      struct ntvfs_module_context *ntvfs,
+			      struct ntvfs_request *req,
+			      void *_io,
+			      void *private_data,
+			      enum pvfs_wait_notice reason)
+{
+	union smb_rename *io = talloc_get_type(_io, union smb_rename);
+	NTSTATUS status = NT_STATUS_INTERNAL_ERROR;
+
+	talloc_free(r);
+
+	switch (reason) {
+	case PVFS_WAIT_CANCEL:
+/*TODO*/
+		status = NT_STATUS_CANCELLED;
+		break;
+	case PVFS_WAIT_TIMEOUT:
+		/* if it timed out, then give the failure
+		   immediately */
+/*TODO*/
+		status = NT_STATUS_SHARING_VIOLATION;
+		break;
+	case PVFS_WAIT_EVENT:
+
+		/* try the open again, which could trigger another retry setup
+		   if it wants to, so we have to unmark the async flag so we
+		   will know if it does a second async reply */
+		req->async_states->state &= ~NTVFS_ASYNC_STATE_ASYNC;
+
+		status = pvfs_rename(ntvfs, req, io);
+		if (req->async_states->state & NTVFS_ASYNC_STATE_ASYNC) {
+			/* the 2nd try also replied async, so we don't send
+			   the reply yet */
+			return;
+		}
+
+		/* re-mark it async, just in case someone up the chain does
+		   paranoid checking */
+		req->async_states->state |= NTVFS_ASYNC_STATE_ASYNC;
+		break;
+	}
+
+	/* send the reply up the chain */
+	req->async_states->status = status;
+	req->async_states->send_fn(req);
+}
+
+/*
+  setup for a rename retry after a sharing violation
+  or a non granted oplock
+*/
+static NTSTATUS pvfs_rename_setup_retry(struct ntvfs_module_context *ntvfs,
+					struct ntvfs_request *req,
+					union smb_rename *io,
+					struct odb_lock *lck,
+					NTSTATUS status)
+{
+	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct timeval end_time;
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+		end_time = timeval_add(&req->statistics.request_time,
+				       0, pvfs->sharing_violation_delay);
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) {
+		end_time = timeval_add(&req->statistics.request_time,
+				       pvfs->oplock_break_timeout, 0);
+	} else {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	return pvfs_odb_retry_setup(ntvfs, req, lck, end_time, io, NULL,
+				    pvfs_retry_rename);
+}
+
+/*
   rename one file from a wildcard set
 */
 static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs, 
@@ -196,7 +280,7 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 	NTSTATUS status;
 
 	/* resolve the wildcard pattern for this name */
-	fname2 = pvfs_resolve_wildcard(mem_ctx, fname1, fname2);
+	fname2 = pvfs_resolve_wildcard(mem_ctx, lp_iconv_convenience(pvfs->ntvfs->ctx->lp_ctx), fname1, fname2);
 	if (fname2 == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -237,11 +321,7 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = pvfs_do_rename(pvfs, name1, fname2);
-
-	if (NT_STATUS_IS_OK(status)) {
-		status = odb_rename(lck, fname2);
-	}
+	status = pvfs_do_rename(pvfs, lck, name1, fname2);
 
 failed:
 	talloc_free(mem_ctx);
@@ -354,14 +434,25 @@ static NTSTATUS pvfs_rename_mv(struct ntvfs_module_context *ntvfs,
 	}
 
 	status = pvfs_can_rename(pvfs, req, name1, &lck);
+	/*
+	 * on a sharing violation we need to retry when the file is closed by
+	 * the other user, or after 1 second
+	 * on a non granted oplock we need to retry when the file is closed by
+	 * the other user, or after 30 seconds
+	 */
+	if ((NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
+	     NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) &&
+	    (req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
+		return pvfs_rename_setup_retry(pvfs->ntvfs, req, ren, lck, status);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(lck);
 		return status;
 	}
 
-	status = pvfs_do_rename(pvfs, name1, name2->full_name);
-	if (NT_STATUS_IS_OK(status)) {
-		status = odb_rename(lck, name2->full_name);
+	status = pvfs_do_rename(pvfs, lck, name1, name2->full_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 	
 	return NT_STATUS_OK;
@@ -377,6 +468,7 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	NTSTATUS status;
 	struct pvfs_filename *name1, *name2;
+	struct odb_lock *lck = NULL;
 
 	switch (ren->ntrename.in.flags) {
 	case RENAME_FLAG_RENAME:
@@ -422,7 +514,18 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	status = pvfs_can_rename(pvfs, req, name1, NULL);
+	status = pvfs_can_rename(pvfs, req, name1, &lck);
+	/*
+	 * on a sharing violation we need to retry when the file is closed by
+	 * the other user, or after 1 second
+	 * on a non granted oplock we need to retry when the file is closed by
+	 * the other user, or after 30 seconds
+	 */
+	if ((NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
+	     NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) &&
+	    (req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
+		return pvfs_rename_setup_retry(pvfs->ntvfs, req, ren, lck, status);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -431,7 +534,7 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 	case RENAME_FLAG_RENAME:
 		status = pvfs_access_check_parent(pvfs, req, name2, SEC_DIR_ADD_FILE);
 		NT_STATUS_NOT_OK_RETURN(status);
-		status = pvfs_do_rename(pvfs, name1, name2->full_name);
+		status = pvfs_do_rename(pvfs, lck, name1, name2->full_name);
 		NT_STATUS_NOT_OK_RETURN(status);
 		break;
 

@@ -7,10 +7,11 @@ OBJ_FILES = \
 	common/open.o common/traverse.o common/freelist.o \
 	common/error.o common/transaction.o
 CFLAGS = -Ilib/tdb/include
-PUBLIC_HEADERS = include/tdb.h
 #
 # End SUBSYSTEM ldb
 ################################################
+
+PUBLIC_HEADERS += $(tdbdir)/include/tdb.h
 
 ################################################
 # Start BINARY tdbtool
