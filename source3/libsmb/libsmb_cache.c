@@ -1,4 +1,3 @@
-
 /* 
    Unix SMB/CIFS implementation.
    SMB client library implementation (server cache)
