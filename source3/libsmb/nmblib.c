@@ -849,9 +849,8 @@ static bool send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
  If buf == NULL this is a length calculation.
 ******************************************************************/
 
-static int build_dgram(char *buf, size_t len, struct packet_struct *p)
+static int build_dgram(char *buf, size_t len, struct dgram_packet *dgram)
 {
-	struct dgram_packet *dgram = &p->packet.dgram;
 	unsigned char *ubuf = (unsigned char *)buf;
 	int offset=0;
 
@@ -926,9 +925,8 @@ bool nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2)
  If buf == NULL this is a length calculation.
 ******************************************************************/
 
-static int build_nmb(char *buf, size_t len, struct packet_struct *p)
+static int build_nmb(char *buf, size_t len, struct nmb_packet *nmb)
 {
-	struct nmb_packet *nmb = &p->packet.nmb;
 	unsigned char *ubuf = (unsigned char *)buf;
 	int offset=0;
 
@@ -1058,11 +1056,11 @@ int build_packet(char *buf, size_t buflen, struct packet_struct *p)
 
 	switch (p->packet_type) {
 	case NMB_PACKET:
-		len = build_nmb(buf,buflen,p);
+		len = build_nmb(buf,buflen,&p->packet.nmb);
 		break;
 
 	case DGRAM_PACKET:
-		len = build_dgram(buf,buflen,p);
+		len = build_dgram(buf,buflen,&p->packet.dgram);
 		break;
 	}
 
