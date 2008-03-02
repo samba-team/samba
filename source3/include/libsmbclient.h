@@ -677,15 +677,14 @@ smbc_getOptionNoAutoAnonymousLogin(SMBCCTX *c);
 void
 smbc_setOptionNoAutoAnonymousLogin(SMBCCTX *c, smbc_bool b);
 
-/** Get the function for obtaining authentication data */
-smbc_get_auth_data_fn smbc_getFunctionAuthData(SMBCCTX *c);
-
-
 
 
 /*************************************
  * Getters and setters for FUNCTIONS *
  *************************************/
+
+/** Get the function for obtaining authentication data */
+smbc_get_auth_data_fn smbc_getFunctionAuthData(SMBCCTX *c);
 
 /** Set the function for obtaining authentication data */
 void smbc_setFunctionAuthData(SMBCCTX *c, smbc_get_auth_data_fn f);
