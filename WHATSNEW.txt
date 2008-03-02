@@ -105,6 +105,68 @@ See examples/scripts/mount/mount.smbfs as an example for a wrapper which
 calls mount.cifs instead of smbmount/mount.smbfs.
 
 
+Modified API for libsmbclient
+==============================================================================
+
+Maintaining ABI compatibility for libsmbclient has become increasingly
+difficult to accomplish, while also keeping the code organization such that it
+is easily readable.  Towards the goal of maintaining ABI compatibility and
+also keeping the code easy to maintain and enhance, the API has changed
+somewhat.  In particular, the fields in the SMBCCTX context structure are no
+longer intended to be read/write by the user.  The names of the fields have
+changed to encourage any recompilations to use the new interface, but for
+continued ABI compatibility, the fields are in the same locations in the
+context structure as they were previously so any previously-compiled
+applications should continue to work with this new version.
+
+An application that previously accessed the members of the SMBCCTX context
+structure will encounter errors if recompiled.  This is intentional to
+encourage implementation of the small changes required for the new interface.
+The number of changes is expected to be quite small for the vast majority of
+applications, and no changes need be made for many applications.  The changes
+required for KDE (konqueror) to conform to the new interface, for example, are
+only four lines in only one file.
+
+Instead of the application manually changing or reading values in the context
+structure, there are now setter and getter functions for each configurable
+member in that structure.  Similarly, the smbc_option_get() and
+smbc_option_set() functions are deprecated in favor of the setter/getter
+interface.  The setters and getters are all documented in libsmbclient.h
+under these comment blocks:
+
+  Getters and setters for CONFIGURATION
+  Getters and setters for OPTIONS
+  Getters and setters for FUNCTIONS
+  Callable functions for files
+  Callable functions for directories
+  Callable functions applicable to both files and directories
+
+Example changes that may be required:
+
+  /* Set the debug level */
+  context->debug = 99;
+changes to:
+  smbc_setDebug(context, 99);
+
+  /* Specify the authentication callback function */
+  context->callbacks.auth_fn = auth_smbc_get_data;
+changes to:
+  smbc_setFunctionAuthData(context, auth_smbc_get_data);
+
+  /* Specify the new-style authentication callback with context parameter */
+  smbc_option_set("auth_function", auth_smbc_get_data_with_ctx);
+changes to:
+  smbc_setFunctionAuthDataWithContext(context, auth_smbc_get_data_with_ctx);
+
+  /* Set kerberos flags */
+  context->flags = (SMB_CTX_FLAG_USE_KERBEROS |
+                    SMB_CTX_FLAG_FALLBACK_AFTER_KERBEROS);
+changes to:
+  smbc_setOptionUseKerberos(context, 1);
+  smbc_setOptionFallbackAfterKerberos(context, 1);
+
+
+
 
 ######################################################################
 Changes
@@ -249,6 +311,9 @@ o   Volker Lendecke <vl@samba.org>
     * Speed up the smbclient "get" command
     * Add the aio_fork module
 
+o   Derrell Lipman <derrell@samba.org>
+    * Modified libsmbclient API for more easily maintaining ABI compatibility
+      while adding new features to libsmbclient.
 
 o   Stefan Metzmacher <metze@samba.org>
     * Refactor Winbind internal parent-child interface tables
