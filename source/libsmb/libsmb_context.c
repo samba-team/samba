@@ -424,7 +424,7 @@ smbc_init_context(SMBCCTX *context)
         
         /* Do not initialise the same client twice */
         if (context->internal->initialized) {
-                return 0;
+                return NULL;
         }
         
         if (!context->server.get_auth_data_fn ||
@@ -446,7 +446,7 @@ smbc_init_context(SMBCCTX *context)
                 
                 /* Set this to what the user wants */
                 DEBUGLEVEL = context->config.debug;
-                
+               
                 load_case_tables();
                 
                 setup_logging("libsmbclient", True);
