@@ -11,7 +11,7 @@ PUBLIC_DEPENDENCIES = \
 #################################
 
 
-gensec_OBJ_LIST = $(addprefix auth/, gensec.o socket.o)
+gensec_OBJ_FILES = $(addprefix auth/gensec/, gensec.o socket.o)
 
 PUBLIC_HEADERS += $(addprefix auth/gensec/, gensec.h spnego.h)
 
