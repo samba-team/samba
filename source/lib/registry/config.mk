@@ -104,3 +104,4 @@ torture_registry_OBJ_FILES = $(addprefix lib/registry/tests/, generic.o hive.o d
 PUBLIC_DEPENDENCIES = registry
 SWIG_FILE = registry.i
 
+swig_registry_OBJ_FILES = lib/registry/registry_wrap.o

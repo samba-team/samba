@@ -151,7 +151,6 @@ sub check_python($$$)
 		$dirname .= "/" unless $dirname =~ /\/$/;
 		$dirname = "" if $dirname eq "./";
 
-		$python->{OBJ_FILES} = ["$dirname$basename\_wrap.o"];
 		$python->{LIBRARY_REALNAME} = "_$basename.\$(SHLIBEXT)";
 		$python->{PYTHON_FILES} = ["$dirname$basename.py"];
 		push (@{$python->{CFLAGS}}, "\$(CFLAG_NO_UNUSED_MACROS)");

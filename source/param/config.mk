@@ -53,3 +53,5 @@ SECRETS_OBJ_FILES = param/secrets.o
 [PYTHON::param]
 SWIG_FILE = param.i
 PRIVATE_DEPENDENCIES = LIBSAMBA-CONFIG
+
+param_OBJ_FILES = param/param_wrap.o

@@ -19,3 +19,5 @@ PUBLIC_HEADERS += $(addprefix libnet/, libnet.h libnet_join.h libnet_lookup.h li
 [PYTHON::swig_net]
 PRIVATE_DEPENDENCIES = LIBSAMBA-NET
 SWIG_FILE = net.i
+
+swig_net_OBJ_FILES = libnet/net_wrap.o

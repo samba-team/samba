@@ -58,9 +58,13 @@ LIBCLI_NBT_OBJ_FILES = $(addprefix libcli/nbt/, \
 SWIG_FILE = swig/libcli_nbt.i
 PUBLIC_DEPENDENCIES = LIBCLI_NBT DYNCONFIG LIBSAMBA-CONFIG
 
+python_libcli_nbt_OBJ_FILES = libcli/swig/libcli_nbt_wrap.o
+
 [PYTHON::python_libcli_smb]
 SWIG_FILE = swig/libcli_smb.i
 PUBLIC_DEPENDENCIES = LIBCLI_SMB DYNCONFIG LIBSAMBA-CONFIG
+
+python_libcli_smb_OBJ_FILES = libcli/swig/libcli_smb_wrap.o
 
 [SUBSYSTEM::LIBCLI_DGRAM]
 PUBLIC_DEPENDENCIES = LIBCLI_NBT LIBNDR LIBCLI_RESOLVE

@@ -14,3 +14,5 @@ PUBLIC_HEADERS += $(addprefix auth/credentials/, credentials.h credentials_krb5.
 [PYTHON::swig_credentials]
 PUBLIC_DEPENDENCIES = CREDENTIALS LIBCMDLINE_CREDENTIALS
 SWIG_FILE = credentials.i
+
+swig_credentials_OBJ_FILES = auth/credentials/credentials_wrap.o
