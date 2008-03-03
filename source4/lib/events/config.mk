@@ -1,40 +1,44 @@
 ##############################
 [MODULE::EVENTS_AIO]
-OBJ_FILES = events_aio.o
 PRIVATE_DEPENDENCIES = LIBAIO_LINUX
 SUBSYSTEM = LIBEVENTS
 INIT_FUNCTION = s4_events_aio_init
 ##############################
 
+EVENTS_AIO_OBJ_FILES = lib/events/events_aio.o
+
 ##############################
 [MODULE::EVENTS_EPOLL]
-OBJ_FILES = events_epoll.o
 SUBSYSTEM = LIBEVENTS
 INIT_FUNCTION = s4_events_epoll_init
 ##############################
 
+EVENTS_EPOLL_OBJ_FILES = lib/events/events_epoll.o
+
 ##############################
 [MODULE::EVENTS_SELECT]
-OBJ_FILES = events_select.o
 SUBSYSTEM = LIBEVENTS
 INIT_FUNCTION = s4_events_select_init
 ##############################
 
+EVENTS_SELECT_OBJ_FILES = lib/events/events_select.o
+
 ##############################
 [MODULE::EVENTS_STANDARD]
-OBJ_FILES = events_standard.o
 SUBSYSTEM = LIBEVENTS
 INIT_FUNCTION = s4_events_standard_init
 ##############################
 
+EVENTS_STANDARD_OBJ_FILES = lib/events/events_standard.o
 
 ##############################
 # Start SUBSYSTEM LIBEVENTS
 [SUBSYSTEM::LIBEVENTS]
-OBJ_FILES = events.o events_timed.o events_signal.o
 PUBLIC_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL
 # End SUBSYSTEM LIBEVENTS
 ##############################
+
+LIBEVENTS_OBJ_FILES = $(addprefix lib/events/, events.o events_timed.o events_signal.o)
 
 PUBLIC_HEADERS += $(addprefix lib/events/, events.h events_internal.h)
 

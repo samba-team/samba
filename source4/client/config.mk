@@ -4,8 +4,6 @@
 # Start BINARY smbclient
 [BINARY::smbclient]
 INSTALLDIR = BINDIR
-OBJ_FILES = \
-		client.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-CONFIG \
 		SMBREADLINE \
@@ -20,13 +18,12 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY smbclient
 #################################
 
+smbclient_OBJ_FILES = client/client.o
+
 #################################
 # Start BINARY cifsdd
 [BINARY::cifsdd]
 INSTALLDIR = BINDIR
-OBJ_FILES = \
-		cifsdd.o \
-		cifsddio.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-CONFIG \
 		LIBCLI_SMB \
@@ -36,3 +33,4 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY sdd
 #################################
 
+cifsdd_OBJ_FILES = client/cifsdd.o client/cifsddio.o

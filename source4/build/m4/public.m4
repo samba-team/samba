@@ -31,7 +31,6 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 ###################################
 # Start Subsystem $1
 @<:@SUBSYSTEM::$1@:>@
-OBJ_FILES = \$($1_OBJ_FILES)
 PRIVATE_DEPENDENCIES = $3
 CFLAGS = \$($1_CFLAGS)
 ENABLE = YES
@@ -54,7 +53,6 @@ SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
 ###################################
 # Start Library $1
 @<:@LIBRARY::$1@:>@
-OBJ_FILES = \$($1_OBJ_FILES)
 PRIVATE_DEPENDENCIES = $3
 VERSION = $4
 SO_VERSION = $5 

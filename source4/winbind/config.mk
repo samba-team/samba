@@ -6,7 +6,19 @@
 INIT_FUNCTION = server_service_winbind_init
 SUBSYSTEM = service
 PRIVATE_PROTO_HEADER = wb_proto.h
-OBJ_FILES = \
+PRIVATE_DEPENDENCIES = \
+		WB_HELPER \
+		IDMAP \
+		NDR_WINBIND \
+		process_model \
+		RPC_NDR_LSA \
+		dcerpc_samr \
+		PAM_ERRORS \
+		LIBCLI_LDAP
+# End SUBSYSTEM WINBIND
+#######################
+
+WINBIND_OBJ_FILES = $(addprefix winbind/, \
 		wb_server.o \
 		wb_irpc.o \
 		wb_samba3_protocol.o \
@@ -34,36 +46,24 @@ OBJ_FILES = \
 		wb_cmd_setpwent.o \
 		wb_cmd_getpwent.o \
 		wb_pam_auth.o \
-		wb_sam_logon.o
-PRIVATE_DEPENDENCIES = \
-		WB_HELPER \
-		IDMAP \
-		NDR_WINBIND \
-		process_model \
-		RPC_NDR_LSA \
-		dcerpc_samr \
-		PAM_ERRORS \
-		LIBCLI_LDAP
-# End SUBSYSTEM WINBIND
-#######################
+		wb_sam_logon.o)
 
 ################################################
 # Start SUBYSTEM WB_HELPER
 [SUBSYSTEM::WB_HELPER]
 PRIVATE_PROTO_HEADER = wb_helper.h
-OBJ_FILES = \
-		wb_async_helpers.o \
-		wb_utils.o
 PUBLIC_DEPENDENCIES = RPC_NDR_LSA dcerpc_samr
 # End SUBSYSTEM WB_HELPER
 ################################################
+
+WB_HELPER_OBJ_FILES = $(addprefix winbind/, wb_async_helpers.o wb_utils.o)
 
 ################################################
 # Start SUBYSTEM IDMAP
 [SUBSYSTEM::IDMAP]
 PRIVATE_PROTO_HEADER = idmap_proto.h
-OBJ_FILES = \
-		idmap.o
 PUBLIC_DEPENDENCIES = SAMDB_COMMON
 # End SUBSYSTEM IDMAP
 ################################################
+
+IDMAP_OBJ_FILES = winbind/idmap.o

@@ -1,15 +1,18 @@
 [BINARY::smbpython]
 PRIVATE_DEPENDENCIES = LIBPYTHON
-OBJ_FILES = smbpython.o
+
+smbpython_OBJ_FILES = scripting/python/smbpython.o
 
 [SUBSYSTEM::LIBPYTHON]
 PUBLIC_DEPENDENCIES = EXT_LIB_PYTHON
 INIT_FUNCTION_SENTINEL = { NULL, NULL }
-OBJ_FILES = modules.o pytalloc.o
+
+LIBPYTHON_OBJ_FILES = $(addprefix scripting/python/, modules.o pytalloc.o)
 
 [PYTHON::python_uuid]
 PRIVATE_DEPENDENCIES = LIBNDR 
-OBJ_FILES = uuidmodule.o
+
+python_uuid_OBJ_FILES = scripting/python/uuidmodule.o
 
 [PYTHON::python_misc]
 PRIVATE_DEPENDENCIES = LIBNDR LIBLDB SAMDB CREDENTIALS
