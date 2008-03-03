@@ -127,7 +127,7 @@ class Ldb(ldb.Ldb):
             try:
                 self.delete(msg.dn)
             except ldb.LdbError, (LDB_ERR_NO_SUCH_OBJECT, _):
-                # Ignor eno such object errors
+                # Ignore no such object errors
                 pass
 
         res = self.search(basedn, ldb.SCOPE_SUBTREE, "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))", ["distinguishedName"])
@@ -151,7 +151,14 @@ class Ldb(ldb.Ldb):
                 previous_remaining = current_remaining
                 current_remaining = len(res2)
                 for msg in res2:
-                    self.delete(msg.dn)
+                    try:
+                        self.delete(msg.dn)
+                    # Ignore no such object errors
+                    except ldb.LdbError, (LDB_ERR_NO_SUCH_OBJECT, _):
+                        pass
+                    # Ignore not allowed on non leaf errors
+                    except ldb.LdbError, (LDB_ERR_NOT_ALLOWED_ON_NON_LEAF, _):
+                        pass
 
     def load_ldif_file_add(self, ldif_path):
         """Load a LDIF file.

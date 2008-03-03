@@ -144,8 +144,8 @@ static NTSTATUS pvfs_open_setup_eas_acl(struct pvfs_state *pvfs,
   form the lock context used for opendb locking. Note that we must
   zero here to take account of possible padding on some architectures
 */
-static NTSTATUS pvfs_locking_key(struct pvfs_filename *name, 
-				 TALLOC_CTX *mem_ctx, DATA_BLOB *key)
+NTSTATUS pvfs_locking_key(struct pvfs_filename *name,
+			  TALLOC_CTX *mem_ctx, DATA_BLOB *key)
 {
 	struct {
 		dev_t device;
