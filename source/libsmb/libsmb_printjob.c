@@ -75,7 +75,7 @@ SMBC_open_print_job_ctx(SMBCCTX *context,
         /* What if the path is empty, or the file exists? */
         
 	TALLOC_FREE(frame);
-        return (context->posix_emu.open_fn)(context, fname, O_WRONLY, 666);
+        return smbc_getFunctionOpen(context)(context, fname, O_WRONLY, 666);
 }
 
 /*
@@ -222,7 +222,7 @@ SMBC_list_print_jobs_ctx(SMBCCTX *context,
         }
         
         if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->config.user);
+		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -300,7 +300,7 @@ SMBC_unlink_print_job_ctx(SMBCCTX *context,
         }
         
         if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->config.user);
+		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);

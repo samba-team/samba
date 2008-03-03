@@ -775,6 +775,7 @@ LIBSMBCLIENT_OBJ0 = \
 		    libsmb/libsmb_server.o \
 		    libsmb/libsmb_stat.o \
 		    libsmb/libsmb_xattr.o \
+		    libsmb/libsmb_setget.o \
 		    $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		    $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		    $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) \
