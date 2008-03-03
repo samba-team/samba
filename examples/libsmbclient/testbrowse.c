@@ -122,7 +122,7 @@ main(int argc, char * argv[])
         /* ... then set the option to do so */
         smbc_setOptionDebugToStderr(context, 1);
     }
-	
+
     /* Initialize the context using the previously specified options */
     if (!smbc_init_context(context)) {
         smbc_free_context(context, 0);

@@ -2767,7 +2767,7 @@ struct _SMBCCTX
          * DEPRECATED:
          * Use smbc_getServerCacheData(), smbc_setServerCacheData()
          */
-        void * reserved; /* space where server_cache_data used to be */
+        void * reserved _DEPRECATED_;
 
         /*
          * Very old configuration options.
@@ -2796,7 +2796,7 @@ struct _SMBCCTX
                 int browse_max_lmb_count _DEPRECATED_;
                 int urlencode_readdir_entries _DEPRECATED_;
                 int one_share_per_server _DEPRECATED_;
-        } options;
+        } options _DEPRECATED_;
 	
 	/** INTERNAL DATA
 	 * do _NOT_ touch this from your program !
