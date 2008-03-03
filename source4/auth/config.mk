@@ -106,3 +106,5 @@ PUBLIC_HEADERS += auth/auth.h
 PUBLIC_DEPENDENCIES = auth_system_session
 PRIVATE_DEPENDENCIES = SAMDB 
 SWIG_FILE = auth.i
+
+swig_auth_OBJ_FILES = auth/auth_wrap.o

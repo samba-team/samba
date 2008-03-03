@@ -708,6 +708,8 @@ RPC_EJS_IRPC_OBJ_FILES = librpc/gen_ndr/ndr_irpc_ejs.o
 SWIG_FILE = rpc/dcerpc.i
 PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-CONFIG dcerpc_samr RPC_NDR_LSA DYNCONFIG
 
+swig_dcerpc_OBJ_FILES = librpc/dcerpc_wrap.o
+
 [PYTHON::python_echo]
 PRIVATE_DEPENDENCIES = RPC_NDR_ECHO
 

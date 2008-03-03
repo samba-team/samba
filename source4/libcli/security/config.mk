@@ -10,3 +10,5 @@ LIBSECURITY_OBJ_FILES = $(addprefix libcli/security/, \
 [PYTHON::swig_security]
 SWIG_FILE = security.i
 PRIVATE_DEPENDENCIES = LIBSECURITY
+
+swig_security_OBJ_FILES = libcli/security/security_wrap.o

@@ -65,11 +65,9 @@ sub generate_merged_obj($)
 	my $link_name = $lib->{NAME};
 	$link_name =~ s/^LIB//;
 
-	if (defined($lib->{OBJ_FILES})) {
-		$lib->{MERGED_OBJNAME} = lc($link_name).".o";
-		$lib->{RESULT_MERGED_OBJ} = $lib->{OUTPUT_MERGED_OBJ} = "bin/mergedobj/$lib->{MERGED_OBJNAME}";
-		$lib->{TARGET_MERGED_OBJ} = $lib->{RESULT_MERGED_OBJ};
-	}
+	$lib->{MERGED_OBJNAME} = lc($link_name).".o";
+	$lib->{RESULT_MERGED_OBJ} = $lib->{OUTPUT_MERGED_OBJ} = "bin/mergedobj/$lib->{MERGED_OBJNAME}";
+	$lib->{TARGET_MERGED_OBJ} = $lib->{RESULT_MERGED_OBJ};
 }
 
 sub generate_static_library($)
