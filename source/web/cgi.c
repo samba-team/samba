@@ -202,19 +202,19 @@ void cgi_load_variables(void)
 	   to our internal unix charset before use */
 	for (i=0;i<num_variables;i++) {
 		TALLOC_CTX *frame = talloc_stackframe();
-		char *dest;
+		char *dest = NULL;
+		size_t dest_len;
 
-		dest = NULL;
 		convert_string_allocate(frame, CH_UTF8, CH_UNIX,
 			       variables[i].name, -1,
-			       &dest, True);
+			       &dest, &dest_len, True);
 		SAFE_FREE(variables[i].name);
 		variables[i].name = SMB_STRDUP(dest ? dest : "");
 
 		dest = NULL;
 		convert_string_allocate(frame, CH_UTF8, CH_UNIX,
 			       variables[i].value, -1,
-			       &dest, True);
+			       &dest, &dest_len, True);
 		SAFE_FREE(variables[i].value);
 		variables[i].value = SMB_STRDUP(dest ? dest : "");
 		TALLOC_FREE(frame);

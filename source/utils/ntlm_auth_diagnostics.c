@@ -470,17 +470,16 @@ static bool test_plaintext(enum ntlm_break break_which)
 		exit(1);
 	}
 
-	if ((convert_string_allocate(NULL, CH_UNIX, 
+	if (!convert_string_allocate(NULL, CH_UNIX,
 				     CH_DOS, password,
 				     strlen(password)+1, 
-				     &lm_response.data,True)) == -1) {
+				     &lm_response.data,
+				     &lm_response.length, True)) {
 		DEBUG(0, ("convert_string_allocate failed!\n"));
 		exit(1);
 	}
 
 	SAFE_FREE(password);
-
-	lm_response.length = strlen((const char *)lm_response.data);
 
 	switch (break_which) {
 	case BREAK_NONE:
