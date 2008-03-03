@@ -714,6 +714,25 @@ static NTSTATUS odb_tdb_rename(struct odb_lock *lck, const char *path)
 }
 
 /*
+  get the path of an open file
+*/
+static NTSTATUS odb_tdb_get_path(struct odb_lock *lck, const char **path)
+{
+	struct opendb_file file;
+	NTSTATUS status;
+
+	*path = NULL;
+
+	status = odb_pull_record(lck, &file);
+	/* we don't ignore NT_STATUS_OBJECT_NAME_NOT_FOUND here */
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	*path = file.path;
+
+	return NT_STATUS_OK;
+}
+
+/*
   update delete on close flag on an open file
 */
 static NTSTATUS odb_tdb_set_delete_on_close(struct odb_lock *lck, bool del_on_close)
@@ -802,6 +821,7 @@ static const struct opendb_ops opendb_tdb_ops = {
 	.odb_close_file          = odb_tdb_close_file,
 	.odb_remove_pending      = odb_tdb_remove_pending,
 	.odb_rename              = odb_tdb_rename,
+	.odb_get_path            = odb_tdb_get_path,
 	.odb_set_delete_on_close = odb_tdb_set_delete_on_close,
 	.odb_get_delete_on_close = odb_tdb_get_delete_on_close,
 	.odb_can_open            = odb_tdb_can_open,

@@ -22,6 +22,13 @@ HOSTLD_FLAGS = $(LDFLAGS) $(SYS_LDFLAGS)
 $(srcdir)/version.h: $(srcdir)/VERSION
 	@$(SHELL) script/mkversion.sh VERSION $(srcdir)/version.h $(srcdir)/
 
+.DEFAULT_GOAL := all
+
+ifneq ($(automatic_deps),yes)
+ALL_PREDEP = proto
+.NOTPARALLEL:
+endif
+
 regen_version::
 	@$(SHELL) script/mkversion.sh VERSION $(srcdir)/version.h $(srcdir)/
 

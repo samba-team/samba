@@ -55,18 +55,66 @@ static WERROR reg_dir_add_key(TALLOC_CTX *mem_ctx,
 	return WERR_GENERAL_FAILURE;
 }
 
+static WERROR reg_dir_delete_recursive(const char *name)
+{
+	DIR *d;
+	struct dirent *e;
+	WERROR werr;
+
+	d = opendir(name);
+	if (d == NULL) {
+		DEBUG(3,("Unable to open '%s': %s\n", name,
+		      strerror(errno)));
+		return WERR_BADFILE;
+	}
+
+	while((e = readdir(d))) {
+		char *path;
+		struct stat stbuf;
+
+		if (ISDOT(e->d_name) || ISDOTDOT(e->d_name))
+			continue;
+
+		path = talloc_asprintf(name, "%s/%s", name, e->d_name);
+		if (!path)
+			return WERR_NOMEM;
+
+		stat(path, &stbuf);
+
+		if (!S_ISDIR(stbuf.st_mode)) {
+			if (unlink(path) < 0) {
+				talloc_free(path);
+				closedir(d);
+				return WERR_GENERAL_FAILURE;
+			}
+		} else {
+			werr = reg_dir_delete_recursive(path);
+			if (!W_ERROR_IS_OK(werr)) {
+				talloc_free(path);
+				closedir(d);
+				return werr;
+			}
+		}
+
+		talloc_free(path);
+	}
+	closedir(d);
+
+	if (rmdir(name) == 0)
+		return WERR_OK;
+	else if (errno == ENOENT)
+		return WERR_BADFILE;
+	else
+		return WERR_GENERAL_FAILURE;
+}
+
 static WERROR reg_dir_del_key(const struct hive_key *k, const char *name)
 {
 	struct dir_key *dk = talloc_get_type(k, struct dir_key);
 	char *child = talloc_asprintf(NULL, "%s/%s", dk->path, name);
 	WERROR ret;
 
-	if (rmdir(child) == 0)
-		ret = WERR_OK;
-	else if (errno == ENOENT)
-		ret = WERR_BADFILE;
-	else
-		ret = WERR_GENERAL_FAILURE;
+	ret = reg_dir_delete_recursive(child);
 
 	talloc_free(child);
 

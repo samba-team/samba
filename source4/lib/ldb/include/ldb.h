@@ -290,7 +290,7 @@ char *ldb_filter_from_tree(TALLOC_CTX *mem_ctx, struct ldb_parse_tree *tree);
    2254 (Section 4). This function also escapes any non-printable
    characters.
 
-   \param ctx the memory context to allocate the return string in.
+   \param mem_ctx the memory context to allocate the return string in.
    \param val the (potentially) binary data to be encoded
 
    \return the encoded data as a null terminated string
@@ -886,7 +886,7 @@ int ldb_search_default_callback(struct ldb_context *ldb, void *context, struct l
   \param attrs the search attributes for the query (pass NULL if none required)
   \param controls an array of controls
   \param context the callback function context
-  \param the callback function to handle the async replies
+  \param callback the callback function to handle the async replies
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
@@ -911,7 +911,7 @@ int ldb_build_search_req(struct ldb_request **ret_req,
   \param message contains the entry to be added 
   \param controls an array of controls
   \param context the callback function context
-  \param the callback function to handle the async replies
+  \param callback the callback function to handle the async replies
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
@@ -933,7 +933,7 @@ int ldb_build_add_req(struct ldb_request **ret_req,
   \param message contains the entry to be modified
   \param controls an array of controls
   \param context the callback function context
-  \param the callback function to handle the async replies
+  \param callback the callback function to handle the async replies
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
@@ -955,7 +955,7 @@ int ldb_build_mod_req(struct ldb_request **ret_req,
   \param dn the DN to be deleted
   \param controls an array of controls
   \param context the callback function context
-  \param the callback function to handle the async replies
+  \param callback the callback function to handle the async replies
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
@@ -978,7 +978,7 @@ int ldb_build_del_req(struct ldb_request **ret_req,
   \param newdn the new DN
   \param controls an array of controls
   \param context the callback function context
-  \param the callback function to handle the async replies
+  \param callback the callback function to handle the async replies
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
@@ -997,7 +997,7 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
 
   \param req the request struct where to add the control
   \param oid the object identifier of the control as string
-  \param ciritical whether the control should be critical or not
+  \param critical whether the control should be critical or not
   \param data a talloc pointer to the control specific data
 
   \return result code (LDB_SUCCESS on success, or a failure code)
@@ -1137,7 +1137,7 @@ int ldb_extended_default_callback(struct ldb_context *ldb, void *context, struct
   it needs to be NULL or a valid talloc pointer! talloc_get_type() will be used on it  
   \param controls an array of controls
   \param context the callback function context
-  \param the callback function to handle the async replies
+  \param callback the callback function to handle the async replies
 
   \return result code (LDB_SUCCESS on success, or a failure code)
 */
@@ -1226,6 +1226,7 @@ int ldb_valid_attr_name(const char *s);
 /*
   ldif manipulation functions
 */
+
 /**
    Write an LDIF message
 
@@ -1418,8 +1419,8 @@ bool ldb_dn_is_null(struct ldb_dn *dn);
    This function compares to attribute names. Note that this is a
    case-insensitive comparison.
 
-   \param attr1 the first attribute name to compare
-   \param attr2 the second attribute name to compare
+   \param a the first attribute name to compare
+   \param b the second attribute name to compare
 
    \return 0 if the attribute names are the same, or only differ in
    case; non-zero if there are any differences
@@ -1562,6 +1563,7 @@ int ldb_msg_check_string_attribute(const struct ldb_message *msg,
    This function performs basic sanity / integrity checks on an
    ldb_message.
 
+   \param ldb context in which to perform the checks
    \param msg the message to check
 
    \return LDB_SUCCESS if the message is OK, or a non-zero error code

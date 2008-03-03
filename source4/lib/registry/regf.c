@@ -1618,10 +1618,55 @@ static WERROR regf_del_key(const struct hive_key *parent, const char *name)
 		return WERR_BADFILE;
 	}
 
-	if (key->nk->subkeys_offset != -1 ||
-		key->nk->values_offset != -1) {
-		DEBUG(0, ("Key '%s' is not empty.\n", name));
-		return WERR_FILE_EXISTS;
+	if (key->nk->subkeys_offset != -1) {
+		char *sk_name;
+		struct hive_key *sk = (struct hive_key *)key;
+		int i = key->nk->num_subkeys;
+		while (i--) {
+			/* Get subkey information. */
+			error = regf_get_subkey_by_index(parent_nk, sk, 0,
+							 (const char **)&sk_name,
+							 NULL, NULL);
+			if (!W_ERROR_IS_OK(error)) {
+				DEBUG(0, ("Can't retrieve subkey by index.\n"));
+				return error;
+			}
+
+			/* Delete subkey. */
+			error = regf_del_key(sk, sk_name);
+			if (!W_ERROR_IS_OK(error)) {
+				DEBUG(0, ("Can't delete key '%s'.\n", sk_name));
+				return error;
+			}
+
+			talloc_free(sk_name);
+		}
+	}
+
+	if (key->nk->values_offset != -1) {
+		char *val_name;
+		struct hive_key *sk = (struct hive_key *)key;
+		DATA_BLOB data;
+		int i = key->nk->num_values;
+		while (i--) {
+			/* Get value information. */
+			error = regf_get_value(parent_nk, sk, 0,
+					       (const char **)&val_name,
+					       NULL, &data);
+			if (!W_ERROR_IS_OK(error)) {
+				DEBUG(0, ("Can't retrieve value by index.\n"));
+				return error;
+			}
+
+			/* Delete value. */
+			error = regf_del_value(sk, val_name);
+			if (!W_ERROR_IS_OK(error)) {
+				DEBUG(0, ("Can't delete value '%s'.\n", val_name));
+				return error;
+			}
+
+			talloc_free(val_name);
+		}
 	}
 
 	/* Delete it from the subkey list. */
