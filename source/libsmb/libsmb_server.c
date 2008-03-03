@@ -80,7 +80,7 @@ SMBC_remove_unused_server(SMBCCTX * context,
         
 	DEBUG(3, ("smbc_remove_usused_server: %p removed.\n", srv));
         
-	(context->cache.remove_cached_server_fn)(context, srv);
+	smbc_getFunctionRemoveCachedServer(context)(context, srv);
         
         SAFE_FREE(srv);
 	return 0;
@@ -106,11 +106,10 @@ SMBC_call_auth_fn(TALLOC_CTX *ctx,
 	strlcpy(username, *pp_username, sizeof(username));
 	strlcpy(password, *pp_password, sizeof(password));
         
-        (context->server.get_auth_data_fn)(
-                server, share,
-                workgroup, sizeof(workgroup),
-                username, sizeof(username),
-                password, sizeof(password));
+        smbc_getFunctionAuthData(context)(server, share,
+                                          workgroup, sizeof(workgroup),
+                                          username, sizeof(username),
+                                          password, sizeof(password));
         
 	TALLOC_FREE(*pp_workgroup);
 	TALLOC_FREE(*pp_username);
@@ -147,10 +146,10 @@ SMBC_find_server(TALLOC_CTX *ctx,
         
 check_server_cache:
         
-	srv = (context->cache.get_cached_server_fn)(context,
-                                                    server, share,
-                                                    *pp_workgroup,
-                                                    *pp_username);
+	srv = smbc_getFunctionGetCachedServer(context)(context,
+                                                       server, share,
+                                                       *pp_workgroup,
+                                                       *pp_username);
         
 	if (!auth_called && !srv && (!*pp_username || !(*pp_username)[0] ||
                                      !*pp_password || !(*pp_password)[0])) {
@@ -172,22 +171,22 @@ check_server_cache:
 	}
         
 	if (srv) {
-		if ((context->server.check_server_fn)(context, srv)) {
+		if (smbc_getFunctionCheckServer(context)(context, srv)) {
 			/*
                          * This server is no good anymore
                          * Try to remove it and check for more possible
                          * servers in the cache
                          */
-			if ((context->server.remove_unused_server_fn)(context,
-                                                                      srv)) { 
+			if (smbc_getFunctionRemoveUnusedServer(context)(context,
+                                                                        srv)) { 
                                 /*
                                  * We could not remove the server completely,
                                  * remove it from the cache so we will not get
                                  * it again. It will be removed when the last
                                  * file/dir is closed.
                                  */
-				(context->cache.remove_cached_server_fn)(context,
-                                                                         srv);
+				smbc_getFunctionRemoveCachedServer(context)(context,
+                                                                            srv);
 			}
                         
 			/*
@@ -251,12 +250,14 @@ SMBC_server(TALLOC_CTX *ctx,
          * If we found a connection and we're only allowed one share per
          * server...
          */
-        if (srv && *share != '\0' && context->options.one_share_per_server) {
+        if (srv &&
+            *share != '\0' &&
+            smbc_getOptionOneSharePerServer(context)) {
                 
                 /*
                  * ... then if there's no current connection to the share,
                  * connect to it.  SMBC_find_server(), or rather the function
-                 * pointed to by context->cache.get_cached_srv_fn which
+                 * pointed to by context->get_cached_srv_fn which
                  * was called by SMBC_find_server(), will have issued a tree
                  * disconnect if the requested share is not the same as the
                  * one that was already connected.
@@ -272,8 +273,8 @@ SMBC_server(TALLOC_CTX *ctx,
 				errno = ENOMEM;
 				cli_shutdown(srv->cli);
 				srv->cli = NULL;
-				(context->cache.remove_cached_server_fn)(context,
-                                                                         srv);
+				smbc_getFunctionRemoveCachedServer(context)(context,
+                                                                            srv);
 				return NULL;
 			}
                         
@@ -290,8 +291,8 @@ SMBC_server(TALLOC_CTX *ctx,
                                 errno = SMBC_errno(context, srv->cli);
                                 cli_shutdown(srv->cli);
 				srv->cli = NULL;
-                                (context->cache.remove_cached_server_fn)(context,
-                                                                         srv);
+                                smbc_getFunctionRemoveCachedServer(context)(context,
+                                                                            srv);
                                 srv = NULL;
                         }
                         
@@ -324,7 +325,7 @@ SMBC_server(TALLOC_CTX *ctx,
 		return NULL;
 	}
         
-	make_nmb_name(&calling, context->config.netbios_name, 0x0);
+	make_nmb_name(&calling, smbc_getNetbiosName(context), 0x0);
 	make_nmb_name(&called , server, 0x20);
         
 	DEBUG(4,("SMBC_server: server_n=[%s] server=[%s]\n", server_n, server));
@@ -341,14 +342,15 @@ again:
 		return NULL;
 	}
         
-	if (context->flags.bits & SMB_CTX_FLAG_USE_KERBEROS) {
+        if (smbc_getOptionUseKerberos(context)) {
 		c->use_kerberos = True;
 	}
-	if (context->flags.bits & SMB_CTX_FLAG_FALLBACK_AFTER_KERBEROS) {
+
+        if (smbc_getOptionFallbackAfterKerberos(context)) {
 		c->fallback_after_kerberos = True;
 	}
         
-	c->timeout = context->config.timeout;
+	c->timeout = smbc_getTimeout(context);
         
         /*
          * Force use of port 139 for first try if share is $IPC, empty, or
@@ -435,8 +437,7 @@ again:
                 /* Failed.  Try an anonymous login, if allowed by flags. */
                 username_used = "";
                 
-                if ((context->flags.bits &
-                     SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON) ||
+                if (smbc_getOptionNoAutoAnonymousLogin(context) ||
                     !NT_STATUS_IS_OK(cli_session_setup(c, username_used,
                                                        *pp_password, 1,
                                                        *pp_password, 0,
@@ -504,10 +505,10 @@ again:
 	/* now add it to the cache (internal or external)  */
 	/* Let the cache function set errno if it wants to */
 	errno = 0;
-	if ((context->cache.add_cached_server_fn)(context, srv,
-                                                  server, share,
-                                                  *pp_workgroup,
-                                                  *pp_username)) {
+	if (smbc_getFunctionAddCachedServer(context)(context, srv,
+                                                     server, share,
+                                                     *pp_workgroup,
+                                                     *pp_username)) {
 		int saved_errno = errno;
 		DEBUG(3, (" Failed to add server to cache\n"));
 		errno = saved_errno;
@@ -576,7 +577,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                 }
                 
                 flags = 0;
-                if (context->flags.bits & SMB_CTX_FLAG_USE_KERBEROS) {
+                if (smbc_getOptionUseKerberos(context)) {
                         flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
                 }
                 
@@ -664,11 +665,11 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                 /* now add it to the cache (internal or external) */
                 
                 errno = 0;      /* let cache function set errno if it likes */
-                if ((context->cache.add_cached_server_fn)(context, ipc_srv,
-                                                          server,
-                                                          "*IPC$",
-                                                          *pp_workgroup,
-                                                          *pp_username)) {
+                if (smbc_getFunctionAddCachedServer(context)(context, ipc_srv,
+                                                             server,
+                                                             "*IPC$",
+                                                             *pp_workgroup,
+                                                             *pp_username)) {
                         DEBUG(3, (" Failed to add server to cache\n"));
                         if (errno == 0) {
                                 errno = ENOMEM;

@@ -25,6 +25,13 @@
 #ifndef SMBCLIENT_H_INCLUDED
 #define SMBCLIENT_H_INCLUDED
 
+#undef _DEPRECATED_
+#if ! defined(__LIBSMBCLIENT_INTERNAL__) && defined(__GNUC__)
+# define _DEPRECATED_      __attribute__ ((deprecated))
+#else
+# define _DEPRECATED_
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -416,7 +423,7 @@ typedef int (*smbc_remove_cached_srv_fn)(SMBCCTX * c, SMBCSRV *srv);
  * @return          0 when found and removed. 1 on failure.
  *
  */ 
-typedef int (*smbc_purge_cached_srv_fn)     (SMBCCTX * c);
+typedef int (*smbc_purge_cached_fn)     (SMBCCTX * c);
 
 
 
@@ -734,14 +741,14 @@ void smbc_setFunctionRemoveCachedServer(SMBCCTX *c,
  * Get the function for server cache purging.  This function tries to
  * remove all cached servers (e.g. on disconnect)
  */
-smbc_purge_cached_srv_fn smbc_getFunctionPurgeCachedServers(SMBCCTX *c);
+smbc_purge_cached_fn smbc_getFunctionPurgeCachedServers(SMBCCTX *c);
 
 /**
  * Set the function for server cache purging.  This function tries to
  * remove all cached servers (e.g. on disconnect)
  */
 void smbc_setFunctionPurgeCachedServers(SMBCCTX *c,
-                                        smbc_purge_cached_srv_fn fn);
+                                        smbc_purge_cached_fn fn);
 
 /** Get the function to store private data of the server cache */
 struct smbc_server_cache * smbc_getServerCacheData(SMBCCTX *c);
@@ -1010,7 +1017,7 @@ int smbc_free_context(SMBCCTX * context, int shutdown_ctx);
 
 /**@ingroup misc
  *
- * @DEPRECATED.  Use smbc_setOption*() functions instead.
+ * @deprecated.  Use smbc_setOption*() functions instead.
  */
 void
 smbc_option_set(SMBCCTX *context,
@@ -1018,7 +1025,7 @@ smbc_option_set(SMBCCTX *context,
                 ... /* option_value */);
 
 /*
- * @DEPRECATED.  Use smbc_getOption*() functions instead.
+ * @deprecated.  Use smbc_getOption*() functions instead.
  */
 void *
 smbc_option_get(SMBCCTX *context,
@@ -2570,7 +2577,6 @@ smbc_version(void);
 }
 #endif
 
-
 /**
  * @ingroup structure
  * Structure that contains a client context information 
@@ -2586,137 +2592,129 @@ smbc_version(void);
  * directly visible to applications.  This makes it much easier to maintain
  * ABI compatibility.
  */
-struct _SMBCCTX {
-        struct
-        {
-                /**
-                 * debug level
-                 *
-                 * Manually setting/retrieving this value is deprecated.
-                 * Use smbc_getDebug() and smbc_setDebug()
-                 */
-                int     debug;
+struct _SMBCCTX
+{
+        /**
+         * debug level
+         *
+         * DEPRECATED:
+         * Use smbc_getDebug() and smbc_setDebug()
+         */
+        int     debug _DEPRECATED_;
 	
-                /**
-                 * netbios name used for making connections
-                 *
-                 * Manually setting/retrieving this value is deprecated.
-                 * Use smbc_getNetbiosName() and smbc_setNetbiosName()
-                 */
-                char * netbios_name;
+        /**
+         * netbios name used for making connections
+         *
+         * DEPRECATED:
+         * Use smbc_getNetbiosName() and smbc_setNetbiosName()
+         */
+        char * netbios_name _DEPRECATED_;
 
-                /**
-                 * workgroup name used for making connections
-                 *
-                 * Manually setting/retrieving this value is deprecated.
-                 * Use smbc_getWorkgroup() and smbc_setWorkgroup()
-                 */
-                char * workgroup;
+        /**
+         * workgroup name used for making connections
+         *
+         * DEPRECATED:
+         * Use smbc_getWorkgroup() and smbc_setWorkgroup()
+         */
+        char * workgroup _DEPRECATED_;
 
-                /**
-                 * username used for making connections
-                 *
-                 * Manually setting/retrieving this value is deprecated.
-                 * Use smbc_getUser() and smbc_setUser()
-                 */
-                char * user;
+        /**
+         * username used for making connections
+         *
+         * DEPRECATED:
+         * Use smbc_getUser() and smbc_setUser()
+         */
+        char * user _DEPRECATED_;
 
-                /**
-                 * timeout used for waiting on connections / response data (in
-                 * milliseconds)
-                 *
-                 * Manually setting/retrieving this value is deprecated.
-                 * Use smbc_getTimeout() and smbc_setTimeout()
-                 */
-                int timeout;
-        } config;
+        /**
+         * timeout used for waiting on connections / response data (in
+         * milliseconds)
+         *
+         * DEPRECATED:
+         * Use smbc_getTimeout() and smbc_setTimeout()
+         */
+        int timeout _DEPRECATED_;
 
 	/**
          * callable functions for files:
 	 * For usage and return values see the SMBC_* functions
          *
-         * Manually setting/retrieving these values is deprecated.
+         * DEPRECATED:
          *
          * Use smbc_getFunction*() and smbc_setFunction*(), e.g.
          * smbc_getFunctionOpen(), smbc_setFunctionUnlink(), etc.
 	 */ 
-        struct
-        {
-                smbc_open_fn                    open_fn;
-                smbc_creat_fn                   creat_fn;
-                smbc_read_fn                    read_fn;
-                smbc_write_fn                   write_fn;
-                smbc_unlink_fn                  unlink_fn;
-                smbc_rename_fn                  rename_fn;
-                smbc_lseek_fn                   lseek_fn;
-                smbc_stat_fn                    stat_fn;
-                smbc_fstat_fn                   fstat_fn;
+        smbc_open_fn                    open _DEPRECATED_;
+        smbc_creat_fn                   creat _DEPRECATED_;
+        smbc_read_fn                    read _DEPRECATED_;
+        smbc_write_fn                   write _DEPRECATED_;
+        smbc_unlink_fn                  unlink _DEPRECATED_;
+        smbc_rename_fn                  rename _DEPRECATED_;
+        smbc_lseek_fn                   lseek _DEPRECATED_;
+        smbc_stat_fn                    stat _DEPRECATED_;
+        smbc_fstat_fn                   fstat _DEPRECATED_;
 #if 0 /* internal */
-                smbc_ftruncate_fn               ftruncate_fn;
+        smbc_ftruncate_fn               ftruncate_fn;
 #endif
-                smbc_close_fn                   close_fn;
-                smbc_opendir_fn                 opendir_fn;
-                smbc_closedir_fn                closedir_fn;
-                smbc_readdir_fn                 readdir_fn;
-                smbc_getdents_fn                getdents_fn;
-                smbc_mkdir_fn                   mkdir_fn;
-                smbc_rmdir_fn                   rmdir_fn;
-                smbc_telldir_fn                 telldir_fn;
-                smbc_lseekdir_fn                lseekdir_fn;
-                smbc_fstatdir_fn                fstatdir_fn;
-                smbc_chmod_fn                   chmod_fn;
-                smbc_utimes_fn                  utimes_fn;
-                smbc_setxattr_fn                setxattr_fn;
-                smbc_getxattr_fn                getxattr_fn;
-                smbc_removexattr_fn             removexattr_fn;
-                smbc_listxattr_fn               listxattr_fn;
-        }               posix_emu;
+        smbc_close_fn                   close_fn _DEPRECATED_;
+        smbc_opendir_fn                 opendir _DEPRECATED_;
+        smbc_closedir_fn                closedir _DEPRECATED_;
+        smbc_readdir_fn                 readdir _DEPRECATED_;
+        smbc_getdents_fn                getdents _DEPRECATED_;
+        smbc_mkdir_fn                   mkdir _DEPRECATED_;
+        smbc_rmdir_fn                   rmdir _DEPRECATED_;
+        smbc_telldir_fn                 telldir _DEPRECATED_;
+        smbc_lseekdir_fn                lseekdir _DEPRECATED_;
+        smbc_fstatdir_fn                fstatdir _DEPRECATED_;
+        smbc_chmod_fn                   chmod _DEPRECATED_;
+        smbc_utimes_fn                  utimes _DEPRECATED_;
+        smbc_setxattr_fn                setxattr _DEPRECATED_;
+        smbc_getxattr_fn                getxattr _DEPRECATED_;
+        smbc_removexattr_fn             removexattr _DEPRECATED_;
+        smbc_listxattr_fn               listxattr _DEPRECATED_;
 
         /* Printing-related functions */
-        struct
-        {
-                smbc_print_file_fn              print_file_fn;
-                smbc_open_print_job_fn          open_print_job_fn;
-                smbc_list_print_jobs_fn         list_print_jobs_fn;
-                smbc_unlink_print_job_fn        unlink_print_job_fn;
-        }               printing;
+        smbc_print_file_fn              print_file _DEPRECATED_;
+        smbc_open_print_job_fn          open_print_job _DEPRECATED_;
+        smbc_list_print_jobs_fn         list_print_jobs _DEPRECATED_;
+        smbc_unlink_print_job_fn        unlink_print_job _DEPRECATED_;
 
         /*
         ** Callbacks
-        * These callbacks _always_ have to be initialized because they will
-        * not be checked at dereference for increased speed.
+        *
+        * DEPRECATED:
+        *
+        * See the comment above each field, for the getter and setter
+        * functions that should now be used.
         */
-	struct
+	struct _smbc_callbacks
         {
 		/**
                  * authentication function callback: called upon auth requests
                  *
-                 * Manually setting/retrieving this value is deprecated.
+                 * DEPRECATED:
                  * Use smbc_getFunctionAuthData(), smbc_setFunctionAuthData()
 		 */
-                smbc_get_auth_data_fn get_auth_data_fn;
+                smbc_get_auth_data_fn auth_fn _DEPRECATED_;
 		
 		/**
                  * check if a server is still good
                  *
-                 * Manually setting/retrieving this value is deprecated.
+                 * DEPRECATED:
                  * Use smbc_getFunctionCheckServer(),
                  * smbc_setFunctionCheckServer()
 		 */
-		smbc_check_server_fn check_server_fn;
+		smbc_check_server_fn check_server_fn _DEPRECATED_;
 
 		/**
                  * remove a server if unused
                  *
-                 * Manually setting/retrieving this value is deprecated.
+                 * DEPRECATED:
                  * Use smbc_getFunctionRemoveUnusedServer(),
                  * smbc_setFunctionCheckServer()
 		 */
-		smbc_remove_unused_server_fn remove_unused_server_fn;
-        } server;
+		smbc_remove_unused_server_fn remove_unused_server_fn _DEPRECATED_;
 
-        struct
-        {
 		/** Cache subsystem
                  *
 		 * For an example cache system see
@@ -2728,53 +2726,53 @@ struct _SMBCCTX {
 		/**
                  * server cache addition 
                  *
-                 * Manually setting/retrieving this value is deprecated.
+                 * DEPRECATED:
                  * Use smbc_getFunctionAddCachedServer(),
                  * smbc_setFunctionAddCachedServer()
 		 */
-		smbc_add_cached_srv_fn add_cached_server_fn;
+		smbc_add_cached_srv_fn add_cached_srv_fn _DEPRECATED_;
 
 		/**
                  * server cache lookup 
                  *
-                 * Manually setting/retrieving this value is deprecated.
+                 * DEPRECATED:
                  * Use smbc_getFunctionGetCachedServer(),
                  * smbc_setFunctionGetCachedServer()
 		 */
-		smbc_get_cached_srv_fn get_cached_server_fn;
+		smbc_get_cached_srv_fn get_cached_srv_fn _DEPRECATED_;
 
 		/**
                  * server cache removal
                  *
-                 * Manually setting/retrieving this value is deprecated.
+                 * DEPRECATED:
                  * Use smbc_getFunctionRemoveCachedServer(),
                  * smbc_setFunctionRemoveCachedServer()
 		 */
-		smbc_remove_cached_srv_fn remove_cached_server_fn;
+		smbc_remove_cached_srv_fn remove_cached_srv_fn _DEPRECATED_;
 		
 		/**
                  * server cache purging, try to remove all cached servers
                  * (disconnect)
                  *
-                 * Manually setting/retrieving this value is deprecated.
+                 * DEPRECATED:
                  * Use smbc_getFunctionPurgeCachedServers(),
                  * smbc_setFunctionPurgeCachedServers()
 		 */
-		smbc_purge_cached_srv_fn purge_cached_servers_fn;
+		smbc_purge_cached_fn purge_cached_fn _DEPRECATED_;
+	} callbacks;
 
-                /**
-                 * Space to store private data of the server cache.
-                 *
-                 * Manually setting/retrieving this value is deprecated.
-                 * Use smbc_getServerCacheData(), smbc_setServerCacheData()
-                 */
-                struct smbc_server_cache * server_cache_data;
-	} cache;
+        /**
+         * Space where the private data of the server cache used to be
+         *
+         * DEPRECATED:
+         * Use smbc_getServerCacheData(), smbc_setServerCacheData()
+         */
+        void * reserved; /* space where server_cache_data used to be */
 
         /*
          * Very old configuration options.
          * 
-         * Manually setting/retrieving this value is deprecated.
+         * DEPRECATED:
          * Use one of the following functions instead:
          *   smbc_setOptionUseKerberos()
          *   smbc_getOptionUseKerberos()
@@ -2783,24 +2781,21 @@ struct _SMBCCTX {
          *   smbc_setOptionNoAutoAnonymousLogin()
          *   smbc_getOptionNoAutoAnonymousLogin()
          */
-        struct
-        {
-                int bits;
-        } flags;
+        int flags _DEPRECATED_;
 	
-        /** user options selections that apply to this session
+        /**
+         * user options selections that apply to this session
          *
-         *  NEW CODE SHOULD NOT DIRECTLY MANIPULATE THE CONTEXT STRUCTURE.
+         * NEW OPTIONS ARE NOT ADDED HERE!
          *
-         *  NEW OPTIONS ARE NOT ADDED HERE!
-         *
-         *  To set and retrieve options, use the smbc_setOption*() and
-         *  smbc_getOption*() functions.
+         * DEPRECATED:
+         * To set and retrieve options, use the smbc_setOption*() and
+         * smbc_getOption*() functions.
          */
         struct _smbc_options {
-                int browse_max_lmb_count;
-                int urlencode_readdir_entries;
-                int one_share_per_server;
+                int browse_max_lmb_count _DEPRECATED_;
+                int urlencode_readdir_entries _DEPRECATED_;
+                int one_share_per_server _DEPRECATED_;
         } options;
 	
 	/** INTERNAL DATA

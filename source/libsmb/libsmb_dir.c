@@ -404,7 +404,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
         }
         
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->config.user);
+		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -450,9 +450,9 @@ SMBC_opendir_ctx(SMBCCTX *context,
 		}
                 
                 /* Determine how many local master browsers to query */
-                max_lmb_count = (context->options.browse_max_lmb_count == 0
+                max_lmb_count = (smbc_getOptionBrowseMaxLmbCount(context) == 0
                                  ? INT_MAX
-                                 : context->options.browse_max_lmb_count);
+                                 : smbc_getOptionBrowseMaxLmbCount(context));
                 
 		memset(&u_info, '\0', sizeof(u_info));
 		u_info.username = talloc_strdup(frame,user);
@@ -810,11 +810,11 @@ SMBC_opendir_ctx(SMBCCTX *context,
                                  * good any more...
                                  */
                                 if (cli_is_error(targetcli) &&
-                                    (context->server.check_server_fn)(context, srv)) {
+                                    smbc_getFunctionCheckServer(context)(context, srv)) {
                                         
                                         /* ... then remove it. */
-                                        if ((context->server.remove_unused_server_fn)(context,
-                                                                                      srv)) { 
+                                        if (smbc_getFunctionRemoveUnusedServer(context)(context,
+                                                                                        srv)) { 
                                                 /*
                                                  * We could not remove the
                                                  * server completely, remove
@@ -823,7 +823,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
                                                  * will be removed when the
                                                  * last file/dir is closed.
                                                  */
-                                                (context->cache.remove_cached_server_fn)(context, srv);
+                                                smbc_getFunctionRemoveCachedServer(context)(context, srv);
                                         }
                                 }
                                 
@@ -884,7 +884,7 @@ smbc_readdir_internal(SMBCCTX * context,
                       struct smbc_dirent *src,
                       int max_namebuf_len)
 {
-        if (context->options.urlencode_readdir_entries) {
+        if (smbc_getOptionUrlEncodeReaddirEntries(context)) {
                 
                 /* url-encode the name.  get back remaining buffer space */
                 max_namebuf_len =
@@ -1142,7 +1142,7 @@ SMBC_mkdir_ctx(SMBCCTX *context,
         }
         
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->config.user);
+		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
                 	errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -1249,7 +1249,7 @@ SMBC_rmdir_ctx(SMBCCTX *context,
         }
         
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->config.user);
+		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
                 	errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -1531,7 +1531,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
         }
         
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->config.user);
+		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
                 	errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -1637,7 +1637,7 @@ SMBC_utimes_ctx(SMBCCTX *context,
         }
         
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->config.user);
+		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -1713,7 +1713,7 @@ SMBC_unlink_ctx(SMBCCTX *context,
         }
         
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->config.user);
+		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -1848,7 +1848,7 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	}
         
 	if (!user1 || user1[0] == (char)0) {
-		user1 = talloc_strdup(frame, ocontext->config.user);
+		user1 = talloc_strdup(frame, smbc_getUser(ocontext));
 		if (!user1) {
                 	errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -1872,7 +1872,7 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	}
         
 	if (!user2 || user2[0] == (char)0) {
-		user2 = talloc_strdup(frame, ncontext->config.user);
+		user2 = talloc_strdup(frame, smbc_getUser(ncontext));
 		if (!user2) {
                 	errno = ENOMEM;
 			TALLOC_FREE(frame);

@@ -25,7 +25,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <libsmbclient.h>
+#include "libsmbclient.h"
 #include "get_auth_data_fn.h"
 
 int global_id = 0;
