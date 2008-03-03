@@ -72,17 +72,7 @@ sub _prepare_mk_files($)
 		push (@tmp, $_);
 	}
 
-	$self->output("
-ifneq (\$(MAKECMDGOALS),clean)
-ifneq (\$(MAKECMDGOALS),distclean)
-ifneq (\$(MAKECMDGOALS),realdistclean)
-");
 	$self->output("MK_FILES = " . array2oneperline(\@tmp) . "\n");
-	$self->output("
-endif
-endif
-endif
-");
 }
 
 sub array2oneperline($)
@@ -342,7 +332,7 @@ sub CFlags($$)
 	
 	my $cflags = join(' ', @cflags);
 
-	$self->output("\$(patsubst %.ho,%.d,\$($key->{NAME}_OBJ_LIST:.o=.d)) \$($key->{NAME}_OBJ_FILES): CFLAGS+= $cflags\n");
+	$self->output("\$(patsubst %.ho,%.d,\$($key->{NAME}_OBJ_FILES:.o=.d)) \$($key->{NAME}_OBJ_FILES): CFLAGS+= $cflags\n");
 }
 
 1;
