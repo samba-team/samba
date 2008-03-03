@@ -736,6 +736,18 @@ try_again:
 		}
 	}
 
+	/* If we dont want ips to fail back after a node becomes healthy
+	   again, we wont even try to reallocat the ip addresses so that
+	   they are evenly spread out.
+	   This can NOT be used at the same time as DeterministicIPs !
+	*/
+	if (1 == ctdb->tunable.no_ip_failback) {
+		if (1 == ctdb->tunable.deterministic_public_ips) {
+			DEBUG(DEBUG_ERR, ("ERROR: You can not use 'DeterministicIPs' and 'NoIPFailback' at the same time\n"));
+		}
+		goto finished;
+	}
+
 
 	/* now, try to make sure the ip adresses are evenly distributed
 	   across the node.
@@ -821,6 +833,10 @@ try_again:
 	}
 
 
+	/* finished distributing the public addresses, now just send the 
+	   info out to the nodes
+	*/
+finished:
 
 	/* at this point ->pnn is the node which will own each IP
 	   or -1 if there is no node that can cover this ip
