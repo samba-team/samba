@@ -111,16 +111,11 @@ Modified API for libsmbclient
 Maintaining ABI compatibility for libsmbclient has become increasingly
 difficult to accomplish, while also keeping the code organization such that it
 is easily readable.  Towards the goal of maintaining ABI compatibility and
-also keeping the code easy to maintain and enhance, the API has changed
-somewhat.  In particular, the fields in the SMBCCTX context structure are no
-longer intended to be read/write by the user.  The names of the fields have
-changed to encourage any recompilations to use the new interface, but for
-continued ABI compatibility, the fields are in the same locations in the
-context structure as they were previously so any previously-compiled
-applications should continue to work with this new version.
-
-An application that previously accessed the members of the SMBCCTX context
-structure will encounter errors if recompiled.  This is intentional to
+also keeping the code easy to maintain and enhance, the API has been enhanced.
+In particular, the fields in the SMBCCTX context structure are no longer
+intended to be read/write by the user, and are marked as deprecated.  An
+application that previously accessed the members of the SMBCCTX context
+structure will now encounter warnings if recompiled.  This is intentional, to
 encourage implementation of the small changes required for the new interface.
 The number of changes is expected to be quite small for the vast majority of
 applications, and no changes need be made for many applications.  The changes
@@ -141,7 +136,7 @@ under these comment blocks:
   Callable functions for directories
   Callable functions applicable to both files and directories
 
-Example changes that may be required:
+Example changes that may be required to eliminate "deprecated" warnings:
 
   /* Set the debug level */
   context->debug = 99;

@@ -88,7 +88,7 @@ SMBC_add_cached_server(SMBCCTX * context,
 		goto failed;
 	}
         
-	DLIST_ADD((context->cache.server_cache_data), srvcache);
+	DLIST_ADD(context->internal->server_cache, srvcache);
 	return 0;
         
 failed:
@@ -118,7 +118,7 @@ SMBC_get_cached_server(SMBCCTX * context,
 	struct smbc_server_cache * srv = NULL;
         
 	/* Search the cache lines */
-	for (srv = context->cache.server_cache_data; srv; srv = srv->next) {
+	for (srv = context->internal->server_cache; srv; srv = srv->next) {
                 
 		if (strcmp(server,srv->server_name)  == 0 &&
 		    strcmp(workgroup,srv->workgroup) == 0 &&
@@ -150,7 +150,7 @@ SMBC_get_cached_server(SMBCCTX * context,
                          * a connection to the server (other than the
                          * attribute server connection) is cool.
                          */
-                        if (context->options.one_share_per_server) {
+                        if (smbc_getOptionOneSharePerServer(context)) {
                                 /*
                                  * The currently connected share name
                                  * doesn't match the requested share, so
@@ -160,7 +160,7 @@ SMBC_get_cached_server(SMBCCTX * context,
                                         /* Sigh. Couldn't disconnect. */
                                         cli_shutdown(srv->server->cli);
 					srv->server->cli = NULL;
-                                        context->cache.remove_cached_server_fn(context, srv->server);
+                                        smbc_getFunctionRemoveCachedServer(context)(context, srv->server);
                                         continue;
                                 }
                                 
@@ -175,7 +175,7 @@ SMBC_get_cached_server(SMBCCTX * context,
                                         /* Out of memory. */
                                         cli_shutdown(srv->server->cli);
 					srv->server->cli = NULL;
-                                        context->cache.remove_cached_server_fn(context, srv->server);
+                                        smbc_getFunctionRemoveCachedServer(context)(context, srv->server);
                                         continue;
                                 }
                                 
@@ -200,11 +200,11 @@ SMBC_remove_cached_server(SMBCCTX * context,
 {
 	struct smbc_server_cache * srv = NULL;
         
-	for (srv = context->cache.server_cache_data; srv; srv = srv->next) {
+	for (srv = context->internal->server_cache; srv; srv = srv->next) {
 		if (server == srv->server) { 
                         
 			/* remove this sucker */
-			DLIST_REMOVE(context->cache.server_cache_data, srv);
+			DLIST_REMOVE(context->internal->server_cache, srv);
 			SAFE_FREE(srv->server_name);
 			SAFE_FREE(srv->share_name);
 			SAFE_FREE(srv->workgroup);
@@ -229,7 +229,7 @@ SMBC_purge_cached_servers(SMBCCTX * context)
 	struct smbc_server_cache * next;
 	int could_not_purge_all = 0;
         
-	for (srv = context->cache.server_cache_data,
+	for (srv = context->internal->server_cache,
                      next = (srv ? srv->next :NULL);
              srv;
              srv = next,
