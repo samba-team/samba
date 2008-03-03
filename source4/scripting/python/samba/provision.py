@@ -830,7 +830,7 @@ def provision(lp, setup_dir, message, paths, session_info,
         message("Setting up smb.conf")
         if serverrole == "domain controller":
             smbconfsuffix = "dc"
-        elif serverrole == "member":
+        elif serverrole == "member server":
             smbconfsuffix = "member"
         setup_file(setup_path("provision.smb.conf.%s" % smbconfsuffix), 
                    paths.smbconf, {
