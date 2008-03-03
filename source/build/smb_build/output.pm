@@ -128,17 +128,6 @@ sub create_output($$)
 	foreach $part (values %{$depend}) {
 		next unless(defined($part->{OUTPUT_TYPE}));
 
-		# Combine object lists
-		if (defined($part->{OBJ_FILES})) {
-			my $list;
-
-			$list = join(" ", @{$part->{OBJ_FILES}});
-			unless ($list =~ /^\.\//) {
-				$list = "\$(addprefix $part->{BASEDIR}/, $list)"
-			} 
-			push(@{$part->{OBJ_LIST}}, $list);
-		}
-
 		generate_binary($part) if grep(/BINARY/, @{$part->{OUTPUT_TYPE}});
 		generate_shared_library($part) if grep(/SHARED_LIBRARY/, @{$part->{OUTPUT_TYPE}});
 		generate_static_library($part) if grep(/STATIC_LIBRARY/, @{$part->{OUTPUT_TYPE}});

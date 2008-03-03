@@ -6,9 +6,8 @@
 INIT_FUNCTION = server_service_web_init
 SUBSYSTEM = service
 PRIVATE_PROTO_HEADER = proto.h
-OBJ_FILES = \
-		web_server.o \
-		http.o
 PRIVATE_DEPENDENCIES = ESP LIBTLS smbcalls process_model 
 # End SUBSYSTEM WEB
 #######################
+
+WEB_OBJ_FILES = $(addprefix web_server/, web_server.o http.o)

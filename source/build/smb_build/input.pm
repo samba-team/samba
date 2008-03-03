@@ -249,7 +249,7 @@ sub check($$$$$)
 
 	foreach my $part (values %$INPUT) {
 		$part->{LINK_FLAGS} = [];
-		$part->{FULL_OBJ_LIST} = ["\$($part->{NAME}_OBJ_LIST)"];
+		$part->{FULL_OBJ_LIST} = ["\$($part->{NAME}_OBJ_FILES)"];
 
 		if ($part->{TYPE} eq "SUBSYSTEM") { 
 			check_subsystem($INPUT, $part, $subsys_ot);

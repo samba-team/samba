@@ -159,7 +159,7 @@ sub SharedModule($$)
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{INIT_FUNCTION_TYPE} =~ /\(\*\)/) {
-		$self->output("\$($ctx->{NAME}_OBJ_LIST): CFLAGS+=-D$ctx->{INIT_FUNCTION}=init_module\n");
+		$self->output("\$($ctx->{NAME}_OBJ_FILES): CFLAGS+=-D$ctx->{INIT_FUNCTION}=init_module\n");
 	}
 
 	$self->output("\$(eval \$(call shared_module_template,$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}, \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST), \$($ctx->{NAME}\_FULL_OBJ_LIST) \$($ctx->{NAME}_LINK_FLAGS)))\n");
@@ -220,14 +220,12 @@ sub MergedObj($$)
 	return unless defined($ctx->{OUTPUT});
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-	$self->output("\$(call partial_link_template, \$($ctx->{NAME}_OUTPUT), \$($ctx->{NAME}_OBJ_LIST))\n");
+	$self->output("\$(call partial_link_template, \$($ctx->{NAME}_OUTPUT), \$($ctx->{NAME}_OBJ_FILES))\n");
 }
 
 sub StaticLibraryPrimitives($$)
 {
 	my ($self,$ctx) = @_;
-
-	return unless (defined($ctx->{OBJ_FILES}));
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
@@ -236,14 +234,12 @@ sub StaticLibraryPrimitives($$)
 sub InitFunctions($$)
 {
 	my ($self, $ctx) = @_;
-	$self->output("\$($ctx->{NAME}_OBJ_LIST): CFLAGS+=-DSTATIC_$ctx->{NAME}_MODULES=\"\$($ctx->{NAME}_INIT_FUNCTIONS)$ctx->{INIT_FUNCTION_SENTINEL}\"\n");
+	$self->output("\$($ctx->{NAME}_OBJ_FILES): CFLAGS+=-DSTATIC_$ctx->{NAME}_MODULES=\"\$($ctx->{NAME}_INIT_FUNCTIONS)$ctx->{INIT_FUNCTION_SENTINEL}\"\n");
 }
 
 sub StaticLibrary($$)
 {
 	my ($self,$ctx) = @_;
-
-	return unless (defined($ctx->{OBJ_FILES}));
 
 	$self->output("STATIC_LIBS += $ctx->{RESULT_STATIC_LIBRARY}\n") if ($ctx->{TYPE} eq "LIBRARY");
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
@@ -288,7 +284,7 @@ sub ProtoHeader($$)
 
 	my $target = "\$(addprefix $ctx->{BASEDIR}/, $ctx->{PRIVATE_PROTO_HEADER})";
 	$self->output("PROTO_HEADERS += $target\n");
-	$self->output("\$(call proto_header_template, $target, \$($ctx->{NAME}_OBJ_LIST:.o=.c))\n");
+	$self->output("\$(call proto_header_template, $target, \$($ctx->{NAME}_OBJ_FILES:.o=.c))\n");
 }
 
 sub write($$)
@@ -324,7 +320,6 @@ sub CFlags($$)
 
 	my $src_ne_build = ($srcdir ne $builddir) ? 1 : 0;
 
-	return unless defined ($key->{OBJ_LIST});
 	return unless defined ($key->{FINAL_CFLAGS});
 	return unless (@{$key->{FINAL_CFLAGS}} > 0);
 
@@ -350,7 +345,7 @@ sub CFlags($$)
 	
 	my $cflags = join(' ', @cflags);
 
-	$self->output("\$(patsubst %.ho,%.d,\$($key->{NAME}_OBJ_LIST:.o=.d)) \$($key->{NAME}_OBJ_LIST): CFLAGS+= $cflags\n");
+	$self->output("\$(patsubst %.ho,%.d,\$($key->{NAME}_OBJ_LIST:.o=.d)) \$($key->{NAME}_OBJ_FILES): CFLAGS+= $cflags\n");
 }
 
 1;

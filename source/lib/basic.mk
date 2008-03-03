@@ -19,26 +19,25 @@ mkinclude dbwrap/config.mk
 mkinclude crypto/config.mk
 
 [SUBSYSTEM::LIBCOMPRESSION]
-OBJ_FILES = compression/mszip.o
+
+LIBCOMPRESSION_OBJ_FILES = lib/compression/mszip.o
 
 [SUBSYSTEM::GENCACHE]
-OBJ_FILES = gencache/gencache.o
 PRIVATE_DEPENDENCIES = TDB_WRAP
 
+GENCACHE_OBJ_FILES = gencache/gencache.o
 
 PUBLIC_HEADERS += lib/gencache/gencache.h
 
 [SUBSYSTEM::LDB_WRAP]
-OBJ_FILES = ldb_wrap.o
 PUBLIC_DEPENDENCIES = LIBLDB
 PRIVATE_DEPENDENCIES = LDBSAMBA UTIL_LDB
 
-
+LDB_WRAP_OBJ_FILES = lib/ldb_wrap.o
 PUBLIC_HEADERS += lib/ldb_wrap.h
 
 [SUBSYSTEM::TDB_WRAP]
-OBJ_FILES = tdb_wrap.o
 PUBLIC_DEPENDENCIES = LIBTDB
 
-
+TDB_WRAP_OBJ_FILES = lib/tdb_wrap.o
 PUBLIC_HEADERS += lib/tdb_wrap.h

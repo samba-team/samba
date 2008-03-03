@@ -3,16 +3,15 @@
 [MODULE::sys_notify_inotify]
 SUBSYSTEM = sys_notify
 INIT_FUNCTION = sys_notify_inotify_init
-OBJ_FILES = \
-		inotify.o
 # End MODULE sys_notify_inotify
 ################################################
+
+sys_notify_inotify_OBJ_FILES = ntvfs/sysdep/inotify.o
 
 ################################################
 # Start SUBSYSTEM sys_notify
 [SUBSYSTEM::sys_notify]
-OBJ_FILES = \
-		sys_notify.o
-PUBLIC_DEPENDENCIES = 
 # End SUBSYSTEM sys_notify
 ################################################
+
+sys_notify_OBJ_FILES = ntvfs/sysdep/sys_notify.o

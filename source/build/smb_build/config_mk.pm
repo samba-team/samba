@@ -23,14 +23,11 @@ my $section_types = {
 		SWIG_FILE => "string",
 		"PRIVATE_DEPENDENCIES"	=> "list",
 		"PUBLIC_DEPENDENCIES"	=> "list",
-		"OBJ_FILES" => "list",
 		"ENABLE"		=> "bool",
 		"LDFLAGS"		=> "list",
 		"CFLAGS"		=> "list",
 	},
 	"SUBSYSTEM" => {
-		"OBJ_FILES"		=> "list",
-
 		"PRIVATE_DEPENDENCIES"	=> "list",
 		"PUBLIC_DEPENDENCIES"	=> "list",
 
@@ -47,7 +44,6 @@ my $section_types = {
 		"SUBSYSTEM"		=> "string",
 
 		"INIT_FUNCTION"		=> "string",
-		"OBJ_FILES"		=> "list",
 
 		"PRIVATE_DEPENDENCIES"	=> "list",
 
@@ -62,7 +58,6 @@ my $section_types = {
 		"CFLAGS"		=> "list"
 		},
 	"BINARY" => {
-		"OBJ_FILES"		=> "list",
 
 		"PRIVATE_DEPENDENCIES"	=> "list",
 
@@ -87,8 +82,6 @@ my $section_types = {
 		"INIT_FUNCTION_TYPE"	=> "string",
 		"INIT_FUNCTION_SENTINEL" => "string",
 		"OUTPUT_TYPE"		=> "list",
-
-		"OBJ_FILES"		=> "list",
 
 		"PRIVATE_DEPENDENCIES"	=> "list",
 		"PUBLIC_DEPENDENCIES"	=> "list",

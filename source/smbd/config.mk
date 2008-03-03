@@ -12,23 +12,23 @@ PRIVATE_DEPENDENCIES = \
 
 [SUBSYSTEM::service]
 PRIVATE_PROTO_HEADER = service_proto.h
-OBJ_FILES = \
-		service.o \
-		service_stream.o \
-		service_task.o
 PRIVATE_DEPENDENCIES = \
 		MESSAGING samba-socket
 
+service_OBJ_FILES = $(addprefix smbd/, \
+		service.o \
+		service_stream.o \
+		service_task.o)
+
 [SUBSYSTEM::PIDFILE]
-OBJ_FILES = pidfile.o
 PRIVATE_PROTO_HEADER = pidfile.h
+
+PIDFILE_OBJ_FILES = smbd/pidfile.o
 
 #################################
 # Start BINARY smbd
 [BINARY::smbd]
 INSTALLDIR = SBINDIR
-OBJ_FILES = \
-		server.o
 PRIVATE_DEPENDENCIES = \
 		process_model \
 		service \
@@ -43,6 +43,8 @@ PRIVATE_DEPENDENCIES = \
 		ntvfs \
 		share \
 		CLUSTER
+
+smbd_OBJ_FILES = smbd/server.o
 
 MANPAGES += smbd/smbd.8
 # End BINARY smbd
