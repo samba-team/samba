@@ -19,7 +19,7 @@ LIBCLI_LSA_OBJ_FILES = libcli/util/clilsa.o
 PRIVATE_PROTO_HEADER = composite/proto.h
 PUBLIC_DEPENDENCIES = LIBEVENTS
 
-LIBCLI_COMPOSITE_OBJ_FILES = libcli/util/composite.o
+LIBCLI_COMPOSITE_OBJ_FILES = libcli/composite/composite.o
 
 [SUBSYSTEM::LIBCLI_SMB_COMPOSITE]
 PRIVATE_PROTO_HEADER = smb_composite/proto.h
@@ -96,7 +96,7 @@ LIBCLI_RESOLVE_OBJ_FILES = libcli/resolve/resolve.o
 PRIVATE_PROTO_HEADER = resolve/lp_proto.h
 PRIVATE_DEPENDENCIES = LIBCLI_NBT LIBSAMBA-CONFIG LIBNETIF 
 
-LP_RESOLVE_OBJ_FILES = $(addprefix libcli/resolve, \
+LP_RESOLVE_OBJ_FILES = $(addprefix libcli/resolve/, \
 					  bcast.o nbtlist.o wins.o \
 					  host.o resolve_lp.o)
 

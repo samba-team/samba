@@ -57,7 +57,7 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE dcerpc_srvsvc
 ################################################
 
-dcerpc_srvsvc_OBJ_FILES = $(addprefix rpc-server/srvsvc/, dcesrv_srvsvc.o srvsvc_ntvfs.o)
+dcerpc_srvsvc_OBJ_FILES = $(addprefix rpc_server/srvsvc/, dcesrv_srvsvc.o srvsvc_ntvfs.o)
 
 ################################################
 # Start MODULE dcerpc_wkssvc
