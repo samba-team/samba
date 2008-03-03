@@ -1216,6 +1216,7 @@ NTSTATUS _lsa_Close(pipes_struct *p, struct lsa_Close *r)
 	}
 
 	close_policy_hnd(p, r->in.handle);
+	ZERO_STRUCTP(r->out.handle);
 	return NT_STATUS_OK;
 }
 
