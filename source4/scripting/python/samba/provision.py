@@ -279,8 +279,6 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     
     Alternatively, provision() may call this, and then populate the database.
     
-    :param erase: Remove the existing data present in the database.
-     
     :note: This will wipe the Sam Database!
     
     :note: This function always removes the local SAM LDB file. The erase 
@@ -289,10 +287,15 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     """
     assert session_info is not None
 
-    if os.path.exists(samdb_path):
+    samdb = SamDB(samdb_path, session_info=session_info, 
+                  credentials=credentials, lp=lp)
+
+    # Wipes the database
+    try:
+        samdb.erase()
+    except:
         os.unlink(samdb_path)
 
-    # Also wipes the database
     samdb = SamDB(samdb_path, session_info=session_info, 
                   credentials=credentials, lp=lp)
 
@@ -547,7 +550,7 @@ def setup_self_join(samdb, configdn, schemadn, domaindn,
 
 def setup_samdb(path, setup_path, session_info, credentials, lp, 
                 schemadn, configdn, domaindn, dnsdomain, realm, 
-                netbiosname, message, hostname, rootdn, erase, 
+                netbiosname, message, hostname, rootdn, 
                 domainsid, aci, domainguid, policyguid, 
                 domainname, fill, adminpass, krbtgtpass, 
                 machinepass, hostguid, invocationid, dnspass,
@@ -559,6 +562,8 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
     """
 
     assert serverrole in ("domain controller", "member server")
+
+    erase = (fill != FILL_DRS)    
 
     # Also wipes the database
     setup_samdb_partitions(path, setup_path, schemadn=schemadn, configdn=configdn, 
@@ -726,7 +731,7 @@ def provision(lp, setup_dir, message, paths, session_info,
               hostguid=None, adminpass=None, krbtgtpass=None, domainguid=None, 
               policyguid=None, invocationid=None, machinepass=None, 
               dnspass=None, root=None, nobody=None, nogroup=None, users=None, 
-              wheel=None, backup=None, aci=None, serverrole=None, erase=False,
+              wheel=None, backup=None, aci=None, serverrole=None,
               ldap_backend=None, ldap_backend_type=None, sitename=DEFAULTSITE):
     """Provision samba4
     
@@ -873,7 +878,7 @@ def provision(lp, setup_dir, message, paths, session_info,
                         configdn=configdn, domaindn=domaindn,
                         dnsdomain=dnsdomain, netbiosname=netbiosname, 
                         realm=realm, message=message, hostname=hostname, 
-                        rootdn=rootdn, erase=erase, domainsid=domainsid, 
+                        rootdn=rootdn, domainsid=domainsid, 
                         aci=aci, domainguid=domainguid, policyguid=policyguid, 
                         domainname=domain, fill=samdb_fill, 
                         adminpass=adminpass, krbtgtpass=krbtgtpass,

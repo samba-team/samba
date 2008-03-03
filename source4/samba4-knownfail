@@ -33,5 +33,4 @@ rpc.netlogon.*.GetTrustPasswords
 base.charset.*.Testing partial surrogate
 .*net.api.delshare.*				# DelShare isn't implemented yet
 rap.*netservergetinfo
-samba4.blackbox.provision.py.reprovision # Fails with entry already exists
 local.torture.provision
