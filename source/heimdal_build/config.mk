@@ -432,7 +432,7 @@ HEIMDAL_ROKEN_OBJ_FILES = \
 	./heimdal/lib/roken/simple_exec.o \
 	./heimdal/lib/roken/strcollect.o \
 	./heimdal/lib/roken/rtbl.o \
-	./heimda_build/replace.o
+	./heimdal_build/replace.o
 
 #######################
 # Start SUBSYSTEM HEIMDAL_GLUE
