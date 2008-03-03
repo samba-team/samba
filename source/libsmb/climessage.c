@@ -71,7 +71,7 @@ bool cli_message_start(struct cli_state *cli, const char *host, const char *user
 int cli_message_text_build(struct cli_state *cli, const char *msg, int len, int grp)
 {
 	char *msgdos;
-	int lendos;
+	size_t lendos;
 	char *p;
 
 	memset(cli->outbuf,'\0',smb_size);
@@ -85,7 +85,8 @@ int cli_message_text_build(struct cli_state *cli, const char *msg, int len, int 
 	p = smb_buf(cli->outbuf);
 	*p++ = 1;
 
-	if ((lendos = (int)convert_string_allocate(NULL,CH_UNIX, CH_DOS, msg,len, (void **)(void *)&msgdos, True)) < 0 || !msgdos) {
+	if (!convert_string_allocate(NULL, CH_UNIX, CH_DOS, msg, len,
+		(void **)(void *)&msgdos, &lendos, True) || !msgdos) {
 		DEBUG(3,("Conversion failed, sending message in UNIX charset\n"));
 		SSVAL(p, 0, len); p += 2;
 		if (len > cli->bufsize - PTR_DIFF(p,cli->outbuf)) {
