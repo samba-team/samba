@@ -82,10 +82,9 @@ static bool notify_marshall_changes(int num_changes,
 
 		c = &changes[i];
 
-		namelen = convert_string_allocate(
-			NULL, CH_UNIX, CH_UTF16LE, c->name, strlen(c->name)+1,
-			&uni_name.buffer, True);
-		if ((namelen == -1) || (uni_name.buffer == NULL)) {
+		if (!convert_string_allocate(NULL, CH_UNIX, CH_UTF16LE,
+			c->name, strlen(c->name)+1, &uni_name.buffer,
+			&namelen, True) || (uni_name.buffer == NULL)) {
 			goto fail;
 		}
 
