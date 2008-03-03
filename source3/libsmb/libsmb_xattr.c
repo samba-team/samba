@@ -1729,7 +1729,7 @@ SMBC_setxattr_ctx(SMBCCTX *context,
         }
         
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->config.user);
+		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -2023,7 +2023,7 @@ SMBC_getxattr_ctx(SMBCCTX *context,
         }
         
         if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->config.user);
+		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -2157,7 +2157,7 @@ SMBC_removexattr_ctx(SMBCCTX *context,
         }
         
         if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->config.user);
+		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);

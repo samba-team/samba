@@ -82,7 +82,7 @@ SMBC_open_ctx(SMBCCTX *context,
         }
         
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->config.user);
+		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
                 	errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -188,7 +188,7 @@ SMBC_open_ctx(SMBCCTX *context,
 		int eno = 0;
                 
 		eno = SMBC_errno(context, srv->cli);
-		file = (context->posix_emu.opendir_fn)(context, fname);
+		file = smbc_getFunctionOpendir(context)(context, fname);
 		if (!file) errno = eno;
 		TALLOC_FREE(frame);
 		return file;
@@ -439,7 +439,7 @@ SMBC_close_ctx(SMBCCTX *context,
 	/* IS a dir ... */
 	if (!file->file) {
 		TALLOC_FREE(frame);
-		return (context->posix_emu.closedir_fn)(context, file);
+		return smbc_getFunctionClosedir(context)(context, file);
 	}
         
 	/*d_printf(">>>close: parsing %s\n", file->fname);*/
@@ -478,7 +478,7 @@ SMBC_close_ctx(SMBCCTX *context,
 		DLIST_REMOVE(context->internal->files, file);
 		SAFE_FREE(file->fname);
 		SAFE_FREE(file);
-		(context->server.remove_unused_server_fn)(context, srv);
+		smbc_getFunctionRemoveUnusedServer(context)(context, srv);
 		TALLOC_FREE(frame);
 		return -1;
                 

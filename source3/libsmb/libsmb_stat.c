@@ -157,7 +157,7 @@ SMBC_stat_ctx(SMBCCTX *context,
         }
         
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame,context->config.user);
+		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -237,7 +237,7 @@ SMBC_fstat_ctx(SMBCCTX *context,
         
 	if (!file->file) {
 		TALLOC_FREE(frame);
-		return (context->posix_emu.fstatdir_fn)(context, file, st);
+		return smbc_getFunctionFstatdir(context)(context, file, st);
 	}
         
 	/*d_printf(">>>fstat: parsing %s\n", file->fname);*/
