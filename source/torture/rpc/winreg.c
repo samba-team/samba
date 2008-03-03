@@ -848,7 +848,6 @@ static bool test_SecurityDescriptorInheritance(struct dcerpc_pipe *p,
 
  out:
 	test_CloseKey(p, tctx, &new_handle);
-	test_Cleanup(p, tctx, handle, TEST_SUBSUBKEY_SD);
 	test_Cleanup(p, tctx, handle, TEST_SUBKEY_SD);
 	test_RestoreSecurity(p, tctx, handle, key, sd_orig);
 
@@ -971,7 +970,6 @@ static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
 
  out:
 	test_CloseKey(p, tctx, &new_handle);
-	test_Cleanup(p, tctx, handle, TEST_SUBSUBKEY_SD);
 	test_Cleanup(p, tctx, handle, TEST_SUBKEY_SD);
 	test_RestoreSecurity(p, tctx, handle, key, sd_orig);
 
@@ -1386,27 +1384,6 @@ static bool test_DeleteKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
-/* DeleteKey on a key with subkey(s) should
- * return WERR_ACCESS_DENIED. */
-static bool test_DeleteKeyWithSubkey(struct dcerpc_pipe *p,
-				     struct torture_context *tctx,
-				     struct policy_handle *handle,
-				     const char *key)
-{
-	struct winreg_DeleteKey r;
-
-	r.in.handle = handle;
-	init_winreg_String(&r.in.key, key);
-
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_DeleteKey(p, tctx, &r),
-				   "DeleteKeyWithSubkey failed");
-
-	torture_assert_werr_equal(tctx, r.out.result, WERR_ACCESS_DENIED,
-				  "DeleteKeyWithSubkey failed");
-
-	return true;
-}
-
 static bool test_QueryInfoKey(struct dcerpc_pipe *p,
 			      struct torture_context *tctx,
 			      struct policy_handle *handle, char *class)
@@ -1443,10 +1420,12 @@ static bool test_QueryInfoKey(struct dcerpc_pipe *p,
 }
 
 static bool test_key(struct dcerpc_pipe *p, struct torture_context *tctx,
-		     struct policy_handle *handle, int depth);
+		     struct policy_handle *handle, int depth,
+		     bool test_security);
 
 static bool test_EnumKey(struct dcerpc_pipe *p, struct torture_context *tctx,
-			 struct policy_handle *handle, int depth)
+			 struct policy_handle *handle, int depth,
+			 bool test_security)
 {
 	struct winreg_EnumKey r;
 	struct winreg_StringBuf class, name;
@@ -1479,7 +1458,8 @@ static bool test_EnumKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 			if (!test_OpenKey(p, tctx, handle, r.out.name->name,
 					  &key_handle)) {
 			} else {
-				test_key(p, tctx, &key_handle, depth + 1);
+				test_key(p, tctx, &key_handle,
+					 depth + 1, test_security);
 			}
 		}
 
@@ -1676,7 +1656,8 @@ static bool test_InitiateSystemShutdownEx(struct torture_context *tctx,
 #define MAX_DEPTH 2		/* Only go this far down the tree */
 
 static bool test_key(struct dcerpc_pipe *p, struct torture_context *tctx,
-		     struct policy_handle *handle, int depth)
+		     struct policy_handle *handle, int depth,
+		     bool test_security)
 {
 	if (depth == MAX_DEPTH)
 		return true;
@@ -1687,10 +1668,10 @@ static bool test_key(struct dcerpc_pipe *p, struct torture_context *tctx,
 	if (!test_NotifyChangeKeyValue(p, tctx, handle)) {
 	}
 
-	if (!test_GetKeySecurity(p, tctx, handle, NULL)) {
+	if (test_security && !test_GetKeySecurity(p, tctx, handle, NULL)) {
 	}
 
-	if (!test_EnumKey(p, tctx, handle, depth)) {
+	if (!test_EnumKey(p, tctx, handle, depth, test_security)) {
 	}
 
 	if (!test_EnumValue(p, tctx, handle, 0xFF, 0xFFFF)) {
@@ -1703,12 +1684,11 @@ static bool test_key(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 typedef NTSTATUS (*winreg_open_fn)(struct dcerpc_pipe *, TALLOC_CTX *, void *);
 
-static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
-		      void *userdata)
+static bool test_Open_Security(struct torture_context *tctx,
+			       struct dcerpc_pipe *p, void *userdata)
 {
 	struct policy_handle handle, newhandle;
-	bool ret = true, created = false, created2 = false, deleted = false;
-	bool created3 = false, created_subkey = false;
+	bool ret = true, created2 = false;
 	bool created4 = false;
 	struct winreg_OpenHKLM r;
 
@@ -1721,14 +1701,85 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	torture_assert_ntstatus_ok(tctx, open_fn(p, tctx, &r),
 				   "open");
 
-	test_Cleanup(p, tctx, &handle, TEST_KEY1);
-	test_Cleanup(p, tctx, &handle, TEST_SUBSUBKEY_SD);
-	test_Cleanup(p, tctx, &handle, TEST_SUBKEY_SD);
-	test_Cleanup(p, tctx, &handle, TEST_KEY4);
-	test_Cleanup(p, tctx, &handle, TEST_KEY2);
-	test_Cleanup(p, tctx, &handle, TEST_SUBKEY);
-	test_Cleanup(p, tctx, &handle, TEST_KEY3);
 	test_Cleanup(p, tctx, &handle, TEST_KEY_BASE);
+
+	if (!test_CreateKey(p, tctx, &handle, TEST_KEY_BASE, NULL)) {
+		torture_comment(tctx,
+				"CreateKey (TEST_KEY_BASE) failed\n");
+	}
+
+	if (test_CreateKey_sd(p, tctx, &handle, TEST_KEY2,
+			      NULL, &newhandle)) {
+		created2 = true;
+	}
+
+	if (created2 && !test_CloseKey(p, tctx, &newhandle)) {
+		printf("CloseKey failed\n");
+		ret = false;
+	}
+
+	if (test_CreateKey_sd(p, tctx, &handle, TEST_KEY4, NULL, &newhandle)) {
+		created4 = true;
+	}
+
+	if (created4 && !test_CloseKey(p, tctx, &newhandle)) {
+		printf("CloseKey failed\n");
+		ret = false;
+	}
+
+	if (created4 && !test_SecurityDescriptors(p, tctx, &handle, TEST_KEY4)) {
+		ret = false;
+	}
+
+	if (created4 && !test_DeleteKey(p, tctx, &handle, TEST_KEY4)) {
+		printf("DeleteKey failed\n");
+		ret = false;
+	}
+
+	if (created2 && !test_DeleteKey(p, tctx, &handle, TEST_KEY2)) {
+		printf("DeleteKey failed\n");
+		ret = false;
+	}
+
+	/* The HKCR hive has a very large fanout */
+	if (open_fn == (void *)dcerpc_winreg_OpenHKCR) {
+		if(!test_key(p, tctx, &handle, MAX_DEPTH - 1, true)) {
+			ret = false;
+		}
+	} else {
+		if (!test_key(p, tctx, &handle, 0, true)) {
+			ret = false;
+		}
+	}
+
+	test_Cleanup(p, tctx, &handle, TEST_KEY_BASE);
+
+	return ret;
+}
+
+static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
+		      void *userdata)
+{
+	struct policy_handle handle, newhandle;
+	bool ret = true, created = false, deleted = false;
+	bool created3 = false, created_subkey = false;
+	struct winreg_OpenHKLM r;
+
+	winreg_open_fn open_fn = userdata;
+
+	r.in.system_name = 0;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.handle = &handle;
+
+	torture_assert_ntstatus_ok(tctx, open_fn(p, tctx, &r),
+				   "open");
+
+	test_Cleanup(p, tctx, &handle, TEST_KEY_BASE);
+
+	if (!test_CreateKey(p, tctx, &handle, TEST_KEY_BASE, NULL)) {
+		torture_comment(tctx,
+				"CreateKey (TEST_KEY_BASE) failed\n");
+	}
 
 	if (!test_CreateKey(p, tctx, &handle, TEST_KEY1, NULL)) {
 		torture_comment(tctx,
@@ -1763,48 +1814,17 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	}
 
 	if (created && deleted &&
-	    test_OpenKey(p, tctx, &handle, TEST_KEY1, &newhandle)) {
+	    !_test_OpenKey(p, tctx, &handle, TEST_KEY1,
+			   SEC_FLAG_MAXIMUM_ALLOWED, &newhandle,
+			   WERR_BADFILE, NULL)) {
 		torture_comment(tctx,
-				"DeleteKey failed (OpenKey after Delete worked)\n");
+				"DeleteKey failed (OpenKey after Delete "
+				"did not return WERR_BADFILE)\n");
 		ret = false;
 	}
 
 	if (!test_GetVersion(p, tctx, &handle)) {
 		torture_comment(tctx, "GetVersion failed\n");
-		ret = false;
-	}
-
-	if (created && test_CreateKey_sd(p, tctx, &handle, TEST_KEY2,
-					 NULL, &newhandle)) {
-		created2 = true;
-	}
-
-	if (created2 && !test_CloseKey(p, tctx, &newhandle)) {
-		printf("CloseKey failed\n");
-		ret = false;
-	}
-
-	if (test_CreateKey_sd(p, tctx, &handle, TEST_KEY4, NULL, &newhandle)) {
-		created4 = true;
-	}
-
-	if (!created4 && !test_CloseKey(p, tctx, &newhandle)) {
-		printf("CloseKey failed\n");
-		ret = false;
-	}
-
-	if (created4 && !test_SecurityDescriptors(p, tctx, &handle, TEST_KEY4)) {
-		ret = false;
-	}
-
-	if (created4 && !test_DeleteKey(p, tctx, &handle, TEST_KEY4)) {
-		printf("DeleteKey failed\n");
-		ret = false;
-	}
-
-
-	if (created && !test_DeleteKey(p, tctx, &handle, TEST_KEY2)) {
-		printf("DeleteKey failed\n");
 		ret = false;
 	}
 
@@ -1818,19 +1838,6 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	}
 
 	if (created_subkey &&
-	    !test_DeleteKeyWithSubkey(p, tctx, &handle, TEST_KEY3)) {
-		printf("DeleteKeyWithSubkey failed "
-		       "(DeleteKey didn't return ACCESS_DENIED)\n");
-		ret = false;
-	}
-
-	if (created_subkey &&
-	    !test_DeleteKey(p, tctx, &handle, TEST_SUBKEY)) {
-		printf("DeleteKey failed\n");
-		ret = false;
-	}
-
-	if (created3 &&
 	    !test_DeleteKey(p, tctx, &handle, TEST_KEY3)) {
 		printf("DeleteKey failed\n");
 		ret = false;
@@ -1838,13 +1845,13 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 
 	/* The HKCR hive has a very large fanout */
 	if (open_fn == (void *)dcerpc_winreg_OpenHKCR) {
-		if(!test_key(p, tctx, &handle, MAX_DEPTH - 1)) {
+		if(!test_key(p, tctx, &handle, MAX_DEPTH - 1, false)) {
 			ret = false;
 		}
-	}
-
-	if (!test_key(p, tctx, &handle, 0)) {
-		ret = false;
+	} else {
+		if (!test_key(p, tctx, &handle, 0, false)) {
+			ret = false;
+		}
 	}
 
 	test_Cleanup(p, tctx, &handle, TEST_KEY_BASE);
@@ -1854,14 +1861,6 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 
 struct torture_suite *torture_rpc_winreg(TALLOC_CTX *mem_ctx)
 {
-	struct {
-		const char *name;
-		winreg_open_fn fn;
-	} open_fns[] = {{"OpenHKLM", (winreg_open_fn)dcerpc_winreg_OpenHKLM },
-			{"OpenHKU",  (winreg_open_fn)dcerpc_winreg_OpenHKU },
-			{"OpenHKCR", (winreg_open_fn)dcerpc_winreg_OpenHKCR },
-			{"OpenHKCU", (winreg_open_fn)dcerpc_winreg_OpenHKCU }};
-	int i;
 	struct torture_rpc_tcase *tcase;
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "WINREG");
 	struct torture_test *test;
@@ -1877,10 +1876,33 @@ struct torture_suite *torture_rpc_winreg(TALLOC_CTX *mem_ctx)
 					  test_InitiateSystemShutdownEx);
 	test->dangerous = true;
 
-	for (i = 0; i < ARRAY_SIZE(open_fns); i++) {
-		torture_rpc_tcase_add_test_ex(tcase, open_fns[i].name,
-					      test_Open, open_fns[i].fn);
-	}
+	/* Basic tests without security descriptors */
+	torture_rpc_tcase_add_test_ex(tcase, "HKLM-basic",
+				      test_Open,
+				      (winreg_open_fn)dcerpc_winreg_OpenHKLM);
+	torture_rpc_tcase_add_test_ex(tcase, "HKU-basic",
+				      test_Open,
+				      (winreg_open_fn)dcerpc_winreg_OpenHKU);
+	torture_rpc_tcase_add_test_ex(tcase, "HKCR-basic",
+				      test_Open,
+				      (winreg_open_fn)dcerpc_winreg_OpenHKCR);
+	torture_rpc_tcase_add_test_ex(tcase, "HKCU-basic",
+				      test_Open,
+				      (winreg_open_fn)dcerpc_winreg_OpenHKCU);
+
+	/* Security descriptor tests */
+	torture_rpc_tcase_add_test_ex(tcase, "HKLM-security",
+				      test_Open_Security,
+				      (winreg_open_fn)dcerpc_winreg_OpenHKLM);
+	torture_rpc_tcase_add_test_ex(tcase, "HKU-security",
+				      test_Open_Security,
+				      (winreg_open_fn)dcerpc_winreg_OpenHKU);
+	torture_rpc_tcase_add_test_ex(tcase, "HKCR-security",
+				      test_Open_Security,
+				      (winreg_open_fn)dcerpc_winreg_OpenHKCR);
+	torture_rpc_tcase_add_test_ex(tcase, "HKCU-security",
+				      test_Open_Security,
+				      (winreg_open_fn)dcerpc_winreg_OpenHKCU);
 
 	return suite;
 }

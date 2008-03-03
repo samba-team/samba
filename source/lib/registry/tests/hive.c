@@ -111,6 +111,38 @@ static bool test_add_subkey(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_del_recursive(struct torture_context *tctx,
+			       const void *test_data)
+{
+	WERROR error;
+	struct hive_key *subkey;
+	struct hive_key *subkey2;
+	const struct hive_key *root = (const struct hive_key *)test_data;
+	TALLOC_CTX *mem_ctx = tctx;
+	uint32_t data = 42;
+
+	/* Create a new key under the root */
+	error = hive_key_add_name(mem_ctx, root, "Parent Key", NULL,
+				  NULL, &subkey);
+	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
+
+	/* Create a new key under "Parent Key" */
+	error = hive_key_add_name(mem_ctx, subkey, "Child Key", NULL,
+				  NULL, &subkey2);
+	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
+
+	/* Create a new value under "Child Key" */
+	error = hive_key_set_value(subkey2, "Answer Recursive", REG_DWORD,
+			       data_blob_talloc(mem_ctx, &data, sizeof(data)));
+	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
+
+	/* Deleting "Parent Key" will also delete "Child Key" and the value. */
+	error = hive_key_del(root, "Parent Key");
+	torture_assert_werr_ok(tctx, error, "hive_key_del");
+
+	return true;
+}
+
 static bool test_flush_key(struct torture_context *tctx, void *test_data)
 {
 	struct hive_key *root = (struct hive_key *)test_data;
@@ -273,6 +305,11 @@ static void tcase_add_tests(struct torture_tcase *tcase)
 						test_add_subkey);
 	torture_tcase_add_simple_test(tcase, "flush_key",
 						test_flush_key);
+	/* test_del_recursive() test must run before test_keyinfo_root().
+	   test_keyinfo_root() checks the number of subkeys, which verifies
+	   the recursive delete worked properly. */
+	torture_tcase_add_simple_test_const(tcase, "del_recursive",
+						test_del_recursive);
 	torture_tcase_add_simple_test_const(tcase, "get_info",
 						test_keyinfo_root);
 	torture_tcase_add_simple_test(tcase, "get_info_nums",
