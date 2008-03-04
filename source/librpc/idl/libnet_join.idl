@@ -12,6 +12,7 @@ import "wkssvc.idl", "security.idl";
 interface libnetjoin
 {
 	typedef bitmap wkssvc_joinflags wkssvc_joinflags;
+	typedef enum netr_SchannelType netr_SchannelType;
 
 	[nopush,nopull,noopnum] WERROR libnet_JoinCtx(
 		[in] string dc_name,
@@ -29,6 +30,7 @@ interface libnetjoin
 		[in] boolean8 modify_config,
 		[in] ads_struct *ads,
 		[in] boolean8 debug,
+		[in] netr_SchannelType secure_channel_type,
 		[out] string account_name,
 		[out] string netbios_domain_name,
 		[out] string dns_domain_name,
