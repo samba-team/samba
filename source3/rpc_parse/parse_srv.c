@@ -2619,18 +2619,6 @@ bool srv_io_r_net_file_enum(const char *desc, SRV_R_NET_FILE_ENUM *r_n, prs_stru
 }
 
 /*******************************************************************
- Inits a SRV_INFO_100 structure.
- ********************************************************************/
-
-void init_srv_info_100(SRV_INFO_100 *sv100, uint32 platform_id, const char *name)
-{
-	DEBUG(5,("init_srv_info_100\n"));
-
-	sv100->platform_id  = platform_id;
-	init_buf_unistr2(&sv100->uni_name, &sv100->ptr_name, name);
-}
-
-/*******************************************************************
  Reads or writes a SRV_INFO_101 structure.
  ********************************************************************/
 
@@ -2654,25 +2642,6 @@ static bool srv_io_info_100(const char *desc, SRV_INFO_100 *sv100, prs_struct *p
 		return False;
 
 	return True;
-}
-
-
-/*******************************************************************
- Inits a SRV_INFO_101 structure.
- ********************************************************************/
-
-void init_srv_info_101(SRV_INFO_101 *sv101, uint32 platform_id, const char *name,
-				uint32 ver_major, uint32 ver_minor,
-				uint32 srv_type, const char *comment)
-{
-	DEBUG(5,("init_srv_info_101\n"));
-
-	sv101->platform_id  = platform_id;
-	init_buf_unistr2(&sv101->uni_name, &sv101->ptr_name, name);
-	sv101->ver_major    = ver_major;
-	sv101->ver_minor    = ver_minor;
-	sv101->srv_type     = srv_type;
-	init_buf_unistr2(&sv101->uni_comment, &sv101->ptr_comment, comment);
 }
 
 /*******************************************************************
@@ -2713,41 +2682,6 @@ static bool srv_io_info_101(const char *desc, SRV_INFO_101 *sv101, prs_struct *p
 
 	return True;
 }
-
-/*******************************************************************
- Inits a SRV_INFO_102 structure.
- ********************************************************************/
-
-void init_srv_info_102(SRV_INFO_102 *sv102, uint32 platform_id, const char *name,
-				const char *comment, uint32 ver_major, uint32 ver_minor,
-				uint32 srv_type, uint32 users, uint32 disc, uint32 hidden,
-				uint32 announce, uint32 ann_delta, uint32 licenses,
-				const char *usr_path)
-{
-	DEBUG(5,("init_srv_info_102\n"));
-
-	sv102->platform_id  = platform_id;
-	init_buf_unistr2(&sv102->uni_name, &sv102->ptr_name, name);
-	sv102->ver_major    = ver_major;
-	sv102->ver_minor    = ver_minor;
-	sv102->srv_type     = srv_type;
-	init_buf_unistr2(&sv102->uni_comment, &sv102->ptr_comment, comment);
-
-	/* same as 101 up to here */
-
-	sv102->users        = users;
-	sv102->disc         = disc;
-	sv102->hidden       = hidden;
-	sv102->announce     = announce;
-	sv102->ann_delta    = ann_delta;
-	sv102->licenses     = licenses;
-	init_buf_unistr2(&sv102->uni_usr_path, &sv102->ptr_usr_path, usr_path);
-}
-
-
-/*******************************************************************
- Reads or writes a SRV_INFO_102 structure.
- ********************************************************************/
 
 static bool srv_io_info_102(const char *desc, SRV_INFO_102 *sv102, prs_struct *ps, int depth)
 {
@@ -2851,71 +2785,6 @@ static bool srv_io_info_ctr(const char *desc, SRV_INFO_CTR *ctr, prs_struct *ps,
 }
 
 /*******************************************************************
- Inits a SRV_Q_NET_SRV_GET_INFO structure.
- ********************************************************************/
-
-void init_srv_q_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *srv,
-				const char *server_name, uint32 switch_value)
-{
-	DEBUG(5,("init_srv_q_net_srv_get_info\n"));
-
-	init_buf_unistr2(&srv->uni_srv_name, &srv->ptr_srv_name, server_name);
-
-	srv->switch_value = switch_value;
-}
-
-/*******************************************************************
- Reads or writes a structure.
-********************************************************************/
-
-bool srv_io_q_net_srv_get_info(const char *desc, SRV_Q_NET_SRV_GET_INFO *q_n, prs_struct *ps, int depth)
-{
-	if (q_n == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "srv_io_q_net_srv_get_info");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("ptr_srv_name  ", ps, depth, &q_n->ptr_srv_name))
-		return False;
-	if(!smb_io_unistr2("", &q_n->uni_srv_name, True, ps, depth))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("switch_value  ", ps, depth, &q_n->switch_value))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Inits a SRV_R_NET_SRV_GET_INFO structure.
- ********************************************************************/
-
-void init_srv_r_net_srv_get_info(SRV_R_NET_SRV_GET_INFO *srv,
-				uint32 switch_value, SRV_INFO_CTR *ctr, WERROR status)
-{
-	DEBUG(5,("init_srv_r_net_srv_get_info\n"));
-
-	srv->ctr = ctr;
-
-	if (W_ERROR_IS_OK(status)) {
-		srv->ctr->switch_value = switch_value;
-		srv->ctr->ptr_srv_ctr  = 1;
-	} else {
-		srv->ctr->switch_value = 0;
-		srv->ctr->ptr_srv_ctr  = 0;
-	}
-
-	srv->status = status;
-}
-
-/*******************************************************************
  Inits a SRV_R_NET_SRV_SET_INFO structure.
  ********************************************************************/
 
@@ -2960,30 +2829,6 @@ bool srv_io_q_net_srv_set_info(const char *desc, SRV_Q_NET_SRV_SET_INFO *q_n,
 	}
 
 	if(!srv_io_info_ctr("ctr", q_n->ctr, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes a structure.
- ********************************************************************/
-
-bool srv_io_r_net_srv_get_info(const char *desc, SRV_R_NET_SRV_GET_INFO *r_n, prs_struct *ps, int depth)
-{
-	if (r_n == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "srv_io_r_net_srv_get_info");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!srv_io_info_ctr("ctr", r_n->ctr, ps, depth))
-		return False;
-
-	if(!prs_werror("status", ps, depth, &r_n->status))
 		return False;
 
 	return True;

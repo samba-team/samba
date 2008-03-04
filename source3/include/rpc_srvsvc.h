@@ -747,24 +747,6 @@ typedef struct srv_info_ctr_info
 
 } SRV_INFO_CTR;
 
-/* SRV_Q_NET_SRV_GET_INFO */
-typedef struct q_net_srv_get_info
-{
-	uint32  ptr_srv_name;
-	UNISTR2 uni_srv_name; /* "\\server" */
-	uint32  switch_value;
-
-} SRV_Q_NET_SRV_GET_INFO;
-
-/* SRV_R_NET_SRV_GET_INFO */
-typedef struct r_net_srv_get_info
-{
-	SRV_INFO_CTR *ctr;
-
-	WERROR status;               /* return status */
-
-} SRV_R_NET_SRV_GET_INFO;
-
 /* SRV_Q_NET_SRV_SET_INFO */
 typedef struct q_net_srv_set_info
 {
