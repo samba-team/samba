@@ -11,4 +11,4 @@ lib/policy/parse_adm.h: lib/policy/parse_adm.c
 [BINARY::dumpadm]
 PRIVATE_DEPENDENCIES = LIBPOLICY LIBPOPT LIBSAMBA-CONFIG LIBTALLOC LIBSAMBA-UTIL CHARSET
 
-dumpadmin_OBJ_FILES = lib/policy/dumpadm.o
+dumpadm_OBJ_FILES = lib/policy/dumpadm.o

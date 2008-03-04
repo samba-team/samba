@@ -21,6 +21,6 @@ PUBLIC_DEPENDENCIES = DCERPC_COMMON
 # End SUBSYSTEM ntptr
 ################################################
 
-NTPTR_OBJ_FILES = \
-		ntptr_base.o \
-		ntptr_interface.o
+ntptr_OBJ_FILES = \
+		ntptr/ntptr_base.o \
+		ntptr/ntptr_interface.o

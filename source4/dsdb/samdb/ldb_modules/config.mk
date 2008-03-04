@@ -268,7 +268,7 @@ SUBSYSTEM = LIBLDB
 # End MODULE ldb_subtree_rename
 ################################################
 
-ldb_subtree_delete_OBJ_FILES = subtree_delete.o
+ldb_subtree_delete_OBJ_FILES = dsdb/samdb/ldb_modules/subtree_delete.o
 
 ################################################
 # Start MODULE ldb_linked_attributes
