@@ -6264,7 +6264,7 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 		    entry,
 		    get_userattr_key2string(ldap_state->schema_ver,
 					    LDAP_ATTR_USER_SID),
-		    NULL);
+		    talloc_tos());
 
 	if (domain_sid_string) {
 		bool found_sid;
@@ -6300,7 +6300,7 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 		    entry,
 		    get_attr_key2string( dominfo_attr_list,
 					 LDAP_ATTR_ALGORITHMIC_RID_BASE ),
-		    NULL);
+		    talloc_tos());
 	if (alg_rid_base_string) {
 		alg_rid_base = (uint32)atol(alg_rid_base_string);
 		if (alg_rid_base != algorithmic_rid_base()) {
