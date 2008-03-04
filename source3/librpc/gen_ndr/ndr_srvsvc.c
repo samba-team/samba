@@ -16179,8 +16179,11 @@ static enum ndr_err_code ndr_push_srvsvc_NetSrvSetInfo(struct ndr_push *ndr, int
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.server_unc, ndr_charset_length(r->in.server_unc, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
-		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->in.info, r->in.level));
-		NDR_CHECK(ndr_push_srvsvc_NetSrvInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.info));
+		if (r->in.info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.info, r->in.level));
+		NDR_CHECK(ndr_push_srvsvc_NetSrvInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.parm_error));
 		if (r->in.parm_error) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.parm_error));
@@ -16201,6 +16204,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetSrvSetInfo(struct ndr_pull *ndr, int
 	uint32_t _ptr_server_unc;
 	uint32_t _ptr_parm_error;
 	TALLOC_CTX *_mem_save_server_unc_0;
+	TALLOC_CTX *_mem_save_info_0;
 	TALLOC_CTX *_mem_save_parm_error_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
@@ -16224,8 +16228,14 @@ static enum ndr_err_code ndr_pull_srvsvc_NetSrvSetInfo(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_unc_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.info, r->in.level));
-		NDR_CHECK(ndr_pull_srvsvc_NetSrvInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.info));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.info);
+		}
+		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.info, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.info, r->in.level));
+		NDR_CHECK(ndr_pull_srvsvc_NetSrvInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_parm_error));
 		if (_ptr_parm_error) {
 			NDR_PULL_ALLOC(ndr, r->in.parm_error);
@@ -16274,8 +16284,11 @@ _PUBLIC_ void ndr_print_srvsvc_NetSrvSetInfo(struct ndr_print *ndr, const char *
 		}
 		ndr->depth--;
 		ndr_print_uint32(ndr, "level", r->in.level);
-		ndr_print_set_switch_value(ndr, &r->in.info, r->in.level);
-		ndr_print_srvsvc_NetSrvInfo(ndr, "info", &r->in.info);
+		ndr_print_ptr(ndr, "info", r->in.info);
+		ndr->depth++;
+		ndr_print_set_switch_value(ndr, r->in.info, r->in.level);
+		ndr_print_srvsvc_NetSrvInfo(ndr, "info", r->in.info);
+		ndr->depth--;
 		ndr_print_ptr(ndr, "parm_error", r->in.parm_error);
 		ndr->depth++;
 		if (r->in.parm_error) {
