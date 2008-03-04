@@ -24,40 +24,6 @@
 
 #include "includes.h"
 
-WERROR rpccli_srvsvc_net_srv_get_info(struct rpc_pipe_client *cli, 
-				   TALLOC_CTX *mem_ctx,
-				   uint32 switch_value, SRV_INFO_CTR *ctr)
-{
-	prs_struct qbuf, rbuf;
-	SRV_Q_NET_SRV_GET_INFO q;
-	SRV_R_NET_SRV_GET_INFO r;
-	WERROR result = W_ERROR(ERRgeneral);
-	fstring server;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialise input parameters */
-
-	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
-	strupper_m(server);
-
-	init_srv_q_net_srv_get_info(&q, server, switch_value);
-	r.ctr = ctr;
-
-	/* Marshall data and send request */
-
-	CLI_DO_RPC_WERR(cli, mem_ctx, PI_SRVSVC, SRV_NET_SRV_GET_INFO,
-		q, r,
-		qbuf, rbuf,
-		srv_io_q_net_srv_get_info,
-		srv_io_r_net_srv_get_info,
-		WERR_GENERAL_FAILURE);
-
-	result = r.status;
-	return result;
-}
-
 WERROR rpccli_srvsvc_net_share_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 uint32 info_level, SRV_SHARE_INFO_CTR *ctr,
 				 int preferred_len, ENUM_HND *hnd)
