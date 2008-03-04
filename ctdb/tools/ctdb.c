@@ -398,6 +398,104 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 }
 
 /*
+  move/failover an ip address to a specific node
+ */
+static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t pnn;
+	struct sockaddr_in ip;
+	uint32_t value;
+	struct ctdb_all_public_ips *ips;
+	struct ctdb_public_ip pip;
+	TDB_DATA data;
+	struct ctdb_node_map *nodemap=NULL;
+	int i, ret;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	ip.sin_family = AF_INET;
+	if (inet_aton(argv[0], &ip.sin_addr) == 0) {
+		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
+		return -1;
+	}
+
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		return ret;
+	}
+
+	if (sscanf(argv[1], "%u", &pnn) != 1) {
+		DEBUG(DEBUG_ERR, ("Badly formed pnn\n"));
+		return -1;
+	}
+
+	ret = ctdb_ctrl_get_tunable(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, "DeterministicIPs", &value);
+	if (ret == -1) {
+		DEBUG(DEBUG_ERR, ("Unable to get tunable variable 'DeterministicIPs' from local node\n"));
+		return -1;
+	}
+	if (value != 0) {
+		DEBUG(DEBUG_ERR, ("The tunable 'DeterministicIPs' is set. You can only move ip addresses when this feature is disabled\n"));
+		return -1;
+	}
+
+	ret = ctdb_ctrl_get_tunable(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, "NoIPFailback", &value);
+	if (ret == -1) {
+		DEBUG(DEBUG_ERR, ("Unable to get tunable variable 'NoIPFailback' from local node\n"));
+		return -1;
+	}
+	if (value == 0) {
+		DEBUG(DEBUG_ERR, ("The tunable 'NoIPFailback' is NOT set. You can only move ip addresses when this feature is enabled\n"));
+		return -1;
+	}
+
+	/* read the public ip list from the node */
+	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), pnn, ctdb, &ips);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get public ip list from node %u\n", pnn));
+		return -1;
+	}
+
+	for (i=0;i<ips->num;i++) {
+		if (ctdb_same_ip(&ip, &ips->ips[i].sin)) {
+			break;
+		}
+	}
+	if (i==ips->num) {
+		DEBUG(DEBUG_ERR, ("Node %u can not host ip address '%s'\n",
+			pnn, inet_ntoa(ip.sin_addr)));
+		return -1;
+	}
+	if (ips->ips[i].pnn == pnn) {
+		DEBUG(DEBUG_ERR, ("Host %u is already hosting '%s'\n",
+			pnn, inet_ntoa(ips->ips[i].sin.sin_addr)));
+		return -1;
+	}
+
+	/* send a moveip message to the recovery master */
+	pip.pnn = pnn;
+	pip.sin.sin_family = AF_INET;
+	pip.sin.sin_addr   = ips->ips[i].sin.sin_addr;
+	data.dsize = sizeof(pip);
+	data.dptr = (unsigned char *)&pip;
+
+
+	/* send release ip to all nodes */
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_RELEASE_IP,
+			list_of_active_nodes(ctdb, nodemap, ctdb, true),
+			TIMELIMIT(), false, data) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to send 'ReleaseIP' to all nodes.\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
   kill a tcp connection
  */
 static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -1298,6 +1396,7 @@ static const struct {
 	{ "listnodes",       control_listnodes,		false, "list all nodes in the cluster"},
 	{ "reloadnodes",     control_reload_nodes_file,		false, "reload the nodes file and restart the transport on all nodes"},
 	{ "getreclock",      control_getreclock,        false,  "get the path to the reclock file" },
+	{ "moveip",          control_moveip,		false, "move/failover an ip address to another node", "<ip> <node>"},
 };
 
 /*
