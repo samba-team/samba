@@ -259,10 +259,53 @@
       investigated and require an administrative action to rectify. This node 
       does not perticipate in the CTDB cluster but can still be communicated 
       with. I.e. ctdb commands can be sent to it.
-    </p></div><div class="refsect1" lang="en"><a name="id2528891"></a><h2>SEE ALSO</h2><p>
+    </p></div><div class="refsect1" lang="en"><a name="id2528891"></a><h2>PUBLIC TUNABLES</h2><p>
+    These are the public tuneables that can be used to control how ctdb behaves.
+    </p><div class="refsect2" lang="en"><a name="id2528901"></a><h3>KeepaliveInterval</h3><p>Default: 1</p><p>
+    How often should the nodes send keepalives to eachother.
+    </p></div><div class="refsect2" lang="en"><a name="id2528915"></a><h3>KeepaliveLimit</h3><p>Default: 5</p><p>
+    After how many keepalive intervals without any traffic should a node
+    wait until marking the peer as DISCONNECTED.
+    </p></div><div class="refsect2" lang="en"><a name="id2528929"></a><h3>MonitorInterval</h3><p>Default: 15</p><p>
+    How often should ctdb run the event scripts to check for a nodes health.
+    </p></div><div class="refsect2" lang="en"><a name="id2528943"></a><h3>TickleUpdateInterval</h3><p>Default: 20</p><p>
+    How often will ctdb record and store the "tickle" information used to
+    kickstart stalled tcp connections after a recovery.
+    </p></div><div class="refsect2" lang="en"><a name="id2528958"></a><h3>EventScriptTimeout</h3><p>Default: 20</p><p>
+    How long should ctdb let an event script run before aborting it and
+    marking the node unhealthy.
+    </p></div><div class="refsect2" lang="en"><a name="id2528972"></a><h3>RecoveryBanPeriod</h3><p>Default: 300</p><p>
+    If a node becomes banned causing repetitive recovery failures. The node will
+    eventually become banned from the cluster.
+    This controls how long the culprit node will be banned from the cluster
+    before it is allowed to try to join the cluster again.
+    Dont set to small. A node gets banned for a reason and it is usually due
+    to real problems with the node.
+    </p></div><div class="refsect2" lang="en"><a name="id2528991"></a><h3>DatabaseHashSize</h3><p>Default: 100000</p><p>
+    Size of the hash chains for the local store of the tdbs that ctdb manages.
+    </p></div><div class="refsect2" lang="en"><a name="id2529005"></a><h3>RerecoveryTimeout</h3><p>Default: 10</p><p>
+    Once a recovery has completed, no additional recoveries are permitted until this timeout has expired.
+    </p></div><div class="refsect2" lang="en"><a name="id2529020"></a><h3>EnableBans</h3><p>Default: 1</p><p>
+    When set to 0, this disables BANNING completely in the cluster and thus nodes can not get banned, even it they break. Dont set to 0.
+    </p></div><div class="refsect2" lang="en"><a name="id2529034"></a><h3>DeterministicIPs</h3><p>Default: 1</p><p>
+    When enabled, this tunable makes ctdb try to keep public ip addresses locked to specific nodes as far as possible. This makes it easier for debugging since you can know that as long as all nodes are healthy public ip X will always be hosted by node Y. 
+    </p><p>
+    The cost of using deterministic ip address assignment is that it disables part of the logic where ctdb tries to reduce the number of public ip assignment changes in the cluster. This tunable may increase the number of ip failover/failbacks that are performed on the cluster by a small margin.
+    </p></div><div class="refsect2" lang="en"><a name="id2529060"></a><h3>DisableWhenUnhealthy</h3><p>Default: 0</p><p>
+    When set, As soon as a node becomes unhealthy, that node will also automatically become permanently DISABLED. Once a node is DISABLED, the only way to make it participate in the cluster again and host services is by manually enabling the node again using 'ctdb enable'. 
+    </p><p>
+    This disables parts of the resilience and robustness of the cluster and should ONLY be used when the system administrator is actively monitoring the cluster, so that nodes can be enabled again.
+    </p></div><div class="refsect2" lang="en"><a name="id2529083"></a><h3>NoIPFailback</h3><p>Default: 0</p><p>
+    When set to 1, ctdb will not perform failback of ip addresses when a node becomes healthy. Ctdb WILL perform failover of public ip addresses when a node becomes UNHEALTHY, but when the node becomes HEALTHY again, ctdb will not fail the addresses back.
+    </p><p>
+    Use with caution! Normally when a node becomes available to the cluster
+ctdb will try to reassign public ip addresses onto the new node as a way to distribute the workload evenly across the clusternode. Ctdb tries to make sure that all running nodes have approximately the same number of public addresses it hosts.
+    </p><p>
+    when you enable this tunable, CTDB will no longer attempt to rebalance the cluster by failing ip addresses back to the new nodes. An unbalanced cluster will therefore remain unbalanced until there is manual intervention from the administrator. (When this parameter is set, you can manually fail public ip addresses over to the new node(s) using the 'ctdb moveip' command.
+    </p></div></div><div class="refsect1" lang="en"><a name="id2529120"></a><h2>SEE ALSO</h2><p>
       ctdb(1), onnode(1)
       <a href="http://ctdb.samba.org/" target="_top">http://ctdb.samba.org/</a>
-    </p></div><div class="refsect1" lang="en"><a name="id2528904"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
+    </p></div><div class="refsect1" lang="en"><a name="id2529133"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
 Copyright (C) Andrew Tridgell 2007<br>
 Copyright (C) Ronnie sahlberg 2007<br>
 <br>

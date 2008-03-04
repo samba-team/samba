@@ -1,11 +1,11 @@
 .\"     Title: ctdbd
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.71.0 <http://docbook.sf.net/>
-.\"      Date: 02/22/2008
+.\"      Date: 03/04/2008
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDBD" "1" "02/22/2008" "" ""
+.TH "CTDBD" "1" "03/04/2008" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -261,6 +261,77 @@ DISABLED \- This node has been administratively disabled. This node is still fun
 UNHEALTHY \- A service provided by this node is malfunctioning and should be investigated. The CTDB daemon itself is operational and participates in the cluster. Its public IP address has been taken over by a different node and no services are currently being hosted. All unhealthy nodes should be investigated and require an administrative action to rectify.
 .PP
 BANNED \- This node failed too many recovery attempts and has been banned from participating in the cluster for a period of RecoveryBanPeriod seconds. Any public IP address has been taken over by other nodes. This node does not provide any services. All banned nodes should be investigated and require an administrative action to rectify. This node does not perticipate in the CTDB cluster but can still be communicated with. I.e. ctdb commands can be sent to it.
+.SH "PUBLIC TUNABLES"
+.PP
+These are the public tuneables that can be used to control how ctdb behaves.
+.SS "KeepaliveInterval"
+.PP
+Default: 1
+.PP
+How often should the nodes send keepalives to eachother.
+.SS "KeepaliveLimit"
+.PP
+Default: 5
+.PP
+After how many keepalive intervals without any traffic should a node wait until marking the peer as DISCONNECTED.
+.SS "MonitorInterval"
+.PP
+Default: 15
+.PP
+How often should ctdb run the event scripts to check for a nodes health.
+.SS "TickleUpdateInterval"
+.PP
+Default: 20
+.PP
+How often will ctdb record and store the "tickle" information used to kickstart stalled tcp connections after a recovery.
+.SS "EventScriptTimeout"
+.PP
+Default: 20
+.PP
+How long should ctdb let an event script run before aborting it and marking the node unhealthy.
+.SS "RecoveryBanPeriod"
+.PP
+Default: 300
+.PP
+If a node becomes banned causing repetitive recovery failures. The node will eventually become banned from the cluster. This controls how long the culprit node will be banned from the cluster before it is allowed to try to join the cluster again. Dont set to small. A node gets banned for a reason and it is usually due to real problems with the node.
+.SS "DatabaseHashSize"
+.PP
+Default: 100000
+.PP
+Size of the hash chains for the local store of the tdbs that ctdb manages.
+.SS "RerecoveryTimeout"
+.PP
+Default: 10
+.PP
+Once a recovery has completed, no additional recoveries are permitted until this timeout has expired.
+.SS "EnableBans"
+.PP
+Default: 1
+.PP
+When set to 0, this disables BANNING completely in the cluster and thus nodes can not get banned, even it they break. Dont set to 0.
+.SS "DeterministicIPs"
+.PP
+Default: 1
+.PP
+When enabled, this tunable makes ctdb try to keep public ip addresses locked to specific nodes as far as possible. This makes it easier for debugging since you can know that as long as all nodes are healthy public ip X will always be hosted by node Y.
+.PP
+The cost of using deterministic ip address assignment is that it disables part of the logic where ctdb tries to reduce the number of public ip assignment changes in the cluster. This tunable may increase the number of ip failover/failbacks that are performed on the cluster by a small margin.
+.SS "DisableWhenUnhealthy"
+.PP
+Default: 0
+.PP
+When set, As soon as a node becomes unhealthy, that node will also automatically become permanently DISABLED. Once a node is DISABLED, the only way to make it participate in the cluster again and host services is by manually enabling the node again using 'ctdb enable'.
+.PP
+This disables parts of the resilience and robustness of the cluster and should ONLY be used when the system administrator is actively monitoring the cluster, so that nodes can be enabled again.
+.SS "NoIPFailback"
+.PP
+Default: 0
+.PP
+When set to 1, ctdb will not perform failback of ip addresses when a node becomes healthy. Ctdb WILL perform failover of public ip addresses when a node becomes UNHEALTHY, but when the node becomes HEALTHY again, ctdb will not fail the addresses back.
+.PP
+Use with caution! Normally when a node becomes available to the cluster ctdb will try to reassign public ip addresses onto the new node as a way to distribute the workload evenly across the clusternode. Ctdb tries to make sure that all running nodes have approximately the same number of public addresses it hosts.
+.PP
+when you enable this tunable, CTDB will no longer attempt to rebalance the cluster by failing ip addresses back to the new nodes. An unbalanced cluster will therefore remain unbalanced until there is manual intervention from the administrator. (When this parameter is set, you can manually fail public ip addresses over to the new node(s) using the 'ctdb moveip' command.
 .SH "SEE ALSO"
 .PP
 ctdb(1), onnode(1)
