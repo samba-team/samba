@@ -14,7 +14,6 @@ schemaIDGUID: c3dbafa6-33df-11d2-98b2-0000f87a57d4
 attributeSecurityGUID: 59ba2f42-79a2-11d0-9020-00c04fc2d3cf
 systemOnly: FALSE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-Exch-Owner-BL,${SCHEMADN}
 objectClass: top
@@ -33,7 +32,6 @@ lDAPDisplayName: ownerBL
 schemaIDGUID: bf9679f4-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Is-Member-Of-DL,${SCHEMADN}
 objectClass: top
@@ -54,7 +52,6 @@ schemaIDGUID: bf967991-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: bc0ac240-79a9-11d0-9020-00c04fc2d4cf
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Search-Guide,${SCHEMADN}
 objectClass: top
@@ -72,7 +69,6 @@ lDAPDisplayName: searchGuide
 schemaIDGUID: bf967a2e-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-ReplicationEpoch,${SCHEMADN}
 objectClass: top
@@ -89,7 +85,6 @@ lDAPDisplayName: msDS-ReplicationEpoch
 schemaIDGUID: 08e3aa79-eb1c-45b5-af7b-8f94246c8e41
 systemOnly: FALSE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Auditing-Policy,${SCHEMADN}
 objectClass: top
@@ -106,7 +101,6 @@ lDAPDisplayName: auditingPolicy
 schemaIDGUID: 6da8a4fe-0e52-11d0-a286-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Phone-Fax-Other,${SCHEMADN}
 objectClass: top
@@ -126,7 +120,6 @@ schemaIDGUID: 0296c11d-40da-11d1-a9c0-0000f80367c1
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Address,${SCHEMADN}
 objectClass: top
@@ -147,7 +140,6 @@ schemaIDGUID: f0f8ff84-1191-11d0-a060-00aa006c33ed
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Security-Identifier,${SCHEMADN}
 objectClass: top
@@ -165,7 +157,6 @@ schemaIDGUID: bf967a2f-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-KeyVersionNumber,${SCHEMADN}
 objectClass: top
@@ -182,7 +173,6 @@ lDAPDisplayName: msDS-KeyVersionNumber
 schemaIDGUID: c523e9c0-33b5-4ac8-8923-b57b927f42f6
 systemOnly: TRUE
 systemFlags: 20
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Account-Name-History,${SCHEMADN}
 objectClass: top
@@ -199,7 +189,6 @@ lDAPDisplayName: accountNameHistory
 schemaIDGUID: 031952ec-3b72-11d2-90cc-00c04fd91ab1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=preferredLanguage,${SCHEMADN}
 objectClass: top
@@ -216,7 +205,6 @@ lDAPDisplayName: preferredLanguage
 schemaIDGUID: 856be0d0-18e7-46e1-8f5f-7ee4d9020e0d
 systemOnly: FALSE
 systemFlags: 0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=User-Shared-Folder-Other,${SCHEMADN}
 objectClass: top
@@ -234,7 +222,6 @@ schemaIDGUID: 9a9a0220-4a5b-11d1-a9c3-0000f80367c1
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=User-Shared-Folder,${SCHEMADN}
 objectClass: top
@@ -252,7 +239,6 @@ schemaIDGUID: 9a9a021f-4a5b-11d1-a9c3-0000f80367c1
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MSMQ-Digests-Mig,${SCHEMADN}
 objectClass: top
@@ -270,7 +256,6 @@ schemaIDGUID: 0f71d8e0-da3b-11d1-90a5-00c04fd91ab1
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Domain-Identifier,${SCHEMADN}
 objectClass: top
@@ -287,7 +272,6 @@ lDAPDisplayName: domainIdentifier
 schemaIDGUID: 7f561278-5301-11d1-a9c5-0000f80367c1
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Legacy-Exchange-DN,${SCHEMADN}
 objectClass: top
@@ -306,7 +290,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Well-Known-Objects,${SCHEMADN}
 objectClass: top
@@ -327,7 +310,6 @@ schemaIDGUID: 05308983-7688-11d1-aded-00c04fd8d5cd
 systemOnly: TRUE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=RDN,${SCHEMADN}
 objectClass: top
@@ -349,7 +331,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: TRUE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Non-Security-Member-BL,${SCHEMADN}
 objectClass: top
@@ -368,7 +349,6 @@ lDAPDisplayName: nonSecurityMemberBL
 schemaIDGUID: 52458019-ca6a-11d0-afff-0000f80367c1
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Repl-Attribute-Meta-Data,${SCHEMADN}
 objectClass: top
@@ -385,7 +365,6 @@ lDAPDisplayName: msDS-ReplAttributeMetaData
 schemaIDGUID: d7c53242-724e-4c39-9d4c-2df8c9d66c7a
 systemOnly: FALSE
 systemFlags: 20
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=DN-Reference-Update,${SCHEMADN}
 objectClass: top
@@ -403,7 +382,6 @@ lDAPDisplayName: dNReferenceUpdate
 schemaIDGUID: 2df90d86-009f-11d2-aa4c-00c04fd7d83a
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=GP-Options,${SCHEMADN}
 objectClass: top
@@ -420,7 +398,6 @@ lDAPDisplayName: gPOptions
 schemaIDGUID: f30e3bbf-9ff0-11d1-b603-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MS-DS-Per-User-Trust-Tombstones-Quota,${SCHEMADN}
 objectClass: top
@@ -437,7 +414,6 @@ lDAPDisplayName: msDS-PerUserTrustTombstonesQuota
 schemaIDGUID: 8b70a6c6-50f9-4fa3-a71e-1ce03040449b
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Phone-Pager-Primary,${SCHEMADN}
 objectClass: top
@@ -458,7 +434,6 @@ schemaIDGUID: f0f8ffa6-1191-11d0-a060-00aa006c33ed
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Site-GUID,${SCHEMADN}
 objectClass: top
@@ -477,7 +452,6 @@ lDAPDisplayName: siteGUID
 schemaIDGUID: 3e978924-8c01-11d0-afda-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Az-Script-Engine-Cache-Max,${SCHEMADN}
 objectClass: top
@@ -495,7 +469,6 @@ lDAPDisplayName: msDS-AzScriptEngineCacheMax
 schemaIDGUID: 2629f66a-1f95-4bf3-a296-8e9d7b9e30c8
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Token-Groups-No-GC-Acceptable,${SCHEMADN}
 objectClass: top
@@ -513,7 +486,6 @@ schemaIDGUID: 040fc392-33df-11d2-98b2-0000f87a57d4
 attributeSecurityGUID: 037088f8-0ae1-11d2-b422-00a0c968f939
 systemOnly: FALSE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Token-Groups-Global-And-Universal,${SCHEMADN}
 objectClass: top
@@ -531,7 +503,6 @@ schemaIDGUID: 46a9b11d-60ae-405a-b7e8-ff8a58d456d2
 attributeSecurityGUID: 037088f8-0ae1-11d2-b422-00a0c968f939
 systemOnly: FALSE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Alt-Security-Identities,${SCHEMADN}
 objectClass: top
@@ -550,7 +521,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=labeledURI,${SCHEMADN}
 objectClass: top
@@ -567,7 +537,6 @@ lDAPDisplayName: labeledURI
 schemaIDGUID: c569bb46-c680-44bc-a273-e6c227d71b45
 systemOnly: FALSE
 systemFlags: 0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Pwd-Last-Set,${SCHEMADN}
 objectClass: top
@@ -585,7 +554,6 @@ schemaIDGUID: bf967a0a-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 4c164200-20c0-11d0-a768-00aa006e0529
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Object-Classes,${SCHEMADN}
 objectClass: top
@@ -602,7 +570,6 @@ lDAPDisplayName: objectClasses
 schemaIDGUID: 9a7ad94b-ca53-11d1-bbd0-0080c76670c0
 systemOnly: TRUE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Trust-Attributes,${SCHEMADN}
 objectClass: top
@@ -620,7 +587,6 @@ schemaIDGUID: 80a67e5a-9f22-11d0-afdd-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Trust-Forest-Trust-Info,${SCHEMADN}
 objectClass: top
@@ -638,7 +604,6 @@ schemaIDGUID: 29cc866e-49d3-4969-942e-1dbc0925d183
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Site-Object,${SCHEMADN}
 objectClass: top
@@ -657,7 +622,6 @@ lDAPDisplayName: siteObject
 schemaIDGUID: 3e10944c-c354-11d0-aff8-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Is-Privilege-Holder,${SCHEMADN}
 objectClass: top
@@ -676,7 +640,6 @@ lDAPDisplayName: isPrivilegeHolder
 schemaIDGUID: 19405b9c-3cfa-11d1-a9c0-0000f80367c1
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Dns-Root,${SCHEMADN}
 objectClass: top
@@ -695,7 +658,6 @@ lDAPDisplayName: dnsRoot
 schemaIDGUID: bf967959-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Modified-Count,${SCHEMADN}
 objectClass: top
@@ -713,7 +675,6 @@ schemaIDGUID: bf9679c5-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: b8119fd0-04f6-4762-ab7a-4986c76b3f9a
 systemOnly: FALSE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=International-ISDN-Number,${SCHEMADN}
 objectClass: top
@@ -734,7 +695,6 @@ schemaIDGUID: bf96798d-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Business-Category,${SCHEMADN}
 objectClass: top
@@ -754,7 +714,6 @@ lDAPDisplayName: businessCategory
 schemaIDGUID: bf967931-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=houseIdentifier,${SCHEMADN}
 objectClass: top
@@ -772,7 +731,6 @@ searchFlags: 0
 lDAPDisplayName: houseIdentifier
 schemaIDGUID: a45398b7-c44a-4eb6-82d3-13c10946dbfe
 systemOnly: FALSE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Other-Name,${SCHEMADN}
 objectClass: top
@@ -791,7 +749,6 @@ lDAPDisplayName: middleName
 schemaIDGUID: bf9679f2-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Attribute-ID,${SCHEMADN}
 objectClass: top
@@ -808,7 +765,6 @@ lDAPDisplayName: attributeID
 schemaIDGUID: bf967922-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Repl-Topology-Stay-Of-Execution,${SCHEMADN}
 objectClass: top
@@ -825,7 +781,6 @@ lDAPDisplayName: replTopologyStayOfExecution
 schemaIDGUID: 7bfdcb83-4807-11d1-a9c3-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Netboot-GUID,${SCHEMADN}
 objectClass: top
@@ -845,7 +800,6 @@ schemaIDGUID: 3e978921-8c01-11d0-afda-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=RDN-Att-ID,${SCHEMADN}
 objectClass: top
@@ -862,7 +816,6 @@ lDAPDisplayName: rDNAttID
 schemaIDGUID: bf967a0f-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=May-Contain,${SCHEMADN}
 objectClass: top
@@ -879,7 +832,6 @@ lDAPDisplayName: mayContain
 schemaIDGUID: bf9679bf-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Trust-Auth-Outgoing,${SCHEMADN}
 objectClass: top
@@ -898,7 +850,6 @@ lDAPDisplayName: trustAuthOutgoing
 schemaIDGUID: bf967a5f-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=GPC-WQL-Filter,${SCHEMADN}
 objectClass: top
@@ -915,7 +866,6 @@ lDAPDisplayName: gPCWQLFilter
 schemaIDGUID: 7bd4c7a6-1add-4436-8c04-3999a880154c
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Server-Reference-BL,${SCHEMADN}
 objectClass: top
@@ -934,7 +884,6 @@ lDAPDisplayName: serverReferenceBL
 schemaIDGUID: 26d9736e-6070-11d1-a9c6-0000f80367c1
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Create-Time-Stamp,${SCHEMADN}
 objectClass: top
@@ -951,7 +900,6 @@ lDAPDisplayName: createTimeStamp
 schemaIDGUID: 2df90d73-009f-11d2-aa4c-00c04fd7d83a
 systemOnly: TRUE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Attribute-Display-Names,${SCHEMADN}
 objectClass: top
@@ -968,7 +916,6 @@ lDAPDisplayName: attributeDisplayNames
 schemaIDGUID: cb843f80-48d9-11d1-a9c3-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Admin-Context-Menu,${SCHEMADN}
 objectClass: top
@@ -985,7 +932,6 @@ lDAPDisplayName: adminContextMenu
 schemaIDGUID: 553fd038-f32e-11d0-b0bc-00c04fd8dca6
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=LSA-Modified-Count,${SCHEMADN}
 objectClass: top
@@ -1002,7 +948,6 @@ lDAPDisplayName: lSAModifiedCount
 schemaIDGUID: bf9679ae-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=LSA-Creation-Time,${SCHEMADN}
 objectClass: top
@@ -1019,7 +964,6 @@ lDAPDisplayName: lSACreationTime
 schemaIDGUID: bf9679ad-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Server-State,${SCHEMADN}
 objectClass: top
@@ -1037,7 +981,6 @@ schemaIDGUID: bf967a34-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: b8119fd0-04f6-4762-ab7a-4986c76b3f9a
 systemOnly: FALSE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=LDAP-Display-Name,${SCHEMADN}
 objectClass: top
@@ -1058,7 +1001,6 @@ schemaIDGUID: bf96799a-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Supplemental-Credentials,${SCHEMADN}
 objectClass: top
@@ -1075,7 +1017,6 @@ lDAPDisplayName: supplementalCredentials
 schemaIDGUID: bf967a3f-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=msNPSavedCallingStationID,${SCHEMADN}
 objectClass: top
@@ -1092,7 +1033,6 @@ lDAPDisplayName: msNPSavedCallingStationID
 schemaIDGUID: db0c908e-c1f2-11d1-bbc5-0080c76670c0
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Flags,${SCHEMADN}
 objectClass: top
@@ -1110,7 +1050,6 @@ schemaIDGUID: bf967976-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Create-Wizard-Ext,${SCHEMADN}
 objectClass: top
@@ -1127,7 +1066,6 @@ lDAPDisplayName: createWizardExt
 schemaIDGUID: 2b09958b-8931-11d1-aebc-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=DMD-Location,${SCHEMADN}
 objectClass: top
@@ -1145,7 +1083,6 @@ lDAPDisplayName: dMDLocation
 schemaIDGUID: f0f8ff8b-1191-11d0-a060-00aa006c33ed
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-Exch-House-Identifier,${SCHEMADN}
 objectClass: top
@@ -1162,7 +1099,6 @@ oMSyntax: 64
 searchFlags: 0
 lDAPDisplayName: msExchHouseIdentifier
 schemaIDGUID: a8df7407-c5ea-11d1-bbcb-0080c76670c0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Phone-Mobile-Other,${SCHEMADN}
 objectClass: top
@@ -1182,7 +1118,6 @@ schemaIDGUID: 0296c11e-40da-11d1-a9c0-0000f80367c1
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Generation-Qualifier,${SCHEMADN}
 objectClass: top
@@ -1202,7 +1137,6 @@ lDAPDisplayName: generationQualifier
 schemaIDGUID: 16775804-47f3-11d1-a9c3-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Attribute-Syntax,${SCHEMADN}
 objectClass: top
@@ -1219,7 +1153,6 @@ lDAPDisplayName: attributeSyntax
 schemaIDGUID: bf967925-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Attribute-Security-GUID,${SCHEMADN}
 objectClass: top
@@ -1238,7 +1171,6 @@ lDAPDisplayName: attributeSecurityGUID
 schemaIDGUID: bf967924-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=DS-Heuristics,${SCHEMADN}
 objectClass: top
@@ -1255,7 +1187,6 @@ lDAPDisplayName: dSHeuristics
 schemaIDGUID: f0f8ff86-1191-11d0-a060-00aa006c33ed
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Serial-Number,${SCHEMADN}
 objectClass: top
@@ -1275,7 +1206,6 @@ lDAPDisplayName: serialNumber
 schemaIDGUID: bf967a32-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Settings,${SCHEMADN}
 objectClass: top
@@ -1293,7 +1223,6 @@ lDAPDisplayName: msDS-Settings
 schemaIDGUID: 0e1b47d7-40a3-4b48-8d1b-4cac0c1cdf21
 systemOnly: FALSE
 systemFlags: 0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Operator-Count,${SCHEMADN}
 objectClass: top
@@ -1310,7 +1239,6 @@ lDAPDisplayName: operatorCount
 schemaIDGUID: bf9679ee-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=msRADIUSFramedIPAddress,${SCHEMADN}
 objectClass: top
@@ -1328,7 +1256,6 @@ schemaIDGUID: db0c90a4-c1f2-11d1-bbc5-0080c76670c0
 attributeSecurityGUID: 037088f8-0ae1-11d2-b422-00a0c968f939
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Home-Drive,${SCHEMADN}
 objectClass: top
@@ -1346,7 +1273,6 @@ schemaIDGUID: bf967986-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 5f202010-79a5-11d0-9020-00c04fc2d4cf
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Attribute-Types,${SCHEMADN}
 objectClass: top
@@ -1363,7 +1289,6 @@ lDAPDisplayName: attributeTypes
 schemaIDGUID: 9a7ad944-ca53-11d1-bbd0-0080c76670c0
 systemOnly: TRUE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Initial-Auth-Outgoing,${SCHEMADN}
 objectClass: top
@@ -1380,7 +1305,6 @@ lDAPDisplayName: initialAuthOutgoing
 schemaIDGUID: 52458024-ca6a-11d0-afff-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Version-Number,${SCHEMADN}
 objectClass: top
@@ -1398,7 +1322,6 @@ schemaIDGUID: bf967a76-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Object-Class,${SCHEMADN}
 objectClass: top
@@ -1417,7 +1340,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: TRUE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Possible-Inferiors,${SCHEMADN}
 objectClass: top
@@ -1434,7 +1356,6 @@ lDAPDisplayName: possibleInferiors
 schemaIDGUID: 9a7ad94c-ca53-11d1-bbd0-0080c76670c0
 systemOnly: TRUE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Approx-Immed-Subordinates,${SCHEMADN}
 objectClass: top
@@ -1452,7 +1373,6 @@ schemaIDGUID: e185d243-f6ce-4adb-b496-b0c005d7823c
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: TRUE
 systemFlags: 20
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Replication-Notify-Subsequent-DSA-Delay,${SCHEMADN}
 objectClass: top
@@ -1469,7 +1389,6 @@ lDAPDisplayName: msDS-Replication-Notify-Subsequent-DSA-Delay
 schemaIDGUID: d63db385-dd92-4b52-b1d8-0d3ecc0e86b6
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Create-Dialog,${SCHEMADN}
 objectClass: top
@@ -1486,7 +1405,6 @@ lDAPDisplayName: createDialog
 schemaIDGUID: 2b09958a-8931-11d1-aebc-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Query-Policy-Object,${SCHEMADN}
 objectClass: top
@@ -1505,7 +1423,6 @@ lDAPDisplayName: queryPolicyObject
 schemaIDGUID: e1aea403-cd5b-11d0-afff-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=FRS-Root-Path,${SCHEMADN}
 objectClass: top
@@ -1524,7 +1441,6 @@ lDAPDisplayName: fRSRootPath
 schemaIDGUID: 1be8f174-a9ff-11d0-afe2-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Organizational-Unit-Name,${SCHEMADN}
 objectClass: top
@@ -1546,7 +1462,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Telex-Number,${SCHEMADN}
 objectClass: top
@@ -1567,7 +1482,6 @@ schemaIDGUID: bf967a4b-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Address-Home,${SCHEMADN}
 objectClass: top
@@ -1588,7 +1502,6 @@ schemaIDGUID: 16775781-47f3-11d1-a9c3-0000f80367c1
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Assistant,${SCHEMADN}
 objectClass: top
@@ -1607,7 +1520,6 @@ schemaIDGUID: 0296c11c-40da-11d1-a9c0-0000f80367c1
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Netboot-Machine-File-Path,${SCHEMADN}
 objectClass: top
@@ -1625,7 +1537,6 @@ schemaIDGUID: 3e978923-8c01-11d0-afda-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=x500uniqueIdentifier,${SCHEMADN}
 objectClass: top
@@ -1642,7 +1553,6 @@ lDAPDisplayName: x500uniqueIdentifier
 schemaIDGUID: d07da11f-8a3d-42b6-b0aa-76c962be719a
 systemOnly: FALSE
 systemFlags: 0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=DBCS-Pwd,${SCHEMADN}
 objectClass: top
@@ -1659,7 +1569,6 @@ lDAPDisplayName: dBCSPwd
 schemaIDGUID: bf96799c-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Prefix-Map,${SCHEMADN}
 objectClass: top
@@ -1676,7 +1585,6 @@ lDAPDisplayName: prefixMap
 schemaIDGUID: 52458022-ca6a-11d0-afff-0000f80367c1
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Members-For-Az-Role-BL,${SCHEMADN}
 objectClass: top
@@ -1695,7 +1603,6 @@ lDAPDisplayName: msDS-MembersForAzRoleBL
 schemaIDGUID: ececcd20-a7e0-4688-9ccf-02ece5e287f5
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Last-Known-Parent,${SCHEMADN}
 objectClass: top
@@ -1713,7 +1620,6 @@ lDAPDisplayName: lastKnownParent
 schemaIDGUID: 52ab8670-5709-11d1-a9c6-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=FSMO-Role-Owner,${SCHEMADN}
 objectClass: top
@@ -1731,7 +1637,6 @@ lDAPDisplayName: fSMORoleOwner
 schemaIDGUID: 66171887-8f3c-11d0-afda-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Retired-Repl-DSA-Signatures,${SCHEMADN}
 objectClass: top
@@ -1748,7 +1653,6 @@ lDAPDisplayName: retiredReplDSASignatures
 schemaIDGUID: 7bfdcb7f-4807-11d1-a9c3-0000f80367c1
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Network-Address,${SCHEMADN}
 objectClass: top
@@ -1767,7 +1671,6 @@ searchFlags: 0
 lDAPDisplayName: networkAddress
 schemaIDGUID: bf9679d9-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Schema-Version,${SCHEMADN}
 objectClass: top
@@ -1785,7 +1688,6 @@ lDAPDisplayName: schemaVersion
 schemaIDGUID: bf967a2c-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Poss-Superiors,${SCHEMADN}
 objectClass: top
@@ -1803,7 +1705,6 @@ schemaIDGUID: bf9679fa-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Default-Security-Descriptor,${SCHEMADN}
 objectClass: top
@@ -1822,7 +1723,6 @@ lDAPDisplayName: defaultSecurityDescriptor
 schemaIDGUID: 807a6d30-1669-11d0-a064-00aa006c33ed
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=User-SMIME-Certificate,${SCHEMADN}
 objectClass: top
@@ -1843,7 +1743,6 @@ attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 0
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=userPKCS12,${SCHEMADN}
 objectClass: top
@@ -1860,7 +1759,6 @@ lDAPDisplayName: userPKCS12
 schemaIDGUID: 23998ab5-70f8-4007-a4c1-a84a38311f9a
 systemOnly: FALSE
 systemFlags: 0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=User-Account-Control,${SCHEMADN}
 objectClass: top
@@ -1879,7 +1777,6 @@ attributeSecurityGUID: 4c164200-20c0-11d0-a768-00aa006e0529
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Terminal-Server,${SCHEMADN}
 objectClass: top
@@ -1897,7 +1794,6 @@ lDAPDisplayName: terminalServer
 schemaIDGUID: 6db69a1c-9422-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Account-Expires,${SCHEMADN}
 objectClass: top
@@ -1915,7 +1811,6 @@ schemaIDGUID: bf967915-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 4c164200-20c0-11d0-a768-00aa006e0529
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Group-Type,${SCHEMADN}
 objectClass: top
@@ -1933,7 +1828,6 @@ schemaIDGUID: 9a9a021e-4a5b-11d1-a9c3-0000f80367c1
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=NT-Group-Members,${SCHEMADN}
 objectClass: top
@@ -1950,7 +1844,6 @@ lDAPDisplayName: nTGroupMembers
 schemaIDGUID: bf9679df-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=WWW-Page-Other,${SCHEMADN}
 objectClass: top
@@ -1969,7 +1862,6 @@ schemaIDGUID: 9a9a0221-4a5b-11d1-a9c3-0000f80367c1
 attributeSecurityGUID: e45795b3-9455-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Revision,${SCHEMADN}
 objectClass: top
@@ -1986,7 +1878,6 @@ lDAPDisplayName: revision
 schemaIDGUID: bf967a21-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Object-Version,${SCHEMADN}
 objectClass: top
@@ -2004,7 +1895,6 @@ lDAPDisplayName: objectVersion
 schemaIDGUID: 16775848-47f3-11d1-a9c3-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-NC-Repl-Inbound-Neighbors,${SCHEMADN}
 objectClass: top
@@ -2021,7 +1911,6 @@ lDAPDisplayName: msDS-NCReplInboundNeighbors
 schemaIDGUID: 9edba85a-3e9e-431b-9b1a-a5b6e9eda796
 systemOnly: FALSE
 systemFlags: 20
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-COM-UserLink,${SCHEMADN}
 objectClass: top
@@ -2040,7 +1929,6 @@ lDAPDisplayName: msCOM-UserLink
 schemaIDGUID: 9e6f3a4d-242c-4f37-b068-36b57f9fc852
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Mastered-By,${SCHEMADN}
 objectClass: top
@@ -2059,7 +1947,6 @@ lDAPDisplayName: masteredBy
 schemaIDGUID: e48e64e0-12c9-11d3-9102-00c04fd91ab1
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Canonical-Name,${SCHEMADN}
 objectClass: top
@@ -2076,7 +1963,6 @@ lDAPDisplayName: canonicalName
 schemaIDGUID: 9a7ad945-ca53-11d1-bbd0-0080c76670c0
 systemOnly: TRUE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-NC-Replica-Locations,${SCHEMADN}
 objectClass: top
@@ -2095,7 +1981,6 @@ lDAPDisplayName: msDS-NC-Replica-Locations
 schemaIDGUID: 97de9615-b537-46bc-ac0f-10720f3909f3
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-UpdateScript,${SCHEMADN}
 objectClass: top
@@ -2112,7 +1997,6 @@ lDAPDisplayName: msDS-UpdateScript
 schemaIDGUID: 146eb639-bb9f-4fc1-a825-e29e00c77920
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Next-Rid,${SCHEMADN}
 objectClass: top
@@ -2129,7 +2013,6 @@ lDAPDisplayName: nextRid
 schemaIDGUID: bf9679db-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=X121-Address,${SCHEMADN}
 objectClass: top
@@ -2150,7 +2033,6 @@ schemaIDGUID: bf967a7b-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=User-Password,${SCHEMADN}
 objectClass: top
@@ -2170,7 +2052,6 @@ lDAPDisplayName: userPassword
 schemaIDGUID: bf967a6e-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Telephone-Number,${SCHEMADN}
 objectClass: top
@@ -2192,7 +2073,6 @@ attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Department,${SCHEMADN}
 objectClass: top
@@ -2213,7 +2093,6 @@ schemaIDGUID: bf96794f-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Is-Member-Of-Partial-Attribute-Set,${SCHEMADN}
 objectClass: top
@@ -2230,7 +2109,6 @@ lDAPDisplayName: isMemberOfPartialAttributeSet
 schemaIDGUID: 19405b9d-3cfa-11d1-a9c0-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Policy-Replication-Flags,${SCHEMADN}
 objectClass: top
@@ -2247,7 +2125,6 @@ lDAPDisplayName: policyReplicationFlags
 schemaIDGUID: 19405b96-3cfa-11d1-a9c0-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Ipsec-ISAKMP-Reference,${SCHEMADN}
 objectClass: top
@@ -2265,7 +2142,6 @@ lDAPDisplayName: ipsecISAKMPReference
 schemaIDGUID: b40ff820-427a-11d1-a9c2-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Application-Name,${SCHEMADN}
 objectClass: top
@@ -2284,7 +2160,6 @@ lDAPDisplayName: applicationName
 schemaIDGUID: dd712226-10e4-11d0-a05f-00aa006c33ed
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=System-May-Contain,${SCHEMADN}
 objectClass: top
@@ -2301,7 +2176,6 @@ lDAPDisplayName: systemMayContain
 schemaIDGUID: bf967a44-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=msRASSavedFramedRoute,${SCHEMADN}
 objectClass: top
@@ -2318,7 +2192,6 @@ lDAPDisplayName: msRASSavedFramedRoute
 schemaIDGUID: db0c90c7-c1f2-11d1-bbc5-0080c76670c0
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=msRASSavedCallbackNumber,${SCHEMADN}
 objectClass: top
@@ -2335,7 +2208,6 @@ lDAPDisplayName: msRASSavedCallbackNumber
 schemaIDGUID: db0c90c5-c1f2-11d1-bbc5-0080c76670c0
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Trust-Type,${SCHEMADN}
 objectClass: top
@@ -2353,7 +2225,6 @@ schemaIDGUID: bf967a60-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Domain-Replica,${SCHEMADN}
 objectClass: top
@@ -2373,7 +2244,6 @@ schemaIDGUID: bf96795e-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: b8119fd0-04f6-4762-ab7a-4986c76b3f9a
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Personal-Title,${SCHEMADN}
 objectClass: top
@@ -2394,7 +2264,6 @@ schemaIDGUID: 16775858-47f3-11d1-a9c3-0000f80367c1
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Other-Mailbox,${SCHEMADN}
 objectClass: top
@@ -2411,7 +2280,6 @@ lDAPDisplayName: otherMailbox
 schemaIDGUID: 0296c123-40da-11d1-a9c0-0000f80367c1
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=E-mail-Addresses,${SCHEMADN}
 objectClass: top
@@ -2433,7 +2301,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=OM-Syntax,${SCHEMADN}
 objectClass: top
@@ -2451,7 +2318,6 @@ lDAPDisplayName: oMSyntax
 schemaIDGUID: bf9679ed-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Is-Defunct,${SCHEMADN}
 objectClass: top
@@ -2468,7 +2334,6 @@ lDAPDisplayName: isDefunct
 schemaIDGUID: 28630ebe-41d5-11d1-a9c1-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Other-Settings,${SCHEMADN}
 objectClass: top
@@ -2485,7 +2350,6 @@ lDAPDisplayName: msDS-Other-Settings
 schemaIDGUID: 79d2f34c-9d7d-42bb-838f-866b3e4400e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Machine-Role,${SCHEMADN}
 objectClass: top
@@ -2502,7 +2366,6 @@ lDAPDisplayName: machineRole
 schemaIDGUID: bf9679b2-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Az-Domain-Timeout,${SCHEMADN}
 objectClass: top
@@ -2520,7 +2383,6 @@ lDAPDisplayName: msDS-AzDomainTimeout
 schemaIDGUID: 6448f56a-ca70-4e2e-b0af-d20e4ce653d0
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=System-Auxiliary-Class,${SCHEMADN}
 objectClass: top
@@ -2537,7 +2399,6 @@ lDAPDisplayName: systemAuxiliaryClass
 schemaIDGUID: bf967a43-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Primary-Group-ID,${SCHEMADN}
 objectClass: top
@@ -2556,7 +2417,6 @@ attributeSecurityGUID: 59ba2f42-79a2-11d0-9020-00c04fc2d3cf
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Lm-Pwd-History,${SCHEMADN}
 objectClass: top
@@ -2573,7 +2433,6 @@ lDAPDisplayName: lmPwdHistory
 schemaIDGUID: bf96799d-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Group-Membership-SAM,${SCHEMADN}
 objectClass: top
@@ -2590,7 +2449,6 @@ lDAPDisplayName: groupMembershipSAM
 schemaIDGUID: bf967980-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Trust-Partner,${SCHEMADN}
 objectClass: top
@@ -2610,7 +2468,6 @@ schemaIDGUID: bf967a5d-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Instance-Type,${SCHEMADN}
 objectClass: top
@@ -2629,7 +2486,6 @@ schemaIDGUID: bf96798c-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Treat-As-Leaf,${SCHEMADN}
 objectClass: top
@@ -2646,7 +2502,6 @@ lDAPDisplayName: treatAsLeaf
 schemaIDGUID: 8fd044e3-771f-11d1-aeae-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Admin-Property-Pages,${SCHEMADN}
 objectClass: top
@@ -2663,7 +2518,6 @@ lDAPDisplayName: adminPropertyPages
 schemaIDGUID: 52458038-ca6a-11d0-afff-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Az-Scope-Name,${SCHEMADN}
 objectClass: top
@@ -2682,7 +2536,6 @@ lDAPDisplayName: msDS-AzScopeName
 schemaIDGUID: 515a6b06-2617-4173-8099-d5605df043c6
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=See-Also,${SCHEMADN}
 objectClass: top
@@ -2701,7 +2554,6 @@ lDAPDisplayName: seeAlso
 schemaIDGUID: bf967a31-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=LDAP-IPDeny-List,${SCHEMADN}
 objectClass: top
@@ -2718,7 +2570,6 @@ lDAPDisplayName: lDAPIPDenyList
 schemaIDGUID: 7359a353-90f7-11d1-aebc-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Retired-Repl-NC-Signatures,${SCHEMADN}
 objectClass: top
@@ -2735,7 +2586,6 @@ lDAPDisplayName: msDS-RetiredReplNCSignatures
 schemaIDGUID: d5b35506-19d6-4d26-9afb-11357ac99b5e
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Has-Master-NCs,${SCHEMADN}
 objectClass: top
@@ -2755,7 +2605,6 @@ lDAPDisplayName: hasMasterNCs
 schemaIDGUID: bf967982-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Modified-Count-At-Last-Prom,${SCHEMADN}
 objectClass: top
@@ -2772,7 +2621,6 @@ lDAPDisplayName: modifiedCountAtLastProm
 schemaIDGUID: bf9679c6-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Min-Pwd-Age,${SCHEMADN}
 objectClass: top
@@ -2790,7 +2638,6 @@ schemaIDGUID: bf9679c2-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: c7407360-20bf-11d0-a768-00aa006e0529
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Force-Logoff,${SCHEMADN}
 objectClass: top
@@ -2808,7 +2655,6 @@ schemaIDGUID: bf967977-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: b8119fd0-04f6-4762-ab7a-4986c76b3f9a
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Move-Tree-State,${SCHEMADN}
 objectClass: top
@@ -2825,7 +2671,6 @@ lDAPDisplayName: moveTreeState
 schemaIDGUID: 1f2ac2c8-3b71-11d2-90cc-00c04fd91ab1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Allowed-To-Delegate-To,${SCHEMADN}
 objectClass: top
@@ -2843,7 +2688,6 @@ schemaIDGUID: 800d94d7-b7a1-42a1-b14d-7cae1423d07f
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=System-Only,${SCHEMADN}
 objectClass: top
@@ -2860,7 +2704,6 @@ lDAPDisplayName: systemOnly
 schemaIDGUID: bf967a46-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-IntId,${SCHEMADN}
 objectClass: top
@@ -2877,7 +2720,6 @@ lDAPDisplayName: msDS-IntId
 schemaIDGUID: bc60096a-1b47-4b30-8877-602c93f56532
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=DNS-Host-Name,${SCHEMADN}
 objectClass: top
@@ -2898,7 +2740,6 @@ attributeSecurityGUID: 72e39547-7b18-11d1-adef-00c04fd8d5cd
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Az-Minor-Version,${SCHEMADN}
 objectClass: top
@@ -2916,7 +2757,6 @@ lDAPDisplayName: msDS-AzMinorVersion
 schemaIDGUID: ee85ed93-b209-4788-8165-e702f51bfbf3
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Bad-Password-Time,${SCHEMADN}
 objectClass: top
@@ -2933,7 +2773,6 @@ lDAPDisplayName: badPasswordTime
 schemaIDGUID: bf96792d-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Primary-Group-Token,${SCHEMADN}
 objectClass: top
@@ -2950,7 +2789,6 @@ lDAPDisplayName: primaryGroupToken
 schemaIDGUID: c0ed8738-7efd-4481-84d9-66d2db8be369
 systemOnly: TRUE
 systemFlags: 20
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=USN-Intersite,${SCHEMADN}
 objectClass: top
@@ -2968,7 +2806,6 @@ lDAPDisplayName: USNIntersite
 schemaIDGUID: a8df7498-c5ea-11d1-bbcb-0080c76670c0
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=FRS-Member-Reference-BL,${SCHEMADN}
 objectClass: top
@@ -2987,7 +2824,6 @@ lDAPDisplayName: fRSMemberReferenceBL
 schemaIDGUID: 2a13257f-9373-11d1-aebc-0000f80367c1
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-SD-Reference-Domain,${SCHEMADN}
 objectClass: top
@@ -3006,7 +2842,6 @@ lDAPDisplayName: msDS-SDReferenceDomain
 schemaIDGUID: 4c51e316-f628-43a5-b06b-ffb695fcb4f3
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Ipsec-ID,${SCHEMADN}
 objectClass: top
@@ -3023,7 +2858,6 @@ lDAPDisplayName: ipsecID
 schemaIDGUID: b40ff81d-427a-11d1-a9c2-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=LDAP-Admin-Limits,${SCHEMADN}
 objectClass: top
@@ -3040,7 +2874,6 @@ lDAPDisplayName: lDAPAdminLimits
 schemaIDGUID: 7359a352-90f7-11d1-aebc-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Last-Backup-Restoration-Time,${SCHEMADN}
 objectClass: top
@@ -3057,7 +2890,6 @@ lDAPDisplayName: lastBackupRestorationTime
 schemaIDGUID: 1fbb0be8-ba63-11d0-afef-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Tree-Name,${SCHEMADN}
 objectClass: top
@@ -3074,7 +2906,6 @@ lDAPDisplayName: treeName
 schemaIDGUID: 28630ebd-41d5-11d1-a9c1-0000f80367c1
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=OEM-Information,${SCHEMADN}
 objectClass: top
@@ -3094,7 +2925,6 @@ schemaIDGUID: bf9679ea-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: b8119fd0-04f6-4762-ab7a-4986c76b3f9a
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Given-Name,${SCHEMADN}
 objectClass: top
@@ -3116,7 +2946,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=SPN-Mappings,${SCHEMADN}
 objectClass: top
@@ -3133,7 +2962,6 @@ lDAPDisplayName: sPNMappings
 schemaIDGUID: 2ab0e76c-7041-11d2-9905-0000f87a57d4
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Operating-System-Version,${SCHEMADN}
 objectClass: top
@@ -3150,7 +2978,6 @@ lDAPDisplayName: operatingSystemVersion
 schemaIDGUID: 3e978926-8c01-11d0-afda-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Notification-List,${SCHEMADN}
 objectClass: top
@@ -3168,7 +2995,6 @@ lDAPDisplayName: notificationList
 schemaIDGUID: 19195a56-6da0-11d0-afd3-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Token-Groups,${SCHEMADN}
 objectClass: top
@@ -3186,7 +3012,6 @@ schemaIDGUID: b7c69e6d-2cc7-11d2-854e-00a0c983f608
 attributeSecurityGUID: 037088f8-0ae1-11d2-b422-00a0c968f939
 systemOnly: FALSE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=carLicense,${SCHEMADN}
 objectClass: top
@@ -3203,7 +3028,6 @@ lDAPDisplayName: carLicense
 schemaIDGUID: d4159c92-957d-4a87-8a67-8d2934e01649
 systemOnly: FALSE
 systemFlags: 0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Preferred-OU,${SCHEMADN}
 objectClass: top
@@ -3221,7 +3045,6 @@ lDAPDisplayName: preferredOU
 schemaIDGUID: bf9679ff-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MS-DS-Creator-SID,${SCHEMADN}
 objectClass: top
@@ -3238,7 +3061,6 @@ lDAPDisplayName: mS-DS-CreatorSID
 schemaIDGUID: c5e60132-1480-11d3-91c1-0000f87a57d4
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Non-Members,${SCHEMADN}
 objectClass: top
@@ -3257,7 +3079,6 @@ lDAPDisplayName: msDS-NonMembers
 schemaIDGUID: cafcb1de-f23c-46b5-adf7-1e64957bd5db
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Tasks-For-Az-Role-BL,${SCHEMADN}
 objectClass: top
@@ -3276,7 +3097,6 @@ lDAPDisplayName: msDS-TasksForAzRoleBL
 schemaIDGUID: a0dcd536-5158-42fe-8c40-c00a7ad37959
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Extension-Name,${SCHEMADN}
 objectClass: top
@@ -3296,7 +3116,6 @@ lDAPDisplayName: extensionName
 schemaIDGUID: bf967972-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Replication-Notify-First-DSA-Delay,${SCHEMADN}
 objectClass: top
@@ -3313,7 +3132,6 @@ lDAPDisplayName: msDS-Replication-Notify-First-DSA-Delay
 schemaIDGUID: 85abd4f4-0a89-4e49-bdec-6f35bb2562ba
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Max-Pwd-Age,${SCHEMADN}
 objectClass: top
@@ -3331,7 +3149,6 @@ schemaIDGUID: bf9679bb-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: c7407360-20bf-11d0-a768-00aa006e0529
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Phone-Ip-Other,${SCHEMADN}
 objectClass: top
@@ -3350,7 +3167,6 @@ attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Ipsec-NFA-Reference,${SCHEMADN}
 objectClass: top
@@ -3368,7 +3184,6 @@ lDAPDisplayName: ipsecNFAReference
 schemaIDGUID: b40ff821-427a-11d1-a9c2-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=secretary,${SCHEMADN}
 objectClass: top
@@ -3386,7 +3201,6 @@ lDAPDisplayName: secretary
 schemaIDGUID: 01072d9a-98ad-4a53-9744-e83e287278fb
 systemOnly: FALSE
 systemFlags: 0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=User-Parameters,${SCHEMADN}
 objectClass: top
@@ -3406,7 +3220,6 @@ schemaIDGUID: bf967a6d-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 4c164200-20c0-11d0-a768-00aa006e0529
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Trust-Posix-Offset,${SCHEMADN}
 objectClass: top
@@ -3423,7 +3236,6 @@ lDAPDisplayName: trustPosixOffset
 schemaIDGUID: bf967a5e-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Bridgehead-Server-List-BL,${SCHEMADN}
 objectClass: top
@@ -3442,7 +3254,6 @@ lDAPDisplayName: bridgeheadServerListBL
 schemaIDGUID: d50c2cdb-8951-11d1-aebc-0000f80367c1
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Az-Application-Data,${SCHEMADN}
 objectClass: top
@@ -3460,7 +3271,6 @@ lDAPDisplayName: msDS-AzApplicationData
 schemaIDGUID: 503fc3e8-1cc6-461a-99a3-9eee04f402a7
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Pek-Key-Change-Interval,${SCHEMADN}
 objectClass: top
@@ -3477,7 +3287,6 @@ lDAPDisplayName: pekKeyChangeInterval
 schemaIDGUID: 07383084-91df-11d1-aebc-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Country-Name,${SCHEMADN}
 objectClass: top
@@ -3499,7 +3308,6 @@ attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Destination-Indicator,${SCHEMADN}
 objectClass: top
@@ -3519,7 +3327,6 @@ lDAPDisplayName: destinationIndicator
 schemaIDGUID: bf967951-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Country-Code,${SCHEMADN}
 objectClass: top
@@ -3539,7 +3346,6 @@ schemaIDGUID: 5fd42471-1262-11d0-a060-00aa006c33ed
 attributeSecurityGUID: 59ba2f42-79a2-11d0-9020-00c04fc2d3cf
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Phone-Mobile-Primary,${SCHEMADN}
 objectClass: top
@@ -3560,7 +3366,6 @@ schemaIDGUID: f0f8ffa3-1191-11d0-a060-00aa006c33ed
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Schema-ID-GUID,${SCHEMADN}
 objectClass: top
@@ -3579,7 +3384,6 @@ lDAPDisplayName: schemaIDGUID
 schemaIDGUID: bf967923-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=RID-Set-References,${SCHEMADN}
 objectClass: top
@@ -3597,7 +3401,6 @@ lDAPDisplayName: rIDSetReferences
 schemaIDGUID: 7bfdcb7b-4807-11d1-a9c3-0000f80367c1
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Auxiliary-Class,${SCHEMADN}
 objectClass: top
@@ -3614,7 +3417,6 @@ lDAPDisplayName: auxiliaryClass
 schemaIDGUID: bf96792c-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=uid,${SCHEMADN}
 objectClass: top
@@ -3632,7 +3434,6 @@ schemaIDGUID: 0bb0fca0-1e89-429f-901a-1413894d9f59
 attributeSecurityGUID: 59ba2f42-79a2-11d0-9020-00c04fc2d3cf
 systemOnly: FALSE
 systemFlags: 0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=departmentNumber,${SCHEMADN}
 objectClass: top
@@ -3649,7 +3450,6 @@ lDAPDisplayName: departmentNumber
 schemaIDGUID: be9ef6ee-cbc7-4f22-b27b-96967e7ee585
 systemOnly: FALSE
 systemFlags: 0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Additional-Trusted-Service-Names,${SCHEMADN}
 objectClass: top
@@ -3666,7 +3466,6 @@ lDAPDisplayName: additionalTrustedServiceNames
 schemaIDGUID: 032160be-9824-11d1-aec0-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=WWW-Home-Page,${SCHEMADN}
 objectClass: top
@@ -3686,7 +3485,6 @@ schemaIDGUID: bf967a7a-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: e45795b3-9455-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=USN-Source,${SCHEMADN}
 objectClass: top
@@ -3704,7 +3502,6 @@ lDAPDisplayName: uSNSource
 schemaIDGUID: 167758ad-47f3-11d1-a9c3-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MS-DS-Consistency-Guid,${SCHEMADN}
 objectClass: top
@@ -3721,7 +3518,6 @@ lDAPDisplayName: mS-DS-ConsistencyGuid
 schemaIDGUID: 23773dc2-b63a-11d2-90e1-00c04fd91ab1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Frs-Computer-Reference-BL,${SCHEMADN}
 objectClass: top
@@ -3740,7 +3536,6 @@ lDAPDisplayName: frsComputerReferenceBL
 schemaIDGUID: 2a132579-9373-11d1-aebc-0000f80367c1
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Allowed-Attributes,${SCHEMADN}
 objectClass: top
@@ -3758,7 +3553,6 @@ schemaIDGUID: 9a7ad940-ca53-11d1-bbd0-0080c76670c0
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: TRUE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Az-Application-Name,${SCHEMADN}
 objectClass: top
@@ -3777,7 +3571,6 @@ lDAPDisplayName: msDS-AzApplicationName
 schemaIDGUID: db5b0728-6208-4876-83b7-95d3e5695275
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=UPN-Suffixes,${SCHEMADN}
 objectClass: top
@@ -3794,7 +3587,6 @@ lDAPDisplayName: uPNSuffixes
 schemaIDGUID: 032160bf-9824-11d1-aec0-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MS-DS-Per-User-Trust-Quota,${SCHEMADN}
 objectClass: top
@@ -3811,7 +3603,6 @@ lDAPDisplayName: msDS-PerUserTrustQuota
 schemaIDGUID: d161adf0-ca24-4993-a3aa-8b2c981302e8
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MS-DS-Machine-Account-Quota,${SCHEMADN}
 objectClass: top
@@ -3828,7 +3619,6 @@ lDAPDisplayName: ms-DS-MachineAccountQuota
 schemaIDGUID: d064fb68-1480-11d3-91c1-0000f87a57d4
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Server-Role,${SCHEMADN}
 objectClass: top
@@ -3846,7 +3636,6 @@ schemaIDGUID: bf967a33-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: b8119fd0-04f6-4762-ab7a-4986c76b3f9a
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Phone-Home-Primary,${SCHEMADN}
 objectClass: top
@@ -3868,7 +3657,6 @@ attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Range-Lower,${SCHEMADN}
 objectClass: top
@@ -3887,7 +3675,6 @@ schemaIDGUID: bf967a0c-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Operating-System-Hotfix,${SCHEMADN}
 objectClass: top
@@ -3904,7 +3691,6 @@ lDAPDisplayName: operatingSystemHotfix
 schemaIDGUID: bd951b3c-9c96-11d0-afdd-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Additional-Dns-Host-Name,${SCHEMADN}
 objectClass: top
@@ -3924,7 +3710,6 @@ schemaIDGUID: 80863791-dbe9-4eb8-837e-7f0ab55d9ac7
 attributeSecurityGUID: 72e39547-7b18-11d1-adef-00c04fd8d5cd
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Az-Script-Timeout,${SCHEMADN}
 objectClass: top
@@ -3942,7 +3727,6 @@ lDAPDisplayName: msDS-AzScriptTimeout
 schemaIDGUID: 87d0fb41-2c8b-41f6-b972-11fdfd50d6b0
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Must-Contain,${SCHEMADN}
 objectClass: top
@@ -3959,7 +3743,6 @@ lDAPDisplayName: mustContain
 schemaIDGUID: bf9679d3-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=X509-Cert,${SCHEMADN}
 objectClass: top
@@ -3980,7 +3763,6 @@ attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=msNPCallingStationID,${SCHEMADN}
 objectClass: top
@@ -3998,7 +3780,6 @@ schemaIDGUID: db0c908a-c1f2-11d1-bbc5-0080c76670c0
 attributeSecurityGUID: 037088f8-0ae1-11d2-b422-00a0c968f939
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-User-Account-Control-Computed,${SCHEMADN}
 objectClass: top
@@ -4016,7 +3797,6 @@ schemaIDGUID: 2cc4b836-b63f-4940-8d23-ea7acf06af56
 attributeSecurityGUID: 4c164200-20c0-11d0-a768-00aa006e0529
 systemOnly: FALSE
 systemFlags: 20
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Home-Directory,${SCHEMADN}
 objectClass: top
@@ -4034,7 +3814,6 @@ schemaIDGUID: bf967985-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 5f202010-79a5-11d0-9020-00c04fc2d4cf
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Az-LDAP-Query,${SCHEMADN}
 objectClass: top
@@ -4053,7 +3832,6 @@ lDAPDisplayName: msDS-AzLDAPQuery
 schemaIDGUID: 5e53368b-fc94-45c8-9d7d-daf31ee7112d
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Partial-Attribute-Deletion-List,${SCHEMADN}
 objectClass: top
@@ -4071,7 +3849,6 @@ schemaIDGUID: 28630ec0-41d5-11d1-a9c1-0000f80367c1
 systemOnly: TRUE
 systemFlags: 19
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Is-Critical-System-Object,${SCHEMADN}
 objectClass: top
@@ -4088,7 +3865,6 @@ lDAPDisplayName: isCriticalSystemObject
 schemaIDGUID: 00fbf30d-91fe-11d1-aebc-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=GP-Link,${SCHEMADN}
 objectClass: top
@@ -4106,7 +3882,6 @@ schemaIDGUID: f30e3bbe-9ff0-11d1-b603-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Scope-Flags,${SCHEMADN}
 objectClass: top
@@ -4123,7 +3898,6 @@ lDAPDisplayName: scopeFlags
 schemaIDGUID: 16f3a4c2-7e79-11d2-9921-0000f87a57d4
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Lockout-Duration,${SCHEMADN}
 objectClass: top
@@ -4141,7 +3915,6 @@ schemaIDGUID: bf9679a5-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: c7407360-20bf-11d0-a768-00aa006e0529
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-COM-UserPartitionSetLink,${SCHEMADN}
 objectClass: top
@@ -4160,7 +3933,6 @@ lDAPDisplayName: msCOM-UserPartitionSetLink
 schemaIDGUID: 8e940c8a-e477-4367-b08d-ff2ff942dcd7
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Logo,${SCHEMADN}
 objectClass: top
@@ -4179,7 +3951,6 @@ lDAPDisplayName: thumbnailLogo
 schemaIDGUID: bf9679a9-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Picture,${SCHEMADN}
 objectClass: top
@@ -4199,7 +3970,6 @@ schemaIDGUID: 8d3bca50-1d7e-11d0-a081-00aa006c33ed
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Location,${SCHEMADN}
 objectClass: top
@@ -4219,7 +3989,6 @@ schemaIDGUID: 09dcb79f-165f-11d0-a064-00aa006c33ed
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=User-Workstations,${SCHEMADN}
 objectClass: top
@@ -4239,7 +4008,6 @@ schemaIDGUID: bf9679d7-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 5f202010-79a5-11d0-9020-00c04fc2d4cf
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Logon-Workstation,${SCHEMADN}
 objectClass: top
@@ -4257,7 +4025,6 @@ schemaIDGUID: bf9679ac-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 5f202010-79a5-11d0-9020-00c04fc2d4cf
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Last-Logon-Timestamp,${SCHEMADN}
 objectClass: top
@@ -4275,7 +4042,6 @@ schemaIDGUID: c0e20a04-0e5a-4ff3-9482-5efeaecd7060
 attributeSecurityGUID: 5f202010-79a5-11d0-9020-00c04fc2d4cf
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Prior-Value,${SCHEMADN}
 objectClass: top
@@ -4292,7 +4058,6 @@ lDAPDisplayName: priorValue
 schemaIDGUID: bf967a02-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Last-Set-Time,${SCHEMADN}
 objectClass: top
@@ -4309,7 +4074,6 @@ lDAPDisplayName: lastSetTime
 schemaIDGUID: bf967998-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Object-Guid,${SCHEMADN}
 objectClass: top
@@ -4331,7 +4095,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: TRUE
 systemFlags: 19
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Tasks-For-Az-Task-BL,${SCHEMADN}
 objectClass: top
@@ -4350,7 +4113,6 @@ lDAPDisplayName: msDS-TasksForAzTaskBL
 schemaIDGUID: df446e52-b5fa-4ca2-a42f-13f98a526c8f
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Managed-By,${SCHEMADN}
 objectClass: top
@@ -4370,7 +4132,6 @@ lDAPDisplayName: managedBy
 schemaIDGUID: 0296c120-40da-11d1-a9c0-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Pwd-Properties,${SCHEMADN}
 objectClass: top
@@ -4388,7 +4149,6 @@ schemaIDGUID: bf967a0b-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: c7407360-20bf-11d0-a768-00aa006e0529
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Builtin-Creation-Time,${SCHEMADN}
 objectClass: top
@@ -4405,7 +4165,6 @@ lDAPDisplayName: builtinCreationTime
 schemaIDGUID: bf96792f-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Post-Office-Box,${SCHEMADN}
 objectClass: top
@@ -4426,7 +4185,6 @@ schemaIDGUID: bf9679fb-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Company,${SCHEMADN}
 objectClass: top
@@ -4447,7 +4205,6 @@ schemaIDGUID: f0f8ff88-1191-11d0-a060-00aa006c33ed
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Catalogs,${SCHEMADN}
 objectClass: top
@@ -4464,7 +4221,6 @@ lDAPDisplayName: catalogs
 schemaIDGUID: 7bfdcb81-4807-11d1-a9c3-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Default-Object-Category,${SCHEMADN}
 objectClass: top
@@ -4482,7 +4238,6 @@ lDAPDisplayName: defaultObjectCategory
 schemaIDGUID: 26d97367-6070-11d1-a9c6-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=msRADIUSFramedRoute,${SCHEMADN}
 objectClass: top
@@ -4500,7 +4255,6 @@ schemaIDGUID: db0c90a9-c1f2-11d1-bbc5-0080c76670c0
 attributeSecurityGUID: 037088f8-0ae1-11d2-b422-00a0c968f939
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Prior-Set-Time,${SCHEMADN}
 objectClass: top
@@ -4517,7 +4271,6 @@ lDAPDisplayName: priorSetTime
 schemaIDGUID: bf967a01-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=User-Cert,${SCHEMADN}
 objectClass: top
@@ -4539,7 +4292,6 @@ attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Non-Security-Member,${SCHEMADN}
 objectClass: top
@@ -4558,7 +4310,6 @@ lDAPDisplayName: nonSecurityMember
 schemaIDGUID: 52458018-ca6a-11d0-afff-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Member,${SCHEMADN}
 objectClass: top
@@ -4580,7 +4331,6 @@ attributeSecurityGUID: bc0ac240-79a9-11d0-9020-00c04fc2d4cf
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Group-Attributes,${SCHEMADN}
 objectClass: top
@@ -4597,7 +4347,6 @@ lDAPDisplayName: groupAttributes
 schemaIDGUID: bf96797e-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=System-Flags,${SCHEMADN}
 objectClass: top
@@ -4615,7 +4364,6 @@ schemaIDGUID: e0fa1e62-9b45-11d0-afdd-00c04fd930c9
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Proxied-Object-Name,${SCHEMADN}
 objectClass: top
@@ -4634,7 +4382,6 @@ schemaIDGUID: e1aea402-cd5b-11d0-afff-0000f80367c1
 systemOnly: TRUE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Repl-Value-Meta-Data,${SCHEMADN}
 objectClass: top
@@ -4651,7 +4398,6 @@ lDAPDisplayName: msDS-ReplValueMetaData
 schemaIDGUID: 2f5c8145-e1bd-410b-8957-8bfa81d5acfd
 systemOnly: FALSE
 systemFlags: 20
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Allowed-Child-Classes-Effective,${SCHEMADN}
 objectClass: top
@@ -4669,7 +4415,6 @@ schemaIDGUID: 9a7ad943-ca53-11d1-bbd0-0080c76670c0
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: TRUE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Az-Generate-Audits,${SCHEMADN}
 objectClass: top
@@ -4686,7 +4431,6 @@ lDAPDisplayName: msDS-AzGenerateAudits
 schemaIDGUID: f90abab0-186c-4418-bb85-88447c87222a
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Az-Application-Version,${SCHEMADN}
 objectClass: top
@@ -4704,7 +4448,6 @@ lDAPDisplayName: msDS-AzApplicationVersion
 schemaIDGUID: 7184a120-3ac4-47ae-848f-fe0ab20784d4
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Icon-Path,${SCHEMADN}
 objectClass: top
@@ -4723,7 +4466,6 @@ lDAPDisplayName: iconPath
 schemaIDGUID: f0f8ff83-1191-11d0-a060-00aa006c33ed
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Street-Address,${SCHEMADN}
 objectClass: top
@@ -4745,7 +4487,6 @@ attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-ExecuteScriptPassword,${SCHEMADN}
 objectClass: top
@@ -4764,7 +4505,6 @@ lDAPDisplayName: msDS-ExecuteScriptPassword
 schemaIDGUID: 9d054a5a-d187-46c1-9d85-42dfc44a56dd
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Logon-Time-Sync-Interval,${SCHEMADN}
 objectClass: top
@@ -4782,7 +4522,6 @@ lDAPDisplayName: msDS-LogonTimeSyncInterval
 schemaIDGUID: ad7940f8-e43a-4a42-83bc-d688e59ea605
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Garbage-Coll-Period,${SCHEMADN}
 objectClass: top
@@ -4800,7 +4539,6 @@ lDAPDisplayName: garbageCollPeriod
 schemaIDGUID: 5fd424a1-1262-11d0-a060-00aa006c33ed
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MSMQ-Sign-Certificates-Mig,${SCHEMADN}
 objectClass: top
@@ -4819,7 +4557,6 @@ schemaIDGUID: 3881b8ea-da3b-11d1-90a5-00c04fd91ab1
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Cached-Membership-Time-Stamp,${SCHEMADN}
 objectClass: top
@@ -4836,7 +4573,6 @@ lDAPDisplayName: msDS-Cached-Membership-Time-Stamp
 schemaIDGUID: 3566bf1f-beee-4dcb-8abe-ef89fcfec6c1
 systemOnly: FALSE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Logon-Count,${SCHEMADN}
 objectClass: top
@@ -4854,7 +4590,6 @@ schemaIDGUID: bf9679aa-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 5f202010-79a5-11d0-9020-00c04fc2d4cf
 systemOnly: FALSE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Locale-ID,${SCHEMADN}
 objectClass: top
@@ -4871,7 +4606,6 @@ lDAPDisplayName: localeID
 schemaIDGUID: bf9679a1-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Bad-Pwd-Count,${SCHEMADN}
 objectClass: top
@@ -4889,7 +4623,6 @@ schemaIDGUID: bf96792e-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 5f202010-79a5-11d0-9020-00c04fc2d4cf
 systemOnly: FALSE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Trust-Auth-Incoming,${SCHEMADN}
 objectClass: top
@@ -4908,7 +4641,6 @@ lDAPDisplayName: trustAuthIncoming
 schemaIDGUID: bf967a59-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=SubSchemaSubEntry,${SCHEMADN}
 objectClass: top
@@ -4926,7 +4658,6 @@ lDAPDisplayName: subSchemaSubEntry
 schemaIDGUID: 9a7ad94d-ca53-11d1-bbd0-0080c76670c0
 systemOnly: TRUE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Structural-Object-Class,${SCHEMADN}
 objectClass: top
@@ -4943,7 +4674,6 @@ lDAPDisplayName: structuralObjectClass
 schemaIDGUID: 3860949f-f6a8-4b38-9950-81ecb6bc2982
 systemOnly: FALSE
 systemFlags: 20
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Is-Deleted,${SCHEMADN}
 objectClass: top
@@ -4962,7 +4692,6 @@ schemaIDGUID: bf96798f-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Extra-Columns,${SCHEMADN}
 objectClass: top
@@ -4979,7 +4708,6 @@ lDAPDisplayName: extraColumns
 schemaIDGUID: d24e2846-1dd9-4bcf-99d7-a6227cc86da7
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Admin-Multiselect-Property-Pages,${SCHEMADN}
 objectClass: top
@@ -4996,7 +4724,6 @@ lDAPDisplayName: adminMultiselectPropertyPages
 schemaIDGUID: 18f9b67d-5ac6-4b3b-97db-d0a406afb7ba
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Options,${SCHEMADN}
 objectClass: top
@@ -5013,7 +4740,6 @@ lDAPDisplayName: options
 schemaIDGUID: 19195a53-6da0-11d0-afd3-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Lock-Out-Observation-Window,${SCHEMADN}
 objectClass: top
@@ -5031,7 +4757,6 @@ schemaIDGUID: bf9679a4-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: c7407360-20bf-11d0-a768-00aa006e0529
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Default-Local-Policy-Object,${SCHEMADN}
 objectClass: top
@@ -5049,7 +4774,6 @@ lDAPDisplayName: defaultLocalPolicyObject
 schemaIDGUID: bf96799f-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Creation-Time,${SCHEMADN}
 objectClass: top
@@ -5066,7 +4790,6 @@ lDAPDisplayName: creationTime
 schemaIDGUID: bf967946-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Registered-Address,${SCHEMADN}
 objectClass: top
@@ -5086,7 +4809,6 @@ lDAPDisplayName: registeredAddress
 schemaIDGUID: bf967a10-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Postal-Address,${SCHEMADN}
 objectClass: top
@@ -5107,7 +4829,6 @@ schemaIDGUID: bf9679fc-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Initials,${SCHEMADN}
 objectClass: top
@@ -5128,7 +4849,6 @@ schemaIDGUID: f0f8ff90-1191-11d0-a060-00aa006c33ed
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Is-Single-Valued,${SCHEMADN}
 objectClass: top
@@ -5146,7 +4866,6 @@ lDAPDisplayName: isSingleValued
 schemaIDGUID: bf967992-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Netboot-SIF-File,${SCHEMADN}
 objectClass: top
@@ -5163,7 +4882,6 @@ lDAPDisplayName: netbootSIFFile
 schemaIDGUID: 2df90d84-009f-11d2-aa4c-00c04fd7d83a
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Additional-Sam-Account-Name,${SCHEMADN}
 objectClass: top
@@ -5182,7 +4900,6 @@ lDAPDisplayName: msDS-AdditionalSamAccountName
 schemaIDGUID: 975571df-a4d5-429a-9f59-cdc6581d91e6
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=System-Poss-Superiors,${SCHEMADN}
 objectClass: top
@@ -5200,7 +4917,6 @@ schemaIDGUID: bf967a47-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=photo,${SCHEMADN}
 objectClass: top
@@ -5217,7 +4933,6 @@ lDAPDisplayName: photo
 schemaIDGUID: 9c979768-ba1a-4c08-9632-c6a5c1ed649a
 systemOnly: FALSE
 systemFlags: 0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Employee-Number,${SCHEMADN}
 objectClass: top
@@ -5237,7 +4952,6 @@ lDAPDisplayName: employeeNumber
 schemaIDGUID: a8df73ef-c5ea-11d1-bbcb-0080c76670c0
 systemOnly: FALSE
 systemFlags: 0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Lockout-Time,${SCHEMADN}
 objectClass: top
@@ -5254,7 +4968,6 @@ lDAPDisplayName: lockoutTime
 schemaIDGUID: 28630ebf-41d5-11d1-a9c1-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Dynamic-LDAP-Server,${SCHEMADN}
 objectClass: top
@@ -5272,7 +4985,6 @@ lDAPDisplayName: dynamicLDAPServer
 schemaIDGUID: 52458021-ca6a-11d0-afff-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Extended-Attribute-Info,${SCHEMADN}
 objectClass: top
@@ -5289,7 +5001,6 @@ lDAPDisplayName: extendedAttributeInfo
 schemaIDGUID: 9a7ad947-ca53-11d1-bbd0-0080c76670c0
 systemOnly: TRUE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-Exch-Assistant-Name,${SCHEMADN}
 objectClass: top
@@ -5306,7 +5017,6 @@ oMSyntax: 64
 searchFlags: 0
 lDAPDisplayName: msExchAssistantName
 schemaIDGUID: a8df7394-c5ea-11d1-bbcb-0080c76670c0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=GPC-User-Extension-Names,${SCHEMADN}
 objectClass: top
@@ -5323,7 +5033,6 @@ lDAPDisplayName: gPCUserExtensionNames
 schemaIDGUID: 42a75fc6-783f-11d2-9916-0000f87a57d4
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Non-Members-BL,${SCHEMADN}
 objectClass: top
@@ -5342,7 +5051,6 @@ lDAPDisplayName: msDS-NonMembersBL
 schemaIDGUID: 2a8c68fc-3a7a-4e87-8720-fe77c51cbe74
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Admin-Display-Name,${SCHEMADN}
 objectClass: top
@@ -5362,7 +5070,6 @@ lDAPDisplayName: adminDisplayName
 schemaIDGUID: bf96791a-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Context-Menu,${SCHEMADN}
 objectClass: top
@@ -5379,7 +5086,6 @@ lDAPDisplayName: contextMenu
 schemaIDGUID: 4d8601ee-ac85-11d0-afe3-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Link-ID,${SCHEMADN}
 objectClass: top
@@ -5397,7 +5103,6 @@ lDAPDisplayName: linkID
 schemaIDGUID: bf96799b-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=attributeCertificateAttribute,${SCHEMADN}
 objectClass: top
@@ -5414,7 +5119,6 @@ lDAPDisplayName: attributeCertificateAttribute
 schemaIDGUID: fa4693bb-7bc2-4cb9-81a8-c99c43b7905e
 systemOnly: FALSE
 systemFlags: 0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Surname,${SCHEMADN}
 objectClass: top
@@ -5436,7 +5140,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=SAM-Account-Name,${SCHEMADN}
 objectClass: top
@@ -5457,7 +5160,6 @@ attributeSecurityGUID: 59ba2f42-79a2-11d0-9020-00c04fc2d3cf
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Governs-ID,${SCHEMADN}
 objectClass: top
@@ -5474,7 +5176,6 @@ lDAPDisplayName: governsID
 schemaIDGUID: bf96797d-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=jpegPhoto,${SCHEMADN}
 objectClass: top
@@ -5491,7 +5192,6 @@ lDAPDisplayName: jpegPhoto
 schemaIDGUID: bac80572-09c4-4fa9-9ae6-7628d7adbe0e
 systemOnly: FALSE
 systemFlags: 0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MSMQ-Sign-Certificates,${SCHEMADN}
 objectClass: top
@@ -5511,7 +5211,6 @@ attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Initial-Auth-Incoming,${SCHEMADN}
 objectClass: top
@@ -5528,7 +5227,6 @@ lDAPDisplayName: initialAuthIncoming
 schemaIDGUID: 52458023-ca6a-11d0-afff-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Domain-Cross-Ref,${SCHEMADN}
 objectClass: top
@@ -5546,7 +5244,6 @@ lDAPDisplayName: domainCrossRef
 schemaIDGUID: b000ea7b-a086-11d0-afdd-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Text-Encoded-OR-Address,${SCHEMADN}
 objectClass: top
@@ -5565,7 +5262,6 @@ searchFlags: 0
 lDAPDisplayName: textEncodedORAddress
 schemaIDGUID: a8df7489-c5ea-11d1-bbcb-0080c76670c0
 systemOnly: FALSE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=GPC-Functionality-Version,${SCHEMADN}
 objectClass: top
@@ -5582,7 +5278,6 @@ lDAPDisplayName: gPCFunctionalityVersion
 schemaIDGUID: f30e3bc0-9ff0-11d1-b603-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=USN-DSA-Last-Obj-Removed,${SCHEMADN}
 objectClass: top
@@ -5600,7 +5295,6 @@ lDAPDisplayName: uSNDSALastObjRemoved
 schemaIDGUID: bf967a71-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Operations-For-Az-Role-BL,${SCHEMADN}
 objectClass: top
@@ -5619,7 +5313,6 @@ lDAPDisplayName: msDS-OperationsForAzRoleBL
 schemaIDGUID: f85b6228-3734-4525-b6b7-3f3bb220902c
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MS-DS-Consistency-Child-Count,${SCHEMADN}
 objectClass: top
@@ -5636,7 +5329,6 @@ lDAPDisplayName: mS-DS-ConsistencyChildCount
 schemaIDGUID: 178b7bc2-b63a-11d2-90e1-00c04fd91ab1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=DSA-Signature,${SCHEMADN}
 objectClass: top
@@ -5654,7 +5346,6 @@ lDAPDisplayName: dSASignature
 schemaIDGUID: 167757bc-47f3-11d1-a9c3-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Allowed-Child-Classes,${SCHEMADN}
 objectClass: top
@@ -5672,7 +5363,6 @@ schemaIDGUID: 9a7ad942-ca53-11d1-bbd0-0080c76670c0
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: TRUE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Allowed-Attributes-Effective,${SCHEMADN}
 objectClass: top
@@ -5690,7 +5380,6 @@ schemaIDGUID: 9a7ad941-ca53-11d1-bbd0-0080c76670c0
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: TRUE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=NT-Mixed-Domain,${SCHEMADN}
 objectClass: top
@@ -5707,7 +5396,6 @@ lDAPDisplayName: nTMixedDomain
 schemaIDGUID: 3e97891f-8c01-11d0-afda-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Has-Instantiated-NCs,${SCHEMADN}
 objectClass: top
@@ -5728,7 +5416,6 @@ lDAPDisplayName: msDS-HasInstantiatedNCs
 schemaIDGUID: 11e9a5bc-4517-4049-af9c-51554fb0fc09
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Min-Pwd-Length,${SCHEMADN}
 objectClass: top
@@ -5746,7 +5433,6 @@ schemaIDGUID: bf9679c3-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: c7407360-20bf-11d0-a768-00aa006e0529
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Domain-Policy-Object,${SCHEMADN}
 objectClass: top
@@ -5764,7 +5450,6 @@ lDAPDisplayName: domainPolicyObject
 schemaIDGUID: bf96795d-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Physical-Delivery-Office-Name,${SCHEMADN}
 objectClass: top
@@ -5785,7 +5470,6 @@ schemaIDGUID: bf9679f7-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Volume-Count,${SCHEMADN}
 objectClass: top
@@ -5802,7 +5486,6 @@ lDAPDisplayName: volumeCount
 schemaIDGUID: 34aaa217-b699-11d0-afee-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=msRADIUSServiceType,${SCHEMADN}
 objectClass: top
@@ -5820,7 +5503,6 @@ schemaIDGUID: db0c90b6-c1f2-11d1-bbc5-0080c76670c0
 attributeSecurityGUID: 037088f8-0ae1-11d2-b422-00a0c968f939
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Last-Logon,${SCHEMADN}
 objectClass: top
@@ -5838,7 +5520,6 @@ schemaIDGUID: bf967997-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 5f202010-79a5-11d0-9020-00c04fc2d4cf
 systemOnly: FALSE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Groups-to-Ignore,${SCHEMADN}
 objectClass: top
@@ -5855,7 +5536,6 @@ lDAPDisplayName: groupsToIgnore
 schemaIDGUID: eea65904-8ac6-11d0-afda-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Schema-Info,${SCHEMADN}
 objectClass: top
@@ -5872,7 +5552,6 @@ lDAPDisplayName: schemaInfo
 schemaIDGUID: f9fb64ae-93b4-11d2-9945-0000f87a57d4
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Domain-Component,${SCHEMADN}
 objectClass: top
@@ -5892,7 +5571,6 @@ schemaIDGUID: 19195a55-6da0-11d0-afd3-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Object-Category,${SCHEMADN}
 objectClass: top
@@ -5912,7 +5590,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Modify-Time-Stamp,${SCHEMADN}
 objectClass: top
@@ -5929,7 +5606,6 @@ lDAPDisplayName: modifyTimeStamp
 schemaIDGUID: 9a7ad94a-ca53-11d1-bbd0-0080c76670c0
 systemOnly: TRUE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Display-Name,${SCHEMADN}
 objectClass: top
@@ -5950,7 +5626,6 @@ attributeSecurityGUID: 59ba2f42-79a2-11d0-9020-00c04fc2d3cf
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Admin-Description,${SCHEMADN}
 objectClass: top
@@ -5971,7 +5646,6 @@ schemaIDGUID: bf967919-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 59ba2f42-79a2-11d0-9020-00c04fc2d3cf
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-DnsRootAlias,${SCHEMADN}
 objectClass: top
@@ -5990,7 +5664,6 @@ lDAPDisplayName: msDS-DnsRootAlias
 schemaIDGUID: 2143acca-eead-4d29-b591-85fa49ce9173
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Creation-Wizard,${SCHEMADN}
 objectClass: top
@@ -6007,7 +5680,6 @@ lDAPDisplayName: creationWizard
 schemaIDGUID: 4d8601ed-ac85-11d0-afe3-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Has-Partial-Replica-NCs,${SCHEMADN}
 objectClass: top
@@ -6027,7 +5699,6 @@ lDAPDisplayName: hasPartialReplicaNCs
 schemaIDGUID: bf967981-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Control-Access-Rights,${SCHEMADN}
 objectClass: top
@@ -6046,7 +5717,6 @@ lDAPDisplayName: controlAccessRights
 schemaIDGUID: 6da8a4fc-0e52-11d0-a286-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=UAS-Compat,${SCHEMADN}
 objectClass: top
@@ -6064,7 +5734,6 @@ schemaIDGUID: bf967a61-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: b8119fd0-04f6-4762-ab7a-4986c76b3f9a
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Object-Sid,${SCHEMADN}
 objectClass: top
@@ -6086,7 +5755,6 @@ attributeSecurityGUID: 59ba2f42-79a2-11d0-9020-00c04fc2d3cf
 systemOnly: TRUE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Title,${SCHEMADN}
 objectClass: top
@@ -6107,7 +5775,6 @@ schemaIDGUID: bf967a55-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Phone-Pager-Other,${SCHEMADN}
 objectClass: top
@@ -6128,7 +5795,6 @@ schemaIDGUID: f0f8ffa4-1191-11d0-a060-00aa006c33ed
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Division,${SCHEMADN}
 objectClass: top
@@ -6148,7 +5814,6 @@ schemaIDGUID: fe6136a0-2073-11d0-a9c2-00aa006c33ed
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Range-Upper,${SCHEMADN}
 objectClass: top
@@ -6167,7 +5832,6 @@ schemaIDGUID: bf967a0d-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=OM-Object-Class,${SCHEMADN}
 objectClass: top
@@ -6185,7 +5849,6 @@ lDAPDisplayName: oMObjectClass
 schemaIDGUID: bf9679ec-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MAPI-ID,${SCHEMADN}
 objectClass: top
@@ -6203,7 +5866,6 @@ lDAPDisplayName: mAPIID
 schemaIDGUID: bf9679b7-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=SAM-Account-Type,${SCHEMADN}
 objectClass: top
@@ -6222,7 +5884,6 @@ attributeSecurityGUID: 59ba2f42-79a2-11d0-9020-00c04fc2d3cf
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Object-Class-Category,${SCHEMADN}
 objectClass: top
@@ -6242,7 +5903,6 @@ lDAPDisplayName: objectClassCategory
 schemaIDGUID: bf9679e6-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Default-Hiding-Value,${SCHEMADN}
 objectClass: top
@@ -6259,7 +5919,6 @@ lDAPDisplayName: defaultHidingValue
 schemaIDGUID: b7b13116-b82e-11d0-afee-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=msNPAllowDialin,${SCHEMADN}
 objectClass: top
@@ -6277,7 +5936,6 @@ schemaIDGUID: db0c9085-c1f2-11d1-bbc5-0080c76670c0
 attributeSecurityGUID: 037088f8-0ae1-11d2-b422-00a0c968f939
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Code-Page,${SCHEMADN}
 objectClass: top
@@ -6297,7 +5955,6 @@ schemaIDGUID: bf967938-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 59ba2f42-79a2-11d0-9020-00c04fc2d3cf
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Admin-Count,${SCHEMADN}
 objectClass: top
@@ -6314,7 +5971,6 @@ lDAPDisplayName: adminCount
 schemaIDGUID: bf967918-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Schema-Update,${SCHEMADN}
 objectClass: top
@@ -6331,7 +5987,6 @@ lDAPDisplayName: schemaUpdate
 schemaIDGUID: 1e2d06b4-ac8f-11d0-afe3-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Trust-Direction,${SCHEMADN}
 objectClass: top
@@ -6349,7 +6004,6 @@ schemaIDGUID: bf967a5c-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Enabled,${SCHEMADN}
 objectClass: top
@@ -6367,7 +6021,6 @@ lDAPDisplayName: Enabled
 schemaIDGUID: a8df73f2-c5ea-11d1-bbcb-0080c76670c0
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Locality-Name,${SCHEMADN}
 objectClass: top
@@ -6389,7 +6042,6 @@ attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=EFSPolicy,${SCHEMADN}
 objectClass: top
@@ -6407,7 +6059,6 @@ schemaIDGUID: 8e4eb2ec-4712-11d0-a1a0-00c04fd930c9
 attributeSecurityGUID: a29b89fd-c7e8-11d0-9bae-00c04fd92ef5
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Builtin-Modified-Count,${SCHEMADN}
 objectClass: top
@@ -6424,7 +6075,6 @@ lDAPDisplayName: builtinModifiedCount
 schemaIDGUID: bf967930-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Phone-Office-Other,${SCHEMADN}
 objectClass: top
@@ -6445,7 +6095,6 @@ schemaIDGUID: f0f8ffa5-1191-11d0-a060-00aa006c33ed
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Phone-ISDN-Primary,${SCHEMADN}
 objectClass: top
@@ -6465,7 +6114,6 @@ schemaIDGUID: 0296c11f-40da-11d1-a9c0-0000f80367c1
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Employee-ID,${SCHEMADN}
 objectClass: top
@@ -6484,7 +6132,6 @@ lDAPDisplayName: employeeID
 schemaIDGUID: bf967962-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Tombstone-Lifetime,${SCHEMADN}
 objectClass: top
@@ -6502,7 +6149,6 @@ lDAPDisplayName: tombstoneLifetime
 schemaIDGUID: 16c3a860-1273-11d0-a060-00aa006c33ed
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Operating-System-Service-Pack,${SCHEMADN}
 objectClass: top
@@ -6519,7 +6165,6 @@ lDAPDisplayName: operatingSystemServicePack
 schemaIDGUID: 3e978927-8c01-11d0-afda-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Netboot-Initialization,${SCHEMADN}
 objectClass: top
@@ -6536,7 +6181,6 @@ lDAPDisplayName: netbootInitialization
 schemaIDGUID: 3e978920-8c01-11d0-afda-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=User-Principal-Name,${SCHEMADN}
 objectClass: top
@@ -6556,7 +6200,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Service-Principal-Name,${SCHEMADN}
 objectClass: top
@@ -6575,7 +6218,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Other-Login-Workstations,${SCHEMADN}
 objectClass: top
@@ -6594,7 +6236,6 @@ lDAPDisplayName: otherLoginWorkstations
 schemaIDGUID: bf9679f1-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-IIS-FTP-Dir,${SCHEMADN}
 objectClass: top
@@ -6613,7 +6254,6 @@ lDAPDisplayName: msIIS-FTPDir
 schemaIDGUID: 8a5c99e9-2230-46eb-b8e8-e59d712eb9ee
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Site-Affinity,${SCHEMADN}
 objectClass: top
@@ -6630,7 +6270,6 @@ lDAPDisplayName: msDS-Site-Affinity
 schemaIDGUID: c17c5602-bcb7-46f0-9656-6370ca884b72
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Max-Storage,${SCHEMADN}
 objectClass: top
@@ -6647,7 +6286,6 @@ lDAPDisplayName: maxStorage
 schemaIDGUID: bf9679bd-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=NT-Security-Descriptor,${SCHEMADN}
 objectClass: top
@@ -6668,7 +6306,6 @@ schemaIDGUID: bf9679e3-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 26
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Site-Object-BL,${SCHEMADN}
 objectClass: top
@@ -6687,7 +6324,6 @@ lDAPDisplayName: siteObjectBL
 schemaIDGUID: 3e10944d-c354-11d0-aff8-0000f80367c1
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Query-Policy-BL,${SCHEMADN}
 objectClass: top
@@ -6706,7 +6342,6 @@ lDAPDisplayName: queryPolicyBL
 schemaIDGUID: e1aea404-cd5b-11d0-afff-0000f80367c1
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Partial-Attribute-Set,${SCHEMADN}
 objectClass: top
@@ -6724,7 +6359,6 @@ schemaIDGUID: 19405b9e-3cfa-11d1-a9c0-0000f80367c1
 systemOnly: TRUE
 systemFlags: 19
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Obj-Dist-Name,${SCHEMADN}
 objectClass: top
@@ -6745,7 +6379,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: TRUE
 systemFlags: 19
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Description,${SCHEMADN}
 objectClass: top
@@ -6767,7 +6400,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Az-Class-ID,${SCHEMADN}
 objectClass: top
@@ -6786,7 +6418,6 @@ lDAPDisplayName: msDS-AzClassId
 schemaIDGUID: 013a7277-5c2d-49ef-a7de-b765b36a3f6f
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=RID-Available-Pool,${SCHEMADN}
 objectClass: top
@@ -6803,7 +6434,6 @@ lDAPDisplayName: rIDAvailablePool
 schemaIDGUID: 66171888-8f3c-11d0-afda-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Shell-Property-Pages,${SCHEMADN}
 objectClass: top
@@ -6820,7 +6450,6 @@ lDAPDisplayName: shellPropertyPages
 schemaIDGUID: 52458039-ca6a-11d0-afff-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-SPN-Suffixes,${SCHEMADN}
 objectClass: top
@@ -6838,7 +6467,6 @@ lDAPDisplayName: msDS-SPNSuffixes
 schemaIDGUID: 789ee1eb-8c8e-4e4c-8cec-79b31b7617b5
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Private-Key,${SCHEMADN}
 objectClass: top
@@ -6855,7 +6483,6 @@ lDAPDisplayName: privateKey
 schemaIDGUID: bf967a03-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Facsimile-Telephone-Number,${SCHEMADN}
 objectClass: top
@@ -6876,7 +6503,6 @@ schemaIDGUID: bf967974-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Search-Flags,${SCHEMADN}
 objectClass: top
@@ -6895,7 +6521,6 @@ lDAPDisplayName: searchFlags
 schemaIDGUID: bf967a2d-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Schema-Flags-Ex,${SCHEMADN}
 objectClass: top
@@ -6912,7 +6537,6 @@ lDAPDisplayName: schemaFlagsEx
 schemaIDGUID: bf967a2b-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Is-Ephemeral,${SCHEMADN}
 objectClass: top
@@ -6929,7 +6553,6 @@ lDAPDisplayName: isEphemeral
 schemaIDGUID: f4c453f0-c5f1-11d1-bbcb-0080c76670c0
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MSMQ-Nt4-Stub,${SCHEMADN}
 objectClass: top
@@ -6946,7 +6569,6 @@ lDAPDisplayName: mSMQNt4Stub
 schemaIDGUID: 6f914be6-d57e-11d1-90a2-00c04fd91ab1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-IIS-FTP-Root,${SCHEMADN}
 objectClass: top
@@ -6965,7 +6587,6 @@ lDAPDisplayName: msIIS-FTPRoot
 schemaIDGUID: 2a7827a4-1483-49a5-9d84-52e3812156b4
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Group-Priority,${SCHEMADN}
 objectClass: top
@@ -6982,7 +6603,6 @@ lDAPDisplayName: groupPriority
 schemaIDGUID: eea65905-8ac6-11d0-afda-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Bridgehead-Transport-List,${SCHEMADN}
 objectClass: top
@@ -7001,7 +6621,6 @@ lDAPDisplayName: bridgeheadTransportList
 schemaIDGUID: d50c2cda-8951-11d1-aebc-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Extended-Class-Info,${SCHEMADN}
 objectClass: top
@@ -7018,7 +6637,6 @@ lDAPDisplayName: extendedClassInfo
 schemaIDGUID: 9a7ad948-ca53-11d1-bbd0-0080c76670c0
 systemOnly: TRUE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Flat-Name,${SCHEMADN}
 objectClass: top
@@ -7035,7 +6653,6 @@ lDAPDisplayName: flatName
 schemaIDGUID: b7b13117-b82e-11d0-afee-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Wbem-Path,${SCHEMADN}
 objectClass: top
@@ -7052,7 +6669,6 @@ lDAPDisplayName: wbemPath
 schemaIDGUID: 244b2970-5abd-11d0-afd2-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-NC-Repl-Outbound-Neighbors,${SCHEMADN}
 objectClass: top
@@ -7069,7 +6685,6 @@ lDAPDisplayName: msDS-NCReplOutboundNeighbors
 schemaIDGUID: 855f2ef5-a1c5-4cc4-ba6d-32522848b61f
 systemOnly: FALSE
 systemFlags: 20
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Operations-For-Az-Task-BL,${SCHEMADN}
 objectClass: top
@@ -7088,7 +6703,6 @@ lDAPDisplayName: msDS-OperationsForAzTaskBL
 schemaIDGUID: a637d211-5739-4ed1-89b2-88974548bc59
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Show-In-Advanced-View-Only,${SCHEMADN}
 objectClass: top
@@ -7106,7 +6720,6 @@ schemaIDGUID: bf967984-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 59ba2f42-79a2-11d0-9020-00c04fc2d3cf
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Behavior-Version,${SCHEMADN}
 objectClass: top
@@ -7124,7 +6737,6 @@ lDAPDisplayName: msDS-Behavior-Version
 schemaIDGUID: d31a8757-2447-4545-8081-3bb610cacbf2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Has-Master-NCs,${SCHEMADN}
 objectClass: top
@@ -7143,7 +6755,6 @@ lDAPDisplayName: msDS-hasMasterNCs
 schemaIDGUID: ae2de0e2-59d7-4d47-8d47-ed4dfe4357ad
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Pwd-History-Length,${SCHEMADN}
 objectClass: top
@@ -7163,7 +6774,6 @@ schemaIDGUID: bf967a09-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: c7407360-20bf-11d0-a768-00aa006e0529
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Pek-List,${SCHEMADN}
 objectClass: top
@@ -7180,7 +6790,6 @@ lDAPDisplayName: pekList
 schemaIDGUID: 07383083-91df-11d1-aebc-0000f80367c1
 systemOnly: FALSE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Postal-Code,${SCHEMADN}
 objectClass: top
@@ -7201,7 +6810,6 @@ schemaIDGUID: bf9679fd-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Netboot-Mirror-Data-File,${SCHEMADN}
 objectClass: top
@@ -7218,7 +6826,6 @@ lDAPDisplayName: netbootMirrorDataFile
 schemaIDGUID: 2df90d85-009f-11d2-aa4c-00c04fd7d83a
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Default-Class-Store,${SCHEMADN}
 objectClass: top
@@ -7236,7 +6843,6 @@ lDAPDisplayName: defaultClassStore
 schemaIDGUID: bf967948-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MSMQ-Site-ID,${SCHEMADN}
 objectClass: top
@@ -7253,7 +6859,6 @@ lDAPDisplayName: mSMQSiteID
 schemaIDGUID: 9a0dc340-c100-11d1-bbc5-0080c76670c0
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Show-In-Address-Book,${SCHEMADN}
 objectClass: top
@@ -7272,7 +6877,6 @@ schemaIDGUID: 3e74f60e-3e73-11d1-a9c0-0000f80367c1
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=When-Created,${SCHEMADN}
 objectClass: top
@@ -7291,7 +6895,6 @@ schemaIDGUID: bf967a78-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=DS-Core-Propagation-Data,${SCHEMADN}
 objectClass: top
@@ -7309,7 +6912,6 @@ schemaIDGUID: d167aa4b-8b08-11d2-9939-0000f87a57d4
 systemOnly: TRUE
 systemFlags: 19
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Display-Name-Printable,${SCHEMADN}
 objectClass: top
@@ -7330,7 +6932,6 @@ schemaIDGUID: bf967954-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Ipsec-Owners-Reference,${SCHEMADN}
 objectClass: top
@@ -7348,7 +6949,6 @@ lDAPDisplayName: ipsecOwnersReference
 schemaIDGUID: b40ff824-427a-11d1-a9c2-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=State-Or-Province-Name,${SCHEMADN}
 objectClass: top
@@ -7370,7 +6970,6 @@ attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Server-Reference,${SCHEMADN}
 objectClass: top
@@ -7389,7 +6988,6 @@ lDAPDisplayName: serverReference
 schemaIDGUID: 26d9736d-6070-11d1-a9c6-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Has-Domain-NCs,${SCHEMADN}
 objectClass: top
@@ -7410,7 +7008,6 @@ lDAPDisplayName: msDS-HasDomainNCs
 schemaIDGUID: 6f17e347-a842-4498-b8b3-15e007da4fed
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Invocation-Id,${SCHEMADN}
 objectClass: top
@@ -7428,7 +7025,6 @@ lDAPDisplayName: invocationId
 schemaIDGUID: bf96798e-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Replica-Source,${SCHEMADN}
 objectClass: top
@@ -7445,7 +7041,6 @@ lDAPDisplayName: replicaSource
 schemaIDGUID: bf967a18-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Phone-Ip-Primary,${SCHEMADN}
 objectClass: top
@@ -7465,7 +7060,6 @@ attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Phone-Home-Other,${SCHEMADN}
 objectClass: top
@@ -7486,7 +7080,6 @@ schemaIDGUID: f0f8ffa2-1191-11d0-a060-00aa006c33ed
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Organization-Name,${SCHEMADN}
 objectClass: top
@@ -7508,7 +7101,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Extended-Chars-Allowed,${SCHEMADN}
 objectClass: top
@@ -7526,7 +7118,6 @@ lDAPDisplayName: extendedCharsAllowed
 schemaIDGUID: bf967966-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Operating-System,${SCHEMADN}
 objectClass: top
@@ -7543,7 +7134,6 @@ lDAPDisplayName: operatingSystem
 schemaIDGUID: 3e978925-8c01-11d0-afda-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Object-Reference,${SCHEMADN}
 objectClass: top
@@ -7561,7 +7151,6 @@ searchFlags: 0
 lDAPDisplayName: msDS-ObjectReference
 schemaIDGUID: 638ec2e8-22e7-409c-85d2-11b21bee72de
 systemOnly: FALSE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MSMQ-Interval1,${SCHEMADN}
 objectClass: top
@@ -7578,7 +7167,6 @@ lDAPDisplayName: mSMQInterval1
 schemaIDGUID: 8ea825aa-3b7b-11d2-90cc-00c04fd91ab1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Rid,${SCHEMADN}
 objectClass: top
@@ -7595,7 +7183,6 @@ lDAPDisplayName: rid
 schemaIDGUID: bf967a22-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Profile-Path,${SCHEMADN}
 objectClass: top
@@ -7613,7 +7200,6 @@ schemaIDGUID: bf967a05-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 5f202010-79a5-11d0-9020-00c04fc2d4cf
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=msRADIUSCallbackNumber,${SCHEMADN}
 objectClass: top
@@ -7631,7 +7217,6 @@ schemaIDGUID: db0c909c-c1f2-11d1-bbc5-0080c76670c0
 attributeSecurityGUID: 037088f8-0ae1-11d2-b422-00a0c968f939
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ACS-Policy-Name,${SCHEMADN}
 objectClass: top
@@ -7648,7 +7233,6 @@ lDAPDisplayName: aCSPolicyName
 schemaIDGUID: 1cb3559a-56d0-11d1-a9c6-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Comment,${SCHEMADN}
 objectClass: top
@@ -7669,7 +7253,6 @@ schemaIDGUID: bf96793e-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Object-Reference-BL,${SCHEMADN}
 objectClass: top
@@ -7688,7 +7271,6 @@ lDAPDisplayName: msDS-ObjectReferenceBL
 schemaIDGUID: 2b702515-c1f7-4b3b-b148-c0e4c6ceecb4
 systemOnly: TRUE
 systemFlags: 1
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=When-Changed,${SCHEMADN}
 objectClass: top
@@ -7707,7 +7289,6 @@ schemaIDGUID: bf967a77-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 19
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=USN-Last-Obj-Rem,${SCHEMADN}
 objectClass: top
@@ -7726,7 +7307,6 @@ schemaIDGUID: bf967a73-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 19
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Reps-To,${SCHEMADN}
 objectClass: top
@@ -7745,7 +7325,6 @@ schemaIDGUID: bf967a1e-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 19
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Repl-UpToDate-Vector,${SCHEMADN}
 objectClass: top
@@ -7763,7 +7342,6 @@ schemaIDGUID: bf967a16-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 19
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=netboot-SCP-BL,${SCHEMADN}
 objectClass: top
@@ -7782,7 +7360,6 @@ lDAPDisplayName: netbootSCPBL
 schemaIDGUID: 07383082-91df-11d1-aebc-0000f80367c1
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Mastered-By,${SCHEMADN}
 objectClass: top
@@ -7801,7 +7378,6 @@ lDAPDisplayName: msDs-masteredBy
 schemaIDGUID: 60234769-4819-4615-a1b2-49d2f119acb5
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-COM-PartitionSetLink,${SCHEMADN}
 objectClass: top
@@ -7820,7 +7396,6 @@ lDAPDisplayName: msCOM-PartitionSetLink
 schemaIDGUID: 67f121dc-7d02-4c7d-82f5-9ad4c950ac34
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Common-Name,${SCHEMADN}
 objectClass: top
@@ -7842,7 +7417,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MS-DS-All-Users-Trust-Quota,${SCHEMADN}
 objectClass: top
@@ -7859,7 +7433,6 @@ lDAPDisplayName: msDS-AllUsersTrustQuota
 schemaIDGUID: d3aa4a5c-4e03-4810-97aa-2b339e7a434b
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Default-Group,${SCHEMADN}
 objectClass: top
@@ -7877,7 +7450,6 @@ lDAPDisplayName: defaultGroup
 schemaIDGUID: 720bc4e2-a54a-11d0-afdf-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Ipsec-Filter-Reference,${SCHEMADN}
 objectClass: top
@@ -7895,7 +7467,6 @@ lDAPDisplayName: ipsecFilterReference
 schemaIDGUID: b40ff823-427a-11d1-a9c2-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=User-Comment,${SCHEMADN}
 objectClass: top
@@ -7913,7 +7484,6 @@ schemaIDGUID: bf967a6a-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 59ba2f42-79a2-11d0-9020-00c04fc2d3cf
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-ds-Schema-Extensions,${SCHEMADN}
 objectClass: top
@@ -7930,7 +7500,6 @@ lDAPDisplayName: msDs-Schema-Extensions
 schemaIDGUID: b39a61be-ed07-4cab-9a4a-4963ed0141e1
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Local-Policy-Flags,${SCHEMADN}
 objectClass: top
@@ -7947,7 +7516,6 @@ lDAPDisplayName: localPolicyFlags
 schemaIDGUID: bf96799e-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MSMQ-Interval2,${SCHEMADN}
 objectClass: top
@@ -7964,7 +7532,6 @@ lDAPDisplayName: mSMQInterval2
 schemaIDGUID: 99b88f52-3b7b-11d2-90cc-00c04fd91ab1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=SID-History,${SCHEMADN}
 objectClass: top
@@ -7983,7 +7550,6 @@ attributeSecurityGUID: 59ba2f42-79a2-11d0-9020-00c04fc2d3cf
 systemOnly: FALSE
 systemFlags: 18
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Unicode-Pwd,${SCHEMADN}
 objectClass: top
@@ -8000,7 +7566,6 @@ lDAPDisplayName: unicodePwd
 schemaIDGUID: bf9679e1-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=msRASSavedFramedIPAddress,${SCHEMADN}
 objectClass: top
@@ -8017,7 +7582,6 @@ lDAPDisplayName: msRASSavedFramedIPAddress
 schemaIDGUID: db0c90c6-c1f2-11d1-bbc5-0080c76670c0
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MS-DRM-Identity-Certificate,${SCHEMADN}
 objectClass: top
@@ -8035,7 +7599,6 @@ searchFlags: 0
 lDAPDisplayName: msDRM-IdentityCertificate
 schemaIDGUID: e85e1204-3434-41ad-9b56-e2901228fff0
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Last-Logoff,${SCHEMADN}
 objectClass: top
@@ -8053,7 +7616,6 @@ schemaIDGUID: bf967996-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 5f202010-79a5-11d0-9020-00c04fc2d4cf
 systemOnly: FALSE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=DMD-Name,${SCHEMADN}
 objectClass: top
@@ -8073,7 +7635,6 @@ lDAPDisplayName: dmdName
 schemaIDGUID: 167757b9-47f3-11d1-a9c3-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-Exch-LabeledURI,${SCHEMADN}
 objectClass: top
@@ -8090,7 +7651,6 @@ oMSyntax: 64
 searchFlags: 0
 lDAPDisplayName: msExchLabeledURI
 schemaIDGUID: 16775820-47f3-11d1-a9c3-0000f80367c1
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Reports,${SCHEMADN}
 objectClass: top
@@ -8111,7 +7671,6 @@ schemaIDGUID: bf967a1c-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Repl-Property-Meta-Data,${SCHEMADN}
 objectClass: top
@@ -8129,7 +7688,6 @@ schemaIDGUID: 281416c0-1968-11d0-a28f-00aa003049e2
 systemOnly: TRUE
 systemFlags: 27
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=From-Entry,${SCHEMADN}
 objectClass: top
@@ -8146,7 +7704,6 @@ lDAPDisplayName: fromEntry
 schemaIDGUID: 9a7ad949-ca53-11d1-bbd0-0080c76670c0
 systemOnly: TRUE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Trust-Parent,${SCHEMADN}
 objectClass: top
@@ -8164,7 +7721,6 @@ lDAPDisplayName: trustParent
 schemaIDGUID: b000ea7a-a086-11d0-afdd-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Ipsec-Data-Type,${SCHEMADN}
 objectClass: top
@@ -8181,7 +7737,6 @@ lDAPDisplayName: ipsecDataType
 schemaIDGUID: b40ff81e-427a-11d1-a9c2-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Ipsec-Data,${SCHEMADN}
 objectClass: top
@@ -8198,7 +7753,6 @@ lDAPDisplayName: ipsecData
 schemaIDGUID: b40ff81f-427a-11d1-a9c2-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=RID-Manager-Reference,${SCHEMADN}
 objectClass: top
@@ -8216,7 +7770,6 @@ lDAPDisplayName: rIDManagerReference
 schemaIDGUID: 66171886-8f3c-11d0-afda-00c04fd930c9
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Lockout-Threshold,${SCHEMADN}
 objectClass: top
@@ -8235,7 +7788,6 @@ schemaIDGUID: bf9679a6-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: c7407360-20bf-11d0-a768-00aa006e0529
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Desktop-Profile,${SCHEMADN}
 objectClass: top
@@ -8252,7 +7804,6 @@ lDAPDisplayName: desktopProfile
 schemaIDGUID: eea65906-8ac6-11d0-afda-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Text-Country,${SCHEMADN}
 objectClass: top
@@ -8273,7 +7824,6 @@ schemaIDGUID: f0f8ffa7-1191-11d0-a060-00aa006c33ed
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Teletex-Terminal-Identifier,${SCHEMADN}
 objectClass: top
@@ -8292,7 +7842,6 @@ schemaIDGUID: bf967a4a-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Telex-Primary,${SCHEMADN}
 objectClass: top
@@ -8312,7 +7861,6 @@ schemaIDGUID: 0296c121-40da-11d1-a9c0-0000f80367c1
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Manager,${SCHEMADN}
 objectClass: top
@@ -8334,7 +7882,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Physical-Location-Object,${SCHEMADN}
 objectClass: top
@@ -8352,7 +7899,6 @@ lDAPDisplayName: physicalLocationObject
 schemaIDGUID: b7b13119-b82e-11d0-afee-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Az-Major-Version,${SCHEMADN}
 objectClass: top
@@ -8370,7 +7916,6 @@ lDAPDisplayName: msDS-AzMajorVersion
 schemaIDGUID: cfb9adb7-c4b7-4059-9568-1ed9db6b7248
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Sub-Class-Of,${SCHEMADN}
 objectClass: top
@@ -8387,7 +7932,6 @@ lDAPDisplayName: subClassOf
 schemaIDGUID: bf967a3b-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=System-Must-Contain,${SCHEMADN}
 objectClass: top
@@ -8404,7 +7948,6 @@ lDAPDisplayName: systemMustContain
 schemaIDGUID: bf967a45-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=roomNumber,${SCHEMADN}
 objectClass: top
@@ -8421,7 +7964,6 @@ lDAPDisplayName: roomNumber
 schemaIDGUID: 81d7f8c2-e327-4a0d-91c6-b42d4009115f
 systemOnly: FALSE
 systemFlags: 0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Employee-Type,${SCHEMADN}
 objectClass: top
@@ -8441,7 +7983,6 @@ lDAPDisplayName: employeeType
 schemaIDGUID: a8df73f0-c5ea-11d1-bbcb-0080c76670c0
 systemOnly: FALSE
 systemFlags: 0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Current-Value,${SCHEMADN}
 objectClass: top
@@ -8458,7 +7999,6 @@ lDAPDisplayName: currentValue
 schemaIDGUID: bf967947-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=DIT-Content-Rules,${SCHEMADN}
 objectClass: top
@@ -8475,7 +8015,6 @@ lDAPDisplayName: dITContentRules
 schemaIDGUID: 9a7ad946-ca53-11d1-bbd0-0080c76670c0
 systemOnly: TRUE
 systemFlags: 134217748
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=GPC-Machine-Extension-Names,${SCHEMADN}
 objectClass: top
@@ -8492,7 +8031,6 @@ lDAPDisplayName: gPCMachineExtensionNames
 schemaIDGUID: 32ff8ecc-783f-11d2-9916-0000f87a57d4
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=USN-Created,${SCHEMADN}
 objectClass: top
@@ -8511,7 +8049,6 @@ schemaIDGUID: bf967a70-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 19
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Sub-Refs,${SCHEMADN}
 objectClass: top
@@ -8531,7 +8068,6 @@ schemaIDGUID: bf967a3c-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 19
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Proxy-Addresses,${SCHEMADN}
 objectClass: top
@@ -8552,7 +8088,6 @@ schemaIDGUID: bf967a06-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Superior-DNS-Root,${SCHEMADN}
 objectClass: top
@@ -8569,7 +8104,6 @@ lDAPDisplayName: superiorDNSRoot
 schemaIDGUID: 5245801d-ca6a-11d0-afff-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Root-Trust,${SCHEMADN}
 objectClass: top
@@ -8587,7 +8121,6 @@ lDAPDisplayName: rootTrust
 schemaIDGUID: 7bfdcb80-4807-11d1-a9c3-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Shell-Context-Menu,${SCHEMADN}
 objectClass: top
@@ -8604,7 +8137,6 @@ lDAPDisplayName: shellContextMenu
 schemaIDGUID: 553fd039-f32e-11d0-b0bc-00c04fd8dca6
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Class-Display-Name,${SCHEMADN}
 objectClass: top
@@ -8621,7 +8153,6 @@ lDAPDisplayName: classDisplayName
 schemaIDGUID: 548e1c22-dea6-11d0-b010-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Ipsec-Name,${SCHEMADN}
 objectClass: top
@@ -8638,7 +8169,6 @@ lDAPDisplayName: ipsecName
 schemaIDGUID: b40ff81c-427a-11d1-a9c2-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=CA-Certificate,${SCHEMADN}
 objectClass: top
@@ -8659,7 +8189,6 @@ schemaIDGUID: bf967932-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Ipsec-Negotiation-Policy-Reference,${SCHEMADN}
 objectClass: top
@@ -8677,7 +8206,6 @@ lDAPDisplayName: ipsecNegotiationPolicyReference
 schemaIDGUID: b40ff822-427a-11d1-a9c2-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MHS-OR-Address,${SCHEMADN}
 objectClass: top
@@ -8694,7 +8222,6 @@ lDAPDisplayName: mhsORAddress
 schemaIDGUID: 0296c122-40da-11d1-a9c0-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Nt-Pwd-History,${SCHEMADN}
 objectClass: top
@@ -8711,7 +8238,6 @@ lDAPDisplayName: ntPwdHistory
 schemaIDGUID: bf9679e2-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=SMTP-Mail-Address,${SCHEMADN}
 objectClass: top
@@ -8728,7 +8254,6 @@ lDAPDisplayName: mailAddress
 schemaIDGUID: 26d9736f-6070-11d1-a9c6-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Foreign-Identifier,${SCHEMADN}
 objectClass: top
@@ -8745,7 +8270,6 @@ lDAPDisplayName: foreignIdentifier
 schemaIDGUID: 3e97891e-8c01-11d0-afda-00c04fd930c9
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=USN-Changed,${SCHEMADN}
 objectClass: top
@@ -8764,7 +8288,6 @@ schemaIDGUID: bf967a6f-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 19
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Reps-From,${SCHEMADN}
 objectClass: top
@@ -8783,7 +8306,6 @@ schemaIDGUID: bf967a1d-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 19
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Other-Well-Known-Objects,${SCHEMADN}
 objectClass: top
@@ -8803,7 +8325,6 @@ lDAPDisplayName: otherWellKnownObjects
 schemaIDGUID: 1ea64e5d-ac0f-11d2-90df-00c04fd91ab1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-NC-Repl-Cursors,${SCHEMADN}
 objectClass: top
@@ -8820,7 +8341,6 @@ lDAPDisplayName: msDS-NCReplCursors
 schemaIDGUID: 8a167ce4-f9e8-47eb-8d78-f7fe80abb2cc
 systemOnly: FALSE
 systemFlags: 20
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Managed-Objects,${SCHEMADN}
 objectClass: top
@@ -8840,7 +8360,6 @@ lDAPDisplayName: managedObjects
 schemaIDGUID: 0296c124-40da-11d1-a9c0-0000f80367c1
 systemOnly: TRUE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Allowed-DNS-Suffixes,${SCHEMADN}
 objectClass: top
@@ -8859,7 +8378,6 @@ lDAPDisplayName: msDS-AllowedDNSSuffixes
 schemaIDGUID: 8469441b-9ac4-4e45-8205-bd219dbf672d
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=NC-Name,${SCHEMADN}
 objectClass: top
@@ -8877,7 +8395,6 @@ lDAPDisplayName: nCName
 schemaIDGUID: bf9679d6-0de6-11d0-a285-00aa003049e2
 systemOnly: TRUE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=NETBIOS-Name,${SCHEMADN}
 objectClass: top
@@ -8896,7 +8413,6 @@ lDAPDisplayName: nETBIOSName
 schemaIDGUID: bf9679d8-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Query-Filter,${SCHEMADN}
 objectClass: top
@@ -8913,7 +8429,6 @@ lDAPDisplayName: queryFilter
 schemaIDGUID: cbf70a26-7e78-11d2-9921-0000f87a57d4
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Preferred-Delivery-Method,${SCHEMADN}
 objectClass: top
@@ -8932,7 +8447,6 @@ schemaIDGUID: bf9679fe-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MSMQ-Site-Foreign,${SCHEMADN}
 objectClass: top
@@ -8949,7 +8463,6 @@ lDAPDisplayName: mSMQSiteForeign
 schemaIDGUID: fd129d8a-d57e-11d1-90a2-00c04fd91ab1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=audio,${SCHEMADN}
 objectClass: top
@@ -8967,7 +8480,6 @@ lDAPDisplayName: audio
 schemaIDGUID: d0e1d224-e1a0-42ce-a2da-793ba5244f35
 systemOnly: FALSE
 systemFlags: 0
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Script-Path,${SCHEMADN}
 objectClass: top
@@ -8985,7 +8497,6 @@ schemaIDGUID: bf9679a8-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 5f202010-79a5-11d0-9020-00c04fc2d4cf
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MSMQ-Digests,${SCHEMADN}
 objectClass: top
@@ -9006,7 +8517,6 @@ attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=ms-DS-Cached-Membership,${SCHEMADN}
 objectClass: top
@@ -9023,7 +8533,6 @@ lDAPDisplayName: msDS-Cached-Membership
 schemaIDGUID: 69cab008-cdd4-4bc9-bab8-0ff37efe1b20
 systemOnly: FALSE
 systemFlags: 17
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Logon-Hours,${SCHEMADN}
 objectClass: top
@@ -9041,7 +8550,6 @@ schemaIDGUID: bf9679ab-0de6-11d0-a285-00aa003049e2
 attributeSecurityGUID: 5f202010-79a5-11d0-9020-00c04fc2d4cf
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=GPC-File-Sys-Path,${SCHEMADN}
 objectClass: top
@@ -9058,7 +8566,6 @@ lDAPDisplayName: gPCFileSysPath
 schemaIDGUID: f30e3bc1-9ff0-11d1-b603-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Top,${SCHEMADN}
 objectClass: top
@@ -9168,7 +8675,6 @@ systemMustContain: instanceType
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Top,${SCHEMADN}
 
 dn: CN=Ipsec-ISAKMP-Policy,${SCHEMADN}
@@ -9190,7 +8696,6 @@ systemPossSuperiors: organizationalUnit
 defaultSecurityDescriptor: D:
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Ipsec-ISAKMP-Policy,${SCHEMADN}
 
 dn: CN=Domain-DNS,${SCHEMADN}
@@ -9227,7 +8732,6 @@ systemAuxiliaryClass: samDomain
 defaultSecurityDescriptor: D:(A;;RP;;;WD)(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;BA)(A;;RPLCLORC;;;AU)(A;;RPWPCRLCLOCCRCWDWOSW;;;DA)(A;CI;RPWPCRLCLOCCRCWDWOSDSW;;;BA)(A;;RPWPCRLCLOCCDCRCWDWOSDDTSW;;;SY)(A;CI;RPWPCRLCLOCCDCRCWDWOSDDTSW;;;EA)(A;CI;LC;;;RU)(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;;RP;c7407360-20bf-11d0-a768-00aa006e0529;;RU)(OA;CIIO;RPLCLORC;;bf967a9c-0de6-11d0-a285-00aa003049e2;RU)(A;;RPRC;;;RU)(OA;CIIO;RPLCLORC;;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(A;;LCRPLORC;;;ED)(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RPLCLORC;;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;RU)(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;AU)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967aba-0de6-11d0-a285-00aa003049e2;ED)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a9c-0de6-11d0-a285-00aa003049e2;ED)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a86-0de6-11d0-a285-00aa003049e2;ED)(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;DD)(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;e2a36dc9-ae17-47c3-b58b-be34c55ba633;;S-1-5-32-557)(OA;;CR;280f369c-67c7-438e-ae98-1d46f3c6f541;;AU)(OA;;CR;ccc2dc7d-a6ad-4a7a-8846-c04e3cc53501;;AU)(OA;;CR;05c74c5e-4deb-43b4-bd9f-86664c2a7fd5;;AU)S:(AU;SA;WDWOWP;;;WD)(AU;SA;CR;;;BA)(AU;SA;CR;;;DU)(OU;CISA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)
 systemFlags: 16
 defaultHidingValue: FALSE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Domain-DNS,${SCHEMADN}
 
 dn: CN=ms-DS-Az-Application,${SCHEMADN}
@@ -9257,7 +8761,6 @@ systemMayContain: description
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;CO)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=ms-DS-Az-Application,${SCHEMADN}
 
 dn: CN=Builtin-Domain,${SCHEMADN}
@@ -9281,7 +8784,6 @@ systemAuxiliaryClass: samDomainBase
 defaultSecurityDescriptor: D:(A;;RPLCLORC;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Builtin-Domain,${SCHEMADN}
 
 dn: CN=Infrastructure-Update,${SCHEMADN}
@@ -9303,7 +8805,6 @@ systemMayContain: dNReferenceUpdate
 defaultSecurityDescriptor: D:(A;;GA;;;SY)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Infrastructure-Update,${SCHEMADN}
 
 dn: CN=Configuration,${SCHEMADN}
@@ -9330,7 +8831,6 @@ systemMustContain: cn
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Configuration,${SCHEMADN}
 
 dn: CN=Cross-Ref,${SCHEMADN}
@@ -9365,7 +8865,6 @@ systemMustContain: cn
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Cross-Ref,${SCHEMADN}
 
 dn: CN=RID-Manager,${SCHEMADN}
@@ -9386,7 +8885,6 @@ systemMustContain: rIDAvailablePool
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)S:(AU;SA;CRWP;;;WD)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=RID-Manager,${SCHEMADN}
 
 dn: CN=Display-Specifier,${SCHEMADN}
@@ -9422,7 +8920,6 @@ systemMayContain: adminContextMenu
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Display-Specifier,${SCHEMADN}
 
 dn: CN=Ipsec-Base,${SCHEMADN}
@@ -9446,7 +8943,6 @@ systemMayContain: ipsecData
 defaultSecurityDescriptor: D:
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Ipsec-Base,${SCHEMADN}
 
 dn: CN=ms-DS-Az-Scope,${SCHEMADN}
@@ -9472,7 +8968,6 @@ systemMustContain: msDS-AzScopeName
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;CO)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=ms-DS-Az-Scope,${SCHEMADN}
 
 dn: CN=Locality,${SCHEMADN}
@@ -9503,7 +8998,6 @@ systemMustContain: l
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: FALSE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Locality,${SCHEMADN}
 
 dn: CN=Cross-Ref-Container,${SCHEMADN}
@@ -9529,7 +9023,6 @@ systemMayContain: msDS-Behavior-Version
 defaultSecurityDescriptor: D:(A;;GA;;;SY)
 systemFlags: 16
 defaultHidingValue: FALSE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Cross-Ref-Container,${SCHEMADN}
 
 dn: CN=Query-Policy,${SCHEMADN}
@@ -9551,7 +9044,6 @@ systemMayContain: lDAPAdminLimits
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Query-Policy,${SCHEMADN}
 
 dn: CN=Subnet-Container,${SCHEMADN}
@@ -9572,7 +9064,6 @@ systemPossSuperiors: sitesContainer
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Subnet-Container,${SCHEMADN}
 
 dn: CN=NTDS-DSA,${SCHEMADN}
@@ -9611,7 +9102,6 @@ systemMayContain: dMDLocation
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=NTDS-DSA,${SCHEMADN}
 
 dn: CN=Sam-Domain,${SCHEMADN}
@@ -9669,7 +9159,6 @@ systemAuxiliaryClass: samDomainBase
 defaultSecurityDescriptor: D:(A;;RP;;;WD)(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;ED)(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;BA)(A;;RPLCLORC;;;AU)(A;;RPWPCRLCLOCCRCWDWOSW;;;DA)(A;CI;RPWPCRLCLOCCRCWDWOSDSW;;;BA)(A;;RPWPCRLCLOCCDCRCWDWOSDDTSW;;;SY)(A;CI;RPWPCRLCLOCCDCRCWDWOSDDTSW;;;EA)(A;CI;LC;;;RU)(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(OA;;RP;c7407360-20bf-11d0-a768-00aa006e0529;;RU)(OA;CIIO;RPLCLORC;;bf967a9c-0de6-11d0-a285-00aa003049e2;RU)(A;;RPRC;;;RU)(OA;CIIO;RPLCLORC;;bf967aba-0de6-11d0-a285-00aa003049e2;RU)(A;;LCRPLORC;;;ED)(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;CIIO;RPLCLORC;;4828CC14-1437-45bc-9B07-AD6F015E5F28;RU)(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;RU)(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;AU)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967aba-0de6-11d0-a285-00aa003049e2;ED)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a9c-0de6-11d0-a285-00aa003049e2;ED)(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a86-0de6-11d0-a285-00aa003049e2;ED)(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;DD)(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;BA)(OA;;CR;e2a36dc9-ae17-47c3-b58b-be34c55ba633;;S-1-5-32-557)(OA;;CR;280f369c-67c7-438e-ae98-1d46f3c6f541;;AU)(OA;;CR;ccc2dc7d-a6ad-4a7a-8846-c04e3cc53501;;AU)(OA;;CR;05c74c5e-4deb-43b4-bd9f-86664c2a7fd5;;AU)S:(AU;SA;WDWOWP;;;WD)(AU;SA;CR;;;BA)(AU;SA;CR;;;DU)(OU;CISA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Sam-Domain,${SCHEMADN}
 
 dn: CN=Sam-Domain-Base,${SCHEMADN}
@@ -9708,7 +9197,6 @@ systemMayContain: domainReplica
 systemMayContain: creationTime
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Sam-Domain-Base,${SCHEMADN}
 
 dn: CN=Country,${SCHEMADN}
@@ -9735,7 +9223,6 @@ systemMustContain: c
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Country,${SCHEMADN}
 
 dn: CN=Organizational-Unit,${SCHEMADN}
@@ -9803,7 +9290,6 @@ systemMustContain: ou
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(OA;;CCDC;bf967a86-0de6-11d0-a285-00aa003049e2;;AO)(OA;;CCDC;bf967aba-0de6-11d0-a285-00aa003049e2;;AO)(OA;;CCDC;bf967a9c-0de6-11d0-a285-00aa003049e2;;AO)(OA;;CCDC;bf967aa8-0de6-11d0-a285-00aa003049e2;;PO)(A;;RPLCLORC;;;AU)(A;;LCRPLORC;;;ED)(OA;;CCDC;4828CC14-1437-45bc-9B07-AD6F015E5F28;;AO)
 systemFlags: 16
 defaultHidingValue: FALSE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Organizational-Unit,${SCHEMADN}
 
 dn: CN=Ipsec-NFA,${SCHEMADN}
@@ -9827,7 +9313,6 @@ systemMayContain: ipsecFilterReference
 defaultSecurityDescriptor: D:
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Ipsec-NFA,${SCHEMADN}
 
 dn: CN=Lost-And-Found,${SCHEMADN}
@@ -9885,7 +9370,6 @@ systemMayContain: moveTreeState
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Lost-And-Found,${SCHEMADN}
 
 dn: CN=Organizational-Person,${SCHEMADN}
@@ -9962,7 +9446,6 @@ systemMayContain: streetAddress
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Person,${SCHEMADN}
 
 dn: CN=Attribute-Schema,${SCHEMADN}
@@ -10005,7 +9488,6 @@ systemMustContain: attributeID
 defaultSecurityDescriptor: D:S:
 systemFlags: 134217744
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=NTDS-Service,${SCHEMADN}
@@ -10033,7 +9515,6 @@ systemMayContain: dSHeuristics
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=NTDS-Service,${SCHEMADN}
 
 dn: CN=Servers-Container,${SCHEMADN}
@@ -10054,7 +9535,6 @@ systemPossSuperiors: site
 defaultSecurityDescriptor: D:(A;;CC;;;BA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Servers-Container,${SCHEMADN}
 
 dn: CN=Computer,${SCHEMADN}
@@ -10104,7 +9584,6 @@ systemMayContain: catalogs
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPCRLCLORCSDDT;;;CO)(OA;;WP;4c164200-20c0-11d0-a768-00aa006e0529;;CO)(A;;RPLCLORC;;;AU)(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;WD)(A;;CCDC;;;PS)(OA;;CCDC;bf967aa8-0de6-11d0-a285-00aa003049e2;;PO)(OA;;RPWP;bf967a7f-0de6-11d0-a285-00aa003049e2;;CA)(OA;;SW;f3a64788-5306-11d1-a9c5-0000f80367c1;;PS)(OA;;RPWP;77B5B886-944A-11d1-AEBD-0000F80367C1;;PS)(OA;;SW;72e39547-7b18-11d1-adef-00c04fd8d5cd;;PS)(OA;;SW;72e39547-7b18-11d1-adef-00c04fd8d5cd;;CO)(OA;;SW;f3a64788-5306-11d1-a9c5-0000f80367c1;;CO)(OA;;WP;3e0abfd0-126a-11d0-a060-00aa006c33ed;bf967a86-0de6-11d0-a285-00aa003049e2;CO)(OA;;WP;5f202010-79a5-11d0-9020-00c04fc2d4cf;bf967a86-0de6-11d0-a285-00aa003049e2;CO)(OA;;WP;bf967950-0de6-11d0-a285-00aa003049e2;bf967a86-0de6-11d0-a285-00aa003049e2;CO)(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;bf967a86-0de6-11d0-a285-00aa003049e2;CO)(OA;;RP;46a9b11d-60ae-405a-b7e8-ff8a58d456d2;;S-1-5-32-560)
 systemFlags: 16
 defaultHidingValue: FALSE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Computer,${SCHEMADN}
 
 dn: CN=Person,${SCHEMADN}
@@ -10132,7 +9611,6 @@ systemMustContain: cn
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Person,${SCHEMADN}
 
 dn: CN=Ipsec-Policy,${SCHEMADN}
@@ -10156,7 +9634,6 @@ systemMayContain: ipsecISAKMPReference
 defaultSecurityDescriptor: D:
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Ipsec-Policy,${SCHEMADN}
 
 dn: CN=Container,${SCHEMADN}
@@ -10207,7 +9684,6 @@ systemMustContain: cn
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Container,${SCHEMADN}
 
 dn: CN=Site,${SCHEMADN}
@@ -10238,7 +9714,6 @@ systemMayContain: gPLink
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)(A;;LCRPLORC;;;ED)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Site,${SCHEMADN}
 
 dn: CN=Organization,${SCHEMADN}
@@ -10290,7 +9765,6 @@ systemMustContain: o
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: FALSE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Organization,${SCHEMADN}
 
 dn: CN=ms-DS-Az-Admin-Manager,${SCHEMADN}
@@ -10324,7 +9798,6 @@ systemMayContain: description
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;CO)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=ms-DS-Az-Admin-Manager,${SCHEMADN}
 
 dn: CN=Security-Principal,${SCHEMADN}
@@ -10356,7 +9829,6 @@ systemMustContain: sAMAccountName
 systemMustContain: objectSid
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Security-Principal,${SCHEMADN}
 
 dn: CN=Application-Settings,${SCHEMADN}
@@ -10378,7 +9850,6 @@ systemMayContain: msDS-Settings
 systemMayContain: applicationName
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Application-Settings,${SCHEMADN}
 
 dn: CN=Class-Schema,${SCHEMADN}
@@ -10422,7 +9893,6 @@ systemMustContain: cn
 defaultSecurityDescriptor: D:S:
 systemFlags: 134217744
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Class-Schema,${SCHEMADN}
 
 dn: CN=User,${SCHEMADN}
@@ -10540,7 +10010,6 @@ systemAuxiliaryClass: mailRecipient
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)(A;;RPLCLORC;;;PS)(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;PS)(OA;;CR;ab721a54-1e2f-11d0-9819-00aa0040529b;;PS)(OA;;CR;ab721a56-1e2f-11d0-9819-00aa0040529b;;PS)(OA;;RPWP;77B5B886-944A-11d1-AEBD-0000F80367C1;;PS)(OA;;RPWP;E45795B2-9455-11d1-AEBD-0000F80367C1;;PS)(OA;;RPWP;E45795B3-9455-11d1-AEBD-0000F80367C1;;PS)(OA;;RP;037088f8-0ae1-11d2-b422-00a0c968f939;;RS)(OA;;RP;4c164200-20c0-11d0-a768-00aa006e0529;;RS)(OA;;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;;RS)(A;;RC;;;AU)(OA;;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;;AU)(OA;;RP;77B5B886-944A-11d1-AEBD-0000F80367C1;;AU)(OA;;RP;E45795B3-9455-11d1-AEBD-0000F80367C1;;AU)(OA;;RP;e48d0154-bcf8-11d1-8702-00c04fb96050;;AU)(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;WD)(OA;;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;;RS)(OA;;RPWP;bf967a7f-0de6-11d0-a285-00aa003049e2;;CA)(OA;;RP;46a9b11d-60ae-405a-b7e8-ff8a58d456d2;;S-1-5-32-560)(OA;;WPRP;6db69a1c-9422-11d1-aebd-0000f80367c1;;S-1-5-32-561)
 systemFlags: 16
 defaultHidingValue: FALSE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Person,${SCHEMADN}
 
 dn: CN=DMD,${SCHEMADN}
@@ -10570,7 +10039,6 @@ systemMustContain: cn
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=DMD,${SCHEMADN}
 
 dn: CN=Leaf,${SCHEMADN}
@@ -10589,7 +10057,6 @@ systemOnly: FALSE
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Leaf,${SCHEMADN}
 
 dn: CN=Secret,${SCHEMADN}
@@ -10613,7 +10080,6 @@ systemMayContain: currentValue
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Secret,${SCHEMADN}
 
 dn: CN=Sites-Container,${SCHEMADN}
@@ -10635,7 +10101,6 @@ systemPossSuperiors: configuration
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Sites-Container,${SCHEMADN}
 
 dn: CN=Server,${SCHEMADN}
@@ -10663,7 +10128,6 @@ systemMayContain: bridgeheadTransportList
 defaultSecurityDescriptor: D:(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Server,${SCHEMADN}
 
 dn: CN=SubSchema,${SCHEMADN}
@@ -10689,7 +10153,6 @@ systemMayContain: attributeTypes
 defaultSecurityDescriptor: D:S:
 systemFlags: 134217744
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=SubSchema,${SCHEMADN}
 
 dn: CN=Trusted-Domain,${SCHEMADN}
@@ -10725,7 +10188,6 @@ systemMayContain: additionalTrustedServiceNames
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)(OA;;WP;736e4812-af31-11d2-b7df-00805f48caeb;bf967ab8-0de6-11d0-a285-00aa003049e2;CO)(A;;SD;;;CO)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Trusted-Domain,${SCHEMADN}
 
 dn: CN=Domain,${SCHEMADN}
@@ -10747,7 +10209,6 @@ systemPossSuperiors: organization
 systemMustContain: dc
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Domain-DNS,${SCHEMADN}
 
 dn: CN=Foreign-Security-Principal,${SCHEMADN}
@@ -10769,7 +10230,6 @@ systemMustContain: objectSid
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)(A;;RPLCLORC;;;PS)(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;PS)(OA;;CR;ab721a54-1e2f-11d0-9819-00aa0040529b;;PS)(OA;;CR;ab721a56-1e2f-11d0-9819-00aa0040529b;;PS)(OA;;RPWP;77B5B886-944A-11d1-AEBD-0000F80367C1;;PS)(OA;;RPWP;E45795B2-9455-11d1-AEBD-0000F80367C1;;PS)(OA;;RPWP;E45795B3-9455-11d1-AEBD-0000F80367C1;;PS)(A;;RC;;;AU)(OA;;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;;AU)(OA;;RP;77B5B886-944A-11d1-AEBD-0000F80367C1;;AU)(OA;;RP;E45795B3-9455-11d1-AEBD-0000F80367C1;;AU)(OA;;RP;e48d0154-bcf8-11d1-8702-00c04fb96050;;AU)(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;WD)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Foreign-Security-Principal,${SCHEMADN}
 
 dn: CN=Subnet,${SCHEMADN}
@@ -10794,7 +10254,6 @@ systemMayContain: location
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Subnet,${SCHEMADN}
 
 dn: CN=Mail-Recipient,${SCHEMADN}
@@ -10828,7 +10287,6 @@ systemMustContain: cn
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Mail-Recipient,${SCHEMADN}
 
 dn: CN=Group,${SCHEMADN}
@@ -10871,7 +10329,6 @@ systemAuxiliaryClass: securityPrincipal
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)(A;;RPLCLORC;;;PS)(OA;;CR;ab721a55-1e2f-11d0-9819-00aa0040529b;;AU)(OA;;RP;46a9b11d-60ae-405a-b7e8-ff8a58d456d2;;S-1-5-32-560)
 systemFlags: 16
 defaultHidingValue: FALSE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Group,${SCHEMADN}
 
 dn: CN=Group-Policy-Container,${SCHEMADN}
@@ -10914,13 +10371,11 @@ systemMayContain: flags
 defaultSecurityDescriptor: D:P(A;CI;RPWPCCDCLCLOLORCWOWDSDDTSW;;;DA)(A;CI;RPWPCCDCLCLOLORCWOWDSDDTSW;;;EA)(A;CI;RPWPCCDCLCLOLORCWOWDSDDTSW;;;CO)(A;CI;RPWPCCDCLCLORCWOWDSDDTSW;;;SY)(A;CI;RPLCLORC;;;AU)(OA;CI;CR;edacfd8f-ffb3-11d1-b41d-00a0c968f939;;AU)(A;CI;LCRPLORC;;;ED)
 systemFlags: 16
 defaultHidingValue: TRUE
-objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Group-Policy-Container,${SCHEMADN}
 
 dn: CN=Aggregate,${SCHEMADN}
 objectClass: top
 objectClass: subSchema
-objectCategory: CN=SubSchema,${SCHEMADN}
 objectClasses: ( 2.5.6.0 NAME 'top' SUP top ABSTRACT MUST ( objectClass $ objectCategory $ nTSecurityDescriptor $ instanceType ) MAY ( url $ wWWHomePage $ whenCreated $ whenChanged $ wellKnownObjects $ wbemPath $ uSNSource $ uSNLastObjRem $ USNIntersite $ uSNDSALastObjRemoved $ uSNCreated $ uSNChanged $ systemFlags $ subSchemaSubEntry $ subRefs $ structuralObjectClass $ siteObjectBL $ serverReferenceBL $ sDRightsEffective $ revision $ repsTo $ repsFrom $ directReports $ replUpToDateVector $ replPropertyMetaData $ name $ queryPolicyBL $ proxyAddresses $ proxiedObjectName $ possibleInferiors $ partialAttributeSet $ partialAttributeDeletionList $ otherWellKnownObjects $ objectVersion $ objectGUID $ distinguishedName $ nonSecurityMemberBL $ netbootSCPBL $ ownerBL $ msDS-ReplValueMetaData $ msDS-ReplAttributeMetaData $ msDS-NonMembersBL $ msDS-NCReplOutboundNeighbors $ msDS-NCReplInboundNeighbors $ msDS-NCReplCursors $ msDS-TasksForAzRoleBL $ msDS-TasksForAzTaskBL $ msDS-OperationsForAzRoleBL $ msDS-OperationsForAzTaskBL $ msDS-MembersForAzRoleBL $ msDs-masteredBy $ mS-DS-ConsistencyGuid $ mS-DS-ConsistencyChildCount $ msDS-Approx-Immed-Subordinates $ msCOM-PartitionSetLink $ msCOM-UserLink $ modifyTimeStamp $ masteredBy $ managedObjects $ lastKnownParent $ isPrivilegeHolder $ memberOf $ isDeleted $ isCriticalSystemObject $ showInAdvancedViewOnly $ fSMORoleOwner $ fRSMemberReferenceBL $ frsComputerReferenceBL $ fromEntry $ flags $ extensionName $ dSASignature $ dSCorePropagationData $ displayNamePrintable $ displayName $ description $ createTimeStamp $ cn $ canonicalName $ bridgeheadServerListBL $ allowedChildClassesEffective $ allowedChildClasses $ allowedAttributesEffective $ allowedAttributes $ adminDisplayName $ adminDescription $ msDS-ObjectReferenceBL ) )
 objectClasses: ( 1.2.840.113556.1.5.120 NAME 'ipsecISAKMPPolicy' SUP ipsecBase STRUCTURAL )
 objectClasses: ( 1.2.840.113556.1.5.67 NAME 'domainDNS' SUP domain STRUCTURAL MAY ( msDS-Behavior-Version $ msDS-AllowedDNSSuffixes $ managedBy ) )
