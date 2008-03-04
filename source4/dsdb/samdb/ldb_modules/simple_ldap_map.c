@@ -153,8 +153,16 @@ static struct ldb_val sid_always_binary(struct ldb_module *module, TALLOC_CTX *c
 /* Ensure we always convert objectCategory into a DN */
 static struct ldb_val objectCategory_always_dn(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
+	struct ldb_dn *dn;
 	struct ldb_val out = data_blob(NULL, 0);
 	const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(module->ldb, "objectCategory");
+
+	dn = ldb_dn_new(ctx, module->ldb, val->data);
+	if (dn && ldb_dn_is_valid(dn)) {
+		talloc_free(dn);
+		return val_copy(module, ctx, val);
+	}
+	talloc_free(dn);
 
 	if (a->syntax->canonicalise_fn(module->ldb, ctx, val, &out) != LDB_SUCCESS) {
 		return data_blob(NULL, 0);
