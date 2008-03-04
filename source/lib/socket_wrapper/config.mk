@@ -7,4 +7,4 @@ PRIVATE_DEPENDENCIES = EXT_SOCKET
 
 PUBLIC_HEADERS += lib/socket_wrapper/socket_wrapper.h
 
-SOCKET_WRAPPER_OBJ_FILES = lib/socket/socket_wrapper.o
+SOCKET_WRAPPER_OBJ_FILES = lib/socket_wrapper/socket_wrapper.o
