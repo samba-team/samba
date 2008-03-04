@@ -233,6 +233,15 @@ static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv
 		return ret;
 	}
 
+	if (options.machinereadable){
+		printf(":Current Node Time:Ctdb Start Time:Last Recovery Time:\n");
+		printf(":%u:%u:%u:\n",
+			(unsigned int)uptime->current_time.tv_sec,
+			(unsigned int)uptime->ctdbd_start_time.tv_sec,
+			(unsigned int)uptime->last_recovery_time.tv_sec);
+		return 0;
+	}
+
 	printf("Current time of node  : %s", ctime(&uptime->current_time.tv_sec));
 
 	tmp = uptime->current_time.tv_sec - uptime->ctdbd_start_time.tv_sec;
