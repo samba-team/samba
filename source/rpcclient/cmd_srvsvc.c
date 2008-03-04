@@ -130,51 +130,37 @@ static char *get_server_type_str(uint32 type)
 	return typestr;
 }
 
-static void display_server(char *sname, uint32 type, const char *comment)
+static void display_server(const char *sname, uint32 type, const char *comment)
 {
 	printf("\t%-15.15s%-20s %s\n", sname, get_server_type_str(type), 
 	       comment);
 }
 
-static void display_srv_info_101(SRV_INFO_101 *sv101)
+static void display_srv_info_101(struct srvsvc_NetSrvInfo101 *r)
 {
-	fstring name;
-	fstring comment;
+	display_server(r->server_name, r->server_type, r->comment);
 
-	unistr2_to_ascii(name, &sv101->uni_name, sizeof(name));
-	unistr2_to_ascii(comment, &sv101->uni_comment, sizeof(comment));
-
-	display_server(name, sv101->srv_type, comment);
-
-	printf("\tplatform_id     :\t%d\n", sv101->platform_id);
-	printf("\tos version      :\t%d.%d\n", sv101->ver_major, 
-	       sv101->ver_minor);
-
-	printf("\tserver type     :\t0x%x\n", sv101->srv_type);
+	printf("\tplatform_id     :\t%d\n", r->platform_id);
+	printf("\tos version      :\t%d.%d\n",
+		r->version_major, r->version_minor);
+	printf("\tserver type     :\t0x%x\n", r->server_type);
 }
 
-static void display_srv_info_102(SRV_INFO_102 *sv102)
+static void display_srv_info_102(struct srvsvc_NetSrvInfo102 *r)
 {
-	fstring name;
-	fstring comment;
-	fstring usr_path;
-	
-	unistr2_to_ascii(name, &sv102->uni_name, sizeof(name));
-	unistr2_to_ascii(comment, &sv102->uni_comment, sizeof(comment));
-	unistr2_to_ascii(usr_path, &sv102->uni_usr_path, sizeof(usr_path));
+	display_server(r->server_name, r->server_type, r->comment);
 
-	display_server(name, sv102->srv_type, comment);
+	printf("\tplatform_id     :\t%d\n", r->platform_id);
+	printf("\tos version      :\t%d.%d\n",
+		r->version_major, r->version_minor);
+	printf("\tserver type     :\t0x%x\n", r->server_type);
 
-	printf("\tplatform_id     :\t%d\n", sv102->platform_id);
-	printf("\tos version      :\t%d.%d\n", sv102->ver_major, 
-	       sv102->ver_minor);
-
-	printf("\tusers           :\t%x\n", sv102->users);
-	printf("\tdisc, hidden    :\t%x, %x\n", sv102->disc, sv102->hidden);
-	printf("\tannounce, delta :\t%d, %d\n", sv102->announce, 
-	       sv102->ann_delta);
-	printf("\tlicenses        :\t%d\n", sv102->licenses);
-	printf("\tuser path       :\t%s\n", usr_path);
+	printf("\tusers           :\t%x\n", r->users);
+	printf("\tdisc, hidden    :\t%x, %x\n", r->disc, r->hidden);
+	printf("\tannounce, delta :\t%d, %d\n", r->announce,
+	       r->anndelta);
+	printf("\tlicenses        :\t%d\n", r->licenses);
+	printf("\tuser path       :\t%s\n", r->userpath);
 }
 
 /* Server query info */
@@ -183,8 +169,10 @@ static WERROR cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli,
                                           int argc, const char **argv)
 {
 	uint32 info_level = 101;
-	SRV_INFO_CTR ctr;
+	union srvsvc_NetSrvInfo info;
 	WERROR result;
+	NTSTATUS status;
+	const char *server_name;
 
 	if (argc > 2) {
 		printf("Usage: %s [infolevel]\n", argv[0]);
@@ -194,8 +182,18 @@ static WERROR cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli,
 	if (argc == 2)
 		info_level = atoi(argv[1]);
 
-	result = rpccli_srvsvc_net_srv_get_info(cli, mem_ctx, info_level,
-					     &ctr);
+	server_name = talloc_asprintf_strupper_m(mem_ctx, "\\\\%s",
+						 cli->cli->desthost);
+	W_ERROR_HAVE_NO_MEMORY(server_name);
+
+	status = rpccli_srvsvc_NetSrvGetInfo(cli, mem_ctx,
+					     server_name,
+					     info_level,
+					     &info,
+					     &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
 
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
@@ -205,10 +203,10 @@ static WERROR cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli,
 
 	switch (info_level) {
 	case 101:
-		display_srv_info_101(&ctr.srv.sv101);
+		display_srv_info_101(info.info101);
 		break;
 	case 102:
-		display_srv_info_102(&ctr.srv.sv102);
+		display_srv_info_102(info.info102);
 		break;
 	default:
 		printf("unsupported info level %d\n", info_level);
