@@ -25,6 +25,19 @@ struct PAC_LOGON_INFO {
 	struct samr_RidWithAttributeArray res_groups;
 }/* [gensize] */;
 
+struct PAC_UNKNOWN_12 {
+	uint16_t upn_size;/* [value(2*strlen_m(upn_name))] */
+	uint16_t unknown1;
+	uint16_t domain_size;/* [value(2*strlen_m(domain_name))] */
+	uint16_t unknown2;
+	uint16_t unknown3;
+	uint16_t unknown4;
+	uint32_t unknown5;
+	const char *upn_name;/* [charset(UTF16)] */
+	const char *domain_name;/* [charset(UTF16)] */
+	uint32_t unknown6;
+};
+
 struct PAC_LOGON_INFO_CTR {
 	uint32_t unknown1;/* [value(0x00081001)] */
 	uint32_t unknown2;/* [value(0xCCCCCCCC)] */
@@ -40,7 +53,8 @@ enum PAC_TYPE
 	PAC_TYPE_SRV_CHECKSUM=6,
 	PAC_TYPE_KDC_CHECKSUM=7,
 	PAC_TYPE_LOGON_NAME=10,
-	PAC_TYPE_CONSTRAINED_DELEGATION=11
+	PAC_TYPE_CONSTRAINED_DELEGATION=11,
+	PAC_TYPE_UNKNOWN_12=12
 }
 #else
  { __donnot_use_enum_PAC_TYPE=0x7FFFFFFF}
@@ -49,6 +63,7 @@ enum PAC_TYPE
 #define PAC_TYPE_KDC_CHECKSUM ( 7 )
 #define PAC_TYPE_LOGON_NAME ( 10 )
 #define PAC_TYPE_CONSTRAINED_DELEGATION ( 11 )
+#define PAC_TYPE_UNKNOWN_12 ( 12 )
 #endif
 ;
 
@@ -57,6 +72,7 @@ union PAC_INFO {
 	struct PAC_SIGNATURE_DATA srv_cksum;/* [case(PAC_TYPE_SRV_CHECKSUM)] */
 	struct PAC_SIGNATURE_DATA kdc_cksum;/* [case(PAC_TYPE_KDC_CHECKSUM)] */
 	struct PAC_LOGON_NAME logon_name;/* [case(PAC_TYPE_LOGON_NAME)] */
+	struct PAC_UNKNOWN_12 unknown;/* [case(PAC_TYPE_UNKNOWN_12)] */
 }/* [gensize,nodiscriminant,public] */;
 
 struct PAC_BUFFER {

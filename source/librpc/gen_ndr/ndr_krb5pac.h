@@ -23,6 +23,7 @@ enum ndr_err_code ndr_push_PAC_SIGNATURE_DATA(struct ndr_push *ndr, int ndr_flag
 enum ndr_err_code ndr_pull_PAC_SIGNATURE_DATA(struct ndr_pull *ndr, int ndr_flags, struct PAC_SIGNATURE_DATA *r);
 void ndr_print_PAC_SIGNATURE_DATA(struct ndr_print *ndr, const char *name, const struct PAC_SIGNATURE_DATA *r);
 void ndr_print_PAC_LOGON_INFO(struct ndr_print *ndr, const char *name, const struct PAC_LOGON_INFO *r);
+void ndr_print_PAC_UNKNOWN_12(struct ndr_print *ndr, const char *name, const struct PAC_UNKNOWN_12 *r);
 enum ndr_err_code ndr_push_PAC_LOGON_INFO_CTR(struct ndr_push *ndr, int ndr_flags, const struct PAC_LOGON_INFO_CTR *r);
 enum ndr_err_code ndr_pull_PAC_LOGON_INFO_CTR(struct ndr_pull *ndr, int ndr_flags, struct PAC_LOGON_INFO_CTR *r);
 void ndr_print_PAC_LOGON_INFO_CTR(struct ndr_print *ndr, const char *name, const struct PAC_LOGON_INFO_CTR *r);
