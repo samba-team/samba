@@ -21,7 +21,7 @@ HOSTLD_FLAGS = $(LDFLAGS) $(SYS_LDFLAGS)
 
 .DEFAULT_GOAL := all
 
-ifneq ($(automatic_deps),yes)
+ifneq ($(automatic_dependencies),yes)
 ALL_PREDEP = proto
 .NOTPARALLEL:
 endif
@@ -32,7 +32,7 @@ include data.mk
 DEP_FILES = $(patsubst %.ho,%.hd,$(patsubst %.o,%.d,$(ALL_OBJS))) \
 		   include/includes.d
 
-ifeq ($(automatic_deps),yes)
+ifeq ($(automatic_dependencies),yes)
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),realdistclean)
