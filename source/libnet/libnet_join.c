@@ -29,7 +29,7 @@
 		char *str = NULL; \
 		str = NDR_PRINT_FUNCTION_STRING(ctx, libnet_JoinCtx, f, r); \
 		DEBUG(1,("libnet_Join:\n%s", str)); \
-		talloc_free(str); \
+		TALLOC_FREE(str); \
 	} while (0)
 
 #define LIBNET_JOIN_IN_DUMP_CTX(ctx, r) \
@@ -42,7 +42,7 @@
 		char *str = NULL; \
 		str = NDR_PRINT_FUNCTION_STRING(ctx, libnet_UnjoinCtx, f, r); \
 		DEBUG(1,("libnet_Unjoin:\n%s", str)); \
-		talloc_free(str); \
+		TALLOC_FREE(str); \
 	} while (0)
 
 #define LIBNET_UNJOIN_IN_DUMP_CTX(ctx, r) \
