@@ -923,7 +923,7 @@ NTSTATUS rpccli_srvsvc_NetShareSetInfo(struct rpc_pipe_client *cli,
 				       const char *server_unc,
 				       const char *share_name,
 				       uint32_t level,
-				       union srvsvc_NetShareInfo info,
+				       union srvsvc_NetShareInfo *info,
 				       uint32_t *parm_error,
 				       WERROR *werror)
 {
