@@ -2204,6 +2204,75 @@ done:
 	return ret;
 }
 
+static bool test_raw_oplock_batch21(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
+{
+	const char *fname = BASEDIR "\\test_batch21.dat";
+	NTSTATUS status;
+	bool ret = true;
+	union smb_open io;
+	struct smb_echo e;
+	uint16_t fnum=0;
+	char c = 0;
+	ssize_t wr;
+
+	if (!torture_setup_dir(cli1, BASEDIR)) {
+		return false;
+	}
+
+	/* cleanup */
+	smbcli_unlink(cli1->tree, fname);
+
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+
+	/*
+	  base ntcreatex parms
+	*/
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+
+	/*
+	  with a batch oplock we get a break
+	*/
+	torture_comment(tctx, "open with batch oplock\n");
+	ZERO_STRUCT(break_info);
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
+		NTCREATEX_FLAGS_REQUEST_OPLOCK |
+		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+	status = smb_raw_open(cli1->tree, tctx, &io);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
+
+	torture_comment(tctx, "writing should not generate a break\n");
+	wr = smbcli_write(cli1->tree, fnum, 0, &c, 0, 1);
+	CHECK_VAL(wr, 1);
+	CHECK_STATUS(tctx, smbcli_nt_error(cli1->tree), NT_STATUS_OK);
+
+	ZERO_STRUCT(e);
+	e.in.repeat_count = 1;
+	status = smb_raw_echo(cli1->transport, &e);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+
+	CHECK_VAL(break_info.count, 0);
+
+	smbcli_close(cli1->tree, fnum);
+
+done:
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+	smbcli_deltree(cli1->tree, BASEDIR);
+	return ret;
+}
+
 /* 
    basic testing of oplocks
 */
@@ -2237,6 +2306,7 @@ struct torture_suite *torture_raw_oplock(TALLOC_CTX *mem_ctx)
 	torture_suite_add_2smb_test(suite, "BATCH18", test_raw_oplock_batch18);
 	torture_suite_add_2smb_test(suite, "BATCH19", test_raw_oplock_batch19);
 	torture_suite_add_2smb_test(suite, "BATCH20", test_raw_oplock_batch20);
+	torture_suite_add_2smb_test(suite, "BATCH21", test_raw_oplock_batch21);
 
 	return suite;
 }
