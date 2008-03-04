@@ -1328,22 +1328,21 @@ WERROR _srvsvc_NetSrvGetInfo(pipes_struct *p,
 }
 
 /*******************************************************************
-net server set info
+ _srvsvc_NetSrvSetInfo
 ********************************************************************/
 
-WERROR _srv_net_srv_set_info(pipes_struct *p, SRV_Q_NET_SRV_SET_INFO *q_u, SRV_R_NET_SRV_SET_INFO *r_u)
+WERROR _srvsvc_NetSrvSetInfo(pipes_struct *p,
+			     struct srvsvc_NetSrvSetInfo *r)
 {
 	WERROR status = WERR_OK;
 
-	DEBUG(5,("srv_net_srv_set_info: %d\n", __LINE__));
+	DEBUG(5,("_srvsvc_NetSrvSetInfo: %d\n", __LINE__));
 
 	/* Set up the net server set info structure. */
 
-	init_srv_r_net_srv_set_info(r_u, 0x0, status);
+	DEBUG(5,("_srvsvc_NetSrvSetInfo: %d\n", __LINE__));
 
-	DEBUG(5,("srv_net_srv_set_info: %d\n", __LINE__));
-
-	return r_u->status;
+	return status;
 }
 
 /*******************************************************************
@@ -2569,12 +2568,6 @@ WERROR _srvsvc_NetShareDelSticky(pipes_struct *p, struct srvsvc_NetShareDelStick
 }
 
 WERROR _srvsvc_NetShareCheck(pipes_struct *p, struct srvsvc_NetShareCheck *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _srvsvc_NetSrvSetInfo(pipes_struct *p, struct srvsvc_NetSrvSetInfo *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
