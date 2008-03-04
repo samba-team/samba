@@ -458,6 +458,24 @@ CTDB version 1
       </para>
     </refsect2>
 
+    <refsect2><title>moveip &lt;public_ip&gt; &lt;node&gt;</title>
+      <para>
+      This command can be used to manually fail a public ip address to a
+      specific node.
+      </para>
+      <para>
+      In order to manually override the "automatic" distribution of public 
+      ip addresses that ctdb normally provides, this command only works
+      when you have changed the tunables for the daemon to:
+      </para>
+      <para>
+      DeterministicIPs = 0
+      </para>
+      <para>
+      NoIPFailback = 1
+      </para>
+    </refsect2>
+
     <refsect2><title>unban</title>
       <para>
         This command is used to unban a node that has either been 
@@ -483,6 +501,41 @@ CTDB version 1
       <para>
         This command will kill the specified TCP connection by issuing a
         TCP RST to the srcip:port endpoint.
+      </para>
+    </refsect2>
+
+    <refsect2><title>reloadnodes</title>
+      <para>
+      This command is used when adding new nodes to an existing cluster and
+      to reduce the disruption of this operation. This command should never
+      be used except when expanding an existing cluster.
+      This can only be used to expand a cluster. To remove a node from the
+      cluster you still need to shut down ctdb on all nodes, edit the nodes file
+      and restart ctdb.
+      </para>
+      <para>
+      Procedure:
+      </para>
+      <para>
+      1, To expand an existing cluster, first ensure with 'ctdb status' that
+      all nodes are up and running and that they are all healthy.
+      Do not try to expand a cluster unless it is completely healthy!
+      </para>
+      <para>
+      2, On all nodes, edit /etc/ctdb/nodes and add the new node as the last
+      entry to the file. The new node MUST be added to the end of this file!
+      </para>
+      <para>
+      3, Verify that all the nodes have identical /etc/ctdb/nodes files after you edited them and added the new node!
+      </para>
+      <para>
+      4, Run 'ctdb reloadnodes' to force all nodes to reaload the nodesfile.
+      </para>
+      <para>
+      5, Use 'ctdb status' on all nodes and verify that they now show the additional node.
+      </para>
+      <para>
+      6, Install and configure the new node and bring it online.
       </para>
     </refsect2>
 

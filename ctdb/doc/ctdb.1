@@ -1,11 +1,11 @@
 .\"     Title: ctdb
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.71.0 <http://docbook.sf.net/>
-.\"      Date: 02/05/2008
+.\"      Date: 03/04/2008
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDB" "1" "02/05/2008" "" ""
+.TH "CTDB" "1" "03/04/2008" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -333,6 +333,15 @@ Administratively ban a node for bantime seconds. A bantime of 0 means that the n
 A banned node does not participate in the cluster and does not host any records for the clustered TDB. Its ip address has been taken over by an other node and no services are hosted.
 .PP
 Nodes are automatically banned if they are the cause of too many cluster recoveries.
+.SS "moveip <public_ip> <node>"
+.PP
+This command can be used to manually fail a public ip address to a specific node.
+.PP
+In order to manually override the "automatic" distribution of public ip addresses that ctdb normally provides, this command only works when you have changed the tunables for the daemon to:
+.PP
+DeterministicIPs = 0
+.PP
+NoIPFailback = 1
 .SS "unban"
 .PP
 This command is used to unban a node that has either been administratively banned using the ban command or has been automatically banned by the recovery daemon.
@@ -345,6 +354,23 @@ This command will trigger the recovery daemon to do a cluster recovery.
 .SS "killtcp <srcip:port> <dstip:port>"
 .PP
 This command will kill the specified TCP connection by issuing a TCP RST to the srcip:port endpoint.
+.SS "reloadnodes"
+.PP
+This command is used when adding new nodes to an existing cluster and to reduce the disruption of this operation. This command should never be used except when expanding an existing cluster. This can only be used to expand a cluster. To remove a node from the cluster you still need to shut down ctdb on all nodes, edit the nodes file and restart ctdb.
+.PP
+Procedure:
+.PP
+1, To expand an existing cluster, first ensure with 'ctdb status' that all nodes are up and running and that they are all healthy. Do not try to expand a cluster unless it is completely healthy!
+.PP
+2, On all nodes, edit /etc/ctdb/nodes and add the new node as the last entry to the file. The new node MUST be added to the end of this file!
+.PP
+3, Verify that all the nodes have identical /etc/ctdb/nodes files after you edited them and added the new node!
+.PP
+4, Run 'ctdb reloadnodes' to force all nodes to reaload the nodesfile.
+.PP
+5, Use 'ctdb status' on all nodes and verify that they now show the additional node.
+.PP
+6, Install and configure the new node and bring it online.
 .SS "tickle <srcip:port> <dstip:port>"
 .PP
 This command will will send a TCP tickle to the source host for the specified TCP connection. A TCP tickle is a TCP ACK packet with an invalid sequence and acknowledge number and will when received by the source host result in it sending an immediate correct ACK back to the other end.
