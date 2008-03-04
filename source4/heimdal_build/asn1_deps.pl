@@ -87,13 +87,14 @@ my $depstr = join(' ', @deps);
 
 print '[SUBSYSTEM::HEIMDAL_'.uc($prefix).']'."\n";
 print "CFLAGS = -Iheimdal_build -Iheimdal/lib/roken -I$dirname\n";
-print "\nPUBLIC_DEPENDENCIES = $depstr\n\n";
+print "PUBLIC_DEPENDENCIES = $depstr\n\n";
 
-print "HEIMDAL_".uc($prefix)."_OBJ_FILES = \$(addprefix heimdal/,";
+print "HEIMDAL_".uc($prefix)."_OBJ_FILES = ";
 foreach $o_file (@o_files) {
     print "\\\n\t$o_file";
 }
-print "\t)\n\n";
+
+print "\n\n";
 
 print "clean:: \n";
 print "\t\@echo \"Deleting ASN1 output files generated from $file\"\n";

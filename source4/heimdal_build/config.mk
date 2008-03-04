@@ -570,14 +570,6 @@ PUBLIC_DEPENDENCIES = \
 HEIMDAL_OBJ_FILES = ./heimdal/lib/vers/print_version.o
 
 #######################
-# Start SUBSYSTEM KERBEROS_LIB
-[SUBSYSTEM::KERBEROS_LIB]
-#PUBLIC_DEPENDENCIES = EXT_KRB5
-PUBLIC_DEPENDENCIES = HEIMDAL
-# End SUBSYSTEM KERBEROS_LIB
-#######################
-
-#######################
 # Start BINARY compile_et
 [BINARY::samba4kinit]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
@@ -585,7 +577,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_KRB5 HEIMDAL_NTLM
 # End BINARY compile_et
 #######################
 
-samba4_kinit_OBJ_FILES = ./heimdal/kuser/kinit.o \
+samba4kinit_OBJ_FILES = ./heimdal/kuser/kinit.o \
 	./heimdal/lib/vers/print_version.o \
 	./heimdal/lib/roken/setprogname.o \
 	./heimdal/lib/roken/getarg.o 

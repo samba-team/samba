@@ -11,7 +11,7 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM CLDAPD
 #######################
 
-CLAPD_OBJ_FILES = $(addprefix cldap_server, \
+CLDAPD_OBJ_FILES = $(addprefix cldap_server/, \
 		cldap_server.o \
 		netlogon.o \
 		rootdse.o)
