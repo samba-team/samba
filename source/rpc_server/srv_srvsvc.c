@@ -52,25 +52,7 @@ static bool proxy_srvsvc_call(pipes_struct *p, uint8 opnum)
 
 static bool api_srv_net_srv_get_info(pipes_struct *p)
 {
-	SRV_Q_NET_SRV_GET_INFO q_u;
-	SRV_R_NET_SRV_GET_INFO r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the net server get info */
-	if (!srv_io_q_net_srv_get_info("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _srv_net_srv_get_info(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if (!srv_io_r_net_srv_get_info("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_srvsvc_call(p, NDR_SRVSVC_NETSRVGETINFO);
 }
 
 /*******************************************************************

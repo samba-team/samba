@@ -1239,67 +1239,93 @@ WERROR _srv_net_file_enum(pipes_struct *p, SRV_Q_NET_FILE_ENUM *q_u, SRV_R_NET_F
 }
 
 /*******************************************************************
-net server get info
+ _srvsvc_NetSrvGetInfo
 ********************************************************************/
 
-WERROR _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R_NET_SRV_GET_INFO *r_u)
+WERROR _srvsvc_NetSrvGetInfo(pipes_struct *p,
+			     struct srvsvc_NetSrvGetInfo *r)
 {
 	WERROR status = WERR_OK;
-	SRV_INFO_CTR *ctr = TALLOC_P(p->mem_ctx, SRV_INFO_CTR);
 
-	if (!ctr)
-		return WERR_NOMEM;
-
-	ZERO_STRUCTP(ctr);
-
-	DEBUG(5,("srv_net_srv_get_info: %d\n", __LINE__));
+	DEBUG(5,("_srvsvc_NetSrvGetInfo: %d\n", __LINE__));
 
 	if (!pipe_access_check(p)) {
-		DEBUG(3, ("access denied to srv_net_srv_get_info\n"));
+		DEBUG(3, ("access denied to _srvsvc_NetSrvGetInfo\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
-	switch (q_u->switch_value) {
+	switch (r->in.level) {
 
 		/* Technically level 102 should only be available to
 		   Administrators but there isn't anything super-secret
 		   here, as most of it is made up. */
 
-	case 102:
-		init_srv_info_102(&ctr->srv.sv102,
-		                  500, global_myname(),
-				  string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH),
-		                  lp_major_announce_version(), lp_minor_announce_version(),
-		                  lp_default_server_announce(),
-		                  0xffffffff, /* users */
-		                  0xf, /* disc */
-		                  0, /* hidden */
-		                  240, /* announce */
-		                  3000, /* announce delta */
-		                  100000, /* licenses */
-		                  "c:\\"); /* user path */
+	case 102: {
+		struct srvsvc_NetSrvInfo102 *info102;
+
+		info102 = TALLOC_P(p->mem_ctx, struct srvsvc_NetSrvInfo102);
+		if (!info102) {
+			return WERR_NOMEM;
+		}
+
+		init_srvsvc_NetSrvInfo102(info102,
+					  PLATFORM_ID_NT,
+					  global_myname(),
+					  lp_major_announce_version(),
+					  lp_minor_announce_version(),
+					  lp_default_server_announce(),
+					  string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH),
+					  0xffffffff, /* users */
+					  0xf, /* disc */
+					  0, /* hidden */
+					  240, /* announce */
+					  3000, /* announce delta */
+					  100000, /* licenses */
+					  "c:\\"); /* user path */
+		r->out.info->info102 = info102;
 		break;
-	case 101:
-		init_srv_info_101(&ctr->srv.sv101,
-		                  500, global_myname(),
-		                  lp_major_announce_version(), lp_minor_announce_version(),
-		                  lp_default_server_announce(),
-		                  string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
+	}
+	case 101: {
+		struct srvsvc_NetSrvInfo101 *info101;
+
+		info101 = TALLOC_P(p->mem_ctx, struct srvsvc_NetSrvInfo101);
+		if (!info101) {
+			return WERR_NOMEM;
+		}
+
+		init_srvsvc_NetSrvInfo101(info101,
+					  PLATFORM_ID_NT,
+					  global_myname(),
+					  lp_major_announce_version(),
+					  lp_minor_announce_version(),
+					  lp_default_server_announce(),
+					  string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
+		r->out.info->info101 = info101;
 		break;
-	case 100:
-		init_srv_info_100(&ctr->srv.sv100, 500, global_myname());
+	}
+	case 100: {
+		struct srvsvc_NetSrvInfo100 *info100;
+
+		info100 = TALLOC_P(p->mem_ctx, struct srvsvc_NetSrvInfo100);
+		if (!info100) {
+			return WERR_NOMEM;
+		}
+
+		init_srvsvc_NetSrvInfo100(info100,
+					  PLATFORM_ID_NT,
+					  global_myname());
+		r->out.info->info100 = info100;
+
 		break;
+	}
 	default:
 		status = WERR_UNKNOWN_LEVEL;
 		break;
 	}
 
-	/* set up the net server get info structure */
-	init_srv_r_net_srv_get_info(r_u, q_u->switch_value, ctr, status);
+	DEBUG(5,("_srvsvc_NetSrvGetInfo: %d\n", __LINE__));
 
-	DEBUG(5,("srv_net_srv_get_info: %d\n", __LINE__));
-
-	return r_u->status;
+	return status;
 }
 
 /*******************************************************************
@@ -2546,12 +2572,6 @@ WERROR _srvsvc_NetShareDelSticky(pipes_struct *p, struct srvsvc_NetShareDelStick
 }
 
 WERROR _srvsvc_NetShareCheck(pipes_struct *p, struct srvsvc_NetShareCheck *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _srvsvc_NetSrvGetInfo(pipes_struct *p, struct srvsvc_NetSrvGetInfo *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
