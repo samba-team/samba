@@ -34,13 +34,13 @@ static bool proxy_srvsvc_call(pipes_struct *p, uint8 opnum)
 	struct api_struct *fns;
 	int n_fns;
 
-	lsarpc_get_pipe_fns(&fns, &n_fns);
+	srvsvc_get_pipe_fns(&fns, &n_fns);
 
 	if (opnum >= n_fns)
 		return False;
 
 	if (fns[opnum].opnum != opnum) {
-		smb_panic("LSA function table not sorted\n");
+		smb_panic("SRVSVC function table not sorted\n");
 	}
 
 	return fns[opnum].fn(p);
