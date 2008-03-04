@@ -1176,10 +1176,10 @@ done:
 		}
 	}
 
-	*r->out.count = num_entries;
+	*r->out.count = mapped_count;
 	*r->out.domains = domains;
 	r->out.sids->sids = trans_sids;
-	r->out.sids->count = mapped_count;
+	r->out.sids->count = num_entries;
 
 	return status;
 }
