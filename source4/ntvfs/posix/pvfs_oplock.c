@@ -32,6 +32,58 @@ struct pvfs_oplock {
 	struct messaging_context *msg_ctx;
 };
 
+static NTSTATUS pvfs_oplock_release_internal(struct pvfs_file_handle *h,
+					     uint8_t oplock_break)
+{
+	struct odb_lock *olck;
+	NTSTATUS status;
+
+	if (h->fd == -1) {
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
+	}
+
+	if (!h->have_opendb_entry) {
+		return NT_STATUS_FOOBAR;
+	}
+
+	if (!h->oplock) {
+		return NT_STATUS_FOOBAR;
+	}
+
+	olck = odb_lock(h, h->pvfs->odb_context, &h->odb_locking_key);
+	if (olck == NULL) {
+		DEBUG(0,("Unable to lock opendb for oplock update\n"));
+		return NT_STATUS_FOOBAR;
+	}
+
+	if (oplock_break == OPLOCK_BREAK_TO_NONE) {
+		h->oplock->level = OPLOCK_NONE;
+	} else if (oplock_break == OPLOCK_BREAK_TO_LEVEL_II) {
+		h->oplock->level = OPLOCK_LEVEL_II;
+	} else {
+		/* fallback to level II in case of a invalid value */
+		DEBUG(1,("unexpected oplock break level[0x%02X]\n", oplock_break));
+		h->oplock->level = OPLOCK_LEVEL_II;
+	}
+	status = odb_update_oplock(olck, h, h->oplock->level);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Unable to update oplock level for '%s' - %s\n",
+			 h->name->full_name, nt_errstr(status)));
+		talloc_free(olck);
+		return status;
+	}
+
+	talloc_free(olck);
+
+	/* after a break to none, we no longer have an oplock attached */
+	if (h->oplock->level == OPLOCK_NONE) {
+		talloc_free(h->oplock);
+		h->oplock = NULL;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /*
   receive oplock breaks and forward them to the client
 */
@@ -140,8 +192,6 @@ NTSTATUS pvfs_oplock_release(struct ntvfs_module_context *ntvfs,
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
-	struct pvfs_file_handle *h;
-	struct odb_lock *olck;
 	uint8_t oplock_break;
 	NTSTATUS status;
 
@@ -150,50 +200,13 @@ NTSTATUS pvfs_oplock_release(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	h = f->handle;
-
-	if (h->fd == -1) {
-		return NT_STATUS_FILE_IS_A_DIRECTORY;
-	}
-
-	if (!h->have_opendb_entry) {
-		return NT_STATUS_FOOBAR;
-	}
-
-	if (!h->oplock) {
-		return NT_STATUS_FOOBAR;
-	}
-
-	olck = odb_lock(h, h->pvfs->odb_context, &h->odb_locking_key);
-	if (olck == NULL) {
-		DEBUG(0,("Unable to lock opendb for oplock update\n"));
-		return NT_STATUS_FOOBAR;
-	}
-
 	oplock_break = (lck->lockx.in.mode >> 8) & 0xFF;
-	if (oplock_break == OPLOCK_BREAK_TO_NONE) {
-		h->oplock->level = OPLOCK_NONE;
-	} else if (oplock_break == OPLOCK_BREAK_TO_LEVEL_II) {
-		h->oplock->level = OPLOCK_LEVEL_II;
-	} else {
-		/* fallback to level II in case of a invalid value */
-		DEBUG(1,("unexpected oplock break level[0x%02X]\n", oplock_break));
-		h->oplock->level = OPLOCK_LEVEL_II;
-	}
-	status = odb_update_oplock(olck, h, h->oplock->level);
+
+	status = pvfs_oplock_release_internal(f->handle, oplock_break);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Unable to update oplock level for '%s' - %s\n",
-			 h->name->full_name, nt_errstr(status)));
-		talloc_free(olck);
+		DEBUG(0,("%s: failed to release the oplock[0x%02X]: %s\n",
+			__FUNCTION__, oplock_break, nt_errstr(status)));
 		return status;
-	}
-
-	talloc_free(olck);
-
-	/* after a break to none, we no longer have an oplock attached */
-	if (h->oplock->level == OPLOCK_NONE) {
-		talloc_free(h->oplock);
-		h->oplock = NULL;
 	}
 
 	return NT_STATUS_OK;
