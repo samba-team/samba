@@ -603,15 +603,22 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
 				name = get_global_sam_name();
-				sid = get_global_sam_sid();
+				sid = sid_dup_talloc(p->mem_ctx, get_global_sam_sid());
+				if (!sid) {
+					return NT_STATUS_NO_MEMORY;
+				}
 				break;
 			case ROLE_DOMAIN_MEMBER:
 				name = lp_workgroup();
 				/* We need to return the Domain SID here. */
-				if (secrets_fetch_domain_sid(lp_workgroup(), &domain_sid))
-					sid = &domain_sid;
-				else
+				if (secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
+					sid = sid_dup_talloc(p->mem_ctx, &domain_sid);
+					if (!sid) {
+						return NT_STATUS_NO_MEMORY;
+					}
+				} else {
 					return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+				}
 				break;
 			case ROLE_STANDALONE:
 				name = lp_workgroup();
