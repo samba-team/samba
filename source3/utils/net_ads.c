@@ -1121,16 +1121,16 @@ int net_ads_join(int argc, const char **argv)
 		goto fail;
 	}
 
+	if (!(ctx = talloc_init("net_ads_join"))) {
+		d_fprintf(stderr, "Could not initialise talloc context.\n");
+		werr = WERR_NOMEM;
+		goto fail;
+	}
+
 	use_in_memory_ccache();
 
 	werr = libnet_init_JoinCtx(ctx, &r);
 	if (!W_ERROR_IS_OK(werr)) {
-		goto fail;
-	}
-
-	if (!(ctx = talloc_init("net_ads_join"))) {
-		d_fprintf(stderr, "Could not initialise talloc context.\n");
-		werr = WERR_NOMEM;
 		goto fail;
 	}
 
