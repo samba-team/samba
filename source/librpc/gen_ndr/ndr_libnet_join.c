@@ -36,6 +36,7 @@ _PUBLIC_ void ndr_print_libnet_JoinCtx(struct ndr_print *ndr, const char *name, 
 		ndr_print_ads_struct(ndr, "ads", r->in.ads);
 		ndr->depth--;
 		ndr_print_uint8(ndr, "debug", r->in.debug);
+		ndr_print_netr_SchannelType(ndr, "secure_channel_type", r->in.secure_channel_type);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {

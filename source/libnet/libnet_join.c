@@ -630,7 +630,7 @@ static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
 
 	if (!secrets_store_machine_password(r->in.machine_password,
 					    r->out.netbios_domain_name,
-					    SEC_CHAN_WKSTA))
+					    r->in.secure_channel_type))
 	{
 		DEBUG(1,("Failed to save machine password\n"));
 		return false;
@@ -1411,6 +1411,8 @@ WERROR libnet_init_JoinCtx(TALLOC_CTX *mem_ctx,
 
 	ctx->in.machine_name = talloc_strdup(mem_ctx, global_myname());
 	W_ERROR_HAVE_NO_MEMORY(ctx->in.machine_name);
+
+	ctx->in.secure_channel_type = SEC_CHAN_WKSTA;
 
 	*r = ctx;
 

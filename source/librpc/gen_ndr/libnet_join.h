@@ -7,6 +7,8 @@
 #ifndef _HEADER_libnetjoin
 #define _HEADER_libnetjoin
 
+enum netr_SchannelType;
+
 
 struct libnet_JoinCtx {
 	struct {
@@ -25,6 +27,7 @@ struct libnet_JoinCtx {
 		uint8_t modify_config;
 		struct ads_struct *ads;/* [ref] */
 		uint8_t debug;
+		enum netr_SchannelType secure_channel_type;
 	} in;
 
 	struct {
