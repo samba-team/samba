@@ -82,6 +82,8 @@ static int init_lsa_ref_domain_list(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
+	ZERO_STRUCT(ref->domains[num]);
+
 	init_lsa_StringLarge(&ref->domains[num].name, dom_name);
 	ref->domains[num].sid = sid_dup_talloc(mem_ctx, dom_sid);
 	if (!ref->domains[num].sid) {
@@ -227,6 +229,8 @@ static NTSTATUS lookup_lsa_sids(TALLOC_CTX *mem_ctx,
 		const char *full_name;
 		const char *domain;
 		enum lsa_SidType type = SID_NAME_UNKNOWN;
+
+		ZERO_STRUCT(sid);
 
 		/* Split name into domain and user component */
 
