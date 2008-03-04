@@ -188,7 +188,6 @@ sub add_implicit($$)
 	$INPUT->{$n} = {
 		TYPE => "MAKE_RULE",
 		NAME => $n,
-		TARGET => "",
 		OUTPUT_TYPE => undef,
 		LIBS => ["\$(".uc($n)."_LIBS)"],
 		LDFLAGS => ["\$(".uc($n)."_LDFLAGS)"],

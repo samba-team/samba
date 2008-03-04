@@ -157,7 +157,7 @@ sub create_output($$)
 				push (@{$part->{FULL_OBJ_LIST}}, $elem->{TARGET});
 			} else {
 				push(@{$part->{LINK_FLAGS}}, "\$($elem->{NAME}_OUTPUT)") if defined($elem->{OUTPUT});
-				push(@{$part->{DEPEND_LIST}}, $elem->{TARGET}) if defined($elem->{TARGET});
+				push(@{$part->{DEPEND_LIST}}, $elem->{TARGET}) if (defined($elem->{TARGET}));
 			}
 		}
 	}
