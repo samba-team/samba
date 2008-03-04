@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "lib/messaging/messaging.h"
 #include "lib/messaging/irpc.h"
+#include "system/time.h"
 #include "vfs_posix.h"
 
 
@@ -29,6 +30,8 @@ struct pvfs_oplock {
 	struct pvfs_file_handle *handle;
 	struct pvfs_file *file;
 	uint32_t level;
+	struct timeval break_to_level_II;
+	struct timeval break_to_none;
 	struct messaging_context *msg_ctx;
 };
 
@@ -93,13 +96,65 @@ static void pvfs_oplock_break(struct pvfs_oplock *opl, uint8_t level)
 	struct pvfs_file *f = opl->file;
 	struct pvfs_file_handle *h = opl->handle;
 	struct pvfs_state *pvfs = h->pvfs;
+	struct timeval cur = timeval_current();
+	struct timeval *last = NULL;
+	struct timeval end;
 
-	DEBUG(10,("pvfs_oplock_break: sending oplock break level %d for '%s' %p\n",
-		level, h->name->original_name, h));
-	status = ntvfs_send_oplock_break(pvfs->ntvfs, f->ntvfs, level);
+	switch (level) {
+	case OPLOCK_BREAK_TO_LEVEL_II:
+		last = &opl->break_to_level_II;
+		break;
+	case OPLOCK_BREAK_TO_NONE:
+		last = &opl->break_to_none;
+		break;
+	}
+
+	if (!last) {
+		DEBUG(0,("%s: got unexpected level[0x%02X]\n",
+			__FUNCTION__, level));
+		return;
+	}
+
+	if (timeval_is_zero(last)) {
+		/*
+		 * this is the first break we for this level
+		 * remember the time
+		 */
+		*last = cur;
+
+		DEBUG(0,("%s: sending oplock break level %d for '%s' %p\n",
+			__FUNCTION__, level, h->name->original_name, h));
+		status = ntvfs_send_oplock_break(pvfs->ntvfs, f->ntvfs, level);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("%s: sending oplock break failed: %s\n",
+				__FUNCTION__, nt_errstr(status)));
+		}
+		return;
+	}
+
+	end = timeval_add(last, pvfs->oplock_break_timeout, 0);
+
+	if (timeval_compare(&cur, &end) < 0) {
+		/*
+		 * If it's not expired just ignore the break
+		 * as we already sent the break request to the client
+		 */
+		DEBUG(0,("%s: do not resend oplock break level %d for '%s' %p\n",
+			__FUNCTION__, level, h->name->original_name, h));
+		return;
+	}
+
+	/*
+	 * If the client did not send a release within the
+	 * oplock break timeout time frame we auto release
+	 * the oplock
+	 */
+	DEBUG(0,("%s: auto release oplock level %d for '%s' %p\n",
+		__FUNCTION__, level, h->name->original_name, h));
+	status = pvfs_oplock_release_internal(h, level);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("pvfs_oplock_break: sending oplock break failed: %s\n",
-			nt_errstr(status)));
+		DEBUG(0,("%s: failed to auto release the oplock[0x%02X]: %s\n",
+			__FUNCTION__, level, nt_errstr(status)));
 	}
 }
 
@@ -165,7 +220,7 @@ NTSTATUS pvfs_setup_oplock(struct pvfs_file *f, uint32_t oplock_granted)
 		return NT_STATUS_OK;
 	}
 
-	opl = talloc(f->handle, struct pvfs_oplock);
+	opl = talloc_zero(f->handle, struct pvfs_oplock);
 	NT_STATUS_HAVE_NO_MEMORY(opl);
 
 	opl->handle	= f->handle;
