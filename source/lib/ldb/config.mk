@@ -6,7 +6,7 @@ CFLAGS = -Ilib/ldb/include
 INIT_FUNCTION = LDB_MODULE(asq)
 SUBSYSTEM = LIBLDB
 
-LDB_ASQ_OBJ_FILES = lib/ldb/modules/asq.o
+ldb_asq_OBJ_FILES = lib/ldb/modules/asq.o
 # End MODULE ldb_asq
 ################################################
 
@@ -32,7 +32,7 @@ SUBSYSTEM = LIBLDB
 # End MODULE ldb_paged_results
 ################################################
 
-ldb_pages_results_OBJ_FILES = lib/ldb/modules/paged_results.o
+ldb_paged_results_OBJ_FILES = lib/ldb/modules/paged_results.o
 
 ################################################
 # Start MODULE ldb_paged_results
