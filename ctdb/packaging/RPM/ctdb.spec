@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 29
+Release: 30
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,17 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Tue Mar 04 2008 : Version 1.0.30
+ - Update documentation cor new commands and tuneables
+ - Add machinereadable output to the ip,uptime and getdebug commands
+ - Add a moveip command to manually failover/failback public ips
+ - Add NoIPFallback tuneable that prevents ip address failback
+ - Use file locking inside the CFS as alternative to verify when other nodes
+   Are connected/disconnected to be able to recover from split network
+ - Add DisableWhenUnhealthy tunable
+ - Add CTDB_START_AS_DISABLED sysconfig param
+ - Add --start-as-disabled flag to ctdb
+ - Add ability to monitor for OOM condition
 * Thu Feb 21 2008 : Version 1.0.29
  - Add a new command to make expansion of an existing cluster easier
  - Fix bug with references to freed objects in the ctdb structure
