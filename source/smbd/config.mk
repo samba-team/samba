@@ -1,15 +1,5 @@
 # server subsystem
 
-################################################
-# Start MODULE service_auth
-[MODULE::service_auth]
-INIT_FUNCTION = server_service_auth_init
-SUBSYSTEM = service
-PRIVATE_DEPENDENCIES = \
-		auth
-# End MODULE server_auth
-################################################
-
 [SUBSYSTEM::service]
 PRIVATE_PROTO_HEADER = service_proto.h
 PRIVATE_DEPENDENCIES = \

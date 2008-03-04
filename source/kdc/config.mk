@@ -6,7 +6,7 @@
 INIT_FUNCTION = server_service_kdc_init
 SUBSYSTEM = service
 PRIVATE_DEPENDENCIES = \
-		LIBLDB KERBEROS_LIB HEIMDAL_KDC HEIMDAL_HDB SAMDB
+		LIBLDB HEIMDAL HEIMDAL_KDC HEIMDAL_HDB SAMDB
 # End SUBSYSTEM KDC
 #######################
 
@@ -18,7 +18,7 @@ KDC_OBJ_FILES = $(addprefix kdc/, kdc.o kpasswdd.o)
 CFLAGS = -Iheimdal/kdc -Iheimdal/lib/hdb
 PRIVATE_PROTO_HEADER = pac_glue.h
 PRIVATE_DEPENDENCIES = \
-		LIBLDB auth_sam auth_sam_reply KERBEROS CREDENTIALS \
+		LIBLDB auth_sam auth_sam_reply HEIMDAL CREDENTIALS \
 		HEIMDAL_HDB_ASN1
 # End SUBSYSTEM KDC
 #######################

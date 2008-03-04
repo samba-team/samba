@@ -107,7 +107,7 @@ sub check_module($$$)
 	} 
 	if (grep(/MERGED_OBJ/, @{$mod->{OUTPUT_TYPE}})) {
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS}}, $mod->{INIT_FUNCTION}) if defined($mod->{INIT_FUNCTION});
-		unshift (@{$INPUT->{$mod->{SUBSYSTEM}}{PRIVATE_DEPENDENCIES}}, $mod->{NAME});
+		push (@{$INPUT->{$mod->{SUBSYSTEM}}{PRIVATE_DEPENDENCIES}}, $mod->{NAME});
 	}
 }
 

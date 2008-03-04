@@ -36,7 +36,7 @@ auth_sam_reply_OBJ_FILES = $(addprefix auth/, auth_sam_reply.o)
 [MODULE::auth_sam_module]
 # gensec_krb5 and gensec_gssapi depend on it
 INIT_FUNCTION = auth_sam_init
-SUBSYSTEM = auth
+SUBSYSTEM = service_auth
 PRIVATE_DEPENDENCIES = \
 		SAMDB auth_sam
 # End MODULE auth_sam
@@ -48,7 +48,7 @@ auth_sam_module_OBJ_FILES = $(addprefix auth/, auth_sam.o)
 # Start MODULE auth_anonymous
 [MODULE::auth_anonymous]
 INIT_FUNCTION = auth_anonymous_init
-SUBSYSTEM = auth
+SUBSYSTEM = service_auth
 # End MODULE auth_anonymous
 #######################
 
@@ -58,7 +58,7 @@ auth_anonymous_OBJ_FILES = $(addprefix auth/, auth_anonymous.o)
 # Start MODULE auth_winbind
 [MODULE::auth_winbind]
 INIT_FUNCTION = auth_winbind_init
-SUBSYSTEM = auth
+SUBSYSTEM = service_auth
 PRIVATE_DEPENDENCIES = NDR_WINBIND MESSAGING LIBWINBIND-CLIENT
 # End MODULE auth_winbind
 #######################
@@ -69,7 +69,7 @@ auth_winbind_OBJ_FILES = $(addprefix auth/, auth_winbind.o)
 # Start MODULE auth_developer
 [MODULE::auth_developer]
 INIT_FUNCTION = auth_developer_init
-SUBSYSTEM = auth
+SUBSYSTEM = service_auth
 # End MODULE auth_developer
 #######################
 
@@ -77,7 +77,7 @@ auth_developer_OBJ_FILES = $(addprefix auth/, auth_developer.o)
 
 [MODULE::auth_unix]
 INIT_FUNCTION = auth_unix_init
-SUBSYSTEM = auth
+SUBSYSTEM = service_auth
 PRIVATE_DEPENDENCIES = CRYPT PAM PAM_ERRORS NSS_WRAPPER
 
 auth_unix_OBJ_FILES = $(addprefix auth/, auth_unix.o)
@@ -87,18 +87,13 @@ PRIVATE_PROTO_HEADER = pam_errors.h
 
 PAM_ERRORS_OBJ_FILES = $(addprefix auth/, pam_errors.o)
 
-#######################
-# Start SUBSYSTEM auth
-[SUBSYSTEM::auth]
-#VERSION = 0.0.1
-#SO_VERSION = 0
+[MODULE::service_auth]
+INIT_FUNCTION = server_service_auth_init
+SUBSYSTEM = service
 PRIVATE_PROTO_HEADER = auth_proto.h
-PUBLIC_DEPENDENCIES = LIBSECURITY SAMDB CREDENTIALS
-PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
-# End SUBSYSTEM auth
-#######################
+PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBSECURITY SAMDB CREDENTIALS 
 
-auth_OBJ_FILES = $(addprefix auth/, auth.o auth_util.o auth_simple.o)
+service_auth_OBJ_FILES = $(addprefix auth/, auth.o auth_util.o auth_simple.o)
 
 PUBLIC_HEADERS += auth/auth.h
 
