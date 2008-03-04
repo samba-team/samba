@@ -216,6 +216,9 @@ sub run_config_mk($$$$)
 		{
 			$section = $1;
 			$infragment = 0;
+
+			$result->{$section}{EXISTS}{KEY} = "EXISTS";
+			$result->{$section}{EXISTS}{VAL} = 1;
 			next;
 		}
 
@@ -273,6 +276,7 @@ sub run_config_mk($$$$)
 		$input->{$name}{BASEDIR} = $basedir;
 
 		foreach my $key (values %{$result->{$section}}) {
+			next if ($key->{KEY} eq "EXISTS");
 			$key->{VAL} = smb_build::input::strtrim($key->{VAL});
 			my $vartype = $sectype->{$key->{KEY}};
 			if (not defined($vartype)) {
