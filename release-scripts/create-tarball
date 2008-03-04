@@ -85,7 +85,13 @@ if [ "x$tagname" != "x" ]; then
       fi
    fi
 
-   git-tag -s ${tagname}
+   echo -n "Enter the keyid:"
+   read keyid
+   if [ x"$keyid" = x"" ];then
+      echo "no keyid"
+      exit 1
+   fi
+   git-tag -u $keyid ${tagname}
 fi
 
 echo "Done!"
