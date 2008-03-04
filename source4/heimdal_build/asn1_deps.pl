@@ -89,7 +89,7 @@ print '[SUBSYSTEM::HEIMDAL_'.uc($prefix).']'."\n";
 print "CFLAGS = -Iheimdal_build -Iheimdal/lib/roken -I$dirname\n";
 print "\nPUBLIC_DEPENDENCIES = $depstr\n\n";
 
-print "HEIMDAL_".uc($prefix)."OBJ_LIST = \$(addprefix heimdal_build/,";
+print "HEIMDAL_".uc($prefix)."OBJ_FILES = \$(addprefix heimdal/,";
 foreach $o_file (@o_files) {
     print "\\\n\t$o_file";
 }

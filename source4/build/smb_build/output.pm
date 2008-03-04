@@ -82,12 +82,10 @@ sub generate_static_library($)
 
 	$lib->{LIBRARY_NAME} = "lib".lc($link_name).".a";
 
-	if (defined($lib->{OBJ_FILES})) {
-		$lib->{RESULT_STATIC_LIBRARY} = "bin/static/$lib->{LIBRARY_NAME}";
-		$lib->{TARGET_STATIC_LIBRARY} = $lib->{RESULT_STATIC_LIBRARY};
-		$lib->{STATICDIR} = 'bin/static';
-		$lib->{OUTPUT_STATIC_LIBRARY} = "-l".lc($link_name);
-	}
+	$lib->{RESULT_STATIC_LIBRARY} = "bin/static/$lib->{LIBRARY_NAME}";
+	$lib->{TARGET_STATIC_LIBRARY} = $lib->{RESULT_STATIC_LIBRARY};
+	$lib->{STATICDIR} = 'bin/static';
+	$lib->{OUTPUT_STATIC_LIBRARY} = "-l".lc($link_name);
 }
 
 sub generate_binary($)
