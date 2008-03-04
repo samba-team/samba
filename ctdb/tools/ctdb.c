@@ -720,7 +720,11 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	for (i=1;i<=ips->num;i++) {
-		printf("%s %d\n", inet_ntoa(ips->ips[ips->num-i].sin.sin_addr), ips->ips[ips->num-i].pnn);
+		if (options.machinereadable){
+			printf(":%s:%d:\n", inet_ntoa(ips->ips[ips->num-i].sin.sin_addr), ips->ips[ips->num-i].pnn);
+		} else {
+			printf("%s %d\n", inet_ntoa(ips->ips[ips->num-i].sin.sin_addr), ips->ips[ips->num-i].pnn);
+		}
 	}
 
 	talloc_free(tmp_ctx);

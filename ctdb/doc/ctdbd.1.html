@@ -301,7 +301,7 @@
     Use with caution! Normally when a node becomes available to the cluster
 ctdb will try to reassign public ip addresses onto the new node as a way to distribute the workload evenly across the clusternode. Ctdb tries to make sure that all running nodes have approximately the same number of public addresses it hosts.
     </p><p>
-    when you enable this tunable, CTDB will no longer attempt to rebalance the cluster by failing ip addresses back to the new nodes. An unbalanced cluster will therefore remain unbalanced until there is manual intervention from the administrator. (When this parameter is set, you can manually fail public ip addresses over to the new node(s) using the 'ctdb moveip' command.
+    When you enable this tunable, CTDB will no longer attempt to rebalance the cluster by failing ip addresses back to the new nodes. An unbalanced cluster will therefore remain unbalanced until there is manual intervention from the administrator. When this parameter is set, you can manually fail public ip addresses over to the new node(s) using the 'ctdb moveip' command.
     </p></div></div><div class="refsect1" lang="en"><a name="id2529120"></a><h2>SEE ALSO</h2><p>
       ctdb(1), onnode(1)
       <a href="http://ctdb.samba.org/" target="_top">http://ctdb.samba.org/</a>
