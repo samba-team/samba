@@ -218,7 +218,7 @@ NTSTATUS pvfs_break_level2_oplocks(struct pvfs_file *f)
 	struct odb_lock *olck;
 	NTSTATUS status;
 
-	if (h->oplock && h->oplock->level == OPLOCK_EXCLUSIVE) {
+	if (h->oplock && h->oplock->level != OPLOCK_LEVEL_II) {
 		return NT_STATUS_OK;
 	}
 
@@ -226,16 +226,6 @@ NTSTATUS pvfs_break_level2_oplocks(struct pvfs_file *f)
 	if (olck == NULL) {
 		DEBUG(0,("Unable to lock opendb for oplock update\n"));
 		return NT_STATUS_FOOBAR;
-	}
-
-	if (h->oplock && h->oplock->level == OPLOCK_BATCH) {
-		status = odb_update_oplock(olck, h, OPLOCK_LEVEL_II);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("Unable to update oplock level for '%s' - %s\n",
-				 h->name->full_name, nt_errstr(status)));
-			talloc_free(olck);
-			return status;
-		}
 	}
 
 	status = odb_break_oplocks(olck);
