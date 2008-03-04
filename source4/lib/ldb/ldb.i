@@ -42,6 +42,7 @@ typedef struct ldb_dn ldb_dn;
 typedef struct ldb_ldif ldb_ldif;
 typedef struct ldb_message_element ldb_msg_element;
 typedef int ldb_error;
+typedef int ldb_int_error;
 
 %}
 
@@ -521,6 +522,14 @@ PyObject *PyExc_LdbError;
 
 %typemap(out,noblock=1) ldb_error {
     if ($1 != LDB_SUCCESS) {
+        PyErr_SetObject(PyExc_LdbError, Py_BuildValue((char *)"(i,s)", $1, ldb_errstring(arg1)));
+        SWIG_fail;
+    }
+    $result = Py_None;
+};
+
+%typemap(out,noblock=1) ldb_int_error {
+    if ($1 != LDB_SUCCESS) {
         PyErr_SetObject(PyExc_LdbError, Py_BuildValue((char *)"(i,s)", $1, ldb_strerror($1)));
         SWIG_fail;
     }
@@ -761,4 +770,4 @@ time_t ldb_string_to_time(const char *s);
 }
 
 %rename(register_module) ldb_register_module;
-ldb_error ldb_register_module(const struct ldb_module_ops *);
+ldb_int_error ldb_register_module(const struct ldb_module_ops *);
