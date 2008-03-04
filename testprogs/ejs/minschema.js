@@ -92,7 +92,6 @@ class_attrs = new Array("objectClass",
 			"defaultSecurityDescriptor",
 			"systemFlags",
 			"defaultHidingValue",
-			"objectCategory",
 			"defaultObjectCategory",
 
 			/* this attributes are not used by w2k3 */
@@ -124,7 +123,6 @@ attrib_attrs = new Array("objectClass",
 			 "systemOnly",
 			 "systemFlags",
 			 "isMemberOfPartialAttributeSet",
-			 "objectCategory",
 
 			 /* this attributes are not used by w2k3 */
 			 "schemaFlagsEx",
@@ -706,7 +704,6 @@ function write_aggregate() {
 	printf("dn: CN=Aggregate,${SCHEMADN}\n");
 	print("objectClass: top
 objectClass: subSchema
-objectCategory: CN=SubSchema,${SCHEMADN}
 ");
 	if (dump_subschema_auto == undefined) {
 		return;	
