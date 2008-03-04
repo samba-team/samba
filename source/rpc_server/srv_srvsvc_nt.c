@@ -1,21 +1,21 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Jeremy Allison               2001.
  *  Copyright (C) Nigel Williams               2001.
  *  Copyright (C) Gerald (Jerry) Carter        2006.
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -101,11 +101,11 @@ static int pipe_enum_fn( struct db_record *rec, void *p)
 ********************************************************************/
 
 static WERROR net_enum_pipes( TALLOC_CTX *ctx, const char *username,
-			      FILE_INFO_3 **info, 
+			      FILE_INFO_3 **info,
                               uint32 *count, uint32 resume )
 {
 	struct file_enum_count fenum;
-	
+
 	fenum.ctx = ctx;
 	fenum.username = username;
 	fenum.count = *count;
@@ -202,7 +202,7 @@ static void enum_file_fn( const struct share_mode_entry *e,
 ********************************************************************/
 
 static WERROR net_enum_files( TALLOC_CTX *ctx, const char *username,
-			      FILE_INFO_3 **info, 
+			      FILE_INFO_3 **info,
                               uint32 *count, uint32 resume )
 {
 	struct file_enum_count f_enum_cnt;
@@ -211,12 +211,12 @@ static WERROR net_enum_files( TALLOC_CTX *ctx, const char *username,
 	f_enum_cnt.username = username;
 	f_enum_cnt.count = *count;
 	f_enum_cnt.info = *info;
-	
+
 	share_mode_forall( enum_file_fn, (void *)&f_enum_cnt );
-	
+
 	*info  = f_enum_cnt.info;
 	*count = f_enum_cnt.count;
-	
+
 	return WERR_OK;
 }
 
@@ -603,7 +603,7 @@ static bool init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 	{
 		SRV_SHARE_INFO_501 *info501 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_501, num_entries);
 		int i = 0;
-	
+
 		if (!info501) {
 			return False;
 		}
@@ -613,7 +613,7 @@ static bool init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 				init_srv_share_info_501(p, &info501[i++], snum);
 			}
 		}
-	
+
 		ctr->share.info501 = info501;
 		break;
 	}
@@ -638,7 +638,7 @@ static bool init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 	}
 
 	/* here for completeness but not currently used with enum (1004 - 1501)*/
-	
+
 	case 1004:
 	{
 		SRV_SHARE_INFO_1004 *info1004 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_1004, num_entries);
@@ -746,7 +746,7 @@ static bool init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 ********************************************************************/
 
 static void init_srv_r_net_share_enum(pipes_struct *p, SRV_R_NET_SHARE_ENUM *r_n,
-				      uint32 info_level, uint32 resume_hnd, bool all)  
+				      uint32 info_level, uint32 resume_hnd, bool all)
 {
 	DEBUG(5,("init_srv_r_net_share_enum: %d\n", __LINE__));
 
@@ -853,7 +853,7 @@ static void init_srv_sess_info_0(pipes_struct *p, SRV_SESS_INFO_0 *ss0, uint32 *
 		ss0->num_entries_read  = num_entries;
 		ss0->ptr_sess_info     = num_entries > 0 ? 1 : 0;
 		ss0->num_entries_read2 = num_entries;
-		
+
 		if ((*snum) >= (*stot)) {
 			(*snum) = 0;
 		}
@@ -868,16 +868,16 @@ static void init_srv_sess_info_0(pipes_struct *p, SRV_SESS_INFO_0 *ss0, uint32 *
 /*******************************************************************
 ********************************************************************/
 
-static void sess_file_fn( const struct share_mode_entry *e, 
+static void sess_file_fn( const struct share_mode_entry *e,
                           const char *sharepath, const char *fname,
 			  void *data )
 {
 	struct sess_file_count *sess = (struct sess_file_count *)data;
- 
+
 	if ( procid_equal(&e->pid, &sess->pid) && (sess->uid == e->uid) ) {
 		sess->count++;
 	}
-	
+
 	return;
 }
 
@@ -891,9 +891,9 @@ static int net_count_files( uid_t uid, struct server_id pid )
 	s_file_cnt.count = 0;
 	s_file_cnt.uid = uid;
 	s_file_cnt.pid = pid;
-	
+
 	share_mode_forall( sess_file_fn, &s_file_cnt );
-	
+
 	return s_file_cnt.count;
 }
 
@@ -911,42 +911,42 @@ static void init_srv_sess_info_1(pipes_struct *p, SRV_SESS_INFO_1 *ss1, uint32 *
 		ss1->num_entries_read = 0;
 		ss1->ptr_sess_info = 0;
 		ss1->num_entries_read2 = 0;
-		
+
 		(*stot) = 0;
 
 		return;
 	}
-	
+
 	if (ss1 == NULL) {
 		(*snum) = 0;
 		return;
 	}
 
 	(*stot) = list_sessions(p->mem_ctx, &session_list);
-	
+
 
 	for (; (*snum) < (*stot) && num_entries < MAX_SESS_ENTRIES; (*snum)++) {
 		uint32 num_files;
 		uint32 connect_time;
 		struct passwd *pw = sys_getpwnam(session_list[*snum].username);
 		bool guest;
-			
+
 		if ( !pw ) {
 			DEBUG(10,("init_srv_sess_info_1: failed to find owner: %s\n",
 				session_list[*snum].username));
 			continue;
 		}
-				
+
 		connect_time = (uint32)(now - session_list[*snum].connect_start);
 		num_files = net_count_files(pw->pw_uid, session_list[*snum].pid);
 		guest = strequal( session_list[*snum].username, lp_guestaccount() );
-					
-		init_srv_sess_info1( &ss1->info_1[num_entries], 
+
+		init_srv_sess_info1( &ss1->info_1[num_entries],
 		                     session_list[*snum].remote_machine,
-				     session_list[*snum].username, 
+				     session_list[*snum].username,
 				     num_files,
 				     connect_time,
-				     0, 
+				     0,
 				     guest);
 		num_entries++;
 	}
@@ -954,7 +954,7 @@ static void init_srv_sess_info_1(pipes_struct *p, SRV_SESS_INFO_1 *ss1, uint32 *
 	ss1->num_entries_read  = num_entries;
 	ss1->ptr_sess_info     = num_entries > 0 ? 1 : 0;
 	ss1->num_entries_read2 = num_entries;
-	
+
 	if ((*snum) >= (*stot)) {
 		(*snum) = 0;
 	}
@@ -999,7 +999,7 @@ static WERROR init_srv_sess_info_ctr(pipes_struct *p, SRV_SESS_INFO_CTR *ctr,
 ********************************************************************/
 
 static void init_srv_r_net_sess_enum(pipes_struct *p, SRV_R_NET_SESS_ENUM *r_n,
-				uint32 resume_hnd, int sess_level, int switch_value)  
+				uint32 resume_hnd, int sess_level, int switch_value)
 {
 	DEBUG(5,("init_srv_r_net_sess_enum: %d\n", __LINE__));
 
@@ -1045,7 +1045,7 @@ static void init_srv_conn_info_0(SRV_CONN_INFO_0 *ss0, uint32 *snum, uint32 *sto
 		ss0->num_entries_read  = num_entries;
 		ss0->ptr_conn_info     = num_entries > 0 ? 1 : 0;
 		ss0->num_entries_read2 = num_entries;
-		
+
 		if ((*snum) >= (*stot)) {
 			(*snum) = 0;
 		}
@@ -1102,7 +1102,7 @@ static void init_srv_conn_info_1(SRV_CONN_INFO_1 *ss1, uint32 *snum, uint32 *sto
 		ss1->num_entries_read  = num_entries;
 		ss1->ptr_conn_info     = num_entries > 0 ? 1 : 0;
 		ss1->num_entries_read2 = num_entries;
-		
+
 
 		if ((*snum) >= (*stot)) {
 			(*snum) = 0;
@@ -1112,7 +1112,7 @@ static void init_srv_conn_info_1(SRV_CONN_INFO_1 *ss1, uint32 *snum, uint32 *sto
 		ss1->num_entries_read = 0;
 		ss1->ptr_conn_info = 0;
 		ss1->num_entries_read2 = 0;
-		
+
 		(*stot) = 0;
 	}
 }
@@ -1155,7 +1155,7 @@ static WERROR init_srv_conn_info_ctr(SRV_CONN_INFO_CTR *ctr,
 ********************************************************************/
 
 static void init_srv_r_net_conn_enum(SRV_R_NET_CONN_ENUM *r_n,
-				uint32 resume_hnd, int conn_level, int switch_value)  
+				uint32 resume_hnd, int conn_level, int switch_value)
 {
 	DEBUG(5,("init_srv_r_net_conn_enum: %d\n", __LINE__));
 
@@ -1181,7 +1181,7 @@ static WERROR net_file_enum_3( const char *username, SRV_R_NET_FILE_ENUM *r,
 	TALLOC_CTX *ctx = talloc_tos();
 	SRV_FILE_INFO_CTR *ctr = &r->ctr;
 
-	/* TODO -- Windows enumerates 
+	/* TODO -- Windows enumerates
 	   (b) active pipes
 	   (c) open directories and files */
 
@@ -1189,12 +1189,12 @@ static WERROR net_file_enum_3( const char *username, SRV_R_NET_FILE_ENUM *r,
 				    &ctr->num_entries, resume_hnd );
 	if ( !W_ERROR_IS_OK(r->status))
 		goto done;
-		
+
 	r->status = net_enum_pipes( ctx, username, &ctr->file.info3,
 				    &ctr->num_entries, resume_hnd );
 	if ( !W_ERROR_IS_OK(r->status))
 		goto done;
-	
+
 	r->level = ctr->level = 3;
 	r->total_entries = ctr->num_entries;
 	/* ctr->num_entries = r->total_entries - resume_hnd; */
@@ -1204,7 +1204,7 @@ static WERROR net_file_enum_3( const char *username, SRV_R_NET_FILE_ENUM *r,
 	r->status = WERR_OK;
 
 done:
-	if ( ctr->num_entries > 0 ) 
+	if ( ctr->num_entries > 0 )
 		ctr->ptr_entries = 1;
 
 	init_enum_hnd(&r->enum_hnd, 0);
@@ -1234,7 +1234,7 @@ WERROR _srv_net_file_enum(pipes_struct *p, SRV_Q_NET_FILE_ENUM *q_u, SRV_R_NET_F
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-	
+
 	return WERR_OK;
 }
 
@@ -1267,7 +1267,7 @@ WERROR _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R
 
 	case 102:
 		init_srv_info_102(&ctr->srv.sv102,
-		                  500, global_myname(), 
+		                  500, global_myname(),
 				  string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH),
 		                  lp_major_announce_version(), lp_minor_announce_version(),
 		                  lp_default_server_announce(),
@@ -1402,7 +1402,7 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 
 	/* fail out now if you are not root or not a domain admin */
 
-	if ((user.ut.uid != sec_initial_uid()) && 
+	if ((user.ut.uid != sec_initial_uid()) &&
 		( ! nt_token_check_domain_rid(p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS))) {
 
 		goto done;
@@ -1414,7 +1414,7 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 		    strequal(session_list[snum].remote_machine, machine)) {
 
 			NTSTATUS ntstat;
-		
+
 			if (user.ut.uid != sec_initial_uid()) {
 				not_root = True;
 				become_root();
@@ -1423,11 +1423,11 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 			ntstat = messaging_send(smbd_messaging_context(),
 						session_list[snum].pid,
 						MSG_SHUTDOWN, &data_blob_null);
-			
+
 			if (NT_STATUS_IS_OK(ntstat))
 				r_u->status = WERR_OK;
 
-			if (not_root) 
+			if (not_root)
 				unbecome_root();
 		}
 	}
@@ -1723,7 +1723,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 		/********* END SeDiskOperatorPrivilege BLOCK *********/
 
-		DEBUG(3,("_srv_net_share_set_info: Running [%s] returned (%d)\n", command, ret ));		
+		DEBUG(3,("_srv_net_share_set_info: Running [%s] returned (%d)\n", command, ret ));
 
 		TALLOC_FREE(command);
 
@@ -1822,7 +1822,7 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		map_generic_share_sd_bits(psd);
 		break;
 
-		/* none of the following contain share names.  NetShareAdd does not have a separate parameter for the share name */ 
+		/* none of the following contain share names.  NetShareAdd does not have a separate parameter for the share name */
 
 	case 1004:
 	case 1005:
@@ -2073,7 +2073,7 @@ WERROR _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET
 	                      t->tm_mon + 1,
 	                      1900+t->tm_year,
 	                      t->tm_wday);
-	
+
 	DEBUG(5,("_srv_net_remote_tod: %d\n", __LINE__));
 
 	return r_u->status;
@@ -2365,7 +2365,7 @@ WERROR _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_D
 
 	r_u->total_entries = init_server_disk_enum(&resume);
 
-	r_u->disk_enum_ctr.unknown = 0; 
+	r_u->disk_enum_ctr.unknown = 0;
 
 	if(!(r_u->disk_enum_ctr.disk_info =  TALLOC_ARRAY(ctx, DISK_INFO, MAX_SERVER_DISK_ENTRIES))) {
 		return WERR_NOMEM;
@@ -2381,7 +2381,7 @@ WERROR _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_D
 
 		/*copy disk name into a unicode string*/
 
-		init_unistr3(&r_u->disk_enum_ctr.disk_info[i].disk_name, disk_name);    
+		init_unistr3(&r_u->disk_enum_ctr.disk_info[i].disk_name, disk_name);
 	}
 
 	/* add a terminating null string.  Is this there if there is more data to come? */
