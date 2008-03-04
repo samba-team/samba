@@ -1169,7 +1169,7 @@ NTSTATUS rpccli_srvsvc_NetSrvSetInfo(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     const char *server_unc,
 				     uint32_t level,
-				     union srvsvc_NetSrvInfo info,
+				     union srvsvc_NetSrvInfo *info,
 				     uint32_t *parm_error,
 				     WERROR *werror)
 {
