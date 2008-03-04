@@ -1371,7 +1371,7 @@ struct srvsvc_NetSrvSetInfo {
 	struct {
 		const char *server_unc;/* [unique,charset(UTF16)] */
 		uint32_t level;
-		union srvsvc_NetSrvInfo info;/* [switch_is(level)] */
+		union srvsvc_NetSrvInfo *info;/* [ref,switch_is(level)] */
 		uint32_t *parm_error;/* [unique] */
 	} in;
 
