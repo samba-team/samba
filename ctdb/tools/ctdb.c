@@ -1178,10 +1178,15 @@ static int control_getdebug(struct ctdb_context *ctdb, int argc, const char **ar
 
 	ret = ctdb_ctrl_get_debuglevel(ctdb, options.pnn, &level);
 	if (ret != 0) {
-	  DEBUG(DEBUG_ERR, ("Unable to get debuglevel response from node %u\n", 
-		       options.pnn));
+		DEBUG(DEBUG_ERR, ("Unable to get debuglevel response from node %u\n", options.pnn));
+		return ret;
 	} else {
-		printf("Node %u is at debug level %s (%u)\n", options.pnn, get_debug_by_level(level), level);
+		if (options.machinereadable){
+			printf(":Name:Level:\n");
+			printf(":%s:%d:\n",get_debug_by_level(level),level);
+		} else {
+			printf("Node %u is at debug level %s (%u)\n", options.pnn, get_debug_by_level(level), level);
+		}
 	}
 	return 0;
 }
