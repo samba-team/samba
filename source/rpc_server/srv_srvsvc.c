@@ -369,25 +369,7 @@ static bool api_srv_net_share_del_sticky(pipes_struct *p)
 
 static bool api_srv_net_remote_tod(pipes_struct *p)
 {
-	SRV_Q_NET_REMOTE_TOD q_u;
-	SRV_R_NET_REMOTE_TOD r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the net server get enum */
-	if(!srv_io_q_net_remote_tod("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _srv_net_remote_tod(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!srv_io_r_net_remote_tod("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_srvsvc_call(p, NDR_SRVSVC_NETREMOTETOD);
 }
 
 /*******************************************************************
