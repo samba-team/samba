@@ -6229,8 +6229,6 @@ AC_OUTPUT(Makefile library-versions
 	  pkgconfig/wbclient.pc
 	  pkgconfig/netapi.pc
 	  pkgconfig/smbsharemodes.pc
-	  lib/talloc/talloc.pc
-	  lib/tdb/tdb.pc
 	  )
 
 #################################################
