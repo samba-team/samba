@@ -508,8 +508,6 @@ WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, struct winreg_InitiateS
 
 	/* pull the message string and perform necessary sanity checks on it */
 
-	chkmsg[0] = '\0';
-
 	if ( r->in.message && r->in.message->name && r->in.message->name->name ) {
 		if ( (msg = talloc_strdup(p->mem_ctx, r->in.message->name->name )) == NULL ) {
 			return WERR_NOMEM;
