@@ -402,9 +402,10 @@ static WERROR cmd_srvsvc_net_remote_tod(struct rpc_pipe_client *cli,
                                           TALLOC_CTX *mem_ctx,
                                           int argc, const char **argv)
 {
-	TIME_OF_DAY_INFO tod;
+	struct srvsvc_NetRemoteTODInfo *tod = NULL;
 	fstring srv_name_slash;
 	WERROR result;
+	NTSTATUS status;
 
 	if (argc > 1) {
 		printf("Usage: %s\n", argv[0]);
@@ -412,8 +413,14 @@ static WERROR cmd_srvsvc_net_remote_tod(struct rpc_pipe_client *cli,
 	}
 
 	fstr_sprintf(srv_name_slash, "\\\\%s", cli->cli->desthost);
-	result = rpccli_srvsvc_net_remote_tod(
-		cli, mem_ctx, srv_name_slash, &tod);
+	status = rpccli_srvsvc_NetRemoteTOD(cli, mem_ctx,
+					    srv_name_slash,
+					    &tod,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
