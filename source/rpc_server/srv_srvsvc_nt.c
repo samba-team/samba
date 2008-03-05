@@ -2057,12 +2057,13 @@ WERROR _srv_net_share_del_sticky(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_
 }
 
 /*******************************************************************
-time of day
+ _srvsvc_NetRemoteTOD
 ********************************************************************/
 
-WERROR _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET_REMOTE_TOD *r_u)
+WERROR _srvsvc_NetRemoteTOD(pipes_struct *p,
+			    struct srvsvc_NetRemoteTOD *r)
 {
-	TIME_OF_DAY_INFO *tod;
+	struct srvsvc_NetRemoteTODInfo *tod;
 	struct tm *t;
 	time_t unixdate = time(NULL);
 
@@ -2071,37 +2072,35 @@ WERROR _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET
 
 	uint32 zone = get_time_zone(unixdate)/60;
 
-	DEBUG(5,("_srv_net_remote_tod: %d\n", __LINE__));
+	DEBUG(5,("_srvsvc_NetRemoteTOD: %d\n", __LINE__));
 
-	if ( !(tod = TALLOC_ZERO_P(p->mem_ctx, TIME_OF_DAY_INFO)) )
+	if ( !(tod = TALLOC_ZERO_P(p->mem_ctx, struct srvsvc_NetRemoteTODInfo)) )
 		return WERR_NOMEM;
 
-	r_u->tod = tod;
-	r_u->ptr_srv_tod = 0x1;
-	r_u->status = WERR_OK;
+	*r->out.info = tod;
 
-	DEBUG(5,("_srv_net_remote_tod: %d\n", __LINE__));
+	DEBUG(5,("_srvsvc_NetRemoteTOD: %d\n", __LINE__));
 
 	t = gmtime(&unixdate);
 
 	/* set up the */
-	init_time_of_day_info(tod,
-	                      unixdate,
-	                      0,
-	                      t->tm_hour,
-	                      t->tm_min,
-	                      t->tm_sec,
-	                      0,
-	                      zone,
-	                      10000,
-	                      t->tm_mday,
-	                      t->tm_mon + 1,
-	                      1900+t->tm_year,
-	                      t->tm_wday);
+	init_srvsvc_NetRemoteTODInfo(tod,
+				     unixdate,
+				     0,
+				     t->tm_hour,
+				     t->tm_min,
+				     t->tm_sec,
+				     0,
+				     zone,
+				     10000,
+				     t->tm_mday,
+				     t->tm_mon + 1,
+				     1900+t->tm_year,
+				     t->tm_wday);
 
-	DEBUG(5,("_srv_net_remote_tod: %d\n", __LINE__));
+	DEBUG(5,("_srvsvc_NetRemoteTOD: %d\n", __LINE__));
 
-	return r_u->status;
+	return WERR_OK;
 }
 
 /***********************************************************************************
@@ -2595,12 +2594,6 @@ WERROR _srvsvc_NetTransportEnum(pipes_struct *p, struct srvsvc_NetTransportEnum 
 }
 
 WERROR _srvsvc_NetTransportDel(pipes_struct *p, struct srvsvc_NetTransportDel *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _srvsvc_NetRemoteTOD(pipes_struct *p, struct srvsvc_NetRemoteTOD *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
