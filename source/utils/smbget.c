@@ -29,7 +29,7 @@
 
 int columns = 0;
 
-static int _resume, _recursive, debuglevel;
+static int _resume, _recursive, debuglevel, update;
 static char *outputfile;
 
 
@@ -303,8 +303,27 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 
 	if(newpath[0] == '/')newpath++;
 	
-	/* Open local file and, if necessary, resume */
-	if(!send_stdout) {
+	/* Open local file according to the mode */
+	if(update) {
+		/* if it is up-to-date, skip */
+		if(stat(newpath, &localstat) == 0 &&
+				localstat.st_mtime >= remotestat.st_mtime) {
+			if(verbose)
+				printf("%s is up-to-date, skipping\n", newpath);
+			smbc_close(remotehandle);
+			return 0;
+		}
+		/* else open it for writting and truncate if it exists */
+		localhandle = open(newpath, O_CREAT | O_NONBLOCK | O_RDWR |
+				O_TRUNC, 0775);
+		if(localhandle < 0) {
+			fprintf(stderr, "Can't open %s : %s\n", newpath,
+					strerror(errno));
+			smbc_close(remotehandle);
+			return 1;
+		}
+		/* no offset */
+	} else if(!send_stdout) {
 		localhandle = open(newpath, O_CREAT | O_NONBLOCK | O_RDWR | (!resume?O_EXCL:0), 0755);
 		if(localhandle < 0) {
 			fprintf(stderr, "Can't open %s: %s\n", newpath, strerror(errno));
@@ -527,6 +546,7 @@ int main(int argc, const char **argv)
 		{"guest", 'a', POPT_ARG_NONE, NULL, 'a', "Work as user guest" },	
 		{"encrypt", 'e', POPT_ARG_NONE, NULL, 'e', "Encrypt SMB transport (UNIX extended servers only)" },	
 		{"resume", 'r', POPT_ARG_NONE, &_resume, 0, "Automatically resume aborted files" },
+		{"update", 'U',  POPT_ARG_NONE, &update, 0, "Download only when remote file is newer than local file or local file is missing"},
 		{"recursive", 'R',  POPT_ARG_NONE, &_recursive, 0, "Recursively download files" },
 		{"username", 'u', POPT_ARG_STRING, &username, 'u', "Username to use" },
 		{"password", 'p', POPT_ARG_STRING, &password, 'p', "Password to use" },
@@ -576,6 +596,10 @@ int main(int argc, const char **argv)
 		}
 	}
 
+	if((send_stdout || _resume || outputfile) && update) {
+		fprintf(stderr, "The -o, -R or -O and -U options can not be used together.\n");
+		return 1;
+	}
 	if((send_stdout || outputfile) && _recursive) {
 		fprintf(stderr, "The -o or -O and -R options can not be used together.\n");
 		return 1;
