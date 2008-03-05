@@ -243,46 +243,45 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 				POLICY_HND *pol,
 				int num_sids,
 				const DOM_SID *sids,
-				char ***domains,
-				char ***names,
-				enum lsa_SidType **types)
+				char ***pdomains,
+				char ***pnames,
+				enum lsa_SidType **ptypes)
 {
 	NTSTATUS result = NT_STATUS_OK;
 	int sids_left = 0;
 	int sids_processed = 0;
 	const DOM_SID *hunk_sids = sids;
-	char **hunk_domains = NULL;
-	char **hunk_names = NULL;
-	enum lsa_SidType *hunk_types = NULL;
+	char **hunk_domains;
+	char **hunk_names;
+	enum lsa_SidType *hunk_types;
+	char **domains = NULL;
+	char **names = NULL;
+	enum lsa_SidType *types = NULL;
 
 	if (num_sids) {
-		if (!((*domains) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
+		if (!(domains = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
 			DEBUG(0, ("rpccli_lsa_lookup_sids(): out of memory\n"));
 			result = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
 
-		if (!((*names) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
+		if (!(names = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
 			DEBUG(0, ("rpccli_lsa_lookup_sids(): out of memory\n"));
 			result = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
 
-		if (!((*types) = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_sids))) {
+		if (!(types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_sids))) {
 			DEBUG(0, ("rpccli_lsa_lookup_sids(): out of memory\n"));
 			result = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
-	} else {
-		(*domains) = NULL;
-		(*names) = NULL;
-		(*types) = NULL;
 	}
 
 	sids_left = num_sids;
-	hunk_domains = *domains;
-	hunk_names = *names;
-	hunk_types = *types;
+	hunk_domains = domains;
+	hunk_names = names;
+	hunk_types = types;
 
 	while (sids_left > 0) {
 		int hunk_num_sids;
@@ -334,12 +333,15 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 		hunk_types += hunk_num_sids;
 	}
 
+	*pdomains = domains;
+	*pnames = names;
+	*ptypes = types;
 	return result;
 
 fail:
-	TALLOC_FREE(*domains);
-	TALLOC_FREE(*names);
-	TALLOC_FREE(*types);
+	TALLOC_FREE(domains);
+	TALLOC_FREE(names);
+	TALLOC_FREE(types);
 	return result;
 }
 
