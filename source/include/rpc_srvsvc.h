@@ -683,42 +683,6 @@ typedef struct {
 	WERROR status;      
 } SRV_R_NET_FILE_ENUM;
 
-/* SRV_Q_NET_REMOTE_TOD */
-typedef struct q_net_remote_tod
-{
-	uint32  ptr_srv_name;
-	UNISTR2 uni_srv_name; /* "\\server" */
-
-} SRV_Q_NET_REMOTE_TOD;
-
-/* TIME_OF_DAY_INFO */
-typedef struct time_of_day_info
-{
-	uint32	elapsedt;
-	uint32	msecs;
-	uint32	hours;
-	uint32	mins;
-	uint32	secs;
-	uint32	hunds;
-	uint32	zone;
-	uint32	tintervals;
-	uint32	day;
-	uint32	month;
-	uint32	year;
-	uint32	weekday;
-	
-} TIME_OF_DAY_INFO;
-
-/* SRV_R_NET_REMOTE_TOD */
-typedef struct r_net_remote_tod
-{
-	uint32 ptr_srv_tod;         /* pointer to TOD */
-	TIME_OF_DAY_INFO *tod;
-	
-	WERROR status;               /* return status */
-
-} SRV_R_NET_REMOTE_TOD;
-
 /* SRV_Q_NET_FILE_QUERY_SECDESC */
 typedef struct q_net_file_query_secdesc
 {
