@@ -349,6 +349,7 @@ int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
 	filter = talloc_asprintf(talloc_tos(), "(&%s%s)", "(uid=%u)",
 		get_objclass_filter(ldap_state->schema_ver));
 	if (!filter) {
+		SAFE_FREE(escape_user);
 		return LDAP_NO_MEMORY;
 	}
 	/*
@@ -358,10 +359,10 @@ int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
 
 	filter = talloc_all_string_sub(talloc_tos(),
 				filter, "%u", escape_user);
+	SAFE_FREE(escape_user);
 	if (!filter) {
 		return LDAP_NO_MEMORY;
 	}
-	SAFE_FREE(escape_user);
 
 	ret = smbldap_search_suffix(ldap_state->smbldap_state,
 			filter, attr, result);
