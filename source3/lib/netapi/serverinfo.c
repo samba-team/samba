@@ -268,7 +268,7 @@ static WERROR NetServerSetInfoRemote(struct libnetapi_ctx *ctx,
 	status = rpccli_srvsvc_NetSrvSetInfo(pipe_cli, ctx,
 					     server_name,
 					     level,
-					     info,
+					     &info,
 					     parm_error,
 					     &werr);
 	if (!NT_STATUS_IS_OK(status)) {
