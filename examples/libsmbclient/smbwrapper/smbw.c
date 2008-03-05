@@ -174,11 +174,11 @@ static void do_init(StartupType startupType)
                 exit(1);
         }
         
-        smbw_ctx->debug = debug_level;
-        smbw_ctx->callbacks.auth_fn = get_auth_data_fn;
-        smbw_ctx->options.browse_max_lmb_count = 0;
-        smbw_ctx->options.urlencode_readdir_entries = 1;
-        smbw_ctx->options.one_share_per_server = 1;
+        smbc_setDebug(smbw_ctx, debug_level);
+        smbc_setFunctionAuthData(smbw_ctx, get_auth_data_fn);
+        smbc_setOptionBrowseMaxLmbCount(smbw_ctx, 0);
+        smbc_setOptionUrlEncodeReaddirEntries(smbw_ctx, 1);
+        smbc_setOptionOneSharePerServer(smbw_ctx, 1);
         
         if (smbc_init_context(smbw_ctx) == NULL) {
                 fprintf(stderr, "Could not initialize context.\n");

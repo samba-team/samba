@@ -58,7 +58,32 @@ static NTSTATUS just_change_the_password(struct rpc_pipe_client *cli, TALLOC_CTX
 		}
 	}
 
-	result = rpccli_net_srv_pwset(cli, mem_ctx, global_myname(), new_trust_passwd_hash);
+	{
+		struct netr_Authenticator clnt_creds, srv_cred;
+		struct samr_Password new_password;
+
+		netlogon_creds_client_step(cli->dc, &clnt_creds);
+
+		cred_hash3(new_password.hash,
+			   new_trust_passwd_hash,
+			   cli->dc->sess_key, 1);
+
+		result = rpccli_netr_ServerPasswordSet(cli, mem_ctx,
+						       cli->dc->remote_machine,
+						       cli->dc->mach_acct,
+						       sec_channel_type,
+						       global_myname(),
+						       &clnt_creds,
+						       &srv_cred,
+						       &new_password);
+
+		/* Always check returned credentials. */
+		if (!netlogon_creds_client_check(cli->dc, &srv_cred.cred)) {
+			DEBUG(0,("rpccli_netr_ServerPasswordSet: "
+				"credentials chain check failed\n"));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("just_change_the_password: unable to change password (%s)!\n",
@@ -184,7 +209,7 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 	/* get a handle */
 
 	result = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, True,
-		POLICY_VIEW_LOCAL_INFORMATION, &pol);
+		LSA_POLICY_VIEW_LOCAL_INFORMATION, &pol);
 	if ( !NT_STATUS_IS_OK(result) )
 		goto done;
 

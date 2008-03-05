@@ -54,6 +54,8 @@ skipped="$skipped RAW-SFILEINFO"
 
 echo "WARNING: Skipping tests $skipped"
 
+ADDARGS="$ADDARGS --option=torture:sharedelay=100000"
+
 failed=0
 for t in $tests; do
     if [ ! -z "$start" -a "$start" != $t ]; then

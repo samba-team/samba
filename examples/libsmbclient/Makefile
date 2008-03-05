@@ -1,14 +1,14 @@
 #
 CC = gcc
 
-SAMBA_INCL = ../../source/include
+SAMBA_INCL  = -I/usr/local/samba/include
 EXTLIB_INCL = -I/usr/include/gtk-1.2 \
 	      -I/usr/include/glib-1.2 \
 	      -I/usr/lib/glib/include
 EXTLIB_INCL = `gtk-config --cflags`
 
 DEFS = -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
-CFLAGS = -O0 -g -I$(SAMBA_INCL) $(EXTLIB_INCL) $(DEFS)
+CFLAGS = -O0 -g $(SAMBA_INCL) $(EXTLIB_INCL) $(DEFS)
 
 LDFLAGS = -L/usr/local/samba/lib \
 	  -lldap -lkrb5 -lgssapi_krb5
@@ -24,6 +24,7 @@ TESTS=	testsmbc \
 	teststat \
 	teststat2 \
 	teststat3 \
+	testtruncate \
 	testchmod \
 	testutime \
 	testread \
@@ -71,6 +72,10 @@ teststat2: teststat2.o
 
 teststat3: teststat3.o
 	@echo Linking teststat3
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
+
+testtruncate: testtruncate.o
+	@echo Linking testtruncate
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
 
 testchmod: testchmod.o

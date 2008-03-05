@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#undef realloc
 
 static int
 process_block (smb_iconv_t cd, const char *addr, size_t len, FILE *output)
@@ -85,7 +86,7 @@ incomplete character or shift sequence at end of buffer"));
 
 
 static int
-process_fd (iconv_t cd, int fd, FILE *output)
+process_fd (smb_iconv_t cd, int fd, FILE *output)
 {
   /* we have a problem with reading from a descriptor since we must not
      provide the iconv() function an incomplete character or shift
@@ -167,8 +168,8 @@ process_fd (iconv_t cd, int fd, FILE *output)
 int main(int argc, char *argv[])
 {
 	const char *file = NULL;
-	char *from = "";
-	char *to = "";
+	const char *from = "";
+	const char *to = "";
 	char *output = NULL;
 	const char *preload_modules[] = {NULL, NULL};
 	FILE *out = stdout;
@@ -213,7 +214,7 @@ int main(int argc, char *argv[])
 	}
 
 	cd = smb_iconv_open(to, from);
-	if((int)cd == -1) {
+	if (cd == (smb_iconv_t)-1) {
 		DEBUG(0,("unable to find from or to encoding, exiting...\n"));
 		return 1;
 	}

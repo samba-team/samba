@@ -904,18 +904,16 @@ static bool wbinfo_auth(char *username)
 
 static bool wbinfo_auth_crap(char *username)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-	NSS_STATUS result;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcAuthUserParams params;
+	struct wbcAuthUserInfo *info = NULL;
+	struct wbcAuthErrorInfo *err = NULL;
+	DATA_BLOB lm = data_blob_null;
+	DATA_BLOB nt = data_blob_null;
 	fstring name_user;
 	fstring name_domain;
 	fstring pass;
 	char *p;
-
-	/* Send off request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
 
 	p = strchr(username, '%');
 
@@ -926,29 +924,30 @@ static bool wbinfo_auth_crap(char *username)
 		
 	parse_wbinfo_domain_user(username, name_domain, name_user);
 
-	request.data.auth_crap.logon_parameters = MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT | MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT;
+	params.account_name	= name_user;
+	params.domain_name	= name_domain;
+	params.workstation_name	= NULL;
 
-	fstrcpy(request.data.auth_crap.user, name_user);
+	params.flags		= 0;
+	params.parameter_control= WBC_MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT |
+				  WBC_MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT;
 
-	fstrcpy(request.data.auth_crap.domain, name_domain);
+	params.level		= WBC_AUTH_USER_LEVEL_RESPONSE;
 
-	generate_random_buffer(request.data.auth_crap.chal, 8);
+	generate_random_buffer(params.password.response.challenge, 8);
 
 	if (lp_client_ntlmv2_auth()) {
 		DATA_BLOB server_chal;
 		DATA_BLOB names_blob;
 
-		DATA_BLOB lm_response;
-		DATA_BLOB nt_response;
-
-		server_chal = data_blob(request.data.auth_crap.chal, 8);
+		server_chal = data_blob(params.password.response.challenge, 8);
 
 		/* Pretend this is a login to 'us', for blob purposes */
 		names_blob = NTLMv2_generate_names_blob(global_myname(), lp_workgroup());
 
 		if (!SMBNTLMv2encrypt(name_user, name_domain, pass, &server_chal,
 				      &names_blob,
-				      &lm_response, &nt_response, NULL)) {
+				      &lm, &nt, NULL)) {
 			data_blob_free(&names_blob);
 			data_blob_free(&server_chal);
 			return false;
@@ -956,47 +955,47 @@ static bool wbinfo_auth_crap(char *username)
 		data_blob_free(&names_blob);
 		data_blob_free(&server_chal);
 
-		memcpy(request.data.auth_crap.nt_resp, nt_response.data,
-		       MIN(nt_response.length,
-			   sizeof(request.data.auth_crap.nt_resp)));
-		request.data.auth_crap.nt_resp_len = nt_response.length;
-
-		memcpy(request.data.auth_crap.lm_resp, lm_response.data,
-		       MIN(lm_response.length,
-			   sizeof(request.data.auth_crap.lm_resp)));
-		request.data.auth_crap.lm_resp_len = lm_response.length;
-
-		data_blob_free(&nt_response);
-		data_blob_free(&lm_response);
-
 	} else {
-		if (lp_client_lanman_auth()
-		    && SMBencrypt(pass, request.data.auth_crap.chal,
-			       (uchar *)request.data.auth_crap.lm_resp)) {
-			request.data.auth_crap.lm_resp_len = 24;
-		} else {
-			request.data.auth_crap.lm_resp_len = 0;
+		if (lp_client_lanman_auth()) {
+			bool ok;
+			lm = data_blob(NULL, 24);
+			ok = SMBencrypt(pass, params.password.response.challenge,
+					lm.data);
+			if (!ok) {
+				data_blob_free(&lm);
+			}
 		}
-		SMBNTencrypt(pass, request.data.auth_crap.chal,
-			     (uchar *)request.data.auth_crap.nt_resp);
-
-		request.data.auth_crap.nt_resp_len = 24;
+		nt = data_blob(NULL, 24);
+		SMBNTencrypt(pass, params.password.response.challenge,
+			     nt.data);
 	}
 
-	result = winbindd_request_response(WINBINDD_PAM_AUTH_CRAP, &request, &response);
+	params.password.response.nt_length	= nt.length;
+	params.password.response.nt_data	= nt.data;
+	params.password.response.lm_length	= lm.length;
+	params.password.response.lm_data	= lm.data;
+
+	wbc_status = wbcAuthenticateUserEx(&params, &info, &err);
 
 	/* Display response */
 
 	d_printf("challenge/response password authentication %s\n",
-		(result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
+		 WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
 
-	if (response.data.auth.nt_status)
+	if (wbc_status == WBC_ERR_AUTH_ERROR) {
 		d_fprintf(stderr, "error code was %s (0x%x)\nerror messsage was: %s\n", 
-			 response.data.auth.nt_status_string,
-			 response.data.auth.nt_status,
-			 response.data.auth.error_string);
+			 err->nt_string,
+			 err->nt_status,
+			 err->display_string);
+		wbcFreeMemory(err);
+	} else if (WBC_ERROR_IS_OK(wbc_status)) {
+		wbcFreeMemory(info);
+	}
 
-	return result == NSS_STATUS_SUCCESS;
+	data_blob_free(&nt);
+	data_blob_free(&lm);
+
+	return WBC_ERROR_IS_OK(wbc_status);
 }
 
 /* Authenticate a user with a plaintext password and set a token */

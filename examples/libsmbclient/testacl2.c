@@ -39,7 +39,7 @@ int main(int argc, const char *argv[])
     }
 
     SMBCCTX *context = smbc_set_context(NULL);
-    smbc_option_set(context, "full_time_names", 1);
+    smbc_setOptionFullTimeNames(context, 1);
     
     the_acl = strdup("system.nt_sec_desc.*");
     ret = smbc_getxattr(argv[1], the_acl, value, sizeof(value));

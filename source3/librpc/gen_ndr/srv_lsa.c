@@ -1128,7 +1128,7 @@ static bool api_lsa_LookupNames(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.domains = talloc_zero(r, struct lsa_RefDomainList);
+	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
@@ -1210,7 +1210,7 @@ static bool api_lsa_LookupSids(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.domains = talloc_zero(r, struct lsa_RefDomainList);
+	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
@@ -1452,7 +1452,7 @@ static bool api_lsa_EnumPrivsAccount(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.privs = talloc_zero(r, struct lsa_PrivilegeSet);
+	r->out.privs = talloc_zero(r, struct lsa_PrivilegeSet *);
 	if (r->out.privs == NULL) {
 		talloc_free(r);
 		return false;
@@ -4437,7 +4437,7 @@ static bool api_lsa_LookupSids2(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.domains = talloc_zero(r, struct lsa_RefDomainList);
+	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
@@ -4519,7 +4519,7 @@ static bool api_lsa_LookupNames2(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.domains = talloc_zero(r, struct lsa_RefDomainList);
+	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
@@ -5258,7 +5258,7 @@ static bool api_lsa_LookupNames3(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.domains = talloc_zero(r, struct lsa_RefDomainList);
+	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
@@ -5858,7 +5858,7 @@ static bool api_lsa_LookupSids3(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.domains = talloc_zero(r, struct lsa_RefDomainList);
+	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
@@ -5940,7 +5940,7 @@ static bool api_lsa_LookupNames4(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.domains = talloc_zero(r, struct lsa_RefDomainList);
+	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;

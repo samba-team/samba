@@ -95,7 +95,7 @@ WERROR reg_pull_multi_sz(TALLOC_CTX *mem_ctx, const void *buf, size_t len,
 		thislen = strnlen_w(p, len) + 1;
 		dstlen = convert_string_allocate(*values, CH_UTF16LE, CH_UNIX,
 						 p, thislen*2, (void *)&val,
-						 True);
+						 true);
 		if (dstlen == (size_t)-1) {
 			TALLOC_FREE(*values);
 			return WERR_NOMEM;
@@ -137,8 +137,8 @@ bool registry_smbconf_valname_forbidden(const char *valname)
 
 	for (forbidden = forbidden_valnames; *forbidden != NULL; forbidden++) {
 		if (strwicmp(valname, *forbidden) == 0) {
-			return True;
+			return true;
 		}
 	}
-	return False;
+	return false;
 }

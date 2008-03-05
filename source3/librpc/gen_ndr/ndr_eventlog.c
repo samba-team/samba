@@ -176,8 +176,7 @@ _PUBLIC_ void ndr_print_eventlog_Record(struct ndr_print *ndr, const char *name,
 	ndr->depth++;
 	for (cntr_strings_0=0;cntr_strings_0<r->num_of_strings;cntr_strings_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_strings_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_strings_0) != -1) {
 			ndr_print_string(ndr, "strings", r->strings[cntr_strings_0]);
 			free(idx_0);
 		}
@@ -878,7 +877,7 @@ static enum ndr_err_code ndr_pull_eventlog_ReadEventLogW(struct ndr_pull *ndr, i
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_ALLOC_N(ndr, r->out.data, r->in.number_of_bytes);
-		memset(r->out.data, 0, r->in.number_of_bytes * sizeof(*r->out.data));
+		memset(r->out.data, 0, (r->in.number_of_bytes) * sizeof(*r->out.data));
 		NDR_PULL_ALLOC(ndr, r->out.sent_size);
 		ZERO_STRUCTP(r->out.sent_size);
 		NDR_PULL_ALLOC(ndr, r->out.real_size);

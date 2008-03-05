@@ -8,6 +8,8 @@
 
 #define LSA_ENUM_TRUST_DOMAIN_MULTIPLIER	( 60 )
 #define LSA_REF_DOMAIN_LIST_MULTIPLIER	( 32 )
+#define MAX_REF_DOMAINS	( LSA_REF_DOMAIN_LIST_MULTIPLIER )
+#define MAX_LOOKUP_SIDS	( 0x5000 )
 #define LSA_ENUM_TRUST_DOMAIN_EX_MULTIPLIER	( 82 )
 struct lsa_String {
 	uint16_t length;/* [value(2*strlen_m(string))] */
@@ -17,7 +19,7 @@ struct lsa_String {
 
 struct lsa_StringLarge {
 	uint16_t length;/* [value(2*strlen_m(string))] */
-	uint16_t size;/* [value(2*(strlen_m(string)+1))] */
+	uint16_t size;/* [value(2*strlen_m_term(string))] */
 	const char *string;/* [unique,charset(UTF16),length_is(length/2),size_is(size/2)] */
 }/* [public] */;
 
@@ -29,7 +31,13 @@ struct lsa_Strings {
 struct lsa_AsciiString {
 	uint16_t length;/* [value(strlen_m(string))] */
 	uint16_t size;/* [value(strlen_m(string))] */
-	const char * string;/* [unique,flag(LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_LEN4)] */
+	const char *string;/* [unique,charset(DOS),length_is(length),size_is(size)] */
+}/* [public] */;
+
+struct lsa_AsciiStringLarge {
+	uint16_t length;/* [value(strlen_m(string))] */
+	uint16_t size;/* [value(strlen_m_term(string))] */
+	const char *string;/* [unique,charset(DOS),length_is(length),size_is(size)] */
 }/* [public] */;
 
 struct lsa_LUID {
@@ -62,6 +70,20 @@ struct lsa_ObjectAttribute {
 	struct security_descriptor *sec_desc;/* [unique] */
 	struct lsa_QosInfo *sec_qos;/* [unique] */
 };
+
+/* bitmap lsa_PolicyAccessMask */
+#define LSA_POLICY_VIEW_LOCAL_INFORMATION ( 0x00000001 )
+#define LSA_POLICY_VIEW_AUDIT_INFORMATION ( 0x00000002 )
+#define LSA_POLICY_GET_PRIVATE_INFORMATION ( 0x00000004 )
+#define LSA_POLICY_TRUST_ADMIN ( 0x00000008 )
+#define LSA_POLICY_CREATE_ACCOUNT ( 0x00000010 )
+#define LSA_POLICY_CREATE_SECRET ( 0x00000020 )
+#define LSA_POLICY_CREATE_PRIVILEGE ( 0x00000040 )
+#define LSA_POLICY_SET_DEFAULT_QUOTA_LIMITS ( 0x00000080 )
+#define LSA_POLICY_SET_AUDIT_REQUIREMENTS ( 0x00000100 )
+#define LSA_POLICY_AUDIT_LOG_ADMIN ( 0x00000200 )
+#define LSA_POLICY_SERVER_ADMIN ( 0x00000400 )
+#define LSA_POLICY_LOOKUP_NAMES ( 0x00000800 )
 
 struct lsa_AuditLogInfo {
 	uint32_t percent_full;
@@ -448,7 +470,7 @@ struct lsa_RightAttribute {
 };
 
 struct lsa_RightSet {
-	uint32_t count;
+	uint32_t count;/* [range(0,256)] */
 	struct lsa_StringLarge *names;/* [unique,size_is(count)] */
 };
 
@@ -774,7 +796,7 @@ struct lsa_LookupNames {
 	} in;
 
 	struct {
-		struct lsa_RefDomainList *domains;/* [unique] */
+		struct lsa_RefDomainList **domains;/* [ref] */
 		struct lsa_TransSidArray *sids;/* [ref] */
 		uint32_t *count;/* [ref] */
 		NTSTATUS result;
@@ -793,7 +815,7 @@ struct lsa_LookupSids {
 	} in;
 
 	struct {
-		struct lsa_RefDomainList *domains;/* [unique] */
+		struct lsa_RefDomainList **domains;/* [ref] */
 		struct lsa_TransNameArray *names;/* [ref] */
 		uint32_t *count;/* [ref] */
 		NTSTATUS result;
@@ -838,7 +860,7 @@ struct lsa_EnumPrivsAccount {
 	} in;
 
 	struct {
-		struct lsa_PrivilegeSet *privs;/* [unique] */
+		struct lsa_PrivilegeSet **privs;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -1104,7 +1126,7 @@ struct lsa_RemoveAccountRights {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		struct dom_sid2 *sid;/* [ref] */
-		uint32_t unknown;
+		uint8_t remove_all;
 		struct lsa_RightSet *rights;/* [ref] */
 	} in;
 
@@ -1356,7 +1378,7 @@ struct lsa_LookupSids2 {
 	} in;
 
 	struct {
-		struct lsa_RefDomainList *domains;/* [unique] */
+		struct lsa_RefDomainList **domains;/* [ref] */
 		struct lsa_TransNameArray2 *names;/* [ref] */
 		uint32_t *count;/* [ref] */
 		NTSTATUS result;
@@ -1378,7 +1400,7 @@ struct lsa_LookupNames2 {
 	} in;
 
 	struct {
-		struct lsa_RefDomainList *domains;/* [unique] */
+		struct lsa_RefDomainList **domains;/* [ref] */
 		struct lsa_TransSidArray2 *sids;/* [ref] */
 		uint32_t *count;/* [ref] */
 		NTSTATUS result;
@@ -1472,7 +1494,7 @@ struct lsa_LookupNames3 {
 	} in;
 
 	struct {
-		struct lsa_RefDomainList *domains;/* [unique] */
+		struct lsa_RefDomainList **domains;/* [ref] */
 		struct lsa_TransSidArray3 *sids;/* [ref] */
 		uint32_t *count;/* [ref] */
 		NTSTATUS result;
@@ -1555,7 +1577,7 @@ struct lsa_LookupSids3 {
 	} in;
 
 	struct {
-		struct lsa_RefDomainList *domains;/* [unique] */
+		struct lsa_RefDomainList **domains;/* [ref] */
 		struct lsa_TransNameArray2 *names;/* [ref] */
 		uint32_t *count;/* [ref] */
 		NTSTATUS result;
@@ -1576,7 +1598,7 @@ struct lsa_LookupNames4 {
 	} in;
 
 	struct {
-		struct lsa_RefDomainList *domains;/* [unique] */
+		struct lsa_RefDomainList **domains;/* [ref] */
 		struct lsa_TransSidArray3 *sids;/* [ref] */
 		uint32_t *count;/* [ref] */
 		NTSTATUS result;

@@ -154,7 +154,7 @@ static void callback_apply_description_change(GtkWidget *widget,
 						GTK_MESSAGE_ERROR,
 						GTK_BUTTONS_OK,
 						"Failed to change computer description: %s.",
-						libnetapi_errstr(status));
+						libnetapi_get_error_string(state->ctx, status));
 		g_signal_connect_swapped(dialog, "response",
 					 G_CALLBACK(gtk_widget_destroy),
 					 dialog);

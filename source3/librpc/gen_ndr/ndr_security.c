@@ -552,8 +552,7 @@ _PUBLIC_ void ndr_print_security_acl(struct ndr_print *ndr, const char *name, co
 	ndr->depth++;
 	for (cntr_aces_0=0;cntr_aces_0<r->num_aces;cntr_aces_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_aces_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_aces_0) != -1) {
 			ndr_print_security_ace(ndr, "aces", &r->aces[cntr_aces_0]);
 			free(idx_0);
 		}
@@ -981,8 +980,7 @@ _PUBLIC_ void ndr_print_security_token(struct ndr_print *ndr, const char *name, 
 	ndr->depth++;
 	for (cntr_sids_0=0;cntr_sids_0<r->num_sids;cntr_sids_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_sids_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_sids_0) != -1) {
 			ndr_print_ptr(ndr, "sids", r->sids[cntr_sids_0]);
 			ndr->depth++;
 			if (r->sids[cntr_sids_0]) {

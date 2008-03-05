@@ -370,7 +370,7 @@ void in_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
  Convert an IPv6 struct in_addr to a struct sockaddr_storage.
 ********************************************************************/
 
-void in6_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
+ void in6_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
 		struct in6_addr ip)
 {
 	struct sockaddr_in6 *sa = (struct sockaddr_in6 *)ss;
@@ -1904,8 +1904,7 @@ int create_pipe_sock(const char *socket_dir,
                 goto out_close;
 	}
 
-	asprintf(&path, "%s/%s", socket_dir, socket_name);
-	if (!path) {
+	if (asprintf(&path, "%s/%s", socket_dir, socket_name) == -1) {
                 goto out_close;
 	}
 
@@ -1933,7 +1932,8 @@ int create_pipe_sock(const char *socket_dir,
 
 out_close:
 	SAFE_FREE(path);
-	close(sock);
+	if (sock != -1)
+		close(sock);
 
 out_umask:
 	umask(old_umask);

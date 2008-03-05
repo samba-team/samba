@@ -6,6 +6,7 @@
    networking system include wrappers
 
    Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Jelmer Vernooij 2007
    
      ** NOTE! The following LGPL license applies to the replace
      ** library. This does NOT imply that all of Samba is released
@@ -82,6 +83,11 @@
 #include <stropts.h>
 #endif
 
+#ifndef HAVE_SOCKLEN_T
+#define HAVE_SOCKLEN_T
+typedef int socklen_t;
+#endif
+
 #ifdef REPLACE_INET_NTOA
 /* define is in "replace.h" */
 char *rep_inet_ntoa(struct in_addr ip);
@@ -95,6 +101,41 @@ int rep_inet_pton(int af, const char *src, void *dst);
 #ifndef HAVE_INET_NTOP
 /* define is in "replace.h" */
 const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
+#endif
+
+#ifndef HAVE_CONNECT
+/* define is in "replace.h" */
+int rep_connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+#endif
+
+#ifndef HAVE_GETHOSTBYNAME
+/* define is in "replace.h" */
+struct hostent *rep_gethostbyname(const char *name);
+#endif
+
+#ifdef HAVE_IFADDRS_H
+#include <ifaddrs.h>
+#endif
+
+#ifndef HAVE_STRUCT_IFADDRS
+struct ifaddrs {
+	struct ifaddrs   *ifa_next;         /* Pointer to next struct */
+	char             *ifa_name;         /* Interface name */
+	unsigned int     ifa_flags;         /* Interface flags */
+	struct sockaddr  *ifa_addr;         /* Interface address */
+	struct sockaddr  *ifa_netmask;      /* Interface netmask */
+#undef ifa_dstaddr
+	struct sockaddr  *ifa_dstaddr;      /* P2P interface destination */
+	void             *ifa_data;         /* Address specific data */
+};
+#endif
+
+#ifndef HAVE_GETIFADDRS
+int rep_getifaddrs(struct ifaddrs **);
+#endif
+
+#ifndef HAVE_FREEIFADDRS
+void rep_freeifaddrs(struct ifaddrs *);
 #endif
 
 /*
@@ -219,11 +260,6 @@ const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #define HOST_NAME_MAX 256
 #endif
 
-#ifndef HAVE_SOCKLEN_T
-#define HAVE_SOCKLEN_T
-typedef int socklen_t;
-#endif
-
 #ifndef HAVE_SA_FAMILY_T
 #define HAVE_SA_FAMILY_T
 typedef unsigned short int sa_family_t;
@@ -269,7 +305,7 @@ struct addrinfo {
 
 /* Needed for some systems that don't define it (Solaris). */
 #ifndef ifr_netmask
-#define ifr_netmask ifr_addrs
+#define ifr_netmask ifr_addr
 #endif
 
 #ifdef SOCKET_WRAPPER

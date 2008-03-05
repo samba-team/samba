@@ -6,6 +6,7 @@
    Copyright (C) Tim Potter 2000-2001,2003
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Volker Lendecke 2005
+   Copyright (C) Guenther Deschner 2008 (pidl conversion)
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -429,7 +430,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	POLICY_HND dom_pol, user_pol;
 	union samr_UserInfo *info = NULL;
 	uint32 user_rid;
-	NET_USER_INFO_3 *user;
+	struct netr_SamInfo3 *user;
 	struct rpc_pipe_client *cli;
 
 	DEBUG(3,("rpc: query_user sid=%s\n", sid_string_dbg(user_sid)));
@@ -449,14 +450,14 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		DEBUG(5,("query_user: Cache lookup succeeded for %s\n", 
 			sid_string_dbg(user_sid)));
 
-		sid_compose(&user_info->user_sid, &domain->sid, user->user_rid);
+		sid_compose(&user_info->user_sid, &domain->sid, user->base.rid);
 		sid_compose(&user_info->group_sid, &domain->sid,
-			    user->group_rid);
+			    user->base.primary_gid);
 				
-		user_info->acct_name = unistr2_to_ascii_talloc(mem_ctx,
-						    &user->uni_user_name);
-		user_info->full_name = unistr2_to_ascii_talloc(mem_ctx,
-						    &user->uni_full_name);
+		user_info->acct_name = talloc_strdup(mem_ctx,
+						     user->base.account_name.string);
+		user_info->full_name = talloc_strdup(mem_ctx,
+						     user->base.full_name.string);
 		
 		TALLOC_FREE(user);
 						

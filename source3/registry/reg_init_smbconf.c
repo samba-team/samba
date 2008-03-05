@@ -67,13 +67,13 @@ done:
  * for use in places where not the whole registry is needed,
  * e.g. utils/net_conf.c and loadparm.c
  */
-bool registry_init_regdb(void)
+bool registry_init_smbconf(void)
 {
 	bool ret = false;
 	int saved_errno = 0;
 	static REGISTRY_HOOK smbconf_reg_hook = {KEY_SMBCONF, &smbconf_reg_ops};
 
-	DEBUG(10, ("registry_init_regdb called\n"));
+	DEBUG(10, ("registry_init_smbconf called\n"));
 
 	if (!regdb_init()) {
 		saved_errno = errno;

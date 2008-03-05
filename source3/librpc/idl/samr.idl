@@ -316,6 +316,10 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	/************************/
 	/* Function    0x0b     */
+
+	const int MAX_SAM_ENTRIES_W2K = 0x400; /* 1024 */
+	const int MAX_SAM_ENTRIES_W95 = 50;
+
 	NTSTATUS samr_EnumDomainGroups(
 		[in]          policy_handle *domain_handle,
 		[in,out,ref]  uint32 *resume_handle,
@@ -779,6 +783,10 @@ import "misc.idl", "lsa.idl", "security.idl";
 		SAMR_FIELD_OWF_PWD          = 0x20000000
 	} samr_FieldsPresent;
 
+	/* used for 'password_expired' in samr_UserInfo21 */
+	const int PASS_MUST_CHANGE_AT_NEXT_LOGON = 0x01;
+	const int PASS_DONT_CHANGE_AT_NEXT_LOGON = 0x00;
+
 	typedef struct {
 		NTTIME last_logon;
 		NTTIME last_logoff;
@@ -968,7 +976,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	typedef struct {
 		uint32    idx;
-		lsa_AsciiString account_name;
+		lsa_AsciiStringLarge account_name;
 	} samr_DispEntryAscii;
 
 	typedef struct {

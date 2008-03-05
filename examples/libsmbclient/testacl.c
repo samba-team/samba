@@ -143,7 +143,7 @@ int main(int argc, const char *argv[])
 
     if (full_time_names) {
         SMBCCTX *context = smbc_set_context(NULL);
-        smbc_option_set(context, "full_time_names", 1);
+        smbc_setOptionFullTimeNames(context, 1);
     }
     
     /* Perform requested action */

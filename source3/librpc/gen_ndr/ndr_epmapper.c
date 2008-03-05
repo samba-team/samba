@@ -1566,8 +1566,7 @@ _PUBLIC_ void ndr_print_epm_tower(struct ndr_print *ndr, const char *name, const
 		ndr->depth++;
 		for (cntr_floors_0=0;cntr_floors_0<r->num_floors;cntr_floors_0++) {
 			char *idx_0=NULL;
-			asprintf(&idx_0, "[%d]", cntr_floors_0);
-			if (idx_0) {
+			if (asprintf(&idx_0, "[%d]", cntr_floors_0) != -1) {
 				ndr_print_epm_floor(ndr, "floors", &r->floors[cntr_floors_0]);
 				free(idx_0);
 			}
@@ -1849,8 +1848,7 @@ _PUBLIC_ void ndr_print_epm_Insert(struct ndr_print *ndr, const char *name, int 
 		ndr->depth++;
 		for (cntr_entries_0=0;cntr_entries_0<r->in.num_ents;cntr_entries_0++) {
 			char *idx_0=NULL;
-			asprintf(&idx_0, "[%d]", cntr_entries_0);
-			if (idx_0) {
+			if (asprintf(&idx_0, "[%d]", cntr_entries_0) != -1) {
 				ndr_print_epm_entry_t(ndr, "entries", &r->in.entries[cntr_entries_0]);
 				free(idx_0);
 			}
@@ -1930,8 +1928,7 @@ _PUBLIC_ void ndr_print_epm_Delete(struct ndr_print *ndr, const char *name, int 
 		ndr->depth++;
 		for (cntr_entries_0=0;cntr_entries_0<r->in.num_ents;cntr_entries_0++) {
 			char *idx_0=NULL;
-			asprintf(&idx_0, "[%d]", cntr_entries_0);
-			if (idx_0) {
+			if (asprintf(&idx_0, "[%d]", cntr_entries_0) != -1) {
 				ndr_print_epm_entry_t(ndr, "entries", &r->in.entries[cntr_entries_0]);
 				free(idx_0);
 			}
@@ -2131,8 +2128,7 @@ _PUBLIC_ void ndr_print_epm_Lookup(struct ndr_print *ndr, const char *name, int 
 		ndr->depth++;
 		for (cntr_entries_0=0;cntr_entries_0<*r->out.num_ents;cntr_entries_0++) {
 			char *idx_0=NULL;
-			asprintf(&idx_0, "[%d]", cntr_entries_0);
-			if (idx_0) {
+			if (asprintf(&idx_0, "[%d]", cntr_entries_0) != -1) {
 				ndr_print_epm_entry_t(ndr, "entries", &r->out.entries[cntr_entries_0]);
 				free(idx_0);
 			}
@@ -2321,8 +2317,7 @@ _PUBLIC_ void ndr_print_epm_Map(struct ndr_print *ndr, const char *name, int fla
 		ndr->depth++;
 		for (cntr_towers_0=0;cntr_towers_0<*r->out.num_towers;cntr_towers_0++) {
 			char *idx_0=NULL;
-			asprintf(&idx_0, "[%d]", cntr_towers_0);
-			if (idx_0) {
+			if (asprintf(&idx_0, "[%d]", cntr_towers_0) != -1) {
 				ndr_print_epm_twr_p_t(ndr, "towers", &r->out.towers[cntr_towers_0]);
 				free(idx_0);
 			}

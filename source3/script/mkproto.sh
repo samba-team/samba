@@ -25,7 +25,7 @@ header="$1"
 shift
 headertmp="$header.$$.tmp~"
 
-proto_src="`echo $@ | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort | uniq | egrep -v 'tdb/|wrapped|modules/getdate'`"
+proto_src="`echo $@ | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort | uniq | egrep -v 'tdb/|wrapped|modules/getdate' | egrep -v '\.a$'`"
 
 echo creating $header
 

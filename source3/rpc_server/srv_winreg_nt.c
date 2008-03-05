@@ -21,13 +21,9 @@
 /* Implementation of registry functions. */
 
 #include "includes.h"
-#include "regfio.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
-
-static const struct generic_mapping reg_generic_map =
-	{ REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
 
 /******************************************************************
  free() function for struct registry_key
@@ -40,7 +36,7 @@ static void free_regkey(void *ptr)
 }
 
 /******************************************************************
- Find a registry key handle and return a REGISTRY_KEY
+ Find a registry key handle and return a struct registry_key *
  *****************************************************************/
 
 static struct registry_key *find_regkey_by_hnd(pipes_struct *p,
@@ -512,8 +508,6 @@ WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, struct winreg_InitiateS
 
 	/* pull the message string and perform necessary sanity checks on it */
 
-	chkmsg[0] = '\0';
-
 	if ( r->in.message && r->in.message->name && r->in.message->name->name ) {
 		if ( (msg = talloc_strdup(p->mem_ctx, r->in.message->name->name )) == NULL ) {
 			return WERR_NOMEM;
@@ -655,125 +649,6 @@ static int validate_reg_filename(TALLOC_CTX *ctx, char **pp_fname )
 }
 
 /*******************************************************************
- Note: topkeypat is the *full* path that this *key will be
- loaded into (including the name of the key)
- ********************************************************************/
-
-static WERROR reg_load_tree( REGF_FILE *regfile, const char *topkeypath,
-                             REGF_NK_REC *key )
-{
-	REGF_NK_REC *subkey;
-	REGISTRY_KEY registry_key;
-	REGVAL_CTR *values;
-	REGSUBKEY_CTR *subkeys;
-	int i;
-	char *path = NULL;
-	WERROR result = WERR_OK;
-
-	/* initialize the REGISTRY_KEY structure */
-
-	if ( !(registry_key.hook = reghook_cache_find(topkeypath)) ) {
-		DEBUG(0,("reg_load_tree: Failed to assigned a REGISTRY_HOOK to [%s]\n",
-			topkeypath ));
-		return WERR_BADFILE;
-	}
-
-	registry_key.name = talloc_strdup( regfile->mem_ctx, topkeypath );
-	if ( !registry_key.name ) {
-		DEBUG(0,("reg_load_tree: Talloc failed for reg_key.name!\n"));
-		return WERR_NOMEM;
-	}
-
-	/* now start parsing the values and subkeys */
-
-	if ( !(subkeys = TALLOC_ZERO_P( regfile->mem_ctx, REGSUBKEY_CTR )) )
-		return WERR_NOMEM;
-
-	if ( !(values = TALLOC_ZERO_P( subkeys, REGVAL_CTR )) )
-		return WERR_NOMEM;
-
-	/* copy values into the REGVAL_CTR */
-
-	for ( i=0; i<key->num_values; i++ ) {
-		regval_ctr_addvalue( values, key->values[i].valuename, key->values[i].type,
-			(char*)key->values[i].data, (key->values[i].data_size & ~VK_DATA_IN_OFFSET) );
-	}
-
-	/* copy subkeys into the REGSUBKEY_CTR */
-
-	key->subkey_index = 0;
-	while ( (subkey = regfio_fetch_subkey( regfile, key )) ) {
-		regsubkey_ctr_addkey( subkeys, subkey->keyname );
-	}
-
-	/* write this key and values out */
-
-	if ( !store_reg_values( &registry_key, values )
-		|| !store_reg_keys( &registry_key, subkeys ) )
-	{
-		DEBUG(0,("reg_load_tree: Failed to load %s!\n", topkeypath));
-		result = WERR_REG_IO_FAILURE;
-	}
-
-	TALLOC_FREE( subkeys );
-
-	if ( !W_ERROR_IS_OK(result) )
-		return result;
-
-	/* now continue to load each subkey registry tree */
-
-	key->subkey_index = 0;
-	while ( (subkey = regfio_fetch_subkey( regfile, key )) ) {
-		path = talloc_asprintf(regfile->mem_ctx,
-				"%s\\%s",
-				topkeypath,
-				subkey->keyname);
-		if (!path) {
-			return WERR_NOMEM;
-		}
-		result = reg_load_tree( regfile, path, subkey );
-		if ( !W_ERROR_IS_OK(result) )
-			break;
-	}
-
-	return result;
-}
-
-/*******************************************************************
- ********************************************************************/
-
-static WERROR restore_registry_key ( REGISTRY_KEY *krecord, const char *fname )
-{
-	REGF_FILE *regfile;
-	REGF_NK_REC *rootkey;
-	WERROR result;
-		
-	/* open the registry file....fail if the file already exists */
-	
-	if ( !(regfile = regfio_open( fname, (O_RDONLY), 0 )) ) {
-                DEBUG(0,("restore_registry_key: failed to open \"%s\" (%s)\n", 
-			fname, strerror(errno) ));
-		return ( ntstatus_to_werror(map_nt_error_from_unix( errno )) );
-        }
-	
-	/* get the rootkey from the regf file and then load the tree
-	   via recursive calls */
-	   
-	if ( !(rootkey = regfio_rootkey( regfile )) ) {
-		regfio_close( regfile );
-		return WERR_REG_FILE_INVALID;
-	}
-
-	result = reg_load_tree( regfile, krecord->name, rootkey );
-
-	/* cleanup */
-
-	regfio_close( regfile );
-
-	return result;
-}
-
-/*******************************************************************
  ********************************************************************/
 
 WERROR _winreg_RestoreKey(pipes_struct *p, struct winreg_RestoreKey *r)
@@ -807,174 +682,8 @@ WERROR _winreg_RestoreKey(pipes_struct *p, struct winreg_RestoreKey *r)
 	DEBUG(2,("_winreg_RestoreKey: Restoring [%s] from %s in share %s\n",
 		 regkey->key->name, fname, lp_servicename(snum) ));
 
-	return restore_registry_key( regkey->key, fname );
+	return reg_restorekey(regkey, fname);
 }
-
-/********************************************************************
-********************************************************************/
-
-static WERROR reg_write_tree( REGF_FILE *regfile, const char *keypath,
-                              REGF_NK_REC *parent, SEC_DESC *sec_desc )
-{
-	REGF_NK_REC *key;
-	REGVAL_CTR *values;
-	REGSUBKEY_CTR *subkeys;
-	int i, num_subkeys;
-	char *key_tmp = NULL;
-	char *keyname, *parentpath;
-	char *subkeypath = NULL;
-	char *subkeyname;
-	REGISTRY_KEY registry_key;
-	WERROR result = WERR_OK;
-
-	if (!regfile)
-		return WERR_GENERAL_FAILURE;
-
-	if (!keypath)
-		return WERR_OBJECT_PATH_INVALID;
-
-	/* split up the registry key path */
-
-	key_tmp = talloc_strdup(regfile->mem_ctx, keypath);
-	if (!key_tmp) {
-		return WERR_NOMEM;
-	}
-	if (!reg_split_key( key_tmp, &parentpath, &keyname ) )
-		return WERR_OBJECT_PATH_INVALID;
-
-	if ( !keyname )
-		keyname = parentpath;
-
-	/* we need a REGISTRY_KEY object here to enumerate subkeys and values */
-
-	ZERO_STRUCT( registry_key );
-
-	if ( (registry_key.name = talloc_strdup(regfile->mem_ctx, keypath)) == NULL )
-		return WERR_NOMEM;
-
-	if ( (registry_key.hook = reghook_cache_find( registry_key.name )) == NULL )
-		return WERR_BADFILE;
-
-	/* lookup the values and subkeys */
-
-	if ( !(subkeys = TALLOC_ZERO_P( regfile->mem_ctx, REGSUBKEY_CTR )) )
-		return WERR_NOMEM;
-
-	if ( !(values = TALLOC_ZERO_P( subkeys, REGVAL_CTR )) )
-		return WERR_NOMEM;
-
-	fetch_reg_keys( &registry_key, subkeys );
-	fetch_reg_values( &registry_key, values );
-
-	/* write out this key */
-
-	if ( !(key = regfio_write_key( regfile, keyname, values, subkeys, sec_desc, parent )) ) {
-		result = WERR_CAN_NOT_COMPLETE;
-		goto done;
-	}
-
-	/* write each one of the subkeys out */
-
-	num_subkeys = regsubkey_ctr_numkeys( subkeys );
-	for ( i=0; i<num_subkeys; i++ ) {
-		subkeyname = regsubkey_ctr_specific_key( subkeys, i );
-		subkeypath = talloc_asprintf(regfile->mem_ctx,
-					"%s\\%s", keypath, subkeyname);
-		if (!subkeypath) {
-			result = WERR_NOMEM;
-			goto done;
-		}
-		result = reg_write_tree( regfile, subkeypath, key, sec_desc );
-		if ( !W_ERROR_IS_OK(result) )
-			goto done;
-	}
-
-	DEBUG(6,("reg_write_tree: wrote key [%s]\n", keypath ));
-
-done:
-	TALLOC_FREE( subkeys );
-	TALLOC_FREE( registry_key.name );
-
-	return result;
-}
-
-/*******************************************************************
- ********************************************************************/
-
-static WERROR make_default_reg_sd( TALLOC_CTX *ctx, SEC_DESC **psd )
-{
-	DOM_SID adm_sid, owner_sid;
-	SEC_ACE ace[2];         /* at most 2 entries */
-	SEC_ACCESS mask;
-	SEC_ACL *psa = NULL;
-	size_t sd_size;
-
-	/* set the owner to BUILTIN\Administrator */
-
-	sid_copy(&owner_sid, &global_sid_Builtin);
-	sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN );
-	
-
-	/* basic access for Everyone */
-
-	init_sec_access(&mask, reg_generic_map.generic_execute | reg_generic_map.generic_read );
-	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-
-	/* add Full Access 'BUILTIN\Administrators' */
-
-	init_sec_access(&mask, reg_generic_map.generic_all);
-	sid_copy(&adm_sid, &global_sid_Builtin);
-	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
-	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-
-        /* create the security descriptor */
-
-        if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 2, ace)) == NULL)
-                return WERR_NOMEM;
-
-        if ((*psd = make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
-				  SEC_DESC_SELF_RELATIVE, &owner_sid, NULL,
-				  NULL, psa, &sd_size)) == NULL)
-                return WERR_NOMEM;
-
-	return WERR_OK;
-}
-
-/*******************************************************************
- ********************************************************************/
-
-static WERROR backup_registry_key ( REGISTRY_KEY *krecord, const char *fname )
-{
-	REGF_FILE *regfile;
-	WERROR result;
-	SEC_DESC *sd = NULL;
-	
-	/* open the registry file....fail if the file already exists */
-
-	if ( !(regfile = regfio_open( fname, (O_RDWR|O_CREAT|O_EXCL), (S_IREAD|S_IWRITE) )) ) {
-                DEBUG(0,("backup_registry_key: failed to open \"%s\" (%s)\n",
-			fname, strerror(errno) ));
-		return ( ntstatus_to_werror(map_nt_error_from_unix( errno )) );
-        }
-
-	if ( !W_ERROR_IS_OK(result = make_default_reg_sd( regfile->mem_ctx, &sd )) ) {
-		regfio_close( regfile );
-		return result;
-	}
-
-	/* write the registry tree to the file  */
-
-	result = reg_write_tree( regfile, krecord->name, NULL, sd );
-
-	/* cleanup */
-
-	regfio_close( regfile );
-
-	return result;
-}
-
-/*******************************************************************
- ********************************************************************/
 
 WERROR _winreg_SaveKey(pipes_struct *p, struct winreg_SaveKey *r)
 {
@@ -1002,7 +711,7 @@ WERROR _winreg_SaveKey(pipes_struct *p, struct winreg_SaveKey *r)
 	DEBUG(2,("_winreg_SaveKey: Saving [%s] to %s in share %s\n",
 		 regkey->key->name, fname, lp_servicename(snum) ));
 
-	return backup_registry_key( regkey->key, fname );
+	return reg_savekey(regkey, fname);
 }
 
 /*******************************************************************

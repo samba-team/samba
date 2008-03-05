@@ -206,7 +206,7 @@ static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *p
 	/* Now deal with the user SID.  If we have a backend that can generate 
 	   RIDs, then do so.  But sometimes the caller just wanted a structure 
 	   initialized and will fill in these fields later (such as from a 
-	   NET_USER_INFO_3 structure) */
+	   netr_SamInfo3 structure) */
 
 	if ( create && !pdb_rid_algorithm() ) {
 		uint32 user_rid;

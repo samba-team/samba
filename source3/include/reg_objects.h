@@ -105,9 +105,16 @@ typedef struct {
 #define KEY_CURRENT_VERSION	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"
 #define KEY_PERFLIB		"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Perflib"
 #define KEY_PERFLIB_009		"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Perflib\\009"
+#define KEY_GROUP_POLICY	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Group Policy"
+#define KEY_WINLOGON		"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon"
 #define KEY_SMBCONF		"HKLM\\SOFTWARE\\Samba\\smbconf"
+#define KEY_SAMBA_GROUP_POLICY	"HKLM\\SOFTWARE\\Samba\\Group Policy"
 #define KEY_TREE_ROOT		""
 
+#define KEY_GP_MACHINE_POLICY		"HKLM\\Software\\Policies"
+#define KEY_GP_MACHINE_WIN_POLICY	"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies"
+#define KEY_GP_USER_POLICY		"HKCU\\Software\\Policies"
+#define KEY_GP_USER_WIN_POLICY		"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies"
 /*
  * Registry key types
  *	Most keys are going to be GENERIC -- may need a better name?

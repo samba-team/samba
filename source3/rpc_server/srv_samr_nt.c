@@ -11,6 +11,7 @@
  *  Copyright (C) Gerald (Jerry) Carter             2003-2004,
  *  Copyright (C) Simo Sorce                        2003.
  *  Copyright (C) Volker Lendecke		    2005.
+ *  Copyright (C) Guenther Deschner		    2008.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -876,6 +877,8 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx,
 	return NT_STATUS_OK;
 }
 
+#define MAX_SAM_ENTRIES MAX_SAM_ENTRIES_W2K
+
 /*******************************************************************
  _samr_EnumDomainUsers
  ********************************************************************/
@@ -1315,8 +1318,8 @@ static NTSTATUS init_samr_dispinfo_4(TALLOC_CTX *ctx,
 
 	for (i = 0; i < num_entries ; i++) {
 
-		init_lsa_AsciiString(&r->entries[i].account_name,
-				     entries[i].account_name);
+		init_lsa_AsciiStringLarge(&r->entries[i].account_name,
+					  entries[i].account_name);
 
 		r->entries[i].idx = start_idx+i+1;
 	}
@@ -1351,8 +1354,8 @@ static NTSTATUS init_samr_dispinfo_5(TALLOC_CTX *ctx,
 
 	for (i = 0; i < num_entries ; i++) {
 
-		init_lsa_AsciiString(&r->entries[i].account_name,
-				     entries[i].account_name);
+		init_lsa_AsciiStringLarge(&r->entries[i].account_name,
+					  entries[i].account_name);
 
 		r->entries[i].idx = start_idx+i+1;
 	}
@@ -2535,10 +2538,10 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 			      logon_hours,
 			      pdb_get_bad_password_count(pw),
 			      pdb_get_logon_count(pw),
-			      0, //country_code,
-			      0, //code_page,
-			      0, //nt_password_set,
-			      0, //lm_password_set,
+			      0, /* country_code */
+			      0, /* code_page */
+			      0, /* nt_password_set */
+			      0, /* lm_password_set */
 			      password_expired);
 	TALLOC_FREE(pw);
 

@@ -827,6 +827,7 @@ void check_log_size( void )
 		};
 		int     priority;
 		char *msgbuf = NULL;
+		int ret;
 
 		if( syslog_level >= ( sizeof(priority_map) / sizeof(priority_map[0]) ) || syslog_level < 0)
 			priority = LOG_DEBUG;
@@ -834,10 +835,10 @@ void check_log_size( void )
 			priority = priority_map[syslog_level];
 
 		va_start(ap, format_str);
-		vasprintf(&msgbuf, format_str, ap);
+		ret = vasprintf(&msgbuf, format_str, ap);
 		va_end(ap);
 
-		if (msgbuf) {
+		if (ret == -1) {
 			syslog(priority, "%s", msgbuf);
 		}
 		SAFE_FREE(msgbuf);
@@ -1059,12 +1060,13 @@ bool dbghdr(int level, int cls, const char *file, const char *func, int line)
 	va_list ap;
 	char *msgbuf = NULL;
 	bool ret = true;
+	int res;
 
 	va_start(ap, format_str);
-	vasprintf(&msgbuf, format_str, ap);
+	res = vasprintf(&msgbuf, format_str, ap);
 	va_end(ap);
 
-	if (msgbuf) {
+	if (res != -1) {
 		format_debug_text(msgbuf);
 	} else {
 		ret = false;

@@ -3,7 +3,7 @@
    Distributed SMB/CIFS Server Management Utility 
    Copyright (C) 2001 Andrew Bartlett (abartlet@samba.org)
    Copyright (C) 2002 Jim McDonough (jmcd@us.ibm.com)
-   Copyright (C) 2004 Guenther Deschner (gd@samba.org)
+   Copyright (C) 2004,2008 Guenther Deschner (gd@samba.org)
    Copyright (C) 2005 Jeremy Allison (jra@samba.org)
    Copyright (C) 2006 Jelmer Vernooij (jelmer@samba.org)
 
@@ -1406,9 +1406,8 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 					   TALLOC_CTX *mem_ctx,
 					   struct rpc_sh_ctx *ctx,
 					   struct rpc_pipe_client *pipe_hnd,
-					   const POLICY_HND *user_hnd,
+					   POLICY_HND *user_hnd,
 					   int argc, const char **argv))
-					   
 {
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -1490,7 +1489,7 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 static NTSTATUS rpc_sh_user_show_internals(TALLOC_CTX *mem_ctx,
 					   struct rpc_sh_ctx *ctx,
 					   struct rpc_pipe_client *pipe_hnd,
-					   const POLICY_HND *user_hnd,
+					   POLICY_HND *user_hnd,
 					   int argc, const char **argv)
 {
 	NTSTATUS result;
@@ -1502,7 +1501,7 @@ static NTSTATUS rpc_sh_user_show_internals(TALLOC_CTX *mem_ctx,
 	}
 
 	result = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
-					   CONST_DISCARD(struct policy_handle *, user_hnd),
+					   user_hnd,
 					   21,
 					   &info);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1539,7 +1538,7 @@ do { if (strequal(ctx->thiscmd, name)) { \
 static NTSTATUS rpc_sh_user_str_edit_internals(TALLOC_CTX *mem_ctx,
 					       struct rpc_sh_ctx *ctx,
 					       struct rpc_pipe_client *pipe_hnd,
-					       const POLICY_HND *user_hnd,
+					       POLICY_HND *user_hnd,
 					       int argc, const char **argv)
 {
 	NTSTATUS result;
@@ -1554,7 +1553,7 @@ static NTSTATUS rpc_sh_user_str_edit_internals(TALLOC_CTX *mem_ctx,
 	}
 
 	result = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
-					   CONST_DISCARD(struct policy_handle *, user_hnd),
+					   user_hnd,
 					   21,
 					   &info);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1589,7 +1588,7 @@ static NTSTATUS rpc_sh_user_str_edit_internals(TALLOC_CTX *mem_ctx,
 	SETSTR("description", description, DESCRIPTION);
 
 	result = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
-					 CONST_DISCARD(struct policy_handle *, user_hnd),
+					 user_hnd,
 					 21,
 					 info);
 
@@ -1622,7 +1621,7 @@ static NTSTATUS rpc_sh_user_str_edit(TALLOC_CTX *mem_ctx,
 static NTSTATUS rpc_sh_user_flag_edit_internals(TALLOC_CTX *mem_ctx,
 						struct rpc_sh_ctx *ctx,
 						struct rpc_pipe_client *pipe_hnd,
-						const POLICY_HND *user_hnd,
+						POLICY_HND *user_hnd,
 						int argc, const char **argv)
 {
 	NTSTATUS result;
@@ -1643,7 +1642,7 @@ static NTSTATUS rpc_sh_user_flag_edit_internals(TALLOC_CTX *mem_ctx,
 	newval = strequal(argv[0], "yes");
 
 	result = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
-					   CONST_DISCARD(struct policy_handle *, user_hnd),
+					   user_hnd,
 					   21,
 					   &info);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1670,7 +1669,7 @@ static NTSTATUS rpc_sh_user_flag_edit_internals(TALLOC_CTX *mem_ctx,
 	info->info21.fields_present = SAMR_FIELD_ACCT_FLAGS;
 
 	result = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
-					 CONST_DISCARD(struct policy_handle *, user_hnd),
+					 user_hnd,
 					 21,
 					 info);
 
@@ -3601,14 +3600,14 @@ static bool check_share_sanity(struct cli_state *cli, fstring netname, uint32 ty
 }
 
 /** 
- * Migrate shares from a remote RPC server to the local RPC srever
+ * Migrate shares from a remote RPC server to the local RPC server
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped

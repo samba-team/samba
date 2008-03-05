@@ -15,260 +15,11 @@ case "$PATH" in
 	;;
 esac 
 
-SMB_VERSION_STRING=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
-echo "SAMBA VERSION: ${SMB_VERSION_STRING}"
+builddir=`pwd`
+AC_SUBST(builddir)
 
-SAMBA_VERSION_GIT_COMMIT_FULLREV=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_GIT_COMMIT_FULLREV' | cut -d ' ' -f3- | cut -d '"' -f2`
-if test -n "${SAMBA_VERSION_GIT_COMMIT_FULLREV}";then
-	echo "BUILD COMMIT REVISION: ${SAMBA_VERSION_GIT_COMMIT_FULLREV}"
-fi
-SAMBA_VERSION_GIT_COMMIT_DATE=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_GIT_COMMIT_DATE' | cut -d ' ' -f3-`
-if test -n "${SAMBA_VERSION_GIT_COMMIT_DATE}";then
-	echo "BUILD COMMIT DATE: ${SAMBA_VERSION_GIT_COMMIT_DATE}"
-fi
-SAMBA_VERSION_GIT_COMMIT_TIME=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_GIT_COMMIT_TIME' | cut -d ' ' -f3-`
-if test -n "${SAMBA_VERSION_GIT_COMMIT_TIME}";then
-	echo "BUILD COMMIT TIME: ${SAMBA_VERSION_GIT_COMMIT_TIME}"
-
-	# just to keep the build-farm gui happy for now...
-	echo "BUILD REVISION: ${SAMBA_VERSION_GIT_COMMIT_TIME}"
-fi
-
-AC_LIBREPLACE_LOCATION_CHECKS
-
-AC_DISABLE_STATIC
-AC_ENABLE_SHARED
-
-#################################################
-# Directory handling stuff to support both the
-# legacy SAMBA directories and FHS compliant
-# ones...
-AC_PREFIX_DEFAULT(/usr/local/samba)
-
-rootsbindir="\${SBINDIR}"
-lockdir="\${VARDIR}/locks"
-piddir="\${VARDIR}/locks"
-test "${mandir}" || mandir="\${prefix}/man"
-logfilebase="\${VARDIR}"
-privatedir="\${prefix}/private"
-test "${libdir}" || libdir="\${prefix}/lib"
-pammodulesdir="\${LIBDIR}/security"
-configdir="\${LIBDIR}"
-swatdir="\${prefix}/swat"
-codepagedir="\${LIBDIR}"
-statedir="\${LOCKDIR}"
-cachedir="\${LOCKDIR}"
-
-AC_ARG_WITH(fhs,
-[AS_HELP_STRING([--with-fhs],[Use FHS-compliant paths (default=no)])],
-[ case "$withval" in
-  yes)
-    lockdir="\${VARDIR}/lib/samba"
-    piddir="\${VARDIR}/run"
-    mandir="\${prefix}/share/man"
-    logfilebase="\${VARDIR}/log/samba"
-    privatedir="\${CONFIGDIR}/private"
-    test "${libdir}" || libdir="\${prefix}/lib/samba"
-    configdir="\${sysconfdir}/samba"
-    swatdir="\${DATADIR}/samba/swat"
-    codepagedir="\${LIBDIR}"
-    statedir="\${VARDIR}/lib/samba"
-    cachedir="\${VARDIR}/lib/samba"
-    AC_DEFINE(FHS_COMPATIBLE, 1, [Whether to use fully FHS-compatible paths])
-    ;;
-  esac])
-
-#################################################
-# set private directory location
-AC_ARG_WITH(privatedir,
-[AS_HELP_STRING([--with-privatedir=DIR], [Where to put smbpasswd ($ac_default_prefix/private)])],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody calls it without argument
-  #
-    AC_MSG_WARN([--with-privatedir called without argument - will use default])
-  ;;
-  * )
-    privatedir="$withval"
-    ;;
-  esac])
-
-#################################################
-# set root sbin directory location
-AC_ARG_WITH(rootsbindir,
-[AS_HELP_STRING([--with-rootsbindir=DIR], [Which directory to use for root sbin ($ac_default_prefix/sbin)])],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody calls it without argument
-  #
-    AC_MSG_WARN([--with-rootsbindir called without argument - will use default])
-  ;;
-  * )
-    rootsbindir="$withval"
-    ;;
-  esac])
-
-#################################################
-# set lock directory location
-AC_ARG_WITH(lockdir,
-[AS_HELP_STRING([--with-lockdir=DIR], [Where to put lock files ($ac_default_prefix/var/locks)])],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody calls it without argument
-  #
-    AC_MSG_WARN([--with-lockdir called without argument - will use default])
-  ;;
-  * )
-    lockdir="$withval"
-    ;;
-  esac])
-
-#################################################
-# set pid directory location
-AC_ARG_WITH(piddir,
-[AS_HELP_STRING([--with-piddir=DIR], [Where to put pid files ($ac_default_prefix/var/locks)])],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody calls it without argument
-  #
-    AC_MSG_WARN([--with-piddir called without argument - will use default])
-  ;;
-  * )
-    piddir="$withval"
-    ;;
-  esac])
-
-#################################################
-# set SWAT directory location
-AC_ARG_WITH(swatdir,
-[AS_HELP_STRING([--with-swatdir=DIR], [Where to put SWAT files ($ac_default_prefix/swat)])],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody does it
-  #
-    AC_MSG_WARN([--with-swatdir called without argument - will use default])
-  ;;
-  * )
-    swatdir="$withval"
-    ;;
-  esac])
-
-#################################################
-# set configuration directory location
-AC_ARG_WITH(configdir,
-[AS_HELP_STRING([--with-configdir=DIR], [Where to put configuration files ($libdir)])],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody does it
-  #
-    AC_MSG_WARN([--with-configdir called without argument - will use default])
-  ;;
-  * )
-    configdir="$withval"
-    ;;
-  esac])
-
-#################################################
-# set log directory location
-AC_ARG_WITH(logfilebase,
-[AS_HELP_STRING([--with-logfilebase=DIR], [Where to put log files ($VARDIR)])],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody does it
-  #
-    AC_MSG_WARN([--with-logfilebase called without argument - will use default])
-  ;;
-  * )
-    logfilebase="$withval"
-    ;;
-  esac])
-
-
-#################################################
-# set ctdb source directory location
-AC_ARG_WITH(ctdb,
-[AS_HELP_STRING([--with-ctdb=DIR], [Where to find ctdb sources])],
-[ case "$withval" in
-  yes|no)
-    AC_MSG_WARN([--with-ctdb called without argument])
-  ;;
-  * )
-    ctdbdir="$withval"
-    ;;
-  esac])
-
-#################################################
-# set lib directory location
-AC_ARG_WITH(libdir,
-[AS_HELP_STRING([--with-libdir=DIR], [Where to put libdir ($libdir)])],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody does it
-  #
-    AC_MSG_WARN([--with-libdir without argument - will use default])
-  ;;
-  * )
-    libdir="$withval"
-    ;;
-  esac])
-
-#################################################
-# set PAM modules directory location
-AC_ARG_WITH(pammodulesdir,
-[AS_HELP_STRING([--with-pammodulesdir=DIR], [Which directory to use for PAM modules ($ac_default_prefix/$libdir/security)])],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody calls it without argument
-  #
-    AC_MSG_WARN([--with-pammodulesdir called without argument - will use default])
-  ;;
-  * )
-    pammodulesdir="$withval"
-    ;;
-  esac])
-
-#################################################
-# set man directory location
-AC_ARG_WITH(mandir,
-[AS_HELP_STRING([--with-mandir=DIR], [Where to put man pages ($mandir)])],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody does it
-  #
-    AC_MSG_WARN([--with-mandir without argument - will use default])
-  ;;
-  * )
-    mandir="$withval"
-    ;;
-  esac])
-
-AC_ARG_WITH(cfenc,
-[AS_HELP_STRING([--with-cfenc=HEADERDIR], [Use internal CoreFoundation encoding API for optimization (Mac OS X/Darwin only)])],
-[
-# May be in source $withval/CoreFoundation/StringEncodings.subproj.
-# Should have been in framework $withval/CoreFoundation.framework/Headers.
-for d in \
-    $withval/CoreFoundation/StringEncodings.subproj \
-    $withval/StringEncodings.subproj \
-    $withval/CoreFoundation.framework/Headers \
-    $withval/Headers \
-    $withval
-do
-    if test -r $d/CFStringEncodingConverter.h; then
-        ln -sfh $d include/CoreFoundation
-    fi
-done
-])
+m4_include(m4/samba_version.m4)
+m4_include(m4/check_path.m4)
 
 AC_LIBREPLACE_CC_CHECKS
 
@@ -276,14 +27,30 @@ m4_include(lib/talloc/libtalloc.m4)
 
 TALLOC_OBJS=""
 for obj in ${TALLOC_OBJ}; do
-	TALLOC_OBJS="${TALLOCOBJS} ${tallocdir}/${obj}"
+	TALLOC_OBJS="${TALLOC_OBJS} ${tallocdir}/${obj}"
 done
 AC_SUBST(TALLOC_OBJS)
+
+# TODO: These should come from m4_include(lib/tdb/libtdb.m4)
+# but currently this fails: things have to get merged from s4.
+tdbdir="lib/tdb"
+AC_SUBST(tdbdir)
+TDB_CFLAGS="-I$tdbdir/include"
+AC_SUBST(TDB_CFLAGS)
+TDB_OBJ="common/tdb.o common/dump.o common/transaction.o common/error.o common/traverse.o"
+TDB_OBJ="$TDB_OBJ common/freelist.o common/freelistcheck.o common/io.o common/lock.o common/open.o"
+AC_SUBST(TDB_OBJ)
+
+TDB_OBJS=""
+for obj in ${TDB_OBJ}; do
+	TDB_OBJS="${TDB_OBJS} ${tdbdir}/${obj}"
+done
+AC_SUBST(TDB_OBJS)
 
 SAMBA_CPPFLAGS="-Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/lib/replace"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TALLOC_CFLAGS}"
-SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/lib/tdb/include"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TDB_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/libaddns"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/librpc"
 
@@ -293,21 +60,6 @@ SAMBA_CONFIGURE_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/popt"
 if test "x${srcdir-.}" != "x."; then
 	SAMBA_CPPFLAGS=`echo ${SAMBA_CPPFLAGS} | sed -e "s;${srcdir};\$\(srcdir\);g"`
 fi
-
-AC_SUBST(configdir)
-AC_SUBST(lockdir)
-AC_SUBST(piddir)
-AC_SUBST(logfilebase)
-AC_SUBST(ctdbdir)
-AC_SUBST(privatedir)
-AC_SUBST(swatdir)
-AC_SUBST(bindir)
-AC_SUBST(sbindir)
-AC_SUBST(codepagedir)
-AC_SUBST(statedir)
-AC_SUBST(cachedir)
-AC_SUBST(rootsbindir)
-AC_SUBST(pammodulesdir)
 
 dnl Unique-to-Samba variables we'll be playing with.
 AC_SUBST(SAMBA_CPPFLAGS)
@@ -331,12 +83,6 @@ AC_SUBST(UNINSTALL_LIBADDNS)
 AC_SUBST(LIBADDNS_SHARED)
 AC_SUBST(LIBADDNS)
 
-AC_SUBST(LIBTALLOC_STATIC_TARGET)
-AC_SUBST(LIBTALLOC_SHARED_TARGET)
-AC_SUBST(LIBTALLOC_SHARED)
-AC_SUBST(LIBTALLOC_STATIC)
-AC_SUBST(LIBTALLOC_LIBS)
-
 AC_SUBST(INSTALL_LIBWBCLIENT)
 AC_SUBST(UNINSTALL_LIBWBCLIENT)
 AC_SUBST(LIBWBCLIENT_SHARED)
@@ -354,10 +100,7 @@ AC_SUBST(INSTALL_LIBSMBSHAREMODES)
 AC_SUBST(UNINSTALL_LIBSMBSHAREMODES)
 AC_SUBST(LIBSMBSHAREMODES_SHARED)
 AC_SUBST(LIBSMBSHAREMODES)
-AC_SUBST(INSTALL_LIBNETAPI)
-AC_SUBST(UNINSTALL_LIBNETAPI)
-AC_SUBST(LIBNETAPI_SHARED)
-AC_SUBST(LIBNETAPI)
+
 AC_SUBST(PRINT_LIBS)
 AC_SUBST(AUTH_LIBS)
 AC_SUBST(ACL_LIBS)
@@ -366,12 +109,12 @@ AC_SUBST(IDMAP_LIBS)
 AC_SUBST(KRB5_LIBS)
 AC_SUBST(UUID_LIBS)
 AC_SUBST(LDAP_LIBS)
+AC_SUBST(GPEXT_LIBS)
 AC_SUBST(PAM_MODULES)
 AC_SUBST(INSTALL_PAM_MODULES)
 AC_SUBST(UNINSTALL_PAM_MODULES)
 AC_SUBST(NSS_MODULES)
 AC_SUBST(EXTRA_BIN_PROGS)
-AC_SUBST(SMBMOUNT_PROGS)
 AC_SUBST(CIFSMOUNT_PROGS)
 AC_SUBST(INSTALL_CIFSMOUNT)
 AC_SUBST(UNINSTALL_CIFSMOUNT)
@@ -383,14 +126,6 @@ AC_SUBST(EXTRA_ALL_TARGETS)
 AC_SUBST(CONFIG_LIBS)
 AC_SUBST(NSCD_LIBS)
 
-## check for --enable-debug first before checking CFLAGS before
-## so that we don't mix -O and -g
-AC_ARG_ENABLE(debug,
-[AS_HELP_STRING([--enable-debug], [Turn on compiler debugging information (default=no)])],
-    [if eval "test x$enable_debug = xyes"; then
-	CFLAGS="${CFLAGS} -g"
-    fi])
-
 # compile with optimization and without debugging by default, but
 # allow people to set their own preference.
 # do this here since AC_CACHE_CHECK apparently sets the CFLAGS to "-g -O2"
@@ -399,74 +134,18 @@ AC_ARG_ENABLE(debug,
 if test "x$CFLAGS" = x; then
   CFLAGS="-O"
 fi
+if test "x$debug" = "xyes" ; then
+	CFLAGS="${CFLAGS} -g"
+else
+	CFLAGS="-O"
+fi
 
 CFLAGS="${CFLAGS} -D_SAMBA_BUILD_=3"
 
 m4_include(lib/socket_wrapper/config.m4)
 m4_include(lib/nss_wrapper/config.m4)
 
-SWAT_SBIN_TARGETS='bin/swat$(EXEEXT)'
-SWAT_INSTALL_TARGETS=installswat
-
-AC_ARG_ENABLE(swat,
-[AS_HELP_STRING([--enable-swat], [Build the SWAT tool (default=yes)])],
-[
-    case "$enable_swat" in
-	no)
-	    SWAT_SBIN_TARGETS=''
-	    SWAT_INSTALL_TARGETS=''
-	    ;;
-    esac
-])
-
-AC_SUBST(SWAT_SBIN_TARGETS)
-AC_SUBST(SWAT_INSTALL_TARGETS)
-
-#################################################
-# set prefix for 'make test'
-selftest_prefix="./"
-AC_SUBST(selftest_prefix)
-AC_ARG_WITH(selftest-prefix,
-[AS_HELP_STRING([--with-selftest-prefix=DIR], [The prefix where make test will be run ($selftest_prefix)])],
-[ case "$withval" in
-  yes|no)
-    AC_MSG_WARN([--with-selftest-prefix called without argument - will use default])
-  ;;
-  * )
-    selftest_prefix="$withval"
-    ;;
-  esac
-])
-
-#################################################
-# set path of samba4's smbtorture
-smbtorture4_path=""
-AC_SUBST(smbtorture4_path)
-AC_ARG_WITH(smbtorture4_path,
-[AS_HELP_STRING([--with-smbtorture4-path=PATH], [The path to a samba4 smbtorture for make test (none)])],
-[ case "$withval" in
-  yes|no)
-    AC_MSG_ERROR([--with-smbtorture4-path should take a path])
-  ;;
-  * )
-    smbtorture4_path="$withval"
-    if test -z "$smbtorture4_path" -a ! -f $smbtorture4_path; then
-    	AC_MSG_ERROR(['$smbtorture_path' does not  exist!])
-    fi
-  ;;
- esac
-])
-
-AC_ARG_ENABLE(developer, [AS_HELP_STRING([--enable-developer], [Turn on developer warnings and debugging (default=no)])],
-    [if eval "test x$enable_developer = xyes"; then
-        developer=yes
-    fi])
-
-AC_ARG_ENABLE(krb5developer, [AS_HELP_STRING([--enable-krb5developer], [Turn on developer warnings and debugging, except -Wstrict-prototypes (default=no)])],
-    [if eval "test x$enable_krb5developer = xyes"; then
-        developer=yes
-	krb5_developer=yes
-    fi])
+m4_include(m4/swat.m4)
 
 # Probe the gcc version for extra CFLAGS. We always stash these in
 # DEVELOPER_CFLAGS, so that you can turn them on and off with a simple
@@ -720,10 +399,10 @@ AC_SUBST(DYNEXP)
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_winreg rpc_initshutdown rpc_dssetup rpc_wkssvc rpc_svcctl2 rpc_ntsvcs rpc_net rpc_netdfs rpc_srvsvc2 rpc_spoolss rpc_eventlog2 auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin vfs_default nss_info_template"
+default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsarpc rpc_samr rpc_winreg rpc_initshutdown rpc_dssetup rpc_wkssvc rpc_svcctl2 rpc_ntsvcs2 rpc_netlogon rpc_netdfs rpc_srvsvc2 rpc_spoolss rpc_eventlog2 auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin vfs_default nss_info_template"
 
 dnl These are preferably build shared, and static if dlopen() is not available
-default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 charset_CP850 charset_CP437 auth_script vfs_readahead vfs_syncops vfs_xattr_tdb vfs_streams_xattr"
+default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 charset_CP850 charset_CP437 auth_script vfs_readahead vfs_xattr_tdb vfs_streams_xattr"
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_rpcecho"
@@ -955,7 +634,12 @@ exit(1);
 
 esac
 
+SAVE_CPPFLAGS="${CPPFLAGS}"
+CPPFLAGS="${CPPFLAGS} ${SAMBA_CONFIGURE_CPPFLAGS}"
+
 AC_LIBREPLACE_BROKEN_CHECKS
+
+CPPFLAGS="${SAVE_CPPFLAGS}"
 
 LIBREPLACE_DIR=`echo ${libreplacedir} | sed -e "s;${srcdir};;" -e "s;^/;;"`
 
@@ -1057,13 +741,8 @@ AC_TYPE_SIZE_T
 AC_TYPE_PID_T
 AC_STRUCT_ST_RDEV
 AC_DIRENT_D_OFF
-AC_CHECK_TYPE(ino_t,unsigned)
-AC_CHECK_TYPE(loff_t,off_t)
-AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPE(ssize_t, int)
 AC_CHECK_TYPE(wchar_t, unsigned short)
-AC_CHECK_TYPE(comparison_fn_t,
-[AC_DEFINE(HAVE_COMPARISON_FN_T, 1,[Whether or not we have comparison_fn_t])])
 
 ############################################
 # for cups support we need libcups, and a handful of header files
@@ -1128,9 +807,59 @@ AC_CACHE_CHECK([for unix domain sockets],samba_cv_unixsocket, [
 ],
 	samba_cv_unixsocket=yes,samba_cv_unixsocket=no)])
 if test x"$samba_cv_unixsocket" = x"yes"; then
-   AC_DEFINE(HAVE_UNIXSOCKET,1,[If we need to build with unixscoket support])
+   AC_DEFINE(HAVE_UNIXSOCKET,1,[If we need to build with unixsocket support])
 fi
 
+#############################################
+# check for fd passing struct via msg_control
+AC_CACHE_CHECK([for fd passing via msg_control],samba_cv_msghdr_msg_control, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <sys/socket.h>
+#include <sys/un.h>],
+[
+	struct msghdr msg;
+	union {
+	      struct cmsghdr cm;
+	      char control[CMSG_SPACE(sizeof(int))];
+	} control_un;
+	msg.msg_control = control_un.control;
+	msg.msg_controllen = sizeof(control_un.control);
+],
+	samba_cv_msghdr_msg_control=yes,samba_cv_msghdr_msg_control=no)])
+if test x"$samba_cv_msghdr_msg_control" = x"yes"; then
+   AC_DEFINE(HAVE_MSGHDR_MSG_CONTROL,1,
+	     [If we can use msg_control for passing file descriptors])
+fi
+
+#############################################
+# check for fd passing struct via msg_acctrights
+AC_CACHE_CHECK([for fd passing via msg_acctrights],
+		samba_cv_msghdr_msg_acctrights, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <sys/socket.h>
+#include <sys/un.h>],
+[
+	struct msghdr msg;
+	int fd;
+	msg.msg_acctrights = (caddr_t) &fd;
+	msg.msg_acctrightslen = sizeof(fd);
+],
+	samba_cv_msghdr_msg_acctrights=yes,samba_cv_msghdr_msg_acctrights=no)])
+if test x"$samba_cv_msghdr_msg_acctrights" = x"yes"; then
+   AC_DEFINE(HAVE_MSGHDR_MSG_ACCTRIGHTS,1,
+	     [If we can use msg_acctrights for passing file descriptors])
+fi
+
+AC_CHECK_FUNCS(dirfd)
+if test x"$ac_cv_func_dirfd" = x"yes"; then
+	default_shared_modules="$default_shared_modules vfs_syncops"
+fi
 
 AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
     AC_TRY_COMPILE([
@@ -1172,10 +901,6 @@ fi
 AC_HAVE_DECL(errno, [#include <errno.h>])
 AC_HAVE_DECL(setresuid, [#include <unistd.h>])
 AC_HAVE_DECL(setresgid, [#include <unistd.h>])
-AC_HAVE_DECL(asprintf, [#include <stdio.h>])
-AC_HAVE_DECL(vasprintf, [#include <stdio.h>])
-AC_HAVE_DECL(vsnprintf, [#include <stdio.h>])
-AC_HAVE_DECL(snprintf, [#include <stdio.h>])
 
 # and glibc has setresuid under linux but the function does
 # nothing until kernel 2.1.44! very dumb.
@@ -1327,7 +1052,7 @@ AC_CHECK_FUNCS(waitpid getcwd strdup strndup strnlen strerror chown fchown lchow
 AC_CHECK_FUNCS(strtol strtoll strtoul strtoull strtouq __strtoull)
 AC_CHECK_FUNCS(fstat strchr utime utimes chflags)
 AC_CHECK_FUNCS(getrlimit fsync fdatasync memset strlcpy strlcat setpgid)
-AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid glob strpbrk pipe crypt16 getauthuid)
+AC_CHECK_FUNCS(memmove setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select poll rdchk getgrnam getgrent pathconf realpath)
 AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate chsize stat64 fstat64)
@@ -1757,6 +1482,9 @@ case "$host_os" in
     ;;
 esac
 
+AC_DISABLE_STATIC
+AC_ENABLE_SHARED
+
 # Set defaults
 PIE_CFLAGS=""
 PIE_LDFLAGS=""
@@ -1880,7 +1608,7 @@ DSO_EXPORTS=""
 			;;
 		*aix*) AC_DEFINE(AIX,1,[Whether the host os is aix])
 			BLDSHARED="true"
-			LDSHFLAGS="-Wl,-G,-bexpall,-bbigtoc"
+			LDSHFLAGS="-Wl,-G,-bexpfull,-bbigtoc"
 			DYNEXP="-Wl,-brtl,-bexpfull,-bbigtoc"
 			PICFLAG="-O2"
 			# as AIX code is always position independent...
@@ -1971,7 +1699,9 @@ DSO_EXPORTS=""
 
 		*darwin*)   AC_DEFINE(DARWINOS,1,[Whether the host os is Darwin/MacOSX])
 			BLDSHARED="true"
-			LDSHFLAGS="-bundle -flat_namespace -undefined suppress"
+			LDSHFLAGS="-dynamiclib -flat_namespace -undefined suppress"
+			CFLAGS="$CFLAGS -fno-common"
+			SHLD="\${CC}"
 			SHLIBEXT="dylib"
                         MODULE_EXPORTS="-exported_symbols_list \$(srcdir)/exports/modules-darwin.syms"
                         SHLIBEXT="dylib"
@@ -1994,6 +1724,10 @@ fi
 
 if test "$enable_shared" = yes -a "${ac_cv_gnu_ld_version_script}" = yes; then
 	DSO_EXPORTS=\$\(DSO_EXPORTS_CMD\)
+fi
+
+if test x"$BLDSHARED" = x"true" ; then
+	LDFLAGS="$LDFLAGS -L./bin"
 fi
 
 AC_MSG_RESULT($BLDSHARED)
@@ -2286,54 +2020,6 @@ if test x"$samba_cv_WITH_PROFILE" = x"yes"; then
 			    SMB_CHECK_CLOCK_ID(CLOCK_REALTIME)
 			])
 
-fi
-
-AC_CACHE_CHECK([for va_copy],samba_cv_HAVE_VA_COPY,[
-AC_TRY_LINK([#include <stdarg.h>
-va_list ap1,ap2;], [va_copy(ap1,ap2);],
-samba_cv_HAVE_VA_COPY=yes,
-samba_cv_HAVE_VA_COPY=no)])
-if test x"$samba_cv_HAVE_VA_COPY" = x"yes"; then
-    AC_DEFINE(HAVE_VA_COPY,1,[Whether va_copy() is available])
-else
-    AC_CACHE_CHECK([for __va_copy],samba_cv_HAVE___VA_COPY,[
-    AC_TRY_LINK([#include <stdarg.h>
-    va_list ap1,ap2;], [__va_copy(ap1,ap2);],
-    samba_cv_HAVE___VA_COPY=yes,
-    samba_cv_HAVE___VA_COPY=no)])
-    if test x"$samba_cv_HAVE___VA_COPY" = x"yes"; then
-        AC_DEFINE(HAVE___VA_COPY,1,[Whether __va_copy() is available])
-    fi
-fi
-
-AC_CACHE_CHECK([for C99 vsnprintf],samba_cv_HAVE_C99_VSNPRINTF,[
-AC_TRY_RUN([
-#include <sys/types.h>
-#include <stdarg.h>
-void foo(const char *format, ...) {
-       va_list ap;
-       int len;
-       char buf[5];
-
-       va_start(ap, format);
-       len = vsnprintf(buf, 0, format, ap);
-       va_end(ap);
-       if (len != 5) exit(1);
-
-       va_start(ap, format);
-       len = vsnprintf(0, 0, format, ap);
-       va_end(ap);
-       if (len != 5) exit(1);
-
-       if (snprintf(buf, 3, "hello") != 5 || strcmp(buf, "he") != 0) exit(1);
-
-       exit(0);
-}
-main() { foo("hello"); }
-],
-samba_cv_HAVE_C99_VSNPRINTF=yes,samba_cv_HAVE_C99_VSNPRINTF=no,samba_cv_HAVE_C99_VSNPRINTF=cross)])
-if test x"$samba_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
-    AC_DEFINE(HAVE_C99_VSNPRINTF,1,[Whether there is a C99 compliant vsnprintf])
 fi
 
 AC_CACHE_CHECK([for broken readdir name],samba_cv_HAVE_BROKEN_READDIR_NAME,[
@@ -2711,7 +2397,7 @@ fi
 
 AC_CACHE_CHECK([for inotify support],samba_cv_HAVE_INOTIFY,[
 AC_CHECK_HEADERS(linux/inotify.h asm/unistd.h)
-AC_CHECK_FUNC(inotify_init)
+AC_CHECK_FUNCS(inotify_init)
 AC_HAVE_DECL(__NR_inotify_init, [#include <asm/unistd.h>])
 ],
 samba_cv_HAVE_INOTIFY=yes,
@@ -2946,147 +2632,11 @@ if test x"$samba_cv_HAVE_BROKEN_GETGROUPS" = x"yes"; then
     AC_DEFINE(HAVE_BROKEN_GETGROUPS,1,[Whether getgroups is broken])
 fi
 
-AC_CACHE_CHECK([for secure mkstemp],samba_cv_HAVE_SECURE_MKSTEMP,[
-AC_TRY_RUN([#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-main() {
-  struct stat st;
-  char tpl[20]="/tmp/test.XXXXXX";
-  int fd = mkstemp(tpl);
-  if (fd == -1) exit(1);
-  unlink(tpl);
-  if (fstat(fd, &st) != 0) exit(1);
-  if ((st.st_mode & 0777) != 0600) exit(1);
-  exit(0);
-}],
-samba_cv_HAVE_SECURE_MKSTEMP=yes,
-samba_cv_HAVE_SECURE_MKSTEMP=no,
-samba_cv_HAVE_SECURE_MKSTEMP=cross)])
-if test x"$samba_cv_HAVE_SECURE_MKSTEMP" = x"yes"; then
-    AC_DEFINE(HAVE_SECURE_MKSTEMP,1,[Whether mkstemp is secure])
-fi
-
-AC_CACHE_CHECK([for broken readdir],samba_cv_HAVE_BROKEN_READDIR,[
-	AC_TRY_RUN([#include "${srcdir-.}/tests/os2_delete.c"],
-		[samba_cv_HAVE_BROKEN_READDIR=no],
-			[samba_cv_HAVE_BROKEN_READDIR=yes],
-			[samba_cv_HAVE_BROKEN_READDIR="assuming not"])])
-
-if test x"$samba_cv_HAVE_BROKEN_READDIR" = x"yes"; then
-AC_CACHE_CHECK([for replacing readdir],samba_cv_REPLACE_READDIR,[
-	AC_TRY_RUN([
-#include "${srcdir-.}/lib/repdir.c"
-#include "${srcdir-.}/tests/os2_delete.c"],
-	samba_cv_REPLACE_READDIR=yes,samba_cv_REPLACE_READDIR=no)])
-fi
-
-if test x"$samba_cv_REPLACE_READDIR" = x"yes"; then
-	AC_DEFINE(REPLACE_READDIR,1,[replace readdir])
-fi
-
 SMB_CHECK_SYSCONF(_SC_NGROUPS_MAX)
 SMB_CHECK_SYSCONF(_SC_NPROC_ONLN)
 SMB_CHECK_SYSCONF(_SC_NPROCESSORS_ONLN)
 SMB_CHECK_SYSCONF(_SC_PAGESIZE)
 AC_CHECK_FUNCS(getpagesize)
-
-dnl test for getifaddrs and freeifaddrs
-AC_CACHE_CHECK([for getifaddrs and freeifaddrs],samba_cv_HAVE_GETIFADDRS,[
-AC_TRY_COMPILE([
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <ifaddrs.h>
-#include <netdb.h>],
-[
-struct ifaddrs *ifp = NULL;
-int ret = getifaddrs (&ifp);
-freeifaddrs(ifp);
-],
-samba_cv_HAVE_GETIFADDRS=yes,samba_cv_HAVE_GETIFADDRS=no)])
-if test x"$samba_cv_HAVE_GETIFADDRS" = x"yes"; then
-    AC_DEFINE(HAVE_GETIFADDRS,1,[Whether the system has getifaddrs])
-    AC_DEFINE(HAVE_FREEIFADDRS,1,[Whether the system has freeifaddrs])
-fi
-
-##################
-# look for a method of finding the list of network interfaces
-iface=no;
-AC_CACHE_CHECK([for iface getifaddrs],samba_cv_HAVE_IFACE_GETIFADDRS,[
-SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
-AC_TRY_RUN([
-#define NO_CONFIG_H 1
-#define HAVE_IFACE_GETIFADDRS 1
-#define AUTOCONF_TEST 1
-#include "${srcdir-.}/lib/replace/replace.c"
-#include "${srcdir-.}/lib/interfaces.c"],
-           samba_cv_HAVE_IFACE_GETIFADDRS=yes,samba_cv_HAVE_IFACE_GETIFADDRS=no,samba_cv_HAVE_IFACE_GETIFADDRS=cross)])
-CPPFLAGS="$SAVE_CPPFLAGS"
-if test x"$samba_cv_HAVE_IFACE_GETIFADDRS" = x"yes"; then
-    iface=yes;AC_DEFINE(HAVE_IFACE_GETIFADDRS,1,[Whether iface getifaddrs is available])
-fi
-
-if test $iface = no; then
-AC_CACHE_CHECK([for iface ifconf],samba_cv_HAVE_IFACE_IFCONF,[
-SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
-AC_TRY_RUN([
-#define NO_CONFIG_H 1
-#define HAVE_IFACE_IFCONF 1
-#define AUTOCONF_TEST 1
-#define SOCKET_WRAPPER_NOT_REPLACE
-#include "${srcdir-.}/lib/replace/replace.c"
-#include "${srcdir-.}/lib/interfaces.c"],
-           samba_cv_HAVE_IFACE_IFCONF=yes,samba_cv_HAVE_IFACE_IFCONF=no,samba_cv_HAVE_IFACE_IFCONF=cross)])
-CPPFLAGS="$SAVE_CPPFLAGS"
-if test x"$samba_cv_HAVE_IFACE_IFCONF" = x"yes"; then
-    iface=yes;AC_DEFINE(HAVE_IFACE_IFCONF,1,[Whether iface ifconf is available])
-fi
-fi
-
-if test $iface = no; then
-AC_CACHE_CHECK([for iface ifreq],samba_cv_HAVE_IFACE_IFREQ,[
-SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
-AC_TRY_RUN([
-#define NO_CONFIG_H 1
-#define HAVE_IFACE_IFREQ 1
-#define AUTOCONF_TEST 1
-#define SOCKET_WRAPPER_NOT_REPLACE
-#include "${srcdir-.}/lib/replace/replace.c"
-#include "${srcdir-.}/lib/replace/getaddrinfo.c"
-#include "${srcdir-.}/lib/replace/snprintf.c"
-#include "${srcdir-.}/lib/interfaces.c"],
-           samba_cv_HAVE_IFACE_IFREQ=yes,samba_cv_HAVE_IFACE_IFREQ=no,samba_cv_HAVE_IFACE_IFREQ=cross)])
-CPPFLAGS="$SAVE_CPPFLAGS"
-if test x"$samba_cv_HAVE_IFACE_IFREQ" = x"yes"; then
-    iface=yes;AC_DEFINE(HAVE_IFACE_IFREQ,1,[Whether iface ifreq is available])
-fi
-fi
-
-if test $iface = no; then
-AC_CACHE_CHECK([for iface AIX],samba_cv_HAVE_IFACE_AIX,[
-SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
-AC_TRY_RUN([
-#define NO_CONFIG_H 1
-#define HAVE_IFACE_AIX 1
-#define AUTOCONF_TEST 1
-#undef _XOPEN_SOURCE_EXTENDED
-#define SOCKET_WRAPPER_NOT_REPLACE
-#include "${srcdir-.}/lib/replace/replace.c"
-#include "${srcdir-.}/lib/replace/snprintf.c"
-#include "${srcdir-.}/lib/interfaces.c"],
-           samba_cv_HAVE_IFACE_AIX=yes,samba_cv_HAVE_IFACE_AIX=no,samba_cv_HAVE_IFACE_AIX=cross)])
-CPPFLAGS="$SAVE_CPPFLAGS"
-if test x"$samba_cv_HAVE_IFACE_AIX" = x"yes"; then
-    iface=yes;AC_DEFINE(HAVE_IFACE_AIX,1,[Whether iface AIX is available])
-fi
-fi
 
 dnl test for ipv6
 AC_CACHE_CHECK([for ipv6 support],samba_cv_HAVE_IPV6,[
@@ -3181,13 +2731,6 @@ AC_CACHE_CHECK([for the Darwin initgroups system call],
 if test x"$samba_cv_DARWIN_INITGROUPS" = x"yes" ; then
     AC_DEFINE(HAVE_DARWIN_INITGROUPS, 1,
 	[Whether to use the Darwin-specific initgroups system call])
-fi
-
-AC_CACHE_CHECK([for working mmap],samba_cv_HAVE_MMAP,[
-AC_TRY_RUN([#include "${srcdir-.}/tests/shared_mmap.c"],
-           samba_cv_HAVE_MMAP=yes,samba_cv_HAVE_MMAP=no,samba_cv_HAVE_MMAP=cross)])
-if test x"$samba_cv_HAVE_MMAP" = x"yes"; then
-    AC_DEFINE(HAVE_MMAP,1,[Whether mmap works])
 fi
 
 AC_CACHE_CHECK([for fcntl locking],samba_cv_HAVE_FCNTL_LOCK,[
@@ -4480,31 +4023,6 @@ AC_ARG_WITH(automount,
 )
 
 #################################################
-# check for smbmount support
-AC_MSG_CHECKING(whether to use smbmount)
-AC_ARG_WITH(smbmount,
-[AS_HELP_STRING([--with-smbmount], [Include smbmount (Linux only) support (default=no)])],
-[ case "$withval" in
-  yes)
-	case "$host_os" in
-	*linux*)
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(WITH_SMBMOUNT,1,[Whether to build smbmount])
-		SMBMOUNT_PROGS="bin/smbmount bin/smbmnt bin/smbumount"
-		;;
-	*)
-		AC_MSG_ERROR(not on a linux system!)
-		;;
-	esac
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
-#################################################
 # check for mount- and umount.cifs support
 CIFSMOUNT_PROGS=""
 INSTALL_CIFSMOUNT=""
@@ -5127,6 +4645,31 @@ if test $enable_static = yes; then
 fi
 
 #################################################
+# --disable-shared-libs
+# can be used to disable the internal use of shared libs altogether
+# (this only has an effect when building shared libs is enabled)
+#
+USESHARED=false
+AC_SUBST(USESHARED)
+
+AC_MSG_CHECKING(whether to use shared libraries internally)
+AC_ARG_ENABLE([shared-libs],
+	AS_HELP_STRING([--enable-shared-libs],
+		[Use shared libraries internally (default=yes)]),
+	[enable_shared_libs=$enableval],
+	[enable_shared_libs=yes])
+
+if test x"$enable_shared_libs" != x"no" ; then
+	USESHARED=$BLDSHARED
+fi
+
+AC_MSG_RESULT([$USESHARED])
+
+if test x"$enable_shared_libs" = x"yes" -a x"$BLDSHARED" != x"true" ; then
+	AC_MSG_WARN([--enable-shared-libs: no support for shared libraries])
+fi
+
+#################################################
 # --with-static-libs=LIBS:
 #   link (internal) libs dynamically or statically?
 #
@@ -5139,7 +4682,7 @@ fi
 #   appears in the --with-static-libs configure option.
 #
 # Example:
-#   --with-static-libs=talloc makes use of libtalloc.a instead
+#   --with-static-libs=libtalloc makes use of libtalloc.a instead
 #   of linking the dynamic variant with -ltalloc.
 #
 # NOTE: This option only affects libraries that we do not only build
@@ -5154,99 +4697,15 @@ AC_ARG_WITH([static-libs],
 	[AS_IF([test $withval],
 		[for lib in `echo $withval | sed -e 's/,/ /g'` ; do
 			[lib=`echo $lib | tr '[a-z]' '[A-Z]'`]
-			eval LIB_$lib=STATIC
+			eval LINK_$lib=STATIC
 		done], [])],
 	[])
 
-#################################################
-# should we build libtalloc?
-LIBTALLOC_SHARED_TARGET=bin/libtalloc.$SHLIBEXT
-LIBTALLOC_STATIC_TARGET=bin/libtalloc.a
-LIBTALLOC_SHARED=
-LIBTALLOC_STATIC=
-LIBTALLOC_LIBS=
 
-AC_MSG_CHECKING(whether to build the libtalloc shared library)
-AC_ARG_WITH(libtalloc,
-[AS_HELP_STRING([--with-libtalloc],
-	[Build the libtalloc shared library (default=yes if shared libs supported)])],
-[
-case "$withval" in
-	*)
-		AC_MSG_RESULT(no)
-		;;
-	yes)
-		samba_cv_with_libtalloc=yes
-		;;
-esac
-],
-[
-# if unspecified, default is to build it if possible.
-samba_cv_with_libtalloc=yes
-]
-)
+SMB_LIBRARY(talloc)
+SMB_LIBRARY(tdb)
+SMB_LIBRARY(netapi)
 
-if test x"$samba_cv_with_libtalloc" = "xyes" -a $BLDSHARED = true; then
-	LIBTALLOC_SHARED=$LIBTALLOC_SHARED_TARGET
-	AC_MSG_RESULT(yes)
-	if test x"$LIB_TALLOC" = "xSTATIC" ; then
-		LIBTALLOC_STATIC=$LIBTALLOC_STATIC_TARGET
-	else
-		LIBTALLOC_LIBS=-ltalloc
-	fi
-else
-	enable_static=yes
-	AC_MSG_RESULT(no shared library support -- will supply static library)
-fi
-if test $enable_static = yes; then
-	LIBTALLOC_STATIC=$LIBTALLOC_STATIC_TARGET
-fi
-
-
-#################################################
-# should we build libnetapi?
-INSTALL_LIBNETAPI=
-UNINSTALL_LIBNETAPI=
-LIBNETAPI_SHARED=
-LIBNETAPI=
-AC_MSG_CHECKING(whether to build the libnetapi shared library)
-AC_ARG_WITH(libnetapi,
-[AS_HELP_STRING([--with-libnetapi], [Build the libnetapi shared library (default=yes if shared libs supported)])],
-[ case "$withval" in
-  *)
-     AC_MSG_RESULT(no)
-     ;;
-  yes)
-     if test $BLDSHARED = true; then
-        LIBNETAPI_SHARED=bin/libnetapi.$SHLIBEXT
-        LIBNETAPI=libnetapi
-        AC_MSG_RESULT(yes)
-     else
-	enable_static=yes
-        AC_MSG_RESULT(no shared library support -- will supply static library)
-     fi
-     if test $enable_static = yes; then
-        LIBNETAPI=libnetapi
-     fi
-     INSTALL_LIBNETAPI=installlibnetapi
-     UNINSTALL_LIBNETAPI=uninstalllibnetapi
-     ;;
-  esac ],
-[
-# if unspecified, default is to build it if possible.
-  if test $BLDSHARED = true; then
-     LIBNETAPI_SHARED=bin/libnetapi.$SHLIBEXT
-     LIBNETAPI=libnetapi
-     AC_MSG_RESULT(yes)
-   else
-     enable_static=yes
-     AC_MSG_RESULT(no shared library support -- will supply static library)
-   fi
-   if test $enable_static = yes; then
-     LIBNETAPI=libnetapi
-  fi]
-  INSTALL_LIBNETAPI=installlibnetapi
-)
 
 #################################################
 # should we build libaddns?
@@ -6267,13 +5726,11 @@ if test x"$HAVE_WINBIND" = x"no"; then
 	WINBIND_WINS_NSS=""
 fi
 
-BUILD_LIBWBCLIENT_SHARED=yes
-
-AC_ARG_ENABLE(libwbclient-shared,
-[AS_HELP_STRING([--enable-libwbclient-shared], [Build libwbclient as shared object (default=yes, \"no\" only for --enable-developer)])],
-	[if eval "test x$enable_developer = xyes -a x$enable_libwbclient_shared = xno" ; then
-		BUILD_LIBWBCLIENT_SHARED=no
-	fi])
+if test x"$enable_developer" = x"yes" -a x"$LINK_LIBWBCLIENT" = x"STATIC" ; then
+	BUILD_LIBWBCLIENT_SHARED=no
+else
+	BUILD_LIBWBCLIENT_SHARED=yes
+fi
 
 if test $BLDSHARED = true -a x"$HAVE_WINBIND" = x"yes" -a x"$BUILD_LIBWBCLIENT_SHARED" = x"yes"; then
 	NSS_MODULES="${WINBIND_NSS} ${WINBIND_WINS_NSS}"
@@ -6284,7 +5741,6 @@ if test $BLDSHARED = true -a x"$HAVE_WINBIND" = x"yes" -a x"$BUILD_LIBWBCLIENT_S
 	INSTALL_LIBWBCLIENT=installlibwbclient
 	UNINSTALL_LIBWBCLIENT=uninstalllibwbclient
 	WINBIND_LIBS="-lwbclient"
-	LDFLAGS="$LDFLAGS -L./bin"
 else
 	LIBWBCLIENT_STATIC=bin/libwbclient.a
 fi
@@ -6540,14 +5996,14 @@ SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
 SMB_SUBSYSTEM(PDB,passdb/pdb_interface.o)
 
 
-SMB_MODULE(rpc_lsa, \$(RPC_LSA_OBJ), "bin/librpc_lsarpc.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_lsarpc, \$(RPC_LSA_OBJ), "bin/librpc_lsarpc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_winreg, \$(RPC_REG_OBJ), "bin/librpc_winreg.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_initshutdown, \$(RPC_INITSHUTDOWN_OBJ), "bin/librpc_initshutdown.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_dssetup, \$(RPC_DSSETUP_OBJ), "bin/librpc_dssetup.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_wkssvc, \$(RPC_WKS_OBJ), "bin/librpc_wkssvc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_svcctl2, \$(RPC_SVCCTL_OBJ), "bin/librpc_svcctl2.$SHLIBEXT", RPC)
-SMB_MODULE(rpc_ntsvcs, \$(RPC_NTSVCS_OBJ), "bin/librpc_ntsvcs.$SHLIBEXT", RPC)
-SMB_MODULE(rpc_net, \$(RPC_NETLOG_OBJ), "bin/librpc_NETLOGON.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_ntsvcs2, \$(RPC_NTSVCS_OBJ), "bin/librpc_ntsvcs2.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_netlogon, \$(RPC_NETLOG_OBJ), "bin/librpc_NETLOGON.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_netdfs, \$(RPC_DFS_OBJ), "bin/librpc_netdfs.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_srvsvc2, \$(RPC_SVC_OBJ), "bin/librpc_svcsvc2.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_spoolss, \$(RPC_SPOOLSS_OBJ), "bin/librpc_spoolss.$SHLIBEXT", RPC)
@@ -6615,12 +6071,16 @@ SMB_MODULE(vfs_gpfs, \$(VFS_GPFS_OBJ), "bin/gpfs.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_readahead, \$(VFS_READAHEAD_OBJ), "bin/readahead.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_tsmsm, \$(VFS_TSMSM_OBJ), "bin/tsmsm.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_fileid, \$(VFS_FILEID_OBJ), "bin/fileid.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_aio_fork, \$(VFS_AIO_FORK_OBJ), "bin/aio_fork.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_syncops, \$(VFS_SYNCOPS_OBJ), "bin/syncops.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_zfsacl, \$(VFS_ZFSACL_OBJ), "bin/zfsacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_notify_fam, \$(VFS_NOTIFY_FAM_OBJ), "bin/notify_fam.$SHLIBEXT", VFS)
 
 
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
+
+SMB_MODULE(gpext_registry, libgpo/gpext/registry.o, "bin/registry.$SHLIBEXT", GPEXT)
+SMB_SUBSYSTEM(GPEXT, libgpo/gpext/gpext.o)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
 
@@ -6756,9 +6216,6 @@ AC_SUBST(DEVELOPER_CFLAGS)
 if test x"$krb5_developer" = x"yes" -o x"$developer" = x"yes"; then
     CFLAGS="${CFLAGS} \$(DEVELOPER_CFLAGS)"
 fi
-
-builddir=`pwd`
-AC_SUBST(builddir)
 
 # Stuff the smbd-only libraries at the end of the smbd link
 # path (if we have them).

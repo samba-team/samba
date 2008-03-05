@@ -35,6 +35,8 @@ void *rep_dlopen(const char *name, int flags)
 #endif
 {
 #ifdef HAVE_SHL_LOAD
+	if (name == NULL)
+		return PROG_HANDLE;
 	return (void *)shl_load(name, flags, 0);
 #else
 	return NULL;

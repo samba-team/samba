@@ -315,8 +315,7 @@ _PUBLIC_ void ndr_print_netr_AcctLockStr(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		for (cntr_bindata_1=0;cntr_bindata_1<r->length / 2;cntr_bindata_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_bindata_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_bindata_1) != -1) {
 				ndr_print_uint16(ndr, "bindata", r->bindata[cntr_bindata_1]);
 				free(idx_1);
 			}
@@ -1111,8 +1110,7 @@ _PUBLIC_ void ndr_print_netr_SamBaseInfo(struct ndr_print *ndr, const char *name
 	ndr->depth++;
 	for (cntr_unknown_0=0;cntr_unknown_0<7;cntr_unknown_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_unknown_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_unknown_0) != -1) {
 			ndr_print_uint32(ndr, "unknown", r->unknown[cntr_unknown_0]);
 			free(idx_0);
 		}
@@ -1287,8 +1285,7 @@ _PUBLIC_ void ndr_print_netr_SamInfo3(struct ndr_print *ndr, const char *name, c
 		ndr->depth++;
 		for (cntr_sids_1=0;cntr_sids_1<r->sidcount;cntr_sids_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_sids_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_sids_1) != -1) {
 				ndr_print_netr_SidAttr(ndr, "sids", &r->sids[cntr_sids_1]);
 				free(idx_1);
 			}
@@ -1396,8 +1393,7 @@ _PUBLIC_ void ndr_print_netr_SamInfo6(struct ndr_print *ndr, const char *name, c
 		ndr->depth++;
 		for (cntr_sids_1=0;cntr_sids_1<r->sidcount;cntr_sids_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_sids_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_sids_1) != -1) {
 				ndr_print_netr_SidAttr(ndr, "sids", &r->sids[cntr_sids_1]);
 				free(idx_1);
 			}
@@ -1411,8 +1407,7 @@ _PUBLIC_ void ndr_print_netr_SamInfo6(struct ndr_print *ndr, const char *name, c
 	ndr->depth++;
 	for (cntr_unknown4_0=0;cntr_unknown4_0<20;cntr_unknown4_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_unknown4_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_unknown4_0) != -1) {
 			ndr_print_uint32(ndr, "unknown4", r->unknown4[cntr_unknown4_0]);
 			free(idx_0);
 		}
@@ -1558,8 +1553,7 @@ _PUBLIC_ void ndr_print_netr_PacInfo(struct ndr_print *ndr, const char *name, co
 	ndr->depth++;
 	for (cntr_expansionroom_0=0;cntr_expansionroom_0<10;cntr_expansionroom_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_expansionroom_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_expansionroom_0) != -1) {
 			ndr_print_uint32(ndr, "expansionroom", r->expansionroom[cntr_expansionroom_0]);
 			free(idx_0);
 		}
@@ -2810,8 +2804,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_GROUP_MEMBER(struct ndr_print *ndr, const cha
 		ndr->depth++;
 		for (cntr_rids_1=0;cntr_rids_1<r->num_rids;cntr_rids_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_rids_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_rids_1) != -1) {
 				ndr_print_uint32(ndr, "rids", r->rids[cntr_rids_1]);
 				free(idx_1);
 			}
@@ -2826,8 +2819,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_GROUP_MEMBER(struct ndr_print *ndr, const cha
 		ndr->depth++;
 		for (cntr_attribs_1=0;cntr_attribs_1<r->num_rids;cntr_attribs_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_attribs_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_attribs_1) != -1) {
 				ndr_print_uint32(ndr, "attribs", r->attribs[cntr_attribs_1]);
 				free(idx_1);
 			}
@@ -3143,8 +3135,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_POLICY(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		for (cntr_eventauditoptions_1=0;cntr_eventauditoptions_1<r->maxauditeventcount + 1;cntr_eventauditoptions_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_eventauditoptions_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_eventauditoptions_1) != -1) {
 				ndr_print_uint32(ndr, "eventauditoptions", r->eventauditoptions[cntr_eventauditoptions_1]);
 				free(idx_1);
 			}
@@ -3285,8 +3276,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_TRUSTED_DOMAIN(struct ndr_print *ndr, const c
 		ndr->depth++;
 		for (cntr_controller_names_1=0;cntr_controller_names_1<r->num_controllers;cntr_controller_names_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_controller_names_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_controller_names_1) != -1) {
 				ndr_print_lsa_String(ndr, "controller_names", &r->controller_names[cntr_controller_names_1]);
 				free(idx_1);
 			}
@@ -3484,8 +3474,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_ACCOUNT(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		for (cntr_privilege_attrib_1=0;cntr_privilege_attrib_1<r->privilege_entries;cntr_privilege_attrib_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_privilege_attrib_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_privilege_attrib_1) != -1) {
 				ndr_print_uint32(ndr, "privilege_attrib", r->privilege_attrib[cntr_privilege_attrib_1]);
 				free(idx_1);
 			}
@@ -3500,8 +3489,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_ACCOUNT(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		for (cntr_privilege_name_1=0;cntr_privilege_name_1<r->privilege_entries;cntr_privilege_name_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_privilege_name_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_privilege_name_1) != -1) {
 				ndr_print_lsa_String(ndr, "privilege_name", &r->privilege_name[cntr_privilege_name_1]);
 				free(idx_1);
 			}
@@ -5291,8 +5279,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_ENUM_ARRAY(struct ndr_print *ndr, const char 
 		ndr->depth++;
 		for (cntr_delta_enum_1=0;cntr_delta_enum_1<r->num_deltas;cntr_delta_enum_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_delta_enum_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_delta_enum_1) != -1) {
 				ndr_print_netr_DELTA_ENUM(ndr, "delta_enum", &r->delta_enum[cntr_delta_enum_1]);
 				free(idx_1);
 			}
@@ -5714,6 +5701,7 @@ _PUBLIC_ void ndr_print_netr_LogonControlCode(struct ndr_print *ndr, const char 
 	const char *val = NULL;
 
 	switch (r) {
+		case NETLOGON_CONTROL_SYNC: val = "NETLOGON_CONTROL_SYNC"; break;
 		case NETLOGON_CONTROL_REDISCOVER: val = "NETLOGON_CONTROL_REDISCOVER"; break;
 		case NETLOGON_CONTROL_TC_QUERY: val = "NETLOGON_CONTROL_TC_QUERY"; break;
 		case NETLOGON_CONTROL_TRANSPORT_NOTIFY: val = "NETLOGON_CONTROL_TRANSPORT_NOTIFY"; break;
@@ -6428,8 +6416,7 @@ _PUBLIC_ void ndr_print_netr_BinaryString(struct ndr_print *ndr, const char *nam
 			ndr->depth++;
 			for (cntr_data_1=0;cntr_data_1<r->length / 2;cntr_data_1++) {
 				char *idx_1=NULL;
-				asprintf(&idx_1, "[%d]", cntr_data_1);
-				if (idx_1) {
+				if (asprintf(&idx_1, "[%d]", cntr_data_1) != -1) {
 					ndr_print_uint16(ndr, "data", r->data[cntr_data_1]);
 					free(idx_1);
 				}
@@ -6702,8 +6689,7 @@ _PUBLIC_ void ndr_print_netr_DomainQuery1(struct ndr_print *ndr, const char *nam
 	ndr->depth++;
 	for (cntr_unknown7_0=0;cntr_unknown7_0<4;cntr_unknown7_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_unknown7_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_unknown7_0) != -1) {
 			ndr_print_uint32(ndr, "unknown7", r->unknown7[cntr_unknown7_0]);
 			free(idx_0);
 		}
@@ -6940,8 +6926,7 @@ _PUBLIC_ void ndr_print_netr_DomainTrustInfo(struct ndr_print *ndr, const char *
 	ndr->depth++;
 	for (cntr_unknown1_0=0;cntr_unknown1_0<4;cntr_unknown1_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_unknown1_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_unknown1_0) != -1) {
 			ndr_print_netr_BinaryString(ndr, "unknown1", &r->unknown1[cntr_unknown1_0]);
 			free(idx_0);
 		}
@@ -6951,8 +6936,7 @@ _PUBLIC_ void ndr_print_netr_DomainTrustInfo(struct ndr_print *ndr, const char *
 	ndr->depth++;
 	for (cntr_unknown_0=0;cntr_unknown_0<4;cntr_unknown_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_unknown_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_unknown_0) != -1) {
 			ndr_print_uint32(ndr, "unknown", r->unknown[cntr_unknown_0]);
 			free(idx_0);
 		}
@@ -7050,8 +7034,7 @@ _PUBLIC_ void ndr_print_netr_DomainInfo1(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		for (cntr_trusts_1=0;cntr_trusts_1<r->num_trusts;cntr_trusts_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_trusts_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_trusts_1) != -1) {
 				ndr_print_netr_DomainTrustInfo(ndr, "trusts", &r->trusts[cntr_trusts_1]);
 				free(idx_1);
 			}
@@ -7063,8 +7046,7 @@ _PUBLIC_ void ndr_print_netr_DomainInfo1(struct ndr_print *ndr, const char *name
 	ndr->depth++;
 	for (cntr_unknown_0=0;cntr_unknown_0<14;cntr_unknown_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_unknown_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_unknown_0) != -1) {
 			ndr_print_uint32(ndr, "unknown", r->unknown[cntr_unknown_0]);
 			free(idx_0);
 		}
@@ -7328,8 +7310,7 @@ _PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesWCtr(struct ndr_print *ndr, co
 		ndr->depth++;
 		for (cntr_sitename_1=0;cntr_sitename_1<r->count;cntr_sitename_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_sitename_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_sitename_1) != -1) {
 				ndr_print_lsa_String(ndr, "sitename", &r->sitename[cntr_sitename_1]);
 				free(idx_1);
 			}
@@ -7691,8 +7672,7 @@ _PUBLIC_ void ndr_print_netr_DomainTrustList(struct ndr_print *ndr, const char *
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_netr_DomainTrust(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -7819,8 +7799,7 @@ _PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesExWCtr(struct ndr_print *ndr, 
 		ndr->depth++;
 		for (cntr_sitename_1=0;cntr_sitename_1<r->count;cntr_sitename_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_sitename_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_sitename_1) != -1) {
 				ndr_print_lsa_String(ndr, "sitename", &r->sitename[cntr_sitename_1]);
 				free(idx_1);
 			}
@@ -7835,8 +7814,7 @@ _PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesExWCtr(struct ndr_print *ndr, 
 		ndr->depth++;
 		for (cntr_subnetname_1=0;cntr_subnetname_1<r->count;cntr_subnetname_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_subnetname_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_subnetname_1) != -1) {
 				ndr_print_lsa_String(ndr, "subnetname", &r->subnetname[cntr_subnetname_1]);
 				free(idx_1);
 			}
@@ -7922,8 +7900,7 @@ _PUBLIC_ void ndr_print_DcSitesCtr(struct ndr_print *ndr, const char *name, cons
 		ndr->depth++;
 		for (cntr_sites_1=0;cntr_sites_1<r->num_sites;cntr_sites_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_sites_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_sites_1) != -1) {
 				ndr_print_lsa_String(ndr, "sites", &r->sites[cntr_sites_1]);
 				free(idx_1);
 			}
@@ -8196,8 +8173,11 @@ static enum ndr_err_code ndr_push_netr_LogonSamLogon(struct ndr_push *ndr, int f
 			NDR_CHECK(ndr_push_netr_Authenticator(ndr, NDR_SCALARS, r->in.return_authenticator));
 		}
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.logon_level));
-		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->in.logon, r->in.logon_level));
-		NDR_CHECK(ndr_push_netr_LogonLevel(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.logon));
+		if (r->in.logon == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.logon, r->in.logon_level));
+		NDR_CHECK(ndr_push_netr_LogonLevel(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.logon));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.validation_level));
 	}
 	if (flags & NDR_OUT) {
@@ -8229,6 +8209,7 @@ static enum ndr_err_code ndr_pull_netr_LogonSamLogon(struct ndr_pull *ndr, int f
 	TALLOC_CTX *_mem_save_computer_name_0;
 	TALLOC_CTX *_mem_save_credential_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
+	TALLOC_CTX *_mem_save_logon_0;
 	TALLOC_CTX *_mem_save_validation_0;
 	TALLOC_CTX *_mem_save_authoritative_0;
 	if (flags & NDR_IN) {
@@ -8295,8 +8276,14 @@ static enum ndr_err_code ndr_pull_netr_LogonSamLogon(struct ndr_pull *ndr, int f
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_return_authenticator_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.logon_level));
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.logon, r->in.logon_level));
-		NDR_CHECK(ndr_pull_netr_LogonLevel(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.logon));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.logon);
+		}
+		_mem_save_logon_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.logon, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.logon, r->in.logon_level));
+		NDR_CHECK(ndr_pull_netr_LogonLevel(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.logon));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_logon_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.validation_level));
 		NDR_PULL_ALLOC(ndr, r->out.validation);
 		ZERO_STRUCTP(r->out.validation);
@@ -8371,8 +8358,11 @@ _PUBLIC_ void ndr_print_netr_LogonSamLogon(struct ndr_print *ndr, const char *na
 		}
 		ndr->depth--;
 		ndr_print_uint16(ndr, "logon_level", r->in.logon_level);
-		ndr_print_set_switch_value(ndr, &r->in.logon, r->in.logon_level);
-		ndr_print_netr_LogonLevel(ndr, "logon", &r->in.logon);
+		ndr_print_ptr(ndr, "logon", r->in.logon);
+		ndr->depth++;
+		ndr_print_set_switch_value(ndr, r->in.logon, r->in.logon_level);
+		ndr_print_netr_LogonLevel(ndr, "logon", r->in.logon);
+		ndr->depth--;
 		ndr_print_uint16(ndr, "validation_level", r->in.validation_level);
 		ndr->depth--;
 	}
@@ -8608,10 +8598,10 @@ static enum ndr_err_code ndr_push_netr_ServerReqChallenge(struct ndr_push *ndr, 
 		NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, r->in.credentials));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.credentials == NULL) {
+		if (r->out.return_credentials == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, r->out.credentials));
+		NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, r->out.return_credentials));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -8622,6 +8612,7 @@ static enum ndr_err_code ndr_pull_netr_ServerReqChallenge(struct ndr_pull *ndr, 
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_credentials_0;
+	TALLOC_CTX *_mem_save_return_credentials_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -8657,17 +8648,17 @@ static enum ndr_err_code ndr_pull_netr_ServerReqChallenge(struct ndr_pull *ndr, 
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.credentials, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, r->in.credentials));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_credentials_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_PULL_ALLOC(ndr, r->out.credentials);
-		*r->out.credentials = *r->in.credentials;
+		NDR_PULL_ALLOC(ndr, r->out.return_credentials);
+		ZERO_STRUCTP(r->out.return_credentials);
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.credentials);
+			NDR_PULL_ALLOC(ndr, r->out.return_credentials);
 		}
-		_mem_save_credentials_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.credentials, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, r->out.credentials));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_credentials_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_return_credentials_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.return_credentials, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, r->out.return_credentials));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_return_credentials_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -8699,9 +8690,9 @@ _PUBLIC_ void ndr_print_netr_ServerReqChallenge(struct ndr_print *ndr, const cha
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "netr_ServerReqChallenge");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "credentials", r->out.credentials);
+		ndr_print_ptr(ndr, "return_credentials", r->out.return_credentials);
 		ndr->depth++;
-		ndr_print_netr_Credential(ndr, "credentials", r->out.credentials);
+		ndr_print_netr_Credential(ndr, "return_credentials", r->out.return_credentials);
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -8734,10 +8725,10 @@ static enum ndr_err_code ndr_push_netr_ServerAuthenticate(struct ndr_push *ndr, 
 		NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, r->in.credentials));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.credentials == NULL) {
+		if (r->out.return_credentials == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, r->out.credentials));
+		NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, r->out.return_credentials));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -8748,6 +8739,7 @@ static enum ndr_err_code ndr_pull_netr_ServerAuthenticate(struct ndr_pull *ndr, 
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_credentials_0;
+	TALLOC_CTX *_mem_save_return_credentials_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -8791,17 +8783,17 @@ static enum ndr_err_code ndr_pull_netr_ServerAuthenticate(struct ndr_pull *ndr, 
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.credentials, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, r->in.credentials));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_credentials_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_PULL_ALLOC(ndr, r->out.credentials);
-		*r->out.credentials = *r->in.credentials;
+		NDR_PULL_ALLOC(ndr, r->out.return_credentials);
+		ZERO_STRUCTP(r->out.return_credentials);
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.credentials);
+			NDR_PULL_ALLOC(ndr, r->out.return_credentials);
 		}
-		_mem_save_credentials_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.credentials, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, r->out.credentials));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_credentials_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_return_credentials_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.return_credentials, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, r->out.return_credentials));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_return_credentials_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -8835,9 +8827,9 @@ _PUBLIC_ void ndr_print_netr_ServerAuthenticate(struct ndr_print *ndr, const cha
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "netr_ServerAuthenticate");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "credentials", r->out.credentials);
+		ndr_print_ptr(ndr, "return_credentials", r->out.return_credentials);
 		ndr->depth++;
-		ndr_print_netr_Credential(ndr, "credentials", r->out.credentials);
+		ndr_print_netr_Credential(ndr, "return_credentials", r->out.return_credentials);
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -8864,8 +8856,14 @@ static enum ndr_err_code ndr_push_netr_ServerPasswordSet(struct ndr_push *ndr, i
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.computer_name, CH_UTF16)));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.computer_name, ndr_charset_length(r->in.computer_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_push_netr_Authenticator(ndr, NDR_SCALARS, &r->in.credential));
-		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.new_password));
+		if (r->in.credential == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_netr_Authenticator(ndr, NDR_SCALARS, r->in.credential));
+		if (r->in.new_password == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.new_password));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.return_authenticator == NULL) {
@@ -8881,7 +8879,9 @@ static enum ndr_err_code ndr_pull_netr_ServerPasswordSet(struct ndr_pull *ndr, i
 {
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
+	TALLOC_CTX *_mem_save_credential_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
+	TALLOC_CTX *_mem_save_new_password_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -8918,8 +8918,20 @@ static enum ndr_err_code ndr_pull_netr_ServerPasswordSet(struct ndr_pull *ndr, i
 		}
 		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_pull_netr_Authenticator(ndr, NDR_SCALARS, &r->in.credential));
-		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.new_password));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.credential);
+		}
+		_mem_save_credential_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.credential, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_netr_Authenticator(ndr, NDR_SCALARS, r->in.credential));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_credential_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.new_password);
+		}
+		_mem_save_new_password_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.new_password, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.new_password));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_new_password_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC(ndr, r->out.return_authenticator);
 		ZERO_STRUCTP(r->out.return_authenticator);
 	}
@@ -8955,8 +8967,14 @@ _PUBLIC_ void ndr_print_netr_ServerPasswordSet(struct ndr_print *ndr, const char
 		ndr_print_string(ndr, "account_name", r->in.account_name);
 		ndr_print_netr_SchannelType(ndr, "secure_channel_type", r->in.secure_channel_type);
 		ndr_print_string(ndr, "computer_name", r->in.computer_name);
-		ndr_print_netr_Authenticator(ndr, "credential", &r->in.credential);
-		ndr_print_samr_Password(ndr, "new_password", &r->in.new_password);
+		ndr_print_ptr(ndr, "credential", r->in.credential);
+		ndr->depth++;
+		ndr_print_netr_Authenticator(ndr, "credential", r->in.credential);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "new_password", r->in.new_password);
+		ndr->depth++;
+		ndr_print_samr_Password(ndr, "new_password", r->in.new_password);
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -8983,7 +9001,10 @@ static enum ndr_err_code ndr_push_netr_DatabaseDeltas(struct ndr_push *ndr, int 
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.computername, CH_UTF16)));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.computername, ndr_charset_length(r->in.computername, CH_UTF16), sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_push_netr_Authenticator(ndr, NDR_SCALARS, &r->in.credential));
+		if (r->in.credential == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_netr_Authenticator(ndr, NDR_SCALARS, r->in.credential));
 		if (r->in.return_authenticator == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -9007,7 +9028,10 @@ static enum ndr_err_code ndr_push_netr_DatabaseDeltas(struct ndr_push *ndr, int 
 		if (r->out.delta_enum_array == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_netr_DELTA_ENUM_ARRAY(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.delta_enum_array));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.delta_enum_array));
+		if (*r->out.delta_enum_array) {
+			NDR_CHECK(ndr_push_netr_DELTA_ENUM_ARRAY(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.delta_enum_array));
+		}
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -9015,9 +9039,12 @@ static enum ndr_err_code ndr_push_netr_DatabaseDeltas(struct ndr_push *ndr, int 
 
 static enum ndr_err_code ndr_pull_netr_DatabaseDeltas(struct ndr_pull *ndr, int flags, struct netr_DatabaseDeltas *r)
 {
+	uint32_t _ptr_delta_enum_array;
+	TALLOC_CTX *_mem_save_credential_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
 	TALLOC_CTX *_mem_save_sequence_num_0;
 	TALLOC_CTX *_mem_save_delta_enum_array_0;
+	TALLOC_CTX *_mem_save_delta_enum_array_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -9035,7 +9062,13 @@ static enum ndr_err_code ndr_pull_netr_DatabaseDeltas(struct ndr_pull *ndr, int 
 		}
 		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computername), sizeof(uint16_t)));
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computername, ndr_get_array_length(ndr, &r->in.computername), sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_pull_netr_Authenticator(ndr, NDR_SCALARS, &r->in.credential));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.credential);
+		}
+		_mem_save_credential_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.credential, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_netr_Authenticator(ndr, NDR_SCALARS, r->in.credential));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_credential_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.return_authenticator);
 		}
@@ -9079,7 +9112,18 @@ static enum ndr_err_code ndr_pull_netr_DatabaseDeltas(struct ndr_pull *ndr, int 
 		}
 		_mem_save_delta_enum_array_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.delta_enum_array, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_netr_DELTA_ENUM_ARRAY(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.delta_enum_array));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_delta_enum_array));
+		if (_ptr_delta_enum_array) {
+			NDR_PULL_ALLOC(ndr, *r->out.delta_enum_array);
+		} else {
+			*r->out.delta_enum_array = NULL;
+		}
+		if (*r->out.delta_enum_array) {
+			_mem_save_delta_enum_array_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.delta_enum_array, 0);
+			NDR_CHECK(ndr_pull_netr_DELTA_ENUM_ARRAY(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.delta_enum_array));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_delta_enum_array_1, 0);
+		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_delta_enum_array_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -9098,7 +9142,10 @@ _PUBLIC_ void ndr_print_netr_DatabaseDeltas(struct ndr_print *ndr, const char *n
 		ndr->depth++;
 		ndr_print_string(ndr, "logon_server", r->in.logon_server);
 		ndr_print_string(ndr, "computername", r->in.computername);
-		ndr_print_netr_Authenticator(ndr, "credential", &r->in.credential);
+		ndr_print_ptr(ndr, "credential", r->in.credential);
+		ndr->depth++;
+		ndr_print_netr_Authenticator(ndr, "credential", r->in.credential);
+		ndr->depth--;
 		ndr_print_ptr(ndr, "return_authenticator", r->in.return_authenticator);
 		ndr->depth++;
 		ndr_print_netr_Authenticator(ndr, "return_authenticator", r->in.return_authenticator);
@@ -9124,7 +9171,12 @@ _PUBLIC_ void ndr_print_netr_DatabaseDeltas(struct ndr_print *ndr, const char *n
 		ndr->depth--;
 		ndr_print_ptr(ndr, "delta_enum_array", r->out.delta_enum_array);
 		ndr->depth++;
-		ndr_print_netr_DELTA_ENUM_ARRAY(ndr, "delta_enum_array", r->out.delta_enum_array);
+		ndr_print_ptr(ndr, "delta_enum_array", *r->out.delta_enum_array);
+		ndr->depth++;
+		if (*r->out.delta_enum_array) {
+			ndr_print_netr_DELTA_ENUM_ARRAY(ndr, "delta_enum_array", *r->out.delta_enum_array);
+		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -10166,8 +10218,11 @@ static enum ndr_err_code ndr_push_netr_LogonControl2(struct ndr_push *ndr, int f
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.function_code));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
-		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->in.data, r->in.function_code));
-		NDR_CHECK(ndr_push_netr_CONTROL_DATA_INFORMATION(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.data));
+		if (r->in.data == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.data, r->in.function_code));
+		NDR_CHECK(ndr_push_netr_CONTROL_DATA_INFORMATION(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.data));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.query == NULL) {
@@ -10184,6 +10239,7 @@ static enum ndr_err_code ndr_pull_netr_LogonControl2(struct ndr_pull *ndr, int f
 {
 	uint32_t _ptr_logon_server;
 	TALLOC_CTX *_mem_save_logon_server_0;
+	TALLOC_CTX *_mem_save_data_0;
 	TALLOC_CTX *_mem_save_query_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
@@ -10208,8 +10264,14 @@ static enum ndr_err_code ndr_pull_netr_LogonControl2(struct ndr_pull *ndr, int f
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.function_code));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.data, r->in.function_code));
-		NDR_CHECK(ndr_pull_netr_CONTROL_DATA_INFORMATION(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.data));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.data);
+		}
+		_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.data, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.data, r->in.function_code));
+		NDR_CHECK(ndr_pull_netr_CONTROL_DATA_INFORMATION(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.data));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC(ndr, r->out.query);
 		ZERO_STRUCTP(r->out.query);
 	}
@@ -10245,8 +10307,11 @@ _PUBLIC_ void ndr_print_netr_LogonControl2(struct ndr_print *ndr, const char *na
 		ndr->depth--;
 		ndr_print_uint32(ndr, "function_code", r->in.function_code);
 		ndr_print_uint32(ndr, "level", r->in.level);
-		ndr_print_set_switch_value(ndr, &r->in.data, r->in.function_code);
-		ndr_print_netr_CONTROL_DATA_INFORMATION(ndr, "data", &r->in.data);
+		ndr_print_ptr(ndr, "data", r->in.data);
+		ndr->depth++;
+		ndr_print_set_switch_value(ndr, r->in.data, r->in.function_code);
+		ndr_print_netr_CONTROL_DATA_INFORMATION(ndr, "data", r->in.data);
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -10292,10 +10357,10 @@ static enum ndr_err_code ndr_push_netr_ServerAuthenticate2(struct ndr_push *ndr,
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.negotiate_flags));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.credentials == NULL) {
+		if (r->out.return_credentials == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, r->out.credentials));
+		NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, r->out.return_credentials));
 		if (r->out.negotiate_flags == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -10310,6 +10375,7 @@ static enum ndr_err_code ndr_pull_netr_ServerAuthenticate2(struct ndr_pull *ndr,
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_credentials_0;
+	TALLOC_CTX *_mem_save_return_credentials_0;
 	TALLOC_CTX *_mem_save_negotiate_flags_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
@@ -10361,19 +10427,19 @@ static enum ndr_err_code ndr_pull_netr_ServerAuthenticate2(struct ndr_pull *ndr,
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.negotiate_flags, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.negotiate_flags));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_negotiate_flags_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_PULL_ALLOC(ndr, r->out.credentials);
-		*r->out.credentials = *r->in.credentials;
+		NDR_PULL_ALLOC(ndr, r->out.return_credentials);
+		ZERO_STRUCTP(r->out.return_credentials);
 		NDR_PULL_ALLOC(ndr, r->out.negotiate_flags);
 		*r->out.negotiate_flags = *r->in.negotiate_flags;
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.credentials);
+			NDR_PULL_ALLOC(ndr, r->out.return_credentials);
 		}
-		_mem_save_credentials_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.credentials, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, r->out.credentials));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_credentials_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_return_credentials_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.return_credentials, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, r->out.return_credentials));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_return_credentials_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.negotiate_flags);
 		}
@@ -10418,9 +10484,9 @@ _PUBLIC_ void ndr_print_netr_ServerAuthenticate2(struct ndr_print *ndr, const ch
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "netr_ServerAuthenticate2");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "credentials", r->out.credentials);
+		ndr_print_ptr(ndr, "return_credentials", r->out.return_credentials);
 		ndr->depth++;
-		ndr_print_netr_Credential(ndr, "credentials", r->out.credentials);
+		ndr_print_netr_Credential(ndr, "return_credentials", r->out.return_credentials);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "negotiate_flags", r->out.negotiate_flags);
 		ndr->depth++;
@@ -10443,7 +10509,10 @@ static enum ndr_err_code ndr_push_netr_DatabaseSync2(struct ndr_push *ndr, int f
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.computername, CH_UTF16)));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.computername, ndr_charset_length(r->in.computername, CH_UTF16), sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_push_netr_Authenticator(ndr, NDR_SCALARS, &r->in.credential));
+		if (r->in.credential == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_netr_Authenticator(ndr, NDR_SCALARS, r->in.credential));
 		if (r->in.return_authenticator == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -10468,7 +10537,10 @@ static enum ndr_err_code ndr_push_netr_DatabaseSync2(struct ndr_push *ndr, int f
 		if (r->out.delta_enum_array == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_netr_DELTA_ENUM_ARRAY(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.delta_enum_array));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.delta_enum_array));
+		if (*r->out.delta_enum_array) {
+			NDR_CHECK(ndr_push_netr_DELTA_ENUM_ARRAY(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.delta_enum_array));
+		}
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -10476,9 +10548,12 @@ static enum ndr_err_code ndr_push_netr_DatabaseSync2(struct ndr_push *ndr, int f
 
 static enum ndr_err_code ndr_pull_netr_DatabaseSync2(struct ndr_pull *ndr, int flags, struct netr_DatabaseSync2 *r)
 {
+	uint32_t _ptr_delta_enum_array;
+	TALLOC_CTX *_mem_save_credential_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
 	TALLOC_CTX *_mem_save_sync_context_0;
 	TALLOC_CTX *_mem_save_delta_enum_array_0;
+	TALLOC_CTX *_mem_save_delta_enum_array_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -10496,7 +10571,13 @@ static enum ndr_err_code ndr_pull_netr_DatabaseSync2(struct ndr_pull *ndr, int f
 		}
 		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computername), sizeof(uint16_t)));
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computername, ndr_get_array_length(ndr, &r->in.computername), sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_pull_netr_Authenticator(ndr, NDR_SCALARS, &r->in.credential));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.credential);
+		}
+		_mem_save_credential_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.credential, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_netr_Authenticator(ndr, NDR_SCALARS, r->in.credential));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_credential_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.return_authenticator);
 		}
@@ -10541,7 +10622,18 @@ static enum ndr_err_code ndr_pull_netr_DatabaseSync2(struct ndr_pull *ndr, int f
 		}
 		_mem_save_delta_enum_array_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.delta_enum_array, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_netr_DELTA_ENUM_ARRAY(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.delta_enum_array));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_delta_enum_array));
+		if (_ptr_delta_enum_array) {
+			NDR_PULL_ALLOC(ndr, *r->out.delta_enum_array);
+		} else {
+			*r->out.delta_enum_array = NULL;
+		}
+		if (*r->out.delta_enum_array) {
+			_mem_save_delta_enum_array_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.delta_enum_array, 0);
+			NDR_CHECK(ndr_pull_netr_DELTA_ENUM_ARRAY(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.delta_enum_array));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_delta_enum_array_1, 0);
+		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_delta_enum_array_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -10560,7 +10652,10 @@ _PUBLIC_ void ndr_print_netr_DatabaseSync2(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		ndr_print_string(ndr, "logon_server", r->in.logon_server);
 		ndr_print_string(ndr, "computername", r->in.computername);
-		ndr_print_netr_Authenticator(ndr, "credential", &r->in.credential);
+		ndr_print_ptr(ndr, "credential", r->in.credential);
+		ndr->depth++;
+		ndr_print_netr_Authenticator(ndr, "credential", r->in.credential);
+		ndr->depth--;
 		ndr_print_ptr(ndr, "return_authenticator", r->in.return_authenticator);
 		ndr->depth++;
 		ndr_print_netr_Authenticator(ndr, "return_authenticator", r->in.return_authenticator);
@@ -10587,7 +10682,12 @@ _PUBLIC_ void ndr_print_netr_DatabaseSync2(struct ndr_print *ndr, const char *na
 		ndr->depth--;
 		ndr_print_ptr(ndr, "delta_enum_array", r->out.delta_enum_array);
 		ndr->depth++;
-		ndr_print_netr_DELTA_ENUM_ARRAY(ndr, "delta_enum_array", r->out.delta_enum_array);
+		ndr_print_ptr(ndr, "delta_enum_array", *r->out.delta_enum_array);
+		ndr->depth++;
+		if (*r->out.delta_enum_array) {
+			ndr_print_netr_DELTA_ENUM_ARRAY(ndr, "delta_enum_array", *r->out.delta_enum_array);
+		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -12588,8 +12688,7 @@ _PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesW(struct ndr_print *ndr, const
 		ndr->depth++;
 		for (cntr_addresses_1=0;cntr_addresses_1<r->in.count;cntr_addresses_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_addresses_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_addresses_1) != -1) {
 				ndr_print_netr_DsRAddress(ndr, "addresses", &r->in.addresses[cntr_addresses_1]);
 				free(idx_1);
 			}
@@ -13132,8 +13231,7 @@ _PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesExW(struct ndr_print *ndr, con
 		ndr->depth++;
 		for (cntr_addresses_1=0;cntr_addresses_1<r->in.count;cntr_addresses_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_addresses_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_addresses_1) != -1) {
 				ndr_print_netr_DsRAddress(ndr, "addresses", &r->in.addresses[cntr_addresses_1]);
 				free(idx_1);
 			}
@@ -13272,8 +13370,11 @@ static enum ndr_err_code ndr_push_netr_LogonSamLogonEx(struct ndr_push *ndr, int
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.computer_name, ndr_charset_length(r->in.computer_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.logon_level));
-		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->in.logon, r->in.logon_level));
-		NDR_CHECK(ndr_push_netr_LogonLevel(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.logon));
+		if (r->in.logon == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.logon, r->in.logon_level));
+		NDR_CHECK(ndr_push_netr_LogonLevel(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.logon));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.validation_level));
 		if (r->in.flags == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
@@ -13305,6 +13406,7 @@ static enum ndr_err_code ndr_pull_netr_LogonSamLogonEx(struct ndr_pull *ndr, int
 	uint32_t _ptr_computer_name;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_computer_name_0;
+	TALLOC_CTX *_mem_save_logon_0;
 	TALLOC_CTX *_mem_save_validation_0;
 	TALLOC_CTX *_mem_save_authoritative_0;
 	TALLOC_CTX *_mem_save_flags_0;
@@ -13348,8 +13450,14 @@ static enum ndr_err_code ndr_pull_netr_LogonSamLogonEx(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_computer_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.logon_level));
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.logon, r->in.logon_level));
-		NDR_CHECK(ndr_pull_netr_LogonLevel(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.logon));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.logon);
+		}
+		_mem_save_logon_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.logon, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.logon, r->in.logon_level));
+		NDR_CHECK(ndr_pull_netr_LogonLevel(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.logon));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_logon_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.validation_level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.flags);
@@ -13416,8 +13524,11 @@ _PUBLIC_ void ndr_print_netr_LogonSamLogonEx(struct ndr_print *ndr, const char *
 		}
 		ndr->depth--;
 		ndr_print_uint16(ndr, "logon_level", r->in.logon_level);
-		ndr_print_set_switch_value(ndr, &r->in.logon, r->in.logon_level);
-		ndr_print_netr_LogonLevel(ndr, "logon", &r->in.logon);
+		ndr_print_ptr(ndr, "logon", r->in.logon);
+		ndr->depth++;
+		ndr_print_set_switch_value(ndr, r->in.logon, r->in.logon_level);
+		ndr_print_netr_LogonLevel(ndr, "logon", r->in.logon);
+		ndr->depth--;
 		ndr_print_uint16(ndr, "validation_level", r->in.validation_level);
 		ndr_print_ptr(ndr, "flags", r->in.flags);
 		ndr->depth++;

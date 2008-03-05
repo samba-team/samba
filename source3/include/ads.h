@@ -319,11 +319,6 @@ typedef void **ADS_MODLIST;
 #define ADS_DNS_DOMAIN     0x40000000  /* DomainName is a DNS name */
 #define ADS_DNS_FOREST     0x80000000  /* DnsForestName is a DNS name */
 
-/* DomainControllerAddressType */
-#define ADS_INET_ADDRESS      0x00000001
-#define ADS_NETBIOS_ADDRESS   0x00000002
-
-
 /* ads auth control flags */
 #define ADS_AUTH_DISABLE_KERBEROS 0x01
 #define ADS_AUTH_NO_BIND          0x02

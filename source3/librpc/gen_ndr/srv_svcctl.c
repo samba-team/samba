@@ -352,6 +352,19 @@ static bool api_svcctl_QueryServiceObjectSecurity(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceObjectSecurity, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.buffer_size);
+	if (r->out.buffer == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _svcctl_QueryServiceObjectSecurity(p, r);
 
 	if (p->rng_fault_state) {

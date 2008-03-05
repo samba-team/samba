@@ -581,8 +581,8 @@ static bool cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob, DATA_B
 		if (cli_is_error(cli) &&
 				!NT_STATUS_EQUAL( cli_get_nt_error(cli), 
 					NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			DEBUG(0, ("cli_session_setup_blob: recieve failed (%s)\n",
-				nt_errstr(cli_get_nt_error(cli)) ));
+			DEBUG(0, ("cli_session_setup_blob: receive failed "
+				  "(%s)\n", nt_errstr(cli_get_nt_error(cli))));
 			cli->vuid = 0;
 			return False;
 		}
@@ -757,9 +757,9 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 			
 			/* 'resign' the last message, so we get the right sequence numbers
 			   for checking the first reply from the server */
-			cli_calculate_sign_mac(cli);
+			cli_calculate_sign_mac(cli, cli->outbuf);
 			
-			if (!cli_check_sign_mac(cli)) {
+			if (!cli_check_sign_mac(cli, cli->inbuf)) {
 				nt_status = NT_STATUS_ACCESS_DENIED;
 			}
 		}

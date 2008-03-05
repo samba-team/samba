@@ -176,11 +176,15 @@ _PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, 
 {
 	va_list ap;
 	char *s = NULL;
-	int i;
+	int i, ret;
 
 	va_start(ap, format);
-	vasprintf(&s, format, ap);
+	ret = vasprintf(&s, format, ap);
 	va_end(ap);
+
+	if (ret == -1) {
+		return;
+	}
 
 	for (i=0;i<ndr->depth;i++) {
 		DEBUGADD(0,("    "));
@@ -450,10 +454,15 @@ _PUBLIC_ enum ndr_err_code ndr_pull_error(struct ndr_pull *ndr,
 {
 	char *s=NULL;
 	va_list ap;
+	int ret;
 
 	va_start(ap, format);
-	vasprintf(&s, format, ap);
+	ret = vasprintf(&s, format, ap);
 	va_end(ap);
+
+	if (ret == -1) {
+		return NDR_ERR_ALLOC;
+	}
 
 	DEBUG(3,("ndr_pull_error(%u): %s\n", ndr_err, s));
 
@@ -471,10 +480,15 @@ _PUBLIC_ enum ndr_err_code ndr_push_error(struct ndr_push *ndr,
 {
 	char *s=NULL;
 	va_list ap;
+	int ret;
 
 	va_start(ap, format);
-	vasprintf(&s, format, ap);
+	ret = vasprintf(&s, format, ap);
 	va_end(ap);
+
+	if (ret == -1) {
+		return NDR_ERR_ALLOC;
+	}
 
 	DEBUG(3,("ndr_push_error(%u): %s\n", ndr_err, s));
 

@@ -603,6 +603,7 @@ union netr_CONTROL_QUERY_INFORMATION {
 enum netr_LogonControlCode
 #ifndef USE_UINT_ENUMS
  {
+	NETLOGON_CONTROL_SYNC=2,
 	NETLOGON_CONTROL_REDISCOVER=5,
 	NETLOGON_CONTROL_TC_QUERY=6,
 	NETLOGON_CONTROL_TRANSPORT_NOTIFY=7,
@@ -610,6 +611,7 @@ enum netr_LogonControlCode
 }
 #else
  { __donnot_use_enum_netr_LogonControlCode=0x7FFFFFFF}
+#define NETLOGON_CONTROL_SYNC ( 2 )
 #define NETLOGON_CONTROL_REDISCOVER ( 5 )
 #define NETLOGON_CONTROL_TC_QUERY ( 6 )
 #define NETLOGON_CONTROL_TRANSPORT_NOTIFY ( 7 )
@@ -849,7 +851,7 @@ struct netr_LogonSamLogon {
 		const char *computer_name;/* [unique,charset(UTF16)] */
 		struct netr_Authenticator *credential;/* [unique] */
 		uint16_t logon_level;
-		union netr_LogonLevel logon;/* [switch_is(logon_level)] */
+		union netr_LogonLevel *logon;/* [ref,switch_is(logon_level)] */
 		uint16_t validation_level;
 		struct netr_Authenticator *return_authenticator;/* [unique] */
 	} in;
@@ -890,7 +892,7 @@ struct netr_ServerReqChallenge {
 	} in;
 
 	struct {
-		struct netr_Credential *credentials;/* [ref] */
+		struct netr_Credential *return_credentials;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -907,7 +909,7 @@ struct netr_ServerAuthenticate {
 	} in;
 
 	struct {
-		struct netr_Credential *credentials;/* [ref] */
+		struct netr_Credential *return_credentials;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -920,8 +922,8 @@ struct netr_ServerPasswordSet {
 		const char *account_name;/* [charset(UTF16)] */
 		enum netr_SchannelType secure_channel_type;
 		const char *computer_name;/* [charset(UTF16)] */
-		struct netr_Authenticator credential;
-		struct samr_Password new_password;
+		struct netr_Authenticator *credential;/* [ref] */
+		struct samr_Password *new_password;/* [ref] */
 	} in;
 
 	struct {
@@ -936,7 +938,7 @@ struct netr_DatabaseDeltas {
 	struct {
 		const char *logon_server;/* [charset(UTF16)] */
 		const char *computername;/* [charset(UTF16)] */
-		struct netr_Authenticator credential;
+		struct netr_Authenticator *credential;/* [ref] */
 		enum netr_SamDatabaseID database_id;
 		uint32_t preferredmaximumlength;
 		struct netr_Authenticator *return_authenticator;/* [ref] */
@@ -944,7 +946,7 @@ struct netr_DatabaseDeltas {
 	} in;
 
 	struct {
-		struct netr_DELTA_ENUM_ARRAY *delta_enum_array;/* [ref] */
+		struct netr_DELTA_ENUM_ARRAY **delta_enum_array;/* [ref] */
 		struct netr_Authenticator *return_authenticator;/* [ref] */
 		uint64_t *sequence_num;/* [ref] */
 		NTSTATUS result;
@@ -1071,7 +1073,7 @@ struct netr_LogonControl2 {
 		const char *logon_server;/* [unique,charset(UTF16)] */
 		uint32_t function_code;
 		uint32_t level;
-		union netr_CONTROL_DATA_INFORMATION data;/* [switch_is(function_code)] */
+		union netr_CONTROL_DATA_INFORMATION *data;/* [ref,switch_is(function_code)] */
 	} in;
 
 	struct {
@@ -1093,7 +1095,7 @@ struct netr_ServerAuthenticate2 {
 	} in;
 
 	struct {
-		struct netr_Credential *credentials;/* [ref] */
+		struct netr_Credential *return_credentials;/* [ref] */
 		uint32_t *negotiate_flags;/* [ref] */
 		NTSTATUS result;
 	} out;
@@ -1105,7 +1107,7 @@ struct netr_DatabaseSync2 {
 	struct {
 		const char *logon_server;/* [charset(UTF16)] */
 		const char *computername;/* [charset(UTF16)] */
-		struct netr_Authenticator credential;
+		struct netr_Authenticator *credential;/* [ref] */
 		enum netr_SamDatabaseID database_id;
 		uint16_t restart_state;
 		uint32_t preferredmaximumlength;
@@ -1114,7 +1116,7 @@ struct netr_DatabaseSync2 {
 	} in;
 
 	struct {
-		struct netr_DELTA_ENUM_ARRAY *delta_enum_array;/* [ref] */
+		struct netr_DELTA_ENUM_ARRAY **delta_enum_array;/* [ref] */
 		struct netr_Authenticator *return_authenticator;/* [ref] */
 		uint32_t *sync_context;/* [ref] */
 		NTSTATUS result;
@@ -1435,7 +1437,7 @@ struct netr_LogonSamLogonEx {
 		const char *server_name;/* [unique,charset(UTF16)] */
 		const char *computer_name;/* [unique,charset(UTF16)] */
 		uint16_t logon_level;
-		union netr_LogonLevel logon;/* [switch_is(logon_level)] */
+		union netr_LogonLevel *logon;/* [ref,switch_is(logon_level)] */
 		uint16_t validation_level;
 		uint32_t *flags;/* [ref] */
 	} in;
