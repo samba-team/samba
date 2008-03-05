@@ -313,9 +313,8 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 			smbc_close(remotehandle);
 			return 0;
 		}
-		/* else open it for writting and truncate if it exists */
-		localhandle = open(newpath, O_CREAT | O_NONBLOCK | O_RDWR |
-				O_TRUNC, 0775);
+		/* else open it for writing and truncate if it exists */
+		localhandle = open(newpath, O_CREAT | O_NONBLOCK | O_RDWR | O_TRUNC, 0775);
 		if(localhandle < 0) {
 			fprintf(stderr, "Can't open %s : %s\n", newpath,
 					strerror(errno));
