@@ -84,3 +84,36 @@ void init_srvsvc_NetSrvInfo100(struct srvsvc_NetSrvInfo100 *r,
 	r->platform_id = platform_id;
 	r->server_name = server_name;
 }
+
+/*******************************************************************
+ inits a srvsvc_NetRemoteTODInfo structure
+ ********************************************************************/
+
+void init_srvsvc_NetRemoteTODInfo(struct srvsvc_NetRemoteTODInfo *r,
+				  uint32_t elapsed,
+				  uint32_t msecs,
+				  uint32_t hours,
+				  uint32_t mins,
+				  uint32_t secs,
+				  uint32_t hunds,
+				  int32_t ttimezone,
+				  uint32_t tinterval,
+				  uint32_t day,
+				  uint32_t month,
+				  uint32_t year,
+				  uint32_t weekday)
+{
+	r->elapsed = elapsed;
+	r->msecs = msecs;
+	r->hours = hours;
+	r->mins = mins;
+	r->secs = secs;
+	r->hunds = hunds;
+	r->timezone = ttimezone;
+	r->tinterval = tinterval;
+	r->day = day;
+	r->month = month;
+	r->year = year;
+	r->weekday = weekday;
+}
+
