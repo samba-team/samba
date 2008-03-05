@@ -1472,7 +1472,7 @@ struct srvsvc_NetRemoteTOD {
 	} in;
 
 	struct {
-		struct srvsvc_NetRemoteTODInfo *info;/* [unique] */
+		struct srvsvc_NetRemoteTODInfo **info;/* [ref] */
 		WERROR result;
 	} out;
 
