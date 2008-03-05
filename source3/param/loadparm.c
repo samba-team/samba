@@ -3404,6 +3404,13 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 		}
 	}
 
+	if (!libnet_conf_share_exists(conf_ctx, GLOBAL_NAME)) {
+		/* nothing to read from the registry yet but make sure lp_load
+		 * doesn't return false */
+		ret = true;
+		goto done;
+	}
+
 	werr = libnet_conf_get_share(mem_ctx, conf_ctx, GLOBAL_NAME,
 				     &num_params, &param_names, &param_values);
 	if (!W_ERROR_IS_OK(werr)) {
