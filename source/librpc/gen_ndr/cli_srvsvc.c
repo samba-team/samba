@@ -1486,7 +1486,7 @@ NTSTATUS rpccli_srvsvc_NetTransportDel(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_srvsvc_NetRemoteTOD(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    const char *server_unc,
-				    struct srvsvc_NetRemoteTODInfo *info,
+				    struct srvsvc_NetRemoteTODInfo **info,
 				    WERROR *werror)
 {
 	struct srvsvc_NetRemoteTOD r;
@@ -1519,9 +1519,7 @@ NTSTATUS rpccli_srvsvc_NetRemoteTOD(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (info && r.out.info) {
-		*info = *r.out.info;
-	}
+	*info = *r.out.info;
 
 	/* Return result */
 	if (werror) {

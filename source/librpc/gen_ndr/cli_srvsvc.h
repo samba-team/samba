@@ -213,7 +213,7 @@ NTSTATUS rpccli_srvsvc_NetTransportDel(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_srvsvc_NetRemoteTOD(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    const char *server_unc,
-				    struct srvsvc_NetRemoteTODInfo *info,
+				    struct srvsvc_NetRemoteTODInfo **info,
 				    WERROR *werror);
 NTSTATUS rpccli_srvsvc_NetSetServiceBits(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
