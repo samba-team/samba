@@ -62,7 +62,7 @@ static WERROR libnet_conf_reg_initialize(struct libnet_conf_ctx *ctx)
 {
 	WERROR werr = WERR_OK;
 
-	if (!registry_init_regdb()) {
+	if (!registry_init_smbconf()) {
 		werr = WERR_REG_IO_FAILURE;
 		goto done;
 	}
@@ -479,6 +479,19 @@ void libnet_conf_close(struct libnet_conf_ctx *ctx)
 {
 	/* this also closes the registry (by destructor): */
 	TALLOC_FREE(ctx);
+}
+
+/**
+ * Get the change sequence number of the given service/parameter.
+ *
+ * NOTE: Currently, for registry configuration, this is independent
+ * of the service and parameter, it returns the registry-sequence
+ * number.
+ */
+uint64_t libnet_conf_get_seqnum(struct libnet_conf_ctx *ctx,
+				const char *service, const char *param)
+{
+	return (uint64_t)regdb_get_seqnum();
 }
 
 /**

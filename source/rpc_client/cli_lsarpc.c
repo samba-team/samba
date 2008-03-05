@@ -6,6 +6,7 @@
    Copyright (C) Rafal Szczesniak                       2002
    Copyright (C) Jeremy Allison				2005.
    Copyright (C) Michael Adam				2007.
+   Copyright (C) Guenther Deschner			2008.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -128,13 +129,16 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 					       char **names,
 					       enum lsa_SidType *types)
 {
-	prs_struct qbuf, rbuf;
-	LSA_Q_LOOKUP_SIDS q;
-	LSA_R_LOOKUP_SIDS r;
-	DOM_R_REF ref;
 	NTSTATUS result = NT_STATUS_OK;
 	TALLOC_CTX *tmp_ctx = NULL;
 	int i;
+	struct lsa_SidArray sid_array;
+	struct lsa_RefDomainList *ref_domains = NULL;
+	struct lsa_TransNameArray lsa_names;
+	uint32_t count = 0;
+	uint16_t level = 1;
+
+	ZERO_STRUCT(lsa_names);
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
@@ -143,38 +147,42 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
+	sid_array.num_sids = num_sids;
+	sid_array.sids = TALLOC_ARRAY(mem_ctx, struct lsa_SidPtr, num_sids);
+	if (!sid_array.sids) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	init_q_lookup_sids(tmp_ctx, &q, pol, num_sids, sids, 1);
+	for (i = 0; i<num_sids; i++) {
+		sid_array.sids[i].sid = sid_dup_talloc(mem_ctx, &sids[i]);
+		if (!sid_array.sids[i].sid) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
 
-	ZERO_STRUCT(ref);
-
-	r.dom_ref = &ref;
-
-	CLI_DO_RPC( cli, tmp_ctx, PI_LSARPC, LSA_LOOKUPSIDS,
-			q, r,
-			qbuf, rbuf,
-			lsa_io_q_lookup_sids,
-			lsa_io_r_lookup_sids,
-			NT_STATUS_UNSUCCESSFUL );
+	result = rpccli_lsa_LookupSids(cli, mem_ctx,
+				       pol,
+				       &sid_array,
+				       &ref_domains,
+				       &lsa_names,
+				       level,
+				       &count);
 
 	DEBUG(10, ("LSA_LOOKUPSIDS returned '%s', mapped count = %d'\n",
-		   nt_errstr(r.status), r.mapped_count));
+		   nt_errstr(result), count));
 
-	if (!NT_STATUS_IS_OK(r.status) &&
-	    !NT_STATUS_EQUAL(r.status, NT_STATUS_NONE_MAPPED) &&
-	    !NT_STATUS_EQUAL(r.status, STATUS_SOME_UNMAPPED))
+	if (!NT_STATUS_IS_OK(result) &&
+	    !NT_STATUS_EQUAL(result, NT_STATUS_NONE_MAPPED) &&
+	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED))
 	{
 		/* An actual error occured */
-		result = r.status;
 		goto done;
 	}
 
 	/* Return output parameters */
 
-	if (NT_STATUS_EQUAL(r.status, NT_STATUS_NONE_MAPPED) ||
-	    (r.mapped_count == 0))
+	if (NT_STATUS_EQUAL(result, NT_STATUS_NONE_MAPPED) ||
+	    (count == 0))
 	{
 		for (i = 0; i < num_sids; i++) {
 			(names)[i] = NULL;
@@ -186,21 +194,19 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 	}
 
 	for (i = 0; i < num_sids; i++) {
-		fstring name, dom_name;
-		uint32 dom_idx = r.names.name[i].domain_idx;
+		const char *name, *dom_name;
+		uint32_t dom_idx = lsa_names.names[i].sid_index;
 
 		/* Translate optimised name through domain index array */
 
 		if (dom_idx != 0xffffffff) {
 
-			rpcstr_pull_unistr2_fstring(
-                                dom_name, &ref.ref_dom[dom_idx].uni_dom_name);
-			rpcstr_pull_unistr2_fstring(
-                                name, &r.names.uni_name[i]);
+			dom_name = ref_domains->domains[dom_idx].name.string;
+			name = lsa_names.names[i].name.string;
 
 			(names)[i] = talloc_strdup(mem_ctx, name);
 			(domains)[i] = talloc_strdup(mem_ctx, dom_name);
-			(types)[i] = r.names.name[i].sid_name_use;
+			(types)[i] = lsa_names.names[i].sid_type;
 
 			if (((names)[i] == NULL) || ((domains)[i] == NULL)) {
 				DEBUG(0, ("cli_lsa_lookup_sids_noalloc(): out of memory\n"));
@@ -348,29 +354,32 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 				 DOM_SID **sids,
 				 enum lsa_SidType **types)
 {
-	prs_struct qbuf, rbuf;
-	LSA_Q_LOOKUP_NAMES q;
-	LSA_R_LOOKUP_NAMES r;
-	DOM_R_REF ref;
 	NTSTATUS result;
 	int i;
+	struct lsa_String *lsa_names = NULL;
+	struct lsa_RefDomainList *domains = NULL;
+	struct lsa_TransSidArray sid_array;
+	uint32_t count = 0;
 
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
+	ZERO_STRUCT(sid_array);
 
-	ZERO_STRUCT(ref);
-	r.dom_ref = &ref;
+	lsa_names = TALLOC_ARRAY(mem_ctx, struct lsa_String, num_names);
+	if (!lsa_names) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	init_q_lookup_names(mem_ctx, &q, pol, num_names, names, level);
+	for (i=0; i<num_names; i++) {
+		init_lsa_String(&lsa_names[i], names[i]);
+	}
 
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_LOOKUPNAMES,
-			q, r,
-			qbuf, rbuf,
-			lsa_io_q_lookup_names,
-			lsa_io_r_lookup_names,
-			NT_STATUS_UNSUCCESSFUL);
-
-	result = r.status;
+	result = rpccli_lsa_LookupNames(cli, mem_ctx,
+				        pol,
+					num_names,
+					lsa_names,
+					&domains,
+					&sid_array,
+					level,
+					&count);
 
 	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) !=
 	    NT_STATUS_V(STATUS_SOME_UNMAPPED)) {
@@ -382,7 +391,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 
 	/* Return output parameters */
 
-	if (r.mapped_count == 0) {
+	if (count == 0) {
 		result = NT_STATUS_NONE_MAPPED;
 		goto done;
 	}
@@ -417,9 +426,8 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 	}
 
 	for (i = 0; i < num_names; i++) {
-		DOM_RID *t_rids = r.dom_rid;
-		uint32 dom_idx = t_rids[i].rid_idx;
-		uint32 dom_rid = t_rids[i].rid;
+		uint32_t dom_idx = sid_array.sids[i].sid_index;
+		uint32_t dom_rid = sid_array.sids[i].rid;
 		DOM_SID *sid = &(*sids)[i];
 
 		/* Translate optimised sid through domain index array */
@@ -431,319 +439,25 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 			continue;
 		}
 
-		sid_copy(sid, &ref.ref_dom[dom_idx].ref_dom.sid);
+		sid_copy(sid, domains->domains[dom_idx].sid);
 
 		if (dom_rid != 0xffffffff) {
 			sid_append_rid(sid, dom_rid);
 		}
 
-		(*types)[i] = t_rids[i].type;
+		(*types)[i] = sid_array.sids[i].sid_type;
 
 		if (dom_names == NULL) {
 			continue;
 		}
 
-		(*dom_names)[i] = rpcstr_pull_unistr2_talloc(
-			*dom_names, &ref.ref_dom[dom_idx].uni_dom_name);
+		(*dom_names)[i] = domains->domains[dom_idx].name.string;
 	}
 
  done:
 
 	return result;
 }
-
-/** Enumerate list of SIDs  */
-
-NTSTATUS rpccli_lsa_enum_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                POLICY_HND *pol, uint32 *enum_ctx, uint32 pref_max_length,
-                                uint32 *num_sids, DOM_SID **sids)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_ENUM_ACCOUNTS q;
-	LSA_R_ENUM_ACCOUNTS r;
-	NTSTATUS result;
-	int i;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-        init_lsa_q_enum_accounts(&q, pol, *enum_ctx, pref_max_length);
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_ENUM_ACCOUNTS,
-		q, r,
-		qbuf, rbuf,
-		lsa_io_q_enum_accounts,
-		lsa_io_r_enum_accounts,
-		NT_STATUS_UNSUCCESSFUL);
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	if (r.sids.num_entries==0)
-		goto done;
-
-	/* Return output parameters */
-
-	*sids = TALLOC_ARRAY(mem_ctx, DOM_SID, r.sids.num_entries);
-	if (!*sids) {
-		DEBUG(0, ("(cli_lsa_enum_sids): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	/* Copy across names and sids */
-
-	for (i = 0; i < r.sids.num_entries; i++) {
-		sid_copy(&(*sids)[i], &r.sids.sid[i].sid);
-	}
-
-	*num_sids= r.sids.num_entries;
-	*enum_ctx = r.enum_context;
-
- done:
-
-	return result;
-}
-
-/** Enumerate user privileges
- *
- * @param cli Handle on an initialised SMB connection */
-
-NTSTATUS rpccli_lsa_enum_privsaccount(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                             POLICY_HND *pol, uint32 *count, LUID_ATTR **set)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_ENUMPRIVSACCOUNT q;
-	LSA_R_ENUMPRIVSACCOUNT r;
-	NTSTATUS result;
-	int i;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialise input parameters */
-
-	init_lsa_q_enum_privsaccount(&q, pol);
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_ENUMPRIVSACCOUNT,
-		q, r,
-		qbuf, rbuf,
-		lsa_io_q_enum_privsaccount,
-		lsa_io_r_enum_privsaccount,
-		NT_STATUS_UNSUCCESSFUL);
-
-	/* Return output parameters */
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	if (r.count == 0)
-		goto done;
-
-	if (!((*set = TALLOC_ARRAY(mem_ctx, LUID_ATTR, r.count)))) {
-		DEBUG(0, ("(cli_lsa_enum_privsaccount): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	for (i=0; i<r.count; i++) {
-		(*set)[i].luid.low = r.set.set[i].luid.low;
-		(*set)[i].luid.high = r.set.set[i].luid.high;
-		(*set)[i].attr = r.set.set[i].attr;
-	}
-
-	*count=r.count;
- done:
-
-	return result;
-}
-
-/** Get a privilege value given its name */
-
-NTSTATUS rpccli_lsa_lookup_priv_value(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				 POLICY_HND *pol, const char *name, LUID *luid)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_LOOKUP_PRIV_VALUE q;
-	LSA_R_LOOKUP_PRIV_VALUE r;
-	NTSTATUS result;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_lsa_q_lookup_priv_value(&q, pol, name);
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_LOOKUPPRIVVALUE,
-		q, r,
-		qbuf, rbuf,
-		lsa_io_q_lookup_priv_value,
-		lsa_io_r_lookup_priv_value,
-		NT_STATUS_UNSUCCESSFUL);
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	/* Return output parameters */
-
-	(*luid).low=r.luid.low;
-	(*luid).high=r.luid.high;
-
- done:
-
-	return result;
-}
-
-/* Enumerate account rights This is similar to enum_privileges but
-   takes a SID directly, avoiding the open_account call.
-*/
-
-NTSTATUS rpccli_lsa_enum_account_rights(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				     POLICY_HND *pol, DOM_SID *sid,
-				     uint32 *count, char ***priv_names)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_ENUM_ACCT_RIGHTS q;
-	LSA_R_ENUM_ACCT_RIGHTS r;
-	NTSTATUS result;
-	int i;
-	fstring *privileges;
-	char **names;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-	init_q_enum_acct_rights(&q, pol, 2, sid);
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_ENUMACCTRIGHTS,
-		q, r,
-		qbuf, rbuf,
-		lsa_io_q_enum_acct_rights,
-		lsa_io_r_enum_acct_rights,
-		NT_STATUS_UNSUCCESSFUL);
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	*count = r.count;
-	if (! *count) {
-		goto done;
-	}
-
-
-	privileges = TALLOC_ARRAY( mem_ctx, fstring, *count );
-	names      = TALLOC_ARRAY( mem_ctx, char *, *count );
-
-	if ((privileges == NULL) || (names == NULL)) {
-		TALLOC_FREE(privileges);
-		TALLOC_FREE(names);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	for ( i=0; i<*count; i++ ) {
-		UNISTR4 *uni_string = &r.rights->strings[i];
-
-		if ( !uni_string->string )
-			continue;
-
-		rpcstr_pull( privileges[i], uni_string->string->buffer, sizeof(privileges[i]), -1, STR_TERMINATE );
-
-		/* now copy to the return array */
-		names[i] = talloc_strdup( mem_ctx, privileges[i] );
-	}
-
-	*priv_names = names;
-
-done:
-
-	return result;
-}
-
-
-
-/* add account rights to an account. */
-
-NTSTATUS rpccli_lsa_add_account_rights(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				    POLICY_HND *pol, DOM_SID sid,
-					uint32 count, const char **privs_name)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_ADD_ACCT_RIGHTS q;
-	LSA_R_ADD_ACCT_RIGHTS r;
-	NTSTATUS result;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-	init_q_add_acct_rights(&q, pol, &sid, count, privs_name);
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_ADDACCTRIGHTS,
-		q, r,
-		qbuf, rbuf,
-		lsa_io_q_add_acct_rights,
-		lsa_io_r_add_acct_rights,
-		NT_STATUS_UNSUCCESSFUL);
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-done:
-
-	return result;
-}
-
-
-/* remove account rights for an account. */
-
-NTSTATUS rpccli_lsa_remove_account_rights(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				       POLICY_HND *pol, DOM_SID sid, bool removeall,
-				       uint32 count, const char **privs_name)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_REMOVE_ACCT_RIGHTS q;
-	LSA_R_REMOVE_ACCT_RIGHTS r;
-	NTSTATUS result;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-	init_q_remove_acct_rights(&q, pol, &sid, removeall?1:0, count, privs_name);
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_REMOVEACCTRIGHTS,
-		q, r,
-		qbuf, rbuf,
-		lsa_io_q_remove_acct_rights,
-		lsa_io_r_remove_acct_rights,
-		NT_STATUS_UNSUCCESSFUL);
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-done:
-
-	return result;
-}
-
 
 #if 0
 

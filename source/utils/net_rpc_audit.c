@@ -1,7 +1,7 @@
 /*
    Samba Unix/Linux SMB client library
    Distributed SMB/CIFS Server Management Utility
-   Copyright (C) 2006 Guenther Deschner
+   Copyright (C) 2006,2008 Guenther Deschner
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

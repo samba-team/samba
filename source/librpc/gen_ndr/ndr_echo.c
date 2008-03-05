@@ -627,8 +627,7 @@ _PUBLIC_ void ndr_print_echo_Surrounding(struct ndr_print *ndr, const char *name
 	ndr->depth++;
 	for (cntr_surrounding_0=0;cntr_surrounding_0<r->x;cntr_surrounding_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_surrounding_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_surrounding_0) != -1) {
 			ndr_print_uint16(ndr, "surrounding", r->surrounding[cntr_surrounding_0]);
 			free(idx_0);
 		}

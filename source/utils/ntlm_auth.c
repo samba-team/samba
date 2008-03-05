@@ -418,7 +418,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 	}
 
 	if (flags & WBFLAG_PAM_UNIX_NAME) {
-		*unix_name = SMB_STRDUP((char *)response.extra_data.data);
+		*unix_name = SMB_STRDUP(response.data.auth.unix_username);
 		if (!*unix_name) {
 			winbindd_free_response(&response);
 			return NT_STATUS_NO_MEMORY;
@@ -1215,7 +1215,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 			char *principal;
 			DATA_BLOB ap_rep;
 			DATA_BLOB session_key;
-			PAC_DATA *pac_data = NULL;
+			struct PAC_DATA *pac_data = NULL;
 
 			if ( request.negTokenInit.mechToken.data == NULL ) {
 				DEBUG(1, ("Client did not provide Kerberos data\n"));

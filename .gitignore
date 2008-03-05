@@ -61,3 +61,4 @@ examples/libsmbclient/teststat2
 examples/libsmbclient/teststat3
 examples/libsmbclient/testutime
 examples/libsmbclient/testwrite
+examples/libsmbclient/testtruncate

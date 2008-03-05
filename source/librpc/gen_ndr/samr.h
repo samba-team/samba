@@ -8,7 +8,11 @@
 #ifndef _HEADER_samr
 #define _HEADER_samr
 
+#define MAX_SAM_ENTRIES_W2K	( 0x400 )
+#define MAX_SAM_ENTRIES_W95	( 50 )
 #define SAMR_ENUM_USERS_MULTIPLIER	( 54 )
+#define PASS_MUST_CHANGE_AT_NEXT_LOGON	( 0x01 )
+#define PASS_DONT_CHANGE_AT_NEXT_LOGON	( 0x00 )
 /* bitmap samr_AcctFlags */
 #define ACB_DISABLED ( 0x00000001 )
 #define ACB_HOMDIRREQ ( 0x00000002 )
@@ -590,7 +594,7 @@ struct samr_DispInfoFullGroups {
 
 struct samr_DispEntryAscii {
 	uint32_t idx;
-	struct lsa_AsciiString account_name;
+	struct lsa_AsciiStringLarge account_name;
 };
 
 struct samr_DispInfoAscii {

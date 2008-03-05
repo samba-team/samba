@@ -185,6 +185,9 @@ static WERROR NetServerSetInfoLocal_1005(struct libnetapi_ctx *ctx,
 	}
 
 	if (!lp_config_backend_is_registry()) {
+		libnetapi_set_error_string(ctx,
+			"Configuration manipulation requested but not "
+			"supported by backend");
 		return WERR_NOT_SUPPORTED;
 	}
 
@@ -268,7 +271,7 @@ static WERROR NetServerSetInfoRemote(struct libnetapi_ctx *ctx,
 	status = rpccli_srvsvc_NetSrvSetInfo(pipe_cli, ctx,
 					     server_name,
 					     level,
-					     info,
+					     &info,
 					     parm_error,
 					     &werr);
 	if (!NT_STATUS_IS_OK(status)) {

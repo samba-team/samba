@@ -366,8 +366,9 @@ static int net_lookup_dsgetdcname(int argc, const char **argv)
 	const char *domain_name = NULL;
 	char *site_name = NULL;
 	uint32_t flags = 0;
-	struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
+	struct netr_DsRGetDCNameInfo *info = NULL;
 	TALLOC_CTX *mem_ctx;
+	char *s = NULL;
 
 	if (argc < 1 || argc > 3) {
 		d_printf("usage: net lookup dsgetdcname "
@@ -410,7 +411,9 @@ static int net_lookup_dsgetdcname(int argc, const char **argv)
 		return -1;
 	}
 
-	display_ds_domain_controller_info(mem_ctx, info);
+	s = NDR_PRINT_STRUCT_STRING(mem_ctx, netr_DsRGetDCNameInfo, info);
+	printf("%s\n", s);
+	TALLOC_FREE(s);
 
 	SAFE_FREE(site_name);
 	TALLOC_FREE(mem_ctx);

@@ -26,12 +26,6 @@ for p in $*; do
       echo "Cannot remove $DESTDIR/$BINDIR/$p2 ... does $USER have privileges? "
     fi
   fi
-
-  # this is a special case, mount needs this in a specific location
-  if test "$p2" = smbmount -a -f "$DESTDIR/sbin/mount.smbfs"; then
-    echo "Removing $DESTDIR/sbin/mount.smbfs "
-    rm -f "$DESTDIR/@rootsbindir@/sbin/mount.smbfs"
-  fi
 done
 
 

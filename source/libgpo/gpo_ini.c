@@ -174,7 +174,7 @@ static NTSTATUS convert_file_from_ucs2(TALLOC_CTX *mem_ctx,
 
  failed:
 
- 	DEBUG(1,("gp_inifile_init_context failed: %s\n",
+	DEBUG(1,("gp_inifile_init_context failed: %s\n",
 		nt_errstr(status)));
 
 	TALLOC_FREE(ctx);
@@ -237,7 +237,7 @@ NTSTATUS parse_gpt_ini(TALLOC_CTX *mem_ctx,
 
 	result = NT_STATUS_OK;
  out:
- 	if (dict) {
+	if (dict) {
 		iniparser_freedict(dict);
 	}
 

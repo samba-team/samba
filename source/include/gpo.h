@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  Group Policy Object Support
- *  Copyright (C) Guenther Deschner 2005-2007
+ *  Copyright (C) Guenther Deschner 2005-2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,7 +22,8 @@ enum GPO_LINK_TYPE {
 	GP_LINK_MACHINE	= 1,
 	GP_LINK_SITE	= 2,
 	GP_LINK_DOMAIN	= 3,
-	GP_LINK_OU	= 4
+	GP_LINK_OU	= 4,
+	GP_LINK_LOCAL	= 5 /* for convenience */
 };
 
 /* GPO_OPTIONS */
@@ -32,6 +33,17 @@ enum GPO_LINK_TYPE {
 /* GPO_LIST_FLAGS */
 #define GPO_LIST_FLAG_MACHINE	0x00000001
 #define GPO_LIST_FLAG_SITEONLY	0x00000002
+
+/* following flags from http://support.microsoft.com/kb/312164/EN-US/ */
+#define GPO_INFO_FLAG_MACHINE			0x00000001
+#define GPO_INFO_FLAG_BACKGROUND	 	0x00000010
+#define GPO_INFO_FLAG_SLOWLINK			0x00000020
+#define GPO_INFO_FLAG_VERBOSE			0x00000040
+#define GPO_INFO_FLAG_NOCHANGES			0x00000080
+#define GPO_INFO_FLAG_LINKTRANSITION		0x00000100
+#define GPO_INFO_FLAG_LOGRSOP_TRANSITION	0x00000200
+#define GPO_INFO_FLAG_FORCED_REFRESH		0x00000400
+#define GPO_INFO_FLAG_SAFEMODE_BOOT		0x00000800
 
 #define GPO_VERSION_USER(x) (x >> 16)
 #define GPO_VERSION_MACHINE(x) (x & 0xffff)
@@ -88,11 +100,59 @@ struct GP_EXT {
 	char **extensions_guid;
 	char **snapins;
 	char **snapins_guid;
+	struct GP_EXT *next, *prev;
 };
 
 #define GPO_CACHE_DIR "gpo_cache"
 #define GPT_INI "GPT.INI"
+#define GPO_REFRESH_INTERVAL 60*90
+
+#define GPO_REG_STATE_MACHINE "State\\Machine"
+
+enum gp_reg_action {
+	GP_REG_ACTION_NONE = 0,
+	GP_REG_ACTION_ADD_VALUE = 1,
+	GP_REG_ACTION_ADD_KEY = 2,
+	GP_REG_ACTION_DEL_VALUES = 3,
+	GP_REG_ACTION_DEL_VALUE = 4,
+	GP_REG_ACTION_DEL_ALL_VALUES = 5,
+	GP_REG_ACTION_DEL_KEYS = 6,
+	GP_REG_ACTION_SEC_KEY_SET = 7,
+	GP_REG_ACTION_SEC_KEY_RESET = 8
+};
+
+struct gp_registry_entry {
+	enum gp_reg_action action;
+	const char *key;
+	const char *value;
+	struct registry_value *data;
+};
+
+struct gp_registry_value {
+	const char *value;
+	struct registry_value *data;
+};
+
+struct gp_registry_entry2 {
+	enum gp_reg_action action;
+	const char *key;
+	size_t num_values;
+	struct gp_registry_value **values;
+};
+
+struct gp_registry_entries {
+	size_t num_entries;
+	struct gp_registry_entry **entries;
+};
+
+struct gp_registry_context {
+	const struct nt_user_token *token;
+	const char *path;
+	struct registry_key *curr_key;
+};
 
 #define GP_EXT_GUID_SECURITY "827D319E-6EAC-11D2-A4EA-00C04F79F83A"
 #define GP_EXT_GUID_REGISTRY "35378EAC-683F-11D2-A89A-00C04FBBCFA2"
 #define GP_EXT_GUID_SCRIPTS  "42B5FAAE-6536-11D2-AE5A-0000F87571E3"
+
+#include "libgpo/gpext/gpext.h"

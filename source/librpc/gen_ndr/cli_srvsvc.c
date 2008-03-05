@@ -923,7 +923,7 @@ NTSTATUS rpccli_srvsvc_NetShareSetInfo(struct rpc_pipe_client *cli,
 				       const char *server_unc,
 				       const char *share_name,
 				       uint32_t level,
-				       union srvsvc_NetShareInfo info,
+				       union srvsvc_NetShareInfo *info,
 				       uint32_t *parm_error,
 				       WERROR *werror)
 {
@@ -1169,7 +1169,7 @@ NTSTATUS rpccli_srvsvc_NetSrvSetInfo(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     const char *server_unc,
 				     uint32_t level,
-				     union srvsvc_NetSrvInfo info,
+				     union srvsvc_NetSrvInfo *info,
 				     uint32_t *parm_error,
 				     WERROR *werror)
 {
@@ -1486,7 +1486,7 @@ NTSTATUS rpccli_srvsvc_NetTransportDel(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_srvsvc_NetRemoteTOD(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    const char *server_unc,
-				    struct srvsvc_NetRemoteTODInfo *info,
+				    struct srvsvc_NetRemoteTODInfo **info,
 				    WERROR *werror)
 {
 	struct srvsvc_NetRemoteTOD r;
@@ -1519,9 +1519,7 @@ NTSTATUS rpccli_srvsvc_NetRemoteTOD(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (info && r.out.info) {
-		*info = *r.out.info;
-	}
+	*info = *r.out.info;
 
 	/* Return result */
 	if (werror) {

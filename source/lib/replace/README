@@ -60,6 +60,8 @@ getaddrinfo
 freeaddrinfo
 getnameinfo
 gai_strerror
+getifaddrs
+freeifaddrs
 
 Types:
 bool

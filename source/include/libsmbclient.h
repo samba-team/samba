@@ -5,7 +5,7 @@
   Copyright (C) Richard Sharpe 2000
   Copyright (C) John Terpsra 2000
   Copyright (C) Tom Jansen (Ninja ISD) 2002 
-  Copyright (C) Derrell Lipman 2003
+  Copyright (C) Derrell Lipman 2003-2008
 
    
   This program is free software; you can redistribute it and/or modify
@@ -24,6 +24,13 @@
 
 #ifndef SMBCLIENT_H_INCLUDED
 #define SMBCLIENT_H_INCLUDED
+
+#undef DEPRECATED_SMBC_INTERFACE
+#if ! defined(__LIBSMBCLIENT_INTERNAL__) && defined(__GNUC__)
+# define DEPRECATED_SMBC_INTERFACE      __attribute__ ((deprecated))
+#else
+# define DEPRECATED_SMBC_INTERFACE
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -142,7 +149,7 @@ struct smbc_dirent
 
 /*
  * Valid values for the option "open_share_mode", when calling
- * smbc_option_set()
+ * smbc_setOptionOpenShareMode()
  */
 typedef enum smbc_share_mode
 {
@@ -153,6 +160,21 @@ typedef enum smbc_share_mode
     SMBC_SHAREMODE_DENY_NONE    = 4,
     SMBC_SHAREMODE_DENY_FCB     = 7
 } smbc_share_mode;
+
+
+/**
+ * Values for option SMB Encryption Level, as set and retrieved with
+ * smbc_setOptionSmbEncryptionLevel() and smbc_getOptionSmbEncryptionLevel()
+ */
+typedef enum smbc_smb_encrypt_level
+{
+    SMBC_ENCRYPTLEVEL_NONE      = 0,
+    SMBC_ENCRYPTLEVEL_REQUEST   = 1,
+    SMBC_ENCRYPTLEVEL_REQUIRE   = 2
+} smbc_smb_encrypt_level;
+
+
+typedef int smbc_bool;
 
 
 #ifndef ENOATTR
@@ -213,6 +235,21 @@ typedef struct _SMBCFILE SMBCFILE;
 typedef struct _SMBCCTX SMBCCTX;
 
 
+/*
+ * Flags for SMBCCTX->flags
+ *
+ * NEW CODE SHOULD NOT DIRECTLY MANIPULATE THE CONTEXT STRUCTURE.
+ * Instead, use:
+ *   smbc_setOptionUseKerberos()
+ *   smbc_getOptionUseKerberos()
+ *   smbc_setOptionFallbackAfterKerberos()
+ *   smbc_getOptionFallbackAFterKerberos()
+ *   smbc_setOptionNoAutoAnonymousLogin()
+ *   smbc_getOptionNoAutoAnonymousLogin()
+ */
+# define SMB_CTX_FLAG_USE_KERBEROS (1 << 0)
+# define SMB_CTX_FLAG_FALLBACK_AFTER_KERBEROS (1 << 1)
+# define SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON (1 << 2)
 
 
 
@@ -389,207 +426,556 @@ typedef int (*smbc_remove_cached_srv_fn)(SMBCCTX * c, SMBCSRV *srv);
 typedef int (*smbc_purge_cached_fn)     (SMBCCTX * c);
 
 
-/**@ingroup structure
- * Structure that contains a client context information 
- * This structure is know as SMBCCTX
+
+/*****************************************
+ * Getters and setters for CONFIGURATION *
+ *****************************************/
+
+/** Get the debug level */
+int
+smbc_getDebug(SMBCCTX *c);
+
+/** Set the debug level */
+void
+smbc_setDebug(SMBCCTX *c, int debug);
+
+/** Get the netbios name used for making connections */
+char *
+smbc_getNetbiosName(SMBCCTX *c);
+
+/** Set the netbios name used for making connections */
+void
+smbc_setNetbiosName(SMBCCTX *c, char * netbios_name);
+
+/** Get the workgroup used for making connections */
+char *
+smbc_getWorkgroup(SMBCCTX *c);
+
+/** Set the workgroup used for making connections */
+void smbc_setWorkgroup(SMBCCTX *c, char * workgroup);
+
+/** Get the username used for making connections */
+char *
+smbc_getUser(SMBCCTX *c);
+
+/** Set the username used for making connections */
+void
+smbc_setUser(SMBCCTX *c, char * user);
+
+/**
+ * Get the timeout used for waiting on connections and response data
+ * (in milliseconds)
  */
-struct _SMBCCTX {
-	/** debug level 
-	 */
-	int     debug;
-	
-	/** netbios name used for making connections
-	 */
-	char * netbios_name;
+int
+smbc_getTimeout(SMBCCTX *c);
 
-	/** workgroup name used for making connections 
-	 */
-	char * workgroup;
+/**
+ * Set the timeout used for waiting on connections and response data
+ * (in milliseconds)
+ */
+void
+smbc_setTimeout(SMBCCTX *c, int timeout);
 
-	/** username used for making connections 
-	 */
-	char * user;
 
-	/** timeout used for waiting on connections / response data (in milliseconds)
-	 */
-	int timeout;
 
-	/** callable functions for files:
-	 * For usage and return values see the smbc_* functions
-	 */ 
-	SMBCFILE * (*open)    (SMBCCTX *c, const char *fname, int flags, mode_t mode);
-	SMBCFILE * (*creat)   (SMBCCTX *c, const char *path, mode_t mode);
-	ssize_t    (*read)    (SMBCCTX *c, SMBCFILE *file, void *buf, size_t count);
-	ssize_t    (*write)   (SMBCCTX *c, SMBCFILE *file, void *buf, size_t count);
-	int        (*unlink)  (SMBCCTX *c, const char *fname);
-	int        (*rename)  (SMBCCTX *ocontext, const char *oname, 
-			       SMBCCTX *ncontext, const char *nname);
-	off_t      (*lseek)   (SMBCCTX *c, SMBCFILE * file, off_t offset, int whence);
-	int        (*stat)    (SMBCCTX *c, const char *fname, struct stat *st);
-	int        (*fstat)   (SMBCCTX *c, SMBCFILE *file, struct stat *st);
-	int        (*close_fn) (SMBCCTX *c, SMBCFILE *file);
+/***********************************
+ * Getters and setters for OPTIONS *
+ ***********************************/
 
-	/** callable functions for dirs
-	 */ 
-	SMBCFILE * (*opendir) (SMBCCTX *c, const char *fname);
-	int        (*closedir)(SMBCCTX *c, SMBCFILE *dir);
-	struct smbc_dirent * (*readdir)(SMBCCTX *c, SMBCFILE *dir);
-	int        (*getdents)(SMBCCTX *c, SMBCFILE *dir, 
-			       struct smbc_dirent *dirp, int count);
-	int        (*mkdir)   (SMBCCTX *c, const char *fname, mode_t mode);
-	int        (*rmdir)   (SMBCCTX *c, const char *fname);
-	off_t      (*telldir) (SMBCCTX *c, SMBCFILE *dir);
-	int        (*lseekdir)(SMBCCTX *c, SMBCFILE *dir, off_t offset);
-	int        (*fstatdir)(SMBCCTX *c, SMBCFILE *dir, struct stat *st);
-        int        (*chmod)(SMBCCTX *c, const char *fname, mode_t mode);
-        int        (*utimes)(SMBCCTX *c,
-                             const char *fname, struct timeval *tbuf);
-        int        (*setxattr)(SMBCCTX *context,
-                               const char *fname,
-                               const char *name,
-                               const void *value,
-                               size_t size,
-                               int flags);
-        int        (*getxattr)(SMBCCTX *context,
-                               const char *fname,
-                               const char *name,
-                               const void *value,
-                               size_t size);
-        int        (*removexattr)(SMBCCTX *context,
-                                  const char *fname,
-                                  const char *name);
-        int        (*listxattr)(SMBCCTX *context,
+/** Get whether to log to standard error instead of standard output */
+smbc_bool
+smbc_getOptionDebugToStderr(SMBCCTX *c);
+
+/** Set whether to log to standard error instead of standard output */
+void
+smbc_setOptionDebugToStderr(SMBCCTX *c, smbc_bool b);
+
+/**
+ * Get whether to use new-style time attribute names, e.g. WRITE_TIME rather
+ * than the old-style names such as M_TIME.  This allows also setting/getting
+ * CREATE_TIME which was previously unimplemented.  (Note that the old C_TIME
+ * was supposed to be CHANGE_TIME but was confused and sometimes referred to
+ * CREATE_TIME.)
+ */
+smbc_bool
+smbc_getOptionFullTimeNames(SMBCCTX *c);
+
+/**
+ * Set whether to use new-style time attribute names, e.g. WRITE_TIME rather
+ * than the old-style names such as M_TIME.  This allows also setting/getting
+ * CREATE_TIME which was previously unimplemented.  (Note that the old C_TIME
+ * was supposed to be CHANGE_TIME but was confused and sometimes referred to
+ * CREATE_TIME.)
+ */
+void
+smbc_setOptionFullTimeNames(SMBCCTX *c, smbc_bool b);
+
+/**
+ * Get the share mode to use for files opened with SMBC_open_ctx().  The
+ * default is SMBC_SHAREMODE_DENY_NONE.
+ */
+smbc_share_mode
+smbc_getOptionOpenShareMode(SMBCCTX *c);
+
+/**
+ * Set the share mode to use for files opened with SMBC_open_ctx().  The
+ * default is SMBC_SHAREMODE_DENY_NONE.
+ */
+void
+smbc_setOptionOpenShareMode(SMBCCTX *c, smbc_share_mode share_mode);
+
+/** Retrieve a previously saved user data handle */
+void *
+smbc_getOptionUserData(SMBCCTX *c);
+
+/** Save a user data handle */
+void
+smbc_setOptionUserData(SMBCCTX *c, void *user_data);
+
+/** Get the encoded value for encryption level. */
+smbc_smb_encrypt_level
+smbc_getOptionSmbEncryptionLevel(SMBCCTX *c);
+
+/** Set the encoded value for encryption level. */
+void
+smbc_setOptionSmbEncryptionLevel(SMBCCTX *c, smbc_smb_encrypt_level level);
+
+/**
+ * Get from how many local master browsers should the list of workgroups be
+ * retrieved.  It can take up to 12 minutes or longer after a server becomes a
+ * local master browser, for it to have the entire browse list (the list of
+ * workgroups/domains) from an entire network.  Since a client never knows
+ * which local master browser will be found first, the one which is found
+ * first and used to retrieve a browse list may have an incomplete or empty
+ * browse list.  By requesting the browse list from multiple local master
+ * browsers, a more complete list can be generated.  For small networks (few
+ * workgroups), it is recommended that this value be set to 0, causing the
+ * browse lists from all found local master browsers to be retrieved and
+ * merged.  For networks with many workgroups, a suitable value for this
+ * variable is probably somewhere around 3. (Default: 3).
+ */
+int
+smbc_getOptionBrowseMaxLmbCount(SMBCCTX *c);
+
+/**
+ * Set from how many local master browsers should the list of workgroups be
+ * retrieved.  It can take up to 12 minutes or longer after a server becomes a
+ * local master browser, for it to have the entire browse list (the list of
+ * workgroups/domains) from an entire network.  Since a client never knows
+ * which local master browser will be found first, the one which is found
+ * first and used to retrieve a browse list may have an incomplete or empty
+ * browse list.  By requesting the browse list from multiple local master
+ * browsers, a more complete list can be generated.  For small networks (few
+ * workgroups), it is recommended that this value be set to 0, causing the
+ * browse lists from all found local master browsers to be retrieved and
+ * merged.  For networks with many workgroups, a suitable value for this
+ * variable is probably somewhere around 3. (Default: 3).
+ */
+void
+smbc_setOptionBrowseMaxLmbCount(SMBCCTX *c, int count);
+
+/**
+ * Get whether to url-encode readdir entries.
+ *
+ * There is a difference in the desired return strings from
+ * smbc_readdir() depending upon whether the filenames are to
+ * be displayed to the user, or whether they are to be
+ * appended to the path name passed to smbc_opendir() to call
+ * a further smbc_ function (e.g. open the file with
+ * smbc_open()).  In the former case, the filename should be
+ * in "human readable" form.  In the latter case, the smbc_
+ * functions expect a URL which must be url-encoded.  Those
+ * functions decode the URL.  If, for example, smbc_readdir()
+ * returned a file name of "abc%20def.txt", passing a path
+ * with this file name attached to smbc_open() would cause
+ * smbc_open to attempt to open the file "abc def.txt" since
+ * the %20 is decoded into a space.
+ *
+ * Set this option to True if the names returned by
+ * smbc_readdir() should be url-encoded such that they can be
+ * passed back to another smbc_ call.  Set it to False if the
+ * names returned by smbc_readdir() are to be presented to the
+ * user.
+ *
+ * For backwards compatibility, this option defaults to False.
+ */
+smbc_bool
+smbc_getOptionUrlEncodeReaddirEntries(SMBCCTX *c);
+
+/**
+ * Set whether to url-encode readdir entries.
+ *
+ * There is a difference in the desired return strings from
+ * smbc_readdir() depending upon whether the filenames are to
+ * be displayed to the user, or whether they are to be
+ * appended to the path name passed to smbc_opendir() to call
+ * a further smbc_ function (e.g. open the file with
+ * smbc_open()).  In the former case, the filename should be
+ * in "human readable" form.  In the latter case, the smbc_
+ * functions expect a URL which must be url-encoded.  Those
+ * functions decode the URL.  If, for example, smbc_readdir()
+ * returned a file name of "abc%20def.txt", passing a path
+ * with this file name attached to smbc_open() would cause
+ * smbc_open to attempt to open the file "abc def.txt" since
+ * the %20 is decoded into a space.
+ *
+ * Set this option to True if the names returned by
+ * smbc_readdir() should be url-encoded such that they can be
+ * passed back to another smbc_ call.  Set it to False if the
+ * names returned by smbc_readdir() are to be presented to the
+ * user.
+ *
+ * For backwards compatibility, this option defaults to False.
+ */
+void
+smbc_setOptionUrlEncodeReaddirEntries(SMBCCTX *c, smbc_bool b);
+
+/**
+ * Get whether to use the same connection for all shares on a server.
+ *
+ * Some Windows versions appear to have a limit to the number
+ * of concurrent SESSIONs and/or TREE CONNECTions.  In
+ * one-shot programs (i.e. the program runs and then quickly
+ * ends, thereby shutting down all connections), it is
+ * probably reasonable to establish a new connection for each
+ * share.  In long-running applications, the limitation can be
+ * avoided by using only a single connection to each server,
+ * and issuing a new TREE CONNECT when the share is accessed.
+ */
+smbc_bool
+smbc_getOptionOneSharePerServer(SMBCCTX *c);
+
+/**
+ * Set whether to use the same connection for all shares on a server.
+ *
+ * Some Windows versions appear to have a limit to the number
+ * of concurrent SESSIONs and/or TREE CONNECTions.  In
+ * one-shot programs (i.e. the program runs and then quickly
+ * ends, thereby shutting down all connections), it is
+ * probably reasonable to establish a new connection for each
+ * share.  In long-running applications, the limitation can be
+ * avoided by using only a single connection to each server,
+ * and issuing a new TREE CONNECT when the share is accessed.
+ */
+void
+smbc_setOptionOneSharePerServer(SMBCCTX *c, smbc_bool b);
+
+/** Get whether to enable use of kerberos */
+smbc_bool
+smbc_getOptionUseKerberos(SMBCCTX *c);
+
+/** Set whether to enable use of kerberos */
+void
+smbc_setOptionUseKerberos(SMBCCTX *c, smbc_bool b);
+
+/** Get whether to fallback after kerberos */
+smbc_bool
+smbc_getOptionFallbackAfterKerberos(SMBCCTX *c);
+
+/** Set whether to fallback after kerberos */
+void
+smbc_setOptionFallbackAfterKerberos(SMBCCTX *c, smbc_bool b);
+
+/** Get whether to automatically select anonymous login */
+smbc_bool
+smbc_getOptionNoAutoAnonymousLogin(SMBCCTX *c);
+
+/** Set whether to automatically select anonymous login */
+void
+smbc_setOptionNoAutoAnonymousLogin(SMBCCTX *c, smbc_bool b);
+
+
+
+/*************************************
+ * Getters and setters for FUNCTIONS *
+ *************************************/
+
+/** Get the function for obtaining authentication data */
+smbc_get_auth_data_fn smbc_getFunctionAuthData(SMBCCTX *c);
+
+/** Set the function for obtaining authentication data */
+void smbc_setFunctionAuthData(SMBCCTX *c, smbc_get_auth_data_fn fn);
+
+/** Get the new-style authentication function which includes the context. */
+smbc_get_auth_data_with_context_fn
+smbc_getFunctionAuthDataWithContext(SMBCCTX *c);
+
+/** Set the new-style authentication function which includes the context. */
+void
+smbc_setFunctionAuthDataWithContext(SMBCCTX *c,
+                                    smbc_get_auth_data_with_context_fn fn);
+
+/** Get the function for checking if a server is still good */
+smbc_check_server_fn smbc_getFunctionCheckServer(SMBCCTX *c);
+
+/** Set the function for checking if a server is still good */
+void smbc_setFunctionCheckServer(SMBCCTX *c, smbc_check_server_fn fn);
+
+/** Get the function for removing a server if unused */
+smbc_remove_unused_server_fn smbc_getFunctionRemoveUnusedServer(SMBCCTX *c);
+
+/** Set the function for removing a server if unused */
+void smbc_setFunctionRemoveUnusedServer(SMBCCTX *c,
+                                        smbc_remove_unused_server_fn fn);
+
+/** Get the function for adding a cached server */
+smbc_add_cached_srv_fn smbc_getFunctionAddCachedServer(SMBCCTX *c);
+
+/** Set the function for adding a cached server */
+void smbc_setFunctionAddCachedServer(SMBCCTX *c, smbc_add_cached_srv_fn fn);
+
+/** Get the function for server cache lookup */
+smbc_get_cached_srv_fn smbc_getFunctionGetCachedServer(SMBCCTX *c);
+
+/** Set the function for server cache lookup */
+void smbc_setFunctionGetCachedServer(SMBCCTX *c, smbc_get_cached_srv_fn fn);
+
+/** Get the function for server cache removal */
+smbc_remove_cached_srv_fn smbc_getFunctionRemoveCachedServer(SMBCCTX *c);
+
+/** Set the function for server cache removal */
+void smbc_setFunctionRemoveCachedServer(SMBCCTX *c,
+                                        smbc_remove_cached_srv_fn fn);
+
+/**
+ * Get the function for server cache purging.  This function tries to
+ * remove all cached servers (e.g. on disconnect)
+ */
+smbc_purge_cached_fn smbc_getFunctionPurgeCachedServers(SMBCCTX *c);
+
+/**
+ * Set the function for server cache purging.  This function tries to
+ * remove all cached servers (e.g. on disconnect)
+ */
+void smbc_setFunctionPurgeCachedServers(SMBCCTX *c,
+                                        smbc_purge_cached_fn fn);
+
+/** Get the function to store private data of the server cache */
+struct smbc_server_cache * smbc_getServerCacheData(SMBCCTX *c);
+
+/** Set the function to store private data of the server cache */
+void smbc_setServerCacheData(SMBCCTX *c, struct smbc_server_cache * cache);
+
+
+
+/*****************************************************************
+ * Callable functions for files.                                 *
+ * Each callable has a function signature typedef, a declaration *
+ * for the getter, and a declaration for the setter.             *
+ *****************************************************************/
+
+typedef SMBCFILE * (*smbc_open_fn)(SMBCCTX *c,
+                                   const char *fname,
+                                   int flags,
+                                   mode_t mode);
+smbc_open_fn smbc_getFunctionOpen(SMBCCTX *c);
+void smbc_setFunctionOpen(SMBCCTX *c, smbc_open_fn fn);
+
+typedef SMBCFILE * (*smbc_creat_fn)(SMBCCTX *c,
+                                    const char *path,
+                                    mode_t mode);
+smbc_creat_fn smbc_getFunctionCreat(SMBCCTX *c);
+void smbc_setFunctionCreat(SMBCCTX *c, smbc_creat_fn);
+
+typedef ssize_t (*smbc_read_fn)(SMBCCTX *c,
+                                SMBCFILE *file,
+                                void *buf,
+                                size_t count);
+smbc_read_fn smbc_getFunctionRead(SMBCCTX *c);
+void smbc_setFunctionRead(SMBCCTX *c, smbc_read_fn fn);
+
+typedef ssize_t (*smbc_write_fn)(SMBCCTX *c,
+                                 SMBCFILE *file,
+                                 void *buf,
+                                 size_t count);
+smbc_write_fn smbc_getFunctionWrite(SMBCCTX *c);
+void smbc_setFunctionWrite(SMBCCTX *c, smbc_write_fn fn);
+
+typedef int (*smbc_unlink_fn)(SMBCCTX *c,
+                              const char *fname);
+smbc_unlink_fn smbc_getFunctionUnlink(SMBCCTX *c);
+void smbc_setFunctionUnlink(SMBCCTX *c, smbc_unlink_fn fn);
+
+typedef int (*smbc_rename_fn)(SMBCCTX *ocontext,
+                              const char *oname,
+                              SMBCCTX *ncontext,
+                              const char *nname);
+smbc_rename_fn smbc_getFunctionRename(SMBCCTX *c);
+void smbc_setFunctionRename(SMBCCTX *c, smbc_rename_fn fn);
+
+typedef off_t (*smbc_lseek_fn)(SMBCCTX *c,
+                               SMBCFILE * file,
+                               off_t offset,
+                               int whence);
+smbc_lseek_fn smbc_getFunctionLseek(SMBCCTX *c);
+void smbc_setFunctionLseek(SMBCCTX *c, smbc_lseek_fn fn);
+
+typedef int (*smbc_stat_fn)(SMBCCTX *c,
+                            const char *fname,
+                            struct stat *st);
+smbc_stat_fn smbc_getFunctionStat(SMBCCTX *c);
+void smbc_setFunctionStat(SMBCCTX *c, smbc_stat_fn fn);
+
+typedef int (*smbc_fstat_fn)(SMBCCTX *c,
+                             SMBCFILE *file,
+                             struct stat *st);
+smbc_fstat_fn smbc_getFunctionFstat(SMBCCTX *c);
+void smbc_setFunctionFstat(SMBCCTX *c, smbc_fstat_fn fn);
+
+typedef int (*smbc_ftruncate_fn)(SMBCCTX *c,
+                                 SMBCFILE *f,
+                                 off_t size);
+smbc_ftruncate_fn smbc_getFunctionFtruncate(SMBCCTX *c);
+void smbc_setFunctionFtruncate(SMBCCTX *c, smbc_ftruncate_fn fn);
+
+typedef int (*smbc_close_fn)(SMBCCTX *c,
+                             SMBCFILE *file);
+smbc_close_fn smbc_getFunctionClose(SMBCCTX *c);
+void smbc_setFunctionClose(SMBCCTX *c, smbc_close_fn fn);
+
+
+
+/*****************************************************************
+ * Callable functions for directories.                           *
+ * Each callable has a function signature typedef, a declaration *
+ * for the getter, and a declaration for the setter.             *
+ *****************************************************************/
+
+typedef SMBCFILE * (*smbc_opendir_fn)(SMBCCTX *c,
+                                      const char *fname);
+smbc_opendir_fn smbc_getFunctionOpendir(SMBCCTX *c);
+void smbc_setFunctionOpendir(SMBCCTX *c, smbc_opendir_fn fn);
+
+typedef int (*smbc_closedir_fn)(SMBCCTX *c,
+                                SMBCFILE *dir);
+smbc_closedir_fn smbc_getFunctionClosedir(SMBCCTX *c);
+void smbc_setFunctionClosedir(SMBCCTX *c, smbc_closedir_fn fn);
+
+typedef struct smbc_dirent * (*smbc_readdir_fn)(SMBCCTX *c,
+                                                SMBCFILE *dir);
+smbc_readdir_fn smbc_getFunctionReaddir(SMBCCTX *c);
+void smbc_setFunctionReaddir(SMBCCTX *c, smbc_readdir_fn fn);
+
+typedef int (*smbc_getdents_fn)(SMBCCTX *c,
+                                SMBCFILE *dir,
+                                struct smbc_dirent *dirp,
+                                int count);
+smbc_getdents_fn smbc_getFunctionGetdents(SMBCCTX *c);
+void smbc_setFunctionGetdents(SMBCCTX *c, smbc_getdents_fn fn);
+
+typedef int (*smbc_mkdir_fn)(SMBCCTX *c,
+                             const char *fname,
+                             mode_t mode);
+smbc_mkdir_fn smbc_getFunctionMkdir(SMBCCTX *c);
+void smbc_setFunctionMkdir(SMBCCTX *c, smbc_mkdir_fn fn);
+
+typedef int (*smbc_rmdir_fn)(SMBCCTX *c,
+                             const char *fname);
+smbc_rmdir_fn smbc_getFunctionRmdir(SMBCCTX *c);
+void smbc_setFunctionRmdir(SMBCCTX *c, smbc_rmdir_fn fn);
+
+typedef off_t (*smbc_telldir_fn)(SMBCCTX *c,
+                                 SMBCFILE *dir);
+smbc_telldir_fn smbc_getFunctionTelldir(SMBCCTX *c);
+void smbc_setFunctionTelldir(SMBCCTX *c, smbc_telldir_fn fn);
+
+typedef int (*smbc_lseekdir_fn)(SMBCCTX *c,
+                                SMBCFILE *dir,
+                                off_t offset);
+smbc_lseekdir_fn smbc_getFunctionLseekdir(SMBCCTX *c);
+void smbc_setFunctionLseekdir(SMBCCTX *c, smbc_lseekdir_fn fn);
+
+typedef int (*smbc_fstatdir_fn)(SMBCCTX *c,
+                                SMBCFILE *dir,
+                                struct stat *st);
+smbc_fstatdir_fn smbc_getFunctionFstatdir(SMBCCTX *c);
+void smbc_setFunctionFstatdir(SMBCCTX *c, smbc_fstatdir_fn fn);
+
+
+
+/*****************************************************************
+ * Callable functions applicable to both files and directories.  *
+ * Each callable has a function signature typedef, a declaration *
+ * for the getter, and a declaration for the setter.             *
+ *****************************************************************/
+
+typedef int (*smbc_chmod_fn)(SMBCCTX *c,
+                             const char *fname,
+                             mode_t mode);
+smbc_chmod_fn smbc_getFunctionChmod(SMBCCTX *c);
+void smbc_setFunctionChmod(SMBCCTX *c, smbc_chmod_fn fn);
+
+typedef int (*smbc_utimes_fn)(SMBCCTX *c,
+                              const char *fname,
+                              struct timeval *tbuf);
+smbc_utimes_fn smbc_getFunctionUtimes(SMBCCTX *c);
+void smbc_setFunctionUtimes(SMBCCTX *c, smbc_utimes_fn fn);
+
+typedef int (*smbc_setxattr_fn)(SMBCCTX *context,
                                 const char *fname,
-                                char *list,
+                                const char *name,
+                                const void *value,
+                                size_t size,
+                                int flags);
+smbc_setxattr_fn smbc_getFunctionSetxattr(SMBCCTX *c);
+void smbc_setFunctionSetxattr(SMBCCTX *c, smbc_setxattr_fn fn);
+
+typedef int (*smbc_getxattr_fn)(SMBCCTX *context,
+                                const char *fname,
+                                const char *name,
+                                const void *value,
                                 size_t size);
+smbc_getxattr_fn smbc_getFunctionGetxattr(SMBCCTX *c);
+void smbc_setFunctionGetxattr(SMBCCTX *c, smbc_getxattr_fn fn);
 
-	/** callable functions for printing
-	 */ 
-	int        (*print_file)(SMBCCTX *c_file, const char *fname, 
-				 SMBCCTX *c_print, const char *printq);
-	SMBCFILE * (*open_print_job)(SMBCCTX *c, const char *fname);
-	int        (*list_print_jobs)(SMBCCTX *c, const char *fname, smbc_list_print_job_fn fn);
-	int        (*unlink_print_job)(SMBCCTX *c, const char *fname, int id);
+typedef int (*smbc_removexattr_fn)(SMBCCTX *context,
+                                   const char *fname,
+                                   const char *name);
+smbc_removexattr_fn smbc_getFunctionRemovexattr(SMBCCTX *c);
+void smbc_setFunctionRemovexattr(SMBCCTX *c, smbc_removexattr_fn fn);
 
-
-        /*
-        ** Callbacks
-        * These callbacks _always_ have to be initialized because they will
-        * not be checked at dereference for increased speed.
-        */
-	struct _smbc_callbacks {
-		/** authentication function callback: called upon auth requests
-		 */
-                smbc_get_auth_data_fn auth_fn;
-		
-		/** check if a server is still good
-		 */
-		smbc_check_server_fn check_server_fn;
-
-		/** remove a server if unused
-		 */
-		smbc_remove_unused_server_fn remove_unused_server_fn;
-
-		/** Cache subsystem
-		 * For an example cache system see samba/source/libsmb/libsmb_cache.c
-		 * Cache subsystem functions follow.
-		 */
-
-		/** server cache addition 
-		 */
-		smbc_add_cached_srv_fn add_cached_srv_fn;
-
-		/** server cache lookup 
-		 */
-		smbc_get_cached_srv_fn get_cached_srv_fn;
-
-		/** server cache removal
-		 */
-		smbc_remove_cached_srv_fn remove_cached_srv_fn;
-		
-		/** server cache purging, try to remove all cached servers (disconnect)
-		 */
-		smbc_purge_cached_fn purge_cached_fn;
-	} callbacks;
+typedef int (*smbc_listxattr_fn)(SMBCCTX *context,
+                                 const char *fname,
+                                 char *list,
+                                 size_t size);
+smbc_listxattr_fn smbc_getFunctionListxattr(SMBCCTX *c);
+void smbc_setFunctionListxattr(SMBCCTX *c, smbc_listxattr_fn fn);
 
 
-	/** Space to store private data of the server cache.
-	 */
-	struct smbc_server_cache * server_cache;
 
-	int flags;
-	
-        /** user options selections that apply to this session
-         */
-        struct _smbc_options {
+/*****************************************************************
+ * Callable functions for printing.                              *
+ * Each callable has a function signature typedef, a declaration *
+ * for the getter, and a declaration for the setter.             *
+ *****************************************************************/
 
-                /*
-                 * From how many local master browsers should the list of
-                 * workgroups be retrieved?  It can take up to 12 minutes or
-                 * longer after a server becomes a local master browser, for
-                 * it to have the entire browse list (the list of
-                 * workgroups/domains) from an entire network.  Since a client
-                 * never knows which local master browser will be found first,
-                 * the one which is found first and used to retrieve a browse
-                 * list may have an incomplete or empty browse list.  By
-                 * requesting the browse list from multiple local master
-                 * browsers, a more complete list can be generated.  For small
-                 * networks (few workgroups), it is recommended that this
-                 * value be set to 0, causing the browse lists from all found
-                 * local master browsers to be retrieved and merged.  For
-                 * networks with many workgroups, a suitable value for this
-                 * variable is probably somewhere around 3. (Default: 3).
-                 */
-                int browse_max_lmb_count;
+typedef int (*smbc_print_file_fn)(SMBCCTX *c_file,
+                                  const char *fname,
+                                  SMBCCTX *c_print,
+                                  const char *printq);
+smbc_print_file_fn smbc_getFunctionPrintFile(SMBCCTX *c);
+void smbc_setFunctionPrintFile(SMBCCTX *c, smbc_print_file_fn fn);
 
-                /*
-                 * There is a difference in the desired return strings from
-                 * smbc_readdir() depending upon whether the filenames are to
-                 * be displayed to the user, or whether they are to be
-                 * appended to the path name passed to smbc_opendir() to call
-                 * a further smbc_ function (e.g. open the file with
-                 * smbc_open()).  In the former case, the filename should be
-                 * in "human readable" form.  In the latter case, the smbc_
-                 * functions expect a URL which must be url-encoded.  Those
-                 * functions decode the URL.  If, for example, smbc_readdir()
-                 * returned a file name of "abc%20def.txt", passing a path
-                 * with this file name attached to smbc_open() would cause
-                 * smbc_open to attempt to open the file "abc def.txt" since
-                 * the %20 is decoded into a space.
-                 *
-                 * Set this option to True if the names returned by
-                 * smbc_readdir() should be url-encoded such that they can be
-                 * passed back to another smbc_ call.  Set it to False if the
-                 * names returned by smbc_readdir() are to be presented to the
-                 * user.
-                 *
-                 * For backwards compatibility, this option defaults to False.
-                 */
-                int urlencode_readdir_entries;
+typedef SMBCFILE * (*smbc_open_print_job_fn)(SMBCCTX *c,
+                                             const char *fname);
+smbc_open_print_job_fn smbc_getFunctionOpenPrintJob(SMBCCTX *c);
+void smbc_setFunctionOpenPrintJob(SMBCCTX *c,
+                                  smbc_open_print_job_fn fn);
 
-                /*
-                 * Some Windows versions appear to have a limit to the number
-                 * of concurrent SESSIONs and/or TREE CONNECTions.  In
-                 * one-shot programs (i.e. the program runs and then quickly
-                 * ends, thereby shutting down all connections), it is
-                 * probably reasonable to establish a new connection for each
-                 * share.  In long-running applications, the limitation can be
-                 * avoided by using only a single connection to each server,
-                 * and issuing a new TREE CONNECT when the share is accessed.
-                 */
-                int one_share_per_server;
-        } options;
-	
-	/** INTERNAL DATA
-	 * do _NOT_ touch this from your program !
-	 */
-	struct smbc_internal_data * internal;
-};
+typedef int (*smbc_list_print_jobs_fn)(SMBCCTX *c,
+                                       const char *fname,
+                                       smbc_list_print_job_fn fn);
+smbc_list_print_jobs_fn smbc_getFunctionListPrintJobs(SMBCCTX *c);
+void smbc_setFunctionListPrintJobs(SMBCCTX *c,
+                                   smbc_list_print_jobs_fn fn);
 
-/* Flags for SMBCCTX->flags */
-#define SMB_CTX_FLAG_USE_KERBEROS (1 << 0)
-#define SMB_CTX_FLAG_FALLBACK_AFTER_KERBEROS (1 << 1)
-#define SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON (1 << 2) /* don't try to do automatic anon login */
+typedef int (*smbc_unlink_print_job_fn)(SMBCCTX *c,
+                                        const char *fname,
+                                        int id);
+smbc_unlink_print_job_fn smbc_getFunctionUnlinkPrintJob(SMBCCTX *c);
+void smbc_setFunctionUnlinkPrintJob(SMBCCTX *c,
+                                    smbc_unlink_print_job_fn fn);
+
 
 /**@ingroup misc
  * Create a new SBMCCTX (a context).
@@ -630,35 +1016,16 @@ int smbc_free_context(SMBCCTX * context, int shutdown_ctx);
 
 
 /**@ingroup misc
- * Each time the context structure is changed, we have binary backward
- * compatibility issues.  Instead of modifying the public portions of the
- * context structure to add new options, instead, we put them in the internal
- * portion of the context structure and provide a set function for these new
- * options.
  *
- * @param context   A pointer to a SMBCCTX obtained from smbc_new_context()
- *
- * @param option_name
- *                  The name of the option for which the value is to be set
- *
- * @param option_value
- *                  The new value of the option being set
- *
+ * @deprecated.  Use smbc_setOption*() functions instead.
  */
 void
 smbc_option_set(SMBCCTX *context,
                 char *option_name,
                 ... /* option_value */);
+
 /*
- * Retrieve the current value of an option
- *
- * @param context   A pointer to a SMBCCTX obtained from smbc_new_context()
- *
- * @param option_name
- *                  The name of the option for which the value is to be
- *                  retrieved
- *
- * @return          The value of the specified option.
+ * @deprecated.  Use smbc_getOption*() functions instead.
  */
 void *
 smbc_option_get(SMBCCTX *context,
@@ -1191,6 +1558,26 @@ int smbc_stat(const char *url, struct stat *st);
  *
  */
 int smbc_fstat(int fd, struct stat *st);
+
+
+/**@ingroup attribute
+ * Truncate a file given a file descriptor
+ * 
+ * @param fd        Open file handle from smbc_open() or smbc_creat()
+ *
+ * @param size      size to truncate the file to
+ * 
+ * @return          EBADF  filedes is bad.
+ *                  - EACCES Permission denied.
+ *                  - EBADF fd is not a valid file descriptor
+ *                  - EINVAL Problems occurred in the underlying routines
+ *		      or smbc_init not called.
+ *                  - ENOMEM Out of memory
+ *
+ * @see             , Unix ftruncate()
+ *
+ */
+int smbc_ftruncate(int fd, off_t size);
 
 
 /**@ingroup attribue
@@ -2189,6 +2576,233 @@ smbc_version(void);
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @ingroup structure
+ * Structure that contains a client context information 
+ * This structure is known as SMBCCTX
+ *
+ * DO NOT DIRECTLY MANIPULATE THE CONTEXT STRUCTURE!  The data in the context
+ * structure should all be considered private to the library.  It remains here
+ * only for backward compatibility.
+ *
+ * See the comments herein for use of the setter and getter functions which
+ * should now be used for manipulating these values.  New features, functions,
+ * etc., are not added here but rather in _internal where they are not
+ * directly visible to applications.  This makes it much easier to maintain
+ * ABI compatibility.
+ */
+struct _SMBCCTX
+{
+        /**
+         * debug level
+         *
+         * DEPRECATED:
+         * Use smbc_getDebug() and smbc_setDebug()
+         */
+        int     debug DEPRECATED_SMBC_INTERFACE;
+	
+        /**
+         * netbios name used for making connections
+         *
+         * DEPRECATED:
+         * Use smbc_getNetbiosName() and smbc_setNetbiosName()
+         */
+        char * netbios_name DEPRECATED_SMBC_INTERFACE;
+
+        /**
+         * workgroup name used for making connections
+         *
+         * DEPRECATED:
+         * Use smbc_getWorkgroup() and smbc_setWorkgroup()
+         */
+        char * workgroup DEPRECATED_SMBC_INTERFACE;
+
+        /**
+         * username used for making connections
+         *
+         * DEPRECATED:
+         * Use smbc_getUser() and smbc_setUser()
+         */
+        char * user DEPRECATED_SMBC_INTERFACE;
+
+        /**
+         * timeout used for waiting on connections / response data (in
+         * milliseconds)
+         *
+         * DEPRECATED:
+         * Use smbc_getTimeout() and smbc_setTimeout()
+         */
+        int timeout DEPRECATED_SMBC_INTERFACE;
+
+	/**
+         * callable functions for files:
+	 * For usage and return values see the SMBC_* functions
+         *
+         * DEPRECATED:
+         *
+         * Use smbc_getFunction*() and smbc_setFunction*(), e.g.
+         * smbc_getFunctionOpen(), smbc_setFunctionUnlink(), etc.
+	 */ 
+        smbc_open_fn                    open DEPRECATED_SMBC_INTERFACE;
+        smbc_creat_fn                   creat DEPRECATED_SMBC_INTERFACE;
+        smbc_read_fn                    read DEPRECATED_SMBC_INTERFACE;
+        smbc_write_fn                   write DEPRECATED_SMBC_INTERFACE;
+        smbc_unlink_fn                  unlink DEPRECATED_SMBC_INTERFACE;
+        smbc_rename_fn                  rename DEPRECATED_SMBC_INTERFACE;
+        smbc_lseek_fn                   lseek DEPRECATED_SMBC_INTERFACE;
+        smbc_stat_fn                    stat DEPRECATED_SMBC_INTERFACE;
+        smbc_fstat_fn                   fstat DEPRECATED_SMBC_INTERFACE;
+#if 0 /* internal */
+        smbc_ftruncate_fn               ftruncate_fn;
+#endif
+        smbc_close_fn                   close_fn DEPRECATED_SMBC_INTERFACE;
+        smbc_opendir_fn                 opendir DEPRECATED_SMBC_INTERFACE;
+        smbc_closedir_fn                closedir DEPRECATED_SMBC_INTERFACE;
+        smbc_readdir_fn                 readdir DEPRECATED_SMBC_INTERFACE;
+        smbc_getdents_fn                getdents DEPRECATED_SMBC_INTERFACE;
+        smbc_mkdir_fn                   mkdir DEPRECATED_SMBC_INTERFACE;
+        smbc_rmdir_fn                   rmdir DEPRECATED_SMBC_INTERFACE;
+        smbc_telldir_fn                 telldir DEPRECATED_SMBC_INTERFACE;
+        smbc_lseekdir_fn                lseekdir DEPRECATED_SMBC_INTERFACE;
+        smbc_fstatdir_fn                fstatdir DEPRECATED_SMBC_INTERFACE;
+        smbc_chmod_fn                   chmod DEPRECATED_SMBC_INTERFACE;
+        smbc_utimes_fn                  utimes DEPRECATED_SMBC_INTERFACE;
+        smbc_setxattr_fn                setxattr DEPRECATED_SMBC_INTERFACE;
+        smbc_getxattr_fn                getxattr DEPRECATED_SMBC_INTERFACE;
+        smbc_removexattr_fn             removexattr DEPRECATED_SMBC_INTERFACE;
+        smbc_listxattr_fn               listxattr DEPRECATED_SMBC_INTERFACE;
+
+        /* Printing-related functions */
+        smbc_print_file_fn              print_file DEPRECATED_SMBC_INTERFACE;
+        smbc_open_print_job_fn          open_print_job DEPRECATED_SMBC_INTERFACE;
+        smbc_list_print_jobs_fn         list_print_jobs DEPRECATED_SMBC_INTERFACE;
+        smbc_unlink_print_job_fn        unlink_print_job DEPRECATED_SMBC_INTERFACE;
+
+        /*
+        ** Callbacks
+        *
+        * DEPRECATED:
+        *
+        * See the comment above each field, for the getter and setter
+        * functions that should now be used.
+        */
+	struct _smbc_callbacks
+        {
+		/**
+                 * authentication function callback: called upon auth requests
+                 *
+                 * DEPRECATED:
+                 * Use smbc_getFunctionAuthData(), smbc_setFunctionAuthData()
+		 */
+                smbc_get_auth_data_fn auth_fn DEPRECATED_SMBC_INTERFACE;
+		
+		/**
+                 * check if a server is still good
+                 *
+                 * DEPRECATED:
+                 * Use smbc_getFunctionCheckServer(),
+                 * smbc_setFunctionCheckServer()
+		 */
+		smbc_check_server_fn check_server_fn DEPRECATED_SMBC_INTERFACE;
+
+		/**
+                 * remove a server if unused
+                 *
+                 * DEPRECATED:
+                 * Use smbc_getFunctionRemoveUnusedServer(),
+                 * smbc_setFunctionCheckServer()
+		 */
+		smbc_remove_unused_server_fn remove_unused_server_fn DEPRECATED_SMBC_INTERFACE;
+
+		/** Cache subsystem
+                 *
+		 * For an example cache system see
+		 * samba/source/libsmb/libsmb_cache.c
+                 *
+                 * Cache subsystem * functions follow.
+		 */
+
+		/**
+                 * server cache addition 
+                 *
+                 * DEPRECATED:
+                 * Use smbc_getFunctionAddCachedServer(),
+                 * smbc_setFunctionAddCachedServer()
+		 */
+		smbc_add_cached_srv_fn add_cached_srv_fn DEPRECATED_SMBC_INTERFACE;
+
+		/**
+                 * server cache lookup 
+                 *
+                 * DEPRECATED:
+                 * Use smbc_getFunctionGetCachedServer(),
+                 * smbc_setFunctionGetCachedServer()
+		 */
+		smbc_get_cached_srv_fn get_cached_srv_fn DEPRECATED_SMBC_INTERFACE;
+
+		/**
+                 * server cache removal
+                 *
+                 * DEPRECATED:
+                 * Use smbc_getFunctionRemoveCachedServer(),
+                 * smbc_setFunctionRemoveCachedServer()
+		 */
+		smbc_remove_cached_srv_fn remove_cached_srv_fn DEPRECATED_SMBC_INTERFACE;
+		
+		/**
+                 * server cache purging, try to remove all cached servers
+                 * (disconnect)
+                 *
+                 * DEPRECATED:
+                 * Use smbc_getFunctionPurgeCachedServers(),
+                 * smbc_setFunctionPurgeCachedServers()
+		 */
+		smbc_purge_cached_fn purge_cached_fn DEPRECATED_SMBC_INTERFACE;
+	} callbacks;
+
+        /**
+         * Space where the private data of the server cache used to be
+         *
+         * DEPRECATED:
+         * Use smbc_getServerCacheData(), smbc_setServerCacheData()
+         */
+        void * reserved DEPRECATED_SMBC_INTERFACE;
+
+        /*
+         * Very old configuration options.
+         * 
+         * DEPRECATED:
+         * Use one of the following functions instead:
+         *   smbc_setOptionUseKerberos()
+         *   smbc_getOptionUseKerberos()
+         *   smbc_setOptionFallbackAfterKerberos()
+         *   smbc_getOptionFallbackAfterKerberos()
+         *   smbc_setOptionNoAutoAnonymousLogin()
+         *   smbc_getOptionNoAutoAnonymousLogin()
+         */
+        int flags DEPRECATED_SMBC_INTERFACE;
+	
+        /**
+         * user options selections that apply to this session
+         *
+         * NEW OPTIONS ARE NOT ADDED HERE!
+         *
+         * DEPRECATED:
+         * To set and retrieve options, use the smbc_setOption*() and
+         * smbc_getOption*() functions.
+         */
+        struct _smbc_options {
+                int browse_max_lmb_count DEPRECATED_SMBC_INTERFACE;
+                int urlencode_readdir_entries DEPRECATED_SMBC_INTERFACE;
+                int one_share_per_server DEPRECATED_SMBC_INTERFACE;
+        } options DEPRECATED_SMBC_INTERFACE;
+	
+	/** INTERNAL DATA
+	 * do _NOT_ touch this from your program !
+	 */
+	struct SMBC_internal_data * internal;
+};
 
 
 #endif /* SMBCLIENT_H_INCLUDED */

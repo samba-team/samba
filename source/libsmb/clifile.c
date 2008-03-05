@@ -38,8 +38,15 @@ static bool cli_link_internal(struct cli_state *cli, const char *oldname, const 
 	size_t newlen = 2*(strlen(newname)+1);
 
 	param = SMB_MALLOC_ARRAY(char, 6+newlen+2);
+
+	if (!param) {
+		return false;
+	}
+
 	data = SMB_MALLOC_ARRAY(char, oldlen+2);
-	if (!param || !data) {
+
+	if (!data) {
+		SAFE_FREE(param);
 		return false;
 	}
 
@@ -878,6 +885,55 @@ bool cli_close(struct cli_state *cli, int fnum)
 	}
 
 	return !cli_is_error(cli);
+}
+
+
+/****************************************************************************
+ Truncate a file to a specified size
+****************************************************************************/
+
+bool cli_ftruncate(struct cli_state *cli, int fnum, uint64_t size)
+{
+	unsigned int param_len = 6;
+	unsigned int data_len = 8;
+	uint16 setup = TRANSACT2_SETFILEINFO;
+	char param[6];
+	unsigned char data[8];
+	char *rparam=NULL, *rdata=NULL;
+	int saved_timeout = cli->timeout;
+
+	SSVAL(param,0,fnum);
+	SSVAL(param,2,SMB_SET_FILE_END_OF_FILE_INFO);
+	SSVAL(param,4,0);
+
+        SBVAL(data, 0, size);
+
+	if (!cli_send_trans(cli, SMBtrans2,
+                            NULL,                    /* name */
+                            -1, 0,                   /* fid, flags */
+                            &setup, 1, 0,            /* setup, length, max */
+                            param, param_len, 2,     /* param, length, max */
+                            (char *)&data,  data_len,/* data, length, ... */
+                            cli->max_xmit)) {        /* ... max */
+		cli->timeout = saved_timeout;
+		return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+				&rparam, &param_len,
+				&rdata, &data_len)) {
+		cli->timeout = saved_timeout;
+		SAFE_FREE(rdata);
+		SAFE_FREE(rparam);
+		return False;
+	}
+
+	cli->timeout = saved_timeout;
+
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
+
+	return True;
 }
 
 

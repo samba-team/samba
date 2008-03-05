@@ -117,10 +117,10 @@ static bool gpo_sync_files(struct sync_context *ctx)
 		     ctx) == -1) {
 		DEBUG(1,("listing [%s] failed with error: %s\n",
 			ctx->mask, cli_errstr(ctx->cli)));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 /****************************************************************

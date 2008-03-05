@@ -469,7 +469,7 @@ void svcctl_init_keys( void )
 
 	fetch_reg_keys( key, subkeys );
 
-	/* the builting services exist */
+	/* the builtin services exist */
 
 	for ( i=0; builtin_svcs[i].servicename; i++ )
 		add_new_svc_name( key, subkeys, builtin_svcs[i].servicename );
@@ -520,25 +520,21 @@ SEC_DESC *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_get_secdesc: key lookup failed! [%s] (%s)\n",
 			path, dos_errstr(wresult)));
-		SAFE_FREE(path);
-		return NULL;
+		goto done;
 	}
-	SAFE_FREE(path);
 
 	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
 		DEBUG(0,("svcctl_get_secdesc: talloc() failed!\n"));
-		TALLOC_FREE( key );
-		return NULL;
+		goto done;
 	}
 
-	fetch_reg_values( key, values );
-
-	TALLOC_FREE(key);
+	if (fetch_reg_values( key, values ) == -1) {
+		DEBUG(0, ("Error getting registry values\n"));
+		goto done;
+	}
 
 	if ( !(val = regval_ctr_getvalue( values, "Security" )) ) {
-		DEBUG(6,("svcctl_get_secdesc: constructing default secdesc for service [%s]\n", 
-			name));
-		return construct_service_sd( ctx );
+		goto fallback_to_default_sd;
 	}
 
 	/* stream the service security descriptor */
@@ -546,10 +542,18 @@ SEC_DESC *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 	status = unmarshall_sec_desc(ctx, regval_data_p(val),
 				     regval_size(val), &ret_sd);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		return construct_service_sd( ctx );
+	if (NT_STATUS_IS_OK(status)) {
+		goto done;
 	}
 
+fallback_to_default_sd:
+	DEBUG(6, ("svcctl_get_secdesc: constructing default secdesc for "
+		  "service [%s]\n", name));
+	ret_sd = construct_service_sd(ctx);
+
+done:
+	SAFE_FREE(path);
+	TALLOC_FREE(key);
 	return ret_sd;
 }
 

@@ -52,6 +52,7 @@
  */
 
 #include "includes.h"
+#include "libnet/libnet.h"
 
 bool in_client = False;		/* Not in the client by default */
 bool bLoaded = False;
@@ -71,7 +72,8 @@ extern userdom_struct current_user_info;
 #define HOMES_NAME "homes"
 #endif
 
-static int regdb_last_seqnum = 0;
+static uint64_t conf_last_seqnum = 0;
+static struct libnet_conf_ctx *conf_ctx = NULL;
 
 #define CONFIG_BACKEND_FILE 0
 #define CONFIG_BACKEND_REGISTRY 1
@@ -418,6 +420,7 @@ typedef struct {
 	bool bRead_only;
 	bool bNo_set_dir;
 	bool bGuest_only;
+	bool bAdministrative_share;
 	bool bGuest_ok;
 	bool bPrint_ok;
 	bool bMap_system;
@@ -560,6 +563,7 @@ static service sDefault = {
 	True,			/* bRead_only */
 	True,			/* bNo_set_dir */
 	False,			/* bGuest_only */
+	False,			/* bAdministrative_share */
 	False,			/* bGuest_ok */
 	False,			/* bPrint_ok */
 	False,			/* bMap_system */
@@ -969,6 +973,7 @@ static struct parm_struct parm_table[] = {
 	{"inherit owner", P_BOOL, P_LOCAL, &sDefault.bInheritOwner, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"guest only", P_BOOL, P_LOCAL, &sDefault.bGuest_only, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"only guest", P_BOOL, P_LOCAL, &sDefault.bGuest_only, NULL, NULL, FLAG_HIDE}, 
+	{"administrative share", P_BOOL, P_LOCAL, &sDefault.bAdministrative_share, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT},
 
 	{"guest ok", P_BOOL, P_LOCAL, &sDefault.bGuest_ok, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"public", P_BOOL, P_LOCAL, &sDefault.bGuest_ok, NULL, NULL, FLAG_HIDE}, 
@@ -2135,6 +2140,7 @@ FN_LOCAL_BOOL(lp_readonly, bRead_only)
 FN_LOCAL_BOOL(lp_no_set_dir, bNo_set_dir)
 FN_LOCAL_BOOL(lp_guest_ok, bGuest_ok)
 FN_LOCAL_BOOL(lp_guest_only, bGuest_only)
+FN_LOCAL_BOOL(lp_administrative_share, bAdministrative_share)
 FN_LOCAL_BOOL(lp_print_ok, bPrint_ok)
 FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
@@ -2249,8 +2255,7 @@ static param_opt_struct *get_parametrics(int snum, const char *type, const char 
 		data = ServicePtrs[snum]->param_opt;
 	}
     
-	asprintf(&param_key, "%s:%s", type, option);
-	if (!param_key) {
+	if (asprintf(&param_key, "%s:%s", type, option) == -1) {
 		DEBUG(0,("asprintf failed!\n"));
 		return NULL;
 	}
@@ -2773,6 +2778,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	ServicePtrs[i]->bAvailable = True;
 	ServicePtrs[i]->bRead_only = True;
 	ServicePtrs[i]->bGuest_only = False;
+	ServicePtrs[i]->bAdministrative_share = True;
 	ServicePtrs[i]->bGuest_ok = guest_ok;
 	ServicePtrs[i]->bPrint_ok = False;
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
@@ -3378,241 +3384,46 @@ bool service_ok(int iService)
 }
 
 /*
- * lp_regdb_open - regdb helper function 
- *
- * this should be considered an interim solution that becomes
- * superfluous once the registry code has been rewritten
- * do allow use of the tdb portion of the registry alone.
- *
- * in the meanwhile this provides a lean access
- * to the registry globals.
- */
-
-static struct tdb_wrap *lp_regdb_open(void)
-{
-	struct tdb_wrap *reg_tdb = NULL;
-	const char *vstring = "INFO/version";
-	uint32 vers_id;
-
-	become_root();
-	reg_tdb = tdb_wrap_open(NULL, state_path("registry.tdb"), 0, 
-				REG_TDB_FLAGS, O_RDWR, 0600);
-	unbecome_root();
-	if (!reg_tdb) {
-		DEBUG(1, ("lp_regdb_open: failed to open %s: %s\n",
-			 state_path("registry.tdb"), strerror(errno)));
-		goto done;
-	}
-	else {
-		DEBUG(10, ("lp_regdb_open: reg tdb opened.\n"));
-	}
-
-	vers_id = tdb_fetch_int32(reg_tdb->tdb, vstring);
-	if (vers_id != REGVER_V1) {
-		DEBUG(10, ("lp_regdb_open: INFO: registry tdb %s has wrong "
-			  "INFO/version (got %d, expected %d)\n",
-			  state_path("registry.tdb"), vers_id, REGVER_V1));
-		/* this is apparently not implemented in the tdb */
-	}
-
-done:
-	return reg_tdb;
-}
-
-/*
  * process_registry_globals
- *
- * this is the interim version of process_registry globals
- *
- * until we can do it as we would like using the api and only
- * using the tdb portion of the registry (see below),
- * this just provides the needed functionality of regdb_fetch_values
- * and regdb_unpack_values, circumventing any fancy stuff, to
- * give us access to the registry globals.
  */
 static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 {
-	bool ret = False;
-	struct tdb_wrap *reg_tdb = NULL;
-	WERROR err;
-	char *keystr;
-	TDB_DATA data;
-	/* vars for the tdb unpack loop */
-	int len = 0;
-	int i;
-	int buflen;
-	uint8 *buf;
-	uint32 type;
-	uint32 size;
-	uint32 num_values = 0;
-	uint8 *data_p;
-	char * valstr;
-	struct registry_value *value = NULL;
+	WERROR werr;
+	char **param_names;
+	char **param_values;
+	uint32_t num_params;
+	uint32_t count;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	bool ret = false;
 
-	ZERO_STRUCT(data);
-
-	reg_tdb = lp_regdb_open();
-	if (!reg_tdb) {
-		DEBUG(1, ("Error opening the registry!\n"));
-		goto done;
-	}
-
-	/* reg_tdb is from now on used as talloc ctx.
-	 * freeing it closes the tdb (if refcount is 0) */
-
-	keystr = talloc_asprintf(reg_tdb,"%s/%s/%s", REG_VALUE_PREFIX,
-				 KEY_SMBCONF, GLOBAL_NAME);
-	normalize_dbkey(keystr);
-
-	DEBUG(10, ("process_registry_globals: fetching key '%s'\n",
-		   keystr));
-
-	data = tdb_fetch_bystring(reg_tdb->tdb, keystr);
-	if (!data.dptr) {
-		ret = True;
-		goto done;
-	}
-
-	buf = data.dptr;
-	buflen = data.dsize;
-
-	/* unpack number of values */
-	len = tdb_unpack(buf, buflen, "d", &num_values);
-	DEBUG(10, ("process_registry_globals: got %d values from tdb\n",
-		   num_values));
-
-	/* unpack the values */
-	for (i=0; i < num_values; i++) {
-		fstring valname;
-		type = REG_NONE;
-		size = 0;
-		data_p = NULL;
-		len += tdb_unpack(buf+len, buflen-len, "fdB",
-				  valname,
-				  &type,
-				  &size,
-				  &data_p);
-		if (registry_smbconf_valname_forbidden(valname)) {
-			DEBUG(10, ("process_registry_globals: Ignoring "
-				   "parameter '%s' in registry.\n", valname));
-			continue;
+	if (conf_ctx == NULL) {
+		/* first time */
+		werr = libnet_conf_open(NULL, &conf_ctx);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
 		}
-		DEBUG(10, ("process_registry_globals: got value '%s'\n",
-			   valname));
-		if (size && data_p) {
-			err = registry_pull_value(reg_tdb,
-						  &value,
-						  (enum winreg_Type)type,
-						  data_p,
-						  size,
-						  size);
-			SAFE_FREE(data_p);
-			if (!W_ERROR_IS_OK(err)) {
-				goto done;
-			}
-			switch(type) {
-			case REG_DWORD:
-				valstr = talloc_asprintf(reg_tdb, "%d",
-							 value->v.dword);
-				pfunc(valname, valstr);
-				break;
-			case REG_SZ:
-				pfunc(valname, value->v.sz.str);
-				break;
-			default:
-				/* ignore other types */
-				break;
-			}
+	}
+
+	werr = libnet_conf_get_share(mem_ctx, conf_ctx, GLOBAL_NAME,
+				     &num_params, &param_names, &param_values);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	for (count = 0; count < num_params; count++) {
+		ret = pfunc(param_names[count], param_values[count]);
+		if (ret != true) {
+			goto done;
 		}
 	}
 
 	ret = pfunc("registry shares", "yes");
-	regdb_last_seqnum = tdb_get_seqnum(reg_tdb->tdb);
+	conf_last_seqnum = libnet_conf_get_seqnum(conf_ctx, NULL, NULL);
 
 done:
-	TALLOC_FREE(reg_tdb);
-	SAFE_FREE(data.dptr);
+	TALLOC_FREE(mem_ctx);
 	return ret;
 }
-
-#if 0
-/*
- * this is process_registry_globals as it _should_ be (roughly)
- * using the reg_api functions...
- *
- * We are *not* currently doing it like this due to the large
- * linker dependecies of the registry code (see above).
- */
-static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
-{
-	bool ret = False;
-	TALLOC_CTX *ctx = NULL;
-	char *regpath = NULL;
-	WERROR werr = WERR_OK;
-	struct registry_key *key = NULL;
-	struct registry_value *value = NULL;
-	char *valname = NULL;
-	char *valstr = NULL;
-	uint32 idx = 0;
-	NT_USER_TOKEN *token = NULL;
-
-	ctx = talloc_init("process_registry_globals");
-	if (!ctx) {
-		smb_panic("Failed to create talloc context!");
-	}
-
-	if (!registry_init_regdb()) {
-		DEBUG(1, ("Error initializing the registry.\n"));
-		goto done;
-	}
-
-	werr = ntstatus_to_werror(registry_create_admin_token(ctx, &token));
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(1, ("Error creating admin token: %s\n",dos_errstr(werr)));
-		goto done;
-	}
-
-	regpath = talloc_asprintf(ctx,"%s\\%s", KEY_SMBCONF, GLOBAL_NAME);
-	werr = reg_open_path(ctx, regpath, REG_KEY_READ, token, &key);
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(1, ("Registry smbconf global section does not exist.\n"));
-		DEBUGADD(1, ("Error opening registry path '%s\\%s: %s\n",
-			     KEY_SMBCONF, GLOBAL_NAME, dos_errstr(werr)));
-		goto done;
-	}
-
-	for (idx = 0;
-	     W_ERROR_IS_OK(werr = reg_enumvalue(ctx, key, idx, &valname,
-			     			&value));
-	     idx++)
-	{
-		DEBUG(5, ("got global registry parameter '%s'\n", valname));
-		switch(value->type) {
-		case REG_DWORD:
-			valstr = talloc_asprintf(ctx, "%d", value->v.dword);
-			pfunc(valname, valstr);
-			TALLOC_FREE(valstr);
-			break;
-		case REG_SZ:
-			pfunc(valname, value->v.sz.str);
-			break;
-		default:
-			/* ignore other types */
-			break;
-		}
-		TALLOC_FREE(value);
-		TALLOC_FREE(valstr);
-	}
-
-	ret = pfunc("registry shares", "yes");
-
-	regdb_last_seqnum = regdb_get_seqnum();
-
-done:
-	talloc_destroy(ctx);
-	return ret;
-}
-#endif /* if 0 */
 
 static struct file_lists {
 	struct file_lists *next;
@@ -3675,17 +3486,26 @@ bool lp_config_backend_is_registry(void)
 bool lp_file_list_changed(void)
 {
 	struct file_lists *f = file_lists;
-	struct tdb_wrap *reg_tdb = NULL;
 
  	DEBUG(6, ("lp_file_list_changed()\n"));
 
 	if (lp_config_backend() == CONFIG_BACKEND_REGISTRY) {
-		reg_tdb = lp_regdb_open();
-		if (reg_tdb && (regdb_last_seqnum != tdb_get_seqnum(reg_tdb->tdb)))
-		{
-			DEBUGADD(6, ("regdb seqnum changed: old = %d, new = %d\n",
-				    regdb_last_seqnum, tdb_get_seqnum(reg_tdb->tdb)));
-			TALLOC_FREE(reg_tdb);
+		uint64_t conf_cur_seqnum;
+		if (conf_ctx == NULL) {
+			WERROR werr;
+			werr = libnet_conf_open(NULL, &conf_ctx);
+			if (!W_ERROR_IS_OK(werr)) {
+				DEBUG(0, ("error opening configuration: %s\n",
+					  dos_errstr(werr)));
+				return false;
+			}
+		}
+		conf_cur_seqnum = libnet_conf_get_seqnum(conf_ctx, NULL, NULL);
+		if (conf_last_seqnum != conf_cur_seqnum) {
+			DEBUGADD(6, ("regdb seqnum changed: old = %llu, "
+				     "new = %llu\n",
+				     (unsigned long long)conf_last_seqnum,
+				     (unsigned long long)conf_cur_seqnum));
 			return true;
 		} else {
 			/*

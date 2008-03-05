@@ -2671,8 +2671,9 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 		status = split_ntfs_stream_name(talloc_tos(), fname,
 						&base, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("split_ntfs_stream_name failed: %s\n",
-				   nt_errstr(status)));
+			DEBUG(10, ("create_file_unixpath: "
+				"split_ntfs_stream_name failed: %s\n",
+				nt_errstr(status)));
 			goto fail;
 		}
 
@@ -2840,7 +2841,7 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 		}
 	}
 
-	DEBUG(10, ("create_file: info=%d\n", info));
+	DEBUG(10, ("create_file_unixpath: info=%d\n", info));
 
 	/*
 	 * Set fsp->base_fsp late enough that we can't "goto fail" anymore. In
@@ -2867,7 +2868,7 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 	return NT_STATUS_OK;
 
  fail:
-	DEBUG(10, ("create_file: %s\n", nt_errstr(status)));
+	DEBUG(10, ("create_file_unixpath: %s\n", nt_errstr(status)));
 
 	if (fsp != NULL) {
 		close_file(fsp, ERROR_CLOSE);

@@ -2,6 +2,7 @@
    Samba Unix/Linux SMB client library 
    Distributed SMB/CIFS Server Management Utility 
    Copyright (C) Gerald (Jerry) Carter          2004
+   Copyright (C) Guenther Deschner              2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -152,22 +153,24 @@ static NTSTATUS check_privilege_for_user(struct rpc_pipe_client *pipe_hnd,
 					const char *right)
 {
 	NTSTATUS result;
-	uint32 count;
-	char **rights;
+	struct lsa_RightSet rights;
 	int i;
 
-	result = rpccli_lsa_enum_account_rights(pipe_hnd, ctx, pol, sid, &count, &rights);
+	result = rpccli_lsa_EnumAccountRights(pipe_hnd, ctx,
+					      pol,
+					      sid,
+					      &rights);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
 
-	if (count == 0) {
+	if (rights.count == 0) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
-		
-	for (i = 0; i < count; i++) {
-		if (StrCaseCmp(rights[i], right) == 0) {
+
+	for (i = 0; i < rights.count; i++) {
+		if (StrCaseCmp(rights.names[i].string, right) == 0) {
 			return NT_STATUS_OK;
 		}
 	}
@@ -184,20 +187,23 @@ static NTSTATUS enum_privileges_for_user(struct rpc_pipe_client *pipe_hnd,
 					DOM_SID *sid )
 {
 	NTSTATUS result;
-	uint32 count;
-	char **rights;
+	struct lsa_RightSet rights;
 	int i;
 
-	result = rpccli_lsa_enum_account_rights(pipe_hnd, ctx, pol, sid, &count, &rights);
+	result = rpccli_lsa_EnumAccountRights(pipe_hnd, ctx,
+					      pol,
+					      sid,
+					      &rights);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	if ( count == 0 )
+	if (rights.count == 0) {
 		d_printf("No privileges assigned\n");
-		
-	for (i = 0; i < count; i++) {
-		printf("%s\n", rights[i]);
+	}
+
+	for (i = 0; i < rights.count; i++) {
+		printf("%s\n", rights.names[i].string);
 	}
 
 	return NT_STATUS_OK;
@@ -214,24 +220,27 @@ static NTSTATUS enum_accounts_for_privilege(struct rpc_pipe_client *pipe_hnd,
 	NTSTATUS result;
 	uint32 enum_context=0;
 	uint32 pref_max_length=0x1000;
-	DOM_SID *sids = NULL;
-	uint32 count=0;
+	struct lsa_SidArray sid_array;
 	int i;
 	fstring name;
 
-	result = rpccli_lsa_enum_sids(pipe_hnd, ctx, pol, &enum_context, 
-		pref_max_length, &count, &sids);
+	result = rpccli_lsa_EnumAccounts(pipe_hnd, ctx,
+					 pol,
+					 &enum_context,
+					 &sid_array,
+					 pref_max_length);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 		
 	d_printf("%s:\n", privilege);
 
-	for ( i=0; i<count; i++ ) {
-	
-		   
-		result = check_privilege_for_user( pipe_hnd, ctx, pol, &sids[i], privilege);
-		
+	for ( i=0; i<sid_array.num_sids; i++ ) {
+
+		result = check_privilege_for_user(pipe_hnd, ctx, pol,
+						  sid_array.sids[i].sid,
+						  privilege);
+
 		if ( ! NT_STATUS_IS_OK(result)) {
 			if ( ! NT_STATUS_EQUAL(result, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 				return result;
@@ -241,9 +250,9 @@ static NTSTATUS enum_accounts_for_privilege(struct rpc_pipe_client *pipe_hnd,
 
 		/* try to convert the SID to a name.  Fall back to 
 		   printing the raw SID if necessary */
-		result = sid_to_name( pipe_hnd, ctx, &sids[i], name );
+		result = sid_to_name( pipe_hnd, ctx, sid_array.sids[i].sid, name );
 		if ( !NT_STATUS_IS_OK (result) )
-			sid_to_fstring(name, &sids[i]);
+			sid_to_fstring(name, sid_array.sids[i].sid);
 
 		d_printf("  %s\n", name);
 	}
@@ -261,30 +270,32 @@ static NTSTATUS enum_privileges_for_accounts(struct rpc_pipe_client *pipe_hnd,
 	NTSTATUS result;
 	uint32 enum_context=0;
 	uint32 pref_max_length=0x1000;
-	DOM_SID *sids;
-	uint32 count=0;
+	struct lsa_SidArray sid_array;
 	int i;
 	fstring name;
 
-	result = rpccli_lsa_enum_sids(pipe_hnd, ctx, pol, &enum_context, 
-		pref_max_length, &count, &sids);
+	result = rpccli_lsa_EnumAccounts(pipe_hnd, ctx,
+					 pol,
+					 &enum_context,
+					 &sid_array,
+					 pref_max_length);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
-		
-	for ( i=0; i<count; i++ ) {
-	
+
+	for ( i=0; i<sid_array.num_sids; i++ ) {
+
 		/* try to convert the SID to a name.  Fall back to 
 		   printing the raw SID if necessary */
-		   
-		result = sid_to_name(pipe_hnd, ctx, &sids[i], name );
+
+		result = sid_to_name(pipe_hnd, ctx, sid_array.sids[i].sid, name);
 		if ( !NT_STATUS_IS_OK (result) )
-			sid_to_fstring(name, &sids[i]);
-			
+			sid_to_fstring(name, sid_array.sids[i].sid);
+
 		d_printf("%s\n", name);
-		
-		result = enum_privileges_for_user(pipe_hnd, ctx, pol, &sids[i] );
-		
+
+		result = enum_privileges_for_user(pipe_hnd, ctx, pol,
+						  sid_array.sids[i].sid);
 		if ( !NT_STATUS_IS_OK(result) )
 			return result;
 
@@ -426,6 +437,8 @@ static NTSTATUS rpc_rights_grant_internal(const DOM_SID *domain_sid,
 {
 	POLICY_HND dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	struct lsa_RightSet rights;
+	int i;
 
 	DOM_SID sid;
 
@@ -445,8 +458,21 @@ static NTSTATUS rpc_rights_grant_internal(const DOM_SID *domain_sid,
 	if (!NT_STATUS_IS_OK(result))
 		return result;	
 
-	result = rpccli_lsa_add_account_rights(pipe_hnd, mem_ctx, &dom_pol, sid, 
-					    argc-1, argv+1);
+	rights.count = argc-1;
+	rights.names = TALLOC_ARRAY(mem_ctx, struct lsa_StringLarge,
+				    rights.count);
+	if (!rights.names) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<argc-1; i++) {
+		init_lsa_StringLarge(&rights.names[i], argv[i+1]);
+	}
+
+	result = rpccli_lsa_AddAccountRights(pipe_hnd, mem_ctx,
+					     &dom_pol,
+					     &sid,
+					     &rights);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -477,8 +503,9 @@ static NTSTATUS rpc_rights_revoke_internal(const DOM_SID *domain_sid,
 {
 	POLICY_HND dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
+	struct lsa_RightSet rights;
 	DOM_SID sid;
+	int i;
 
 	if (argc < 2 ) {
 		d_printf("Usage: net rpc rights revoke <name|SID> <rights...>\n");
@@ -496,8 +523,22 @@ static NTSTATUS rpc_rights_revoke_internal(const DOM_SID *domain_sid,
 	if (!NT_STATUS_IS_OK(result))
 		return result;	
 
-	result = rpccli_lsa_remove_account_rights(pipe_hnd, mem_ctx, &dom_pol, sid, 
-					       False, argc-1, argv+1);
+	rights.count = argc-1;
+	rights.names = TALLOC_ARRAY(mem_ctx, struct lsa_StringLarge,
+				    rights.count);
+	if (!rights.names) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<argc-1; i++) {
+		init_lsa_StringLarge(&rights.names[i], argv[i+1]);
+	}
+
+	result = rpccli_lsa_RemoveAccountRights(pipe_hnd, mem_ctx,
+						&dom_pol,
+						&sid,
+						false,
+						&rights);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;

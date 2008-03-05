@@ -147,7 +147,7 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 static NODE_STATUS_STRUCT *lookup_byaddr_backend(char *addr, int *count)
 {
 	int fd;
-	struct in_addr  ip;
+	struct sockaddr_storage ss;
 	struct nmb_name nname;
 	NODE_STATUS_STRUCT *status;
 
@@ -160,8 +160,10 @@ static NODE_STATUS_STRUCT *lookup_byaddr_backend(char *addr, int *count)
 		return NULL;
 
 	make_nmb_name(&nname, "*", 0);
-	(void)interpret_addr2(&ip,addr);
-	status = node_status_query(fd,&nname,ip, count, NULL);
+	if (!interpret_string_addr(&ss, addr, AI_NUMERICHOST)) {
+		return NULL;
+	}
+	status = node_status_query(fd, &nname, &ss, count, NULL);
 
 	close(fd);
 	return status;

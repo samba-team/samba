@@ -1035,7 +1035,7 @@ static bool do_winbind_dump_domain_list(struct messaging_context *msg_ctx,
 			   print_pid_string_cb);
 
 	buf_len = sizeof(myid)+domain_len;
-	buf = SMB_MALLOC(buf_len);
+	buf = SMB_MALLOC_ARRAY(uint8_t, buf_len);
 	if (!buf) {
 		return false;
 	}

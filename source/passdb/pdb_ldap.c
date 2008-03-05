@@ -349,6 +349,7 @@ int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
 	filter = talloc_asprintf(talloc_tos(), "(&%s%s)", "(uid=%u)",
 		get_objclass_filter(ldap_state->schema_ver));
 	if (!filter) {
+		SAFE_FREE(escape_user);
 		return LDAP_NO_MEMORY;
 	}
 	/*
@@ -358,10 +359,10 @@ int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
 
 	filter = talloc_all_string_sub(talloc_tos(),
 				filter, "%u", escape_user);
+	SAFE_FREE(escape_user);
 	if (!filter) {
 		return LDAP_NO_MEMORY;
 	}
-	SAFE_FREE(escape_user);
 
 	ret = smbldap_search_suffix(ldap_state->smbldap_state,
 			filter, attr, result);
@@ -2683,7 +2684,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 			goto done;
 		}
 
-		rc = smbldap_search(conn, lp_ldap_user_suffix(),
+		rc = smbldap_search(conn, lp_ldap_suffix(),
 				    LDAP_SCOPE_SUBTREE, filter, sid_attrs, 0,
 				    &result);
 
@@ -2739,7 +2740,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 				 LDAP_OBJ_SAMBASAMACCOUNT,
 				 gidstr);
 
-	rc = smbldap_search(conn, lp_ldap_user_suffix(),
+	rc = smbldap_search(conn, lp_ldap_suffix(),
 			    LDAP_SCOPE_SUBTREE, filter, sid_attrs, 0,
 			    &result);
 
@@ -6264,7 +6265,7 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 		    entry,
 		    get_userattr_key2string(ldap_state->schema_ver,
 					    LDAP_ATTR_USER_SID),
-		    NULL);
+		    talloc_tos());
 
 	if (domain_sid_string) {
 		bool found_sid;
@@ -6300,7 +6301,7 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 		    entry,
 		    get_attr_key2string( dominfo_attr_list,
 					 LDAP_ATTR_ALGORITHMIC_RID_BASE ),
-		    NULL);
+		    talloc_tos());
 	if (alg_rid_base_string) {
 		alg_rid_base = (uint32)atol(alg_rid_base_string);
 		if (alg_rid_base != algorithmic_rid_base()) {

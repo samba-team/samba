@@ -84,6 +84,7 @@ werror_code_struct dos_errs[] =
 	{ "WERR_LOGON_FAILURE", WERR_LOGON_FAILURE },
 	{ "WERR_NO_SUCH_DOMAIN", WERR_NO_SUCH_DOMAIN },
 	{ "WERR_INVALID_SECURITY_DESCRIPTOR", WERR_INVALID_SECURITY_DESCRIPTOR },
+	{ "WERR_TIME_SKEW", WERR_TIME_SKEW },
 	{ "WERR_INVALID_OWNER", WERR_INVALID_OWNER },
 	{ "WERR_SERVER_UNAVAILABLE", WERR_SERVER_UNAVAILABLE },
 	{ "WERR_IO_PENDING", WERR_IO_PENDING },
@@ -121,6 +122,7 @@ werror_str_struct dos_err_strs[] = {
 	{ WERR_USER_EXISTS, "User account already exists" },
 	{ WERR_PASSWORD_MUST_CHANGE, "The password must be changed" },
 	{ WERR_ACCOUNT_LOCKED_OUT, "Account locked out" },
+	{ WERR_TIME_SKEW, "Time difference between client and server" },
 };
 
 /*****************************************************************************

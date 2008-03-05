@@ -473,7 +473,7 @@ bool se_priv_to_privilege_set( PRIVILEGE_SET *set, SE_PRIV *mask )
 /*******************************************************************
 *******************************************************************/
 
-static bool luid_to_se_priv( LUID *luid, SE_PRIV *mask )
+static bool luid_to_se_priv( struct lsa_LUID *luid, SE_PRIV *mask )
 {
 	int i;
 	uint32 num_privs = count_all_privileges();
@@ -491,7 +491,7 @@ static bool luid_to_se_priv( LUID *luid, SE_PRIV *mask )
 /*******************************************************************
 *******************************************************************/
 
-bool privilege_set_to_se_priv( SE_PRIV *mask, PRIVILEGE_SET *privset )
+bool privilege_set_to_se_priv( SE_PRIV *mask, struct lsa_PrivilegeSet *privset )
 {
 	int i;
 	

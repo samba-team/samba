@@ -43,8 +43,8 @@
  * 0x10		winreg_QueryInfoKey			reg_queryinfokey
  * 0x11		winreg_QueryValue			reg_queryvalue
  * 0x12		winreg_ReplaceKey
- * 0x13		winreg_RestoreKey
- * 0x14		winreg_SaveKey
+ * 0x13		winreg_RestoreKey			reg_restorekey
+ * 0x14		winreg_SaveKey				reg_savekey
  * 0x15		winreg_SetKeySecurity			reg_setkeysecurity
  * 0x16		winreg_SetValue				reg_setvalue
  * 0x17		winreg_UnLoadKey
@@ -63,6 +63,7 @@
  */
 
 #include "includes.h"
+#include "regfio.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
@@ -696,6 +697,279 @@ WERROR reg_getversion(uint32_t *version)
 	return WERR_OK;
 }
 
+/*******************************************************************
+ Note: topkeypat is the *full* path that this *key will be
+ loaded into (including the name of the key)
+ ********************************************************************/
+
+static WERROR reg_load_tree(REGF_FILE *regfile, const char *topkeypath,
+			    REGF_NK_REC *key)
+{
+	REGF_NK_REC *subkey;
+	REGISTRY_KEY registry_key;
+	REGVAL_CTR *values;
+	REGSUBKEY_CTR *subkeys;
+	int i;
+	char *path = NULL;
+	WERROR result = WERR_OK;
+
+	/* initialize the REGISTRY_KEY structure */
+
+	registry_key.hook = reghook_cache_find(topkeypath);
+	if (!registry_key.hook) {
+		DEBUG(0, ("reg_load_tree: Failed to assigned a REGISTRY_HOOK "
+			  "to [%s]\n", topkeypath));
+		return WERR_BADFILE;
+	}
+
+	registry_key.name = talloc_strdup(regfile->mem_ctx, topkeypath);
+	if (!registry_key.name) {
+		DEBUG(0, ("reg_load_tree: Talloc failed for reg_key.name!\n"));
+		return WERR_NOMEM;
+	}
+
+	/* now start parsing the values and subkeys */
+
+	subkeys = TALLOC_ZERO_P(regfile->mem_ctx, REGSUBKEY_CTR);
+	if (subkeys == NULL) {
+		return WERR_NOMEM;
+	}
+
+	values = TALLOC_ZERO_P(subkeys, REGVAL_CTR);
+	if (values == NULL) {
+		return WERR_NOMEM;
+	}
+
+	/* copy values into the REGVAL_CTR */
+
+	for (i=0; i<key->num_values; i++) {
+		regval_ctr_addvalue(values, key->values[i].valuename,
+				    key->values[i].type,
+				    (char*)key->values[i].data,
+				    (key->values[i].data_size & ~VK_DATA_IN_OFFSET));
+	}
+
+	/* copy subkeys into the REGSUBKEY_CTR */
+
+	key->subkey_index = 0;
+	while ((subkey = regfio_fetch_subkey( regfile, key ))) {
+		regsubkey_ctr_addkey(subkeys, subkey->keyname);
+	}
+
+	/* write this key and values out */
+
+	if (!store_reg_values(&registry_key, values)
+	    || !store_reg_keys(&registry_key, subkeys))
+	{
+		DEBUG(0,("reg_load_tree: Failed to load %s!\n", topkeypath));
+		result = WERR_REG_IO_FAILURE;
+	}
+
+	TALLOC_FREE(subkeys);
+
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	/* now continue to load each subkey registry tree */
+
+	key->subkey_index = 0;
+	while ((subkey = regfio_fetch_subkey(regfile, key))) {
+		path = talloc_asprintf(regfile->mem_ctx,
+				       "%s\\%s",
+				       topkeypath,
+				       subkey->keyname);
+		if (path == NULL) {
+			return WERR_NOMEM;
+		}
+		result = reg_load_tree(regfile, path, subkey);
+		if (!W_ERROR_IS_OK(result)) {
+			break;
+		}
+	}
+
+	return result;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+static WERROR restore_registry_key(REGISTRY_KEY *krecord, const char *fname)
+{
+	REGF_FILE *regfile;
+	REGF_NK_REC *rootkey;
+	WERROR result;
+
+	/* open the registry file....fail if the file already exists */
+
+	regfile = regfio_open(fname, (O_RDONLY), 0);
+	if (regfile == NULL) {
+		DEBUG(0, ("restore_registry_key: failed to open \"%s\" (%s)\n",
+			  fname, strerror(errno)));
+		return ntstatus_to_werror(map_nt_error_from_unix(errno));
+	}
+
+	/* get the rootkey from the regf file and then load the tree
+	   via recursive calls */
+
+	if (!(rootkey = regfio_rootkey(regfile))) {
+		regfio_close(regfile);
+		return WERR_REG_FILE_INVALID;
+	}
+
+	result = reg_load_tree(regfile, krecord->name, rootkey);
+
+	/* cleanup */
+
+	regfio_close(regfile);
+
+	return result;
+}
+
+WERROR reg_restorekey(struct registry_key *key, const char *fname)
+{
+	return restore_registry_key(key->key, fname);
+}
+
+/********************************************************************
+********************************************************************/
+
+static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
+			     REGF_NK_REC *parent)
+{
+	REGF_NK_REC *key;
+	REGVAL_CTR *values;
+	REGSUBKEY_CTR *subkeys;
+	int i, num_subkeys;
+	char *key_tmp = NULL;
+	char *keyname, *parentpath;
+	char *subkeypath = NULL;
+	char *subkeyname;
+	REGISTRY_KEY registry_key;
+	WERROR result = WERR_OK;
+	SEC_DESC *sec_desc = NULL;
+
+	if (!regfile) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	if (!keypath) {
+		return WERR_OBJECT_PATH_INVALID;
+	}
+
+	/* split up the registry key path */
+
+	key_tmp = talloc_strdup(regfile->mem_ctx, keypath);
+	if (!key_tmp) {
+		return WERR_NOMEM;
+	}
+	if (!reg_split_key(key_tmp, &parentpath, &keyname)) {
+		return WERR_OBJECT_PATH_INVALID;
+	}
+
+	if (!keyname) {
+		keyname = parentpath;
+	}
+
+	/* we need a REGISTRY_KEY object here to enumerate subkeys and values */
+
+	ZERO_STRUCT(registry_key);
+
+	registry_key.name = talloc_strdup(regfile->mem_ctx, keypath);
+	if (registry_key.name == NULL) {
+		return WERR_NOMEM;
+	}
+
+	registry_key.hook = reghook_cache_find(registry_key.name);
+	if (registry_key.hook == NULL) {
+		return WERR_BADFILE;
+	}
+
+	/* lookup the values and subkeys */
+
+	subkeys = TALLOC_ZERO_P(regfile->mem_ctx, REGSUBKEY_CTR);
+	if (subkeys == NULL) {
+		return WERR_NOMEM;
+	}
+
+	values = TALLOC_ZERO_P(subkeys, REGVAL_CTR);
+	if (values == NULL) {
+		return WERR_NOMEM;
+	}
+
+	fetch_reg_keys(&registry_key, subkeys);
+	fetch_reg_values(&registry_key, values);
+
+	result = regkey_get_secdesc(regfile->mem_ctx, &registry_key, &sec_desc);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	/* write out this key */
+
+	key = regfio_write_key(regfile, keyname, values, subkeys, sec_desc,
+			       parent);
+	if (key == NULL) {
+		result = WERR_CAN_NOT_COMPLETE;
+		goto done;
+	}
+
+	/* write each one of the subkeys out */
+
+	num_subkeys = regsubkey_ctr_numkeys(subkeys);
+	for (i=0; i<num_subkeys; i++) {
+		subkeyname = regsubkey_ctr_specific_key(subkeys, i);
+		subkeypath = talloc_asprintf(regfile->mem_ctx, "%s\\%s",
+					     keypath, subkeyname);
+		if (subkeypath == NULL) {
+			result = WERR_NOMEM;
+			goto done;
+		}
+		result = reg_write_tree(regfile, subkeypath, key);
+		if (!W_ERROR_IS_OK(result))
+			goto done;
+	}
+
+	DEBUG(6, ("reg_write_tree: wrote key [%s]\n", keypath));
+
+done:
+	TALLOC_FREE(subkeys);
+	TALLOC_FREE(registry_key.name);
+
+	return result;
+}
+
+static WERROR backup_registry_key(REGISTRY_KEY *krecord, const char *fname)
+{
+	REGF_FILE *regfile;
+	WERROR result;
+
+	/* open the registry file....fail if the file already exists */
+
+	regfile = regfio_open(fname, (O_RDWR|O_CREAT|O_EXCL),
+			      (S_IREAD|S_IWRITE));
+	if (regfile == NULL) {
+		DEBUG(0,("backup_registry_key: failed to open \"%s\" (%s)\n",
+			 fname, strerror(errno) ));
+		return ntstatus_to_werror(map_nt_error_from_unix(errno));
+	}
+
+	/* write the registry tree to the file  */
+
+	result = reg_write_tree(regfile, krecord->name, NULL);
+
+	/* cleanup */
+
+	regfio_close(regfile);
+
+	return result;
+}
+
+WERROR reg_savekey(struct registry_key *key, const char *fname)
+{
+	return backup_registry_key(key->key, fname);
+}
+
 /**********************************************************************
  * Higher level utility functions
  **********************************************************************/
@@ -726,9 +1000,7 @@ WERROR reg_deleteallvalues(struct registry_key *key)
 }
 
 /*
- * Utility function to open a complete registry path including the hive
- * prefix. This should become the replacement function for
- * regkey_open_internal.
+ * Utility function to open a complete registry path including the hive prefix.
  */
 
 WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,

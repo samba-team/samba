@@ -12,8 +12,9 @@ import "wkssvc.idl", "security.idl";
 interface libnetjoin
 {
 	typedef bitmap wkssvc_joinflags wkssvc_joinflags;
+	typedef enum netr_SchannelType netr_SchannelType;
 
-	[nopush,nopull] WERROR libnet_JoinCtx(
+	[nopush,nopull,noopnum] WERROR libnet_JoinCtx(
 		[in] string dc_name,
 		[in] string machine_name,
 		[in,ref] string *domain_name,
@@ -29,6 +30,7 @@ interface libnetjoin
 		[in] boolean8 modify_config,
 		[in] ads_struct *ads,
 		[in] boolean8 debug,
+		[in] netr_SchannelType secure_channel_type,
 		[out] string account_name,
 		[out] string netbios_domain_name,
 		[out] string dns_domain_name,
@@ -39,7 +41,7 @@ interface libnetjoin
 		[out] boolean8 domain_is_ad
 		);
 
-	[nopush,nopull] WERROR libnet_UnjoinCtx(
+	[nopush,nopull,noopnum] WERROR libnet_UnjoinCtx(
 		[in] string dc_name,
 		[in] string machine_name,
 		[in] string domain_name,
@@ -55,6 +57,8 @@ interface libnetjoin
 		[out] string netbios_domain_name,
 		[out] string dns_domain_name,
 		[out] boolean8 modified_config,
-		[out] string error_string
+		[out] string error_string,
+		[out] boolean8 disabled_machine_account,
+		[out] boolean8 deleted_machine_account
 		);
 }

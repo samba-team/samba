@@ -188,11 +188,17 @@ void ndr_print_lsa_Strings(struct ndr_print *ndr, const char *name, const struct
 enum ndr_err_code ndr_push_lsa_AsciiString(struct ndr_push *ndr, int ndr_flags, const struct lsa_AsciiString *r);
 enum ndr_err_code ndr_pull_lsa_AsciiString(struct ndr_pull *ndr, int ndr_flags, struct lsa_AsciiString *r);
 void ndr_print_lsa_AsciiString(struct ndr_print *ndr, const char *name, const struct lsa_AsciiString *r);
+enum ndr_err_code ndr_push_lsa_AsciiStringLarge(struct ndr_push *ndr, int ndr_flags, const struct lsa_AsciiStringLarge *r);
+enum ndr_err_code ndr_pull_lsa_AsciiStringLarge(struct ndr_pull *ndr, int ndr_flags, struct lsa_AsciiStringLarge *r);
+void ndr_print_lsa_AsciiStringLarge(struct ndr_print *ndr, const char *name, const struct lsa_AsciiStringLarge *r);
 void ndr_print_lsa_LUID(struct ndr_print *ndr, const char *name, const struct lsa_LUID *r);
 void ndr_print_lsa_PrivEntry(struct ndr_print *ndr, const char *name, const struct lsa_PrivEntry *r);
 void ndr_print_lsa_PrivArray(struct ndr_print *ndr, const char *name, const struct lsa_PrivArray *r);
 void ndr_print_lsa_QosInfo(struct ndr_print *ndr, const char *name, const struct lsa_QosInfo *r);
 void ndr_print_lsa_ObjectAttribute(struct ndr_print *ndr, const char *name, const struct lsa_ObjectAttribute *r);
+enum ndr_err_code ndr_push_lsa_PolicyAccessMask(struct ndr_push *ndr, int ndr_flags, uint32_t r);
+enum ndr_err_code ndr_pull_lsa_PolicyAccessMask(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
+void ndr_print_lsa_PolicyAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_lsa_AuditLogInfo(struct ndr_print *ndr, const char *name, const struct lsa_AuditLogInfo *r);
 void ndr_print_lsa_PolicyAuditPolicy(struct ndr_print *ndr, const char *name, enum lsa_PolicyAuditPolicy r);
 void ndr_print_lsa_AuditEventsInfo(struct ndr_print *ndr, const char *name, const struct lsa_AuditEventsInfo *r);

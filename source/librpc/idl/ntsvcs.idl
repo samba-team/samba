@@ -9,69 +9,358 @@
 ]
 interface ntsvcs
 {
-	void PNP_Disconnect();
-	void PNP_Connect();
-	void PNP_GetVersion();
-	void PNP_GetGlobalState();
-	void PNP_InitDetection();
-	void PNP_ReportLogOn();
-	void PNP_ValidateDeviceInstance();
-	void PNP_GetRootDeviceInstance();
-	void PNP_GetRelatedDeviceInstance();
-	void PNP_EnumerateSubKeys();
-	void PNP_GetDeviceList();
-	void PNP_GetDeviceListSize();
-	void PNP_GetDepth();
-	void PNP_GetDeviceRegProp();
-	void PNP_SetDeviceRegProp();
-	void PNP_GetClassInstance();
-	void PNP_CreateKey();
-	void PNP_DeleteRegistryKey();
-	void PNP_GetClassCount();
-	void PNP_GetClassName();
-	void PNP_DeleteClassKey();
-	void PNP_GetInterfaceDeviceAlias();
-	void PNP_GetInterfaceDeviceList();
-	void PNP_GetInterfaceDeviceListSize();
-	void PNP_RegisterDeviceClassAssociation();
-	void PNP_UnregisterDeviceClassAssociation();
-	void PNP_GetClassRegProp();
-	void PNP_SetClassRegProp();
-	void PNP_CreateDevInst();
-	void PNP_DeviceInstanceAction();
-	void PNP_GetDeviceStatus();
-	void PNP_SetDeviceProblem();
-	void PNP_DisableDevInst();
-	void PNP_UninstallDevInst();
-	void PNP_AddID();
-	void PNP_RegisterDriver();
-	void PNP_QueryRemove();
-	void PNP_RequestDeviceEject();
-	void PNP_IsDockStationPresent();
-	void PNP_RequestEjectPC();
-	void PNP_HwProfFlags();
-	void PNP_GetHwProfInfo();
-	void PNP_AddEmptyLogConf();
-	void PNP_FreeLogConf();
-	void PNP_GetFirstLogConf();
-	void PNP_GetNextLogConf();
-	void PNP_GetLogConfPriority();
-	void PNP_AddResDes();
-	void PNP_FreeResDes();
-	void PNP_GetNextResDes();
-	void PNP_GetResDesData();
-	void PNP_GetResDesDataSize();
-	void PNP_ModifyResDes();
-	void PNP_DetectResourceLimit();
-	void PNP_QueryResConfList();
-	void PNP_SetHwProf();
-	void PNP_QueryArbitratorFreeData();
-	void PNP_QueryArbitratorFreeSize();
-	void PNP_RunDetection();
-	void PNP_RegisterNotification();
-	void PNP_UnregisterNotification();
-	void PNP_GetCustomDevProp();
-	void PNP_GetVersionInternal();
-	void PNP_GetBlockedDriverInfo();
-	void PNP_GetServerSideDeviceInstallFlags();
+	/******************/
+	/* Function: 0x00 */
+
+	WERROR PNP_Disconnect();
+
+	/******************/
+	/* Function: 0x01 */
+
+	WERROR PNP_Connect();
+
+	/******************/
+	/* Function: 0x02 */
+
+	WERROR PNP_GetVersion(
+		[out,ref] uint16 *version
+		);
+
+	/******************/
+	/* Function: 0x03 */
+
+	WERROR PNP_GetGlobalState();
+
+	/******************/
+	/* Function: 0x04 */
+
+	WERROR PNP_InitDetection();
+
+	/******************/
+	/* Function: 0x05 */
+
+	WERROR PNP_ReportLogOn();
+
+	/******************/
+	/* Function: 0x06 */
+
+	WERROR PNP_ValidateDeviceInstance(
+		[in,ref] [string,charset(UTF16)] uint16 *devicepath,
+		[in] uint32 flags
+		);
+
+	/******************/
+	/* Function: 0x07 */
+
+	WERROR PNP_GetRootDeviceInstance();
+
+	/******************/
+	/* Function: 0x08 */
+
+	WERROR PNP_GetRelatedDeviceInstance();
+
+	/******************/
+	/* Function: 0x09 */
+
+	WERROR PNP_EnumerateSubKeys();
+
+	/******************/
+	/* Function: 0x0a */
+
+	WERROR PNP_GetDeviceList();
+
+	/******************/
+	/* Function: 0x0b */
+
+	WERROR PNP_GetDeviceListSize(
+		[in,unique] [string,charset(UTF16)] uint16 *devicename,
+		[out,ref] uint32 *size,
+		[in] uint32 flags
+		);
+
+	/******************/
+	/* Function: 0x0c */
+
+	WERROR PNP_GetDepth();
+
+	/******************/
+	/* Function: 0x0d */
+
+	WERROR PNP_GetDeviceRegProp();
+
+	/******************/
+	/* Function: 0x0e */
+
+	WERROR PNP_SetDeviceRegProp();
+
+	/******************/
+	/* Function: 0x0f */
+
+	WERROR PNP_GetClassInstance();
+
+	/******************/
+	/* Function: 0x10 */
+
+	WERROR PNP_CreateKey();
+
+	/******************/
+	/* Function: 0x11 */
+
+	WERROR PNP_DeleteRegistryKey();
+
+	/******************/
+	/* Function: 0x12 */
+
+	WERROR PNP_GetClassCount();
+
+	/******************/
+	/* Function: 0x13 */
+
+	WERROR PNP_GetClassName();
+
+	/******************/
+	/* Function: 0x14 */
+
+	WERROR PNP_DeleteClassKey();
+
+	/******************/
+	/* Function: 0x15 */
+
+	WERROR PNP_GetInterfaceDeviceAlias();
+
+	/******************/
+	/* Function: 0x16 */
+
+	WERROR PNP_GetInterfaceDeviceList();
+
+	/******************/
+	/* Function: 0x17 */
+
+	WERROR PNP_GetInterfaceDeviceListSize();
+
+	/******************/
+	/* Function: 0x18 */
+
+	WERROR PNP_RegisterDeviceClassAssociation();
+
+	/******************/
+	/* Function: 0x19 */
+
+	WERROR PNP_UnregisterDeviceClassAssociation();
+
+	/******************/
+	/* Function: 0x1a */
+
+	WERROR PNP_GetClassRegProp();
+
+	/******************/
+	/* Function: 0x1b */
+
+	WERROR PNP_SetClassRegProp();
+
+	/******************/
+	/* Function: 0x1c */
+
+	WERROR PNP_CreateDevInst();
+
+	/******************/
+	/* Function: 0x1d */
+
+	WERROR PNP_DeviceInstanceAction();
+
+	/******************/
+	/* Function: 0x1e */
+
+	WERROR PNP_GetDeviceStatus();
+
+	/******************/
+	/* Function: 0x1f */
+
+	WERROR PNP_SetDeviceProblem();
+
+	/******************/
+	/* Function: 0x20 */
+
+	WERROR PNP_DisableDevInst();
+
+	/******************/
+	/* Function: 0x21 */
+
+	WERROR PNP_UninstallDevInst();
+
+	/******************/
+	/* Function: 0x22 */
+
+	WERROR PNP_AddID();
+
+	/******************/
+	/* Function: 0x23 */
+
+	WERROR PNP_RegisterDriver();
+
+	/******************/
+	/* Function: 0x24 */
+
+	WERROR PNP_QueryRemove();
+
+	/******************/
+	/* Function: 0x25 */
+
+	WERROR PNP_RequestDeviceEject();
+
+	/******************/
+	/* Function: 0x26 */
+
+	WERROR PNP_IsDockStationPresent();
+
+	/******************/
+	/* Function: 0x27 */
+
+	WERROR PNP_RequestEjectPC();
+
+	/******************/
+	/* Function: 0x28 */
+
+	WERROR PNP_HwProfFlags(
+		[in] uint32 unknown1,
+		[in,ref] [string,charset(UTF16)] uint16 *devicepath,
+		[in] uint32 unknown2,
+		[in,out,ref] uint32 *unknown3,
+		[in,out,unique] uint16 *unknown4,
+		[in,unique] [string,charset(UTF16)] uint16 *unknown5,
+		[out,unique] [string,charset(UTF16)] uint16 **unknown5a,
+		[in] uint32 unknown6,
+		[in] uint32 unknown7
+		);
+
+	/******************/
+	/* Function: 0x29 */
+
+	typedef struct {
+		uint32 unknown1;
+		uint16 unknown2[160];
+		uint32 unknown3;
+	} PNP_HwProfInfo;
+
+	WERROR PNP_GetHwProfInfo(
+		[in] uint32 idx,
+		[in,out,ref] PNP_HwProfInfo *info,
+		[in] uint32 unknown1,
+		[in] uint32 unknown2
+		);
+
+	/******************/
+	/* Function: 0x2a */
+
+	WERROR PNP_AddEmptyLogConf();
+
+	/******************/
+	/* Function: 0x2b */
+
+	WERROR PNP_FreeLogConf();
+
+	/******************/
+	/* Function: 0x2c */
+
+	WERROR PNP_GetFirstLogConf();
+
+	/******************/
+	/* Function: 0x2d */
+
+	WERROR PNP_GetNextLogConf();
+
+	/******************/
+	/* Function: 0x2e */
+
+	WERROR PNP_GetLogConfPriority();
+
+	/******************/
+	/* Function: 0x2f */
+
+	WERROR PNP_AddResDes();
+
+	/******************/
+	/* Function: 0x30 */
+
+	WERROR PNP_FreeResDes();
+
+	/******************/
+	/* Function: 0x31 */
+
+	WERROR PNP_GetNextResDes();
+
+	/******************/
+	/* Function: 0x32 */
+
+	WERROR PNP_GetResDesData();
+
+	/******************/
+	/* Function: 0x33 */
+
+	WERROR PNP_GetResDesDataSize();
+
+	/******************/
+	/* Function: 0x34 */
+
+	WERROR PNP_ModifyResDes();
+
+	/******************/
+	/* Function: 0x35 */
+
+	WERROR PNP_DetectResourceLimit();
+
+	/******************/
+	/* Function: 0x36 */
+
+	WERROR PNP_QueryResConfList();
+
+	/******************/
+	/* Function: 0x37 */
+
+	WERROR PNP_SetHwProf();
+
+	/******************/
+	/* Function: 0x38 */
+
+	WERROR PNP_QueryArbitratorFreeData();
+
+	/******************/
+	/* Function: 0x39 */
+
+	WERROR PNP_QueryArbitratorFreeSize();
+
+	/******************/
+	/* Function: 0x3a */
+
+	WERROR PNP_RunDetection();
+
+	/******************/
+	/* Function: 0x3b */
+
+	WERROR PNP_RegisterNotification();
+
+	/******************/
+	/* Function: 0x3c */
+
+	WERROR PNP_UnregisterNotification();
+
+	/******************/
+	/* Function: 0x3d */
+
+	WERROR PNP_GetCustomDevProp();
+
+	/******************/
+	/* Function: 0x3e */
+
+	WERROR PNP_GetVersionInternal();
+
+	/******************/
+	/* Function: 0x3f */
+
+	WERROR PNP_GetBlockedDriverInfo();
+
+	/******************/
+	/* Function: 0x40 */
+
+	WERROR PNP_GetServerSideDeviceInstallFlags();
 }

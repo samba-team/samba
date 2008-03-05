@@ -3,6 +3,7 @@
 ## Makefile_target:major:minor
 ##
 bin/libtalloc.@SHLIBEXT@:1:0
+bin/libtdb.@SHLIBEXT@:0:1
 bin/libsmbclient.@SHLIBEXT@:0:1
 bin/libsmbsharemodes.@SHLIBEXT@:0:2
 bin/libaddns.@SHLIBEXT@:0:1

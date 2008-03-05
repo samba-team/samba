@@ -3,6 +3,7 @@
    Distributed SMB/CIFS Server Management Utility 
    Copyright (C) 2001 Andrew Bartlett (abartlet@samba.org)
    Copyright (C) Tim Potter     2001
+   Copyright (C) 2008 Guenther Deschner
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

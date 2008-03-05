@@ -28,13 +28,13 @@ static bool gpo_sd_check_agp_object_guid(const struct security_ace_object *objec
 	NTSTATUS status;
 
 	if (!object) {
-		return False;
+		return false;
 	}
 
 	status = GUID_from_string(ADS_EXTENDED_RIGHT_APPLY_GROUP_POLICY,
 				  &ext_right_apg_guid);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return false;
 	}
 
 	switch (object->flags) {
@@ -52,7 +52,7 @@ static bool gpo_sd_check_agp_object_guid(const struct security_ace_object *objec
 			break;
 	}
 
-	return False;
+	return false;
 }
 
 /****************************************************************
@@ -61,7 +61,7 @@ static bool gpo_sd_check_agp_object_guid(const struct security_ace_object *objec
 static bool gpo_sd_check_agp_object(const SEC_ACE *ace)
 {
 	if (!sec_ace_object(ace->type)) {
-		return False;
+		return false;
 	}
 
 	return gpo_sd_check_agp_object_guid(&ace->object.object);

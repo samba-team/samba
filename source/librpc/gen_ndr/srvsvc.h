@@ -1299,7 +1299,7 @@ struct srvsvc_NetShareSetInfo {
 		const char *server_unc;/* [unique,charset(UTF16)] */
 		const char *share_name;/* [charset(UTF16)] */
 		uint32_t level;
-		union srvsvc_NetShareInfo info;/* [switch_is(level)] */
+		union srvsvc_NetShareInfo *info;/* [ref,switch_is(level)] */
 		uint32_t *parm_error;/* [unique] */
 	} in;
 
@@ -1371,7 +1371,7 @@ struct srvsvc_NetSrvSetInfo {
 	struct {
 		const char *server_unc;/* [unique,charset(UTF16)] */
 		uint32_t level;
-		union srvsvc_NetSrvInfo info;/* [switch_is(level)] */
+		union srvsvc_NetSrvInfo *info;/* [ref,switch_is(level)] */
 		uint32_t *parm_error;/* [unique] */
 	} in;
 
@@ -1472,7 +1472,7 @@ struct srvsvc_NetRemoteTOD {
 	} in;
 
 	struct {
-		struct srvsvc_NetRemoteTODInfo *info;/* [unique] */
+		struct srvsvc_NetRemoteTODInfo **info;/* [ref] */
 		WERROR result;
 	} out;
 

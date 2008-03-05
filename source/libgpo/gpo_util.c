@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  Group Policy Object Support
- *  Copyright (C) Guenther Deschner 2005-2007
+ *  Copyright (C) Guenther Deschner 2005-2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -668,6 +668,51 @@ NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 /****************************************************************
 ****************************************************************/
 
+NTSTATUS gpo_get_unix_path(TALLOC_CTX *mem_ctx,
+			   struct GROUP_POLICY_OBJECT *gpo,
+			   char **unix_path)
+{
+	char *server, *share, *nt_path;
+	return gpo_explode_filesyspath(mem_ctx, gpo->file_sys_path,
+				       &server, &share, &nt_path, unix_path);
+}
+
+/****************************************************************
+****************************************************************/
+
+char *gpo_flag_str(uint32_t flags)
+{
+	fstring str = "";
+
+	if (flags == 0) {
+		return NULL;
+	}
+
+	if (flags & GPO_INFO_FLAG_SLOWLINK)
+		fstrcat(str, "GPO_INFO_FLAG_SLOWLINK ");
+	if (flags & GPO_INFO_FLAG_VERBOSE)
+		fstrcat(str, "GPO_INFO_FLAG_VERBOSE ");
+	if (flags & GPO_INFO_FLAG_SAFEMODE_BOOT)
+		fstrcat(str, "GPO_INFO_FLAG_SAFEMODE_BOOT ");
+	if (flags & GPO_INFO_FLAG_NOCHANGES)
+		fstrcat(str, "GPO_INFO_FLAG_NOCHANGES ");
+	if (flags & GPO_INFO_FLAG_MACHINE)
+		fstrcat(str, "GPO_INFO_FLAG_MACHINE ");
+	if (flags & GPO_INFO_FLAG_LOGRSOP_TRANSITION)
+		fstrcat(str, "GPO_INFO_FLAG_LOGRSOP_TRANSITION ");
+	if (flags & GPO_INFO_FLAG_LINKTRANSITION)
+		fstrcat(str, "GPO_INFO_FLAG_LINKTRANSITION ");
+	if (flags & GPO_INFO_FLAG_FORCED_REFRESH)
+		fstrcat(str, "GPO_INFO_FLAG_FORCED_REFRESH ");
+	if (flags & GPO_INFO_FLAG_BACKGROUND)
+		fstrcat(str, "GPO_INFO_FLAG_BACKGROUND ");
+
+	return SMB_STRDUP(str);
+}
+
+/****************************************************************
+****************************************************************/
+
 NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
 		      uint32_t flags,
 		      const char *filename,
@@ -693,8 +738,11 @@ NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	tmp = talloc_asprintf_strupper_m(mem_ctx, "%s/%s/%s", filename, path,
-					 suffix);
+	path = talloc_strdup_upper(mem_ctx, path);
+	NT_STATUS_HAVE_NO_MEMORY(path);
+
+	tmp = talloc_asprintf(mem_ctx, "%s/%s/%s", filename,
+			      path, suffix);
 	NT_STATUS_HAVE_NO_MEMORY(tmp);
 
 	if (sys_stat(tmp, &sbuf) == 0) {
@@ -705,3 +753,31 @@ NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_NO_SUCH_FILE;
 }
 
+/****************************************************************
+****************************************************************/
+
+ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
+				TALLOC_CTX *mem_ctx,
+				const char *dn,
+				struct nt_user_token **token)
+{
+	struct nt_user_token *ad_token = NULL;
+	ADS_STATUS status;
+	NTSTATUS ntstatus;
+
+#ifndef HAVE_ADS
+	return ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+#endif
+	status = ads_get_sid_token(ads, mem_ctx, dn, &ad_token);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	ntstatus = merge_nt_token(mem_ctx, ad_token, get_system_token(),
+				  token);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		return ADS_ERROR_NT(ntstatus);
+	}
+
+	return ADS_SUCCESS;
+}

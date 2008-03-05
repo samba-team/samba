@@ -127,7 +127,11 @@ bool lang_tdb_init(const char *lang)
 	if (!lang) 
 		return True;
 
-	asprintf(&msg_path, "%s.msg", data_path((const char *)lang));
+	if (asprintf(&msg_path, "%s.msg",
+		     data_path((const char *)lang)) == -1) {
+		DEBUG(0, ("asprintf failed\n"));
+		goto done;
+	}
 	if (stat(msg_path, &st) != 0) {
 		/* the msg file isn't available */
 		DEBUG(10, ("lang_tdb_init: %s: %s\n", msg_path, 
@@ -135,7 +139,10 @@ bool lang_tdb_init(const char *lang)
 		goto done;
 	}
 	
-	asprintf(&path, "%s%s.tdb", lock_path("lang_"), lang);
+	if (asprintf(&path, "%s%s.tdb", lock_path("lang_"), lang) == -1) {
+		DEBUG(0, ("asprintf failed\n"));
+		goto done;
+	}
 
 	DEBUG(10, ("lang_tdb_init: loading %s\n", path));
 
