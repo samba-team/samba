@@ -2225,7 +2225,7 @@ static bool api_srvsvc_NetRemoteTOD(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.info = talloc_zero(r, struct srvsvc_NetRemoteTODInfo);
+	r->out.info = talloc_zero(r, struct srvsvc_NetRemoteTODInfo *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
