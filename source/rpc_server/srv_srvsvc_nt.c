@@ -1565,16 +1565,17 @@ char *valid_share_pathname(TALLOC_CTX *ctx, const char *dos_pathname)
 }
 
 /*******************************************************************
- Net share set info. Modify share details.
+ _srvsvc_NetShareSetInfo. Modify share details.
 ********************************************************************/
 
-WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, SRV_R_NET_SHARE_SET_INFO *r_u)
+WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
+			       struct srvsvc_NetShareSetInfo *r)
 {
 	struct current_user user;
 	char *command = NULL;
 	char *share_name = NULL;
 	char *comment = NULL;
-	char *pathname = NULL;
+	const char *pathname = NULL;
 	int type;
 	int snum;
 	int ret;
@@ -1584,15 +1585,16 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	bool is_disk_op = False;
 	int max_connections = 0;
 	TALLOC_CTX *ctx = p->mem_ctx;
+	union srvsvc_NetShareInfo *info = r->in.info;
 
-	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
+	DEBUG(5,("_srvsvc_NetShareSetInfo: %d\n", __LINE__));
 
-	share_name = unistr2_to_ascii_talloc(ctx, &q_u->uni_share_name);
+	share_name = talloc_strdup(p->mem_ctx, r->in.share_name);
 	if (!share_name) {
-		return WERR_NET_NAME_NOT_FOUND;
+		return WERR_NOMEM;
 	}
 
-	r_u->parm_error = 0;
+	*r->out.parm_error = 0;
 
 	if ( strequal(share_name,"IPC$")
 		|| ( lp_enable_asu_support() && strequal(share_name,"ADMIN$") )
@@ -1620,44 +1622,39 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	if ( user.ut.uid != sec_initial_uid() && !is_disk_op )
 		return WERR_ACCESS_DENIED;
 
-	switch (q_u->info_level) {
+	switch (r->in.level) {
 	case 1:
 		pathname = talloc_strdup(ctx, lp_pathname(snum));
-		comment = unistr2_to_ascii_talloc(ctx,
-				&q_u->info.share.info2.info_2_str.uni_remark);
-		type = q_u->info.share.info2.info_2.type;
+		comment = talloc_strdup(ctx, info->info2->comment);
+		type = info->info2->type;
 		psd = NULL;
 		break;
 	case 2:
-		comment = unistr2_to_ascii_talloc(ctx,
-				&q_u->info.share.info2.info_2_str.uni_remark);
-		pathname = unistr2_to_ascii_talloc(ctx,
-				&q_u->info.share.info2.info_2_str.uni_path);
-		type = q_u->info.share.info2.info_2.type;
-		max_connections = (q_u->info.share.info2.info_2.max_uses == 0xffffffff) ? 0 : q_u->info.share.info2.info_2.max_uses;
+		comment = talloc_strdup(ctx, info->info2->comment);
+		pathname = info->info2->path;
+		type = info->info2->type;
+		max_connections = (info->info2->max_users == 0xffffffff) ?
+			0 : info->info2->max_users;
 		psd = NULL;
 		break;
 #if 0
 		/* not supported on set but here for completeness */
 	case 501:
-		unistr2_to_ascii(comment, &q_u->info.share.info501.info_501_str.uni_remark, sizeof(comment));
-		type = q_u->info.share.info501.info_501.type;
+		comment = talloc_strdup(ctx, info->info501->comment);
+		type = info->info501->type;
 		psd = NULL;
 		break;
 #endif
 	case 502:
-		comment = unistr2_to_ascii_talloc(ctx,
-				&q_u->info.share.info502.info_502_str.uni_remark);
-		pathname = unistr2_to_ascii_talloc(ctx,
-				&q_u->info.share.info502.info_502_str.uni_path);
-		type = q_u->info.share.info502.info_502.type;
-		psd = q_u->info.share.info502.info_502_str.sd;
+		comment = talloc_strdup(ctx, info->info502->comment);
+		pathname = info->info502->path;
+		type = info->info502->type;
+		psd = info->info502->sd;
 		map_generic_share_sd_bits(psd);
 		break;
 	case 1004:
 		pathname = talloc_strdup(ctx, lp_pathname(snum));
-		comment = unistr2_to_ascii_talloc(ctx,
-				&q_u->info.share.info1004.info_1004_str.uni_remark);
+		comment = talloc_strdup(ctx, info->info1004->comment);
 		type = STYPE_DISKTREE;
 		break;
 	case 1005:
@@ -1665,12 +1662,12 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		   user, so we must compare it to see if it's what is set in
 		   smb.conf, so that we can contine other ops like setting
 		   ACLs on a share */
-		if (((q_u->info.share.info1005.share_info_flags &
+		if (((info->info1005->dfs_flags &
 		      SHARE_1005_CSC_POLICY_MASK) >>
 		     SHARE_1005_CSC_POLICY_SHIFT) == lp_csc_policy(snum))
 			return WERR_OK;
 		else {
-			DEBUG(3, ("_srv_net_share_set_info: client is trying to change csc policy from the network; must be done with smb.conf\n"));
+			DEBUG(3, ("_srvsvc_NetShareSetInfo: client is trying to change csc policy from the network; must be done with smb.conf\n"));
 			return WERR_ACCESS_DENIED;
 		}
 	case 1006:
@@ -1679,12 +1676,13 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	case 1501:
 		pathname = talloc_strdup(ctx, lp_pathname(snum));
 		comment = talloc_strdup(ctx, lp_comment(snum));
-		psd = q_u->info.share.info1501.sdb->sd;
+		psd = info->info1501->sd;
 		map_generic_share_sd_bits(psd);
 		type = STYPE_DISKTREE;
 		break;
 	default:
-		DEBUG(5,("_srv_net_share_set_info: unsupported switch value %d\n", q_u->info_level));
+		DEBUG(5,("_srvsvc_NetShareSetInfo: unsupported switch value %d\n",
+			r->in.level));
 		return WERR_UNKNOWN_LEVEL;
 	}
 
@@ -1705,7 +1703,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	string_replace(path, '"', ' ');
 	string_replace(comment, '"', ' ');
 
-	DEBUG(10,("_srv_net_share_set_info: change share command = %s\n",
+	DEBUG(10,("_srvsvc_NetShareSetInfo: change share command = %s\n",
 		lp_change_share_cmd() ? lp_change_share_cmd() : "NULL" ));
 
 	/* Only call modify function if something changed. */
@@ -1713,7 +1711,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	if (strcmp(path, lp_pathname(snum)) || strcmp(comment, lp_comment(snum))
 			|| (lp_max_connections(snum) != max_connections)) {
 		if (!lp_change_share_cmd() || !*lp_change_share_cmd()) {
-			DEBUG(10,("_srv_net_share_set_info: No change share command\n"));
+			DEBUG(10,("_srvsvc_NetShareSetInfo: No change share command\n"));
 			return WERR_ACCESS_DENIED;
 		}
 
@@ -1729,7 +1727,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 			return WERR_NOMEM;
 		}
 
-		DEBUG(10,("_srv_net_share_set_info: Running [%s]\n", command ));
+		DEBUG(10,("_srvsvc_NetShareSetInfo: Running [%s]\n", command ));
 
 		/********* BEGIN SeDiskOperatorPrivilege BLOCK *********/
 
@@ -1748,14 +1746,16 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 		/********* END SeDiskOperatorPrivilege BLOCK *********/
 
-		DEBUG(3,("_srv_net_share_set_info: Running [%s] returned (%d)\n", command, ret ));
+		DEBUG(3,("_srvsvc_NetShareSetInfo: Running [%s] returned (%d)\n",
+			command, ret ));
 
 		TALLOC_FREE(command);
 
 		if ( ret != 0 )
 			return WERR_ACCESS_DENIED;
 	} else {
-		DEBUG(10,("_srv_net_share_set_info: No change to share name (%s)\n", share_name ));
+		DEBUG(10,("_srvsvc_NetShareSetInfo: No change to share name (%s)\n",
+			share_name ));
 	}
 
 	/* Replace SD if changed. */
@@ -1767,12 +1767,12 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 		if (old_sd && !sec_desc_equal(old_sd, psd)) {
 			if (!set_share_security(share_name, psd))
-				DEBUG(0,("_srv_net_share_set_info: Failed to change security info in share %s.\n",
+				DEBUG(0,("_srvsvc_NetShareSetInfo: Failed to change security info in share %s.\n",
 					share_name ));
 		}
 	}
 
-	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
+	DEBUG(5,("_srvsvc_NetShareSetInfo: %d\n", __LINE__));
 
 	return WERR_OK;
 }
@@ -2547,12 +2547,6 @@ WERROR _srvsvc_NetShareEnumAll(pipes_struct *p, struct srvsvc_NetShareEnumAll *r
 }
 
 WERROR _srvsvc_NetShareGetInfo(pipes_struct *p, struct srvsvc_NetShareGetInfo *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _srvsvc_NetShareSetInfo(pipes_struct *p, struct srvsvc_NetShareSetInfo *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
