@@ -430,39 +430,6 @@ WERROR rpccli_srvsvc_net_share_add(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	return result;	
 }
 
-WERROR rpccli_srvsvc_net_remote_tod(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				 char *server, TIME_OF_DAY_INFO *tod)
-{
-	prs_struct qbuf, rbuf;
-	SRV_Q_NET_REMOTE_TOD q;
-	SRV_R_NET_REMOTE_TOD r;
-	WERROR result = W_ERROR(ERRgeneral);
-	fstring server_slash;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialise input parameters */
-
-	slprintf(server_slash, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
-	strupper_m(server_slash);
-
-	init_srv_q_net_remote_tod(&q, server_slash);
-	r.tod = tod;
-
-	/* Marshall data and send request */
-
-	CLI_DO_RPC_WERR(cli, mem_ctx, PI_SRVSVC, SRV_NET_REMOTE_TOD,
-		q, r,
-		qbuf, rbuf,
-		srv_io_q_net_remote_tod,
-		srv_io_r_net_remote_tod,
-		WERR_GENERAL_FAILURE);
-
-	result = r.status;
-	return result;	
-}
-
 WERROR rpccli_srvsvc_net_file_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				uint32 file_level, const char *user_name,
 				SRV_FILE_INFO_CTR *ctr,	int preferred_len,
