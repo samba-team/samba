@@ -1299,7 +1299,7 @@ import "security.idl", "svcctl.idl";
 	/* Function: 0x1c */
 	WERROR srvsvc_NetRemoteTOD(
 		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
-		[out,unique]   srvsvc_NetRemoteTODInfo *info
+		[out,ref]     srvsvc_NetRemoteTODInfo **info
 		);
 
 /**************************/
