@@ -157,7 +157,7 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 
 	acct_flags = samdb_result_acct_flags(sam_ctx, mem_ctx, msg, domain_dn);
 	
-	acct_expiry = samdb_result_nttime(msg, "accountExpires", 0);
+	acct_expiry = samdb_result_account_expires(msg, 0);
 
 	/* Check for when we must change this password, taking the
 	 * userAccountControl flags into account */
@@ -351,7 +351,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 
 	server_info->last_logon = samdb_result_nttime(msg, "lastLogon", 0);
 	server_info->last_logoff = samdb_result_nttime(msg, "lastLogoff", 0);
-	server_info->acct_expiry = samdb_result_nttime(msg, "accountExpires", 0);
+	server_info->acct_expiry = samdb_result_account_expires(msg, 0);
 	server_info->last_password_change = samdb_result_nttime(msg, "pwdLastSet", 0);
 
 	ncname = samdb_result_dn(sam_ctx, mem_ctx, msg_domain_ref, "nCName", NULL);
