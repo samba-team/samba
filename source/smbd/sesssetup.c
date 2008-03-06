@@ -539,6 +539,8 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	if ( !server_info->ptok ) {
 		ret = create_local_token( server_info );
 		if ( !NT_STATUS_IS_OK(ret) ) {
+			DEBUG(10,("failed to create local token: %s\n",
+				nt_errstr(ret)));
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
