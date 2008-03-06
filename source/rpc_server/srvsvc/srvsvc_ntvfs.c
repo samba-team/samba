@@ -98,6 +98,7 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 	/* init ntvfs function pointers */
 	status = ntvfs_init_connection(c, scfg, type,
 				       PROTOCOL_NT1,
+				       0,/* ntvfs_client_caps */
 				       dce_call->event_ctx,
 				       dce_call->conn->msg_ctx,
 				       dce_call->conn->dce_ctx->lp_ctx,

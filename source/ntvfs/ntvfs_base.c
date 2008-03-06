@@ -153,6 +153,7 @@ _PUBLIC_ bool ntvfs_interface_differs(const struct ntvfs_critical_sizes *const i
 */
 NTSTATUS ntvfs_init_connection(TALLOC_CTX *mem_ctx, struct share_config *scfg, enum ntvfs_type type,
 			       enum protocol_types protocol,
+			       uint64_t ntvfs_client_caps,
 			       struct event_context *ev, struct messaging_context *msg,
 			       struct loadparm_context *lp_ctx,
 			       struct server_id server_id, struct ntvfs_context **_ctx)
@@ -168,6 +169,7 @@ NTSTATUS ntvfs_init_connection(TALLOC_CTX *mem_ctx, struct share_config *scfg, e
 	ctx = talloc_zero(mem_ctx, struct ntvfs_context);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 	ctx->protocol		= protocol;
+	ctx->client_caps	= ntvfs_client_caps;
 	ctx->type		= type;
 	ctx->config		= talloc_steal(ctx, scfg);
 	ctx->event_ctx		= ev;
