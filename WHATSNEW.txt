@@ -49,7 +49,7 @@ Major enhancements in Samba 3.2.0 include:
 
 
   Documentation:
-  o Inclusion of an HTLM version of the 3rd edition of "Using Samba"
+  o Inclusion of an HTML version of the 3rd edition of "Using Samba"
     from O'Reilly Publishing.
 
 
@@ -185,6 +185,7 @@ smb.conf changes
     ldap debug level			New		0
     ldap debug threshold		New		10
     mangle map				Removed
+    min receive file size		New             0
     open files database hashsize	Removed
     read bmpx				Removed
     registry shares			New		No
@@ -292,7 +293,7 @@ o   Steve Langasek <vorlon@debian.org>
       for better adherence to the FHS standard.
 
 
-o  Volker Lendecke <vl@samba.org>
+o   Volker Lendecke <vl@samba.org>
     * Add talloc_stackframe() and talloc_pool() features.
     * Removal of pstring data type.
     * Add generic a in-memory cache.
@@ -310,13 +311,13 @@ o   Derrell Lipman <derrell@samba.org>
       while adding new features to libsmbclient.
 
 o   Stefan Metzmacher <metze@samba.org>
-    * Fixes for libreplace.
+    * Refactor Winbind internal parent-child interface tables
+      to achieve better unit testing support.
+    * Add nss_wrapper API for local Winbind unit tests.
+    * Networking fixes to the libreplace library.
     * Pidl fixes.
+    * Remove unused Winbind pipe calls.
     * Build fixes.
-    * Add nss_wrapper support.
-    * Start and test winbindd by 'make test'.
-    * Split up child_dispatch_table into domain, idmap and locator tables
-      in winbindd.
     * Fix for a crash bug in pidl generated client code.
       This could have happend with [in,out,unique] pointers
       when the client sends a valid pointer, but the server
