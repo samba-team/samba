@@ -144,6 +144,10 @@ SMBC_find_server(TALLOC_CTX *ctx,
         SMBCSRV *srv;
         int auth_called = 0;
         
+        if (!pp_workgroup || !pp_username || !pp_password) {
+                return NULL;
+        }
+                
 check_server_cache:
         
 	srv = smbc_getFunctionGetCachedServer(context)(context,
@@ -155,10 +159,6 @@ check_server_cache:
                                      !*pp_password || !(*pp_password)[0])) {
 		SMBC_call_auth_fn(ctx, context, server, share,
                                   pp_workgroup, pp_username, pp_password);
-                
-		if (!pp_workgroup || !pp_username || !pp_password) {
-			return NULL;
-		}
                 
 		/*
                  * However, smbc_auth_fn may have picked up info relating to
