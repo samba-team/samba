@@ -29,6 +29,18 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
 
+struct dsdb_schema *dsdb_new_schema(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience)
+{
+	struct dsdb_schema *schema = talloc_zero(mem_ctx, struct dsdb_schema);
+	if (!schema) {
+		return NULL;
+	}
+
+	schema->iconv_convenience = iconv_convenience;
+	return schema;
+}
+
+
 WERROR dsdb_load_oid_mappings_drsuapi(struct dsdb_schema *schema, const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr)
 {
 	uint32_t i,j;
@@ -1150,12 +1162,7 @@ WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf
 		goto nomem;
 	}
 
-	schema = talloc_zero(mem_ctx, struct dsdb_schema);
-	if (!schema) {
-		goto nomem;
-	}
-
-	schema->iconv_convenience = lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm"));
+	schema = dsdb_new_schema(mem_ctx, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")));
 
 	/*
 	 * load the prefixMap attribute from pf

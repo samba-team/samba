@@ -478,6 +478,9 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 
 	lp_smbcli_options(tctx->lp_ctx, &options);
 
+	options.use_oplocks = torture_setting_bool(tctx, "use_oplocks", true);
+	options.use_level2_oplocks = torture_setting_bool(tctx, "use_level2_oplocks", true);
+
 	status = smbcli_full_connection(mem_ctx, c, hostname, 
 					lp_smb_ports(tctx->lp_ctx),
 					sharename, NULL,
@@ -488,9 +491,6 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 		printf("Failed to open connection - %s\n", nt_errstr(status));
 		return false;
 	}
-
-	(*c)->transport->options.use_oplocks = torture_setting_bool(tctx, "use_oplocks", false);
-	(*c)->transport->options.use_level2_oplocks = torture_setting_bool(tctx, "use_level2_oplocks", false);
 
 	return true;
 }

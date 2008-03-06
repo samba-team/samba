@@ -56,16 +56,9 @@ struct test_become_dc_state {
 		struct drsuapi_DsReplicaObjectListItemEx *last_object;
 	} schema_part;
 
-	struct {
-		const char *samdb_ldb;
-		const char *domaindn_ldb;
-		const char *configdn_ldb;
-		const char *schemadn_ldb;
-		const char *secrets_ldb;
-		const char *templates_ldb;
-		const char *secrets_keytab;
-		const char *dns_keytab;
-	} path;
+	const char *targetdir;
+
+	struct loadparm_context *lp_ctx;
 };
 
 static NTSTATUS test_become_dc_prepare_db(void *private_data,
@@ -73,6 +66,14 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 {
 	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
 	struct provision_settings settings;
+	NTSTATUS status;
+	bool ok;
+	struct loadparm_context *lp_ctx = loadparm_init(s);
+	char *smbconf;
+
+	if (!lp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	settings.dns_name = p->dest_dsa->dns_name;
 	settings.site_name = p->dest_dsa->site_name;
@@ -80,21 +81,46 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 	settings.domain_dn_str = p->domain->dn_str;
 	settings.config_dn_str = p->forest->config_dn_str;
 	settings.schema_dn_str = p->forest->schema_dn_str;
-	settings.invocation_id = &p->dest_dsa->invocation_id;
 	settings.netbios_name = p->dest_dsa->netbios_name;
 	settings.realm = torture_join_dom_dns_name(s->tj);
 	settings.domain = torture_join_dom_netbios_name(s->tj);
-	settings.ntds_guid = &p->dest_dsa->ntds_guid;
-	settings.ntds_dn_str = p->dest_dsa->ntds_dn_str;
 	settings.machine_password = cli_credentials_get_password(s->machine_account);
-	settings.samdb_ldb = s->path.samdb_ldb;
-	settings.secrets_ldb = s->path.secrets_ldb;
-	settings.secrets_keytab = s->path.secrets_keytab;
-	settings.schemadn_ldb = s->path.schemadn_ldb;
-	settings.configdn_ldb = s->path.configdn_ldb;
-	settings.domaindn_ldb = s->path.domaindn_ldb;
+	settings.targetdir = s->targetdir;
 
-	return provision_bare(s, s->tctx->lp_ctx, &settings);
+	status = provision_bare(s, s->lp_ctx, &settings);
+	
+	smbconf = talloc_asprintf(lp_ctx, "%s/%s", s->targetdir, "/etc/smb.conf");
+
+	ok = lp_load(lp_ctx, smbconf);
+	if (!ok) {
+		DEBUG(0,("Failed load freshly generated smb.conf '%s'\n", smbconf));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	s->ldb = ldb_wrap_connect(s, lp_ctx, lp_sam_url(lp_ctx),
+				  system_session(s, lp_ctx),
+				  NULL, 0, NULL);
+	if (!s->ldb) {
+		DEBUG(0,("Failed to open '%s'\n", lp_sam_url(lp_ctx)));
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+	
+	ok = samdb_set_ntds_invocation_id(s->ldb, &p->dest_dsa->invocation_id);
+	if (!ok) {
+		DEBUG(0,("Failed to set cached ntds invocationId\n"));
+		return NT_STATUS_FOOBAR;
+	}
+	ok = samdb_set_ntds_objectGUID(s->ldb, &p->dest_dsa->ntds_guid);
+	if (!ok) {
+		DEBUG(0,("Failed to set cached ntds objectGUID\n"));
+		return NT_STATUS_FOOBAR;
+	}
+	
+	s->lp_ctx = lp_ctx;
+
+        return NT_STATUS_OK;
+
+
 }
 
 static NTSTATUS test_become_dc_check_options(void *private_data,
@@ -140,6 +166,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 	struct ldb_val prefixMap_val;
 	struct ldb_message_element *prefixMap_el;
 	struct ldb_val schemaInfo_val;
+	char *sam_ldb_path;
 	uint32_t i;
 	int ret;
 	bool ok;
@@ -325,13 +352,14 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 	talloc_free(s->ldb); /* this also free's the s->schema, because dsdb_set_schema() steals it */
 	s->schema = NULL;
 
-	DEBUG(0,("Reopen the SAM LDB with system credentials and a already stored schema: %s\n", s->path.samdb_ldb));
-	s->ldb = ldb_wrap_connect(s, s->tctx->lp_ctx, s->path.samdb_ldb,
+	sam_ldb_path = talloc_asprintf(s, "%s/%s", s->targetdir, "private/sam.ldb");
+	DEBUG(0,("Reopen the SAM LDB with system credentials and a already stored schema: %s\n", sam_ldb_path));
+	s->ldb = ldb_wrap_connect(s, s->tctx->lp_ctx, sam_ldb_path,
 				  system_session(s, s->tctx->lp_ctx),
 				  NULL, 0, NULL);
 	if (!s->ldb) {
 		DEBUG(0,("Failed to open '%s'\n",
-			s->path.samdb_ldb));
+			sam_ldb_path));
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
@@ -392,7 +420,8 @@ static NTSTATUS test_become_dc_schema_chunk(void *private_data,
 	}
 
 	if (!s->schema) {
-		s->self_made_schema = talloc_zero(s, struct dsdb_schema);
+		s->self_made_schema = dsdb_new_schema(s, lp_iconv_convenience(s->lp_ctx));
+
 		NT_STATUS_HAVE_NO_MEMORY(s->self_made_schema);
 
 		status = dsdb_load_oid_mappings_drsuapi(s->self_made_schema, mapping_ctr);
@@ -564,33 +593,24 @@ bool torture_net_become_dc(struct torture_context *torture)
 	struct ldb_message *msg;
 	int ldb_ret;
 	uint32_t i;
+	char *sam_ldb_path;
+
+	char *location = NULL;
+	torture_assert_ntstatus_ok(torture, torture_temp_dir(torture, "libnet_BecomeDC", &location), 
+				   "torture_temp_dir should return NT_STATUS_OK" );
 
 	s = talloc_zero(torture, struct test_become_dc_state);
 	if (!s) return false;
 
 	s->tctx = torture;
+	s->lp_ctx = torture->lp_ctx;
 
 	s->netbios_name = lp_parm_string(torture->lp_ctx, NULL, "become dc", "smbtorture dc");
 	if (!s->netbios_name || !s->netbios_name[0]) {
 		s->netbios_name = "smbtorturedc";
 	}
 
-	s->path.samdb_ldb	= talloc_asprintf(s, "%s_samdb.ldb", s->netbios_name);
-	if (!s->path.samdb_ldb) return false;
-	s->path.domaindn_ldb	= talloc_asprintf(s, "%s_domain.ldb", s->netbios_name);
-	if (!s->path.domaindn_ldb) return false;
-	s->path.configdn_ldb	= talloc_asprintf(s, "%s_config.ldb", s->netbios_name);
-	if (!s->path.configdn_ldb) return false;
-	s->path.schemadn_ldb	= talloc_asprintf(s, "%s_schema.ldb", s->netbios_name);
-	if (!s->path.schemadn_ldb) return false;
-	s->path.secrets_ldb	= talloc_asprintf(s, "%s_secrets.ldb", s->netbios_name);
-	if (!s->path.secrets_ldb) return false;
-	s->path.templates_ldb	= talloc_asprintf(s, "%s_templates.ldb", s->netbios_name);
-	if (!s->path.templates_ldb) return false;
-	s->path.secrets_keytab	= talloc_asprintf(s, "%s_secrets.keytab", s->netbios_name);
-	if (!s->path.secrets_keytab) return false;
-	s->path.dns_keytab	= talloc_asprintf(s, "%s_dns.keytab", s->netbios_name);
-	if (!s->path.dns_keytab) return false;
+	s->targetdir = location;
 
 	/* Join domain as a member server. */
 	s->tj = torture_join_domain(torture, s->netbios_name,
@@ -664,13 +684,14 @@ bool torture_net_become_dc(struct torture_context *torture)
 	talloc_free(s->ldb); /* this also free's the s->schema, because dsdb_set_schema() steals it */
 	s->schema = NULL;
 
-	DEBUG(0,("Reopen the SAM LDB with system credentials and all replicated data: %s\n", s->path.samdb_ldb));
-	s->ldb = ldb_wrap_connect(s, torture->lp_ctx, s->path.samdb_ldb,
-				  system_session(s, torture->lp_ctx),
+	sam_ldb_path = talloc_asprintf(s, "%s/%s", s->targetdir, "private/sam.ldb");
+	DEBUG(0,("Reopen the SAM LDB with system credentials and all replicated data: %s\n", sam_ldb_path));
+	s->ldb = ldb_wrap_connect(s, s->lp_ctx, sam_ldb_path,
+				  system_session(s, s->lp_ctx),
 				  NULL, 0, NULL);
 	if (!s->ldb) {
 		DEBUG(0,("Failed to open '%s'\n",
-			s->path.samdb_ldb));
+			sam_ldb_path));
 		ret = false;
 		goto cleanup;
 	}
@@ -682,6 +703,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 		goto cleanup;
 	}
 
+	/* Make sure we get this from the command line */
 	if (lp_parm_bool(torture->lp_ctx, NULL, "become dc", "do not unjoin", false)) {
 		talloc_free(s);
 		return ret;

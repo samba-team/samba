@@ -32,6 +32,7 @@ from socket import gethostname, gethostbyname
 import param
 import registry
 import samba
+from auth import system_session
 from samba import Ldb, substitute_var, valid_netbios_name, check_all_substituted
 from samba.samdb import SamDB
 import security
@@ -65,6 +66,7 @@ class ProvisionPaths:
         self.dns_keytab = None
         self.dns = None
         self.winsdb = None
+        self.private_dir = None
 
 
 def check_install(lp, session_info, credentials):
@@ -197,20 +199,20 @@ def provision_paths_from_lp(lp, dnsdomain):
     :param dnsdomain: DNS Domain name
     """
     paths = ProvisionPaths()
-    private_dir = lp.get("private dir")
+    paths.private_dir = lp.get("private dir")
     paths.keytab = "secrets.keytab"
     paths.dns_keytab = "dns.keytab"
 
-    paths.shareconf = os.path.join(private_dir, "share.ldb")
-    paths.samdb = os.path.join(private_dir, lp.get("sam database") or "samdb.ldb")
-    paths.idmapdb = os.path.join(private_dir, lp.get("idmap database") or "idmap.ldb")
-    paths.secrets = os.path.join(private_dir, lp.get("secrets database") or "secrets.ldb")
-    paths.templates = os.path.join(private_dir, "templates.ldb")
-    paths.dns = os.path.join(private_dir, dnsdomain + ".zone")
-    paths.winsdb = os.path.join(private_dir, "wins.ldb")
-    paths.s4_ldapi_path = os.path.join(private_dir, "ldapi")
-    paths.smbconf = os.path.join(private_dir, "smb.conf")
-    paths.phpldapadminconfig = os.path.join(private_dir, 
+    paths.shareconf = os.path.join(paths.private_dir, "share.ldb")
+    paths.samdb = os.path.join(paths.private_dir, lp.get("sam database") or "samdb.ldb")
+    paths.idmapdb = os.path.join(paths.private_dir, lp.get("idmap database") or "idmap.ldb")
+    paths.secrets = os.path.join(paths.private_dir, lp.get("secrets database") or "secrets.ldb")
+    paths.templates = os.path.join(paths.private_dir, "templates.ldb")
+    paths.dns = os.path.join(paths.private_dir, dnsdomain + ".zone")
+    paths.winsdb = os.path.join(paths.private_dir, "wins.ldb")
+    paths.s4_ldapi_path = os.path.join(paths.private_dir, "ldapi")
+    paths.smbconf = os.path.join(paths.private_dir, "smb.conf")
+    paths.phpldapadminconfig = os.path.join(paths.private_dir, 
                                             "phpldapadmin-config.php")
     paths.hklm = "hklm.ldb"
     paths.hkcr = "hkcr.ldb"
@@ -597,7 +599,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
     samdb = SamDB(path, session_info=session_info, 
                   credentials=credentials, lp=lp)
     samdb.set_domain_sid(domainsid)
-    if lp.get("server role") == "domain controller":
+    if serverrole == "domain controller":
         samdb.set_invocation_id(invocationid)
 
     load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename)
@@ -708,7 +710,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                 "KRBTGTPASS_B64": b64encode(krbtgtpass),
                 })
 
-            if lp.get("server role") == "domain controller":
+            if serverrole == "domain controller":
                 message("Setting up self join")
                 setup_self_join(samdb, configdn=configdn, schemadn=schemadn, 
                                 domaindn=domaindn, invocationid=invocationid, 
@@ -734,13 +736,14 @@ FILL_FULL = "FULL"
 FILL_NT4SYNC = "NT4SYNC"
 FILL_DRS = "DRS"
 
-def provision(lp, setup_dir, message, paths, session_info, 
-              credentials, samdb_fill=FILL_FULL, realm=None, rootdn=None,
+def provision(setup_dir, message, session_info, 
+              credentials, smbconf=None, targetdir=None, samdb_fill=FILL_FULL, realm=None, 
+              rootdn=None, domaindn=None, schemadn=None, configdn=None,
               domain=None, hostname=None, hostip=None, domainsid=None, 
               hostguid=None, adminpass=None, krbtgtpass=None, domainguid=None, 
               policyguid=None, invocationid=None, machinepass=None, 
               dnspass=None, root=None, nobody=None, nogroup=None, users=None, 
-              wheel=None, backup=None, aci=None, serverrole=None,
+              wheel=None, backup=None, aci=None, serverrole=None, 
               ldap_backend=None, ldap_backend_type=None, sitename=DEFAULTSITE):
     """Provision samba4
     
@@ -777,28 +780,6 @@ def provision(lp, setup_dir, message, paths, session_info,
         backup = findnss(grp.getgrnam, ["backup", "wheel", "root", "staff"])[0]
     if aci is None:
         aci = "# no aci for local ldb"
-    if serverrole is None:
-        serverrole = lp.get("server role")
-    assert serverrole in ("domain controller", "member server")
-    if invocationid is None and serverrole == "domain controller":
-        invocationid = uuid.random()
-
-    if realm is None:
-        realm = lp.get("realm")
-
-    if lp.get("realm").upper() != realm.upper():
-        raise Exception("realm '%s' in smb.conf must match chosen realm '%s'" %
-                (lp.get("realm"), realm))
-
-    ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
-    
-    if ldap_backend == "ldapi":
-        # provision-backend will set this path suggested slapd command line / fedorads.inf
-        ldap_backend = "ldapi://" % urllib.quote(os.path.join(lp.get("private dir"), "ldap", "ldapi"), safe="")
-
-    assert realm is not None
-    realm = realm.upper()
-
     if hostname is None:
         hostname = gethostname().split(".")[0].lower()
 
@@ -809,9 +790,84 @@ def provision(lp, setup_dir, message, paths, session_info,
     if not valid_netbios_name(netbiosname):
         raise InvalidNetbiosName(netbiosname)
 
+    if targetdir is not None:
+        if not os.path.exists(targetdir):
+            os.mkdir(targetdir)
+        if not os.path.exists(os.path.join(targetdir, "etc")):
+           os.mkdir(os.path.join(targetdir, "etc"))
+
+        if smbconf is None:
+            smbconf = os.path.join(targetdir, os.path.join("etc", "smb.conf"))
+
+    # only install a new smb.conf if there isn't one there already
+    if not os.path.exists(smbconf):
+        message("Setting up smb.conf")
+        assert serverrole is not None
+        if serverrole == "domain controller":
+            smbconfsuffix = "dc"
+        elif serverrole == "member server":
+            smbconfsuffix = "member"
+
+        assert domain is not None
+        assert realm is not None
+
+        default_lp = param.LoadParm()
+        #Load non-existant file
+        default_lp.load(smbconf)
+        
+        if targetdir is not None:
+            privatedir_line = "private dir = " + os.path.abspath(os.path.join(targetdir, "private"))
+            lockdir_line = "lock dir = " + os.path.abspath(targetdir)
+
+            default_lp.set("lock dir", os.path.abspath(targetdir))
+            
+        sysvol = os.path.join(default_lp.get("lock dir"), "sysvol")
+        netlogon = os.path.join(os.path.join(sysvol, "scripts"))
+
+        setup_file(setup_path("provision.smb.conf.%s" % smbconfsuffix), 
+                   smbconf, {
+                "HOSTNAME": hostname,
+                "DOMAIN_CONF": domain,
+                "REALM_CONF": realm,
+                "SERVERROLE": serverrole,
+                "NETLOGONPATH": netlogon,
+                "SYSVOLPATH": sysvol,
+                "PRIVATEDIR_LINE": privatedir_line,
+                "LOCKDIR_LINE": lockdir_line
+                })
+
+    lp = param.LoadParm()
+    lp.load(smbconf)
+
+    if serverrole is None:
+        serverrole = lp.get("server role")
+    assert serverrole in ("domain controller", "member server")
+    if invocationid is None and serverrole == "domain controller":
+        invocationid = uuid.random()
+
+    if realm is None:
+        realm = lp.get("realm")
+
+    assert realm is not None
+    realm = realm.upper()
+
     dnsdomain = realm.lower()
+
+    paths = provision_paths_from_lp(lp, dnsdomain)
+
+    if targetdir is not None:
+        if not os.path.exists(paths.private_dir):
+            os.mkdir(paths.private_dir)
+
+    ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
+    
+    if ldap_backend == "ldapi":
+        # provision-backend will set this path suggested slapd command line / fedorads.inf
+        ldap_backend = "ldapi://" % urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
+
     if serverrole == "domain controller":
-        domaindn = "DC=" + dnsdomain.replace(".", ",DC=")
+        if domaindn is None:
+            domaindn = "DC=" + dnsdomain.replace(".", ",DC=")
         if domain is None:
             domain = lp.get("workgroup")
     
@@ -824,38 +880,25 @@ def provision(lp, setup_dir, message, paths, session_info,
         if not valid_netbios_name(domain):
             raise InvalidNetbiosName(domain)
     else:
-        domaindn = "CN=" + netbiosname
+        if domaindn is None:
+            domaindn = "CN=" + netbiosname
         domain = netbiosname
     
     if rootdn is None:
        rootdn = domaindn
        
-    configdn = "CN=Configuration," + rootdn
-    schemadn = "CN=Schema," + configdn
+    if configdn is None:
+        configdn = "CN=Configuration," + rootdn
+    if schemadn is None:
+        schemadn = "CN=Schema," + configdn
 
     message("set DOMAIN SID: %s" % str(domainsid))
     message("Provisioning for %s in realm %s" % (domain, realm))
     message("Using administrator password: %s" % adminpass)
 
-    assert paths.smbconf is not None
-
-    # only install a new smb.conf if there isn't one there already
-    if not os.path.exists(paths.smbconf):
-        message("Setting up smb.conf")
-        if serverrole == "domain controller":
-            smbconfsuffix = "dc"
-        elif serverrole == "member server":
-            smbconfsuffix = "member"
-        setup_file(setup_path("provision.smb.conf.%s" % smbconfsuffix), 
-                   paths.smbconf, {
-            "HOSTNAME": hostname,
-            "DOMAIN_CONF": domain,
-            "REALM_CONF": realm,
-            "SERVERROLE": serverrole,
-            "NETLOGONPATH": paths.netlogon,
-            "SYSVOLPATH": paths.sysvol,
-            })
-        lp.load(paths.smbconf)
+    if lp.get("realm").upper() != realm.upper():
+        raise Exception("realm '%s' in smb.conf must match chosen realm '%s'" %
+                        (lp.get("realm"), realm))
 
     # only install a new shares config db if there is none
     if not os.path.exists(paths.shareconf):
@@ -920,32 +963,52 @@ def provision(lp, setup_dir, message, paths, session_info,
         message("Setting up sam.ldb rootDSE marking as synchronized")
         setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
 
+        # Only make a zone file on the first DC, it should be replicated with DNS replication
+        if serverrole == "domain controller":
+            samdb = SamDB(paths.samdb, session_info=session_info, 
+                      credentials=credentials, lp=lp)
+
+            domainguid = samdb.searchone(basedn=domaindn, attribute="objectGUID")
+            assert isinstance(domainguid, str)
+            hostguid = samdb.searchone(basedn=domaindn, attribute="objectGUID",
+                                       expression="(&(objectClass=computer)(cn=%s))" % hostname,
+                                       scope=SCOPE_SUBTREE)
+            assert isinstance(hostguid, str)
+            
+            message("Setting up DNS zone: %s" % dnsdomain)
+            create_zone_file(paths.dns, setup_path, samdb, 
+                             hostname=hostname, hostip=hostip, dnsdomain=dnsdomain,
+                             domaindn=domaindn, dnspass=dnspass, realm=realm, 
+                             domainguid=domainguid, hostguid=hostguid)
+            message("Please install the zone located in %s into your DNS server" % paths.dns)
+            
     message("Setting up phpLDAPadmin configuration")
     create_phpldapadmin_config(paths.phpldapadminconfig, setup_path, 
                                ldapi_url)
 
     message("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php" % paths.phpldapadminconfig)
 
-    if lp.get("server role") == "domain controller":
-        samdb = SamDB(paths.samdb, session_info=session_info, 
-                      credentials=credentials, lp=lp)
-
-        domainguid = samdb.searchone(basedn=domaindn, attribute="objectGUID")
-        assert isinstance(domainguid, str)
-        hostguid = samdb.searchone(basedn=domaindn, attribute="objectGUID",
-                expression="(&(objectClass=computer)(cn=%s))" % hostname,
-                scope=SCOPE_SUBTREE)
-        assert isinstance(hostguid, str)
-
-        message("Setting up DNS zone: %s" % dnsdomain)
-        create_zone_file(paths.dns, setup_path, samdb, 
-                      hostname=hostname, hostip=hostip, dnsdomain=dnsdomain,
-                      domaindn=domaindn, dnspass=dnspass, realm=realm, 
-                      domainguid=domainguid, hostguid=hostguid)
-        message("Please install the zone located in %s into your DNS server" % paths.dns)
-
     return domaindn
 
+def provision_become_dc(setup_dir=None,
+                        smbconf=None, targetdir=None, realm=None, 
+                        rootdn=None, domaindn=None, schemadn=None, configdn=None,
+                        domain=None, hostname=None, domainsid=None, 
+                        hostguid=None, adminpass=None, krbtgtpass=None, domainguid=None, 
+                        policyguid=None, invocationid=None, machinepass=None, 
+                        dnspass=None, root=None, nobody=None, nogroup=None, users=None, 
+                        wheel=None, backup=None, aci=None, serverrole=None, 
+                        ldap_backend=None, ldap_backend_type=None, sitename=DEFAULTSITE):
+
+    def message(text):
+	"""print a message if quiet is not set."""
+        print text
+
+    provision(setup_dir, message, system_session(), None,
+              smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS, realm=realm, 
+              rootdn=rootdn, domaindn=domaindn, schemadn=schemadn, configdn=configdn, 
+              domain=domain, hostname=hostname, hostip="127.0.0.1", domainsid=domainsid, machinepass=machinepass, serverrole="domain controller", sitename=sitename);
+    
 
 def create_phpldapadmin_config(path, setup_path, ldapi_uri):
     """Create a PHP LDAP admin configuration file.
@@ -986,7 +1049,6 @@ def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn,
             "DEFAULTSITE": DEFAULTSITE,
             "HOSTGUID": hostguid,
         })
-
 
 def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename):
     """Load schema for the SamDB.
