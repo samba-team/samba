@@ -35,7 +35,7 @@ static WERROR fill_dsrole_dominfo_basic(TALLOC_CTX *ctx,
 					struct dssetup_DsRolePrimaryDomInfoBasic **info)
 {
 	struct dssetup_DsRolePrimaryDomInfoBasic *basic = NULL;
-	fstring dnsdomain;
+	char *dnsdomain = NULL;
 
 	DEBUG(10,("fill_dsrole_dominfo_basic: enter\n"));
 
@@ -71,7 +71,10 @@ static WERROR fill_dsrole_dominfo_basic(TALLOC_CTX *ctx,
 	/* fill in some additional fields if we are a member of an AD domain */
 
 	if (lp_security() == SEC_ADS) {
-		fstrcpy(dnsdomain, lp_realm());
+		dnsdomain = talloc_strdup(ctx, lp_realm());
+		if (!dnsdomain) {
+			return WERR_NOMEM;
+		}
 		strlower_m(dnsdomain);
 		basic->dns_domain = dnsdomain;
 
