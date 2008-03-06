@@ -72,7 +72,6 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	unsigned int ctrl;
 	int retval, *ret_data = NULL;
 	struct samu *sampass = NULL;
-	extern bool in_client;
 	const char *name;
 	void (*oldsig_handler)(int) = NULL;
 	bool found;
@@ -83,7 +82,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	/* Samba initialization. */
 	load_case_tables();
 	setup_logging("pam_smbpass",False);
-	in_client = True;
+        lp_set_in_client(True);
 
 	ctrl = set_ctrl(flags, argc, argv);
 

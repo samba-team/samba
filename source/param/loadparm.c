@@ -53,7 +53,6 @@
 
 #include "includes.h"
 
-bool in_client = False;		/* Not in the client by default */
 bool bLoaded = False;
 
 extern enum protocol_types Protocol;
@@ -71,6 +70,7 @@ extern userdom_struct current_user_info;
 #define HOMES_NAME "homes"
 #endif
 
+static bool in_client = False;		/* Not in the client by default */
 static uint64_t conf_last_seqnum = 0;
 static struct smbconf_ctx *conf_ctx = NULL;
 
@@ -8608,6 +8608,27 @@ void gfree_loadparm(void)
 	}
 }
 
+
+/***************************************************************************
+ Allow client apps to specify that they are a client
+***************************************************************************/
+void lp_set_in_client(bool b)
+{
+    in_client = b;
+}
+
+
+/***************************************************************************
+ Determine if we're running in a client app
+***************************************************************************/
+bool lp_is_in_client(void)
+{
+    return in_client;
+}
+
+
+
+
 /***************************************************************************
  Load the services array from the services file. Return True on success, 
  False on failure.
@@ -8718,7 +8739,7 @@ bool lp_load(const char *pszFname,
 
 	/* Now we check bWINSsupport and set szWINSserver to 127.0.0.1 */
 	/* if bWINSsupport is true and we are in the client            */
-	if (in_client && Globals.bWINSsupport) {
+	if (lp_is_in_client() && Globals.bWINSsupport) {
 		lp_do_parameter(GLOBAL_SECTION_SNUM, "wins server", "127.0.0.1");
 	}
 
