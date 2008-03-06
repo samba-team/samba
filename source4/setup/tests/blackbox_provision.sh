@@ -27,7 +27,10 @@ testit() {
 	return $status
 }
 
-testit "simple" $PYTHON ./setup/provision $CONFIGURATION --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple
+testit "simple-default" $PYTHON ./setup/provision $CONFIGURATION --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-default
+testit "simple-dc" $PYTHON ./setup/provision $CONFIGURATION --server-role="dc" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-dc
+testit "simple-member" $PYTHON ./setup/provision $CONFIGURATION --server-role="member" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-member
+testit "simple-standalone" $PYTHON ./setup/provision $CONFIGURATION --server-role="standalone" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-standalone
 
 reprovision() {
 	$PYTHON ./setup/provision $CONFIGURATION --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/reprovision"

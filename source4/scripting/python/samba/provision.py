@@ -572,9 +572,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
     :note: This will wipe the main SAM database file!
     """
 
-    assert serverrole in ("domain controller", "member server")
-
-    erase = (fill != FILL_DRS)    
+    erase = (fill != FILL_DRS)
 
     # Also wipes the database
     setup_samdb_partitions(path, setup_path, schemadn=schemadn, configdn=configdn, 
@@ -796,17 +794,22 @@ def provision(setup_dir, message, session_info,
         if not os.path.exists(os.path.join(targetdir, "etc")):
            os.mkdir(os.path.join(targetdir, "etc"))
 
-        if smbconf is None:
-            smbconf = os.path.join(targetdir, os.path.join("etc", "smb.conf"))
+        smbconf = os.path.join(targetdir, os.path.join("etc", "smb.conf"))
 
     # only install a new smb.conf if there isn't one there already
+
     if not os.path.exists(smbconf):
         message("Setting up smb.conf")
-        assert serverrole is not None
+        if serverrole is None:
+            serverrole = "standalone"
+
+        assert serverrole in ("domain controller", "member server", "standalone")
         if serverrole == "domain controller":
             smbconfsuffix = "dc"
         elif serverrole == "member server":
             smbconfsuffix = "member"
+        elif serverrole == "standalone":
+            smbconfsuffix = "standalone"
 
         assert domain is not None
         assert realm is not None
@@ -827,8 +830,8 @@ def provision(setup_dir, message, session_info,
         setup_file(setup_path("provision.smb.conf.%s" % smbconfsuffix), 
                    smbconf, {
                 "HOSTNAME": hostname,
-                "DOMAIN_CONF": domain,
-                "REALM_CONF": realm,
+                "DOMAIN": domain,
+                "REALM": realm,
                 "SERVERROLE": serverrole,
                 "NETLOGONPATH": netlogon,
                 "SYSVOLPATH": sysvol,
@@ -841,7 +844,7 @@ def provision(setup_dir, message, session_info,
 
     if serverrole is None:
         serverrole = lp.get("server role")
-    assert serverrole in ("domain controller", "member server")
+    assert serverrole in ("domain controller", "member server", "standalone")
     if invocationid is None and serverrole == "domain controller":
         invocationid = uuid.random()
 
@@ -851,6 +854,10 @@ def provision(setup_dir, message, session_info,
     assert realm is not None
     realm = realm.upper()
 
+    if lp.get("realm").upper() != realm.upper():
+        raise Exception("realm '%s' in %s must match chosen realm '%s'" %
+                        (lp.get("realm"), smbconf, realm))
+    
     dnsdomain = realm.lower()
 
     paths = provision_paths_from_lp(lp, dnsdomain)
@@ -895,10 +902,6 @@ def provision(setup_dir, message, session_info,
     message("set DOMAIN SID: %s" % str(domainsid))
     message("Provisioning for %s in realm %s" % (domain, realm))
     message("Using administrator password: %s" % adminpass)
-
-    if lp.get("realm").upper() != realm.upper():
-        raise Exception("realm '%s' in smb.conf must match chosen realm '%s'" %
-                        (lp.get("realm"), realm))
 
     # only install a new shares config db if there is none
     if not os.path.exists(paths.shareconf):

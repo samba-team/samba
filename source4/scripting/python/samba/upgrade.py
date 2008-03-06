@@ -218,11 +218,9 @@ def upgrade_provision(samba3, setup_dir, message, credentials, session_info, lp,
         else:
             serverrole = "member server"
 
-    lp.set("server role", serverrole)
     domainname = oldconf.get("workgroup")
     if domainname:
         domainname = str(domainname)
-    lp.set("workgroup", domainname)
     realm = oldconf.get("realm")
     netbiosname = oldconf.get("netbios name")
 
@@ -235,7 +233,6 @@ def upgrade_provision(samba3, setup_dir, message, credentials, session_info, lp,
     if realm is None:
         realm = domainname.lower()
         message("No realm specified in smb.conf file, assuming '%s'\n" % realm)
-    lp.set("realm", realm)
 
     domainguid = secrets_db.get_domain_guid(domainname)
     domainsid = secrets_db.get_sid(domainname)
@@ -247,7 +244,7 @@ def upgrade_provision(samba3, setup_dir, message, credentials, session_info, lp,
     else:
         machinepass = None
     
-    domaindn = provision(lp=lp, setup_dir=setup_dir, message=message, 
+    domaindn = provision(setup_dir=setup_dir, message=message, 
                          samdb_fill=FILL_DRS, paths=paths, session_info=session_info, 
                          credentials=credentials, realm=realm, 
                          domain=domainname, domainsid=domainsid, domainguid=domainguid, 

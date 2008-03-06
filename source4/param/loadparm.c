@@ -316,7 +316,9 @@ static const struct enum_list enum_smb_signing_vals[] = {
 static const struct enum_list enum_server_role[] = {
 	{ROLE_STANDALONE, "standalone"},
 	{ROLE_DOMAIN_MEMBER, "member server"},
+	{ROLE_DOMAIN_MEMBER, "member"},
 	{ROLE_DOMAIN_CONTROLLER, "domain controller"},
+	{ROLE_DOMAIN_CONTROLLER, "dc"},
 	{-1, NULL}
 };
 
