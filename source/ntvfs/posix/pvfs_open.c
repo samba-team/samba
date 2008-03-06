@@ -293,7 +293,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		status = odb_open_file(lck, f->handle, name->full_name, name->stream_id,
 				       share_access, access_mask, del_on_close, 
 				       io->generic.in.open_disposition,
-				       false, OPLOCK_NONE, NULL);
+				       false, false, OPLOCK_NONE, NULL);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(lck);
@@ -347,7 +347,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		status = odb_open_file(lck, f->handle, name->full_name, name->stream_id,
 				       share_access, access_mask, del_on_close, 
 				       io->generic.in.open_disposition,
-				       false, OPLOCK_NONE, NULL);
+				       false, false, OPLOCK_NONE, NULL);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			goto cleanup_delete;
@@ -544,6 +544,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	bool del_on_close;
 	struct pvfs_filename *parent;
 	uint32_t oplock_level = OPLOCK_NONE, oplock_granted;
+	bool allow_level_II_oplock = false;
 
 	if ((io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_READONLY) &&
 	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
@@ -658,10 +659,15 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		oplock_level = OPLOCK_EXCLUSIVE;
 	}
 
+	if (req->client_caps & NTVFS_CLIENT_CAP_LEVEL_II_OPLOCKS) {
+		allow_level_II_oplock = true;
+	}
+
 	status = odb_open_file(lck, f->handle, name->full_name, name->stream_id,
 			       share_access, access_mask, del_on_close, 
 			       io->generic.in.open_disposition,
-			       false, oplock_level, &oplock_granted);
+			       false, allow_level_II_oplock,
+			       oplock_level, &oplock_granted);
 	talloc_free(lck);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* bad news, we must have hit a race - we don't delete the file
@@ -1047,6 +1053,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	bool del_on_close;
 	bool stream_existed, stream_truncate=false;
 	uint32_t oplock_level = OPLOCK_NONE, oplock_granted;
+	bool allow_level_II_oplock = false;
 
 	/* use the generic mapping code to avoid implementing all the
 	   different open calls. */
@@ -1241,11 +1248,16 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		oplock_level = OPLOCK_EXCLUSIVE;
 	}
 
+	if (req->client_caps & NTVFS_CLIENT_CAP_LEVEL_II_OPLOCKS) {
+		allow_level_II_oplock = true;
+	}
+
 	/* see if we are allowed to open at the same time as existing opens */
 	status = odb_open_file(lck, f->handle, name->full_name, name->stream_id,
 			       share_access, access_mask, del_on_close,
 			       io->generic.in.open_disposition,
-			       false, oplock_level, &oplock_granted);
+			       false, allow_level_II_oplock,
+			       oplock_level, &oplock_granted);
 
 	/*
 	 * on a sharing violation we need to retry when the file is closed by
