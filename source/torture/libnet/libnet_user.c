@@ -339,9 +339,9 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
 	const char* logon_scripts[] = { "start_login.cmd", "login.bat", "start.cmd" };
 	const char* home_dirs[] = { "\\\\srv\\home", "\\\\homesrv\\home\\user", "\\\\pdcsrv\\domain" };
 	const char* home_drives[] = { "H:", "z:", "I:", "J:", "n:" };
-	const uint32_t flags[] = { (ACB_DISABLED | ACB_NORMAL),
+	const uint32_t flags[] = { (ACB_DISABLED | ACB_NORMAL | ACB_PW_EXPIRED),
 				   (ACB_NORMAL | ACB_PWNOEXP),
-				   (ACB_NORMAL) };
+				   (ACB_NORMAL | ACB_PW_EXPIRED) };
 	const char *homedir, *homedrive, *logonscript;
 	struct timeval now;
 	int i, testfld;

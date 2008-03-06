@@ -88,9 +88,9 @@ static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p,
 	const char* home_dirs[] = { "\\\\srv\\home", "\\\\homesrv\\home\\user", "\\\\pdcsrv\\domain" };
 	const char* home_drives[] = { "H:", "z:", "I:", "J:", "n:" };
 	const char *homedir, *homedrive, *logonscript;
-	const uint32_t flags[] = { (ACB_DISABLED | ACB_NORMAL),
+	const uint32_t flags[] = { (ACB_DISABLED | ACB_NORMAL | ACB_PW_EXPIRED),
 				   (ACB_NORMAL | ACB_PWNOEXP),
-				   (ACB_NORMAL) };
+				   (ACB_NORMAL | ACB_PW_EXPIRED) };
 
 	NTSTATUS status;
 	struct timeval now;
@@ -201,7 +201,7 @@ static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p,
 			break;
 		}
 
-		printf(((i < num_changes - 1) ? "%s," : "%s"), fldname);
+		torture_comment(tctx, ((i < num_changes - 1) ? "%s," : "%s"), fldname);
 	}
 	torture_comment(tctx, "]\n");
 
