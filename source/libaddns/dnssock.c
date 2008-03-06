@@ -118,6 +118,7 @@ static DNS_ERROR dns_udp_open( const char *nameserver,
 	   the receiver (in this example case "123.456.789.1")
 	   and the specified port number. */
 
+	ZERO_STRUCT(RecvAddr);
 	RecvAddr.sin_family = AF_INET;
 	RecvAddr.sin_port = htons( DNS_UDP_PORT );
 	RecvAddr.sin_addr.s_addr = ulAddress;
