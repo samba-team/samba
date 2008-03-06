@@ -35,7 +35,6 @@
  * Globals...
  */
 
-extern bool		in_client;	/* Boolean for client library */
 
 
 /*
@@ -228,7 +227,7 @@ static bool smb_encrypt;
 
   setup_logging("smbspool", True);
 
-  in_client = True;   /* Make sure that we tell lp_load we are */
+  lp_set_in_client(True);       /* Make sure that we tell lp_load we are */
 
   load_case_tables();
 

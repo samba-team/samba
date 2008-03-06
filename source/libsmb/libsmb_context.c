@@ -27,8 +27,6 @@
 #include "libsmb_internal.h"
 
 
-extern bool in_client;
-
 /*
  * Is the logging working / configfile read ? 
  */
@@ -450,7 +448,7 @@ smbc_init_context(SMBCCTX *context)
                 
                 /* Here we would open the smb.conf file if needed ... */
                 
-                in_client = True; /* FIXME, make a param */
+                lp_set_in_client(True);
                 
                 home = getenv("HOME");
                 if (home) {
