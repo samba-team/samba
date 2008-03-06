@@ -2360,7 +2360,8 @@ Makefile: $(srcdir)/Makefile.in config.status
 # Check shared libs for unresolved symbols
 test_shlibs: $(SHLIBS)
 	@echo "Testing $(SHLIBS) "
-	@for module in $(SHLIBS); do \
+	@export $(LIB_PATH_VAR)=./bin && \
+	for module in $(SHLIBS); do \
 		./script/tests/dlopen.sh bin/$${module}.@SHLIBEXT@ \
 			|| exit 1; \
 	done
@@ -2368,7 +2369,8 @@ test_shlibs: $(SHLIBS)
 # Check for NSS module problems.
 test_nss_modules: nss_modules
 	@echo "Testing $(NSS_MODULES) "
-	@for module in $(NSS_MODULES); do \
+	@export $(LIB_PATH_VAR)=./bin && \
+	for module in $(NSS_MODULES); do \
 		./script/tests/dlopen.sh $${module} \
 			|| exit 1; \
 	done
@@ -2377,7 +2379,8 @@ test_nss_modules: nss_modules
 # built can actually be loaded by a minimal PAM-aware application.
 test_pam_modules: pam_modules
 	@echo "Testing $(PAM_MODULES) "
-	@for module in $(PAM_MODULES); do \
+	@export $(LIB_PATH_VAR)=./bin && \
+	for module in $(PAM_MODULES); do \
 		./script/tests/dlopen.sh -lpam -ldl bin/$${module}.@SHLIBEXT@ \
 			|| exit 1; \
 	done
