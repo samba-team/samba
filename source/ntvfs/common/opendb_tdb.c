@@ -344,7 +344,8 @@ static NTSTATUS odb_tdb_open_can_internal(struct odb_context *odb,
 			   break request and suspending this call
 			   until the break is acknowledged or the file
 			   is closed */
-			if (break_to_none) {
+			if (break_to_none ||
+			    !file->entries[i].allow_level_II_oplock) {
 				oplock_return = OPLOCK_BREAK_TO_NONE;
 			}
 			odb_oplock_break_send(odb, &file->entries[i],
@@ -391,7 +392,8 @@ static NTSTATUS odb_tdb_open_can_internal(struct odb_context *odb,
 			 * send an oplock break to the holder of the
 			 * oplock and tell caller to retry later
 			 */
-			if (break_to_none) {
+			if (break_to_none ||
+			    !file->entries[i].allow_level_II_oplock) {
 				oplock_return = OPLOCK_BREAK_TO_NONE;
 			}
 			odb_oplock_break_send(odb, &file->entries[i],
@@ -418,6 +420,7 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 				  uint32_t stream_id, uint32_t share_access,
 				  uint32_t access_mask, bool delete_on_close,
 				  uint32_t open_disposition, bool break_to_none,
+				  bool allow_level_II_oplock,
 				  uint32_t oplock_level, uint32_t *oplock_granted)
 {
 	struct odb_context *odb = lck->odb;
@@ -447,13 +450,14 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* see if it conflicts */
-	e.server          = odb->ntvfs_ctx->server_id;
-	e.file_handle     = file_handle;
-	e.stream_id       = stream_id;
-	e.share_access    = share_access;
-	e.access_mask     = access_mask;
-	e.delete_on_close = delete_on_close;
-	e.oplock_level    = OPLOCK_NONE;
+	e.server		= odb->ntvfs_ctx->server_id;
+	e.file_handle		= file_handle;
+	e.stream_id		= stream_id;
+	e.share_access		= share_access;
+	e.access_mask		= access_mask;
+	e.delete_on_close	= delete_on_close;
+	e.allow_level_II_oplock	= allow_level_II_oplock;
+	e.oplock_level		= OPLOCK_NONE;
 
 	/*
 	  possibly grant an exclusive, batch or level2 oplock
@@ -466,17 +470,23 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 			if (file.num_entries == 0) {
 				e.oplock_level	= OPLOCK_EXCLUSIVE;
 				*oplock_granted	= EXCLUSIVE_OPLOCK_RETURN;
-			} else {
+			} else if (allow_level_II_oplock) {
 				e.oplock_level	= OPLOCK_LEVEL_II;
 				*oplock_granted	= LEVEL_II_OPLOCK_RETURN;
+			} else {
+				e.oplock_level	= OPLOCK_NONE;
+				*oplock_granted	= NO_OPLOCK_RETURN;
 			}
 		} else if (oplock_level == OPLOCK_BATCH) {
 			if (file.num_entries == 0) {
 				e.oplock_level	= OPLOCK_BATCH;
 				*oplock_granted	= BATCH_OPLOCK_RETURN;
-			} else {
+			} else if (allow_level_II_oplock) {
 				e.oplock_level	= OPLOCK_LEVEL_II;
 				*oplock_granted	= LEVEL_II_OPLOCK_RETURN;
+			} else {
+				e.oplock_level	= OPLOCK_NONE;
+				*oplock_granted	= NO_OPLOCK_RETURN;
 			}
 		} else if (oplock_level == OPLOCK_LEVEL_II) {
 			e.oplock_level	= OPLOCK_LEVEL_II;
