@@ -187,6 +187,10 @@ NTSTATUS smb_raw_negotiate_recv(struct smbcli_request *req)
 		transport->negotiate.capabilities &= ~CAP_STATUS32;
 	}
 
+	if (!transport->options.use_level2_oplocks) {
+		transport->negotiate.capabilities &= ~CAP_LEVEL_II_OPLOCKS;
+	}
+
 failed:
 	return smbcli_request_destroy(req);
 }
