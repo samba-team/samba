@@ -220,10 +220,15 @@ nogroup:x:65534:nobody
 $USERNAME-group:x:$GROUPID:
 EOF
 
+MAKE_TEST_BINARY="bin/smbpasswd"
+export MAKE_TEST_BINARY
+
 (echo $PASSWORD; echo $PASSWORD) | \
-	smbpasswd -c $CONFFILE -L -s -a $USERNAME >/dev/null || exit 1
+	bin/smbpasswd -c $CONFFILE -L -s -a $USERNAME >/dev/null || exit 1
 
 echo "DONE";
+
+MAKE_TEST_BINARY=""
 
 SERVER_TEST_FIFO="$PREFIX/server_test.fifo"
 export SERVER_TEST_FIFO
@@ -233,9 +238,6 @@ WINBINDD_TEST_LOG="$PREFIX/winbindd_test.log"
 export WINBINDD_TEST_LOG
 SMBD_TEST_LOG="$PREFIX/smbd_test.log"
 export SMBD_TEST_LOG
-
-MAKE_TEST_BINARY=""
-export MAKE_TEST_BINARY
 
 # start off with 0 failures
 failed=0
@@ -272,6 +274,7 @@ START=`date`
  echo "delaying for nbt name registration"
  sleep 10
  # This will return quickly when things are up, but be slow if we need to wait for (eg) SSL init 
+ MAKE_TEST_BINARY="bin/nmblookup"
  bin/nmblookup $CONFIGURATION -U $SERVER_IP __SAMBA__
  bin/nmblookup $CONFIGURATION __SAMBA__
  bin/nmblookup $CONFIGURATION -U 127.255.255.255 __SAMBA__
@@ -279,8 +282,10 @@ START=`date`
  bin/nmblookup $CONFIGURATION $SERVER
  # make sure smbd is also up set
  echo "wait for smbd"
+ MAKE_TEST_BINARY="bin/smbclient"
  bin/smbclient $CONFIGURATION -L $SERVER_IP -U% -p 139 | head -2
  bin/smbclient $CONFIGURATION -L $SERVER_IP -U% -p 139 | head -2
+ MAKE_TEST_BINARY=""
 
  failed=0
 
