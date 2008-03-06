@@ -27,9 +27,9 @@ struct PAC_LOGON_INFO {
 
 struct PAC_UNKNOWN_12 {
 	uint16_t upn_size;/* [value(2*strlen_m(upn_name))] */
-	uint16_t unknown1;
+	uint16_t upn_offset;
 	uint16_t domain_size;/* [value(2*strlen_m(domain_name))] */
-	uint16_t unknown2;
+	uint16_t domain_offset;
 	uint16_t unknown3;
 	uint16_t unknown4;
 	uint32_t unknown5;
