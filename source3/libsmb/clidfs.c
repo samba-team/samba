@@ -1054,7 +1054,7 @@ static bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 	split_dfs_path(ctx, refs[0].dfspath, pp_newserver,
 			pp_newshare, &newextrapath );
 
-	if (!pp_newserver || !pp_newshare) {
+	if ((*pp_newserver == NULL) || (*pp_newshare == NULL)) {
 		return false;
 	}
 
