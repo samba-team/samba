@@ -42,6 +42,7 @@ _PUBLIC_ struct ntvfs_request *ntvfs_request_create(struct ntvfs_context *ctx, T
 	req->async_states		= NULL;
 	req->session_info		= session_info;
 	req->smbpid			= smbpid;
+	req->client_caps		= ctx->client_caps;
 	req->statistics.request_time	= request_time;
 
 	async = talloc(req, struct ntvfs_async_state);
