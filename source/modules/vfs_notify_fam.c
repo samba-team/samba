@@ -156,6 +156,9 @@ static void fam_handler(struct event_context *event_ctx,
 		   fam_event.filename));
 
 	switch (fam_event.code) {
+	case FAMChanged:
+		ne.action = NOTIFY_ACTION_MODIFIED;
+		break;
 	case FAMCreated:
 		ne.action = NOTIFY_ACTION_ADDED;
 		break;
