@@ -704,7 +704,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 	}
 
 	/* Make sure we get this from the command line */
-	if (lp_parm_bool(toture->lp_ctx, NULL, "become dc", "do not unjoin", false)) {
+	if (lp_parm_bool(torture->lp_ctx, NULL, "become dc", "do not unjoin", false)) {
 		talloc_free(s);
 		return ret;
 	}
