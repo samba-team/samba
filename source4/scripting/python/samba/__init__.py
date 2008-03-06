@@ -147,7 +147,12 @@ class Ldb(ldb.Ldb):
             k = 0
             while ++k < 10 and (previous_remaining != current_remaining):
                 # and the rest
-                res2 = self.search(basedn, ldb.SCOPE_SUBTREE, "(|(objectclass=*)(distinguishedName=*))", ["distinguishedName"])
+                try:
+                    res2 = self.search(basedn, ldb.SCOPE_SUBTREE, "(|(objectclass=*)(distinguishedName=*))", ["distinguishedName"])
+                except ldb.LdbError, (LDB_ERR_NO_SUCH_OBJECT, _):
+                    # Ignore missing dn errors
+                    return
+
                 previous_remaining = current_remaining
                 current_remaining = len(res2)
                 for msg in res2:

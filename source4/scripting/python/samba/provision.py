@@ -341,12 +341,21 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     	
     if ldap_backend_type == "fedora-ds":
         backend_modules = ["nsuniqueid", "paged_searches"]
+        # We can handle linked attributes here, as we don't have directory-side subtree operations
+        tdb_modules_list = ["linked_attributes"]
     elif ldap_backend_type == "openldap":
         backend_modules = ["normalise", "entryuuid", "paged_searches"]
+        # OpenLDAP handles subtree renames, so we don't want to do any of these things
+        tdb_modules_list = None
     elif serverrole == "domain controller":
         backend_modules = ["repl_meta_data"]
     else:
         backend_modules = ["objectguid"]
+
+    if tdb_modules_list is None:
+        tdb_modules_list_as_string = ""
+    else:
+        tdb_modules_list_as_string = ","+",".join(tdb_modules_list)
         
     samdb.transaction_start()
     try:
@@ -362,7 +371,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                 "CONFIGDN_MOD": "naming_fsmo,instancetype",
                 "DOMAINDN_MOD": "pdc_fsmo,password_hash,instancetype",
                 "MODULES_LIST": ",".join(modules_list),
-                "TDB_MODULES_LIST": ","+",".join(tdb_modules_list),
+                "TDB_MODULES_LIST": tdb_modules_list_as_string,
                 "MODULES_LIST2": ",".join(modules_list2),
                 "BACKEND_MOD": ",".join(backend_modules),
         })
