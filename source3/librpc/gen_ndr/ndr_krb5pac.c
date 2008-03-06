@@ -171,9 +171,9 @@ static enum ndr_err_code ndr_push_PAC_UNKNOWN_12(struct ndr_push *ndr, int ndr_f
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 2 * strlen_m(r->upn_name)));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->unknown1));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->upn_offset));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 2 * strlen_m(r->domain_name)));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->unknown2));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->domain_offset));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->unknown3));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->unknown4));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown5));
@@ -191,9 +191,9 @@ static enum ndr_err_code ndr_pull_PAC_UNKNOWN_12(struct ndr_pull *ndr, int ndr_f
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->upn_size));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->unknown1));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->upn_offset));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->domain_size));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->unknown2));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->domain_offset));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->unknown3));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->unknown4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown5));
@@ -211,9 +211,9 @@ _PUBLIC_ void ndr_print_PAC_UNKNOWN_12(struct ndr_print *ndr, const char *name, 
 	ndr_print_struct(ndr, name, "PAC_UNKNOWN_12");
 	ndr->depth++;
 	ndr_print_uint16(ndr, "upn_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2 * strlen_m(r->upn_name):r->upn_size);
-	ndr_print_uint16(ndr, "unknown1", r->unknown1);
+	ndr_print_uint16(ndr, "upn_offset", r->upn_offset);
 	ndr_print_uint16(ndr, "domain_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2 * strlen_m(r->domain_name):r->domain_size);
-	ndr_print_uint16(ndr, "unknown2", r->unknown2);
+	ndr_print_uint16(ndr, "domain_offset", r->domain_offset);
 	ndr_print_uint16(ndr, "unknown3", r->unknown3);
 	ndr_print_uint16(ndr, "unknown4", r->unknown4);
 	ndr_print_uint32(ndr, "unknown5", r->unknown5);
