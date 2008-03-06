@@ -110,6 +110,7 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 		}
 		if (address[0].ss.ss_family != AF_INET) {
 			free(address);
+			free(ret);
 			return NULL;
 		}
 		*ret = ((struct sockaddr_in *)&address[0].ss)->sin_addr;
