@@ -55,12 +55,11 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
 	const char *name;
 	struct samu *sampass = NULL;
 	void (*oldsig_handler)(int);
-	extern bool in_client;
 
 	/* Samba initialization. */
 	load_case_tables();
 	setup_logging( "pam_smbpass", False );
-	in_client = True;
+        lp_set_in_client(True);
 
 	ctrl = set_ctrl( flags, argc, argv );
 

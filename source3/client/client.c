@@ -33,7 +33,6 @@ extern int do_smb_browse(void); /* mDNS browsing */
 extern bool AllowDebugChange;
 extern bool override_logfile;
 extern char tar_type;
-extern bool in_client;
 
 static int port = 0;
 static char *service;
@@ -4701,7 +4700,7 @@ static int do_message_op(void)
 	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 0);
 	poptSetOtherOptionHelp(pc, "service <password>");
 
-	in_client = true;   /* Make sure that we tell lp_load we are */
+        lp_set_in_client(true); /* Make sure that we tell lp_load we are */
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 

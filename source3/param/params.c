@@ -80,8 +80,6 @@
 
 #include "includes.h"
 
-extern bool in_client;
-
 /* -------------------------------------------------------------------------- **
  * Constants...
  */
@@ -519,7 +517,7 @@ static bool Parse( DATA_BLOB *buf, myFILE *InFile,
 static myFILE *OpenConfFile( const char *FileName )
 {
 	const char *func = "params.c:OpenConfFile() -";
-	int lvl = in_client?1:0;
+	int lvl = lp_is_in_client() ? 1 : 0;
 	myFILE *ret;
 
 	ret = SMB_MALLOC_P(myFILE);
