@@ -30,6 +30,7 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "lib/util/dlinklist.h"
+#include "param/param.h"
 
 static int schema_fsmo_init(struct ldb_module *module)
 {
@@ -78,7 +79,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 	}
 	module->private_data = schema_fsmo;
 
-	schema = talloc_zero(mem_ctx, struct dsdb_schema);
+	schema = dsdb_new_schema(mem_ctx, lp_iconv_convenience(ldb_get_opaque(module->ldb, "loadparm")));
 	if (!schema) {
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;

@@ -33,4 +33,3 @@ rpc.netlogon.*.GetTrustPasswords
 base.charset.*.Testing partial surrogate
 .*net.api.delshare.*				# DelShare isn't implemented yet
 rap.*netservergetinfo
-local.torture.provision

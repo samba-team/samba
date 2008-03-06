@@ -43,6 +43,9 @@ static bool test_provision(struct torture_context *tctx)
 {
 	NTSTATUS status;
 	struct provision_settings settings;
+	char *location = NULL;
+	torture_assert_ntstatus_ok(tctx, torture_temp_dir(tctx, "torture_provision", &location), 
+				   "torture_temp_dir should return NT_STATUS_OK" );
 
 	settings.dns_name = "example.com";
 	settings.site_name = "SOME-SITE-NAME";
@@ -57,14 +60,7 @@ static bool test_provision(struct torture_context *tctx)
 	settings.ntds_guid = NULL;
 	settings.ntds_dn_str = NULL;
 	settings.machine_password = "geheim";
-	settings.samdb_ldb = NULL;
-	settings.secrets_ldb = NULL;
-	settings.secrets_keytab = NULL;
-	settings.schemadn_ldb = NULL;
-	settings.configdn_ldb = NULL;
-	settings.domaindn_ldb = NULL;
-	settings.templates_ldb = NULL;
-	settings.dns_keytab = NULL;
+	settings.targetdir = location;
 
 	status = provision_bare(tctx, tctx->lp_ctx, &settings);
 			
