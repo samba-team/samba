@@ -23,13 +23,13 @@ enum ndr_err_code ndr_push_PAC_SIGNATURE_DATA(struct ndr_push *ndr, int ndr_flag
 enum ndr_err_code ndr_pull_PAC_SIGNATURE_DATA(struct ndr_pull *ndr, int ndr_flags, struct PAC_SIGNATURE_DATA *r);
 void ndr_print_PAC_SIGNATURE_DATA(struct ndr_print *ndr, const char *name, const struct PAC_SIGNATURE_DATA *r);
 void ndr_print_PAC_LOGON_INFO(struct ndr_print *ndr, const char *name, const struct PAC_LOGON_INFO *r);
-void ndr_print_PAC_UNKNOWN_12(struct ndr_print *ndr, const char *name, const struct PAC_UNKNOWN_12 *r);
 enum ndr_err_code ndr_push_PAC_LOGON_INFO_CTR(struct ndr_push *ndr, int ndr_flags, const struct PAC_LOGON_INFO_CTR *r);
 enum ndr_err_code ndr_pull_PAC_LOGON_INFO_CTR(struct ndr_pull *ndr, int ndr_flags, struct PAC_LOGON_INFO_CTR *r);
 void ndr_print_PAC_LOGON_INFO_CTR(struct ndr_print *ndr, const char *name, const struct PAC_LOGON_INFO_CTR *r);
 enum ndr_err_code ndr_push_PAC_TYPE(struct ndr_push *ndr, int ndr_flags, enum PAC_TYPE r);
 enum ndr_err_code ndr_pull_PAC_TYPE(struct ndr_pull *ndr, int ndr_flags, enum PAC_TYPE *r);
 void ndr_print_PAC_TYPE(struct ndr_print *ndr, const char *name, enum PAC_TYPE r);
+void ndr_print_DATA_BLOB_REM(struct ndr_print *ndr, const char *name, const struct DATA_BLOB_REM *r);
 enum ndr_err_code ndr_push_PAC_INFO(struct ndr_push *ndr, int ndr_flags, const union PAC_INFO *r);
 enum ndr_err_code ndr_pull_PAC_INFO(struct ndr_pull *ndr, int ndr_flags, union PAC_INFO *r);
 void ndr_print_PAC_INFO(struct ndr_print *ndr, const char *name, const union PAC_INFO *r);
@@ -40,7 +40,6 @@ void ndr_print_PAC_BUFFER(struct ndr_print *ndr, const char *name, const struct 
 enum ndr_err_code ndr_push_PAC_DATA(struct ndr_push *ndr, int ndr_flags, const struct PAC_DATA *r);
 enum ndr_err_code ndr_pull_PAC_DATA(struct ndr_pull *ndr, int ndr_flags, struct PAC_DATA *r);
 void ndr_print_PAC_DATA(struct ndr_print *ndr, const char *name, const struct PAC_DATA *r);
-void ndr_print_DATA_BLOB_REM(struct ndr_print *ndr, const char *name, const struct DATA_BLOB_REM *r);
 enum ndr_err_code ndr_push_PAC_BUFFER_RAW(struct ndr_push *ndr, int ndr_flags, const struct PAC_BUFFER_RAW *r);
 enum ndr_err_code ndr_pull_PAC_BUFFER_RAW(struct ndr_pull *ndr, int ndr_flags, struct PAC_BUFFER_RAW *r);
 void ndr_print_PAC_BUFFER_RAW(struct ndr_print *ndr, const char *name, const struct PAC_BUFFER_RAW *r);
