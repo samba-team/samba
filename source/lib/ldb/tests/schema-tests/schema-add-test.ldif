@@ -46,7 +46,7 @@ pwdLastSet: 0
 primaryGroupID: 513
 objectSid: S-1-5-21-43662522-77495566-38969261-500
 adminCount: 1
-accountExpires: -1
+accountExpires: 9223372036854775807
 logonCount: 0
 sAMAccountName: Administrator
 sAMAccountType: 0x30000000

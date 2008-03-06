@@ -27,7 +27,7 @@ lastLogoff: 0
 lastLogon: 0
 pwdLastSet: 0
 primaryGroupID: 513
-accountExpires: -1
+accountExpires: 9223372036854775807
 logonCount: 0
 
 dn: CN=TemplateTrustingDomain,CN=Templates
@@ -39,7 +39,7 @@ badPasswordTime: 0
 lastLogoff: 0
 lastLogon: 0
 primaryGroupID: 513
-accountExpires: -1
+accountExpires: 9223372036854775807
 logonCount: 0
 
 dn: CN=TemplateGroup,CN=Templates
