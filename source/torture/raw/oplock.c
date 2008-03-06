@@ -2301,13 +2301,10 @@ static bool test_raw_oplock_batch22(struct torture_context *tctx, struct smbcli_
 	NTSTATUS status;
 	bool ret = true;
 	union smb_open io;
-	union smb_unlink unl;
 	uint16_t fnum=0, fnum2=0;
-	char c = 0;
 	struct timeval tv;
 	int timeout = torture_setting_int(tctx, "oplocktimeout", 30);
 	int te;
-	ssize_t wr;
 
 	if (torture_setting_bool(tctx, "samba3", false)) {
 		torture_skip(tctx, "BACHT22 disabled against samba3\n");
