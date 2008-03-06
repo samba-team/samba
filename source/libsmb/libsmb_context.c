@@ -27,6 +27,8 @@
 #include "libsmb_internal.h"
 
 
+extern bool in_client;
+
 /*
  * Is the logging working / configfile read ? 
  */
@@ -410,7 +412,6 @@ smbc_init_context(SMBCCTX *context)
         int pid;
         char *user = NULL;
         char *home = NULL;
-        extern bool in_client;
         
         if (!context) {
                 errno = EBADF;
