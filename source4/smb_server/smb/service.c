@@ -36,6 +36,7 @@ static NTSTATUS make_connection_scfg(struct smbsrv_request *req,
 {
 	struct smbsrv_tcon *tcon;
 	NTSTATUS status;
+	uint64_t ntvfs_caps = 0;
 
 	tcon = smbsrv_smb_tcon_new(req->smb_conn, scfg->name);
 	if (!tcon) {
@@ -44,9 +45,14 @@ static NTSTATUS make_connection_scfg(struct smbsrv_request *req,
 	}
 	req->tcon = tcon;
 
+	if (req->smb_conn->negotiate.client_caps & CAP_LEVEL_II_OPLOCKS) {
+		ntvfs_caps |= NTVFS_CLIENT_CAP_LEVEL_II_OPLOCKS;
+	}
+
 	/* init ntvfs function pointers */
 	status = ntvfs_init_connection(tcon, scfg, type,
 				       req->smb_conn->negotiate.protocol,
+				       ntvfs_caps,
 				       req->smb_conn->connection->event.ctx,
 				       req->smb_conn->connection->msg_ctx,
 				       req->smb_conn->lp_ctx,

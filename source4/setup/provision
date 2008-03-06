@@ -30,9 +30,7 @@ import samba
 
 from auth import system_session
 import samba.getopt as options
-import param
 from samba.provision import (provision, 
-                             provision_paths_from_lp,
                              FILL_FULL, FILL_NT4SYNC,
                              FILL_DRS)
 
@@ -113,26 +111,12 @@ if opts.realm is None or opts.domain is None:
 	sys.exit(1)
 
 # cope with an initially blank smb.conf 
-private_dir = None
-lp = sambaopts.get_loadparm()
-if opts.targetdir is not None:
-    if not os.path.exists(opts.targetdir):
-        os.mkdir(opts.targetdir)
-    private_dir = os.path.join(opts.targetdir, "private")
-    if not os.path.exists(private_dir):
-        os.mkdir(private_dir)
-    lp.set("private dir", os.path.abspath(private_dir))
-    lp.set("lock dir", os.path.abspath(opts.targetdir))
-lp.set("realm", opts.realm)
-lp.set("workgroup", opts.domain)
-lp.set("server role", opts.server_role or "domain controller")
+
+if sambaopts.get_loadparm_path() is not None:
+    smbconf = sambaopts.get_loadparm_path()
 
 if opts.aci is not None:
 	print "set ACI: %s" % opts.aci
-
-paths = provision_paths_from_lp(lp, opts.realm.lower())
-if sambaopts.get_loadparm_path() is not None:
-    paths.smbconf = sambaopts.get_loadparm_path()
 
 creds = credopts.get_credentials()
 
@@ -146,8 +130,8 @@ if opts.blank:
 elif opts.partitions_only:
     samdb_fill = FILL_DRS
 
-provision(lp, setup_dir, message, paths, 
-          system_session(), creds, 
+provision(setup_dir, message, 
+          system_session(), creds, smbconf=smbconf, 
           samdb_fill=samdb_fill, realm=opts.realm,
           domainguid=opts.domain_guid, domainsid=opts.domain_sid,
           policyguid=opts.policy_guid, hostname=opts.host_name,

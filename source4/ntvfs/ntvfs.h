@@ -181,6 +181,14 @@ struct ntvfs_context {
 
 	enum protocol_types protocol;
 
+	/*
+	 * client capabilities
+	 * this field doesn't use protocol specific
+	 * values!
+	 */
+#define NTVFS_CLIENT_CAP_LEVEL_II_OPLOCKS	0x0000000000000001LLU
+	uint64_t client_caps;
+
 	/* 
 	 * linked list of module contexts
 	 */
@@ -256,6 +264,14 @@ struct ntvfs_request {
 
 	/* the smb pid is needed for locking contexts */
 	uint16_t smbpid;
+
+	/*
+	 * client capabilities
+	 * this field doesn't use protocol specific
+	 * values!
+	 * see NTVFS_CLIENT_CAP_*
+	 */
+	uint64_t client_caps;
 
 	/* some statictics for the management tools */
 	struct {

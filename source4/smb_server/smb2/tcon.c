@@ -245,6 +245,7 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 	const char *service = io->smb2.in.path;
 	struct share_config *scfg;
 	const char *sharetype;
+	uint64_t ntvfs_caps = 0;
 
 	if (strncmp(service, "\\\\", 2) == 0) {
 		const char *p = strchr(service+2, '\\');
@@ -283,9 +284,12 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 	}
 	req->tcon = tcon;
 
+	ntvfs_caps = NTVFS_CLIENT_CAP_LEVEL_II_OPLOCKS;
+
 	/* init ntvfs function pointers */
 	status = ntvfs_init_connection(tcon, scfg, type,
 				       req->smb_conn->negotiate.protocol,
+				       ntvfs_caps,
 				       req->smb_conn->connection->event.ctx,
 				       req->smb_conn->connection->msg_ctx,
 				       req->smb_conn->lp_ctx,
