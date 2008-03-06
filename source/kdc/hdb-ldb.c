@@ -510,9 +510,8 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 
 	entry_ex->entry.valid_start = NULL;
 
-	acct_expiry = samdb_result_nttime(msg, "accountExpires", (NTTIME)-1);
-	if ((acct_expiry == (NTTIME)-1) ||
-	    (acct_expiry == 0x7FFFFFFFFFFFFFFFULL)) {
+	acct_expiry = samdb_result_account_expires(msg, 0);
+	if (acct_expiry == 0x7FFFFFFFFFFFFFFFULL) {
 		entry_ex->entry.valid_end = NULL;
 	} else {
 		entry_ex->entry.valid_end = malloc(sizeof(*entry_ex->entry.valid_end));
