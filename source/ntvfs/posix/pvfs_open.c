@@ -696,20 +696,19 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 
 	DLIST_ADD(pvfs->files.list, f);
 
+	/* setup a destructor to avoid file descriptor leaks on
+	   abnormal termination */
+	talloc_set_destructor(f, pvfs_fnum_destructor);
+	talloc_set_destructor(f->handle, pvfs_handle_destructor);
+
 	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
 		oplock_granted = OPLOCK_BATCH;
 	} else if (oplock_granted != OPLOCK_NONE) {
 		status = pvfs_setup_oplock(f, oplock_granted);
 		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(lck);
 			return status;
 		}
 	}
-
-	/* setup a destructor to avoid file descriptor leaks on
-	   abnormal termination */
-	talloc_set_destructor(f, pvfs_fnum_destructor);
-	talloc_set_destructor(f->handle, pvfs_handle_destructor);
 
 	io->generic.out.oplock_level  = oplock_granted;
 	io->generic.out.file.ntvfs    = f->ntvfs;
