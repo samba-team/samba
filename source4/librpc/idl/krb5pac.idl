@@ -33,15 +33,15 @@ interface krb5pac
 
 	typedef struct {
 		[value(2*strlen_m(upn_name))] uint16 upn_size;
-		uint16 unknown1; /* 0x10 */
+		uint16 upn_offset;
 		[value(2*strlen_m(domain_name))] uint16 domain_size;
-		uint16 unknown2; /* 0x50 */
+		uint16 domain_offset;
 		uint16 unknown3; /* 0x01 */
 		uint16 unknown4;
 		uint32 unknown5;
 		[charset(UTF16)] uint8 upn_name[upn_size+2];
 		[charset(UTF16)] uint8 domain_name[domain_size+2];
-		uint32 unknown6;
+		uint32 unknown6; /* padding */
 	} PAC_UNKNOWN_12;
 
 	typedef [public] struct {
