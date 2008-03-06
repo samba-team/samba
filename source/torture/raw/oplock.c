@@ -71,16 +71,30 @@ static struct {
 /*
   a handler function for oplock break requests. Ack it as a break to level II if possible
 */
-static bool oplock_handler_ack_to_levelII(struct smbcli_transport *transport, 
-					  uint16_t tid, uint16_t fnum, 
-					  uint8_t level, void *private)
+static bool oplock_handler_ack_to_given(struct smbcli_transport *transport,
+					uint16_t tid, uint16_t fnum,
+					uint8_t level, void *private)
 {
 	struct smbcli_tree *tree = (struct smbcli_tree *)private;
+	const char *name;
+
 	break_info.fnum = fnum;
 	break_info.level = level;
 	break_info.count++;
 
-	printf("Acking to level II in oplock handler\n");
+	switch (level) {
+	case OPLOCK_BREAK_TO_LEVEL_II:
+		name = "level II";
+		break;
+	case OPLOCK_BREAK_TO_NONE:
+		name = "none";
+		break;
+	default:
+		name = "unknown";
+		break_info.failures++;
+	}
+	printf("Acking to %s [0x%02X] in oplock handler\n",
+		name, level);
 
 	return smbcli_oplock_ack(tree, fnum, level);
 }
@@ -198,7 +212,7 @@ static bool test_raw_oplock_exclusive1(struct torture_context *tctx, struct smbc
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -263,7 +277,7 @@ static bool test_raw_oplock_exclusive2(struct torture_context *tctx, struct smbc
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -358,7 +372,7 @@ static bool test_raw_oplock_exclusive3(struct torture_context *tctx, struct smbc
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -427,7 +441,7 @@ static bool test_raw_oplock_exclusive4(struct torture_context *tctx, struct smbc
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -446,7 +460,7 @@ static bool test_raw_oplock_exclusive4(struct torture_context *tctx, struct smbc
 
 	torture_comment(tctx, "open with exclusive oplock\n");
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | NTCREATEX_FLAGS_REQUEST_OPLOCK;
 	status = smb_raw_open(cli1->tree, tctx, &io);
@@ -491,8 +505,8 @@ static bool test_raw_oplock_exclusive5(struct torture_context *tctx, struct smbc
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
-	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
+	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -511,7 +525,7 @@ static bool test_raw_oplock_exclusive5(struct torture_context *tctx, struct smbc
 
 	torture_comment(tctx, "open with exclusive oplock\n");
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | NTCREATEX_FLAGS_REQUEST_OPLOCK;
@@ -566,7 +580,7 @@ static bool test_raw_oplock_exclusive6(struct torture_context *tctx, struct smbc
 	smbcli_unlink(cli1->tree, fname1);
 	smbcli_unlink(cli1->tree, fname2);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -639,7 +653,7 @@ static bool test_raw_oplock_batch1(struct torture_context *tctx, struct smbcli_s
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -723,7 +737,7 @@ static bool test_raw_oplock_batch2(struct torture_context *tctx, struct smbcli_s
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -801,7 +815,7 @@ static bool test_raw_oplock_batch3(struct torture_context *tctx, struct smbcli_s
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -865,7 +879,7 @@ static bool test_raw_oplock_batch4(struct torture_context *tctx, struct smbcli_s
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -884,7 +898,7 @@ static bool test_raw_oplock_batch4(struct torture_context *tctx, struct smbcli_s
 
 	torture_comment(tctx, "a self read should not cause a break\n");
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -928,7 +942,7 @@ static bool test_raw_oplock_batch5(struct torture_context *tctx, struct smbcli_s
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -947,7 +961,7 @@ static bool test_raw_oplock_batch5(struct torture_context *tctx, struct smbcli_s
 
 	torture_comment(tctx, "a 2nd open should give a break\n");
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -993,7 +1007,7 @@ static bool test_raw_oplock_batch6(struct torture_context *tctx, struct smbcli_s
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -1012,8 +1026,8 @@ static bool test_raw_oplock_batch6(struct torture_context *tctx, struct smbcli_s
 
 	torture_comment(tctx, "a 2nd open should give a break to level II if the first open allowed shared read\n");
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
-	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_levelII, cli2->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
+	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_given, cli2->tree);
 
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_READ | SEC_RIGHTS_FILE_WRITE;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
@@ -1073,7 +1087,7 @@ static bool test_raw_oplock_batch7(struct torture_context *tctx, struct smbcli_s
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -1143,7 +1157,7 @@ static bool test_raw_oplock_batch8(struct torture_context *tctx, struct smbcli_s
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -1162,7 +1176,7 @@ static bool test_raw_oplock_batch8(struct torture_context *tctx, struct smbcli_s
 
 	torture_comment(tctx, "open with batch oplock\n");
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -1212,7 +1226,7 @@ static bool test_raw_oplock_batch9(struct torture_context *tctx, struct smbcli_s
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -1244,7 +1258,7 @@ static bool test_raw_oplock_batch9(struct torture_context *tctx, struct smbcli_s
 	torture_comment(tctx, "Subsequent normal open should break oplock on attribute only open to level II\n");
 
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -1263,8 +1277,8 @@ static bool test_raw_oplock_batch9(struct torture_context *tctx, struct smbcli_s
 
 	torture_comment(tctx, "third oplocked open should grant level2 without break\n");
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
-	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_levelII, cli2->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
+	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_given, cli2->tree);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
 		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
@@ -1317,7 +1331,7 @@ static bool test_raw_oplock_batch10(struct torture_context *tctx, struct smbcli_
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -1348,7 +1362,7 @@ static bool test_raw_oplock_batch10(struct torture_context *tctx, struct smbcli_
 	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(io.ntcreatex.out.oplock_level, 0);
 
-	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_levelII, cli2->tree);
+	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_given, cli2->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -1426,7 +1440,7 @@ static bool test_raw_oplock_batch11(struct torture_context *tctx, struct smbcli_
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -1447,7 +1461,7 @@ static bool test_raw_oplock_batch11(struct torture_context *tctx, struct smbcli_
 	torture_comment(tctx, "Test if setpathinfo set EOF breaks oplocks.\n");
 
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -1501,7 +1515,7 @@ static bool test_raw_oplock_batch12(struct torture_context *tctx, struct smbcli_
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -1522,7 +1536,7 @@ static bool test_raw_oplock_batch12(struct torture_context *tctx, struct smbcli_
 	torture_comment(tctx, "Test if setpathinfo allocation size breaks oplocks.\n");
 
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -1575,8 +1589,8 @@ static bool test_raw_oplock_batch13(struct torture_context *tctx, struct smbcli_
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
-	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
+	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -1595,7 +1609,7 @@ static bool test_raw_oplock_batch13(struct torture_context *tctx, struct smbcli_
 
 	torture_comment(tctx, "open with batch oplock\n");
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
@@ -1653,7 +1667,7 @@ static bool test_raw_oplock_batch14(struct torture_context *tctx, struct smbcli_
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -1672,7 +1686,7 @@ static bool test_raw_oplock_batch14(struct torture_context *tctx, struct smbcli_
 
 	torture_comment(tctx, "open with batch oplock\n");
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -1729,7 +1743,7 @@ static bool test_raw_oplock_batch15(struct torture_context *tctx, struct smbcli_
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -1750,7 +1764,7 @@ static bool test_raw_oplock_batch15(struct torture_context *tctx, struct smbcli_
 	torture_comment(tctx, "Test if qpathinfo all info breaks a batch oplock (should not).\n");
 
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
 		NTCREATEX_FLAGS_REQUEST_OPLOCK |
@@ -1801,8 +1815,8 @@ static bool test_raw_oplock_batch16(struct torture_context *tctx, struct smbcli_
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
-	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
+	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -1821,7 +1835,7 @@ static bool test_raw_oplock_batch16(struct torture_context *tctx, struct smbcli_
 
 	torture_comment(tctx, "open with batch oplock\n");
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
@@ -1883,7 +1897,7 @@ static bool test_raw_oplock_batch17(struct torture_context *tctx, struct smbcli_
 	smbcli_unlink(cli1->tree, fname1);
 	smbcli_unlink(cli1->tree, fname2);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -1961,7 +1975,7 @@ static bool test_raw_oplock_batch18(struct torture_context *tctx, struct smbcli_
 	smbcli_unlink(cli1->tree, fname1);
 	smbcli_unlink(cli1->tree, fname2);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -2045,7 +2059,7 @@ static bool test_raw_oplock_batch19(struct torture_context *tctx, struct smbcli_
 	smbcli_unlink(cli1->tree, fname2);
 	smbcli_unlink(cli1->tree, fname3);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -2147,7 +2161,7 @@ static bool test_raw_oplock_batch20(struct torture_context *tctx, struct smbcli_
 	smbcli_unlink(cli1->tree, fname2);
 	smbcli_unlink(cli1->tree, fname3);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -2273,7 +2287,7 @@ static bool test_raw_oplock_batch21(struct torture_context *tctx, struct smbcli_
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -2346,7 +2360,7 @@ static bool test_raw_oplock_batch22(struct torture_context *tctx, struct smbcli_
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	/*
 	  base ntcreatex parms
@@ -2395,7 +2409,7 @@ static bool test_raw_oplock_batch22(struct torture_context *tctx, struct smbcli_
 
 	torture_comment(tctx, "a 2nd open shoud succeed after the oplock release without break\n");
 	tv = timeval_current();
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 	status = smb_raw_open(cli1->tree, tctx, &io);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
@@ -2436,7 +2450,7 @@ static bool test_raw_oplock_batch23(struct torture_context *tctx, struct smbcli_
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	ret = open_connection_no_level2_oplocks(tctx, &cli3);
 	CHECK_VAL(ret, true);
@@ -2458,9 +2472,9 @@ static bool test_raw_oplock_batch23(struct torture_context *tctx, struct smbcli_
 
 	torture_comment(tctx, "a open and ask for a batch oplock\n");
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
-	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_levelII, cli2->tree);
-	smbcli_oplock_handler(cli3->transport, oplock_handler_ack_to_levelII, cli3->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
+	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_given, cli2->tree);
+	smbcli_oplock_handler(cli3->transport, oplock_handler_ack_to_given, cli3->tree);
 
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_READ | SEC_RIGHTS_FILE_WRITE;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
@@ -2523,7 +2537,7 @@ static bool test_raw_oplock_batch24(struct torture_context *tctx, struct smbcli_
 	/* cleanup */
 	smbcli_unlink(cli1->tree, fname);
 
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
 	ret = open_connection_no_level2_oplocks(tctx, &cli3);
 	CHECK_VAL(ret, true);
@@ -2545,9 +2559,9 @@ static bool test_raw_oplock_batch24(struct torture_context *tctx, struct smbcli_
 
 	torture_comment(tctx, "a open without level support and ask for a batch oplock\n");
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
-	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_levelII, cli2->tree);
-	smbcli_oplock_handler(cli3->transport, oplock_handler_ack_to_levelII, cli3->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
+	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_given, cli2->tree);
+	smbcli_oplock_handler(cli3->transport, oplock_handler_ack_to_given, cli3->tree);
 
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_READ | SEC_RIGHTS_FILE_WRITE;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
