@@ -434,6 +434,30 @@ NTTIME samdb_result_nttime(struct ldb_message *msg, const char *attr, NTTIME def
 }
 
 /*
+ * Windows uses both 0 and 9223372036854775807 (0x7FFFFFFFFFFFFFFFULL) to
+ * indicate an account doesn't expire.
+ *
+ * When Windows initially creates an account, it sets
+ * accountExpires = 9223372036854775807 (0x7FFFFFFFFFFFFFFF).  However,
+ * when changing from an account having a specific expiration date to
+ * that account never expiring, it sets accountExpires = 0.
+ *
+ * Consolidate that logic here to allow clearer logic for account expiry in
+ * the rest of the code.
+ */
+NTTIME samdb_result_account_expires(struct ldb_message *msg,
+				    NTTIME default_value)
+{
+	NTTIME ret = ldb_msg_find_attr_as_uint64(msg, "accountExpires",
+						 default_value);
+
+	if (ret == (NTTIME)0)
+		ret = 0x7FFFFFFFFFFFFFFFULL;
+
+	return ret;
+}
+
+/*
   pull a uint64_t from a result set. 
 */
 uint64_t samdb_result_uint64(struct ldb_message *msg, const char *attr, uint64_t default_value)
