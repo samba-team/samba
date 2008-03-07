@@ -520,7 +520,7 @@ NTSTATUS auth_init(void)
 	extern NTSTATUS auth_unix_init(void);
 	extern NTSTATUS auth_sam_init(void);
 
-	init_module_fn static_init[] = { STATIC_auth_MODULES };
+	init_module_fn static_init[] = { STATIC_service_auth_MODULES };
 	
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
