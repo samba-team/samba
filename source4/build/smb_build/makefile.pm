@@ -141,16 +141,10 @@ sub SharedModule($$)
 
 	$self->output("\$(eval \$(call shared_module_template,$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}, \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST), \$($ctx->{NAME}\_FULL_OBJ_LIST) \$($ctx->{NAME}_LINK_FLAGS)))\n");
 
+
 	if (defined($ctx->{ALIASES})) {
 		foreach (@{$ctx->{ALIASES}}) {
-			$self->output("$ctx->{SHAREDDIR}/$_.\$(SHLIBEXT): $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
-			$self->output("\t\@ln -fs \$(<F) \$@\n");
-			$self->output("PLUGINS += $ctx->{SHAREDDIR}/$_.\$(SHLIBEXT)\n");
-			$self->output("\n");
-			$self->output("uninstallplugins::\n");
-			$self->output("\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n\n");
-			$self->output("installplugins::\n");
-			$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n\n");
+			$self->output("\$(eval \$(call shared_module_alias_template,$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME},$sane_subsystem,$_))\n");
 		}
 	}
 }
