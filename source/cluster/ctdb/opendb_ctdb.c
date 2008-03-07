@@ -261,6 +261,7 @@ static NTSTATUS odb_push_record(struct odb_lock *lck, struct opendb_file *file)
 	return NT_STATUS_OK;
 }
 
+#if 0
 /*
   send an oplock break to a client
 */
@@ -271,6 +272,7 @@ static NTSTATUS odb_oplock_break_send(struct odb_context *odb, struct opendb_ent
 	return messaging_send_ptr(odb->ntvfs_ctx->msg_ctx, e->server, 
 				  MSG_NTVFS_OPLOCK_BREAK, e->file_handle);
 }
+#endif
 
 /*
   register an open file in the open files database. This implements the share_access
@@ -281,104 +283,16 @@ static NTSTATUS odb_oplock_break_send(struct odb_context *odb, struct opendb_ent
 */
 static NTSTATUS odb_ctdb_open_file(struct odb_lock *lck,
 				   void *file_handle, const char *path,
-				   uint32_t stream_id, uint32_t share_access,
-				   uint32_t access_mask, bool delete_on_close,
-				   uint32_t open_disposition, bool break_to_none,
 				   bool allow_level_II_oplock,
 				   uint32_t oplock_level, uint32_t *oplock_granted)
 
 {
-	struct odb_context *odb = lck->odb;
-	struct opendb_entry e;
-	int i;
-	struct opendb_file file;
-	NTSTATUS status;
-
-	if (odb->oplocks == false) {
-		oplock_level = OPLOCK_NONE;
-	}
-
-	status = odb_pull_record(lck, &file);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		/* initialise a blank structure */
-		ZERO_STRUCT(file);
-		file.path = path;
-	} else {
-		NT_STATUS_NOT_OK_RETURN(status);
-	}
-
-	/* see if it conflicts */
-	e.server          = odb->ntvfs_ctx->server_id;
-	e.file_handle     = file_handle;
-	e.stream_id       = stream_id;
-	e.share_access    = share_access;
-	e.access_mask     = access_mask;
-	e.delete_on_close = delete_on_close;
-	e.oplock_level    = OPLOCK_NONE;
-		
-	/* see if anyone has an oplock, which we need to break */
-	for (i=0;i<file.num_entries;i++) {
-		if (file.entries[i].oplock_level == OPLOCK_BATCH) {
-			/* a batch oplock caches close calls, which
-			   means the client application might have
-			   already closed the file. We have to allow
-			   this close to propogate by sending a oplock
-			   break request and suspending this call
-			   until the break is acknowledged or the file
-			   is closed */
-			odb_oplock_break_send(odb, &file.entries[i]);
-			return NT_STATUS_OPLOCK_NOT_GRANTED;
-		}
-	}
-
-	if (file.delete_on_close || 
-	    (file.num_entries != 0 && delete_on_close)) {
-		/* while delete on close is set, no new opens are allowed */
-		return NT_STATUS_DELETE_PENDING;
-	}
-
-	/* check for sharing violations */
-	for (i=0;i<file.num_entries;i++) {
-		status = share_conflict(&file.entries[i], &e);
-		NT_STATUS_NOT_OK_RETURN(status);
-	}
-
-	/* we now know the open could succeed, but we need to check
-	   for any exclusive oplocks. We can't grant a second open
-	   till these are broken. Note that we check for batch oplocks
-	   before checking for sharing violations, and check for
-	   exclusive oplocks afterwards. */
-	for (i=0;i<file.num_entries;i++) {
-		if (file.entries[i].oplock_level == OPLOCK_EXCLUSIVE) {
-			odb_oplock_break_send(odb, &file.entries[i]);
-			return NT_STATUS_OPLOCK_NOT_GRANTED;
-		}
-	}
-
 	/*
-	  possibly grant an exclusive or batch oplock if this is the only client
-	  with the file open. We don't yet grant levelII oplocks.
-	*/
-	if (oplock_granted != NULL) {
-		if ((oplock_level == OPLOCK_BATCH ||
-		     oplock_level == OPLOCK_EXCLUSIVE) &&
-		    file.num_entries == 0) {
-			(*oplock_granted) = oplock_level;
-		} else {
-			(*oplock_granted) = OPLOCK_NONE;
-		}
-		e.oplock_level = (*oplock_granted);
-	}
-
-	/* it doesn't conflict, so add it to the end */
-	file.entries = talloc_realloc(lck, file.entries, struct opendb_entry, 
-				      file.num_entries+1);
-	NT_STATUS_HAVE_NO_MEMORY(file.entries);
-
-	file.entries[file.num_entries] = e;
-	file.num_entries++;
-
-	return odb_push_record(lck, &file);
+	 * as this file will went away and isn't used yet,
+	 * copy the implementation from the tdb backend
+	 * --metze
+	 */
+	return NT_STATUS_FOOBAR;
 }
 
 
