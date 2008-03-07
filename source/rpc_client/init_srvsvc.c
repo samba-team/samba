@@ -86,6 +86,140 @@ void init_srvsvc_NetSrvInfo100(struct srvsvc_NetSrvInfo100 *r,
 }
 
 /*******************************************************************
+ inits a srvsvc_NetShareInfo0 structure
+********************************************************************/
+
+void init_srvsvc_NetShareInfo0(struct srvsvc_NetShareInfo0 *r,
+			       const char *name)
+{
+	r->name = name;
+}
+
+/*******************************************************************
+ inits a srvsvc_NetShareInfo1 structure
+********************************************************************/
+
+void init_srvsvc_NetShareInfo1(struct srvsvc_NetShareInfo1 *r,
+			       const char *name,
+			       enum srvsvc_ShareType type,
+			       const char *comment)
+{
+	r->name = name;
+	r->type = type;
+	r->comment = comment;
+}
+
+/*******************************************************************
+ inits a srvsvc_NetShareInfo2 structure
+********************************************************************/
+
+void init_srvsvc_NetShareInfo2(struct srvsvc_NetShareInfo2 *r,
+			       const char *name,
+			       enum srvsvc_ShareType type,
+			       const char *comment,
+			       uint32_t permissions,
+			       uint32_t max_users,
+			       uint32_t current_users,
+			       const char *path,
+			       const char *password)
+{
+	r->name = name;
+	r->type = type;
+	r->comment = comment;
+	r->permissions = permissions;
+	r->max_users = max_users;
+	r->current_users = current_users;
+	r->path = path;
+	r->password = password;
+}
+
+/*******************************************************************
+ inits a srvsvc_NetShareInfo501 structure
+********************************************************************/
+
+void init_srvsvc_NetShareInfo501(struct srvsvc_NetShareInfo501 *r,
+				 const char *name,
+				 enum srvsvc_ShareType type,
+				 const char *comment,
+				 uint32_t csc_policy)
+{
+	r->name = name;
+	r->type = type;
+	r->comment = comment;
+	r->csc_policy = csc_policy;
+}
+
+/*******************************************************************
+ inits a srvsvc_NetShareInfo502 structure
+********************************************************************/
+
+void init_srvsvc_NetShareInfo502(struct srvsvc_NetShareInfo502 *r,
+				 const char *name,
+				 enum srvsvc_ShareType type,
+				 const char *comment,
+				 uint32_t permissions,
+				 int32_t max_users,
+				 uint32_t current_users,
+				 const char *path,
+				 const char *password,
+				 uint32_t unknown,
+				 struct security_descriptor *sd)
+{
+	r->name = name;
+	r->type = type;
+	r->comment = comment;
+	r->permissions = permissions;
+	r->max_users = max_users;
+	r->current_users = current_users;
+	r->path = path;
+	r->password = password;
+	r->unknown = unknown;
+	r->sd = sd;
+}
+
+/*******************************************************************
+ inits a srvsvc_NetShareInfo1004 structure
+********************************************************************/
+
+void init_srvsvc_NetShareInfo1004(struct srvsvc_NetShareInfo1004 *r,
+				  const char *comment)
+{
+	r->comment = comment;
+}
+
+/*******************************************************************
+ inits a srvsvc_NetShareInfo1005 structure
+********************************************************************/
+
+void init_srvsvc_NetShareInfo1005(struct srvsvc_NetShareInfo1005 *r,
+				  uint32_t dfs_flags)
+{
+	r->dfs_flags = dfs_flags;
+}
+
+/*******************************************************************
+ inits a srvsvc_NetShareInfo1006 structure
+********************************************************************/
+
+void init_srvsvc_NetShareInfo1006(struct srvsvc_NetShareInfo1006 *r,
+				  int32_t max_users)
+{
+	r->max_users = max_users;
+}
+
+/*******************************************************************
+ inits a srvsvc_NetShareInfo1007 structure
+********************************************************************/
+
+void init_srvsvc_NetShareInfo1007(struct srvsvc_NetShareInfo1007 *r,
+				  uint32_t flags,
+				  const char *alternate_directory_name)
+{
+	r->flags = flags;
+	r->alternate_directory_name = alternate_directory_name;
+}
+
+/*******************************************************************
  inits a srvsvc_NetRemoteTODInfo structure
  ********************************************************************/
 
