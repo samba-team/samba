@@ -362,38 +362,6 @@ WERROR rpccli_srvsvc_net_share_set_info(struct rpc_pipe_client *cli,
 	return result;
 }
 
-WERROR rpccli_srvsvc_net_share_del(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				const char *sharename)
-{
-	prs_struct qbuf, rbuf;
-	SRV_Q_NET_SHARE_DEL q;
-	SRV_R_NET_SHARE_DEL r;
-	WERROR result = W_ERROR(ERRgeneral);
-	fstring server;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialise input parameters */
-
-	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
-	strupper_m(server);
-
-	init_srv_q_net_share_del(&q, server, sharename);
-
-	/* Marshall data and send request */
-
-	CLI_DO_RPC_WERR(cli, mem_ctx, PI_SRVSVC, SRV_NET_SHARE_DEL,
-		q, r,
-		qbuf, rbuf,
-		srv_io_q_net_share_del,
-		srv_io_r_net_share_del,
-		WERR_GENERAL_FAILURE);
-
-	result = r.status;
-	return result;
-}
-
 WERROR rpccli_srvsvc_net_share_add(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				const char *netname, uint32 type, 
 				const char *remark, uint32 perms, 

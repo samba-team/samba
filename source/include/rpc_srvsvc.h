@@ -625,23 +625,6 @@ typedef struct r_net_share_add
 
 } SRV_R_NET_SHARE_ADD;
 
-/* SRV_Q_NET_SHARE_DEL */
-typedef struct q_net_share_del
-{
-	uint32 ptr_srv_name;
-	UNISTR2 uni_srv_name;
-	UNISTR2 uni_share_name;
-	uint32 reserved;
-
-} SRV_Q_NET_SHARE_DEL;
-
-/* SRV_R_NET_SHARE_DEL */
-typedef struct r_net_share_del
-{
-	WERROR status;               /* return status */
-
-} SRV_R_NET_SHARE_DEL;
-
 /***************************/
 
 typedef struct {
