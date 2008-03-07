@@ -75,20 +75,6 @@ typedef struct net_srv_disk_enum {
 
 /***************************/
 
-typedef struct  {
-	UNISTR2 *servername;
-	UNISTR2 sharename;
-	uint32 type;
-	uint32 flags;
-	WERROR status;
-} SRV_Q_NET_NAME_VALIDATE;
-
-typedef struct  {
-	WERROR status;
-} SRV_R_NET_NAME_VALIDATE;
-
-/***************************/
-
 /* oops - this is going to take up a *massive* amount of stack. */
 /* the UNISTR2s already have 1024 uint16 chars in them... */
 
