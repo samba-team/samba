@@ -460,7 +460,7 @@ static NTSTATUS nttrans_backend(struct smbsrv_request *req,
 static void reply_nttrans_send(struct ntvfs_request *ntvfs)
 {
 	struct smbsrv_request *req;
-	uint16_t params_left, data_left;
+	uint32_t params_left, data_left;
 	uint8_t *params, *data;
 	struct smb_nttrans *trans;
 	struct nttrans_op *op;
@@ -502,7 +502,7 @@ static void reply_nttrans_send(struct ntvfs_request *ntvfs)
 	/* we need to divide up the reply into chunks that fit into
 	   the negotiated buffer size */
 	do {
-		uint16_t this_data, this_param, max_bytes;
+		uint32_t this_data, this_param, max_bytes;
 		uint_t align1 = 1, align2 = (params_left ? 2 : 0);
 		struct smbsrv_request *this_req;
 
@@ -573,9 +573,9 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 {
 	struct nttrans_op *op;
 	struct smb_nttrans *trans;
-	uint16_t param_ofs, data_ofs;
-	uint16_t param_count, data_count;
-	uint16_t param_total, data_total;
+	uint32_t param_ofs, data_ofs;
+	uint32_t param_count, data_count;
+	uint32_t param_total, data_total;
 
 	/* parse request */
 	if (req->in.wct < 19) {
