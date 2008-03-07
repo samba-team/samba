@@ -81,6 +81,7 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 
 	r->in.join_flags = join_flags;
 	r->in.modify_config = true;
+	r->in.debug = true;
 
 	werr = libnet_Join(mem_ctx, r);
 	if (!W_ERROR_IS_OK(werr) && r->out.error_string) {

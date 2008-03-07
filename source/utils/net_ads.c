@@ -829,7 +829,7 @@ static int net_ads_leave(int argc, const char **argv)
 		return -1;
 	}
 
-	r->in.debug		= opt_verbose;
+	r->in.debug		= true;
 	r->in.dc_name		= opt_host;
 	r->in.domain_name	= lp_realm();
 	r->in.admin_account	= opt_user_name;
@@ -1178,7 +1178,7 @@ int net_ads_join(int argc, const char **argv)
 	r->in.dc_name		= opt_host;
 	r->in.admin_account	= opt_user_name;
 	r->in.admin_password	= net_prompt_pass(opt_user_name);
-	r->in.debug		= opt_verbose;
+	r->in.debug		= true;
 	r->in.join_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 				  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
 				  WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED;
