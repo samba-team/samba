@@ -23,8 +23,13 @@ _PUBLIC_ void ndr_print_libnet_JoinCtx(struct ndr_print *ndr, const char *name, 
 		ndr->depth--;
 		ndr_print_string(ndr, "account_ou", r->in.account_ou);
 		ndr_print_string(ndr, "admin_account", r->in.admin_account);
+#ifdef DEBUG_PASSWORD
 		ndr_print_string(ndr, "admin_password", r->in.admin_password);
 		ndr_print_string(ndr, "machine_password", r->in.machine_password);
+#else
+		ndr_print_ptr(ndr, "admin_password", r->in.admin_password);
+		ndr_print_ptr(ndr, "machine_password", r->in.machine_password);
+#endif
 		ndr_print_wkssvc_joinflags(ndr, "join_flags", r->in.join_flags);
 		ndr_print_string(ndr, "os_version", r->in.os_version);
 		ndr_print_string(ndr, "os_name", r->in.os_name);
@@ -74,8 +79,13 @@ _PUBLIC_ void ndr_print_libnet_UnjoinCtx(struct ndr_print *ndr, const char *name
 		ndr_print_string(ndr, "domain_name", r->in.domain_name);
 		ndr_print_string(ndr, "account_ou", r->in.account_ou);
 		ndr_print_string(ndr, "admin_account", r->in.admin_account);
+#ifdef DEBUG_PASSWORD
 		ndr_print_string(ndr, "admin_password", r->in.admin_password);
 		ndr_print_string(ndr, "machine_password", r->in.machine_password);
+#else
+		ndr_print_ptr(ndr, "admin_password", r->in.admin_password);
+		ndr_print_ptr(ndr, "machine_password", r->in.machine_password);
+#endif
 		ndr_print_wkssvc_joinflags(ndr, "unjoin_flags", r->in.unjoin_flags);
 		ndr_print_uint8(ndr, "modify_config", r->in.modify_config);
 		ndr_print_ptr(ndr, "domain_sid", r->in.domain_sid);
