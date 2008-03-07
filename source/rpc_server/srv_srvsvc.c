@@ -180,28 +180,7 @@ static bool api_srv_net_sess_del(pipes_struct *p)
 
 static bool api_srv_net_share_enum_all(pipes_struct *p)
 {
-	SRV_Q_NET_SHARE_ENUM q_u;
-	SRV_R_NET_SHARE_ENUM r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* Unmarshall the net server get enum. */
-	if(!srv_io_q_net_share_enum("", &q_u, data, 0)) {
-		DEBUG(0,("api_srv_net_share_enum_all: Failed to unmarshall SRV_Q_NET_SHARE_ENUM.\n"));
-		return False;
-	}
-
-	r_u.status = _srv_net_share_enum_all(p, &q_u, &r_u);
-
-	if (!srv_io_r_net_share_enum("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_srv_net_share_enum_all: Failed to marshall SRV_R_NET_SHARE_ENUM.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_srvsvc_call(p, NDR_SRVSVC_NETSHAREENUMALL);
 }
 
 /*******************************************************************
@@ -210,28 +189,7 @@ static bool api_srv_net_share_enum_all(pipes_struct *p)
 
 static bool api_srv_net_share_enum(pipes_struct *p)
 {
-	SRV_Q_NET_SHARE_ENUM q_u;
-	SRV_R_NET_SHARE_ENUM r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* Unmarshall the net server get enum. */
-	if(!srv_io_q_net_share_enum("", &q_u, data, 0)) {
-		DEBUG(0,("api_srv_net_share_enum: Failed to unmarshall SRV_Q_NET_SHARE_ENUM.\n"));
-		return False;
-	}
-
-	r_u.status = _srv_net_share_enum(p, &q_u, &r_u);
-
-	if (!srv_io_r_net_share_enum("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_srv_net_share_enum: Failed to marshall SRV_R_NET_SHARE_ENUM.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_srvsvc_call(p, NDR_SRVSVC_NETSHAREENUM);
 }
 
 /*******************************************************************
@@ -240,28 +198,7 @@ static bool api_srv_net_share_enum(pipes_struct *p)
 
 static bool api_srv_net_share_get_info(pipes_struct *p)
 {
-	SRV_Q_NET_SHARE_GET_INFO q_u;
-	SRV_R_NET_SHARE_GET_INFO r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* Unmarshall the net server get info. */
-	if(!srv_io_q_net_share_get_info("", &q_u, data, 0)) {
-		DEBUG(0,("api_srv_net_share_get_info: Failed to unmarshall SRV_Q_NET_SHARE_GET_INFO.\n"));
-		return False;
-	}
-
-	r_u.status = _srv_net_share_get_info(p, &q_u, &r_u);
-
-	if(!srv_io_r_net_share_get_info("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_srv_net_share_get_info: Failed to marshall SRV_R_NET_SHARE_GET_INFO.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_srvsvc_call(p, NDR_SRVSVC_NETSHAREGETINFO);
 }
 
 /*******************************************************************
