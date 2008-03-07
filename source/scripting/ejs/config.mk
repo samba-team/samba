@@ -58,7 +58,7 @@ smbcalls_data_OBJ_FILES = scripting/ejs/smbcalls_data.o
 OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_auth
-PRIVATE_DEPENDENCIES = auth
+PRIVATE_DEPENDENCIES = service_auth
 
 smbcalls_auth_OBJ_FILES = scripting/ejs/smbcalls_auth.o
 
