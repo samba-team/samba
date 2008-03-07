@@ -2383,17 +2383,19 @@ WERROR _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_D
 }
 
 /********************************************************************
+ _srvsvc_NetNameValidate
 ********************************************************************/
 
-WERROR _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV_R_NET_NAME_VALIDATE *r_u)
+WERROR _srvsvc_NetNameValidate(pipes_struct *p,
+			       struct srvsvc_NetNameValidate *r)
 {
-	fstring sharename;
-
-	switch ( q_u->type ) {
+	switch (r->in.name_type) {
 	case 0x9:
-		rpcstr_pull(sharename, q_u->sharename.buffer, sizeof(sharename), q_u->sharename.uni_str_len*2, 0);
-		if ( !validate_net_name( sharename, INVALID_SHARENAME_CHARS, sizeof(sharename) ) ) {
-			DEBUG(5,("_srv_net_name_validate: Bad sharename \"%s\"\n", sharename));
+		if (!validate_net_name(r->in.name, INVALID_SHARENAME_CHARS,
+				       strlen_m(r->in.name)))
+		{
+			DEBUG(5,("_srvsvc_NetNameValidate: Bad sharename \"%s\"\n",
+				r->in.name));
 			return WERR_INVALID_NAME;
 		}
 		break;
@@ -2404,7 +2406,6 @@ WERROR _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV
 
 	return WERR_OK;
 }
-
 
 /********************************************************************
 ********************************************************************/
@@ -2557,12 +2558,6 @@ WERROR _srvsvc_NetPathCanonicalize(pipes_struct *p, struct srvsvc_NetPathCanonic
 }
 
 WERROR _srvsvc_NetPathCompare(pipes_struct *p, struct srvsvc_NetPathCompare *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _srvsvc_NetNameValidate(pipes_struct *p, struct srvsvc_NetNameValidate *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
