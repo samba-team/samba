@@ -73,6 +73,7 @@ AC_SUBST(HOST_OS)
 AC_SUBST(PICFLAG)
 AC_SUBST(PIE_CFLAGS)
 AC_SUBST(PIE_LDFLAGS)
+AC_SUBST(RELRO_LDFLAGS)
 AC_SUBST(SHLIBEXT)
 AC_SUBST(INSTALLLIBCMD_SH)
 AC_SUBST(INSTALLLIBCMD_A)
@@ -1510,6 +1511,32 @@ EOF
 	then
 		PIE_CFLAGS="-fPIE"
 		PIE_LDFLAGS="-pie"
+	fi
+fi
+
+# Set defaults
+RELRO_LDFLAGS=""
+AC_ARG_ENABLE(relro, [AS_HELP_STRING([--enable-relro], [Turn on Relocations Read-Only (relro) support if available (default=yes)])])
+
+if test "x$enable_relro" != xno
+then
+	AC_CACHE_CHECK([for -Wl,-z,relro], samba_cv_relro,
+	[
+		cat > conftest.c <<EOF
+int foo;
+main () { return 0;}
+EOF
+		if AC_TRY_COMMAND([${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS -Wl,-z,relro -o conftest conftest.c 1>&AS_MESSAGE_LOG_FD])
+		then
+			samba_cv_relro=yes
+		else
+			samba_cv_relro=no
+		fi
+		rm -f conftest*
+	])
+	if test x"${samba_cv_relro}" = x"yes"
+	then
+		RELRO_LDFLAGS="-Wl,-z,relro"
 	fi
 fi
 
