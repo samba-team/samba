@@ -1409,7 +1409,7 @@ account to which the Samba backend database account can be mapped.
 	Set <smbconfoption name="client use spnego">yes</smbconfoption> when communicating 
 	with a Windows 2003 server. This will not interfere with other Windows clients that do not
 	support the more advanced security features of Windows 2003 because the client will simply
-	negotiate a protocol tha both it and the server suppport. This is a well-known fall-back facility
+	negotiate a protocol that both it and the server suppport. This is a well-known fall-back facility
 	that is built into the SMB/CIFS protocols.
 	</para>
 
