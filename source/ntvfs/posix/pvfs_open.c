@@ -290,6 +290,15 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		}
 		
 		/* see if we are allowed to open at the same time as existing opens */
+		status = odb_can_open(lck, name->stream_id,
+				      share_access, access_mask, del_on_close,
+				      io->generic.in.open_disposition, false);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(lck);
+			return status;
+		}
+
+		/* now really mark the file as open */
 		status = odb_open_file(lck, f->handle, name->full_name, name->stream_id,
 				       share_access, access_mask, del_on_close, 
 				       io->generic.in.open_disposition,
@@ -342,6 +351,14 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 			/* we were supposed to do a blocking lock, so something
 			   is badly wrong! */
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		status = odb_can_open(lck, name->stream_id,
+				      share_access, access_mask, del_on_close,
+				      io->generic.in.open_disposition, false);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			goto cleanup_delete;
 		}
 
 		status = odb_open_file(lck, f->handle, name->full_name, name->stream_id,
@@ -663,6 +680,18 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		allow_level_II_oplock = true;
 	}
 
+	status = odb_can_open(lck, name->stream_id,
+			      share_access, access_mask, del_on_close,
+			      io->generic.in.open_disposition, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(lck);
+		/* bad news, we must have hit a race - we don't delete the file
+		   here as the most likely scenario is that someone else created
+		   the file at the same time */
+		close(fd);
+		return status;
+	}
+
 	status = odb_open_file(lck, f->handle, name->full_name, name->stream_id,
 			       share_access, access_mask, del_on_close, 
 			       io->generic.in.open_disposition,
@@ -801,7 +830,7 @@ static void pvfs_odb_retry_callback(void *_r, enum pvfs_wait_notice reason)
 
 /*
   setup for a retry of a request that was rejected
-  by odb_open_file() or odb_can_open()
+  by odb_can_open()
 */
 NTSTATUS pvfs_odb_retry_setup(struct ntvfs_module_context *ntvfs,
 			      struct ntvfs_request *req,
@@ -1253,11 +1282,9 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* see if we are allowed to open at the same time as existing opens */
-	status = odb_open_file(lck, f->handle, name->full_name, name->stream_id,
-			       share_access, access_mask, del_on_close,
-			       io->generic.in.open_disposition,
-			       false, allow_level_II_oplock,
-			       oplock_level, &oplock_granted);
+	status = odb_can_open(lck, name->stream_id,
+			      share_access, access_mask, del_on_close,
+			      io->generic.in.open_disposition, false);
 
 	/*
 	 * on a sharing violation we need to retry when the file is closed by
@@ -1270,6 +1297,18 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	    (req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return pvfs_open_setup_retry(ntvfs, req, io, f, lck, status);
 	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(lck);
+		return status;
+	}
+
+	/* now really mark the file as open */
+	status = odb_open_file(lck, f->handle, name->full_name, name->stream_id,
+			       share_access, access_mask, del_on_close,
+			       io->generic.in.open_disposition,
+			       false, allow_level_II_oplock,
+			       oplock_level, &oplock_granted);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);
