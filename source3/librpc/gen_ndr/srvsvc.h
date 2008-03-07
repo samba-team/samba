@@ -1641,7 +1641,7 @@ struct srvsvc_NetGetFileSecurity {
 	} in;
 
 	struct {
-		struct sec_desc_buf *sd_buf;/* [unique] */
+		struct sec_desc_buf **sd_buf;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1654,7 +1654,7 @@ struct srvsvc_NetSetFileSecurity {
 		const char *share;/* [unique,charset(UTF16)] */
 		const char *file;/* [charset(UTF16)] */
 		uint32_t securityinformation;
-		struct sec_desc_buf sd_buf;
+		struct sec_desc_buf *sd_buf;/* [ref] */
 	} in;
 
 	struct {
