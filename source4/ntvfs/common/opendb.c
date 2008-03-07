@@ -87,23 +87,21 @@ _PUBLIC_ DATA_BLOB odb_get_key(TALLOC_CTX *mem_ctx, struct odb_lock *lck)
 }
 
 /*
-  register an open file in the open files database. This implements the share_access
-  rules
+  register an open file in the open files database.
+  The share_access rules are implemented by odb_can_open()
+  and it's needed to call odb_can_open() before
+  odb_open_file() otherwise NT_STATUS_INTERNAL_ERROR is returned
 
   Note that the path is only used by the delete on close logic, not
   for comparing with other filenames
 */
 _PUBLIC_ NTSTATUS odb_open_file(struct odb_lock *lck,
 				void *file_handle, const char *path,
-				uint32_t stream_id, uint32_t share_access,
-				uint32_t access_mask, bool delete_on_close,
-				uint32_t open_disposition, bool break_to_none,
 				bool allow_level_II_oplock,
 				uint32_t oplock_level, uint32_t *oplock_granted)
 {
-	return ops->odb_open_file(lck, file_handle, path, stream_id, share_access,
-				  access_mask, delete_on_close, open_disposition,
-				  break_to_none, allow_level_II_oplock,
+	return ops->odb_open_file(lck, file_handle, path,
+				  allow_level_II_oplock,
 				  oplock_level, oplock_granted);
 }
 
