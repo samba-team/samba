@@ -122,13 +122,7 @@ sub SharedModule($$)
 	$sane_subsystem =~ s/^lib//;
 	
 	$self->output("PLUGINS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
-	$self->output("installplugins:: $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
-	$self->output("\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
-	$self->output("\t\@mkdir -p \$(DESTDIR)\$(modulesdir)/$sane_subsystem/\n");
-	$self->output("\t\@cp $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
-	$self->output("uninstallplugins::\n");
-	$self->output("\t\@echo Uninstalling \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
-	$self->output("\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
+	$self->output("\$(eval \$(call shared_module_install_template,$sane_subsystem, $ctx->{LIBRARY_REALNAME}))\n");
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
