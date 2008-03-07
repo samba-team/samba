@@ -3067,7 +3067,7 @@ static bool api_srvsvc_NetGetFileSecurity(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.sd_buf = talloc_zero(r, struct sec_desc_buf);
+	r->out.sd_buf = talloc_zero(r, struct sec_desc_buf *);
 	if (r->out.sd_buf == NULL) {
 		talloc_free(r);
 		return false;
