@@ -572,6 +572,39 @@ static WERROR cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static WERROR cmd_srvsvc_net_name_validate(struct rpc_pipe_client *cli,
+					   TALLOC_CTX *mem_ctx,
+					   int argc, const char **argv)
+{
+	WERROR result;
+	NTSTATUS status;
+	uint32_t name_type = 9;
+	uint32_t flags = 0;
+
+	if (argc < 2 || argc > 3) {
+		printf("Usage: %s [sharename] [type]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc == 3) {
+		name_type = atoi(argv[2]);
+	}
+
+	status = rpccli_srvsvc_NetNameValidate(cli, mem_ctx,
+					       cli->cli->desthost,
+					       argv[1],
+					       name_type,
+					       flags,
+					       &result);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+ done:
+	return result;
+}
+
+
 /* List of commands exported by this module */
 
 struct cmd_set srvsvc_commands[] = {
@@ -585,6 +618,7 @@ struct cmd_set srvsvc_commands[] = {
 	{ "netsharesetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_set_info, PI_SRVSVC, NULL, "Set Share Info", "" },
 	{ "netfileenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_file_enum,  PI_SRVSVC, NULL, "Enumerate open files", "" },
 	{ "netremotetod",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_remote_tod, PI_SRVSVC, NULL, "Fetch remote time of day", "" },
+	{ "netnamevalidate", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_name_validate, PI_SRVSVC, NULL, "Validate sharename", "" },
 
 	{ NULL }
 };
