@@ -235,7 +235,7 @@ static void reload_interfaces(time_t t)
 	if (FIRST_SUBNET == NULL) {
 		void (*saved_handler)(int);
 
-		DEBUG(2,("reload_interfaces: "
+		DEBUG(0,("reload_interfaces: "
 			"No subnets to listen to. Waiting..\n"));
 
 		/*
