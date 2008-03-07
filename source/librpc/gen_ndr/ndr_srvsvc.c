@@ -18257,9 +18257,12 @@ static enum ndr_err_code ndr_push_srvsvc_NetGetFileSecurity(struct ndr_push *ndr
 		NDR_CHECK(ndr_push_security_secinfo(ndr, NDR_SCALARS, r->in.securityinformation));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.sd_buf));
-		if (r->out.sd_buf) {
-			NDR_CHECK(ndr_push_sec_desc_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sd_buf));
+		if (r->out.sd_buf == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.sd_buf));
+		if (*r->out.sd_buf) {
+			NDR_CHECK(ndr_push_sec_desc_buf(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.sd_buf));
 		}
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -18274,6 +18277,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetGetFileSecurity(struct ndr_pull *ndr
 	TALLOC_CTX *_mem_save_server_unc_0;
 	TALLOC_CTX *_mem_save_share_0;
 	TALLOC_CTX *_mem_save_sd_buf_0;
+	TALLOC_CTX *_mem_save_sd_buf_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -18321,20 +18325,28 @@ static enum ndr_err_code ndr_pull_srvsvc_NetGetFileSecurity(struct ndr_pull *ndr
 		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.file), sizeof(uint16_t)));
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.file, ndr_get_array_length(ndr, &r->in.file), sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_security_secinfo(ndr, NDR_SCALARS, &r->in.securityinformation));
+		NDR_PULL_ALLOC(ndr, r->out.sd_buf);
+		ZERO_STRUCTP(r->out.sd_buf);
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.sd_buf);
+		}
+		_mem_save_sd_buf_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.sd_buf, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sd_buf));
 		if (_ptr_sd_buf) {
-			NDR_PULL_ALLOC(ndr, r->out.sd_buf);
+			NDR_PULL_ALLOC(ndr, *r->out.sd_buf);
 		} else {
-			r->out.sd_buf = NULL;
+			*r->out.sd_buf = NULL;
 		}
-		if (r->out.sd_buf) {
-			_mem_save_sd_buf_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.sd_buf, 0);
-			NDR_CHECK(ndr_pull_sec_desc_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sd_buf));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sd_buf_0, 0);
+		if (*r->out.sd_buf) {
+			_mem_save_sd_buf_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.sd_buf, 0);
+			NDR_CHECK(ndr_pull_sec_desc_buf(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.sd_buf));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sd_buf_1, 0);
 		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sd_buf_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -18371,9 +18383,12 @@ _PUBLIC_ void ndr_print_srvsvc_NetGetFileSecurity(struct ndr_print *ndr, const c
 		ndr->depth++;
 		ndr_print_ptr(ndr, "sd_buf", r->out.sd_buf);
 		ndr->depth++;
-		if (r->out.sd_buf) {
-			ndr_print_sec_desc_buf(ndr, "sd_buf", r->out.sd_buf);
+		ndr_print_ptr(ndr, "sd_buf", *r->out.sd_buf);
+		ndr->depth++;
+		if (*r->out.sd_buf) {
+			ndr_print_sec_desc_buf(ndr, "sd_buf", *r->out.sd_buf);
 		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -18403,7 +18418,10 @@ static enum ndr_err_code ndr_push_srvsvc_NetSetFileSecurity(struct ndr_push *ndr
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.file, CH_UTF16)));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.file, ndr_charset_length(r->in.file, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_push_security_secinfo(ndr, NDR_SCALARS, r->in.securityinformation));
-		NDR_CHECK(ndr_push_sec_desc_buf(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.sd_buf));
+		if (r->in.sd_buf == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_sec_desc_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sd_buf));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -18417,6 +18435,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetSetFileSecurity(struct ndr_pull *ndr
 	uint32_t _ptr_share;
 	TALLOC_CTX *_mem_save_server_unc_0;
 	TALLOC_CTX *_mem_save_share_0;
+	TALLOC_CTX *_mem_save_sd_buf_0;
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_server_unc));
 		if (_ptr_server_unc) {
@@ -18462,7 +18481,13 @@ static enum ndr_err_code ndr_pull_srvsvc_NetSetFileSecurity(struct ndr_pull *ndr
 		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.file), sizeof(uint16_t)));
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.file, ndr_get_array_length(ndr, &r->in.file), sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_security_secinfo(ndr, NDR_SCALARS, &r->in.securityinformation));
-		NDR_CHECK(ndr_pull_sec_desc_buf(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.sd_buf));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.sd_buf);
+		}
+		_mem_save_sd_buf_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.sd_buf, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_sec_desc_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sd_buf));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sd_buf_0, LIBNDR_FLAG_REF_ALLOC);
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -18494,7 +18519,10 @@ _PUBLIC_ void ndr_print_srvsvc_NetSetFileSecurity(struct ndr_print *ndr, const c
 		ndr->depth--;
 		ndr_print_string(ndr, "file", r->in.file);
 		ndr_print_security_secinfo(ndr, "securityinformation", r->in.securityinformation);
-		ndr_print_sec_desc_buf(ndr, "sd_buf", &r->in.sd_buf);
+		ndr_print_ptr(ndr, "sd_buf", r->in.sd_buf);
+		ndr->depth++;
+		ndr_print_sec_desc_buf(ndr, "sd_buf", r->in.sd_buf);
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {

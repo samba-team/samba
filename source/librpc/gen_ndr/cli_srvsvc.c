@@ -2040,7 +2040,7 @@ NTSTATUS rpccli_srvsvc_NetGetFileSecurity(struct rpc_pipe_client *cli,
 					  const char *share,
 					  const char *file,
 					  uint32_t securityinformation,
-					  struct sec_desc_buf *sd_buf,
+					  struct sec_desc_buf **sd_buf,
 					  WERROR *werror)
 {
 	struct srvsvc_NetGetFileSecurity r;
@@ -2076,9 +2076,7 @@ NTSTATUS rpccli_srvsvc_NetGetFileSecurity(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (sd_buf && r.out.sd_buf) {
-		*sd_buf = *r.out.sd_buf;
-	}
+	*sd_buf = *r.out.sd_buf;
 
 	/* Return result */
 	if (werror) {
@@ -2094,7 +2092,7 @@ NTSTATUS rpccli_srvsvc_NetSetFileSecurity(struct rpc_pipe_client *cli,
 					  const char *share,
 					  const char *file,
 					  uint32_t securityinformation,
-					  struct sec_desc_buf sd_buf,
+					  struct sec_desc_buf *sd_buf,
 					  WERROR *werror)
 {
 	struct srvsvc_NetSetFileSecurity r;
