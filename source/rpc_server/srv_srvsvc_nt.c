@@ -1729,11 +1729,13 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 }
 
 /*******************************************************************
- Net share add. Call 'add_share_command "sharename" "pathname"
+ _srvsvc_NetShareAdd.
+ Call 'add_share_command "sharename" "pathname"
  "comment" "max connections = "
 ********************************************************************/
 
-WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_SHARE_ADD *r_u)
+WERROR _srvsvc_NetShareAdd(pipes_struct *p,
+			   struct srvsvc_NetShareAdd *r)
 {
 	struct current_user user;
 	char *command = NULL;
@@ -1750,9 +1752,9 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	int max_connections = 0;
 	TALLOC_CTX *ctx = p->mem_ctx;
 
-	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
+	DEBUG(5,("_srvsvc_NetShareAdd: %d\n", __LINE__));
 
-	r_u->parm_error = 0;
+	*r->out.parm_error = 0;
 
 	get_current_user(&user,p);
 
@@ -1762,11 +1764,11 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		return WERR_ACCESS_DENIED;
 
 	if (!lp_add_share_cmd() || !*lp_add_share_cmd()) {
-		DEBUG(10,("_srv_net_share_add: No add share command\n"));
+		DEBUG(10,("_srvsvc_NetShareAdd: No add share command\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
-	switch (q_u->info_level) {
+	switch (r->in.level) {
 	case 0:
 		/* No path. Not enough info in a level 0 to do anything. */
 		return WERR_ACCESS_DENIED;
@@ -1774,27 +1776,24 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		/* Not enough info in a level 1 to do anything. */
 		return WERR_ACCESS_DENIED;
 	case 2:
-		share_name = unistr2_to_ascii_talloc(ctx,
-				&q_u->info.share.info2.info_2_str.uni_netname);
-		comment = unistr2_to_ascii_talloc(ctx,
-				&q_u->info.share.info2.info_2_str.uni_remark);
-		pathname = unistr2_to_ascii_talloc(ctx,
-				&q_u->info.share.info2.info_2_str.uni_path);
-		max_connections = (q_u->info.share.info2.info_2.max_uses == 0xffffffff) ? 0 : q_u->info.share.info2.info_2.max_uses;
-		type = q_u->info.share.info2.info_2.type;
+		share_name = talloc_strdup(ctx, r->in.info->info2->name);
+		comment = talloc_strdup(ctx, r->in.info->info2->comment);
+		pathname = talloc_strdup(ctx, r->in.info->info2->path);
+		max_connections = (r->in.info->info2->max_users == 0xffffffff) ?
+			0 : r->in.info->info2->max_users;
+		type = r->in.info->info2->type;
 		break;
 	case 501:
 		/* No path. Not enough info in a level 501 to do anything. */
 		return WERR_ACCESS_DENIED;
 	case 502:
-		share_name = unistr2_to_ascii_talloc(ctx,
-				&q_u->info.share.info502.info_502_str.uni_netname);
-		comment = unistr2_to_ascii_talloc(ctx,
-				&q_u->info.share.info502.info_502_str.uni_remark);
-		pathname = unistr2_to_ascii_talloc(ctx,
-				&q_u->info.share.info502.info_502_str.uni_path);
-		type = q_u->info.share.info502.info_502.type;
-		psd = q_u->info.share.info502.info_502_str.sd;
+		share_name = talloc_strdup(ctx, r->in.info->info502->name);
+		comment = talloc_strdup(ctx, r->in.info->info502->comment);
+		pathname = talloc_strdup(ctx, r->in.info->info502->path);
+		max_connections = (r->in.info->info502->max_users == 0xffffffff) ?
+			0 : r->in.info->info502->max_users;
+		type = r->in.info->info502->type;
+		psd = r->in.info->info502->sd;
 		map_generic_share_sd_bits(psd);
 		break;
 
@@ -1809,7 +1808,8 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		/* DFS only level. */
 		return WERR_ACCESS_DENIED;
 	default:
-		DEBUG(5,("_srv_net_share_add: unsupported switch value %d\n", q_u->info_level));
+		DEBUG(5,("_srvsvc_NetShareAdd: unsupported switch value %d\n",
+			r->in.level));
 		return WERR_UNKNOWN_LEVEL;
 	}
 
@@ -1818,7 +1818,7 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	if (!share_name || !validate_net_name(share_name,
 				INVALID_SHARENAME_CHARS,
 				strlen(share_name))) {
-		DEBUG(5,("_srv_net_name_validate: Bad sharename \"%s\"\n",
+		DEBUG(5,("_srvsvc_NetShareAdd: Bad sharename \"%s\"\n",
 					share_name ? share_name : ""));
 		return WERR_INVALID_NAME;
 	}
@@ -1865,12 +1865,14 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		return WERR_NOMEM;
 	}
 
-	DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
+	DEBUG(10,("_srvsvc_NetShareAdd: Running [%s]\n", command ));
 
 	/********* BEGIN SeDiskOperatorPrivilege BLOCK *********/
 
 	if ( is_disk_op )
 		become_root();
+
+	/* FIXME: use libnetconf here - gd */
 
 	if ( (ret = smbrun(command, NULL)) == 0 ) {
 		/* Tell everyone we updated smb.conf. */
@@ -1883,7 +1885,8 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	/********* END SeDiskOperatorPrivilege BLOCK *********/
 
-	DEBUG(3,("_srv_net_share_add: Running [%s] returned (%d)\n", command, ret ));
+	DEBUG(3,("_srvsvc_NetShareAdd: Running [%s] returned (%d)\n",
+		command, ret ));
 
 	TALLOC_FREE(command);
 
@@ -1892,7 +1895,8 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	if (psd) {
 		if (!set_share_security(share_name, psd)) {
-			DEBUG(0,("_srv_net_share_add: Failed to add security info to share %s.\n", share_name ));
+			DEBUG(0,("_srvsvc_NetShareAdd: Failed to add security info to share %s.\n",
+				share_name ));
 		}
 	}
 
@@ -1902,7 +1906,7 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	 * from the client. JRA.
 	 */
 
-	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
+	DEBUG(5,("_srvsvc_NetShareAdd: %d\n", __LINE__));
 
 	return WERR_OK;
 }
@@ -2492,12 +2496,6 @@ WERROR _srvsvc_NetSessEnum(pipes_struct *p, struct srvsvc_NetSessEnum *r)
 }
 
 WERROR _srvsvc_NetSessDel(pipes_struct *p, struct srvsvc_NetSessDel *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _srvsvc_NetShareAdd(pipes_struct *p, struct srvsvc_NetShareAdd *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;

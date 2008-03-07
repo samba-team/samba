@@ -216,28 +216,7 @@ static bool api_srv_net_share_set_info(pipes_struct *p)
 
 static bool api_srv_net_share_add(pipes_struct *p)
 {
-	SRV_Q_NET_SHARE_ADD q_u;
-	SRV_R_NET_SHARE_ADD r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* Unmarshall the net server add info. */
-	if(!srv_io_q_net_share_add("", &q_u, data, 0)) {
-		DEBUG(0,("api_srv_net_share_add: Failed to unmarshall SRV_Q_NET_SHARE_ADD.\n"));
-		return False;
-	}
-
-	r_u.status = _srv_net_share_add(p, &q_u, &r_u);
-
-	if(!srv_io_r_net_share_add("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_srv_net_share_add: Failed to marshall SRV_R_NET_SHARE_ADD.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_srvsvc_call(p, NDR_SRVSVC_NETSHAREADD);
 }
 
 /*******************************************************************
