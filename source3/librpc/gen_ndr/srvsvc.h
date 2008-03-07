@@ -380,6 +380,11 @@ union srvsvc_NetShareCtr {
 	struct srvsvc_NetShareCtr1501 *ctr1501;/* [unique,case(1501)] */
 };
 
+struct srvsvc_NetShareInfoCtr {
+	uint32_t level;
+	union srvsvc_NetShareCtr ctr;/* [switch_is(level)] */
+};
+
 enum srvsvc_PlatformId
 #ifndef USE_UINT_ENUMS
  {
@@ -1263,15 +1268,13 @@ struct srvsvc_NetShareEnumAll {
 	struct {
 		const char *server_unc;/* [unique,charset(UTF16)] */
 		uint32_t max_buffer;
-		uint32_t *level;/* [ref] */
-		union srvsvc_NetShareCtr *ctr;/* [ref,switch_is(*level)] */
+		struct srvsvc_NetShareInfoCtr *info_ctr;/* [ref] */
 		uint32_t *resume_handle;/* [unique] */
 	} in;
 
 	struct {
 		uint32_t *totalentries;/* [ref] */
-		uint32_t *level;/* [ref] */
-		union srvsvc_NetShareCtr *ctr;/* [ref,switch_is(*level)] */
+		struct srvsvc_NetShareInfoCtr *info_ctr;/* [ref] */
 		uint32_t *resume_handle;/* [unique] */
 		WERROR result;
 	} out;
@@ -1587,15 +1590,13 @@ struct srvsvc_NetShareEnum {
 	struct {
 		const char *server_unc;/* [unique,charset(UTF16)] */
 		uint32_t max_buffer;
-		uint32_t *level;/* [ref] */
-		union srvsvc_NetShareCtr *ctr;/* [ref,switch_is(*level)] */
+		struct srvsvc_NetShareInfoCtr *info_ctr;/* [ref] */
 		uint32_t *resume_handle;/* [unique] */
 	} in;
 
 	struct {
 		uint32_t *totalentries;/* [ref] */
-		uint32_t *level;/* [ref] */
-		union srvsvc_NetShareCtr *ctr;/* [ref,switch_is(*level)] */
+		struct srvsvc_NetShareInfoCtr *info_ctr;/* [ref] */
 		uint32_t *resume_handle;/* [unique] */
 		WERROR result;
 	} out;
