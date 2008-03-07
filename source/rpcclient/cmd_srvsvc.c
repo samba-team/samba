@@ -217,96 +217,161 @@ static WERROR cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli,
 	return result;
 }
 
-static void display_share_info_1(SRV_SHARE_INFO_1 *info1)
+static void display_share_info_1(struct srvsvc_NetShareInfo1 *r)
 {
-	fstring netname = "", remark = "";
-
-	rpcstr_pull_unistr2_fstring(netname, &info1->info_1_str.uni_netname);
-	rpcstr_pull_unistr2_fstring(remark, &info1->info_1_str.uni_remark);
-
-	printf("netname: %s\n", netname);
-	printf("\tremark:\t%s\n", remark);
+	printf("netname: %s\n", r->name);
+	printf("\tremark:\t%s\n", r->comment);
 }
 
-static void display_share_info_2(SRV_SHARE_INFO_2 *info2)
+static void display_share_info_2(struct srvsvc_NetShareInfo2 *r)
 {
-	fstring netname = "", remark = "", path = "", passwd = "";
-
-	rpcstr_pull_unistr2_fstring(netname, &info2->info_2_str.uni_netname);
-	rpcstr_pull_unistr2_fstring(remark, &info2->info_2_str.uni_remark);
-	rpcstr_pull_unistr2_fstring(path, &info2->info_2_str.uni_path);
-	rpcstr_pull_unistr2_fstring(passwd, &info2->info_2_str.uni_passwd);
-
-	printf("netname: %s\n", netname);
-	printf("\tremark:\t%s\n", remark);
-	printf("\tpath:\t%s\n", path);
-	printf("\tpassword:\t%s\n", passwd);
+	printf("netname: %s\n", r->name);
+	printf("\tremark:\t%s\n", r->comment);
+	printf("\tpath:\t%s\n", r->path);
+	printf("\tpassword:\t%s\n", r->password);
 }
 
-static void display_share_info_502(SRV_SHARE_INFO_502 *info502)
+static void display_share_info_502(struct srvsvc_NetShareInfo502 *r)
 {
-	fstring netname = "", remark = "", path = "", passwd = "";
+	printf("netname: %s\n", r->name);
+	printf("\tremark:\t%s\n", r->comment);
+	printf("\tpath:\t%s\n", r->path);
+	printf("\tpassword:\t%s\n", r->password);
 
-	rpcstr_pull_unistr2_fstring(netname, &info502->info_502_str.uni_netname);
-	rpcstr_pull_unistr2_fstring(remark, &info502->info_502_str.uni_remark);
-	rpcstr_pull_unistr2_fstring(path, &info502->info_502_str.uni_path);
-	rpcstr_pull_unistr2_fstring(passwd, &info502->info_502_str.uni_passwd);
+	printf("\ttype:\t0x%x\n", r->type);
+	printf("\tperms:\t%d\n", r->permissions);
+	printf("\tmax_uses:\t%d\n", r->max_users);
+	printf("\tnum_uses:\t%d\n", r->current_users);
 
-	printf("netname: %s\n", netname);
-	printf("\tremark:\t%s\n", remark);
-	printf("\tpath:\t%s\n", path);
-	printf("\tpassword:\t%s\n", passwd);
-
-	printf("\ttype:\t0x%x\n", info502->info_502.type);
-	printf("\tperms:\t%d\n", info502->info_502.perms);
-	printf("\tmax_uses:\t%d\n", info502->info_502.max_uses);
-	printf("\tnum_uses:\t%d\n", info502->info_502.num_uses);
-	
-	if (info502->info_502_str.sd)
-		display_sec_desc(info502->info_502_str.sd);
+	if (r->sd)
+		display_sec_desc(r->sd);
 
 }
 
-static WERROR cmd_srvsvc_net_share_enum(struct rpc_pipe_client *cli, 
-                                          TALLOC_CTX *mem_ctx,
-                                          int argc, const char **argv)
+static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
+					    TALLOC_CTX *mem_ctx,
+					    int argc, const char **argv,
+					    uint32_t opcode)
 {
 	uint32 info_level = 2;
-	SRV_SHARE_INFO_CTR ctr;
+	struct srvsvc_NetShareInfoCtr info_ctr;
+	struct srvsvc_NetShareCtr0 ctr0;
+	struct srvsvc_NetShareCtr1 ctr1;
+	struct srvsvc_NetShareCtr2 ctr2;
+	struct srvsvc_NetShareCtr501 ctr501;
+	struct srvsvc_NetShareCtr502 ctr502;
+	struct srvsvc_NetShareCtr1004 ctr1004;
+	struct srvsvc_NetShareCtr1005 ctr1005;
+	struct srvsvc_NetShareCtr1006 ctr1006;
+	struct srvsvc_NetShareCtr1007 ctr1007;
+	struct srvsvc_NetShareCtr1501 ctr1501;
 	WERROR result;
-	ENUM_HND hnd;
+	NTSTATUS status;
+	uint32_t totalentries = 0;
+	uint32_t resume_handle = 0;
 	uint32 preferred_len = 0xffffffff, i;
 
-	if (argc > 2) {
-		printf("Usage: %s [infolevel]\n", argv[0]);
+	if (argc > 3) {
+		printf("Usage: %s [infolevel] [resume_handle]\n", argv[0]);
 		return WERR_OK;
 	}
 
-	if (argc == 2)
+	if (argc >= 2) {
 		info_level = atoi(argv[1]);
+	}
 
-	init_enum_hnd(&hnd, 0);
+	if (argc == 3) {
+		resume_handle = atoi(argv[2]);
+	}
 
-	result = rpccli_srvsvc_net_share_enum(
-		cli, mem_ctx, info_level, &ctr, preferred_len, &hnd);
+	ZERO_STRUCT(info_ctr);
 
-	if (!W_ERROR_IS_OK(result) || !ctr.num_entries)
+	info_ctr.level = info_level;
+
+	switch (info_level) {
+	case 0:
+		ZERO_STRUCT(ctr0);
+		info_ctr.ctr.ctr0 = &ctr0;
+		break;
+	case 1:
+		ZERO_STRUCT(ctr1);
+		info_ctr.ctr.ctr1 = &ctr1;
+		break;
+	case 2:
+		ZERO_STRUCT(ctr2);
+		info_ctr.ctr.ctr2 = &ctr2;
+		break;
+	case 501:
+		ZERO_STRUCT(ctr501);
+		info_ctr.ctr.ctr501 = &ctr501;
+		break;
+	case 502:
+		ZERO_STRUCT(ctr502);
+		info_ctr.ctr.ctr502 = &ctr502;
+		break;
+	case 1004:
+		ZERO_STRUCT(ctr1004);
+		info_ctr.ctr.ctr1004 = &ctr1004;
+		break;
+	case 1005:
+		ZERO_STRUCT(ctr1005);
+		info_ctr.ctr.ctr1005 = &ctr1005;
+		break;
+	case 1006:
+		ZERO_STRUCT(ctr1006);
+		info_ctr.ctr.ctr1006 = &ctr1006;
+		break;
+	case 1007:
+		ZERO_STRUCT(ctr1007);
+		info_ctr.ctr.ctr1007 = &ctr1007;
+		break;
+	case 1501:
+		ZERO_STRUCT(ctr1501);
+		info_ctr.ctr.ctr1501 = &ctr1501;
+		break;
+	}
+
+	switch (opcode) {
+		case NDR_SRVSVC_NETSHAREENUM:
+			status = rpccli_srvsvc_NetShareEnum(cli, mem_ctx,
+							    cli->cli->desthost,
+							    &info_ctr,
+							    preferred_len,
+							    &totalentries,
+							    &resume_handle,
+							    &result);
+			break;
+		case NDR_SRVSVC_NETSHAREENUMALL:
+			status = rpccli_srvsvc_NetShareEnumAll(cli, mem_ctx,
+							       cli->cli->desthost,
+							       &info_ctr,
+							       preferred_len,
+							       &totalentries,
+							       &resume_handle,
+							       &result);
+			break;
+		default:
+			return WERR_INVALID_PARAM;
+	}
+
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
 		goto done;
+	}
 
 	/* Display results */
 
 	switch (info_level) {
 	case 1:
-		for (i = 0; i < ctr.num_entries; i++)
-			display_share_info_1(&ctr.share.info1[i]);
+		for (i = 0; i < totalentries; i++)
+			display_share_info_1(&info_ctr.ctr.ctr1->array[i]);
 		break;
 	case 2:
-		for (i = 0; i < ctr.num_entries; i++)
-			display_share_info_2(&ctr.share.info2[i]);
+		for (i = 0; i < totalentries; i++)
+			display_share_info_2(&info_ctr.ctr.ctr2->array[i]);
 		break;
 	case 502:
-		for (i = 0; i < ctr.num_entries; i++)
-			display_share_info_502(&ctr.share.info502[i]);
+		for (i = 0; i < totalentries; i++)
+			display_share_info_502(&info_ctr.ctr.ctr502->array[i]);
 		break;
 	default:
 		printf("unsupported info level %d\n", info_level);
@@ -317,15 +382,34 @@ static WERROR cmd_srvsvc_net_share_enum(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static WERROR cmd_srvsvc_net_share_enum(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					int argc, const char **argv)
+{
+	return cmd_srvsvc_net_share_enum_int(cli, mem_ctx,
+					     argc, argv,
+					     NDR_SRVSVC_NETSHAREENUM);
+}
+
+static WERROR cmd_srvsvc_net_share_enum_all(struct rpc_pipe_client *cli,
+					    TALLOC_CTX *mem_ctx,
+					    int argc, const char **argv)
+{
+	return cmd_srvsvc_net_share_enum_int(cli, mem_ctx,
+					     argc, argv,
+					     NDR_SRVSVC_NETSHAREENUMALL);
+}
+
 static WERROR cmd_srvsvc_net_share_get_info(struct rpc_pipe_client *cli, 
 					    TALLOC_CTX *mem_ctx,
 					    int argc, const char **argv)
 {
 	uint32 info_level = 502;
-	SRV_SHARE_INFO info;
+	union srvsvc_NetShareInfo info;
 	WERROR result;
+	NTSTATUS status;
 
-	if (argc > 3) {
+	if (argc < 2 || argc > 3) {
 		printf("Usage: %s [sharename] [infolevel]\n", argv[0]);
 		return WERR_OK;
 	}
@@ -333,22 +417,28 @@ static WERROR cmd_srvsvc_net_share_get_info(struct rpc_pipe_client *cli,
 	if (argc == 3)
 		info_level = atoi(argv[2]);
 
-	result = rpccli_srvsvc_net_share_get_info(cli, mem_ctx, argv[1], info_level, &info);
+	status = rpccli_srvsvc_NetShareGetInfo(cli, mem_ctx,
+					       cli->cli->desthost,
+					       argv[1],
+					       info_level,
+					       &info,
+					       &result);
 
-	if (!W_ERROR_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
 		goto done;
+	}
 
 	/* Display results */
 
 	switch (info_level) {
 	case 1:
-		display_share_info_1(&info.share.info1);
+		display_share_info_1(info.info1);
 		break;
 	case 2:
-		display_share_info_2(&info.share.info2);
+		display_share_info_2(info.info2);
 		break;
 	case 502:
-		display_share_info_502(&info.share.info502);
+		display_share_info_502(info.info502);
 		break;
 	default:
 		printf("unsupported info level %d\n", info_level);
@@ -364,8 +454,10 @@ static WERROR cmd_srvsvc_net_share_set_info(struct rpc_pipe_client *cli,
 					    int argc, const char **argv)
 {
 	uint32 info_level = 502;
-	SRV_SHARE_INFO info_get;
+	union srvsvc_NetShareInfo info_get;
 	WERROR result;
+	NTSTATUS status;
+	uint32_t parm_err = 0;
 
 	if (argc > 3) {
 		printf("Usage: %s [sharename] [comment]\n", argv[0]);
@@ -373,27 +465,46 @@ static WERROR cmd_srvsvc_net_share_set_info(struct rpc_pipe_client *cli,
 	}
 
 	/* retrieve share info */
-	result = rpccli_srvsvc_net_share_get_info(cli, mem_ctx, argv[1], info_level, &info_get);
-	if (!W_ERROR_IS_OK(result))
-		goto done;
+	status = rpccli_srvsvc_NetShareGetInfo(cli, mem_ctx,
+					       cli->cli->desthost,
+					       argv[1],
+					       info_level,
+					       &info_get,
+					       &result);
 
-	info_get.switch_value = info_level;
-	info_get.ptr_share_ctr = 1;
-	init_unistr2(&(info_get.share.info502.info_502_str.uni_remark), argv[2], UNI_STR_TERMINATE);
-	
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	info_get.info502->comment = argv[2];
+
 	/* set share info */
-	result = rpccli_srvsvc_net_share_set_info(cli, mem_ctx, argv[1], info_level, &info_get);
+	status = rpccli_srvsvc_NetShareSetInfo(cli, mem_ctx,
+					       cli->cli->desthost,
+					       argv[1],
+					       info_level,
+					       &info_get,
+					       &parm_err,
+					       &result);
 
-	if (!W_ERROR_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
 		goto done;
+	}
 
 	/* re-retrieve share info and display */
-	result = rpccli_srvsvc_net_share_get_info(cli, mem_ctx, argv[1], info_level, &info_get);
-	if (!W_ERROR_IS_OK(result))
-		goto done;
+	status = rpccli_srvsvc_NetShareGetInfo(cli, mem_ctx,
+					       cli->cli->desthost,
+					       argv[1],
+					       info_level,
+					       &info_get,
+					       &result);
 
-	display_share_info_502(&info_get.share.info502);
-	
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	display_share_info_502(info_get.info502);
+
  done:
 	return result;
 }
@@ -469,6 +580,7 @@ struct cmd_set srvsvc_commands[] = {
 
 	{ "srvinfo",     RPC_RTYPE_WERROR, NULL, cmd_srvsvc_srv_query_info, PI_SRVSVC, NULL, "Server query info", "" },
 	{ "netshareenum",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_enum, PI_SRVSVC, NULL, "Enumerate shares", "" },
+	{ "netshareenumall",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_enum_all, PI_SRVSVC, NULL, "Enumerate all shares", "" },
 	{ "netsharegetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_get_info, PI_SRVSVC, NULL, "Get Share Info", "" },
 	{ "netsharesetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_set_info, PI_SRVSVC, NULL, "Set Share Info", "" },
 	{ "netfileenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_file_enum,  PI_SRVSVC, NULL, "Enumerate open files", "" },
