@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "lib/messaging/messaging.h"
 #include "lib/messaging/irpc.h"
+#include "system/time.h"
 #include "vfs_posix.h"
 
 
@@ -29,8 +30,62 @@ struct pvfs_oplock {
 	struct pvfs_file_handle *handle;
 	struct pvfs_file *file;
 	uint32_t level;
+	struct timeval break_to_level_II;
+	struct timeval break_to_none;
 	struct messaging_context *msg_ctx;
 };
+
+static NTSTATUS pvfs_oplock_release_internal(struct pvfs_file_handle *h,
+					     uint8_t oplock_break)
+{
+	struct odb_lock *olck;
+	NTSTATUS status;
+
+	if (h->fd == -1) {
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
+	}
+
+	if (!h->have_opendb_entry) {
+		return NT_STATUS_FOOBAR;
+	}
+
+	if (!h->oplock) {
+		return NT_STATUS_FOOBAR;
+	}
+
+	olck = odb_lock(h, h->pvfs->odb_context, &h->odb_locking_key);
+	if (olck == NULL) {
+		DEBUG(0,("Unable to lock opendb for oplock update\n"));
+		return NT_STATUS_FOOBAR;
+	}
+
+	if (oplock_break == OPLOCK_BREAK_TO_NONE) {
+		h->oplock->level = OPLOCK_NONE;
+	} else if (oplock_break == OPLOCK_BREAK_TO_LEVEL_II) {
+		h->oplock->level = OPLOCK_LEVEL_II;
+	} else {
+		/* fallback to level II in case of a invalid value */
+		DEBUG(1,("unexpected oplock break level[0x%02X]\n", oplock_break));
+		h->oplock->level = OPLOCK_LEVEL_II;
+	}
+	status = odb_update_oplock(olck, h, h->oplock->level);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Unable to update oplock level for '%s' - %s\n",
+			 h->name->full_name, nt_errstr(status)));
+		talloc_free(olck);
+		return status;
+	}
+
+	talloc_free(olck);
+
+	/* after a break to none, we no longer have an oplock attached */
+	if (h->oplock->level == OPLOCK_NONE) {
+		talloc_free(h->oplock);
+		h->oplock = NULL;
+	}
+
+	return NT_STATUS_OK;
+}
 
 /*
   receive oplock breaks and forward them to the client
@@ -41,13 +96,65 @@ static void pvfs_oplock_break(struct pvfs_oplock *opl, uint8_t level)
 	struct pvfs_file *f = opl->file;
 	struct pvfs_file_handle *h = opl->handle;
 	struct pvfs_state *pvfs = h->pvfs;
+	struct timeval cur = timeval_current();
+	struct timeval *last = NULL;
+	struct timeval end;
 
-	DEBUG(10,("pvfs_oplock_break: sending oplock break level %d for '%s' %p\n",
-		level, h->name->original_name, h));
-	status = ntvfs_send_oplock_break(pvfs->ntvfs, f->ntvfs, level);
+	switch (level) {
+	case OPLOCK_BREAK_TO_LEVEL_II:
+		last = &opl->break_to_level_II;
+		break;
+	case OPLOCK_BREAK_TO_NONE:
+		last = &opl->break_to_none;
+		break;
+	}
+
+	if (!last) {
+		DEBUG(0,("%s: got unexpected level[0x%02X]\n",
+			__FUNCTION__, level));
+		return;
+	}
+
+	if (timeval_is_zero(last)) {
+		/*
+		 * this is the first break we for this level
+		 * remember the time
+		 */
+		*last = cur;
+
+		DEBUG(0,("%s: sending oplock break level %d for '%s' %p\n",
+			__FUNCTION__, level, h->name->original_name, h));
+		status = ntvfs_send_oplock_break(pvfs->ntvfs, f->ntvfs, level);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("%s: sending oplock break failed: %s\n",
+				__FUNCTION__, nt_errstr(status)));
+		}
+		return;
+	}
+
+	end = timeval_add(last, pvfs->oplock_break_timeout, 0);
+
+	if (timeval_compare(&cur, &end) < 0) {
+		/*
+		 * If it's not expired just ignore the break
+		 * as we already sent the break request to the client
+		 */
+		DEBUG(0,("%s: do not resend oplock break level %d for '%s' %p\n",
+			__FUNCTION__, level, h->name->original_name, h));
+		return;
+	}
+
+	/*
+	 * If the client did not send a release within the
+	 * oplock break timeout time frame we auto release
+	 * the oplock
+	 */
+	DEBUG(0,("%s: auto release oplock level %d for '%s' %p\n",
+		__FUNCTION__, level, h->name->original_name, h));
+	status = pvfs_oplock_release_internal(h, level);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("pvfs_oplock_break: sending oplock break failed: %s\n",
-			nt_errstr(status)));
+		DEBUG(0,("%s: failed to auto release the oplock[0x%02X]: %s\n",
+			__FUNCTION__, level, nt_errstr(status)));
 	}
 }
 
@@ -113,7 +220,7 @@ NTSTATUS pvfs_setup_oplock(struct pvfs_file *f, uint32_t oplock_granted)
 		return NT_STATUS_OK;
 	}
 
-	opl = talloc(f->handle, struct pvfs_oplock);
+	opl = talloc_zero(f->handle, struct pvfs_oplock);
 	NT_STATUS_HAVE_NO_MEMORY(opl);
 
 	opl->handle	= f->handle;
@@ -140,8 +247,6 @@ NTSTATUS pvfs_oplock_release(struct ntvfs_module_context *ntvfs,
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
-	struct pvfs_file_handle *h;
-	struct odb_lock *olck;
 	uint8_t oplock_break;
 	NTSTATUS status;
 
@@ -150,50 +255,13 @@ NTSTATUS pvfs_oplock_release(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	h = f->handle;
-
-	if (h->fd == -1) {
-		return NT_STATUS_FILE_IS_A_DIRECTORY;
-	}
-
-	if (!h->have_opendb_entry) {
-		return NT_STATUS_FOOBAR;
-	}
-
-	if (!h->oplock) {
-		return NT_STATUS_FOOBAR;
-	}
-
-	olck = odb_lock(h, h->pvfs->odb_context, &h->odb_locking_key);
-	if (olck == NULL) {
-		DEBUG(0,("Unable to lock opendb for oplock update\n"));
-		return NT_STATUS_FOOBAR;
-	}
-
 	oplock_break = (lck->lockx.in.mode >> 8) & 0xFF;
-	if (oplock_break == OPLOCK_BREAK_TO_NONE) {
-		h->oplock->level = OPLOCK_NONE;
-	} else if (oplock_break == OPLOCK_BREAK_TO_LEVEL_II) {
-		h->oplock->level = OPLOCK_LEVEL_II;
-	} else {
-		/* fallback to level II in case of a invalid value */
-		DEBUG(1,("unexpected oplock break level[0x%02X]\n", oplock_break));
-		h->oplock->level = OPLOCK_LEVEL_II;
-	}
-	status = odb_update_oplock(olck, h, h->oplock->level);
+
+	status = pvfs_oplock_release_internal(f->handle, oplock_break);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Unable to update oplock level for '%s' - %s\n",
-			 h->name->full_name, nt_errstr(status)));
-		talloc_free(olck);
+		DEBUG(0,("%s: failed to release the oplock[0x%02X]: %s\n",
+			__FUNCTION__, oplock_break, nt_errstr(status)));
 		return status;
-	}
-
-	talloc_free(olck);
-
-	/* after a break to none, we no longer have an oplock attached */
-	if (h->oplock->level == OPLOCK_NONE) {
-		talloc_free(h->oplock);
-		h->oplock = NULL;
 	}
 
 	return NT_STATUS_OK;
@@ -205,7 +273,7 @@ NTSTATUS pvfs_break_level2_oplocks(struct pvfs_file *f)
 	struct odb_lock *olck;
 	NTSTATUS status;
 
-	if (h->oplock && h->oplock->level == OPLOCK_EXCLUSIVE) {
+	if (h->oplock && h->oplock->level != OPLOCK_LEVEL_II) {
 		return NT_STATUS_OK;
 	}
 
@@ -213,16 +281,6 @@ NTSTATUS pvfs_break_level2_oplocks(struct pvfs_file *f)
 	if (olck == NULL) {
 		DEBUG(0,("Unable to lock opendb for oplock update\n"));
 		return NT_STATUS_FOOBAR;
-	}
-
-	if (h->oplock && h->oplock->level == OPLOCK_BATCH) {
-		status = odb_update_oplock(olck, h, OPLOCK_LEVEL_II);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("Unable to update oplock level for '%s' - %s\n",
-				 h->name->full_name, nt_errstr(status)));
-			talloc_free(olck);
-			return status;
-		}
 	}
 
 	status = odb_break_oplocks(olck);

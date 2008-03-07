@@ -5,7 +5,7 @@ description: Built-in account for administering the computer/domain
 userAccountControl: 66048
 objectSid: ${DOMAINSID}-500
 adminCount: 1
-accountExpires: -1
+accountExpires: 9223372036854775807
 sAMAccountName: Administrator
 isCriticalSystemObject: TRUE
 sambaPassword:: ${ADMINPASS_B64}
