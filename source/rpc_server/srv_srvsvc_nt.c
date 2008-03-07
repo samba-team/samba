@@ -2176,11 +2176,12 @@ error_exit:
 }
 
 /***********************************************************************************
+ _srvsvc_NetSetFileSecurity
  Win9x NT tools set security descriptor.
 ***********************************************************************************/
 
-WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_u,
-									SRV_R_NET_FILE_SET_SECDESC *r_u)
+WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
+				  struct srvsvc_NetSetFileSecurity *r)
 {
 	char *filename_in = NULL;
 	char *filename = NULL;
@@ -2189,6 +2190,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	files_struct *fsp = NULL;
 	SMB_STRUCT_STAT st;
 	NTSTATUS nt_status;
+	WERROR werr;
 	struct current_user user;
 	connection_struct *conn = NULL;
 	bool became_user = False;
@@ -2196,11 +2198,11 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 
 	ZERO_STRUCT(st);
 
-	r_u->status = WERR_OK;
+	werr = WERR_OK;
 
-	qualname = unistr2_to_ascii_talloc(ctx, &q_u->uni_qual_name);
+	qualname = talloc_strdup(ctx, r->in.share);
 	if (!qualname) {
-		r_u->status = WERR_ACCESS_DENIED;
+		werr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
@@ -2214,35 +2216,35 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	unbecome_root();
 
 	if (conn == NULL) {
-		DEBUG(3,("_srv_net_file_set_secdesc: Unable to connect to %s\n", qualname));
-		r_u->status = ntstatus_to_werror(nt_status);
+		DEBUG(3,("_srvsvc_NetSetFileSecurity: Unable to connect to %s\n", qualname));
+		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;
 	}
 
 	if (!become_user(conn, conn->vuid)) {
-		DEBUG(0,("_srv_net_file_set_secdesc: Can't become connected user!\n"));
-		r_u->status = WERR_ACCESS_DENIED;
+		DEBUG(0,("_srvsvc_NetSetFileSecurity: Can't become connected user!\n"));
+		werr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 	became_user = True;
 
-	filename_in= unistr2_to_ascii_talloc(ctx, &q_u->uni_file_name);
+	filename_in = talloc_strdup(ctx, r->in.file);
 	if (!filename_in) {
-		r_u->status = WERR_ACCESS_DENIED;
+		werr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
 	nt_status = unix_convert(ctx, conn, filename, False, &filename, NULL, &st);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3,("_srv_net_file_set_secdesc: bad pathname %s\n", filename));
-		r_u->status = WERR_ACCESS_DENIED;
+		DEBUG(3,("_srvsvc_NetSetFileSecurity: bad pathname %s\n", filename));
+		werr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
 	nt_status = check_name(conn, filename);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3,("_srv_net_file_set_secdesc: can't access %s\n", filename));
-		r_u->status = WERR_ACCESS_DENIED;
+		DEBUG(3,("_srvsvc_NetSetFileSecurity: can't access %s\n", filename));
+		werr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
@@ -2260,24 +2262,26 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 						NULL, &fsp);
 
 		if ( !NT_STATUS_IS_OK(nt_status) ) {
-			DEBUG(3,("_srv_net_file_set_secdesc: Unable to open file %s\n", filename));
-			r_u->status = ntstatus_to_werror(nt_status);
+			DEBUG(3,("_srvsvc_NetSetFileSecurity: Unable to open file %s\n", filename));
+			werr = ntstatus_to_werror(nt_status);
 			goto error_exit;
 		}
 	}
 
-	nt_status = SMB_VFS_SET_NT_ACL(fsp, fsp->fsp_name, q_u->sec_info, q_u->sec_desc);
+	nt_status = SMB_VFS_SET_NT_ACL(fsp, fsp->fsp_name,
+				       r->in.securityinformation,
+				       r->in.sd_buf->sd);
 
 	if (!NT_STATUS_IS_OK(nt_status) ) {
-		DEBUG(3,("_srv_net_file_set_secdesc: Unable to set NT ACL on file %s\n", filename));
-		r_u->status = WERR_ACCESS_DENIED;
+		DEBUG(3,("_srvsvc_NetSetFileSecurity: Unable to set NT ACL on file %s\n", filename));
+		werr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
 	close_file(fsp, NORMAL_CLOSE);
 	unbecome_user();
 	close_cnum(conn, user.vuid);
-	return r_u->status;
+	return werr;
 
 error_exit:
 
@@ -2293,7 +2297,7 @@ error_exit:
 		close_cnum(conn, user.vuid);
 	}
 
-	return r_u->status;
+	return werr;
 }
 
 /***********************************************************************************
@@ -2583,12 +2587,6 @@ WERROR _srvsvc_NetShareDelCommit(pipes_struct *p, struct srvsvc_NetShareDelCommi
 }
 
 WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p, struct srvsvc_NetGetFileSecurity *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p, struct srvsvc_NetSetFileSecurity *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
