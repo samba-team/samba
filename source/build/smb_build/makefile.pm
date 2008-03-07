@@ -126,21 +126,9 @@ sub SharedModule($$)
 	$self->output("\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
 	$self->output("\t\@mkdir -p \$(DESTDIR)\$(modulesdir)/$sane_subsystem/\n");
 	$self->output("\t\@cp $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
-	if (defined($ctx->{ALIASES})) {
-		foreach (@{$ctx->{ALIASES}}) {
-			$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n");
-		}
-	}
-
 	$self->output("uninstallplugins::\n");
 	$self->output("\t\@echo Uninstalling \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
 	$self->output("\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
-
-	if (defined($ctx->{ALIASES})) {
-		foreach (@{$ctx->{ALIASES}}) {
-			$self->output("\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n");
-		}
-	}
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
@@ -158,6 +146,11 @@ sub SharedModule($$)
 			$self->output("$ctx->{SHAREDDIR}/$_.\$(SHLIBEXT): $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
 			$self->output("\t\@ln -fs \$(<F) \$@\n");
 			$self->output("PLUGINS += $ctx->{SHAREDDIR}/$_.\$(SHLIBEXT)\n");
+			$self->output("\n");
+			$self->output("uninstallplugins::\n");
+			$self->output("\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n\n");
+			$self->output("installplugins::\n");
+			$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n\n");
 		}
 	}
 }
@@ -189,8 +182,7 @@ $ctx->{RESULT_SHARED_LIBRARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL
 	\@echo Linking \$\@
 	\@mkdir -p \$(\@D)
 	\@\$(SHLD) \$(LDFLAGS) \$(SHLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$($ctx->{NAME}\_FULL_OBJ_LIST) \\
-		\$($ctx->{NAME}_LINK_FLAGS) \\
+		\$($ctx->{NAME}\_FULL_OBJ_LIST) \$($ctx->{NAME}_LINK_FLAGS) \\
 		\$(if \$(SONAMEFLAG), \$(SONAMEFLAG)$ctx->{LIBRARY_SONAME})
 ifneq ($ctx->{LIBRARY_REALNAME}, $ctx->{LIBRARY_SONAME})
 	\@test \$($ctx->{NAME}_VERSION) = \$($ctx->{NAME}_SOVERSION) || ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}
@@ -205,8 +197,6 @@ __EOD__
 sub MergedObj($$)
 {
 	my ($self, $ctx) = @_;
-
-	return unless defined($ctx->{OUTPUT});
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->output("\$(call partial_link_template, \$($ctx->{NAME}_OUTPUT), \$($ctx->{NAME}_OBJ_FILES))\n");
