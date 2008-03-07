@@ -136,6 +136,22 @@ $(1): $(2) ;
 
 endef
 
+# Shared alias
+# Arguments: Target, subsystem name, alias name
+define shared_module_alias_template
+bin/modules/$(2)/$(3).$$(SHLIBEXT): $(1)
+	@ln -fs $$(<F) $$@
+
+PLUGINS += bin/modules/$(2)/$(3).$$(SHLIBEXT)
+
+uninstallplugins::
+	@-rm $$(DESTDIR)$$(modulesdir)/$(2)/$(3).$$(SHLIBEXT)
+installplugins::
+	@ln -fs $(1) $$(DESTDIR)$$(modulesdir)/$(2)/$(3).$$(SHLIBEXT)
+
+
+endef
+
 ###############################################################################
 # File types
 ###############################################################################
