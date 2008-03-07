@@ -16,3 +16,11 @@ OBJ_FILES = \
 PUBLIC_DEPENDENCIES = 
 # End SUBSYSTEM sys_notify
 ################################################
+
+################################################
+# Start SUBSYSTEM sys_lease
+[SUBSYSTEM::sys_lease]
+OBJ_FILES = \
+		sys_lease.o
+# End SUBSYSTEM sys_lease
+################################################
