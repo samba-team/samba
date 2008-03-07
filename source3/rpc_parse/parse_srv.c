@@ -2695,64 +2695,6 @@ bool srv_io_r_net_disk_enum(const char *desc, SRV_R_NET_DISK_ENUM *r_n, prs_stru
 
 /*******************************************************************
  Reads or writes a structure.
- ********************************************************************/
-
-bool srv_io_q_net_name_validate(const char *desc, SRV_Q_NET_NAME_VALIDATE *q_n, prs_struct *ps, int depth)
-{
-	if (q_n == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "srv_io_q_net_name_validate");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_pointer("servername", ps, depth, (void*)&q_n->servername,
-			sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_unistr2("", &q_n->sharename, True, ps, depth))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("type", ps, depth, &q_n->type))
-		return False;
-
-	if(!prs_uint32("flags", ps, depth, &q_n->flags))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes a structure.
- ********************************************************************/
-
-bool srv_io_r_net_name_validate(const char *desc, SRV_R_NET_NAME_VALIDATE *r_n, prs_struct *ps, int depth)
-{
-	if (r_n == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "srv_io_r_net_name_validate");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_werror("status", ps, depth, &r_n->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes a structure.
 ********************************************************************/
 
 bool srv_io_q_net_file_query_secdesc(const char *desc, SRV_Q_NET_FILE_QUERY_SECDESC *q_n, prs_struct *ps, int depth)
