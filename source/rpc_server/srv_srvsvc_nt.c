@@ -1908,11 +1908,13 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 }
 
 /*******************************************************************
- Net share delete. Call "delete share command" with the share name as
+ _srvsvc_NetShareDel
+ Call "delete share command" with the share name as
  a parameter.
 ********************************************************************/
 
-WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_SHARE_DEL *r_u)
+WERROR _srvsvc_NetShareDel(pipes_struct *p,
+			   struct srvsvc_NetShareDel *r)
 {
 	struct current_user user;
 	char *command = NULL;
@@ -1924,10 +1926,9 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	struct share_params *params;
 	TALLOC_CTX *ctx = p->mem_ctx;
 
-	DEBUG(5,("_srv_net_share_del: %d\n", __LINE__));
+	DEBUG(5,("_srvsvc_NetShareDel: %d\n", __LINE__));
 
-	share_name = unistr2_to_ascii_talloc(ctx, &q_u->uni_share_name);
-
+	share_name = talloc_strdup(p->mem_ctx, r->in.share_name);
 	if (!share_name) {
 		return WERR_NET_NAME_NOT_FOUND;
 	}
@@ -1956,7 +1957,7 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 		return WERR_ACCESS_DENIED;
 
 	if (!lp_delete_share_cmd() || !*lp_delete_share_cmd()) {
-		DEBUG(10,("_srv_net_share_del: No delete share command\n"));
+		DEBUG(10,("_srvsvc_NetShareDel: No delete share command\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -1969,7 +1970,7 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 		return WERR_NOMEM;
 	}
 
-	DEBUG(10,("_srv_net_share_del: Running [%s]\n", command ));
+	DEBUG(10,("_srvsvc_NetShareDel: Running [%s]\n", command ));
 
 	/********* BEGIN SeDiskOperatorPrivilege BLOCK *********/
 
@@ -1987,7 +1988,7 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 
 	/********* END SeDiskOperatorPrivilege BLOCK *********/
 
-	DEBUG(3,("_srv_net_share_del: Running [%s] returned (%d)\n", command, ret ));
+	DEBUG(3,("_srvsvc_NetShareDel: Running [%s] returned (%d)\n", command, ret ));
 
 	if ( ret != 0 )
 		return WERR_ACCESS_DENIED;
@@ -2000,11 +2001,22 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	return WERR_OK;
 }
 
-WERROR _srv_net_share_del_sticky(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_SHARE_DEL *r_u)
-{
-	DEBUG(5,("_srv_net_share_del_stick: %d\n", __LINE__));
+/*******************************************************************
+ _srvsvc_NetShareDelSticky
+********************************************************************/
 
-	return _srv_net_share_del(p, q_u, r_u);
+WERROR _srvsvc_NetShareDelSticky(pipes_struct *p,
+				 struct srvsvc_NetShareDelSticky *r)
+{
+	struct srvsvc_NetShareDel q;
+
+	DEBUG(5,("_srvsvc_NetShareDelSticky: %d\n", __LINE__));
+
+	q.in.server_unc		= r->in.server_unc;
+	q.in.share_name		= r->in.share_name;
+	q.in.reserved		= r->in.reserved;
+
+	return _srvsvc_NetShareDel(p, &q);
 }
 
 /*******************************************************************
@@ -2485,18 +2497,6 @@ WERROR _srvsvc_NetSessDel(pipes_struct *p, struct srvsvc_NetSessDel *r)
 }
 
 WERROR _srvsvc_NetShareAdd(pipes_struct *p, struct srvsvc_NetShareAdd *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _srvsvc_NetShareDel(pipes_struct *p, struct srvsvc_NetShareDel *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _srvsvc_NetShareDelSticky(pipes_struct *p, struct srvsvc_NetShareDelSticky *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
