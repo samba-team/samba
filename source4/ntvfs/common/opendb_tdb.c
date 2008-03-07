@@ -63,6 +63,11 @@ struct odb_context {
 struct odb_lock {
 	struct odb_context *odb;
 	TDB_DATA key;
+
+	struct {
+		struct opendb_entry *e;
+		bool attrs_only;
+	} can_open;
 };
 
 /*
@@ -129,6 +134,8 @@ static struct odb_lock *odb_tdb_lock(TALLOC_CTX *mem_ctx,
 		talloc_free(lck);
 		return NULL;
 	}
+
+	ZERO_STRUCT(lck->can_open);
 
 	talloc_set_destructor(lck, odb_lock_destructor);
 	
@@ -411,27 +418,32 @@ static NTSTATUS odb_tdb_open_can_internal(struct odb_context *odb,
 }
 
 /*
-  register an open file in the open files database. This implements the share_access
-  rules
+  register an open file in the open files database.
+  The share_access rules are implemented by odb_can_open()
+  and it's needed to call odb_can_open() before
+  odb_open_file() otherwise NT_STATUS_INTERNAL_ERROR is returned
 
   Note that the path is only used by the delete on close logic, not
   for comparing with other filenames
 */
 static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 				  void *file_handle, const char *path,
-				  uint32_t stream_id, uint32_t share_access,
-				  uint32_t access_mask, bool delete_on_close,
-				  uint32_t open_disposition, bool break_to_none,
 				  bool allow_level_II_oplock,
 				  uint32_t oplock_level, uint32_t *oplock_granted)
 {
 	struct odb_context *odb = lck->odb;
-	struct opendb_entry e;
 	struct opendb_file file;
 	NTSTATUS status;
-	bool attrs_only = false;
+
+	if (!lck->can_open.e) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	if (odb->oplocks == false) {
+		oplock_level = OPLOCK_NONE;
+	}
+
+	if (!oplock_granted) {
 		oplock_level = OPLOCK_NONE;
 	}
 
@@ -444,67 +456,55 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
-	/* see if it conflicts */
-	status = odb_tdb_open_can_internal(odb, &file, stream_id,
-					   share_access, access_mask,
-					   delete_on_close, open_disposition,
-					   break_to_none, &attrs_only);
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	/* see if it conflicts */
-	e.server		= odb->ntvfs_ctx->server_id;
-	e.file_handle		= file_handle;
-	e.stream_id		= stream_id;
-	e.share_access		= share_access;
-	e.access_mask		= access_mask;
-	e.delete_on_close	= delete_on_close;
-	e.allow_level_II_oplock	= allow_level_II_oplock;
-	e.oplock_level		= OPLOCK_NONE;
-
 	/*
 	  possibly grant an exclusive, batch or level2 oplock
 	*/
+	if (lck->can_open.attrs_only) {
+		oplock_level	= OPLOCK_NONE;
+	} else if (oplock_level == OPLOCK_EXCLUSIVE) {
+		if (file.num_entries == 0) {
+			oplock_level	= OPLOCK_EXCLUSIVE;
+		} else if (allow_level_II_oplock) {
+			oplock_level	= OPLOCK_LEVEL_II;
+		} else {
+			oplock_level	= OPLOCK_NONE;
+		}
+	} else if (oplock_level == OPLOCK_BATCH) {
+		if (file.num_entries == 0) {
+			oplock_level	= OPLOCK_BATCH;
+		} else if (allow_level_II_oplock) {
+			oplock_level	= OPLOCK_LEVEL_II;
+		} else {
+			oplock_level	= OPLOCK_NONE;
+		}
+	} else if (oplock_level == OPLOCK_LEVEL_II) {
+		oplock_level	= OPLOCK_LEVEL_II;
+	} else {
+		oplock_level	= OPLOCK_NONE;
+	}
+
 	if (oplock_granted) {
-		if (attrs_only) {
-			e.oplock_level	= OPLOCK_NONE;
-			*oplock_granted	= NO_OPLOCK_RETURN;
-		} else if (oplock_level == OPLOCK_EXCLUSIVE) {
-			if (file.num_entries == 0) {
-				e.oplock_level	= OPLOCK_EXCLUSIVE;
-				*oplock_granted	= EXCLUSIVE_OPLOCK_RETURN;
-			} else if (allow_level_II_oplock) {
-				e.oplock_level	= OPLOCK_LEVEL_II;
-				*oplock_granted	= LEVEL_II_OPLOCK_RETURN;
-			} else {
-				e.oplock_level	= OPLOCK_NONE;
-				*oplock_granted	= NO_OPLOCK_RETURN;
-			}
+		if (oplock_level == OPLOCK_EXCLUSIVE) {
+			*oplock_granted	= EXCLUSIVE_OPLOCK_RETURN;
 		} else if (oplock_level == OPLOCK_BATCH) {
-			if (file.num_entries == 0) {
-				e.oplock_level	= OPLOCK_BATCH;
-				*oplock_granted	= BATCH_OPLOCK_RETURN;
-			} else if (allow_level_II_oplock) {
-				e.oplock_level	= OPLOCK_LEVEL_II;
-				*oplock_granted	= LEVEL_II_OPLOCK_RETURN;
-			} else {
-				e.oplock_level	= OPLOCK_NONE;
-				*oplock_granted	= NO_OPLOCK_RETURN;
-			}
+			*oplock_granted	= BATCH_OPLOCK_RETURN;
 		} else if (oplock_level == OPLOCK_LEVEL_II) {
-			e.oplock_level	= OPLOCK_LEVEL_II;
 			*oplock_granted	= LEVEL_II_OPLOCK_RETURN;
 		} else {
-			e.oplock_level	= OPLOCK_NONE;
 			*oplock_granted	= NO_OPLOCK_RETURN;
 		}
 	}
+
+	lck->can_open.e->file_handle		= file_handle;
+	lck->can_open.e->allow_level_II_oplock	= allow_level_II_oplock;
+	lck->can_open.e->oplock_level		= oplock_level;
 
 	/* it doesn't conflict, so add it to the end */
 	file.entries = talloc_realloc(lck, file.entries, struct opendb_entry, 
 				      file.num_entries+1);
 	NT_STATUS_HAVE_NO_MEMORY(file.entries);
 
-	file.entries[file.num_entries] = e;
+	file.entries[file.num_entries] = *lck->can_open.e;
 	file.num_entries++;
 
 	return odb_push_record(lck, &file);
@@ -807,19 +807,31 @@ static NTSTATUS odb_tdb_can_open(struct odb_lock *lck,
 	struct odb_context *odb = lck->odb;
 	NTSTATUS status;
 	struct opendb_file file;
-	bool attrs_only = false;
 
 	status = odb_pull_record(lck, &file);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		return NT_STATUS_OK;
+		goto ok;
 	}
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	status = odb_tdb_open_can_internal(odb, &file, stream_id,
 					   share_access, access_mask,
 					   delete_on_close, open_disposition,
-					   break_to_none, &attrs_only);
+					   break_to_none, &lck->can_open.attrs_only);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+ok:
+	lck->can_open.e	= talloc(lck, struct opendb_entry);
+	NT_STATUS_HAVE_NO_MEMORY(lck->can_open.e);
+
+	lck->can_open.e->server			= odb->ntvfs_ctx->server_id;
+	lck->can_open.e->file_handle		= NULL;
+	lck->can_open.e->stream_id		= stream_id;
+	lck->can_open.e->share_access		= share_access;
+	lck->can_open.e->access_mask		= access_mask;
+	lck->can_open.e->delete_on_close	= delete_on_close;
+	lck->can_open.e->allow_level_II_oplock	= false;
+	lck->can_open.e->oplock_level		= OPLOCK_NONE;
 
 	return NT_STATUS_OK;
 }
