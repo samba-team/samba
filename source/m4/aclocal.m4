@@ -78,8 +78,8 @@ AC_SUBST(LIBUC[_LIBS])
 
 AC_MSG_CHECKING([whether to build the LIBNAME shared library])
 AC_ARG_WITH(LIBNAME,
-[AS_HELP_STRING([--with-LIBNAME],
-	[Build the LIBNAME shared library (default=yes if shared libs supported)])],
+AS_HELP_STRING([--with-]LIBNAME,
+	[Build the LIBNAME shared library (default=yes if shared libs supported)]),
 [
 case "$withval" in
 	*)
