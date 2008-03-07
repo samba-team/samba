@@ -7,6 +7,7 @@
 # Copyright (C) 2002-2003 Jelmer Vernooij <jelmer@samba.org>
 # Copyright (C) 2006 Lars Mueller <lars@samba.org>
 # Copyright (C) 2007 James Peach <jpeach@samba.org>
+# Copyright (C) 2008 Michael Adam <obnox@samba.org>
 ###########################################################################
 
 prefix=@prefix@
