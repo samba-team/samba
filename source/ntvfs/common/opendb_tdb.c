@@ -263,7 +263,7 @@ static NTSTATUS odb_push_record(struct odb_lock *lck, struct opendb_file *file)
 /*
   send an oplock break to a client
 */
-static NTSTATUS odb_oplock_break_send(struct odb_context *odb,
+static NTSTATUS odb_oplock_break_send(struct messaging_context *msg_ctx,
 				      struct opendb_entry *e,
 				      uint8_t level)
 {
@@ -280,7 +280,7 @@ static NTSTATUS odb_oplock_break_send(struct odb_context *odb,
 
 	blob = data_blob_const(&op_break, sizeof(op_break));
 
-	status = messaging_send(odb->ntvfs_ctx->msg_ctx, e->server,
+	status = messaging_send(msg_ctx, e->server,
 				MSG_NTVFS_OPLOCK_BREAK, &blob);
 	NT_STATUS_NOT_OK_RETURN(status);
 
@@ -348,7 +348,8 @@ static NTSTATUS odb_tdb_open_can_internal(struct odb_context *odb,
 			    !file->entries[i].allow_level_II_oplock) {
 				oplock_return = OPLOCK_BREAK_TO_NONE;
 			}
-			odb_oplock_break_send(odb, &file->entries[i],
+			odb_oplock_break_send(odb->ntvfs_ctx->msg_ctx,
+					      &file->entries[i],
 					      oplock_return);
 			return NT_STATUS_OPLOCK_NOT_GRANTED;
 		}
@@ -396,7 +397,8 @@ static NTSTATUS odb_tdb_open_can_internal(struct odb_context *odb,
 			    !file->entries[i].allow_level_II_oplock) {
 				oplock_return = OPLOCK_BREAK_TO_NONE;
 			}
-			odb_oplock_break_send(odb, &file->entries[i],
+			odb_oplock_break_send(odb->ntvfs_ctx->msg_ctx,
+					      &file->entries[i],
 					      oplock_return);
 			return NT_STATUS_OPLOCK_NOT_GRANTED;
 		}
@@ -655,7 +657,8 @@ static NTSTATUS odb_tdb_break_oplocks(struct odb_lock *lck)
 			 * and we just send a break to none to all of them
 			 * without waiting for a release
 			 */
-			odb_oplock_break_send(odb, &file.entries[i],
+			odb_oplock_break_send(odb->ntvfs_ctx->msg_ctx,
+					      &file.entries[i],
 					      OPLOCK_BREAK_TO_NONE);
 			file.entries[i].oplock_level = OPLOCK_NONE;
 			modified = true;
