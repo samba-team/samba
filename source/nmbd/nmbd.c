@@ -150,22 +150,29 @@ static void expire_names_and_servers(time_t t)
 
 /************************************************************************** **
  Reload the list of network interfaces.
+ Doesn't return until a network interface is up.
  ************************************************************************** */
 
-static BOOL reload_interfaces(time_t t)
+static void reload_interfaces(time_t t)
 {
 	static time_t lastt;
 	int n;
 	struct subnet_record *subrec;
 
-	if (t && ((t - lastt) < NMBD_INTERFACES_RELOAD)) return False;
+	if (t && ((t - lastt) < NMBD_INTERFACES_RELOAD)) {
+		return;
+	}
 	lastt = t;
 
-	if (!interfaces_changed()) return False;
+	if (!interfaces_changed()) {
+		return;
+	}
 
 	/* the list of probed interfaces has changed, we may need to add/remove
 	   some subnets */
 	load_interfaces();
+
+  try_again:
 
 	/* find any interfaces that need adding */
 	for (n=iface_count() - 1; n >= 0; n--) {
@@ -221,15 +228,35 @@ static BOOL reload_interfaces(time_t t)
 			close_subnet(subrec);
 		}
 	}
-	
+
 	rescan_listen_set = True;
 
-	/* We need to shutdown if there are no subnets... */
+	/* We need to wait if there are no subnets... */
 	if (FIRST_SUBNET == NULL) {
-		DEBUG(0,("reload_interfaces: No subnets to listen to. Shutting down...\n"));
-		return True;
+		void (*saved_handler)(int);
+
+		DEBUG(2,("reload_interfaces: "
+			"No subnets to listen to. Waiting..\n"));
+
+		/*
+		 * Whilst we're waiting for an interface, allow SIGTERM to
+		 * cause us to exit.
+		 */
+
+		saved_handler = CatchSignal( SIGTERM, SIGNAL_CAST SIG_DFL );
+
+                while (iface_count() == 0) {
+			sleep(5);
+			load_interfaces();
+		}
+
+		/*
+		 * We got an interface, restore our normal term handler.
+		 */
+
+		CatchSignal( SIGTERM, SIGNAL_CAST saved_handler );
+		goto try_again;
 	}
-	return False;
 }
 
 /**************************************************************************** **
@@ -267,8 +294,6 @@ static BOOL reload_nmbd_services(BOOL test)
 
 /**************************************************************************** **
  * React on 'smbcontrol nmbd reload-config' in the same way as to SIGHUP
- * We use buf here to return BOOL result to process() when reload_interfaces()
- * detects that there are no subnets.
  **************************************************************************** */
 
 static void msg_reload_nmbd_services(int msg_type, struct process_id src,
@@ -278,14 +303,7 @@ static void msg_reload_nmbd_services(int msg_type, struct process_id src,
 	dump_all_namelists();
 	reload_nmbd_services( True );
 	reopen_logs();
-	
-	if(buf) {
-		/* We were called from process() */
-		/* If reload_interfaces() returned True */
-		/* we need to shutdown if there are no subnets... */
-		/* pass this info back to process() */
-		*((BOOL*)buf) = reload_interfaces(0);  
-	}
+	reload_interfaces(0);
 }
 
 static void msg_nmbd_send_packet(int msg_type, struct process_id src,
@@ -348,7 +366,6 @@ static void msg_nmbd_send_packet(int msg_type, struct process_id src,
 static void process(void)
 {
 	BOOL run_election;
-	BOOL no_subnets;
 
 	while( True ) {
 		time_t t = time(NULL);
@@ -558,19 +575,16 @@ static void process(void)
 		if(reload_after_sighup) {
 			DEBUG( 0, ( "Got SIGHUP dumping debug info.\n" ) );
 			msg_reload_nmbd_services(MSG_SMB_CONF_UPDATED,
-						 pid_to_procid(0), (void*) &no_subnets, 0, NULL);
-			if(no_subnets)
-				return;
+						 pid_to_procid(0), NULL, 0, NULL);
 			reload_after_sighup = 0;
 		}
 
 		/* check for new network interfaces */
 
-		if(reload_interfaces(t))
-			return;
+		reload_interfaces(t);
 
 		/* free up temp memory */
-			lp_TALLOC_FREE();
+		lp_TALLOC_FREE();
 	}
 }
 
