@@ -174,24 +174,72 @@ static void handle_incoming_pdu(struct cli_state *cli)
 {
 	struct cli_request *req;
 	uint16_t mid;
-	size_t raw_pdu_len, buf_len, pdu_len;
-	size_t rest_len;
+	size_t raw_pdu_len, buf_len, pdu_len, rest_len;
+	char *pdu;
 	NTSTATUS status;
 
 	/*
 	 * The encrypted PDU len might differ from the unencrypted one
 	 */
 	raw_pdu_len = smb_len(cli->evt_inbuf) + 4;
+	buf_len = talloc_get_size(cli->evt_inbuf);
+	rest_len = buf_len - raw_pdu_len;
+
+	if (buf_len == raw_pdu_len) {
+		/*
+		 * Optimal case: Exactly one PDU was in the socket buffer
+		 */
+		pdu = cli->evt_inbuf;
+		cli->evt_inbuf = NULL;
+	}
+	else {
+		DEBUG(11, ("buf_len = %d, raw_pdu_len = %d, splitting "
+			   "buffer\n", (int)buf_len, (int)raw_pdu_len));
+
+		if (raw_pdu_len < rest_len) {
+			/*
+			 * The PDU is shorter, talloc_memdup that one.
+			 */
+			pdu = (char *)talloc_memdup(
+				cli, cli->evt_inbuf, raw_pdu_len);
+
+			memmove(cli->evt_inbuf,	cli->evt_inbuf + raw_pdu_len,
+				buf_len - raw_pdu_len);
+
+			cli->evt_inbuf = TALLOC_REALLOC_ARRAY(
+				NULL, cli->evt_inbuf, char, rest_len);
+
+			if (pdu == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				goto invalidate_requests;
+			}
+		}
+		else {
+			/*
+			 * The PDU is larger than the rest, talloc_memdup the
+			 * rest
+			 */
+			pdu = cli->evt_inbuf;
+
+			cli->evt_inbuf = (char *)talloc_memdup(
+				cli, pdu + raw_pdu_len,	rest_len);
+
+			if (cli->evt_inbuf == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				goto invalidate_requests;
+			}
+		}
+
+	}
 
 	/*
 	 * TODO: Handle oplock break requests
 	 */
 
-	if (cli_encryption_on(cli) && CVAL(cli->evt_inbuf, 0) == 0) {
+	if (cli_encryption_on(cli) && CVAL(pdu, 0) == 0) {
 		uint16_t enc_ctx_num;
 
-		status = get_enc_ctx_num((uint8_t *)cli->evt_inbuf,
-					 &enc_ctx_num);
+		status = get_enc_ctx_num((uint8_t *)pdu, &enc_ctx_num);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("get_enc_ctx_num returned %s\n",
 				   nt_errstr(status)));
@@ -207,7 +255,7 @@ static void handle_incoming_pdu(struct cli_state *cli)
 		}
 
 		status = common_decrypt_buffer(cli->trans_enc_state,
-					       cli->evt_inbuf);
+					       pdu);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("common_decrypt_buffer returned %s\n",
 				   nt_errstr(status)));
@@ -215,13 +263,13 @@ static void handle_incoming_pdu(struct cli_state *cli)
 		}
 	}
 
-	if (!cli_check_sign_mac(cli, cli->evt_inbuf)) {
+	if (!cli_check_sign_mac(cli, pdu)) {
 		DEBUG(10, ("cli_check_sign_mac failed\n"));
 		status = NT_STATUS_ACCESS_DENIED;
 		goto invalidate_requests;
 	}
 
-	mid = SVAL(cli->evt_inbuf, smb_mid);
+	mid = SVAL(pdu, smb_mid);
 
 	DEBUG(10, ("handle_incoming_pdu: got mid %d\n", mid));
 
@@ -231,64 +279,17 @@ static void handle_incoming_pdu(struct cli_state *cli)
 		}
 	}
 
-	buf_len = talloc_get_size(cli->evt_inbuf);
-	pdu_len = smb_len(cli->evt_inbuf) + 4;
-	rest_len = buf_len - raw_pdu_len;
+	pdu_len = smb_len(pdu) + 4;
 
 	if (req == NULL) {
 		DEBUG(3, ("Request for mid %d not found, dumping PDU\n", mid));
 
-		memmove(cli->evt_inbuf,	cli->evt_inbuf + raw_pdu_len,
-			buf_len - raw_pdu_len);
-
-		cli->evt_inbuf = TALLOC_REALLOC_ARRAY(NULL, cli->evt_inbuf,
-						      char, rest_len);
+		TALLOC_FREE(pdu);
 		return;
 	}
 
-	if (buf_len == pdu_len) {
-		/*
-		 * Optimal case: Exactly one PDU was in the socket buffer
-		 */
-		req->inbuf = talloc_move(req, &cli->evt_inbuf);
-		goto done;
-	}
+	req->inbuf = talloc_move(req, &pdu);
 
-	DEBUG(11, ("buf_len = %d, pdu_len = %d, splitting buffer\n",
-		   (int)buf_len, (int)pdu_len));
-
-	if (pdu_len < rest_len) {
-		/*
-		 * The PDU is shorter, talloc_memdup that one.
-		 */
-		req->inbuf = (char *)talloc_memdup(
-			req, cli->evt_inbuf, pdu_len);
-
-		memmove(cli->evt_inbuf,
-			cli->evt_inbuf + raw_pdu_len,
-			buf_len - raw_pdu_len);
-
-		cli->evt_inbuf = TALLOC_REALLOC_ARRAY(
-			NULL, cli->evt_inbuf, char, rest_len);
-	}
-	else {
-		/*
-		 * The PDU is larger than the rest,
-		 * talloc_memdup the rest
-		 */
-		req->inbuf = talloc_move(req, &cli->evt_inbuf);
-
-		cli->evt_inbuf = (char *)talloc_memdup(
-			cli, req->inbuf + raw_pdu_len,
-			rest_len);
-	}
-
-	if ((req->inbuf == NULL) || (cli->evt_inbuf == NULL)) {
-		status = NT_STATUS_NO_MEMORY;
-		goto invalidate_requests;
-	}
-
- done:
 	async_req_done(req->async);
 	return;
 
