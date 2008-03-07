@@ -299,10 +299,8 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		}
 
 		/* now really mark the file as open */
-		status = odb_open_file(lck, f->handle, name->full_name, name->stream_id,
-				       share_access, access_mask, del_on_close, 
-				       io->generic.in.open_disposition,
-				       false, false, OPLOCK_NONE, NULL);
+		status = odb_open_file(lck, f->handle, name->full_name,
+				       false, OPLOCK_NONE, NULL);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(lck);
@@ -361,10 +359,8 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 			goto cleanup_delete;
 		}
 
-		status = odb_open_file(lck, f->handle, name->full_name, name->stream_id,
-				       share_access, access_mask, del_on_close, 
-				       io->generic.in.open_disposition,
-				       false, false, OPLOCK_NONE, NULL);
+		status = odb_open_file(lck, f->handle, name->full_name,
+				       false, OPLOCK_NONE, NULL);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			goto cleanup_delete;
@@ -692,10 +688,8 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	status = odb_open_file(lck, f->handle, name->full_name, name->stream_id,
-			       share_access, access_mask, del_on_close, 
-			       io->generic.in.open_disposition,
-			       false, allow_level_II_oplock,
+	status = odb_open_file(lck, f->handle, name->full_name,
+			       allow_level_II_oplock,
 			       oplock_level, &oplock_granted);
 	talloc_free(lck);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1304,10 +1298,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* now really mark the file as open */
-	status = odb_open_file(lck, f->handle, name->full_name, name->stream_id,
-			       share_access, access_mask, del_on_close,
-			       io->generic.in.open_disposition,
-			       false, allow_level_II_oplock,
+	status = odb_open_file(lck, f->handle, name->full_name,
+			       allow_level_II_oplock,
 			       oplock_level, &oplock_granted);
 
 	if (!NT_STATUS_IS_OK(status)) {
