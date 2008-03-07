@@ -2068,11 +2068,12 @@ WERROR _srvsvc_NetRemoteTOD(pipes_struct *p,
 }
 
 /***********************************************************************************
+ _srvsvc_NetGetFileSecurity
  Win9x NT tools get security descriptor.
 ***********************************************************************************/
 
-WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC *q_u,
-			SRV_R_NET_FILE_QUERY_SECDESC *r_u)
+WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
+				  struct srvsvc_NetGetFileSecurity *r)
 {
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
@@ -2082,18 +2083,20 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	char *qualname = NULL;
 	SMB_STRUCT_STAT st;
 	NTSTATUS nt_status;
+	WERROR werr;
 	struct current_user user;
 	connection_struct *conn = NULL;
 	bool became_user = False;
 	TALLOC_CTX *ctx = p->mem_ctx;
+	struct sec_desc_buf *sd_buf;
 
 	ZERO_STRUCT(st);
 
-	r_u->status = WERR_OK;
+	werr = WERR_OK;
 
-	qualname = unistr2_to_ascii_talloc(ctx, &q_u->uni_qual_name);
+	qualname = talloc_strdup(ctx, r->in.share);
 	if (!qualname) {
-		r_u->status = WERR_ACCESS_DENIED;
+		werr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
@@ -2107,35 +2110,38 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	unbecome_root();
 
 	if (conn == NULL) {
-		DEBUG(3,("_srv_net_file_query_secdesc: Unable to connect to %s\n", qualname));
-		r_u->status = ntstatus_to_werror(nt_status);
+		DEBUG(3,("_srvsvc_NetGetFileSecurity: Unable to connect to %s\n",
+			qualname));
+		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;
 	}
 
 	if (!become_user(conn, conn->vuid)) {
-		DEBUG(0,("_srv_net_file_query_secdesc: Can't become connected user!\n"));
-		r_u->status = WERR_ACCESS_DENIED;
+		DEBUG(0,("_srvsvc_NetGetFileSecurity: Can't become connected user!\n"));
+		werr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 	became_user = True;
 
-	filename_in = unistr2_to_ascii_talloc(ctx, &q_u->uni_file_name);
+	filename_in = talloc_strdup(ctx, r->in.file);
 	if (!filename_in) {
-		r_u->status = WERR_ACCESS_DENIED;
+		werr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
 	nt_status = unix_convert(ctx, conn, filename_in, False, &filename, NULL, &st);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3,("_srv_net_file_query_secdesc: bad pathname %s\n", filename));
-		r_u->status = WERR_ACCESS_DENIED;
+		DEBUG(3,("_srvsvc_NetGetFileSecurity: bad pathname %s\n",
+			filename));
+		werr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
 	nt_status = check_name(conn, filename);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3,("_srv_net_file_query_secdesc: can't access %s\n", filename));
-		r_u->status = WERR_ACCESS_DENIED;
+		DEBUG(3,("_srvsvc_NetGetFileSecurity: can't access %s\n",
+			filename));
+		werr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
@@ -2145,24 +2151,30 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 					|DACL_SECURITY_INFORMATION), &psd);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3,("_srv_net_file_query_secdesc: Unable to get NT ACL for file %s\n", filename));
-		r_u->status = ntstatus_to_werror(nt_status);
+		DEBUG(3,("_srvsvc_NetGetFileSecurity: Unable to get NT ACL for file %s\n",
+			filename));
+		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;
 	}
 
 	sd_size = ndr_size_security_descriptor(psd, 0);
 
-	r_u->ptr_response = 1;
-	r_u->size_response = sd_size;
-	r_u->ptr_secdesc = 1;
-	r_u->size_secdesc = sd_size;
-	r_u->sec_desc = psd;
+	sd_buf = TALLOC_ZERO_P(ctx, struct sec_desc_buf);
+	if (!sd_buf) {
+		werr = WERR_NOMEM;
+		goto error_exit;
+	}
+
+	sd_buf->sd_size = sd_size;
+	sd_buf->sd = psd;
+
+	*r->out.sd_buf = sd_buf;
 
 	psd->dacl->revision = NT4_ACL_REVISION;
 
 	unbecome_user();
 	close_cnum(conn, user.vuid);
-	return r_u->status;
+	return werr;
 
 error_exit:
 
@@ -2172,7 +2184,7 @@ error_exit:
 	if (conn)
 		close_cnum(conn, user.vuid);
 
-	return r_u->status;
+	return werr;
 }
 
 /***********************************************************************************
@@ -2581,12 +2593,6 @@ WERROR _srvsvc_NetShareDelStart(pipes_struct *p, struct srvsvc_NetShareDelStart 
 }
 
 WERROR _srvsvc_NetShareDelCommit(pipes_struct *p, struct srvsvc_NetShareDelCommit *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p, struct srvsvc_NetGetFileSecurity *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
