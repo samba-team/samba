@@ -3314,8 +3314,11 @@ static NTSTATUS rpc_share_del_internals(const DOM_SID *domain_sid,
 {
 	WERROR result;
 
-	result = rpccli_srvsvc_net_share_del(pipe_hnd, mem_ctx, argv[0]);
-	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return rpccli_srvsvc_NetShareDel(pipe_hnd, mem_ctx,
+					 pipe_hnd->cli->desthost,
+					 argv[0],
+					 0,
+					 &result);
 }
 
 /** 
@@ -5067,14 +5070,20 @@ static NTSTATUS rpc_sh_share_delete(TALLOC_CTX *mem_ctx,
 				    int argc, const char **argv)
 {
 	WERROR result;
+	NTSTATUS status;
 
 	if (argc != 1) {
 		d_fprintf(stderr, "usage: %s <share>\n", ctx->whoami);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	result = rpccli_srvsvc_net_share_del(pipe_hnd, mem_ctx, argv[0]);
-	return werror_to_ntstatus(result);
+	status = rpccli_srvsvc_NetShareDel(pipe_hnd, mem_ctx,
+					   pipe_hnd->cli->desthost,
+					   argv[0],
+					   0,
+					   &result);
+
+	return status;
 }
 
 static NTSTATUS rpc_sh_share_info(TALLOC_CTX *mem_ctx,
