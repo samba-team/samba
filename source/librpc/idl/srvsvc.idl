@@ -1416,7 +1416,7 @@ import "security.idl", "svcctl.idl";
 		[in,unique]       [string,charset(UTF16)] uint16 *share,
 		[in]       [string,charset(UTF16)] uint16 file[],
 		[in]       security_secinfo securityinformation,
-		[out,unique]	   sec_desc_buf *sd_buf
+		[out,ref]  sec_desc_buf **sd_buf
 		);
 
 	/******************/
@@ -1426,7 +1426,7 @@ import "security.idl", "svcctl.idl";
 		[in,unique]       [string,charset(UTF16)] uint16 *share,
 		[in]       [string,charset(UTF16)] uint16 file[],
 		[in]       security_secinfo securityinformation,
-		[in]	   sec_desc_buf sd_buf
+		[in,ref]   sec_desc_buf *sd_buf
 		);
 
 
