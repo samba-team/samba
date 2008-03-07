@@ -517,7 +517,7 @@ NTTIME samdb_result_force_password_change(struct ldb_context *sam_ldb,
 
 	maxPwdAge = samdb_search_int64(sam_ldb, mem_ctx, 0, domain_dn, "maxPwdAge", NULL);
 	if (maxPwdAge == 0) {
-		return 0;
+		return 0x7FFFFFFFFFFFFFFFULL;
 	} else {
 		attr_time -= maxPwdAge;
 	}
