@@ -207,7 +207,7 @@ def import_wins(samba4_winsdb, samba3_winsdb):
                        "objectClass": "winsMaxVersion",
                        "maxVersion": str(version_id)})
 
-def upgrade_provision(samba3, setup_dir, message, credentials, session_info, lp, paths):
+def upgrade_provision(samba3, setup_dir, message, credentials, session_info, smbconf, targetdir):
     oldconf = samba3.get_conf()
 
     if oldconf.get("domain logons") == "True":
@@ -244,15 +244,13 @@ def upgrade_provision(samba3, setup_dir, message, credentials, session_info, lp,
     else:
         machinepass = None
     
-    domaindn = provision(setup_dir=setup_dir, message=message, 
-                         samdb_fill=FILL_DRS, paths=paths, session_info=session_info, 
-                         credentials=credentials, realm=realm, 
-                         domain=domainname, domainsid=domainsid, domainguid=domainguid, 
-                         machinepass=machinepass, serverrole=serverrole)
+    result = provision(setup_dir=setup_dir, message=message, 
+                       samdb_fill=FILL_DRS, smbconf=smbconf, session_info=session_info, 
+                       credentials=credentials, realm=realm, 
+                       domain=domainname, domainsid=domainsid, domainguid=domainguid, 
+                       machinepass=machinepass, serverrole=serverrole, targetdir=targetdir)
 
-    samdb = SamDB(paths.samdb, credentials=credentials, lp=lp, session_info=session_info)
-
-    import_wins(Ldb(paths.winsdb), samba3.get_wins_db())
+    import_wins(Ldb(result.paths.winsdb), samba3.get_wins_db())
 
     # FIXME: import_registry(registry.Registry(), samba3.get_registry())
 
@@ -268,12 +266,12 @@ def upgrade_provision(samba3, setup_dir, message, credentials, session_info, lp,
     passdb = samba3.get_sam_db()
     for name in passdb:
         user = passdb[name]
-        #FIXME: import_sam_account(samdb, user, domaindn, domainsid)
+        #FIXME: import_sam_account(result.samdb, user, domaindn, domainsid)
 
     if hasattr(passdb, 'ldap_url'):
         message("Enabling Samba3 LDAP mappings for SAM database")
 
-        enable_samba3sam(samdb, passdb.ldap_url)
+        enable_samba3sam(result.samdb, passdb.ldap_url)
 
 
 def enable_samba3sam(samdb, ldapurl):

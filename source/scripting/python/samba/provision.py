@@ -68,6 +68,12 @@ class ProvisionPaths:
         self.winsdb = None
         self.private_dir = None
 
+class ProvisionResult:
+    def __init__(self):
+        self.paths = None
+        self.domaindn = None
+        self.lp = None
+        self.samdb = None
 
 def check_install(lp, session_info, credentials):
     """Check whether the current install seems ok.
@@ -991,7 +997,12 @@ def provision(setup_dir, message, session_info,
 
     message("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php" % paths.phpldapadminconfig)
 
-    return domaindn
+    result = ProvisionResult()
+    result.domaindn = domaindn
+    result.paths = paths
+    result.lp = lp
+    result.samdb = samdb
+    return result
 
 def provision_become_dc(setup_dir=None,
                         smbconf=None, targetdir=None, realm=None, 

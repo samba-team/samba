@@ -50,7 +50,6 @@ else:
 samba3 = Samba3(libdir, smbconf)
 
 from samba.upgrade import upgrade_provision
-from samba.provision import provision_paths_from_lp
 
 message("Provisioning\n")
 
@@ -59,13 +58,6 @@ if setup_dir is None:
 	setup_dir = "setup"
 
 creds = credopts.get_credentials()
-lp = sambaopts.get_loadparm()
-if opts.targetdir is not None:
-    if not os.path.exists(opts.targetdir):
-        os.mkdir(opts.targetdir)
-    lp.set("private dir", os.path.abspath(opts.targetdir))
-    lp.set("lock dir", os.path.abspath(opts.targetdir))
-paths = provision_paths_from_lp(lp, "")
-paths.smbconf = sambaopts.get_loadparm_path()
+
 upgrade_provision(samba3, setup_dir, message, credentials=creds, session_info=system_session(), 
-                  lp=lp, paths=paths)
+                  smbconf=sambaopts.get_loadparm_path(), targetdir=opts.targetdir)
