@@ -29,19 +29,13 @@ struct provision_settings {
 	const char *schema_dn_str;
 	const struct GUID *invocation_id;
 	const char *netbios_name;
+	const char *host_ip;
 	const char *realm;
 	const char *domain;
 	const struct GUID *ntds_guid;
 	const char *ntds_dn_str;
 	const char *machine_password;
-	const char *samdb_ldb;
-	const char *secrets_ldb;
-	const char *secrets_keytab;
-	const char *schemadn_ldb;
-	const char *configdn_ldb;
-	const char *domaindn_ldb;
-	const char *templates_ldb;
-	const char *dns_keytab;
+	const char *targetdir;
 };
 
 NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,

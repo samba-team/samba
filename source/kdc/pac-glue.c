@@ -276,9 +276,28 @@ krb5_error_code samba_kdc_check_client_access(void *priv,
 
 	/* TODO:  Need a more complete mapping of NTSTATUS to krb5kdc errors */
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	/* TODO:  Also need to add the appropriate e-data struct of type
+	 * PA-PW-SALT (3) that includes the NT_STATUS code, which gives Windows
+	 * the information it needs to display the appropriate dialog. */
+
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_MUST_CHANGE))
+		return KRB5KDC_ERR_KEY_EXPIRED;
+	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_EXPIRED))
+		return KRB5KDC_ERR_KEY_EXPIRED;
+	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_EXPIRED))
+		return KRB5KDC_ERR_CLIENT_REVOKED;
+	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_DISABLED))
+		return KRB5KDC_ERR_CLIENT_REVOKED;
+	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_LOGON_HOURS))
+		return KRB5KDC_ERR_CLIENT_REVOKED;
+	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_LOCKED_OUT))
+		return KRB5KDC_ERR_CLIENT_REVOKED;
+	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_WORKSTATION))
+		return KRB5KDC_ERR_POLICY;
+	else if (!NT_STATUS_IS_OK(nt_status)) {
 		return KRB5KDC_ERR_POLICY;
 	}
+
 	return 0;
 }
 

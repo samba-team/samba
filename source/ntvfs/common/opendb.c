@@ -98,11 +98,13 @@ _PUBLIC_ NTSTATUS odb_open_file(struct odb_lock *lck,
 				uint32_t stream_id, uint32_t share_access,
 				uint32_t access_mask, bool delete_on_close,
 				uint32_t open_disposition, bool break_to_none,
+				bool allow_level_II_oplock,
 				uint32_t oplock_level, uint32_t *oplock_granted)
 {
 	return ops->odb_open_file(lck, file_handle, path, stream_id, share_access,
 				  access_mask, delete_on_close, open_disposition,
-				  break_to_none, oplock_level, oplock_granted);
+				  break_to_none, allow_level_II_oplock,
+				  oplock_level, oplock_granted);
 }
 
 

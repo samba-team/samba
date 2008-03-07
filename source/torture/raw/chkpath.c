@@ -150,7 +150,7 @@ static bool test_chkpath(struct smbcli_state *cli, struct torture_context *tctx)
 	ret &= test_path_ex(cli, tctx, ((char *)BASEDIR"\\\\") + 1, BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
 	ret &= test_path_ex(cli, tctx, ((char *)BASEDIR"\\foo\\..") + 1, BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
 	ret &= test_path_ex(cli, tctx, ((char *)BASEDIR"\\f\\o\\o\\..\\..\\..") + 1, BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
-	ret &= test_path_ex(cli, tctx, ((char *)BASEDIR"\\foo\\\\\..\\\\") + 1, BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
+	ret &= test_path_ex(cli, tctx, ((char *)BASEDIR"\\foo\\\\..\\\\") + 1, BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
 	ret &= test_path_ex(cli, tctx, BASEDIR"\\", BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
 	ret &= test_path_ex(cli, tctx, BASEDIR"\\\\..\\"BASEDIR, BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
 	ret &= test_path_ex(cli, tctx, BASEDIR"\\\\\\", BASEDIR, NT_STATUS_OK, NT_STATUS_OK);

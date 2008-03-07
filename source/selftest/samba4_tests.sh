@@ -217,7 +217,7 @@ done
 plantest "rpc.echo on ncacn_np over smb2" dc $smb4torture ncacn_np:"\$SERVER[smb2]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
 
 # Tests against the NTVFS POSIX backend
-NTVFSARGS="--option=torture:sharedelay=100000"
+NTVFSARGS="--option=torture:sharedelay=100000 --option=torture:oplocktimeout=3"
 smb2=`$smb4torture --list | grep "^SMB2-" | xargs`
 raw=`$smb4torture --list | grep "^RAW-" | xargs`
 base=`$smb4torture --list | grep "^BASE-" | xargs`

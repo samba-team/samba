@@ -316,7 +316,9 @@ static const struct enum_list enum_smb_signing_vals[] = {
 static const struct enum_list enum_server_role[] = {
 	{ROLE_STANDALONE, "standalone"},
 	{ROLE_DOMAIN_MEMBER, "member server"},
+	{ROLE_DOMAIN_MEMBER, "member"},
 	{ROLE_DOMAIN_CONTROLLER, "domain controller"},
+	{ROLE_DOMAIN_CONTROLLER, "dc"},
 	{-1, NULL}
 };
 
@@ -2614,6 +2616,6 @@ void lp_smbcli_options(struct loadparm_context *lp_ctx,
 	options->ntstatus_support = lp_nt_status_support(lp_ctx);
 	options->max_protocol = lp_cli_maxprotocol(lp_ctx);
 	options->unicode = lp_unicode(lp_ctx);
-	options->use_oplocks = false;
-	options->use_level2_oplocks = false;
+	options->use_oplocks = true;
+	options->use_level2_oplocks = true;
 }
