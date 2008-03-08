@@ -46,7 +46,7 @@ clean:: clean_pch
 	@echo Removing binaries
 	@-rm -f $(BIN_PROGS) $(SBIN_PROGS) $(BINARIES) $(TORTURE_PROGS)
 	@echo Removing libraries
-	@-rm -f $(STATIC_LIBRARIES) $(SHARED_LIBRARIES)
+	@-rm -f $(STATIC_LIBS) $(SHARED_LIBS)
 	@-rm -f bin/static/*.a bin/shared/*.$(SHLIBEXT) bin/mergedobj/*.o
 	@echo Removing modules
 	@-rm -f bin/modules/*/*.$(SHLIBEXT)
@@ -166,7 +166,6 @@ uninstallplugins::
 	@-rm $$(DESTDIR)$$(modulesdir)/$(2)/$(3).$$(SHLIBEXT)
 installplugins::
 	@ln -fs $(1) $$(DESTDIR)$$(modulesdir)/$(2)/$(3).$$(SHLIBEXT)
-
 
 endef
 
