@@ -1,1 +1,1 @@
-#define PACKAGE_BUGREPORT ""
+/* this should be empty */
