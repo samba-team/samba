@@ -37,7 +37,6 @@
 #include "lib/messaging/irpc.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
-#include "build.h"
 #include "param/param.h"
 
 struct dcesrv_socket_context {

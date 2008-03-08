@@ -28,7 +28,6 @@
 #include "lib/cmdline/popt_common.h"
 #include "system/dir.h"
 #include "system/filesys.h"
-#include "build.h"
 #include "ldb/include/ldb.h"
 #include "registry/registry.h"
 #include "ntvfs/ntvfs.h"

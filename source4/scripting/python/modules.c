@@ -19,7 +19,6 @@
 
 #include "includes.h"
 #include <Python.h>
-#include "build.h"
 
 extern void init_ldb(void);
 extern void init_security(void);
