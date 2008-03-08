@@ -162,21 +162,7 @@ sub SharedLibrary($$)
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
-	$self->output(<< "__EOD__"
-$ctx->{RESULT_SHARED_LIBRARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
-	\@echo Linking \$\@
-	\@mkdir -p \$(\@D)
-	\@\$(SHLD) \$(LDFLAGS) \$(SHLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$($ctx->{NAME}\_FULL_OBJ_LIST) \$($ctx->{NAME}_LINK_FLAGS) \\
-		\$(if \$(SONAMEFLAG), \$(SONAMEFLAG)$ctx->{LIBRARY_SONAME})
-ifneq ($ctx->{LIBRARY_REALNAME}, $ctx->{LIBRARY_SONAME})
-	\@test \$($ctx->{NAME}_VERSION) = \$($ctx->{NAME}_SOVERSION) || ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}
-endif
-ifdef $ctx->{NAME}_SOVERSION
-	\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}
-endif
-__EOD__
-);
+	$self->output("\$(eval \$(call shared_library_template,$ctx->{RESULT_SHARED_LIBRARY}, \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST), \$($ctx->{NAME}\_FULL_OBJ_LIST) \$($ctx->{NAME}_LINK_FLAGS),$ctx->{LIBRARY_SONAME}))\n");
 }
 
 sub MergedObj($$)

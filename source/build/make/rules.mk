@@ -136,6 +136,24 @@ $(1): $(2) ;
 
 endef
 
+# Shared library
+# Arguments: Target, dependencies, link flags, soname
+define shared_library_template
+$(1): $(2)
+	@echo Linking $$@
+	@mkdir -p $$(@D)
+	@$$(SHLD) $$(LDFLAGS) $$(SHLD_FLAGS) $$(INTERN_LDFLAGS) -o $$@ $$(INSTALL_LINK_FLAGS) \
+		$(3) \
+		$$(if $$(SONAMEFLAG), $$(SONAMEFLAG)$(4))
+
+ifneq ($(notdir $(1)), $(notdir $(4)))
+$(4): $(1)
+	@echo "Creating symbolic link for $(4)"
+	@ln -fs $(notdir $(4)) $(1)
+endif
+
+endef
+
 # Shared alias
 # Arguments: Target, subsystem name, alias name
 define shared_module_alias_template

@@ -44,7 +44,7 @@ PUBLIC_HEADERS += dsdb/schema/schema.h
 # Start SUBSYSTEM DREPL_SRV
 [MODULE::DREPL_SRV]
 INIT_FUNCTION = server_service_drepl_init
-SUBSYSTEM = service
+SUBSYSTEM = smbd
 PRIVATE_PROTO_HEADER = repl/drepl_service_proto.h
 PRIVATE_DEPENDENCIES = \
 		SAMDB \
