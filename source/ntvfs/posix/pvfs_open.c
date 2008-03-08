@@ -300,7 +300,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 
 		/* now really mark the file as open */
 		status = odb_open_file(lck, f->handle, name->full_name,
-				       false, OPLOCK_NONE, NULL);
+				       NULL, false, OPLOCK_NONE, NULL);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(lck);
@@ -360,7 +360,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		}
 
 		status = odb_open_file(lck, f->handle, name->full_name,
-				       false, OPLOCK_NONE, NULL);
+				       NULL, false, OPLOCK_NONE, NULL);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			goto cleanup_delete;
@@ -688,19 +688,6 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	status = odb_open_file(lck, f->handle, name->full_name,
-			       allow_level_II_oplock,
-			       oplock_level, &oplock_granted);
-	talloc_free(lck);
-	if (!NT_STATUS_IS_OK(status)) {
-		/* bad news, we must have hit a race - we don't delete the file
-		   here as the most likely scenario is that someone else created 
-		   the file at the same time */
-		close(fd);
-		return status;
-	}
-
-
 	f->ntvfs             = h;
 	f->pvfs              = pvfs;
 	f->pending_list      = NULL;
@@ -722,6 +709,18 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	f->handle->have_opendb_entry = true;
 	f->handle->sticky_write_time = false;
 	f->handle->open_completed    = false;
+
+	status = odb_open_file(lck, f->handle, name->full_name,
+			       &f->handle->fd, allow_level_II_oplock,
+			       oplock_level, &oplock_granted);
+	talloc_free(lck);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* bad news, we must have hit a race - we don't delete the file
+		   here as the most likely scenario is that someone else created
+		   the file at the same time */
+		close(fd);
+		return status;
+	}
 
 	DLIST_ADD(pvfs->files.list, f);
 
@@ -1297,9 +1296,24 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
+	if (access_mask & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA)) {
+		flags |= O_RDWR;
+	} else {
+		flags |= O_RDONLY;
+	}
+
+	/* do the actual open */
+	fd = open(f->handle->name->full_name, flags);
+	if (fd == -1) {
+		talloc_free(lck);
+		return pvfs_map_errno(f->pvfs, errno);
+	}
+
+	f->handle->fd = fd;
+
 	/* now really mark the file as open */
 	status = odb_open_file(lck, f->handle, name->full_name,
-			       allow_level_II_oplock,
+			       &f->handle->fd, allow_level_II_oplock,
 			       oplock_level, &oplock_granted);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1318,21 +1332,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	f->handle->have_opendb_entry = true;
-
-	if (access_mask & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA)) {
-		flags |= O_RDWR;
-	} else {
-		flags |= O_RDONLY;
-	}
-
-	/* do the actual open */
-	fd = open(f->handle->name->full_name, flags);
-	if (fd == -1) {
-		talloc_free(lck);
-		return pvfs_map_errno(f->pvfs, errno);
-	}
-
-	f->handle->fd = fd;
 
 	stream_existed = name->stream_exists;
 
