@@ -64,6 +64,8 @@ struct odb_lock {
 	struct odb_context *odb;
 	TDB_DATA key;
 
+	struct opendb_file file;
+
 	struct {
 		struct opendb_entry *e;
 		bool attrs_only;
@@ -108,6 +110,8 @@ static int odb_lock_destructor(struct odb_lock *lck)
 	return 0;
 }
 
+static NTSTATUS odb_pull_record(struct odb_lock *lck, struct opendb_file *file);
+
 /*
   get a lock on a entry in the odb. This call returns a lock handle,
   which the caller should unlock using talloc_free().
@@ -116,6 +120,7 @@ static struct odb_lock *odb_tdb_lock(TALLOC_CTX *mem_ctx,
 				     struct odb_context *odb, DATA_BLOB *file_key)
 {
 	struct odb_lock *lck;
+	NTSTATUS status;
 
 	lck = talloc(mem_ctx, struct odb_lock);
 	if (lck == NULL) {
@@ -138,6 +143,15 @@ static struct odb_lock *odb_tdb_lock(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(lck->can_open);
 
 	talloc_set_destructor(lck, odb_lock_destructor);
+
+	status = odb_pull_record(lck, &lck->file);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		/* initialise a blank structure */
+		ZERO_STRUCT(lck->file);
+	} else if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(lck);
+		return NULL;
+	}
 	
 	return lck;
 }
@@ -432,8 +446,6 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 				  uint32_t oplock_level, uint32_t *oplock_granted)
 {
 	struct odb_context *odb = lck->odb;
-	struct opendb_file file;
-	NTSTATUS status;
 
 	if (!lck->can_open.e) {
 		return NT_STATUS_INTERNAL_ERROR;
@@ -447,13 +459,9 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 		oplock_level = OPLOCK_NONE;
 	}
 
-	status = odb_pull_record(lck, &file);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		/* initialise a blank structure */
-		ZERO_STRUCT(file);
-		file.path = path;
-	} else {
-		NT_STATUS_NOT_OK_RETURN(status);
+	if (lck->file.path == NULL) {
+		lck->file.path = talloc_strdup(lck, path);
+		NT_STATUS_HAVE_NO_MEMORY(lck->file.path);
 	}
 
 	/*
@@ -462,7 +470,7 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 	if (lck->can_open.attrs_only) {
 		oplock_level	= OPLOCK_NONE;
 	} else if (oplock_level == OPLOCK_EXCLUSIVE) {
-		if (file.num_entries == 0) {
+		if (lck->file.num_entries == 0) {
 			oplock_level	= OPLOCK_EXCLUSIVE;
 		} else if (allow_level_II_oplock) {
 			oplock_level	= OPLOCK_LEVEL_II;
@@ -470,7 +478,7 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 			oplock_level	= OPLOCK_NONE;
 		}
 	} else if (oplock_level == OPLOCK_BATCH) {
-		if (file.num_entries == 0) {
+		if (lck->file.num_entries == 0) {
 			oplock_level	= OPLOCK_BATCH;
 		} else if (allow_level_II_oplock) {
 			oplock_level	= OPLOCK_LEVEL_II;
@@ -500,14 +508,18 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 	lck->can_open.e->oplock_level		= oplock_level;
 
 	/* it doesn't conflict, so add it to the end */
-	file.entries = talloc_realloc(lck, file.entries, struct opendb_entry, 
-				      file.num_entries+1);
-	NT_STATUS_HAVE_NO_MEMORY(file.entries);
+	lck->file.entries = talloc_realloc(lck, lck->file.entries,
+					   struct opendb_entry,
+					   lck->file.num_entries+1);
+	NT_STATUS_HAVE_NO_MEMORY(lck->file.entries);
 
-	file.entries[file.num_entries] = *lck->can_open.e;
-	file.num_entries++;
+	lck->file.entries[lck->file.num_entries] = *lck->can_open.e;
+	lck->file.num_entries++;
 
-	return odb_push_record(lck, &file);
+	talloc_free(lck->can_open.e);
+	lck->can_open.e = NULL;
+
+	return odb_push_record(lck, &lck->file);
 }
 
 
@@ -517,22 +529,22 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 static NTSTATUS odb_tdb_open_file_pending(struct odb_lock *lck, void *private)
 {
 	struct odb_context *odb = lck->odb;
-	struct opendb_file file;
-	NTSTATUS status;
-		
-	status = odb_pull_record(lck, &file);
-	NT_STATUS_NOT_OK_RETURN(status);
 
-	file.pending = talloc_realloc(lck, file.pending, struct opendb_pending, 
-				      file.num_pending+1);
-	NT_STATUS_HAVE_NO_MEMORY(file.pending);
+	if (lck->file.path == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 
-	file.pending[file.num_pending].server = odb->ntvfs_ctx->server_id;
-	file.pending[file.num_pending].notify_ptr = private;
+	lck->file.pending = talloc_realloc(lck, lck->file.pending,
+					   struct opendb_pending,
+					   lck->file.num_pending+1);
+	NT_STATUS_HAVE_NO_MEMORY(lck->file.pending);
 
-	file.num_pending++;
+	lck->file.pending[lck->file.num_pending].server = odb->ntvfs_ctx->server_id;
+	lck->file.pending[lck->file.num_pending].notify_ptr = private;
 
-	return odb_push_record(lck, &file);
+	lck->file.num_pending++;
+
+	return odb_push_record(lck, &lck->file);
 }
 
 
@@ -543,54 +555,53 @@ static NTSTATUS odb_tdb_close_file(struct odb_lock *lck, void *file_handle,
 				   const char **_delete_path)
 {
 	struct odb_context *odb = lck->odb;
-	struct opendb_file file;
 	const char *delete_path = NULL;
 	int i;
-	NTSTATUS status;
 
-	status = odb_pull_record(lck, &file);
-	NT_STATUS_NOT_OK_RETURN(status);
+	if (lck->file.path == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 
 	/* find the entry, and delete it */
-	for (i=0;i<file.num_entries;i++) {
-		if (file_handle == file.entries[i].file_handle &&
-		    cluster_id_equal(&odb->ntvfs_ctx->server_id, &file.entries[i].server)) {
-			if (file.entries[i].delete_on_close) {
-				file.delete_on_close = true;
+	for (i=0;i<lck->file.num_entries;i++) {
+		if (file_handle == lck->file.entries[i].file_handle &&
+		    cluster_id_equal(&odb->ntvfs_ctx->server_id, &lck->file.entries[i].server)) {
+			if (lck->file.entries[i].delete_on_close) {
+				lck->file.delete_on_close = true;
 			}
-			if (i < file.num_entries-1) {
-				memmove(file.entries+i, file.entries+i+1, 
-					(file.num_entries - (i+1)) * 
+			if (i < lck->file.num_entries-1) {
+				memmove(lck->file.entries+i, lck->file.entries+i+1,
+					(lck->file.num_entries - (i+1)) *
 					sizeof(struct opendb_entry));
 			}
 			break;
 		}
 	}
 
-	if (i == file.num_entries) {
+	if (i == lck->file.num_entries) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* send any pending notifications, removing them once sent */
-	for (i=0;i<file.num_pending;i++) {
-		messaging_send_ptr(odb->ntvfs_ctx->msg_ctx, file.pending[i].server, 
-				   MSG_PVFS_RETRY_OPEN, 
-				   file.pending[i].notify_ptr);
+	for (i=0;i<lck->file.num_pending;i++) {
+		messaging_send_ptr(odb->ntvfs_ctx->msg_ctx,
+				   lck->file.pending[i].server,
+				   MSG_PVFS_RETRY_OPEN,
+				   lck->file.pending[i].notify_ptr);
 	}
-	file.num_pending = 0;
+	lck->file.num_pending = 0;
 
-	file.num_entries--;
+	lck->file.num_entries--;
 
-	if (file.num_entries == 0 && file.delete_on_close) {
-		delete_path = talloc_strdup(lck, file.path);
-		NT_STATUS_HAVE_NO_MEMORY(delete_path);
+	if (lck->file.num_entries == 0 && lck->file.delete_on_close) {
+		delete_path = lck->file.path;
 	}
 
 	if (_delete_path) {
 		*_delete_path = delete_path;
 	}
 
-	return odb_push_record(lck, &file);
+	return odb_push_record(lck, &lck->file);
 }
 
 /*
@@ -600,36 +611,35 @@ static NTSTATUS odb_tdb_update_oplock(struct odb_lock *lck, void *file_handle,
 				      uint32_t oplock_level)
 {
 	struct odb_context *odb = lck->odb;
-	struct opendb_file file;
 	int i;
-	NTSTATUS status;
 
-	status = odb_pull_record(lck, &file);
-	NT_STATUS_NOT_OK_RETURN(status);
+	if (lck->file.path == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 
 	/* find the entry, and update it */
-	for (i=0;i<file.num_entries;i++) {
-		if (file_handle == file.entries[i].file_handle &&
-		    cluster_id_equal(&odb->ntvfs_ctx->server_id, &file.entries[i].server)) {
-			file.entries[i].oplock_level = oplock_level;
+	for (i=0;i<lck->file.num_entries;i++) {
+		if (file_handle == lck->file.entries[i].file_handle &&
+		    cluster_id_equal(&odb->ntvfs_ctx->server_id, &lck->file.entries[i].server)) {
+			lck->file.entries[i].oplock_level = oplock_level;
 			break;
 		}
 	}
 
-	if (i == file.num_entries) {
+	if (i == lck->file.num_entries) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* send any pending notifications, removing them once sent */
-	for (i=0;i<file.num_pending;i++) {
+	for (i=0;i<lck->file.num_pending;i++) {
 		messaging_send_ptr(odb->ntvfs_ctx->msg_ctx,
-				   file.pending[i].server,
+				   lck->file.pending[i].server,
 				   MSG_PVFS_RETRY_OPEN,
-				   file.pending[i].notify_ptr);
+				   lck->file.pending[i].notify_ptr);
 	}
-	file.num_pending = 0;
+	lck->file.num_pending = 0;
 
-	return odb_push_record(lck, &file);
+	return odb_push_record(lck, &lck->file);
 }
 
 /*
@@ -638,35 +648,27 @@ static NTSTATUS odb_tdb_update_oplock(struct odb_lock *lck, void *file_handle,
 static NTSTATUS odb_tdb_break_oplocks(struct odb_lock *lck)
 {
 	struct odb_context *odb = lck->odb;
-	NTSTATUS status;
-	struct opendb_file file;
 	int i;
 	bool modified = false;
 
-	status = odb_pull_record(lck, &file);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		return NT_STATUS_OK;
-	}
-	NT_STATUS_NOT_OK_RETURN(status);
-
 	/* see if anyone has an oplock, which we need to break */
-	for (i=0;i<file.num_entries;i++) {
-		if (file.entries[i].oplock_level == OPLOCK_LEVEL_II) {
+	for (i=0;i<lck->file.num_entries;i++) {
+		if (lck->file.entries[i].oplock_level == OPLOCK_LEVEL_II) {
 			/*
 			 * there could be multiple level2 oplocks
 			 * and we just send a break to none to all of them
 			 * without waiting for a release
 			 */
 			odb_oplock_break_send(odb->ntvfs_ctx->msg_ctx,
-					      &file.entries[i],
+					      &lck->file.entries[i],
 					      OPLOCK_BREAK_TO_NONE);
-			file.entries[i].oplock_level = OPLOCK_NONE;
+			lck->file.entries[i].oplock_level = OPLOCK_NONE;
 			modified = true;
 		}
 	}
 
 	if (modified) {
-		return odb_push_record(lck, &file);
+		return odb_push_record(lck, &lck->file);
 	}
 	return NT_STATUS_OK;
 }
@@ -678,32 +680,31 @@ static NTSTATUS odb_tdb_remove_pending(struct odb_lock *lck, void *private)
 {
 	struct odb_context *odb = lck->odb;
 	int i;
-	NTSTATUS status;
-	struct opendb_file file;
 
-	status = odb_pull_record(lck, &file);
-	NT_STATUS_NOT_OK_RETURN(status);
+	if (lck->file.path == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 
 	/* find the entry, and delete it */
-	for (i=0;i<file.num_pending;i++) {
-		if (private == file.pending[i].notify_ptr &&
-		    cluster_id_equal(&odb->ntvfs_ctx->server_id, &file.pending[i].server)) {
-			if (i < file.num_pending-1) {
-				memmove(file.pending+i, file.pending+i+1, 
-					(file.num_pending - (i+1)) * 
+	for (i=0;i<lck->file.num_pending;i++) {
+		if (private == lck->file.pending[i].notify_ptr &&
+		    cluster_id_equal(&odb->ntvfs_ctx->server_id, &lck->file.pending[i].server)) {
+			if (i < lck->file.num_pending-1) {
+				memmove(lck->file.pending+i, lck->file.pending+i+1,
+					(lck->file.num_pending - (i+1)) *
 					sizeof(struct opendb_pending));
 			}
 			break;
 		}
 	}
 
-	if (i == file.num_pending) {
+	if (i == lck->file.num_pending) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	file.num_pending--;
+	lck->file.num_pending--;
 	
-	return odb_push_record(lck, &file);
+	return odb_push_record(lck, &lck->file);
 }
 
 
@@ -712,18 +713,15 @@ static NTSTATUS odb_tdb_remove_pending(struct odb_lock *lck, void *private)
 */
 static NTSTATUS odb_tdb_rename(struct odb_lock *lck, const char *path)
 {
-	struct opendb_file file;
-	NTSTATUS status;
-
-	status = odb_pull_record(lck, &file);
-	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
+	if (lck->file.path == NULL) {
 		/* not having the record at all is OK */
 		return NT_STATUS_OK;
 	}
-	NT_STATUS_NOT_OK_RETURN(status);
 
-	file.path = path;
-	return odb_push_record(lck, &file);
+	lck->file.path = talloc_strdup(lck, path);
+	NT_STATUS_HAVE_NO_MEMORY(lck->file.path);
+
+	return odb_push_record(lck, &lck->file);
 }
 
 /*
@@ -731,16 +729,14 @@ static NTSTATUS odb_tdb_rename(struct odb_lock *lck, const char *path)
 */
 static NTSTATUS odb_tdb_get_path(struct odb_lock *lck, const char **path)
 {
-	struct opendb_file file;
-	NTSTATUS status;
-
 	*path = NULL;
 
-	status = odb_pull_record(lck, &file);
 	/* we don't ignore NT_STATUS_OBJECT_NAME_NOT_FOUND here */
-	NT_STATUS_NOT_OK_RETURN(status);
+	if (lck->file.path == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 
-	*path = file.path;
+	*path = lck->file.path;
 
 	return NT_STATUS_OK;
 }
@@ -750,15 +746,13 @@ static NTSTATUS odb_tdb_get_path(struct odb_lock *lck, const char **path)
 */
 static NTSTATUS odb_tdb_set_delete_on_close(struct odb_lock *lck, bool del_on_close)
 {
-	NTSTATUS status;
-	struct opendb_file file;
+	if (lck->file.path == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 
-	status = odb_pull_record(lck, &file);
-	NT_STATUS_NOT_OK_RETURN(status);
+	lck->file.delete_on_close = del_on_close;
 
-	file.delete_on_close = del_on_close;
-
-	return odb_push_record(lck, &file);
+	return odb_push_record(lck, &lck->file);
 }
 
 /*
@@ -768,8 +762,6 @@ static NTSTATUS odb_tdb_set_delete_on_close(struct odb_lock *lck, bool del_on_cl
 static NTSTATUS odb_tdb_get_delete_on_close(struct odb_context *odb, 
 					    DATA_BLOB *key, bool *del_on_close)
 {
-	NTSTATUS status;
-	struct opendb_file file;
 	struct odb_lock *lck;
 
 	(*del_on_close) = false;
@@ -777,17 +769,7 @@ static NTSTATUS odb_tdb_get_delete_on_close(struct odb_context *odb,
 	lck = odb_lock(odb, odb, key);
 	NT_STATUS_HAVE_NO_MEMORY(lck);
 
-	status = odb_pull_record(lck, &file);
-	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
-		talloc_free(lck);
-		return NT_STATUS_OK;
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(lck);
-		return status;
-	}
-
-	(*del_on_close) = file.delete_on_close;
+	(*del_on_close) = lck->file.delete_on_close;
 
 	talloc_free(lck);
 
@@ -806,21 +788,13 @@ static NTSTATUS odb_tdb_can_open(struct odb_lock *lck,
 {
 	struct odb_context *odb = lck->odb;
 	NTSTATUS status;
-	struct opendb_file file;
 
-	status = odb_pull_record(lck, &file);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		goto ok;
-	}
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	status = odb_tdb_open_can_internal(odb, &file, stream_id,
+	status = odb_tdb_open_can_internal(odb, &lck->file, stream_id,
 					   share_access, access_mask,
 					   delete_on_close, open_disposition,
 					   break_to_none, &lck->can_open.attrs_only);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-ok:
 	lck->can_open.e	= talloc(lck, struct opendb_entry);
 	NT_STATUS_HAVE_NO_MEMORY(lck->can_open.e);
 
