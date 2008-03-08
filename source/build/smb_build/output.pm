@@ -7,7 +7,6 @@
 
 package output;
 use strict;
-use smb_build::config;
 
 sub generate_shared_library($)
 {
@@ -48,7 +47,7 @@ sub generate_shared_library($)
 
 	$lib->{LIBRARY_DEBUGNAME} = $lib->{LIBRARY_REALNAME};
 
-	if (defined($lib->{VERSION}) and $config::config{SONAMEFLAG} ne "#") {
+	if (defined($lib->{VERSION})) {
 		$lib->{LIBRARY_SONAME} = "$lib->{LIBRARY_REALNAME}.\$($lib->{NAME}_SOVERSION)";
 		$lib->{LIBRARY_REALNAME} = "$lib->{LIBRARY_REALNAME}.\$($lib->{NAME}_VERSION)";
 	} 
