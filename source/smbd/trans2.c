@@ -2365,6 +2365,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 
 			SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
 				(lp_nt_acl_support(SNUM(conn)) ? FILE_PERSISTENT_ACLS : 0)|
+			        FILE_UNICODE_ON_DISK|
 				quota_flag); /* FS ATTRIBUTES */
 
 			SIVAL(pdata,4,255); /* Max filename component length */
