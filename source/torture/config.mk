@@ -1,7 +1,5 @@
 # TORTURE subsystem
 [LIBRARY::torture]
-SO_VERSION = 0
-VERSION = 0.0.1
 PC_FILE = torture.pc
 PRIVATE_PROTO_HEADER = proto.h
 PUBLIC_DEPENDENCIES = \

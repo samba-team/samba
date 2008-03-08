@@ -2,8 +2,6 @@
 # Start SUBSYSTEM gensec
 [LIBRARY::gensec]
 PC_FILE = gensec.pc
-VERSION = 0.0.1
-SO_VERSION = 0
 PRIVATE_PROTO_HEADER = gensec_proto.h
 PUBLIC_DEPENDENCIES = \
 		CREDENTIALS LIBSAMBA-UTIL LIBCRYPTO ASN1_UTIL samba-socket LIBPACKET
@@ -11,6 +9,8 @@ PUBLIC_DEPENDENCIES = \
 #################################
 
 
+gensec_VERSION = 0.0.1
+gensec_SOVERSION = 0
 gensec_OBJ_FILES = $(addprefix auth/gensec/, gensec.o socket.o)
 
 PUBLIC_HEADERS += $(addprefix auth/gensec/, gensec.h spnego.h)

@@ -24,7 +24,6 @@
 
 #include "includes.h"
 #include "ntptr/ntptr.h"
-#include "build.h"
 #include "param/param.h"
 
 /* the list of currently registered NTPTR backends */
