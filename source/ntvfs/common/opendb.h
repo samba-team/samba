@@ -27,7 +27,7 @@ struct opendb_ops {
 	DATA_BLOB (*odb_get_key)(TALLOC_CTX *mem_ctx, struct odb_lock *lck);
 	NTSTATUS (*odb_open_file)(struct odb_lock *lck,
 				  void *file_handle, const char *path,
-				  bool allow_level_II_oplock,
+				  int *fd, bool allow_level_II_oplock,
 				  uint32_t oplock_level, uint32_t *oplock_granted);
 	NTSTATUS (*odb_open_file_pending)(struct odb_lock *lck, void *private);
 	NTSTATUS (*odb_close_file)(struct odb_lock *lck, void *file_handle,

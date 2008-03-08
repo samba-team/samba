@@ -442,7 +442,7 @@ static NTSTATUS odb_tdb_open_can_internal(struct odb_context *odb,
 */
 static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 				  void *file_handle, const char *path,
-				  bool allow_level_II_oplock,
+				  int *fd, bool allow_level_II_oplock,
 				  uint32_t oplock_level, uint32_t *oplock_granted)
 {
 	struct odb_context *odb = lck->odb;
@@ -504,6 +504,7 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 	}
 
 	lck->can_open.e->file_handle		= file_handle;
+	lck->can_open.e->fd			= fd;
 	lck->can_open.e->allow_level_II_oplock	= allow_level_II_oplock;
 	lck->can_open.e->oplock_level		= oplock_level;
 
@@ -800,6 +801,7 @@ static NTSTATUS odb_tdb_can_open(struct odb_lock *lck,
 
 	lck->can_open.e->server			= odb->ntvfs_ctx->server_id;
 	lck->can_open.e->file_handle		= NULL;
+	lck->can_open.e->fd			= NULL;
 	lck->can_open.e->stream_id		= stream_id;
 	lck->can_open.e->share_access		= share_access;
 	lck->can_open.e->access_mask		= access_mask;
