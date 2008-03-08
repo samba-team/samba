@@ -2,7 +2,7 @@
 #
 [MODULE::SERVICE_SMB]
 INIT_FUNCTION = server_service_smb_init
-SUBSYSTEM = service
+SUBSYSTEM = smbd
 PRIVATE_PROTO_HEADER = service_smb_proto.h
 PRIVATE_DEPENDENCIES = SMB_SERVER
 

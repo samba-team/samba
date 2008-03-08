@@ -89,7 +89,7 @@ PAM_ERRORS_OBJ_FILES = $(addprefix auth/, pam_errors.o)
 
 [MODULE::service_auth]
 INIT_FUNCTION = server_service_auth_init
-SUBSYSTEM = service
+SUBSYSTEM = smbd
 PRIVATE_PROTO_HEADER = auth_proto.h
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBSECURITY SAMDB CREDENTIALS 
 

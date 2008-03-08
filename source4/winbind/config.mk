@@ -4,7 +4,7 @@
 # Start SUBSYSTEM WINBIND
 [MODULE::WINBIND]
 INIT_FUNCTION = server_service_winbind_init
-SUBSYSTEM = service
+SUBSYSTEM = smbd
 PRIVATE_PROTO_HEADER = wb_proto.h
 PRIVATE_DEPENDENCIES = \
 		WB_HELPER \

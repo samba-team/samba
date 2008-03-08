@@ -4,7 +4,7 @@
 # Start SUBSYSTEM CLDAPD
 [MODULE::CLDAPD]
 INIT_FUNCTION = server_service_cldapd_init
-SUBSYSTEM = service
+SUBSYSTEM = smbd
 PRIVATE_PROTO_HEADER = proto.h
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_CLDAP LIBNETIF process_model
