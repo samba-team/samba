@@ -97,11 +97,11 @@ _PUBLIC_ DATA_BLOB odb_get_key(TALLOC_CTX *mem_ctx, struct odb_lock *lck)
 */
 _PUBLIC_ NTSTATUS odb_open_file(struct odb_lock *lck,
 				void *file_handle, const char *path,
-				bool allow_level_II_oplock,
+				int *fd, bool allow_level_II_oplock,
 				uint32_t oplock_level, uint32_t *oplock_granted)
 {
 	return ops->odb_open_file(lck, file_handle, path,
-				  allow_level_II_oplock,
+				  fd, allow_level_II_oplock,
 				  oplock_level, oplock_granted);
 }
 
