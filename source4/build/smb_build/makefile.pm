@@ -137,9 +137,7 @@ sub SharedModule($$)
 
 
 	if (defined($ctx->{ALIASES})) {
-		foreach (@{$ctx->{ALIASES}}) {
-			$self->output("\$(eval \$(call shared_module_alias_template,$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME},$sane_subsystem,$_))\n");
-		}
+		$self->output("\$(eval \$(foreach alias,". join(' ', @{$ctx->{ALIASES}}) . ",\$(call shared_module_alias_template,$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME},$sane_subsystem,\$(alias))))\n");
 	}
 }
 
@@ -157,12 +155,12 @@ sub SharedLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
-	$self->output("SHARED_LIBS += $ctx->{RESULT_SHARED_LIBRARY}\n") if (defined($ctx->{SO_VERSION}));
+	$self->output("SHARED_LIBS += $ctx->{RESULT_SHARED_LIBRARY}\n");
 
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
-	$self->output("\$(eval \$(call shared_library_template,$ctx->{RESULT_SHARED_LIBRARY}, \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST), \$($ctx->{NAME}\_FULL_OBJ_LIST) \$($ctx->{NAME}_LINK_FLAGS),$ctx->{LIBRARY_SONAME}))\n");
+	$self->output("\$(eval \$(call shared_library_template,$ctx->{RESULT_SHARED_LIBRARY}, \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST), \$($ctx->{NAME}\_FULL_OBJ_LIST) \$($ctx->{NAME}_LINK_FLAGS),$ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME},$ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}))\n");
 }
 
 sub MergedObj($$)

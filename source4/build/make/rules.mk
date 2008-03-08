@@ -144,14 +144,19 @@ $(1): $(2)
 	@mkdir -p $$(@D)
 	@$$(SHLD) $$(LDFLAGS) $$(SHLD_FLAGS) $$(INTERN_LDFLAGS) -o $$@ $$(INSTALL_LINK_FLAGS) \
 		$(3) \
-		$$(if $$(SONAMEFLAG), $$(SONAMEFLAG)$(4))
+		$$(if $$(SONAMEFLAG), $$(SONAMEFLAG)$(notdir $(4)))
 
-ifneq ($(notdir $(1)), $(notdir $(4)))
+ifneq ($(notdir $(1)),$(notdir $(4)))
 $(4): $(1)
 	@echo "Creating symbolic link for $(4)"
 	@ln -fs $(notdir $(4)) $(1)
 endif
 
+ifneq ($(notdir $(1)),$(notdir $(5)))
+$(5): $(1)
+	@echo "Creating symbolic link for $(5)"
+	@ln -fs $(notdir $(5)) $(1)
+endif
 endef
 
 # Shared alias

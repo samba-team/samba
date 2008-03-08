@@ -47,10 +47,8 @@ sub generate_shared_library($)
 
 	$lib->{LIBRARY_DEBUGNAME} = $lib->{LIBRARY_REALNAME};
 
-	if (defined($lib->{VERSION})) {
-		$lib->{LIBRARY_SONAME} = "$lib->{LIBRARY_REALNAME}.\$($lib->{NAME}_SOVERSION)";
-		$lib->{LIBRARY_REALNAME} = "$lib->{LIBRARY_REALNAME}.\$($lib->{NAME}_VERSION)";
-	} 
+	$lib->{LIBRARY_SONAME} = "\$(if \$($lib->{NAME}_SOVERSION),$lib->{LIBRARY_REALNAME}.\$($lib->{NAME}_SOVERSION),$lib->{LIBRARY_REALNAME})";
+	$lib->{LIBRARY_REALNAME} = "\$(if \$($lib->{NAME}_VERSION),$lib->{LIBRARY_REALNAME}.\$($lib->{NAME}_VERSION),$lib->{LIBRARY_REALNAME})";
 	
 	$lib->{RESULT_SHARED_LIBRARY} = "$lib->{SHAREDDIR}/$lib->{LIBRARY_REALNAME}";
 	$lib->{OUTPUT_SHARED_LIBRARY} = "-l$link_name";
