@@ -641,7 +641,7 @@ static NTSTATUS odb_tdb_break_oplocks(struct odb_lock *lck)
 	NTSTATUS status;
 	struct opendb_file file;
 	int i;
-	bool modified = true;
+	bool modified = false;
 
 	status = odb_pull_record(lck, &file);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
