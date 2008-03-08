@@ -5502,6 +5502,7 @@ static void usage(void)
 	int gotpass = 0;
 	bool correct = True;
 	TALLOC_CTX *frame = talloc_stackframe();
+	int seed = time(NULL);
 
 	dbf = x_stdout;
 
@@ -5547,8 +5548,6 @@ static void usage(void)
 	argc--;
 	argv++;
 
-	srandom(time(NULL));
-
 	fstrcpy(workgroup, lp_workgroup());
 
 	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:m:Ld:Aec:ks:b:")) != EOF) {
@@ -5557,7 +5556,7 @@ static void usage(void)
 			port_to_use = atoi(optarg);
 			break;
 		case 's':
-			srandom(atoi(optarg));
+			seed = atoi(optarg);
 			break;
 		case 'W':
 			fstrcpy(workgroup,optarg);
@@ -5619,6 +5618,10 @@ static void usage(void)
 			usage();
 		}
 	}
+
+	d_printf("using seed %d\n", seed);
+
+	srandom(seed);
 
 	if(use_kerberos && !gotuser) gotpass = True;
 
