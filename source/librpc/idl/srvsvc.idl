@@ -355,12 +355,17 @@ import "security.idl", "svcctl.idl";
 
 	/******************/
 	/* Function: 0x0c */
+
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] srvsvc_NetSessCtr ctr;
+	} srvsvc_NetSessInfoCtr;
+
 	WERROR srvsvc_NetSessEnum(
 		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in,unique]   [string,charset(UTF16)] uint16 *client,
 		[in,unique]   [string,charset(UTF16)] uint16 *user,
-		[in,out,ref]   uint32 *level,
-		[in,out,switch_is(*level),ref]   srvsvc_NetSessCtr *ctr,
+		[in,out,ref]   srvsvc_NetSessInfoCtr *info_ctr,
 		[in]   uint32 max_buffer,
 		[out,ref]   uint32 *totalentries,
 		[in,out,unique]   uint32 *resume_handle
