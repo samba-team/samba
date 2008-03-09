@@ -558,7 +558,7 @@ init_auth
 
     return gsskrb5_initiator_ready(minor_status, ctx, context);
 failure:
-    if(cred)
+    if(kcred)
 	krb5_free_creds(context, kcred);
     if (ccache && cred == NULL)
 	krb5_cc_close(context, ccache);
