@@ -209,6 +209,11 @@ union srvsvc_NetSessCtr {
 	struct srvsvc_NetSessCtr502 *ctr502;/* [unique,case(502)] */
 };
 
+struct srvsvc_NetSessInfoCtr {
+	uint32_t level;
+	union srvsvc_NetSessCtr ctr;/* [switch_is(level)] */
+};
+
 enum srvsvc_ShareType
 #ifndef USE_UINT_ENUMS
  {
@@ -1218,15 +1223,13 @@ struct srvsvc_NetSessEnum {
 		const char *client;/* [unique,charset(UTF16)] */
 		const char *user;/* [unique,charset(UTF16)] */
 		uint32_t max_buffer;
-		uint32_t *level;/* [ref] */
-		union srvsvc_NetSessCtr *ctr;/* [ref,switch_is(*level)] */
+		struct srvsvc_NetSessInfoCtr *info_ctr;/* [ref] */
 		uint32_t *resume_handle;/* [unique] */
 	} in;
 
 	struct {
 		uint32_t *totalentries;/* [ref] */
-		uint32_t *level;/* [ref] */
-		union srvsvc_NetSessCtr *ctr;/* [ref,switch_is(*level)] */
+		struct srvsvc_NetSessInfoCtr *info_ctr;/* [ref] */
 		uint32_t *resume_handle;/* [unique] */
 		WERROR result;
 	} out;
