@@ -1,3 +1,9 @@
+2008-03-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* telnetd/sys_term.c: Dont need to set this as the controlling PTY
+	on steams sockets, don't abort on failure. From Harald Barth and
+	Ian Delahorne.
+
 2007-12-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* telnetd/sys_term.c: Use strlcpy instead of strncpy, thanks to
