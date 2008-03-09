@@ -165,8 +165,7 @@ sub MergedObj($$)
 {
 	my ($self, $ctx) = @_;
 
-	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-	$self->output("\$(call partial_link_template, \$($ctx->{NAME}_OUTPUT), \$($ctx->{NAME}_OBJ_FILES))\n");
+	$self->output("\$(call partial_link_template, $ctx->{OUTPUT}, \$($ctx->{NAME}_OBJ_FILES))\n");
 }
 
 sub StaticLibraryPrimitives($$)
@@ -197,7 +196,7 @@ sub Binary($$)
 	my ($self,$ctx) = @_;
 
 	unless (defined($ctx->{INSTALLDIR})) {
-		$self->output("binaries:: $ctx->{TARGET_BINARY}\n");
+		$self->output("BINARIES += $ctx->{TARGET_BINARY}\n");
 	} elsif ($ctx->{INSTALLDIR} eq "SBINDIR") {
 		$self->output("SBIN_PROGS += $ctx->{RESULT_BINARY}\n");
 	} elsif ($ctx->{INSTALLDIR} eq "BINDIR") {
