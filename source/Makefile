@@ -49,6 +49,8 @@ include build/make/rules.mk
 include build/make/python.mk
 include data.mk
 
+BINARIES += $(BIN_PROGS) $(SBIN_PROGS)
+
 DEP_FILES = $(patsubst %.ho,%.hd,$(patsubst %.o,%.d,$(ALL_OBJS))) \
 		   include/includes.d
 
@@ -75,7 +77,7 @@ endif
 DEFAULT_HEADERS = $(srcdir)/lib/util/dlinklist.h \
 		  $(srcdir)/version.h
 
-binaries:: $(BIN_PROGS) $(SBIN_PROGS)
+binaries:: $(BINARIES)
 libraries:: $(STATIC_LIBS) $(SHARED_LIBS)
 modules:: $(PLUGINS)
 headers:: $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
