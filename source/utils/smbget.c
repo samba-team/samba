@@ -319,7 +319,7 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 			fprintf(stderr, "Can't open %s : %s\n", newpath,
 					strerror(errno));
 			smbc_close(remotehandle);
-			return 1;
+			return 0;
 		}
 		/* no offset */
 	} else if(!send_stdout) {
