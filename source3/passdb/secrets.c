@@ -111,10 +111,6 @@ void *secrets_fetch(const char *key, size_t *size)
 		return NULL;
 	}
 
-	if (!tdb) {
-		return NULL;
-	}
-
 	dbuf = tdb_fetch(tdb, string_tdb_data(key));
 	if (size) {
 		*size = dbuf.dsize;
@@ -131,10 +127,6 @@ bool secrets_store(const char *key, const void *data, size_t size)
 		return false;
 	}
 
-	if (!tdb) {
-		return false;
-	}
-
 	return tdb_trans_store(tdb, string_tdb_data(key),
 			       make_tdb_data((const uint8 *)data, size),
 			       TDB_REPLACE) == 0;
@@ -146,10 +138,6 @@ bool secrets_store(const char *key, const void *data, size_t size)
 bool secrets_delete(const char *key)
 {
 	if (!secrets_init()) {
-		return false;
-	}
-
-	if (!tdb) {
 		return false;
 	}
 
