@@ -1275,31 +1275,33 @@ WERROR _srv_net_sess_enum(pipes_struct *p, SRV_Q_NET_SESS_ENUM *q_u, SRV_R_NET_S
 }
 
 /*******************************************************************
-net sess del
+ _srvsvc_NetSessDel
 ********************************************************************/
 
-WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SESS_DEL *r_u)
+WERROR _srvsvc_NetSessDel(pipes_struct *p,
+			  struct srvsvc_NetSessDel *r)
 {
 	struct sessionid *session_list;
 	struct current_user user;
 	int num_sessions, snum;
-	fstring username;
-	fstring machine;
+	const char *username;
+	const char *machine;
 	bool not_root = False;
+	WERROR werr;
 
-	rpcstr_pull_unistr2_fstring(username, &q_u->uni_user_name);
-	rpcstr_pull_unistr2_fstring(machine, &q_u->uni_cli_name);
+	username = r->in.user;
+	machine = r->in.client;
 
 	/* strip leading backslashes if any */
-	while (machine[0] == '\\') {
-		memmove(machine, &machine[1], strlen(machine));
+	if (machine && machine[0] == '\\' && machine[1] == '\\') {
+		machine += 2;
 	}
 
 	num_sessions = list_sessions(p->mem_ctx, &session_list);
 
-	DEBUG(5,("_srv_net_sess_del: %d\n", __LINE__));
+	DEBUG(5,("_srvsvc_NetSessDel: %d\n", __LINE__));
 
-	r_u->status = WERR_ACCESS_DENIED;
+	werr = WERR_ACCESS_DENIED;
 
 	get_current_user(&user, p);
 
@@ -1328,19 +1330,18 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 						MSG_SHUTDOWN, &data_blob_null);
 
 			if (NT_STATUS_IS_OK(ntstat))
-				r_u->status = WERR_OK;
+				werr = WERR_OK;
 
 			if (not_root)
 				unbecome_root();
 		}
 	}
 
-	DEBUG(5,("_srv_net_sess_del: %d\n", __LINE__));
-
+	DEBUG(5,("_srvsvc_NetSessDel: %d\n", __LINE__));
 
 done:
 
-	return r_u->status;
+	return werr;
 }
 
 /*******************************************************************
@@ -2506,12 +2507,6 @@ WERROR _srvsvc_NetFileGetInfo(pipes_struct *p, struct srvsvc_NetFileGetInfo *r)
 }
 
 WERROR _srvsvc_NetSessEnum(pipes_struct *p, struct srvsvc_NetSessEnum *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _srvsvc_NetSessDel(pipes_struct *p, struct srvsvc_NetSessDel *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
