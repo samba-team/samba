@@ -385,20 +385,21 @@ fail:
     return ret;
 }
 
-static char *
-get_cc_name(cc_ccache_t cache)
+static cc_int32
+get_cc_name(krb5_acc *a)
 {
     cc_string_t name;
     cc_int32 error;
-    char *str;
 
-    error = (*cache->func->get_name)(cache, &name);
+    error = (*a->ccache->func->get_name)(a->ccache, &name);
     if (error)
-	return NULL;
+	return error;
 
-    str = strdup(name->data);
+    a->cache_name = strdup(name->data);
     (*name->func->release)(name);
-    return str;
+    if (a->cache_name == NULL)
+	return ccErrNoMem;
+    return ccNoError;
 }
 
 
@@ -406,7 +407,37 @@ static const char*
 acc_get_name(krb5_context context,
 	     krb5_ccache id)
 {
-    return ACACHE(id)->cache_name;
+    krb5_acc *a = ACACHE(id);
+    int32_t error;
+
+    if (a->cache_name == NULL) {
+	krb5_error_code ret;
+	krb5_principal principal;
+	char *name;
+
+	ret = _krb5_get_default_principal_local(context, &principal);
+	if (ret)
+	    return NULL;
+
+	ret = krb5_unparse_name(context, principal, &name);
+	krb5_free_principal(context, principal);
+	if (ret)
+	    return NULL;
+
+	error = (*a->context->func->create_new_ccache)(a->context,
+						       cc_credentials_v5,
+						       name,
+						       &a->ccache);
+	krb5_xfree(name);
+	if (error)
+	    return NULL;
+
+	error = get_cc_name(a);
+	if (error)
+	    return NULL;
+    }    
+
+    return a->cache_name;
 }
 
 static krb5_error_code
@@ -452,15 +483,13 @@ acc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 
     a = ACACHE(*id);
 
-    error = (*a->context->func->open_ccache)(a->context, res,
-					     &a->ccache);
-    if (error == 0) {
-	a->cache_name = get_cc_name(a->ccache);
-	if (a->cache_name == NULL) {
+    error = (*a->context->func->open_ccache)(a->context, res, &a->ccache);
+    if (error == ccNoError) {
+	error = get_cc_name(a);
+	if (error != ccNoError) {
 	    acc_close(context, *id);
 	    *id = NULL;
-	    krb5_set_error_string(context, "malloc: out of memory");
-	    return ENOMEM;
+	    return translate_cc_error(context, error);
 	}
     } else if (error == ccErrCCacheNotFound) {
 	a->ccache = NULL;
@@ -506,11 +535,37 @@ acc_initialize(krb5_context context,
     if (ret)
 	return ret;
 
-    error = (*a->context->func->create_new_ccache)(a->context,
-						   cc_credentials_v5,
-						   name,
-						   &a->ccache);
-    free(name);
+    if (a->cache_name == NULL) {
+	error = (*a->context->func->create_new_ccache)(a->context,
+						       cc_credentials_v5,
+						       name,
+						       &a->ccache);
+	free(name);
+	if (error == ccNoError)
+	    error = get_cc_name(a);
+    } else {
+	cc_credentials_iterator_t iter;
+	cc_credentials_t ccred;
+
+	error = (*a->ccache->func->new_credentials_iterator)(a->ccache, &iter);
+	if (error) {
+	    free(name);
+	    return translate_cc_error(context, error);
+	}
+
+	while (1) {
+	    error = (*iter->func->next)(iter, &ccred);
+	    if (error)
+		break;
+	    (*a->ccache->func->remove_credentials)(a->ccache, ccred);
+	    (*ccred->func->release)(ccred);
+	}
+	(*iter->func->release)(iter);
+
+	error = (*a->ccache->func->set_principal)(a->ccache,
+						  cc_credentials_v5,
+						  name);
+    }
 
     return translate_cc_error(context, error);
 }
@@ -832,12 +887,11 @@ acc_get_cache_next(krb5_context context, krb5_cc_cursor cursor, krb5_ccache *id)
     a = ACACHE(*id);
     a->ccache = cache;
 
-    a->cache_name = get_cc_name(a->ccache);
-    if (a->cache_name == NULL) {
+    error = get_cc_name(a);
+    if (error) {
 	acc_close(context, *id);
 	*id = NULL;
-	krb5_set_error_string(context, "malloc: out of memory");
-	return ENOMEM;
+	return translate_cc_error(context, error);
     }	
     return 0;
 }
