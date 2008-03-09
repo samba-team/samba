@@ -27,14 +27,14 @@
 #define OFF_T_FORMAT_CAST long
 #endif
 
-int columns = 0;
+static int columns = 0;
 
 static int _resume, _recursive, debuglevel, update;
 static char *outputfile;
 
 
-time_t total_start_time = 0;
-off_t total_bytes = 0;
+static time_t total_start_time = 0;
+static off_t total_bytes = 0;
 
 #define SMB_MAXPATHLEN MAXPATHLEN
 
@@ -45,9 +45,9 @@ off_t total_bytes = 0;
 /* Number of bytes to read at once */
 #define SMB_DEFAULT_BLOCKSIZE 					64000
 
-const char *username = NULL, *password = NULL, *workgroup = NULL;
-int nonprompt = 0, quiet = 0, dots = 0, keep_permissions = 0, verbose = 0, send_stdout = 0;
-int blocksize = SMB_DEFAULT_BLOCKSIZE;
+static const char *username = NULL, *password = NULL, *workgroup = NULL;
+static int nonprompt = 0, quiet = 0, dots = 0, keep_permissions = 0, verbose = 0, send_stdout = 0;
+static int blocksize = SMB_DEFAULT_BLOCKSIZE;
 
 static int smb_download_file(const char *base, const char *name, int recursive, int resume, char *outfile);
 
