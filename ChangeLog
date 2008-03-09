@@ -1,5 +1,9 @@
 2008-03-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/acache.c: Create a new credential cache is ->get_name
+	is called, make acc_initialize() reset the existing credential
+	cache if needed.
+
 	* lib/krb5/acache.c (acc_get_name): just return the cache_name
 	directly instead of trying to resolve it.
 
