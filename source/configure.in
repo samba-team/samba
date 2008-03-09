@@ -5341,6 +5341,13 @@ int main() { struct aiocb a; return aio_suspend64(&a, 1, NULL); }],
   AC_MSG_RESULT(no)
 )
 
+if test x"$samba_cv_HAVE_AIO" = x"yes"; then
+	if test x"$samba_cv_msghdr_msg_control" = x"yes" -o \
+		x"$samba_cv_msghdr_msg_acctright" = x"yes"; then
+		default_shared_modules="$default_shared_modules vfs_aio_fork"
+	fi
+fi
+
 #################################################
 # check for sendfile support
 
