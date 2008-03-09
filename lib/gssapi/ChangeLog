@@ -1,3 +1,8 @@
+2008-03-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* krb5/init_sec_context.c (init_auth): use right variable to
+	detect if we want to free or not.
+
 2008-02-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add missing \
