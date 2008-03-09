@@ -124,7 +124,7 @@ PRIVATE_DEPENDENCIES = \
 		LIBCLI_AUTH POPT_CREDENTIALS TORTURE_LDAP TORTURE_UTIL TORTURE_RAP \
 		dcerpc_server service process_model ntvfs SERVICE_SMB
 
-Torture_rpc_OBJ_FILES = $(addprefix torture/rpc/, \
+torture_rpc_OBJ_FILES = $(addprefix torture/rpc/, \
 		join.o lsa.o lsa_lookup.o session_key.o echo.o dfs.o drsuapi.o \
 		drsuapi_cracknames.o dssync.o spoolss.o spoolss_notify.o spoolss_win.o \
 		unixinfo.o samr.o samr_accessmask.o wkssvc.o srvsvc.o svcctl.o atsvc.o \
