@@ -51,22 +51,15 @@ static void get_rand_seed(int *new_seed)
 /* open up the secrets database */
 bool secrets_init(void)
 {
-	TALLOC_CTX *ctx;
 	char *fname = NULL;
 	unsigned char dummy;
 
 	if (tdb)
 		return True;
 
-	ctx = talloc_init("secrets_init");
-	if (!ctx) {
-		return false;
-	}
-	fname = talloc_asprintf(ctx,
-			"%s/secrets.tdb",
-			lp_private_dir());
-	if (!fname) {
-		TALLOC_FREE(ctx);
+	fname = talloc_asprintf(talloc_tos(), "%s/secrets.tdb",
+				lp_private_dir());
+	if (fname == NULL) {
 		return false;
 	}
 
@@ -74,11 +67,11 @@ bool secrets_init(void)
 
 	if (!tdb) {
 		DEBUG(0,("Failed to open %s\n", fname));
-		TALLOC_FREE(ctx);
+		TALLOC_FREE(fname);
 		return False;
 	}
 
-	TALLOC_FREE(ctx);
+	TALLOC_FREE(fname);
 
 	/**
 	 * Set a reseed function for the crypto random generator
