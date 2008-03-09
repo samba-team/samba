@@ -251,3 +251,94 @@ void init_srvsvc_NetRemoteTODInfo(struct srvsvc_NetRemoteTODInfo *r,
 	r->weekday = weekday;
 }
 
+/*******************************************************************
+ inits a srvsvc_NetSessInfo0 structure
+ ********************************************************************/
+
+void init_srvsvc_NetSessInfo0(struct srvsvc_NetSessInfo0 *r,
+			      const char *client)
+{
+	r->client = client;
+}
+
+/*******************************************************************
+ inits a srvsvc_NetSessInfo1 structure
+ ********************************************************************/
+
+void init_srvsvc_NetSessInfo1(struct srvsvc_NetSessInfo1 *r,
+			      const char *client,
+			      const char *user,
+			      uint32_t num_open,
+			      uint32_t _time,
+			      uint32_t idle_time,
+			      uint32_t user_flags)
+{
+	r->client = client;
+	r->user = user;
+	r->num_open = num_open;
+	r->time = _time;
+	r->idle_time = idle_time;
+	r->user_flags = user_flags;
+}
+
+/*******************************************************************
+ inits a srvsvc_NetSessInfo2 structure
+ ********************************************************************/
+
+void init_srvsvc_NetSessInfo2(struct srvsvc_NetSessInfo2 *r,
+			      const char *client,
+			      const char *user,
+			      uint32_t num_open,
+			      uint32_t _time,
+			      uint32_t idle_time,
+			      uint32_t user_flags,
+			      const char *client_type)
+{
+	r->client = client;
+	r->user = user;
+	r->num_open = num_open;
+	r->time = _time;
+	r->idle_time = idle_time;
+	r->user_flags = user_flags;
+	r->client_type = client_type;
+}
+
+/*******************************************************************
+ inits a srvsvc_NetSessInfo10 structure
+ ********************************************************************/
+
+void init_srvsvc_NetSessInfo10(struct srvsvc_NetSessInfo10 *r,
+			       const char *client,
+			       const char *user,
+			       uint32_t _time,
+			       uint32_t idle_time)
+{
+	r->client = client;
+	r->user = user;
+	r->time = _time;
+	r->idle_time = idle_time;
+}
+
+/*******************************************************************
+ inits a srvsvc_NetSessInfo502 structure
+ ********************************************************************/
+
+void init_srvsvc_NetSessInfo502(struct srvsvc_NetSessInfo502 *r,
+			       const char *client,
+			       const char *user,
+			       uint32_t num_open,
+			       uint32_t _time,
+			       uint32_t idle_time,
+			       uint32_t user_flags,
+			       const char *client_type,
+			       const char *transport)
+{
+	r->client = client;
+	r->user = user;
+	r->num_open = num_open;
+	r->time = _time;
+	r->idle_time = idle_time;
+	r->user_flags = user_flags;
+	r->client_type = client_type;
+	r->transport = transport;
+}
