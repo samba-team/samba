@@ -120,12 +120,13 @@ ldb_tdb_OBJ_FILES = $(addprefix lib/ldb/ldb_tdb/, ldb_tdb.o ldb_search.o ldb_pac
 # Start SUBSYSTEM ldb
 [LIBRARY::LIBLDB]
 CFLAGS = -Ilib/ldb/include
-PC_FILE = ldb.pc
 INIT_FUNCTION_TYPE = extern const struct ldb_module_ops
 PUBLIC_DEPENDENCIES = \
 		LIBTALLOC
 PRIVATE_DEPENDENCIES = \
 		SOCKET_WRAPPER
+
+PC_FILES += $(ldbdir)/ldb.pc
 #
 # End SUBSYSTEM ldb
 ################################################
