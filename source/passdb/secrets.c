@@ -155,12 +155,9 @@ static const char *domain_sid_keystr(const char *domain)
 {
 	char *keystr;
 
-	keystr = talloc_asprintf(talloc_tos(), "%s/%s",
-				 SECRETS_DOMAIN_SID, domain);
+	keystr = talloc_asprintf_strupper_m(talloc_tos(), "%s/%s",
+					    SECRETS_DOMAIN_SID, domain);
 	SMB_ASSERT(keystr != NULL);
-
-	strupper_m(keystr);
-
 	return keystr;
 }
 
@@ -250,12 +247,10 @@ static const char *machine_sec_channel_type_keystr(const char *domain)
 {
 	char *keystr;
 
-	keystr = talloc_asprintf(talloc_tos(), "%s/%s",
-				 SECRETS_MACHINE_SEC_CHANNEL_TYPE, domain);
+	keystr = talloc_asprintf_strupper_m(talloc_tos(), "%s/%s",
+					    SECRETS_MACHINE_SEC_CHANNEL_TYPE,
+					    domain);
 	SMB_ASSERT(keystr != NULL);
-
-	strupper_m(keystr);
-
 	return keystr;
 }
 
@@ -270,12 +265,10 @@ static const char *machine_last_change_time_keystr(const char *domain)
 {
 	char *keystr;
 
-	keystr = talloc_asprintf(talloc_tos(), "%s/%s",
-				 SECRETS_MACHINE_LAST_CHANGE_TIME, domain);
+	keystr = talloc_asprintf_strupper_m(talloc_tos(), "%s/%s",
+					    SECRETS_MACHINE_LAST_CHANGE_TIME,
+					    domain);
 	SMB_ASSERT(keystr != NULL);
-
-	strupper_m(keystr);
-
 	return keystr;
 }
 
@@ -291,12 +284,9 @@ static const char *machine_password_keystr(const char *domain)
 {
 	char *keystr;
 
-	keystr = talloc_asprintf(talloc_tos(), "%s/%s",
-				 SECRETS_MACHINE_PASSWORD, domain);
+	keystr = talloc_asprintf_strupper_m(talloc_tos(), "%s/%s",
+					    SECRETS_MACHINE_PASSWORD, domain);
 	SMB_ASSERT(keystr != NULL);
-
-	strupper_m(keystr);
-
 	return keystr;
 }
 
@@ -311,12 +301,9 @@ static const char *trust_keystr(const char *domain)
 {
 	char *keystr;
 
-	keystr = talloc_asprintf(talloc_tos(), "%s/%s",
-				 SECRETS_MACHINE_ACCT_PASS, domain);
+	keystr = talloc_asprintf_strupper_m(talloc_tos(), "%s/%s",
+					    SECRETS_MACHINE_ACCT_PASS, domain);
 	SMB_ASSERT(keystr != NULL);
-
-	strupper_m(keystr);
-
 	return keystr;
 }
 
@@ -331,11 +318,10 @@ static char *trustdom_keystr(const char *domain)
 {
 	char *keystr;
 
-	keystr = talloc_asprintf(talloc_tos(), "%s/%s",
-				 SECRETS_DOMTRUST_ACCT_PASS, domain);
+	keystr = talloc_asprintf_strupper_m(talloc_tos(), "%s/%s",
+					    SECRETS_DOMTRUST_ACCT_PASS,
+					    domain);
 	SMB_ASSERT(keystr != NULL);
-	strupper_m(keystr);
-
 	return keystr;
 }
 
@@ -1211,13 +1197,12 @@ bool secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx,
 	TDB_CONTEXT *tdb_sc = NULL;
 	TDB_DATA value;
 	bool ret;
-	char *keystr = talloc_asprintf(mem_ctx, "%s/%s", SECRETS_SCHANNEL_STATE,
-				remote_machine);
+	char *keystr = talloc_asprintf_strupper_m(mem_ctx, "%s/%s",
+						  SECRETS_SCHANNEL_STATE,
+						  remote_machine);
 	if (!keystr) {
 		return False;
 	}
-
-	strupper_m(keystr);
 
 	/* Work out how large the record is. */
 	value.dsize = tdb_pack(NULL, 0, "dBBBBBfff",
@@ -1285,16 +1270,15 @@ bool secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 	uint32 l1, l2, l3, l4, l5;
 	int ret;
 	struct dcinfo *pdc = NULL;
-	char *keystr = talloc_asprintf(mem_ctx, "%s/%s", SECRETS_SCHANNEL_STATE,
-				remote_machine);
+	char *keystr = talloc_asprintf_strupper_m(mem_ctx, "%s/%s",
+						  SECRETS_SCHANNEL_STATE,
+						  remote_machine);
 
 	*ppdc = NULL;
 
 	if (!keystr) {
 		return False;
 	}
-
-	strupper_m(keystr);
 
 	tdb_sc = open_schannel_session_store(mem_ctx);
 	if (!tdb_sc) {
