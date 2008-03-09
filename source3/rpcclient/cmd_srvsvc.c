@@ -661,6 +661,89 @@ static WERROR cmd_srvsvc_net_sess_del(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static WERROR cmd_srvsvc_net_sess_enum(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       int argc, const char **argv)
+{
+	WERROR result;
+	NTSTATUS status;
+	struct srvsvc_NetSessInfoCtr info_ctr;
+	struct srvsvc_NetSessCtr0 ctr0;
+	struct srvsvc_NetSessCtr1 ctr1;
+	struct srvsvc_NetSessCtr2 ctr2;
+	struct srvsvc_NetSessCtr10 ctr10;
+	struct srvsvc_NetSessCtr502 ctr502;
+	uint32_t total_entries = 0;
+	uint32_t resume_handle = 0;
+	uint32_t level = 1;
+	const char *client = NULL;
+	const char *user = NULL;
+
+	if (argc > 5) {
+		printf("Usage: %s [client] [user]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc >= 2) {
+		client = argv[1];
+	}
+
+	if (argc >= 3) {
+		user = argv[2];
+	}
+
+	if (argc >= 4) {
+		level = atoi(argv[3]);
+	}
+
+	ZERO_STRUCT(info_ctr);
+
+	info_ctr.level = level;
+
+	d_printf("trying level: %d\n", level);
+
+	switch (level) {
+	case 0:
+		ZERO_STRUCT(ctr0);
+		info_ctr.ctr.ctr0 = &ctr0;
+		break;
+	case 1:
+		ZERO_STRUCT(ctr1);
+		info_ctr.ctr.ctr1 = &ctr1;
+		break;
+	case 2:
+		ZERO_STRUCT(ctr2);
+		info_ctr.ctr.ctr2 = &ctr2;
+		break;
+	case 10:
+		ZERO_STRUCT(ctr10);
+		info_ctr.ctr.ctr10 = &ctr10;
+		break;
+	case 502:
+		ZERO_STRUCT(ctr502);
+		info_ctr.ctr.ctr502 = &ctr502;
+		break;
+	}
+
+	status = rpccli_srvsvc_NetSessEnum(cli, mem_ctx,
+					  cli->cli->desthost,
+					  client,
+					  user,
+					  &info_ctr,
+					  0xffffffff,
+					  &total_entries,
+					  &resume_handle,
+					  &result);
+
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+ done:
+	return result;
+}
+
+
 
 /* List of commands exported by this module */
 
@@ -678,6 +761,7 @@ struct cmd_set srvsvc_commands[] = {
 	{ "netnamevalidate", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_name_validate, PI_SRVSVC, NULL, "Validate sharename", "" },
 	{ "netfilegetsec", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_file_get_sec, PI_SRVSVC, NULL, "Get File security", "" },
 	{ "netsessdel", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_sess_del, PI_SRVSVC, NULL, "Delete Session", "" },
+	{ "netsessenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_sess_enum, PI_SRVSVC, NULL, "Enumerate Sessions", "" },
 
 	{ NULL }
 };
