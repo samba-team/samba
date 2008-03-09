@@ -1,13 +1,13 @@
 ################################################
 # Start SUBSYSTEM LIBNDR
 [LIBRARY::LIBNDR]
-PC_FILE = ndr.pc
 PRIVATE_PROTO_HEADER = ndr/libndr_proto.h
 PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBTALLOC LIBSAMBA-UTIL CHARSET EXT_NSL \
 					  LIBSAMBA-CONFIG
 
 LIBNDR_OBJ_FILES = $(addprefix librpc/ndr/, ndr.o ndr_basic.o ndr_string.o uuid.o)
 
+PC_FILES += librpc/ndr.pc
 LIBNDR_VERSION = 0.0.1
 LIBNDR_SOVERSION = 0
 
@@ -427,8 +427,9 @@ PUBLIC_DEPENDENCIES = dcerpc NDR_UNIXINFO
 RPC_NDR_UNIXINFO_OBJ_FILES = librpc/gen_ndr/ndr_unixinfo_c.o
 
 [LIBRARY::dcerpc_samr]
-PC_FILE = dcerpc_samr.pc
 PUBLIC_DEPENDENCIES = dcerpc NDR_SAMR 
+
+PC_FILES += librpc/dcerpc_samr.pc
 
 dcerpc_samr_VERSION = 0.0.1
 dcerpc_samr_SOVERSION = 0
@@ -568,7 +569,6 @@ PUBLIC_HEADERS += $(addprefix librpc/, gen_ndr/dcerpc.h gen_ndr/ndr_dcerpc.h)
 ################################################
 # Start SUBSYSTEM dcerpc
 [LIBRARY::dcerpc]
-PC_FILE = dcerpc.pc
 PRIVATE_PROTO_HEADER = rpc/dcerpc_proto.h
 PRIVATE_DEPENDENCIES = \
 		samba-socket LIBCLI_RESOLVE LIBCLI_SMB LIBCLI_SMB2 \
@@ -580,6 +580,7 @@ PUBLIC_DEPENDENCIES = CREDENTIALS
 # End SUBSYSTEM dcerpc
 ################################################
 
+PC_FILES += librpc/dcerpc.pc
 dcerpc_VERSION = 0.0.1
 dcerpc_SOVERSION = 0
 

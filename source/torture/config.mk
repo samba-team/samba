@@ -1,6 +1,5 @@
 # TORTURE subsystem
 [LIBRARY::torture]
-PC_FILE = torture.pc
 PRIVATE_PROTO_HEADER = proto.h
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-CONFIG \
@@ -8,6 +7,7 @@ PUBLIC_DEPENDENCIES = \
 		LIBTALLOC \
 		LIBPOPT
 
+PC_FILES += torture/torture.pc
 torture_OBJ_FILES = $(addprefix torture/, torture.o ui.o)
 
 PUBLIC_HEADERS += torture/torture.h torture/ui.h

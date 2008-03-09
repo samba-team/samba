@@ -18,12 +18,13 @@ clean::
 ################################################
 # Start SUBSYSTEM registry
 [LIBRARY::registry]
-PC_FILE = registry.pc
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-UTIL CHARSET TDR_REGF LIBLDB \
 		RPC_NDR_WINREG LDB_WRAP
 # End MODULE registry_ldb
 ################################################
+
+PC_FILES += lib/registry/registry.pc
 
 registry_VERSION = 0.0.1
 registry_SOVERSION = 0
