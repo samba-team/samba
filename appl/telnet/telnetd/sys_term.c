@@ -159,6 +159,8 @@ char	wtmpf[]	= "/etc/wtmp";
 # ifdef  STREAMSPTY
      static int ttyfd = -1;
      int really_stream = 0;
+# else
+#define really_stream 0
 # endif
 
      const char *new_login = _PATH_LOGIN;
@@ -1008,8 +1010,10 @@ int cleanopen(char *line)
 
 int login_tty(int t)
 {
+    /* Dont need to set this as the controlling PTY on steams sockets,
+     * don't abort on failure. */
 # if defined(TIOCSCTTY) && !defined(__hpux)
-    if (ioctl(t, TIOCSCTTY, (char *)0) < 0)
+    if (ioctl(t, TIOCSCTTY, (char *)0) < 0 && !really_stream)
 	fatalperror(net, "ioctl(sctty)");
 #  ifdef _CRAY
     /*
