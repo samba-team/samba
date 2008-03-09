@@ -1,3 +1,8 @@
+2008-03-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/acache.c (acc_get_name): just return the cache_name
+	directly instead of trying to resolve it.
+
 2008-02-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* include/Makefile.am (CLEANFILES): add wind.h and wind_err.h and
