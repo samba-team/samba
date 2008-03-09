@@ -88,3 +88,31 @@ uint32_t dbwrap_change_uint32_atomic(struct db_context *db, const char *keystr,
 	return 0;
 }
 
+int32 dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
+				 int32 *oldval, int32 change_val)
+{
+	struct db_record *rec;
+	int32 val = -1;
+	TDB_DATA data;
+
+	if (!(rec = db->fetch_locked(db, NULL,
+				     string_term_tdb_data(keystr)))) {
+		return -1;
+	}
+
+	if ((rec->value.dptr != NULL)
+	    && (rec->value.dsize == sizeof(val))) {
+		val = IVAL(rec->value.dptr, 0);
+	}
+
+	val += change_val;
+
+	data.dsize = sizeof(val);
+	data.dptr = (uint8 *)&val;
+
+	rec->store(rec, data, TDB_REPLACE);
+
+	TALLOC_FREE(rec);
+
+	return 0;
+}
