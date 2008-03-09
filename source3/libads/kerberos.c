@@ -894,6 +894,8 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 		DEBUG(0,("create_local_private_krb5_conf_for_domain: smb_mkstemp failed,"
 			" for file %s. Errno %s\n",
 			tmpname, strerror(errno) ));
+		TALLOC_FREE(dname);
+		return false;
 	}
 
 	if (fchmod(fd, 0644)==-1) {

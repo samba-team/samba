@@ -24,7 +24,7 @@
 ****************************************************************************/
 static size_t cli_read_max_bufsize(struct cli_state *cli)
 {
-	if (!client_is_signing_on(cli) && !cli_encryption_on(cli) == false
+	if (!client_is_signing_on(cli) && !cli_encryption_on(cli)
 	    && (cli->posix_capabilities & CIFS_UNIX_LARGE_READ_CAP)) {
 		return CLI_SAMBA_MAX_POSIX_LARGE_READX_SIZE;
 	}

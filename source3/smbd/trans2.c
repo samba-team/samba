@@ -3189,7 +3189,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				}
 
 				DEBUG( 4,("call_trans2setfsinfo: "
-					"request transport encrption.\n"));
+					"request transport encryption.\n"));
 
 				status = srv_request_encryption_setup(conn,
 								(unsigned char **)ppdata,
