@@ -148,14 +148,14 @@ $(1): $(2)
 
 ifneq ($(notdir $(1)),$(notdir $(4)))
 $(4): $(1)
-	@echo "Creating symbolic link for $(4)"
-	@ln -fs $(notdir $(4)) $(1)
+	@echo "Creating symbolic link for $$@"
+	@ln -fs $$(<F) $$@
 endif
 
 ifneq ($(notdir $(1)),$(notdir $(5)))
 $(5): $(1)
-	@echo "Creating symbolic link for $(5)"
-	@ln -fs $(notdir $(5)) $(1)
+	@echo "Creating symbolic link for $$@"
+	@ln -fs $$(<F) $$@
 endif
 endef
 
