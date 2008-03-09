@@ -406,18 +406,7 @@ static const char*
 acc_get_name(krb5_context context,
 	     krb5_ccache id)
 {
-    krb5_acc *a = ACACHE(id);
-    static char n[255];
-    char *name;
-
-    name = get_cc_name(a->ccache);
-    if (name == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	return NULL;
-    }
-    strlcpy(n, name, sizeof(n));
-    free(name);
-    return n;
+    return ACACHE(id)->cache_name;
 }
 
 static krb5_error_code
