@@ -154,6 +154,7 @@ void ndr_print_srvsvc_NetSessCtr10(struct ndr_print *ndr, const char *name, cons
 void ndr_print_srvsvc_NetSessInfo502(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessInfo502 *r);
 void ndr_print_srvsvc_NetSessCtr502(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessCtr502 *r);
 void ndr_print_srvsvc_NetSessCtr(struct ndr_print *ndr, const char *name, const union srvsvc_NetSessCtr *r);
+void ndr_print_srvsvc_NetSessInfoCtr(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessInfoCtr *r);
 void ndr_print_srvsvc_ShareType(struct ndr_print *ndr, const char *name, enum srvsvc_ShareType r);
 void ndr_print_srvsvc_NetShareInfo0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareInfo0 *r);
 void ndr_print_srvsvc_NetShareCtr0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetShareCtr0 *r);
