@@ -3496,6 +3496,44 @@ _PUBLIC_ void ndr_print_srvsvc_NetSessCtr(struct ndr_print *ndr, const char *nam
 	}
 }
 
+static enum ndr_err_code ndr_push_srvsvc_NetSessInfoCtr(struct ndr_push *ndr, int ndr_flags, const struct srvsvc_NetSessInfoCtr *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->level));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->ctr, r->level));
+		NDR_CHECK(ndr_push_srvsvc_NetSessCtr(ndr, NDR_SCALARS, &r->ctr));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_push_srvsvc_NetSessCtr(ndr, NDR_BUFFERS, &r->ctr));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_srvsvc_NetSessInfoCtr(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetSessInfoCtr *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->level));
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->ctr, r->level));
+		NDR_CHECK(ndr_pull_srvsvc_NetSessCtr(ndr, NDR_SCALARS, &r->ctr));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_pull_srvsvc_NetSessCtr(ndr, NDR_BUFFERS, &r->ctr));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_srvsvc_NetSessInfoCtr(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessInfoCtr *r)
+{
+	ndr_print_struct(ndr, name, "srvsvc_NetSessInfoCtr");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "level", r->level);
+	ndr_print_set_switch_value(ndr, &r->ctr, r->level);
+	ndr_print_srvsvc_NetSessCtr(ndr, "ctr", &r->ctr);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_srvsvc_ShareType(struct ndr_push *ndr, int ndr_flags, enum srvsvc_ShareType r)
 {
 	{
@@ -14824,15 +14862,10 @@ static enum ndr_err_code ndr_push_srvsvc_NetSessEnum(struct ndr_push *ndr, int f
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.user, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.user, ndr_charset_length(r->in.user, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		if (r->in.level == NULL) {
+		if (r->in.info_ctr == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.level));
-		if (r->in.ctr == NULL) {
-			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
-		}
-		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.ctr, *r->in.level));
-		NDR_CHECK(ndr_push_srvsvc_NetSessCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.ctr));
+		NDR_CHECK(ndr_push_srvsvc_NetSessInfoCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info_ctr));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.max_buffer));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.resume_handle));
 		if (r->in.resume_handle) {
@@ -14840,15 +14873,10 @@ static enum ndr_err_code ndr_push_srvsvc_NetSessEnum(struct ndr_push *ndr, int f
 		}
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.level == NULL) {
+		if (r->out.info_ctr == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.level));
-		if (r->out.ctr == NULL) {
-			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
-		}
-		NDR_CHECK(ndr_push_set_switch_value(ndr, r->out.ctr, *r->out.level));
-		NDR_CHECK(ndr_push_srvsvc_NetSessCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.ctr));
+		NDR_CHECK(ndr_push_srvsvc_NetSessInfoCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.info_ctr));
 		if (r->out.totalentries == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -14871,8 +14899,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetSessEnum(struct ndr_pull *ndr, int f
 	TALLOC_CTX *_mem_save_server_unc_0;
 	TALLOC_CTX *_mem_save_client_0;
 	TALLOC_CTX *_mem_save_user_0;
-	TALLOC_CTX *_mem_save_level_0;
-	TALLOC_CTX *_mem_save_ctr_0;
+	TALLOC_CTX *_mem_save_info_ctr_0;
 	TALLOC_CTX *_mem_save_totalentries_0;
 	TALLOC_CTX *_mem_save_resume_handle_0;
 	if (flags & NDR_IN) {
@@ -14933,20 +14960,12 @@ static enum ndr_err_code ndr_pull_srvsvc_NetSessEnum(struct ndr_pull *ndr, int f
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_user_0, 0);
 		}
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->in.level);
+			NDR_PULL_ALLOC(ndr, r->in.info_ctr);
 		}
-		_mem_save_level_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->in.level, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.level));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_level_0, LIBNDR_FLAG_REF_ALLOC);
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->in.ctr);
-		}
-		_mem_save_ctr_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->in.ctr, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.ctr, *r->in.level));
-		NDR_CHECK(ndr_pull_srvsvc_NetSessCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.ctr));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctr_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_info_ctr_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.info_ctr, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_srvsvc_NetSessInfoCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info_ctr));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_ctr_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.max_buffer));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_resume_handle));
 		if (_ptr_resume_handle) {
@@ -14960,29 +14979,19 @@ static enum ndr_err_code ndr_pull_srvsvc_NetSessEnum(struct ndr_pull *ndr, int f
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.resume_handle));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_resume_handle_0, 0);
 		}
-		NDR_PULL_ALLOC(ndr, r->out.level);
-		*r->out.level = *r->in.level;
-		NDR_PULL_ALLOC(ndr, r->out.ctr);
-		*r->out.ctr = *r->in.ctr;
+		NDR_PULL_ALLOC(ndr, r->out.info_ctr);
+		*r->out.info_ctr = *r->in.info_ctr;
 		NDR_PULL_ALLOC(ndr, r->out.totalentries);
 		ZERO_STRUCTP(r->out.totalentries);
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.level);
+			NDR_PULL_ALLOC(ndr, r->out.info_ctr);
 		}
-		_mem_save_level_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.level, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.level));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_level_0, LIBNDR_FLAG_REF_ALLOC);
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.ctr);
-		}
-		_mem_save_ctr_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.ctr, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->out.ctr, *r->out.level));
-		NDR_CHECK(ndr_pull_srvsvc_NetSessCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.ctr));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctr_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_info_ctr_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.info_ctr, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_srvsvc_NetSessInfoCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.info_ctr));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_ctr_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.totalentries);
 		}
@@ -15035,14 +15044,9 @@ _PUBLIC_ void ndr_print_srvsvc_NetSessEnum(struct ndr_print *ndr, const char *na
 			ndr_print_string(ndr, "user", r->in.user);
 		}
 		ndr->depth--;
-		ndr_print_ptr(ndr, "level", r->in.level);
+		ndr_print_ptr(ndr, "info_ctr", r->in.info_ctr);
 		ndr->depth++;
-		ndr_print_uint32(ndr, "level", *r->in.level);
-		ndr->depth--;
-		ndr_print_ptr(ndr, "ctr", r->in.ctr);
-		ndr->depth++;
-		ndr_print_set_switch_value(ndr, r->in.ctr, *r->in.level);
-		ndr_print_srvsvc_NetSessCtr(ndr, "ctr", r->in.ctr);
+		ndr_print_srvsvc_NetSessInfoCtr(ndr, "info_ctr", r->in.info_ctr);
 		ndr->depth--;
 		ndr_print_uint32(ndr, "max_buffer", r->in.max_buffer);
 		ndr_print_ptr(ndr, "resume_handle", r->in.resume_handle);
@@ -15056,14 +15060,9 @@ _PUBLIC_ void ndr_print_srvsvc_NetSessEnum(struct ndr_print *ndr, const char *na
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "srvsvc_NetSessEnum");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "level", r->out.level);
+		ndr_print_ptr(ndr, "info_ctr", r->out.info_ctr);
 		ndr->depth++;
-		ndr_print_uint32(ndr, "level", *r->out.level);
-		ndr->depth--;
-		ndr_print_ptr(ndr, "ctr", r->out.ctr);
-		ndr->depth++;
-		ndr_print_set_switch_value(ndr, r->out.ctr, *r->out.level);
-		ndr_print_srvsvc_NetSessCtr(ndr, "ctr", r->out.ctr);
+		ndr_print_srvsvc_NetSessInfoCtr(ndr, "info_ctr", r->out.info_ctr);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "totalentries", r->out.totalentries);
 		ndr->depth++;
