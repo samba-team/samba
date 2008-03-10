@@ -4535,6 +4535,7 @@ static void init_globals(bool first_time_only)
 {
 	static bool done_init = False;
 	char *s = NULL;
+	int i;
 
         /* If requested to initialize only once and we've already done it... */
         if (first_time_only && done_init) {
@@ -4543,29 +4544,38 @@ static void init_globals(bool first_time_only)
         }
 
 	if (!done_init) {
-		int i;
-
 		/* The logfile can be set before this is invoked. Free it if so. */
 		if (Globals.szLogFile != NULL) {
 			string_free(&Globals.szLogFile);
 			Globals.szLogFile = NULL;
 		}
-
-		memset((void *)&Globals, '\0', sizeof(Globals));
-
-		for (i = 0; parm_table[i].label; i++)
+		done_init = True;
+	} else {
+		for (i = 0; parm_table[i].label; i++) {
 			if ((parm_table[i].type == P_STRING ||
 			     parm_table[i].type == P_USTRING) &&
 			    parm_table[i].ptr)
-				string_set((char **)parm_table[i].ptr, "");
-
-		string_set(&sDefault.fstype, FSTYPE_STRING);
-		string_set(&sDefault.szPrintjobUsername, "%U");
-
-		init_printer_values(&sDefault);
-
-		done_init = True;
+			{
+				string_free((char **)parm_table[i].ptr);
+			}
+		}
 	}
+
+	memset((void *)&Globals, '\0', sizeof(Globals));
+
+	for (i = 0; parm_table[i].label; i++) {
+		if ((parm_table[i].type == P_STRING ||
+		     parm_table[i].type == P_USTRING) &&
+		    parm_table[i].ptr)
+		{
+			string_set((char **)parm_table[i].ptr, "");
+		}
+	}
+
+	string_set(&sDefault.fstype, FSTYPE_STRING);
+	string_set(&sDefault.szPrintjobUsername, "%U");
+
+	init_printer_values(&sDefault);
 
 
 	DEBUG(3, ("Initialising global parameters\n"));
