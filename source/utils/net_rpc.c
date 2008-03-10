@@ -4748,20 +4748,25 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 	SEC_DESC *root_sd = NULL;
 	struct cli_state *cli = pipe_hnd->cli;
 	int i;
-	SRV_SHARE_INFO info;
+	union srvsvc_NetShareInfo info;
 	WERROR result;
+	NTSTATUS status;
 	uint16 cnum;
 
-	result = rpccli_srvsvc_net_share_get_info(pipe_hnd, mem_ctx, netname,
-					       502, &info);
+	status = rpccli_srvsvc_NetShareGetInfo(pipe_hnd, mem_ctx,
+					       pipe_hnd->cli->desthost,
+					       netname,
+					       502,
+					       &info,
+					       &result);
 
-	if (!W_ERROR_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
 		DEBUG(1, ("Coult not query secdesc for share %s\n",
 			  netname));
 		return;
 	}
 
-	share_sd = info.share.info502.info_502_str.sd;
+	share_sd = info.info502->sd;
 	if (share_sd == NULL) {
 		DEBUG(1, ("Got no secdesc for share %s\n",
 			  netname));
@@ -4781,7 +4786,6 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 
 	for (i=0; i<num_tokens; i++) {
 		uint32 acc_granted;
-		NTSTATUS status;
 
 		if (share_sd != NULL) {
 			if (!se_access_check(share_sd, &tokens[i].token,
@@ -5088,34 +5092,29 @@ static NTSTATUS rpc_sh_share_info(TALLOC_CTX *mem_ctx,
 				  struct rpc_pipe_client *pipe_hnd,
 				  int argc, const char **argv)
 {
-	SRV_SHARE_INFO info;
-	SRV_SHARE_INFO_2 *info2 = &info.share.info2;
+	union srvsvc_NetShareInfo info;
 	WERROR result;
+	NTSTATUS status;
 
 	if (argc != 1) {
 		d_fprintf(stderr, "usage: %s <share>\n", ctx->whoami);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	result = rpccli_srvsvc_net_share_get_info(
-		pipe_hnd, mem_ctx, argv[0], 2, &info);
-	if (!W_ERROR_IS_OK(result)) {
+	status = rpccli_srvsvc_NetShareGetInfo(pipe_hnd, mem_ctx,
+					       pipe_hnd->cli->desthost,
+					       argv[0],
+					       2,
+					       &info,
+					       &result);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	d_printf("Name:     %s\n",
-		 rpcstr_pull_unistr2_talloc(mem_ctx,
-					    &info2->info_2_str.uni_netname));
-	d_printf("Comment:  %s\n",
-		 rpcstr_pull_unistr2_talloc(mem_ctx,
-					    &info2->info_2_str.uni_remark));
-	
-	d_printf("Path:     %s\n",
-		 rpcstr_pull_unistr2_talloc(mem_ctx,
-					    &info2->info_2_str.uni_path));
-	d_printf("Password: %s\n",
-		 rpcstr_pull_unistr2_talloc(mem_ctx,
-					    &info2->info_2_str.uni_passwd));
+	d_printf("Name:     %s\n", info.info2->name);
+	d_printf("Comment:  %s\n", info.info2->comment);
+	d_printf("Path:     %s\n", info.info2->path);
+	d_printf("Password: %s\n", info.info2->password);
 
  done:
 	return werror_to_ntstatus(result);
