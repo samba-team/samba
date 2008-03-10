@@ -545,10 +545,13 @@ static WERROR cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli,
 					 int argc, const char **argv)
 {
 	uint32 info_level = 3;
-	SRV_FILE_INFO_CTR ctr;
+	struct srvsvc_NetFileInfoCtr info_ctr;
+	struct srvsvc_NetFileCtr3 ctr3;
 	WERROR result;
-	ENUM_HND hnd;
+	NTSTATUS status;
 	uint32 preferred_len = 0xffff;
+	uint32_t total_entries = 0;
+	uint32_t resume_handle = 0;
 
 	if (argc > 2) {
 		printf("Usage: %s [infolevel]\n", argv[0]);
@@ -558,14 +561,23 @@ static WERROR cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli,
 	if (argc == 2)
 		info_level = atoi(argv[1]);
 
-	init_enum_hnd(&hnd, 0);
+	ZERO_STRUCT(info_ctr);
+	ZERO_STRUCT(ctr3);
 
-	ZERO_STRUCT(ctr);
+	info_ctr.level = info_level;
+	info_ctr.ctr.ctr3 = &ctr3;
 
-	result = rpccli_srvsvc_net_file_enum(
-		cli, mem_ctx, info_level, NULL, &ctr, preferred_len, &hnd);
+	status = rpccli_srvsvc_NetFileEnum(cli, mem_ctx,
+					   cli->cli->desthost,
+					   NULL,
+					   NULL,
+					   &info_ctr,
+					   preferred_len,
+					   &total_entries,
+					   &resume_handle,
+					   &result);
 
-	if (!W_ERROR_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result))
 		goto done;
 
  done:
