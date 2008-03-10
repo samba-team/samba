@@ -135,6 +135,11 @@ union srvsvc_NetFileCtr {
 	struct srvsvc_NetFileCtr3 *ctr3;/* [unique,case(3)] */
 };
 
+struct srvsvc_NetFileInfoCtr {
+	uint32_t level;
+	union srvsvc_NetFileCtr ctr;/* [switch_is(level)] */
+};
+
 struct srvsvc_NetSessInfo0 {
 	const char *client;/* [unique,charset(UTF16)] */
 };
@@ -1173,15 +1178,13 @@ struct srvsvc_NetFileEnum {
 		const char *path;/* [unique,charset(UTF16)] */
 		const char *user;/* [unique,charset(UTF16)] */
 		uint32_t max_buffer;
-		uint32_t *level;/* [ref] */
-		union srvsvc_NetFileCtr *ctr;/* [ref,switch_is(*level)] */
+		struct srvsvc_NetFileInfoCtr *info_ctr;/* [ref] */
 		uint32_t *resume_handle;/* [unique] */
 	} in;
 
 	struct {
 		uint32_t *totalentries;/* [ref] */
-		uint32_t *level;/* [ref] */
-		union srvsvc_NetFileCtr *ctr;/* [ref,switch_is(*level)] */
+		struct srvsvc_NetFileInfoCtr *info_ctr;/* [ref] */
 		uint32_t *resume_handle;/* [unique] */
 		WERROR result;
 	} out;

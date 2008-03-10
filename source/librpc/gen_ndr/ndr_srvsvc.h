@@ -143,6 +143,7 @@ void ndr_print_srvsvc_NetFileInfo3(struct ndr_print *ndr, const char *name, cons
 void ndr_print_srvsvc_NetFileCtr3(struct ndr_print *ndr, const char *name, const struct srvsvc_NetFileCtr3 *r);
 void ndr_print_srvsvc_NetFileInfo(struct ndr_print *ndr, const char *name, const union srvsvc_NetFileInfo *r);
 void ndr_print_srvsvc_NetFileCtr(struct ndr_print *ndr, const char *name, const union srvsvc_NetFileCtr *r);
+void ndr_print_srvsvc_NetFileInfoCtr(struct ndr_print *ndr, const char *name, const struct srvsvc_NetFileInfoCtr *r);
 void ndr_print_srvsvc_NetSessInfo0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessInfo0 *r);
 void ndr_print_srvsvc_NetSessCtr0(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessCtr0 *r);
 void ndr_print_srvsvc_NetSessInfo1(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSessInfo1 *r);
