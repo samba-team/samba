@@ -1,125 +1,125 @@
-	/* Unix NT password database implementation, version 0.6.
-	 *
-	 * This program is free software; you can redistribute it and/or modify it under
-	 * the terms of the GNU General Public License as published by the Free
-	 * Software Foundation; either version 3 of the License, or (at your option)
-	 * any later version.
-	 *
-	 * This program is distributed in the hope that it will be useful, but WITHOUT
-	 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-	 * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-	 * more details.
-	 *
-	 * You should have received a copy of the GNU General Public License along with
-	 * this program; if not, see <http://www.gnu.org/licenses/>.
-	 */
+/* Unix NT password database implementation, version 0.6.
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 3 of the License, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program; if not, see <http://www.gnu.org/licenses/>.
+ */
 
-	#include "includes.h"
-	#include "general.h"
+#include "includes.h"
+#include "general.h"
 
-	#include "support.h"
-
-
-	#define _pam_overwrite(x)        \
-	do {                             \
-	     register char *__xx__;      \
-	     if ((__xx__=(x)))           \
-		  while (*__xx__)        \
-		       *__xx__++ = '\0'; \
-	} while (0)
-
-	/*
-	 * Don't just free it, forget it too.
-	 */
-
-	#define _pam_drop(X) \
-	do {                 \
-	    if (X) {         \
-		free(X);     \
-		X=NULL;      \
-	    }                \
-	} while (0)
-
-	#define _pam_drop_reply(/* struct pam_response * */ reply, /* int */ replies) \
-	do {                                              \
-	    int reply_i;                                  \
-							  \
-	    for (reply_i=0; reply_i<replies; ++reply_i) { \
-		if (reply[reply_i].resp) {                \
-		    _pam_overwrite(reply[reply_i].resp);  \
-		    free(reply[reply_i].resp);            \
-		}                                         \
-	    }                                             \
-	    if (reply)                                    \
-		free(reply);                              \
-	} while (0)
+#include "support.h"
 
 
-	int converse(pam_handle_t *, int, int, struct pam_message **,
-				 struct pam_response **);
-	int make_remark(pam_handle_t *, unsigned int, int, const char *);
-	void _cleanup(pam_handle_t *, void *, int);
-	char *_pam_delete(register char *);
+#define _pam_overwrite(x)        \
+do {                             \
+     register char *__xx__;      \
+     if ((__xx__=(x)))           \
+	  while (*__xx__)        \
+	       *__xx__++ = '\0'; \
+} while (0)
 
-	/* syslogging function for errors and other information */
+/*
+ * Don't just free it, forget it too.
+ */
 
-	void _log_err( int err, const char *format, ... )
-	{
-	    va_list args;
+#define _pam_drop(X) \
+do {                 \
+    if (X) {         \
+	free(X);     \
+	X=NULL;      \
+    }                \
+} while (0)
 
-	    va_start( args, format );
-	    openlog( "PAM_smbpass", LOG_CONS | LOG_PID, LOG_AUTH );
-	    vsyslog( err, format, args );
-	    va_end( args );
-	    closelog();
-	}
+#define _pam_drop_reply(/* struct pam_response * */ reply, /* int */ replies) \
+do {                                              \
+    int reply_i;                                  \
+						  \
+    for (reply_i=0; reply_i<replies; ++reply_i) { \
+	if (reply[reply_i].resp) {                \
+	    _pam_overwrite(reply[reply_i].resp);  \
+	    free(reply[reply_i].resp);            \
+	}                                         \
+    }                                             \
+    if (reply)                                    \
+	free(reply);                              \
+} while (0)
 
-	/* this is a front-end for module-application conversations */
 
-	int converse( pam_handle_t * pamh, int ctrl, int nargs
-		      , struct pam_message **message
-		      , struct pam_response **response )
-	{
-		int retval;
-		struct pam_conv *conv;
+int converse(pam_handle_t *, int, int, struct pam_message **,
+			 struct pam_response **);
+int make_remark(pam_handle_t *, unsigned int, int, const char *);
+void _cleanup(pam_handle_t *, void *, int);
+char *_pam_delete(register char *);
 
-		retval = pam_get_item(pamh, PAM_CONV, (const void **) &conv);
-		if (retval == PAM_SUCCESS) {
+/* syslogging function for errors and other information */
 
-			retval = conv->conv(nargs, (const struct pam_message **) message
-								,response, conv->appdata_ptr);
+void _log_err( int err, const char *format, ... )
+{
+    va_list args;
 
-			if (retval != PAM_SUCCESS && on(SMB_DEBUG, ctrl)) {
-				_log_err(LOG_DEBUG, "conversation failure [%s]"
-						 ,pam_strerror(pamh, retval));
-			}
-		} else {
-			_log_err(LOG_ERR, "couldn't obtain coversation function [%s]"
+    va_start( args, format );
+    openlog( "PAM_smbpass", LOG_CONS | LOG_PID, LOG_AUTH );
+    vsyslog( err, format, args );
+    va_end( args );
+    closelog();
+}
+
+/* this is a front-end for module-application conversations */
+
+int converse( pam_handle_t * pamh, int ctrl, int nargs
+	      , struct pam_message **message
+	      , struct pam_response **response )
+{
+	int retval;
+	struct pam_conv *conv;
+
+	retval = pam_get_item(pamh, PAM_CONV, (const void **) &conv);
+	if (retval == PAM_SUCCESS) {
+
+		retval = conv->conv(nargs, (const struct pam_message **) message
+							,response, conv->appdata_ptr);
+
+		if (retval != PAM_SUCCESS && on(SMB_DEBUG, ctrl)) {
+			_log_err(LOG_DEBUG, "conversation failure [%s]"
 					 ,pam_strerror(pamh, retval));
 		}
-
-		return retval;				/* propagate error status */
+	} else {
+		_log_err(LOG_ERR, "couldn't obtain coversation function [%s]"
+				 ,pam_strerror(pamh, retval));
 	}
 
-	int make_remark( pam_handle_t * pamh, unsigned int ctrl
-			 , int type, const char *text )
-	{
-		if (off(SMB__QUIET, ctrl)) {
-			struct pam_message *pmsg[1], msg[1];
-			struct pam_response *resp;
+	return retval;				/* propagate error status */
+}
 
-			pmsg[0] = &msg[0];
-			msg[0].msg = CONST_DISCARD(char *, text);
-			msg[0].msg_style = type;
-			resp = NULL;
+int make_remark( pam_handle_t * pamh, unsigned int ctrl
+		 , int type, const char *text )
+{
+	if (off(SMB__QUIET, ctrl)) {
+		struct pam_message *pmsg[1], msg[1];
+		struct pam_response *resp;
 
-			return converse(pamh, ctrl, 1, pmsg, &resp);
-		}
-		return PAM_SUCCESS;
+		pmsg[0] = &msg[0];
+		msg[0].msg = CONST_DISCARD(char *, text);
+		msg[0].msg_style = type;
+		resp = NULL;
+
+		return converse(pamh, ctrl, 1, pmsg, &resp);
 	}
+	return PAM_SUCCESS;
+}
 
 
-	/* set the control flags for the SMB module. */
+/* set the control flags for the SMB module. */
 
 int set_ctrl( int flags, int argc, const char **argv )
 {
