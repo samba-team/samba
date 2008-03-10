@@ -600,7 +600,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	mode = pvfs_fileperms(pvfs, attrib);
 
 	/* create the file */
-	fd = open(name->full_name, flags | O_CREAT | O_EXCL, mode);
+	fd = open(name->full_name, flags | O_CREAT | O_EXCL| O_NONBLOCK, mode);
 	if (fd == -1) {
 		return pvfs_map_errno(pvfs, errno);
 	}
@@ -1303,7 +1303,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* do the actual open */
-	fd = open(f->handle->name->full_name, flags);
+	fd = open(f->handle->name->full_name, flags | O_NONBLOCK);
 	if (fd == -1) {
 		talloc_free(lck);
 		return pvfs_map_errno(f->pvfs, errno);
