@@ -116,3 +116,82 @@ int32 dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
 
 	return 0;
 }
+
+int dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
+		       int flag)
+{
+	int res;
+	struct db_record *rec;
+	NTSTATUS status;
+
+	res = db->transaction_start(db);
+	if (res != 0) {
+		DEBUG(5, ("transaction_start failed\n"));
+	}
+
+	rec = db->fetch_locked(db, talloc_tos(), key);
+	if (rec == NULL) {
+		DEBUG(5, ("fetch_locked failed\n"));
+		goto cancel;
+	}
+
+	status = rec->store(rec, dbuf, flag);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5, ("store returned %s\n", nt_errstr(status)));
+		goto cancel;
+	}
+
+	TALLOC_FREE(rec);
+
+	res = db->transaction_commit(db);
+	if (res != 0) {
+		DEBUG(5, ("tdb_transaction_commit failed\n"));
+	}
+
+	return res;
+
+ cancel:
+	if (db->transaction_cancel(db) != 0) {
+		smb_panic("Cancelling transaction failed");
+	}
+	return -1;
+}
+
+int dbwrap_trans_delete(struct db_context *db, TDB_DATA key)
+{
+	int res;
+	struct db_record *rec;
+	NTSTATUS status;
+
+	res = db->transaction_start(db);
+	if (res != 0) {
+		DEBUG(5, ("transaction_start failed\n"));
+	}
+
+	rec = db->fetch_locked(db, talloc_tos(), key);
+	if (rec == NULL) {
+		DEBUG(5, ("fetch_locked failed\n"));
+		goto cancel;
+	}
+
+	status = rec->delete_rec(rec);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5, ("delete_rec returned %s\n", nt_errstr(status)));
+		goto cancel;
+	}
+
+	TALLOC_FREE(rec);
+
+	res = db->transaction_commit(db);
+	if (res != 0) {
+		DEBUG(5, ("tdb_transaction_commit failed\n"));
+	}
+
+	return res;
+
+ cancel:
+	if (db->transaction_cancel(db) != 0) {
+		smb_panic("Cancelling transaction failed");
+	}
+	return -1;
+}
