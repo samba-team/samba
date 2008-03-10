@@ -748,8 +748,7 @@ static bool api_srvsvc_NetFileEnum(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.level = r->in.level;
-	r->out.ctr = r->in.ctr;
+	r->out.info_ctr = r->in.info_ctr;
 	r->out.totalentries = talloc_zero(r, uint32_t);
 	if (r->out.totalentries == NULL) {
 		talloc_free(r);
