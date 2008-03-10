@@ -99,7 +99,7 @@ struct _param_opt_struct {
 	char **list;
 };
 
-/* 
+/*
  * This structure describes global (ie., server-wide) parameters.
  */
 typedef struct {
@@ -136,7 +136,7 @@ typedef struct {
 	char *szRealm;
 	char *szAfsUsernameMap;
 	int iAfsTokenLifetime;
- 	char *szLogNtTokenCommand;
+	char *szLogNtTokenCommand;
 	char *szUsernameMap;
 	char *szLogonScript;
 	char *szLogonPath;
@@ -156,7 +156,7 @@ typedef struct {
 	char *szNameResolveOrder;
 	char *szPanicAction;
 	char *szAddUserScript;
-        char *szRenameUserScript;
+	char *szRenameUserScript;
 	char *szDelUserScript;
 	char *szAddGroupScript;
 	char *szDelGroupScript;
@@ -195,7 +195,7 @@ typedef struct {
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
 	char *szDeleteShareCommand;
-        char **szEventLogs;
+	char **szEventLogs;
 	char *szGuestaccount;
 	char *szManglingMethod;
 	char **szServicesList;
@@ -328,7 +328,6 @@ typedef struct {
 	int iUsershareMaxShares;
 	int iIdmapCacheTime;
 	int iIdmapNegativeCacheTime;
-
 	bool bResetOnZeroVC;
 	int iKeepalive;
 	int iminreceivefile;
@@ -337,8 +336,8 @@ typedef struct {
 
 static global Globals;
 
-/* 
- * This structure describes a single service. 
+/*
+ * This structure describes a single service.
  */
 typedef struct {
 	bool valid;
