@@ -3255,12 +3255,16 @@ static NTSTATUS rpc_share_add_internals(const DOM_SID *domain_sid,
 					const char **argv)
 {
 	WERROR result;
+	NTSTATUS status;
 	char *sharename;
 	char *path;
 	uint32 type = STYPE_DISKTREE; /* only allow disk shares to be added */
 	uint32 num_users=0, perms=0;
 	char *password=NULL; /* don't allow a share password */
 	uint32 level = 2;
+	union srvsvc_NetShareInfo info;
+	struct srvsvc_NetShareInfo2 info2;
+	uint32_t parm_error = 0;
 
 	if ((sharename = talloc_strdup(mem_ctx, argv[0])) == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -3271,11 +3275,24 @@ static NTSTATUS rpc_share_add_internals(const DOM_SID *domain_sid,
 		return NT_STATUS_UNSUCCESSFUL;
 	*path++ = '\0';
 
-	result = rpccli_srvsvc_net_share_add(pipe_hnd, mem_ctx, sharename, type,
-					  opt_comment, perms, opt_maxusers,
-					  num_users, path, password, 
-					  level, NULL);
-	return werror_to_ntstatus(result);
+	info2.name		= sharename;
+	info2.type		= type;
+	info2.comment		= opt_comment;
+	info2.permissions	= perms;
+	info2.max_users		= opt_maxusers;
+	info2.current_users	= num_users;
+	info2.path		= path;
+	info2.password		= password;
+
+	info.info2 = &info2;
+
+	status = rpccli_srvsvc_NetShareAdd(pipe_hnd, mem_ctx,
+					   pipe_hnd->cli->desthost,
+					   level,
+					   &info,
+					   &parm_error,
+					   &result);
+	return status;
 }
 
 static int rpc_share_add(int argc, const char **argv)
@@ -5050,6 +5067,10 @@ static NTSTATUS rpc_sh_share_add(TALLOC_CTX *mem_ctx,
 				 int argc, const char **argv)
 {
 	WERROR result;
+	NTSTATUS status;
+	uint32_t parm_err = 0;
+	union srvsvc_NetShareInfo info;
+	struct srvsvc_NetShareInfo2 info2;
 
 	if ((argc < 2) || (argc > 3)) {
 		d_fprintf(stderr, "usage: %s <share> <path> [comment]\n",
@@ -5057,12 +5078,25 @@ static NTSTATUS rpc_sh_share_add(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	result = rpccli_srvsvc_net_share_add(
-		pipe_hnd, mem_ctx, argv[0], STYPE_DISKTREE,
-		(argc == 3) ? argv[2] : "",
-		0, 0, 0, argv[1], NULL, 2, NULL);
-					     
-	return werror_to_ntstatus(result);
+	info2.name		= argv[0];
+	info2.type		= STYPE_DISKTREE;
+	info2.comment		= (argc == 3) ? argv[2] : "";
+	info2.permissions	= 0;
+	info2.max_users		= 0;
+	info2.current_users	= 0;
+	info2.path		= argv[1];
+	info2.password		= NULL;
+
+	info.info2 = &info2;
+
+	status = rpccli_srvsvc_NetShareAdd(pipe_hnd, mem_ctx,
+					   pipe_hnd->cli->desthost,
+					   2,
+					   &info,
+					   &parm_err,
+					   &result);
+
+	return status;
 }
 
 static NTSTATUS rpc_sh_share_delete(TALLOC_CTX *mem_ctx,
