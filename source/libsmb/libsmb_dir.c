@@ -261,15 +261,16 @@ net_share_enum_rpc(struct cli_state *cli,
 {
         int i;
 	WERROR result;
-	ENUM_HND enum_hnd;
-        uint32 info_level = 1;
 	uint32 preferred_len = 0xffffffff;
         uint32 type;
-	SRV_SHARE_INFO_CTR ctr;
+	struct srvsvc_NetShareInfoCtr info_ctr;
+	struct srvsvc_NetShareCtr1 ctr1;
 	fstring name = "";
         fstring comment = "";
 	struct rpc_pipe_client *pipe_hnd;
         NTSTATUS nt_status;
+	uint32_t resume_handle = 0;
+	uint32_t total_entries = 0;
 
         /* Open the server service pipe */
         pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SRVSVC, &nt_status);
@@ -278,34 +279,39 @@ net_share_enum_rpc(struct cli_state *cli,
                 return -1;
         }
 
+	ZERO_STRUCT(info_ctr);
+	ZERO_STRUCT(ctr1);
+
+	info_ctr.level = 1;
+	info_ctr.ctr.ctr1 = &ctr1;
+
         /* Issue the NetShareEnum RPC call and retrieve the response */
-	init_enum_hnd(&enum_hnd, 0);
-	result = rpccli_srvsvc_net_share_enum(pipe_hnd,
-                                              talloc_tos(),
-                                              info_level,
-                                              &ctr,
-                                              preferred_len,
-                                              &enum_hnd);
+	nt_status = rpccli_srvsvc_NetShareEnumAll(pipe_hnd, talloc_tos(),
+						  pipe_hnd->cli->desthost,
+						  &info_ctr,
+						  preferred_len,
+						  &total_entries,
+						  &resume_handle,
+						  &result);
 
         /* Was it successful? */
-	if (!W_ERROR_IS_OK(result) || ctr.num_entries == 0) {
+	if (!NT_STATUS_IS_OK(nt_status) || !W_ERROR_IS_OK(result) ||
+	    total_entries == 0) {
                 /*  Nope.  Go clean up. */
 		goto done;
         }
 
         /* For each returned entry... */
-        for (i = 0; i < ctr.num_entries; i++) {
+        for (i = 0; i < total_entries; i++) {
 
                 /* pull out the share name */
-                rpcstr_pull_unistr2_fstring(
-                        name, &ctr.share.info1[i].info_1_str.uni_netname);
+		fstrcpy(name, info_ctr.ctr.ctr1->array[i].name);
 
                 /* pull out the share's comment */
-                rpcstr_pull_unistr2_fstring(
-                        comment, &ctr.share.info1[i].info_1_str.uni_remark);
+		fstrcpy(comment, info_ctr.ctr.ctr1->array[i].comment);
 
                 /* Get the type value */
-                type = ctr.share.info1[i].info_1.type;
+                type = info_ctr.ctr.ctr1->array[i].type;
 
                 /* Add this share to the list */
                 (*fn)(name, type, comment, state);
