@@ -325,20 +325,36 @@ static char *trustdom_keystr(const char *domain)
 	return keystr;
 }
 
+static int unlock_trust_account(char *domain)
+{
+	tdb_unlock_bystring(tdb, trust_keystr(domain));
+	return 0;
+}
+
 /************************************************************************
  Lock the trust password entry.
 ************************************************************************/
 
-bool secrets_lock_trust_account_password(const char *domain, bool dolock)
+void *secrets_get_trust_account_lock(TALLOC_CTX *mem_ctx, const char *domain)
 {
-	if (!tdb)
-		return False;
+	char *result;
 
-	if (dolock)
-		return (tdb_lock_bystring(tdb, trust_keystr(domain)) == 0);
-	else
-		tdb_unlock_bystring(tdb, trust_keystr(domain));
-	return True;
+	if (!secrets_init()) {
+		return NULL;
+	}
+
+	result = talloc_strdup(mem_ctx, domain);
+	if (result == NULL) {
+		return NULL;
+	}
+
+	if (tdb_lock_bystring(tdb, trust_keystr(domain)) != 0) {
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
+	talloc_set_destructor(result, unlock_trust_account);
+	return result;
 }
 
 /************************************************************************
