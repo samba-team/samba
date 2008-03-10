@@ -37,6 +37,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	const char *p;
 	char *pserver = NULL;
 	bool connected_ok = False;
+	struct named_mutex *mutex;
 
 	if (!(cli = cli_initialise()))
 		return NULL;
@@ -74,7 +75,8 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		   session setup yet it will send a TCP reset to the first
 		   connection (tridge) */
 
-		if (!grab_server_mutex(desthost)) {
+		mutex = grab_named_mutex(talloc_tos(), desthost, 10);
+		if (mutex == NULL) {
 			cli_shutdown(cli);
 			return NULL;
 		}
@@ -87,7 +89,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		}
 		DEBUG(10,("server_cryptkey: failed to connect to server %s. Error %s\n",
 			desthost, nt_errstr(status) ));
-		release_server_mutex();
+		TALLOC_FREE(mutex);
 	}
 
 	if (!connected_ok) {
@@ -98,7 +100,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 
 	if (!attempt_netbios_session_request(&cli, global_myname(),
 					     desthost, &dest_ss)) {
-		release_server_mutex();
+		TALLOC_FREE(mutex);
 		DEBUG(1,("password server fails session request\n"));
 		cli_shutdown(cli);
 		return NULL;
@@ -111,16 +113,16 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	DEBUG(3,("got session\n"));
 
 	if (!cli_negprot(cli)) {
+		TALLOC_FREE(mutex);
 		DEBUG(1,("%s rejected the negprot\n",desthost));
-		release_server_mutex();
 		cli_shutdown(cli);
 		return NULL;
 	}
 
 	if (cli->protocol < PROTOCOL_LANMAN2 ||
 	    !(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
+		TALLOC_FREE(mutex);
 		DEBUG(1,("%s isn't in user level security mode\n",desthost));
-		release_server_mutex();
 		cli_shutdown(cli);
 		return NULL;
 	}
@@ -132,14 +134,14 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 
 	if (!NT_STATUS_IS_OK(cli_session_setup(cli, "", "", 0, "", 0,
 					       ""))) {
+		TALLOC_FREE(mutex);
 		DEBUG(0,("%s rejected the initial session setup (%s)\n",
 			 desthost, cli_errstr(cli)));
-		release_server_mutex();
 		cli_shutdown(cli);
 		return NULL;
 	}
 
-	release_server_mutex();
+	TALLOC_FREE(mutex);
 
 	DEBUG(3,("password server OK\n"));
 
