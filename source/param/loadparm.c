@@ -874,7 +874,7 @@ static const struct enum_list enum_config_backend[] = {
  */
 
 static struct parm_struct parm_table[] = {
-	{N_("Base Options"), P_SEP, P_SEPARATOR}, 
+	{N_("Base Options"), P_SEP, P_SEPARATOR},
 
 	{
 		.label		= "dos charset",
@@ -1004,7 +1004,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_WIZARD,
 	},
-
 	{
 		.label		= "config backend",
 		.type		= P_ENUM,
@@ -1015,7 +1014,7 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 
-	{N_("Security Options"), P_SEP, P_SEPARATOR}, 
+	{N_("Security Options"), P_SEP, P_SEPARATOR},
 
 	{
 		.label		= "security",
@@ -1342,7 +1341,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
 	{
 		.label		= "username",
 		.type		= P_STRING,
@@ -1370,7 +1368,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_HIDE,
 	},
-
 	{
 		.label		= "invalid users",
 		.type		= P_LIST,
@@ -1452,7 +1449,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
 	{
 		.label		= "read only",
 		.type		= P_BOOL,
@@ -1489,7 +1485,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_HIDE,
 	},
-
 	{
 		.label		= "acl check permissions",
 		.type		= P_BOOL,
@@ -1689,7 +1684,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_HIDE,
 	},
-
 	{
 		.label		= "only user",
 		.type		= P_BOOL,
@@ -1754,7 +1748,7 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 
-	{N_("Logging Options"), P_SEP, P_SEPARATOR}, 
+	{N_("Logging Options"), P_SEP, P_SEPARATOR},
 
 	{
 		.label		= "log level",
@@ -1801,7 +1795,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
 	{
 		.label		= "max log size",
 		.type		= P_INTEGER,
@@ -1884,7 +1877,7 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 
-	{N_("Protocol Options"), P_SEP, P_SEPARATOR}, 
+	{N_("Protocol Options"), P_SEP, P_SEPARATOR},
 
 	{
 		.label		= "allocation roundup size",
@@ -2012,7 +2005,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
 	{
 		.label		= "acl compatibility",
 		.type		= P_ENUM,
@@ -2076,7 +2068,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE,
 	},
-
 	{
 		.label		= "announce version",
 		.type		= P_STRING,
@@ -2131,7 +2122,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
 	{
 		.label		= "name resolve order",
 		.type		= P_STRING,
@@ -2259,7 +2249,7 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 
-	{N_("Tuning Options"), P_SEP, P_SEPARATOR}, 
+	{N_("Tuning Options"), P_SEP, P_SEPARATOR},
 
 	{
 		.label		= "block size",
@@ -2324,7 +2314,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_SHARE,
 	},
-
 	{
 		.label		= "lpq cache time",
 		.type		= P_INTEGER,
@@ -2388,7 +2377,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_PRINT,
 	},
-
 	{
 		.label		= "socket options",
 		.type		= P_STRING,
@@ -2461,7 +2449,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_DEPRECATED,
 	},
-
 	{
 		.label		= "name cache timeout",
 		.type		= P_INTEGER,
@@ -2499,7 +2486,7 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
 	},
 
-	{N_("Printing Options"), P_SEP, P_SEPARATOR}, 
+	{N_("Printing Options"), P_SEP, P_SEPARATOR},
 
 	{
 		.label		= "max reported print jobs",
@@ -2690,7 +2677,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL,
 	},
-
 	{
 		.label		= "addport command",
 		.type		= P_STRING,
@@ -2801,7 +2787,8 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_PRINT,
 	},
 
-	{N_("Filename Handling"), P_SEP, P_SEPARATOR}, 
+	{N_("Filename Handling"), P_SEP, P_SEPARATOR},
+
 	{
 		.label		= "mangling method",
 		.type		= P_STRING,
@@ -3030,7 +3017,7 @@ static struct parm_struct parm_table[] = {
 	},
 
 
-	{N_("Domain Options"), P_SEP, P_SEPARATOR}, 
+	{N_("Domain Options"), P_SEP, P_SEPARATOR},
 
 	{
 		.label		= "machine password timeout",
@@ -3042,7 +3029,7 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_WIZARD,
 	},
 
-	{N_("Logon Options"), P_SEP, P_SEPARATOR}, 
+	{N_("Logon Options"), P_SEP, P_SEPARATOR},
 
 	{
 		.label		= "add user script",
@@ -3152,7 +3139,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
 	{
 		.label		= "logon script",
 		.type		= P_STRING,
@@ -3199,7 +3185,7 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 
-	{N_("Browse Options"), P_SEP, P_SEPARATOR}, 
+	{N_("Browse Options"), P_SEP, P_SEPARATOR},
 
 	{
 		.label		= "os level",
@@ -3301,7 +3287,7 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 
-	{N_("WINS Options"), P_SEP, P_SEPARATOR}, 
+	{N_("WINS Options"), P_SEP, P_SEPARATOR},
 
 	{
 		.label		= "dns proxy",
@@ -3321,7 +3307,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
 	{
 		.label		= "wins server",
 		.type		= P_LIST,
@@ -3350,7 +3335,7 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 
-	{N_("Locking Options"), P_SEP, P_SEPARATOR}, 
+	{N_("Locking Options"), P_SEP, P_SEPARATOR},
 
 	{
 		.label		= "blocking locks",
@@ -3406,7 +3391,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
 	},
-
 	{
 		.label		= "oplocks",
 		.type		= P_BOOL,
@@ -3471,7 +3455,7 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
 	},
 
-	{N_("Ldap Options"), P_SEP, P_SEPARATOR}, 
+	{N_("Ldap Options"), P_SEP, P_SEPARATOR},
 
 	{
 		.label		= "ldap admin dn",
@@ -3590,7 +3574,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
 	{
 		.label		= "ldap debug level",
 		.type		= P_INTEGER,
@@ -3610,8 +3593,8 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 
+	{N_("EventLog Options"), P_SEP, P_SEPARATOR},
 
-	{N_("EventLog Options"), P_SEP, P_SEPARATOR}, 
 	{
 		.label		= "eventlog list",
 		.type		= P_LIST,
@@ -3622,7 +3605,8 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE,
 	},
 
-	{N_("Miscellaneous Options"), P_SEP, P_SEPARATOR}, 
+	{N_("Miscellaneous Options"), P_SEP, P_SEPARATOR},
+
 	{
 		.label		= "add share command",
 		.type		= P_STRING,
@@ -3650,7 +3634,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
 	{
 		.label		= "config file",
 		.type		= P_STRING,
@@ -3734,7 +3717,6 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 #endif
-
 	{
 		.label		= "default service",
 		.type		= P_STRING,
@@ -3888,7 +3870,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_HIDE,
 	},
-
 	{
 		.label		= "copy",
 		.type		= P_STRING,
@@ -3925,7 +3906,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
 	{
 		.label		= "preexec close",
 		.type		= P_BOOL,
@@ -4160,7 +4140,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
 	},
-
 	{
 		.label		= "fake directory create times",
 		.type		= P_BOOL,
@@ -4180,7 +4159,7 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 
-	{N_("VFS module options"), P_SEP, P_SEPARATOR}, 
+	{N_("VFS module options"), P_SEP, P_SEPARATOR},
 
 	{
 		.label		= "vfs objects",
@@ -4232,7 +4211,7 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 
-	{N_("Winbind options"), P_SEP, P_SEPARATOR}, 
+	{N_("Winbind options"), P_SEP, P_SEPARATOR},
 
 	{
 		.label		= "passdb expand explicit",
