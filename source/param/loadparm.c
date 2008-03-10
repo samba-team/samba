@@ -102,7 +102,7 @@ struct _param_opt_struct {
 /*
  * This structure describes global (ie., server-wide) parameters.
  */
-typedef struct {
+struct global {
 	int ConfigBackend;
 	char *smb_ports;
 	char *dos_charset;
@@ -332,14 +332,14 @@ typedef struct {
 	int iKeepalive;
 	int iminreceivefile;
 	param_opt_struct *param_opt;
-} global;
+};
 
-static global Globals;
+static struct global Globals;
 
 /*
  * This structure describes a single service.
  */
-typedef struct {
+struct service {
 	bool valid;
 	bool autoloaded;
 	int usershare;
@@ -478,11 +478,11 @@ typedef struct {
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
-} service;
+};
 
 
 /* This is a default service used to prime a services structure */
-static service sDefault = {
+static struct service sDefault = {
 	True,			/* valid */
 	False,			/* not autoloaded */
 	0,			/* not a usershare */
@@ -628,7 +628,7 @@ static service sDefault = {
 };
 
 /* local variables */
-static service **ServicePtrs = NULL;
+static struct service **ServicePtrs = NULL;
 static int iNumServices = 0;
 static int iServiceIndex = 0;
 static struct db_context *ServiceHash;
@@ -4445,7 +4445,7 @@ static struct parm_struct parm_table[] = {
  Initialise the sDefault parameter structure for the printer values.
 ***************************************************************************/
 
-static void init_printer_values(service *pService)
+static void init_printer_values(struct service *pService)
 {
 	/* choose defaults depending on the type of printing */
 	switch (pService->iPrinting) {
@@ -5314,13 +5314,13 @@ static int map_parameter_canonical(const char *pszParmName, bool *inverse);
 static bool set_boolean(bool *pb, const char *pszParmValue);
 static const char *get_boolean(bool bool_value);
 static int getservicebyname(const char *pszServiceName,
-			    service * pserviceDest);
-static void copy_service(service * pserviceDest,
-			 service * pserviceSource,
+			    struct service *pserviceDest);
+static void copy_service(struct service *pserviceDest,
+			 struct service *pserviceSource,
 			 struct bitmap *pcopymapDest);
 static bool do_parameter(const char *pszParmName, const char *pszParmValue);
 static bool do_section(const char *pszSectionName);
-static void init_copymap(service * pservice);
+static void init_copymap(struct service *pservice);
 static bool hash_a_service(const char *name, int number);
 static void free_service_byindex(int iService);
 static char * canonicalize_servicename(const char *name);
@@ -5568,9 +5568,9 @@ int lp_parm_enum(int snum, const char *type, const char *option,
  Initialise a service to the defaults.
 ***************************************************************************/
 
-static void init_service(service * pservice)
+static void init_service(struct service *pservice)
 {
-	memset((char *)pservice, '\0', sizeof(service));
+	memset((char *)pservice, '\0', sizeof(struct service));
 	copy_service(pservice, &sDefault, NULL);
 }
 
@@ -5578,7 +5578,7 @@ static void init_service(service * pservice)
  Free the dynamically allocated parts of a service struct.
 ***************************************************************************/
 
-static void free_service(service *pservice)
+static void free_service(struct service *pservice)
 {
 	int i;
         param_opt_struct *data, *pdata;
@@ -5655,10 +5655,10 @@ static void free_service_byindex(int idx)
  service. 
 ***************************************************************************/
 
-static int add_a_service(const service *pservice, const char *name)
+static int add_a_service(const struct service *pservice, const char *name)
 {
 	int i;
-	service tservice;
+	struct service tservice;
 	int num_to_alloc = iNumServices + 1;
 	param_opt_struct *data, *pdata;
 
@@ -5692,16 +5692,16 @@ static int add_a_service(const service *pservice, const char *name)
 
 	/* if not, then create one */
 	if (i == iNumServices) {
-		service **tsp;
+		struct service **tsp;
 		int *tinvalid;
 		
-		tsp = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(ServicePtrs, service *, num_to_alloc);
+		tsp = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(ServicePtrs, struct service *, num_to_alloc);
 		if (tsp == NULL) {
 			DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
 			return (-1);
 		}
 		ServicePtrs = tsp;
-		ServicePtrs[iNumServices] = SMB_MALLOC_P(service);
+		ServicePtrs[iNumServices] = SMB_MALLOC_P(struct service);
 		if (!ServicePtrs[iNumServices]) {
 			DEBUG(0,("add_a_service: out of memory!\n"));
 			return (-1);
@@ -6305,7 +6305,7 @@ bool lp_canonicalize_boolean(const char *str, const char**canon_str)
 Find a service by name. Otherwise works like get_service.
 ***************************************************************************/
 
-static int getservicebyname(const char *pszServiceName, service * pserviceDest)
+static int getservicebyname(const char *pszServiceName, struct service *pserviceDest)
 {
 	int iService = -1;
 	char *canon_name;
@@ -6338,7 +6338,7 @@ static int getservicebyname(const char *pszServiceName, service * pserviceDest)
  If pcopymapDest is NULL then copy all fields
 ***************************************************************************/
 
-static void copy_service(service * pserviceDest, service * pserviceSource,
+static void copy_service(struct service *pserviceDest, struct service *pserviceSource,
 			 struct bitmap *pcopymapDest)
 {
 	int i;
@@ -6745,7 +6745,7 @@ static bool handle_copy(int snum, const char *pszParmValue, char **ptr)
 {
 	bool bRetval;
 	int iTemp;
-	service serviceTemp;
+	struct service serviceTemp;
 
 	string_set(ptr, pszParmValue);
 
@@ -6947,7 +6947,7 @@ static void lp_set_enum_parm( struct parm_struct *parm, const char *pszParmValue
 static bool handle_printing(int snum, const char *pszParmValue, char **ptr)
 {
 	static int parm_num = -1;
-	service *s;
+	struct service *s;
 
 	if ( parm_num == -1 )
 		parm_num = map_parameter( "printing" );
@@ -6969,7 +6969,7 @@ static bool handle_printing(int snum, const char *pszParmValue, char **ptr)
  Initialise a copymap.
 ***************************************************************************/
 
-static void init_copymap(service * pservice)
+static void init_copymap(struct service *pservice)
 {
 	int i;
 	if (pservice->copymap) {
@@ -7416,7 +7416,7 @@ bool lp_is_default(int snum, struct parm_struct *parm)
  Display the contents of a single services record.
 ***************************************************************************/
 
-static void dump_a_service(service * pService, FILE * f)
+static void dump_a_service(struct service *pService, FILE * f)
 {
 	int i;
 	param_opt_struct *data;
@@ -7513,7 +7513,7 @@ bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 			if (isGlobal) {
 				ptr = parm_table[i].ptr;
 			} else {
-				service * pService = ServicePtrs[snum];
+				struct service *pService = ServicePtrs[snum];
 				ptr = ((char *)pService) +
 					PTR_DIFF(parm_table[i].ptr, &sDefault);
 			}
@@ -7574,7 +7574,7 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 			return &parm_table[(*i)++];
 		}
 	} else {
-		service *pService = ServicePtrs[snum];
+		struct service *pService = ServicePtrs[snum];
 
 		for (; parm_table[*i].label; (*i)++) {
 			if (parm_table[*i].p_class == P_SEPARATOR)
@@ -8241,7 +8241,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 
 	/* Everything ok - add the service possibly using a template. */
 	if (iService < 0) {
-		const service *sp = &sDefault;
+		const struct service *sp = &sDefault;
 		if (snum_template != -1) {
 			sp = ServicePtrs[snum_template];
 		}
