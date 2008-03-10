@@ -246,14 +246,18 @@ import "security.idl", "svcctl.idl";
 		[default] ;
 	} srvsvc_NetFileCtr;
 
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] srvsvc_NetFileCtr ctr;
+	} srvsvc_NetFileInfoCtr;
+
 	/******************/
 	/* Function: 0x09 */
 	WERROR srvsvc_NetFileEnum(
 		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in,unique]   [string,charset(UTF16)] uint16 *path,
 		[in,unique]   [string,charset(UTF16)] uint16 *user,
-		[in,out,ref]   uint32 *level,
-		[in,out,switch_is(*level),ref]   srvsvc_NetFileCtr *ctr,
+		[in,out,ref]   srvsvc_NetFileInfoCtr *info_ctr,
 		[in]   uint32 max_buffer,
 		[out,ref]   uint32 *totalentries,
 		[in,out,unique]   uint32 *resume_handle
