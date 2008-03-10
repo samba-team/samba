@@ -429,8 +429,7 @@ NTSTATUS rpccli_srvsvc_NetConnEnum(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   const char *server_unc,
 				   const char *path,
-				   uint32_t *level,
-				   union srvsvc_NetConnCtr *ctr,
+				   struct srvsvc_NetConnInfoCtr *info_ctr,
 				   uint32_t max_buffer,
 				   uint32_t *totalentries,
 				   uint32_t *resume_handle,
@@ -442,8 +441,7 @@ NTSTATUS rpccli_srvsvc_NetConnEnum(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.server_unc = server_unc;
 	r.in.path = path;
-	r.in.level = level;
-	r.in.ctr = ctr;
+	r.in.info_ctr = info_ctr;
 	r.in.max_buffer = max_buffer;
 	r.in.resume_handle = resume_handle;
 
@@ -471,8 +469,7 @@ NTSTATUS rpccli_srvsvc_NetConnEnum(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	*level = *r.out.level;
-	*ctr = *r.out.ctr;
+	*info_ctr = *r.out.info_ctr;
 	*totalentries = *r.out.totalentries;
 	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
