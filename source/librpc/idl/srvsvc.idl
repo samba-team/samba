@@ -197,13 +197,17 @@ import "security.idl", "svcctl.idl";
 		[default] ;
 	} srvsvc_NetConnCtr;
 
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] srvsvc_NetConnCtr ctr;
+	} srvsvc_NetConnInfoCtr;
+
 	/******************/
 	/* Function: 0x08 */
 	WERROR srvsvc_NetConnEnum(
 		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in,unique]   [string,charset(UTF16)] uint16 *path,
-		[in,out,ref]   uint32 *level,
-		[in,out,switch_is(*level),ref]   srvsvc_NetConnCtr *ctr,
+		[in,out,ref]  srvsvc_NetConnInfoCtr *info_ctr,
 		[in]   uint32 max_buffer,
 		[out,ref]   uint32 *totalentries,
 		[in,out,unique]   uint32 *resume_handle
