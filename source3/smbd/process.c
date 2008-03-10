@@ -1901,6 +1901,7 @@ static void timeout_processing(int *select_timeout,
 
 		unsigned char trust_passwd_hash[16];
 		time_t lct;
+		void *lock;
 
 		/*
 		 * We're in domain level security, and the code that
@@ -1912,7 +1913,9 @@ static void timeout_processing(int *select_timeout,
 		 * First, open the machine password file with an exclusive lock.
 		 */
 
-		if (secrets_lock_trust_account_password(lp_workgroup(), True) == False) {
+		lock = secrets_get_trust_account_lock(NULL, lp_workgroup());
+
+		if (lock == NULL) {
 			DEBUG(0,("process: unable to lock the machine account password for \
 machine %s in domain %s.\n", global_myname(), lp_workgroup() ));
 			return;
@@ -1921,7 +1924,7 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup() ));
 		if(!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd_hash, &lct, NULL)) {
 			DEBUG(0,("process: unable to read the machine account password for \
 machine %s in domain %s.\n", global_myname(), lp_workgroup()));
-			secrets_lock_trust_account_password(lp_workgroup(), False);
+			TALLOC_FREE(lock);
 			return;
 		}
 
@@ -1931,7 +1934,7 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 
 		if(t < lct + lp_machine_password_timeout()) {
 			global_machine_password_needs_changing = False;
-			secrets_lock_trust_account_password(lp_workgroup(), False);
+			TALLOC_FREE(lock);
 			return;
 		}
 
@@ -1939,7 +1942,7 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
     
 		change_trust_account_password( lp_workgroup(), NULL);
 		global_machine_password_needs_changing = False;
-		secrets_lock_trust_account_password(lp_workgroup(), False);
+		TALLOC_FREE(lock);
 	}
 
 	/* update printer queue caches if necessary */
