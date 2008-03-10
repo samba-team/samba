@@ -755,7 +755,48 @@ static WERROR cmd_srvsvc_net_sess_enum(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static WERROR cmd_srvsvc_net_disk_enum(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       int argc, const char **argv)
+{
+	struct srvsvc_NetDiskInfo info;
+	WERROR result;
+	NTSTATUS status;
+	uint32_t total_entries = 0;
+	uint32_t resume_handle = 0;
+	uint32_t level = 0;
 
+	if (argc > 2) {
+		printf("Usage: %s [level] [resume_handle]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc >= 2) {
+		level = atoi(argv[1]);
+	}
+
+	if (argc >= 3) {
+		resume_handle = atoi(argv[2]);
+	}
+
+	ZERO_STRUCT(info);
+
+	status = rpccli_srvsvc_NetDiskEnum(cli, mem_ctx,
+					   cli->cli->desthost,
+					   level,
+					   &info,
+					   0xffffffff,
+					   &total_entries,
+					   &resume_handle,
+					   &result);
+
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+ done:
+	return result;
+}
 
 /* List of commands exported by this module */
 
@@ -774,6 +815,7 @@ struct cmd_set srvsvc_commands[] = {
 	{ "netfilegetsec", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_file_get_sec, PI_SRVSVC, NULL, "Get File security", "" },
 	{ "netsessdel", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_sess_del, PI_SRVSVC, NULL, "Delete Session", "" },
 	{ "netsessenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_sess_enum, PI_SRVSVC, NULL, "Enumerate Sessions", "" },
+	{ "netdiskenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_disk_enum, PI_SRVSVC, NULL, "Enumerate Disks", "" },
 
 	{ NULL }
 };
