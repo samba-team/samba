@@ -798,6 +798,72 @@ static WERROR cmd_srvsvc_net_disk_enum(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static WERROR cmd_srvsvc_net_conn_enum(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       int argc, const char **argv)
+{
+	struct srvsvc_NetConnInfoCtr info_ctr;
+	struct srvsvc_NetConnCtr0 ctr0;
+	struct srvsvc_NetConnCtr1 ctr1;
+	WERROR result;
+	NTSTATUS status;
+	uint32_t total_entries = 0;
+	uint32_t resume_handle = 0;
+	uint32_t level = 1;
+	const char *path = "IPC$";
+
+	if (argc > 4) {
+		printf("Usage: %s [level] [path] [resume_handle]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc >= 2) {
+		level = atoi(argv[1]);
+	}
+
+	if (argc >= 3) {
+		path = argv[2];
+	}
+
+	if (argc >= 4) {
+		resume_handle = atoi(argv[3]);
+	}
+
+	ZERO_STRUCT(info_ctr);
+
+	info_ctr.level = level;
+
+	switch (level) {
+		case 0:
+			ZERO_STRUCT(ctr0);
+			info_ctr.ctr.ctr0 = &ctr0;
+			break;
+		case 1:
+			ZERO_STRUCT(ctr1);
+			info_ctr.ctr.ctr1 = &ctr1;
+			break;
+		default:
+			return WERR_INVALID_PARAM;
+	}
+
+	status = rpccli_srvsvc_NetConnEnum(cli, mem_ctx,
+					   cli->cli->desthost,
+					   path,
+					   &info_ctr,
+					   0xffffffff,
+					   &total_entries,
+					   &resume_handle,
+					   &result);
+
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+ done:
+	return result;
+}
+
+
 /* List of commands exported by this module */
 
 struct cmd_set srvsvc_commands[] = {
@@ -816,6 +882,7 @@ struct cmd_set srvsvc_commands[] = {
 	{ "netsessdel", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_sess_del, PI_SRVSVC, NULL, "Delete Session", "" },
 	{ "netsessenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_sess_enum, PI_SRVSVC, NULL, "Enumerate Sessions", "" },
 	{ "netdiskenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_disk_enum, PI_SRVSVC, NULL, "Enumerate Disks", "" },
+	{ "netconnenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_conn_enum, PI_SRVSVC, NULL, "Enumerate Connections", "" },
 
 	{ NULL }
 };
