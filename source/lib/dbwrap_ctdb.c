@@ -441,6 +441,13 @@ static int db_ctdb_get_seqnum(struct db_context *db)
 	return tdb_get_seqnum(ctx->wtdb->tdb);
 }
 
+static int db_ctdb_trans_dummy(struct db_context *db)
+{
+	/*
+	 * Not implemented yet, just return ok
+	 */
+	return 0;
+}
 
 struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 				const char *name,
@@ -495,6 +502,9 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	result->traverse = db_ctdb_traverse;
 	result->traverse_read = db_ctdb_traverse_read;
 	result->get_seqnum = db_ctdb_get_seqnum;
+	result->transaction_start = db_ctdb_trans_dummy;
+	result->transaction_commit = db_ctdb_trans_dummy;
+	result->transaction_cancel = db_ctdb_trans_dummy;
 
 	DEBUG(3,("db_open_ctdb: opened database '%s' with dbid 0x%x\n",
 		 name, db_ctdb->db_id));
