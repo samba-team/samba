@@ -3627,12 +3627,12 @@ static bool browse_host_rpc(bool sort)
 	NTSTATUS status;
 	struct rpc_pipe_client *pipe_hnd;
 	TALLOC_CTX *frame = talloc_stackframe();
-	ENUM_HND enum_hnd;
 	WERROR werr;
-	SRV_SHARE_INFO_CTR ctr;
+	struct srvsvc_NetShareInfoCtr info_ctr;
+	struct srvsvc_NetShareCtr1 ctr1;
+	uint32_t resume_handle = 0;
+	uint32_t total_entries = 0;
 	int i;
-
-	init_enum_hnd(&enum_hnd, 0);
 
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SRVSVC, &status);
 
@@ -3643,23 +3643,29 @@ static bool browse_host_rpc(bool sort)
 		return false;
 	}
 
-	werr = rpccli_srvsvc_net_share_enum(pipe_hnd, frame, 1, &ctr,
-					    0xffffffff, &enum_hnd);
+	ZERO_STRUCT(info_ctr);
+	ZERO_STRUCT(ctr1);
 
-	if (!W_ERROR_IS_OK(werr)) {
+	info_ctr.level = 1;
+	info_ctr.ctr.ctr1 = &ctr1;
+
+	status = rpccli_srvsvc_NetShareEnumAll(pipe_hnd, frame,
+					      pipe_hnd->cli->desthost,
+					      &info_ctr,
+					      0xffffffff,
+					      &total_entries,
+					      &resume_handle,
+					      &werr);
+
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(werr)) {
 		cli_rpc_pipe_close(pipe_hnd);
 		TALLOC_FREE(frame);
 		return false;
 	}
 
-	for (i=0; i<ctr.num_entries; i++) {
-		SRV_SHARE_INFO_1 *info = &ctr.share.info1[i];
-		char *name, *comment;
-		name = rpcstr_pull_unistr2_talloc(
-			frame, &info->info_1_str.uni_netname);
-		comment = rpcstr_pull_unistr2_talloc(
-			frame, &info->info_1_str.uni_remark);
-		browse_fn(name, info->info_1.type, comment, NULL);
+	for (i=0; i < info_ctr.ctr.ctr1->count; i++) {
+		struct srvsvc_NetShareInfo1 info = info_ctr.ctr.ctr1->array[i];
+		browse_fn(info.name, info.type, info.comment, NULL);
 	}
 
 	cli_rpc_pipe_close(pipe_hnd);
