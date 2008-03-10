@@ -71,6 +71,10 @@ static void switch_message(int type, struct smbsrv_request *req);
 #define NEED_SESS		(1<<0)
 #define NEED_TCON		(1<<1)
 #define SIGNING_NO_REPLY	(1<<2)
+/* does VWV(0) of the request hold chaining information */
+#define AND_X			(1<<3)
+/* The 64Kb question: are requests > 64K valid? */
+#define LARGE_REQUEST	(1<<4)
 
 /* 
    define a list of possible SMB messages and their corresponding
@@ -81,6 +85,7 @@ static const struct smb_message_struct
 {
 	const char *name;
 	void (*fn)(struct smbsrv_request *);
+#define message_flags(type) smb_messages[(type) & 0xff].flags
 	int flags;
 }
  smb_messages[256] = {
@@ -120,7 +125,7 @@ static const struct smb_message_struct
 /* 0x21 */ { NULL, NULL, 0 },
 /* 0x22 */ { "SMBsetattrE",	smbsrv_reply_setattrE,		NEED_SESS|NEED_TCON },
 /* 0x23 */ { "SMBgetattrE",	smbsrv_reply_getattrE,		NEED_SESS|NEED_TCON },
-/* 0x24 */ { "SMBlockingX",	smbsrv_reply_lockingX,		NEED_SESS|NEED_TCON },
+/* 0x24 */ { "SMBlockingX",	smbsrv_reply_lockingX,		NEED_SESS|NEED_TCON|AND_X },
 /* 0x25 */ { "SMBtrans",	smbsrv_reply_trans,		NEED_SESS|NEED_TCON },
 /* 0x26 */ { "SMBtranss",	smbsrv_reply_transs,		NEED_SESS|NEED_TCON },
 /* 0x27 */ { "SMBioctl",	smbsrv_reply_ioctl,		NEED_SESS|NEED_TCON },
@@ -129,9 +134,9 @@ static const struct smb_message_struct
 /* 0x2a */ { "SMBmove",		NULL,				NEED_SESS|NEED_TCON },
 /* 0x2b */ { "SMBecho",		smbsrv_reply_echo,		0 },
 /* 0x2c */ { "SMBwriteclose",	smbsrv_reply_writeclose,	NEED_SESS|NEED_TCON },
-/* 0x2d */ { "SMBopenX",	smbsrv_reply_open_and_X,	NEED_SESS|NEED_TCON },
-/* 0x2e */ { "SMBreadX",	smbsrv_reply_read_and_X,	NEED_SESS|NEED_TCON },
-/* 0x2f */ { "SMBwriteX",	smbsrv_reply_write_and_X,	NEED_SESS|NEED_TCON},
+/* 0x2d */ { "SMBopenX",	smbsrv_reply_open_and_X,	NEED_SESS|NEED_TCON|AND_X },
+/* 0x2e */ { "SMBreadX",	smbsrv_reply_read_and_X,	NEED_SESS|NEED_TCON|AND_X },
+/* 0x2f */ { "SMBwriteX",	smbsrv_reply_write_and_X,	NEED_SESS|NEED_TCON|AND_X|LARGE_REQUEST},
 /* 0x30 */ { NULL, NULL, 0 },
 /* 0x31 */ { NULL, NULL, 0 },
 /* 0x32 */ { "SMBtrans2",	smbsrv_reply_trans2,		NEED_SESS|NEED_TCON },
@@ -199,9 +204,9 @@ static const struct smb_message_struct
 /* 0x70 */ { "SMBtcon",		smbsrv_reply_tcon,		NEED_SESS },
 /* 0x71 */ { "SMBtdis",		smbsrv_reply_tdis,		NEED_TCON },
 /* 0x72 */ { "SMBnegprot",	smbsrv_reply_negprot,		0 },
-/* 0x73 */ { "SMBsesssetupX",	smbsrv_reply_sesssetup,		0 },
-/* 0x74 */ { "SMBulogoffX",	smbsrv_reply_ulogoffX,		NEED_SESS }, /* ulogoff doesn't give a valid TID */
-/* 0x75 */ { "SMBtconX",	smbsrv_reply_tcon_and_X,	NEED_SESS },
+/* 0x73 */ { "SMBsesssetupX",	smbsrv_reply_sesssetup,		AND_X },
+/* 0x74 */ { "SMBulogoffX",	smbsrv_reply_ulogoffX,		NEED_SESS|AND_X }, /* ulogoff doesn't give a valid TID */
+/* 0x75 */ { "SMBtconX",	smbsrv_reply_tcon_and_X,	NEED_SESS|AND_X },
 /* 0x76 */ { NULL, NULL, 0 },
 /* 0x77 */ { NULL, NULL, 0 },
 /* 0x78 */ { NULL, NULL, 0 },
@@ -244,9 +249,9 @@ static const struct smb_message_struct
 /* 0x9d */ { NULL, NULL, 0 },
 /* 0x9e */ { NULL, NULL, 0 },
 /* 0x9f */ { NULL, NULL, 0 },
-/* 0xa0 */ { "SMBnttrans",	smbsrv_reply_nttrans,		NEED_SESS|NEED_TCON },
+/* 0xa0 */ { "SMBnttrans",	smbsrv_reply_nttrans,		NEED_SESS|NEED_TCON|LARGE_REQUEST },
 /* 0xa1 */ { "SMBnttranss",	smbsrv_reply_nttranss,		NEED_SESS|NEED_TCON },
-/* 0xa2 */ { "SMBntcreateX",	smbsrv_reply_ntcreate_and_X,	NEED_SESS|NEED_TCON },
+/* 0xa2 */ { "SMBntcreateX",	smbsrv_reply_ntcreate_and_X,	NEED_SESS|NEED_TCON|AND_X },
 /* 0xa3 */ { NULL, NULL, 0 },
 /* 0xa4 */ { "SMBntcancel",	smbsrv_reply_ntcancel,		NEED_SESS|NEED_TCON|SIGNING_NO_REPLY },
 /* 0xa5 */ { "SMBntrename",	smbsrv_reply_ntrename,		NEED_SESS|NEED_TCON },
@@ -395,6 +400,9 @@ NTSTATUS smbsrv_recv_smb_request(void *private, DATA_BLOB blob)
 	req->in.hdr = req->in.buffer + NBT_HDR_SIZE;
 	req->in.vwv = req->in.hdr + HDR_VWV;
 	req->in.wct = CVAL(req->in.hdr, HDR_WCT);
+
+	command = CVAL(req->in.hdr, HDR_COM);
+
 	if (req->in.vwv + VWV(req->in.wct) <= req->in.buffer + req->in.size) {
 		req->in.data = req->in.vwv + VWV(req->in.wct) + 2;
 		req->in.data_size = SVAL(req->in.vwv, VWV(req->in.wct));
@@ -407,7 +415,10 @@ NTSTATUS smbsrv_recv_smb_request(void *private, DATA_BLOB blob)
 		   used instead of the bcc size */
 		if (req->in.data_size + 0x10000 <= 
 		    req->in.size - PTR_DIFF(req->in.data, req->in.buffer) &&
-		    (req->in.wct < 1 || SVAL(req->in.vwv, VWV(0)) == SMB_CHAIN_NONE)) {
+			( message_flags(command) & LARGE_REQUEST) &&
+			( !(message_flags(command) & AND_X) ||
+		      (req->in.wct < 1 || SVAL(req->in.vwv, VWV(0)) == SMB_CHAIN_NONE) )
+			) {
 			/* its an oversized packet! fun for all the family */
 			req->in.data_size = req->in.size - PTR_DIFF(req->in.data,req->in.buffer);
 		}
