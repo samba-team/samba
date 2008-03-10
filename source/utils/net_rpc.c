@@ -5173,19 +5173,13 @@ static int rpc_file_close(int argc, const char **argv)
 /** 
  * Formatted print of open file info 
  *
- * @param info3  FILE_INFO_3 contents
- * @param str3   strings for FILE_INFO_3
+ * @param r  struct srvsvc_NetFileInfo3 contents
  **/
 
-static void display_file_info_3( FILE_INFO_3 *info3 )
+static void display_file_info_3(struct srvsvc_NetFileInfo3 *r)
 {
-	fstring user = "", path = "";
-
-	rpcstr_pull_unistr2_fstring(user, info3->user);
-	rpcstr_pull_unistr2_fstring(path, info3->path);
-
 	d_printf("%-7.1d %-20.20s 0x%-4.2x %-6.1d %s\n",
-		 info3->id, user, info3->perms, info3->num_locks, path);
+		 r->fid, r->user, r->permissions, r->num_locks, r->path);
 }
 
 /** 
@@ -5212,22 +5206,36 @@ static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
 					int argc,
 					const char **argv)
 {
-	SRV_FILE_INFO_CTR ctr;
+	struct srvsvc_NetFileInfoCtr info_ctr;
+	struct srvsvc_NetFileCtr3 ctr3;
 	WERROR result;
-	ENUM_HND hnd;
+	NTSTATUS status;
 	uint32 preferred_len = 0xffffffff, i;
 	const char *username=NULL;
-
-	init_enum_hnd(&hnd, 0);
+	uint32_t total_entries = 0;
+	uint32_t resume_handle = 0;
 
 	/* if argc > 0, must be user command */
 	if (argc > 0)
 		username = smb_xstrdup(argv[0]);
-		
-	result = rpccli_srvsvc_net_file_enum(pipe_hnd,
-					mem_ctx, 3, username, &ctr, preferred_len, &hnd);
 
-	if (!W_ERROR_IS_OK(result))
+	ZERO_STRUCT(info_ctr);
+	ZERO_STRUCT(ctr3);
+
+	info_ctr.level = 3;
+	info_ctr.ctr.ctr3 = &ctr3;
+
+	status = rpccli_srvsvc_NetFileEnum(pipe_hnd, mem_ctx,
+					   pipe_hnd->cli->desthost,
+					   NULL,
+					   username,
+					   &info_ctr,
+					   preferred_len,
+					   &total_entries,
+					   &resume_handle,
+					   &result);
+
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result))
 		goto done;
 
 	/* Display results */
@@ -5236,8 +5244,8 @@ static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
 		 "\nEnumerating open files on remote server:\n\n"\
 		 "\nFileId  Opened by            Perms  Locks  Path"\
 		 "\n------  ---------            -----  -----  ---- \n");
-	for (i = 0; i < ctr.num_entries; i++)
-		display_file_info_3(&ctr.file.info3[i]);
+	for (i = 0; i < total_entries; i++)
+		display_file_info_3(&info_ctr.ctr.ctr3->array[i]);
  done:
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
