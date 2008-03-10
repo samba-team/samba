@@ -351,6 +351,14 @@ static int db_rbt_get_seqnum(struct db_context *db)
 	return 0;
 }
 
+static int db_rbt_trans_dummy(struct db_context *db)
+{
+	/*
+	 * Transactions are pretty pointless in-memory, just return success.
+	 */
+	return 0;
+}
+
 struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx)
 {
 	struct db_context *result;
@@ -373,6 +381,9 @@ struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx)
 	result->traverse = db_rbt_traverse;
 	result->traverse_read = db_rbt_traverse;
 	result->get_seqnum = db_rbt_get_seqnum;
+	result->transaction_start = db_rbt_trans_dummy;
+	result->transaction_commit = db_rbt_trans_dummy;
+	result->transaction_cancel = db_rbt_trans_dummy;
 
 	return result;
 }
