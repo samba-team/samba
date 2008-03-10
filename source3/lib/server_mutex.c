@@ -28,28 +28,51 @@
    This locking allows smbd's mutlithread architecture to look
    like the single-connection that NT makes. */
 
-static char *mutex_server_name;
+struct named_mutex {
+	struct tdb_wrap *tdb;
+	char *name;
+};
 
-bool grab_server_mutex(const char *name)
+static int unlock_named_mutex(struct named_mutex *mutex)
 {
-	mutex_server_name = SMB_STRDUP(name);
-	if (!mutex_server_name) {
-		DEBUG(0,("grab_server_mutex: malloc failed for %s\n", name));
-		return False;
-	}
-	if (!secrets_named_mutex(mutex_server_name, 10)) {
-		DEBUG(10,("grab_server_mutex: failed for %s\n", name));
-		SAFE_FREE(mutex_server_name);
-		return False;
-	}
-
-	return True;
+	tdb_unlock_bystring(mutex->tdb->tdb, mutex->name);
+	return 0;
 }
 
-void release_server_mutex(void)
+struct named_mutex *grab_named_mutex(TALLOC_CTX *mem_ctx, const char *name,
+				     int timeout)
 {
-	if (mutex_server_name) {
-		secrets_named_mutex_release(mutex_server_name);
-		SAFE_FREE(mutex_server_name);
+	struct named_mutex *result;
+
+	result = talloc(mem_ctx, struct named_mutex);
+	if (result == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
 	}
+
+	result->name = talloc_strdup(result, name);
+	if (result->name == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
+	result->tdb = tdb_wrap_open(result, lock_path("mutex.tdb"), 0,
+				    TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	if (result->tdb == NULL) {
+		DEBUG(1, ("Could not open mutex.tdb: %s\n",
+			  strerror(errno)));
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
+	if (tdb_lock_bystring_with_timeout(result->tdb->tdb, name,
+					   timeout) == -1) {
+		DEBUG(1, ("Could not get the lock for %s\n", name));
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
+	talloc_set_destructor(result, unlock_named_mutex);
+	return result;
 }

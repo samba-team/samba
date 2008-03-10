@@ -24,6 +24,7 @@
 #define DBGC_CLASS DBGC_AUTH
 
 extern bool global_machine_password_needs_changing;
+static struct named_mutex *mutex;
 
 /**
  * Connect to a remote server for (inter)domain security authenticaion.
@@ -67,7 +68,8 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	 * ACCESS_DENIED errors if 2 auths are done from the same machine. JRA.
 	 */
 
-	if (!grab_server_mutex(dc_name)) {
+	mutex = grab_named_mutex(NULL, dc_name, 10);
+	if (mutex == NULL) {
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
 	
@@ -87,7 +89,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 			*cli = NULL;
 		}
 
-		release_server_mutex();
+		TALLOC_FREE(mutex);
 		return result;
 	}
 
@@ -118,7 +120,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 		cli_shutdown(*cli);
 		*cli = NULL;
-		release_server_mutex();
+		TALLOC_FREE(mutex);
 		return result;
 	}
 
@@ -137,7 +139,7 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 				domain));
 			cli_shutdown(*cli);
 			*cli = NULL;
-			release_server_mutex();
+			TALLOC_FREE(mutex);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
 
@@ -153,7 +155,7 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 		if (!NT_STATUS_IS_OK(result)) {
 			cli_shutdown(*cli);
 			*cli = NULL;
-			release_server_mutex();
+			TALLOC_FREE(mutex);
 			return result;
 		}
 	}
@@ -163,7 +165,7 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 machine %s. Error was : %s.\n", dc_name, cli_errstr(*cli)));
 		cli_shutdown(*cli);
 		*cli = NULL;
-		release_server_mutex();
+		TALLOC_FREE(mutex);
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
 
@@ -247,7 +249,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	/* Let go as soon as possible so we avoid any potential deadlocks
 	   with winbind lookup up users or groups. */
 	   
-	release_server_mutex();
+	TALLOC_FREE(mutex);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("domain_client_validate: unable to validate password "
