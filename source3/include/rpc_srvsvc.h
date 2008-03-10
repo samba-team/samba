@@ -137,27 +137,6 @@ typedef struct {
 
 /***************************/
 
-/* SRV_Q_NET_SESS_DEL */
-typedef struct q_net_sess_del
-{
-	uint32 ptr_srv_name;         /* pointer (to server name?) */
-	UNISTR2 uni_srv_name;        /* server name */
-
-	uint32 ptr_cli_name;         /* pointer (to qualifier name) */
-	UNISTR2 uni_cli_name;        /* qualifier name "\\qualifier" */
-
-	uint32 ptr_user_name;         /* pointer (to user name */
-	UNISTR2 uni_user_name;        /* user name */
-
-} SRV_Q_NET_SESS_DEL;
-
-/* SRV_R_NET_SESS_DEL */
-typedef struct r_net_sess_del
-{
-	WERROR status;               /* return status */
-
-} SRV_R_NET_SESS_DEL;
-
 /* CONN_INFO_0 (pointers to level 0 connection info strings) */
 typedef struct ptr_conn_info0
 {
