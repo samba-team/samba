@@ -1029,37 +1029,6 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 }
 
 /*******************************************************************************
- Lock the secrets tdb based on a string - this is used as a primitive form of mutex
- between smbd instances.
-*******************************************************************************/
-
-bool secrets_named_mutex(const char *name, unsigned int timeout)
-{
-	int ret = 0;
-
-	if (!secrets_init()) {
-		return false;
-	}
-
-	ret = tdb_lock_bystring_with_timeout(tdb, name, timeout);
-	if (ret == 0) {
-		DEBUG(10,("secrets_named_mutex: got mutex for %s\n", name ));
-	}
-
-	return (ret == 0);
-}
-
-/*******************************************************************************
- Unlock a named mutex.
-*******************************************************************************/
-
-void secrets_named_mutex_release(const char *name)
-{
-	tdb_unlock_bystring(tdb, name);
-	DEBUG(10,("secrets_named_mutex: released mutex for %s\n", name ));
-}
-
-/*******************************************************************************
  Store a complete AFS keyfile into secrets.tdb.
 *******************************************************************************/
 

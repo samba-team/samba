@@ -747,7 +747,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	char *ipc_domain = NULL;
 	char *ipc_password = NULL;
 
-	bool got_mutex;
+	struct named_mutex *mutex;
 
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
@@ -761,10 +761,9 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	*retry = True;
 
-	got_mutex = secrets_named_mutex(controller,
-					WINBIND_SERVER_MUTEX_WAIT_TIME);
-
-	if (!got_mutex) {
+	mutex = grab_named_mutex(talloc_tos(), controller,
+				 WINBIND_SERVER_MUTEX_WAIT_TIME);
+	if (mutex == NULL) {
 		DEBUG(0,("cm_prepare_connection: mutex grab failed for %s\n",
 			 controller));
 		result = NT_STATUS_POSSIBLE_DEADLOCK;
@@ -952,8 +951,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		goto done;
 	}
 
-	secrets_named_mutex_release(controller);
-	got_mutex = False;
+	TALLOC_FREE(mutex);
 	*retry = False;
 
 	/* set the domain if empty; needed for schannel connections */
@@ -964,10 +962,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	result = NT_STATUS_OK;
 
  done:
-	if (got_mutex) {
-		secrets_named_mutex_release(controller);
-	}
-
+	TALLOC_FREE(mutex);
 	SAFE_FREE(machine_account);
 	SAFE_FREE(machine_password);
 	SAFE_FREE(machine_krb5_principal);

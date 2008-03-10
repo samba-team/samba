@@ -330,8 +330,8 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 	krb5_const_principal client_principal = NULL;
 	char *host_princ_s = NULL;
 	bool auth_ok = False;
-	bool got_replay_mutex = False;
 	bool got_auth_data = False;
+	struct named_mutex *mutex = NULL;
 
 	ZERO_STRUCT(packet);
 	ZERO_STRUCT(auth_data);
@@ -395,14 +395,14 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 		   locking in the MIT krb5 code surrounding the replay 
 		   cache... */
 
-		if (!grab_server_mutex("replay cache mutex")) {
+		mutex = grab_named_mutex(talloc_tos(), "replay cache mutex",
+					 10);
+		if (mutex == NULL) {
 			DEBUG(1,("ads_verify_ticket: unable to protect "
 				 "replay cache with mutex.\n"));
 			ret = KRB5_CC_IO;
 			goto out;
 		}
-
-		got_replay_mutex = True;
 
 		/* JRA. We must set the rcache here. This will prevent 
 		   replay attacks. */
@@ -443,8 +443,7 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 	}
 
 	if ( use_replay_cache ) {		
-		release_server_mutex();
-		got_replay_mutex = False;
+		TALLOC_FREE(mutex);
 #if 0
 		/* Heimdal leaks here, if we fix the leak, MIT crashes */
 		if (rcache) {
@@ -539,9 +538,7 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 
  out:
 
-	if (got_replay_mutex) {
-		release_server_mutex();
-	}
+	TALLOC_FREE(mutex);
 
 	if (!NT_STATUS_IS_OK(sret)) {
 		data_blob_free(&auth_data);
