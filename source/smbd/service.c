@@ -235,6 +235,10 @@ static int load_registry_service(const char *servicename)
 		return -1;
 	}
 
+	if (strequal(servicename, GLOBAL_NAME)) {
+		return -2;
+	}
+
 	if (asprintf(&path, "%s\\%s", KEY_SMBCONF, servicename) == -1) {
 		return -1;
 	}
