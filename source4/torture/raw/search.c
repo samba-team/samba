@@ -708,6 +708,16 @@ static bool test_many_files(struct torture_context *tctx,
 
 	for (t=0;t<ARRAY_SIZE(search_types);t++) {
 		ZERO_STRUCT(result);
+
+		if ((search_types[t].cont_type == CONT_RESUME_KEY) &&
+		    (search_types[t].data_level != RAW_SEARCH_DATA_SEARCH) &&
+		    torture_setting_bool(tctx, "samba3", false)) {
+			torture_comment(tctx,
+					"SKIP: Continue %s via %s\n",
+					search_types[t].name, search_types[t].cont_name);
+			continue;
+		}
+
 		result.tctx = talloc_new(tctx);
 	
 		torture_comment(tctx,
