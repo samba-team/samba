@@ -475,7 +475,7 @@ static int save_reload(int snum)
 		lp_dump_one(f, False, snum);
 	fclose(f);
 
-	lp_killunused(NULL);
+	lp_kill_all_services();
 
 	if (!load_config(False)) {
                 printf(_("Can't reload %s"), get_dyn_CONFIGFILE());
