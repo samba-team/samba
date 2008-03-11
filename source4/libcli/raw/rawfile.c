@@ -36,6 +36,8 @@ struct smbcli_request *smb_raw_rename_send(struct smbcli_tree *tree,
 					union smb_rename *parms)
 {
 	struct smbcli_request *req = NULL; 
+	struct smb_nttrans nt;
+	TALLOC_CTX *mem_ctx;
 
 	switch (parms->generic.level) {
 	case RAW_RENAME_RENAME:
@@ -53,6 +55,30 @@ struct smbcli_request *smb_raw_rename_send(struct smbcli_tree *tree,
 		smbcli_req_append_ascii4(req, parms->ntrename.in.old_name, STR_TERMINATE);
 		smbcli_req_append_ascii4(req, parms->ntrename.in.new_name, STR_TERMINATE);
 		break;
+
+	case RAW_RENAME_NTTRANS:
+
+		mem_ctx = talloc_new(tree);
+
+		nt.in.max_setup = 0;
+		nt.in.max_param = 0;
+		nt.in.max_data = 0;
+		nt.in.setup_count = 0;
+		nt.in.setup = NULL;
+		nt.in.function = NT_TRANSACT_RENAME;
+		nt.in.params = data_blob_talloc(mem_ctx, NULL, 4);
+		nt.in.data = data_blob(NULL, 0);
+
+		SSVAL(nt.in.params.data, VWV(0), parms->nttrans.in.file.fnum);
+		SSVAL(nt.in.params.data, VWV(1), parms->nttrans.in.flags);
+
+		smbcli_blob_append_string(tree->session, mem_ctx,
+					  &nt.in.params, parms->nttrans.in.new_name,
+					  STR_TERMINATE);
+
+		req = smb_raw_nttrans_send(tree, &nt);
+		talloc_free(mem_ctx);
+		return req;
 	}
 
 	if (!smbcli_request_send(req)) {
