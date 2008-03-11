@@ -269,6 +269,7 @@ static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 	NTSTATUS status;
 	uint32_t totalentries = 0;
 	uint32_t resume_handle = 0;
+	uint32_t *resume_handle_p = NULL;
 	uint32 preferred_len = 0xffffffff, i;
 
 	if (argc > 3) {
@@ -282,6 +283,7 @@ static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 
 	if (argc == 3) {
 		resume_handle = atoi(argv[2]);
+		resume_handle_p = &resume_handle;
 	}
 
 	ZERO_STRUCT(info_ctr);
@@ -338,7 +340,7 @@ static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 							    &info_ctr,
 							    preferred_len,
 							    &totalentries,
-							    &resume_handle,
+							    resume_handle_p,
 							    &result);
 			break;
 		case NDR_SRVSVC_NETSHAREENUMALL:
@@ -347,7 +349,7 @@ static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 							       &info_ctr,
 							       preferred_len,
 							       &totalentries,
-							       &resume_handle,
+							       resume_handle_p,
 							       &result);
 			break;
 		default:
