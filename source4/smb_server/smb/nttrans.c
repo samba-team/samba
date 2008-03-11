@@ -287,7 +287,30 @@ static NTSTATUS nttrans_set_sec_desc(struct smbsrv_request *req,
 static NTSTATUS nttrans_rename(struct smbsrv_request *req, 
 			       struct nttrans_op *op)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct smb_nttrans *trans = op->trans;
+	union smb_rename *io;
+
+	if (trans->in.params.length < 5) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* parse the request */
+	io = talloc(req, union smb_rename);
+	NT_STATUS_HAVE_NO_MEMORY(io);
+
+	io->nttrans.level		= RAW_RENAME_NTTRANS;
+	io->nttrans.in.file.ntvfs	= smbsrv_pull_fnum(req, trans->in.params.data, 0);
+	io->nttrans.in.flags		= SVAL(trans->in.params.data, 2);
+
+	smbsrv_blob_pull_string(&req->in.bufinfo, &trans->in.params, 4,
+				&io->nttrans.in.new_name,
+				STR_TERMINATE);
+	if (!io->nttrans.in.new_name) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	SMBSRV_CHECK_FILE_HANDLE_NTSTATUS(io->nttrans.in.file.ntvfs);
+	return ntvfs_rename(req->ntvfs, io);
 }
 
 /* 
