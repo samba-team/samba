@@ -5295,7 +5295,7 @@ static void rename_open_files(connection_struct *conn,
 		   sharepaths we need to manipulate relative paths. */
 		/* TODO - create the absolute path and manipulate the newname
 		   relative to the sharepath. */
-		if (fsp->conn != conn) {
+		if (!strequal(fsp->conn->connectpath, conn->connectpath)) {
 			continue;
 		}
 		DEBUG(10,("rename_open_files: renaming file fnum %d (file_id %s) from %s -> %s\n",
