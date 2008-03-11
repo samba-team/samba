@@ -7744,6 +7744,14 @@ void lp_killunused(bool (*snumused) (int))
 	}
 }
 
+/**
+ * Kill all except autoloaded and usershare services - convenience wrapper
+ */
+void lp_kill_all_services(void)
+{
+	lp_killunused(NULL);
+}
+
 /***************************************************************************
  Unload a service.
 ***************************************************************************/
