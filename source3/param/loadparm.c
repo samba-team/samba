@@ -8700,7 +8700,7 @@ bool lp_load(const char *pszFname,
 		if (lp_config_backend_is_registry()) {
 			/*
 			 * We need to use this extra global variable here to
-			 * survive restart: init_globals usese this as a default
+			 * survive restart: init_globals uses this as a default
 			 * for ConfigBackend. Otherwise, init_globals would
 			 *  send us into an endless loop here.
 			 */
