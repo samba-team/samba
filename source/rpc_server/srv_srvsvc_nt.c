@@ -2362,45 +2362,51 @@ static const char *next_server_disk_enum(uint32 *resume)
 	return disk;
 }
 
-WERROR _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_DISK_ENUM *r_u)
+/********************************************************************
+ _srvsvc_NetDiskEnum
+********************************************************************/
+
+WERROR _srvsvc_NetDiskEnum(pipes_struct *p,
+			   struct srvsvc_NetDiskEnum *r)
 {
 	uint32 i;
 	const char *disk_name;
 	TALLOC_CTX *ctx = p->mem_ctx;
-	uint32 resume=get_enum_hnd(&q_u->enum_hnd);
+	WERROR werr;
+	uint32_t resume = r->in.resume_handle ? *r->in.resume_handle : 0;
 
-	r_u->status=WERR_OK;
+	werr = WERR_OK;
 
-	r_u->total_entries = init_server_disk_enum(&resume);
+	*r->out.totalentries = init_server_disk_enum(&resume);
 
-	r_u->disk_enum_ctr.unknown = 0;
+	r->out.info->disks = TALLOC_ZERO_ARRAY(ctx, struct srvsvc_NetDiskInfo0,
+					       MAX_SERVER_DISK_ENTRIES);
+	W_ERROR_HAVE_NO_MEMORY(r->out.info->disks);
 
-	if(!(r_u->disk_enum_ctr.disk_info =  TALLOC_ARRAY(ctx, DISK_INFO, MAX_SERVER_DISK_ENTRIES))) {
-		return WERR_NOMEM;
-	}
-
-	r_u->disk_enum_ctr.disk_info_ptr = r_u->disk_enum_ctr.disk_info ? 1 : 0;
-
-	/*allow one DISK_INFO for null terminator*/
+	/*allow one struct srvsvc_NetDiskInfo0 for null terminator*/
 
 	for(i = 0; i < MAX_SERVER_DISK_ENTRIES -1 && (disk_name = next_server_disk_enum(&resume)); i++) {
 
-		r_u->disk_enum_ctr.entries_read++;
+		r->out.info->count++;
 
 		/*copy disk name into a unicode string*/
 
-		init_unistr3(&r_u->disk_enum_ctr.disk_info[i].disk_name, disk_name);
+		r->out.info->disks[i].disk = talloc_strdup(ctx, disk_name);
+		W_ERROR_HAVE_NO_MEMORY(r->out.info->disks[i].disk);
 	}
 
 	/* add a terminating null string.  Is this there if there is more data to come? */
 
-	r_u->disk_enum_ctr.entries_read++;
+	r->out.info->count++;
 
-	init_unistr3(&r_u->disk_enum_ctr.disk_info[i].disk_name, "");
+	r->out.info->disks[i].disk = talloc_strdup(ctx, "");
+	W_ERROR_HAVE_NO_MEMORY(r->out.info->disks[i].disk);
 
-	init_enum_hnd(&r_u->enum_hnd, resume);
+	if (r->out.resume_handle) {
+		*r->out.resume_handle = resume;
+	}
 
-	return r_u->status;
+	return werr;
 }
 
 /********************************************************************
@@ -2513,12 +2519,6 @@ WERROR _srvsvc_NetSessEnum(pipes_struct *p, struct srvsvc_NetSessEnum *r)
 }
 
 WERROR _srvsvc_NetShareCheck(pipes_struct *p, struct srvsvc_NetShareCheck *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _srvsvc_NetDiskEnum(pipes_struct *p, struct srvsvc_NetDiskEnum *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
