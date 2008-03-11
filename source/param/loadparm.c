@@ -6596,7 +6596,7 @@ bool lp_file_list_changed(void)
 
  	DEBUG(6, ("lp_file_list_changed()\n"));
 
-	if (lp_config_backend() == CONFIG_BACKEND_REGISTRY) {
+	if (lp_config_backend_is_registry()) {
 		uint64_t conf_cur_seqnum;
 		if (conf_ctx == NULL) {
 			WERROR werr;
@@ -8668,7 +8668,7 @@ bool lp_load(const char *pszFname,
 			}
 		}
 
-		if (lp_config_backend() == CONFIG_BACKEND_REGISTRY) {
+		if (lp_config_backend_is_registry()) {
 			/*
 			 * We need to use this extra global variable here to
 			 * survive restart: init_globals usese this as a default
@@ -8681,7 +8681,7 @@ bool lp_load(const char *pszFname,
 			return lp_load(pszFname, global_only, save_defaults,
 				       add_ipc, initialize_globals);
 		}
-	} else if (lp_config_backend() == CONFIG_BACKEND_REGISTRY) {
+	} else if (lp_config_backend_is_registry()) {
 		bRetval = process_registry_globals(do_parameter);
 	} else {
 		DEBUG(0, ("Illegal config  backend given: %d\n",
