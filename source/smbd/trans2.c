@@ -4930,7 +4930,7 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 	}
 
 	status = open_file_ntcreate(conn, req, fname, psbuf,
-				FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES,
+				FILE_WRITE_ATTRIBUTES,
 				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 				FILE_OPEN,
 				0,
