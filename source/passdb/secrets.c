@@ -27,7 +27,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
-static TDB_CONTEXT *tdb;
+static struct db_context *db_ctx;
 
 /* Urrrg. global.... */
 bool global_machine_password_needs_changing;
@@ -43,8 +43,9 @@ bool global_machine_password_needs_changing;
 static void get_rand_seed(int *new_seed)
 {
 	*new_seed = sys_getpid();
-	if (tdb) {
-		tdb_change_int32_atomic(tdb, "INFO/random_seed", new_seed, 1);
+	if (db_ctx) {
+		dbwrap_change_int32_atomic(db_ctx, "INFO/random_seed",
+					   new_seed, 1);
 	}
 }
 
@@ -54,7 +55,7 @@ bool secrets_init(void)
 	char *fname = NULL;
 	unsigned char dummy;
 
-	if (tdb)
+	if (db_ctx != NULL)
 		return True;
 
 	fname = talloc_asprintf(talloc_tos(), "%s/secrets.tdb",
@@ -63,9 +64,9 @@ bool secrets_init(void)
 		return false;
 	}
 
-	tdb = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	db_ctx = db_open(NULL, fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 
-	if (!tdb) {
+	if (db_ctx == NULL) {
 		DEBUG(0,("Failed to open %s\n", fname));
 		TALLOC_FREE(fname);
 		return False;
@@ -92,12 +93,7 @@ bool secrets_init(void)
  */
 void secrets_shutdown(void)
 {
-	if (!tdb) {
-		return;
-	}
-
-	tdb_close(tdb);
-	tdb = NULL;
+	TALLOC_FREE(db_ctx);
 }
 
 /* read a entry from the secrets database - the caller must free the result
@@ -106,17 +102,28 @@ void secrets_shutdown(void)
 void *secrets_fetch(const char *key, size_t *size)
 {
 	TDB_DATA dbuf;
+	void *result;
 
 	if (!secrets_init()) {
 		return NULL;
 	}
 
-	dbuf = tdb_fetch(tdb, string_tdb_data(key));
+	if (db_ctx->fetch(db_ctx, talloc_tos(), string_tdb_data(key),
+			  &dbuf) != 0) {
+		return NULL;
+	}
+
+	result = memdup(dbuf.dptr, dbuf.dsize);
+	if (result == NULL) {
+		return NULL;
+	}
+	TALLOC_FREE(dbuf.dptr);
+
 	if (size) {
 		*size = dbuf.dsize;
 	}
 
-	return dbuf.dptr;
+	return result;
 }
 
 /* store a secrets entry
@@ -127,9 +134,9 @@ bool secrets_store(const char *key, const void *data, size_t size)
 		return false;
 	}
 
-	return tdb_trans_store(tdb, string_tdb_data(key),
-			       make_tdb_data((const uint8 *)data, size),
-			       TDB_REPLACE) == 0;
+	return dbwrap_trans_store(db_ctx, string_tdb_data(key),
+				  make_tdb_data((const uint8 *)data, size),
+				  TDB_REPLACE) == 0;
 }
 
 
@@ -141,7 +148,7 @@ bool secrets_delete(const char *key)
 		return false;
 	}
 
-	return tdb_trans_delete(tdb, string_tdb_data(key)) == 0;
+	return dbwrap_trans_delete(db_ctx, string_tdb_data(key)) == 0;
 }
 
 /**
@@ -325,36 +332,18 @@ static char *trustdom_keystr(const char *domain)
 	return keystr;
 }
 
-static int unlock_trust_account(char *domain)
-{
-	tdb_unlock_bystring(tdb, trust_keystr(domain));
-	return 0;
-}
-
 /************************************************************************
  Lock the trust password entry.
 ************************************************************************/
 
 void *secrets_get_trust_account_lock(TALLOC_CTX *mem_ctx, const char *domain)
 {
-	char *result;
-
 	if (!secrets_init()) {
 		return NULL;
 	}
 
-	result = talloc_strdup(mem_ctx, domain);
-	if (result == NULL) {
-		return NULL;
-	}
-
-	if (tdb_lock_bystring(tdb, trust_keystr(domain)) != 0) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
-
-	talloc_set_destructor(result, unlock_trust_account);
-	return result;
+	return db_ctx->fetch_locked(
+		db_ctx, mem_ctx, string_term_tdb_data(trust_keystr(domain)));
 }
 
 /************************************************************************
@@ -913,118 +902,94 @@ bool fetch_ldap_pw(char **dn, char** pw)
  * Get trusted domains info from secrets.tdb.
  **/
 
+struct list_trusted_domains_state {
+	uint32 num_domains;
+	struct trustdom_info **domains;
+};
+
+static int list_trusted_domain(struct db_record *rec, void *private_data)
+{
+	const size_t prefix_len = strlen(SECRETS_DOMTRUST_ACCT_PASS);
+	size_t packed_size = 0;
+	struct trusted_dom_pass pass;
+	struct trustdom_info *dom_info;
+
+	struct list_trusted_domains_state *state =
+		(struct list_trusted_domains_state *)private_data;
+
+	if ((rec->key.dsize < prefix_len)
+	    || (strncmp((char *)rec->key.dptr, SECRETS_DOMTRUST_ACCT_PASS,
+			prefix_len) != 0)) {
+		return 0;
+	}
+
+	packed_size = tdb_trusted_dom_pass_unpack(
+		rec->value.dptr, rec->value.dsize, &pass);
+
+	if (rec->value.dsize != packed_size) {
+		DEBUG(2, ("Secrets record is invalid!\n"));
+		return 0;
+	}
+
+	if (pass.domain_sid.num_auths != 4) {
+		DEBUG(0, ("SID %s is not a domain sid, has %d "
+			  "auths instead of 4\n",
+			  sid_string_dbg(&pass.domain_sid),
+			  pass.domain_sid.num_auths));
+		return 0;
+	}
+
+	if (!(dom_info = TALLOC_P(state->domains, struct trustdom_info))) {
+		DEBUG(0, ("talloc failed\n"));
+		return 0;
+	}
+
+	if (pull_ucs2_talloc(dom_info, &dom_info->name,
+			     pass.uni_name) == (size_t)-1) {
+		DEBUG(2, ("pull_ucs2_talloc failed\n"));
+		TALLOC_FREE(dom_info);
+		return 0;
+	}
+
+	sid_copy(&dom_info->sid, &pass.domain_sid);
+
+	ADD_TO_ARRAY(state->domains, struct trustdom_info *, dom_info,
+		     &state->domains, &state->num_domains);
+
+	if (state->domains == NULL) {
+		state->num_domains = 0;
+		return -1;
+	}
+	return 0;
+}
+
 NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 				 struct trustdom_info ***domains)
 {
-	TDB_LIST_NODE *keys, *k;
-	char *pattern;
-	TALLOC_CTX *tmp_ctx;
+	struct list_trusted_domains_state state;
 
-	if (!(tmp_ctx = talloc_new(mem_ctx))) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	secrets_init();
 
-	if (!secrets_init()) {
+	if (db_ctx == NULL) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* generate searching pattern */
-	pattern = talloc_asprintf(tmp_ctx, "%s/*", SECRETS_DOMTRUST_ACCT_PASS);
-	if (pattern == NULL) {
-		DEBUG(0, ("secrets_trusted_domains: talloc_asprintf() "
-			  "failed!\n"));
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	*num_domains = 0;
+	state.num_domains = 0;
 
 	/*
 	 * Make sure that a talloc context for the trustdom_info structs
 	 * exists
 	 */
 
-	if (!(*domains = TALLOC_ARRAY(mem_ctx, struct trustdom_info *, 1))) {
-		TALLOC_FREE(tmp_ctx);
+	if (!(state.domains = TALLOC_ARRAY(
+		      mem_ctx, struct trustdom_info *, 1))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* fetching trusted domains' data and collecting them in a list */
-	keys = tdb_search_keys(tdb, pattern);
+	db_ctx->traverse(db_ctx, list_trusted_domain, (void *)&state);
 
-	/* searching for keys in secrets db -- way to go ... */
-	for (k = keys; k; k = k->next) {
-		uint8 *packed_pass;
-		size_t size = 0, packed_size = 0;
-		struct trusted_dom_pass pass;
-		char *secrets_key;
-		struct trustdom_info *dom_info;
-
-		/* important: ensure null-termination of the key string */
-		secrets_key = talloc_strndup(tmp_ctx,
-					     (const char *)k->node_key.dptr,
-					     k->node_key.dsize);
-		if (!secrets_key) {
-			DEBUG(0, ("strndup failed!\n"));
-			tdb_search_list_free(keys);
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		packed_pass = (uint8 *)secrets_fetch(secrets_key, &size);
-		packed_size = tdb_trusted_dom_pass_unpack(packed_pass, size,
-							  &pass);
-		/* packed representation isn't needed anymore */
-		SAFE_FREE(packed_pass);
-
-		if (size != packed_size) {
-			DEBUG(2, ("Secrets record %s is invalid!\n",
-				  secrets_key));
-			continue;
-		}
-
-		if (pass.domain_sid.num_auths != 4) {
-			DEBUG(0, ("SID %s is not a domain sid, has %d "
-				  "auths instead of 4\n",
-				  sid_string_dbg(&pass.domain_sid),
-				  pass.domain_sid.num_auths));
-			continue;
-		}
-
-		if (!(dom_info = TALLOC_P(*domains, struct trustdom_info))) {
-			DEBUG(0, ("talloc failed\n"));
-			tdb_search_list_free(keys);
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		if (pull_ucs2_talloc(dom_info, &dom_info->name,
-				     pass.uni_name) == (size_t)-1) {
-			DEBUG(2, ("pull_ucs2_talloc failed\n"));
-			tdb_search_list_free(keys);
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		sid_copy(&dom_info->sid, &pass.domain_sid);
-
-		ADD_TO_ARRAY(*domains, struct trustdom_info *, dom_info,
-			     domains, num_domains);
-
-		if (*domains == NULL) {
-			tdb_search_list_free(keys);
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	DEBUG(5, ("secrets_get_trusted_domains: got %d domains\n",
-		  *num_domains));
-
-	/* free the results of searching the keys */
-	tdb_search_list_free(keys);
-	TALLOC_FREE(tmp_ctx);
-
+	*num_domains = state.num_domains;
+	*domains = state.domains;
 	return NT_STATUS_OK;
 }
 
