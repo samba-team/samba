@@ -766,7 +766,7 @@ static WERROR cmd_srvsvc_net_disk_enum(struct rpc_pipe_client *cli,
 	uint32_t resume_handle = 0;
 	uint32_t level = 0;
 
-	if (argc > 2) {
+	if (argc > 4) {
 		printf("Usage: %s [level] [resume_handle]\n", argv[0]);
 		return WERR_OK;
 	}
