@@ -2,6 +2,7 @@
 #define DATABASE_VERSION_V2 2 /* le format. */
 
 #define GROUP_PREFIX "UNIXGROUP/"
+#define GROUP_PREFIX_LEN 10
 
 /* Alias memberships are stored reverse, as memberships. The performance
  * critical operation is to determine the aliases a SID is member of, not
@@ -9,6 +10,7 @@
  * hanging of the member as key.
  */
 #define MEMBEROF_PREFIX "MEMBEROF/"
+#define MEMBEROF_PREFIX_LEN 9
 
 /*
   groupdb mapping backend abstraction
