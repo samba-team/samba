@@ -6586,6 +6586,14 @@ bool lp_config_backend_is_registry(void)
 	return (lp_config_backend() == CONFIG_BACKEND_REGISTRY);
 }
 
+/**
+ * Utility function to check if the config backend is FILE.
+ */
+bool lp_config_backend_is_file(void)
+{
+	return (lp_config_backend() == CONFIG_BACKEND_FILE);
+}
+
 /*******************************************************************
  Check if a config file has changed date.
 ********************************************************************/
@@ -8645,7 +8653,7 @@ bool lp_load(const char *pszFname,
 		Globals.param_opt = NULL;
 	}
 
-	if (lp_config_backend() == CONFIG_BACKEND_FILE) {
+	if (lp_config_backend_is_file()) {
 		n2 = alloc_sub_basic(get_current_username(),
 					current_user_info.domain,
 					pszFname);
