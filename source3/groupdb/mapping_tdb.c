@@ -106,7 +106,7 @@ static bool add_mapping_entry(GROUP_MAP *map, int flag)
 		if (!buf) {
 			return false;
 		}
-		len = tdb_pack((uint8 *)buf, sizeof(buf), "ddff", map->gid,
+		len = tdb_pack((uint8 *)buf, len, "ddff", map->gid,
 				map->sid_name_use, map->nt_name, map->comment);
 	}
 
