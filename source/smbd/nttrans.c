@@ -1353,7 +1353,7 @@ void reply_ntrename(struct smb_request *req)
 		case RENAME_FLAG_RENAME:
 			status = rename_internals(ctx, conn, req, oldname,
 					newname, attrs, False, src_has_wcard,
-					dest_has_wcard);
+					dest_has_wcard, DELETE_ACCESS);
 			break;
 		case RENAME_FLAG_HARD_LINK:
 			if (src_has_wcard || dest_has_wcard) {
@@ -1549,7 +1549,8 @@ static void call_nt_transact_rename(connection_struct *conn,
 			0,
 			replace_if_exists,
 			False,
-			dest_has_wcard);
+			dest_has_wcard,
+			DELETE_ACCESS);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
