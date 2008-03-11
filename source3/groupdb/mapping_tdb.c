@@ -91,27 +91,30 @@ static bool init_group_mapping(void)
 static bool add_mapping_entry(GROUP_MAP *map, int flag)
 {
 	TDB_DATA dbuf;
-	char *key = NULL;
-	char *buf = NULL;
-	fstring string_sid="";
+	char *key, *buf, *sid_string;
 	int len;
 	bool ret;
 
-	sid_to_fstring(string_sid, &map->sid);
+	sid_string = sid_string_talloc(talloc_tos(), &map->sid);
+	if (sid_string == NULL) {
+		return NULL;
+	}
 
 	len = tdb_pack(NULL, sizeof(buf), "ddff",
 		map->gid, map->sid_name_use, map->nt_name, map->comment);
 	if (len) {
-		buf = SMB_MALLOC_ARRAY(char, len);
+		buf = TALLOC_ARRAY(sid_string, char, len);
 		if (!buf) {
+			TALLOC_FREE(sid_string);
 			return false;
 		}
 		len = tdb_pack((uint8 *)buf, len, "ddff", map->gid,
 				map->sid_name_use, map->nt_name, map->comment);
 	}
 
-	if (asprintf(&key, "%s%s", GROUP_PREFIX, string_sid) < 0) {
-		SAFE_FREE(buf);
+	key = talloc_asprintf(sid_string, "%s%s", GROUP_PREFIX, sid_string);
+	if (key == NULL) {
+		TALLOC_FREE(sid_string);
 		return false;
 	}
 
@@ -120,8 +123,7 @@ static bool add_mapping_entry(GROUP_MAP *map, int flag)
 
 	ret = (tdb_store_bystring(tdb, key, dbuf, flag) == 0);
 
-	SAFE_FREE(key);
-	SAFE_FREE(buf);
+	TALLOC_FREE(sid_string);
 	return ret;
 }
 
