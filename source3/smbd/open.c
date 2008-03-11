@@ -1366,7 +1366,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	se_map_generic(&access_mask, &file_generic_mapping);
 	open_access_mask = access_mask;
 
-	if (flags2 & O_TRUNC) {
+	if ((flags2 & O_TRUNC) || (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE)) {
 		open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
 	}
 
@@ -1378,7 +1378,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * mean the same thing under DOS and Unix.
 	 */
 
-	if (access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) {
+	if ((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ||
+			(oplock_request & FORCE_OPLOCK_BREAK_TO_NONE)) {
 		/* DENY_DOS opens are always underlying read-write on the
 		   file handle, no matter what the requested access mask
 		    says. */
