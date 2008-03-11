@@ -258,6 +258,9 @@ int ldb_dn_from_pyobject(TALLOC_CTX *mem_ctx, PyObject *object,
     struct ldb_dn *odn;
     if (ldb_ctx != NULL && PyString_Check(object)) {
         *dn = ldb_dn_new(mem_ctx, ldb_ctx, PyString_AsString(object));
+	if (!*dn) {
+		return SWIG_ERROR;
+	}
         return 0;
     }
     ret = SWIG_ConvertPtr(object, (void **)&odn, SWIGTYPE_p_ldb_dn, 
@@ -566,7 +569,7 @@ PyObject *PyExc_LdbError;
         $1->elements = talloc_zero_array($1, struct ldb_message_element, PyDict_Size($input));
         msg_pos = dict_pos = 0;
         while (PyDict_Next($input, &dict_pos, &key, &value)) {
-            if (!strcmp(PyString_AsString(key), "dn")) {
+            if (strcmp(PyString_AsString(key), "dn") == 0) {
                 /* using argp0 (magic SWIG value) here is a hack */
                 if (ldb_dn_from_pyobject($1, value, argp1, &$1->dn) != 0) {
                     SWIG_exception(SWIG_TypeError, "unable to import dn object");
