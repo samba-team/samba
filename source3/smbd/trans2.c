@@ -5322,7 +5322,8 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		DEBUG(10,("smb_file_rename_information: SMB_FILE_RENAME_INFORMATION %s -> %s\n",
 			fname, base_name ));
 		status = rename_internals(ctx, conn, req, fname, base_name, 0,
-					  overwrite, False, dest_has_wcard);
+					overwrite, False, dest_has_wcard,
+					FILE_WRITE_ATTRIBUTES);
 	}
 
 	return status;
