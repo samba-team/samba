@@ -363,7 +363,6 @@ static bool test_raw_oplock_exclusive3(struct torture_context *tctx, struct smbc
 	union smb_open io;
 	union smb_setfileinfo sfi;
 	uint16_t fnum=0;
-	bool s3 = torture_setting_bool(tctx, "samba3", false);
 
 	if (!torture_setup_dir(cli1, BASEDIR)) {
 		return false;
@@ -389,15 +388,10 @@ static bool test_raw_oplock_exclusive3(struct torture_context *tctx, struct smbc
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "open a file with an exclusive oplock (share mode: %s)\n",
-			s3?"all":"none");
+	torture_comment(tctx, "open a file with an exclusive oplock (share mode: none)\n");
+
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | NTCREATEX_FLAGS_REQUEST_OPLOCK;
-	if (s3) {
-		io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
-			NTCREATEX_SHARE_ACCESS_WRITE|
-			NTCREATEX_SHARE_ACCESS_DELETE;
-	}
 
 	status = smb_raw_open(cli1->tree, tctx, &io);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
