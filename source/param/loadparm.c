@@ -8677,6 +8677,7 @@ bool lp_load(const char *pszFname,
 		}
 
 		if (lp_config_backend_is_registry()) {
+			/* config backend changed to registry in config file */
 			/*
 			 * We need to use this extra global variable here to
 			 * survive restart: init_globals uses this as a default
