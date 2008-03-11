@@ -1550,7 +1550,7 @@ static void call_nt_transact_rename(connection_struct *conn,
 			replace_if_exists,
 			False,
 			dest_has_wcard,
-			DELETE_ACCESS);
+			FILE_WRITE_ATTRIBUTES);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
