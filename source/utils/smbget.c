@@ -29,7 +29,7 @@
 
 static int columns = 0;
 
-static int _resume, _recursive, debuglevel, update;
+static int debuglevel, update;
 static char *outputfile;
 
 
@@ -540,13 +540,14 @@ int main(int argc, const char **argv)
 	const char *file = NULL;
 	char *rcfile = NULL;
 	bool smb_encrypt = false;
+	int resume = 0, recursive = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct poptOption long_options[] = {
 		{"guest", 'a', POPT_ARG_NONE, NULL, 'a', "Work as user guest" },	
 		{"encrypt", 'e', POPT_ARG_NONE, NULL, 'e', "Encrypt SMB transport (UNIX extended servers only)" },	
-		{"resume", 'r', POPT_ARG_NONE, &_resume, 0, "Automatically resume aborted files" },
+		{"resume", 'r', POPT_ARG_NONE, &resume, 0, "Automatically resume aborted files" },
 		{"update", 'U',  POPT_ARG_NONE, &update, 0, "Download only when remote file is newer than local file or local file is missing"},
-		{"recursive", 'R',  POPT_ARG_NONE, &_recursive, 0, "Recursively download files" },
+		{"recursive", 'R',  POPT_ARG_NONE, &recursive, 0, "Recursively download files" },
 		{"username", 'u', POPT_ARG_STRING, &username, 'u', "Username to use" },
 		{"password", 'p', POPT_ARG_STRING, &password, 'p', "Password to use" },
 		{"workgroup", 'w', POPT_ARG_STRING, &workgroup, 'w', "Workgroup to use (optional)" },
@@ -595,11 +596,11 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	if((send_stdout || _resume || outputfile) && update) {
+	if((send_stdout || resume || outputfile) && update) {
 		fprintf(stderr, "The -o, -R or -O and -U options can not be used together.\n");
 		return 1;
 	}
-	if((send_stdout || outputfile) && _recursive) {
+	if((send_stdout || outputfile) && recursive) {
 		fprintf(stderr, "The -o or -O and -R options can not be used together.\n");
 		return 1;
 	}
@@ -626,10 +627,10 @@ int main(int argc, const char **argv)
 	total_start_time = time(NULL);
 
 	while ( (file = poptGetArg(pc)) ) {
-		if (!_recursive) 
-			return smb_download_file(file, "", _recursive, _resume, outputfile);
+		if (!recursive) 
+			return smb_download_file(file, "", recursive, resume, outputfile);
 		else 
-			return smb_download_dir(file, "", _resume);
+			return smb_download_dir(file, "", resume);
 	}
 
 	clean_exit();
