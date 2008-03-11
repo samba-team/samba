@@ -342,3 +342,63 @@ void init_srvsvc_NetSessInfo502(struct srvsvc_NetSessInfo502 *r,
 	r->client_type = client_type;
 	r->transport = transport;
 }
+
+/*******************************************************************
+ inits a srvsvc_NetFileInfo2 structure
+ ********************************************************************/
+
+void init_srvsvc_NetFileInfo2(struct srvsvc_NetFileInfo2 *r,
+			      uint32_t fid)
+{
+	r->fid = fid;
+}
+
+/*******************************************************************
+ inits a srvsvc_NetFileInfo3 structure
+ ********************************************************************/
+
+void init_srvsvc_NetFileInfo3(struct srvsvc_NetFileInfo3 *r,
+			      uint32_t fid,
+			      uint32_t permissions,
+			      uint32_t num_locks,
+			      const char *path,
+			      const char *user)
+{
+	r->fid = fid;
+	r->permissions = permissions;
+	r->num_locks = num_locks;
+	r->path = path;
+	r->user = user;
+}
+
+/*******************************************************************
+ inits a srvsvc_NetConnInfo0 structure
+ ********************************************************************/
+
+void init_srvsvc_NetConnInfo0(struct srvsvc_NetConnInfo0 *r,
+			      uint32_t conn_id)
+{
+	r->conn_id = conn_id;
+}
+
+/*******************************************************************
+ inits a srvsvc_NetConnInfo1 structure
+ ********************************************************************/
+
+void init_srvsvc_NetConnInfo1(struct srvsvc_NetConnInfo1 *r,
+			      uint32_t conn_id,
+			      uint32_t conn_type,
+			      uint32_t num_open,
+			      uint32_t num_users,
+			      uint32_t conn_time,
+			      const char *user,
+			      const char *share)
+{
+	r->conn_id = conn_id;
+	r->conn_type = conn_type;
+	r->num_open = num_open;
+	r->num_users = num_users;
+	r->conn_time = conn_time;
+	r->user = user;
+	r->share = share;
+}
