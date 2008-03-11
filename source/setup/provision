@@ -27,6 +27,7 @@ import optparse
 import os, sys
 
 import samba
+import param
 
 from auth import system_session
 import samba.getopt as options
@@ -110,7 +111,7 @@ if opts.realm is None or opts.domain is None:
 	parser.print_usage()
 	sys.exit(1)
 
-smbconf = sambaopts.get_loadparm_path()
+smbconf = sambaopts.get_loadparm().configfile()
 
 if opts.aci is not None:
 	print "set ACI: %s" % opts.aci

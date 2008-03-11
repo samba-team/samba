@@ -51,7 +51,6 @@ class InvalidNetbiosName(Exception):
 
 class ProvisionPaths:
     def __init__(self):
-        self.smbconf = None
         self.shareconf = None
         self.hklm = None
         self.hkcu = None
@@ -217,7 +216,6 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.dns = os.path.join(paths.private_dir, dnsdomain + ".zone")
     paths.winsdb = os.path.join(paths.private_dir, "wins.ldb")
     paths.s4_ldapi_path = os.path.join(paths.private_dir, "ldapi")
-    paths.smbconf = os.path.join(paths.private_dir, "smb.conf")
     paths.phpldapadminconfig = os.path.join(paths.private_dir, 
                                             "phpldapadmin-config.php")
     paths.hklm = "hklm.ldb"
@@ -759,6 +757,9 @@ def provision(setup_dir, message, session_info,
 
     if domainsid is None:
         domainsid = security.random_sid()
+    else:
+        domainsid = security.Sid(domainsid)
+
     if policyguid is None:
         policyguid = uuid.random()
     if adminpass is None:
