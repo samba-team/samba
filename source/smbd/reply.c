@@ -2184,7 +2184,7 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 		return NT_STATUS_OK;
 	}
 
-	if (fsp->access_mask & DELETE_ACCESS) {
+	if (fsp->access_mask & (DELETE_ACCESS|FILE_WRITE_ATTRIBUTES)) {
 		return NT_STATUS_OK;
 	}
 
@@ -5585,7 +5585,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			uint32 attrs,
 			bool replace_if_exists,
 			bool src_has_wild,
-			bool dest_has_wild)
+			bool dest_has_wild,
+			uint32_t access_mask)
 {
 	char *directory = NULL;
 	char *mask = NULL;
@@ -5715,12 +5716,12 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 
 		status = S_ISDIR(sbuf1.st_mode) ?
 			open_directory(conn, req, directory, &sbuf1,
-				       DELETE_ACCESS,
+				       access_mask,
 				       FILE_SHARE_READ|FILE_SHARE_WRITE,
 				       FILE_OPEN, 0, 0, NULL,
 				       &fsp)
 			: open_file_ntcreate(conn, req, directory, &sbuf1,
-					     DELETE_ACCESS,
+					     access_mask,
 					     FILE_SHARE_READ|FILE_SHARE_WRITE,
 					     FILE_OPEN, 0, 0, 0, NULL,
 					     &fsp);
@@ -5819,12 +5820,12 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 
 		status = S_ISDIR(sbuf1.st_mode) ?
 			open_directory(conn, req, fname, &sbuf1,
-				       DELETE_ACCESS,
+				       access_mask,
 				       FILE_SHARE_READ|FILE_SHARE_WRITE,
 				       FILE_OPEN, 0, 0, NULL,
 				       &fsp)
 			: open_file_ntcreate(conn, req, fname, &sbuf1,
-					     DELETE_ACCESS,
+					     access_mask,
 					     FILE_SHARE_READ|FILE_SHARE_WRITE,
 					     FILE_OPEN, 0, 0, 0, NULL,
 					     &fsp);
@@ -5947,7 +5948,7 @@ void reply_mv(struct smb_request *req)
 	DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
 
 	status = rename_internals(ctx, conn, req, name, newname, attrs, False,
-				  src_has_wcard, dest_has_wcard);
+				  src_has_wcard, dest_has_wcard, DELETE_ACCESS);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
