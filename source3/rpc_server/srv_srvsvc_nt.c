@@ -694,7 +694,11 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 
 	*total_entries = alloc_entries;
 	if (resume_handle_p) {
-		*resume_handle_p = num_entries;
+		if (all_shares) {
+			*resume_handle_p = (num_entries == 0) ? *resume_handle_p : 0;
+		} else {
+			*resume_handle_p = num_entries;
+		}
 	}
 
 	info_ctr->ctr = ctr;
