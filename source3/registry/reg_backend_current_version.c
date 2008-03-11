@@ -52,7 +52,7 @@ static int current_version_fetch_values(const char *key, REGVAL_CTR *values)
 	}
 
 	if (strncmp(path, KEY_CURRENT_VERSION_NORM, strlen(path)) != 0) {
-		return 0;
+		return regdb_ops.fetch_values(key, values);
 	}
 
 	value_length = push_ucs2(value, value, sysroot_string, sizeof(value),
