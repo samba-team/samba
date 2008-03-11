@@ -575,6 +575,9 @@ NTSTATUS pvfs_rename(struct ntvfs_module_context *ntvfs,
 	case RAW_RENAME_NTRENAME:
 		return pvfs_rename_nt(ntvfs, req, ren);
 
+	case RAW_RENAME_NTTRANS:
+		return NT_STATUS_NOT_IMPLEMENTED;
+
 	default:
 		break;
 	}
