@@ -48,31 +48,6 @@
 
 #define MAX_SERVER_DISK_ENTRIES 15
 
-typedef struct disk_info {
-	uint32  unknown;
-	UNISTR3 disk_name;
-} DISK_INFO;
-
-typedef struct disk_enum_container {
-	uint32 level;
-	uint32 entries_read;
-	uint32 unknown;
-	uint32 disk_info_ptr;
-	DISK_INFO *disk_info;
-} DISK_ENUM_CONTAINER;
-
-typedef struct net_srv_disk_enum {
-	uint32 ptr_srv_name;         /* pointer (to server name?) */
-	UNISTR2 uni_srv_name;        /* server name */
-
-	DISK_ENUM_CONTAINER disk_enum_ctr;
-
-	uint32 preferred_len;        /* preferred maximum length (0xffff ffff) */
-	uint32 total_entries;        /* total number of entries */
-	ENUM_HND enum_hnd;
-	WERROR status;               /* return status */
-} SRV_Q_NET_DISK_ENUM, SRV_R_NET_DISK_ENUM;
-
 /***************************/
 
 /* oops - this is going to take up a *massive* amount of stack. */
