@@ -2218,7 +2218,7 @@ bool test_nttransrename(struct torture_context *tctx, struct smbcli_state *cli1)
 	NTSTATUS status;
 	bool ret = true;
 	union smb_open io;
-	union smb_fileinfo qfi;
+	union smb_fileinfo qfi, qpi;
 	union smb_rename rn;
 	uint16_t fnum=0;
 
@@ -2237,7 +2237,7 @@ bool test_nttransrename(struct torture_context *tctx, struct smbcli_state *cli1)
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
-	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.access_mask = 0;/* ask for no access at all */;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
@@ -2256,7 +2256,7 @@ bool test_nttransrename(struct torture_context *tctx, struct smbcli_state *cli1)
 	fnum = io.ntcreatex.out.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, EXCLUSIVE_OPLOCK_RETURN);
 
-	torture_comment(tctx, "nttrans_rename should not trigger a break nor a share mode violation\n");
+	torture_comment(tctx, "nttrans_rename: should not trigger a break nor a share mode violation\n");
 	ZERO_STRUCT(rn);
 	rn.generic.level = RAW_RENAME_NTTRANS;
 	rn.nttrans.in.file.fnum = fnum;
@@ -2268,25 +2268,60 @@ bool test_nttransrename(struct torture_context *tctx, struct smbcli_state *cli1)
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 	CHECK_VAL(break_info.count, 0);
 
-	/* Seems name is only updated on close. */
-	smbcli_close(cli1->tree, fnum);
-
-	/* Check if we can open with the new name. */
-	io.ntcreatex.in.fname = fname2;
-	status = smb_raw_open(cli1->tree, tctx, &io);
-	CHECK_STATUS(tctx, status, NT_STATUS_OK);
-	fnum = io.ntcreatex.out.file.fnum;
-	CHECK_VAL(io.ntcreatex.out.oplock_level, EXCLUSIVE_OPLOCK_RETURN);
-
+	/* w2k3 does nothing, it doesn't rename the file */
+	torture_comment(tctx, "nttrans_rename: the server should have done nothing\n");
 	ZERO_STRUCT(qfi);
 	qfi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
 	qfi.generic.in.file.fnum = fnum;
 
 	status = smb_raw_fileinfo(cli1->tree, tctx, &qfi);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
-	CHECK_STRMATCH(qfi.all_info.out.fname.s, fname2);
+	CHECK_STRMATCH(qfi.all_info.out.fname.s, fname1);
 
-	smbcli_close(cli1->tree, fnum);
+	ZERO_STRUCT(qpi);
+	qpi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	qpi.generic.in.file.path = fname1;
+
+	status = smb_raw_pathinfo(cli1->tree, tctx, &qpi);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	CHECK_STRMATCH(qpi.all_info.out.fname.s, fname1);
+
+	ZERO_STRUCT(qpi);
+	qpi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	qpi.generic.in.file.path = fname2;
+
+	status = smb_raw_pathinfo(cli1->tree, tctx, &qpi);
+	CHECK_STATUS(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	torture_comment(tctx, "nttrans_rename: after closing the file the file is still not renamed\n");
+	status = smbcli_close(cli1->tree, fnum);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+
+	ZERO_STRUCT(qpi);
+	qpi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	qpi.generic.in.file.path = fname1;
+
+	status = smb_raw_pathinfo(cli1->tree, tctx, &qpi);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	CHECK_STRMATCH(qpi.all_info.out.fname.s, fname1);
+
+	ZERO_STRUCT(qpi);
+	qpi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	qpi.generic.in.file.path = fname2;
+
+	status = smb_raw_pathinfo(cli1->tree, tctx, &qpi);
+	CHECK_STATUS(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	torture_comment(tctx, "nttrans_rename: rename with an invalid handle gives NT_STATUS_INVALID_HANDLE\n");
+	ZERO_STRUCT(rn);
+	rn.generic.level = RAW_RENAME_NTTRANS;
+	rn.nttrans.in.file.fnum = fnum+1;
+	rn.nttrans.in.flags	= 0;
+	rn.nttrans.in.new_name	= fname2+strlen(BASEDIR)+1;
+
+	status = smb_raw_rename(cli1->tree, &rn);
+
+	CHECK_STATUS(tctx, status, NT_STATUS_INVALID_HANDLE);
 
 done:
 	smb_raw_exit(cli1->session);
