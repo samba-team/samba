@@ -295,6 +295,7 @@ void load_registry_shares(void)
 	WERROR err;
 	int i;
 
+	DEBUG(8, ("load_registry_shares()\n"));
 	if (!lp_registry_shares()) {
 		return;
 	}
