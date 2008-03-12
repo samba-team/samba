@@ -46,8 +46,8 @@ parser.add_option("--domain", type="string", metavar="DOMAIN",
 				  help="set domain")
 parser.add_option("--host-name", type="string", metavar="HOSTNAME", 
 		help="set hostname")
-parser.add_option("--adminpass", type="string", metavar="PASSWORD", 
-		help="choose admin password (otherwise random)")
+parser.add_option("--ldap-manager-pass", type="string", metavar="PASSWORD", 
+		help="choose LDAP manager password (otherwise random)")
 parser.add_option("--root", type="string", metavar="USERNAME", 
 		help="choose 'root' unix username")
 parser.add_option("--quiet", help="Be quiet", action="store_true")
@@ -91,7 +91,7 @@ if setup_dir is None:
 provision_backend(setup_dir=setup_dir, message=message, smbconf=smbconf, targetdir=opts.targetdir,
           realm=opts.realm, domain=opts.domain,
           hostname=opts.host_name,
-          adminpass=opts.adminpass,
+          adminpass=opts.ldap_manager_pass,
           root=opts.root, serverrole=server_role, 
           ldap_backend_type=opts.ldap_backend_type)
 

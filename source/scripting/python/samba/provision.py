@@ -1192,16 +1192,18 @@ def provision_backend(setup_dir=None, message=None,
 	for i in range (0, len(res)):
             linkid = res[i]["linkID"][0]
             linkid = str(int(linkid) + 1)
+            expression = "(&(objectclass=attributeSchema)(linkID=" + (linkid) + "))"
             target = schemadb.searchone(basedn=names.schemadn, 
-                                        expression="(&(objectclass=attributeSchema)(linkID=" + (linkid) + "))", 
-                                        attribute="lDAPDisplayName");
+                                        expression=expression, 
+                                        attribute="lDAPDisplayName", 
+                                        scope=SCOPE_SUBTREE);
             if target is not None:
-                refint_attributes = refint_attributes + " " + target + " " + res[i]["lDAPDisplayName"];
+                refint_attributes = refint_attributes + " " + target + " " + res[i]["lDAPDisplayName"][0];
                 memberof_config = memberof_config + """overlay memberof
 memberof-dangling error
 memberof-refint TRUE
 memberof-group-oc top
-memberof-member-ad """ + res[i]["lDAPDisplayName"] + """
+memberof-member-ad """ + res[i]["lDAPDisplayName"][0] + """
 memberof-memberof-ad """ + target + """
 memberof-dangling-error 32
 
@@ -1214,7 +1216,7 @@ refint_attributes""" + refint_attributes + "\n";
         if os.path.exists(paths.memberofconf):
             os.unlink(paths.memberof.conf)
 
-            open(paths.memberofconf, 'w').write(memberof_config)
+        open(paths.memberofconf, 'w').write(memberof_config)
 
         ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
         message("Start slapd with: slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri)
