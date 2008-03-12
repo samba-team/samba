@@ -560,7 +560,9 @@ bool torture_raw_streams(struct torture_context *torture,
 	}
 
 	ret &= test_stream_io(torture, cli, torture);
+	smb_raw_exit(cli->session);
 	ret &= test_stream_sharemodes(torture, cli, torture);
+	smb_raw_exit(cli->session);
 	if (!torture_setting_bool(torture, "samba4", false)) {
 		ret &= test_stream_delete(torture, cli, torture);
 	}
