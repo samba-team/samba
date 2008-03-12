@@ -46,7 +46,7 @@ unix="UNIX-INFO2"
 
 tests="$base $raw $rpc $unix"
 
-skipped="BASE-CHARSET BASE-DELAYWRITE BASE-TCONDEV"
+skipped="BASE-CHARSET BASE-TCONDEV"
 skipped="$skipped RAW-ACLS RAW-COMPOSITE RAW-CONTEXT"
 skipped="$skipped RAW-IOCTL"
 skipped="$skipped RAW-QFILEINFO RAW-QFSINFO RAW-SEARCH"
