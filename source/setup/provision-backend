@@ -1,189 +1,98 @@
-#!/bin/sh
-exec smbscript "$0" ${1+"$@"}
-/*
-	provision a Samba4 server
-	Copyright Andrew Tridgell 2005
-	Released under the GNU GPL v2 or later
-*/
+#!/usr/bin/python
+#
+# Unix SMB/CIFS implementation.
+# provision a Samba4 server
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
+# Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008
+#
+# Based on the original in EJS:
+# Copyright (C) Andrew Tridgell 2005
+#   
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#   
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#   
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 
-options = GetOptions(ARGV,
-		"POPT_AUTOHELP",
-		"POPT_COMMON_SAMBA",
-		"POPT_COMMON_VERSION",
-		"POPT_COMMON_CREDENTIALS",
-		'realm=s',
-		'host-name=s',
-		'ldap-manager-pass=s',
-		'root=s',
-		'quiet',
-		'ldap-backend-type=s',
-                'ldap-backend-port=i');
+import getopt
+import optparse
+import os, sys
 
-if (options == undefined) {
-   println("Failed to parse options");
-   return -1;
-}
+import samba
+import param
 
-sys = sys_init();
+from auth import system_session
+import samba.getopt as options
+from samba.provision import (provision_backend)
 
-libinclude("base.js");
-libinclude("provision.js");
+parser = optparse.OptionParser("provision [options]")
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
+parser.add_option_group(options.VersionOptions(parser))
+credopts = options.CredentialsOptions(parser)
+parser.add_option_group(credopts)
+parser.add_option("--setupdir", type="string", metavar="DIR", 
+		help="directory with setup files")
+parser.add_option("--realm", type="string", metavar="REALM", help="set realm")
+parser.add_option("--domain", type="string", metavar="DOMAIN",
+				  help="set domain")
+parser.add_option("--host-name", type="string", metavar="HOSTNAME", 
+		help="set hostname")
+parser.add_option("--adminpass", type="string", metavar="PASSWORD", 
+		help="choose admin password (otherwise random)")
+parser.add_option("--root", type="string", metavar="USERNAME", 
+		help="choose 'root' unix username")
+parser.add_option("--quiet", help="Be quiet", action="store_true")
+parser.add_option("--ldap-backend-type", type="choice", metavar="LDAP-BACKEND-TYPE", 
+		help="LDB mapping module to use for the LDAP backend",
+		choices=["fedora-ds", "openldap"])
+parser.add_option("--server-role", type="choice", metavar="ROLE",
+		  choices=["domain controller", "dc", "member server", "member", "standalone"],
+		help="Set server role to provision for (default standalone)")
+parser.add_option("--targetdir", type="string", metavar="DIR", 
+		          help="Set target directory")
 
-/*
-  print a message if quiet is not set
-*/
-function message()
-{
-	if (options["quiet"] == undefined) {
-		print(vsprintf(arguments));
-	}
-}
+opts = parser.parse_args()[0]
 
-/*
- show some help
-*/
-function ShowHelp()
-{
-	print("
-Samba4 provisioning
+def message(text):
+	"""print a message if quiet is not set."""
+	if not opts.quiet:
+		print text
 
-provision [options]
- --realm	REALM		set realm
- --host-name	HOSTNAME	set hostname
- --ldap-manager-pass	PASSWORD	choose LDAP Manager password (otherwise random)
- --root         USERNAME	choose 'root' unix username
- --quiet			Be quiet
- --ldap-backend-type LDAPSERVER Select either \"openldap\" or \"fedora-ds\" as a target to configure
- --ldap-backend-port PORT       Select the TCP port (if any) that the LDAP backend should listen on (Fedora DS only)
-You must provide at least a realm and ldap-backend-type
+if opts.realm is None or opts.domain is None:
+	if opts.realm is None:
+		print >>sys.stderr, "No realm set"
+	if opts.domain is None:
+		print >>sys.stderr, "No domain set"
+	parser.print_usage()
+	sys.exit(1)
 
-");
-	exit(1);
-}
+smbconf = sambaopts.get_loadparm().configfile()
 
-if (options['host-name'] == undefined) {
-	options['host-name'] = hostname();
-}
+if opts.server_role == "dc":
+	server_role = "domain controller"
+elif opts.server_role == "member":
+	server_role = "member server"
+else:
+        server_role = opts.server_role
 
-/*
-   main program
-*/
-if (options["realm"] == undefined ||
-    options["ldap-backend-type"] == undefined ||
-    options["host-name"] == undefined) {
-	ShowHelp();
-}
+setup_dir = opts.setupdir
+if setup_dir is None:
+	setup_dir = "setup"
 
-/* cope with an initially blank smb.conf */
-var lp = loadparm_init();
-lp.set("realm", options.realm);
-lp.reload();
+provision_backend(setup_dir=setup_dir, message=message, smbconf=smbconf, targetdir=opts.targetdir,
+          realm=opts.realm, domain=opts.domain,
+          hostname=opts.host_name,
+          adminpass=opts.adminpass,
+          root=opts.root, serverrole=server_role, 
+          ldap_backend_type=opts.ldap_backend_type)
 
-var subobj = provision_guess();
-for (r in options) {
-	var key = strupper(join("", split("-", r)));
-	subobj[key] = options[r];
-}
-
-
-
-var paths = provision_default_paths(subobj);
-provision_fix_subobj(subobj, paths);
-message("Provisioning LDAP backend for %s in realm %s into %s\n", subobj.HOSTNAME, subobj.REALM, subobj.LDAPDIR);
-message("Using %s password: %s\n", subobj.LDAPMANAGERDN, subobj.LDAPMANAGERPASS);
-var tmp_schema_ldb = subobj.LDAPDIR + "/schema-tmp.ldb";
-sys.mkdir(subobj.LDAPDIR, 0700);
-
-provision_schema(subobj, message, tmp_schema_ldb, paths);
-
-var mapping;
-var backend_schema;
-var slapd_command;
-if (options["ldap-backend-type"] == "fedora-ds") {
-	mapping = "schema-map-fedora-ds-1.0";
-	backend_schema = "99_ad.ldif";
-	if (options["ldap-backend-port"] != undefined) {
-		message("Will listen on TCP port " + options["ldap-backend-port"] + "\n");
-		subobj.SERVERPORT="ServerPort = " + options["ldap-backend-port"];
-	} else {
-		message("Will listen on LDAPI only\n");
-		subobj.SERVERPORT="";
-	}
-	setup_file("fedorads.inf", message, subobj.LDAPDIR + "/fedorads.inf", subobj);
-	setup_file("fedorads-partitions.ldif", message, subobj.LDAPDIR + "/fedorads-partitions.ldif", subobj);
-
-	slapd_command = "(see documentation)";
-} else if (options["ldap-backend-type"] == "openldap") {
-	mapping = "schema-map-openldap-2.3";
-	backend_schema = "backend-schema.schema";
-	setup_file("slapd.conf", message, subobj.LDAPDIR + "/slapd.conf", subobj);
-	setup_file("modules.conf", message, subobj.LDAPDIR + "/modules.conf", subobj);
-	sys.mkdir(subobj.LDAPDIR + "/db", 0700);
-	subobj.LDAPDBDIR = subobj.LDAPDIR + "/db/user";
-	sys.mkdir(subobj.LDAPDBDIR, 0700);
-	sys.mkdir(subobj.LDAPDBDIR + "/bdb-logs", 0700);
-	sys.mkdir(subobj.LDAPDBDIR + "/tmp", 0700);
-	setup_file("DB_CONFIG", message, subobj.LDAPDBDIR + "/DB_CONFIG", subobj);
-	subobj.LDAPDBDIR = subobj.LDAPDIR + "/db/config";
-	sys.mkdir(subobj.LDAPDBDIR, 0700);
-	sys.mkdir(subobj.LDAPDBDIR + "/bdb-logs", 0700);
-	sys.mkdir(subobj.LDAPDBDIR + "/tmp", 0700);
-	setup_file("DB_CONFIG", message, subobj.LDAPDBDIR + "/DB_CONFIG", subobj);
-	subobj.LDAPDBDIR = subobj.LDAPDIR + "/db/schema";
-	sys.mkdir(subobj.LDAPDBDIR, 0700);
-	sys.mkdir(subobj.LDAPDBDIR + "/tmp", 0700);
-	sys.mkdir(subobj.LDAPDBDIR + "/bdb-logs", 0700);
-	setup_file("DB_CONFIG", message, subobj.LDAPDBDIR + "/DB_CONFIG", subobj);
-	if (options["ldap-backend-port"] != undefined) {
-		message("\nStart slapd with: \n");
-		slapd_command = "slapd -f " + subobj.LDAPDIR + "/slapd.conf -h \"ldap://0.0.0.0:" + options["ldap-backend-port"] + " " + subobj.LDAPI_URI "\"";
-	} else {
-		slapd_command = "slapd -f " + subobj.LDAPDIR + "/slapd.conf -h " + subobj.LDAPI_URI;
-	}
-
-	var ldb = ldb_init();
-	ldb.filename = tmp_schema_ldb;
-
-	var connect_ok = ldb.connect(ldb.filename);
-	assert(connect_ok);
-	var attrs = new Array("linkID", "lDAPDisplayName");
-	var res = ldb.search("(&(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1)))(objectclass=attributeSchema))", subobj.SCHEMADN, ldb.SCOPE_SUBTREE, attrs);
-	assert(res.error == 0);
-	var memberof_config = "";
-	var refint_attributes = "";
-	for (i=0; i < res.msgs.length; i++) {
-searchone(ldb, subobj.DOMAINDN, "(&(objectClass=computer)(cn=" + subobj.NETBIOSNAME + "))", "objectGUID");
-		var target = searchone(ldb, subobj.SCHEMADN, "(&(objectclass=attributeSchema)(linkID=" + (res.msgs[i].linkID + 1) + "))", "lDAPDisplayName");
-		if (target != undefined) {
-			refint_attributes = refint_attributes + " " + target + " " + res.msgs[i].lDAPDisplayName;
-			memberof_config = memberof_config + "overlay memberof
-memberof-dangling error
-memberof-refint TRUE
-memberof-group-oc top
-memberof-member-ad " + res.msgs[i].lDAPDisplayName + "
-memberof-memberof-ad " + target + "
-memberof-dangling-error 32
-
-";
-		}
-	}
-
-	memberof_config = memberof_config + "
-overlay refint
-refint_attributes" + refint_attributes + "
-";
-	
-	ok = sys.file_save(subobj.LDAPDIR + "/memberof.conf", memberof_config);
-	if (!ok) {
-		message("failed to create file: " + f + "\n");
-		assert(ok);
-	}
-
-}
-var schema_command = "ad2oLschema --option=convert:target=" + options["ldap-backend-type"] + " -I " + lp.get("setup directory") + "/" + mapping + " -H tdb://" + tmp_schema_ldb + " -O " + subobj.LDAPDIR + "/" + backend_schema;
-
-message("\nCreate a suitable schema file with:\n%s\n", schema_command);
-message("\nStart slapd with: \n%s\n", slapd_command);
-
-message("All OK\n");
-return 0;
+message("All OK")
