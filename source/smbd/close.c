@@ -246,7 +246,8 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	 * This prevents race conditions with the file being created. JRA.
 	 */
 
-	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL);
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL,
+				  NULL);
 
 	if (lck == NULL) {
 		DEBUG(0, ("close_remove_share_mode: Could not get share mode "
@@ -535,7 +536,8 @@ static NTSTATUS close_directory(files_struct *fsp, enum file_close_type close_ty
 	 * reference to a directory also.
 	 */
 
-	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL);
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL,
+				  NULL);
 
 	if (lck == NULL) {
 		DEBUG(0, ("close_directory: Could not get share mode lock for %s\n", fsp->fsp_name));

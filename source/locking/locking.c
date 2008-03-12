@@ -503,12 +503,20 @@ static bool parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 	data = (struct locking_data *)dbuf.dptr;
 
 	lck->delete_on_close = data->u.s.delete_on_close;
+	lck->old_write_time = data->u.s.old_write_time;
+	lck->changed_write_time = data->u.s.changed_write_time;
 	lck->num_share_modes = data->u.s.num_share_mode_entries;
 
-	DEBUG(10, ("parse_share_modes: delete_on_close: %d, "
-		   "num_share_modes: %d\n",
-		lck->delete_on_close,
-		lck->num_share_modes));
+	DEBUG(10, ("parse_share_modes: delete_on_close: %d, owrt: %s, "
+		   "cwrt: %s, tok: %u, num_share_modes: %d\n",
+		   lck->delete_on_close,
+		   timestring(debug_ctx(),
+			      convert_timespec_to_time_t(lck->old_write_time)),
+		   timestring(debug_ctx(),
+			      convert_timespec_to_time_t(
+				      lck->changed_write_time)),
+		   (unsigned int)data->u.s.delete_token_size,
+		   lck->num_share_modes));
 
 	if ((lck->num_share_modes < 0) || (lck->num_share_modes > 1000000)) {
 		DEBUG(0, ("invalid number of share modes: %d\n",
@@ -659,11 +667,20 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	ZERO_STRUCTP(data);
 	data->u.s.num_share_mode_entries = lck->num_share_modes;
 	data->u.s.delete_on_close = lck->delete_on_close;
+	data->u.s.old_write_time = lck->old_write_time;
+	data->u.s.changed_write_time = lck->changed_write_time;
 	data->u.s.delete_token_size = delete_token_size;
-	DEBUG(10, ("unparse_share_modes: del: %d, tok = %u, num: %d\n",
-		data->u.s.delete_on_close,
-		(unsigned int)data->u.s.delete_token_size,
-		data->u.s.num_share_mode_entries));
+
+	DEBUG(10,("unparse_share_modes: del: %d, owrt: %s cwrt: %s, tok: %u, "
+		  "num: %d\n", data->u.s.delete_on_close,
+		  timestring(debug_ctx(),
+			     convert_timespec_to_time_t(lck->old_write_time)),
+		  timestring(debug_ctx(),
+			     convert_timespec_to_time_t(
+				     lck->changed_write_time)),
+		  (unsigned int)data->u.s.delete_token_size,
+		  data->u.s.num_share_mode_entries));
+
 	memcpy(result.dptr + sizeof(*data), lck->share_modes,
 	       sizeof(struct share_mode_entry)*lck->num_share_modes);
 	offset = sizeof(*data) +
@@ -739,7 +756,8 @@ static bool fill_share_mode_lock(struct share_mode_lock *lck,
 				 struct file_id id,
 				 const char *servicepath,
 				 const char *fname,
-				 TDB_DATA share_mode_data)
+				 TDB_DATA share_mode_data,
+				 const struct timespec *old_write_time)
 {
 	/* Ensure we set every field here as the destructor must be
 	   valid even if parse_share_modes fails. */
@@ -751,13 +769,16 @@ static bool fill_share_mode_lock(struct share_mode_lock *lck,
 	lck->share_modes = NULL;
 	lck->delete_token = NULL;
 	lck->delete_on_close = False;
+	ZERO_STRUCT(lck->old_write_time);
+	ZERO_STRUCT(lck->changed_write_time);
 	lck->fresh = False;
 	lck->modified = False;
 
 	lck->fresh = (share_mode_data.dptr == NULL);
 
 	if (lck->fresh) {
-		if (fname == NULL || servicepath == NULL) {
+		if (fname == NULL || servicepath == NULL
+		    || old_write_time == NULL) {
 			return False;
 		}
 		lck->filename = talloc_strdup(lck, fname);
@@ -766,6 +787,7 @@ static bool fill_share_mode_lock(struct share_mode_lock *lck,
 			DEBUG(0, ("talloc failed\n"));
 			return False;
 		}
+		lck->old_write_time = *old_write_time;
 	} else {
 		if (!parse_share_modes(share_mode_data, lck)) {
 			DEBUG(0, ("Could not parse share modes\n"));
@@ -779,7 +801,8 @@ static bool fill_share_mode_lock(struct share_mode_lock *lck,
 struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 					    const struct file_id id,
 					    const char *servicepath,
-					    const char *fname)
+					    const char *fname,
+					    const struct timespec *old_write_time)
 {
 	struct share_mode_lock *lck;
 	struct file_id tmp;
@@ -797,7 +820,7 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!fill_share_mode_lock(lck, id, servicepath, fname,
-				  lck->record->value)) {
+				  lck->record->value, old_write_time)) {
 		DEBUG(3, ("fill_share_mode_lock failed\n"));
 		TALLOC_FREE(lck);
 		return NULL;
@@ -829,7 +852,7 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (!fill_share_mode_lock(lck, id, servicepath, fname, data)) {
+	if (!fill_share_mode_lock(lck, id, servicepath, fname, data, NULL)) {
 		DEBUG(3, ("fill_share_mode_lock failed\n"));
 		TALLOC_FREE(lck);
 		return NULL;
@@ -915,6 +938,26 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 	}
 
 	return True;
+}
+
+struct timespec get_write_time(struct file_id id)
+{
+	struct timespec result;
+	struct share_mode_lock *lck;
+
+	ZERO_STRUCT(result);
+
+	if (!(lck = fetch_share_mode_unlocked(talloc_tos(), id, NULL, NULL))) {
+		return result;
+	}
+	result = lck->changed_write_time;
+
+	if (null_timespec(result)) {
+		result = lck->old_write_time;
+	}
+
+	TALLOC_FREE(lck);
+	return result;
 }
 
 bool get_delete_on_close_flag(struct file_id id)
@@ -1321,7 +1364,8 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, UNIX_USER_TOKE
 		return True;
 	}
 
-	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL);
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL,
+				  NULL);
 	if (lck == NULL) {
 		return False;
 	}
@@ -1358,6 +1402,30 @@ bool set_allow_initial_delete_on_close(struct share_mode_lock *lck, files_struct
 		e->flags &= ~SHARE_MODE_ALLOW_INITIAL_DELETE_ON_CLOSE;
 	}
 	lck->modified = True;
+	return True;
+}
+
+bool set_write_time(struct file_id fileid, struct timespec write_time,
+		    bool overwrite)
+{
+	struct share_mode_lock *lck;
+
+	DEBUG(5,("set_write_time: %s overwrite=%d id=%s\n",
+		 timestring(debug_ctx(),
+			    convert_timespec_to_time_t(write_time)),
+		 overwrite, file_id_string_tos(&fileid)));
+
+	lck = get_share_mode_lock(NULL, fileid, NULL, NULL, NULL);
+	if (lck == NULL) {
+		return False;
+	}
+
+	if (overwrite || null_timespec(lck->changed_write_time)) {
+		lck->modified = True;
+		lck->changed_write_time = write_time;
+	}
+
+	TALLOC_FREE(lck);
 	return True;
 }
 

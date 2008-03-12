@@ -811,6 +811,8 @@ struct share_mode_lock {
 	struct share_mode_entry *share_modes;
 	UNIX_USER_TOKEN *delete_token;
 	bool delete_on_close;
+	struct timespec old_write_time;
+	struct timespec changed_write_time;
 	bool fresh;
 	bool modified;
 	struct db_record *record;
@@ -826,6 +828,8 @@ struct locking_data {
 		struct {
 			int num_share_mode_entries;
 			bool delete_on_close;
+			struct timespec old_write_time;
+			struct timespec changed_write_time;
 			uint32 delete_token_size; /* Only valid if either of
 						     the two previous fields
 						     are True. */

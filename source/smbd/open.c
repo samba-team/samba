@@ -1221,7 +1221,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		request_time = pml->request_time;
 
 		/* Remove the deferred open entry under lock. */
-		lck = get_share_mode_lock(talloc_tos(), state->id, NULL, NULL);
+		lck = get_share_mode_lock(talloc_tos(), state->id, NULL, NULL,
+					  NULL);
 		if (lck == NULL) {
 			DEBUG(0, ("could not get share mode lock\n"));
 		} else {
@@ -1450,11 +1451,12 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (file_existed) {
+		struct timespec old_write_time = get_mtimespec(psbuf);
 		id = vfs_file_id_from_sbuf(conn, psbuf);
 
 		lck = get_share_mode_lock(talloc_tos(), id,
 					  conn->connectpath,
-					  fname);
+					  fname, &old_write_time);
 
 		if (lck == NULL) {
 			file_free(fsp);
@@ -1661,7 +1663,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (!file_existed) {
-
+		struct timespec old_write_time = get_mtimespec(psbuf);
 		/*
 		 * Deal with the race condition where two smbd's detect the
 		 * file doesn't exist and do the create at the same time. One
@@ -1681,7 +1683,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		lck = get_share_mode_lock(talloc_tos(), id,
 					  conn->connectpath,
-					  fname);
+					  fname, &old_write_time);
 
 		if (lck == NULL) {
 			DEBUG(0, ("open_file_ntcreate: Could not get share "
@@ -2095,6 +2097,7 @@ NTSTATUS open_directory(connection_struct *conn,
 	bool dir_existed = VALID_STAT(*psbuf) ? True : False;
 	struct share_mode_lock *lck = NULL;
 	NTSTATUS status;
+	struct timespec mtimespec;
 	int info = 0;
 
 	DEBUG(5,("open_directory: opening directory %s, access_mask = 0x%x, "
@@ -2217,9 +2220,11 @@ NTSTATUS open_directory(connection_struct *conn,
 
 	string_set(&fsp->fsp_name,fname);
 
+	mtimespec = get_mtimespec(psbuf);
+
 	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
 				  conn->connectpath,
-				  fname);
+				  fname, &mtimespec);
 
 	if (lck == NULL) {
 		DEBUG(0, ("open_directory: Could not get share mode lock for %s\n", fname));
