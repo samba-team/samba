@@ -1,0 +1,188 @@
+#!/bin/sh
+exec smbscript "$0" ${1+"$@"}
+/*
+	provision a Samba4 server
+	Copyright Andrew Tridgell 2005
+	Released under the GNU GPL v2 or later
+*/
+
+options = GetOptions(ARGV,
+		"POPT_AUTOHELP",
+		"POPT_COMMON_SAMBA",
+		"POPT_COMMON_VERSION",
+		"POPT_COMMON_CREDENTIALS",
+		'realm=s',
+		'host-name=s',
+		'ldap-manager-pass=s',
+		'root=s',
+		'quiet',
+		'ldap-backend-type=s',
+                'ldap-backend-port=i');
+
+if (options == undefined) {
+   println("Failed to parse options");
+   return -1;
+}
+
+sys = sys_init();
+
+libinclude("base.js");
+libinclude("provision.js");
+
+/*
+  print a message if quiet is not set
+*/
+function message()
+{
+	if (options["quiet"] == undefined) {
+		print(vsprintf(arguments));
+	}
+}
+
+/*
+ show some help
+*/
+function ShowHelp()
+{
+	print("
+Samba4 provisioning
+
+provision [options]
+ --realm	REALM		set realm
+ --host-name	HOSTNAME	set hostname
+ --ldap-manager-pass	PASSWORD	choose LDAP Manager password (otherwise random)
+ --root         USERNAME	choose 'root' unix username
+ --quiet			Be quiet
+ --ldap-backend-type LDAPSERVER Select either \"openldap\" or \"fedora-ds\" as a target to configure
+ --ldap-backend-port PORT       Select the TCP port (if any) that the LDAP backend should listen on (Fedora DS only)
+You must provide at least a realm and ldap-backend-type
+
+");
+	exit(1);
+}
+
+if (options['host-name'] == undefined) {
+	options['host-name'] = hostname();
+}
+
+/*
+   main program
+*/
+if (options["realm"] == undefined ||
+    options["ldap-backend-type"] == undefined ||
+    options["host-name"] == undefined) {
+	ShowHelp();
+}
+
+/* cope with an initially blank smb.conf */
+var lp = loadparm_init();
+lp.set("realm", options.realm);
+lp.reload();
+
+var subobj = provision_guess();
+for (r in options) {
+	var key = strupper(join("", split("-", r)));
+	subobj[key] = options[r];
+}
+
+
+
+var paths = provision_default_paths(subobj);
+provision_fix_subobj(subobj, paths);
+message("Provisioning LDAP backend for %s in realm %s into %s\n", subobj.HOSTNAME, subobj.REALM, subobj.LDAPDIR);
+message("Using %s password: %s\n", subobj.LDAPMANAGERDN, subobj.LDAPMANAGERPASS);
+var tmp_schema_ldb = subobj.LDAPDIR + "/schema-tmp.ldb";
+sys.mkdir(subobj.LDAPDIR, 0700);
+
+provision_schema(subobj, message, tmp_schema_ldb, paths);
+
+var mapping;
+var backend_schema;
+var slapd_command;
+if (options["ldap-backend-type"] == "fedora-ds") {
+	mapping = "schema-map-fedora-ds-1.0";
+	backend_schema = "99_ad.ldif";
+	if (options["ldap-backend-port"] != undefined) {
+		message("Will listen on TCP port " + options["ldap-backend-port"] + "\n");
+		subobj.SERVERPORT="ServerPort = " + options["ldap-backend-port"];
+	} else {
+		message("Will listen on LDAPI only\n");
+		subobj.SERVERPORT="";
+	}
+	setup_file("fedorads.inf", message, subobj.LDAPDIR + "/fedorads.inf", subobj);
+	setup_file("fedorads-partitions.ldif", message, subobj.LDAPDIR + "/fedorads-partitions.ldif", subobj);
+
+	slapd_command = "(see documentation)";
+} else if (options["ldap-backend-type"] == "openldap") {
+	mapping = "schema-map-openldap-2.3";
+	backend_schema = "backend-schema.schema";
+	setup_file("slapd.conf", message, subobj.LDAPDIR + "/slapd.conf", subobj);
+	setup_file("modules.conf", message, subobj.LDAPDIR + "/modules.conf", subobj);
+	sys.mkdir(subobj.LDAPDIR + "/db", 0700);
+	subobj.LDAPDBDIR = subobj.LDAPDIR + "/db/user";
+	sys.mkdir(subobj.LDAPDBDIR, 0700);
+	sys.mkdir(subobj.LDAPDBDIR + "/bdb-logs", 0700);
+	sys.mkdir(subobj.LDAPDBDIR + "/tmp", 0700);
+	setup_file("DB_CONFIG", message, subobj.LDAPDBDIR + "/DB_CONFIG", subobj);
+	subobj.LDAPDBDIR = subobj.LDAPDIR + "/db/config";
+	sys.mkdir(subobj.LDAPDBDIR, 0700);
+	sys.mkdir(subobj.LDAPDBDIR + "/bdb-logs", 0700);
+	sys.mkdir(subobj.LDAPDBDIR + "/tmp", 0700);
+	setup_file("DB_CONFIG", message, subobj.LDAPDBDIR + "/DB_CONFIG", subobj);
+	subobj.LDAPDBDIR = subobj.LDAPDIR + "/db/schema";
+	sys.mkdir(subobj.LDAPDBDIR, 0700);
+	sys.mkdir(subobj.LDAPDBDIR + "/tmp", 0700);
+	sys.mkdir(subobj.LDAPDBDIR + "/bdb-logs", 0700);
+	setup_file("DB_CONFIG", message, subobj.LDAPDBDIR + "/DB_CONFIG", subobj);
+	if (options["ldap-backend-port"] != undefined) {
+		message("\nStart slapd with: \n");
+		slapd_command = "slapd -f " + subobj.LDAPDIR + "/slapd.conf -h \"ldap://0.0.0.0:" + options["ldap-backend-port"] + " " + subobj.LDAPI_URI "\"";
+	} else {
+		slapd_command = "slapd -f " + subobj.LDAPDIR + "/slapd.conf -h " + subobj.LDAPI_URI;
+	}
+
+	var ldb = ldb_init();
+	ldb.filename = tmp_schema_ldb;
+
+	var connect_ok = ldb.connect(ldb.filename);
+	assert(connect_ok);
+	var attrs = new Array("linkID", "lDAPDisplayName");
+	var res = ldb.search("(&(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1)))(objectclass=attributeSchema))", subobj.SCHEMADN, ldb.SCOPE_SUBTREE, attrs);
+	assert(res.error == 0);
+	var memberof_config = "";
+	var refint_attributes = "";
+	for (i=0; i < res.msgs.length; i++) {
+		var target = searchone(ldb, subobj.SCHEMADN, "(&(objectclass=attributeSchema)(linkID=" + (res.msgs[i].linkID + 1) + "))", "lDAPDisplayName");
+		if (target != undefined) {
+			refint_attributes = refint_attributes + " " + target + " " + res.msgs[i].lDAPDisplayName;
+			memberof_config = memberof_config + "overlay memberof
+memberof-dangling error
+memberof-refint TRUE
+memberof-group-oc top
+memberof-member-ad " + res.msgs[i].lDAPDisplayName + "
+memberof-memberof-ad " + target + "
+memberof-dangling-error 32
+
+";
+		}
+	}
+
+	memberof_config = memberof_config + "
+overlay refint
+refint_attributes" + refint_attributes + "
+";
+	
+	ok = sys.file_save(subobj.LDAPDIR + "/memberof.conf", memberof_config);
+	if (!ok) {
+		message("failed to create file: " + f + "\n");
+		assert(ok);
+	}
+
+}
+var schema_command = "ad2oLschema --option=convert:target=" + options["ldap-backend-type"] + " -I " + lp.get("setup directory") + "/" + mapping + " -H tdb://" + tmp_schema_ldb + " -O " + subobj.LDAPDIR + "/" + backend_schema;
+
+message("\nCreate a suitable schema file with:\n%s\n", schema_command);
+message("\nStart slapd with: \n%s\n", slapd_command);
+
+message("All OK\n");
+return 0;
