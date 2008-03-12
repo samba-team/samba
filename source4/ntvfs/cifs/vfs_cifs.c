@@ -595,6 +595,13 @@ static NTSTATUS cvfs_rename(struct ntvfs_module_context *ntvfs,
 
 	SETUP_PID;
 
+	if (ren->nttrans.level == RAW_RENAME_NTTRANS) {
+		struct cvfs_file *f;
+		f = ntvfs_handle_get_backend_data(ren->nttrans.in.file.ntvfs, ntvfs);
+		if (!f) return NT_STATUS_INVALID_HANDLE;
+		ren->nttrans.in.file.fnum = f->fnum;
+	}
+
 	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_rename(private->tree, ren);
 	}
