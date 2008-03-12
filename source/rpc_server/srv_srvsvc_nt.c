@@ -498,8 +498,9 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 
 	/* Ensure all the usershares are loaded. */
 	become_root();
-	num_services = load_usershare_shares();
+	load_usershare_shares();
 	load_registry_shares();
+	num_services = lp_numservices();
 	unbecome_root();
 
 	/* Count the number of entries. */
