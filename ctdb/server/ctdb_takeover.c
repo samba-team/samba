@@ -957,7 +957,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	vnn = find_public_ip_vnn(ctdb, p->dest);
 	if (vnn == NULL) {
 		if (ntohl(p->dest.sin_addr.s_addr) != INADDR_LOOPBACK) {
-			DEBUG(DEBUG_ERR,("Could not add client IP %s. This is not a public address.\n", 
+			DEBUG(DEBUG_INFO,("Could not add client IP %s. This is not a public address.\n", 
 				 inet_ntoa(p->dest.sin_addr))); 
 		}
 		return 0;
