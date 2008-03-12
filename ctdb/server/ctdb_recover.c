@@ -641,16 +641,17 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 	return true;
 }
 
-
 /*
   delete a record as part of the vacuum process
   only delete if we are not lmaster or dmaster, and our rsn is <= the provided rsn
   use non-blocking locks
+
+  return 0 if the record was successfully deleted (i.e. it does not exist
+  when the function returns)
+  or !0 is the record still exists in the tdb after returning.
  */
-int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata)
+static int delete_tdb_record(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, struct ctdb_rec_data *rec)
 {
-	struct ctdb_rec_data *rec = (struct ctdb_rec_data *)indata.dptr;
-	struct ctdb_db_context *ctdb_db;
 	TDB_DATA key, data;
 	struct ctdb_ltdb_header *hdr, *hdr2;
 	
@@ -659,16 +660,6 @@ int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata)
 	int tdb_lock_nonblock(struct tdb_context *tdb, int list, int ltype);
 	int tdb_unlock(struct tdb_context *tdb, int list, int ltype);
 
-	if (indata.dsize < sizeof(uint32_t) || indata.dsize != rec->length) {
-		DEBUG(DEBUG_ERR,(__location__ " Bad record size in ctdb_control_delete_record\n"));
-		return -1;
-	}
-
-	ctdb_db = find_ctdb_db(ctdb, rec->reqid);
-	if (!ctdb_db) {
-		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%08x\n", rec->reqid));
-		return -1;
-	}
 
 	key.dsize = rec->keylen;
 	key.dptr  = &rec->data[0];
@@ -745,6 +736,7 @@ int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata)
 	free(data.dptr);
 	return 0;	
 }
+
 
 
 struct recovery_callback_state {
@@ -878,4 +870,90 @@ int32_t ctdb_control_get_reclock_file(struct ctdb_context *ctdb, TDB_DATA *outda
 	outdata->dptr = (uint8_t *)reclock;
 
 	return 0;	
+}
+
+/*
+ try to delete all these records as part of the vacuuming process
+ and return the records we failed to delete
+*/
+int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata)
+{
+	struct ctdb_control_pulldb_reply *reply = (struct ctdb_control_pulldb_reply *)indata.dptr;
+	struct ctdb_db_context *ctdb_db;
+	int i;
+	struct ctdb_rec_data *rec;
+	struct ctdb_control_pulldb_reply *records;
+
+	if (indata.dsize < offsetof(struct ctdb_control_pulldb_reply, data)) {
+		DEBUG(DEBUG_ERR,(__location__ " invalid data in try_delete_records\n"));
+		return -1;
+	}
+
+	ctdb_db = find_ctdb_db(ctdb, reply->db_id);
+	if (!ctdb_db) {
+		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%08x\n", reply->db_id));
+		return -1;
+	}
+
+
+	DEBUG(DEBUG_DEBUG,("starting try_delete_records of %u records for dbid 0x%x\n",
+		 reply->count, reply->db_id));
+
+
+	/* create a blob to send back the records we couldnt delete */	
+	records = (struct ctdb_control_pulldb_reply *)
+			talloc_zero_size(outdata, 
+				    offsetof(struct ctdb_control_pulldb_reply, data));
+	if (records == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
+		return -1;
+	}
+	records->db_id = ctdb_db->db_id;
+
+
+	rec = (struct ctdb_rec_data *)&reply->data[0];
+	for (i=0;i<reply->count;i++) {
+		TDB_DATA key, data;
+
+		key.dptr = &rec->data[0];
+		key.dsize = rec->keylen;
+		data.dptr = &rec->data[key.dsize];
+		data.dsize = rec->datalen;
+
+		if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
+			DEBUG(DEBUG_CRIT,(__location__ " bad ltdb record in indata\n"));
+			return -1;
+		}
+
+		/* If we cant delete the record we must add it to the reply
+		   so the lmaster knows it may not purge this record
+		*/
+		if (delete_tdb_record(ctdb, ctdb_db, rec) != 0) {
+			size_t old_size;
+			struct ctdb_ltdb_header *hdr;
+
+			hdr = (struct ctdb_ltdb_header *)data.dptr;
+			data.dptr += sizeof(*hdr);
+			data.dsize -= sizeof(*hdr);
+
+			DEBUG(DEBUG_INFO, (__location__ " Failed to vacuum delete record with hash 0x%08x\n", ctdb_hash(&key)));
+
+			old_size = talloc_get_size(records);
+			records = talloc_realloc_size(outdata, records, old_size + rec->length);
+			if (records == NULL) {
+				DEBUG(DEBUG_ERR,(__location__ " Failed to expand\n"));
+				return -1;
+			}
+			records->count++;
+			memcpy(old_size+(uint8_t *)records, rec, rec->length);
+		} 
+
+		rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
+	}	    
+
+
+	outdata->dptr = (uint8_t *)records;
+	outdata->dsize = talloc_get_size(records);
+
+	return 0;
 }

@@ -353,9 +353,6 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_wipe_database));
 		return ctdb_control_wipe_database(ctdb, indata);
 
-	case CTDB_CONTROL_DELETE_RECORD:
-		return ctdb_control_delete_record(ctdb, indata);
-
 	case CTDB_CONTROL_UPTIME:
 		return ctdb_control_uptime(ctdb, outdata);
 
@@ -368,6 +365,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_get_reclock_file(ctdb, outdata);
+
+	case CTDB_CONTROL_TRY_DELETE_RECORDS:
+		return ctdb_control_try_delete_records(ctdb, indata, outdata);
 
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
