@@ -858,7 +858,13 @@ NTSTATUS pvfs_odb_retry_setup(struct ntvfs_module_context *ntvfs,
 
 	/* setup a pending lock */
 	status = odb_open_file_pending(lck, r);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND,status)) {
+		/*
+		 * maybe only a unix application
+		 * has the file open
+		 */
+		data_blob_free(&r->odb_locking_key);
+	} else if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
@@ -891,7 +897,13 @@ static void pvfs_retry_open_sharing(struct pvfs_odb_retry *r,
 				    enum pvfs_wait_notice reason)
 {
 	union smb_open *io = talloc_get_type(_io, union smb_open);
+	struct timeval *final_timeout = NULL;
 	NTSTATUS status;
+
+	if (private_data) {
+		final_timeout = talloc_get_type(private_data,
+						struct timeval);
+	}
 
 	/* w2k3 ignores SMBntcancel for outstanding open requests. It's probably
 	   just a bug in their server, but we better do the same */
@@ -900,6 +912,16 @@ static void pvfs_retry_open_sharing(struct pvfs_odb_retry *r,
 	}
 
 	if (reason == PVFS_WAIT_TIMEOUT) {
+		if (final_timeout &&
+		    !timeval_expired(final_timeout)) {
+			/*
+			 * we need to retry periodictly
+			 * after an EAGAIN as there's
+			 * no way the kernel tell us
+			 * an oplock is released.
+			 */
+			goto retry;
+		}
 		/* if it timed out, then give the failure
 		   immediately */
 		talloc_free(r);
@@ -908,6 +930,7 @@ static void pvfs_retry_open_sharing(struct pvfs_odb_retry *r,
 		return;
 	}
 
+retry:
 	talloc_free(r);
 
 	/* try the open again, which could trigger another retry setup
@@ -1027,6 +1050,7 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	NTSTATUS status;
 	struct timeval end_time;
+	struct timeval *final_timeout = NULL;
 
 	if (io->generic.in.create_options & 
 	    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS | NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
@@ -1047,12 +1071,28 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 	} else if (NT_STATUS_EQUAL(parent_status, NT_STATUS_OPLOCK_NOT_GRANTED)) {
 		end_time = timeval_add(&req->statistics.request_time,
 				       pvfs->oplock_break_timeout, 0);
+	} else if (NT_STATUS_EQUAL(parent_status, STATUS_MORE_ENTRIES)) {
+		/*
+		 * we got EAGAIN which means a unix application
+		 * has an oplock or share mode
+		 *
+		 * we retry every 4/5 of the sharing violation delay
+		 * to see if the unix application
+		 * has released the oplock or share mode.
+		 */
+		final_timeout = talloc(req, struct timeval);
+		NT_STATUS_HAVE_NO_MEMORY(final_timeout);
+		*final_timeout = timeval_add(&req->statistics.request_time,
+					     pvfs->oplock_break_timeout,
+					     0);
+		end_time = timeval_current_ofs(0, (pvfs->sharing_violation_delay*4)/5);
+		end_time = timeval_min(final_timeout, &end_time);
 	} else {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	return pvfs_odb_retry_setup(ntvfs, req, lck, end_time, io, NULL,
-				    pvfs_retry_open_sharing);
+	return pvfs_odb_retry_setup(ntvfs, req, lck, end_time, io,
+				    final_timeout, pvfs_retry_open_sharing);
 }
 
 /*
@@ -1305,8 +1345,18 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	/* do the actual open */
 	fd = open(f->handle->name->full_name, flags | O_NONBLOCK);
 	if (fd == -1) {
+		status = pvfs_map_errno(f->pvfs, errno);
+
+		/*
+		 * STATUS_MORE_ENTRIES is EAGAIN or EWOULDBLOCK
+		 */
+		if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) &&
+		    (req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
+			return pvfs_open_setup_retry(ntvfs, req, io, f, lck, status);
+		}
+
 		talloc_free(lck);
-		return pvfs_map_errno(f->pvfs, errno);
+		return status;
 	}
 
 	f->handle->fd = fd;
