@@ -516,7 +516,6 @@ static WERROR cmd_srvsvc_net_remote_tod(struct rpc_pipe_client *cli,
                                           int argc, const char **argv)
 {
 	struct srvsvc_NetRemoteTODInfo *tod = NULL;
-	fstring srv_name_slash;
 	WERROR result;
 	NTSTATUS status;
 
@@ -525,9 +524,8 @@ static WERROR cmd_srvsvc_net_remote_tod(struct rpc_pipe_client *cli,
 		return WERR_OK;
 	}
 
-	fstr_sprintf(srv_name_slash, "\\\\%s", cli->cli->desthost);
 	status = rpccli_srvsvc_NetRemoteTOD(cli, mem_ctx,
-					    srv_name_slash,
+					    cli->cli->srv_name_slash,
 					    &tod,
 					    &result);
 	if (!NT_STATUS_IS_OK(status)) {
