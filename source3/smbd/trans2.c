@@ -6431,7 +6431,8 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 	 * non-POSIX opens return SHARING_VIOLATION.
 	 */
 
-	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL);
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL,
+				  NULL);
 	if (lck == NULL) {
 		DEBUG(0, ("smb_posix_unlink: Could not get share mode "
 			"lock for file %s\n", fsp->fsp_name));
