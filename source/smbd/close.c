@@ -255,6 +255,10 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (fsp->write_time_forced) {
+		set_close_write_time(fsp, lck->changed_write_time);
+	}
+
 	if (!del_share_mode(lck, fsp)) {
 		DEBUG(0, ("close_remove_share_mode: Could not delete share "
 			  "entry for file %s\n", fsp->fsp_name));
@@ -316,6 +320,11 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 
 	DEBUG(5,("close_remove_share_mode: file %s. Delete on close was set "
 		 "- deleting file.\n", fsp->fsp_name));
+
+	/*
+	 * Don't try to update the write time when we delete the file
+	 */
+	fsp->update_write_time_on_close = false;
 
 	if (!unix_token_equal(lck->delete_token, &current_user.ut)) {
 		/* Become the user who requested the delete. */
@@ -428,6 +437,66 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	return status;
 }
 
+void set_close_write_time(struct files_struct *fsp, struct timespec ts)
+{
+	DEBUG(6,("close_write_time: %s" , time_to_asc(convert_timespec_to_time_t(ts))));
+
+	if (null_timespec(ts)) {
+		return;
+	}
+	/*
+	 * if the write time on close is explict set, then don't
+	 * need to fix it up to the value in the locking db
+	 */
+	fsp->write_time_forced = false;
+
+	fsp->update_write_time_on_close = true;
+	fsp->close_write_time = ts;
+}
+
+static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
+{
+	SMB_STRUCT_STAT sbuf;
+	struct timespec ts[2];
+	NTSTATUS status;
+
+	ZERO_STRUCT(sbuf);
+	ZERO_STRUCT(ts);
+
+	if (!fsp->update_write_time_on_close) {
+		return NT_STATUS_OK;
+	}
+
+	if (null_timespec(fsp->close_write_time)) {
+		fsp->close_write_time = timespec_current();
+	}
+
+	/* Ensure we have a valid stat struct for the source. */
+	if (fsp->fh->fd != -1) {
+		if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+	} else {
+		if (SMB_VFS_STAT(fsp->conn,fsp->fsp_name,&sbuf) == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+	}
+
+	if (!VALID_STAT(sbuf)) {
+		/* if it doesn't seem to be a real file */
+		return NT_STATUS_OK;
+	}
+
+	ts[1] = fsp->close_write_time;
+	status = smb_set_file_time(fsp->conn, fsp, fsp->fsp_name,
+				   &sbuf, ts, true);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Close a file.
 
@@ -442,6 +511,7 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 	NTSTATUS saved_status1 = NT_STATUS_OK;
 	NTSTATUS saved_status2 = NT_STATUS_OK;
 	NTSTATUS saved_status3 = NT_STATUS_OK;
+	NTSTATUS saved_status4 = NT_STATUS_OK;
 	connection_struct *conn = fsp->conn;
 
 	if (fsp->aio_write_behind) {
@@ -496,11 +566,7 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 	 * Ensure pending modtime is set after close.
 	 */
 
-	if (fsp->pending_modtime_owner && !null_timespec(fsp->pending_modtime)) {
-		set_filetime(conn, fsp->fsp_name, fsp->pending_modtime);
-	} else if (!null_timespec(fsp->last_write_time)) {
-		set_filetime(conn, fsp->fsp_name, fsp->last_write_time);
-	}
+	saved_status4 = update_write_time_on_close(fsp);
 
 	if (NT_STATUS_IS_OK(status)) {
 		if (!NT_STATUS_IS_OK(saved_status1)) {
@@ -509,6 +575,8 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 			status = saved_status2;
 		} else if (!NT_STATUS_IS_OK(saved_status3)) {
 			status = saved_status3;
+		} else if (!NT_STATUS_IS_OK(saved_status4)) {
+			status = saved_status4;
 		}
 	}
 

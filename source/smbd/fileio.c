@@ -142,27 +142,6 @@ static ssize_t real_write_file(struct smb_request *req,
 	if (ret != -1) {
 		fsp->fh->pos += ret;
 
-		/*
-		 * It turns out that setting the last write time from a Windows
-		 * client stops any subsequent writes from updating the write time.
-		 * Doing this after the write gives a race condition here where
-		 * a stat may see the changed write time before we reset it here,
-		 * but it's cheaper than having to store the write time in shared
-		 * memory and look it up using dev/inode across all running smbd's.
-		 * The 99% solution will hopefully be good enough in this case. JRA.
-		 */
-
-		if (!null_timespec(fsp->pending_modtime)) {
-			set_filetime(fsp->conn, fsp->fsp_name,
-					fsp->pending_modtime);
-
-			/* If we didn't get the "set modtime" call ourselves, we must
-			   store the last write time to restore on close. JRA. */
-			if (!fsp->pending_modtime_owner) {
-				fsp->last_write_time = timespec_current();
-			}
-		}
-
 /* Yes - this is correct - writes don't update this. JRA. */
 /* Found by Samba4 tests. */
 #if 0
@@ -190,6 +169,41 @@ static int wcp_file_size_change(files_struct *fsp)
 			fsp->fsp_name, (double)wcp->file_size, strerror(errno) ));
 	}
 	return ret;
+}
+
+static void update_write_time_handler(struct event_context *ctx,
+				      struct timed_event *te,
+				      const struct timeval *now,
+				      void *private_data)
+{
+       files_struct *fsp = (files_struct *)private_data;
+
+       /* Remove the timed event handler. */
+       TALLOC_FREE(fsp->update_write_time_event);
+       DEBUG(5, ("Update write time on %s\n", fsp->fsp_name));
+
+       /* change the write time if not already changed by someoneelse */
+       set_write_time_fsp(fsp, timespec_current(), false);
+}
+
+void trigger_write_time_update(struct files_struct *fsp)
+{
+	if (fsp->write_time_forced) {
+		return;
+	}
+
+	if (fsp->update_write_time_triggered) {
+		return;
+	}
+	fsp->update_write_time_triggered = true;
+
+	/* trigger the update 2 seconds later */
+	fsp->update_write_time_on_close = true;
+	fsp->update_write_time_event =
+		event_add_timed(smbd_event_context(), NULL,
+				timeval_current_ofs(2, 0),
+				"update_write_time_handler",
+				update_write_time_handler, fsp);
 }
 
 /****************************************************************************
@@ -230,7 +244,9 @@ ssize_t write_file(struct smb_request *req,
 		fsp->modified = True;
 
 		if (SMB_VFS_FSTAT(fsp, &st) == 0) {
-			int dosmode = dos_mode(fsp->conn,fsp->fsp_name,&st);
+			int dosmode;
+			trigger_write_time_update(fsp);
+			dosmode = dos_mode(fsp->conn,fsp->fsp_name,&st);
 			if ((lp_store_dos_attributes(SNUM(fsp->conn)) ||
 					MAP_ARCHIVE(fsp->conn)) &&
 					!IS_DOS_ARCHIVE(dosmode)) {
