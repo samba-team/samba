@@ -1042,6 +1042,7 @@ void reply_getatr(struct smb_request *req)
 
 void reply_setatr(struct smb_request *req)
 {
+	struct timespec ts[2];
 	connection_struct *conn = req->conn;
 	char *fname = NULL;
 	int mode;
@@ -1052,6 +1053,8 @@ void reply_setatr(struct smb_request *req)
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBsetatr);
+
+	ZERO_STRUCT(ts);
 
 	if (req->wct < 2) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -1110,7 +1113,10 @@ void reply_setatr(struct smb_request *req)
 	mode = SVAL(req->inbuf,smb_vwv0);
 	mtime = srv_make_unix_date3(req->inbuf+smb_vwv1);
 
-	if (!set_filetime(conn,fname,convert_time_t_to_timespec(mtime))) {
+	ts[1] = convert_time_t_to_timespec(mtime);
+	status = smb_set_file_time(conn, NULL, fname,
+				   &sbuf, ts, true);
+	if (!NT_STATUS_IS_OK(status)) {
 		reply_unixerror(req, ERRDOS, ERRnoaccess);
 		END_PROFILE(SMBsetatr);
 		return;
@@ -1985,7 +1991,12 @@ void reply_mknew(struct smb_request *req)
 	}
 
 	ts[0] = get_atimespec(&sbuf); /* atime. */
-	file_ntimes(conn, fsp->fsp_name, ts);
+	status = smb_set_file_time(conn, fsp, fname, &sbuf, ts, true);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBcreate);
+		reply_openerror(req, status);
+		return;
+	}
 
 	reply_outbuf(req, 1, 0);
 	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
@@ -4239,6 +4250,7 @@ void reply_close(struct smb_request *req)
 		DEBUG(3,("close directory fnum=%d\n", fsp->fnum));
 		status = close_file(fsp,NORMAL_CLOSE);
 	} else {
+		time_t t;
 		/*
 		 * Close ordinary file.
 		 */
@@ -4251,9 +4263,8 @@ void reply_close(struct smb_request *req)
 		 * Take care of any time sent in the close.
 		 */
 
-		fsp_set_pending_modtime(fsp, convert_time_t_to_timespec(
-						srv_make_unix_date3(
-							req->inbuf+smb_vwv1)));
+		t = srv_make_unix_date3(req->inbuf+smb_vwv1);
+		set_close_write_time(fsp, convert_time_t_to_timespec(t));
 
 		/*
 		 * close_file() returns the unix errno if an error
@@ -4326,8 +4337,8 @@ void reply_writeclose(struct smb_request *req)
   
 	nwritten = write_file(req,fsp,data,startpos,numtowrite);
 
-	set_filetime(conn, fsp->fsp_name, mtime);
-  
+	set_close_write_time(fsp, mtime);
+
 	/*
 	 * More insanity. W2K only closes the file if writelen > 0.
 	 * JRA.
@@ -6078,7 +6089,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	close_file(fsp1,NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
-	fsp_set_pending_modtime( fsp2, get_mtimespec(&src_sbuf));
+	set_close_write_time(fsp2, get_mtimespec(&src_sbuf));
 
 	/*
 	 * As we are opening fsp1 read-only we only expect
@@ -6961,6 +6972,8 @@ void reply_setattrE(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	struct timespec ts[2];
 	files_struct *fsp;
+	SMB_STRUCT_STAT sbuf;
+	NTSTATUS status;
 
 	START_PROFILE(SMBsetattrE);
 
@@ -6996,23 +7009,27 @@ void reply_setattrE(struct smb_request *req)
 	 * Sometimes times are sent as zero - ignore them.
 	 */
 
-	if (null_timespec(ts[0]) && null_timespec(ts[1])) {
-		/* Ignore request */
-		if( DEBUGLVL( 3 ) ) {
-			dbgtext( "reply_setattrE fnum=%d ", fsp->fnum);
-			dbgtext( "ignoring zero request - not setting timestamps of 0\n" );
+	/* Ensure we have a valid stat struct for the source. */
+	if (fsp->fh->fd != -1) {
+		if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
+			status = map_nt_error_from_unix(errno);
+			reply_nterror(req, status);
+			END_PROFILE(SMBsetattrE);
+			return;
 		}
-		END_PROFILE(SMBsetattrE);
-		return;
-	} else if (!null_timespec(ts[0]) && null_timespec(ts[1])) {
-		/* set modify time = to access time if modify time was unset */
-		ts[1] = ts[0];
+	} else {
+		if (SMB_VFS_STAT(conn, fsp->fsp_name, &sbuf) == -1) {
+			status = map_nt_error_from_unix(errno);
+			reply_nterror(req, status)
+			END_PROFILE(SMBsetattrE);
+			return;
+		}
 	}
 
-	/* Set the date on this file */
-	/* Should we set pending modtime here ? JRA */
-	if(file_ntimes(conn, fsp->fsp_name, ts)) {
-		reply_doserror(req, ERRDOS, ERRnoaccess);
+	status = smb_set_file_time(conn, fsp, fsp->fsp_name,
+				   &sbuf, ts, true);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_doserror(req, ERRDOS, ERRnoaccess)
 		END_PROFILE(SMBsetattrE);
 		return;
 	}

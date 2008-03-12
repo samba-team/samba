@@ -375,29 +375,6 @@ files_struct *file_find_print(void)
 }
 
 /****************************************************************************
- Set a pending modtime across all files with a given dev/ino pair.
- Record the owner of that modtime.
-****************************************************************************/
-
-void fsp_set_pending_modtime(files_struct *tfsp, const struct timespec mod)
-{
-	files_struct *fsp;
-
-	if (null_timespec(mod)) {
-		return;
-	}
-
-	for (fsp = Files;fsp;fsp=fsp->next) {
-		if ( fsp->fh->fd != -1 && file_id_equal(&fsp->file_id, &tfsp->file_id)) {
-			fsp->pending_modtime = mod;
-			fsp->pending_modtime_owner = False;
-		}
-	}
-
-	tfsp->pending_modtime_owner = True;
-}
-
-/****************************************************************************
  Sync open files on a connection.
 ****************************************************************************/
 
@@ -440,6 +417,9 @@ void file_free(files_struct *fsp)
 
 	/* Ensure this event will never fire. */
 	TALLOC_FREE(fsp->oplock_timeout);
+
+	/* Ensure this event will never fire. */
+	TALLOC_FREE(fsp->update_write_time_event);
 
 	bitmap_clear(file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
 	files_used--;
@@ -548,9 +528,6 @@ NTSTATUS dup_file_fsp(files_struct *fsp,
 	dup_fsp->open_time = fsp->open_time;
 	dup_fsp->access_mask = access_mask;
 	dup_fsp->share_access = share_access;
-	dup_fsp->pending_modtime_owner = fsp->pending_modtime_owner;
-	dup_fsp->pending_modtime = fsp->pending_modtime;
-	dup_fsp->last_write_time = fsp->last_write_time;
 	dup_fsp->oplock_type = fsp->oplock_type;
 	dup_fsp->can_lock = fsp->can_lock;
 	dup_fsp->can_read = (access_mask & (FILE_READ_DATA)) ? True : False;
