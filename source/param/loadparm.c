@@ -8715,6 +8715,8 @@ bool lp_load(const char *pszFname,
 			 */
 			config_backend = CONFIG_BACKEND_REGISTRY;
 			/* start over */
+			DEBUG(1, ("lp_load: changing to config backend "
+				  "registry\n"));
 			init_globals(false);
 			lp_kill_all_services();
 			return lp_load(pszFname, global_only, save_defaults,
