@@ -1238,6 +1238,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 	bool needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
 	bool check_mangled_names = lp_manglednames(conn->params);
 	char mangled_name[13]; /* mangled 8.3 name. */
+	struct timespec write_time_ts;
 
 	*out_of_space = False;
 	*got_exact_match = False;
@@ -1396,6 +1397,12 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			mdate_ts = get_mtimespec(&sbuf);
 			adate_ts = get_atimespec(&sbuf);
 			create_date_ts = get_create_timespec(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+
+			write_time_ts = get_write_time(
+				vfs_file_id_from_sbuf(conn, &sbuf));
+			if (!null_timespec(write_time_ts)) {
+				mdate_ts = write_time_ts;
+			}
 
 			if (lp_dos_filetime_resolution(SNUM(conn))) {
 				dos_filetime_timespec(&create_date_ts);
@@ -3784,6 +3791,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	int len;
 	time_t create_time, mtime, atime;
 	struct timespec create_time_ts, mtime_ts, atime_ts;
+	struct timespec write_time_ts;
 	files_struct *fsp = NULL;
 	struct file_id fileid;
 	struct ea_list *ea_list = NULL;
@@ -3797,6 +3805,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	}
 
 	ZERO_STRUCT(sbuf);
+	ZERO_STRUCT(write_time_ts);
 
 	if (tran_call == TRANSACT2_QFILEINFO) {
 		if (total_params < 4) {
@@ -3862,6 +3871,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 
 			fileid = vfs_file_id_from_sbuf(conn, &sbuf);
 			delete_pending = get_delete_on_close_flag(fileid);
+			write_time_ts = get_write_time(fileid);
 		} else {
 			/*
 			 * Original code - this is an open file.
@@ -3878,6 +3888,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			pos = fsp->fh->position_information;
 			fileid = vfs_file_id_from_sbuf(conn, &sbuf);
 			delete_pending = get_delete_on_close_flag(fileid);
+			write_time_ts = get_write_time(fileid);
 			access_mask = fsp->access_mask;
 		}
 
@@ -3953,6 +3964,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			reply_nterror(req, NT_STATUS_DELETE_PENDING);
 			return;
 		}
+		write_time_ts = get_write_time(fileid);
 	}
 
 	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
@@ -4073,23 +4085,18 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 	allocation_size = get_allocation_size(conn,fsp,&sbuf);
 
-	if (fsp) {
-		if (!null_timespec(fsp->pending_modtime)) {
-			/* the pending modtime overrides the current modtime */
-			mtime_ts = fsp->pending_modtime;
-		}
-	} else {
-		files_struct *fsp1;
+	if (!fsp) {
 		/* Do we have this path open ? */
+		files_struct *fsp1;
 		fileid = vfs_file_id_from_sbuf(conn, &sbuf);
 		fsp1 = file_find_di_first(fileid);
-		if (fsp1 && !null_timespec(fsp1->pending_modtime)) {
-			/* the pending modtime overrides the current modtime */
-			mtime_ts = fsp1->pending_modtime;
-		}
 		if (fsp1 && fsp1->initial_allocation_size) {
 			allocation_size = get_allocation_size(conn, fsp1, &sbuf);
 		}
+	}
+
+	if (!null_timespec(write_time_ts)) {
+		mtime_ts = write_time_ts;
 	}
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
@@ -4781,12 +4788,12 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
  Deal with setting the time from any of the setfilepathinfo functions.
 ****************************************************************************/
 
-static NTSTATUS smb_set_file_time(connection_struct *conn,
-				files_struct *fsp,
-				const char *fname,
-				const SMB_STRUCT_STAT *psbuf,
-				struct timespec ts[2],
-				bool setting_write_time)
+NTSTATUS smb_set_file_time(connection_struct *conn,
+			   files_struct *fsp,
+			   const char *fname,
+			   const SMB_STRUCT_STAT *psbuf,
+			   struct timespec ts[2],
+			   bool setting_write_time)
 {
 	uint32 action =
 		FILE_NOTIFY_CHANGE_LAST_ACCESS
@@ -4828,7 +4835,7 @@ static NTSTATUS smb_set_file_time(connection_struct *conn,
 		}
 	}
 
-	if(fsp != NULL) {
+	if (setting_write_time) {
 		/*
 		 * This was a setfileinfo on an open file.
 		 * NT does this a lot. We also need to 
@@ -4839,13 +4846,18 @@ static NTSTATUS smb_set_file_time(connection_struct *conn,
 		 * away and will set it on file close and after a write. JRA.
 		 */
 
-		if (!null_timespec(ts[1])) {
-			DEBUG(10,("smb_set_file_time: setting pending modtime to %s\n",
-				time_to_asc(convert_timespec_to_time_t(ts[1])) ));
-			fsp_set_pending_modtime(fsp, ts[1]);
-		}
+		DEBUG(10,("smb_set_file_time: setting pending modtime to %s\n",
+			  time_to_asc(convert_timespec_to_time_t(ts[1])) ));
 
+		if (fsp != NULL) {
+			set_write_time_fsp(fsp, ts[1], true);
+		} else {
+			set_write_time_path(conn, fname,
+					    vfs_file_id_from_sbuf(conn, psbuf),
+					    ts[1], true);
+		}
 	}
+
 	DEBUG(10,("smb_set_file_time: setting utimes to modified values.\n"));
 
 	if(file_ntimes(conn, fname, ts)!=0) {
@@ -5670,14 +5682,11 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 			}
 		}
 		/* But always update the time. */
-		if (null_timespec(fsp->pending_modtime)) {
-			/*
-			 * This is equivalent to a write. Ensure it's seen immediately
-			 * if there are no pending writes.
-			 */
-			set_filetime(fsp->conn, fsp->fsp_name,
-					timespec_current());
-		}
+		/*
+		 * This is equivalent to a write. Ensure it's seen immediately
+		 * if there are no pending writes.
+		 */
+		trigger_write_time_update(fsp);
 		return NT_STATUS_OK;
 	}
 
@@ -5707,10 +5716,11 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	}
 
 	/* Changing the allocation size should set the last mod time. */
-	/* Don't need to call set_filetime as this will be flushed on
-	 * close. */
-
-	fsp_set_pending_modtime(new_fsp, timespec_current());
+	/*
+	 * This is equivalent to a write. Ensure it's seen immediately
+	 * if there are no pending writes.
+	 */
+	trigger_write_time_update(new_fsp);
 
 	close_file(new_fsp,NORMAL_CLOSE);
 	return NT_STATUS_OK;
@@ -6657,11 +6667,6 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 	params = *pparams;
 
 	SSVAL(params,0,0);
-
-	if (fsp && !null_timespec(fsp->pending_modtime)) {
-		/* the pending modtime overrides the current modtime */
-		set_mtimespec(&sbuf, fsp->pending_modtime);
-	}
 
 	switch (info_level) {
 

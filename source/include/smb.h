@@ -485,9 +485,13 @@ typedef struct files_struct {
 	struct timeval open_time;
 	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
 	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
-	bool pending_modtime_owner;
-	struct timespec pending_modtime;
-	struct timespec last_write_time;
+
+	bool update_write_time_triggered;
+	struct timed_event *update_write_time_event;
+	bool update_write_time_on_close;
+	struct timespec close_write_time;
+	bool write_time_forced;
+
 	int oplock_type;
 	int sent_oplock_break;
 	struct timed_event *oplock_timeout;

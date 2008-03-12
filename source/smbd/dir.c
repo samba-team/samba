@@ -841,6 +841,8 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 		    mask_match_search(filename,mask,False) ||
 		    mangle_mask_match(conn,filename,mask)) {
 			char mname[13];
+			struct timespec write_time_ts;
+			struct file_id fileid;
 
 			if (!mangle_is_8_3(filename, False, conn->params)) {
 				if (!name_to_8_3(filename,mname,False,
@@ -882,6 +884,12 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 
 			*size = sbuf.st_size;
 			*date = sbuf.st_mtime;
+
+			fileid = vfs_file_id_from_sbuf(conn, &sbuf);
+			write_time_ts = get_write_time(fileid);
+			if (!null_timespec(write_time_ts)) {
+				*date = convert_timespec_to_time_t(write_time_ts);
+			}
 
 			DEBUG(3,("get_dir_entry mask=[%s] found %s "
 				"fname=%s (%s)\n",

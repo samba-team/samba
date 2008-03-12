@@ -571,6 +571,11 @@ int file_ntimes(connection_struct *conn, const char *fname, const struct timespe
 	errno = 0;
 	ZERO_STRUCT(sbuf);
 
+	DEBUG(6, ("file_ntime: actime: %s",
+		  time_to_asc(convert_timespec_to_time_t(ts[0]))));
+	DEBUG(6, ("file_ntime: modtime: %s",
+		  time_to_asc(convert_timespec_to_time_t(ts[1]))));
+
 	/* Don't update the time on read-only shares */
 	/* We need this as set_filetime (which can be called on
 	   close and other paths) can end up calling this function
@@ -615,26 +620,35 @@ int file_ntimes(connection_struct *conn, const char *fname, const struct timespe
  Change a filetime - possibly allowing DOS semantics.
 *******************************************************************/
 
-bool set_filetime(connection_struct *conn, const char *fname,
-		const struct timespec mtime)
+bool set_write_time_path(connection_struct *conn, const char *fname,
+			 struct file_id fileid, const struct timespec mtime,
+			 bool overwrite)
 {
-	struct timespec ts[2];
-
 	if (null_timespec(mtime)) {
-		return(True);
+		return true;
 	}
 
-	ts[1] = mtime; /* mtime. */
-	ts[0] = ts[1]; /* atime. */
-
-	if (file_ntimes(conn, fname, ts)) {
-		DEBUG(4,("set_filetime(%s) failed: %s\n",
-					fname,strerror(errno)));
-		return False;
+	if (!set_write_time(fileid, mtime, overwrite)) {
+		return false;
 	}
 
-	notify_fname(conn, NOTIFY_ACTION_MODIFIED,
-		FILE_NOTIFY_CHANGE_LAST_WRITE, fname);
+	/* in the overwrite case the caller should trigger the notify */
+	if (!overwrite) {
+		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_LAST_WRITE, fname);
+	}
 
 	return true;
+}
+
+bool set_write_time_fsp(struct files_struct *fsp, const struct timespec mtime,
+			bool overwrite)
+{
+	if (overwrite) {
+		fsp->write_time_forced = true;
+		TALLOC_FREE(fsp->update_write_time_event);
+	}
+
+	return set_write_time_path(fsp->conn, fsp->fsp_name, fsp->file_id,
+				   mtime, overwrite);
 }
