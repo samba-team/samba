@@ -42,17 +42,11 @@ NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
 	uchar new_nt_hash[16];
 	uchar new_lanman_hash[16];
 	struct lsa_String server, account;
-	char *srv_name_slash = NULL;
 
 	DEBUG(10,("rpccli_samr_chgpasswd_user\n"));
 
-	init_lsa_String(&server, srv_name_slash);
+	init_lsa_String(&server, cli->cli->srv_name_slash);
 	init_lsa_String(&account, username);
-
-	srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", cli->cli->desthost);
-	if (!srv_name_slash) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
 	E_md4hash(oldpassword, old_nt_hash);
@@ -108,16 +102,10 @@ NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
 	struct samr_Password old_nt_hash_enc;
 	struct samr_Password old_lm_hash_enc;
 	struct lsa_String server, account;
-	char *srv_name_slash = NULL;
 
 	DEBUG(10,("rpccli_samr_chng_pswd_auth_crap\n"));
 
-	srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", cli->cli->desthost);
-	if (!srv_name_slash) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	init_lsa_String(&server, srv_name_slash);
+	init_lsa_String(&server, cli->cli->srv_name_slash);
 	init_lsa_String(&account, username);
 
 	memcpy(&new_nt_password.data, new_nt_password_blob.data, 516);
@@ -160,16 +148,10 @@ NTSTATUS rpccli_samr_chgpasswd3(struct rpc_pipe_client *cli,
 	uchar new_lanman_hash[16];
 
 	struct lsa_String server, account;
-	char *srv_name_slash = NULL;
 
 	DEBUG(10,("rpccli_samr_chgpasswd_user3\n"));
 
-	srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", cli->cli->desthost);
-	if (!srv_name_slash) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	init_lsa_String(&server, srv_name_slash);
+	init_lsa_String(&server, cli->cli->srv_name_slash);
 	init_lsa_String(&account, username);
 
 	/* Calculate the MD4 hash (NT compatible) of the password */

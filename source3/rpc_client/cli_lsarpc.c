@@ -87,7 +87,6 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 {
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
-	char *srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", cli->cli->desthost);
 
 	if (sec_qos) {
 		init_lsa_sec_qos(&qos, 0xc, 2, 1, 0);
@@ -109,7 +108,7 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 	}
 
 	return rpccli_lsa_OpenPolicy2(cli, mem_ctx,
-				      srv_name_slash,
+				      cli->cli->srv_name_slash,
 				      &attr,
 				      des_access,
 				      pol);
