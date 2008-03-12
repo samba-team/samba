@@ -356,22 +356,24 @@ static bool test_stream_sharemodes(struct torture_context *tctx,
 	 * A different stream does not give a sharing violation
 	 */
 
+	io.ntcreatex.in.fname = sname2;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum1 = io.ntcreatex.out.file.fnum;
+	fnum2 = io.ntcreatex.out.file.fnum;
 
 	/*
 	 * ... whereas the same stream does with unchanged access/share_access
 	 * flags
 	 */
 
+	io.ntcreatex.in.fname = sname1;
 	io.ntcreatex.in.open_disposition = 0;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
 	io.ntcreatex.in.fname = sname2;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = io.ntcreatex.out.file.fnum;
+	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
 done:
 	if (fnum1 != -1) smbcli_close(cli->tree, fnum1);
