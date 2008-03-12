@@ -16,3 +16,21 @@ OBJ_FILES = \
 PUBLIC_DEPENDENCIES = 
 # End SUBSYSTEM sys_notify
 ################################################
+
+################################################
+# Start MODULE sys_lease_linux
+[MODULE::sys_lease_linux]
+SUBSYSTEM = sys_lease
+INIT_FUNCTION = sys_lease_linux_init
+OBJ_FILES = \
+		sys_lease_linux.o
+# End MODULE sys_lease_linux
+################################################
+
+################################################
+# Start SUBSYSTEM sys_lease
+[SUBSYSTEM::sys_lease]
+OBJ_FILES = \
+		sys_lease.o
+# End SUBSYSTEM sys_lease
+################################################

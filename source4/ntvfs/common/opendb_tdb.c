@@ -49,11 +49,13 @@
 #include "ntvfs/common/ntvfs_common.h"
 #include "cluster/cluster.h"
 #include "param/param.h"
+#include "ntvfs/sysdep/sys_lease.h"
 
 struct odb_context {
 	struct tdb_wrap *w;
 	struct ntvfs_context *ntvfs_ctx;
 	bool oplocks;
+	struct sys_lease_context *lease_ctx;
 };
 
 /*
@@ -71,6 +73,10 @@ struct odb_lock {
 		bool attrs_only;
 	} can_open;
 };
+
+static NTSTATUS odb_oplock_break_send(struct messaging_context *msg_ctx,
+				      struct opendb_entry *e,
+				      uint8_t level);
 
 /*
   Open up the openfiles.tdb database. Close it down using
@@ -97,6 +103,11 @@ static struct odb_context *odb_tdb_init(TALLOC_CTX *mem_ctx,
 
 	/* leave oplocks disabled by default until the code is working */
 	odb->oplocks = lp_parm_bool(ntvfs_ctx->lp_ctx, NULL, "opendb", "oplocks", false);
+
+	odb->lease_ctx = sys_lease_context_create(ntvfs_ctx->config, odb,
+						  ntvfs_ctx->event_ctx,
+						  ntvfs_ctx->msg_ctx,
+						  odb_oplock_break_send);
 
 	return odb;
 }
@@ -442,7 +453,7 @@ static NTSTATUS odb_tdb_open_can_internal(struct odb_context *odb,
 */
 static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 				  void *file_handle, const char *path,
-				  bool allow_level_II_oplock,
+				  int *fd, bool allow_level_II_oplock,
 				  uint32_t oplock_level, uint32_t *oplock_granted)
 {
 	struct odb_context *odb = lck->odb;
@@ -491,21 +502,28 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 		oplock_level	= OPLOCK_NONE;
 	}
 
+	lck->can_open.e->file_handle		= file_handle;
+	lck->can_open.e->fd			= fd;
+	lck->can_open.e->allow_level_II_oplock	= allow_level_II_oplock;
+	lck->can_open.e->oplock_level		= oplock_level;
+
+	if (odb->lease_ctx && fd) {
+		NTSTATUS status;
+		status = sys_lease_setup(odb->lease_ctx, lck->can_open.e);
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
+
 	if (oplock_granted) {
-		if (oplock_level == OPLOCK_EXCLUSIVE) {
+		if (lck->can_open.e->oplock_level == OPLOCK_EXCLUSIVE) {
 			*oplock_granted	= EXCLUSIVE_OPLOCK_RETURN;
-		} else if (oplock_level == OPLOCK_BATCH) {
+		} else if (lck->can_open.e->oplock_level == OPLOCK_BATCH) {
 			*oplock_granted	= BATCH_OPLOCK_RETURN;
-		} else if (oplock_level == OPLOCK_LEVEL_II) {
+		} else if (lck->can_open.e->oplock_level == OPLOCK_LEVEL_II) {
 			*oplock_granted	= LEVEL_II_OPLOCK_RETURN;
 		} else {
 			*oplock_granted	= NO_OPLOCK_RETURN;
 		}
 	}
-
-	lck->can_open.e->file_handle		= file_handle;
-	lck->can_open.e->allow_level_II_oplock	= allow_level_II_oplock;
-	lck->can_open.e->oplock_level		= oplock_level;
 
 	/* it doesn't conflict, so add it to the end */
 	lck->file.entries = talloc_realloc(lck, lck->file.entries,
@@ -569,6 +587,11 @@ static NTSTATUS odb_tdb_close_file(struct odb_lock *lck, void *file_handle,
 			if (lck->file.entries[i].delete_on_close) {
 				lck->file.delete_on_close = true;
 			}
+			if (odb->lease_ctx && lck->file.entries[i].fd) {
+				NTSTATUS status;
+				status = sys_lease_remove(odb->lease_ctx, &lck->file.entries[i]);
+				NT_STATUS_NOT_OK_RETURN(status);
+			}
 			if (i < lck->file.num_entries-1) {
 				memmove(lck->file.entries+i, lck->file.entries+i+1,
 					(lck->file.num_entries - (i+1)) *
@@ -622,6 +645,13 @@ static NTSTATUS odb_tdb_update_oplock(struct odb_lock *lck, void *file_handle,
 		if (file_handle == lck->file.entries[i].file_handle &&
 		    cluster_id_equal(&odb->ntvfs_ctx->server_id, &lck->file.entries[i].server)) {
 			lck->file.entries[i].oplock_level = oplock_level;
+
+			if (odb->lease_ctx && lck->file.entries[i].fd) {
+				NTSTATUS status;
+				status = sys_lease_update(odb->lease_ctx, &lck->file.entries[i]);
+				NT_STATUS_NOT_OK_RETURN(status);
+			}
+
 			break;
 		}
 	}
@@ -800,6 +830,7 @@ static NTSTATUS odb_tdb_can_open(struct odb_lock *lck,
 
 	lck->can_open.e->server			= odb->ntvfs_ctx->server_id;
 	lck->can_open.e->file_handle		= NULL;
+	lck->can_open.e->fd			= NULL;
 	lck->can_open.e->stream_id		= stream_id;
 	lck->can_open.e->share_access		= share_access;
 	lck->can_open.e->access_mask		= access_mask;
@@ -831,5 +862,6 @@ static const struct opendb_ops opendb_tdb_ops = {
 
 void odb_tdb_init_ops(void)
 {
+	sys_lease_init();
 	odb_set_ops(&opendb_tdb_ops);
 }
