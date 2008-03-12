@@ -123,6 +123,7 @@ struct cli_state {
 	int privileges;
 
 	fstring desthost;
+	fstring srv_name_slash;
 
 	/* The credentials used to open the cli_state connection. */
 	fstring domain;
