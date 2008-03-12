@@ -283,7 +283,7 @@ static NTSTATUS odb_oplock_break_send(struct odb_context *odb, struct opendb_ent
 */
 static NTSTATUS odb_ctdb_open_file(struct odb_lock *lck,
 				   void *file_handle, const char *path,
-				   bool allow_level_II_oplock,
+				   int *fd, bool allow_level_II_oplock,
 				   uint32_t oplock_level, uint32_t *oplock_granted)
 
 {
