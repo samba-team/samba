@@ -505,7 +505,10 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 	/* Count the number of entries. */
 	for (snum = 0; snum < num_services; snum++) {
 		if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
+			DEBUG(10, ("counting service %s\n", lp_servicename(snum)));
 			num_entries++;
+		} else {
+			DEBUG(10, ("NOT counting service %s\n", lp_servicename(snum)));
 		}
 	}
 
