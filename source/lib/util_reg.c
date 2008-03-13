@@ -127,7 +127,6 @@ bool registry_smbconf_valname_forbidden(const char *valname)
 {
 	/* hard code the list of forbidden names here for now */
 	const char *forbidden_valnames[] = {
-		"include",
 		"lock directory",
 		"lock dir",
 		"config backend",
