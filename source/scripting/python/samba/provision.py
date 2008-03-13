@@ -763,9 +763,15 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         
     try:
         message("Adding DomainDN: %s (permitted to fail)" % names.domaindn)
+        if serverrole == "domain controller":
+            domain_oc = "domainDNS"
+        else:
+            domain_oc = "samba4LocalDomain"
+
         setup_add_ldif(samdb, setup_path("provision_basedn.ldif"), {
             "DOMAINDN": names.domaindn,
             "ACI": aci,
+            "DOMAIN_OC": domain_oc
             })
 
         message("Modifying DomainDN: " + names.domaindn + "")
