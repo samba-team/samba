@@ -258,14 +258,15 @@ static DATA_BLOB *get_sd(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	struct auth_session_info *session_info
 		= ldb_get_opaque(module->ldb, "sessionInfo");
 	struct security_descriptor *sd;
+	struct dom_sid *domain_sid = samdb_domain_sid(module->ldb);
 
-	if (!objectclass->defaultSecurityDescriptor) {
+	if (!objectclass->defaultSecurityDescriptor || !domain_sid) {
 		return NULL;
 	}
 	
 	sd = sddl_decode(mem_ctx, 
 			 objectclass->defaultSecurityDescriptor,
-			 samdb_domain_sid(module->ldb));
+			 domain_sid);
 
 	if (!sd || !session_info || !session_info->security_token) {
 		return NULL;
