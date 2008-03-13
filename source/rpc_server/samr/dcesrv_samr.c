@@ -324,11 +324,11 @@ static NTSTATUS dcesrv_samr_EnumDomains(struct dcesrv_call_state *dce_call, TALL
 	struct samr_connect_state *c_state;
 	struct dcesrv_handle *h;
 	struct samr_SamArray *array;
-	int count, i, start_i;
+	int i, start_i, ret;
 	const char * const dom_attrs[] = { "cn", NULL};
 	const char * const ref_attrs[] = { "nETBIOSName", NULL};
-	struct ldb_message **dom_msgs;
-	struct ldb_message **ref_msgs;
+	struct ldb_result *dom_res;
+	struct ldb_result *ref_res;
 	struct ldb_dn *partitions_basedn;
 
 	*r->out.resume_handle = 0;
@@ -341,19 +341,18 @@ static NTSTATUS dcesrv_samr_EnumDomains(struct dcesrv_call_state *dce_call, TALL
 
 	partitions_basedn = samdb_partitions_dn(c_state->sam_ctx, mem_ctx);
 
-	count = gendb_search(c_state->sam_ctx,
-			     mem_ctx, NULL, &dom_msgs, dom_attrs,
-			     "(objectClass=domain)");
-	if (count == -1) {
-		DEBUG(0,("samdb: no domains found in EnumDomains\n"));
+	ret = ldb_search_exp_fmt(c_state->sam_ctx, mem_ctx, &dom_res, ldb_get_default_basedn(c_state->sam_ctx),
+				 LDB_SCOPE_SUBTREE, dom_attrs, "(|(|(objectClass=domain)(objectClass=builtinDomain))(objectClass=samba4LocalDomain))");
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("samdb: unable to find domains: %s\n", ldb_errstring(c_state->sam_ctx)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	*r->out.resume_handle = count;
+	*r->out.resume_handle = dom_res->count;
 
 	start_i = *r->in.resume_handle;
 
-	if (start_i >= count) {
+	if (start_i >= dom_res->count) {
 		/* search past end of list is not an error for this call */
 		return NT_STATUS_OK;
 	}
@@ -366,23 +365,27 @@ static NTSTATUS dcesrv_samr_EnumDomains(struct dcesrv_call_state *dce_call, TALL
 	array->count = 0;
 	array->entries = NULL;
 
-	array->entries = talloc_array(mem_ctx, struct samr_SamEntry, count - start_i);
+	array->entries = talloc_array(mem_ctx, struct samr_SamEntry, dom_res->count - start_i);
 	if (array->entries == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	for (i=0;i<count-start_i;i++) {
-		int ret;
+	for (i=0;i<dom_res->count-start_i;i++) {
 		array->entries[i].idx = start_i + i;
 		/* try and find the domain */
-		ret = gendb_search(c_state->sam_ctx, mem_ctx, partitions_basedn,
-				   &ref_msgs, ref_attrs, 
-				   "(&(objectClass=crossRef)(ncName=%s))", 
-				   ldb_dn_get_linearized(dom_msgs[i]->dn));
-		if (ret == 1) {
-			array->entries[i].name.string = samdb_result_string(ref_msgs[0], "nETBIOSName", NULL);
+		ret = ldb_search_exp_fmt(c_state->sam_ctx, mem_ctx, &ref_res, partitions_basedn,
+					 LDB_SCOPE_SUBTREE, ref_attrs, "(&(objectClass=crossRef)(ncName=%s))", 
+					 ldb_dn_get_linearized(dom_res->msgs[i]->dn));
+
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,("samdb: unable to find domains: %s\n", ldb_errstring(c_state->sam_ctx)));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		if (ref_res->count == 1) {
+			array->entries[i].name.string = samdb_result_string(ref_res->msgs[0], "nETBIOSName", NULL);
 		} else {
-			array->entries[i].name.string = samdb_result_string(dom_msgs[i], "cn", NULL);
+			array->entries[i].name.string = samdb_result_string(dom_res->msgs[i], "cn", NULL);
 		}
 	}
 
@@ -2073,7 +2076,8 @@ static NTSTATUS dcesrv_samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, T
 {
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
-	struct ldb_message *msg, **res;
+	struct ldb_message *msg;
+	struct ldb_result *res;
 	const char * const attrs[4] = { "sAMAccountName", "description",
 					"numMembers", NULL };
 	int ret;
@@ -2083,14 +2087,22 @@ static NTSTATUS dcesrv_samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, T
 	DCESRV_PULL_HANDLE(h, r->in.group_handle, SAMR_HANDLE_GROUP);
 
 	a_state = h->data;
-
-	/* pull all the group attributes */
-	ret = gendb_search_dn(a_state->sam_ctx, mem_ctx,
-			      a_state->account_dn, &res, attrs);
-	if (ret != 1) {
+	
+	ret = ldb_search_exp_fmt(a_state->sam_ctx, mem_ctx, &res, a_state->account_dn, LDB_SCOPE_SUBTREE, attrs, "objectClass=*");
+	
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		return NT_STATUS_NO_SUCH_GROUP;
+	} else if (ret != LDB_SUCCESS) {
+		DEBUG(2, ("Error reading group info: %s\n", ldb_errstring(a_state->sam_ctx)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	msg = res[0];
+
+	if (res->count != 1) {
+		DEBUG(2, ("Error finding group info, got %d entries\n", res->count));
+		
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	msg = res->msgs[0];
 
 	/* allocate the info structure */
 	r->out.info = talloc(mem_ctx, union samr_GroupInfo);
