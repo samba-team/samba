@@ -1043,7 +1043,7 @@ _kdc_as_rep(krb5_context context,
 	goto out;
     }
 
-    ret = _kdc_windc_client_access(context, client, req);
+    ret = _kdc_windc_client_access(context, client, req, &e_data);
     if(ret)
 	goto out;
 
