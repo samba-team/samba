@@ -644,9 +644,26 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_cal
 
 	/* create the trusted_domain */
 	ret = ldb_add(trusted_domain_state->policy->sam_ldb, msg);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Failed to create trusted_domain record %s: %s\n",
-			 ldb_dn_get_linearized(msg->dn), ldb_errstring(trusted_domain_state->policy->sam_ldb)));
+	switch (ret) {
+	case  LDB_SUCCESS:
+		break;
+	case  LDB_ERR_ENTRY_ALREADY_EXISTS:
+		ldb_transaction_cancel(trusted_domain_state->policy->sam_ldb);
+		DEBUG(0,("Failed to create trusted domain record %s: %s\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 ldb_errstring(trusted_domain_state->policy->sam_ldb)));
+		return NT_STATUS_DOMAIN_EXISTS;
+	case  LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
+		ldb_transaction_cancel(trusted_domain_state->policy->sam_ldb);
+		DEBUG(0,("Failed to create trusted domain record %s: %s\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 ldb_errstring(trusted_domain_state->policy->sam_ldb)));
+		return NT_STATUS_ACCESS_DENIED;
+	default:
+		ldb_transaction_cancel(trusted_domain_state->policy->sam_ldb);
+		DEBUG(0,("Failed to create user record %s: %s\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 ldb_errstring(trusted_domain_state->policy->sam_ldb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
