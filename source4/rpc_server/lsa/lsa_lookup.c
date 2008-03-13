@@ -220,6 +220,7 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct loadparm_context *lp_ctx,
 	} else if (strchr_m(name, '@')) {
 		status = crack_name_to_nt4_name(mem_ctx, lp_ctx, DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL, name, &domain, &username);
 		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("Failed to crack name %s into an NT4 name: %s\n", name, nt_errstr(status)));
 			return status;
 		}
 	} else {
