@@ -117,7 +117,7 @@ static int normalise_search_callback(struct ldb_context *ldb, void *context, str
 				talloc_free(mem_ctx);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
-			ret = fix_dn(ares->message->dn);
+			ret = fix_dn(dn);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(mem_ctx);
 				return ret;
