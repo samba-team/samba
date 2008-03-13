@@ -897,7 +897,7 @@ hx509_name_is_null_p(const hx509_name name)
  * @param name the name to print
  * @param str an allocated string returns the name in string form
  *
- * @return An hx509 error code, see krb5_get_error_string().
+ * @return An hx509 error code, see hx509_get_error_string().
  *
  * @ingroup hx509_name
  */

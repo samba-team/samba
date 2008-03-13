@@ -2355,7 +2355,7 @@ hx509_verify_hostname(hx509_context context,
     } while (1);
 
     {
-	Name *name = &cert->data->tbsCertificate.subject;
+	const Name *name = &cert->data->tbsCertificate.subject;
 
 	/* match if first component is a CN= */
 	if (name->u.rdnSequence.len > 0
@@ -2548,6 +2548,7 @@ hx509_query_alloc(hx509_context context, hx509_query **q)
     return 0;
 }
 
+
 /**
  * Set match options for the hx509 query controller.
  *
@@ -2697,6 +2698,25 @@ hx509_query_match_eku(hx509_query *q, const heim_oid *eku)
     return 0;
 }
 
+int
+hx509_query_match_expr(hx509_context context, hx509_query *q, const char *expr)
+{
+    if (q->expr) {
+	_hx509_expr_free(q->expr);
+	q->expr = NULL;
+    }
+
+    if (expr == NULL) {
+	q->match &= ~HX509_QUERY_MATCH_EXPR;
+    } else {
+	q->expr = _hx509_expr_parse(expr);
+	if (q->expr)
+	    q->match |= HX509_QUERY_MATCH_EXPR;
+    }
+
+    return 0;
+}
+
 /**
  * Set the query controller to match using a specific match function.
  *
@@ -2753,6 +2773,9 @@ hx509_query_free(hx509_context context, hx509_query *q)
     }
     if (q->friendlyname)
 	free(q->friendlyname);
+    if (q->expr)
+	_hx509_expr_free(q->expr);
+
     memset(q, 0, sizeof(*q));
     free(q);
 }
@@ -2889,6 +2912,19 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
     if ((q->match & HX509_QUERY_MATCH_EKU) &&
 	hx509_cert_check_eku(context, cert, q->eku, 0))
 	return 0;
+
+    if ((q->match & HX509_QUERY_MATCH_EXPR)) {
+	hx509_env env = NULL;
+
+	ret = _hx509_cert_to_env(context, cert, &env);
+	if (ret)
+	    return 0;
+
+	ret = _hx509_eval_expr(context, env, q->expr);
+	hx509_env_free(&env);
+	if (ret == 0)
+	    return 0;
+    }
 
     if (q->match & ~HX509_QUERY_MASK)
 	return 0;
@@ -3205,4 +3241,104 @@ void
 hx509_xfree(void *ptr)
 {
     free(ptr);
+}
+
+/**
+ *
+ */
+
+int
+_hx509_cert_to_env(hx509_context context, hx509_cert cert, hx509_env *env)
+{
+    ExtKeyUsage eku;
+    hx509_name name;
+    char *buf;
+    int ret;
+    hx509_env envcert = NULL;
+
+    *env = NULL;
+
+    /* version */
+    asprintf(&buf, "%d", _hx509_cert_get_version(_hx509_get_cert(cert)));
+    ret = hx509_env_add(context, &envcert, "version", buf);
+    free(buf);
+    if (ret)
+	goto out;
+
+    /* subject */
+    ret = hx509_cert_get_subject(cert, &name);
+    if (ret)
+	goto out;
+
+    ret = hx509_name_to_string(name, &buf);
+    if (ret) {
+	hx509_name_free(&name);
+	goto out;
+    }
+
+    ret = hx509_env_add(context, &envcert, "subject", buf);
+    hx509_name_free(&name);
+    if (ret)
+	goto out;
+
+    /* issuer */
+    ret = hx509_cert_get_issuer(cert, &name);
+    if (ret)
+	goto out;
+
+    ret = hx509_name_to_string(name, &buf);
+    hx509_name_free(&name);
+    if (ret)
+	goto out;
+
+    ret = hx509_env_add(context, &envcert, "issuer", buf);
+    hx509_xfree(buf);
+    if (ret)
+	goto out;
+
+    /* eku */
+
+    ret = _hx509_cert_get_eku(context, cert, &eku);
+    if (ret == HX509_EXTENSION_NOT_FOUND)
+	;
+    else if (ret != 0)
+	goto out;
+    else {
+	int i;
+	hx509_env enveku = NULL;
+
+	for (i = 0; i < eku.len; i++) {
+
+	    ret = der_print_heim_oid(&eku.val[i], '.', &buf);
+	    if (ret) {
+		free_ExtKeyUsage(&eku);
+		hx509_env_free(&enveku);
+		goto out;
+	    }
+	    ret = hx509_env_add(context, &enveku, buf, "oid-name-here");
+	    free(buf);
+	    if (ret) {
+		free_ExtKeyUsage(&eku);
+		hx509_env_free(&enveku);
+		goto out;
+	    }
+	}
+	free_ExtKeyUsage(&eku);
+
+	ret = hx509_env_add_binding(context, &envcert, "eku", enveku);
+	if (ret) {
+	    hx509_env_free(&enveku);
+	    goto out;
+	}
+    }
+
+    ret = hx509_env_add_binding(context, env, "certificate", envcert);
+    if (ret)
+	goto out;
+
+    return 0;
+
+out:
+    hx509_env_free(&envcert);
+    return ret;
 }

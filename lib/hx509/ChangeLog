@@ -1,5 +1,7 @@
 2008-02-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* version-script.map: add hx509_pem_read
+
 	* hxtool-commands.in: Add --pem to cms-verify-sd.
 
 	* test_cms.in: Test verifying PEM signature files.

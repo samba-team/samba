@@ -6,6 +6,7 @@ lib_LTLIBRARIES = libhx509.la
 libhx509_la_LDFLAGS = -version-info 3:0:0
 
 BUILT_SOURCES =				\
+	sel-gram.h			\
 	$(gen_files_ocsp:.x=.c)		\
 	$(gen_files_pkcs10:.x=.c)	\
 	hx509_err.c			\
@@ -50,6 +51,8 @@ gen_files_crmf = 			\
 	asn1_ProofOfPossession.x	\
 	asn1_SubsequentMessage.x	
 
+AM_YFLAGS = -d
+
 dist_libhx509_la_SOURCES = \
 	ca.c \
 	cert.c \
@@ -64,6 +67,10 @@ dist_libhx509_la_SOURCES = \
 	hx509-protos.h \
 	hx509.h \
 	hx_locl.h \
+	sel.c \
+	sel.h \
+	sel-gram.y \
+	sel-lex.l \
 	keyset.c \
 	ks_dir.c \
 	ks_file.c \
@@ -80,6 +87,8 @@ dist_libhx509_la_SOURCES = \
 	ref/pkcs11.h \
 	req.c \
 	revoke.c
+
+sel-lex.c: sel-gram.h
 
 libhx509_la_LIBADD = \
 	$(LIB_com_err) \
@@ -184,7 +193,8 @@ test_soft_pkcs11_CPPFLAGS = -I$(srcdir)/ref
 TESTS = $(SCRIPT_TESTS) $(PROGRAM_TESTS)
 
 PROGRAM_TESTS = 		\
-	test_name
+	test_name		\
+	test_expr
 
 SCRIPT_TESTS = 			\
 	test_ca			\

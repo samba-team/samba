@@ -942,6 +942,9 @@ query(struct query_options *opt, int argc, char **argv)
     if (opt->digitalSignature_flag)
 	hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
 
+    if (opt->expr_string)
+	hx509_query_match_expr(context, q, opt->expr_string);
+
     ret = hx509_certs_find(context, certs, q, &c);
     hx509_query_free(context, q);
     if (ret)

@@ -72,13 +72,12 @@ test_name_fail(hx509_context context, const char *name)
 static int
 test_expand(hx509_context context, const char *name, const char *expected)
 {
-    hx509_env env;
+    hx509_env env = NULL;
     hx509_name n;
     char *s;
     int ret;
 
-    hx509_env_init(context, &env);
-    hx509_env_add(context, env, "uid", "lha");
+    hx509_env_add(context, &env, "uid", "lha");
 
     ret = hx509_parse_name(context, name, &n);
     if (ret)

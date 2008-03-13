@@ -449,6 +449,12 @@ command = {
 		help = "match on EKU"
 	}
 	option = {
+		long = "expr"
+		type = "string"
+		argument = "expression"
+		help = "match on expression"
+	}
+	option = {
 		long = "keyEncipherment"
 		type = "flag"
 		help = "match keyEncipherment certificates"
