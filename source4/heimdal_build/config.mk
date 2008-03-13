@@ -501,6 +501,7 @@ OBJ_FILES = ../heimdal/lib/vers/print_version.ho \
 	../heimdal/lib/roken/get_window_size.ho \
 	../heimdal/lib/roken/strupr.ho \
 	../heimdal/lib/roken/setprogname.ho \
+	../heimdal/lib/roken/inet_aton.ho \
 	../lib/socket_wrapper/socket_wrapper.ho \
 	replace.ho
 PRIVATE_DEPENDENCIES = HEIMDAL_COM_ERR_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H EXT_SOCKET EXT_NSL
