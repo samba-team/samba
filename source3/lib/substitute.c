@@ -597,10 +597,16 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			}
 			a_string = realloc_string_sub(a_string, "%D", r);
 			break;
-		case 'I' :
+		case 'I' : {
+			int offset = 0;
+			client_addr(get_client_fd(), addr, sizeof(addr));
+			if (strnequal(addr,"::ffff:",7)) {
+				offset = 7;
+			}
 			a_string = realloc_string_sub(a_string, "%I",
-					client_addr(get_client_fd(),addr, sizeof(addr)));
+						      addr + offset);
 			break;
+		}
 		case 'i': 
 			a_string = realloc_string_sub( a_string, "%i",
 					client_socket_addr(get_client_fd(), addr, sizeof(addr)) );
