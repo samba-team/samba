@@ -1464,7 +1464,7 @@ int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	
 	while ((sdn = ldb_dn_get_parent(local_ctx, sdn))) {
 		ret = ldb_search(ldb, sdn, LDB_SCOPE_BASE, 
-				 "(|(objectClass=domain)(objectClass=builtinDomain))", attrs, &res);
+				 "(|(|(objectClass=domain)(objectClass=builtinDomain))(objectClass=samba4LocalDomain))", attrs, &res);
 		if (ret == LDB_SUCCESS) {
 			talloc_steal(local_ctx, res);
 			if (res->count == 1) {

@@ -544,7 +544,7 @@ sub provision($$$$$$)
 
 
 	my $localbasedn = $basedn;
-	$localbasedn = "DC=$netbiosname" if $server_role eq "member server";
+	$localbasedn = "CN=$netbiosname" if $server_role eq "member server";
 
 	open(CONFFILE, ">$conffile");
 	print CONFFILE "

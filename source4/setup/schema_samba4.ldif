@@ -194,3 +194,41 @@ attributeID: 1.3.6.1.4.1.7165.4.1.11
 attributeSyntax: 2.5.5.4
 oMSyntax: 20
 
+#
+# Based on domainDNS, but without the DNS bits.
+#
+
+dn: CN=Samba4-Local-Domain,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+subClassOf: top
+governsID: 1.3.6.1.4.1.7165.4.2.2
+possibleInferiors: group
+possibleInferiors: lostAndFound
+possibleInferiors: builtinDomain
+possibleInferiors: computer
+possibleInferiors: user
+possibleInferiors: container
+possibleInferiors: groupPolicyContainer
+possibleInferiors: organization
+possibleInferiors: domainDNS
+possibleInferiors: locality
+possibleInferiors: msDS-AzAdminManager
+possibleInferiors: country
+possibleInferiors: organizationalUnit
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Samba4-Local-Domain
+adminDescription: Samba4-Local-Domain
+systemMayContain: msDS-Behavior-Version
+systemMayContain: managedBy
+objectClassCategory: 1
+lDAPDisplayName: samba4LocalDomain
+schemaIDGUID: 07be1647-8310-4fba-91ae-34e55d5a8293
+systemOnly: FALSE
+systemAuxiliaryClass: samDomainBase
+defaultSecurityDescriptor: D:(A;;RPLCLORC;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
+systemFlags: 16
+defaultHidingValue: TRUE
+defaultObjectCategory: CN=Builtin-Domain,${SCHEMADN}
+
