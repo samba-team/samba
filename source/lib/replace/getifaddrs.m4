@@ -38,6 +38,8 @@ fi
 #
 old_LIBS=$LIBS
 LIBS="$NSL_LIBS $SOCKET_LIBS"
+SAVE_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS -I$libreplacedir"
 iface=no;
 ##################
 # look for a method of finding the list of network interfaces
@@ -125,3 +127,5 @@ fi
 fi
 
 LIBS=$old_LIBS
+CPPFLAGS="$SAVE_CPPFLAGS"
+
