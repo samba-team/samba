@@ -387,7 +387,12 @@ static void pop_conn_ctx(void)
 
 void become_root(void)
 {
-	push_sec_ctx();
+	 /*
+	  * no good way to handle push_sec_ctx() failing without changing
+	  * the prototype of become_root()
+	  */
+	if (!push_sec_ctx())
+		return;
 	push_conn_ctx();
 	set_root_sec_ctx();
 }

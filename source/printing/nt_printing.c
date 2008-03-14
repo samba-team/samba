@@ -358,7 +358,7 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 
 	ZERO_STRUCT( ps );
 
-	prs_init( &ps, 0, ctx, UNMARSHALL );
+	prs_init_empty( &ps, ctx, UNMARSHALL );
 	prs_give_memory( &ps, (char *)data.dptr, data.dsize, False );
 
 	if ( !sec_io_desc_buf( "sec_desc_upg_fn", &sd_orig, &ps, 1 ) ) {
@@ -405,7 +405,10 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 
 	/* create a new SEC_DESC with the appropriate owner and group SIDs */
 
-	string_to_sid(&sid, "S-1-5-32-544" );
+	if (!string_to_sid(&sid, "S-1-5-32-544" )) {
+		prs_mem_free( &ps );
+		return 0;
+	}
 	new_sec = make_sec_desc( ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
 		&sid, &sid,
 		NULL, NULL, &size_new_sec );
@@ -431,7 +434,10 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 	
 	sd_size = ndr_size_security_descriptor(sd_store->sd, 0)
 		+ sizeof(SEC_DESC_BUF);
-	prs_init(&ps, sd_size, ctx, MARSHALL);
+	if ( !prs_init(&ps, sd_size, ctx, MARSHALL) ) {
+		DEBUG(0,("sec_desc_upg_fn: Failed to allocate prs memory for %s\n", key.dptr ));
+		return 0;
+	}
 
 	if ( !sec_io_desc_buf( "sec_desc_upg_fn", &sd_store, &ps, 1 ) ) {
 		DEBUG(0,("sec_desc_upg_fn: Failed to parse new sec_desc for %s\n", key.dptr ));
@@ -4551,7 +4557,7 @@ static bool convert_driver_init( TALLOC_CTX *ctx, NT_DEVICEMODE *nt_devmode, uin
 
 	ZERO_STRUCT(devmode);
 
-	prs_init(&ps, 0, ctx, UNMARSHALL);
+	prs_init_empty(&ps, ctx, UNMARSHALL);
 	ps.data_p      = (char *)data;
 	ps.buffer_size = data_len;
 
@@ -5396,9 +5402,13 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 
 	/* Store the security descriptor in a tdb */
 
-	prs_init(&ps,
-		 (uint32)ndr_size_security_descriptor(new_secdesc_ctr->sd, 0)
-		 + sizeof(SEC_DESC_BUF), mem_ctx, MARSHALL);
+	if (!prs_init(&ps,
+		(uint32)ndr_size_security_descriptor(new_secdesc_ctr->sd, 0)
+		+ sizeof(SEC_DESC_BUF), mem_ctx, MARSHALL) ) {
+		status = WERR_NOMEM;
+		goto out;
+	}
+
 
 	prs_init_done = true;
 
@@ -5546,8 +5556,9 @@ bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 
 		/* Save default security descriptor for later */
 
-		prs_init(&ps, (uint32)ndr_size_security_descriptor((*secdesc_ctr)->sd, 0) +
-				sizeof(SEC_DESC_BUF), ctx, MARSHALL);
+		if (!prs_init(&ps, (uint32)ndr_size_security_descriptor((*secdesc_ctr)->sd, 0) +
+			sizeof(SEC_DESC_BUF), ctx, MARSHALL))
+			return False;
 
 		if (sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
 			tdb_prs_store(tdb_printers, kbuf, &ps);

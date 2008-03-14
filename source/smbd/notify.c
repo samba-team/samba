@@ -169,7 +169,7 @@ void change_notify_reply(connection_struct *conn,
 		return;
 	}
 
-	prs_init(&ps, 0, NULL, MARSHALL);
+	prs_init_empty(&ps, NULL, MARSHALL);
 
 	if (!notify_marshall_changes(notify_buf->num_changes, max_param,
 					notify_buf->changes, &ps)) {

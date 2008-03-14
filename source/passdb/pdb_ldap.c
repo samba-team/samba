@@ -1726,10 +1726,16 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		ber_printf (ber, "{");
-		ber_printf (ber, "ts", LDAP_TAG_EXOP_MODIFY_PASSWD_ID, utf8_dn);
-	        ber_printf (ber, "ts", LDAP_TAG_EXOP_MODIFY_PASSWD_NEW, utf8_password);
-	        ber_printf (ber, "n}");
+		if ((ber_printf (ber, "{") < 0) ||
+		    (ber_printf (ber, "ts", LDAP_TAG_EXOP_MODIFY_PASSWD_ID, utf8_dn) < 0) ||
+		    (ber_printf (ber, "ts", LDAP_TAG_EXOP_MODIFY_PASSWD_NEW, utf8_password) < 0) ||
+		    (ber_printf (ber, "n}") < 0)) {
+			DEBUG(0,("ldapsam_modify_entry: ber_printf returns a value <0\n"));
+                       ber_free(ber,1);
+                       SAFE_FREE(utf8_dn);
+                       SAFE_FREE(utf8_password);
+                       return NT_STATUS_UNSUCCESSFUL;
+		}
 
 	        if ((rc = ber_flatten (ber, &bv))<0) {
 			DEBUG(0,("ldapsam_modify_entry: ber_flatten returns a value <0\n"));

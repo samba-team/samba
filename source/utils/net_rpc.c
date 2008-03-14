@@ -3048,7 +3048,7 @@ static NTSTATUS rpc_group_members_internals(const DOM_SID *domain_sid,
 
 		rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
 
-		string_to_sid(&sid_Builtin, "S-1-5-32");		
+		(void) string_to_sid(&sid_Builtin, "S-1-5-32");
 
 		result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
 						&connect_pol,
@@ -4501,7 +4501,10 @@ static bool get_user_sids(const char *domain, const char *user, NT_USER_TOKEN *t
 		return False;
 	}
 
-	string_to_sid(&user_sid, response.data.sid.sid);
+	if (!string_to_sid(&user_sid, response.data.sid.sid)) {
+		DEBUG(1, ("Could not convert string '%s' to SID\n", response.data.sid.sid));
+		return False;
+	}
 
 	init_user_token(token, &user_sid);
 

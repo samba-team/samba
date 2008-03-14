@@ -285,7 +285,8 @@ bool smb_io_strhdr(const char *desc,  STRHDR *hdr, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "smb_io_strhdr");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
 	if(!prs_uint16("str_str_len", ps, depth, &hdr->str_str_len))
 		return False;
@@ -1761,10 +1762,14 @@ bool smb_io_bufhdr2(const char *desc, BUFHDR2 *hdr, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "smb_io_bufhdr2");
 	depth++;
 
-	prs_align(ps);
-	prs_uint32("info_level", ps, depth, &(hdr->info_level));
-	prs_uint32("length    ", ps, depth, &(hdr->length    ));
-	prs_uint32("buffer    ", ps, depth, &(hdr->buffer    ));
+	if (!prs_align(ps))
+		return False;
+	if (!prs_uint32("info_level", ps, depth, &(hdr->info_level)))
+		return False;
+	if (!prs_uint32("length    ", ps, depth, &(hdr->length    )))
+		return False;
+	if (!prs_uint32("buffer    ", ps, depth, &(hdr->buffer    )))
+		return False;
 
 	return True;
 }
@@ -1777,9 +1782,12 @@ bool smb_io_bufhdr4(const char *desc, BUFHDR4 *hdr, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "smb_io_bufhdr4");
 	depth++;
 
-	prs_align(ps);
-	prs_uint32("size", ps, depth, &hdr->size);
-	prs_uint32("buffer", ps, depth, &hdr->buffer);
+	if (!prs_align(ps))
+		return False;
+	if (!prs_uint32("size", ps, depth, &hdr->size))
+		return False;
+	if (!prs_uint32("buffer", ps, depth, &hdr->buffer))
+		return False;
 
 	return True;
 }
@@ -1793,7 +1801,8 @@ bool smb_io_rpc_blob(const char *desc, RPC_DATA_BLOB *blob, prs_struct *ps, int 
 	prs_debug(ps, depth, desc, "smb_io_rpc_blob");
 	depth++;
 
-	prs_align(ps);
+	if (!prs_align(ps))
+		return False;
 	if ( !prs_uint32("buf_len", ps, depth, &blob->buf_len) )
 		return False;
 

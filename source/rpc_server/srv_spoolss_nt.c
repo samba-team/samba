@@ -6033,7 +6033,11 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 	/* NT seems to like setting the security descriptor even though
 	   nothing may have actually changed. */
 
-	nt_printing_getsec(p->mem_ctx, Printer->sharename, &old_secdesc_ctr);
+	if ( !nt_printing_getsec(p->mem_ctx, Printer->sharename, &old_secdesc_ctr)) {
+		DEBUG(2,("update_printer_sec: nt_printing_getsec() failed\n"));
+		result = WERR_BADFID;
+		goto done;
+	}
 
 	if (DEBUGLEVEL >= 10) {
 		SEC_ACL *the_acl;

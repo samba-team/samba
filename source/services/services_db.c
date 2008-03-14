@@ -592,7 +592,12 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, 
 	}
 
 	/* stream the printer security descriptor */
-	prs_init( &ps, RPC_MAX_PDU_FRAG_LEN, key, MARSHALL);
+
+	if (!prs_init( &ps, RPC_MAX_PDU_FRAG_LEN, key, MARSHALL)) {
+		DEBUG(0,("svcctl_set_secdesc: prs_init() failed!\n"));
+		TALLOC_FREE( key );
+		return False;
+	}
 
 	if ( sec_io_desc("sec_desc", &sec_desc, &ps, 0 ) ) {
 		uint32 offset = prs_offset( &ps );
