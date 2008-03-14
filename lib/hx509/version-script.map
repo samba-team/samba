@@ -145,6 +145,7 @@ HEIMDAL_X509_1.0 {
 		hx509_query_match_option;
 		hx509_query_statistic_file;
 		hx509_query_unparse_stats;
+		hx509_query_match_expr;
 		hx509_revoke_add_crl;
 		hx509_revoke_add_ocsp;
 		hx509_revoke_free;
