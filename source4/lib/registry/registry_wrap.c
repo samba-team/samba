@@ -2950,7 +2950,7 @@ SWIGINTERN PyObject *_wrap_Registry(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
   }
   result = reg_open_local(arg1,arg2,arg3,arg4);
   if (!W_ERROR_IS_OK(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, win_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V(result), win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3001,7 +3001,7 @@ SWIGINTERN PyObject *_wrap_reg_get_predefined_key_by_name(PyObject *SWIGUNUSEDPA
   arg3 = (struct registry_key **)(argp3);
   result = reg_get_predefined_key_by_name(arg1,(char const *)arg2,arg3);
   if (!W_ERROR_IS_OK(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, win_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V(result), win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3044,7 +3044,7 @@ SWIGINTERN PyObject *_wrap_reg_key_del_abs(PyObject *SWIGUNUSEDPARM(self), PyObj
   arg2 = (char *)(buf2);
   result = reg_key_del_abs(arg1,(char const *)arg2);
   if (!W_ERROR_IS_OK(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, win_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V(result), win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3095,7 +3095,7 @@ SWIGINTERN PyObject *_wrap_reg_get_predefined_key(PyObject *SWIGUNUSEDPARM(self)
   arg3 = (struct registry_key **)(argp3);
   result = reg_get_predefined_key(arg1,arg2,arg3);
   if (!W_ERROR_IS_OK(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, win_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V(result), win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3136,7 +3136,7 @@ SWIGINTERN PyObject *_wrap_reg_diff_apply(PyObject *SWIGUNUSEDPARM(self), PyObje
   arg2 = (char *)(buf2);
   result = reg_diff_apply(arg1,(char const *)arg2);
   if (!W_ERROR_IS_OK(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, win_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V(result), win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3194,7 +3194,7 @@ SWIGINTERN PyObject *_wrap_reg_generate_diff(PyObject *SWIGUNUSEDPARM(self), PyO
   }
   result = reg_generate_diff(arg1,arg2,(struct reg_diff_callbacks const *)arg3,arg4);
   if (!W_ERROR_IS_OK(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, win_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V(result), win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3260,7 +3260,7 @@ SWIGINTERN PyObject *_wrap_reg_mount_hive__SWIG_0(PyObject *SWIGUNUSEDPARM(self)
   }
   result = reg_mount_hive(arg1,arg2,arg3,(char const **)arg4);
   if (!W_ERROR_IS_OK(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, win_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V(result), win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3373,7 +3373,7 @@ SWIGINTERN PyObject *_wrap_reg_mount_hive__SWIG_1(PyObject *SWIGUNUSEDPARM(self)
   arg3 = (char *)(buf3);
   result = reg_mount_hive__SWIG_1(arg1,arg2,(char const *)arg3);
   if (!W_ERROR_IS_OK(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, win_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V(result), win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3524,7 +3524,7 @@ SWIGINTERN PyObject *_wrap_hive_key(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
   }
   result = reg_open_hive(arg1,(char const *)arg2,arg3,arg4,arg5,arg6);
   if (!W_ERROR_IS_OK(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, win_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V(result), win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3601,7 +3601,7 @@ SWIGINTERN PyObject *_wrap_open_ldb(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
   }
   result = reg_open_ldb_file(arg1,(char const *)arg2,arg3,arg4,arg5,arg6);
   if (!W_ERROR_IS_OK(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, win_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V(result), win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3642,7 +3642,7 @@ SWIGINTERN PyObject *_wrap_create_dir(PyObject *SWIGUNUSEDPARM(self), PyObject *
   arg2 = (char *)(buf2);
   result = reg_create_directory(arg1,(char const *)arg2,arg3);
   if (!W_ERROR_IS_OK(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, win_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V(result), win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3683,7 +3683,7 @@ SWIGINTERN PyObject *_wrap_open_dir(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
   arg2 = (char *)(buf2);
   result = reg_open_directory(arg1,(char const *)arg2,arg3);
   if (!W_ERROR_IS_OK(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, win_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V(result), win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3750,7 +3750,7 @@ SWIGINTERN PyObject *_wrap_open_samba(PyObject *SWIGUNUSEDPARM(self), PyObject *
   }
   result = reg_open_samba(arg1,arg2,arg3,arg4,arg5);
   if (!W_ERROR_IS_OK(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, win_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V(result), win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {

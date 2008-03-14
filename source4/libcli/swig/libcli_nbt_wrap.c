@@ -4065,7 +4065,7 @@ SWIGINTERN PyObject *_wrap_do_nbt_name_query(PyObject *SWIGUNUSEDPARM(self), PyO
   arg3 = (struct nbt_name_query *)(argp3);
   result = do_nbt_name_query(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
