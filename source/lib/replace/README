@@ -52,6 +52,7 @@ readline (the library)
 inet_ntoa
 inet_ntop
 inet_pton
+inet_aton
 strtoll
 strtoull
 socketpair
