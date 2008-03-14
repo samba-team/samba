@@ -1,3 +1,7 @@
+2008-03-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kx509.c: Adapt to hx509_env changes.
+	
 2008-03-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c: Try searchin the key by to use by first
