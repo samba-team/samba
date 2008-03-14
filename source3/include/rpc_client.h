@@ -36,6 +36,8 @@
 #include "librpc/gen_ndr/cli_dssetup.h"
 #include "librpc/gen_ndr/cli_ntsvcs.h"
 
+#define prs_init_empty( _ps_, _ctx_, _io_ ) (void) prs_init((_ps_), 0, (_ctx_), (_io_))
+
 /* macro to expand cookie-cutter code in cli_xxx() using rpc_api_pipe_req() */
 
 #define CLI_DO_RPC_INTERNAL( pcli, ctx, p_idx, opnum, q_in, r_out, \
@@ -45,10 +47,7 @@
 	if (!prs_init( &q_ps, RPC_MAX_PDU_FRAG_LEN, ctx, MARSHALL )) { \
 		return NT_STATUS_NO_MEMORY;\
 	}\
-	if (!prs_init( &r_ps, 0, ctx, UNMARSHALL )) {\
-		prs_mem_free( &q_ps );\
-		return NT_STATUS_NO_MEMORY;\
-	}\
+	prs_init_empty( &r_ps, ctx, UNMARSHALL );\
 	if ( copy_sess_key) prs_set_session_key(&q_ps, (const char *)pcli->dc->sess_key);\
 	if ( q_io_fn("", &q_in, &q_ps, 0) ) {\
 		NTSTATUS _smb_pipe_stat_ = rpc_api_pipe_req(pcli, opnum, &q_ps, &r_ps); \
@@ -96,10 +95,7 @@
 	if (!prs_init( &q_ps, RPC_MAX_PDU_FRAG_LEN, ctx, MARSHALL )) { \
 		return WERR_NOMEM;\
 	}\
-	if (!prs_init( &r_ps, 0, ctx, UNMARSHALL )) {\
-		prs_mem_free( &q_ps );\
-		return WERR_NOMEM;\
-	}\
+	prs_init_empty( &r_ps, ctx, UNMARSHALL );\
 	if ( q_io_fn("", &q_in, &q_ps, 0) ) {\
 		NTSTATUS _smb_pipe_stat_ = rpc_api_pipe_req(pcli, opnum, &q_ps, &r_ps); \
 		if (!NT_STATUS_IS_OK(_smb_pipe_stat_)) {\

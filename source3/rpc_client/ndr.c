@@ -58,10 +58,7 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 
 	talloc_free(push);
 
-	if (!prs_init( &r_ps, 0, mem_ctx, UNMARSHALL )) {
-		prs_mem_free( &q_ps );
-		return NT_STATUS_NO_MEMORY;
-	}
+	prs_init_empty( &r_ps, mem_ctx, UNMARSHALL );
 	
 	status = rpc_api_pipe_req(cli, opnum, &q_ps, &r_ps); 
 

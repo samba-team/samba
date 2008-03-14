@@ -239,7 +239,8 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
 	if(regkey->key->type == REG_KEY_HKPD) 
 	{
 		if(strequal(r->in.value_name.name, "Global"))	{
-			prs_init(&prs_hkpd, *r->in.data_size, p->mem_ctx, MARSHALL);
+			if (!prs_init(&prs_hkpd, *r->in.data_size, p->mem_ctx, MARSHALL))
+				return WERR_NOMEM;
 			status = reg_perfcount_get_hkpd(
 				&prs_hkpd, *r->in.data_size, &outbuf_size, NULL);
 			outbuf = (uint8_t *)prs_hkpd.data_p;
@@ -260,7 +261,8 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
 		else if(isdigit(r->in.value_name.name[0])) {
 			/* we probably have a request for a specific object
 			 * here */
-			prs_init(&prs_hkpd, *r->in.data_size, p->mem_ctx, MARSHALL);
+			if (!prs_init(&prs_hkpd, *r->in.data_size, p->mem_ctx, MARSHALL))
+				return WERR_NOMEM;
 			status = reg_perfcount_get_hkpd(
 				&prs_hkpd, *r->in.data_size, &outbuf_size,
 				r->in.value_name.name);

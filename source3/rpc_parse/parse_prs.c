@@ -1496,7 +1496,7 @@ int tdb_prs_fetch(TDB_CONTEXT *tdb, TDB_DATA kbuf, prs_struct *ps, TALLOC_CTX *m
 {
 	TDB_DATA dbuf;
 
-	prs_init(ps, 0, mem_ctx, UNMARSHALL);
+	prs_init_empty(ps, mem_ctx, UNMARSHALL);
 
 	dbuf = tdb_fetch(tdb, kbuf);
 	if (!dbuf.dptr)

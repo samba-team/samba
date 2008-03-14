@@ -683,7 +683,7 @@ static NTSTATUS cli_pipe_reset_current_pdu(struct rpc_pipe_client *cli, RPC_HDR 
 	/* Common case. */
 	if (current_pdu_len == (uint32)prhdr->frag_len) {
 		prs_mem_free(current_pdu);
-		prs_init(current_pdu, 0, prs_get_mem_context(current_pdu), UNMARSHALL);
+		prs_init_empty(current_pdu, prs_get_mem_context(current_pdu), UNMARSHALL);
 		/* Make current_pdu dynamic with no memory. */
 		prs_give_memory(current_pdu, 0, 0, True);
 		return NT_STATUS_OK;
@@ -757,7 +757,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 #endif
 
 	/* Set up the current pdu parse struct. */
-	prs_init(&current_pdu, 0, prs_get_mem_context(rbuf), UNMARSHALL);
+	prs_init_empty(&current_pdu, prs_get_mem_context(rbuf), UNMARSHALL);
 
 	/* Create setup parameters - must be in native byte order. */
 	setup[0] = TRANSACT_DCERPCCMD; 
@@ -1183,7 +1183,8 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 	NTSTATUS ret = NT_STATUS_OK;
 
 	ZERO_STRUCT(hdr_auth);
-	prs_init(&auth_info, RPC_HDR_AUTH_LEN, prs_get_mem_context(rpc_out), MARSHALL);
+	if (!prs_init(&auth_info, RPC_HDR_AUTH_LEN, prs_get_mem_context(rpc_out), MARSHALL))
+		return NT_STATUS_NO_MEMORY;
 
 	switch (auth_type) {
 		case PIPE_AUTH_TYPE_SCHANNEL:
@@ -1468,7 +1469,8 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	prs_init(&outgoing_pdu, cli->max_xmit_frag, prs_get_mem_context(in_data), MARSHALL);
+	if (!prs_init(&outgoing_pdu, cli->max_xmit_frag, prs_get_mem_context(in_data), MARSHALL))
+		return NT_STATUS_NO_MEMORY;
 
 	while (1) {
 		RPC_HDR hdr;
@@ -1811,7 +1813,7 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 		return nt_status;
 	}
 
-	prs_init(&rpc_out, 0, prs_get_mem_context(rbuf), MARSHALL);
+	prs_init_empty(&rpc_out, prs_get_mem_context(rbuf), MARSHALL);
 
 	nt_status = create_rpc_bind_auth3(cli, rpc_call_id,
 				auth_type, auth_level,
@@ -1865,7 +1867,8 @@ static NTSTATUS create_rpc_alter_context(uint32 rpc_call_id,
 	NTSTATUS ret = NT_STATUS_OK;
 
 	ZERO_STRUCT(hdr_auth);
-	prs_init(&auth_info, RPC_HDR_AUTH_LEN, prs_get_mem_context(rpc_out), MARSHALL);
+	if (!prs_init(&auth_info, RPC_HDR_AUTH_LEN, prs_get_mem_context(rpc_out), MARSHALL))
+		return NT_STATUS_NO_MEMORY;
 
 	/* We may change the pad length before marshalling. */
 	init_rpc_hdr_auth(&hdr_auth, RPC_SPNEGO_AUTH_TYPE, (int)auth_level, 0, 1);
@@ -1958,7 +1961,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 	tmp_blob = data_blob_null; /* Ensure it's safe to free this just in case. */
 
 	/* Now prepare the alter context pdu. */
-	prs_init(&rpc_out, 0, prs_get_mem_context(rbuf), MARSHALL);
+	prs_init_empty(&rpc_out, prs_get_mem_context(rbuf), MARSHALL);
 
 	nt_status = create_rpc_alter_context(rpc_call_id,
 						abstract,
@@ -1976,7 +1979,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 
 	/* Initialize the returning data struct. */
 	prs_mem_free(rbuf);
-	prs_init(rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init_empty(rbuf, cli->mem_ctx, UNMARSHALL);
 
 	nt_status = rpc_api_pipe(cli, &rpc_out, rbuf, RPC_ALTCONTRESP);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2049,7 +2052,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	prs_init(&rpc_out, 0, cli->mem_ctx, MARSHALL);
+	prs_init_empty(&rpc_out, cli->mem_ctx, MARSHALL);
 
 	rpc_call_id = get_rpc_call_id();
 
@@ -2065,7 +2068,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 	}
 
 	/* Initialize the incoming data struct. */
-	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init_empty(&rbuf, cli->mem_ctx, UNMARSHALL);
 
 	/* send data on \PIPE\.  receive a response */
 	status = rpc_api_pipe(cli, &rpc_out, &rbuf, RPC_BINDACK);

@@ -330,7 +330,12 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 			return 0;
 		}
 	
-		fstat(localhandle, &localstat);
+		if (fstat(localhandle, &localstat) != 0) {
+			fprintf(stderr, "Can't fstat %s: %s\n", newpath, strerror(errno));
+			smbc_close(remotehandle);
+			close(localhandle);
+			return 0;
+		}
 
 		start_offset = localstat.st_size;
 

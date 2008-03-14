@@ -40,7 +40,8 @@ main()
 	ctx=talloc_init("main");
 	if (!ctx) exit(1);
 
-	prs_init(&ps, 1600, 4, ctx, MARSHALL);
+	if (!prs_init(&ps, 1600, 4, ctx, MARSHALL))
+		exit(1);
 
 	while (scanf("%s", s)!=-1) {
 		if (strlen(s)==2 && strchr_m(filter, *s)!=NULL && strchr_m(filter, *(s+1))!=NULL) {

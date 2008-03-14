@@ -58,9 +58,15 @@ static int wins_lookup_open_socket_in(void)
 	if (res == -1)
 		return -1;
 
-	setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val));
+	if (setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val)) != 0) {
+		close(res);
+		return -1;
+	}
 #ifdef SO_REUSEPORT
-	setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val));
+	if (setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val)) != 0) {
+		close(res);
+		return -1;
+	}
 #endif /* SO_REUSEPORT */
 
 	/* now we've got a socket - we need to bind it */
