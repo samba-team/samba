@@ -46,6 +46,7 @@ port=@port@
 
 keytabfile=${objdir}/server.keytab
 keytab="FILE:${keytabfile}"
+nokeytab="FILE:no-such-keytab"
 cache="FILE:krb5ccfile"
 
 kinit="${TESTS_ENVIRONMENT} ../../kuser/kinit -c $cache --no-afslog"
@@ -189,6 +190,24 @@ for mech in krb5 ; do
 	    { exitcode=1 ; echo "test failed"; }
 
 done
+
+echo "test gsskrb5_register_acceptor_identity (both positive and negative)"
+
+cp ${keytabfile} ${keytabfile}.new
+for mech in krb5 spnego; do
+	echo "${mech}: acceptor_identity positive"
+	${context} --gsskrb5-acceptor-identity=${keytabfile}.new \
+		--mech-type=$mech host@lucid.test.h5l.se || \
+		{ exitcode=1 ; echo "test failed"; }
+
+	echo "${mech}: acceptor_identity negative"
+	${context} --gsskrb5-acceptor-identity=${keytabfile}.foo \
+		--mech-type=$mech host@lucid.test.h5l.se 2>/dev/null && \
+		{ exitcode=1 ; echo "test failed"; }
+done
+
+rm ${keytabfile}.new
+
 
 #echo "sasl-digest-md5"
 #${context}  --mech-type=sasl-digest-md5 \
