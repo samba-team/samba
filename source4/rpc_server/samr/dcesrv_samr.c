@@ -475,6 +475,14 @@ static NTSTATUS dcesrv_samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLO
 	}
 	d_state->access_mask = r->in.access_mask;
 
+	if (dom_sid_equal(d_state->domain_sid, dom_sid_parse_talloc(mem_ctx, SID_BUILTIN))) {
+		d_state->builtin = true;
+	} else {
+		d_state->builtin = false;
+	}
+
+	d_state->lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+
 	h_domain = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_DOMAIN);
 	if (!h_domain) {
 		talloc_free(d_state);
@@ -522,6 +530,10 @@ static NTSTATUS dcesrv_samr_info_DomInfo2(struct samr_domain_state *state,
 	   cn=NTDS Settings,cn=<NETBIOS name of PDC>,....
 	   string */
 	info->primary.string = samdb_result_fsmo_name(state->sam_ctx, mem_ctx, dom_msgs[0], "fSMORoleOwner");
+
+	if (!info->primary.string) {
+		info->primary.string = lp_netbios_name(state->lp_ctx);
+	}
 
 	info->force_logoff_time = ldb_msg_find_attr_as_uint64(dom_msgs[0], "forceLogoff", 
 							    0x8000000000000000LL);
@@ -616,6 +628,10 @@ static NTSTATUS dcesrv_samr_info_DomInfo6(struct samr_domain_state *state,
 	   string */
 	info->primary.string = samdb_result_fsmo_name(state->sam_ctx, mem_ctx, 
 						      dom_msgs[0], "fSMORoleOwner");
+
+	if (!info->primary.string) {
+		info->primary.string = lp_netbios_name(state->lp_ctx);
+	}
 
 	return NT_STATUS_OK;
 }
@@ -1007,6 +1023,11 @@ static NTSTATUS dcesrv_samr_CreateDomainGroup(struct dcesrv_call_state *dce_call
 
 	d_state = h->data;
 
+	if (d_state->builtin) {
+		DEBUG(5, ("Cannot create a domain group in the BUILTIN domain"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	groupname = r->in.name->string;
 
 	if (groupname == NULL) {
@@ -1133,9 +1154,6 @@ static NTSTATUS dcesrv_samr_EnumDomainGroups(struct dcesrv_call_state *dce_call,
 	if (ldb_cnt == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	if (ldb_cnt == 0 || r->in.max_size == 0) {
-		return NT_STATUS_OK;
-	}
 
 	/* convert to SamEntry format */
 	entries = talloc_array(mem_ctx, struct samr_SamEntry, ldb_cnt);
@@ -1168,10 +1186,6 @@ static NTSTATUS dcesrv_samr_EnumDomainGroups(struct dcesrv_call_state *dce_call,
 	for (first=0;
 	     first<count && entries[first].idx <= *r->in.resume_handle;
 	     first++) ;
-
-	if (first == count) {
-		return NT_STATUS_OK;
-	}
 
 	/* return the rest, limit by max_size. Note that we 
 	   use the w2k3 element size value of 54 */
@@ -1237,6 +1251,10 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 
 	d_state = h->data;
 
+	if (d_state->builtin) {
+		DEBUG(5, ("Cannot create a user in the BUILTIN domain"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
 	account_name = r->in.account_name->string;
 
 	if (account_name == NULL) {
@@ -1321,15 +1339,16 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 	/* create the user */
 	ret = ldb_add(d_state->sam_ctx, msg);
 	switch (ret) {
-	case  LDB_SUCCESS:
+	case LDB_SUCCESS:
 		break;
-	case  LDB_ERR_ENTRY_ALREADY_EXISTS:
+	case LDB_ERR_ENTRY_ALREADY_EXISTS:
 		ldb_transaction_cancel(d_state->sam_ctx);
 		DEBUG(0,("Failed to create user record %s: %s\n",
 			 ldb_dn_get_linearized(msg->dn),
 			 ldb_errstring(d_state->sam_ctx)));
 		return NT_STATUS_USER_EXISTS;
-	case  LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
+	case LDB_ERR_UNWILLING_TO_PERFORM:
+	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
 		ldb_transaction_cancel(d_state->sam_ctx);
 		DEBUG(0,("Failed to create user record %s: %s\n",
 			 ldb_dn_get_linearized(msg->dn),
@@ -1469,8 +1488,8 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 {
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
-	struct ldb_message **res;
-	int count, num_filtered_entries, i, first;
+	struct ldb_result *res;
+	int ret, num_filtered_entries, i, first;
 	struct samr_SamEntry *entries;
 	const char * const attrs[] = { "objectSid", "sAMAccountName", "userAccountControl", NULL };
 
@@ -1482,32 +1501,30 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 
 	d_state = h->data;
 	
-	/* search for all users in this domain. This could possibly be cached and 
-	   resumed based on resume_key */
-	count = gendb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn, &res, attrs, 
-			     "objectclass=user");
-	if (count == -1) {
+	/* don't have to worry about users in the builtin domain, as there are none */
+	ret = ldb_search_exp_fmt(d_state->sam_ctx, mem_ctx, &res, d_state->domain_dn, LDB_SCOPE_SUBTREE, attrs, "objectClass=user");
+
+	if (ret != LDB_SUCCESS) {
+		DEBUG(3, ("Failed to search for Domain Users in %s: %s\n", 
+			  ldb_dn_get_linearized(d_state->domain_dn), ldb_errstring(d_state->sam_ctx)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-	if (count == 0 || r->in.max_size == 0) {
-		return NT_STATUS_OK;
 	}
 
 	/* convert to SamEntry format */
-	entries = talloc_array(mem_ctx, struct samr_SamEntry, count);
+	entries = talloc_array(mem_ctx, struct samr_SamEntry, res->count);
 	if (!entries) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	num_filtered_entries = 0;
-	for (i=0;i<count;i++) {
+	for (i=0;i<res->count;i++) {
 		/* Check if a mask has been requested */
 		if (r->in.acct_flags
-		    && ((samdb_result_acct_flags(d_state->sam_ctx, mem_ctx, res[i], 
+		    && ((samdb_result_acct_flags(d_state->sam_ctx, mem_ctx, res->msgs[i], 
 						 d_state->domain_dn) & r->in.acct_flags) == 0)) {
 			continue;
 		}
-		entries[num_filtered_entries].idx = samdb_result_rid_from_sid(mem_ctx, res[i], "objectSid", 0);
-		entries[num_filtered_entries].name.string = samdb_result_string(res[i], "sAMAccountName", "");
+		entries[num_filtered_entries].idx = samdb_result_rid_from_sid(mem_ctx, res->msgs[i], "objectSid", 0);
+		entries[num_filtered_entries].name.string = samdb_result_string(res->msgs[i], "sAMAccountName", "");
 		num_filtered_entries++;
 	}
 
@@ -1568,6 +1585,11 @@ static NTSTATUS dcesrv_samr_CreateDomAlias(struct dcesrv_call_state *dce_call, T
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
 
 	d_state = h->data;
+
+	if (d_state->builtin) {
+		DEBUG(5, ("Cannot create a domain alias in the BUILTIN domain"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	alias_name = r->in.alias_name->string;
 
