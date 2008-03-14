@@ -65,6 +65,7 @@ Bugfixes, documentation, encouragement, and code has been contributed by:
 @item Phil Fisher
 @item Rafal Malinowski
 @item Richard Nyberg
+@item Zeqing Xia
 @item Åke Sandgren 
 @item and we hope that those not mentioned here will forgive us.
 @end table
