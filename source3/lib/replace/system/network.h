@@ -103,6 +103,11 @@ int rep_inet_pton(int af, const char *src, void *dst);
 const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #endif
 
+#ifndef HAVE_INET_ATON
+/* define is in "replace.h" */
+int rep_inet_aton(const char *src, struct in_addr *dst);
+#endif
+
 #ifndef HAVE_CONNECT
 /* define is in "replace.h" */
 int rep_connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);

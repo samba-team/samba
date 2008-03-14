@@ -340,6 +340,11 @@ ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
 /* prototype is in "system/network.h" */
 #endif
 
+#ifndef HAVE_INET_ATON
+#define inet_aton rep_inet_aton
+/* prototype is in "system/network.h" */
+#endif
+
 #ifndef HAVE_CONNECT
 #define connect rep_connect
 /* prototype is in "system/network.h" */
