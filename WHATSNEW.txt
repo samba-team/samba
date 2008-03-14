@@ -305,6 +305,7 @@ o   Volker Lendecke <vl@samba.org>
     * Add implicit temporary talloc contexts via talloc_stack().
     * Speed up the smbclient "get" command
     * Add the aio_fork module
+    * Fix bug 4901
 
 o   Derrell Lipman <derrell@samba.org>
     * Modified libsmbclient API for more easily maintaining ABI compatibility
