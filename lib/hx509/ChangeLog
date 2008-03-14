@@ -1,3 +1,11 @@
+2008-03-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rename to be more consistent, export for teting
+
+	* Add language to support querying certificates to find a
+	match. Support constructs like "1.3.6.1.5.2.3.5" IN
+	%{certificate.eku} AND %{certificate.subject} TAILMATCH "C=SE".
+
 2008-02-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* version-script.map: add hx509_pem_read
