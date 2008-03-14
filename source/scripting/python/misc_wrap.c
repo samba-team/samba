@@ -3027,7 +3027,7 @@ SWIGINTERN PyObject *_wrap_dsdb_attach_schema_from_ldif_file(PyObject *SWIGUNUSE
     "ldb context must be non-NULL");
   result = dsdb_attach_schema_from_ldif_file(arg1,(char const *)arg2,(char const *)arg3);
   if (!W_ERROR_IS_OK(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, win_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V(result), win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {

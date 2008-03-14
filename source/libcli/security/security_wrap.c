@@ -3116,7 +3116,7 @@ SWIGINTERN PyObject *_wrap_security_descriptor_sacl_add(PyObject *SWIGUNUSEDPARM
   arg2 = (struct security_ace *)(argp2);
   result = security_descriptor_sacl_add(arg1,(struct security_ace const *)arg2);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3156,7 +3156,7 @@ SWIGINTERN PyObject *_wrap_security_descriptor_dacl_add(PyObject *SWIGUNUSEDPARM
   arg2 = (struct security_ace *)(argp2);
   result = security_descriptor_dacl_add(arg1,(struct security_ace const *)arg2);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3196,7 +3196,7 @@ SWIGINTERN PyObject *_wrap_security_descriptor_dacl_del(PyObject *SWIGUNUSEDPARM
   arg2 = (struct dom_sid *)(argp2);
   result = security_descriptor_dacl_del(arg1,(struct dom_sid const *)arg2);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3236,7 +3236,7 @@ SWIGINTERN PyObject *_wrap_security_descriptor_sacl_del(PyObject *SWIGUNUSEDPARM
   arg2 = (struct dom_sid *)(argp2);
   result = security_descriptor_sacl_del(arg1,(struct dom_sid const *)arg2);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
