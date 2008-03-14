@@ -255,7 +255,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 		DEBUG(0,("domain_client_validate: unable to validate password "
                          "for user %s in domain %s to Domain controller %s. "
                          "Error was %s.\n", user_info->smb_name,
-                         user_info->domain, dc_name, 
+                         user_info->client_domain, dc_name, 
                          nt_errstr(nt_status)));
 
 		/* map to something more useful */
