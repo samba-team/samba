@@ -81,7 +81,6 @@ AC_TRY_RUN([
            libreplace_cv_HAVE_IFACE_AIX=yes,libreplace_cv_HAVE_IFACE_AIX=no,libreplace_cv_HAVE_IFACE_AIX=cross)])
 if test x"$libreplace_cv_HAVE_IFACE_AIX" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_AIX,1,[Whether iface AIX is available])
-	old_LIBS="$old_LIBS $LIBS"
 fi
 fi
 
@@ -102,7 +101,6 @@ AC_TRY_RUN([
            libreplace_cv_HAVE_IFACE_IFCONF=yes,libreplace_cv_HAVE_IFACE_IFCONF=no,libreplace_cv_HAVE_IFACE_IFCONF=cross)])
 if test x"$libreplace_cv_HAVE_IFACE_IFCONF" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_IFCONF,1,[Whether iface ifconf is available])
-	old_LIBS="$old_LIBS $LIBS"
 fi
 fi
 
@@ -122,7 +120,6 @@ AC_TRY_RUN([
            libreplace_cv_HAVE_IFACE_IFREQ=yes,libreplace_cv_HAVE_IFACE_IFREQ=no,libreplace_cv_HAVE_IFACE_IFREQ=cross)])
 if test x"$libreplace_cv_HAVE_IFACE_IFREQ" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_IFREQ,1,[Whether iface ifreq is available])
-	old_LIBS="$old_LIBS $LIBS"
 fi
 fi
 
