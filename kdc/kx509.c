@@ -157,12 +157,8 @@ build_certificate(krb5_context context,
     ret = hx509_context_init(&hxctx);
     if (ret)
 	goto out;
-
-    ret = hx509_env_init(hxctx, &env);
-    if (ret)
-	goto out;
-
-    ret = hx509_env_add(hxctx, env, "principal-name", 
+    
+    ret = hx509_env_add(hxctx, &env, "principal-name", 
 			krb5_principal_get_comp_string(context, principal, 0));
     if (ret)
 	goto out;
