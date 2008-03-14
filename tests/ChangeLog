@@ -1,3 +1,7 @@
+2008-03-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gss/check-context.in: Test gsskrb5_register_acceptor_identity.
+	
 2008-02-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ldap/check-ldap.in: check tgs req too
