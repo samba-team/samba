@@ -222,6 +222,9 @@ HEIMDAL_X509_1.0 {
 		_hx509_cert_assign_key;
 		_hx509_cert_private_key;
 		_hx509_name_from_Name;
+		_hx509_expr_free;
+		_hx509_expr_eval;
+		_hx509_expr_parse;
 		# pkcs11 symbols
 		C_GetFunctionList;
 	local:

@@ -2920,7 +2920,7 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
 	if (ret)
 	    return 0;
 
-	ret = _hx509_eval_expr(context, env, q->expr);
+	ret = _hx509_expr_eval(context, env, q->expr);
 	hx509_env_free(&env);
 	if (ret == 0)
 	    return 0;

@@ -156,7 +156,7 @@ eval_comp(hx509_context context, hx509_env env, struct hx_expr *expr)
 }
 
 int
-_hx509_eval_expr(hx509_context context, hx509_env env, struct hx_expr *expr)
+_hx509_expr_eval(hx509_context context, hx509_env env, struct hx_expr *expr)
 {
     switch (expr->op) {
     case op_TRUE:
@@ -164,13 +164,13 @@ _hx509_eval_expr(hx509_context context, hx509_env env, struct hx_expr *expr)
     case op_FALSE:
 	return 0;
     case op_NOT:
-	return ! _hx509_eval_expr(context, env, expr->arg1);
+	return ! _hx509_expr_eval(context, env, expr->arg1);
     case op_AND:
-	return _hx509_eval_expr(context, env, expr->arg1) && 
-	    _hx509_eval_expr(context, env, expr->arg2);
+	return _hx509_expr_eval(context, env, expr->arg1) && 
+	    _hx509_expr_eval(context, env, expr->arg2);
     case op_OR:
-	return _hx509_eval_expr(context, env, expr->arg1) ||
-	    _hx509_eval_expr(context, env, expr->arg2);
+	return _hx509_expr_eval(context, env, expr->arg1) ||
+	    _hx509_expr_eval(context, env, expr->arg2);
     case op_COMP:
 	return eval_comp(context, env, expr->arg1);
     default:
