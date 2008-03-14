@@ -48,7 +48,7 @@ static int socketpair_tcp(int fd[2])
 #endif
         sock2.sin_family = PF_INET;
 
-        bind(listener, (struct sockaddr *)&sock2, sizeof(sock2));
+        if (bind(listener, (struct sockaddr *)&sock2, sizeof(sock2)) != 0) goto failed;
 
 	if (listen(listener, 1) != 0) goto failed;
 

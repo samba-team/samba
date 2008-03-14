@@ -34,8 +34,10 @@ void rpcbuf_init(RPC_BUFFER *buffer, uint32 size, TALLOC_CTX *ctx)
 {
 	buffer->size = size;
 	buffer->string_at_end = size;
-	prs_init(&buffer->prs, size, ctx, MARSHALL);
-	buffer->struct_start = prs_offset(&buffer->prs);
+	if (prs_init(&buffer->prs, size, ctx, MARSHALL))
+		buffer->struct_start = prs_offset(&buffer->prs);
+	else
+		buffer->struct_start = NULL;
 }
 
 /*******************************************************************

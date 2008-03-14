@@ -1251,8 +1251,10 @@ static bool build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 
 	/* set remaining fields */
 		
-	pdb_set_nt_passwd (sam_pass, pw_buf->smb_nt_passwd, PDB_SET);
-	pdb_set_lanman_passwd (sam_pass, pw_buf->smb_passwd, PDB_SET);			
+	if (!pdb_set_nt_passwd (sam_pass, pw_buf->smb_nt_passwd, PDB_SET))
+		return False;
+	if (!pdb_set_lanman_passwd (sam_pass, pw_buf->smb_passwd, PDB_SET))
+		return False;
 	pdb_set_acct_ctrl (sam_pass, pw_buf->acct_ctrl, PDB_SET);
 	pdb_set_pass_last_set_time (sam_pass, pw_buf->pass_last_set_time, PDB_SET);
 	pdb_set_pass_can_change_time (sam_pass, pw_buf->pass_last_set_time, PDB_SET);

@@ -606,9 +606,11 @@ bool kerberos_secrets_store_salting_principal(const char *service,
 	krb5_principal princ = NULL;
 	char *princ_s = NULL;
 	char *unparsed_name = NULL;
+	krb5_error_code code;
 
-	krb5_init_context(&context);
-	if (!context) {
+	if (((code = krb5_init_context(&context)) != 0) || (context == NULL)) {
+		DEBUG(5, ("kerberos_secrets_store_salting_pricipal: kdb5_init_context failed: %s\n",
+			  error_message(code)));
 		return False;
 	}
 	if (strchr_m(service, '@')) {

@@ -438,10 +438,21 @@ static ADS_STATUS do_krb5_kpasswd_request(krb5_context context,
 			return ADS_ERROR_SYSTEM(rc);
 		}
 		addr_len = sizeof(remote_addr);
-		getpeername(sock, (struct sockaddr *)&remote_addr, &addr_len);
+		if (getpeername(sock, (struct sockaddr *)&remote_addr, &addr_len) != 0) {
+			close(sock);
+			SAFE_FREE(ap_req.data);
+			krb5_auth_con_free(context, auth_context);
+			DEBUG(1,("getpeername() failed (%s)\n", error_message(errno)));
+			return ADS_ERROR_SYSTEM(errno);
+		}
 		addr_len = sizeof(local_addr);
-		getsockname(sock, (struct sockaddr *)&local_addr, &addr_len);
-
+		if (getsockname(sock, (struct sockaddr *)&local_addr, &addr_len) != 0) {
+			close(sock);
+			SAFE_FREE(ap_req.data);
+			krb5_auth_con_free(context, auth_context);
+			DEBUG(1,("getsockname() failed (%s)\n", error_message(errno)));
+			return ADS_ERROR_SYSTEM(errno);
+		}
 		if (!setup_kaddr(&remote_kaddr, &remote_addr) ||
 				!setup_kaddr(&local_kaddr, &local_addr)) {
 			DEBUG(1,("do_krb5_kpasswd_request: "

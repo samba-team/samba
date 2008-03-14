@@ -588,7 +588,10 @@ static char **ads_push_strvals(TALLOC_CTX *ctx, const char **in_vals)
 	if (!values) return NULL;
 
 	for (i=0; in_vals[i]; i++) {
-		push_utf8_talloc(ctx, &values[i], in_vals[i]);
+		if (push_utf8_talloc(ctx, &values[i], in_vals[i]) == (size_t) -1) {
+			TALLOC_FREE(values);
+			return NULL;
+		}
 	}
 	return values;
 }

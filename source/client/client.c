@@ -4894,7 +4894,10 @@ static int do_message_op(void)
 	}
 
 	smb_encrypt = get_cmdline_auth_info_smb_encrypt();
-	init_names();
+	if (!init_names()) {
+		fprintf(stderr, "init_names() failed\n");
+		exit(1);
+	}
 
 	if(new_name_resolve_order)
 		lp_set_name_resolve_order(new_name_resolve_order);

@@ -348,7 +348,7 @@ static void *make_internal_rpc_pipe_p(const char *pipe_name,
 	/*
 	 * Initialize the outgoing RPC data buffer with no memory.
 	 */	
-	prs_init(&p->out_data.rdata, 0, p->mem_ctx, MARSHALL);
+	prs_init_empty(&p->out_data.rdata, p->mem_ctx, MARSHALL);
 	
 	fstrcpy(p->name, pipe_name);
 	
@@ -408,7 +408,7 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 		return -1;
 	}
 
-	prs_init( &rpc_in, 0, p->mem_ctx, UNMARSHALL);
+	prs_init_empty( &rpc_in, p->mem_ctx, UNMARSHALL);
 	prs_set_endian_data( &rpc_in, p->endian);
 
 	prs_give_memory( &rpc_in, (char *)&p->in_data.current_in_pdu[0],
@@ -693,7 +693,7 @@ static void process_complete_pdu(pipes_struct *p)
 		return;
 	}
 
-	prs_init( &rpc_in, 0, p->mem_ctx, UNMARSHALL);
+	prs_init_empty( &rpc_in, p->mem_ctx, UNMARSHALL);
 
 	/*
 	 * Ensure we're using the corrent endianness for both the 
