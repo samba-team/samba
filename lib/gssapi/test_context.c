@@ -47,6 +47,7 @@ static int dce_style_flag = 0;
 static int wrapunwrap_flag = 0;
 static int getverifymic_flag = 0;
 static int deleg_flag = 0;
+static char *gsskrb5_acceptor_identity;
 static int version_flag = 0;
 static int verbose_flag = 0;
 static int help_flag	= 0;
@@ -254,6 +255,7 @@ static struct getargs args[] = {
     {"getverifymic",0,	arg_flag,	&getverifymic_flag, 
      "get and verify mic", NULL },
     {"delegate",0,	arg_flag,	&deleg_flag, "delegate credential", NULL },
+    {"gsskrb5-acceptor-identity", 0, arg_string, &gsskrb5_acceptor_identity, "keytab", NULL },
     {"version",	0,	arg_flag,	&version_flag, "print version", NULL },
     {"verbose",	'v',	arg_flag,	&verbose_flag, "verbose", NULL },
     {"help",	0,	arg_flag,	&help_flag,  NULL, NULL }
@@ -314,6 +316,9 @@ main(int argc, char **argv)
 	mechoid = GSS_KRB5_MECHANISM;
     else 
 	mechoid = string_to_oid(mech_string);
+
+    if (gsskrb5_acceptor_identity)
+	gsskrb5_register_acceptor_identity(gsskrb5_acceptor_identity);
 
     loop(mechoid, nameoid, argv[0], GSS_C_NO_CREDENTIAL,
 	 &sctx, &cctx, &actual_mech, &deleg_cred);
