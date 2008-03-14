@@ -2332,9 +2332,15 @@ static bool test_CreateAlias(struct dcerpc_pipe *p, struct torture_context *tctx
 
 	status = dcerpc_samr_CreateDomAlias(p, tctx, &r);
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		printf("Server refused create of '%s'\n", r.in.alias_name->string);
-		return true;
+	if (dom_sid_equal(domain_sid, dom_sid_parse_talloc(tctx, SID_BUILTIN))) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			printf("Server correctly refused create of '%s'\n", r.in.alias_name->string);
+			return true;
+		} else {
+			printf("Server should have refused create of '%s', got %s instead\n", r.in.alias_name->string, 
+			       nt_errstr(status));
+			return false;
+		}
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ALIAS_EXISTS)) {
@@ -2515,7 +2521,8 @@ static bool test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 static bool test_CreateUser(struct dcerpc_pipe *p, struct torture_context *tctx,
 			    struct policy_handle *domain_handle, 
-			    struct policy_handle *user_handle_out, 
+			    struct policy_handle *user_handle_out,
+			    struct dom_sid *domain_sid, 
 			    enum torture_samr_choice which_ops)
 {
 
@@ -2546,10 +2553,15 @@ static bool test_CreateUser(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	status = dcerpc_samr_CreateUser(p, user_ctx, &r);
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		printf("Server refused create of '%s': %s\n", r.in.account_name->string, nt_errstr(status));
-		talloc_free(user_ctx);
-		return true;
+	if (dom_sid_equal(domain_sid, dom_sid_parse_talloc(tctx, SID_BUILTIN))) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			printf("Server correctly refused create of '%s'\n", r.in.account_name->string);
+			return true;
+		} else {
+			printf("Server should have refused create of '%s', got %s instead\n", r.in.account_name->string, 
+			       nt_errstr(status));
+			return false;
+		}
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
@@ -2610,7 +2622,9 @@ static bool test_CreateUser(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 
 static bool test_CreateUser2(struct dcerpc_pipe *p, struct torture_context *tctx,
-			     struct policy_handle *domain_handle, enum torture_samr_choice which_ops)
+			     struct policy_handle *domain_handle,
+			     struct dom_sid *domain_sid,
+			     enum torture_samr_choice which_ops)
 {
 	NTSTATUS status;
 	struct samr_CreateUser2 r;
@@ -2663,12 +2677,19 @@ static bool test_CreateUser2(struct dcerpc_pipe *p, struct torture_context *tctx
 		
 		status = dcerpc_samr_CreateUser2(p, user_ctx, &r);
 		
-		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-			talloc_free(user_ctx);
-			printf("Server refused create of '%s'\n", r.in.account_name->string);
-			continue;
+		if (dom_sid_equal(domain_sid, dom_sid_parse_talloc(tctx, SID_BUILTIN))) {
+			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+				printf("Server correctly refused create of '%s'\n", r.in.account_name->string);
+				continue;
+			} else {
+				printf("Server should have refused create of '%s', got %s instead\n", r.in.account_name->string, 
+				       nt_errstr(status));
+				ret = false;
+				continue;
+			}
+		}
 
-		} else if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 			if (!test_DeleteUser_byname(p, user_ctx, domain_handle, r.in.account_name->string)) {
 				talloc_free(user_ctx);
 				ret = false;
@@ -3893,6 +3914,7 @@ static bool test_GroupList(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 	
 	if (!q1.out.sam) {
+		printf("EnumDomainGroups failed to return q1.out.sam\n");
 		return false;
 	}
 
@@ -4138,7 +4160,9 @@ static bool test_AddGroupMember(struct dcerpc_pipe *p, struct torture_context *t
 
 
 static bool test_CreateDomainGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-				   struct policy_handle *domain_handle, struct policy_handle *group_handle)
+				   struct policy_handle *domain_handle, 
+				   struct policy_handle *group_handle,
+				   struct dom_sid *domain_sid)
 {
 	NTSTATUS status;
 	struct samr_CreateDomainGroup r;
@@ -4158,15 +4182,19 @@ static bool test_CreateDomainGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_samr_CreateDomainGroup(p, mem_ctx, &r);
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		printf("Server refused create of '%s'\n", r.in.name->string);
-		ZERO_STRUCTP(group_handle);
-		return true;
+	if (dom_sid_equal(domain_sid, dom_sid_parse_talloc(mem_ctx, SID_BUILTIN))) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			printf("Server correctly refused create of '%s'\n", r.in.name->string);
+			return true;
+		} else {
+			printf("Server should have refused create of '%s', got %s instead\n", r.in.name->string, 
+			       nt_errstr(status));
+			return false;
+		}
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_GROUP_EXISTS)) {
 		if (!test_DeleteGroup_byname(p, mem_ctx, domain_handle, r.in.name->string)) {
-			
 			printf("CreateDomainGroup failed: Could not delete domain group %s - %s\n", r.in.name->string, 
 			       nt_errstr(status));
 			return false;
@@ -4244,7 +4272,7 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 	ZERO_STRUCT(group_handle);
 	ZERO_STRUCT(domain_handle);
 
-	printf("Testing OpenDomain\n");
+	printf("Testing OpenDomain of %s\n", dom_sid_string(tctx, sid));
 
 	r.in.connect_handle = handle;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -4264,17 +4292,23 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 	switch (which_ops) {
 	case TORTURE_SAMR_USER_ATTRIBUTES:
 	case TORTURE_SAMR_PASSWORDS:
-		ret &= test_CreateUser2(p, tctx, &domain_handle, which_ops);
-		ret &= test_CreateUser(p, tctx, &domain_handle, &user_handle, which_ops);
+		ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops);
+		ret &= test_CreateUser(p, tctx, &domain_handle, &user_handle, sid, which_ops);
 		/* This test needs 'complex' users to validate */
 		ret &= test_QueryDisplayInfo(p, tctx, &domain_handle);
+		if (!ret) {
+			printf("Testing PASSWORDS or ATTRIBUTES on domain %s failed!\n", dom_sid_string(tctx, sid));
+		}
 		break;
 	case TORTURE_SAMR_OTHER:
-		ret &= test_CreateUser(p, tctx, &domain_handle, &user_handle, which_ops);
+		ret &= test_CreateUser(p, tctx, &domain_handle, &user_handle, sid, which_ops);
+		if (!ret) {
+			printf("Failed to CreateUser in SAMR-OTHER on domain %s!\n", dom_sid_string(tctx, sid));
+		}
 		ret &= test_QuerySecurity(p, tctx, &domain_handle);
 		ret &= test_RemoveMemberFromForeignDomain(p, tctx, &domain_handle);
 		ret &= test_CreateAlias(p, tctx, &domain_handle, &alias_handle, sid);
-		ret &= test_CreateDomainGroup(p, tctx, &domain_handle, &group_handle);
+		ret &= test_CreateDomainGroup(p, tctx, &domain_handle, &group_handle, sid);
 		ret &= test_QueryDomainInfo(p, tctx, &domain_handle);
 		ret &= test_QueryDomainInfo2(p, tctx, &domain_handle);
 		ret &= test_EnumDomainUsers(p, tctx, &domain_handle);
@@ -4295,6 +4329,9 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 		ret &= test_TestPrivateFunctionsDomain(p, tctx, &domain_handle);
 		ret &= test_RidToSid(p, tctx, sid, &domain_handle);
 		ret &= test_GetBootKeyInformation(p, tctx, &domain_handle);
+		if (!ret) {
+			printf("Testing SAMR-OTHER on domain %s failed!\n", dom_sid_string(tctx, sid));
+		}
 		break;
 	}
 
