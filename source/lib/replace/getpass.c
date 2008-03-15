@@ -187,6 +187,9 @@ char *rep_getpass(const char *prompt)
 		in_fd = fileno(in);
 		if (fgets(buf, bufsize, in) == NULL) {
 			buf[0] = 0;
+			if (in && in != stdin) {
+				fclose(in);
+			}
 			return buf;
 		}
 	}
