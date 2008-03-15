@@ -1369,6 +1369,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
+	f->handle->have_opendb_entry = true;
+
 	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
 		oplock_granted = OPLOCK_BATCH;
 	} else if (oplock_granted != OPLOCK_NONE) {
@@ -1378,8 +1380,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 			return status;
 		}
 	}
-
-	f->handle->have_opendb_entry = true;
 
 	stream_existed = name->stream_exists;
 
