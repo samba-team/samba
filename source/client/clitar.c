@@ -668,16 +668,6 @@ static void do_atar(const char *rname_in,char *lname,file_info *finfo1)
 	}
 
 	safe_strcpy(finfo.name,rname, strlen(rname));
-	if (!finfo1) {
-		time_t atime, mtime;
-		if (!cli_getattrE(cli, fnum, &finfo.mode, &finfo.size, NULL, &atime, &mtime)) {
-			DEBUG(0, ("getattrE: %s\n", cli_errstr(cli)));
-			goto cleanup;
-		}
-		finfo.atime_ts = convert_time_t_to_timespec(atime);
-		finfo.mtime_ts = convert_time_t_to_timespec(mtime);
-		finfo.ctime_ts = finfo.mtime_ts;
-	}
 
 	DEBUG(3,("file %s attrib 0x%X\n",finfo.name,finfo.mode));
 
