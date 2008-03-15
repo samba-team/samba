@@ -1051,6 +1051,7 @@ NTSTATUS resolve_wins(const char *name,
 		DEBUG(3,("resolve_wins: cannot receive WINS replies "
 			"on IPv6 address %s\n",
 			addr));
+		wins_srv_tags_free(wins_tags);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
