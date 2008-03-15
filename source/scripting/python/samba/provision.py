@@ -1173,27 +1173,10 @@ def provision_backend(setup_dir=None, message=None,
         mapping = "schema-map-fedora-ds-1.0"
         backend_schema = "99_ad.ldif"
     elif ldap_backend_type == "openldap":
-        setup_file(setup_path("slapd.conf"), paths.slapdconf,
-                   {"DNSDOMAIN": names.dnsdomain,
-                    "LDAPDIR": paths.ldapdir,
-                    "DOMAINDN": names.domaindn,
-                    "CONFIGDN": names.configdn,
-                    "SCHEMADN": names.schemadn,
-                    "LDAPMANAGERDN": names.ldapmanagerdn,
-                    "LDAPMANAGERPASS": adminpass})
-        setup_file(setup_path("modules.conf"), paths.modulesconf,
-                   {"REALM": names.realm})
-        
-        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "db", "user"))
-        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "db", "config"))
-        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "db", "schema"))
-        mapping = "schema-map-openldap-2.3"
-        backend_schema = "backend-schema.schema"
-        
         attrs = ["linkID", "lDAPDisplayName"]
 	res = schemadb.search(expression="(&(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1)))(objectclass=attributeSchema))", base=names.schemadn, scope=SCOPE_SUBTREE, attrs=attrs);
 
- 	memberof_config = "# This is a generated file, do not edit!\n";
+ 	memberof_config = "# Generated from schema in " + schemadb_path + "\n";
 	refint_attributes = "";
 	for i in range (0, len(res)):
             linkid = res[i]["linkID"][0]
@@ -1219,10 +1202,24 @@ memberof-dangling-error 32
 overlay refint
 refint_attributes""" + refint_attributes + "\n";
 	
-        if os.path.exists(paths.memberofconf):
-            os.unlink(paths.memberof.conf)
-
-        open(paths.memberofconf, 'w').write(memberof_config)
+        setup_file(setup_path("slapd.conf"), paths.slapdconf,
+                   {"DNSDOMAIN": names.dnsdomain,
+                    "LDAPDIR": paths.ldapdir,
+                    "DOMAINDN": names.domaindn,
+                    "CONFIGDN": names.configdn,
+                    "SCHEMADN": names.schemadn,
+                    "LDAPMANAGERDN": names.ldapmanagerdn,
+                    "LDAPMANAGERPASS": adminpass,
+                    "MEMBEROF_CONFIG": memberof_config})
+        setup_file(setup_path("modules.conf"), paths.modulesconf,
+                   {"REALM": names.realm})
+        
+        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "db", "user"))
+        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "db", "config"))
+        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "db", "schema"))
+        mapping = "schema-map-openldap-2.3"
+        backend_schema = "backend-schema.schema"
+        
 
         ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
         message("Start slapd with: slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri)
