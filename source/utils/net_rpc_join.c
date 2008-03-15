@@ -485,7 +485,7 @@ int net_rpc_testjoin(int argc, const char **argv)
 	nt_status = net_rpc_join_ok(domain, NULL, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr,"Join to domain '%s' is not valid: %s\n",
-			nt_errstr(nt_status), domain);
+			domain, nt_errstr(nt_status));
 		free(domain);
 		return -1;
 	}
