@@ -881,8 +881,6 @@ NTSTATUS pvfs_odb_retry_setup(struct ntvfs_module_context *ntvfs,
 
 	talloc_steal(r, wait_handle);
 
-	talloc_steal(pvfs, r);
-
 	return NT_STATUS_OK;
 }
 
