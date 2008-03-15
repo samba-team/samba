@@ -4102,11 +4102,7 @@ static void completion_remote_filter(const char *mnt,
 			TALLOC_CTX *ctx = talloc_stackframe();
 			char *tmp;
 
-			if (info->dirmask && info->dirmask[0] != 0) {
-				tmp = talloc_strdup(ctx,info->dirmask);
-			} else {
-				tmp = talloc_strdup(ctx,"");
-			}
+			tmp = talloc_strdup(ctx,info->dirmask);
 			if (!tmp) {
 				TALLOC_FREE(ctx);
 				return;
