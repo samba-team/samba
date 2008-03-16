@@ -386,7 +386,7 @@ static bool regdb_store_keys_internal(const char *key, REGSUBKEY_CTR *ctr)
 	bool ret = true;
 	uint32 num_subkeys = regsubkey_ctr_numkeys(ctr);
 	char *keyname = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	TALLOC_CTX *ctx = talloc_stackframe();
 	NTSTATUS status;
 
 	if (!key) {
@@ -439,6 +439,7 @@ static bool regdb_store_keys_internal(const char *key, REGSUBKEY_CTR *ctr)
 	}
 
 done:
+	TALLOC_FREE(ctx);
 	SAFE_FREE( buffer );
 	return ret;
 }
