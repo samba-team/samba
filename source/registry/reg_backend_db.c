@@ -83,7 +83,7 @@ static struct builtin_regkey_value builtin_registry_values[] = {
  Open the registry data in the tdb
  ***********************************************************************/
 
-static bool init_registry_data( void )
+static bool init_registry_data(void)
 {
 	char *path = NULL;
 	char *base = NULL;
@@ -105,7 +105,7 @@ static bool init_registry_data( void )
 	 * transaction behaviour.
 	 */
 
-	if ( regdb->transaction_start( regdb ) == -1 ) {
+	if (regdb->transaction_start(regdb) == -1) {
 		DEBUG(0, ("init_registry_data: tdb_transaction_start "
 			  "failed\n"));
 		return false;
@@ -113,11 +113,12 @@ static bool init_registry_data( void )
 
 	/* loop over all of the predefined paths and add each component */
 
-	for ( i=0; builtin_registry_paths[i] != NULL; i++ ) {
+	for (i=0; builtin_registry_paths[i] != NULL; i++) {
 
 		frame = talloc_stackframe();
 
-		DEBUG(6,("init_registry_data: Adding [%s]\n", builtin_registry_paths[i]));
+		DEBUG(6, ("init_registry_data: Adding [%s]\n",
+			  builtin_registry_paths[i]));
 
 		path = talloc_strdup(frame, builtin_registry_paths[i]);
 		base = talloc_strdup(frame, "");
@@ -155,7 +156,8 @@ static bool init_registry_data( void )
 				p2 = remaining;
 
 				if (!next_token_talloc(frame, &p2,
-							&subkeyname, "\\")) {
+							&subkeyname, "\\"))
+				{
 					subkeyname = talloc_strdup(frame,p2);
 					if (!subkeyname) {
 						goto fail;
@@ -163,14 +165,15 @@ static bool init_registry_data( void )
 				}
 			}
 
-			DEBUG(10,("init_registry_data: Storing key [%s] with subkey [%s]\n",
-				base, *subkeyname ? subkeyname : "NULL"));
+			DEBUG(10,("init_registry_data: Storing key [%s] with "
+				  "subkey [%s]\n", base,
+				  *subkeyname ? subkeyname : "NULL"));
 
-			/* we don't really care if the lookup succeeds or not since
-			   we are about to update the record.  We just want any
-			   subkeys already present */
+			/* we don't really care if the lookup succeeds or not
+			 * since we are about to update the record.
+			 * We just want any subkeys already present */
 
-			if ( !(subkeys = TALLOC_ZERO_P(frame, REGSUBKEY_CTR )) ) {
+			if (!(subkeys = TALLOC_ZERO_P(frame, REGSUBKEY_CTR))) {
 				DEBUG(0,("talloc() failure!\n"));
 				goto fail;
 			}
@@ -197,36 +200,43 @@ static bool init_registry_data( void )
 			goto fail;
 		}
 
-		regdb_fetch_values( builtin_registry_values[i].path, values);
+		regdb_fetch_values(builtin_registry_values[i].path, values);
 
-		/* preserve existing values across restarts.  Only add new ones */
+		/* preserve existing values across restarts. Only add new ones */
 
-		if (!regval_ctr_key_exists(values, builtin_registry_values[i].valuename)) {
+		if (!regval_ctr_key_exists(values,
+					builtin_registry_values[i].valuename))
+		{
 			switch(builtin_registry_values[i].type) {
 			case REG_DWORD:
-				regval_ctr_addvalue( values,
-				                     builtin_registry_values[i].valuename,
-						     REG_DWORD,
-						     (char*)&builtin_registry_values[i].data.dw_value,
-						     sizeof(uint32) );
+				regval_ctr_addvalue(values,
+					builtin_registry_values[i].valuename,
+					REG_DWORD,
+					(char*)&builtin_registry_values[i].data.dw_value,
+					sizeof(uint32));
 				break;
 
 			case REG_SZ:
-				init_unistr2( &data, builtin_registry_values[i].data.string, UNI_STR_TERMINATE);
-				regval_ctr_addvalue( values,
-				                     builtin_registry_values[i].valuename,
-						     REG_SZ,
-						     (char*)data.buffer,
-						     data.uni_str_len*sizeof(uint16) );
+				init_unistr2(&data,
+					builtin_registry_values[i].data.string,
+					UNI_STR_TERMINATE);
+				regval_ctr_addvalue(values,
+					builtin_registry_values[i].valuename,
+					REG_SZ,
+					(char*)data.buffer,
+					data.uni_str_len*sizeof(uint16));
 				break;
 
 			default:
-				DEBUG(0,("init_registry_data: invalid value type in builtin_registry_values [%d]\n",
-					builtin_registry_values[i].type));
+				DEBUG(0, ("init_registry_data: invalid value "
+					  "type in builtin_registry_values "
+					  "[%d]\n",
+					  builtin_registry_values[i].type));
 			}
-			regdb_store_values( builtin_registry_values[i].path, values );
+			regdb_store_values(builtin_registry_values[i].path,
+					   values);
 		}
-		TALLOC_FREE( values );
+		TALLOC_FREE(values);
 	}
 
 	TALLOC_FREE(frame);
