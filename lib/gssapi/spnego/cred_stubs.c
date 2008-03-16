@@ -334,3 +334,23 @@ OM_uint32 _gss_spnego_inquire_cred_by_oid
     return ret;
 }
 
+OM_uint32
+_gss_spnego_set_cred_option (OM_uint32 *minor_status,
+			     gss_cred_id_t *cred_handle,
+			     const gss_OID object,
+			     const gss_buffer_t value)
+{
+    gssspnego_cred cred;
+
+    if (cred_handle == NULL || *cred_handle == GSS_C_NO_CREDENTIAL) {
+	*minor_status = 0;
+	return GSS_S_NO_CRED;
+    }
+
+    cred = (gssspnego_cred)*cred_handle;
+    return gss_set_cred_option(minor_status,
+			      &cred->negotiated_cred_id,
+			      object,
+			      value);
+}
+

@@ -76,7 +76,6 @@ OM_uint32 _gss_spnego_alloc_sec_context (OM_uint32 * minor_status,
     ctx->mech_flags = 0;
     ctx->mech_time_rec = 0;
     ctx->mech_src_name = GSS_C_NO_NAME;
-    ctx->delegated_cred_id = GSS_C_NO_CREDENTIAL;
 
     ctx->open = 0;
     ctx->local = 0;
@@ -123,8 +122,6 @@ OM_uint32 _gss_spnego_internal_delete_sec_context
 
     if (ctx->initiator_mech_types.val != NULL)
 	free_MechTypeList(&ctx->initiator_mech_types);
-
-    _gss_spnego_release_cred(&minor, &ctx->delegated_cred_id);
 
     gss_release_oid(&minor, &ctx->preferred_mech_type);
     ctx->negotiated_mech_type = GSS_C_NO_OID;

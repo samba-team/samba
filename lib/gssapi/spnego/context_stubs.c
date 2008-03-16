@@ -907,7 +907,7 @@ OM_uint32 _gss_spnego_set_sec_context_option
 	return GSS_S_NO_CONTEXT;
     }
 
-    ctx = (gssspnego_ctx)context_handle;
+    ctx = (gssspnego_ctx)*context_handle;
 
     if (ctx->negotiated_ctx_id == GSS_C_NO_CONTEXT) {
 	return GSS_S_NO_CONTEXT;
@@ -919,3 +919,31 @@ OM_uint32 _gss_spnego_set_sec_context_option
 				      value);
 }
 
+
+OM_uint32
+_gss_spnego_pseudo_random(OM_uint32 *minor_status,
+			  gss_ctx_id_t context_handle,
+			  int prf_key,
+			  const gss_buffer_t prf_in,
+			  ssize_t desired_output_len,
+			  gss_buffer_t prf_out)
+{
+    gssspnego_ctx ctx;
+
+    *minor_status = 0;
+
+    if (context_handle == GSS_C_NO_CONTEXT)
+	return GSS_S_NO_CONTEXT;
+
+    ctx = (gssspnego_ctx)context_handle;
+
+    if (ctx->negotiated_ctx_id == GSS_C_NO_CONTEXT)
+	return GSS_S_NO_CONTEXT;
+
+    return gss_pseudo_random(minor_status,
+			     ctx->negotiated_ctx_id,
+			     prf_key,
+			     prf_in,
+			     desired_output_len,
+			     prf_out);
+}

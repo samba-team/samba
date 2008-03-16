@@ -635,9 +635,6 @@ acceptor_start
 	if (ctx->mech_src_name != GSS_C_NO_NAME)
 	    gss_release_name(&junk, &ctx->mech_src_name);
 	
-	if (ctx->delegated_cred_id != GSS_C_NO_CREDENTIAL)
-	    _gss_spnego_release_cred(&junk, &ctx->delegated_cred_id);
-	
 	ret = gss_accept_sec_context(minor_status,
 				     &ctx->negotiated_ctx_id,
 				     mech_cred,
@@ -649,18 +646,19 @@ acceptor_start
 				     &ctx->mech_flags,
 				     &ctx->mech_time_rec,
 				     &mech_delegated_cred);
+
+	if (mech_delegated_cred && delegated_cred_handle) {
+	    _gss_spnego_alloc_cred(&junk,
+				   mech_delegated_cred,
+				   delegated_cred_handle);
+	} else if (mech_delegated_cred != GSS_C_NO_CREDENTIAL)
+	    gss_release_cred(&junk, &mech_delegated_cred);
+
 	if (ret == GSS_S_COMPLETE || ret == GSS_S_CONTINUE_NEEDED) {
 	    ctx->preferred_mech_type = preferred_mech_type;
 	    ctx->negotiated_mech_type = preferred_mech_type;
 	    if (ret == GSS_S_COMPLETE)
 		ctx->open = 1;
-
-	    if (mech_delegated_cred && delegated_cred_handle)
-		ret = _gss_spnego_alloc_cred(&junk,
-					     mech_delegated_cred,
-					     delegated_cred_handle);
-	    else
-		gss_release_cred(&junk, &mech_delegated_cred);
 
 	    ret = acceptor_complete(minor_status,
 				    ctx,
@@ -740,10 +738,6 @@ out:
 		*src_name = (gss_name_t)name;
 	    }
 	}
-        if (delegated_cred_handle != NULL) {
-	    *delegated_cred_handle = ctx->delegated_cred_id;
-	    ctx->delegated_cred_id = GSS_C_NO_CREDENTIAL;
-	}
     }
     
     if (mech_type != NULL)
@@ -780,7 +774,7 @@ acceptor_continue
 	    gss_cred_id_t *delegated_cred_handle
 	   )
 {
-    OM_uint32 ret, ret2, minor;
+    OM_uint32 ret, ret2, minor, junk;
     NegotiationToken nt;
     size_t nt_len;
     NegTokenResp *na;
@@ -836,26 +830,15 @@ acceptor_continue
 
 	if (mech_input_token != GSS_C_NO_BUFFER) {
 	    gss_cred_id_t mech_cred;
-	    gss_cred_id_t mech_delegated_cred;
-	    gss_cred_id_t *mech_delegated_cred_p;
+	    gss_cred_id_t mech_delegated_cred = GSS_C_NO_CREDENTIAL;
 
 	    if (acceptor_cred != NULL)
 		mech_cred = acceptor_cred->negotiated_cred_id;
 	    else
 		mech_cred = GSS_C_NO_CREDENTIAL;
 
-	    if (delegated_cred_handle != NULL) {
-		mech_delegated_cred = GSS_C_NO_CREDENTIAL;
-		mech_delegated_cred_p = &mech_delegated_cred;
-	    } else {
-		mech_delegated_cred_p = NULL;
-	    }
-
 	    if (ctx->mech_src_name != GSS_C_NO_NAME)
 		gss_release_name(&minor, &ctx->mech_src_name);
-
-	    if (ctx->delegated_cred_id != GSS_C_NO_CREDENTIAL)
-		_gss_spnego_release_cred(&minor, &ctx->delegated_cred_id);
 
 	    ret = gss_accept_sec_context(&minor,
 					 &ctx->negotiated_ctx_id,
@@ -867,16 +850,16 @@ acceptor_continue
 					 &obuf,
 					 &ctx->mech_flags,
 					 &ctx->mech_time_rec,
-					 mech_delegated_cred_p);
+					 &mech_delegated_cred);
+
+	    if (mech_delegated_cred && delegated_cred_handle) {
+		_gss_spnego_alloc_cred(&junk,
+				       mech_delegated_cred,
+				       delegated_cred_handle);
+	    } else if (mech_delegated_cred != GSS_C_NO_CREDENTIAL)
+		gss_release_cred(&junk, &mech_delegated_cred);
+
 	    if (ret == GSS_S_COMPLETE || ret == GSS_S_CONTINUE_NEEDED) {
-		if (mech_delegated_cred_p != NULL &&
-		    mech_delegated_cred != GSS_C_NO_CREDENTIAL) {
-		    ret2 = _gss_spnego_alloc_cred(minor_status,
-						  mech_delegated_cred,
-						  &ctx->delegated_cred_id);
-		    if (ret2 != GSS_S_COMPLETE)
-			ret = ret2;
-		}
 		mech_output_token = &obuf;
 	    }
 	    if (ret != GSS_S_COMPLETE && ret != GSS_S_CONTINUE_NEEDED) {
@@ -957,10 +940,6 @@ acceptor_continue
 		ctx->mech_src_name = NULL;
 		*src_name = (gss_name_t)name;
 	    }
-	}
-        if (delegated_cred_handle != NULL) {
-	    *delegated_cred_handle = ctx->delegated_cred_id;
-	    ctx->delegated_cred_id = GSS_C_NO_CREDENTIAL;
 	}
     }
 

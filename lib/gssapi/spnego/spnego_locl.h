@@ -86,7 +86,6 @@ typedef struct {
 	OM_uint32		mech_flags;
 	OM_uint32		mech_time_rec;
 	gss_name_t		mech_src_name;
-	gss_cred_id_t		delegated_cred_id;
 	unsigned int		open : 1;
 	unsigned int		local : 1;
 	unsigned int		require_mic : 1;
