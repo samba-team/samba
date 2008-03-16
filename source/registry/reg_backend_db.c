@@ -25,7 +25,7 @@
 #define DBGC_CLASS DBGC_REGISTRY
 
 static struct db_context *regdb = NULL;
-static int tdb_refcount;
+static int regdb_refcount;
 
 /* List the deepest path into the registry.  All part components will be created.*/
 
@@ -259,8 +259,8 @@ bool regdb_init( void )
 	uint32 vers_id;
 
 	if ( regdb ) {
-		DEBUG(10,("regdb_init: incrementing refcount (%d)\n", tdb_refcount));
-		tdb_refcount++;
+		DEBUG(10,("regdb_init: incrementing refcount (%d)\n", regdb_refcount));
+		regdb_refcount++;
 		return true;
 	}
 
@@ -276,7 +276,7 @@ bool regdb_init( void )
 		DEBUG(10,("regdb_init: Successfully created registry tdb\n"));
 	}
 
-	tdb_refcount = 1;
+	regdb_refcount = 1;
 
 	vers_id = dbwrap_fetch_int32(regdb, vstring);
 
@@ -305,8 +305,8 @@ WERROR regdb_open( void )
 	WERROR result = WERR_OK;
 
 	if ( regdb ) {
-		DEBUG(10,("regdb_open: incrementing refcount (%d)\n", tdb_refcount));
-		tdb_refcount++;
+		DEBUG(10,("regdb_open: incrementing refcount (%d)\n", regdb_refcount));
+		regdb_refcount++;
 		return WERR_OK;
 	}
 	
@@ -321,8 +321,8 @@ WERROR regdb_open( void )
 
 	unbecome_root();
 
-	tdb_refcount = 1;
-	DEBUG(10,("regdb_open: refcount reset (%d)\n", tdb_refcount));
+	regdb_refcount = 1;
+	DEBUG(10,("regdb_open: refcount reset (%d)\n", regdb_refcount));
 
 	return result;
 }
@@ -332,18 +332,18 @@ WERROR regdb_open( void )
 
 int regdb_close( void )
 {
-	if (tdb_refcount == 0) {
+	if (regdb_refcount == 0) {
 		return 0;
 	}
 
-	tdb_refcount--;
+	regdb_refcount--;
 
-	DEBUG(10,("regdb_close: decrementing refcount (%d)\n", tdb_refcount));
+	DEBUG(10,("regdb_close: decrementing refcount (%d)\n", regdb_refcount));
 
-	if ( tdb_refcount > 0 )
+	if ( regdb_refcount > 0 )
 		return 0;
 
-	SMB_ASSERT( tdb_refcount >= 0 );
+	SMB_ASSERT( regdb_refcount >= 0 );
 
 	TALLOC_FREE(regdb);
 	return 0;
