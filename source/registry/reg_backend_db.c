@@ -459,7 +459,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 	char *path = NULL;
 	REGSUBKEY_CTR *subkeys = NULL, *old_subkeys = NULL;
 	char *oldkeyname = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	TALLOC_CTX *ctx = talloc_stackframe();
 	NTSTATUS status;
 
 	/*
@@ -623,6 +623,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
  fail:
 	TALLOC_FREE(old_subkeys);
 	TALLOC_FREE(subkeys);
+	TALLOC_FREE(ctx);
 
 	if (regdb->transaction_cancel(regdb) == -1) {
 		smb_panic("regdb_store_keys: transaction_cancel failed\n");
