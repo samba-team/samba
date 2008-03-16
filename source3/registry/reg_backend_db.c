@@ -493,6 +493,8 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 		}
 	}
 
+	TALLOC_FREE(old_subkeys);
+
 	if (regdb->transaction_start(regdb) == -1) {
 		DEBUG(0, ("regdb_store_keys: transaction_start failed\n"));
 		return false;
@@ -501,8 +503,6 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 	/*
 	 * Re-fetch the old keys inside the transaction
 	 */
-
-	TALLOC_FREE(old_subkeys);
 
 	if (!(old_subkeys = TALLOC_ZERO_P(ctr, REGSUBKEY_CTR))) {
 		DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
