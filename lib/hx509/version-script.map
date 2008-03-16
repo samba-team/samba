@@ -96,9 +96,12 @@ HEIMDAL_X509_1.0 {
 		hx509_crypto_set_params;
 		hx509_crypto_set_random_key;
 		hx509_env_add;
+		hx509_env_add_binding;
 		hx509_env_free;
 		hx509_env_init;
 		hx509_env_lfind;
+		hx509_env_find;
+		hx509_env_find_binding;
 		hx509_err;
 		hx509_free_error_string;
 		hx509_free_octet_string_list;
