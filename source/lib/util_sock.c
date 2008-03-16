@@ -63,7 +63,7 @@ bool is_ipaddress(const char *str)
 					sizeof(addr)));
 			sp = addr;
 		}
-		ret = inet_pton(AF_INET6, addr, &dest6);
+		ret = inet_pton(AF_INET6, sp, &dest6);
 		if (ret > 0) {
 			return true;
 		}
