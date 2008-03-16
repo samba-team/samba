@@ -56,6 +56,8 @@ static struct mmap_area *mmap_area_init(TALLOC_CTX *mem_ctx, size_t size)
 		goto fail;
 	}
 
+	close(fd);
+
 	result->size = size;
 	talloc_set_destructor(result, mmap_area_destructor);
 
