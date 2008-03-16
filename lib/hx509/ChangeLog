@@ -1,3 +1,12 @@
+2008-03-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* version-script.map: add missing symbols
+
+	* spnego: Make delegated credentials delegated directly, Oleg
+	Sharoiko pointed out that it always didnt work with the old
+	code. Also add som missing cred and context pass-thou functions in
+	the SPNEGO layer.
+	
 2008-03-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rename to be more consistent, export for teting
