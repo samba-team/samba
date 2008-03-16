@@ -189,6 +189,8 @@ static bool init_registry_data( void )
 
 	/* loop over all of the predefined values and add each component */
 
+	frame = talloc_stackframe();
+
 	for (i=0; builtin_registry_values[i].path != NULL; i++) {
 
 		if (!(values = TALLOC_ZERO_P(talloc_tos(), REGVAL_CTR))) {
