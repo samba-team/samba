@@ -119,19 +119,19 @@ static bool init_registry_data( void )
 
 		DEBUG(6,("init_registry_data: Adding [%s]\n", builtin_registry_paths[i]));
 
-		path = talloc_strdup(talloc_tos(), builtin_registry_paths[i]);
-		base = talloc_strdup(talloc_tos(), "");
+		path = talloc_strdup(frame, builtin_registry_paths[i]);
+		base = talloc_strdup(frame, "");
 		if (!path || !base) {
 			goto fail;
 		}
 		p = path;
 
-		while (next_token_talloc(talloc_tos(), &p, &keyname, "\\")) {
+		while (next_token_talloc(frame, &p, &keyname, "\\")) {
 
 			/* build up the registry path from the components */
 
 			if (*base) {
-				base = talloc_asprintf(talloc_tos(), "%s\\", base);
+				base = talloc_asprintf(frame, "%s\\", base);
 				if (!base) {
 					goto fail;
 				}
@@ -143,20 +143,20 @@ static bool init_registry_data( void )
 
 			/* get the immediate subkeyname (if we have one ) */
 
-			subkeyname = talloc_strdup(talloc_tos(), "");
+			subkeyname = talloc_strdup(frame, "");
 			if (!subkeyname) {
 				goto fail;
 			}
 			if (*p) {
-				remaining = talloc_strdup(talloc_tos(), p);
+				remaining = talloc_strdup(frame, p);
 				if (!remaining) {
 					goto fail;
 				}
 				p2 = remaining;
 
-				if (!next_token_talloc(talloc_tos(), &p2,
+				if (!next_token_talloc(frame, &p2,
 							&subkeyname, "\\")) {
-					subkeyname = talloc_strdup(talloc_tos(),p2);
+					subkeyname = talloc_strdup(frame,p2);
 					if (!subkeyname) {
 						goto fail;
 					}
@@ -170,7 +170,7 @@ static bool init_registry_data( void )
 			   we are about to update the record.  We just want any
 			   subkeys already present */
 
-			if ( !(subkeys = TALLOC_ZERO_P(talloc_tos(), REGSUBKEY_CTR )) ) {
+			if ( !(subkeys = TALLOC_ZERO_P(frame, REGSUBKEY_CTR )) ) {
 				DEBUG(0,("talloc() failure!\n"));
 				goto fail;
 			}
@@ -193,7 +193,7 @@ static bool init_registry_data( void )
 
 	for (i=0; builtin_registry_values[i].path != NULL; i++) {
 
-		if (!(values = TALLOC_ZERO_P(talloc_tos(), REGVAL_CTR))) {
+		if (!(values = TALLOC_ZERO_P(frame, REGVAL_CTR))) {
 			goto fail;
 		}
 
