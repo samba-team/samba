@@ -20,7 +20,7 @@
 #ifndef __LIBSMBCONF_H__
 #define __LIBSMBCONF_H__
 
-struct libnet_conf_ctx {
+struct smbconf_ctx {
 	NT_USER_TOKEN *token;
 };
 
@@ -30,46 +30,44 @@ struct libnet_conf_ctx {
  *   (Backends and possibly remote support being added ...)
  */
 
-WERROR libnet_conf_open(TALLOC_CTX *mem_ctx, struct libnet_conf_ctx **conf_ctx);
-void libnet_conf_close(struct libnet_conf_ctx *ctx);
-uint64_t libnet_conf_get_seqnum(struct libnet_conf_ctx *ctx,
+WERROR smbconf_open(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx);
+void smbconf_close(struct smbconf_ctx *ctx);
+uint64_t smbconf_get_seqnum(struct smbconf_ctx *ctx,
+			    const char *service, const char *param);
+WERROR smbconf_drop(struct smbconf_ctx *ctx);
+WERROR smbconf_get_config(TALLOC_CTX *mem_ctx,
+			  struct smbconf_ctx *ctx, uint32_t *num_shares,
+			  char ***share_names, uint32_t **num_params,
+			  char ****param_names, char ****param_values);
+WERROR smbconf_get_share_names(TALLOC_CTX *mem_ctx,
+			       struct smbconf_ctx *ctx,
+			       uint32_t *num_shares,
+			       char ***share_names);
+bool smbconf_share_exists(struct smbconf_ctx *ctx, const char *servicename);
+WERROR smbconf_create_share(struct smbconf_ctx *ctx, const char *servicename);
+WERROR smbconf_get_share(TALLOC_CTX *mem_ctx, struct smbconf_ctx *ctx,
+			 const char *servicename, uint32_t *num_params,
+			 char ***param_names, char ***param_values);
+WERROR smbconf_delete_share(struct smbconf_ctx *ctx,
+			    const char *servicename);
+WERROR smbconf_set_parameter(struct smbconf_ctx *ctx,
+			     const char *service,
+			     const char *param,
+			     const char *valstr);
+WERROR smbconf_set_global_parameter(struct smbconf_ctx *ctx,
+				    const char *param, const char *val);
+WERROR smbconf_get_parameter(TALLOC_CTX *mem_ctx,
+			     struct smbconf_ctx *ctx,
+			     const char *service,
+			     const char *param,
+			     char **valstr);
+WERROR smbconf_get_global_parameter(TALLOC_CTX *mem_ctx,
+				    struct smbconf_ctx *ctx,
+				    const char *param,
+				    char **valstr);
+WERROR smbconf_delete_parameter(struct smbconf_ctx *ctx,
 				const char *service, const char *param);
-WERROR libnet_conf_drop(struct libnet_conf_ctx *ctx);
-WERROR libnet_conf_get_config(TALLOC_CTX *mem_ctx,
-			      struct libnet_conf_ctx *ctx, uint32_t *num_shares,
-			      char ***share_names, uint32_t **num_params,
-			      char ****param_names, char ****param_values);
-WERROR libnet_conf_get_share_names(TALLOC_CTX *mem_ctx,
-				   struct libnet_conf_ctx *ctx,
-				   uint32_t *num_shares,
-				   char ***share_names);
-bool libnet_conf_share_exists(struct libnet_conf_ctx *ctx,
-			      const char *servicename);
-WERROR libnet_conf_create_share(struct libnet_conf_ctx *ctx,
-				const char *servicename);
-WERROR libnet_conf_get_share(TALLOC_CTX *mem_ctx, struct libnet_conf_ctx *ctx,
-			     const char *servicename, uint32_t *num_params,
-			     char ***param_names, char ***param_values);
-WERROR libnet_conf_delete_share(struct libnet_conf_ctx *ctx,
-				const char *servicename);
-WERROR libnet_conf_set_parameter(struct libnet_conf_ctx *ctx,
-				 const char *service,
-				 const char *param,
-				 const char *valstr);
-WERROR libnet_conf_set_global_parameter(struct libnet_conf_ctx *ctx,
-					const char *param, const char *val);
-WERROR libnet_conf_get_parameter(TALLOC_CTX *mem_ctx,
-				 struct libnet_conf_ctx *ctx,
-				 const char *service,
-				 const char *param,
-				 char **valstr);
-WERROR libnet_conf_get_global_parameter(TALLOC_CTX *mem_ctx,
-					struct libnet_conf_ctx *ctx,
-					const char *param,
-					char **valstr);
-WERROR libnet_conf_delete_parameter(struct libnet_conf_ctx *ctx,
-				    const char *service, const char *param);
-WERROR libnet_conf_delete_global_parameter(struct libnet_conf_ctx *ctx,
-					   const char *param);
+WERROR smbconf_delete_global_parameter(struct smbconf_ctx *ctx,
+				       const char *param);
 
 #endif /*  _LIBSMBCONF_H_  */
