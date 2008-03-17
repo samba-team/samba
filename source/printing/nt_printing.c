@@ -344,7 +344,6 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 	int result, i;
 	uint32 sd_size;
 	size_t size_new_sec;
-	DOM_SID sid;
 
 	if (!data.dptr || data.dsize == 0) {
 		return 0;
@@ -405,13 +404,10 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 
 	/* create a new SEC_DESC with the appropriate owner and group SIDs */
 
-	if (!string_to_sid(&sid, "S-1-5-32-544" )) {
-		prs_mem_free( &ps );
-		return 0;
-	}
 	new_sec = make_sec_desc( ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
-		&sid, &sid,
-		NULL, NULL, &size_new_sec );
+				 &global_sid_Builtin_Administrators,
+				 &global_sid_Builtin_Administrators,
+				 NULL, NULL, &size_new_sec );
 	if (!new_sec) {
 		prs_mem_free( &ps );
 		return 0;

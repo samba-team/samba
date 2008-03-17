@@ -3048,7 +3048,7 @@ static NTSTATUS rpc_group_members_internals(const DOM_SID *domain_sid,
 
 		rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
 
-		(void) string_to_sid(&sid_Builtin, "S-1-5-32");
+		sid_copy(&sid_Builtin, &global_sid_Builtin);
 
 		result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
 						&connect_pol,
