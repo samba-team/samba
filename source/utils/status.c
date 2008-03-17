@@ -386,7 +386,7 @@ static int traverse_sessionid(struct db_record *db, void *state)
 	if ( show_processes ) {
 		struct db_context *db;
 		db = db_open(NULL, lock_path("sessionid.tdb"), 0,
-			     TDB_DEFAULT, O_RDWR, 0644);
+			     TDB_CLEAR_IF_FIRST, O_RDONLY, 0644);
 		if (!db) {
 			d_printf("sessionid.tdb not initialised\n");
 		} else {
@@ -428,7 +428,7 @@ static int traverse_sessionid(struct db_record *db, void *state)
 		int result;
 		struct db_context *db;
 		db = db_open(NULL, lock_path("locking.tdb"), 0,
-			     TDB_DEFAULT, O_RDONLY, 0);
+			     TDB_CLEAR_IF_FIRST, O_RDONLY, 0);
 
 		if (!db) {
 			d_printf("%s not initialised\n",
