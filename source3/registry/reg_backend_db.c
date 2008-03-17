@@ -911,15 +911,11 @@ static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
 static WERROR regdb_set_secdesc(const char *key,
 				struct security_descriptor *secdesc)
 {
-	prs_struct ps;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	char *tdbkey;
 	WERROR err = WERR_NOMEM;
 	TDB_DATA tdbdata;
 	int tdb_ret;
-
-
-	ZERO_STRUCT(ps);
 
 	tdbkey = talloc_asprintf(mem_ctx, "%s/%s", REG_SECDESC_PREFIX, key);
 	if (tdbkey == NULL) {
@@ -936,7 +932,6 @@ static WERROR regdb_set_secdesc(const char *key,
 		} else {
 			err = WERR_OK;
 		}
-
 		goto done;
 	}
 
@@ -955,7 +950,6 @@ static WERROR regdb_set_secdesc(const char *key,
 	}
 
  done:
-	prs_mem_free(&ps);
 	TALLOC_FREE(mem_ctx);
 	return err;
 }
