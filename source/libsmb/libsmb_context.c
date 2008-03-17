@@ -422,7 +422,8 @@ smbc_init_context(SMBCCTX *context)
                 return NULL;
         }
         
-        if (!smbc_getFunctionAuthData(context) ||
+        if ((!smbc_getFunctionAuthData(context) &&
+             !smbc_getFunctionAuthDataWithContext(context)) ||
             smbc_getDebug(context) < 0 ||
             smbc_getDebug(context) > 100) {
                 
