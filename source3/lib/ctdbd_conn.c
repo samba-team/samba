@@ -820,13 +820,16 @@ NTSTATUS ctdbd_db_attach(struct ctdbd_connection *conn,
 	NTSTATUS status;
 	TDB_DATA data;
 	int32_t cstatus;
+	bool persistent = (tdb_flags & TDB_CLEAR_IF_FIRST) == 0;
 
 	data.dptr = (uint8_t*)name;
 	data.dsize = strlen(name)+1;
 
 	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			       CTDB_CONTROL_DB_ATTACH, 0, data, 
-			       NULL, &data, &cstatus);
+			       persistent
+			       ? CTDB_CONTROL_DB_ATTACH_PERSISTENT
+			       : CTDB_CONTROL_DB_ATTACH,
+			       0, data, NULL, &data, &cstatus);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ " ctdb_control for db_attach "
 			  "failed: %s\n", nt_errstr(status)));
