@@ -196,7 +196,8 @@ static bool init_registry_data(void)
 
 	for (i=0; builtin_registry_values[i].path != NULL; i++) {
 
-		if (!(values = TALLOC_ZERO_P(frame, REGVAL_CTR))) {
+		values = TALLOC_ZERO_P(frame, REGVAL_CTR);
+		if (values == NULL) {
 			goto fail;
 		}
 
