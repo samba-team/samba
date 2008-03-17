@@ -1199,41 +1199,41 @@ done:
 static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 {
 	WERROR werr;
-	struct libnet_conf_ctx *ctx;
+	struct smbconf_ctx *ctx;
 
-	werr = libnet_conf_open(r, &ctx);
+	werr = smbconf_open(r, &ctx);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
 	if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE)) {
 
-		werr = libnet_conf_set_global_parameter(ctx, "security", "user");
+		werr = smbconf_set_global_parameter(ctx, "security", "user");
 		W_ERROR_NOT_OK_GOTO_DONE(werr);
 
-		werr = libnet_conf_set_global_parameter(ctx, "workgroup",
-							r->in.domain_name);
+		werr = smbconf_set_global_parameter(ctx, "workgroup",
+						    r->in.domain_name);
 		goto done;
 	}
 
-	werr = libnet_conf_set_global_parameter(ctx, "security", "domain");
+	werr = smbconf_set_global_parameter(ctx, "security", "domain");
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
-	werr = libnet_conf_set_global_parameter(ctx, "workgroup",
-						r->out.netbios_domain_name);
+	werr = smbconf_set_global_parameter(ctx, "workgroup",
+					    r->out.netbios_domain_name);
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 	if (r->out.domain_is_ad) {
-		werr = libnet_conf_set_global_parameter(ctx, "security", "ads");
+		werr = smbconf_set_global_parameter(ctx, "security", "ads");
 		W_ERROR_NOT_OK_GOTO_DONE(werr);
 
-		werr = libnet_conf_set_global_parameter(ctx, "realm",
-							r->out.dns_domain_name);
+		werr = smbconf_set_global_parameter(ctx, "realm",
+						    r->out.dns_domain_name);
 		W_ERROR_NOT_OK_GOTO_DONE(werr);
 	}
 
  done:
-	libnet_conf_close(ctx);
+	smbconf_close(ctx);
 	return werr;
 }
 
@@ -1243,22 +1243,22 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 {
 	WERROR werr = WERR_OK;
-	struct libnet_conf_ctx *ctx;
+	struct smbconf_ctx *ctx;
 
-	werr = libnet_conf_open(r, &ctx);
+	werr = smbconf_open(r, &ctx);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 
-		werr = libnet_conf_set_global_parameter(ctx, "security", "user");
+		werr = smbconf_set_global_parameter(ctx, "security", "user");
 		W_ERROR_NOT_OK_GOTO_DONE(werr);
-		libnet_conf_delete_global_parameter(ctx, "realm");
+		smbconf_delete_global_parameter(ctx, "realm");
 	}
 
  done:
-	libnet_conf_close(ctx);
+	smbconf_close(ctx);
 	return werr;
 }
 
