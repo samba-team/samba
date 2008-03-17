@@ -584,7 +584,7 @@ push (@torture_options, "--configfile=$conffile");
 push (@torture_options, "--maximum-runtime=$torture_maxtime");
 push (@torture_options, "--target=$opt_target");
 push (@torture_options, "--basedir=$prefix_abs");
-push (@torture_options, "--option=torture:progress=no") if ($opt_format eq "buildfarm");
+push (@torture_options, "--option=torture:progress=no") unless ($opt_verbose);
 push (@torture_options, "--format=subunit");
 push (@torture_options, "--option=torture:quick=yes") if ($opt_quick);
 
