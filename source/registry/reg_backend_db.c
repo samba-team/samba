@@ -916,19 +916,19 @@ static WERROR regdb_set_secdesc(const char *key,
 	char *tdbkey;
 	WERROR err = WERR_NOMEM;
 	TDB_DATA tdbdata;
+	int tdb_ret;
+
 
 	ZERO_STRUCT(ps);
 
-	if (!(tdbkey = talloc_asprintf(mem_ctx, "%s/%s", REG_SECDESC_PREFIX,
-				       key))) {
+	tdbkey = talloc_asprintf(mem_ctx, "%s/%s", REG_SECDESC_PREFIX, key);
+	if (tdbkey == NULL) {
 		goto done;
 	}
 	normalize_dbkey(tdbkey);
 
 	if (secdesc == NULL) {
 		/* assuming a delete */
-		int tdb_ret;
-
 		tdb_ret = dbwrap_trans_delete(regdb,
 					      string_term_tdb_data(tdbkey));
 		if (tdb_ret == -1) {
@@ -947,8 +947,9 @@ static WERROR regdb_set_secdesc(const char *key,
 		goto done;
 	}
 
-	if (dbwrap_trans_store(regdb, string_term_tdb_data(tdbkey),
-			       tdbdata, 0) == -1) {
+	tdb_ret = dbwrap_trans_store(regdb, string_term_tdb_data(tdbkey),
+				     tdbdata, 0);
+	if (tdb_ret == -1) {
 		err = ntstatus_to_werror(map_nt_error_from_unix(errno));
 		goto done;
 	}
