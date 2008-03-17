@@ -467,7 +467,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 	 * changed
 	 */
 
-	if (!(old_subkeys = TALLOC_ZERO_P(ctr, REGSUBKEY_CTR))) {
+	if (!(old_subkeys = TALLOC_ZERO_P(ctx, REGSUBKEY_CTR))) {
 		DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
 		return false;
 	}
@@ -504,7 +504,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 	 * Re-fetch the old keys inside the transaction
 	 */
 
-	if (!(old_subkeys = TALLOC_ZERO_P(ctr, REGSUBKEY_CTR))) {
+	if (!(old_subkeys = TALLOC_ZERO_P(ctx, REGSUBKEY_CTR))) {
 		DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
 		goto cancel;
 	}
@@ -574,7 +574,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 	num_subkeys = regsubkey_ctr_numkeys(ctr);
 
 	if (num_subkeys == 0) {
-		if (!(subkeys = TALLOC_ZERO_P(ctr, REGSUBKEY_CTR)) ) {
+		if (!(subkeys = TALLOC_ZERO_P(ctx, REGSUBKEY_CTR)) ) {
 			DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
 			goto cancel;
 		}
@@ -595,7 +595,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 		if (!path) {
 			goto cancel;
 		}
-		if (!(subkeys = TALLOC_ZERO_P(ctr, REGSUBKEY_CTR)) ) {
+		if (!(subkeys = TALLOC_ZERO_P(ctx, REGSUBKEY_CTR)) ) {
 			DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
 			goto cancel;
 		}
@@ -626,8 +626,6 @@ cancel:
 	}
 
 fail:
-	TALLOC_FREE(old_subkeys);
-	TALLOC_FREE(subkeys);
 	TALLOC_FREE(ctx);
 
 	return false;
