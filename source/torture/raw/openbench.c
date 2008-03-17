@@ -37,7 +37,7 @@
 
 static int nprocs;
 static int open_failed;
-static int open_retries;
+static int close_failed;
 static char **fnames;
 static int num_connected;
 static struct timed_event *report_te;
@@ -55,6 +55,7 @@ struct benchopen_state {
 	int count;
 	int lastcount;
 	union smb_open open_parms;
+	int open_retries;
 	union smb_close close_parms;
 	struct smbcli_request *req_open;
 	struct smbcli_request *req_close;
@@ -228,7 +229,7 @@ static void open_completed(struct smbcli_request *req)
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
 		DEBUG(2,("[%d] retrying open\n", state->client_num));
-		open_retries++;
+		state->open_retries++;
 		state->req_open = smb_raw_open_send(state->tree, &state->open_parms);
 		state->req_open->async.fn = open_completed;
 		state->req_open->async.private = state;
@@ -280,7 +281,7 @@ static void close_completed(struct smbcli_request *req)
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		open_failed++;
+		close_failed++;
 		DEBUG(0,("close failed - %s\n", nt_errstr(status)));
 		return;
 	}
@@ -352,7 +353,9 @@ bool torture_bench_open(struct torture_context *torture)
 	struct timeval tv;
 	struct event_context *ev = event_context_find(mem_ctx);
 	struct benchopen_state *state;
-	int total = 0, minops=0;
+	int total = 0;
+	int total_retries = 0;
+	int minops = 0;
 	bool progress=false;
 
 	progress = torture_setting_bool(torture, "progress", true);
@@ -420,17 +423,24 @@ bool torture_bench_open(struct torture_context *torture)
 			DEBUG(0,("open failed\n"));
 			goto failed;
 		}
+		if (close_failed) {
+			DEBUG(0,("open failed\n"));
+			goto failed;
+		}
 	}
 
 	talloc_free(report_te);
 
-	printf("%.2f ops/second (%d retries)\n", 
-	       total/timeval_elapsed(&tv), open_retries);
 	minops = state[0].count;
 	for (i=0;i<nprocs;i++) {
-		printf("[%d] %u ops\n", i, state[i].count);
+		total += state[i].count;
+		total_retries += state[i].open_retries;
+		printf("[%d] %u ops (%u retries)\n",
+		       i, state[i].count, state[i].open_retries);
 		if (state[i].count < minops) minops = state[i].count;
 	}
+	printf("%.2f ops/second (%d retries)\n",
+	       total/timeval_elapsed(&tv), total_retries);
 	if (minops < 0.5*total/nprocs) {
 		printf("Failed: unbalanced open\n");
 		goto failed;
