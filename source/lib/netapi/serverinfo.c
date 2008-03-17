@@ -169,7 +169,7 @@ static WERROR NetServerSetInfoLocal_1005(struct libnetapi_ctx *ctx,
 					 uint32_t *parm_error)
 {
 	WERROR werr;
-	struct libnet_conf_ctx *conf_ctx;
+	struct smbconf_ctx *conf_ctx;
 	struct srvsvc_NetSrvInfo1005 *info1005;
 
 	if (!buffer) {
@@ -191,17 +191,16 @@ static WERROR NetServerSetInfoLocal_1005(struct libnetapi_ctx *ctx,
 		return WERR_NOT_SUPPORTED;
 	}
 
-	werr = libnet_conf_open(ctx, &conf_ctx);
+	werr = smbconf_open(ctx, &conf_ctx);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
-	werr = libnet_conf_set_global_parameter(conf_ctx,
-						"server string",
-						info1005->comment);
+	werr = smbconf_set_global_parameter(conf_ctx, "server string",
+					    info1005->comment);
 
  done:
-	libnet_conf_close(conf_ctx);
+	smbconf_close(conf_ctx);
 	return werr;
 }
 

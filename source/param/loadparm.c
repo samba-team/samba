@@ -73,7 +73,7 @@ extern userdom_struct current_user_info;
 #endif
 
 static uint64_t conf_last_seqnum = 0;
-static struct libnet_conf_ctx *conf_ctx = NULL;
+static struct smbconf_ctx *conf_ctx = NULL;
 
 #define CONFIG_BACKEND_FILE 0
 #define CONFIG_BACKEND_REGISTRY 1
@@ -6498,21 +6498,21 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 
 	if (conf_ctx == NULL) {
 		/* first time */
-		werr = libnet_conf_open(NULL, &conf_ctx);
+		werr = smbconf_open(NULL, &conf_ctx);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
 	}
 
-	if (!libnet_conf_share_exists(conf_ctx, GLOBAL_NAME)) {
+	if (!smbconf_share_exists(conf_ctx, GLOBAL_NAME)) {
 		/* nothing to read from the registry yet but make sure lp_load
 		 * doesn't return false */
 		ret = true;
 		goto done;
 	}
 
-	werr = libnet_conf_get_share(mem_ctx, conf_ctx, GLOBAL_NAME,
-				     &num_params, &param_names, &param_values);
+	werr = smbconf_get_share(mem_ctx, conf_ctx, GLOBAL_NAME,
+				 &num_params, &param_names, &param_values);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -6525,7 +6525,7 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 	}
 
 	ret = pfunc("registry shares", "yes");
-	conf_last_seqnum = libnet_conf_get_seqnum(conf_ctx, NULL, NULL);
+	conf_last_seqnum = smbconf_get_seqnum(conf_ctx, NULL, NULL);
 
 done:
 	TALLOC_FREE(mem_ctx);
@@ -6608,14 +6608,14 @@ bool lp_file_list_changed(void)
 		uint64_t conf_cur_seqnum;
 		if (conf_ctx == NULL) {
 			WERROR werr;
-			werr = libnet_conf_open(NULL, &conf_ctx);
+			werr = smbconf_open(NULL, &conf_ctx);
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(0, ("error opening configuration: %s\n",
 					  dos_errstr(werr)));
 				return false;
 			}
 		}
-		conf_cur_seqnum = libnet_conf_get_seqnum(conf_ctx, NULL, NULL);
+		conf_cur_seqnum = smbconf_get_seqnum(conf_ctx, NULL, NULL);
 		if (conf_last_seqnum != conf_cur_seqnum) {
 			DEBUGADD(6, ("regdb seqnum changed: old = %llu, "
 				     "new = %llu\n",
