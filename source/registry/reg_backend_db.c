@@ -666,7 +666,8 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 
 	rec = regdb->fetch_locked(regdb, frame, string_term_tdb_data(path));
 	if (rec == NULL) {
-		return 0;
+		ret = 0;
+		goto fail;
 	}
 
 	ctr->seqnum = regdb_get_seqnum();
