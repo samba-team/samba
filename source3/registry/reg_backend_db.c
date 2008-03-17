@@ -835,7 +835,7 @@ bool regdb_store_values( const char *key, REGVAL_CTR *values )
 		goto done;
 	}
 
-	data.dptr = SMB_MALLOC_ARRAY( uint8, len );
+	data.dptr = TALLOC_ARRAY(ctx, uint8, len);
 	data.dsize = len;
 
 	len = regdb_pack_values(values, data.dptr, data.dsize);
@@ -866,7 +866,6 @@ bool regdb_store_values( const char *key, REGVAL_CTR *values )
 	result = (ret != -1);
 
 done:
-	SAFE_FREE(data.dptr);
 	TALLOC_FREE(ctx);
 	return result;
 }
