@@ -618,6 +618,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 		goto fail;
 	}
 
+	TALLOC_FREE(ctx);
 	return true;
 
 cancel:
