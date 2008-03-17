@@ -877,35 +877,35 @@ static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
 	TDB_DATA data;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	WERROR err = WERR_OK;
 
 	DEBUG(10, ("regdb_get_secdesc: Getting secdesc of key [%s]\n", key));
 
-	if (asprintf(&tdbkey, "%s/%s", REG_SECDESC_PREFIX, key) == -1) {
-		return WERR_NOMEM;
+	tdbkey = talloc_asprintf(tmp_ctx, "%s/%s", REG_SECDESC_PREFIX, key);
+	if (tdbkey == NULL) {
+		err = WERR_NOMEM;
+		goto done;
 	}
 	normalize_dbkey(tdbkey);
 
 	data = dbwrap_fetch_bystring(regdb, tmp_ctx, tdbkey);
-	SAFE_FREE(tdbkey);
-
 	if (data.dptr == NULL) {
-		return WERR_BADFILE;
+		err = WERR_BADFILE;
+		goto done;
 	}
 
 	status = unmarshall_sec_desc(mem_ctx, (uint8 *)data.dptr, data.dsize,
 				     psecdesc);
 
-	TALLOC_FREE(tmp_ctx);
-
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
-		return WERR_NOMEM;
+		err = WERR_NOMEM;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		err = WERR_REG_CORRUPT;
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		return WERR_REG_CORRUPT;
-	}
-
-	return WERR_OK;
+done:
+	TALLOC_FREE(tmp_ctx);
+	return err;
 }
 
 static WERROR regdb_set_secdesc(const char *key,
