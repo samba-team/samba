@@ -21,7 +21,6 @@
 #define __LIBNET_H__
 
 #include "librpc/gen_ndr/libnet_join.h"
-#include "libnet/libnet_conf.h"
 #include "libnet/libnet_proto.h"
 
 #endif

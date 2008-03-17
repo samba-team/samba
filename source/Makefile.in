@@ -364,7 +364,7 @@ READLINE_OBJ = lib/readline.o
 POPT_LIB_OBJ = lib/popt_common.o
 
 PARAM_WITHOUT_REG_OBJ = dynconfig.o param/loadparm.o param/params.o param/util.o lib/sharesec.o lib/ldap_debug_handler.o
-PARAM_REG_ADD_OBJ = $(REG_SMBCONF_OBJ) $(LIBNET_CONF_OBJ) $(PRIVILEGES_BASIC_OBJ)
+PARAM_REG_ADD_OBJ = $(REG_SMBCONF_OBJ) $(LIBSMBCONF_OBJ) $(PRIVILEGES_BASIC_OBJ)
 PARAM_OBJ = $(PARAM_WITHOUT_REG_OBJ) $(PARAM_REG_ADD_OBJ)
 
 KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o
@@ -670,6 +670,7 @@ SMBD_OBJ_BASE = $(PARAM_WITHOUT_REG_OBJ) $(SMBD_OBJ_SRV) $(LIBSMB_OBJ) \
 		$(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(LIBADS_SERVER_OBJ) \
 		$(REG_FULL_OBJ) $(POPT_LIB_OBJ) $(BUILDOPT_OBJ) \
 		$(SMBLDAP_OBJ) $(LDB_OBJ) $(LIBNET_OBJ) @LIBWBCLIENT_STATIC@ \
+		$(LIBSMBCONF_OBJ) \
 		$(PRIVILEGES_BASIC_OBJ)
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/print_aix.o \
@@ -816,6 +817,7 @@ LIBNETAPI_OBJ1 = lib/netapi/netapi.o \
 		 lib/netapi/getdc.o
 
 LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ1) $(LIBNET_OBJ) \
+		 $(LIBSMBCONF_OBJ) \
 		 $(REG_SMBCONF_OBJ) \
 		 $(PARAM_WITHOUT_REG_OBJ) $(LIB_NONSMBD_OBJ) \
 		 $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
@@ -823,9 +825,9 @@ LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ1) $(LIBNET_OBJ) \
 		 $(SECRETS_OBJ) $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ) \
 		 $(DCUTIL_OBJ) $(LIBADS_OBJ) $(PRIVILEGES_BASIC_OBJ)
 
-LIBNET_CONF_OBJ = libnet/libnet_conf.o
+LIBSMBCONF_OBJ = lib/smbconf/smbconf.o
 
-LIBNET_OBJ = $(LIBNET_CONF_OBJ) libnet/libnet_join.o \
+LIBNET_OBJ = libnet/libnet_join.o \
 	     librpc/gen_ndr/ndr_libnet_join.o
 
 NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
@@ -848,6 +850,7 @@ NET_OBJ = $(NET_OBJ1) $(PARAM_WITHOUT_REG_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(READLINE_OBJ) \
 	  $(LDB_OBJ) $(LIBGPO_OBJ) @BUILD_INIPARSER@ $(DISPLAY_SEC_OBJ) \
 	  $(REG_SMBCONF_OBJ) @LIBNETAPI_STATIC@ $(LIBNET_OBJ) \
+	  $(LIBSMBCONF_OBJ) \
 	  $(WBCOMMON_OBJ) @LIBWBCLIENT_STATIC@ \
 	  $(PRIVILEGES_BASIC_OBJ)
 
