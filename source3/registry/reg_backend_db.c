@@ -969,13 +969,12 @@ bool regdb_values_need_update(REGVAL_CTR *values)
  */
  
 REGISTRY_OPS regdb_ops = {
-	regdb_fetch_keys,
-	regdb_fetch_values,
-	regdb_store_keys,
-	regdb_store_values,
-	NULL,
-	regdb_get_secdesc,
-	regdb_set_secdesc,
-	regdb_subkeys_need_update,
-	regdb_values_need_update
+	.fetch_subkeys = regdb_fetch_keys,
+	.fetch_values = regdb_fetch_values,
+	.store_subkeys = regdb_store_keys,
+	.store_values = regdb_store_values,
+	.get_secdesc = regdb_get_secdesc,
+	.set_secdesc = regdb_set_secdesc,
+	.subkeys_need_update = regdb_subkeys_need_update,
+	.values_need_update = regdb_values_need_update
 };
