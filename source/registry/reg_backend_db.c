@@ -912,14 +912,10 @@ static WERROR regdb_set_secdesc(const char *key,
 				struct security_descriptor *secdesc)
 {
 	prs_struct ps;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	char *tdbkey;
 	WERROR err = WERR_NOMEM;
 	TDB_DATA tdbdata;
-
-	if (!(mem_ctx = talloc_init("regdb_set_secdesc"))) {
-		return WERR_NOMEM;
-	}
 
 	ZERO_STRUCT(ps);
 
