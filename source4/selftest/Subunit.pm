@@ -15,7 +15,34 @@ sub parse_results($$$$$)
 	my $unexpected_err = 0;
 	my $orig_open_len = $#$open_tests;
 
-	while(<$fh>) {
+	while(1) {
+		my $line = "";
+		my $char = "";
+		my $eof = 0;
+		my $error = 0;
+
+		while ($char ne "\n") {
+			my $ret = sysread($fh, $char, 1);
+			if (not defined($ret)) {
+				$error = $!;
+				last;
+			}
+			if ($ret == 0) {
+				$eof = 1;
+				last;
+			}
+
+			$line .= $char;
+			if ($char eq "\r") {
+				$msg_ops->output_msg($line);
+				$line = "";
+			}
+		}
+
+		last if ($eof or $error);
+
+		$_ = $line;
+
 		if (/^test: (.+)\n/) {
 			$msg_ops->control_msg($_);
 			$msg_ops->start_test($open_tests, $1);
