@@ -497,7 +497,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 
 	if (regdb->transaction_start(regdb) == -1) {
 		DEBUG(0, ("regdb_store_keys: transaction_start failed\n"));
-		return false;
+		goto fail;
 	}
 
 	/*
@@ -506,7 +506,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 
 	if (!(old_subkeys = TALLOC_ZERO_P(ctr, REGSUBKEY_CTR))) {
 		DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
-		goto fail;
+		goto cancel;
 	}
 
 	regdb_fetch_keys(key, old_subkeys);
@@ -516,7 +516,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 	if (!regdb_store_keys_internal(key, ctr) ) {
 		DEBUG(0,("regdb_store_keys: Failed to store new subkey list "
 			 "for parent [%s]\n", key));
-		goto fail;
+		goto cancel;
 	}
 
 	/* now delete removed keys */
@@ -535,16 +535,16 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 
 		path = talloc_asprintf(ctx, "%s/%s", key, oldkeyname);
 		if (!path) {
-			goto fail;
+			goto cancel;
 		}
 		path = normalize_reg_path(ctx, path);
 		if (!path) {
-			goto fail;
+			goto cancel;
 		}
 		status = dbwrap_delete_bystring(regdb, path);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Deleting %s failed\n", path));
-			goto fail;
+			goto cancel;
 		}
 
 		TALLOC_FREE(path);
@@ -553,11 +553,11 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 				key,
 				oldkeyname );
 		if (!path) {
-			goto fail;
+			goto cancel;
 		}
 		path = normalize_reg_path(ctx, path);
 		if (!path) {
-			goto fail;
+			goto cancel;
 		}
 
 		/*
@@ -576,13 +576,13 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 	if (num_subkeys == 0) {
 		if (!(subkeys = TALLOC_ZERO_P(ctr, REGSUBKEY_CTR)) ) {
 			DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
-			goto fail;
+			goto cancel;
 		}
 
 		if (!regdb_store_keys_internal(key, subkeys)) {
 			DEBUG(0,("regdb_store_keys: Failed to store "
 				 "new record for key [%s]\n", key));
-			goto fail;
+			goto cancel;
 		}
 		TALLOC_FREE(subkeys);
 
@@ -593,11 +593,11 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 					key,
 					regsubkey_ctr_specific_key(ctr, i));
 		if (!path) {
-			goto fail;
+			goto cancel;
 		}
 		if (!(subkeys = TALLOC_ZERO_P(ctr, REGSUBKEY_CTR)) ) {
 			DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
-			goto fail;
+			goto cancel;
 		}
 
 		if (regdb_fetch_keys( path, subkeys ) == -1) {
@@ -605,7 +605,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 			if (!regdb_store_keys_internal(path, subkeys)) {
 				DEBUG(0,("regdb_store_keys: Failed to store "
 					 "new record for key [%s]\n", path));
-				goto fail;
+				goto cancel;
 			}
 		}
 
@@ -615,19 +615,20 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 
 	if (regdb->transaction_commit(regdb) == -1) {
 		DEBUG(0, ("regdb_store_keys: Could not commit transaction\n"));
-		return false;
+		goto fail;
 	}
 
 	return true;
 
- fail:
-	TALLOC_FREE(old_subkeys);
-	TALLOC_FREE(subkeys);
-	TALLOC_FREE(ctx);
-
+cancel:
 	if (regdb->transaction_cancel(regdb) == -1) {
 		smb_panic("regdb_store_keys: transaction_cancel failed\n");
 	}
+
+fail:
+	TALLOC_FREE(old_subkeys);
+	TALLOC_FREE(subkeys);
+	TALLOC_FREE(ctx);
 
 	return false;
 }
