@@ -821,8 +821,9 @@ bool regdb_store_values( const char *key, REGVAL_CTR *values )
 {
 	TDB_DATA old_data, data;
 	char *keystr = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	TALLOC_CTX *ctx = talloc_stackframe();
 	int len, ret;
+	bool result = false;
 
 	DEBUG(10,("regdb_store_values: Looking for value of key [%s] \n", key));
 
@@ -831,7 +832,7 @@ bool regdb_store_values( const char *key, REGVAL_CTR *values )
 	len = regdb_pack_values(values, data.dptr, data.dsize);
 	if (len <= 0) {
 		DEBUG(0,("regdb_store_values: unable to pack values. len <= 0\n"));
-		return false;
+		goto done;
 	}
 
 	data.dptr = SMB_MALLOC_ARRAY( uint8, len );
@@ -843,32 +844,31 @@ bool regdb_store_values( const char *key, REGVAL_CTR *values )
 
 	keystr = talloc_asprintf(ctx, "%s/%s", REG_VALUE_PREFIX, key );
 	if (!keystr) {
-		SAFE_FREE(data.dptr);
-		return false;
+		goto done;
 	}
 	keystr = normalize_reg_path(ctx, keystr);
 	if (!keystr) {
-		SAFE_FREE(data.dptr);
-		return false;
+		goto done;
 	}
 
 	old_data = dbwrap_fetch_bystring(regdb, ctx, keystr);
 
 	if ((old_data.dptr != NULL)
 	    && (old_data.dsize == data.dsize)
-	    && (memcmp(old_data.dptr, data.dptr, data.dsize) == 0)) {
-		TALLOC_FREE(old_data.dptr);
-		SAFE_FREE(data.dptr);
-		return true;
+	    && (memcmp(old_data.dptr, data.dptr, data.dsize) == 0))
+	{
+		result = true;
+		goto done;
 	}
 
 	ret = dbwrap_trans_store(regdb, string_term_tdb_data(keystr), data,
 				 TDB_REPLACE);
+	result = (ret != -1);
 
-	TALLOC_FREE( old_data.dptr );
-	SAFE_FREE( data.dptr );
-
-	return ret != -1 ;
+done:
+	SAFE_FREE(data.dptr);
+	TALLOC_FREE(ctx);
+	return result;
 }
 
 static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
