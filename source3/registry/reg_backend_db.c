@@ -652,13 +652,13 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 
 	DEBUG(11,("regdb_fetch_keys: Enter key => [%s]\n", key ? key : "NULL"));
 
-	path = talloc_strdup(talloc_tos(), key);
+	path = talloc_strdup(frame, key);
 	if (!path) {
 		goto fail;
 	}
 
 	/* convert to key format */
-	path = talloc_string_sub(talloc_tos(), path, "\\", "/");
+	path = talloc_string_sub(frame, path, "\\", "/");
 	if (!path) {
 		goto fail;
 	}
