@@ -101,15 +101,29 @@ SMBC_call_auth_fn(TALLOC_CTX *ctx,
 	fstring workgroup;
 	fstring username;
 	fstring password;
+        smbc_get_auth_data_with_context_fn auth_with_context_fn;
         
 	strlcpy(workgroup, *pp_workgroup, sizeof(workgroup));
 	strlcpy(username, *pp_username, sizeof(username));
 	strlcpy(password, *pp_password, sizeof(password));
         
-        smbc_getFunctionAuthData(context)(server, share,
-                                          workgroup, sizeof(workgroup),
-                                          username, sizeof(username),
-                                          password, sizeof(password));
+        /* See if there's an authentication with context function provided */
+        auth_with_context_fn = smbc_getFunctionAuthDataWithContext(context);
+        if (auth_with_context_fn)
+        {
+            (* auth_with_context_fn)(context,
+                                     server, share,
+                                     workgroup, sizeof(workgroup),
+                                     username, sizeof(username),
+                                     password, sizeof(password));
+        }
+        else
+        {
+            smbc_getFunctionAuthData(context)(server, share,
+                                              workgroup, sizeof(workgroup),
+                                              username, sizeof(username),
+                                              password, sizeof(password));
+        }
         
 	TALLOC_FREE(*pp_workgroup);
 	TALLOC_FREE(*pp_username);
