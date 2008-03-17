@@ -128,7 +128,10 @@ struct cli_credentials {
 
 struct ldb_context;
 struct loadparm_context;
-#include "auth/credentials/credentials_krb5.h"
+struct ccache_container;
+
+struct gssapi_creds_container;
+
 #include "auth/credentials/credentials_proto.h"
 
 #endif /* __CREDENTIALS_H__ */
