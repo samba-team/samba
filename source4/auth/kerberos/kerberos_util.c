@@ -101,10 +101,10 @@ static krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
  * the library routines.  The returned princ is placed in the talloc
  * system by means of a destructor (do *not* free). */
 
-krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx, 
-					   struct cli_credentials *credentials, 
-					   struct smb_krb5_context *smb_krb5_context,
-					   krb5_principal *princ)
+ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx, 
+					    struct cli_credentials *credentials, 
+					    struct smb_krb5_context *smb_krb5_context,
+					    krb5_principal *princ)
 {
 	krb5_error_code ret;
 	const char *princ_string;
