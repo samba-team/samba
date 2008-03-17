@@ -392,10 +392,9 @@ static bool locking_init_internal(bool read_only)
 	if (lock_db)
 		return True;
 
-	lock_db = db_open(NULL, lock_path("locking.tdb"), 0,
-			  TDB_DEFAULT
-			  |TDB_VOLATILE
-			  |(read_only?0x0:TDB_CLEAR_IF_FIRST),
+	lock_db = db_open(NULL, lock_path("locking.tdb"),
+			  lp_open_files_db_hash_size(),
+			  TDB_DEFAULT|TDB_VOLATILE|TDB_CLEAR_IF_FIRST,
 			  read_only?O_RDONLY:O_RDWR|O_CREAT, 0644);
 
 	if (!lock_db) {
