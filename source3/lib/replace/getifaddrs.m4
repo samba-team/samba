@@ -34,10 +34,10 @@ fi
 ##################
 # look for a method of finding the list of network interfaces
 #
-# This tests need LIBS="$NSL_LIBS $SOCKET_LIBS"
+# This tests need LIBS="${LIBREPLACE_NETWORK_LIBS}"
 #
 old_LIBS=$LIBS
-LIBS="$NSL_LIBS $SOCKET_LIBS"
+LIBS="${LIBREPLACE_NETWORK_LIBS}"
 SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS -I$libreplacedir"
 iface=no;
