@@ -4,4 +4,6 @@ ENV="$1"
 
 shift 1
 
-$ENV valgrind -q --db-attach=yes --num-callers=30 $@
+CMD="$ENV valgrind -q --db-attach=yes --num-callers=30 $@"
+echo $CMD
+eval $CMD
