@@ -17,6 +17,7 @@ sub parse_results($$$$$)
 
 	while(1) {
 		my $line = "";
+		my $subline = "";
 		my $char = "";
 		my $eof = 0;
 		my $error = 0;
@@ -33,9 +34,10 @@ sub parse_results($$$$$)
 			}
 
 			$line .= $char;
+			$subline .= $char;
 			if ($char eq "\r") {
-				$msg_ops->output_msg($line);
-				$line = "";
+				$msg_ops->output_msg($subline);
+				$subline = "";
 			}
 		}
 
