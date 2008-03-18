@@ -1,4 +1,4 @@
--- $Id: canthandle.asn1 16593 2006-01-18 19:12:33Z lha $ --
+-- $Id: canthandle.asn1 22071 2007-11-14 20:04:50Z lha $ --
 
 CANTHANDLE DEFINITIONS ::= BEGIN
 
@@ -19,7 +19,7 @@ Foo ::= SEQUENCE {
         kaka3 [2] IMPLICIT Kaka3 OPTIONAL
 }
 
--- Don't code kaka if its 1
+-- Don't code kaka if it's 1
 -- Workaround is to use OPTIONAL and check for in the encoder stubs
 
 Bar ::= SEQUENCE {

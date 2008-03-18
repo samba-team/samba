@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -35,7 +35,7 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: rsa.c 20466 2007-04-20 08:29:05Z lha $");
+RCSID("$Id: rsa.c 22422 2008-01-13 09:43:59Z lha $");
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,11 +46,40 @@ RCSID("$Id: rsa.c 20466 2007-04-20 08:29:05Z lha $");
 
 #include <roken.h>
 
+/**
+ * @page page_rsa RSA - public-key cryptography
+ *
+ * RSA is named by its inventors (Ron Rivest, Adi Shamir, and Leonard
+ * Adleman) (published in 1977), patented expired in 21 September 2000.
+ *
+ * See the library functions here: @ref hcrypto_rsa
+ */
+
+/**
+ * Same as RSA_new_method() using NULL as engine.
+ *
+ * @return a newly allocated RSA object. Free with RSA_free().
+ *
+ * @ingroup hcrypto_rsa
+ */
+
 RSA *
 RSA_new(void)
 {
     return RSA_new_method(NULL);
 }
+
+/**
+ * Allocate a new RSA object using the engine, if NULL is specified as
+ * the engine, use the default RSA engine as returned by
+ * ENGINE_get_default_RSA().
+ *
+ * @param engine Specific what ENGINE RSA provider should be used.
+ *
+ * @return a newly allocated RSA object. Free with RSA_free().
+ *
+ * @ingroup hcrypto_rsa
+ */
 
 RSA *
 RSA_new_method(ENGINE *engine)
@@ -87,6 +116,12 @@ RSA_new_method(ENGINE *engine)
     return rsa;
 }
 
+/**
+ * Free an allocation RSA object.
+ *
+ * @param rsa the RSA object to free.
+ * @ingroup hcrypto_rsa
+ */
 
 void
 RSA_free(RSA *rsa)
@@ -117,17 +152,50 @@ RSA_free(RSA *rsa)
     free(rsa);
 }
 
+/**
+ * Add an extra reference to the RSA object. The object should be free
+ * with RSA_free() to drop the reference.
+ *
+ * @param rsa the object to add reference counting too.
+ *
+ * @return the current reference count, can't safely be used except
+ * for debug printing.
+ *
+ * @ingroup hcrypto_rsa
+ */
+
 int
 RSA_up_ref(RSA *rsa)
 {
     return ++rsa->references;
 }
 
+/**
+ * Return the RSA_METHOD used for this RSA object.
+ *
+ * @param rsa the object to get the method from.
+ *
+ * @return the method used for this RSA object.
+ *
+ * @ingroup hcrypto_rsa
+ */
+
 const RSA_METHOD *
 RSA_get_method(const RSA *rsa)
 {
     return rsa->meth;
 }
+
+/**
+ * Set a new method for the RSA keypair.
+ *
+ * @param rsa rsa parameter.
+ * @param method the new method for the RSA parameter.
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_rsa
+ */
 
 int
 RSA_set_method(RSA *rsa, const RSA_METHOD *method)
@@ -144,12 +212,33 @@ RSA_set_method(RSA *rsa, const RSA_METHOD *method)
     return 1;
 }
 
+/**
+ * Set the application data for the RSA object.
+ *
+ * @param rsa the rsa object to set the parameter for
+ * @param arg the data object to store
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_rsa
+ */
+
 int
 RSA_set_app_data(RSA *rsa, void *arg)
 {
     rsa->ex_data.sk = arg;
     return 1;
 }
+
+/**
+ * Get the application data for the RSA object.
+ *
+ * @param rsa the rsa object to get the parameter for
+ *
+ * @return the data object
+ *
+ * @ingroup hcrypto_rsa
+ */
 
 void *
 RSA_get_app_data(RSA *rsa)
@@ -296,7 +385,11 @@ RSA_null_method(void)
 }
 
 extern const RSA_METHOD hc_rsa_imath_method;
+#ifdef HAVE_GMP
+static const RSA_METHOD *default_rsa_method = &hc_rsa_gmp_method;
+#else
 static const RSA_METHOD *default_rsa_method = &hc_rsa_imath_method;
+#endif
 
 const RSA_METHOD *
 RSA_get_default_method(void)

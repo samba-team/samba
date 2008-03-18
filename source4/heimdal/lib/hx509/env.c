@@ -32,7 +32,13 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: env.c 19878 2007-01-13 00:58:39Z lha $");
+RCSID("$Id: env.c 22349 2007-12-26 19:32:49Z lha $");
+
+/**
+ * @page page_env Hx509 enviroment functions
+ *
+ * See the library functions here: @ref hx509_env
+ */
 
 struct hx509_env {
     struct {
@@ -41,6 +47,17 @@ struct hx509_env {
     } *val;
     size_t len;
 };
+
+/**
+ * Allocate a new hx509_env container object.
+ *
+ * @param context A hx509 context.
+ * @param env return a hx509_env structure, free with hx509_env_free().
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_env
+ */
 
 int
 hx509_env_init(hx509_context context, hx509_env *env)
@@ -52,6 +69,19 @@ hx509_env_init(hx509_context context, hx509_env *env)
     }
     return 0;
 }
+
+/**
+ * Add a new key/value pair to the hx509_env.
+ *
+ * @param context A hx509 context.
+ * @param env enviroment to add the enviroment variable too.
+ * @param key key to add
+ * @param value value to add
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_env
+ */
 
 int
 hx509_env_add(hx509_context context, hx509_env env, 
@@ -80,6 +110,19 @@ hx509_env_add(hx509_context context, hx509_env env,
     return 0;
 }
 
+/**
+ * Search the hx509_env for a key.
+ *
+ * @param context A hx509 context.
+ * @param env enviroment to add the enviroment variable too.
+ * @param key key to search for.
+ * @param len length of key.
+ *
+ * @return the value if the key is found, NULL otherwise.
+ *
+ * @ingroup hx509_env
+ */
+
 const char *
 hx509_env_lfind(hx509_context context, hx509_env env,
 		const char *key, size_t len)
@@ -94,6 +137,13 @@ hx509_env_lfind(hx509_context context, hx509_env env,
     return NULL;
 }
 
+/**
+ * Free an hx509_env enviroment context.
+ *
+ * @param env the enviroment to free.
+ *
+ * @ingroup hx509_env
+ */
 
 void
 hx509_env_free(hx509_env *env)

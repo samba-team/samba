@@ -1,9 +1,18 @@
--- $Id: digest.asn1 20138 2007-02-02 21:08:24Z lha $
+-- $Id: digest.asn1 22152 2007-12-04 19:59:18Z lha $
 
 DIGEST DEFINITIONS ::=
 BEGIN
 
 IMPORTS EncryptedData, Principal FROM krb5;
+
+DigestTypes ::= BIT STRING {
+	ntlm-v1(0),
+	ntlm-v1-session(1),
+	ntlm-v2(2),
+	digest-md5(3),
+	chap-md5(4),
+	ms-chap-v2(5)
+}
 
 DigestInit ::= SEQUENCE {
     type		UTF8String, -- http, sasl, chap, cram-md5 --
@@ -95,7 +104,8 @@ DigestReqInner ::= CHOICE {
     init		[0] DigestInit,
     digestRequest	[1] DigestRequest,
     ntlmInit		[2] NTLMInit,
-    ntlmRequest		[3] NTLMRequest
+    ntlmRequest		[3] NTLMRequest,
+    supportedMechs	[4] NULL
 }
 
 DigestREQ ::= [APPLICATION 128] SEQUENCE {
@@ -108,7 +118,9 @@ DigestRepInner ::= CHOICE {
     initReply		[1] DigestInitReply,
     response		[2] DigestResponse,
     ntlmInitReply	[3] NTLMInitReply,
-    ntlmResponse	[4] NTLMResponse
+    ntlmResponse	[4] NTLMResponse,
+    supportedMechs	[5] DigestTypes,
+    ...
 }
 
 DigestREP ::= [APPLICATION 129] SEQUENCE {

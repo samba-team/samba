@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_req.c 21004 2007-06-08 01:53:10Z lha $");
+RCSID("$Id: rd_req.c 22235 2007-12-08 21:52:07Z lha $");
 
 static krb5_error_code
 decrypt_tkt_enc_part (krb5_context context,
@@ -137,7 +137,7 @@ check_transited(krb5_context context, Ticket *ticket, EncTicketPart *enc)
     krb5_error_code ret;
 	    
     /* 
-     * Windows 2000 and 2003 uses this inside their TGT so its normaly
+     * Windows 2000 and 2003 uses this inside their TGT so it's normaly
      * not seen by others, however, samba4 joined with a Windows AD as
      * a Domain Controller gets exposed to this.
      */
@@ -512,13 +512,13 @@ krb5_verify_ap_req2(krb5_context context,
  *
  */
 
-struct krb5_rd_req_in_ctx {
+struct krb5_rd_req_in_ctx_data {
     krb5_keytab keytab;
     krb5_keyblock *keyblock;
-    krb5_boolean no_pac_check;
+    krb5_boolean check_pac;
 };
 
-struct krb5_rd_req_out_ctx {
+struct krb5_rd_req_out_ctx_data {
     krb5_keyblock *keyblock;
     krb5_flags ap_req_options;
     krb5_ticket *ticket;
@@ -536,6 +536,7 @@ krb5_rd_req_in_ctx_alloc(krb5_context context, krb5_rd_req_in_ctx *ctx)
 	krb5_set_error_string(context, "out of memory");
 	return ENOMEM;
     }
+    (*ctx)->check_pac = (context->flags & KRB5_CTX_F_CHECK_PAC) ? 1 : 0;
     return 0;
 }
 
@@ -548,12 +549,24 @@ krb5_rd_req_in_set_keytab(krb5_context context,
     return 0;
 }
 
+/**
+ * Set if krb5_rq_red() is going to check the Windows PAC or not
+ * 
+ * @param context Keberos 5 context.
+ * @param in krb5_rd_req_in_ctx to check the option on.
+ * @param flag flag to select if to check the pac (TRUE) or not (FALSE).
+ *
+ * @return Kerberos 5 error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_req_in_set_pac_check(krb5_context context, 
 			     krb5_rd_req_in_ctx in,
 			     krb5_boolean flag)
 {
-    in->no_pac_check = !flag;
+    in->check_pac = flag;
     return 0;
 }
 
@@ -826,20 +839,21 @@ krb5_rd_req_ctx(krb5_context context,
 	    goto out;
     }
 
-    ret = krb5_verify_ap_req(context,
-			     auth_context,
-			     &ap_req,
-			     server,
-			     o->keyblock,
-			     0,
-			     &o->ap_req_options,
-			     &o->ticket);
+    ret = krb5_verify_ap_req2(context,
+			      auth_context,
+			      &ap_req,
+			      server,
+			      o->keyblock,
+			      0,
+			      &o->ap_req_options,
+			      &o->ticket,
+			      KRB5_KU_AP_REQ_AUTH);
 
     if (ret)
 	goto out;
 
     /* If there is a PAC, verify its server signature */
-    if (inctx->no_pac_check == FALSE) {
+    if (inctx->check_pac) {
 	krb5_pac pac;
 	krb5_data data;
 

@@ -32,8 +32,13 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: print.c 21381 2007-06-28 08:29:22Z lha $");
+RCSID("$Id: print.c 22538 2008-01-27 13:05:47Z lha $");
 
+/**
+ * @page page_print Hx509 printing functions
+ *
+ * See the library functions here: @ref hx509_print
+ */
 
 struct hx509_validate_ctx_data {
     int flags;
@@ -75,15 +80,31 @@ Time2string(const Time *T, char **str)
     return 0;
 }
 
+/**
+ * Helper function to print on stdout for:
+ * - hx509_oid_print(),
+ * - hx509_bitstring_print(),
+ * - hx509_validate_ctx_set_print().
+ *
+ * @param ctx the context to the print function. If the ctx is NULL,
+ * stdout is used.
+ * @param fmt the printing format.
+ * @param va the argumet list.
+ *
+ * @ingroup hx509_print
+ */
+
 void
 hx509_print_stdout(void *ctx, const char *fmt, va_list va)
 {
     FILE *f = ctx;
+    if (f == NULL)
+	f = stdout;
     vfprintf(f, fmt, va);
 }
 
-void
-hx509_print_func(hx509_vprint_func func, void *ctx, const char *fmt, ...)
+static void
+print_func(hx509_vprint_func func, void *ctx, const char *fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
@@ -91,35 +112,81 @@ hx509_print_func(hx509_vprint_func func, void *ctx, const char *fmt, ...)
     va_end(va);
 }
 
+/**
+ * Print a oid to a string.
+ * 
+ * @param oid oid to print
+ * @param str allocated string, free with hx509_xfree().
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_print
+ */
+
 int
 hx509_oid_sprint(const heim_oid *oid, char **str)
 {
     return der_print_heim_oid(oid, '.', str);
 }
 
+/**
+ * Print a oid using a hx509_vprint_func function. To print to stdout
+ * use hx509_print_stdout().
+ * 
+ * @param oid oid to print
+ * @param func hx509_vprint_func to print with.
+ * @param ctx context variable to hx509_vprint_func function.
+ *
+ * @ingroup hx509_print
+ */
+
 void
 hx509_oid_print(const heim_oid *oid, hx509_vprint_func func, void *ctx)
 {
     char *str;
     hx509_oid_sprint(oid, &str);
-    hx509_print_func(func, ctx, "%s", str);
+    print_func(func, ctx, "%s", str);
     free(str);
 }
+
+/**
+ * Print a bitstring using a hx509_vprint_func function. To print to
+ * stdout use hx509_print_stdout().
+ * 
+ * @param b bit string to print.
+ * @param func hx509_vprint_func to print with.
+ * @param ctx context variable to hx509_vprint_func function.
+ *
+ * @ingroup hx509_print
+ */
 
 void
 hx509_bitstring_print(const heim_bit_string *b,
 		      hx509_vprint_func func, void *ctx)
 {
     int i;
-    hx509_print_func(func, ctx, "\tlength: %d\n\t", b->length);
+    print_func(func, ctx, "\tlength: %d\n\t", b->length);
     for (i = 0; i < (b->length + 7) / 8; i++)
-	hx509_print_func(func, ctx, "%02x%s%s",
-			 ((unsigned char *)b->data)[i], 
-			 i < (b->length - 7) / 8
-			 && (i == 0 || (i % 16) != 15) ? ":" : "",
-			 i != 0 && (i % 16) == 15 ?
-			 (i <= ((b->length + 7) / 8 - 2) ? "\n\t" : "\n"):"");
+	print_func(func, ctx, "%02x%s%s",
+		   ((unsigned char *)b->data)[i], 
+		   i < (b->length - 7) / 8
+		   && (i == 0 || (i % 16) != 15) ? ":" : "",
+		   i != 0 && (i % 16) == 15 ?
+		   (i <= ((b->length + 7) / 8 - 2) ? "\n\t" : "\n"):"");
 }
+
+/**
+ * Print certificate usage for a certificate to a string.
+ * 
+ * @param context A hx509 context.
+ * @param c a certificate print the keyusage for.
+ * @param s the return string with the keysage printed in to, free
+ * with hx509_xfree().
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_print
+ */
 
 int
 hx509_cert_keyusage_print(hx509_context context, hx509_cert c, char **s)
@@ -268,9 +335,6 @@ check_authorityKeyIdentifier(hx509_validate_ctx ctx,
     status->haveAKI = 1;
     check_Null(ctx, status, cf, e);
 
-    status->haveSKI = 1;
-    check_Null(ctx, status, cf, e);
-
     ret = decode_AuthorityKeyIdentifier(e->extnValue.data, 
 					e->extnValue.length,
 					&ai, &size);
@@ -298,6 +362,56 @@ check_authorityKeyIdentifier(hx509_validate_ctx ctx,
     return 0;
 }
 
+static int
+check_extKeyUsage(hx509_validate_ctx ctx, 
+		  struct cert_status *status,
+		  enum critical_flag cf,
+		  const Extension *e)
+{
+    ExtKeyUsage eku;
+    size_t size, i;
+    int ret;
+
+    check_Null(ctx, status, cf, e);
+
+    ret = decode_ExtKeyUsage(e->extnValue.data, 
+			     e->extnValue.length,
+			     &eku, &size);
+    if (ret) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding ExtKeyUsage failed: %d", ret);
+	return 1;
+    }
+    if (size != e->extnValue.length) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Padding data in EKU");
+	free_ExtKeyUsage(&eku);
+	return 1;
+    }
+    if (eku.len == 0) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "ExtKeyUsage length is 0");
+	return 1;
+    }
+
+    for (i = 0; i < eku.len; i++) {
+	char *str;
+	ret = der_print_heim_oid (&eku.val[i], '.', &str);
+	if (ret) {
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+			   "\tEKU: failed to print oid %d", i);
+	    free_ExtKeyUsage(&eku);
+	    return 1;
+	}
+	validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
+		       "\teku-%d: %s\n", i, str);;
+	free(str);
+    }
+
+    free_ExtKeyUsage(&eku);
+
+    return 0;
+}
 
 static int
 check_pkinit_san(hx509_validate_ctx ctx, heim_any *a)
@@ -664,7 +778,7 @@ struct {
     { ext(policyMappings, Null), M_N_C },
     { ext(authorityKeyIdentifier, authorityKeyIdentifier), M_N_C },
     { ext(policyConstraints, Null), D_C },
-    { ext(extKeyUsage, Null), D_C },
+    { ext(extKeyUsage, extKeyUsage), D_C },
     { ext(freshestCRL, Null), M_N_C },
     { ext(inhibitAnyPolicy, Null), M_C },
 #undef ext
@@ -679,6 +793,18 @@ struct {
     { NULL }
 };
 
+/**
+ * Allocate a hx509 validation/printing context.
+ * 
+ * @param context A hx509 context.
+ * @param ctx a new allocated hx509 validation context, free with
+ * hx509_validate_ctx_free().
+
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_print
+ */
+
 int
 hx509_validate_ctx_init(hx509_context context, hx509_validate_ctx *ctx)
 {
@@ -689,6 +815,18 @@ hx509_validate_ctx_init(hx509_context context, hx509_validate_ctx *ctx)
     return 0;
 }
 
+/**
+ * Set the printing functions for the validation context.
+ * 
+ * @param ctx a hx509 valication context.
+ * @param func the printing function to usea.
+ * @param c the context variable to the printing function.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_print
+ */
+
 void
 hx509_validate_ctx_set_print(hx509_validate_ctx ctx, 
 			     hx509_vprint_func func,
@@ -698,17 +836,49 @@ hx509_validate_ctx_set_print(hx509_validate_ctx ctx,
     ctx->ctx = c;
 }
 
+/**
+ * Add flags to control the behaivor of the hx509_validate_cert()
+ * function.
+ * 
+ * @param ctx A hx509 validation context.
+ * @param flags flags to add to the validation context.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_print
+ */
+
 void
 hx509_validate_ctx_add_flags(hx509_validate_ctx ctx, int flags)
 {
     ctx->flags |= flags;
 }
 
+/**
+ * Free an hx509 validate context.
+ * 
+ * @param ctx the hx509 validate context to free.
+ *
+ * @ingroup hx509_print
+ */
+
 void
 hx509_validate_ctx_free(hx509_validate_ctx ctx)
 {
     free(ctx);
 }
+
+/**
+ * Validate/Print the status of the certificate.
+ * 
+ * @param context A hx509 context.
+ * @param ctx A hx509 validation context.
+ * @param cert the cerificate to validate/print.
+
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_print
+ */
 
 int
 hx509_validate_cert(hx509_context context,

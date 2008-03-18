@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5_locl.h 21552 2007-07-15 09:04:00Z lha $ */
+/* $Id: krb5_locl.h 22226 2007-12-08 21:31:53Z lha $ */
 
 #ifndef __KRB5_LOCL_H__
 #define __KRB5_LOCL_H__
@@ -231,14 +231,18 @@ typedef struct krb5_context_data {
     krb5_addresses *ignore_addresses;
     char *default_cc_name;
     char *default_cc_name_env;
+    int default_cc_name_set;
     void *mutex;			/* protects error_string/error_buf */
     int large_msg_size;
-    int dns_canonicalize_hostname;
+    int flags;
+#define KRB5_CTX_F_DNS_CANONICALIZE_HOSTNAME	1
+#define KRB5_CTX_F_CHECK_PAC			2
     struct send_to_kdc *send_to_kdc;
 } krb5_context_data;
 
 #define KRB5_DEFAULT_CCNAME_FILE "FILE:/tmp/krb5cc_%{uid}"
 #define KRB5_DEFAULT_CCNAME_API "API:"
+#define KRB5_DEFAULT_CCNAME_KCM "KCM:%{uid}"
 
 #define EXTRACT_TICKET_ALLOW_CNAME_MISMATCH		1
 #define EXTRACT_TICKET_ALLOW_SERVER_MISMATCH		2
@@ -248,11 +252,11 @@ typedef struct krb5_context_data {
  * Configurable options
  */
 
-#ifndef KRB5_DEFAULT_CCNAME
+#ifndef KRB5_DEFAULT_CCTYPE
 #ifdef __APPLE__
-#define KRB5_DEFAULT_CCNAME KRB5_DEFAULT_CCNAME_API
+#define KRB5_DEFAULT_CCTYPE (&krb5_acc_ops)
 #else
-#define KRB5_DEFAULT_CCNAME KRB5_DEFAULT_CCNAME_FILE
+#define KRB5_DEFAULT_CCTYPE (&krb5_fcc_ops)
 #endif
 #endif
 

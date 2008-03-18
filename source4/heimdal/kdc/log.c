@@ -32,7 +32,7 @@
  */
 
 #include "kdc_locl.h"
-RCSID("$Id: log.c 15532 2005-06-30 01:54:49Z lha $");
+RCSID("$Id: log.c 22254 2007-12-09 06:01:05Z lha $");
 
 void
 kdc_openlog(krb5_context context, 
@@ -47,8 +47,12 @@ kdc_openlog(krb5_context context,
 	for(p = s; *p; p++)
 	    krb5_addlog_dest(context, config->logf, *p);
 	krb5_config_free_strings(s);
-    }else
-	krb5_addlog_dest(context, config->logf, DEFAULT_LOG_DEST);
+    }else {
+	char *s;
+	asprintf(&s, "0-1/FILE:%s/%s", hdb_db_dir(context), KDC_LOG_FILE);
+	krb5_addlog_dest(context, config->logf, s);
+	free(s);
+    }
     krb5_set_warn_dest(context, config->logf);
 }
 

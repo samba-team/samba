@@ -36,7 +36,7 @@
 #define O_BINARY 0
 #endif
 
-RCSID("$Id: mkey.c 17445 2006-05-05 10:37:46Z lha $");
+RCSID("$Id: mkey.c 21745 2007-07-31 16:11:25Z lha $");
 
 struct hdb_master_key_data {
     krb5_keytab_entry keytab;
@@ -129,6 +129,11 @@ read_master_keytab(krb5_context context, const char *filename,
     *mkey = NULL;
     while(krb5_kt_next_entry(context, id, &entry, &cursor) == 0) {
 	p = calloc(1, sizeof(*p));
+	if(p == NULL) {
+	    krb5_kt_end_seq_get(context, id, &cursor);
+	    ret = ENOMEM;
+	    goto out;
+	}
 	p->keytab = entry;
 	ret = krb5_crypto_init(context, &p->keytab.keyblock, 0, &p->crypto);
 	p->next = *mkey;

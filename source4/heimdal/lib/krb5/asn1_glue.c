@@ -37,7 +37,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: asn1_glue.c 18269 2006-10-06 17:02:48Z lha $");
+RCSID("$Id: asn1_glue.c 21745 2007-07-31 16:11:25Z lha $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_principal2principalname (PrincipalName *p,
@@ -53,8 +53,12 @@ _krb5_principalname2krb5_principal (krb5_context context,
 				    const Realm realm)
 {
     krb5_principal p = malloc(sizeof(*p));
+    if (p == NULL)
+	return ENOMEM;
     copy_PrincipalName(&from, &p->name);
     p->realm = strdup(realm);
+    if (p->realm == NULL)
+	return ENOMEM;
     *principal = p;
     return 0;
 }

@@ -40,6 +40,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_KRB5 \
 CFLAGS = -Iheimdal_build -Iheimdal/lib/hdb
 OBJ_FILES = \
 	../heimdal/lib/hdb/db.o \
+	../heimdal/lib/hdb/dbinfo.o \
 	../heimdal/lib/hdb/hdb.o \
 	../heimdal/lib/hdb/ext.o \
 	../heimdal/lib/hdb/keytab.o \
@@ -170,7 +171,7 @@ PUBLIC_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_KRB5
 # Start SUBSYSTEM HEIMDAL_KRB5
 [SUBSYSTEM::HEIMDAL_KRB5]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_PKINIT_ASN1
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_PKINIT_ASN1 HEIMDAL_WIND
 PUBLIC_DEPENDENCIES = HEIMDAL_KRB5_ASN1 HEIMDAL_GLUE HEIMDAL_HX509 HEIMDAL_HCRYPTO
 OBJ_FILES = \
 	../heimdal/lib/krb5/acache.o \
@@ -323,7 +324,9 @@ OBJ_FILES = \
 	../heimdal/lib/hcrypto/rand-unix.o \
 	../heimdal/lib/hcrypto/rand-fortuna.o \
 	../heimdal/lib/hcrypto/rand-timer.o \
-	../heimdal/lib/hcrypto/hmac.o
+	../heimdal/lib/hcrypto/hmac.o \
+	../heimdal/lib/hcrypto/camellia.o \
+	../heimdal/lib/hcrypto/camellia-ntt.o
 # End SUBSYSTEM HEIMDAL_HCRYPTO
 #######################
 
@@ -337,7 +340,8 @@ PRIVATE_DEPENDENCIES = \
 	HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 \
 	HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 \
 	HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 \
-	HEIMDAL_PKINIT_ASN1 HEIMDAL_PKCS10_ASN1
+	HEIMDAL_PKINIT_ASN1 HEIMDAL_PKCS10_ASN1 \
+	HEIMDAL_WIND
 OBJ_FILES = \
 	../heimdal/lib/hx509/ca.o \
 	../heimdal/lib/hx509/cert.o \
@@ -363,6 +367,30 @@ OBJ_FILES = \
 	../heimdal/lib/hx509/revoke.o \
 	../heimdal/lib/hx509/hx509_err.o
 # End SUBSYSTEM HEIMDAL_HX509
+#######################
+
+#######################
+# Start SUBSYSTEM HEIMDAL_WIND
+[SUBSYSTEM::HEIMDAL_WIND]
+CFLAGS = -Iheimdal_build -Iheimdal/lib/wind 
+PRIVATE_DEPENDENCIES = \
+	HEIMDAL_ROKEN HEIMDAL_COM_ERR
+OBJ_FILES = \
+	../heimdal/lib/wind/wind_err.o \
+	../heimdal/lib/wind/stringprep.o \
+	../heimdal/lib/wind/errorlist.o \
+	../heimdal/lib/wind/errorlist_table.o \
+	../heimdal/lib/wind/normalize.o \
+	../heimdal/lib/wind/normalize_table.o \
+	../heimdal/lib/wind/combining.o \
+	../heimdal/lib/wind/combining_table.o \
+	../heimdal/lib/wind/utf8.o \
+	../heimdal/lib/wind/bidi.o \
+	../heimdal/lib/wind/bidi_table.o \
+	../heimdal/lib/wind/ldap.o \
+	../heimdal/lib/wind/map.o \
+	../heimdal/lib/wind/map_table.o
+# End SUBSYSTEM HEIMDAL_WIND
 #######################
 
 [SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME]
@@ -532,6 +560,7 @@ mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb_err.et heimdal/li
 mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb5_err.et heimdal/lib/krb5|
 mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/gssapi/krb5/gkrb5_err.et heimdal/lib/gssapi|
 mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/hx509/hx509_err.et heimdal/lib/hx509|
+mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/wind/wind_err.et heimdal/lib/wind|
 
 clean::	
 	@-rm -f bin/compile_et bin/asn1_compile

@@ -9,6 +9,11 @@
 #endif
 
 int
+_hx509_AlgorithmIdentifier_cmp (
+	const AlgorithmIdentifier */*p*/,
+	const AlgorithmIdentifier */*q*/);
+
+int
 _hx509_Certificate_cmp (
 	const Certificate */*p*/,
 	const Certificate */*q*/);
@@ -269,12 +274,14 @@ _hx509_match_keys (
 int
 _hx509_name_cmp (
 	const Name */*n1*/,
-	const Name */*n2*/);
+	const Name */*n2*/,
+	int */*c*/);
 
 int
 _hx509_name_ds_cmp (
 	const DirectoryString */*ds1*/,
-	const DirectoryString */*ds2*/);
+	const DirectoryString */*ds2*/,
+	int */*diff*/);
 
 int
 _hx509_name_from_Name (
@@ -314,6 +321,14 @@ _hx509_pbe_decrypt (
 	const heim_octet_string */*econtent*/,
 	heim_octet_string */*content*/);
 
+int
+_hx509_pbe_encrypt (
+	hx509_context /*context*/,
+	hx509_lock /*lock*/,
+	const AlgorithmIdentifier */*ai*/,
+	const heim_octet_string */*content*/,
+	heim_octet_string */*econtent*/);
+
 void
 _hx509_pi_printf (
 	int (*/*func*/)(void *, const char *),
@@ -343,6 +358,12 @@ _hx509_private_key_exportable (hx509_private_key /*key*/);
 
 int
 _hx509_private_key_free (hx509_private_key */*key*/);
+
+BIGNUM *
+_hx509_private_key_get_internal (
+	hx509_context /*context*/,
+	hx509_private_key /*key*/,
+	const char */*type*/);
 
 int
 _hx509_private_key_init (
@@ -415,9 +436,33 @@ void
 _hx509_request_free (hx509_request */*req*/);
 
 int
+_hx509_request_get_SubjectPublicKeyInfo (
+	hx509_context /*context*/,
+	hx509_request /*req*/,
+	SubjectPublicKeyInfo */*key*/);
+
+int
+_hx509_request_get_name (
+	hx509_context /*context*/,
+	hx509_request /*req*/,
+	hx509_name */*name*/);
+
+int
 _hx509_request_init (
 	hx509_context /*context*/,
 	hx509_request */*req*/);
+
+int
+_hx509_request_parse (
+	hx509_context /*context*/,
+	const char */*path*/,
+	hx509_request */*req*/);
+
+int
+_hx509_request_print (
+	hx509_context /*context*/,
+	hx509_request /*req*/,
+	FILE */*f*/);
 
 int
 _hx509_request_set_SubjectPublicKeyInfo (
@@ -437,6 +482,9 @@ _hx509_request_to_pkcs10 (
 	const hx509_request /*req*/,
 	const hx509_private_key /*signer*/,
 	heim_octet_string */*request*/);
+
+hx509_revoke_ctx
+_hx509_revoke_ref (hx509_revoke_ctx /*ctx*/);
 
 int
 _hx509_set_cert_attribute (

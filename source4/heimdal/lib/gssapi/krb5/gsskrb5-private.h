@@ -413,7 +413,7 @@ _gsskrb5_init (krb5_context */*context*/);
 OM_uint32
 _gsskrb5_init_sec_context (
 	OM_uint32 * /*minor_status*/,
-	const gss_cred_id_t /*initiator_cred_handle*/,
+	const gss_cred_id_t /*cred_handle*/,
 	gss_ctx_id_t * /*context_handle*/,
 	const gss_name_t /*target_name*/,
 	const gss_OID /*mech_type*/,

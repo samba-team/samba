@@ -28,7 +28,7 @@
 
 #include "mech_locl.h"
 #include <heim_threads.h>
-RCSID("$Id: gss_mech_switch.c 21700 2007-07-26 19:08:34Z lha $");
+RCSID("$Id: gss_mech_switch.c 21698 2007-07-26 19:07:11Z lha $");
 
 #ifndef _PATH_GSS_MECH
 #define _PATH_GSS_MECH	"/etc/gss/mech"

@@ -31,17 +31,22 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: heimntlm.h 19469 2006-12-20 07:28:37Z lha $ */
+/* $Id: heimntlm.h 22376 2007-12-28 18:38:23Z lha $ */
 
 #ifndef HEIM_NTLM_H
 #define HEIM_NTLM_H
 
+/**
+ * Buffer for storing data in the NTLM library. When filled in by the
+ * library it should be freed with heim_ntlm_free_buf().
+ */
 struct ntlm_buf {
-    size_t length;
-    void *data;
+    size_t length; /**< length buffer data */
+    void *data; /**< pointer to the data itself */
 };
 
 #define NTLM_NEG_UNICODE		0x00000001
+#define NTLM_NEG_TARGET			0x00000004
 #define NTLM_NEG_SIGN			0x00000010
 #define NTLM_NEG_SEAL			0x00000020
 #define NTLM_NEG_NTLM			0x00000200
@@ -52,42 +57,66 @@ struct ntlm_buf {
 #define NTLM_NEG_ALWAYS_SIGN		0x00008000
 #define NTLM_NEG_NTLM2_SESSION		0x00080000
 
-#define NTLM_NEG_TARGET_DOMAIN		0x00010000
+#define NTLM_TARGET_DOMAIN		0x00010000
+#define NTLM_TARGET_SERVER		0x00020000
 #define NTLM_ENC_128			0x20000000
 #define NTLM_NEG_KEYEX			0x40000000
 
+/**
+ * Struct for the NTLM target info, the strings is assumed to be in
+ * UTF8.  When filled in by the library it should be freed with
+ * heim_ntlm_free_targetinfo().
+ */
 struct ntlm_targetinfo {
-    char *servername;
-    char *domainname;
-    char *dnsdomainname;
-    char *dnsservername;
+    char *servername; /**< */
+    char *domainname; /**< */
+    char *dnsdomainname; /**< */
+    char *dnsservername; /**< */
 };
+
+/**
+ * Struct for the NTLM type1 message info, the strings is assumed to
+ * be in UTF8.  When filled in by the library it should be freed with
+ * heim_ntlm_free_type1().
+ */
 
 struct ntlm_type1 {
-    uint32_t flags;
-    char *domain;
-    char *hostname;
-    uint32_t os[2];
+    uint32_t flags; /**< */
+    char *domain; /**< */
+    char *hostname; /**< */
+    uint32_t os[2]; /**< */
 };
+
+/**
+ * Struct for the NTLM type2 message info, the strings is assumed to
+ * be in UTF8.  When filled in by the library it should be freed with
+ * heim_ntlm_free_type2().
+ */
 
 struct ntlm_type2 {
-    uint32_t flags;
-    char *targetname;
-    struct ntlm_buf targetinfo;
-    unsigned char challange[8];
-    uint32_t context[2];
-    uint32_t os[2];
+    uint32_t flags; /**< */
+    char *targetname; /**< */
+    struct ntlm_buf targetinfo; /**< */
+    unsigned char challange[8]; /**< */
+    uint32_t context[2]; /**< */
+    uint32_t os[2]; /**< */
 };
 
+/**
+ * Struct for the NTLM type3 message info, the strings is assumed to
+ * be in UTF8.  When filled in by the library it should be freed with
+ * heim_ntlm_free_type3().
+ */
+
 struct ntlm_type3 {
-    uint32_t flags;
-    char *username;
-    char *targetname;
-    struct ntlm_buf lm;
-    struct ntlm_buf ntlm;
-    struct ntlm_buf sessionkey;
-    char *ws;
-    uint32_t os[2];
+    uint32_t flags; /**< */
+    char *username; /**< */
+    char *targetname; /**< */
+    struct ntlm_buf lm; /**< */
+    struct ntlm_buf ntlm; /**< */
+    struct ntlm_buf sessionkey; /**< */
+    char *ws; /**< */
+    uint32_t os[2]; /**< */
 };
 
 #include <heimntlm-protos.h>

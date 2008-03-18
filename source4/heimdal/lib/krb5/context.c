@@ -34,11 +34,18 @@
 #include "krb5_locl.h"
 #include <com_err.h>
 
-RCSID("$Id: context.c 19107 2006-11-24 14:24:33Z lha $");
+RCSID("$Id: context.c 22293 2007-12-14 05:25:59Z lha $");
 
 #define INIT_FIELD(C, T, E, D, F)					\
     (C)->E = krb5_config_get_ ## T ## _default ((C), NULL, (D), 	\
 						"libdefaults", F, NULL)
+
+#define INIT_FLAG(C, O, V, D, F)					\
+    do {								\
+	if (krb5_config_get_bool_default((C), NULL, (D),"libdefaults", F, NULL)) { \
+	    (C)->O |= V;						\
+        }								\
+    } while(0)
 
 /*
  * Set the list of etypes `ret_etypes' from the configuration variable
@@ -181,10 +188,27 @@ init_context_from_config_file(krb5_context context)
     INIT_FIELD(context, bool, srv_lookup, TRUE, "srv_lookup");
     INIT_FIELD(context, bool, srv_lookup, context->srv_lookup, "dns_lookup_kdc");
     INIT_FIELD(context, int, large_msg_size, 1400, "large_message_size");
-    INIT_FIELD(context, bool, dns_canonicalize_hostname, TRUE, "dns_canonicalize_hostname");
+    INIT_FLAG(context, flags, KRB5_CTX_F_DNS_CANONICALIZE_HOSTNAME, TRUE, "dns_canonicalize_hostname");
+    INIT_FLAG(context, flags, KRB5_CTX_F_CHECK_PAC, TRUE, "check_pac");
     context->default_cc_name = NULL;
+    context->default_cc_name_set = 0;
     return 0;
 }
+
+/**
+ * Initializes the context structure and reads the configuration file
+ * /etc/krb5.conf. The structure should be freed by calling
+ * krb5_free_context() when it is no longer being used.
+ *
+ * @param context pointer to returned context
+ *
+ * @return Returns 0 to indicate success.  Otherwise an errno code is
+ * returned.  Failure means either that something bad happened during
+ * initialization (typically ENOMEM) or that Kerberos should not be
+ * used ENXIO.
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_init_context(krb5_context *context)
@@ -246,11 +270,21 @@ out:
     return ret;
 }
 
+/**
+ * Frees the krb5_context allocated by krb5_init_context().
+ *
+ * @param context context to be freed.
+ *
+ *  @ingroup krb5
+*/
+
 void KRB5_LIB_FUNCTION
 krb5_free_context(krb5_context context)
 {
     if (context->default_cc_name)
 	free(context->default_cc_name);
+    if (context->default_cc_name_env)
+	free(context->default_cc_name_env);
     free(context->etypes);
     free(context->etypes_des);
     krb5_free_host_realm (context, context->default_realms);
@@ -271,6 +305,18 @@ krb5_free_context(krb5_context context)
     memset(context, 0, sizeof(*context));
     free(context);
 }
+
+/**
+ * Reinit the context from a new set of filenames.
+ *
+ * @param context context to add configuration too.
+ * @param filenames array of filenames, end of list is indicated with a NULL filename.
+ *
+ * @return Returns 0 to indicate success.  Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_config_files(krb5_context context, char **filenames)
@@ -324,7 +370,7 @@ add_file(char ***pfilenames, int *len, char *file)
 }
 
 /*
- *  `pq' isn't free, its up the the caller
+ *  `pq' isn't free, it's up the the caller
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -380,6 +426,18 @@ krb5_prepend_config_files(const char *filelist, char **pq, char ***ret_pp)
     return 0;
 }
 
+/**
+ * Prepend the filename to the global configuration list.
+ *
+ * @param filelist a filename to add to the default list of filename
+ * @param pfilenames return array of filenames, should be freed with krb5_free_config_files().
+ *
+ * @return Returns 0 to indicate success.  Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_prepend_config_files_default(const char *filelist, char ***pfilenames)
 {
@@ -399,6 +457,17 @@ krb5_prepend_config_files_default(const char *filelist, char ***pfilenames)
     return 0;
 }
 
+/**
+ * Get the global configuration list.
+ *
+ * @param pfilenames return array of filenames, should be freed with krb5_free_config_files().
+ *
+ * @return Returns 0 to indicate success.  Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION 
 krb5_get_default_config_files(char ***pfilenames)
 {
@@ -414,6 +483,17 @@ krb5_get_default_config_files(char ***pfilenames)
     return krb5_prepend_config_files(files, NULL, pfilenames);
 }
 
+/**
+ * Free a list of configuration files.
+ *
+ * @param filenames list to be freed.
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 void KRB5_LIB_FUNCTION
 krb5_free_config_files(char **filenames)
 {
@@ -423,12 +503,17 @@ krb5_free_config_files(char **filenames)
     free(filenames);
 }
 
-/*
+/**
  * Returns the list of Kerberos encryption types sorted in order of
- * most preferred to least preferred encryption type.  The array ends
- * with ETYPE_NULL.  Note that some encryption types might be
- * disabled, so you need to check with krb5_enctype_valid() before
- * using the encryption type.
+ * most preferred to least preferred encryption type.  Note that some
+ * encryption types might be disabled, so you need to check with
+ * krb5_enctype_valid() before using the encryption type.
+ *
+ * @return list of enctypes, terminated with ETYPE_NULL. Its a static
+ * array completed into the Kerberos library so the content doesn't
+ * need to be freed.
+ *
+ * @ingroup krb5
  */
 
 const krb5_enctype * KRB5_LIB_FUNCTION
@@ -479,6 +564,19 @@ default_etypes(krb5_context context, krb5_enctype **etype)
     return 0;
 }
 
+/**
+ * Set the default encryption types that will be use in communcation
+ * with the KDC, clients and servers.
+ *
+ * @param context Kerberos 5 context.
+ * @param etypes Encryption types, array terminated with ETYPE_NULL (0).
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_default_in_tkt_etypes(krb5_context context, 
 			       const krb5_enctype *etypes)
@@ -507,6 +605,19 @@ krb5_set_default_in_tkt_etypes(krb5_context context,
     return 0;
 }
 
+/**
+ * Get the default encryption types that will be use in communcation
+ * with the KDC, clients and servers.
+ *
+ * @param context Kerberos 5 context.
+ * @param etypes Encryption types, array terminated with
+ * ETYPE_NULL(0), caller should free array with krb5_xfree():
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_default_in_tkt_etypes(krb5_context context,
@@ -534,6 +645,18 @@ krb5_get_default_in_tkt_etypes(krb5_context context,
   return 0;
 }
 
+/**
+ * Return the error string for the error code. The caller must not
+ * free the string.
+ *
+ * @param context Kerberos 5 context.
+ * @param code Kerberos error code.
+ *
+ * @return the error message matching code
+ *
+ * @ingroup krb5
+ */
+
 const char* KRB5_LIB_FUNCTION
 krb5_get_err_text(krb5_context context, krb5_error_code code)
 {
@@ -546,6 +669,14 @@ krb5_get_err_text(krb5_context context, krb5_error_code code)
 	p = "Unknown error";
     return p;
 }
+
+/**
+ * Init the built-in ets in the Kerberos library. 
+ *
+ * @param context kerberos context to add the ets too
+ *
+ * @ingroup krb5
+ */
 
 void KRB5_LIB_FUNCTION
 krb5_init_ets(krb5_context context)
@@ -561,17 +692,49 @@ krb5_init_ets(krb5_context context)
     }
 }
 
+/**
+ * Make the kerberos library default to the admin KDC.
+ *
+ * @param context Kerberos 5 context.
+ * @param flag boolean flag to select if the use the admin KDC or not.
+ *
+ * @ingroup krb5
+ */
+
 void KRB5_LIB_FUNCTION
 krb5_set_use_admin_kdc (krb5_context context, krb5_boolean flag)
 {
     context->use_admin_kdc = flag;
 }
 
+/**
+ * Make the kerberos library default to the admin KDC.
+ *
+ * @param context Kerberos 5 context.
+ *
+ * @return boolean flag to telling the context will use admin KDC as the default KDC.
+ *
+ * @ingroup krb5
+ */
+
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_get_use_admin_kdc (krb5_context context)
 {
     return context->use_admin_kdc;
 }
+
+/**
+ * Add extra address to the address list that the library will add to
+ * the client's address list when communicating with the KDC.
+ *
+ * @param context Kerberos 5 context.
+ * @param addresses addreses to add
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_add_extra_addresses(krb5_context context, krb5_addresses *addresses)
@@ -583,6 +746,19 @@ krb5_add_extra_addresses(krb5_context context, krb5_addresses *addresses)
     else
 	return krb5_set_extra_addresses(context, addresses);
 }
+
+/**
+ * Set extra address to the address list that the library will add to
+ * the client's address list when communicating with the KDC.
+ *
+ * @param context Kerberos 5 context.
+ * @param addresses addreses to set
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_extra_addresses(krb5_context context, const krb5_addresses *addresses)
@@ -607,6 +783,19 @@ krb5_set_extra_addresses(krb5_context context, const krb5_addresses *addresses)
     return krb5_copy_addresses(context, addresses, context->extra_addresses);
 }
 
+/**
+ * Get extra address to the address list that the library will add to
+ * the client's address list when communicating with the KDC.
+ *
+ * @param context Kerberos 5 context.
+ * @param addresses addreses to set
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_extra_addresses(krb5_context context, krb5_addresses *addresses)
 {
@@ -616,6 +805,19 @@ krb5_get_extra_addresses(krb5_context context, krb5_addresses *addresses)
     }
     return krb5_copy_addresses(context,context->extra_addresses, addresses);
 }
+
+/**
+ * Add extra addresses to ignore when fetching addresses from the
+ * underlaying operating system.
+ *
+ * @param context Kerberos 5 context.
+ * @param addresses addreses to ignore
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_add_ignore_addresses(krb5_context context, krb5_addresses *addresses)
@@ -627,6 +829,19 @@ krb5_add_ignore_addresses(krb5_context context, krb5_addresses *addresses)
     else
 	return krb5_set_ignore_addresses(context, addresses);
 }
+
+/**
+ * Set extra addresses to ignore when fetching addresses from the
+ * underlaying operating system.
+ *
+ * @param context Kerberos 5 context.
+ * @param addresses addreses to ignore
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_ignore_addresses(krb5_context context, const krb5_addresses *addresses)
@@ -650,6 +865,19 @@ krb5_set_ignore_addresses(krb5_context context, const krb5_addresses *addresses)
     return krb5_copy_addresses(context, addresses, context->ignore_addresses);
 }
 
+/**
+ * Get extra addresses to ignore when fetching addresses from the
+ * underlaying operating system.
+ *
+ * @param context Kerberos 5 context.
+ * @param addresses list addreses ignored
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_ignore_addresses(krb5_context context, krb5_addresses *addresses)
 {
@@ -660,6 +888,18 @@ krb5_get_ignore_addresses(krb5_context context, krb5_addresses *addresses)
     return krb5_copy_addresses(context, context->ignore_addresses, addresses);
 }
 
+/**
+ * Set version of fcache that the library should use.
+ *
+ * @param context Kerberos 5 context.
+ * @param version version number.
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_fcache_version(krb5_context context, int version)
 {
@@ -667,12 +907,33 @@ krb5_set_fcache_version(krb5_context context, int version)
     return 0;
 }
 
+/**
+ * Get version of fcache that the library should use.
+ *
+ * @param context Kerberos 5 context.
+ * @param version version number.
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_fcache_version(krb5_context context, int *version)
 {
     *version = context->fcache_vno;
     return 0;
 }
+
+/**
+ * Runtime check if the Kerberos library was complied with thread support.
+ *
+ * @return TRUE if the library was compiled with thread support, FALSE if not.
+ *
+ * @ingroup krb5
+ */
+
 
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_is_thread_safe(void)
@@ -684,17 +945,51 @@ krb5_is_thread_safe(void)
 #endif
 }
 
+/**
+ * Set if the library should use DNS to canonicalize hostnames.
+ *
+ * @param context Kerberos 5 context.
+ * @param flag if its dns canonicalizion is used or not.
+ *
+ * @ingroup krb5
+ */
+
 void KRB5_LIB_FUNCTION
 krb5_set_dns_canonicalize_hostname (krb5_context context, krb5_boolean flag)
 {
-    context->dns_canonicalize_hostname = flag;
+    if (flag)
+	context->flags |= KRB5_CTX_F_DNS_CANONICALIZE_HOSTNAME;
+    else
+	context->flags &= ~KRB5_CTX_F_DNS_CANONICALIZE_HOSTNAME;
 }
+
+/**
+ * Get if the library uses DNS to canonicalize hostnames.
+ *
+ * @param context Kerberos 5 context.
+ *
+ * @return return non zero if the library uses DNS to canonicalize hostnames.
+ *
+ * @ingroup krb5
+ */
 
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_get_dns_canonicalize_hostname (krb5_context context)
 {
-    return context->dns_canonicalize_hostname;
+    return (context->flags & KRB5_CTX_F_DNS_CANONICALIZE_HOSTNAME) ? 1 : 0;
 }
+
+/**
+ * Get current offset in time to the KDC.
+ *
+ * @param context Kerberos 5 context.
+ * @param sec seconds part of offset.
+ * @param usec micro seconds part of offset.
+ *
+ * @return return non zero if the library uses DNS to canonicalize hostnames.
+ *
+ * @ingroup krb5
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_kdc_sec_offset (krb5_context context, int32_t *sec, int32_t *usec)
@@ -706,11 +1001,30 @@ krb5_get_kdc_sec_offset (krb5_context context, int32_t *sec, int32_t *usec)
     return 0;
 }
 
+/**
+ * Get max time skew allowed.
+ *
+ * @param context Kerberos 5 context.
+ *
+ * @return timeskew in seconds.
+ *
+ * @ingroup krb5
+ */
+
 time_t KRB5_LIB_FUNCTION
 krb5_get_max_time_skew (krb5_context context)
 {
     return context->max_skew;
 }
+
+/**
+ * Set max time skew allowed.
+ *
+ * @param context Kerberos 5 context.
+ * @param t timeskew in seconds.
+ *
+ * @ingroup krb5
+ */
 
 void KRB5_LIB_FUNCTION
 krb5_set_max_time_skew (krb5_context context, time_t t)

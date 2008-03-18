@@ -34,7 +34,7 @@
 #include "krb5/gsskrb5_locl.h"
 #include <gssapi_mech.h>
 
-RCSID("$Id: external.c 20386 2007-04-18 08:52:08Z lha $");
+RCSID("$Id: external.c 22128 2007-12-04 00:56:55Z lha $");
 
 /*
  * The implementation must reserve static storage for a
@@ -373,8 +373,6 @@ gss_OID GSS_SASL_DIGEST_MD5_MECHANISM = &gss_sasl_digest_md5_mechanism_desc;
 /*
  * Context for krb5 calls.
  */
-
-krb5_context context;
 
 /*
  *

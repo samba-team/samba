@@ -32,7 +32,7 @@
 
 #include "spnego/spnego_locl.h"
 
-RCSID("$Id: context_stubs.c 21035 2007-06-09 15:32:47Z lha $");
+RCSID("$Id: context_stubs.c 22604 2008-02-21 21:12:48Z lha $");
 
 static OM_uint32
 spnego_supported_mechs(OM_uint32 *minor_status, gss_OID_set *mechs)
@@ -263,18 +263,6 @@ OM_uint32 _gss_spnego_unwrap
 		      qop_state);
 }
 
-OM_uint32 _gss_spnego_display_status
-           (OM_uint32 * minor_status,
-            OM_uint32 status_value,
-            int status_type,
-            const gss_OID mech_type,
-            OM_uint32 * message_context,
-            gss_buffer_t status_string
-           )
-{
-    return GSS_S_FAILURE;
-}
-
 OM_uint32 _gss_spnego_compare_name
            (OM_uint32 *minor_status,
             const gss_name_t name1,
@@ -406,28 +394,58 @@ OM_uint32 _gss_spnego_inquire_context (
            )
 {
     gssspnego_ctx ctx;
+    OM_uint32 maj_stat, junk;
+    gss_name_t src_mn, targ_mn;
 
     *minor_status = 0;
 
-    if (context_handle == GSS_C_NO_CONTEXT) {
+    if (context_handle == GSS_C_NO_CONTEXT)
 	return GSS_S_NO_CONTEXT;
-    }
 
     ctx = (gssspnego_ctx)context_handle;
 
-    if (ctx->negotiated_ctx_id == GSS_C_NO_CONTEXT) {
+    if (ctx->negotiated_ctx_id == GSS_C_NO_CONTEXT)
 	return GSS_S_NO_CONTEXT;
-    }
 
-    return gss_inquire_context(minor_status,
-			       ctx->negotiated_ctx_id,
-			       src_name,
-			       targ_name,
-			       lifetime_rec,
-			       mech_type,
-			       ctx_flags,
-			       locally_initiated,
-			       open_context);
+    maj_stat = gss_inquire_context(minor_status,
+				   ctx->negotiated_ctx_id,
+				   &src_mn,
+				   &targ_mn,
+				   lifetime_rec,
+				   mech_type,
+				   ctx_flags,
+				   locally_initiated,
+				   open_context);
+    if (maj_stat != GSS_S_COMPLETE)
+	return maj_stat;
+
+    if (src_name) {
+	spnego_name name = calloc(1, sizeof(*name));
+	if (name == NULL)
+	    goto enomem;
+	name->mech = src_mn;
+	*src_name = (gss_name_t)name;
+    } else
+	gss_release_name(&junk, &src_mn);
+    
+    if (targ_name) {
+	spnego_name name = calloc(1, sizeof(*name));
+	if (name == NULL) {
+	    gss_release_name(minor_status, src_name);
+	    goto enomem;
+	}
+	name->mech = targ_mn;
+	*targ_name = (gss_name_t)name;
+    } else
+	gss_release_name(&junk, &targ_mn);
+
+    return GSS_S_COMPLETE;
+
+enomem:
+    gss_release_name(&junk, &targ_mn);
+    gss_release_name(&junk, &src_mn);
+    *minor_status = ENOMEM;
+    return GSS_S_FAILURE;
 }
 
 OM_uint32 _gss_spnego_wrap_size_limit (

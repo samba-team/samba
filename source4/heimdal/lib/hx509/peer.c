@@ -32,7 +32,27 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: peer.c 21481 2007-07-10 16:33:23Z lha $");
+RCSID("$Id: peer.c 22345 2007-12-26 19:03:51Z lha $");
+
+/**
+ * @page page_peer Hx509 crypto selecting functions
+ *
+ * Peer info structures are used togeter with hx509_crypto_select() to
+ * select the best avaible crypto algorithm to use.
+ *
+ * See the library functions here: @ref hx509_peer
+ */
+
+/**
+ * Allocate a new peer info structure an init it to default values.
+ *
+ * @param context A hx509 context.
+ * @param peer return an allocated peer, free with hx509_peer_info_free().
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_peer
+ */
 
 int
 hx509_peer_info_alloc(hx509_context context, hx509_peer_info *peer)
@@ -59,6 +79,14 @@ free_cms_alg(hx509_peer_info peer)
     }
 }
 
+/**
+ * Free a peer info structure.
+ *
+ * @param peer peer info to be freed.
+ *
+ * @ingroup hx509_peer
+ */
+
 void
 hx509_peer_info_free(hx509_peer_info peer)
 {
@@ -71,6 +99,17 @@ hx509_peer_info_free(hx509_peer_info peer)
     free(peer);
 }
 
+/**
+ * Set the certificate that remote peer is using.
+ *
+ * @param peer peer info to update
+ * @param cert cerificate of the remote peer.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_peer
+ */
+
 int
 hx509_peer_info_set_cert(hx509_peer_info peer,
 			 hx509_cert cert)
@@ -80,6 +119,19 @@ hx509_peer_info_set_cert(hx509_peer_info peer,
     peer->cert = hx509_cert_ref(cert);
     return 0;
 }
+
+/**
+ * Set the algorithms that the peer supports.
+ *
+ * @param context A hx509 context.
+ * @param peer the peer to set the new algorithms for
+ * @param val array of supported AlgorithmsIdentiers
+ * @param len length of array val.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_peer
+ */
 
 int
 hx509_peer_info_set_cms_algs(hx509_context context,

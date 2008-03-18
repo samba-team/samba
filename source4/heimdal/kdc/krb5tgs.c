@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: krb5tgs.c 21262 2007-06-21 15:18:37Z lha $");
+RCSID("$Id: krb5tgs.c 22071 2007-11-14 20:04:50Z lha $");
 
 /*
  * return the realm of a krbtgt-ticket or NULL
@@ -822,7 +822,7 @@ tgs_make_reply(krb5_context context,
     if(rspac->length) {
 	/*
 	 * No not need to filter out the any PAC from the
-	 * auth_data since its signed by the KDC.
+	 * auth_data since it's signed by the KDC.
 	 */
 	ret = _kdc_tkt_add_if_relevant_ad(context, &et,
 					  KRB5_AUTHDATA_WIN2K_PAC,
@@ -1099,11 +1099,14 @@ tgs_parse_request(krb5_context context,
     ret = hdb_enctype2key(context, &(*krbtgt)->entry, 
 			  ap_req.ticket.enc_part.etype, &tkey);
     if(ret){
-	char *str, *p;
+	char *str = NULL, *p = NULL;
+
 	krb5_enctype_to_string(context, ap_req.ticket.enc_part.etype, &str);
 	krb5_unparse_name(context, princ, &p);
-	kdc_log(context, config, 0,
-		"No server key with enctype %s found for %s", str, p);
+ 	kdc_log(context, config, 0,
+		"No server key with enctype %s found for %s",
+		str ? str : "<unknown enctype>",
+		p ? p : "<unparse_name failed>");
 	free(str);
 	free(p);
 	ret = KRB5KRB_AP_ERR_BADKEYVER;
@@ -1163,8 +1166,10 @@ tgs_parse_request(krb5_context context,
     }
 
     if (b->enc_authorization_data) {
+	unsigned usage = KRB5_KU_TGS_REQ_AUTH_DAT_SUBKEY;
 	krb5_keyblock *subkey;
 	krb5_data ad;
+
 	ret = krb5_auth_con_getremotesubkey(context,
 					    ac,
 					    &subkey);
@@ -1175,6 +1180,7 @@ tgs_parse_request(krb5_context context,
 	    goto out;
 	}
 	if(subkey == NULL){
+	    usage = KRB5_KU_TGS_REQ_AUTH_DAT_SESSION;
 	    ret = krb5_auth_con_getkey(context, ac, &subkey);
 	    if(ret) {
 		krb5_auth_con_free(context, ac);
@@ -1199,7 +1205,7 @@ tgs_parse_request(krb5_context context,
 	}
 	ret = krb5_decrypt_EncryptedData (context,
 					  crypto,
-					  KRB5_KU_TGS_REQ_AUTH_DAT_SUBKEY,
+					  usage,
 					  b->enc_authorization_data,
 					  &ad);
 	krb5_crypto_destroy(context, crypto);
@@ -1373,6 +1379,7 @@ server_lookup:
 		    ret = krb5_unparse_name(context, sp, &spn);	
 		    if (ret)
 			goto out;
+		    auth_data = NULL; /* ms don't handle AD in referals */
 		    goto server_lookup;
 		}
 	    }
@@ -1390,6 +1397,7 @@ server_lookup:
 		if (ret)
 		    goto out;
 		krb5_free_host_realm(context, realms);
+		auth_data = NULL; /* ms don't handle AD in referals */
 		goto server_lookup;
 	    }
 	    krb5_free_host_realm(context, realms);
@@ -1431,8 +1439,8 @@ server_lookup:
     }
     
     /*
-     * Check that service is in the same realm as the krbtgt. If its
-     * not the same, its someone that is using a uni-directional trust
+     * Check that service is in the same realm as the krbtgt. If it's
+     * not the same, it's someone that is using a uni-directional trust
      * backward.
      */
     

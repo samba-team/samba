@@ -43,7 +43,7 @@
 
 #include "imath/imath.h"
 
-RCSID("$Id: dh-imath.c 18645 2006-10-20 06:56:57Z lha $");
+RCSID("$Id: dh-imath.c 22368 2007-12-28 15:27:52Z lha $");
 
 static void
 BN2mpz(mpz_t *s, const BIGNUM *bn)
@@ -224,7 +224,7 @@ dh_finish(DH *dh)
  *
  */
 
-const DH_METHOD hc_dh_imath_method = {
+const DH_METHOD _hc_dh_imath_method = {
     "hcrypto imath DH",
     dh_generate_key,
     dh_compute_key,
@@ -236,8 +236,16 @@ const DH_METHOD hc_dh_imath_method = {
     dh_generate_params
 };
 
+/**
+ * DH implementation using libimath.
+ *
+ * @return the DH_METHOD for the DH implementation using libimath.
+ *
+ * @ingroup hcrypto_dh
+ */
+
 const DH_METHOD *
 DH_imath_method(void)
 {
-    return &hc_dh_imath_method;
+    return &_hc_dh_imath_method;
 }

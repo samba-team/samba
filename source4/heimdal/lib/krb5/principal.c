@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,6 +31,22 @@
  * SUCH DAMAGE. 
  */
 
+/**
+ * @page page_principal The principal handing functions.
+ *
+ * A Kerberos principal is a email address looking string that
+ * contains to parts separeted by a @.  The later part is the kerbero
+ * realm the principal belongs to and the former is a list of 0 or
+ * more components. For example 
+ * @verbatim
+lha@SU.SE
+host/hummel.it.su.se@SU.SE
+host/admin@H5L.ORG
+@endverbatim
+ *
+ * See the library functions here: @ref krb5_principal
+ */
+
 #include "krb5_locl.h"
 #ifdef HAVE_RES_SEARCH
 #define USE_RESOLVER
@@ -41,13 +57,28 @@
 #include <fnmatch.h>
 #include "resolve.h"
 
-RCSID("$Id: principal.c 21285 2007-06-25 12:30:55Z lha $");
+RCSID("$Id: principal.c 22549 2008-01-29 09:37:25Z lha $");
 
 #define princ_num_comp(P) ((P)->name.name_string.len)
 #define princ_type(P) ((P)->name.name_type)
 #define princ_comp(P) ((P)->name.name_string.val)
 #define princ_ncomp(P, N) ((P)->name.name_string.val[(N)])
 #define princ_realm(P) ((P)->realm)
+
+/**
+ * Frees a Kerberos principal allocated by the library with
+ * krb5_parse_name(), krb5_make_principal() or any other related
+ * principal functions.
+ *
+ * @param context A Kerberos context.
+ * @param p a principal to free.
+ *
+ * @return An krb5 error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5_principal
+ */
+
+
 
 void KRB5_LIB_FUNCTION
 krb5_free_principal(krb5_context context,
@@ -804,7 +835,7 @@ krb5_425_conv_principal_ext2(krb5_context context,
     char local_hostname[MAXHOSTNAMELEN];
 
     /* do the following: if the name is found in the
-       `v4_name_convert:host' part, is is assumed to be a `host' type
+       `v4_name_convert:host' part, is assumed to be a `host' type
        principal, and the instance is looked up in the
        `v4_instance_convert' part. if not found there the name is
        (optionally) looked up as a hostname, and if that doesn't yield
