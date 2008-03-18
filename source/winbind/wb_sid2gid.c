@@ -3,7 +3,7 @@
 
    Map a SID to a gid
 
-   Copyright (C) Kai Blin 2007
+   Copyright (C) 2007-2008  Kai Blin
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,11 +33,14 @@ struct sid2gid_state {
 	gid_t gid;
 };
 
+static void sid2gid_recv_gid(struct composite_context *ctx);
+
 struct composite_context *wb_sid2gid_send(TALLOC_CTX *mem_ctx,
 		struct wbsrv_service *service, const struct dom_sid *sid)
 {
-	struct composite_context *result;
+	struct composite_context *result, *ctx;
 	struct sid2gid_state *state;
+	struct id_mapping *ids;
 
 	DEBUG(5, ("wb_sid2gid_send called\n"));
 
@@ -51,16 +54,41 @@ struct composite_context *wb_sid2gid_send(TALLOC_CTX *mem_ctx,
 	result->private_data = state;
 	state->service = service;
 
-	state->ctx->status = idmap_sid_to_gid(service->idmap_ctx, state, sid,
-					      &state->gid);
-	if (NT_STATUS_EQUAL(state->ctx->status, NT_STATUS_RETRY)) {
-		state->ctx->status = idmap_sid_to_gid(service->idmap_ctx, state,
-						      sid, &state->gid);
-	}
-	if (!composite_is_ok(state->ctx)) return result;
+	ids = talloc(result, struct id_mapping);
+	if (composite_nomem(ids, result)) return result;
 
-	composite_done(state->ctx);
+	ids->sid = dom_sid_dup(result, sid);
+	if (composite_nomem(ids->sid, result)) return result;
+
+	ctx = wb_sids2xids_send(result, service, 1, ids);
+	if (composite_nomem(ctx, result)) return result;
+
+	composite_continue(result, ctx, sid2gid_recv_gid, state);
 	return result;
+}
+
+static void sid2gid_recv_gid(struct composite_context *ctx)
+{
+	struct sid2gid_state *state = talloc_get_type(ctx->async.private_data,
+						      struct sid2gid_state);
+
+	struct id_mapping *ids = NULL;
+
+	state->ctx->status = wb_sids2xids_recv(ctx, &ids);
+	if (!composite_is_ok(state->ctx)) return;
+
+	if (!NT_STATUS_IS_OK(ids->status)) {
+		composite_error(state->ctx, ids->status);
+		return;
+	}
+
+	if (ids->unixid->type == ID_TYPE_BOTH ||
+	    ids->unixid->type == ID_TYPE_GID) {
+		state->gid = ids->unixid->id;
+		composite_done(state->ctx);
+	} else {
+		composite_error(state->ctx, NT_STATUS_INVALID_SID);
+	}
 }
 
 NTSTATUS wb_sid2gid_recv(struct composite_context *ctx, gid_t *gid)

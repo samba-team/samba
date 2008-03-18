@@ -27,7 +27,6 @@
 #include "system/time.h"
 #include "system/passwd.h"
 #include "system/syslog.h"
-#include "system/network.h"
 #include "system/locale.h"
 #include "system/wait.h"
 
@@ -294,20 +293,6 @@ char *rep_strdup(const char *s)
 	return(ret);
 }
 #endif /* HAVE_STRDUP */
-
-#ifndef WITH_PTHREADS
-/* REWRITE: not thread safe */
-#ifdef REPLACE_INET_NTOA
-char *rep_inet_ntoa(struct in_addr ip)
-{
-	uint8_t *p = (uint8_t *)&ip.s_addr;
-	static char buf[18];
-	slprintf(buf, 17, "%d.%d.%d.%d", 
-		 (int)p[0], (int)p[1], (int)p[2], (int)p[3]);
-	return buf;
-}
-#endif /* REPLACE_INET_NTOA */
-#endif
 
 #ifndef HAVE_SETLINEBUF
 void rep_setlinebuf(FILE *stream)
@@ -597,27 +582,5 @@ int rep_unsetenv(const char *name)
 	}
 
 	return 0;
-}
-#endif
-
-#ifndef HAVE_SOCKETPAIR
-int rep_socketpair(int d, int type, int protocol, int sv[2])
-{
-	if (d != AF_UNIX) {
-		errno = EAFNOSUPPORT;
-		return -1;
-	}
-
-	if (protocol != 0) {
-		errno = EPROTONOSUPPORT;
-		return -1;
-	}
-
-	if (type != SOCK_STREAM) {
-		errno = EOPNOTSUPP;
-		return -1;
-	}
-
-	return pipe(sv);
 }
 #endif

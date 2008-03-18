@@ -212,7 +212,7 @@ int rep_dlclose(void *handle);
 
 #ifndef HAVE_SOCKETPAIR
 #define socketpair rep_socketpair
-int rep_socketpair(int d, int type, int protocol, int sv[2]);
+/* prototype is in system/network.h */
 #endif
 
 #ifndef PRINTF_ATTRIBUTE
@@ -325,7 +325,7 @@ ssize_t rep_pread(int __fd, void *__buf, size_t __nbytes, off_t __offset);
 ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset);
 #endif
 
-#ifdef REPLACE_INET_NTOA
+#if !defined(HAVE_INET_NTOA) || defined(REPLACE_INET_NTOA)
 #define inet_ntoa rep_inet_ntoa
 /* prototype is in "system/network.h" */
 #endif

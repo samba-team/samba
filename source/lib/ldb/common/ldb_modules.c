@@ -129,11 +129,11 @@ static struct ops_list_entry {
 #ifndef STATIC_LIBLDB_MODULES
 
 #define STATIC_LIBLDB_MODULES \
-	ldb_operational_module_ops,	\
-	ldb_rdn_name_module_ops,	\
-	ldb_paged_results_module_ops,	\
-	ldb_sort_module_ops,		\
-	ldb_asq_module_ops, \
+	&ldb_operational_module_ops,	\
+	&ldb_rdn_name_module_ops,	\
+	&ldb_paged_results_module_ops,	\
+	&ldb_server_sort_module_ops,	\
+	&ldb_asq_module_ops, \
 	NULL
 #endif
 

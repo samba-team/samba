@@ -19,7 +19,7 @@ fi
 
 cat <<EOF | $VALGRIND ldbadd || exit 1
 dn: @MODULES
-@LIST: sample_module
+@LIST: sample
 EOF
 
 cat <<EOF | $VALGRIND ldbadd || exit 1

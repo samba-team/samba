@@ -5,7 +5,7 @@ PRIVATE_PROTO_HEADER = netif_proto.h
 OBJ_FILES = \
 		interface.o \
 		netif.o
-PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL EXT_SOCKET EXT_NSL
+PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBREPLACE_NETWORK
 # End SUBSYSTEM LIBNETIF
 ##############################
 
@@ -16,7 +16,7 @@ SUBSYSTEM = samba-socket
 OUTPUT_TYPE = MERGED_OBJ
 OBJ_FILES = \
 		socket_ip.o
-PRIVATE_DEPENDENCIES = EXT_SOCKET EXT_NSL LIBSAMBA-ERRORS 
+PRIVATE_DEPENDENCIES = LIBSAMBA-ERRORS LIBREPLACE_NETWORK
 # End MODULE socket_ip
 ################################################
 
@@ -27,7 +27,7 @@ SUBSYSTEM = samba-socket
 OUTPUT_TYPE = MERGED_OBJ
 OBJ_FILES = \
 		socket_unix.o
-PRIVATE_DEPENDENCIES = EXT_SOCKET EXT_NSL
+PRIVATE_DEPENDENCIES = LIBREPLACE_NETWORK
 # End MODULE socket_unix
 ################################################
 

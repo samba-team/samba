@@ -21,7 +21,7 @@ if test "$ac_cv_prog_gcc" = yes; then
    CFLAGS="$CFLAGS -Wno-format-y2k"
 fi
 
-LIBS="$SOCKET_LIBS $NSL_LIBS"
+LIBS="${LIBREPLACE_NETWORK_LIBS}"
 AC_SUBST(LIBS)
 
 AC_SUBST(LDFLAGS)

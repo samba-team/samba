@@ -18,7 +18,6 @@
 
 #include "replace.h"
 #include "system/filesys.h"
-#include "system/network.h"
 #include "system/time.h"
 #include "talloc.h"
 #include "ldb.h"

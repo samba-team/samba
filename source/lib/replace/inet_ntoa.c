@@ -1,7 +1,8 @@
 /*
  * Unix SMB/CIFS implementation.
- * replacement functions
- * Copyright (C) Michael Adam <obnox@samba.org> 2008
+ * replacement routines for broken systems
+ * Copyright (C) Andrew Tridgell 2003
+ * Copyright (C) Michael Adam 2008
  *
  *  ** NOTE! The following LGPL license applies to the replace
  *  ** library. This does NOT imply that all of Samba is released
@@ -25,9 +26,14 @@
 #include "system/network.h"
 
 /**
- * We know that we have inet_pton from earlier libreplace checks.
+ * NOTE: this is not thread safe, but it can't be, either
+ * since it returns a pointer to static memory.
  */
-int rep_inet_aton(const char *src, struct in_addr *dst)
+char *rep_inet_ntoa(struct in_addr ip)
 {
-	return (inet_pton(AF_INET, src, dst) > 0) ? 1 : 0;
+	uint8_t *p = (uint8_t *)&ip.s_addr;
+	static char buf[18];
+	slprintf(buf, 17, "%d.%d.%d.%d",
+		 (int)p[0], (int)p[1], (int)p[2], (int)p[3]);
+	return buf;
 }

@@ -3,7 +3,7 @@
 
    Command backend for wbinfo -G
 
-   Copyright (C) Kai Blin 2007
+   Copyright (C) 2007-2008 Kai Blin
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,35 +33,60 @@ struct gid2sid_state {
 	struct dom_sid *sid;
 };
 
+static void gid2sid_recv_sid(struct composite_context *ctx);
+
 struct composite_context *wb_gid2sid_send(TALLOC_CTX *mem_ctx,
 		struct wbsrv_service *service, gid_t gid)
 {
-	struct composite_context *result;
+	struct composite_context *result, *ctx;
 	struct gid2sid_state *state;
+	struct unixid *unixid;
+	struct id_mapping *ids;
 
 	DEBUG(5, ("wb_gid2sid_send called\n"));
 
 	result = composite_create(mem_ctx, service->task->event_ctx);
 	if (!result) return NULL;
 
-	state = talloc(mem_ctx, struct gid2sid_state);
+	state = talloc(result, struct gid2sid_state);
 	if (composite_nomem(state, result)) return result;
 
 	state->ctx = result;
 	result->private_data = state;
 	state->service = service;
 
-	state->ctx->status = idmap_gid_to_sid(service->idmap_ctx, mem_ctx, gid,
-					      &state->sid);
-	if (NT_STATUS_EQUAL(state->ctx->status, NT_STATUS_RETRY)) {
-		state->ctx->status = idmap_gid_to_sid(service->idmap_ctx,
-						      mem_ctx, gid,
-						      &state->sid);
-	}
-	if (!composite_is_ok(state->ctx)) return result;
+	unixid = talloc(result, struct unixid);
+	if (composite_nomem(unixid, result)) return result;
+	unixid->id = gid;
+	unixid->type = ID_TYPE_GID;
 
-	composite_done(state->ctx);
+	ids = talloc(result, struct id_mapping);
+	if (composite_nomem(ids, result)) return result;
+	ids->unixid = unixid;
+	ids->sid = NULL;
+
+	ctx = wb_xids2sids_send(result, service, 1, ids);
+	if (composite_nomem(ctx, result)) return result;
+
+	composite_continue(result, ctx, gid2sid_recv_sid, state);
 	return result;
+}
+
+static void gid2sid_recv_sid(struct composite_context *ctx)
+{
+	struct gid2sid_state *state = talloc_get_type(ctx->async.private_data,
+						      struct gid2sid_state);
+	struct id_mapping *ids = NULL;
+	state->ctx->status = wb_xids2sids_recv(ctx, &ids);
+	if (!composite_is_ok(state->ctx)) return;
+
+	if (!NT_STATUS_IS_OK(ids->status)) {
+		composite_error(state->ctx, ids->status);
+		return;
+	}
+
+	state->sid = ids->sid;
+	composite_done(state->ctx);
 }
 
 NTSTATUS wb_gid2sid_recv(struct composite_context *ctx, TALLOC_CTX *mem_ctx,
