@@ -2,7 +2,7 @@
   Name:     imath.c
   Purpose:  Arbitrary precision integer arithmetic routines.
   Author:   M. J. Fromberger <http://www.dartmouth.edu/~sting/>
-  Info:     $Id: imath.c 20854 2007-06-03 18:04:10Z lha $
+  Info:     $Id: imath.c 22648 2008-02-25 07:37:57Z lha $
 
   Copyright (C) 2002-2007 Michael J. Fromberger, All Rights Reserved.
 
@@ -1769,7 +1769,7 @@ mp_result mp_int_read_cstring(mp_int z, mp_size radix, const char *str, char **e
     return MP_RANGE;
 
   /* Skip leading whitespace */
-  while(isspace((int)*str))
+  while(isspace((unsigned char)*str))
     ++str;
 
   /* Handle leading sign tag (+/-, positive default) */
@@ -3135,7 +3135,7 @@ static int       s_ch2val(char c, int r)
   if(isdigit((unsigned char) c))
     out = c - '0';
   else if(r > 10 && isalpha((unsigned char) c))
-    out = toupper(c) - 'A' + 10;
+      out = toupper((unsigned char)c) - 'A' + 10;
   else
     return -1;
 

@@ -1,7 +1,7 @@
 #include "mech/mech_locl.h"
 #include "heim_threads.h"
 
-RCSID("$Id: context.c 21248 2007-06-21 00:45:13Z lha $");
+RCSID("$Id: context.c 22600 2008-02-21 12:46:24Z lha $");
 
 struct mg_thread_ctx {
     gss_OID mech;
@@ -107,6 +107,13 @@ _gss_mg_error(gssapi_mech_interface m, OM_uint32 maj, OM_uint32 min)
     OM_uint32 message_content;
     struct mg_thread_ctx *mg;
 
+    /* 
+     * Mechs without gss_display_status() does
+     * gss_mg_collect_error() by themself.
+     */
+    if (m->gm_display_status == NULL)
+	return ;
+
     mg = _gss_mechglue_thread();
     if (mg == NULL)
 	return;
@@ -138,4 +145,13 @@ _gss_mg_error(gssapi_mech_interface m, OM_uint32 maj, OM_uint32 min)
 	mg->min_error.value = NULL;
 	mg->min_error.length = 0;
     }
+}
+
+void
+gss_mg_collect_error(gss_OID mech, OM_uint32 maj, OM_uint32 min)
+{
+    gssapi_mech_interface m = __gss_get_mechanism(mech);
+    if (m == NULL)
+	return;
+    _gss_mg_error(m, maj, min);
 }

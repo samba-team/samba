@@ -32,7 +32,7 @@
  */
 
 /*
- * $Id: bn.h 16536 2006-01-13 08:27:50Z lha $
+ * $Id: bn.h 22260 2007-12-09 06:23:47Z lha $
  */
 
 #ifndef _HEIM_BN_H
@@ -97,7 +97,7 @@ int	BN_num_bytes(const BIGNUM *);
 int	BN_cmp(const BIGNUM *, const BIGNUM *);
 
 void	BN_set_negative(BIGNUM *, int);
-int	BN_is_negative(BIGNUM *);
+int	BN_is_negative(const BIGNUM *);
 
 int	BN_is_bit_set(const BIGNUM *, int);
 int	BN_set_bit(BIGNUM *, int);

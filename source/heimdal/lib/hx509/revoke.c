@@ -31,14 +31,33 @@
  * SUCH DAMAGE. 
  */
 
+/**
+ * @page page_revoke Revocation methods
+ *
+ * There are two revocation method for PKIX/X.509: CRL and OCSP.
+ * Revocation is needed if the private key is lost and
+ * stolen. Depending on how picky you are, you might want to make
+ * revocation for destroyed private keys too (smartcard broken), but
+ * that should not be a problem.
+ *
+ * CRL is a list of certifiates that have expired.
+ *
+ * OCSP is an online checking method where the requestor sends a list
+ * of certificates to the OCSP server to return a signed reply if they
+ * are valid or not. Some services sends a OCSP reply as part of the
+ * hand-shake to make the revoktion decision simpler/faster for the
+ * client.
+ */
+
 #include "hx_locl.h"
-RCSID("$Id: revoke.c 21153 2007-06-18 21:55:46Z lha $");
+RCSID("$Id: revoke.c 22583 2008-02-11 20:46:21Z lha $");
 
 struct revoke_crl {
     char *path;
     time_t last_modfied;
     CRLCertificateList crl;
     int verified;
+    int failed_verify;
 };
 
 struct revoke_ocsp {
@@ -51,6 +70,7 @@ struct revoke_ocsp {
 
 
 struct hx509_revoke_ctx_data {
+    unsigned ref;
     struct {
 	struct revoke_crl *val;
 	size_t len;
@@ -61,6 +81,17 @@ struct hx509_revoke_ctx_data {
     } ocsps;
 };
 
+/**
+ * Allocate a revokation context. Free with hx509_revoke_free().
+ *
+ * @param context A hx509 context.
+ * @param ctx returns a newly allocated revokation context.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_revoke
+ */
+
 int
 hx509_revoke_init(hx509_context context, hx509_revoke_ctx *ctx)
 {
@@ -68,12 +99,26 @@ hx509_revoke_init(hx509_context context, hx509_revoke_ctx *ctx)
     if (*ctx == NULL)
 	return ENOMEM;
 
+    (*ctx)->ref = 1;
     (*ctx)->crls.len = 0;
     (*ctx)->crls.val = NULL;
     (*ctx)->ocsps.len = 0;
     (*ctx)->ocsps.val = NULL;
 
     return 0;
+}
+
+hx509_revoke_ctx
+_hx509_revoke_ref(hx509_revoke_ctx ctx)
+{
+    if (ctx == NULL)
+	return NULL;
+    if (ctx->ref <= 0)
+	_hx509_abort("revoke ctx refcount <= 0");
+    ctx->ref++;
+    if (ctx->ref == 0)
+	_hx509_abort("revoke ctx refcount == 0");
+    return ctx;
 }
 
 static void
@@ -85,12 +130,25 @@ free_ocsp(struct revoke_ocsp *ocsp)
     hx509_cert_free(ocsp->signer);
 }
 
+/**
+ * Free a hx509 revokation context.
+ *
+ * @param ctx context to be freed
+ *
+ * @ingroup hx509_revoke
+ */
+
 void
 hx509_revoke_free(hx509_revoke_ctx *ctx)
 {
     size_t i ;
 
     if (ctx == NULL || *ctx == NULL)
+	return;
+
+    if ((*ctx)->ref <= 0)
+	_hx509_abort("revoke ctx refcount <= 0 on free");
+    if (--(*ctx)->ref > 0)
 	return;
 
     for (i = 0; i < (*ctx)->crls.len; i++) {
@@ -150,7 +208,7 @@ verify_ocsp(hx509_context context,
 
     /*
      * If signer certificate isn't the CA certificate, lets check the
-     * its the CA that signed the signer certificate and the OCSP EKU
+     * it is the CA that signed the signer certificate and the OCSP EKU
      * is set.
      */
     if (hx509_cert_cmp(signer, parent) != 0) {
@@ -324,6 +382,18 @@ load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
     return 0;
 }
 
+/**
+ * Add a OCSP file to the revokation context.
+ *
+ * @param context hx509 context
+ * @param ctx hx509 revokation context
+ * @param path path to file that is going to be added to the context.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_revoke
+ */
+
 int
 hx509_revoke_add_ocsp(hx509_context context,
 		      hx509_revoke_ctx ctx,
@@ -380,6 +450,7 @@ hx509_revoke_add_ocsp(hx509_context context,
 
 static int
 verify_crl(hx509_context context,
+	   hx509_revoke_ctx ctx,
 	   CRLCertificateList *crl,
 	   time_t time_now,
 	   hx509_certs certs,
@@ -391,52 +462,44 @@ verify_crl(hx509_context context,
     int ret;
 	
     t = _hx509_Time2time_t(&crl->tbsCertList.thisUpdate);
-    if (t > time_now)
+    if (t > time_now) {
+	hx509_set_error_string(context, 0, HX509_CRL_USED_BEFORE_TIME,
+			       "CRL used before time");
 	return HX509_CRL_USED_BEFORE_TIME;
+    }
 
-    if (crl->tbsCertList.nextUpdate == NULL)
+    if (crl->tbsCertList.nextUpdate == NULL) {
+	hx509_set_error_string(context, 0, HX509_CRL_INVALID_FORMAT,
+			       "CRL missing nextUpdate");
 	return HX509_CRL_INVALID_FORMAT;
+    }
 
     t = _hx509_Time2time_t(crl->tbsCertList.nextUpdate);
-    if (t < time_now)
+    if (t < time_now) {
+	hx509_set_error_string(context, 0, HX509_CRL_USED_AFTER_TIME,
+			       "CRL used after time");
 	return HX509_CRL_USED_AFTER_TIME;
+    }
 
     _hx509_query_clear(&q);
 	
-    q.match = HX509_QUERY_MATCH_SUBJECT_NAME;
-    q.subject_name = &crl->tbsCertList.issuer;
+    /*
+     * If it's the signer have CRLSIGN bit set, use that as the signer
+     * cert for the certificate, otherwise, search for a certificate.
+     */
+    if (_hx509_check_key_usage(context, parent, 1 << 6, FALSE) == 0) {
+	signer = hx509_cert_ref(parent);
+    } else {
+	q.match = HX509_QUERY_MATCH_SUBJECT_NAME;
+	q.match |= HX509_QUERY_KU_CRLSIGN;
+	q.subject_name = &crl->tbsCertList.issuer;
 	
-    ret = hx509_certs_find(context, certs, &q, &signer);
-    if (ret)
-	return ret;
-
-    /* verify is parent or CRLsigner */
-    if (hx509_cert_cmp(signer, parent) != 0) {
-	Certificate *p = _hx509_get_cert(parent);
-	Certificate *s = _hx509_get_cert(signer);
-
-	ret = _hx509_cert_is_parent_cmp(s, p, 0);
-	if (ret != 0) {
-	    ret = HX509_PARENT_NOT_CA;
-	    hx509_set_error_string(context, 0, ret, "Revoke CRL signer is "
-				   "doesn't have CA as signer certificate");
-	    goto out;
-	}
-
-	ret = _hx509_verify_signature_bitstring(context,
-						p,
-						&s->signatureAlgorithm,
-						&s->tbsCertificate._save,
-						&s->signatureValue);
+	ret = hx509_certs_find(context, certs, &q, &signer);
 	if (ret) {
 	    hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
-				   "CRL signer signature invalid");
-	    goto out;
+				   "Failed to find certificate for CRL");
+	    return ret;
 	}
-
-	ret = _hx509_check_key_usage(context, signer, 1 << 6, TRUE); /* crl */
-	if (ret != 0)
-	    goto out;
     }
 
     ret = _hx509_verify_signature_bitstring(context,
@@ -448,6 +511,44 @@ verify_crl(hx509_context context,
 	hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
 			       "CRL signature invalid");
 	goto out;
+    }
+
+    /* 
+     * If signer is not CA cert, need to check revoke status of this
+     * CRL signing cert too, this include all parent CRL signer cert
+     * up to the root *sigh*, assume root at least hve CERTSIGN flag
+     * set.
+     */
+    while (_hx509_check_key_usage(context, signer, 1 << 5, TRUE)) {
+	hx509_cert crl_parent;
+
+	_hx509_query_clear(&q);
+	
+	q.match = HX509_QUERY_MATCH_SUBJECT_NAME;
+	q.match |= HX509_QUERY_KU_CRLSIGN;
+	q.subject_name = &_hx509_get_cert(signer)->tbsCertificate.issuer;
+	
+	ret = hx509_certs_find(context, certs, &q, &crl_parent);
+	if (ret) {
+	    hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
+				   "Failed to find parent of CRL signer");
+	    goto out;
+	}
+
+	ret = hx509_revoke_verify(context,
+				  ctx, 
+				  certs,
+				  time_now,
+				  signer,
+				  crl_parent);
+	hx509_cert_free(signer);
+	signer = crl_parent;
+	if (ret) {
+	    hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
+				   "Failed to verify revoke "
+				   "status of CRL signer");
+	    goto out;
+	}
     }
 
 out:
@@ -484,6 +585,18 @@ load_crl(const char *path, time_t *t, CRLCertificateList *crl)
     }
     return 0;
 }
+
+/**
+ * Add a CRL file to the revokation context.
+ *
+ * @param context hx509 context
+ * @param ctx hx509 revokation context
+ * @param path path to file that is going to be added to the context.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_revoke
+ */
 
 int
 hx509_revoke_add_crl(hx509_context context,
@@ -537,6 +650,23 @@ hx509_revoke_add_crl(hx509_context context,
     return ret;
 }
 
+/**
+ * Check that a certificate is not expired according to a revokation
+ * context. Also need the parent certificte to the check OCSP
+ * parent identifier.
+ *
+ * @param context hx509 context
+ * @param ctx hx509 revokation context
+ * @param certs
+ * @param now
+ * @param cert
+ * @param parent_cert
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_revoke
+ */
+
 
 int
 hx509_revoke_verify(hx509_context context,
@@ -550,6 +680,8 @@ hx509_revoke_verify(hx509_context context,
     const Certificate *p = _hx509_get_cert(parent_cert);
     unsigned long i, j, k;
     int ret;
+
+    hx509_clear_error_string(context);
 
     for (i = 0; i < ctx->ocsps.len; i++) {
 	struct revoke_ocsp *ocsp = &ctx->ocsps.val[i];
@@ -604,6 +736,10 @@ hx509_revoke_verify(hx509_context context,
 	    case choice_OCSPCertStatus_good:
 		break;
 	    case choice_OCSPCertStatus_revoked:
+		hx509_set_error_string(context, 0, 
+				       HX509_CERT_REVOKED,
+				       "Certificate revoked by issuer in OCSP");
+		return HX509_CERT_REVOKED;
 	    case choice_OCSPCertStatus_unknown:
 		continue;
 	    }
@@ -613,7 +749,7 @@ hx509_revoke_verify(hx509_context context,
 		now + context->ocsp_time_diff)
 		continue;
 
-	    /* don't allow the next updte to be in the past */
+	    /* don't allow the next update to be in the past */
 	    if (ocsp->ocsp.tbsResponseData.responses.val[j].nextUpdate) {
 		if (*ocsp->ocsp.tbsResponseData.responses.val[j].nextUpdate < now)
 		    continue;
@@ -627,11 +763,12 @@ hx509_revoke_verify(hx509_context context,
     for (i = 0; i < ctx->crls.len; i++) {
 	struct revoke_crl *crl = &ctx->crls.val[i];
 	struct stat sb;
+	int diff;
 
 	/* check if cert.issuer == crls.val[i].crl.issuer */
 	ret = _hx509_name_cmp(&c->tbsCertificate.issuer, 
-			      &crl->crl.tbsCertList.issuer);
-	if (ret)
+			      &crl->crl.tbsCertList.issuer, &diff);
+	if (ret || diff)
 	    continue;
 
 	ret = stat(crl->path, &sb);
@@ -643,21 +780,32 @@ hx509_revoke_verify(hx509_context context,
 		free_CRLCertificateList(&crl->crl);
 		crl->crl = cl;
 		crl->verified = 0;
+		crl->failed_verify = 0;
 	    }
 	}
+	if (crl->failed_verify)
+	    continue;
 
 	/* verify signature in crl if not already done */
 	if (crl->verified == 0) {
-	    ret = verify_crl(context, &crl->crl, now, certs, parent_cert);
-	    if (ret)
-		return ret;
+	    ret = verify_crl(context, ctx, &crl->crl, now, certs, parent_cert);
+	    if (ret) {
+		crl->failed_verify = 1;
+		continue;
+	    }
 	    crl->verified = 1;
 	}
-	
-	if (crl->crl.tbsCertList.crlExtensions)
-	    for (j = 0; j < crl->crl.tbsCertList.crlExtensions->len; j++)
-		if (crl->crl.tbsCertList.crlExtensions->val[j].critical)
+
+	if (crl->crl.tbsCertList.crlExtensions) {
+	    for (j = 0; j < crl->crl.tbsCertList.crlExtensions->len; j++) {
+		if (crl->crl.tbsCertList.crlExtensions->val[j].critical) {
+		    hx509_set_error_string(context, 0, 
+					   HX509_CRL_UNKNOWN_EXTENSION,
+					   "Unknown CRL extension");
 		    return HX509_CRL_UNKNOWN_EXTENSION;
+		}
+	    }
+	}
 
 	if (crl->crl.tbsCertList.revokedCertificates == NULL)
 	    return 0;
@@ -667,7 +815,7 @@ hx509_revoke_verify(hx509_context context,
 	    time_t t;
 
 	    ret = der_heim_integer_cmp(&crl->crl.tbsCertList.revokedCertificates->val[j].userCertificate,
-				   &c->tbsCertificate.serialNumber);
+				       &c->tbsCertificate.serialNumber);
 	    if (ret != 0)
 		continue;
 
@@ -680,7 +828,10 @@ hx509_revoke_verify(hx509_context context,
 		    if (crl->crl.tbsCertList.revokedCertificates->val[j].crlEntryExtensions->val[k].critical)
 			return HX509_CRL_UNKNOWN_EXTENSION;
 	    
-	    return HX509_CRL_CERT_REVOKED;
+	    hx509_set_error_string(context, 0, 
+				   HX509_CERT_REVOKED,
+				   "Certificate revoked by issuer in CRL");
+	    return HX509_CERT_REVOKED;
 	}
 
 	return 0;
@@ -689,6 +840,10 @@ hx509_revoke_verify(hx509_context context,
 
     if (context->flags & HX509_CTX_VERIFY_MISSING_OK)
 	return 0;
+    hx509_set_error_string(context, HX509_ERROR_APPEND, 
+			   HX509_REVOKE_STATUS_MISSING,
+			   "No revoke status found for "
+			   "certificates");
     return HX509_REVOKE_STATUS_MISSING;
 }
 
@@ -785,6 +940,22 @@ out:
     return ret;
 }
 
+/**
+ * Create an OCSP request for a set of certificates.
+ *
+ * @param context a hx509 context
+ * @param reqcerts list of certificates to request ocsp data for
+ * @param pool certificate pool to use when signing
+ * @param signer certificate to use to sign the request
+ * @param digest the signing algorithm in the request, if NULL use the
+ * default signature algorithm,
+ * @param request the encoded request, free with free_heim_octet_string().
+ * @param nonce nonce in the request, free with free_heim_octet_string().
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_revoke
+ */
 
 int
 hx509_ocsp_request(hx509_context context,
@@ -813,41 +984,49 @@ hx509_ocsp_request(hx509_context context,
 
     ret = hx509_certs_iter(context, reqcerts, add_to_req, &ctx);
     hx509_cert_free(ctx.parent);
-    if (ret) {
-	free_OCSPRequest(&req);
-	return ret;
-    }
+    if (ret)
+	goto out;
     
     if (nonce) {
-
 	req.tbsRequest.requestExtensions = 
 	    calloc(1, sizeof(*req.tbsRequest.requestExtensions));
 	if (req.tbsRequest.requestExtensions == NULL) {
-	    free_OCSPRequest(&req);
-	    return ENOMEM;
+	    ret = ENOMEM;
+	    goto out;
 	}
 
 	es = req.tbsRequest.requestExtensions;
 	
-	es->len = 1;
 	es->val = calloc(es->len, sizeof(es->val[0]));
+	if (es->val == NULL) {
+	    ret = ENOMEM;
+	    goto out;
+	}
+	es->len = 1;
 	
 	ret = der_copy_oid(oid_id_pkix_ocsp_nonce(), &es->val[0].extnID);
-	if (ret)
-	    abort();
-	
+	if (ret) {
+	    free_OCSPRequest(&req);
+	    return ret;
+	}
+
 	es->val[0].extnValue.data = malloc(10);
 	if (es->val[0].extnValue.data == NULL) {
-	    free_OCSPRequest(&req);
-	    return ENOMEM;
+	    ret = ENOMEM;
+	    goto out;
 	}
 	es->val[0].extnValue.length = 10;
 	
 	ret = RAND_bytes(es->val[0].extnValue.data,
 			 es->val[0].extnValue.length);
 	if (ret != 1) {
-	    free_OCSPRequest(&req);
-	    return HX509_CRYPTO_INTERNAL_ERROR;
+	    ret = HX509_CRYPTO_INTERNAL_ERROR;
+	    goto out;
+	}
+	ret = der_copy_octet_string(nonce, &es->val[0].extnValue);
+	if (ret) {
+	    ret = ENOMEM;
+	    goto out;
 	}
     }
 
@@ -855,12 +1034,15 @@ hx509_ocsp_request(hx509_context context,
 		       &req, &size, ret);
     free_OCSPRequest(&req);
     if (ret)
-	return ret;
+	goto out;
     if (size != request->length)
 	_hx509_abort("internal ASN.1 encoder error");
 
-
     return 0;
+
+out:
+    free_OCSPRequest(&req);
+    return ret;
 }
 
 static char *
@@ -871,6 +1053,18 @@ printable_time(time_t t)
     s[20] = 0;
     return s;
 }
+
+/**
+ * Print the OCSP reply stored in a file.
+ *
+ * @param context a hx509 context
+ * @param path path to a file with a OCSP reply
+ * @param out the out FILE descriptor to print the reply on
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_revoke
+ */
 
 int
 hx509_revoke_ocsp_print(hx509_context context, const char *path, FILE *out)
@@ -959,10 +1153,23 @@ hx509_revoke_ocsp_print(hx509_context context, const char *path, FILE *out)
     return ret;
 }
 
-/*
- * Verify that the `cert' is part of the OCSP reply and its not
- * expired. Doesn't verify signature the OCSP reply or its done by a
+/**
+ * Verify that the certificate is part of the OCSP reply and it's not
+ * expired. Doesn't verify signature the OCSP reply or it's done by a
  * authorized sender, that is assumed to be already done.
+ *
+ * @param context a hx509 context
+ * @param now the time right now, if 0, use the current time.
+ * @param cert the certificate to verify
+ * @param flags flags control the behavior
+ * @param data pointer to the encode ocsp reply
+ * @param length the length of the encode ocsp reply
+ * @param expiration return the time the OCSP will expire and need to
+ * be rechecked.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_verify
  */
 
 int
@@ -1062,6 +1269,17 @@ struct hx509_crl {
     time_t expire;
 };
 
+/**
+ * Create a CRL context. Use hx509_crl_free() to free the CRL context.
+ *
+ * @param context a hx509 context.
+ * @param crl return pointer to a newly allocated CRL context.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_verify
+ */
+
 int
 hx509_crl_alloc(hx509_context context, hx509_crl *crl)
 {
@@ -1083,6 +1301,18 @@ hx509_crl_alloc(hx509_context context, hx509_crl *crl)
     return ret;
 }
 
+/**
+ * Add revoked certificate to an CRL context.
+ *
+ * @param context a hx509 context.
+ * @param crl the CRL to add the revoked certificate to.
+ * @param certs keyset of certificate to revoke.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_verify
+ */
+
 int
 hx509_crl_add_revoked_certs(hx509_context context,
 			    hx509_crl crl, 
@@ -1091,6 +1321,19 @@ hx509_crl_add_revoked_certs(hx509_context context,
     return hx509_certs_merge(context, crl->revoked, certs);
 }
 
+/**
+ * Set the lifetime of a CRL context.
+ *
+ * @param context a hx509 context.
+ * @param crl a CRL context
+ * @param delta delta time the certificate is valid, library adds the
+ * current time to this.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_verify
+ */
+
 int
 hx509_crl_lifetime(hx509_context context, hx509_crl crl, int delta)
 {
@@ -1098,6 +1341,14 @@ hx509_crl_lifetime(hx509_context context, hx509_crl crl, int delta)
     return 0;
 }
 
+/**
+ * Free a CRL context.
+ *
+ * @param context a hx509 context.
+ * @param crl a CRL context to free.
+ *
+ * @ingroup hx509_verify
+ */
 
 void
 hx509_crl_free(hx509_context context, hx509_crl *crl)
@@ -1144,6 +1395,19 @@ add_revoked(hx509_context context, void *ctx, hx509_cert cert)
     return 0;
 }    
 
+/**
+ * Sign a CRL and return an encode certificate.
+ *
+ * @param context a hx509 context.
+ * @param signer certificate to sign the CRL with
+ * @param crl the CRL to sign
+ * @param os return the signed and encoded CRL, free with
+ * free_heim_octet_string()
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_verify
+ */
 
 int
 hx509_crl_sign(hx509_context context,

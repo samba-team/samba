@@ -33,12 +33,20 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: add_et_list.c 13713 2004-04-13 14:33:45Z lha $");
+RCSID("$Id: add_et_list.c 22603 2008-02-21 18:44:57Z lha $");
 
-/*
+/**
  * Add a specified list of error messages to the et list in context.
  * Call func (probably a comerr-generated function) with a pointer to
  * the current et_list.
+ *
+ * @param context A kerberos context.
+ * @param func The generated com_err et function.
+ *
+ * @return Returns 0 to indicate success.  Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
  */
 
 krb5_error_code KRB5_LIB_FUNCTION

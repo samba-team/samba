@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: keytab_file.c 17457 2006-05-05 12:36:57Z lha $");
+RCSID("$Id: keytab_file.c 22532 2008-01-27 11:59:18Z lha $");
 
 #define KRB5_KT_VNO_1 1
 #define KRB5_KT_VNO_2 2
@@ -334,8 +334,8 @@ fkt_start_seq_get_int(krb5_context context,
     c->fd = open (d->filename, flags);
     if (c->fd < 0) {
 	ret = errno;
-	krb5_set_error_string(context, "%s: %s", d->filename,
-			      strerror(ret));
+	krb5_set_error_string(context, "keytab %s open failed: %s", 
+			      d->filename, strerror(ret));
 	return ret;
     }
     ret = _krb5_xlock(context, c->fd, exclusive, d->filename);

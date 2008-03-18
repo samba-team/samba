@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: pkinit.c 21290 2007-06-25 14:13:23Z lha $");
+RCSID("$Id: pkinit.c 22243 2007-12-08 23:39:30Z lha $");
 
 #ifdef PKINIT
 
@@ -1248,6 +1248,7 @@ out:
 static int
 match_rfc_san(krb5_context context, 
 	      krb5_kdc_configuration *config,
+	      hx509_context hx509ctx,
 	      hx509_cert client_cert, 
 	      krb5_const_principal match)
 {
@@ -1256,7 +1257,8 @@ match_rfc_san(krb5_context context,
 
     memset(&list, 0 , sizeof(list));
 
-    ret = hx509_cert_find_subjectAltName_otherName(client_cert,
+    ret = hx509_cert_find_subjectAltName_otherName(hx509ctx,
+						   client_cert,
 						   oid_id_pkinit_san(),
 						   &list);
     if (ret)
@@ -1304,6 +1306,7 @@ out:
 static int
 match_ms_upn_san(krb5_context context, 
 		 krb5_kdc_configuration *config,
+		 hx509_context hx509ctx,
 		 hx509_cert client_cert, 
 		 krb5_const_principal match)
 {
@@ -1315,7 +1318,8 @@ match_ms_upn_san(krb5_context context,
 
     memset(&list, 0 , sizeof(list));
 
-    ret = hx509_cert_find_subjectAltName_otherName(client_cert,
+    ret = hx509_cert_find_subjectAltName_otherName(hx509ctx,
+						   client_cert,
 						   oid_id_pkinit_ms_san(),
 						   &list);
     if (ret)
@@ -1376,7 +1380,7 @@ _kdc_pk_check_client(krb5_context context,
     hx509_name name;
     int i;
 
-    ret = hx509_cert_get_base_subject(kdc_identity->hx509ctx, 
+    ret = hx509_cert_get_base_subject(kdc_identity->hx509ctx,
 				      client_params->cert,
 				      &name);
     if (ret)
@@ -1393,6 +1397,7 @@ _kdc_pk_check_client(krb5_context context,
 
     if (config->pkinit_princ_in_cert) {
 	ret = match_rfc_san(context, config,
+			    kdc_identity->hx509ctx,
 			    client_params->cert,
 			    client->entry.principal);
 	if (ret == 0) {
@@ -1401,6 +1406,7 @@ _kdc_pk_check_client(krb5_context context,
 	    return 0;
 	}
 	ret = match_ms_upn_san(context, config,
+			       kdc_identity->hx509ctx,
 			       client_params->cert,
 			       client->entry.principal);
 	if (ret == 0) {
@@ -1580,7 +1586,8 @@ _kdc_pk_initialize(krb5_context context,
 		   char **pool,
 		   char **revoke_list)
 {
-    const char *file; 
+    const char *file;
+    char *fn = NULL;
     krb5_error_code ret;
 
     file = krb5_config_get_string(context, NULL,
@@ -1646,14 +1653,19 @@ _kdc_pk_initialize(krb5_context context,
 				       NULL);
     _krb5_pk_allow_proxy_certificate(kdc_identity, ret);
 
-    file = krb5_config_get_string_default(context, 
-					  NULL,
-					  HDB_DB_DIR "/pki-mapping",
-					  "kdc",
-					  "pkinit_mappings_file",
-					  NULL);
+    file = krb5_config_get_string(context, 
+				  NULL,
+				  "kdc",
+				  "pkinit_mappings_file",
+				  NULL);
+    if (file == NULL) {
+	asprintf(&fn, "%s/pki-mapping", hdb_db_dir(context));
+	file = fn;
+    }
 
     load_mappings(context, file);
+    if (fn)
+	free(fn);
 
     return 0;
 }

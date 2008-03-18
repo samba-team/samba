@@ -43,7 +43,7 @@ heim_ntlm_calculate_ntlm2_sess (
 
 int
 heim_ntlm_decode_targetinfo (
-	struct ntlm_buf */*data*/,
+	const struct ntlm_buf */*data*/,
 	int /*ucs2*/,
 	struct ntlm_targetinfo */*ti*/);
 
@@ -65,7 +65,7 @@ heim_ntlm_decode_type3 (
 
 int
 heim_ntlm_encode_targetinfo (
-	struct ntlm_targetinfo */*ti*/,
+	const struct ntlm_targetinfo */*ti*/,
 	int /*ucs2*/,
 	struct ntlm_buf */*data*/);
 
@@ -76,13 +76,16 @@ heim_ntlm_encode_type1 (
 
 int
 heim_ntlm_encode_type2 (
-	struct ntlm_type2 */*type2*/,
+	const struct ntlm_type2 */*type2*/,
 	struct ntlm_buf */*data*/);
 
 int
 heim_ntlm_encode_type3 (
-	struct ntlm_type3 */*type3*/,
+	const struct ntlm_type3 */*type3*/,
 	struct ntlm_buf */*data*/);
+
+void
+heim_ntlm_free_buf (struct ntlm_buf */*p*/);
 
 void
 heim_ntlm_free_targetinfo (struct ntlm_targetinfo */*ti*/);

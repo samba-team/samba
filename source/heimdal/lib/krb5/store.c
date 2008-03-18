@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include "store-int.h"
 
-RCSID("$Id: store.c 20529 2007-04-22 14:28:19Z lha $");
+RCSID("$Id: store.c 22071 2007-11-14 20:04:50Z lha $");
 
 #define BYTEORDER_IS(SP, V) (((SP)->flags & KRB5_STORAGE_BYTEORDER_MASK) == (V))
 #define BYTEORDER_IS_LE(SP) BYTEORDER_IS((SP), KRB5_STORAGE_BYTEORDER_LE)
@@ -838,8 +838,8 @@ krb5_ret_creds(krb5_storage *sp, krb5_creds *creds)
     if(ret) goto cleanup;
     /*
      * Runtime detect the what is the higher bits of the bitfield. If
-     * any of the higher bits are set in the input data, its either a
-     * new ticket flag (and this code need to be removed), or its a
+     * any of the higher bits are set in the input data, it's either a
+     * new ticket flag (and this code need to be removed), or it's a
      * MIT cache (or new Heimdal cache), lets change it to our current
      * format.
      */
@@ -993,8 +993,8 @@ krb5_ret_creds_tag(krb5_storage *sp,
     if(ret) goto cleanup;
     /*
      * Runtime detect the what is the higher bits of the bitfield. If
-     * any of the higher bits are set in the input data, its either a
-     * new ticket flag (and this code need to be removed), or its a
+     * any of the higher bits are set in the input data, it's either a
+     * new ticket flag (and this code need to be removed), or it's a
      * MIT cache (or new Heimdal cache), lets change it to our current
      * format.
      */

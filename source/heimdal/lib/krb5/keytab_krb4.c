@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: keytab_krb4.c 17046 2006-04-10 17:10:53Z lha $");
+RCSID("$Id: keytab_krb4.c 22532 2008-01-27 11:59:18Z lha $");
 
 struct krb4_kt_data {
     char *filename;
@@ -134,14 +134,15 @@ krb4_kt_start_seq_get_int (krb5_context context,
     if (c->fd < 0) {
 	ret = errno;
 	free (ed);
-	krb5_set_error_string(context, "open(%s): %s", d->filename,
-			      strerror(ret));
+	krb5_set_error_string(context, "keytab krb5 open %s failed: %s", 
+			      d->filename, strerror(ret));
 	return ret;
     }
     c->sp = krb5_storage_from_fd(c->fd);
     if(c->sp == NULL) {
 	close(c->fd);
 	free(ed);
+	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
     }
     krb5_storage_set_eof_code(c->sp, KRB5_KT_END);
@@ -369,8 +370,11 @@ krb4_kt_remove_entry(krb5_context context,
 	if(fd < 0) {
 	    memset(data.data, 0, data.length);
 	    krb5_data_free(&data);
-	    if(errno == EACCES || errno == EROFS) 
+	    if(errno == EACCES || errno == EROFS) {
+		krb5_set_error_string(context, "failed to open %s for writing",
+				      d->filename);
 		return KRB5_KT_NOWRITE;
+	    }
 	    return errno;
 	}
 
@@ -378,14 +382,16 @@ krb4_kt_remove_entry(krb5_context context,
 	    memset(data.data, 0, data.length);
 	    krb5_data_free(&data);
 	    close(fd);
-	    krb5_set_error_string(context, "failed writing to \"%s\"", d->filename);
+	    krb5_set_error_string(context, "failed writing to file %s", 
+				  d->filename);
 	    return errno;
 	}
 	memset(data.data, 0, data.length);
 	if(fstat(fd, &st) < 0) {
 	    krb5_data_free(&data);
 	    close(fd);
-	    krb5_set_error_string(context, "failed getting size of \"%s\"", d->filename);
+	    krb5_set_error_string(context, "failed getting size of file %s", 
+				  d->filename);
 	    return errno;
 	}
 	st.st_size -= data.length;
@@ -396,7 +402,8 @@ krb4_kt_remove_entry(krb5_context context,
 	    if(n <= 0) {
 		krb5_data_free(&data);
 		close(fd);
-		krb5_set_error_string(context, "failed writing to \"%s\"", d->filename);
+		krb5_set_error_string(context, "failed writing to file %s",
+				      d->filename);
 		return errno;
 		
 	    }
@@ -405,17 +412,20 @@ krb4_kt_remove_entry(krb5_context context,
 	if(ftruncate(fd, data.length) < 0) {
 	    krb5_data_free(&data);
 	    close(fd);
-	    krb5_set_error_string(context, "failed truncating \"%s\"", d->filename);
+	    krb5_set_error_string(context, "failed truncating file %s",
+				  d->filename);
 	    return errno;
 	}
 	krb5_data_free(&data);
 	if(close(fd) < 0) {
-	    krb5_set_error_string(context, "error closing \"%s\"", d->filename);
+	    krb5_set_error_string(context, "error closing %s",
+				  d->filename);
 	    return errno;
 	}
 	return 0;
     } else {
 	krb5_storage_free(sp);
+	krb5_set_error_string(context, "Keytab entry not found");
 	return KRB5_KT_NOTFOUND;
     }
 }

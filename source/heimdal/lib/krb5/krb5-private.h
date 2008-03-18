@@ -276,7 +276,7 @@ _krb5_mk_req_internal (
 	krb5_key_usage /*checksum_usage*/,
 	krb5_key_usage /*encrypt_usage*/);
 
-void KRB5_LIB_FUNCTION
+krb5_error_code KRB5_LIB_FUNCTION
 _krb5_n_fold (
 	const void */*str*/,
 	size_t /*len*/,
@@ -292,7 +292,7 @@ _krb5_oid_to_enctype (
 krb5_error_code
 _krb5_pac_sign (
 	krb5_context /*context*/,
-	struct krb5_pac */*p*/,
+	krb5_pac /*p*/,
 	time_t /*authtime*/,
 	krb5_principal /*principal*/,
 	const krb5_keyblock */*server_key*/,
@@ -395,13 +395,6 @@ _krb5_plugin_get_next (struct krb5_plugin */*p*/);
 
 void *
 _krb5_plugin_get_symbol (struct krb5_plugin */*p*/);
-
-krb5_error_code
-_krb5_plugin_register (
-	krb5_context /*context*/,
-	enum krb5_plugin_type /*type*/,
-	const char */*name*/,
-	void */*symbol*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_principal2principalname (

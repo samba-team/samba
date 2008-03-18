@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: convert_creds.c 14897 2005-04-23 19:40:57Z lha $");
+RCSID("$Id: convert_creds.c 22050 2007-11-11 11:20:46Z lha $");
 
 #include "krb5-v4compat.h"
 
@@ -42,10 +42,20 @@ check_ticket_flags(TicketFlags f)
     return 0; /* maybe add some more tests here? */
 }
 
-/* Convert the v5 credentials in `in_cred' to v4-dito in `v4creds'.
- * This is done by sending them to the 524 function in the KDC.  If
+/**
+ * Convert the v5 credentials in in_cred to v4-dito in v4creds.  This
+ * is done by sending them to the 524 function in the KDC.  If
  * `in_cred' doesn't contain a DES session key, then a new one is
  * gotten from the KDC and stored in the cred cache `ccache'.
+ *
+ * @param context Kerberos 5 context.
+ * @param in_cred the credential to convert
+ * @param v4creds the converted credential
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5_v4compat
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -133,6 +143,21 @@ out2:
 	krb5_free_creds (context, v5_creds);
     return ret;
 }
+
+/**
+ * Convert the v5 credentials in in_cred to v4-dito in v4creds,
+ * check the credential cache ccache before checking with the KDC.
+ *
+ * @param context Kerberos 5 context.
+ * @param ccache credential cache used to check for des-ticket.
+ * @param in_cred the credential to convert
+ * @param v4creds the converted credential
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5_v4compat
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb524_convert_creds_kdc_ccache(krb5_context context, 

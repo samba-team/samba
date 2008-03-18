@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: get_for_creds.c 17036 2006-04-10 09:28:15Z lha $");
+RCSID("$Id: get_for_creds.c 22504 2008-01-21 15:49:58Z lha $");
 
 static krb5_error_code
 add_addrs(krb5_context context,
@@ -83,11 +83,23 @@ fail:
     return ret;
 }
 
-/*
- * Forward credentials for `client' to host `hostname`,
- * making them forwardable if `forwardable', and returning the
- * blob of data to sent in `out_data'.
- * If hostname == NULL, pick it from `server'
+/**
+ * Forward credentials for client to host hostname , making them
+ * forwardable if forwardable, and returning the blob of data to sent
+ * in out_data.  If hostname == NULL, pick it from server.
+ *
+ * @param context A kerberos 5 context.
+ * @param auth_context the auth context with the key to encrypt the out_data.
+ * @param hostname the host to forward the tickets too.
+ * @param client the client to delegate from.
+ * @param server the server to delegate the credential too.
+ * @param ccache credential cache to use.
+ * @param forwardable make the forwarded ticket forwabledable.
+ * @param out_data the resulting credential.
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_credential
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -147,8 +159,31 @@ krb5_fwd_tgt_creds (krb5_context	context,
     return ret;
 }
 
-/*
+/**
+ * Gets tickets forwarded to hostname. If the tickets that are
+ * forwarded are address-less, the forwarded tickets will also be
+ * address-less.
+ * 
+ * If the ticket have any address, hostname will be used for figure
+ * out the address to forward the ticket too. This since this might
+ * use DNS, its insecure and also doesn't represent configured all
+ * addresses of the host. For example, the host might have two
+ * adresses, one IPv4 and one IPv6 address where the later is not
+ * published in DNS. This IPv6 address might be used communications
+ * and thus the resulting ticket useless.
  *
+ * @param context A kerberos 5 context.
+ * @param auth_context the auth context with the key to encrypt the out_data.
+ * @param ccache credential cache to use
+ * @param flags the flags to control the resulting ticket flags
+ * @param hostname the host to forward the tickets too.
+ * @param in_creds the in client and server ticket names.  The client
+ * and server components forwarded to the remote host.
+ * @param out_data the resulting credential.
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_credential
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -174,39 +209,31 @@ krb5_get_forwarded_creds (krb5_context	    context,
     struct addrinfo *ai;
     int save_errno;
     krb5_creds *ticket;
-    char *realm;
 
-    realm = in_creds->client->realm;
-
+    paddrs = NULL;
     addrs.len = 0;
     addrs.val = NULL;
-    paddrs = &addrs;
 
-    {
+    ret = krb5_get_credentials(context, 0, ccache, in_creds, &ticket);
+    if(ret == 0) {
+	if (ticket->addresses.len)
+	    paddrs = &addrs;
+	krb5_free_creds (context, ticket);
+    } else {
 	krb5_boolean noaddr;
-	krb5_appdefault_boolean(context, NULL, realm,
+	krb5_appdefault_boolean(context, NULL,
+				krb5_principal_get_realm(context, 
+							 in_creds->client),
 				"no-addresses", KRB5_ADDRESSLESS_DEFAULT,
 				&noaddr);
-	if (noaddr)
-	    paddrs = NULL;
+	if (!noaddr)
+	    paddrs = &addrs;
     }
 	
     /*
-     * If tickets are address-less, forward address-less tickets.
+     * If tickets have addresses, get the address of the remote host.
      */
 
-    if (paddrs) {
-	ret = _krb5_get_krbtgt (context,
-				ccache,
-				realm,
-				&ticket);
-	if(ret == 0) {
-	    if (ticket->addresses.len == 0)
-		paddrs = NULL;
-	    krb5_free_creds (context, ticket);
-	}
-    }
-    
     if (paddrs != NULL) {
 
 	ret = getaddrinfo (hostname, NULL, NULL, &ai);
@@ -233,9 +260,8 @@ krb5_get_forwarded_creds (krb5_context	    context,
 			     in_creds,
 			     &out_creds);
     krb5_free_addresses (context, &addrs);
-    if (ret) {
+    if (ret)
 	return ret;
-    }
 
     memset (&cred, 0, sizeof(cred));
     cred.pvno = 5;
@@ -372,6 +398,14 @@ krb5_get_forwarded_creds (krb5_context	    context,
     }
     if(buf_size != len)
 	krb5_abortx(context, "internal error in ASN.1 encoder");
+
+    /**
+     * Some older of the MIT gssapi library used clear-text tickets
+     * (warped inside AP-REQ encryption), use the krb5_auth_context
+     * flag KRB5_AUTH_CONTEXT_CLEAR_FORWARDED_CRED to support those
+     * tickets. The session key is used otherwise to encrypt the
+     * forwarded ticket.
+     */
 
     if (auth_context->flags & KRB5_AUTH_CONTEXT_CLEAR_FORWARDED_CRED) {
 	cred.enc_part.etype = ENCTYPE_NULL;

@@ -35,7 +35,7 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: bn.c 18449 2006-10-14 09:21:09Z lha $");
+RCSID("$Id: bn.c 22261 2007-12-09 06:24:18Z lha $");
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -232,9 +232,9 @@ BN_set_negative(BIGNUM *bn, int flag)
 }
 
 int
-BN_is_negative(BIGNUM *bn)
+BN_is_negative(const BIGNUM *bn)
 {
-    return ((heim_integer *)bn)->negative ? 1 : 0;
+    return ((const heim_integer *)bn)->negative ? 1 : 0;
 }
 
 static const unsigned char is_set[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };

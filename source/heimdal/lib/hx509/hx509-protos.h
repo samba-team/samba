@@ -183,6 +183,7 @@ hx509_cert_cmp (
 
 int
 hx509_cert_find_subjectAltName_otherName (
+	hx509_context /*context*/,
 	hx509_cert /*cert*/,
 	const heim_oid */*oid*/,
 	hx509_octet_string_list */*list*/);
@@ -192,8 +193,15 @@ hx509_cert_free (hx509_cert /*cert*/);
 
 int
 hx509_cert_get_SPKI (
+	hx509_context /*context*/,
 	hx509_cert /*p*/,
 	SubjectPublicKeyInfo */*spki*/);
+
+int
+hx509_cert_get_SPKI_AlgorithmIdentifier (
+	hx509_context /*context*/,
+	hx509_cert /*p*/,
+	AlgorithmIdentifier */*alg*/);
 
 hx509_cert_attribute
 hx509_cert_get_attribute (
@@ -229,6 +237,9 @@ int
 hx509_cert_get_subject (
 	hx509_cert /*p*/,
 	hx509_name */*name*/);
+
+int
+hx509_cert_have_private_key (hx509_cert /*p*/);
 
 int
 hx509_cert_init (
@@ -305,7 +316,7 @@ int
 hx509_certs_iter (
 	hx509_context /*context*/,
 	hx509_certs /*certs*/,
-	int (*/*fn*/)(hx509_context, void *, hx509_cert),
+	int (*/*func*/)(hx509_context, void *, hx509_cert),
 	void */*ctx*/);
 
 int
@@ -402,7 +413,7 @@ hx509_cms_verify_signed (
 	const void */*data*/,
 	size_t /*length*/,
 	const heim_octet_string */*signedContent*/,
-	hx509_certs /*store*/,
+	hx509_certs /*pool*/,
 	heim_oid */*contentType*/,
 	heim_octet_string */*content*/,
 	hx509_certs */*signer_certs*/);
@@ -581,6 +592,9 @@ hx509_err (
 	...);
 
 void
+hx509_free_error_string (char */*str*/);
+
+void
 hx509_free_octet_string_list (hx509_octet_string_list */*list*/);
 
 int
@@ -652,6 +666,11 @@ hx509_lock_set_prompter (
 	void */*data*/);
 
 int
+hx509_name_binary (
+	const hx509_name /*name*/,
+	heim_octet_string */*os*/);
+
+int
 hx509_name_cmp (
 	hx509_name /*n1*/,
 	hx509_name /*n2*/);
@@ -683,12 +702,6 @@ int
 hx509_name_to_Name (
 	const hx509_name /*from*/,
 	Name */*to*/);
-
-int
-hx509_name_to_der_name (
-	const hx509_name /*name*/,
-	void **/*data*/,
-	size_t */*length*/);
 
 int
 hx509_name_to_string (
@@ -783,13 +796,6 @@ hx509_pem_write (
 	size_t /*size*/);
 
 void
-hx509_print_func (
-	hx509_vprint_func /*func*/,
-	void */*ctx*/,
-	const char */*fmt*/,
-	...);
-
-void
 hx509_print_stdout (
 	void */*ctx*/,
 	const char */*fmt*/,
@@ -813,6 +819,11 @@ hx509_query_match_cmp_func (
 	hx509_query */*q*/,
 	int (*/*func*/)(void *, hx509_cert),
 	void */*ctx*/);
+
+int
+hx509_query_match_eku (
+	hx509_query */*q*/,
+	const heim_oid */*eku*/);
 
 int
 hx509_query_match_friendly_name (
@@ -900,6 +911,9 @@ hx509_signature_md5 (void);
 
 const AlgorithmIdentifier *
 hx509_signature_rsa (void);
+
+const AlgorithmIdentifier *
+hx509_signature_rsa_pkcs1_x509 (void);
 
 const AlgorithmIdentifier *
 hx509_signature_rsa_with_md2 (void);
@@ -1029,6 +1043,9 @@ hx509_verify_signature (
 	const AlgorithmIdentifier */*alg*/,
 	const heim_octet_string */*data*/,
 	const heim_octet_string */*sig*/);
+
+void
+hx509_xfree (void */*ptr*/);
 
 #ifdef __cplusplus
 }

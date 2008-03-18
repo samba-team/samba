@@ -33,7 +33,7 @@
 
 #include "spnego/spnego_locl.h"
 
-RCSID("$Id: accept_sec_context.c 21461 2007-07-10 14:01:13Z lha $");
+RCSID("$Id: accept_sec_context.c 22600 2008-02-21 12:46:24Z lha $");
 
 static OM_uint32
 send_reject (OM_uint32 *minor_status,
@@ -540,7 +540,7 @@ acceptor_start
 	    gss_cred_id_t *delegated_cred_handle
 	   )
 {
-    OM_uint32 ret, junk, minor;
+    OM_uint32 ret, junk;
     NegotiationToken nt;
     size_t nt_len;
     NegTokenInit *ni;
@@ -609,7 +609,7 @@ acceptor_start
     /*
      * First we try the opportunistic token if we have support for it,
      * don't try to verify we have credential for the token,
-     * gss_accept_sec_context will (hopefully) tell us that.
+     * gss_accept_sec_context() will (hopefully) tell us that.
      * If that failes, 
      */
 
@@ -633,12 +633,12 @@ acceptor_start
 	    mech_cred = GSS_C_NO_CREDENTIAL;
 	
 	if (ctx->mech_src_name != GSS_C_NO_NAME)
-	    gss_release_name(&minor, &ctx->mech_src_name);
+	    gss_release_name(&junk, &ctx->mech_src_name);
 	
 	if (ctx->delegated_cred_id != GSS_C_NO_CREDENTIAL)
-	    _gss_spnego_release_cred(&minor, &ctx->delegated_cred_id);
+	    _gss_spnego_release_cred(&junk, &ctx->delegated_cred_id);
 	
-	ret = gss_accept_sec_context(&minor,
+	ret = gss_accept_sec_context(minor_status,
 				     &ctx->negotiated_ctx_id,
 				     mech_cred,
 				     mech_input_token,
@@ -656,7 +656,7 @@ acceptor_start
 		ctx->open = 1;
 
 	    if (mech_delegated_cred && delegated_cred_handle)
-		ret = _gss_spnego_alloc_cred(minor_status,
+		ret = _gss_spnego_alloc_cred(&junk,
 					     mech_delegated_cred,
 					     delegated_cred_handle);
 	    else
@@ -674,6 +674,8 @@ acceptor_start
 		goto out;
 
 	    first_ok = 1;
+	} else {
+	    gss_mg_collect_error(preferred_mech_type, ret, *minor_status);
 	}
     }
 
@@ -681,7 +683,9 @@ acceptor_start
      * If opportunistic token failed, lets try the other mechs.
      */
 
-    if (!first_ok) {
+    if (!first_ok && ni->mechToken != NULL) {
+
+	preferred_mech_type = GSS_C_NO_OID;
 
 	/* Call glue layer to find first mech we support */
 	for (i = 1; i < ni->mechTypes.len; ++i) {
@@ -695,7 +699,7 @@ acceptor_start
 	if (preferred_mech_type == GSS_C_NO_OID) {
 	    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 	    free_NegotiationToken(&nt);
-	    return GSS_S_BAD_MECH;
+	    return ret;
 	}
 
 	ctx->preferred_mech_type = preferred_mech_type;
@@ -717,7 +721,7 @@ acceptor_start
     
 out:
     if (mech_output_token.value != NULL)
-	gss_release_buffer(&minor, &mech_output_token);
+	gss_release_buffer(&junk, &mech_output_token);
     if (mech_buf.value != NULL) {
 	free(mech_buf.value);
 	mech_buf.value = NULL;
@@ -754,7 +758,7 @@ out:
  	return ret;
     }
 
-    _gss_spnego_internal_delete_sec_context(&minor, context_handle,
+    _gss_spnego_internal_delete_sec_context(&junk, context_handle,
 					    GSS_C_NO_BUFFER);
     
     return ret;
@@ -877,6 +881,7 @@ acceptor_continue
 	    }
 	    if (ret != GSS_S_COMPLETE && ret != GSS_S_CONTINUE_NEEDED) {
 		free_NegotiationToken(&nt);
+		gss_mg_collect_error(ctx->negotiated_mech_type, ret, minor);
 		send_reject (minor_status, output_token);
 		HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 		return ret;

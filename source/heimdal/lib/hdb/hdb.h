@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hdb.h 20535 2007-04-23 07:49:16Z lha $ */
+/* $Id: hdb.h 22198 2007-12-07 13:09:25Z lha $ */
 
 #ifndef __HDB_H__
 #define __HDB_H__
@@ -134,10 +134,6 @@ struct hdb_so_method {
     const char *prefix;
     krb5_error_code (*create)(krb5_context, HDB **, const char *filename);
 };
-
-#define HDB_DB_DIR "/var/heimdal"
-#define HDB_DEFAULT_DB HDB_DB_DIR "/heimdal"
-#define HDB_DB_FORMAT_ENTRY "hdb/db-format"
 
 typedef krb5_error_code (*hdb_foreach_func_t)(krb5_context, HDB*,
 					      hdb_entry_ex*, void*);

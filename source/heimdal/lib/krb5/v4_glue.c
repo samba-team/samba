@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: v4_glue.c 21572 2007-07-16 05:13:08Z lha $");
+RCSID("$Id: v4_glue.c 22071 2007-11-14 20:04:50Z lha $");
 
 #include "krb5-v4compat.h"
 
@@ -599,7 +599,7 @@ _krb5_krb_cr_err_reply(krb5_context context,
     RCHECK(ret, krb5_store_int8(sp, AUTH_MSG_ERR_REPLY), error);
     RCHECK(ret, put_nir(sp, name, inst, realm), error);
     RCHECK(ret, krb5_store_int32(sp, time_ws), error);
-    /* If its a Kerberos 4 error-code, remove the et BASE */
+    /* If it is a Kerberos 4 error-code, remove the et BASE */
     if (e >= ERROR_TABLE_BASE_krb && e <= ERROR_TABLE_BASE_krb + 255)
 	e -= ERROR_TABLE_BASE_krb;
     RCHECK(ret, krb5_store_int32(sp, e), error);

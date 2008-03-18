@@ -32,10 +32,45 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: cms.c 21319 2007-06-25 19:46:52Z lha $");
+RCSID("$Id: cms.c 22327 2007-12-15 04:49:37Z lha $");
+
+/**
+ * @page page_cms CMS/PKCS7 message functions.
+ *
+ * CMS is defined in RFC 3369 and is an continuation of the RSA Labs
+ * standard PKCS7. The basic messages in CMS is 
+ *
+ * - SignedData
+ *   Data signed with private key (RSA, DSA, ECDSA) or secret
+ *   (symmetric) key
+ * - EnvelopedData
+ *   Data encrypted with private key (RSA)
+ * - EncryptedData
+ *   Data encrypted with secret (symmetric) key.
+ * - ContentInfo
+ *   Wrapper structure including type and data.
+ *
+ *
+ * See the library functions here: @ref hx509_cms
+ */
 
 #define ALLOC(X, N) (X) = calloc((N), sizeof(*(X)))
 #define ALLOC_SEQ(X, N) do { (X)->len = (N); ALLOC((X)->val, (N)); } while(0)
+
+/**
+ * Wrap data and oid in a ContentInfo and encode it.
+ *
+ * @param oid type of the content.
+ * @param buf data to be wrapped. If a NULL pointer is passed in, the
+ * optional content field in the ContentInfo is not going be filled
+ * in.
+ * @param res the encoded buffer, the result should be freed with
+ * der_free_octet_string().
+ *
+ * @return Returns an hx509 error code.
+ * 
+ * @ingroup hx509_cms
+ */
 
 int
 hx509_cms_wrap_ContentInfo(const heim_oid *oid,
@@ -52,18 +87,20 @@ hx509_cms_wrap_ContentInfo(const heim_oid *oid,
     ret = der_copy_oid(oid, &ci.contentType);
     if (ret)
 	return ret;
-    ALLOC(ci.content, 1);
-    if (ci.content == NULL) {
-	free_ContentInfo(&ci);
-	return ENOMEM;
+    if (buf) {
+	ALLOC(ci.content, 1);
+	if (ci.content == NULL) {
+	    free_ContentInfo(&ci);
+	    return ENOMEM;
+	}
+	ci.content->data = malloc(buf->length);
+	if (ci.content->data == NULL) {
+	    free_ContentInfo(&ci);
+	    return ENOMEM;
+	}
+	memcpy(ci.content->data, buf->data, buf->length);
+	ci.content->length = buf->length;
     }
-    ci.content->data = malloc(buf->length);
-    if (ci.content->data == NULL) {
-	free_ContentInfo(&ci);
-	return ENOMEM;
-    }
-    memcpy(ci.content->data, buf->data, buf->length);
-    ci.content->length = buf->length;
 
     ASN1_MALLOC_ENCODE(ContentInfo, res->data, res->length, &ci, &size, ret);
     free_ContentInfo(&ci);
@@ -74,6 +111,20 @@ hx509_cms_wrap_ContentInfo(const heim_oid *oid,
 
     return 0;
 }
+
+/**
+ * Decode an ContentInfo and unwrap data and oid it.
+ *
+ * @param in the encoded buffer.
+ * @param oid type of the content.
+ * @param out data to be wrapped.
+ * @param have_data since the data is optional, this flags show dthe
+ * diffrence between no data and the zero length data.
+ *
+ * @return Returns an hx509 error code.
+ * 
+ * @ingroup hx509_cms
+ */
 
 int
 hx509_cms_unwrap_ContentInfo(const heim_octet_string *in,
@@ -267,6 +318,27 @@ find_CMSIdentifier(hx509_context context,
     return 0;
 }
 
+/**
+ * Decode and unencrypt EnvelopedData.
+ *
+ * Extract data and parameteres from from the EnvelopedData. Also
+ * supports using detached EnvelopedData.
+ *
+ * @param context A hx509 context.
+ * @param certs Certificate that can decrypt the EnvelopedData
+ * encryption key.
+ * @param flags HX509_CMS_UE flags to control the behavior.
+ * @param data pointer the structure the contains the DER/BER encoded
+ * EnvelopedData stucture.
+ * @param length length of the data that data point to.
+ * @param encryptedContent in case of detached signature, this
+ * contains the actual encrypted data, othersize its should be NULL.
+ * @param contentType output type oid, should be freed with der_free_oid().
+ * @param content the data, free with der_free_octet_string().
+ *
+ * @ingroup hx509_cms
+ */
+
 int
 hx509_cms_unenvelope(hx509_context context,
 		     hx509_certs certs,
@@ -334,11 +406,6 @@ hx509_cms_unenvelope(hx509_context context,
 	int ret2;
 
 	ri = &ed.recipientInfos.val[i];
-
-	/* ret = search_keyset(ri,
-	 * 	PRIVATE_KEY,
-	 * 	ki->keyEncryptionAlgorithm.algorithm);
-	 */
 
 	ret = find_CMSIdentifier(context, &ri->rid, certs, &cert,
 				 HX509_QUERY_PRIVATE_KEY|findflags);
@@ -443,6 +510,29 @@ out:
 
     return ret;
 }
+
+/**
+ * Encrypt end encode EnvelopedData.
+ *
+ * Encrypt and encode EnvelopedData. The data is encrypted with a
+ * random key and the the random key is encrypted with the
+ * certificates private key. This limits what private key type can be
+ * used to RSA.
+ *
+ * @param context A hx509 context.
+ * @param flags flags to control the behavior, no flags today
+ * @param cert Certificate to encrypt the EnvelopedData encryption key
+ * with.
+ * @param data pointer the data to encrypt.
+ * @param length length of the data that data point to.
+ * @param encryption_type Encryption cipher to use for the bulk data,
+ * use NULL to get default.
+ * @param contentType type of the data that is encrypted
+ * @param content the output of the function,
+ * free with der_free_octet_string().
+ *
+ * @ingroup hx509_cms
+ */
 
 int
 hx509_cms_envelope_1(hx509_context context,
@@ -637,13 +727,31 @@ find_attribute(const CMSAttributes *attr, const heim_oid *oid)
     return NULL;
 }
 
+/**
+ * Decode SignedData and verify that the signature is correct.
+ *
+ * @param context A hx509 context.
+ * @param ctx a hx509 version context
+ * @param data
+ * @param length length of the data that data point to.
+ * @param signedContent
+ * @param pool certificate pool to build certificates paths.
+ * @param contentType free with der_free_oid()
+ * @param content the output of the function, free with
+ * der_free_octet_string().
+ * @param signer_certs list of the cerficates used to sign this
+ * request, free with hx509_certs_free().
+ *
+ * @ingroup hx509_cms
+ */
+
 int
 hx509_cms_verify_signed(hx509_context context,
 			hx509_verify_ctx ctx,
 			const void *data,
 			size_t length,
 			const heim_octet_string *signedContent,
-			hx509_certs store,
+			hx509_certs pool,
 			heim_oid *contentType,
 			heim_octet_string *content,
 			hx509_certs *signer_certs)
@@ -701,8 +809,8 @@ hx509_cms_verify_signed(hx509_context context,
     if (ret)
 	goto out;
 
-    if (store) {
-	ret = hx509_certs_merge(context, certs, store);
+    if (pool) {
+	ret = hx509_certs_merge(context, certs, pool);
 	if (ret)
 	    goto out;
     }
@@ -946,6 +1054,29 @@ add_one_attribute(Attribute **attr,
     return 0;
 }
 	
+/**
+ * Decode SignedData and verify that the signature is correct.
+ *
+ * @param context A hx509 context.
+ * @param flags
+ * @param eContentType the type of the data.
+ * @param data data to sign
+ * @param length length of the data that data point to.
+ * @param digest_alg digest algorithm to use, use NULL to get the
+ * default or the peer determined algorithm.
+ * @param cert certificate to use for sign the data.
+ * @param peer info about the peer the message to send the message to,
+ * like what digest algorithm to use.
+ * @param anchors trust anchors that the client will use, used to
+ * polulate the certificates included in the message
+ * @param pool certificates to use in try to build the path to the
+ * trust anchors.
+ * @param signed_data the output of the function, free with
+ * der_free_octet_string().
+ *
+ * @ingroup hx509_cms
+ */
+
 int
 hx509_cms_create_signed_1(hx509_context context,
 			  int flags,
@@ -1050,7 +1181,7 @@ hx509_cms_create_signed_1(hx509_context context,
     }
 
     /*
-     * If its not pkcs7-data send signedAttributes
+     * If it isn't pkcs7-data send signedAttributes
      */
 
     if (der_heim_oid_cmp(eContentType, oid_id_pkcs7_data()) != 0) {

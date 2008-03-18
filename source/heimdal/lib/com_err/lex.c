@@ -1,6 +1,5 @@
-#include "config.h"
 
-#line 3 "heimdal/lib/com_err/lex.c"
+#line 3 "lex.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -524,7 +523,7 @@ char *yytext;
 #include "parse.h"
 #include "lex.h"
 
-RCSID("$Id: lex.l,v 1.8 2005/05/16 08:52:54 lha Exp $");
+RCSID("$Id: lex.l 15143 2005-05-16 08:52:54Z lha $");
 
 static unsigned lineno = 1;
 static int getstring(void);
@@ -533,7 +532,7 @@ static int getstring(void);
 
 #undef ECHO
 
-#line 536 "heimdal/lib/com_err/lex.c"
+#line 536 "lex.c"
 
 #define INITIAL 0
 
@@ -550,6 +549,35 @@ static int getstring(void);
 #endif
 
 static int yy_init_globals (void );
+
+/* Accessor methods to globals.
+   These are made visible to non-reentrant scanners for convenience. */
+
+int yylex_destroy (void );
+
+int yyget_debug (void );
+
+void yyset_debug (int debug_flag  );
+
+YY_EXTRA_TYPE yyget_extra (void );
+
+void yyset_extra (YY_EXTRA_TYPE user_defined  );
+
+FILE *yyget_in (void );
+
+void yyset_in  (FILE * in_str  );
+
+FILE *yyget_out (void );
+
+void yyset_out  (FILE * out_str  );
+
+int yyget_leng (void );
+
+char *yyget_text (void );
+
+int yyget_lineno (void );
+
+void yyset_lineno (int line_number  );
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -688,7 +716,7 @@ YY_DECL
     
 #line 59 "lex.l"
 
-#line 691 "heimdal/lib/com_err/lex.c"
+#line 720 "lex.c"
 
 	if ( !(yy_init) )
 		{
@@ -852,7 +880,7 @@ YY_RULE_SETUP
 #line 75 "lex.l"
 ECHO;
 	YY_BREAK
-#line 855 "heimdal/lib/com_err/lex.c"
+#line 884 "lex.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1083,7 +1111,7 @@ static int yy_get_next_buffer (void)
 
 		/* Read in more data. */
 		YY_INPUT( (&YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[number_to_move]),
-			(yy_n_chars), (size_t) num_to_read );
+			(yy_n_chars), num_to_read );
 
 		YY_CURRENT_BUFFER_LVALUE->yy_n_chars = (yy_n_chars);
 		}
@@ -1584,7 +1612,7 @@ YY_BUFFER_STATE yy_scan_buffer  (char * base, yy_size_t  size )
 
 /** Setup the input buffer state to scan a string. The next call to yylex() will
  * scan from a @e copy of @a str.
- * @param yystr a NUL-terminated string to scan
+ * @param str a NUL-terminated string to scan
  * 
  * @return the newly allocated buffer state object.
  * @note If you want to scan bytes that may contain NUL values, then use

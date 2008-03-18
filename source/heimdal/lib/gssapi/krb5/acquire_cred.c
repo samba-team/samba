@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: acquire_cred.c 21221 2007-06-20 08:42:10Z lha $");
+RCSID("$Id: acquire_cred.c 22596 2008-02-18 18:05:55Z lha $");
 
 OM_uint32
 __gsskrb5_ccache_lifetime(OM_uint32 *minor_status,
@@ -128,9 +128,12 @@ static OM_uint32 acquire_initiator_cred
     ret = GSS_S_FAILURE;
     memset(&cred, 0, sizeof(cred));
 
-    /* If we have a preferred principal, lets try to find it in all
-     * caches, otherwise, fall back to default cache.  Ignore
-     * errors. */
+    /* 
+     * If we have a preferred principal, lets try to find it in all
+     * caches, otherwise, fall back to default cache, ignore all
+     * errors while searching.
+     */
+
     if (handle->principal)
 	kret = krb5_cc_cache_match (context,
 				    handle->principal,
@@ -142,32 +145,30 @@ static OM_uint32 acquire_initiator_cred
 	if (kret)
 	    goto end;
     }
-    kret = krb5_cc_get_principal(context, ccache,
-	&def_princ);
+    kret = krb5_cc_get_principal(context, ccache, &def_princ);
     if (kret != 0) {
 	/* we'll try to use a keytab below */
-	krb5_cc_destroy(context, ccache);
-	ccache = NULL;
+	krb5_cc_close(context, ccache);
+	def_princ = NULL;
 	kret = 0;
     } else if (handle->principal == NULL)  {
-	kret = krb5_copy_principal(context, def_princ,
-	    &handle->principal);
+	kret = krb5_copy_principal(context, def_princ, &handle->principal);
 	if (kret)
 	    goto end;
     } else if (handle->principal != NULL &&
-	krb5_principal_compare(context, handle->principal,
-	def_princ) == FALSE) {
-	/* Before failing, lets check the keytab */
+	       krb5_principal_compare(context, handle->principal,
+				      def_princ) == FALSE) {
 	krb5_free_principal(context, def_princ);
 	def_princ = NULL;
+	krb5_cc_close(context, ccache);
+	ccache = NULL;
     }
     if (def_princ == NULL) {
 	/* We have no existing credentials cache,
 	 * so attempt to get a TGT using a keytab.
 	 */
 	if (handle->principal == NULL) {
-	    kret = krb5_get_default_principal(context,
-		&handle->principal);
+	    kret = krb5_get_default_principal(context, &handle->principal);
 	    if (kret)
 		goto end;
 	}
@@ -182,16 +183,19 @@ static OM_uint32 acquire_initiator_cred
 	krb5_get_init_creds_opt_free(context, opt);
 	if (kret)
 	    goto end;
-	kret = krb5_cc_gen_new(context, &krb5_mcc_ops,
-		&ccache);
+	kret = krb5_cc_gen_new(context, &krb5_mcc_ops, &ccache);
 	if (kret)
 	    goto end;
 	kret = krb5_cc_initialize(context, ccache, cred.client);
-	if (kret)
+	if (kret) {
+	    krb5_cc_destroy(context, ccache);
 	    goto end;
+	}
 	kret = krb5_cc_store_cred(context, ccache, &cred);
-	if (kret)
+	if (kret) {
+	    krb5_cc_destroy(context, ccache);
 	    goto end;
+	}
 	handle->lifetime = cred.times.endtime;
 	handle->cred_flags |= GSS_CF_DESTROY_CRED_ON_RELEASE;
     } else {
@@ -201,8 +205,10 @@ static OM_uint32 acquire_initiator_cred
 					ccache,
 					handle->principal,
 					&handle->lifetime);
-	if (ret != GSS_S_COMPLETE)
+	if (ret != GSS_S_COMPLETE) {
+	    krb5_cc_close(context, ccache);
 	    goto end;
+	}
 	kret = 0;
     }
 
@@ -216,13 +222,8 @@ end:
 	krb5_free_principal(context, def_princ);
     if (keytab != NULL)
 	krb5_kt_close(context, keytab);
-    if (ret != GSS_S_COMPLETE) {
-	if (ccache != NULL)
-	    krb5_cc_close(context, ccache);
-	if (kret != 0) {
-	    *minor_status = kret;
-	}
-    }
+    if (ret != GSS_S_COMPLETE && kret != 0)
+	*minor_status = kret;
     return (ret);
 }
 
@@ -257,8 +258,23 @@ static OM_uint32 acquire_acceptor_cred
 	    goto end;
 	krb5_kt_free_entry(context, &entry);
 	ret = GSS_S_COMPLETE;
-    }
- 
+    } else {
+	/* 
+	 * Check if there is at least one entry in the keytab before
+	 * declaring it as an useful keytab.
+	 */
+	krb5_keytab_entry tmp;
+	krb5_kt_cursor c;
+
+	kret = krb5_kt_start_seq_get (context, handle->keytab, &c);
+	if (kret)
+	    goto end;
+	if (krb5_kt_next_entry(context, handle->keytab, &tmp, &c) == 0) {
+	    krb5_kt_free_entry(context, &tmp);
+	    ret = GSS_S_COMPLETE; /* ok found one entry */
+	}
+	krb5_kt_end_seq_get (context, handle->keytab, &c);
+    } 
 end:
     if (ret != GSS_S_COMPLETE) {
 	if (handle->keytab != NULL)

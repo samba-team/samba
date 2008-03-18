@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: get_cred.c 21669 2007-07-22 11:29:13Z lha $");
+RCSID("$Id: get_cred.c 22530 2008-01-27 11:48:16Z lha $");
 
 /*
  * Take the `body' and encode it into `padata' using the credentials
@@ -761,14 +761,6 @@ get_cred_from_kdc_flags(krb5_context context,
 
     try_realm = krb5_config_get_string(context, NULL, "capaths", 
 				       client_realm, server_realm, NULL);
-    
-#if 1
-    /* XXX remove in future release */
-    if(try_realm == NULL)
-	try_realm = krb5_config_get_string(context, NULL, "libdefaults", 
-					   "capath", server_realm, NULL);
-#endif
-
     if (try_realm == NULL)
 	try_realm = client_realm;
 
