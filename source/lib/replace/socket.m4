@@ -37,6 +37,3 @@ if test x"$ac_cv_func_gethostbyname" = x"no"; then
 			  [Whether the system has gethostbyname()])
 	fi
 fi
-
-SOCKET_LIBS="${LIBREPLACE_NETWORK_LIBS}"
-NSL_LIBS=""
