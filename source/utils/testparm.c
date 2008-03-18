@@ -128,8 +128,7 @@ parameter.\n" );
 cannot be executed (error was %s).\n", truncated_prog, strerror(errno) );
 					ret = 1;
 				}
-
-             }
+			}
 
 #ifdef WITH_PAM
 		}
