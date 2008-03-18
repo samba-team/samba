@@ -109,7 +109,9 @@ to a valid password server.\n", sec_setting );
 		if (!lp_pam_password_change()) {
 #endif
 
-			if(lp_passwd_program() == NULL) {
+			if((lp_passwd_program() == NULL) ||
+			   (strlen(lp_passwd_program()) == 0))
+			{
 				fprintf( stderr, "ERROR: the 'unix password sync' parameter is set and there is no valid 'passwd program' \
 parameter.\n" );
 				ret = 1;
