@@ -140,11 +140,16 @@ cannot be executed (error was %s).\n", truncated_prog, strerror(errno) );
 			fprintf(stderr, "ERROR: the 'unix password sync' parameter is set and there is no valid 'passwd chat' \
 parameter.\n");
 			ret = 1;
-		} else 
-		/* check if there's a %u parameter present */
-		if(strstr_m(lp_passwd_program(), "%u") == NULL) {
-			fprintf(stderr, "ERROR: the 'passwd program' (%s) requires a '%%u' parameter.\n", lp_passwd_program());
-			ret = 1;
+		}
+
+		if ((lp_passwd_program() != NULL) &&
+		    (strlen(lp_passwd_program()) > 0))
+		{
+			/* check if there's a %u parameter present */
+			if(strstr_m(lp_passwd_program(), "%u") == NULL) {
+				fprintf(stderr, "ERROR: the 'passwd program' (%s) requires a '%%u' parameter.\n", lp_passwd_program());
+				ret = 1;
+			}
 		}
 
 		/*
