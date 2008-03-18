@@ -30,7 +30,7 @@
 @title HX509
 @subtitle X.509 distribution from KTH
 @subtitle Edition @value{EDITION}, for version @value{VERSION}
-@subtitle 2007
+@subtitle 2008
 @author Love Hörnquist Åstrand
 @author last updated @value{UPDATED}
 
@@ -202,6 +202,7 @@ This manual is last updated @value{UPDATED} for version
 * What is X.509 ?::
 * Setting up a CA::
 * CMS signing and encryption::
+* Certificate matching::
 
 @detailmenu
  --- The Detailed Node Listing ---
@@ -221,6 +222,10 @@ Setting up a CA
 CMS signing and encryption
 
 * CMS background::
+
+Certificate matching
+
+* Matching syntax::
 
 @end detailmenu
 @end menu
@@ -623,8 +628,42 @@ CMS is the Cryptographic Message System that among other, is used by
 S/MIME (secure email) and Kerberos PK-INIT. It's an extended version of
 the RSA, Inc standard PKCS7.
 
-@node CMS background, , CMS signing and encryption, Top
+@node CMS background, Certificate matching, CMS signing and encryption, Top
 @section CMS background
+
+
+@node Certificate matching, Matching syntax, CMS background, Top
+@section Certificate matching
+
+To match certificates hx509 have a special query language to match
+certifictes in queries and ACLs.
+
+@node Matching syntax, , Certificate matching, Top
+@section Matching syntax
+
+This is the language definitions somewhat slopply descriped:
+
+@example
+
+expr = TRUE, 
+     FALSE,
+     ! expr,
+     expr AND expr,
+     expr OR expr,
+     ( expr )
+     compare
+
+compare =
+     word == word,
+     word != word,
+     word IN ( word [, word ...])
+     word IN %@{variable.subvariable@}
+
+word =
+     STRING,
+     %@{variable@}
+
+@end example
 
 
 @c @shortcontents
