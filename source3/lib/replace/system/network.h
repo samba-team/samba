@@ -143,6 +143,11 @@ int rep_getifaddrs(struct ifaddrs **);
 void rep_freeifaddrs(struct ifaddrs *);
 #endif
 
+#ifndef HAVE_SOCKETPAIR
+/* define is in "replace.h" */
+int rep_socketpair(int d, int type, int protocol, int sv[2]);
+#endif
+
 /*
  * Some systems have getaddrinfo but not the
  * defines needed to use it.

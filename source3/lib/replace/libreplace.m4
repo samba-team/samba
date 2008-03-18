@@ -158,7 +158,7 @@ fi
 AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
 AC_CHECK_FUNCS(waitpid strlcpy strlcat initgroups memmove strdup)
-AC_CHECK_FUNCS(pread pwrite strndup strcasestr strtok_r mkdtemp socketpair)
+AC_CHECK_FUNCS(pread pwrite strndup strcasestr strtok_r mkdtemp)
 AC_CHECK_FUNCS(isatty)
 AC_HAVE_DECL(setresuid, [#include <unistd.h>])
 AC_HAVE_DECL(setresgid, [#include <unistd.h>])
@@ -334,6 +334,7 @@ m4_include(inet_ntoa.m4)
 m4_include(getaddrinfo.m4)
 m4_include(repdir.m4)
 m4_include(getifaddrs.m4)
+m4_include(socketpair.m4)
 
 AC_CHECK_FUNCS([syslog printf memset memcpy],,[AC_MSG_ERROR([Required function not found])])
 
