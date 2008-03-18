@@ -33,7 +33,7 @@ char *rep_inet_ntoa(struct in_addr ip)
 {
 	uint8_t *p = (uint8_t *)&ip.s_addr;
 	static char buf[18];
-	slprintf(buf, 17, "%d.%d.%d.%d", 
+	slprintf(buf, 17, "%d.%d.%d.%d",
 		 (int)p[0], (int)p[1], (int)p[2], (int)p[3]);
 	return buf;
 }
