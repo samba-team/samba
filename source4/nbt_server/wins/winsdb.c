@@ -613,7 +613,6 @@ NTSTATUS winsdb_record(struct winsdb_handle *h, struct ldb_message *msg, TALLOC_
 	struct ldb_message_element *el;
 	struct nbt_name *name;
 	uint32_t i, j, num_values;
-	bool we_are_owner = false;
 
 	rec = talloc(mem_ctx, struct winsdb_record);
 	if (rec == NULL) {
@@ -674,26 +673,6 @@ NTSTATUS winsdb_record(struct winsdb_handle *h, struct ldb_message *msg, TALLOC_
 		goto failed;
 	}
 
-	if (strcmp(rec->wins_owner, h->local_owner) == 0) {
-		we_are_owner = true;
-	}
-
-	/* 
-	 * see if it has already expired
-	 * 
-	 * NOTE: only expire owned records this way!
-	 *       w2k3 resolves expired replicas
-	 *       which are in active state
-	 */
-	if (!rec->is_static &&
-	    rec->expire_time <= now &&
-	    rec->state == WREPL_STATE_ACTIVE &&
-	    we_are_owner) {
-		DEBUG(5,("WINS: expiring name %s (expired at %s)\n", 
-			 nbt_name_string(mem_ctx, rec->name), timestring(mem_ctx, rec->expire_time)));
-		rec->state = WREPL_STATE_RELEASED;
-	}
-
 	rec->addresses     = talloc_array(rec, struct winsdb_addr *, num_values+1);
 	if (rec->addresses == NULL) {
 		status = NT_STATUS_NO_MEMORY;
@@ -701,12 +680,26 @@ NTSTATUS winsdb_record(struct winsdb_handle *h, struct ldb_message *msg, TALLOC_
 	}
 
 	for (i=0,j=0;i<num_values;i++) {
+		bool we_are_owner = false;
+
 		status = winsdb_addr_decode(h, rec, &el->values[i], rec->addresses, &rec->addresses[j]);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 
+		if (strcmp(rec->addresses[j]->wins_owner, h->local_owner) == 0) {
+			we_are_owner = true;
+		}
+
 		/*
 		 * the record isn't static and is active
-		 * then don't add the address if it's expired
+		 * then don't add the address if it's expired,
+		 * but only if we're the owner of the address
+		 *
+		 * This is important for SGROUP records,
+		 * because each server thinks he's the owner of the
+		 * record and the record isn't replicated on a
+		 * name_refresh. So addresses owned by another owner
+		 * could expire, but we still need to return them
+		 * (as windows does).
 		 */
 		if (!rec->is_static &&
 		    rec->addresses[j]->expire_time <= now &&
