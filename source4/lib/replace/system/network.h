@@ -88,7 +88,7 @@
 typedef int socklen_t;
 #endif
 
-#ifdef REPLACE_INET_NTOA
+#if !defined (HAVE_INET_NTOA) || defined(REPLACE_INET_NTOA)
 /* define is in "replace.h" */
 char *rep_inet_ntoa(struct in_addr ip);
 #endif

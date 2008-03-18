@@ -295,20 +295,6 @@ char *rep_strdup(const char *s)
 }
 #endif /* HAVE_STRDUP */
 
-#ifndef WITH_PTHREADS
-/* REWRITE: not thread safe */
-#ifdef REPLACE_INET_NTOA
-char *rep_inet_ntoa(struct in_addr ip)
-{
-	uint8_t *p = (uint8_t *)&ip.s_addr;
-	static char buf[18];
-	slprintf(buf, 17, "%d.%d.%d.%d", 
-		 (int)p[0], (int)p[1], (int)p[2], (int)p[3]);
-	return buf;
-}
-#endif /* REPLACE_INET_NTOA */
-#endif
-
 #ifndef HAVE_SETLINEBUF
 void rep_setlinebuf(FILE *stream)
 {
