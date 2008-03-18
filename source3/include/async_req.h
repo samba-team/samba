@@ -75,6 +75,13 @@ void async_req_done(struct async_req *req);
 void async_req_error(struct async_req *req, NTSTATUS status);
 
 /*
+ * If a request is finished or ends in error even before it has the chance to
+ * trigger the event loop, post a status. This creates an immediate timed
+ * event to call the async function if there is any.
+ */
+bool async_post_status(struct async_req *req, NTSTATUS status);
+
+/*
  * Convenience helper to easily check alloc failure within a callback.
  *
  * Call pattern would be

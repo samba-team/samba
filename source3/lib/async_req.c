@@ -58,6 +58,36 @@ void async_req_error(struct async_req *req, NTSTATUS status)
 	}
 }
 
+static void async_trigger(struct event_context *ev, struct timed_event *te,
+			  const struct timeval *now, void *priv)
+{
+	struct async_req *req = talloc_get_type_abort(priv, struct async_req);
+
+	TALLOC_FREE(te);
+	if (NT_STATUS_IS_OK(req->status)) {
+		async_req_done(req);
+	}
+	else {
+		async_req_error(req, req->status);
+	}
+}
+
+bool async_post_status(struct async_req *req, NTSTATUS status)
+{
+	/*
+	 * Used if a request is finished before it even started
+	 */
+
+	req->status = status;
+
+	if (event_add_timed(req->event_ctx, req, timeval_zero(),
+			    "async_trigger",
+			    async_trigger, req) == NULL) {
+		return false;
+	}
+	return true;
+}
+
 bool async_req_nomem(const void *p, struct async_req *req)
 {
 	if (p != NULL) {

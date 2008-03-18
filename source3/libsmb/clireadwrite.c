@@ -262,6 +262,14 @@ struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 
 	state->pushed = 0;
 	state->top_req = 0;
+
+	if (size == 0) {
+		if (!async_post_status(result, NT_STATUS_OK)) {
+			goto failed;
+		}
+		return result;
+	}
+
 	state->chunk_size = cli_read_max_bufsize(cli);
 
 	state->num_reqs = MAX(window_size/state->chunk_size, 1);
