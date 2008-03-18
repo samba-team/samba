@@ -1,6 +1,7 @@
 /*
  * Unix SMB/CIFS implementation.
- * replacement functions
+ * replacement routines for broken systems
+ * Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2006
  * Copyright (C) Michael Adam <obnox@samba.org> 2008
  *
  *  ** NOTE! The following LGPL license applies to the replace
@@ -24,10 +25,22 @@
 #include "replace.h"
 #include "system/network.h"
 
-/**
- * We know that we have inet_pton from earlier libreplace checks.
- */
-int rep_inet_aton(const char *src, struct in_addr *dst)
+int rep_socketpair(int d, int type, int protocol, int sv[2])
 {
-	return (inet_pton(AF_INET, src, dst) > 0) ? 1 : 0;
+	if (d != AF_UNIX) {
+		errno = EAFNOSUPPORT;
+		return -1;
+	}
+
+	if (protocol != 0) {
+		errno = EPROTONOSUPPORT;
+		return -1;
+	}
+
+	if (type != SOCK_STREAM) {
+		errno = EOPNOTSUPP;
+		return -1;
+	}
+
+	return pipe(sv);
 }

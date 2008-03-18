@@ -65,7 +65,7 @@ static struct backends_list_entry {
 
 #ifdef HAVE_LDB_LDAP
 #define LDAP_INIT &ldb_ldap_backend_ops, \
-				  &ldb_ildap_backend_ops, \
+				  &ldb_ldapi_backend_ops, \
 				  &ldb_ldaps_backend_ops,
 #else
 #define LDAP_INIT
