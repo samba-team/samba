@@ -27,7 +27,6 @@
 #include "system/time.h"
 #include "system/passwd.h"
 #include "system/syslog.h"
-#include "system/network.h"
 #include "system/locale.h"
 #include "system/wait.h"
 
