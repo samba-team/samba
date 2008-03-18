@@ -325,7 +325,7 @@ ssize_t rep_pread(int __fd, void *__buf, size_t __nbytes, off_t __offset);
 ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset);
 #endif
 
-#ifdef REPLACE_INET_NTOA
+#if !defined(HAVE_INET_NTOA) || defined(REPLACE_INET_NTOA)
 #define inet_ntoa rep_inet_ntoa
 /* prototype is in "system/network.h" */
 #endif
