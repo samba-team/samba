@@ -6,7 +6,7 @@ noinst_DATA = krb5.conf
 
 noinst_SCRIPTS = have-db
 
-check_SCRIPTS = loaddump-db add-modify-delete check-dbinfo
+check_SCRIPTS = loaddump-db add-modify-delete check-dbinfo check-aliases
 
 TESTS = $(check_SCRIPTS) 
 
@@ -28,6 +28,11 @@ check-dbinfo: check-dbinfo.in Makefile
 	$(do_subst) < $(srcdir)/check-dbinfo.in > check-dbinfo.tmp
 	chmod +x check-dbinfo.tmp
 	mv check-dbinfo.tmp check-dbinfo
+
+check-aliases: check-aliases.in Makefile
+	$(do_subst) < $(srcdir)/check-aliases.in > check-aliases.tmp
+	chmod +x check-aliases.tmp
+	mv check-aliases.tmp check-aliases
 
 have-db: have-db.in Makefile
 	$(do_subst) < $(srcdir)/have-db.in > have-db.tmp
@@ -54,6 +59,7 @@ CLEANFILES= \
 	messages.log
 
 EXTRA_DIST = \
+	check-aliases.in \
 	check-dbinfo.in \
 	loaddump-db.in \
 	add-modify-delete.in \

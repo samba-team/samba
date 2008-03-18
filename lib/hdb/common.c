@@ -219,11 +219,57 @@ hdb_add_aliases(krb5_context context, HDB *db,
     return 0;
 }
 
+static krb5_error_code
+hdb_check_aliases(krb5_context context, HDB *db, hdb_entry_ex *entry)
+{
+    const HDB_Ext_Aliases *aliases;
+    int code, i;
+
+    /* check if new aliases already is used */
+
+    code = hdb_entry_get_aliases(&entry->entry, &aliases);
+    if (code)
+	return code;
+
+    for (i = 0; aliases && i < aliases->aliases.len; i++) {
+	hdb_entry_alias alias;
+	krb5_data akey, value;
+
+	hdb_principal2key(context, &aliases->aliases.val[i], &akey);
+	code = db->hdb__get(context, db, akey, &value);
+	krb5_data_free(&akey);
+	if (code == HDB_ERR_NOENTRY)
+	    continue;
+	else if (code)
+	    return code;
+
+	code = hdb_value2entry_alias(context, &value, &alias);
+	krb5_data_free(&value);
+
+	if (code == ASN1_BAD_ID)
+	    return HDB_ERR_EXISTS;
+	else if (code)
+	    return code;
+
+	code = krb5_principal_compare(context, alias.principal,
+				      entry->entry.principal);
+	free_hdb_entry_alias(&alias);
+	if (code == 0)
+	    return HDB_ERR_EXISTS;
+    }
+    return 0;
+}
+
 krb5_error_code
 _hdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
 {
     krb5_data key, value;
     int code;
+
+    /* check if new aliases already is used */
+    code = hdb_check_aliases(context, db, entry);
+    if (code)
+	return code;
 
     if(entry->entry.generation == NULL) {
 	struct timeval t;
@@ -238,12 +284,12 @@ _hdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
 	entry->entry.generation->gen = 0;
     } else
 	entry->entry.generation->gen++;
-    hdb_principal2key(context, entry->entry.principal, &key);
+
     code = hdb_seal_keys(context, db, &entry->entry);
-    if (code) {
-	krb5_data_free(&key);
+    if (code)
 	return code;
-    }
+
+    hdb_principal2key(context, entry->entry.principal, &key);
 
     /* remove aliases */
     code = hdb_remove_aliases(context, db, &key);
