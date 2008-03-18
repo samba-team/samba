@@ -415,7 +415,7 @@ PUBLIC_DEPENDENCIES = \
 			HEIMDAL_ROKEN_GETPROGNAME \
 			HEIMDAL_ROKEN_CLOSEFROM \
 			RESOLV \
-			EXT_SOCKET
+			LIBREPLACE_NETWORK
 # End SUBSYSTEM HEIMDAL_ROKEN
 #######################
 
@@ -475,7 +475,7 @@ OBJ_FILES = \
 	../heimdal/lib/vers/print_version.ho \
 	../lib/socket_wrapper/socket_wrapper.ho \
 	replace.ho
-PRIVATE_DEPENDENCIES = HEIMDAL_ASN1_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H EXT_SOCKET EXT_NSL
+PRIVATE_DEPENDENCIES = HEIMDAL_ASN1_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
 
 # End BINARY asn1_compile
 #######################
@@ -502,7 +502,7 @@ OBJ_FILES = ../heimdal/lib/vers/print_version.ho \
 	../heimdal/lib/roken/setprogname.ho \
 	../lib/socket_wrapper/socket_wrapper.ho \
 	replace.ho
-PRIVATE_DEPENDENCIES = HEIMDAL_COM_ERR_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H EXT_SOCKET EXT_NSL
+PRIVATE_DEPENDENCIES = HEIMDAL_COM_ERR_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
 # End BINARY compile_et
 #######################
 
