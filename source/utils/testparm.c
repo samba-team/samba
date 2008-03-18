@@ -120,7 +120,6 @@ parameter.\n" );
 
 				passwd_prog = lp_passwd_program();
 				p = passwd_prog;
-				*truncated_prog = '\0';
 				next_token_talloc(talloc_tos(),
 						&p,
 						&truncated_prog, NULL);
