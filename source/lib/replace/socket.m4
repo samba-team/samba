@@ -7,10 +7,10 @@ dnl only looks in /etc/hosts), so we only look for -lsocket if we need
 dnl it.
 AC_CHECK_FUNCS(connect)
 if test x"$ac_cv_func_connect" = x"no"; then
-	AC_CHECK_LIB_EXT(nsl_s, SOCKET_LIBS, connect)
-	AC_CHECK_LIB_EXT(nsl, SOCKET_LIBS, connect)
-	AC_CHECK_LIB_EXT(socket, SOCKET_LIBS, connect)
-	AC_CHECK_LIB_EXT(inet, SOCKET_LIBS, connect)
+	AC_CHECK_LIB_EXT(nsl_s, LIBREPLACE_NETWORK_LIBS, connect)
+	AC_CHECK_LIB_EXT(nsl, LIBREPLACE_NETWORK_LIBS, connect)
+	AC_CHECK_LIB_EXT(socket, LIBREPLACE_NETWORK_LIBS, connect)
+	AC_CHECK_LIB_EXT(inet, LIBREPLACE_NETWORK_LIBS, connect)
 	dnl We can't just call AC_CHECK_FUNCS(connect) here,
 	dnl because the value has been cached.
 	if test x"$ac_cv_lib_ext_nsl_s_connect" = x"yes" ||
@@ -24,9 +24,9 @@ fi
 
 AC_CHECK_FUNCS(gethostbyname)
 if test x"$ac_cv_func_gethostbyname" = x"no"; then
-	AC_CHECK_LIB_EXT(nsl_s, NSL_LIBS, gethostbyname)
-	AC_CHECK_LIB_EXT(nsl, NSL_LIBS, gethostbyname)
-	AC_CHECK_LIB_EXT(socket, NSL_LIBS, gethostbyname)
+	AC_CHECK_LIB_EXT(nsl_s, LIBREPLACE_NETWORK_LIBS, gethostbyname)
+	AC_CHECK_LIB_EXT(nsl, LIBREPLACE_NETWORK_LIBS, gethostbyname)
+	AC_CHECK_LIB_EXT(socket, LIBREPLACE_NETWORK_LIBS, gethostbyname)
 	dnl We can't just call AC_CHECK_FUNCS(gethostbyname) here,
 	dnl because the value has been cached.
 	if test x"$ac_cv_lib_ext_nsl_s_gethostbyname" = x"yes" ||
@@ -38,3 +38,5 @@ if test x"$ac_cv_func_gethostbyname" = x"no"; then
 	fi
 fi
 
+SOCKET_LIBS="${LIBREPLACE_NETWORK_LIBS}"
+NSL_LIBS=""
