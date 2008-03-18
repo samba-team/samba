@@ -212,7 +212,7 @@ int rep_dlclose(void *handle);
 
 #ifndef HAVE_SOCKETPAIR
 #define socketpair rep_socketpair
-int rep_socketpair(int d, int type, int protocol, int sv[2]);
+/* prototype is in system/network.h */
 #endif
 
 #ifndef PRINTF_ATTRIBUTE
