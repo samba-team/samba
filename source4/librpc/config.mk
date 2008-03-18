@@ -10,7 +10,7 @@ OBJ_FILES = \
 		ndr/ndr_basic.o \
 		ndr/ndr_string.o \
 		ndr/uuid.o
-PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBTALLOC LIBSAMBA-UTIL CHARSET EXT_NSL \
+PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBTALLOC LIBSAMBA-UTIL CHARSET \
 					  LIBSAMBA-CONFIG
 # End SUBSYSTEM LIBNDR
 ################################################
