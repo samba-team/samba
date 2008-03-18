@@ -1,20 +1,20 @@
-/* 
-   Samba Unix/Linux SMB client library 
+/*
+   Samba Unix/Linux SMB client library
    net ads commands for Group Policy
-   Copyright (C) 2005 Guenther Deschner (gd@samba.org)
+   Copyright (C) 2005-2008 Guenther Deschner (gd@samba.org)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
@@ -48,6 +48,7 @@ static int net_ads_gpo_refresh(int argc, const char **argv)
 	ADS_STATUS status;
 	const char *dn = NULL;
 	struct GROUP_POLICY_OBJECT *gpo_list = NULL;
+	struct GROUP_POLICY_OBJECT *read_list = NULL;
 	uint32 uac = 0;
 	uint32 flags = 0;
 	struct GROUP_POLICY_OBJECT *gpo;
@@ -66,6 +67,7 @@ static int net_ads_gpo_refresh(int argc, const char **argv)
 
 	status = ads_startup(False, &ads);
 	if (!ADS_ERR_OK(status)) {
+		printf("failed to connect AD server: %s\n", ads_errstr(status));
 		goto out;
 	}
 
@@ -79,27 +81,61 @@ static int net_ads_gpo_refresh(int argc, const char **argv)
 		flags |= GPO_LIST_FLAG_MACHINE;
 	}
 
-	printf("\n%s: '%s' has dn: '%s'\n\n", 
-		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? "machine" : "user", 
+	printf("\n%s: '%s' has dn: '%s'\n\n",
+		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? "machine" : "user",
 		argv[0], dn);
 
-	status = ads_get_sid_token(ads, mem_ctx, dn, &token);
-	if (!ADS_ERR_OK(status)) {
-		goto out;
+	printf("* fetching token ");
+	if (uac & UF_WORKSTATION_TRUST_ACCOUNT) {
+		status = gp_get_machine_token(ads, mem_ctx, dn, &token);
+	} else {
+		status = ads_get_sid_token(ads, mem_ctx, dn, &token);
 	}
 
+	if (!ADS_ERR_OK(status)) {
+		printf("failed: %s\n", ads_errstr(status));
+		goto out;
+	}
+	printf("finished\n");
+
+	printf("* fetching GPO List ");
 	status = ads_get_gpo_list(ads, mem_ctx, dn, flags, token, &gpo_list);
 	if (!ADS_ERR_OK(status)) {
+		printf("failed: %s\n", ads_errstr(status));
 		goto out;
 	}
+	printf("finished\n");
 
-	if (!NT_STATUS_IS_OK(result = check_refresh_gpo_list(ads, mem_ctx, flags, gpo_list))) {
-		printf("failed to refresh GPOs: %s\n", nt_errstr(result));
+	printf("* refreshing Group Policy Data ");
+	if (!NT_STATUS_IS_OK(result = check_refresh_gpo_list(ads, mem_ctx,
+							     flags,
+							     gpo_list))) {
+		printf("failed: %s\n", nt_errstr(result));
 		goto out;
 	}
+	printf("finished\n");
 
-	for (gpo = gpo_list; gpo; gpo = gpo->next) {
+	printf("* storing GPO list to registry ");
 
+	{
+		WERROR werr = gp_reg_state_store(mem_ctx, flags, dn,
+						 token, gpo_list);
+		if (!W_ERROR_IS_OK(werr)) {
+			printf("failed: %s\n", dos_errstr(werr));
+			goto out;
+		}
+	}
+
+	printf("finished\n");
+
+	if (opt_verbose) {
+
+		printf("* dumping GPO list\n");
+
+		for (gpo = gpo_list; gpo; gpo = gpo->next) {
+
+			dump_gpo(ads, mem_ctx, gpo, 0);
+#if 0
 		char *server, *share, *nt_path, *unix_path;
 
 		printf("--------------------------------------\n");
@@ -110,7 +146,8 @@ static int net_ads_gpo_refresh(int argc, const char **argv)
 			GPO_VERSION_MACHINE(gpo->version));
 
 		result = gpo_explode_filesyspath(mem_ctx, gpo->file_sys_path,
-						 &server, &share, &nt_path, &unix_path);
+						 &server, &share, &nt_path,
+						 &unix_path);
 		if (!NT_STATUS_IS_OK(result)) {
 			printf("got: %s\n", nt_errstr(result));
 		}
@@ -118,6 +155,54 @@ static int net_ads_gpo_refresh(int argc, const char **argv)
 		printf("GPO stored on server: %s, share: %s\n", server, share);
 		printf("\tremote path:\t%s\n", nt_path);
 		printf("\tlocal path:\t%s\n", unix_path);
+#endif
+		}
+	}
+
+	printf("* re-reading GPO list from registry ");
+
+	{
+		WERROR werr = gp_reg_state_read(mem_ctx, flags,
+						&token->user_sids[0],
+						&read_list);
+		if (!W_ERROR_IS_OK(werr)) {
+			printf("failed: %s\n", dos_errstr(werr));
+			goto out;
+		}
+	}
+
+	printf("finished\n");
+
+	if (opt_verbose) {
+
+		printf("* dumping GPO list from registry\n");
+
+		for (gpo = read_list; gpo; gpo = gpo->next) {
+
+			dump_gpo(ads, mem_ctx, gpo, 0);
+
+#if 0
+		char *server, *share, *nt_path, *unix_path;
+
+		printf("--------------------------------------\n");
+		printf("Name:\t\t\t%s\n", gpo->display_name);
+		printf("LDAP GPO version:\t%d (user: %d, machine: %d)\n",
+			gpo->version,
+			GPO_VERSION_USER(gpo->version),
+			GPO_VERSION_MACHINE(gpo->version));
+
+		result = gpo_explode_filesyspath(mem_ctx, gpo->file_sys_path,
+						 &server, &share, &nt_path,
+						 &unix_path);
+		if (!NT_STATUS_IS_OK(result)) {
+			printf("got: %s\n", nt_errstr(result));
+		}
+
+		printf("GPO stored on server: %s, share: %s\n", server, share);
+		printf("\tremote path:\t%s\n", nt_path);
+		printf("\tlocal path:\t%s\n", unix_path);
+#endif
+		}
 	}
 
  out:
@@ -168,14 +253,16 @@ static int net_ads_gpo_list_all(int argc, const char **argv)
 	if (!ADS_ERR_OK(status)) {
 		d_printf("search failed: %s\n", ads_errstr(status));
 		goto out;
-	}	
+	}
 
 	num_reply = ads_count_replies(ads, res);
-	
+
 	d_printf("Got %d replies\n\n", num_reply);
 
 	/* dump the results */
-	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
+	for (msg = ads_first_entry(ads, res);
+	     msg;
+	     msg = ads_next_entry(ads, msg)) {
 
 		if ((dn = ads_get_dn(ads, msg)) == NULL) {
 			goto out;
@@ -184,10 +271,11 @@ static int net_ads_gpo_list_all(int argc, const char **argv)
 		status = ads_parse_gpo(ads, mem_ctx, msg, dn, &gpo);
 
 		if (!ADS_ERR_OK(status)) {
-			d_printf("ads_parse_gpo failed: %s\n", ads_errstr(status));
+			d_printf("ads_parse_gpo failed: %s\n",
+				ads_errstr(status));
 			ads_memfree(ads, dn);
 			goto out;
-		}	
+		}
 
 		dump_gpo(ads, mem_ctx, &gpo, 0);
 		ads_memfree(ads, dn);
@@ -198,7 +286,7 @@ out:
 
 	talloc_destroy(mem_ctx);
 	ads_destroy(&ads);
-	
+
 	return 0;
 }
 
@@ -238,11 +326,16 @@ static int net_ads_gpo_list(int argc, const char **argv)
 		flags |= GPO_LIST_FLAG_MACHINE;
 	}
 
-	printf("%s: '%s' has dn: '%s'\n", 
-		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? "machine" : "user", 
+	printf("%s: '%s' has dn: '%s'\n",
+		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? "machine" : "user",
 		argv[0], dn);
 
-	status = ads_get_sid_token(ads, mem_ctx, dn, &token);
+	if (uac & UF_WORKSTATION_TRUST_ACCOUNT) {
+		status = gp_get_machine_token(ads, mem_ctx, dn, &token);
+	} else {
+		status = ads_get_sid_token(ads, mem_ctx, dn, &token);
+	}
+
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -259,11 +352,11 @@ out:
 
 	talloc_destroy(mem_ctx);
 	ads_destroy(&ads);
-	
+
 	return 0;
 }
 
-#if 0 /* not yet */
+#if 0
 static int net_ads_gpo_apply(int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
@@ -273,7 +366,9 @@ static int net_ads_gpo_apply(int argc, const char **argv)
 	struct GROUP_POLICY_OBJECT *gpo_list;
 	uint32 uac = 0;
 	uint32 flags = 0;
-	
+	struct nt_user_token *token = NULL;
+	const char *filter = NULL;
+
 	if (argc < 1) {
 		printf("usage: net ads gpo apply <username|machinename>\n");
 		return -1;
@@ -284,13 +379,20 @@ static int net_ads_gpo_apply(int argc, const char **argv)
 		goto out;
 	}
 
+	if (argc >= 2) {
+		filter = cse_gpo_name_to_guid_string(argv[1]);
+	}
+
 	status = ads_startup(False, &ads);
 	if (!ADS_ERR_OK(status)) {
+		printf("got: %s\n", ads_errstr(status));
 		goto out;
 	}
 
 	status = ads_find_samaccount(ads, mem_ctx, argv[0], &uac, &dn);
 	if (!ADS_ERR_OK(status)) {
+		printf("failed to find samaccount for %s: %s\n",
+			argv[0], ads_errstr(status));
 		goto out;
 	}
 
@@ -298,18 +400,34 @@ static int net_ads_gpo_apply(int argc, const char **argv)
 		flags |= GPO_LIST_FLAG_MACHINE;
 	}
 
-	printf("%s: '%s' has dn: '%s'\n", 
-		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? "machine" : "user", 
+	if (opt_verbose) {
+		flags |= GPO_INFO_FLAG_VERBOSE;
+	}
+
+	printf("%s: '%s' has dn: '%s'\n",
+		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? "machine" : "user",
 		argv[0], dn);
 
-	status = ads_get_gpo_list(ads, mem_ctx, dn, flags, &gpo_list);
+	if (uac & UF_WORKSTATION_TRUST_ACCOUNT) {
+		status = gp_get_machine_token(ads, mem_ctx, dn, &token);
+	} else {
+		status = ads_get_sid_token(ads, mem_ctx, dn, &token);
+	}
+
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
 
-	/* FIXME: allow to process just a single extension */
-	status = gpo_process_gpo_list(ads, mem_ctx, gpo_list, NULL, flags); 
+	status = ads_get_gpo_list(ads, mem_ctx, dn, flags, token, &gpo_list);
 	if (!ADS_ERR_OK(status)) {
+		goto out;
+	}
+
+	status = gpo_process_gpo_list(ads, mem_ctx, token, gpo_list,
+				      filter, flags);
+	if (!ADS_ERR_OK(status)) {
+		d_printf("failed to process gpo list: %s\n",
+			ads_errstr(status));
 		goto out;
 	}
 
@@ -318,7 +436,6 @@ out:
 	talloc_destroy(mem_ctx);
 	return 0;
 }
-
 #endif
 
 static int net_ads_gpo_link_get(int argc, const char **argv)
@@ -345,9 +462,10 @@ static int net_ads_gpo_link_get(int argc, const char **argv)
 
 	status = ads_get_gpo_link(ads, mem_ctx, argv[0], &gp_link);
 	if (!ADS_ERR_OK(status)) {
-		d_printf("get link for %s failed: %s\n", argv[0], ads_errstr(status));
+		d_printf("get link for %s failed: %s\n", argv[0],
+			ads_errstr(status));
 		goto out;
-	}	
+	}
 
 	dump_gplink(ads, mem_ctx, &gp_link);
 
@@ -367,7 +485,8 @@ static int net_ads_gpo_link_add(int argc, const char **argv)
 
 	if (argc < 2) {
 		printf("usage: net ads gpo linkadd <linkdn> <gpodn> [options]\n");
-		printf("note: DNs must be provided properly escaped.\n      See RFC 4514 for details\n");
+		printf("note: DNs must be provided properly escaped.\n");
+		printf("See RFC 4514 for details\n");
 		return -1;
 	}
 
@@ -424,7 +543,7 @@ static int net_ads_gpo_link_delete(int argc, const char **argv)
 	if (!ADS_ERR_OK(status)) {
 		d_printf("delete link failed: %s\n", ads_errstr(status));
 		goto out;
-	}	
+	}
 
 out:
 	talloc_destroy(mem_ctx);
@@ -464,9 +583,10 @@ static int net_ads_gpo_get_gpo(int argc, const char **argv)
 	}
 
 	if (!ADS_ERR_OK(status)) {
-		d_printf("get gpo for [%s] failed: %s\n", argv[0], ads_errstr(status));
+		d_printf("get gpo for [%s] failed: %s\n", argv[0],
+			ads_errstr(status));
 		goto out;
-	}	
+	}
 
 	dump_gpo(ads, mem_ctx, &gpo, 1);
 

@@ -725,7 +725,7 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 
 	/* (L)ocal */
 	status = add_local_policy_to_gpo_list(mem_ctx, gpo_list,
-					      GP_LINK_UNKOWN);
+					      GP_LINK_LOCAL);
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
