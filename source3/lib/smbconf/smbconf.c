@@ -417,6 +417,20 @@ static int smbconf_destroy_ctx(struct smbconf_ctx *ctx)
 	return regdb_close();
 }
 
+/**
+ * Get the change sequence number of the given service/parameter.
+ * service and parameter strings may be NULL.
+ */
+static void smbconf_reg_get_csn(struct smbconf_ctx *ctx,
+				struct smbconf_csn *csn,
+				const char *service, const char *param)
+{
+	if (csn == NULL) {
+		return;
+	}
+	csn->csn = (uint64_t)regdb_get_seqnum();
+}
+
 /**********************************************************************
  *
  * The actual net conf api functions, that are exported.
@@ -475,16 +489,24 @@ void smbconf_close(struct smbconf_ctx *ctx)
 }
 
 /**
- * Get the change sequence number of the given service/parameter.
- *
- * NOTE: Currently, for registry configuration, this is independent
- * of the service and parameter, it returns the registry-sequence
- * number.
+ * Detect changes in the configuration.
+ * The given csn struct is filled with the current csn.
+ * smbconf_changed() can also be used for initial retrieval
+ * of the csn.
  */
-uint64_t smbconf_get_seqnum(struct smbconf_ctx *ctx,
-			    const char *service, const char *param)
+bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
+		     const char *service, const char *param)
 {
-	return (uint64_t)regdb_get_seqnum();
+	struct smbconf_csn old_csn;
+
+	if (csn == NULL) {
+		return false;
+	}
+
+	old_csn = *csn;
+
+	smbconf_reg_get_csn(ctx, csn, service, param);
+	return (csn->csn != old_csn.csn);
 }
 
 /**

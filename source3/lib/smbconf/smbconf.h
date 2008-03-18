@@ -24,6 +24,11 @@ struct smbconf_ctx {
 	NT_USER_TOKEN *token;
 };
 
+/* the change sequence number */
+struct smbconf_csn {
+	uint64_t csn;
+};
+
 /*
  * WARNING:
  *   Of this API, at least the open function is still subject to change.
@@ -32,8 +37,8 @@ struct smbconf_ctx {
 
 WERROR smbconf_open(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx);
 void smbconf_close(struct smbconf_ctx *ctx);
-uint64_t smbconf_get_seqnum(struct smbconf_ctx *ctx,
-			    const char *service, const char *param);
+bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
+		     const char *service, const char *param);
 WERROR smbconf_drop(struct smbconf_ctx *ctx);
 WERROR smbconf_get_config(TALLOC_CTX *mem_ctx,
 			  struct smbconf_ctx *ctx, uint32_t *num_shares,
