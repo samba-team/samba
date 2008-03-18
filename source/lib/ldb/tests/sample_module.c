@@ -32,7 +32,7 @@ int sample_add(struct ldb_module *mod, struct ldb_request *req)
 	return ldb_next_request(mod, req);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_sample_module_ops = {
+const struct ldb_module_ops ldb_sample_module_ops = {
 	.name              = "sample",
 	.add		   = sample_add,
 };

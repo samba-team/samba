@@ -826,17 +826,17 @@ failed:
 	return -1;
 }
 
-_PUBLIC_ struct ldb_backend_ops ldb_ldap_backend_ops = {
+const struct ldb_backend_ops ldb_ldap_backend_ops = {
 	.name = "ldap",
 	.connect_fn = lldb_connect
 };
 
-_PUBLIC_ struct ldb_backend_ops ldb_ldapi_backend_ops = {
+const struct ldb_backend_ops ldb_ldapi_backend_ops = {
 	.name = "ldapi",
 	.connect_fn = lldb_connect
 };
 
-_PUBLIC_ struct ldb_backend_ops ldb_ldaps_backend_ops = {
+const struct ldb_backend_ops ldb_ldaps_backend_ops = {
 	.name = "ldaps",
 	.connect_fn = lldb_connect
 };
