@@ -71,7 +71,7 @@ extern userdom_struct current_user_info;
 #endif
 
 static bool in_client = False;		/* Not in the client by default */
-static uint64_t conf_last_seqnum = 0;
+static struct smbconf_csn conf_last_csn;
 static struct smbconf_ctx *conf_ctx = NULL;
 
 #define CONFIG_BACKEND_FILE 0
@@ -6524,7 +6524,8 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 	}
 
 	ret = pfunc("registry shares", "yes");
-	conf_last_seqnum = smbconf_get_seqnum(conf_ctx, NULL, NULL);
+	/* store the csn */
+	smbconf_changed(conf_ctx, &conf_last_csn, NULL, NULL);
 
 done:
 	TALLOC_FREE(mem_ctx);
@@ -6604,7 +6605,6 @@ bool lp_file_list_changed(void)
  	DEBUG(6, ("lp_file_list_changed()\n"));
 
 	if (lp_config_backend_is_registry()) {
-		uint64_t conf_cur_seqnum;
 		if (conf_ctx == NULL) {
 			WERROR werr;
 			werr = smbconf_open(NULL, &conf_ctx);
@@ -6614,12 +6614,8 @@ bool lp_file_list_changed(void)
 				return false;
 			}
 		}
-		conf_cur_seqnum = smbconf_get_seqnum(conf_ctx, NULL, NULL);
-		if (conf_last_seqnum != conf_cur_seqnum) {
-			DEBUGADD(6, ("regdb seqnum changed: old = %llu, "
-				     "new = %llu\n",
-				     (unsigned long long)conf_last_seqnum,
-				     (unsigned long long)conf_cur_seqnum));
+		if (smbconf_changed(conf_ctx, &conf_last_csn, NULL, NULL)) {
+			DEBUGADD(6, ("registry config changed\n"));
 			return true;
 		}
 	}
