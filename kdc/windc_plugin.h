@@ -64,10 +64,10 @@ typedef krb5_error_code
 
 typedef krb5_error_code 
 (*krb5plugin_windc_client_access)(
-    void *, krb5_context, struct hdb_entry_ex *, KDC_REQ *);
+    void *, krb5_context, struct hdb_entry_ex *, KDC_REQ *, krb5_data *);
 
 
-#define KRB5_WINDC_PLUGING_MINOR		2
+#define KRB5_WINDC_PLUGING_MINOR		3
 
 typedef struct krb5plugin_windc_ftable {
     int			minor_version;
