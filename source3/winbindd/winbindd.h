@@ -176,6 +176,14 @@ struct winbindd_domain {
 	time_t startup_time;		       /* When we set "startup" true. */
 	bool startup;                          /* are we in the first 30 seconds after startup_time ? */
 
+	bool can_do_samlogon_ex; /* Due to the lack of finer control what type
+				  * of DC we have, let us try to do a
+				  * credential-chain less samlogon_ex call
+				  * with AD and schannel. If this fails with
+				  * DCERPC_FAULT_OP_RNG_ERROR, then set this
+				  * to False. This variable is around so that
+				  * we don't have to try _ex every time. */
+
 	/* Lookup methods for this domain (LDAP or RPC) */
 	struct winbindd_methods *methods;
 
