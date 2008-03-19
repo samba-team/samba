@@ -1,3 +1,7 @@
+2008-03-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_nist2.in: Try to find unzip.
+
 2008-03-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* version-script.map: add missing symbols
