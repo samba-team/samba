@@ -122,8 +122,9 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 		}
 	}
 
-	if (c->reply_data) {
+	if ( (c->reply_data) && (c->reply_data->dsize != 0) ) {
 		call->reply_data = *c->reply_data;
+
 		talloc_steal(ctdb, call->reply_data.dptr);
 		talloc_set_name_const(call->reply_data.dptr, __location__);
 	} else {
