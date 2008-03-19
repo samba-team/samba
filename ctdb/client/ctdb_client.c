@@ -122,10 +122,10 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 		}
 	}
 
-	if ( (c->reply_data) && (c->reply_data->dsize != 0) ) {
+	if (c->reply_data) {
 		call->reply_data = *c->reply_data;
 
-		talloc_steal(ctdb, call->reply_data.dptr);
+		talloc_steal(call, call->reply_data.dptr);
 		talloc_set_name_const(call->reply_data.dptr, __location__);
 	} else {
 		call->reply_data.dptr = NULL;
@@ -171,9 +171,9 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 		return;
 	}
 
-	state->call.reply_data.dptr = c->data;
-	state->call.reply_data.dsize = c->datalen;
-	state->call.status = c->status;
+	state->call->reply_data.dptr = c->data;
+	state->call->reply_data.dsize = c->datalen;
+	state->call->status = c->status;
 
 	talloc_steal(state, c);
 
@@ -309,16 +309,16 @@ int ctdb_call_recv(struct ctdb_client_call_state *state, struct ctdb_call *call)
 		return -1;
 	}
 
-	if (state->call.reply_data.dsize) {
+	if (state->call->reply_data.dsize) {
 		call->reply_data.dptr = talloc_memdup(state->ctdb_db,
-						      state->call.reply_data.dptr,
-						      state->call.reply_data.dsize);
-		call->reply_data.dsize = state->call.reply_data.dsize;
+						      state->call->reply_data.dptr,
+						      state->call->reply_data.dsize);
+		call->reply_data.dsize = state->call->reply_data.dsize;
 	} else {
 		call->reply_data.dptr = NULL;
 		call->reply_data.dsize = 0;
 	}
-	call->status = state->call.status;
+	call->status = state->call->status;
 	talloc_free(state);
 
 	return 0;
@@ -353,14 +353,16 @@ static struct ctdb_client_call_state *ctdb_client_call_local_send(struct ctdb_db
 
 	state = talloc_zero(ctdb_db, struct ctdb_client_call_state);
 	CTDB_NO_MEMORY_NULL(ctdb, state);
+	state->call = talloc_zero(state, struct ctdb_call);
+	CTDB_NO_MEMORY_NULL(ctdb, state->call);
 
 	talloc_steal(state, data->dptr);
 
-	state->state = CTDB_CALL_DONE;
-	state->call = *call;
+	state->state   = CTDB_CALL_DONE;
+	*(state->call) = *call;
 	state->ctdb_db = ctdb_db;
 
-	ret = ctdb_call_local(ctdb_db, &state->call, header, state, data, ctdb->pnn);
+	ret = ctdb_call_local(ctdb_db, state->call, header, state, data, ctdb->pnn);
 
 	return state;
 }
@@ -410,6 +412,11 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 		DEBUG(DEBUG_ERR, (__location__ " failed to allocate state\n"));
 		return NULL;
 	}
+	state->call = talloc_zero(state, struct ctdb_call);
+	if (state->call == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " failed to allocate state->call\n"));
+		return NULL;
+	}
 
 	len = offsetof(struct ctdb_req_call, data) + call->key.dsize + call->call_data.dsize;
 	c = ctdbd_allocate_pkt(ctdb, state, CTDB_REQ_CALL, len, struct ctdb_req_call);
@@ -432,9 +439,9 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 	memcpy(&c->data[0], call->key.dptr, call->key.dsize);
 	memcpy(&c->data[call->key.dsize], 
 	       call->call_data.dptr, call->call_data.dsize);
-	state->call                = *call;
-	state->call.call_data.dptr = &c->data[call->key.dsize];
-	state->call.key.dptr       = &c->data[0];
+	*(state->call)              = *call;
+	state->call->call_data.dptr = &c->data[call->key.dsize];
+	state->call->key.dptr       = &c->data[0];
 
 	state->state  = CTDB_CALL_WAIT;
 

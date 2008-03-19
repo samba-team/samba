@@ -589,7 +589,7 @@ struct ctdb_call_state {
 	struct ctdb_req_call *c;
 	struct ctdb_db_context *ctdb_db;
 	const char *errmsg;
-	struct ctdb_call call;
+	struct ctdb_call *call;
 	uint32_t generation;
 	struct {
 		void (*fn)(struct ctdb_call_state *);
@@ -1022,7 +1022,7 @@ struct ctdb_client_call_state {
 	enum call_state state;
 	uint32_t reqid;
 	struct ctdb_db_context *ctdb_db;
-	struct ctdb_call call;
+	struct ctdb_call *call;
 	struct {
 		void (*fn)(struct ctdb_client_call_state *);
 		void *private;

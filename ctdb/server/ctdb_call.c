@@ -259,9 +259,9 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 		return;
 	}
 
-	ctdb_call_local(ctdb_db, &state->call, &header, state, &data, ctdb->pnn);
+	ctdb_call_local(ctdb_db, state->call, &header, state, &data, ctdb->pnn);
 
-	ctdb_ltdb_unlock(ctdb_db, state->call.key);
+	ctdb_ltdb_unlock(ctdb_db, state->call->key);
 
 	state->state = CTDB_CALL_DONE;
 	if (state->async.fn) {
@@ -364,7 +364,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_reply_call *r;
 	int ret, len;
 	struct ctdb_ltdb_header header;
-	struct ctdb_call call;
+	struct ctdb_call *call;
 	struct ctdb_db_context *ctdb_db;
 
 	ctdb_db = find_ctdb_db(ctdb, c->db_id);
@@ -375,17 +375,20 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 
-	call.call_id  = c->callid;
-	call.key.dptr = c->data;
-	call.key.dsize = c->keylen;
-	call.call_data.dptr = c->data + c->keylen;
-	call.call_data.dsize = c->calldatalen;
+	call = talloc(hdr, struct ctdb_call);
+	CTDB_NO_MEMORY_FATAL(ctdb, call);
+
+	call->call_id  = c->callid;
+	call->key.dptr = c->data;
+	call->key.dsize = c->keylen;
+	call->call_data.dptr = c->data + c->keylen;
+	call->call_data.dsize = c->calldatalen;
 
 	/* determine if we are the dmaster for this key. This also
 	   fetches the record data (if any), thus avoiding a 2nd fetch of the data 
 	   if the call will be answered locally */
 
-	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, call.key, &header, hdr, &data,
+	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, call->key, &header, hdr, &data,
 					   ctdb_call_input_pkt, ctdb, False);
 	if (ret == -1) {
 		ctdb_send_error(ctdb, hdr, ret, "ltdb fetch failed in ctdb_request_call");
@@ -400,8 +403,8 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   requesting node */
 	if (header.dmaster != ctdb->pnn) {
 		talloc_free(data.dptr);
-		ctdb_call_send_redirect(ctdb, call.key, c, &header);
-		ctdb_ltdb_unlock(ctdb_db, call.key);
+		ctdb_call_send_redirect(ctdb, call->key, c, &header);
+		ctdb_ltdb_unlock(ctdb_db, call->key);
 		return;
 	}
 
@@ -418,27 +421,27 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	       && header.lacount >= ctdb->tunable.max_lacount)
 	      || (c->flags & CTDB_IMMEDIATE_MIGRATION)) ) {
 		DEBUG(DEBUG_INFO,("pnn %u starting migration of %08x to %u\n", 
-			 ctdb->pnn, ctdb_hash(&call.key), c->hdr.srcnode));
-		ctdb_call_send_dmaster(ctdb_db, c, &header, &call.key, &data);
+			 ctdb->pnn, ctdb_hash(&(call->key)), c->hdr.srcnode));
+		ctdb_call_send_dmaster(ctdb_db, c, &header, &(call->key), &data);
 		talloc_free(data.dptr);
-		ctdb_ltdb_unlock(ctdb_db, call.key);
+		ctdb_ltdb_unlock(ctdb_db, call->key);
 		return;
 	}
 
-	ctdb_call_local(ctdb_db, &call, &header, hdr, &data, c->hdr.srcnode);
+	ctdb_call_local(ctdb_db, call, &header, hdr, &data, c->hdr.srcnode);
 
-	ctdb_ltdb_unlock(ctdb_db, call.key);
+	ctdb_ltdb_unlock(ctdb_db, call->key);
 
-	len = offsetof(struct ctdb_reply_call, data) + call.reply_data.dsize;
+	len = offsetof(struct ctdb_reply_call, data) + call->reply_data.dsize;
 	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REPLY_CALL, len, 
 				    struct ctdb_reply_call);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.destnode  = hdr->srcnode;
 	r->hdr.reqid     = hdr->reqid;
-	r->status        = call.status;
-	r->datalen       = call.reply_data.dsize;
-	if (call.reply_data.dsize) {
-		memcpy(&r->data[0], call.reply_data.dptr, call.reply_data.dsize);
+	r->status        = call->status;
+	r->datalen       = call->reply_data.dsize;
+	if (call->reply_data.dsize) {
+		memcpy(&r->data[0], call->reply_data.dptr, call->reply_data.dsize);
 	}
 
 	ctdb_queue_packet(ctdb, &r->hdr);
@@ -469,9 +472,9 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 
-	state->call.reply_data.dptr = c->data;
-	state->call.reply_data.dsize = c->datalen;
-	state->call.status = c->status;
+	state->call->reply_data.dptr = c->data;
+	state->call->reply_data.dsize = c->datalen;
+	state->call->status = c->status;
 
 	talloc_steal(state, c);
 
@@ -633,10 +636,12 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 	talloc_steal(state, data->dptr);
 
 	state->state = CTDB_CALL_DONE;
-	state->call = *call;
+	state->call  = talloc(state, struct ctdb_call);
+	CTDB_NO_MEMORY_NULL(ctdb, state->call);
+	*(state->call) = *call;
 	state->ctdb_db = ctdb_db;
 
-	ret = ctdb_call_local(ctdb_db, &state->call, header, state, data, ctdb->pnn);
+	ret = ctdb_call_local(ctdb_db, state->call, header, state, data, ctdb->pnn);
 
 	event_add_timed(ctdb->ev, state, timeval_zero(), call_local_trigger, state);
 
@@ -660,6 +665,9 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 
 	state = talloc_zero(ctdb_db, struct ctdb_call_state);
 	CTDB_NO_MEMORY_NULL(ctdb, state);
+	state->call = talloc(state, struct ctdb_call);
+	CTDB_NO_MEMORY_NULL(ctdb, state->call);
+
 	state->reqid = ctdb_reqid_new(ctdb, state);
 	state->ctdb_db = ctdb_db;
 	talloc_set_destructor(state, ctdb_call_destructor);
@@ -681,9 +689,9 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	memcpy(&state->c->data[0], call->key.dptr, call->key.dsize);
 	memcpy(&state->c->data[call->key.dsize], 
 	       call->call_data.dptr, call->call_data.dsize);
-	state->call                = *call;
-	state->call.call_data.dptr = &state->c->data[call->key.dsize];
-	state->call.key.dptr       = &state->c->data[0];
+	*(state->call)              = *call;
+	state->call->call_data.dptr = &state->c->data[call->key.dsize];
+	state->call->key.dptr       = &state->c->data[0];
 
 	state->state  = CTDB_CALL_WAIT;
 	state->generation = ctdb->vnn_map->generation;
@@ -712,16 +720,16 @@ int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 		return -1;
 	}
 
-	if (state->call.reply_data.dsize) {
+	if (state->call->reply_data.dsize) {
 		call->reply_data.dptr = talloc_memdup(state->ctdb_db->ctdb,
-						      state->call.reply_data.dptr,
-						      state->call.reply_data.dsize);
-		call->reply_data.dsize = state->call.reply_data.dsize;
+						      state->call->reply_data.dptr,
+						      state->call->reply_data.dsize);
+		call->reply_data.dsize = state->call->reply_data.dsize;
 	} else {
 		call->reply_data.dptr = NULL;
 		call->reply_data.dsize = 0;
 	}
-	call->status = state->call.status;
+	call->status = state->call->status;
 	talloc_free(state);
 	return 0;
 }
