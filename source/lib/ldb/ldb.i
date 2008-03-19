@@ -257,15 +257,19 @@ int ldb_dn_from_pyobject(TALLOC_CTX *mem_ctx, PyObject *object,
     int ret;
     struct ldb_dn *odn;
     if (ldb_ctx != NULL && PyString_Check(object)) {
-        *dn = ldb_dn_new(mem_ctx, ldb_ctx, PyString_AsString(object));
-	if (!*dn) {
+        odn = ldb_dn_new(mem_ctx, ldb_ctx, PyString_AsString(object));
+	if (!odn) {
 		return SWIG_ERROR;
 	}
+	*dn = odn;
         return 0;
     }
     ret = SWIG_ConvertPtr(object, (void **)&odn, SWIGTYPE_p_ldb_dn, 
                            SWIG_POINTER_EXCEPTION);
     *dn = ldb_dn_copy(mem_ctx, odn);
+    if (odn && !*dn) {
+ 	return SWIG_ERROR;
+    }
     return ret;
 }
 
