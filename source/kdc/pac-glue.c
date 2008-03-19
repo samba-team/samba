@@ -227,7 +227,6 @@ static void samba_kdc_build_edata_reply(TALLOC_CTX *tmp_ctx, krb5_data *e_data,
 	unsigned char *buf;
 	size_t len;
 	krb5_error_code ret = 0;
-	uint32_t *tmp;
 
 	if (!e_data)
 		return;
