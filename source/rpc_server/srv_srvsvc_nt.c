@@ -34,8 +34,7 @@ extern const struct generic_mapping file_generic_mapping;
 struct file_enum_count {
 	TALLOC_CTX *ctx;
 	const char *username;
-	int count;
-	FILE_INFO_3 *info;
+	struct srvsvc_NetFileCtr3 *ctr3;
 };
 
 struct sess_file_count {
@@ -52,8 +51,8 @@ static int pipe_enum_fn( struct db_record *rec, void *p)
 {
 	struct pipe_open_rec prec;
 	struct file_enum_count *fenum = (struct file_enum_count *)p;
-	FILE_INFO_3 *f;
-	int i = fenum->count;
+	struct srvsvc_NetFileInfo3 *f;
+	int i = fenum->ctr3->count;
 	char *fullpath = NULL;
 	const char *username;
 
@@ -78,21 +77,22 @@ static int pipe_enum_fn( struct db_record *rec, void *p)
 		return 1;
 	}
 
-	f = TALLOC_REALLOC_ARRAY( fenum->ctx, fenum->info, FILE_INFO_3, i+1 );
+	f = TALLOC_REALLOC_ARRAY(fenum->ctx, fenum->ctr3->array,
+				 struct srvsvc_NetFileInfo3, i+1);
 	if ( !f ) {
 		DEBUG(0,("conn_enum_fn: realloc failed for %d items\n", i+1));
 		return 1;
 	}
-	fenum->info = f;
+	fenum->ctr3->array = f;
 
-	init_srv_file_info3(
-		&fenum->info[i],
-		(uint32)((procid_to_pid(&prec.pid)<<16) & prec.pnum),
-		(FILE_READ_DATA|FILE_WRITE_DATA),
-		0, username, fullpath);
+	init_srvsvc_NetFileInfo3(&fenum->ctr3->array[i],
+				 (uint32_t)((procid_to_pid(&prec.pid)<<16) & prec.pnum),
+				 (FILE_READ_DATA|FILE_WRITE_DATA),
+				 0,
+				 fullpath,
+				 username);
 
-	TALLOC_FREE(fullpath);
-	fenum->count++;
+	fenum->ctr3->count++;
 
 	return 0;
 }
@@ -100,16 +100,16 @@ static int pipe_enum_fn( struct db_record *rec, void *p)
 /*******************************************************************
 ********************************************************************/
 
-static WERROR net_enum_pipes( TALLOC_CTX *ctx, const char *username,
-			      FILE_INFO_3 **info,
-                              uint32 *count, uint32 resume )
+static WERROR net_enum_pipes(TALLOC_CTX *ctx,
+			     const char *username,
+			     struct srvsvc_NetFileCtr3 **ctr3,
+			     uint32_t resume )
 {
 	struct file_enum_count fenum;
 
 	fenum.ctx = ctx;
 	fenum.username = username;
-	fenum.count = *count;
-	fenum.info = *info;
+	fenum.ctr3 = *ctr3;
 
 	if (connections_traverse(pipe_enum_fn, &fenum) == -1) {
 		DEBUG(0,("net_enum_pipes: traverse of connections.tdb "
@@ -117,8 +117,7 @@ static WERROR net_enum_pipes( TALLOC_CTX *ctx, const char *username,
 		return WERR_NOMEM;
 	}
 
-	*info  = fenum.info;
-	*count = fenum.count;
+	*ctr3 = fenum.ctr3;
 
 	return WERR_OK;
 }
@@ -133,8 +132,8 @@ static void enum_file_fn( const struct share_mode_entry *e,
  	struct file_enum_count *fenum =
  		(struct file_enum_count *)private_data;
 
-	FILE_INFO_3 *f;
-	int i = fenum->count;
+	struct srvsvc_NetFileInfo3 *f;
+	int i = fenum->ctr3->count;
 	files_struct fsp;
 	struct byte_range_lock *brl;
 	int num_locks = 0;
@@ -155,12 +154,13 @@ static void enum_file_fn( const struct share_mode_entry *e,
 		return;
 	}
 
-	f = TALLOC_REALLOC_ARRAY( fenum->ctx, fenum->info, FILE_INFO_3, i+1 );
+	f = TALLOC_REALLOC_ARRAY(fenum->ctx, fenum->ctr3->array,
+				 struct srvsvc_NetFileInfo3, i+1);
 	if ( !f ) {
 		DEBUG(0,("conn_enum_fn: realloc failed for %d items\n", i+1));
 		return;
 	}
-	fenum->info = f;
+	fenum->ctr3->array = f;
 
 	/* need to count the number of locks on a file */
 
@@ -186,36 +186,33 @@ static void enum_file_fn( const struct share_mode_entry *e,
 	/* mask out create (what ever that is) */
 	permissions = e->share_access & (FILE_READ_DATA|FILE_WRITE_DATA);
 
-	/* now fill in the FILE_INFO_3 struct */
-	init_srv_file_info3( &fenum->info[i],
-			     e->share_file_id,
-			     permissions,
-			     num_locks,
-			     username,
-			     fullpath );
-
-	TALLOC_FREE(fullpath);
-	fenum->count++;
+	/* now fill in the srvsvc_NetFileInfo3 struct */
+	init_srvsvc_NetFileInfo3(&fenum->ctr3->array[i],
+				 e->share_file_id,
+				 permissions,
+				 num_locks,
+				 username,
+				 fullpath);
+	fenum->ctr3->count++;
 }
 
 /*******************************************************************
 ********************************************************************/
 
-static WERROR net_enum_files( TALLOC_CTX *ctx, const char *username,
-			      FILE_INFO_3 **info,
-                              uint32 *count, uint32 resume )
+static WERROR net_enum_files(TALLOC_CTX *ctx,
+			     const char *username,
+			     struct srvsvc_NetFileCtr3 **ctr3,
+			     uint32_t resume)
 {
 	struct file_enum_count f_enum_cnt;
 
 	f_enum_cnt.ctx = ctx;
 	f_enum_cnt.username = username;
-	f_enum_cnt.count = *count;
-	f_enum_cnt.info = *info;
+	f_enum_cnt.ctr3 = *ctr3;
 
 	share_mode_forall( enum_file_fn, (void *)&f_enum_cnt );
 
-	*info  = f_enum_cnt.info;
-	*count = f_enum_cnt.count;
+	*ctr3 = f_enum_cnt.ctr3;
 
 	return WERR_OK;
 }
@@ -1054,70 +1051,52 @@ static void init_srv_r_net_conn_enum(SRV_R_NET_CONN_ENUM *r_n,
 }
 
 /*******************************************************************
- makes a SRV_R_NET_FILE_ENUM structure.
-********************************************************************/
+ _srvsvc_NetFileEnum
+*******************************************************************/
 
-static WERROR net_file_enum_3( const char *username, SRV_R_NET_FILE_ENUM *r,
-			       uint32 resume_hnd )
+WERROR _srvsvc_NetFileEnum(pipes_struct *p,
+			   struct srvsvc_NetFileEnum *r)
 {
-	TALLOC_CTX *ctx = talloc_tos();
-	SRV_FILE_INFO_CTR *ctr = &r->ctr;
+	TALLOC_CTX *ctx = NULL;
+	struct srvsvc_NetFileCtr3 *ctr3;
+	uint32_t resume_hnd = 0;
+	WERROR werr;
+
+	switch (r->in.info_ctr->level) {
+	case 3:
+		break;
+	default:
+		return WERR_UNKNOWN_LEVEL;
+	}
+
+	ctx = talloc_tos();
+	ctr3 = r->in.info_ctr->ctr.ctr3;
+	if (!ctr3) {
+		goto done;
+	}
 
 	/* TODO -- Windows enumerates
 	   (b) active pipes
 	   (c) open directories and files */
 
-	r->status = net_enum_files( ctx, username, &ctr->file.info3,
-				    &ctr->num_entries, resume_hnd );
-	if ( !W_ERROR_IS_OK(r->status))
+	werr = net_enum_files(ctx, r->in.user, &ctr3, resume_hnd);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
-
-	r->status = net_enum_pipes( ctx, username, &ctr->file.info3,
-				    &ctr->num_entries, resume_hnd );
-	if ( !W_ERROR_IS_OK(r->status))
-		goto done;
-
-	r->level = ctr->level = 3;
-	r->total_entries = ctr->num_entries;
-	/* ctr->num_entries = r->total_entries - resume_hnd; */
-	ctr->num_entries2 = ctr->num_entries;
-	ctr->ptr_file_info = 1;
-
-	r->status = WERR_OK;
-
-done:
-	if ( ctr->num_entries > 0 )
-		ctr->ptr_entries = 1;
-
-	init_enum_hnd(&r->enum_hnd, 0);
-
-	return r->status;
-}
-
-/*******************************************************************
-*******************************************************************/
-
-WERROR _srv_net_file_enum(pipes_struct *p, SRV_Q_NET_FILE_ENUM *q_u, SRV_R_NET_FILE_ENUM *r_u)
-{
-	const char *username = NULL;
-
-	switch ( q_u->level ) {
-	case 3:
-		if (q_u->username) {
-			username = rpcstr_pull_unistr2_talloc(
-				p->mem_ctx, q_u->username);
-			if (!username) {
-				return WERR_NOMEM;
-			}
-		}
-
-		return net_file_enum_3(username, r_u,
-				       get_enum_hnd(&q_u->enum_hnd));
-	default:
-		return WERR_UNKNOWN_LEVEL;
 	}
 
-	return WERR_OK;
+	werr = net_enum_pipes(ctx, r->in.user, &ctr3, resume_hnd);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	*r->out.totalentries = ctr3->count;
+	r->out.info_ctr->ctr.ctr3->array = ctr3->array;
+	r->out.info_ctr->ctr.ctr3->count = ctr3->count;
+
+	werr = WERR_OK;
+
+ done:
+	return werr;
 }
 
 /*******************************************************************
@@ -2499,12 +2478,6 @@ WERROR _srvsvc_NetCharDevQPurgeSelf(pipes_struct *p, struct srvsvc_NetCharDevQPu
 }
 
 WERROR _srvsvc_NetConnEnum(pipes_struct *p, struct srvsvc_NetConnEnum *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _srvsvc_NetFileEnum(pipes_struct *p, struct srvsvc_NetFileEnum *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
