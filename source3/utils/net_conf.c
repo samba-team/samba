@@ -318,7 +318,7 @@ static int net_conf_list(struct smbconf_ctx *conf_ctx,
 		goto done;
 	}
 
-	werr = smbconf_get_config(ctx, conf_ctx, &num_shares, &share_names,
+	werr = smbconf_get_config(conf_ctx, ctx, &num_shares, &share_names,
 				  &num_params, &param_names, &param_values);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error getting config: %s\n",
@@ -448,7 +448,7 @@ static int net_conf_listshares(struct smbconf_ctx *conf_ctx,
 		goto done;
 	}
 
-	werr = smbconf_get_share_names(ctx, conf_ctx, &num_shares,
+	werr = smbconf_get_share_names(conf_ctx, ctx, &num_shares,
 				       &share_names);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -511,7 +511,7 @@ static int net_conf_showshare(struct smbconf_ctx *conf_ctx,
 
 	sharename = argv[0];
 
-	werr = smbconf_get_share(ctx, conf_ctx, sharename, &num_params,
+	werr = smbconf_get_share(conf_ctx, ctx, sharename, &num_params,
 				 &param_names, &param_values);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_printf("error getting share parameters: %s\n",
@@ -799,7 +799,7 @@ static int net_conf_getparm(struct smbconf_ctx *conf_ctx,
 	service = strdup_lower(argv[0]);
 	param = strdup_lower(argv[1]);
 
-	werr = smbconf_get_parameter(ctx, conf_ctx, service, param, &valstr);
+	werr = smbconf_get_parameter(conf_ctx, ctx, service, param, &valstr);
 
 	if (W_ERROR_EQUAL(werr, WERR_NO_SUCH_SERVICE)) {
 		d_fprintf(stderr,

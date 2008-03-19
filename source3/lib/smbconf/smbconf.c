@@ -558,8 +558,9 @@ done:
  *  param_names  : list of lists of parameter names for each share
  *  param_values : list of lists of parameter values for each share
  */
-WERROR smbconf_get_config(TALLOC_CTX *mem_ctx,
-			  struct smbconf_ctx *ctx, uint32_t *num_shares,
+WERROR smbconf_get_config(struct smbconf_ctx *ctx,
+			  TALLOC_CTX *mem_ctx,
+			  uint32_t *num_shares,
 			  char ***share_names, uint32_t **num_params,
 			  char ****param_names, char ****param_values)
 {
@@ -586,7 +587,7 @@ WERROR smbconf_get_config(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	werr = smbconf_get_share_names(tmp_ctx, ctx, &tmp_num_shares,
+	werr = smbconf_get_share_names(ctx, tmp_ctx, &tmp_num_shares,
 				       &tmp_share_names);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -604,7 +605,7 @@ WERROR smbconf_get_config(TALLOC_CTX *mem_ctx,
 	}
 
 	for (count = 0; count < tmp_num_shares; count++) {
-		werr = smbconf_get_share(mem_ctx, ctx,
+		werr = smbconf_get_share(ctx, mem_ctx,
 					 tmp_share_names[count],
 					 &tmp_num_params[count],
 					 &tmp_param_names[count],
@@ -637,8 +638,8 @@ done:
 /**
  * get the list of share names defined in the configuration.
  */
-WERROR smbconf_get_share_names(TALLOC_CTX *mem_ctx,
-			       struct smbconf_ctx *ctx,
+WERROR smbconf_get_share_names(struct smbconf_ctx *ctx,
+			       TALLOC_CTX *mem_ctx,
 			       uint32_t *num_shares,
 			       char ***share_names)
 {
@@ -758,7 +759,8 @@ done:
 /**
  * get a definition of a share (service) from configuration.
  */
-WERROR smbconf_get_share(TALLOC_CTX *mem_ctx, struct smbconf_ctx *ctx,
+WERROR smbconf_get_share(struct smbconf_ctx *ctx,
+			 TALLOC_CTX *mem_ctx,
 			 const char *servicename, uint32_t *num_params,
 			 char ***param_names, char ***param_values)
 {
@@ -856,8 +858,8 @@ done:
 /**
  * get the value of a configuration parameter as a string
  */
-WERROR smbconf_get_parameter(TALLOC_CTX *mem_ctx,
-			     struct smbconf_ctx *ctx,
+WERROR smbconf_get_parameter(struct smbconf_ctx *ctx,
+			     TALLOC_CTX *mem_ctx,
 			     const char *service,
 			     const char *param,
 			     char **valstr)
@@ -909,8 +911,8 @@ done:
  *
  * Create [global] if it does not exist.
  */
-WERROR smbconf_get_global_parameter(TALLOC_CTX *mem_ctx,
-				    struct smbconf_ctx *ctx,
+WERROR smbconf_get_global_parameter(struct smbconf_ctx *ctx,
+				    TALLOC_CTX *mem_ctx,
 				    const char *param,
 				    char **valstr)
 {
@@ -922,7 +924,7 @@ WERROR smbconf_get_global_parameter(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 	}
-	werr = smbconf_get_parameter(mem_ctx, ctx, GLOBAL_NAME, param, valstr);
+	werr = smbconf_get_parameter(ctx, mem_ctx, GLOBAL_NAME, param, valstr);
 
 done:
 	return werr;
