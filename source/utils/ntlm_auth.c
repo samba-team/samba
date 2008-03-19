@@ -285,7 +285,7 @@ static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mod
 	DATA_BLOB in;
 	if (strlen(buf) < 2) {
 		DEBUG(1, ("query [%s] invalid", buf));
-		mux_printf(mux_id, "BH\n");
+		mux_printf(mux_id, "BH Query invalid\n");
 		return;
 	}
 
@@ -302,7 +302,7 @@ static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mod
 		
 		if (*password == NULL) {
 			DEBUG(1, ("Out of memory\n"));
-			mux_printf(mux_id, "BH\n");
+			mux_printf(mux_id, "BH Out of memory\n");
 			data_blob_free(&in);
 			return;
 		}
@@ -312,7 +312,7 @@ static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mod
 		return;
 	}
 	DEBUG(1, ("Asked for (and expected) a password\n"));
-	mux_printf(mux_id, "BH\n");
+	mux_printf(mux_id, "BH Expected a password\n");
 	data_blob_free(&in);
 }
 
@@ -420,7 +420,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	
 	if (strlen(buf) < 2) {
 		DEBUG(1, ("query [%s] invalid", buf));
-		mux_printf(mux_id, "BH\n");
+		mux_printf(mux_id, "BH Query invalid\n");
 		return;
 	}
 
@@ -444,7 +444,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		}
 	} else if ( (strncmp(buf, "OK", 2) == 0)) {
 		/* Just return BH, like ntlm_auth from Samba 3 does. */
-		mux_printf(mux_id, "BH\n");
+		mux_printf(mux_id, "BH Command expected\n");
 		data_blob_free(&in);
 		return;
 	} else if ( (strncmp(buf, "TT ", 3) != 0) &&
@@ -456,7 +456,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		    (strncmp(buf, "GK", 2) != 0) &&
 		    (strncmp(buf, "GF", 2) != 0)) {
 		DEBUG(1, ("SPNEGO request [%s] invalid\n", buf));
-		mux_printf(mux_id, "BH\n");
+		mux_printf(mux_id, "BH SPNEGO request invalid\n");
 		data_blob_free(&in);
 		return;
 	}
@@ -545,7 +545,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("GENSEC mech failed to start: %s\n", nt_errstr(nt_status)));
-			mux_printf(mux_id, "BH\n");
+			mux_printf(mux_id, "BH GENSEC mech failed to start\n");
 			return;
 		}
 
@@ -655,11 +655,11 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 
 
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED)) {
-		reply_code = "BH";
+		reply_code = "BH NT_STATUS_ACCESS_DENIED";
 		reply_arg = nt_errstr(nt_status);
 		DEBUG(1, ("GENSEC login failed: %s\n", nt_errstr(nt_status)));
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_UNSUCCESSFUL)) {
-		reply_code = "BH";
+		reply_code = "BH NT_STATUS_UNSUCCESSFUL";
 		reply_arg = nt_errstr(nt_status);
 		DEBUG(1, ("GENSEC login failed: %s\n", nt_errstr(nt_status)));
 	} else if (!NT_STATUS_IS_OK(nt_status)) {
@@ -671,7 +671,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 
 		nt_status = gensec_session_info(state->gensec_state, &session_info);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			reply_code = "BH";
+			reply_code = "BH Failed to retrive session info";
 			reply_arg = nt_errstr(nt_status);
 			DEBUG(1, ("GENSEC failed to retreive the session info: %s\n", nt_errstr(nt_status)));
 		} else {
