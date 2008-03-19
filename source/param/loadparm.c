@@ -6621,15 +6621,6 @@ bool lp_file_list_changed(void)
 				     (unsigned long long)conf_last_seqnum,
 				     (unsigned long long)conf_cur_seqnum));
 			return true;
-		} else {
-			/*
-			 * Don't check files when config_backend is registry.
-			 * Remove this to obtain checking of files even with
-			 * registry config backend. That would enable switching
-			 * off registry configuration by changing smb.conf even
-			 * without restarting smbd.
-			 */
-			return false;
 		}
 	}
 
