@@ -52,7 +52,6 @@
  */
 
 #include "includes.h"
-#include "libnet/libnet.h"
 
 bool in_client = False;		/* Not in the client by default */
 bool bLoaded = False;
