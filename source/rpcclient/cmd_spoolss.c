@@ -2616,7 +2616,7 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 	
 	fstrcpy( printername, argv[1] );
 	
-	fstr_sprintf( servername1, cli->cli->desthost );
+	fstrcpy( servername1, cli->cli->desthost );
 	fstrcpy( servername2, argv[2] );
 	strupper_m( servername1 );
 	strupper_m( servername2 );
