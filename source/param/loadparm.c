@@ -52,7 +52,6 @@
  */
 
 #include "includes.h"
-#include "libnet/libnet.h"
 
 bool bLoaded = False;
 
