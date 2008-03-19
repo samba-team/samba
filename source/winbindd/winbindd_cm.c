@@ -2403,6 +2403,11 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
  no_schannel:
 	if ((lp_client_schannel() == False) ||
 			((neg_flags & NETLOGON_NEG_SCHANNEL) == 0)) {
+		/*
+		 * NetSamLogonEx only works for schannel
+		 */
+		domain->can_do_samlogon_ex = False;
+
 		/* We're done - just keep the existing connection to NETLOGON
 		 * open */
 		conn->netlogon_pipe = netlogon_pipe;
@@ -2433,6 +2438,11 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		/* make sure we return something besides OK */
 		return !NT_STATUS_IS_OK(result) ? result : NT_STATUS_PIPE_NOT_AVAILABLE;
 	}
+
+	/*
+	 * Try NetSamLogonEx for AD domains
+	 */
+	domain->can_do_samlogon_ex = domain->active_directory;
 
 	*cli = conn->netlogon_pipe;
 	return NT_STATUS_OK;
