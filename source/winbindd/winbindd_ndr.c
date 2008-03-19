@@ -70,18 +70,18 @@ void ndr_print_winbindd_cm_conn(struct ndr_print *ndr,
 /****************************************************************
 ****************************************************************/
 
+#ifdef HAVE_ADS
+extern struct winbindd_methods ads_methods;
+#endif
+extern struct winbindd_methods msrpc_methods;
+extern struct winbindd_methods passdb_methods;
+extern struct winbindd_methods reconnect_methods;
+extern struct winbindd_methods cache_methods;
+
 void ndr_print_winbindd_methods(struct ndr_print *ndr,
 				const char *name,
 				const struct winbindd_methods *r)
 {
-#ifdef HAVE_ADS
-	extern struct winbindd_methods ads_methods;
-#endif
-	extern struct winbindd_methods msrpc_methods;
-	extern struct winbindd_methods passdb_methods;
-	extern struct winbindd_methods reconnect_methods;
-	extern struct winbindd_methods cache_methods;
-
 	ndr_print_struct(ndr, name, "winbindd_methods");
 	ndr->depth++;
 
