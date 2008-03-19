@@ -217,43 +217,4 @@ typedef struct r_net_conn_enum_info
 
 /***************************/
 
-typedef struct {
-	uint32 id;            /* file index */
-	uint32 perms;         /* file permissions. don't know what format */
-	uint32 num_locks;     /* file locks */
-	UNISTR2 *path;        /* file name */
-	UNISTR2 *user;        /* file owner */
-} FILE_INFO_3;
-
-typedef struct {
-	uint32 level;                /* switch value */
-	uint32 ptr_file_info;        /* pointer to file info union */
-
-	uint32 num_entries;
-	uint32 ptr_entries;
-	uint32 num_entries2;
-	union {
-		FILE_INFO_3 *info3;
-	} file;
-
-} SRV_FILE_INFO_CTR;
-
-typedef struct {
-	UNISTR2 *servername;
-	UNISTR2 *qualifier;
-	UNISTR2 *username;
-	uint32 level;
-	SRV_FILE_INFO_CTR ctr;
-	uint32 preferred_len;     /* preferred maximum length (0xffff ffff) */
-	ENUM_HND enum_hnd;
-} SRV_Q_NET_FILE_ENUM;
-
-typedef struct {
-	uint32 level;   
-	SRV_FILE_INFO_CTR ctr;
-	uint32 total_entries;
-	ENUM_HND enum_hnd;
-	WERROR status;      
-} SRV_R_NET_FILE_ENUM;
-
 #endif /* _RPC_SRVSVC_H */
