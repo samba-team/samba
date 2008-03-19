@@ -136,7 +136,7 @@ NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 
 	status = cli_pull_error(cli_req->inbuf);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
 
