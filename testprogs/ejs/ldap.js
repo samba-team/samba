@@ -866,12 +866,30 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer," + base_dn + "
 	}
 
 	assert(res.msgs[0].dn == ("CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn));
-	assert(strupper(res.msgs[0].memberOf[0]) == strupper(("CN=ldaptestgroup2,CN=Users," + base_dn)));
+	assert(strupper(res.msgs[0].memberOf[0]) == (strupper("CN=ldaptestgroup2,CN=Users," + base_dn)));
 
-	println("Testing ldb.search for (&(member=CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn + ")(objectclass=group)) to check subtree renames and linked attributes");
-	var res = ldb.search("(&(member=CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn + ")(objectclass=group))", base_dn, ldb.SCOPE_SUBTREE);
+	println("Testing ldb.search for (&(cn=ldaptestgroup2)(objectClass=group)) in cn=users");
+	var res_group = ldb.search("(&(cn=ldaptestgroup2)(objectClass=group))", "cn=users," + base_dn, ldb.SCOPE_SUBTREE);
+	if (res_group.error != 0 || res_group.msgs.length != 1) {
+		println("Could not find (&(cn=ldaptestgroup2)(objectClass=group)) under cn=users," + base_dn);
+		assert(res_group.error == 0);
+		assert(res_group.msgs.length == 1);
+	}
+
+	println("Testing ldb.search for (member=CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn + ") to check subtree renames and linked attributes");
+	var res = ldb.search("(member=CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn + ")", base_dn, ldb.SCOPE_SUBTREE);
 	if (res.error != 0 || res.msgs.length != 1) {
-		println("Could not find (&(member=CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn + ")(objectclass=group)), perhaps linked attributes are not conistant with subtree renames?");
+		for (i=0; i < res_group.msgs[0].member.length; i++) {
+		    println("res_group.member[" +  i + "]: " + res_group.msgs[0].member[i]);
+		}
+
+		println("Could not find (member=CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn + "), perhaps linked attributes are not conistant with subtree renames?");
+		println("Testing ldb.search for (member=CN=ldaptestuser4,CN=ldaptestcontainer," + base_dn + ") to check if it just hasn't been updated");
+		var res2 = ldb.search("(member=CN=ldaptestuser4,CN=ldaptestcontainer," + base_dn + ")", base_dn, ldb.SCOPE_SUBTREE);
+		if (res2.error != 0 || res2.msgs.length != 1) {
+			println("Could not find (member=CN=ldaptestuser4,CN=ldaptestcontainer," + base_dn + "), very odd, it wasn't here at all..");
+		}
+
 		assert(res.error == 0);
 		assert(res.msgs.length == 1);
 	}
@@ -992,7 +1010,7 @@ objectClass: user
 	assert(res.msgs[0].objectCategory == ("CN=Person,CN=Schema,CN=Configuration," + base_dn));
 	assert(res.msgs[0].sAMAccountType == 805306368);
 	assert(res.msgs[0].userAccountControl == 546);
-	assert(res.msgs[0].memberOf[0] == ("CN=ldaptestgroup2,CN=Users," + base_dn));
+	assert(strupper(res.msgs[0].memberOf[0]) == strupper("CN=ldaptestgroup2,CN=Users," + base_dn));
 	assert(res.msgs[0].memberOf.length == 1);
  
 	println("Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + base_dn + "))");
