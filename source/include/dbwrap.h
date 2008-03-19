@@ -66,6 +66,14 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 			       int hash_size, int tdb_flags,
 			       int open_flags, mode_t mode);
 
+struct db_context *db_open_tdb2(TALLOC_CTX *mem_ctx,
+			        const char *name,
+			        int hash_size, int tdb_flags,
+			        int open_flags, mode_t mode);
+
+struct messaging_context;
+void db_tdb2_setup_messaging(struct messaging_context *msg_ctx, bool server);
+
 #ifdef CLUSTER_SUPPORT
 struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 				const char *name,
