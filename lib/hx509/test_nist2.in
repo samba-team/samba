@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (c) 2004 - 2005 Kungliga Tekniska Högskolan
+# Copyright (c) 2004 - 2008 Kungliga Tekniska Högskolan
 # (Royal Institute of Technology, Stockholm, Sweden). 
 # All rights reserved. 
 #
@@ -54,6 +54,22 @@ fi
 if ${hxtool} info | grep 'rand: not available' > /dev/null ; then
     exit 77
 fi
+
+#--------- Try to find unzip
+
+oldifs=$IFS
+IFS=:
+set -- $PATH
+IFS=$oldifs
+found=
+
+for p in "$@" ; do
+    test -x "$p/unzip" && { found=1 ; break; }
+done
+test "X$found" = "X" && exit 77
+
+#---------
+
 
 echo "nist tests, version 2"
 
