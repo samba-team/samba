@@ -1,3 +1,7 @@
+2008-03-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* camellia.h: Drop unused defined that originates from aes.
+	
 2008-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Add extra files missing from dist.
