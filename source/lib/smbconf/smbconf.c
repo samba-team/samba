@@ -559,9 +559,9 @@ done:
  *  param_values : list of lists of parameter values for each share
  */
 WERROR smbconf_get_config(TALLOC_CTX *mem_ctx,
-			      struct smbconf_ctx *ctx, uint32_t *num_shares,
-			      char ***share_names, uint32_t **num_params,
-			      char ****param_names, char ****param_values)
+			  struct smbconf_ctx *ctx, uint32_t *num_shares,
+			  char ***share_names, uint32_t **num_params,
+			  char ****param_names, char ****param_values)
 {
 	WERROR werr = WERR_OK;
 	TALLOC_CTX *tmp_ctx = NULL;
