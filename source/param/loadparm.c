@@ -6510,7 +6510,7 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 		goto done;
 	}
 
-	werr = smbconf_get_share(mem_ctx, conf_ctx, GLOBAL_NAME,
+	werr = smbconf_get_share(conf_ctx, mem_ctx, GLOBAL_NAME,
 				 &num_params, &param_names, &param_values);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
