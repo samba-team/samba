@@ -20,9 +20,7 @@
 #ifndef __LIBSMBCONF_H__
 #define __LIBSMBCONF_H__
 
-struct smbconf_ctx {
-	NT_USER_TOKEN *token;
-};
+struct smbconf_ctx;
 
 /* the change sequence number */
 struct smbconf_csn {
