@@ -20,8 +20,39 @@
 #ifndef __LIBSMBCONF_PRIVATE_H__
 #define __LIBSMBCONF_PRIVATE_H__
 
+struct smbconf_ops {
+	WERROR (*init)(struct smbconf_ctx *ctx);
+	void (*get_csn)(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
+			const char *service, const char *param);
+	WERROR (*drop)(struct smbconf_ctx *ctx);
+	WERROR (*get_share_names)(struct smbconf_ctx *ctx,
+				  TALLOC_CTX *mem_ctx,
+				  uint32_t *num_shares,
+				  char ***share_names);
+	bool (*share_exists)(struct smbconf_ctx *ctx, const char *service);
+	WERROR (*create_share)(struct smbconf_ctx *ctx, const char *service);
+	WERROR (*get_share)(struct smbconf_ctx *ctx,
+			    TALLOC_CTX *mem_ctx,
+			    const char *servicename, uint32_t *num_params,
+			    char ***param_names, char ***param_values);
+	WERROR (*delete_share)(struct smbconf_ctx *ctx,
+				    const char *servicename);
+	WERROR (*set_parameter)(struct smbconf_ctx *ctx,
+			        const char *service,
+			        const char *param,
+			        const char *valstr);
+	WERROR (*get_parameter)(struct smbconf_ctx *ctx,
+			        TALLOC_CTX *mem_ctx,
+			        const char *service,
+			        const char *param,
+			        char **valstr);
+	WERROR (*delete_parameter)(struct smbconf_ctx *ctx,
+				   const char *service, const char *param);
+};
+
 struct smbconf_ctx {
 	NT_USER_TOKEN *token;
+	struct smbconf_ops *ops;
 };
 
 #endif

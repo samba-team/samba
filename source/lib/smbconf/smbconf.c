@@ -413,7 +413,10 @@ static WERROR smbconf_global_check(struct smbconf_ctx *ctx)
  *
  **********************************************************************/
 
-static WERROR smbconf_reg_initialize(struct smbconf_ctx *ctx)
+/**
+ * initialize the registry smbconf backend
+ */
+static WERROR smbconf_reg_init(struct smbconf_ctx *ctx)
 {
 	WERROR werr = WERR_OK;
 
@@ -746,6 +749,20 @@ done:
 	return werr;
 }
 
+struct smbconf_ops smbconf_ops_reg = {
+	.init			= smbconf_reg_init,
+	.get_csn		= smbconf_reg_get_csn,
+	.drop			= smbconf_reg_drop,
+	.get_share_names	= smbconf_reg_get_share_names,
+	.share_exists		= smbconf_reg_share_exists,
+	.create_share		= smbconf_reg_create_share,
+	.get_share		= smbconf_reg_get_share,
+	.delete_share		= smbconf_reg_delete_share,
+	.set_parameter		= smbconf_reg_set_parameter,
+	.get_parameter		= smbconf_reg_get_parameter,
+	.delete_parameter	= smbconf_reg_delete_parameter
+};
+
 
 /**********************************************************************
  *
@@ -780,7 +797,9 @@ WERROR smbconf_open(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx)
 		return WERR_NOMEM;
 	}
 
-	werr = smbconf_reg_initialize(ctx);
+	ctx->ops = &smbconf_ops_reg;
+
+	werr = ctx->ops->init(ctx);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto fail;
 	}
@@ -821,7 +840,7 @@ bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
 
 	old_csn = *csn;
 
-	smbconf_reg_get_csn(ctx, csn, service, param);
+	ctx->ops->get_csn(ctx, csn, service, param);
 	return (csn->csn != old_csn.csn);
 }
 
@@ -830,7 +849,7 @@ bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
  */
 WERROR smbconf_drop(struct smbconf_ctx *ctx)
 {
-	return smbconf_reg_drop(ctx);
+	return ctx->ops->drop(ctx);
 }
 
 /**
@@ -927,8 +946,8 @@ WERROR smbconf_get_share_names(struct smbconf_ctx *ctx,
 			       uint32_t *num_shares,
 			       char ***share_names)
 {
-	return smbconf_reg_get_share_names(ctx, mem_ctx, num_shares,
-					   share_names);
+	return ctx->ops->get_share_names(ctx, mem_ctx, num_shares,
+					 share_names);
 }
 
 /**
@@ -940,7 +959,7 @@ bool smbconf_share_exists(struct smbconf_ctx *ctx,
 	if (servicename == NULL) {
 		return false;
 	}
-	return smbconf_reg_share_exists(ctx, servicename);
+	return ctx->ops->share_exists(ctx, servicename);
 }
 
 /**
@@ -953,7 +972,7 @@ WERROR smbconf_create_share(struct smbconf_ctx *ctx,
 		return WERR_ALREADY_EXISTS;
 	}
 
-	return smbconf_reg_create_share(ctx, servicename);
+	return ctx->ops->create_share(ctx, servicename);
 }
 
 /**
@@ -968,8 +987,8 @@ WERROR smbconf_get_share(struct smbconf_ctx *ctx,
 		return WERR_NO_SUCH_SERVICE;
 	}
 
-	return smbconf_reg_get_share(ctx, mem_ctx, servicename, num_params,
-				     param_names, param_values);
+	return ctx->ops->get_share(ctx, mem_ctx, servicename, num_params,
+				   param_names, param_values);
 }
 
 /**
@@ -981,7 +1000,7 @@ WERROR smbconf_delete_share(struct smbconf_ctx *ctx, const char *servicename)
 		return WERR_NO_SUCH_SERVICE;
 	}
 
-	return smbconf_reg_delete_share(ctx, servicename);
+	return ctx->ops->delete_share(ctx, servicename);
 }
 
 /**
@@ -996,7 +1015,7 @@ WERROR smbconf_set_parameter(struct smbconf_ctx *ctx,
 		return WERR_NO_SUCH_SERVICE;
 	}
 
-	return smbconf_reg_set_parameter(ctx, service, param, valstr);
+	return ctx->ops->set_parameter(ctx, service, param, valstr);
 }
 
 /**
@@ -1035,7 +1054,7 @@ WERROR smbconf_get_parameter(struct smbconf_ctx *ctx,
 		return WERR_NO_SUCH_SERVICE;
 	}
 
-	return smbconf_reg_get_parameter(ctx, mem_ctx, service, param, valstr);
+	return ctx->ops->get_parameter(ctx, mem_ctx, service, param, valstr);
 }
 
 /**
@@ -1069,7 +1088,7 @@ WERROR smbconf_delete_parameter(struct smbconf_ctx *ctx,
 		return WERR_NO_SUCH_SERVICE;
 	}
 
-	return smbconf_reg_delete_parameter(ctx, service, param);
+	return ctx->ops->delete_parameter(ctx, service, param);
 }
 
 /**
