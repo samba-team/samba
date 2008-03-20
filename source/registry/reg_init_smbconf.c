@@ -84,6 +84,11 @@ bool registry_init_smbconf(void)
 		DEBUGADD(1, (".\n"));
 		goto done;
 	}
+	if (!init_registry_key(KEY_SMBCONF)) {
+		DEBUG(1, ("Could not initialize registry key '%s'\n",
+			  KEY_SMBCONF));
+		goto done;
+	}
 	reghook_cache_init();
 	if (!reghook_cache_add(&smbconf_reg_hook)) {
 		DEBUG(1, ("Error adding smbconf reghooks to reghook cache.\n"));
