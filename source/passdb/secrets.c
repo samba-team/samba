@@ -986,7 +986,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	db_ctx->traverse(db_ctx, list_trusted_domain, (void *)&state);
+	db_ctx->traverse_read(db_ctx, list_trusted_domain, (void *)&state);
 
 	*num_domains = state.num_domains;
 	*domains = state.domains;
