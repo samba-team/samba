@@ -937,6 +937,9 @@ WERROR smbconf_get_share_names(struct smbconf_ctx *ctx,
 bool smbconf_share_exists(struct smbconf_ctx *ctx,
 			  const char *servicename)
 {
+	if (servicename == NULL) {
+		return false;
+	}
 	return smbconf_reg_share_exists(ctx, servicename);
 }
 
