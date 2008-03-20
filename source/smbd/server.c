@@ -59,6 +59,23 @@ int get_client_fd(void)
 	return server_fd;
 }
 
+int client_get_tcp_info(struct sockaddr_in *server, struct sockaddr_in *client)
+{
+	socklen_t length;
+	if (server_fd == -1) {
+		return -1;
+	}
+	length = sizeof(*server);
+	if (getsockname(server_fd, (struct sockaddr *)server, &length) != 0) {
+		return -1;
+	}
+	length = sizeof(*client);
+	if (getpeername(server_fd, (struct sockaddr *)client, &length) != 0) {
+		return -1;
+	}
+	return 0;
+}
+
 struct event_context *smbd_event_context(void)
 {
 	static struct event_context *ctx;
@@ -946,10 +963,8 @@ void exit_server_fault(void)
 /****************************************************************************
 received when we should release a specific IP
 ****************************************************************************/
-static void msg_release_ip(struct messaging_context *msg_ctx, void *private_data, 
-                    	   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data)
+static void release_ip(const char *ip, void *priv)
 {
-	const char *ip = (const char *)data->data;
 	char addr[INET6_ADDRSTRLEN];
 
 	if (strcmp(client_socket_addr(get_client_fd(),addr,sizeof(addr)), ip) == 0) {
@@ -964,6 +979,11 @@ static void msg_release_ip(struct messaging_context *msg_ctx, void *private_data
 	}
 }
 
+static void msg_release_ip(struct messaging_context *msg_ctx, void *private_data,
+			   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data)
+{
+	release_ip((char *)data->data, NULL);
+}
 
 /****************************************************************************
  Initialise connect, service and file structs.
@@ -1377,6 +1397,40 @@ extern void build_options(bool screen);
 		DEBUG(0, ("Could not add deadtime event\n"));
 		exit(1);
 	}
+
+#ifdef CLUSTER_SUPPORT
+
+	if (lp_clustering()) {
+		/*
+		 * We need to tell ctdb about our client's TCP
+		 * connection, so that for failover ctdbd can send
+		 * tickle acks, triggering a reconnection by the
+		 * client.
+		 */
+
+		struct sockaddr_in srv, clnt;
+
+		if (client_get_tcp_info(&srv, &clnt) == 0) {
+
+			NTSTATUS status;
+
+			status = ctdbd_register_ips(
+				messaging_ctdbd_connection(),
+				&srv, &clnt, release_ip, NULL);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0, ("ctdbd_register_ips failed: %s\n",
+					  nt_errstr(status)));
+			}
+		} else
+		{
+			DEBUG(0,("Unable to get tcp info for "
+				 "CTDB_CONTROL_TCP_CLIENT: %s\n",
+				 strerror(errno)));
+		}
+	}
+
+#endif
 
 	TALLOC_FREE(frame);
 
