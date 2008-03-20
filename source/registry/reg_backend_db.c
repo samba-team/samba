@@ -329,8 +329,8 @@ bool regdb_init( void )
 		return true;
 	}
 
-	if ( !(regdb = db_open(NULL, state_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR, 0600)) )
-	{
+	regdb = db_open(NULL, state_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR, 0600);
+	if (!regdb) {
 		regdb = db_open(NULL, state_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR|O_CREAT, 0600);
 		if ( !regdb ) {
 			DEBUG(0,("regdb_init: Failed to open registry %s (%s)\n",
