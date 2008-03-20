@@ -76,7 +76,7 @@ static WERROR smbconf_reg_open_path(TALLOC_CTX *mem_ctx,
 
 	if (ctx->token == NULL) {
 		DEBUG(1, ("Error: token missing from smbconf_ctx. "
-			  "was smbconf_open() called?\n"));
+			  "was smbconf_init() called?\n"));
 		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
@@ -795,7 +795,7 @@ struct smbconf_ops smbconf_ops_reg = {
  * After the work with the configuration is completed, smbconf_close()
  * should be called.
  */
-WERROR smbconf_open(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx)
+WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx)
 {
 	WERROR werr = WERR_OK;
 	struct smbconf_ctx *ctx;
