@@ -178,6 +178,37 @@ fail:
 	return ret;
 }
 
+/**
+ * Initialize a key in the registry:
+ * create each component key of the specified path,
+ * wrapped in one db transaction.
+ */
+static bool init_registry_key(const char *add_path)
+{
+	if (regdb->transaction_start(regdb) == -1) {
+		DEBUG(0, ("init_registry_key: transaction_start failed\n"));
+		return false;
+	}
+
+	if (!init_registry_key_internal(add_path)) {
+		goto fail;
+	}
+
+	if (regdb->transaction_commit(regdb) == -1) {
+		DEBUG(0, ("init_registry_key: Could not commit transaction\n"));
+		return false;
+	}
+
+	return true;
+
+fail:
+	if (regdb->transaction_cancel(regdb) == -1) {
+		smb_panic("init_registry_key: transaction_cancel failed\n");
+	}
+
+	return false;
+}
+
 /***********************************************************************
  Open the registry data in the tdb
  ***********************************************************************/
