@@ -418,6 +418,21 @@ static int smbconf_destroy_ctx(struct smbconf_ctx *ctx)
 	return regdb_close();
 }
 
+static WERROR smbconf_global_check(struct smbconf_ctx *ctx)
+{
+	if (!smbconf_share_exists(ctx, GLOBAL_NAME)) {
+		return smbconf_create_share(ctx, GLOBAL_NAME);
+	}
+	return WERR_OK;
+}
+
+
+/**********************************************************************
+ *
+ * smbconf operations: registry implementations
+ *
+ **********************************************************************/
+
 /**
  * Get the change sequence number of the given service/parameter.
  * service and parameter strings may be NULL.
@@ -432,13 +447,305 @@ static void smbconf_reg_get_csn(struct smbconf_ctx *ctx,
 	csn->csn = (uint64_t)regdb_get_seqnum();
 }
 
-static WERROR smbconf_global_check(struct smbconf_ctx *ctx)
+/**
+ * Drop the whole configuration (restarting empty) - registry version
+ */
+static WERROR smbconf_reg_drop(struct smbconf_ctx *ctx)
 {
-	if (!smbconf_share_exists(ctx, GLOBAL_NAME)) {
-		return smbconf_create_share(ctx, GLOBAL_NAME);
+	char *path, *p;
+	WERROR werr = WERR_OK;
+	struct registry_key *parent_key = NULL;
+	struct registry_key *new_key = NULL;
+	TALLOC_CTX* mem_ctx = talloc_stackframe();
+	enum winreg_CreateAction action;
+
+	path = talloc_strdup(mem_ctx, KEY_SMBCONF);
+	if (path == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
 	}
-	return WERR_OK;
+	p = strrchr(path, '\\');
+	*p = '\0';
+	werr = smbconf_reg_open_path(mem_ctx, ctx, path, REG_KEY_WRITE,
+				     &parent_key);
+
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = reg_deletekey_recursive(mem_ctx, parent_key, p+1);
+
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = reg_createkey(mem_ctx, parent_key, p+1, REG_KEY_WRITE,
+			     &new_key, &action);
+
+done:
+	TALLOC_FREE(mem_ctx);
+	return werr;
 }
+
+/**
+ * get the list of share names defined in the configuration.
+ * registry version.
+ */
+static WERROR smbconf_reg_get_share_names(struct smbconf_ctx *ctx,
+					  TALLOC_CTX *mem_ctx,
+					  uint32_t *num_shares,
+					  char ***share_names)
+{
+	uint32_t count;
+	uint32_t added_count = 0;
+	TALLOC_CTX *tmp_ctx = NULL;
+	WERROR werr = WERR_OK;
+	struct registry_key *key = NULL;
+	char *subkey_name = NULL;
+	char **tmp_share_names = NULL;
+
+	if ((num_shares == NULL) || (share_names == NULL)) {
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	/* make sure "global" is always listed first */
+	if (smbconf_share_exists(ctx, GLOBAL_NAME)) {
+		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
+						   0, GLOBAL_NAME);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+		added_count++;
+	}
+
+	werr = smbconf_reg_open_base_key(tmp_ctx, ctx,
+					 SEC_RIGHTS_ENUM_SUBKEYS, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	for (count = 0;
+	     W_ERROR_IS_OK(werr = reg_enumkey(tmp_ctx, key, count,
+					      &subkey_name, NULL));
+	     count++)
+	{
+		if (strequal(subkey_name, GLOBAL_NAME)) {
+			continue;
+		}
+
+		werr = smbconf_add_string_to_array(tmp_ctx,
+						   &tmp_share_names,
+						   added_count,
+						   subkey_name);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+		added_count++;
+	}
+	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
+		goto done;
+	}
+	werr = WERR_OK;
+
+	*num_shares = added_count;
+	if (added_count > 0) {
+		*share_names = talloc_move(mem_ctx, &tmp_share_names);
+	} else {
+		*share_names = NULL;
+	}
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return werr;
+}
+
+/**
+ * check if a share/service of a given name exists - registry version
+ */
+static bool smbconf_reg_share_exists(struct smbconf_ctx *ctx,
+				     const char *servicename)
+{
+	bool ret = false;
+	WERROR werr = WERR_OK;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	struct registry_key *key = NULL;
+
+	werr = smbconf_reg_open_service_key(mem_ctx, ctx, servicename,
+					    REG_KEY_READ, &key);
+	if (W_ERROR_IS_OK(werr)) {
+		ret = true;
+	}
+
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
+/**
+ * Add a service if it does not already exist - registry version
+ */
+static WERROR smbconf_reg_create_share(struct smbconf_ctx *ctx,
+				       const char *servicename)
+{
+	WERROR werr;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	struct registry_key *key = NULL;
+
+	werr = smbconf_reg_create_service_key(mem_ctx, ctx, servicename, &key);
+
+	TALLOC_FREE(mem_ctx);
+	return werr;
+}
+
+/**
+ * get a definition of a share (service) from configuration.
+ */
+static WERROR smbconf_reg_get_share(struct smbconf_ctx *ctx,
+				    TALLOC_CTX *mem_ctx,
+				    const char *servicename,
+				    uint32_t *num_params,
+				    char ***param_names, char ***param_values)
+{
+	WERROR werr = WERR_OK;
+	struct registry_key *key = NULL;
+
+	werr = smbconf_reg_open_service_key(mem_ctx, ctx, servicename,
+					    REG_KEY_READ, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = smbconf_reg_get_values(mem_ctx, key, num_params,
+				      param_names, param_values);
+
+done:
+	TALLOC_FREE(key);
+	return werr;
+}
+
+/**
+ * delete a service from configuration
+ */
+static WERROR smbconf_reg_delete_share(struct smbconf_ctx *ctx,
+				       const char *servicename)
+{
+	WERROR werr = WERR_OK;
+	struct registry_key *key = NULL;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+
+	werr = smbconf_reg_open_base_key(mem_ctx, ctx, REG_KEY_WRITE, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = reg_deletekey_recursive(key, key, servicename);
+
+done:
+	TALLOC_FREE(mem_ctx);
+	return werr;
+}
+
+/**
+ * set a configuration parameter to the value provided.
+ */
+static WERROR smbconf_reg_set_parameter(struct smbconf_ctx *ctx,
+					const char *service,
+					const char *param,
+					const char *valstr)
+{
+	WERROR werr;
+	struct registry_key *key = NULL;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+
+	werr = smbconf_reg_open_service_key(mem_ctx, ctx, service,
+					    REG_KEY_WRITE, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = smbconf_reg_set_value(key, param, valstr);
+
+done:
+	TALLOC_FREE(mem_ctx);
+	return werr;
+}
+
+/**
+ * get the value of a configuration parameter as a string
+ */
+static WERROR smbconf_reg_get_parameter(struct smbconf_ctx *ctx,
+					TALLOC_CTX *mem_ctx,
+					const char *service,
+					const char *param,
+					char **valstr)
+{
+	WERROR werr = WERR_OK;
+	struct registry_key *key = NULL;
+	struct registry_value *value = NULL;
+
+	werr = smbconf_reg_open_service_key(mem_ctx, ctx, service,
+					    REG_KEY_READ, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	if (!smbconf_value_exists(key, param)) {
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	werr = reg_queryvalue(mem_ctx, key, param, &value);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	*valstr = smbconf_format_registry_value(mem_ctx, value);
+
+	if (*valstr == NULL) {
+		werr = WERR_NOMEM;
+	}
+
+done:
+	TALLOC_FREE(key);
+	TALLOC_FREE(value);
+	return werr;
+}
+
+/**
+ * delete a parameter from configuration
+ */
+static WERROR smbconf_reg_delete_parameter(struct smbconf_ctx *ctx,
+					   const char *service,
+					   const char *param)
+{
+	struct registry_key *key = NULL;
+	WERROR werr = WERR_OK;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+
+	werr = smbconf_reg_open_service_key(mem_ctx, ctx, service,
+					    REG_KEY_ALL, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	if (!smbconf_value_exists(key, param)) {
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	werr = reg_deletevalue(key, param);
+
+done:
+	TALLOC_FREE(mem_ctx);
+	return werr;
+}
+
 
 /**********************************************************************
  *
@@ -523,39 +830,7 @@ bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
  */
 WERROR smbconf_drop(struct smbconf_ctx *ctx)
 {
-	char *path, *p;
-	WERROR werr = WERR_OK;
-	struct registry_key *parent_key = NULL;
-	struct registry_key *new_key = NULL;
-	TALLOC_CTX* mem_ctx = talloc_stackframe();
-	enum winreg_CreateAction action;
-
-	path = talloc_strdup(mem_ctx, KEY_SMBCONF);
-	if (path == NULL) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
-	p = strrchr(path, '\\');
-	*p = '\0';
-	werr = smbconf_reg_open_path(mem_ctx, ctx, path, REG_KEY_WRITE,
-				     &parent_key);
-
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = reg_deletekey_recursive(mem_ctx, parent_key, p+1);
-
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = reg_createkey(mem_ctx, parent_key, p+1, REG_KEY_WRITE,
-			     &new_key, &action);
-
-done:
-	TALLOC_FREE(mem_ctx);
-	return werr;
+	return smbconf_reg_drop(ctx);
 }
 
 /**
@@ -652,74 +927,8 @@ WERROR smbconf_get_share_names(struct smbconf_ctx *ctx,
 			       uint32_t *num_shares,
 			       char ***share_names)
 {
-	uint32_t count;
-	uint32_t added_count = 0;
-	TALLOC_CTX *tmp_ctx = NULL;
-	WERROR werr = WERR_OK;
-	struct registry_key *key = NULL;
-	char *subkey_name = NULL;
-	char **tmp_share_names = NULL;
-
-	if ((num_shares == NULL) || (share_names == NULL)) {
-		werr = WERR_INVALID_PARAM;
-		goto done;
-	}
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
-
-	/* make sure "global" is always listed first */
-	if (smbconf_share_exists(ctx, GLOBAL_NAME)) {
-		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
-						   0, GLOBAL_NAME);
-		if (!W_ERROR_IS_OK(werr)) {
-			goto done;
-		}
-		added_count++;
-	}
-
-	werr = smbconf_reg_open_base_key(tmp_ctx, ctx,
-					 SEC_RIGHTS_ENUM_SUBKEYS, &key);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	for (count = 0;
-	     W_ERROR_IS_OK(werr = reg_enumkey(tmp_ctx, key, count,
-					      &subkey_name, NULL));
-	     count++)
-	{
-		if (strequal(subkey_name, GLOBAL_NAME)) {
-			continue;
-		}
-
-		werr = smbconf_add_string_to_array(tmp_ctx,
-						   &tmp_share_names,
-						   added_count,
-						   subkey_name);
-		if (!W_ERROR_IS_OK(werr)) {
-			goto done;
-		}
-		added_count++;
-	}
-	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
-		goto done;
-	}
-	werr = WERR_OK;
-
-	*num_shares = added_count;
-	if (added_count > 0) {
-		*share_names = talloc_move(mem_ctx, &tmp_share_names);
-	} else {
-		*share_names = NULL;
-	}
-
-done:
-	TALLOC_FREE(tmp_ctx);
-	return werr;
+	return smbconf_reg_get_share_names(ctx, mem_ctx, num_shares,
+					   share_names);
 }
 
 /**
@@ -728,19 +937,7 @@ done:
 bool smbconf_share_exists(struct smbconf_ctx *ctx,
 			  const char *servicename)
 {
-	bool ret = false;
-	WERROR werr = WERR_OK;
-	TALLOC_CTX *mem_ctx = talloc_stackframe();
-	struct registry_key *key = NULL;
-
-	werr = smbconf_reg_open_service_key(mem_ctx, ctx, servicename,
-					    REG_KEY_READ, &key);
-	if (W_ERROR_IS_OK(werr)) {
-		ret = true;
-	}
-
-	TALLOC_FREE(mem_ctx);
-	return ret;
+	return smbconf_reg_share_exists(ctx, servicename);
 }
 
 /**
@@ -749,20 +946,11 @@ bool smbconf_share_exists(struct smbconf_ctx *ctx,
 WERROR smbconf_create_share(struct smbconf_ctx *ctx,
 			    const char *servicename)
 {
-	WERROR werr;
-	TALLOC_CTX *mem_ctx = talloc_stackframe();
-	struct registry_key *key = NULL;
-
 	if (smbconf_share_exists(ctx, servicename)) {
-		werr = WERR_ALREADY_EXISTS;
-		goto done;
+		return WERR_ALREADY_EXISTS;
 	}
 
-	werr = smbconf_reg_create_service_key(mem_ctx, ctx, servicename, &key);
-
-done:
-	TALLOC_FREE(mem_ctx);
-	return werr;
+	return smbconf_reg_create_share(ctx, servicename);
 }
 
 /**
@@ -773,21 +961,8 @@ WERROR smbconf_get_share(struct smbconf_ctx *ctx,
 			 const char *servicename, uint32_t *num_params,
 			 char ***param_names, char ***param_values)
 {
-	WERROR werr = WERR_OK;
-	struct registry_key *key = NULL;
-
-	werr = smbconf_reg_open_service_key(mem_ctx, ctx, servicename,
-					    REG_KEY_READ, &key);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = smbconf_reg_get_values(mem_ctx, key, num_params,
-				      param_names, param_values);
-
-done:
-	TALLOC_FREE(key);
-	return werr;
+	return smbconf_reg_get_share(ctx, mem_ctx, servicename, num_params,
+				     param_names, param_values);
 }
 
 /**
@@ -795,20 +970,7 @@ done:
  */
 WERROR smbconf_delete_share(struct smbconf_ctx *ctx, const char *servicename)
 {
-	WERROR werr = WERR_OK;
-	struct registry_key *key = NULL;
-	TALLOC_CTX *mem_ctx = talloc_stackframe();
-
-	werr = smbconf_reg_open_base_key(mem_ctx, ctx, REG_KEY_WRITE, &key);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = reg_deletekey_recursive(key, key, servicename);
-
-done:
-	TALLOC_FREE(mem_ctx);
-	return werr;
+	return smbconf_reg_delete_share(ctx, servicename);
 }
 
 /**
@@ -819,26 +981,11 @@ WERROR smbconf_set_parameter(struct smbconf_ctx *ctx,
 			     const char *param,
 			     const char *valstr)
 {
-	WERROR werr;
-	struct registry_key *key = NULL;
-	TALLOC_CTX *mem_ctx = talloc_stackframe();
-
 	if (!smbconf_share_exists(ctx, service)) {
-		werr = WERR_NO_SUCH_SERVICE;
-		goto done;
+		return WERR_NO_SUCH_SERVICE;
 	}
 
-	werr = smbconf_reg_open_service_key(mem_ctx, ctx, service,
-					    REG_KEY_WRITE, &key);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = smbconf_reg_set_value(key, param, valstr);
-
-done:
-	TALLOC_FREE(mem_ctx);
-	return werr;
+	return smbconf_reg_set_parameter(ctx, service, param, valstr);
 }
 
 /**
@@ -869,46 +1016,15 @@ WERROR smbconf_get_parameter(struct smbconf_ctx *ctx,
 			     const char *param,
 			     char **valstr)
 {
-	WERROR werr = WERR_OK;
-	struct registry_key *key = NULL;
-	struct registry_value *value = NULL;
-
 	if (valstr == NULL) {
-		werr = WERR_INVALID_PARAM;
-		goto done;
+		return WERR_INVALID_PARAM;
 	}
 
 	if (!smbconf_share_exists(ctx, service)) {
-		werr = WERR_NO_SUCH_SERVICE;
-		goto done;
+		return WERR_NO_SUCH_SERVICE;
 	}
 
-	werr = smbconf_reg_open_service_key(mem_ctx, ctx, service,
-					    REG_KEY_READ, &key);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	if (!smbconf_value_exists(key, param)) {
-		werr = WERR_INVALID_PARAM;
-		goto done;
-	}
-
-	werr = reg_queryvalue(mem_ctx, key, param, &value);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	*valstr = smbconf_format_registry_value(mem_ctx, value);
-
-	if (*valstr == NULL) {
-		werr = WERR_NOMEM;
-	}
-
-done:
-	TALLOC_FREE(key);
-	TALLOC_FREE(value);
-	return werr;
+	return smbconf_reg_get_parameter(ctx, mem_ctx, service, param, valstr);
 }
 
 /**
@@ -938,30 +1054,11 @@ WERROR smbconf_get_global_parameter(struct smbconf_ctx *ctx,
 WERROR smbconf_delete_parameter(struct smbconf_ctx *ctx,
 				const char *service, const char *param)
 {
-	struct registry_key *key = NULL;
-	WERROR werr = WERR_OK;
-	TALLOC_CTX *mem_ctx = talloc_stackframe();
-
 	if (!smbconf_share_exists(ctx, service)) {
 		return WERR_NO_SUCH_SERVICE;
 	}
 
-	werr = smbconf_reg_open_service_key(mem_ctx, ctx, service,
-					    REG_KEY_ALL, &key);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	if (!smbconf_value_exists(key, param)) {
-		werr = WERR_INVALID_PARAM;
-		goto done;
-	}
-
-	werr = reg_deletevalue(key, param);
-
-done:
-	TALLOC_FREE(mem_ctx);
-	return werr;
+	return smbconf_reg_delete_parameter(ctx, service, param);
 }
 
 /**
