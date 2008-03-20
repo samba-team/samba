@@ -26,6 +26,7 @@
 #include "rpc_server/common/common.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
+#include "libcli/security/security.h"
 
 enum handle_types { HTYPE_REGVAL, HTYPE_REGKEY };
 
@@ -120,32 +121,39 @@ static WERROR dcesrv_winreg_CreateKey(struct dcesrv_call_state *dce_call,
 
 	newh = dcesrv_handle_new(dce_call->context, HTYPE_REGKEY);
 
-	/* the security descriptor is optional */
-	if (r->in.secdesc != NULL) {
-		DATA_BLOB sdblob;
-		enum ndr_err_code ndr_err;
-		sdblob.data = r->in.secdesc->sd.data;
-		sdblob.length = r->in.secdesc->sd.len;
-		if (sdblob.data == NULL) {
-			return WERR_INVALID_PARAM;
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	{
+	case SECURITY_SYSTEM:
+	case SECURITY_ADMINISTRATOR:
+		/* the security descriptor is optional */
+		if (r->in.secdesc != NULL) {
+			DATA_BLOB sdblob;
+			enum ndr_err_code ndr_err;
+			sdblob.data = r->in.secdesc->sd.data;
+			sdblob.length = r->in.secdesc->sd.len;
+			if (sdblob.data == NULL) {
+				return WERR_INVALID_PARAM;
+			}
+			ndr_err = ndr_pull_struct_blob_all(&sdblob, mem_ctx, NULL, &sd,
+							   (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return WERR_INVALID_PARAM;
+			}
 		}
-		ndr_err = ndr_pull_struct_blob_all(&sdblob, mem_ctx, NULL, &sd,
-						   (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			return WERR_INVALID_PARAM;
+		
+		error = reg_key_add_name(newh, (struct registry_key *)h->data,
+					 r->in.name.name, NULL, r->in.secdesc?&sd:NULL,
+					 (struct registry_key **)&newh->data);
+		if (W_ERROR_IS_OK(error)) {
+			r->out.new_handle = &newh->wire_handle;
+		} else {
+			talloc_free(newh);
 		}
+		
+		return error;
+	default:
+		return WERR_ACCESS_DENIED;
 	}
-
-	error = reg_key_add_name(newh, (struct registry_key *)h->data,
-				 r->in.name.name, NULL, r->in.secdesc?&sd:NULL,
-				 (struct registry_key **)&newh->data);
-	if (W_ERROR_IS_OK(error)) {
-		r->out.new_handle = &newh->wire_handle;
-	} else {
-		talloc_free(newh);
-	}
-
-	return error;
 }
 
 
@@ -160,7 +168,14 @@ static WERROR dcesrv_winreg_DeleteKey(struct dcesrv_call_state *dce_call,
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
-	return reg_key_del((struct registry_key *)h->data, r->in.key.name);
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	{
+	case SECURITY_SYSTEM:
+	case SECURITY_ADMINISTRATOR:
+		return reg_key_del((struct registry_key *)h->data, r->in.key.name);
+	default:
+		return WERR_ACCESS_DENIED;
+	}
 }
 
 
@@ -176,9 +191,16 @@ static WERROR dcesrv_winreg_DeleteValue(struct dcesrv_call_state *dce_call,
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
-	key = h->data;
-
-	return reg_del_value(key, r->in.value.name);
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	{
+	case SECURITY_SYSTEM:
+	case SECURITY_ADMINISTRATOR:
+		key = h->data;
+		
+		return reg_del_value(key, r->in.value.name);
+	default:
+		return WERR_ACCESS_DENIED;
+	}
 }
 
 
@@ -289,7 +311,14 @@ static WERROR dcesrv_winreg_FlushKey(struct dcesrv_call_state *dce_call,
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
-	return reg_key_flush(h->data);
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	{
+	case SECURITY_SYSTEM:
+	case SECURITY_ADMINISTRATOR:
+		return reg_key_flush(h->data);
+	default:
+		return WERR_ACCESS_DENIED;
+	}
 }
 
 
@@ -342,23 +371,31 @@ static WERROR dcesrv_winreg_OpenKey(struct dcesrv_call_state *dce_call,
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.parent_handle, HTYPE_REGKEY);
 
-	if (r->in.keyname.name && strcmp(r->in.keyname.name, "") == 0) {
-		newh = talloc_reference(dce_call->context, h);
-		result = WERR_OK;
-	} else {
-		newh = dcesrv_handle_new(dce_call->context, HTYPE_REGKEY);
-		result = reg_open_key(newh, (struct registry_key *)h->data,
-				      r->in.keyname.name,
-				      (struct registry_key **)&newh->data);
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	{
+	case SECURITY_SYSTEM:
+	case SECURITY_ADMINISTRATOR:
+	case SECURITY_USER:
+		if (r->in.keyname.name && strcmp(r->in.keyname.name, "") == 0) {
+			newh = talloc_reference(dce_call->context, h);
+			result = WERR_OK;
+		} else {
+			newh = dcesrv_handle_new(dce_call->context, HTYPE_REGKEY);
+			result = reg_open_key(newh, (struct registry_key *)h->data,
+					      r->in.keyname.name,
+					      (struct registry_key **)&newh->data);
+		}
+		
+		if (W_ERROR_IS_OK(result)) {
+			r->out.handle = &newh->wire_handle;
+		} else {
+			talloc_free(newh);
+		}
+		return result;
+	default:
+		return WERR_ACCESS_DENIED;
 	}
 
-	if (W_ERROR_IS_OK(result)) {
-		r->out.handle = &newh->wire_handle;
-	} else {
-		talloc_free(newh);
-	}
-
-	return result;
 }
 
 
@@ -376,17 +413,25 @@ static WERROR dcesrv_winreg_QueryInfoKey(struct dcesrv_call_state *dce_call,
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
-	k = h->data;
-
-	ret = reg_key_get_info(mem_ctx, k, &classname, r->out.num_subkeys,
-			       r->out.num_values, r->out.last_changed_time,
-			       r->out.max_subkeylen, r->out.max_valnamelen, 
-			       r->out.max_valbufsize);
-
-	if (r->out.classname != NULL)
-		r->out.classname->name = classname;
-
-	return ret;
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	{
+	case SECURITY_SYSTEM:
+	case SECURITY_ADMINISTRATOR:
+	case SECURITY_USER:
+		k = h->data;
+		
+		ret = reg_key_get_info(mem_ctx, k, &classname, r->out.num_subkeys,
+				       r->out.num_values, r->out.last_changed_time,
+				       r->out.max_subkeylen, r->out.max_valnamelen, 
+				       r->out.max_valbufsize);
+		
+		if (r->out.classname != NULL)
+			r->out.classname->name = classname;
+		
+		return ret;
+	default:
+		return WERR_ACCESS_DENIED;
+	}
 }
 
 
@@ -405,35 +450,43 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
-	key = h->data;
-
-	result = reg_key_get_value_by_name(mem_ctx, key, r->in.value_name.name,
-					   &value_type, &value_data);
-
-	if (!W_ERROR_IS_OK(result)) {
-		return result;
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	{
+	case SECURITY_SYSTEM:
+	case SECURITY_ADMINISTRATOR:
+	case SECURITY_USER:
+		key = h->data;
+		
+		result = reg_key_get_value_by_name(mem_ctx, key, r->in.value_name.name,
+						   &value_type, &value_data);
+		
+		if (!W_ERROR_IS_OK(result)) {
+			return result;
+		}
+		
+		/* Just asking for the size of the buffer */
+		r->out.type = talloc(mem_ctx, uint32_t);
+		if (!r->out.type) {
+			return WERR_NOMEM;
+		}
+		*r->out.type = value_type;
+		r->out.length = talloc(mem_ctx, uint32_t);
+		if (!r->out.length) {
+			return WERR_NOMEM;
+		}
+		*r->out.length = value_data.length;
+		if (r->in.data == NULL) {
+			r->out.size = talloc(mem_ctx, uint32_t);
+			*r->out.size = value_data.length;
+		} else {
+			r->out.size = r->in.size;
+			r->out.data = value_data.data;
+		}
+		
+		return WERR_OK;
+	default:
+		return WERR_ACCESS_DENIED;
 	}
-
-	/* Just asking for the size of the buffer */
-	r->out.type = talloc(mem_ctx, uint32_t);
-	if (!r->out.type) {
-		return WERR_NOMEM;
-	}
-	*r->out.type = value_type;
-	r->out.length = talloc(mem_ctx, uint32_t);
-	if (!r->out.length) {
-		return WERR_NOMEM;
-	}
-	*r->out.length = value_data.length;
-	if (r->in.data == NULL) {
-		r->out.size = talloc(mem_ctx, uint32_t);
-		*r->out.size = value_data.length;
-	} else {
-		r->out.size = r->in.size;
-		r->out.data = value_data.data;
-	}
-
-	return WERR_OK;
 }
 
 
@@ -497,11 +550,17 @@ static WERROR dcesrv_winreg_SetValue(struct dcesrv_call_state *dce_call,
 
 	key = h->data;
 
-	data.data = r->in.data;
-	data.length = r->in.size;
-	result = reg_val_set(key, r->in.name.name, r->in.type, data);
-
-	return result;
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	{
+	case SECURITY_SYSTEM:
+	case SECURITY_ADMINISTRATOR:
+		data.data = r->in.data;
+		data.length = r->in.size;
+		result = reg_val_set(key, r->in.name.name, r->in.type, data);
+		return result;
+	default:
+		return WERR_ACCESS_DENIED;
+	}
 }
 
 

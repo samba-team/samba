@@ -99,8 +99,21 @@ static NTSTATUS dcesrv_lsa_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	int ret;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, DCESRV_HANDLE_ANY);
+
 	if (h->wire_handle.handle_type == LSA_HANDLE_SECRET) {
 		struct lsa_secret_state *secret_state = h->data;
+
+		/* Ensure user is permitted to delete this... */
+		switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+		{
+		case SECURITY_SYSTEM:
+		case SECURITY_ADMINISTRATOR:
+			break;
+		default:
+			/* Users and annonymous are not allowed delete things */
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
 		ret = ldb_delete(secret_state->sam_ldb, 
 				 secret_state->secret_dn);
 		talloc_free(h);
@@ -446,6 +459,8 @@ static NTSTATUS dcesrv_lsa_ClearAuditLog(struct dcesrv_call_state *dce_call, TAL
 
 /* 
   lsa_CreateAccount 
+
+  This call does not seem to have any long-term effects, hence no database operations
 */
 static NTSTATUS dcesrv_lsa_CreateAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct lsa_CreateAccount *r)
@@ -1673,6 +1688,16 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
 	ZERO_STRUCTP(r->out.sec_handle);
 	
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	{
+	case SECURITY_SYSTEM:
+	case SECURITY_ADMINISTRATOR:
+		break;
+	default:
+		/* Users and annonymous are not allowed create secrets */
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	policy_state = policy_handle->data;
 
 	if (!r->in.name.string) {
@@ -1819,6 +1844,16 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	{
+	case SECURITY_SYSTEM:
+	case SECURITY_ADMINISTRATOR:
+		break;
+	default:
+		/* Users and annonymous are not allowed to access secrets */
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	secret_state = talloc(mem_ctx, struct lsa_secret_state);
 	if (!secret_state) {
 		return NT_STATUS_NO_MEMORY;
@@ -1850,10 +1885,10 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 		}
 	
 	} else {
+		secret_state->global = false;
 		secret_state->sam_ldb = talloc_reference(secret_state, 
 				 secrets_db_connect(mem_ctx, dce_call->conn->dce_ctx->lp_ctx));
 
-		secret_state->global = false;
 		name = r->in.name.string;
 		if (strlen(name) < 1) {
 			return NT_STATUS_INVALID_PARAMETER;
@@ -2084,6 +2119,17 @@ static NTSTATUS dcesrv_lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLO
 	NTSTATUS nt_status;
 
 	DCESRV_PULL_HANDLE(h, r->in.sec_handle, LSA_HANDLE_SECRET);
+
+	/* Ensure user is permitted to read this... */
+	switch (security_session_user_level(dce_call->conn->auth_state.session_info))
+	{
+	case SECURITY_SYSTEM:
+	case SECURITY_ADMINISTRATOR:
+		break;
+	default:
+		/* Users and annonymous are not allowed to read secrets */
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	secret_state = h->data;
 

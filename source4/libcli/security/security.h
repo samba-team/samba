@@ -18,4 +18,12 @@
 */
 
 #include "librpc/gen_ndr/security.h"
+
+enum security_user_level {
+	SECURITY_ANONYMOUS,
+	SECURITY_USER,
+	SECURITY_ADMINISTRATOR,
+	SECURITY_SYSTEM
+};
+
 #include "libcli/security/proto.h"
