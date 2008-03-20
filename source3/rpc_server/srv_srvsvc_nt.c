@@ -1075,6 +1075,7 @@ WERROR _srvsvc_NetFileEnum(pipes_struct *p,
 	ctx = talloc_tos();
 	ctr3 = r->in.info_ctr->ctr.ctr3;
 	if (!ctr3) {
+		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
 
