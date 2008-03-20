@@ -19,6 +19,43 @@
 #include "includes.h"
 #include "utils/net.h"
 
+
+struct svc_state_msg {
+	uint32 flag;
+	const char *message;
+};
+
+static struct svc_state_msg state_msg_table[] = {
+	{ SVCCTL_STOPPED,            "stopped" },
+	{ SVCCTL_START_PENDING,      "start pending" },
+	{ SVCCTL_STOP_PENDING,       "stop pending" },
+	{ SVCCTL_RUNNING,            "running" },
+	{ SVCCTL_CONTINUE_PENDING,   "resume pending" },
+	{ SVCCTL_PAUSE_PENDING,      "pause pending" },
+	{ SVCCTL_PAUSED,             "paused" },
+	{ 0,                          NULL }
+};
+
+
+/********************************************************************
+********************************************************************/
+const char *svc_status_string( uint32 state )
+{
+	fstring msg;
+	int i;
+
+	fstr_sprintf( msg, "Unknown State [%d]", state );
+
+	for ( i=0; state_msg_table[i].message; i++ ) {
+		if ( state_msg_table[i].flag == state ) {
+			fstrcpy( msg, state_msg_table[i].message );
+			break;
+		}
+	}
+
+	return talloc_strdup(talloc_tos(), msg);
+}
+
 /********************************************************************
 ********************************************************************/
 
