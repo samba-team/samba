@@ -318,21 +318,24 @@ bool init_registry_data(void)
  Open the registry database
  ***********************************************************************/
  
-bool regdb_init( void )
+bool regdb_init(void)
 {
 	const char *vstring = "INFO/version";
 	uint32 vers_id;
 
-	if ( regdb ) {
-		DEBUG(10,("regdb_init: incrementing refcount (%d)\n", regdb_refcount));
+	if (regdb) {
+		DEBUG(10, ("regdb_init: incrementing refcount (%d)\n",
+			  regdb_refcount));
 		regdb_refcount++;
 		return true;
 	}
 
-	regdb = db_open(NULL, state_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR, 0600);
+	regdb = db_open(NULL, state_path("registry.tdb"), 0, REG_TDB_FLAGS,
+			O_RDWR, 0600);
 	if (!regdb) {
-		regdb = db_open(NULL, state_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR|O_CREAT, 0600);
-		if ( !regdb ) {
+		regdb = db_open(NULL, state_path("registry.tdb"), 0,
+				REG_TDB_FLAGS, O_RDWR|O_CREAT, 0600);
+		if (!regdb) {
 			DEBUG(0,("regdb_init: Failed to open registry %s (%s)\n",
 				state_path("registry.tdb"), strerror(errno) ));
 			return false;
