@@ -352,6 +352,14 @@ bool regdb_init(void)
 		/* any upgrade code here if needed */
 		DEBUG(10, ("regdb_init: got INFO/version = %d != %d\n",
 			   vers_id, REGVER_V1));
+		if (dbwrap_store_int32(regdb, vstring, REGVER_V1) != 0) {
+			DEBUG(0, ("regdb_init: error storing %s = %d\n",
+				  vstring, REGVER_V1));
+			return false;
+		} else {
+			DEBUG(10, ("regdb_init: stored %s = %d\n",
+				  vstring, REGVER_V1));
+		}
 	}
 
 	return true;
