@@ -1322,6 +1322,8 @@ bool torture_samba3_sessionkey(struct torture_context *torture)
 		goto done;
 	}
 
+	cli_credentials_set_workstation(anon_creds, wks_name, CRED_SPECIFIED);
+
 	ret = true;
 
 	if (!torture_setting_bool(torture, "samba3", false)) {
