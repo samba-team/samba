@@ -661,7 +661,7 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
 					      struct policy_handle *service,
 					      uint32_t state,
-					      struct ENUM_SERVICE_STATUS *service_status,
+					      uint8_t *service_status,
 					      uint32_t buf_size,
 					      uint32_t *bytes_needed,
 					      uint32_t *services_returned,
@@ -699,9 +699,7 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (service_status && r.out.service_status) {
-		*service_status = *r.out.service_status;
-	}
+	memcpy(service_status, r.out.service_status, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
 	*services_returned = *r.out.services_returned;
 
