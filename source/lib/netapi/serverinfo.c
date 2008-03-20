@@ -191,7 +191,7 @@ static WERROR NetServerSetInfoLocal_1005(struct libnetapi_ctx *ctx,
 		return WERR_NOT_SUPPORTED;
 	}
 
-	werr = smbconf_open(ctx, &conf_ctx);
+	werr = smbconf_init(ctx, &conf_ctx);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
