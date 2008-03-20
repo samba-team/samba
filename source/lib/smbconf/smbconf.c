@@ -964,6 +964,10 @@ WERROR smbconf_get_share(struct smbconf_ctx *ctx,
 			 const char *servicename, uint32_t *num_params,
 			 char ***param_names, char ***param_values)
 {
+	if (!smbconf_share_exists(ctx, servicename)) {
+		return WERR_NO_SUCH_SERVICE;
+	}
+
 	return smbconf_reg_get_share(ctx, mem_ctx, servicename, num_params,
 				     param_names, param_values);
 }
