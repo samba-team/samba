@@ -274,13 +274,13 @@ struct svcctl_EnumDependentServicesW {
 	struct {
 		struct policy_handle *service;/* [ref] */
 		uint32_t state;
-		uint32_t buf_size;
+		uint32_t buf_size;/* [range(0,0x40000)] */
 	} in;
 
 	struct {
-		struct ENUM_SERVICE_STATUS *service_status;/* [unique] */
-		uint32_t *bytes_needed;/* [ref] */
-		uint32_t *services_returned;/* [ref] */
+		uint8_t *service_status;/* [ref,size_is(buf_size)] */
+		uint32_t *bytes_needed;/* [ref,range(0,0x40000)] */
+		uint32_t *services_returned;/* [ref,range(0,0x40000)] */
 		WERROR result;
 	} out;
 
