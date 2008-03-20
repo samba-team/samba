@@ -3863,7 +3863,8 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
  set_user_info_pw
  ********************************************************************/
 
-static bool set_user_info_pw(uint8 *pass, struct samu *pwd)
+static bool set_user_info_pw(uint8 *pass, struct samu *pwd,
+			     int level)
 {
 	uint32 len = 0;
 	char *plaintext_buf = NULL;
@@ -3925,8 +3926,20 @@ static bool set_user_info_pw(uint8 *pass, struct samu *pwd)
 
 	memset(plaintext_buf, '\0', strlen(plaintext_buf));
 
-	/* restore last set time as this is an admin change, not a user pw change */
-	pdb_set_pass_last_set_time (pwd, last_set_time, last_set_state);
+	/*
+	 * A level 25 change does reset the pwdlastset field, a level 24
+	 * change does not. I know this is probably not the full story, but
+	 * it is needed to make XP join LDAP correctly, without it the later
+	 * auth2 check can fail with PWD_MUST_CHANGE.
+	 */
+	if (level != 25) {
+		/*
+		 * restore last set time as this is an admin change, not a
+		 * user pw change
+		 */
+		pdb_set_pass_last_set_time (pwd, last_set_time,
+					    last_set_state);
+	}
 
 	DEBUG(5,("set_user_info_pw: pdb_update_pwd()\n"));
 
@@ -4147,7 +4160,8 @@ static NTSTATUS samr_SetUserInfo_internal(const char *fn_name,
 
 			dump_data(100, info->info24.password.data, 516);
 
-			if (!set_user_info_pw(info->info24.password.data, pwd)) {
+			if (!set_user_info_pw(info->info24.password.data, pwd,
+					      switch_value)) {
 				status = NT_STATUS_ACCESS_DENIED;
 			}
 			break;
@@ -4166,7 +4180,8 @@ static NTSTATUS samr_SetUserInfo_internal(const char *fn_name,
 			if (!NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
-			if (!set_user_info_pw(info->info25.password.data, pwd)) {
+			if (!set_user_info_pw(info->info25.password.data, pwd,
+					      switch_value)) {
 				status = NT_STATUS_ACCESS_DENIED;
 			}
 			break;
@@ -4180,7 +4195,8 @@ static NTSTATUS samr_SetUserInfo_internal(const char *fn_name,
 
 			dump_data(100, info->info26.password.data, 516);
 
-			if (!set_user_info_pw(info->info26.password.data, pwd)) {
+			if (!set_user_info_pw(info->info26.password.data, pwd,
+					      switch_value)) {
 				status = NT_STATUS_ACCESS_DENIED;
 			}
 			break;
