@@ -74,6 +74,13 @@ bool init_registry( void )
 		goto fail;
 	}
 
+	/* setup the necessary keys and values */
+
+	if ( !init_registry_data() ) {
+		DEBUG(0,("regdb_init: Failed to initialize data in registry!\n"));
+		return false;
+	}
+
 	/* build the cache tree of registry hooks */
 	
 	reghook_cache_init();

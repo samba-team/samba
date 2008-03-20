@@ -175,7 +175,7 @@ fail:
  * create each component key of the specified path,
  * wrapped in one db transaction.
  */
-static bool init_registry_key(const char *add_path)
+bool init_registry_key(const char *add_path)
 {
 	if (regdb->transaction_start(regdb) == -1) {
 		DEBUG(0, ("init_registry_key: transaction_start failed\n"));
@@ -205,7 +205,7 @@ fail:
  Open the registry data in the tdb
  ***********************************************************************/
 
-static bool init_registry_data(void)
+bool init_registry_data(void)
 {
 	TALLOC_CTX *frame = NULL;
 	REGVAL_CTR *values;
@@ -341,13 +341,6 @@ bool regdb_init( void )
 		/* any upgrade code here if needed */
 		DEBUG(10, ("regdb_init: got INFO/version = %d != %d\n",
 			   vers_id, REGVER_V1));
-	}
-
-	/* always setup the necessary keys and values */
-
-	if ( !init_registry_data() ) {
-		DEBUG(0,("regdb_init: Failed to initialize data in registry!\n"));
-		return false;
 	}
 
 	return true;
