@@ -683,6 +683,7 @@ static bool join3(struct smbcli_state *cli,
 	struct dcerpc_pipe *samr_pipe;
 	struct policy_handle *wks_handle;
 	bool ret = false;
+	NTTIME last_password_change;
 
 	if ((mem_ctx = talloc_init("join3")) == NULL) {
 		d_printf("talloc_init failed\n");
@@ -700,6 +701,22 @@ static bool join3(struct smbcli_state *cli,
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("get_wks_handle failed: %s\n", nt_errstr(status));
 		goto done;
+	}
+
+	{
+		struct samr_QueryUserInfo q;
+
+		q.in.user_handle = wks_handle;
+		q.in.level = 21;
+
+		status = dcerpc_samr_QueryUserInfo(samr_pipe, mem_ctx, &q);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("(%s) QueryUserInfo failed: %s\n",
+				  __location__, nt_errstr(status));
+			goto done;
+		}
+
+		last_password_change = q.out.info->info21.last_password_change;
 	}
 
 	cli_credentials_set_domain(wks_creds, dom_name, CRED_SPECIFIED);
@@ -792,6 +809,39 @@ static bool join3(struct smbcli_state *cli,
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("samr_SetUserInfo(16) failed\n");
 			goto done;
+		}
+	}
+
+	{
+		struct samr_QueryUserInfo q;
+
+		q.in.user_handle = wks_handle;
+		q.in.level = 21;
+
+		status = dcerpc_samr_QueryUserInfo(samr_pipe, mem_ctx, &q);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("(%s) QueryUserInfo failed: %s\n",
+				  __location__, nt_errstr(status));
+			goto done;
+		}
+
+		if (use_level25) {
+			if (last_password_change
+			    == q.out.info->info21.last_password_change) {
+				d_printf("(%s) last_password_change unchanged "
+					 "during join, level25 must change "
+					 "it\n", __location__);
+				goto done;
+			}
+		}
+		else {
+			if (last_password_change
+			    != q.out.info->info21.last_password_change) {
+				d_printf("(%s) last_password_change changed "
+					 "during join, level24 doesn't "
+					 "change it\n", __location__);
+				goto done;
+			}
 		}
 	}
 
