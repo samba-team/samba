@@ -57,26 +57,6 @@ static WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
-static WERROR smbconf_reg_initialize(struct smbconf_ctx *ctx)
-{
-	WERROR werr = WERR_OK;
-
-	if (!registry_init_smbconf()) {
-		werr = WERR_REG_IO_FAILURE;
-		goto done;
-	}
-
-	werr = ntstatus_to_werror(registry_create_admin_token(ctx,
-							      &(ctx->token)));
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(1, ("Error creating admin token\n"));
-		goto done;
-	}
-
-done:
-	return werr;
-}
-
 /**
  * Open a registry key specified by "path"
  */
@@ -432,6 +412,26 @@ static WERROR smbconf_global_check(struct smbconf_ctx *ctx)
  * smbconf operations: registry implementations
  *
  **********************************************************************/
+
+static WERROR smbconf_reg_initialize(struct smbconf_ctx *ctx)
+{
+	WERROR werr = WERR_OK;
+
+	if (!registry_init_smbconf()) {
+		werr = WERR_REG_IO_FAILURE;
+		goto done;
+	}
+
+	werr = ntstatus_to_werror(registry_create_admin_token(ctx,
+							      &(ctx->token)));
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("Error creating admin token\n"));
+		goto done;
+	}
+
+done:
+	return werr;
+}
 
 /**
  * Get the change sequence number of the given service/parameter.
