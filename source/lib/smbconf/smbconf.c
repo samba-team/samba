@@ -749,7 +749,7 @@ done:
 
 /**********************************************************************
  *
- * The actual net conf api functions, that are exported.
+ * The actual libsmbconf API functions that are exported.
  *
  **********************************************************************/
 
