@@ -977,6 +977,10 @@ WERROR smbconf_get_share(struct smbconf_ctx *ctx,
  */
 WERROR smbconf_delete_share(struct smbconf_ctx *ctx, const char *servicename)
 {
+	if (!smbconf_share_exists(ctx, servicename)) {
+		return WERR_NO_SUCH_SERVICE;
+	}
+
 	return smbconf_reg_delete_share(ctx, servicename);
 }
 
