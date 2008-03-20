@@ -1191,6 +1191,7 @@ static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
 	size_t len;
 	bool changed_old_addrs = false;
 	bool become_owner = true;
+	const char *local_owner = partner->service->wins_db->local_owner;
 
 	merge = talloc(mem_ctx, struct winsdb_record);
 	NT_STATUS_HAVE_NO_MEMORY(merge);
@@ -1265,7 +1266,7 @@ static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
 	}
 
 	/* if we're the owner of the old record, we'll be the owner of the new one too */
-	if (strcmp(rec->wins_owner, partner->service->wins_db->local_owner)==0) {
+	if (strcmp(rec->wins_owner, local_owner)==0) {
 		become_owner = true;
 	}
 
