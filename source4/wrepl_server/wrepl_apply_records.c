@@ -1283,7 +1283,25 @@ static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
 	 * will be owner of the merge result, otherwise we take the ownership
 	 */
 	if (become_owner) {
+		time_t lh = 0;
+
 		modify_flags = WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP;
+
+		/*
+		 * if we're the owner, the expire time becomes the highest
+		 * expire time of owned addresses
+		 */
+		len = winsdb_addr_list_length(merge->addresses);
+
+		for (i=0; i < len; i++) {
+			if (strcmp(merge->addresses[i]->wins_owner, local_owner)==0) {
+				lh = MAX(lh, merge->addresses[i]->expire_time);
+			}
+		}
+
+		if (lh != 0) {
+			merge->expire_time = lh;
+		}
 	}
 
 	ret = winsdb_modify(partner->service->wins_db, merge, modify_flags);
