@@ -79,22 +79,106 @@ static struct builtin_regkey_value builtin_registry_values[] = {
 	{ NULL, NULL, 0, { NULL } }
 };
 
+/**
+ * Initialize a key in the registry:
+ * create each component key of the specified path.
+ */
+static bool init_registry_key_internal(const char *add_path)
+{
+	bool ret = false;
+	TALLOC_CTX *frame = talloc_stackframe();
+	char *path = NULL;
+	char *base = NULL;
+	char *remaining = NULL;
+	char *keyname;
+	char *subkeyname;
+	REGSUBKEY_CTR *subkeys;
+	const char *p, *p2;
+
+	DEBUG(6, ("init_registry_key: Adding [%s]\n", add_path));
+
+	path = talloc_strdup(frame, add_path);
+	base = talloc_strdup(frame, "");
+	if (!path || !base) {
+		goto fail;
+	}
+	p = path;
+
+	while (next_token_talloc(frame, &p, &keyname, "\\")) {
+
+		/* build up the registry path from the components */
+
+		if (*base) {
+			base = talloc_asprintf(frame, "%s\\", base);
+			if (!base) {
+				goto fail;
+			}
+		}
+		base = talloc_asprintf_append(base, "%s", keyname);
+		if (!base) {
+			goto fail;
+		}
+
+		/* get the immediate subkeyname (if we have one ) */
+
+		subkeyname = talloc_strdup(frame, "");
+		if (!subkeyname) {
+			goto fail;
+		}
+		if (*p) {
+			remaining = talloc_strdup(frame, p);
+			if (!remaining) {
+				goto fail;
+			}
+			p2 = remaining;
+
+			if (!next_token_talloc(frame, &p2,
+						&subkeyname, "\\"))
+			{
+				subkeyname = talloc_strdup(frame,p2);
+				if (!subkeyname) {
+					goto fail;
+				}
+			}
+		}
+
+		DEBUG(10,("init_registry_key: Storing key [%s] with "
+			  "subkey [%s]\n", base,
+			  *subkeyname ? subkeyname : "NULL"));
+
+		/* we don't really care if the lookup succeeds or not
+		 * since we are about to update the record.
+		 * We just want any subkeys already present */
+
+		if (!(subkeys = TALLOC_ZERO_P(frame, REGSUBKEY_CTR))) {
+			DEBUG(0,("talloc() failure!\n"));
+			goto fail;
+		}
+
+		regdb_fetch_keys(base, subkeys);
+		if (*subkeyname) {
+			regsubkey_ctr_addkey( subkeys, subkeyname);
+		}
+		if (!regdb_store_keys( base, subkeys)) {
+			goto fail;
+		}
+	}
+
+	ret = true;
+fail:
+	TALLOC_FREE(frame);
+	return ret;
+}
+
 /***********************************************************************
  Open the registry data in the tdb
  ***********************************************************************/
 
 static bool init_registry_data(void)
 {
-	char *path = NULL;
-	char *base = NULL;
-	char *remaining = NULL;
 	TALLOC_CTX *frame = NULL;
-	char *keyname;
-	char *subkeyname;
-	REGSUBKEY_CTR *subkeys;
 	REGVAL_CTR *values;
 	int i;
-	const char *p, *p2;
 	UNISTR2 data;
 
 	/*
@@ -114,80 +198,9 @@ static bool init_registry_data(void)
 	/* loop over all of the predefined paths and add each component */
 
 	for (i=0; builtin_registry_paths[i] != NULL; i++) {
-
-		frame = talloc_stackframe();
-
-		DEBUG(6, ("init_registry_data: Adding [%s]\n",
-			  builtin_registry_paths[i]));
-
-		path = talloc_strdup(frame, builtin_registry_paths[i]);
-		base = talloc_strdup(frame, "");
-		if (!path || !base) {
+		if (!init_registry_key_internal(builtin_registry_paths[i])) {
 			goto fail;
 		}
-		p = path;
-
-		while (next_token_talloc(frame, &p, &keyname, "\\")) {
-
-			/* build up the registry path from the components */
-
-			if (*base) {
-				base = talloc_asprintf(frame, "%s\\", base);
-				if (!base) {
-					goto fail;
-				}
-			}
-			base = talloc_asprintf_append(base, "%s", keyname);
-			if (!base) {
-				goto fail;
-			}
-
-			/* get the immediate subkeyname (if we have one ) */
-
-			subkeyname = talloc_strdup(frame, "");
-			if (!subkeyname) {
-				goto fail;
-			}
-			if (*p) {
-				remaining = talloc_strdup(frame, p);
-				if (!remaining) {
-					goto fail;
-				}
-				p2 = remaining;
-
-				if (!next_token_talloc(frame, &p2,
-							&subkeyname, "\\"))
-				{
-					subkeyname = talloc_strdup(frame,p2);
-					if (!subkeyname) {
-						goto fail;
-					}
-				}
-			}
-
-			DEBUG(10,("init_registry_data: Storing key [%s] with "
-				  "subkey [%s]\n", base,
-				  *subkeyname ? subkeyname : "NULL"));
-
-			/* we don't really care if the lookup succeeds or not
-			 * since we are about to update the record.
-			 * We just want any subkeys already present */
-
-			if (!(subkeys = TALLOC_ZERO_P(frame, REGSUBKEY_CTR))) {
-				DEBUG(0,("talloc() failure!\n"));
-				goto fail;
-			}
-
-			regdb_fetch_keys(base, subkeys);
-			if (*subkeyname) {
-				regsubkey_ctr_addkey( subkeys, subkeyname);
-			}
-			if (!regdb_store_keys( base, subkeys)) {
-				goto fail;
-			}
-		}
-
-		TALLOC_FREE(frame);
 	}
 
 	/* loop over all of the predefined values and add each component */
