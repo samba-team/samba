@@ -1531,7 +1531,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		if (doencrypt) {
 			lm_resp = data_blob(p, passlen1);
 			nt_resp = data_blob(p+passlen1, passlen2);
-		} else {
+		} else if (lp_security() != SEC_SHARE) {
 			char *pass = NULL;
 			bool unic= smb_flag2 & FLAGS2_UNICODE_STRINGS;
 
