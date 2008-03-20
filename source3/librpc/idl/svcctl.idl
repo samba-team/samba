@@ -205,10 +205,10 @@
 	WERROR svcctl_EnumDependentServicesW(
 		[in,ref] policy_handle *service,
 		[in] uint32 state,
-		[out,unique] ENUM_SERVICE_STATUS *service_status,
-		[in] uint32 buf_size,
-		[out,ref] uint32 *bytes_needed,
-		[out,ref] uint32 *services_returned
+		[out,ref,size_is(buf_size)] uint8 *service_status,
+		[in,range(0,0x40000)] uint32 buf_size,
+		[out,ref,range(0,0x40000)] uint32 *bytes_needed,
+		[out,ref,range(0,0x40000)] uint32 *services_returned
 	);
 
 	/*****************/
