@@ -432,6 +432,14 @@ static void smbconf_reg_get_csn(struct smbconf_ctx *ctx,
 	csn->csn = (uint64_t)regdb_get_seqnum();
 }
 
+static WERROR smbconf_global_check(struct smbconf_ctx *ctx)
+{
+	if (!smbconf_share_exists(ctx, GLOBAL_NAME)) {
+		return smbconf_create_share(ctx, GLOBAL_NAME);
+	}
+	return WERR_OK;
+}
+
 /**********************************************************************
  *
  * The actual net conf api functions, that are exported.
@@ -844,15 +852,11 @@ WERROR smbconf_set_global_parameter(struct smbconf_ctx *ctx,
 {
 	WERROR werr;
 
-	if (!smbconf_share_exists(ctx, GLOBAL_NAME)) {
-		werr = smbconf_create_share(ctx, GLOBAL_NAME);
-		if (!W_ERROR_IS_OK(werr)) {
-			goto done;
-		}
+	werr = smbconf_global_check(ctx);
+	if (W_ERROR_IS_OK(werr)) {
+		werr = smbconf_set_parameter(ctx, GLOBAL_NAME, param, val);
 	}
-	werr = smbconf_set_parameter(ctx, GLOBAL_NAME, param, val);
 
-done:
 	return werr;
 }
 
@@ -919,15 +923,12 @@ WERROR smbconf_get_global_parameter(struct smbconf_ctx *ctx,
 {
 	WERROR werr;
 
-	if (!smbconf_share_exists(ctx, GLOBAL_NAME)) {
-		werr = smbconf_create_share(ctx, GLOBAL_NAME);
-		if (!W_ERROR_IS_OK(werr)) {
-			goto done;
-		}
+	werr = smbconf_global_check(ctx);
+	if (W_ERROR_IS_OK(werr)) {
+		werr = smbconf_get_parameter(ctx, mem_ctx, GLOBAL_NAME, param,
+					     valstr);
 	}
-	werr = smbconf_get_parameter(ctx, mem_ctx, GLOBAL_NAME, param, valstr);
 
-done:
 	return werr;
 }
 
@@ -973,14 +974,10 @@ WERROR smbconf_delete_global_parameter(struct smbconf_ctx *ctx,
 {
 	WERROR werr;
 
-	if (!smbconf_share_exists(ctx, GLOBAL_NAME)) {
-		werr = smbconf_create_share(ctx, GLOBAL_NAME);
-		if (!W_ERROR_IS_OK(werr)) {
-			goto done;
-		}
+	werr = smbconf_global_check(ctx);
+	if (W_ERROR_IS_OK(werr)) {
+		werr = smbconf_delete_parameter(ctx, GLOBAL_NAME, param);
 	}
-	werr = smbconf_delete_parameter(ctx, GLOBAL_NAME, param);
 
-done:
 	return werr;
 }
