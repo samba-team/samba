@@ -200,7 +200,7 @@ static WERROR NetServerSetInfoLocal_1005(struct libnetapi_ctx *ctx,
 					    info1005->comment);
 
  done:
-	smbconf_close(conf_ctx);
+	smbconf_shutdown(conf_ctx);
 	return werr;
 }
 

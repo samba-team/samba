@@ -792,7 +792,7 @@ struct smbconf_ops smbconf_ops_reg = {
  * that should be passed around in subsequent calls to the other
  * smbconf functions.
  *
- * After the work with the configuration is completed, smbconf_close()
+ * After the work with the configuration is completed, smbconf_shutdown()
  * should be called.
  */
 WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx)
@@ -829,7 +829,7 @@ fail:
 /**
  * Close the configuration.
  */
-void smbconf_close(struct smbconf_ctx *ctx)
+void smbconf_shutdown(struct smbconf_ctx *ctx)
 {
 	/* this also closes the registry (by destructor): */
 	TALLOC_FREE(ctx);
