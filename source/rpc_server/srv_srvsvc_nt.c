@@ -708,40 +708,49 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
  fill in a sess info level 0 structure.
  ********************************************************************/
 
-static void init_srv_sess_info_0(pipes_struct *p, SRV_SESS_INFO_0 *ss0, uint32 *snum, uint32 *stot)
+static WERROR init_srv_sess_info_0(pipes_struct *p,
+				   struct srvsvc_NetSessCtr0 *ctr0,
+				   uint32_t *resume_handle_p,
+				   uint32_t *total_entries)
 {
 	struct sessionid *session_list;
-	uint32 num_entries = 0;
-	(*stot) = list_sessions(p->mem_ctx, &session_list);
+	uint32_t num_entries = 0;
+	uint32_t resume_handle = resume_handle_p ? *resume_handle_p : 0;
+	*total_entries = list_sessions(p->mem_ctx, &session_list);
 
-	if (ss0 == NULL) {
-		if (snum) {
-			(*snum) = 0;
+	DEBUG(5,("init_srv_sess_info_0\n"));
+
+	if (ctr0 == NULL) {
+		if (resume_handle_p) {
+			*resume_handle_p = 0;
 		}
-		return;
+		return WERR_OK;
 	}
 
-	DEBUG(5,("init_srv_sess_0_ss0\n"));
+	for (; resume_handle < *total_entries && num_entries < MAX_SESS_ENTRIES; resume_handle++) {
 
-	if (snum) {
-		for (; (*snum) < (*stot) && num_entries < MAX_SESS_ENTRIES; (*snum)++) {
-			init_srv_sess_info0( &ss0->info_0[num_entries], session_list[(*snum)].remote_machine);
-			num_entries++;
-		}
+		ctr0->array = TALLOC_REALLOC_ARRAY(p->mem_ctx,
+						   ctr0->array,
+						   struct srvsvc_NetSessInfo0,
+						   num_entries+1);
+		W_ERROR_HAVE_NO_MEMORY(ctr0->array);
 
-		ss0->num_entries_read  = num_entries;
-		ss0->ptr_sess_info     = num_entries > 0 ? 1 : 0;
-		ss0->num_entries_read2 = num_entries;
-
-		if ((*snum) >= (*stot)) {
-			(*snum) = 0;
-		}
-
-	} else {
-		ss0->num_entries_read = 0;
-		ss0->ptr_sess_info = 0;
-		ss0->num_entries_read2 = 0;
+		init_srvsvc_NetSessInfo0(&ctr0->array[num_entries],
+					 session_list[resume_handle].remote_machine);
+		num_entries++;
 	}
+
+	ctr0->count = num_entries;
+
+	if (resume_handle_p) {
+		if (*resume_handle_p >= *total_entries) {
+			*resume_handle_p = 0;
+		} else {
+			*resume_handle_p = resume_handle;
+		}
+	}
+
+	return WERR_OK;
 }
 
 /*******************************************************************
@@ -780,119 +789,70 @@ static int net_count_files( uid_t uid, struct server_id pid )
  fill in a sess info level 1 structure.
  ********************************************************************/
 
-static void init_srv_sess_info_1(pipes_struct *p, SRV_SESS_INFO_1 *ss1, uint32 *snum, uint32 *stot)
+static WERROR init_srv_sess_info_1(pipes_struct *p,
+				   struct srvsvc_NetSessCtr1 *ctr1,
+				   uint32_t *resume_handle_p,
+				   uint32_t *total_entries)
 {
 	struct sessionid *session_list;
-	uint32 num_entries = 0;
+	uint32_t num_entries = 0;
 	time_t now = time(NULL);
+	uint32_t resume_handle = resume_handle_p ? *resume_handle_p : 0;
 
-	if ( !snum ) {
-		ss1->num_entries_read = 0;
-		ss1->ptr_sess_info = 0;
-		ss1->num_entries_read2 = 0;
+	ZERO_STRUCTP(ctr1);
 
-		(*stot) = 0;
-
-		return;
+	if (ctr1 == NULL) {
+		if (resume_handle_p) {
+			*resume_handle_p = 0;
+		}
+		return WERR_OK;
 	}
 
-	if (ss1 == NULL) {
-		(*snum) = 0;
-		return;
-	}
+	*total_entries = list_sessions(p->mem_ctx, &session_list);
 
-	(*stot) = list_sessions(p->mem_ctx, &session_list);
-
-
-	for (; (*snum) < (*stot) && num_entries < MAX_SESS_ENTRIES; (*snum)++) {
+	for (; resume_handle < *total_entries && num_entries < MAX_SESS_ENTRIES; resume_handle++) {
 		uint32 num_files;
 		uint32 connect_time;
-		struct passwd *pw = sys_getpwnam(session_list[*snum].username);
+		struct passwd *pw = sys_getpwnam(session_list[resume_handle].username);
 		bool guest;
 
 		if ( !pw ) {
 			DEBUG(10,("init_srv_sess_info_1: failed to find owner: %s\n",
-				session_list[*snum].username));
+				session_list[resume_handle].username));
 			continue;
 		}
 
-		connect_time = (uint32)(now - session_list[*snum].connect_start);
-		num_files = net_count_files(pw->pw_uid, session_list[*snum].pid);
-		guest = strequal( session_list[*snum].username, lp_guestaccount() );
+		connect_time = (uint32_t)(now - session_list[resume_handle].connect_start);
+		num_files = net_count_files(pw->pw_uid, session_list[resume_handle].pid);
+		guest = strequal( session_list[resume_handle].username, lp_guestaccount() );
 
-		init_srv_sess_info1( &ss1->info_1[num_entries],
-		                     session_list[*snum].remote_machine,
-				     session_list[*snum].username,
-				     num_files,
-				     connect_time,
-				     0,
-				     guest);
+		ctr1->array = TALLOC_REALLOC_ARRAY(p->mem_ctx,
+						   ctr1->array,
+						   struct srvsvc_NetSessInfo1,
+						   num_entries+1);
+		W_ERROR_HAVE_NO_MEMORY(ctr1->array);
+
+		init_srvsvc_NetSessInfo1(&ctr1->array[num_entries],
+					 session_list[resume_handle].remote_machine,
+					 session_list[resume_handle].username,
+					 num_files,
+					 connect_time,
+					 0,
+					 guest);
 		num_entries++;
 	}
 
-	ss1->num_entries_read  = num_entries;
-	ss1->ptr_sess_info     = num_entries > 0 ? 1 : 0;
-	ss1->num_entries_read2 = num_entries;
+	ctr1->count = num_entries;
 
-	if ((*snum) >= (*stot)) {
-		(*snum) = 0;
+	if (resume_handle_p) {
+		if (*resume_handle_p >= *total_entries) {
+			*resume_handle_p = 0;
+		} else {
+			*resume_handle_p = resume_handle;
+		}
 	}
 
-}
-
-/*******************************************************************
- makes a SRV_R_NET_SESS_ENUM structure.
-********************************************************************/
-
-static WERROR init_srv_sess_info_ctr(pipes_struct *p, SRV_SESS_INFO_CTR *ctr,
-				int switch_value, uint32 *resume_hnd, uint32 *total_entries)
-{
-	WERROR status = WERR_OK;
-	DEBUG(5,("init_srv_sess_info_ctr: %d\n", __LINE__));
-
-	ctr->switch_value = switch_value;
-
-	switch (switch_value) {
-	case 0:
-		init_srv_sess_info_0(p, &(ctr->sess.info0), resume_hnd, total_entries);
-		ctr->ptr_sess_ctr = 1;
-		break;
-	case 1:
-		init_srv_sess_info_1(p, &(ctr->sess.info1), resume_hnd, total_entries);
-		ctr->ptr_sess_ctr = 1;
-		break;
-	default:
-		DEBUG(5,("init_srv_sess_info_ctr: unsupported switch value %d\n", switch_value));
-		(*resume_hnd) = 0;
-		(*total_entries) = 0;
-		ctr->ptr_sess_ctr = 0;
-		status = WERR_UNKNOWN_LEVEL;
-		break;
-	}
-
-	return status;
-}
-
-/*******************************************************************
- makes a SRV_R_NET_SESS_ENUM structure.
-********************************************************************/
-
-static void init_srv_r_net_sess_enum(pipes_struct *p, SRV_R_NET_SESS_ENUM *r_n,
-				uint32 resume_hnd, int sess_level, int switch_value)
-{
-	DEBUG(5,("init_srv_r_net_sess_enum: %d\n", __LINE__));
-
-	r_n->sess_level  = sess_level;
-
-	if (sess_level == -1)
-		r_n->status = WERR_UNKNOWN_LEVEL;
-	else
-		r_n->status = init_srv_sess_info_ctr(p, r_n->ctr, switch_value, &resume_hnd, &r_n->total_entries);
-
-	if (!W_ERROR_IS_OK(r_n->status))
-		resume_hnd = 0;
-
-	init_enum_hnd(&r_n->enum_hnd, resume_hnd);
+	return WERR_OK;
 }
 
 /*******************************************************************
@@ -1200,28 +1160,36 @@ WERROR _srvsvc_NetConnEnum(pipes_struct *p,
 }
 
 /*******************************************************************
-net sess enum
+ _srvsvc_NetSessEnum
 ********************************************************************/
 
-WERROR _srv_net_sess_enum(pipes_struct *p, SRV_Q_NET_SESS_ENUM *q_u, SRV_R_NET_SESS_ENUM *r_u)
+WERROR _srvsvc_NetSessEnum(pipes_struct *p,
+			   struct srvsvc_NetSessEnum *r)
 {
-	DEBUG(5,("_srv_net_sess_enum: %d\n", __LINE__));
+	WERROR werr;
 
-	r_u->ctr = TALLOC_P(p->mem_ctx, SRV_SESS_INFO_CTR);
-	if (!r_u->ctr)
-		return WERR_NOMEM;
+	DEBUG(5,("_srvsvc_NetSessEnum: %d\n", __LINE__));
 
-	ZERO_STRUCTP(r_u->ctr);
+	switch (r->in.info_ctr->level) {
+		case 0:
+			werr = init_srv_sess_info_0(p,
+						    r->in.info_ctr->ctr.ctr0,
+						    r->in.resume_handle,
+						    r->out.totalentries);
+			break;
+		case 1:
+			werr = init_srv_sess_info_1(p,
+						    r->in.info_ctr->ctr.ctr1,
+						    r->in.resume_handle,
+						    r->out.totalentries);
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
 
-	/* set up the */
-	init_srv_r_net_sess_enum(p, r_u,
-				get_enum_hnd(&q_u->enum_hnd),
-				q_u->sess_level,
-				q_u->ctr->switch_value);
+	DEBUG(5,("_srvsvc_NetSessEnum: %d\n", __LINE__));
 
-	DEBUG(5,("_srv_net_sess_enum: %d\n", __LINE__));
-
-	return r_u->status;
+	return werr;
 }
 
 /*******************************************************************
@@ -2445,12 +2413,6 @@ WERROR _srvsvc_NetCharDevQPurgeSelf(pipes_struct *p, struct srvsvc_NetCharDevQPu
 }
 
 WERROR _srvsvc_NetFileGetInfo(pipes_struct *p, struct srvsvc_NetFileGetInfo *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _srvsvc_NetSessEnum(pipes_struct *p, struct srvsvc_NetSessEnum *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
