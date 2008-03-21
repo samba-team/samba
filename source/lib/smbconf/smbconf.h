@@ -28,9 +28,7 @@ struct smbconf_csn {
 };
 
 /*
- * WARNING:
- *   Of this API, at least the open function is still subject to change.
- *   (Backends and possibly remote support being added ...)
+ * WARNING: this api is still subject to change.
  */
 
 WERROR smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx);
