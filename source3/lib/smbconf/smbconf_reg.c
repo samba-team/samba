@@ -20,12 +20,20 @@
 #include "includes.h"
 #include "smbconf_private.h"
 
+struct reg_private_data {
+	NT_USER_TOKEN *token;
+};
 
 /**********************************************************************
  *
  * helper functions
  *
  **********************************************************************/
+
+static struct reg_private_data *rpd(struct smbconf_ctx *ctx)
+{
+	return (struct reg_private_data *)(ctx->data);
+}
 
 /**
  * Open a registry key specified by "path"
@@ -44,7 +52,7 @@ static WERROR smbconf_reg_open_path(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (ctx->token == NULL) {
+	if (rpd(ctx)->token == NULL) {
 		DEBUG(1, ("Error: token missing from smbconf_ctx. "
 			  "was smbconf_init() called?\n"));
 		werr = WERR_INVALID_PARAM;
@@ -57,7 +65,8 @@ static WERROR smbconf_reg_open_path(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	werr = reg_open_path(mem_ctx, path, desired_access, ctx->token, key);
+	werr = reg_open_path(mem_ctx, path, desired_access, rpd(ctx)->token,
+			     key);
 
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(1, ("Error opening registry path '%s': %s\n",
@@ -385,17 +394,20 @@ static WERROR smbconf_reg_init(struct smbconf_ctx *ctx, const char *path)
 		goto done;
 	}
 
+	ctx->data = TALLOC_ZERO_P(ctx, struct reg_private_data);
+
+	werr = ntstatus_to_werror(registry_create_admin_token(ctx,
+							&(rpd(ctx)->token)));
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("Error creating admin token\n"));
+		goto done;
+	}
+
 	if (!registry_init_smbconf()) {
 		werr = WERR_REG_IO_FAILURE;
 		goto done;
 	}
 
-	werr = ntstatus_to_werror(registry_create_admin_token(ctx,
-							      &(ctx->token)));
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(1, ("Error creating admin token\n"));
-		goto done;
-	}
 
 done:
 	return werr;
