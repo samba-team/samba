@@ -39,7 +39,7 @@
 @def@copyrightend{}
 @page
 @copyrightstart
-Copyright (c) 1994-2007 Kungliga Tekniska Högskolan
+Copyright (c) 1994-2008 Kungliga Tekniska Högskolan
 (Royal Institute of Technology, Stockholm, Sweden).
 All rights reserved.
 
