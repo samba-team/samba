@@ -1058,7 +1058,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	ltdb->sequence_number = 0;
 
 	*module = talloc(ldb, struct ldb_module);
-	if (!module) {
+	if ((*module) == NULL) {
 		ldb_oom(ldb);
 		talloc_free(ltdb);
 		return -1;
