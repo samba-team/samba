@@ -6497,7 +6497,7 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 
 	if (conf_ctx == NULL) {
 		/* first time */
-		werr = smbconf_init_reg(NULL, &conf_ctx);
+		werr = smbconf_init_reg(NULL, &conf_ctx, NULL);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -6607,7 +6607,7 @@ bool lp_file_list_changed(void)
 	if (lp_config_backend_is_registry()) {
 		if (conf_ctx == NULL) {
 			WERROR werr;
-			werr = smbconf_init_reg(NULL, &conf_ctx);
+			werr = smbconf_init_reg(NULL, &conf_ctx, NULL);
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(0, ("error opening configuration: %s\n",
 					  dos_errstr(werr)));
