@@ -55,61 +55,6 @@
 
 #define MAX_SESS_ENTRIES 32
 
-typedef struct {
-	UNISTR2 *sharename;
-} SESS_INFO_0;
-
-typedef struct {
-	uint32 num_entries_read;
-	uint32 ptr_sess_info;
-	uint32 num_entries_read2;
-	SESS_INFO_0 info_0[MAX_SESS_ENTRIES];
-} SRV_SESS_INFO_0;
-
-typedef struct {
-	UNISTR2 *sharename;
-	UNISTR2 *username;
-	uint32 num_opens;
-	uint32 open_time;
-	uint32 idle_time;
-	uint32 user_flags;
-} SESS_INFO_1;
-
-typedef struct {
-	uint32 num_entries_read;
-	uint32 ptr_sess_info;
-	uint32 num_entries_read2;
-	SESS_INFO_1 info_1[MAX_SESS_ENTRIES];
-} SRV_SESS_INFO_1;
-
-typedef struct {
-	uint32 switch_value;
-	uint32 ptr_sess_ctr;
-	union {
-		SRV_SESS_INFO_0 info0; 
-		SRV_SESS_INFO_1 info1; 
-	} sess;
-
-} SRV_SESS_INFO_CTR;
-
-typedef struct {
-	UNISTR2 *servername;
-	UNISTR2 *qualifier;
-	UNISTR2 *username;
-	uint32 sess_level;
-	SRV_SESS_INFO_CTR *ctr;
-	uint32 preferred_len;
-	ENUM_HND enum_hnd;
-} SRV_Q_NET_SESS_ENUM;
-
-typedef struct {
-	uint32 sess_level; 
-	SRV_SESS_INFO_CTR *ctr;
-	uint32 total_entries;
-	ENUM_HND enum_hnd;
-	WERROR status;
-} SRV_R_NET_SESS_ENUM;
-
 /***************************/
 
 /* oops - this is going to take up a *massive* amount of stack. */
