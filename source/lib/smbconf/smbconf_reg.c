@@ -22,6 +22,7 @@
 
 struct reg_private_data {
 	NT_USER_TOKEN *token;
+	bool open;		/* did _we_ open the registry? */
 };
 
 /**********************************************************************
@@ -59,6 +60,12 @@ static WERROR smbconf_reg_open_path(TALLOC_CTX *mem_ctx,
 		DEBUG(1, ("Error: token missing from smbconf_ctx. "
 			  "was smbconf_init() called?\n"));
 		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	werr = ctx->ops->open_conf(ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("Error opening the registry.\n"));
 		goto done;
 	}
 
@@ -405,12 +412,14 @@ static WERROR smbconf_reg_init(struct smbconf_ctx *ctx, const char *path)
 		DEBUG(1, ("Error creating admin token\n"));
 		goto done;
 	}
+	rpd(ctx)->open = false;
 
 	if (!registry_init_smbconf()) {
 		werr = WERR_REG_IO_FAILURE;
 		goto done;
 	}
-
+	/* we know registry_init_smbconf() leaves registry open */
+	regdb_close();
 
 done:
 	return werr;
@@ -418,17 +427,37 @@ done:
 
 static int smbconf_reg_shutdown(struct smbconf_ctx *ctx)
 {
-	return regdb_close();
+	return ctx->ops->close_conf(ctx);
 }
 
 static WERROR smbconf_reg_open(struct smbconf_ctx *ctx)
 {
-	return regdb_open();
+	WERROR werr;
+
+	if (rpd(ctx)->open) {
+		return WERR_OK;
+	}
+
+	werr = regdb_open();
+	if (W_ERROR_IS_OK(werr)) {
+		rpd(ctx)->open = true;
+	}
+	return werr;
 }
 
 static int smbconf_reg_close(struct smbconf_ctx *ctx)
 {
-	return regdb_close();
+	int ret;
+
+	if (!rpd(ctx)->open) {
+		return 0;
+	}
+
+	ret = regdb_close();
+	if (ret == 0) {
+		rpd(ctx)->open = false;
+	}
+	return ret;
 }
 
 /**
@@ -442,6 +471,11 @@ static void smbconf_reg_get_csn(struct smbconf_ctx *ctx,
 	if (csn == NULL) {
 		return;
 	}
+
+	if (!W_ERROR_IS_OK(ctx->ops->open_conf(ctx))) {
+		return;
+	}
+
 	csn->csn = (uint64_t)regdb_get_seqnum();
 }
 
