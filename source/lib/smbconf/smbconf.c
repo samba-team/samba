@@ -783,7 +783,7 @@ struct smbconf_ops smbconf_ops_reg = {
  **********************************************************************/
 
 /**
- * Open the configuration.
+ * Initialize the configuration.
  *
  * This should be the first function in a sequence of calls to smbconf
  * functions:
@@ -831,7 +831,6 @@ fail:
  */
 void smbconf_shutdown(struct smbconf_ctx *ctx)
 {
-	/* this also closes the registry (by destructor): */
 	TALLOC_FREE(ctx);
 }
 
