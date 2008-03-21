@@ -23,7 +23,28 @@
 
 /**********************************************************************
  *
- * Helper functions
+ * internal helper functions
+ *
+ **********************************************************************/
+
+static int smbconf_destroy_ctx(struct smbconf_ctx *ctx)
+{
+	return ctx->ops->shutdown(ctx);
+}
+
+static WERROR smbconf_global_check(struct smbconf_ctx *ctx)
+{
+	if (!smbconf_share_exists(ctx, GLOBAL_NAME)) {
+		return smbconf_create_share(ctx, GLOBAL_NAME);
+	}
+	return WERR_OK;
+}
+
+
+/**********************************************************************
+ *
+ * helper functions exported to the backend modules
+ * (might go into a smbconf_util.c)
  *
  **********************************************************************/
 
@@ -56,26 +77,6 @@
 
 	return WERR_OK;
 }
-
-static int smbconf_destroy_ctx(struct smbconf_ctx *ctx)
-{
-	return ctx->ops->shutdown(ctx);
-}
-
-static WERROR smbconf_global_check(struct smbconf_ctx *ctx)
-{
-	if (!smbconf_share_exists(ctx, GLOBAL_NAME)) {
-		return smbconf_create_share(ctx, GLOBAL_NAME);
-	}
-	return WERR_OK;
-}
-
-
-/**********************************************************************
- *
- * The actual libsmbconf API functions that are exported.
- *
- **********************************************************************/
 
 /**
  * Initialize the configuration.
@@ -121,6 +122,13 @@ fail:
 	TALLOC_FREE(ctx);
 	return werr;
 }
+
+
+/**********************************************************************
+ *
+ * The actual libsmbconf API functions that are exported.
+ *
+ **********************************************************************/
 
 /**
  * Close the configuration.
