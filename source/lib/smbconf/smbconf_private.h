@@ -54,9 +54,9 @@ struct smbconf_ops {
 };
 
 struct smbconf_ctx {
-	NT_USER_TOKEN *token;
 	const char *path;
 	struct smbconf_ops *ops;
+	void *data; /* private data for use in backends */
 };
 
 WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
