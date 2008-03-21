@@ -897,7 +897,7 @@ static int net_conf_wrap_function(int (*fn)(struct smbconf_ctx *,
 
 	ret = fn(conf_ctx, argc, argv);
 
-	smbconf_close(conf_ctx);
+	smbconf_shutdown(conf_ctx);
 
 	return ret;
 }
