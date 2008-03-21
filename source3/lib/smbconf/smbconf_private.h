@@ -21,7 +21,7 @@
 #define __LIBSMBCONF_PRIVATE_H__
 
 struct smbconf_ops {
-	WERROR (*init)(struct smbconf_ctx *ctx);
+	WERROR (*init)(struct smbconf_ctx *ctx, const char *path);
 	int (*shutdown)(struct smbconf_ctx *ctx);
 	WERROR (*open_conf)(struct smbconf_ctx *ctx);
 	int (*close_conf)(struct smbconf_ctx *ctx);
@@ -55,6 +55,7 @@ struct smbconf_ops {
 
 struct smbconf_ctx {
 	NT_USER_TOKEN *token;
+	const char *path;
 	struct smbconf_ops *ops;
 };
 
@@ -64,6 +65,6 @@ WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
 				   const char *string);
 
 WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
-		    struct smbconf_ops *ops);
+		    const char *path, struct smbconf_ops *ops);
 
 #endif

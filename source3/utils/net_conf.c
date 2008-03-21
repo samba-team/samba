@@ -889,7 +889,7 @@ static int net_conf_wrap_function(int (*fn)(struct smbconf_ctx *,
 	struct smbconf_ctx *conf_ctx;
 	int ret = -1;
 
-	werr = smbconf_init_reg(mem_ctx, &conf_ctx);
+	werr = smbconf_init_reg(mem_ctx, &conf_ctx, NULL);
 
 	if (!W_ERROR_IS_OK(werr)) {
 		return -1;

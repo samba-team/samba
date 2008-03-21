@@ -92,7 +92,7 @@ static WERROR smbconf_global_check(struct smbconf_ctx *ctx)
  * should be called.
  */
 WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
-		    struct smbconf_ops *ops)
+		    const char *path, struct smbconf_ops *ops)
 {
 	WERROR werr = WERR_OK;
 	struct smbconf_ctx *ctx;
@@ -108,7 +108,7 @@ WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 
 	ctx->ops = ops;
 
-	werr = ctx->ops->init(ctx);
+	werr = ctx->ops->init(ctx, path);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto fail;
 	}

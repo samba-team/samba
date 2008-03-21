@@ -69,7 +69,7 @@ done:
 }
 
 /**
- * Open a subkey of KEY_SMBCONF (i.e a service)
+ * Open a subkey of the base key (i.e a service)
  */
 static WERROR smbconf_reg_open_service_key(TALLOC_CTX *mem_ctx,
 					   struct smbconf_ctx *ctx,
@@ -86,7 +86,7 @@ static WERROR smbconf_reg_open_service_key(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	path = talloc_asprintf(mem_ctx, "%s\\%s", KEY_SMBCONF, servicename);
+	path = talloc_asprintf(mem_ctx, "%s\\%s", ctx->path, servicename);
 	if (path == NULL) {
 		werr = WERR_NOMEM;
 		goto done;
@@ -100,14 +100,14 @@ done:
 }
 
 /**
- * open the base key KEY_SMBCONF
+ * open the base key
  */
 static WERROR smbconf_reg_open_base_key(TALLOC_CTX *mem_ctx,
 					struct smbconf_ctx *ctx,
 					uint32 desired_access,
 					struct registry_key **key)
 {
-	return smbconf_reg_open_path(mem_ctx, ctx, KEY_SMBCONF, desired_access,
+	return smbconf_reg_open_path(mem_ctx, ctx, ctx->path, desired_access,
 				     key);
 }
 
@@ -131,7 +131,7 @@ static bool smbconf_value_exists(struct registry_key *key, const char *param)
 }
 
 /**
- * create a subkey of KEY_SMBCONF
+ * create a subkey of the base key (i.e. a service...)
  */
 static WERROR smbconf_reg_create_service_key(TALLOC_CTX *mem_ctx,
 					     struct smbconf_ctx *ctx,
@@ -372,9 +372,18 @@ done:
 /**
  * initialize the registry smbconf backend
  */
-static WERROR smbconf_reg_init(struct smbconf_ctx *ctx)
+static WERROR smbconf_reg_init(struct smbconf_ctx *ctx, const char *path)
 {
 	WERROR werr = WERR_OK;
+
+	if (path == NULL) {
+		path = KEY_SMBCONF;
+	}
+	ctx->path = talloc_strdup(ctx, path);
+	if (ctx->path == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
 
 	if (!registry_init_smbconf()) {
 		werr = WERR_REG_IO_FAILURE;
@@ -433,7 +442,7 @@ static WERROR smbconf_reg_drop(struct smbconf_ctx *ctx)
 	TALLOC_CTX* mem_ctx = talloc_stackframe();
 	enum winreg_CreateAction action;
 
-	path = talloc_strdup(mem_ctx, KEY_SMBCONF);
+	path = talloc_strdup(mem_ctx, ctx->path);
 	if (path == NULL) {
 		werr = WERR_NOMEM;
 		goto done;
@@ -742,7 +751,8 @@ struct smbconf_ops smbconf_ops_reg = {
  * initialize the smbconf registry backend
  * the only function that is exported from this module
  */
-WERROR smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx)
+WERROR smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
+			const char *path)
 {
-	return smbconf_init(mem_ctx, conf_ctx, &smbconf_ops_reg);
+	return smbconf_init(mem_ctx, conf_ctx, path, &smbconf_ops_reg);
 }
