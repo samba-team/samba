@@ -811,6 +811,7 @@ static WERROR cmd_srvsvc_net_conn_enum(struct rpc_pipe_client *cli,
 	NTSTATUS status;
 	uint32_t total_entries = 0;
 	uint32_t resume_handle = 0;
+	uint32_t *resume_handle_p = NULL;
 	uint32_t level = 1;
 	const char *path = "IPC$";
 
@@ -829,6 +830,7 @@ static WERROR cmd_srvsvc_net_conn_enum(struct rpc_pipe_client *cli,
 
 	if (argc >= 4) {
 		resume_handle = atoi(argv[3]);
+		resume_handle_p = &resume_handle;
 	}
 
 	ZERO_STRUCT(info_ctr);
@@ -854,7 +856,7 @@ static WERROR cmd_srvsvc_net_conn_enum(struct rpc_pipe_client *cli,
 					   &info_ctr,
 					   0xffffffff,
 					   &total_entries,
-					   &resume_handle,
+					   resume_handle_p,
 					   &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
