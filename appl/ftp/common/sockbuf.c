@@ -45,10 +45,24 @@ void
 set_buffer_size(int fd, int read)
 {
 #if defined(SO_RCVBUF) && defined(SO_SNDBUF) && defined(HAVE_SETSOCKOPT)
-    size_t size = 4194304;
+    int size = 4194304;
+    int optname = read ? SO_RCVBUF : SO_SNDBUF;
+
+#ifdef HAVE_GETSOCKOPT
+    int curr=0;
+    socklen_t optlen;
+
+    optlen = sizeof(curr);
+    if(getsockopt(fd, SOL_SOCKET, optname, (void *)&curr, &optlen) == 0) {
+        if(curr >= size) {
+            /* Already large enough */
+            return;
+        }
+    }
+#endif /* HAVE_GETSOCKOPT */
+
     while(size >= 131072 && 
-	  setsockopt(fd, SOL_SOCKET, read ? SO_RCVBUF : SO_SNDBUF, 
-		     (void *)&size, sizeof(size)) < 0)
+	  setsockopt(fd, SOL_SOCKET, optname, (void *)&size, sizeof(size)) < 0)
 	size /= 2;
 #endif
 }
