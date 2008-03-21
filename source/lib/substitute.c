@@ -433,6 +433,9 @@ static const char *automount_path(const char *user_name)
 						(home_path_start+1):""));
 				server_path = talloc_strdup(ctx,
 							home_path_start+1);
+				if (!server_path) {
+					server_path = "";
+				}
 			}
 		} else {
 			/* NIS key lookup failed: default to
@@ -443,9 +446,6 @@ static const char *automount_path(const char *user_name)
 	}
 #endif
 
-	if (!server_path) {
-		server_path = "";
-	}
 	DEBUG(4,("Home server path: %s\n", server_path));
 	return server_path;
 }
