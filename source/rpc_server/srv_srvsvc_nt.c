@@ -29,6 +29,21 @@ extern const struct generic_mapping file_generic_mapping;
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+#define MAX_SERVER_DISK_ENTRIES 15
+
+/***************************/
+
+/* oops - this is going to take up a *massive* amount of stack. */
+/* the UNISTR2s already have 1024 uint16 chars in them... */
+
+#define MAX_SESS_ENTRIES 32
+
+/***************************/
+
+/* oops - this is going to take up a *massive* amount of stack. */
+/* the UNISTR2s already have 1024 uint16 chars in them... */
+#define MAX_CONN_ENTRIES 32
+
 /* Use for enumerating connections, pipes, & files */
 
 struct file_enum_count {
