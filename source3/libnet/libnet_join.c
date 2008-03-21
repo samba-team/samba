@@ -1233,7 +1233,7 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 	}
 
  done:
-	smbconf_close(ctx);
+	smbconf_shutdown(ctx);
 	return werr;
 }
 
@@ -1258,7 +1258,7 @@ static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 	}
 
  done:
-	smbconf_close(ctx);
+	smbconf_shutdown(ctx);
 	return werr;
 }
 

@@ -34,7 +34,7 @@ struct smbconf_csn {
  */
 
 WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx);
-void smbconf_close(struct smbconf_ctx *ctx);
+void smbconf_shutdown(struct smbconf_ctx *ctx);
 bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
 		     const char *service, const char *param);
 WERROR smbconf_drop(struct smbconf_ctx *ctx);
