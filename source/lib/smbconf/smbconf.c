@@ -781,6 +781,11 @@ struct smbconf_ops smbconf_ops_reg = {
 	.delete_parameter	= smbconf_reg_delete_parameter
 };
 
+WERROR smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx)
+{
+	return smbconf_init(mem_ctx, conf_ctx, &smbconf_ops_reg);
+}
+
 
 /**********************************************************************
  *
@@ -801,7 +806,8 @@ struct smbconf_ops smbconf_ops_reg = {
  * After the work with the configuration is completed, smbconf_shutdown()
  * should be called.
  */
-WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx)
+WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
+		    struct smbconf_ops *ops)
 {
 	WERROR werr = WERR_OK;
 	struct smbconf_ctx *ctx;
@@ -815,7 +821,7 @@ WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx)
 		return WERR_NOMEM;
 	}
 
-	ctx->ops = &smbconf_ops_reg;
+	ctx->ops = ops;
 
 	werr = ctx->ops->init(ctx);
 	if (!W_ERROR_IS_OK(werr)) {
