@@ -298,6 +298,11 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 		     const char ***names,
 		     enum wbcSidType **types);
 
+wbcErr wbcLookupUserSids(const struct wbcDomainSid *user_sid,
+			 bool domain_groups_only,
+			 uint32_t *num_sids,
+			 struct wbcDomainSid **sids);
+
 /*
  * SID/uid/gid Mappings
  */
