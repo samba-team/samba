@@ -582,3 +582,18 @@ _PUBLIC_ void *realloc_array(void *ptr, size_t el_size, unsigned count)
 	return realloc(ptr, el_size * count);
 }
 
+_PUBLIC_ void *talloc_check_name_abort(const void *ptr, const char *name)
+{
+        void *result;
+
+        result = talloc_check_name(ptr, name);
+        if (result != NULL)
+                return result;
+
+        DEBUG(0, ("Talloc type mismatch, expected %s, got %s\n",
+                  name, talloc_get_name(ptr)));
+        smb_panic("talloc type mismatch");
+        /* Keep the compiler happy */
+        return NULL;
+}
+
