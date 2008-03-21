@@ -33,7 +33,7 @@ struct smbconf_csn {
  *   (Backends and possibly remote support being added ...)
  */
 
-WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx);
+WERROR smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx);
 void smbconf_shutdown(struct smbconf_ctx *ctx);
 bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
 		     const char *service, const char *param);

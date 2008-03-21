@@ -1201,7 +1201,7 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 	WERROR werr;
 	struct smbconf_ctx *ctx;
 
-	werr = smbconf_init(r, &ctx);
+	werr = smbconf_init_reg(r, &ctx);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -1245,7 +1245,7 @@ static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 	WERROR werr = WERR_OK;
 	struct smbconf_ctx *ctx;
 
-	werr = smbconf_init(r, &ctx);
+	werr = smbconf_init_reg(r, &ctx);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
