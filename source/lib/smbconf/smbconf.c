@@ -395,7 +395,7 @@ done:
 
 static int smbconf_destroy_ctx(struct smbconf_ctx *ctx)
 {
-	return ctx->ops->close_conf(ctx);
+	return ctx->ops->shutdown(ctx);
 }
 
 static WERROR smbconf_global_check(struct smbconf_ctx *ctx)
@@ -434,6 +434,11 @@ static WERROR smbconf_reg_init(struct smbconf_ctx *ctx)
 
 done:
 	return werr;
+}
+
+static int smbconf_reg_shutdown(struct smbconf_ctx *ctx)
+{
+	return regdb_close();
 }
 
 static WERROR smbconf_reg_open(struct smbconf_ctx *ctx)
@@ -761,6 +766,7 @@ done:
 
 struct smbconf_ops smbconf_ops_reg = {
 	.init			= smbconf_reg_init,
+	.shutdown		= smbconf_reg_shutdown,
 	.open_conf		= smbconf_reg_open,
 	.close_conf		= smbconf_reg_close,
 	.get_csn		= smbconf_reg_get_csn,
