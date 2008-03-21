@@ -1580,6 +1580,10 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 	if (type != STYPE_DISKTREE)
 		return WERR_ACCESS_DENIED;
 
+	if (comment == NULL) {
+		return WERR_NOMEM;
+	}
+
 	/* Check if the pathname is valid. */
 	if (!(path = valid_share_pathname(p->mem_ctx, pathname )))
 		return WERR_OBJECT_PATH_INVALID;
@@ -1587,9 +1591,7 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 	/* Ensure share name, pathname and comment don't contain '"' characters. */
 	string_replace(share_name, '"', ' ');
 	string_replace(path, '"', ' ');
-	if (comment) {
-		string_replace(comment, '"', ' ');
-	}
+	string_replace(comment, '"', ' ');
 
 	DEBUG(10,("_srvsvc_NetShareSetInfo: change share command = %s\n",
 		lp_change_share_cmd() ? lp_change_share_cmd() : "NULL" ));
