@@ -175,7 +175,7 @@ struct cli_pull_state {
 	struct cli_state *cli;
 	uint16_t fnum;
 	off_t start_offset;
-	size_t size;
+	SMB_OFF_T size;
 
 	NTSTATUS (*sink)(char *buf, size_t n, void *priv);
 	void *priv;
@@ -232,7 +232,7 @@ static void cli_pull_read_done(struct async_req *read_req);
 
 struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 				uint16_t fnum, off_t start_offset,
-				size_t size, size_t window_size,
+				SMB_OFF_T size, size_t window_size,
 				NTSTATUS (*sink)(char *buf, size_t n,
 						 void *priv),
 				void *priv)
@@ -284,7 +284,8 @@ struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	state->requested = 0;
 
 	for (i=0; i<state->num_reqs; i++) {
-		size_t size_left, request_thistime;
+		SMB_OFF_T size_left;
+		size_t request_thistime;
 
 		if (state->requested >= size) {
 			state->num_reqs = i;
@@ -376,7 +377,8 @@ static void cli_pull_read_done(struct async_req *read_req)
 
 		if (state->requested < state->size) {
 			struct async_req *new_req;
-			size_t size_left, request_thistime;
+			SMB_OFF_T size_left;
+			size_t request_thistime;
 
 			size_left = state->size - state->requested;
 			request_thistime = MIN(size_left, state->chunk_size);
@@ -424,7 +426,7 @@ NTSTATUS cli_pull_recv(struct async_req *req, ssize_t *received)
 }
 
 NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
-		  off_t start_offset, size_t size, size_t window_size,
+		  off_t start_offset, SMB_OFF_T size, size_t window_size,
 		  NTSTATUS (*sink)(char *buf, size_t n, void *priv),
 		  void *priv, ssize_t *received)
 {
