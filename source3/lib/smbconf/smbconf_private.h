@@ -58,4 +58,7 @@ struct smbconf_ctx {
 	struct smbconf_ops *ops;
 };
 
+WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
+		    struct smbconf_ops *ops);
+
 #endif
