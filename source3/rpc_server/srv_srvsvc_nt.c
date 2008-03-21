@@ -902,155 +902,116 @@ static void init_srv_r_net_sess_enum(pipes_struct *p, SRV_R_NET_SESS_ENUM *r_n,
  fill in a conn info level 0 structure.
  ********************************************************************/
 
-static void init_srv_conn_info_0(SRV_CONN_INFO_0 *ss0, uint32 *snum, uint32 *stot)
+static WERROR init_srv_conn_info_0(struct srvsvc_NetConnCtr0 *ctr0,
+				   uint32_t *resume_handle_p,
+				   uint32_t *total_entries)
 {
-	uint32 num_entries = 0;
-	(*stot) = 1;
+	uint32_t num_entries = 0;
+	uint32_t resume_handle = resume_handle_p ? *resume_handle_p : 0;
 
-	if (ss0 == NULL) {
-		(*snum) = 0;
-		return;
+	DEBUG(5,("init_srv_conn_info_0\n"));
+
+	if (ctr0 == NULL) {
+		if (resume_handle_p) {
+			*resume_handle_p = 0;
+		}
+		return WERR_OK;
 	}
 
-	DEBUG(5,("init_srv_conn_0_ss0\n"));
+	*total_entries = 1;
 
-	if (snum) {
-		for (; (*snum) < (*stot) && num_entries < MAX_CONN_ENTRIES; (*snum)++) {
+	ZERO_STRUCTP(ctr0);
 
-			init_srv_conn_info0(&ss0->info_0[num_entries], (*stot));
+	for (; resume_handle < *total_entries && num_entries < MAX_CONN_ENTRIES; resume_handle++) {
 
-			/* move on to creating next connection */
-			/* move on to creating next conn */
-			num_entries++;
+		ctr0->array = TALLOC_REALLOC_ARRAY(talloc_tos(),
+						   ctr0->array,
+						   struct srvsvc_NetConnInfo0,
+						   num_entries+1);
+		if (!ctr0->array) {
+			return WERR_NOMEM;
 		}
 
-		ss0->num_entries_read  = num_entries;
-		ss0->ptr_conn_info     = num_entries > 0 ? 1 : 0;
-		ss0->num_entries_read2 = num_entries;
+		init_srvsvc_NetConnInfo0(&ctr0->array[num_entries],
+					 (*total_entries));
 
-		if ((*snum) >= (*stot)) {
-			(*snum) = 0;
-		}
-
-	} else {
-		ss0->num_entries_read = 0;
-		ss0->ptr_conn_info = 0;
-		ss0->num_entries_read2 = 0;
-
-		(*stot) = 0;
+		/* move on to creating next connection */
+		num_entries++;
 	}
+
+	ctr0->count = num_entries;
+	*total_entries = num_entries;
+
+	if (resume_handle_p) {
+		if (*resume_handle_p >= *total_entries) {
+			*resume_handle_p = 0;
+		} else {
+			*resume_handle_p = resume_handle;
+		}
+	}
+
+	return WERR_OK;
 }
 
 /*******************************************************************
  fill in a conn info level 1 structure.
  ********************************************************************/
 
-static void init_srv_conn_1_info(CONN_INFO_1 *se1, CONN_INFO_1_STR *str1,
-				uint32 id, uint32 type,
-				uint32 num_opens, uint32 num_users, uint32 open_time,
-				const char *usr_name, const char *net_name)
+static WERROR init_srv_conn_info_1(struct srvsvc_NetConnCtr1 *ctr1,
+				   uint32_t *resume_handle_p,
+				   uint32_t *total_entries)
 {
-	init_srv_conn_info1(se1 , id, type, num_opens, num_users, open_time, usr_name, net_name);
-	init_srv_conn_info1_str(str1, usr_name, net_name);
-}
+	uint32_t num_entries = 0;
+	uint32_t resume_handle = resume_handle_p ? *resume_handle_p : 0;
 
-/*******************************************************************
- fill in a conn info level 1 structure.
- ********************************************************************/
+	DEBUG(5,("init_srv_conn_info_1\n"));
 
-static void init_srv_conn_info_1(SRV_CONN_INFO_1 *ss1, uint32 *snum, uint32 *stot)
-{
-	uint32 num_entries = 0;
-	(*stot) = 1;
-
-	if (ss1 == NULL) {
-		(*snum) = 0;
-		return;
+	if (ctr1 == NULL) {
+		if (resume_handle_p) {
+			*resume_handle_p = 0;
+		}
+		return WERR_OK;
 	}
 
-	DEBUG(5,("init_srv_conn_1_ss1\n"));
+	*total_entries = 1;
 
-	if (snum) {
-		for (; (*snum) < (*stot) && num_entries < MAX_CONN_ENTRIES; (*snum)++) {
-			init_srv_conn_1_info(&ss1->info_1[num_entries],
-								 &ss1->info_1_str[num_entries],
-			                     (*stot), 0x3, 1, 1, 3,"dummy_user", "IPC$");
+	ZERO_STRUCTP(ctr1);
 
-			/* move on to creating next connection */
-			/* move on to creating next conn */
-			num_entries++;
+	for (; (resume_handle < *total_entries) && num_entries < MAX_CONN_ENTRIES; resume_handle++) {
+
+		ctr1->array = TALLOC_REALLOC_ARRAY(talloc_tos(),
+						   ctr1->array,
+						   struct srvsvc_NetConnInfo1,
+						   num_entries+1);
+		if (!ctr1->array) {
+			return WERR_NOMEM;
 		}
 
-		ss1->num_entries_read  = num_entries;
-		ss1->ptr_conn_info     = num_entries > 0 ? 1 : 0;
-		ss1->num_entries_read2 = num_entries;
+		init_srvsvc_NetConnInfo1(&ctr1->array[num_entries],
+					 (*total_entries),
+					 0x3,
+					 1,
+					 1,
+					 3,
+					 "dummy_user",
+					 "IPC$");
 
+		/* move on to creating next connection */
+		num_entries++;
+	}
 
-		if ((*snum) >= (*stot)) {
-			(*snum) = 0;
+	ctr1->count = num_entries;
+	*total_entries = num_entries;
+
+	if (resume_handle_p) {
+		if (*resume_handle_p >= *total_entries) {
+			*resume_handle_p = 0;
+		} else {
+			*resume_handle_p = resume_handle;
 		}
-
-	} else {
-		ss1->num_entries_read = 0;
-		ss1->ptr_conn_info = 0;
-		ss1->num_entries_read2 = 0;
-
-		(*stot) = 0;
-	}
-}
-
-/*******************************************************************
- makes a SRV_R_NET_CONN_ENUM structure.
-********************************************************************/
-
-static WERROR init_srv_conn_info_ctr(SRV_CONN_INFO_CTR *ctr,
-				int switch_value, uint32 *resume_hnd, uint32 *total_entries)
-{
-	WERROR status = WERR_OK;
-	DEBUG(5,("init_srv_conn_info_ctr: %d\n", __LINE__));
-
-	ctr->switch_value = switch_value;
-
-	switch (switch_value) {
-	case 0:
-		init_srv_conn_info_0(&ctr->conn.info0, resume_hnd, total_entries);
-		ctr->ptr_conn_ctr = 1;
-		break;
-	case 1:
-		init_srv_conn_info_1(&ctr->conn.info1, resume_hnd, total_entries);
-		ctr->ptr_conn_ctr = 1;
-		break;
-	default:
-		DEBUG(5,("init_srv_conn_info_ctr: unsupported switch value %d\n", switch_value));
-		(*resume_hnd = 0);
-		(*total_entries) = 0;
-		ctr->ptr_conn_ctr = 0;
-		status = WERR_UNKNOWN_LEVEL;
-		break;
 	}
 
-	return status;
-}
-
-/*******************************************************************
- makes a SRV_R_NET_CONN_ENUM structure.
-********************************************************************/
-
-static void init_srv_r_net_conn_enum(SRV_R_NET_CONN_ENUM *r_n,
-				uint32 resume_hnd, int conn_level, int switch_value)
-{
-	DEBUG(5,("init_srv_r_net_conn_enum: %d\n", __LINE__));
-
-	r_n->conn_level  = conn_level;
-	if (conn_level == -1)
-		r_n->status = WERR_UNKNOWN_LEVEL;
-	else
-		r_n->status = init_srv_conn_info_ctr(r_n->ctr, switch_value, &resume_hnd, &r_n->total_entries);
-
-	if (!W_ERROR_IS_OK(r_n->status))
-		resume_hnd = 0;
-
-	init_enum_hnd(&r_n->enum_hnd, resume_hnd);
+	return WERR_OK;
 }
 
 /*******************************************************************
@@ -1212,28 +1173,34 @@ WERROR _srvsvc_NetSrvSetInfo(pipes_struct *p,
 }
 
 /*******************************************************************
-net conn enum
+ _srvsvc_NetConnEnum
 ********************************************************************/
 
-WERROR _srv_net_conn_enum(pipes_struct *p, SRV_Q_NET_CONN_ENUM *q_u, SRV_R_NET_CONN_ENUM *r_u)
+WERROR _srvsvc_NetConnEnum(pipes_struct *p,
+			   struct srvsvc_NetConnEnum *r)
 {
-	DEBUG(5,("srv_net_conn_enum: %d\n", __LINE__));
+	WERROR werr;
 
-	r_u->ctr = TALLOC_P(p->mem_ctx, SRV_CONN_INFO_CTR);
-	if (!r_u->ctr)
-		return WERR_NOMEM;
+	DEBUG(5,("_srvsvc_NetConnEnum: %d\n", __LINE__));
 
-	ZERO_STRUCTP(r_u->ctr);
+	switch (r->in.info_ctr->level) {
+		case 0:
+			werr = init_srv_conn_info_0(r->in.info_ctr->ctr.ctr0,
+						    r->in.resume_handle,
+						    r->out.totalentries);
+			break;
+		case 1:
+			werr = init_srv_conn_info_1(r->in.info_ctr->ctr.ctr1,
+						    r->in.resume_handle,
+						    r->out.totalentries);
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
 
-	/* set up the */
-	init_srv_r_net_conn_enum(r_u,
-				get_enum_hnd(&q_u->enum_hnd),
-				q_u->conn_level,
-				q_u->ctr->switch_value);
+	DEBUG(5,("_srvsvc_NetConnEnum: %d\n", __LINE__));
 
-	DEBUG(5,("srv_net_conn_enum: %d\n", __LINE__));
-
-	return r_u->status;
+	return werr;
 }
 
 /*******************************************************************
@@ -2474,12 +2441,6 @@ WERROR _srvsvc_NetCharDevQPurge(pipes_struct *p, struct srvsvc_NetCharDevQPurge 
 }
 
 WERROR _srvsvc_NetCharDevQPurgeSelf(pipes_struct *p, struct srvsvc_NetCharDevQPurgeSelf *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _srvsvc_NetConnEnum(pipes_struct *p, struct srvsvc_NetConnEnum *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
