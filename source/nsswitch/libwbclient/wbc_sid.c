@@ -423,3 +423,85 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 
 	return wbc_status;
 }
+
+/** @brief Get the groups a user belongs to
+ *
+ **/
+
+wbcErr wbcLookupUserSids(const struct wbcDomainSid *user_sid,
+			 bool domain_groups_only,
+			 uint32_t *num_sids,
+			 struct wbcDomainSid **_sids)
+{
+	uint32_t i;
+	const char *s;
+	struct winbindd_request request;
+	struct winbindd_response response;
+	char *sid_string = NULL;
+	struct wbcDomainSid *sids = NULL;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	int cmd;
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	if (!user_sid) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	wbc_status = wbcSidToString(user_sid, &sid_string);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	strncpy(request.data.sid, sid_string, sizeof(request.data.sid)-1);
+	wbcFreeMemory(sid_string);
+
+	if (domain_groups_only) {
+		cmd = WINBINDD_GETUSERDOMGROUPS;
+	} else {
+		cmd = WINBINDD_GETUSERSIDS;
+	}
+
+	wbc_status = wbcRequestResponse(cmd,
+					&request,
+					&response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	if (response.data.num_entries &&
+	    !response.extra_data.data) {
+		wbc_status = WBC_INVALID_RESPONSE;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	sids = talloc_array(NULL, struct wbcDomainSid,
+			    response.data.num_entries);
+	BAIL_ON_PTR_ERROR(sids, wbc_status);
+
+	s = (const char *)response.extra_data.data;
+	for (i = 0; i < response.data.num_entries; i++) {
+		char *n = strchr(s, '\n');
+		if (n) {
+			*n = '\0';
+		}
+		wbc_status = wbcStringToSid(s, &sids[i]);
+		BAIL_ON_WBC_ERROR(wbc_status);
+		s += strlen(s) + 1;
+	}
+
+	*num_sids = response.data.num_entries;
+	*_sids = sids;
+	sids = NULL;
+	wbc_status = WBC_ERR_SUCCESS;
+
+ done:
+	if (response.extra_data.data) {
+		free(response.extra_data.data);
+	}
+	if (sids) {
+		talloc_free(sids);
+	}
+
+	return wbc_status;
+}
