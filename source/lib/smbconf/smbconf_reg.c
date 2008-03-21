@@ -30,6 +30,9 @@ struct reg_private_data {
  *
  **********************************************************************/
 
+/**
+ * a convenience helper to cast the private data structure
+ */
 static struct reg_private_data *rpd(struct smbconf_ctx *ctx)
 {
 	return (struct reg_private_data *)(ctx->data);
