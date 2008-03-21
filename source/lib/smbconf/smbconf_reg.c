@@ -737,8 +737,12 @@ struct smbconf_ops smbconf_ops_reg = {
 	.delete_parameter	= smbconf_reg_delete_parameter
 };
 
+
+/**
+ * initialize the smbconf registry backend
+ * the only function that is exported from this module
+ */
 WERROR smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx)
 {
 	return smbconf_init(mem_ctx, conf_ctx, &smbconf_ops_reg);
 }
-
