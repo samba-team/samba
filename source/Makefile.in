@@ -299,7 +299,7 @@ RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 # that requires knowledge of security contexts
 RPC_PARSE_OBJ1 = $(RPC_PARSE_OBJ0) rpc_parse/parse_sec.o
 
-RPC_PARSE_OBJ2 = rpc_parse/parse_rpc.o rpc_parse/parse_srv.o \
+RPC_PARSE_OBJ2 = rpc_parse/parse_rpc.o \
 		 rpc_client/init_netlogon.o \
 		 rpc_client/init_lsa.o \
 		 rpc_client/init_srvsvc.o
@@ -503,7 +503,7 @@ RPC_REG_OBJ =  rpc_server/srv_winreg_nt.o \
 
 RPC_DSSETUP_OBJ =  rpc_server/srv_dssetup_nt.o librpc/gen_ndr/srv_dssetup.o
 
-RPC_SVC_OBJ = rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o \
+RPC_SVC_OBJ = rpc_server/srv_srvsvc_nt.o \
 	      librpc/gen_ndr/srv_srvsvc.o
 
 RPC_WKS_OBJ =  librpc/gen_ndr/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o

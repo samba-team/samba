@@ -698,7 +698,6 @@ typedef char fstring[FSTRING_LEN];
 #include "rpc_netlogon.h"
 #include "reg_objects.h"
 #include "reg_db.h"
-#include "rpc_srvsvc.h"
 #include "rpc_spoolss.h"
 #include "rpc_eventlog.h"
 #include "rpc_perfcount.h"
