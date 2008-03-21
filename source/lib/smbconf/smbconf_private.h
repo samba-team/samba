@@ -58,6 +58,11 @@ struct smbconf_ctx {
 	struct smbconf_ops *ops;
 };
 
+WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
+				   char ***array,
+				   uint32_t count,
+				   const char *string);
+
 WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 		    struct smbconf_ops *ops);
 
