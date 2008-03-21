@@ -678,7 +678,10 @@ bool _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
 	memset(temp, 0, PERFCOUNT_MAX_LEN);
 	snprintf(temp, PERFCOUNT_MAX_LEN, "i%d", instId);
 	_reg_perfcount_make_key(&key, buf, PERFCOUNT_MAX_LEN, obj->ObjectNameTitleIndex, temp);
-	_reg_perfcount_get_counter_data(key, &data);
+	if (!_reg_perfcount_get_counter_data(key, &data)) {
+		DEBUG(3, ("_reg_perfcount_get_counter_data failed\n"));
+		return false;
+	}
 	if(data.dptr == NULL)
 	{
 		DEBUG(3, ("_reg_perfcount_get_instance_info: No instance data for instance [%s].\n",
