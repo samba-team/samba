@@ -689,12 +689,13 @@ static WERROR cmd_srvsvc_net_sess_enum(struct rpc_pipe_client *cli,
 	struct srvsvc_NetSessCtr502 ctr502;
 	uint32_t total_entries = 0;
 	uint32_t resume_handle = 0;
+	uint32_t *resume_handle_p = NULL;
 	uint32_t level = 1;
 	const char *client = NULL;
 	const char *user = NULL;
 
-	if (argc > 5) {
-		printf("Usage: %s [client] [user]\n", argv[0]);
+	if (argc > 6) {
+		printf("Usage: %s [client] [user] [level] [resume_handle]\n", argv[0]);
 		return WERR_OK;
 	}
 
@@ -708,6 +709,11 @@ static WERROR cmd_srvsvc_net_sess_enum(struct rpc_pipe_client *cli,
 
 	if (argc >= 4) {
 		level = atoi(argv[3]);
+	}
+
+	if (argc >= 5) {
+		resume_handle = atoi(argv[4]);
+		resume_handle_p = &resume_handle;
 	}
 
 	ZERO_STRUCT(info_ctr);
@@ -746,7 +752,7 @@ static WERROR cmd_srvsvc_net_sess_enum(struct rpc_pipe_client *cli,
 					  &info_ctr,
 					  0xffffffff,
 					  &total_entries,
-					  &resume_handle,
+					  resume_handle_p,
 					  &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
