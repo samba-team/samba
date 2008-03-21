@@ -418,8 +418,6 @@ static WERROR smbconf_reg_init(struct smbconf_ctx *ctx, const char *path)
 		werr = WERR_REG_IO_FAILURE;
 		goto done;
 	}
-	/* we know registry_init_smbconf() leaves registry open */
-	regdb_close();
 
 done:
 	return werr;
