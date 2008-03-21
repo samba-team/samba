@@ -31,7 +31,15 @@ struct smbconf_csn {
  * WARNING: this api is still subject to change.
  */
 
+/*
+ * initialization functions for the available modules
+ * (a dispatcher might be added in the future)
+ */
 WERROR smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx);
+
+/*
+ * the smbconf API functions
+ */
 void smbconf_shutdown(struct smbconf_ctx *ctx);
 bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
 		     const char *service, const char *param);
