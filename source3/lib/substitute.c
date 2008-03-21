@@ -483,6 +483,9 @@ static const char *automount_server(const char *user_name)
 			return "";
 		}
 		srv = talloc_strdup(ctx, automount_value);
+		if (!srv) {
+			return "";
+		}
 		p = strchr_m(srv, ':');
 		if (!p) {
 			return "";
@@ -494,9 +497,6 @@ static const char *automount_server(const char *user_name)
 	}
 #endif
 
-	if (!server_name) {
-		server_name = "";
-	}
 	DEBUG(4,("Home server: %s\n", server_name));
 	return server_name;
 }
