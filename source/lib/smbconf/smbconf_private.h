@@ -41,14 +41,14 @@ struct smbconf_ops {
 	WERROR (*delete_share)(struct smbconf_ctx *ctx,
 				    const char *servicename);
 	WERROR (*set_parameter)(struct smbconf_ctx *ctx,
-			        const char *service,
-			        const char *param,
-			        const char *valstr);
+				const char *service,
+				const char *param,
+				const char *valstr);
 	WERROR (*get_parameter)(struct smbconf_ctx *ctx,
-			        TALLOC_CTX *mem_ctx,
-			        const char *service,
-			        const char *param,
-			        char **valstr);
+				TALLOC_CTX *mem_ctx,
+				const char *service,
+				const char *param,
+				char **valstr);
 	WERROR (*delete_parameter)(struct smbconf_ctx *ctx,
 				   const char *service, const char *param);
 };
