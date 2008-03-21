@@ -46,20 +46,6 @@
 #define SRV_NET_FILE_QUERY_SECDESC 0x27
 #define SRV_NET_FILE_SET_SECDESC   0x28
 
-#define MAX_SERVER_DISK_ENTRIES 15
-
-/***************************/
-
-/* oops - this is going to take up a *massive* amount of stack. */
-/* the UNISTR2s already have 1024 uint16 chars in them... */
-
-#define MAX_SESS_ENTRIES 32
-
-/***************************/
-
-/* oops - this is going to take up a *massive* amount of stack. */
-/* the UNISTR2s already have 1024 uint16 chars in them... */
-#define MAX_CONN_ENTRIES 32
 
 /***************************/
 
