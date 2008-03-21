@@ -252,6 +252,8 @@ static WERROR cmd_dfs_enumex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
+	str.level = 1;
+
 	if (argc == 3)
 		str.level = atoi(argv[2]);
 
