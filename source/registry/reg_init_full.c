@@ -78,7 +78,7 @@ bool init_registry( void )
 
 	if ( !init_registry_data() ) {
 		DEBUG(0,("regdb_init: Failed to initialize data in registry!\n"));
-		return false;
+		goto fail;
 	}
 
 	/* build the cache tree of registry hooks */
@@ -99,12 +99,11 @@ bool init_registry( void )
 	eventlog_init_keys();
 	perfcount_init_keys();
 
-	/* close and let each smbd open up as necessary */
-
-	regdb_close();
 
 	ret = true;
  fail:
+	/* close and let each smbd open up as necessary */
+	regdb_close();
 	TALLOC_FREE(frame);
 	return ret;
 }
