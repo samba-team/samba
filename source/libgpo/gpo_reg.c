@@ -515,7 +515,7 @@ WERROR gp_reg_state_store(TALLOC_CTX *mem_ctx,
 			       token, &reg_ctx);
 	W_ERROR_NOT_OK_RETURN(werr);
 
-	werr = gp_secure_key(mem_ctx, flags, KEY_GROUP_POLICY,
+	werr = gp_secure_key(mem_ctx, flags, reg_ctx->curr_key,
 			     &token->user_sids[0]);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,("failed to secure key: %s\n", dos_errstr(werr)));
@@ -806,7 +806,7 @@ static WERROR gp_reg_generate_sd(TALLOC_CTX *mem_ctx,
 
 WERROR gp_secure_key(TALLOC_CTX *mem_ctx,
 		     uint32_t flags,
-		     const char *key,
+		     struct registry_key *key,
 		     const DOM_SID *sid)
 {
 	struct security_descriptor *sd = NULL;
@@ -821,7 +821,7 @@ WERROR gp_secure_key(TALLOC_CTX *mem_ctx,
 	werr = gp_reg_generate_sd(mem_ctx, sd_sid, &sd, &sd_size);
 	W_ERROR_NOT_OK_RETURN(werr);
 
-	return gp_reg_set_secdesc(key, sd);
+	return reg_setkeysecurity(key, sd);
 }
 
 /****************************************************************
@@ -1001,7 +1001,7 @@ WERROR reg_apply_registry_entry(TALLOC_CTX *mem_ctx,
 
 		case GP_REG_ACTION_SEC_KEY_SET:
 			werr = gp_secure_key(mem_ctx, flags,
-					     entry->key,
+					     key,
 					     &token->user_sids[0]);
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(0,("reg_apply_registry_entry: "
