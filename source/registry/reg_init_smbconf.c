@@ -95,10 +95,9 @@ bool registry_init_smbconf(void)
 		goto done;
 	}
 
-	regdb_close();
-
 	ret = true;
 
 done:
+	regdb_close();
 	return ret;
 }
