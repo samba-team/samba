@@ -61,29 +61,30 @@ REGISTRY_HOOK reg_hooks[] = {
  Open the registry database and initialize the REGISTRY_HOOK cache
  with all available backens.
  ***********************************************************************/
- 
+
 bool init_registry( void )
 {
 	int i;
 	bool ret = false;
-	
-	
+
 	if ( !regdb_init() ) {
-		DEBUG(0,("init_registry: failed to initialize the registry tdb!\n"));
+		DEBUG(0, ("init_registry: failed to initialize the registry "
+			  "tdb!\n"));
 		goto fail;
 	}
 
 	/* setup the necessary keys and values */
 
 	if ( !init_registry_data() ) {
-		DEBUG(0,("regdb_init: Failed to initialize data in registry!\n"));
+		DEBUG(0, ("regdb_init: Failed to initialize data in "
+			  "registry!\n"));
 		goto fail;
 	}
 
 	/* build the cache tree of registry hooks */
-	
+
 	reghook_cache_init();
-	
+
 	for ( i=0; reg_hooks[i].keyname; i++ ) {
 		if ( !reghook_cache_add(&reg_hooks[i]) )
 			goto fail;
@@ -98,9 +99,9 @@ bool init_registry( void )
 	eventlog_init_keys();
 	perfcount_init_keys();
 
-
 	ret = true;
- fail:
+
+fail:
 	/* close and let each smbd open up as necessary */
 	regdb_close();
 	return ret;
