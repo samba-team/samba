@@ -77,6 +77,11 @@ WERROR gp_init_reg_ctx(TALLOC_CTX *mem_ctx,
 		return WERR_NOMEM;
 	}
 
+	werr = regdb_open();
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
 	if (initial_path) {
 		tmp_ctx->path = talloc_strdup(mem_ctx, initial_path);
 		if (!tmp_ctx->path) {
