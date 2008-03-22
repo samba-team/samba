@@ -20,53 +20,6 @@
 #include "includes.h"
 
 
-extern REGISTRY_OPS regdb_ops;
-
-static int gp_reg_fetch_keys(const char *key, REGSUBKEY_CTR *subkey_ctr)
-{
-	return regdb_ops.fetch_subkeys(key, subkey_ctr);
-}
-
-static bool gp_reg_store_keys(const char *key, REGSUBKEY_CTR *subkeys)
-{
-	return regdb_ops.store_subkeys(key, subkeys);
-}
-
-static int gp_reg_fetch_values(const char *key, REGVAL_CTR *val)
-{
-	return regdb_ops.fetch_values(key, val);
-}
-
-static bool gp_reg_store_values(const char *key, REGVAL_CTR *val)
-{
-	return regdb_ops.store_values(key, val);
-}
-
-static WERROR gp_reg_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
-				 struct security_descriptor **psecdesc)
-{
-	return regdb_ops.get_secdesc(mem_ctx, key, psecdesc);
-}
-
-static WERROR gp_reg_set_secdesc(const char *key,
-				 struct security_descriptor *secdesc)
-{
-	return regdb_ops.set_secdesc(key, secdesc);
-}
-
-/****************************************************************
-****************************************************************/
-
-static REGISTRY_OPS gp_reg_ops = {
-	.fetch_subkeys		= gp_reg_fetch_keys,
-	.fetch_values		= gp_reg_fetch_values,
-	.store_subkeys		= gp_reg_store_keys,
-	.store_values		= gp_reg_store_values,
-/*	.reg_access_check	= gp_reg_reg_access_check, */
-	.get_secdesc		= gp_reg_get_secdesc,
-	.set_secdesc		= gp_reg_set_secdesc
-};
-
 /****************************************************************
 ****************************************************************/
 
@@ -101,24 +54,13 @@ WERROR gp_init_reg_ctx(TALLOC_CTX *mem_ctx,
 		       struct gp_registry_context **reg_ctx)
 {
 	struct gp_registry_context *tmp_ctx;
-	static REGISTRY_HOOK gp_reg_hook;
 	WERROR werr;
 
 	if (!reg_ctx) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (!regdb_init()) {
-		return WERR_CAN_NOT_COMPLETE;
-	}
-
-	gp_reg_hook.keyname = initial_path; /* KEY_SAMBA_GROUP_POLICY */
-	gp_reg_hook.ops = &gp_reg_ops;
-
-	/* not sure about the cache hook */
-	reghook_cache_init();
-
-	if (!reghook_cache_add(&gp_reg_hook)) {
+	if (!registry_init_basic()) {
 		return WERR_CAN_NOT_COMPLETE;
 	}
 
