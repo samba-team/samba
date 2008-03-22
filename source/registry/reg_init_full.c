@@ -66,7 +66,6 @@ bool init_registry( void )
 {
 	int i;
 	bool ret = false;
-	TALLOC_CTX *frame = talloc_stackframe();
 	
 	
 	if ( !regdb_init() ) {
@@ -104,6 +103,5 @@ bool init_registry( void )
  fail:
 	/* close and let each smbd open up as necessary */
 	regdb_close();
-	TALLOC_FREE(frame);
 	return ret;
 }
