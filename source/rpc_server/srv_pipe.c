@@ -1593,6 +1593,8 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		}
 	}
 
+	ZERO_STRUCT(hdr_rb);
+
 	/* decode the bind request */
 	if(!smb_io_rpc_hdr_rb("", &hdr_rb, rpc_in_p, 0))  {
 		DEBUG(0,("api_pipe_bind_req: unable to unmarshall RPC_HDR_RB struct.\n"));
