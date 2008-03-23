@@ -319,12 +319,10 @@ int main(int argc, const char **argv)
 
 	do_edit(ldb, result->msgs, result->count, options->editor);
 
-	if (result) {
-		ret = talloc_free(result);
-		if (ret == -1) {
-			fprintf(stderr, "talloc_free failed\n");
-			exit(1);
-		}
+	ret = talloc_free(result);
+	if (ret == -1) {
+		fprintf(stderr, "talloc_free failed\n");
+		exit(1);
 	}
 
 	talloc_free(ldb);
