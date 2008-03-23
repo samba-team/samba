@@ -516,8 +516,7 @@ static int key_printers_fetch_values( const char *key, REGVAL_CTR *values )
 	if ( (key_index = lookup_printerkey( p_data, printerdatakey )) == -1  ) {
 		/* failure....should never happen if the client has a valid open handle first */
 		DEBUG(10,("key_printers_fetch_values: Unknown keyname [%s]\n", printerdatakey));
-		if ( printer )
-			free_a_printer( &printer, 2 );
+		free_a_printer( &printer, 2 );
 		return -1;
 	}
 	
