@@ -51,7 +51,7 @@ static NTSTATUS convert_file_from_ucs2(TALLOC_CTX *mem_ctx,
 				       const char *filename_in,
 				       char **filename_out)
 {
-	int tmp_fd = 0;
+	int tmp_fd = -1;
 	uint8 *data_in = NULL;
 	uint8 *data_out = NULL;
 	char *tmp_name = NULL;
@@ -112,7 +112,7 @@ static NTSTATUS convert_file_from_ucs2(TALLOC_CTX *mem_ctx,
 	status = NT_STATUS_OK;
 
  out:
-	if (tmp_fd) {
+	if (tmp_fd != -1) {
 		close(tmp_fd);
 	}
 
