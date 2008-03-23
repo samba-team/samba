@@ -679,7 +679,11 @@ static int audit_syslog_priority(vfs_handle_struct *handle)
 
 	int priority;
 
-	priority = lp_parm_enum(SNUM(handle->conn), "full_audit", "priority", enum_log_priorities, LOG_NOTICE);
+	priority = lp_parm_enum(SNUM(handle->conn), "full_audit", "priority",
+				enum_log_priorities, LOG_NOTICE);
+	if (priority == -1) {
+		priority = LOG_WARNING;
+	}
 
 	return priority;
 }
