@@ -7205,7 +7205,7 @@ bool make_spoolss_q_getprintprocessordirectory(SPOOL_Q_GETPRINTPROCESSORDIRECTOR
 
 bool spoolss_io_q_getprintprocessordirectory(const char *desc, SPOOL_Q_GETPRINTPROCESSORDIRECTORY *q_u, prs_struct *ps, int depth)
 {
-	uint32 ptr;
+	uint32 ptr = 0;
 
 	prs_debug(ps, depth, desc, "spoolss_io_q_getprintprocessordirectory");
 	depth++;
