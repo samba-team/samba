@@ -373,8 +373,7 @@ static bool key_printers_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	
 	/* cleanup */
 	
-	if ( printer )
-		free_a_printer( &printer, 2 );
+	free_a_printer( &printer, 2 );
 
 	SAFE_FREE( existing_subkeys );
 
