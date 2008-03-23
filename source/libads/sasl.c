@@ -597,6 +597,8 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t
 		context_handle = GSS_C_NO_CONTEXT;
 	}
 
+	status = ADS_SUCCESS;
+
 failed:
 	if (context_handle != GSS_C_NO_CONTEXT)
 		gss_delete_sec_context(&minor_status, &context_handle, GSS_C_NO_BUFFER);
