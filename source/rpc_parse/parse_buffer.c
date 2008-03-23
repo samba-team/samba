@@ -374,8 +374,10 @@ bool smb_io_relarraystr(const char *desc, RPC_BUFFER *buffer, int depth, uint16 
 			return False;
 	
 		do {
-			if (!smb_io_unistr(desc, &chaine, ps, depth))
+			if (!smb_io_unistr(desc, &chaine, ps, depth)) {
+				SAFE_FREE(chaine2);
 				return False;
+			}
 			
 			l_chaine=str_len_uni(&chaine);
 			
@@ -402,10 +404,10 @@ bool smb_io_relarraystr(const char *desc, RPC_BUFFER *buffer, int depth, uint16 
 		{
 			chaine2[l_chaine2] = '\0';
 			*string=(uint16 *)TALLOC_MEMDUP(prs_get_mem_context(ps),chaine2,realloc_size);
+			SAFE_FREE(chaine2);
 			if (!*string) {
 				return False;
 			}
-			SAFE_FREE(chaine2);
 		}
 
 		if(!prs_set_offset(ps, old_offset))
