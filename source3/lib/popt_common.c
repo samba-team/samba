@@ -327,6 +327,11 @@ static void get_password_file(void)
 		close_it = True;
 	}
 
+	if (fd < 0) {
+		fprintf(stderr, "fd = %d, < 0\n", fd);
+		exit(1);
+	}
+
 	for(p = pass, *p = '\0'; /* ensure that pass is null-terminated */
 		p && p - pass < sizeof(pass);) {
 		switch (read(fd, p, 1)) {
