@@ -232,58 +232,72 @@ static bool wbinfo_get_usergroups(char *user)
 
 
 /* List group SIDs a user SID is a member of */
-static bool wbinfo_get_usersids(char *user_sid)
+static bool wbinfo_get_usersids(const char *user_sid_str)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-	NSS_STATUS result;
-	int i;
-	const char *s;
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	uint32_t num_sids;
+	uint32_t i;
+	struct wbcDomainSid user_sid, *sids = NULL;
 
 	/* Send request */
-	fstrcpy(request.data.sid, user_sid);
 
-	result = winbindd_request_response(WINBINDD_GETUSERSIDS, &request, &response);
-
-	if (result != NSS_STATUS_SUCCESS)
+	wbc_status = wbcStringToSid(user_sid_str, &user_sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
-
-	s = (const char *)response.extra_data.data;
-	for (i = 0; i < response.data.num_entries; i++) {
-		d_printf("%s\n", s);
-		s += strlen(s) + 1;
 	}
 
-	SAFE_FREE(response.extra_data.data);
+	wbc_status = wbcLookupUserSids(&user_sid, false, &num_sids, &sids);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	for (i = 0; i < num_sids; i++) {
+		char *str = NULL;
+		wbc_status = wbcSidToString(&sids[i], &str);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			wbcFreeMemory(sids);
+			return false;
+		}
+		d_printf("%s\n", str);
+		wbcFreeMemory(str);
+	}
+
+	wbcFreeMemory(sids);
 
 	return true;
 }
 
-static bool wbinfo_get_userdomgroups(const char *user_sid)
+static bool wbinfo_get_userdomgroups(const char *user_sid_str)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-	NSS_STATUS result;
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	uint32_t num_sids;
+	uint32_t i;
+	struct wbcDomainSid user_sid, *sids = NULL;
 
 	/* Send request */
-	fstrcpy(request.data.sid, user_sid);
 
-	result = winbindd_request_response(WINBINDD_GETUSERDOMGROUPS, &request,
-					   &response);
-
-	if (result != NSS_STATUS_SUCCESS)
+	wbc_status = wbcStringToSid(user_sid_str, &user_sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
+	}
 
-	if (response.data.num_entries != 0)
-		printf("%s", (char *)response.extra_data.data);
+	wbc_status = wbcLookupUserSids(&user_sid, true, &num_sids, &sids);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
 
-	SAFE_FREE(response.extra_data.data);
+	for (i = 0; i < num_sids; i++) {
+		char *str = NULL;
+		wbc_status = wbcSidToString(&sids[i], &str);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			wbcFreeMemory(sids);
+			return false;
+		}
+		d_printf("%s\n", str);
+		wbcFreeMemory(str);
+	}
+
+	wbcFreeMemory(sids);
 
 	return true;
 }
