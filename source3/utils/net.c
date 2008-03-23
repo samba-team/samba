@@ -503,7 +503,7 @@ bool net_find_server(const char *domain,
 		*server_name = SMB_STRDUP("127.0.0.1");
 	}
 
-	if (!server_name || !*server_name) {
+	if (!*server_name) {
 		DEBUG(1,("no server to connect to\n"));
 		return False;
 	}
