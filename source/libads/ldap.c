@@ -3413,6 +3413,7 @@ ADS_STATUS ads_find_samaccount(ADS_STRUCT *ads,
 	filter = talloc_asprintf(mem_ctx, "(&(objectclass=user)(sAMAccountName=%s))",
 		samaccountname);
 	if (filter == NULL) {
+		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 		goto out;
 	}
 
