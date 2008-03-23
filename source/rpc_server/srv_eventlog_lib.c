@@ -464,8 +464,6 @@ int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee )
 	if ( mem_ctx == NULL )
 		return 0;
 
-	if ( !ee )
-		return 0;
 	/* discard any entries that have bogus time, which usually indicates a bogus entry as well. */
 	if ( ee->record.time_generated == 0 )
 		return 0;
