@@ -1679,7 +1679,7 @@ static int net_ads_password(int argc, const char **argv)
 		fill in the KDC's addresss */
 	ads_connect(ads);
 
-	if (!ads || !ads->config.realm) {
+	if (!ads->config.realm) {
 		d_fprintf(stderr, "Didn't find the kerberos server!\n");
 		return -1;
 	}
