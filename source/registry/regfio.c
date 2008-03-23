@@ -1277,7 +1277,7 @@ static void regfio_mem_free( REGF_FILE *file )
 
 	/* nothing tdo do if there is no open file */
 
-	if ( !file || (file->fd == -1) )
+	if (file->fd == -1)
 		return 0;
 		
 	fd = file->fd;
