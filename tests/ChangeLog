@@ -1,3 +1,7 @@
+2008-03-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-referral.in: Test TGS referrals.
+
 2008-03-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss/check-context.in: Test gsskrb5_register_acceptor_identity.
