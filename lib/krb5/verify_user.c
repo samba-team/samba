@@ -198,16 +198,12 @@ krb5_verify_user_opt(krb5_context context,
 	ret = KRB5_CONFIG_NODEFREALM;
 	
 	for (r = realms; *r != NULL && ret != 0; ++r) {
-	    char *tmp = strdup (*r);
-	    
-	    if (tmp == NULL) {
+	    ret = krb5_principal_set_realm(context, principal, *r);
+	    if (ret) {
 		krb5_free_host_realm (context, realms);
-		krb5_set_error_string (context, "malloc: out of memory");
-		return ENOMEM;
+		return ret;
 	    }
-	    free (*krb5_princ_realm (context, principal));
-	    krb5_princ_set_realm (context, principal, &tmp);
-	    
+
 	    ret = verify_user_opt_int(context, principal, password, opt);
 	}
 	krb5_free_host_realm (context, realms);
