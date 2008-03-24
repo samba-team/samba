@@ -165,8 +165,6 @@ init_cred (krb5_context context,
     }
 
     if (in_tkt_service) {
-	krb5_realm server_realm;
-
 	ret = krb5_parse_name (context, in_tkt_service, &cred->server);
 	if (ret)
 	    goto out;
