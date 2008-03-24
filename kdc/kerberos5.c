@@ -1648,7 +1648,7 @@ _kdc_as_rep(krb5_context context,
 	memset(&canon, 0, sizeof(canon));
 
 	canon.names.requested_name = *b->cname;
-	canon.names.real_name = client->entry.principal->name;
+	canon.names.mapped_name = client->entry.principal->name;
 
 	ASN1_MALLOC_ENCODE(PA_ClientCanonicalizedNames, data.data, data.length,
 			   &canon.names, &len, ret);
