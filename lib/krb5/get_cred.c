@@ -735,14 +735,14 @@ get_cred(server)
 	*/
 
 static krb5_error_code
-get_cred_from_kdc_flags(krb5_context context,
-			krb5_kdc_flags flags,
-			krb5_ccache ccache,
-			krb5_creds *in_creds,
-			krb5_principal impersonate_principal,
-			Ticket *second_ticket,			
-			krb5_creds **out_creds,
-			krb5_creds ***ret_tgts)
+get_cred_kdc_capath(krb5_context context,
+		    krb5_kdc_flags flags,
+		    krb5_ccache ccache,
+		    krb5_creds *in_creds,
+		    krb5_principal impersonate_principal,
+		    Ticket *second_ticket,			
+		    krb5_creds **out_creds,
+		    krb5_creds ***ret_tgts)
 {
     krb5_error_code ret;
     krb5_creds *tgt, tmp_creds;
@@ -807,8 +807,8 @@ get_cred_from_kdc_flags(krb5_context context,
     while(1){
 	heim_general_string tgt_inst;
 
-	ret = get_cred_from_kdc_flags(context, flags, ccache, &tmp_creds,
-				      NULL, NULL, &tgt, ret_tgts);
+	ret = get_cred_kdc_capath(context, flags, ccache, &tmp_creds,
+				  NULL, NULL, &tgt, ret_tgts);
 	if(ret) {
 	    krb5_free_principal(context, tmp_creds.server);
 	    krb5_free_principal(context, tmp_creds.client);
@@ -847,8 +847,8 @@ get_cred_from_kdc_flags(krb5_context context,
 	ret = ENOMEM;
     } else {
 	ret = get_cred_kdc_address (context, ccache, flags, NULL,
-				    in_creds, tgt, NULL, NULL,
-				    *out_creds);
+				    in_creds, tgt, impersonate_principal, 
+				    second_ticket, *out_creds);
 	if (ret) {
 	    free (*out_creds);
 	    *out_creds = NULL;
@@ -875,6 +875,8 @@ get_cred_kdc_referral(krb5_context context,
 
     memset(&tgt, 0, sizeof(tgt));
     memset(&ticket, 0, sizeof(ticket));
+
+    flags.b.canonicalize = 1;
 
     *out_creds = NULL;
 
@@ -997,6 +999,44 @@ out:
 }
 
 
+/*
+ * Glue function between referrals version and old client chasing
+ * codebase.
+ */
+
+static krb5_error_code
+get_cred_kdc_any(krb5_context context,
+		 krb5_kdc_flags flags,
+		 krb5_ccache ccache,
+		 krb5_creds *in_creds,
+		 krb5_principal impersonate_principal,
+		 Ticket *second_ticket,			
+		 krb5_creds **out_creds,
+		 krb5_creds ***ret_tgts)
+{
+    krb5_error_code ret;
+
+    ret = get_cred_kdc_referral(context,
+				flags,
+				ccache,
+				in_creds,
+				impersonate_principal, 
+				second_ticket,
+				out_creds,
+				ret_tgts);
+    if (ret == 0 || flags.b.canonicalize)
+	return ret;
+    return get_cred_kdc_capath(context,
+				flags,
+				ccache,
+				in_creds,
+				impersonate_principal, 
+				second_ticket,
+				out_creds,
+				ret_tgts);
+}
+
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_cred_from_kdc_opt(krb5_context context,
 			   krb5_ccache ccache,
@@ -1007,9 +1047,9 @@ krb5_get_cred_from_kdc_opt(krb5_context context,
 {
     krb5_kdc_flags f;
     f.i = flags;
-    return get_cred_kdc_referral(context, f, ccache,
-				 in_creds, NULL, NULL,
-				 out_creds, ret_tgts);
+    return get_cred_kdc_any(context, f, ccache,
+			    in_creds, NULL, NULL,
+			    out_creds, ret_tgts);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -1092,8 +1132,8 @@ krb5_get_credentials_with_flags(krb5_context context,
 	options |= KRB5_GC_NO_STORE;
 
     tgts = NULL;
-    ret = get_cred_kdc_referral(context, flags, ccache,
-				in_creds, NULL, NULL, out_creds, &tgts);
+    ret = get_cred_kdc_any(context, flags, ccache,
+			   in_creds, NULL, NULL, out_creds, &tgts);
     for(i = 0; tgts && tgts[i]; i++) {
 	krb5_cc_store_cred(context, ccache, tgts[i]);
 	krb5_free_creds(context, tgts[i]);
@@ -1306,9 +1346,9 @@ krb5_get_creds(krb5_context context,
 	flags.b.canonicalize = 1;
 
     tgts = NULL;
-    ret = get_cred_kdc_referral(context, flags, ccache,
-				&in_creds, opt->self, opt->ticket,
-				out_creds, &tgts);
+    ret = get_cred_kdc_any(context, flags, ccache,
+			   &in_creds, opt->self, opt->ticket,
+			   out_creds, &tgts);
     krb5_free_principal(context, in_creds.client);
     for(i = 0; tgts && tgts[i]; i++) {
 	krb5_cc_store_cred(context, ccache, tgts[i]);
