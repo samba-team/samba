@@ -1,5 +1,9 @@
-2008-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
+2008-03-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* k5.asn1: add referral-valid-until
+
+2008-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* asn1-common.h gen.c der.c gen_encode.c: add and use der_{malloc,free}
 
 2007-12-13  Love Hörnquist Åstrand  <lha@it.su.se>
