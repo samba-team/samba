@@ -701,7 +701,7 @@ find_cred(krb5_context context,
 }
 
 static krb5_error_code
-add_cred(krb5_context context, krb5_creds ***tgts, krb5_creds *tkt)
+add_cred(krb5_context context, krb5_creds const *tkt, krb5_creds ***tgts)
 {
     int i;
     krb5_error_code ret;
@@ -814,7 +814,7 @@ get_cred_from_kdc_flags(krb5_context context,
 	    krb5_free_principal(context, tmp_creds.client);
 	    return ret;
 	}
-	ret = add_cred(context, ret_tgts, tgt);
+	ret = add_cred(context, tgt, ret_tgts);
 	if(ret) {
 	    krb5_free_principal(context, tmp_creds.server);
 	    krb5_free_principal(context, tmp_creds.client);
@@ -873,8 +873,6 @@ get_cred_kdc_referral(krb5_context context,
     krb5_creds tgt, referral, ticket;
     int loop = 0;
 
-    flags.b.canonicalize = 1; /* XXX */
-
     memset(&tgt, 0, sizeof(tgt));
     memset(&ticket, 0, sizeof(ticket));
 
@@ -914,12 +912,12 @@ get_cred_kdc_referral(krb5_context context,
     }
 
     while (loop++ < 17) {
+	krb5_creds **tickets;
 	krb5_creds mcreds;
 	char *referral_realm;
-	int save_to_ccache = 0;
 
-	/* Use cache if we are not doing impersonation */
-	if (impersonate_principal == NULL) {
+	/* Use cache if we are not doing impersonation or contrainte deleg */
+	if (impersonate_principal == NULL || flags.b.constrained_delegation) {
 	    krb5_cc_clear_mcred(&mcreds);
 	    mcreds.server = referral.server;
 	    ret = krb5_cc_retrieve_cred(context, ccache, 0, &mcreds, &ticket);
@@ -932,54 +930,57 @@ get_cred_kdc_referral(krb5_context context,
 					second_ticket, &ticket);
 	    if (ret)
 		goto out;
-	    save_to_ccache = 1;
 	}
 
 	/* Did we get the right ticket ? */
-	if (krb5_principal_compare_any_realm(context, referral.server, ticket.server))
+	if (krb5_principal_compare_any_realm(context,
+					     referral.server,
+					     ticket.server))
 	    break;
 
 	if (ticket.server->name.name_string.len != 2 &&
 	    strcmp(ticket.server->name.name_string.val[0], KRB5_TGS_NAME) != 0)
 	{
-	    krb5_set_error_string(context, "Got back an non krbtgt ticket referrals");
+	    krb5_set_error_string(context,
+				  "Got back an non krbtgt ticket referrals");
 	    krb5_free_cred_contents(context, &ticket);
 	    return KRB5KRB_AP_ERR_NOT_US;
 	}
 
-	if (save_to_ccache) {
-	    ret = add_cred(context, ret_tgts, &tgt);
-	    if (ret) {
-		krb5_free_cred_contents(context, &ticket);
-		goto out;
-	    }
-	}
-
 	referral_realm = ticket.server->name.name_string.val[1];
 
-	{
-	    krb5_creds **tickets = *ret_tgts;
+	/* check that there are no referrals loops */
+	tickets = *ret_tgts;
 
-	    krb5_cc_clear_mcred(&mcreds);
-	    mcreds.server = ticket.server;
+	krb5_cc_clear_mcred(&mcreds);
+	mcreds.server = ticket.server;
 
-	    while(tickets && *tickets){
-		if(krb5_compare_creds(context, KRB5_TC_DONT_MATCH_REALM,
-				      &mcreds, *tickets))
-		{
-		    krb5_set_error_string(context,
-					  "Referral from %s loops back "
-					  "to realm %s",
-					  tgt.server->realm,
-					  referral_realm);
-		    krb5_free_cred_contents(context, &ticket);
-		    return KRB5_GET_IN_TKT_LOOP;
-		}
-		tickets++;
+	while(tickets && *tickets){
+	    if(krb5_compare_creds(context,
+				  KRB5_TC_DONT_MATCH_REALM,
+				  &mcreds,
+				  *tickets))
+	    {
+		krb5_set_error_string(context,
+				      "Referral from %s loops back to realm %s",
+				      tgt.server->realm,
+				      referral_realm);
+		krb5_free_cred_contents(context, &ticket);
+		return KRB5_GET_IN_TKT_LOOP;
 	    }
+	    tickets++;
 	}	
 
-	ret = krb5_principal_set_realm(context, referral.server, referral_realm);
+	ret = add_cred(context, &ticket, ret_tgts);
+	if (ret) {
+	    krb5_free_cred_contents(context, &ticket);
+	    goto out;
+	}
+
+	/* try realm in the referral */
+	ret = krb5_principal_set_realm(context, 
+				       referral.server,
+				       referral_realm);
 	krb5_free_cred_contents(context, &tgt);
 	tgt = ticket;
 	memset(&ticket, 0, sizeof(ticket));
