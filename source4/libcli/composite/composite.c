@@ -1,6 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
+   Copyright (C) Volker Lendecke 2005
    Copyright (C) Andrew Tridgell 2005
    
    This program is free software; you can redistribute it and/or modify
