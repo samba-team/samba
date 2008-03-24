@@ -1344,7 +1344,7 @@ init_cred_loop(krb5_context context,
 
     {
 	krb5_keyblock *key = NULL;
-	unsigned flags = 0;
+	unsigned flags = EXTRACT_TICKET_AS_REQ;
 
 	if (ctx->flags.request_anonymous)
 	    flags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH;
