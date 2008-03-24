@@ -45,8 +45,7 @@ make_pa_tgs_req(krb5_context context,
 		krb5_auth_context ac,
 		KDC_REQ_BODY *body,
 		PA_DATA *padata,
-		krb5_creds *creds,
-		krb5_key_usage usage)
+		krb5_creds *creds)
 {
     u_char *buf;
     size_t buf_size;
@@ -65,8 +64,7 @@ make_pa_tgs_req(krb5_context context,
     ret = _krb5_mk_req_internal(context, &ac, 0, &in_data, creds,
 				&padata->padata_value,
 				KRB5_KU_TGS_REQ_AUTH_CKSUM,
-				usage
-				/* KRB5_KU_TGS_REQ_AUTH */);
+				KRB5_KU_TGS_REQ_AUTH);
  out:
     free (buf);
     if(ret)
@@ -144,8 +142,7 @@ init_tgs_req (krb5_context context,
 	      unsigned nonce,
 	      const METHOD_DATA *padata,
 	      krb5_keyblock **subkey,
-	      TGS_REQ *t,
-	      krb5_key_usage usage)
+	      TGS_REQ *t)
 {
     krb5_error_code ret = 0;
 
@@ -280,8 +277,7 @@ init_tgs_req (krb5_context context,
 			      ac,
 			      &t->req_body, 
 			      &t->padata->val[0],
-			      krbtgt,
-			      usage);
+			      krbtgt);
 	if(ret) {
 	    if (key)
 		krb5_free_keyblock (context, key);
@@ -390,16 +386,15 @@ decrypt_tkt_with_subkey (krb5_context context,
 }
 
 static krb5_error_code
-get_cred_kdc_usage(krb5_context context, 
-		   krb5_ccache id, 
-		   krb5_kdc_flags flags,
-		   krb5_addresses *addresses, 
-		   krb5_creds *in_creds,
-		   krb5_creds *krbtgt,
-		   krb5_principal impersonate_principal,
-		   Ticket *second_ticket,
-		   krb5_creds *out_creds,
-		   krb5_key_usage usage)
+get_cred_kdc(krb5_context context, 
+	     krb5_ccache id, 
+	     krb5_kdc_flags flags,
+	     krb5_addresses *addresses, 
+	     krb5_creds *in_creds,
+	     krb5_creds *krbtgt,
+	     krb5_principal impersonate_principal,
+	     Ticket *second_ticket,
+	     krb5_creds *out_creds)
 {
     TGS_REQ req;
     krb5_data enc;
@@ -492,8 +487,7 @@ get_cred_kdc_usage(krb5_context context,
 			nonce,
 			&padata,
 			&subkey, 
-			&req,
-			usage);
+			&req);
     if (ret)
 	goto out;
 
@@ -576,31 +570,6 @@ out:
     }
     return ret;
     
-}
-
-static krb5_error_code
-get_cred_kdc(krb5_context context, 
-	     krb5_ccache id, 
-	     krb5_kdc_flags flags,
-	     krb5_addresses *addresses, 
-	     krb5_creds *in_creds, 
-	     krb5_creds *krbtgt,
-	     krb5_principal impersonate_principal,
-	     Ticket *second_ticket,
-	     krb5_creds *out_creds)
-{
-    krb5_error_code ret;
-
-    ret = get_cred_kdc_usage(context, id, flags, addresses, in_creds,
-			     krbtgt, impersonate_principal, second_ticket,
-			     out_creds, KRB5_KU_TGS_REQ_AUTH);
-    if (ret == KRB5KRB_AP_ERR_BAD_INTEGRITY) {
-	krb5_clear_error_string (context);
-	ret = get_cred_kdc_usage(context, id, flags, addresses, in_creds,
-				 krbtgt, impersonate_principal, second_ticket,
-				 out_creds, KRB5_KU_AP_REQ_AUTH);
-    }
-    return ret;
 }
 
 /* same as above, just get local addresses first */
