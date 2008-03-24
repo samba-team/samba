@@ -669,6 +669,7 @@ tgs_make_reply(krb5_context context,
 	       krb5_enctype krbtgt_etype,
 	       KRB5SignedPathPrincipals *spp,
 	       const krb5_data *rspac,
+	       const METHOD_DATA *enc_pa_data,
 	       const char **e_text,
 	       krb5_data *reply)
 {
@@ -871,6 +872,17 @@ tgs_make_reply(krb5_context context,
 	    if (ret)
 		goto out;
 	}
+    }
+
+    if (enc_pa_data->len) {
+	rep.padata = calloc(1, sizeof(*rep.padata));
+	if (rep.padata == NULL) {
+	    ret = ENOMEM;
+	    goto out;
+	}
+	ret = copy_METHOD_DATA(enc_pa_data, rep.padata);
+	if (ret)
+	    goto out;
     }
 
     /* It is somewhat unclear where the etype in the following
@@ -1359,6 +1371,8 @@ tgs_build_reply(krb5_context context,
     krb5_data rspac;
     int cross_realm = 0;
 
+    METHOD_DATA enc_pa_data;
+
     PrincipalName *s;
     Realm r;
     int nloop = 0;
@@ -1369,6 +1383,7 @@ tgs_build_reply(krb5_context context,
     memset(&sessionkey, 0, sizeof(sessionkey));
     memset(&adtkt, 0, sizeof(adtkt));
     krb5_data_zero(&rspac);
+    memset(&enc_pa_data, 0, sizeof(enc_pa_data));
 
     s = b->sname;
     r = b->realm;
@@ -1869,7 +1884,7 @@ server_lookup:
      * auth_data reply .
      */
     if (ref_realm) {
-	AuthorizationDataElement ade;
+	PA_DATA pa;
 	krb5_crypto crypto;
 
 	kdc_log(context, config, 0,
@@ -1880,26 +1895,20 @@ server_lookup:
 	    goto out;
 
 	ret = tgs_build_referral(context, config, crypto, ref_realm,
-				 NULL, s, &ade.ad_data);
+				 NULL, s, &pa.padata_value);
 	krb5_crypto_destroy(context, crypto);
 	if (ret) {
 	    kdc_log(context, config, 0,
 		    "Failed building server referral");
 	    goto out;
 	}
-	ade.ad_type = KRB5_PADATA_SERVER_REFERRAL;
-	if (*auth_data == NULL) {
-	    *auth_data = calloc(1, sizeof(**auth_data));
-	    if (*auth_data == NULL) {
-		ret = ENOMEM;
-		goto out;
-	    }
-	}
-	ret = add_AuthorizationData(*auth_data, &ade);
-	krb5_data_free(&ade.ad_data);
+	pa.padata_type = KRB5_PADATA_SERVER_REFERRAL;
+
+	ret = add_METHOD_DATA(&enc_pa_data, &pa);
+	krb5_data_free(&pa.padata_value);
 	if (ret) {
 	    kdc_log(context, config, 0,
-		    "Add server referral AuthorizationData failed");
+		    "Add server referral METHOD-DATA failed");
 	    goto out;
 	}
     }
@@ -1925,6 +1934,7 @@ server_lookup:
 			 krbtgt_etype,
 			 spp,
 			 &rspac,
+			 &enc_pa_data,
 			 e_text,
 			 reply);
 	
@@ -1947,6 +1957,7 @@ out:
 	krb5_free_principal(context, sp);
     if (ref_realm)
 	free(ref_realm);
+    free_METHOD_DATA(&enc_pa_data);
 
     free_EncTicketPart(&adtkt);
 
