@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -88,7 +88,7 @@ check_server_referral(krb5_context context,
     PA_DATA *pa;
     int i = 0;
 
-    if (rep->kdc_rep.padata == 0)
+    if (rep->kdc_rep.padata == NULL)
 	return 0;
 
     pa = krb5_find_padata(rep->kdc_rep.padata->val,
@@ -101,7 +101,9 @@ check_server_referral(krb5_context context,
     memset(&ed, 0, sizeof(ed));
     memset(&ref, 0, sizeof(ref));
     
-    ret = decode_EncryptedData(pa->padata_value.data, pa->padata_value.length, &ed, &len);
+    ret = decode_EncryptedData(pa->padata_value.data, 
+			       pa->padata_value.length,
+			       &ed, &len);
     if (ret)
 	return ret;
     if (len != pa->padata_value.length) {
@@ -153,6 +155,7 @@ check_server_referral(krb5_context context,
     ret = krb5_principal_compare(context, principal, requested_server);
     krb5_free_principal(context, principal);
     free_PA_ServerReferralData(&ref);
+
     printf("referrals request match ? %d\n", ret);
     
     ret = 0;
@@ -169,8 +172,9 @@ check_server_referral(krb5_context context,
 static krb5_error_code
 check_client_referral(krb5_context context,
 		      krb5_kdc_rep *rep,
-		      krb5_const_principal requested_client,
-		      const krb5_keyblock const * key)
+		      krb5_const_principal requested,
+		      krb5_const_principal mapped,
+		      krb5_keyblock const * key)
 {
     krb5_error_code ret;
     PA_ClientCanonicalized canon;
@@ -180,11 +184,14 @@ check_client_referral(krb5_context context,
     size_t len;
     int i = 0;
 
+    if (rep->kdc_rep.padata == NULL)
+	goto noreferral;
+
     pa = krb5_find_padata(rep->kdc_rep.padata->val,
 			  rep->kdc_rep.padata->len, 
 			  KRB5_PADATA_CLIENT_CANONICALIZED, &i);
     if (pa == NULL)
-	return 0;
+	goto noreferral;
 
     ret = decode_PA_ClientCanonicalized(pa->padata_value.data, 
 					pa->padata_value.length,
@@ -216,12 +223,41 @@ check_client_referral(krb5_context context,
 			       &canon.canon_checksum);
     krb5_crypto_destroy(context, crypto);
     free(data.data);
-    free_PA_ClientCanonicalized(&canon);
-    if (ret)
+    if (ret) {
 	krb5_set_error_string(context, "Failed to verify "
 			      "client canonicalized data");
+	free_PA_ClientCanonicalized(&canon);
+	return ret;
+    }
 
-    return ret;
+    if (!_krb5_principal_compare_PrincipalName(context, 
+					       requested,
+					       &canon.names.requested_name))
+    {
+	free_PA_ClientCanonicalized(&canon);
+	krb5_set_error_string(context, "Requested name doesn't match"
+			      " in client referral");
+	return KRB5_PRINC_NOMATCH;
+    }
+    if (!_krb5_principal_compare_PrincipalName(context,
+					       mapped,
+					       &canon.names.mapped_name))
+    {
+	free_PA_ClientCanonicalized(&canon);
+	krb5_set_error_string(context, "Mapped name doesn't match"
+			      " in client referral");
+	return KRB5_PRINC_NOMATCH;
+    }
+
+    return 0;
+
+noreferral:
+    if (krb5_principal_compare(context, requested, mapped) == FALSE) {
+	krb5_set_error_string(context, "Not same principal returned "
+			      "as requestd");
+	return KRB5KRB_AP_ERR_MODIFIED;
+    }
+    return 0;
 }
 
 
@@ -270,9 +306,9 @@ decrypt_tkt (krb5_context context,
 }
 
 int
-_krb5_extract_ticket(krb5_context context, 
-		     krb5_kdc_rep *rep, 
-		     krb5_creds *creds,		
+_krb5_extract_ticket(krb5_context context,
+		     krb5_kdc_rep *rep,
+		     krb5_creds *creds,
 		     krb5_keyblock *key,
 		     krb5_const_pointer keyseed,
 		     krb5_key_usage key_usage,
@@ -311,20 +347,7 @@ _krb5_extract_ticket(krb5_context context,
 	goto out;
     }
 
-
-    /* check referrals */
-    ret = check_client_referral(context, rep, creds->client,
-				&creds->session);
-    if (ret)
-	return ret;
-    ret = check_server_referral(context, rep, creds->server,
-				&creds->session);
-    if (ret)
-	return ret;
-
-
-
-   /* save principals */
+    /* compare client and save */
     ret = _krb5_principalname2krb5_principal (context,
 					      &tmp_principal,
 					      rep->kdc_rep.cname,
@@ -332,18 +355,27 @@ _krb5_extract_ticket(krb5_context context,
     if (ret)
 	goto out;
 
-    if(flags & EXTRACT_TICKET_ALLOW_CNAME_MISMATCH){
-	krb5_free_principal (context, creds->client);
-	creds->client = tmp_principal;
-    } else {
-	tmp = krb5_principal_compare (context, tmp_principal, creds->client);
-	if (!tmp) {
+    /* check referrals and save */
+    /* anonymous here ? */
+    if((flags & EXTRACT_TICKET_ALLOW_CNAME_MISMATCH) == 0) {
+	ret = check_client_referral(context, rep,
+				    creds->client,
+				    tmp_principal,
+				    &creds->session);
+	if (ret) {
 	    krb5_free_principal (context, tmp_principal);
-	    krb5_clear_error_string (context);
-	    ret = KRB5KRB_AP_ERR_MODIFIED;
 	    goto out;
 	}
     }
+    krb5_free_principal (context, creds->client);
+    creds->client = tmp_principal;
+
+    ret = check_server_referral(context, rep, creds->server,
+				&creds->session);
+    if (ret)
+	goto out;
+
+   /* save principals */
 
     /* compare server */
     ret = _krb5_principalname2krb5_principal (context,
