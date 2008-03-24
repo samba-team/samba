@@ -1,5 +1,19 @@
 2008-03-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/krb5tgs.c: Better referrals support, use canonicalize flag.
+
+	* kdc/hprop.c: use krb5_principal_set_realm
+
+	* lib/krb5/init_creds_pw.c: use krb5_principal_set_realm
+
+	* lib/krb5/verify_user.c: use krb5_principal_set_realm
+
+	* lib/krb5/version-script.map: add krb5_principal_set_realm
+
+	* lib/krb5/principal.c: add krb5_principal_set_realm
+
+	* lib/krb5/get_cred.c: Insecure tgs referrals.
+
 	* lib/krb5/get_cred.c: Dont try key usage KRB5_KU_AP_REQ_AUTH for
 	TGS-REQ. This drop compatibility with pre 0.3d KDCs.
 	
