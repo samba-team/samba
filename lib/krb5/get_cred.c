@@ -521,6 +521,7 @@ get_cred_kdc(krb5_context context,
 
     memset(&rep, 0, sizeof(rep));
     if(decode_TGS_REP(resp.data, resp.length, &rep.kdc_rep, &len) == 0) {
+	unsigned eflags = 0;
 
 	ret = krb5_copy_principal(context,
 				  in_creds->client,
@@ -535,6 +536,10 @@ get_cred_kdc(krb5_context context,
 	/* this should go someplace else */
 	out_creds->times.endtime = in_creds->times.endtime;
 
+	/* XXX should do better testing */
+	if (flags.b.constrained_delegation || impersonate_principal)
+	    eflags |= EXTRACT_TICKET_ALLOW_CNAME_MISMATCH;
+
 	ret = _krb5_extract_ticket(context,
 				   &rep,
 				   out_creds,
@@ -543,8 +548,7 @@ get_cred_kdc(krb5_context context,
 				   KRB5_KU_TGS_REP_ENC_PART_SESSION,
 				   &krbtgt->addresses,
 				   nonce,
-				   EXTRACT_TICKET_ALLOW_CNAME_MISMATCH|
-				   EXTRACT_TICKET_ALLOW_SERVER_MISMATCH,
+				   eflags,
 				   decrypt_tkt_with_subkey,
 				   subkey);
     out2:
@@ -869,7 +873,7 @@ get_cred_kdc_referral(krb5_context context,
     krb5_creds tgt, referral, ticket;
     int loop = 0;
 
-    flags.b.canonicalize = 1;
+    flags.b.canonicalize = 1; /* XXX */
 
     memset(&tgt, 0, sizeof(tgt));
     memset(&ticket, 0, sizeof(ticket));
