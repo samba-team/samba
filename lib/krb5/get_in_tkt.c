@@ -87,7 +87,7 @@ check_server_referral(krb5_context context,
     size_t len;
     krb5_data data;
     PA_DATA *pa;
-    int i = 0;
+    int i = 0, cmp;
 
     if (rep->kdc_rep.padata == NULL)
 	goto noreferral;
@@ -133,34 +133,25 @@ check_server_referral(krb5_context context,
     }
     krb5_data_free(&data);
     
-    printf("encrypted SERVER REFERRAL data ok\n");
-    
     if (ref.requested_principal_name == NULL || ref.referred_realm == NULL) {
 	free_PA_ServerReferralData(&ref);
 	krb5_set_error_string(context, "req princ missing");
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
     
-    ret = _krb5_principalname2krb5_principal(context, &principal,
-					     *ref.requested_principal_name,
-					     requested->realm);
-    if (ret) {
-	free_PA_ServerReferralData(&ref);
-	return ret;
-    }
-    
-    ret = krb5_principal_compare(context, principal, requested);
-    krb5_free_principal(context, principal);
+    cmp = _krb5_principal_compare_PrincipalName(context,
+						*ref.requested_principal_name,
+						requested);
     free_PA_ServerReferralData(&ref);
-
-    printf("referrals request match ? %d\n", ret);
-    
-    ret = 0;
+    if (!cmp) {
+	krb5_set_error_string(context, "krb5_principal_compare princ missing");
+	return KRB5KRB_AP_ERR_MODIFIED;
+    }
 
     return ret;
 noreferral:
     if (krb5_principal_compare(context, requested, returned) == FALSE) {
-	krb5_set_error_string(context, "Not same principal returned "
+	krb5_set_error_string(context, "Not same server principal returned "
 			      "as requested");
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
@@ -257,7 +248,7 @@ check_client_referral(krb5_context context,
 
 noreferral:
     if (krb5_principal_compare(context, requested, mapped) == FALSE) {
-	krb5_set_error_string(context, "Not same principal returned "
+	krb5_set_error_string(context, "Not same client principal returned "
 			      "as requested");
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
