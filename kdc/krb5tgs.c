@@ -1005,24 +1005,17 @@ need_referral(krb5_context context, krb5_kdc_configuration *config,
 {
     const char *name;
 
-    kdc_log(context, config, 0,
-	    "need referral ? %d %s/%s@%s", 
-	    server->name.name_type,
-	    server->name.name_string.val[0],
-	    server->name.name_string.len > 1 ? server->name.name_string.val[1] : "",
-	    server->realm);
-
-    if(options->canonicalize || server->name.name_type != KRB5_NT_SRV_INST)
+    if(!options->canonicalize && server->name.name_type != KRB5_NT_SRV_INST)
 	return FALSE;
     
     if (server->name.name_string.len == 1)
 	name = server->name.name_string.val[0];
-    if (server->name.name_string.len == 2)
+    if (server->name.name_string.len > 1)
 	name = server->name.name_string.val[1];
     else
 	return FALSE;
  
-    kdc_log(context, config, 0, "searching referral for %s", name);
+    kdc_log(context, config, 0, "Searching referral for %s", name);
 
     return _krb5_get_host_realm_int(context, name, FALSE, realms) == 0;
 }
