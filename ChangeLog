@@ -1,5 +1,8 @@
 2008-03-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/principal.c (_krb5_principal_compare_PrincipalName):
+	new function to compare a principal to a PrincipalName.
+
 	* lib/krb5/init_creds_pw.c: Move client referral checking to
 	_krb5_extract_ticket().
 
