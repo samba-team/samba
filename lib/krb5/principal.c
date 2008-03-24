@@ -511,6 +511,22 @@ krb5_princ_set_realm(krb5_context context,
     princ_realm(principal) = *realm;
 }
 
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_principal_set_realm(krb5_context context,
+			 krb5_principal principal,
+			 krb5_const_realm realm)
+{
+    if (princ_realm(principal))
+	free(princ_realm(principal));
+
+    princ_realm(principal) = strdup(realm);
+    if (princ_realm(principal) == NULL) {
+	krb5_set_error_string(context, "out of memory");
+	return ENOMEM;
+    }
+    return 0;
+}
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_build_principal(krb5_context context,
