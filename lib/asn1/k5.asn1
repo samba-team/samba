@@ -654,6 +654,15 @@ PA-SvrReferralData ::= SEQUENCE {
 	referred-realm  [0] Realm
 }
 
+PA-SERVER-REFERRAL-DATA ::= EncryptedData
+
+PA-ServerReferralData ::= SEQUENCE {
+	referred-realm		[0] Realm OPTIONAL,
+	true-principal-name	[1] PrincipalName OPTIONAL,
+	requested-principal-name [2] PrincipalName OPTIONAL,
+	...
+}
+
 END
 
 -- etags -r '/\([A-Za-z][-A-Za-z0-9]*\).*::=/\1/' k5.asn1
