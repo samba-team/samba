@@ -1,5 +1,9 @@
 2008-03-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/get_in_tkt.c: check no server referral, don't use
+	stringent length tests since encryption layer does padding for
+	us...
+
 	* kdc/kerberos5.c: Match name in ClientCanonicalizedNames with -10
 
 	* lib/krb5/principal.c (_krb5_principal_compare_PrincipalName):
