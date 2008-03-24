@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -1000,8 +1000,11 @@ find_rpath(krb5_context context, Realm crealm, Realm srealm)
 
 static krb5_boolean
 need_referral(krb5_context context, krb5_kdc_configuration *config,
-	      krb5_principal server, krb5_realm **realms)
+	      const KDCOptions * const options, krb5_principal server,
+	      krb5_realm **realms)
 {
+    const char *name;
+
     kdc_log(context, config, 0,
 	    "need referral ? %d %s/%s@%s", 
 	    server->name.name_type,
@@ -1009,12 +1012,19 @@ need_referral(krb5_context context, krb5_kdc_configuration *config,
 	    server->name.name_string.len > 1 ? server->name.name_string.val[1] : "",
 	    server->realm);
 
-    if(server->name.name_type != KRB5_NT_SRV_INST ||
-       server->name.name_string.len != 2)
+    if(options->canonicalize || server->name.name_type != KRB5_NT_SRV_INST)
+	return FALSE;
+    
+    if (server->name.name_string.len == 1)
+	name = server->name.name_string.val[0];
+    if (server->name.name_string.len == 2)
+	name = server->name.name_string.val[1];
+    else
 	return FALSE;
  
-    return _krb5_get_host_realm_int(context, server->name.name_string.val[1],
-				    FALSE, realms) == 0;
+    kdc_log(context, config, 0, "searching referral for %s", name);
+
+    return _krb5_get_host_realm_int(context, name, FALSE, realms) == 0;
 }
 
 static krb5_error_code
@@ -1472,7 +1482,7 @@ server_lookup:
 		    goto server_lookup;
 		}
 	    }
-	} else if(need_referral(context, config, sp, &realms)) {
+	} else if(need_referral(context, config, &b->kdc_options, sp, &realms)) {
 	    if (strcmp(realms[0], sp->realm) != 0) {
 		kdc_log(context, config, 5,
 			"Returning a referral to realm %s for "
