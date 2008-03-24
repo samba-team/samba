@@ -1,5 +1,8 @@
 2008-03-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/init_creds_pw.c: remove lost bits from using
+	krb5_principal_set_realm
+	
 	* kdc/krb5tgs.c: Better referrals support, use canonicalize flag.
 
 	* kdc/hprop.c: use krb5_principal_set_realm
