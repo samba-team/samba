@@ -852,6 +852,144 @@ get_cred_from_kdc_flags(krb5_context context,
     return ret;
 }
 
+static krb5_error_code
+get_cred_kdc_referral(krb5_context context,
+		      krb5_kdc_flags flags,
+		      krb5_ccache ccache,
+		      krb5_creds *in_creds,
+		      krb5_principal impersonate_principal,
+		      Ticket *second_ticket,			
+		      krb5_creds **out_creds,
+		      krb5_creds ***ret_tgts)
+{
+    krb5_const_realm client_realm;
+    krb5_error_code ret;
+    krb5_creds tgt, referral, ticket;
+    int loop = 0;
+
+    flags.b.canonicalize = 1;
+
+    memset(&tgt, 0, sizeof(tgt));
+    memset(&ticket, 0, sizeof(ticket));
+
+    *out_creds = NULL;
+
+    client_realm = krb5_principal_get_realm(context, in_creds->client);
+
+    /* find tgt for the clients base realm */
+    {
+	krb5_principal tgtname;
+	
+	ret = krb5_make_principal(context, &tgtname,
+				  client_realm,
+				  KRB5_TGS_NAME,
+				  client_realm, 
+				  NULL);
+	if(ret)
+	    return ret;
+	
+	ret = find_cred(context, ccache, tgtname, *ret_tgts, &tgt);
+	krb5_free_principal(context, tgtname);
+	if (ret)
+	    return ret;
+    }
+
+    referral = *in_creds;
+    ret = krb5_copy_principal(context, in_creds->server, &referral.server);
+    if (ret) {
+	krb5_free_cred_contents(context, &tgt);
+	return ret;
+    }
+    ret = krb5_principal_set_realm(context, referral.server, client_realm);
+    if (ret) {
+	krb5_free_cred_contents(context, &tgt);
+	krb5_free_principal(context, referral.server);
+	return ret;
+    }
+
+    while (loop++ < 17) {
+	krb5_creds mcreds;
+	char *referral_realm;
+	int save_to_ccache = 0;
+
+	/* Use cache if we are not doing impersonation */
+	if (impersonate_principal == NULL) {
+	    krb5_cc_clear_mcred(&mcreds);
+	    mcreds.server = referral.server;
+	    ret = krb5_cc_retrieve_cred(context, ccache, 0, &mcreds, &ticket);
+	} else
+	    ret = EINVAL;
+
+	if (ret) {
+	    ret = get_cred_kdc_address (context, ccache, flags, NULL,
+					&referral, &tgt, impersonate_principal,
+					second_ticket, &ticket);
+	    if (ret)
+		goto out;
+	    save_to_ccache = 1;
+	}
+
+	/* Did we get the right ticket ? */
+	if (krb5_principal_compare_any_realm(context, referral.server, ticket.server))
+	    break;
+
+	if (ticket.server->name.name_string.len != 2 &&
+	    strcmp(ticket.server->name.name_string.val[0], KRB5_TGS_NAME) != 0)
+	{
+	    krb5_set_error_string(context, "Got back an non krbtgt ticket referrals");
+	    krb5_free_cred_contents(context, &ticket);
+	    return KRB5KRB_AP_ERR_NOT_US;
+	}
+
+	if (save_to_ccache) {
+	    ret = add_cred(context, ret_tgts, &tgt);
+	    if (ret) {
+		krb5_free_cred_contents(context, &ticket);
+		goto out;
+	    }
+	}
+
+	referral_realm = ticket.server->name.name_string.val[1];
+
+	{
+	    krb5_creds **tickets = *ret_tgts;
+
+	    krb5_cc_clear_mcred(&mcreds);
+	    mcreds.server = ticket.server;
+
+	    while(tickets && *tickets){
+		if(krb5_compare_creds(context, KRB5_TC_DONT_MATCH_REALM, 
+				      &mcreds, *tickets))
+		{
+		    krb5_set_error_string(context,
+					  "Referral from %s loops back "
+					  "to realm %s",
+					  tgt.server->realm,
+					  referral_realm);
+		    krb5_free_cred_contents(context, &ticket);
+		    return KRB5_GET_IN_TKT_LOOP;
+		}
+		tickets++;
+	    }
+	}	
+
+	ret = krb5_principal_set_realm(context, referral.server, referral_realm);
+	krb5_free_cred_contents(context, &tgt);
+	tgt = ticket;
+	memset(&ticket, 0, sizeof(ticket));
+	if (ret)
+	    goto out;
+    }
+
+    ret = krb5_copy_creds(context, &ticket, out_creds);
+
+out:
+    krb5_free_principal(context, referral.server);
+    krb5_free_cred_contents(context, &tgt);
+    return ret;
+}
+
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_cred_from_kdc_opt(krb5_context context,
 			   krb5_ccache ccache,
@@ -862,9 +1000,9 @@ krb5_get_cred_from_kdc_opt(krb5_context context,
 {
     krb5_kdc_flags f;
     f.i = flags;
-    return get_cred_from_kdc_flags(context, f, ccache, 
-				   in_creds, NULL, NULL,
-				   out_creds, ret_tgts);
+    return get_cred_kdc_referral(context, f, ccache, 
+				 in_creds, NULL, NULL,
+				 out_creds, ret_tgts);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -947,8 +1085,8 @@ krb5_get_credentials_with_flags(krb5_context context,
 	options |= KRB5_GC_NO_STORE;
 
     tgts = NULL;
-    ret = get_cred_from_kdc_flags(context, flags, ccache, 
-				  in_creds, NULL, NULL, out_creds, &tgts);
+    ret = get_cred_kdc_referral(context, flags, ccache, 
+				in_creds, NULL, NULL, out_creds, &tgts);
     for(i = 0; tgts && tgts[i]; i++) {
 	krb5_cc_store_cred(context, ccache, tgts[i]);
 	krb5_free_creds(context, tgts[i]);
@@ -1161,9 +1299,9 @@ krb5_get_creds(krb5_context context,
 	flags.b.canonicalize = 1;
 
     tgts = NULL;
-    ret = get_cred_from_kdc_flags(context, flags, ccache, 
-				  &in_creds, opt->self, opt->ticket,
-				  out_creds, &tgts);
+    ret = get_cred_kdc_referral(context, flags, ccache, 
+				&in_creds, opt->self, opt->ticket,
+				out_creds, &tgts);
     krb5_free_principal(context, in_creds.client);
     for(i = 0; tgts && tgts[i]; i++) {
 	krb5_cc_store_cred(context, ccache, tgts[i]);
