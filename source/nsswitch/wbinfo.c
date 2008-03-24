@@ -1133,42 +1133,28 @@ static bool wbinfo_klog(char *username)
 
 static bool print_domain_users(const char *domain)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-	const char *extra_data;
-	char *name;
-	TALLOC_CTX *frame = NULL;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	uint32_t i;
+	uint32_t num_users = 0;
+	const char **users = NULL;
 
 	/* Send request to winbind daemon */
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	if (domain) {
-		/* '.' is the special sign for our own domain */
-		if ( strequal(domain, ".") )
-			fstrcpy( request.domain_name, get_winbind_domain() );
-		else
-			fstrcpy( request.domain_name, domain );
+	/* '.' is the special sign for our own domain */
+	if (domain && strcmp(domain, ".") == 0) {
+		domain = get_winbind_domain();
 	}
 
-	if (winbindd_request_response(WINBINDD_LIST_USERS, &request, &response) !=
-	    NSS_STATUS_SUCCESS)
+	wbc_status = wbcListUsers(domain, &num_users, &users);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
+	}
 
-	/* Look through extra data */
+	for (i=0; i < num_users; i++) {
+		d_printf("%s\n", users[i]);
+	}
 
-	if (!response.extra_data.data)
-		return false;
-
-	extra_data = (const char *)response.extra_data.data;
-
-	frame = talloc_stackframe();
-	while(next_token_talloc(frame,&extra_data,&name, ","))
-		d_printf("%s\n", name);
-	TALLOC_FREE(frame);
-
-	SAFE_FREE(response.extra_data.data);
+	wbcFreeMemory(users);
 
 	return true;
 }
@@ -1177,39 +1163,28 @@ static bool print_domain_users(const char *domain)
 
 static bool print_domain_groups(const char *domain)
 {
-	struct winbindd_request  request;
-	struct winbindd_response response;
-	const char *extra_data;
-	TALLOC_CTX *frame = NULL;
-	char *name;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	uint32_t i;
+	uint32_t num_groups = 0;
+	const char **groups = NULL;
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	/* Send request to winbind daemon */
 
-	if (domain) {
-		if ( strequal(domain, ".") )
-			fstrcpy( request.domain_name, get_winbind_domain() );
-		else
-			fstrcpy( request.domain_name, domain );
+	/* '.' is the special sign for our own domain */
+	if (domain && strcmp(domain, ".") == 0) {
+		domain = get_winbind_domain();
 	}
 
-	if (winbindd_request_response(WINBINDD_LIST_GROUPS, &request, &response) !=
-	    NSS_STATUS_SUCCESS)
+	wbc_status = wbcListGroups(domain, &num_groups, &groups);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
+	}
 
-	/* Look through extra data */
+	for (i=0; i < num_groups; i++) {
+		d_printf("%s\n", groups[i]);
+	}
 
-	if (!response.extra_data.data)
-		return false;
-
-	extra_data = (const char *)response.extra_data.data;
-
-	frame = talloc_stackframe();
-	while(next_token_talloc(frame,&extra_data,&name, ","))
-		d_printf("%s\n", name);
-	TALLOC_FREE(frame);
-
-	SAFE_FREE(response.extra_data.data);
+	wbcFreeMemory(groups);
 
 	return true;
 }
