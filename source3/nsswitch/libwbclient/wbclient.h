@@ -363,8 +363,6 @@ wbcErr wbcGetgrent(struct group **grp);
 wbcErr wbcDomainInfo(const char *domain,
 		     struct wbcDomainInfo **info);
 
-wbcErr wbcDomainSequenceNumbers(void);
-
 /*
  * Athenticate functions
  */
