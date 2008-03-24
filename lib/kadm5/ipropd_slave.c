@@ -625,8 +625,8 @@ main(int argc, char **argv)
     else if(exit_flag == SIGINT || exit_flag == SIGTERM)
 	krb5_warnx(context, "%s terminated", getprogname());
     else
-	krb5_warnx(context, "%s unexpected exit reason: %d", 
-		   getprogname(), exit_flag);
+	krb5_warnx(context, "%s unexpected exit reason: %ld", 
+		   getprogname(), (long)exit_flag);
 
     return 0;
 }
