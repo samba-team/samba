@@ -1265,13 +1265,13 @@ out:
 }
 
 static krb5_error_code
-tgs_build_referral(krb5_context context,
-		   krb5_kdc_configuration *config,
-		   krb5_crypto session,
-		   krb5_const_realm referred_realm,
-		   const PrincipalName *true_principal_name,
-		   const PrincipalName *requested_principal,
-		   krb5_data *outdata)
+build_server_referral(krb5_context context,
+		      krb5_kdc_configuration *config,
+		      krb5_crypto session,
+		      krb5_const_realm referred_realm,
+		      const PrincipalName *true_principal_name,
+		      const PrincipalName *requested_principal,
+		      krb5_data *outdata)
 {		
     PA_ServerReferralData ref;
     krb5_error_code ret;
@@ -1894,8 +1894,8 @@ server_lookup:
 	if (ret)
 	    goto out;
 
-	ret = tgs_build_referral(context, config, crypto, ref_realm,
-				 NULL, s, &pa.padata_value);
+	ret = build_server_referral(context, config, crypto, ref_realm,
+				    NULL, s, &pa.padata_value);
 	krb5_crypto_destroy(context, crypto);
 	if (ret) {
 	    kdc_log(context, config, 0,
