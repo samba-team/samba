@@ -1,5 +1,13 @@
-2008-03-21  Love Hörnquist Åstrand  <lha@it.su.se>
+2008-03-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/get_cred.c: Try moving referrals checking into
+	_krb5_extract_ticket().
+
+	* lib/krb5/get_in_tkt.c: Try moving referrals checking into
+	_krb5_extract_ticket().
+
+2008-03-21  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/krb5tgs.c: Send SERVER-REFERRAL data in rep.padata instead
 	of auth_data in ticket.
 
