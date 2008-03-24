@@ -72,6 +72,159 @@ cleanup:
     return ret;
 }
 
+static krb5_error_code
+check_server_referral(krb5_context context,
+		      krb5_kdc_rep *rep,
+		      krb5_const_principal requested_server,
+		      const krb5_keyblock const * key)
+{
+    krb5_error_code ret;
+    krb5_principal principal;
+    PA_ServerReferralData ref;
+    krb5_crypto session;
+    EncryptedData ed;
+    size_t len;
+    krb5_data data;
+    PA_DATA *pa;
+    int i = 0;
+
+    if (rep->kdc_rep.padata == 0)
+	return 0;
+
+    pa = krb5_find_padata(rep->kdc_rep.padata->val,
+			  rep->kdc_rep.padata->len, 
+			  KRB5_PADATA_SERVER_REFERRAL, &i);
+    if (pa == NULL)
+	return 0;
+
+
+    memset(&ed, 0, sizeof(ed));
+    memset(&ref, 0, sizeof(ref));
+    
+    ret = decode_EncryptedData(pa->padata_value.data, pa->padata_value.length, &ed, &len);
+    if (ret)
+	return ret;
+    if (len != pa->padata_value.length) {
+	free_EncryptedData(&ed);
+	return EINVAL; /* XXX */
+    }
+    
+    ret = krb5_crypto_init(context, key, 0, &session);
+    if (ret) {
+	free_EncryptedData(&ed);
+	return ret;
+    }
+    
+    ret = krb5_decrypt_EncryptedData(context, session,
+				     KRB5_KU_PA_SERVER_REFERRAL,
+				     &ed, &data);
+    free_EncryptedData(&ed);
+    krb5_crypto_destroy(context, session);
+    if (ret)
+	return ret;
+    
+    ret = decode_PA_ServerReferralData(data.data, data.length, &ref, &len);
+    if (ret) {
+	krb5_data_free(&data);
+	return ret;
+    }
+    if (len != data.length) {
+	free_PA_ServerReferralData(&ref);
+	krb5_data_free(&data);
+	return EINVAL;
+    }
+    krb5_data_free(&data);
+    
+    printf("encrypted SERVER REFERRAL data ok\n");
+    
+    if (ref.requested_principal_name == NULL || ref.referred_realm == NULL) {
+	free_PA_ServerReferralData(&ref);
+	return EINVAL; /* XXX */
+    }
+    
+    ret = _krb5_principalname2krb5_principal(context, &principal,
+					     *ref.requested_principal_name,
+					     requested_server->realm);
+    if (ret) {
+	free_PA_ServerReferralData(&ref);
+	return ret;
+    }
+    
+    ret = krb5_principal_compare(context, principal, requested_server);
+    krb5_free_principal(context, principal);
+    free_PA_ServerReferralData(&ref);
+    printf("referrals request match ? %d\n", ret);
+    
+    ret = 0;
+
+    return ret;
+}
+
+
+/*
+ * Verify referral data
+ */
+
+
+static krb5_error_code
+check_client_referral(krb5_context context,
+		      krb5_kdc_rep *rep,
+		      krb5_const_principal requested_client,
+		      const krb5_keyblock const * key)
+{
+    krb5_error_code ret;
+    PA_ClientCanonicalized canon;
+    krb5_crypto crypto;
+    krb5_data data;
+    PA_DATA *pa;
+    size_t len;
+    int i = 0;
+
+    pa = krb5_find_padata(rep->kdc_rep.padata->val,
+			  rep->kdc_rep.padata->len, 
+			  KRB5_PADATA_CLIENT_CANONICALIZED, &i);
+    if (pa == NULL)
+	return 0;
+
+    ret = decode_PA_ClientCanonicalized(pa->padata_value.data, 
+					pa->padata_value.length,
+					&canon, &len);
+    if (ret) {
+	krb5_set_error_string(context, "Failed to decode "
+			      "PA_ClientCanonicalized");
+	return ret;
+    }
+    
+    ASN1_MALLOC_ENCODE(PA_ClientCanonicalizedNames, data.data, data.length,
+		       &canon.names, &len, ret);
+    if (ret) {
+	free_PA_ClientCanonicalized(&canon);
+	return ret;
+    }
+    if (data.length != len)
+	krb5_abortx(context, "internal asn.1 error");
+    
+    ret = krb5_crypto_init(context, key, 0, &crypto);
+    if (ret) {
+	free(data.data);
+	free_PA_ClientCanonicalized(&canon);
+	return ret;
+    }
+    
+    ret = krb5_verify_checksum(context, crypto, KRB5_KU_CANONICALIZED_NAMES,
+			       data.data, data.length,
+			       &canon.canon_checksum);
+    krb5_crypto_destroy(context, crypto);
+    free(data.data);
+    free_PA_ClientCanonicalized(&canon);
+    if (ret)
+	krb5_set_error_string(context, "Failed to verify "
+			      "client canonicalized data");
+
+    return ret;
+}
+
+
 
 static krb5_error_code
 decrypt_tkt (krb5_context context,
@@ -136,6 +289,42 @@ _krb5_extract_ticket(krb5_context context,
     time_t tmp_time;
     krb5_timestamp sec_now;
 
+    /* decrypt */
+
+    if (decrypt_proc == NULL)
+	decrypt_proc = decrypt_tkt;
+    
+    ret = (*decrypt_proc)(context, key, key_usage, decryptarg, rep);
+    if (ret)
+	goto out;
+
+    /* save session key */
+
+    creds->session.keyvalue.length = 0;
+    creds->session.keyvalue.data   = NULL;
+    creds->session.keytype = rep->enc_part.key.keytype;
+    ret = krb5_data_copy (&creds->session.keyvalue,
+			  rep->enc_part.key.keyvalue.data,
+			  rep->enc_part.key.keyvalue.length);
+    if (ret) {
+	krb5_clear_error_string(context);
+	goto out;
+    }
+
+
+    /* check referrals */
+    ret = check_client_referral(context, rep, creds->client,
+				&creds->session);
+    if (ret)
+	return ret;
+    ret = check_server_referral(context, rep, creds->server,
+				&creds->session);
+    if (ret)
+	return ret;
+
+
+
+   /* save principals */
     ret = _krb5_principalname2krb5_principal (context,
 					      &tmp_principal,
 					      rep->kdc_rep.cname,
@@ -143,9 +332,10 @@ _krb5_extract_ticket(krb5_context context,
     if (ret)
 	goto out;
 
-    /* compare client */
-
-    if((flags & EXTRACT_TICKET_ALLOW_CNAME_MISMATCH) == 0){
+    if(flags & EXTRACT_TICKET_ALLOW_CNAME_MISMATCH){
+	krb5_free_principal (context, creds->client);
+	creds->client = tmp_principal;
+    } else {
 	tmp = krb5_principal_compare (context, tmp_principal, creds->client);
 	if (!tmp) {
 	    krb5_free_principal (context, tmp_principal);
@@ -155,21 +345,7 @@ _krb5_extract_ticket(krb5_context context,
 	}
     }
 
-    krb5_free_principal (context, creds->client);
-    creds->client = tmp_principal;
-
-    /* extract ticket */
-    ASN1_MALLOC_ENCODE(Ticket, creds->ticket.data, creds->ticket.length, 
-		       &rep->kdc_rep.ticket, &len, ret);
-    if(ret)
-	goto out;
-    if (creds->ticket.length != len)
-	krb5_abortx(context, "internal error in ASN.1 encoder");
-    creds->second_ticket.length = 0;
-    creds->second_ticket.data   = NULL;
-
     /* compare server */
-
     ret = _krb5_principalname2krb5_principal (context,
 					      &tmp_principal,
 					      rep->kdc_rep.ticket.sname,
@@ -190,15 +366,6 @@ _krb5_extract_ticket(krb5_context context,
 	    goto out;
 	}
     }
-    
-    /* decrypt */
-
-    if (decrypt_proc == NULL)
-	decrypt_proc = decrypt_tkt;
-    
-    ret = (*decrypt_proc)(context, key, key_usage, decryptarg, rep);
-    if (ret)
-	goto out;
 
     /* verify names */
     if(flags & EXTRACT_TICKET_MATCH_REALM){
@@ -298,12 +465,17 @@ _krb5_extract_ticket(krb5_context context,
 	  
     creds->authdata.len = 0;
     creds->authdata.val = NULL;
-    creds->session.keyvalue.length = 0;
-    creds->session.keyvalue.data   = NULL;
-    creds->session.keytype = rep->enc_part.key.keytype;
-    ret = krb5_data_copy (&creds->session.keyvalue,
-			  rep->enc_part.key.keyvalue.data,
-			  rep->enc_part.key.keyvalue.length);
+
+    /* extract ticket */
+    ASN1_MALLOC_ENCODE(Ticket, creds->ticket.data, creds->ticket.length, 
+		       &rep->kdc_rep.ticket, &len, ret);
+    if(ret)
+	goto out;
+    if (creds->ticket.length != len)
+	krb5_abortx(context, "internal error in ASN.1 encoder");
+    creds->second_ticket.length = 0;
+    creds->second_ticket.data   = NULL;
+
 
 out:
     memset (rep->enc_part.key.keyvalue.data, 0,
