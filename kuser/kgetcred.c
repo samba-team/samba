@@ -151,6 +151,8 @@ main(int argc, char **argv)
 	krb5_get_creds_opt_add_options(context, opt, KRB5_GC_FORWARDABLE);
     if (!transit_flag)
 	krb5_get_creds_opt_add_options(context, opt, KRB5_GC_NO_TRANSIT_CHECK);
+    if (canonicalize_flag)
+	krb5_get_creds_opt_add_options(context, opt, KRB5_GC_CANONICALIZE);
 
     if (delegation_cred_str) {
 	krb5_ccache id;
