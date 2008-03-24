@@ -722,6 +722,22 @@ krb5_principal_compare_any_realm(krb5_context context,
     return TRUE;
 }
 
+krb5_boolean KRB5_LIB_FUNCTION
+_krb5_principal_compare_PrincipalName(krb5_context context,
+				      krb5_const_principal princ1,
+				      PrincipalName *princ2)
+{
+    int i;
+    if (princ_num_comp(princ1) != princ2->name_string.len)
+	return FALSE;
+    for(i = 0; i < princ_num_comp(princ1); i++){
+	if(strcmp(princ_ncomp(princ1, i), princ2->name_string.val[i]) != 0)
+	    return FALSE;
+    }
+    return TRUE;
+}
+
+
 /*
  * return TRUE iff princ1 == princ2
  */
