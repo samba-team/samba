@@ -1,5 +1,7 @@
 2008-03-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* k5.asn1: Match name in ClientCanonicalizedNames with -10
+
 	* k5.asn1: add referral-valid-until
 
 2008-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
