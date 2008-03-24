@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 30
+Release: 31
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,16 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Tue Mar 25 2008 : Version 1.0.31
+ - Add back controls to disable/enable monitoring on a node.
+ - Fix a memory leak where we used to attach CALL data to the ctdb structure
+   when performing a local call. Memory which would be lost if the call was
+   aborted.
+ - Reduce the loglevel for the log output when someone connects to a non
+   public ip address for samba.
+ - Redo and optimize the vacuuming process to send only one control to each
+   other node containing all records to be vacuumed instead of one
+   control per node per record.
 * Tue Mar 04 2008 : Version 1.0.30
  - Update documentation cor new commands and tuneables
  - Add machinereadable output to the ip,uptime and getdebug commands
