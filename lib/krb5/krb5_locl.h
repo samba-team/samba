@@ -247,6 +247,7 @@ typedef struct krb5_context_data {
 #define EXTRACT_TICKET_ALLOW_CNAME_MISMATCH		1
 #define EXTRACT_TICKET_ALLOW_SERVER_MISMATCH		2
 #define EXTRACT_TICKET_MATCH_REALM			4
+#define EXTRACT_TICKET_AS_REQ				8
 
 /*
  * Configurable options
