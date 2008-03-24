@@ -1,3 +1,8 @@
+2008-03-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-kdc.in: More verbose checks, disable check that no
+	longer works with referrals.
+
 2008-03-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-referral.in: Test TGS referrals.
