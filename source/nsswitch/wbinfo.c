@@ -439,39 +439,46 @@ static bool wbinfo_show_sequence(const char *domain)
 
 /* Show domain info */
 
-static bool wbinfo_domain_info(const char *domain_name)
+static bool wbinfo_domain_info(const char *domain)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcDomainInfo *dinfo = NULL;
+	char *sid_str = NULL;
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	if ((strequal(domain_name, ".")) || (domain_name[0] == '\0'))
-		fstrcpy(request.domain_name, get_winbind_domain());
-	else
-		fstrcpy(request.domain_name, domain_name);
+	if (strcmp(domain, ".") == 0 || domain[0] == '\0') {
+		domain = get_winbind_domain();
+	}
 
 	/* Send request */
 
-	if (winbindd_request_response(WINBINDD_DOMAIN_INFO, &request, &response) !=
-	    NSS_STATUS_SUCCESS)
+	wbc_status = wbcDomainInfo(domain, &dinfo);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
+	}
+
+	wbc_status = wbcSidToString(&dinfo->sid, &sid_str);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		wbcFreeMemory(dinfo);
+		return false;
+	}
 
 	/* Display response */
 
-	d_printf("Name              : %s\n", response.data.domain_info.name);
-	d_printf("Alt_Name          : %s\n", response.data.domain_info.alt_name);
+	d_printf("Name              : %s\n", dinfo->short_name);
+	d_printf("Alt_Name          : %s\n", dinfo->dns_name);
 
-	d_printf("SID               : %s\n", response.data.domain_info.sid);
+	d_printf("SID               : %s\n", sid_str);
 
 	d_printf("Active Directory  : %s\n",
-		 response.data.domain_info.active_directory ? "Yes" : "No");
+		 (dinfo->flags & WBC_DOMINFO_AD) ? "Yes" : "No");
 	d_printf("Native            : %s\n",
-		 response.data.domain_info.native_mode ? "Yes" : "No");
+		 (dinfo->flags & WBC_DOMINFO_NATIVE) ? "Yes" : "No");
 
 	d_printf("Primary           : %s\n",
-		 response.data.domain_info.primary ? "Yes" : "No");
+		 (dinfo->flags & WBC_DOMINFO_PRIMARY) ? "Yes" : "No");
+
+	wbcFreeMemory(sid_str);
+	wbcFreeMemory(dinfo);
 
 	return true;
 }
