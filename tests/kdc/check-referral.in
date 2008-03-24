@@ -165,27 +165,25 @@ ${kinit} --canonicalize \
 echo "Remove alias"
 ${kadmin} modify --alias= foo@${R} || { ec=1 ; eval "${testfailed}"; }
 
-echo "Test TGS-REQ"
+echo "Test server referrals"
 
-echo "Getting client for ${service}@${R} (kdc referral)"
+echo "Getting client for ${service}@${R} (tgs kdc referral)"
 > messages.log
 ${kinit} --password-file=${objdir}/foopassword foo@${R} || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kgetcred} --canonicalize ${service}@${R} ||
 	{ ec=1 ; eval "${testfailed}"; }
-${klist}
 echo "checking that we got back right principal"
 ${klist} | grep "${service}@${R2}" > /dev/null || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
 
-echo "Getting client for ${service}@${R2} (client side guessing)"
+echo "Getting client for ${service}@${R2} (tgs client side guessing)"
 > messages.log
 ${kinit} --password-file=${objdir}/foopassword foo@${R} || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kgetcred} ${service}@${R2} ||
 	{ ec=1 ; eval "${testfailed}"; }
-${klist}
 echo "checking that we got back right principal"
 ${klist} | grep "${service}@${R2}" > /dev/null || \
 	{ ec=1 ; eval "${testfailed}"; }
