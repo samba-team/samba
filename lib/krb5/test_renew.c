@@ -109,7 +109,7 @@ main(int argc, char **argv)
 				 in_tkt_service);
 
     if(ret)
-	krb5_err(context, 1, ret, "krb5_get_kdc_cred");
+	krb5_err(context, 1, ret, "krb5_get_renewed_creds");
 
     if (krb5_principal_compare(context, out.client, client) != TRUE)
 	krb5_errx(context, 1, "return principal is not as expected");
