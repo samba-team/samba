@@ -1,5 +1,12 @@
 2008-03-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/init_creds_pw.c: Move client referral checking to
+	_krb5_extract_ticket().
+
+	* lib/krb5/get_in_tkt.c: More bits for server referral.
+
+	* lib/krb5/get_in_tkt.c: Make working with client referrals.
+
 	* lib/krb5/get_cred.c: Try moving referrals checking into
 	_krb5_extract_ticket().
 
