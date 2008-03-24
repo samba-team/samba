@@ -75,7 +75,8 @@ cleanup:
 static krb5_error_code
 check_server_referral(krb5_context context,
 		      krb5_kdc_rep *rep,
-		      krb5_const_principal requested_server,
+		      krb5_const_principal requested,
+		      krb5_const_principal returned,
 		      const krb5_keyblock const * key)
 {
     krb5_error_code ret;
@@ -89,14 +90,13 @@ check_server_referral(krb5_context context,
     int i = 0;
 
     if (rep->kdc_rep.padata == NULL)
-	return 0;
+	goto noreferral;
 
     pa = krb5_find_padata(rep->kdc_rep.padata->val,
 			  rep->kdc_rep.padata->len, 
 			  KRB5_PADATA_SERVER_REFERRAL, &i);
     if (pa == NULL)
-	return 0;
-
+	goto noreferral;
 
     memset(&ed, 0, sizeof(ed));
     memset(&ref, 0, sizeof(ref));
@@ -108,7 +108,8 @@ check_server_referral(krb5_context context,
 	return ret;
     if (len != pa->padata_value.length) {
 	free_EncryptedData(&ed);
-	return EINVAL; /* XXX */
+	krb5_set_error_string(context, "Referral EncryptedData wrong");
+	return KRB5KRB_AP_ERR_MODIFIED;
     }
     
     ret = krb5_crypto_init(context, key, 0, &session);
@@ -130,29 +131,25 @@ check_server_referral(krb5_context context,
 	krb5_data_free(&data);
 	return ret;
     }
-    if (len != data.length) {
-	free_PA_ServerReferralData(&ref);
-	krb5_data_free(&data);
-	return EINVAL;
-    }
     krb5_data_free(&data);
     
     printf("encrypted SERVER REFERRAL data ok\n");
     
     if (ref.requested_principal_name == NULL || ref.referred_realm == NULL) {
 	free_PA_ServerReferralData(&ref);
-	return EINVAL; /* XXX */
+	krb5_set_error_string(context, "req princ missing");
+	return KRB5KRB_AP_ERR_MODIFIED;
     }
     
     ret = _krb5_principalname2krb5_principal(context, &principal,
 					     *ref.requested_principal_name,
-					     requested_server->realm);
+					     requested->realm);
     if (ret) {
 	free_PA_ServerReferralData(&ref);
 	return ret;
     }
     
-    ret = krb5_principal_compare(context, principal, requested_server);
+    ret = krb5_principal_compare(context, principal, requested);
     krb5_free_principal(context, principal);
     free_PA_ServerReferralData(&ref);
 
@@ -161,6 +158,13 @@ check_server_referral(krb5_context context,
     ret = 0;
 
     return ret;
+noreferral:
+    if (krb5_principal_compare(context, requested, returned) == FALSE) {
+	krb5_set_error_string(context, "Not same principal returned "
+			      "as requested");
+	return KRB5KRB_AP_ERR_MODIFIED;
+    }
+    return 0;
 }
 
 
@@ -254,7 +258,7 @@ check_client_referral(krb5_context context,
 noreferral:
     if (krb5_principal_compare(context, requested, mapped) == FALSE) {
 	krb5_set_error_string(context, "Not same principal returned "
-			      "as requestd");
+			      "as requested");
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
     return 0;
@@ -377,7 +381,9 @@ _krb5_extract_ticket(krb5_context context,
     if (ret)
 	goto out;
     if((flags & EXTRACT_TICKET_ALLOW_SERVER_MISMATCH) == 0){
-	ret = check_server_referral(context, rep, creds->server,
+	ret = check_server_referral(context, rep, 
+				    creds->server,
+				    tmp_principal,
 				    &creds->session);
 	if (ret) {
 	    krb5_free_principal (context, tmp_principal);
