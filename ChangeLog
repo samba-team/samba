@@ -1,3 +1,8 @@
+2008-03-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/krb5tgs.c: Send SERVER-REFERRAL data in rep.padata instead
+	of auth_data in ticket.
+
 2008-03-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/init_creds_pw.c: remove lost bits from using
