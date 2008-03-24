@@ -634,18 +634,18 @@ KRB5SignedPath ::= SEQUENCE {
 }
 
 PA-ClientCanonicalizedNames ::= SEQUENCE{
-	requested-name [0] PrincipalName,
-	real-name      [1] PrincipalName
+	requested-name	[0] PrincipalName,
+	mapped-name	[1] PrincipalName
 }
 
 PA-ClientCanonicalized ::= SEQUENCE {
-	names          [0] PA-ClientCanonicalizedNames,
-	canon-checksum [1] Checksum
+	names		[0] PA-ClientCanonicalizedNames,
+	canon-checksum	[1] Checksum
 }
 
 AD-LoginAlias ::= SEQUENCE { -- ad-type number TBD --
-	login-alias  [0] PrincipalName,
-	checksum     [1] Checksum
+	login-alias	[0] PrincipalName,
+	checksum	[1] Checksum
 }
 
 -- old ms referral
