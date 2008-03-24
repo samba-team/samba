@@ -660,6 +660,7 @@ PA-ServerReferralData ::= SEQUENCE {
 	referred-realm		[0] Realm OPTIONAL,
 	true-principal-name	[1] PrincipalName OPTIONAL,
 	requested-principal-name [2] PrincipalName OPTIONAL,
+	referral-valid-until     [3] KerberosTime OPTIONAL,
 	...
 }
 
