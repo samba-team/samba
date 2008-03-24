@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,6 +41,7 @@ static char *delegation_cred_str;
 static char *etype_str;
 static int transit_flag = 1;
 static int forwardable_flag;
+static int canonicalize_flag;
 static char *impersonate_str;
 static char *nametype_str;
 static int version_flag;
@@ -53,6 +54,8 @@ struct getargs args[] = {
       "credential cache to store credential in", "cache"},
     { "delegation-credential-cache",0,arg_string, &delegation_cred_str,
       "where to find the ticket use for delegation", "cache"},
+    { "canonicalize",	0, arg_flag, &canonicalize_flag,
+      "canonicalize the principal"},
     { "forwardable",	0, arg_flag, &forwardable_flag,
       "forwardable ticket requested"},
     { "transit-check",	0,   arg_negative_flag, &transit_flag },
