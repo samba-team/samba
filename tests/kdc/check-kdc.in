@@ -236,19 +236,15 @@ echo "try getting ticket with deleted user"; > messages.log
 ${kgetcred} ${server}@${R} 2> /dev/null && { ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
 
-# This test no longer works since referrals make the client pass by
-# the user's own KDC on the way over to the server's KDC.
-#
-#
-#echo "cross realm case (deleted user)"; > messages.log
-#${kinit} --password-file=${objdir}/foopassword remove2@$R2 || \
-#	{ ec=1 ; eval "${testfailed}"; }
-#${kgetcred} krbtgt/${R}@${R2} 2> /dev/null || \
-#	{ ec=1 ; eval "${testfailed}"; }
-#${kadmin} delete remove2@${R2} || exit 1
-#${kgetcred} ${server}@${R} 2> /dev/null || \
-#	{ ec=1 ; eval "${testfailed}"; }
-#${kdestroy}
+echo "cross realm case (deleted user)"; > messages.log
+${kinit} --password-file=${objdir}/foopassword remove2@$R2 || \
+	{ ec=1 ; eval "${testfailed}"; }
+${kgetcred} krbtgt/${R}@${R2} 2> /dev/null || \
+	{ ec=1 ; eval "${testfailed}"; }
+${kadmin} delete remove2@${R2} || exit 1
+${kgetcred} ${server}@${R} 2> /dev/null || \
+	{ ec=1 ; eval "${testfailed}"; }
+${kdestroy}
 
 echo "rename user"; > messages.log
 ${kadmin} add -p foo --use-defaults rename@${R} || exit 1
