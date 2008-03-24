@@ -75,12 +75,12 @@ cleanup:
 static krb5_error_code
 check_server_referral(krb5_context context,
 		      krb5_kdc_rep *rep,
+		      unsigned flags,
 		      krb5_const_principal requested,
 		      krb5_const_principal returned,
 		      const krb5_keyblock const * key)
 {
     krb5_error_code ret;
-    krb5_principal principal;
     PA_ServerReferralData ref;
     krb5_crypto session;
     EncryptedData ed;
@@ -133,20 +133,46 @@ check_server_referral(krb5_context context,
     }
     krb5_data_free(&data);
     
-    if (ref.requested_principal_name == NULL || ref.referred_realm == NULL) {
+    if (strcmp(requested->realm, returned->realm) != 0) {
 	free_PA_ServerReferralData(&ref);
-	krb5_set_error_string(context, "req princ missing");
+	krb5_set_error_string(context, "server ref realm mismatch");
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
-    
-    cmp = _krb5_principal_compare_PrincipalName(context,
-						*ref.requested_principal_name,
-						requested);
+
+    if (returned->name.name_string.len == 2 &&
+	strcmp(returned->name.name_string.val[0], KRB5_TGS_NAME) == 0)
+    {
+	const char *realm = returned->name.name_string.val[1];
+
+	if (ref.referred_realm == NULL
+	    || strcmp(*ref.referred_realm, realm) != 0)
+	{
+	    free_PA_ServerReferralData(&ref);
+	    krb5_set_error_string(context, "tgt returned with wrong ref");
+	    return KRB5KRB_AP_ERR_MODIFIED;
+	}
+    } else if (krb5_principal_compare(context, returned, requested) == 0) {
+	free_PA_ServerReferralData(&ref);
+	krb5_set_error_string(context, "req princ no same as returned");
+	return KRB5KRB_AP_ERR_MODIFIED;
+    }
+
+    if (ref.requested_principal_name) {
+	cmp = _krb5_principal_compare_PrincipalName(context,
+						    requested,
+						    ref.requested_principal_name);
+	if (!cmp) {
+	    free_PA_ServerReferralData(&ref);
+	    krb5_set_error_string(context, "compare requested failed");
+	    return KRB5KRB_AP_ERR_MODIFIED;
+	}
+    } else if (flags & EXTRACT_TICKET_AS_REQ) {
+	free_PA_ServerReferralData(&ref);
+	krb5_set_error_string(context, "Requested principal missing on AS-REQ");
+	return KRB5KRB_AP_ERR_MODIFIED;
+    }
+
     free_PA_ServerReferralData(&ref);
-    if (!cmp) {
-	krb5_set_error_string(context, "krb5_principal_compare princ missing");
-	return KRB5KRB_AP_ERR_MODIFIED;
-    }
 
     return ret;
 noreferral:
@@ -372,7 +398,9 @@ _krb5_extract_ticket(krb5_context context,
     if (ret)
 	goto out;
     if((flags & EXTRACT_TICKET_ALLOW_SERVER_MISMATCH) == 0){
-	ret = check_server_referral(context, rep, 
+	ret = check_server_referral(context,
+				    rep, 
+				    flags,
 				    creds->server,
 				    tmp_principal,
 				    &creds->session);
