@@ -1,5 +1,7 @@
 2008-03-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kerberos5.c: Match name in ClientCanonicalizedNames with -10
+
 	* lib/krb5/principal.c (_krb5_principal_compare_PrincipalName):
 	new function to compare a principal to a PrincipalName.
 
