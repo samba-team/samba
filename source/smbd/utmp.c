@@ -409,6 +409,10 @@ static void sys_utmp_update(struct utmp *u, const char *hostname, bool claim)
 	/* Odd.  Have utmpx.h but no "getutmpx()".  Drop to non-x stuff */
 	DEBUG(1,("utmp_update: have utmpx.h but no getutmpx() function\n"));
 	utmp_nox_update(u, claim);
+#elif !defined(HAVE_UPDWTMPX)
+	/* Have utmpx.h but no "updwtmpx()".  Drop to non-x stuff */
+	DEBUG(1,("utmp_update: have utmpx.h but no updwtmpx() function\n"));
+	utmp_nox_update(u, claim);
 #else
 	char *uname = NULL;
 	char *wname = NULL;
