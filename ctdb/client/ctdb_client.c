@@ -1979,7 +1979,7 @@ int ctdb_ctrl_getmonmode(struct ctdb_context *ctdb, struct timeval timeout, uint
 			   CTDB_CONTROL_GET_MONMODE, 0, tdb_null, 
 			   NULL, NULL, &res, &timeout, NULL);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for getrecmode failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for getmonmode failed\n"));
 		return -1;
 	}
 
@@ -1987,6 +1987,51 @@ int ctdb_ctrl_getmonmode(struct ctdb_context *ctdb, struct timeval timeout, uint
 
 	return 0;
 }
+
+
+/*
+ set the monitoring mode of a remote node to active
+ */
+int ctdb_ctrl_enable_monmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
+{
+	int ret;
+	
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_ENABLE_MONITOR, 0, tdb_null, 
+			   NULL, NULL,NULL, &timeout, NULL);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for enable_monitor failed\n"));
+		return -1;
+	}
+
+	
+
+	return 0;
+}
+
+/*
+  set the monitoring mode of a remote node to disable
+ */
+int ctdb_ctrl_disable_monmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
+{
+	int ret;
+	
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_DISABLE_MONITOR, 0, tdb_null, 
+			   NULL, NULL, NULL, &timeout, NULL);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for disable_monitor failed\n"));
+		return -1;
+	}
+
+	
+
+	return 0;
+}
+
+
 
 /* 
   sent to a node to make it take over an ip address

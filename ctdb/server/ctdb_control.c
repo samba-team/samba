@@ -255,7 +255,18 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_set_recmode(ctdb, c, indata, async_reply, errormsg);
 
 	case CTDB_CONTROL_GET_MONMODE: 
+		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_monitoring_mode(ctdb);
+		
+	case CTDB_CONTROL_ENABLE_MONITOR: 
+		CHECK_CONTROL_DATA_SIZE(0);
+		ctdb_enable_monitoring(ctdb);
+		return 0;
+	
+	case CTDB_CONTROL_DISABLE_MONITOR: 
+		CHECK_CONTROL_DATA_SIZE(0);
+		ctdb_disable_monitoring(ctdb);
+		return 0;
 
 	case CTDB_CONTROL_SHUTDOWN:
 		ctdb_stop_recoverd(ctdb);

@@ -900,6 +900,43 @@ static int control_getmonmode(struct ctdb_context *ctdb, int argc, const char **
 	return 0;
 }
 
+
+/*
+  disable monitoring on a  node
+ */
+static int control_disable_monmode(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	
+	int ret;
+
+	ret = ctdb_ctrl_disable_monmode(ctdb, TIMELIMIT(), options.pnn);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to disable monmode on node %u\n", options.pnn));
+		return ret;
+	}
+	printf("Monitoring mode:%s\n","DISABLED");
+
+	return 0;
+}
+
+/*
+  enable monitoring on a  node
+ */
+static int control_enable_monmode(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	
+	int ret;
+
+	ret = ctdb_ctrl_enable_monmode(ctdb, TIMELIMIT(), options.pnn);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to enable monmode on node %u\n", options.pnn));
+		return ret;
+	}
+	printf("Monitoring mode:%s\n","ACTIVE");
+
+	return 0;
+}
+
 /*
   display remote list of keys/data for a db
  */
@@ -1386,6 +1423,8 @@ static const struct {
 	{ "getdbmap",        control_getdbmap,          true,  "show the database map" },
 	{ "catdb",           control_catdb,             true,  "dump a database" ,                     "<dbname>"},
 	{ "getmonmode",      control_getmonmode,        true,  "show monitoring mode" },
+	{ "disablemonitor",      control_disable_monmode,        true,  "set monitoring mode to DISABLE" },
+	{ "enablemonitor",      control_enable_monmode,        true,  "set monitoring mode to ACTIVE" },
 	{ "setdebug",        control_setdebug,          true,  "set debug level",                      "<EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG>" },
 	{ "getdebug",        control_getdebug,          true,  "get debug level" },
 	{ "attach",          control_attach,            true,  "attach to a database",                 "<dbname>" },

@@ -497,6 +497,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_RELOAD_NODES_FILE       = 72,
 		    CTDB_CONTROL_GET_RECLOCK_FILE        = 73,
 		    CTDB_CONTROL_TRY_DELETE_RECORDS      = 74,
+		    CTDB_CONTROL_ENABLE_MONITOR          = 75,
+		    CTDB_CONTROL_DISABLE_MONITOR         = 76,
 };	
 
 /*
