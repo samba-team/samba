@@ -108,9 +108,13 @@ static bool interpret_string_addr_internal(struct addrinfo **ppres,
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = flags;
 
+	/* Linux man page on getaddinfo() says port will be
+	   uninitialized when service string in NULL */
+
 	ret = getaddrinfo(str, NULL,
 			&hints,
 			ppres);
+
 	if (ret) {
 		DEBUG(3,("interpret_string_addr_internal: getaddrinfo failed "
 			"for name %s [%s]\n",
@@ -541,50 +545,22 @@ char *print_canonical_sockaddr(TALLOC_CTX *ctx,
 	char *dest = NULL;
 	int ret;
 
+	/* Linux getnameinfo() man pages says port is unitialized if
+	   service name is NULL. */
+
 	ret = sys_getnameinfo((const struct sockaddr *)pss,
 			sizeof(struct sockaddr_storage),
 			addr, sizeof(addr),
 			NULL, 0,
 			NI_NUMERICHOST);
-	if (ret) {
+	if (ret != 0) {
 		return NULL;
 	}
-	if (pss->ss_family != AF_INET) {
 #if defined(HAVE_IPV6)
-		/* IPv6 */
-		const struct sockaddr_in6 *sa6 =
-			(const struct sockaddr_in6 *)pss;
-		uint16_t port = ntohs(sa6->sin6_port);
-
-		if (port) {
-			dest = talloc_asprintf(ctx,
-					"[%s]:%d",
-					addr,
-					(unsigned int)port);
-		} else {
-			dest = talloc_asprintf(ctx,
-					"[%s]",
-					addr);
-		}
+	dest = talloc_asprintf(ctx, "[%s]", addr);
 #else
-		return NULL;
+	dest = talloc_asprintf(ctx, "%s", addr);
 #endif
-	} else {
-		const struct sockaddr_in *sa =
-			(const struct sockaddr_in *)pss;
-		uint16_t port = ntohs(sa->sin_port);
-
-		if (port) {
-			dest = talloc_asprintf(ctx,
-					"%s:%d",
-					addr,
-					(unsigned int)port);
-		} else {
-			dest = talloc_asprintf(ctx,
-					"%s",
-					addr);
-		}
-	}
 	return dest;
 }
 
