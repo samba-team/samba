@@ -1,3 +1,7 @@
+2008-03-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-kdc.in: Ident.
+
 2008-03-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-kdc.in: More verbose checks, disable check that no
