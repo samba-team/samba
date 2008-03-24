@@ -1,7 +1,11 @@
 2008-03-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/setup.texi: Fix sasl-regexp, from Howard Chu.
+
+2008-03-19  Love Hörnquist Åstrand  <lha@it.su.se>
 	
+	* kuser/kgetcred.c: Add stub --canonicalize implementation.
+
 2008-03-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kx509.c: Adapt to hx509_env changes.
