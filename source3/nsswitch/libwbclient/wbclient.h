@@ -303,6 +303,14 @@ wbcErr wbcLookupUserSids(const struct wbcDomainSid *user_sid,
 			 uint32_t *num_sids,
 			 struct wbcDomainSid **sids);
 
+wbcErr wbcListUsers(const char *domain_name,
+		    uint32_t *num_users,
+		    const char ***users);
+
+wbcErr wbcListGroups(const char *domain_name,
+		     uint32_t *num_groups,
+		     const char ***groups);
+
 /*
  * SID/uid/gid Mappings
  */
