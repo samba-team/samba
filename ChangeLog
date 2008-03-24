@@ -1,9 +1,8 @@
 2008-03-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* doc/setup.texi: Fix sasl-regexp, from Howard Chu.
-
-2008-03-19  Love Hörnquist Åstrand  <lha@it.su.se>
-
+	* lib/krb5/get_cred.c: Dont try key usage KRB5_KU_AP_REQ_AUTH for
+	TGS-REQ. This drop compatibility with pre 0.3d KDCs.
+	
 	* lib/krb5/get_cred.c: catch KRB5_GC_CANONICALIZE.
 
 	* lib/krb5/krb5.h: set KRB5_GC_CANONICALIZE.
@@ -11,6 +10,10 @@
 	* kuser/kgetcred.c: set KRB5_GC_CANONICALIZE.
 
 	* kuser/kgetcred.c: Add stub --canonicalize implementation.
+
+2008-03-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/setup.texi: Fix sasl-regexp, from Howard Chu.
 
 2008-03-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
