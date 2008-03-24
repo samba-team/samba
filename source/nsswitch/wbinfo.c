@@ -174,29 +174,22 @@ static bool wbinfo_get_uidinfo(int uid)
 }
 
 /* pull grent for a given group */
-static bool wbinfo_get_groupinfo(char *group)
+static bool wbinfo_get_groupinfo(const char *group)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-	NSS_STATUS result;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct group *grp;
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	/* Send request */
-
-	fstrcpy(request.data.groupname, group);
-
-	result = winbindd_request_response(WINBINDD_GETGRNAM, &request,
-					   &response);
-
-	if ( result != NSS_STATUS_SUCCESS)
+	wbc_status = wbcGetgrnam(group, &grp);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
+	}
 
-	d_printf( "%s:%s:%d\n",
-		  response.data.gr.gr_name,
-		  response.data.gr.gr_passwd,
-		  response.data.gr.gr_gid );
+	d_printf("%s:%s:%d\n",
+		 grp->gr_name,
+		 grp->gr_passwd,
+		 grp->gr_gid);
+
+	wbcFreeMemory(grp);
 
 	return true;
 }
