@@ -547,67 +547,6 @@ get_cred_kdc(krb5_context context,
 				   EXTRACT_TICKET_ALLOW_SERVER_MISMATCH,
 				   decrypt_tkt_with_subkey,
 				   subkey);
-
-	/* check for server-referral data */
-	if (rep.kdc_rep.padata) {
-	    PA_DATA *pa;
-	    int i = 0;
-	    pa = krb5_find_padata(rep.kdc_rep.padata->val,
-				  rep.kdc_rep.padata->len, 
-				  KRB5_PADATA_SERVER_REFERRAL, &i);
-	    if (pa) {
-		PA_ServerReferralData ref;
-		krb5_crypto session;
-		EncryptedData ed;
-		size_t len;
-		krb5_data data;
-
-		memset(&ed, 0, sizeof(ed));
-		memset(&ref, 0, sizeof(ref));
-
-		ret = decode_EncryptedData(pa->padata_value.data, pa->padata_value.length, &ed, &len);
-		if (ret)
-		    goto out2;
-		if (len != pa->padata_value.length) {
-		    free_EncryptedData(&ed);
-		    ret = EINVAL; /* XXX */
-		    goto out2;
-		}
-
-		ret = krb5_crypto_init(context, &out_creds->session, 0, &session);
-		if (ret) {
-		    free_EncryptedData(&ed);
-		    goto out;
-		}
-
-		ret = krb5_decrypt_EncryptedData(context, session,
-						 KRB5_KU_PA_SERVER_REFERRAL,
-						 &ed, &data);
-		free_EncryptedData(&ed);
-		krb5_crypto_destroy(context, session);
-		if (ret)
-		    goto out2;
-
-		ret = decode_PA_ServerReferralData(data.data, data.length, &ref, &len);
-		if (ret) {
-		    krb5_data_free(&data);
-		    goto out2;
-		}
-		if (len != data.length) {
-		    free_PA_ServerReferralData(&ref);
-		    krb5_data_free(&data);
-		    return EINVAL;
-		}
-		krb5_data_free(&data);
-		
-		/* XXX check PA_ServerReferralData */
-
-		free_PA_ServerReferralData(&ref);
-
-		printf("encrypted SERVER REFERRAL data ok\n");
-	    }
-	}
-
     out2:
 	krb5_free_kdc_rep(context, &rep);
     } else if(krb5_rd_error(context, &resp, &error) == 0) {
