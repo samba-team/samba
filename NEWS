@@ -1,3 +1,8 @@
+Changes in release 1.2
+
+* Dont try key usage KRB5_KU_AP_REQ_AUTH for TGS-REQ. This drop
+  compatibility with pre 0.3d KDCs.
+
 Changes in release 1.1
 
  * Read-only PKCS11 provider built-in to hx509.
