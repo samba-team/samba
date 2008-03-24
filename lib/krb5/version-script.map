@@ -461,6 +461,7 @@ HEIMDAL_KRB5_1.0 {
 		krb5_principal_get_comp_string;
 		krb5_principal_get_realm;
 		krb5_principal_get_type;
+		krb5_principal_set_realm;
 		krb5_principal_match;
 		krb5_principal_set_type;
 		krb5_print_address;
