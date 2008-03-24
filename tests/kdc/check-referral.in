@@ -183,7 +183,7 @@ echo "Getting client for ${service}@${R2} (client side guessing)"
 > messages.log
 ${kinit} --password-file=${objdir}/foopassword foo@${R} || \
 	{ ec=1 ; eval "${testfailed}"; }
-${kgetcred} --canonicalize ${service}@${R2} ||
+${kgetcred} ${service}@${R2} ||
 	{ ec=1 ; eval "${testfailed}"; }
 ${klist}
 echo "checking that we got back right principal"
