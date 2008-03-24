@@ -33,7 +33,7 @@ AC_SUBST(TALLOC_OBJS)
 
 # TODO: These should come from m4_include(lib/tdb/libtdb.m4)
 # but currently this fails: things have to get merged from s4.
-tdbdir="lib/tdb"
+tdbdir="${srcdir-.}/lib/tdb"
 AC_SUBST(tdbdir)
 TDB_CFLAGS="-I$tdbdir/include"
 AC_SUBST(TDB_CFLAGS)

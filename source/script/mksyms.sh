@@ -34,7 +34,7 @@ echo creating $symsfile
 
 mkdir -p `dirname $symsfile`
 
-${awk} -f script/mksyms.awk $proto_src > $symsfile_tmp
+${awk} -f `dirname $0`/mksyms.awk $proto_src > $symsfile_tmp
 
 if cmp -s $symsfile $symsfile_tmp 2>/dev/null
 then
