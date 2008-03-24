@@ -320,7 +320,6 @@ _krb5_extract_ticket(krb5_context context,
 {
     krb5_error_code ret;
     krb5_principal tmp_principal;
-    int tmp;
     size_t len;
     time_t tmp_time;
     krb5_timestamp sec_now;
@@ -355,7 +354,7 @@ _krb5_extract_ticket(krb5_context context,
     if (ret)
 	goto out;
 
-    /* check referrals and save */
+    /* check client referral and save principal */
     /* anonymous here ? */
     if((flags & EXTRACT_TICKET_ALLOW_CNAME_MISMATCH) == 0) {
 	ret = check_client_referral(context, rep,
@@ -370,34 +369,23 @@ _krb5_extract_ticket(krb5_context context,
     krb5_free_principal (context, creds->client);
     creds->client = tmp_principal;
 
-    ret = check_server_referral(context, rep, creds->server,
-				&creds->session);
-    if (ret)
-	goto out;
-
-   /* save principals */
-
-    /* compare server */
+    /* check server referral and save principal */
     ret = _krb5_principalname2krb5_principal (context,
 					      &tmp_principal,
 					      rep->kdc_rep.ticket.sname,
 					      rep->kdc_rep.ticket.realm);
     if (ret)
 	goto out;
-    if(flags & EXTRACT_TICKET_ALLOW_SERVER_MISMATCH){
-	krb5_free_principal(context, creds->server);
-	creds->server = tmp_principal;
-	tmp_principal = NULL;
-    } else {
-	tmp = krb5_principal_compare (context, tmp_principal,
-				      creds->server);
-	krb5_free_principal (context, tmp_principal);
-	if (!tmp) {
-	    ret = KRB5KRB_AP_ERR_MODIFIED;
-	    krb5_clear_error_string (context);
+    if((flags & EXTRACT_TICKET_ALLOW_SERVER_MISMATCH) == 0){
+	ret = check_server_referral(context, rep, creds->server,
+				    &creds->session);
+	if (ret) {
+	    krb5_free_principal (context, tmp_principal);
 	    goto out;
 	}
     }
+    krb5_free_principal(context, creds->server);
+    creds->server = tmp_principal;
 
     /* verify names */
     if(flags & EXTRACT_TICKET_MATCH_REALM){
