@@ -376,13 +376,19 @@ ${kgetcred_imp} --impersonate=bar@${R} foo@${R} 2>/dev/null && \
 echo "test constrained delegation"; > messages.log
 ${kgetcred_imp} --forward --impersonate=bar@${R} ${ps} || \
 	{ ec=1 ; eval "${testfailed}"; }
-${kgetcred} --out-cache=${o2cache} --delegation-credential-cache=${ocache} ${server}@${R} || \
+${kgetcred} \
+	--out-cache=${o2cache} \
+	--delegation-credential-cache=${ocache} \
+	${server}@${R} || \
 	{ ec=1 ; eval "${testfailed}"; }
 echo "  try using the credential"
 ./ap-req ${server}@${R} ${keytab} ${o2cache} || \
 	{ ec=1 ; eval "${testfailed}"; }
 echo "  negative check"
-${kgetcred} --out-cache=${o2cache} --delegation-credential-cache=${ocache} bar@${R} 2>/dev/null && \
+${kgetcred} \
+	--out-cache=${o2cache} \
+	--delegation-credential-cache=${ocache} \
+	bar@${R} 2>/dev/null && \
 	{ ec=1 ; eval "${testfailed}"; }
 
 echo "test constrained delegation impersonation (non forward)"; > messages.log
