@@ -768,7 +768,7 @@ get_cred_from_kdc_flags(krb5_context context,
     }
     {
 	krb5_creds tgts;
-	/* XXX try krb5_cc_retrieve_cred first? */
+
 	ret = find_cred(context, ccache, tmp_creds.server, 
 			*ret_tgts, &tgts);
 	if(ret == 0){
