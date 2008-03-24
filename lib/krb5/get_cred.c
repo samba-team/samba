@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -1187,6 +1187,8 @@ krb5_get_creds(krb5_context context,
 	flags.b.request_anonymous = 1; /* XXX ARGH confusion */
 	flags.b.constrained_delegation = 1;
     }
+    if (options & KRB5_GC_CANONICALIZE)
+	flags.b.canonicalize = 1;
 
     tgts = NULL;
     ret = get_cred_from_kdc_flags(context, flags, ccache, 
