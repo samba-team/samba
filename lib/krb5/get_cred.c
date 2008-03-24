@@ -1,34 +1,34 @@
 /*
  * Copyright (c) 1997 - 2008 Kungliga Tekniska Högskolan
- * (Royal Institute of Technology, Stockholm, Sweden). 
- * All rights reserved. 
+ * (Royal Institute of Technology, Stockholm, Sweden).
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #include <krb5_locl.h>
@@ -41,7 +41,7 @@ RCSID("$Id$");
  */
 
 static krb5_error_code
-make_pa_tgs_req(krb5_context context, 
+make_pa_tgs_req(krb5_context context,
 		krb5_auth_context ac,
 		KDC_REQ_BODY *body,
 		PA_DATA *padata,
@@ -109,9 +109,9 @@ set_auth_data (krb5_context context,
 	    req_body->enc_authorization_data = NULL;
 	    return ret;
 	}
-	krb5_encrypt_EncryptedData(context, 
+	krb5_encrypt_EncryptedData(context,
 				   crypto,
-				   KRB5_KU_TGS_REQ_AUTH_DAT_SUBKEY, 
+				   KRB5_KU_TGS_REQ_AUTH_DAT_SUBKEY,
 				   /* KRB5_KU_TGS_REQ_AUTH_DAT_SESSION? */
 				   buf,
 				   len,
@@ -123,7 +123,7 @@ set_auth_data (krb5_context context,
 	req_body->enc_authorization_data = NULL;
     }
     return 0;
-}    
+}
 
 /*
  * Create a tgs-req in `t' with `addresses', `flags', `second_ticket'
@@ -158,9 +158,9 @@ init_tgs_req (krb5_context context,
 	}
 	t->req_body.etype.val[0] = in_creds->session.keytype;
     } else {
-	ret = krb5_init_etype(context, 
-			      &t->req_body.etype.len, 
-			      &t->req_body.etype.val, 
+	ret = krb5_init_etype(context,
+			      &t->req_body.etype.len,
+			      &t->req_body.etype.val,
 			      NULL);
     }
     if (ret)
@@ -193,7 +193,7 @@ init_tgs_req (krb5_context context,
 	goto fail;
     }
     *t->req_body.till = in_creds->times.endtime;
-    
+
     t->req_body.nonce = nonce;
     if(second_ticket){
 	ALLOC(t->req_body.additional_tickets, 1);
@@ -208,7 +208,7 @@ init_tgs_req (krb5_context context,
 	    krb5_set_error_string(context, "malloc: out of memory");
 	    goto fail;
 	}
-	ret = copy_Ticket(second_ticket, t->req_body.additional_tickets->val); 
+	ret = copy_Ticket(second_ticket, t->req_body.additional_tickets->val);
 	if (ret)
 	    goto fail;
     }
@@ -275,7 +275,7 @@ init_tgs_req (krb5_context context,
 
 	ret = make_pa_tgs_req(context,
 			      ac,
-			      &t->req_body, 
+			      &t->req_body,
 			      &t->padata->val[0],
 			      krbtgt);
 	if(ret) {
@@ -311,7 +311,7 @@ _krb5_get_krbtgt(krb5_context context,
     if (ret)
 	return ret;
 
-    ret = krb5_make_principal(context, 
+    ret = krb5_make_principal(context,
 			      &tmp_cred.server,
 			      realm,
 			      KRB5_TGS_NAME,
@@ -345,7 +345,7 @@ decrypt_tkt_with_subkey (krb5_context context,
     krb5_data data;
     size_t size;
     krb5_crypto crypto;
-    
+
     ret = krb5_crypto_init(context, key, 0, &crypto);
     if (ret)
 	return ret;
@@ -369,27 +369,27 @@ decrypt_tkt_with_subkey (krb5_context context,
     }
     if (ret)
 	return ret;
-    
+
     ret = krb5_decode_EncASRepPart(context,
 				   data.data,
 				   data.length,
-				   &dec_rep->enc_part, 
+				   &dec_rep->enc_part,
 				   &size);
     if (ret)
 	ret = krb5_decode_EncTGSRepPart(context,
 					data.data,
 					data.length,
-					&dec_rep->enc_part, 
+					&dec_rep->enc_part,
 					&size);
     krb5_data_free (&data);
     return ret;
 }
 
 static krb5_error_code
-get_cred_kdc(krb5_context context, 
-	     krb5_ccache id, 
+get_cred_kdc(krb5_context context,
+	     krb5_ccache id,
 	     krb5_kdc_flags flags,
-	     krb5_addresses *addresses, 
+	     krb5_addresses *addresses,
 	     krb5_creds *in_creds,
 	     krb5_creds *krbtgt,
 	     krb5_principal impersonate_principal,
@@ -407,7 +407,7 @@ get_cred_kdc(krb5_context context,
     size_t len;
     Ticket second_ticket_data;
     METHOD_DATA padata;
-    
+
     krb5_data_zero(&resp);
     krb5_data_zero(&enc);
     padata.val = NULL;
@@ -415,10 +415,10 @@ get_cred_kdc(krb5_context context,
 
     krb5_generate_random_block(&nonce, sizeof(nonce));
     nonce &= 0xffffffff;
-    
+
     if(flags.b.enc_tkt_in_skey && second_ticket == NULL){
-	ret = decode_Ticket(in_creds->second_ticket.data, 
-			    in_creds->second_ticket.length, 
+	ret = decode_Ticket(in_creds->second_ticket.data,
+			    in_creds->second_ticket.length,
 			    &second_ticket_data, &len);
 	if(ret)
 	    return ret;
@@ -455,7 +455,7 @@ get_cred_kdc(krb5_context context,
 				   KRB5_KU_OTHER_CKSUM,
 				   0,
 				   data.data,
-				   data.length, 
+				   data.length,
 				   &self.cksum);
 	krb5_crypto_destroy(context, crypto);
 	krb5_data_free(&data);
@@ -486,13 +486,13 @@ get_cred_kdc(krb5_context context,
 			krbtgt,
 			nonce,
 			&padata,
-			&subkey, 
+			&subkey,
 			&req);
     if (ret)
 	goto out;
 
     ASN1_MALLOC_ENCODE(TGS_REQ, enc.data, enc.length, &req, &len, ret);
-    if (ret) 
+    if (ret)
 	goto out;
     if(enc.length != len)
 	krb5_abortx(context, "internal error in ASN.1 encoder");
@@ -521,13 +521,13 @@ get_cred_kdc(krb5_context context,
 
     memset(&rep, 0, sizeof(rep));
     if(decode_TGS_REP(resp.data, resp.length, &rep.kdc_rep, &len) == 0){
-	ret = krb5_copy_principal(context, 
-				  in_creds->client, 
+	ret = krb5_copy_principal(context,
+				  in_creds->client,
 				  &out_creds->client);
 	if(ret)
 	    goto out;
-	ret = krb5_copy_principal(context, 
-				  in_creds->server, 
+	ret = krb5_copy_principal(context,
+				  in_creds->server,
 				  &out_creds->server);
 	if(ret)
 	    goto out;
@@ -569,28 +569,28 @@ out:
 	free(subkey);
     }
     return ret;
-    
+
 }
 
-/* 
+/*
  * same as above, just get local addresses first if the krbtgt have
  * them and the realm is not addressless
  */
 
 static krb5_error_code
-get_cred_kdc_address(krb5_context context, 
+get_cred_kdc_address(krb5_context context,
 		     krb5_ccache id,
-		     krb5_kdc_flags flags, 
+		     krb5_kdc_flags flags,
 		     krb5_addresses *addrs,
 		     krb5_creds *in_creds,
-		     krb5_creds *krbtgt, 
+		     krb5_creds *krbtgt,
 		     krb5_principal impersonate_principal,
 		     Ticket *second_ticket,
 		     krb5_creds *out_creds)
 {
     krb5_error_code ret;
     krb5_addresses addresses = { 0, NULL };
-    
+
     /*
      * Inherit the address-ness of the krbtgt if the address is not
      * specified.
@@ -643,7 +643,7 @@ krb5_get_kdc_cred(krb5_context context,
 	free(*out_creds);
 	return ret;
     }
-    ret = get_cred_kdc(context, id, flags, addresses, 
+    ret = get_cred_kdc(context, id, flags, addresses,
 		       in_creds, krbtgt, NULL, NULL, *out_creds);
     krb5_free_creds (context, krbtgt);
     if(ret)
@@ -678,12 +678,12 @@ find_cred(krb5_context context,
 
     krb5_cc_clear_mcred(&mcreds);
     mcreds.server = server;
-    ret = krb5_cc_retrieve_cred(context, id, KRB5_TC_DONT_MATCH_REALM, 
+    ret = krb5_cc_retrieve_cred(context, id, KRB5_TC_DONT_MATCH_REALM,
 				&mcreds, out_creds);
     if(ret == 0)
 	return 0;
     while(tgts && *tgts){
-	if(krb5_compare_creds(context, KRB5_TC_DONT_MATCH_REALM, 
+	if(krb5_compare_creds(context, KRB5_TC_DONT_MATCH_REALM,
 			      &mcreds, *tgts)){
 	    ret = krb5_copy_creds_contents(context, *tgts, out_creds);
 	    return ret;
@@ -751,7 +751,7 @@ get_cred_from_kdc_flags(krb5_context context,
     if(ret)
 	return ret;
 
-    try_realm = krb5_config_get_string(context, NULL, "capaths", 
+    try_realm = krb5_config_get_string(context, NULL, "capaths",
 				       client_realm, server_realm, NULL);
     if (try_realm == NULL)
 	try_realm = client_realm;
@@ -760,7 +760,7 @@ get_cred_from_kdc_flags(krb5_context context,
 			      &tmp_creds.server,
 			      try_realm,
 			      KRB5_TGS_NAME,
-			      server_realm, 
+			      server_realm,
 			      NULL);
     if(ret){
 	krb5_free_principal(context, tmp_creds.client);
@@ -769,7 +769,7 @@ get_cred_from_kdc_flags(krb5_context context,
     {
 	krb5_creds tgts;
 
-	ret = find_cred(context, ccache, tmp_creds.server, 
+	ret = find_cred(context, ccache, tmp_creds.server,
 			*ret_tgts, &tgts);
 	if(ret == 0){
 	    *out_creds = calloc(1, sizeof(**out_creds));
@@ -779,7 +779,7 @@ get_cred_from_kdc_flags(krb5_context context,
 	    } else {
 		ret = get_cred_kdc_address(context, ccache, flags, NULL,
 					   in_creds, &tgts,
-					   impersonate_principal, 
+					   impersonate_principal,
 					   second_ticket,
 					   *out_creds);
 		if (ret) {
@@ -801,7 +801,7 @@ get_cred_from_kdc_flags(krb5_context context,
     while(1){
 	heim_general_string tgt_inst;
 
-	ret = get_cred_from_kdc_flags(context, flags, ccache, &tmp_creds, 
+	ret = get_cred_from_kdc_flags(context, flags, ccache, &tmp_creds,
 				      NULL, NULL, &tgt, ret_tgts);
 	if(ret) {
 	    krb5_free_principal(context, tmp_creds.server);
@@ -818,7 +818,7 @@ get_cred_from_kdc_flags(krb5_context context,
 	if(strcmp(tgt_inst, server_realm) == 0)
 	    break;
 	krb5_free_principal(context, tmp_creds.server);
-	ret = krb5_make_principal(context, &tmp_creds.server, 
+	ret = krb5_make_principal(context, &tmp_creds.server,
 				  tgt_inst, KRB5_TGS_NAME, server_realm, NULL);
 	if(ret) {
 	    krb5_free_principal(context, tmp_creds.server);
@@ -883,7 +883,7 @@ get_cred_kdc_referral(krb5_context context,
 	ret = krb5_make_principal(context, &tgtname,
 				  client_realm,
 				  KRB5_TGS_NAME,
-				  client_realm, 
+				  client_realm,
 				  NULL);
 	if(ret)
 	    return ret;
@@ -958,7 +958,7 @@ get_cred_kdc_referral(krb5_context context,
 	    mcreds.server = ticket.server;
 
 	    while(tickets && *tickets){
-		if(krb5_compare_creds(context, KRB5_TC_DONT_MATCH_REALM, 
+		if(krb5_compare_creds(context, KRB5_TC_DONT_MATCH_REALM,
 				      &mcreds, *tickets))
 		{
 		    krb5_set_error_string(context,
@@ -1000,7 +1000,7 @@ krb5_get_cred_from_kdc_opt(krb5_context context,
 {
     krb5_kdc_flags f;
     f.i = flags;
-    return get_cred_kdc_referral(context, f, ccache, 
+    return get_cred_kdc_referral(context, f, ccache,
 				 in_creds, NULL, NULL,
 				 out_creds, ret_tgts);
 }
@@ -1012,10 +1012,10 @@ krb5_get_cred_from_kdc(krb5_context context,
 		       krb5_creds **out_creds,
 		       krb5_creds ***ret_tgts)
 {
-    return krb5_get_cred_from_kdc_opt(context, ccache, 
+    return krb5_get_cred_from_kdc_opt(context, ccache,
 				      in_creds, out_creds, ret_tgts, 0);
 }
-     
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_credentials_with_flags(krb5_context context,
@@ -1029,7 +1029,7 @@ krb5_get_credentials_with_flags(krb5_context context,
     krb5_creds **tgts;
     krb5_creds *res_creds;
     int i;
-    
+
     *out_creds = NULL;
     res_creds = calloc(1, sizeof(*res_creds));
     if (res_creds == NULL) {
@@ -1040,7 +1040,7 @@ krb5_get_credentials_with_flags(krb5_context context,
     if (in_creds->session.keytype)
 	options |= KRB5_TC_MATCH_KEYTYPE;
 
-    /* 
+    /*
      * If we got a credential, check if credential is expired before
      * returning it.
      */
@@ -1049,7 +1049,7 @@ krb5_get_credentials_with_flags(krb5_context context,
                                 in_creds->session.keytype ?
                                 KRB5_TC_MATCH_KEYTYPE : 0,
                                 in_creds, res_creds);
-    /* 
+    /*
      * If we got a credential, check if credential is expired before
      * returning it, but only if KRB5_GC_EXPIRED_OK is not set.
      */
@@ -1061,7 +1061,7 @@ krb5_get_credentials_with_flags(krb5_context context,
             *out_creds = res_creds;
             return 0;
         }
-	    
+	
 	krb5_timeofday(context, &timeret);
 	if(res_creds->times.endtime > timeret) {
 	    *out_creds = res_creds;
@@ -1085,7 +1085,7 @@ krb5_get_credentials_with_flags(krb5_context context,
 	options |= KRB5_GC_NO_STORE;
 
     tgts = NULL;
-    ret = get_cred_kdc_referral(context, flags, ccache, 
+    ret = get_cred_kdc_referral(context, flags, ccache,
 				in_creds, NULL, NULL, out_creds, &tgts);
     for(i = 0; tgts && tgts[i]; i++) {
 	krb5_cc_store_cred(context, ccache, tgts[i]);
@@ -1217,7 +1217,7 @@ krb5_get_creds(krb5_context context,
     krb5_creds **tgts;
     krb5_creds *res_creds;
     int i;
-    
+
     memset(&in_creds, 0, sizeof(in_creds));
     in_creds.server = rk_UNCONST(inprinc);
 
@@ -1241,7 +1241,7 @@ krb5_get_creds(krb5_context context,
 	options |= KRB5_TC_MATCH_KEYTYPE;
     }
 
-    /* 
+    /*
      * If we got a credential, check if credential is expired before
      * returning it.
      */
@@ -1249,7 +1249,7 @@ krb5_get_creds(krb5_context context,
                                 ccache,
 				opt->enctype ? KRB5_TC_MATCH_KEYTYPE : 0,
                                 &in_creds, res_creds);
-    /* 
+    /*
      * If we got a credential, check if credential is expired before
      * returning it, but only if KRB5_GC_EXPIRED_OK is not set.
      */
@@ -1262,7 +1262,7 @@ krb5_get_creds(krb5_context context,
 	    krb5_free_principal(context, in_creds.client);
             return 0;
         }
-	    
+	
 	krb5_timeofday(context, &timeret);
 	if(res_creds->times.endtime > timeret) {
 	    *out_creds = res_creds;
@@ -1299,7 +1299,7 @@ krb5_get_creds(krb5_context context,
 	flags.b.canonicalize = 1;
 
     tgts = NULL;
-    ret = get_cred_kdc_referral(context, flags, ccache, 
+    ret = get_cred_kdc_referral(context, flags, ccache,
 				&in_creds, opt->self, opt->ticket,
 				out_creds, &tgts);
     krb5_free_principal(context, in_creds.client);
