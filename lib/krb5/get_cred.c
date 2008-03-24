@@ -572,24 +572,47 @@ out:
     
 }
 
-/* same as above, just get local addresses first */
+/* 
+ * same as above, just get local addresses first if the krbtgt have
+ * them and the realm is not addressless
+ */
 
 static krb5_error_code
-get_cred_kdc_la(krb5_context context, krb5_ccache id, krb5_kdc_flags flags, 
-		krb5_creds *in_creds, krb5_creds *krbtgt, 
-		krb5_principal impersonate_principal, Ticket *second_ticket,
-		krb5_creds *out_creds)
+get_cred_kdc_address(krb5_context context, 
+		     krb5_ccache id,
+		     krb5_kdc_flags flags, 
+		     krb5_addresses *addrs,
+		     krb5_creds *in_creds,
+		     krb5_creds *krbtgt, 
+		     krb5_principal impersonate_principal,
+		     Ticket *second_ticket,
+		     krb5_creds *out_creds)
 {
     krb5_error_code ret;
-    krb5_addresses addresses, *addrs = &addresses;
+    krb5_addresses addresses = { 0, NULL };
     
-    krb5_get_all_client_addrs(context, &addresses);
-    /* XXX this sucks. */
-    if(addresses.len == 0)
-	addrs = NULL;
-    ret = get_cred_kdc(context, id, flags, addrs, 
-		       in_creds, krbtgt, impersonate_principal, second_ticket,
-		       out_creds);
+    /*
+     * Inherit the address-ness of the krbtgt if the address is not
+     * specified.
+     */
+
+    if (addrs == NULL && krbtgt->addresses.len != 0) {
+	krb5_boolean noaddr;
+
+	krb5_appdefault_boolean(context, NULL, krbtgt->server->realm,
+				"no-addresses", FALSE, &noaddr);
+	
+	if (!noaddr) {
+	    krb5_get_all_client_addrs(context, &addresses);
+	    /* XXX this sucks. */
+	    addrs = &addresses;
+	    if(addresses.len == 0)
+		addrs = NULL;
+	}
+    }
+    ret = get_cred_kdc(context, id, flags, addrs, in_creds,
+		       krbtgt, impersonate_principal,
+		       second_ticket, out_creds);
     krb5_free_addresses(context, &addresses);
     return ret;
 }
@@ -754,23 +777,11 @@ get_cred_from_kdc_flags(krb5_context context,
 		krb5_set_error_string(context, "malloc: out of memory");
 		ret = ENOMEM;
 	    } else {
-		krb5_boolean noaddr;
-
-		krb5_appdefault_boolean(context, NULL, tgts.server->realm,
-					"no-addresses", FALSE, &noaddr);
-
-		if (noaddr)
-		    ret = get_cred_kdc(context, ccache, flags, NULL,
-				       in_creds, &tgts,
-				       impersonate_principal, 
-				       second_ticket,
-				       *out_creds);
-		else
-		    ret = get_cred_kdc_la(context, ccache, flags, 
-					  in_creds, &tgts, 
-					  impersonate_principal, 
-					  second_ticket,
-					  *out_creds);
+		ret = get_cred_kdc_address(context, ccache, flags, NULL,
+					   in_creds, &tgts,
+					   impersonate_principal, 
+					   second_ticket,
+					   *out_creds);
 		if (ret) {
 		    free (*out_creds);
 		    *out_creds = NULL;
@@ -829,19 +840,9 @@ get_cred_from_kdc_flags(krb5_context context,
 	krb5_set_error_string(context, "malloc: out of memory");
 	ret = ENOMEM;
     } else {
-	krb5_boolean noaddr;
-
-	krb5_appdefault_boolean(context, NULL, tgt->server->realm,
-				"no-addresses", KRB5_ADDRESSLESS_DEFAULT,
-				&noaddr);
-	if (noaddr)
-	    ret = get_cred_kdc (context, ccache, flags, NULL,
-				in_creds, tgt, NULL, NULL,
-				*out_creds);
-	else
-	    ret = get_cred_kdc_la(context, ccache, flags, 
-				  in_creds, tgt, NULL, NULL,
-				  *out_creds);
+	ret = get_cred_kdc_address (context, ccache, flags, NULL,
+				    in_creds, tgt, NULL, NULL,
+				    *out_creds);
 	if (ret) {
 	    free (*out_creds);
 	    *out_creds = NULL;
