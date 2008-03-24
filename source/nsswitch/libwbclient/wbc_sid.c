@@ -505,3 +505,145 @@ wbcErr wbcLookupUserSids(const struct wbcDomainSid *user_sid,
 
 	return wbc_status;
 }
+
+/** @brief Lists Users
+ *
+ **/
+
+wbcErr wbcListUsers(const char *domain_name,
+		    uint32_t *_num_users,
+		    const char ***_users)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct winbindd_request request;
+	struct winbindd_response response;
+	uint32_t num_users = 0;
+	const char **users = NULL;
+	const char *next;
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	if (domain_name) {
+		strncpy(request.domain_name, domain_name,
+			sizeof(request.domain_name)-1);
+	}
+
+	wbc_status = wbcRequestResponse(WINBINDD_LIST_USERS,
+					&request,
+					&response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	/* Look through extra data */
+
+	next = (const char *)response.extra_data.data;
+	while (next) {
+		const char **tmp;
+		const char *current = next;
+		char *k = strchr(next, ',');
+		if (k) {
+			k[0] = '\0';
+			next = k+1;
+		} else {
+			next = NULL;
+		}
+
+		tmp = talloc_realloc(NULL, users,
+				     const char *,
+				     num_users+1);
+		BAIL_ON_PTR_ERROR(tmp, wbc_status);
+		users = tmp;
+
+		users[num_users] = talloc_strdup(users, current);
+		BAIL_ON_PTR_ERROR(users[num_users], wbc_status);
+
+		num_users++;
+	}
+
+	*_num_users = num_users;
+	*_users = users;
+	users = NULL;
+	wbc_status = WBC_ERR_SUCCESS;
+
+ done:
+	if (response.extra_data.data) {
+		free(response.extra_data.data);
+	}
+	if (users) {
+		talloc_free(users);
+	}
+	return wbc_status;
+}
+
+/** @brief Lists Groups
+ *
+ **/
+
+wbcErr wbcListGroups(const char *domain_name,
+		     uint32_t *_num_groups,
+		     const char ***_groups)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct winbindd_request request;
+	struct winbindd_response response;
+	uint32_t num_groups = 0;
+	const char **groups = NULL;
+	const char *next;
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	if (domain_name) {
+		strncpy(request.domain_name, domain_name,
+			sizeof(request.domain_name)-1);
+	}
+
+	wbc_status = wbcRequestResponse(WINBINDD_LIST_GROUPS,
+					&request,
+					&response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	/* Look through extra data */
+
+	next = (const char *)response.extra_data.data;
+	while (next) {
+		const char **tmp;
+		const char *current = next;
+		char *k = strchr(next, ',');
+		if (k) {
+			k[0] = '\0';
+			next = k+1;
+		} else {
+			next = NULL;
+		}
+
+		tmp = talloc_realloc(NULL, groups,
+				     const char *,
+				     num_groups+1);
+		BAIL_ON_PTR_ERROR(tmp, wbc_status);
+		groups = tmp;
+
+		groups[num_groups] = talloc_strdup(groups, current);
+		BAIL_ON_PTR_ERROR(groups[num_groups], wbc_status);
+
+		num_groups++;
+	}
+
+	*_num_groups = num_groups;
+	*_groups = groups;
+	groups = NULL;
+	wbc_status = WBC_ERR_SUCCESS;
+
+ done:
+	if (response.extra_data.data) {
+		free(response.extra_data.data);
+	}
+	if (groups) {
+		talloc_free(groups);
+	}
+	return wbc_status;
+}
