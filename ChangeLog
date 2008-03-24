@@ -1,5 +1,8 @@
 2008-03-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/get_cred.c: Try both kdc server referral and the old
+	client chasing mode.
+
 	* lib/krb5/get_cred.c: Don't do canonicalize by default, make
 	add_cred() sane, make loop detection in credential fetching
 	better.
