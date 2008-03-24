@@ -2470,7 +2470,10 @@ static enum ndr_err_code ndr_push_winreg_QueryValue(struct ndr_push *ndr, int fl
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		NDR_CHECK(ndr_push_winreg_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.value_name));
+		if (r->in.value_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_winreg_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.value_name));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.type));
 		if (r->in.type) {
 			NDR_CHECK(ndr_push_winreg_Type(ndr, NDR_SCALARS, *r->in.type));
@@ -2523,6 +2526,7 @@ static enum ndr_err_code ndr_pull_winreg_QueryValue(struct ndr_pull *ndr, int fl
 	uint32_t _ptr_data_size;
 	uint32_t _ptr_value_length;
 	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_value_name_0;
 	TALLOC_CTX *_mem_save_type_0;
 	TALLOC_CTX *_mem_save_data_0;
 	TALLOC_CTX *_mem_save_data_size_0;
@@ -2537,7 +2541,13 @@ static enum ndr_err_code ndr_pull_winreg_QueryValue(struct ndr_pull *ndr, int fl
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_winreg_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.value_name));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.value_name);
+		}
+		_mem_save_value_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.value_name, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_winreg_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.value_name));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_value_name_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_type));
 		if (_ptr_type) {
 			NDR_PULL_ALLOC(ndr, r->in.type);
@@ -2683,7 +2693,10 @@ _PUBLIC_ void ndr_print_winreg_QueryValue(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
-		ndr_print_winreg_String(ndr, "value_name", &r->in.value_name);
+		ndr_print_ptr(ndr, "value_name", r->in.value_name);
+		ndr->depth++;
+		ndr_print_winreg_String(ndr, "value_name", r->in.value_name);
+		ndr->depth--;
 		ndr_print_ptr(ndr, "type", r->in.type);
 		ndr->depth++;
 		if (r->in.type) {

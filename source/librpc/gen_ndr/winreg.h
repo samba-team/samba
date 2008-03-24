@@ -381,7 +381,7 @@ struct winreg_QueryInfoKey {
 struct winreg_QueryValue {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		struct winreg_String value_name;
+		struct winreg_String *value_name;/* [ref] */
 		enum winreg_Type *type;/* [unique] */
 		uint8_t *data;/* [unique,length_is(*value_length),size_is(*data_size)] */
 		uint32_t *data_size;/* [unique] */
