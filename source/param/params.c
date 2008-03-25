@@ -230,7 +230,7 @@ static int Continuation(uint8_t *line, int pos )
  * ------------------------------------------------------------------------ **
  */
 
-static bool Section( DATA_BLOB *buf, myFILE *InFile, bool (*sfunc)(const char *) )
+static bool Section( DATA_BLOB *buf, myFILE *InFile, bool (*sfunc)(const char *, void *), void *userdata )
 {
 	int   c;
 	int   i;
@@ -299,7 +299,7 @@ static bool Section( DATA_BLOB *buf, myFILE *InFile, bool (*sfunc)(const char *)
 				DEBUG(0, ("%s Empty section name in configuration file.\n", func ));
 				return False;
 			}
-			if( !sfunc((char *)buf->data) )            /* Got a valid name.  Deal with it. */
+			if( !sfunc((char *)buf->data, userdata) )            /* Got a valid name.  Deal with it. */
 				return False;
 			EatComment( InFile );     /* Finish off the line.             */
 			return True;
@@ -336,7 +336,7 @@ static bool Section( DATA_BLOB *buf, myFILE *InFile, bool (*sfunc)(const char *)
  * ------------------------------------------------------------------------ **
  */
 
-static bool Parameter( DATA_BLOB *buf, myFILE *InFile, bool (*pfunc)(const char *, const char *), int c )
+static bool Parameter( DATA_BLOB *buf, myFILE *InFile, bool (*pfunc)(const char *, const char *, void *), int c, void *userdata )
 {
 	int   i       = 0;    /* Position within bufr. */
 	int   end     = 0;    /* bufr[end] is current end-of-string. */
@@ -441,7 +441,7 @@ static bool Parameter( DATA_BLOB *buf, myFILE *InFile, bool (*pfunc)(const char 
 	}
 	buf->data[end] = '\0';          /* End of value. */
 
-	return( pfunc( (char *)buf->data, (char *)&buf->data[vstart] ) );   /* Pass name & value to pfunc().  */
+	return( pfunc( (char *)buf->data, (char *)&buf->data[vstart], userdata ) );   /* Pass name & value to pfunc().  */
 }
 
 /* ------------------------------------------------------------------------ **
@@ -467,8 +467,9 @@ static bool Parameter( DATA_BLOB *buf, myFILE *InFile, bool (*pfunc)(const char 
  */
 
 static bool Parse( DATA_BLOB *buf, myFILE *InFile,
-                   bool (*sfunc)(const char *),
-                   bool (*pfunc)(const char *, const char *) )
+                   bool (*sfunc)(const char *, void *),
+                   bool (*pfunc)(const char *, const char *, void *),
+		   void *userdata)
 {
 	int    c;
 
@@ -485,7 +486,7 @@ static bool Parse( DATA_BLOB *buf, myFILE *InFile,
 				break;
 
 			case '[': /* Section Header. */
-				if( !Section( buf, InFile, sfunc ) )
+				if( !Section( buf, InFile, sfunc, userdata ) )
 					return False;
 				c = EatWhitespace( InFile );
 				break;
@@ -495,7 +496,7 @@ static bool Parse( DATA_BLOB *buf, myFILE *InFile,
 				break;
 
 			default: /* Parameter line. */
-				if( !Parameter( buf, InFile, pfunc, c ) )
+				if( !Parameter( buf, InFile, pfunc, c, userdata ) )
 					return False;
 				c = EatWhitespace( InFile );
 				break;
@@ -552,8 +553,9 @@ static myFILE *OpenConfFile( const char *FileName )
  */
 
 bool pm_process( const char *FileName,
-		bool (*sfunc)(const char *),
-		bool (*pfunc)(const char *, const char *) )
+		bool (*sfunc)(const char *, void *),
+		bool (*pfunc)(const char *, const char *, void *),
+		void *userdata)
 {
 	int   result;
 	myFILE *InFile;
@@ -574,7 +576,7 @@ bool pm_process( const char *FileName,
 		return False;
 	}
 
-	result = Parse( &buf, InFile, sfunc, pfunc );
+	result = Parse( &buf, InFile, sfunc, pfunc, userdata );
 	data_blob_free(&buf);
 
 	myfile_close(InFile);

@@ -5327,8 +5327,9 @@ static int getservicebyname(const char *pszServiceName,
 static void copy_service(struct service *pserviceDest,
 			 struct service *pserviceSource,
 			 struct bitmap *pcopymapDest);
-static bool do_parameter(const char *pszParmName, const char *pszParmValue);
-static bool do_section(const char *pszSectionName);
+static bool do_parameter(const char *pszParmName, const char *pszParmValue,
+			 void *userdata);
+static bool do_section(const char *pszSectionName, void *userdata);
 static void init_copymap(struct service *pservice);
 static bool hash_a_service(const char *name, int number);
 static void free_service_byindex(int iService);
@@ -6485,7 +6486,7 @@ bool service_ok(int iService)
 /*
  * process_registry_globals
  */
-static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
+static bool process_registry_globals(bool (*pfunc)(const char *, const char *, void *))
 {
 	WERROR werr;
 	char **param_names;
@@ -6517,13 +6518,13 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 	}
 
 	for (count = 0; count < num_params; count++) {
-		ret = pfunc(param_names[count], param_values[count]);
+		ret = pfunc(param_names[count], param_values[count], NULL);
 		if (ret != true) {
 			goto done;
 		}
 	}
 
-	ret = pfunc("registry shares", "yes");
+	ret = pfunc("registry shares", "yes", NULL);
 	/* store the csn */
 	smbconf_changed(conf_ctx, &conf_last_csn, NULL, NULL);
 
@@ -6731,7 +6732,7 @@ static bool handle_include(int snum, const char *pszParmValue, char **ptr)
 	string_set(ptr, fname);
 
 	if (file_exist(fname, NULL)) {
-		bool ret = pm_process(fname, do_section, do_parameter);
+		bool ret = pm_process(fname, do_section, do_parameter, NULL);
 		SAFE_FREE(fname);
 		return ret;
 	}
@@ -7162,7 +7163,8 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
  Process a parameter.
 ***************************************************************************/
 
-static bool do_parameter(const char *pszParmName, const char *pszParmValue)
+static bool do_parameter(const char *pszParmName, const char *pszParmValue,
+			 void *userdata)
 {
 	if (!bInGlobalSection && bGlobalOnly)
 		return (True);
@@ -7292,7 +7294,7 @@ void init_locals(void)
  Returns True on success, False on failure. 
 ***************************************************************************/
 
-static bool do_section(const char *pszSectionName)
+static bool do_section(const char *pszSectionName, void *userdata)
 {
 	bool bRetval;
 	bool isglobal = ((strwicmp(pszSectionName, GLOBAL_NAME) == 0) ||
@@ -8680,7 +8682,7 @@ bool lp_load(const char *pszFname,
 
 		/* We get sections first, so have to start 'behind' to make up */
 		iServiceIndex = -1;
-		bRetval = pm_process(n2, do_section, do_parameter);
+		bRetval = pm_process(n2, do_section, do_parameter, NULL);
 		SAFE_FREE(n2);
 
 		/* finish up the last section */
@@ -9073,7 +9075,7 @@ void lp_remove_service(int snum)
 
 void lp_copy_service(int snum, const char *new_name)
 {
-	do_section(new_name);
+	do_section(new_name, NULL);
 	if (snum >= 0) {
 		snum = lp_servicenumber(new_name);
 		if (snum >= 0)
