@@ -445,11 +445,10 @@ NTTIME samdb_result_nttime(struct ldb_message *msg, const char *attr, NTTIME def
  * Consolidate that logic here to allow clearer logic for account expiry in
  * the rest of the code.
  */
-NTTIME samdb_result_account_expires(struct ldb_message *msg,
-				    NTTIME default_value)
+NTTIME samdb_result_account_expires(struct ldb_message *msg)
 {
 	NTTIME ret = ldb_msg_find_attr_as_uint64(msg, "accountExpires",
-						 default_value);
+						 0);
 
 	if (ret == (NTTIME)0)
 		ret = 0x7FFFFFFFFFFFFFFFULL;
