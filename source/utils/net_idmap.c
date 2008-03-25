@@ -270,7 +270,7 @@ static int net_idmap_secret(int argc, const char **argv)
 
 int net_help_idmap(int argc, const char **argv)
 {
-	d_printf("net idmap dump <outputfile>\n"\
+	d_printf("net idmap dump <inputfile>\n"\
 		 "    Dump current id mapping\n");
 
 	d_printf("net idmap restore\n"\
