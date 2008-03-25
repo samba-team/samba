@@ -1362,7 +1362,7 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 	 * caller, we look up the account flags ourselve - gd */
 
 	if ((state->request.flags & WBFLAG_PAM_INFO3_TEXT) && 
-	    (my_info3->base.acct_flags == 0) && NT_STATUS_IS_OK(result)) {
+	    NT_STATUS_IS_OK(result) && (my_info3->base.acct_flags == 0)) {
 
 		struct rpc_pipe_client *samr_pipe;
 		POLICY_HND samr_domain_handle, user_pol;
