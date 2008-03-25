@@ -30,6 +30,7 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "param/param.h"
 
 const char *wreplsrv_owner_filter(struct wreplsrv_service *service,
 				  TALLOC_CTX *mem_ctx,
@@ -63,11 +64,12 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 	bool delete_record;
 	bool delete_tombstones;
 	struct timeval tombstone_extra_time;
+	const char *local_owner = service->wins_db->local_owner;
+	bool propagate = lp_parm_bool(service->task->lp_ctx, NULL, "wreplsrv", "propagate name releases", false);
 
 	now_timestr = ldb_timestring(tmp_mem, now);
 	NT_STATUS_HAVE_NO_MEMORY(now_timestr);
-	owner_filter = wreplsrv_owner_filter(service, tmp_mem,
-					     service->wins_db->local_owner);
+	owner_filter = wreplsrv_owner_filter(service, tmp_mem, local_owner);
 	NT_STATUS_HAVE_NO_MEMORY(owner_filter);
 	filter = talloc_asprintf(tmp_mem,
 				 "(&%s(objectClass=winsRecord)"
@@ -84,6 +86,8 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 	delete_tombstones = timeval_expired(&tombstone_extra_time);
 
 	for (i=0; i < res->count; i++) {
+		bool has_replicas = false;
+
 		/*
 		 * we pass '0' as 'now' here,
 		 * because we want to get the raw timestamps which are in the DB
@@ -110,10 +114,40 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 				modify_record	= true;
 				break;
 			}
-			new_state	= "released";
-			rec->state	= WREPL_STATE_RELEASED;
-			rec->expire_time= service->config.tombstone_interval + now;
-			modify_flags	= 0;
+			if (rec->type != WREPL_TYPE_SGROUP || !propagate) {
+				new_state	= "released";
+				rec->state	= WREPL_STATE_RELEASED;
+				rec->expire_time= service->config.tombstone_interval + now;
+				modify_flags	= 0;
+				modify_record	= true;
+				break;
+			}
+			/* check if there's any replica address */
+			for (i=0;rec->addresses[i];i++) {
+				if (strcmp(rec->addresses[i]->wins_owner, local_owner) != 0) {
+					has_replicas = true;
+					rec->addresses[i]->expire_time= service->config.renew_interval + now;
+				}
+			}
+			if (has_replicas) {
+				/* if it has replica addresses propagate them */
+				new_state	= "active(propagated)";
+				rec->state	= WREPL_STATE_ACTIVE;
+				rec->expire_time= service->config.renew_interval + now;
+				modify_flags	= WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP;
+				modify_record	= true;
+				break;
+			}
+			/*
+			 * if it doesn't have replica addresses, make it a tombstone,
+			 * so that the released owned addresses are propagated
+			 */
+			new_state	= "tombstone";
+			rec->state	= WREPL_STATE_TOMBSTONE;
+			rec->expire_time= time(NULL) +
+					  service->config.tombstone_interval +
+					  service->config.tombstone_timeout;
+			modify_flags	= WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP;
 			modify_record	= true;
 			break;
 

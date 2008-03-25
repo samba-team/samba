@@ -950,6 +950,13 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 		if (strcmp(rec->wins_owner, winssrv->wins_db->local_owner) != 0) {
 			modify_flags = WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP;
 		}
+		if (lp_parm_bool(iface->nbtsrv->task->lp_ctx, NULL, "wreplsrv", "propagate name releases", false)) {
+			/*
+			 * We have an option to propagate every name release,
+			 * this is off by default to match windows servers
+			 */
+			modify_flags = WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP;
+		}
 	} else if (rec->state == WREPL_STATE_RELEASED) {
 		/*
 		 * if we're not the owner, we need to take the owner ship
