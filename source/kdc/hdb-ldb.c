@@ -510,7 +510,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 
 	entry_ex->entry.valid_start = NULL;
 
-	acct_expiry = samdb_result_account_expires(msg, 0);
+	acct_expiry = samdb_result_account_expires(msg);
 	if (acct_expiry == 0x7FFFFFFFFFFFFFFFULL) {
 		entry_ex->entry.valid_end = NULL;
 	} else {
