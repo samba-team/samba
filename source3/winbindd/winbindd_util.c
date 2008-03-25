@@ -339,7 +339,7 @@ static void trustdom_recv(void *private_data, bool success)
 	*/
 
 	if ( state->primary ) {
-		/* If this is our primary domain and we are not the in the
+		/* If this is our primary domain and we are not in the
 		   forest root, we have to scan the root trusts first */
 
 		if ( !state->forest_root )
@@ -349,7 +349,7 @@ static void trustdom_recv(void *private_data, bool success)
 
 	} else if ( state->forest_root ) {
 		/* Once we have done root forest trust search, we can
-		   go on to search thing trusted forests */
+		   go on to search the trusted forests */
 
 		rescan_forest_trusts();
 	}
@@ -419,7 +419,7 @@ static void rescan_forest_root_trusts( void )
 }
 
 /********************************************************************
- scan the transitive forest trists (not our own)
+ scan the transitive forest trusts (not our own)
 ********************************************************************/
 
 
