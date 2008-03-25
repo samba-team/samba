@@ -8,8 +8,8 @@
 
 NTSTATUS rpccli_eventlog_ClearEventLogW(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
-					struct policy_handle *handle,
-					struct lsa_String *backupfile)
+					struct policy_handle *handle /* [in] [ref] */,
+					struct lsa_String *backupfile /* [in] [unique] */)
 {
 	struct eventlog_ClearEventLogW r;
 	NTSTATUS status;
@@ -86,7 +86,7 @@ NTSTATUS rpccli_eventlog_BackupEventLogW(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_eventlog_CloseEventLog(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
-				       struct policy_handle *handle)
+				       struct policy_handle *handle /* [in,out] [ref] */)
 {
 	struct eventlog_CloseEventLog r;
 	NTSTATUS status;
@@ -163,8 +163,8 @@ NTSTATUS rpccli_eventlog_DeregisterEventSource(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_eventlog_GetNumRecords(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
-				       struct policy_handle *handle,
-				       uint32_t *number)
+				       struct policy_handle *handle /* [in] [ref] */,
+				       uint32_t *number /* [out] [ref] */)
 {
 	struct eventlog_GetNumRecords r;
 	NTSTATUS status;
@@ -204,8 +204,8 @@ NTSTATUS rpccli_eventlog_GetNumRecords(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_eventlog_GetOldestRecord(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
-					 struct policy_handle *handle,
-					 uint32_t *oldest_entry)
+					 struct policy_handle *handle /* [in] [ref] */,
+					 uint32_t *oldest_entry /* [out] [ref] */)
 {
 	struct eventlog_GetOldestRecord r;
 	NTSTATUS status;
@@ -282,12 +282,12 @@ NTSTATUS rpccli_eventlog_ChangeNotify(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_eventlog_OpenEventLogW(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
-				       struct eventlog_OpenUnknown0 *unknown0,
-				       struct lsa_String *logname,
-				       struct lsa_String *servername,
-				       uint32_t unknown2,
-				       uint32_t unknown3,
-				       struct policy_handle *handle)
+				       struct eventlog_OpenUnknown0 *unknown0 /* [in] [unique] */,
+				       struct lsa_String *logname /* [in] [ref] */,
+				       struct lsa_String *servername /* [in] [ref] */,
+				       uint32_t unknown2 /* [in]  */,
+				       uint32_t unknown3 /* [in]  */,
+				       struct policy_handle *handle /* [out] [ref] */)
 {
 	struct eventlog_OpenEventLogW r;
 	NTSTATUS status;
@@ -405,13 +405,13 @@ NTSTATUS rpccli_eventlog_OpenBackupEventLogW(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_eventlog_ReadEventLogW(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
-				       struct policy_handle *handle,
-				       uint32_t flags,
-				       uint32_t offset,
-				       uint32_t number_of_bytes,
-				       uint8_t *data,
-				       uint32_t *sent_size,
-				       uint32_t *real_size)
+				       struct policy_handle *handle /* [in] [ref] */,
+				       uint32_t flags /* [in]  */,
+				       uint32_t offset /* [in]  */,
+				       uint32_t number_of_bytes /* [in] [range(0,0x7FFFF)] */,
+				       uint8_t *data /* [out] [ref,size_is(number_of_bytes)] */,
+				       uint32_t *sent_size /* [out] [ref] */,
+				       uint32_t *real_size /* [out] [ref] */)
 {
 	struct eventlog_ReadEventLogW r;
 	NTSTATUS status;
@@ -900,7 +900,7 @@ NTSTATUS rpccli_eventlog_GetLogIntormation(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_eventlog_FlushEventLog(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
-				       struct policy_handle *handle)
+				       struct policy_handle *handle /* [in] [ref] */)
 {
 	struct eventlog_FlushEventLog r;
 	NTSTATUS status;
