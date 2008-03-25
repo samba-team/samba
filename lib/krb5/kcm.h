@@ -59,6 +59,7 @@ typedef enum kcm_operation {
     KCM_OP_CHMOD,
     KCM_OP_GET_INITIAL_TICKET,
     KCM_OP_GET_TICKET,
+    KCM_OP_MOVE_CACHE,
     KCM_OP_MAX
 } kcm_operation;
 

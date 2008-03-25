@@ -832,8 +832,31 @@ kcm_get_version(krb5_context context,
 static krb5_error_code
 kcm_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 {
-    krb5_set_error_string(context, "kcm_move not implemented");
-    return EINVAL;
+    krb5_error_code ret;
+    krb5_kcmcache *oldk = KCMCACHE(from);
+    krb5_kcmcache *newk = KCMCACHE(to);
+    krb5_storage *request;
+
+    ret = kcm_storage_request(context, KCM_OP_MOVE_CACHE, &request);
+    if (ret)
+	return ret;
+
+    ret = krb5_store_stringz(request, oldk->name);
+    if (ret) {
+	krb5_storage_free(request);
+	return ret;
+    }
+
+    ret = krb5_store_stringz(request, newk->name);
+    if (ret) {
+	krb5_storage_free(request);
+	return ret;
+    }
+
+    ret = kcm_call(context, k, request, NULL, NULL);
+
+    krb5_storage_free(request);
+    return ret;
 }
 
 static krb5_error_code
@@ -1117,6 +1140,5 @@ _krb5_kcm_get_ticket(krb5_context context,
     krb5_storage_free(request);
     return ret;
 }
-
 
 #endif /* HAVE_KCM */

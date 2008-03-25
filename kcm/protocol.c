@@ -950,6 +950,86 @@ kcm_op_get_ticket(krb5_context context,
     return ret;
 }
 
+/*
+ * Request:
+ *	OldNameZ
+ *	NewNameZ
+ *
+ * Repsonse:
+ *
+ */
+static krb5_error_code
+kcm_op_move_cache(krb5_context context,
+		  kcm_client *client,
+		  kcm_operation opcode,
+		  krb5_storage *request,
+		  krb5_storage *response)
+{
+    krb5_error_code ret;
+    kcm_ccache oldid, newid;
+    char *oldname, *newname;
+
+    ret = krb5_ret_stringz(request, &oldname);
+    if (ret)
+	return ret;
+
+    KCM_LOG_REQUEST_NAME(context, client, opcode, oldname);
+
+    ret = krb5_ret_stringz(request, &newname);
+    if (ret) {
+	free(oldname);
+	return ret;
+    }
+
+    ret = kcm_ccache_resolve_client(context, client, opcode, oldname, &oldid);
+    if (ret) {
+	free(oldname);
+	free(newname);
+	return ret;
+    }
+ 
+    ret = kcm_ccache_resolve_client(context, client, opcode, newname, &newid);
+    free(newname);
+    if (ret) {
+	free(oldname);
+	kcm_release_ccache(context, &oldid);
+	return ret;
+    }
+
+    HEIMDAL_MUTEX_lock(&oldid->mutex);
+    HEIMDAL_MUTEX_lock(&newid->mutex);
+
+    /* move content */
+    {
+	kcm_ccache_data tmp;
+
+#define MOVE(n,o,f) { tmp.f = n->f ; n->f = o->f; o->f = tmp.f; }
+
+	MOVE(newid, oldid, flags);
+	MOVE(newid, oldid, client);
+	MOVE(newid, oldid, server);
+	MOVE(newid, oldid, creds);
+	MOVE(newid, oldid, tkt_life);
+	MOVE(newid, oldid, renew_life);
+	MOVE(newid, oldid, key);
+	MOVE(newid, oldid, key);
+#undef MOVE
+    }
+
+    HEIMDAL_MUTEX_unlock(&oldid->mutex);
+    HEIMDAL_MUTEX_unlock(&newid->mutex);
+
+    kcm_release_ccache(context, &oldid);
+    kcm_release_ccache(context, &newid);
+
+    ret = kcm_ccache_destroy_client(context, client, oldname);
+
+    free(oldname);
+
+    return ret;
+}
+
+
 static struct kcm_op kcm_ops[] = {
     { "NOOP", 			kcm_op_noop },
     { "GET_NAME",		kcm_op_get_name },
@@ -968,7 +1048,8 @@ static struct kcm_op kcm_ops[] = {
     { "CHOWN",			kcm_op_chown },
     { "CHMOD",			kcm_op_chmod },
     { "GET_INITIAL_TICKET",	kcm_op_get_initial_ticket },
-    { "GET_TICKET",		kcm_op_get_ticket }
+    { "GET_TICKET",		kcm_op_get_ticket },
+    { "MOVE_CACHE",		kcm_op_move_cache }
 };
 
 
