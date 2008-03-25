@@ -54,6 +54,27 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			   int hash_size, int tdb_flags,
 			   int open_flags, mode_t mode);
 
+struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx);
+
+struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
+			       const char *name,
+			       int hash_size, int tdb_flags,
+			       int open_flags, mode_t mode);
+
+#ifdef CLUSTER_SUPPORT
+struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
+				const char *name,
+				int hash_size, int tdb_flags,
+				int open_flags, mode_t mode);
+#endif
+
+struct db_context *db_open_file(TALLOC_CTX *mem_ctx,
+				struct messaging_context *msg_ctx,
+				const char *name,
+				int hash_size, int tdb_flags,
+				int open_flags, mode_t mode);
+
+
 NTSTATUS dbwrap_delete_bystring(struct db_context *db, const char *key);
 NTSTATUS dbwrap_store_bystring(struct db_context *db, const char *key,
 			       TDB_DATA data, int flags);
