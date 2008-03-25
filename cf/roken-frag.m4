@@ -243,12 +243,18 @@ AC_FOREACH([rk_func], [asprintf vasprintf asnprintf vasnprintf],
 	rk_func)])
 
 AC_FIND_FUNC_NO_LIBS(bswap16,,
-[#ifdef HAVE_SYS_BSWAP_H
+[#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_BSWAP_H
 #include <sys/bswap.h>
 #endif],0)
 
 AC_FIND_FUNC_NO_LIBS(bswap32,,
-[#ifdef HAVE_SYS_BSWAP_H
+[#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_BSWAP_H
 #include <sys/bswap.h>
 #endif],0)
 
