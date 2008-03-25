@@ -1,3 +1,8 @@
+2008-03-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* install-catman.sh: Match man_MANS = files with directories in
+	them.
+	
 2008-02-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* make-proto.pl: Handle c-comments.
