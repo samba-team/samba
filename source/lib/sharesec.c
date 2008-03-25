@@ -65,7 +65,7 @@ static bool share_info_db_init(void)
 	}
 
 	if (vers_id != SHARE_DATABASE_VERSION_V2) {
-		tdb_traverse(share_tdb, tdb_traverse_delete_fn, NULL);
+		tdb_wipe(share_tdb);
 		tdb_store_int32(share_tdb, vstring, SHARE_DATABASE_VERSION_V2);
 	}
 	tdb_unlock_bystring(share_tdb, vstring);
