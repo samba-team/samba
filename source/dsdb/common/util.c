@@ -450,7 +450,7 @@ NTTIME samdb_result_account_expires(struct ldb_message *msg)
 	NTTIME ret = ldb_msg_find_attr_as_uint64(msg, "accountExpires",
 						 0);
 
-	if (ret == (NTTIME)0)
+	if (ret == 0)
 		ret = 0x7FFFFFFFFFFFFFFFULL;
 
 	return ret;
