@@ -13,8 +13,9 @@ suffix="$1"; shift
 catinstall="${INSTALL_CATPAGES-yes}"
 
 for f in "$@"; do
-	base=`echo "$f" | sed 's/\(.*\)\.\([^.]*\)$/\1/'`
-	section=`echo "$f" | sed 's/\(.*\)\.\([^.]*\)$/\2/'`
+        echo $f
+	base=`echo "$f" | sed 's/\([^/]*\/\)*\(.*\)\.\([^.]*\)$/\2/'`
+	section=`echo "$f" | sed 's/\([^/]*\/\)*\(.*\)\.\([^.]*\)$/\3/'`
 	mandir="$manbase/man$section"
 	catdir="$manbase/cat$section"
 	c="$base.cat$section"
