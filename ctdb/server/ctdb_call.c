@@ -721,7 +721,7 @@ int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 	}
 
 	if (state->call->reply_data.dsize) {
-		call->reply_data.dptr = talloc_memdup(state->ctdb_db->ctdb,
+		call->reply_data.dptr = talloc_memdup(call,
 						      state->call->reply_data.dptr,
 						      state->call->reply_data.dsize);
 		call->reply_data.dsize = state->call->reply_data.dsize;
