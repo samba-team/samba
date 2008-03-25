@@ -238,7 +238,7 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
 	/* Handle QueryValue calls on HKEY_PERFORMANCE_DATA */
 	if(regkey->key->type == REG_KEY_HKPD) 
 	{
-		if(strequal(r->in.value_name.name, "Global"))	{
+		if (strequal(r->in.value_name->name, "Global"))	{
 			if (!prs_init(&prs_hkpd, *r->in.data_size, p->mem_ctx, MARSHALL))
 				return WERR_NOMEM;
 			status = reg_perfcount_get_hkpd(
@@ -246,32 +246,32 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
 			outbuf = (uint8_t *)prs_hkpd.data_p;
 			free_prs = True;
 		}
-		else if(strequal(r->in.value_name.name, "Counter 009")) {
+		else if (strequal(r->in.value_name->name, "Counter 009")) {
 			outbuf_size = reg_perfcount_get_counter_names(
 				reg_perfcount_get_base_index(),
 				(char **)(void *)&outbuf);
 			free_buf = True;
 		}
-		else if(strequal(r->in.value_name.name, "Explain 009")) {
+		else if (strequal(r->in.value_name->name, "Explain 009")) {
 			outbuf_size = reg_perfcount_get_counter_help(
 				reg_perfcount_get_base_index(),
 				(char **)(void *)&outbuf);
 			free_buf = True;
 		}
-		else if(isdigit(r->in.value_name.name[0])) {
+		else if (isdigit(r->in.value_name->name[0])) {
 			/* we probably have a request for a specific object
 			 * here */
 			if (!prs_init(&prs_hkpd, *r->in.data_size, p->mem_ctx, MARSHALL))
 				return WERR_NOMEM;
 			status = reg_perfcount_get_hkpd(
 				&prs_hkpd, *r->in.data_size, &outbuf_size,
-				r->in.value_name.name);
+				r->in.value_name->name);
 			outbuf = (uint8_t *)prs_hkpd.data_p;
 			free_prs = True;
 		}
 		else {
 			DEBUG(3,("Unsupported key name [%s] for HKPD.\n",
-				 r->in.value_name.name));
+				 r->in.value_name->name));
 			return WERR_BADFILE;
 		}
 
@@ -280,7 +280,7 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
 	else {
 		struct registry_value *val;
 
-		status = reg_queryvalue(p->mem_ctx, regkey, r->in.value_name.name,
+		status = reg_queryvalue(p->mem_ctx, regkey, r->in.value_name->name,
 					&val);
 		if (!W_ERROR_IS_OK(status)) {
 			if (r->out.data_size) {
