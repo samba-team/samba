@@ -1238,7 +1238,7 @@ int main(int argc, char **argv, char **envp)
 	wcache_tdc_clear();	
 	
 	if (!init_domain_list()) {
-		DEBUG(0,("unable to initalize domain list\n"));
+		DEBUG(0,("unable to initialize domain list\n"));
 		exit(1);
 	}
 
