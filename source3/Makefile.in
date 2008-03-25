@@ -327,7 +327,8 @@ LIB_WITHOUT_PROTO_OBJ = $(LIBSAMBAUTIL_OBJ) \
 	lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o \
 	lib/messages_ctdbd.o lib/packet.o lib/ctdbd_conn.o lib/talloc_stack.o \
 	lib/interfaces.o lib/rbtree.o lib/memcache.o \
-	lib/util_transfer_file.o lib/async_req.o
+	lib/util_transfer_file.o lib/async_req.o \
+	$(TDB_OBJ)
 
 LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/interface.o lib/md4.o \
@@ -345,7 +346,7 @@ LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o libsmb/smb_signing.o \
 	  lib/md5.o lib/hmacmd5.o lib/arc4.o lib/iconv.o \
 	  lib/pam_errors.o intl/lang_tdb.o lib/conn_tdb.o \
-	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
+	  lib/adt_tree.o lib/gencache.o \
 	  lib/module.o lib/events.o lib/ldap_escape.o @CHARSET_STATIC@ \
 	  lib/secdesc.o lib/util_seaccess.o lib/secace.o lib/secacl.o \
 	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o $(LIBNDR_OBJ) \
