@@ -76,7 +76,7 @@ static bool init_group_mapping(void)
 		/* if its an unknown version we remove everthing in the db */
 
 		if (vers_id != DATABASE_VERSION_V2) {
-			tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
+			tdb_wipe(tdb);
 			tdb_store_int32(tdb, vstring, DATABASE_VERSION_V2);
 		}
 
