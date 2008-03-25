@@ -1,6 +1,6 @@
 2008-03-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* lib/krb5/fcache.c: Make erase_file() to locking too.
+	* lib/krb5/fcache.c: Make erase_file() do locking too.
 
 	* kcm/protocol.c: Make work when moving to a non-existant
 	cred-cache.
