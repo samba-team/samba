@@ -939,7 +939,18 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 		break;
 	}
 
-	if (rec->state == WREPL_STATE_RELEASED) {
+	if (rec->state == WREPL_STATE_ACTIVE) {
+		/*
+		 * If the record is still active, we need to update the
+		 * expire_time.
+		 *
+		 * if we're not the owner, we need to take the ownership.
+		 */
+		rec->expire_time= time(NULL) + winssrv->config.max_renew_interval;
+		if (strcmp(rec->wins_owner, winssrv->wins_db->local_owner) != 0) {
+			modify_flags = WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP;
+		}
+	} else if (rec->state == WREPL_STATE_RELEASED) {
 		/*
 		 * if we're not the owner, we need to take the owner ship
 		 * and make the record tombstone, but expire after
