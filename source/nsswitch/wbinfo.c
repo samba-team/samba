@@ -85,7 +85,7 @@ static const char *get_winbind_domain(void)
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		d_fprintf(stderr, "could not obtain winbind domain name!\n");
 
-		/* HACK: (this module should not call lp_ funtions) */
+		/* HACK: (this module should not call lp_ functions) */
 		return lp_workgroup();
 	}
 
@@ -340,12 +340,14 @@ static bool wbinfo_wins_byip(char *ip)
 	return true;
 }
 
-/* List trusted domains */
+/* List all/trusted domains */
 
-static bool wbinfo_list_domains(bool list_all_domains)
+static bool wbinfo_list_domains(bool list_all_domains, bool verbose)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
+
+	bool print_all = !list_all_domains && verbose;
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
@@ -363,21 +365,72 @@ static bool wbinfo_list_domains(bool list_all_domains)
 	if (response.extra_data.data) {
 		const char *extra_data = (char *)response.extra_data.data;
 		char *name;
-		char *p;
+		char *beg, *end;
 		TALLOC_CTX *frame = talloc_stackframe();
 
-		while(next_token_talloc(frame,&extra_data,&name,"\n")) {
-			p = strchr(name, '\\');
-			if (p == 0) {
-				d_fprintf(stderr, "Got invalid response: %s\n",
-					 extra_data);
-				TALLOC_FREE(frame);
-				SAFE_FREE(response.extra_data.data);
-				return false;
-			}
-			*p = 0;
-			d_printf("%s\n", name);
+		if (print_all) {
+			d_printf("%-34s%-12s%-12s%-10s%-10s\n", 
+			    "Domain Name", " Trust Type", "Transitive", 
+			    "Incoming", "Outgoing");
 		}
+
+		while(next_token_talloc(frame,&extra_data,&name,"\n")) {
+			/* Print Domain Name */
+			if ((beg = strchr(name, '\\')) == NULL)
+				goto error;
+			*beg = 0;
+			beg++;
+			if ((end = strchr(beg, '\\')) == NULL)
+				goto error;
+			*end = 0;
+			if(*beg == 0)
+				d_printf("%-34s", name);
+			else 
+				d_printf("%-34s", beg);
+
+			if (!print_all) {
+				d_printf("\n");	
+				continue;
+			}
+
+			/* Skip SID */
+			beg = ++end;
+			if ((end = strchr(beg, '\\')) == NULL)
+				goto error;
+
+			/* Print Trust Type */
+			beg = ++end;
+			if ((end = strchr(beg, '\\')) == NULL)
+				goto error;
+			*end = 0;
+			d_printf(" %-12s", beg);
+
+			/* Print Transitive */
+			beg = ++end;
+			if ((end = strchr(beg, '\\')) == NULL)
+				goto error;
+			*end = 0;
+			d_printf("%-12s", beg);
+
+			/* Print Incoming */
+			beg = ++end;
+			if ((end = strchr(beg, '\\')) == NULL)
+				goto error;
+			*end = 0;
+			d_printf("%-10s", beg);
+
+			/* Print Outgoing */
+			beg = ++end;
+			d_printf("%-10s\n", beg);
+		}
+		goto out;
+
+error:
+		d_fprintf(stderr, "Got invalid response: %s\n", extra_data);
+		TALLOC_FREE(frame);
+		SAFE_FREE(response.extra_data.data);
+		return false;
+out:
 		TALLOC_FREE(frame);
 		SAFE_FREE(response.extra_data.data);
 	}
@@ -1265,6 +1318,7 @@ enum {
 	OPT_LIST_OWN_DOMAIN,
 	OPT_UID_INFO,
 	OPT_GROUP_INFO,
+	OPT_VERBOSE
 };
 
 int main(int argc, char **argv, char **envp)
@@ -1276,6 +1330,7 @@ int main(int argc, char **argv, char **envp)
 	static char *opt_domain_name;
 	static int int_arg;
 	int result = 1;
+	bool verbose = false;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -1328,6 +1383,7 @@ int main(int argc, char **argv, char **envp)
 			/* "user%password,DOM\\user%password,user@EXAMPLE.COM,EXAMPLE.COM\\user%password" }, */
 #endif
 		{ "separator", 0, POPT_ARG_NONE, 0, OPT_SEPARATOR, "Get the active winbind separator", NULL },
+		{ "verbose", 0, POPT_ARG_NONE, 0, OPT_VERBOSE, "Print additional information per command", NULL },
 		POPT_COMMON_CONFIGFILE
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
@@ -1350,6 +1406,11 @@ int main(int argc, char **argv, char **envp)
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		/* get the generic configuration parameters like --domain */
+		switch (opt) {
+		case OPT_VERBOSE:
+			verbose = True;
+			break;
+		}
 	}
 
 	poptFreeContext(pc);
@@ -1458,7 +1519,7 @@ int main(int argc, char **argv, char **envp)
 			}
 			break;
 		case 'm':
-			if (!wbinfo_list_domains(false)) {
+			if (!wbinfo_list_domains(false, verbose)) {
 				d_fprintf(stderr, "Could not list trusted domains\n");
 				goto done;
 			}
@@ -1588,7 +1649,7 @@ int main(int argc, char **argv, char **envp)
 			break;
 		}
 		case OPT_LIST_ALL_DOMAINS:
-			if (!wbinfo_list_domains(true)) {
+			if (!wbinfo_list_domains(true, verbose)) {
 				goto done;
 			}
 			break;
@@ -1599,6 +1660,8 @@ int main(int argc, char **argv, char **envp)
 			break;
 		/* generic configuration options */
 		case OPT_DOMAIN_NAME:
+			break;
+		case OPT_VERBOSE:
 			break;
 		default:
 			d_fprintf(stderr, "Invalid option\n");
