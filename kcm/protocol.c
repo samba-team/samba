@@ -988,6 +988,7 @@ kcm_op_move_cache(krb5_context context,
 	return ret;
     }
  
+    /* Check if new credential cache exists, if not create one. */
     ret = kcm_ccache_resolve_client(context, client, opcode, newname, &newid);
     if (ret == KRB5_FCC_NOFILE)
 	ret = kcm_ccache_new_client(context, client, newname, &newid);
