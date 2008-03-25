@@ -97,27 +97,104 @@ enum winbindd_result winbindd_dual_check_machine_acct(struct winbindd_domain *do
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
+/* Constants and helper functions for determining domain trust types */
+
+enum trust_type {
+	EXTERNAL = 0,
+	FOREST,
+	IN_FOREST,
+	NONE,
+};
+
+const char *trust_type_strings[] = {"External", 
+				    "Forest", 
+				    "In Forest",
+				    "None"};
+
+static enum trust_type get_trust_type(struct winbindd_tdc_domain *domain)
+{
+	if (domain->trust_attribs == NETR_TRUST_ATTRIBUTE_QUARANTINED_DOMAIN)	
+		return EXTERNAL;
+	else if (domain->trust_attribs == NETR_TRUST_ATTRIBUTE_FOREST_TRANSITIVE)
+		return FOREST;
+	else if (((domain->trust_flags & NETR_TRUST_FLAG_IN_FOREST) == NETR_TRUST_FLAG_IN_FOREST) &&
+	    ((domain->trust_flags & NETR_TRUST_FLAG_PRIMARY) == 0x0))
+		return IN_FOREST;
+	return NONE;	
+}
+
+static const char *get_trust_type_string(struct winbindd_tdc_domain *domain)
+{
+	return trust_type_strings[get_trust_type(domain)];
+}
+
+static bool trust_is_inbound(struct winbindd_tdc_domain *domain)
+{
+	return (domain->trust_flags == 0x0) ||
+	    ((domain->trust_flags & NETR_TRUST_FLAG_IN_FOREST) ==
+            NETR_TRUST_FLAG_IN_FOREST) ||           		
+	    ((domain->trust_flags & NETR_TRUST_FLAG_INBOUND) ==
+	    NETR_TRUST_FLAG_INBOUND);      	
+}
+
+static bool trust_is_outbound(struct winbindd_tdc_domain *domain)
+{
+	return (domain->trust_flags == 0x0) ||
+	    ((domain->trust_flags & NETR_TRUST_FLAG_IN_FOREST) ==
+            NETR_TRUST_FLAG_IN_FOREST) ||           		
+	    ((domain->trust_flags & NETR_TRUST_FLAG_OUTBOUND) ==
+	    NETR_TRUST_FLAG_OUTBOUND);      	
+}
+
+static bool trust_is_transitive(struct winbindd_tdc_domain *domain)
+{
+	if ((domain->trust_attribs == NETR_TRUST_ATTRIBUTE_NON_TRANSITIVE) ||         
+	    (domain->trust_attribs == NETR_TRUST_ATTRIBUTE_QUARANTINED_DOMAIN) ||
+	    (domain->trust_attribs == NETR_TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL))
+		return False;
+	return True;
+}
+
 void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 {
-	struct winbindd_domain *d = NULL;
+	struct winbindd_tdc_domain *dom_list = NULL;
+	struct winbindd_tdc_domain *d = NULL;
+	size_t num_domains = 0;
 	int extra_data_len = 0;
 	char *extra_data = NULL;
+	int i = 0;
 	
 	DEBUG(3, ("[%5lu]: list trusted domains\n",
 		  (unsigned long)state->pid));
 
-	for ( d=domain_list(); d; d=d->next ) {
+	if( !wcache_tdc_fetch_list( &dom_list, &num_domains )) {
+		request_error(state);	
+		goto done;
+	}
+
+	for ( i = 0; i < num_domains; i++ ) {
+		d = &dom_list[i];
 		if ( !extra_data ) {
-			extra_data = talloc_asprintf(
-				state->mem_ctx, "%s\\%s\\%s",
-				d->name, d->alt_name ? d->alt_name : d->name,
-				sid_string_talloc(state->mem_ctx, &d->sid));
+			extra_data = talloc_asprintf(state->mem_ctx, 
+						     "%s\\%s\\%s\\%s\\%s\\%s\\%s",
+						     d->domain_name,
+						     d->dns_name ? d->dns_name : d->domain_name,
+						     sid_string_talloc(state->mem_ctx, &d->sid),
+						     get_trust_type_string(d),
+						     trust_is_transitive(d) ? "Yes" : "No",
+						     trust_is_inbound(d) ? "Yes" : "No",
+						     trust_is_outbound(d) ? "Yes" : "No");
 		} else {
-			extra_data = talloc_asprintf(
-				state->mem_ctx, "%s\n%s\\%s\\%s",
-				extra_data, d->name,
-				d->alt_name ? d->alt_name : d->name,
-				sid_string_talloc(state->mem_ctx, &d->sid));
+			extra_data = talloc_asprintf(state->mem_ctx, 
+						     "%s\n%s\\%s\\%s\\%s\\%s\\%s\\%s",
+						     extra_data,
+						     d->domain_name,
+						     d->dns_name ? d->dns_name : d->domain_name,
+						     sid_string_talloc(state->mem_ctx, &d->sid),
+						     get_trust_type_string(d),
+						     trust_is_transitive(d) ? "Yes" : "No",
+						     trust_is_inbound(d) ? "Yes" : "No",
+						     trust_is_outbound(d) ? "Yes" : "No");
 		}
 	}
 	
@@ -131,9 +208,10 @@ void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 		state->response.length += extra_data_len+1;
 	}
 
-	TALLOC_FREE( extra_data );	
-
 	request_ok(state);	
+done:
+	TALLOC_FREE( dom_list );
+	TALLOC_FREE( extra_data );	
 }
 
 enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *domain,
