@@ -149,7 +149,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 	/* so we fill it in since winbindd_getpwnam() makes use of it */
 
 	if (!info3->base.account_name.string) {
-		info3->base.account_name.string = talloc_strdup(mem_ctx, username);
+		info3->base.account_name.string = talloc_strdup(info3, username);
 	}
 
 	r.timestamp = t;
