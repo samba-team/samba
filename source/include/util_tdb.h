@@ -87,6 +87,8 @@ int tdb_trans_delete(struct tdb_context *tdb, TDB_DATA key);
 
 int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...);
 size_t tdb_pack(uint8 *buf, int bufsize, const char *fmt, ...);
+bool tdb_pack_append(TALLOC_CTX *mem_ctx, uint8 **buf, size_t *len,
+		     const char *fmt, ...);
 
 struct tdb_context *tdb_open_log(const char *name, int hash_size,
 				 int tdb_flags, int open_flags, mode_t mode);
