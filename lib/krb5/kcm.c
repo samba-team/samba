@@ -137,7 +137,7 @@ kcm_send_request(krb5_context context,
 	return KRB5_CC_NOMEM;
     }
 
-    ret = KRB5_CC_IO;
+    ret = KRB5_CC_NOSUPP;
 
     for (i = 0; i < context->max_retries; i++) {
 	ret = try_door(context, &request_data, response_data);
@@ -152,7 +152,7 @@ kcm_send_request(krb5_context context,
 
     if (ret) {
 	krb5_clear_error_string(context);
-	ret = KRB5_CC_IO;
+	ret = KRB5_CC_NOSUPP;
     }
 
     return ret;
