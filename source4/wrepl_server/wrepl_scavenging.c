@@ -99,12 +99,20 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 		switch (rec->state) {
 		case WREPL_STATE_ACTIVE:
 			old_state	= "active";
-			new_state	= "active";
-			if (!rec->is_static) {
-				new_state	= "released";
-				rec->state	= WREPL_STATE_RELEASED;
-				rec->expire_time= service->config.tombstone_interval + now;
+			if (rec->is_static) {
+				/*
+				 *we store it again, so that it won't appear
+				 * in the scavenging the next time
+				 */
+				old_state	= "active(static)";
+				new_state	= "active(static)";
+				modify_flags	= 0;
+				modify_record	= true;
+				break;
 			}
+			new_state	= "released";
+			rec->state	= WREPL_STATE_RELEASED;
+			rec->expire_time= service->config.tombstone_interval + now;
 			modify_flags	= 0;
 			modify_record	= true;
 			break;
