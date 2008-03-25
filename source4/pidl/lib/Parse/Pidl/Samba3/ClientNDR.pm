@@ -44,6 +44,36 @@ sub new($)
 	bless($self, $class);
 }
 
+sub ElementDirection($)
+{
+	my ($e) = @_;
+
+	return "[in,out]" if (has_property($e, "in") and has_property($e, "out"));
+	return "[in]" if (has_property($e, "in"));
+	return "[out]" if (has_property($e, "out"));
+	return "[in,out]";
+}
+
+sub HeaderProperties($$)
+{
+	my($props,$ignores) = @_;
+	my $ret = "";
+
+	foreach my $d (keys %{$props}) {
+		next if (grep(/^$d$/, @$ignores));
+		if($props->{$d} ne "1") {
+			$ret.= "$d($props->{$d}),";
+		} else {
+			$ret.="$d,";
+		}
+	}
+
+	if ($ret) {
+		return "[" . substr($ret, 0, -1) . "]";
+	}
+}
+
+
 sub ParseFunction($$$)
 {
 	my ($self, $if, $fn) = @_;
@@ -57,7 +87,9 @@ sub ParseFunction($$$)
 	$fn_args .= "struct rpc_pipe_client *cli,\n" . $pad . "TALLOC_CTX *mem_ctx";
 
 	foreach (@{$fn->{ELEMENTS}}) {
-		$fn_args .= ",\n" . $pad . DeclLong($_);
+		my $dir = ElementDirection($_);
+		my $prop = HeaderProperties($_->{PROPERTIES}, ["in", "out"]);
+		$fn_args .= ",\n" . $pad . DeclLong($_) . " /* $dir $prop */";
 	}
 
 	if (defined($fn->{RETURN_TYPE}) && ($fn->{RETURN_TYPE} eq "WERROR")) {
