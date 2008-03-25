@@ -39,6 +39,7 @@ Bugfixes, documentation, encouragement, and code has been contributed by:
 @item Alexander Boström
 @item Andreaw Bartlett
 @item Björn Sandell
+@item Björn Schlögl
 @item Brandon S. Allbery KF8NH
 @item Brian A May
 @item Chaskiel M Grundman
