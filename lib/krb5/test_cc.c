@@ -429,6 +429,54 @@ test_copy(krb5_context context, const char *fromtype, const char *totype)
 }
 
 static void
+test_move(krb5_context context, const char *type)
+{
+    const krb5_cc_ops *ops;
+    krb5_ccache fromid, toid;
+    krb5_error_code ret;
+    krb5_principal p, p2;
+
+    ops = krb5_cc_get_prefix_ops(context, type);
+    if (ops == NULL)
+	krb5_errx(context, 1, "%s isn't a type", type);
+
+    ret = krb5_cc_gen_new(context, ops, &fromid);
+    if (ret == KRB5_CC_NOSUPP)
+	return 0;
+    else if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_gen_new");
+
+    ret = krb5_parse_name(context, "lha@SU.SE", &p);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_parse_name");
+
+    ret = krb5_cc_initialize(context, fromid, p);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_initialize");
+
+    ret = krb5_cc_gen_new(context, ops, &toid);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_gen_new");
+
+    ret = krb5_cc_move(context, fromid, toid);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_move: %s", type);
+
+    ret = krb5_cc_get_principal(context, toid, &p2);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_get_principal");
+
+    if (krb5_principal_compare(context, p, p2) == FALSE)
+	krb5_errx(context, 1, "p != p2");
+
+    krb5_free_principal(context, p);
+    krb5_free_principal(context, p2);
+
+    krb5_cc_destroy(context, toid);
+}
+
+
+static void
 test_prefix_ops(krb5_context context, const char *name, const krb5_cc_ops *ops)
 {
     const krb5_cc_ops *o;
@@ -516,6 +564,10 @@ main(int argc, char **argv)
     test_copy(context, "MEMORY", "MEMORY");
     test_copy(context, "FILE", "MEMORY");
     test_copy(context, "MEMORY", "FILE");
+
+    test_move(context, "FILE");
+    test_move(context, "MEMORY");
+    test_move(context, "KCM");
 
     test_prefix_ops(context, "FILE:/tmp/foo", &krb5_fcc_ops);
     test_prefix_ops(context, "FILE", &krb5_fcc_ops);
