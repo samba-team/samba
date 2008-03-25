@@ -203,7 +203,7 @@ scrub_file (int fd)
  */
 
 static krb5_error_code
-erase_file(const char *filename)
+erase_file(krb5_context context, const char *filename)
 {
     int fd;
     struct stat sb1, sb2;
@@ -220,12 +220,19 @@ erase_file(const char *filename)
 	else
 	    return errno;
     }
+    ret = _krb5_xlock(context, fd, 1, filename);
+    if (ret) {
+	close(fd);
+	return ret;
+    }
     if (unlink(filename) < 0) {
+	_krb5_xunlock(context, fd);
         close (fd);
         return errno;
     }
     ret = fstat (fd, &sb2);
     if (ret < 0) {
+	_krb5_xunlock(context, fd);
 	close (fd);
 	return errno;
     }
@@ -233,6 +240,7 @@ erase_file(const char *filename)
     /* check if someone was playing with symlinks */
 
     if (sb1.st_dev != sb2.st_dev || sb1.st_ino != sb2.st_ino) {
+	_krb5_xunlock(context, fd);
 	close (fd);
 	return EPERM;
     }
@@ -240,11 +248,18 @@ erase_file(const char *filename)
     /* there are still hard links to this file */
 
     if (sb2.st_nlink != 0) {
+	_krb5_xunlock(context, fd);
         close (fd);
         return 0;
     }
 
     ret = scrub_file (fd);
+    if (ret) {
+	_krb5_xunlock(context, fd);
+	close(fd);
+	return ret;
+    }
+    ret = _krb5_xunlock(context, fd);
     close (fd);
     return ret;
 }
@@ -401,7 +416,7 @@ static krb5_error_code
 fcc_destroy(krb5_context context,
 	    krb5_ccache id)
 {
-    erase_file(FILENAME(id));
+    erase_file(context, FILENAME(id));
     return 0;
 }
 
@@ -814,8 +829,6 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 				  "credential cache to the other");
 	    goto out2;
 	}
-	erase_file(FILENAME(from));
-	    
     out2:
 	fcc_unlock(context, fd2);
 	close(fd2);
@@ -824,8 +837,10 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 	fcc_unlock(context, fd1);
 	close(fd1);
 
+	erase_file(context, FILENAME(from));
+
 	if (ret) {
-	    erase_file(FILENAME(to));
+	    erase_file(context, FILENAME(to));
 	    return ret;
 	}
     }
