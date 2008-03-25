@@ -8,9 +8,9 @@
 
 NTSTATUS rpccli_winreg_OpenHKCR(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				uint16_t *system_name,
-				uint32_t access_mask,
-				struct policy_handle *handle,
+				uint16_t *system_name /* [in] [unique] */,
+				uint32_t access_mask /* [in]  */,
+				struct policy_handle *handle /* [out] [ref] */,
 				WERROR *werror)
 {
 	struct winreg_OpenHKCR r;
@@ -56,9 +56,9 @@ NTSTATUS rpccli_winreg_OpenHKCR(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_OpenHKCU(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				uint16_t *system_name,
-				uint32_t access_mask,
-				struct policy_handle *handle,
+				uint16_t *system_name /* [in] [unique] */,
+				uint32_t access_mask /* [in]  */,
+				struct policy_handle *handle /* [out] [ref] */,
 				WERROR *werror)
 {
 	struct winreg_OpenHKCU r;
@@ -104,9 +104,9 @@ NTSTATUS rpccli_winreg_OpenHKCU(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_OpenHKLM(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				uint16_t *system_name,
-				uint32_t access_mask,
-				struct policy_handle *handle,
+				uint16_t *system_name /* [in] [unique] */,
+				uint32_t access_mask /* [in]  */,
+				struct policy_handle *handle /* [out] [ref] */,
 				WERROR *werror)
 {
 	struct winreg_OpenHKLM r;
@@ -152,9 +152,9 @@ NTSTATUS rpccli_winreg_OpenHKLM(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_OpenHKPD(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				uint16_t *system_name,
-				uint32_t access_mask,
-				struct policy_handle *handle,
+				uint16_t *system_name /* [in] [unique] */,
+				uint32_t access_mask /* [in]  */,
+				struct policy_handle *handle /* [out] [ref] */,
 				WERROR *werror)
 {
 	struct winreg_OpenHKPD r;
@@ -200,9 +200,9 @@ NTSTATUS rpccli_winreg_OpenHKPD(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_OpenHKU(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
-			       uint16_t *system_name,
-			       uint32_t access_mask,
-			       struct policy_handle *handle,
+			       uint16_t *system_name /* [in] [unique] */,
+			       uint32_t access_mask /* [in]  */,
+			       struct policy_handle *handle /* [out] [ref] */,
 			       WERROR *werror)
 {
 	struct winreg_OpenHKU r;
@@ -248,7 +248,7 @@ NTSTATUS rpccli_winreg_OpenHKU(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_CloseKey(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				struct policy_handle *handle,
+				struct policy_handle *handle /* [in,out] [ref] */,
 				WERROR *werror)
 {
 	struct winreg_CloseKey r;
@@ -293,14 +293,14 @@ NTSTATUS rpccli_winreg_CloseKey(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_CreateKey(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
-				 struct policy_handle *handle,
-				 struct winreg_String name,
-				 struct winreg_String keyclass,
-				 uint32_t options,
-				 uint32_t access_mask,
-				 struct winreg_SecBuf *secdesc,
-				 struct policy_handle *new_handle,
-				 enum winreg_CreateAction *action_taken,
+				 struct policy_handle *handle /* [in] [ref] */,
+				 struct winreg_String name /* [in]  */,
+				 struct winreg_String keyclass /* [in]  */,
+				 uint32_t options /* [in]  */,
+				 uint32_t access_mask /* [in]  */,
+				 struct winreg_SecBuf *secdesc /* [in] [unique] */,
+				 struct policy_handle *new_handle /* [out] [ref] */,
+				 enum winreg_CreateAction *action_taken /* [in,out] [unique] */,
 				 WERROR *werror)
 {
 	struct winreg_CreateKey r;
@@ -354,8 +354,8 @@ NTSTATUS rpccli_winreg_CreateKey(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_DeleteKey(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
-				 struct policy_handle *handle,
-				 struct winreg_String key,
+				 struct policy_handle *handle /* [in] [ref] */,
+				 struct winreg_String key /* [in]  */,
 				 WERROR *werror)
 {
 	struct winreg_DeleteKey r;
@@ -400,8 +400,8 @@ NTSTATUS rpccli_winreg_DeleteKey(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_DeleteValue(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
-				   struct policy_handle *handle,
-				   struct winreg_String value,
+				   struct policy_handle *handle /* [in] [ref] */,
+				   struct winreg_String value /* [in]  */,
 				   WERROR *werror)
 {
 	struct winreg_DeleteValue r;
@@ -446,11 +446,11 @@ NTSTATUS rpccli_winreg_DeleteValue(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_EnumKey(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
-			       struct policy_handle *handle,
-			       uint32_t enum_index,
-			       struct winreg_StringBuf *name,
-			       struct winreg_StringBuf *keyclass,
-			       NTTIME *last_changed_time,
+			       struct policy_handle *handle /* [in] [ref] */,
+			       uint32_t enum_index /* [in]  */,
+			       struct winreg_StringBuf *name /* [in,out] [ref] */,
+			       struct winreg_StringBuf *keyclass /* [in,out] [unique] */,
+			       NTTIME *last_changed_time /* [in,out] [unique] */,
 			       WERROR *werror)
 {
 	struct winreg_EnumKey r;
@@ -505,13 +505,13 @@ NTSTATUS rpccli_winreg_EnumKey(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
-				 struct policy_handle *handle,
-				 uint32_t enum_index,
-				 struct winreg_ValNameBuf *name,
-				 enum winreg_Type *type,
-				 uint8_t *value,
-				 uint32_t *size,
-				 uint32_t *length,
+				 struct policy_handle *handle /* [in] [ref] */,
+				 uint32_t enum_index /* [in]  */,
+				 struct winreg_ValNameBuf *name /* [in,out] [ref] */,
+				 enum winreg_Type *type /* [in,out] [unique] */,
+				 uint8_t *value /* [in,out] [unique,length_is(*length),size_is(*size)] */,
+				 uint32_t *size /* [in,out] [unique] */,
+				 uint32_t *length /* [in,out] [unique] */,
 				 WERROR *werror)
 {
 	struct winreg_EnumValue r;
@@ -574,7 +574,7 @@ NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_FlushKey(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				struct policy_handle *handle,
+				struct policy_handle *handle /* [in] [ref] */,
 				WERROR *werror)
 {
 	struct winreg_FlushKey r;
@@ -618,9 +618,9 @@ NTSTATUS rpccli_winreg_FlushKey(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_GetKeySecurity(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
-				      struct policy_handle *handle,
-				      uint32_t sec_info,
-				      struct KeySecurityData *sd,
+				      struct policy_handle *handle /* [in] [ref] */,
+				      uint32_t sec_info /* [in]  */,
+				      struct KeySecurityData *sd /* [in,out] [ref] */,
 				      WERROR *werror)
 {
 	struct winreg_GetKeySecurity r;
@@ -667,9 +667,9 @@ NTSTATUS rpccli_winreg_GetKeySecurity(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_LoadKey(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
-			       struct policy_handle *handle,
-			       struct winreg_String *keyname,
-			       struct winreg_String *filename,
+			       struct policy_handle *handle /* [in] [ref] */,
+			       struct winreg_String *keyname /* [in] [unique] */,
+			       struct winreg_String *filename /* [in] [unique] */,
 			       WERROR *werror)
 {
 	struct winreg_LoadKey r;
@@ -715,13 +715,13 @@ NTSTATUS rpccli_winreg_LoadKey(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_NotifyChangeKeyValue(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
-					    struct policy_handle *handle,
-					    uint8_t watch_subtree,
-					    uint32_t notify_filter,
-					    uint32_t unknown,
-					    struct winreg_String string1,
-					    struct winreg_String string2,
-					    uint32_t unknown2,
+					    struct policy_handle *handle /* [in] [ref] */,
+					    uint8_t watch_subtree /* [in]  */,
+					    uint32_t notify_filter /* [in]  */,
+					    uint32_t unknown /* [in]  */,
+					    struct winreg_String string1 /* [in]  */,
+					    struct winreg_String string2 /* [in]  */,
+					    uint32_t unknown2 /* [in]  */,
 					    WERROR *werror)
 {
 	struct winreg_NotifyChangeKeyValue r;
@@ -771,11 +771,11 @@ NTSTATUS rpccli_winreg_NotifyChangeKeyValue(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_OpenKey(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
-			       struct policy_handle *parent_handle,
-			       struct winreg_String keyname,
-			       uint32_t unknown,
-			       uint32_t access_mask,
-			       struct policy_handle *handle,
+			       struct policy_handle *parent_handle /* [in] [ref] */,
+			       struct winreg_String keyname /* [in]  */,
+			       uint32_t unknown /* [in]  */,
+			       uint32_t access_mask /* [in]  */,
+			       struct policy_handle *handle /* [out] [ref] */,
 			       WERROR *werror)
 {
 	struct winreg_OpenKey r;
@@ -823,16 +823,16 @@ NTSTATUS rpccli_winreg_OpenKey(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_QueryInfoKey(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
-				    struct policy_handle *handle,
-				    struct winreg_String *classname,
-				    uint32_t *num_subkeys,
-				    uint32_t *max_subkeylen,
-				    uint32_t *max_classlen,
-				    uint32_t *num_values,
-				    uint32_t *max_valnamelen,
-				    uint32_t *max_valbufsize,
-				    uint32_t *secdescsize,
-				    NTTIME *last_changed_time,
+				    struct policy_handle *handle /* [in] [ref] */,
+				    struct winreg_String *classname /* [in,out] [ref] */,
+				    uint32_t *num_subkeys /* [out] [ref] */,
+				    uint32_t *max_subkeylen /* [out] [ref] */,
+				    uint32_t *max_classlen /* [out] [ref] */,
+				    uint32_t *num_values /* [out] [ref] */,
+				    uint32_t *max_valnamelen /* [out] [ref] */,
+				    uint32_t *max_valbufsize /* [out] [ref] */,
+				    uint32_t *secdescsize /* [out] [ref] */,
+				    NTTIME *last_changed_time /* [out] [ref] */,
 				    WERROR *werror)
 {
 	struct winreg_QueryInfoKey r;
@@ -886,12 +886,12 @@ NTSTATUS rpccli_winreg_QueryInfoKey(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
-				  struct policy_handle *handle,
-				  struct winreg_String *value_name,
-				  enum winreg_Type *type,
-				  uint8_t *data,
-				  uint32_t *data_size,
-				  uint32_t *value_length,
+				  struct policy_handle *handle /* [in] [ref] */,
+				  struct winreg_String *value_name /* [in] [ref] */,
+				  enum winreg_Type *type /* [in,out] [unique] */,
+				  uint8_t *data /* [in,out] [unique,length_is(*value_length),size_is(*data_size)] */,
+				  uint32_t *data_size /* [in,out] [unique] */,
+				  uint32_t *value_length /* [in,out] [unique] */,
 				  WERROR *werror)
 {
 	struct winreg_QueryValue r;
@@ -994,9 +994,9 @@ NTSTATUS rpccli_winreg_ReplaceKey(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_RestoreKey(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
-				  struct policy_handle *handle,
-				  struct winreg_String *filename,
-				  uint32_t flags,
+				  struct policy_handle *handle /* [in] [ref] */,
+				  struct winreg_String *filename /* [in] [ref] */,
+				  uint32_t flags /* [in]  */,
 				  WERROR *werror)
 {
 	struct winreg_RestoreKey r;
@@ -1042,9 +1042,9 @@ NTSTATUS rpccli_winreg_RestoreKey(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_SaveKey(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
-			       struct policy_handle *handle,
-			       struct winreg_String *filename,
-			       struct KeySecurityAttribute *sec_attrib,
+			       struct policy_handle *handle /* [in] [ref] */,
+			       struct winreg_String *filename /* [in] [ref] */,
+			       struct KeySecurityAttribute *sec_attrib /* [in] [unique] */,
 			       WERROR *werror)
 {
 	struct winreg_SaveKey r;
@@ -1090,9 +1090,9 @@ NTSTATUS rpccli_winreg_SaveKey(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_SetKeySecurity(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
-				      struct policy_handle *handle,
-				      uint32_t access_mask,
-				      struct KeySecurityData *sd,
+				      struct policy_handle *handle /* [in] [ref] */,
+				      uint32_t access_mask /* [in]  */,
+				      struct KeySecurityData *sd /* [in] [ref] */,
 				      WERROR *werror)
 {
 	struct winreg_SetKeySecurity r;
@@ -1138,11 +1138,11 @@ NTSTATUS rpccli_winreg_SetKeySecurity(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_SetValue(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				struct policy_handle *handle,
-				struct winreg_String name,
-				enum winreg_Type type,
-				uint8_t *data,
-				uint32_t size,
+				struct policy_handle *handle /* [in] [ref] */,
+				struct winreg_String name /* [in]  */,
+				enum winreg_Type type /* [in]  */,
+				uint8_t *data /* [in] [ref,size_is(size)] */,
+				uint32_t size /* [in]  */,
 				WERROR *werror)
 {
 	struct winreg_SetValue r;
@@ -1232,11 +1232,11 @@ NTSTATUS rpccli_winreg_UnLoadKey(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_InitiateSystemShutdown(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
-					      uint16_t *hostname,
-					      struct initshutdown_String *message,
-					      uint32_t timeout,
-					      uint8_t force_apps,
-					      uint8_t reboot,
+					      uint16_t *hostname /* [in] [unique] */,
+					      struct initshutdown_String *message /* [in] [unique] */,
+					      uint32_t timeout /* [in]  */,
+					      uint8_t force_apps /* [in]  */,
+					      uint8_t reboot /* [in]  */,
 					      WERROR *werror)
 {
 	struct winreg_InitiateSystemShutdown r;
@@ -1284,7 +1284,7 @@ NTSTATUS rpccli_winreg_InitiateSystemShutdown(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_AbortSystemShutdown(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
-					   uint16_t *server,
+					   uint16_t *server /* [in] [unique] */,
 					   WERROR *werror)
 {
 	struct winreg_AbortSystemShutdown r;
@@ -1328,8 +1328,8 @@ NTSTATUS rpccli_winreg_AbortSystemShutdown(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_GetVersion(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
-				  struct policy_handle *handle,
-				  uint32_t *version,
+				  struct policy_handle *handle /* [in] [ref] */,
+				  uint32_t *version /* [out] [ref] */,
 				  WERROR *werror)
 {
 	struct winreg_GetVersion r;
@@ -1374,9 +1374,9 @@ NTSTATUS rpccli_winreg_GetVersion(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_OpenHKCC(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				uint16_t *system_name,
-				uint32_t access_mask,
-				struct policy_handle *handle,
+				uint16_t *system_name /* [in] [unique] */,
+				uint32_t access_mask /* [in]  */,
+				struct policy_handle *handle /* [out] [ref] */,
 				WERROR *werror)
 {
 	struct winreg_OpenHKCC r;
@@ -1422,9 +1422,9 @@ NTSTATUS rpccli_winreg_OpenHKCC(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_OpenHKDD(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				uint16_t *system_name,
-				uint32_t access_mask,
-				struct policy_handle *handle,
+				uint16_t *system_name /* [in] [unique] */,
+				uint32_t access_mask /* [in]  */,
+				struct policy_handle *handle /* [out] [ref] */,
 				WERROR *werror)
 {
 	struct winreg_OpenHKDD r;
@@ -1470,11 +1470,11 @@ NTSTATUS rpccli_winreg_OpenHKDD(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_QueryMultipleValues(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
-					   struct policy_handle *key_handle,
-					   struct QueryMultipleValue *values,
-					   uint32_t num_values,
-					   uint8_t *buffer,
-					   uint32_t *buffer_size,
+					   struct policy_handle *key_handle /* [in] [ref] */,
+					   struct QueryMultipleValue *values /* [in,out] [ref,length_is(num_values),size_is(num_values)] */,
+					   uint32_t num_values /* [in]  */,
+					   uint8_t *buffer /* [in,out] [unique,length_is(*buffer_size),size_is(*buffer_size)] */,
+					   uint32_t *buffer_size /* [in,out] [ref] */,
 					   WERROR *werror)
 {
 	struct winreg_QueryMultipleValues r;
@@ -1527,12 +1527,12 @@ NTSTATUS rpccli_winreg_QueryMultipleValues(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_InitiateSystemShutdownEx(struct rpc_pipe_client *cli,
 						TALLOC_CTX *mem_ctx,
-						uint16_t *hostname,
-						struct initshutdown_String *message,
-						uint32_t timeout,
-						uint8_t force_apps,
-						uint8_t reboot,
-						uint32_t reason,
+						uint16_t *hostname /* [in] [unique] */,
+						struct initshutdown_String *message /* [in] [unique] */,
+						uint32_t timeout /* [in]  */,
+						uint8_t force_apps /* [in]  */,
+						uint8_t reboot /* [in]  */,
+						uint32_t reason /* [in]  */,
 						WERROR *werror)
 {
 	struct winreg_InitiateSystemShutdownEx r;
@@ -1623,9 +1623,9 @@ NTSTATUS rpccli_winreg_SaveKeyEx(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_OpenHKPT(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				uint16_t *system_name,
-				uint32_t access_mask,
-				struct policy_handle *handle,
+				uint16_t *system_name /* [in] [unique] */,
+				uint32_t access_mask /* [in]  */,
+				struct policy_handle *handle /* [out] [ref] */,
 				WERROR *werror)
 {
 	struct winreg_OpenHKPT r;
@@ -1671,9 +1671,9 @@ NTSTATUS rpccli_winreg_OpenHKPT(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_winreg_OpenHKPN(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				uint16_t *system_name,
-				uint32_t access_mask,
-				struct policy_handle *handle,
+				uint16_t *system_name /* [in] [unique] */,
+				uint32_t access_mask /* [in]  */,
+				struct policy_handle *handle /* [out] [ref] */,
 				WERROR *werror)
 {
 	struct winreg_OpenHKPN r;

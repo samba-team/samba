@@ -8,9 +8,9 @@
 
 NTSTATUS rpccli_samr_Connect(struct rpc_pipe_client *cli,
 			     TALLOC_CTX *mem_ctx,
-			     uint16_t *system_name,
-			     uint32_t access_mask,
-			     struct policy_handle *connect_handle)
+			     uint16_t *system_name /* [in] [unique] */,
+			     uint32_t access_mask /* [in]  */,
+			     struct policy_handle *connect_handle /* [out] [ref] */)
 {
 	struct samr_Connect r;
 	NTSTATUS status;
@@ -51,7 +51,7 @@ NTSTATUS rpccli_samr_Connect(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_Close(struct rpc_pipe_client *cli,
 			   TALLOC_CTX *mem_ctx,
-			   struct policy_handle *handle)
+			   struct policy_handle *handle /* [in,out] [ref] */)
 {
 	struct samr_Close r;
 	NTSTATUS status;
@@ -91,9 +91,9 @@ NTSTATUS rpccli_samr_Close(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_SetSecurity(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
-				 struct policy_handle *handle,
-				 uint32_t sec_info,
-				 struct sec_desc_buf *sdbuf)
+				 struct policy_handle *handle /* [in] [ref] */,
+				 uint32_t sec_info /* [in]  */,
+				 struct sec_desc_buf *sdbuf /* [in] [ref] */)
 {
 	struct samr_SetSecurity r;
 	NTSTATUS status;
@@ -134,9 +134,9 @@ NTSTATUS rpccli_samr_SetSecurity(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_QuerySecurity(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
-				   struct policy_handle *handle,
-				   uint32_t sec_info,
-				   struct sec_desc_buf **sdbuf)
+				   struct policy_handle *handle /* [in] [ref] */,
+				   uint32_t sec_info /* [in]  */,
+				   struct sec_desc_buf **sdbuf /* [out] [ref] */)
 {
 	struct samr_QuerySecurity r;
 	NTSTATUS status;
@@ -177,7 +177,7 @@ NTSTATUS rpccli_samr_QuerySecurity(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_Shutdown(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
-			      struct policy_handle *connect_handle)
+			      struct policy_handle *connect_handle /* [in] [ref] */)
 {
 	struct samr_Shutdown r;
 	NTSTATUS status;
@@ -216,9 +216,9 @@ NTSTATUS rpccli_samr_Shutdown(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_LookupDomain(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
-				  struct policy_handle *connect_handle,
-				  struct lsa_String *domain_name,
-				  struct dom_sid2 **sid)
+				  struct policy_handle *connect_handle /* [in] [ref] */,
+				  struct lsa_String *domain_name /* [in] [ref] */,
+				  struct dom_sid2 **sid /* [out] [ref] */)
 {
 	struct samr_LookupDomain r;
 	NTSTATUS status;
@@ -259,11 +259,11 @@ NTSTATUS rpccli_samr_LookupDomain(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_EnumDomains(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
-				 struct policy_handle *connect_handle,
-				 uint32_t *resume_handle,
-				 struct samr_SamArray **sam,
-				 uint32_t buf_size,
-				 uint32_t *num_entries)
+				 struct policy_handle *connect_handle /* [in] [ref] */,
+				 uint32_t *resume_handle /* [in,out] [ref] */,
+				 struct samr_SamArray **sam /* [out] [ref] */,
+				 uint32_t buf_size /* [in]  */,
+				 uint32_t *num_entries /* [out] [ref] */)
 {
 	struct samr_EnumDomains r;
 	NTSTATUS status;
@@ -307,10 +307,10 @@ NTSTATUS rpccli_samr_EnumDomains(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_OpenDomain(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				struct policy_handle *connect_handle,
-				uint32_t access_mask,
-				struct dom_sid2 *sid,
-				struct policy_handle *domain_handle)
+				struct policy_handle *connect_handle /* [in] [ref] */,
+				uint32_t access_mask /* [in]  */,
+				struct dom_sid2 *sid /* [in] [ref] */,
+				struct policy_handle *domain_handle /* [out] [ref] */)
 {
 	struct samr_OpenDomain r;
 	NTSTATUS status;
@@ -352,9 +352,9 @@ NTSTATUS rpccli_samr_OpenDomain(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_QueryDomainInfo(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
-				     struct policy_handle *domain_handle,
-				     uint16_t level,
-				     union samr_DomainInfo **info)
+				     struct policy_handle *domain_handle /* [in] [ref] */,
+				     uint16_t level /* [in]  */,
+				     union samr_DomainInfo **info /* [out] [ref,switch_is(level)] */)
 {
 	struct samr_QueryDomainInfo r;
 	NTSTATUS status;
@@ -395,9 +395,9 @@ NTSTATUS rpccli_samr_QueryDomainInfo(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_SetDomainInfo(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
-				   struct policy_handle *domain_handle,
-				   uint16_t level,
-				   union samr_DomainInfo *info)
+				   struct policy_handle *domain_handle /* [in] [ref] */,
+				   uint16_t level /* [in]  */,
+				   union samr_DomainInfo *info /* [in] [ref,switch_is(level)] */)
 {
 	struct samr_SetDomainInfo r;
 	NTSTATUS status;
@@ -438,11 +438,11 @@ NTSTATUS rpccli_samr_SetDomainInfo(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_CreateDomainGroup(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
-				       struct policy_handle *domain_handle,
-				       struct lsa_String *name,
-				       uint32_t access_mask,
-				       struct policy_handle *group_handle,
-				       uint32_t *rid)
+				       struct policy_handle *domain_handle /* [in] [ref] */,
+				       struct lsa_String *name /* [in] [ref] */,
+				       uint32_t access_mask /* [in]  */,
+				       struct policy_handle *group_handle /* [out] [ref] */,
+				       uint32_t *rid /* [out] [ref] */)
 {
 	struct samr_CreateDomainGroup r;
 	NTSTATUS status;
@@ -485,11 +485,11 @@ NTSTATUS rpccli_samr_CreateDomainGroup(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_EnumDomainGroups(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
-				      struct policy_handle *domain_handle,
-				      uint32_t *resume_handle,
-				      struct samr_SamArray **sam,
-				      uint32_t max_size,
-				      uint32_t *num_entries)
+				      struct policy_handle *domain_handle /* [in] [ref] */,
+				      uint32_t *resume_handle /* [in,out] [ref] */,
+				      struct samr_SamArray **sam /* [out] [ref] */,
+				      uint32_t max_size /* [in]  */,
+				      uint32_t *num_entries /* [out] [ref] */)
 {
 	struct samr_EnumDomainGroups r;
 	NTSTATUS status;
@@ -533,11 +533,11 @@ NTSTATUS rpccli_samr_EnumDomainGroups(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_CreateUser(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				struct policy_handle *domain_handle,
-				struct lsa_String *account_name,
-				uint32_t access_mask,
-				struct policy_handle *user_handle,
-				uint32_t *rid)
+				struct policy_handle *domain_handle /* [in] [ref] */,
+				struct lsa_String *account_name /* [in] [ref] */,
+				uint32_t access_mask /* [in]  */,
+				struct policy_handle *user_handle /* [out] [ref] */,
+				uint32_t *rid /* [out] [ref] */)
 {
 	struct samr_CreateUser r;
 	NTSTATUS status;
@@ -580,12 +580,12 @@ NTSTATUS rpccli_samr_CreateUser(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_EnumDomainUsers(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
-				     struct policy_handle *domain_handle,
-				     uint32_t *resume_handle,
-				     uint32_t acct_flags,
-				     struct samr_SamArray **sam,
-				     uint32_t max_size,
-				     uint32_t *num_entries)
+				     struct policy_handle *domain_handle /* [in] [ref] */,
+				     uint32_t *resume_handle /* [in,out] [ref] */,
+				     uint32_t acct_flags /* [in]  */,
+				     struct samr_SamArray **sam /* [out] [ref] */,
+				     uint32_t max_size /* [in]  */,
+				     uint32_t *num_entries /* [out] [ref] */)
 {
 	struct samr_EnumDomainUsers r;
 	NTSTATUS status;
@@ -630,11 +630,11 @@ NTSTATUS rpccli_samr_EnumDomainUsers(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_CreateDomAlias(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
-				    struct policy_handle *domain_handle,
-				    struct lsa_String *alias_name,
-				    uint32_t access_mask,
-				    struct policy_handle *alias_handle,
-				    uint32_t *rid)
+				    struct policy_handle *domain_handle /* [in] [ref] */,
+				    struct lsa_String *alias_name /* [in] [ref] */,
+				    uint32_t access_mask /* [in]  */,
+				    struct policy_handle *alias_handle /* [out] [ref] */,
+				    uint32_t *rid /* [out] [ref] */)
 {
 	struct samr_CreateDomAlias r;
 	NTSTATUS status;
@@ -677,11 +677,11 @@ NTSTATUS rpccli_samr_CreateDomAlias(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_EnumDomainAliases(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
-				       struct policy_handle *domain_handle,
-				       uint32_t *resume_handle,
-				       struct samr_SamArray **sam,
-				       uint32_t max_size,
-				       uint32_t *num_entries)
+				       struct policy_handle *domain_handle /* [in] [ref] */,
+				       uint32_t *resume_handle /* [in,out] [ref] */,
+				       struct samr_SamArray **sam /* [out] [ref] */,
+				       uint32_t max_size /* [in]  */,
+				       uint32_t *num_entries /* [out] [ref] */)
 {
 	struct samr_EnumDomainAliases r;
 	NTSTATUS status;
@@ -725,9 +725,9 @@ NTSTATUS rpccli_samr_EnumDomainAliases(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_GetAliasMembership(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
-					struct policy_handle *domain_handle,
-					struct lsa_SidArray *sids,
-					struct samr_Ids *rids)
+					struct policy_handle *domain_handle /* [in] [ref] */,
+					struct lsa_SidArray *sids /* [in] [ref] */,
+					struct samr_Ids *rids /* [out] [ref] */)
 {
 	struct samr_GetAliasMembership r;
 	NTSTATUS status;
@@ -768,11 +768,11 @@ NTSTATUS rpccli_samr_GetAliasMembership(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_LookupNames(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
-				 struct policy_handle *domain_handle,
-				 uint32_t num_names,
-				 struct lsa_String *names,
-				 struct samr_Ids *rids,
-				 struct samr_Ids *types)
+				 struct policy_handle *domain_handle /* [in] [ref] */,
+				 uint32_t num_names /* [in] [range(0,1000)] */,
+				 struct lsa_String *names /* [in] [length_is(num_names),size_is(1000)] */,
+				 struct samr_Ids *rids /* [out] [ref] */,
+				 struct samr_Ids *types /* [out] [ref] */)
 {
 	struct samr_LookupNames r;
 	NTSTATUS status;
@@ -815,11 +815,11 @@ NTSTATUS rpccli_samr_LookupNames(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_LookupRids(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				struct policy_handle *domain_handle,
-				uint32_t num_rids,
-				uint32_t *rids,
-				struct lsa_Strings *names,
-				struct samr_Ids *types)
+				struct policy_handle *domain_handle /* [in] [ref] */,
+				uint32_t num_rids /* [in] [range(0,1000)] */,
+				uint32_t *rids /* [in] [length_is(num_rids),size_is(1000)] */,
+				struct lsa_Strings *names /* [out] [ref] */,
+				struct samr_Ids *types /* [out] [ref] */)
 {
 	struct samr_LookupRids r;
 	NTSTATUS status;
@@ -862,10 +862,10 @@ NTSTATUS rpccli_samr_LookupRids(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_OpenGroup(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
-			       struct policy_handle *domain_handle,
-			       uint32_t access_mask,
-			       uint32_t rid,
-			       struct policy_handle *group_handle)
+			       struct policy_handle *domain_handle /* [in] [ref] */,
+			       uint32_t access_mask /* [in]  */,
+			       uint32_t rid /* [in]  */,
+			       struct policy_handle *group_handle /* [out] [ref] */)
 {
 	struct samr_OpenGroup r;
 	NTSTATUS status;
@@ -907,9 +907,9 @@ NTSTATUS rpccli_samr_OpenGroup(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_QueryGroupInfo(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
-				    struct policy_handle *group_handle,
-				    enum samr_GroupInfoEnum level,
-				    union samr_GroupInfo **info)
+				    struct policy_handle *group_handle /* [in] [ref] */,
+				    enum samr_GroupInfoEnum level /* [in]  */,
+				    union samr_GroupInfo **info /* [out] [ref,switch_is(level)] */)
 {
 	struct samr_QueryGroupInfo r;
 	NTSTATUS status;
@@ -950,9 +950,9 @@ NTSTATUS rpccli_samr_QueryGroupInfo(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_SetGroupInfo(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
-				  struct policy_handle *group_handle,
-				  enum samr_GroupInfoEnum level,
-				  union samr_GroupInfo *info)
+				  struct policy_handle *group_handle /* [in] [ref] */,
+				  enum samr_GroupInfoEnum level /* [in]  */,
+				  union samr_GroupInfo *info /* [in] [ref,switch_is(level)] */)
 {
 	struct samr_SetGroupInfo r;
 	NTSTATUS status;
@@ -993,9 +993,9 @@ NTSTATUS rpccli_samr_SetGroupInfo(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_AddGroupMember(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
-				    struct policy_handle *group_handle,
-				    uint32_t rid,
-				    uint32_t flags)
+				    struct policy_handle *group_handle /* [in] [ref] */,
+				    uint32_t rid /* [in]  */,
+				    uint32_t flags /* [in]  */)
 {
 	struct samr_AddGroupMember r;
 	NTSTATUS status;
@@ -1036,7 +1036,7 @@ NTSTATUS rpccli_samr_AddGroupMember(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_DeleteDomainGroup(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
-				       struct policy_handle *group_handle)
+				       struct policy_handle *group_handle /* [in,out] [ref] */)
 {
 	struct samr_DeleteDomainGroup r;
 	NTSTATUS status;
@@ -1076,8 +1076,8 @@ NTSTATUS rpccli_samr_DeleteDomainGroup(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_DeleteGroupMember(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
-				       struct policy_handle *group_handle,
-				       uint32_t rid)
+				       struct policy_handle *group_handle /* [in] [ref] */,
+				       uint32_t rid /* [in]  */)
 {
 	struct samr_DeleteGroupMember r;
 	NTSTATUS status;
@@ -1117,8 +1117,8 @@ NTSTATUS rpccli_samr_DeleteGroupMember(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_QueryGroupMember(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
-				      struct policy_handle *group_handle,
-				      struct samr_RidTypeArray **rids)
+				      struct policy_handle *group_handle /* [in] [ref] */,
+				      struct samr_RidTypeArray **rids /* [out] [ref] */)
 {
 	struct samr_QueryGroupMember r;
 	NTSTATUS status;
@@ -1158,9 +1158,9 @@ NTSTATUS rpccli_samr_QueryGroupMember(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_SetMemberAttributesOfGroup(struct rpc_pipe_client *cli,
 						TALLOC_CTX *mem_ctx,
-						struct policy_handle *group_handle,
-						uint32_t unknown1,
-						uint32_t unknown2)
+						struct policy_handle *group_handle /* [in] [ref] */,
+						uint32_t unknown1 /* [in]  */,
+						uint32_t unknown2 /* [in]  */)
 {
 	struct samr_SetMemberAttributesOfGroup r;
 	NTSTATUS status;
@@ -1201,10 +1201,10 @@ NTSTATUS rpccli_samr_SetMemberAttributesOfGroup(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_OpenAlias(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
-			       struct policy_handle *domain_handle,
-			       uint32_t access_mask,
-			       uint32_t rid,
-			       struct policy_handle *alias_handle)
+			       struct policy_handle *domain_handle /* [in] [ref] */,
+			       uint32_t access_mask /* [in]  */,
+			       uint32_t rid /* [in]  */,
+			       struct policy_handle *alias_handle /* [out] [ref] */)
 {
 	struct samr_OpenAlias r;
 	NTSTATUS status;
@@ -1246,9 +1246,9 @@ NTSTATUS rpccli_samr_OpenAlias(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_QueryAliasInfo(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
-				    struct policy_handle *alias_handle,
-				    enum samr_AliasInfoEnum level,
-				    union samr_AliasInfo **info)
+				    struct policy_handle *alias_handle /* [in] [ref] */,
+				    enum samr_AliasInfoEnum level /* [in]  */,
+				    union samr_AliasInfo **info /* [out] [ref,switch_is(level)] */)
 {
 	struct samr_QueryAliasInfo r;
 	NTSTATUS status;
@@ -1289,9 +1289,9 @@ NTSTATUS rpccli_samr_QueryAliasInfo(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_SetAliasInfo(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
-				  struct policy_handle *alias_handle,
-				  enum samr_AliasInfoEnum level,
-				  union samr_AliasInfo *info)
+				  struct policy_handle *alias_handle /* [in] [ref] */,
+				  enum samr_AliasInfoEnum level /* [in]  */,
+				  union samr_AliasInfo *info /* [in] [ref,switch_is(level)] */)
 {
 	struct samr_SetAliasInfo r;
 	NTSTATUS status;
@@ -1332,7 +1332,7 @@ NTSTATUS rpccli_samr_SetAliasInfo(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_DeleteDomAlias(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
-				    struct policy_handle *alias_handle)
+				    struct policy_handle *alias_handle /* [in,out] [ref] */)
 {
 	struct samr_DeleteDomAlias r;
 	NTSTATUS status;
@@ -1372,8 +1372,8 @@ NTSTATUS rpccli_samr_DeleteDomAlias(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_AddAliasMember(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
-				    struct policy_handle *alias_handle,
-				    struct dom_sid2 *sid)
+				    struct policy_handle *alias_handle /* [in] [ref] */,
+				    struct dom_sid2 *sid /* [in] [ref] */)
 {
 	struct samr_AddAliasMember r;
 	NTSTATUS status;
@@ -1413,8 +1413,8 @@ NTSTATUS rpccli_samr_AddAliasMember(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_DeleteAliasMember(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
-				       struct policy_handle *alias_handle,
-				       struct dom_sid2 *sid)
+				       struct policy_handle *alias_handle /* [in] [ref] */,
+				       struct dom_sid2 *sid /* [in] [ref] */)
 {
 	struct samr_DeleteAliasMember r;
 	NTSTATUS status;
@@ -1454,8 +1454,8 @@ NTSTATUS rpccli_samr_DeleteAliasMember(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_GetMembersInAlias(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
-				       struct policy_handle *alias_handle,
-				       struct lsa_SidArray *sids)
+				       struct policy_handle *alias_handle /* [in] [ref] */,
+				       struct lsa_SidArray *sids /* [out] [ref] */)
 {
 	struct samr_GetMembersInAlias r;
 	NTSTATUS status;
@@ -1495,10 +1495,10 @@ NTSTATUS rpccli_samr_GetMembersInAlias(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_OpenUser(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
-			      struct policy_handle *domain_handle,
-			      uint32_t access_mask,
-			      uint32_t rid,
-			      struct policy_handle *user_handle)
+			      struct policy_handle *domain_handle /* [in] [ref] */,
+			      uint32_t access_mask /* [in]  */,
+			      uint32_t rid /* [in]  */,
+			      struct policy_handle *user_handle /* [out] [ref] */)
 {
 	struct samr_OpenUser r;
 	NTSTATUS status;
@@ -1540,7 +1540,7 @@ NTSTATUS rpccli_samr_OpenUser(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_DeleteUser(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				struct policy_handle *user_handle)
+				struct policy_handle *user_handle /* [in,out] [ref] */)
 {
 	struct samr_DeleteUser r;
 	NTSTATUS status;
@@ -1580,9 +1580,9 @@ NTSTATUS rpccli_samr_DeleteUser(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_QueryUserInfo(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
-				   struct policy_handle *user_handle,
-				   uint16_t level,
-				   union samr_UserInfo **info)
+				   struct policy_handle *user_handle /* [in] [ref] */,
+				   uint16_t level /* [in]  */,
+				   union samr_UserInfo **info /* [out] [ref,switch_is(level)] */)
 {
 	struct samr_QueryUserInfo r;
 	NTSTATUS status;
@@ -1623,9 +1623,9 @@ NTSTATUS rpccli_samr_QueryUserInfo(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_SetUserInfo(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
-				 struct policy_handle *user_handle,
-				 uint16_t level,
-				 union samr_UserInfo *info)
+				 struct policy_handle *user_handle /* [in] [ref] */,
+				 uint16_t level /* [in]  */,
+				 union samr_UserInfo *info /* [in] [ref,switch_is(level)] */)
 {
 	struct samr_SetUserInfo r;
 	NTSTATUS status;
@@ -1666,17 +1666,17 @@ NTSTATUS rpccli_samr_SetUserInfo(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_ChangePasswordUser(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
-					struct policy_handle *user_handle,
-					uint8_t lm_present,
-					struct samr_Password *old_lm_crypted,
-					struct samr_Password *new_lm_crypted,
-					uint8_t nt_present,
-					struct samr_Password *old_nt_crypted,
-					struct samr_Password *new_nt_crypted,
-					uint8_t cross1_present,
-					struct samr_Password *nt_cross,
-					uint8_t cross2_present,
-					struct samr_Password *lm_cross)
+					struct policy_handle *user_handle /* [in] [ref] */,
+					uint8_t lm_present /* [in]  */,
+					struct samr_Password *old_lm_crypted /* [in] [unique] */,
+					struct samr_Password *new_lm_crypted /* [in] [unique] */,
+					uint8_t nt_present /* [in]  */,
+					struct samr_Password *old_nt_crypted /* [in] [unique] */,
+					struct samr_Password *new_nt_crypted /* [in] [unique] */,
+					uint8_t cross1_present /* [in]  */,
+					struct samr_Password *nt_cross /* [in] [unique] */,
+					uint8_t cross2_present /* [in]  */,
+					struct samr_Password *lm_cross /* [in] [unique] */)
 {
 	struct samr_ChangePasswordUser r;
 	NTSTATUS status;
@@ -1725,8 +1725,8 @@ NTSTATUS rpccli_samr_ChangePasswordUser(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_GetGroupsForUser(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
-				      struct policy_handle *user_handle,
-				      struct samr_RidWithAttributeArray **rids)
+				      struct policy_handle *user_handle /* [in] [ref] */,
+				      struct samr_RidWithAttributeArray **rids /* [out] [ref] */)
 {
 	struct samr_GetGroupsForUser r;
 	NTSTATUS status;
@@ -1766,14 +1766,14 @@ NTSTATUS rpccli_samr_GetGroupsForUser(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_QueryDisplayInfo(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
-				      struct policy_handle *domain_handle,
-				      uint16_t level,
-				      uint32_t start_idx,
-				      uint32_t max_entries,
-				      uint32_t buf_size,
-				      uint32_t *total_size,
-				      uint32_t *returned_size,
-				      union samr_DispInfo *info)
+				      struct policy_handle *domain_handle /* [in] [ref] */,
+				      uint16_t level /* [in]  */,
+				      uint32_t start_idx /* [in]  */,
+				      uint32_t max_entries /* [in]  */,
+				      uint32_t buf_size /* [in]  */,
+				      uint32_t *total_size /* [out] [ref] */,
+				      uint32_t *returned_size /* [out] [ref] */,
+				      union samr_DispInfo *info /* [out] [ref,switch_is(level)] */)
 {
 	struct samr_QueryDisplayInfo r;
 	NTSTATUS status;
@@ -1819,10 +1819,10 @@ NTSTATUS rpccli_samr_QueryDisplayInfo(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_GetDisplayEnumerationIndex(struct rpc_pipe_client *cli,
 						TALLOC_CTX *mem_ctx,
-						struct policy_handle *domain_handle,
-						uint16_t level,
-						struct lsa_String name,
-						uint32_t *idx)
+						struct policy_handle *domain_handle /* [in] [ref] */,
+						uint16_t level /* [in]  */,
+						struct lsa_String name /* [in]  */,
+						uint32_t *idx /* [out] [ref] */)
 {
 	struct samr_GetDisplayEnumerationIndex r;
 	NTSTATUS status;
@@ -1864,7 +1864,7 @@ NTSTATUS rpccli_samr_GetDisplayEnumerationIndex(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_TestPrivateFunctionsDomain(struct rpc_pipe_client *cli,
 						TALLOC_CTX *mem_ctx,
-						struct policy_handle *domain_handle)
+						struct policy_handle *domain_handle /* [in] [ref] */)
 {
 	struct samr_TestPrivateFunctionsDomain r;
 	NTSTATUS status;
@@ -1903,7 +1903,7 @@ NTSTATUS rpccli_samr_TestPrivateFunctionsDomain(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_TestPrivateFunctionsUser(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
-					      struct policy_handle *user_handle)
+					      struct policy_handle *user_handle /* [in] [ref] */)
 {
 	struct samr_TestPrivateFunctionsUser r;
 	NTSTATUS status;
@@ -1942,8 +1942,8 @@ NTSTATUS rpccli_samr_TestPrivateFunctionsUser(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_GetUserPwInfo(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
-				   struct policy_handle *user_handle,
-				   struct samr_PwInfo *info)
+				   struct policy_handle *user_handle /* [in] [ref] */,
+				   struct samr_PwInfo *info /* [out] [ref] */)
 {
 	struct samr_GetUserPwInfo r;
 	NTSTATUS status;
@@ -1983,8 +1983,8 @@ NTSTATUS rpccli_samr_GetUserPwInfo(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_RemoveMemberFromForeignDomain(struct rpc_pipe_client *cli,
 						   TALLOC_CTX *mem_ctx,
-						   struct policy_handle *domain_handle,
-						   struct dom_sid2 *sid)
+						   struct policy_handle *domain_handle /* [in] [ref] */,
+						   struct dom_sid2 *sid /* [in] [ref] */)
 {
 	struct samr_RemoveMemberFromForeignDomain r;
 	NTSTATUS status;
@@ -2024,9 +2024,9 @@ NTSTATUS rpccli_samr_RemoveMemberFromForeignDomain(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_QueryDomainInfo2(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
-				      struct policy_handle *domain_handle,
-				      uint16_t level,
-				      union samr_DomainInfo **info)
+				      struct policy_handle *domain_handle /* [in] [ref] */,
+				      uint16_t level /* [in]  */,
+				      union samr_DomainInfo **info /* [out] [ref,switch_is(level)] */)
 {
 	struct samr_QueryDomainInfo2 r;
 	NTSTATUS status;
@@ -2067,9 +2067,9 @@ NTSTATUS rpccli_samr_QueryDomainInfo2(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_QueryUserInfo2(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
-				    struct policy_handle *user_handle,
-				    uint16_t level,
-				    union samr_UserInfo *info)
+				    struct policy_handle *user_handle /* [in] [ref] */,
+				    uint16_t level /* [in]  */,
+				    union samr_UserInfo *info /* [out] [ref,switch_is(level)] */)
 {
 	struct samr_QueryUserInfo2 r;
 	NTSTATUS status;
@@ -2110,14 +2110,14 @@ NTSTATUS rpccli_samr_QueryUserInfo2(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_QueryDisplayInfo2(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
-				       struct policy_handle *domain_handle,
-				       uint16_t level,
-				       uint32_t start_idx,
-				       uint32_t max_entries,
-				       uint32_t buf_size,
-				       uint32_t *total_size,
-				       uint32_t *returned_size,
-				       union samr_DispInfo *info)
+				       struct policy_handle *domain_handle /* [in] [ref] */,
+				       uint16_t level /* [in]  */,
+				       uint32_t start_idx /* [in]  */,
+				       uint32_t max_entries /* [in]  */,
+				       uint32_t buf_size /* [in]  */,
+				       uint32_t *total_size /* [out] [ref] */,
+				       uint32_t *returned_size /* [out] [ref] */,
+				       union samr_DispInfo *info /* [out] [ref,switch_is(level)] */)
 {
 	struct samr_QueryDisplayInfo2 r;
 	NTSTATUS status;
@@ -2163,10 +2163,10 @@ NTSTATUS rpccli_samr_QueryDisplayInfo2(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_GetDisplayEnumerationIndex2(struct rpc_pipe_client *cli,
 						 TALLOC_CTX *mem_ctx,
-						 struct policy_handle *domain_handle,
-						 uint16_t level,
-						 struct lsa_String name,
-						 uint32_t *idx)
+						 struct policy_handle *domain_handle /* [in] [ref] */,
+						 uint16_t level /* [in]  */,
+						 struct lsa_String name /* [in]  */,
+						 uint32_t *idx /* [out] [ref] */)
 {
 	struct samr_GetDisplayEnumerationIndex2 r;
 	NTSTATUS status;
@@ -2208,13 +2208,13 @@ NTSTATUS rpccli_samr_GetDisplayEnumerationIndex2(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_CreateUser2(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
-				 struct policy_handle *domain_handle,
-				 struct lsa_String *account_name,
-				 uint32_t acct_flags,
-				 uint32_t access_mask,
-				 struct policy_handle *user_handle,
-				 uint32_t *access_granted,
-				 uint32_t *rid)
+				 struct policy_handle *domain_handle /* [in] [ref] */,
+				 struct lsa_String *account_name /* [in] [ref] */,
+				 uint32_t acct_flags /* [in]  */,
+				 uint32_t access_mask /* [in]  */,
+				 struct policy_handle *user_handle /* [out] [ref] */,
+				 uint32_t *access_granted /* [out] [ref] */,
+				 uint32_t *rid /* [out] [ref] */)
 {
 	struct samr_CreateUser2 r;
 	NTSTATUS status;
@@ -2259,14 +2259,14 @@ NTSTATUS rpccli_samr_CreateUser2(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_QueryDisplayInfo3(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
-				       struct policy_handle *domain_handle,
-				       uint16_t level,
-				       uint32_t start_idx,
-				       uint32_t max_entries,
-				       uint32_t buf_size,
-				       uint32_t *total_size,
-				       uint32_t *returned_size,
-				       union samr_DispInfo *info)
+				       struct policy_handle *domain_handle /* [in] [ref] */,
+				       uint16_t level /* [in]  */,
+				       uint32_t start_idx /* [in]  */,
+				       uint32_t max_entries /* [in]  */,
+				       uint32_t buf_size /* [in]  */,
+				       uint32_t *total_size /* [out] [ref] */,
+				       uint32_t *returned_size /* [out] [ref] */,
+				       union samr_DispInfo *info /* [out] [ref,switch_is(level)] */)
 {
 	struct samr_QueryDisplayInfo3 r;
 	NTSTATUS status;
@@ -2312,8 +2312,8 @@ NTSTATUS rpccli_samr_QueryDisplayInfo3(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_AddMultipleMembersToAlias(struct rpc_pipe_client *cli,
 					       TALLOC_CTX *mem_ctx,
-					       struct policy_handle *alias_handle,
-					       struct lsa_SidArray *sids)
+					       struct policy_handle *alias_handle /* [in] [ref] */,
+					       struct lsa_SidArray *sids /* [in] [ref] */)
 {
 	struct samr_AddMultipleMembersToAlias r;
 	NTSTATUS status;
@@ -2353,8 +2353,8 @@ NTSTATUS rpccli_samr_AddMultipleMembersToAlias(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_RemoveMultipleMembersFromAlias(struct rpc_pipe_client *cli,
 						    TALLOC_CTX *mem_ctx,
-						    struct policy_handle *alias_handle,
-						    struct lsa_SidArray *sids)
+						    struct policy_handle *alias_handle /* [in] [ref] */,
+						    struct lsa_SidArray *sids /* [in] [ref] */)
 {
 	struct samr_RemoveMultipleMembersFromAlias r;
 	NTSTATUS status;
@@ -2394,10 +2394,10 @@ NTSTATUS rpccli_samr_RemoveMultipleMembersFromAlias(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_OemChangePasswordUser2(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
-					    struct lsa_AsciiString *server,
-					    struct lsa_AsciiString *account,
-					    struct samr_CryptPassword *password,
-					    struct samr_Password *hash)
+					    struct lsa_AsciiString *server /* [in] [unique] */,
+					    struct lsa_AsciiString *account /* [in] [ref] */,
+					    struct samr_CryptPassword *password /* [in] [unique] */,
+					    struct samr_Password *hash /* [in] [unique] */)
 {
 	struct samr_OemChangePasswordUser2 r;
 	NTSTATUS status;
@@ -2439,13 +2439,13 @@ NTSTATUS rpccli_samr_OemChangePasswordUser2(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_ChangePasswordUser2(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
-					 struct lsa_String *server,
-					 struct lsa_String *account,
-					 struct samr_CryptPassword *nt_password,
-					 struct samr_Password *nt_verifier,
-					 uint8_t lm_change,
-					 struct samr_CryptPassword *lm_password,
-					 struct samr_Password *lm_verifier)
+					 struct lsa_String *server /* [in] [unique] */,
+					 struct lsa_String *account /* [in] [ref] */,
+					 struct samr_CryptPassword *nt_password /* [in] [unique] */,
+					 struct samr_Password *nt_verifier /* [in] [unique] */,
+					 uint8_t lm_change /* [in]  */,
+					 struct samr_CryptPassword *lm_password /* [in] [unique] */,
+					 struct samr_Password *lm_verifier /* [in] [unique] */)
 {
 	struct samr_ChangePasswordUser2 r;
 	NTSTATUS status;
@@ -2490,8 +2490,8 @@ NTSTATUS rpccli_samr_ChangePasswordUser2(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_GetDomPwInfo(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
-				  struct lsa_String *domain_name,
-				  struct samr_PwInfo *info)
+				  struct lsa_String *domain_name /* [in] [unique] */,
+				  struct samr_PwInfo *info /* [out] [ref] */)
 {
 	struct samr_GetDomPwInfo r;
 	NTSTATUS status;
@@ -2531,9 +2531,9 @@ NTSTATUS rpccli_samr_GetDomPwInfo(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_Connect2(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
-			      const char *system_name,
-			      uint32_t access_mask,
-			      struct policy_handle *connect_handle)
+			      const char *system_name /* [in] [unique,charset(UTF16)] */,
+			      uint32_t access_mask /* [in]  */,
+			      struct policy_handle *connect_handle /* [out] [ref] */)
 {
 	struct samr_Connect2 r;
 	NTSTATUS status;
@@ -2574,9 +2574,9 @@ NTSTATUS rpccli_samr_Connect2(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_SetUserInfo2(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
-				  struct policy_handle *user_handle,
-				  uint16_t level,
-				  union samr_UserInfo *info)
+				  struct policy_handle *user_handle /* [in] [ref] */,
+				  uint16_t level /* [in]  */,
+				  union samr_UserInfo *info /* [in] [ref,switch_is(level)] */)
 {
 	struct samr_SetUserInfo2 r;
 	NTSTATUS status;
@@ -2617,10 +2617,10 @@ NTSTATUS rpccli_samr_SetUserInfo2(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_SetBootKeyInformation(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
-					   struct policy_handle *connect_handle,
-					   uint32_t unknown1,
-					   uint32_t unknown2,
-					   uint32_t unknown3)
+					   struct policy_handle *connect_handle /* [in] [ref] */,
+					   uint32_t unknown1 /* [in]  */,
+					   uint32_t unknown2 /* [in]  */,
+					   uint32_t unknown3 /* [in]  */)
 {
 	struct samr_SetBootKeyInformation r;
 	NTSTATUS status;
@@ -2662,8 +2662,8 @@ NTSTATUS rpccli_samr_SetBootKeyInformation(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_GetBootKeyInformation(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
-					   struct policy_handle *domain_handle,
-					   uint32_t *unknown)
+					   struct policy_handle *domain_handle /* [in] [ref] */,
+					   uint32_t *unknown /* [out] [ref] */)
 {
 	struct samr_GetBootKeyInformation r;
 	NTSTATUS status;
@@ -2703,10 +2703,10 @@ NTSTATUS rpccli_samr_GetBootKeyInformation(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_Connect3(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
-			      const char *system_name,
-			      uint32_t unknown,
-			      uint32_t access_mask,
-			      struct policy_handle *connect_handle)
+			      const char *system_name /* [in] [unique,charset(UTF16)] */,
+			      uint32_t unknown /* [in]  */,
+			      uint32_t access_mask /* [in]  */,
+			      struct policy_handle *connect_handle /* [out] [ref] */)
 {
 	struct samr_Connect3 r;
 	NTSTATUS status;
@@ -2748,10 +2748,10 @@ NTSTATUS rpccli_samr_Connect3(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_Connect4(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
-			      const char *system_name,
-			      enum samr_ConnectVersion client_version,
-			      uint32_t access_mask,
-			      struct policy_handle *connect_handle)
+			      const char *system_name /* [in] [unique,charset(UTF16)] */,
+			      enum samr_ConnectVersion client_version /* [in]  */,
+			      uint32_t access_mask /* [in]  */,
+			      struct policy_handle *connect_handle /* [out] [ref] */)
 {
 	struct samr_Connect4 r;
 	NTSTATUS status;
@@ -2793,16 +2793,16 @@ NTSTATUS rpccli_samr_Connect4(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_ChangePasswordUser3(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
-					 struct lsa_String *server,
-					 struct lsa_String *account,
-					 struct samr_CryptPassword *nt_password,
-					 struct samr_Password *nt_verifier,
-					 uint8_t lm_change,
-					 struct samr_CryptPassword *lm_password,
-					 struct samr_Password *lm_verifier,
-					 struct samr_CryptPassword *password3,
-					 struct samr_DomInfo1 **dominfo,
-					 struct samr_ChangeReject **reject)
+					 struct lsa_String *server /* [in] [unique] */,
+					 struct lsa_String *account /* [in] [ref] */,
+					 struct samr_CryptPassword *nt_password /* [in] [unique] */,
+					 struct samr_Password *nt_verifier /* [in] [unique] */,
+					 uint8_t lm_change /* [in]  */,
+					 struct samr_CryptPassword *lm_password /* [in] [unique] */,
+					 struct samr_Password *lm_verifier /* [in] [unique] */,
+					 struct samr_CryptPassword *password3 /* [in] [unique] */,
+					 struct samr_DomInfo1 **dominfo /* [out] [ref] */,
+					 struct samr_ChangeReject **reject /* [out] [ref] */)
 {
 	struct samr_ChangePasswordUser3 r;
 	NTSTATUS status;
@@ -2850,13 +2850,13 @@ NTSTATUS rpccli_samr_ChangePasswordUser3(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_Connect5(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
-			      const char *system_name,
-			      uint32_t access_mask,
-			      uint32_t level_in,
-			      union samr_ConnectInfo *info_in,
-			      uint32_t *level_out,
-			      union samr_ConnectInfo *info_out,
-			      struct policy_handle *connect_handle)
+			      const char *system_name /* [in] [unique,charset(UTF16)] */,
+			      uint32_t access_mask /* [in]  */,
+			      uint32_t level_in /* [in]  */,
+			      union samr_ConnectInfo *info_in /* [in] [ref,switch_is(level_in)] */,
+			      uint32_t *level_out /* [out] [ref] */,
+			      union samr_ConnectInfo *info_out /* [out] [ref,switch_is(*level_out)] */,
+			      struct policy_handle *connect_handle /* [out] [ref] */)
 {
 	struct samr_Connect5 r;
 	NTSTATUS status;
@@ -2901,9 +2901,9 @@ NTSTATUS rpccli_samr_Connect5(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_RidToSid(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
-			      struct policy_handle *domain_handle,
-			      uint32_t rid,
-			      struct dom_sid2 *sid)
+			      struct policy_handle *domain_handle /* [in] [ref] */,
+			      uint32_t rid /* [in]  */,
+			      struct dom_sid2 *sid /* [out] [ref] */)
 {
 	struct samr_RidToSid r;
 	NTSTATUS status;
@@ -2944,9 +2944,9 @@ NTSTATUS rpccli_samr_RidToSid(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_SetDsrmPassword(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
-				     struct lsa_String *name,
-				     uint32_t unknown,
-				     struct samr_Password *hash)
+				     struct lsa_String *name /* [in] [unique] */,
+				     uint32_t unknown /* [in]  */,
+				     struct samr_Password *hash /* [in] [unique] */)
 {
 	struct samr_SetDsrmPassword r;
 	NTSTATUS status;
@@ -2987,9 +2987,9 @@ NTSTATUS rpccli_samr_SetDsrmPassword(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_samr_ValidatePassword(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
-				      enum samr_ValidatePasswordLevel level,
-				      union samr_ValidatePasswordReq req,
-				      union samr_ValidatePasswordRep *rep)
+				      enum samr_ValidatePasswordLevel level /* [in]  */,
+				      union samr_ValidatePasswordReq req /* [in] [switch_is(level)] */,
+				      union samr_ValidatePasswordRep *rep /* [out] [ref,switch_is(level)] */)
 {
 	struct samr_ValidatePassword r;
 	NTSTATUS status;

@@ -92,7 +92,7 @@ NTSTATUS rpccli_PNP_Connect(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_PNP_GetVersion(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
-			       uint16_t *version,
+			       uint16_t *version /* [out] [ref] */,
 			       WERROR *werror)
 {
 	struct PNP_GetVersion r;
@@ -262,8 +262,8 @@ NTSTATUS rpccli_PNP_ReportLogOn(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_PNP_ValidateDeviceInstance(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
-					   const char *devicepath,
-					   uint32_t flags,
+					   const char *devicepath /* [in] [ref,charset(UTF16)] */,
+					   uint32_t flags /* [in]  */,
 					   WERROR *werror)
 {
 	struct PNP_ValidateDeviceInstance r;
@@ -476,9 +476,9 @@ NTSTATUS rpccli_PNP_GetDeviceList(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_PNP_GetDeviceListSize(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
-				      const char *devicename,
-				      uint32_t *size,
-				      uint32_t flags,
+				      const char *devicename /* [in] [unique,charset(UTF16)] */,
+				      uint32_t *size /* [out] [ref] */,
+				      uint32_t flags /* [in]  */,
 				      WERROR *werror)
 {
 	struct PNP_GetDeviceListSize r;
@@ -1700,15 +1700,15 @@ NTSTATUS rpccli_PNP_RequestEjectPC(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_PNP_HwProfFlags(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				uint32_t unknown1,
-				const char *devicepath,
-				uint32_t unknown2,
-				uint32_t *unknown3,
-				uint16_t *unknown4,
-				const char *unknown5,
-				const char **unknown5a,
-				uint32_t unknown6,
-				uint32_t unknown7,
+				uint32_t unknown1 /* [in]  */,
+				const char *devicepath /* [in] [ref,charset(UTF16)] */,
+				uint32_t unknown2 /* [in]  */,
+				uint32_t *unknown3 /* [in,out] [ref] */,
+				uint16_t *unknown4 /* [in,out] [unique] */,
+				const char *unknown5 /* [in] [unique,charset(UTF16)] */,
+				const char **unknown5a /* [out] [unique,charset(UTF16)] */,
+				uint32_t unknown6 /* [in]  */,
+				uint32_t unknown7 /* [in]  */,
 				WERROR *werror)
 {
 	struct PNP_HwProfFlags r;
@@ -1766,10 +1766,10 @@ NTSTATUS rpccli_PNP_HwProfFlags(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_PNP_GetHwProfInfo(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
-				  uint32_t idx,
-				  struct PNP_HwProfInfo *info,
-				  uint32_t unknown1,
-				  uint32_t unknown2,
+				  uint32_t idx /* [in]  */,
+				  struct PNP_HwProfInfo *info /* [in,out] [ref] */,
+				  uint32_t unknown1 /* [in]  */,
+				  uint32_t unknown2 /* [in]  */,
 				  WERROR *werror)
 {
 	struct PNP_GetHwProfInfo r;

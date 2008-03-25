@@ -8,8 +8,8 @@
 
 NTSTATUS rpccli_echo_AddOne(struct rpc_pipe_client *cli,
 			    TALLOC_CTX *mem_ctx,
-			    uint32_t in_data,
-			    uint32_t *out_data)
+			    uint32_t in_data /* [in]  */,
+			    uint32_t *out_data /* [out] [ref] */)
 {
 	struct echo_AddOne r;
 	NTSTATUS status;
@@ -49,9 +49,9 @@ NTSTATUS rpccli_echo_AddOne(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_echo_EchoData(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
-			      uint32_t len,
-			      uint8_t *in_data,
-			      uint8_t *out_data)
+			      uint32_t len /* [in]  */,
+			      uint8_t *in_data /* [in] [size_is(len)] */,
+			      uint8_t *out_data /* [out] [size_is(len)] */)
 {
 	struct echo_EchoData r;
 	NTSTATUS status;
@@ -92,8 +92,8 @@ NTSTATUS rpccli_echo_EchoData(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_echo_SinkData(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
-			      uint32_t len,
-			      uint8_t *data)
+			      uint32_t len /* [in]  */,
+			      uint8_t *data /* [in] [size_is(len)] */)
 {
 	struct echo_SinkData r;
 	NTSTATUS status;
@@ -133,8 +133,8 @@ NTSTATUS rpccli_echo_SinkData(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_echo_SourceData(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				uint32_t len,
-				uint8_t *data)
+				uint32_t len /* [in]  */,
+				uint8_t *data /* [out] [size_is(len)] */)
 {
 	struct echo_SourceData r;
 	NTSTATUS status;
@@ -174,8 +174,8 @@ NTSTATUS rpccli_echo_SourceData(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_echo_TestCall(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
-			      const char *s1,
-			      const char **s2)
+			      const char *s1 /* [in] [ref,charset(UTF16)] */,
+			      const char **s2 /* [out] [ref,charset(UTF16)] */)
 {
 	struct echo_TestCall r;
 	NTSTATUS status;
@@ -215,8 +215,8 @@ NTSTATUS rpccli_echo_TestCall(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_echo_TestCall2(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
-			       uint16_t level,
-			       union echo_Info *info)
+			       uint16_t level /* [in]  */,
+			       union echo_Info *info /* [out] [ref,switch_is(level)] */)
 {
 	struct echo_TestCall2 r;
 	NTSTATUS status;
@@ -256,7 +256,7 @@ NTSTATUS rpccli_echo_TestCall2(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_echo_TestSleep(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
-			       uint32_t seconds)
+			       uint32_t seconds /* [in]  */)
 {
 	struct echo_TestSleep r;
 	NTSTATUS status;
@@ -295,9 +295,9 @@ NTSTATUS rpccli_echo_TestSleep(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_echo_TestEnum(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
-			      enum echo_Enum1 *foo1,
-			      struct echo_Enum2 *foo2,
-			      union echo_Enum3 *foo3)
+			      enum echo_Enum1 *foo1 /* [in,out] [ref] */,
+			      struct echo_Enum2 *foo2 /* [in,out] [ref] */,
+			      union echo_Enum3 *foo3 /* [in,out] [ref,switch_is(*foo1)] */)
 {
 	struct echo_TestEnum r;
 	NTSTATUS status;
@@ -341,7 +341,7 @@ NTSTATUS rpccli_echo_TestEnum(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_echo_TestSurrounding(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
-				     struct echo_Surrounding *data)
+				     struct echo_Surrounding *data /* [in,out] [ref] */)
 {
 	struct echo_TestSurrounding r;
 	NTSTATUS status;
@@ -381,7 +381,7 @@ NTSTATUS rpccli_echo_TestSurrounding(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_echo_TestDoublePointer(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
-				       uint16_t ***data)
+				       uint16_t ***data /* [in] [ref] */)
 {
 	struct echo_TestDoublePointer r;
 	NTSTATUS status;
