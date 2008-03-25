@@ -989,7 +989,10 @@ kcm_op_move_cache(krb5_context context,
     }
  
     ret = kcm_ccache_resolve_client(context, client, opcode, newname, &newid);
+    if (ret == KRB5_FCC_NOFILE)
+	ret = kcm_ccache_new_client(context, client, newname, &newid);
     free(newname);
+
     if (ret) {
 	free(oldname);
 	kcm_release_ccache(context, &oldid);
