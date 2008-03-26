@@ -77,10 +77,15 @@ static NTSTATUS wreplsrv_out_connect_wait_assoc_ctx(struct wreplsrv_out_connect_
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	state->wreplconn->assoc_ctx.peer_ctx = state->assoc_io.out.assoc_ctx;
+	state->wreplconn->assoc_ctx.peer_major = state->assoc_io.out.major_version;
 
 	if (state->type == WINSREPL_PARTNER_PUSH) {
-		state->wreplconn->partner->push.wreplconn = state->wreplconn;
-		talloc_steal(state->wreplconn->partner, state->wreplconn);
+		if (state->wreplconn->assoc_ctx.peer_major >= 5) {
+			state->wreplconn->partner->push.wreplconn = state->wreplconn;
+			talloc_steal(state->wreplconn->partner, state->wreplconn);
+		} else {
+			state->type = WINSREPL_PARTNER_NONE;
+		}
 	} else if (state->type == WINSREPL_PARTNER_PULL) {
 		state->wreplconn->partner->pull.wreplconn = state->wreplconn;
 		talloc_steal(state->wreplconn->partner, state->wreplconn);
@@ -965,6 +970,22 @@ static NTSTATUS wreplsrv_push_notify_wait_connect(struct wreplsrv_push_notify_st
 
 	status = wreplsrv_out_connect_recv(state->creq, state, &state->wreplconn);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	/* is the peer doesn't support inform fallback to update */
+	switch (state->command) {
+	case WREPL_REPL_INFORM:
+		if (state->wreplconn->assoc_ctx.peer_major < 5) {
+			state->command = WREPL_REPL_UPDATE;
+		}
+		break;
+	case WREPL_REPL_INFORM2:
+		if (state->wreplconn->assoc_ctx.peer_major < 5) {
+			state->command = WREPL_REPL_UPDATE2;
+		}
+		break;
+	default:
+		break;
+	}
 
 	switch (state->command) {
 	case WREPL_REPL_UPDATE:

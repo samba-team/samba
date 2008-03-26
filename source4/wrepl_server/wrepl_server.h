@@ -79,6 +79,7 @@ struct wreplsrv_out_connection {
 	struct {
 		uint32_t our_ctx;
 		uint32_t peer_ctx;
+		uint16_t peer_major;
 	} assoc_ctx;
 
 	/* 

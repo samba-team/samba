@@ -207,7 +207,7 @@ NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 								    WINSREPL_DEFAULT_PULL_RETRY_INTERVAL);
 		partner->push.change_count	= ldb_msg_find_attr_as_uint(res->msgs[i], "pushChangeCount",
 								    WINSREPL_DEFAULT_PUSH_CHANGE_COUNT);
-		partner->push.use_inform	= ldb_msg_find_attr_as_uint(res->msgs[i], "pushUseInform", false);
+		partner->push.use_inform	= ldb_msg_find_attr_as_uint(res->msgs[i], "pushUseInform", true);
 
 		DEBUG(3,("wreplsrv_load_partners: found partner: %s type: 0x%X\n",
 			partner->address, partner->type));
