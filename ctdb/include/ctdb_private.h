@@ -37,6 +37,7 @@
 #define CTDB_NULL_FUNC      0xFF000001
 #define CTDB_FETCH_FUNC     0xFF000002
 
+
 /*
   a tcp connection description
  */
@@ -499,6 +500,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TRY_DELETE_RECORDS      = 74,
 		    CTDB_CONTROL_ENABLE_MONITOR          = 75,
 		    CTDB_CONTROL_DISABLE_MONITOR         = 76,
+		    CTDB_CONTROL_ADD_PUBLIC_IP           = 77,
+		    CTDB_CONTROL_DEL_PUBLIC_IP           = 78,
 };	
 
 /*
@@ -527,10 +530,13 @@ struct ctdb_control_killtcp {
 };
 
 /*
-  struct for send_gratious_arp
+  struct holding a sockaddr_in and an interface name,
+  used for send_gratious_arp and also add/remove public addresses
  */
-struct ctdb_control_gratious_arp {
+//struct ctdb_control_gratious_arp {
+struct ctdb_control_ip_iface {
 	struct sockaddr_in sin;
+	uint32_t mask;
 	uint32_t len;
 	char iface[1];
 };
@@ -1165,6 +1171,8 @@ int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb, TDB_DATA *outdata);
 int32_t ctdb_control_get_reclock_file(struct ctdb_context *ctdb, TDB_DATA *outdata);
 int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
+int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA indata);
 
 void ctdb_tunables_set_defaults(struct ctdb_context *ctdb);
 
@@ -1189,6 +1197,16 @@ int ctdb_ctrl_killtcp(struct ctdb_context *ctdb,
 		      struct timeval timeout, 
 		      uint32_t destnode,
 		      struct ctdb_control_killtcp *killtcp);
+
+int ctdb_ctrl_add_public_ip(struct ctdb_context *ctdb, 
+		      struct timeval timeout, 
+		      uint32_t destnode,
+		      struct ctdb_control_ip_iface *pub);
+
+int ctdb_ctrl_del_public_ip(struct ctdb_context *ctdb, 
+		      struct timeval timeout, 
+		      uint32_t destnode,
+		      struct ctdb_control_ip_iface *pub);
 
 int ctdb_ctrl_gratious_arp(struct ctdb_context *ctdb, 
 		      struct timeval timeout, 

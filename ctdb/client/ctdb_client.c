@@ -2290,6 +2290,55 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 	return 0;
 }
 
+/*
+  add a public address to a node
+ */
+int ctdb_ctrl_add_public_ip(struct ctdb_context *ctdb, 
+		      struct timeval timeout, 
+		      uint32_t destnode,
+		      struct ctdb_control_ip_iface *pub)
+{
+	TDB_DATA data;
+	int32_t res;
+	int ret;
+
+	data.dsize = offsetof(struct ctdb_control_ip_iface, iface) + pub->len;
+	data.dptr  = (unsigned char *)pub;
+
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_ADD_PUBLIC_IP, 0, data, NULL,
+			   NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for add_public_ip failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+  delete a public address from a node
+ */
+int ctdb_ctrl_del_public_ip(struct ctdb_context *ctdb, 
+		      struct timeval timeout, 
+		      uint32_t destnode,
+		      struct ctdb_control_ip_iface *pub)
+{
+	TDB_DATA data;
+	int32_t res;
+	int ret;
+
+	data.dsize = offsetof(struct ctdb_control_ip_iface, iface) + pub->len;
+	data.dptr  = (unsigned char *)pub;
+
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_DEL_PUBLIC_IP, 0, data, NULL,
+			   NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for del_public_ip failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
 
 /*
   kill a tcp connection
@@ -2328,13 +2377,13 @@ int ctdb_ctrl_gratious_arp(struct ctdb_context *ctdb,
 	TDB_DATA data;
 	int32_t res;
 	int ret, len;
-	struct ctdb_control_gratious_arp *gratious_arp;
+	struct ctdb_control_ip_iface *gratious_arp;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 
 
 	len = strlen(ifname)+1;
 	gratious_arp = talloc_size(tmp_ctx, 
-		offsetof(struct ctdb_control_gratious_arp, iface) + len);
+		offsetof(struct ctdb_control_ip_iface, iface) + len);
 	CTDB_NO_MEMORY(ctdb, gratious_arp);
 
 	gratious_arp->sin = *sin;
@@ -2342,7 +2391,7 @@ int ctdb_ctrl_gratious_arp(struct ctdb_context *ctdb,
 	memcpy(&gratious_arp->iface[0], ifname, len);
 
 
-	data.dsize = offsetof(struct ctdb_control_gratious_arp, iface) + len;
+	data.dsize = offsetof(struct ctdb_control_ip_iface, iface) + len;
 	data.dptr  = (unsigned char *)gratious_arp;
 
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_SEND_GRATIOUS_ARP, 0, data, NULL,

@@ -505,6 +505,76 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 }
 
 /*
+  add a public ip address to a node
+ */
+static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	int len;
+	unsigned mask;
+	struct sockaddr_in addr;
+	struct ctdb_control_ip_iface *pub;
+
+	if (argc != 2) {
+		usage();
+	}
+
+	if (!parse_ip_mask(argv[0], &addr, &mask)) {
+		DEBUG(DEBUG_ERR, ("Badly formed ip/mask : %s\n", argv[0]));
+		return -1;
+	}
+
+	len = offsetof(struct ctdb_control_ip_iface, iface) + strlen(argv[1]);
+	pub = talloc_size(ctdb, len); 
+	CTDB_NO_MEMORY(ctdb, pub);
+
+	pub->sin   = addr;
+	pub->mask  = mask;
+	pub->len   = strlen(argv[1]);
+	memcpy(&pub->iface[0], argv[1], strlen(argv[1]));
+
+	ret = ctdb_ctrl_add_public_ip(ctdb, TIMELIMIT(), options.pnn, pub);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to add public ip to node %u\n", options.pnn));
+		return ret;
+	}
+
+	return 0;
+}
+
+/*
+  delete a public ip address from a node
+ */
+static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	struct sockaddr_in addr;
+	struct ctdb_control_ip_iface pub;
+
+	if (argc != 1) {
+		usage();
+	}
+
+	addr.sin_family = AF_INET;
+	if (inet_aton(argv[0], &addr.sin_addr) == 0) {
+		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
+		return -1;
+	}
+
+	pub.sin   = addr;
+	pub.mask  = 0;
+	pub.len   = 0;
+
+	ret = ctdb_ctrl_del_public_ip(ctdb, TIMELIMIT(), options.pnn, &pub);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to del public ip from node %u\n", options.pnn));
+		return ret;
+	}
+
+	return 0;
+}
+
+/*
   kill a tcp connection
  */
 static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -1454,6 +1524,8 @@ static const struct {
 	{ "reloadnodes",     control_reload_nodes_file,		false, "reload the nodes file and restart the transport on all nodes"},
 	{ "getreclock",      control_getreclock,        false,  "get the path to the reclock file" },
 	{ "moveip",          control_moveip,		false, "move/failover an ip address to another node", "<ip> <node>"},
+	{ "addip",           control_addip,		false, "add a ip address to a node", "<ip/mask> <iface>"},
+	{ "delip",           control_delip,		false, "delete an ip address from a node", "<ip>"},
 };
 
 /*

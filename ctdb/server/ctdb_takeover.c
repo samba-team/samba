@@ -391,7 +391,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 
 
 
-static int add_public_address(struct ctdb_context *ctdb, struct sockaddr_in addr, unsigned mask, const char *iface)
+static int ctdb_add_public_address(struct ctdb_context *ctdb, struct sockaddr_in addr, unsigned mask, const char *iface)
 {
 	struct ctdb_vnn      *vnn;
 
@@ -400,7 +400,7 @@ static int add_public_address(struct ctdb_context *ctdb, struct sockaddr_in addr
 		if (ctdb_same_sockaddr(&addr, &vnn->public_address)) {
 			DEBUG(DEBUG_CRIT,("Same ip '%s' specified multiple times in the public address list \n", 
 				 inet_ntoa(addr.sin_addr)));
-			exit(1);
+			return -1;
 		}		
 	}
 
@@ -471,7 +471,7 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 			iface = tok;
 		}
 
-		if (add_public_address(ctdb, addr, mask, iface)) {
+		if (ctdb_add_public_address(ctdb, addr, mask, iface)) {
 			DEBUG(DEBUG_CRIT,("Failed to add line %u to the public address list\n", i+1));
 			talloc_free(lines);
 			return -1;
@@ -1781,23 +1781,23 @@ static void send_gratious_arp(struct event_context *ev, struct timed_event *te,
  */
 int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_control_gratious_arp *gratious_arp = (struct ctdb_control_gratious_arp *)indata.dptr;
+	struct ctdb_control_ip_iface *gratious_arp = (struct ctdb_control_ip_iface *)indata.dptr;
 	struct control_gratious_arp *arp;
 
 
 	/* verify the size of indata */
-	if (indata.dsize < offsetof(struct ctdb_control_gratious_arp, iface)) {
-		DEBUG(DEBUG_ERR,(__location__ " Too small indata to hold a ctdb_control_gratious_arp structure\n"));
+	if (indata.dsize < offsetof(struct ctdb_control_ip_iface, iface)) {
+		DEBUG(DEBUG_ERR,(__location__ " Too small indata to hold a ctdb_control_ip_iface structure\n"));
 		return -1;
 	}
 	if (indata.dsize != 
-		( offsetof(struct ctdb_control_gratious_arp, iface)
+		( offsetof(struct ctdb_control_ip_iface, iface)
 		+ gratious_arp->len ) ){
 
 		DEBUG(DEBUG_ERR,(__location__ " Wrong size of indata. Was %u bytes "
 			"but should be %u bytes\n", 
 			 (unsigned)indata.dsize, 
-			 (unsigned)(offsetof(struct ctdb_control_gratious_arp, iface)+gratious_arp->len)));
+			 (unsigned)(offsetof(struct ctdb_control_ip_iface, iface)+gratious_arp->len)));
 		return -1;
 	}
 
@@ -1815,5 +1815,85 @@ int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb, TDB_DATA indat
 			timeval_zero(), send_gratious_arp, arp);
 
 	return 0;
+}
+
+int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	struct ctdb_control_ip_iface *pub = (struct ctdb_control_ip_iface *)indata.dptr;
+
+
+	/* verify the size of indata */
+	if (indata.dsize < offsetof(struct ctdb_control_ip_iface, iface)) {
+		DEBUG(DEBUG_ERR,(__location__ " Too small indata to hold a ctdb_control_ip_iface structure\n"));
+		return -1;
+	}
+	if (indata.dsize != 
+		( offsetof(struct ctdb_control_ip_iface, iface)
+		+ pub->len ) ){
+
+		DEBUG(DEBUG_ERR,(__location__ " Wrong size of indata. Was %u bytes "
+			"but should be %u bytes\n", 
+			 (unsigned)indata.dsize, 
+			 (unsigned)(offsetof(struct ctdb_control_ip_iface, iface)+pub->len)));
+		return -1;
+	}
+
+	return ctdb_add_public_address(ctdb, pub->sin, pub->mask, &pub->iface[0]);
+}
+
+/*
+  called when releaseip event finishes for del_public_address
+ */
+static void delete_ip_callback(struct ctdb_context *ctdb, int status, 
+				void *private_data)
+{
+	talloc_free(private_data);
+}
+
+int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	struct ctdb_control_ip_iface *pub = (struct ctdb_control_ip_iface *)indata.dptr;
+	struct ctdb_vnn *vnn;
+	int ret;
+
+	/* verify the size of indata */
+	if (indata.dsize < offsetof(struct ctdb_control_ip_iface, iface)) {
+		DEBUG(DEBUG_ERR,(__location__ " Too small indata to hold a ctdb_control_ip_iface structure\n"));
+		return -1;
+	}
+	if (indata.dsize != 
+		( offsetof(struct ctdb_control_ip_iface, iface)
+		+ pub->len ) ){
+
+		DEBUG(DEBUG_ERR,(__location__ " Wrong size of indata. Was %u bytes "
+			"but should be %u bytes\n", 
+			 (unsigned)indata.dsize, 
+			 (unsigned)(offsetof(struct ctdb_control_ip_iface, iface)+pub->len)));
+		return -1;
+	}
+
+	/* walk over all public addresses until we find a match */
+	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
+		if (ctdb_same_ip(&vnn->public_address, &pub->sin)) {
+			TALLOC_CTX *mem_ctx = talloc_new(ctdb);
+
+			DLIST_REMOVE(ctdb->vnn, vnn);
+
+			ret = ctdb_event_script_callback(ctdb, 
+					 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+					 mem_ctx, delete_ip_callback, mem_ctx,
+					 "releaseip %s %s %u",
+					 vnn->iface, 
+					 inet_ntoa(vnn->public_address.sin_addr),
+					 vnn->public_netmask_bits);
+			talloc_free(vnn);
+			if (ret != 0) {
+				return -1;
+			}
+			return 0;
+		}
+	}
+
+	return -1;
 }
 
