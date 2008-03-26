@@ -104,8 +104,63 @@ struct db_context *db_open_trans(TALLOC_CTX *mem_ctx,
 				 int hash_size, int tdb_flags,
 				 int open_flags, mode_t mode)
 {
-	/* TODO: implement this differently */
-	return db_open(mem_ctx, name, hash_size, tdb_flags, open_flags, mode);
+	bool use_tdb2 = lp_parm_bool(-1, "dbwrap", "use_tdb2", false);
+#ifdef CLUSTER_SUPPORT
+	const char *sockname = lp_ctdbd_socket();
+#endif
+
+	if (tdb_flags & TDB_CLEAR_IF_FIRST) {
+		DEBUG(0,("db_open_trans: called with TDB_CLEAR_IF_FIRST: %s\n",
+			 name));
+		smb_panic("db_open_trans: called with TDB_CLEAR_IF_FIRST");
+	}
+
+#ifdef CLUSTER_SUPPORT
+	if(!sockname || !*sockname) {
+		sockname = CTDB_PATH;
+	}
+
+	if (lp_clustering() && socket_exist(sockname)) {
+		const char *partname;
+		/* ctdb only wants the file part of the name */
+		partname = strrchr(name, '/');
+		if (partname) {
+			partname++;
+		} else {
+			partname = name;
+		}
+		/* allow ctdb for individual databases to be disabled */
+		if (lp_parm_bool(-1, "ctdb", partname, true)) {
+			result = db_open_ctdb(mem_ctx, partname, hash_size,
+					      tdb_flags, open_flags, mode);
+			if (result == NULL) {
+				DEBUG(0,("failed to attach to ctdb %s\n",
+					 partname));
+				smb_panic("failed to attach to a ctdb "
+					  "database");
+			}
+		}
+	}
+#endif
+
+	if (use_tdb2) {
+		const char *partname;
+		/* tdb2 only wants the file part of the name */
+		partname = strrchr(name, '/');
+		if (partname) {
+			partname++;
+		} else {
+			partname = name;
+		}
+		/* allow ctdb for individual databases to be disabled */
+		if (lp_parm_bool(-1, "tdb2", partname, true)) {
+			return db_open_tdb2(mem_ctx, partname, hash_size,
+					    tdb_flags, open_flags, mode);
+		}
+	}
+
+	return db_open_tdb(mem_ctx, name, hash_size,
+			   tdb_flags, open_flags, mode);
 }
 
 NTSTATUS dbwrap_delete_bystring(struct db_context *db, const char *key)
