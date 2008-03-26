@@ -168,7 +168,7 @@ static int net_conf_list(struct smbconf_ctx *conf_ctx,
 {
 	WERROR werr = WERR_OK;
 	int ret = -1;
-	TALLOC_CTX *ctx;
+	TALLOC_CTX *mem_ctx;
 	uint32_t num_shares;
 	char **share_names;
 	uint32_t *num_params;
@@ -176,14 +176,14 @@ static int net_conf_list(struct smbconf_ctx *conf_ctx,
 	char ***param_values;
 	uint32_t share_count, param_count;
 
-	ctx = talloc_stackframe();
+	mem_ctx = talloc_stackframe();
 
 	if (argc != 0) {
 		net_conf_list_usage(argc, argv);
 		goto done;
 	}
 
-	werr = smbconf_get_config(conf_ctx, ctx, &num_shares, &share_names,
+	werr = smbconf_get_config(conf_ctx, mem_ctx, &num_shares, &share_names,
 				  &num_params, &param_names, &param_values);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error getting config: %s\n",
@@ -206,7 +206,7 @@ static int net_conf_list(struct smbconf_ctx *conf_ctx,
 	ret = 0;
 
 done:
-	TALLOC_FREE(ctx);
+	TALLOC_FREE(mem_ctx);
 	return ret;
 }
 
@@ -216,11 +216,11 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 	int ret = -1;
 	const char *filename = NULL;
 	const char *servicename = NULL;
-	TALLOC_CTX *ctx;
+	TALLOC_CTX *mem_ctx;
 	struct smbconf_ctx *txt_ctx;
 	WERROR werr;
 
-	ctx = talloc_stackframe();
+	mem_ctx = talloc_stackframe();
 
 	switch (argc) {
 		case 0:
@@ -237,7 +237,7 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 	DEBUG(3,("net_conf_import: reading configuration from file %s.\n",
 		filename));
 
-	werr = smbconf_init_txt_simple(ctx, &txt_ctx, filename);
+	werr = smbconf_init_txt_simple(mem_ctx, &txt_ctx, filename);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -251,7 +251,7 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 		char **param_names, **param_values;
 		uint32_t num_params;
 
-		werr = smbconf_get_share(txt_ctx, ctx,
+		werr = smbconf_get_share(txt_ctx, mem_ctx,
 					 servicename,
 					 &num_params,
 					 &param_names,
@@ -271,7 +271,7 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 		char **share_names, ***param_names, ***param_values;
 		uint32_t num_shares, *num_params, sidx;
 
-		werr = smbconf_get_config(txt_ctx, ctx,
+		werr = smbconf_get_config(txt_ctx, mem_ctx,
 				&num_shares, &share_names,
 				&num_params, &param_names, &param_values);
 		if (!W_ERROR_IS_OK(werr)) {
@@ -292,7 +292,7 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 	ret = 0;
 
 done:
-	TALLOC_FREE(ctx);
+	TALLOC_FREE(mem_ctx);
 	return ret;
 }
 
@@ -303,16 +303,16 @@ static int net_conf_listshares(struct smbconf_ctx *conf_ctx,
 	int ret = -1;
 	uint32_t count, num_shares = 0;
 	char **share_names = NULL;
-	TALLOC_CTX *ctx;
+	TALLOC_CTX *mem_ctx;
 
-	ctx = talloc_stackframe();
+	mem_ctx = talloc_stackframe();
 
 	if (argc != 0) {
 		net_conf_listshares_usage(argc, argv);
 		goto done;
 	}
 
-	werr = smbconf_get_share_names(conf_ctx, ctx, &num_shares,
+	werr = smbconf_get_share_names(conf_ctx, mem_ctx, &num_shares,
 				       &share_names);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -326,7 +326,7 @@ static int net_conf_listshares(struct smbconf_ctx *conf_ctx,
 	ret = 0;
 
 done:
-	TALLOC_FREE(ctx);
+	TALLOC_FREE(mem_ctx);
 	return ret;
 }
 
@@ -360,13 +360,13 @@ static int net_conf_showshare(struct smbconf_ctx *conf_ctx,
 	int ret = -1;
 	WERROR werr = WERR_OK;
 	const char *sharename = NULL;
-	TALLOC_CTX *ctx;
+	TALLOC_CTX *mem_ctx;
 	uint32_t num_params;
 	uint32_t count;
 	char **param_names;
 	char **param_values;
 
-	ctx = talloc_stackframe();
+	mem_ctx = talloc_stackframe();
 
 	if (argc != 1) {
 		net_conf_showshare_usage(argc, argv);
@@ -375,7 +375,7 @@ static int net_conf_showshare(struct smbconf_ctx *conf_ctx,
 
 	sharename = argv[0];
 
-	werr = smbconf_get_share(conf_ctx, ctx, sharename, &num_params,
+	werr = smbconf_get_share(conf_ctx, mem_ctx, sharename, &num_params,
 				 &param_names, &param_values);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_printf("error getting share parameters: %s\n",
@@ -393,7 +393,7 @@ static int net_conf_showshare(struct smbconf_ctx *conf_ctx,
 	ret = 0;
 
 done:
-	TALLOC_FREE(ctx);
+	TALLOC_FREE(mem_ctx);
 	return ret;
 }
 
@@ -652,9 +652,9 @@ static int net_conf_getparm(struct smbconf_ctx *conf_ctx,
 	char *service = NULL;
 	char *param = NULL;
 	char *valstr = NULL;
-	TALLOC_CTX *ctx;
+	TALLOC_CTX *mem_ctx;
 
-	ctx = talloc_stackframe();
+	mem_ctx = talloc_stackframe();
 
 	if (argc != 2) {
 		net_conf_getparm_usage(argc, argv);
@@ -663,7 +663,7 @@ static int net_conf_getparm(struct smbconf_ctx *conf_ctx,
 	service = strdup_lower(argv[0]);
 	param = strdup_lower(argv[1]);
 
-	werr = smbconf_get_parameter(conf_ctx, ctx, service, param, &valstr);
+	werr = smbconf_get_parameter(conf_ctx, mem_ctx, service, param, &valstr);
 
 	if (W_ERROR_EQUAL(werr, WERR_NO_SUCH_SERVICE)) {
 		d_fprintf(stderr,
@@ -687,7 +687,7 @@ static int net_conf_getparm(struct smbconf_ctx *conf_ctx,
 done:
 	SAFE_FREE(service);
 	SAFE_FREE(param);
-	TALLOC_FREE(ctx);
+	TALLOC_FREE(mem_ctx);
 	return ret;
 }
 
