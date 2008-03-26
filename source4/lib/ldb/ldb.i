@@ -469,6 +469,8 @@ typedef struct ldb_ldif ldb_ldif;
 
 #ifdef SWIGPYTHON
 %{
+static void py_ldb_debug(void *context, enum ldb_debug_level level, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3, 0);
+
 static void py_ldb_debug(void *context, enum ldb_debug_level level, const char *fmt, va_list ap)
 {
     char *text;
@@ -564,22 +566,29 @@ PyObject *PyExc_LdbError;
 };
 
 %typemap(in,numinputs=1) ldb_msg *add_msg {
-    int dict_pos, msg_pos;
-    PyObject *key, *value;
+    Py_ssize_t dict_pos, msg_pos;
     ldb_msg_element *msgel;
+    PyObject *key, *value;
 
     if (PyDict_Check($input)) {
+ 	PyObject *dn_value = PyDict_GetItemString($input, "dn");
         $1 = ldb_msg_new(NULL);
         $1->elements = talloc_zero_array($1, struct ldb_message_element, PyDict_Size($input));
         msg_pos = dict_pos = 0;
-        while (PyDict_Next($input, &dict_pos, &key, &value)) {
-            if (strcmp(PyString_AsString(key), "dn") == 0) {
-                /* using argp0 (magic SWIG value) here is a hack */
-                if (ldb_dn_from_pyobject($1, value, argp1, &$1->dn) != 0) {
+	if (dn_value) {
+                /* using argp1 (magic SWIG value) here is a hack */
+                if (ldb_dn_from_pyobject($1, dn_value, argp1, &$1->dn) != 0) {
                     SWIG_exception(SWIG_TypeError, "unable to import dn object");
                 }
-            } else {
-                msgel = ldb_msg_element_from_pyobject($1->elements, value, 0, PyString_AsString(key));
+		if ($1->dn == NULL) {
+		    SWIG_exception(SWIG_TypeError, "dn set but not found");
+		}
+	}
+
+	while (PyDict_Next($input, &dict_pos, &key, &value)) {
+	    char *key_str = PyString_AsString(key);
+            if (strcmp(key_str, "dn") != 0) {
+                msgel = ldb_msg_element_from_pyobject($1->elements, value, 0, key_str);
                 if (msgel == NULL) {
                     SWIG_exception(SWIG_TypeError, "unable to import element");
                 }
