@@ -117,178 +117,43 @@ static int net_conf_delparm_usage(int argc, const char **argv)
  **********************************************************************/
 
 /**
- * This formats an in-memory smbconf parameter to a string.
- * The result string is allocated with talloc.
+ * This functions process a service previously loaded with libsmbconf.
  */
-static char *parm_valstr(TALLOC_CTX *ctx, struct parm_struct *parm,
-			 struct share_params *share)
+static WERROR import_process_service(struct smbconf_ctx *conf_ctx,
+				     const char *servicename,
+				     const uint32_t num_params,
+				     const char **param_names,
+				     const char **param_values)
 {
-	char *valstr = NULL;
-	int i = 0;
-	void *ptr = parm->ptr;
-
-	if (parm->p_class == P_LOCAL && share->service >= 0) {
-		ptr = lp_local_ptr(share->service, ptr);
-	}
-
-	switch (parm->type) {
-	case P_CHAR:
-		valstr = talloc_asprintf(ctx, "%c", *(char *)ptr);
-		break;
-	case P_STRING:
-	case P_USTRING:
-		valstr = talloc_asprintf(ctx, "%s", *(char **)ptr);
-		break;
-	case P_BOOL:
-		valstr = talloc_asprintf(ctx, "%s", BOOLSTR(*(bool *)ptr));
-		break;
-	case P_BOOLREV:
-		valstr = talloc_asprintf(ctx, "%s", BOOLSTR(!*(bool *)ptr));
-		break;
-	case P_ENUM:
-		for (i = 0; parm->enum_list[i].name; i++) {
-			if (*(int *)ptr == parm->enum_list[i].value)
-			{
-				valstr = talloc_asprintf(ctx, "%s",
-					parm->enum_list[i].name);
-				break;
-			}
-		}
-		break;
-	case P_OCTAL: {
-		char *o = octal_string(*(int *)ptr);
-		valstr = talloc_move(ctx, &o);
-		break;
-	}
-	case P_LIST:
-		valstr = talloc_strdup(ctx, "");
-		if ((char ***)ptr && *(char ***)ptr) {
-			char **list = *(char ***)ptr;
-			for (; *list; list++) {
-				/* surround strings with whitespace
-				 * in double quotes */
-				if (strchr_m(*list, ' '))
-				{
-					valstr = talloc_asprintf_append(
-						valstr, "\"%s\"%s",
-						*list,
-						 ((*(list+1))?", ":""));
-				} else {
-					valstr = talloc_asprintf_append(
-						valstr, "%s%s", *list,
-						 ((*(list+1))?", ":""));
-				}
-			}
-		}
-		break;
-	case P_INTEGER:
-		valstr = talloc_asprintf(ctx, "%d", *(int *)ptr);
-		break;
-	case P_SEP:
-		break;
-	default:
-		valstr = talloc_asprintf(ctx, "<type unimplemented>\n");
-		break;
-	}
-
-	return valstr;
-}
-
-/**
- * This functions imports a configuration that has previously
- * been loaded with lp_load() to registry.
- */
-static int import_process_service(TALLOC_CTX *ctx,
-				  struct smbconf_ctx *conf_ctx,
-				  struct share_params *share)
-{
-	int ret = -1;
-	struct parm_struct *parm;
-	int pnum = 0;
-	const char *servicename;
-	WERROR werr;
-	char *valstr = NULL;
-	TALLOC_CTX *tmp_ctx = NULL;
-
-	tmp_ctx = talloc_new(ctx);
-	if (tmp_ctx == NULL) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
-
-	servicename = (share->service == GLOBAL_SECTION_SNUM)?
-		GLOBAL_NAME : lp_servicename(share->service);
+	uint32_t idx;
+	WERROR werr = WERR_OK;
 
 	if (opt_testmode) {
 		d_printf("[%s]\n", servicename);
 	} else {
-		if (smbconf_share_exists(conf_ctx, servicename)) {
-			werr = smbconf_delete_share(conf_ctx, servicename);
-			if (!W_ERROR_IS_OK(werr)) {
-				goto done;
-			}
-		}
-		werr = smbconf_create_share(conf_ctx, servicename);
+		werr = smbconf_delete_share(conf_ctx, servicename);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
 	}
 
-	while ((parm = lp_next_parameter(share->service, &pnum, 0)))
-	{
-		if ((share->service < 0) && (parm->p_class == P_LOCAL)
-		    && !(parm->flags & FLAG_GLOBAL))
-		{
-			continue;
-		}
-
-		valstr = parm_valstr(tmp_ctx, parm, share);
-
-		if (parm->type != P_SEP) {
-			if (opt_testmode) {
-				d_printf("\t%s = %s\n", parm->label, valstr);
-			} else {
-				werr = smbconf_set_parameter(conf_ctx,
-							     servicename,
-							     parm->label,
-							     valstr);
-				if (!W_ERROR_IS_OK(werr)) {
-					d_fprintf(stderr,
-						  "Error setting parameter '%s'"
-						  ": %s\n", parm->label,
-						   dos_errstr(werr));
-					goto done;
-				}
+	for (idx = 0; idx < num_params; idx ++) {
+		if (opt_testmode) {
+			d_printf("\t%s = %s\n", param_names[idx],
+				 param_values[idx]);
+		} else {
+			werr = smbconf_set_parameter(conf_ctx,
+						     servicename,
+						     param_names[idx],
+						     param_values[idx]);
+			if (!W_ERROR_IS_OK(werr)) {
+				goto done;
 			}
 		}
 	}
 
-	if (opt_testmode) {
-		d_printf("\n");
-	}
-
-	ret = 0;
-
 done:
-	TALLOC_FREE(tmp_ctx);
-	return ret;
-}
-
-/**
- * Return true iff there are nondefault globals in the
- * currently loaded configuration.
- */
-static bool globals_exist(void)
-{
-	int i = 0;
-	struct parm_struct *parm;
-
-	while ((parm = lp_next_parameter(GLOBAL_SECTION_SNUM, &i, 0)) != NULL) {
-		if (parm->type != P_SEP) {
-			return true;
-		}
-	}
-	return false;
+	return werr;
 }
 
 
@@ -351,11 +216,9 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 	int ret = -1;
 	const char *filename = NULL;
 	const char *servicename = NULL;
-	bool service_found = false;
 	TALLOC_CTX *ctx;
-	struct share_iterator *shares;
-	struct share_params *share;
-	struct share_params global_share = { GLOBAL_SECTION_SNUM };
+	struct smbconf_ctx *txt_ctx;
+	WERROR werr;
 
 	ctx = talloc_init("net_conf_import");
 
@@ -374,13 +237,8 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 	DEBUG(3,("net_conf_import: reading configuration from file %s.\n",
 		filename));
 
-	if (!lp_load(filename,
-		     false,     /* global_only */
-		     true,      /* save_defaults */
-		     false,     /* add_ipc */
-		     true))     /* initialize_globals */
-	{
-		d_fprintf(stderr, "Error parsing configuration file.\n");
+	werr = smbconf_init_txt_simple(ctx, &txt_ctx, filename);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -389,40 +247,46 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 			 "would import the following configuration:\n\n");
 	}
 
-	if (((servicename == NULL) && globals_exist()) ||
-	    strequal(servicename, GLOBAL_NAME))
-	{
-		service_found = true;
-		if (import_process_service(ctx, conf_ctx, &global_share) != 0) {
+	if (servicename != NULL) {
+		char **param_names, **param_values;
+		uint32_t num_params;
+
+		werr = smbconf_get_share(txt_ctx, ctx,
+					 servicename,
+					 &num_params,
+					 &param_names,
+					 &param_values);
+		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
-	}
+		werr = import_process_service(conf_ctx,
+					      servicename,
+					      num_params,
+					      param_names,
+					      param_values);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+	} else {
+		char **share_names, ***param_names, ***param_values;
+		uint32_t num_shares, *num_params, sidx;
 
-	if (service_found && (servicename != NULL)) {
-		ret = 0;
-		goto done;
-	}
-
-	if (!(shares = share_list_all(ctx))) {
-		d_fprintf(stderr, "Could not list shares...\n");
-		goto done;
-	}
-	while ((share = next_share(shares)) != NULL) {
-		if ((servicename == NULL)
-		    || strequal(servicename, lp_servicename(share->service)))
-		{
-			service_found = true;
-			if (import_process_service(ctx, conf_ctx, share)!= 0) {
+		werr = smbconf_get_config(txt_ctx, ctx,
+				&num_shares, &share_names,
+				&num_params, &param_names, &param_values);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+		for (sidx = 0; sidx < num_shares; sidx++) {
+			werr = import_process_service(conf_ctx,
+						      share_names[sidx],
+						      num_params[sidx],
+						      param_names[sidx],
+						      param_values[sidx]);
+			if (!W_ERROR_IS_OK(werr)) {
 				goto done;
 			}
 		}
-	}
-
-	if ((servicename != NULL) && !service_found) {
-		d_printf("Share %s not found in file %s\n",
-			 servicename, filename);
-		goto done;
-
 	}
 
 	ret = 0;
