@@ -324,7 +324,7 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 				WBFLAG_PAM_LMKEY;
 
 		if (params->password.response.lm_length &&
-		    params->password.response.lm_data) {
+		    !params->password.response.lm_data) {
 			wbc_status = WBC_ERR_INVALID_PARAM;
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
