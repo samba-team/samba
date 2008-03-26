@@ -776,7 +776,7 @@ interface netlogon
 	typedef struct {
 		uint32 flags;
 		uint32 pdc_connection_status;
-		[string,charset(UTF16)] uint16 trusted_dc_name[];
+		[string,charset(UTF16)] uint16 *trusted_dc_name;
 		uint32 tc_connection_status;
 	} netr_NETLOGON_INFO_2;
 
