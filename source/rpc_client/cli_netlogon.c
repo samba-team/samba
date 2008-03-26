@@ -623,6 +623,4 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 	*info3 = validation.sam3;
 
 	return result;
-
-        return result;
 }
