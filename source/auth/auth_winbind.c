@@ -80,6 +80,11 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	wbc_status = wbcAuthenticateUserEx(&params, &info, &err);
 	unbecome_root();
 
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		DEBUG(10,("check_winbind_security: wbcAuthenticateUserEx failed: %s\n",
+			wbcErrorString(wbc_status)));
+	}
+
 	if (wbc_status == WBC_ERR_NO_MEMORY) {
 		return NT_STATUS_NO_MEMORY;
 	}
