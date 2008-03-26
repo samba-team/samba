@@ -202,7 +202,7 @@ bool print_backend_init(struct messaging_context *msg_ctx)
 			return False;
 		}
 		if (tdb_fetch_int32(pdb->tdb, sversion) != PRINT_DATABASE_VERSION) {
-			tdb_wipe(pdb->tdb);
+			tdb_wipe_all(pdb->tdb);
 			tdb_store_int32(pdb->tdb, sversion, PRINT_DATABASE_VERSION);
 		}
 		tdb_unlock_bystring(pdb->tdb, sversion);
