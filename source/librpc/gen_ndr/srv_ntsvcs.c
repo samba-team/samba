@@ -1007,6 +1007,16 @@ static bool api_PNP_GetDeviceRegProp(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetDeviceRegProp, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.unknown1 = r->in.unknown1;
+	r->out.buffer = talloc_zero_array(r, uint8_t, *r->out.buffer_size);
+	if (r->out.buffer == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.buffer_size = r->in.buffer_size;
+	r->out.needed = r->in.needed;
 	r->out.result = _PNP_GetDeviceRegProp(p, r);
 
 	if (p->rng_fault_state) {

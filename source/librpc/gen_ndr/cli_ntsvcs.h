@@ -48,6 +48,13 @@ NTSTATUS rpccli_PNP_GetDepth(struct rpc_pipe_client *cli,
 			     WERROR *werror);
 NTSTATUS rpccli_PNP_GetDeviceRegProp(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
+				     const char *devicepath /* [in] [ref,charset(UTF16)] */,
+				     uint32_t property /* [in]  */,
+				     uint32_t *unknown1 /* [in,out] [ref] */,
+				     uint8_t *buffer /* [out] [ref,length_is(*buffer_size),size_is(*buffer_size)] */,
+				     uint32_t *buffer_size /* [in,out] [ref] */,
+				     uint32_t *needed /* [in,out] [ref] */,
+				     uint32_t unknown3 /* [in]  */,
 				     WERROR *werror);
 NTSTATUS rpccli_PNP_SetDeviceRegProp(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
