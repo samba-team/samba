@@ -2335,7 +2335,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result;
 
-	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS;
+	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
 	uint8  mach_pwd[16];
 	uint32  sec_chan_type;
 	const char *account_name;
@@ -2346,6 +2346,10 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	result = init_dc_connection(domain);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
+	}
+
+	if (domain->active_directory) {
+		neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 	}
 
 	conn = &domain->conn;
