@@ -131,7 +131,13 @@ static WERROR import_process_service(struct smbconf_ctx *conf_ctx,
 	if (opt_testmode) {
 		d_printf("[%s]\n", servicename);
 	} else {
-		werr = smbconf_delete_share(conf_ctx, servicename);
+		if (smbconf_share_exists(conf_ctx, servicename)) {
+			werr = smbconf_delete_share(conf_ctx, servicename);
+			if (!W_ERROR_IS_OK(werr)) {
+				goto done;
+			}
+		}
+		werr = smbconf_create_share(conf_ctx, servicename);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -277,6 +283,10 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 					  &num_params,
 					  &param_names,
 					  &param_values);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+		werr = smbconf_drop(conf_ctx);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
