@@ -45,7 +45,7 @@ static bool load_msg(const char *msg_file)
 	}
 
 	/* wipe the db */
-	tdb_wipe(tdb);
+	tdb_wipe_all(tdb);
 
 	msgid = NULL;
 	
