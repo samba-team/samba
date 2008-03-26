@@ -262,8 +262,8 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 		werr = import_process_service(conf_ctx,
 					      servicename,
 					      num_params,
-					      param_names,
-					      param_values);
+					      (const char **)param_names,
+					      (const char **)param_values);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -279,10 +279,10 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 		}
 		for (sidx = 0; sidx < num_shares; sidx++) {
 			werr = import_process_service(conf_ctx,
-						      share_names[sidx],
-						      num_params[sidx],
-						      param_names[sidx],
-						      param_values[sidx]);
+					share_names[sidx],
+					num_params[sidx],
+					(const char **)param_names[sidx],
+					(const char **)param_values[sidx]);
 			if (!W_ERROR_IS_OK(werr)) {
 				goto done;
 			}
