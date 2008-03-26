@@ -272,8 +272,11 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 		uint32_t num_shares, *num_params, sidx;
 
 		werr = smbconf_get_config(txt_ctx, mem_ctx,
-				&num_shares, &share_names,
-				&num_params, &param_names, &param_values);
+					  &num_shares,
+					  &share_names,
+					  &num_params,
+					  &param_names,
+					  &param_values);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
