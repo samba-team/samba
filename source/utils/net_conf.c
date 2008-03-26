@@ -176,7 +176,7 @@ static int net_conf_list(struct smbconf_ctx *conf_ctx,
 	char ***param_values;
 	uint32_t share_count, param_count;
 
-	ctx = talloc_init("list");
+	ctx = talloc_stackframe();
 
 	if (argc != 0) {
 		net_conf_list_usage(argc, argv);
@@ -220,7 +220,7 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 	struct smbconf_ctx *txt_ctx;
 	WERROR werr;
 
-	ctx = talloc_init("net_conf_import");
+	ctx = talloc_stackframe();
 
 	switch (argc) {
 		case 0:
@@ -305,7 +305,7 @@ static int net_conf_listshares(struct smbconf_ctx *conf_ctx,
 	char **share_names = NULL;
 	TALLOC_CTX *ctx;
 
-	ctx = talloc_init("listshares");
+	ctx = talloc_stackframe();
 
 	if (argc != 0) {
 		net_conf_listshares_usage(argc, argv);
@@ -366,7 +366,7 @@ static int net_conf_showshare(struct smbconf_ctx *conf_ctx,
 	char **param_names;
 	char **param_values;
 
-	ctx = talloc_init("showshare");
+	ctx = talloc_stackframe();
 
 	if (argc != 1) {
 		net_conf_showshare_usage(argc, argv);
@@ -654,7 +654,7 @@ static int net_conf_getparm(struct smbconf_ctx *conf_ctx,
 	char *valstr = NULL;
 	TALLOC_CTX *ctx;
 
-	ctx = talloc_init("getparm");
+	ctx = talloc_stackframe();
 
 	if (argc != 2) {
 		net_conf_getparm_usage(argc, argv);
