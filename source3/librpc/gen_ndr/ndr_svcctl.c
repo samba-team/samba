@@ -295,6 +295,63 @@ _PUBLIC_ void ndr_print_svcctl_ServerType(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_svcctl_MgrAccessMask(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_svcctl_MgrAccessMask(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_svcctl_MgrAccessMask(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SC_RIGHT_MGR_CONNECT", SC_RIGHT_MGR_CONNECT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SC_RIGHT_MGR_CREATE_SERVICE", SC_RIGHT_MGR_CREATE_SERVICE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SC_RIGHT_MGR_ENUMERATE_SERVICE", SC_RIGHT_MGR_ENUMERATE_SERVICE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SC_RIGHT_MGR_LOCK", SC_RIGHT_MGR_LOCK, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SC_RIGHT_MGR_QUERY_LOCK_STATUS", SC_RIGHT_MGR_QUERY_LOCK_STATUS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SC_RIGHT_MGR_MODIFY_BOOT_CONFIG", SC_RIGHT_MGR_MODIFY_BOOT_CONFIG, r);
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_svcctl_ServiceAccessMask(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_svcctl_ServiceAccessMask(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_svcctl_ServiceAccessMask(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SC_RIGHT_SVC_QUERY_CONFIG", SC_RIGHT_SVC_QUERY_CONFIG, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SC_RIGHT_SVC_CHANGE_CONFIG", SC_RIGHT_SVC_CHANGE_CONFIG, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SC_RIGHT_SVC_QUERY_STATUS", SC_RIGHT_SVC_QUERY_STATUS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SC_RIGHT_SVC_ENUMERATE_DEPENDENTS", SC_RIGHT_SVC_ENUMERATE_DEPENDENTS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SC_RIGHT_SVC_START", SC_RIGHT_SVC_START, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SC_RIGHT_SVC_STOP", SC_RIGHT_SVC_STOP, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SC_RIGHT_SVC_PAUSE_CONTINUE", SC_RIGHT_SVC_PAUSE_CONTINUE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SC_RIGHT_SVC_INTERROGATE", SC_RIGHT_SVC_INTERROGATE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SC_RIGHT_SVC_USER_DEFINED_CONTROL", SC_RIGHT_SVC_USER_DEFINED_CONTROL, r);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_svcctl_CloseServiceHandle(struct ndr_push *ndr, int flags, const struct svcctl_CloseServiceHandle *r)
 {
 	if (flags & NDR_IN) {
@@ -1987,7 +2044,7 @@ static enum ndr_err_code ndr_push_svcctl_OpenSCManagerW(struct ndr_push *ndr, in
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.DatabaseName, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.DatabaseName, ndr_charset_length(r->in.DatabaseName, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
+		NDR_CHECK(ndr_push_svcctl_MgrAccessMask(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.handle == NULL) {
@@ -2045,7 +2102,7 @@ static enum ndr_err_code ndr_pull_svcctl_OpenSCManagerW(struct ndr_pull *ndr, in
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.DatabaseName, ndr_get_array_length(ndr, &r->in.DatabaseName), sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_DatabaseName_0, 0);
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.access_mask));
+		NDR_CHECK(ndr_pull_svcctl_MgrAccessMask(ndr, NDR_SCALARS, &r->in.access_mask));
 		NDR_PULL_ALLOC(ndr, r->out.handle);
 		ZERO_STRUCTP(r->out.handle);
 	}
@@ -2084,7 +2141,7 @@ _PUBLIC_ void ndr_print_svcctl_OpenSCManagerW(struct ndr_print *ndr, const char 
 			ndr_print_string(ndr, "DatabaseName", r->in.DatabaseName);
 		}
 		ndr->depth--;
-		ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+		ndr_print_svcctl_MgrAccessMask(ndr, "access_mask", r->in.access_mask);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -2111,7 +2168,7 @@ static enum ndr_err_code ndr_push_svcctl_OpenServiceW(struct ndr_push *ndr, int 
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.ServiceName, CH_UTF16)));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.ServiceName, ndr_charset_length(r->in.ServiceName, CH_UTF16), sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
+		NDR_CHECK(ndr_push_svcctl_ServiceAccessMask(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.handle == NULL) {
@@ -2144,7 +2201,7 @@ static enum ndr_err_code ndr_pull_svcctl_OpenServiceW(struct ndr_pull *ndr, int 
 		}
 		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.ServiceName), sizeof(uint16_t)));
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.ServiceName, ndr_get_array_length(ndr, &r->in.ServiceName), sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.access_mask));
+		NDR_CHECK(ndr_pull_svcctl_ServiceAccessMask(ndr, NDR_SCALARS, &r->in.access_mask));
 		NDR_PULL_ALLOC(ndr, r->out.handle);
 		ZERO_STRUCTP(r->out.handle);
 	}
@@ -2176,7 +2233,7 @@ _PUBLIC_ void ndr_print_svcctl_OpenServiceW(struct ndr_print *ndr, const char *n
 		ndr_print_policy_handle(ndr, "scmanager_handle", r->in.scmanager_handle);
 		ndr->depth--;
 		ndr_print_string(ndr, "ServiceName", r->in.ServiceName);
-		ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+		ndr_print_svcctl_ServiceAccessMask(ndr, "access_mask", r->in.access_mask);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
