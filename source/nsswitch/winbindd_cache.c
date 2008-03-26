@@ -37,6 +37,7 @@ extern BOOL opt_nocache;
 #ifdef HAVE_ADS
 extern struct winbindd_methods ads_methods;
 #endif
+extern struct winbindd_methods passdb_methods;
 
 /*
  * JRA. KEEP THIS LIST UP TO DATE IF YOU ADD CACHE ENTRIES.
@@ -136,6 +137,10 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 
 	/* We have to know what type of domain we are dealing with first. */
 
+	if (domain->internal) {
+		domain->backend = &passdb_methods;
+		domain->initialized = True;
+	}
 	if ( !domain->initialized ) {
 		init_dc_connection( domain );
 	}

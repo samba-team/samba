@@ -994,7 +994,6 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	 * but not the main daemon */
 
 	if (child->domain && child->domain->internal && IS_DC) {
-		child->domain->internal = False;
 		child->domain->methods = &cache_methods;
 		child->domain->online = False;
 	}
