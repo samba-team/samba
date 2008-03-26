@@ -81,49 +81,49 @@ static bool smbconf_txt_do_section(const char *section, void *private_data)
 {
 	WERROR werr;
 	uint32_t idx;
-	struct txt_private_data *data = (struct txt_private_data *)private_data;
+	struct txt_cache *cache = (struct txt_cache *)private_data;
 
-	if (smbconf_txt_find_in_array(section, data->cache.share_names,
-				      data->cache.num_shares, &idx))
+	if (smbconf_txt_find_in_array(section, cache->share_names,
+				      cache->num_shares, &idx))
 	{
-		data->cache.current_share = idx;
+		cache->current_share = idx;
 		return true;
 	}
 
-	werr = smbconf_add_string_to_array(data, &(data->cache.share_names),
-					   data->cache.num_shares, section);
+	werr = smbconf_add_string_to_array(cache, &(cache->share_names),
+					   cache->num_shares, section);
 	if (!W_ERROR_IS_OK(werr)) {
 		return false;
 	}
-	data->cache.current_share = data->cache.num_shares;
-	data->cache.num_shares++;
+	cache->current_share = cache->num_shares;
+	cache->num_shares++;
 
-	data->cache.param_names = TALLOC_REALLOC_ARRAY(data,
-						       data->cache.param_names,
-						       char **,
-						       data->cache.num_shares);
-	if (data->cache.param_names == NULL) {
+	cache->param_names = TALLOC_REALLOC_ARRAY(cache,
+						  cache->param_names,
+						  char **,
+						  cache->num_shares);
+	if (cache->param_names == NULL) {
 		return false;
 	}
-	data->cache.param_names[data->cache.current_share] = NULL;
+	cache->param_names[cache->current_share] = NULL;
 
-	data->cache.param_values = TALLOC_REALLOC_ARRAY(data,
-						data->cache.param_values,
-						char **,
-						data->cache.num_shares);
-	if (data->cache.param_values == NULL) {
+	cache->param_values = TALLOC_REALLOC_ARRAY(cache,
+						   cache->param_values,
+						   char **,
+						   cache->num_shares);
+	if (cache->param_values == NULL) {
 		return false;
 	}
-	data->cache.param_values[data->cache.current_share] = NULL;
+	cache->param_values[cache->current_share] = NULL;
 
-	data->cache.num_params = TALLOC_REALLOC_ARRAY(data,
-						      data->cache.num_params,
-						      uint32_t,
-						      data->cache.num_shares);
-	if (data->cache.num_params == NULL) {
+	cache->num_params = TALLOC_REALLOC_ARRAY(cache,
+						 cache->num_params,
+						 uint32_t,
+						 cache->num_shares);
+	if (cache->num_params == NULL) {
 		return false;
 	}
-	data->cache.num_params[data->cache.current_share] = 0;
+	cache->num_params[cache->current_share] = 0;
 
 	return true;
 }
@@ -136,37 +136,37 @@ static bool smbconf_txt_do_parameter(const char *param_name,
 	char **param_names, **param_values;
 	uint32_t num_params;
 	uint32_t idx;
-	struct txt_private_data *data = (struct txt_private_data *)private_data;
+	struct txt_cache *cache = (struct txt_cache *)private_data;
 
-	if (data->cache.num_shares == 0) {
+	if (cache->num_shares == 0) {
 		/* not in any share ... */
 		return false;
 	}
 
-	param_names  = data->cache.param_names[data->cache.current_share];
-	param_values = data->cache.param_values[data->cache.current_share];
-	num_params   = data->cache.num_params[data->cache.current_share];
+	param_names  = cache->param_names[cache->current_share];
+	param_values = cache->param_values[cache->current_share];
+	num_params   = cache->num_params[cache->current_share];
 
 	if (smbconf_txt_find_in_array(param_name, param_names, num_params,
 				      &idx))
 	{
 		TALLOC_FREE(param_values[idx]);
-		param_values[idx] = talloc_strdup(data, param_value);
+		param_values[idx] = talloc_strdup(cache, param_value);
 		if (param_values[idx] == NULL) {
 			return false;
 		}
 		return true;
 	}
-	werr = smbconf_add_string_to_array(data,
-			&(data->cache.param_names[data->cache.current_share]),
-			num_params, param_name);
+	werr = smbconf_add_string_to_array(cache,
+				&(cache->param_names[cache->current_share]),
+				num_params, param_name);
 	if (!W_ERROR_IS_OK(werr)) {
 		return false;
 	}
-	werr = smbconf_add_string_to_array(data,
-			&(data->cache.param_values[data->cache.current_share]),
-			num_params, param_value);
-	data->cache.num_params[data->cache.current_share]++;
+	werr = smbconf_add_string_to_array(cache,
+				&(cache->param_values[cache->current_share]),
+				num_params, param_value);
+	cache->num_params[cache->current_share]++;
 	return W_ERROR_IS_OK(werr);
 }
 
@@ -205,7 +205,7 @@ static WERROR smbconf_txt_load_file(struct smbconf_ctx *ctx)
 	}
 
 	if (!pm_process(ctx->path, smbconf_txt_do_section,
-		 	smbconf_txt_do_parameter, pd(ctx)))
+			smbconf_txt_do_parameter, pd(ctx)->cache))
 	{
 		return WERR_CAN_NOT_COMPLETE;
 	}
