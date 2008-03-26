@@ -136,7 +136,8 @@ WERROR _netr_LogonControl2(pipes_struct *p,
         uint32 pdc_connection_status = 0x0;
         uint32 logon_attempts = 0x0;
         uint32 tc_status;
-	fstring dc_name, dc_name2;
+	fstring dc_name2;
+	const char *dc_name = NULL;
 	struct sockaddr_storage dc_ss;
 	const char *domain = NULL;
 	struct netr_NETLOGON_INFO_1 *info1;
@@ -144,7 +145,6 @@ WERROR _netr_LogonControl2(pipes_struct *p,
 	struct netr_NETLOGON_INFO_3 *info3;
 
 	tc_status = W_ERROR_V(WERR_NO_SUCH_DOMAIN);
-	fstrcpy( dc_name, "" );
 
 	switch (r->in.function_code) {
 		case NETLOGON_CONTROL_TC_QUERY:
@@ -158,7 +158,10 @@ WERROR _netr_LogonControl2(pipes_struct *p,
 				break;
 			}
 
-			fstr_sprintf( dc_name, "\\\\%s", dc_name2 );
+			dc_name = talloc_asprintf(p->mem_ctx, "\\\\%s", dc_name2);
+			if (!dc_name) {
+				return WERR_NOMEM;
+			}
 
 			tc_status = W_ERROR_V(WERR_OK);
 
@@ -175,7 +178,10 @@ WERROR _netr_LogonControl2(pipes_struct *p,
 				break;
 			}
 
-			fstr_sprintf( dc_name, "\\\\%s", dc_name2 );
+			dc_name = talloc_asprintf(p->mem_ctx, "\\\\%s", dc_name2);
+			if (!dc_name) {
+				return WERR_NOMEM;
+			}
 
 			tc_status = W_ERROR_V(WERR_OK);
 
