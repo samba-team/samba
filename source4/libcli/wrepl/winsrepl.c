@@ -611,6 +611,7 @@ NTSTATUS wrepl_associate_recv(struct wrepl_request *req,
 	}
 	if (NT_STATUS_IS_OK(status)) {
 		io->out.assoc_ctx = packet->message.start_reply.assoc_ctx;
+		io->out.major_version = packet->message.start_reply.major_version;
 	}
 	talloc_free(packet);
 	return status;

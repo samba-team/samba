@@ -93,6 +93,7 @@ struct wrepl_request {
 struct wrepl_associate {
 	struct {
 		uint32_t assoc_ctx;
+		uint16_t major_version;
 	} out;
 };
 
