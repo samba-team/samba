@@ -1,19 +1,19 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *
  *  Copyright (C) Gerald (Jerry) Carter             2005.
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -106,24 +106,24 @@ WERROR _ntsvcs_get_device_reg_property( pipes_struct *p, NTSVCS_Q_GET_DEVICE_REG
 
 	switch( q_u->property ) {
 	case DEV_REGPROP_DESC:
-		/* just parse the service name from the device path and then 
+		/* just parse the service name from the device path and then
 		   lookup the display name */
 		if ( !(ptr = strrchr_m( devicepath, '\\' )) )
-			return WERR_GENERAL_FAILURE;	
+			return WERR_GENERAL_FAILURE;
 		*ptr = '\0';
-		
+
 		if ( !(ptr = strrchr_m( devicepath, '_' )) )
-			return WERR_GENERAL_FAILURE;	
+			return WERR_GENERAL_FAILURE;
 		ptr++;
-		
+
 		if ( !(values = svcctl_fetch_regvalues( ptr, p->pipe_user.nt_user_token )) )
-			return WERR_GENERAL_FAILURE;	
-		
+			return WERR_GENERAL_FAILURE;
+
 		if ( !(val = regval_ctr_getvalue( values, "DisplayName" )) ) {
 			TALLOC_FREE( values );
 			return WERR_GENERAL_FAILURE;
 		}
-		
+
 		r_u->unknown1 = 0x1;	/* always 1...tested using a remove device manager connection */
 		r_u->size = reg_init_regval_buffer( &r_u->value, val );
 		r_u->needed = r_u->size;
@@ -131,7 +131,7 @@ WERROR _ntsvcs_get_device_reg_property( pipes_struct *p, NTSVCS_Q_GET_DEVICE_REG
 		TALLOC_FREE(values);
 
 		break;
-		
+
 	default:
 		r_u->unknown1 = 0x00437c98;
 		return WERR_CM_NO_SUCH_VALUE;
