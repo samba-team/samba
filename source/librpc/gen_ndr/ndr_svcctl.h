@@ -106,6 +106,8 @@ void ndr_print_ENUM_SERVICE_STATUS(struct ndr_print *ndr, const char *name, cons
 enum ndr_err_code ndr_push_svcctl_ServerType(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_svcctl_ServerType(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 void ndr_print_svcctl_ServerType(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_svcctl_MgrAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_svcctl_ServiceAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_svcctl_CloseServiceHandle(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_CloseServiceHandle *r);
 void ndr_print_svcctl_ControlService(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_ControlService *r);
 void ndr_print_svcctl_DeleteService(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_DeleteService *r);
