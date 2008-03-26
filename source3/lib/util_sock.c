@@ -556,11 +556,17 @@ char *print_canonical_sockaddr(TALLOC_CTX *ctx,
 	if (ret != 0) {
 		return NULL;
 	}
+
+	if (pss->ss_family != AF_INET) {
 #if defined(HAVE_IPV6)
-	dest = talloc_asprintf(ctx, "[%s]", addr);
+		dest = talloc_asprintf(ctx, "[%s]", addr);
 #else
-	dest = talloc_asprintf(ctx, "%s", addr);
+		return NULL;
 #endif
+	} else {
+		dest = talloc_asprintf(ctx, "%s", addr);
+	}
+	
 	return dest;
 }
 
