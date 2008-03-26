@@ -1,0 +1,520 @@
+/*
+ *  Unix SMB/CIFS implementation.
+ *  libsmbconf - Samba configuration library, simple text backend
+ *  Copyright (C) Michael Adam 2008
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
+ * This is a sample implementation of a libsmbconf text backend
+ * using the params.c parser.
+ *
+ * It is read only.
+ * Don't expect brilliant performance, since it is not hashing the lists.
+ */
+
+#include "includes.h"
+#include "smbconf_private.h"
+
+struct txt_private_data {
+	struct {
+		uint32_t current_share;
+		uint32_t num_shares;
+		char **share_names;
+		uint32_t *num_params;
+		char ***param_names;
+		char ***param_values;
+	} cache;
+	uint64_t csn;
+};
+
+/**********************************************************************
+ *
+ * helper functions
+ *
+ **********************************************************************/
+
+/**
+ * a convenience helper to cast the private data structure
+ */
+static struct txt_private_data *pd(struct smbconf_ctx *ctx)
+{
+	return (struct txt_private_data *)(ctx->data);
+}
+
+static bool smbconf_txt_find_in_array(const char *string, char **list,
+				      uint32_t num_entries, uint32_t *entry)
+{
+	uint32_t i;
+
+	if ((string == NULL) || (list == NULL)) {
+		return false;
+	}
+
+	for (i = 0; i < num_entries; i++) {
+		if (strequal(string, list[i])) {
+			if (entry != NULL) {
+				*entry = i;
+			}
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool smbconf_txt_do_section(const char *section, void *private_data)
+{
+	WERROR werr;
+	uint32_t idx;
+	struct txt_private_data *data = (struct txt_private_data *)private_data;
+
+	if (smbconf_txt_find_in_array(section, data->cache.share_names,
+				      data->cache.num_shares, &idx))
+	{
+		data->cache.current_share = idx;
+		return true;
+	}
+
+	werr = smbconf_add_string_to_array(data, &(data->cache.share_names),
+					   data->cache.num_shares, section);
+	if (!W_ERROR_IS_OK(werr)) {
+		return false;
+	}
+	data->cache.current_share = data->cache.num_shares;
+	data->cache.num_shares++;
+
+	data->cache.param_names = TALLOC_REALLOC_ARRAY(data,
+						       data->cache.param_names,
+						       char **,
+						       data->cache.num_shares);
+	if (data->cache.param_names == NULL) {
+		return false;
+	}
+	data->cache.param_names[data->cache.current_share] = NULL;
+
+	data->cache.param_values = TALLOC_REALLOC_ARRAY(data,
+						data->cache.param_values,
+						char **,
+						data->cache.num_shares);
+	if (data->cache.param_values == NULL) {
+		return false;
+	}
+	data->cache.param_values[data->cache.current_share] = NULL;
+
+	data->cache.num_params = TALLOC_REALLOC_ARRAY(data,
+						      data->cache.num_params,
+						      uint32_t,
+						      data->cache.num_shares);
+	if (data->cache.num_params == NULL) {
+		return false;
+	}
+	data->cache.num_params[data->cache.current_share] = 0;
+
+	return true;
+}
+
+static bool smbconf_txt_do_parameter(const char *param_name,
+				     const char *param_value,
+				     void *private_data)
+{
+	WERROR werr;
+	char **param_names, **param_values;
+	uint32_t num_params;
+	uint32_t idx;
+	struct txt_private_data *data = (struct txt_private_data *)private_data;
+
+	if (data->cache.num_shares == 0) {
+		/* not in any share ... */
+		return false;
+	}
+
+	param_names  = data->cache.param_names[data->cache.current_share];
+	param_values = data->cache.param_values[data->cache.current_share];
+	num_params   = data->cache.num_params[data->cache.current_share];
+
+	if (smbconf_txt_find_in_array(param_name, param_names, num_params,
+				      &idx))
+	{
+		TALLOC_FREE(param_values[idx]);
+		param_values[idx] = talloc_strdup(data, param_value);
+		if (param_values[idx] == NULL) {
+			return false;
+		}
+		return true;
+	}
+	werr = smbconf_add_string_to_array(data,
+			&(data->cache.param_names[data->cache.current_share]),
+			num_params, param_name);
+	if (!W_ERROR_IS_OK(werr)) {
+		return false;
+	}
+	werr = smbconf_add_string_to_array(data,
+			&(data->cache.param_values[data->cache.current_share]),
+			num_params, param_value);
+	data->cache.num_params[data->cache.current_share]++;
+	return W_ERROR_IS_OK(werr);
+}
+
+static WERROR smbconf_txt_load_file(struct smbconf_ctx *ctx)
+{
+	uint64_t new_csn = (uint64_t)file_modtime(ctx->path);
+
+	if (new_csn == pd(ctx)->csn) {
+		return WERR_OK;
+	}
+
+	TALLOC_FREE(pd(ctx)->cache.share_names);
+	pd(ctx)->cache.current_share = 0;
+	pd(ctx)->cache.num_shares = 0;
+	TALLOC_FREE(pd(ctx)->cache.param_names);
+	TALLOC_FREE(pd(ctx)->cache.param_values);
+	TALLOC_FREE(pd(ctx)->cache.num_params);
+
+	if (!pm_process(ctx->path, smbconf_txt_do_section,
+		 	smbconf_txt_do_parameter, pd(ctx)))
+	{
+		return WERR_CAN_NOT_COMPLETE;
+	}
+
+	pd(ctx)->csn = new_csn;
+
+	return WERR_OK;
+}
+
+
+/**********************************************************************
+ *
+ * smbconf operations: simple text implementations
+ *
+ **********************************************************************/
+
+/**
+ * initialize the text based smbconf backend
+ */
+static WERROR smbconf_txt_init(struct smbconf_ctx *ctx, const char *path)
+{
+	if (path == NULL) {
+		path = get_dyn_CONFIGFILE();
+	}
+	ctx->path = talloc_strdup(ctx, path);
+	if (ctx->path == NULL) {
+		return WERR_NOMEM;
+	}
+
+	ctx->data = TALLOC_ZERO_P(ctx, struct txt_private_data);
+
+	return smbconf_txt_load_file(ctx);
+}
+
+static int smbconf_txt_shutdown(struct smbconf_ctx *ctx)
+{
+	return ctx->ops->close_conf(ctx);
+}
+
+static WERROR smbconf_txt_open(struct smbconf_ctx *ctx)
+{
+	return smbconf_txt_load_file(ctx);
+}
+
+static int smbconf_txt_close(struct smbconf_ctx *ctx)
+{
+	return 0;
+}
+
+/**
+ * Get the change sequence number of the given service/parameter.
+ * service and parameter strings may be NULL.
+ */
+static void smbconf_txt_get_csn(struct smbconf_ctx *ctx,
+				struct smbconf_csn *csn,
+				const char *service, const char *param)
+{
+	if (csn == NULL) {
+		return;
+	}
+
+	csn->csn = (uint64_t)file_modtime(ctx->path);
+}
+
+/**
+ * Drop the whole configuration (restarting empty)
+ */
+static WERROR smbconf_txt_drop(struct smbconf_ctx *ctx)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/**
+ * get the list of share names defined in the configuration.
+ */
+static WERROR smbconf_txt_get_share_names(struct smbconf_ctx *ctx,
+					  TALLOC_CTX *mem_ctx,
+					  uint32_t *num_shares,
+					  char ***share_names)
+{
+	uint32_t count;
+	uint32_t added_count = 0;
+	TALLOC_CTX *tmp_ctx = NULL;
+	WERROR werr = WERR_OK;
+	char **tmp_share_names = NULL;
+
+	if ((num_shares == NULL) || (share_names == NULL)) {
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	werr = smbconf_txt_load_file(ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	/* make sure "global" is always listed first */
+	if (smbconf_share_exists(ctx, GLOBAL_NAME)) {
+		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
+						   0, GLOBAL_NAME);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+		added_count++;
+	}
+
+	for (count = 0; count < pd(ctx)->cache.num_shares; count++) {
+		if (strequal(pd(ctx)->cache.share_names[count], GLOBAL_NAME)) {
+			continue;
+		}
+
+		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
+					added_count,
+					pd(ctx)->cache.share_names[count]);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+		added_count++;
+	}
+
+	*num_shares = added_count;
+	if (added_count > 0) {
+		*share_names = talloc_move(mem_ctx, &tmp_share_names);
+	} else {
+		*share_names = NULL;
+	}
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return werr;
+}
+
+/**
+ * check if a share/service of a given name exists
+ */
+static bool smbconf_txt_share_exists(struct smbconf_ctx *ctx,
+				     const char *servicename)
+{
+	WERROR werr;
+
+	werr = smbconf_txt_load_file(ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		return false;
+	}
+
+	return smbconf_txt_find_in_array(servicename,
+					 pd(ctx)->cache.share_names,
+					 pd(ctx)->cache.num_shares, NULL);
+}
+
+/**
+ * Add a service if it does not already exist
+ */
+static WERROR smbconf_txt_create_share(struct smbconf_ctx *ctx,
+				       const char *servicename)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/**
+ * get a definition of a share (service) from configuration.
+ */
+static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
+				    TALLOC_CTX *mem_ctx,
+				    const char *servicename,
+				    uint32_t *num_params,
+				    char ***param_names, char ***param_values)
+{
+	WERROR werr;
+	uint32_t sidx, count;
+	bool found;
+	TALLOC_CTX *tmp_ctx = NULL;
+	char **tmp_param_names = NULL;
+	char **tmp_param_values = NULL;
+
+	werr = smbconf_txt_load_file(ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	found = smbconf_txt_find_in_array(servicename,
+					  pd(ctx)->cache.share_names,
+					  pd(ctx)->cache.num_shares,
+					  &sidx);
+	if (!found) {
+		return WERR_NO_SUCH_SERVICE;
+	}
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	for (count = 0; count < pd(ctx)->cache.num_params[sidx]; count++) {
+		werr = smbconf_add_string_to_array(tmp_ctx,
+				&tmp_param_names,
+				count,
+				pd(ctx)->cache.param_names[sidx][count]);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+		werr = smbconf_add_string_to_array(tmp_ctx,
+				&tmp_param_values,
+				count,
+				pd(ctx)->cache.param_values[sidx][count]);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+	}
+
+	*num_params = count;
+	if (count > 0) {
+		*param_names = talloc_move(mem_ctx, &tmp_param_names);
+		*param_values = talloc_move(mem_ctx, &tmp_param_values);
+	} else {
+		*param_names = NULL;
+		*param_values = NULL;
+	}
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return werr;
+}
+
+/**
+ * delete a service from configuration
+ */
+static WERROR smbconf_txt_delete_share(struct smbconf_ctx *ctx,
+				       const char *servicename)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/**
+ * set a configuration parameter to the value provided.
+ */
+static WERROR smbconf_txt_set_parameter(struct smbconf_ctx *ctx,
+					const char *service,
+					const char *param,
+					const char *valstr)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/**
+ * get the value of a configuration parameter as a string
+ */
+static WERROR smbconf_txt_get_parameter(struct smbconf_ctx *ctx,
+					TALLOC_CTX *mem_ctx,
+					const char *service,
+					const char *param,
+					char **valstr)
+{
+	WERROR werr;
+	bool found;
+	uint32_t share_index, param_index;
+
+	werr = smbconf_txt_load_file(ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	found = smbconf_txt_find_in_array(service,
+					  pd(ctx)->cache.share_names,
+					  pd(ctx)->cache.num_shares,
+					  &share_index);
+	if (!found) {
+		return WERR_NO_SUCH_SERVICE;
+	}
+
+	found = smbconf_txt_find_in_array(param,
+					pd(ctx)->cache.param_names[share_index],
+					pd(ctx)->cache.num_params[share_index],
+					&param_index);
+	if (!found) {
+		return WERR_INVALID_PARAM;
+	}
+
+	*valstr = talloc_strdup(mem_ctx,
+			pd(ctx)->cache.param_values[share_index][param_index]);
+
+	if (*valstr == NULL) {
+		return WERR_NOMEM;
+	}
+
+	return WERR_OK;
+}
+
+/**
+ * delete a parameter from configuration
+ */
+static WERROR smbconf_txt_delete_parameter(struct smbconf_ctx *ctx,
+					   const char *service,
+					   const char *param)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+static struct smbconf_ops smbconf_ops_txt = {
+	.init			= smbconf_txt_init,
+	.shutdown		= smbconf_txt_shutdown,
+	.open_conf		= smbconf_txt_open,
+	.close_conf		= smbconf_txt_close,
+	.get_csn		= smbconf_txt_get_csn,
+	.drop			= smbconf_txt_drop,
+	.get_share_names	= smbconf_txt_get_share_names,
+	.share_exists		= smbconf_txt_share_exists,
+	.create_share		= smbconf_txt_create_share,
+	.get_share		= smbconf_txt_get_share,
+	.delete_share		= smbconf_txt_delete_share,
+	.set_parameter		= smbconf_txt_set_parameter,
+	.get_parameter		= smbconf_txt_get_parameter,
+	.delete_parameter	= smbconf_txt_delete_parameter
+};
+
+
+/**
+ * initialize the smbconf text backend
+ * the only function that is exported from this module
+ */
+WERROR smbconf_init_txt_simple(TALLOC_CTX *mem_ctx,
+			       struct smbconf_ctx **conf_ctx,
+			       const char *path)
+{
+	return smbconf_init(mem_ctx, conf_ctx, path, &smbconf_ops_txt);
+}
