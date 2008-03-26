@@ -28,15 +28,17 @@
 #include "includes.h"
 #include "smbconf_private.h"
 
+struct txt_cache {
+	uint32_t current_share;
+	uint32_t num_shares;
+	char **share_names;
+	uint32_t *num_params;
+	char ***param_names;
+	char ***param_values;
+};
+
 struct txt_private_data {
-	struct {
-		uint32_t current_share;
-		uint32_t num_shares;
-		char **share_names;
-		uint32_t *num_params;
-		char ***param_names;
-		char ***param_values;
-	} cache;
+	struct txt_cache *cache;
 	uint64_t csn;
 };
 
@@ -170,23 +172,37 @@ static bool smbconf_txt_do_parameter(const char *param_name,
 
 static void smbconf_txt_flush_cache(struct smbconf_ctx *ctx)
 {
-	TALLOC_FREE(pd(ctx)->cache.share_names);
-	pd(ctx)->cache.current_share = 0;
-	pd(ctx)->cache.num_shares = 0;
-	TALLOC_FREE(pd(ctx)->cache.param_names);
-	TALLOC_FREE(pd(ctx)->cache.param_values);
-	TALLOC_FREE(pd(ctx)->cache.num_params);
+	TALLOC_FREE(pd(ctx)->cache);
+}
+
+static WERROR smbconf_txt_init_cache(struct smbconf_ctx *ctx)
+{
+	if (pd(ctx)->cache != NULL) {
+		smbconf_txt_flush_cache(ctx);
+	}
+
+	pd(ctx)->cache = TALLOC_ZERO_P(pd(ctx), struct txt_cache);
+
+	if (pd(ctx)->cache == NULL) {
+		return WERR_NOMEM;
+	}
+
+	return WERR_OK;
 }
 
 static WERROR smbconf_txt_load_file(struct smbconf_ctx *ctx)
 {
+	WERROR werr;
 	uint64_t new_csn = (uint64_t)file_modtime(ctx->path);
 
 	if (new_csn == pd(ctx)->csn) {
 		return WERR_OK;
 	}
 
-	smbconf_txt_flush_cache(ctx);
+	werr = smbconf_txt_init_cache(ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
 
 	if (!pm_process(ctx->path, smbconf_txt_do_section,
 		 	smbconf_txt_do_parameter, pd(ctx)))
@@ -303,14 +319,14 @@ static WERROR smbconf_txt_get_share_names(struct smbconf_ctx *ctx,
 		added_count++;
 	}
 
-	for (count = 0; count < pd(ctx)->cache.num_shares; count++) {
-		if (strequal(pd(ctx)->cache.share_names[count], GLOBAL_NAME)) {
+	for (count = 0; count < pd(ctx)->cache->num_shares; count++) {
+		if (strequal(pd(ctx)->cache->share_names[count], GLOBAL_NAME)) {
 			continue;
 		}
 
 		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
 					added_count,
-					pd(ctx)->cache.share_names[count]);
+					pd(ctx)->cache->share_names[count]);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -343,8 +359,8 @@ static bool smbconf_txt_share_exists(struct smbconf_ctx *ctx,
 	}
 
 	return smbconf_txt_find_in_array(servicename,
-					 pd(ctx)->cache.share_names,
-					 pd(ctx)->cache.num_shares, NULL);
+					 pd(ctx)->cache->share_names,
+					 pd(ctx)->cache->num_shares, NULL);
 }
 
 /**
@@ -378,8 +394,8 @@ static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
 	}
 
 	found = smbconf_txt_find_in_array(servicename,
-					  pd(ctx)->cache.share_names,
-					  pd(ctx)->cache.num_shares,
+					  pd(ctx)->cache->share_names,
+					  pd(ctx)->cache->num_shares,
 					  &sidx);
 	if (!found) {
 		return WERR_NO_SUCH_SERVICE;
@@ -391,18 +407,18 @@ static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
 		goto done;
 	}
 
-	for (count = 0; count < pd(ctx)->cache.num_params[sidx]; count++) {
+	for (count = 0; count < pd(ctx)->cache->num_params[sidx]; count++) {
 		werr = smbconf_add_string_to_array(tmp_ctx,
 				&tmp_param_names,
 				count,
-				pd(ctx)->cache.param_names[sidx][count]);
+				pd(ctx)->cache->param_names[sidx][count]);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
 		werr = smbconf_add_string_to_array(tmp_ctx,
 				&tmp_param_values,
 				count,
-				pd(ctx)->cache.param_values[sidx][count]);
+				pd(ctx)->cache->param_values[sidx][count]);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -461,23 +477,23 @@ static WERROR smbconf_txt_get_parameter(struct smbconf_ctx *ctx,
 	}
 
 	found = smbconf_txt_find_in_array(service,
-					  pd(ctx)->cache.share_names,
-					  pd(ctx)->cache.num_shares,
+					  pd(ctx)->cache->share_names,
+					  pd(ctx)->cache->num_shares,
 					  &share_index);
 	if (!found) {
 		return WERR_NO_SUCH_SERVICE;
 	}
 
 	found = smbconf_txt_find_in_array(param,
-					pd(ctx)->cache.param_names[share_index],
-					pd(ctx)->cache.num_params[share_index],
-					&param_index);
+				pd(ctx)->cache->param_names[share_index],
+				pd(ctx)->cache->num_params[share_index],
+				&param_index);
 	if (!found) {
 		return WERR_INVALID_PARAM;
 	}
 
 	*valstr = talloc_strdup(mem_ctx,
-			pd(ctx)->cache.param_values[share_index][param_index]);
+			pd(ctx)->cache->param_values[share_index][param_index]);
 
 	if (*valstr == NULL) {
 		return WERR_NOMEM;
