@@ -167,7 +167,7 @@ void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
  Output is int32 in native byte order.
 ****************************************************************************/
 
-static int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, TDB_DATA key)
+int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, TDB_DATA key)
 {
 	TDB_DATA data;
 	int32 ret;
@@ -200,7 +200,7 @@ int32 tdb_fetch_int32(TDB_CONTEXT *tdb, const char *keystr)
  Input is int32 in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-static int tdb_store_int32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, int32 v)
+int tdb_store_int32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, int32 v)
 {
 	TDB_DATA data;
 	int32 v_store;
@@ -229,7 +229,7 @@ int tdb_store_int32(TDB_CONTEXT *tdb, const char *keystr, int32 v)
  Output is uint32 in native byte order.
 ****************************************************************************/
 
-static bool tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 *value)
+bool tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 *value)
 {
 	TDB_DATA data;
 
@@ -261,7 +261,7 @@ bool tdb_fetch_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 *value)
  Input is uint32 in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-static bool tdb_store_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 value)
+bool tdb_store_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 value)
 {
 	TDB_DATA data;
 	uint32 v_store;

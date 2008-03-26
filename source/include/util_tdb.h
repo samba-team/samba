@@ -65,9 +65,13 @@ int tdb_read_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
 					unsigned int timeout);
 void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval);
 
+int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, TDB_DATA key);
 int32 tdb_fetch_int32(struct tdb_context *tdb, const char *keystr);
+bool tdb_store_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 value);
 bool tdb_store_uint32(struct tdb_context *tdb, const char *keystr, uint32 value);
+int tdb_store_int32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, int32 v);
 int tdb_store_int32(struct tdb_context *tdb, const char *keystr, int32 v);
+bool tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, TDB_DATA key, uint32 *value);
 bool tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32 *value);
 int32 tdb_change_int32_atomic(struct tdb_context *tdb, const char *keystr, int32 *oldval, int32 change_val);
 bool tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr,
