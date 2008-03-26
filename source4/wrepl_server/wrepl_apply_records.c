@@ -29,6 +29,7 @@
 #include "libcli/wrepl/winsrepl.h"
 #include "system/time.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "param/param.h"
 
 enum _R_ACTION {
 	R_INVALID,
@@ -1190,7 +1191,9 @@ static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
 	uint8_t ret;
 	size_t len;
 	bool changed_old_addrs = false;
+	bool skip_replica_owned_by_us = false;
 	bool become_owner = true;
+	bool propagate = lp_parm_bool(partner->service->task->lp_ctx, NULL, "wreplsrv", "propagate name releases", false);
 	const char *local_owner = partner->service->wins_db->local_owner;
 
 	merge = talloc(mem_ctx, struct winsdb_record);
@@ -1251,6 +1254,23 @@ static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
 	}
 
 	for (i=0; i < replica->num_addresses; i++) {
+		if (propagate &&
+		    strcmp(replica->addresses[i].owner, local_owner) == 0) {
+			const struct winsdb_addr *a;
+
+			/*
+			 * NOTE: this is different to the windows behavior
+			 *       and off by default, but it better propagated
+			 *       name releases
+			 */
+			a = winsdb_addr_list_check(merge->addresses,
+						   replica->addresses[i].address);
+			if (!a) {
+				/* don't add addresses owned by us */
+				skip_replica_owned_by_us = true;
+			}
+			continue;
+		}
 		merge->addresses = winsdb_addr_list_add(partner->service->wins_db,
 							merge, merge->addresses,
 							replica->addresses[i].address,
@@ -1263,6 +1283,15 @@ static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
 	/* we the old addresses change changed we don't become the owner */
 	if (changed_old_addrs) {
 		become_owner = false;
+	}
+
+	/*
+	 * when we notice another server believes an address
+	 * is owned by us and that's not the case
+	 * we propagate the result
+	 */
+	if (skip_replica_owned_by_us) {
+		become_owner = true;
 	}
 
 	/* if we're the owner of the old record, we'll be the owner of the new one too */
