@@ -168,6 +168,16 @@ static bool smbconf_txt_do_parameter(const char *param_name,
 	return W_ERROR_IS_OK(werr);
 }
 
+static void smbconf_txt_flush_cache(struct smbconf_ctx *ctx)
+{
+	TALLOC_FREE(pd(ctx)->cache.share_names);
+	pd(ctx)->cache.current_share = 0;
+	pd(ctx)->cache.num_shares = 0;
+	TALLOC_FREE(pd(ctx)->cache.param_names);
+	TALLOC_FREE(pd(ctx)->cache.param_values);
+	TALLOC_FREE(pd(ctx)->cache.num_params);
+}
+
 static WERROR smbconf_txt_load_file(struct smbconf_ctx *ctx)
 {
 	uint64_t new_csn = (uint64_t)file_modtime(ctx->path);
@@ -176,12 +186,7 @@ static WERROR smbconf_txt_load_file(struct smbconf_ctx *ctx)
 		return WERR_OK;
 	}
 
-	TALLOC_FREE(pd(ctx)->cache.share_names);
-	pd(ctx)->cache.current_share = 0;
-	pd(ctx)->cache.num_shares = 0;
-	TALLOC_FREE(pd(ctx)->cache.param_names);
-	TALLOC_FREE(pd(ctx)->cache.param_values);
-	TALLOC_FREE(pd(ctx)->cache.num_params);
+	smbconf_txt_flush_cache(ctx);
 
 	if (!pm_process(ctx->path, smbconf_txt_do_section,
 		 	smbconf_txt_do_parameter, pd(ctx)))
@@ -231,6 +236,7 @@ static WERROR smbconf_txt_open(struct smbconf_ctx *ctx)
 
 static int smbconf_txt_close(struct smbconf_ctx *ctx)
 {
+	smbconf_txt_flush_cache(ctx);
 	return 0;
 }
 
