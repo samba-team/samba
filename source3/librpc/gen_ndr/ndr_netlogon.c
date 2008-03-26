@@ -5420,33 +5420,49 @@ static enum ndr_err_code ndr_push_netr_NETLOGON_INFO_2(struct ndr_push *ndr, int
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->flags));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->pdc_connection_status));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->trusted_dc_name, CH_UTF16)));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->trusted_dc_name, CH_UTF16)));
-		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->trusted_dc_name, ndr_charset_length(r->trusted_dc_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->trusted_dc_name));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->tc_connection_status));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		if (r->trusted_dc_name) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->trusted_dc_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->trusted_dc_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->trusted_dc_name, ndr_charset_length(r->trusted_dc_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
 	}
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_netr_NETLOGON_INFO_2(struct ndr_pull *ndr, int ndr_flags, struct netr_NETLOGON_INFO_2 *r)
 {
+	uint32_t _ptr_trusted_dc_name;
+	TALLOC_CTX *_mem_save_trusted_dc_name_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->flags));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->pdc_connection_status));
-		NDR_CHECK(ndr_pull_array_size(ndr, &r->trusted_dc_name));
-		NDR_CHECK(ndr_pull_array_length(ndr, &r->trusted_dc_name));
-		if (ndr_get_array_length(ndr, &r->trusted_dc_name) > ndr_get_array_size(ndr, &r->trusted_dc_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->trusted_dc_name), ndr_get_array_length(ndr, &r->trusted_dc_name));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_trusted_dc_name));
+		if (_ptr_trusted_dc_name) {
+			NDR_PULL_ALLOC(ndr, r->trusted_dc_name);
+		} else {
+			r->trusted_dc_name = NULL;
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->trusted_dc_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->trusted_dc_name, ndr_get_array_length(ndr, &r->trusted_dc_name), sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->tc_connection_status));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		if (r->trusted_dc_name) {
+			_mem_save_trusted_dc_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->trusted_dc_name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->trusted_dc_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->trusted_dc_name));
+			if (ndr_get_array_length(ndr, &r->trusted_dc_name) > ndr_get_array_size(ndr, &r->trusted_dc_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->trusted_dc_name), ndr_get_array_length(ndr, &r->trusted_dc_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->trusted_dc_name), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->trusted_dc_name, ndr_get_array_length(ndr, &r->trusted_dc_name), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_trusted_dc_name_0, 0);
+		}
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -5457,7 +5473,12 @@ _PUBLIC_ void ndr_print_netr_NETLOGON_INFO_2(struct ndr_print *ndr, const char *
 	ndr->depth++;
 	ndr_print_uint32(ndr, "flags", r->flags);
 	ndr_print_uint32(ndr, "pdc_connection_status", r->pdc_connection_status);
-	ndr_print_string(ndr, "trusted_dc_name", r->trusted_dc_name);
+	ndr_print_ptr(ndr, "trusted_dc_name", r->trusted_dc_name);
+	ndr->depth++;
+	if (r->trusted_dc_name) {
+		ndr_print_string(ndr, "trusted_dc_name", r->trusted_dc_name);
+	}
+	ndr->depth--;
 	ndr_print_uint32(ndr, "tc_connection_status", r->tc_connection_status);
 	ndr->depth--;
 }
@@ -5543,7 +5564,7 @@ static enum ndr_err_code ndr_push_netr_CONTROL_QUERY_INFORMATION(struct ndr_push
 
 			case 2:
 				if (r->info2) {
-					NDR_CHECK(ndr_push_netr_NETLOGON_INFO_2(ndr, NDR_SCALARS, r->info2));
+					NDR_CHECK(ndr_push_netr_NETLOGON_INFO_2(ndr, NDR_SCALARS|NDR_BUFFERS, r->info2));
 				}
 			break;
 
@@ -5623,7 +5644,7 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_QUERY_INFORMATION(struct ndr_pull
 				if (r->info2) {
 					_mem_save_info2_0 = NDR_PULL_GET_MEM_CTX(ndr);
 					NDR_PULL_SET_MEM_CTX(ndr, r->info2, 0);
-					NDR_CHECK(ndr_pull_netr_NETLOGON_INFO_2(ndr, NDR_SCALARS, r->info2));
+					NDR_CHECK(ndr_pull_netr_NETLOGON_INFO_2(ndr, NDR_SCALARS|NDR_BUFFERS, r->info2));
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info2_0, 0);
 				}
 			break;

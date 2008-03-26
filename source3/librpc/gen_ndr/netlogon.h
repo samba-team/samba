@@ -580,7 +580,7 @@ struct netr_NETLOGON_INFO_1 {
 struct netr_NETLOGON_INFO_2 {
 	uint32_t flags;
 	uint32_t pdc_connection_status;
-	const char *trusted_dc_name;/* [charset(UTF16)] */
+	const char *trusted_dc_name;/* [unique,charset(UTF16)] */
 	uint32_t tc_connection_status;
 };
 
