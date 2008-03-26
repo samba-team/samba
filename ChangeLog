@@ -1,3 +1,9 @@
+2008-03-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/fcache.c: Make the storing credential an atomic
+	write(2) to avoid signal races, bug traced by Harald Bart and Lars
+	Malinowsky.
+
 2008-03-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/fcache.c: Make erase_file() do locking too.
