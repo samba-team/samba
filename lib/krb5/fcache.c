@@ -135,6 +135,30 @@ _krb5_xunlock(krb5_context context, int fd)
 }
 
 static krb5_error_code
+write_storage(krb5_context context, krb5_storage *sp, int fd)
+{
+    krb5_error_code ret;
+    krb5_data data;
+    ssize_t sret;
+
+    ret = krb5_storage_to_data(sp, &data);
+    if (ret) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ret;
+    }
+    sret = write(fd, data.data, data.length);
+    ret = (sret != data.length);
+    krb5_data_free(&data);
+    if (ret) {
+	ret = errno;
+	krb5_set_error_string(context, "Failed to write FILE credential data");
+	return ret;
+    }
+    return 0;
+}
+
+
+static krb5_error_code
 fcc_lock(krb5_context context, krb5_ccache id,
 	 int fd, krb5_boolean exclusive)
 {
@@ -368,7 +392,7 @@ fcc_initialize(krb5_context context,
 	return ret;
     {
 	krb5_storage *sp;    
-	sp = krb5_storage_from_fd(fd);
+	sp = krb5_storage_emem();
 	krb5_storage_set_eof_code(sp, KRB5_CC_END);
 	if(context->fcache_vno != 0)
 	    f->version = context->fcache_vno;
@@ -391,6 +415,8 @@ fcc_initialize(krb5_context context,
 	}
 	ret |= krb5_store_principal(sp, primary_principal);
 	
+	ret |= write_storage(context, sp, fd);
+
 	krb5_storage_free(sp);
     }
     fcc_unlock(context, fd);
@@ -433,7 +459,8 @@ fcc_store_cred(krb5_context context,
 	return ret;
     {
 	krb5_storage *sp;
-	sp = krb5_storage_from_fd(fd);
+
+	sp = krb5_storage_emem();
 	krb5_storage_set_eof_code(sp, KRB5_CC_END);
 	storage_set_flags(context, sp, FCACHE(id)->version);
 	if (!krb5_config_get_bool_default(context, NULL, TRUE,
@@ -442,15 +469,18 @@ fcc_store_cred(krb5_context context,
 					  NULL))
 	    krb5_storage_set_flags(sp, KRB5_STORAGE_CREDS_FLAGS_WRONG_BITORDER);
 	ret = krb5_store_creds(sp, creds);
+	if (ret == 0)
+	    ret = write_storage(context, sp, fd);
 	krb5_storage_free(sp);
     }
     fcc_unlock(context, fd);
-    if (close(fd) < 0)
+    if (close(fd) < 0) {
 	if (ret == 0) {
 	    ret = errno;
 	    krb5_set_error_string (context, "close %s: %s", 
 				   FILENAME(id), strerror(ret));
 	}
+    }
     return ret;
 }
 
