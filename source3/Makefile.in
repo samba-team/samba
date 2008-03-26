@@ -826,7 +826,8 @@ LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ1) $(LIBNET_OBJ) \
 		 $(SECRETS_OBJ) $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ) \
 		 $(DCUTIL_OBJ) $(LIBADS_OBJ) $(PRIVILEGES_BASIC_OBJ)
 
-LIBSMBCONF_OBJ = lib/smbconf/smbconf.o lib/smbconf/smbconf_reg.o
+LIBSMBCONF_OBJ = lib/smbconf/smbconf.o lib/smbconf/smbconf_reg.o \
+		 lib/smbconf/smbconf_txt_simple.o
 
 LIBNET_OBJ = libnet/libnet_join.o \
 	     librpc/gen_ndr/ndr_libnet_join.o

@@ -38,6 +38,10 @@ struct smbconf_csn {
 WERROR smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 			const char *path);
 
+WERROR smbconf_init_txt_simple(TALLOC_CTX *mem_ctx,
+			       struct smbconf_ctx **conf_ctx,
+			       const char *path);
+
 /*
  * the smbconf API functions
  */
