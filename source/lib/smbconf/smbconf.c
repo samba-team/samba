@@ -51,10 +51,10 @@ static WERROR smbconf_global_check(struct smbconf_ctx *ctx)
 /**
  * add a string to a talloced array of strings.
  */
- WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
-				    char ***array,
-				    uint32_t count,
-				    const char *string)
+WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
+				   char ***array,
+				   uint32_t count,
+				   const char *string)
 {
 	char **new_array = NULL;
 
