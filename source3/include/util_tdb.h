@@ -77,8 +77,6 @@ int32 tdb_change_int32_atomic(struct tdb_context *tdb, const char *keystr, int32
 bool tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr,
 			      uint32 *oldval, uint32 change_val);
 
-int tdb_wipe(TDB_CONTEXT *tdb);
-
 int tdb_store_bystring(struct tdb_context *tdb, const char *keystr, TDB_DATA data, int flags);
 int tdb_trans_store_bystring(TDB_CONTEXT *tdb, const char *keystr,
 			     TDB_DATA data, int flags);

@@ -719,23 +719,6 @@ TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 	return tdb;
 }
 
-/****************************************************************************
- Allow tdb_delete to be used as a tdb_traversal_fn.
-****************************************************************************/
-
-static int tdb_traverse_delete_fn(TDB_CONTEXT *the_tdb, TDB_DATA key,
-				  TDB_DATA dbuf, void *state)
-{
-    return tdb_delete(the_tdb, key);
-}
-
-int tdb_wipe(TDB_CONTEXT *tdb)
-{
-	return tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
-}
-
-
-
 
 /**
  * Search across the whole tdb for keys that match the given pattern
