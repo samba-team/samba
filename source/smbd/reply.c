@@ -4622,7 +4622,7 @@ void reply_printclose(struct smb_request *req)
 
 	START_PROFILE(SMBsplclose);
 
-	if (req->wct < 3) {
+	if (req->wct < 1) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBsplclose);
 		return;
