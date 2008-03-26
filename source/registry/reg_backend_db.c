@@ -344,7 +344,7 @@ bool regdb_init(void)
 		/* any upgrade code here if needed */
 		DEBUG(10, ("regdb_init: got %s = %d != %d\n", vstring,
 			   vers_id, REGVER_V1));
-		if (dbwrap_store_int32(regdb, vstring, REGVER_V1) != 0) {
+		if (dbwrap_trans_store_int32(regdb, vstring, REGVER_V1) != 0) {
 			DEBUG(0, ("regdb_init: error storing %s = %d\n",
 				  vstring, REGVER_V1));
 			return false;
