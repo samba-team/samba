@@ -45,25 +45,6 @@ typedef struct hdr_account_lockout_string {
 	uint32 buffer;
 } HDR_LOCKOUT_STRING;
 
-#define DSGETDC_VALID_FLAGS ( \
-    DS_FORCE_REDISCOVERY | \
-    DS_DIRECTORY_SERVICE_REQUIRED | \
-    DS_DIRECTORY_SERVICE_PREFERRED | \
-    DS_GC_SERVER_REQUIRED | \
-    DS_PDC_REQUIRED | \
-    DS_BACKGROUND_ONLY | \
-    DS_IP_REQUIRED | \
-    DS_KDC_REQUIRED | \
-    DS_TIMESERV_REQUIRED | \
-    DS_WRITABLE_REQUIRED | \
-    DS_GOOD_TIMESERV_PREFERRED | \
-    DS_AVOID_SELF | \
-    DS_ONLY_LDAP_NEEDED | \
-    DS_IS_FLAT_NAME | \
-    DS_IS_DNS_NAME | \
-    DS_RETURN_FLAT_NAME  | \
-    DS_RETURN_DNS_NAME )
-
 struct DS_DOMAIN_CONTROLLER_INFO {
 	const char *domain_controller_name;
 	const char *domain_controller_address;
