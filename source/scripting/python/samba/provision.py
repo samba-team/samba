@@ -374,8 +374,8 @@ def load_or_make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrol
 
             default_lp.set("lock dir", os.path.abspath(targetdir))
         else:
-	    privatedir_line = "private_dir = " + default_lp.get("private dir")
-	    lockdir_line = "lock dir = " + default_lp.get("lock dir")
+	    privatedir_line = ""
+	    lockdir_line = ""
 
         sysvol = os.path.join(default_lp.get("lock dir"), "sysvol")
         netlogon = os.path.join(sysvol, realm.lower(), "scripts")
