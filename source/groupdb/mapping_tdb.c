@@ -123,7 +123,7 @@ static bool add_mapping_entry(GROUP_MAP *map, int flag)
 {
 	char *key, *buf;
 	int len;
-	NTSTATUS status;
+	int res;
 
 	key = group_mapping_key(talloc_tos(), &map->sid);
 	if (key == NULL) {
@@ -141,12 +141,13 @@ static bool add_mapping_entry(GROUP_MAP *map, int flag)
 	len = tdb_pack((uint8 *)buf, len, "ddff", map->gid,
 		       map->sid_name_use, map->nt_name, map->comment);
 
-	status = dbwrap_store_bystring(
-		db, key, make_tdb_data((uint8_t *)buf, len), flag);
+	res = dbwrap_trans_store(
+		db, string_term_tdb_data(key),
+		make_tdb_data((uint8_t *)buf, len), flag);
 
 	TALLOC_FREE(key);
 
-	return NT_STATUS_IS_OK(status);
+	return (res == 0);
 }
 
 
@@ -281,17 +282,17 @@ static bool get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 static bool group_map_remove(const DOM_SID *sid)
 {
 	char *key;
-	bool result;
+	int res;
 
 	key = group_mapping_key(talloc_tos(), sid);
 	if (key == NULL) {
 		return false;
 	}
 
-	result = NT_STATUS_IS_OK(dbwrap_delete_bystring(db, key));
+	res = dbwrap_trans_delete(db, string_term_tdb_data(key));
 
 	TALLOC_FREE(key);
-	return result;
+	return (res == 0);
 }
 
 /****************************************************************************
@@ -479,12 +480,18 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (db->transaction_start(db) != 0) {
+		DEBUG(0, ("transaction_start failed\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
 	rec = db->fetch_locked(db, key, string_term_tdb_data(key));
 
 	if (rec == NULL) {
 		DEBUG(10, ("fetch_lock failed\n"));
 		TALLOC_FREE(key);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto cancel;
 	}
 
 	sid_to_fstring(string_sid, alias);
@@ -498,7 +505,8 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 
 	if (new_memberstring == NULL) {
 		TALLOC_FREE(key);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto cancel;
 	}
 
 	status = rec->store(rec, string_term_tdb_data(new_memberstring), 0);
@@ -507,6 +515,20 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Could not store record: %s\n", nt_errstr(status)));
+		goto cancel;
+	}
+
+	if (db->transaction_commit(db) != 0) {
+		DEBUG(0, ("transaction_commit failed\n"));
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto cancel;
+	}
+
+	return NT_STATUS_OK;
+
+ cancel:
+	if (db->transaction_cancel(db) != 0) {
+		smb_panic("transaction_cancel failed");
 	}
 
 	return status;
@@ -604,10 +626,16 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	char *key;
 	fstring sid_string;
 
+	if (db->transaction_start(db) != 0) {
+		DEBUG(0, ("transaction_start failed\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
 	status = alias_memberships(member, 1, &sids, &num);
 
-	if (!NT_STATUS_IS_OK(status))
-		return status;
+	if (!NT_STATUS_IS_OK(status)) {
+		goto cancel;
+	}
 
 	for (i=0; i<num; i++) {
 		if (sid_compare(&sids[i], alias) == 0) {
@@ -618,7 +646,8 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 
 	if (!found) {
 		TALLOC_FREE(sids);
-		return NT_STATUS_MEMBER_NOT_IN_ALIAS;
+		status = NT_STATUS_MEMBER_NOT_IN_ALIAS;
+		goto cancel;
 	}
 
 	if (i < num)
@@ -631,19 +660,21 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	key = talloc_asprintf(sids, "%s%s", MEMBEROF_PREFIX, sid_string);
 	if (key == NULL) {
 		TALLOC_FREE(sids);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto cancel;
 	}
 
 	if (num == 0) {
 		status = dbwrap_delete_bystring(db, key);
 		TALLOC_FREE(sids);
-		return status;
+		goto cancel;
 	}
 
 	member_string = talloc_strdup(sids, "");
 	if (member_string == NULL) {
 		TALLOC_FREE(sids);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto cancel;
 	}
 
 	for (i=0; i<num; i++) {
@@ -655,7 +686,8 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 
 		if (member_string == NULL) {
 			TALLOC_FREE(sids);
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto cancel;
 		}
 	}
 
@@ -664,6 +696,24 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 
 	TALLOC_FREE(sids);
 
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("dbwrap_store_bystring failed: %s\n",
+			   nt_errstr(status)));
+		goto cancel;
+	}
+
+	if (db->transaction_commit(db) != 0) {
+		DEBUG(0, ("transaction_commit failed\n"));
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto cancel;
+	}
+
+	return NT_STATUS_OK;
+
+ cancel:
+	if (db->transaction_cancel(db) != 0) {
+		smb_panic("transaction_cancel failed");
+	}
 	return status;
 }
 
