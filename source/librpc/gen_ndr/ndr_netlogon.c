@@ -234,95 +234,42 @@ _PUBLIC_ void ndr_print_netr_UasLogoffInfo(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_netr_AcctLockStr(struct ndr_push *ndr, int ndr_flags, const struct netr_AcctLockStr *r)
+_PUBLIC_ enum ndr_err_code ndr_push_netr_AcctLockStr(struct ndr_push *ndr, int ndr_flags, const struct netr_AcctLockStr *r)
 {
-	uint32_t cntr_bindata_1;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->size));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->length));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->bindata));
+		NDR_CHECK(ndr_push_dlong(ndr, NDR_SCALARS, r->lockout_duration));
+		NDR_CHECK(ndr_push_udlong(ndr, NDR_SCALARS, r->reset_count));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->bad_attempt_lockout));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->dummy));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->bindata) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->size / 2));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->length / 2));
-			for (cntr_bindata_1 = 0; cntr_bindata_1 < r->length / 2; cntr_bindata_1++) {
-				NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->bindata[cntr_bindata_1]));
-			}
-		}
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_netr_AcctLockStr(struct ndr_pull *ndr, int ndr_flags, struct netr_AcctLockStr *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_netr_AcctLockStr(struct ndr_pull *ndr, int ndr_flags, struct netr_AcctLockStr *r)
 {
-	uint32_t _ptr_bindata;
-	uint32_t cntr_bindata_1;
-	TALLOC_CTX *_mem_save_bindata_0;
-	TALLOC_CTX *_mem_save_bindata_1;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->size));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->length));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_bindata));
-		if (_ptr_bindata) {
-			NDR_PULL_ALLOC(ndr, r->bindata);
-		} else {
-			r->bindata = NULL;
-		}
+		NDR_CHECK(ndr_pull_dlong(ndr, NDR_SCALARS, &r->lockout_duration));
+		NDR_CHECK(ndr_pull_udlong(ndr, NDR_SCALARS, &r->reset_count));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->bad_attempt_lockout));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dummy));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->bindata) {
-			_mem_save_bindata_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->bindata, 0);
-			NDR_CHECK(ndr_pull_array_size(ndr, &r->bindata));
-			NDR_CHECK(ndr_pull_array_length(ndr, &r->bindata));
-			if (ndr_get_array_length(ndr, &r->bindata) > ndr_get_array_size(ndr, &r->bindata)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->bindata), ndr_get_array_length(ndr, &r->bindata));
-			}
-			NDR_PULL_ALLOC_N(ndr, r->bindata, ndr_get_array_size(ndr, &r->bindata));
-			_mem_save_bindata_1 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->bindata, 0);
-			for (cntr_bindata_1 = 0; cntr_bindata_1 < r->length / 2; cntr_bindata_1++) {
-				NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->bindata[cntr_bindata_1]));
-			}
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bindata_1, 0);
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bindata_0, 0);
-		}
-		if (r->bindata) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->bindata, r->size / 2));
-		}
-		if (r->bindata) {
-			NDR_CHECK(ndr_check_array_length(ndr, (void*)&r->bindata, r->length / 2));
-		}
 	}
 	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_netr_AcctLockStr(struct ndr_print *ndr, const char *name, const struct netr_AcctLockStr *r)
 {
-	uint32_t cntr_bindata_1;
 	ndr_print_struct(ndr, name, "netr_AcctLockStr");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "size", r->size);
-	ndr_print_uint16(ndr, "length", r->length);
-	ndr_print_ptr(ndr, "bindata", r->bindata);
-	ndr->depth++;
-	if (r->bindata) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "bindata", r->length / 2);
-		ndr->depth++;
-		for (cntr_bindata_1=0;cntr_bindata_1<r->length / 2;cntr_bindata_1++) {
-			char *idx_1=NULL;
-			if (asprintf(&idx_1, "[%d]", cntr_bindata_1) != -1) {
-				ndr_print_uint16(ndr, "bindata", r->bindata[cntr_bindata_1]);
-				free(idx_1);
-			}
-		}
-		ndr->depth--;
-	}
-	ndr->depth--;
+	ndr_print_dlong(ndr, "lockout_duration", r->lockout_duration);
+	ndr_print_udlong(ndr, "reset_count", r->reset_count);
+	ndr_print_uint32(ndr, "bad_attempt_lockout", r->bad_attempt_lockout);
+	ndr_print_uint32(ndr, "dummy", r->dummy);
 	ndr->depth--;
 }
 
@@ -2483,7 +2430,7 @@ static enum ndr_err_code ndr_push_netr_DELTA_DOMAIN(struct ndr_push *ndr, int nd
 		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->domain_create_time));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->SecurityInformation));
 		NDR_CHECK(ndr_push_sec_desc_buf(ndr, NDR_SCALARS, &r->sdbuf));
-		NDR_CHECK(ndr_push_netr_AcctLockStr(ndr, NDR_SCALARS, &r->account_lockout));
+		NDR_CHECK(ndr_push_lsa_BinaryString(ndr, NDR_SCALARS, &r->account_lockout));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->unknown2));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->unknown3));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->unknown4));
@@ -2496,7 +2443,7 @@ static enum ndr_err_code ndr_push_netr_DELTA_DOMAIN(struct ndr_push *ndr, int nd
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->domain_name));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->comment));
 		NDR_CHECK(ndr_push_sec_desc_buf(ndr, NDR_BUFFERS, &r->sdbuf));
-		NDR_CHECK(ndr_push_netr_AcctLockStr(ndr, NDR_BUFFERS, &r->account_lockout));
+		NDR_CHECK(ndr_push_lsa_BinaryString(ndr, NDR_BUFFERS, &r->account_lockout));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->unknown2));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->unknown3));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->unknown4));
@@ -2519,7 +2466,7 @@ static enum ndr_err_code ndr_pull_netr_DELTA_DOMAIN(struct ndr_pull *ndr, int nd
 		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->domain_create_time));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->SecurityInformation));
 		NDR_CHECK(ndr_pull_sec_desc_buf(ndr, NDR_SCALARS, &r->sdbuf));
-		NDR_CHECK(ndr_pull_netr_AcctLockStr(ndr, NDR_SCALARS, &r->account_lockout));
+		NDR_CHECK(ndr_pull_lsa_BinaryString(ndr, NDR_SCALARS, &r->account_lockout));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->unknown2));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->unknown3));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->unknown4));
@@ -2532,7 +2479,7 @@ static enum ndr_err_code ndr_pull_netr_DELTA_DOMAIN(struct ndr_pull *ndr, int nd
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->domain_name));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->comment));
 		NDR_CHECK(ndr_pull_sec_desc_buf(ndr, NDR_BUFFERS, &r->sdbuf));
-		NDR_CHECK(ndr_pull_netr_AcctLockStr(ndr, NDR_BUFFERS, &r->account_lockout));
+		NDR_CHECK(ndr_pull_lsa_BinaryString(ndr, NDR_BUFFERS, &r->account_lockout));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->unknown2));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->unknown3));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->unknown4));
@@ -2555,7 +2502,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_DOMAIN(struct ndr_print *ndr, const char *nam
 	ndr_print_NTTIME(ndr, "domain_create_time", r->domain_create_time);
 	ndr_print_uint32(ndr, "SecurityInformation", r->SecurityInformation);
 	ndr_print_sec_desc_buf(ndr, "sdbuf", &r->sdbuf);
-	ndr_print_netr_AcctLockStr(ndr, "account_lockout", &r->account_lockout);
+	ndr_print_lsa_BinaryString(ndr, "account_lockout", &r->account_lockout);
 	ndr_print_lsa_String(ndr, "unknown2", &r->unknown2);
 	ndr_print_lsa_String(ndr, "unknown3", &r->unknown3);
 	ndr_print_lsa_String(ndr, "unknown4", &r->unknown4);

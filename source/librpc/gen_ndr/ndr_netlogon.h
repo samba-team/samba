@@ -108,6 +108,8 @@ extern const struct ndr_interface_table ndr_table_netlogon;
 #define NDR_NETLOGON_CALL_COUNT (47)
 void ndr_print_netr_UasInfo(struct ndr_print *ndr, const char *name, const struct netr_UasInfo *r);
 void ndr_print_netr_UasLogoffInfo(struct ndr_print *ndr, const char *name, const struct netr_UasLogoffInfo *r);
+enum ndr_err_code ndr_push_netr_AcctLockStr(struct ndr_push *ndr, int ndr_flags, const struct netr_AcctLockStr *r);
+enum ndr_err_code ndr_pull_netr_AcctLockStr(struct ndr_pull *ndr, int ndr_flags, struct netr_AcctLockStr *r);
 void ndr_print_netr_AcctLockStr(struct ndr_print *ndr, const char *name, const struct netr_AcctLockStr *r);
 enum ndr_err_code ndr_push_netr_LogonParameterControl(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_netr_LogonParameterControl(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
