@@ -86,6 +86,17 @@ interface netlogon
 		[size_is(size/2),length_is(length/2)] uint16 *bindata;
 	} netr_AcctLockStr;
 
+	/* - MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT
+	 *   sets the NETLOGON_SERVER_TRUST_ACCOUNT user_flag
+	 * - MSV1_0_UPDATE_LOGON_STATISTICS
+	 *   sets the logon time on network logon
+	 * - MSV1_0_RETURN_USER_PARAMETERS
+	 *   sets the user parameters in the driveletter
+	 * - MSV1_0_RETURN_PROFILE_PATH
+	 *   returns the profilepath in the driveletter and
+	 *   sets LOGON_PROFILE_PATH_RETURNED user_flag
+	 */
+
 	typedef [public,bitmap32bit] bitmap {
 		MSV1_0_CLEARTEXT_PASSWORD_ALLOWED	= 0x00000002,
 		MSV1_0_UPDATE_LOGON_STATISTICS		= 0x00000004,
