@@ -23,9 +23,7 @@ AC_DEFUN([TRY_LINK_PYTHON],
 
 		AC_TRY_LINK([
 				/* we have our own configure tests */
-				#define Py_PYCONFIG_H 1
 				#include <Python.h>
-				#include <stdlib.h>
 			],[
 				Py_InitModule(NULL, NULL);
 			],[
