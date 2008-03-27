@@ -38,10 +38,11 @@ struct netr_UasLogoffInfo {
 };
 
 struct netr_AcctLockStr {
-	uint16_t size;
-	uint16_t length;
-	uint16_t *bindata;/* [unique,length_is(length/2),size_is(size/2)] */
-};
+	int64_t lockout_duration;
+	uint64_t reset_count;
+	uint32_t bad_attempt_lockout;
+	uint32_t dummy;
+}/* [public] */;
 
 /* bitmap netr_LogonParameterControl */
 #define MSV1_0_CLEARTEXT_PASSWORD_ALLOWED ( 0x00000002 )
@@ -309,7 +310,7 @@ struct netr_DELTA_DOMAIN {
 	NTTIME domain_create_time;
 	uint32_t SecurityInformation;
 	struct sec_desc_buf sdbuf;
-	struct netr_AcctLockStr account_lockout;
+	struct lsa_BinaryString account_lockout;
 	struct lsa_String unknown2;
 	struct lsa_String unknown3;
 	struct lsa_String unknown4;
