@@ -23,7 +23,7 @@
  Create the share security tdb.
  ********************************************************************/
 
-static TDB_CONTEXT *share_tdb; /* used for share security descriptors */
+static struct db_context *share_db; /* used for share security descriptors */
 #define SHARE_DATABASE_VERSION_V1 1
 #define SHARE_DATABASE_VERSION_V2 2 /* version id in little endian. */
 
@@ -36,41 +36,88 @@ static const struct generic_mapping file_generic_mapping = {
         FILE_GENERIC_ALL
 };
 
+static int delete_fn(struct db_record *rec, void *priv)
+{
+	rec->delete_rec(rec);
+	return 0;
+}
 
 static bool share_info_db_init(void)
 {
 	const char *vstring = "INFO/version";
 	int32 vers_id;
  
-	if (share_tdb) {
+	if (share_db != NULL) {
 		return True;
 	}
 
-	share_tdb = tdb_open_log(state_path("share_info.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-	if (!share_tdb) {
+	share_db = db_open(NULL, state_path("share_info.tdb"), 0, TDB_DEFAULT,
+			   O_RDWR|O_CREAT, 0600);
+	if (share_db == NULL) {
 		DEBUG(0,("Failed to open share info database %s (%s)\n",
 			state_path("share_info.tdb"), strerror(errno) ));
 		return False;
 	}
  
-	/* handle a Samba upgrade */
-	tdb_lock_bystring(share_tdb, vstring);
+	vers_id = dbwrap_fetch_int32(share_db, vstring);
+	if (vers_id == SHARE_DATABASE_VERSION_V2) {
+		return true;
+	}
+
+	if (share_db->transaction_start(share_db) != 0) {
+		DEBUG(0, ("transaction_start failed\n"));
+		TALLOC_FREE(share_db);
+		return false;
+	}
+
+	vers_id = dbwrap_fetch_int32(share_db, vstring);
+	if (vers_id == SHARE_DATABASE_VERSION_V2) {
+		/*
+		 * Race condition
+		 */
+		if (share_db->transaction_cancel(share_db)) {
+			smb_panic("transaction_cancel failed");
+		}
+		return true;
+	}
 
 	/* Cope with byte-reversed older versions of the db. */
-	vers_id = tdb_fetch_int32(share_tdb, vstring);
 	if ((vers_id == SHARE_DATABASE_VERSION_V1) || (IREV(vers_id) == SHARE_DATABASE_VERSION_V1)) {
 		/* Written on a bigendian machine with old fetch_int code. Save as le. */
-		tdb_store_int32(share_tdb, vstring, SHARE_DATABASE_VERSION_V2);
+
+		if (dbwrap_store_int32(share_db, vstring,
+				       SHARE_DATABASE_VERSION_V2) != 0) {
+			DEBUG(0, ("dbwrap_store_int32 failed\n"));
+			goto cancel;
+		}
 		vers_id = SHARE_DATABASE_VERSION_V2;
 	}
 
 	if (vers_id != SHARE_DATABASE_VERSION_V2) {
-		tdb_wipe_all(share_tdb);
-		tdb_store_int32(share_tdb, vstring, SHARE_DATABASE_VERSION_V2);
+		if (share_db->traverse(share_db, delete_fn, NULL) != 0) {
+			DEBUG(0, ("wipe_all failed\n"));
+			goto cancel;
+		}
+		if (dbwrap_store_int32(share_db, vstring,
+				       SHARE_DATABASE_VERSION_V2) != 0) {
+			DEBUG(0, ("dbwrap_store_int32 failed\n"));
+			goto cancel;
+		}
 	}
-	tdb_unlock_bystring(share_tdb, vstring);
 
-	return True;
+	if (share_db->transaction_commit(share_db) != 0) {
+		DEBUG(0, ("transaction_commit failed\n"));
+		goto cancel;
+	}
+
+	return true;
+
+ cancel:
+	if (share_db->transaction_cancel(share_db)) {
+		smb_panic("transaction_cancel failed");
+	}
+
+	return false;
 }
 
 /*******************************************************************
@@ -126,7 +173,7 @@ SEC_DESC *get_share_security( TALLOC_CTX *ctx, const char *servicename,
 		return NULL;
 	}
 
-	data = tdb_fetch_bystring(share_tdb, key);
+	data = dbwrap_fetch_bystring(share_db, talloc_tos(), key);
 
 	TALLOC_FREE(key);
 
@@ -137,7 +184,7 @@ SEC_DESC *get_share_security( TALLOC_CTX *ctx, const char *servicename,
 
 	status = unmarshall_sec_desc(ctx, data.dptr, data.dsize, &psd);
 
-	SAFE_FREE(data.dptr);
+	TALLOC_FREE(data.dptr);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("unmarshall_sec_desc failed: %s\n",
@@ -182,8 +229,8 @@ bool set_share_security(const char *share_name, SEC_DESC *psd)
 		goto out;
 	}
 
-	if (tdb_trans_store_bystring(share_tdb, key, blob,
-				     TDB_REPLACE) == -1) {
+	if (dbwrap_trans_store(share_db, string_term_tdb_data(key), blob,
+			       TDB_REPLACE) == -1) {
 		DEBUG(1,("set_share_security: Failed to store secdesc for "
 			 "%s\n", share_name ));
 		goto out;
@@ -212,7 +259,7 @@ bool delete_share_security(const char *servicename)
 	}
 	kbuf = string_term_tdb_data(key);
 
-	if (tdb_trans_delete(share_tdb, kbuf) != 0) {
+	if (dbwrap_trans_delete(share_db, kbuf) != 0) {
 		DEBUG(0, ("delete_share_security: Failed to delete entry for "
 			  "share %s\n", servicename));
 		return False;
