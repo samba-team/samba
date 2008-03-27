@@ -2252,6 +2252,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_ctx->sDefault->bRead_only = true;
 	lp_ctx->sDefault->bMap_archive = true;
 	lp_ctx->sDefault->bStrictLocking = true;
+	lp_ctx->sDefault->bOplocks = true;
 	lp_ctx->sDefault->iCreate_mask = 0744;
 	lp_ctx->sDefault->iCreate_force_mode = 0000;
 	lp_ctx->sDefault->iDir_mask = 0755;
@@ -2407,8 +2408,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 				   dyn_SETUPDIR);
 
 	lp_do_global_parameter(lp_ctx, "prefork children:smb", "4");
-
-	lp_do_global_parameter(lp_ctx, "oplocks", "true");
 
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
