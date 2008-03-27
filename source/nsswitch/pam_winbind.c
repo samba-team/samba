@@ -1200,9 +1200,13 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	request.data.auth.krb5_cc_type[0] = '\0';
 	request.data.auth.uid = -1;
 
-	request.flags = WBFLAG_PAM_INFO3_TEXT |
-			WBFLAG_PAM_GET_PWD_POLICY |
-			WBFLAG_PAM_CONTACT_TRUSTDOM;
+	request.flags = WBFLAG_PAM_INFO3_TEXT | WBFLAG_PAM_GET_PWD_POLICY;
+
+	/* Krb5 auth always has to go against the KDC of the user's realm */
+
+	if (ctrl & WINBIND_KRB5_AUTH) {
+		request.flags |= WBFLAG_PAM_CONTACT_TRUSTDOM;
+	}
 
 	if (ctrl & (WINBIND_KRB5_AUTH|WINBIND_CACHED_LOGIN)) {
 		struct passwd *pwd = NULL;
