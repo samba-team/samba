@@ -1145,53 +1145,6 @@ bool init_unistr4_array( UNISTR4_ARRAY *array, uint32 count, const char **string
 	return True;
 }
 
-bool smb_io_lockout_string_hdr(const char *desc, HDR_LOCKOUT_STRING *hdr_account_lockout, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "smb_io_lockout_string_hdr");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint16("size", ps, depth, &hdr_account_lockout->size))
-		return False;
-	if(!prs_uint16("length", ps, depth, &hdr_account_lockout->length))
-		return False;
-	if(!prs_uint32("buffer", ps, depth, &hdr_account_lockout->buffer))
-		return False;
-
-	return True;
-}
-
-bool smb_io_account_lockout_str(const char *desc, LOCKOUT_STRING *account_lockout, uint32 buffer, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "smb_io_account_lockout_string");
-	depth++;
-
-	if(!prs_uint32("array_size", ps, depth, &account_lockout->array_size))
-		return False;
-
-	if(!prs_uint32("offset", ps, depth, &account_lockout->offset))
-		return False;
-	if(!prs_uint32("length", ps, depth, &account_lockout->length))
-		return False;
-
-	if (!prs_uint64("lockout_duration", ps, depth, &account_lockout->lockout_duration))
-		return False;
-	if (!prs_uint64("reset_count", ps, depth, &account_lockout->reset_count))
-		return False;
-	if (!prs_uint32("bad_attempt_lockout", ps, depth, &account_lockout->bad_attempt_lockout))
-		return False;
-	if (!prs_uint32("dummy", ps, depth, &account_lockout->dummy))
-		return False;
-#if 0
-	if(!prs_uint16s (False, "bindata", ps, depth, &account_lockout->bindata, length))
-		return False;
-#endif
-
-	return True;
-}
-
 /*******************************************************************
  Inits a DOM_RID structure.
 ********************************************************************/
