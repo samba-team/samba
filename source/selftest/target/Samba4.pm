@@ -577,9 +577,6 @@ sub provision($$$$$$)
 	gensec:require_pac = true
 	log level = $smbd_loglevel
 
-	# this is a global option
-	opendb:oplocks = yes
-
 [tmp]
 	path = $tmpdir
 	read only = no
