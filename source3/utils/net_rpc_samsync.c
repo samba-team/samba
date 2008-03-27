@@ -280,7 +280,8 @@ static void display_sam_entry(struct netr_DELTA_ENUM *r)
 	}
 }
 
-static void dump_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type)
+static void dump_database(struct rpc_pipe_client *pipe_hnd,
+			  enum netr_SamDatabaseID database_id)
 {
         NTSTATUS result;
 	int i;
@@ -289,7 +290,6 @@ static void dump_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type)
 	const char *computername = global_myname();
 	struct netr_Authenticator credential;
 	struct netr_Authenticator return_authenticator;
-	enum netr_SamDatabaseID database_id = db_type;
 	uint16_t restart_state = 0;
 	uint32_t sync_context = 0;
 
@@ -297,7 +297,7 @@ static void dump_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type)
 		return;
 	}
 
-	switch( db_type ) {
+	switch(database_id) {
 	case SAM_DATABASE_DOMAIN:
 		d_printf("Dumping DOMAIN database\n");
 		break;
@@ -308,7 +308,8 @@ static void dump_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type)
 		d_printf("Dumping PRIVS databases\n");
 		break;
 	default:
-		d_printf("Dumping unknown database type %u\n", db_type );
+		d_printf("Dumping unknown database type %u\n",
+			database_id);
 		break;
 	}
 
