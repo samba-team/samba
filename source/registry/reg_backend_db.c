@@ -194,7 +194,7 @@ bool init_registry_key(const char *add_path)
 		goto fail;
 	}
 
-	if (regdb->transaction_commit(regdb) == -1) {
+	if (regdb->transaction_commit(regdb) != 0) {
 		DEBUG(0, ("init_registry_key: Could not commit transaction\n"));
 		return false;
 	}
@@ -202,7 +202,7 @@ bool init_registry_key(const char *add_path)
 	return true;
 
 fail:
-	if (regdb->transaction_cancel(regdb) == -1) {
+	if (regdb->transaction_cancel(regdb) != 0) {
 		smb_panic("init_registry_key: transaction_cancel failed\n");
 	}
 
@@ -294,7 +294,7 @@ bool init_registry_data(void)
 
 	TALLOC_FREE(frame);
 
-	if (regdb->transaction_commit(regdb) == -1) {
+	if (regdb->transaction_commit(regdb) != 0) {
 		DEBUG(0, ("init_registry_data: Could not commit "
 			  "transaction\n"));
 		return false;
@@ -306,7 +306,7 @@ bool init_registry_data(void)
 
 	TALLOC_FREE(frame);
 
-	if (regdb->transaction_cancel(regdb) == -1) {
+	if (regdb->transaction_cancel(regdb) != 0) {
 		smb_panic("init_registry_data: tdb_transaction_cancel "
 			  "failed\n");
 	}
@@ -671,7 +671,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 		TALLOC_FREE(path);
 	}
 
-	if (regdb->transaction_commit(regdb) == -1) {
+	if (regdb->transaction_commit(regdb) != 0) {
 		DEBUG(0, ("regdb_store_keys: Could not commit transaction\n"));
 		goto fail;
 	}
@@ -680,7 +680,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 	return true;
 
 cancel:
-	if (regdb->transaction_cancel(regdb) == -1) {
+	if (regdb->transaction_cancel(regdb) != 0) {
 		smb_panic("regdb_store_keys: transaction_cancel failed\n");
 	}
 
