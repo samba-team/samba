@@ -23,14 +23,6 @@
 #ifndef _RPC_NETLOGON_H /* _RPC_NETLOGON_H */
 #define _RPC_NETLOGON_H 
 
-/* Some flag values reverse engineered from NLTEST.EXE */
-/* used in the NETLOGON_CONTROL[2] reply */
-
-#define NL_CTRL_IN_SYNC          0x0000
-#define NL_CTRL_REPL_NEEDED      0x0001
-#define NL_CTRL_REPL_IN_PROGRESS 0x0002
-#define NL_CTRL_FULL_SYNC        0x0004
-
 #define LOGON_KRB5_FAIL_CLOCK_SKEW	0x02000000
 
 #define INTERACTIVE_LOGON_TYPE 1
