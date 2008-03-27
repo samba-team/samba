@@ -42,6 +42,9 @@ static int dbwrap_fallback_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+/**
+ * If you need transaction support use db_open_trans()
+ */
 struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			   const char *name,
 			   int hash_size, int tdb_flags,
@@ -91,6 +94,18 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 	}
 
 	return result;
+}
+
+/**
+ * If you use this you can only modify with a transaction
+ */
+struct db_context *db_open_trans(TALLOC_CTX *mem_ctx,
+				 const char *name,
+				 int hash_size, int tdb_flags,
+				 int open_flags, mode_t mode)
+{
+	/* TODO: implement this differently */
+	return db_open(mem_ctx, name, hash_size, tdb_flags, open_flags, mode);
 }
 
 NTSTATUS dbwrap_delete_bystring(struct db_context *db, const char *key)
