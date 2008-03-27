@@ -3367,7 +3367,8 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx, SAM_USER_INFO_23 *id23,
  set_user_info_pw
  ********************************************************************/
 
-static BOOL set_user_info_pw(uint8 *pass, struct samu *pwd)
+static BOOL set_user_info_pw(uint8 *pass, struct samu *pwd,
+			    int level)
 {
 	uint32 len;
 	pstring plaintext_buf;
@@ -3425,8 +3426,20 @@ static BOOL set_user_info_pw(uint8 *pass, struct samu *pwd)
  
 	ZERO_STRUCT(plaintext_buf);
 
-	/* restore last set time as this is an admin change, not a user pw change */
-	pdb_set_pass_last_set_time (pwd, last_set_time, last_set_state);
+	/*
+	 * A level 25 change does reset the pwdlastset field, a level 24
+	 * change does not. I know this is probably not the full story, but
+	 * it is needed to make XP join LDAP correctly, without it the later
+	 * auth2 check can fail with PWD_MUST_CHANGE.
+	 */
+	if (level != 25) {
+		/*
+		 * restore last set time as this is an admin change, not a
+		 * user pw change
+		 */
+		pdb_set_pass_last_set_time (pwd, last_set_time,
+					    last_set_state);
+	}
  
 	DEBUG(5,("set_user_info_pw: pdb_update_pwd()\n"));
  
@@ -3591,7 +3604,8 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 
 			dump_data(100, (char *)ctr->info.id24->pass, 516);
 
-			if (!set_user_info_pw(ctr->info.id24->pass, pwd))
+			if (!set_user_info_pw(ctr->info.id24->pass, pwd, 
+					      switch_value))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 
@@ -3608,7 +3622,8 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			if (!NT_STATUS_IS_OK(r_u->status)) {
 				goto done;
 			}
-			if (!set_user_info_pw(ctr->info.id25->pass, pwd))
+			if (!set_user_info_pw(ctr->info.id25->pass, pwd,
+					      switch_value))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 
@@ -3620,7 +3635,8 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 
 			dump_data(100, (char *)ctr->info.id26->pass, 516);
 
-			if (!set_user_info_pw(ctr->info.id26->pass, pwd))
+			if (!set_user_info_pw(ctr->info.id26->pass, pwd,
+					      switch_value))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 
@@ -3777,7 +3793,8 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 
 			dump_data(100, (char *)ctr->info.id26->pass, 516);
 
-			if (!set_user_info_pw(ctr->info.id26->pass, pwd))
+			if (!set_user_info_pw(ctr->info.id26->pass, pwd,
+					      switch_value))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 		default:
