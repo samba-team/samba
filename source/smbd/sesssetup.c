@@ -1534,6 +1534,10 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			lm_resp = data_blob(p, passlen1);
 			nt_resp = data_blob(p+passlen1, passlen2);
 		} else if (lp_security() != SEC_SHARE) {
+			/*
+			 * In share level we should ignore any passwords, so
+ 			 * only read them if we're not.
+ 			 */
 			char *pass = NULL;
 			bool unic= smb_flag2 & FLAGS2_UNICODE_STRINGS;
 
@@ -1636,7 +1640,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	reload_services(True);
 
 	if (lp_security() == SEC_SHARE) {
-		/* in share level we should ignore any passwords */
+		/* In share level we should ignore any passwords */
 
 		data_blob_free(&lm_resp);
 		data_blob_free(&nt_resp);
