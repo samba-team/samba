@@ -185,7 +185,8 @@ installdat:: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(datadir) $(srcdir)
 
 installswat:: installdirs
-	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
+#SWAT has been disabled until further notice
+#	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
 
 installman:: manpages installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(mandir) $(MANPAGES)

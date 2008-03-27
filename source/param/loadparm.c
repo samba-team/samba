@@ -210,6 +210,7 @@ struct loadparm_service
 	int bMap_hidden;
 	int bMap_archive;
 	int bStrictLocking;
+	int bOplocks;
 	int iCreate_mask;
 	int iCreate_force_mode;
 	int iDir_mask;
@@ -457,6 +458,7 @@ static struct parm_struct parm_table[] = {
 	{"csc policy", P_ENUM, P_LOCAL, LOCAL_VAR(iCSCPolicy), NULL, enum_csc_policy},
 
 	{"strict locking", P_BOOL, P_LOCAL, LOCAL_VAR(bStrictLocking), NULL, NULL},
+	{"oplocks", P_BOOL, P_LOCAL, LOCAL_VAR(bOplocks), NULL, NULL},
 
 	{"share backend", P_STRING, P_GLOBAL, GLOBAL_VAR(szShareBackend), NULL, NULL},
 	{"preload", P_STRING, P_GLOBAL, GLOBAL_VAR(szAutoServices), NULL, NULL},
@@ -715,6 +717,7 @@ _PUBLIC_ FN_LOCAL_BOOL(lp_print_ok, bPrint_ok)
 _PUBLIC_ FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
 _PUBLIC_ FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
 _PUBLIC_ FN_LOCAL_BOOL(lp_strict_locking, bStrictLocking)
+_PUBLIC_ FN_LOCAL_BOOL(lp_oplocks, bOplocks)
 _PUBLIC_ FN_LOCAL_BOOL(lp_strict_sync, bStrictSync)
 _PUBLIC_ FN_LOCAL_BOOL(lp_ci_filesystem, bCIFileSystem)
 _PUBLIC_ FN_LOCAL_BOOL(lp_map_system, bMap_system)
@@ -2250,6 +2253,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_ctx->sDefault->bRead_only = true;
 	lp_ctx->sDefault->bMap_archive = true;
 	lp_ctx->sDefault->bStrictLocking = true;
+	lp_ctx->sDefault->bOplocks = true;
 	lp_ctx->sDefault->iCreate_mask = 0744;
 	lp_ctx->sDefault->iCreate_force_mode = 0000;
 	lp_ctx->sDefault->iDir_mask = 0755;
@@ -2292,7 +2296,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_do_global_parameter(lp_ctx, "max connections", "-1");
 
 	lp_do_global_parameter(lp_ctx, "dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup unixinfo");
-	lp_do_global_parameter(lp_ctx, "server services", "smb rpc nbt wrepl ldap cldap web kdc drepl winbind");
+	lp_do_global_parameter(lp_ctx, "server services", "smb rpc nbt wrepl ldap cldap kdc drepl winbind");
 	lp_do_global_parameter(lp_ctx, "ntptr providor", "simple_ldb");
 	lp_do_global_parameter(lp_ctx, "auth methods:domain controller", "anonymous sam_ignoredomain");
 	lp_do_global_parameter(lp_ctx, "auth methods:member server", "anonymous sam winbind");
