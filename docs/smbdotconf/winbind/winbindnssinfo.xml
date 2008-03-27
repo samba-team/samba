@@ -18,7 +18,7 @@
 		</listitem>
 			
 		<listitem>
-			<para><parameter moreinfo="none">sfu</parameter>
+			<para><parameter moreinfo="none">&lt;sfu | rfc2307 &gt;</parameter>
 			- When Samba is running in security = ads and your Active Directory
 			Domain Controller does support the Microsoft "Services for Unix" (SFU)
 			LDAP schema, winbind can retrieve the login shell and the home
