@@ -322,11 +322,11 @@ bool regdb_init(void)
 		return true;
 	}
 
-	regdb = db_open(NULL, state_path("registry.tdb"), 0, REG_TDB_FLAGS,
-			O_RDWR, 0600);
+	regdb = db_open_trans(NULL, state_path("registry.tdb"), 0,
+			      REG_TDB_FLAGS, O_RDWR, 0600);
 	if (!regdb) {
-		regdb = db_open(NULL, state_path("registry.tdb"), 0,
-				REG_TDB_FLAGS, O_RDWR|O_CREAT, 0600);
+		regdb = db_open_trans(NULL, state_path("registry.tdb"), 0,
+				      REG_TDB_FLAGS, O_RDWR|O_CREAT, 0600);
 		if (!regdb) {
 			DEBUG(0,("regdb_init: Failed to open registry %s (%s)\n",
 				state_path("registry.tdb"), strerror(errno) ));
@@ -373,7 +373,8 @@ WERROR regdb_open( void )
 	
 	become_root();
 
-	regdb = db_open(NULL, state_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR, 0600);
+	regdb = db_open_trans(NULL, state_path("registry.tdb"), 0,
+			      REG_TDB_FLAGS, O_RDWR, 0600);
 	if ( !regdb ) {
 		result = ntstatus_to_werror( map_nt_error_from_unix( errno ) );
 		DEBUG(0,("regdb_open: Failed to open %s! (%s)\n", 
