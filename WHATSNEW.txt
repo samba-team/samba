@@ -1,4 +1,4 @@
-What's new in Samba 4 alpha2
+What's new in Samba 4 alpha3
 ============================
 
 Samba 4 is the ambitious next version of the Samba suite that is being
@@ -10,14 +10,14 @@ Samba 4 is currently not yet in a state where it is usable in
 production environments. Note the WARNINGS below, and the STATUS file,
 which aims to document what should and should not work.
 
-Samba4 alpha2 follows on from our first alpha release, made in
+Samba4 alpha3 follows on from our first alpha release, made in
 September, and the Technology Preview series we have offered for some
 time now. 
 
 WARNINGS
 ========
 
-Samba4 alpha2 is not a final Samba release.  That is more a reference
+Samba4 alpha3 is not a final Samba release.  That is more a reference
 to Samba4's lack of the features we expect you will need than a
 statement of code quality, but clearly it hasn't seen a broad
 deployment yet.  If you were to upgrade Samba3 (or indeed Windows) to
@@ -64,29 +64,27 @@ working on modules to map between AD-like behaviours and this backend.
 We are aiming for Samba 4 to be powerful frontend to large
 directories.
 
-CHANGES SINCE Alpha 1
+CHANGES SINCE Alpha2
 =====================
 
-In the time since Samba4 Alpha1 was released in September 2007, Samba has
+In the time since Samba4 Alpha2 was released in December 2007, Samba has
 continued to evolve, but you may particularly notice these areas:
 
-  MMC Support:  The Active Directory Users and Computers console now
-  handles group membership correctly.  
+  Python Bindings:  Bindings for Python are now in place, and used for
+  Samba's provision script, slowly displacing EJS as the embedded
+  scripting language
 
-  member/memberOf:  These and other linked attributes are now kept in
-  sync
+  SWAT Disabled: Due to a lack of developer time and without a
+  long-term web developer to maintain it, the SWAT web UI has been
+  disabled.
 
-  subtree renames: Renaming a subtree of LDAP objects is now possible,
-  with all linked attributes being kept consistant.
+  Oplock support: Samba4's file server now supports oplocks
 
-  Python Bindings:  Bindings for a future move to Python as the
-  internal scripting language have been created. 
-
-  Shared library use:  In support of projects such as OpenChange,
-  which depend on Samba4, more of Samba4 is built as shared libraries.
+  GNU Make: To try and simplfy our build system, we rely on GNU Make
+  to avoid autogenerating a massive single makefile. 
 
 These are just some of the highlights of the work done in the past few
-months.  More details can be found in our SVN history.
+months.  More details can be found in our GIT history.
 
 
 CHANGES
@@ -108,6 +106,7 @@ KNOWN ISSUES
 - Clock Synchronisation is critical.  Many 'wrong password' errors are
   actually due to Kerberos objecting to a clock skew between client
   and server.  
+
 
 RUNNING Samba4
 ==============
