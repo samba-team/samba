@@ -137,6 +137,8 @@ SEC_DESC *get_share_security( TALLOC_CTX *ctx, const char *servicename,
 
 	status = unmarshall_sec_desc(ctx, data.dptr, data.dsize, &psd);
 
+	SAFE_FREE(data.dptr);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("unmarshall_sec_desc failed: %s\n",
 			  nt_errstr(status)));
