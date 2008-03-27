@@ -978,10 +978,10 @@ static WERROR regdb_set_secdesc(const char *key,
 		/* assuming a delete */
 		tdb_ret = dbwrap_trans_delete(regdb,
 					      string_term_tdb_data(tdbkey));
-		if (tdb_ret == -1) {
-			err = ntstatus_to_werror(map_nt_error_from_unix(errno));
-		} else {
+		if (tdb_ret == 0) {
 			err = WERR_OK;
+		} else {
+			err = ntstatus_to_werror(map_nt_error_from_unix(errno));
 		}
 		goto done;
 	}
@@ -995,7 +995,7 @@ static WERROR regdb_set_secdesc(const char *key,
 
 	tdb_ret = dbwrap_trans_store(regdb, string_term_tdb_data(tdbkey),
 				     tdbdata, 0);
-	if (tdb_ret == -1) {
+	if (tdb_ret != 0) {
 		err = ntstatus_to_werror(map_nt_error_from_unix(errno));
 		goto done;
 	}
