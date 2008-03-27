@@ -210,6 +210,7 @@ struct loadparm_service
 	int bMap_hidden;
 	int bMap_archive;
 	int bStrictLocking;
+	int bOplocks;
 	int iCreate_mask;
 	int iCreate_force_mode;
 	int iDir_mask;
@@ -715,6 +716,7 @@ _PUBLIC_ FN_LOCAL_BOOL(lp_print_ok, bPrint_ok)
 _PUBLIC_ FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
 _PUBLIC_ FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
 _PUBLIC_ FN_LOCAL_BOOL(lp_strict_locking, bStrictLocking)
+_PUBLIC_ FN_LOCAL_BOOL(lp_oplocks, bOplocks)
 _PUBLIC_ FN_LOCAL_BOOL(lp_strict_sync, bStrictSync)
 _PUBLIC_ FN_LOCAL_BOOL(lp_ci_filesystem, bCIFileSystem)
 _PUBLIC_ FN_LOCAL_BOOL(lp_map_system, bMap_system)
@@ -2292,7 +2294,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_do_global_parameter(lp_ctx, "max connections", "-1");
 
 	lp_do_global_parameter(lp_ctx, "dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup unixinfo");
-	lp_do_global_parameter(lp_ctx, "server services", "smb rpc nbt wrepl ldap cldap web kdc drepl winbind");
+	lp_do_global_parameter(lp_ctx, "server services", "smb rpc nbt wrepl ldap cldap kdc drepl winbind");
 	lp_do_global_parameter(lp_ctx, "ntptr providor", "simple_ldb");
 	lp_do_global_parameter(lp_ctx, "auth methods:domain controller", "anonymous sam_ignoredomain");
 	lp_do_global_parameter(lp_ctx, "auth methods:member server", "anonymous sam winbind");
@@ -2405,6 +2407,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 				   dyn_SETUPDIR);
 
 	lp_do_global_parameter(lp_ctx, "prefork children:smb", "4");
+
+	lp_do_global_parameter(lp_ctx, "oplocks", "true");
 
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
