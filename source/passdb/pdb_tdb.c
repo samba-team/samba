@@ -832,7 +832,7 @@ static bool tdbsam_open( const char *name )
 
 	/* Try to open tdb passwd.  Create a new one if necessary */
 
-	db_sam = db_open(NULL, name, 0, TDB_DEFAULT, O_CREAT|O_RDWR, 0600);
+	db_sam = db_open_trans(NULL, name, 0, TDB_DEFAULT, O_CREAT|O_RDWR, 0600);
 	if (db_sam == NULL) {
 		DEBUG(0, ("tdbsam_open: Failed to open/create TDB passwd "
 			  "[%s]\n", name));
