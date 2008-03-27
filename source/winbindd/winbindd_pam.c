@@ -27,6 +27,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+#define LOGON_KRB5_FAIL_CLOCK_SKEW	0x02000000
+
 static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 				    struct winbindd_cli_state *state,
 				    struct netr_SamInfo3 *info3)
