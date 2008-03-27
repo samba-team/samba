@@ -786,7 +786,7 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	struct netr_SamInfo3 *sam3 = NULL;
-	union netr_LogonLevel *logon = r->in.logon;
+	union netr_LogonInfo *logon = r->in.logon;
 	fstring nt_username, nt_domain, nt_workstation;
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
