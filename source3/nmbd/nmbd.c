@@ -182,11 +182,12 @@ static void reload_interfaces(time_t t)
 		return;
 	}
 
+  try_again:
+
 	/* the list of probed interfaces has changed, we may need to add/remove
 	   some subnets */
 	load_interfaces();
 
-  try_again:
 
 	/* find any interfaces that need adding */
 	for (n=iface_count() - 1; n >= 0; n--) {
@@ -278,7 +279,6 @@ static void reload_interfaces(time_t t)
 
 	/* We need to wait if there are no subnets... */
 	if (FIRST_SUBNET == NULL) {
-		void (*saved_handler)(int);
 
 		DEBUG(0,("reload_interfaces: "
 			"No subnets to listen to. Waiting..\n"));
@@ -288,19 +288,28 @@ static void reload_interfaces(time_t t)
 		 * cause us to exit.
 		 */
 
-		saved_handler = CatchSignal( SIGTERM, SIGNAL_CAST SIG_DFL );
+		BlockSignals(false, SIGTERM);
 
 		/* We only count IPv4 interfaces here. */
-		while (iface_count_v4() == 0) {
+		while (iface_count_v4() == 0 && !got_sig_term) {
 			sleep(5);
 			load_interfaces();
 		}
 
 		/*
-		 * We got an interface, restore our normal term handler.
+		 * Handle termination inband.
 		 */
 
-		CatchSignal( SIGTERM, SIGNAL_CAST saved_handler );
+		if (got_sig_term) {
+			got_sig_term = 0;
+			terminate();
+		}
+
+		/*
+		 * We got an interface, go back to blocking term.
+		 */
+
+		BlockSignals(true, SIGTERM);
 		goto try_again;
 	}
 }
