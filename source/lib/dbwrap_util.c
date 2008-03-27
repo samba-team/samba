@@ -127,6 +127,7 @@ int dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
 	res = db->transaction_start(db);
 	if (res != 0) {
 		DEBUG(5, ("transaction_start failed\n"));
+		return res;
 	}
 
 	rec = db->fetch_locked(db, talloc_tos(), key);
@@ -166,6 +167,7 @@ int dbwrap_trans_delete(struct db_context *db, TDB_DATA key)
 	res = db->transaction_start(db);
 	if (res != 0) {
 		DEBUG(5, ("transaction_start failed\n"));
+		return res;
 	}
 
 	rec = db->fetch_locked(db, talloc_tos(), key);
