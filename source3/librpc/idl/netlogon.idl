@@ -80,10 +80,11 @@ interface netlogon
 	   but it doesn't look as though this structure is reflected at the
 	   NDR level. Maybe it is left to the application to decode the bindata array.
 	*/
-	typedef struct {
-		uint16 size;
-		uint16 length;
-		[size_is(size/2),length_is(length/2)] uint16 *bindata;
+	typedef [public] struct {
+		dlong lockout_duration;
+		udlong reset_count;
+		uint32 bad_attempt_lockout;
+		uint32 dummy;
 	} netr_AcctLockStr;
 
 	/* - MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT
@@ -433,7 +434,7 @@ interface netlogon
 		NTTIME domain_create_time;
 		uint32 SecurityInformation;
 		sec_desc_buf sdbuf;
-		netr_AcctLockStr account_lockout;
+		lsa_BinaryString account_lockout;
 		lsa_String unknown2;
 		lsa_String unknown3;
 		lsa_String unknown4;
