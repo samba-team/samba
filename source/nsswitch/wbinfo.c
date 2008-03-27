@@ -369,9 +369,9 @@ static bool wbinfo_list_domains(bool list_all_domains, bool verbose)
 		TALLOC_CTX *frame = talloc_stackframe();
 
 		if (print_all) {
-			d_printf("%-34s%-12s%-12s%-10s%-10s\n", 
-			    "Domain Name", " Trust Type", "Transitive", 
-			    "Incoming", "Outgoing");
+			d_printf("%-16s%-24s%-12s%-12s%-5s%-5s\n", 
+				 "Domain Name", "DNS Domain", "Trust Type", 
+				 "Transitive", "In", "Out");
 		}
 
 		while(next_token_talloc(frame,&extra_data,&name,"\n")) {
@@ -383,14 +383,20 @@ static bool wbinfo_list_domains(bool list_all_domains, bool verbose)
 			if ((end = strchr(beg, '\\')) == NULL)
 				goto error;
 			*end = 0;
-			if(*beg == 0)
-				d_printf("%-34s", name);
-			else 
-				d_printf("%-34s", beg);
+
+			/* Print short name */
+
+			d_printf("%-16s", name);
 
 			if (!print_all) {
 				d_printf("\n");	
 				continue;
+			}
+
+			/* Print DNS domain */
+
+			if (beg) {
+				d_printf("%-24s", beg);
 			}
 
 			/* Skip SID */
@@ -403,7 +409,7 @@ static bool wbinfo_list_domains(bool list_all_domains, bool verbose)
 			if ((end = strchr(beg, '\\')) == NULL)
 				goto error;
 			*end = 0;
-			d_printf(" %-12s", beg);
+			d_printf("%-12s", beg);
 
 			/* Print Transitive */
 			beg = ++end;
@@ -417,11 +423,11 @@ static bool wbinfo_list_domains(bool list_all_domains, bool verbose)
 			if ((end = strchr(beg, '\\')) == NULL)
 				goto error;
 			*end = 0;
-			d_printf("%-10s", beg);
+			d_printf("%-5s", beg);
 
 			/* Print Outgoing */
 			beg = ++end;
-			d_printf("%-10s\n", beg);
+			d_printf("%-5s\n", beg);
 		}
 		goto out;
 
