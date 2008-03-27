@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: transited.c 17043 2006-04-10 10:26:35Z lha $");
+RCSID("$Id: transited.c 21745 2007-07-31 16:11:25Z lha $");
 
 /* this is an attempt at one of the most horrible `compression'
    schemes that has ever been invented; it's so amazingly brain-dead
@@ -87,6 +87,10 @@ make_path(krb5_context context, struct tr_realm *r,
 	    if(strcmp(p, to) == 0)
 		break;
 	    tmp = calloc(1, sizeof(*tmp));
+	    if(tmp == NULL){
+		krb5_set_error_string (context, "malloc: out of memory");
+		return ENOMEM;
+	    }
 	    tmp->next = path;
 	    path = tmp;
 	    path->realm = strdup(p);
@@ -107,6 +111,10 @@ make_path(krb5_context context, struct tr_realm *r,
 	    if(strncmp(to, from, p - from) == 0)
 		break;
 	    tmp = calloc(1, sizeof(*tmp));
+	    if(tmp == NULL){
+		krb5_set_error_string (context, "malloc: out of memory");
+		return ENOMEM;
+	    }
 	    tmp->next = path;
 	    path = tmp;
 	    path->realm = malloc(p - from + 1);
@@ -277,6 +285,10 @@ decode_realms(krb5_context context,
 	}
 	if(tr[i] == ','){
 	    tmp = malloc(tr + i - start + 1);
+	    if(tmp == NULL){
+		krb5_set_error_string (context, "malloc: out of memory");
+		return ENOMEM;
+	    }
 	    memcpy(tmp, start, tr + i - start);
 	    tmp[tr + i - start] = '\0';
 	    r = make_realm(tmp);
@@ -290,6 +302,11 @@ decode_realms(krb5_context context,
 	}
     }
     tmp = malloc(tr + i - start + 1);
+    if(tmp == NULL){
+	free(*realms);
+	krb5_set_error_string (context, "malloc: out of memory");
+	return ENOMEM;
+    }
     memcpy(tmp, start, tr + i - start);
     tmp[tr + i - start] = '\0';
     r = make_realm(tmp);

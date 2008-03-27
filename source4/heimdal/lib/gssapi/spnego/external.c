@@ -33,7 +33,7 @@
 #include "spnego/spnego_locl.h"
 #include <gssapi_mech.h>
 
-RCSID("$Id: external.c 18336 2006-10-07 22:27:13Z lha $");
+RCSID("$Id: external.c 22600 2008-02-21 12:46:24Z lha $");
 
 /*
  * RFC2478, SPNEGO:
@@ -57,7 +57,7 @@ static gssapi_mech_interface_desc spnego_mech = {
     _gss_spnego_verify_mic,
     _gss_spnego_wrap,
     _gss_spnego_unwrap,
-    _gss_spnego_display_status,
+    NULL,
     NULL,
     _gss_spnego_compare_name,
     _gss_spnego_display_name,

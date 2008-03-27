@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: crypto.c 21130 2007-06-18 20:45:21Z lha $");
+RCSID("$Id: crypto.c 22200 2007-12-07 13:48:01Z lha $");
 
 #undef CRYPTO_DEBUG
 #ifdef CRYPTO_DEBUG
@@ -184,7 +184,7 @@ krb5_DES_schedule(krb5_context context,
 #ifdef ENABLE_AFS_STRING_TO_KEY
 
 /* This defines the Andrew string_to_key function.  It accepts a password
- * string as input and converts its via a one-way encryption algorithm to a DES
+ * string as input and converts it via a one-way encryption algorithm to a DES
  * encryption key.  It is compatible with the original Andrew authentication
  * service password database.
  */
@@ -425,6 +425,7 @@ DES3_string_to_key(krb5_context context,
     size_t len;
     unsigned char tmp[24];
     DES_cblock keys[3];
+    krb5_error_code ret;
     
     len = password.length + salt.saltvalue.length;
     str = malloc(len);
@@ -439,7 +440,13 @@ DES3_string_to_key(krb5_context context,
 	DES_key_schedule s[3];
 	int i;
 	
-	_krb5_n_fold(str, len, tmp, 24);
+	ret = _krb5_n_fold(str, len, tmp, 24);
+	if (ret) {
+	    memset(str, 0, len);
+	    free(str);
+	    krb5_set_error_string(context, "out of memory");
+	    return ret;
+	}
 	
 	for(i = 0; i < 3; i++){
 	    memcpy(keys + i, tmp + i * 8, sizeof(keys[i]));
@@ -557,12 +564,14 @@ ARCFOUR_string_to_key(krb5_context context,
     size_t len;
     int i;
     MD4_CTX m;
+    krb5_error_code ret;
 
     len = 2 * password.length;
     s = malloc (len);
     if (len != 0 && s == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
-	return ENOMEM;
+	ret = ENOMEM;
+	goto out;
     }
     for (p = s, i = 0; i < password.length; ++i) {
 	*p++ = ((char *)password.data)[i];
@@ -571,11 +580,17 @@ ARCFOUR_string_to_key(krb5_context context,
     MD4_Init (&m);
     MD4_Update (&m, s, len);
     key->keytype = enctype;
-    krb5_data_alloc (&key->keyvalue, 16);
+    ret = krb5_data_alloc (&key->keyvalue, 16);
+    if (ret) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	goto out;
+    }
     MD4_Final (key->keyvalue.data, &m);
     memset (s, 0, len);
+    ret = 0;
+out:
     free (s);
-    return 0;
+    return ret;
 }
 
 /*
@@ -1829,7 +1844,9 @@ create_checksum (krb5_context context,
     } else
 	dkey = NULL;
     result->cksumtype = ct->type;
-    krb5_data_alloc(&result->checksum, ct->checksumsize);
+    ret = krb5_data_alloc(&result->checksum, ct->checksumsize);
+    if (ret)
+	return (ret);
     (*ct->checksum)(context, dkey, data, len, usage, result);
     return 0;
 }
@@ -2751,6 +2768,7 @@ krb5_enctype_to_string(krb5_context context,
     if(e == NULL) {
 	krb5_set_error_string (context, "encryption type %d not supported",
 			       etype);
+	*string = NULL;
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
     *string = strdup(e->name);
@@ -3525,15 +3543,19 @@ derive_key(krb5_context context,
     ret = _key_schedule(context, key);
     if(ret)
 	return ret;
-    if(et->blocksize * 8 < kt->bits || 
-       len != et->blocksize) {
+    if(et->blocksize * 8 < kt->bits || len != et->blocksize) {
 	nblocks = (kt->bits + et->blocksize * 8 - 1) / (et->blocksize * 8);
 	k = malloc(nblocks * et->blocksize);
 	if(k == NULL) {
 	    krb5_set_error_string(context, "malloc: out of memory");
 	    return ENOMEM;
 	}
-	_krb5_n_fold(constant, len, k, et->blocksize);
+	ret = _krb5_n_fold(constant, len, k, et->blocksize);
+	if (ret) {
+	    free(k);
+	    krb5_set_error_string(context, "out of memory");
+	    return ret;
+	}
 	for(i = 0; i < nblocks; i++) {
 	    if(i > 0)
 		memcpy(k + i * et->blocksize, 
@@ -3559,7 +3581,12 @@ derive_key(krb5_context context,
 	    krb5_set_error_string(context, "malloc: out of memory");
 	    return ENOMEM;
 	}
-	_krb5_n_fold(c, len, k, res_len);
+	ret = _krb5_n_fold(c, len, k, res_len);
+	if (ret) {
+	    free(k);
+	    krb5_set_error_string(context, "out of memory");
+	    return ret;
+	}
 	free(c);
     }
     
@@ -3821,7 +3848,12 @@ krb5_string_to_key_derived(krb5_context context,
 	krb5_set_error_string (context, "malloc: out of memory");
 	return ENOMEM;
     }
-    _krb5_n_fold(str, len, tmp, keylen);
+    ret = _krb5_n_fold(str, len, tmp, keylen);
+    if (ret) {
+	free(tmp);
+	krb5_set_error_string(context, "out of memory");
+	return ret;
+    }
     kd.schedule = NULL;
     DES3_postproc (context, tmp, keylen, &kd); /* XXX */
     memset(tmp, 0, keylen);
@@ -4122,7 +4154,7 @@ main()
 
     d = _new_derived_key(crypto, usage);
     if(d == NULL)
-	return ENOMEM;
+	krb5_errx(context, 1, "_new_derived_key failed");
     krb5_copy_keyblock(context, crypto->key.key, &d->key);
     _krb5_put_int(constant, usage, 4);
     derive_key(context, crypto->et, d, constant, sizeof(constant));
@@ -4148,11 +4180,10 @@ main()
        "\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"; */
     key.keyvalue.length = 4;
 
-    d = calloc(1, sizeof(*d));
-
+    d = ecalloc(1, sizeof(*d));
     d->key = &key;
     res.checksum.length = 20;
-    res.checksum.data = malloc(res.checksum.length);
+    res.checksum.data = emalloc(res.checksum.length);
     SP_HMAC_SHA1_checksum(context, d, data, 28, &res);
 
     return 0;

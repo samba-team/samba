@@ -11,50 +11,6 @@ if test x"$samba_cv_HAVE_SOCK_SIN_LEN" = x"yes"; then
     AC_DEFINE(HAVE_SOCK_SIN_LEN,1,[Whether the sockaddr_in struct has a sin_len property])
 fi
 
-# The following test taken from the cvs sources
-# If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
-# The Irix 5 libc.so has connect and gethostbyname, but Irix 5 also has
-# libsocket.so which has a bad implementation of gethostbyname (it
-# only looks in /etc/hosts), so we only look for -lsocket if we need
-# it.
-AC_CHECK_FUNCS(connect)
-if test x"$ac_cv_func_connect" = x"no"; then
-    AC_CHECK_LIB_EXT(nsl_s, SOCKET_LIBS, connect)
-    AC_CHECK_LIB_EXT(nsl, SOCKET_LIBS, connect)
-    AC_CHECK_LIB_EXT(socket, SOCKET_LIBS, connect)
-    AC_CHECK_LIB_EXT(inet, SOCKET_LIBS, connect)
-    SMB_ENABLE(EXT_SOCKET,YES)
-    dnl We can't just call AC_CHECK_FUNCS(connect) here, because the value
-    dnl has been cached.
-    if test x"$ac_cv_lib_ext_nsl_s_connect" = x"yes" ||
-       test x"$ac_cv_lib_ext_nsl_connect" = x"yes" ||
-       test x"$ac_cv_lib_ext_socket_connect" = x"yes" ||
-       test x"$ac_cv_lib_ext_inet_connect" = x"yes"; then
-        AC_DEFINE(HAVE_CONNECT,1,[Whether the system has connect()])
-    else
-	AC_MSG_ERROR([no connect() function available!])
-    fi
-fi
-
-SMB_EXT_LIB(EXT_SOCKET,[${SOCKET_LIBS}],[${SOCKET_CFLAGS}],[${SOCKET_CPPFLAGS}],[${SOCKET_LDFLAGS}])
-
-AC_CHECK_FUNCS(gethostbyname)
-if test x"$ac_cv_func_gethostbyname" = x"no"; then
-    AC_CHECK_LIB_EXT(nsl_s, NSL_LIBS, gethostbyname)
-    AC_CHECK_LIB_EXT(nsl, NSL_LIBS, gethostbyname)
-    AC_CHECK_LIB_EXT(socket, NSL_LIBS, gethostbyname)
-    SMB_ENABLE(EXT_NSL,YES)
-    dnl We can't just call AC_CHECK_FUNCS(gethostbyname) here, because the value
-    dnl has been cached.
-    if test x"$ac_cv_lib_ext_nsl_s_gethostbyname" != x"yes" &&
-       test x"$ac_cv_lib_ext_nsl_gethostbyname" != x"yes" &&
-       test x"$ac_cv_lib_ext_socket_gethostbyname" != x"yes"; then
-		AC_MSG_ERROR([no gethostbyname() function available!])
-    fi
-fi
-
-SMB_EXT_LIB(EXT_NSL,[${NSL_LIBS}],[],[],[])
-
 ############################################
 # check for unix domain sockets
 AC_CACHE_CHECK([for unix domain sockets],samba_cv_unixsocket, [

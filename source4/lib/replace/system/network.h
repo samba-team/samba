@@ -88,7 +88,7 @@
 typedef int socklen_t;
 #endif
 
-#ifdef REPLACE_INET_NTOA
+#if !defined (HAVE_INET_NTOA) || defined(REPLACE_INET_NTOA)
 /* define is in "replace.h" */
 char *rep_inet_ntoa(struct in_addr ip);
 #endif
@@ -101,6 +101,11 @@ int rep_inet_pton(int af, const char *src, void *dst);
 #ifndef HAVE_INET_NTOP
 /* define is in "replace.h" */
 const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
+#endif
+
+#ifndef HAVE_INET_ATON
+/* define is in "replace.h" */
+int rep_inet_aton(const char *src, struct in_addr *dst);
 #endif
 
 #ifndef HAVE_CONNECT
@@ -136,6 +141,11 @@ int rep_getifaddrs(struct ifaddrs **);
 
 #ifndef HAVE_FREEIFADDRS
 void rep_freeifaddrs(struct ifaddrs *);
+#endif
+
+#ifndef HAVE_SOCKETPAIR
+/* define is in "replace.h" */
+int rep_socketpair(int d, int type, int protocol, int sv[2]);
 #endif
 
 /*
@@ -305,7 +315,7 @@ struct addrinfo {
 
 /* Needed for some systems that don't define it (Solaris). */
 #ifndef ifr_netmask
-#define ifr_netmask ifr_addrs
+#define ifr_netmask ifr_addr
 #endif
 
 #ifdef SOCKET_WRAPPER

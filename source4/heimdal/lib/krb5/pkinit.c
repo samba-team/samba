@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: pkinit.c 21684 2007-07-23 23:09:10Z lha $");
+RCSID("$Id: pkinit.c 22673 2008-03-10 15:00:05Z lha $");
 
 struct krb5_dh_moduli {
     char *name;
@@ -139,17 +139,59 @@ integer_to_BN(krb5_context context, const char *field, const heim_integer *f)
     return bn;
 }
 
+struct certfind {
+    const char *type;
+    const heim_oid *oid;
+};
+
+/*
+ * Try searchin the key by to use by first looking for for PK-INIT
+ * EKU, then the Microsoft smart card EKU and last, no special EKU at all.
+ */
 
 static krb5_error_code
-_krb5_pk_create_sign(krb5_context context,
-		     const heim_oid *eContentType,
-		     krb5_data *eContent,
-		     struct krb5_pk_identity *id,
-		     hx509_peer_info peer,
-		     krb5_data *sd_data)
+find_cert(krb5_context context, struct krb5_pk_identity *id, 
+	  hx509_query *q, hx509_cert *cert)
 {
-    hx509_cert cert;
-    hx509_query *q;
+    struct certfind cf[3] = { 
+	{ "PKINIT EKU" },
+	{ "MS EKU" },
+	{ "no" }
+    };
+    int i, ret;
+
+    cf[0].oid = oid_id_pkekuoid();
+    cf[1].oid = oid_id_pkinit_ms_eku();
+    cf[2].oid = NULL;
+
+    for (i = 0; i < sizeof(cf)/sizeof(cf[0]); i++) {
+	ret = hx509_query_match_eku(q, cf[i].oid);
+	if (ret) {
+	    _krb5_pk_copy_error(context, id->hx509ctx, ret, 
+				"Failed setting %s OID", cf[i].type);
+	    return ret;
+	}
+
+	ret = hx509_certs_find(id->hx509ctx, id->certs, q, cert);
+	if (ret == 0)
+	    break;
+	_krb5_pk_copy_error(context, id->hx509ctx, ret, 
+			    "Failed cert for finding %s OID", cf[i].type);
+    }
+    return ret;
+}
+
+
+static krb5_error_code
+create_signature(krb5_context context,
+		 const heim_oid *eContentType,
+		 krb5_data *eContent,
+		 struct krb5_pk_identity *id,
+		 hx509_peer_info peer,
+		 krb5_data *sd_data)
+{
+    hx509_cert cert = NULL;
+    hx509_query *q = NULL;
     int ret;
 
     ret = hx509_query_alloc(id->hx509ctx, &q);
@@ -162,13 +204,10 @@ _krb5_pk_create_sign(krb5_context context,
     hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
     hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
 
-    ret = hx509_certs_find(id->hx509ctx, id->certs, q, &cert);
+    ret = find_cert(context, id, q, &cert);
     hx509_query_free(id->hx509ctx, q);
-    if (ret) {
-	_krb5_pk_copy_error(context, id->hx509ctx, ret, 
-			    "Find certificate to signed CMS data");
+    if (ret)
 	return ret;
-    }
 
     ret = hx509_cms_create_signed_1(id->hx509ctx,
 				    0,
@@ -181,11 +220,14 @@ _krb5_pk_create_sign(krb5_context context,
 				    NULL,
 				    id->certs,
 				    sd_data);
-    if (ret)
-	_krb5_pk_copy_error(context, id->hx509ctx, ret, "create CMS signedData");
     hx509_cert_free(cert);
+    if (ret) {
+	_krb5_pk_copy_error(context, id->hx509ctx, ret,
+			    "Create CMS signedData");
+	return ret;
+    }
 
-    return ret;
+    return 0;
 }
 
 static int
@@ -212,8 +254,7 @@ cert2epi(hx509_context context, void *ctx, hx509_cert c)
 	    return ENOMEM;
 	}
     
-	ret = hx509_name_to_der_name(subject, &id.subjectName->data,
-				     &id.subjectName->length);
+	ret = hx509_name_binary(subject, id.subjectName);
 	if (ret) {
 	    hx509_name_free(&subject);
 	    free_ExternalPrincipalIdentifier(&id);
@@ -544,12 +585,8 @@ pk_mk_padata(krb5_context context,
     } else
 	krb5_abortx(context, "internal pkinit error");
 
-    ret = _krb5_pk_create_sign(context,
-			       oid,
-			       &buf,
-			       ctx->id,
-			       ctx->peer,
-			       &sd_buf);
+    ret = create_signature(context, oid, &buf, ctx->id,
+			   ctx->peer, &sd_buf);
     krb5_data_free(&buf);
     if (ret)
 	goto out;
@@ -878,7 +915,8 @@ pk_verify_host(krb5_context context,
 	hx509_octet_string_list list;
 	int i;
 
-	ret = hx509_cert_find_subjectAltName_otherName(host->cert,
+	ret = hx509_cert_find_subjectAltName_otherName(ctx->id->hx509ctx,
+						       host->cert,
 						       oid_id_pkinit_san(),
 						       &list);
 	if (ret) {

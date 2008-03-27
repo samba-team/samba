@@ -33,12 +33,17 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: eai_to_heim_errno.c 13863 2004-05-25 21:46:46Z lha $");
+RCSID("$Id: eai_to_heim_errno.c 22065 2007-11-11 16:41:06Z lha $");
 
-/*
- * convert the getaddrinfo error code in `eai_errno' into a
- * krb5_error_code. `system_error' should have the value of the errno
- * after the failed call.
+/**
+ * Convert the getaddrinfo() error code to a Kerberos et error code.
+ *
+ * @param eai_errno contains the error code from getaddrinfo().
+ * @param system_error should have the value of errno after the failed getaddrinfo().
+ *
+ * @return Kerberos error code representing the EAI errors.
+ *
+ * @ingroup krb5_error
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -77,6 +82,17 @@ krb5_eai_to_heim_errno(int eai_errno, int system_error)
 	return HEIM_EAI_UNKNOWN; /* XXX */
     }
 }
+
+/**
+ * Convert the gethostname() error code (h_error) to a Kerberos et
+ * error code.
+ *
+ * @param eai_errno contains the error code from gethostname().
+ *
+ * @return Kerberos error code representing the gethostname errors.
+ *
+ * @ingroup krb5_error
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_h_errno_to_heim_errno(int eai_errno)

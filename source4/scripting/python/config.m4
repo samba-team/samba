@@ -22,8 +22,8 @@ AC_DEFUN([TRY_LINK_PYTHON],
 		CFLAGS="$CFLAGS $2"
 
 		AC_TRY_LINK([
+				/* we have our own configure tests */
 				#include <Python.h>
-				#include <stdlib.h>
 			],[
 				Py_InitModule(NULL, NULL);
 			],[

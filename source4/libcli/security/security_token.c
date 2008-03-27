@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
+#include "auth/session.h"
 
 /*
   return a blank security token
@@ -141,3 +142,29 @@ bool security_token_has_nt_authenticated_users(const struct security_token *toke
 {
 	return security_token_has_sid_string(token, SID_NT_AUTHENTICATED_USERS);
 }
+
+enum security_user_level security_session_user_level(struct auth_session_info *session_info) 
+{
+	if (!session_info) {
+		return SECURITY_ANONYMOUS;
+	}
+	
+	if (security_token_is_system(session_info->security_token)) {
+		return SECURITY_SYSTEM;
+	}
+
+	if (security_token_is_anonymous(session_info->security_token)) {
+		return SECURITY_ANONYMOUS;
+	}
+
+	if (security_token_has_builtin_administrators(session_info->security_token)) {
+		return SECURITY_ADMINISTRATOR;
+	}
+
+	if (security_token_has_nt_authenticated_users(session_info->security_token)) {
+		return SECURITY_USER;
+	}
+
+	return SECURITY_ANONYMOUS;
+}
+

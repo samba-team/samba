@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: crypto.c 21318 2007-06-25 19:46:32Z lha $");
+RCSID("$Id: crypto.c 22435 2008-01-14 20:53:56Z lha $");
 
 struct hx509_crypto;
 
@@ -64,6 +64,7 @@ struct hx509_private_key_ops {
     int (*generate_private_key)(hx509_context,
 				struct hx509_generate_private_context *,
 				hx509_private_key);
+    BIGNUM *(*get_internal)(hx509_context, hx509_private_key, const char *);
     int (*handle_alg)(const hx509_private_key,
 		      const AlgorithmIdentifier *,
 		      enum crypto_op_type);
@@ -114,6 +115,9 @@ struct signature_alg {
 #define SIG_DIGEST	0x100
 #define SIG_PUBLIC_SIG	0x200
 #define SIG_SECRET	0x400
+
+#define RA_RSA_USES_DIGEST_INFO 0x1000000
+
 
     int (*verify_signature)(hx509_context context,
 			    const struct signature_alg *,
@@ -248,43 +252,57 @@ rsa_verify_signature(hx509_context context,
     }
     if (retsize > tosize)
 	_hx509_abort("internal rsa decryption failure: ret > tosize");
-    ret = decode_DigestInfo(to, retsize, &di, &size);
-    free(to);
-    if (ret) {
-	goto out;
+
+    if (sig_alg->flags & RA_RSA_USES_DIGEST_INFO) {
+
+	ret = decode_DigestInfo(to, retsize, &di, &size);
+	free(to);
+	if (ret) {
+	    goto out;
+	}
+	
+	/* Check for extra data inside the sigature */
+	if (size != retsize) {
+	    ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
+	    hx509_set_error_string(context, 0, ret, "size from decryption mismatch");
+	    goto out;
+	}
+	
+	if (sig_alg->digest_oid &&
+	    der_heim_oid_cmp(&di.digestAlgorithm.algorithm, 
+			     (*sig_alg->digest_oid)()) != 0) 
+	{
+	    ret = HX509_CRYPTO_OID_MISMATCH;
+	    hx509_set_error_string(context, 0, ret, "object identifier in RSA sig mismatch");
+	    goto out;
+	}
+	
+	/* verify that the parameters are NULL or the NULL-type */
+	if (di.digestAlgorithm.parameters != NULL &&
+	    (di.digestAlgorithm.parameters->length != 2 ||
+	     memcmp(di.digestAlgorithm.parameters->data, "\x05\x00", 2) != 0))
+	{
+	    ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
+	    hx509_set_error_string(context, 0, ret, "Extra parameters inside RSA signature");
+	    goto out;
+	}
+
+	ret = _hx509_verify_signature(context,
+				      NULL,
+				      &di.digestAlgorithm,
+				      data,
+				      &di.digest);
+    } else {
+	if (retsize != data->length ||
+	    memcmp(to, data->data, retsize) != 0)
+	{
+	    ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
+	    hx509_set_error_string(context, 0, ret, "RSA Signature incorrect");
+	    goto out;
+	}
+	free(to);
     }
 
-    /* Check for extra data inside the sigature */
-    if (size != retsize) {
-	ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
-	hx509_set_error_string(context, 0, ret, "size from decryption mismatch");
-	goto out;
-    }
-
-    if (sig_alg->digest_oid &&
-	der_heim_oid_cmp(&di.digestAlgorithm.algorithm, 
-		     (*sig_alg->digest_oid)()) != 0) 
-    {
-	ret = HX509_CRYPTO_OID_MISMATCH;
-	hx509_set_error_string(context, 0, ret, "object identifier in RSA sig mismatch");
-	goto out;
-    }
-
-    /* verify that the parameters are NULL or the NULL-type */
-    if (di.digestAlgorithm.parameters != NULL &&
-	(di.digestAlgorithm.parameters->length != 2 ||
-	 memcmp(di.digestAlgorithm.parameters->data, "\x05\x00", 2) != 0))
-    {
-	ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
-	hx509_set_error_string(context, 0, ret, "Extra parameters inside RSA signature");
-	goto out;
-    }
-
-    ret = _hx509_verify_signature(context,
-				  NULL,
-				  &di.digestAlgorithm,
-				  data,
-				  &di.digest);
  out:
     free_DigestInfo(&di);
     RSA_free(rsa);
@@ -303,7 +321,6 @@ rsa_create_signature(hx509_context context,
     const AlgorithmIdentifier *digest_alg;
     heim_octet_string indata;
     const heim_oid *sig_oid;
-    DigestInfo di;
     size_t size;
     int ret;
     
@@ -324,6 +341,8 @@ rsa_create_signature(hx509_context context,
 	digest_alg = hx509_signature_sha1();
     } else if (der_heim_oid_cmp(sig_oid, oid_id_pkcs1_rsaEncryption()) == 0) {
 	digest_alg = hx509_signature_sha1();
+    } else if (der_heim_oid_cmp(sig_oid, oid_id_heim_rsa_pkcs1_x509()) == 0) {
+	digest_alg = NULL;
     } else
 	return HX509_ALG_NOT_SUPP;
 
@@ -335,29 +354,34 @@ rsa_create_signature(hx509_context context,
 	}
     }
 
-    memset(&di, 0, sizeof(di));
+    if (digest_alg) {
+	DigestInfo di;
+	memset(&di, 0, sizeof(di));
 
-    ret = _hx509_create_signature(context,
-				  NULL,
-				  digest_alg,
-				  data,
-				  &di.digestAlgorithm,
-				  &di.digest);
-    if (ret)
-	return ret;
-    ASN1_MALLOC_ENCODE(DigestInfo,
-		       indata.data,
-		       indata.length,
-		       &di,
-		       &size,
-		       ret);
-    free_DigestInfo(&di);
-    if (ret) {
-	hx509_set_error_string(context, 0, ret, "out of memory");
-	return ret;
+	ret = _hx509_create_signature(context,
+				      NULL,
+				      digest_alg,
+				      data,
+				      &di.digestAlgorithm,
+				      &di.digest);
+	if (ret)
+	    return ret;
+	ASN1_MALLOC_ENCODE(DigestInfo,
+			   indata.data,
+			   indata.length,
+			   &di,
+			   &size,
+			   ret);
+	free_DigestInfo(&di);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "out of memory");
+	    return ret;
+	}
+	if (indata.length != size)
+	    _hx509_abort("internal ASN.1 encoder error");
+    } else {
+	indata = *data;
     }
-    if (indata.length != size)
-	_hx509_abort("internal ASN.1 encoder error");
 
     sig->length = RSA_size(signer->private_key.rsa);
     sig->data = malloc(sig->length);
@@ -371,7 +395,8 @@ rsa_create_signature(hx509_context context,
 			      sig->data, 
 			      signer->private_key.rsa,
 			      RSA_PKCS1_PADDING);
-    der_free_octet_string(&indata);
+    if (indata.data != data->data)
+	der_free_octet_string(&indata);
     if (ret <= 0) {
 	ret = HX509_CMS_FAILED_CREATE_SIGATURE;
 	hx509_set_error_string(context, 0, ret,
@@ -517,6 +542,18 @@ rsa_private_key_export(hx509_context context,
     return 0;
 }
 
+static BIGNUM *
+rsa_get_internal(hx509_context context, hx509_private_key key, const char *type)
+{
+    if (strcasecmp(type, "rsa-modulus") == 0) {
+	return BN_dup(key->private_key.rsa->n);
+    } else if (strcasecmp(type, "rsa-exponent") == 0) {
+	return BN_dup(key->private_key.rsa->e);
+    } else
+	return NULL;
+}
+
+
 
 static hx509_private_key_ops rsa_private_key_ops = {
     "RSA PRIVATE KEY",
@@ -524,7 +561,8 @@ static hx509_private_key_ops rsa_private_key_ops = {
     rsa_private_key2SPKI,
     rsa_private_key_export,
     rsa_private_key_import,
-    rsa_generate_private_key
+    rsa_generate_private_key,
+    rsa_get_internal
 };
 
 
@@ -833,13 +871,24 @@ md2_verify_signature(hx509_context context,
     return 0;
 }
 
+static const struct signature_alg heim_rsa_pkcs1_x509 = {
+    "rsa-pkcs1-x509",
+    oid_id_heim_rsa_pkcs1_x509,
+    hx509_signature_rsa_pkcs1_x509,
+    oid_id_pkcs1_rsaEncryption,
+    NULL,
+    PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
+    rsa_verify_signature,
+    rsa_create_signature
+};
+
 static const struct signature_alg pkcs1_rsa_sha1_alg = {
     "rsa",
     oid_id_pkcs1_rsaEncryption,
     hx509_signature_rsa_with_sha1,
     oid_id_pkcs1_rsaEncryption,
     NULL,
-    PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
+    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
     rsa_verify_signature,
     rsa_create_signature
 };
@@ -850,7 +899,7 @@ static const struct signature_alg rsa_with_sha256_alg = {
     hx509_signature_rsa_with_sha256,
     oid_id_pkcs1_rsaEncryption,
     oid_id_sha256,
-    PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
+    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
     rsa_verify_signature,
     rsa_create_signature
 };
@@ -861,7 +910,7 @@ static const struct signature_alg rsa_with_sha1_alg = {
     hx509_signature_rsa_with_sha1,
     oid_id_pkcs1_rsaEncryption,
     oid_id_secsig_sha_1,
-    PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
+    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
     rsa_verify_signature,
     rsa_create_signature
 };
@@ -872,7 +921,7 @@ static const struct signature_alg rsa_with_md5_alg = {
     hx509_signature_rsa_with_md5,
     oid_id_pkcs1_rsaEncryption,
     oid_id_rsa_digest_md5,
-    PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
+    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
     rsa_verify_signature,
     rsa_create_signature
 };
@@ -883,7 +932,7 @@ static const struct signature_alg rsa_with_md2_alg = {
     hx509_signature_rsa_with_md2,
     oid_id_pkcs1_rsaEncryption,
     oid_id_rsa_digest_md2,
-    PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
+    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
     rsa_verify_signature,
     rsa_create_signature
 };
@@ -952,7 +1001,7 @@ static const struct signature_alg *sig_algs[] = {
     &pkcs1_rsa_sha1_alg,
     &rsa_with_md5_alg,
     &rsa_with_md2_alg,
-    &pkcs1_rsa_sha1_alg,
+    &heim_rsa_pkcs1_x509,
     &dsa_sha1_alg,
     &sha256_alg,
     &sha1_alg,
@@ -1423,6 +1472,11 @@ const AlgorithmIdentifier _hx509_signature_rsa_data = {
     { 7, rk_UNCONST(rsa_oid) }, NULL
 };
 
+static const unsigned rsa_pkcs1_x509_oid[] ={ 1, 2, 752, 43, 16, 1 };
+const AlgorithmIdentifier _hx509_signature_rsa_pkcs1_x509_data = { 
+    { 6, rk_UNCONST(rsa_pkcs1_x509_oid) }, NULL
+};
+
 static const unsigned des_rsdi_ede3_cbc_oid[] ={ 1, 2, 840, 113549, 3, 7 };
 const AlgorithmIdentifier _hx509_des_rsdi_ede3_cbc_oid = {
     { 6, rk_UNCONST(des_rsdi_ede3_cbc_oid) }, NULL
@@ -1489,6 +1543,10 @@ hx509_signature_rsa_with_md2(void)
 const AlgorithmIdentifier *
 hx509_signature_rsa(void)
 { return &_hx509_signature_rsa_data; }
+
+const AlgorithmIdentifier *
+hx509_signature_rsa_pkcs1_x509(void)
+{ return &_hx509_signature_rsa_pkcs1_x509_data; }
 
 const AlgorithmIdentifier *
 hx509_crypto_des_rsdi_ede3_cbc(void)
@@ -1595,6 +1653,16 @@ _hx509_private_key_exportable(hx509_private_key key)
     if (key->ops->export == NULL)
 	return 0;
     return 1;
+}
+
+BIGNUM *
+_hx509_private_key_get_internal(hx509_context context,
+				hx509_private_key key, 
+				const char *type)
+{
+    if (key->ops->get_internal == NULL)
+	return NULL;
+    return (*key->ops->get_internal)(context, key, type);
 }
 
 int 

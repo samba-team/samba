@@ -400,10 +400,10 @@ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
    to the credentials system.
 */
 
-int cli_credentials_set_client_gss_creds(struct cli_credentials *cred, 
-					 struct loadparm_context *lp_ctx,
-					 gss_cred_id_t gssapi_cred,
-					 enum credentials_obtained obtained) 
+ int cli_credentials_set_client_gss_creds(struct cli_credentials *cred, 
+					  struct loadparm_context *lp_ctx,
+					  gss_cred_id_t gssapi_cred,
+					  enum credentials_obtained obtained) 
 {
 	int ret;
 	OM_uint32 maj_stat, min_stat;

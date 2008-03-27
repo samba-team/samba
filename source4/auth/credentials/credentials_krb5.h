@@ -26,10 +26,20 @@
 #include <gssapi/gssapi.h>
 #include <krb5.h>
 
-struct ccache_container;
-
 struct gssapi_creds_container {
 	gss_cred_id_t creds;
 };
 
+/* Manually prototyped here to avoid needing gss headers in most callers */
+int cli_credentials_set_client_gss_creds(struct cli_credentials *cred, 
+					 struct loadparm_context *lp_ctx,
+					 gss_cred_id_t gssapi_cred,
+					 enum credentials_obtained obtained);
+
+/* Manually prototyped here to avoid needing krb5 headers in most callers */
+krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx, 
+					   struct cli_credentials *credentials, 
+					   struct smb_krb5_context *smb_krb5_context,
+					   krb5_principal *princ);
+	
 #endif /* __CREDENTIALS_KRB5_H__ */

@@ -33,7 +33,7 @@
 
 #include "spnego/spnego_locl.h"
 
-RCSID("$Id: init_sec_context.c 19411 2006-12-18 15:42:03Z lha $");
+RCSID("$Id: init_sec_context.c 22600 2008-02-21 12:46:24Z lha $");
 
 /*
  * Is target_name an sane target for `mech´.
@@ -59,8 +59,10 @@ initiator_approved(gss_name_t target_name, gss_OID mech)
 				    &out,
 				    NULL,
 				    NULL);
-    if (GSS_ERROR(maj_stat))
+    if (GSS_ERROR(maj_stat)) {
+	gss_mg_collect_error(mech, maj_stat, min_stat);
 	return GSS_S_BAD_MECH;
+    }
     gss_release_buffer(&min_stat, &out);
     gss_delete_sec_context(&min_stat, &ctx, NULL);
 
@@ -268,6 +270,7 @@ spnego_initial
     if (GSS_ERROR(sub)) {
 	free_NegTokenInit(&ni);
 	*minor_status = minor;
+	gss_mg_collect_error(ctx->preferred_mech_type, sub, minor);
 	_gss_spnego_internal_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
 	return sub;
     }
@@ -480,7 +483,8 @@ spnego_reply
 	return GSS_S_BAD_MECH;
     }
 
-    if (resp.responseToken != NULL || 
+    /* if a token (of non zero length), or no context, pass to underlaying mech */
+    if ((resp.responseToken != NULL && resp.responseToken->length) || 
 	ctx->negotiated_ctx_id == GSS_C_NO_CONTEXT) {
 	gss_buffer_desc mech_input_token;
 
@@ -515,6 +519,7 @@ spnego_reply
 	if (GSS_ERROR(ret)) {
 	    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 	    free_NegTokenResp(&resp);
+	    gss_mg_collect_error(&mech, ret, minor);
 	    *minor_status = minor;
 	    return ret;
 	}

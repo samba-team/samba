@@ -639,9 +639,9 @@ static void kdc_task_init(struct task_server *task)
 	}
 
 	/* Registar WinDC hooks */
-	ret = _krb5_plugin_register(kdc->smb_krb5_context->krb5_context, 
-				    PLUGIN_TYPE_DATA, "windc",
-				    &windc_plugin_table);
+	ret = krb5_plugin_register(kdc->smb_krb5_context->krb5_context, 
+				   PLUGIN_TYPE_DATA, "windc",
+				   &windc_plugin_table);
 	if(ret) {
 		task_server_terminate(task, "kdc: failed to register hdb keytab");
 		return;

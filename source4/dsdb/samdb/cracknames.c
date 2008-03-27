@@ -329,7 +329,7 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	result_filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(samAccountName=%s))", 
 					ldb_binary_encode_string(mem_ctx, unparsed_name_short));
 
-	domain_filter = talloc_asprintf(mem_ctx, "(dn=%s)", ldb_dn_get_linearized(domain_res->msgs[0]->dn));
+	domain_filter = talloc_asprintf(mem_ctx, "(distinguishedName=%s)", ldb_dn_get_linearized(domain_res->msgs[0]->dn));
 
 	if (!result_filter || !domain_filter) {
 		free(unparsed_name_short);

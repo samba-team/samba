@@ -145,7 +145,7 @@ _krb5_extract_ticket(krb5_context context,
 flags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH;
 flags |=EXTRACT_TICKET_ALLOW_CNAME_MISMATCH ;
 
-    ret = _krb5_principalname2krb5_principal (context,
+   ret = _krb5_principalname2krb5_principal (context,
 					      &tmp_principal,
 					      rep->kdc_rep.cname,
 					      rep->kdc_rep.crealm);

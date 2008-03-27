@@ -462,6 +462,8 @@ NTSTATUS messaging_send(struct messaging_context *msg, struct server_id server,
 	rec->retries       = 0;
 	rec->msg              = msg;
 	rec->header           = (struct messaging_header *)rec->packet.data;
+	/* zero padding */
+	ZERO_STRUCTP(rec->header);
 	rec->header->version  = MESSAGING_VERSION;
 	rec->header->msg_type = msg_type;
 	rec->header->from     = msg->server_id;

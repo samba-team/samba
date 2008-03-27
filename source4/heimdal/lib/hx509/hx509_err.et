@@ -3,7 +3,7 @@
 #
 # This might look like a com_err file, but is not
 #
-id "$Id: hx509_err.et 20807 2007-06-03 03:11:20Z lha $"
+id "$Id: hx509_err.et 22329 2007-12-15 05:13:14Z lha $"
 
 error_table hx
 prefix HX509
@@ -72,7 +72,7 @@ prefix HX509
 error_code CRL_USED_BEFORE_TIME, "CRL used before it became valid"
 error_code CRL_USED_AFTER_TIME, "CRL used after it became invalid"
 error_code CRL_INVALID_FORMAT, "CRL have invalid format"
-error_code CRL_CERT_REVOKED, "Certificate is included in CRL"
+error_code CERT_REVOKED, "Certificate is revoked"
 error_code REVOKE_STATUS_MISSING, "No revoke status found for certificates"
 error_code CRL_UNKNOWN_EXTENSION, "Unknown extension"
 error_code REVOKE_WRONG_DATA, "Got wrong CRL/OCSP data from server"

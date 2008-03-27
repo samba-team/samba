@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: expand_hostname.c 18906 2006-11-04 03:34:57Z lha $");
+RCSID("$Id: expand_hostname.c 22229 2007-12-08 21:40:59Z lha $");
 
 static krb5_error_code
 copy_hostname(krb5_context context,
@@ -62,7 +62,7 @@ krb5_expand_hostname (krb5_context context,
     struct addrinfo *ai, *a, hints;
     int error;
 
-    if (!context->dns_canonicalize_hostname)
+    if ((context->flags & KRB5_CTX_F_DNS_CANONICALIZE_HOSTNAME) == 0)
 	return copy_hostname (context, orig_hostname, new_hostname);
 
     memset (&hints, 0, sizeof(hints));
@@ -127,7 +127,7 @@ krb5_expand_hostname_realms (krb5_context context,
     int error;
     krb5_error_code ret = 0;
 
-    if (!context->dns_canonicalize_hostname)
+    if ((context->flags & KRB5_CTX_F_DNS_CANONICALIZE_HOSTNAME) == 0)
 	return vanilla_hostname (context, orig_hostname, new_hostname,
 				 realms);
 

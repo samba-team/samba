@@ -20,6 +20,7 @@ interface opendb
 		uint32 share_access;
 		uint32 access_mask;
 		pointer file_handle;
+		pointer fd;
 		/* we need a per-entry delete on close, as well as a per-file
 		   one, to cope with strange semantics on open */
 		boolean8 delete_on_close;

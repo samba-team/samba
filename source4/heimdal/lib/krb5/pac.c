@@ -32,8 +32,9 @@
  */
 
 #include "krb5_locl.h"
+#include <wind.h>
 
-RCSID("$Id: pac.c 21149 2007-06-18 21:50:22Z lha $");
+RCSID("$Id: pac.c 22562 2008-02-03 17:38:35Z lha $");
 
 struct PAC_INFO_BUFFER {
     uint32_t type;
@@ -48,7 +49,7 @@ struct PACTYPE {
     struct PAC_INFO_BUFFER buffers[1];
 };
 
-struct krb5_pac {
+struct krb5_pac_data {
     struct PACTYPE *pac;
     krb5_data data;
     struct PAC_INFO_BUFFER *server_checksum;
@@ -82,10 +83,10 @@ static const char zeros[PAC_ALIGNMENT] = { 0 };
 
 krb5_error_code
 krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
-	       struct krb5_pac **pac)
+	       krb5_pac *pac)
 {
     krb5_error_code ret;
-    struct krb5_pac *p;
+    krb5_pac p;
     krb5_storage *sp = NULL;
     uint32_t i, tmp, tmp2, header_end;
 
@@ -216,10 +217,10 @@ out:
 }
 
 krb5_error_code
-krb5_pac_init(krb5_context context, struct krb5_pac **pac)
+krb5_pac_init(krb5_context context, krb5_pac *pac)
 {
     krb5_error_code ret;
-    struct krb5_pac *p;
+    krb5_pac p;
 
     p = calloc(1, sizeof(*p));
     if (p == NULL) {
@@ -248,7 +249,7 @@ krb5_pac_init(krb5_context context, struct krb5_pac **pac)
 }
 
 krb5_error_code
-krb5_pac_add_buffer(krb5_context context, struct krb5_pac *p,
+krb5_pac_add_buffer(krb5_context context, krb5_pac p,
 		    uint32_t type, const krb5_data *data)
 {
     krb5_error_code ret;
@@ -316,7 +317,7 @@ krb5_pac_add_buffer(krb5_context context, struct krb5_pac *p,
 }
 
 krb5_error_code
-krb5_pac_get_buffer(krb5_context context, struct krb5_pac *p,
+krb5_pac_get_buffer(krb5_context context, krb5_pac p,
 		    uint32_t type, krb5_data *data)
 {
     krb5_error_code ret;
@@ -361,7 +362,7 @@ krb5_pac_get_buffer(krb5_context context, struct krb5_pac *p,
 
 krb5_error_code
 krb5_pac_get_types(krb5_context context,
-		   struct krb5_pac *p,
+		   krb5_pac p,
 		   size_t *len,
 		   uint32_t **types)
 {
@@ -385,7 +386,7 @@ krb5_pac_get_types(krb5_context context,
  */
 
 void
-krb5_pac_free(krb5_context context, struct krb5_pac *pac)
+krb5_pac_free(krb5_context context, krb5_pac pac)
 {
     krb5_data_free(&pac->data);
     free(pac->pac);
@@ -564,51 +565,48 @@ verify_logonname(krb5_context context,
     ret = krb5_storage_read(sp, s, len);
     if (ret != len) {
 	krb5_storage_free(sp);
-	krb5_set_error_string(context, "Failed to read pac logon name");
+	krb5_set_error_string(context, "Failed to read PAC logon name");
 	return EINVAL;
     }
     krb5_storage_free(sp);
-#if 1 /* cheat for now */
     {
-	size_t i;
-
-	if (len & 1) {
-	    krb5_set_error_string(context, "PAC logon name malformed");
-	    return EINVAL;
-	}
-
-	for (i = 0; i < len / 2; i++) {
-	    if (s[(i * 2) + 1]) {
-		krb5_set_error_string(context, "PAC logon name not ASCII");
-		return EINVAL;
-	    }
-	    s[i] = s[i * 2];
-	}
-	s[i] = '\0';
-    }
-#else
-    {
+	size_t ucs2len = len / 2;
 	uint16_t *ucs2;
-	ssize_t ucs2len;
 	size_t u8len;
+	unsigned int flags = WIND_RW_LE;
 
-	ucs2 = malloc(sizeof(ucs2[0]) * len / 2);
-	if (ucs2)
-	    abort();
-	ucs2len = wind_ucs2read(s, len / 2, ucs2);
+	ucs2 = malloc(sizeof(ucs2[0]) * ucs2len);
+	if (ucs2 == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    return ENOMEM;
+	}
+	ret = wind_ucs2read(s, len, &flags, ucs2, &ucs2len);
 	free(s);
-	if (len < 0)
-	    return -1;
-	ret = wind_ucs2toutf8(ucs2, ucs2len, NULL, &u8len);
-	if (ret < 0)
-	    abort();
-	s = malloc(u8len + 1);
-	if (s == NULL)
-	    abort();
-	wind_ucs2toutf8(ucs2, ucs2len, s, &u8len);
+	if (ret) {
+	    free(ucs2);
+	    krb5_set_error_string(context, "Failed to convert string to UCS-2");
+	    return ret;
+	}
+	ret = wind_ucs2utf8_length(ucs2, ucs2len, &u8len);
+	if (ret) {
+	    free(ucs2);
+	    krb5_set_error_string(context, "Failed to count length of UCS-2 string");
+	    return ret;
+	}
+	u8len += 1; /* Add space for NUL */
+	s = malloc(u8len);
+	if (s == NULL) {
+	    free(ucs2);
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    return ENOMEM;
+	}
+	ret = wind_ucs2utf8(ucs2, ucs2len, s, &u8len);
 	free(ucs2);
+	if (ret) {
+	    krb5_set_error_string(context, "Failed to convert to UTF-8");
+	    return ret;
+	}
     }
-#endif
     ret = krb5_parse_name_flags(context, s, KRB5_PRINCIPAL_PARSE_NO_REALM, &p2);
     free(s);
     if (ret)
@@ -703,7 +701,7 @@ out:
 
 krb5_error_code
 krb5_pac_verify(krb5_context context, 
-		const struct krb5_pac *pac,
+		const krb5_pac pac,
 		time_t authtime,
 		krb5_const_principal principal,
 		const krb5_keyblock *server,
@@ -840,7 +838,7 @@ pac_checksum(krb5_context context,
 
 krb5_error_code
 _krb5_pac_sign(krb5_context context,
-	       struct krb5_pac *p,
+	       krb5_pac p,
 	       time_t authtime,
 	       krb5_principal principal,
 	       const krb5_keyblock *server_key,

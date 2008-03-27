@@ -32,7 +32,13 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: error.c 20912 2007-06-05 03:53:52Z lha $");
+RCSID("$Id: error.c 22332 2007-12-17 01:03:22Z lha $");
+
+/**
+ * @page page_error Hx509 error reporting functions
+ *
+ * See the library functions here: @ref hx509_error
+ */
 
 struct hx509_error_data {
     hx509_error next;
@@ -51,12 +57,34 @@ free_error_string(hx509_error msg)
     }
 }
 
+/**
+ * Resets the error strings the hx509 context.
+ *
+ * @param context A hx509 context.
+ *
+ * @ingroup hx509_error
+ */
+
 void
 hx509_clear_error_string(hx509_context context)
 {
     free_error_string(context->error);
     context->error = NULL;
 }
+
+/**
+ * Add an error message to the hx509 context.
+ *
+ * @param context A hx509 context.
+ * @param flags
+ * - HX509_ERROR_APPEND appends the error string to the old messages
+     (code is updated).
+ * @param code error code related to error message
+ * @param fmt error message format
+ * @param ap arguments to error message format
+ *
+ * @ingroup hx509_error
+ */
 
 void
 hx509_set_error_stringv(hx509_context context, int flags, int code, 
@@ -86,6 +114,20 @@ hx509_set_error_stringv(hx509_context context, int flags, int code,
     }
 }
 
+/**
+ * See hx509_set_error_stringv(). 
+ *
+ * @param context A hx509 context.
+ * @param flags
+ * - HX509_ERROR_APPEND appends the error string to the old messages
+     (code is updated).
+ * @param code error code related to error message
+ * @param fmt error message format
+ * @param ... arguments to error message format
+ *
+ * @ingroup hx509_error
+ */
+
 void
 hx509_set_error_string(hx509_context context, int flags, int code,
 		       const char *fmt, ...)
@@ -96,6 +138,17 @@ hx509_set_error_string(hx509_context context, int flags, int code,
     hx509_set_error_stringv(context, flags, code, fmt, ap);
     va_end(ap);
 }
+
+/**
+ * Get an error string from context associated with error_code.
+ *
+ * @param context A hx509 context.
+ * @param error_code Get error message for this error code.
+ *
+ * @return error string, free with hx509_free_error_string().
+ *
+ * @ingroup hx509_error
+ */
 
 char *
 hx509_get_error_string(hx509_context context, int error_code)
@@ -124,6 +177,32 @@ hx509_get_error_string(hx509_context context, int error_code)
 
     return rk_strpoolcollect(p);
 }
+
+/**
+ * Free error string returned by hx509_get_error_string().
+ *
+ * @param str error string to free.
+ *
+ * @ingroup hx509_error
+ */
+
+void
+hx509_free_error_string(char *str)
+{
+    free(str);
+}
+
+/**
+ * Print error message and fatally exit from error code
+ *
+ * @param context A hx509 context.
+ * @param exit_code exit() code from process.
+ * @param error_code Error code for the reason to exit.
+ * @param fmt format string with the exit message.
+ * @param ... argument to format string.
+ *
+ * @ingroup hx509_error
+ */
 
 void
 hx509_err(hx509_context context, int exit_code, 

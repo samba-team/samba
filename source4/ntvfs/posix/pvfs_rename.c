@@ -568,12 +568,24 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 NTSTATUS pvfs_rename(struct ntvfs_module_context *ntvfs,
 		     struct ntvfs_request *req, union smb_rename *ren)
 {
+	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_file *f;
+
 	switch (ren->generic.level) {
 	case RAW_RENAME_RENAME:
 		return pvfs_rename_mv(ntvfs, req, ren);
 
 	case RAW_RENAME_NTRENAME:
 		return pvfs_rename_nt(ntvfs, req, ren);
+
+	case RAW_RENAME_NTTRANS:
+		f = pvfs_find_fd(pvfs, req, ren->nttrans.in.file.ntvfs);
+		if (!f) {
+			return NT_STATUS_INVALID_HANDLE;
+		}
+
+		/* wk23 ignores the request */
+		return NT_STATUS_OK;
 
 	default:
 		break;

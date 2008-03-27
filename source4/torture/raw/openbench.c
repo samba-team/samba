@@ -37,7 +37,7 @@
 
 static int nprocs;
 static int open_failed;
-static int open_retries;
+static int close_failed;
 static char **fnames;
 static int num_connected;
 static struct timed_event *report_te;
@@ -49,12 +49,16 @@ struct benchopen_state {
 	struct smbcli_state *cli;
 	struct smbcli_tree *tree;
 	int client_num;
-	int old_fnum;
-	int fnum;
-	int file_num;
+	int close_fnum;
+	int open_fnum;
+	int close_file_num;
+	int open_file_num;
+	int pending_file_num;
+	int next_file_num;
 	int count;
 	int lastcount;
 	union smb_open open_parms;
+	int open_retries;
 	union smb_close close_parms;
 	struct smbcli_request *req_open;
 	struct smbcli_request *req_close;
@@ -95,11 +99,11 @@ static void reopen_connection_complete(struct composite_context *ctx)
 
 	num_connected++;
 
-	DEBUG(0,("reconnect to %s finished (%u connected)\n", state->dest_host,
-		 num_connected));
+	DEBUG(0,("[%u] reconnect to %s finished (%u connected)\n",
+		 state->client_num, state->dest_host, num_connected));
 
-	state->fnum = -1;
-	state->old_fnum = -1;
+	state->open_fnum = -1;
+	state->close_fnum = -1;
 	next_open(state);
 }
 
@@ -136,7 +140,8 @@ static void reopen_connection(struct event_context *ev, struct timed_event *te,
 	/* kill off the remnants of the old connection */
 	talloc_free(state->tree);
 	state->tree = NULL;
-	state->fnum = -1;
+	state->open_fnum = -1;
+	state->close_fnum = -1;
 
 	ctx = smb_composite_connect_send(io, state->mem_ctx, 
 					 lp_resolve_context(state->tctx->lp_ctx), 
@@ -158,9 +163,10 @@ static void next_open(struct benchopen_state *state)
 {
 	state->count++;
 
-	state->file_num = (state->file_num+1) % (3*nprocs);
+	state->pending_file_num = state->next_file_num;
+	state->next_file_num = (state->next_file_num+1) % (3*nprocs);
 
-	DEBUG(2,("[%d] opening %u\n", state->client_num, state->file_num));
+	DEBUG(2,("[%d] opening %u\n", state->client_num, state->pending_file_num));
 	state->open_parms.ntcreatex.level = RAW_OPEN_NTCREATEX;
 	state->open_parms.ntcreatex.in.flags = 0;
 	state->open_parms.ntcreatex.in.root_fid = 0;
@@ -172,7 +178,7 @@ static void next_open(struct benchopen_state *state)
 	state->open_parms.ntcreatex.in.create_options = 0;
 	state->open_parms.ntcreatex.in.impersonation = 0;
 	state->open_parms.ntcreatex.in.security_flags = 0;
-	state->open_parms.ntcreatex.in.fname = fnames[state->file_num];
+	state->open_parms.ntcreatex.in.fname = fnames[state->pending_file_num];
 
 	state->req_open = smb_raw_open_send(state->tree, &state->open_parms);
 	state->req_open->async.fn = open_completed;
@@ -182,18 +188,18 @@ static void next_open(struct benchopen_state *state)
 
 static void next_close(struct benchopen_state *state)
 {
-	DEBUG(2,("[%d] closing %d\n", state->client_num, state->old_fnum));
-	if (state->old_fnum == -1) {
+	if (state->close_fnum == -1) {
 		return;
 	}
+	DEBUG(2,("[%d] closing %d (fnum[%d])\n",
+		 state->client_num, state->close_file_num, state->close_fnum));
 	state->close_parms.close.level = RAW_CLOSE_CLOSE;
-	state->close_parms.close.in.file.fnum = state->old_fnum;
+	state->close_parms.close.in.file.fnum = state->close_fnum;
 	state->close_parms.close.in.write_time = 0;
 
 	state->req_close = smb_raw_close_send(state->tree, &state->close_parms);
 	state->req_close->async.fn = close_completed;
 	state->req_close->async.private = state;
-	state->old_fnum = -1;
 }
 
 /*
@@ -218,7 +224,8 @@ static void open_completed(struct smbcli_request *req)
 		state->tree = NULL;
 		state->cli = NULL;
 		num_connected--;	
-		DEBUG(0,("reopening connection to %s\n", state->dest_host));
+		DEBUG(0,("[%u] reopening connection to %s\n",
+			 state->client_num, state->dest_host));
 		talloc_free(state->te);
 		state->te = event_add_timed(state->ev, state->mem_ctx, 
 					    timeval_current_ofs(1,0), 
@@ -227,8 +234,9 @@ static void open_completed(struct smbcli_request *req)
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
-		DEBUG(2,("[%d] retrying open\n", state->client_num));
-		open_retries++;
+		DEBUG(2,("[%d] retrying open %d\n",
+			 state->client_num, state->pending_file_num));
+		state->open_retries++;
 		state->req_open = smb_raw_open_send(state->tree, &state->open_parms);
 		state->req_open->async.fn = open_completed;
 		state->req_open->async.private = state;
@@ -237,17 +245,21 @@ static void open_completed(struct smbcli_request *req)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		open_failed++;
-		DEBUG(0,("open failed - %s\n", nt_errstr(status)));
+		DEBUG(0,("[%u] open failed %d - %s\n",
+			 state->client_num, state->pending_file_num,
+			 nt_errstr(status)));
 		return;
 	}
 
-	state->old_fnum = state->fnum;
-	state->fnum = state->open_parms.ntcreatex.out.file.fnum;
+	state->close_file_num = state->open_file_num;
+	state->close_fnum = state->open_fnum;
+	state->open_file_num = state->pending_file_num;
+	state->open_fnum = state->open_parms.ntcreatex.out.file.fnum;
 
-	DEBUG(2,("[%d] open completed: fnum=%d old_fnum=%d\n", 
-		 state->client_num, state->fnum, state->old_fnum));
+	DEBUG(2,("[%d] open completed %d (fnum[%d])\n",
+		 state->client_num, state->open_file_num, state->open_fnum));
 
-	if (state->old_fnum != -1) {
+	if (state->close_fnum != -1) {
 		next_close(state);
 	}
 
@@ -271,7 +283,8 @@ static void close_completed(struct smbcli_request *req)
 		state->tree = NULL;
 		state->cli = NULL;
 		num_connected--;	
-		DEBUG(0,("reopening connection to %s\n", state->dest_host));
+		DEBUG(0,("[%u] reopening connection to %s\n",
+			 state->client_num, state->dest_host));
 		talloc_free(state->te);
 		state->te = event_add_timed(state->ev, state->mem_ctx, 
 					    timeval_current_ofs(1,0), 
@@ -280,13 +293,17 @@ static void close_completed(struct smbcli_request *req)
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		open_failed++;
-		DEBUG(0,("close failed - %s\n", nt_errstr(status)));
+		close_failed++;
+		DEBUG(0,("[%u] close failed %d (fnum[%d]) - %s\n",
+			 state->client_num, state->close_file_num,
+			 state->close_fnum,
+			 nt_errstr(status)));
 		return;
 	}
 
-	DEBUG(2,("[%d] close completed: fnum=%d old_fnum=%d\n", 
-		 state->client_num, state->fnum, state->old_fnum));
+	DEBUG(2,("[%d] close completed %d (fnum[%d])\n",
+		 state->client_num, state->close_file_num,
+		 state->close_fnum));
 }	
 
 static void echo_completion(struct smbcli_request *req)
@@ -298,7 +315,8 @@ static void echo_completion(struct smbcli_request *req)
 		talloc_free(state->tree);
 		state->tree = NULL;
 		num_connected--;	
-		DEBUG(0,("reopening connection to %s\n", state->dest_host));
+		DEBUG(0,("[%u] reopening connection to %s\n",
+			 state->client_num, state->dest_host));
 		talloc_free(state->te);
 		state->te = event_add_timed(state->ev, state->mem_ctx, 
 					    timeval_current_ofs(1,0), 
@@ -352,7 +370,9 @@ bool torture_bench_open(struct torture_context *torture)
 	struct timeval tv;
 	struct event_context *ev = event_context_find(mem_ctx);
 	struct benchopen_state *state;
-	int total = 0, minops=0;
+	int total = 0;
+	int total_retries = 0;
+	int minops = 0;
 	bool progress=false;
 
 	progress = torture_setting_bool(torture, "progress", true);
@@ -397,11 +417,10 @@ bool torture_bench_open(struct torture_context *torture)
 	}
 
 	for (i=0;i<nprocs;i++) {
-		state[i].file_num = i;		
-		state[i].fnum = smbcli_open(state[i].tree, 
-					    fnames[state->file_num], 
-					    O_RDWR|O_CREAT, DENY_ALL);
-		state[i].old_fnum = -1;
+		/* all connections start with the same file */
+		state[i].next_file_num = 0;
+		state[i].open_fnum = -1;
+		state[i].close_fnum = -1;
 		next_open(&state[i]);
 	}
 
@@ -420,17 +439,30 @@ bool torture_bench_open(struct torture_context *torture)
 			DEBUG(0,("open failed\n"));
 			goto failed;
 		}
+		if (close_failed) {
+			DEBUG(0,("open failed\n"));
+			goto failed;
+		}
 	}
 
 	talloc_free(report_te);
+	if (progress) {
+		for (i=0;i<nprocs;i++) {
+			printf("      ");
+		}
+		printf("\r");
+	}
 
-	printf("%.2f ops/second (%d retries)\n", 
-	       total/timeval_elapsed(&tv), open_retries);
 	minops = state[0].count;
 	for (i=0;i<nprocs;i++) {
-		printf("[%d] %u ops\n", i, state[i].count);
+		total += state[i].count;
+		total_retries += state[i].open_retries;
+		printf("[%d] %u ops (%u retries)\n",
+		       i, state[i].count, state[i].open_retries);
 		if (state[i].count < minops) minops = state[i].count;
 	}
+	printf("%.2f ops/second (%d retries)\n",
+	       total/timeval_elapsed(&tv), total_retries);
 	if (minops < 0.5*total/nprocs) {
 		printf("Failed: unbalanced open\n");
 		goto failed;

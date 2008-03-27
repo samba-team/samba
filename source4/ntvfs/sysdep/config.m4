@@ -11,3 +11,13 @@ fi
 if test x"$ac_cv_header_linux_inotify_h" = x"yes" -a x"$ac_cv_have___NR_inotify_init_decl" = x"yes"; then
     SMB_ENABLE(sys_notify_inotify, YES)
 fi
+
+AC_HAVE_DECL(F_SETLEASE, [#include <fcntl.h>])
+AC_HAVE_DECL(SA_SIGINFO, [#include <signal.h>])
+
+SMB_ENABLE(sys_lease_linux, NO)
+
+if test x"$ac_cv_have_F_SETLEASE_decl" = x"yes" \
+	-a x"$ac_cv_have_SA_SIGINFO_decl" = x"yes"; then
+    SMB_ENABLE(sys_lease_linux, YES)
+fi

@@ -293,7 +293,7 @@ int samldb_notice_sid(struct ldb_module *module,
 	/* find the domain DN */
 	ret = ldb_search_exp_fmt(module->ldb, mem_ctx, &dom_res,
 				 NULL, LDB_SCOPE_SUBTREE, attrs,
-				 "(&(objectSid=%s)(objectclass=domain))",
+				 "(&(objectSid=%s)(|(|(objectClass=domain)(objectClass=builtinDomain))(objectClass=samba4LocalDomain)))", 
 				 ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
 	if (ret == LDB_SUCCESS) {
 		if (dom_res->count == 0) {
@@ -369,7 +369,7 @@ static int samldb_generate_samAccountName(struct ldb_module *module, TALLOC_CTX 
 	/* Format: $000000-000000000000 */
 	
 	do {
-		*name = talloc_asprintf(mem_ctx, "$%.6X-%.6X%.6X", (unsigned int)random(), (unsigned int)random(), (unsigned int)random());
+		*name = talloc_asprintf(mem_ctx, "$%.6X-%.6X%.6X", (unsigned int)generate_random(), (unsigned int)generate_random(), (unsigned int)generate_random());
 		/* TODO: Figure out exactly what this is meant to conflict with */
 		ret = ldb_search_exp_fmt(module->ldb,
 					 mem_ctx, &res, dom_dn, LDB_SCOPE_SUBTREE, attrs,

@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_release_oid_set.c 19963 2007-01-17 16:01:22Z lha $");
+RCSID("$Id: gss_release_oid_set.c 22144 2007-12-04 17:31:55Z lha $");
 
 OM_uint32
 gss_release_oid_set(OM_uint32 *minor_status,
@@ -35,7 +35,7 @@ gss_release_oid_set(OM_uint32 *minor_status,
 {
 
 	*minor_status = 0;
-	if (*set) {
+	if (set && *set) {
 		if ((*set)->elements)
 			free((*set)->elements);
 		free(*set);

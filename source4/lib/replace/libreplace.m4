@@ -120,24 +120,6 @@ if test x"$libreplace_cv_USABLE_NET_IF_H" = x"yes";then
 	AC_DEFINE(HAVE_NET_IF_H, 1, usability of net/if.h)
 fi
 
-AC_CACHE_CHECK([for broken inet_ntoa],libreplace_cv_REPLACE_INET_NTOA,[
-AC_TRY_RUN([
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif
-main() { struct in_addr ip; ip.s_addr = 0x12345678;
-if (strcmp(inet_ntoa(ip),"18.52.86.120") &&
-    strcmp(inet_ntoa(ip),"120.86.52.18")) { exit(0); } 
-exit(1);}],
-           libreplace_cv_REPLACE_INET_NTOA=yes,libreplace_cv_REPLACE_INET_NTOA=no,libreplace_cv_REPLACE_INET_NTOA=cross)])
-if test x"$libreplace_cv_REPLACE_INET_NTOA" = x"yes"; then
-    AC_DEFINE(REPLACE_INET_NTOA,1,[Whether inet_ntoa should be replaced])
-fi
-
 AC_HAVE_TYPE([socklen_t],[#include <sys/socket.h>])
 AC_HAVE_TYPE([sa_family_t],[#include <sys/socket.h>])
 AC_HAVE_TYPE([struct addrinfo], [#include <netdb.h>])
@@ -176,7 +158,7 @@ fi
 AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
 AC_CHECK_FUNCS(waitpid strlcpy strlcat initgroups memmove strdup)
-AC_CHECK_FUNCS(pread pwrite strndup strcasestr strtok_r mkdtemp socketpair)
+AC_CHECK_FUNCS(pread pwrite strndup strcasestr strtok_r mkdtemp)
 AC_CHECK_FUNCS(isatty)
 AC_HAVE_DECL(setresuid, [#include <unistd.h>])
 AC_HAVE_DECL(setresgid, [#include <unistd.h>])
@@ -347,9 +329,12 @@ m4_include(timegm.m4)
 m4_include(socket.m4)
 m4_include(inet_ntop.m4)
 m4_include(inet_pton.m4)
+m4_include(inet_aton.m4)
+m4_include(inet_ntoa.m4)
 m4_include(getaddrinfo.m4)
 m4_include(repdir.m4)
 m4_include(getifaddrs.m4)
+m4_include(socketpair.m4)
 
 AC_CHECK_FUNCS([syslog printf memset memcpy],,[AC_MSG_ERROR([Required function not found])])
 

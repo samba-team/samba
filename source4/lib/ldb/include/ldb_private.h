@@ -200,7 +200,7 @@ extern const struct ldb_module_ops ldb_ranged_results_module_ops;
 extern const struct ldb_backend_ops ldb_tdb_backend_ops;
 extern const struct ldb_backend_ops ldb_sqlite3_backend_ops;
 extern const struct ldb_backend_ops ldb_ldap_backend_ops;
-extern const struct ldb_backend_ops ldb_ildap_backend_ops;
+extern const struct ldb_backend_ops ldb_ldapi_backend_ops;
 extern const struct ldb_backend_ops ldb_ldaps_backend_ops;
 
 int ldb_match_msg(struct ldb_context *ldb,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "krb5/gsskrb5_locl.h"
 
-RCSID("$Id: init_sec_context.c 20326 2007-04-12 16:49:57Z lha $");
+RCSID("$Id: init_sec_context.c 22671 2008-03-09 23:57:54Z lha $");
 
 /*
  * copy the addresses from `input_chan_bindings' (if any) to
@@ -326,7 +326,7 @@ do_delegation (krb5_context context,
 static OM_uint32
 init_auth
 (OM_uint32 * minor_status,
- gsskrb5_cred initiator_cred_handle,
+ gsskrb5_cred cred,
  gsskrb5_ctx ctx,
  krb5_context context,
  krb5_const_principal name,
@@ -344,7 +344,7 @@ init_auth
     OM_uint32 ret = GSS_S_FAILURE;
     krb5_error_code kret;
     krb5_flags ap_options;
-    krb5_creds *cred = NULL;
+    krb5_creds *kcred = NULL;
     krb5_data outbuf;
     krb5_ccache ccache = NULL;
     uint32_t flags;
@@ -362,7 +362,7 @@ init_auth
     if (actual_mech_type)
 	*actual_mech_type = GSS_KRB5_MECHANISM;
 
-    if (initiator_cred_handle == NULL) {
+    if (cred == NULL) {
 	kret = krb5_cc_default (context, &ccache);
 	if (kret) {
 	    *minor_status = kret;
@@ -370,7 +370,7 @@ init_auth
 	    goto failure;
 	}
     } else
-	ccache = initiator_cred_handle->ccache;
+	ccache = cred->ccache;
 
     kret = krb5_cc_get_principal (context, ccache, &ctx->source);
     if (kret) {
@@ -400,8 +400,8 @@ init_auth
     {
 	krb5_enctype *enctypes = NULL;
 
-	if (initiator_cred_handle && initiator_cred_handle->enctypes)
-	    enctypes = initiator_cred_handle->enctypes;
+	if (cred && cred->enctypes)
+	    enctypes = cred->enctypes;
 	krb5_set_default_in_tkt_etypes(context, enctypes);
     }
 
@@ -412,11 +412,11 @@ init_auth
 			    ctx->target,
 			    time_req,
 			    time_rec,
-			    &cred);
+			    &kcred);
     if (ret)
 	goto failure;
 
-    ctx->lifetime = cred->times.endtime;
+    ctx->lifetime = kcred->times.endtime;
 
     ret = _gsskrb5_lifetime_left(minor_status,
 				 context,
@@ -434,11 +434,11 @@ init_auth
 
     krb5_auth_con_setkey(context, 
 			 ctx->auth_context, 
-			 &cred->session);
+			 &kcred->session);
 
     kret = krb5_auth_con_generatelocalsubkey(context, 
 					     ctx->auth_context,
-					     &cred->session);
+					     &kcred->session);
     if(kret) {
 	*minor_status = kret;
 	ret = GSS_S_FAILURE;
@@ -449,10 +449,10 @@ init_auth
      * If the credential doesn't have ok-as-delegate, check what local
      * policy say about ok-as-delegate, default is FALSE that makes
      * code ignore the KDC setting and follow what the application
-     * requested. If its TRUE, strip of the GSS_C_DELEG_FLAG if the
+     * requested. If it is TRUE, strip of the GSS_C_DELEG_FLAG if the
      * KDC doesn't set ok-as-delegate.
      */
-    if (!cred->flags.b.ok_as_delegate) {
+    if (!kcred->flags.b.ok_as_delegate) {
 	krb5_boolean delegate;
     
 	krb5_appdefault_boolean(context,
@@ -467,7 +467,7 @@ init_auth
     if (req_flags & GSS_C_DELEG_FLAG)
 	do_delegation (context,
 		       ctx->auth_context,
-		       ccache, cred, name, &fwd_data, &flags);
+		       ccache, kcred, name, &fwd_data, &flags);
     
     if (req_flags & GSS_C_MUTUAL_FLAG) {
 	flags |= GSS_C_MUTUAL_FLAG;
@@ -490,8 +490,10 @@ init_auth
     if (req_flags & GSS_C_EXTENDED_ERROR_FLAG)
 	flags |= GSS_C_EXTENDED_ERROR_FLAG;
 
-    flags |= GSS_C_CONF_FLAG;
-    flags |= GSS_C_INTEG_FLAG;
+    if (cred == NULL || !(cred->cred_flags & GSS_CF_NO_CI_FLAGS)) {
+	flags |= GSS_C_CONF_FLAG;
+	flags |= GSS_C_INTEG_FLAG;
+    }
     flags |= GSS_C_TRANS_FLAG;
     
     if (ret_flags)
@@ -513,7 +515,7 @@ init_auth
     kret = krb5_build_authenticator (context,
 				     ctx->auth_context,
 				     enctype,
-				     cred,
+				     kcred,
 				     &cksum,
 				     NULL,
 				     &authenticator,
@@ -527,7 +529,7 @@ init_auth
 
     kret = krb5_build_ap_req (context,
 			      enctype,
-			      cred,
+			      kcred,
 			      ap_options,
 			      authenticator,
 			      &outbuf);
@@ -544,9 +546,9 @@ init_auth
 	goto failure;
 
     krb5_data_free (&outbuf);
-    krb5_free_creds(context, cred);
+    krb5_free_creds(context, kcred);
     free_Checksum(&cksum);
-    if (initiator_cred_handle == NULL)
+    if (cred == NULL)
 	krb5_cc_close(context, ccache);
 
     if (flags & GSS_C_MUTUAL_FLAG) {
@@ -556,9 +558,9 @@ init_auth
 
     return gsskrb5_initiator_ready(minor_status, ctx, context);
 failure:
-    if(cred)
-	krb5_free_creds(context, cred);
-    if (ccache && initiator_cred_handle == NULL)
+    if(kcred)
+	krb5_free_creds(context, kcred);
+    if (ccache && cred == NULL)
 	krb5_cc_close(context, ccache);
 
     return ret;
@@ -682,7 +684,7 @@ repl_mutual
 
 OM_uint32 _gsskrb5_init_sec_context
 (OM_uint32 * minor_status,
- const gss_cred_id_t initiator_cred_handle,
+ const gss_cred_id_t cred_handle,
  gss_ctx_id_t * context_handle,
  const gss_name_t target_name,
  const gss_OID mech_type,
@@ -697,7 +699,7 @@ OM_uint32 _gsskrb5_init_sec_context
     )
 {
     krb5_context context;
-    gsskrb5_cred cred = (gsskrb5_cred)initiator_cred_handle;
+    gsskrb5_cred cred = (gsskrb5_cred)cred_handle;
     krb5_const_principal name = (krb5_const_principal)target_name;
     gsskrb5_ctx ctx;
     OM_uint32 ret;

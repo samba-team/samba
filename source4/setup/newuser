@@ -1,80 +1,61 @@
-#!/bin/sh
-exec smbscript "$0" ${1+"$@"}
-/*
-	add a new user to a Samba4 server
-	Copyright Andrew Tridgell 2005
-	Released under the GNU GPL v2 or later
-*/
+#!/usr/bin/python
+#
+#	add a new user to a Samba4 server
+#	Copyright Andrew Tridgell 2005
+#	Copyright Jelmer Vernooij 2008
+#	Released under the GNU GPL v2 or later
+#
 
-options = GetOptions(ARGV,
-		"POPT_AUTOHELP",
-		'username=s',
-		'unixname=s',
-		'password=s',
-		"POPT_COMMON_SAMBA",
-		"POPT_COMMON_VERSION",
-		"POPT_COMMON_CREDENTIALS",
-		'quiet');
+import samba.getopt as options
+import optparse
+import pwd
+import sys
 
-if (options == undefined) {
-   println("Failed to parse options");
-   return -1;
-}
+from auth import system_session
+from samba.samdb import SamDB
 
-libinclude("base.js");
-libinclude("provision.js");
+parser = optparse.OptionParser("newuser [options] <username> [<password>]")
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
+parser.add_option_group(options.VersionOptions(parser))
+credopts = options.CredentialsOptions(parser)
+parser.add_option_group(credopts)
+parser.add_option("--quiet", help="Be quiet", action="store_true")
+parser.add_option("--unixname", help="Unix Username", type=str)
 
-/*
-  print a message if quiet is not set
-*/
-function message() 
-{
-	if (options["quiet"] == undefined) {
-		print(vsprintf(arguments));
-	}
-}
+opts, args = parser.parse_args()
 
-/*
- show some help
-*/
-function ShowHelp()
-{
-	print("
-Samba4 newuser
+#
+#  print a message if quiet is not set
+#
+def message(text):
+	if not opts.quiet:
+		print text
 
-newuser [options]
-  --username  USERNAME     choose new username
-  --unixname  USERNAME     choose unix name of new user
-  --password  PASSWORD     set password
+if len(args) == 0:
+	parser.print_usage()
+	sys.exit(1)
 
-You must provide at least a username
-");
-	exit(1);
-}
+username = args[0]
+if len(args) > 1:
+	password = args[1]
+else:
+	random_init(local)
+	options.password = randpass(12)
+	print "chose random password %s\n" % password
 
-if (options['username'] == undefined) {
-	ShowHelp();
-}
+if opts.unixname is None:
+	opts.unixname = username
 
-if (options['password'] == undefined) {
-	random_init(local);
-	options.password = randpass(12);
-	printf("chose random password %s\n", options.password);
-}
-if (options['unixname'] == undefined) {
-	options.unixname = options.username;
-}
+try:
+	pwd.getpwnam(opts.unixname)
+except KeyError:
+	print "ERROR: Unix user '%s' does not exist" % opts.unixname
+	sys.exit(1)
 
-var nss = nss_init();
-if (nss.getpwnam(options.unixname) == undefined) {
-	printf("ERROR: Unix user '%s' does not exist\n", options.unixname);
-	exit(1);
-}
+creds = credopts.get_credentials()
 
-var creds = options.get_credentials();
-var system_session = system_session();
-
-
-newuser(options.username, options.unixname, options.password, message, system_session, creds);
-
-return 0;
+lp = sambaopts.get_loadparm()
+samdb = SamDB(url=lp.get("sam database"), session_info=system_session(), 
+              credentials=creds, lp=lp)
+samdb.newuser(username, opts.unixname, password)

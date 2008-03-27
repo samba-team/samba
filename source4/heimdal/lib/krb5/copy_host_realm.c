@@ -33,10 +33,19 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: copy_host_realm.c 13863 2004-05-25 21:46:46Z lha $");
+RCSID("$Id: copy_host_realm.c 22057 2007-11-11 15:13:13Z lha $");
 
-/*
+/**
  * Copy the list of realms from `from' to `to'.
+ *
+ * @param context Kerberos 5 context.
+ * @param from list of realms to copy from.
+ * @param to list of realms to copy to, free list of krb5_free_host_realm().
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
  */
 
 krb5_error_code KRB5_LIB_FUNCTION

@@ -175,7 +175,7 @@ struct smb_rmdir {
 };
 
 /* struct used in rename() call */
-enum smb_rename_level {RAW_RENAME_RENAME, RAW_RENAME_NTRENAME};
+enum smb_rename_level {RAW_RENAME_RENAME, RAW_RENAME_NTRENAME, RAW_RENAME_NTTRANS};
 
 union smb_rename {
 	struct {
@@ -206,6 +206,17 @@ union smb_rename {
 			const char *new_name;
 		} in;
 	} ntrename;
+
+	/* NT TRANS rename interface */
+	struct {
+		enum smb_rename_level level;
+
+		struct {
+			union smb_handle file;
+			uint16_t flags;/* see RENAME_REPLACE_IF_EXISTS */
+			const char *new_name;
+		} in;
+	} nttrans;
 };
 
 enum smb_tcon_level {

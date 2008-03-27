@@ -52,6 +52,8 @@ struct samr_domain_state {
 	const char *domain_name;
 	struct ldb_dn *domain_dn;
 	enum server_role role;
+	bool builtin;
+	struct loadparm_context *lp_ctx;
 };
 
 /*

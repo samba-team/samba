@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_accept_sec_context.c 21237 2007-06-20 11:21:09Z lha $");
+RCSID("$Id: gss_accept_sec_context.c 22071 2007-11-14 20:04:50Z lha $");
 
 static OM_uint32
 parse_header(const gss_buffer_t input_token, gss_OID mech_oid)
@@ -38,7 +38,7 @@ parse_header(const gss_buffer_t input_token, gss_OID mech_oid)
 	
 	/*
 	 * Token must start with [APPLICATION 0] SEQUENCE.
-	 * But if it doesn't assume its DCE-STYLE Kerberos!
+	 * But if it doesn't assume it is DCE-STYLE Kerberos!
 	 */
 	if (len == 0)
 		return (GSS_S_DEFECTIVE_TOKEN);
@@ -102,7 +102,7 @@ choose_mech(const gss_buffer_t input, gss_OID mech_oid)
 	OM_uint32 status;
 
 	/*
-	 * First try to parse the gssapi token header and see if its a
+	 * First try to parse the gssapi token header and see if it's a
 	 * correct header, use that in the first hand.
 	 */
 

@@ -445,13 +445,12 @@ NTTIME samdb_result_nttime(struct ldb_message *msg, const char *attr, NTTIME def
  * Consolidate that logic here to allow clearer logic for account expiry in
  * the rest of the code.
  */
-NTTIME samdb_result_account_expires(struct ldb_message *msg,
-				    NTTIME default_value)
+NTTIME samdb_result_account_expires(struct ldb_message *msg)
 {
 	NTTIME ret = ldb_msg_find_attr_as_uint64(msg, "accountExpires",
-						 default_value);
+						 0);
 
-	if (ret == (NTTIME)0)
+	if (ret == 0)
 		ret = 0x7FFFFFFFFFFFFFFFULL;
 
 	return ret;
@@ -1004,7 +1003,13 @@ struct ldb_dn *samdb_sites_dn(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx)
 const struct dom_sid *samdb_domain_sid(struct ldb_context *ldb)
 {
 	TALLOC_CTX *tmp_ctx;
-	struct dom_sid *domain_sid;
+	const struct dom_sid *domain_sid;
+	const char *attrs[] = {
+		"objectSid",
+		NULL
+	};
+	struct ldb_result *res;
+	int ret;
 
 	/* see if we have a cached copy */
 	domain_sid = (struct dom_sid *)ldb_get_opaque(ldb, "cache.domain_sid");
@@ -1017,9 +1022,17 @@ const struct dom_sid *samdb_domain_sid(struct ldb_context *ldb)
 		goto failed;
 	}
 
-	/* find the domain_sid */
-	domain_sid = samdb_search_dom_sid(ldb, tmp_ctx, ldb_get_default_basedn(ldb),
-					  "objectSid", "objectClass=domainDNS");
+	ret = ldb_search_exp_fmt(ldb, tmp_ctx, &res, ldb_get_default_basedn(ldb), LDB_SCOPE_BASE, attrs, "objectSid=*");
+
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
+	
+	if (res->count != 1) {
+		goto failed;
+	}
+
+	domain_sid = samdb_result_dom_sid(tmp_ctx, res->msgs[0], "objectSid");
 	if (domain_sid == NULL) {
 		goto failed;
 	}
@@ -1464,7 +1477,7 @@ int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	
 	while ((sdn = ldb_dn_get_parent(local_ctx, sdn))) {
 		ret = ldb_search(ldb, sdn, LDB_SCOPE_BASE, 
-				 "(|(objectClass=domain)(objectClass=builtinDomain))", attrs, &res);
+				 "(|(|(objectClass=domain)(objectClass=builtinDomain))(objectClass=samba4LocalDomain))", attrs, &res);
 		if (ret == LDB_SUCCESS) {
 			talloc_steal(local_ctx, res);
 			if (res->count == 1) {
