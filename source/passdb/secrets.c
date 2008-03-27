@@ -64,7 +64,8 @@ bool secrets_init(void)
 		return false;
 	}
 
-	db_ctx = db_open(NULL, fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	db_ctx = db_open_trans(NULL, fname, 0,
+			       TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 
 	if (db_ctx == NULL) {
 		DEBUG(0,("Failed to open %s\n", fname));
