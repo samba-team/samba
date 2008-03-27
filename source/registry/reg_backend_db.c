@@ -177,7 +177,7 @@ fail:
  */
 bool init_registry_key(const char *add_path)
 {
-	if (regdb->transaction_start(regdb) == -1) {
+	if (regdb->transaction_start(regdb) != 0) {
 		DEBUG(0, ("init_registry_key: transaction_start failed\n"));
 		return false;
 	}
@@ -220,7 +220,7 @@ bool init_registry_data(void)
 	 * transaction behaviour.
 	 */
 
-	if (regdb->transaction_start(regdb) == -1) {
+	if (regdb->transaction_start(regdb) != 0) {
 		DEBUG(0, ("init_registry_data: tdb_transaction_start "
 			  "failed\n"));
 		return false;
@@ -544,7 +544,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 
 	TALLOC_FREE(old_subkeys);
 
-	if (regdb->transaction_start(regdb) == -1) {
+	if (regdb->transaction_start(regdb) != 0) {
 		DEBUG(0, ("regdb_store_keys: transaction_start failed\n"));
 		goto fail;
 	}
