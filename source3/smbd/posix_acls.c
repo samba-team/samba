@@ -2882,7 +2882,6 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 		{
 			canon_ace *ace;
 			enum security_ace_type nt_acl_type;
-			int i;
 
 			if (nt4_compatible_acls() && dir_ace) {
 				/*
@@ -2948,9 +2947,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 			 * Create the NT ACE list from the canonical ace lists.
 			 */
 
-			ace = file_ace;
-
-			for (i = 0; i < num_acls; i++, ace = ace->next) {
+			for (ace = file_ace; ace != NULL; ace = ace->next) {
 				SEC_ACCESS acc;
 
 				acc = map_canon_ace_perms(SNUM(conn),
@@ -2977,9 +2974,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 						acc, 0);
 			}
 
-			ace = dir_ace;
-
-			for (i = 0; i < num_def_acls; i++, ace = ace->next) {
+			for (ace = dir_ace; ace != NULL; ace = ace->next) {
 				SEC_ACCESS acc;
 
 				acc = map_canon_ace_perms(SNUM(conn),
