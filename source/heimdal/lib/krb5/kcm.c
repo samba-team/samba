@@ -43,7 +43,7 @@
 
 #include "kcm.h"
 
-RCSID("$Id: kcm.c 17442 2006-05-05 09:31:15Z lha $");
+RCSID("$Id: kcm.c 22108 2007-12-03 17:23:53Z lha $");
 
 typedef struct krb5_kcmcache {
     char *name;
@@ -829,6 +829,27 @@ kcm_get_version(krb5_context context,
     return 0;
 }
 
+static krb5_error_code
+kcm_move(krb5_context context, krb5_ccache from, krb5_ccache to)
+{
+    krb5_set_error_string(context, "kcm_move not implemented");
+    return EINVAL;
+}
+
+static krb5_error_code
+kcm_default_name(krb5_context context, char **str)
+{
+    return _krb5_expand_default_cc_name(context, 
+					KRB5_DEFAULT_CCNAME_KCM,
+					str);
+}
+
+/**
+ * Variable containing the KCM based credential cache implemention.
+ *
+ * @ingroup krb5_ccache
+ */
+
 const krb5_cc_ops krb5_kcm_ops = {
     "KCM",
     kcm_get_name,
@@ -845,7 +866,12 @@ const krb5_cc_ops krb5_kcm_ops = {
     kcm_end_get,
     kcm_remove_cred,
     kcm_set_flags,
-    kcm_get_version
+    kcm_get_version,
+    NULL,
+    NULL,
+    NULL,
+    kcm_move,
+    kcm_default_name
 };
 
 krb5_boolean

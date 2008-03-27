@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: addr_families.c 18805 2006-10-22 06:54:00Z lha $");
+RCSID("$Id: addr_families.c 22039 2007-11-10 11:47:35Z lha $");
 
 struct addr_operations {
     int af;
@@ -767,6 +767,19 @@ find_atype(int atype)
     return NULL;
 }
 
+/**
+ * krb5_sockaddr2address stores a address a "struct sockaddr" sa in
+ * the krb5_address addr. 
+ *
+ * @param context a Keberos context
+ * @param sa a struct sockaddr to extract the address from
+ * @param addr an Kerberos 5 address to store the address in.
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_address
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_sockaddr2address (krb5_context context,
 		       const struct sockaddr *sa, krb5_address *addr)
@@ -780,6 +793,20 @@ krb5_sockaddr2address (krb5_context context,
     return (*a->sockaddr2addr)(sa, addr);
 }
 
+/**
+ * krb5_sockaddr2port extracts a port (if possible) from a "struct
+ * sockaddr.
+ *
+ * @param context a Keberos context
+ * @param sa a struct sockaddr to extract the port from
+ * @param port a pointer to an int16_t store the port in.
+ *
+ * @return Return an error code or 0. Will return
+ * KRB5_PROG_ATYPE_NOSUPP in case address type is not supported.
+ *
+ * @ingroup krb5_address
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_sockaddr2port (krb5_context context,
 		    const struct sockaddr *sa, int16_t *port)
@@ -792,6 +819,27 @@ krb5_sockaddr2port (krb5_context context,
     }
     return (*a->sockaddr2port)(sa, port);
 }
+
+/**
+ * krb5_addr2sockaddr sets the "struct sockaddr sockaddr" from addr
+ * and port. The argument sa_size should initially contain the size of
+ * the sa and after the call, it will contain the actual length of the
+ * address. In case of the sa is too small to fit the whole address,
+ * the up to *sa_size will be stored, and then *sa_size will be set to
+ * the required length.
+ *
+ * @param context a Keberos context
+ * @param addr the address to copy the from
+ * @param sa the struct sockaddr that will be filled in
+ * @param sa_size pointer to length of sa, and after the call, it will
+ * contain the actual length of the address.
+ * @param port set port in sa.
+ *
+ * @return Return an error code or 0. Will return
+ * KRB5_PROG_ATYPE_NOSUPP in case address type is not supported.
+ *
+ * @ingroup krb5_address
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_addr2sockaddr (krb5_context context,
@@ -808,13 +856,23 @@ krb5_addr2sockaddr (krb5_context context,
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
     if (a->addr2sockaddr == NULL) {
-	krb5_set_error_string (context, "Can't convert address type %d to sockaddr",
+	krb5_set_error_string (context,
+			       "Can't convert address type %d to sockaddr",
 			       addr->addr_type);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
     (*a->addr2sockaddr)(addr, sa, sa_size, port);
     return 0;
 }
+
+/**
+ * krb5_max_sockaddr_size returns the max size of the .Li struct
+ * sockaddr that the Kerberos library will return.
+ *
+ * @return Return an size_t of the maximum struct sockaddr.
+ *
+ * @ingroup krb5_address
+ */
 
 size_t KRB5_LIB_FUNCTION
 krb5_max_sockaddr_size (void)
@@ -828,6 +886,18 @@ krb5_max_sockaddr_size (void)
     return max_sockaddr_size;
 }
 
+/**
+ * krb5_sockaddr_uninteresting returns TRUE for all .Fa sa that the
+ * kerberos library thinks are uninteresting.  One example are link
+ * local addresses.
+ *
+ * @param sa pointer to struct sockaddr that might be interesting.
+ *
+ * @return Return a non zero for uninteresting addresses.
+ *
+ * @ingroup krb5_address
+ */
+
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_sockaddr_uninteresting(const struct sockaddr *sa)
 {
@@ -836,6 +906,25 @@ krb5_sockaddr_uninteresting(const struct sockaddr *sa)
 	return TRUE;
     return (*a->uninteresting)(sa);
 }
+
+/**
+ * krb5_h_addr2sockaddr initializes a "struct sockaddr sa" from af and
+ * the "struct hostent" (see gethostbyname(3) ) h_addr_list
+ * component. The argument sa_size should initially contain the size
+ * of the sa, and after the call, it will contain the actual length of
+ * the address.
+ *
+ * @param context a Keberos context
+ * @param af addresses
+ * @param addr address
+ * @param sa returned struct sockaddr
+ * @param sa_size size of sa
+ * @param port port to set in sa.
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_address
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_h_addr2sockaddr (krb5_context context,
@@ -853,6 +942,20 @@ krb5_h_addr2sockaddr (krb5_context context,
     return 0;
 }
 
+/**
+ * krb5_h_addr2addr works like krb5_h_addr2sockaddr with the exception
+ * that it operates on a krb5_address instead of a struct sockaddr.
+ *
+ * @param context a Keberos context
+ * @param af address family
+ * @param haddr host address from struct hostent.
+ * @param addr returned krb5_address.
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_address
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_h_addr2addr (krb5_context context,
 		  int af,
@@ -865,6 +968,23 @@ krb5_h_addr2addr (krb5_context context,
     }
     return (*a->h_addr2addr)(haddr, addr);
 }
+
+/**
+ * krb5_anyaddr fills in a "struct sockaddr sa" that can be used to
+ * bind(2) to.  The argument sa_size should initially contain the size
+ * of the sa, and after the call, it will contain the actual length
+ * of the address.
+ *
+ * @param context a Keberos context
+ * @param af address family
+ * @param sa sockaddr
+ * @param sa_size lenght of sa.
+ * @param port for to fill into sa.
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_address
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_anyaddr (krb5_context context,
@@ -883,6 +1003,22 @@ krb5_anyaddr (krb5_context context,
     (*a->anyaddr)(sa, sa_size, port);
     return 0;
 }
+
+/**
+ * krb5_print_address prints the address in addr to the string string
+ * that have the length len. If ret_len is not NULL, it will be filled
+ * with the length of the string if size were unlimited (not including
+ * the final NUL) .
+ *
+ * @param addr address to be printed
+ * @param str pointer string to print the address into
+ * @param len length that will fit into area pointed to by "str".
+ * @param ret_len return length the str.
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_address
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_print_address (const krb5_address *addr, 
@@ -920,6 +1056,19 @@ krb5_print_address (const krb5_address *addr,
 	*ret_len = ret;
     return 0;
 }
+
+/**
+ * krb5_parse_address returns the resolved hostname in string to the
+ * krb5_addresses addresses .
+ *
+ * @param context a Keberos context
+ * @param string
+ * @param addresses
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_address
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_parse_address(krb5_context context,
@@ -980,6 +1129,21 @@ krb5_parse_address(krb5_context context,
     return 0;
 }
 
+/**
+ * krb5_address_order compares the addresses addr1 and addr2 so that
+ * it can be used for sorting addresses. If the addresses are the same
+ * address krb5_address_order will return 0. Behavies like memcmp(2). 
+ *
+ * @param context a Keberos context
+ * @param addr1 krb5_address to compare
+ * @param addr2 krb5_address to compare
+ *
+ * @return < 0 if address addr1 in "less" then addr2. 0 if addr1 and
+ * addr2 is the same address, > 0 if addr2 is "less" then addr1.
+ *
+ * @ingroup krb5_address
+ */
+
 int KRB5_LIB_FUNCTION
 krb5_address_order(krb5_context context,
 		   const krb5_address *addr1,
@@ -1014,6 +1178,19 @@ krb5_address_order(krb5_context context,
 		   addr1->address.length);
 }
 
+/**
+ * krb5_address_compare compares the addresses  addr1 and addr2.
+ * Returns TRUE if the two addresses are the same.
+ *
+ * @param context a Keberos context
+ * @param addr1 address to compare
+ * @param addr2 address to compare
+ *
+ * @return Return an TRUE is the address are the same FALSE if not
+ *
+ * @ingroup krb5_address
+ */
+
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_address_compare(krb5_context context,
 		     const krb5_address *addr1,
@@ -1021,6 +1198,19 @@ krb5_address_compare(krb5_context context,
 {
     return krb5_address_order (context, addr1, addr2) == 0;
 }
+
+/**
+ * krb5_address_search checks if the address addr is a member of the
+ * address set list addrlist .
+ *
+ * @param context a Keberos context.
+ * @param addr address to search for.
+ * @param addrlist list of addresses to look in for addr.
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_address
+ */
 
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_address_search(krb5_context context,
@@ -1035,6 +1225,18 @@ krb5_address_search(krb5_context context,
     return FALSE;
 }
 
+/**
+ * krb5_free_address frees the data stored in the address that is
+ * alloced with any of the krb5_address functions.
+ *
+ * @param context a Keberos context
+ * @param address addresss to be freed.
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_address
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_address(krb5_context context,
 		  krb5_address *address)
@@ -1046,6 +1248,18 @@ krb5_free_address(krb5_context context,
     memset(address, 0, sizeof(*address));
     return 0;
 }
+
+/**
+ * krb5_free_addresses frees the data stored in the address that is
+ * alloced with any of the krb5_address functions.
+ *
+ * @param context a Keberos context
+ * @param addresses addressses to be freed.
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_address
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_addresses(krb5_context context,
@@ -1060,6 +1274,19 @@ krb5_free_addresses(krb5_context context,
     return 0;
 }
 
+/**
+ * krb5_copy_address copies the content of address
+ * inaddr to outaddr.
+ *
+ * @param context a Keberos context
+ * @param inaddr pointer to source address
+ * @param outaddr pointer to destination address
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_address
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_copy_address(krb5_context context,
 		  const krb5_address *inaddr,
@@ -1070,6 +1297,19 @@ krb5_copy_address(krb5_context context,
 	return (*a->copy_addr)(context, inaddr, outaddr);
     return copy_HostAddress(inaddr, outaddr);
 }
+
+/**
+ * krb5_copy_addresses copies the content of addresses
+ * inaddr to outaddr.
+ *
+ * @param context a Keberos context
+ * @param inaddr pointer to source addresses
+ * @param outaddr pointer to destination addresses
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_address
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_copy_addresses(krb5_context context,
@@ -1084,6 +1324,19 @@ krb5_copy_addresses(krb5_context context,
 	krb5_copy_address(context, &inaddr->val[i], &outaddr->val[i]);
     return 0;
 }
+
+/**
+ * krb5_append_addresses adds the set of addresses in source to
+ * dest. While copying the addresses, duplicates are also sorted out.
+ *
+ * @param context a Keberos context
+ * @param dest destination of copy operation
+ * @param source adresses that are going to be added to dest
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_address
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_append_addresses(krb5_context context,
@@ -1115,8 +1368,17 @@ krb5_append_addresses(krb5_context context,
     return 0;
 }
 
-/*
+/**
  * Create an address of type KRB5_ADDRESS_ADDRPORT from (addr, port)
+ *
+ * @param context a Keberos context
+ * @param res built address from addr/port
+ * @param addr address to use
+ * @param port port to use
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_address
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -1170,9 +1432,19 @@ krb5_make_addrport (krb5_context context,
     return 0;
 }
 
-/*
+/**
  * Calculate the boundary addresses of `inaddr'/`prefixlen' and store
  * them in `low' and `high'.
+ *
+ * @param context a Keberos context
+ * @param inaddr address in prefixlen that the bondery searched
+ * @param prefixlen width of boundery
+ * @param low lowest address
+ * @param high highest address
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_address
  */
 
 krb5_error_code KRB5_LIB_FUNCTION

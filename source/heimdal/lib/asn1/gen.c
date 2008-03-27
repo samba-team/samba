@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen.c 21364 2007-06-27 08:51:06Z lha $");
+RCSID("$Id: gen.c 22429 2008-01-13 10:25:50Z lha $");
 
 FILE *headerfile, *codefile, *logfile;
 

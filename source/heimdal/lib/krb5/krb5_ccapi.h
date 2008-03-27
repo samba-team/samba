@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5_ccapi.h 17442 2006-05-05 09:31:15Z lha $ */
+/* $Id: krb5_ccapi.h 22090 2007-12-02 23:23:43Z lha $ */
 
 #ifndef KRB5_CCAPI_H
 #define KRB5_CCAPI_H 1
@@ -180,18 +180,18 @@ typedef struct cc_ccache_functions {
     cc_int32 (*destroy)(cc_ccache_t);
     cc_int32 (*set_default)(cc_ccache_t);
     cc_int32 (*get_credentials_version)(cc_ccache_t, cc_uint32*);
-    cc_int32 (*get_name)(cc_ccache_t ccache,cc_string_t*);
+    cc_int32 (*get_name)(cc_ccache_t, cc_string_t*);
     cc_int32 (*get_principal)(cc_ccache_t, cc_uint32, cc_string_t*);
     cc_int32 (*set_principal)(cc_ccache_t, cc_uint32, const char*);
     cc_int32 (*store_credentials)(cc_ccache_t, const cc_credentials_union*);
     cc_int32 (*remove_credentials)(cc_ccache_t, cc_credentials_t);
     cc_int32 (*new_credentials_iterator)(cc_ccache_t,
 					 cc_credentials_iterator_t*);
-    cc_int32 (*move)(cc_ccache_t source, cc_ccache_t);
+    cc_int32 (*move)(cc_ccache_t, cc_ccache_t);
     cc_int32 (*lock)(cc_ccache_t, cc_uint32, cc_uint32);
     cc_int32 (*unlock)(cc_ccache_t);
     cc_int32 (*get_last_default_time)(cc_ccache_t, cc_time_t*);
-    cc_int32 (*get_change_time)(cc_ccache_t ccache, cc_time_t*);
+    cc_int32 (*get_change_time)(cc_ccache_t, cc_time_t*);
     cc_int32 (*compare)(cc_ccache_t, cc_ccache_t, cc_uint32*);
     cc_int32 (*get_kdc_time_offset)(cc_ccache_t, cc_int32, cc_time_t *);
     cc_int32 (*set_kdc_time_offset)(cc_ccache_t, cc_int32, cc_time_t);

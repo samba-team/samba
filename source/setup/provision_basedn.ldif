@@ -3,7 +3,6 @@
 ################################
 dn: ${DOMAINDN}
 objectClass: top
-objectClass: domain
-objectClass: domainDNS
+objectClass: ${DOMAIN_OC}
 ${ACI}
 

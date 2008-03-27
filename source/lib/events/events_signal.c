@@ -257,7 +257,7 @@ int common_event_check_signal(struct event_context *ev)
 				for (j=0;j<count;j++) {
 					/* note the use of the sig_info array as a
 					   ring buffer */
-					int ofs = (counter.count + j) % SA_INFO_QUEUE_COUNT;
+					int ofs = ((count-1) + j) % SA_INFO_QUEUE_COUNT;
 					se->handler(ev, se, i, 1, 
 						    (void*)&sig_state->sig_info[i][ofs], 
 						    se->private_data);

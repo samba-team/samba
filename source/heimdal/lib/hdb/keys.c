@@ -33,7 +33,7 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id: keys.c 18819 2006-10-22 09:40:12Z lha $");
+RCSID("$Id: keys.c 22071 2007-11-14 20:04:50Z lha $");
 
 /*
  * free all the memory used by (len, keys)
@@ -105,7 +105,7 @@ parse_key_set(krb5_context context, const char *key,
     salt->saltvalue.length = 0;
 
     for(i = 0; i < num_buf; i++) {
-	if(enctypes == NULL) {
+	if(enctypes == NULL && num_buf > 1) {
 	    /* this might be a etype specifier */
 	    /* XXX there should be a string_to_etypes handling
 	       special cases like `des' and `all' */
@@ -124,7 +124,9 @@ parse_key_set(krb5_context context, const char *key,
 		} else
 		    return ret;
 	    }
-	} else if(salt->salttype == 0) {
+	    continue;
+	}
+	if(salt->salttype == 0) {
 	    /* interpret string as a salt specifier, if no etype
 	       is set, this sets default values */
 	    /* XXX should perhaps use string_to_salttype, but that
@@ -142,7 +144,10 @@ parse_key_set(krb5_context context, const char *key,
 		}
 		salt->salttype = KRB5_AFS3_SALT;
 	    }
-	} else {
+	    continue;
+	}
+
+	{
 	    /* if there is a final string, use it as the string to
 	       salt with, this is mostly useful with null salt for
 	       v4 compat, and a cell name for afs compat */
@@ -239,7 +244,7 @@ add_enctype_to_key_set(Key **key_set, size_t *nkeyset,
 /*
  * Generate the `key_set' from the [kadmin]default_keys statement. If
  * `no_salt' is set, salt is not important (and will not be set) since
- * its random keys that is going to be created.
+ * it's random keys that is going to be created.
  */
 
 krb5_error_code

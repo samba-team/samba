@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hx509.h 21310 2007-06-25 18:26:06Z lha $ */
+/* $Id: hx509.h 22464 2008-01-16 14:24:50Z lha $ */
 
 typedef struct hx509_cert_attribute_data *hx509_cert_attribute;
 typedef struct hx509_cert_data *hx509_cert;
@@ -54,6 +54,10 @@ typedef struct hx509_env *hx509_env;
 typedef struct hx509_crl *hx509_crl;
 
 typedef void (*hx509_vprint_func)(void *, const char *, va_list);
+
+enum {
+    HX509_VHN_F_ALLOW_NO_MATCH = 1
+};
 
 enum {
     HX509_VALIDATE_F_VALIDATE = 1,
@@ -107,6 +111,7 @@ typedef enum {
 
 /* flags to hx509_certs_init */
 #define HX509_CERTS_CREATE				0x01
+#define HX509_CERTS_UNPROTECT_ALL			0x02
 
 /* flags to hx509_set_error_string */
 #define HX509_ERROR_APPEND				0x01

@@ -27,7 +27,7 @@
  */
 
 #include "mech_locl.h"
-RCSID("$Id: gss_krb5.c 21123 2007-06-18 20:05:26Z lha $");
+RCSID("$Id: gss_krb5.c 21889 2007-08-09 07:43:24Z lha $");
 
 #include <krb5.h>
 #include <roken.h>
@@ -252,7 +252,6 @@ free_key(gss_krb5_lucid_key_t *key)
     free(key->data);
     memset(key, 0, sizeof(*key));
 }
-
 
 OM_uint32
 gss_krb5_export_lucid_sec_context(OM_uint32 *minor_status,
@@ -824,3 +823,43 @@ gsskrb5_set_default_realm(const char *realm)
 
 	return (GSS_S_COMPLETE);
 }
+
+OM_uint32
+gss_krb5_get_tkt_flags(OM_uint32 *minor_status,
+		       gss_ctx_id_t context_handle,
+		       OM_uint32 *tkt_flags)
+{
+
+    OM_uint32 major_status;
+    gss_buffer_set_t data_set = GSS_C_NO_BUFFER_SET;
+
+    if (context_handle == GSS_C_NO_CONTEXT) {
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
+    
+    major_status =
+	gss_inquire_sec_context_by_oid (minor_status,
+					context_handle,
+					GSS_KRB5_GET_TKT_FLAGS_X,
+					&data_set);
+    if (major_status)
+	return major_status;
+    
+    if (data_set == GSS_C_NO_BUFFER_SET || 
+	data_set->count != 1 ||
+	data_set->elements[0].length < 4) {
+	gss_release_buffer_set(minor_status, &data_set);
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
+
+    {
+	const u_char *p = data_set->elements[0].value;
+	*tkt_flags = (p[0] << 0) | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
+    }
+
+    gss_release_buffer_set(minor_status, &data_set);
+    return GSS_S_COMPLETE;
+}
+

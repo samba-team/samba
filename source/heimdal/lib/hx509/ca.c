@@ -33,7 +33,13 @@
 
 #include "hx_locl.h"
 #include <pkinit_asn1.h>
-RCSID("$Id: ca.c 21379 2007-06-28 07:38:17Z lha $");
+RCSID("$Id: ca.c 22456 2008-01-15 20:22:53Z lha $");
+
+/**
+ * @page page_ca Hx509 CA functions
+ *
+ * See the library functions here: @ref hx509_ca
+ */
 
 struct hx509_ca_tbs {
     hx509_name subject;
@@ -55,6 +61,19 @@ struct hx509_ca_tbs {
     CRLDistributionPoints crldp;
 };
 
+/**
+ * Allocate an to-be-signed certificate object that will be converted
+ * into an certificate.
+ *
+ * @param context A hx509 context.
+ * @param tbs returned to-be-signed certicate object, free with
+ * hx509_ca_tbs_free().
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
+
 int
 hx509_ca_tbs_init(hx509_context context, hx509_ca_tbs *tbs)
 {
@@ -73,6 +92,14 @@ hx509_ca_tbs_init(hx509_context context, hx509_ca_tbs *tbs)
 
     return 0;
 }
+
+/**
+ * Free an To Be Signed object.
+ *
+ * @param tbs object to free.
+ *
+ * @ingroup hx509_ca
+ */
 
 void
 hx509_ca_tbs_free(hx509_ca_tbs *tbs)
@@ -93,6 +120,19 @@ hx509_ca_tbs_free(hx509_ca_tbs *tbs)
     *tbs = NULL;
 }
 
+/**
+ * Set the absolute time when the certificate is valid from. If not
+ * set the current time will be used.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param t time the certificated will start to be valid
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
+
 int
 hx509_ca_tbs_set_notBefore(hx509_context context,
 			   hx509_ca_tbs tbs,
@@ -102,6 +142,18 @@ hx509_ca_tbs_set_notBefore(hx509_context context,
     return 0;
 }
 
+/**
+ * Set the absolute time when the certificate is valid to.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param t time when the certificate will expire
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
+
 int
 hx509_ca_tbs_set_notAfter(hx509_context context,
 			   hx509_ca_tbs tbs,
@@ -110,6 +162,18 @@ hx509_ca_tbs_set_notAfter(hx509_context context,
     tbs->notAfter = t;
     return 0;
 }
+
+/**
+ * Set the relative time when the certificiate is going to expire.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param delta seconds to the certificate is going to expire.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
 
 int
 hx509_ca_tbs_set_notAfter_lifetime(hx509_context context,
@@ -130,11 +194,34 @@ static const struct units templatebits[] = {
     { NULL, 0 }
 };
 
+/**
+ * Make of template units, use to build flags argument to
+ * hx509_ca_tbs_set_template() with parse_units().
+ *
+ * @return an units structure.
+ *
+ * @ingroup hx509_ca
+ */
+
 const struct units *
 hx509_ca_tbs_template_units(void)
 {
     return templatebits;
 }
+
+/**
+ * Initialize the to-be-signed certificate object from a template certifiate.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param flags bit field selecting what to copy from the template
+ * certifiate.
+ * @param cert template certificate.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
 
 int
 hx509_ca_tbs_set_template(hx509_context context,
@@ -170,12 +257,10 @@ hx509_ca_tbs_set_template(hx509_context context,
 	tbs->notAfter = hx509_cert_get_notAfter(cert);
     if (flags & HX509_CA_TEMPLATE_SPKI) {
 	free_SubjectPublicKeyInfo(&tbs->spki);
-	ret = hx509_cert_get_SPKI(cert, &tbs->spki);
+	ret = hx509_cert_get_SPKI(context, cert, &tbs->spki);
 	tbs->flags.key = !ret;
-	if (ret) {
-	    hx509_set_error_string(context, 0, ret, "Failed to copy SPKI");
+	if (ret)
 	    return ret;
-	}
     }
     if (flags & HX509_CA_TEMPLATE_KU) {
 	KeyUsage ku;
@@ -202,6 +287,20 @@ hx509_ca_tbs_set_template(hx509_context context,
     return 0;
 }
 
+/**
+ * Make the to-be-signed certificate object a CA certificate. If the
+ * pathLenConstraint is negative path length constraint is used.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param pathLenConstraint path length constraint, negative, no
+ * constraint.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
+
 int
 hx509_ca_tbs_set_ca(hx509_context context,
 		    hx509_ca_tbs tbs,
@@ -211,6 +310,20 @@ hx509_ca_tbs_set_ca(hx509_context context,
     tbs->pathLenConstraint = pathLenConstraint;
     return 0;
 }
+
+/**
+ * Make the to-be-signed certificate object a proxy certificate. If the
+ * pathLenConstraint is negative path length constraint is used.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param pathLenConstraint path length constraint, negative, no
+ * constraint.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
 
 int
 hx509_ca_tbs_set_proxy(hx509_context context,
@@ -223,6 +336,17 @@ hx509_ca_tbs_set_proxy(hx509_context context,
 }
 
 
+/**
+ * Make the to-be-signed certificate object a windows domain controller certificate.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
+
 int
 hx509_ca_tbs_set_domaincontroller(hx509_context context,
 				  hx509_ca_tbs tbs)
@@ -230,6 +354,20 @@ hx509_ca_tbs_set_domaincontroller(hx509_context context,
     tbs->flags.domaincontroller = 1;
     return 0;
 }
+
+/**
+ * Set the subject public key info (SPKI) in the to-be-signed certificate
+ * object. SPKI is the public key and key related parameters in the
+ * certificate.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param spki subject public key info to use for the to-be-signed certificate object.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
 
 int
 hx509_ca_tbs_set_spki(hx509_context context,
@@ -243,6 +381,19 @@ hx509_ca_tbs_set_spki(hx509_context context,
     return ret;
 }
 
+/**
+ * Set the serial number to use for to-be-signed certificate object.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param serialNumber serial number to use for the to-be-signed
+ * certificate object.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
+
 int
 hx509_ca_tbs_set_serialnumber(hx509_context context,
 			      hx509_ca_tbs tbs,
@@ -254,6 +405,19 @@ hx509_ca_tbs_set_serialnumber(hx509_context context,
     tbs->flags.serial = !ret;
     return ret;
 }
+
+/**
+ * An an extended key usage to the to-be-signed certificate object.
+ * Duplicates will detected and not added.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param oid extended key usage to add.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
 
 int
 hx509_ca_tbs_add_eku(hx509_context context,
@@ -284,6 +448,20 @@ hx509_ca_tbs_add_eku(hx509_context context,
     tbs->eku.len += 1;
     return 0;
 }
+
+/**
+ * Add CRL distribution point URI to the to-be-signed certificate
+ * object.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param uri uri to the CRL.
+ * @param issuername name of the issuer.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
 
 int
 hx509_ca_tbs_add_crl_dp_uri(hx509_context context,
@@ -325,6 +503,9 @@ hx509_ca_tbs_add_crl_dp_uri(hx509_context context,
 
     if (issuername) {
 #if 1
+	/**
+	 * issuername not supported
+	 */
 	hx509_set_error_string(context, 0, EINVAL,
 			       "CRLDistributionPoints.name.issuername not yet supported");
 	return EINVAL;
@@ -372,6 +553,20 @@ out:
     return ret;
 }
 
+/**
+ * Add Subject Alternative Name otherName to the to-be-signed
+ * certificate object.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param oid the oid of the OtherName.
+ * @param os data in the other name.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
+
 int
 hx509_ca_tbs_add_san_otherName(hx509_context context,
 			       hx509_ca_tbs tbs,
@@ -388,6 +583,18 @@ hx509_ca_tbs_add_san_otherName(hx509_context context,
     return add_GeneralNames(&tbs->san, &gn);
 }
 
+/**
+ * Add Kerberos Subject Alternative Name to the to-be-signed
+ * certificate object. The principal string is a UTF8 string.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param principal Kerberos principal to add to the certificate.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
 
 int
 hx509_ca_tbs_add_san_pkinit(hx509_context context,
@@ -511,6 +718,19 @@ out:
     return ret;
 }
 
+/**
+ * Add Microsoft UPN Subject Alternative Name to the to-be-signed
+ * certificate object. The principal string is a UTF8 string.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param principal Microsoft UPN string.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
+
 int
 hx509_ca_tbs_add_san_ms_upn(hx509_context context,
 			    hx509_ca_tbs tbs,
@@ -518,6 +738,19 @@ hx509_ca_tbs_add_san_ms_upn(hx509_context context,
 {
     return add_utf8_san(context, tbs, oid_id_pkinit_ms_san(), principal);
 }
+
+/**
+ * Add a Jabber/XMPP jid Subject Alternative Name to the to-be-signed
+ * certificate object. The jid is an UTF8 string.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param jid string of an a jabber id in UTF8.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
 
 int
 hx509_ca_tbs_add_san_jid(hx509_context context,
@@ -527,6 +760,22 @@ hx509_ca_tbs_add_san_jid(hx509_context context,
     return add_utf8_san(context, tbs, oid_id_pkix_on_xmppAddr(), jid);
 }
 
+
+/**
+ * Add a Subject Alternative Name hostname to to-be-signed certificate
+ * object. A domain match starts with ., an exact match does not.
+ *
+ * Example of a an domain match: .domain.se matches the hostname
+ * host.domain.se.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param dnsname a hostame.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
 
 int
 hx509_ca_tbs_add_san_hostname(hx509_context context,
@@ -542,6 +791,19 @@ hx509_ca_tbs_add_san_hostname(hx509_context context,
     return add_GeneralNames(&tbs->san, &gn);
 }
 
+/**
+ * Add a Subject Alternative Name rfc822 (email address) to
+ * to-be-signed certificate object.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param rfc822Name a string to a email address.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
+
 int
 hx509_ca_tbs_add_san_rfc822name(hx509_context context,
 				hx509_ca_tbs tbs,
@@ -556,6 +818,17 @@ hx509_ca_tbs_add_san_rfc822name(hx509_context context,
     return add_GeneralNames(&tbs->san, &gn);
 }
 
+/**
+ * Set the subject name of a to-be-signed certificate object.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param subject the name to set a subject.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
 
 int
 hx509_ca_tbs_set_subject(hx509_context context,
@@ -566,6 +839,20 @@ hx509_ca_tbs_set_subject(hx509_context context,
 	hx509_name_free(&tbs->subject);
     return hx509_name_copy(context, subject, &tbs->subject);
 }
+
+/**
+ * Expand the the subject name in the to-be-signed certificate object
+ * using hx509_name_expand().
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param env enviroment variable to expand variables in the subject
+ * name, see hx509_env_init().
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
 
 int
 hx509_ca_tbs_subject_expand(hx509_context context,
@@ -1148,6 +1435,30 @@ out:
 }
 
 
+/**
+ * Sign a to-be-signed certificate object with a issuer certificate. 
+ *
+ * The caller needs to at least have called the following functions on the
+ * to-be-signed certificate object:
+ * - hx509_ca_tbs_init()
+ * - hx509_ca_tbs_set_subject()
+ * - hx509_ca_tbs_set_spki()
+ *
+ * When done the to-be-signed certificate object should be freed with
+ * hx509_ca_tbs_free().
+ *
+ * When creating self-signed certificate use hx509_ca_sign_self() instead.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param signer the CA certificate object to sign with (need private key).
+ * @param certificate return cerificate, free with hx509_cert_free().
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
+
 int
 hx509_ca_sign(hx509_context context,
 	      hx509_ca_tbs tbs,
@@ -1178,6 +1489,19 @@ out:
 
     return ret;
 }
+
+/**
+ * Work just like hx509_ca_sign() but signs it-self.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param signer private key to sign with.
+ * @param certificate return cerificate, free with hx509_cert_free().
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
 
 int
 hx509_ca_sign_self(hx509_context context,

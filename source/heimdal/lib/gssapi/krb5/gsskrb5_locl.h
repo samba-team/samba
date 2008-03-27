@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gsskrb5_locl.h 20324 2007-04-12 16:46:01Z lha $ */
+/* $Id: gsskrb5_locl.h 22655 2008-02-26 12:40:35Z lha $ */
 
 #ifndef GSSKRB5_LOCL_H
 #define GSSKRB5_LOCL_H
@@ -86,6 +86,7 @@ typedef struct {
   krb5_principal principal;
   int cred_flags;
 #define GSS_CF_DESTROY_CRED_ON_RELEASE	1
+#define GSS_CF_NO_CI_FLAGS		2
   struct krb5_keytab_data *keytab;
   OM_uint32 lifetime;
   gss_cred_usage_t usage;

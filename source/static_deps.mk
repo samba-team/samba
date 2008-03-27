@@ -36,7 +36,8 @@ heimdal_basics: \
        heimdal/lib/krb5/krb_err.h \
        heimdal/lib/krb5/krb5_err.h \
        heimdal/lib/gssapi/gkrb5_err.h \
-       heimdal/lib/hx509/hx509_err.h
+       heimdal/lib/hx509/hx509_err.h \
+       heimdal/lib/wind/wind_err.h
 
 proto: basics
 basics: include/includes.h \

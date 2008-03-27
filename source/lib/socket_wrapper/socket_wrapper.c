@@ -64,6 +64,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #endif
 
@@ -624,67 +625,67 @@ enum swrap_packet_type {
 };
 
 struct swrap_file_hdr {
-	unsigned long	magic;
-	unsigned short	version_major;	
-	unsigned short	version_minor;
-	long		timezone;
-	unsigned long	sigfigs;
-	unsigned long	frame_max_len;
+	uint32_t	magic;
+	uint16_t	version_major;
+	uint16_t	version_minor;
+	int32_t		timezone;
+	uint32_t	sigfigs;
+	uint32_t	frame_max_len;
 #define SWRAP_FRAME_LENGTH_MAX 0xFFFF
-	unsigned long	link_type;
+	uint32_t	link_type;
 };
 #define SWRAP_FILE_HDR_SIZE 24
 
 struct swrap_packet {
 	struct {
-		unsigned long seconds;
-		unsigned long micro_seconds;
-		unsigned long recorded_length;
-		unsigned long full_length;
+		uint32_t seconds;
+		uint32_t micro_seconds;
+		uint32_t recorded_length;
+		uint32_t full_length;
 	} frame;
 #define SWRAP_PACKET__FRAME_SIZE 16
 
 	struct {
 		struct {
-			unsigned char	ver_hdrlen;
-			unsigned char	tos;
-			unsigned short	packet_length;
-			unsigned short	identification;
-			unsigned char	flags;
-			unsigned char	fragment;
-			unsigned char	ttl;
-			unsigned char	protocol;
-			unsigned short	hdr_checksum;
-			unsigned long	src_addr;
-			unsigned long	dest_addr;
+			uint8_t		ver_hdrlen;
+			uint8_t		tos;
+			uint16_t	packet_length;
+			uint16_t	identification;
+			uint8_t		flags;
+			uint8_t		fragment;
+			uint8_t		ttl;
+			uint8_t		protocol;
+			uint16_t	hdr_checksum;
+			uint32_t	src_addr;
+			uint32_t	dest_addr;
 		} hdr;
 #define SWRAP_PACKET__IP_HDR_SIZE 20
 
 		union {
 			struct {
-				unsigned short	source_port;
-				unsigned short	dest_port;
-				unsigned long	seq_num;
-				unsigned long	ack_num;
-				unsigned char	hdr_length;
-				unsigned char	control;
-				unsigned short	window;
-				unsigned short	checksum;
-				unsigned short	urg;
+				uint16_t	source_port;
+				uint16_t	dest_port;
+				uint32_t	seq_num;
+				uint32_t	ack_num;
+				uint8_t		hdr_length;
+				uint8_t		control;
+				uint16_t	window;
+				uint16_t	checksum;
+				uint16_t	urg;
 			} tcp;
 #define SWRAP_PACKET__IP_P_TCP_SIZE 20
 			struct {
-				unsigned short	source_port;
-				unsigned short	dest_port;
-				unsigned short	length;
-				unsigned short	checksum;
+				uint16_t	source_port;
+				uint16_t	dest_port;
+				uint16_t	length;
+				uint16_t	checksum;
 			} udp;
 #define SWRAP_PACKET__IP_P_UDP_SIZE 8
 			struct {
-				unsigned char	type;
-				unsigned char	code;
-				unsigned short	checksum;
-				unsigned long	unused;
+				uint8_t		type;
+				uint8_t		code;
+				uint16_t	checksum;
+				uint32_t	unused;
 			} icmp;
 #define SWRAP_PACKET__IP_P_ICMP_SIZE 8
 		} p;

@@ -434,6 +434,8 @@ done:
 	return ret;
 }
 
+extern bool test_trans2rename(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2);
+extern bool test_nttransrename(struct torture_context *tctx, struct smbcli_state *cli1);
 
 /* 
    basic testing of rename calls
@@ -443,6 +445,10 @@ struct torture_suite *torture_raw_rename(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "RENAME");
 
 	torture_suite_add_1smb_test(suite, "mv", test_mv);
+	/* test_trans2rename and test_nttransrename are actually in torture/raw/oplock.c to
+	   use the handlers and macros there. */
+	torture_suite_add_2smb_test(suite, "trans2rename", test_trans2rename);
+	torture_suite_add_1smb_test(suite, "nttransrename", test_nttransrename);
 	torture_suite_add_1smb_test(suite, "ntrename", test_ntrename);
 
 	return suite;

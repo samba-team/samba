@@ -257,12 +257,18 @@ static DATA_BLOB *get_sd(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	DATA_BLOB *linear_sd;
 	struct auth_session_info *session_info
 		= ldb_get_opaque(module->ldb, "sessionInfo");
-	struct security_descriptor *sd
-		= sddl_decode(mem_ctx, 
-			      objectclass->defaultSecurityDescriptor,
-			      samdb_domain_sid(module->ldb));
+	struct security_descriptor *sd;
+	struct dom_sid *domain_sid = samdb_domain_sid(module->ldb);
 
-	if (!session_info || !session_info->security_token) {
+	if (!objectclass->defaultSecurityDescriptor || !domain_sid) {
+		return NULL;
+	}
+	
+	sd = sddl_decode(mem_ctx, 
+			 objectclass->defaultSecurityDescriptor,
+			 domain_sid);
+
+	if (!sd || !session_info || !session_info->security_token) {
 		return NULL;
 	}
 	
@@ -538,7 +544,9 @@ static int objectclass_do_add(struct ldb_handle *h)
 				}
 				if (!ldb_msg_find_element(msg, "nTSecurityDescriptor")) {
 					DATA_BLOB *sd = get_sd(ac->module, mem_ctx, current->objectclass);
-					ldb_msg_add_steal_value(msg, "nTSecurityDescriptor", sd);
+					if (sd) {
+						ldb_msg_add_steal_value(msg, "nTSecurityDescriptor", sd);
+					}
 				}
 			}
 		}

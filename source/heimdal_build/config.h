@@ -19,4 +19,6 @@
 #define SIGRETURN(x) return (RETSIGTYPE)(x)
 #endif
 
+#define HDB_DB_DIR ""
+
 #endif

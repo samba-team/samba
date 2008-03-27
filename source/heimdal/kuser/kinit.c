@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2007 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -32,7 +32,7 @@
  */
 
 #include "kuser_locl.h"
-RCSID("$Id: kinit.c 21483 2007-07-10 16:40:46Z lha $");
+RCSID("$Id: kinit.c 22116 2007-12-03 21:22:58Z lha $");
 
 #include "krb5-v4compat.h"
 
@@ -260,7 +260,7 @@ renew_validate(krb5_context context,
 
     if (renew) {
 	/* 
-	 * no need to check the error here, its only to be 
+	 * no need to check the error here, it's only to be 
 	 * friendly to the user
 	 */
 	krb5_get_credentials(context, KRB5_GC_CACHED, cache, &in, &out);
@@ -377,6 +377,7 @@ get_new_tickets(krb5_context context,
     char *renewstr = NULL;
     krb5_enctype *enctype = NULL;
     struct ntlm_buf ntlmkey;
+    krb5_ccache tempccache;
 
     memset(&ntlmkey, 0, sizeof(ntlmkey));
     passwd[0] = '\0';
@@ -577,15 +578,24 @@ get_new_tickets(krb5_context context,
 	}
     }
 
-    ret = krb5_cc_initialize (context, ccache, cred.client);
+    ret = krb5_cc_new_unique(context, krb5_cc_get_type(context, ccache), 
+			     NULL, &tempccache);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_cc_new_unique");
+
+    ret = krb5_cc_initialize (context, tempccache, cred.client);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_initialize");
     
-    ret = krb5_cc_store_cred (context, ccache, &cred);
+    ret = krb5_cc_store_cred (context, tempccache, &cred);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_store_cred");
 
     krb5_free_cred_contents (context, &cred);
+
+    ret = krb5_cc_move(context, tempccache, ccache);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_cc_move");
 
     if (ntlm_domain && ntlmkey.data)
 	store_ntlmkey(context, ccache, ntlm_domain, principal, &ntlmkey);
@@ -757,8 +767,11 @@ main (int argc, char **argv)
 		    krb4_cc_name = NULL;
 		}
 	    }
-	} else
-	    ret = krb5_cc_default (context, &ccache);
+	} else {
+	    ret = krb5_cc_cache_match(context, principal, NULL, &ccache);
+	    if (ret)
+		ret = krb5_cc_default (context, &ccache);
+	}
     }
     if (ret)
 	krb5_err (context, 1, ret, "resolving credentials cache");

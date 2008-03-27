@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: kerberos5.c 21529 2007-07-13 12:37:14Z lha $");
+RCSID("$Id: kerberos5.c 22071 2007-11-14 20:04:50Z lha $");
 
 #define MAX_TIME ((time_t)((1U << 31) - 1))
 
@@ -362,6 +362,13 @@ older_enctype(krb5_enctype enctype)
     case ETYPE_DES3_CBC_SHA1:
     case ETYPE_ARCFOUR_HMAC_MD5:
     case ETYPE_ARCFOUR_HMAC_MD5_56:
+    /* 
+     * The following three is "old" windows enctypes and is needed for
+     * windows 2000 hosts.
+     */
+    case ETYPE_ARCFOUR_MD4:
+    case ETYPE_ARCFOUR_HMAC_OLD:
+    case ETYPE_ARCFOUR_HMAC_OLD_EXP:
 	return 1;
     default:
 	return 0;
@@ -411,8 +418,8 @@ make_etype_info_entry(krb5_context context, ETYPE_INFO_ENTRY *ent, Key *key)
 	*ent->salttype = key->salt->type;
 #else
 	/* 
-	 * We shouldn't sent salttype since its incompatible with the
-	 * specification and its break windows clients.  The afs
+	 * We shouldn't sent salttype since it is incompatible with the
+	 * specification and it breaks windows clients.  The afs
 	 * salting problem is solved by using KRB5-PADATA-AFS3-SALT
 	 * implemented in Heimdal 0.7 and later.
 	 */
@@ -472,11 +479,13 @@ get_pa_etype_info(krb5_context context,
 		    free_ETYPE_INFO(&pa);
 		    return ret;
 		}
+		break;
 	    }
 	}
     skip1:;
     }
     for(i = 0; i < client->keys.len; i++) {
+	/* already added? */
 	for(j = 0; j < etypes_len; j++) {
 	    if(client->keys.val[i].key.keytype == etypes[j])
 		goto skip2;
@@ -497,7 +506,7 @@ get_pa_etype_info(krb5_context context,
     }
     
     if(n < pa.len) {
-	/* stripped out newer enctypes */
+	/* stripped out dups, newer enctypes, and not valid enctypes */
  	pa.len = n;
     }
 
@@ -621,23 +630,29 @@ get_pa_etype_info2(krb5_context context,
 	    if(client->keys.val[i].key.keytype == etypes[j]) {
 		if (krb5_enctype_valid(context, etypes[j]) != 0)
 		    continue;
+		if (n >= pa.len)
+		    krb5_abortx(context, "internal error: n >= p.len");
 		if((ret = make_etype_info2_entry(&pa.val[n++], 
 						 &client->keys.val[i])) != 0) {
 		    free_ETYPE_INFO2(&pa);
 		    return ret;
 		}
+		break;
 	    }
 	}
     skip1:;
     }
-    /* send enctypes that the cliene doesn't know about too */
+    /* send enctypes that the client doesn't know about too */
     for(i = 0; i < client->keys.len; i++) {
+	/* already added? */
 	for(j = 0; j < etypes_len; j++) {
 	    if(client->keys.val[i].key.keytype == etypes[j])
 		goto skip2;
 	}
 	if (krb5_enctype_valid(context, client->keys.val[i].key.keytype) != 0)
 	    continue;
+	if (n >= pa.len)
+	    krb5_abortx(context, "internal error: n >= p.len");
 	if((ret = make_etype_info2_entry(&pa.val[n++],
 					 &client->keys.val[i])) != 0) {
 	    free_ETYPE_INFO2(&pa);
@@ -646,16 +661,8 @@ get_pa_etype_info2(krb5_context context,
       skip2:;
     }
     
-    if(n != pa.len) {
-	char *name;
-	ret = krb5_unparse_name(context, client->principal, &name);
-	if (ret)
-	    name = rk_UNCONST("<unparse_name failed>");
-	kdc_log(context, config, 0,
-		"internal error in get_pa_etype_info2(%s): %d != %d", 
-		name, n, pa.len);
-	if (ret == 0)
-	    free(name);
+    if(n < pa.len) {
+	/* stripped out dups, and not valid enctypes */
  	pa.len = n;
     }
 
@@ -1043,7 +1050,7 @@ _kdc_as_rep(krb5_context context,
 	goto out;
     }
 
-    ret = _kdc_windc_client_access(context, client, req);
+    ret = _kdc_windc_client_access(context, client, req, &e_data);
     if(ret)
 	goto out;
 
@@ -1554,6 +1561,10 @@ _kdc_as_rep(krb5_context context,
      * otherwise just a dummy lr.
      */
     ek.last_req.val = malloc(2 * sizeof(*ek.last_req.val));
+    if (ek.last_req.val == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
     ek.last_req.len = 0;
     if (client->entry.pw_end
 	&& (config->kdc_warn_pwexpire == 0

@@ -24,6 +24,7 @@
 static PyObject *uuid_random(PyObject *self, PyObject *args)
 {
 	struct GUID guid;
+	PyObject *pyobj;
 	char *str;
 
 	if (!PyArg_ParseTuple(args, (char *)""))
@@ -37,9 +38,11 @@ static PyObject *uuid_random(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
+	pyobj = PyString_FromString(str);
+
 	talloc_free(str);
 
-	return PyString_FromString(str);
+	return pyobj;
 }
 
 static PyMethodDef methods[] = {

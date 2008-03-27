@@ -34,7 +34,7 @@
 #include "kdc_locl.h"
 #include <hex.h>
 
-RCSID("$Id: digest.c 21606 2007-07-17 07:03:25Z lha $");
+RCSID("$Id: digest.c 22374 2007-12-28 18:36:52Z lha $");
 
 #define MS_CHAP_V2	0x20
 #define CHAP_MD5	0x10
@@ -1003,7 +1003,8 @@ _kdc_do_digest(krb5_context context,
 	}
 
 	r.u.ntlmInitReply.flags |= 
-	    NTLM_NEG_TARGET_DOMAIN |
+	    NTLM_NEG_TARGET |
+	    NTLM_TARGET_DOMAIN |
 	    NTLM_ENC_128;
 
 #define ALL					\
@@ -1331,6 +1332,27 @@ _kdc_do_digest(krb5_context context,
 		version, ireq.u.ntlmRequest.username);
 	break;
     }
+    case choice_DigestReqInner_supportedMechs:
+
+	kdc_log(context, config, 0, "digest supportedMechs from %s", from);
+
+	r.element = choice_DigestRepInner_supportedMechs;
+	memset(&r.u.supportedMechs, 0, sizeof(r.u.supportedMechs));
+
+	if (config->digests_allowed & NTLM_V1)
+	    r.u.supportedMechs.ntlm_v1 = 1;
+	if (config->digests_allowed & NTLM_V1_SESSION)
+	    r.u.supportedMechs.ntlm_v1_session = 1;
+	if (config->digests_allowed & NTLM_V2)
+	    r.u.supportedMechs.ntlm_v2 = 1;
+	if (config->digests_allowed & DIGEST_MD5)
+	    r.u.supportedMechs.digest_md5 = 1;
+	if (config->digests_allowed & CHAP_MD5)
+	    r.u.supportedMechs.chap_md5 = 1;
+	if (config->digests_allowed & MS_CHAP_V2)
+	    r.u.supportedMechs.ms_chap_v2 = 1;
+	break;
+
     default: {
 	char *s;
 	krb5_set_error_string(context, "unknown operation to digest");

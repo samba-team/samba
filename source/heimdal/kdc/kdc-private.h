@@ -281,6 +281,7 @@ krb5_error_code
 _kdc_windc_client_access (
 	krb5_context /*context*/,
 	struct hdb_entry_ex */*client*/,
-	KDC_REQ */*req*/);
+	KDC_REQ */*req*/,
+	krb5_data */*e_data*/);
 
 #endif /* __kdc_private_h__ */

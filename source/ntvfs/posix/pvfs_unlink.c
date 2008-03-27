@@ -219,6 +219,12 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 		return pvfs_unlink_one(pvfs, req, unl, name);
 	}
 
+	/*
+	 * disable async requests in the wildcard case
+	 * untill we have proper tests for this
+	 */
+	req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
+
 	/* get list of matching files */
 	status = pvfs_list_start(pvfs, name, req, &dir);
 	if (!NT_STATUS_IS_OK(status)) {

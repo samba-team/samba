@@ -1220,7 +1220,8 @@ static int build_domain_data_request(struct ph_context *ac)
 	ac->dom_req->op.search.base = ldb_get_default_basedn(ac->module->ldb);
 	ac->dom_req->op.search.scope = LDB_SCOPE_SUBTREE;
 
-	filter = talloc_asprintf(ac->dom_req, "(&(objectSid=%s)(|(objectClass=domain)(objectClass=builtinDomain)))", 
+	filter = talloc_asprintf(ac->dom_req,
+				 "(&(objectSid=%s)(|(|(objectClass=domain)(objectClass=builtinDomain))(objectClass=samba4LocalDomain)))", 
 				 ldap_encode_ndr_dom_sid(ac->dom_req, ac->domain_sid));
 	if (filter == NULL) {
 		ldb_debug(ac->module->ldb, LDB_DEBUG_ERROR, "Out of Memory!\n");

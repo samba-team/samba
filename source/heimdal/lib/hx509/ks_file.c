@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: ks_file.c 21314 2007-06-25 18:45:07Z lha $");
+RCSID("$Id: ks_file.c 22465 2008-01-16 14:25:24Z lha $");
 
 typedef enum { USE_PEM, USE_DER } outformat;
 
@@ -289,19 +289,25 @@ struct pem_formats {
 };
 
 
+struct pem_ctx {
+    int flags;
+    struct hx509_collector *c;
+};
+
 static int
 pem_func(hx509_context context, const char *type,
 	 const hx509_pem_header *header,
 	 const void *data, size_t len, void *ctx)
 {
-    struct hx509_collector *c = ctx;
-    int ret, j;
+    struct pem_ctx *pem_ctx = (struct pem_ctx*)ctx;
+    int ret = 0, j;
 
     for (j = 0; j < sizeof(formats)/sizeof(formats[0]); j++) {
 	const char *q = formats[j].name;
 	if (strcasecmp(type, q) == 0) {
-	    ret = (*formats[j].func)(context, NULL, c,  header, data, len);
-	    break;
+	    ret = (*formats[j].func)(context, NULL, pem_ctx->c,  header, data, len);
+	    if (ret == 0)
+		break;
 	}
     }
     if (j == sizeof(formats)/sizeof(formats[0])) {
@@ -310,6 +316,8 @@ pem_func(hx509_context context, const char *type,
 			       "Found no matching PEM format for %s", type);
 	return ret;
     }
+    if (ret && (pem_ctx->flags & HX509_CERTS_UNPROTECT_ALL))
+	return ret;
     return 0;
 }
 
@@ -324,9 +332,12 @@ file_init_common(hx509_context context,
 {
     char *p, *pnext;
     struct ks_file *f = NULL;
-    struct hx509_collector *c = NULL;
     hx509_private_key *keys = NULL;
     int ret;
+    struct pem_ctx pem_ctx;
+
+    pem_ctx.flags = flags;
+    pem_ctx.c = NULL;
 
     *data = NULL;
 
@@ -361,7 +372,7 @@ file_init_common(hx509_context context,
 	return 0;
     }
 
-    ret = _hx509_collector_alloc(context, lock, &c);
+    ret = _hx509_collector_alloc(context, lock, &pem_ctx.c);
     if (ret)
 	goto out;
 
@@ -381,7 +392,7 @@ file_init_common(hx509_context context,
 	    goto out;
 	}
 
-	ret = hx509_pem_read(context, f, pem_func, c);
+	ret = hx509_pem_read(context, f, pem_func, &pem_ctx);
 	fclose(f);		     
 	if (ret != 0 && ret != HX509_PARSING_KEY_FAILED)
 	    goto out;
@@ -397,7 +408,7 @@ file_init_common(hx509_context context,
 	    }
 
 	    for (i = 0; i < sizeof(formats)/sizeof(formats[0]); i++) {
-		ret = (*formats[i].func)(context, p, c, NULL, ptr, length);
+		ret = (*formats[i].func)(context, p, pem_ctx.c, NULL, ptr, length);
 		if (ret == 0)
 		    break;
 	    }
@@ -407,11 +418,11 @@ file_init_common(hx509_context context,
 	}
     }
 
-    ret = _hx509_collector_collect_certs(context, c, &f->certs);
+    ret = _hx509_collector_collect_certs(context, pem_ctx.c, &f->certs);
     if (ret)
 	goto out;
 
-    ret = _hx509_collector_collect_private_keys(context, c, &keys);
+    ret = _hx509_collector_collect_private_keys(context, pem_ctx.c, &keys);
     if (ret == 0) {
 	int i;
 
@@ -428,8 +439,9 @@ out:
 	    free(f->fn);
 	free(f);
     }
-    if (c)
-	_hx509_collector_free(c);
+    if (pem_ctx.c)
+	_hx509_collector_free(pem_ctx.c);
+
     return ret;
 }
 

@@ -32,7 +32,7 @@
  */
 
 /* 
- * $Id: kdc_locl.h 20954 2007-06-07 03:30:15Z lha $ 
+ * $Id: kdc_locl.h 22247 2007-12-08 23:49:41Z lha $ 
  */
 
 #ifndef __KDC_LOCL_H__
@@ -58,8 +58,7 @@ extern int detach_from_console;
 
 extern const struct units _kdc_digestunits[];
 
-#define _PATH_KDC_CONF		HDB_DB_DIR "/kdc.conf"
-#define DEFAULT_LOG_DEST	"0-1/FILE:" HDB_DB_DIR "/kdc.log"
+#define KDC_LOG_FILE		"kdc.log"
 
 extern struct timeval _kdc_now;
 #define kdc_time (_kdc_now.tv_sec)

@@ -544,7 +544,7 @@ sub provision($$$$$$)
 
 
 	my $localbasedn = $basedn;
-	$localbasedn = "DC=$netbiosname" if $server_role eq "member server";
+	$localbasedn = "CN=$netbiosname" if $server_role eq "member server";
 
 	open(CONFFILE, ">$conffile");
 	print CONFFILE "
@@ -576,9 +576,6 @@ sub provision($$$$$$)
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
 	log level = $smbd_loglevel
-
-	# this is a global option
-	opendb:oplocks = yes
 
 [tmp]
 	path = $tmpdir
@@ -616,6 +613,14 @@ sub provision($$$$$$)
 	path = $tmpdir
 	read only = no
 	ntvfs handler = simple
+
+[sysvol]
+	path = $lockdir/sysvol
+	read only = yes
+
+[netlogon]
+	path = $lockdir/sysvol/$dnsname/scripts
+	read only = no
 
 [cifsposix]
 	copy = simple
@@ -746,7 +751,7 @@ nogroup:x:65534:nobody
 	if (defined($self->{ldap})) {
 
                 push (@provision_options, "--ldap-backend=$ldap_uri");
-	        system("$self->{bindir}/smbscript $self->{setupdir}/provision-backend $configuration --ldap-manager-pass=$password --root=$unix_name --realm=$realm --host-name=$netbiosname --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
+	        system("$self->{bindir}/smbpython $self->{setupdir}/provision-backend $configuration --ldap-manager-pass=$password --root=$unix_name --realm=$realm --domain=$domain --host-name=$netbiosname --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
 
 	        if ($self->{ldap} eq "openldap") {
 		       ($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ldapdir, $configuration) or die("Unable to create openldap directories");

@@ -2679,7 +2679,7 @@ SWIGINTERN PyObject *_wrap_libnet_samsync_ldb(PyObject *SWIGUNUSEDPARM(self), Py
   arg3 = (struct libnet_samsync_ldb *)(argp3);
   result = libnet_samsync_ldb(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -2721,7 +2721,7 @@ SWIGINTERN PyObject *_wrap_libnet_DomainList(PyObject *SWIGUNUSEDPARM(self), PyO
   arg3 = (struct libnet_DomainList *)(argp3);
   result = libnet_DomainList(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -2763,7 +2763,7 @@ SWIGINTERN PyObject *_wrap_libnet_DomainClose(PyObject *SWIGUNUSEDPARM(self), Py
   arg3 = (struct libnet_DomainClose *)(argp3);
   result = libnet_DomainClose(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -2805,7 +2805,7 @@ SWIGINTERN PyObject *_wrap_libnet_DomainOpen(PyObject *SWIGUNUSEDPARM(self), PyO
   arg3 = (struct libnet_DomainOpen *)(argp3);
   result = libnet_DomainOpen(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -2847,7 +2847,7 @@ SWIGINTERN PyObject *_wrap_libnet_LookupName(PyObject *SWIGUNUSEDPARM(self), PyO
   arg3 = (struct libnet_LookupName *)(argp3);
   result = libnet_LookupName(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -2889,7 +2889,7 @@ SWIGINTERN PyObject *_wrap_libnet_LookupDCs(PyObject *SWIGUNUSEDPARM(self), PyOb
   arg3 = (struct libnet_LookupDCs *)(argp3);
   result = libnet_LookupDCs(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -2931,7 +2931,7 @@ SWIGINTERN PyObject *_wrap_libnet_LookupHost(PyObject *SWIGUNUSEDPARM(self), PyO
   arg3 = (struct libnet_Lookup *)(argp3);
   result = libnet_LookupHost(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -2973,7 +2973,7 @@ SWIGINTERN PyObject *_wrap_libnet_Lookup(PyObject *SWIGUNUSEDPARM(self), PyObjec
   arg3 = (struct libnet_Lookup *)(argp3);
   result = libnet_Lookup(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3015,7 +3015,7 @@ SWIGINTERN PyObject *_wrap_libnet_ListShares(PyObject *SWIGUNUSEDPARM(self), PyO
   arg3 = (struct libnet_ListShares *)(argp3);
   result = libnet_ListShares(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3057,7 +3057,7 @@ SWIGINTERN PyObject *_wrap_libnet_AddShare(PyObject *SWIGUNUSEDPARM(self), PyObj
   arg3 = (struct libnet_AddShare *)(argp3);
   result = libnet_AddShare(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3099,7 +3099,7 @@ SWIGINTERN PyObject *_wrap_libnet_DelShare(PyObject *SWIGUNUSEDPARM(self), PyObj
   arg3 = (struct libnet_DelShare *)(argp3);
   result = libnet_DelShare(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3141,7 +3141,7 @@ SWIGINTERN PyObject *_wrap_libnet_GroupList(PyObject *SWIGUNUSEDPARM(self), PyOb
   arg3 = (struct libnet_GroupList *)(argp3);
   result = libnet_GroupList(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3183,7 +3183,7 @@ SWIGINTERN PyObject *_wrap_libnet_GroupInfo(PyObject *SWIGUNUSEDPARM(self), PyOb
   arg3 = (struct libnet_GroupInfo *)(argp3);
   result = libnet_GroupInfo(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3225,7 +3225,7 @@ SWIGINTERN PyObject *_wrap_libnet_UserList(PyObject *SWIGUNUSEDPARM(self), PyObj
   arg3 = (struct libnet_UserList *)(argp3);
   result = libnet_UserList(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3267,7 +3267,7 @@ SWIGINTERN PyObject *_wrap_libnet_UserInfo(PyObject *SWIGUNUSEDPARM(self), PyObj
   arg3 = (struct libnet_UserInfo *)(argp3);
   result = libnet_UserInfo(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3309,7 +3309,7 @@ SWIGINTERN PyObject *_wrap_libnet_ModifyUser(PyObject *SWIGUNUSEDPARM(self), PyO
   arg3 = (struct libnet_ModifyUser *)(argp3);
   result = libnet_ModifyUser(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3351,7 +3351,7 @@ SWIGINTERN PyObject *_wrap_libnet_DeleteUser(PyObject *SWIGUNUSEDPARM(self), PyO
   arg3 = (struct libnet_DeleteUser *)(argp3);
   result = libnet_DeleteUser(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3393,7 +3393,7 @@ SWIGINTERN PyObject *_wrap_libnet_CreateUser(PyObject *SWIGUNUSEDPARM(self), PyO
   arg3 = (struct libnet_CreateUser *)(argp3);
   result = libnet_CreateUser(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3435,7 +3435,7 @@ SWIGINTERN PyObject *_wrap_libnet_SamDump_keytab(PyObject *SWIGUNUSEDPARM(self),
   arg3 = (struct libnet_SamDump_keytab *)(argp3);
   result = libnet_SamDump_keytab(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3477,7 +3477,7 @@ SWIGINTERN PyObject *_wrap_libnet_SamDump(PyObject *SWIGUNUSEDPARM(self), PyObje
   arg3 = (struct libnet_SamDump *)(argp3);
   result = libnet_SamDump(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3519,7 +3519,7 @@ SWIGINTERN PyObject *_wrap_libnet_SamSync_netlogon(PyObject *SWIGUNUSEDPARM(self
   arg3 = (struct libnet_SamSync *)(argp3);
   result = libnet_SamSync_netlogon(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3561,7 +3561,7 @@ SWIGINTERN PyObject *_wrap_libnet_UnbecomeDC(PyObject *SWIGUNUSEDPARM(self), PyO
   arg3 = (struct libnet_UnbecomeDC *)(argp3);
   result = libnet_UnbecomeDC(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3603,7 +3603,7 @@ SWIGINTERN PyObject *_wrap_libnet_BecomeDC(PyObject *SWIGUNUSEDPARM(self), PyObj
   arg3 = (struct libnet_BecomeDC *)(argp3);
   result = libnet_BecomeDC(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3652,7 +3652,7 @@ SWIGINTERN PyObject *_wrap_libnet_JoinSite(PyObject *SWIGUNUSEDPARM(self), PyObj
   arg3 = (struct libnet_JoinDomain *)(argp3);
   result = libnet_JoinSite(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3694,7 +3694,7 @@ SWIGINTERN PyObject *_wrap_libnet_JoinDomain(PyObject *SWIGUNUSEDPARM(self), PyO
   arg3 = (struct libnet_JoinDomain *)(argp3);
   result = libnet_JoinDomain(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3736,7 +3736,7 @@ SWIGINTERN PyObject *_wrap_libnet_Join(PyObject *SWIGUNUSEDPARM(self), PyObject 
   arg3 = (struct libnet_Join *)(argp3);
   result = libnet_Join(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3778,7 +3778,7 @@ SWIGINTERN PyObject *_wrap_libnet_RpcConnect(PyObject *SWIGUNUSEDPARM(self), PyO
   arg3 = (struct libnet_RpcConnect *)(argp3);
   result = libnet_RpcConnect(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3820,7 +3820,7 @@ SWIGINTERN PyObject *_wrap_libnet_RemoteTOD(PyObject *SWIGUNUSEDPARM(self), PyOb
   arg3 = (union libnet_RemoteTOD *)(argp3);
   result = libnet_RemoteTOD(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3862,7 +3862,7 @@ SWIGINTERN PyObject *_wrap_libnet_ChangePassword(PyObject *SWIGUNUSEDPARM(self),
   arg3 = (union libnet_ChangePassword *)(argp3);
   result = libnet_ChangePassword(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3904,7 +3904,7 @@ SWIGINTERN PyObject *_wrap_libnet_SetPassword(PyObject *SWIGUNUSEDPARM(self), Py
   arg3 = (union libnet_SetPassword *)(argp3);
   result = libnet_SetPassword(arg1,arg2,arg3);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V(result), nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {

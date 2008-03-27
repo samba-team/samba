@@ -229,7 +229,7 @@ static bool test_raw_oplock_exclusive1(struct torture_context *tctx, struct smbc
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "open a file with an exclusive oplock (share mode: none)\n");
+	torture_comment(tctx, "EXCLUSIVE1: open a file with an exclusive oplock (share mode: none)\n");
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | NTCREATEX_FLAGS_REQUEST_OPLOCK;
 
@@ -294,7 +294,7 @@ static bool test_raw_oplock_exclusive2(struct torture_context *tctx, struct smbc
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "open a file with an exclusive oplock (share mode: all)\n");
+	torture_comment(tctx, "EXCLUSIVE2: open a file with an exclusive oplock (share mode: all)\n");
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | NTCREATEX_FLAGS_REQUEST_OPLOCK;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
@@ -363,7 +363,6 @@ static bool test_raw_oplock_exclusive3(struct torture_context *tctx, struct smbc
 	union smb_open io;
 	union smb_setfileinfo sfi;
 	uint16_t fnum=0;
-	bool s3 = torture_setting_bool(tctx, "samba3", false);
 
 	if (!torture_setup_dir(cli1, BASEDIR)) {
 		return false;
@@ -389,15 +388,10 @@ static bool test_raw_oplock_exclusive3(struct torture_context *tctx, struct smbc
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "open a file with an exclusive oplock (share mode: %s)\n",
-			s3?"all":"none");
+	torture_comment(tctx, "EXCLUSIVE3: open a file with an exclusive oplock (share mode: none)\n");
+
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | NTCREATEX_FLAGS_REQUEST_OPLOCK;
-	if (s3) {
-		io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
-			NTCREATEX_SHARE_ACCESS_WRITE|
-			NTCREATEX_SHARE_ACCESS_DELETE;
-	}
 
 	status = smb_raw_open(cli1->tree, tctx, &io);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
@@ -458,7 +452,7 @@ static bool test_raw_oplock_exclusive4(struct torture_context *tctx, struct smbc
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "open with exclusive oplock\n");
+	torture_comment(tctx, "EXCLUSIVE4: open with exclusive oplock\n");
 	ZERO_STRUCT(break_info);
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
@@ -523,7 +517,7 @@ static bool test_raw_oplock_exclusive5(struct torture_context *tctx, struct smbc
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "open with exclusive oplock\n");
+	torture_comment(tctx, "EXCLUSIVE5: open with exclusive oplock\n");
 	ZERO_STRUCT(break_info);
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
@@ -570,7 +564,6 @@ static bool test_raw_oplock_exclusive6(struct torture_context *tctx, struct smbc
 	union smb_open io;
 	union smb_rename rn;
 	uint16_t fnum=0;
-	bool s3 = torture_setting_bool(tctx, "samba3", false);
 
 	if (!torture_setup_dir(cli1, BASEDIR)) {
 		return false;
@@ -597,16 +590,9 @@ static bool test_raw_oplock_exclusive6(struct torture_context *tctx, struct smbc
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname1;
 
-	/* we should use no share mode, when samba3 passes this */
-	torture_comment(tctx, "open a file with an exclusive oplock (share mode: %s)\n",
-			s3?"all":"none");
+	torture_comment(tctx, "EXCLUSIVE6: open a file with an exclusive oplock (share mode: none)\n");
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | NTCREATEX_FLAGS_REQUEST_OPLOCK;
-	if (s3) {
-		io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
-			NTCREATEX_SHARE_ACCESS_WRITE|
-			NTCREATEX_SHARE_ACCESS_DELETE;
-	}
 
 	status = smb_raw_open(cli1->tree, tctx, &io);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
@@ -673,7 +659,7 @@ static bool test_raw_oplock_batch1(struct torture_context *tctx, struct smbcli_s
 	/*
 	  with a batch oplock we get a break
 	*/
-	torture_comment(tctx, "open with batch oplock\n");
+	torture_comment(tctx, "BATCH1: open with batch oplock\n");
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -754,7 +740,7 @@ static bool test_raw_oplock_batch2(struct torture_context *tctx, struct smbcli_s
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "open with batch oplock\n");
+	torture_comment(tctx, "BATCH2: open with batch oplock\n");
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -832,7 +818,7 @@ static bool test_raw_oplock_batch3(struct torture_context *tctx, struct smbcli_s
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "if we close on break then the unlink can succeed\n");
+	torture_comment(tctx, "BATCH3: if we close on break then the unlink can succeed\n");
 	ZERO_STRUCT(break_info);
 	smbcli_oplock_handler(cli1->transport, oplock_handler_close, cli1->tree);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
@@ -896,7 +882,7 @@ static bool test_raw_oplock_batch4(struct torture_context *tctx, struct smbcli_s
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "a self read should not cause a break\n");
+	torture_comment(tctx, "BATCH4: a self read should not cause a break\n");
 	ZERO_STRUCT(break_info);
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
@@ -959,7 +945,7 @@ static bool test_raw_oplock_batch5(struct torture_context *tctx, struct smbcli_s
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "a 2nd open should give a break\n");
+	torture_comment(tctx, "BATCH5: a 2nd open should give a break\n");
 	ZERO_STRUCT(break_info);
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
@@ -1024,7 +1010,7 @@ static bool test_raw_oplock_batch6(struct torture_context *tctx, struct smbcli_s
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "a 2nd open should give a break to level II if the first open allowed shared read\n");
+	torture_comment(tctx, "BATCH6: a 2nd open should give a break to level II if the first open allowed shared read\n");
 	ZERO_STRUCT(break_info);
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_given, cli2->tree);
@@ -1104,7 +1090,7 @@ static bool test_raw_oplock_batch7(struct torture_context *tctx, struct smbcli_s
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "a 2nd open should get an oplock when we close instead of ack\n");
+	torture_comment(tctx, "BATCH7: a 2nd open should get an oplock when we close instead of ack\n");
 	ZERO_STRUCT(break_info);
 	smbcli_oplock_handler(cli1->transport, oplock_handler_close, cli1->tree);
 
@@ -1174,7 +1160,7 @@ static bool test_raw_oplock_batch8(struct torture_context *tctx, struct smbcli_s
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "open with batch oplock\n");
+	torture_comment(tctx, "BATCH8: open with batch oplock\n");
 	ZERO_STRUCT(break_info);
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
@@ -1243,7 +1229,7 @@ static bool test_raw_oplock_batch9(struct torture_context *tctx, struct smbcli_s
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "open with attributes only can create file\n");
+	torture_comment(tctx, "BATCH9: open with attributes only can create file\n");
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -1348,7 +1334,7 @@ static bool test_raw_oplock_batch10(struct torture_context *tctx, struct smbcli_
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "Open with oplock after a non-oplock open should grant level2\n");
+	torture_comment(tctx, "BATCH10: Open with oplock after a non-oplock open should grant level2\n");
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
@@ -1458,7 +1444,7 @@ static bool test_raw_oplock_batch11(struct torture_context *tctx, struct smbcli_
 	io.ntcreatex.in.fname = fname;
 
 	/* Test if a set-eof on pathname breaks an exclusive oplock. */
-	torture_comment(tctx, "Test if setpathinfo set EOF breaks oplocks.\n");
+	torture_comment(tctx, "BATCH11: Test if setpathinfo set EOF breaks oplocks.\n");
 
 	ZERO_STRUCT(break_info);
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
@@ -1533,7 +1519,7 @@ static bool test_raw_oplock_batch12(struct torture_context *tctx, struct smbcli_
 	io.ntcreatex.in.fname = fname;
 
 	/* Test if a set-allocation size on pathname breaks an exclusive oplock. */
-	torture_comment(tctx, "Test if setpathinfo allocation size breaks oplocks.\n");
+	torture_comment(tctx, "BATCH12: Test if setpathinfo allocation size breaks oplocks.\n");
 
 	ZERO_STRUCT(break_info);
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
@@ -1607,7 +1593,7 @@ static bool test_raw_oplock_batch13(struct torture_context *tctx, struct smbcli_
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "open with batch oplock\n");
+	torture_comment(tctx, "BATCH13: open with batch oplock\n");
 	ZERO_STRUCT(break_info);
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
@@ -1684,7 +1670,7 @@ static bool test_raw_oplock_batch14(struct torture_context *tctx, struct smbcli_
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "open with batch oplock\n");
+	torture_comment(tctx, "BATCH14: open with batch oplock\n");
 	ZERO_STRUCT(break_info);
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
@@ -1761,7 +1747,7 @@ static bool test_raw_oplock_batch15(struct torture_context *tctx, struct smbcli_
 	io.ntcreatex.in.fname = fname;
 
 	/* Test if a qpathinfo all info on pathname breaks a batch oplock. */
-	torture_comment(tctx, "Test if qpathinfo all info breaks a batch oplock (should not).\n");
+	torture_comment(tctx, "BATCH15: Test if qpathinfo all info breaks a batch oplock (should not).\n");
 
 	ZERO_STRUCT(break_info);
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
@@ -1833,7 +1819,7 @@ static bool test_raw_oplock_batch16(struct torture_context *tctx, struct smbcli_
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "open with batch oplock\n");
+	torture_comment(tctx, "BATCH16: open with batch oplock\n");
 	ZERO_STRUCT(break_info);
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 
@@ -1887,7 +1873,6 @@ static bool test_raw_oplock_batch17(struct torture_context *tctx, struct smbcli_
 	union smb_open io;
 	union smb_rename rn;
 	uint16_t fnum=0;
-	bool s3 = torture_setting_bool(tctx, "samba3", false);
 
 	if (!torture_setup_dir(cli1, BASEDIR)) {
 		return false;
@@ -1914,18 +1899,12 @@ static bool test_raw_oplock_batch17(struct torture_context *tctx, struct smbcli_
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname1;
 
-	/* we should use no share mode, when samba3 passes this */
-	torture_comment(tctx, "open a file with an batch oplock (share mode: %s)\n",
-			s3?"all":"none");
+	torture_comment(tctx, "BATCH17: open a file with an batch oplock (share mode: none)\n");
+
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
 		NTCREATEX_FLAGS_REQUEST_OPLOCK |
 		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
-	if (s3) {
-		io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
-			NTCREATEX_SHARE_ACCESS_WRITE|
-			NTCREATEX_SHARE_ACCESS_DELETE;
-	}
 
 	status = smb_raw_open(cli1->tree, tctx, &io);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
@@ -1965,7 +1944,6 @@ static bool test_raw_oplock_batch18(struct torture_context *tctx, struct smbcli_
 	union smb_open io;
 	union smb_rename rn;
 	uint16_t fnum=0;
-	bool s3 = torture_setting_bool(tctx, "samba3", false);
 
 	if (!torture_setup_dir(cli1, BASEDIR)) {
 		return false;
@@ -1992,18 +1970,12 @@ static bool test_raw_oplock_batch18(struct torture_context *tctx, struct smbcli_
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname1;
 
-	/* we should use no share mode, when samba3 passes this */
-	torture_comment(tctx, "open a file with an batch oplock (share mode: %s)\n",
-			s3?"all":"none");
+	torture_comment(tctx, "BATCH18: open a file with an batch oplock (share mode: none)\n");
+
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
 		NTCREATEX_FLAGS_REQUEST_OPLOCK |
 		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
-	if (s3) {
-		io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
-			NTCREATEX_SHARE_ACCESS_WRITE|
-			NTCREATEX_SHARE_ACCESS_DELETE;
-	}
 
 	status = smb_raw_open(cli1->tree, tctx, &io);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
@@ -2046,10 +2018,6 @@ static bool test_raw_oplock_batch19(struct torture_context *tctx, struct smbcli_
 	union smb_setfileinfo sfi;
 	uint16_t fnum=0;
 
-	if (torture_setting_bool(tctx, "samba3", false)) {
-		torture_skip(tctx, "BACHT19 disabled against samba3\n");
-	}
-
 	if (!torture_setup_dir(cli1, BASEDIR)) {
 		return false;
 	}
@@ -2076,7 +2044,7 @@ static bool test_raw_oplock_batch19(struct torture_context *tctx, struct smbcli_
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname1;
 
-	torture_comment(tctx, "open a file with an batch oplock (share mode: none)\n");
+	torture_comment(tctx, "BATCH19: open a file with an batch oplock (share mode: none)\n");
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
 		NTCREATEX_FLAGS_REQUEST_OPLOCK |
@@ -2136,21 +2104,22 @@ done:
 	return ret;
 }
 
-static bool test_raw_oplock_batch20(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
+/****************************************************
+ Called from raw-rename - we need oplock handling for
+ this test so this is why it's in oplock.c, not rename.c
+****************************************************/
+
+bool test_trans2rename(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
 {
-	const char *fname1 = BASEDIR "\\test_batch20_1.dat";
-	const char *fname2 = BASEDIR "\\test_batch20_2.dat";
-	const char *fname3 = BASEDIR "\\test_batch20_3.dat";
+	const char *fname1 = BASEDIR "\\test_trans2rename_1.dat";
+	const char *fname2 = BASEDIR "\\test_trans2rename_2.dat";
+	const char *fname3 = BASEDIR "\\test_trans2rename_3.dat";
 	NTSTATUS status;
 	bool ret = true;
 	union smb_open io;
 	union smb_fileinfo qfi;
 	union smb_setfileinfo sfi;
-	uint16_t fnum=0,fnum2=0;
-
-	if (torture_setting_bool(tctx, "samba3", false)) {
-		torture_skip(tctx, "BACHT20 disabled against samba3\n");
-	}
+	uint16_t fnum=0;
 
 	if (!torture_setup_dir(cli1, BASEDIR)) {
 		return false;
@@ -2178,7 +2147,228 @@ static bool test_raw_oplock_batch20(struct torture_context *tctx, struct smbcli_
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname1;
 
-	torture_comment(tctx, "open a file with an batch oplock (share mode: all)\n");
+	torture_comment(tctx, "open a file with an exclusive oplock (share mode: none)\n");
+	ZERO_STRUCT(break_info);
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
+		NTCREATEX_FLAGS_REQUEST_OPLOCK;
+	status = smb_raw_open(cli1->tree, tctx, &io);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+	CHECK_VAL(io.ntcreatex.out.oplock_level, EXCLUSIVE_OPLOCK_RETURN);
+
+	torture_comment(tctx, "setpathinfo rename info should not trigger a break nor a violation\n");
+	ZERO_STRUCT(sfi);
+	sfi.generic.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sfi.generic.in.file.path = fname1;
+	sfi.rename_information.in.overwrite	= 0;
+	sfi.rename_information.in.root_fid	= 0;
+	sfi.rename_information.in.new_name	= fname2+strlen(BASEDIR)+1;
+
+        status = smb_raw_setpathinfo(cli2->tree, &sfi);
+
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	CHECK_VAL(break_info.count, 0);
+
+	ZERO_STRUCT(qfi);
+	qfi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	qfi.generic.in.file.fnum = fnum;
+
+	status = smb_raw_fileinfo(cli1->tree, tctx, &qfi);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	CHECK_STRMATCH(qfi.all_info.out.fname.s, fname2);
+
+	torture_comment(tctx, "setfileinfo rename info should not trigger a break nor a violation\n");
+	ZERO_STRUCT(sfi);
+	sfi.generic.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sfi.generic.in.file.fnum = fnum;
+	sfi.rename_information.in.overwrite	= 0;
+	sfi.rename_information.in.root_fid	= 0;
+	sfi.rename_information.in.new_name	= fname3+strlen(BASEDIR)+1;
+
+	status = smb_raw_setfileinfo(cli1->tree, &sfi);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	CHECK_VAL(break_info.count, 0);
+
+	ZERO_STRUCT(qfi);
+	qfi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	qfi.generic.in.file.fnum = fnum;
+
+	status = smb_raw_fileinfo(cli1->tree, tctx, &qfi);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	CHECK_STRMATCH(qfi.all_info.out.fname.s, fname3);
+
+	smbcli_close(cli1->tree, fnum);
+
+done:
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+	smbcli_deltree(cli1->tree, BASEDIR);
+	return ret;
+}
+
+/****************************************************
+ Called from raw-rename - we need oplock handling for
+ this test so this is why it's in oplock.c, not rename.c
+****************************************************/
+
+bool test_nttransrename(struct torture_context *tctx, struct smbcli_state *cli1)
+{
+	const char *fname1 = BASEDIR "\\test_nttransrename_1.dat";
+	const char *fname2 = BASEDIR "\\test_nttransrename_2.dat";
+	NTSTATUS status;
+	bool ret = true;
+	union smb_open io;
+	union smb_fileinfo qfi, qpi;
+	union smb_rename rn;
+	uint16_t fnum=0;
+
+	if (!torture_setup_dir(cli1, BASEDIR)) {
+		return false;
+	}
+
+	/* cleanup */
+	smbcli_unlink(cli1->tree, fname1);
+	smbcli_unlink(cli1->tree, fname2);
+
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
+
+	/*
+	  base ntcreatex parms
+	*/
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.access_mask = 0;/* ask for no access at all */;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname1;
+
+	torture_comment(tctx, "nttrans_rename: open a file with an exclusive oplock (share mode: none)\n");
+	ZERO_STRUCT(break_info);
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
+		NTCREATEX_FLAGS_REQUEST_OPLOCK;
+	status = smb_raw_open(cli1->tree, tctx, &io);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+	CHECK_VAL(io.ntcreatex.out.oplock_level, EXCLUSIVE_OPLOCK_RETURN);
+
+	torture_comment(tctx, "nttrans_rename: should not trigger a break nor a share mode violation\n");
+	ZERO_STRUCT(rn);
+	rn.generic.level = RAW_RENAME_NTTRANS;
+	rn.nttrans.in.file.fnum = fnum;
+	rn.nttrans.in.flags	= 0;
+	rn.nttrans.in.new_name	= fname2+strlen(BASEDIR)+1;
+
+        status = smb_raw_rename(cli1->tree, &rn);
+
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	CHECK_VAL(break_info.count, 0);
+
+	/* w2k3 does nothing, it doesn't rename the file */
+	torture_comment(tctx, "nttrans_rename: the server should have done nothing\n");
+	ZERO_STRUCT(qfi);
+	qfi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	qfi.generic.in.file.fnum = fnum;
+
+	status = smb_raw_fileinfo(cli1->tree, tctx, &qfi);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	CHECK_STRMATCH(qfi.all_info.out.fname.s, fname1);
+
+	ZERO_STRUCT(qpi);
+	qpi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	qpi.generic.in.file.path = fname1;
+
+	status = smb_raw_pathinfo(cli1->tree, tctx, &qpi);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	CHECK_STRMATCH(qpi.all_info.out.fname.s, fname1);
+
+	ZERO_STRUCT(qpi);
+	qpi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	qpi.generic.in.file.path = fname2;
+
+	status = smb_raw_pathinfo(cli1->tree, tctx, &qpi);
+	CHECK_STATUS(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	torture_comment(tctx, "nttrans_rename: after closing the file the file is still not renamed\n");
+	status = smbcli_close(cli1->tree, fnum);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+
+	ZERO_STRUCT(qpi);
+	qpi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	qpi.generic.in.file.path = fname1;
+
+	status = smb_raw_pathinfo(cli1->tree, tctx, &qpi);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	CHECK_STRMATCH(qpi.all_info.out.fname.s, fname1);
+
+	ZERO_STRUCT(qpi);
+	qpi.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	qpi.generic.in.file.path = fname2;
+
+	status = smb_raw_pathinfo(cli1->tree, tctx, &qpi);
+	CHECK_STATUS(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	torture_comment(tctx, "nttrans_rename: rename with an invalid handle gives NT_STATUS_INVALID_HANDLE\n");
+	ZERO_STRUCT(rn);
+	rn.generic.level = RAW_RENAME_NTTRANS;
+	rn.nttrans.in.file.fnum = fnum+1;
+	rn.nttrans.in.flags	= 0;
+	rn.nttrans.in.new_name	= fname2+strlen(BASEDIR)+1;
+
+	status = smb_raw_rename(cli1->tree, &rn);
+
+	CHECK_STATUS(tctx, status, NT_STATUS_INVALID_HANDLE);
+
+done:
+	smb_raw_exit(cli1->session);
+	smbcli_deltree(cli1->tree, BASEDIR);
+	return ret;
+}
+
+
+static bool test_raw_oplock_batch20(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
+{
+	const char *fname1 = BASEDIR "\\test_batch20_1.dat";
+	const char *fname2 = BASEDIR "\\test_batch20_2.dat";
+	const char *fname3 = BASEDIR "\\test_batch20_3.dat";
+	NTSTATUS status;
+	bool ret = true;
+	union smb_open io;
+	union smb_fileinfo qfi;
+	union smb_setfileinfo sfi;
+	uint16_t fnum=0,fnum2=0;
+
+	if (!torture_setup_dir(cli1, BASEDIR)) {
+		return false;
+	}
+
+	/* cleanup */
+	smbcli_unlink(cli1->tree, fname1);
+	smbcli_unlink(cli1->tree, fname2);
+	smbcli_unlink(cli1->tree, fname3);
+
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
+
+	/*
+	  base ntcreatex parms
+	*/
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname1;
+
+	torture_comment(tctx, "BATCH20: open a file with an batch oplock (share mode: all)\n");
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
 		NTCREATEX_FLAGS_REQUEST_OPLOCK |
@@ -2212,7 +2402,6 @@ static bool test_raw_oplock_batch20(struct torture_context *tctx, struct smbcli_
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 	CHECK_STRMATCH(qfi.all_info.out.fname.s, fname2);
 
-	/* we should use no share mode, when samba3 passes this */
 	torture_comment(tctx, "open a file with the new name an batch oplock (share mode: all)\n");
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
@@ -2307,7 +2496,7 @@ static bool test_raw_oplock_batch21(struct torture_context *tctx, struct smbcli_
 	/*
 	  with a batch oplock we get a break
 	*/
-	torture_comment(tctx, "open with batch oplock\n");
+	torture_comment(tctx, "BATCH21: open with batch oplock\n");
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
 		NTCREATEX_FLAGS_REQUEST_OPLOCK |
@@ -2350,7 +2539,7 @@ static bool test_raw_oplock_batch22(struct torture_context *tctx, struct smbcli_
 	int te;
 
 	if (torture_setting_bool(tctx, "samba3", false)) {
-		torture_skip(tctx, "BACHT22 disabled against samba3\n");
+		torture_skip(tctx, "BATCH22 disabled against samba3\n");
 	}
 
 	if (!torture_setup_dir(cli1, BASEDIR)) {
@@ -2380,7 +2569,7 @@ static bool test_raw_oplock_batch22(struct torture_context *tctx, struct smbcli_
 	/*
 	  with a batch oplock we get a break
 	*/
-	torture_comment(tctx, "open with batch oplock\n");
+	torture_comment(tctx, "BATCH22: open with batch oplock\n");
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
 		NTCREATEX_FLAGS_REQUEST_OPLOCK |
@@ -2440,7 +2629,7 @@ static bool test_raw_oplock_batch23(struct torture_context *tctx, struct smbcli_
 	struct smbcli_state *cli3 = NULL;
 
 	if (torture_setting_bool(tctx, "samba3", false)) {
-		torture_skip(tctx, "BACHT23 disabled against samba3\n");
+		torture_skip(tctx, "BATCH23 disabled against samba3\n");
 	}
 
 	if (!torture_setup_dir(cli1, BASEDIR)) {
@@ -2470,7 +2659,7 @@ static bool test_raw_oplock_batch23(struct torture_context *tctx, struct smbcli_
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "a open and ask for a batch oplock\n");
+	torture_comment(tctx, "BATCH23: a open and ask for a batch oplock\n");
 	ZERO_STRUCT(break_info);
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_given, cli2->tree);
@@ -2557,7 +2746,7 @@ static bool test_raw_oplock_batch24(struct torture_context *tctx, struct smbcli_
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "a open without level support and ask for a batch oplock\n");
+	torture_comment(tctx, "BATCH24: a open without level support and ask for a batch oplock\n");
 	ZERO_STRUCT(break_info);
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_given, cli2->tree);

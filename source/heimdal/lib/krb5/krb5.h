@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5.h 21551 2007-07-15 09:03:39Z lha $ */
+/* $Id: krb5.h 22100 2007-12-03 17:15:00Z lha $ */
 
 #ifndef __KRB5_H__
 #define __KRB5_H__
@@ -75,15 +75,16 @@ typedef struct krb5_crypto_data *krb5_crypto;
 struct krb5_get_creds_opt_data;
 typedef struct krb5_get_creds_opt_data *krb5_get_creds_opt;
 
-struct krb5_digest;
-typedef struct krb5_digest *krb5_digest;
-struct krb5_ntlm;
-typedef struct krb5_ntlm *krb5_ntlm;
+struct krb5_digest_data;
+typedef struct krb5_digest_data *krb5_digest;
+struct krb5_ntlm_data;
+typedef struct krb5_ntlm_data *krb5_ntlm;
 
-typedef struct krb5_pac *krb5_pac;
+struct krb5_pac_data;
+typedef struct krb5_pac_data *krb5_pac;
 
-typedef struct krb5_rd_req_in_ctx *krb5_rd_req_in_ctx;
-typedef struct krb5_rd_req_out_ctx *krb5_rd_req_out_ctx;
+typedef struct krb5_rd_req_in_ctx_data *krb5_rd_req_in_ctx;
+typedef struct krb5_rd_req_out_ctx_data *krb5_rd_req_out_ctx;
 
 typedef CKSUMTYPE krb5_cksumtype;
 
@@ -417,6 +418,8 @@ typedef struct krb5_cc_ops {
     krb5_error_code (*get_cache_first)(krb5_context, krb5_cc_cursor *);
     krb5_error_code (*get_cache_next)(krb5_context, krb5_cc_cursor, krb5_ccache *);
     krb5_error_code (*end_cache_get)(krb5_context, krb5_cc_cursor);
+    krb5_error_code (*move)(krb5_context, krb5_ccache, krb5_ccache);
+    krb5_error_code (*default_name)(krb5_context, char **);
 } krb5_cc_ops;
 
 struct krb5_log_facility;
@@ -753,7 +756,7 @@ enum {
     KRB5_PRINCIPAL_UNPARSE_DISPLAY = 4
 };
 
-typedef struct krb5_sendto_ctx *krb5_sendto_ctx;
+typedef struct krb5_sendto_ctx_data *krb5_sendto_ctx;
 
 #define KRB5_SENDTO_DONE	0
 #define KRB5_SENDTO_RESTART	1

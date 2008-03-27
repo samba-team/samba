@@ -32,7 +32,13 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: lock.c 18452 2006-10-14 09:41:05Z lha $");
+RCSID("$Id: lock.c 22327 2007-12-15 04:49:37Z lha $");
+
+/**
+ * @page page_lock Locking and unlocking certificates and encrypted data.
+ *
+ * See the library functions here: @ref hx509_lock
+ */
 
 struct hx509_lock_data {
     struct _hx509_password password;

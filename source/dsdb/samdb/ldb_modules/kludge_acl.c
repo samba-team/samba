@@ -46,42 +46,15 @@
  *
  */
 
-enum user_is {
-	ANONYMOUS,
-	USER,
-	ADMINISTRATOR,
-	SYSTEM
-};
-
 struct kludge_private_data {
 	const char **password_attrs;
 };
 
-static enum user_is what_is_user(struct ldb_module *module) 
+static enum security_user_level what_is_user(struct ldb_module *module) 
 {
 	struct auth_session_info *session_info
 		= (struct auth_session_info *)ldb_get_opaque(module->ldb, "sessionInfo");
-	if (!session_info) {
-		return ANONYMOUS;
-	}
-	
-	if (security_token_is_system(session_info->security_token)) {
-		return SYSTEM;
-	}
-
-	if (security_token_is_anonymous(session_info->security_token)) {
-		return ANONYMOUS;
-	}
-
-	if (security_token_has_builtin_administrators(session_info->security_token)) {
-		return ADMINISTRATOR;
-	}
-
-	if (security_token_has_nt_authenticated_users(session_info->security_token)) {
-		return USER;
-	}
-
-	return ANONYMOUS;
+	return security_session_user_level(session_info);
 }
 
 static const char *user_name(TALLOC_CTX *mem_ctx, struct ldb_module *module) 
@@ -104,7 +77,7 @@ struct kludge_acl_context {
 	void *up_context;
 	int (*up_callback)(struct ldb_context *, void *, struct ldb_reply *);
 
-	enum user_is user_type;
+	enum security_user_level user_type;
 	bool allowedAttributes;
 	bool allowedAttributesEffective;
 	bool allowedChildClasses;
@@ -272,8 +245,8 @@ static int kludge_acl_callback(struct ldb_context *ldb, void *context, struct ld
 	if (data && data->password_attrs) /* if we are not initialized just get through */
 	{
 		switch (ac->user_type) {
-		case SYSTEM:
-		case ADMINISTRATOR:
+		case SECURITY_SYSTEM:
+		case SECURITY_ADMINISTRATOR:
 			if (ac->allowedAttributesEffective) {
 				ret = kludge_acl_allowedAttributes(ldb, ares->message, "allowedAttributesEffective");
 				if (ret != LDB_SUCCESS) {
@@ -359,7 +332,7 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	   so we don't allow a search for 'sambaPassword=penguin',
 	   just as we would not allow that attribute to be returned */
 	switch (ac->user_type) {
-	case SYSTEM:
+	case SECURITY_SYSTEM:
 		break;
 	default:
 		/* remove password attributes */
@@ -391,10 +364,10 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 /* ANY change type */
 static int kludge_acl_change(struct ldb_module *module, struct ldb_request *req)
 {
-	enum user_is user_type = what_is_user(module);
+	enum security_user_level user_type = what_is_user(module);
 	switch (user_type) {
-	case SYSTEM:
-	case ADMINISTRATOR:
+	case SECURITY_SYSTEM:
+	case SECURITY_ADMINISTRATOR:
 		return ldb_next_request(module, req);
 	default:
 		ldb_asprintf_errstring(module->ldb,

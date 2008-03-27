@@ -7,8 +7,6 @@ use Exporter;
 use FindBin qw($RealBin);
 use lib "$RealBin/..";
 
-use Subunit qw(parse_results);
-
 use strict;
 
 sub new($$$$$$$) {
@@ -62,7 +60,9 @@ sub output_msg($$)
 	my ($self, $output) = @_;
 
 	if ($self->{verbose}) {
+		require FileHandle;
 		print $output;
+		STDOUT->flush();
 	} else {
 		$self->{test_output}->{$self->{NAME}} .= $output;
 	}

@@ -32,17 +32,39 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id: name.c 20891 2007-06-04 22:51:41Z lha $");
+#include <wind.h>
+RCSID("$Id: name.c 22583 2008-02-11 20:46:21Z lha $");
 
-/* 
- * name parsing from rfc2253
- * fix so parsing rfc1779 works too 
- * rfc3280
+/**
+ * @page page_name PKIX/X.509 Names
+ *
+ * There are several names in PKIX/X.509, GeneralName and Name.
+ *
+ * A Name consists of an ordered list of Relative Distinguished Names
+ * (RDN). Each RDN consists of an unordered list of typed strings. The
+ * types are defined by OID and have long and short description. For
+ * example id-at-commonName (2.5.4.3) have the long name CommonName
+ * and short name CN. The string itself can be of serveral encoding,
+ * UTF8, UTF16, Teltex string, etc. The type limit what encoding
+ * should be used.
+ *
+ * GeneralName is a broader nametype that can contains al kind of
+ * stuff like Name, IP addresses, partial Name, etc.
+ *
+ * Name is mapped into a hx509_name object.
+ *
+ * Parse and string name into a hx509_name object with hx509_parse_name(),
+ * make it back into string representation with hx509_name_to_string().
+ *
+ * Name string are defined rfc2253, rfc1779 and X.501.
+ *
+ * See the library functions here: @ref hx509_name
  */
 
 static const struct {
     const char *n;
     const heim_oid *(*o)(void);
+    wind_profile_flags flags;
 } no[] = {
     { "C", oid_id_at_countryName },
     { "CN", oid_id_at_commonName },
@@ -153,6 +175,18 @@ stringtooid(const char *name, size_t len, heim_oid *oid)
     return ret;
 }
 
+/**
+ * Convert the hx509 name object into a printable string.
+ * The resulting string should be freed with free().
+ *
+ * @param name name to print
+ * @param str the string to return
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_name
+ */
+
 int
 hx509_name_to_string(const hx509_name name, char **str)
 {
@@ -247,82 +281,185 @@ _hx509_Name_to_string(const Name *n, char **str)
     return 0;
 }
 
-/*
- * XXX this function is broken, it needs to compare code points, not
- * bytes.
- */
+#define COPYCHARARRAY(_ds,_el,_l,_n)		\
+        (_l) = strlen(_ds->u._el);		\
+	(_n) = malloc((_l) * sizeof((_n)[0]));	\
+	if ((_n) == NULL)			\
+	    return ENOMEM;			\
+	for (i = 0; i < (_l); i++)		\
+	    (_n)[i] = _ds->u._el[i]
 
-int
-_hx509_name_ds_cmp(const DirectoryString *ds1, const DirectoryString *ds2)
+
+#define COPYVALARRAY(_ds,_el,_l,_n)		\
+        (_l) = _ds->u._el.length;		\
+	(_n) = malloc((_l) * sizeof((_n)[0]));	\
+	if ((_n) == NULL)			\
+	    return ENOMEM;			\
+	for (i = 0; i < (_l); i++)		\
+	    (_n)[i] = _ds->u._el.data[i]
+
+#define COPYVOIDARRAY(_ds,_el,_l,_n)		\
+        (_l) = _ds->u._el.length;		\
+	(_n) = malloc((_l) * sizeof((_n)[0]));	\
+	if ((_n) == NULL)			\
+	    return ENOMEM;			\
+	for (i = 0; i < (_l); i++)		\
+	    (_n)[i] = ((unsigned char *)_ds->u._el.data)[i]
+
+
+
+static int
+dsstringprep(const DirectoryString *ds, uint32_t **rname, size_t *rlen)
 {
-    int c;
+    wind_profile_flags flags = 0;
+    size_t i, len;
+    int ret;
+    uint32_t *name;
 
-    c = ds1->element - ds2->element;
-    if (c)
-	return c;
+    *rname = NULL;
+    *rlen = 0;
 
-    switch(ds1->element) {
+    switch(ds->element) {
     case choice_DirectoryString_ia5String:
-	c = strcmp(ds1->u.ia5String, ds2->u.ia5String);
-	break;
-    case choice_DirectoryString_teletexString:
-	c = der_heim_octet_string_cmp(&ds1->u.teletexString,
-				  &ds2->u.teletexString);
+	COPYCHARARRAY(ds, ia5String, len, name);
 	break;
     case choice_DirectoryString_printableString:
-	c = strcasecmp(ds1->u.printableString, ds2->u.printableString);
+	flags = WIND_PROFILE_LDAP_CASE_EXACT_ATTRIBUTE;
+	COPYCHARARRAY(ds, printableString, len, name);
 	break;
-    case choice_DirectoryString_utf8String:
-	c = strcmp(ds1->u.utf8String, ds2->u.utf8String);
-	break;
-    case choice_DirectoryString_universalString:
-	c = der_heim_universal_string_cmp(&ds1->u.universalString,
-					  &ds2->u.universalString);
+    case choice_DirectoryString_teletexString:
+	COPYVOIDARRAY(ds, teletexString, len, name);
 	break;
     case choice_DirectoryString_bmpString:
-	c = der_heim_bmp_string_cmp(&ds1->u.bmpString,
-				    &ds2->u.bmpString);
+	COPYVALARRAY(ds, bmpString, len, name);
+	break;
+    case choice_DirectoryString_universalString:
+	COPYVALARRAY(ds, universalString, len, name);
+	break;
+    case choice_DirectoryString_utf8String:
+	ret = wind_utf8ucs4_length(ds->u.utf8String, &len);
+	if (ret)
+	    return ret;
+	name = malloc(len * sizeof(name[0]));
+	if (name == NULL)
+	    return ENOMEM;
+	ret = wind_utf8ucs4(ds->u.utf8String, name, &len);
+	if (ret)
+	    return ret;
 	break;
     default:
-	c = 1;
-	break;
+	_hx509_abort("unknown directory type: %d", ds->element);
     }
-    return c;
-}
 
-int
-_hx509_name_cmp(const Name *n1, const Name *n2)
-{
-    int i, j, c;
+    *rlen = len;
+    /* try a couple of times to get the length right, XXX gross */
+    for (i = 0; i < 4; i++) {
+	*rlen = *rlen * 2;
+	*rname = malloc(*rlen * sizeof((*rname)[0]));
 
-    c = n1->u.rdnSequence.len - n2->u.rdnSequence.len;
-    if (c)
-	return c;
-
-    for (i = 0 ; i < n1->u.rdnSequence.len; i++) {
-	c = n1->u.rdnSequence.val[i].len - n2->u.rdnSequence.val[i].len;
-	if (c)
-	    return c;
-
-	for (j = 0; j < n1->u.rdnSequence.val[i].len; j++) {
-	    c = der_heim_oid_cmp(&n1->u.rdnSequence.val[i].val[j].type,
-				 &n1->u.rdnSequence.val[i].val[j].type);
-	    if (c)
-		return c;
-			     
-	    c = _hx509_name_ds_cmp(&n1->u.rdnSequence.val[i].val[j].value,
-				   &n2->u.rdnSequence.val[i].val[j].value);
-	    if (c)
-		return c;
-	}
+	ret = wind_stringprep(name, len, *rname, rlen,
+			      WIND_PROFILE_LDAP|flags);
+	if (ret == WIND_ERR_OVERRUN) {
+	    free(*rname);
+	    *rname = NULL;
+	    continue;
+	} else
+	    break;
     }
+    free(name);
+    if (ret) {
+	if (*rname)
+	    free(*rname);
+	*rname = NULL;
+	*rlen = 0;
+	return ret;
+    }
+
     return 0;
 }
 
 int
+_hx509_name_ds_cmp(const DirectoryString *ds1,
+		   const DirectoryString *ds2,
+		   int *diff)
+{
+    uint32_t *ds1lp, *ds2lp;
+    size_t ds1len, ds2len;
+    int ret;
+
+    ret = dsstringprep(ds1, &ds1lp, &ds1len);
+    if (ret)
+	return ret;
+    ret = dsstringprep(ds2, &ds2lp, &ds2len);
+    if (ret) {
+	free(ds1lp);
+	return ret;
+    }
+
+    if (ds1len != ds2len)
+	*diff = ds1len - ds2len;
+    else
+	*diff = memcmp(ds1lp, ds2lp, ds1len * sizeof(ds1lp[0]));
+
+    free(ds1lp);
+    free(ds2lp);
+
+    return 0;
+}
+
+int
+_hx509_name_cmp(const Name *n1, const Name *n2, int *c)
+{
+    int ret, i, j;
+
+    *c = n1->u.rdnSequence.len - n2->u.rdnSequence.len;
+    if (*c)
+	return 0;
+
+    for (i = 0 ; i < n1->u.rdnSequence.len; i++) {
+	*c = n1->u.rdnSequence.val[i].len - n2->u.rdnSequence.val[i].len;
+	if (*c)
+	    return 0;
+
+	for (j = 0; j < n1->u.rdnSequence.val[i].len; j++) {
+	    *c = der_heim_oid_cmp(&n1->u.rdnSequence.val[i].val[j].type,
+				  &n1->u.rdnSequence.val[i].val[j].type);
+	    if (*c)
+		return 0;
+			     
+	    ret = _hx509_name_ds_cmp(&n1->u.rdnSequence.val[i].val[j].value,
+				     &n2->u.rdnSequence.val[i].val[j].value,
+				     c);
+	    if (ret)
+		return ret;
+	    if (*c)
+		return 0;
+	}
+    }
+    *c = 0;
+    return 0;
+}
+
+/**
+ * Compare to hx509 name object, useful for sorting.
+ *
+ * @param n1 a hx509 name object.
+ * @param n2 a hx509 name object.
+ *
+ * @return 0 the objects are the same, returns > 0 is n2 is "larger"
+ * then n2, < 0 if n1 is "smaller" then n2.
+ *
+ * @ingroup hx509_name
+ */
+
+int
 hx509_name_cmp(hx509_name n1, hx509_name n2)
 {
-    return _hx509_name_cmp(&n1->der_name, &n2->der_name);
+    int ret, diff;
+    ret = _hx509_name_cmp(&n1->der_name, &n2->der_name, &diff);
+    if (ret)
+	return ret;
+    return diff;
 }
 
 
@@ -339,19 +476,6 @@ _hx509_name_from_Name(const Name *n, hx509_name *name)
 	*name = NULL;
     }
     return ret;
-}
-
-static int
-hx509_der_parse_name(const void *data, size_t length, hx509_name *name)
-{
-    int ret;
-    Name n;
-
-    *name = NULL;
-    ret = decode_Name(data, length, &n, NULL);
-    if (ret)
-	return ret;
-    return _hx509_name_from_Name(&n, name);
 }
 
 int
@@ -399,6 +523,18 @@ _hx509_name_modify(hx509_context context,
 
     return 0;
 }
+
+/**
+ * Parse a string into a hx509 name object.
+ *
+ * @param context A hx509 context.
+ * @param str a string to parse.
+ * @param name the resulting object, NULL in case of error.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_name
+ */
 
 int
 hx509_parse_name(hx509_context context, const char *str, hx509_name *name)
@@ -492,6 +628,18 @@ out:
     return HX509_NAME_MALFORMED;
 }
 
+/**
+ * Copy a hx509 name object.
+ *
+ * @param context A hx509 cotext.
+ * @param from the name to copy from
+ * @param to the name to copy to
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_name
+ */
+
 int
 hx509_name_copy(hx509_context context, const hx509_name from, hx509_name *to)
 {
@@ -509,6 +657,17 @@ hx509_name_copy(hx509_context context, const hx509_name from, hx509_name *to)
     return 0;
 }
 
+/**
+ * Convert a hx509_name into a Name.
+ *
+ * @param from the name to copy from
+ * @param to the name to copy to
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_name
+ */
+
 int
 hx509_name_to_Name(const hx509_name from, Name *to)
 {
@@ -520,6 +679,19 @@ hx509_name_normalize(hx509_context context, hx509_name name)
 {
     return 0;
 }
+
+/**
+ * Expands variables in the name using env. Variables are on the form
+ * ${name}. Useful when dealing with certificate templates.
+ *
+ * @param context A hx509 cotext.
+ * @param name the name to expand.
+ * @param env environment variable to expand.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_name
+ */
 
 int
 hx509_name_expand(hx509_context context,
@@ -539,6 +711,7 @@ hx509_name_expand(hx509_context context,
 
     for (i = 0 ; i < n->u.rdnSequence.len; i++) {
 	for (j = 0; j < n->u.rdnSequence.val[i].len; j++) {
+	    /** Only UTF8String rdnSequence names are allowed */
 	    /*
 	      THIS SHOULD REALLY BE:
 	      COMP = n->u.rdnSequence.val[i].val[j];
@@ -615,6 +788,13 @@ hx509_name_expand(hx509_context context,
     return 0;
 }
 
+/**
+ * Free a hx509 name object, upond return *name will be NULL.
+ *
+ * @param name a hx509 name object to be freed.
+ *
+ * @ingroup hx509_name
+ */
 
 void
 hx509_name_free(hx509_name *name)
@@ -625,36 +805,60 @@ hx509_name_free(hx509_name *name)
     *name = NULL;
 }
 
+/**
+ * Convert a DER encoded name info a string.
+ *
+ * @param data data to a DER/BER encoded name
+ * @param length length of data
+ * @param str the resulting string, is NULL on failure.
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_name
+ */
+
 int
 hx509_unparse_der_name(const void *data, size_t length, char **str)
 {
-    hx509_name name;
+    Name name;
     int ret;
 
-    ret = hx509_der_parse_name(data, length, &name);
+    *str = NULL;
+
+    ret = decode_Name(data, length, &name, NULL);
     if (ret)
 	return ret;
-    
-    ret = hx509_name_to_string(name, str);
-    hx509_name_free(&name);
+    ret = _hx509_Name_to_string(&name, str);
+    free_Name(&name);
     return ret;
 }
 
+/**
+ * Convert a hx509_name object to DER encoded name.
+ *
+ * @param name name to concert
+ * @param os data to a DER encoded name, free the resulting octet
+ * string with hx509_xfree(os->data).
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_name
+ */
+
 int
-hx509_name_to_der_name(const hx509_name name, void **data, size_t *length)
+hx509_name_binary(const hx509_name name, heim_octet_string *os)
 {
     size_t size;
     int ret;
 
-    ASN1_MALLOC_ENCODE(Name, *data, *length, &name->der_name, &size, ret);
+    ASN1_MALLOC_ENCODE(Name, os->data, os->length, &name->der_name, &size, ret);
     if (ret)
 	return ret;
-    if (*length != size)
+    if (os->length != size)
 	_hx509_abort("internal ASN.1 encoder error");
 
     return 0;
 }
-
 
 int
 _hx509_unparse_Name(const Name *aname, char **str)
@@ -671,11 +875,32 @@ _hx509_unparse_Name(const Name *aname, char **str)
     return ret;
 }
 
+/**
+ * Unparse the hx509 name in name into a string.
+ *
+ * @param name the name to check if its empty/null.
+ *
+ * @return non zero if the name is empty/null.
+ *
+ * @ingroup hx509_name
+ */
+
 int
 hx509_name_is_null_p(const hx509_name name)
 {
     return name->der_name.u.rdnSequence.len == 0;
 }
+
+/**
+ * Unparse the hx509 name in name into a string.
+ *
+ * @param name the name to print
+ * @param str an allocated string returns the name in string form
+ *
+ * @return An hx509 error code, see krb5_get_error_string().
+ *
+ * @ingroup hx509_name
+ */
 
 int
 hx509_general_name_unparse(GeneralName *name, char **str)

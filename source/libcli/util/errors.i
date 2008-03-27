@@ -20,7 +20,7 @@
 #ifdef SWIGPYTHON
 %typemap(out,noblock=1) WERROR {
     if (!W_ERROR_IS_OK($1)) {
-        PyObject *obj = Py_BuildValue((char *)"(i,s)", $1.v, win_errstr($1));
+        PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V($1), win_errstr($1));
         PyErr_SetObject(PyExc_RuntimeError, obj);
         SWIG_fail;
     } else if ($result == NULL) {
@@ -30,7 +30,7 @@
 
 %typemap(out,noblock=1) NTSTATUS {
     if (NT_STATUS_IS_ERR($1)) {
-        PyObject *obj = Py_BuildValue((char *)"(i,s)", $1.v, nt_errstr($1));
+        PyObject *obj = Py_BuildValue((char *)"(i,s)", NT_STATUS_V($1), nt_errstr($1));
         PyErr_SetObject(PyExc_RuntimeError, obj);
         SWIG_fail;
     } else if ($result == NULL) {

@@ -15,7 +15,6 @@ rename
 initgroups
 memmove
 strdup
-inet_ntoa
 setlinebuf
 vsyslog
 timegm
@@ -52,6 +51,7 @@ readline (the library)
 inet_ntoa
 inet_ntop
 inet_pton
+inet_aton
 strtoll
 strtoull
 socketpair

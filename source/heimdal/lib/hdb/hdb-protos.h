@@ -43,6 +43,9 @@ hdb_db_create (
 	const char */*filename*/);
 
 const char *
+hdb_db_dir (krb5_context /*context*/);
+
+const char *
 hdb_dbinfo_get_acl_file (
 	krb5_context /*context*/,
 	struct hdb_dbinfo */*dbp*/);
@@ -63,6 +66,11 @@ hdb_dbinfo_get_label (
 	struct hdb_dbinfo */*dbp*/);
 
 const char *
+hdb_dbinfo_get_log_file (
+	krb5_context /*context*/,
+	struct hdb_dbinfo */*dbp*/);
+
+const char *
 hdb_dbinfo_get_mkey_file (
 	krb5_context /*context*/,
 	struct hdb_dbinfo */*dbp*/);
@@ -76,6 +84,9 @@ const char *
 hdb_dbinfo_get_realm (
 	krb5_context /*context*/,
 	struct hdb_dbinfo */*dbp*/);
+
+const char *
+hdb_default_db (krb5_context /*context*/);
 
 krb5_error_code
 hdb_enctype2key (

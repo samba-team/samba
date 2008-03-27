@@ -295,8 +295,8 @@ static bool test_LookupNames_wellknown(struct dcerpc_pipe *p,
 	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
 
 	name.name.string = "BUILTIN\\Administrators";
-	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
 	name.sid_type = SID_NAME_ALIAS;
+	ret &= test_LookupNames(p, mem_ctx, handle, &tnames);
 
 	name.name.string = "SYSTEM";
 	name.sid_type = SID_NAME_WKN_GRP;

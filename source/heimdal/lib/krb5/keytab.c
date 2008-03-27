@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: keytab.c 20211 2007-02-09 07:11:03Z lha $");
+RCSID("$Id: keytab.c 22532 2008-01-27 11:59:18Z lha $");
 
 /*
  * Register a new keytab in `ops'
@@ -337,8 +337,9 @@ krb5_kt_get_entry(krb5_context context,
 
     ret = krb5_kt_start_seq_get (context, id, &cursor);
     if (ret) {
-	krb5_clear_error_string(context);
-	return KRB5_KT_NOTFOUND; /* XXX i.e. file not found */
+	/* This is needed for krb5_verify_init_creds, but keep error
+	 * string from previous error for the human. */
+	return KRB5_KT_NOTFOUND;
     }
 
     entry->vno = 0;

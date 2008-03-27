@@ -7,7 +7,7 @@ ctags:
 .SUFFIXES: _wrap.c .i
 
 .i_wrap.c:
-	[ "$(SWIG)" == "no" ] || $(SWIG) -O -Wall -python -keyword $<
+	[ "$(SWIG)" = "no" ] || $(SWIG) -O -Wall -python -keyword $<
 
 .SUFFIXES: .1 .1.xml .3 .3.xml .xml .html .c .o
 

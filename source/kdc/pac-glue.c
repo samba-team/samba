@@ -220,13 +220,47 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 	return ret;
 }
 
+static void samba_kdc_build_edata_reply(TALLOC_CTX *tmp_ctx, krb5_data *e_data,
+				       NTSTATUS nt_status)
+{
+	PA_DATA pa;
+	unsigned char *buf;
+	size_t len;
+	krb5_error_code ret = 0;
+
+	if (!e_data)
+		return;
+
+	pa.padata_type		= KRB5_PADATA_PW_SALT;
+	pa.padata_value.length	= 12;
+	pa.padata_value.data	= malloc(pa.padata_value.length);
+	if (!pa.padata_value.data) {
+		e_data->length = 0;
+		e_data->data = NULL;
+		return;
+	}
+
+	SIVAL(pa.padata_value.data, 0, NT_STATUS_V(nt_status));
+	SIVAL(pa.padata_value.data, 4, 0);
+	SIVAL(pa.padata_value.data, 8, 1);
+
+	ASN1_MALLOC_ENCODE(PA_DATA, buf, len, &pa, &len, ret);
+	free(pa.padata_value.data);
+
+	e_data->data   = buf;
+	e_data->length = len;
+
+	return;
+}
+
 /* Given an hdb entry (and in particular it's private member), consult
  * the account_ok routine in auth/auth_sam.c for consistancy */
 
 
 krb5_error_code samba_kdc_check_client_access(void *priv, 
 					      krb5_context context, hdb_entry_ex *entry_ex, 
-					      KDC_REQ *req)
+					      KDC_REQ *req,
+					      krb5_data *e_data)
 {
 	krb5_error_code ret;
 	NTSTATUS nt_status;
@@ -274,30 +308,28 @@ krb5_error_code samba_kdc_check_client_access(void *priv,
 				       name);
 	free(name);
 
-	/* TODO:  Need a more complete mapping of NTSTATUS to krb5kdc errors */
-
-	/* TODO:  Also need to add the appropriate e-data struct of type
-	 * PA-PW-SALT (3) that includes the NT_STATUS code, which gives Windows
-	 * the information it needs to display the appropriate dialog. */
+	if (NT_STATUS_IS_OK(nt_status))
+		return 0;
 
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_MUST_CHANGE))
-		return KRB5KDC_ERR_KEY_EXPIRED;
+		ret = KRB5KDC_ERR_KEY_EXPIRED;
 	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_EXPIRED))
-		return KRB5KDC_ERR_KEY_EXPIRED;
+		ret = KRB5KDC_ERR_KEY_EXPIRED;
 	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_EXPIRED))
-		return KRB5KDC_ERR_CLIENT_REVOKED;
+		ret = KRB5KDC_ERR_CLIENT_REVOKED;
 	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_DISABLED))
-		return KRB5KDC_ERR_CLIENT_REVOKED;
+		ret = KRB5KDC_ERR_CLIENT_REVOKED;
 	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_LOGON_HOURS))
-		return KRB5KDC_ERR_CLIENT_REVOKED;
+		ret = KRB5KDC_ERR_CLIENT_REVOKED;
 	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_LOCKED_OUT))
-		return KRB5KDC_ERR_CLIENT_REVOKED;
+		ret = KRB5KDC_ERR_CLIENT_REVOKED;
 	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_WORKSTATION))
-		return KRB5KDC_ERR_POLICY;
-	else if (!NT_STATUS_IS_OK(nt_status)) {
-		return KRB5KDC_ERR_POLICY;
-	}
+		ret = KRB5KDC_ERR_POLICY;
+	else
+		ret = KRB5KDC_ERR_POLICY;
 
-	return 0;
+	samba_kdc_build_edata_reply(tmp_ctx, e_data, nt_status);
+
+	return ret;
 }
 

@@ -300,7 +300,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 
 		/* now really mark the file as open */
 		status = odb_open_file(lck, f->handle, name->full_name,
-				       false, OPLOCK_NONE, NULL);
+				       NULL, false, OPLOCK_NONE, NULL);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(lck);
@@ -360,7 +360,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		}
 
 		status = odb_open_file(lck, f->handle, name->full_name,
-				       false, OPLOCK_NONE, NULL);
+				       NULL, false, OPLOCK_NONE, NULL);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			goto cleanup_delete;
@@ -600,7 +600,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	mode = pvfs_fileperms(pvfs, attrib);
 
 	/* create the file */
-	fd = open(name->full_name, flags | O_CREAT | O_EXCL, mode);
+	fd = open(name->full_name, flags | O_CREAT | O_EXCL| O_NONBLOCK, mode);
 	if (fd == -1) {
 		return pvfs_map_errno(pvfs, errno);
 	}
@@ -688,19 +688,6 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	status = odb_open_file(lck, f->handle, name->full_name,
-			       allow_level_II_oplock,
-			       oplock_level, &oplock_granted);
-	talloc_free(lck);
-	if (!NT_STATUS_IS_OK(status)) {
-		/* bad news, we must have hit a race - we don't delete the file
-		   here as the most likely scenario is that someone else created 
-		   the file at the same time */
-		close(fd);
-		return status;
-	}
-
-
 	f->ntvfs             = h;
 	f->pvfs              = pvfs;
 	f->pending_list      = NULL;
@@ -722,6 +709,18 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	f->handle->have_opendb_entry = true;
 	f->handle->sticky_write_time = false;
 	f->handle->open_completed    = false;
+
+	status = odb_open_file(lck, f->handle, name->full_name,
+			       &f->handle->fd, allow_level_II_oplock,
+			       oplock_level, &oplock_granted);
+	talloc_free(lck);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* bad news, we must have hit a race - we don't delete the file
+		   here as the most likely scenario is that someone else created
+		   the file at the same time */
+		close(fd);
+		return status;
+	}
 
 	DLIST_ADD(pvfs->files.list, f);
 
@@ -859,7 +858,13 @@ NTSTATUS pvfs_odb_retry_setup(struct ntvfs_module_context *ntvfs,
 
 	/* setup a pending lock */
 	status = odb_open_file_pending(lck, r);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND,status)) {
+		/*
+		 * maybe only a unix application
+		 * has the file open
+		 */
+		data_blob_free(&r->odb_locking_key);
+	} else if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
@@ -876,8 +881,6 @@ NTSTATUS pvfs_odb_retry_setup(struct ntvfs_module_context *ntvfs,
 
 	talloc_steal(r, wait_handle);
 
-	talloc_steal(pvfs, r);
-
 	return NT_STATUS_OK;
 }
 
@@ -892,7 +895,13 @@ static void pvfs_retry_open_sharing(struct pvfs_odb_retry *r,
 				    enum pvfs_wait_notice reason)
 {
 	union smb_open *io = talloc_get_type(_io, union smb_open);
+	struct timeval *final_timeout = NULL;
 	NTSTATUS status;
+
+	if (private_data) {
+		final_timeout = talloc_get_type(private_data,
+						struct timeval);
+	}
 
 	/* w2k3 ignores SMBntcancel for outstanding open requests. It's probably
 	   just a bug in their server, but we better do the same */
@@ -901,6 +910,16 @@ static void pvfs_retry_open_sharing(struct pvfs_odb_retry *r,
 	}
 
 	if (reason == PVFS_WAIT_TIMEOUT) {
+		if (final_timeout &&
+		    !timeval_expired(final_timeout)) {
+			/*
+			 * we need to retry periodictly
+			 * after an EAGAIN as there's
+			 * no way the kernel tell us
+			 * an oplock is released.
+			 */
+			goto retry;
+		}
 		/* if it timed out, then give the failure
 		   immediately */
 		talloc_free(r);
@@ -909,6 +928,7 @@ static void pvfs_retry_open_sharing(struct pvfs_odb_retry *r,
 		return;
 	}
 
+retry:
 	talloc_free(r);
 
 	/* try the open again, which could trigger another retry setup
@@ -1028,6 +1048,7 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	NTSTATUS status;
 	struct timeval end_time;
+	struct timeval *final_timeout = NULL;
 
 	if (io->generic.in.create_options & 
 	    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS | NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
@@ -1048,12 +1069,28 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 	} else if (NT_STATUS_EQUAL(parent_status, NT_STATUS_OPLOCK_NOT_GRANTED)) {
 		end_time = timeval_add(&req->statistics.request_time,
 				       pvfs->oplock_break_timeout, 0);
+	} else if (NT_STATUS_EQUAL(parent_status, STATUS_MORE_ENTRIES)) {
+		/*
+		 * we got EAGAIN which means a unix application
+		 * has an oplock or share mode
+		 *
+		 * we retry every 4/5 of the sharing violation delay
+		 * to see if the unix application
+		 * has released the oplock or share mode.
+		 */
+		final_timeout = talloc(req, struct timeval);
+		NT_STATUS_HAVE_NO_MEMORY(final_timeout);
+		*final_timeout = timeval_add(&req->statistics.request_time,
+					     pvfs->oplock_break_timeout,
+					     0);
+		end_time = timeval_current_ofs(0, (pvfs->sharing_violation_delay*4)/5);
+		end_time = timeval_min(final_timeout, &end_time);
 	} else {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	return pvfs_odb_retry_setup(ntvfs, req, lck, end_time, io, NULL,
-				    pvfs_retry_open_sharing);
+	return pvfs_odb_retry_setup(ntvfs, req, lck, end_time, io,
+				    final_timeout, pvfs_retry_open_sharing);
 }
 
 /*
@@ -1297,15 +1334,42 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
+	if (access_mask & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA)) {
+		flags |= O_RDWR;
+	} else {
+		flags |= O_RDONLY;
+	}
+
+	/* do the actual open */
+	fd = open(f->handle->name->full_name, flags | O_NONBLOCK);
+	if (fd == -1) {
+		status = pvfs_map_errno(f->pvfs, errno);
+
+		/*
+		 * STATUS_MORE_ENTRIES is EAGAIN or EWOULDBLOCK
+		 */
+		if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) &&
+		    (req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
+			return pvfs_open_setup_retry(ntvfs, req, io, f, lck, status);
+		}
+
+		talloc_free(lck);
+		return status;
+	}
+
+	f->handle->fd = fd;
+
 	/* now really mark the file as open */
 	status = odb_open_file(lck, f->handle, name->full_name,
-			       allow_level_II_oplock,
+			       &f->handle->fd, allow_level_II_oplock,
 			       oplock_level, &oplock_granted);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);
 		return status;
 	}
+
+	f->handle->have_opendb_entry = true;
 
 	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
 		oplock_granted = OPLOCK_BATCH;
@@ -1316,23 +1380,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 			return status;
 		}
 	}
-
-	f->handle->have_opendb_entry = true;
-
-	if (access_mask & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA)) {
-		flags |= O_RDWR;
-	} else {
-		flags |= O_RDONLY;
-	}
-
-	/* do the actual open */
-	fd = open(f->handle->name->full_name, flags);
-	if (fd == -1) {
-		talloc_free(lck);
-		return pvfs_map_errno(f->pvfs, errno);
-	}
-
-	f->handle->fd = fd;
 
 	stream_existed = name->stream_exists;
 

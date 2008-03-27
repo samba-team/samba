@@ -21,6 +21,8 @@ id-pkcs1-sha256WithRSAEncryption OBJECT IDENTIFIER ::=	{ id-pkcs-1 11 }
 id-pkcs1-sha384WithRSAEncryption OBJECT IDENTIFIER ::=	{ id-pkcs-1 12 }
 id-pkcs1-sha512WithRSAEncryption OBJECT IDENTIFIER ::=	{ id-pkcs-1 13 }
 
+id-heim-rsa-pkcs1-x509 OBJECT IDENTIFIER ::= { 1  2 752 43 16 1 }
+
 id-pkcs-2 OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840)
 	rsadsi(113549) pkcs(1) 2 }
 id-pkcs2-md2 OBJECT IDENTIFIER ::=		{ id-pkcs-2 2 }

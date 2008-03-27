@@ -867,8 +867,11 @@ static NTSTATUS libnet_RpcConnectDCInfo_recv(struct composite_context *c, struct
 	} else {
 		if (s->r.out.error_string) {
 			r->out.error_string = talloc_steal(mem_ctx, s->r.out.error_string);
-		} else {
+		} else if (r->in.binding == NULL) {
 			r->out.error_string = talloc_asprintf(mem_ctx, "Connection to DC failed: %s", nt_errstr(status));
+		} else {
+			r->out.error_string = talloc_asprintf(mem_ctx, "Connection to DC %s failed: %s", 
+							      r->in.binding, nt_errstr(status));
 		}
 	}
 
