@@ -23,9 +23,6 @@
 #ifndef _RPC_NETLOGON_H /* _RPC_NETLOGON_H */
 #define _RPC_NETLOGON_H 
 
-#define INTERACTIVE_LOGON_TYPE 1
-#define NET_LOGON_TYPE 2
-
 /* LOCKOUT_STRING */
 typedef struct account_lockout_string {
 	uint32 array_size;
