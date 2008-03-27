@@ -90,6 +90,7 @@ struct loadparm_context;
 #define SHARE_MAP_ARCHIVE	"map-archive"
 
 #define SHARE_STRICT_LOCKING	"strict-locking"
+#define SHARE_OPLOCKS	        "oplocks"
 #define SHARE_STRICT_SYNC	"strict-sync"
 #define SHARE_MSDFS_ROOT	"msdfs-root"
 #define SHARE_CI_FILESYSTEM	"ci-filesystem"
@@ -125,6 +126,7 @@ struct loadparm_context;
 #define SHARE_MAP_ARCHIVE_DEFAULT	true
 
 #define SHARE_STRICT_LOCKING_DEFAULT	true
+#define SHARE_OPLOCKS_DEFAULT	true
 #define SHARE_STRICT_SYNC_DEFAULT	false
 #define SHARE_MSDFS_ROOT_DEFAULT	false
 #define SHARE_CI_FILESYSTEM_DEFAULT	false
