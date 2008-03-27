@@ -97,9 +97,53 @@ static time_t uint64s_nt_time_to_unix_abs(const uint64 *src)
 	return nt_time_to_unix_abs(&nttime);
 }
 
+static NTSTATUS pull_netr_AcctLockStr(TALLOC_CTX *mem_ctx,
+				      struct lsa_BinaryString *r,
+				      struct netr_AcctLockStr **str_p)
+{
+	struct netr_AcctLockStr *str;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+
+	if (!mem_ctx || !r || !str_p) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	*str_p = NULL;
+
+	str = TALLOC_ZERO_P(mem_ctx, struct netr_AcctLockStr);
+	if (!str) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	blob = data_blob_const(r->string, r->length*2);
+
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, str,
+		       (ndr_pull_flags_fn_t)ndr_pull_netr_AcctLockStr);
+	data_blob_free(&blob);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	*str_p = str;
+
+	return NT_STATUS_OK;
+}
+
 static void display_domain_info(struct netr_DELTA_DOMAIN *r)
 {
 	time_t u_logout;
+	struct netr_AcctLockStr *lockstr = NULL;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_tos();
+
+	status = pull_netr_AcctLockStr(mem_ctx, &r->account_lockout,
+				       &lockstr);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("failed to pull account lockout string: %s\n",
+			nt_errstr(status));
+	}
 
 	u_logout = uint64s_nt_time_to_unix_abs((const uint64 *)&r->force_logoff_time);
 
@@ -113,12 +157,12 @@ static void display_domain_info(struct netr_DELTA_DOMAIN *r)
 	d_printf("Max Password Age: %s\n", display_time(r->max_password_age));
 	d_printf("Min Password Age: %s\n", display_time(r->min_password_age));
 
-#if 0
-	/* FIXME - gd */
-	d_printf("Lockout Time: %s\n", display_time(a->account_lockout.lockout_duration));
-	d_printf("Lockout Reset Time: %s\n", display_time(a->account_lockout.reset_count));
-	d_printf("Bad Attempt Lockout: %d\n", a->account_lockout.bad_attempt_lockout);
-#endif
+	if (lockstr) {
+		d_printf("Lockout Time: %s\n", display_time((NTTIME)lockstr->lockout_duration));
+		d_printf("Lockout Reset Time: %s\n", display_time((NTTIME)lockstr->reset_count));
+		d_printf("Bad Attempt Lockout: %d\n", lockstr->bad_attempt_lockout);
+	}
+
 	d_printf("User must logon to change password: %d\n", r->logon_to_chgpass);
 }
 
@@ -982,21 +1026,29 @@ static NTSTATUS fetch_domain_info(uint32_t rid,
 				  struct netr_DELTA_DOMAIN *r)
 {
 	time_t u_max_age, u_min_age, u_logout;
-#if 0
-	/* FIXME: gd */
 	time_t u_lockoutreset, u_lockouttime;
-#endif
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	const char *domname;
+	struct netr_AcctLockStr *lockstr = NULL;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_tos();
+
+	status = pull_netr_AcctLockStr(mem_ctx, &r->account_lockout,
+				       &lockstr);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("failed to pull account lockout string: %s\n",
+			nt_errstr(status));
+	}
 
 	u_max_age = uint64s_nt_time_to_unix_abs((uint64 *)&r->max_password_age);
 	u_min_age = uint64s_nt_time_to_unix_abs((uint64 *)&r->min_password_age);
 	u_logout = uint64s_nt_time_to_unix_abs((uint64 *)&r->force_logoff_time);
-#if 0
-	/* FIXME: gd */
-	u_lockoutreset = uint64s_nt_time_to_unix_abs(&delta->account_lockout.reset_count);
-	u_lockouttime = uint64s_nt_time_to_unix_abs(&delta->account_lockout.lockout_duration);
-#endif
+
+	if (lockstr) {
+		u_lockoutreset = uint64s_nt_time_to_unix_abs(&lockstr->reset_count);
+		u_lockouttime = uint64s_nt_time_to_unix_abs((uint64_t *)&lockstr->lockout_duration);
+	}
+
 	domname = r->domain_name.string;
 	if (!domname) {
 		return NT_STATUS_NO_MEMORY;
@@ -1025,20 +1077,21 @@ static NTSTATUS fetch_domain_info(uint32_t rid,
 
 	if (!pdb_set_account_policy(AP_TIME_TO_LOGOUT, (uint32)u_logout))
 		return nt_status;
-#if 0
-/* FIXME: gd */
-	if (!pdb_set_account_policy(AP_BAD_ATTEMPT_LOCKOUT, delta->account_lockout.bad_attempt_lockout))
-		return nt_status;
 
-	if (!pdb_set_account_policy(AP_RESET_COUNT_TIME, (uint32)u_lockoutreset/60))
-		return nt_status;
+	if (lockstr) {
+		if (!pdb_set_account_policy(AP_BAD_ATTEMPT_LOCKOUT,
+					    lockstr->bad_attempt_lockout))
+			return nt_status;
 
-	if (u_lockouttime != -1)
-		u_lockouttime /= 60;
+		if (!pdb_set_account_policy(AP_RESET_COUNT_TIME, (uint32_t)u_lockoutreset/60))
+			return nt_status;
 
-	if (!pdb_set_account_policy(AP_LOCK_ACCOUNT_DURATION, (uint32)u_lockouttime))
-		return nt_status;
-#endif
+		if (u_lockouttime != -1)
+			u_lockouttime /= 60;
+
+		if (!pdb_set_account_policy(AP_LOCK_ACCOUNT_DURATION, (uint32_t)u_lockouttime))
+			return nt_status;
+	}
 
 	if (!pdb_set_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
 				    r->logon_to_chgpass))
