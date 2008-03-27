@@ -40,6 +40,12 @@ struct lsa_AsciiStringLarge {
 	const char *string;/* [unique,charset(DOS),length_is(length),size_is(size)] */
 }/* [public] */;
 
+struct lsa_BinaryString {
+	uint16_t length;
+	uint16_t size;
+	uint16_t *string;/* [unique,length_is(length/2),size_is(size/2)] */
+}/* [public] */;
+
 struct lsa_LUID {
 	uint32_t low;
 	uint32_t high;

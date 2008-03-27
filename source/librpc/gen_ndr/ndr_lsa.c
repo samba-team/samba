@@ -374,6 +374,98 @@ _PUBLIC_ void ndr_print_lsa_AsciiStringLarge(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_BinaryString(struct ndr_push *ndr, int ndr_flags, const struct lsa_BinaryString *r)
+{
+	uint32_t cntr_string_1;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->length));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->size));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->string));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->string) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->size / 2));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->length / 2));
+			for (cntr_string_1 = 0; cntr_string_1 < r->length / 2; cntr_string_1++) {
+				NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->string[cntr_string_1]));
+			}
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_BinaryString(struct ndr_pull *ndr, int ndr_flags, struct lsa_BinaryString *r)
+{
+	uint32_t _ptr_string;
+	uint32_t cntr_string_1;
+	TALLOC_CTX *_mem_save_string_0;
+	TALLOC_CTX *_mem_save_string_1;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->length));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->size));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_string));
+		if (_ptr_string) {
+			NDR_PULL_ALLOC(ndr, r->string);
+		} else {
+			r->string = NULL;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->string) {
+			_mem_save_string_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->string, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->string));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->string));
+			if (ndr_get_array_length(ndr, &r->string) > ndr_get_array_size(ndr, &r->string)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->string), ndr_get_array_length(ndr, &r->string));
+			}
+			NDR_PULL_ALLOC_N(ndr, r->string, ndr_get_array_size(ndr, &r->string));
+			_mem_save_string_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->string, 0);
+			for (cntr_string_1 = 0; cntr_string_1 < r->length / 2; cntr_string_1++) {
+				NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->string[cntr_string_1]));
+			}
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_string_1, 0);
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_string_0, 0);
+		}
+		if (r->string) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->string, r->size / 2));
+		}
+		if (r->string) {
+			NDR_CHECK(ndr_check_array_length(ndr, (void*)&r->string, r->length / 2));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_BinaryString(struct ndr_print *ndr, const char *name, const struct lsa_BinaryString *r)
+{
+	uint32_t cntr_string_1;
+	ndr_print_struct(ndr, name, "lsa_BinaryString");
+	ndr->depth++;
+	ndr_print_uint16(ndr, "length", r->length);
+	ndr_print_uint16(ndr, "size", r->size);
+	ndr_print_ptr(ndr, "string", r->string);
+	ndr->depth++;
+	if (r->string) {
+		ndr->print(ndr, "%s: ARRAY(%d)", "string", r->length / 2);
+		ndr->depth++;
+		for (cntr_string_1=0;cntr_string_1<r->length / 2;cntr_string_1++) {
+			char *idx_1=NULL;
+			if (asprintf(&idx_1, "[%d]", cntr_string_1) != -1) {
+				ndr_print_uint16(ndr, "string", r->string[cntr_string_1]);
+				free(idx_1);
+			}
+		}
+		ndr->depth--;
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_lsa_LUID(struct ndr_push *ndr, int ndr_flags, const struct lsa_LUID *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
