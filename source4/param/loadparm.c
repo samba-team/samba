@@ -458,6 +458,7 @@ static struct parm_struct parm_table[] = {
 	{"csc policy", P_ENUM, P_LOCAL, LOCAL_VAR(iCSCPolicy), NULL, enum_csc_policy},
 
 	{"strict locking", P_BOOL, P_LOCAL, LOCAL_VAR(bStrictLocking), NULL, NULL},
+	{"oplocks", P_BOOL, P_LOCAL, LOCAL_VAR(bOplocks), NULL, NULL},
 
 	{"share backend", P_STRING, P_GLOBAL, GLOBAL_VAR(szShareBackend), NULL, NULL},
 	{"preload", P_STRING, P_GLOBAL, GLOBAL_VAR(szAutoServices), NULL, NULL},
