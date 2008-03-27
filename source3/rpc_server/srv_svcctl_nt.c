@@ -328,6 +328,8 @@ WERROR _svcctl_CloseServiceHandle(pipes_struct *p, struct svcctl_CloseServiceHan
 	if ( !close_policy_hnd( p, r->in.handle ) )
 		return  WERR_BADFID;
 
+	ZERO_STRUCTP(r->out.handle);
+
 	return WERR_OK;
 }
 
