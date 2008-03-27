@@ -195,3 +195,18 @@ int dbwrap_trans_delete(struct db_context *db, TDB_DATA key)
 	}
 	return -1;
 }
+
+int dbwrap_trans_store_int32(struct db_context *db, const char *keystr, int32_t v)
+{
+	int ret;
+	int32 v_store;
+
+	SIVAL(&v_store, 0, v);
+
+	ret = dbwrap_trans_store(db, string_term_tdb_data(keystr),
+				 make_tdb_data((const uint8 *)&v_store,
+						sizeof(v_store)),
+				 TDB_REPLACE);
+
+	return ret;
+}
