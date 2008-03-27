@@ -1275,7 +1275,7 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (db_sam->transaction_start(db_sam) == -1) {
+	if (db_sam->transaction_start(db_sam) != 0) {
 		DEBUG(0, ("Could not start transaction\n"));
 		TALLOC_FREE(new_acct);
 		return NT_STATUS_ACCESS_DENIED;
