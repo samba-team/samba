@@ -1335,7 +1335,7 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 
 	tdb_delete_samacct_only( old_acct );
 
-	if (db_sam->transaction_commit(db_sam) == -1) {
+	if (db_sam->transaction_commit(db_sam) != 0) {
 		/*
 		 * Ok, we're screwed. We've changed the posix account, but
 		 * could not adapt passdb.tdb. Shall we change the posix
