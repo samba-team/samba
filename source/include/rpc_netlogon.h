@@ -42,16 +42,4 @@ typedef struct hdr_account_lockout_string {
 	uint32 buffer;
 } HDR_LOCKOUT_STRING;
 
-struct DS_DOMAIN_CONTROLLER_INFO {
-	const char *domain_controller_name;
-	const char *domain_controller_address;
-	int32 domain_controller_address_type;
-	struct GUID *domain_guid;
-	const char *domain_name;
-	const char *dns_forest_name;
-	uint32 flags;
-	const char *dc_site_name;
-	const char *client_site_name;
-};
-
 #endif /* _RPC_NETLOGON_H */
