@@ -464,7 +464,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_error(struct ndr_pull *ndr,
 		return NDR_ERR_ALLOC;
 	}
 
-	DEBUG(3,("ndr_pull_error(%u): %s\n", ndr_err, s));
+	DEBUG(1,("ndr_pull_error(%u): %s\n", ndr_err, s));
 
 	free(s);
 
@@ -490,7 +490,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_error(struct ndr_push *ndr,
 		return NDR_ERR_ALLOC;
 	}
 
-	DEBUG(3,("ndr_push_error(%u): %s\n", ndr_err, s));
+	DEBUG(1,("ndr_push_error(%u): %s\n", ndr_err, s));
 
 	free(s);
 
