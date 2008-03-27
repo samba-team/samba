@@ -213,6 +213,10 @@ static bool sclassic_bool_option(struct share_config *scfg, const char *opt_name
 		return lp_strict_locking(s, lp_default_service(lp_ctx));
 	}
 
+	if (strcmp(opt_name, SHARE_OPLOCKS) == 0) {
+		return lp_oplocks(s, lp_default_service(lp_ctx));
+	}
+
 	if (strcmp(opt_name, SHARE_STRICT_SYNC) == 0) {
 		return lp_strict_sync(s, lp_default_service(lp_ctx));
 	}
