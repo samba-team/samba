@@ -10237,7 +10237,7 @@ static enum ndr_err_code ndr_push_netr_LogonControl2(struct ndr_push *ndr, int f
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.logon_server, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.logon_server, ndr_charset_length(r->in.logon_server, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.function_code));
+		NDR_CHECK(ndr_push_netr_LogonControlCode(ndr, NDR_SCALARS, r->in.function_code));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.data == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
@@ -10283,7 +10283,7 @@ static enum ndr_err_code ndr_pull_netr_LogonControl2(struct ndr_pull *ndr, int f
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_logon_server_0, 0);
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.function_code));
+		NDR_CHECK(ndr_pull_netr_LogonControlCode(ndr, NDR_SCALARS, &r->in.function_code));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.data);
@@ -10326,7 +10326,7 @@ _PUBLIC_ void ndr_print_netr_LogonControl2(struct ndr_print *ndr, const char *na
 			ndr_print_string(ndr, "logon_server", r->in.logon_server);
 		}
 		ndr->depth--;
-		ndr_print_uint32(ndr, "function_code", r->in.function_code);
+		ndr_print_netr_LogonControlCode(ndr, "function_code", r->in.function_code);
 		ndr_print_uint32(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "data", r->in.data);
 		ndr->depth++;
