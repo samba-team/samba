@@ -1638,12 +1638,24 @@ process_result:
 
 
 		if (state->request.flags & WBFLAG_PAM_GET_PWD_POLICY) {
-			result = fillup_password_policy(domain, state);
+			struct winbindd_domain *our_domain = find_our_domain();
+			
+			/* This is not entiurely correct I believe, but it is 
+			   consistent.  Only apply the password policy settings
+			   too warn users for our own domain.  Cannot obtain these 
+			   from trusted DCs all the  time so don't do it at all. 
+			   -- jerry */
 
+			result = NT_STATUS_NOT_SUPPORTED;			
+			if (our_domain == domain ) {
+a				result = fillup_password_policy(our_domain, state);
+			}
+			
 			if (!NT_STATUS_IS_OK(result) 
 			    && !NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED) ) 
 			{
-				DEBUG(10,("Failed to get password policies: %s\n", nt_errstr(result)));
+				DEBUG(10,("Failed to get password policies for domain %s: %s\n", 
+					  domain->name, nt_errstr(result)));
 				goto done;
 			}
 		}
