@@ -779,20 +779,26 @@ interface netlogon
 	/*****************/
 	/* Function 0x0C */
 
+	typedef [bitmap32bit] bitmap {
+		NETLOGON_CTRL_REPL_NEEDED	= 0x0001,
+		NETLOGON_CTRL_REPL_IN_PROGRESS	= 0x0002,
+		NETLOGON_CTRL_REPL_FULL_SYNC	= 0x0004
+	} netr_InfoFlags;
+
 	typedef struct {
-		uint32 flags;
+		netr_InfoFlags flags;
 		uint32 pdc_connection_status;
 	} netr_NETLOGON_INFO_1;
 
 	typedef struct {
-		uint32 flags;
+		netr_InfoFlags flags;
 		uint32 pdc_connection_status;
 		[string,charset(UTF16)] uint16 *trusted_dc_name;
 		uint32 tc_connection_status;
 	} netr_NETLOGON_INFO_2;
 
 	typedef struct {
-		uint32 flags;
+		netr_InfoFlags flags;
 		uint32 logon_attempts;
 		uint32 unknown1;
 		uint32 unknown2;
