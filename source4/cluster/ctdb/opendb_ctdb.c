@@ -97,7 +97,7 @@ static struct odb_context *odb_ctdb_init(TALLOC_CTX *mem_ctx,
 	odb->ntvfs_ctx = ntvfs_ctx;
 
 	/* leave oplocks disabled by default until the code is working */
-	odb->oplocks = share_bool_option(ntvfs->ctx->config, SHARE_OPLOCKS, SHARE_OPLOCKS_DEFAULT);
+	odb->oplocks = share_bool_option(ntvfs_ctx->config, SHARE_OPLOCKS, SHARE_OPLOCKS_DEFAULT);
 
 	return odb;
 }

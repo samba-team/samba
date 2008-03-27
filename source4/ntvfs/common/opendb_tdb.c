@@ -101,7 +101,7 @@ static struct odb_context *odb_tdb_init(TALLOC_CTX *mem_ctx,
 
 	odb->ntvfs_ctx = ntvfs_ctx;
 
-	odb->oplocks = share_bool_option(ntvfs_ctx->ctx->config, SHARE_OPLOCKS, SHARE_OPLOCKS_DEFAULT);
+	odb->oplocks = share_bool_option(ntvfs_ctx->config, SHARE_OPLOCKS, SHARE_OPLOCKS_DEFAULT);
 
 	odb->lease_ctx = sys_lease_context_create(ntvfs_ctx->config, odb,
 						  ntvfs_ctx->event_ctx,
