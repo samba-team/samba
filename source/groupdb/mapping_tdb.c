@@ -282,17 +282,17 @@ static bool get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 static bool group_map_remove(const DOM_SID *sid)
 {
 	char *key;
-	int res;
+	NTSTATUS status;
 
 	key = group_mapping_key(talloc_tos(), sid);
 	if (key == NULL) {
 		return false;
 	}
 
-	res = dbwrap_trans_delete(db, string_term_tdb_data(key));
+	status = dbwrap_trans_delete(db, string_term_tdb_data(key));
 
 	TALLOC_FREE(key);
-	return (res == 0);
+	return NT_STATUS_IS_OK(status);
 }
 
 /****************************************************************************

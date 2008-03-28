@@ -157,11 +157,14 @@ bool secrets_store(const char *key, const void *data, size_t size)
  */
 bool secrets_delete(const char *key)
 {
+	NTSTATUS status;
 	if (!secrets_init()) {
 		return false;
 	}
 
-	return dbwrap_trans_delete(db_ctx, string_tdb_data(key)) == 0;
+	status = dbwrap_trans_delete(db_ctx, string_tdb_data(key));
+
+	return NT_STATUS_IS_OK(status);
 }
 
 /**
