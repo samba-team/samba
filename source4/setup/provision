@@ -111,7 +111,8 @@ if opts.realm is None or opts.domain is None:
 	parser.print_usage()
 	sys.exit(1)
 
-smbconf = sambaopts.get_loadparm().configfile()
+lp = sambaopts.get_loadparm()
+smbconf = lp.configfile()
 
 if opts.aci is not None:
 	print "set ACI: %s" % opts.aci
@@ -123,7 +124,7 @@ elif opts.server_role == "member":
 else:
         server_role = opts.server_role
 
-creds = credopts.get_credentials()
+creds = credopts.get_credentials(lp)
 
 setup_dir = opts.setupdir
 if setup_dir is None:
