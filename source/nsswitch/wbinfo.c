@@ -689,10 +689,17 @@ static bool wbinfo_allocate_uid(void)
 
 static bool wbinfo_allocate_gid(void)
 {
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	gid_t gid;
 
-	if (!winbind_allocate_gid(&gid))
+	/* Send request */
+
+	wbc_status = wbcAllocateGid(&gid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
+	}
+
+	/* Display response */
 
 	d_printf("New gid: %d\n", gid);
 
