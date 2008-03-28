@@ -548,6 +548,7 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 	fstring pidstr, vnnstr;
 	char addr[INET6_ADDRSTRLEN];
 	const char *local_machine_name = get_local_machine_name();
+	TALLOC_CTX *tmp_ctx = NULL;
 
 	/* workaround to prevent a crash while looking at bug #687 */
 	
@@ -561,12 +562,14 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 		DEBUG(0, ("alloc_sub_basic: Out of memory!\n"));
 		return NULL;
 	}
-	
+
+	tmp_ctx = talloc_stackframe();
+
 	for (b = s = a_string; (p = strchr_m(s, '%')); s = a_string + (p - b)) {
 
 		r = NULL;
 		b = a_string;
-		
+
 		switch (*(p+1)) {
 		case 'U' : 
 			r = strdup_lower(smb_name);
@@ -581,7 +584,7 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			if (r == NULL) {
 				goto error;
 			}
-			pass = Get_Pwnam_alloc(talloc_tos(), r);
+			pass = Get_Pwnam_alloc(tmp_ctx, r);
 			if (pass != NULL) {
 				a_string = realloc_string_sub(
 					a_string, "%G",
@@ -631,7 +634,7 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			a_string = realloc_string_sub(a_string, "%R", remote_proto);
 			break;
 		case 'T' :
-			a_string = realloc_string_sub(a_string, "%T", current_timestring(False));
+			a_string = realloc_string_sub(a_string, "%T", current_timestring(tmp_ctx, False));
 			break;
 		case 'a' :
 			a_string = realloc_string_sub(a_string, "%a",
@@ -669,17 +672,20 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 
 		p++;
 		SAFE_FREE(r);
-		
-		if ( !a_string ) {
-			return NULL;
+
+		if (a_string == NULL) {
+			goto done;
 		}
 	}
 
-	return a_string;
+	goto done;
 
 error:
 	SAFE_FREE(a_string);
-	return NULL;
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return a_string;
 }
 
 /****************************************************************************

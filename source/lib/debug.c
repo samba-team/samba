@@ -1029,12 +1029,14 @@ bool dbghdr(int level, int cls, const char *file, const char *func, int line)
 		/* Print it all out at once to prevent split syslog output. */
 		if( lp_debug_prefix_timestamp() ) {
 		    (void)Debug1( "[%s, %2d%s] ",
-			current_timestring(lp_debug_hires_timestamp()), level,
-			header_str);
+			current_timestring(debug_ctx(),
+					   lp_debug_hires_timestamp()),
+			level, header_str);
 		} else {
 		    (void)Debug1( "[%s, %2d%s] %s:%s(%d)\n",
-			current_timestring(lp_debug_hires_timestamp()), level,
-			header_str, file, func, line );
+			current_timestring(debug_ctx(),
+					   lp_debug_hires_timestamp()),
+			level, header_str, file, func, line );
 		}
 	}
 

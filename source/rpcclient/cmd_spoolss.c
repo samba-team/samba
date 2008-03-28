@@ -1966,13 +1966,15 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 	PRINTER_INFO_CTR ctr;
 	PRINTER_INFO_0 info;
 	REGISTRY_VALUE value;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
 	/* parse the command arguements */
 	if (argc < 5) {
 		printf ("Usage: %s <printer> <string|binary|dword|multistring>"
 			" <value> <data>\n",
 			argv[0]);
-		return WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAM;
+		goto done;
 	}
 
 	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->cli->desthost);
@@ -2000,7 +2002,8 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 
 	if (value.type == REG_NONE) {
 		printf("Unknown data type: %s\n", argv[2]);
-		return WERR_INVALID_PARAM;
+		result =  WERR_INVALID_PARAM;
+		goto done;
 	}
 
 	/* get a printer handle */
@@ -2019,7 +2022,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
         if (!W_ERROR_IS_OK(result))
                 goto done;
 		
-	printf("%s\n", current_timestring(True));
+	printf("%s\n", current_timestring(tmp_ctx, True));
 	printf("\tchange_id (before set)\t:[0x%x]\n", info.change_id);
 
 	/* Set the printer data */
@@ -2105,11 +2108,12 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
         if (!W_ERROR_IS_OK(result))
                 goto done;
 		
-	printf("%s\n", current_timestring(True));
+	printf("%s\n", current_timestring(tmp_ctx, True));
 	printf("\tchange_id (after set)\t:[0x%x]\n", info.change_id);
 
 done:
 	/* cleanup */
+	TALLOC_FREE(tmp_ctx);
 	if (opened_hnd)
 		rpccli_spoolss_close_printer(cli, mem_ctx, &pol);
 
