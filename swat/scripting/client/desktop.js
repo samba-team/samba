@@ -2,7 +2,7 @@
    Windows, tabs, and general widgetry for SWAT.
 
    Copyright (C) Deryck Hodge 2005
-   released under the GNU GPL Version 2 or later
+   released under the GNU GPL Version 3 or later
 */
 
 /* Qooxdoo's browser sniffer doesn't distinguish IE version.

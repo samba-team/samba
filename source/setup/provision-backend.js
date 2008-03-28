@@ -3,7 +3,7 @@ exec smbscript "$0" ${1+"$@"}
 /*
 	provision a Samba4 server
 	Copyright Andrew Tridgell 2005
-	Released under the GNU GPL v2 or later
+	Released under the GNU GPL version 3 or later
 */
 
 options = GetOptions(ARGV,

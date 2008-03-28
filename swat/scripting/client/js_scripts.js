@@ -2,7 +2,7 @@
    Beginnnigs of a script manager for SWAT.
 
    Copyright (C) Deryck Hodge 2005
-   released under the GNU GPL Version 2 or later
+   released under the GNU GPL Version 3 or later
 */
 
 var head = document.getElementsByTagName('head')[0];
