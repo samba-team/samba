@@ -47,7 +47,7 @@ import "security.idl";
 	typedef [public] struct {
 		uint16 length;
 		uint16 size;
-		[size_is(size/2),length_is(length/2)] uint16 *string;
+		[size_is(size/2),length_is(length/2)] uint16 *array;
 	} lsa_BinaryString;
 
 	/******************/
