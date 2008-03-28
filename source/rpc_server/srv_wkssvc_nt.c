@@ -4,7 +4,8 @@
  *
  *  Copyright (C) Andrew Tridgell		1992-1997,
  *  Copyright (C) Gerald (Jerry) Carter		2006.
- *  
+ *  Copyright (C) Guenther Deschner		2007-2008.
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
@@ -298,12 +299,21 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
+	if (!r->in.admin_account || !r->in.encrypted_password) {
+		return WERR_INVALID_PARAM;
+	}
+
 	if (!user_has_privileges(token, &se_machine_account) &&
 	    !nt_token_check_domain_rid(token, DOMAIN_GROUP_RID_ADMINS) &&
 	    !nt_token_check_domain_rid(token, BUILTIN_ALIAS_RID_ADMINS)) {
 		DEBUG(5,("_wkssvc_NetrJoinDomain2: account doesn't have "
 			"sufficient privileges\n"));
 		return WERR_ACCESS_DENIED;
+	}
+
+	if ((r->in.join_flags & WKSSVC_JOIN_FLAGS_MACHINE_PWD_PASSED) ||
+	    (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE)) {
+		return WERR_NOT_SUPPORTED;
 	}
 
 	werr = decode_wkssvc_join_password_buffer(p->mem_ctx,
@@ -336,7 +346,7 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p,
 	unbecome_root();
 
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(5,("_wkssvc_NetrJoinDomain2: libnet_Join gave %s\n",
+		DEBUG(5,("_wkssvc_NetrJoinDomain2: libnet_Join failed with: %s\n",
 			j->out.error_string ? j->out.error_string :
 			dos_errstr(werr)));
 	}
@@ -358,6 +368,10 @@ WERROR _wkssvc_NetrUnjoinDomain2(pipes_struct *p,
 	char *admin_account = NULL;
 	WERROR werr;
 	struct nt_user_token *token = p->pipe_user.nt_user_token;
+
+	if (!r->in.account || !r->in.encrypted_password) {
+		return WERR_INVALID_PARAM;
+	}
 
 	if (!user_has_privileges(token, &se_machine_account) &&
 	    !nt_token_check_domain_rid(token, DOMAIN_GROUP_RID_ADMINS) &&
@@ -395,6 +409,12 @@ WERROR _wkssvc_NetrUnjoinDomain2(pipes_struct *p,
 	become_root();
 	werr = libnet_Unjoin(p->mem_ctx, u);
 	unbecome_root();
+
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(5,("_wkssvc_NetrUnjoinDomain2: libnet_Unjoin failed with: %s\n",
+			u->out.error_string ? u->out.error_string :
+			dos_errstr(werr)));
+	}
 
 	TALLOC_FREE(u);
 	return werr;
