@@ -981,7 +981,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	uint16 attr;
 	SMB_OFF_T size;
 	off_t start = 0;
-	ssize_t nread = 0;
+	SMB_OFF_T nread = 0;
 	int rc = 0;
 	struct cli_state *targetcli = NULL;
 	char *targetname = NULL;
