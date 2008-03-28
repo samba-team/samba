@@ -200,7 +200,7 @@ NTSTATUS dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
 	return status;
 }
 
-int dbwrap_trans_delete(struct db_context *db, TDB_DATA key)
+NTSTATUS dbwrap_trans_delete(struct db_context *db, TDB_DATA key)
 {
 	int res;
 	struct db_record *rec;
@@ -209,12 +209,13 @@ int dbwrap_trans_delete(struct db_context *db, TDB_DATA key)
 	res = db->transaction_start(db);
 	if (res != 0) {
 		DEBUG(5, ("transaction_start failed\n"));
-		return res;
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	rec = db->fetch_locked(db, talloc_tos(), key);
 	if (rec == NULL) {
 		DEBUG(5, ("fetch_locked failed\n"));
+		status = NT_STATUS_NO_MEMORY;
 		goto cancel;
 	}
 
@@ -229,15 +230,17 @@ int dbwrap_trans_delete(struct db_context *db, TDB_DATA key)
 	res = db->transaction_commit(db);
 	if (res != 0) {
 		DEBUG(5, ("tdb_transaction_commit failed\n"));
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto cancel;
 	}
 
-	return res;
+	return NT_STATUS_OK;
 
  cancel:
 	if (db->transaction_cancel(db) != 0) {
 		smb_panic("Cancelling transaction failed");
 	}
-	return -1;
+	return status;
 }
 
 NTSTATUS dbwrap_trans_store_int32(struct db_context *db, const char *keystr,

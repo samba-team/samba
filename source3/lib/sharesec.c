@@ -253,6 +253,7 @@ bool delete_share_security(const char *servicename)
 {
 	TDB_DATA kbuf;
 	char *key;
+	NTSTATUS status;
 
 	if (!(key = talloc_asprintf(talloc_tos(), "SECDESC/%s",
 				    servicename))) {
@@ -260,9 +261,10 @@ bool delete_share_security(const char *servicename)
 	}
 	kbuf = string_term_tdb_data(key);
 
-	if (dbwrap_trans_delete(share_db, kbuf) != 0) {
+	status = dbwrap_trans_delete(share_db, kbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("delete_share_security: Failed to delete entry for "
-			  "share %s\n", servicename));
+			  "share %s: %s\n", servicename, nt_errstr(status)));
 		return False;
 	}
 
