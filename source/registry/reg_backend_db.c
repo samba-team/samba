@@ -341,12 +341,14 @@ bool regdb_init(void)
 	vers_id = dbwrap_fetch_int32(regdb, vstring);
 
 	if ( vers_id != REGVER_V1 ) {
+		NTSTATUS status;
 		/* any upgrade code here if needed */
 		DEBUG(10, ("regdb_init: got %s = %d != %d\n", vstring,
 			   vers_id, REGVER_V1));
-		if (dbwrap_trans_store_int32(regdb, vstring, REGVER_V1) != 0) {
-			DEBUG(0, ("regdb_init: error storing %s = %d\n",
-				  vstring, REGVER_V1));
+		status = dbwrap_trans_store_int32(regdb, vstring, REGVER_V1);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("regdb_init: error storing %s = %d: %s\n",
+				  vstring, REGVER_V1, nt_errstr(status)));
 			return false;
 		} else {
 			DEBUG(10, ("regdb_init: stored %s = %d\n",
@@ -873,7 +875,8 @@ bool regdb_store_values( const char *key, REGVAL_CTR *values )
 	TDB_DATA old_data, data;
 	char *keystr = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
-	int len, ret;
+	int len;
+	NTSTATUS status;
 	bool result = false;
 
 	DEBUG(10,("regdb_store_values: Looking for value of key [%s] \n", key));
@@ -912,9 +915,10 @@ bool regdb_store_values( const char *key, REGVAL_CTR *values )
 		goto done;
 	}
 
-	ret = dbwrap_trans_store(regdb, string_term_tdb_data(keystr), data,
-				 TDB_REPLACE);
-	result = (ret != -1);
+	status = dbwrap_trans_store(regdb, string_term_tdb_data(keystr), data,
+				    TDB_REPLACE);
+
+	result = NT_STATUS_IS_OK(status);
 
 done:
 	TALLOC_FREE(ctx);
@@ -964,6 +968,7 @@ static WERROR regdb_set_secdesc(const char *key,
 {
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	char *tdbkey;
+	NTSTATUS status;
 	WERROR err = WERR_NOMEM;
 	TDB_DATA tdbdata;
 	int tdb_ret;
@@ -993,10 +998,10 @@ static WERROR regdb_set_secdesc(const char *key,
 		goto done;
 	}
 
-	tdb_ret = dbwrap_trans_store(regdb, string_term_tdb_data(tdbkey),
-				     tdbdata, 0);
-	if (tdb_ret != 0) {
-		err = ntstatus_to_werror(map_nt_error_from_unix(errno));
+	status = dbwrap_trans_store(regdb, string_term_tdb_data(tdbkey),
+				    tdbdata, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		err = ntstatus_to_werror(status);
 		goto done;
 	}
 
