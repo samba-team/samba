@@ -34,11 +34,11 @@ struct db_context {
 	int (*fetch)(struct db_context *db, TALLOC_CTX *mem_ctx,
 		     TDB_DATA key, TDB_DATA *data);
 	int (*traverse)(struct db_context *db,
-			int (*f)(struct db_record *db,
+			int (*f)(struct db_record *rec,
 				 void *private_data),
 			void *private_data);
 	int (*traverse_read)(struct db_context *db,
-			     int (*f)(struct db_record *db,
+			     int (*f)(struct db_record *rec,
 				      void *private_data),
 			     void *private_data);
 	int (*get_seqnum)(struct db_context *db);
