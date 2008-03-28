@@ -26,4 +26,6 @@ enum security_user_level {
 	SECURITY_SYSTEM
 };
 
+struct auth_session_info;
+
 #include "libcli/security/proto.h"
