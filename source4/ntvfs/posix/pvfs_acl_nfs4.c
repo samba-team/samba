@@ -38,7 +38,9 @@ static NTSTATUS pvfs_acl_load_nfs4(struct pvfs_state *pvfs, struct pvfs_filename
 	NTSTATUS status;
 	struct nfs4acl *acl;
 	struct security_descriptor *sd;
-	int i;
+	int i, num_ids;
+	struct id_mapping *ids;
+	struct composite_context *ctx;
 
 	acl = talloc_zero(mem_ctx, struct nfs4acl);
 	NT_STATUS_HAVE_NO_MEMORY(acl);
@@ -57,25 +59,57 @@ static NTSTATUS pvfs_acl_load_nfs4(struct pvfs_state *pvfs, struct pvfs_filename
 	sd = *psd;
 
 	sd->type |= acl->a_flags;
-	status = sidmap_uid_to_sid(pvfs->sidmap, sd, name->st.st_uid, &sd->owner_sid);
+
+	/* the number of ids to map is the acl count plus uid and gid */
+	num_ids = acl->a_count +2;
+	ids = talloc_array(sd, struct id_mapping, num_ids);
+	NT_STATUS_HAVE_NO_MEMORY(ids);
+
+	ids[0].unixid = talloc(ids, struct unixid);
+	NT_STATUS_HAVE_NO_MEMORY(ids[0].unixid);
+	ids[0].unixid->id = name->st.st_uid;
+	ids[0].unixid->type = ID_TYPE_UID;
+	ids[0].sid = NULL;
+	ids[0].status = NT_STATUS_NONE_MAPPED;
+
+	ids[1].unixid = talloc(ids, struct unixid);
+	NT_STATUS_HAVE_NO_MEMORY(ids[1].unixid);
+	ids[1].unixid->id = name->st.st_gid;
+	ids[1].unixid->type = ID_TYPE_GID;
+	ids[1].sid = NULL;
+	ids[1].status = NT_STATUS_NONE_MAPPED;
+
+	for (i=0;i<acl->a_count;i++) {
+		struct nfs4ace *a = &acl->ace[i];
+		ids[i+2].unixid = talloc(ids, struct unixid);
+		NT_STATUS_HAVE_NO_MEMORY(ids[i+2].unixid);
+		ids[i+2].unixid->id = a->e_id;
+		if (a->e_flags & ACE4_IDENTIFIER_GROUP) {
+			ids[i+2].unixid->type = ID_TYPE_GID;
+		} else {
+			ids[i+2].unixid->type = ID_TYPE_UID;
+		}
+		ids[i+2].sid = NULL;
+		ids[i+2].status = NT_STATUS_NONE_MAPPED;
+	}
+
+	/* Allocate memory for the sids from the security descriptor to be on
+	 * the safe side. */
+	ctx = wbc_xids_to_sids_send(pvfs->wbc_ctx, sd, num_ids, ids);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+	status = wbc_xids_to_sids_recv(ctx, &ids);
 	NT_STATUS_NOT_OK_RETURN(status);
-	status = sidmap_gid_to_sid(pvfs->sidmap, sd, name->st.st_gid, &sd->group_sid);
-	NT_STATUS_NOT_OK_RETURN(status);
+
+	sd->owner_sid = talloc_steal(sd, ids[0].sid);
+	sd->group_sid = talloc_steal(sd, ids[1].sid);
 
 	for (i=0;i<acl->a_count;i++) {
 		struct nfs4ace *a = &acl->ace[i];
 		struct security_ace ace;
-		struct dom_sid *sid;
 		ace.type = a->e_type;
 		ace.flags = a->e_flags;
 		ace.access_mask = a->e_mask;
-		if (a->e_flags & ACE4_IDENTIFIER_GROUP) {
-			status = sidmap_gid_to_sid(pvfs->sidmap, sd, a->e_id, &sid);
-		} else {
-			status = sidmap_uid_to_sid(pvfs->sidmap, sd, a->e_id, &sid);
-		}
-		NT_STATUS_NOT_OK_RETURN(status);
-		ace.trustee = *sid;
+		ace.trustee = *ids[i+2].sid;
 		security_descriptor_dacl_add(sd, &ace);
 	}
 
@@ -93,6 +127,8 @@ static NTSTATUS pvfs_acl_save_nfs4(struct pvfs_state *pvfs, struct pvfs_filename
 	struct nfs4acl acl;
 	int i;
 	TALLOC_CTX *tmp_ctx;
+	struct id_mapping *ids;
+	struct composite_context *ctx;
 
 	tmp_ctx = talloc_new(pvfs);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
@@ -110,30 +146,44 @@ static NTSTATUS pvfs_acl_save_nfs4(struct pvfs_state *pvfs, struct pvfs_filename
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	ids = talloc_array(tmp_ctx, struct id_mapping, acl.a_count);
+	if (ids == NULL) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0;i<acl.a_count;i++) {
+		struct security_ace *ace = &sd->dacl->aces[i];
+		ids[i].unixid = NULL;
+		ids[i].sid = dom_sid_dup(ids, &ace->trustee);
+		if (ids[i].sid == NULL) {
+			talloc_free(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+		ids[i].status = NT_STATUS_NONE_MAPPED;
+	}
+
+	ctx = wbc_sids_to_xids_send(pvfs->wbc_ctx,ids, acl.a_count, ids);
+	if (ctx == NULL) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = wbc_sids_to_xids_recv(ctx, &ids);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
 	for (i=0;i<acl.a_count;i++) {
 		struct nfs4ace *a = &acl.ace[i];
 		struct security_ace *ace = &sd->dacl->aces[i];
 		a->e_type  = ace->type;
 		a->e_flags = ace->flags;
 		a->e_mask  = ace->access_mask;
-		if (sidmap_sid_is_group(pvfs->sidmap, &ace->trustee)) {
-			gid_t gid;
+		if (ids[i].unixid->type != ID_TYPE_UID) {
 			a->e_flags |= ACE4_IDENTIFIER_GROUP;
-			status = sidmap_sid_to_unixgid(pvfs->sidmap, &ace->trustee, &gid);
-			if (!NT_STATUS_IS_OK(status)) {
-				talloc_free(tmp_ctx);
-				return status;
-			}
-			a->e_id = gid;
-		} else {
-			uid_t uid;
-			status = sidmap_sid_to_unixuid(pvfs->sidmap, &ace->trustee, &uid);
-			if (!NT_STATUS_IS_OK(status)) {
-				talloc_free(tmp_ctx);
-				return status;
-			}
-			a->e_id = uid;
 		}
+		a->e_id = ids[i].unixid->id;
 		a->e_who   = "";
 	}
 
