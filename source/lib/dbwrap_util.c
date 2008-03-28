@@ -59,6 +59,45 @@ int dbwrap_store_int32(struct db_context *db, const char *keystr, int32_t v)
 	return NT_STATUS_IS_OK(status) ? 0 : -1;
 }
 
+bool dbwrap_fetch_uint32(struct db_context *db, const char *keystr,
+			 uint32_t *val)
+{
+	TDB_DATA dbuf;
+
+	if (db->fetch(db, NULL, string_term_tdb_data(keystr), &dbuf) != 0) {
+		return false;
+	}
+
+	if ((dbuf.dptr == NULL) || (dbuf.dsize != sizeof(uint32_t))) {
+		TALLOC_FREE(dbuf.dptr);
+		return false;
+	}
+
+	*val = IVAL(dbuf.dptr, 0);
+	TALLOC_FREE(dbuf.dptr);
+	return true;
+}
+
+bool dbwrap_store_uint32(struct db_context *db, const char *keystr, uint32_t v)
+{
+	struct db_record *rec;
+	uint32 v_store;
+	NTSTATUS status;
+
+	rec = db->fetch_locked(db, NULL, string_term_tdb_data(keystr));
+	if (rec == NULL) {
+		return false;
+	}
+
+	SIVAL(&v_store, 0, v);
+
+	status = rec->store(rec, make_tdb_data((const uint8 *)&v_store,
+					       sizeof(v_store)),
+			    TDB_REPLACE);
+	TALLOC_FREE(rec);
+	return NT_STATUS_IS_OK(status) ? 0 : -1;
+}
+
 uint32_t dbwrap_change_uint32_atomic(struct db_context *db, const char *keystr,
 				     uint32_t *oldval, uint32_t change_val)
 {
