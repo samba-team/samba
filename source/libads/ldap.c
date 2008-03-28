@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "lib/ldb/include/includes.h"
 
 #ifdef HAVE_LDAP
 
@@ -3549,6 +3550,52 @@ const char *ads_get_extended_right_name_by_guid(ADS_STRUCT *ads,
 	ads_msgfree(ads, res);
 	return result;
 	
+}
+
+/**
+ * verify or build and verify an account ou
+ * @param mem_ctx Pointer to talloc context
+ * @param ads connection to ads server
+ * @param account_ou
+ * @return status of search
+ **/
+
+ADS_STATUS ads_check_ou_dn(TALLOC_CTX *mem_ctx,
+			   ADS_STRUCT *ads,
+			   const char *account_ou)
+{
+	struct ldb_dn *name_dn = NULL;
+	const char *name = NULL;
+	char *ou_string = NULL;
+
+	name_dn = ldb_dn_explode(mem_ctx, account_ou);
+	if (name_dn) {
+		return ADS_SUCCESS;
+	}
+
+	ou_string = ads_ou_string(ads, account_ou);
+	if (!ou_string) {
+		return ADS_ERROR_LDAP(LDAP_INVALID_DN_SYNTAX);
+	}
+
+	name = talloc_asprintf(mem_ctx, "%s,%s", ou_string,
+			       ads->config.bind_path);
+	SAFE_FREE(ou_string);
+	if (!name) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+
+	name_dn = ldb_dn_explode(mem_ctx, name);
+	if (!name_dn) {
+		return ADS_ERROR_LDAP(LDAP_INVALID_DN_SYNTAX);
+	}
+
+	account_ou = talloc_strdup(mem_ctx, name);
+	if (!account_ou) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+
+	return ADS_SUCCESS;
 }
 
 #endif
