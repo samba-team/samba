@@ -1001,6 +1001,7 @@ static struct functable net_func[] = {
 	{"USERSHARE", net_usershare},
 	{"USERSIDLIST", net_usersidlist},
 	{"CONF", net_conf},
+	{"REGISTRY", net_registry},
 #ifdef WITH_FAKE_KASERVER
 	{"AFS", net_afs},
 #endif
