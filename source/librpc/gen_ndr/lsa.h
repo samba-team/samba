@@ -43,7 +43,7 @@ struct lsa_AsciiStringLarge {
 struct lsa_BinaryString {
 	uint16_t length;
 	uint16_t size;
-	uint16_t *string;/* [unique,length_is(length/2),size_is(size/2)] */
+	uint16_t *array;/* [unique,length_is(length/2),size_is(size/2)] */
 }/* [public] */;
 
 struct lsa_LUID {
