@@ -2,7 +2,7 @@
 
 # A perl script to connect to a VMware server and revert a VM snapshot.
 # Copyright Brad Henry <brad@samba.org> 2006
-# Released under the GNU GPL v2 or later.
+# Released under the GNU GPL version 3 or later.
 
 use VMHost;
 

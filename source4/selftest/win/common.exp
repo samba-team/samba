@@ -1,6 +1,6 @@
 # A library of commonly used functions written in expect.
 # Copyright Brad Henry <brad@samba.org> 2006
-# Released under the GNU GPL v2 or later.
+# Released under the GNU GPL version 3 or later.
 
 # This function maps a drive letter to a share point.
 proc map_share { remote_prompt share_drive sharepoint username domain password } {
