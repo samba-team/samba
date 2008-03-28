@@ -310,7 +310,7 @@ static bool enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_
 	int i, ret;
 	char *expr;
 	fstring name;
-	struct ldb_result *res;
+	struct ldb_result *res = NULL;
 	struct ldb_dn *basedn=NULL;
 	TALLOC_CTX *tmp_ctx;
 
@@ -333,6 +333,7 @@ static bool enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_
 	}
 
 	ret = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, expr, NULL, &res);
+	talloc_steal(tmp_ctx, res);
 	if (ret != LDB_SUCCESS) goto failed;
 
 	(*pp_rmap) = NULL;
