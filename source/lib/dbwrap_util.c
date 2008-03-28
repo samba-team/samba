@@ -256,6 +256,19 @@ NTSTATUS dbwrap_trans_store_int32(struct db_context *db, const char *keystr,
 				  TDB_REPLACE);
 }
 
+NTSTATUS dbwrap_trans_store_uint32(struct db_context *db, const char *keystr,
+				   uint32_t v)
+{
+	uint32 v_store;
+
+	SIVAL(&v_store, 0, v);
+
+	return dbwrap_trans_store(db, string_term_tdb_data(keystr),
+				  make_tdb_data((const uint8 *)&v_store,
+						sizeof(v_store)),
+				  TDB_REPLACE);
+}
+
 NTSTATUS dbwrap_trans_store_bystring(struct db_context *db, const char *key,
 				     TDB_DATA data, int flags)
 {
