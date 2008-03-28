@@ -1009,7 +1009,7 @@ interface netlogon
 		DS_DNS_FOREST			 = 0x80000000
 	} netr_DsR_DcFlags;
 
-	typedef struct {
+	typedef [public] struct {
 		[string,charset(UTF16)] uint16 *dc_unc;
 		[string,charset(UTF16)] uint16 *dc_address;
 		netr_DsRGetDCNameInfo_AddressType dc_address_type;
