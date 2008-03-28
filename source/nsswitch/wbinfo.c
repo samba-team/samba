@@ -677,25 +677,27 @@ static bool wbinfo_gid_to_sid(gid_t gid)
 
 /* Convert sid to uid */
 
-static bool wbinfo_sid_to_uid(char *sid)
+static bool wbinfo_sid_to_uid(const char *sid_str)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcDomainSid sid;
+	uid_t uid;
 
 	/* Send request */
 
-	fstrcpy(request.data.sid, sid);
-
-	if (winbindd_request_response(WINBINDD_SID_TO_UID, &request, &response) !=
-	    NSS_STATUS_SUCCESS)
+	wbc_status = wbcStringToSid(sid_str, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
+	}
+
+	wbc_status = wbcSidToUid(&sid, &uid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
 
 	/* Display response */
 
-	d_printf("%d\n", (int)response.data.uid);
+	d_printf("%d\n", (int)uid);
 
 	return true;
 }
