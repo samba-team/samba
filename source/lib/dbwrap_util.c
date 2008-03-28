@@ -156,8 +156,8 @@ int32 dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
 	return 0;
 }
 
-int dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
-		       int flag)
+NTSTATUS dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
+			    int flag)
 {
 	int res;
 	struct db_record *rec;
@@ -166,12 +166,13 @@ int dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
 	res = db->transaction_start(db);
 	if (res != 0) {
 		DEBUG(5, ("transaction_start failed\n"));
-		return res;
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	rec = db->fetch_locked(db, talloc_tos(), key);
 	if (rec == NULL) {
 		DEBUG(5, ("fetch_locked failed\n"));
+		status = NT_STATUS_NO_MEMORY;
 		goto cancel;
 	}
 
@@ -186,15 +187,17 @@ int dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
 	res = db->transaction_commit(db);
 	if (res != 0) {
 		DEBUG(5, ("tdb_transaction_commit failed\n"));
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto cancel;
 	}
 
-	return res;
+	return NT_STATUS_OK;
 
  cancel:
 	if (db->transaction_cancel(db) != 0) {
 		smb_panic("Cancelling transaction failed");
 	}
-	return -1;
+	return status;
 }
 
 int dbwrap_trans_delete(struct db_context *db, TDB_DATA key)
@@ -237,17 +240,15 @@ int dbwrap_trans_delete(struct db_context *db, TDB_DATA key)
 	return -1;
 }
 
-int dbwrap_trans_store_int32(struct db_context *db, const char *keystr, int32_t v)
+NTSTATUS dbwrap_trans_store_int32(struct db_context *db, const char *keystr,
+				  int32_t v)
 {
-	int ret;
 	int32 v_store;
 
 	SIVAL(&v_store, 0, v);
 
-	ret = dbwrap_trans_store(db, string_term_tdb_data(keystr),
-				 make_tdb_data((const uint8 *)&v_store,
+	return dbwrap_trans_store(db, string_term_tdb_data(keystr),
+				  make_tdb_data((const uint8 *)&v_store,
 						sizeof(v_store)),
-				 TDB_REPLACE);
-
-	return ret;
+				  TDB_REPLACE);
 }
