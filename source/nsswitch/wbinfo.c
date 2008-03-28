@@ -702,25 +702,27 @@ static bool wbinfo_sid_to_uid(const char *sid_str)
 	return true;
 }
 
-static bool wbinfo_sid_to_gid(char *sid)
+static bool wbinfo_sid_to_gid(const char *sid_str)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcDomainSid sid;
+	gid_t gid;
 
 	/* Send request */
 
-	fstrcpy(request.data.sid, sid);
-
-	if (winbindd_request_response(WINBINDD_SID_TO_GID, &request, &response) !=
-	    NSS_STATUS_SUCCESS)
+	wbc_status = wbcStringToSid(sid_str, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
+	}
+
+	wbc_status = wbcSidToGid(&sid, &gid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
 
 	/* Display response */
 
-	d_printf("%d\n", (int)response.data.gid);
+	d_printf("%d\n", (int)gid);
 
 	return true;
 }
