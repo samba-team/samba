@@ -729,10 +729,17 @@ static bool wbinfo_sid_to_gid(const char *sid_str)
 
 static bool wbinfo_allocate_uid(void)
 {
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	uid_t uid;
 
-	if (!winbind_allocate_uid(&uid))
+	/* Send request */
+
+	wbc_status = wbcAllocateUid(&uid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
+	}
+
+	/* Display response */
 
 	d_printf("New uid: %d\n", uid);
 
