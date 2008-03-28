@@ -44,6 +44,81 @@ wbcErr wbcPing(void)
 	return wbcRequestResponse(WINBINDD_PING, &request, &response);
 }
 
+wbcErr wbcInterfaceDetails(struct wbcInterfaceDetails **_details)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcInterfaceDetails *info;
+	struct wbcDomainInfo *domain = NULL;
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	/* Initialize request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	info = talloc(NULL, struct wbcInterfaceDetails);
+	BAIL_ON_PTR_ERROR(info, wbc_status);
+
+	/* first the interface version */
+	wbc_status = wbcRequestResponse(WINBINDD_INTERFACE_VERSION, NULL, &response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+	info->interface_version = response.data.interface_version;
+
+	/* then the samba version and the winbind separator */
+	wbc_status = wbcRequestResponse(WINBINDD_INFO, NULL, &response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	info->winbind_version = talloc_strdup(info,
+					      response.data.info.samba_version);
+	BAIL_ON_PTR_ERROR(info->winbind_version, wbc_status);
+	info->winbind_separator = response.data.info.winbind_separator;
+
+	/* then the local netbios name */
+	wbc_status = wbcRequestResponse(WINBINDD_NETBIOS_NAME, NULL, &response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	info->netbios_name = talloc_strdup(info,
+					   response.data.netbios_name);
+	BAIL_ON_PTR_ERROR(info->netbios_name, wbc_status);
+
+	/* then the local workgroup name */
+	wbc_status = wbcRequestResponse(WINBINDD_DOMAIN_NAME, NULL, &response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	info->netbios_domain = talloc_strdup(info,
+					response.data.domain_name);
+	BAIL_ON_PTR_ERROR(info->netbios_domain, wbc_status);
+
+	wbc_status = wbcDomainInfo(info->netbios_domain, &domain);
+	if (wbc_status == WBC_ERR_DOMAIN_NOT_FOUND) {
+		/* maybe it's a standalone server */
+		domain = NULL;
+		wbc_status = WBC_ERR_SUCCESS;
+	} else {
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	if (domain) {
+		info->dns_domain = talloc_strdup(info,
+						 domain->dns_name);
+		wbcFreeMemory(domain);
+		BAIL_ON_PTR_ERROR(info->dns_domain, wbc_status);
+	} else {
+		info->dns_domain = NULL;
+	}
+
+	*_details = info;
+	info = NULL;
+
+	wbc_status = WBC_ERR_SUCCESS;
+
+done:
+	talloc_free(info);
+	return wbc_status;
+}
+
+
 /** @brief Lookup the current status of a trusted domain
  *
  * @param domain      Domain to query
