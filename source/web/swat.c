@@ -438,11 +438,15 @@ static bool load_config(bool save_def)
 ****************************************************************************/
 static void write_config(FILE *f, bool show_defaults)
 {
+	TALLOC_CTX *ctx = talloc_stackframe();
+
 	fprintf(f, "# Samba config file created using SWAT\n");
 	fprintf(f, "# from %s (%s)\n", cgi_remote_host(), cgi_remote_addr());
-	fprintf(f, "# Date: %s\n\n", current_timestring(False));
+	fprintf(f, "# Date: %s\n\n", current_timestring(ctx, False));
 	
 	lp_dump(f, show_defaults, iNumNonAutoPrintServices);
+
+	TALLOC_FREE(ctx);
 }
 
 /****************************************************************************

@@ -687,7 +687,7 @@ int set_server_zone_offset(time_t t)
  Return the date and time as a string
 ****************************************************************************/
 
-char *current_timestring(bool hires)
+char *current_timestring(TALLOC_CTX *ctx, bool hires)
 {
 	fstring TimeBuf;
 	struct timeval tp;
@@ -739,7 +739,7 @@ char *current_timestring(bool hires)
 		}
 #endif
 	}
-	return talloc_strdup(talloc_tos(), TimeBuf);
+	return talloc_strdup(ctx, TimeBuf);
 }
 
 

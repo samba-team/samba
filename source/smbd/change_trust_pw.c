@@ -90,7 +90,7 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 failed:
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("%s : change_trust_account_password: Failed to change password for domain %s.\n", 
-			current_timestring(False), domain));
+			current_timestring(debug_ctx(), False), domain));
 	}
 	else
 		DEBUG(5,("change_trust_account_password: sucess!\n"));
