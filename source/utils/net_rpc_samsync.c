@@ -116,7 +116,7 @@ static NTSTATUS pull_netr_AcctLockStr(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	blob = data_blob_const(r->string, r->length*2);
+	blob = data_blob_const(r->array, r->length);
 
 	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, str,
 		       (ndr_pull_flags_fn_t)ndr_pull_netr_AcctLockStr);
