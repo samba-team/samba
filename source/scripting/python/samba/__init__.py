@@ -225,7 +225,7 @@ def valid_netbios_name(name):
     """Check whether a name is valid as a NetBIOS name. """
     # FIXME: There are probably more constraints here. 
     # crh has a paragraph on this in his book (1.4.1.1)
-    if len(name) > 13:
+    if len(name) > 15:
         return False
     return True
 
