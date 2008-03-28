@@ -187,6 +187,7 @@ void ndr_print_netr_NETLOGON_INFO_3(struct ndr_print *ndr, const char *name, con
 void ndr_print_netr_CONTROL_QUERY_INFORMATION(struct ndr_print *ndr, const char *name, const union netr_CONTROL_QUERY_INFORMATION *r);
 void ndr_print_netr_LogonControlCode(struct ndr_print *ndr, const char *name, enum netr_LogonControlCode r);
 void ndr_print_netr_CONTROL_DATA_INFORMATION(struct ndr_print *ndr, const char *name, const union netr_CONTROL_DATA_INFORMATION *r);
+void ndr_print_netr_NegotiateFlags(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_netr_Blob(struct ndr_print *ndr, const char *name, const struct netr_Blob *r);
 void ndr_print_netr_DsRGetDCName_flags(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_netr_DsRGetDCNameInfo_AddressType(struct ndr_print *ndr, const char *name, enum netr_DsRGetDCNameInfo_AddressType r);
