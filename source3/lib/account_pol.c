@@ -341,7 +341,6 @@ Set an account policy (in tdb)
 bool account_policy_set(int field, uint32 value)
 {
 	const char *name;
-	uint32_t v_store;
 	NTSTATUS status;
 
 	if (!init_account_policy()) {
@@ -354,12 +353,7 @@ bool account_policy_set(int field, uint32 value)
 		return False;
 	}
 
-	SIVAL(&v_store, 0, value);
-
-	status = dbwrap_trans_store_bystring(
-		db, name,
-		make_tdb_data((const uint8 *)&v_store, sizeof(v_store)),
-		TDB_REPLACE);
+	status = dbwrap_trans_store_uint32(db, name, value);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("store_uint32 failed for field %d (%s) on value "
 			  "%u: %s\n", field, name, value, nt_errstr(status)));
