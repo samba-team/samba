@@ -298,8 +298,7 @@ static NTSTATUS dsgetdcname_cache_store(TALLOC_CTX *mem_ctx,
 	char *key;
 	bool ret = false;
 	DATA_BLOB blob;
-	unsigned char *buf = NULL;
-	int len = 0;
+	enum ndr_err_code ndr_err;
 
 	if (!gencache_init()) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
@@ -312,13 +311,11 @@ static NTSTATUS dsgetdcname_cache_store(TALLOC_CTX *mem_ctx,
 
 	expire_time = time(NULL) + DSGETDCNAME_CACHE_TTL;
 
-	len = pack_dsdcinfo(info, &buf);
-	if (len == -1) {
-		return NT_STATUS_UNSUCCESSFUL;
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, info,
+		       (ndr_push_flags_fn_t)ndr_push_netr_DsRGetDCNameInfo);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
 	}
-
-	blob = data_blob(buf, len);
-	SAFE_FREE(buf);
 
 	if (gencache_lock_entry(key) != 0) {
 		data_blob_free(&blob);
@@ -404,12 +401,13 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 					struct GUID *domain_guid,
 					uint32_t flags,
 					const char *site_name,
-					struct netr_DsRGetDCNameInfo **info,
+					struct netr_DsRGetDCNameInfo **info_p,
 					bool *expired)
 {
 	char *key;
 	DATA_BLOB blob;
-	NTSTATUS status;
+	enum ndr_err_code ndr_err;
+	struct netr_DsRGetDCNameInfo *info;
 
 	if (!gencache_init()) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
@@ -424,24 +422,36 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	status = unpack_dsdcinfo(mem_ctx, blob.data, blob.length, info);
-	if (!NT_STATUS_IS_OK(status)) {
-		data_blob_free(&blob);
-		return status;
+	info = TALLOC_ZERO_P(mem_ctx, struct netr_DsRGetDCNameInfo);
+	if (!info) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, info,
+		      (ndr_pull_flags_fn_t)ndr_pull_netr_DsRGetDCNameInfo);
+
 	data_blob_free(&blob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		dsgetdcname_cache_delete(mem_ctx, domain_name);
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(netr_DsRGetDCNameInfo, info);
+	}
 
 	/* check flags */
-	if (!check_cldap_reply_required_flags((*info)->dc_flags, flags)) {
+	if (!check_cldap_reply_required_flags(info->dc_flags, flags)) {
 		DEBUG(10,("invalid flags\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if ((flags & DS_IP_REQUIRED) &&
-	    ((*info)->dc_address_type != DS_ADDRESS_TYPE_INET)) {
+	    (info->dc_address_type != DS_ADDRESS_TYPE_INET)) {
 	    	return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
+
+	*info_p = info;
 
 	return NT_STATUS_OK;
 }
