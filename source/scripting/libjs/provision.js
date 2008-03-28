@@ -1174,7 +1174,7 @@ member: %s
 // crh has a paragraph on this in his book (1.4.1.1)
 function valid_netbios_name(name)
 {
-	if (strlen(name) > 13) return false;
+	if (strlen(name) > 15) return false;
 	return true;
 }
 
