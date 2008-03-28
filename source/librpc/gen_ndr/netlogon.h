@@ -733,7 +733,7 @@ struct netr_DsRGetDCNameInfo {
 	uint32_t dc_flags;
 	const char *dc_site_name;/* [unique,charset(UTF16)] */
 	const char *client_site_name;/* [unique,charset(UTF16)] */
-};
+}/* [public] */;
 
 struct netr_BinaryString {
 	uint16_t length;

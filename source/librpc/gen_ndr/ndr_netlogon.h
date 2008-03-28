@@ -192,6 +192,8 @@ void ndr_print_netr_Blob(struct ndr_print *ndr, const char *name, const struct n
 void ndr_print_netr_DsRGetDCName_flags(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_netr_DsRGetDCNameInfo_AddressType(struct ndr_print *ndr, const char *name, enum netr_DsRGetDCNameInfo_AddressType r);
 void ndr_print_netr_DsR_DcFlags(struct ndr_print *ndr, const char *name, uint32_t r);
+enum ndr_err_code ndr_push_netr_DsRGetDCNameInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_DsRGetDCNameInfo *r);
+enum ndr_err_code ndr_pull_netr_DsRGetDCNameInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_DsRGetDCNameInfo *r);
 void ndr_print_netr_DsRGetDCNameInfo(struct ndr_print *ndr, const char *name, const struct netr_DsRGetDCNameInfo *r);
 void ndr_print_netr_BinaryString(struct ndr_print *ndr, const char *name, const struct netr_BinaryString *r);
 void ndr_print_netr_DomainQuery1(struct ndr_print *ndr, const char *name, const struct netr_DomainQuery1 *r);
