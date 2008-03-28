@@ -27,21 +27,35 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+static struct wbcInterfaceDetails *init_interface_details(void)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	static struct wbcInterfaceDetails *details;
+
+	if (details) {
+		return details;
+	}
+
+	wbc_status = wbcInterfaceDetails(&details);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "could not obtain winbind interface details!\n");
+	}
+
+	return details;
+}
+
 static char winbind_separator_int(bool strict)
 {
-	struct winbindd_response response;
+	struct wbcInterfaceDetails *details;
 	static bool got_sep;
 	static char sep;
 
 	if (got_sep)
 		return sep;
 
-	ZERO_STRUCT(response);
+	details = init_interface_details();
 
-	/* Send off request */
-
-	if (winbindd_request_response(WINBINDD_INFO, NULL, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	if (!details) {
 		d_fprintf(stderr, "could not obtain winbind separator!\n");
 		if (strict) {
 			return 0;
@@ -50,7 +64,7 @@ static char winbind_separator_int(bool strict)
 		return *lp_winbind_separator();
 	}
 
-	sep = response.data.info.winbind_separator;
+	sep = details->winbind_separator;
 	got_sep = true;
 
 	if (!sep) {
@@ -72,26 +86,18 @@ static char winbind_separator(void)
 
 static const char *get_winbind_domain(void)
 {
-	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	struct wbcDomainInfo *dinfo = NULL;
-	static fstring winbind_domain;
+	static struct wbcInterfaceDetails *details;
 
-	ZERO_STRUCT(dinfo);
+	details = init_interface_details();
 
-	wbc_status = wbcDomainInfo(".", &dinfo);
-
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
+	if (!details) {
 		d_fprintf(stderr, "could not obtain winbind domain name!\n");
 
 		/* HACK: (this module should not call lp_ functions) */
 		return lp_workgroup();
 	}
 
-	fstrcpy(winbind_domain, dinfo->short_name);
-
-	wbcFreeMemory(dinfo);
-
-	return winbind_domain;
+	return details->netbios_domain;
 }
 
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
