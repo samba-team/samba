@@ -25,11 +25,11 @@
 #include "system/passwd.h"
 #include "auth/auth.h"
 #include "ntvfs/ntvfs.h"
-#include "dsdb/samdb/samdb.h"
+#include "libcli/wbclient/wbclient.h"
 #include "param/param.h"
 
 struct unixuid_private {
-	struct sidmap_context *sidmap;
+	struct wbc_context *wbc_ctx;
 	struct unix_sec_ctx *last_sec_ctx;
 	struct security_token *last_token;
 };
@@ -100,9 +100,11 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 					  struct security_token *token,
 					  struct unix_sec_ctx **sec)
 {
-	struct unixuid_private *private = ntvfs->private_data;
+	struct unixuid_private *priv = ntvfs->private_data;
 	int i;
 	NTSTATUS status;
+	struct id_mapping *ids;
+	struct composite_context *ctx;
 	*sec = talloc(req, struct unix_sec_ctx);
 
 	/* we can't do unix security without a user and group */
@@ -110,29 +112,53 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = sidmap_sid_to_unixuid(private->sidmap, 
-				       token->user_sid, &(*sec)->uid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	ids = talloc_array(req, struct id_mapping, token->num_sids);
+	NT_STATUS_HAVE_NO_MEMORY(ids);
 
-	status = sidmap_sid_to_unixgid(private->sidmap, 
-				       token->group_sid, &(*sec)->gid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	ids[0].unixid = NULL;
+	ids[0].sid = token->user_sid;
+	ids[0].status = NT_STATUS_NONE_MAPPED;
+
+	ids[1].unixid = NULL;
+	ids[1].sid = token->group_sid;
+	ids[1].status = NT_STATUS_NONE_MAPPED;
 
 	(*sec)->ngroups = token->num_sids - 2;
 	(*sec)->groups = talloc_array(*sec, gid_t, (*sec)->ngroups);
-	if ((*sec)->groups == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	NT_STATUS_HAVE_NO_MEMORY((*sec)->groups);
+
+	for (i=0;i<(*sec)->ngroups;i++) {
+		ids[i+2].unixid = NULL;
+		ids[i+2].sid = token->sids[i+2];
+		ids[i+2].status = NT_STATUS_NONE_MAPPED;
+	}
+
+	ctx = wbc_sids_to_xids_send(priv->wbc_ctx, ids, token->num_sids, ids);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	status = wbc_sids_to_xids_recv(ctx, &ids);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (ids[0].unixid->type == ID_TYPE_BOTH ||
+	    ids[0].unixid->type == ID_TYPE_UID) {
+		(*sec)->uid = ids[0].unixid->id;
+	} else {
+		return NT_STATUS_INVALID_SID;
+	}
+
+	if (ids[1].unixid->type == ID_TYPE_BOTH ||
+	    ids[1].unixid->type == ID_TYPE_GID) {
+		(*sec)->gid = ids[1].unixid->id;
+	} else {
+		return NT_STATUS_INVALID_SID;
 	}
 
 	for (i=0;i<(*sec)->ngroups;i++) {
-		status = sidmap_sid_to_unixgid(private->sidmap, 
-					       token->sids[i+2], &(*sec)->groups[i]);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+		if (ids[i+2].unixid->type == ID_TYPE_BOTH ||
+		    ids[i+2].unixid->type == ID_TYPE_GID) {
+			(*sec)->groups[i] = ids[i+2].unixid->id;
+		} else {
+			return NT_STATUS_INVALID_SID;
 		}
 	}
 
@@ -216,9 +242,11 @@ static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	private->sidmap = sidmap_open(private, ntvfs->ctx->lp_ctx);
-	if (private->sidmap == NULL) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	private->wbc_ctx = wbc_init(private, ntvfs->ctx->msg_ctx,
+				    ntvfs->ctx->event_ctx);
+	if (private->wbc_ctx == NULL) {
+		talloc_free(private);
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	ntvfs->private_data = private;
