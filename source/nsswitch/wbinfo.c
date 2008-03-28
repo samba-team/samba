@@ -621,23 +621,27 @@ static bool wbinfo_check_secret(void)
 
 static bool wbinfo_uid_to_sid(uid_t uid)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcDomainSid sid;
+	char *sid_str = NULL;
 
 	/* Send request */
 
-	request.data.uid = uid;
-
-	if (winbindd_request_response(WINBINDD_UID_TO_SID, &request, &response) !=
-	    NSS_STATUS_SUCCESS)
+	wbc_status = wbcUidToSid(uid, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
+	}
+
+	wbc_status = wbcSidToString(&sid, &sid_str);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
 
 	/* Display response */
 
-	d_printf("%s\n", response.data.sid.sid);
+	d_printf("%s\n", sid_str);
+
+	wbcFreeMemory(sid_str);
 
 	return true;
 }
