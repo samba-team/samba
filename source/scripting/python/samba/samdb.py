@@ -77,10 +77,15 @@ unixName: %s
         
         :param user_dn: Dn of the account to enable.
         """
-        res = self.search(user_dn, SCOPE_ONELEVEL, None, ["userAccountControl"])
+        res = self.search(user_dn, ldb.SCOPE_BASE, None, ["userAccountControl"])
         assert len(res) == 1
-        userAccountControl = res[0].userAccountControl
-        userAccountControl = userAccountControl - 2 # remove disabled bit
+        userAccountControl = res[0]["userAccountControl"][0]
+        userAccountControl = int(userAccountControl)
+        if (userAccountControl & 0x2):
+            userAccountControl = userAccountControl & ~0x2 # remove disabled bit
+        if (userAccountControl & 0x20):
+            userAccountControl = userAccountControl & ~0x20 # remove 'no password required' bit
+
         mod = """
 dn: %s
 changetype: modify
@@ -103,13 +108,9 @@ userAccountControl: %u
         res = self.search("", scope=ldb.SCOPE_BASE, 
                           expression="(defaultNamingContext=*)", 
                           attrs=["defaultNamingContext"])
-        assert(len(res) == 1 and res[0].defaultNamingContext is not None)
+        assert(len(res) == 1 and res[0]["defaultNamingContext"] is not None)
         domain_dn = res[0]["defaultNamingContext"][0]
         assert(domain_dn is not None)
-        dom_users = self.searchone(basedn=domain_dn, attribute="dn", 
-                                   expression="name=Domain Users")
-        assert(dom_users is not None)
-
         user_dn = "CN=%s,CN=Users,%s" % (username, domain_dn)
 
         #
@@ -123,19 +124,44 @@ userAccountControl: %u
             "sambaPassword": password,
             "objectClass": "user"})
 
-        #  add the user to the users group as well
-        modgroup = """
+        #  modify the userAccountControl to remove the disabled bit
+        self.enable_account(user_dn)
+        self.transaction_commit()
+
+    def setpassword(self, filter, password):
+        """Set a password on a user record
+        
+        :param filter: LDAP filter to find the user (eg samccountname=name)
+        :param password: Password for the user
+        """
+        # connect to the sam 
+        self.transaction_start()
+
+        # find the DNs for the domain
+        res = self.search("", scope=ldb.SCOPE_BASE, 
+                          expression="(defaultNamingContext=*)", 
+                          attrs=["defaultNamingContext"])
+        assert(len(res) == 1 and res[0]["defaultNamingContext"] is not None)
+        domain_dn = res[0]["defaultNamingContext"][0]
+        assert(domain_dn is not None)
+
+        res = self.search(domain_dn, scope=ldb.SCOPE_SUBTREE, 
+                          expression=filter,
+                          attrs=[])
+        assert(len(res) == 1)
+        user_dn = res[0].dn
+
+        setpw = """
 dn: %s
 changetype: modify
-add: member
-member: %s
-""" % (dom_users, user_dn)
+replace: sambaPassword
+sambaPassword: %s
+""" % (user_dn, password)
 
-
-        self.modify(modgroup)
+        self.modify_ldif(setpw)
 
         #  modify the userAccountControl to remove the disabled bit
-        enable_account(self, user_dn)
+        self.enable_account(user_dn)
         self.transaction_commit()
 
     def set_domain_sid(self, sid):
