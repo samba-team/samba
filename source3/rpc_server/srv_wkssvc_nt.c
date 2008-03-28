@@ -292,9 +292,7 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p,
 	char *admin_domain = NULL;
 	char *admin_account = NULL;
 	WERROR werr;
-	NTSTATUS status;
 	struct nt_user_token *token = p->pipe_user.nt_user_token;
-	struct netr_DsRGetDCNameInfo *info = NULL;
 
 	if (!r->in.domain_name) {
 		return WERR_INVALID_PARAM;
@@ -321,24 +319,11 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p,
 			  &admin_domain,
 			  &admin_account);
 
-	status = dsgetdcname(p->mem_ctx,
-			     r->in.domain_name,
-			     NULL,
-			     NULL,
-			     DS_DIRECTORY_SERVICE_REQUIRED |
-			     DS_WRITABLE_REQUIRED |
-			     DS_RETURN_DNS_NAME,
-			     &info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return ntstatus_to_werror(status);
-	}
-
 	werr = libnet_init_JoinCtx(p->mem_ctx, &j);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
 
-	j->in.dc_name		= info->dc_unc;
 	j->in.domain_name	= r->in.domain_name;
 	j->in.account_ou	= r->in.account_ou;
 	j->in.join_flags	= r->in.join_flags;
@@ -372,9 +357,7 @@ WERROR _wkssvc_NetrUnjoinDomain2(pipes_struct *p,
 	char *admin_domain = NULL;
 	char *admin_account = NULL;
 	WERROR werr;
-	NTSTATUS status;
 	struct nt_user_token *token = p->pipe_user.nt_user_token;
-	struct netr_DsRGetDCNameInfo *info = NULL;
 
 	if (!user_has_privileges(token, &se_machine_account) &&
 	    !nt_token_check_domain_rid(token, DOMAIN_GROUP_RID_ADMINS) &&
@@ -397,24 +380,11 @@ WERROR _wkssvc_NetrUnjoinDomain2(pipes_struct *p,
 			  &admin_domain,
 			  &admin_account);
 
-	status = dsgetdcname(p->mem_ctx,
-			     lp_realm(),
-			     NULL,
-			     NULL,
-			     DS_DIRECTORY_SERVICE_REQUIRED |
-			     DS_WRITABLE_REQUIRED |
-			     DS_RETURN_DNS_NAME,
-			     &info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return ntstatus_to_werror(status);
-	}
-
 	werr = libnet_init_UnjoinCtx(p->mem_ctx, &u);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
 
-	u->in.dc_name		= info->dc_unc;
 	u->in.domain_name	= lp_realm();
 	u->in.unjoin_flags	= r->in.unjoin_flags |
 				  WKSSVC_JOIN_FLAGS_JOIN_TYPE;
