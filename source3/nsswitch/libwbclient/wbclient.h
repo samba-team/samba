@@ -51,6 +51,19 @@ typedef enum _wbcErrType wbcErr;
 
 const char *wbcErrorString(wbcErr error);
 
+/**
+ *  @brief Some useful details about the running winbindd
+ *
+ **/
+struct wbcInterfaceDetails {
+	uint32_t interface_version;
+	const char *winbind_version;
+	char winbind_separator;
+	const char *netbios_name;
+	const char *netbios_domain;
+	const char *dns_domain;
+};
+
 /*
  * Data types used by the Winbind Client API
  */
@@ -276,6 +289,8 @@ wbcErr wbcStringToSid(const char *sid_string,
 		      struct wbcDomainSid *sid);
 
 wbcErr wbcPing(void);
+
+wbcErr wbcInterfaceDetails(struct wbcInterfaceDetails **details);
 
 /*
  * Name/SID conversion
