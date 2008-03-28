@@ -83,6 +83,10 @@ continued to evolve, but you may particularly notice these areas:
   GNU Make: To try and simplfy our build system, we rely on GNU Make
   to avoid autogenerating a massive single makefile. 
 
+  Account Expiry: Samba4 now better handles installations over 30 days
+  old (thanks to our long-suffering testers for keeping installations
+  around that long!)
+
 These are just some of the highlights of the work done in the past few
 months.  More details can be found in our GIT history.
 
