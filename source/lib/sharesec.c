@@ -51,8 +51,8 @@ static bool share_info_db_init(void)
 		return True;
 	}
 
-	share_db = db_open(NULL, state_path("share_info.tdb"), 0, TDB_DEFAULT,
-			   O_RDWR|O_CREAT, 0600);
+	share_db = db_open_trans(NULL, state_path("share_info.tdb"), 0,
+				 TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (share_db == NULL) {
 		DEBUG(0,("Failed to open share info database %s (%s)\n",
 			state_path("share_info.tdb"), strerror(errno) ));
