@@ -191,7 +191,7 @@ struct cli_pull_state {
 	/*
 	 * For how many bytes did we send requests already?
 	 */
-	off_t requested;
+	SMB_OFF_T requested;
 
 	/*
 	 * Next request index to push into "sink". This walks around the "req"
@@ -205,7 +205,7 @@ struct cli_pull_state {
 	 * How many bytes did we push into "sink"?
 	 */
 
-	off_t pushed;
+	SMB_OFF_T pushed;
 };
 
 static char *cli_pull_print(TALLOC_CTX *mem_ctx, struct async_req *req)
@@ -412,7 +412,7 @@ static void cli_pull_read_done(struct async_req *read_req)
 	async_req_done(pull_req);
 }
 
-NTSTATUS cli_pull_recv(struct async_req *req, ssize_t *received)
+NTSTATUS cli_pull_recv(struct async_req *req, SMB_OFF_T *received)
 {
 	struct cli_pull_state *state = talloc_get_type_abort(
 		req->private_data, struct cli_pull_state);
@@ -428,7 +428,7 @@ NTSTATUS cli_pull_recv(struct async_req *req, ssize_t *received)
 NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
 		  off_t start_offset, SMB_OFF_T size, size_t window_size,
 		  NTSTATUS (*sink)(char *buf, size_t n, void *priv),
-		  void *priv, ssize_t *received)
+		  void *priv, SMB_OFF_T *received)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct async_req *req;
@@ -466,7 +466,7 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf,
 		 off_t offset, size_t size)
 {
 	NTSTATUS status;
-	ssize_t ret;
+	SMB_OFF_T ret;
 
 	status = cli_pull(cli, fnum, offset, size, size,
 			  cli_read_sink, &buf, &ret);
