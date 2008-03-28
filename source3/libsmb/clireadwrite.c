@@ -745,7 +745,9 @@ ssize_t cli_write(struct cli_state *cli,
 			break;
 
 		bwritten += SVAL(cli->inbuf, smb_vwv2);
-		bwritten += (((int)(SVAL(cli->inbuf, smb_vwv4)))<<16);
+		if (writesize > 0xFFFF) {
+			bwritten += (((int)(SVAL(cli->inbuf, smb_vwv4)))<<16);
+		}
 	}
 
 	while (received < issued && cli_receive_smb(cli)) {
