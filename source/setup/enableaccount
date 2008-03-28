@@ -42,9 +42,10 @@ username = args[0]
 if username is None:
 	print "username must be specified"
 
-creds = credopts.get_credentials()
-
 lp = sambaopts.get_loadparm()
+
+creds = credopts.get_credentials(lp)
+
 if opts.H is not None:
 	url = opts.H
 else:

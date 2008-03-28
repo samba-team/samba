@@ -57,7 +57,9 @@ setup_dir = opts.setupdir
 if setup_dir is None:
 	setup_dir = "setup"
 
-creds = credopts.get_credentials()
+lp = sambaopts.get_loadparm()
+smbconf = lp.configfile()
+creds = credopts.get_credentials(lp)
 
 upgrade_provision(samba3, setup_dir, message, credentials=creds, session_info=system_session(), 
-                  smbconf=sambaopts.get_loadparm_path(), targetdir=opts.targetdir)
+                  smbconf=smbconf, targetdir=opts.targetdir)

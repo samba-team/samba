@@ -25,7 +25,6 @@ parser.add_option_group(options.VersionOptions(parser))
 # use command line creds if available
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
-creds = credopts.get_credentials()
 opts, args = parser.parse_args()
 
 if len(args) < 1:
@@ -35,6 +34,7 @@ if len(args) < 1:
 host = args[0]
 
 lp = sambaopts.get_loadparm()
+creds = credopts.get_credentials(lp)
 
 class BasicTests(unittest.TestCase):
     def delete_force(self, ldb, dn):

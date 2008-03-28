@@ -58,6 +58,9 @@ def _swig_setattr_nondynamic_method(set):
 
 
 import param
+AUTO_USE_KERBEROS = _credentials.AUTO_USE_KERBEROS
+DONT_USE_KERBEROS = _credentials.DONT_USE_KERBEROS
+MUST_USE_KERBEROS = _credentials.MUST_USE_KERBEROS
 class Credentials(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
@@ -72,9 +75,11 @@ Credentials.get_domain = new_instancemethod(_credentials.Credentials_get_domain,
 Credentials.set_domain = new_instancemethod(_credentials.Credentials_set_domain,None,Credentials)
 Credentials.get_realm = new_instancemethod(_credentials.Credentials_get_realm,None,Credentials)
 Credentials.set_realm = new_instancemethod(_credentials.Credentials_set_realm,None,Credentials)
+Credentials.set_kerberos_state = new_instancemethod(_credentials.Credentials_set_kerberos_state,None,Credentials)
 Credentials.parse_string = new_instancemethod(_credentials.Credentials_parse_string,None,Credentials)
 Credentials.get_bind_dn = new_instancemethod(_credentials.Credentials_get_bind_dn,None,Credentials)
 Credentials.set_bind_dn = new_instancemethod(_credentials.Credentials_set_bind_dn,None,Credentials)
+Credentials.set_anonymous = new_instancemethod(_credentials.Credentials_set_anonymous,None,Credentials)
 Credentials.get_workstation = new_instancemethod(_credentials.Credentials_get_workstation,None,Credentials)
 Credentials.set_workstation = new_instancemethod(_credentials.Credentials_set_workstation,None,Credentials)
 Credentials.guess = new_instancemethod(_credentials.Credentials_guess,None,Credentials)
