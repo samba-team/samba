@@ -255,3 +255,14 @@ NTSTATUS dbwrap_trans_store_int32(struct db_context *db, const char *keystr,
 						sizeof(v_store)),
 				  TDB_REPLACE);
 }
+
+NTSTATUS dbwrap_trans_store_bystring(struct db_context *db, const char *key,
+				     TDB_DATA data, int flags)
+{
+	return dbwrap_trans_store(db, string_term_tdb_data(key), data, flags);
+}
+
+NTSTATUS dbwrap_trans_delete_bystring(struct db_context *db, const char *key)
+{
+	return dbwrap_trans_delete(db, string_term_tdb_data(key));
+}
