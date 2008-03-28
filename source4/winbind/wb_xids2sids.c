@@ -41,7 +41,7 @@ struct composite_context *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *result;
 	struct xids2sids_state *state;
 
-	DEBUG(0, ("wb_xids2sids_send called\n"));
+	DEBUG(5, ("wb_xids2sids_send called\n"));
 
 	result = composite_create(mem_ctx, service->task->event_ctx);
 	if (!result) return NULL;
@@ -68,7 +68,7 @@ NTSTATUS wb_xids2sids_recv(struct composite_context *ctx,
 {
 	NTSTATUS status = composite_wait(ctx);
 
-	DEBUG(0, ("wb_xids2sids_recv called.\n"));
+	DEBUG(5, ("wb_xids2sids_recv called.\n"));
 
 	if (NT_STATUS_IS_OK(status)) {
 		struct xids2sids_state *state =
