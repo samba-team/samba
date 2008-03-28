@@ -163,7 +163,7 @@ static bool get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 
 	/* the key is the SID, retrieving is direct */
 
-	key = group_mapping_key(talloc_tos(), &map->sid);
+	key = group_mapping_key(talloc_tos(), &sid);
 	if (key == NULL) {
 		return false;
 	}
