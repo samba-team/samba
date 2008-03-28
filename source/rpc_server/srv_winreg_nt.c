@@ -740,6 +740,9 @@ WERROR _winreg_CreateKey( pipes_struct *p, struct winreg_CreateKey *r)
 	if ( !parent )
 		return WERR_BADFID;
 
+	DEBUG(10, ("_winreg_CreateKey called with parent key '%s' and "
+		   "subkey name '%s'\n", parent->key->name, r->in.name.name));
+
 	result = reg_createkey(NULL, parent, r->in.name.name, r->in.access_mask,
 			       &new_key, r->out.action_taken);
 	if (!W_ERROR_IS_OK(result)) {
