@@ -6103,7 +6103,7 @@ _PUBLIC_ void ndr_print_netr_DsR_DcFlags(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_netr_DsRGetDCNameInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_DsRGetDCNameInfo *r)
+_PUBLIC_ enum ndr_err_code ndr_push_netr_DsRGetDCNameInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_DsRGetDCNameInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -6159,7 +6159,7 @@ static enum ndr_err_code ndr_push_netr_DsRGetDCNameInfo(struct ndr_push *ndr, in
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_netr_DsRGetDCNameInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_DsRGetDCNameInfo *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_netr_DsRGetDCNameInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_DsRGetDCNameInfo *r)
 {
 	uint32_t _ptr_dc_unc;
 	TALLOC_CTX *_mem_save_dc_unc_0;
