@@ -229,10 +229,11 @@ bool set_share_security(const char *share_name, SEC_DESC *psd)
 		goto out;
 	}
 
-	if (dbwrap_trans_store(share_db, string_term_tdb_data(key), blob,
-			       TDB_REPLACE) == -1) {
-		DEBUG(1,("set_share_security: Failed to store secdesc for "
-			 "%s\n", share_name ));
+	status = dbwrap_trans_store(share_db, string_term_tdb_data(key), blob,
+				    TDB_REPLACE);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("set_share_security: Failed to store secdesc for "
+			  "%s: %s\n", share_name, nt_errstr(status)));
 		goto out;
 	}
 

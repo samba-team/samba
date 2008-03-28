@@ -123,7 +123,7 @@ static bool add_mapping_entry(GROUP_MAP *map, int flag)
 {
 	char *key, *buf;
 	int len;
-	int res;
+	NTSTATUS status;
 
 	key = group_mapping_key(talloc_tos(), &map->sid);
 	if (key == NULL) {
@@ -141,13 +141,13 @@ static bool add_mapping_entry(GROUP_MAP *map, int flag)
 	len = tdb_pack((uint8 *)buf, len, "ddff", map->gid,
 		       map->sid_name_use, map->nt_name, map->comment);
 
-	res = dbwrap_trans_store(
+	status = dbwrap_trans_store(
 		db, string_term_tdb_data(key),
 		make_tdb_data((uint8_t *)buf, len), flag);
 
 	TALLOC_FREE(key);
 
-	return (res == 0);
+	return NT_STATUS_IS_OK(status);
 }
 
 

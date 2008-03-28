@@ -140,13 +140,16 @@ void *secrets_fetch(const char *key, size_t *size)
  */
 bool secrets_store(const char *key, const void *data, size_t size)
 {
+	NTSTATUS status;
+
 	if (!secrets_init()) {
 		return false;
 	}
 
-	return dbwrap_trans_store(db_ctx, string_tdb_data(key),
-				  make_tdb_data((const uint8 *)data, size),
-				  TDB_REPLACE) == 0;
+	status = dbwrap_trans_store(db_ctx, string_tdb_data(key),
+				    make_tdb_data((const uint8 *)data, size),
+				    TDB_REPLACE);
+	return NT_STATUS_IS_OK(status);
 }
 
 
