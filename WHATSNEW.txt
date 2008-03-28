@@ -10,9 +10,9 @@ Samba 4 is currently not yet in a state where it is usable in
 production environments. Note the WARNINGS below, and the STATUS file,
 which aims to document what should and should not work.
 
-Samba4 alpha3 follows on from our first alpha release, made in
-September, and the Technology Preview series we have offered for some
-time now. 
+Samba4 alpha3 follows on from our second alpha release (made in
+December), the first alpha release (made in September), and the
+Technology Preview series we have offered for some time now. 
 
 WARNINGS
 ========
@@ -70,9 +70,11 @@ CHANGES SINCE Alpha2
 In the time since Samba4 Alpha2 was released in December 2007, Samba has
 continued to evolve, but you may particularly notice these areas:
 
-  Python Bindings:  Bindings for Python are now in place, and used for
+  Python Bindings: Bindings for Python are now in place, and used for
   Samba's provision script, slowly displacing EJS as the embedded
-  scripting language
+  scripting language.  With its increased use, Python is no longer
+  optional, and configure will generate an error if it cannot locate
+  an appropriate Python installation.
 
   SWAT Disabled: Due to a lack of developer time and without a
   long-term web developer to maintain it, the SWAT web UI has been
@@ -86,6 +88,14 @@ continued to evolve, but you may particularly notice these areas:
   Account Expiry: Samba4 now better handles installations over 30 days
   old (thanks to our long-suffering testers for keeping installations
   around that long!)
+
+  Registry: Samba4 registry interoperability has been improved in
+  both the client utilities and in the registry service exposed by
+  the Samba4 server itself.
+
+  Administrative Tools: Many enhancements have been made that allow
+  better integration with Windows administrative tools, especially
+  Active Directory Users and Computers.
 
 These are just some of the highlights of the work done in the past few
 months.  More details can be found in our GIT history.
