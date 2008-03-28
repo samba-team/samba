@@ -1577,7 +1577,7 @@ server_lookup:
 				  &skey, &etype);
 	    if(ret) {
 		kdc_log(context, config, 0,
-			"Server (%s) has no support for etypes", spp);
+			"Server (%s) has no support for etypes", spn);
 		return ret;
 	    }
 	    ekey = &skey->key;
