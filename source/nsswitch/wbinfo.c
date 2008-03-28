@@ -27,8 +27,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-extern int winbindd_fd;
-
 static char winbind_separator_int(bool strict)
 {
 	struct winbindd_response response;
@@ -1224,16 +1222,16 @@ static void wbinfo_get_auth_user(void)
 
 static bool wbinfo_ping(void)
 {
-        NSS_STATUS result;
+	wbcErr wbc_status;
 
-	result = winbindd_request_response(WINBINDD_PING, NULL, NULL);
+	wbc_status = wbcPing();
 
 	/* Display response */
 
-	d_printf("Ping to winbindd %s on fd %d\n",
-		 (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed", winbindd_fd);
+	d_printf("Ping to winbindd %s\n",
+		 WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
 
-	return result == NSS_STATUS_SUCCESS;
+	return WBC_ERROR_IS_OK(wbc_status);
 }
 
 /* Main program */
