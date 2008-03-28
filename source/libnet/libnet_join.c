@@ -1314,12 +1314,62 @@ static WERROR libnet_unjoin_config(struct libnet_UnjoinCtx *r)
 /****************************************************************
 ****************************************************************/
 
+static bool libnet_parse_domain_dc(TALLOC_CTX *mem_ctx,
+				   const char *domain_str,
+				   const char **domain_p,
+				   const char **dc_p)
+{
+	char *domain = NULL;
+	char *dc = NULL;
+	const char *p = NULL;
+
+	if (!domain_str || !domain_p || !dc_p) {
+		return false;
+	}
+
+	p = strchr_m(domain_str, '\\');
+
+	if (p != NULL) {
+		domain = talloc_strndup(mem_ctx, domain_str,
+					 PTR_DIFF(p, domain_str));
+		dc = talloc_strdup(mem_ctx, p+1);
+		if (!dc) {
+			return false;
+		}
+	} else {
+		domain = talloc_strdup(mem_ctx, domain_str);
+		dc = NULL;
+	}
+	if (!domain) {
+		return false;
+	}
+
+	*domain_p = domain;
+
+	if (!*dc_p && dc) {
+		*dc_p = dc;
+	}
+
+	return true;
+}
+
+/****************************************************************
+****************************************************************/
+
 static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
 					 struct libnet_JoinCtx *r)
 {
 	if (!r->in.domain_name) {
 		libnet_join_set_error_string(mem_ctx, r,
 			"No domain name defined");
+		return WERR_INVALID_PARAM;
+	}
+
+	if (!libnet_parse_domain_dc(mem_ctx, r->in.domain_name,
+				    &r->in.domain_name,
+				    &r->in.dc_name)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"Failed to parse domain name");
 		return WERR_INVALID_PARAM;
 	}
 
@@ -1649,6 +1699,14 @@ static WERROR libnet_unjoin_pre_processing(TALLOC_CTX *mem_ctx,
 	if (!r->in.domain_name) {
 		libnet_unjoin_set_error_string(mem_ctx, r,
 			"No domain name defined");
+		return WERR_INVALID_PARAM;
+	}
+
+	if (!libnet_parse_domain_dc(mem_ctx, r->in.domain_name,
+				    &r->in.domain_name,
+				    &r->in.dc_name)) {
+		libnet_unjoin_set_error_string(mem_ctx, r,
+			"Failed to parse domain name");
 		return WERR_INVALID_PARAM;
 	}
 
