@@ -22,12 +22,9 @@ Introduction of LDB
 Samba now stores most of its persistent data in a LDAP-like database 
 called LDB (see ldb(7) for more info). 
 
-Much improved SWAT
+Removed SWAT
 ==================
-SWAT has had some rather large improvements and is now more than just a 
-direct editor for smb.conf. Its layout has been improved. SWAT can now also 
-be used for editing run-time data - maintaining user information, provisioning,
-etc. TLS is supported out of the box.
+Unlike previous versions, Samba4 does not provide a web interface at this time.
 
 Built-in KDC
 ============
@@ -251,7 +248,6 @@ The following parameters have been removed:
 - locking
 - lock spin count
 - lock spin time
-- oplocks
 - level2 oplocks
 - oplock break wait time
 - oplock contention limit
