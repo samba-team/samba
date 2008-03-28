@@ -39,7 +39,7 @@ typedef struct {
 
 static bool get_privileges( const DOM_SID *sid, SE_PRIV *mask )
 {
-	TDB_CONTEXT *tdb = get_account_pol_tdb();
+	struct db_context *db = get_account_pol_db();
 	fstring tmp, keystr;
 	TDB_DATA data;
 
@@ -49,14 +49,14 @@ static bool get_privileges( const DOM_SID *sid, SE_PRIV *mask )
 		return False;
 	}
 	
-	if ( !tdb )
+	if ( db == NULL )
 		return False;
 
 	/* PRIV_<SID> (NULL terminated) as the key */
 	
 	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, sid_to_fstring(tmp, sid));
 
-	data = tdb_fetch_bystring( tdb, keystr );
+	data = dbwrap_fetch_bystring( db, talloc_tos(), keystr );
 	
 	if ( !data.dptr ) {
 		DEBUG(3, ("get_privileges: No privileges assigned to SID "
@@ -67,7 +67,7 @@ static bool get_privileges( const DOM_SID *sid, SE_PRIV *mask )
 	SMB_ASSERT( data.dsize == sizeof( SE_PRIV ) );
 	
 	se_priv_copy( mask, (SE_PRIV*)data.dptr );
-	SAFE_FREE(data.dptr);
+	TALLOC_FREE(data.dptr);
 
 	return True;
 }
@@ -78,14 +78,14 @@ static bool get_privileges( const DOM_SID *sid, SE_PRIV *mask )
 
 static bool set_privileges( const DOM_SID *sid, SE_PRIV *mask )
 {
-	TDB_CONTEXT *tdb = get_account_pol_tdb();
+	struct db_context *db = get_account_pol_db();
 	fstring tmp, keystr;
 	TDB_DATA data;
 	
 	if ( !lp_enable_privileges() )
 		return False;
 
-	if ( !tdb )
+	if ( db == NULL )
 		return False;
 
 	if ( !sid || (sid->num_auths == 0) ) {
@@ -102,7 +102,8 @@ static bool set_privileges( const DOM_SID *sid, SE_PRIV *mask )
 	data.dptr  = (uint8 *)mask;
 	data.dsize = sizeof(SE_PRIV);
 
-	return ( tdb_store_bystring(tdb, keystr, data, TDB_REPLACE) != -1 );
+	return NT_STATUS_IS_OK(dbwrap_store_bystring(db, keystr, data,
+						     TDB_REPLACE));
 }
 
 /*********************************************************************
@@ -136,10 +137,10 @@ bool get_privileges_for_sids(SE_PRIV *privileges, DOM_SID *slist, int scount)
 
 
 /*********************************************************************
- travseral functions for privilege_enumerate_accounts
+ traversal functions for privilege_enumerate_accounts
 *********************************************************************/
 
-static int priv_traverse_fn(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *state)
+static int priv_traverse_fn(struct db_record *rec, void *state)
 {
 	PRIV_SID_LIST *priv = (PRIV_SID_LIST *)state;
 	int  prefixlen = strlen(PRIVPREFIX);
@@ -148,12 +149,12 @@ static int priv_traverse_fn(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *s
 	
 	/* easy check first */
 	
-	if ( data.dsize != sizeof(SE_PRIV) )
+	if (rec->value.dsize != sizeof(SE_PRIV) )
 		return 0;
 
 	/* check we have a PRIV_+SID entry */
 
-	if ( strncmp((const char *)key.dptr, PRIVPREFIX, prefixlen) != 0)
+	if ( strncmp((char *)rec->key.dptr, PRIVPREFIX, prefixlen) != 0)
 		return 0;
 		
 	/* check to see if we are looking for a particular privilege */
@@ -161,7 +162,7 @@ static int priv_traverse_fn(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *s
 	if ( !se_priv_equal(&priv->privilege, &se_priv_none) ) {
 		SE_PRIV mask;
 		
-		se_priv_copy( &mask, (SE_PRIV*)data.dptr );
+		se_priv_copy( &mask, (SE_PRIV*)rec->value.dptr );
 		
 		/* if the SID does not have the specified privilege 
 		   then just return */
@@ -170,7 +171,7 @@ static int priv_traverse_fn(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *s
 			return 0;
 	}
 		
-	fstrcpy( sid_string, (const char *)&key.dptr[strlen(PRIVPREFIX)] );
+	fstrcpy( sid_string, (char *)&(rec->key.dptr[strlen(PRIVPREFIX)]) );
 
 	/* this is a last ditch safety check to preventing returning
 	   and invalid SID (i've somehow run into this on development branches) */
@@ -200,10 +201,10 @@ static int priv_traverse_fn(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *s
 
 NTSTATUS privilege_enumerate_accounts(DOM_SID **sids, int *num_sids)
 {
-	TDB_CONTEXT *tdb = get_account_pol_tdb();
+	struct db_context *db = get_account_pol_db();
 	PRIV_SID_LIST priv;
 	
-	if (!tdb) {
+	if (db == NULL) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -211,7 +212,7 @@ NTSTATUS privilege_enumerate_accounts(DOM_SID **sids, int *num_sids)
 
 	se_priv_copy( &priv.privilege, &se_priv_none );
 
-	tdb_traverse( tdb, priv_traverse_fn, &priv);
+	db->traverse_read(db, priv_traverse_fn, &priv);
 
 	/* give the memory away; caller will free */
 	
@@ -228,10 +229,10 @@ NTSTATUS privilege_enumerate_accounts(DOM_SID **sids, int *num_sids)
 NTSTATUS privilege_enum_sids(const SE_PRIV *mask, TALLOC_CTX *mem_ctx,
 			     DOM_SID **sids, int *num_sids)
 {
-	TDB_CONTEXT *tdb = get_account_pol_tdb();
+	struct db_context *db = get_account_pol_db();
 	PRIV_SID_LIST priv;
 
-	if (!tdb) {
+	if (db == NULL) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -240,7 +241,7 @@ NTSTATUS privilege_enum_sids(const SE_PRIV *mask, TALLOC_CTX *mem_ctx,
 	se_priv_copy(&priv.privilege, mask);
 	priv.mem_ctx = mem_ctx;
 
-	tdb_traverse( tdb, priv_traverse_fn, &priv);
+	db->traverse_read(db, priv_traverse_fn, &priv);
 
 	/* give the memory away; caller will free */
 

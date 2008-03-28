@@ -20,7 +20,7 @@
  */
 
 #include "includes.h"
-static TDB_CONTEXT *tdb; 
+static struct db_context *db;
 
 /* cache all entries for 60 seconds for to save ldap-queries (cache is updated
  * after this period if admins do not use pdbedit or usermanager but manipulate
@@ -208,35 +208,61 @@ bool init_account_policy(void)
 	uint32 version;
 	int i;
 
-	if (tdb) {
+	if (db != NULL) {
 		return True;
 	}
 
-	tdb = tdb_open_log(state_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
-	if (!tdb) { /* the account policies files does not exist or open failed, try to create a new one */
-		tdb = tdb_open_log(state_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-		if (!tdb) {
+	db = db_open(NULL, state_path("account_policy.tdb"), 0, TDB_DEFAULT,
+		     O_RDWR, 0600);
+
+	if (db == NULL) { /* the account policies files does not exist or open
+			   * failed, try to create a new one */
+		db = db_open(NULL, state_path("account_policy.tdb"), 0,
+			     TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+		if (db == NULL) {
 			DEBUG(0,("Failed to open account policy database\n"));
 			return False;
 		}
 	}
 
-	/* handle a Samba upgrade */
-	tdb_lock_bystring(tdb, vstring);
-	if (!tdb_fetch_uint32(tdb, vstring, &version) || version != DATABASE_VERSION) {
+	version = dbwrap_fetch_int32(db, vstring);
+	if (version == DATABASE_VERSION) {
+		return true;
+	}
 
-		tdb_store_uint32(tdb, vstring, DATABASE_VERSION);
+	/* handle a Samba upgrade */
+
+	if (db->transaction_start(db) != 0) {
+		DEBUG(0, ("transaction_start failed\n"));
+		TALLOC_FREE(db);
+		return false;
+	}
+
+	version = dbwrap_fetch_int32(db, vstring);
+	if (version == DATABASE_VERSION) {
+		/*
+		 * Race condition
+		 */
+		if (db->transaction_cancel(db)) {
+			smb_panic("transaction_cancel failed");
+		}
+		return true;
+	}
+
+	if (version != DATABASE_VERSION) {
+		if (dbwrap_store_uint32(db, vstring, DATABASE_VERSION) != 0) {
+			DEBUG(0, ("dbwrap_store_uint32 failed\n"));
+			goto cancel;
+		}
 
 		for (i=0; account_policy_names[i].field; i++) {
 
 			if (!account_policy_set_default_on_empty(account_policy_names[i].field)) {
 				DEBUG(0,("failed to set default value in account policy tdb\n"));
-				return False;
+				goto cancel;
 			}
 		}
 	}
-
-	tdb_unlock_bystring(tdb, vstring);
 
 	/* These exist by default on NT4 in [HKLM\SECURITY\Policy\Accounts] */
 
@@ -255,7 +281,20 @@ bool init_account_policy(void)
 		}
 	}
 
+	if (db->transaction_commit(db) != 0) {
+		DEBUG(0, ("transaction_commit failed\n"));
+		goto cancel;
+	}
+
 	return True;
+
+ cancel:
+	if (db->transaction_cancel(db)) {
+		smb_panic("transaction_cancel failed");
+	}
+	TALLOC_FREE(db);
+
+	return false;
 }
 
 /*****************************************************************************
@@ -281,7 +320,7 @@ bool account_policy_get(int field, uint32 *value)
 		return False;
 	}
 	
-	if (!tdb_fetch_uint32(tdb, name, &regval)) {
+	if (!dbwrap_fetch_uint32(db, name, &regval)) {
 		DEBUG(1, ("account_policy_get: tdb_fetch_uint32 failed for field %d (%s), returning 0\n", field, name));
 		return False;
 	}
@@ -302,6 +341,8 @@ Set an account policy (in tdb)
 bool account_policy_set(int field, uint32 value)
 {
 	const char *name;
+	uint32_t v_store;
+	NTSTATUS status;
 
 	if (!init_account_policy()) {
 		return False;
@@ -313,8 +354,15 @@ bool account_policy_set(int field, uint32 value)
 		return False;
 	}
 
-	if (!tdb_store_uint32(tdb, name, value)) {
-		DEBUG(1, ("tdb_store_uint32 failed for field %d (%s) on value %u\n", field, name, value));
+	SIVAL(&v_store, 0, value);
+
+	status = dbwrap_trans_store_bystring(
+		db, name,
+		make_tdb_data((const uint8 *)&v_store, sizeof(v_store)),
+		TDB_REPLACE);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("store_uint32 failed for field %d (%s) on value "
+			  "%u: %s\n", field, name, value, nt_errstr(status)));
 		return False;
 	}
 
@@ -397,15 +445,15 @@ bool cache_account_policy_get(int field, uint32 *value)
 /****************************************************************************
 ****************************************************************************/
 
-TDB_CONTEXT *get_account_pol_tdb( void )
+struct db_context *get_account_pol_db( void )
 {
 
-	if ( !tdb ) {
+	if ( db != NULL ) {
 		if ( !init_account_policy() ) {
 			return NULL;
 		}
 	}
 
-	return tdb;
+	return db;
 }
 
