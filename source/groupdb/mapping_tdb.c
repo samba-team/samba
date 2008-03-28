@@ -130,7 +130,7 @@ static bool add_mapping_entry(GROUP_MAP *map, int flag)
 		return NULL;
 	}
 
-	len = tdb_pack(NULL, sizeof(buf), "ddff",
+	len = tdb_pack(NULL, 0, "ddff",
 		map->gid, map->sid_name_use, map->nt_name, map->comment);
 
 	buf = TALLOC_ARRAY(key, char, len);
