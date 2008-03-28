@@ -20,6 +20,8 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "lib/ldb_wrap.h"
+#include "torture/torture.h"
+#include "libcli/raw/libcliraw.h"
 #include "torture/util.h"
 
 #include "param/param.h"
@@ -27,12 +29,9 @@
 #include "scripting/python/modules.h"
 
 NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
-						struct provision_settings *settings)
+			struct provision_settings *settings)
 {
-	bool ok;
 	PyObject *provision_mod, *provision_dict, *provision_fn, *result, *parameters;
-	struct ldb_context *ldb;
-	char *sam_ldb_path;
 	
 	DEBUG(0,("Provision for Become-DC test using python\n"));
 
