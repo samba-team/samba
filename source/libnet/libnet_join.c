@@ -207,6 +207,11 @@ static ADS_STATUS libnet_join_precreate_machine_acct(TALLOC_CTX *mem_ctx,
 	const char *attrs[] = { "dn", NULL };
 	bool moved = false;
 
+	status = ads_check_ou_dn(mem_ctx, r->in.ads, r->in.account_ou);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
 	status = ads_search_dn(r->in.ads, &res, r->in.account_ou, attrs);
 	if (!ADS_ERR_OK(status)) {
 		return status;
