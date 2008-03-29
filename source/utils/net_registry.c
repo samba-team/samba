@@ -207,7 +207,7 @@ static int net_registry_enumerate(int argc, const char **argv)
 	struct registry_key *key = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	char *subkey_name;
-	NTTIME *modtime;
+	NTTIME modtime;
 	uint32_t count;
 	char *valname = NULL;
 	struct registry_value *valvalue = NULL;
@@ -227,11 +227,11 @@ static int net_registry_enumerate(int argc, const char **argv)
 	}
 
 	for (count = 0;
-	     werr = reg_enumkey(ctx, key, count, &subkey_name, modtime),
+	     werr = reg_enumkey(ctx, key, count, &subkey_name, &modtime),
 	     W_ERROR_IS_OK(werr);
 	     count++)
 	{
-		print_registry_key(subkey_name, modtime);
+		print_registry_key(subkey_name, &modtime);
 	}
 	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
 		goto done;
