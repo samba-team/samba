@@ -222,6 +222,13 @@ int vfs_get_user_ntquota_list(files_struct *fsp, SMB_NTQUOTA_LIST **qt_list)
 	return 0;
 }
 
+static int quota_handle_destructor(SMB_NTQUOTA_HANDLE *handle)
+{
+	if (handle->quota_list)
+		free_ntquota_list(&handle->quota_list);
+	return 0;
+}
+
 void *init_quota_handle(TALLOC_CTX *mem_ctx)
 {
 	SMB_NTQUOTA_HANDLE *qt_handle;
@@ -235,24 +242,6 @@ void *init_quota_handle(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	return (void *)qt_handle;	
-}
-
-void destroy_quota_handle(void **pqt_handle)
-{
-	SMB_NTQUOTA_HANDLE *qt_handle = NULL;
-	if (!pqt_handle||!(*pqt_handle))
-		return;
-	
-	qt_handle = (SMB_NTQUOTA_HANDLE *)(*pqt_handle);
-	
-	
-	if (qt_handle->quota_list)
-		free_ntquota_list(&qt_handle->quota_list);
-
-	qt_handle->quota_list = NULL;
-	qt_handle->tmp_list = NULL;
-	qt_handle = NULL;
-
-	return;
+	talloc_set_destructor(qt_handle, quota_handle_destructor);
+	return (void *)qt_handle;
 }
