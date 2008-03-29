@@ -1270,7 +1270,7 @@ static NTSTATUS resolve_hosts(const char *name, int name_type,
 			continue;
 		}
 
-		memset(&ss, '\0', sizeof(ss));
+		ZERO_STRUCT(ss);
 		memcpy(&ss, res->ai_addr, res->ai_addrlen);
 
 		*return_count += 1;
