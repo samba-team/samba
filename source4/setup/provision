@@ -149,12 +149,3 @@ provision(setup_dir, message,
           aci=opts.aci, serverrole=server_role, 
           ldap_backend=opts.ldap_backend, 
           ldap_backend_type=opts.ldap_backend_type)
-
-message("To reproduce this provision, run with:")
-def shell_escape(arg):
-    if " " in arg:
-        return '"%s"' % arg
-    return arg
-message(" ".join([shell_escape(arg) for arg in sys.argv]))
-
-message("All OK")
