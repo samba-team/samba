@@ -2656,7 +2656,7 @@ void send_file_readbraw(connection_struct *conn,
 	 * reply_readbraw has already checked the length.
 	 */
 
-	if ( (chain_size == 0) && (nread > 0) && (fsp->base_fsp == NULL)
+	if ( (chain_size == 0) && (nread > 0) && (fsp->base_fsp == NULL) &&
 	    (fsp->wcp == NULL) && lp_use_sendfile(SNUM(conn)) ) {
 		char header[4];
 		DATA_BLOB header_blob;
