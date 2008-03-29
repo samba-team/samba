@@ -216,9 +216,6 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	lreq = talloc(local_ctx, struct ldb_request);
 	NT_STATUS_HAVE_NO_MEMORY(lreq);
 
-	res = talloc_zero(local_ctx, struct ldb_result);
-	NT_STATUS_HAVE_NO_MEMORY(res);
-	
 	lreq->operation = LDB_SEARCH;
 	lreq->op.search.base = basedn;
 	lreq->op.search.scope = scope;
@@ -242,6 +239,9 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		}
 	}
 
+	res = talloc_zero(lreq, struct ldb_result);
+	NT_STATUS_HAVE_NO_MEMORY(res);
+	
 	lreq->context = res;
 	lreq->callback = ldb_search_default_callback;
 
