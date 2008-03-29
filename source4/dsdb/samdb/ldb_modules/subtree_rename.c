@@ -117,7 +117,15 @@ static int subtree_rename_search_callback(struct ldb_context *ldb, void *context
 					   NULL,
 					   NULL);
 		
-		if (ret != LDB_SUCCESS) return ret;
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		ret = ldb_set_timeout_from_prev_req(ldb, ac->orig_req, req);
+		
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 
 		talloc_steal(req, newdn);
 
@@ -182,6 +190,12 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 				   ac, 
 				   subtree_rename_search_callback);
 
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_set_timeout_from_prev_req(module->ldb, req, new_req);
+	
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
