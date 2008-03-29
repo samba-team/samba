@@ -11,7 +11,8 @@ TMPDIR=`mktemp -d samba-XXXXX`
 
 VERSION=`sed -n 's/^SAMBA_VERSION_STRING=//p' $TMPDIR/source/version.h`
 mv $TMPDIR samba-$VERSION || exit 1
-tar -cf samba-$VERSION.tar samba-$VERSION || exit 1
+tar -cf samba-$VERSION.tar samba-$VERSION || (rm -rf samba-$VERSION; exit 1)
+rm -rf samba-$VERSION || exit 1
 echo "Now run: "
 echo "gpg --detach-sign --armor samba-$VERSION.tar"
 echo "gzip samba-$VERSION.tar" 
