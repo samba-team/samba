@@ -3209,6 +3209,29 @@ static int validate_de(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 	return 0;
 }
 
+static int validate_pwinfo(TALLOC_CTX *mem_ctx, const char *keystr,
+			   TDB_DATA dbuf, struct tdb_validation_status *state)
+{
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
+
+	if (!centry) {
+		return 1;
+	}
+
+	(void)centry_string(centry, mem_ctx);
+	(void)centry_string(centry, mem_ctx);
+	(void)centry_string(centry, mem_ctx);
+	(void)centry_uint32(centry);
+
+	centry_free(centry);
+
+	if (!(state->success)) {
+		return 1;
+	}
+	DEBUG(10,("validate_pwinfo: %s ok\n", keystr));
+	return 0;
+}
+
 static int validate_trustdoms(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 			      struct tdb_validation_status *state)
 {
@@ -3307,6 +3330,7 @@ struct key_val_struct {
 	{"GM/", validate_gm},
 	{"DR/", validate_dr},
 	{"DE/", validate_de},
+	{"NSS/PWINFO/", validate_pwinfo},
 	{"TRUSTDOMS/", validate_trustdoms},
 	{"TRUSTDOMCACHE/", validate_trustdomcache},
 	{"WINBINDD_OFFLINE", validate_offline},
