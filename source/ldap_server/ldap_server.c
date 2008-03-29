@@ -155,8 +155,10 @@ static NTSTATUS ldapsrv_decode(void *private, DATA_BLOB blob)
 	}
 
 	data_blob_free(&blob);
-	ldapsrv_process_message(conn, msg);
+	talloc_steal(conn, msg);
 	asn1_free(asn1);
+
+	ldapsrv_process_message(conn, msg);
 	return NT_STATUS_OK;
 }
 

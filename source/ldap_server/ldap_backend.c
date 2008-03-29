@@ -261,6 +261,11 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 			ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
 			NT_STATUS_HAVE_NO_MEMORY(ent_r);
 
+			/* Better to have the whole message kept here,
+			 * than to find someone further up didn't put
+			 * a value in the right spot in the talloc tree */
+			talloc_steal(ent_r, res->msgs[i]);
+			
 			ent = &ent_r->msg->r.SearchResultEntry;
 			ent->dn = ldb_dn_alloc_linearized(ent_r, res->msgs[i]->dn);
 			ent->num_attributes = 0;
