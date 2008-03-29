@@ -1595,9 +1595,11 @@ static void getgroups_sid2gid_recv(void *private_data, bool success, gid_t gid)
 	}
 
 	s->state->response.data.num_entries = s->num_token_gids;
-	/* s->token_gids are talloced */
-	s->state->response.extra_data.data = smb_xmemdup(s->token_gids, s->num_token_gids * sizeof(gid_t));
-	s->state->response.length += s->num_token_gids * sizeof(gid_t);
+	if (s->num_token_gids) {
+		/* s->token_gids are talloced */
+		s->state->response.extra_data.data = smb_xmemdup(s->token_gids, s->num_token_gids * sizeof(gid_t));
+		s->state->response.length += s->num_token_gids * sizeof(gid_t);
+	}
 	request_ok(s->state);
 }
 
