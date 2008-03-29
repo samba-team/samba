@@ -1,9 +1,9 @@
 #!/bin/sh
 
 TMPDIR=`mktemp -d samba-XXXXX`
-(git archive --format=tar HEAD | (cd $TMPDIR/ ; tar xf -))
+(git archive --format=tar HEAD | (cd $TMPDIR/ && tar xf -))
 
-( cd $TMPDIR/source
+( cd $TMPDIR/source || exit 1
  ./autogen.sh || exit 1
  ./configure || exit 1
  make dist  || exit 1
