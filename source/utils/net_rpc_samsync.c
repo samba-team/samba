@@ -337,6 +337,8 @@ static void dump_database(struct rpc_pipe_client *pipe_hnd,
 	uint16_t restart_state = 0;
 	uint32_t sync_context = 0;
 
+	ZERO_STRUCT(return_authenticator);
+
 	if (!(mem_ctx = talloc_init("dump_database"))) {
 		return;
 	}
