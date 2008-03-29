@@ -974,10 +974,6 @@ def provision(setup_dir, message, session_info,
             # provision-backend will set this path suggested slapd command line / fedorads.inf
             ldap_backend = "ldapi://" % urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
              
-    message("set DOMAIN SID: %s" % str(domainsid))
-    message("Provisioning for %s in realm %s" % (names.domain, realm))
-    message("Using administrator password: %s" % adminpass)
-
     # only install a new shares config db if there is none
     if not os.path.exists(paths.shareconf):
         message("Setting up share.ldb")
@@ -1036,7 +1032,7 @@ def provision(setup_dir, message, session_info,
                             nobody=nobody, nogroup=nogroup, wheel=wheel, 
                             users=users, backup=backup)
    
-        message("Setting up sam.ldb rootDSE marking as synchronized")
+        message("Compleating sam.ldb setup by marking as synchronized")
         setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
 
         # Only make a zone file on the first DC, it should be replicated with DNS replication
@@ -1051,18 +1047,24 @@ def provision(setup_dir, message, session_info,
                                        scope=SCOPE_SUBTREE)
             assert isinstance(hostguid, str)
             
-            message("Setting up DNS zone: %s" % names.dnsdomain)
             create_zone_file(paths.dns, setup_path, samdb, 
                              hostname=names.hostname, hostip=hostip, dnsdomain=names.dnsdomain,
                              domaindn=names.domaindn, dnspass=dnspass, realm=names.realm, 
                              domainguid=domainguid, hostguid=hostguid)
             message("Please install the zone located in %s into your DNS server" % paths.dns)
             
-    message("Setting up phpLDAPadmin configuration")
     create_phpldapadmin_config(paths.phpldapadminconfig, setup_path, 
                                ldapi_url)
 
     message("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php" % paths.phpldapadminconfig)
+
+    message("Once the above files are installed, your server will be ready to use")
+    message("Server Type:    %s" % serverrole)
+    message("Hostname:       %s" % names.hostname)
+    message("NetBIOS Domain: %s" % names.domain)
+    message("DNS Domain:     %s" % names.dnsdomain)
+    message("DOMAIN SID:     %s" % str(domainsid))
+    message("Admin password: %s" % adminpass)
 
     result = ProvisionResult()
     result.domaindn = domaindn
