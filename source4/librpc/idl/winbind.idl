@@ -3,8 +3,8 @@
 */
 
 #include "idl_types.h"
-  
-import "netlogon.idl";
+
+import "netlogon.idl", "lsa.idl", "security.idl";
 
 [
   uuid("245f3e6b-3c5d-6e21-3a2d-2a3d645b7221"),
@@ -15,6 +15,24 @@ interface winbind
 {
 	typedef [switch_type(uint16)] union netr_LogonLevel netr_LogonLevel;
 	typedef [switch_type(uint16)] union netr_Validation netr_Validation;
+
+	typedef enum {
+		ID_TYPE_NOT_SPECIFIED,
+		ID_TYPE_UID,
+		ID_TYPE_GID,
+		ID_TYPE_BOTH
+	} id_type;
+
+	typedef struct {
+		uint32 id;
+		id_type type;
+	} unixid;
+
+	typedef struct {
+		unixid *unixid;
+		dom_sid *sid;
+		NTSTATUS status;
+	} id_mapping;
 
 	/* a call to get runtime informations */
 	void winbind_information(/* TODO */);
@@ -35,4 +53,16 @@ interface winbind
 		[out] [switch_is(validation_level)] netr_Validation validation,
 		[out] uint8 authoritative
 	);
+
+	typedef [v1_enum] enum {
+		WINBIND_IDMAP_LEVEL_SIDS_TO_XIDS	= 1,
+		WINBIND_IDMAP_LEVEL_XIDS_TO_SIDS	= 2
+	} winbind_get_idmap_level;
+
+	NTSTATUS winbind_get_idmap(
+		[in]     winbind_get_idmap_level level,
+		[in]     uint32 count,
+		[in,out] [size_is(count)] id_mapping ids[]
+	);
+
 }
