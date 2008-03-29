@@ -57,10 +57,7 @@ Run this::
 
   $ cd samba4/source
   $ ./configure
-  $ make proto all
-
-If you have gcc 3.4 or newer, then substitute "pch" for "proto" to
-greatly speed up the compile process (about 5x faster).
+  $ make
 
 Step 3: install Samba4
 ----------------------
@@ -127,13 +124,9 @@ in your $PATH. Make sure you run the right version!
 Step 7: testing Samba4
 ----------------------
 
-try these commands::
+try this command::
 
   $ smbclient //localhost/test -Uadministrator%SOMEPASSWORD
-
-or::
-
-  $ ./script/tests/test_posix.sh //localhost/test administrator SOMEPASSWORD
 
 
 NOTE about filesystem support
