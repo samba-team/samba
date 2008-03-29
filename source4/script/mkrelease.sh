@@ -1,8 +1,7 @@
 #!/bin/sh
 
-TMPDIR=`mktemp samba-XXXXX`
-rm $TMPDIR || exit 1
-svn export . $TMPDIR || exit 1
+TMPDIR=`mktemp -d samba-XXXXX`
+(git archive --format=tar HEAD | (cd $TMPDIR/ ; tar xf -))
 
 ( cd $TMPDIR/source
  ./autogen.sh || exit 1
