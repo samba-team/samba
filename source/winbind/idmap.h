@@ -22,29 +22,13 @@
 #ifndef _IDMAP_H_
 #define _IDMAP_H_
 
+#include "librpc/gen_ndr/winbind.h"
+
 struct idmap_context {
 	struct loadparm_context *lp_ctx;
 	struct ldb_context *ldb_ctx;
 	struct dom_sid *unix_groups_sid;
 	struct dom_sid *unix_users_sid;
-};
-
-enum id_type {
-        ID_TYPE_NOT_SPECIFIED = 0,
-        ID_TYPE_UID,
-        ID_TYPE_GID,
-	ID_TYPE_BOTH
-};
-
-struct unixid {
-        uint32_t id;
-        enum id_type type;
-};
-
-struct id_mapping {
-	struct unixid *unixid;
-	struct dom_sid *sid;
-	NTSTATUS status;
 };
 
 #include "winbind/idmap_proto.h"
