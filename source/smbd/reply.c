@@ -2656,7 +2656,7 @@ void send_file_readbraw(connection_struct *conn,
 	 * reply_readbraw has already checked the length.
 	 */
 
-	if ( (chain_size == 0) && (nread > 0) &&
+	if ( (chain_size == 0) && (nread > 0) && (fsp->base_fsp == NULL)
 	    (fsp->wcp == NULL) && lp_use_sendfile(SNUM(conn)) ) {
 		char header[4];
 		DATA_BLOB header_blob;
@@ -3131,7 +3131,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	 */
 
 	if ((chain_size == 0) && (CVAL(req->inbuf,smb_vwv0) == 0xFF) &&
-	    !is_encrypted_packet(req->inbuf) &&
+	    !is_encrypted_packet(req->inbuf) && (fsp->base_fsp == NULL) &&
 	    lp_use_sendfile(SNUM(conn)) && (fsp->wcp == NULL) ) {
 		uint8 headerbuf[smb_size + 12 * 2];
 		DATA_BLOB header;
