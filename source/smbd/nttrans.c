@@ -498,11 +498,10 @@ void reply_ntcreate_and_X(struct smb_request *req)
 			do_ntcreate_pipe_open(conn, req);
 			END_PROFILE(SMBntcreateX);
 			return;
-		} else {
-			reply_doserror(req, ERRDOS, ERRnoaccess);
-			END_PROFILE(SMBntcreateX);
-			return;
 		}
+		reply_doserror(req, ERRDOS, ERRnoaccess);
+		END_PROFILE(SMBntcreateX);
+		return;
 	}
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
@@ -871,10 +870,9 @@ static void call_nt_transact_create(connection_struct *conn,
 				ppparams, parameter_count,
 				ppdata, data_count);
 			return;
-		} else {
-			reply_doserror(req, ERRDOS, ERRnoaccess);
-			return;
 		}
+		reply_doserror(req, ERRDOS, ERRnoaccess);
+		return;
 	}
 
 	/*
