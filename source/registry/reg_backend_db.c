@@ -698,7 +698,7 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 	fstring subkeyname;
 	int ret = -1;
 	TALLOC_CTX *frame = talloc_stackframe();
-	TDB_DATA value;
+	struct db_record *rec;
 
 	DEBUG(11,("regdb_fetch_keys: Enter key => [%s]\n", key ? key : "NULL"));
 
@@ -714,16 +714,16 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 	}
 	strupper_m(path);
 
-	ret = regdb->fetch(regdb, frame, string_term_tdb_data(path), &value);
-	if (ret != 0) {
+	rec = regdb->fetch_locked(regdb, frame, string_term_tdb_data(path));
+	if (rec == NULL) {
 		ret = 0;
 		goto fail;
 	}
 
 	ctr->seqnum = regdb_get_seqnum();
 
-	buf = value.dptr;
-	buflen = value.dsize;
+	buf = rec->value.dptr;
+	buflen = rec->value.dsize;
 
 	if ( !buf ) {
 		DEBUG(5,("regdb_fetch_keys: tdb lookup failed to locate key [%s]\n", key));
@@ -833,8 +833,8 @@ int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 {
 	char *keystr = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
+	struct db_record *rec;
 	int ret = 0;
-	TDB_DATA value;
 
 	DEBUG(10,("regdb_fetch_values: Looking for value of key [%s] \n", key));
 
@@ -847,20 +847,19 @@ int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 		goto done;
 	}
 
-	ret = regdb->fetch(regdb, ctx, string_term_tdb_data(keystr), &value);
-	if (ret != 0) {
-		ret = 0;
+	rec = regdb->fetch_locked(regdb, ctx, string_term_tdb_data(keystr));
+	if (rec == NULL) {
 		goto done;
 	}
 
 	values->seqnum = regdb_get_seqnum();
 
-	if (!value.dptr) {
+	if (!rec->value.dptr) {
 		/* all keys have zero values by default */
 		goto done;
 	}
 
-	regdb_unpack_values(values, value.dptr, value.dsize);
+	regdb_unpack_values(values, rec->value.dptr, rec->value.dsize);
 	ret = regval_ctr_numvals(values);
 
 done:
