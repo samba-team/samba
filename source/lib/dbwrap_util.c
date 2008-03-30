@@ -160,7 +160,7 @@ NTSTATUS dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
 			    int flag)
 {
 	int res;
-	struct db_record *rec;
+	struct db_record *rec = NULL;
 	NTSTATUS status;
 
 	res = db->transaction_start(db);
@@ -194,6 +194,8 @@ NTSTATUS dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
 	return NT_STATUS_OK;
 
  cancel:
+	TALLOC_FREE(rec);
+
 	if (db->transaction_cancel(db) != 0) {
 		smb_panic("Cancelling transaction failed");
 	}
