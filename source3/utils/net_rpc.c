@@ -4044,7 +4044,7 @@ static NTSTATUS rpc_share_migrate_security_internals(const DOM_SID *domain_sid,
 			info502.name, info502.path, info502.comment);
 
 		if (opt_verbose)
-			display_sec_desc(info502.sd);
+			display_sec_desc(info502.sd_buf.sd);
 
 		/* FIXME: shouldn't we be able to just set the security descriptor ? */
 		info.info502 = &info502;
@@ -4723,7 +4723,7 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 		return;
 	}
 
-	share_sd = info.info502->sd;
+	share_sd = info.info502->sd_buf.sd;
 	if (share_sd == NULL) {
 		DEBUG(1, ("Got no secdesc for share %s\n",
 			  netname));
