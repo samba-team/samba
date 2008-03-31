@@ -23,4 +23,19 @@ interface messaging
 		uint32 num_messages;
 		messaging_rec messages[num_messages];
 	} messaging_array;
+
+	/*
+	 * struct used for change notify messages
+	 * in the dbwrap_tdb2 code
+	 */
+	typedef [public] struct {
+		[charset(DOS),value("TDB2")] uint8 magic_string[4];
+		[value(1)] uint32 magic_version;
+		[charset(UTF8),string] uint8 name[];
+		uint32 old_seqnum;
+		uint32 new_seqnum;
+		uint32 num_changes;
+		uint32 num_keys;
+		DATA_BLOB keys[num_keys];
+	} dbwrap_tdb2_changes;
 }
