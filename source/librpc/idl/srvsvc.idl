@@ -463,7 +463,7 @@ import "security.idl", "svcctl.idl";
 		srvsvc_ShareType type;
 		[string,charset(UTF16)] uint16 *comment;
 		uint32 permissions;
-		int32 max_users;
+		uint32 max_users;
 		uint32 current_users;
 		[string,charset(UTF16)] uint16 *path;
 		[string,charset(UTF16)] uint16 *password;
@@ -504,7 +504,7 @@ import "security.idl", "svcctl.idl";
 	} srvsvc_NetShareCtr1005;
 
 	typedef struct {
-		int32 max_users;
+		uint32 max_users;
 	} srvsvc_NetShareInfo1006;
 
 	typedef struct {
