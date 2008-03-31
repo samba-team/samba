@@ -1484,7 +1484,9 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 		return WERR_NOMEM;
 	}
 
-	*r->out.parm_error = 0;
+	if (r->out.parm_error) {
+		*r->out.parm_error = 0;
+	}
 
 	if ( strequal(share_name,"IPC$")
 		|| ( lp_enable_asu_support() && strequal(share_name,"ADMIN$") )
@@ -1515,8 +1517,8 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 	switch (r->in.level) {
 	case 1:
 		pathname = talloc_strdup(ctx, lp_pathname(snum));
-		comment = talloc_strdup(ctx, info->info2->comment);
-		type = info->info2->type;
+		comment = talloc_strdup(ctx, info->info1->comment);
+		type = info->info1->type;
 		psd = NULL;
 		break;
 	case 2:
