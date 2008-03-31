@@ -100,7 +100,7 @@ build_lib=yes
 if eval test x"$build_lib" = "xyes" -a $BLDSHARED = true; then
 	LIBUC[_SHARED]=$LIBUC[_SHARED_TARGET]
 	AC_MSG_RESULT(yes)
-	if test x"$USESHARED" != x"true" -o x"$LINK_LIBUC" = "xSTATIC" ; then
+	if test x"$USESHARED" != x"true" -o x"$[LINK_]LIBUC" = "xSTATIC" ; then
 		LIBUC[_STATIC]=$LIBUC[_STATIC_TARGET]
 	else
 		LIBUC[_LIBS]=LIBLIBS
