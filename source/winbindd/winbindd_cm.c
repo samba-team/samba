@@ -1938,7 +1938,7 @@ no_dssetup:
 				lsa_info->dns.dns_forest.string);
 
 			if (strequal(domain->forest_name, domain->alt_name)) {
-				domain->domain_flags = NETR_TRUST_FLAG_TREEROOT;
+				domain->domain_flags |= NETR_TRUST_FLAG_TREEROOT;
 			}
 		}
 
