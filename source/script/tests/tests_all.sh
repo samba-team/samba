@@ -52,12 +52,18 @@ posix_s3() {
 	fi
 }
 
-local_s3
-smbtorture_s3
-smbtorture_s3_encrypted
-smbclient_s3
-smbclient_s3_encrypted
-wbinfo_s3
-ntlm_auth_s3
-posix_s3
+if test "x$RUNTESTS" = "x" ; then
+	local_s3
+	smbtorture_s3
+	smbtorture_s3_encrypted
+	smbclient_s3
+	smbclient_s3_encrypted
+	wbinfo_s3
+	ntlm_auth_s3
+	posix_s3
+else
+	for THIS_TEST in $RUNTESTS; do
+		$THIS_TEST
+	done
+fi
 
