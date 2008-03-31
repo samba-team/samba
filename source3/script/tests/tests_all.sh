@@ -42,6 +42,12 @@ ntlm_auth_s3() {
 	|| failed=`expr $failed + $?`
 }
 
+net_registry() {
+	echo "RUNNING SUBTESTS net_registry"
+	$SCRIPTDIR/test_net_registry.sh \
+	|| failed=`expr $failed + $?`
+}
+
 posix_s3() {
 	echo "RUNNING SUBTESTS posix_s3"
 	eval "$LIB_PATH_VAR="\$SAMBA4SHAREDDIR:\$$LIB_PATH_VAR"; export $LIB_PATH_VAR"
@@ -66,6 +72,7 @@ if test "x$RUNTESTS" = "x" ; then
 	smbclient_s3_encrypted
 	wbinfo_s3
 	ntlm_auth_s3
+	net_registry
 	posix_s3
 else
 	for THIS_TEST in $RUNTESTS; do
