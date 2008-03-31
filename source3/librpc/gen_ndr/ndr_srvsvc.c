@@ -4442,8 +4442,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetShareInfo502(struct ndr_push *ndr, i
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->current_users));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->path));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->password));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->sd));
+		NDR_CHECK(ndr_push_sec_desc_buf(ndr, NDR_SCALARS, &r->sd_buf));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->name) {
@@ -4470,14 +4469,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetShareInfo502(struct ndr_push *ndr, i
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->password, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->password, ndr_charset_length(r->password, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		if (r->sd) {
-			{
-				struct ndr_push *_ndr_sd;
-				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_sd, 4, -1));
-				NDR_CHECK(ndr_push_security_descriptor(_ndr_sd, NDR_SCALARS|NDR_BUFFERS, r->sd));
-				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_sd, 4, -1));
-			}
-		}
+		NDR_CHECK(ndr_push_sec_desc_buf(ndr, NDR_BUFFERS, &r->sd_buf));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -4492,8 +4484,6 @@ static enum ndr_err_code ndr_pull_srvsvc_NetShareInfo502(struct ndr_pull *ndr, i
 	TALLOC_CTX *_mem_save_path_0;
 	uint32_t _ptr_password;
 	TALLOC_CTX *_mem_save_password_0;
-	uint32_t _ptr_sd;
-	TALLOC_CTX *_mem_save_sd_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_name));
@@ -4524,13 +4514,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetShareInfo502(struct ndr_pull *ndr, i
 		} else {
 			r->password = NULL;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sd));
-		if (_ptr_sd) {
-			NDR_PULL_ALLOC(ndr, r->sd);
-		} else {
-			r->sd = NULL;
-		}
+		NDR_CHECK(ndr_pull_sec_desc_buf(ndr, NDR_SCALARS, &r->sd_buf));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->name) {
@@ -4581,17 +4565,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetShareInfo502(struct ndr_pull *ndr, i
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->password, ndr_get_array_length(ndr, &r->password), sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_password_0, 0);
 		}
-		if (r->sd) {
-			_mem_save_sd_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->sd, 0);
-			{
-				struct ndr_pull *_ndr_sd;
-				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_sd, 4, -1));
-				NDR_CHECK(ndr_pull_security_descriptor(_ndr_sd, NDR_SCALARS|NDR_BUFFERS, r->sd));
-				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_sd, 4, -1));
-			}
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sd_0, 0);
-		}
+		NDR_CHECK(ndr_pull_sec_desc_buf(ndr, NDR_BUFFERS, &r->sd_buf));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -4628,13 +4602,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareInfo502(struct ndr_print *ndr, const char
 		ndr_print_string(ndr, "password", r->password);
 	}
 	ndr->depth--;
-	ndr_print_uint32(ndr, "unknown", r->unknown);
-	ndr_print_ptr(ndr, "sd", r->sd);
-	ndr->depth++;
-	if (r->sd) {
-		ndr_print_security_descriptor(ndr, "sd", r->sd);
-	}
-	ndr->depth--;
+	ndr_print_sec_desc_buf(ndr, "sd_buf", &r->sd_buf);
 	ndr->depth--;
 }
 
