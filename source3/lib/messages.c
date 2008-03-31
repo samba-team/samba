@@ -162,6 +162,8 @@ bool message_send_all(struct messaging_context *msg_ctx,
 		msg_all.msg_flag = FLAG_MSG_PRINT_GENERAL;
 	else if (msg_type > 3000 && msg_type < 4000)
 		msg_all.msg_flag = FLAG_MSG_SMBD;
+	else if (msg_type > 4000 && msg_type < 5000)
+		msg_all.msg_flag = FLAG_MSG_DBWRAP;
 	else
 		return False;
 
