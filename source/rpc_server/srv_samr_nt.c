@@ -2393,7 +2393,7 @@ static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx,
 	samr_clear_sam_passwd(sampass);
 
 	DEBUG(3,("User:[%s] has [%s] (length: %d)\n", pdb_get_username(sampass),
-		munged_dial, strlen(munged_dial)));
+		munged_dial, (int)strlen(munged_dial)));
 
 	if (munged_dial) {
 		blob = base64_decode_data_blob(munged_dial);
