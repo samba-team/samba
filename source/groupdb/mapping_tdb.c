@@ -143,7 +143,7 @@ static bool add_mapping_entry(GROUP_MAP *map, int flag)
 
 	status = dbwrap_trans_store(
 		db, string_term_tdb_data(key),
-		make_tdb_data((uint8_t *)buf, len), flag);
+		make_tdb_data((uint8_t *)buf, len), TDB_REPLACE);
 
 	TALLOC_FREE(key);
 
