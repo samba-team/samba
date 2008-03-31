@@ -530,8 +530,8 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	pub->sin   = addr;
 	pub->mask  = mask;
-	pub->len   = strlen(argv[1]);
-	memcpy(&pub->iface[0], argv[1], strlen(argv[1]));
+	pub->len   = strlen(argv[1])+1;
+	memcpy(&pub->iface[0], argv[1], strlen(argv[1])+1);
 
 	ret = ctdb_ctrl_add_public_ip(ctdb, TIMELIMIT(), options.pnn, pub);
 	if (ret != 0) {
