@@ -467,9 +467,7 @@ import "security.idl", "svcctl.idl";
 		uint32 current_users;
 		[string,charset(UTF16)] uint16 *path;
 		[string,charset(UTF16)] uint16 *password;
-		/* maybe here is a struct sec_desc_buf following */
-		uint32 unknown;
-		[subcontext(4)] security_descriptor *sd;
+		sec_desc_buf sd_buf;
 	} srvsvc_NetShareInfo502;
 
 	typedef struct {
