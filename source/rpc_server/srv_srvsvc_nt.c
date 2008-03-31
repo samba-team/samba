@@ -291,7 +291,7 @@ static void init_srv_share_info_2(pipes_struct *p, struct srvsvc_NetShareInfo2 *
 	char *remark = NULL;
 	char *path = NULL;
 	int max_connections = lp_max_connections(snum);
-	uint32 max_uses = max_connections!=0 ? max_connections : 0xffffffff;
+	uint32_t max_uses = max_connections!=0 ? max_connections : (uint32_t)-1;
 	int count = 0;
 	char *net_name = lp_servicename(snum);
 
@@ -401,7 +401,7 @@ static void init_srv_share_info_502(pipes_struct *p, struct srvsvc_NetShareInfo5
 				    get_share_type(snum),
 				    remark ? remark : "",
 				    0,
-				    0xffffffff,
+				    (uint32_t)-1,
 				    1,
 				    path ? path : "",
 				    "",
@@ -447,7 +447,7 @@ static void init_srv_share_info_1005(pipes_struct *p, struct srvsvc_NetShareInfo
 
 static void init_srv_share_info_1006(pipes_struct *p, struct srvsvc_NetShareInfo1006 *r, int snum)
 {
-	init_srvsvc_NetShareInfo1006(r, 0xffffffff);
+	init_srvsvc_NetShareInfo1006(r, (uint32_t)-1);
 }
 
 /***************************************************************************
@@ -1525,7 +1525,7 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 		comment = talloc_strdup(ctx, info->info2->comment);
 		pathname = info->info2->path;
 		type = info->info2->type;
-		max_connections = (info->info2->max_users == 0xffffffff) ?
+		max_connections = (info->info2->max_users == (uint32_t)-1) ?
 			0 : info->info2->max_users;
 		psd = NULL;
 		break;
@@ -1720,7 +1720,7 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p,
 		share_name = talloc_strdup(ctx, r->in.info->info2->name);
 		comment = talloc_strdup(ctx, r->in.info->info2->comment);
 		pathname = talloc_strdup(ctx, r->in.info->info2->path);
-		max_connections = (r->in.info->info2->max_users == 0xffffffff) ?
+		max_connections = (r->in.info->info2->max_users == (uint32_t)-1) ?
 			0 : r->in.info->info2->max_users;
 		type = r->in.info->info2->type;
 		break;
@@ -1731,7 +1731,7 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p,
 		share_name = talloc_strdup(ctx, r->in.info->info502->name);
 		comment = talloc_strdup(ctx, r->in.info->info502->comment);
 		pathname = talloc_strdup(ctx, r->in.info->info502->path);
-		max_connections = (r->in.info->info502->max_users == 0xffffffff) ?
+		max_connections = (r->in.info->info502->max_users == (uint32_t)-1) ?
 			0 : r->in.info->info502->max_users;
 		type = r->in.info->info502->type;
 		psd = r->in.info->info502->sd;

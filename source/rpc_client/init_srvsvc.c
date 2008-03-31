@@ -158,7 +158,7 @@ void init_srvsvc_NetShareInfo502(struct srvsvc_NetShareInfo502 *r,
 				 enum srvsvc_ShareType type,
 				 const char *comment,
 				 uint32_t permissions,
-				 int32_t max_users,
+				 uint32_t max_users,
 				 uint32_t current_users,
 				 const char *path,
 				 const char *password,
@@ -202,7 +202,7 @@ void init_srvsvc_NetShareInfo1005(struct srvsvc_NetShareInfo1005 *r,
 ********************************************************************/
 
 void init_srvsvc_NetShareInfo1006(struct srvsvc_NetShareInfo1006 *r,
-				  int32_t max_users)
+				  uint32_t max_users)
 {
 	r->max_users = max_users;
 }
