@@ -499,6 +499,17 @@ port 445 is tried and if no response then port 139 is tried.
 </refsect1>
 
 <refsect1>
+	<title>SERVICE FORMATTING AND DELIMITERS</title>
+
+	<para>
+		It's generally preferred to use forward slashes (/) as a delimiter in service names. They are considered to be the "universal delimiter" since they are generally not allowed to be embedded within path components on Windows machines and the client can convert them to blackslashes (\) unconditionally. Conversely, backslash characters are allowed by POSIX to be part of a path component, and can't be automatically converted in the same way.
+	</para>
+	<para>
+		mount.cifs will attempt to convert backslashes to forward slashes where it's able to do so, but it cannot do so in any path component following the sharename.
+	</para>
+</refsect1>
+
+<refsect1>
 	<title>ENVIRONMENT VARIABLES</title>
 
 	<para>
