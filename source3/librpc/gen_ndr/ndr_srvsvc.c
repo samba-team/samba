@@ -4438,7 +4438,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetShareInfo502(struct ndr_push *ndr, i
 		NDR_CHECK(ndr_push_srvsvc_ShareType(ndr, NDR_SCALARS, r->type));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->comment));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->permissions));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->max_users));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->max_users));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->current_users));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->path));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->password));
@@ -4510,7 +4510,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetShareInfo502(struct ndr_pull *ndr, i
 			r->comment = NULL;
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->permissions));
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->max_users));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->max_users));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->current_users));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_path));
 		if (_ptr_path) {
@@ -4614,7 +4614,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareInfo502(struct ndr_print *ndr, const char
 	}
 	ndr->depth--;
 	ndr_print_uint32(ndr, "permissions", r->permissions);
-	ndr_print_int32(ndr, "max_users", r->max_users);
+	ndr_print_uint32(ndr, "max_users", r->max_users);
 	ndr_print_uint32(ndr, "current_users", r->current_users);
 	ndr_print_ptr(ndr, "path", r->path);
 	ndr->depth++;
@@ -5007,7 +5007,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetShareInfo1006(struct ndr_push *ndr, 
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->max_users));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->max_users));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -5018,7 +5018,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetShareInfo1006(struct ndr_pull *ndr, 
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->max_users));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->max_users));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -5029,7 +5029,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareInfo1006(struct ndr_print *ndr, const cha
 {
 	ndr_print_struct(ndr, name, "srvsvc_NetShareInfo1006");
 	ndr->depth++;
-	ndr_print_int32(ndr, "max_users", r->max_users);
+	ndr_print_uint32(ndr, "max_users", r->max_users);
 	ndr->depth--;
 }
 

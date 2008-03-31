@@ -310,7 +310,7 @@ struct srvsvc_NetShareInfo502 {
 	enum srvsvc_ShareType type;
 	const char *comment;/* [unique,charset(UTF16)] */
 	uint32_t permissions;
-	int32_t max_users;
+	uint32_t max_users;
 	uint32_t current_users;
 	const char *path;/* [unique,charset(UTF16)] */
 	const char *password;/* [unique,charset(UTF16)] */
@@ -346,7 +346,7 @@ struct srvsvc_NetShareCtr1005 {
 };
 
 struct srvsvc_NetShareInfo1006 {
-	int32_t max_users;
+	uint32_t max_users;
 };
 
 struct srvsvc_NetShareCtr1006 {
