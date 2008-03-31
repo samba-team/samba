@@ -52,6 +52,16 @@ static void display_samr_user_info_16(struct samr_UserInfo16 *r)
 }
 
 /****************************************************************************
+ display samr_user_info_20 structure
+ ****************************************************************************/
+static void display_samr_user_info_20(struct samr_UserInfo20 *r)
+{
+	printf("\tRemote Dial :\n");
+	dump_data(0, (uint8_t *)r->parameters.array, r->parameters.length*2);
+}
+
+
+/****************************************************************************
  display samr_user_info_21 structure
  ****************************************************************************/
 static void display_samr_user_info_21(struct samr_UserInfo21 *r)
@@ -65,7 +75,8 @@ static void display_samr_user_info_21(struct samr_UserInfo21 *r)
 	printf("\tDescription :\t%s\n", r->description.string);
 	printf("\tWorkstations:\t%s\n", r->workstations.string);
 	printf("\tComment     :\t%s\n", r->comment.string);
-	printf("\tRemote Dial :\t%s\n", r->parameters.string);
+	printf("\tRemote Dial :\n");
+	dump_data(0, (uint8_t *)r->parameters.array, r->parameters.length*2);
 
 	printf("\tLogon Time               :\t%s\n",
 	       http_timestring(nt_time_to_unix(r->last_logon)));
@@ -373,6 +384,9 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 		break;
 	case 16:
 		display_samr_user_info_16(&info->info16);
+		break;
+	case 20:
+		display_samr_user_info_20(&info->info20);
 		break;
 	case 21:
 		display_samr_user_info_21(&info->info21);
