@@ -2057,7 +2057,7 @@ void ra_lanman_string( const char *native_lanman )
 	if ( strcmp( native_lanman, "Windows 2002 5.1" ) == 0 )
 		set_remote_arch( RA_WINXP );
 	else if ( strcmp( native_lanman, "Windows XP 5.2" ) == 0 )
-		set_remote_arch( RA_WINXP );
+		set_remote_arch( RA_WINXP64 );
 	else if ( strcmp( native_lanman, "Windows Server 2003 5.2" ) == 0 )
 		set_remote_arch( RA_WIN2K3 );
 }
@@ -2097,6 +2097,9 @@ void set_remote_arch(enum remote_arch_types type)
 		break;
 	case RA_WINXP:
 		remote_arch_str = "WinXP";
+		break;
+	case RA_WINXP64:
+		remote_arch_str = "WinXP64";
 		break;
 	case RA_WIN2K3:
 		remote_arch_str = "Win2K3";
