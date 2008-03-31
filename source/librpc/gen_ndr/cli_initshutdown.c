@@ -8,11 +8,11 @@
 
 NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
-				  uint16_t *hostname,
-				  struct initshutdown_String *message,
-				  uint32_t timeout,
-				  uint8_t force_apps,
-				  uint8_t reboot,
+				  uint16_t *hostname /* [in] [unique] */,
+				  struct initshutdown_String *message /* [in] [unique] */,
+				  uint32_t timeout /* [in]  */,
+				  uint8_t force_apps /* [in]  */,
+				  uint8_t reboot /* [in]  */,
 				  WERROR *werror)
 {
 	struct initshutdown_Init r;
@@ -60,7 +60,7 @@ NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_initshutdown_Abort(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
-				   uint16_t *server,
+				   uint16_t *server /* [in] [unique] */,
 				   WERROR *werror)
 {
 	struct initshutdown_Abort r;
@@ -104,12 +104,12 @@ NTSTATUS rpccli_initshutdown_Abort(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_initshutdown_InitEx(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
-				    uint16_t *hostname,
-				    struct initshutdown_String *message,
-				    uint32_t timeout,
-				    uint8_t force_apps,
-				    uint8_t reboot,
-				    uint32_t reason,
+				    uint16_t *hostname /* [in] [unique] */,
+				    struct initshutdown_String *message /* [in] [unique] */,
+				    uint32_t timeout /* [in]  */,
+				    uint8_t force_apps /* [in]  */,
+				    uint8_t reboot /* [in]  */,
+				    uint32_t reason /* [in]  */,
 				    WERROR *werror)
 {
 	struct initshutdown_InitEx r;

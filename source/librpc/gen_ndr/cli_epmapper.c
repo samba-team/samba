@@ -8,9 +8,9 @@
 
 NTSTATUS rpccli_epm_Insert(struct rpc_pipe_client *cli,
 			   TALLOC_CTX *mem_ctx,
-			   uint32_t num_ents,
-			   struct epm_entry_t *entries,
-			   uint32_t replace)
+			   uint32_t num_ents /* [in]  */,
+			   struct epm_entry_t *entries /* [in] [size_is(num_ents)] */,
+			   uint32_t replace /* [in]  */)
 {
 	struct epm_Insert r;
 	NTSTATUS status;
@@ -51,8 +51,8 @@ NTSTATUS rpccli_epm_Insert(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_epm_Delete(struct rpc_pipe_client *cli,
 			   TALLOC_CTX *mem_ctx,
-			   uint32_t num_ents,
-			   struct epm_entry_t *entries)
+			   uint32_t num_ents /* [in]  */,
+			   struct epm_entry_t *entries /* [in] [size_is(num_ents)] */)
 {
 	struct epm_Delete r;
 	NTSTATUS status;
@@ -92,14 +92,14 @@ NTSTATUS rpccli_epm_Delete(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_epm_Lookup(struct rpc_pipe_client *cli,
 			   TALLOC_CTX *mem_ctx,
-			   uint32_t inquiry_type,
-			   struct GUID *object,
-			   struct rpc_if_id_t *interface_id,
-			   uint32_t vers_option,
-			   struct policy_handle *entry_handle,
-			   uint32_t max_ents,
-			   uint32_t *num_ents,
-			   struct epm_entry_t *entries)
+			   uint32_t inquiry_type /* [in]  */,
+			   struct GUID *object /* [in] [ptr] */,
+			   struct rpc_if_id_t *interface_id /* [in] [ptr] */,
+			   uint32_t vers_option /* [in]  */,
+			   struct policy_handle *entry_handle /* [in,out] [ref] */,
+			   uint32_t max_ents /* [in]  */,
+			   uint32_t *num_ents /* [out] [ref] */,
+			   struct epm_entry_t *entries /* [out] [length_is(*num_ents),size_is(max_ents)] */)
 {
 	struct epm_Lookup r;
 	NTSTATUS status;
@@ -146,12 +146,12 @@ NTSTATUS rpccli_epm_Lookup(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_epm_Map(struct rpc_pipe_client *cli,
 			TALLOC_CTX *mem_ctx,
-			struct GUID *object,
-			struct epm_twr_t *map_tower,
-			struct policy_handle *entry_handle,
-			uint32_t max_towers,
-			uint32_t *num_towers,
-			struct epm_twr_p_t *towers)
+			struct GUID *object /* [in] [ptr] */,
+			struct epm_twr_t *map_tower /* [in] [ptr] */,
+			struct policy_handle *entry_handle /* [in,out] [ref] */,
+			uint32_t max_towers /* [in]  */,
+			uint32_t *num_towers /* [out] [ref] */,
+			struct epm_twr_p_t *towers /* [out] [length_is(*num_towers),size_is(max_towers)] */)
 {
 	struct epm_Map r;
 	NTSTATUS status;
@@ -196,7 +196,7 @@ NTSTATUS rpccli_epm_Map(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_epm_LookupHandleFree(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
-				     struct policy_handle *entry_handle)
+				     struct policy_handle *entry_handle /* [in,out] [ref] */)
 {
 	struct epm_LookupHandleFree r;
 	NTSTATUS status;
@@ -236,7 +236,7 @@ NTSTATUS rpccli_epm_LookupHandleFree(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_epm_InqObject(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
-			      struct GUID *epm_object)
+			      struct GUID *epm_object /* [in] [ref] */)
 {
 	struct epm_InqObject r;
 	NTSTATUS status;
@@ -275,9 +275,9 @@ NTSTATUS rpccli_epm_InqObject(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_epm_MgmtDelete(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
-			       uint32_t object_speced,
-			       struct GUID *object,
-			       struct epm_twr_t *tower)
+			       uint32_t object_speced /* [in]  */,
+			       struct GUID *object /* [in] [ptr] */,
+			       struct epm_twr_t *tower /* [in] [ptr] */)
 {
 	struct epm_MgmtDelete r;
 	NTSTATUS status;

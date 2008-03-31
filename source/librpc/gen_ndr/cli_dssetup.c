@@ -8,8 +8,8 @@
 
 NTSTATUS rpccli_dssetup_DsRoleGetPrimaryDomainInformation(struct rpc_pipe_client *cli,
 							  TALLOC_CTX *mem_ctx,
-							  enum dssetup_DsRoleInfoLevel level,
-							  union dssetup_DsRoleInfo *info,
+							  enum dssetup_DsRoleInfoLevel level /* [in]  */,
+							  union dssetup_DsRoleInfo *info /* [out] [unique,switch_is(level)] */,
 							  WERROR *werror)
 {
 	struct dssetup_DsRoleGetPrimaryDomainInformation r;
