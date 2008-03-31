@@ -13,4 +13,7 @@ void ndr_print_messaging_rec(struct ndr_print *ndr, const char *name, const stru
 enum ndr_err_code ndr_push_messaging_array(struct ndr_push *ndr, int ndr_flags, const struct messaging_array *r);
 enum ndr_err_code ndr_pull_messaging_array(struct ndr_pull *ndr, int ndr_flags, struct messaging_array *r);
 void ndr_print_messaging_array(struct ndr_print *ndr, const char *name, const struct messaging_array *r);
+enum ndr_err_code ndr_push_dbwrap_tdb2_changes(struct ndr_push *ndr, int ndr_flags, const struct dbwrap_tdb2_changes *r);
+enum ndr_err_code ndr_pull_dbwrap_tdb2_changes(struct ndr_pull *ndr, int ndr_flags, struct dbwrap_tdb2_changes *r);
+void ndr_print_dbwrap_tdb2_changes(struct ndr_print *ndr, const char *name, const struct dbwrap_tdb2_changes *r);
 #endif /* _HEADER_NDR_messaging */

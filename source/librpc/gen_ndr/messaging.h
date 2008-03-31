@@ -18,4 +18,15 @@ struct messaging_array {
 	struct messaging_rec *messages;
 }/* [public] */;
 
+struct dbwrap_tdb2_changes {
+	const char *magic_string;/* [value("TDB2"),charset(DOS)] */
+	uint32_t magic_version;/* [value] */
+	const char *name;/* [charset(UTF8)] */
+	uint32_t old_seqnum;
+	uint32_t new_seqnum;
+	uint32_t num_changes;
+	uint32_t num_keys;
+	DATA_BLOB *keys;
+}/* [public] */;
+
 #endif /* _HEADER_messaging */
