@@ -49,6 +49,7 @@
 		<arg choice="opt">-U uid</arg>
 		<arg choice="opt">-V</arg>
 		<arg choice="opt">-Y sid</arg>
+		<arg choice="opt">--verbose</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -306,6 +307,14 @@
 		<listitem><para>Try to convert a UNIX user id to a Windows NT
 		SID.  If the uid specified does not refer to one within
 		the idmap uid range then the operation will fail. </para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		  <term>--verbose</term>
+		  <listitem><para>
+		      Print additional information about the query
+		      results.
+		  </para></listitem>
 		</varlistentry>
 
 		<varlistentry>
