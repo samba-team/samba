@@ -162,8 +162,7 @@ void init_srvsvc_NetShareInfo502(struct srvsvc_NetShareInfo502 *r,
 				 uint32_t current_users,
 				 const char *path,
 				 const char *password,
-				 uint32_t unknown,
-				 struct security_descriptor *sd)
+				 struct sec_desc_buf *sd_buf)
 {
 	r->name = name;
 	r->type = type;
@@ -173,8 +172,7 @@ void init_srvsvc_NetShareInfo502(struct srvsvc_NetShareInfo502 *r,
 	r->current_users = current_users;
 	r->path = path;
 	r->password = password;
-	r->unknown = unknown;
-	r->sd = sd;
+	r->sd_buf = *sd_buf;
 }
 
 /*******************************************************************

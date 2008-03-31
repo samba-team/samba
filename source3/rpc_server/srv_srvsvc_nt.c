@@ -379,6 +379,7 @@ static void init_srv_share_info_502(pipes_struct *p, struct srvsvc_NetShareInfo5
 	const char *net_name = lp_servicename(snum);
 	char *path = NULL;
 	SEC_DESC *sd = NULL;
+	struct sec_desc_buf *sd_buf = NULL;
 	size_t sd_size = 0;
 	TALLOC_CTX *ctx = p->mem_ctx;
 	char *remark = talloc_strdup(ctx, lp_comment(snum));;
@@ -397,6 +398,8 @@ static void init_srv_share_info_502(pipes_struct *p, struct srvsvc_NetShareInfo5
 
 	sd = get_share_security(ctx, lp_servicename(snum), &sd_size);
 
+	sd_buf = make_sec_desc_buf(p->mem_ctx, sd_size, sd);
+
 	init_srvsvc_NetShareInfo502(r, net_name,
 				    get_share_type(snum),
 				    remark ? remark : "",
@@ -405,8 +408,7 @@ static void init_srv_share_info_502(pipes_struct *p, struct srvsvc_NetShareInfo5
 				    1,
 				    path ? path : "",
 				    "",
-				    0,
-				    sd);
+				    sd_buf);
 }
 
 /***************************************************************************
@@ -1541,7 +1543,7 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 		comment = talloc_strdup(ctx, info->info502->comment);
 		pathname = info->info502->path;
 		type = info->info502->type;
-		psd = info->info502->sd;
+		psd = info->info502->sd_buf.sd;
 		map_generic_share_sd_bits(psd);
 		break;
 	case 1004:
@@ -1734,7 +1736,7 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p,
 		max_connections = (r->in.info->info502->max_users == (uint32_t)-1) ?
 			0 : r->in.info->info502->max_users;
 		type = r->in.info->info502->type;
-		psd = r->in.info->info502->sd;
+		psd = r->in.info->info502->sd_buf.sd;
 		map_generic_share_sd_bits(psd);
 		break;
 
