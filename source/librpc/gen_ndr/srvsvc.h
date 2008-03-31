@@ -314,8 +314,7 @@ struct srvsvc_NetShareInfo502 {
 	uint32_t current_users;
 	const char *path;/* [unique,charset(UTF16)] */
 	const char *password;/* [unique,charset(UTF16)] */
-	uint32_t unknown;
-	struct security_descriptor *sd;/* [unique,subcontext(4)] */
+	struct sec_desc_buf sd_buf;
 };
 
 struct srvsvc_NetShareCtr502 {
