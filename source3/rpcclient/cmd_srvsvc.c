@@ -243,8 +243,8 @@ static void display_share_info_502(struct srvsvc_NetShareInfo502 *r)
 	printf("\tmax_uses:\t%d\n", r->max_users);
 	printf("\tnum_uses:\t%d\n", r->current_users);
 
-	if (r->sd)
-		display_sec_desc(r->sd);
+	if (r->sd_buf.sd)
+		display_sec_desc(r->sd_buf.sd);
 
 }
 
