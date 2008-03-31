@@ -653,6 +653,19 @@ WERROR reg_setvalue(struct registry_key *key, const char *name,
 	return WERR_OK;
 }
 
+static WERROR reg_value_exists(struct registry_key *key, const char *name)
+{
+	int i;
+
+	for (i=0; i<key->values->num_values; i++) {
+		if (strequal(key->values->values[i]->valuename, name)) {
+			return WERR_OK;
+		}
+	}
+
+	return WERR_BADFILE;
+}
+
 WERROR reg_deletevalue(struct registry_key *key, const char *name)
 {
 	WERROR err;
@@ -662,6 +675,11 @@ WERROR reg_deletevalue(struct registry_key *key, const char *name)
 	}
 
 	if (!W_ERROR_IS_OK(err = fill_value_cache(key))) {
+		return err;
+	}
+
+	err = reg_value_exists(key, name);
+	if (!W_ERROR_IS_OK(err)) {
 		return err;
 	}
 
