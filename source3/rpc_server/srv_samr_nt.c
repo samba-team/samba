@@ -2368,8 +2368,9 @@ static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx,
 	struct samu *sampass=NULL;
 	bool ret;
 	const char *munged_dial = NULL;
-	const char *munged_dial_decoded = NULL;
 	DATA_BLOB blob;
+	NTSTATUS status;
+	struct lsa_BinaryString *parameters = NULL;
 
 	ZERO_STRUCTP(r);
 
@@ -2391,28 +2392,23 @@ static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx,
 
 	samr_clear_sam_passwd(sampass);
 
-	DEBUG(3,("User:[%s]\n",  pdb_get_username(sampass) ));
+	DEBUG(3,("User:[%s] has [%s] (length: %d)\n", pdb_get_username(sampass),
+		munged_dial, strlen(munged_dial)));
 
 	if (munged_dial) {
 		blob = base64_decode_data_blob(munged_dial);
-		munged_dial_decoded = talloc_strndup(mem_ctx,
-						     (const char *)blob.data,
-						     blob.length);
-		data_blob_free(&blob);
-		if (!munged_dial_decoded) {
-			TALLOC_FREE(sampass);
-			return NT_STATUS_NO_MEMORY;
-		}
+	} else {
+		blob = data_blob_string_const("");
 	}
 
-#if 0
-	init_unistr2_from_datablob(&usr->uni_munged_dial, &blob);
-	init_uni_hdr(&usr->hdr_munged_dial, &usr->uni_munged_dial);
+	status = init_samr_parameters_string(mem_ctx, &blob, &parameters);
 	data_blob_free(&blob);
-#endif
-	init_samr_user_info20(r, munged_dial_decoded);
-
 	TALLOC_FREE(sampass);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	init_samr_user_info20(r, parameters);
 
 	return NT_STATUS_OK;
 }
@@ -2427,6 +2423,7 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 				 DOM_SID *user_sid,
 				 DOM_SID *domain_sid)
 {
+	NTSTATUS status;
 	struct samu *pw = NULL;
 	bool ret;
 	const DOM_SID *sid_user, *sid_group;
@@ -2437,8 +2434,9 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 	uint8_t password_expired;
 	const char *account_name, *full_name, *home_directory, *home_drive,
 		   *logon_script, *profile_path, *description,
-		   *workstations, *comment, *parameters;
+		   *workstations, *comment;
 	struct samr_LogonHours logon_hours;
+	struct lsa_BinaryString *parameters = NULL;
 	const char *munged_dial = NULL;
 	DATA_BLOB blob;
 
@@ -2508,16 +2506,16 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 	munged_dial = pdb_get_munged_dial(pw);
 	if (munged_dial) {
 		blob = base64_decode_data_blob(munged_dial);
-		parameters = talloc_strndup(mem_ctx, (const char *)blob.data, blob.length);
-		data_blob_free(&blob);
-		if (!parameters) {
-			TALLOC_FREE(pw);
-			return NT_STATUS_NO_MEMORY;
-		}
 	} else {
-		parameters = NULL;
+		blob = data_blob_string_const("");
 	}
 
+	status = init_samr_parameters_string(mem_ctx, &blob, &parameters);
+	data_blob_free(&blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(pw);
+		return status;
+	}
 
 	account_name = talloc_strdup(mem_ctx, pdb_get_username(pw));
 	full_name = talloc_strdup(mem_ctx, pdb_get_fullname(pw));
@@ -2542,11 +2540,6 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 	  -- Volker
 	*/
 
-#if 0
-	init_unistr2_from_datablob(&usr->uni_munged_dial, &munged_dial_blob);
-	init_uni_hdr(&usr->hdr_munged_dial, &usr->uni_munged_dial);
-	data_blob_free(&munged_dial_blob);
-#endif
 #endif
 
 	init_samr_user_info21(r,
