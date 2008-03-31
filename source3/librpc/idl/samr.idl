@@ -746,7 +746,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	} samr_UserInfo18;
 
 	typedef struct {
-		lsa_String parameters;
+		lsa_BinaryString parameters;
 	} samr_UserInfo20;
 
 	/* this defines the bits used for fields_present in info21 */
@@ -803,7 +803,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		lsa_String description;
 		lsa_String workstations;
 		lsa_String comment;
-		lsa_String parameters;
+		lsa_BinaryString parameters;
 		lsa_String unknown1;
 		lsa_String unknown2;
 		lsa_String unknown3;
