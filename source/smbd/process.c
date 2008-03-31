@@ -853,6 +853,15 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 		goto again;
 	}
 
+	/*
+	 * We've just woken up from a protentially long select sleep.
+	 * Ensure we process local messages as we need to synchronously
+	 * process any messages from other smbd's to avoid file rename race
+	 * conditions. This call is cheap if there are no messages waiting.
+	 * JRA.
+	 */
+	message_dispatch(smbd_messaging_context());
+
 	/* if we get EINTR then maybe we have received an oplock
 	   signal - treat this as select returning 1. This is ugly, but
 	   is the best we can do until the oplock code knows more about
