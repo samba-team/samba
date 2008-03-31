@@ -308,9 +308,9 @@ void init_samr_user_info18(struct samr_UserInfo18 *r,
 ********************************************************************/
 
 void init_samr_user_info20(struct samr_UserInfo20 *r,
-			   const char *munged_dial)
+			   struct lsa_BinaryString *parameters)
 {
-	init_lsa_String(&r->parameters, munged_dial);
+	r->parameters = *parameters;
 }
 
 /*************************************************************************
@@ -333,7 +333,7 @@ void init_samr_user_info21(struct samr_UserInfo21 *r,
 			   const char *description,
 			   const char *workstations,
 			   const char *comment,
-			   const char *parameters,
+			   struct lsa_BinaryString *parameters,
 			   uint32_t rid,
 			   uint32_t primary_gid,
 			   uint32_t acct_flags,
@@ -362,7 +362,7 @@ void init_samr_user_info21(struct samr_UserInfo21 *r,
 	init_lsa_String(&r->description, description);
 	init_lsa_String(&r->workstations, workstations);
 	init_lsa_String(&r->comment, comment);
-	init_lsa_String(&r->parameters, parameters);
+	r->parameters = *parameters;
 	r->rid = rid;
 	r->primary_gid = primary_gid;
 	r->acct_flags = acct_flags;
@@ -397,7 +397,7 @@ void init_samr_user_info23(struct samr_UserInfo23 *r,
 			   const char *description,
 			   const char *workstations,
 			   const char *comment,
-			   const char *parameters,
+			   struct lsa_BinaryString *parameters,
 			   uint32_t rid,
 			   uint32_t primary_gid,
 			   uint32_t acct_flags,
