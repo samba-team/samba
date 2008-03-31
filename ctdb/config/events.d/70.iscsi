@@ -11,40 +11,49 @@ shift
 
 [ "$CTDB_MANAGES_ISCSI" = "yes" ] || exit 0
 
-[ -z "$CTDB_ISCSI_PUBLIC_IP" ] && {
-	echo "No public ip set for iscsi. iscsi disabled"
-	exit 1
-}
-
-[ -z "$CTDB_START_ISCSI_SCRIPT" ] && {
-	echo "No iscsi start script found"
-	exit 1
-}
-
-[ ! -x "$CTDB_START_ISCSI_SCRIPT" ] && {
-	echo "iscsi start script is not executable"
+[ -z "$CTDB_START_ISCSI_SCRIPTS" ] && {
+	echo "No iscsi start script directory found"
 	exit 1
 }
 
 case $cmd in 
      startup)
-	/bin/mkdir -p $CTDB_BASE/state/iscsi
 	;;
 
      takeip)
-	# when we takeover this ip we must start iscsi
-	[ $2 == "$CTDB_ISCSI_PUBLIC_IP" ] && {
-		$CTDB_START_ISCSI_SCRIPT
-		touch $CTDB_BASE/state/iscsi/iscsi_active
-	}
 	;;
 
      releaseip)
-	# when we release this ip we must stop iscsi
-	[ $2 == "$CTDB_ISCSI_PUBLIC_IP" ] && {
-		killall -9 tgtd >/dev/null 2>/dev/null
-		rm -rf $CTDB_BASE/state/iscsi/iscsi_active >/dev/null 2>/dev/null
+	;;
+
+     recovered)
+	# block the iscsi port
+	iptables -I INPUT 1 -p tcp --dport 3260 -j DROP
+	
+	# shut down the iscsi service
+	killall -9 tgtd >/dev/null 2>/dev/null
+
+	THIS_NODE=`ctdb status | grep "THIS NODE" | sed -e "s/pnn://" -e "s/ .*//"`
+	[ -z $THIS_NODE ] && {
+		echo "70.iscsi: Failed to get node pnn"
+		exit 0
 	}
+
+	# start the iscsi daemon
+	tgtd >/dev/null 2>/dev/null
+
+	for NODE in `ctdb ip | grep -v "Public" | egrep " ${THIS_NODE}$" | sed -e "s/ .*//"`; do
+		[ -f $CTDB_START_ISCSI_SCRIPTS/${NODE}.sh ] && {
+			echo Starting iscsi service for public address $NODE
+			$CTDB_START_ISCSI_SCRIPTS/${NODE}.sh
+		}
+	done
+
+	# remove all iptables rules
+	while `iptables -D INPUT -p tcp --dport 3260 -j DROP 2>/dev/null >/dev/null` ;  do
+		true;
+	done
+
 	;;
 
      shutdown)
