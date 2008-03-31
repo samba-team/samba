@@ -24,10 +24,11 @@
 
 /* Private macros */
 
-#define BAIL_ON_WBC_ERROR(x)                \
-	do {				    \
-		if ((x) != WBC_ERR_SUCCESS) \
-			goto done;	    \
+#define BAIL_ON_WBC_ERROR(x)			\
+	do {					\
+		if (!WBC_ERROR_IS_OK(x)) {	\
+			goto done;		\
+		}				\
 	} while(0);
 
 #define BAIL_ON_PTR_ERROR(x, status)                    \
