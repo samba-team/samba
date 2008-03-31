@@ -53,25 +53,6 @@ description: %s
         for msg in self.parse_ldif(add):
             self.add(msg[1])
 
-    def setup_name_mapping(self, domaindn, sid, unixname):
-        """Setup a mapping between a sam name and a unix name.
-        
-        :param domaindn: DN of the domain.
-        :param sid: SID of the NT-side of the mapping.
-        :param unixname: Unix name to map to.
-        """
-        res = self.search(domaindn, ldb.SCOPE_SUBTREE, 
-                         "objectSid=%s" % sid, ["dn"])
-        assert len(res) == 1, "Failed to find record for objectSid %s" % sid
-
-        mod = """
-dn: %s
-changetype: modify
-replace: unixName
-unixName: %s
-""" % (res[0].dn, unixname)
-        self.modify(self.parse_ldif(mod).next()[1])
-
     def enable_account(self, user_dn):
         """Enable an account.
         

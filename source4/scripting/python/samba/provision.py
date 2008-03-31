@@ -35,6 +35,7 @@ import samba
 from auth import system_session
 from samba import Ldb, substitute_var, valid_netbios_name, check_all_substituted
 from samba.samdb import SamDB
+from samba.idmap import IDmapDB
 import security
 import urllib
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
@@ -397,45 +398,32 @@ def load_or_make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrol
 
     return lp
 
-def setup_name_mappings(ldb, sid, domaindn, root, nobody, nogroup, users, 
-                        wheel, backup):
+def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
+                        users_gid, wheel_gid, backup_gid):
     """setup reasonable name mappings for sam names to unix names.
-    
-    :param ldb: SamDB object.
+
+    :param samdb: SamDB object.
+    :param idmap: IDmap db object.
     :param sid: The domain sid.
     :param domaindn: The domain DN.
-    :param root: Name of the UNIX root user.
-    :param nobody: Name of the UNIX nobody user.
-    :param nogroup: Name of the unix nobody group.
-    :param users: Name of the unix users group.
-    :param wheel: Name of the wheel group (users that can become root).
-    :param backup: Name of the backup group."""
+    :param root_uid: uid of the UNIX root user.
+    :param nobody_uid: uid of the UNIX nobody user.
+    :param users_gid: gid of the UNIX users group.
+    :param wheel_gid: gid of the UNIX wheel group.
+    :param backup_gid: gid of the UNIX backup group."""
     # add some foreign sids if they are not present already
-    ldb.add_foreign(domaindn, "S-1-5-7", "Anonymous")
-    ldb.add_foreign(domaindn, "S-1-1-0", "World")
-    ldb.add_foreign(domaindn, "S-1-5-2", "Network")
-    ldb.add_foreign(domaindn, "S-1-5-18", "System")
-    ldb.add_foreign(domaindn, "S-1-5-11", "Authenticated Users")
+    samdb.add_foreign(domaindn, "S-1-5-7", "Anonymous")
+    samdb.add_foreign(domaindn, "S-1-1-0", "World")
+    samdb.add_foreign(domaindn, "S-1-5-2", "Network")
+    samdb.add_foreign(domaindn, "S-1-5-18", "System")
+    samdb.add_foreign(domaindn, "S-1-5-11", "Authenticated Users")
 
-    # some well known sids
-    ldb.setup_name_mapping(domaindn, "S-1-5-7", nobody)
-    ldb.setup_name_mapping(domaindn, "S-1-1-0", nogroup)
-    ldb.setup_name_mapping(domaindn, "S-1-5-2", nogroup)
-    ldb.setup_name_mapping(domaindn, "S-1-5-18", root)
-    ldb.setup_name_mapping(domaindn, "S-1-5-11", users)
-    ldb.setup_name_mapping(domaindn, "S-1-5-32-544", wheel)
-    ldb.setup_name_mapping(domaindn, "S-1-5-32-545", users)
-    ldb.setup_name_mapping(domaindn, "S-1-5-32-546", nogroup)
-    ldb.setup_name_mapping(domaindn, "S-1-5-32-551", backup)
+    idmap.setup_name_mapping("S-1-5-7", idmap.TYPE_UID, nobody_uid)
+    idmap.setup_name_mapping("S-1-5-32-544", idmap.TYPE_GID, wheel_gid)
+    idmap.setup_name_mapping("S-1-5-32-551", idmap.TYPE_GID, backup_gid)
 
-    # and some well known domain rids
-    ldb.setup_name_mapping(domaindn, sid + "-500", root)
-    ldb.setup_name_mapping(domaindn, sid + "-518", wheel)
-    ldb.setup_name_mapping(domaindn, sid + "-519", wheel)
-    ldb.setup_name_mapping(domaindn, sid + "-512", wheel)
-    ldb.setup_name_mapping(domaindn, sid + "-513", users)
-    ldb.setup_name_mapping(domaindn, sid + "-520", wheel)
-
+    idmap.setup_name_mapping(sid + "-500", idmap.TYPE_UID, root_uid)
+    idmap.setup_name_mapping(sid + "-513", idmap.TYPE_GID, users_gid)
 
 def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info, 
                            credentials, names,
@@ -663,8 +651,8 @@ def setup_idmapdb(path, setup_path, session_info, credentials, lp):
     if os.path.exists(path):
         os.unlink(path)
 
-    idmap_ldb = Ldb(path, session_info=session_info, credentials=credentials,
-                    lp=lp)
+    idmap_ldb = IDmapDB(path, session_info=session_info,
+                        credentials=credentials, lp=lp)
 
     idmap_ldb.erase()
     idmap_ldb.load_ldif_file_add(setup_path("idmap_init.ldif"))
@@ -924,18 +912,25 @@ def provision(setup_dir, message, session_info,
     if dnspass is None:
         dnspass = misc.random_password(12)
     if root is None:
-        root = findnss(pwd.getpwnam, ["root"])[0]
+        root_uid = findnss(pwd.getpwnam, ["root"])[2]
+    else:
+        root_uid = findnss(pwd.getpwnam, [root])[2]
     if nobody is None:
-        nobody = findnss(pwd.getpwnam, ["nobody"])[0]
-    if nogroup is None:
-        nogroup = findnss(grp.getgrnam, ["nogroup", "nobody"])[0]
+        nobody_uid = findnss(pwd.getpwnam, ["nobody"])[2]
+    else:
+        nobody_uid = findnss(pwd.getpwnam, [nobody])[2]
     if users is None:
-        users = findnss(grp.getgrnam, ["users", "guest", "other", "unknown", 
-                        "usr"])[0]
+        users_gid = findnss(grp.getgrnam, ["users"])[2]
+    else:
+        users_gid = findnss(grp.getgrnam, [users])[2]
     if wheel is None:
-        wheel = findnss(grp.getgrnam, ["wheel", "root", "staff", "adm"])[0]
+        wheel_gid = findnss(grp.getgrnam, ["wheel", "adm"])[2]
+    else:
+        wheel_gid = findnss(grp.getgrnam, [wheel])[2]
     if backup is None:
-        backup = findnss(grp.getgrnam, ["backup", "wheel", "root", "staff"])[0]
+        backup_gid = findnss(grp.getgrnam, ["backup", "staff"])[2]
+    else:
+        backup_gid = findnss(grp.getgrnam, [backup])[2]
     if aci is None:
         aci = "# no aci for local ldb"
 
@@ -994,8 +989,8 @@ def provision(setup_dir, message, session_info,
                       credentials=credentials, lp=lp)
 
     message("Setting up idmap db")
-    setup_idmapdb(paths.idmapdb, setup_path, session_info=session_info,
-                  credentials=credentials, lp=lp)
+    idmap = setup_idmapdb(paths.idmapdb, setup_path, session_info=session_info,
+                          credentials=credentials, lp=lp)
 
     samdb = setup_samdb(paths.samdb, setup_path, session_info=session_info, 
                         credentials=credentials, lp=lp, names=names,
@@ -1026,11 +1021,12 @@ def provision(setup_dir, message, session_info,
                            machinepass=machinepass, dnsdomain=names.dnsdomain)
 
     if samdb_fill == FILL_FULL:
-        setup_name_mappings(samdb, str(domainsid), names.domaindn, root=root, 
-                            nobody=nobody, nogroup=nogroup, wheel=wheel, 
-                            users=users, backup=backup)
-   
-        message("Compleating sam.ldb setup by marking as synchronized")
+        setup_name_mappings(samdb, idmap, str(domainsid), names.domaindn,
+                            root_uid=root_uid, nobody_uid=nobody_uid,
+                            users_gid=users_gid, wheel_gid=wheel_gid,
+                            backup_gid=backup_gid)
+
+        message("Setting up sam.ldb rootDSE marking as synchronized")
         setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
 
         # Only make a zone file on the first DC, it should be replicated with DNS replication
