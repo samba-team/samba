@@ -13,7 +13,7 @@ shift
 
 [ -z "$CTDB_START_ISCSI_SCRIPTS" ] && {
 	echo "No iscsi start script directory found"
-	exit 1
+	exit 0
 }
 
 case $cmd in 
