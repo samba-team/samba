@@ -2155,6 +2155,41 @@ NTSTATUS _samr_OpenUser(pipes_struct *p,
 }
 
 /*************************************************************************
+ *************************************************************************/
+
+static NTSTATUS init_samr_parameters_string(TALLOC_CTX *mem_ctx,
+					    DATA_BLOB *blob,
+					    struct lsa_BinaryString **_r)
+{
+	struct lsa_BinaryString *r;
+
+	if (!blob || !_r) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	r = TALLOC_ZERO_P(mem_ctx, struct lsa_BinaryString);
+	if (!r) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	r->array = TALLOC_ZERO_ARRAY(mem_ctx, uint16_t, blob->length/2);
+	if (!r->array) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	memcpy(r->array, blob->data, blob->length);
+	r->size = blob->length;
+	r->length = blob->length;
+
+	if (!r->array) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*_r = r;
+
+	return NT_STATUS_OK;
+}
+
+/*************************************************************************
  get_user_info_7. Safe. Only gives out account_name.
  *************************************************************************/
 
