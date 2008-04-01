@@ -277,6 +277,29 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 
 	DLIST_ADD_END(queue->out_queue, pkt, struct ctdb_queue_pkt *);
 
+	if (LogLevel > DEBUG_NOTICE) {
+		struct ctdb_req_header *hdr = (struct ctdb_req_header *)pkt->data;
+		switch (hdr->operation) {
+		case CTDB_REQ_CONTROL: {
+			struct ctdb_req_control *c = (struct ctdb_req_control *)hdr;
+			talloc_set_name(pkt, "ctdb_queue_pkt: control opcode=%u srvid=%llu datalen=%u",
+					(unsigned)c->opcode, (unsigned long long)c->srvid, (unsigned)c->datalen);
+			break;
+		}
+		case CTDB_REQ_MESSAGE: {
+			struct ctdb_req_message *m = (struct ctdb_req_message *)hdr;
+			talloc_set_name(pkt, "ctdb_queue_pkt: message srvid=%llu datalen=%u",
+					(unsigned long long)m->srvid, (unsigned)m->datalen);
+			break;
+		}
+		default:
+			talloc_set_name(pkt, "ctdb_queue_pkt: operation=%u length=%u src=%u dest=%u",
+					(unsigned)hdr->operation, (unsigned)hdr->length, 
+					(unsigned)hdr->srcnode, (unsigned)hdr->destnode);
+			break;
+		}
+	}
+
 	return 0;
 }
 
