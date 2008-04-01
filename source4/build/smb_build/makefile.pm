@@ -336,7 +336,7 @@ sub ProtoHeader($$)
 	$self->output("$priv: $ctx->{MK_FILE} \$($ctx->{NAME}_OBJ_LIST:.o=.c) \$(srcdir)/script/mkproto.pl\n");
 	$self->output("\t\@echo \"Creating \$@\"\n");
 	$self->output("\t\@mkdir -p \$(\@D)\n");
-	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --srcdir=\$(srcdir) --builddir=\$(builddir) --all=\$@ \$($ctx->{NAME}_OBJ_LIST)\n\n");
+	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --srcdir=\$(srcdir) --builddir=\$(builddir) --public=/dev/null --private=\$@ \$($ctx->{NAME}_OBJ_LIST)\n\n");
 }
 
 sub write($$)
