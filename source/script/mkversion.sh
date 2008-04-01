@@ -73,10 +73,10 @@ if test x"${SAMBA_VERSION_IS_GIT_SNAPSHOT}" = x"yes";then
     if test x"${HAVEVER}" != x"yes" -a -d "${SOURCE_DIR}../.git";then
 	HAVEGIT=no
 	GIT_INFO=`git show --pretty=format:"%h%n%ct%n%H%n%cd" --stat HEAD 2>/dev/null`
-	GIT_COMMIT_ABBREV=`echo -e "${GIT_INFO}" | sed -n 1p`
-	GIT_COMMIT_TIME=`echo -e "${GIT_INFO}" | sed -n 2p`
-	GIT_COMMIT_FULLREV=`echo -e "${GIT_INFO}" | sed -n 3p`
-	GIT_COMMIT_DATE=`echo -e "${GIT_INFO}" | sed -n 4p`
+	GIT_COMMIT_ABBREV=`printf "%s" "${GIT_INFO}" | sed -n 1p`
+	GIT_COMMIT_TIME=`printf "%s" "${GIT_INFO}" | sed -n 2p`
+	GIT_COMMIT_FULLREV=`printf "%s" "${GIT_INFO}" | sed -n 3p`
+	GIT_COMMIT_DATE=`printf "%s" "${GIT_INFO}" | sed -n 4p`
 	if test -n "${GIT_COMMIT_ABBREV}";then
 	    HAVEGIT=yes
             HAVEVER=yes
