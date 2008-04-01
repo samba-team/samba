@@ -1077,7 +1077,7 @@ AC_CHECK_HEADERS(execinfo.h libexc.h libunwind.h)
 AC_CHECK_FUNCS(backtrace_symbols)
 AC_CHECK_LIB(exc, trace_back_stack)
 
-echo -n "checking for GPFS GPL libs... "
+printf "%s" "checking for GPFS GPL libs... "
 save_LIBS="$LIBS"
 LIBS="$LIBS -lgpfs_gpl"
 AC_TRY_LINK([#include <gpfs_gpl.h>],
