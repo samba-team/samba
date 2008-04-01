@@ -30,6 +30,7 @@ test_enumerate_nonexisting()
 {
 	KEY="$1"
 	${NETREG} enumerate ${KEY}
+
 	if test "x$?" = "x0" ; then
 		echo "ERROR: enumerate succeeded with key '${KEY}'"
 		false
@@ -53,13 +54,14 @@ test_create_existing()
 {
 	KEY="HKLM"
 	EXPECTED="createkey opened existing ${KEY}"
+
 	OUTPUT=`${NETREG} createkey ${KEY}`
 	if test "x$?" = "x0" ; then
 		if test "$OUTPUT" = "$EXPECTED" ; then
 			true
 		else
 			echo "got '$OUTPUT', expected '$EXPECTED'"
-			false;
+			false
 		fi
 	else
 		printf "%s\n" "$OUTPUT"
@@ -112,7 +114,6 @@ test_deletekey()
 	SUBKEY=`basename ${KEY}`
 
 	OUTPUT=`test_createkey "${KEY}"`
-
 	if test "x$?" != "x0" ; then
 		printf "%s\n" "${OUTPUT}"
 		false
