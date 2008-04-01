@@ -11,7 +11,7 @@ OBJ_FILES = \
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-UTIL \
 		LIBREPLACE_EXT \
-		LIBSAMBA-CONFIG
+		LIBSAMBA-HOSTCONFIG
 # End BINARY nsstest
 #################################
 

@@ -8,7 +8,7 @@ OBJ_FILES = credentials.o \
 		smbdes.o
 PUBLIC_DEPENDENCIES = \
 		MSRPC_PARSE \
-		LIBSAMBA-CONFIG
+		LIBSAMBA-HOSTCONFIG
 # End SUBSYSTEM LIBCLI_AUTH
 #################################
 
