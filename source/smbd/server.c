@@ -553,7 +553,8 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 	   clustered mode, ctdb won't allow us to start doing database
 	   operations until it has gone thru a full startup, which
 	   includes checking to see that smbd is listening. */
-	claim_connection(NULL,"",FLAG_MSG_GENERAL|FLAG_MSG_SMBD);
+	claim_connection(NULL,"",
+			 FLAG_MSG_GENERAL|FLAG_MSG_SMBD|FLAG_MSG_DBWRAP);
 
         /* Listen to messages */
 
@@ -573,6 +574,8 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 	messaging_register(smbd_messaging_context(), NULL,
 			   MSG_SMB_INJECT_FAULT, msg_inject_fault);
 #endif
+
+	db_tdb2_setup_messaging(smbd_messaging_context(), true);
 
 	/* now accept incoming connections - forking a new process
 	   for each incoming connection */
@@ -1226,6 +1229,7 @@ extern void build_options(bool screen);
 	/*
 	 * Do this before reload_services.
 	 */
+	db_tdb2_setup_messaging(NULL, false);
 
 	if (!reload_services(False))
 		return(-1);	

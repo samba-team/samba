@@ -835,6 +835,8 @@ static bool open_sockets(bool isdaemon, int port)
 	DEBUG(0,("nmbd version %s started.\n", SAMBA_VERSION_STRING));
 	DEBUGADD(0,("%s\n", COPYRIGHT_STARTUP_MESSAGE));
 
+	db_tdb2_setup_messaging(NULL, false);
+
 	if ( !reload_nmbd_services(False) )
 		return(-1);
 
@@ -886,6 +888,10 @@ static bool open_sockets(bool isdaemon, int port)
 	}
 
 	pidfile_create("nmbd");
+
+	/* get broadcast messages */
+	claim_connection(NULL,"",FLAG_MSG_GENERAL|FLAG_MSG_DBWRAP);
+
 	messaging_register(nmbd_messaging_context(), NULL,
 			   MSG_FORCE_ELECTION, nmbd_message_election);
 #if 0
@@ -899,6 +905,8 @@ static bool open_sockets(bool isdaemon, int port)
 			   MSG_SMB_CONF_UPDATED, msg_reload_nmbd_services);
 	messaging_register(nmbd_messaging_context(), NULL,
 			   MSG_SEND_PACKET, msg_nmbd_send_packet);
+
+	db_tdb2_setup_messaging(nmbd_messaging_context(), true);
 
 	TimeInit();
 
