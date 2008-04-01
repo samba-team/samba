@@ -315,6 +315,7 @@ test_setvalue_twice()
 
 	OUTPUT=`test_setvalue ${KEY} ${VALNAME} ${VALTYPE1} ${VALVALUE1}`
 	if test "x$?" != "x0" ; then
+		echo "ERROR: first setvalue call failed"
 		printf "%s\n" "$OUTPUT"
 		false
 		return
