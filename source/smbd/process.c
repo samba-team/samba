@@ -873,15 +873,6 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 		return map_nt_error_from_unix(errno);
 	}
 
-	/*
-	 * We've just woken up from a protentially long select sleep.
-	 * Ensure we process local messages as we need to synchronously
-	 * process any messages from other smbd's to avoid file rename race
-	 * conditions. This call is cheap if there are no messages waiting.
-	 * JRA.
-	 */
-	message_dispatch(smbd_messaging_context());
-
 	/* Did we timeout ? */
 	if (selrtn == 0) {
 		return NT_STATUS_IO_TIMEOUT;
@@ -902,6 +893,15 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 		 */
 		goto again;
 	}
+
+	/*
+	 * We've just woken up from a protentially long select sleep.
+	 * Ensure we process local messages as we need to synchronously
+	 * process any messages from other smbd's to avoid file rename race
+	 * conditions. This call is cheap if there are no messages waiting.
+	 * JRA.
+	 */
+	message_dispatch(smbd_messaging_context());
 
 	status = receive_smb_talloc(mem_ctx, smbd_server_fd(), buffer, 0,
 				    p_unread, p_encrypted, &len);
