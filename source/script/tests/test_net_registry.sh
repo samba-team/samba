@@ -62,7 +62,7 @@ test_create_existing()
 			false;
 		fi
 	else
-		echo -e "$OUTPUT"
+		printf "%s" "$OUTPUT"
 		false
 	fi
 }
@@ -84,17 +84,17 @@ test_createkey()
 	if test "x$?" != "x0" ; then
 		echo "ERROR: failed to enumerate key '${BASEKEY}'"
 		echo "output:"
-		echo -e "$OUTPUT"
+		printf "%s" "$OUTPUT"
 		false
 		return
 	fi
 
 	EXPECTED="Keyname = ${SUBKEY}"
-	echo -e "$OUTPUT" | grep ^Keyname | grep ${SUBKEY}
+	printf "%s" "$OUTPUT" | grep ^Keyname | grep ${SUBKEY}
 	if test "x$?" != "x0" ; then
 		echo "ERROR: did not find expexted '$EXPECTED' in output"
 		echo "output:"
-		echo -e "$OUTPUT"
+		printf "%s" "$OUTPUT"
 		false
 	fi
 
@@ -120,17 +120,17 @@ test_deletekey()
 	# check enumerate of basekey does not show key anymore:
 	OUTPUT=`${NETREG} enumerate ${BASEKEY}`
 	if test "x$?" != "x0" ; then
-		echo -e "$OUTPUT"
+		printf "%s" "$OUTPUT"
 		false
 		return
 	fi
 
 	UNEXPECTED="Keyname = ${SUBKEY}"
-	echo -e "$OUTPUT" | grep ^Keyname | grep ${SUBKEY}
+	printf "%s" "$OUTPUT" | grep ^Keyname | grep ${SUBKEY}
 	if test "x$?" = "x0" ; then
 		echo "ERROR: found '$UNEXPECTED' after delete in output"
 		echo "output:"
-		echo -e "$OUTPUT"
+		printf "%s" "$OUTPUT"
 		false
 	fi
 
@@ -206,7 +206,7 @@ test_deletekey_with_subkey()
 	if test "x$?" = "x0" ; then
 		echo "ERROR: delete of key with subkey succeeded"
 		echo "output:"
-		echo -e "$OUTPUT"
+		printf "%s" "$OUTPUT"
 		false
 		return
 	fi
@@ -238,12 +238,12 @@ test_setvalue()
 	if test "x$?" != "x0" ; then
 		echo "ERROR: failure calling enumerate for key ${KEY}"
 		echo output:
-		echo -e "${OUTPUT}"
+		printf "%s" "${OUTPUT}"
 		false
 		return
 	fi
 
-	echo -e "$OUTPUT" | {
+	printf "%s" "$OUTPUT" | {
 	FOUND=0
 	while read LINE ; do
 		SEARCH1=`echo $LINE | grep ^Valuename | grep ${VALNAME}`
@@ -261,7 +261,7 @@ test_setvalue()
 	if test "x$FOUND" != "x1" ; then
 		echo "ERROR: did not find value '${VALNAME}' with enumerate"
 		echo "enumerate output:"
-		echo -e "$OUTPUT"
+		printf "%s" "$OUTPUT"
 		false
 		return
 	fi
@@ -301,7 +301,7 @@ test_setvalue_twice()
 
 	OUTPUT=`test_setvalue ${KEY} ${VALNAME} ${VALTYPE1} ${VALVALUE1}`
 	if test "x$?" != "x0" ; then
-		echo -e "$OUTPUT"
+		printf "%s" "$OUTPUT"
 		false
 		return
 	fi
