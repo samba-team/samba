@@ -218,7 +218,7 @@ _PUBLIC_ struct in_addr sys_inet_makeaddr(int net, int host);
 /**
  Copy any user given reseed data.
 **/
-_PUBLIC_ void set_rand_reseed_callback(void (*fn)(int *));
+_PUBLIC_ void set_rand_reseed_callback(void (*fn)(void *, int *), void *);
 
 /**
  * Tell the random number generator it needs to reseed.

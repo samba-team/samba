@@ -37,15 +37,17 @@ static unsigned int bytes_since_reseed = 0;
 
 static int urand_fd = -1;
 
-static void (*reseed_callback)(int *newseed);
+static void (*reseed_callback)(void *userdata, int *newseed);
+static void *reseed_callback_userdata = NULL;
 
 /**
  Copy any user given reseed data.
 **/
 
-_PUBLIC_ void set_rand_reseed_callback(void (*fn)(int *))
+_PUBLIC_ void set_rand_reseed_callback(void (*fn)(void *, int *), void *userdata)
 {
 	reseed_callback = fn;
+	reseed_callback_userdata = userdata;
 	set_need_random_reseed();
 }
 
@@ -61,7 +63,7 @@ _PUBLIC_ void set_need_random_reseed(void)
 static void get_rand_reseed_data(int *reseed_data)
 {
 	if (reseed_callback) {
-		reseed_callback(reseed_data);
+		reseed_callback(reseed_callback_userdata, reseed_data);
 	} else {
 		*reseed_data = 0;
 	}
