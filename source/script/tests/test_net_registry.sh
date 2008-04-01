@@ -90,7 +90,7 @@ test_createkey()
 	fi
 
 	EXPECTED="Keyname = ${SUBKEY}"
-	printf "%s" "$OUTPUT" | grep ^Keyname | grep ${SUBKEY}
+	printf "%s" "$OUTPUT" | grep '^Keyname' | grep ${SUBKEY}
 	if test "x$?" != "x0" ; then
 		echo "ERROR: did not find expexted '$EXPECTED' in output"
 		echo "output:"
@@ -126,7 +126,7 @@ test_deletekey()
 	fi
 
 	UNEXPECTED="Keyname = ${SUBKEY}"
-	printf "%s" "$OUTPUT" | grep ^Keyname | grep ${SUBKEY}
+	printf "%s" "$OUTPUT" | 'grep ^Keyname' | grep ${SUBKEY}
 	if test "x$?" = "x0" ; then
 		echo "ERROR: found '$UNEXPECTED' after delete in output"
 		echo "output:"
@@ -246,11 +246,11 @@ test_setvalue()
 	printf "%s" "$OUTPUT" | {
 	FOUND=0
 	while read LINE ; do
-		SEARCH1=`echo $LINE | grep ^Valuename | grep ${VALNAME}`
+		SEARCH1=`echo $LINE | grep '^Valuename' | grep ${VALNAME}`
 		if test "x$?" = "x0" ; then
 			read LINE
 			read LINE
-			SEARCH2=`echo $LINE | grep "^Value " | grep ${VALVALUE}`
+			SEARCH2=`echo $LINE | grep '^Value ' | grep ${VALVALUE}`
 			if test "x$?" = "x0" ; then
 				FOUND=1
 				break
