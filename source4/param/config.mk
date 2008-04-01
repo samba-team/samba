@@ -1,6 +1,5 @@
 [SUBSYSTEM::LIBSAMBA-CONFIG]
 OBJ_FILES = loadparm.o \
-			params.o \
 			generic.o \
 			util.o \
 			../lib/version.o

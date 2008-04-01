@@ -795,4 +795,12 @@ _PUBLIC_ int idr_remove(struct idr_context *idp, int id);
 **/
 _PUBLIC_ void become_daemon(bool fork);
 
+/**
+ * Load a ini-style file.
+ */
+bool pm_process( const char *fileName,
+                 bool (*sfunc)(const char *, void *),
+                 bool (*pfunc)(const char *, const char *, void *),
+				 void *userdata);
+
 #endif /* _SAMBA_UTIL_H_ */
