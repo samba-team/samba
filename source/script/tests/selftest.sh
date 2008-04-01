@@ -107,7 +107,7 @@ fi
 ## 
 ## create the test directory layout
 ##
-echo -n "CREATE TEST ENVIRONMENT IN '$PREFIX'"...
+printf "%s" "CREATE TEST ENVIRONMENT IN '$PREFIX'"...
 /bin/rm -rf $PREFIX/*
 mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $LOCKDIR $LOGDIR
 mkdir -p $SOCKET_WRAPPER_DIR
