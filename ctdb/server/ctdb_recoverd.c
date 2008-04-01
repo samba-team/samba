@@ -1600,6 +1600,47 @@ static void election_send_request(struct event_context *ev, struct timed_event *
 }
 
 /*
+  handler for memory dumps
+*/
+static void mem_dump_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			     TDB_DATA data, void *private_data)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	TDB_DATA *dump;
+	int ret;
+	struct rd_memdump_reply *rd;
+
+	if (data.dsize != sizeof(struct rd_memdump_reply)) {
+		DEBUG(DEBUG_ERR, (__location__ " Wrong size of return address.\n"));
+		return;
+	}
+	rd = (struct rd_memdump_reply *)data.dptr;
+
+	dump = talloc_zero(tmp_ctx, TDB_DATA);
+	if (dump == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed to allocate memory for memdump\n"));
+		talloc_free(tmp_ctx);
+		return;
+	}
+	ret = ctdb_dump_memory(ctdb, dump);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " ctdb_dump_memory() failed\n"));
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+DEBUG(DEBUG_ERR, ("recovery master memory dump\n"));		
+
+	ret = ctdb_send_message(ctdb, rd->pnn, rd->srvid, *dump);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send rd memdump reply message\n"));
+		return;
+	}
+
+	talloc_free(tmp_ctx);
+}
+
+/*
   handler for recovery master elections
 */
 static void election_handler(struct ctdb_context *ctdb, uint64_t srvid, 
@@ -2121,6 +2162,9 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	/* open the rec file fd and lock our slot */
 	rec->rec_file_fd = -1;
 	ctdb_recoverd_get_pnn_lock(rec);
+
+	/* register a message port for sending memory dumps */
+	ctdb_set_message_handler(ctdb, CTDB_SRVID_MEM_DUMP, mem_dump_handler, rec);
 
 	/* register a message port for recovery elections */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_RECOVERY, election_handler, rec);

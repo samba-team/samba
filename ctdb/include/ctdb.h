@@ -90,6 +90,12 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_VACUUM_FETCH 0xF700000000000000LL
 
+/*
+  a message to tell the recovery daemon to write a talloc memdump
+  to the log
+ */
+#define CTDB_SRVID_MEM_DUMP 0xF800000000000000LL
+
 
 /* used on the domain socket, send a pdu to the local daemon */
 #define CTDB_CURRENT_NODE     0xF0000001

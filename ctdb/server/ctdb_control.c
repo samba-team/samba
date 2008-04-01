@@ -39,7 +39,7 @@ struct ctdb_control_state {
 /*
   dump talloc memory hierarchy, returning it as a blob to the client
  */
-static int32_t ctdb_dump_memory(struct ctdb_context *ctdb, TDB_DATA *outdata)
+int32_t ctdb_dump_memory(struct ctdb_context *ctdb, TDB_DATA *outdata)
 {
 	/* dump to a file, then send the file as a blob */
 	FILE *f;

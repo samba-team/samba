@@ -277,7 +277,7 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 
 	DLIST_ADD_END(queue->out_queue, pkt, struct ctdb_queue_pkt *);
 
-	if (LogLevel > DEBUG_NOTICE) {
+	if (queue->ctdb->tunable.verbose_memory_names != 0) {
 		struct ctdb_req_header *hdr = (struct ctdb_req_header *)pkt->data;
 		switch (hdr->operation) {
 		case CTDB_REQ_CONTROL: {

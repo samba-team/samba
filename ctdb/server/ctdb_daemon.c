@@ -27,6 +27,7 @@
 #include "system/wait.h"
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
+#include <sys/socket.h>
 
 static void daemon_incoming_packet(void *, struct ctdb_req_header *);
 
@@ -540,6 +541,19 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	set_close_on_exec(fd);
 
 	client = talloc_zero(ctdb, struct ctdb_client);
+	if (ctdb->tunable.verbose_memory_names != 0) {
+		struct ucred cr;
+		socklen_t crl = sizeof(struct ucred);
+		if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cr, &crl) == 0) {
+#if 0
+			/* This causes client to later become NULL ? */
+			talloc_set_name(client, "struct ctdb_client: pid:%u", (unsigned)cr.pid);
+#else
+			DEBUG(DEBUG_ERR, ("Client with pid:%u connected to struct ctdb_client %p\n", (unsigned)cr.pid, client));
+#endif
+		}
+	}
+
 	client->ctdb = ctdb;
 	client->fd = fd;
 	client->client_id = ctdb_reqid_new(ctdb, client);

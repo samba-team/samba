@@ -39,6 +39,14 @@
 
 
 /*
+  recovery daemon memdump reply address
+ */
+struct rd_memdump_reply {
+	uint32_t pnn;
+	uint64_t srvid;
+};
+
+/*
   a tcp connection description
  */
 struct ctdb_tcp_connection {
@@ -93,6 +101,7 @@ struct ctdb_tunable {
 	uint32_t disable_when_unhealthy;
 	uint32_t reclock_ping_period;
 	uint32_t no_ip_failback;
+	uint32_t verbose_memory_names;
 };
 
 /*
@@ -1275,5 +1284,6 @@ void ctdb_load_nodes_file(struct ctdb_context *ctdb);
 
 int ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode);
 
+int32_t ctdb_dump_memory(struct ctdb_context *ctdb, TDB_DATA *outdata);
 
 #endif

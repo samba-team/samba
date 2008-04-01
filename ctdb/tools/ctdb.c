@@ -1408,6 +1408,55 @@ static int control_dumpmemory(struct ctdb_context *ctdb, int argc, const char **
 }
 
 /*
+  handler for memory dumps
+*/
+static void mem_dump_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			     TDB_DATA data, void *private_data)
+{
+	write(1, data.dptr, data.dsize);
+	exit(0);
+}
+
+/*
+  dump memory usage on the recovery daemon
+ */
+static int control_rddumpmemory(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	TDB_DATA data;
+	struct rd_memdump_reply rd;
+
+	rd.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
+	if (rd.pnn == -1) {
+		DEBUG(DEBUG_ERR, ("Failed to get pnn of local node\n"));
+		return -1;
+	}
+	rd.srvid = getpid();
+
+	/* register a message port for receiveing the reply so that we
+	   can receive the reply
+	*/
+	ctdb_set_message_handler(ctdb, rd.srvid, mem_dump_handler, NULL);
+
+
+	data.dptr = (uint8_t *)&rd;
+	data.dsize = sizeof(rd);
+
+	ret = ctdb_send_message(ctdb, options.pnn, CTDB_SRVID_MEM_DUMP, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send memdump request message to %u\n", options.pnn));
+		return -1;
+	}
+
+	/* this loop will terminate when we have received the reply */
+	while (1) {	
+		event_loop_once(ctdb->ev);
+	}
+
+	return 0;
+}
+
+/*
   list all nodes in the cluster
  */
 static int control_listnodes(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -1499,6 +1548,7 @@ static const struct {
 	{ "getdebug",        control_getdebug,          true,  "get debug level" },
 	{ "attach",          control_attach,            true,  "attach to a database",                 "<dbname>" },
 	{ "dumpmemory",      control_dumpmemory,        true,  "dump memory map to stdout" },
+	{ "rddumpmemory",    control_rddumpmemory,      true,  "dump memory map from the recovery daemon to stdout" },
 	{ "getpid",          control_getpid,            true,  "get ctdbd process ID" },
 	{ "disable",         control_disable,           true,  "disable a nodes public IP" },
 	{ "enable",          control_enable,            true,  "enable a nodes public IP" },
