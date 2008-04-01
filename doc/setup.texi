@@ -881,8 +881,7 @@ see option --hdb-openldap-module to configure.
 
 @item
 OpenLDAP 2.0.x. Configure OpenLDAP with @kbd{--enable-local} to enable the
-local transport. (A patch to support SASL EXTERNAL authentication is
-necessary in order to use OpenLDAP 2.1.x.)
+local transport.
 
 @item
 Add the hdb schema to the LDAP server, it's included in the source-tree
