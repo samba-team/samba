@@ -30,7 +30,7 @@ $XGETTEXT --default-domain="i18n_swat" \
   $FILES
 
 for lang in $LANGS; do
-  echo -n $lang
+  printf "%s" "$lang"
   mv ${lang}.msg ${lang}.msg.old
   $MSGMERGE --width=${WIDTH} ${lang}.msg.old i18n_swat.po -o ${lang}.msg
 done
