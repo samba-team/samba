@@ -73,8 +73,11 @@ test_createkey()
 	BASEKEY=`dirname $KEY`
 	SUBKEY=`basename $KEY`
 
-	${NETREG} createkey ${KEY}
+	OUTPUT=`${NETREG} createkey ${KEY}`
 	if test "x$?" != "x0" ; then
+		echo "ERROR: createkey ${KEY} failed"
+		echo "output:"
+		printf "%s\n" "$OUTPUT"
 		false
 		return
 	fi
@@ -108,14 +111,20 @@ test_deletekey()
 	BASEKEY=`dirname ${KEY}`
 	SUBKEY=`basename ${KEY}`
 
-	test_createkey "${KEY}"
+	OUTPUT=`test_createkey "${KEY}"`
 
 	if test "x$?" != "x0" ; then
+		printf "%s\n" "${OUTPUT}"
 		false
 		return
 	fi
 
-	${NETREG} deletekey ${KEY}
+	OUTPUT=`${NETREG} deletekey ${KEY}`
+	if test "x$?" != "x0" ; then
+		printf "%s\n" "${OUTPUT}"
+		false
+		return
+	fi
 
 	# check enumerate of basekey does not show key anymore:
 	OUTPUT=`${NETREG} enumerate ${BASEKEY}`
@@ -148,9 +157,9 @@ test_deletekey_nonexisting()
 {
 	KEY="$1"
 
-	test_deletekey "${KEY}"
-
+	OUTPUT=`test_deletekey "${KEY}"`
 	if test "x$?" != "x0" ; then
+		printf "%s\n" "${OUTPUT}"
 		false
 		return
 	fi
@@ -170,17 +179,19 @@ test_createkey_with_subkey()
 	BASENAME=`dirname ${KEY2}`
 	SUBKEYNAME1=`basename ${KEY2}`
 
-	${NETREG} createkey ${KEY}
-
+	OUTPUT=`${NETREG} createkey ${KEY}`
 	if test "x$?" != "x0" ; then
+		echo "ERROR: createkey ${KEY} failed"
+		printf "%s\n" "${OUTPUT}"
 		false
 		return
 	fi
 
 	# check we can enumerate to level key
-	${NETREG} enumerate ${KEY}
+	OUTPUT=`${NETREG} enumerate ${KEY}`
 	if test "x$?" != "x0" ; then
 		echo "ERROR: failed to enumerate '${KEY}' after creation"
+		printf "%s\n" "${OUTPUT}"
 		false
 		return
 	fi
@@ -194,9 +205,9 @@ test_deletekey_with_subkey()
 	KEY="$1"
 	KEY2=`dirname ${KEY}`
 
-	${NETREG} createkey ${KEY}
-
+	OUTPUT=`${NETREG} createkey ${KEY}`
 	if test "x$?" != "x0" ; then
+		printf "%s\n" "${OUTPUT}"
 		false
 		return
 	fi
@@ -221,15 +232,17 @@ test_setvalue()
 	VALTYPE="$3"
 	VALVALUE="$4"
 
-	test_createkey ${KEY}
+	OUTPUT=`test_createkey ${KEY}`
 	if test "x$?" != "x0" ; then
+		printf "%s\n" "${OUTPUT}"
 		false
 		return
 	fi
 
-	${NETREG} setvalue ${KEY} ${VALNAME} ${VALTYPE} ${VALVALUE}
+	OUTPUT=`${NETREG} setvalue ${KEY} ${VALNAME} ${VALTYPE} ${VALVALUE}`
 	if test "x$?" != "x0" ; then
 		echo "ERROR: failed to set value testval in key ${KEY}"
+		printf "%s\n" "${OUTPUT}"
 		false
 		return
 	fi
