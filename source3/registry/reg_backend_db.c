@@ -723,13 +723,13 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 	}
 	strupper_m(path);
 
+	ctr->seqnum = regdb_get_seqnum();
+
 	dbret = regdb->fetch(regdb, frame, string_term_tdb_data(path), &value);
 	if (dbret != 0) {
 		ret = 0;
 		goto fail;
 	}
-
-	ctr->seqnum = regdb_get_seqnum();
 
 	buf = value.dptr;
 	buflen = value.dsize;
@@ -857,12 +857,12 @@ int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 		goto done;
 	}
 
+	values->seqnum = regdb_get_seqnum();
+
 	dbret = regdb->fetch(regdb, ctx, string_term_tdb_data(keystr), &value);
 	if (dbret != 0) {
 		goto done;
 	}
-
-	values->seqnum = regdb_get_seqnum();
 
 	if (!value.dptr) {
 		/* all keys have zero values by default */
