@@ -89,6 +89,15 @@ bool secrets_init(void)
 	return True;
 }
 
+struct db_context *secrets_db_ctx(void)
+{
+	if (!secrets_init()) {
+		return NULL;
+	}
+
+	return db_ctx;
+}
+
 /*
  * close secrets.tdb
  */
