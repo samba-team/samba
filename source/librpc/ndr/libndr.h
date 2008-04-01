@@ -1,6 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    rpc interface definitions
+
    Copyright (C) Andrew Tridgell 2003
    
    This program is free software; you can redistribute it and/or modify
@@ -16,6 +17,10 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+/* This is a public header file that is installed as part of Samba. 
+ * If you remove any functions or change their signature, update 
+ * the so version number. */
 
 #ifndef __LIBNDR_H__
 #define __LIBNDR_H__
