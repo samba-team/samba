@@ -529,6 +529,8 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	int fd;
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	struct ctdb_client *client;
+	struct ucred cr;
+	socklen_t crl = sizeof(struct ucred);
 
 	memset(&addr, 0, sizeof(addr));
 	len = sizeof(addr);
@@ -541,17 +543,8 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	set_close_on_exec(fd);
 
 	client = talloc_zero(ctdb, struct ctdb_client);
-	if (ctdb->tunable.verbose_memory_names != 0) {
-		struct ucred cr;
-		socklen_t crl = sizeof(struct ucred);
-		if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cr, &crl) == 0) {
-#if 0
-			/* This causes client to later become NULL ? */
-			talloc_set_name(client, "struct ctdb_client: pid:%u", (unsigned)cr.pid);
-#else
-			DEBUG(DEBUG_ERR, ("Client with pid:%u connected to struct ctdb_client %p\n", (unsigned)cr.pid, client));
-#endif
-		}
+	if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cr, &crl) == 0) {
+		talloc_asprintf(client, "struct ctdb_client: pid:%u", (unsigned)cr.pid);
 	}
 
 	client->ctdb = ctdb;
