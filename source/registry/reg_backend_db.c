@@ -719,7 +719,6 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 
 	dbret = regdb->fetch(regdb, frame, string_term_tdb_data(path), &value);
 	if (dbret != 0) {
-		ret = 0;
 		goto fail;
 	}
 
