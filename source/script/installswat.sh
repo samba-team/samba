@@ -10,13 +10,13 @@ case $0 in
 	*uninstall*)
 		echo "Removing SWAT from $DESTDIR/$SWATDIR "
 		echo "Removing the Samba Web Administration Tool "
-		echo -n "Removed "
+		printf "%s" "Removed "
 		mode='uninstall'
 		;;
 	*)
 		echo "Installing SWAT in $DESTDIR/$SWATDIR "
 		echo "Installing the Samba Web Administration Tool "
-		echo -n "Installing "
+		printf "%s" "Installing "
 		mode='install'
 		;;
 esac
