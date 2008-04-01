@@ -1518,7 +1518,6 @@ static void call_nt_transact_rename(connection_struct *conn,
 	char *params = *ppparams;
 	char *new_name = NULL;
 	files_struct *fsp = NULL;
-	bool replace_if_exists = False;
 	bool dest_has_wcard = False;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -1529,7 +1528,6 @@ static void call_nt_transact_rename(connection_struct *conn,
 	}
 
 	fsp = file_fsp(SVAL(params, 0));
-	replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
 	if (!check_fsp(conn, req, fsp, &current_user)) {
 		return;
 	}
@@ -1541,32 +1539,13 @@ static void call_nt_transact_rename(connection_struct *conn,
 		return;
 	}
 
-	status = rename_internals(ctx,
-			conn,
-			req,
-			fsp->fsp_name,
-			new_name,
-			0,
-			replace_if_exists,
-			False,
-			dest_has_wcard,
-			FILE_WRITE_ATTRIBUTES);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		if (open_was_deferred(req->mid)) {
-			/* We have re-scheduled this call. */
-			return;
-		}
-		reply_nterror(req, status);
-		return;
-	}
-
 	/*
-	 * Rename was successful.
+	 * W2K3 ignores this request as the RAW-RENAME test
+	 * demonstrates, so we do.
 	 */
 	send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0, NULL, 0);
 
-	DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n",
+	DEBUG(3,("nt transact rename from = %s, to = %s ignored!\n",
 		 fsp->fsp_name, new_name));
 
 	return;
