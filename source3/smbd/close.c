@@ -665,10 +665,6 @@ NTSTATUS close_file(files_struct *fsp, enum file_close_type close_type)
 		status = close_normal_file(fsp, close_type);
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	if ((base_fsp != NULL) && (close_type != SHUTDOWN_CLOSE)) {
 
 		/*
