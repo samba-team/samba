@@ -380,7 +380,7 @@ testit "delete nonexisting value" \
 	test_deletevalue_nonexisting HKLM/testkey testval || \
 	failed=`expr $failed + 1`
 
-testit "set value to different type"
+testit "set value to different type" \
 	test_setvalue_twice HKLM/testkey testval sz moin dword 42 || \
 	failed=`expr $failed + 1`
 
