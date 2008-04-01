@@ -1102,6 +1102,8 @@ int main(int argc, char **argv, char **envp)
 	DEBUG(0,("winbindd version %s started.\n", SAMBA_VERSION_STRING));
 	DEBUGADD(0,("%s\n", COPYRIGHT_STARTUP_MESSAGE));
 
+	db_tdb2_setup_messaging(NULL, false);
+
 	if (!reload_services_file()) {
 		DEBUG(0, ("error opening config file\n"));
 		exit(1);
@@ -1188,6 +1190,9 @@ int main(int argc, char **argv, char **envp)
 		exit(1);
 	}
 
+	/* get broadcast messages */
+	claim_connection(NULL,"",FLAG_MSG_GENERAL|FLAG_MSG_DBWRAP);
+
 	/* React on 'smbcontrol winbindd reload-config' in the same way
 	   as to SIGHUP signal */
 	messaging_register(winbind_messaging_context(), NULL,
@@ -1213,6 +1218,8 @@ int main(int argc, char **argv, char **envp)
 	messaging_register(winbind_messaging_context(), NULL,
 			   MSG_WINBIND_DUMP_DOMAIN_LIST,
 			   winbind_msg_dump_domain_list);
+
+	db_tdb2_setup_messaging(winbind_messaging_context(), true);
 
 	netsamlogon_cache_init(); /* Non-critical */
 	

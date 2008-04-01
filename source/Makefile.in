@@ -711,7 +711,7 @@ NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_processlogon.o nmbd/nmbd_responserecordsdb.o \
             nmbd/nmbd_sendannounce.o nmbd/nmbd_serverlistdb.o \
             nmbd/nmbd_subnetdb.o nmbd/nmbd_winsproxy.o nmbd/nmbd_winsserver.o \
-            nmbd/nmbd_workgroupdb.o nmbd/nmbd_synclists.o
+            nmbd/nmbd_workgroupdb.o nmbd/nmbd_synclists.o smbd/connection.o
 
 NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
            $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ)
@@ -1032,7 +1032,8 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_idmap.o \
 		winbindd/winbindd_locator.o \
 		winbindd/winbindd_ndr.o \
-		auth/token_util.o
+		auth/token_util.o \
+		smbd/connection.o
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ $(GROUPDB_OBJ) \
