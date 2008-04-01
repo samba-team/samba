@@ -5,7 +5,7 @@ OBJ_FILES = \
 		tls.o \
 		tlscert.o
 PUBLIC_DEPENDENCIES = \
-		LIBTALLOC GNUTLS LIBSAMBA-CONFIG samba-socket
+		LIBTALLOC GNUTLS LIBSAMBA-HOSTCONFIG samba-socket
 #
 # End SUBSYSTEM LIBTLS
 ################################################

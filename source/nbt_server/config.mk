@@ -21,7 +21,7 @@ INIT_FUNCTION = &ldb_wins_ldb_module_ops
 OBJ_FILES = \
 		wins/wins_ldb.o
 PRIVATE_DEPENDENCIES = \
-		LIBNETIF LIBSAMBA-CONFIG LIBSAMBA-UTIL
+		LIBNETIF LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL
 # End MODULE ldb_wins_ldb
 #######################
 
