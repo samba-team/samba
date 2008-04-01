@@ -1,3 +1,8 @@
+2008-04-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/setup.texi: No patching of OpenLDAP is needed, from Buchan
+	Milne.
+
 2008-03-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/fcache.c: Make the storing credential an atomic
