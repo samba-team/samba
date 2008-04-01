@@ -42,7 +42,7 @@ samba3_check_or_start() {
 		mkfifo $SERVER_TEST_FIFO
 
 		rm -f $NMBD_TEST_LOG
-		echo -n "STARTING NMBD..."
+		printf "%s" "STARTING NMBD..."
 		((
 			if test x"$NMBD_MAXTIME" = x; then
 			    NMBD_MAXTIME=2700
@@ -74,7 +74,7 @@ samba3_check_or_start() {
 		echo  "DONE"
 
 		rm -f $WINBINDD_TEST_LOG
-		echo -n "STARTING WINBINDD..."
+		printf "%s" "STARTING WINBINDD..."
 		((
 			if test x"$WINBINDD_MAXTIME" = x; then
 			    WINBINDD_MAXTIME=2700
@@ -106,7 +106,7 @@ samba3_check_or_start() {
 		echo  "DONE"
 
 		rm -f $SMBD_TEST_LOG
-		echo -n "STARTING SMBD..."
+		printf "%s" "STARTING SMBD..."
 		((
 			if test x"$SMBD_MAXTIME" = x; then
 			    SMBD_MAXTIME=2700
