@@ -204,9 +204,6 @@ _NORETURN_ static void standard_terminate(struct event_context *ev, const char *
 	   which makes leak checking easier */
 	reload_charcnv(global_loadparm);
 
-	/* the secrets db should really hang off the connection structure */
-	secrets_shutdown();
-
 	talloc_free(ev);
 
 	/* terminate this process */
