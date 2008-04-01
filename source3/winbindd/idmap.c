@@ -522,6 +522,76 @@ NTSTATUS idmap_init(void)
 		talloc_free(config_option);
 	}
 
+	/* on DCs we need to add idmap_tdb as the default backend if compat is
+	 * defined (when the old implicit configuration is used)
+	 * This is not done in the previous loop a on member server we exclude
+	 * the local domain. But on a DC the local domain is the only domain
+	 * available therefore we are left with no default domain */
+	if (((lp_server_role() == ROLE_DOMAIN_PDC) ||
+	     (lp_server_role() == ROLE_DOMAIN_BDC)) &&
+            ((num_domains == 0) && (compat == 1))) {
+
+		dom = TALLOC_ZERO_P(idmap_ctx, struct idmap_domain);
+		IDMAP_CHECK_ALLOC(dom);
+
+		dom->name = talloc_strdup(dom, "__default__");
+		IDMAP_CHECK_ALLOC(dom->name);
+
+		dom->default_domain = True;
+		dom->readonly = False;
+
+		/* get the backend methods for this domain */
+		dom->methods = get_methods(backends, compat_backend);
+
+		if ( ! dom->methods) {
+			ret = smb_probe_module("idmap", compat_backend);
+			if (NT_STATUS_IS_OK(ret)) {
+				dom->methods = get_methods(backends,
+							   compat_backend);
+			}
+		}
+		if ( ! dom->methods) {
+			DEBUG(0, ("ERROR: Could not get methods for "
+				  "backend %s\n", compat_backend));
+			ret = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+
+		/* now that we have methods,
+		 * set the destructor for this domain */
+		talloc_set_destructor(dom, close_domain_destructor);
+
+		dom->params = talloc_strdup(dom, compat_params);
+		IDMAP_CHECK_ALLOC(dom->params);
+
+		/* Finally instance a backend copy for this domain */
+		ret = dom->methods->init(dom);
+		if ( ! NT_STATUS_IS_OK(ret)) {
+			DEBUG(0, ("ERROR: Initialization failed for backend "
+				  "%s (domain %s), deferred!\n",
+				  compat_backend, dom->name));
+		}
+		idmap_domains = talloc_realloc(idmap_ctx, idmap_domains,
+						struct idmap_domain *, 2);
+		if ( ! idmap_domains) {
+			DEBUG(0, ("Out of memory!\n"));
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		idmap_domains[num_domains] = dom;
+
+		def_dom_num = num_domains;
+
+		/* Bump counter to next available slot */
+
+		num_domains++;
+
+		DEBUG(10, ("Domain %s - Backend %s - %sdefault - %sreadonly\n",
+				dom->name, compat_backend,
+				dom->default_domain?"":"not ",
+				dom->readonly?"":"not "));
+	}
+
 	/* automatically add idmap_nss backend if needed */
 	if ((lp_server_role() == ROLE_DOMAIN_MEMBER) &&
 	    ( ! pri_dom_is_in_list) &&
