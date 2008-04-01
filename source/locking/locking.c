@@ -940,37 +940,40 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 	return True;
 }
 
-struct timespec get_write_time(struct file_id id)
+void get_file_infos(struct file_id id,
+		    bool *delete_on_close,
+		    struct timespec *write_time)
 {
-	struct timespec result;
 	struct share_mode_lock *lck;
 
-	ZERO_STRUCT(result);
+	if (delete_on_close) {
+		*delete_on_close = false;
+	}
+
+	if (write_time) {
+		ZERO_STRUCTP(write_time);
+	}
 
 	if (!(lck = fetch_share_mode_unlocked(talloc_tos(), id, NULL, NULL))) {
-		return result;
+		return;
 	}
-	result = lck->changed_write_time;
 
-	if (null_timespec(result)) {
-		result = lck->old_write_time;
+	if (delete_on_close) {
+		*delete_on_close = lck->delete_on_close;
+	}
+
+	if (write_time) {
+		struct timespec wt;
+
+		wt = lck->changed_write_time;
+		if (null_timespec(wt)) {
+			wt = lck->old_write_time;
+		}
+
+		*write_time = wt;
 	}
 
 	TALLOC_FREE(lck);
-	return result;
-}
-
-bool get_delete_on_close_flag(struct file_id id)
-{
-	bool result;
-	struct share_mode_lock *lck;
-  
-	if (!(lck = fetch_share_mode_unlocked(talloc_tos(), id, NULL, NULL))) {
-		return False;
-	}
-	result = lck->delete_on_close;
-	TALLOC_FREE(lck);
-	return result;
 }
 
 bool is_valid_share_mode_entry(const struct share_mode_entry *e)

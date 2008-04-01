@@ -886,7 +886,7 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 			*date = sbuf.st_mtime;
 
 			fileid = vfs_file_id_from_sbuf(conn, &sbuf);
-			write_time_ts = get_write_time(fileid);
+			get_file_infos(fileid, NULL, &write_time_ts);
 			if (!null_timespec(write_time_ts)) {
 				*date = convert_timespec_to_time_t(write_time_ts);
 			}

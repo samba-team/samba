@@ -611,11 +611,19 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		} /* end else */
 
 #ifdef DEVELOPER
-		if (VALID_STAT(st) &&
-		    get_delete_on_close_flag(vfs_file_id_from_sbuf(conn,
-				    &st))) {
-			result = NT_STATUS_DELETE_PENDING;
-			goto fail;
+		/*
+		 * This sucks!
+		 * We should never provide different behaviors
+		 * depending on DEVELOPER!!!
+		 */
+		if (VALID_STAT(st)) {
+			bool delete_pending;
+			get_file_infos(vfs_file_id_from_sbuf(conn, &st),
+				       &delete_pending, NULL);
+			if (delete_pending) {
+				result = NT_STATUS_DELETE_PENDING;
+				goto fail;
+			}
 		}
 #endif
 

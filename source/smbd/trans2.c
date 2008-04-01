@@ -1398,8 +1398,8 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			adate_ts = get_atimespec(&sbuf);
 			create_date_ts = get_create_timespec(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
 
-			write_time_ts = get_write_time(
-				vfs_file_id_from_sbuf(conn, &sbuf));
+			get_file_infos(vfs_file_id_from_sbuf(conn, &sbuf),
+				       NULL, &write_time_ts);
 			if (!null_timespec(write_time_ts)) {
 				mdate_ts = write_time_ts;
 			}
@@ -3870,8 +3870,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			}
 
 			fileid = vfs_file_id_from_sbuf(conn, &sbuf);
-			delete_pending = get_delete_on_close_flag(fileid);
-			write_time_ts = get_write_time(fileid);
+			get_file_infos(fileid, &delete_pending, &write_time_ts);
 		} else {
 			/*
 			 * Original code - this is an open file.
@@ -3887,8 +3886,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			}
 			pos = fsp->fh->position_information;
 			fileid = vfs_file_id_from_sbuf(conn, &sbuf);
-			delete_pending = get_delete_on_close_flag(fileid);
-			write_time_ts = get_write_time(fileid);
+			get_file_infos(fileid, &delete_pending, &write_time_ts);
 			access_mask = fsp->access_mask;
 		}
 
@@ -3959,12 +3957,11 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 		}
 
 		fileid = vfs_file_id_from_sbuf(conn, &sbuf);
-		delete_pending = get_delete_on_close_flag(fileid);
+		get_file_infos(fileid, &delete_pending, &write_time_ts);
 		if (delete_pending) {
 			reply_nterror(req, NT_STATUS_DELETE_PENDING);
 			return;
 		}
-		write_time_ts = get_write_time(fileid);
 	}
 
 	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
