@@ -18,7 +18,8 @@ OBJ_FILES = xfile.o \
 		ms_fnmatch.o \
 		mutex.o \
 		idtree.o \
-		become_daemon.o
+		become_daemon.o \
+		params.o
 PUBLIC_DEPENDENCIES = \
 		LIBTALLOC LIBCRYPTO \
 		SOCKET_WRAPPER LIBREPLACE_NETWORK \
