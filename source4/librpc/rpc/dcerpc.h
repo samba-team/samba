@@ -20,6 +20,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* This is a public header file that is installed as part of Samba. 
+ * If you remove any functions or change their signature, update 
+ * the so version number. */
+
 #ifndef __DCERPC_H__
 #define __DCERPC_H__
 
