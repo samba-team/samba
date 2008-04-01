@@ -292,7 +292,7 @@ bool run_events(struct event_context *event_ctx,
 		if (FD_ISSET(fde->fd, read_fds)) flags |= EVENT_FD_READ;
 		if (FD_ISSET(fde->fd, write_fds)) flags |= EVENT_FD_WRITE;
 
-		if (flags) {
+		if (flags & fde->flags) {
 			fde->handler(event_ctx, fde, flags, fde->private_data);
 			fired = True;
 		}
