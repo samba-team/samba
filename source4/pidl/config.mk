@@ -5,10 +5,7 @@ pidl-testcov: pidl/Makefile
 	cd pidl && cover -test
 
 installpidl:: pidl/Makefile
-	$(MAKE) -C pidl install
-
-uninstallpidl:: pidl/Makefile
-	$(MAKE) -C pidl uninstall
+	$(MAKE) -C pidl install_vendor PREFIX=$(prefix)
 
 idl_full:: pidl/lib/Parse/Pidl/IDL.pm pidl/lib/Parse/Pidl/Expr.pm 
 	@CPP="$(CPP)" PERL="$(PERL)" srcdir=$(srcdir) $(srcdir)/script/build_idl.sh FULL
