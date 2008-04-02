@@ -384,5 +384,4 @@ bool torture_suite_init_tcase(struct torture_suite *suite,
 struct torture_context *torture_context_init(TALLOC_CTX *mem_ctx, 
 					     const struct torture_ui_ops *ui_ops);
 
-
 #endif /* __TORTURE_UI_H__ */

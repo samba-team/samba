@@ -11,8 +11,6 @@ OBJ_FILES = \
 # End SUBSYSTEM DCERPC_COMMON
 ################################################
 
-PUBLIC_HEADERS += rpc_server/common/common.h
-
 ################################################
 # Start MODULE dcerpc_rpcecho
 [MODULE::dcerpc_rpcecho]
