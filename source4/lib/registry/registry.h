@@ -66,8 +66,6 @@ struct registry_key
 	struct registry_context *context;
 };
 
-#include "lib/registry/patchfile.h"
-
 struct registry_value
 {
 	const char *name;
@@ -284,6 +282,35 @@ WERROR reg_get_security(TALLOC_CTX *mem_ctx,
 
 WERROR reg_set_security(struct registry_key *key,
 			struct security_descriptor *security);
+
+struct reg_diff_callbacks {
+	WERROR (*add_key) (void *callback_data, const char *key_name);
+	WERROR (*set_value) (void *callback_data, const char *key_name,
+			     const char *value_name, uint32_t value_type,
+			     DATA_BLOB value);
+	WERROR (*del_value) (void *callback_data, const char *key_name,
+			     const char *value_name);
+	WERROR (*del_key) (void *callback_data, const char *key_name);
+	WERROR (*del_all_values) (void *callback_data, const char *key_name);
+	WERROR (*done) (void *callback_data);
+};
+
+WERROR reg_diff_apply(struct registry_context *ctx, const char *filename);
+
+WERROR reg_generate_diff(struct registry_context *ctx1,
+			 struct registry_context *ctx2,
+			 const struct reg_diff_callbacks *callbacks,
+			 void *callback_data);
+WERROR reg_dotreg_diff_save(TALLOC_CTX *ctx, const char *filename,
+			    struct smb_iconv_convenience *iconv_convenience,
+			    struct reg_diff_callbacks **callbacks,
+			    void **callback_data);
+WERROR reg_generate_diff_key(struct registry_key *oldkey,
+			     struct registry_key *newkey,
+			     const char *path,
+			     const struct reg_diff_callbacks *callbacks,
+			     void *callback_data);
+
 
 
 #endif /* _REGISTRY_H */
