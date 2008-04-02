@@ -399,7 +399,7 @@ def load_or_make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrol
     return lp
 
 def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
-                        users_gid, wheel_gid, backup_gid):
+                        users_gid, wheel_gid):
     """setup reasonable name mappings for sam names to unix names.
 
     :param samdb: SamDB object.
@@ -409,8 +409,7 @@ def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
     :param root_uid: uid of the UNIX root user.
     :param nobody_uid: uid of the UNIX nobody user.
     :param users_gid: gid of the UNIX users group.
-    :param wheel_gid: gid of the UNIX wheel group.
-    :param backup_gid: gid of the UNIX backup group."""
+    :param wheel_gid: gid of the UNIX wheel group."""
     # add some foreign sids if they are not present already
     samdb.add_foreign(domaindn, "S-1-5-7", "Anonymous")
     samdb.add_foreign(domaindn, "S-1-1-0", "World")
@@ -420,7 +419,6 @@ def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
 
     idmap.setup_name_mapping("S-1-5-7", idmap.TYPE_UID, nobody_uid)
     idmap.setup_name_mapping("S-1-5-32-544", idmap.TYPE_GID, wheel_gid)
-    idmap.setup_name_mapping("S-1-5-32-551", idmap.TYPE_GID, backup_gid)
 
     idmap.setup_name_mapping(sid + "-500", idmap.TYPE_UID, root_uid)
     idmap.setup_name_mapping(sid + "-513", idmap.TYPE_GID, users_gid)
@@ -927,10 +925,6 @@ def provision(setup_dir, message, session_info,
         wheel_gid = findnss(grp.getgrnam, ["wheel", "adm"])[2]
     else:
         wheel_gid = findnss(grp.getgrnam, [wheel])[2]
-    if backup is None:
-        backup_gid = findnss(grp.getgrnam, ["backup", "staff"])[2]
-    else:
-        backup_gid = findnss(grp.getgrnam, [backup])[2]
     if aci is None:
         aci = "# no aci for local ldb"
 
@@ -1023,8 +1017,7 @@ def provision(setup_dir, message, session_info,
     if samdb_fill == FILL_FULL:
         setup_name_mappings(samdb, idmap, str(domainsid), names.domaindn,
                             root_uid=root_uid, nobody_uid=nobody_uid,
-                            users_gid=users_gid, wheel_gid=wheel_gid,
-                            backup_gid=backup_gid)
+                            users_gid=users_gid, wheel_gid=wheel_gid)
 
         message("Setting up sam.ldb rootDSE marking as synchronized")
         setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
