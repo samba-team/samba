@@ -362,8 +362,8 @@ PUBLIC_DEPENDENCIES = dcerpc NDR_UNIXINFO
 
 [LIBRARY::dcerpc_samr]
 OBJ_FILES = gen_ndr/ndr_samr_c.o
-PC_FILE = dcerpc_samr.pc
 PUBLIC_DEPENDENCIES = dcerpc NDR_SAMR 
+PC_FILE = dcerpc_samr.pc
 VERSION = 0.0.1
 SO_VERSION = 0
 
@@ -385,9 +385,12 @@ PUBLIC_DEPENDENCIES = dcerpc NDR_SVCCTL
 
 PUBLIC_HEADERS += librpc/gen_ndr/ndr_svcctl_c.h
 
-[SUBSYSTEM::dcerpc_atsvc]
+[LIBRARY::dcerpc_atsvc]
 OBJ_FILES = gen_ndr/ndr_atsvc_c.o
 PUBLIC_DEPENDENCIES = dcerpc NDR_ATSVC
+PC_FILE = dcerpc_atsvc.pc
+VERSION = 0.0.1
+SO_VERSION = 0
 
 PUBLIC_HEADERS += librpc/gen_ndr/ndr_atsvc_c.h
 

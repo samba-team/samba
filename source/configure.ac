@@ -34,6 +34,7 @@ AC_CONFIG_FILES(torture/torture.pc)
 AC_CONFIG_FILES(auth/gensec/gensec.pc)
 AC_CONFIG_FILES(param/samba-hostconfig.pc)
 AC_CONFIG_FILES(librpc/dcerpc_samr.pc)
+AC_CONFIG_FILES(librpc/dcerpc_atsvc.pc)
 
 SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.2.0,
 	[],
