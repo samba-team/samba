@@ -11,7 +11,7 @@ PUBLIC_DEPENDENCIES = \
 # End SUBSYSTEM gensec
 #################################
 
-PUBLIC_HEADERS += $(addprefix auth/gensec/, gensec.h spnego.h)
+PUBLIC_HEADERS += auth/gensec/gensec.h
 
 ################################################
 # Start MODULE gensec_krb5

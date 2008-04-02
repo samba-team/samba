@@ -26,7 +26,7 @@ OBJ_FILES = gencache/gencache.o
 PRIVATE_DEPENDENCIES = TDB_WRAP
 
 
-PUBLIC_HEADERS += lib/gencache/gencache.h
+# PUBLIC_HEADERS += lib/gencache/gencache.h
 
 [SUBSYSTEM::LDB_WRAP]
 OBJ_FILES = ldb_wrap.o

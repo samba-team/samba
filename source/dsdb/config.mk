@@ -17,7 +17,7 @@ OBJ_FILES = \
 		repl/replicated_objects.o
 
 
-PUBLIC_HEADERS += dsdb/samdb/samdb.h
+# PUBLIC_HEADERS += dsdb/samdb/samdb.h
 
 [SUBSYSTEM::SAMDB_COMMON]
 PRIVATE_PROTO_HEADER = common/proto.h
@@ -36,7 +36,7 @@ OBJ_FILES = \
 		schema/schema_constructed.o \
 
 
-PUBLIC_HEADERS += dsdb/schema/schema.h
+# PUBLIC_HEADERS += dsdb/schema/schema.h
 
 #######################
 # Start SUBSYSTEM DREPL_SRV

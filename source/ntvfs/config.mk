@@ -87,7 +87,7 @@ OBJ_FILES = \
 		ntvfs_interface.o \
 		ntvfs_util.o
 
-PUBLIC_HEADERS += ntvfs/ntvfs.h
+# PUBLIC_HEADERS += ntvfs/ntvfs.h
 #
 # End SUBSYSTEM NTVFS
 ################################################

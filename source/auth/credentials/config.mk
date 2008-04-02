@@ -12,7 +12,7 @@ PUBLIC_DEPENDENCIES = \
 PRIVATE_DEPENDENCIES = \
 		SECRETS
 
-PUBLIC_HEADERS += $(addprefix auth/credentials/, credentials.h credentials_krb5.h)
+PUBLIC_HEADERS += auth/credentials/credentials.h
 
 [PYTHON::swig_credentials]
 PUBLIC_DEPENDENCIES = CREDENTIALS LIBCMDLINE_CREDENTIALS

@@ -25,10 +25,10 @@ OBJ_FILES = \
 		prereq_domain.o
 PUBLIC_DEPENDENCIES = CREDENTIALS dcerpc dcerpc_samr RPC_NDR_LSA RPC_NDR_SRVSVC RPC_NDR_DRSUAPI LIBCLI_COMPOSITE LIBCLI_RESOLVE LIBCLI_FINDDCS LIBCLI_CLDAP LIBCLI_FINDDCS gensec_schannel LIBCLI_AUTH LIBNDR SMBPASSWD
 
-PUBLIC_HEADERS += $(addprefix libnet/, libnet.h libnet_join.h libnet_lookup.h libnet_passwd.h \
-				 libnet_rpc.h libnet_share.h libnet_time.h \
-				 libnet_user.h libnet_site.h libnet_vampire.h \
-				 userinfo.h userman.h)
+#PUBLIC_HEADERS += $(addprefix libnet/, libnet.h libnet_join.h libnet_lookup.h libnet_passwd.h \
+#				 libnet_rpc.h libnet_share.h libnet_time.h \
+#				 libnet_user.h libnet_site.h libnet_vampire.h \
+#				 userinfo.h userman.h)
 
 
 [PYTHON::swig_net]
