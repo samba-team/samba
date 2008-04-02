@@ -63,14 +63,17 @@ typedef struct join_state {
 	GtkWidget *entry_account;
 	GtkWidget *entry_password;
 	GtkWidget *entry_domain;
+	GtkWidget *entry_ou_list;
 	GtkWidget *entry_workgroup;
 	GtkWidget *button_ok;
 	GtkWidget *button_apply;
 	GtkWidget *button_ok_creds;
+	GtkWidget *button_get_ous;
 	GtkWidget *label_reboot;
 	GtkWidget *label_current_name_buffer;
 	GtkWidget *label_current_name_type;
 	GtkWidget *label_full_computer_name;
+	GtkWidget *label_winbind;
 	uint16_t name_type_initial;
 	uint16_t name_type_new;
 	char *name_buffer_initial;
@@ -111,8 +114,38 @@ static gboolean callback_delete_event(GtkWidget *widget,
 static void callback_do_close(GtkWidget *widget,
 			      gpointer data)
 {
-	debug("Closing now...\n");
+	debug("callback_do_close called\n");
+
 	gtk_widget_destroy(data);
+}
+
+static void callback_do_freeauth(GtkWidget *widget,
+				 gpointer data)
+{
+	struct join_state *state = (struct join_state *)data;
+
+	debug("callback_do_freeauth called\n");
+
+	SAFE_FREE(state->account);
+	SAFE_FREE(state->password);
+
+	if (state->window_creds_prompt) {
+		gtk_widget_destroy(state->window_creds_prompt);
+	}
+}
+
+static void callback_do_freeauth_and_close(GtkWidget *widget,
+					   gpointer data)
+{
+	struct join_state *state = (struct join_state *)data;
+
+	debug("callback_do_freeauth_and_close called\n");
+
+	SAFE_FREE(state->account);
+	SAFE_FREE(state->password);
+
+	gtk_widget_destroy(state->window_creds_prompt);
+	gtk_widget_destroy(state->window_do_change);
 }
 
 static void free_join_state(struct join_state *s)
@@ -155,6 +188,8 @@ static void callback_apply_description_change(GtkWidget *widget,
 						GTK_BUTTONS_OK,
 						"Failed to change computer description: %s.",
 						libnetapi_get_error_string(state->ctx, status));
+		gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+
 		g_signal_connect_swapped(dialog, "response",
 					 G_CALLBACK(gtk_widget_destroy),
 					 dialog);
@@ -183,6 +218,7 @@ static void callback_do_exit(GtkWidget *widget,
 					GTK_MESSAGE_QUESTION,
 					GTK_BUTTONS_YES_NO,
 					"You must restart your computer before the new settings will take effect.");
+	gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
 	result = gtk_dialog_run(GTK_DIALOG(dialog));
 	switch (result) {
 		case GTK_RESPONSE_YES:
@@ -214,6 +250,7 @@ static void callback_do_reboot(GtkWidget *widget,
 					GTK_MESSAGE_INFO,
 					GTK_BUTTONS_OK,
 					"You must restart this computer for the changes to take effect.");
+	gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
 #if 0
 	g_signal_connect_swapped(dialog, "response",
 				 G_CALLBACK(gtk_widget_destroy),
@@ -269,10 +306,14 @@ static void callback_return_username(GtkWidget *widget,
 {
 	const gchar *entry_text;
 	struct join_state *state = (struct join_state *)data;
+	debug("callback_return_username called\n");
 	if (!widget) {
 		return;
 	}
 	entry_text = gtk_entry_get_text(GTK_ENTRY(widget));
+	if (!entry_text) {
+		return;
+	}
 	debug("callback_return_username: %s\n", entry_text);
 	SAFE_FREE(state->account);
 	state->account = strdup(entry_text);
@@ -287,7 +328,10 @@ static void callback_return_username_and_enter(GtkWidget *widget,
 		return;
 	}
 	entry_text = gtk_entry_get_text(GTK_ENTRY(widget));
-	debug("callback_return_username: %s\n", entry_text);
+	if (!entry_text) {
+		return;
+	}
+	debug("callback_return_username_and_enter: %s\n", entry_text);
 	SAFE_FREE(state->account);
 	state->account = strdup(entry_text);
 	g_signal_emit_by_name(state->button_ok_creds, "clicked");
@@ -298,10 +342,14 @@ static void callback_return_password(GtkWidget *widget,
 {
 	const gchar *entry_text;
 	struct join_state *state = (struct join_state *)data;
+	debug("callback_return_password called\n");
 	if (!widget) {
 		return;
 	}
 	entry_text = gtk_entry_get_text(GTK_ENTRY(widget));
+	if (!entry_text) {
+		return;
+	}
 #ifdef DEBUG_PASSWORD
 	debug("callback_return_password: %s\n", entry_text);
 #else
@@ -320,14 +368,57 @@ static void callback_return_password_and_enter(GtkWidget *widget,
 		return;
 	}
 	entry_text = gtk_entry_get_text(GTK_ENTRY(widget));
+	if (!entry_text) {
+		return;
+	}
 #ifdef DEBUG_PASSWORD
-	debug("callback_return_password: %s\n", entry_text);
+	debug("callback_return_password_and_enter: %s\n", entry_text);
 #else
-	debug("callback_return_password: (not printed)\n");
+	debug("callback_return_password_and_enter: (not printed)\n");
 #endif
 	SAFE_FREE(state->password);
 	state->password = strdup(entry_text);
 	g_signal_emit_by_name(state->button_ok_creds, "clicked");
+}
+
+static void callback_do_storeauth(GtkWidget *widget,
+				  gpointer data)
+{
+	struct join_state *state = (struct join_state *)data;
+
+	debug("callback_do_storeauth called\n");
+
+	SAFE_FREE(state->account);
+	SAFE_FREE(state->password);
+
+	callback_return_username(state->entry_account, state);
+	callback_return_password(state->entry_password, state);
+
+	gtk_widget_destroy(state->window_creds_prompt);
+}
+
+static void callback_continue(GtkWidget *widget,
+			      gpointer data)
+{
+	struct join_state *state = (struct join_state *)data;
+
+	gtk_widget_grab_focus(GTK_WIDGET(state->button_ok));
+	g_signal_emit_by_name(state->button_ok, "clicked");
+}
+
+static void callback_do_storeauth_and_continue(GtkWidget *widget,
+					       gpointer data)
+{
+	callback_do_storeauth(widget, data);
+	callback_continue(NULL, data);
+}
+
+static void callback_do_storeauth_and_scan(GtkWidget *widget,
+					   gpointer data)
+{
+	struct join_state *state = (struct join_state *)data;
+	callback_do_storeauth(widget, data);
+	g_signal_emit_by_name(state->button_get_ous, "clicked");
 }
 
 static void callback_do_hostname_change(GtkWidget *widget,
@@ -355,155 +446,17 @@ static void callback_do_hostname_change(GtkWidget *widget,
 					GTK_BUTTONS_CLOSE,
 					str);
 
+	gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
 	g_signal_connect_swapped(dialog, "response",
 				 G_CALLBACK(gtk_widget_destroy),
 				 dialog);
 	gtk_widget_show(dialog);
 }
 
-static void callback_do_join(GtkWidget *widget,
-			     gpointer data)
-{
-	GtkWidget *dialog;
-
-	NET_API_STATUS status;
-	const char *err_str = NULL;
-	uint32_t join_flags = 0;
-	uint32_t unjoin_flags = 0;
-	gboolean domain_join = FALSE;
-	gboolean try_unjoin = FALSE;
-	const char *new_workgroup_type = NULL;
-	const char *initial_workgroup_type = NULL;
-
-	struct join_state *state = (struct join_state *)data;
-
-	callback_return_username(state->entry_account, state);
-	callback_return_password(state->entry_password, state);
-
-	if (state->window_creds_prompt) {
-		gtk_widget_destroy(GTK_WIDGET(state->window_creds_prompt));
-	}
-
-	switch (state->name_type_initial) {
-		case NetSetupWorkgroupName:
-			initial_workgroup_type = "workgroup";
-			break;
-		case NetSetupDomainName:
-			initial_workgroup_type = "domain";
-			break;
-		default:
-			break;
-	}
-
-	switch (state->name_type_new) {
-		case NetSetupWorkgroupName:
-			new_workgroup_type = "workgroup";
-			break;
-		case NetSetupDomainName:
-			new_workgroup_type = "domain";
-			break;
-		default:
-			break;
-	}
-
-	if (state->name_type_new == NetSetupDomainName) {
-		domain_join = TRUE;
-		join_flags = WKSSVC_JOIN_FLAGS_JOIN_TYPE |
-			     WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
-			     WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED; /* for testing */
-	}
-
-	if ((state->name_type_initial == NetSetupDomainName) &&
-	    (state->name_type_new == NetSetupWorkgroupName)) {
-		try_unjoin = TRUE;
-		unjoin_flags = WKSSVC_JOIN_FLAGS_JOIN_TYPE |
-			       WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE;
-	}
-
-	debug("callback_do_join: Joining a %s named %s using join_flags 0x%08x ",
-		new_workgroup_type,
-		state->name_buffer_new,
-		join_flags);
-	if (domain_join) {
-		debug("as %s ", state->account);
-#ifdef DEBUG_PASSWORD
-		debug("with %s ", state->password);
-#endif
-	}
-	debug("\n");
-	if (try_unjoin) {
-
-		debug("callback_do_join: Unjoining\n");
-
-		status = NetUnjoinDomain(NULL,
-					 state->account,
-					 state->password,
-					 unjoin_flags);
-		if (status != 0) {
-			err_str = libnetapi_get_error_string(state->ctx, status);
-			g_print("callback_do_join: failed to unjoin (%s)\n",
-				err_str);
-
-			dialog = gtk_message_dialog_new(GTK_WINDOW(state->window_parent),
-							GTK_DIALOG_DESTROY_WITH_PARENT,
-							GTK_MESSAGE_ERROR,
-							GTK_BUTTONS_CLOSE,
-							"The following error occured attempting to unjoin the %s: \"%s\": %s",
-							initial_workgroup_type,
-							state->name_buffer_initial,
-							err_str);
-			gtk_dialog_run(GTK_DIALOG(dialog));
-			gtk_widget_destroy(dialog);
-		}
-
-	}
-	status = NetJoinDomain(NULL,
-			       state->name_buffer_new,
-			       NULL,
-			       state->account,
-			       state->password,
-			       join_flags);
-	if (status != 0) {
-		err_str = libnetapi_get_error_string(state->ctx, status);
-		g_print("callback_do_join: failed to join (%s)\n", err_str);
-
-		dialog = gtk_message_dialog_new(GTK_WINDOW(state->window_parent),
-						GTK_DIALOG_DESTROY_WITH_PARENT,
-						GTK_MESSAGE_ERROR,
-						GTK_BUTTONS_CLOSE,
-						"The following error occured attempting to join the %s: \"%s\": %s",
-						new_workgroup_type,
-						state->name_buffer_new,
-						err_str);
-
-		g_signal_connect_swapped(dialog, "response",
-					 G_CALLBACK(gtk_widget_destroy),
-					 dialog);
-
-		gtk_widget_show(dialog);
-
-		return;
-	}
-
-	debug("callback_do_join: Successfully joined %s\n",
-		new_workgroup_type);
-
-	dialog = gtk_message_dialog_new(GTK_WINDOW(state->window_parent),
-					GTK_DIALOG_DESTROY_WITH_PARENT,
-					GTK_MESSAGE_INFO,
-					GTK_BUTTONS_OK,
-					"Welcome to the %s %s.",
-					state->name_buffer_new,
-					new_workgroup_type);
-
-	gtk_dialog_run(GTK_DIALOG(dialog));
-	gtk_widget_destroy(dialog);
-
-	callback_do_reboot(NULL, state->window_parent, state);
-}
-
 static void callback_creds_prompt(GtkWidget *widget,
-				  gpointer data)
+				  gpointer data,
+				  const char *label_string,
+				  gpointer cont_fn)
 {
 	GtkWidget *window;
 	GtkWidget *box1;
@@ -513,44 +466,28 @@ static void callback_creds_prompt(GtkWidget *widget,
 
 	struct join_state *state = (struct join_state *)data;
 
-	debug("callback_creds_prompt:\n");
-
-	state->window_parent = state->window_do_change;
-
-	if (state->hostname_changed) {
-		return callback_do_hostname_change(NULL, state);
-	}
-
-	if ((state->name_type_initial != NetSetupDomainName) &&
-	    (state->name_type_new != NetSetupDomainName)) {
-		return callback_do_join(NULL, state);
-	}
+	debug("callback_creds_prompt\n");
 
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	gtk_window_set_modal(GTK_WINDOW(window), TRUE);
 
 	gtk_window_set_title(GTK_WINDOW(window), "Computer Name Changes");
 	gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
 	gtk_widget_set_size_request(GTK_WIDGET(window), 380, 280);
 	gtk_window_set_icon_from_file(GTK_WINDOW(window), SAMBA_ICON_PATH, NULL);
-/*	gtk_window_set_icon_name(GTK_WIDGET(window), GTK_STOCK_DIALOG_AUTHENTICATION); */
-	state->window_creds_prompt = window;
 
 	g_signal_connect(G_OBJECT(window), "delete_event",
 			 G_CALLBACK(callback_do_close), window);
 
+	state->window_creds_prompt = window;
 	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
 
 	box1 = gtk_vbox_new(FALSE, 0);
 
 	gtk_container_add(GTK_CONTAINER(window), box1);
 
-	if ((state->name_type_initial == NetSetupDomainName) &&
-	    (state->name_type_new == NetSetupWorkgroupName)) {
-		label = gtk_label_new("Enter the name and password of an account with permission to leave the domain.\n");
-	} else {
-		label = gtk_label_new("Enter the name and password of an account with permission to join the domain.\n");
-	}
+	label = gtk_label_new(label_string);
 	gtk_misc_set_alignment(GTK_MISC(label), 0, 0);
 	gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
 
@@ -592,6 +529,7 @@ static void callback_creds_prompt(GtkWidget *widget,
 	gtk_box_pack_start(GTK_BOX(box1), state->entry_password, TRUE, TRUE, 0);
 	gtk_widget_show(state->entry_password);
 
+	/* BUTTONS */
 	bbox = gtk_hbutton_box_new();
 	gtk_container_set_border_width(GTK_CONTAINER(bbox), 5);
 	gtk_container_add(GTK_CONTAINER(box1), bbox);
@@ -602,15 +540,208 @@ static void callback_creds_prompt(GtkWidget *widget,
 	gtk_widget_grab_focus(GTK_WIDGET(state->button_ok_creds));
 	gtk_container_add(GTK_CONTAINER(bbox), state->button_ok_creds);
 	g_signal_connect(G_OBJECT(state->button_ok_creds), "clicked",
-			 G_CALLBACK(callback_do_join),
+			 G_CALLBACK(cont_fn),
 			 (gpointer)state);
 	gtk_widget_show(state->button_ok_creds);
 
 	button = gtk_button_new_from_stock(GTK_STOCK_CANCEL);
 	gtk_container_add(GTK_CONTAINER(bbox), button);
 	g_signal_connect(G_OBJECT(button), "clicked",
-			 G_CALLBACK(callback_do_close), (gpointer) window);
+			 G_CALLBACK(callback_do_freeauth),
+			 (gpointer)state);
 	gtk_widget_show_all(window);
+}
+
+static void callback_do_join(GtkWidget *widget,
+			     gpointer data)
+{
+	GtkWidget *dialog;
+
+	NET_API_STATUS status;
+	const char *err_str = NULL;
+	uint32_t join_flags = 0;
+	uint32_t unjoin_flags = 0;
+	gboolean domain_join = FALSE;
+	gboolean try_unjoin = FALSE;
+	gboolean join_creds_required = TRUE;
+	gboolean unjoin_creds_required = TRUE;
+	const char *new_workgroup_type = NULL;
+	const char *initial_workgroup_type = NULL;
+	const char *account_ou = NULL;
+
+	struct join_state *state = (struct join_state *)data;
+
+	if (state->hostname_changed) {
+		callback_do_hostname_change(NULL, state);
+		return;
+	}
+
+	switch (state->name_type_initial) {
+		case NetSetupWorkgroupName:
+			initial_workgroup_type = "workgroup";
+			break;
+		case NetSetupDomainName:
+			initial_workgroup_type = "domain";
+			break;
+		default:
+			break;
+	}
+
+	switch (state->name_type_new) {
+		case NetSetupWorkgroupName:
+			new_workgroup_type = "workgroup";
+			break;
+		case NetSetupDomainName:
+			new_workgroup_type = "domain";
+			break;
+		default:
+			break;
+	}
+
+	account_ou = gtk_combo_box_get_active_text(GTK_COMBO_BOX(state->entry_ou_list));
+	if (account_ou && strlen(account_ou) == 0) {
+		account_ou = NULL;
+	}
+
+	if ((state->name_type_initial != NetSetupDomainName) &&
+	    (state->name_type_new != NetSetupDomainName)) {
+		join_creds_required = FALSE;
+		unjoin_creds_required = FALSE;
+	}
+
+	if (state->name_type_new == NetSetupDomainName) {
+		domain_join = TRUE;
+		join_creds_required = TRUE;
+		join_flags = WKSSVC_JOIN_FLAGS_JOIN_TYPE |
+			     WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
+			     WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED; /* for testing */
+	}
+
+	if ((state->name_type_initial == NetSetupDomainName) &&
+	    (state->name_type_new == NetSetupWorkgroupName)) {
+		try_unjoin = TRUE;
+		unjoin_creds_required = TRUE;
+		join_creds_required = FALSE;
+		unjoin_flags = WKSSVC_JOIN_FLAGS_JOIN_TYPE |
+			       WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE;
+	}
+
+	if (try_unjoin) {
+
+		debug("callback_do_join: Unjoining\n");
+
+		if (unjoin_creds_required) {
+			if (!state->account || !state->password) {
+				debug("callback_do_join: no creds yet\n");
+				callback_creds_prompt(NULL, state,
+						      "Enter the name and password of an account with permission to leave the domain.",
+						      callback_do_storeauth_and_continue);
+			}
+
+			if (!state->account || !state->password) {
+				debug("callback_do_join: still no creds???\n");
+				return;
+			}
+		}
+
+		status = NetUnjoinDomain(NULL,
+					 state->account,
+					 state->password,
+					 unjoin_flags);
+		if (status != 0) {
+			callback_do_freeauth(NULL, state);
+			err_str = libnetapi_get_error_string(state->ctx, status);
+			g_print("callback_do_join: failed to unjoin (%s)\n",
+				err_str);
+
+			dialog = gtk_message_dialog_new(GTK_WINDOW(state->window_parent),
+							GTK_DIALOG_DESTROY_WITH_PARENT,
+							GTK_MESSAGE_ERROR,
+							GTK_BUTTONS_CLOSE,
+							"The following error occured attempting to unjoin the %s: \"%s\": %s",
+							initial_workgroup_type,
+							state->name_buffer_initial,
+							err_str);
+			gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+			gtk_dialog_run(GTK_DIALOG(dialog));
+			gtk_widget_destroy(dialog);
+		}
+
+	}
+
+	if (join_creds_required) {
+		if (!state->account || !state->password) {
+			debug("callback_do_join: no creds yet\n");
+			callback_creds_prompt(NULL, state,
+					      "Enter the name and password of an account with permission to leave the domain.",
+					      callback_do_storeauth_and_continue);
+		}
+
+		if (!state->account || !state->password) {
+			debug("callback_do_join: still no creds???\n");
+			return;
+		}
+	}
+
+	debug("callback_do_join: Joining a %s named %s using join_flags 0x%08x ",
+		new_workgroup_type,
+		state->name_buffer_new,
+		join_flags);
+	if (domain_join) {
+		debug("as %s ", state->account);
+#ifdef DEBUG_PASSWORD
+		debug("with %s ", state->password);
+#endif
+	}
+	debug("\n");
+
+	status = NetJoinDomain(NULL,
+			       state->name_buffer_new,
+			       account_ou,
+			       state->account,
+			       state->password,
+			       join_flags);
+	if (status != 0) {
+		callback_do_freeauth(NULL, state);
+		err_str = libnetapi_get_error_string(state->ctx, status);
+		g_print("callback_do_join: failed to join (%s)\n", err_str);
+
+		dialog = gtk_message_dialog_new(GTK_WINDOW(state->window_parent),
+						GTK_DIALOG_DESTROY_WITH_PARENT,
+						GTK_MESSAGE_ERROR,
+						GTK_BUTTONS_CLOSE,
+						"The following error occured attempting to join the %s: \"%s\": %s",
+						new_workgroup_type,
+						state->name_buffer_new,
+						err_str);
+
+		gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+		g_signal_connect_swapped(dialog, "response",
+					 G_CALLBACK(gtk_widget_destroy),
+					 dialog);
+
+		gtk_widget_show(dialog);
+
+		return;
+	}
+
+	debug("callback_do_join: Successfully joined %s\n",
+		new_workgroup_type);
+
+	callback_do_freeauth(NULL, state);
+	dialog = gtk_message_dialog_new(GTK_WINDOW(state->window_parent),
+					GTK_DIALOG_DESTROY_WITH_PARENT,
+					GTK_MESSAGE_INFO,
+					GTK_BUTTONS_OK,
+					"Welcome to the %s %s.",
+					state->name_buffer_new,
+					new_workgroup_type);
+
+	gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+	gtk_dialog_run(GTK_DIALOG(dialog));
+	gtk_widget_destroy(dialog);
+
+	callback_do_reboot(NULL, state->window_parent, state);
 }
 
 static void callback_enter_hostname_and_unlock(GtkWidget *widget,
@@ -717,18 +848,11 @@ static void callback_enter_domain_and_unlock(GtkWidget *widget,
 		return;
 	}
 	gtk_widget_set_sensitive(GTK_WIDGET(state->button_ok), TRUE);
+	gtk_widget_set_sensitive(GTK_WIDGET(state->entry_ou_list), TRUE);
+	gtk_widget_set_sensitive(GTK_WIDGET(state->button_get_ous), TRUE);
 	SAFE_FREE(state->name_buffer_new);
 	state->name_buffer_new = strdup(entry_text);
 	state->name_type_new = NetSetupDomainName;
-}
-
-static void callback_continue(GtkWidget *widget,
-			      gpointer data)
-{
-	struct join_state *state = (struct join_state *)data;
-
-	gtk_widget_grab_focus(GTK_WIDGET(state->button_ok));
-	g_signal_emit_by_name(state->button_ok, "clicked");
 }
 
 static void callback_apply_continue(GtkWidget *widget,
@@ -748,6 +872,8 @@ static void callback_do_join_workgroup(GtkWidget *widget,
 	gtk_widget_set_sensitive(GTK_WIDGET(state->entry_workgroup), TRUE);
 	gtk_widget_grab_focus(GTK_WIDGET(state->entry_workgroup));
 	gtk_widget_set_sensitive(GTK_WIDGET(state->entry_domain), FALSE);
+	gtk_widget_set_sensitive(GTK_WIDGET(state->entry_ou_list), FALSE);
+	gtk_widget_set_sensitive(GTK_WIDGET(state->button_get_ous), FALSE);
 	callback_enter_workgroup_and_unlock(state->entry_workgroup, state); /* TEST */
 }
 
@@ -760,6 +886,62 @@ static void callback_do_join_domain(GtkWidget *widget,
 	gtk_widget_grab_focus(GTK_WIDGET(state->entry_domain));
 	gtk_widget_set_sensitive(GTK_WIDGET(state->entry_workgroup), FALSE);
 	callback_enter_domain_and_unlock(state->entry_domain, state); /* TEST */
+}
+
+static void callback_do_getous(GtkWidget *widget,
+			       gpointer data)
+{
+	NET_API_STATUS status;
+	uint32_t num_ous = 0;
+	const char **ous = NULL;
+	int i;
+	const char *domain = NULL;
+
+	struct join_state *state = (struct join_state *)data;
+
+	debug("callback_do_getous called\n");
+
+	domain = state->name_buffer_new ? state->name_buffer_new : state->name_buffer_initial;
+
+	if (!state->account || !state->password) {
+		debug("callback_do_getous: no creds yet\n");
+		callback_creds_prompt(NULL, state,
+				      "Enter the name and password of an account with permission to join the domain.",
+				      callback_do_storeauth_and_scan);
+	}
+
+	if (!state->account || !state->password) {
+		debug("callback_do_getous: still no creds ???\n");
+		return;
+	}
+
+	status = NetGetJoinableOUs(NULL, domain,
+				   state->account,
+				   state->password,
+				   &num_ous, &ous);
+	if (status != NET_API_STATUS_SUCCESS) {
+		GtkWidget *dialog;
+		callback_do_freeauth(NULL, state);
+		debug("failed to call NetGetJoinableOUs: %s\n",
+			libnetapi_get_error_string(state->ctx, status));
+		dialog = gtk_message_dialog_new(NULL,
+						GTK_DIALOG_DESTROY_WITH_PARENT,
+						GTK_MESSAGE_INFO,
+						GTK_BUTTONS_OK,
+						"Failed to query joinable OUs: %s",
+						libnetapi_get_error_string(state->ctx, status));
+		gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+		gtk_dialog_run(GTK_DIALOG(dialog));
+		gtk_widget_destroy(dialog);
+		return;
+	}
+
+	for (i=0; i<num_ous && ous[i] != NULL; i++) {
+		gtk_combo_box_append_text(GTK_COMBO_BOX(state->entry_ou_list),
+					  ous[i]);
+	}
+	NetApiBufferFree(ous);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(state->entry_ou_list), num_ous-1);
 }
 
 static void callback_do_change(GtkWidget *widget,
@@ -785,11 +967,13 @@ static void callback_do_change(GtkWidget *widget,
 	/* FIXME: add proper warnings for Samba as a DC */
 	if (state->server_role == 3) {
 		GtkWidget *dialog;
+		callback_do_freeauth(NULL, state);
 		dialog = gtk_message_dialog_new(GTK_WINDOW(state->window_main),
 						GTK_DIALOG_DESTROY_WITH_PARENT,
 						GTK_MESSAGE_ERROR,
 						GTK_BUTTONS_OK,
 						"Domain controller cannot be moved from one domain to another, they must first be demoted. Renaming this domain controller may cause it to become temporarily unavailable to users and computers. For information on renaming domain controllers, including alternate renaming methods, see Help and Support. To continue renaming this domain controller, click OK.");
+		gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
 		g_signal_connect_swapped(dialog, "response",
 					 G_CALLBACK(gtk_widget_destroy),
 					 dialog);
@@ -800,11 +984,13 @@ static void callback_do_change(GtkWidget *widget,
 #endif
 
 	state->button_ok = gtk_button_new_from_stock(GTK_STOCK_OK);
+	state->button_get_ous = gtk_button_new_with_label("Scan for joinable OUs");
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	gtk_window_set_modal(GTK_WINDOW(window), TRUE);
 
 	gtk_window_set_title(GTK_WINDOW(window), "Computer Name Changes");
 	gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
-	gtk_widget_set_size_request(GTK_WIDGET(window), 480, 500);
+	gtk_widget_set_size_request(GTK_WIDGET(window), 480, 650);
 	gtk_window_set_icon_from_file(GTK_WINDOW(window), SAMBA_ICON_PATH, NULL);
 
 	g_signal_connect(G_OBJECT(window), "delete_event",
@@ -941,6 +1127,37 @@ static void callback_do_change(GtkWidget *widget,
 	}
 	gtk_widget_show(button_workgroup);
 
+	/* Advanced Options */
+	frame_horz = gtk_frame_new("Advanced Options");
+	gtk_box_pack_start(GTK_BOX(box1), frame_horz, TRUE, TRUE, 10);
+
+	vbox = gtk_vbox_new(FALSE, 0);
+	gtk_container_set_border_width(GTK_CONTAINER(vbox), 10);
+	gtk_container_add(GTK_CONTAINER(frame_horz), vbox);
+
+	/* OUs */
+	gtk_container_add(GTK_CONTAINER(vbox), state->button_get_ous);
+	gtk_widget_set_sensitive(GTK_WIDGET(state->button_get_ous), FALSE);
+	g_signal_connect(G_OBJECT(state->button_get_ous), "clicked",
+			 G_CALLBACK(callback_do_getous),
+			 (gpointer)state);
+
+	state->entry_ou_list = gtk_combo_box_entry_new_text();
+	gtk_widget_set_sensitive(state->entry_ou_list, FALSE);
+	if (state->name_type_initial == NetSetupWorkgroupName) {
+		gtk_widget_set_sensitive(state->entry_ou_list, FALSE);
+		gtk_widget_set_sensitive(state->button_get_ous, FALSE);
+	}
+	gtk_box_pack_start(GTK_BOX(vbox), state->entry_ou_list, TRUE, TRUE, 0);
+	gtk_widget_show(state->entry_ou_list);
+
+	{
+		state->label_winbind = gtk_check_button_new_with_label("Modify winbind configuration");
+		gtk_box_pack_start(GTK_BOX(vbox), state->label_winbind, TRUE, TRUE, 0);
+		gtk_widget_set_sensitive(state->label_winbind, FALSE);
+	}
+
+
 	/* BUTTONS */
 	bbox = gtk_hbutton_box_new();
 	gtk_container_set_border_width(GTK_CONTAINER(bbox), 5);
@@ -949,20 +1166,19 @@ static void callback_do_change(GtkWidget *widget,
 	gtk_box_set_spacing(GTK_BOX(bbox), 10);
 
 	state->window_do_change = window;
-	gtk_widget_set_sensitive(GTK_WIDGET(state->button_ok), FALSE); /* !!! */
+	gtk_widget_set_sensitive(GTK_WIDGET(state->button_ok), FALSE);
 	gtk_container_add(GTK_CONTAINER(bbox), state->button_ok);
 	g_signal_connect(G_OBJECT(state->button_ok), "clicked",
-			 G_CALLBACK(callback_creds_prompt),
+			 G_CALLBACK(callback_do_join),
 			 (gpointer)state);
 
 	button = gtk_button_new_from_stock(GTK_STOCK_CANCEL);
 	gtk_container_add(GTK_CONTAINER(bbox), button);
 	g_signal_connect(G_OBJECT(button), "clicked",
-			 G_CALLBACK(callback_do_close),
-			 (gpointer)window);
+			 G_CALLBACK(callback_do_freeauth_and_close),
+			 (gpointer)state);
 
 	gtk_widget_show_all(window);
-
 }
 
 static void callback_do_about(GtkWidget *widget,
@@ -970,6 +1186,7 @@ static void callback_do_about(GtkWidget *widget,
 {
 	GdkPixbuf *logo;
 	GError    *error = NULL;
+	GtkWidget *about;
 
 	debug("callback_do_about called\n");
 
@@ -980,15 +1197,25 @@ static void callback_do_about(GtkWidget *widget,
 			SAMBA_IMAGE_PATH, error->message);
 	}
 
-	gtk_show_about_dialog(data,
-			      "name", "Samba",
-			      "version", "3.2.0pre2-GIT-904a90-test",
-			      "copyright", "Copyright Andrew Tridgell and the Samba Team 1992-2007",
-			      "website", "http://www.samba.org",
-			      "license", "GPLv3",
-			      "logo", logo,
-			      "comments", "Samba gtk domain join utility",
-			      NULL);
+	about = gtk_about_dialog_new();
+	gtk_about_dialog_set_name(GTK_ABOUT_DIALOG(about), "Samba");
+	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(about), "3.2.0pre3");
+	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(about),
+		"Copyright Andrew Tridgell and the Samba Team 1992-2008\n"
+		"Copyright Günther Deschner 2007-2008");
+	gtk_about_dialog_set_license(GTK_ABOUT_DIALOG(about), "GPLv3");
+	gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(about), "http://www.samba.org");
+	gtk_about_dialog_set_website_label(GTK_ABOUT_DIALOG(about), "http://www.samba.org");
+	if (logo) {
+		gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(about), logo);
+	}
+	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(about), "Samba gtk domain join utility");
+	gtk_window_set_modal(GTK_WINDOW(about), TRUE);
+	g_signal_connect_swapped(about, "response",
+				 G_CALLBACK(gtk_widget_destroy),
+				 about);
+
+	gtk_widget_show(about);
 }
 
 static int draw_main_window(struct join_state *state)
@@ -1221,7 +1448,13 @@ static int draw_main_window(struct join_state *state)
 		g_signal_connect(G_OBJECT(button2), "clicked",
 				 G_CALLBACK(callback_do_about),
 				 window);
-
+#if 0
+		button2 = gtk_button_new_from_stock(GTK_STOCK_HELP);
+		gtk_container_add(GTK_CONTAINER(bbox2), button2);
+		g_signal_connect(G_OBJECT(button2), "clicked",
+				 G_CALLBACK(callback_do_about),
+				 window);
+#endif
 		gtk_box_pack_start(GTK_BOX(vbox), frame, TRUE, TRUE, 5);
 	}
 
