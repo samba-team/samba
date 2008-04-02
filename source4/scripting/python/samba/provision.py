@@ -28,7 +28,7 @@ import pwd
 import grp
 import time
 import uuid, misc
-from socket import gethostname, gethostbyname
+import socket
 import param
 import registry
 import samba
@@ -267,7 +267,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None, serverrole=
               rootdn=None, domaindn=None, configdn=None, schemadn=None, sitename=None):
 
     if hostname is None:
-        hostname = gethostname().split(".")[0].lower()
+        hostname = socket.gethostname().split(".")[0].lower()
 
     netbiosname = hostname.upper()
     if not valid_netbios_name(netbiosname):
@@ -348,7 +348,7 @@ def load_or_make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrol
 
     if not os.path.exists(smbconf):
         if hostname is None:
-            hostname = gethostname().split(".")[0].lower()
+            hostname = socket.gethostname().split(".")[0].lower()
 
         if serverrole is None:
             serverrole = "standalone"
@@ -894,8 +894,8 @@ FILL_DRS = "DRS"
 def provision(setup_dir, message, session_info, 
               credentials, smbconf=None, targetdir=None, samdb_fill=FILL_FULL, realm=None, 
               rootdn=None, domaindn=None, schemadn=None, configdn=None,
-              domain=None, hostname=None, hostip=None, domainsid=None, 
-              adminpass=None, krbtgtpass=None, domainguid=None, 
+              domain=None, hostname=None, hostip=None, hostip6=None, 
+              domainsid=None, adminpass=None, krbtgtpass=None, domainguid=None, 
               policyguid=None, invocationid=None, machinepass=None, 
               dnspass=None, root=None, nobody=None, nogroup=None, users=None, 
               wheel=None, backup=None, aci=None, serverrole=None, 
@@ -948,7 +948,12 @@ def provision(setup_dir, message, session_info,
     paths = provision_paths_from_lp(lp, names.dnsdomain)
 
     if hostip is None:
-        hostip = gethostbyname(names.hostname)
+        hostip = socket.getaddrinfo(names.hostname, None, socket.AF_INET, socket.AI_CANONNAME, socket.IPPROTO_IP)[0][-1][0]
+
+    if hostip6 is None:
+        try:
+            hostip6 = socket.getaddrinfo(names.hostname, None, socket.AF_INET6, socket.AI_CANONNAME, socket.IPPROTO_IP)[0][-1][0]
+        except socket.gaierror: pass
 
     if serverrole is None:
         serverrole = lp.get("server role")
@@ -1041,7 +1046,8 @@ def provision(setup_dir, message, session_info,
             assert isinstance(hostguid, str)
             
             create_zone_file(paths.dns, setup_path, samdb, 
-                             hostname=names.hostname, hostip=hostip, dnsdomain=names.dnsdomain,
+                             hostname=names.hostname, hostip=hostip,
+                             hostip6=hostip6, dnsdomain=names.dnsdomain,
                              domaindn=names.domaindn, dnspass=dnspass, realm=names.realm, 
                              domainguid=domainguid, hostguid=hostguid)
             message("Please install the zone located in %s into your DNS server" % paths.dns)
@@ -1107,7 +1113,7 @@ def provision_backend(setup_dir=None, message=None,
         return os.path.join(setup_dir, file)
 
     if hostname is None:
-        hostname = gethostname().split(".")[0].lower()
+        hostname = socket.gethostname().split(".")[0].lower()
 
     if root is None:
         root = findnss(pwd.getpwnam, ["root"])[0]
@@ -1240,7 +1246,7 @@ def create_phpldapadmin_config(path, setup_path, ldapi_uri):
 
 
 def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn, 
-                  hostip, hostname, dnspass, realm, domainguid, hostguid):
+                  hostip, hostip6, hostname, dnspass, realm, domainguid, hostguid):
     """Write out a DNS zone file, from the info in the current database.
     
     :param path: Path of the new file.
@@ -1248,7 +1254,8 @@ def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn,
     :param samdb: SamDB object
     :param dnsdomain: DNS Domain name
     :param domaindn: DN of the Domain
-    :param hostip: Local IP
+    :param hostip: Local IPv4 IP
+    :param hostip6: Local IPv6 IP
     :param hostname: Local hostname
     :param dnspass: Password for DNS
     :param realm: Realm name
@@ -1256,6 +1263,13 @@ def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn,
     :param hostguid: GUID of the host.
     """
     assert isinstance(domainguid, str)
+
+    hostip6_base_line = ""
+    hostip6_host_line = ""
+
+    if hostip6 is not None:
+        hostip6_base_line = "			IN AAAA	" + hostip6
+        hostip6_host_line = hostname + "		IN AAAA	" + hostip6
 
     setup_file(setup_path("provision.zone"), path, {
             "DNSPASS_B64": b64encode(dnspass),
@@ -1267,6 +1281,8 @@ def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn,
             "DATESTRING": time.strftime("%Y%m%d%H"),
             "DEFAULTSITE": DEFAULTSITE,
             "HOSTGUID": hostguid,
+            "HOSTIP6_BASE_LINE": hostip6_base_line,
+            "HOSTIP6_HOST_LINE": hostip6_host_line,
         })
 
 def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename):
