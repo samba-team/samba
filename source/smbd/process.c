@@ -1259,8 +1259,10 @@ void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes)
 	if ((num_bytes > 0xffffff)
 	    || ((num_bytes + smb_size + num_words*2) > 0xffffff)) {
 		char *msg;
-		asprintf(&msg, "num_bytes too large: %u",
-			 (unsigned)num_bytes);
+		if (asprintf(&msg, "num_bytes too large: %u",
+			     (unsigned)num_bytes) == -1) {
+			msg = CONST_DISCARD(char *, "num_bytes too large");
+		}
 		smb_panic(msg);
 	}
 
@@ -1298,9 +1300,8 @@ static void smb_dump(const char *name, int type, const char *data, ssize_t len)
 
 	if (len < 4) len = smb_len(data)+4;
 	for (i=1;i<100;i++) {
-		asprintf(&fname, "/tmp/%s.%d.%s", name, i,
-				type ? "req" : "resp");
-		if (!fname) {
+		if (asprintf(&fname, "/tmp/%s.%d.%s", name, i,
+			     type ? "req" : "resp") == -1) {
 			return;
 		}
 		fd = open(fname, O_WRONLY|O_CREAT|O_EXCL, 0644);
