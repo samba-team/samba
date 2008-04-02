@@ -529,8 +529,13 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	int fd;
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	struct ctdb_client *client;
+#ifdef _AIX
+	struct peercred_struct cr;
+	socklen_t crl = sizeof(struct peercred_struct);
+#else
 	struct ucred cr;
 	socklen_t crl = sizeof(struct ucred);
+#endif
 
 	memset(&addr, 0, sizeof(addr));
 	len = sizeof(addr);
@@ -543,7 +548,11 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	set_close_on_exec(fd);
 
 	client = talloc_zero(ctdb, struct ctdb_client);
+#ifdef _AIX
+	if (getsockopt(fd, SOL_SOCKET, SO_PEERID, &cr, &crl) == 0) {
+#else
 	if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cr, &crl) == 0) {
+#endif
 		talloc_asprintf(client, "struct ctdb_client: pid:%u", (unsigned)cr.pid);
 	}
 
