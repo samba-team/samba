@@ -132,6 +132,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	struct netr_Credential clnt_chal_send;
 	struct netr_Credential srv_chal_recv;
 	struct dcinfo *dc;
+	bool retried = false;
 
 	SMB_ASSERT(cli->pipe_idx == PI_NETLOGON);
 
@@ -153,6 +154,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 
 	fstr_sprintf( dc->mach_acct, "%s$", machine_account);
 
+ again:
 	/* Create the client challenge. */
 	generate_random_buffer(clnt_chal_send.data, 8);
 
@@ -186,6 +188,15 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 						 &clnt_chal_send, /* input. */
 						 &srv_chal_recv, /* output. */
 						 neg_flags_inout);
+
+	/* we might be talking to NT4, so let's downgrade in that case and retry
+	 * with the returned neg_flags - gd */
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) && !retried) {
+		retried = true;
+		goto again;
+	}
+
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
