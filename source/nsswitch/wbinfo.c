@@ -508,7 +508,7 @@ static bool wbinfo_domain_info(const char *domain)
 	struct wbcDomainInfo *dinfo = NULL;
 	char *sid_str = NULL;
 
-	if (strcmp(domain, ".") == 0 || domain[0] == '\0') {
+	if ((domain == NULL) || (strequal(domain, ".")) || (domain[0] == '\0')) {
 		domain = get_winbind_domain();
 	}
 
