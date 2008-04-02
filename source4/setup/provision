@@ -57,17 +57,9 @@ parser.add_option("--invocationid", type="string", metavar="GUID",
 parser.add_option("--host-name", type="string", metavar="HOSTNAME", 
 		help="set hostname")
 parser.add_option("--host-ip", type="string", metavar="IPADDRESS", 
-<<<<<<< HEAD:source/setup/provision
-		help="set ipaddress")
-=======
 		help="set IPv4 ipaddress")
 parser.add_option("--host-ip6", type="string", metavar="IP6ADDRESS", 
 		help="set IPv6 ipaddress")
-parser.add_option("--host-guid", type="string", metavar="GUID", 
-		help="set hostguid (otherwise random)")
-parser.add_option("--invocationid", type="string", metavar="GUID", 
-		help="set invocationid (otherwise random)")
->>>>>>> 8585a3c77d5dfe97bca3f08716fc06ac2819f578:source/setup/provision
 parser.add_option("--adminpass", type="string", metavar="PASSWORD", 
 		help="choose admin password (otherwise random)")
 parser.add_option("--krbtgtpass", type="string", metavar="PASSWORD", 
