@@ -55,7 +55,9 @@ parser.add_option("--policy-guid", type="string", metavar="GUID",
 parser.add_option("--host-name", type="string", metavar="HOSTNAME", 
 		help="set hostname")
 parser.add_option("--host-ip", type="string", metavar="IPADDRESS", 
-		help="set ipaddress")
+		help="set IPv4 ipaddress")
+parser.add_option("--host-ip6", type="string", metavar="IP6ADDRESS", 
+		help="set IPv6 ipaddress")
 parser.add_option("--host-guid", type="string", metavar="GUID", 
 		help="set hostguid (otherwise random)")
 parser.add_option("--invocationid", type="string", metavar="GUID", 
@@ -141,7 +143,7 @@ provision(setup_dir, message,
           samdb_fill=samdb_fill, realm=opts.realm, domain=opts.domain,
           domainguid=opts.domain_guid, domainsid=opts.domain_sid,
           policyguid=opts.policy_guid, hostname=opts.host_name,
-          hostip=opts.host_ip, hostguid=opts.host_guid, 
+          hostip=opts.host_ip, hostip6=opts.host_ip6, hostguid=opts.host_guid, 
           invocationid=opts.invocationid, adminpass=opts.adminpass,
           krbtgtpass=opts.krbtgtpass, machinepass=opts.machinepass,
           dnspass=opts.dnspass, root=opts.root, nobody=opts.nobody,
