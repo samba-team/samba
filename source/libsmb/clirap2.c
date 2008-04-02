@@ -1469,7 +1469,7 @@ int cli_NetShareDelete(struct cli_state *cli, const char * share_name )
 *
 ************************************************************************/
 
-bool cli_get_pdc_name(struct cli_state *cli, char *workgroup, char **pdc_name)
+bool cli_get_pdc_name(struct cli_state *cli, const char *workgroup, char **pdc_name)
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
