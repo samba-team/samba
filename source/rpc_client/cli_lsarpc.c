@@ -204,11 +204,19 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 			dom_name = ref_domains->domains[dom_idx].name.string;
 			name = lsa_names.names[i].name.string;
 
-			(names)[i] = talloc_strdup(mem_ctx, name);
+			if (name) {
+				(names)[i] = talloc_strdup(mem_ctx, name);
+				if ((names)[i] == NULL) {
+					DEBUG(0, ("cli_lsa_lookup_sids_noalloc(): out of memory\n"));
+					result = NT_STATUS_UNSUCCESSFUL;
+					goto done;
+				}
+			} else {
+				(names)[i] = NULL;
+			}
 			(domains)[i] = talloc_strdup(mem_ctx, dom_name);
 			(types)[i] = lsa_names.names[i].sid_type;
-
-			if (((names)[i] == NULL) || ((domains)[i] == NULL)) {
+			if (((domains)[i] == NULL)) {
 				DEBUG(0, ("cli_lsa_lookup_sids_noalloc(): out of memory\n"));
 				result = NT_STATUS_UNSUCCESSFUL;
 				goto done;
