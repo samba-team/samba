@@ -1245,7 +1245,8 @@ static const struct smb_message_struct {
  allocate and initialize a reply packet
 ********************************************************************/
 
-void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes)
+bool create_outbuf(TALLOC_CTX *mem_ctx, const char *inbuf, char **outbuf,
+		   uint8_t num_words, uint32_t num_bytes)
 {
 	/*
          * Protect against integer wrap
@@ -1260,23 +1261,33 @@ void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes)
 		smb_panic(msg);
 	}
 
-	if (!(req->outbuf = TALLOC_ARRAY(
-		      req, uint8,
-		      smb_size + num_words*2 + num_bytes))) {
-		smb_panic("could not allocate output buffer\n");
+	*outbuf = TALLOC_ARRAY(mem_ctx, char,
+			       smb_size + num_words*2 + num_bytes);
+	if (*outbuf == NULL) {
+		return false;
 	}
 
-	construct_reply_common((char *)req->inbuf, (char *)req->outbuf);
-	srv_set_message((char *)req->outbuf, num_words, num_bytes, false);
+	construct_reply_common(inbuf, *outbuf);
+	srv_set_message(*outbuf, num_words, num_bytes, false);
 	/*
 	 * Zero out the word area, the caller has to take care of the bcc area
 	 * himself
 	 */
 	if (num_words != 0) {
-		memset(req->outbuf + smb_vwv0, 0, num_words*2);
+		memset(*outbuf + smb_vwv0, 0, num_words*2);
 	}
 
-	return;
+	return true;
+}
+
+void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes)
+{
+	char *outbuf;
+	if (!create_outbuf(req, (char *)req->inbuf, &outbuf, num_words,
+			   num_bytes)) {
+		smb_panic("could not allocate output buffer\n");
+	}
+	req->outbuf = (uint8_t *)outbuf;
 }
 
 
