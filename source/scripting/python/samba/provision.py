@@ -695,13 +695,8 @@ def setup_samdb_rootdse(samdb, setup_path, schemadn, domaindn, hostname,
 def setup_self_join(samdb, names,
                     machinepass, dnspass, 
                     domainsid, invocationid, setup_path,
-                    policyguid, hostguid=None):
+                    policyguid):
     """Join a host to its own domain."""
-    if hostguid is not None:
-        hostguid_add = "objectGUID: %s" % hostguid
-    else:
-        hostguid_add = ""
-
     setup_add_ldif(samdb, setup_path("provision_self_join.ldif"), { 
               "CONFIGDN": names.configdn, 
               "SCHEMADN": names.schemadn,
@@ -714,7 +709,6 @@ def setup_self_join(samdb, names,
               "DNSPASS_B64": b64encode(dnspass),
               "REALM": names.realm,
               "DOMAIN": names.domain,
-              "HOSTGUID_ADD": hostguid_add,
               "DNSDOMAIN": names.dnsdomain})
     setup_add_ldif(samdb, setup_path("provision_group_policy.ldif"), { 
               "POLICYGUID": policyguid,
@@ -727,7 +721,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                 names, message, 
                 domainsid, aci, domainguid, policyguid, 
                 fill, adminpass, krbtgtpass, 
-                machinepass, hostguid, invocationid, dnspass,
+                machinepass, invocationid, dnspass,
                 serverrole, ldap_backend=None, 
                 ldap_backend_type=None):
     """Setup a complete SAM Database.
@@ -880,7 +874,6 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                                 dnspass=dnspass,  
                                 machinepass=machinepass, 
                                 domainsid=domainsid, policyguid=policyguid,
-                                hostguid=hostguid, 
                                 setup_path=setup_path)
 
     #We want to setup the index last, as adds are faster unindexed
@@ -902,7 +895,7 @@ def provision(setup_dir, message, session_info,
               credentials, smbconf=None, targetdir=None, samdb_fill=FILL_FULL, realm=None, 
               rootdn=None, domaindn=None, schemadn=None, configdn=None,
               domain=None, hostname=None, hostip=None, domainsid=None, 
-              hostguid=None, adminpass=None, krbtgtpass=None, domainguid=None, 
+              adminpass=None, krbtgtpass=None, domainguid=None, 
               policyguid=None, invocationid=None, machinepass=None, 
               dnspass=None, root=None, nobody=None, nogroup=None, users=None, 
               wheel=None, backup=None, aci=None, serverrole=None, 
@@ -1006,7 +999,7 @@ def provision(setup_dir, message, session_info,
                         aci=aci, domainguid=domainguid, policyguid=policyguid, 
                         fill=samdb_fill, 
                         adminpass=adminpass, krbtgtpass=krbtgtpass,
-                        hostguid=hostguid, invocationid=invocationid, 
+                        invocationid=invocationid, 
                         machinepass=machinepass, dnspass=dnspass,
                         serverrole=serverrole, ldap_backend=ldap_backend, 
                         ldap_backend_type=ldap_backend_type)
@@ -1077,7 +1070,7 @@ def provision_become_dc(setup_dir=None,
                         smbconf=None, targetdir=None, realm=None, 
                         rootdn=None, domaindn=None, schemadn=None, configdn=None,
                         domain=None, hostname=None, domainsid=None, 
-                        hostguid=None, adminpass=None, krbtgtpass=None, domainguid=None, 
+                        adminpass=None, krbtgtpass=None, domainguid=None, 
                         policyguid=None, invocationid=None, machinepass=None, 
                         dnspass=None, root=None, nobody=None, nogroup=None, users=None, 
                         wheel=None, backup=None, aci=None, serverrole=None, 
