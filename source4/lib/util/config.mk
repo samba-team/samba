@@ -40,7 +40,7 @@ PUBLIC_HEADERS += $(addprefix lib/util/, util.h \
 PRIVATE_PROTO_HEADER = asn1_proto.h
 OBJ_FILES = asn1.o
 
-PUBLIC_HEADERS += lib/util/asn1.h
+# PUBLIC_HEADERS += lib/util/asn1.h
 
 [SUBSYSTEM::UNIX_PRIVS]
 PRIVATE_PROTO_HEADER = unix_privs.h

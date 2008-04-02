@@ -36,7 +36,7 @@ PUBLIC_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL
 # End SUBSYSTEM LIBEVENTS
 ##############################
 
-PUBLIC_HEADERS += $(addprefix lib/events/, events.h events_internal.h)
+# PUBLIC_HEADERS += $(addprefix lib/events/, events.h events_internal.h)
 
 [PYTHON::swig_events]
 SWIG_FILE = events.i

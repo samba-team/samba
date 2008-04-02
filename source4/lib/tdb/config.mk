@@ -11,8 +11,6 @@ CFLAGS = -Ilib/tdb/include
 # End SUBSYSTEM ldb
 ################################################
 
-PUBLIC_HEADERS += $(tdbdir)/include/tdb.h
-
 ################################################
 # Start BINARY tdbtool
 [BINARY::tdbtool]

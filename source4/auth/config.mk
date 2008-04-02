@@ -9,7 +9,7 @@ OBJ_FILES = session.o
 PRIVATE_PROTO_HEADER = session_proto.h
 PUBLIC_DEPENDENCIES = CREDENTIALS
 
-PUBLIC_HEADERS += auth/session.h
+# PUBLIC_HEADERS += auth/session.h
 
 [SUBSYSTEM::auth_system_session]
 OBJ_FILES = system_session.o
@@ -92,7 +92,7 @@ PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
 # End SUBSYSTEM auth
 #######################
 
-PUBLIC_HEADERS += auth/auth.h
+# PUBLIC_HEADERS += auth/auth.h
 
 [PYTHON::swig_auth]
 PUBLIC_DEPENDENCIES = auth_system_session
