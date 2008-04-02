@@ -108,11 +108,9 @@ enum RPC_PKT_TYPE {
    to NT4.  Actually, anything other than 1ff would seem to do... */
 #define NETLOGON_NEG_AUTH2_FLAGS 0x000701ff
 #define NETLOGON_NEG_DOMAIN_TRUST_ACCOUNT	0x2010b000
- 
-/* these are the flags that ADS clients use */
-#define NETLOGON_NEG_AUTH2_ADS_FLAGS (0x200fbffb | NETLOGON_NEG_ARCFOUR | NETLOGON_NEG_128BIT | NETLOGON_NEG_SCHANNEL)
 
-#define NETLOGON_NEG_SELECT_AUTH2_FLAGS ((lp_security() == SEC_ADS) ? NETLOGON_NEG_AUTH2_ADS_FLAGS : NETLOGON_NEG_AUTH2_FLAGS)
+/* these are the flags that ADS clients use */
+#define NETLOGON_NEG_AUTH2_ADS_FLAGS 0x600fffff
 
 enum schannel_direction {
 	SENDER_IS_INITIATOR,
