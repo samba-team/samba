@@ -23,7 +23,6 @@
 /* FIXME Newer .REG files, created by Windows XP and above use unicode UTF-16 */
 
 #include "includes.h"
-#include "lib/registry/patchfile.h"
 #include "lib/registry/registry.h"
 #include "system/filesys.h"
 #include "param/param.h"

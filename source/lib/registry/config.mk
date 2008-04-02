@@ -39,7 +39,7 @@ PUBLIC_DEPENDENCIES = \
 # End MODULE registry_ldb
 ################################################
 
-PUBLIC_HEADERS += $(addprefix lib/registry/, registry.h hive.h patchfile.h)
+PUBLIC_HEADERS += $(addprefix lib/registry/, registry.h hive.h)
 
 [SUBSYSTEM::registry_common]
 PUBLIC_DEPENDENCIES = registry
