@@ -112,7 +112,7 @@ static bool test_reg_val_description_nullname(struct torture_context *ctx)
 	return true;
 }
 
-_PUBLIC_ struct torture_suite *torture_registry(TALLOC_CTX *mem_ctx)
+struct torture_suite *torture_registry(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "REGISTRY");
 	torture_suite_add_simple_test(suite, "str_regtype",

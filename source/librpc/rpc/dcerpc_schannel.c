@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "auth/credentials/credentials.h"
+#include "librpc/rpc/dcerpc_proto.h"
 
 struct schannel_key_state {
 	struct dcerpc_pipe *pipe;
@@ -396,7 +397,7 @@ NTSTATUS dcerpc_bind_auth_schannel_recv(struct composite_context *c)
 /*
   Perform schannel authenticated bind - sync version
  */
-NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx, 
+_PUBLIC_ NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx, 
 				   struct dcerpc_pipe *p,
 				   const struct ndr_interface_table *table,
 				   struct cli_credentials *credentials,

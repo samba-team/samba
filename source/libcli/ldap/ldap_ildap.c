@@ -28,7 +28,7 @@
 /*
   count the returned search entries
 */
-int ildap_count_entries(struct ldap_connection *conn, struct ldap_message **res)
+_PUBLIC_ int ildap_count_entries(struct ldap_connection *conn, struct ldap_message **res)
 {
 	int i;
 	for (i=0;res && res[i];i++) /* noop */ ;
@@ -39,7 +39,7 @@ int ildap_count_entries(struct ldap_connection *conn, struct ldap_message **res)
 /*
   perform a synchronous ldap search
 */
-NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *basedn, 
+_PUBLIC_ NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *basedn, 
 			     int scope, struct ldb_parse_tree *tree,
 			     const char * const *attrs, bool attributesonly, 
 			     struct ldb_control **control_req,
@@ -112,7 +112,7 @@ NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *basedn,
 /*
   perform a ldap search
 */
-NTSTATUS ildap_search(struct ldap_connection *conn, const char *basedn, 
+_PUBLIC_ NTSTATUS ildap_search(struct ldap_connection *conn, const char *basedn, 
 		      int scope, const char *expression, 
 		      const char * const *attrs, bool attributesonly, 
 		      struct ldb_control **control_req,

@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "ntvfs/ntvfs.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 
 #define TRANS2_CHECK_ASYNC_STATUS_SIMPLE do { \
 	if (!NT_STATUS_IS_OK(req->ntvfs->async_states->status)) { \

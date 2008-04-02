@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "param/param.h"
+#include "librpc/ndr/libndr.h"
 
 /* This map was extracted by the ERRMAPEXTRACT smbtorture command. 
    The setup was a Samba HEAD (2002-01-03) PDC and an Win2k member 

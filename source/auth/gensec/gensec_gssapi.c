@@ -34,7 +34,9 @@
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_proto.h"
 #include "param/param.h"
+#include "auth/session_proto.h"
 
 enum gensec_gssapi_sasl_state 
 {

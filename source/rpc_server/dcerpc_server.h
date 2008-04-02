@@ -282,6 +282,52 @@ struct dcesrv_critical_sizes {
 
 struct model_ops;
 
-#include "rpc_server/dcerpc_server_proto.h"
+NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
+				   const char *ep_name,
+				   const struct dcesrv_interface *iface,
+				   const struct security_descriptor *sd);
+NTSTATUS dcerpc_register_ep_server(const void *_ep_server);
+NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, 
+				      struct loadparm_context *lp_ctx,
+				      const char **endpoint_servers, struct dcesrv_context **_dce_ctx);
+NTSTATUS dcesrv_init_ipc_context(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
+					  struct dcesrv_context **_dce_ctx);
+NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
+					TALLOC_CTX *mem_ctx,
+					const struct dcerpc_binding *ep_description,
+					struct auth_session_info *session_info,
+					struct event_context *event_ctx,
+					struct messaging_context *msg_ctx,
+					struct server_id server_id,
+					uint32_t state_flags,
+					struct dcesrv_connection **dce_conn_p);
+NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn, 
+		       void *private_data,
+		       NTSTATUS (*write_fn)(void *private_data, DATA_BLOB *output, size_t *nwritten));
+NTSTATUS dcesrv_input(struct dcesrv_connection *dce_conn, const DATA_BLOB *data);
+NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
+				 TALLOC_CTX *mem_ctx,
+				 const struct dcesrv_endpoint *ep,
+				 struct auth_session_info *session_info,
+				 struct event_context *event_ctx,
+				 struct messaging_context *msg_ctx,
+				 struct server_id server_id,
+				 uint32_t state_flags,
+				 struct dcesrv_connection **_p);
+
+NTSTATUS dcesrv_reply(struct dcesrv_call_state *call);
+struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection_context *context, 
+					uint8_t handle_type);
+
+struct dcesrv_handle *dcesrv_handle_fetch(
+					  struct dcesrv_connection_context *context, 
+					  struct policy_handle *p,
+					  uint8_t handle_type);
+struct socket_address *dcesrv_connection_get_my_addr(struct dcesrv_connection *conn, TALLOC_CTX *mem_ctx);
+
+struct socket_address *dcesrv_connection_get_peer_addr(struct dcesrv_connection *conn, TALLOC_CTX *mem_ctx);
+
+NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p, DATA_BLOB *session_key);
+
 
 #endif /* SAMBA_DCERPC_SERVER_H */

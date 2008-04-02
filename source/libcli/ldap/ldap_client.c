@@ -28,6 +28,7 @@
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "libcli/ldap/ldap.h"
+#include "libcli/ldap/ldap_proto.h"
 #include "libcli/ldap/ldap_client.h"
 #include "libcli/composite/composite.h"
 #include "lib/stream/packet.h"
@@ -41,7 +42,7 @@
 /**
   create a new ldap_connection stucture. The event context is optional
 */
-struct ldap_connection *ldap4_new_connection(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ struct ldap_connection *ldap4_new_connection(TALLOC_CTX *mem_ctx, 
 					     struct loadparm_context *lp_ctx,
 					     struct event_context *ev)
 {
@@ -293,7 +294,7 @@ struct ldap_connect_state {
 static void ldap_connect_recv_unix_conn(struct composite_context *ctx);
 static void ldap_connect_recv_tcp_conn(struct composite_context *ctx);
 
-struct composite_context *ldap_connect_send(struct ldap_connection *conn,
+_PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *conn,
 					    const char *url)
 {
 	struct composite_context *result, *ctx;
@@ -476,7 +477,7 @@ _PUBLIC_ NTSTATUS ldap_connect_recv(struct composite_context *ctx)
 	return status;
 }
 
-NTSTATUS ldap_connect(struct ldap_connection *conn, const char *url)
+_PUBLIC_ NTSTATUS ldap_connect(struct ldap_connection *conn, const char *url)
 {
 	struct composite_context *ctx = ldap_connect_send(conn, url);
 	return ldap_connect_recv(ctx);
@@ -484,7 +485,7 @@ NTSTATUS ldap_connect(struct ldap_connection *conn, const char *url)
 
 /* set reconnect parameters */
 
-void ldap_set_reconn_params(struct ldap_connection *conn, int max_retries)
+_PUBLIC_ void ldap_set_reconn_params(struct ldap_connection *conn, int max_retries)
 {
 	if (conn) {
 		conn->reconnect.max_retries = max_retries;
@@ -569,7 +570,7 @@ static void ldap_request_complete(struct event_context *ev, struct timed_event *
 /*
   send a ldap message - async interface
 */
-struct ldap_request *ldap_request_send(struct ldap_connection *conn,
+_PUBLIC_ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 				       struct ldap_message *msg)
 {
 	struct ldap_request *req;
@@ -645,7 +646,7 @@ failed:
   wait for a request to complete
   note that this does not destroy the request
 */
-NTSTATUS ldap_request_wait(struct ldap_request *req)
+_PUBLIC_ NTSTATUS ldap_request_wait(struct ldap_request *req)
 {
 	while (req->state < LDAP_REQUEST_DONE) {
 		if (event_loop_once(req->conn->event.event_ctx) != 0) {
@@ -709,7 +710,7 @@ static const struct {
 /*
   used to setup the status code from a ldap response
 */
-NTSTATUS ldap_check_response(struct ldap_connection *conn, struct ldap_Result *r)
+_PUBLIC_ NTSTATUS ldap_check_response(struct ldap_connection *conn, struct ldap_Result *r)
 {
 	int i;
 	const char *codename = "unknown";
@@ -742,7 +743,7 @@ NTSTATUS ldap_check_response(struct ldap_connection *conn, struct ldap_Result *r
 /*
   return error string representing the last error
 */
-const char *ldap_errstr(struct ldap_connection *conn, 
+_PUBLIC_ const char *ldap_errstr(struct ldap_connection *conn, 
 			TALLOC_CTX *mem_ctx, 
 			NTSTATUS status)
 {
@@ -756,7 +757,7 @@ const char *ldap_errstr(struct ldap_connection *conn,
 /*
   return the Nth result message, waiting if necessary
 */
-NTSTATUS ldap_result_n(struct ldap_request *req, int n, struct ldap_message **msg)
+_PUBLIC_ NTSTATUS ldap_result_n(struct ldap_request *req, int n, struct ldap_message **msg)
 {
 	*msg = NULL;
 
@@ -784,7 +785,7 @@ NTSTATUS ldap_result_n(struct ldap_request *req, int n, struct ldap_message **ms
 /*
   return a single result message, checking if it is of the expected LDAP type
 */
-NTSTATUS ldap_result_one(struct ldap_request *req, struct ldap_message **msg, int type)
+_PUBLIC_ NTSTATUS ldap_result_one(struct ldap_request *req, struct ldap_message **msg, int type)
 {
 	NTSTATUS status;
 	status = ldap_result_n(req, 0, msg);
@@ -802,7 +803,7 @@ NTSTATUS ldap_result_one(struct ldap_request *req, struct ldap_message **msg, in
   a simple ldap transaction, for single result requests that only need a status code
   this relies on single valued requests having the response type == request type + 1
 */
-NTSTATUS ldap_transaction(struct ldap_connection *conn, struct ldap_message *msg)
+_PUBLIC_ NTSTATUS ldap_transaction(struct ldap_connection *conn, struct ldap_message *msg)
 {
 	struct ldap_request *req = ldap_request_send(conn, msg);
 	struct ldap_message *res;

@@ -3,7 +3,7 @@
 /*
   spoolss interface definitions
 */
-import "security.idl", "winreg.idl";
+import "misc.idl", "security.idl", "winreg.idl";
 
 [ uuid("12345678-1234-abcd-ef00-0123456789ab"),
   version(1.0),

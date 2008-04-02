@@ -22,6 +22,7 @@
 #include "libcli/libcli.h"
 #include "torture/util.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "system/filesys.h"
 #include "param/param.h"
 

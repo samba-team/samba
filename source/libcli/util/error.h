@@ -22,7 +22,6 @@
 #include "libcli/util/werror.h"
 #include "libcli/util/doserr.h"
 #include "libcli/util/ntstatus.h"
-#include "librpc/ndr/libndr.h"
 
 /** NT error on DOS connection! (NT_STATUS_OK) */
 bool ntstatus_dos_equal(NTSTATUS status1, NTSTATUS status2);
@@ -46,6 +45,8 @@ WERROR ntstatus_to_werror(NTSTATUS error);
  Map an NT error code from a Unix error code.
 *********************************************************************/
 NTSTATUS map_nt_error_from_unix(int unix_error);
+
+enum ndr_err_code;
 
 /*********************************************************************
  Map an NT error code from a NDR error code.

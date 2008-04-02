@@ -170,7 +170,7 @@ NTSTATUS smbcli_sock_connect(TALLOC_CTX *mem_ctx,
 /****************************************************************************
  mark the socket as dead
 ****************************************************************************/
-void smbcli_sock_dead(struct smbcli_socket *sock)
+_PUBLIC_ void smbcli_sock_dead(struct smbcli_socket *sock)
 {
 	talloc_free(sock->event.fde);
 	sock->event.fde = NULL;
@@ -189,7 +189,7 @@ void smbcli_sock_set_options(struct smbcli_socket *sock, const char *options)
 /****************************************************************************
 resolve a hostname and connect 
 ****************************************************************************/
-struct smbcli_socket *smbcli_sock_connect_byname(const char *host, const char **ports,
+_PUBLIC_ struct smbcli_socket *smbcli_sock_connect_byname(const char *host, const char **ports,
 						 TALLOC_CTX *mem_ctx,
 						 struct resolve_context *resolve_ctx,
 						 struct event_context *event_ctx)

@@ -443,7 +443,7 @@ static bool test_netserverenum(struct torture_context *tctx,
 	return true;
 }
 
-_PUBLIC_ NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_tree *tree,
+NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_tree *tree,
 					      struct smb_iconv_convenience *iconv_convenience, 
 				     TALLOC_CTX *mem_ctx,
 				     struct rap_WserverGetInfo *r)

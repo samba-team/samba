@@ -110,7 +110,7 @@ _PUBLIC_ NTSTATUS NS_GUID_from_string(const char *s, struct GUID *guid)
 /**
  * generate a random GUID
  */
-struct GUID GUID_random(void)
+_PUBLIC_ struct GUID GUID_random(void)
 {
 	struct GUID guid;
 

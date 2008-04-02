@@ -5,4 +5,3 @@ CFLAGS = -Ilib/talloc
 
 
 MANPAGES += $(tallocdir)/talloc.3
-PUBLIC_HEADERS += $(tallocdir)/talloc.h

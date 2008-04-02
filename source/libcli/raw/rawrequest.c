@@ -24,9 +24,12 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "param/param.h"
+#include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 /* we over allocate the data buffer to prevent too many realloc calls */
 #define REQ_OVER_ALLOCATION 0
@@ -49,7 +52,7 @@ void smb_setup_bufinfo(struct smbcli_request *req)
 
 
 /* destroy a request structure and return final status */
-NTSTATUS smbcli_request_destroy(struct smbcli_request *req)
+_PUBLIC_ NTSTATUS smbcli_request_destroy(struct smbcli_request *req)
 {
 	NTSTATUS status;
 
@@ -405,7 +408,7 @@ bool smbcli_handle_oplock_break(struct smbcli_transport *transport, uint_t len, 
   wait for a reply to be received for a packet that just returns an error
   code and nothing more
 */
-NTSTATUS smbcli_request_simple_recv(struct smbcli_request *req)
+_PUBLIC_ NTSTATUS smbcli_request_simple_recv(struct smbcli_request *req)
 {
 	(void) smbcli_request_receive(req);
 	return smbcli_request_destroy(req);

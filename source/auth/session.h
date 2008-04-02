@@ -29,6 +29,28 @@ struct auth_session_info {
 };
 
 #include "librpc/gen_ndr/netlogon.h"
-#include "auth/session_proto.h"
+
+struct auth_session_info *system_session_anon(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
+struct auth_session_info *system_session(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx) ;
+NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx, 
+				    const char *netbios_name,
+				    struct auth_serversupplied_info **_server_info) ;
+NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx, 
+				    struct loadparm_context *lp_ctx,
+				    struct auth_serversupplied_info *server_info, 
+				    struct auth_session_info **_session_info) ;
+
+NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
+					      const char *account_name,
+					      uint16_t validation_level,
+					      union netr_Validation *validation,
+					      struct auth_serversupplied_info **_server_info);
+NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx, 
+				     struct loadparm_context *lp_ctx,
+				     struct auth_session_info **_session_info);
+
+struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx, 
+					    struct loadparm_context *lp_ctx);
+
 
 #endif /* _SAMBA_AUTH_SESSION_H */

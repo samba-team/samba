@@ -21,6 +21,7 @@
 #include "torture/torture.h"
 #include "system/filesys.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
 
@@ -42,7 +43,7 @@ static bool single_search_callback(void *private, const union smb_search_data *f
 /*
   do a single file (non-wildcard) search 
 */
-_PUBLIC_ NTSTATUS torture_single_search(struct smbcli_state *cli, 
+NTSTATUS torture_single_search(struct smbcli_state *cli, 
 			       TALLOC_CTX *tctx,
 			       const char *pattern,
 			       enum smb_search_level level,

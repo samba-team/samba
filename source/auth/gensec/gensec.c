@@ -27,6 +27,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_proto.h"
 #include "param/param.h"
 
 /* the list of currently registered GENSEC backends */
@@ -35,7 +36,7 @@ static int gensec_num_backends;
 
 /* Return all the registered mechs.  Don't modify the return pointer,
  * but you may talloc_reference it if convient */
-struct gensec_security_ops **gensec_security_all(void)
+_PUBLIC_ struct gensec_security_ops **gensec_security_all(void)
 {
 	return generic_security_ops;
 }
@@ -45,7 +46,7 @@ struct gensec_security_ops **gensec_security_all(void)
  * gensec_security_all(), or from cli_credentials_gensec_list() (ie,
  * an existing list we have trimmed down) */
 
-struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_ctx, 
 						       struct gensec_security_ops **old_gensec_list, 
 						       struct cli_credentials *creds)
 {
@@ -572,7 +573,7 @@ _PUBLIC_ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx,
   @param gensec_security Returned GENSEC context pointer.
   @note  The mem_ctx is only a parent and may be NULL.
 */
-NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, 
 			     struct event_context *ev,
 			     struct loadparm_context *lp_ctx,
 			     struct messaging_context *msg,
@@ -637,7 +638,7 @@ static NTSTATUS gensec_start_mech(struct gensec_security *gensec_security)
  * @param auth_level DCERPC auth level 
  */
 
-NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security, 
+_PUBLIC_ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security, 
 				       uint8_t auth_type, uint8_t auth_level) 
 {
 	gensec_security->ops = gensec_security_by_authtype(gensec_security, auth_type);
@@ -663,7 +664,7 @@ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security,
 	return gensec_start_mech(gensec_security);
 }
 
-const char *gensec_get_name_by_authtype(uint8_t authtype) 
+_PUBLIC_ const char *gensec_get_name_by_authtype(uint8_t authtype) 
 {
 	const struct gensec_security_ops *ops;
 	ops = gensec_security_by_authtype(NULL, authtype);
@@ -674,7 +675,7 @@ const char *gensec_get_name_by_authtype(uint8_t authtype)
 }
 	
 
-const char *gensec_get_name_by_oid(const char *oid_string) 
+_PUBLIC_ const char *gensec_get_name_by_oid(const char *oid_string) 
 {
 	const struct gensec_security_ops *ops;
 	ops = gensec_security_by_oid(NULL, oid_string);
@@ -704,7 +705,7 @@ NTSTATUS gensec_start_mech_by_ops(struct gensec_security *gensec_security,
  *       well-known #define to hook it in.
  */
 
-NTSTATUS gensec_start_mech_by_oid(struct gensec_security *gensec_security, 
+_PUBLIC_ NTSTATUS gensec_start_mech_by_oid(struct gensec_security *gensec_security, 
 				  const char *mech_oid) 
 {
 	gensec_security->ops = gensec_security_by_oid(gensec_security, mech_oid);
@@ -720,7 +721,7 @@ NTSTATUS gensec_start_mech_by_oid(struct gensec_security *gensec_security,
  *
  */
 
-NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security, 
+_PUBLIC_ NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security, 
 					const char *sasl_name) 
 {
 	gensec_security->ops = gensec_security_by_sasl_name(gensec_security, sasl_name);
@@ -769,7 +770,7 @@ _PUBLIC_ NTSTATUS gensec_start_mech_by_sasl_list(struct gensec_security *gensec_
  *
  */
 
-NTSTATUS gensec_start_mech_by_name(struct gensec_security *gensec_security, 
+_PUBLIC_ NTSTATUS gensec_start_mech_by_name(struct gensec_security *gensec_security, 
 					const char *name) 
 {
 	gensec_security->ops = gensec_security_by_name(gensec_security, name);
@@ -783,7 +784,7 @@ NTSTATUS gensec_start_mech_by_name(struct gensec_security *gensec_security,
 /*
   wrappers for the gensec function pointers
 */
-NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security, 
+_PUBLIC_ NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security, 
 			      TALLOC_CTX *mem_ctx, 
 			      uint8_t *data, size_t length, 
 			      const uint8_t *whole_pdu, size_t pdu_length, 
@@ -802,7 +803,7 @@ NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security,
 						   sig);
 }
 
-NTSTATUS gensec_check_packet(struct gensec_security *gensec_security, 
+_PUBLIC_ NTSTATUS gensec_check_packet(struct gensec_security *gensec_security, 
 			     TALLOC_CTX *mem_ctx, 
 			     const uint8_t *data, size_t length, 
 			     const uint8_t *whole_pdu, size_t pdu_length, 
@@ -818,7 +819,7 @@ NTSTATUS gensec_check_packet(struct gensec_security *gensec_security,
 	return gensec_security->ops->check_packet(gensec_security, mem_ctx, data, length, whole_pdu, pdu_length, sig);
 }
 
-NTSTATUS gensec_seal_packet(struct gensec_security *gensec_security, 
+_PUBLIC_ NTSTATUS gensec_seal_packet(struct gensec_security *gensec_security, 
 			    TALLOC_CTX *mem_ctx, 
 			    uint8_t *data, size_t length, 
 			    const uint8_t *whole_pdu, size_t pdu_length, 
@@ -834,7 +835,7 @@ NTSTATUS gensec_seal_packet(struct gensec_security *gensec_security,
 	return gensec_security->ops->seal_packet(gensec_security, mem_ctx, data, length, whole_pdu, pdu_length, sig);
 }
 
-NTSTATUS gensec_sign_packet(struct gensec_security *gensec_security, 
+_PUBLIC_ NTSTATUS gensec_sign_packet(struct gensec_security *gensec_security, 
 			    TALLOC_CTX *mem_ctx, 
 			    const uint8_t *data, size_t length, 
 			    const uint8_t *whole_pdu, size_t pdu_length, 
@@ -850,7 +851,7 @@ NTSTATUS gensec_sign_packet(struct gensec_security *gensec_security,
 	return gensec_security->ops->sign_packet(gensec_security, mem_ctx, data, length, whole_pdu, pdu_length, sig);
 }
 
-size_t gensec_sig_size(struct gensec_security *gensec_security, size_t data_size) 
+_PUBLIC_ size_t gensec_sig_size(struct gensec_security *gensec_security, size_t data_size) 
 {
 	if (!gensec_security->ops->sig_size) {
 		return 0;
@@ -880,7 +881,7 @@ size_t gensec_max_input_size(struct gensec_security *gensec_security)
 	return gensec_security->ops->max_input_size(gensec_security);
 }
 
-NTSTATUS gensec_wrap(struct gensec_security *gensec_security, 
+_PUBLIC_ NTSTATUS gensec_wrap(struct gensec_security *gensec_security, 
 		     TALLOC_CTX *mem_ctx, 
 		     const DATA_BLOB *in, 
 		     DATA_BLOB *out) 
@@ -891,7 +892,7 @@ NTSTATUS gensec_wrap(struct gensec_security *gensec_security,
 	return gensec_security->ops->wrap(gensec_security, mem_ctx, in, out);
 }
 
-NTSTATUS gensec_unwrap(struct gensec_security *gensec_security, 
+_PUBLIC_ NTSTATUS gensec_unwrap(struct gensec_security *gensec_security, 
 		       TALLOC_CTX *mem_ctx, 
 		       const DATA_BLOB *in, 
 		       DATA_BLOB *out) 
@@ -902,7 +903,7 @@ NTSTATUS gensec_unwrap(struct gensec_security *gensec_security,
 	return gensec_security->ops->unwrap(gensec_security, mem_ctx, in, out);
 }
 
-NTSTATUS gensec_session_key(struct gensec_security *gensec_security, 
+_PUBLIC_ NTSTATUS gensec_session_key(struct gensec_security *gensec_security, 
 			    DATA_BLOB *session_key)
 {
 	if (!gensec_security->ops->session_key) {
@@ -925,7 +926,7 @@ NTSTATUS gensec_session_key(struct gensec_security *gensec_security,
  *
  */
 
-NTSTATUS gensec_session_info(struct gensec_security *gensec_security, 
+_PUBLIC_ NTSTATUS gensec_session_info(struct gensec_security *gensec_security, 
 			     struct auth_session_info **session_info)
 {
 	if (!gensec_security->ops->session_info) {
@@ -1065,7 +1066,7 @@ _PUBLIC_ NTSTATUS gensec_set_credentials(struct gensec_security *gensec_security
  *
  */
 
-struct cli_credentials *gensec_get_credentials(struct gensec_security *gensec_security) 
+_PUBLIC_ struct cli_credentials *gensec_get_credentials(struct gensec_security *gensec_security) 
 {
 	if (!gensec_security) {
 		return NULL;
@@ -1135,7 +1136,7 @@ _PUBLIC_ const char *gensec_get_target_hostname(struct gensec_security *gensec_s
  * cryptographic tokens, to avoid certain attacks.
  */
 
-NTSTATUS gensec_set_my_addr(struct gensec_security *gensec_security, struct socket_address *my_addr) 
+_PUBLIC_ NTSTATUS gensec_set_my_addr(struct gensec_security *gensec_security, struct socket_address *my_addr) 
 {
 	gensec_security->my_addr = my_addr;
 	if (my_addr && !talloc_reference(gensec_security, my_addr)) {
@@ -1144,7 +1145,7 @@ NTSTATUS gensec_set_my_addr(struct gensec_security *gensec_security, struct sock
 	return NT_STATUS_OK;
 }
 
-NTSTATUS gensec_set_peer_addr(struct gensec_security *gensec_security, struct socket_address *peer_addr) 
+_PUBLIC_ NTSTATUS gensec_set_peer_addr(struct gensec_security *gensec_security, struct socket_address *peer_addr) 
 {
 	gensec_security->peer_addr = peer_addr;
 	if (peer_addr && !talloc_reference(gensec_security, peer_addr)) {
@@ -1164,7 +1165,7 @@ struct socket_address *gensec_get_my_addr(struct gensec_security *gensec_securit
 	return NULL;
 }
 
-struct socket_address *gensec_get_peer_addr(struct gensec_security *gensec_security) 
+_PUBLIC_ struct socket_address *gensec_get_peer_addr(struct gensec_security *gensec_security) 
 {
 	if (gensec_security->peer_addr) {
 		return gensec_security->peer_addr;
@@ -1264,7 +1265,7 @@ static int sort_gensec(struct gensec_security_ops **gs1, struct gensec_security_
 /*
   initialise the GENSEC subsystem
 */
-NTSTATUS gensec_init(struct loadparm_context *lp_ctx)
+_PUBLIC_ NTSTATUS gensec_init(struct loadparm_context *lp_ctx)
 {
 	static bool initialized = false;
 

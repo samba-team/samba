@@ -26,7 +26,7 @@
 #include "includes.h"
 #include "ntvfs/sysdep/sys_notify.h"
 
-_PUBLIC_ NTSTATUS ntvfs_common_init(void)
+NTSTATUS ntvfs_common_init(void)
 {
 	return sys_notify_init();
 }

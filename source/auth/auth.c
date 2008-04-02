@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "lib/util/dlinklist.h"
 #include "auth/auth.h"
+#include "auth/auth_proto.h"
 #include "lib/events/events.h"
 #include "build.h"
 #include "param/param.h"
@@ -28,7 +29,7 @@
 /***************************************************************************
  Set a fixed challenge
 ***************************************************************************/
-NTSTATUS auth_context_set_challenge(struct auth_context *auth_ctx, const uint8_t chal[8], const char *set_by) 
+_PUBLIC_ NTSTATUS auth_context_set_challenge(struct auth_context *auth_ctx, const uint8_t chal[8], const char *set_by) 
 {
 	auth_ctx->challenge.set_by = talloc_strdup(auth_ctx, set_by);
 	NT_STATUS_HAVE_NO_MEMORY(auth_ctx->challenge.set_by);
@@ -146,7 +147,7 @@ static void auth_check_password_sync_callback(struct auth_check_password_request
  *
  **/
 
-NTSTATUS auth_check_password(struct auth_context *auth_ctx,
+_PUBLIC_ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 			     TALLOC_CTX *mem_ctx,
 			     const struct auth_usersupplied_info *user_info, 
 			     struct auth_serversupplied_info **server_info)
@@ -218,7 +219,7 @@ static void auth_check_password_async_timed_handler(struct event_context *ev, st
  *
  **/
 
-void auth_check_password_send(struct auth_context *auth_ctx,
+_PUBLIC_ void auth_check_password_send(struct auth_context *auth_ctx,
 			      const struct auth_usersupplied_info *user_info,
 			      void (*callback)(struct auth_check_password_request *req, void *private_data),
 			      void *private_data)
@@ -320,7 +321,7 @@ failed:
  *
  **/
 
-NTSTATUS auth_check_password_recv(struct auth_check_password_request *req,
+_PUBLIC_ NTSTATUS auth_check_password_recv(struct auth_check_password_request *req,
 				  TALLOC_CTX *mem_ctx,
 				  struct auth_serversupplied_info **server_info)
 {
@@ -350,7 +351,7 @@ NTSTATUS auth_check_password_recv(struct auth_check_password_request *req,
  Make a auth_info struct for the auth subsystem
  - Allow the caller to specify the methods to use
 ***************************************************************************/
-NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods, 
+_PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods, 
 				     struct event_context *ev,
 				     struct messaging_context *msg,
 				     struct loadparm_context *lp_ctx,
@@ -413,7 +414,7 @@ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods,
  Make a auth_info struct for the auth subsystem
  - Uses default auth_methods, depending on server role and smb.conf settings
 ***************************************************************************/
-NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx, 
 			     struct event_context *ev,
 			     struct messaging_context *msg,
 			     struct loadparm_context *lp_ctx,
@@ -447,7 +448,7 @@ static int num_backends;
   The 'name' can be later used by other backends to find the operations
   structure for this backend.
 */
-NTSTATUS auth_register(const struct auth_operations *ops)
+_PUBLIC_ NTSTATUS auth_register(const struct auth_operations *ops)
 {
 	struct auth_operations *new_ops;
 	
@@ -512,7 +513,7 @@ const struct auth_critical_sizes *auth_interface_version(void)
 	return &critical_sizes;
 }
 
-NTSTATUS auth_init(void)
+_PUBLIC_ NTSTATUS auth_init(void)
 {
 	static bool initialized = false;
 

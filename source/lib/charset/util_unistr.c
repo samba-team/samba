@@ -67,7 +67,7 @@ static void load_case_tables(void)
 /**
  Convert a codepoint_t to upper case.
 **/
-codepoint_t toupper_w(codepoint_t val)
+_PUBLIC_ codepoint_t toupper_w(codepoint_t val)
 {
 	if (val < 128) {
 		return toupper(val);
@@ -87,7 +87,7 @@ codepoint_t toupper_w(codepoint_t val)
 /**
  Convert a codepoint_t to lower case.
 **/
-codepoint_t tolower_w(codepoint_t val)
+_PUBLIC_ codepoint_t tolower_w(codepoint_t val)
 {
 	if (val < 128) {
 		return tolower(val);
@@ -107,7 +107,7 @@ codepoint_t tolower_w(codepoint_t val)
 /**
   compare two codepoints case insensitively
 */
-int codepoint_cmpi(codepoint_t c1, codepoint_t c2)
+_PUBLIC_ int codepoint_cmpi(codepoint_t c1, codepoint_t c2)
 {
 	if (c1 == c2 ||
 	    toupper_w(c1) == toupper_w(c2)) {

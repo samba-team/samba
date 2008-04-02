@@ -25,6 +25,7 @@
 #include "libcli/composite/composite.h"
 #include "auth/gensec/gensec.h"
 #include "librpc/rpc/dcerpc.h"
+#include "librpc/rpc/dcerpc_proto.h"
 #include "param/param.h"
 
 /*
@@ -86,7 +87,7 @@ NTSTATUS dcerpc_bind_auth_none_recv(struct composite_context *ctx)
 /*
   Perform sync non-authenticated dcerpc bind
 */
-NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
+_PUBLIC_ NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
 			       const struct ndr_interface_table *table)
 {
 	struct composite_context *ctx;
@@ -372,7 +373,7 @@ NTSTATUS dcerpc_bind_auth_recv(struct composite_context *creq)
    @retval NTSTATUS status code
 */
 
-NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p,
+_PUBLIC_ NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p,
 			  const struct ndr_interface_table *table,
 			  struct cli_credentials *credentials,
 			  struct loadparm_context *lp_ctx,

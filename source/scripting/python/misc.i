@@ -25,6 +25,7 @@
 #include "auth/credentials/credentials.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/ldb-samba/ldif_handlers.h"
+#include "librpc/ndr/libndr.h"
 %}
 
 %import "stdint.i"

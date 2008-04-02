@@ -31,6 +31,8 @@
 #include "libcli/security/security.h"
 #include "system/filesys.h"
 #include "param/param.h"
+#include "librpc/rpc/dcerpc_proto.h"
+#include "auth/gensec/gensec.h"
 
 #define TEST_MACHINE_NAME "schannel"
 

@@ -4,7 +4,7 @@
   who contributed!
 */
 
-import "lsa.idl", "samr.idl", "security.idl", "nbt.idl";
+import "misc.idl", "lsa.idl", "samr.idl", "security.idl", "nbt.idl";
 
 #include "idl_types.h"
 

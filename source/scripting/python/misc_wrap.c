@@ -2533,6 +2533,7 @@ static swig_module_info swig_module = {swig_types, 27, 0, 0, 0, 0};
 #include "auth/credentials/credentials.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/ldb-samba/ldif_handlers.h"
+#include "librpc/ndr/libndr.h"
 
 
 SWIGINTERN int

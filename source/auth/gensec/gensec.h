@@ -199,6 +199,96 @@ NTSTATUS gensec_packet_full_request(struct gensec_security *gensec_security,
 
 struct loadparm_context;
 
-#include "auth/gensec/gensec_proto.h"
+NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx, 
+				 struct gensec_security *parent, 
+				 struct gensec_security **gensec_security);
+NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx, 
+			     struct gensec_security **gensec_security,
+			     struct event_context *ev,
+			     struct loadparm_context *lp_ctx);
+NTSTATUS gensec_start_mech_by_sasl_list(struct gensec_security *gensec_security, 
+						 const char **sasl_names);
+NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
+		       const DATA_BLOB in, DATA_BLOB *out);
+void gensec_update_send(struct gensec_security *gensec_security, const DATA_BLOB in,
+				 void (*callback)(struct gensec_update_request *req, void *private_data),
+				 void *private_data);
+NTSTATUS gensec_update_recv(struct gensec_update_request *req, TALLOC_CTX *out_mem_ctx, DATA_BLOB *out);
+void gensec_want_feature(struct gensec_security *gensec_security,
+			 uint32_t feature);
+bool gensec_have_feature(struct gensec_security *gensec_security,
+			 uint32_t feature);
+NTSTATUS gensec_set_credentials(struct gensec_security *gensec_security, struct cli_credentials *credentials);
+NTSTATUS gensec_set_target_service(struct gensec_security *gensec_security, const char *service);
+const char *gensec_get_target_service(struct gensec_security *gensec_security);
+NTSTATUS gensec_set_target_hostname(struct gensec_security *gensec_security, const char *hostname);
+const char *gensec_get_target_hostname(struct gensec_security *gensec_security);
+NTSTATUS gensec_session_key(struct gensec_security *gensec_security, 
+			    DATA_BLOB *session_key);
+NTSTATUS gensec_start_mech_by_oid(struct gensec_security *gensec_security, 
+				  const char *mech_oid);
+const char *gensec_get_name_by_oid(const char *oid_string);
+struct cli_credentials *gensec_get_credentials(struct gensec_security *gensec_security);
+struct socket_address *gensec_get_peer_addr(struct gensec_security *gensec_security);
+NTSTATUS gensec_init(struct loadparm_context *lp_ctx);
+NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security, 
+			      TALLOC_CTX *mem_ctx, 
+			      uint8_t *data, size_t length, 
+			      const uint8_t *whole_pdu, size_t pdu_length, 
+			      const DATA_BLOB *sig);
+NTSTATUS gensec_check_packet(struct gensec_security *gensec_security, 
+			     TALLOC_CTX *mem_ctx, 
+			     const uint8_t *data, size_t length, 
+			     const uint8_t *whole_pdu, size_t pdu_length, 
+			     const DATA_BLOB *sig);
+size_t gensec_sig_size(struct gensec_security *gensec_security, size_t data_size);
+NTSTATUS gensec_seal_packet(struct gensec_security *gensec_security, 
+			    TALLOC_CTX *mem_ctx, 
+			    uint8_t *data, size_t length, 
+			    const uint8_t *whole_pdu, size_t pdu_length, 
+			    DATA_BLOB *sig);
+NTSTATUS gensec_sign_packet(struct gensec_security *gensec_security, 
+			    TALLOC_CTX *mem_ctx, 
+			    const uint8_t *data, size_t length, 
+			    const uint8_t *whole_pdu, size_t pdu_length, 
+			    DATA_BLOB *sig);
+NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security, 
+				       uint8_t auth_type, uint8_t auth_level);
+const char *gensec_get_name_by_authtype(uint8_t authtype);
+NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, 
+			     struct event_context *ev,
+			     struct loadparm_context *lp_ctx,
+			     struct messaging_context *msg,
+			     struct gensec_security **gensec_security);
+NTSTATUS gensec_session_info(struct gensec_security *gensec_security, 
+			     struct auth_session_info **session_info);
+NTSTATUS auth_nt_status_squash(NTSTATUS nt_status);
+struct creds_CredentialState;
+NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
+			       TALLOC_CTX *mem_ctx,
+			       struct creds_CredentialState **creds);
+NTSTATUS gensec_set_peer_addr(struct gensec_security *gensec_security, struct socket_address *peer_addr);
+NTSTATUS gensec_set_my_addr(struct gensec_security *gensec_security, struct socket_address *my_addr);
+
+NTSTATUS gensec_start_mech_by_name(struct gensec_security *gensec_security, 
+					const char *name);
+
+NTSTATUS gensec_unwrap(struct gensec_security *gensec_security, 
+		       TALLOC_CTX *mem_ctx, 
+		       const DATA_BLOB *in, 
+		       DATA_BLOB *out);
+NTSTATUS gensec_wrap(struct gensec_security *gensec_security, 
+		     TALLOC_CTX *mem_ctx, 
+		     const DATA_BLOB *in, 
+		     DATA_BLOB *out);
+
+struct gensec_security_ops **gensec_security_all(void);
+struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_ctx, 
+						       struct gensec_security_ops **old_gensec_list, 
+						       struct cli_credentials *creds);
+
+NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security, 
+					const char *sasl_name);
+
 
 #endif /* __GENSEC_H__ */
