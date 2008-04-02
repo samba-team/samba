@@ -19,7 +19,6 @@ servicePrincipalName: HOST/${DNSNAME}/${REALM}
 servicePrincipalName: HOST/${NETBIOSNAME}/${REALM}
 servicePrincipalName: HOST/${DNSNAME}/${DOMAIN}
 servicePrincipalName: HOST/${NETBIOSNAME}/${DOMAIN}
-${HOSTGUID_ADD}
 
 #Provide a account for DNS keytab export
 dn: CN=dns,CN=Users,${DOMAINDN}
