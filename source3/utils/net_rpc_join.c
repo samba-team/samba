@@ -46,7 +46,7 @@ NTSTATUS net_rpc_join_ok(const char *domain, const char *server,
 {
 	enum security_types sec;
 	unsigned int conn_flags = NET_FLAGS_PDC;
-	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
+	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
@@ -133,7 +133,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	struct cli_state *cli;
 	TALLOC_CTX *mem_ctx;
         uint32 acb_info = ACB_WSTRUST;
-	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS|(lp_client_schannel() ? NETLOGON_NEG_SCHANNEL : 0);
+	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 	uint32 sec_channel_type;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 
