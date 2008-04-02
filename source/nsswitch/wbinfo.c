@@ -803,46 +803,38 @@ static bool wbinfo_lookupsid(const char *sid_str)
 
 /* Lookup a list of RIDs */
 
-static bool wbinfo_lookuprids(char *domain, char *arg)
+static bool wbinfo_lookuprids(const char *domain, const char *arg)
 {
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcDomainInfo *dinfo = NULL;
+	char *domain_name = NULL;
+	const char **names = NULL;
+	enum wbcSidType *types = NULL;
 	size_t i;
-	DOM_SID sid;
 	int num_rids;
-	uint32 *rids;
+	uint32 *rids = NULL;
 	const char *p;
 	char *ridstr;
-	const char **names;
-	enum lsa_SidType *types;
-	const char *domain_name;
 	TALLOC_CTX *mem_ctx;
-	struct winbindd_request request;
-	struct winbindd_response response;
+	bool ret = false;
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	if ((domain == NULL) || (strequal(domain, ".")) || (domain[0] == '\0'))
-		fstrcpy(request.domain_name, get_winbind_domain());
-	else
-		fstrcpy(request.domain_name, domain);
+	if ((domain == NULL) || (strequal(domain, ".")) || (domain[0] == '\0')) {
+		domain = get_winbind_domain();
+	}
 
 	/* Send request */
 
-	if (winbindd_request_response(WINBINDD_DOMAIN_INFO, &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
-		d_printf("Could not get domain sid for %s\n", request.domain_name);
-		return false;
-	}
-
-	if (!string_to_sid(&sid, response.data.domain_info.sid)) {
-		d_printf("Could not convert %s to sid\n", response.data.domain_info.sid);
-		return false;
+	wbc_status = wbcDomainInfo(domain, &dinfo);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_printf("wbcDomainInfo(%s) failed: %s\n", domain,
+			 wbcErrorString(wbc_status));
+		goto done;
 	}
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		d_printf("talloc_new failed\n");
-		return false;
+		goto done;
 	}
 
 	num_rids = 0;
@@ -855,15 +847,16 @@ static bool wbinfo_lookuprids(char *domain, char *arg)
 	}
 
 	if (rids == NULL) {
-		TALLOC_FREE(mem_ctx);
-		return false;
+		d_printf("no rids\n");
+		goto done;
 	}
 
-	if (!winbind_lookup_rids(mem_ctx, &sid, num_rids, rids,
-				 &domain_name, &names, &types)) {
-		d_printf("winbind_lookup_rids failed\n");
-		TALLOC_FREE(mem_ctx);
-		return false;
+	wbc_status = wbcLookupRids(&dinfo->sid, num_rids, rids,
+				   (const char **)&domain_name, &names, &types);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_printf("winbind_lookup_rids failed: %s\n",
+			 wbcErrorString(wbc_status));
+		goto done;
 	}
 
 	d_printf("Domain: %s\n", domain_name);
@@ -873,8 +866,22 @@ static bool wbinfo_lookuprids(char *domain, char *arg)
 			 sid_type_lookup(types[i]));
 	}
 
+	ret = true;
+done:
+	if (dinfo) {
+		wbcFreeMemory(dinfo);
+	}
+	if (domain_name) {
+		wbcFreeMemory(domain_name);
+	}
+	if (names) {
+		wbcFreeMemory(names);
+	}
+	if (types) {
+		wbcFreeMemory(types);
+	}
 	TALLOC_FREE(mem_ctx);
-	return true;
+	return ret;
 }
 
 /* Convert string to sid */
