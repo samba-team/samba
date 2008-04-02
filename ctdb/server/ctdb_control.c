@@ -263,6 +263,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		ctdb_enable_monitoring(ctdb);
 		return 0;
 	
+	case CTDB_CONTROL_RUN_EVENTSCRIPTS: 
+		return ctdb_run_eventscripts(ctdb, c, indata, async_reply);
+
 	case CTDB_CONTROL_DISABLE_MONITOR: 
 		CHECK_CONTROL_DATA_SIZE(0);
 		ctdb_disable_monitoring(ctdb);

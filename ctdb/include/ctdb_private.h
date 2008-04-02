@@ -386,6 +386,7 @@ struct ctdb_context {
 	struct ctdb_monitor_state *monitor;
 	struct ctdb_log_state *log;
 	int start_as_disabled;
+	TALLOC_CTX *eventscripts_ctx; /* a context to hold data for the RUN_EVENTSCRIPTS control */
 };
 
 struct ctdb_db_context {
@@ -511,6 +512,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_DISABLE_MONITOR         = 76,
 		    CTDB_CONTROL_ADD_PUBLIC_IP           = 77,
 		    CTDB_CONTROL_DEL_PUBLIC_IP           = 78,
+		    CTDB_CONTROL_RUN_EVENTSCRIPTS        = 79,
 };	
 
 /*
@@ -1092,6 +1094,8 @@ void ctdb_start_tcp_tickle_update(struct ctdb_context *ctdb);
 void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode);
 void ctdb_start_keepalive(struct ctdb_context *ctdb);
 void ctdb_stop_keepalive(struct ctdb_context *ctdb);
+int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA data, bool *async_reply);
+
 
 void ctdb_daemon_cancel_controls(struct ctdb_context *ctdb, struct ctdb_node *node);
 void ctdb_call_resend_all(struct ctdb_context *ctdb);

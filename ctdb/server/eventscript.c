@@ -367,3 +367,77 @@ int ctdb_event_script(struct ctdb_context *ctdb, const char *fmt, ...)
 
 	return status.status;
 }
+
+
+struct eventscript_callback_state {
+	struct ctdb_req_control *c;
+};
+
+/*
+  called when takeip event finishes
+ */
+static void run_eventscripts_callback(struct ctdb_context *ctdb, int status, 
+				 void *private_data)
+{
+	struct eventscript_callback_state *state = 
+		talloc_get_type(private_data, struct eventscript_callback_state);
+
+	ctdb_enable_monitoring(ctdb);
+
+	if (status != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to forcibly run eventscripts\n"));
+		ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
+		talloc_free(state);
+		return;
+	}
+
+	/* the control succeeded */
+	ctdb_request_control_reply(ctdb, state->c, NULL, 0, NULL);
+	talloc_free(state);
+	return;
+}
+
+/*
+  A control to force running of the eventscripts from the ctdb client tool
+*/
+int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
+		struct ctdb_req_control *c,
+		TDB_DATA indata, bool *async_reply)
+{
+	int ret;
+	struct eventscript_callback_state *state;
+
+	/* kill off any previous invokations of forced eventscripts */
+	if (ctdb->eventscripts_ctx) {
+		talloc_free(ctdb->eventscripts_ctx);
+	}
+	ctdb->eventscripts_ctx = talloc_new(ctdb);
+	CTDB_NO_MEMORY(ctdb, ctdb->eventscripts_ctx);
+
+	state = talloc(ctdb->eventscripts_ctx, struct eventscript_callback_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->c = talloc_steal(ctdb, c);
+
+	DEBUG(DEBUG_NOTICE,("Forced running of eventscripts with arguments %s\n", indata.dptr));
+
+	ctdb_disable_monitoring(ctdb);
+
+	ret = ctdb_event_script_callback(ctdb, 
+			 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+			 state, run_eventscripts_callback, state,
+			 (const char *)indata.dptr);
+
+	if (ret != 0) {
+		ctdb_enable_monitoring(ctdb);
+		DEBUG(DEBUG_ERR,(__location__ " Failed to run eventscripts with arguments %s\n", indata.dptr));
+		talloc_free(state);
+		return -1;
+	}
+
+	/* tell ctdb_control.c that we will be replying asynchronously */
+	*async_reply = true;
+
+	return 0;
+}
+

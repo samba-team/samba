@@ -1388,6 +1388,38 @@ static int control_attach(struct ctdb_context *ctdb, int argc, const char **argv
 /*
   dump memory usage
  */
+static int control_eventscript(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	TDB_DATA data;
+	int ret;
+	int32_t res;
+	char *errmsg;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+
+	if (argc != 1) {
+		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
+		return -1;
+	}
+
+	data.dptr = (unsigned char *)discard_const(argv[0]);
+	data.dsize = strlen((char *)data.dptr) + 1;
+
+	DEBUG(DEBUG_ERR, ("Running eventscripts with arguments \"%s\" on node %u\n", data.dptr, options.pnn));
+
+	ret = ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_RUN_EVENTSCRIPTS,
+			   0, data, tmp_ctx, NULL, &res, NULL, &errmsg);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,("Failed to run eventscripts - %s\n", errmsg));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+/*
+  dump memory usage
+ */
 static int control_dumpmemory(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	TDB_DATA data;
@@ -1576,6 +1608,7 @@ static const struct {
 	{ "moveip",          control_moveip,		false, "move/failover an ip address to another node", "<ip> <node>"},
 	{ "addip",           control_addip,		false, "add a ip address to a node", "<ip/mask> <iface>"},
 	{ "delip",           control_delip,		false, "delete an ip address from a node", "<ip>"},
+	{ "eventscript",     control_eventscript,	false, "run the eventscript with the given parameters on a node", "<arguments>"},
 };
 
 /*

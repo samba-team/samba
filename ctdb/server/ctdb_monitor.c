@@ -268,3 +268,4 @@ int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb)
 	}
 	return ctdb->monitor->monitoring_mode;
 }
+
