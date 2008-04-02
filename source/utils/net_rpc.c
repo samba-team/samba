@@ -4469,88 +4469,84 @@ static void collect_alias_memberships(NT_USER_TOKEN *token)
 
 static bool get_user_sids(const char *domain, const char *user, NT_USER_TOKEN *token)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	enum wbcSidType type;
 	fstring full_name;
-	NSS_STATUS result;
-
+	struct wbcDomainSid wsid;
+	char *sid_str = NULL;
 	DOM_SID user_sid;
-
-	int i;
+	uint32_t num_groups;
+	gid_t *groups = NULL;
+	uint32_t i;
 
 	fstr_sprintf(full_name, "%s%c%s",
 		     domain, *lp_winbind_separator(), user);
 
 	/* First let's find out the user sid */
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	wbc_status = wbcLookupName(domain, user, &wsid, &type);
 
-	fstrcpy(request.data.name.dom_name, domain);
-	fstrcpy(request.data.name.name, user);
-
-	result = winbindd_request_response(WINBINDD_LOOKUPNAME, &request, &response);
-
-	if (result != NSS_STATUS_SUCCESS) {
-		DEBUG(1, ("winbind could not find %s\n", full_name));
-		return False;
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		DEBUG(1, ("winbind could not find %s: %s\n",
+			  full_name, wbcErrorString(wbc_status)));
+		return false;
 	}
 
-	if (response.data.sid.type != SID_NAME_USER) {
+	wbc_status = wbcSidToString(&wsid, &sid_str);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	if (type != SID_NAME_USER) {
+		wbcFreeMemory(sid_str);
 		DEBUG(1, ("%s is not a user\n", full_name));
-		return False;
+		return false;
 	}
 
-	if (!string_to_sid(&user_sid, response.data.sid.sid)) {
-		DEBUG(1, ("Could not convert string '%s' to SID\n", response.data.sid.sid));
-		return False;
-	}
+	string_to_sid(&user_sid, sid_str);
+	wbcFreeMemory(sid_str);
+	sid_str = NULL;
 
 	init_user_token(token, &user_sid);
 
 	/* And now the groups winbind knows about */
 
-	ZERO_STRUCT(response);
-
-	fstrcpy(request.data.username, full_name);
-
-	result = winbindd_request_response(WINBINDD_GETGROUPS, &request, &response);
-
-	if (result != NSS_STATUS_SUCCESS) {
-		DEBUG(1, ("winbind could not get groups of %s\n", full_name));
-		return False;
+	wbc_status = wbcGetGroups(full_name, &num_groups, &groups);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		DEBUG(1, ("winbind could not get groups of %s: %s\n",
+			full_name, wbcErrorString(wbc_status)));
+		return false;
 	}
 
-	for (i = 0; i < response.data.num_entries; i++) {
-		gid_t gid = ((gid_t *)response.extra_data.data)[i];
+	for (i = 0; i < num_groups; i++) {
+		gid_t gid = groups[i];
 		DOM_SID sid;
 
-		struct winbindd_request sidrequest;
-		struct winbindd_response sidresponse;
-
-		ZERO_STRUCT(sidrequest);
-		ZERO_STRUCT(sidresponse);
-
-		sidrequest.data.gid = gid;
-
-		result = winbindd_request_response(WINBINDD_GID_TO_SID,
-					  &sidrequest, &sidresponse);
-
-		if (result != NSS_STATUS_SUCCESS) {
-			DEBUG(1, ("winbind could not find SID of gid %d\n",
-				  gid));
-			return False;
+		wbc_status = wbcGidToSid(gid, &wsid);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			DEBUG(1, ("winbind could not find SID of gid %d: %s\n",
+				  gid, wbcErrorString(wbc_status)));
+			wbcFreeMemory(groups);
+			return false;
 		}
 
-		DEBUG(3, (" %s\n", sidresponse.data.sid.sid));
+		wbc_status = wbcSidToString(&wsid, &sid_str);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			wbcFreeMemory(groups);
+			return false;
+		}
 
-		string_to_sid(&sid, sidresponse.data.sid.sid);
+		DEBUG(3, (" %s\n", sid_str));
+
+		string_to_sid(&sid, sid_str);
+		wbcFreeMemory(sid_str);
+		sid_str = NULL;
+
 		add_sid_to_token(token, &sid);
 	}
+	wbcFreeMemory(groups);
 
-	SAFE_FREE(response.extra_data.data);
-
-	return True;
+	return true;
 }
 	
 /**
