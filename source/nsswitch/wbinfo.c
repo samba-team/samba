@@ -886,26 +886,36 @@ done:
 
 /* Convert string to sid */
 
-static bool wbinfo_lookupname(char *name)
+static bool wbinfo_lookupname(const char *full_name)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcDomainSid sid;
+	char *sid_str;
+	enum wbcSidType type;
+	fstring domain_name;
+	fstring account_name;
 
 	/* Send off request */
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	parse_wbinfo_domain_user(full_name, domain_name,
+				 account_name);
 
-	parse_wbinfo_domain_user(name, request.data.name.dom_name,
-				 request.data.name.name);
-
-	if (winbindd_request_response(WINBINDD_LOOKUPNAME, &request, &response) !=
-	    NSS_STATUS_SUCCESS)
+	wbc_status = wbcLookupName(domain_name, account_name,
+				   &sid, &type);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
+	}
+
+	wbc_status = wbcSidToString(&sid, &sid_str);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
 
 	/* Display response */
 
-	d_printf("%s %s (%d)\n", response.data.sid.sid, sid_type_lookup(response.data.sid.type), response.data.sid.type);
+	d_printf("%s %s (%d)\n", sid_str, sid_type_lookup(type), type);
+
+	wbcFreeMemory(sid_str);
 
 	return true;
 }
