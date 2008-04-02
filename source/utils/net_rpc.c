@@ -5841,7 +5841,49 @@ static int rpc_trustdom_del(int argc, const char **argv)
 		return -1;
 	}
 }
- 
+
+static NTSTATUS rpc_trustdom_get_pdc(struct cli_state *cli,
+				     TALLOC_CTX *mem_ctx,
+				     const char *domain_name)
+{
+	char *dc_name = NULL;
+	const char *buffer = NULL;
+	struct rpc_pipe_client *netr;
+	NTSTATUS status;
+
+	/* Use NetServerEnum2 */
+
+	if (cli_get_pdc_name(cli, domain_name, &dc_name)) {
+		SAFE_FREE(dc_name);
+		return NT_STATUS_OK;
+	}
+
+	DEBUG(1,("NetServerEnum2 error: Couldn't find primary domain controller\
+		 for domain %s\n", domain_name));
+
+	/* Try netr_GetDcName */
+
+	netr = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON, &status);
+	if (!netr) {
+		return status;
+	}
+
+	status = rpccli_netr_GetDcName(netr, mem_ctx,
+				       cli->desthost,
+				       domain_name,
+				       &buffer,
+				       NULL);
+	cli_rpc_pipe_close(netr);
+
+	if (NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	DEBUG(1,("netr_GetDcName error: Couldn't find primary domain controller\
+		 for domain %s\n", domain_name));
+
+	return status;
+}
 
 /**
  * Establish trust relationship to a trusting domain.
@@ -5866,7 +5908,6 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	char* domain_name;
 	char* acct_name;
 	fstring pdc_name;
-	char *dc_name;
 	union lsa_PolicyInformation *info = NULL;
 
 	/*
@@ -5927,22 +5968,19 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		return -1;
 	}
 
-	/*
-	 * Use NetServerEnum2 to make sure we're talking to a proper server
-	 */
-
-	if (!cli_get_pdc_name(cli, domain_name, &dc_name)) {
-		DEBUG(0, ("NetServerEnum2 error: Couldn't find primary domain controller\
-			 for domain %s\n", domain_name));
-		cli_shutdown(cli);
-		return -1;
-	}
-	SAFE_FREE(dc_name);
-	 
 	if (!(mem_ctx = talloc_init("establishing trust relationship to "
 				    "domain %s", domain_name))) {
 		DEBUG(0, ("talloc_init() failed\n"));
 		cli_shutdown(cli);
+		return -1;
+	}
+
+	/* Make sure we're talking to a proper server */
+
+	nt_status = rpc_trustdom_get_pdc(cli, mem_ctx, domain_name);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		cli_shutdown(cli);
+		talloc_destroy(mem_ctx);
 		return -1;
 	}
 
