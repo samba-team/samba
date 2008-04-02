@@ -106,26 +106,6 @@ static NTSTATUS parse_dfs_path(const char *pathname,
 	fstrcpy(pdp->hostname,temp);
 	DEBUG(10,("parse_dfs_path: hostname: %s\n",pdp->hostname));
 
-	/* If we got a hostname, is it ours (or an IP address) ? */
-	if (!is_myname_or_ipaddr(pdp->hostname)) {
-		/* Repair path. */
-		*p = sepchar;
-		DEBUG(10,("parse_dfs_path: hostname %s isn't ours. Try local path from path %s\n",
-			pdp->hostname, temp));
-		/*
-		 * Possibly client sent a local path by mistake.
-		 * Try and convert to a local path.
-		 */
-
-		pdp->hostname[0] = '\0';
-		pdp->servicename[0] = '\0';
-
-		p = temp;
-		DEBUG(10,("parse_dfs_path: trying to convert %s to a local path\n",
-			temp));
-		goto local_path;
-	}
-
 	/* Parse out servicename. */
 	temp = p+1;
 	p = strchr_m(temp,sepchar);
@@ -608,13 +588,6 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	status = parse_dfs_path(dfs_path, False, &dp, &dummy);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	/* Verify hostname in path */
-	if (!is_myname_or_ipaddr(dp.hostname)) {
-		DEBUG(3, ("get_referred_path: Invalid hostname %s in path %s\n",
-			dp.hostname, dfs_path));
-		return NT_STATUS_NOT_FOUND;
 	}
 
 	fstrcpy(jucn->service_name, dp.servicename);
