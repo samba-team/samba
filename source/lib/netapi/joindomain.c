@@ -238,6 +238,7 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 {
 	struct libnet_UnjoinCtx *r = NULL;
 	struct dom_sid domain_sid;
+	const char *domain = NULL;
 	WERROR werr;
 
 	if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
@@ -247,26 +248,28 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 	werr = libnet_init_UnjoinCtx(mem_ctx, &r);
 	W_ERROR_NOT_OK_RETURN(werr);
 
+	if (lp_realm()) {
+		domain = lp_realm();
+	} else {
+		domain = lp_workgroup();
+	}
+
 	if (server_name) {
 		r->in.dc_name = talloc_strdup(mem_ctx, server_name);
 		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
 	} else {
 		NTSTATUS status;
-		const char *domain = NULL;
 		struct netr_DsRGetDCNameInfo *info = NULL;
 		uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 				 DS_WRITABLE_REQUIRED |
 				 DS_RETURN_DNS_NAME;
-		if (lp_realm()) {
-			domain = lp_realm();
-		} else {
-			domain = lp_workgroup();
-		}
 		status = dsgetdcname(mem_ctx, domain,
 				     NULL, NULL, flags, &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			libnetapi_set_error_string(mem_ctx,
-				"%s", get_friendly_nt_error_msg(status));
+				"failed to find DC for domain %s: %s",
+				domain,
+				get_friendly_nt_error_msg(status));
 			return ntstatus_to_werror(status);
 		}
 		r->in.dc_name = talloc_strdup(mem_ctx,
@@ -284,6 +287,7 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 		W_ERROR_HAVE_NO_MEMORY(r->in.admin_password);
 	}
 
+	r->in.domain_name = domain;
 	r->in.unjoin_flags = unjoin_flags;
 	r->in.modify_config = true;
 	r->in.debug = true;
