@@ -9,8 +9,10 @@ $TTL 1W
                                 6W              ; expiry
                                 1W )            ; minimum
 			IN NS	${HOSTNAME}
+${HOSTIP6_BASE_LINE}
 			IN A	${HOSTIP}
 ;
+${HOSTIP6_HOST_LINE}
 ${HOSTNAME}		IN A	${HOSTIP}
 ${HOSTGUID}._msdcs	IN CNAME ${HOSTNAME}
 ;
