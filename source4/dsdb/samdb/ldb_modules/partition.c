@@ -87,7 +87,7 @@ static struct ldb_module *make_module_for_next_request(TALLOC_CTX *mem_ctx,
 						       struct ldb_module *module)
 {
 	struct ldb_module *current;
-_PUBLIC_ 	static const struct ldb_module_ops ops; /* zero */
+	static const struct ldb_module_ops ops; /* zero */
 	current = talloc_zero(mem_ctx, struct ldb_module);
 	if (current == NULL) {
 		return module;

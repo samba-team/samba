@@ -21,13 +21,14 @@
 
 #include "includes.h"
 #include "libcli/nbt/libnbt.h"
+#include "libcli/nbt/nbt_proto.h"
 #include "lib/socket/socket.h"
 #include "param/param.h"
 
 /*
   send a nbt name release request
 */
-struct nbt_name_request *nbt_name_release_send(struct nbt_name_socket *nbtsock,
+_PUBLIC_ struct nbt_name_request *nbt_name_release_send(struct nbt_name_socket *nbtsock,
 					       struct nbt_name_release *io)
 {
 	struct nbt_name_request *req;
@@ -84,7 +85,7 @@ failed:
 /*
   wait for a release reply
 */
-NTSTATUS nbt_name_release_recv(struct nbt_name_request *req, 
+_PUBLIC_ NTSTATUS nbt_name_release_recv(struct nbt_name_request *req, 
 			       TALLOC_CTX *mem_ctx, struct nbt_name_release *io)
 {
 	NTSTATUS status;
@@ -126,7 +127,7 @@ NTSTATUS nbt_name_release_recv(struct nbt_name_request *req,
 /*
   synchronous name release request
 */
-NTSTATUS nbt_name_release(struct nbt_name_socket *nbtsock, 
+_PUBLIC_ NTSTATUS nbt_name_release(struct nbt_name_socket *nbtsock, 
 			   TALLOC_CTX *mem_ctx, struct nbt_name_release *io)
 {
 	struct nbt_name_request *req = nbt_name_release_send(nbtsock, io);

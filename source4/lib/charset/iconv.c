@@ -113,7 +113,7 @@ static size_t sys_iconv(void *cd,
  * It only knows about a very small number of character sets - just
  * enough that Samba works on systems that don't have iconv.
  **/
-size_t smb_iconv(smb_iconv_t cd, 
+_PUBLIC_ size_t smb_iconv(smb_iconv_t cd, 
 		 const char **inbuf, size_t *inbytesleft,
 		 char **outbuf, size_t *outbytesleft)
 {
@@ -156,7 +156,7 @@ static bool is_utf16(const char *name)
 
 
 
-smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode, 
+_PUBLIC_ smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode, 
 			      const char *fromcode, bool native_iconv)
 {
 	smb_iconv_t ret;
@@ -263,7 +263,7 @@ failed:
 /*
   simple iconv_open() wrapper
  */
-smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
+_PUBLIC_ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 {
 	return smb_iconv_open_ex(NULL, tocode, fromcode, true);
 }
@@ -271,7 +271,7 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 /*
   simple iconv_close() wrapper
 */
-int smb_iconv_close(smb_iconv_t cd)
+_PUBLIC_ int smb_iconv_close(smb_iconv_t cd)
 {
 #ifdef HAVE_NATIVE_ICONV
 	if (cd->cd_direct) iconv_close((iconv_t)cd->cd_direct);

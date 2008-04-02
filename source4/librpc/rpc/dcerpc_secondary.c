@@ -27,6 +27,7 @@
 #include "libcli/composite/composite.h"
 #include "lib/events/events.h"
 #include "librpc/rpc/dcerpc.h"
+#include "librpc/rpc/dcerpc_proto.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
@@ -50,7 +51,7 @@ static void continue_pipe_open(struct composite_context *c);
   Send request to create a secondary dcerpc connection from a primary
   connection
 */
-struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p,
+_PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p,
 							   struct dcerpc_binding *b)
 {
 	struct composite_context *c;
@@ -183,7 +184,7 @@ static void continue_pipe_open(struct composite_context *c)
   Receive result of secondary rpc connection request and return
   second dcerpc pipe.
 */
-NTSTATUS dcerpc_secondary_connection_recv(struct composite_context *c,
+_PUBLIC_ NTSTATUS dcerpc_secondary_connection_recv(struct composite_context *c,
 					  struct dcerpc_pipe **p2)
 {
 	NTSTATUS status = composite_wait(c);
@@ -206,7 +207,7 @@ NTSTATUS dcerpc_secondary_connection_recv(struct composite_context *c,
   If the primary is a SMB connection then the secondary connection
   will be on the same SMB connection, but using a new fnum
 */
-NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p,
+_PUBLIC_ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p,
 				     struct dcerpc_pipe **p2,
 				     struct dcerpc_binding *b)
 {
@@ -234,7 +235,7 @@ struct sec_auth_conn_state {
 static void dcerpc_secondary_auth_connection_bind(struct composite_context *ctx);
 static void dcerpc_secondary_auth_connection_continue(struct composite_context *ctx);
 
-struct composite_context* dcerpc_secondary_auth_connection_send(struct dcerpc_pipe *p,
+_PUBLIC_ struct composite_context* dcerpc_secondary_auth_connection_send(struct dcerpc_pipe *p,
 								struct dcerpc_binding *binding,
 								const struct ndr_interface_table *table,
 								struct cli_credentials *credentials,
@@ -306,7 +307,7 @@ static void dcerpc_secondary_auth_connection_continue(struct composite_context *
 /*
   Receive an authenticated pipe, created as a secondary connection
 */
-NTSTATUS dcerpc_secondary_auth_connection_recv(struct composite_context *c, 
+_PUBLIC_ NTSTATUS dcerpc_secondary_auth_connection_recv(struct composite_context *c, 
 					       TALLOC_CTX *mem_ctx,
 					       struct dcerpc_pipe **p)
 {

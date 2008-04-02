@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libcli/nbt/libnbt.h"
+#include "libcli/nbt/nbt_proto.h"
 #include "lib/socket/socket.h"
 #include "param/param.h"
 

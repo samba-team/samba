@@ -8,9 +8,9 @@
    encoding if it doesn't work out
 */
 
-import "security.idl", "svcctl.idl";
+import "misc.idl", "security.idl", "svcctl.idl";
 [
-helper("libcli/nbt/nbtname.h")
+helper("libcli/nbt/libnbt.h")
 ]
 interface nbt
 {

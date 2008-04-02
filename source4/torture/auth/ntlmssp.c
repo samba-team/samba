@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_proto.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/torture.h"
@@ -141,7 +142,7 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 	return true;
 }
 
-_PUBLIC_ struct torture_suite *torture_ntlmssp(TALLOC_CTX *mem_ctx)
+struct torture_suite *torture_ntlmssp(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, 
 													   "NTLMSSP");

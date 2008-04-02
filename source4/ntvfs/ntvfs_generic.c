@@ -361,7 +361,7 @@ static NTSTATUS map_openx_open(uint16_t flags, uint16_t open_mode,
 /* 
    NTVFS open generic to any mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
+NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 				 struct ntvfs_request *req,
 				 union smb_open *io)
 {
@@ -512,7 +512,7 @@ done:
 /* 
    NTVFS fsinfo generic to any mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_fsinfo(struct ntvfs_module_context *ntvfs,
+NTSTATUS ntvfs_map_fsinfo(struct ntvfs_module_context *ntvfs,
 				   struct ntvfs_request *req,
 				   union smb_fsinfo *fs)
 {
@@ -641,7 +641,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_fsinfo(struct ntvfs_module_context *ntvfs,
 /* 
    NTVFS fileinfo generic to any mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_fileinfo(TALLOC_CTX *mem_ctx,
+NTSTATUS ntvfs_map_fileinfo(TALLOC_CTX *mem_ctx,
 				     union smb_fileinfo *info, 
 				     union smb_fileinfo *info2)
 {
@@ -872,7 +872,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_fileinfo(TALLOC_CTX *mem_ctx,
 /* 
    NTVFS fileinfo generic to any mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_qfileinfo(struct ntvfs_module_context *ntvfs,
+NTSTATUS ntvfs_map_qfileinfo(struct ntvfs_module_context *ntvfs,
 				      struct ntvfs_request *req,
 				      union smb_fileinfo *info)
 {
@@ -905,7 +905,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_qfileinfo(struct ntvfs_module_context *ntvfs,
 /* 
    NTVFS pathinfo generic to any mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_qpathinfo(struct ntvfs_module_context *ntvfs,
+NTSTATUS ntvfs_map_qpathinfo(struct ntvfs_module_context *ntvfs,
 				      struct ntvfs_request *req,
 				      union smb_fileinfo *info)
 {
@@ -939,7 +939,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_qpathinfo(struct ntvfs_module_context *ntvfs,
 /* 
    NTVFS lock generic to any mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
+NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 				 struct ntvfs_request *req,
 				 union smb_lock *lck)
 {
@@ -1114,7 +1114,7 @@ static NTSTATUS ntvfs_map_write_finish(struct ntvfs_module_context *ntvfs,
 /* 
    NTVFS write generic to any mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_write(struct ntvfs_module_context *ntvfs,
+NTSTATUS ntvfs_map_write(struct ntvfs_module_context *ntvfs,
 				  struct ntvfs_request *req,
 				  union smb_write *wr)
 {
@@ -1226,7 +1226,7 @@ static NTSTATUS ntvfs_map_read_finish(struct ntvfs_module_context *ntvfs,
 /* 
    NTVFS read* to readx mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_read(struct ntvfs_module_context *ntvfs,
+NTSTATUS ntvfs_map_read(struct ntvfs_module_context *ntvfs,
 				 struct ntvfs_request *req,
 				 union smb_read *rd)
 {
@@ -1322,7 +1322,7 @@ done:
 /* 
    NTVFS close generic to any mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_close(struct ntvfs_module_context *ntvfs,
+NTSTATUS ntvfs_map_close(struct ntvfs_module_context *ntvfs,
 				  struct ntvfs_request *req,
 				  union smb_close *cl)
 {
@@ -1391,7 +1391,7 @@ static NTSTATUS ntvfs_map_notify_finish(struct ntvfs_module_context *ntvfs,
 /* 
    NTVFS notify generic to any mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_notify(struct ntvfs_module_context *ntvfs,
+NTSTATUS ntvfs_map_notify(struct ntvfs_module_context *ntvfs,
 				   struct ntvfs_request *req,
 				   union smb_notify *nt)
 {

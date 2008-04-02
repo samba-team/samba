@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "lib/util/asn1.h"
 #include "libcli/ldap/ldap.h"
+#include "libcli/ldap/ldap_proto.h"
 
 
 static bool ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree)
@@ -187,7 +188,7 @@ static void ldap_encode_response(struct asn1_data *data, struct ldap_Result *res
 	}
 }
 
-bool ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ctx)
+_PUBLIC_ bool ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ctx)
 {
 	struct asn1_data *data = asn1_init(mem_ctx);
 	int i, j;
@@ -927,7 +928,7 @@ static void ldap_decode_attribs(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 
 /* This routine returns LDAP status codes */
 
-NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg)
+_PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 {
 	uint8_t tag;
 

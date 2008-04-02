@@ -25,6 +25,7 @@
 #include "smb_server/smb_server.h"
 #include "ntvfs/ntvfs.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
 

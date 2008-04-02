@@ -83,7 +83,7 @@ static int close_iconv(struct smb_iconv_convenience *data)
 	return 0;
 }
 
-struct smb_iconv_convenience *smb_iconv_convenience_init(TALLOC_CTX *mem_ctx,
+_PUBLIC_ struct smb_iconv_convenience *smb_iconv_convenience_init(TALLOC_CTX *mem_ctx,
 							 const char *dos_charset,
 							 const char *unix_charset,
 							 bool native_iconv)

@@ -63,7 +63,7 @@ bool SMBencrypt(const char *passwd, const uint8_t *c8, uint8_t p24[24])
  * @param p16 return password hashed with md4, caller allocated 16 byte buffer
  */
  
-_PUBLIC_ bool E_md4hash(const char *passwd, uint8_t p16[16])
+bool E_md4hash(const char *passwd, uint8_t p16[16])
 {
 	int len;
 	void *wpwd;
@@ -91,7 +91,7 @@ _PUBLIC_ bool E_md4hash(const char *passwd, uint8_t p16[16])
  * @note p16 is filled in regardless
  */
  
-_PUBLIC_ bool E_deshash(const char *passwd, uint8_t p16[16])
+bool E_deshash(const char *passwd, uint8_t p16[16])
 {
 	bool ret = true;
 	fstring dospwd; 

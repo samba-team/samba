@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "libcli/ldap/ldap.h"
+#include "libcli/ldap/ldap_client.h"
 #include "torture/torture.h"
 #include "torture/ldap/proto.h"
 
@@ -38,7 +38,7 @@ NTSTATUS torture_ldap_bind(struct ldap_connection *conn, const char *userdn, con
 	return status;
 }
 
-_PUBLIC_ NTSTATUS torture_ldap_bind_sasl(struct ldap_connection *conn, 
+NTSTATUS torture_ldap_bind_sasl(struct ldap_connection *conn, 
 				struct cli_credentials *creds, 
 				struct loadparm_context *lp_ctx)
 {
@@ -54,7 +54,7 @@ _PUBLIC_ NTSTATUS torture_ldap_bind_sasl(struct ldap_connection *conn,
 }
 
 /* open a ldap connection to a server */
-_PUBLIC_ NTSTATUS torture_ldap_connection(struct torture_context *tctx, 
+NTSTATUS torture_ldap_connection(struct torture_context *tctx, 
 					  struct ldap_connection **conn, 
 					  const char *url)
 {

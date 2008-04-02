@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "smb.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
 #define SETUP_REQUEST(cmd, wct, buflen) do { \
@@ -92,7 +93,7 @@ struct smbcli_request *smb_raw_rename_send(struct smbcli_tree *tree,
 /****************************************************************************
  Rename a file - sync interface
 ****************************************************************************/
-NTSTATUS smb_raw_rename(struct smbcli_tree *tree,
+_PUBLIC_ NTSTATUS smb_raw_rename(struct smbcli_tree *tree,
 			union smb_rename *parms)
 {
 	struct smbcli_request *req = smb_raw_rename_send(tree, parms);
@@ -123,7 +124,7 @@ struct smbcli_request *smb_raw_unlink_send(struct smbcli_tree *tree,
 /*
   delete a file - sync interface
 */
-NTSTATUS smb_raw_unlink(struct smbcli_tree *tree,
+_PUBLIC_ NTSTATUS smb_raw_unlink(struct smbcli_tree *tree,
 			union smb_unlink *parms)
 {
 	struct smbcli_request *req = smb_raw_unlink_send(tree, parms);
@@ -201,7 +202,7 @@ struct smbcli_request *smb_raw_mkdir_send(struct smbcli_tree *tree,
 /****************************************************************************
  Create a directory - sync interface
 ****************************************************************************/
-NTSTATUS smb_raw_mkdir(struct smbcli_tree *tree,
+_PUBLIC_ NTSTATUS smb_raw_mkdir(struct smbcli_tree *tree,
 		       union smb_mkdir *parms)
 {
 	struct smbcli_request *req = smb_raw_mkdir_send(tree, parms);
@@ -231,7 +232,7 @@ struct smbcli_request *smb_raw_rmdir_send(struct smbcli_tree *tree,
 /****************************************************************************
  Remove a directory - sync interface
 ****************************************************************************/
-NTSTATUS smb_raw_rmdir(struct smbcli_tree *tree,
+_PUBLIC_ NTSTATUS smb_raw_rmdir(struct smbcli_tree *tree,
 		       struct smb_rmdir *parms)
 {
 	struct smbcli_request *req = smb_raw_rmdir_send(tree, parms);
@@ -448,7 +449,7 @@ static NTSTATUS smb_raw_t2open_recv(struct smbcli_request *req, TALLOC_CTX *mem_
 /****************************************************************************
  Open a file - async send
 ****************************************************************************/
-struct smbcli_request *smb_raw_open_send(struct smbcli_tree *tree, union smb_open *parms)
+_PUBLIC_ struct smbcli_request *smb_raw_open_send(struct smbcli_tree *tree, union smb_open *parms)
 {
 	int len;
 	struct smbcli_request *req = NULL; 
@@ -585,7 +586,7 @@ struct smbcli_request *smb_raw_open_send(struct smbcli_tree *tree, union smb_ope
 /****************************************************************************
  Open a file - async recv
 ****************************************************************************/
-NTSTATUS smb_raw_open_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, union smb_open *parms)
+_PUBLIC_ NTSTATUS smb_raw_open_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, union smb_open *parms)
 {
 	NTSTATUS status;
 
@@ -720,7 +721,7 @@ failed:
 /****************************************************************************
  Open a file - sync interface
 ****************************************************************************/
-NTSTATUS smb_raw_open(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, union smb_open *parms)
+_PUBLIC_ NTSTATUS smb_raw_open(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, union smb_open *parms)
 {
 	struct smbcli_request *req = smb_raw_open_send(tree, parms);
 	return smb_raw_open_recv(req, mem_ctx, parms);
@@ -730,7 +731,7 @@ NTSTATUS smb_raw_open(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, union smb_o
 /****************************************************************************
  Close a file - async send
 ****************************************************************************/
-struct smbcli_request *smb_raw_close_send(struct smbcli_tree *tree, union smb_close *parms)
+_PUBLIC_ struct smbcli_request *smb_raw_close_send(struct smbcli_tree *tree, union smb_close *parms)
 {
 	struct smbcli_request *req = NULL; 
 
@@ -766,7 +767,7 @@ struct smbcli_request *smb_raw_close_send(struct smbcli_tree *tree, union smb_cl
 /****************************************************************************
  Close a file - sync interface
 ****************************************************************************/
-NTSTATUS smb_raw_close(struct smbcli_tree *tree, union smb_close *parms)
+_PUBLIC_ NTSTATUS smb_raw_close(struct smbcli_tree *tree, union smb_close *parms)
 {
 	struct smbcli_request *req = smb_raw_close_send(tree, parms);
 	return smbcli_request_simple_recv(req);
@@ -843,7 +844,7 @@ struct smbcli_request *smb_raw_lock_send(struct smbcli_tree *tree, union smb_loc
 /****************************************************************************
  Locking calls - sync interface
 ****************************************************************************/
-NTSTATUS smb_raw_lock(struct smbcli_tree *tree, union smb_lock *parms)
+_PUBLIC_ NTSTATUS smb_raw_lock(struct smbcli_tree *tree, union smb_lock *parms)
 {
 	struct smbcli_request *req = smb_raw_lock_send(tree, parms);
 	return smbcli_request_simple_recv(req);
@@ -913,7 +914,7 @@ struct smbcli_request *smb_raw_flush_send(struct smbcli_tree *tree, union smb_fl
 /****************************************************************************
  flush a file - sync interface
 ****************************************************************************/
-NTSTATUS smb_raw_flush(struct smbcli_tree *tree, union smb_flush *parms)
+_PUBLIC_ NTSTATUS smb_raw_flush(struct smbcli_tree *tree, union smb_flush *parms)
 {
 	struct smbcli_request *req = smb_raw_flush_send(tree, parms);
 	return smbcli_request_simple_recv(req);
@@ -962,7 +963,7 @@ failed:
 /*
   seek a file - sync interface
 */
-NTSTATUS smb_raw_seek(struct smbcli_tree *tree,
+_PUBLIC_ NTSTATUS smb_raw_seek(struct smbcli_tree *tree,
 		      union smb_seek *parms)
 {
 	struct smbcli_request *req = smb_raw_seek_send(tree, parms);

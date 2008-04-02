@@ -33,6 +33,7 @@ PUBLIC_HEADERS += $(addprefix lib/util/, util.h \
 				 mutex.h \
 				 safe_string.h \
 				 time.h \
+				 util_ldb.h \
 				 xfile.h)
 
 [SUBSYSTEM::ASN1_UTIL]
@@ -48,7 +49,6 @@ OBJ_FILES = unix_privs.o
 ################################################
 # Start SUBSYSTEM WRAP_XATTR
 [SUBSYSTEM::WRAP_XATTR]
-PRIVATE_PROTO_HEADER = wrap_xattr.h
 OBJ_FILES = \
 		wrap_xattr.o
 PUBLIC_DEPENDENCIES = XATTR
@@ -63,7 +63,6 @@ OBJ_FILES = \
 PUBLIC_DEPENDENCIES = LIBTDB
 
 [SUBSYSTEM::UTIL_LDB]
-PRIVATE_PROTO_HEADER = util_ldb.h
 OBJ_FILES = \
 			util_ldb.o
 PUBLIC_DEPENDENCIES = LIBLDB

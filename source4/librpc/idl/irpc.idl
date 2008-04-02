@@ -1,6 +1,6 @@
 #include "idl_types.h"
 
-import "security.idl", "nbt.idl";
+import "misc.idl", "security.idl", "nbt.idl";
 
 /*
   definitions for irpc primitives

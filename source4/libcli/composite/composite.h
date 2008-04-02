@@ -19,6 +19,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef __COMPOSITE_H__
+#define __COMPOSITE_H__
+
 #include "libcli/raw/interfaces.h"
 
 /*
@@ -68,4 +71,36 @@ struct smb2_request;
 struct rpc_request;
 struct nbt_name_request;
 
-#include "libcli/composite/proto.h"
+struct composite_context *composite_create(TALLOC_CTX *mem_ctx, struct event_context *ev);
+bool composite_nomem(const void *p, struct composite_context *ctx);
+void composite_continue(struct composite_context *ctx,
+				 struct composite_context *new_ctx,
+				 void (*continuation)(struct composite_context *),
+				 void *private_data);
+void composite_continue_rpc(struct composite_context *ctx,
+				     struct rpc_request *new_req,
+				     void (*continuation)(struct rpc_request *),
+				     void *private_data);
+void composite_continue_irpc(struct composite_context *ctx,
+				      struct irpc_request *new_req,
+				      void (*continuation)(struct irpc_request *),
+				      void *private_data);
+void composite_continue_smb(struct composite_context *ctx,
+				     struct smbcli_request *new_req,
+				     void (*continuation)(struct smbcli_request *),
+				     void *private_data);
+void composite_continue_smb2(struct composite_context *ctx,
+				      struct smb2_request *new_req,
+				      void (*continuation)(struct smb2_request *),
+				      void *private_data);
+void composite_continue_nbt(struct composite_context *ctx,
+				     struct nbt_name_request *new_req,
+				     void (*continuation)(struct nbt_name_request *),
+				     void *private_data);
+bool composite_is_ok(struct composite_context *ctx);
+void composite_done(struct composite_context *ctx);
+void composite_error(struct composite_context *ctx, NTSTATUS status);
+NTSTATUS composite_wait(struct composite_context *c);
+
+
+#endif /* __COMPOSITE_H__ */

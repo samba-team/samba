@@ -356,7 +356,7 @@ _PUBLIC_ bool file_save(const char *fname, const void *packet, size_t length)
 	return true;
 }
 
-_PUBLIC_ int vfdprintf(int fd, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0)
+_PUBLIC_ int vfdprintf(int fd, const char *format, va_list ap)
 {
 	char *p;
 	int len, ret;
@@ -371,7 +371,7 @@ _PUBLIC_ int vfdprintf(int fd, const char *format, va_list ap) _PRINTF_ATTRIBUTE
 	return ret;
 }
 
-_PUBLIC_ int fdprintf(int fd, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
+_PUBLIC_ int fdprintf(int fd, const char *format, ...)
 {
 	va_list ap;
 	int ret;

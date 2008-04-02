@@ -77,6 +77,9 @@ struct process_model_critical_sizes {
 
 extern const struct model_ops single_ops;
 
-#include "smbd/process_model_proto.h"
+const struct model_ops *process_model_startup(struct event_context *ev, const char *model);
+const struct model_ops *process_model_byname(const char *name);
+NTSTATUS register_process_model(const void *_ops);
+NTSTATUS process_model_init(struct loadparm_context *lp_ctx);
 
 #endif /* __PROCESS_MODEL_H__ */

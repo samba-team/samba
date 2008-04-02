@@ -22,6 +22,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "smb_server/smb_server.h"
@@ -29,6 +30,7 @@
 #include "smb_server/smb2/smb2_server.h"
 #include "smbd/service_stream.h"
 #include "param/param.h"
+#include "librpc/ndr/libndr.h"
 
 static NTSTATUS smb2srv_negprot_secblob(struct smb2srv_request *req, DATA_BLOB *_blob)
 {

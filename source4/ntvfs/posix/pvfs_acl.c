@@ -38,7 +38,7 @@ static int num_backends;
   The 'name' can be later used by other backends to find the operations
   structure for this backend.  
 */
-_PUBLIC_ NTSTATUS pvfs_acl_register(const struct pvfs_acl_ops *ops)
+NTSTATUS pvfs_acl_register(const struct pvfs_acl_ops *ops)
 {
 	struct pvfs_acl_ops *new_ops;
 
@@ -66,7 +66,7 @@ _PUBLIC_ NTSTATUS pvfs_acl_register(const struct pvfs_acl_ops *ops)
 /*
   return the operations structure for a named backend
 */
-_PUBLIC_ const struct pvfs_acl_ops *pvfs_acl_backend_byname(const char *name)
+const struct pvfs_acl_ops *pvfs_acl_backend_byname(const char *name)
 {
 	int i;
 

@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "system/filesys.h"
 #include "param/param.h"
 
@@ -291,7 +292,7 @@ struct smbcli_request *smb_raw_exit_send(struct smbcli_session *session)
 /****************************************************************************
  Send a exit (sync interface)
 *****************************************************************************/
-NTSTATUS smb_raw_exit(struct smbcli_session *session)
+_PUBLIC_ NTSTATUS smb_raw_exit(struct smbcli_session *session)
 {
 	struct smbcli_request *req = smb_raw_exit_send(session);
 	return smbcli_request_simple_recv(req);

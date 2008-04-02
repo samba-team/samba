@@ -27,6 +27,7 @@
 #include "lib/stream/packet.h"
 #include "libcli/composite/composite.h"
 #include "librpc/rpc/dcerpc.h"
+#include "librpc/rpc/dcerpc_proto.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
 

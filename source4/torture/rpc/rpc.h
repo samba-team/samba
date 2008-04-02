@@ -42,6 +42,48 @@ struct torture_rpc_tcase_data {
 	struct cli_credentials *credentials;
 };
 
+NTSTATUS torture_rpc_connection(struct torture_context *tctx,
+				struct dcerpc_pipe **p, 
+				const struct ndr_interface_table *table);
+
+struct test_join *torture_join_domain(struct torture_context *tctx,
+					       const char *machine_name, 
+				      uint32_t acct_flags,
+				      struct cli_credentials **machine_credentials);
+const struct dom_sid *torture_join_sid(struct test_join *join);
+void torture_leave_domain(struct test_join *join);
+struct torture_rpc_tcase *torture_suite_add_rpc_iface_tcase(struct torture_suite *suite, 
+								const char *name,
+								const struct ndr_interface_table *table);
+
+struct torture_test *torture_rpc_tcase_add_test(
+					struct torture_rpc_tcase *tcase, 
+					const char *name, 
+					bool (*fn) (struct torture_context *, struct dcerpc_pipe *));
+struct torture_rpc_tcase *torture_suite_add_anon_rpc_iface_tcase(struct torture_suite *suite, 
+								const char *name,
+								const struct ndr_interface_table *table);
+
+struct torture_test *torture_rpc_tcase_add_test_ex(
+					struct torture_rpc_tcase *tcase, 
+					const char *name, 
+					bool (*fn) (struct torture_context *, struct dcerpc_pipe *,
+								void *),
+					void *userdata);
+struct torture_rpc_tcase *torture_suite_add_machine_rpc_iface_tcase(
+				struct torture_suite *suite, 
+				const char *name,
+				const struct ndr_interface_table *table,
+				const char *machine_name);
+struct torture_test *torture_rpc_tcase_add_test_creds(
+					struct torture_rpc_tcase *tcase, 
+					const char *name, 
+					bool (*fn) (struct torture_context *, struct dcerpc_pipe *, struct cli_credentials *));
+bool torture_suite_init_rpc_tcase(struct torture_suite *suite, 
+					   struct torture_rpc_tcase *tcase, 
+					   const char *name,
+					   const struct ndr_interface_table *table);
+
 
 
 #endif /* __TORTURE_RPC_H__ */

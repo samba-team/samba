@@ -246,7 +246,7 @@ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth_context *auth_contex
  * @param nt_status NTSTATUS input for squashing.
  * @return the 'squashed' nt_status
  **/
-NTSTATUS auth_nt_status_squash(NTSTATUS nt_status)
+_PUBLIC_ NTSTATUS auth_nt_status_squash(NTSTATUS nt_status)
 {
 	if NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER) {
 		/* Match WinXP and don't give the game away */

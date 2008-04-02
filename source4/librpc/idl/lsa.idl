@@ -4,7 +4,7 @@
   lsa interface definition
 */
 
-import "security.idl";
+import "misc.idl", "security.idl";
 
 [ uuid("12345778-1234-abcd-ef00-0123456789ab"),
   version(0.0),

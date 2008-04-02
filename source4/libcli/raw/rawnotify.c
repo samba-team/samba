@@ -19,12 +19,13 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "lib/util/dlinklist.h"
 
 /****************************************************************************
 change notify (async send)
 ****************************************************************************/
-struct smbcli_request *smb_raw_changenotify_send(struct smbcli_tree *tree, union smb_notify *parms)
+_PUBLIC_ struct smbcli_request *smb_raw_changenotify_send(struct smbcli_tree *tree, union smb_notify *parms)
 {
 	struct smb_nttrans nt;
 	uint8_t setup[8];
@@ -51,7 +52,7 @@ struct smbcli_request *smb_raw_changenotify_send(struct smbcli_tree *tree, union
 /****************************************************************************
 change notify (async recv)
 ****************************************************************************/
-NTSTATUS smb_raw_changenotify_recv(struct smbcli_request *req, 
+_PUBLIC_ NTSTATUS smb_raw_changenotify_recv(struct smbcli_request *req, 
 				   TALLOC_CTX *mem_ctx, union smb_notify *parms)
 {
 	struct smb_nttrans nt;

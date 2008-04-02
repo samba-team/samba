@@ -39,7 +39,7 @@
  * @param obtained This enum describes how 'specified' this password is
  */
 
-bool cli_credentials_parse_password_fd(struct cli_credentials *credentials, 
+_PUBLIC_ bool cli_credentials_parse_password_fd(struct cli_credentials *credentials, 
 				       int fd, enum credentials_obtained obtained)
 {
 	char *p;
@@ -83,7 +83,7 @@ bool cli_credentials_parse_password_fd(struct cli_credentials *credentials,
  * @param obtained This enum describes how 'specified' this password is
  */
 
-bool cli_credentials_parse_password_file(struct cli_credentials *credentials, const char *file, enum credentials_obtained obtained)
+_PUBLIC_ bool cli_credentials_parse_password_file(struct cli_credentials *credentials, const char *file, enum credentials_obtained obtained)
 {
 	int fd = open(file, O_RDONLY, 0);
 	bool ret;
@@ -109,7 +109,7 @@ bool cli_credentials_parse_password_file(struct cli_credentials *credentials, co
  * @param obtained This enum describes how 'specified' this password is
  */
 
-bool cli_credentials_parse_file(struct cli_credentials *cred, const char *file, enum credentials_obtained obtained) 
+_PUBLIC_ bool cli_credentials_parse_file(struct cli_credentials *cred, const char *file, enum credentials_obtained obtained) 
 {
 	uint16_t len = 0;
 	char *ptr, *val, *param;
@@ -168,7 +168,7 @@ bool cli_credentials_parse_file(struct cli_credentials *cred, const char *file, 
  * @param cred Credentials structure to fill in
  * @retval NTSTATUS error detailing any failure
  */
-NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred, 
+_PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred, 
 				     struct loadparm_context *lp_ctx,
 				     struct ldb_context *ldb,
 				     const char *base,
@@ -326,7 +326,7 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
  * @param cred Credentials structure to fill in
  * @retval NTSTATUS error detailing any failure
  */
-NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred,
+_PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred,
 					     struct loadparm_context *lp_ctx)
 {
 	char *filter;
@@ -369,7 +369,7 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred,
  * @param cred Credentials structure to fill in
  * @retval NTSTATUS error detailing any failure
  */
-NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
+_PUBLIC_ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
 					      struct loadparm_context *lp_ctx,
 					      const char *serviceprincipal)
 {
@@ -395,7 +395,7 @@ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
  *       than during, popt processing.
  *
  */
-void cli_credentials_set_machine_account_pending(struct cli_credentials *cred,
+_PUBLIC_ void cli_credentials_set_machine_account_pending(struct cli_credentials *cred,
 						 struct loadparm_context *lp_ctx)
 {
 	cred->machine_account_pending = true;

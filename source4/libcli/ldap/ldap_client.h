@@ -94,3 +94,47 @@ struct ldap_connection {
 
 	struct packet_context *packet;
 };
+
+struct ldap_connection *ldap4_new_connection(TALLOC_CTX *mem_ctx, 
+					     struct loadparm_context *lp_ctx,
+					     struct event_context *ev);
+
+NTSTATUS ldap_connect(struct ldap_connection *conn, const char *url);
+struct composite_context *ldap_connect_send(struct ldap_connection *conn,
+					    const char *url);
+
+NTSTATUS ldap_rebind(struct ldap_connection *conn);
+NTSTATUS ldap_bind_simple(struct ldap_connection *conn, 
+			  const char *userdn, const char *password);
+NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, 
+			struct cli_credentials *creds,
+			struct loadparm_context *lp_ctx);
+struct ldap_request *ldap_request_send(struct ldap_connection *conn,
+				       struct ldap_message *msg);
+NTSTATUS ldap_request_wait(struct ldap_request *req);
+struct composite_context;
+NTSTATUS ldap_connect_recv(struct composite_context *ctx);
+NTSTATUS ldap_result_n(struct ldap_request *req, int n, struct ldap_message **msg);
+NTSTATUS ldap_result_one(struct ldap_request *req, struct ldap_message **msg, int type);
+NTSTATUS ldap_transaction(struct ldap_connection *conn, struct ldap_message *msg);
+const char *ldap_errstr(struct ldap_connection *conn, 
+			TALLOC_CTX *mem_ctx, 
+			NTSTATUS status);
+NTSTATUS ldap_check_response(struct ldap_connection *conn, struct ldap_Result *r);
+void ldap_set_reconn_params(struct ldap_connection *conn, int max_retries);
+int ildap_count_entries(struct ldap_connection *conn, struct ldap_message **res);
+NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *basedn, 
+			     int scope, struct ldb_parse_tree *tree,
+			     const char * const *attrs, bool attributesonly, 
+			     struct ldb_control **control_req,
+			     struct ldb_control ***control_res,
+			     struct ldap_message ***results);
+NTSTATUS ildap_search(struct ldap_connection *conn, const char *basedn, 
+		      int scope, const char *expression, 
+		      const char * const *attrs, bool attributesonly, 
+		      struct ldb_control **control_req,
+		      struct ldb_control ***control_res,
+		      struct ldap_message ***results);
+
+
+

@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "param/param.h"
 
@@ -33,7 +34,7 @@
 /****************************************************************************
  Initialize the tree context
 ****************************************************************************/
-struct smbcli_tree *smbcli_tree_init(struct smbcli_session *session,
+_PUBLIC_ struct smbcli_tree *smbcli_tree_init(struct smbcli_session *session,
 				     TALLOC_CTX *parent_ctx, bool primary)
 {
 	struct smbcli_tree *tree;
@@ -141,7 +142,7 @@ failed:
 /****************************************************************************
  Send a tconX (sync interface)
 ****************************************************************************/
-NTSTATUS smb_raw_tcon(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, 
+_PUBLIC_ NTSTATUS smb_raw_tcon(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, 
 		      union smb_tcon *parms)
 {
 	struct smbcli_request *req = smb_raw_tcon_send(tree, parms);
@@ -152,7 +153,7 @@ NTSTATUS smb_raw_tcon(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx,
 /****************************************************************************
  Send a tree disconnect.
 ****************************************************************************/
-NTSTATUS smb_tree_disconnect(struct smbcli_tree *tree)
+_PUBLIC_ NTSTATUS smb_tree_disconnect(struct smbcli_tree *tree)
 {
 	struct smbcli_request *req;
 

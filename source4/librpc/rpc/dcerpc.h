@@ -237,6 +237,126 @@ struct smbcli_tree;
 struct smb2_tree;
 struct socket_address;
 
-#include "librpc/rpc/dcerpc_proto.h"
+NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, 
+			     struct dcerpc_pipe **pp, 
+			     const char *binding,
+			     const struct ndr_interface_table *table,
+			     struct cli_credentials *credentials,
+			     struct event_context *ev,
+			     struct loadparm_context *lp_ctx);
+NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req);
+struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
+						const struct GUID *object,
+						const struct ndr_interface_table *table,
+						uint32_t opnum, 
+						TALLOC_CTX *mem_ctx, 
+						void *r);
+const char *dcerpc_server_name(struct dcerpc_pipe *p);
+struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				     struct smb_iconv_convenience *ic);
+NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p,
+			      struct smbcli_tree *tree,
+			      const char *pipe_name);
+NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
+			       const struct ndr_interface_table *table);
+NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
+				  DATA_BLOB *session_key);
+struct composite_context;
+NTSTATUS dcerpc_secondary_connection_recv(struct composite_context *c,
+					  struct dcerpc_pipe **p2);
+NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_binding **b_out);
+
+struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
+						     struct dcerpc_binding *binding,
+						     const struct ndr_interface_table *table,
+						     struct cli_credentials *credentials,
+						     struct event_context *ev,
+						     struct loadparm_context *lp_ctx);
+
+NTSTATUS dcerpc_pipe_connect_b_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+				    struct dcerpc_pipe **p);
+
+NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
+			       struct dcerpc_pipe **pp,
+			       struct dcerpc_binding *binding,
+			       const struct ndr_interface_table *table,
+			       struct cli_credentials *credentials,
+			       struct event_context *ev,
+			       struct loadparm_context *lp_ctx);
+const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
+
+NTSTATUS dcerpc_pipe_auth(TALLOC_CTX *mem_ctx,
+			  struct dcerpc_pipe **p, 
+			  struct dcerpc_binding *binding,
+			  const struct ndr_interface_table *table,
+			  struct cli_credentials *credentials,
+			  struct loadparm_context *lp_ctx);
+char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b);
+NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p,
+				     struct dcerpc_pipe **p2,
+				     struct dcerpc_binding *b);
+NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx, 
+				   struct dcerpc_pipe *p,
+				   const struct ndr_interface_table *table,
+				   struct cli_credentials *credentials,
+				   struct loadparm_context *lp_ctx,
+				   uint8_t auth_level);
+struct event_context *dcerpc_event_context(struct dcerpc_pipe *p);
+NTSTATUS dcerpc_init(void);
+struct smbcli_tree *dcerpc_smb_tree(struct dcerpc_connection *c);
+uint16_t dcerpc_smb_fnum(struct dcerpc_connection *c);
+NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p, 
+				  struct dcerpc_pipe **pp2,
+				  const struct ndr_interface_table *table);
+NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p, 
+			      TALLOC_CTX *mem_ctx,
+			      const struct ndr_syntax_id *syntax,
+			      const struct ndr_syntax_id *transfer_syntax);
+
+NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p,
+			  const struct ndr_interface_table *table,
+			  struct cli_credentials *credentials,
+			  struct loadparm_context *lp_ctx,
+			  uint8_t auth_type, uint8_t auth_level,
+			  const char *service);
+struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,
+						   const char *binding,
+						   const struct ndr_interface_table *table,
+						   struct cli_credentials *credentials,
+						   struct event_context *ev, struct loadparm_context *lp_ctx);
+NTSTATUS dcerpc_pipe_connect_recv(struct composite_context *c,
+				  TALLOC_CTX *mem_ctx,
+				  struct dcerpc_pipe **pp);
+
+NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding,
+				const struct ndr_interface_table *table, struct event_context *ev,
+				struct loadparm_context *lp_ctx);
+struct composite_context* dcerpc_secondary_auth_connection_send(struct dcerpc_pipe *p,
+								struct dcerpc_binding *binding,
+								const struct ndr_interface_table *table,
+								struct cli_credentials *credentials,
+								struct loadparm_context *lp_ctx);
+NTSTATUS dcerpc_secondary_auth_connection_recv(struct composite_context *c, 
+					       TALLOC_CTX *mem_ctx,
+					       struct dcerpc_pipe **p);
+
+struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p,
+							   struct dcerpc_binding *b);
+void dcerpc_log_packet(const struct ndr_interface_table *ndr,
+		       uint32_t opnum, uint32_t flags, 
+		       DATA_BLOB *pkt);
+NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding, struct epm_tower *tower);
+
+NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct ndr_syntax_id *syntax);
+
+enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tower);
+
+NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
+			    const struct GUID *object,
+			    const struct ndr_interface_table *table,
+			    uint32_t opnum, 
+			    TALLOC_CTX *mem_ctx, 
+			    void *r);
+
 
 #endif /* __DCERPC_H__ */

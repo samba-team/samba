@@ -57,7 +57,18 @@
 #define DCESRV_PULL_HANDLE(h, inhandle, t) DCESRV_PULL_HANDLE_RETVAL(h, inhandle, t, NT_STATUS_INVALID_HANDLE)
 #define DCESRV_PULL_HANDLE_WERR(h, inhandle, t) DCESRV_PULL_HANDLE_RETVAL(h, inhandle, t, WERR_BADFID)
 
+struct share_config;
 struct dcesrv_context;
+enum srvsvc_ShareType dcesrv_common_get_share_type(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg);
+enum srvsvc_PlatformId dcesrv_common_get_platform_id(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx);
+const char *dcesrv_common_get_domain_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx);
+const char *dcesrv_common_get_lan_root(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx);
+const char *dcesrv_common_get_server_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, const char *server_unc);
+uint32_t dcesrv_common_get_version_major(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
+uint32_t dcesrv_common_get_version_minor(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
+uint32_t dcesrv_common_get_version_build(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
+uint32_t dcesrv_common_get_share_permissions(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg);
+uint32_t dcesrv_common_get_share_current_users(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg);
+const char *dcesrv_common_get_share_path(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, struct share_config *scfg);
 
-#include "param/share.h"
-#include "rpc_server/common/proto.h"
+struct dcesrv_context;

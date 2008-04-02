@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
 

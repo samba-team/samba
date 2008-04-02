@@ -186,4 +186,5 @@ struct gensec_ntlmssp_state
 
 struct loadparm_context;
 struct auth_session_info;
+
 #include "auth/ntlmssp/proto.h"

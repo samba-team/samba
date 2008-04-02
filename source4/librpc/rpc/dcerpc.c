@@ -24,13 +24,14 @@
 #include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "librpc/rpc/dcerpc.h"
+#include "librpc/rpc/dcerpc_proto.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "libcli/composite/composite.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
 
-NTSTATUS dcerpc_init(void)
+_PUBLIC_ NTSTATUS dcerpc_init(void)
 {
 	gensec_init(global_loadparm);
 
@@ -98,7 +99,7 @@ static struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx,
 }
 
 /* initialise a dcerpc pipe. */
-struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct event_context *ev,
+_PUBLIC_ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				     struct smb_iconv_convenience *ic)
 {
 	struct dcerpc_pipe *p;
@@ -1104,7 +1105,7 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
   return the event context for a dcerpc pipe
   used by callers who wish to operate asynchronously
 */
-struct event_context *dcerpc_event_context(struct dcerpc_pipe *p)
+_PUBLIC_ struct event_context *dcerpc_event_context(struct dcerpc_pipe *p)
 {
 	return p->conn->event_ctx;
 }
@@ -1503,7 +1504,7 @@ _PUBLIC_ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
   this can be used when you have ndr push/pull functions in the
   standard format
 */
-NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
+_PUBLIC_ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 			    const struct GUID *object,
 			    const struct ndr_interface_table *table,
 			    uint32_t opnum, 
@@ -1524,7 +1525,7 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 /*
   a useful function for retrieving the server name we connected to
 */
-const char *dcerpc_server_name(struct dcerpc_pipe *p)
+_PUBLIC_ const char *dcerpc_server_name(struct dcerpc_pipe *p)
 {
 	if (!p->conn->transport.target_hostname) {
 		if (!p->conn->transport.peer_name) {
@@ -1688,7 +1689,7 @@ NTSTATUS dcerpc_alter_context_recv(struct composite_context *ctx)
 /* 
    send a dcerpc alter_context request
 */
-NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p, 
+_PUBLIC_ NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p, 
 			      TALLOC_CTX *mem_ctx,
 			      const struct ndr_syntax_id *syntax,
 			      const struct ndr_syntax_id *transfer_syntax)

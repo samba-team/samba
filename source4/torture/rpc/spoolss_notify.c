@@ -28,6 +28,7 @@
 #include "lib/events/events.h"
 #include "smbd/process_model.h"
 #include "smb_server/smb_server.h"
+#include "librpc/rpc/dcerpc_proto.h"
 #include "lib/socket/netif.h"
 #include "util/dlinklist.h"
 #include "ntvfs/ntvfs.h"

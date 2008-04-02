@@ -28,8 +28,9 @@
 #include "dsdb/samdb/samdb.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
+#include "auth/session_proto.h"
 
-struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx, 
 					    struct loadparm_context *lp_ctx) 
 {
 	NTSTATUS nt_status;
@@ -41,7 +42,7 @@ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx,
 	return session_info;
 }
 
-NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx, 
+_PUBLIC_ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx, 
 				     struct loadparm_context *lp_ctx,
 				     struct auth_session_info **_session_info) 
 {
@@ -77,7 +78,7 @@ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx, 
 				    const char *netbios_name,
 				    struct auth_serversupplied_info **_server_info) 
 {
@@ -149,7 +150,7 @@ NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx, 
 				    struct loadparm_context *lp_ctx,
 				    struct auth_serversupplied_info *server_info, 
 				    struct auth_session_info **_session_info) 
@@ -199,7 +200,7 @@ void auth_session_info_debug(int dbg_lev,
 /**
  * Make a server_info struct from the info3 returned by a domain logon 
  */
-NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
+_PUBLIC_ NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
 					      const char *account_name,
 					      uint16_t validation_level,
 					      union netr_Validation *validation,

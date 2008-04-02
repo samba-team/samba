@@ -286,6 +286,80 @@ struct smbcli_request {
 }
 
 #include "libcli/raw/interfaces.h" 
-#include "libcli/raw/raw_proto.h"
+
+NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *parms);
+struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_read *parms);
+NTSTATUS smb_raw_trans_recv(struct smbcli_request *req,
+			     TALLOC_CTX *mem_ctx,
+			     struct smb_trans2 *parms);
+size_t smb_raw_max_trans_data(struct smbcli_tree *tree, size_t param_size);
+struct smbcli_request *smb_raw_trans_send(struct smbcli_tree *tree, struct smb_trans2 *parms);
+NTSTATUS smbcli_request_destroy(struct smbcli_request *req);
+struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_write *parms);
+struct smbcli_request *smb_raw_close_send(struct smbcli_tree *tree, union smb_close *parms);
+NTSTATUS smb_raw_open_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, union smb_open *parms);
+struct smbcli_request *smb_raw_open_send(struct smbcli_tree *tree, union smb_open *parms);
+
+bool smbcli_transport_process(struct smbcli_transport *transport);
+const char *smbcli_errstr(struct smbcli_tree *tree);
+NTSTATUS smb_raw_fsinfo(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, union smb_fsinfo *fsinfo);
+NTSTATUS smb_raw_pathinfo(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, union smb_fileinfo *parms);
+NTSTATUS smb_raw_shadow_data(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, struct smb_shadow_copy *info);
+NTSTATUS smb_raw_fileinfo(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, union smb_fileinfo *parms);
+struct smbcli_tree *smbcli_tree_init(struct smbcli_session *session, TALLOC_CTX *parent_ctx, bool primary);
+NTSTATUS smb_raw_tcon(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, union smb_tcon *parms);
+void smbcli_oplock_handler(struct smbcli_transport *transport, 
+			bool (*handler)(struct smbcli_transport *, uint16_t, uint16_t, uint8_t, void *),
+			void *private);
+void smbcli_transport_idle_handler(struct smbcli_transport *transport, 
+				   void (*idle_func)(struct smbcli_transport *, void *),
+				   uint64_t period,
+				   void *private);
+NTSTATUS smbcli_request_simple_recv(struct smbcli_request *req);
+bool smbcli_oplock_ack(struct smbcli_tree *tree, uint16_t fnum, uint16_t ack_level);
+NTSTATUS smb_raw_open(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, union smb_open *parms);
+NTSTATUS smb_raw_close(struct smbcli_tree *tree, union smb_close *parms);
+NTSTATUS smb_raw_unlink(struct smbcli_tree *tree, union smb_unlink *parms);
+NTSTATUS smb_raw_chkpath(struct smbcli_tree *tree, union smb_chkpath *parms);
+NTSTATUS smb_raw_mkdir(struct smbcli_tree *tree, union smb_mkdir *parms);
+NTSTATUS smb_raw_rmdir(struct smbcli_tree *tree, struct smb_rmdir *parms);
+NTSTATUS smb_raw_rename(struct smbcli_tree *tree, union smb_rename *parms);
+NTSTATUS smb_raw_seek(struct smbcli_tree *tree, union smb_seek *parms);
+NTSTATUS smb_raw_read(struct smbcli_tree *tree, union smb_read *parms);
+NTSTATUS smb_raw_write(struct smbcli_tree *tree, union smb_write *parms);
+NTSTATUS smb_raw_lock(struct smbcli_tree *tree, union smb_lock *parms);
+NTSTATUS smb_raw_setpathinfo(struct smbcli_tree *tree, union smb_setfileinfo *parms);
+NTSTATUS smb_raw_setfileinfo(struct smbcli_tree *tree, union smb_setfileinfo *parms);
+
+struct smbcli_request *smb_raw_changenotify_send(struct smbcli_tree *tree, union smb_notify *parms);
+NTSTATUS smb_raw_changenotify_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, union smb_notify *parms);
+
+NTSTATUS smb_tree_disconnect(struct smbcli_tree *tree);
+NTSTATUS smbcli_nt_error(struct smbcli_tree *tree);
+NTSTATUS smb_raw_exit(struct smbcli_session *session);
+NTSTATUS smb_raw_pathinfo_recv(struct smbcli_request *req,
+			       TALLOC_CTX *mem_ctx,
+			       union smb_fileinfo *parms);
+struct smbcli_request *smb_raw_pathinfo_send(struct smbcli_tree *tree,
+					     union smb_fileinfo *parms);
+struct smbcli_request *smb_raw_setpathinfo_send(struct smbcli_tree *tree,
+					     union smb_setfileinfo *parms);
+struct smbcli_request *smb_raw_echo_send(struct smbcli_transport *transport,
+					 struct smb_echo *p);
+NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
+			      TALLOC_CTX *mem_ctx,
+			      union smb_search_first *io, void *private,
+			      smbcli_search_callback callback);
+NTSTATUS smb_raw_flush(struct smbcli_tree *tree, union smb_flush *parms);
+
+NTSTATUS smb_raw_trans(struct smbcli_tree *tree,
+		       TALLOC_CTX *mem_ctx,
+		       struct smb_trans2 *parms);
+
+struct smbcli_socket *smbcli_sock_connect_byname(const char *host, const char **ports,
+						 TALLOC_CTX *mem_ctx,
+						 struct resolve_context *resolve_ctx,
+						 struct event_context *event_ctx);
+void smbcli_sock_dead(struct smbcli_socket *sock);
 
 #endif /* __LIBCLI_RAW__H__ */

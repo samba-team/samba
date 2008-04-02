@@ -1,6 +1,6 @@
 #include "idl_types.h"
 
-import "drsuapi.idl";
+import "drsuapi.idl", "misc.idl";
 
 [
   uuid("12345778-1234-abcd-0001-00000001"),

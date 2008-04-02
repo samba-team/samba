@@ -23,6 +23,7 @@
 #include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
 #include "torture/util.h"
+#include "librpc/ndr/libndr.h"
 
 #include "param/param.h"
 #include <Python.h>
