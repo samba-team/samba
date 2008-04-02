@@ -9727,7 +9727,7 @@ NTSTATUS dup_file_fsp(files_struct *fsp,
 /* The following definitions come from smbd/ipc.c  */
 
 void send_trans_reply(connection_struct *conn,
-			struct smb_request *req,
+		      const uint8_t *inbuf,
 		      char *rparam, int rparam_len,
 		      char *rdata, int rdata_len,
 		      bool buffer_too_large);
