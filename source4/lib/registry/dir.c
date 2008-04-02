@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "hive.h"
+#include "registry.h"
 #include "system/dir.h"
 #include "system/filesys.h"
 

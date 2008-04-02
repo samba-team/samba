@@ -18,13 +18,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "includes.h"
-#include "lib/registry/hive.h"
 #include "system/filesys.h"
 #include "system/time.h"
 #include "lib/registry/tdr_regf.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/winreg.h"
 #include "param/param.h"
+#include "lib/registry/registry.h"
 
 static struct hive_operations reg_backend_regf;
 

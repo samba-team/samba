@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "hive.h"
+#include "registry.h"
 #include "system/filesys.h"
 #include "param/param.h"
 
