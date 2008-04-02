@@ -4559,11 +4559,9 @@ static bool get_user_sids(const char *domain, const char *user, NT_USER_TOKEN *t
 
 static bool get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-	const char *extra_data;
-	char *name;
-	int i;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	uint32_t i, num_users;
+	const char **users;
 	struct user_token *result;
 	TALLOC_CTX *frame = NULL;
 
@@ -4571,58 +4569,43 @@ static bool get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 	    (opt_target_workgroup == NULL)) {
 		d_fprintf(stderr, "winbind use default domain = yes set, "
 			 "please specify a workgroup\n");
-		return False;
+		return false;
 	}
 
 	/* Send request to winbind daemon */
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	if (winbindd_request_response(WINBINDD_LIST_USERS, &request, &response) !=
-	    NSS_STATUS_SUCCESS)
-		return False;
-
-	/* Look through extra data */
-
-	if (!response.extra_data.data)
-		return False;
-
-	extra_data = (const char *)response.extra_data.data;
-	*num_tokens = 0;
-
-	frame = talloc_stackframe();
-	while(next_token_talloc(frame, &extra_data, &name, ",")) {
-		*num_tokens += 1;
+	wbc_status = wbcListUsers(NULL, &num_users, &users);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		DEBUG(1, ("winbind could not list users: %s\n",
+			  wbcErrorString(wbc_status)));
+		return false;
 	}
 
-	result = SMB_MALLOC_ARRAY(struct user_token, *num_tokens);
+	result = SMB_MALLOC_ARRAY(struct user_token, num_users);
 
 	if (result == NULL) {
 		DEBUG(1, ("Could not malloc sid array\n"));
-		TALLOC_FREE(frame);
-		return False;
+		wbcFreeMemory(users);
+		return false;
 	}
 
-	extra_data = (const char *)response.extra_data.data;
-	i=0;
-
-	while(next_token_talloc(frame, &extra_data, &name, ",")) {
+	frame = talloc_stackframe();
+	for (i=0; i < num_users; i++) {
 		fstring domain, user;
 		char *p;
 
-		fstrcpy(result[i].name, name);
+		fstrcpy(result[i].name, users[i]);
 
-		p = strchr(name, *lp_winbind_separator());
+		p = strchr(users[i], *lp_winbind_separator());
 
-		DEBUG(3, ("%s\n", name));
+		DEBUG(3, ("%s\n", users[i]));
 
 		if (p == NULL) {
 			fstrcpy(domain, opt_target_workgroup);
-			fstrcpy(user, name);
+			fstrcpy(user, users[i]);
 		} else {
 			*p++ = '\0';
-			fstrcpy(domain, name);
+			fstrcpy(domain, users[i]);
 			strupper_m(domain);
 			fstrcpy(user, p);
 		}
@@ -4631,11 +4614,12 @@ static bool get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 		i+=1;
 	}
 	TALLOC_FREE(frame);
-	SAFE_FREE(response.extra_data.data);
+	wbcFreeMemory(users);
 
+	*num_tokens = num_users;
 	*user_tokens = result;
 
-	return True;
+	return true;
 }
 
 static bool get_user_tokens_from_file(FILE *f,
