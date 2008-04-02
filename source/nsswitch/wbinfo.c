@@ -773,27 +773,30 @@ static bool wbinfo_allocate_gid(void)
 
 /* Convert sid to string */
 
-static bool wbinfo_lookupsid(char *sid)
+static bool wbinfo_lookupsid(const char *sid_str)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcDomainSid sid;
+	char *domain;
+	char *name;
+	enum wbcSidType type;
 
 	/* Send off request */
 
-	fstrcpy(request.data.sid, sid);
-
-	if (winbindd_request_response(WINBINDD_LOOKUPSID, &request, &response) !=
-	    NSS_STATUS_SUCCESS)
+	wbc_status = wbcStringToSid(sid_str, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
+	}
+
+	wbc_status = wbcLookupSid(&sid, &domain, &name, &type);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
 
 	/* Display response */
 
-	d_printf("%s%c%s %d\n", response.data.name.dom_name,
-		 winbind_separator(), response.data.name.name,
-		 response.data.name.type);
+	d_printf("%s%c%s %d\n",
+		 domain, winbind_separator(), name, type);
 
 	return true;
 }
