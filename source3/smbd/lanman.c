@@ -1971,24 +1971,24 @@ static bool api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 		return False;
 	}
 
-	asprintf(&command, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
-		lp_add_share_cmd(), get_dyn_CONFIGFILE(), sharename, pathname, comment);
+	if (asprintf(&command, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
+		     lp_add_share_cmd(), get_dyn_CONFIGFILE(), sharename,
+		     pathname, comment) == -1) {
+		return false;
+	}
 
-	if (command) {
-		DEBUG(10,("api_RNetShareAdd: Running [%s]\n", command ));
+	DEBUG(10,("api_RNetShareAdd: Running [%s]\n", command ));
 
-		if ((res = smbrun(command, NULL)) != 0) {
-			DEBUG(1,("api_RNetShareAdd: Running [%s] returned (%d)\n", command, res ));
-			SAFE_FREE(command);
-			res = ERRnoaccess;
-			goto error_exit;
-		} else {
-			SAFE_FREE(command);
-			message_send_all(smbd_messaging_context(),
-					 MSG_SMB_CONF_UPDATED, NULL, 0, NULL);
-		}
+	if ((res = smbrun(command, NULL)) != 0) {
+		DEBUG(1,("api_RNetShareAdd: Running [%s] returned (%d)\n",
+			 command, res ));
+		SAFE_FREE(command);
+		res = ERRnoaccess;
+		goto error_exit;
 	} else {
-		return False;
+		SAFE_FREE(command);
+		message_send_all(smbd_messaging_context(),
+				 MSG_SMB_CONF_UPDATED, NULL, 0, NULL);
 	}
 
 	*rparam_len = 6;
