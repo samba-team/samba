@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 31
+Release: 32
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,19 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Wed Apr 02 2008 : Version 1.0.32
+ - Add a control to have a node execute the eventscripts with arbitrary
+   command line arguments.
+ - Add a control "rddumpmemory" that will dump the talloc memory allocations
+   for the recovery daemon.
+ - Decorate the talloc memdump to produce better and easier memory leak
+   tracking. 
+ - Update the RHEL5 iscsi tgtd scripts to allow one iscsi target for each
+   public address.
+ - Add two new controls "addip/delip" that can be used to add/remove public
+   addresses to a node at runtime. After using these controls a "ctdb recover"
+   ir required to make the changes take.
+ - Fix a couple of slow memory leaks.
 * Tue Mar 25 2008 : Version 1.0.31
  - Add back controls to disable/enable monitoring on a node.
  - Fix a memory leak where we used to attach CALL data to the ctdb structure
