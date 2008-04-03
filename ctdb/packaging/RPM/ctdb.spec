@@ -39,7 +39,7 @@ CC="gcc"
 ## always run autogen.sh
 ./autogen.sh
 
-CFLAGS="$RPM_OPT_FLAGS $EXTRA -O0 -D_GNU_SOURCE" ./configure \
+CFLAGS="$RPM_OPT_FLAGS $EXTRA -O0 -D_GNU_SOURCE -DCTDB_VERS=\"%{version}-%{release}\"" ./configure \
 	--prefix=%{_prefix} \
 	--sysconfdir=%{_sysconfdir} \
 	--mandir=%{_mandir} \

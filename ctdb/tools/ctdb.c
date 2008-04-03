@@ -40,6 +40,16 @@ static struct {
 
 #define TIMELIMIT() timeval_current_ofs(options.timelimit, 0)
 
+#ifdef CTDB_VERS
+static int control_version(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+#define STR(x) #x
+#define XSTR(x) STR(x)
+	printf("CTDB version: %s\n", XSTR(CTDB_VERS));
+	return 0;
+}
+#endif
+
 /*
   see if a process exists
  */
@@ -1561,6 +1571,9 @@ static const struct {
 	const char *msg;
 	const char *args;
 } ctdb_commands[] = {
+#ifdef CTDB_VERS
+	{ "version",         control_version,           true,  "show version of ctdb" },
+#endif
 	{ "status",          control_status,            true,  "show node status" },
 	{ "uptime",          control_uptime,            true,  "show node uptime" },
 	{ "ping",            control_ping,              true,  "ping all nodes" },
