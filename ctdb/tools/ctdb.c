@@ -524,7 +524,7 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}
 
-	len = offsetof(struct ctdb_control_ip_iface, iface) + strlen(argv[1]);
+	len = offsetof(struct ctdb_control_ip_iface, iface) + strlen(argv[1]) + 1;
 	pub = talloc_size(ctdb, len); 
 	CTDB_NO_MEMORY(ctdb, pub);
 
