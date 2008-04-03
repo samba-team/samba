@@ -276,7 +276,6 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 	uint32 info_level = 21;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	union samr_UserInfo *info = NULL;
-	fstring server;
 	uint32 user_rid = 0;
 
 	if ((argc < 2) || (argc > 4)) {
@@ -292,9 +291,6 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 	if (argc > 3)
 		sscanf(argv[3], "%x", &access_mask);
 
-
-	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
-	strupper_m(server);
 
 	result = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
@@ -468,7 +464,6 @@ static NTSTATUS cmd_samr_query_group(struct rpc_pipe_client *cli,
 	enum samr_GroupInfoEnum info_level = GROUPINFOALL;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	union samr_GroupInfo *group_info = NULL;
-	fstring			server;
 	uint32 group_rid;
 
 	if ((argc < 2) || (argc > 4)) {
@@ -483,9 +478,6 @@ static NTSTATUS cmd_samr_query_group(struct rpc_pipe_client *cli,
 
 	if (argc > 3)
 		sscanf(argv[3], "%x", &access_mask);
-
-	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
-	strupper_m(server);
 
 	result = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
@@ -542,7 +534,6 @@ static NTSTATUS cmd_samr_query_usergroups(struct rpc_pipe_client *cli,
 	uint32 			user_rid;
 	uint32			access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int 			i;
-	fstring			server;
 	struct samr_RidWithAttributeArray *rid_array = NULL;
 
 	if ((argc < 2) || (argc > 3)) {
@@ -554,9 +545,6 @@ static NTSTATUS cmd_samr_query_usergroups(struct rpc_pipe_client *cli,
 
 	if (argc > 2)
 		sscanf(argv[2], "%x", &access_mask);
-
-	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
-	strupper_m(server);
 
 	result = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
@@ -614,7 +602,6 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 	size_t                     num_sids;
 	uint32			access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int 			i;
-	fstring			server;
 	struct lsa_SidArray sid_array;
 	struct samr_Ids alias_rids;
 
@@ -654,9 +641,6 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 	}
 
 	sid_array.num_sids = num_sids;
-
-	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
-	strupper_m(server);
 
 	result = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
@@ -712,7 +696,6 @@ static NTSTATUS cmd_samr_query_groupmem(struct rpc_pipe_client *cli,
 	uint32 group_rid;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int i;
-	fstring			server;
 	unsigned int old_timeout;
 	struct samr_RidTypeArray *rids = NULL;
 
@@ -725,9 +708,6 @@ static NTSTATUS cmd_samr_query_groupmem(struct rpc_pipe_client *cli,
 
 	if (argc > 2)
 		sscanf(argv[2], "%x", &access_mask);
-
-	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
-	strupper_m(server);
 
 	result = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
@@ -2221,7 +2201,6 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 	POLICY_HND connect_pol, domain_pol, user_pol, *pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 sec_info = DACL_SECURITY_INFORMATION;
-	fstring server;
 	uint32 user_rid = 0;
 	TALLOC_CTX *ctx = NULL;
 	SEC_DESC_BUF *sec_desc_buf=NULL;
@@ -2247,8 +2226,6 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 		sec_info = atoi(argv[2]);
 	}
 
-	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
-	strupper_m(server);
 	result = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
