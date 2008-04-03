@@ -225,3 +225,47 @@ void get_query_dispinfo_params(int loop_count, uint32 *max_entries,
 		break;
 	}
 }
+
+NTSTATUS rpccli_try_samr_connects(struct rpc_pipe_client *cli,
+				  TALLOC_CTX *mem_ctx,
+				  uint32_t access_mask,
+				  POLICY_HND *connect_pol)
+{
+	NTSTATUS status;
+	union samr_ConnectInfo info_in, info_out;
+	struct samr_ConnectInfo1 info1;
+	uint32_t lvl_out = 0;
+
+	ZERO_STRUCT(info1);
+
+	info1.client_version = SAMR_CONNECT_W2K;
+	info_in.info1 = info1;
+
+	status = rpccli_samr_Connect5(cli, mem_ctx,
+				      cli->cli->srv_name_slash,
+				      access_mask,
+				      1,
+				      &info_in,
+				      &lvl_out,
+				      &info_out,
+				      connect_pol);
+	if (NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = rpccli_samr_Connect4(cli, mem_ctx,
+				      cli->cli->srv_name_slash,
+				      SAMR_CONNECT_W2K,
+				      access_mask,
+				      connect_pol);
+	if (NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = rpccli_samr_Connect2(cli, mem_ctx,
+				      cli->cli->srv_name_slash,
+				      access_mask,
+				      connect_pol);
+	return status;
+}
+
