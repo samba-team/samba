@@ -660,7 +660,7 @@ _PUBLIC_ enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tow
 	return (unsigned int)-1;
 }
 
-NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, 
 				   struct epm_tower *tower, 
 				   struct dcerpc_binding **b_out)
 {
