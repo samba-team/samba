@@ -358,5 +358,9 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 			    TALLOC_CTX *mem_ctx, 
 			    void *r);
 
+NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, 
+				   struct epm_tower *tower, 
+				   struct dcerpc_binding **b_out);
+
 
 #endif /* __DCERPC_H__ */
