@@ -407,7 +407,7 @@ static const struct ntstatus_errors {
 	{NULL, NULL}
 };
 
-const char *_get_ntstatus_error_string(const char *nt_status_string)
+static const char *_get_ntstatus_error_string(const char *nt_status_string)
 {
 	int i;
 	for (i=0; ntstatus_errors[i].ntstatus_string != NULL; i++) {
@@ -1690,13 +1690,13 @@ static int _winbind_read_password(pam_handle_t * pamh,
 	return PAM_SUCCESS;
 }
 
-const char *get_conf_item_string(const pam_handle_t *pamh,
-				 int argc,
-				 const char **argv,
-				 int ctrl,
-				 dictionary *d,
-				 const char *item,
-				 int config_flag)
+static const char *get_conf_item_string(const pam_handle_t *pamh,
+					int argc,
+					const char **argv,
+					int ctrl,
+					dictionary *d,
+					const char *item,
+					int config_flag)
 {
 	int i = 0;
 	const char *parm_opt = NULL;
@@ -1740,13 +1740,13 @@ out:
 	return parm_opt;
 }
 
-int get_config_item_int(const pam_handle_t *pamh,
-			      int argc,
-			      const char **argv,
-			      int ctrl,
-			      dictionary *d,
-			      const char *item,
-			      int config_flag)
+static int get_config_item_int(const pam_handle_t *pamh,
+			       int argc,
+			       const char **argv,
+			       int ctrl,
+			       dictionary *d,
+			       const char *item,
+			       int config_flag)
 {
 	int i, parm_opt = -1;
 
@@ -1792,22 +1792,22 @@ out:
 	return parm_opt;
 }
 
-const char *get_krb5_cc_type_from_config(const pam_handle_t *pamh,
-					 int argc,
-					 const char **argv,
-					 int ctrl,
-					 dictionary *d)
+static const char *get_krb5_cc_type_from_config(const pam_handle_t *pamh,
+						int argc,
+						const char **argv,
+						int ctrl,
+						dictionary *d)
 {
 	return get_conf_item_string(pamh, argc, argv, ctrl, d,
 				    "krb5_ccache_type",
 				    WINBIND_KRB5_CCACHE_TYPE);
 }
 
-const char *get_member_from_config(const pam_handle_t *pamh,
-				   int argc,
-				   const char **argv,
-				   int ctrl,
-				   dictionary *d)
+static const char *get_member_from_config(const pam_handle_t *pamh,
+					  int argc,
+					  const char **argv,
+					  int ctrl,
+					  dictionary *d)
 {
 	const char *ret = NULL;
 	ret = get_conf_item_string(pamh, argc, argv, ctrl, d,
@@ -1821,11 +1821,11 @@ const char *get_member_from_config(const pam_handle_t *pamh,
 				    WINBIND_REQUIRED_MEMBERSHIP);
 }
 
-int get_warn_pwd_expire_from_config(const pam_handle_t *pamh,
-				    int argc,
-				    const char **argv,
-				    int ctrl,
-				    dictionary *d)
+static int get_warn_pwd_expire_from_config(const pam_handle_t *pamh,
+					   int argc,
+					   const char **argv,
+					   int ctrl,
+					   dictionary *d)
 {
 	int ret;
 	ret = get_config_item_int(pamh, argc, argv, ctrl, d,
