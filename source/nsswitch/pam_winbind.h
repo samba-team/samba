@@ -200,3 +200,12 @@ do {                             \
 #define PAM_WB_CACHED_LOGON(x) (x & NETLOGON_CACHED_ACCOUNT)
 #define PAM_WB_KRB5_CLOCK_SKEW(x) (x & LOGON_KRB5_FAIL_CLOCK_SKEW)
 #define PAM_WB_GRACE_LOGON(x)  ((NETLOGON_CACHED_ACCOUNT|NETLOGON_GRACE_LOGON) == ( x & (NETLOGON_CACHED_ACCOUNT|NETLOGON_GRACE_LOGON)))
+
+struct pwb_context {
+	const pam_handle_t *pamh;
+	int flags;
+	int argc;
+	const char **argv;
+	dictionary *dict;
+	uint32_t ctrl;
+};
