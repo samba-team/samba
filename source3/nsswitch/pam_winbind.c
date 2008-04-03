@@ -3,7 +3,7 @@
    Copyright Andrew Tridgell <tridge@samba.org> 2000
    Copyright Tim Potter <tpot@samba.org> 2000
    Copyright Andrew Bartlett <abartlet@samba.org> 2002
-   Copyright Guenther Deschner <gd@samba.org> 2005-2007
+   Copyright Guenther Deschner <gd@samba.org> 2005-2008
 
    largely based on pam_userdb by Cristian Gafton <gafton@redhat.com> also
    contains large slabs of code from pam_unix by Elliot Lee
@@ -2690,7 +2690,7 @@ struct pam_module _pam_winbind_modstruct = {
  * Copyright (c) Andrew Tridgell  <tridge@samba.org>   2000
  * Copyright (c) Tim Potter       <tpot@samba.org>     2000
  * Copyright (c) Andrew Bartlettt <abartlet@samba.org> 2002
- * Copyright (c) Guenther Deschner <gd@samba.org>      2005-2007
+ * Copyright (c) Guenther Deschner <gd@samba.org>      2005-2008
  * Copyright (c) Jan Rêkorajski 1999.
  * Copyright (c) Andrew G. Morgan 1996-8.
  * Copyright (c) Alex O. Yuriev, 1996.
