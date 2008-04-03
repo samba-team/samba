@@ -220,12 +220,6 @@ static WERROR smbconf_reg_set_value(struct registry_key *key,
 		goto done;
 	}
 
-	ZERO_STRUCT(val);
-
-	val.type = REG_SZ;
-	val.v.sz.str = CONST_DISCARD(char *, canon_valstr);
-	val.v.sz.len = strlen(canon_valstr) + 1;
-
 	if (registry_smbconf_valname_forbidden(canon_valname)) {
 		DEBUG(5, ("Parameter '%s' not allowed in registry.\n",
 			  canon_valname));
@@ -250,6 +244,12 @@ static WERROR smbconf_reg_set_value(struct registry_key *key,
 		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
+
+	ZERO_STRUCT(val);
+
+	val.type = REG_SZ;
+	val.v.sz.str = CONST_DISCARD(char *, canon_valstr);
+	val.v.sz.len = strlen(canon_valstr) + 1;
 
 	werr = reg_setvalue(key, canon_valname, &val);
 	if (!W_ERROR_IS_OK(werr)) {
