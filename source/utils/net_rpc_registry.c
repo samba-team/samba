@@ -23,45 +23,56 @@
 #include "regfio.h"
 #include "reg_objects.h"
 
-static bool reg_hive_key(const char *fullname, uint32 *reg_type,
-			 const char **key_name)
+static bool reg_hive_key(TALLOC_CTX *ctx, const char *fullname,
+			 uint32 *reg_type, const char **key_name)
 {
-	const char *sep;
-	ptrdiff_t len;
+	WERROR werr;
+	char *hivename = NULL;
+	const char *tmp_keyname = NULL;
+	bool ret = false;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
-	sep = strchr_m(fullname, '\\');
-
-	if (sep != NULL) {
-		len = sep - fullname;
-		*key_name = sep+1;
-	}
-	else {
-		len = strlen(fullname);
-		*key_name = "";
+	werr = split_hive_key(tmp_ctx, fullname, &hivename, &tmp_keyname);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
 	}
 
-	if (strnequal(fullname, "HKLM", len) ||
-	    strnequal(fullname, "HKEY_LOCAL_MACHINE", len))
+	*key_name = talloc_strdup(ctx, tmp_keyname);
+	if (*key_name == NULL) {
+		goto done;
+	}
+
+	if (strequal(hivename, "HKLM") ||
+	    strequal(hivename, "HKEY_LOCAL_MACHINE"))
+	{
 		(*reg_type) = HKEY_LOCAL_MACHINE;
-	else if (strnequal(fullname, "HKCR", len) ||
-		 strnequal(fullname, "HKEY_CLASSES_ROOT", len))
+	} else if (strequal(hivename, "HKCR") ||
+		   strequal(hivename, "HKEY_CLASSES_ROOT")) 
+	{
 		(*reg_type) = HKEY_CLASSES_ROOT;
-	else if (strnequal(fullname, "HKU", len) ||
-		 strnequal(fullname, "HKEY_USERS", len))
+	} else if (strequal(hivename, "HKU") ||
+		   strequal(hivename, "HKEY_USERS"))
+	{
 		(*reg_type) = HKEY_USERS;
-	else if (strnequal(fullname, "HKCU", len) ||
-		 strnequal(fullname, "HKEY_CURRENT_USER", len))
+	} else if (strequal(hivename, "HKCU") ||
+		   strequal(hivename, "HKEY_CURRENT_USER"))
+	{
 		(*reg_type) = HKEY_CURRENT_USER;
-	else if (strnequal(fullname, "HKPD", len) ||
-		 strnequal(fullname, "HKEY_PERFORMANCE_DATA", len))
+	} else if (strequal(hivename, "HKPD") ||
+		   strequal(hivename, "HKEY_PERFORMANCE_DATA"))
+	{
 		(*reg_type) = HKEY_PERFORMANCE_DATA;
-	else {
+	} else {
 		DEBUG(10,("reg_hive_key: unrecognised hive key %s\n",
 			  fullname));
-		return False;
+		goto done;
 	}
 
-	return True;
+	ret = true;
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return ret;
 }
 
 static NTSTATUS registry_openkey(TALLOC_CTX *mem_ctx,
@@ -76,7 +87,7 @@ static NTSTATUS registry_openkey(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(key);
 
-	if (!reg_hive_key(name, &hive, &key.name)) {
+	if (!reg_hive_key(mem_ctx, name, &hive, &key.name)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -494,7 +505,7 @@ static NTSTATUS rpc_registry_createkey_internal(const DOM_SID *domain_sid,
 	ZERO_STRUCT(key);
 	ZERO_STRUCT(keyclass);
 
-	if (!reg_hive_key(argv[0], &hive, &key.name)) {
+	if (!reg_hive_key(mem_ctx, argv[0], &hive, &key.name)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -562,7 +573,7 @@ static NTSTATUS rpc_registry_deletekey_internal(const DOM_SID *domain_sid,
 
 	ZERO_STRUCT(key);
 
-	if (!reg_hive_key(argv[0], &hive, &key.name)) {
+	if (!reg_hive_key(mem_ctx, argv[0], &hive, &key.name)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
