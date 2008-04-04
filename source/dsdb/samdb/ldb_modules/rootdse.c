@@ -26,6 +26,7 @@
 #include "lib/ldb/include/ldb_private.h"
 #include "system/time.h"
 #include "dsdb/samdb/samdb.h"
+#include "version.h"
 
 struct private_data {
 	int num_controls;
@@ -199,6 +200,13 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 					goto failed;
 				}
 			}
+		}
+	}
+
+	if (schema && do_attribute_explicit(attrs, "vendorVersion")) {
+		if (ldb_msg_add_fmt(msg, "vendorVersion", 
+				    "%s", SAMBA_VERSION_STRING) != 0) {
+			goto failed;
 		}
 	}
 
