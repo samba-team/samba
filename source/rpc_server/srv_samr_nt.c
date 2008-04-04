@@ -627,22 +627,59 @@ NTSTATUS _samr_GetUserPwInfo(pipes_struct *p,
 			     struct samr_GetUserPwInfo *r)
 {
 	struct samr_info *info = NULL;
-
-	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, r->in.user_handle, (void **)(void *)&info))
-		return NT_STATUS_INVALID_HANDLE;
-
-	if (!sid_check_is_in_our_domain(&info->sid))
-		return NT_STATUS_OBJECT_TYPE_MISMATCH;
-
-	ZERO_STRUCTP(r->out.info);
+	enum lsa_SidType sid_type;
+	uint32_t min_password_length = 0;
+	uint32_t password_properties = 0;
+	bool ret = false;
+	NTSTATUS status;
 
 	DEBUG(5,("_samr_GetUserPwInfo: %d\n", __LINE__));
 
-	/*
-	 * NT sometimes return NT_STATUS_ACCESS_DENIED
-	 * I don't know yet why.
-	 */
+	/* find the policy handle.  open a policy on it. */
+	if (!find_policy_by_hnd(p, r->in.user_handle, (void **)(void *)&info)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	status = access_check_samr_function(info->acc_granted,
+					    SAMR_USER_ACCESS_GET_ATTRIBUTES,
+					    "_samr_GetUserPwInfo" );
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (!sid_check_is_in_our_domain(&info->sid)) {
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+	}
+
+	become_root();
+	ret = lookup_sid(p->mem_ctx, &info->sid, NULL, NULL, &sid_type);
+	unbecome_root();
+	if (ret == false) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	switch (sid_type) {
+		case SID_NAME_USER:
+			become_root();
+			pdb_get_account_policy(AP_MIN_PASSWORD_LEN,
+					       &min_password_length);
+			pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
+					       &password_properties);
+			unbecome_root();
+
+			if (lp_check_password_script() && *lp_check_password_script()) {
+				password_properties |= DOMAIN_PASSWORD_COMPLEX;
+			}
+
+			break;
+		default:
+			break;
+	}
+
+	r->out.info->min_password_length = min_password_length;
+	r->out.info->password_properties = password_properties;
+
+	DEBUG(5,("_samr_GetUserPwInfo: %d\n", __LINE__));
 
 	return NT_STATUS_OK;
 }
