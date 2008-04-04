@@ -3743,7 +3743,11 @@ static void map_to_os2_driver(fstring drivername)
 /****************************************************************************
  Get a default printer info 2 struct.
 ****************************************************************************/
-static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 *info, const char *servername, const char* sharename)
+
+static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 *info,
+					const char *servername,
+					const char* sharename,
+					BOOL get_loc_com)
 {
 	int snum = lp_servicenumber(sharename);
 
@@ -3770,7 +3774,7 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 *info, const char 
 	fstrcpy(info->datatype, "RAW");
 
 #ifdef HAVE_CUPS
-	if ( (enum printing_types)lp_printing(snum) == PRINT_CUPS ) {		
+	if (get_loc_com && (enum printing_types)lp_printing(snum) == PRINT_CUPS ) {		
 		/* Pull the location and comment strings from cups if we don't
 		   already have one */
 		if ( !strlen(info->location) || !strlen(info->comment) )
@@ -3819,7 +3823,11 @@ fail:
 
 /****************************************************************************
 ****************************************************************************/
-static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info, const char *servername, const char *sharename)
+
+static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info,
+				const char *servername,
+				const char *sharename,
+				BOOL get_loc_com)
 {
 	int len = 0;
 	int snum = lp_servicenumber(sharename);
@@ -3831,7 +3839,8 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info, const char *servern
 
 	dbuf = tdb_fetch(tdb_printers, kbuf);
 	if (!dbuf.dptr) {
-		return get_a_printer_2_default(info, servername, sharename);
+		return get_a_printer_2_default(info, servername,
+				sharename, get_loc_com);
 	}
 
 	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "dddddddddddfffffPfffff",
@@ -3874,7 +3883,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info, const char *servern
 	fstrcpy(info->printername, printername);
 
 #ifdef HAVE_CUPS
-	if ( (enum printing_types)lp_printing(snum) == PRINT_CUPS ) {		
+	if (get_loc_com && (enum printing_types)lp_printing(snum) == PRINT_CUPS ) {		
 		/* Pull the location and comment strings from cups if we don't
 		   already have one */
 		if ( !strlen(info->location) || !strlen(info->comment) )
@@ -4448,8 +4457,8 @@ WERROR save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, uint8 *dat
 
 ****************************************************************************/
 
-WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, 
-			const char *sharename)
+static WERROR get_a_printer_internal( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, 
+			const char *sharename, BOOL get_loc_com)
 {
 	WERROR result;
 	fstring servername;
@@ -4477,7 +4486,10 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 						    sizeof(servername)-1 );
 			}
 
-			result = get_a_printer_2( (*pp_printer)->info_2, servername, sharename );
+			result = get_a_printer_2( (*pp_printer)->info_2,
+					servername,
+					sharename,
+					get_loc_com);
 	
 			
 			/* we have a new printer now.  Save it with this handle */
@@ -4499,6 +4511,20 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 	}
 	
 	return WERR_OK;
+}
+
+WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, 
+			const char *sharename)
+{
+	return get_a_printer_internal(print_hnd, pp_printer, level,
+					sharename, True);
+}
+
+WERROR get_a_printer_search( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, 
+			const char *sharename)
+{
+	return get_a_printer_internal(print_hnd, pp_printer, level,
+					sharename, False);
 }
 
 /****************************************************************************
