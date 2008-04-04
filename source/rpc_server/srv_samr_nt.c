@@ -5373,6 +5373,9 @@ NTSTATUS _samr_SetAliasInfo(pipes_struct *p,
 NTSTATUS _samr_GetDomPwInfo(pipes_struct *p,
 			    struct samr_GetDomPwInfo *r)
 {
+	uint32_t min_password_length = 0;
+	uint32_t password_properties = 0;
+
 	/* Perform access check.  Since this rpc does not require a
 	   policy handle it will not be caught by the access checks on
 	   SAMR_CONNECT or SAMR_CONNECT_ANON. */
@@ -5382,8 +5385,19 @@ NTSTATUS _samr_GetDomPwInfo(pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* Actually, returning zeros here works quite well :-). */
-	ZERO_STRUCTP(r->out.info);
+	become_root();
+	pdb_get_account_policy(AP_MIN_PASSWORD_LEN,
+			       &min_password_length);
+	pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
+			       &password_properties);
+	unbecome_root();
+
+	if (lp_check_password_script() && *lp_check_password_script()) {
+		password_properties |= DOMAIN_PASSWORD_COMPLEX;
+	}
+
+	r->out.info->min_password_length = min_password_length;
+	r->out.info->password_properties = password_properties;
 
 	return NT_STATUS_OK;
 }
