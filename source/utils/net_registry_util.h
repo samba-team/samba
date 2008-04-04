@@ -34,6 +34,6 @@ void print_registry_value(const char *valname,
  *  - strip trailing '\\' chars
  */
 WERROR split_hive_key(TALLOC_CTX *ctx, const char *path, char **hivename,
-		      const char **subkeyname);
+		      char **subkeyname);
 
 #endif
