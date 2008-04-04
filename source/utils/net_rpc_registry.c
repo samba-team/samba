@@ -629,7 +629,7 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	if (argc != 1 ) {
 		d_printf("Usage:    net rpc registry enumerate <path> [recurse]\n");
 		d_printf("Example:  net rpc registry enumerate 'HKLM\\Software\\Samba'\n");
-		return NT_STATUS_OK;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	status = registry_openkey(mem_ctx, pipe_hnd, argv[0], REG_KEY_READ,
@@ -697,7 +697,7 @@ static NTSTATUS rpc_registry_save_internal(const DOM_SID *domain_sid,
 	
 	if (argc != 2 ) {
 		d_printf("Usage:    net rpc registry backup <path> <file> \n");
-		return NT_STATUS_OK;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
 	status = registry_openkey(mem_ctx, pipe_hnd, argv[0], REG_KEY_ALL,
@@ -882,7 +882,7 @@ static int rpc_registry_dump( int argc, const char **argv )
 	
 	if (argc != 1 ) {
 		d_printf("Usage:    net rpc registry dump <file> \n");
-		return 0;
+		return -1;
 	}
 	
 	d_printf("Opening %s....", argv[0]);
@@ -926,7 +926,7 @@ static int rpc_registry_copy( int argc, const char **argv )
 	
 	if (argc != 2 ) {
 		d_printf("Usage:    net rpc registry copy <srcfile> <newfile>\n");
-		return 0;
+		return -1;
 	}
 	
 	d_printf("Opening %s....", argv[0]);
@@ -997,7 +997,7 @@ static NTSTATUS rpc_registry_getsd_internal(const DOM_SID *domain_sid,
 	if (argc <1 || argc > 2) {
 		d_printf("Usage:    net rpc registry getsd <path> <secinfo>\n");
 		d_printf("Example:  net rpc registry getsd 'HKLM\\Software\\Samba'\n");
-		return NT_STATUS_OK;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	status = registry_openkey(mem_ctx, pipe_hnd, argv[0],
