@@ -521,7 +521,13 @@ static bool set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		fstrcpy(sname, lp_servicename(snum));
 
 		printer = NULL;
-		result = get_a_printer( NULL, &printer, 2, sname );
+
+		/* This call doesn't fill in the location or comment from
+		 * a CUPS server for efficiency with large numbers of printers.
+		 * JRA.
+		 */
+
+		result = get_a_printer_search( NULL, &printer, 2, sname );
 		if ( !W_ERROR_IS_OK(result) ) {
 			DEBUG(0,("set_printer_hnd_name: failed to lookup printer [%s] -- result [%s]\n",
 				sname, dos_errstr(result)));
