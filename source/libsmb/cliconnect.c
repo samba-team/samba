@@ -249,10 +249,16 @@ static NTSTATUS cli_session_setup_plaintext(struct cli_state *cli,
 	if ( (capabilities & CAP_UNICODE) == 0 ) {
 		p += clistr_push(cli, p, pass, -1, STR_TERMINATE); /* password */
 		SSVAL(cli->outbuf,smb_vwv7,PTR_DIFF(p, smb_buf(cli->outbuf)));
-	}
-	else { 
+	} else {
+		/* For ucs2 passwords clistr_push calls ucs2_align, which causes
+		 * the space taken by the unicode password to be one byte too
+		 * long (as we're on an odd byte boundary here). Reduce the
+		 * count by 1 to cope with this. Fixes smbclient against NetApp
+		 * servers which can't cope. Fix from
+		 * bryan.kolodziej@allenlund.com in bug #3840.
+		 */
 		p += clistr_push(cli, p, pass, -1, STR_UNICODE|STR_TERMINATE); /* unicode password */
-		SSVAL(cli->outbuf,smb_vwv8,PTR_DIFF(p, smb_buf(cli->outbuf)));	
+		SSVAL(cli->outbuf,smb_vwv8,PTR_DIFF(p, smb_buf(cli->outbuf))-1);	
 	}
 	
 	p += clistr_push(cli, p, user, -1, STR_TERMINATE); /* username */
@@ -1026,7 +1032,6 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 	}
 
 	return NT_STATUS_OK;
-
 }
 
 /****************************************************************************
