@@ -900,7 +900,7 @@ access to *
         by dn.exact="uid=heimdal,dc=services,dc=example,dc=com" write
         ...
 
-sasl-regexp "gidNumber=.*\\\+uidNumber=0,cn=peercred,cn=external,cn=auth''
+authz-regexp "gidNumber=.*\\\+uidNumber=0,cn=peercred,cn=external,cn=auth''
 	"uid=heimdal,dc=services,dc=example,dc=com"
 
 @end example
