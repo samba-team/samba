@@ -389,7 +389,7 @@ LIBGPO_OBJ0 = libgpo/gpo_ldap.o libgpo/gpo_ini.o libgpo/gpo_util.o \
 	      libgpo/gpo_fetch.o libgpo/gpo_filesync.o libgpo/gpo_sec.o \
 	      libgpo/gpo_reg.o \
 	      $(GPEXT_OBJ)
-LIBGPO_OBJ = $(LIBGPO_OBJ0) $(REG_INIT_BASIC_OBJ)
+LIBGPO_OBJ = $(LIBGPO_OBJ0)
 
 LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o \
 	     libads/sasl.o libads/sasl_wrapping.o \
@@ -481,7 +481,8 @@ REG_BASE_OBJ = registry/reg_api.o \
 	       registry/reg_util.o \
 	       $(UTIL_REG_API_OBJ) \
 	       lib/util_nttoken.o \
-	       $(REG_BACKENDS_BASE_OBJ)
+	       $(REG_BACKENDS_BASE_OBJ) \
+	       $(REG_INIT_BASIC_OBJ)
 
 REG_SMBCONF_OBJ = $(REG_BASE_OBJ) \
 		  $(REG_BACKENDS_SMBCONF_OBJ) \
