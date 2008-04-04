@@ -668,7 +668,8 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 			      const struct netr_SamInfo3 *info3,
 			      DOM_SID **user_sids,
 			      size_t *num_user_sids,
-			      bool include_user_group_rid)
+			      bool include_user_group_rid,
+			      bool skip_ressource_groups)
 {
 	NTSTATUS status;
 	DOM_SID sid;
@@ -728,6 +729,12 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
          */
 
 	for (i = 0; i < info3->sidcount; i++) {
+
+		if (skip_ressource_groups &&
+		    (info3->sids[i].attributes & SE_GROUP_RESOURCE)) {
+			continue;
+		}
+
 		status = add_sid_to_array(mem_ctx, info3->sids[i].sid,
 				      &sid_array, &num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
