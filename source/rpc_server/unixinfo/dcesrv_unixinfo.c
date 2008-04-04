@@ -23,53 +23,100 @@
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
 #include "librpc/gen_ndr/ndr_unixinfo.h"
+#include "libcli/wbclient/wbclient.h"
 #include "lib/events/events.h"
-#include "dsdb/samdb/samdb.h"
 #include "system/passwd.h"
 #include "param/param.h"
+
+static NTSTATUS dcerpc_unixinfo_bind(struct dcesrv_call_state *dce_call,
+				     const struct dcesrv_interface *iface)
+{
+	struct wbc_context *wbc_ctx;
+
+	wbc_ctx = wbc_init(dce_call->context, dce_call->msg_ctx,
+			   dce_call->event_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(wbc_ctx);
+
+	dce_call->context->private = wbc_ctx;
+
+	return NT_STATUS_OK;
+}
+
+#define DCESRV_INTERFACE_UNIXINFO_BIND dcerpc_unixinfo_bind
 
 static NTSTATUS dcesrv_unixinfo_SidToUid(struct dcesrv_call_state *dce_call,
 				  TALLOC_CTX *mem_ctx,
 				  struct unixinfo_SidToUid *r)
 {
 	NTSTATUS status;
-	struct sidmap_context *sidmap;
-	uid_t uid;
+	struct wbc_context *wbc_ctx = talloc_get_type_abort(
+						dce_call->context->private,
+						struct wbc_context);
+	struct id_mapping *ids;
+	struct composite_context *ctx;
 
-	sidmap = sidmap_open(mem_ctx, dce_call->conn->dce_ctx->lp_ctx);
-	if (sidmap == NULL) {
-		DEBUG(10, ("sidmap_open failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
+	DEBUG(5, ("dcesrv_unixinfo_SidToUid called\n"));
 
-	status = sidmap_sid_to_unixuid(sidmap, &r->in.sid, &uid);
+	ids = talloc(mem_ctx, struct  id_mapping);
+	NT_STATUS_HAVE_NO_MEMORY(ids);
+
+	ids->sid = &r->in.sid;
+	ids->status = NT_STATUS_NONE_MAPPED;
+	ids->unixid = NULL;
+	ctx = wbc_sids_to_xids_send(wbc_ctx, ids, 1, ids);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	status = wbc_sids_to_xids_recv(ctx, &ids);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	*r->out.uid = uid;
-	return NT_STATUS_OK;
+	if (ids->unixid->type == ID_TYPE_BOTH ||
+	    ids->unixid->type == ID_TYPE_UID) {
+		*r->out.uid = ids->unixid->id;
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_INVALID_SID;
+	}
 }
 
 static NTSTATUS dcesrv_unixinfo_UidToSid(struct dcesrv_call_state *dce_call,
 				  TALLOC_CTX *mem_ctx,
 				  struct unixinfo_UidToSid *r)
 {
-	struct sidmap_context *sidmap;
-	uid_t uid;
+	struct wbc_context *wbc_ctx = talloc_get_type_abort(
+						dce_call->context->private,
+						struct wbc_context);
+	struct id_mapping *ids;
+	struct composite_context *ctx;
+	uint32_t uid;
+	NTSTATUS status;
 
-	sidmap = sidmap_open(mem_ctx, dce_call->conn->dce_ctx->lp_ctx);
-	if (sidmap == NULL) {
-		DEBUG(10, ("sidmap_open failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
+	DEBUG(5, ("dcesrv_unixinfo_UidToSid called\n"));
 
-	uid = r->in.uid; 	/* This cuts uid to (probably) 32 bit */
-
+	uid = r->in.uid; 	/* This cuts uid to 32 bit */
 	if ((uint64_t)uid != r->in.uid) {
 		DEBUG(10, ("uid out of range\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	return sidmap_uid_to_sid(sidmap, mem_ctx, uid, &r->out.sid);
+	ids = talloc(mem_ctx, struct id_mapping);
+	NT_STATUS_HAVE_NO_MEMORY(ids);
+
+	ids->sid = NULL;
+	ids->status = NT_STATUS_NONE_MAPPED;
+	ids->unixid = talloc(ids, struct unixid);
+	NT_STATUS_HAVE_NO_MEMORY(ids->unixid);
+
+	ids->unixid->id = uid;
+	ids->unixid->type = ID_TYPE_UID;
+
+	ctx = wbc_xids_to_sids_send(wbc_ctx, ids, 1, ids);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	status = wbc_xids_to_sids_recv(ctx, &ids);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	r->out.sid = ids->sid;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS dcesrv_unixinfo_SidToGid(struct dcesrv_call_state *dce_call,
@@ -77,43 +124,74 @@ static NTSTATUS dcesrv_unixinfo_SidToGid(struct dcesrv_call_state *dce_call,
 				  struct unixinfo_SidToGid *r)
 {
 	NTSTATUS status;
-	struct sidmap_context *sidmap;
-	gid_t gid;
+	struct wbc_context *wbc_ctx = talloc_get_type_abort(
+						dce_call->context->private,
+						struct wbc_context);
+	struct id_mapping *ids;
+	struct composite_context *ctx;
 
-	sidmap = sidmap_open(mem_ctx, dce_call->conn->dce_ctx->lp_ctx);
-	if (sidmap == NULL) {
-		DEBUG(10, ("sidmap_open failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
+	DEBUG(5, ("dcesrv_unixinfo_SidToGid called\n"));
 
-	status = sidmap_sid_to_unixgid(sidmap, &r->in.sid, &gid);
+	ids = talloc(mem_ctx, struct  id_mapping);
+	NT_STATUS_HAVE_NO_MEMORY(ids);
+
+	ids->sid = &r->in.sid;
+	ids->status = NT_STATUS_NONE_MAPPED;
+	ids->unixid = NULL;
+	ctx = wbc_sids_to_xids_send(wbc_ctx, ids, 1, ids);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	status = wbc_sids_to_xids_recv(ctx, &ids);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	*r->out.gid = gid;
-	return NT_STATUS_OK;
+	if (ids->unixid->type == ID_TYPE_BOTH ||
+	    ids->unixid->type == ID_TYPE_GID) {
+		*r->out.gid = ids->unixid->id;
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_INVALID_SID;
+	}
 }
 
 static NTSTATUS dcesrv_unixinfo_GidToSid(struct dcesrv_call_state *dce_call,
 				  TALLOC_CTX *mem_ctx,
 				  struct unixinfo_GidToSid *r)
 {
-	struct sidmap_context *sidmap;
-	gid_t gid;
+	struct wbc_context *wbc_ctx = talloc_get_type_abort(
+						dce_call->context->private,
+						struct wbc_context);
+	struct id_mapping *ids;
+	struct composite_context *ctx;
+	uint32_t gid;
+	NTSTATUS status;
 
-	sidmap = sidmap_open(mem_ctx, dce_call->conn->dce_ctx->lp_ctx);
-	if (sidmap == NULL) {
-		DEBUG(10, ("sidmap_open failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
+	DEBUG(5, ("dcesrv_unixinfo_GidToSid called\n"));
 
-	gid = r->in.gid; 	/* This cuts gid to (probably) 32 bit */
-
+	gid = r->in.gid; 	/* This cuts gid to 32 bit */
 	if ((uint64_t)gid != r->in.gid) {
 		DEBUG(10, ("gid out of range\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	return sidmap_gid_to_sid(sidmap, mem_ctx, gid, &r->out.sid);
+	ids = talloc(mem_ctx, struct id_mapping);
+	NT_STATUS_HAVE_NO_MEMORY(ids);
+
+	ids->sid = NULL;
+	ids->status = NT_STATUS_NONE_MAPPED;
+	ids->unixid = talloc(ids, struct unixid);
+	NT_STATUS_HAVE_NO_MEMORY(ids->unixid);
+
+	ids->unixid->id = gid;
+	ids->unixid->type = ID_TYPE_GID;
+
+	ctx = wbc_xids_to_sids_send(wbc_ctx, ids, 1, ids);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	status = wbc_xids_to_sids_recv(ctx, &ids);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	r->out.sid = ids->sid;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS dcesrv_unixinfo_GetPWUid(struct dcesrv_call_state *dce_call,

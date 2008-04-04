@@ -26,6 +26,7 @@
 #include "system/filesys.h"
 #include "ntvfs/ntvfs.h"
 #include "ntvfs/common/ntvfs_common.h"
+#include "libcli/wbclient/wbclient.h"
 #include "dsdb/samdb/samdb.h"
 
 struct pvfs_wait;
@@ -46,7 +47,7 @@ struct pvfs_state {
 	struct brl_context *brl_context;
 	struct odb_context *odb_context;
 	struct notify_context *notify_context;
-	struct sidmap_context *sidmap;
+	struct wbc_context *wbc_ctx;
 
 	/* a list of pending async requests. Needed to support
 	   ntcancel */

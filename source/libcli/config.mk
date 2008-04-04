@@ -1,6 +1,7 @@
 mkinclude auth/config.mk
 mkinclude ldap/config.mk
 mkinclude security/config.mk
+mkinclude wbclient/config.mk
 
 [SUBSYSTEM::LIBSAMBA-ERRORS]
 OBJ_FILES = util/doserr.o \
