@@ -364,7 +364,7 @@ static bool enum_group_mapping(const DOM_SID *domsid,
 	state.num_maps = 0;
 	state.maps = NULL;
 
-	if (db->traverse_read(db, collect_map, (void *)&state) != 0) {
+	if (db->traverse_read(db, collect_map, (void *)&state) < 0) {
 		return false;
 	}
 
