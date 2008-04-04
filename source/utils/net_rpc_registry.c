@@ -650,36 +650,7 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	}
 
 	for (i=0; i<num_values; i++) {
-		struct registry_value *v = values[i];
-		d_printf("Valuename  = %s\n", names[i]);
-		d_printf("Type       = %s\n",
-			 reg_type_lookup(v->type));
-		switch(v->type) {
-		case REG_DWORD:
-			d_printf("Value      = %d\n", v->v.dword);
-			break;
-		case REG_SZ:
-		case REG_EXPAND_SZ:
-			d_printf("Value      = \"%s\"\n", v->v.sz.str);
-			break;
-		case REG_MULTI_SZ: {
-			uint32 j;
-			for (j = 0; j < v->v.multi_sz.num_strings; j++) {
-				d_printf("Value[%3.3d] = \"%s\"\n", j,
-					 v->v.multi_sz.strings[j]);
-			}
-			break;
-		}
-		case REG_BINARY:
-			d_printf("Value      = %d bytes\n",
-				 (int)v->v.binary.length);
-			break;
-		default:
-			d_printf("Value      = <unprintable>\n");
-			break;
-		}
-			
-		d_printf("\n");
+		print_registry_value(names[i], values[i]);
 	}
 
 	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key, NULL);
