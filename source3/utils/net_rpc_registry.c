@@ -28,7 +28,7 @@ static bool reg_hive_key(TALLOC_CTX *ctx, const char *fullname,
 {
 	WERROR werr;
 	char *hivename = NULL;
-	const char *tmp_keyname = NULL;
+	char *tmp_keyname = NULL;
 	bool ret = false;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 

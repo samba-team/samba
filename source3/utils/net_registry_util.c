@@ -72,9 +72,10 @@ void print_registry_value(const char *valname,
  *  - strip trailing '\\' chars
  */
 WERROR split_hive_key(TALLOC_CTX *ctx, const char *path, char **hivename,
-		      const char **subkeyname)
+		      char **subkeyname)
 {
 	char *p;
+	const char *tmp_subkeyname;
 
 	if ((path == NULL) || (hivename == NULL) || (subkeyname == NULL)) {
 		return WERR_INVALID_PARAM;
@@ -100,10 +101,14 @@ WERROR split_hive_key(TALLOC_CTX *ctx, const char *path, char **hivename,
 
 	if ((p == NULL) || (*p == '\0')) {
 		/* just the hive - no subkey given */
-		*subkeyname = "";
+		tmp_subkeyname = "";
 	} else {
 		*p = '\0';
-		*subkeyname = p+1;
+		tmp_subkeyname = p+1;
+	}
+	*subkeyname = talloc_strdup(ctx, tmp_subkeyname);
+	if (*subkeyname == NULL) {
+		return WERR_NOMEM;
 	}
 
 	return WERR_OK;
