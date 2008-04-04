@@ -313,7 +313,7 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 	status = sid_array_from_info3(mem_ctx, info3, 
 				      &token->user_sids, 
 				      &token->num_sids,
-				      True);
+				      true, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
