@@ -19,6 +19,7 @@
  
 #include "includes.h"
 #include "utils/net.h"
+#include "utils/net_registry_util.h"
 #include "regfio.h"
 #include "reg_objects.h"
 
@@ -637,11 +638,7 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	}
 
 	for (i=0; i<num_subkeys; i++) {
-		d_printf("Keyname   = %s\n", names[i]);
-		d_printf("Modtime   = %s\n", modtimes[i]
-			 ? http_timestring(nt_time_to_unix(*modtimes[i]))
-			 : "None");
-		d_printf("\n" );
+		print_registry_key(names[i], modtimes[i]);
 	}
 
 	status = registry_enumvalues(mem_ctx, pipe_hnd, &pol_key, &num_values,
