@@ -844,6 +844,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   $(PASSWD_UTIL_OBJ) utils/net_dns.o utils/net_ads_gpo.o \
 	   utils/net_conf.o \
 	   utils/net_registry.o \
+	   utils/net_registry_util.o \
 	   auth/token_util.o utils/net_dom.o nsswitch/wb_client.o
 
 NET_OBJ = $(NET_OBJ1) $(PARAM_WITHOUT_REG_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
