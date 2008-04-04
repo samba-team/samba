@@ -286,8 +286,6 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_NBT
 OBJ_FILES = gen_ndr/ndr_winbind.o
 PUBLIC_DEPENDENCIES = LIBNDR NDR_NETLOGON
 
-PUBLIC_HEADERS += librpc/gen_ndr/winbind.h
-
 librpc/idl-deps:
 	./librpc/idl-deps.pl librpc/idl/*.idl >$@
 
