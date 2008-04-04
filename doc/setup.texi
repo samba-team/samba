@@ -863,6 +863,8 @@ suitable authorisation policy, it is possible to set this up in a
 secure fashion. A knowledge of LDAP, Kerberos, and C is necessary to
 install this backend. The HDB schema was devised by Leif Johansson.
 
+This assumes, OpenLDAP 2.3 or later.
+
 Requirements:
 
 @itemize @bullet
@@ -880,8 +882,7 @@ Its also possible to configure the ldap backend as a shared module,
 see option --hdb-openldap-module to configure.
 
 @item
-OpenLDAP 2.0.x. Configure OpenLDAP with @kbd{--enable-local} to enable the
-local transport.
+Configure OpenLDAP with @kbd{--enable-local} to enable the local transport.
 
 @item
 Add the hdb schema to the LDAP server, it's included in the source-tree
