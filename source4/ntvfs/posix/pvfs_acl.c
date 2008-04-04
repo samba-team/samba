@@ -126,6 +126,8 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	struct security_ace ace;
 	mode_t mode;
+	struct id_mapping *ids;
+	struct composite_context *ctx;
 
 	*psd = security_descriptor_initialise(req);
 	if (*psd == NULL) {
@@ -133,15 +135,33 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	}
 	sd = *psd;
 
-	status = sidmap_uid_to_sid(pvfs->sidmap, sd, name->st.st_uid, &sd->owner_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	status = sidmap_gid_to_sid(pvfs->sidmap, sd, name->st.st_gid, &sd->group_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	ids = talloc_array(sd, struct id_mapping, 2);
+	NT_STATUS_HAVE_NO_MEMORY(ids);
 
+	ids[0].unixid = talloc(ids, struct unixid);
+	NT_STATUS_HAVE_NO_MEMORY(ids[0].unixid);
+
+	ids[0].unixid->id = name->st.st_uid;
+	ids[0].unixid->type = ID_TYPE_UID;
+	ids[0].sid = NULL;
+
+	ids[1].unixid = talloc(ids, struct unixid);
+	NT_STATUS_HAVE_NO_MEMORY(ids[1].unixid);
+
+	ids[1].unixid->id = name->st.st_gid;
+	ids[1].unixid->type = ID_TYPE_GID;
+	ids[1].sid = NULL;
+
+	ctx = wbc_xids_to_sids_send(pvfs->wbc_ctx, ids, 2, ids);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	status = wbc_xids_to_sids_recv(ctx, &ids);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	sd->owner_sid = talloc_steal(sd, ids[0].sid);
+	sd->group_sid = talloc_steal(sd, ids[1].sid);
+
+	talloc_free(ids);
 	sd->type |= SEC_DESC_DACL_PRESENT;
 
 	mode = name->st.st_mode;
@@ -248,6 +268,8 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 	gid_t old_gid = -1;
 	uid_t new_uid = -1;
 	gid_t new_gid = -1;
+	struct id_mapping *ids;
+	struct composite_context *ctx;
 
 	if (pvfs->acl_ops != NULL) {
 		status = pvfs->acl_ops->acl_load(pvfs, name, fd, req, &sd);
@@ -258,6 +280,12 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	ids = talloc(req, struct id_mapping);
+	NT_STATUS_HAVE_NO_MEMORY(ids);
+	ids->unixid = NULL;
+	ids->sid = NULL;
+	ids->status = NT_STATUS_NONE_MAPPED;
 
 	new_sd = info->set_secdesc.in.sd;
 	orig_sd = *sd;
@@ -271,8 +299,16 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		if (!dom_sid_equal(sd->owner_sid, new_sd->owner_sid)) {
-			status = sidmap_sid_to_unixuid(pvfs->sidmap, new_sd->owner_sid, &new_uid);
+			ids->sid = new_sd->owner_sid;
+			ctx = wbc_sids_to_xids_send(pvfs->wbc_ctx, ids, 1, ids);
+			NT_STATUS_HAVE_NO_MEMORY(ctx);
+			status = wbc_sids_to_xids_recv(ctx, &ids);
 			NT_STATUS_NOT_OK_RETURN(status);
+
+			if (ids->unixid->type == ID_TYPE_BOTH ||
+			    ids->unixid->type == ID_TYPE_UID) {
+				new_uid = ids->unixid->id;
+			}
 		}
 		sd->owner_sid = new_sd->owner_sid;
 	}
@@ -281,8 +317,17 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		if (!dom_sid_equal(sd->group_sid, new_sd->group_sid)) {
-			status = sidmap_sid_to_unixgid(pvfs->sidmap, new_sd->group_sid, &new_gid);
+			ids->sid = new_sd->group_sid;
+			ctx = wbc_sids_to_xids_send(pvfs->wbc_ctx, ids, 1, ids);
+			NT_STATUS_HAVE_NO_MEMORY(ctx);
+			status = wbc_sids_to_xids_recv(ctx, &ids);
 			NT_STATUS_NOT_OK_RETURN(status);
+
+			if (ids->unixid->type == ID_TYPE_BOTH ||
+			    ids->unixid->type == ID_TYPE_GID) {
+				new_gid = ids->unixid->id;
+			}
+
 		}
 		sd->group_sid = new_sd->group_sid;
 	}
@@ -664,6 +709,8 @@ NTSTATUS pvfs_acl_inherit(struct pvfs_state *pvfs,
 	struct pvfs_filename *parent;
 	struct security_descriptor *parent_sd, *sd;
 	bool container;
+	struct id_mapping *ids;
+	struct composite_context *ctx;
 
 	/* form the parents path */
 	status = pvfs_resolve_parent(pvfs, req, name, &parent);
@@ -705,14 +752,31 @@ NTSTATUS pvfs_acl_inherit(struct pvfs_state *pvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = sidmap_uid_to_sid(pvfs->sidmap, sd, name->st.st_uid, &sd->owner_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	status = sidmap_gid_to_sid(pvfs->sidmap, sd, name->st.st_gid, &sd->group_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	ids = talloc_array(sd, struct id_mapping, 2);
+	NT_STATUS_HAVE_NO_MEMORY(ids);
+
+	ids[0].unixid = talloc(ids, struct unixid);
+	NT_STATUS_HAVE_NO_MEMORY(ids[0].unixid);
+	ids[0].unixid->id = name->st.st_uid;
+	ids[0].unixid->type = ID_TYPE_UID;
+	ids[0].sid = NULL;
+	ids[0].status = NT_STATUS_NONE_MAPPED;
+
+	ids[1].unixid = talloc(ids, struct unixid);
+	NT_STATUS_HAVE_NO_MEMORY(ids[1].unixid);
+	ids[1].unixid->id = name->st.st_gid;
+	ids[1].unixid->type = ID_TYPE_GID;
+	ids[1].sid = NULL;
+	ids[1].status = NT_STATUS_NONE_MAPPED;
+
+	ctx = wbc_xids_to_sids_send(pvfs->wbc_ctx, ids, 2, ids);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	status = wbc_xids_to_sids_recv(ctx, &ids);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	sd->owner_sid = talloc_steal(sd, ids[0].sid);
+	sd->group_sid = talloc_steal(sd, ids[1].sid);
 
 	sd->type |= SEC_DESC_DACL_PRESENT;
 

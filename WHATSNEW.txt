@@ -97,6 +97,11 @@ continued to evolve, but you may particularly notice these areas:
   better integration with Windows administrative tools, especially
   Active Directory Users and Computers.
 
+  ID mapping: Samba4 now handles ID mapping via winbind. The mappings
+  are stored in a central ldb that could be shared across multiple
+  machines using LDAP. Internal callers access this interface via a new
+  wbclient library.
+
 These are just some of the highlights of the work done in the past few
 months.  More details can be found in our GIT history.
 

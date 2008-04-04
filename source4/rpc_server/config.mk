@@ -82,7 +82,8 @@ PRIVATE_DEPENDENCIES = \
 		DCERPC_COMMON \
 		SAMDB \
 		NDR_UNIXINFO \
-		NSS_WRAPPER
+		NSS_WRAPPER \
+		LIBWBCLIENT
 # End MODULE dcerpc_unixinfo
 ################################################
 

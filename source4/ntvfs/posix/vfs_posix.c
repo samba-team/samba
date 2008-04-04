@@ -222,8 +222,10 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 					   event_context_find(pvfs),
 					   pvfs->ntvfs->ctx->config);
 
-	pvfs->sidmap = sidmap_open(pvfs, pvfs->ntvfs->ctx->lp_ctx);
-	if (pvfs->sidmap == NULL) {
+	pvfs->wbc_ctx = wbc_init(pvfs,
+				 pvfs->ntvfs->ctx->msg_ctx,
+				 pvfs->ntvfs->ctx->event_ctx);
+	if (pvfs->wbc_ctx == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 

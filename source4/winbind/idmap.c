@@ -210,13 +210,26 @@ NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx, TALLOC_CTX *mem_ctx,
 	NTSTATUS status = NT_STATUS_NONE_MAPPED;
 	struct ldb_context *ldb = idmap_ctx->ldb_ctx;
 	struct ldb_result *res = NULL;
-	uint32_t low, high;
 	struct dom_sid *unix_sid, *new_sid;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	const char *id_type;
+
+	switch (unixid->type) {
+		case ID_TYPE_UID:
+			id_type = "ID_TYPE_UID";
+			break;
+		case ID_TYPE_GID:
+			id_type = "ID_TYPE_GID";
+			break;
+		default:
+			DEBUG(1, ("unixid->type must be type gid or uid\n"));
+			status = NT_STATUS_NONE_MAPPED;
+			goto failed;
+	}
 
 	ret = ldb_search_exp_fmt(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
-				 NULL, "(&(objectClass=sidMap)(xidNumber=%u))",
-				 unixid->id);
+				 NULL, "(&(|(type=ID_TYPE_BOTH)(type=%s))"
+				 "(xidNumber=%u))", id_type, unixid->id);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(1, ("Search failed: %s\n", ldb_errstring(ldb)));
 		status = NT_STATUS_NONE_MAPPED;
@@ -235,40 +248,9 @@ NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	DEBUG(6, ("xid not found in idmap db, trying to allocate SID.\n"));
+	DEBUG(6, ("xid not found in idmap db, create S-1-22- SID.\n"));
 
-	/* Now redo the search to make sure noone added a mapping for that SID
-	 * while we weren't looking.*/
-	ret = ldb_search_exp_fmt(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
-				 NULL, "(&(objectClass=sidMap)(xidNumber=%u))",
-				 unixid->id);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(1, ("Search failed: %s\n", ldb_errstring(ldb)));
-		status = NT_STATUS_NONE_MAPPED;
-		goto failed;
-	}
-
-	if (res->count > 0) {
-		DEBUG(1, ("sidMap modified while trying to add a mapping.\n"));
-		status = NT_STATUS_RETRY;
-		goto failed;
-	}
-
-	ret = idmap_get_bounds(idmap_ctx, &low, &high);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(1, ("Failed to get id bounds from db: %u\n", ret));
-		status = NT_STATUS_NONE_MAPPED;
-		goto failed;
-	}
-
-	if (unixid->id >= low && unixid->id <= high) {
-		/* An existing xid would have been mapped before */
-		status = NT_STATUS_NONE_MAPPED;
-		goto failed;
-	}
-
-	/* For local users, we just create a rid = uid +1, so root doesn't end
-	 * up with a 0 rid */
+	/* For local users/groups , we just create a rid = uid/gid */
 	if (unixid->type == ID_TYPE_UID) {
 		unix_sid = dom_sid_parse_talloc(tmp_ctx, "S-1-22-1");
 	} else {
@@ -279,7 +261,7 @@ NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx, TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	new_sid = dom_sid_add_rid(mem_ctx, unix_sid, unixid->id + 1);
+	new_sid = dom_sid_add_rid(mem_ctx, unix_sid, unixid->id);
 	if (new_sid == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto failed;
@@ -326,39 +308,6 @@ NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx, TALLOC_CTX *mem_ctx,
 	bool hwm_entry_exists;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
-	ret = ldb_search_exp_fmt(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
-				 NULL, "(&(objectClass=sidMap)(objectSid=%s))",
-				 ldap_encode_ndr_dom_sid(tmp_ctx, sid));
-	if (ret != LDB_SUCCESS) {
-		DEBUG(1, ("Search failed: %s\n", ldb_errstring(ldb)));
-		status = NT_STATUS_NONE_MAPPED;
-		goto failed;
-	}
-
-	if (res->count == 1) {
-		new_xid = ldb_msg_find_attr_as_uint(res->msgs[0], "xidNumber",
-						    -1);
-		if (new_xid == (uint32_t) -1) {
-			DEBUG(1, ("Invalid xid mapping.\n"));
-			status = NT_STATUS_NONE_MAPPED;
-			goto failed;
-		}
-
-		*unixid = talloc(mem_ctx, struct unixid);
-		if (*unixid == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto failed;
-		}
-
-		(*unixid)->id = new_xid;
-		(*unixid)->type = ID_TYPE_BOTH;
-
-		talloc_free(tmp_ctx);
-		return NT_STATUS_OK;
-	}
-
-	DEBUG(6, ("No existing mapping found, attempting to create one.\n"));
-
 	if (dom_sid_in_domain(idmap_ctx->unix_users_sid, sid)) {
 		uint32_t rid;
 		DEBUG(6, ("This is a local unix uid, just calculate that.\n"));
@@ -370,7 +319,7 @@ NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx, TALLOC_CTX *mem_ctx,
 			status = NT_STATUS_NO_MEMORY;
 			goto failed;
 		}
-		(*unixid)->id = rid - 1;
+		(*unixid)->id = rid;
 		(*unixid)->type = ID_TYPE_UID;
 
 		talloc_free(tmp_ctx);
@@ -388,12 +337,60 @@ NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx, TALLOC_CTX *mem_ctx,
 			status = NT_STATUS_NO_MEMORY;
 			goto failed;
 		}
-		(*unixid)->id = rid - 1;
+		(*unixid)->id = rid;
 		(*unixid)->type = ID_TYPE_GID;
 
 		talloc_free(tmp_ctx);
 		return NT_STATUS_OK;
 	 }
+
+	ret = ldb_search_exp_fmt(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
+				 NULL, "(&(objectClass=sidMap)(objectSid=%s))",
+				 ldap_encode_ndr_dom_sid(tmp_ctx, sid));
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("Search failed: %s\n", ldb_errstring(ldb)));
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	if (res->count == 1) {
+		const char *type = ldb_msg_find_attr_as_string(res->msgs[0],
+							       "type", NULL);
+		new_xid = ldb_msg_find_attr_as_uint(res->msgs[0], "xidNumber",
+						    -1);
+		if (new_xid == (uint32_t) -1) {
+			DEBUG(1, ("Invalid xid mapping.\n"));
+			status = NT_STATUS_NONE_MAPPED;
+			goto failed;
+		}
+
+		if (type == NULL) {
+			DEBUG(1, ("Invalid type for mapping entry.\n"));
+			status = NT_STATUS_NONE_MAPPED;
+			goto failed;
+		}
+
+		*unixid = talloc(mem_ctx, struct unixid);
+		if (*unixid == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto failed;
+		}
+
+		(*unixid)->id = new_xid;
+
+		if (strcmp(type, "ID_TYPE_BOTH") == 0) {
+			(*unixid)->type = ID_TYPE_BOTH;
+		} else if (strcmp(type, "ID_TYPE_UID") == 0) {
+			(*unixid)->type = ID_TYPE_UID;
+		} else {
+			(*unixid)->type = ID_TYPE_GID;
+		}
+
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+
+	DEBUG(6, ("No existing mapping found, attempting to create one.\n"));
 
 	trans = ldb_transaction_start(ldb);
 	if (trans != LDB_SUCCESS) {
@@ -580,6 +577,12 @@ NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx, TALLOC_CTX *mem_ctx,
 	}
 
 	ret = ldb_msg_add_string(map_msg, "objectClass", "sidMap");
+	if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	ret = ldb_msg_add_string(map_msg, "type", "ID_TYPE_BOTH");
 	if (ret != LDB_SUCCESS) {
 		status = NT_STATUS_NONE_MAPPED;
 		goto failed;

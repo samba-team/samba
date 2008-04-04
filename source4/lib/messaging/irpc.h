@@ -19,6 +19,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef IRPC_H
+#define IRPC_H
+
 #include "librpc/gen_ndr/irpc.h"
 
 /*
@@ -123,4 +126,5 @@ struct server_id *irpc_servers_byname(struct messaging_context *msg_ctx, TALLOC_
 void irpc_remove_name(struct messaging_context *msg_ctx, const char *name);
 NTSTATUS irpc_send_reply(struct irpc_message *m, NTSTATUS status);
 
+#endif
 

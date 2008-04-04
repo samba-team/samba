@@ -803,4 +803,11 @@ bool pm_process( const char *fileName,
                  bool (*pfunc)(const char *, const char *, void *),
 				 void *userdata);
 
+/**
+ * Add-on to talloc_get_type
+ */
+_PUBLIC_ void *talloc_check_name_abort(const void *ptr, const char *name);
+#define talloc_get_type_abort(ptr, type) \
+	(type *)talloc_check_name_abort(ptr, #type)
+
 #endif /* _SAMBA_UTIL_H_ */
