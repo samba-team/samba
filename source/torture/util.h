@@ -27,6 +27,7 @@ struct provision_settings {
 	const char *domain_dn_str;
 	const char *config_dn_str;
 	const char *schema_dn_str;
+	const char *server_dn_str;
 	const struct GUID *invocation_id;
 	const char *netbios_name;
 	const char *host_ip;
