@@ -111,7 +111,7 @@ static char *group_mapping_key(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
 		return NULL;
 	}
 
-	result = talloc_asprintf(mem_ctx, "GROUP_PREFIX%s", sidstr);
+	result = talloc_asprintf(mem_ctx, "%s%s", GROUP_PREFIX, sidstr);
 
 	TALLOC_FREE(sidstr);
 	return result;
