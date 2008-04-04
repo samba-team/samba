@@ -26,6 +26,7 @@ m4_include(lib/popt/samba.m4)
 m4_include(lib/charset/config.m4)
 m4_include(lib/socket/config.m4)
 m4_include(nsswitch/nsstest.m4)
+m4_include(pidl/config.m4)
 
 AC_CONFIG_FILES(lib/registry/registry.pc)
 AC_CONFIG_FILES(librpc/dcerpc.pc)

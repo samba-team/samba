@@ -7,6 +7,10 @@ pidl-testcov: pidl/Makefile
 installpidl:: pidl/Makefile
 	$(MAKE) -C pidl install_vendor PREFIX=$(prefix)
 
+ifeq ($(HAVE_PERL_EXTUTILS_MAKEMAKER),1)
+install:: installpidl
+endif
+
 idl_full:: pidl/lib/Parse/Pidl/IDL.pm pidl/lib/Parse/Pidl/Expr.pm 
 	@CPP="$(CPP)" PERL="$(PERL)" srcdir=$(srcdir) $(srcdir)/script/build_idl.sh FULL
 
