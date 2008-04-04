@@ -254,6 +254,7 @@ SOCKET_WRAPPER_DEFAULT_IFACE=2
 export SOCKET_WRAPPER_DEFAULT_IFACE
 samba3_check_or_start
 
+
 # ensure any one smbtorture call doesn't run too long
 # and smbtorture will use 127.0.0.6 as source address by default
 SOCKET_WRAPPER_DEFAULT_IFACE=6
@@ -290,6 +291,15 @@ START=`date`
  MAKE_TEST_BINARY="bin/smbclient"
  bin/smbclient $CONFIGURATION -L $SERVER_IP -U% -p 139 | head -2
  bin/smbclient $CONFIGURATION -L $SERVER_IP -U% -p 139 | head -2
+ MAKE_TEST_BINARY=""
+
+ MAKE_TEST_BINARY="bin/net"
+ printf "%s" "GIVING USER ${USERNAME} ADMINISTRATIVE RIGHTS..."
+ bin/net -s $SERVERCONFFILE sam createbuiltingroup \
+   Administrators > /dev/null 2>&1 ||  exit 1
+ bin/net -s $SERVERCONFFILE sam addmem \
+   BUILTIN\\Administrators $USERNAME > /dev/null 2>&1 || exit 1
+ echo "DONE"
  MAKE_TEST_BINARY=""
 
  failed=0
