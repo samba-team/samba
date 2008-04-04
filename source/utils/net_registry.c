@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "utils/net_registry_util.h"
 
 
 /*
@@ -28,93 +29,6 @@
  * Helper functions
  *
  */
-
-static void print_registry_key(const char *keyname, NTTIME *modtime)
-{
-	d_printf("Keyname   = %s\n", keyname);
-	d_printf("Modtime   = %s\n",
-		 modtime
-		 ? http_timestring(nt_time_to_unix(*modtime))
-		 : "None");
-	d_printf("\n");
-}
-
-static void print_registry_value(const char *valname,
-				 const struct registry_value *valvalue)
-{
-	d_printf("Valuename  = %s\n", valname);
-	d_printf("Type       = %s\n",
-		 reg_type_lookup(valvalue->type));
-	switch(valvalue->type) {
-	case REG_DWORD:
-		d_printf("Value      = %d\n", valvalue->v.dword);
-		break;
-	case REG_SZ:
-	case REG_EXPAND_SZ:
-		d_printf("Value      = \"%s\"\n", valvalue->v.sz.str);
-		break;
-	case REG_MULTI_SZ: {
-		uint32 j;
-		for (j = 0; j < valvalue->v.multi_sz.num_strings; j++) {
-			d_printf("Value[%3.3d] = \"%s\"\n", j,
-				 valvalue->v.multi_sz.strings[j]);
-		}
-		break;
-	}
-	case REG_BINARY:
-		d_printf("Value      = %d bytes\n",
-			 (int)valvalue->v.binary.length);
-		break;
-	default:
-		d_printf("Value      = <unprintable>\n");
-		break;
-	}
-	d_printf("\n");
-}
-
-/**
- * Split path into hive name and subkeyname
- * normalizations performed:
- *  - convert '/' to '\\'
- *  - strip trailing '\\' chars
- */
-static WERROR split_hive_key(TALLOC_CTX *ctx, const char *path,
-			     char **hivename, const char **subkeyname)
-{
-	char *p;
-
-	if ((path == NULL) || (hivename == NULL) || (subkeyname == NULL)) {
-		return WERR_INVALID_PARAM;
-	}
-
-	if (strlen(path) == 0) {
-		return WERR_INVALID_PARAM;
-	}
-
-	*hivename = talloc_string_sub(ctx, path, "/", "\\");
-	if (*hivename == NULL) {
-		return WERR_NOMEM;
-	}
-
-	/* strip trailing '\\' chars */
-	p = strrchr(*hivename, '\\');
-	while ((p != NULL) && (p[1] == '\0')) {
-		*p = '\0';
-		p = strrchr(*hivename, '\\');
-	}
-
-	p = strchr(*hivename, '\\');
-
-	if ((p == NULL) || (*p == '\0')) {
-		/* just the hive - no subkey given */
-		*subkeyname = "";
-	} else {
-		*p = '\0';
-		*subkeyname = p+1;
-	}
-
-	return WERR_OK;
-}
 
 /**
  * split given path into hive and remaining path and open the hive key
