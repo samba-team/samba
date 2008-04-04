@@ -473,7 +473,7 @@ static NTSTATUS rpc_registry_deletevalue_internal(const DOM_SID *domain_sid,
 	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &key_hnd, NULL);
 	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd, NULL);
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 static int rpc_registry_deletevalue( int argc, const char **argv )
