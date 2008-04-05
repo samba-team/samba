@@ -125,6 +125,10 @@ def findnss(nssfn, names):
     raise KeyError("Unable to find user/group %r" % names)
 
 
+findnss_uid = lambda names: findnss(pwd.getpwnam, names)[2]
+findnss_gid = lambda names: findnss(grp.getgrnam, names)[2]
+
+
 def open_ldb(session_info, credentials, lp, dbname):
     """Open a LDB, thrashing it if it is corrupt.
 
@@ -293,7 +297,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     
     dnsdomain = dnsdomain.lower()
 
-    if (serverrole == "domain controller"):
+    if serverrole == "domain controller":
         if domain is None:
             domain = lp.get("workgroup")
         if domaindn is None:
@@ -384,6 +388,7 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
             "PRIVATEDIR_LINE": privatedir_line,
             "LOCKDIR_LINE": lockdir_line
             })
+
 
 def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
                         users_gid, wheel_gid):
@@ -902,13 +907,13 @@ def provision(setup_dir, message, session_info,
         machinepass  = misc.random_password(12)
     if dnspass is None:
         dnspass = misc.random_password(12)
-    root_uid = findnss(pwd.getpwnam, [root or "root"])[2]
-    nobody_uid = findnss(pwd.getpwnam, [nobody or "nobody"])[2]
-    users_gid = findnss(grp.getgrnam, [users or "users"])[2]
+    root_uid = findnss_uid([root or "root"])
+    nobody_uid = findnss_uid([nobody or "nobody"])
+    users_gid = findnss_gid([users or "users"])
     if wheel is None:
-        wheel_gid = findnss(grp.getgrnam, ["wheel", "adm"])[2]
+        wheel_gid = findnss_gid(["wheel", "adm"])
     else:
-        wheel_gid = findnss(grp.getgrnam, [wheel])[2]
+        wheel_gid = findnss_gid([wheel])
     if aci is None:
         aci = "# no aci for local ldb"
 
@@ -925,8 +930,9 @@ def provision(setup_dir, message, session_info,
     lp.load(smbconf)
 
     names = guess_names(lp=lp, hostname=hostname, domain=domain, 
-                        dnsdomain=realm, serverrole=serverrole, sitename=sitename,
-                        rootdn=rootdn, domaindn=domaindn, configdn=configdn, schemadn=schemadn)
+                        dnsdomain=realm, serverrole=serverrole, 
+                        sitename=sitename, rootdn=rootdn, domaindn=domaindn, 
+                        configdn=configdn, schemadn=schemadn)
 
     paths = provision_paths_from_lp(lp, names.dnsdomain)
 
@@ -936,7 +942,8 @@ def provision(setup_dir, message, session_info,
     if hostip6 is None:
         try:
             hostip6 = socket.getaddrinfo(names.hostname, None, socket.AF_INET6, socket.AI_CANONNAME, socket.IPPROTO_IP)[0][-1][0]
-        except socket.gaierror: pass
+        except socket.gaierror: 
+            pass
 
     if serverrole is None:
         serverrole = lp.get("server role")
