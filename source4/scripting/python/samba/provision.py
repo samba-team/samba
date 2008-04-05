@@ -103,7 +103,7 @@ def check_install(lp, session_info, credentials):
     :param credentials: Credentials
     """
     if lp.get("realm") == "":
-        raise Error("Realm empty")
+        raise Exception("Realm empty")
     ldb = Ldb(lp.get("sam database"), session_info=session_info, 
             credentials=credentials, lp=lp)
     if len(ldb.search("(cn=Administrator)")) != 1:
@@ -288,8 +288,8 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     realm = dnsdomain.upper()
 
     if lp.get("realm").upper() != realm:
-        raise Exception("realm '%s' in %s must match chosen realm '%s'" %
-                        (lp.get("realm"), smbconf, realm))
+        raise Exception("realm '%s' must match chosen realm '%s'" %
+                        (lp.get("realm"), realm))
     
     dnsdomain = dnsdomain.lower()
 
@@ -299,7 +299,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
         if domaindn is None:
             domaindn = "DC=" + dnsdomain.replace(".", ",DC=")
         if lp.get("workgroup").upper() != domain.upper():
-            raise Error("workgroup '%s' in smb.conf must match chosen domain '%s'",
+            raise Exception("workgroup '%s' in smb.conf must match chosen domain '%s'",
                         lp.get("workgroup"), domain)
     else:
         domain = netbiosname
@@ -338,68 +338,52 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     return names
     
 
-def load_or_make_smbconf(smbconf, setup_path, hostname, domain, realm, 
-                         serverrole, targetdir):
+def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, 
+                 targetdir):
+    if hostname is None:
+        hostname = socket.gethostname().split(".")[0].lower()
+
+    if serverrole is None:
+        serverrole = "standalone"
+
+    assert serverrole in ("domain controller", "member server", "standalone")
+    if serverrole == "domain controller":
+        smbconfsuffix = "dc"
+    elif serverrole == "member server":
+        smbconfsuffix = "member"
+    elif serverrole == "standalone":
+        smbconfsuffix = "standalone"
+
+    assert domain is not None
+    assert realm is not None
+
+    default_lp = param.LoadParm()
+    #Load non-existant file
+    default_lp.load(smbconf)
+    
     if targetdir is not None:
-        if not os.path.exists(targetdir):
-            os.mkdir(targetdir)
-        if not os.path.exists(os.path.join(targetdir, "etc")):
-           os.mkdir(os.path.join(targetdir, "etc"))
+        privatedir_line = "private dir = " + os.path.abspath(os.path.join(targetdir, "private"))
+        lockdir_line = "lock dir = " + os.path.abspath(targetdir)
 
-        smbconf = os.path.join(targetdir, "etc", "smb.conf")
+        default_lp.set("lock dir", os.path.abspath(targetdir))
+    else:
+        privatedir_line = ""
+        lockdir_line = ""
 
-    # only install a new smb.conf if there isn't one there already
+    sysvol = os.path.join(default_lp.get("lock dir"), "sysvol")
+    netlogon = os.path.join(sysvol, realm.lower(), "scripts")
 
-    if not os.path.exists(smbconf):
-        if hostname is None:
-            hostname = socket.gethostname().split(".")[0].lower()
-
-        if serverrole is None:
-            serverrole = "standalone"
-
-        assert serverrole in ("domain controller", "member server", "standalone")
-        if serverrole == "domain controller":
-            smbconfsuffix = "dc"
-        elif serverrole == "member server":
-            smbconfsuffix = "member"
-        elif serverrole == "standalone":
-            smbconfsuffix = "standalone"
-
-        assert domain is not None
-        assert realm is not None
-
-        default_lp = param.LoadParm()
-        #Load non-existant file
-        default_lp.load(smbconf)
-        
-        if targetdir is not None:
-            privatedir_line = "private dir = " + os.path.abspath(os.path.join(targetdir, "private"))
-            lockdir_line = "lock dir = " + os.path.abspath(targetdir)
-
-            default_lp.set("lock dir", os.path.abspath(targetdir))
-        else:
-	    privatedir_line = ""
-	    lockdir_line = ""
-
-        sysvol = os.path.join(default_lp.get("lock dir"), "sysvol")
-        netlogon = os.path.join(sysvol, realm.lower(), "scripts")
-
-        setup_file(setup_path("provision.smb.conf.%s" % smbconfsuffix), 
-                   smbconf, {
-                "HOSTNAME": hostname,
-                "DOMAIN": domain,
-                "REALM": realm,
-                "SERVERROLE": serverrole,
-                "NETLOGONPATH": netlogon,
-                "SYSVOLPATH": sysvol,
-                "PRIVATEDIR_LINE": privatedir_line,
-                "LOCKDIR_LINE": lockdir_line
-                })
-
-    lp = param.LoadParm()
-    lp.load(smbconf)
-
-    return lp
+    setup_file(setup_path("provision.smb.conf.%s" % smbconfsuffix), 
+               smbconf, {
+            "HOSTNAME": hostname,
+            "DOMAIN": domain,
+            "REALM": realm,
+            "SERVERROLE": serverrole,
+            "NETLOGONPATH": netlogon,
+            "SYSVOLPATH": sysvol,
+            "PRIVATEDIR_LINE": privatedir_line,
+            "LOCKDIR_LINE": lockdir_line
+            })
 
 def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
                         users_gid, wheel_gid):
@@ -493,8 +477,8 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     schemadn_ldb = "schema.ldb"
     if ldap_backend is not None:
         schema_ldb = ldap_backend
-    	schemadn_ldb = ldap_backend
-    	
+        schemadn_ldb = ldap_backend
+        
     if ldap_backend_type == "fedora-ds":
         backend_modules = ["nsuniqueid", "paged_searches"]
         # We can handle linked attributes here, as we don't have directory-side subtree operations
@@ -886,14 +870,15 @@ FILL_NT4SYNC = "NT4SYNC"
 FILL_DRS = "DRS"
 
 def provision(setup_dir, message, session_info, 
-              credentials, smbconf=None, targetdir=None, samdb_fill=FILL_FULL, realm=None, 
-              rootdn=None, domaindn=None, schemadn=None, configdn=None,
-              domain=None, hostname=None, hostip=None, hostip6=None, 
-              domainsid=None, adminpass=None, krbtgtpass=None, domainguid=None, 
-              policyguid=None, invocationid=None, machinepass=None, 
-              dnspass=None, root=None, nobody=None, nogroup=None, users=None, 
-              wheel=None, backup=None, aci=None, serverrole=None, 
-              ldap_backend=None, ldap_backend_type=None, sitename=None):
+              credentials, smbconf=None, targetdir=None, samdb_fill=FILL_FULL, 
+              realm=None, rootdn=None, domaindn=None, schemadn=None, 
+              configdn=None, domain=None, hostname=None, hostip=None, 
+              hostip6=None, domainsid=None, adminpass=None, krbtgtpass=None, 
+              domainguid=None, policyguid=None, invocationid=None, 
+              machinepass=None, dnspass=None, root=None, nobody=None, 
+              nogroup=None, users=None, wheel=None, backup=None, aci=None, 
+              serverrole=None, ldap_backend=None, ldap_backend_type=None, 
+              sitename=None):
     """Provision samba4
     
     :note: caution, this wipes all existing data!
@@ -917,18 +902,9 @@ def provision(setup_dir, message, session_info,
         machinepass  = misc.random_password(12)
     if dnspass is None:
         dnspass = misc.random_password(12)
-    if root is None:
-        root_uid = findnss(pwd.getpwnam, ["root"])[2]
-    else:
-        root_uid = findnss(pwd.getpwnam, [root])[2]
-    if nobody is None:
-        nobody_uid = findnss(pwd.getpwnam, ["nobody"])[2]
-    else:
-        nobody_uid = findnss(pwd.getpwnam, [nobody])[2]
-    if users is None:
-        users_gid = findnss(grp.getgrnam, ["users"])[2]
-    else:
-        users_gid = findnss(grp.getgrnam, [users])[2]
+    root_uid = findnss(pwd.getpwnam, [root or "root"])[2]
+    nobody_uid = findnss(pwd.getpwnam, [nobody or "nobody"])[2]
+    users_gid = findnss(grp.getgrnam, [users or "users"])[2]
     if wheel is None:
         wheel_gid = findnss(grp.getgrnam, ["wheel", "adm"])[2]
     else:
@@ -936,7 +912,17 @@ def provision(setup_dir, message, session_info,
     if aci is None:
         aci = "# no aci for local ldb"
 
-    lp = load_or_make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, targetdir)
+    if smbconf is None:
+        os.makedirs(os.path.join(targetdir, "etc"))
+        smbconf = os.path.join(targetdir, "etc", "smb.conf")
+
+    # only install a new smb.conf if there isn't one there already
+    if not os.path.exists(smbconf):
+        make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, 
+                     targetdir)
+
+    lp = param.LoadParm()
+    lp.load(smbconf)
 
     names = guess_names(lp=lp, hostname=hostname, domain=domain, 
                         dnsdomain=realm, serverrole=serverrole, sitename=sitename,
@@ -1080,7 +1066,7 @@ def provision_become_dc(setup_dir=None,
                         ldap_backend=None, ldap_backend_type=None, sitename=DEFAULTSITE):
 
     def message(text):
-	"""print a message if quiet is not set."""
+        """print a message if quiet is not set."""
         print text
 
     provision(setup_dir, message, system_session(), None,
@@ -1115,11 +1101,22 @@ def provision_backend(setup_dir=None, message=None,
     if root is None:
         root = findnss(pwd.getpwnam, ["root"])[0]
 
-    lp = load_or_make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, targetdir)
+    if smbconf is None:
+        os.makedirs(os.path.join(targetdir, "etc"))
+        smbconf = os.path.join(targetdir, "etc", "smb.conf")
+
+    # only install a new smb.conf if there isn't one there already
+    if not os.path.exists(smbconf):
+        make_smbconf(smbconf, setup_path, hostname, domain, realm, 
+                              serverrole, targetdir)
+
+    lp = param.LoadParm()
+    lp.load(smbconf)
 
     names = guess_names(lp=lp, hostname=hostname, domain=domain, 
                         dnsdomain=realm, serverrole=serverrole, 
-                        rootdn=rootdn, domaindn=domaindn, configdn=configdn, schemadn=schemadn)
+                        rootdn=rootdn, domaindn=domaindn, configdn=configdn, 
+                        schemadn=schemadn)
 
     paths = provision_paths_from_lp(lp, names.dnsdomain)
 
@@ -1175,11 +1172,11 @@ def provision_backend(setup_dir=None, message=None,
         backend_schema = "99_ad.ldif"
     elif ldap_backend_type == "openldap":
         attrs = ["linkID", "lDAPDisplayName"]
-	res = schemadb.search(expression="(&(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1)))(objectclass=attributeSchema))", base=names.schemadn, scope=SCOPE_SUBTREE, attrs=attrs);
+    res = schemadb.search(expression="(&(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1)))(objectclass=attributeSchema))", base=names.schemadn, scope=SCOPE_SUBTREE, attrs=attrs);
 
- 	memberof_config = "# Generated from schema in " + schemadb_path + "\n";
-	refint_attributes = "";
-	for i in range (0, len(res)):
+    memberof_config = "# Generated from schema in " + schemadb_path + "\n";
+    refint_attributes = "";
+    for i in range (0, len(res)):
             linkid = res[i]["linkID"][0]
             linkid = str(int(linkid) + 1)
             expression = "(&(objectclass=attributeSchema)(linkID=" + (linkid) + "))"
@@ -1199,11 +1196,11 @@ memberof-dangling-error 32
 
 """;
 
-	memberof_config = memberof_config + """
+    memberof_config = memberof_config + """
 overlay refint
 refint_attributes""" + refint_attributes + "\n";
-	
-        setup_file(setup_path("slapd.conf"), paths.slapdconf,
+    
+    setup_file(setup_path("slapd.conf"), paths.slapdconf,
                    {"DNSDOMAIN": names.dnsdomain,
                     "LDAPDIR": paths.ldapdir,
                     "DOMAINDN": names.domaindn,
@@ -1212,18 +1209,18 @@ refint_attributes""" + refint_attributes + "\n";
                     "LDAPMANAGERDN": names.ldapmanagerdn,
                     "LDAPMANAGERPASS": adminpass,
                     "MEMBEROF_CONFIG": memberof_config})
-        setup_file(setup_path("modules.conf"), paths.modulesconf,
+    setup_file(setup_path("modules.conf"), paths.modulesconf,
                    {"REALM": names.realm})
         
-        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "db", "user"))
-        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "db", "config"))
-        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "db", "schema"))
-        mapping = "schema-map-openldap-2.3"
-        backend_schema = "backend-schema.schema"
+    setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "db", "user"))
+    setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "db", "config"))
+    setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "db", "schema"))
+    mapping = "schema-map-openldap-2.3"
+    backend_schema = "backend-schema.schema"
         
 
-        ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
-        message("Start slapd with: slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri)
+    ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
+    message("Start slapd with: slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri)
                 
 
     schema_command = "bin/ad2oLschema --option=convert:target=" + ldap_backend_type + " -I " + setup_path(mapping) + " -H tdb://" + schemadb_path + " -O " + os.path.join(paths.ldapdir, backend_schema);
@@ -1265,8 +1262,8 @@ def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn,
     hostip6_host_line = ""
 
     if hostip6 is not None:
-        hostip6_base_line = "			IN AAAA	" + hostip6
-        hostip6_host_line = hostname + "		IN AAAA	" + hostip6
+        hostip6_base_line = "            IN AAAA    " + hostip6
+        hostip6_host_line = hostname + "        IN AAAA    " + hostip6
 
     setup_file(setup_path("provision.zone"), path, {
             "DNSPASS_B64": b64encode(dnspass),
