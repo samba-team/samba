@@ -3,10 +3,9 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: registry
-Description: Windows-style registry library
-Requires: talloc
-Requires.private: ldb
+Name: dcerpc_atsvc
+Description: DCE/RPC client library - ATSVC
+Requires.private: dcerpc ndr
 Version: 0.0.1
-Libs: -L${libdir} -lregistry 
+Libs: -L${libdir} -ldcerpc_atsvc
 Cflags: -I${includedir}  -DHAVE_IMMEDIATE_STRUCTURES=1
