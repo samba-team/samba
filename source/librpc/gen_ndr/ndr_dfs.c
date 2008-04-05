@@ -5781,7 +5781,7 @@ static const char * const netdfs_authservice_strings[] = {
 };
 
 static const struct ndr_interface_string_array netdfs_authservices = {
-	.count	= 3,
+	.count	= 1,
 	.names	= netdfs_authservice_strings
 };
 

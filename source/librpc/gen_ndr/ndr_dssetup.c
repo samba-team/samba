@@ -1062,7 +1062,7 @@ static const char * const dssetup_authservice_strings[] = {
 };
 
 static const struct ndr_interface_string_array dssetup_authservices = {
-	.count	= 4,
+	.count	= 1,
 	.names	= dssetup_authservice_strings
 };
 

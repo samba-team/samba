@@ -2679,7 +2679,7 @@ static const char * const epmapper_authservice_strings[] = {
 };
 
 static const struct ndr_interface_string_array epmapper_authservices = {
-	.count	= 3,
+	.count	= 1,
 	.names	= epmapper_authservice_strings
 };
 

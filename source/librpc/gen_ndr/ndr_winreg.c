@@ -4522,7 +4522,7 @@ static const char * const winreg_authservice_strings[] = {
 };
 
 static const struct ndr_interface_string_array winreg_authservices = {
-	.count	= 3,
+	.count	= 1,
 	.names	= winreg_authservice_strings
 };
 
