@@ -95,6 +95,8 @@ typedef struct cli_credentials {
         bool set_workstation(const char *workstation, 
                              enum credentials_obtained obtained=CRED_SPECIFIED);
 
+        NTSTATUS set_machine_account(struct loadparm_context *lp_ctx);
+
         void guess(struct loadparm_context *lp_ctx);
         bool is_anonymous(void);
 
