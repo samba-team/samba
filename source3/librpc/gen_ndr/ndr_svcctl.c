@@ -6059,7 +6059,7 @@ static const char * const svcctl_authservice_strings[] = {
 };
 
 static const struct ndr_interface_string_array svcctl_authservices = {
-	.count	= 2,
+	.count	= 1,
 	.names	= svcctl_authservice_strings
 };
 

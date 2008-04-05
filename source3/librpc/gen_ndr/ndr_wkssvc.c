@@ -10659,7 +10659,7 @@ static const char * const wkssvc_authservice_strings[] = {
 };
 
 static const struct ndr_interface_string_array wkssvc_authservices = {
-	.count	= 3,
+	.count	= 1,
 	.names	= wkssvc_authservice_strings
 };
 
