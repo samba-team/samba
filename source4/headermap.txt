@@ -69,5 +69,5 @@ lib/util/wrap_xattr.h: wrap_xattr.h
 lib/events/events.h: events/events.h
 lib/events/events_internal.h: events/events_internal.h
 libcli/ldap/ldap_ndr.h: ldap_ndr.h
-libcli/wbclient/wbclient.h: wbclient/wbclient.h
-lib/gencache/gencache.h: gencache.h
+lib/events/events.h: events.h
+lib/events/events_internal.h: events_internal.h

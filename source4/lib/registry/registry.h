@@ -22,11 +22,15 @@
 #define _REGISTRY_H
 
 struct registry_context;
+struct loadparm_context;
+struct smb_iconv_convenience;
 
 #include <talloc.h>
 #include "libcli/util/werror.h"
 #include "librpc/gen_ndr/security.h"
 #include "libcli/util/ntstatus.h"
+#include "util/time.h"
+#include "util/data_blob.h"
 
 /**
  * The hive API. This API is generally used for
