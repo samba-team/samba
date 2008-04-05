@@ -264,8 +264,10 @@ def provision_paths_from_lp(lp, dnsdomain):
 
     return paths
 
-def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None, serverrole=None,
-              rootdn=None, domaindn=None, configdn=None, schemadn=None, sitename=None):
+
+def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None, 
+                serverrole=None, rootdn=None, domaindn=None, configdn=None, 
+                schemadn=None, sitename=None):
 
     if hostname is None:
         hostname = socket.gethostname().split(".")[0].lower()
@@ -336,7 +338,8 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None, serverrole=
     return names
     
 
-def load_or_make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, targetdir):
+def load_or_make_smbconf(smbconf, setup_path, hostname, domain, realm, 
+                         serverrole, targetdir):
     if targetdir is not None:
         if not os.path.exists(targetdir):
             os.mkdir(targetdir)
@@ -422,6 +425,7 @@ def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
 
     idmap.setup_name_mapping(sid + "-500", idmap.TYPE_UID, root_uid)
     idmap.setup_name_mapping(sid + "-513", idmap.TYPE_GID, users_gid)
+
 
 def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info, 
                            credentials, names,
@@ -543,8 +547,9 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
         samdb.load_ldif_file_add(setup_path("provision_init.ldif"))
 
         message("Setting up sam.ldb rootDSE")
-        setup_samdb_rootdse(samdb, setup_path, names.schemadn, names.domaindn, names.hostname, 
-                            names.dnsdomain, names.realm, names.rootdn, names.configdn, names.netbiosname,
+        setup_samdb_rootdse(samdb, setup_path, names.schemadn, names.domaindn, 
+                            names.hostname, names.dnsdomain, names.realm, 
+                            names.rootdn, names.configdn, names.netbiosname,
                             names.sitename)
 
         if erase:
@@ -637,6 +642,7 @@ def setup_registry(path, setup_path, session_info, credentials, lp):
     assert os.path.exists(provision_reg)
     reg.diff_apply(provision_reg)
 
+
 def setup_idmapdb(path, setup_path, session_info, credentials, lp):
     """Setup the idmap database.
 
@@ -655,6 +661,7 @@ def setup_idmapdb(path, setup_path, session_info, credentials, lp):
     idmap_ldb.erase()
     idmap_ldb.load_ldif_file_add(setup_path("idmap_init.ldif"))
     return idmap_ldb
+
 
 def setup_samdb_rootdse(samdb, setup_path, schemadn, domaindn, hostname, 
                         dnsdomain, realm, rootdn, configdn, netbiosname,
@@ -740,7 +747,8 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
     if serverrole == "domain controller":
         samdb.set_invocation_id(invocationid)
 
-    load_schema(setup_path, samdb, names.schemadn, names.netbiosname, names.configdn, names.sitename)
+    load_schema(setup_path, samdb, names.schemadn, names.netbiosname, 
+                names.configdn, names.sitename)
 
     samdb.transaction_start()
         
