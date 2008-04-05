@@ -2190,6 +2190,26 @@ sub ParseFunctionPull($$)
 	$self->pidl("");
 }
 
+sub AuthServiceStruct($$$)
+{
+	my ($self, $ifacename, $authservice) = @_;
+	my @a = split /,/, $authservice;
+	my $authservice_count = $#a + 1;
+
+	$self->pidl("static const char * const $ifacename\_authservice_strings[] = {");
+	foreach my $ap (@a) {
+		$self->pidl("\t$ap, ");
+	}
+	$self->pidl("};");
+	$self->pidl("");
+
+	$self->pidl("static const struct ndr_interface_string_array $ifacename\_authservices = {");
+	$self->pidl("\t.count\t= $authservice_count,");
+	$self->pidl("\t.names\t= $ifacename\_authservice_strings");
+	$self->pidl("};");
+	$self->pidl("");
+}
+
 #####################################################################
 # produce a function call table
 sub FunctionTable($$)
@@ -2237,21 +2257,8 @@ sub FunctionTable($$)
 		$interface->{PROPERTIES}->{authservice} = "\"host\"";
 	}
 
-	my @a = split /,/, $interface->{PROPERTIES}->{authservice};
-	my $authservice_count = $#a + 1;
-
-	$self->pidl("static const char * const $interface->{NAME}\_authservice_strings[] = {");
-	foreach my $ap (@a) {
-		$self->pidl("\t$ap, ");
-	}
-	$self->pidl("};");
-	$self->pidl("");
-
-	$self->pidl("static const struct ndr_interface_string_array $interface->{NAME}\_authservices = {");
-	$self->pidl("\t.count\t= $authservice_count,");
-	$self->pidl("\t.names\t= $interface->{NAME}\_authservice_strings");
-	$self->pidl("};");
-	$self->pidl("");
+	$self->AuthServiceStruct($interface->{NAME}, 
+		                     $interface->{PROPERTIES}->{authservice});
 
 	$self->pidl("\nconst struct ndr_interface_table ndr_table_$interface->{NAME} = {");
 	$self->pidl("\t.name\t\t= \"$interface->{NAME}\",");
