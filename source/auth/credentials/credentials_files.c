@@ -327,7 +327,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
  * @retval NTSTATUS error detailing any failure
  */
 _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred,
-					     struct loadparm_context *lp_ctx)
+						      struct loadparm_context *lp_ctx)
 {
 	char *filter;
 	/* Bleh, nasty recursion issues: We are setting a machine

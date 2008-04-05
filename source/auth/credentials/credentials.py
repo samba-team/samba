@@ -82,6 +82,7 @@ Credentials.set_bind_dn = new_instancemethod(_credentials.Credentials_set_bind_d
 Credentials.set_anonymous = new_instancemethod(_credentials.Credentials_set_anonymous,None,Credentials)
 Credentials.get_workstation = new_instancemethod(_credentials.Credentials_get_workstation,None,Credentials)
 Credentials.set_workstation = new_instancemethod(_credentials.Credentials_set_workstation,None,Credentials)
+Credentials.set_machine_account = new_instancemethod(_credentials.Credentials_set_machine_account,None,Credentials)
 Credentials.guess = new_instancemethod(_credentials.Credentials_guess,None,Credentials)
 Credentials.is_anonymous = new_instancemethod(_credentials.Credentials_is_anonymous,None,Credentials)
 Credentials.get_nt_hash = new_instancemethod(_credentials.Credentials_get_nt_hash,None,Credentials)
