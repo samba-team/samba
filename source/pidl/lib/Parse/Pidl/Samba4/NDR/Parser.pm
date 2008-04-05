@@ -2248,7 +2248,7 @@ sub FunctionTable($$)
 	$self->pidl("");
 
 	$self->pidl("static const struct ndr_interface_string_array $interface->{NAME}\_authservices = {");
-	$self->pidl("\t.count\t= $endpoint_count,");
+	$self->pidl("\t.count\t= $authservice_count,");
 	$self->pidl("\t.names\t= $interface->{NAME}\_authservice_strings");
 	$self->pidl("};");
 	$self->pidl("");
