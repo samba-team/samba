@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 30;
+use Test::More tests => 31;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -277,3 +277,17 @@ $generator->ParseElementPrint({ NAME => "x", TYPE => "uint32", REPRESENTATION_TY
 				    PROPERTIES => { value => "23" },
 				    LEVELS => [ { TYPE => "DATA", DATA_TYPE => "uint32"} ]}, "var", { "x" => "r->foobar" } );
 is($generator->{res}, "ndr_print_uint32(ndr, \"x\", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?23:var);\n");
+
+$generator = new Parse::Pidl::Samba4::NDR::Parser();
+$generator->AuthServiceStruct("bridge", "\"rot13\",\"onetimepad\"");
+is($generator->{res}, "static const char * const bridge_authservice_strings[] = {
+	\"rot13\", 
+	\"onetimepad\", 
+};
+
+static const struct ndr_interface_string_array bridge_authservices = {
+	.count	= 2,
+	.names	= bridge_authservice_strings
+};
+
+");
