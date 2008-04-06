@@ -4,12 +4,11 @@
 		 advanced="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-    <para>Samba 3.0.23 introduces support for adding printer ports
+    <para>Samba 3.0.23 introduced support for adding printer ports
 	remotely using the Windows &quot;Add Standard TCP/IP Port Wizard&quot;.
 	This option defines an external program to be executed when
 	smbd receives a request to add a new Port to the system.
-	he script is passed two parameters:
-    </para>
+	he script is passed two parameters:</para>
 		
     <itemizedlist>
 	<listitem><para><parameter moreinfo="none">port name</parameter></para></listitem>
