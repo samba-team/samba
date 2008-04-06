@@ -374,3 +374,63 @@ wbcErr wbcGetgrent(struct group **grp)
 	return WBC_ERR_NOT_IMPLEMENTED;
 }
 
+/** @brief Return the unix group array belonging to the given user
+ *
+ * @param *account       The given user name
+ * @param *num_groups    Number of elements returned in the groups array
+ * @param **groups       Pointer to resulting gid_t array.
+ *
+ * @return #wbcErr
+ **/
+wbcErr wbcGetGroups(const char *account,
+		    uint32_t *num_groups,
+		    gid_t **_groups)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct winbindd_request request;
+	struct winbindd_response response;
+	uint32_t i;
+	gid_t *groups = NULL;
+
+	if (!account) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	/* Initialize request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	strncpy(request.data.username, account, sizeof(request.data.username)-1);
+
+	wbc_status = wbcRequestResponse(WINBINDD_GETGROUPS,
+					&request,
+					&response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	groups = talloc_array(NULL, gid_t, response.data.num_entries);
+	BAIL_ON_PTR_ERROR(groups, wbc_status);
+
+	for (i = 0; i < response.data.num_entries; i++) {
+		groups[i] = ((gid_t *)response.extra_data.data)[i];
+	}
+
+	*num_groups = response.data.num_entries;
+	*_groups = groups;
+	groups = NULL;
+
+	wbc_status = WBC_ERR_SUCCESS;
+
+ done:
+	if (response.extra_data.data) {
+		free(response.extra_data.data);
+	}
+	if (groups) {
+		talloc_free(groups);
+	}
+
+	return wbc_status;
+}
