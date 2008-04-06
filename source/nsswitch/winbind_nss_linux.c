@@ -147,7 +147,7 @@ static bool next_token_alloc(const char **ptr,
 	}
 
 	/* We started with len = 1 so we have space for the nul. */
-	*pp_buff = malloc(len);
+	*pp_buff = (char *)malloc(len);
 	if (!*pp_buff) {
 		return false;
 	}
