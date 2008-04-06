@@ -200,29 +200,25 @@ static bool wbinfo_get_groupinfo(const char *group)
 
 /* List groups a user is a member of */
 
-static bool wbinfo_get_usergroups(char *user)
+static bool wbinfo_get_usergroups(const char *user)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-	NSS_STATUS result;
-	int i;
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	uint32_t num_groups;
+	uint32_t i;
+	gid_t *groups = NULL;
 
 	/* Send request */
 
-	fstrcpy(request.data.username, user);
-
-	result = winbindd_request_response(WINBINDD_GETGROUPS, &request, &response);
-
-	if (result != NSS_STATUS_SUCCESS)
+	wbc_status = wbcGetGroups(user, &num_groups, &groups);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
+	}
 
-	for (i = 0; i < response.data.num_entries; i++)
-		d_printf("%d\n", (int)((gid_t *)response.extra_data.data)[i]);
+	for (i = 0; i < num_groups; i++) {
+		d_printf("%d\n", (int)groups[i]);
+	}
 
-	SAFE_FREE(response.extra_data.data);
+	wbcFreeMemory(groups);
 
 	return true;
 }
