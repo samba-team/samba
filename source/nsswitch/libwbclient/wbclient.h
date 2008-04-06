@@ -344,7 +344,7 @@ wbcErr wbcGidToSid(gid_t gid,
 
 wbcErr wbcAllocateUid(uid_t *puid);
 
-wbcErr wbcAllocateGid(uid_t *pgid);
+wbcErr wbcAllocateGid(gid_t *pgid);
 
 /*
  * NSS Lookup User/Group details
