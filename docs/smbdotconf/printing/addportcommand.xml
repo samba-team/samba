@@ -8,7 +8,7 @@
 	remotely using the Windows &quot;Add Standard TCP/IP Port Wizard&quot;.
 	This option defines an external program to be executed when
 	smbd receives a request to add a new Port to the system.
-	he script is passed two parameters:</para>
+	The script is passed two parameters:</para>
 		
     <itemizedlist>
 	<listitem><para><parameter moreinfo="none">port name</parameter></para></listitem>
