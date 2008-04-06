@@ -73,8 +73,6 @@ NSS_STATUS _nss_winbind_gidtosid(gid_t gid, char **sid, char *buffer,
 
 /* Prototypes from wb_common.c */
 
-extern int winbindd_fd;
-
 /* Allocate some space from the nss static buffer.  The buffer and buflen
    are the pointers passed in by the C library to the _nss_ntdom_*
    functions. */

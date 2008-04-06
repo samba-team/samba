@@ -111,8 +111,6 @@ static const struct {
 	{ NUM_HELPER_MODES, NULL, NULL}
 };
 
-extern int winbindd_fd;
-
 const char *opt_username;
 const char *opt_domain;
 const char *opt_workstation;
