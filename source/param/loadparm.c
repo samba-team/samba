@@ -70,6 +70,14 @@ extern userdom_struct current_user_info;
 #define HOMES_NAME "homes"
 #endif
 
+/* the special value for the include parameter
+ * to be interpreted not as a file name but to
+ * trigger loading of the global smb.conf options
+ * from registry. */
+#ifndef INCLUDE_REGISTRY_NAME
+#define INCLUDE_REGISTRY_NAME "registry"
+#endif
+
 static bool in_client = False;		/* Not in the client by default */
 static struct smbconf_csn conf_last_csn;
 static struct smbconf_ctx *conf_ctx = NULL;
@@ -6723,6 +6731,16 @@ static bool handle_netbios_aliases(int snum, const char *pszParmValue, char **pt
 static bool handle_include(int snum, const char *pszParmValue, char **ptr)
 {
 	char *fname;
+
+	if (strequal(pszParmValue, INCLUDE_REGISTRY_NAME)) {
+		if (bInGlobalSection) {
+			return process_registry_globals();
+		} else {
+			DEBUG(1, ("\"include = registry\" only effective "
+				  "in %s section\n", GLOBAL_NAME));
+			return false;
+		}
+	}
 
 	fname = alloc_sub_basic(get_current_username(),
 				current_user_info.domain,
