@@ -4,6 +4,9 @@
 <refmeta>
 	<refentrytitle>smb.conf</refentrytitle>
 	<manvolnum>5</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">File Formats and Conventions</refmiscinfo>
+	<refmiscinfo class="version">3.2</refmiscinfo>
 </refmeta>
 
 

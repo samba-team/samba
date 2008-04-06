@@ -5,6 +5,9 @@
 <refmeta>
 	<refentrytitle>ldb</refentrytitle>
 	<manvolnum>3</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">C Library Functions</refmiscinfo>
+	<refmiscinfo class="version">3.2</refmiscinfo>
 </refmeta>
 
 <refnamediv>
