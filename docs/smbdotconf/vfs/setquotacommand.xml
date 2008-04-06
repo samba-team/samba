@@ -24,8 +24,7 @@
 				<listitem><para>2 - user default quotas (uid = -1)</para></listitem>
 				<listitem><para>3 - group quotas</para></listitem>
 				<listitem><para>4 - group default quotas (gid = -1)</para></listitem>
-			</itemizedlist>
-			</para></listitem>
+			</itemizedlist></para></listitem>
 		<listitem><para>2 - id (uid for user, gid for group, -1 if N/A)</para></listitem>
 		<listitem><para>3 - quota state (0 = disable, 1 = enable, 2 = enable and enforce)</para></listitem>
 		<listitem><para>4 - block softlimit</para></listitem>
