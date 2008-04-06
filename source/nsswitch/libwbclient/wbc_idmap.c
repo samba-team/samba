@@ -243,7 +243,7 @@ wbcErr wbcAllocateUid(uid_t *puid)
  * @return #wbcErr
  **/
 
-wbcErr wbcAllocateGid(uid_t *pgid)
+wbcErr wbcAllocateGid(gid_t *pgid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
