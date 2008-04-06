@@ -21,22 +21,63 @@
 		</xsl:copy>
 	</xsl:template>
 
+	<xsl:template name="smbconfoption">
+		<xsl:param name="name"/>
+		<xsl:param name="content"/>
+		<xsl:variable name="linkcontent">
+			<xsl:element name="parameter">
+				<xsl:attribute name="moreinfo">
+					<xsl:text>none</xsl:text>
+				</xsl:attribute>
+				<xsl:value-of select="$name"/>	
+			</xsl:element>
+
+			<xsl:choose>
+				<xsl:when test="$content != ''">
+					<xsl:text> = </xsl:text>
+					<xsl:value-of select="$content"/>
+				</xsl:when>
+			</xsl:choose>
+		</xsl:variable>
+
+		<xsl:choose>
+			<xsl:when test="$noreference = 1">
+				<xsl:value-of select="$linkcontent"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:element name="link">
+					<xsl:attribute name="linkend">
+						<xsl:value-of select="translate(translate(string($name),' ',''),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
+					</xsl:attribute>
+					<xsl:value-of select="$linkcontent"/>
+				</xsl:element>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+
+	<xsl:template match="related">
+		<xsl:element name="para">
+			<xsl:text>Related command: </xsl:text>
+			<xsl:call-template name="smbconfoption">
+				<xsl:with-param name="name" select="text()"/>
+			</xsl:call-template>
+		</xsl:element>
+	</xsl:template>
+
 	<xsl:template match="smbconfblock/smbconfoption">
 		<xsl:element name="member">
-			<xsl:element name="indexterm">
-				<xsl:element name="primary">
+			<xsl:element name="term">
 					<xsl:value-of select="@name"/>
-				</xsl:element>
 			</xsl:element>
-			<xsl:element name="parameter">
-				<xsl:value-of select="@name"/>
-				<xsl:choose>
-					<xsl:when test="text() != ''">
+			<xsl:choose>
+				<xsl:when test="text() != ''">
+					<xsl:element name="parameter">
+						<xsl:value-of select="@name"/>
 						<xsl:text> = </xsl:text>
 						<xsl:value-of select="text()"/>
-					</xsl:when>
-				</xsl:choose>
-			</xsl:element>
+					</xsl:element>
+				</xsl:when>
+			</xsl:choose>
 		</xsl:element>
 	</xsl:template>
 
@@ -59,43 +100,12 @@
 	</xsl:template>
 
 	<xsl:template match="smbconfoption">
-		<!-- Include an index term -->
-		<xsl:element name="indexterm">
-			<xsl:element name="primary">
-				<xsl:value-of select="@name"/>
-			</xsl:element>
-		</xsl:element>
-
-		<xsl:variable name="linkcontent">
-			<xsl:element name="parameter">
-				<xsl:attribute name="moreinfo">
-					<xsl:text>none</xsl:text>
-				</xsl:attribute>
-				<xsl:value-of select="@name"/>	
-			</xsl:element>
-
-			<xsl:choose>
-				<xsl:when test="text() != ''">
-					<xsl:text> = </xsl:text>
-					<xsl:value-of select="text()"/>
-				</xsl:when>
-			</xsl:choose>
-		</xsl:variable>
-
-		<xsl:choose>
-			<xsl:when test="$noreference = 1">
-				<xsl:value-of select="$linkcontent"/>
-			</xsl:when>
-			<xsl:otherwise>
-				<xsl:element name="link">
-					<xsl:attribute name="linkend">
-						<xsl:value-of select="translate(translate(string(@name),' ',''),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
-					</xsl:attribute>
-					<xsl:value-of select="$linkcontent"/>
-				</xsl:element>
-			</xsl:otherwise>
-		</xsl:choose>
+		<xsl:call-template name="smbconfoption">
+			<xsl:with-param name="name" select="@name"/>
+			<xsl:with-param name="content"><xsl:copy-of select="text()"/></xsl:with-param>
+		</xsl:call-template>
 	</xsl:template>
+
 
 	<xsl:template match="smbconfblock">
 		<xsl:element name="simplelist">

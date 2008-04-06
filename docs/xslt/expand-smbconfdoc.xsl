@@ -18,7 +18,7 @@
 
 	<xsl:template match="synonym"><xsl:apply-templates/></xsl:template>
 
-	<xsl:template match="related"><xsl:apply-templates/></xsl:template>
+	<xsl:template match="related"><xsl:element name="para"><xsl:text>Related command</xsl:text><xsl:apply-templates/></xsl:element></xsl:template>
 
 	<xsl:template match="samba:parameterlist">
 		<xsl:apply-templates>
