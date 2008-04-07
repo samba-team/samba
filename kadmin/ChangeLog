@@ -1,3 +1,7 @@
+2008-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kadm_conn.c: Use unsigned where appropriate.
+
 2007-12-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kadmin.c: Use hdb_db_dir().
