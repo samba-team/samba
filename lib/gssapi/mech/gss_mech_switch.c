@@ -46,7 +46,7 @@ static int
 _gss_string_to_oid(const char* s, gss_OID oid)
 {
 	int			number_count, i, j;
-	int			byte_count;
+	size_t			byte_count;
 	const char		*p, *q;
 	char			*res;
 
@@ -118,7 +118,7 @@ _gss_string_to_oid(const char* s, gss_OID oid)
 				 * The number is encoded in seven bit chunks.
 				 */
 				unsigned int t;
-				int bytes;
+				unsigned int bytes;
 
 				bytes = 0;
 				for (t = number; t; t >>= 7)
