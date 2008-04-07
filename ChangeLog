@@ -1,5 +1,10 @@
 2008-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/scache.c: implemetation of a sqlite3 backed credential
+	cache.
+
+	* lib/krb5/test_cc.c: test acc and scc
+
 	* lib/krb5/acache.c: Only release context if its in use.
 
 2008-04-01  Love Hörnquist Åstrand  <lha@it.su.se>
