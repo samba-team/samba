@@ -226,6 +226,7 @@ sub PythonStruct($$$$)
 	$self->pidl_hdr("#define $name\_Check(op) PyObject_TypeCheck(op, &$name\_Type)\n");
 	$self->pidl_hdr("#define $name\_CheckExact(op) ((op)->ob_type == &$name\_Type)\n");
 	$self->pidl_hdr("\n");
+	my $docstring = $self->DocString($d, $name);
 	$self->pidl("PyTypeObject $name\_Type = {");
 	$self->indent;
 	$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
@@ -235,6 +236,7 @@ sub PythonStruct($$$$)
 	$self->pidl(".tp_getattr = py_$name\_getattr,");
 	$self->pidl(".tp_setattr = py_$name\_setattr,");
 	$self->pidl(".tp_repr = py_talloc_default_repr,");
+	$self->pidl(".tp_doc = $docstring,");
 	$self->deindent;
 	$self->pidl("};");
 
@@ -250,14 +252,18 @@ sub PythonStruct($$$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	return $py_fnname;
+	return ($py_fnname, "NULL");
 }
 
 sub PythonFunction($$$)
 {
 	my ($self, $fn, $iface) = @_;
 
-	$self->pidl("static PyObject *py_$fn->{NAME}(PyObject *self, PyObject *args, PyObject *kwargs)");
+	my $docstring = $self->DocString($fn, $fn->{NAME});
+
+	my $fnname = "py_$fn->{NAME}";
+
+	$self->pidl("static PyObject *$fnname(PyObject *self, PyObject *args, PyObject *kwargs)");
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("$iface\_InterfaceObject *iface = ($iface\_InterfaceObject *)self;");
@@ -347,6 +353,8 @@ sub PythonFunction($$$)
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
+
+	return ($fnname, $docstring);
 }
 
 sub handle_werror($$$$)
@@ -387,11 +395,11 @@ sub PythonType($$$)
 	}
 
 	if ($actual_ctype->{TYPE} eq "STRUCT") {
-		my $py_fnname;
+		my ($py_fnname, $py_fndocstring);
 		if ($d->{TYPE} eq "STRUCT") {
-			$py_fnname = $self->PythonStruct($d->{NAME}, mapTypeName($d), $d);
+			($py_fnname, $py_fndocstring) = $self->PythonStruct($d->{NAME}, mapTypeName($d), $d);
 		} else {
-			$py_fnname = $self->PythonStruct($d->{NAME}, mapTypeName($d), $d->{DATA});
+			($py_fnname, $py_fndocstring) = $self->PythonStruct($d->{NAME}, mapTypeName($d), $d->{DATA});
 		}
 
 		my $fn_name = $d->{NAME};
@@ -399,7 +407,7 @@ sub PythonType($$$)
 		$fn_name =~ s/^$interface->{NAME}_//;
 		$fn_name =~ s/^$basename\_//;
 
-		$self->register_module_method($fn_name, $py_fnname, "METH_NOARGS", "NULL");
+		$self->register_module_method($fn_name, $py_fnname, "METH_NOARGS", $py_fndocstring);
 	}
 
 	if ($d->{TYPE} eq "ENUM" or $d->{TYPE} eq "BITMAP") {
@@ -427,6 +435,18 @@ sub PythonType($$$)
 		$self->pidl("}");
 		$self->pidl("");
 	}
+}
+
+sub DocString($$$)
+{
+	my ($self, $d, $name) = @_;
+	if (has_property($d, "helpstring")) {
+		my $docstring = "py_doc_$name";
+		$self->pidl("static const char ".$docstring."[] = ".has_property($d, "helpstring").";");
+		return $docstring;
+	}
+
+	return "NULL";
 }
 
 sub Interface($$$)
@@ -457,25 +477,27 @@ sub Interface($$$)
 
 		$self->pidl("");
 
+		my @fns = ();
+
 		foreach my $d (@{$interface->{FUNCTIONS}}) {
 			next if not defined($d->{OPNUM});
 			next if has_property($d, "nopython");
 
-			$self->PythonFunction($d, $interface->{NAME});
+			my ($fnname, $fndocstring) = $self->PythonFunction($d, $interface->{NAME});
+
+			push (@fns, [$fnname, $fndocstring]);
 		}
 
 		$self->pidl("static PyMethodDef interface_$interface->{NAME}\_methods[] = {");
 		$self->indent;
-		foreach my $d (@{$interface->{FUNCTIONS}}) {
-			next if not defined($d->{OPNUM});
-			next if has_property($d, "nopython");
-
-			my $fn_name = $d->{NAME};
+		foreach my $d (@fns) {
+			my ($c_fn, $docstring) = @$d;
+			my $fn_name = $c_fn;
 
 			$fn_name =~ s/^$interface->{NAME}_//;
 			$fn_name =~ s/^$basename\_//;
 
-			$self->pidl("{ \"$fn_name\", (PyCFunction)py_$d->{NAME}, METH_VARARGS|METH_KEYWORDS, NULL },");
+			$self->pidl("{ \"$fn_name\", (PyCFunction)$c_fn, METH_VARARGS|METH_KEYWORDS, $docstring },");
 		}
 		$self->pidl("{ NULL, NULL, 0, NULL }");
 		$self->deindent;
@@ -501,6 +523,7 @@ sub Interface($$$)
 
 		$self->pidl("");
 
+		my $docstring = $self->DocString($interface, $interface->{NAME});
 		$self->pidl("PyTypeObject $interface->{NAME}_InterfaceType = {");
 		$self->indent;
 		$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
@@ -508,12 +531,13 @@ sub Interface($$$)
 		$self->pidl(".tp_basicsize = sizeof($interface->{NAME}_InterfaceObject),");
 		$self->pidl(".tp_dealloc = interface_$interface->{NAME}_dealloc,");
 		$self->pidl(".tp_getattr = interface_$interface->{NAME}_getattr,");
+		$self->pidl(".tp_doc = $docstring,");
 		$self->deindent;
 		$self->pidl("};");
 
 		$self->pidl("");
 
-		$self->register_module_method($interface->{NAME}, "interface_$interface->{NAME}", "METH_VARARGS|METH_KEYWORDS", "NULL");
+		$self->register_module_method($interface->{NAME}, "interface_$interface->{NAME}", "METH_VARARGS|METH_KEYWORDS", "\"$interface->{NAME}(binding, lp_ctx, credentials)\\nConnect to the $interface->{NAME} interface\"");
 		$self->pidl("static PyObject *interface_$interface->{NAME}(PyObject *self, PyObject *args, PyObject *kwargs)");
 		$self->pidl("{");
 		$self->indent;
