@@ -41,7 +41,7 @@ krb5_init_etype (krb5_context context,
 		 krb5_enctype **val,
 		 const krb5_enctype *etypes)
 {
-    int i;
+    unsigned int i;
     krb5_error_code ret;
     krb5_enctype *tmp = NULL;
 
