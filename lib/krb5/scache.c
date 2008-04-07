@@ -53,6 +53,7 @@ typedef struct krb5_scache {
     sqlite3_stmt *dcache;
     sqlite3_stmt *scache;
     sqlite3_stmt *scache_name;
+    sqlite3_stmt *umaster;
 
 } krb5_scache;
 
@@ -77,6 +78,7 @@ typedef struct krb5_scache {
 
 #define SQL_SETUP_MASTER \
 	"INSERT INTO master (version,defaultcache) VALUES(2, \"" SCACHE_DEF_NAME "\")"
+#define SQL_UMASTER "UPDATE master SET defaultcache=? WHERE version=2"
 
 #define SQL_CCACHE ""				\
 	"CREATE TABLE caches ("			\
@@ -169,6 +171,8 @@ scc_free(krb5_scache *s)
 	sqlite3_finalize(s->scache);
     if (s->scache_name)
 	sqlite3_finalize(s->scache_name);
+    if (s->umaster)
+	sqlite3_finalize(s->umaster);
 
     if (s->db)
 	sqlite3_close(s->db);
@@ -415,6 +419,8 @@ make_database(krb5_context context, krb5_scache *s)
     ret = prepare_stmt(context, s->db, &s->scache, SQL_SCACHE);
     if (ret) goto out;
     ret = prepare_stmt(context, s->db, &s->scache_name, SQL_SCACHE_NAME);
+    if (ret) goto out;
+    ret = prepare_stmt(context, s->db, &s->umaster, SQL_UMASTER);
     if (ret) goto out;
 
     return 0;
@@ -1297,7 +1303,7 @@ rollback:
 }
 
 static krb5_error_code
-scc_default_name(krb5_context context, char **str)
+scc_get_default_name(krb5_context context, char **str)
 {
     krb5_error_code ret;
     char *name;
@@ -1315,6 +1321,37 @@ scc_default_name(krb5_context context, char **str)
     return 0;
 }
 
+static krb5_error_code
+scc_set_default(krb5_context context, krb5_ccache id)
+{
+    krb5_scache *s = SCACHE(id);
+    krb5_error_code ret;
+
+    if (s->cid == SCACHE_INVALID_CID) {
+	krb5_set_error_string(context,
+			      "Trying to set a invalid cache as default %s",
+			      s->name);
+	return KRB5_CC_IO;
+    }
+
+    ret = sqlite3_bind_text(s->umaster, 1, s->name, -1, NULL);
+    if (ret) {
+	sqlite3_reset(s->umaster);
+	krb5_set_error_string(context, "Failed to set name of default cache");
+	return ret;
+    }
+
+    do {
+	ret = sqlite3_step(s->umaster);
+    } while (ret == SQLITE_ROW);
+    sqlite3_reset(s->umaster);
+    if (ret != SQLITE_DONE) {
+	krb5_set_error_string(context, "Failed to update default cache");
+	return KRB5_CC_IO;
+    }
+
+    return 0;
+}
 
 /**
  * Variable containing the SDB based credential cache implemention.
@@ -1343,5 +1380,6 @@ const krb5_cc_ops krb5_scc_ops = {
     scc_get_cache_next,
     scc_end_cache_get,
     scc_move,
-    scc_default_name
+    scc_get_default_name,
+    scc_set_default
 };
