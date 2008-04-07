@@ -60,7 +60,7 @@ typedef struct krb5_scache {
 
 #define	SCACHE(X)	((krb5_scache *)(X)->data.data)
 
-#define DEFAULT_SCACHE "/tmp/scache-foo" /* XXX */
+#define DEFAULT_SCACHE "/tmp/scache-bar" /* XXX */
 
 #define SCACHE_STRING(x) 	#x
 #define SCACHE_XSTRING(x) 	SCACHE_STRING(x)
@@ -263,7 +263,7 @@ create_cache(krb5_context context, krb5_scache *s)
     return 0;
 }
 
-#if 0
+#ifdef TRACEME
 static void
 trace(void* ptr, const char * str)
 {
@@ -283,8 +283,7 @@ make_database(krb5_context context, krb5_scache *s)
     ret = open_database(context, s, 0);
     if (ret) {
 	ret = open_database(context, s, SQLITE_OPEN_CREATE);
-	if (ret)
-	    return ret;
+	if (ret) goto out;
 
 	created_file = 1;
 
@@ -305,7 +304,7 @@ make_database(krb5_context context, krb5_scache *s)
 	if (ret) goto out;
     }
 
-#if 0
+#ifdef TRACEME
     sqlite3_trace(s->db, trace, NULL);
 #endif
 
@@ -500,7 +499,7 @@ static krb5_error_code
 scc_close(krb5_context context,
 	  krb5_ccache id)
 {
-    krb5_data_free(&id->data);
+    scc_free(SCACHE(id));
     return 0;
 }
 
@@ -508,7 +507,19 @@ static krb5_error_code
 scc_destroy(krb5_context context,
 	    krb5_ccache id)
 {
-    scc_close(context, id);
+    krb5_scache *s = SCACHE(id);
+    int ret;
+
+    sqlite3_bind_int(s->dcache, 1, s->cid);
+    do {
+	ret = sqlite3_step(s->dcache);
+    } while (ret == SQLITE_ROW);
+    sqlite3_reset(s->dcache);
+    if (ret != SQLITE_DONE) {
+	krb5_set_error_string(context, "Failed to destroy cache %s: %s",
+			      s->name, sqlite3_errmsg(s->db));
+	return KRB5_CC_IO;
+    }
     return 0;
 }
 
