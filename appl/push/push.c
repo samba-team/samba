@@ -227,7 +227,7 @@ doit(int s,
     size_t from_line_length;
     time_t now;
     struct write_state write_state;
-    int numheaders = 1;
+    unsigned int numheaders = 1;
     char **headers = NULL;
     int i;
     char *tmp = NULL;
