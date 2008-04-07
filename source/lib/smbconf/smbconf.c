@@ -1,6 +1,6 @@
 /*
  *  Unix SMB/CIFS implementation.
- *  libnet smbconf registry Support
+ *  libsmbconf - Samba configuration library
  *  Copyright (C) Michael Adam 2007-2008
  *  Copyright (C) Guenther Deschner 2007
  *
