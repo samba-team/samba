@@ -101,7 +101,7 @@ find_all_addresses (krb5_context context, krb5_addresses *res, int flags)
     struct sockaddr sa_zero;
     struct ifaddrs *ifa0, *ifa;
     krb5_error_code ret = ENXIO; 
-    int num, idx;
+    unsigned int num, idx;
     krb5_addresses ignore_addresses;
 
     res->val = NULL;
@@ -217,9 +217,10 @@ find_all_addresses (krb5_context context, krb5_addresses *res, int flags)
     if (flags & EXTRA_ADDRESSES)
 	krb5_free_addresses(context, &ignore_addresses);
     freeifaddrs(ifa0);
-    if (ret)
+    if (ret) {
 	free(res->val);
-    else
+	res->val = NULL;
+    } else
 	res->len = idx;        /* Now a count. */
     return (ret);
 }
