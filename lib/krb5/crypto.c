@@ -2902,7 +2902,7 @@ krb5_keytype_to_enctypes_default (krb5_context context,
 				  unsigned *len,
 				  krb5_enctype **val)
 {
-    int i, n;
+    unsigned int i, n;
     krb5_enctype *ret;
 
     if (keytype != KEYTYPE_DES || context->etypes_des == NULL)
