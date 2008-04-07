@@ -1,5 +1,9 @@
 2008-04-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/cache.c: allow returning the default cc-type.
+
+	* kuser/kswitch.c: Enable switching between existing caches.
+
 	* lib/krb5/cache.c: Add krb5_cc_switch, to set the default
 	credential cache.
 
