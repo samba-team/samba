@@ -1,3 +1,7 @@
+2008-04-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/scache.c: Do credential iteration by temporary table.
+
 2008-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/acache.c: Translate ccErrInvalidCCache.
