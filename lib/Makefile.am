@@ -18,5 +18,6 @@ if !HAVE_OPENSSL
 dir_hcrypto = hcrypto
 endif
 
-SUBDIRS = roken vers editline $(dir_com_err) sl wind asn1 $(dir_hcrypto) hx509 \
-	krb5 ntlm kafs gssapi hdb kadm5 auth $(dir_45) $(dir_otp) $(dir_dce)
+SUBDIRS = roken vers editline $(dir_com_err) sl wind asn1 sqlite \
+	$(dir_hcrypto) hx509 krb5 ntlm kafs gssapi hdb kadm5 \
+	auth $(dir_45) $(dir_otp) $(dir_dce)
