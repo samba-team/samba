@@ -237,6 +237,7 @@ sub PythonStruct($$$$)
 	$self->pidl(".tp_setattr = py_$name\_setattr,");
 	$self->pidl(".tp_repr = py_talloc_default_repr,");
 	$self->pidl(".tp_doc = $docstring,");
+	$self->pidl(".tp_flags = Py_TPFLAGS_DEFAULT,");
 	$self->deindent;
 	$self->pidl("};");
 
@@ -532,6 +533,7 @@ sub Interface($$$)
 		$self->pidl(".tp_dealloc = interface_$interface->{NAME}_dealloc,");
 		$self->pidl(".tp_getattr = interface_$interface->{NAME}_getattr,");
 		$self->pidl(".tp_doc = $docstring,");
+		$self->pidl(".tp_flags = Py_TPFLAGS_DEFAULT,");
 		$self->deindent;
 		$self->pidl("};");
 
