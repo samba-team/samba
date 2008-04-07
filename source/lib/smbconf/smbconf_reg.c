@@ -342,8 +342,8 @@ static WERROR smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 	}
 
 	for (count = 0;
-	     W_ERROR_IS_OK(werr = reg_enumvalue(tmp_ctx, key, count, &valname,
-						&valvalue));
+	     werr = reg_enumvalue(tmp_ctx, key, count, &valname, &valvalue),
+	     W_ERROR_IS_OK(werr);
 	     count++)
 	{
 		char *valstring;
@@ -562,8 +562,8 @@ static WERROR smbconf_reg_get_share_names(struct smbconf_ctx *ctx,
 	}
 
 	for (count = 0;
-	     W_ERROR_IS_OK(werr = reg_enumkey(tmp_ctx, key, count,
-					      &subkey_name, NULL));
+	     werr = reg_enumkey(tmp_ctx, key, count, &subkey_name, NULL),
+	     W_ERROR_IS_OK(werr);
 	     count++)
 	{
 		if (strequal(subkey_name, GLOBAL_NAME)) {
