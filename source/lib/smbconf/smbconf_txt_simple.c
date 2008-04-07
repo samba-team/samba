@@ -462,10 +462,10 @@ static WERROR smbconf_txt_get_parameter(struct smbconf_ctx *ctx,
 		return WERR_NO_SUCH_SERVICE;
 	}
 
-	found = smbconf_find_in_array(param,
-				      pd(ctx)->cache->param_names[share_index],
-				      pd(ctx)->cache->num_params[share_index],
-				      &param_index);
+	found = smbconf_reverse_find_in_array(param,
+				pd(ctx)->cache->param_names[share_index],
+				pd(ctx)->cache->num_params[share_index],
+				&param_index);
 	if (!found) {
 		return WERR_INVALID_PARAM;
 	}
