@@ -1,3 +1,7 @@
+2008-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kswitch.c: Implement --principal.
+
 2008-04-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/cache.c: allow returning the default cc-type.
