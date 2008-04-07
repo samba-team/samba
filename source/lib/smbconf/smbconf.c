@@ -27,100 +27,12 @@
  *
  **********************************************************************/
 
-static int smbconf_destroy_ctx(struct smbconf_ctx *ctx)
-{
-	return ctx->ops->shutdown(ctx);
-}
-
 static WERROR smbconf_global_check(struct smbconf_ctx *ctx)
 {
 	if (!smbconf_share_exists(ctx, GLOBAL_NAME)) {
 		return smbconf_create_share(ctx, GLOBAL_NAME);
 	}
 	return WERR_OK;
-}
-
-
-/**********************************************************************
- *
- * helper functions exported to the backend modules
- * (might go into a smbconf_util.c)
- *
- **********************************************************************/
-
-/**
- * add a string to a talloced array of strings.
- */
-WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
-				   char ***array,
-				   uint32_t count,
-				   const char *string)
-{
-	char **new_array = NULL;
-
-	if ((array == NULL) || (string == NULL)) {
-		return WERR_INVALID_PARAM;
-	}
-
-	new_array = TALLOC_REALLOC_ARRAY(mem_ctx, *array, char *, count + 1);
-	if (new_array == NULL) {
-		return WERR_NOMEM;
-	}
-
-	new_array[count] = talloc_strdup(new_array, string);
-	if (new_array[count] == NULL) {
-		TALLOC_FREE(new_array);
-		return WERR_NOMEM;
-	}
-
-	*array = new_array;
-
-	return WERR_OK;
-}
-
-/**
- * Initialize the configuration.
- *
- * This should be the first function in a sequence of calls to smbconf
- * functions:
- *
- * Upon success, this creates and returns the conf context
- * that should be passed around in subsequent calls to the other
- * smbconf functions.
- *
- * After the work with the configuration is completed, smbconf_shutdown()
- * should be called.
- */
-WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
-		    const char *path, struct smbconf_ops *ops)
-{
-	WERROR werr = WERR_OK;
-	struct smbconf_ctx *ctx;
-
-	if (conf_ctx == NULL) {
-		return WERR_INVALID_PARAM;
-	}
-
-	ctx = TALLOC_ZERO_P(mem_ctx, struct smbconf_ctx);
-	if (ctx == NULL) {
-		return WERR_NOMEM;
-	}
-
-	ctx->ops = ops;
-
-	werr = ctx->ops->init(ctx, path);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto fail;
-	}
-
-	talloc_set_destructor(ctx, smbconf_destroy_ctx);
-
-	*conf_ctx = ctx;
-	return werr;
-
-fail:
-	TALLOC_FREE(ctx);
-	return werr;
 }
 
 
