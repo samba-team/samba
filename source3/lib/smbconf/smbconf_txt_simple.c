@@ -216,7 +216,7 @@ static WERROR smbconf_txt_init(struct smbconf_ctx *ctx, const char *path)
 
 	ctx->data = TALLOC_ZERO_P(ctx, struct txt_private_data);
 
-	return smbconf_txt_load_file(ctx);
+	return WERR_OK;
 }
 
 static int smbconf_txt_shutdown(struct smbconf_ctx *ctx)
@@ -526,5 +526,6 @@ WERROR smbconf_init_txt_simple(TALLOC_CTX *mem_ctx,
 	}
 
 	pd(*conf_ctx)->verbatim = verbatim;
-	return WERR_OK;
+
+	return smbconf_txt_load_file(*conf_ctx);
 }
