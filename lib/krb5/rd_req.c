@@ -133,7 +133,7 @@ static krb5_error_code
 check_transited(krb5_context context, Ticket *ticket, EncTicketPart *enc)
 {
     char **realms;
-    int num_realms;
+    unsigned int num_realms;
     krb5_error_code ret;
 	    
     /* 
