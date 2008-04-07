@@ -67,4 +67,7 @@ WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
 				   uint32_t count,
 				   const char *string);
 
+bool smbconf_find_in_array(const char *string, char **list,
+			   uint32_t num_entries, uint32_t *entry);
+
 #endif
