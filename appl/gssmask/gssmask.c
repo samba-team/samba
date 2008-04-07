@@ -284,14 +284,14 @@ static int
 HandleOP(GoodBye)
 {
     struct handle *h = c->handles;
-    int i = 0;
+    unsigned int i = 0;
 
     while (h) {
 	h = h->next;
 	i++;
     }
 
-    if (i != 0)
+    if (i)
 	logmessage(c, __FILE__, __LINE__, 0,
 		   "Did not toast all resources: %d", i);
     return 1;
