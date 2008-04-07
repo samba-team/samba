@@ -13,7 +13,7 @@ man_MANS = \
 
 SLC = $(top_builddir)/lib/sl/slc
 
-bin_PROGRAMS = kinit klist kdestroy kgetcred
+bin_PROGRAMS = kinit klist kdestroy kgetcred kswitch
 libexec_PROGRAMS = kdigest kimpersonate
 
 noinst_PROGRAMS = kverify kdecode_ticket generate-requests copy_cred_cache
