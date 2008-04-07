@@ -142,7 +142,7 @@ make_cred_from_ccred(krb5_context context,
 		     krb5_creds *cred)
 {
     krb5_error_code ret;
-    int i;
+    unsigned int i;
 
     memset(cred, 0, sizeof(*cred));
 
