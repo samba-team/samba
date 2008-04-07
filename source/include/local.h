@@ -233,6 +233,9 @@
 /* Number of microseconds to wait before a sharing violation. */
 #define SHARING_VIOLATION_USEC_WAIT 950000
 
+/* Number of microseconds to wait before a updating the write time (2 secs). */
+#define WRITE_TIME_UPDATE_USEC_DELAY 2000000
+
 #define MAX_LDAP_REPLICATION_SLEEP_TIME 5000 /* In milliseconds. */
 
 /* tdb hash size for the open database. */
