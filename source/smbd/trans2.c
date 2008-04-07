@@ -1207,6 +1207,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				int info_level,
 				int requires_resume_key,
 				bool dont_descend,
+				bool ask_sharemode,
 				char **ppdata,
 				char *base_data,
 				char *end_data,
@@ -1238,7 +1239,6 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 	bool needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
 	bool check_mangled_names = lp_manglednames(conn->params);
 	char mangled_name[13]; /* mangled 8.3 name. */
-	struct timespec write_time_ts;
 
 	*out_of_space = False;
 	*got_exact_match = False;
@@ -1398,10 +1398,15 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			adate_ts = get_atimespec(&sbuf);
 			create_date_ts = get_create_timespec(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
 
-			get_file_infos(vfs_file_id_from_sbuf(conn, &sbuf),
-				       NULL, &write_time_ts);
-			if (!null_timespec(write_time_ts)) {
-				mdate_ts = write_time_ts;
+			if (ask_sharemode) {
+				struct timespec write_time_ts;
+				struct file_id fileid;
+
+				fileid = vfs_file_id_from_sbuf(conn, &sbuf);
+				get_file_infos(fileid, NULL, &write_time_ts);
+				if (!null_timespec(write_time_ts)) {
+					mdate_ts = write_time_ts;
+				}
 			}
 
 			if (lp_dos_filetime_resolution(SNUM(conn))) {
@@ -1873,6 +1878,7 @@ static void call_trans2findfirst(connection_struct *conn,
 	SMB_STRUCT_STAT sbuf;
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
+	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	if (total_params < 13) {
@@ -2069,6 +2075,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 					req->flags2,
 					mask,dirtype,info_level,
 					requires_resume_key,dont_descend,
+					ask_sharemode,
 					&p,pdata,data_end,
 					space_remaining, &out_of_space,
 					&got_exact_match,
@@ -2205,6 +2212,7 @@ static void call_trans2findnext(connection_struct *conn,
 	int space_remaining;
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
+	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	if (total_params < 13) {
@@ -2413,6 +2421,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 						req->flags2,
 						mask,dirtype,info_level,
 						requires_resume_key,dont_descend,
+						ask_sharemode,
 						&p,pdata,data_end,
 						space_remaining, &out_of_space,
 						&got_exact_match,

@@ -1224,6 +1224,7 @@ void reply_search(struct smb_request *req)
 	bool mask_contains_wcard = False;
 	bool allow_long_path_components = (req->flags2 & FLAGS2_LONG_PATH_COMPONENTS) ? True : False;
 	TALLOC_CTX *ctx = talloc_tos();
+	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
 
 	START_PROFILE(SMBsearch);
 
@@ -1409,8 +1410,16 @@ void reply_search(struct smb_request *req)
 		}
 
 		for (i=numentries;(i<maxentries) && !finished;i++) {
-			finished = !get_dir_entry(ctx,conn,mask,dirtype,&fname,
-					&size,&mode,&date,check_descend);
+			finished = !get_dir_entry(ctx,
+						  conn,
+						  mask,
+						  dirtype,
+						  &fname,
+						  &size,
+						  &mode,
+						  &date,
+						  check_descend,
+						  ask_sharemode);
 			if (!finished) {
 				char buf[DIR_STRUCT_SIZE];
 				memcpy(buf,status,21);
