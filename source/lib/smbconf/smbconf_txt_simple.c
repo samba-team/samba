@@ -56,27 +56,6 @@ static struct txt_private_data *pd(struct smbconf_ctx *ctx)
 	return (struct txt_private_data *)(ctx->data);
 }
 
-static bool smbconf_find_in_array(const char *string, char **list,
-				  uint32_t num_entries, uint32_t *entry)
-{
-	uint32_t i;
-
-	if ((string == NULL) || (list == NULL)) {
-		return false;
-	}
-
-	for (i = 0; i < num_entries; i++) {
-		if (strequal(string, list[i])) {
-			if (entry != NULL) {
-				*entry = i;
-			}
-			return true;
-		}
-	}
-
-	return false;
-}
-
 static bool smbconf_txt_do_section(const char *section, void *private_data)
 {
 	WERROR werr;
