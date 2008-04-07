@@ -320,9 +320,9 @@ print_file(FILE *out,
 	   int max_n_link,
 	   int max_user,
 	   int max_group,
-	   int max_size,
-	   int max_major,
-	   int max_minor,
+	   unsigned int max_size,
+	   unsigned int max_major,
+	   unsigned int max_minor,
 	   int max_date)
 {
     if(f->filename == NULL)
@@ -569,9 +569,9 @@ list_files(FILE *out, const char **files, int n_files, int flags)
 	int max_n_link = 0;
 	int max_user = 0;
 	int max_group = 0;
-	int max_size = 0;
-	int max_major = 0;
-	int max_minor = 0;
+	unsigned int max_size = 0;
+	unsigned int max_major = 0;
+	unsigned int max_minor = 0;
 	int max_date = 0;
 	for(i = 0; i < n_files; i++) {
 	    if(fi[i].filename == NULL)
