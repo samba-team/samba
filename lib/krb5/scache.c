@@ -70,14 +70,17 @@ typedef struct krb5_scache {
 
 #define SQL_CMASTER ""				\
 	"CREATE TABLE master ("			\
+        "oid INTEGER PRIMARY KEY,"		\
 	"version INTEGER NOT NULL,"		\
-	"defaultcache INTEGER NOT NULL"		\
+	"defaultcache TEXT NOT NULL"		\
 	")"
 
-#define SQL_SETUP_MASTER "INSERT INTO master VALUES(1, 1)"
+#define SQL_SETUP_MASTER \
+	"INSERT INTO master (version,defaultcache) VALUES(2, \"" SCACHE_DEF_NAME "\")"
 
 #define SQL_CCACHE ""				\
 	"CREATE TABLE caches ("			\
+        "oid INTEGER PRIMARY KEY,"		\
 	"principal TEXT,"			\
 	"name TEXT NOT NULL"			\
 	")"
@@ -97,6 +100,7 @@ typedef struct krb5_scache {
 
 #define SQL_CCREDS ""				\
 	"CREATE TABLE credentials ("		\
+        "oid INTEGER PRIMARY KEY,"		\
 	"cid INTEGER NOT NULL,"			\
 	"kvno INTEGER NOT NULL,"		\
 	"etype INTEGER NOT NULL,"		\
@@ -114,6 +118,7 @@ typedef struct krb5_scache {
 
 #define SQL_CPRINCIPALS ""			\
 	"CREATE TABLE principals ("		\
+        "oid INTEGER PRIMARY KEY,"		\
 	"principal TEXT NOT NULL,"		\
 	"type INTEGER NOT NULL,"		\
 	"credential_id INTEGER NOT NULL"	\
@@ -169,42 +174,33 @@ scc_free(krb5_scache *s)
     free(s);
 }
 
-static krb5_scache *
-scc_alloc(krb5_context context, const char *name)
+static krb5_error_code
+prepare_stmt(krb5_context context, sqlite3 *db, sqlite3_stmt **stmt, const char *str)
 {
-    krb5_scache *s;
+    int ret;
 
-    ALLOC(s, 1);
-    if(s == NULL)
-	return NULL;
-
-    s->cid = SCACHE_INVALID_CID;
-
-    if (name) {
-	char *file;
-
-	if (*name == '\0') {
-	    /* XXX get default cid */
-	    name = SCACHE_DEF_NAME;
-	}
-	s->name = strdup(name);
-	file = strrchr(s->name, ':');
-	if (file) {
-	    *file++ = '\0';
-	    s->file = strdup(file);
-	} else {
-	    _krb5_expand_default_cc_name(context, KRB5_SCACHE_DB, &s->file);
-	}
-    } else {
-	_krb5_expand_default_cc_name(context, KRB5_SCACHE_DB, &s->file);
-	asprintf(&s->name, "unique-%08x", (unsigned long)s);
+    ret = sqlite3_prepare_v2(db, str, -1, stmt, NULL);
+    if (ret != SQLITE_OK) {
+	krb5_set_error_string(context, "Failed to prepare stmt %s: %s", 
+			      str, sqlite3_errmsg(db));
+	return ENOENT;
     }
-    if (s->file == NULL || s->name == NULL) {
-	scc_free(s);
-	return NULL;
-    }
+    return 0;
+}
 
-    return s;
+static krb5_error_code
+exec_stmt(krb5_context context, sqlite3 *db, const char *str,
+	  krb5_error_code code)
+{
+    int ret;
+    
+    ret = sqlite3_exec(db, str, NULL, NULL, NULL);
+    if (ret != SQLITE_OK && code) {
+	krb5_set_error_string(context, "Execute %s: %s", str,
+			      sqlite3_errmsg(db));
+	return code;
+    }
+    return 0;
 }
 
 static krb5_error_code
@@ -228,6 +224,92 @@ default_db(krb5_context context, sqlite3 **db)
 }
 
 static krb5_error_code
+get_def_name(krb5_context context, char **str)
+{
+    krb5_error_code ret;
+    sqlite3_stmt *stmt;
+    const char *name;
+    sqlite3 *db;
+
+    ret = default_db(context, &db);
+    if (ret)
+	return ret;
+
+    ret = prepare_stmt(context, db, &stmt, "SELECT defaultcache FROM master");
+    if (ret) {
+	sqlite3_close(db);
+	return ret;
+    }
+
+    ret = sqlite3_step(stmt);
+    if (ret != SQLITE_ROW)
+	goto out;
+
+    if (sqlite3_column_type(stmt, 0) != SQLITE_TEXT)
+	goto out;
+
+    name = (const char *)sqlite3_column_text(stmt, 0);
+    if (name == NULL)
+	goto out;
+
+    *str = strdup(name);
+    if (*str == NULL)
+	goto out;
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    return 0;
+out:
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    krb5_clear_error_string(context);
+    return ENOENT;
+}
+
+
+
+static krb5_scache *
+scc_alloc(krb5_context context, const char *name)
+{
+    krb5_scache *s;
+
+    ALLOC(s, 1);
+    if(s == NULL)
+	return NULL;
+
+    s->cid = SCACHE_INVALID_CID;
+
+    if (name) {
+	char *file;
+
+	if (*name == '\0') {
+	    krb5_error_code ret;
+	    ret = get_def_name(context, &s->name);
+	    if (ret)
+		s->name = strdup(SCACHE_DEF_NAME);
+	} else
+	    s->name = strdup(name);
+
+	file = strrchr(s->name, ':');
+	if (file) {
+	    *file++ = '\0';
+	    s->file = strdup(file);
+	} else {
+	    _krb5_expand_default_cc_name(context, KRB5_SCACHE_DB, &s->file);
+	}
+    } else {
+	_krb5_expand_default_cc_name(context, KRB5_SCACHE_DB, &s->file);
+	asprintf(&s->name, "unique-%08x", (unsigned long)s);
+    }
+    if (s->file == NULL || s->name == NULL) {
+	scc_free(s);
+	return NULL;
+    }
+
+    return s;
+}
+
+static krb5_error_code
 open_database(krb5_context context, krb5_scache *s, int flags)
 {
     int ret;
@@ -242,35 +324,6 @@ open_database(krb5_context context, krb5_scache *s, int flags)
 	} else
 	    krb5_set_error_string(context, "out of memory");
 	return ENOENT;
-    }
-    return 0;
-}
-
-static krb5_error_code
-prepare_stmt(krb5_context context, sqlite3 *db, sqlite3_stmt **stmt, const char *str)
-{
-    int ret;
-
-    ret = sqlite3_prepare_v2(db, str, -1, stmt, NULL);
-    if (ret != SQLITE_OK) {
-	krb5_set_error_string(context, "Failed to prepare stmt %s: %s", 
-			      str, sqlite3_errmsg(db));
-	return ENOENT;
-    }
-    return 0;
-}
-
-static krb5_error_code
-exec_stmt(krb5_context context, sqlite3 *db, const char *str,
-	  krb5_error_code code)
-{
-    int ret;
-    
-    ret = sqlite3_exec(db, str, NULL, NULL, NULL);
-    if (ret != SQLITE_OK) {
-	krb5_set_error_string(context, "Execute %s: %s", str,
-			      sqlite3_errmsg(db));
-	return code;
     }
     return 0;
 }
@@ -295,6 +348,7 @@ create_cache(krb5_context context, krb5_scache *s)
     return 0;
 }
 
+#define TRACEME
 #ifdef TRACEME
 static void
 trace(void* ptr, const char * str)
@@ -433,7 +487,7 @@ scc_resolve(krb5_context context, krb5_ccache *id, const char *res)
     if (sqlite3_step(s->scache_name) == SQLITE_ROW) {
 
 	if (sqlite3_column_type(s->scache_name, 0) != SQLITE_INTEGER) {
-	    sqlite3_reset(s->scache);
+	    sqlite3_reset(s->scache_name);
 	    krb5_set_error_string(context, "Cache name of wrong type "
 				  "for scache %ld", 
 				  (unsigned long)s->name);
@@ -444,7 +498,7 @@ scc_resolve(krb5_context context, krb5_ccache *id, const char *res)
     } else {
 	s->cid = SCACHE_INVALID_CID;
     }
-    sqlite3_reset(s->scache);
+    sqlite3_reset(s->scache_name);
     
     (*id)->data.data = s;
     (*id)->data.length = sizeof(*s);
@@ -482,7 +536,8 @@ scc_initialize(krb5_context context,
     if (ret)
 	return ret;
 
-    sqlite3_exec(s->db, "BEGIN TRANSACTION", NULL, NULL, NULL);
+    ret = exec_stmt(context, s->db, "BEGIN IMMEDIATE TRANSACTION", KRB5_CC_IO);
+    if (ret) return ret;
 
     if (s->cid == SCACHE_INVALID_CID) {
 	ret = create_cache(context, s);
@@ -518,12 +573,13 @@ scc_initialize(krb5_context context,
 	goto rollback;
     }
 
-    sqlite3_exec(s->db, "END TRANSACTION", NULL, NULL, NULL);
+    ret = exec_stmt(context, s->db, "COMMIT", KRB5_CC_IO);
+    if (ret) return ret;
 
     return 0;
 
 rollback:
-    sqlite3_exec(s->db, "ROLLBACK", NULL, NULL, NULL);
+    exec_stmt(context, s->db, "ROLLBACK", 0);
 
     return ret;
 
@@ -651,7 +707,8 @@ scc_store_cred(krb5_context context,
 
     sqlite3_bind_blob(s->icred, 4, data.data, data.length, free_data);
 
-    sqlite3_exec(s->db, "BEGIN TRANSACTION", NULL, NULL, NULL);
+    ret = exec_stmt(context, s->db, "BEGIN IMMEDIATE TRANSACTION", KRB5_CC_IO);
+    if (ret) return ret;
 
     do {
 	ret = sqlite3_step(s->icred);
@@ -697,13 +754,14 @@ scc_store_cred(krb5_context context,
 	}
     }
 
-    sqlite3_exec(s->db, "END TRANSACTION", NULL, NULL, NULL);
+    ret = exec_stmt(context, s->db, "COMMIT", KRB5_CC_IO);
+    if (ret) return ret;
 
     return 0;
 
 rollback:
     krb5_set_error_string(context, "store credentials: %s", sqlite3_errmsg(s->db));
-    sqlite3_exec(s->db, "ROLLBACK", NULL, NULL, NULL);
+    exec_stmt(context, s->db, "ROLLBACK", 0);
 
     return ret;
 }
@@ -961,7 +1019,8 @@ scc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     if (ret)
 	return ret;
 
-    sqlite3_exec(sfrom->db, "BEGIN TRANSACTION", NULL, NULL, NULL);
+    ret = exec_stmt(context, sfrom->db, "BEGIN IMMEDIATE TRANSACTION", KRB5_CC_IO);
+    if (ret) return ret;
 
     if (sto->cid != SCACHE_INVALID_CID) {
 	/* drop old cache entry */
@@ -991,7 +1050,8 @@ scc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 
     sto->cid = sfrom->cid;
 
-    sqlite3_exec(sfrom->db, "END TRANSACTION", NULL, NULL, NULL);
+    ret = exec_stmt(context, sfrom->db, "COMMIT", KRB5_CC_IO);
+    if (ret) return ret;
 
     /* free sfrom */
 
@@ -999,7 +1059,7 @@ scc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 
 rollback:
 
-    sqlite3_exec(sfrom->db, "ROLLBACK", NULL, NULL, NULL);
+    exec_stmt(context, sfrom->db, "ROLLBACK", 0);
 
     return KRB5_CC_IO;
 }
@@ -1007,49 +1067,20 @@ rollback:
 static krb5_error_code
 scc_default_name(krb5_context context, char **str)
 {
-    sqlite3 *db;
-    sqlite3_stmt *stmt;
-    const char *name;
-    int ret;
+    krb5_error_code ret;
+    char *name;
 
-    ret = default_db(context, &db);
+    ret = get_def_name(context, &name);
     if (ret)
-	return ret;
-
-    ret = prepare_stmt(context, db, &stmt,
-		       "SELECT caches.name "
-		       "FROM caches,master "
-		       "WHERE master.version = 1 AND master.defaultcache = caches.oid");
-    if (ret) {
-	sqlite3_close(db);
-	return ret;
-    }
-
-    ret = sqlite3_step(stmt);
-    if (ret != SQLITE_ROW)
-	goto defaultname;
-
-    if (sqlite3_column_type(stmt, 0) != SQLITE_TEXT)
-	goto defaultname;
-
-    name = (const char *)sqlite3_column_text(stmt, 0);
-    if (name == NULL)
-	goto defaultname;
-
+	return _krb5_expand_default_cc_name(context, KRB5_SCACHE_NAME, str);
 
     asprintf(str, "SDB:%s", name);
-    if (*str == NULL)
-	goto defaultname;
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
+    free(name);
+    if (*str == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
     return 0;
-
-defaultname:
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-
-    return _krb5_expand_default_cc_name(context, KRB5_SCACHE_NAME, str);
 }
 
 
