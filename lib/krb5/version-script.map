@@ -114,6 +114,7 @@ HEIMDAL_KRB5_1.0 {
 		krb5_cc_set_flags;
 		krb5_cc_start_seq_get;
 		krb5_cc_store_cred;
+		krb5_cc_switch;
 		krb5_change_password;
 		krb5_check_transited;
 		krb5_check_transited_realms;
@@ -461,8 +462,8 @@ HEIMDAL_KRB5_1.0 {
 		krb5_principal_get_comp_string;
 		krb5_principal_get_realm;
 		krb5_principal_get_type;
-		krb5_principal_set_realm;
 		krb5_principal_match;
+		krb5_principal_set_realm;
 		krb5_principal_set_type;
 		krb5_print_address;
 		krb5_program_setup;
