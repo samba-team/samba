@@ -1,3 +1,7 @@
+2008-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mech/gss_mech_switch.c: Use unsigned where appropriate.
+
 2008-03-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_context.c: Add test for gsskrb5_register_acceptor_identity.
