@@ -288,25 +288,25 @@ static char *smbconf_format_registry_value(TALLOC_CTX *mem_ctx,
 		result = talloc_asprintf(mem_ctx, "%s", value->v.sz.str);
 		break;
 	case REG_MULTI_SZ: {
-                uint32 j;
-                for (j = 0; j < value->v.multi_sz.num_strings; j++) {
-                        result = talloc_asprintf(mem_ctx, "%s \"%s\" ",
+		uint32 j;
+		for (j = 0; j < value->v.multi_sz.num_strings; j++) {
+			result = talloc_asprintf(mem_ctx, "%s \"%s\" ",
 						 result,
 						 value->v.multi_sz.strings[j]);
 			if (result == NULL) {
 				break;
 			}
-                }
-                break;
-        }
+		}
+		break;
+	}
 	case REG_BINARY:
-                result = talloc_asprintf(mem_ctx, "binary (%d bytes)",
+		result = talloc_asprintf(mem_ctx, "binary (%d bytes)",
 					 (int)value->v.binary.length);
-                break;
-        default:
-                result = talloc_asprintf(mem_ctx, "<unprintable>");
-                break;
-        }
+		break;
+	default:
+		result = talloc_asprintf(mem_ctx, "<unprintable>");
+		break;
+	}
 	return result;
 }
 
