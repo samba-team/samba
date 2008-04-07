@@ -101,3 +101,24 @@ WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
 
 	return WERR_OK;
 }
+
+bool smbconf_find_in_array(const char *string, char **list,
+			   uint32_t num_entries, uint32_t *entry)
+{
+	uint32_t i;
+
+	if ((string == NULL) || (list == NULL)) {
+		return false;
+	}
+
+	for (i = 0; i < num_entries; i++) {
+		if (strequal(string, list[i])) {
+			if (entry != NULL) {
+				*entry = i;
+			}
+			return true;
+		}
+	}
+
+	return false;
+}
