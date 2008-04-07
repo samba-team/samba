@@ -70,7 +70,7 @@ struct revoke_ocsp {
 
 
 struct hx509_revoke_ctx_data {
-    unsigned ref;
+    unsigned int ref;
     struct {
 	struct revoke_crl *val;
 	size_t len;
@@ -113,11 +113,11 @@ _hx509_revoke_ref(hx509_revoke_ctx ctx)
 {
     if (ctx == NULL)
 	return NULL;
-    if (ctx->ref <= 0)
-	_hx509_abort("revoke ctx refcount <= 0");
-    ctx->ref++;
     if (ctx->ref == 0)
-	_hx509_abort("revoke ctx refcount == 0");
+	_hx509_abort("revoke ctx refcount == 0 on ref");
+    ctx->ref++;
+    if (ctx->ref == UINT_MAX)
+	_hx509_abort("revoke ctx refcount == UINT_MAX on ref");
     return ctx;
 }
 
@@ -146,8 +146,8 @@ hx509_revoke_free(hx509_revoke_ctx *ctx)
     if (ctx == NULL || *ctx == NULL)
 	return;
 
-    if ((*ctx)->ref <= 0)
-	_hx509_abort("revoke ctx refcount <= 0 on free");
+    if ((*ctx)->ref == 0)
+	_hx509_abort("revoke ctx refcount == 0 on free");
     if (--(*ctx)->ref > 0)
 	return;
 
