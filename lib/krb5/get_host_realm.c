@@ -55,7 +55,7 @@ copy_txt_to_realms (struct resource_record *head,
 		    krb5_realm **realms)
 {
     struct resource_record *rr;
-    int n, i;
+    unsigned int n, i;
 
     for(n = 0, rr = head; rr; rr = rr->next)
 	if (rr->type == T_TXT)
