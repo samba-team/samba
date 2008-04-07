@@ -1,5 +1,7 @@
 2008-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* softp11.c: call va_start before using vsnprintf.
+
 	* crypto.c: make refcount slightly more sane.
 
 	* keyset.c: make refcount slightly more sane.
