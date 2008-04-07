@@ -53,19 +53,18 @@ krb5_copy_host_realm(krb5_context context,
 		     const krb5_realm *from,
 		     krb5_realm **to)
 {
-    int n, i;
+    unsigned int n, i;
     const krb5_realm *p;
 
-    for (n = 0, p = from; *p != NULL; ++p)
+    for (n = 1, p = from; *p != NULL; ++p)
 	++n;
-    ++n;
-    *to = malloc (n * sizeof(**to));
+
+    *to = calloc (n, sizeof(**to));
     if (*to == NULL) {
 	krb5_set_error_string (context, "malloc: out of memory");
 	return ENOMEM;
     }
-    for (i = 0; i < n; ++i)
-	(*to)[i] = NULL;
+
     for (i = 0, p = from; *p != NULL; ++p, ++i) {
 	(*to)[i] = strdup(*p);
 	if ((*to)[i] == NULL) {
