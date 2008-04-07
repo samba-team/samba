@@ -837,7 +837,10 @@ void set_socket_options(int fd, const char *options)
 		}
 
 		if (ret != 0) {
-			DEBUG(0,("Failed to set socket option %s (Error %s)\n",
+			/* be aware that some systems like Solaris return
+			 * EINVAL to a setsockopt() call when the client
+			 * sent a RST previously - no need to worry */
+			DEBUG(2,("Failed to set socket option %s (Error %s)\n",
 				tok, strerror(errno) ));
 		}
 	}
