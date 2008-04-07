@@ -175,6 +175,15 @@ scc_free(krb5_scache *s)
     free(s);
 }
 
+#define TRACEME
+#ifdef TRACEME
+static void
+trace(void* ptr, const char * str)
+{
+    printf("SQL: %s\n", str);
+}
+#endif
+
 static krb5_error_code
 prepare_stmt(krb5_context context, sqlite3 *db, sqlite3_stmt **stmt, const char *str)
 {
@@ -221,6 +230,10 @@ default_db(krb5_context context, sqlite3 **db)
 	return ENOENT;
     }
 	
+#ifdef TRACEME
+    sqlite3_trace(*db, trace, NULL);
+#endif
+
     return 0;
 }
 
@@ -348,15 +361,6 @@ create_cache(krb5_context context, krb5_scache *s)
 
     return 0;
 }
-
-#define TRACEME
-#ifdef TRACEME
-static void
-trace(void* ptr, const char * str)
-{
-    printf("SQL: %s\n", str);
-}
-#endif
 
 static krb5_error_code
 make_database(krb5_context context, krb5_scache *s)
@@ -1016,6 +1020,7 @@ scc_set_flags(krb5_context context,
 }
 		    
 struct cache_iter {
+    char *drop;
     sqlite3 *db;
     sqlite3_stmt *stmt;
 };
@@ -1025,6 +1030,7 @@ scc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 {
     struct cache_iter *ctx;
     krb5_error_code ret;
+    char *name, *str;
 
     *cursor = NULL;
 
@@ -1040,9 +1046,61 @@ scc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 	return ret;
     }
 
-    ret = prepare_stmt(context, ctx->db, &ctx->stmt,"SELECT name FROM caches");
+    asprintf(&name, "cacheIteration%luPid%d",
+	     (unsigned long)ctx, (int)getpid());
+    if (name == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	sqlite3_close(ctx->db);
+	free(ctx);
+	return ENOMEM;
+    }
+
+    asprintf(&ctx->drop, "DROP TABLE %s", name);
+    if (ctx->drop == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	sqlite3_close(ctx->db);
+	free(name);
+	free(ctx);
+	return ENOMEM;
+    }
+
+    asprintf(&str, "CREATE TEMPORARY TABLE %s AS SELECT name FROM caches", 
+	     name);
+    if (str == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	sqlite3_close(ctx->db);
+	free(name);
+	free(ctx->drop);
+	free(ctx);
+	return ENOMEM;
+    }
+
+    ret = exec_stmt(context, ctx->db, str, KRB5_CC_IO);
+    free(str);
     if (ret) {
 	sqlite3_close(ctx->db);
+	free(name);
+	free(ctx->drop);
+	free(ctx);
+	return ret;
+    }
+
+    asprintf(&str, "SELECT name FROM %s", name);
+    free(name);
+    if (str == NULL) {
+	exec_stmt(context, ctx->db, ctx->drop, 0);
+	sqlite3_close(ctx->db);
+	free(name);
+	free(ctx->drop);
+	free(ctx);
+	return ENOMEM;
+    }
+    
+    ret = prepare_stmt(context, ctx->db, &ctx->stmt, str);
+    if (ret) {
+	exec_stmt(context, ctx->db, ctx->drop, 0);
+	sqlite3_close(ctx->db);
+	free(ctx->drop);
 	free(ctx);
 	return ret;
     }
@@ -1090,8 +1148,10 @@ scc_end_cache_get(krb5_context context, krb5_cc_cursor cursor)
 {
     struct cache_iter *ctx = cursor;
 
+    exec_stmt(context, ctx->db, ctx->drop, 0);
     sqlite3_finalize(ctx->stmt);
     sqlite3_close(ctx->db);
+    free(ctx->drop);
     free(ctx);
     return 0;
 }
