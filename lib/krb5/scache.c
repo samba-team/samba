@@ -104,6 +104,7 @@ typedef struct krb5_scache {
 	"cid INTEGER NOT NULL,"			\
 	"kvno INTEGER NOT NULL,"		\
 	"etype INTEGER NOT NULL,"		\
+        "created_at INTEGER NOT NULL,"		\
 	"cred BLOB NOT NULL"			\
 	")"
 
@@ -113,7 +114,7 @@ typedef struct krb5_scache {
 	"DELETE FROM principals WHERE credential_id=old.oid;"		\
 	"END"
 
-#define SQL_ICRED "INSERT INTO credentials (cid, kvno, etype, cred) VALUES (?,?,?,?)"
+#define SQL_ICRED "INSERT INTO credentials (cid, kvno, etype, cred, created_at) VALUES (?,?,?,?,?)"
 #define SQL_DCRED "DELETE FROM credentials WHERE cid=?"
 
 #define SQL_CPRINCIPALS ""			\
@@ -706,6 +707,7 @@ scc_store_cred(krb5_context context,
     }
 
     sqlite3_bind_blob(s->icred, 4, data.data, data.length, free_data);
+    sqlite3_bind_int(s->icred, 5, time(NULL));
 
     ret = exec_stmt(context, s->db, "BEGIN IMMEDIATE TRANSACTION", KRB5_CC_IO);
     if (ret) return ret;
@@ -760,7 +762,8 @@ scc_store_cred(krb5_context context,
     return 0;
 
 rollback:
-    krb5_set_error_string(context, "store credentials: %s", sqlite3_errmsg(s->db));
+    krb5_set_error_string(context, "store credentials: %s",
+			  sqlite3_errmsg(s->db));
     exec_stmt(context, s->db, "ROLLBACK", 0);
 
     return ret;
@@ -814,6 +817,12 @@ scc_get_principal(krb5_context context,
     return ret;
 }
 
+struct cred_ctx {
+    char *drop;
+    sqlite3_stmt *stmt;
+    sqlite3_stmt *credstmt;
+};
+
 static krb5_error_code
 scc_get_first (krb5_context context,
 	       krb5_ccache id,
@@ -821,29 +830,89 @@ scc_get_first (krb5_context context,
 {
     krb5_scache *s = SCACHE(id);
     krb5_error_code ret;
-    sqlite3_stmt *stmt;
+    struct cred_ctx *ctx;
+    char *str, *name;
 
     *cursor = NULL;
 
+    ctx = calloc(1, sizeof(*ctx));
+    if (ctx == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
+
     ret = make_database(context, s);
-    if (ret)
-	return ret;
-
-    if (s->cid == SCACHE_INVALID_CID)
-	return KRB5_CC_END;
-
-    ret = prepare_stmt(context, s->db, &stmt, 
-		       "SELECT cred FROM credentials WHERE cid = ?");
-    if (ret)
-	return ret;
-
-    ret = sqlite3_bind_int(stmt, 1, s->cid);
     if (ret) {
-	sqlite3_finalize(stmt);
-	krb5_clear_error_string(context);
+	free(ctx);
+	return ret;
+    }
+
+    if (s->cid == SCACHE_INVALID_CID) {
+	krb5_set_error_string(context, "Iterating a invalid cache %s", 
+			      s->name);
+	free(ctx);
 	return KRB5_CC_END;
     }
-    *cursor = stmt;
+
+    asprintf(&name, "credIteration%luPid%d",
+	     (unsigned long)ctx, (int)getpid());
+    if (name == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	free(ctx);
+	return ENOMEM;
+    }
+
+    asprintf(&ctx->drop, "DROP TABLE %s", name);
+    if (ctx->drop == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	free(name);
+	free(ctx);
+	return ENOMEM;
+    }
+
+    asprintf(&str, "CREATE TEMPORARY TABLE %s "
+	     "AS SELECT oid,created_at FROM credentials WHERE cid = %lu", 
+	     name, (unsigned long)s->cid);
+
+    ret = exec_stmt(context, s->db, str, KRB5_CC_IO);
+    free(str);
+    if (ret) {
+	free(ctx->drop);
+	free(name);
+	free(ctx);
+	return ret;
+    }
+
+    asprintf(&str, "SELECT oid FROM %s ORDER BY created_at", name);
+    if (str == NULL) {
+	exec_stmt(context, s->db, ctx->drop, 0);
+	free(ctx->drop);
+	free(name);
+	free(ctx);
+	return ret;
+    }
+
+    ret = prepare_stmt(context, s->db, &ctx->stmt, str);
+    free(str);
+    free(name);
+    if (ret) {
+	exec_stmt(context, s->db, ctx->drop, 0);
+	free(ctx->drop);
+	free(ctx);
+	return ret;
+    }
+
+    ret = prepare_stmt(context, s->db, &ctx->credstmt, 
+		       "SELECT cred FROM credentials WHERE oid = ?");
+    if (ret) {
+	sqlite3_finalize(ctx->stmt);
+	exec_stmt(context, s->db, ctx->drop, 0);
+	free(ctx->drop);
+	free(ctx);
+	return ret;
+    }
+
+    *cursor = ctx;
 
     return 0;
 }
@@ -854,14 +923,15 @@ scc_get_next (krb5_context context,
 	      krb5_cc_cursor *cursor,
 	      krb5_creds *creds)
 {
-    sqlite3_stmt *stmt = *cursor;
+    struct cred_ctx *ctx = *cursor;
     krb5_scache *s = SCACHE(id);
     krb5_error_code ret;
-
+    sqlite_uint64 oid;
     const void *data = NULL;
     size_t len = 0;
 
-    ret = sqlite3_step(stmt);
+next:
+    ret = sqlite3_step(ctx->stmt);
     if (ret == SQLITE_DONE) {
 	krb5_clear_error_string(context);
         return KRB5_CC_END;
@@ -871,17 +941,31 @@ scc_get_next (krb5_context context,
         return KRB5_CC_IO;
     }
 
-    if (sqlite3_column_type(stmt, 0) != SQLITE_BLOB) {
+    oid = sqlite3_column_int64(ctx->stmt, 0);
+
+    /* read cred from credentials table */
+
+    sqlite3_bind_int(ctx->credstmt, 1, oid);
+
+    ret = sqlite3_step(ctx->credstmt);
+    if (ret != SQLITE_ROW) {
+	sqlite3_reset(ctx->credstmt);
+	goto next;
+    }
+
+    if (sqlite3_column_type(ctx->credstmt, 0) != SQLITE_BLOB) {
 	krb5_set_error_string(context, "credential of wrong type "
 			      "for SCACHE:%s:%s", 
 			      s->name, s->file);
+	sqlite3_reset(ctx->credstmt);
 	return KRB5_CC_END;
     }
 
-    data = sqlite3_column_blob(stmt, 0);
-    len = sqlite3_column_bytes(stmt, 0);
+    data = sqlite3_column_blob(ctx->credstmt, 0);
+    len = sqlite3_column_bytes(ctx->credstmt, 0);
 
     ret = decode_creds(context, data, len, creds);
+    sqlite3_reset(ctx->credstmt);
 
     krb5_clear_error_string(context);
     return ret;
@@ -892,7 +976,18 @@ scc_end_get (krb5_context context,
 	     krb5_ccache id,
 	     krb5_cc_cursor *cursor)
 {
-    sqlite3_finalize((sqlite3_stmt *)*cursor);
+    struct cred_ctx *ctx = *cursor;
+    krb5_scache *s = SCACHE(id);
+    int ret;
+
+    sqlite3_finalize(ctx->stmt);
+    sqlite3_finalize(ctx->credstmt);
+
+    ret = exec_stmt(context, s->db, ctx->drop, 0);
+
+    free(ctx->drop);
+    free(ctx);
+
     return 0;
 }
 
