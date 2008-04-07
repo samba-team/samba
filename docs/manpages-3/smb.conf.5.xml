@@ -772,7 +772,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 		The registry configuration can be accessed with
 		tools like <emphasis>regedit</emphasis> or <emphasis>net rpc
 		registry</emphasis> in the key
-		 <emphasis>HKLM\Software\Samba\smbconf</emphasis>.
+		 <emphasis><literal>HKLM\Software\Samba\smbconf</literal></emphasis>.
 
 		More conveniently, the <emphasis>conf</emphasis> subcommand of the
 		 <citerefentry><refentrytitle>net</refentrytitle>
