@@ -335,3 +335,25 @@ WERROR smbconf_delete_global_parameter(struct smbconf_ctx *ctx,
 
 	return werr;
 }
+
+WERROR smbconf_get_includes(struct smbconf_ctx *ctx,
+			    const char *service,
+			    uint32_t *num_includes, char ***includes)
+{
+	if (!smbconf_share_exists(ctx, service)) {
+		return WERR_NO_SUCH_SERVICE;
+	}
+
+	return ctx->ops->get_includes(ctx, service, num_includes, includes);
+}
+
+WERROR smbconf_set_includes(struct smbconf_ctx *ctx,
+			    const char *service,
+			    uint32_t num_includes, const char **includes)
+{
+	if (!smbconf_share_exists(ctx, service)) {
+		return WERR_NO_SUCH_SERVICE;
+	}
+
+	return ctx->ops->set_includes(ctx, service, num_includes, includes);
+}
