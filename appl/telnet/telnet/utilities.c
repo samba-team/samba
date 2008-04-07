@@ -249,7 +249,7 @@ optionstatus(void)
 }
 
 void
-printsub(int direction, unsigned char *pointer, int length)
+printsub(int direction, unsigned char *pointer, size_t length)
 {
     int i;
     unsigned char buf[512];
@@ -295,7 +295,9 @@ printsub(int direction, unsigned char *pointer, int length)
 	    fprintf(NetTrace, "TERMINAL-TYPE ");
 	    switch (pointer[1]) {
 	    case TELQUAL_IS:
-		fprintf(NetTrace, "IS \"%.*s\"", length-2, (char *)pointer+2);
+		fprintf(NetTrace, "IS \"%.*s\"", 
+			(int)(length-2), 
+			(char *)pointer+2);
 		break;
 	    case TELQUAL_SEND:
 		fprintf(NetTrace, "SEND");
@@ -315,7 +317,7 @@ printsub(int direction, unsigned char *pointer, int length)
 	    switch (pointer[1]) {
 	    case TELQUAL_IS:
 		fprintf(NetTrace, " IS ");
-		fprintf(NetTrace, "%.*s", length-2, (char *)pointer+2);
+		fprintf(NetTrace, "%.*s", (int)(length-2), (char *)pointer+2);
 		break;
 	    default:
 		if (pointer[1] == 1)
@@ -696,7 +698,7 @@ printsub(int direction, unsigned char *pointer, int length)
 	    fprintf(NetTrace, "X-DISPLAY-LOCATION ");
 	    switch (pointer[1]) {
 	    case TELQUAL_IS:
-		fprintf(NetTrace, "IS \"%.*s\"", length-2, (char *)pointer+2);
+		fprintf(NetTrace, "IS \"%.*s\"", (int)(length-2), (char *)pointer+2);
 		break;
 	    case TELQUAL_SEND:
 		fprintf(NetTrace, "SEND");

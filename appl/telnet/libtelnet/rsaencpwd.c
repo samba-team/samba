@@ -403,11 +403,10 @@ rsaencpwd_status(ap, name, name_sz, level)
 #define	ADDC(buf, len, c)	if ((len) > 0) {*(buf)++ = (c); --(len);}
 
 	void
-rsaencpwd_printsub(data, cnt, buf, buflen)
-	unsigned char *data, *buf;
-	int cnt, buflen;
+rsaencpwd_printsub(unsigned char *data, size_t cnt,
+		   unsigned char * buf, size_t buflen)
 {
-	int i;
+	size_t i;
 
 	buf[buflen-1] = '\0';		/* make sure it's NULL terminated */
 	buflen -= 1;

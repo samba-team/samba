@@ -124,8 +124,8 @@ int fb64_reply (unsigned char *, int, struct fb *);
 static void fb64_session (Session_Key *, int, struct fb *);
 void fb64_stream_key (DES_cblock, struct stinfo *);
 int fb64_keyid (int, unsigned char *, int *, struct fb *);
-void fb64_printsub(unsigned char *, int ,
-		   unsigned char *, int , char *);
+void fb64_printsub(unsigned char *, size_t ,
+		   unsigned char *, size_t , char *);
 
 void cfb64_init(int server)
 {
@@ -456,8 +456,8 @@ int fb64_keyid(int dir, unsigned char *kp, int *lenp, struct fb *fbp)
 	return(fbp->state[dir-1] = state);
 }
 
-void fb64_printsub(unsigned char *data, int cnt, 
-		   unsigned char *buf, int buflen, char *type)
+void fb64_printsub(unsigned char *data, size_t cnt, 
+		   unsigned char *buf, size_t buflen, char *type)
 {
 	char lbuf[32];
 	int i;
@@ -497,14 +497,14 @@ void fb64_printsub(unsigned char *data, int cnt,
 	}
 }
 
-void cfb64_printsub(unsigned char *data, int cnt, 
-		    unsigned char *buf, int buflen)
+void cfb64_printsub(unsigned char *data, size_t cnt, 
+		    unsigned char *buf, size_t buflen)
 {
 	fb64_printsub(data, cnt, buf, buflen, "CFB64");
 }
 
-void ofb64_printsub(unsigned char *data, int cnt,
-		    unsigned char *buf, int buflen)
+void ofb64_printsub(unsigned char *data, size_t cnt,
+		    unsigned char *buf, size_t buflen)
 {
 	fb64_printsub(data, cnt, buf, buflen, "OFB64");
 }

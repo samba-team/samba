@@ -72,7 +72,7 @@ typedef struct XauthP {
 	void	(*is) (struct XauthP *, unsigned char *, int);
 	void	(*reply) (struct XauthP *, unsigned char *, int);
 	int	(*status) (struct XauthP *, char *, size_t, int);
-	void	(*printsub) (unsigned char *, int, unsigned char *, int);
+	void	(*printsub) (unsigned char *, size_t, unsigned char *, size_t);
 } Authenticator;
 
 #include "auth-proto.h"

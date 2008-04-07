@@ -722,7 +722,8 @@ kerberos5_status(Authenticator *ap, char *name, size_t name_sz, int level)
 #define	ADDC(buf, len, c)	if ((len) > 0) {*(buf)++ = (c); --(len);}
 
 void
-kerberos5_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
+kerberos5_printsub(unsigned char *data, size_t cnt, 
+		   unsigned char *buf, size_t buflen)
 {
     int i;
 

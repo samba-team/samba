@@ -532,7 +532,7 @@ printoption(char *fmt, int option)
 }
 
 void
-printsub(int direction, unsigned char *pointer, int length)
+printsub(int direction, unsigned char *pointer, size_t length)
         		          	/* '<' or '>' */
                  	         	/* where suboption data sits */
        			       		/* length of suboption data */
@@ -587,7 +587,7 @@ printsub(int direction, unsigned char *pointer, int length)
 	switch (pointer[1]) {
 	case TELQUAL_IS:
 	    output_data("IS \"%.*s\"",
-			length-2,
+			(int)(length-2),
 			(char *)pointer+2);
 	    break;
 	case TELQUAL_SEND:
@@ -606,7 +606,7 @@ printsub(int direction, unsigned char *pointer, int length)
 	}
 	switch (pointer[1]) {
 	case TELQUAL_IS:
-	    output_data(" IS %.*s", length-2, (char *)pointer+2);
+	    output_data(" IS %.*s", (int)(length-2), (char *)pointer+2);
 	    break;
 	default:
 	    if (pointer[1] == 1)
@@ -884,7 +884,7 @@ printsub(int direction, unsigned char *pointer, int length)
 	switch (pointer[1]) {
 	case TELQUAL_IS:
 	    output_data("IS \"%.*s\"",
-			length-2,
+			(int)(length-2),
 			(char *)pointer+2);
 	    break;
 	case TELQUAL_SEND:
@@ -1019,7 +1019,7 @@ printsub(int direction, unsigned char *pointer, int length)
 	case TELQUAL_NAME:
 	    i = 2;
 	    output_data(" NAME \"%.*s\"",
-			length - 2,
+			(int)(length - 2),
 			pointer);
 	    break;
 
@@ -1130,9 +1130,9 @@ printsub(int direction, unsigned char *pointer, int length)
  * Dump a data buffer in hex and ascii to the output data stream.
  */
 void
-printdata(char *tag, char *ptr, int cnt)
+printdata(char *tag, char *ptr, size_t cnt)
 {
-    int i;
+    size_t i;
     char xbuf[30];
 
     while (cnt) {
