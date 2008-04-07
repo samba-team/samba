@@ -127,6 +127,7 @@ snprintf_fill(char *str, size_t size, char fillchar, const char *fmt, ...)
 {
     int len;
     va_list ap;
+    va_start(ap, fmt);
     len = vsnprintf(str, size, fmt, ap);
     va_end(ap);
     if (len < 0 || len > size)
