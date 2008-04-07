@@ -584,8 +584,10 @@ acc_close(krb5_context context,
 	free(a->cache_name);
 	a->cache_name = NULL;
     }
-    (*a->context->func->release)(a->context);
-    a->context = NULL;
+    if (a->context) {
+	(*a->context->func->release)(a->context);
+	a->context = NULL;
+    }
     krb5_data_free(&id->data);
     return 0;
 }
