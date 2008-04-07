@@ -44,7 +44,7 @@ _krb5_crc_init_table(void)
 {
     static int flag = 0;
     unsigned long crc, poly;
-    int     i, j;
+    unsigned int i, j;
     
     if(flag) return;
     poly = CRC_GEN;
