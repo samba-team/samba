@@ -40,7 +40,7 @@ WERROR smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 
 WERROR smbconf_init_txt_simple(TALLOC_CTX *mem_ctx,
 			       struct smbconf_ctx **conf_ctx,
-			       const char *path
+			       const char *path,
 			       bool verbatim);
 
 /*
