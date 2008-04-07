@@ -247,6 +247,7 @@ kcmss_get_version(krb5_context context,
 }
 
 static const krb5_cc_ops krb5_kcmss_ops = {
+    KRB5_CC_OPS_VERSION,
     "KCM",
     kcmss_get_name,
     kcmss_resolve,
