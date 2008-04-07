@@ -52,6 +52,7 @@ endif
 
 libkrb5_la_LIBADD = \
 	$(LIB_pkinit) \
+	../sqlite/libsqlite.la \
 	$(LIB_com_err) \
 	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
