@@ -115,5 +115,32 @@
   <xsl:apply-templates/>
 </xsl:template>
 
+  <!-- ================================================================== -->
+  <!-- These macros are from Docbook manpages XSLT development tree       -->
+  <!-- help to maintain manpage generation clean when difference between  -->
+  <!-- roff processors is important to note.                              -->
+
+  <xsl:template name="roff-if-else-start">
+    <xsl:param name="condition">n</xsl:param>
+    <xsl:text>.ie </xsl:text>
+    <xsl:value-of select="$condition"/>
+    <xsl:text> \{\&#10;</xsl:text>
+  </xsl:template>
+
+  <xsl:template name="roff-if-start">
+    <xsl:param name="condition">n</xsl:param>
+    <xsl:text>.if </xsl:text>
+    <xsl:value-of select="$condition"/>
+    <xsl:text> \{\&#10;</xsl:text>
+  </xsl:template>
+
+  <xsl:template name="roff-else">
+    <xsl:text>.\}&#10;</xsl:text>
+    <xsl:text>.el \{\&#10;</xsl:text>
+  </xsl:template>
+
+  <xsl:template name="roff-if-end">
+    <xsl:text>.\}&#10;</xsl:text>
+  </xsl:template>
 
 </xsl:stylesheet>
