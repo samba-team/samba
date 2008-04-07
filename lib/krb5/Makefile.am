@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-AM_CPPFLAGS += $(INCLUDE_krb4) $(INCLUDE_hcrypto) -I../com_err -I$(srcdir)/../com_err
+AM_CPPFLAGS += $(INCLUDE_krb4) $(INCLUDE_hcrypto) -I../com_err -I$(srcdir)/../com_err -I$(srcdir)/../sqlite
 
 bin_PROGRAMS = verify_krb5_conf
 
@@ -154,6 +154,7 @@ dist_libkrb5_la_SOURCES =			\
 	read_message.c				\
 	recvauth.c				\
 	replay.c				\
+	scache.c				\
 	send_to_kdc.c				\
 	sendauth.c				\
 	set_default_realm.c			\
