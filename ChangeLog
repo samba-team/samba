@@ -1,5 +1,7 @@
 2008-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/acache.c: Use unsigned where appropriate.
+
 	* kcm/glue.c: Adapt to chenge to krb5_cc_ops.
 
 	* kcm/acl.c: Add missing op.
