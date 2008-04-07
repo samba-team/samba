@@ -59,10 +59,11 @@ typedef struct krb5_scache {
 
 #define DEFAULT_SCACHE "/tmp/scache-foo" /* XXX */
 
-#define SCACHE_STRINIFY(x) 	#x
+#define SCACHE_STRING(x) 	#x
+#define SCACHE_XSTRING(x) 	SCACHE_STRING(x)
 
 #define SCACHE_DEF_CID		0
-#define SCACHE_DEF_CID_NAME	SCACHE_STRINIFY(SCACHE_DEF_CID)
+#define SCACHE_DEF_CID_NAME	SCACHE_XSTRING(SCACHE_DEF_CID)
 
 /*
  *
@@ -88,7 +89,7 @@ typedef struct krb5_scache {
 
 #define SQL_CCREDS ""				\
 	"CREATE TABLE credentials ("		\
-	"cid INTEGER NOT NULL"			\
+	"cid INTEGER NOT NULL,"			\
 	"kvno INTEGER NOT NULL,"		\
 	"etype INTEGER NOT NULL,"		\
 	"cred BLOB NOT NULL"			\
@@ -121,8 +122,8 @@ free_krb5(void *str)
     krb5_xfree(str);
 }
 
-
 /*
+ *
  */
 
 static const char*
@@ -152,18 +153,10 @@ scc_alloc(const char *name)
 }
 
 static krb5_error_code
-make_database(krb5_context context, krb5_scache *s, int create)
+open_database(krb5_context context, krb5_scache *s, int flags)
 {
     int ret;
-    int flags = SQLITE_OPEN_READWRITE;
-
-    if (s->db)
-	return 0;
-
-    if (create)
-	flags |= SQLITE_OPEN_CREATE;
-
-    ret = sqlite3_open_v2(s->file, &s->db, flags, NULL);
+    ret = sqlite3_open_v2(s->file, &s->db, SQLITE_OPEN_READWRITE|flags, NULL);
     if (ret) {
 	if (s->db) {
 	    krb5_set_error_string(context, "Error opening scache file %s: %s", 
@@ -174,25 +167,68 @@ make_database(krb5_context context, krb5_scache *s, int create)
 	    krb5_set_error_string(context, "out of memory");
 	return ENOENT;
     }
+    return 0;
+}
 
-    sqlite3_prepare_v2(s->db, SQL_ICRED, -1, &s->icred, NULL);
-    sqlite3_prepare_v2(s->db, SQL_IPRINCIPAL, -1, &s->iprincipal, NULL);
+static krb5_error_code
+make_database(krb5_context context, krb5_scache *s, int create)
+{
+    int ret;
 
-    sqlite3_prepare_v2(s->db, SQL_ICACHE, -1, &s->icache, NULL);
+    if (s->db)
+	return 0;
+
+    ret = open_database(context, s, 0);
+    if (ret) {
+	ret = open_database(context, s, SQLITE_OPEN_CREATE);
+	if (ret)
+	    return ret;
+
+	sqlite3_exec(s->db, SQL_CMASTER, NULL, NULL, NULL);
+	sqlite3_exec(s->db, SQL_CCACHE, NULL, NULL, NULL);
+	ret = sqlite3_exec(s->db, SQL_CCREDS, NULL, NULL, NULL);
+	if (ret != SQLITE_OK) {
+	    krb5_set_error_string(context, "Failed to create table creds: %s",
+				  sqlite3_errmsg(s->db));
+	    goto end;
+	}
+	sqlite3_exec(s->db, SQL_CPRINCIPALS, NULL, NULL, NULL);
+
+	sqlite3_exec(s->db, SQL_SETUP_MASTER, NULL, NULL, NULL);
+    }
+
+    ret = sqlite3_prepare_v2(s->db, SQL_ICRED, -1, &s->icred, NULL);
+    if (ret != SQLITE_OK) {
+	krb5_set_error_string(context, "Failed to create icred: %s",
+			      sqlite3_errmsg(s->db));
+	goto end;
+    }
+    ret = sqlite3_prepare_v2(s->db, SQL_IPRINCIPAL, -1, &s->iprincipal, NULL);
+    if (ret != SQLITE_OK) {
+	krb5_set_error_string(context, "Failed to create iprincipal: %s",
+			      sqlite3_errmsg(s->db));
+	goto end;
+    }
+
+    ret = sqlite3_prepare_v2(s->db, SQL_ICACHE, -1, &s->icache, NULL);
+    if (ret != SQLITE_OK) {
+	krb5_set_error_string(context, "Failed to create icache: %s",
+			      sqlite3_errmsg(s->db));
+	goto end;
+    }
     sqlite3_prepare_v2(s->db, SQL_UCACHE_PRINCIPAL, -1, &s->ucachep, NULL);
     sqlite3_prepare_v2(s->db, SQL_SCACHE, -1, &s->scache, NULL);
 
     if (create) {
-	sqlite3_exec(s->db, SQL_CMASTER, NULL, NULL, NULL);
-	sqlite3_exec(s->db, SQL_CCACHE, NULL, NULL, NULL);
-	sqlite3_exec(s->db, SQL_CCREDS, NULL, NULL, NULL);
-	sqlite3_exec(s->db, SQL_CPRINCIPALS, NULL, NULL, NULL);
-
-	sqlite3_exec(s->db, SQL_SETUP_MASTER, NULL, NULL, NULL);
-
-	sqlite3_bind_text(s->icache, 1, s->name, -1, free_data);
-	if (sqlite3_step(s->icred) != SQLITE_DONE)
+	/* create inital entry */
+	sqlite3_bind_text(s->icache, 1, s->name, -1, NULL);
+	do {
+	    ret = sqlite3_step(s->icache);
+	} while (ret == SQLITE_ROW);
+	if (ret != SQLITE_DONE) {
+	    krb5_set_error_string(context, "Failed to add scache: %d", ret);
 	    goto end;
+	}
 	sqlite3_reset(s->icred);
     }
 
@@ -204,16 +240,8 @@ end:
     if (create)
 	unlink(s->file);
 
-    krb5_clear_error_string(context);
     return ENOENT;
 }
-
-#if 0
-create_tabels(void)
-{
-}
-
-#endif
 
 static krb5_error_code
 scc_resolve(krb5_context context, krb5_ccache *id, const char *res)
@@ -232,7 +260,6 @@ scc_resolve(krb5_context context, krb5_ccache *id, const char *res)
     return 0;
 }
 
-
 static krb5_error_code
 scc_gen_new(krb5_context context, krb5_ccache *id)
 {
@@ -244,6 +271,7 @@ scc_gen_new(krb5_context context, krb5_ccache *id)
 	krb5_set_error_string (context, "malloc: out of memory");
 	return KRB5_CC_NOMEM;
     }
+    s->cid = ++foo;
 
     (*id)->data.data = s;
     (*id)->data.length = sizeof(*s);
@@ -275,6 +303,8 @@ scc_initialize(krb5_context context,
 	ret = EPERM; /* XXX */
 
     sqlite3_reset(s->ucachep);
+
+    /* XXX delete all entries for this cid, trigger ? */
 
     return ret;
 }
@@ -426,22 +456,24 @@ scc_get_principal(krb5_context context,
 
     sqlite3_bind_int(s->scache, 1, s->cid);
 
-    if (sqlite3_step(s->scache) != SQLITE_DONE) {
+    if (sqlite3_step(s->scache) != SQLITE_ROW) {
 	sqlite3_reset(s->scache);
-	krb5_clear_error_string(context);
+	krb5_set_error_string(context, "No principal for scache %d", s->cid);
 	return ENOENT;
     }
 	
     if (sqlite3_column_type(s->scache, 2) == SQLITE_TEXT) {
 	sqlite3_reset(s->scache);
-	krb5_clear_error_string(context);
+	krb5_set_error_string(context, "Principal data of wrong type "
+			      "for scache %d", s->cid);
 	return ENOENT;
     }
 
     str = (const char *)sqlite3_column_text(s->scache, 2);
     if (str == NULL) {
 	sqlite3_reset(s->scache);
-	krb5_clear_error_string(context);
+	krb5_set_error_string(context, "Principal not set "
+			      "for scache %d", s->cid);
 	return ENOENT;
     }
 
