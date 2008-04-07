@@ -309,7 +309,8 @@ p11_init_slot(hx509_context context,
     CK_SESSION_HANDLE session;
     CK_SLOT_INFO slot_info;
     CK_TOKEN_INFO token_info;
-    int ret, i;
+    size_t i;
+    int ret;
 
     slot->certs = NULL;
     slot->id = id;
