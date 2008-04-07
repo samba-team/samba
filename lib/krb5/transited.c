@@ -323,7 +323,7 @@ decode_realms(krb5_context context,
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_domain_x500_decode(krb5_context context,
-			krb5_data tr, char ***realms, int *num_realms, 
+			krb5_data tr, char ***realms, unsigned int *num_realms, 
 			const char *client_realm, const char *server_realm)
 {
     struct tr_realm *r = NULL;
@@ -385,11 +385,12 @@ krb5_domain_x500_decode(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_domain_x500_encode(char **realms, int num_realms, krb5_data *encoding)
+krb5_domain_x500_encode(char **realms, unsigned int num_realms, 
+			krb5_data *encoding)
 {
     char *s = NULL;
     int len = 0;
-    int i;
+    unsigned int i;
     krb5_data_zero(encoding);
     if (num_realms == 0)
 	return 0;
@@ -420,7 +421,7 @@ krb5_check_transited(krb5_context context,
 		     krb5_const_realm client_realm,
 		     krb5_const_realm server_realm,
 		     krb5_realm *realms,
-		     int num_realms,
+		     unsigned int num_realms,
 		     int *bad_realm)
 {
     char **tr_realms;
@@ -456,7 +457,7 @@ krb5_check_transited(krb5_context context,
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_check_transited_realms(krb5_context context,
 			    const char *const *realms, 
-			    int num_realms, 
+			    unsigned int num_realms, 
 			    int *bad_realm)
 {
     int i;
