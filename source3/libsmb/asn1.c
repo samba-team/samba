@@ -36,19 +36,19 @@ void asn1_free(ASN1_DATA *data)
 /* write to the ASN1 buffer, advancing the buffer pointer */
 bool asn1_write(ASN1_DATA *data, const void *p, int len)
 {
-	if (data->has_error) return False;
+	if (data->has_error) return false;
 	if (data->length < data->ofs+len) {
 		data->data = SMB_REALLOC_ARRAY(data->data, unsigned char,
 					       data->ofs+len);
 		if (!data->data) {
-			data->has_error = True;
-			return False;
+			data->has_error = true;
+			return false;
 		}
 		data->length = data->ofs+len;
 	}
 	memcpy(data->data + data->ofs, p, len);
 	data->ofs += len;
-	return True;
+	return true;
 }
 
 /* useful fn for writing a uint8 */
@@ -65,8 +65,8 @@ bool asn1_push_tag(ASN1_DATA *data, uint8 tag)
 	asn1_write_uint8(data, tag);
 	nesting = SMB_MALLOC_P(struct nesting);
 	if (!nesting) {
-		data->has_error = True;
-		return False;
+		data->has_error = true;
+		return false;
 	}
 
 	nesting->start = data->ofs;
@@ -82,14 +82,14 @@ bool asn1_pop_tag(ASN1_DATA *data)
 	size_t len;
 
 	if (data->has_error) {
-		return False;
+		return false;
 	}
 
 	nesting = data->nesting;
 
 	if (!nesting) {
-		data->has_error = True;
-		return False;
+		data->has_error = true;
+		return false;
 	}
 	len = data->ofs - (nesting->start+1);
 	/* yes, this is ugly. We don't know in advance how many bytes the length
@@ -97,23 +97,23 @@ bool asn1_pop_tag(ASN1_DATA *data)
 	   need to correct our mistake */
 	if (len > 0xFFFF) {
 		data->data[nesting->start] = 0x83;
-		if (!asn1_write_uint8(data, 0)) return False;
-		if (!asn1_write_uint8(data, 0)) return False;
-		if (!asn1_write_uint8(data, 0)) return False;
+		if (!asn1_write_uint8(data, 0)) return false;
+		if (!asn1_write_uint8(data, 0)) return false;
+		if (!asn1_write_uint8(data, 0)) return false;
 		memmove(data->data+nesting->start+4, data->data+nesting->start+1, len);
 		data->data[nesting->start+1] = (len>>16) & 0xFF;
 		data->data[nesting->start+2] = (len>>8) & 0xFF;
 		data->data[nesting->start+3] = len&0xff;
 	} else if (len > 255) {
 		data->data[nesting->start] = 0x82;
-		if (!asn1_write_uint8(data, 0)) return False;
-		if (!asn1_write_uint8(data, 0)) return False;
+		if (!asn1_write_uint8(data, 0)) return false;
+		if (!asn1_write_uint8(data, 0)) return false;
 		memmove(data->data+nesting->start+3, data->data+nesting->start+1, len);
 		data->data[nesting->start+1] = len>>8;
 		data->data[nesting->start+2] = len&0xff;
 	} else if (len > 127) {
 		data->data[nesting->start] = 0x81;
-		if (!asn1_write_uint8(data, 0)) return False;
+		if (!asn1_write_uint8(data, 0)) return false;
 		memmove(data->data+nesting->start+2, data->data+nesting->start+1, len);
 		data->data[nesting->start+1] = len;
 	} else {
@@ -122,14 +122,14 @@ bool asn1_pop_tag(ASN1_DATA *data)
 
 	data->nesting = nesting->next;
 	free(nesting);
-	return True;
+	return true;
 }
 
 
 /* write an integer */
 bool asn1_write_Integer(ASN1_DATA *data, int i)
 {
-	if (!asn1_push_tag(data, ASN1_INTEGER)) return False;
+	if (!asn1_push_tag(data, ASN1_INTEGER)) return false;
 	do {
 		asn1_write_uint8(data, i);
 		i = i >> 8;
@@ -145,13 +145,13 @@ bool asn1_write_OID(ASN1_DATA *data, const char *OID)
 	char *newp;
 
 	if (!asn1_push_tag(data, ASN1_OID))
-		return False;
+		return false;
 	v = strtol(p, &newp, 10);
 	p = newp;
 	v2 = strtol(p, &newp, 10);
 	p = newp;
 	if (!asn1_write_uint8(data, 40*v + v2))
-		return False;
+		return false;
 
 	while (*p) {
 		v = strtol(p, &newp, 10);
@@ -161,7 +161,7 @@ bool asn1_write_OID(ASN1_DATA *data, const char *OID)
 		if (v >= (1<<14)) asn1_write_uint8(data, 0x80 | ((v>>14)&0xff));
 		if (v >= (1<<7)) asn1_write_uint8(data, 0x80 | ((v>>7)&0xff));
 		if (!asn1_write_uint8(data, v&0x7f))
-			return False;
+			return false;
 	}
 	return asn1_pop_tag(data);
 }
@@ -209,13 +209,13 @@ bool asn1_check_BOOLEAN(ASN1_DATA *data, bool v)
 
 	asn1_read_uint8(data, &b);
 	if (b != ASN1_BOOLEAN) {
-		data->has_error = True;
-		return False;
+		data->has_error = true;
+		return false;
 	}
 	asn1_read_uint8(data, &b);
 	if (b != v) {
-		data->has_error = True;
-		return False;
+		data->has_error = true;
+		return false;
 	}
 	return !data->has_error;
 }
@@ -227,37 +227,50 @@ bool asn1_load(ASN1_DATA *data, DATA_BLOB blob)
 	ZERO_STRUCTP(data);
 	data->data = (unsigned char *)memdup(blob.data, blob.length);
 	if (!data->data) {
-		data->has_error = True;
-		return False;
+		data->has_error = true;
+		return false;
 	}
 	data->length = blob.length;
-	return True;
+	return true;
 }
 
 /* read from a ASN1 buffer, advancing the buffer pointer */
 bool asn1_read(ASN1_DATA *data, void *p, int len)
 {
 	if (data->has_error)
-		return False;
+		return false;
 
 	if (len < 0 || data->ofs + len < data->ofs || data->ofs + len < len) {
-		data->has_error = True;
-		return False;
+		data->has_error = true;
+		return false;
 	}
 
 	if (data->ofs + len > data->length) {
-		data->has_error = True;
-		return False;
+		data->has_error = true;
+		return false;
 	}
 	memcpy(p, data->data + data->ofs, len);
 	data->ofs += len;
-	return True;
+	return true;
 }
 
 /* read a uint8 from a ASN1 buffer */
 bool asn1_read_uint8(ASN1_DATA *data, uint8 *v)
 {
 	return asn1_read(data, v, 1);
+}
+
+/*
+ * Check thta the value of the ASN1 buffer at the current offset equals tag.
+ */
+bool asn1_check_tag(ASN1_DATA *data, uint8 tag)
+{
+	if (data->has_error || data->ofs >= data->length || data->ofs < 0) {
+		data->has_error = true;
+		return false;
+	}
+
+	return (tag == data->data[data->ofs]);
 }
 
 /* start reading a nested asn1 structure */
@@ -267,34 +280,34 @@ bool asn1_start_tag(ASN1_DATA *data, uint8 tag)
 	struct nesting *nesting;
 	
 	if (!asn1_read_uint8(data, &b))
-		return False;
+		return false;
 
 	if (b != tag) {
-		data->has_error = True;
-		return False;
+		data->has_error = true;
+		return false;
 	}
 	nesting = SMB_MALLOC_P(struct nesting);
 	if (!nesting) {
-		data->has_error = True;
-		return False;
+		data->has_error = true;
+		return false;
 	}
 
 	if (!asn1_read_uint8(data, &b)) {
 		SAFE_FREE(nesting);
-		return False;
+		return false;
 	}
 
 	if (b & 0x80) {
 		int n = b & 0x7f;
 		if (!asn1_read_uint8(data, &b)) {
 			SAFE_FREE(nesting);
-			return False;
+			return false;
 		}
 		nesting->taglen = b;
 		while (n > 1) {
 			if (!asn1_read_uint8(data, &b)) {
 				SAFE_FREE(nesting);
-				return False;
+				return false;
 			}
 			nesting->taglen = (nesting->taglen << 8) | b;
 			n--;
@@ -316,20 +329,20 @@ bool asn1_end_tag(ASN1_DATA *data)
 
 	/* make sure we read it all */
 	if (asn1_tag_remaining(data) != 0) {
-		data->has_error = True;
-		return False;
+		data->has_error = true;
+		return false;
 	}
 
 	nesting = data->nesting;
 
 	if (!nesting) {
-		data->has_error = True;
-		return False;
+		data->has_error = true;
+		return false;
 	}
 
 	data->nesting = nesting->next;
 	free(nesting);
-	return True;
+	return true;
 }
 
 /* work out how many bytes are left in this nested tag */
@@ -339,7 +352,7 @@ int asn1_tag_remaining(ASN1_DATA *data)
 		return 0;
 
 	if (!data->nesting) {
-		data->has_error = True;
+		data->has_error = true;
 		return -1;
 	}
 	return data->nesting->taglen - (data->ofs - data->nesting->start);
@@ -407,15 +420,15 @@ bool asn1_check_OID(ASN1_DATA *data, const char *OID)
 	char *id;
 
 	if (!asn1_read_OID(data, &id)) {
-		return False;
+		return false;
 	}
 
 	if (strcmp(id, OID) != 0) {
-		data->has_error = True;
-		return False;
+		data->has_error = true;
+		return false;
 	}
 	free(id);
-	return True;
+	return true;
 }
 
 /* read a GeneralString from a ASN1 buffer */
@@ -427,17 +440,17 @@ bool asn1_read_GeneralString(ASN1_DATA *data, char **s)
 	*s = NULL;
 
 	if (!asn1_start_tag(data, ASN1_GENERAL_STRING)) {
-		return False;
+		return false;
 	}
 	len = asn1_tag_remaining(data);
 	if (len < 0) {
-		data->has_error = True;
-		return False;
+		data->has_error = true;
+		return false;
 	}
 	str = SMB_MALLOC_ARRAY(char, len+1);
 	if (!str) {
-		data->has_error = True;
-		return False;
+		data->has_error = true;
+		return false;
 	}
 	asn1_read(data, str, len);
 	str[len] = 0;
@@ -454,11 +467,11 @@ bool asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
 {
 	int len;
 	ZERO_STRUCTP(blob);
-	if (!asn1_start_tag(data, ASN1_OCTET_STRING)) return False;
+	if (!asn1_start_tag(data, ASN1_OCTET_STRING)) return false;
 	len = asn1_tag_remaining(data);
 	if (len < 0) {
-		data->has_error = True;
-		return False;
+		data->has_error = true;
+		return false;
 	}
 	*blob = data_blob(NULL, len);
 	asn1_read(data, blob->data, len);
@@ -472,7 +485,7 @@ bool asn1_read_Integer(ASN1_DATA *data, int *i)
 	uint8 b;
 	*i = 0;
 	
-	if (!asn1_start_tag(data, ASN1_INTEGER)) return False;
+	if (!asn1_start_tag(data, ASN1_INTEGER)) return false;
 	while (asn1_tag_remaining(data)>0) {
 		asn1_read_uint8(data, &b);
 		*i = (*i << 8) + b;
@@ -485,12 +498,12 @@ bool asn1_read_Integer(ASN1_DATA *data, int *i)
 bool asn1_check_enumerated(ASN1_DATA *data, int v)
 {
 	uint8 b;
-	if (!asn1_start_tag(data, ASN1_ENUMERATED)) return False;
+	if (!asn1_start_tag(data, ASN1_ENUMERATED)) return false;
 	asn1_read_uint8(data, &b);
 	asn1_end_tag(data);
 
 	if (v != b)
-		data->has_error = False;
+		data->has_error = false;
 
 	return !data->has_error;
 }
@@ -498,7 +511,7 @@ bool asn1_check_enumerated(ASN1_DATA *data, int v)
 /* write an enumarted value to the stream */
 bool asn1_write_enumerated(ASN1_DATA *data, uint8 v)
 {
-	if (!asn1_push_tag(data, ASN1_ENUMERATED)) return False;
+	if (!asn1_push_tag(data, ASN1_ENUMERATED)) return false;
 	asn1_write_uint8(data, v);
 	asn1_pop_tag(data);
 	return !data->has_error;
