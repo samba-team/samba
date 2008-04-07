@@ -61,7 +61,8 @@ static bool smbconf_txt_do_section(const char *section, void *private_data)
 {
 	WERROR werr;
 	uint32_t idx;
-	struct txt_cache *cache = (struct txt_cache *)private_data;
+	struct txt_private_data *tpd = (struct txt_private_data *)private_data;
+	struct txt_cache *cache = tpd->cache;
 
 	if (smbconf_find_in_array(section, cache->share_names,
 				  cache->num_shares, &idx))
@@ -116,7 +117,8 @@ static bool smbconf_txt_do_parameter(const char *param_name,
 	char **param_names, **param_values;
 	uint32_t num_params;
 	uint32_t idx;
-	struct txt_cache *cache = (struct txt_cache *)private_data;
+	struct txt_private_data *tpd = (struct txt_private_data *)private_data;
+	struct txt_cache *cache = tpd->cache;
 
 	if (cache->num_shares == 0) {
 		/* not in any share ... */
@@ -184,7 +186,7 @@ static WERROR smbconf_txt_load_file(struct smbconf_ctx *ctx)
 	}
 
 	if (!pm_process(ctx->path, smbconf_txt_do_section,
-			smbconf_txt_do_parameter, pd(ctx)->cache))
+			smbconf_txt_do_parameter, pd(ctx)))
 	{
 		return WERR_CAN_NOT_COMPLETE;
 	}
