@@ -246,6 +246,18 @@ bool parse_negTokenTarg(DATA_BLOB blob, char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *se
 	asn1_end_tag(&data);
 	asn1_end_tag(&data);
 
+	/* Skip any optional req_flags that are sent per RFC 4178 */
+	if (asn1_check_tag(&data, ASN1_CONTEXT(1))) {
+		uint8 flags;
+
+		asn1_start_tag(&data, ASN1_CONTEXT(1));
+		asn1_start_tag(&data, ASN1_BITFIELD);
+		while (asn1_tag_remaining(&data) > 0)
+			asn1_read_uint8(&data, &flags);
+		asn1_end_tag(&data);
+		asn1_end_tag(&data);
+	}
+
 	asn1_start_tag(&data, ASN1_CONTEXT(2));
 	asn1_read_OctetString(&data,secblob);
 	asn1_end_tag(&data);
