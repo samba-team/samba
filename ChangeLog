@@ -1,5 +1,8 @@
 2008-04-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/cache.c: Add krb5_cc_switch, to set the default
+	credential cache.
+
 	* lib/krb5/acache.c: Implement set_default.
 
 	* lib/krb5/krb5.h: Extend krb5_cc_ops and add set_default to set
