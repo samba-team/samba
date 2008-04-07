@@ -1,5 +1,7 @@
 2008-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_p11.c: Use unsigned where appropriate.
+
 	* softp11.c: call va_start before using vsnprintf.
 
 	* crypto.c: make refcount slightly more sane.
