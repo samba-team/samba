@@ -606,7 +606,7 @@ void
 kcm_loop(void)
 {
     struct descr *d;
-    int ndescr;
+    unsigned int ndescr;
 
 #ifdef HAVE_DOOR_CREATE
     kcm_setup_door();
