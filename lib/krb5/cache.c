@@ -204,16 +204,14 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_new_unique(krb5_context context, const char *type, 
 		   const char *hint, krb5_ccache *id)
 {
-    const krb5_cc_ops *ops = KRB5_DEFAULT_CCTYPE;
+    const krb5_cc_ops *ops;
     krb5_error_code ret;
 
-    if (type) {
-	ops = krb5_cc_get_prefix_ops(context, type);
-	if (ops == NULL) {
-	    krb5_set_error_string(context,
-				  "Credential cache type %s is unknown", type);
-	    return KRB5_CC_UNKNOWN_TYPE;
-	}
+    ops = krb5_cc_get_prefix_ops(context, type);
+    if (ops == NULL) {
+	krb5_set_error_string(context,
+			      "Credential cache type %s is unknown", type);
+	return KRB5_CC_UNKNOWN_TYPE;
     }
 
     ret = _krb5_cc_allocate(context, ops, id);
@@ -864,10 +862,12 @@ krb5_cc_clear_mcred(krb5_creds *mcred)
 
 /**
  * Get the cc ops that is registered in `context' to handle the
- * `prefix'. `prefix' can be a complete credential cache name or a
+ * prefix. prefix can be a complete credential cache name or a
  * prefix, the function will only use part up to the first colon (:)
- * if there is one.
- * Returns NULL if ops not found.
+ * if there is one. If prefix the argument is NULL, the default ccache
+ * implemtation is returned.
+ 
+ * @return Returns NULL if ops not found.
  *
  * @ingroup krb5_ccache
  */
@@ -879,6 +879,8 @@ krb5_cc_get_prefix_ops(krb5_context context, const char *prefix)
     char *p, *p1;
     int i;
     
+    if (prefix == NULL)
+	return KRB5_DEFAULT_CCTYPE;
     if (prefix[0] == '/')
 	return &krb5_fcc_ops;
 
