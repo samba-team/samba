@@ -823,7 +823,7 @@ loop(krb5_context context,
      krb5_kdc_configuration *config)
 {
     struct descr *d;
-    int ndescr;
+    unsigned int ndescr;
 
     ndescr = init_sockets(context, config, &d);
     if(ndescr <= 0)
