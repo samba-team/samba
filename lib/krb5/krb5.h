@@ -396,7 +396,10 @@ typedef struct krb5_creds {
 
 typedef struct krb5_cc_cache_cursor_data *krb5_cc_cache_cursor;
 
+#define KRB5_CC_OPS_VERSION 1
+
 typedef struct krb5_cc_ops {
+    int version;
     const char *prefix;
     const char* (*get_name)(krb5_context, krb5_ccache);
     krb5_error_code (*resolve)(krb5_context, krb5_ccache *, const char *);
