@@ -117,7 +117,8 @@ terminate(int sig)
 }
 
 static int
-spawn_child(krb5_context context, int *socks, int num_socks, int this_sock)
+spawn_child(krb5_context context, int *socks, 
+	    unsigned int num_socks, int this_sock)
 {
     int e, i;
     struct sockaddr_storage __ss;
@@ -164,9 +165,10 @@ spawn_child(krb5_context context, int *socks, int num_socks, int this_sock)
 
 static int
 wait_for_connection(krb5_context context,
-		    int *socks, int num_socks)
+		    int *socks, unsigned int num_socks)
 {
-    int i, e;
+    unsigned int i;
+    int e;
     fd_set orig_read_set, read_set;
     int max_fd = -1;
     
@@ -223,7 +225,7 @@ start_server(krb5_context context)
     struct kadm_port *p;
 
     int *socks = NULL, *tmp;
-    int num_socks = 0;
+    unsigned int num_socks = 0;
     int i;
 
     for(p = kadm_ports; p; p = p->next) {
