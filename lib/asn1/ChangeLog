@@ -1,5 +1,9 @@
-2008-03-22  Love Hörnquist Åstrand  <lha@it.su.se>
+2008-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gen.c: Use unsigned where appropriate.
+	
+2008-03-22  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* k5.asn1: Match name in ClientCanonicalizedNames with -10
 
 	* k5.asn1: add referral-valid-until
