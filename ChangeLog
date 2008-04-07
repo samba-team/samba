@@ -1,3 +1,7 @@
+2008-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/acache.c: Only release context if its in use.
+
 2008-04-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/setup.texi: No patching of OpenLDAP is needed, from Buchan
