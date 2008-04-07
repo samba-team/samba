@@ -627,7 +627,7 @@ auth_debug(int mode)
 }
 
 void
-auth_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
+auth_printsub(unsigned char *data, int cnt, unsigned char *buf, size_t buflen)
 {
     Authenticator *ap;
 
@@ -638,7 +638,8 @@ auth_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
 }
 
 void
-auth_gen_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
+auth_gen_printsub(unsigned char *data, int cnt,
+		  unsigned char *buf, size_t buflen)
 {
     unsigned char *cp;
     unsigned char tbuf[16];
