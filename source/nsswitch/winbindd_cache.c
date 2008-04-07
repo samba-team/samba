@@ -2122,7 +2122,9 @@ do_query:
 
 	/* and save it */
 	refresh_sequence_number(domain, False);
-	wcache_save_password_policy(domain, status, policy);
+	if (NT_STATUS_IS_OK(status)) {
+		wcache_save_password_policy(domain, status, policy);
+	}
 
 	return status;
 }
