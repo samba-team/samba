@@ -484,10 +484,11 @@ static NTSTATUS srv_enc_spnego_negotiate(connection_struct *conn,
 	DATA_BLOB blob = data_blob_null;
 	DATA_BLOB secblob = data_blob_null;
 	bool got_kerberos_mechanism = false;
+	char *kerb_mech = NULL;
 
 	blob = data_blob_const(*ppdata, *p_data_size);
 
-	status = parse_spnego_mechanisms(blob, &secblob, &got_kerberos_mechanism);
+	status = parse_spnego_mechanisms(blob, &secblob, &kerb_mech);
 	if (!NT_STATUS_IS_OK(status)) {
 		return nt_status_squash(status);
 	}
@@ -496,7 +497,9 @@ static NTSTATUS srv_enc_spnego_negotiate(connection_struct *conn,
 
 	srv_free_encryption_context(&partial_srv_trans_enc_ctx);
 
-	if (got_kerberos_mechanism) {
+	if (kerb_mech) {
+		SAFE_FREE(kerb_mech);
+
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 		status = srv_enc_spnego_gss_negotiate(ppdata, p_data_size, secblob);
 #else
