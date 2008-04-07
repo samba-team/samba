@@ -1,3 +1,7 @@
+2008-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* resolve.c: Use unsigned where appropriate.
+
 2008-02-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: make AM_CPPFLAGS +=
