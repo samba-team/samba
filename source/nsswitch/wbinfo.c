@@ -811,7 +811,7 @@ static bool wbinfo_lookuprids(const char *domain, const char *arg)
 	uint32 *rids = NULL;
 	const char *p;
 	char *ridstr;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = NULL;
 	bool ret = false;
 
 	if ((domain == NULL) || (strequal(domain, ".")) || (domain[0] == '\0')) {
