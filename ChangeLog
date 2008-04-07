@@ -1,5 +1,9 @@
 2008-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kcm/acl.c: Add missing op.
+
+	* kdc/connect.c: Use unsigned where appropriate.
+
 	* lib/krb5/n-fold.c: Use size_t where appropriate.
 
 	* lib/krb5/get_addrs.c: Use unsigned where appropriate.
