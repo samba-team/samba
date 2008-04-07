@@ -40,6 +40,7 @@ struct txt_cache {
 struct txt_private_data {
 	struct txt_cache *cache;
 	uint64_t csn;
+	bool verbatim;
 };
 
 /**********************************************************************
@@ -514,7 +515,16 @@ static struct smbconf_ops smbconf_ops_txt = {
  */
 WERROR smbconf_init_txt_simple(TALLOC_CTX *mem_ctx,
 			       struct smbconf_ctx **conf_ctx,
-			       const char *path)
+			       const char *path,
+			       bool verbatim)
 {
-	return smbconf_init(mem_ctx, conf_ctx, path, &smbconf_ops_txt);
+	WERROR werr;
+
+	werr = smbconf_init(mem_ctx, conf_ctx, path, &smbconf_ops_txt);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	pd(*conf_ctx)->verbatim = verbatim;
+	return WERR_OK;
 }
