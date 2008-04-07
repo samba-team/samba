@@ -56,8 +56,8 @@ static struct txt_private_data *pd(struct smbconf_ctx *ctx)
 	return (struct txt_private_data *)(ctx->data);
 }
 
-static bool smbconf_txt_find_in_array(const char *string, char **list,
-				      uint32_t num_entries, uint32_t *entry)
+static bool smbconf_find_in_array(const char *string, char **list,
+				  uint32_t num_entries, uint32_t *entry)
 {
 	uint32_t i;
 
@@ -83,8 +83,8 @@ static bool smbconf_txt_do_section(const char *section, void *private_data)
 	uint32_t idx;
 	struct txt_cache *cache = (struct txt_cache *)private_data;
 
-	if (smbconf_txt_find_in_array(section, cache->share_names,
-				      cache->num_shares, &idx))
+	if (smbconf_find_in_array(section, cache->share_names,
+				  cache->num_shares, &idx))
 	{
 		cache->current_share = idx;
 		return true;
@@ -147,8 +147,7 @@ static bool smbconf_txt_do_parameter(const char *param_name,
 	param_values = cache->param_values[cache->current_share];
 	num_params   = cache->num_params[cache->current_share];
 
-	if (smbconf_txt_find_in_array(param_name, param_names, num_params,
-				      &idx))
+	if (smbconf_find_in_array(param_name, param_names, num_params, &idx))
 	{
 		TALLOC_FREE(param_values[idx]);
 		param_values[idx] = talloc_strdup(cache, param_value);
@@ -358,9 +357,9 @@ static bool smbconf_txt_share_exists(struct smbconf_ctx *ctx,
 		return false;
 	}
 
-	return smbconf_txt_find_in_array(servicename,
-					 pd(ctx)->cache->share_names,
-					 pd(ctx)->cache->num_shares, NULL);
+	return smbconf_find_in_array(servicename,
+				     pd(ctx)->cache->share_names,
+				     pd(ctx)->cache->num_shares, NULL);
 }
 
 /**
@@ -393,10 +392,10 @@ static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
 		return werr;
 	}
 
-	found = smbconf_txt_find_in_array(servicename,
-					  pd(ctx)->cache->share_names,
-					  pd(ctx)->cache->num_shares,
-					  &sidx);
+	found = smbconf_find_in_array(servicename,
+				      pd(ctx)->cache->share_names,
+				      pd(ctx)->cache->num_shares,
+				      &sidx);
 	if (!found) {
 		return WERR_NO_SUCH_SERVICE;
 	}
@@ -476,18 +475,18 @@ static WERROR smbconf_txt_get_parameter(struct smbconf_ctx *ctx,
 		return werr;
 	}
 
-	found = smbconf_txt_find_in_array(service,
-					  pd(ctx)->cache->share_names,
-					  pd(ctx)->cache->num_shares,
-					  &share_index);
+	found = smbconf_find_in_array(service,
+				      pd(ctx)->cache->share_names,
+				      pd(ctx)->cache->num_shares,
+				      &share_index);
 	if (!found) {
 		return WERR_NO_SUCH_SERVICE;
 	}
 
-	found = smbconf_txt_find_in_array(param,
-				pd(ctx)->cache->param_names[share_index],
-				pd(ctx)->cache->num_params[share_index],
-				&param_index);
+	found = smbconf_find_in_array(param,
+				      pd(ctx)->cache->param_names[share_index],
+				      pd(ctx)->cache->num_params[share_index],
+				      &param_index);
 	if (!found) {
 		return WERR_INVALID_PARAM;
 	}
