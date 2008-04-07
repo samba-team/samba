@@ -65,7 +65,7 @@ struct p11_module {
     void *dl_handle;
     CK_FUNCTION_LIST_PTR funcs;
     CK_ULONG num_slots;
-    unsigned int refcount;
+    unsigned int ref;
     struct p11_slot *slot;
 };
 
@@ -640,9 +640,11 @@ collect_private_key(hx509_context context,
     p11rsa->slot = slot;
     p11rsa->private_key = object;
     
-    p->refcount++;
-    if (p->refcount == 0)
-	_hx509_abort("pkcs11 refcount to high");
+    if (p->ref == 0)
+	_hx509_abort("pkcs11 ref == 0 on alloc");
+    p->ref++;
+    if (p->ref == UINT_MAX)
+	_hx509_abort("pkcs11 ref == UINT_MAX on alloc");
 
     RSA_set_method(rsa, &p11_rsa_pkcs1_method);
     ret = RSA_set_app_data(rsa, p11rsa);
@@ -695,9 +697,11 @@ collect_cert(hx509_context context,
     if (ret)
 	return ret;
 
-    p->refcount++;
-    if (p->refcount == 0)
-	_hx509_abort("pkcs11 refcount to high");
+    if (p->ref == 0)
+	_hx509_abort("pkcs11 ref == 0 on alloc");
+    p->ref++;
+    if (p->ref == UINT_MAX)
+	_hx509_abort("pkcs11 ref to high");
 
     _hx509_cert_set_release(cert, p11_cert_release, p);
 
@@ -808,7 +812,7 @@ p11_init(hx509_context context,
 	return ENOMEM;
     }
 
-    p->refcount = 1;
+    p->ref = 1;
 
     str = strchr(list, ',');
     if (str)
@@ -934,9 +938,9 @@ p11_release_module(struct p11_module *p)
 {
     int i;
 
-    if (p->refcount == 0)
-	_hx509_abort("pkcs11 refcount to low");
-    if (--p->refcount > 0)
+    if (p->ref == 0)
+	_hx509_abort("pkcs11 ref to low");
+    if (--p->ref > 0)
 	return;
 
     for (i = 0; i < p->num_slots; i++) {
