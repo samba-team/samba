@@ -394,8 +394,7 @@ kcm_fire_event(krb5_context context,
 }
 
 krb5_error_code
-kcm_run_events(krb5_context context,
-	       time_t now)
+kcm_run_events(krb5_context context, time_t now)
 {
     krb5_error_code ret;
     kcm_event **e;
