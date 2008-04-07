@@ -18,6 +18,7 @@ if test -z "$WFLAGS" -a "$GCC" = "yes"; then
   #   -Wcast-align doesn't work well on alpha osf/1
   #   -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast
   #   -Wmissing-declarations -Wnested-externs
+  #   -Wstrict-overflow=5
   WFLAGS="ifelse($#, 0,-Wall, $1) $dwflags"
   WFLAGS_NOUNUSED="-Wno-unused"
   WFLAGS_NOIMPLICITINT="-Wno-implicit-int"
