@@ -929,7 +929,7 @@ sub Parse($$$$$)
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("PyObject *m;");
-	$self->pidl("m = Py_InitModule(\"$basename\", $basename\_methods);");
+	$self->pidl("m = Py_InitModule3(\"$basename\", $basename\_methods, \"$basename DCE/RPC interface\");");
 	foreach my $name (keys %{$self->{constants}}) {
 		my $py_obj;
 		my ($ctype, $cvar) = @{$self->{constants}->{$name}};
