@@ -5603,7 +5603,7 @@ static BOOL sam_io_user_info17(const char *desc, SAM_USER_INFO_17 * usr,
 }
 
 /*************************************************************************
- init_sam_user_infoa
+ init_sam_user_info24
  *************************************************************************/
 
 void init_sam_user_info24(SAM_USER_INFO_24 * usr, char newpass[516],
