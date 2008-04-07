@@ -567,7 +567,7 @@ static bool fill_grent_mem(struct winbindd_domain *domain,
 		/* If we have no more groups to expand, break out
 		   early */
 
-		if ( !&new_glist )
+		if (new_glist == NULL)
 			break;
 
 		/* One more round */
