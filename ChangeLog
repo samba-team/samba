@@ -1,5 +1,7 @@
 2008-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/acache.c: Translate ccErrInvalidCCache.
+
 	* lib/krb5/scache.c: implemetation of a sqlite3 backed credential
 	cache.
 
