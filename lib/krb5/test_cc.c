@@ -191,7 +191,7 @@ test_init_vs_destroy(krb5_context context, const krb5_cc_ops *ops)
 }
 
 static void
-test_fcache_remove(krb5_context context)
+test_cache_remove(krb5_context context, const krb5_cc_ops *ops)
 {
     krb5_error_code ret;
     krb5_ccache id;
@@ -202,7 +202,7 @@ test_fcache_remove(krb5_context context)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_parse_name");
 
-    ret = krb5_cc_gen_new(context, &krb5_fcc_ops, &id);
+    ret = krb5_cc_gen_new(context, ops, &id);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_cc_gen_new");
 
@@ -534,7 +534,10 @@ main(int argc, char **argv)
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
 
-    test_fcache_remove(context);
+    test_cache_remove(context, &krb5_fcc_ops);
+    test_cache_remove(context, &krb5_mcc_ops);
+    test_cache_remove(context, &krb5_scc_ops);
+
     test_default_name(context);
     test_mcache(context);
     test_init_vs_destroy(context, &krb5_mcc_ops);
