@@ -409,7 +409,8 @@ think(void)
 static void
 move(XtPointer _p, XtIntervalId *_id)
 {
-    static int length, dir;
+    static int dir;
+    static unsigned int length;
 
     if (!length) {
 	int tries = 0;
@@ -705,7 +706,7 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 {
     XKeyEvent *event = (XKeyEvent *)_event;
     static char passwd[MAX_PASSWD_LENGTH];
-    static int cnt;
+    static unsigned int cnt;
     static int is_ctrl = XNLOCK_NOCTRL;
     char c;
     KeySym keysym;
@@ -823,8 +824,9 @@ init_images(void)
 static void
 talk(int force_erase)
 {
-    int width = 0, height, Z, total = 0;
-    static int X, Y, talking;
+    unsigned int width = 0, height, Z, total = 0;
+    static unsigned int X, Y;
+    static int talking;
     static struct { int x, y, width, height; } s_rect;
     char *p, *p2;
     char buf[BUFSIZ], args[MAXLINES][256];
