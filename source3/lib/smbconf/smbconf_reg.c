@@ -776,6 +776,23 @@ done:
 	return werr;
 }
 
+static WERROR smbconf_reg_get_includes(struct smbconf_ctx *ctx,
+				       const char *service,
+				       uint32_t *num_includes,
+				       char ***includes)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+static WERROR smbconf_reg_set_includes(struct smbconf_ctx *ctx,
+				       const char *service,
+				       uint32_t num_includes,
+				       const char **includes)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+
 struct smbconf_ops smbconf_ops_reg = {
 	.init			= smbconf_reg_init,
 	.shutdown		= smbconf_reg_shutdown,
@@ -790,7 +807,9 @@ struct smbconf_ops smbconf_ops_reg = {
 	.delete_share		= smbconf_reg_delete_share,
 	.set_parameter		= smbconf_reg_set_parameter,
 	.get_parameter		= smbconf_reg_get_parameter,
-	.delete_parameter	= smbconf_reg_delete_parameter
+	.delete_parameter	= smbconf_reg_delete_parameter,
+	.get_includes		= smbconf_reg_get_includes,
+	.set_includes		= smbconf_reg_set_includes,
 };
 
 

@@ -51,6 +51,12 @@ struct smbconf_ops {
 				char **valstr);
 	WERROR (*delete_parameter)(struct smbconf_ctx *ctx,
 				   const char *service, const char *param);
+	WERROR (*get_includes)(struct smbconf_ctx *ctx,
+			       const char *service,
+			       uint32_t *num_includes, char ***includes);
+	WERROR (*set_includes)(struct smbconf_ctx *ctx,
+			       const char *service,
+			       uint32_t num_includes, const char **includes);
 };
 
 struct smbconf_ctx {
