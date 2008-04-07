@@ -57,6 +57,7 @@ kcm_access(krb5_context context,
     case KCM_OP_CHMOD:
     case KCM_OP_GET_INITIAL_TICKET:
     case KCM_OP_GET_TICKET:
+    case KCM_OP_MOVE_CACHE:
 	write_p = 1;
 	read_p = 0;
 	break;
@@ -79,7 +80,8 @@ kcm_access(krb5_context context,
 	/* System caches cannot be reinitialized or destroyed by users */
 	if (opcode == KCM_OP_INITIALIZE ||
 	    opcode == KCM_OP_DESTROY ||
-	    opcode == KCM_OP_REMOVE_CRED) {
+	    opcode == KCM_OP_REMOVE_CRED ||
+	    opcode == KCM_OP_MOVE_CACHE) {
 	    ret = KRB5_FCC_PERM;
 	    goto out;
 	}
