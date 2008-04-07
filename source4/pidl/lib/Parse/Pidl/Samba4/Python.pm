@@ -260,7 +260,7 @@ sub PythonStruct($$$$$$)
 
 sub PythonFunction($$$)
 {
-	my ($self, $fn, $iface) = @_;
+	my ($self, $fn, $iface, $prettyname) = @_;
 
 	my $docstring = $self->DocString($fn, $fn->{NAME});
 
@@ -282,6 +282,8 @@ sub PythonFunction($$$)
 	my $args_string = "";
 	my $args_names = "";
 
+	my $signature = "S.$prettyname(";
+
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		$self->pidl("PyObject *py_$e->{NAME};");
 		if (grep(/out/,@{$e->{DIRECTION}})) {
@@ -291,8 +293,14 @@ sub PythonFunction($$$)
 			$args_format .= "O";
 			$args_string .= ", &py_$e->{NAME}";
 			$args_names .= "\"$e->{NAME}\", ";
+			$signature .= "$e->{NAME}, ";
 		}
 	}
+	if (substr($signature, -2) eq ", ") {
+		$signature = substr($signature, 0, -2);
+	}
+	$signature.= ") -> ";
+
 	$self->pidl("const char *kwnames[] = {");
 	$self->indent;
 	$self->pidl($args_names . "NULL");
@@ -323,6 +331,9 @@ sub PythonFunction($$$)
 
 	if ($result_size > 1) {
 		$self->pidl("result = PyTuple_New($result_size);");
+		$signature .= "(";
+	} elsif ($result_size == 0) {
+		$signature .= "None";
 	}
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
@@ -332,8 +343,10 @@ sub PythonFunction($$$)
 			if ($result_size > 1) {
 				$self->pidl("PyTuple_SetItem(result, $i, $py_name);");
 				$i++;
+				$signature .= "$e->{NAME}, ";
 			} else {
 				$self->pidl("result = $py_name;");
+				$signature .= "result";
 			}
 		}
 	}
@@ -346,9 +359,18 @@ sub PythonFunction($$$)
 		my $conv = $self->ConvertObjectToPythonData("r", $fn->{RETURN_TYPE}, "r->out.result");
 		if ($result_size > 1) {
 			$self->pidl("PyTuple_SetItem(result, $i, $conv);");
+			$signature .= "result";
 		} else {
 			$self->pidl("result = $conv;");
+			$signature .= "result";
 		}
+	}
+
+	if (substr($signature, -2) eq ", ") {
+		$signature = substr($signature, 0, -2);
+	}
+	if ($result_size > 1) {
+		$signature .= ")";
 	}
 
 	$self->pidl("talloc_free(mem_ctx);");
@@ -356,6 +378,12 @@ sub PythonFunction($$$)
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
+
+	if ($docstring eq "NULL") {
+		$docstring = "\"$signature\"";
+	} else {
+		$docstring = "\"$signature\\n\\n\"$docstring";
+	}
 
 	return ($fnname, $docstring);
 }
@@ -487,12 +515,12 @@ sub Interface($$$)
 			next if not defined($d->{OPNUM});
 			next if has_property($d, "nopython");
 
-			my ($fnname, $fndocstring) = $self->PythonFunction($d, $interface->{NAME});
-
 			my $prettyname = $d->{NAME};
 
 			$prettyname =~ s/^$interface->{NAME}_//;
 			$prettyname =~ s/^$basename\_//;
+
+			my ($fnname, $fndocstring) = $self->PythonFunction($d, $interface->{NAME}, $prettyname);
 
 			push (@fns, [$fnname, $prettyname, $fndocstring]);
 		}
