@@ -442,7 +442,7 @@ test_move(krb5_context context, const char *type)
 
     ret = krb5_cc_gen_new(context, ops, &fromid);
     if (ret == KRB5_CC_NOSUPP)
-	return 0;
+	return;
     else if (ret)
 	krb5_err(context, 1, ret, "krb5_cc_gen_new");
 
@@ -539,6 +539,8 @@ main(int argc, char **argv)
     test_mcache(context);
     test_init_vs_destroy(context, &krb5_mcc_ops);
     test_init_vs_destroy(context, &krb5_fcc_ops);
+    test_init_vs_destroy(context, &krb5_acc_ops);
+    test_init_vs_destroy(context, &krb5_scc_ops);
     test_mcc_default();
     test_def_cc_name(context);
     test_cache_iter(context, "MEMORY", 0);
@@ -559,21 +561,28 @@ main(int argc, char **argv)
     test_cache_iter(context, "MEMORY", 0);
     test_cache_iter(context, "FILE", 0);
     test_cache_iter(context, "API", 0);
+    test_cache_iter(context, "SDB", 0);
+    test_cache_iter(context, "SDB", 1);
 
     test_copy(context, "FILE", "FILE");
     test_copy(context, "MEMORY", "MEMORY");
     test_copy(context, "FILE", "MEMORY");
     test_copy(context, "MEMORY", "FILE");
+    test_copy(context, "SDB", "FILE");
+    test_copy(context, "FILE", "SDB");
 
     test_move(context, "FILE");
     test_move(context, "MEMORY");
     test_move(context, "KCM");
+    test_move(context, "SDB");
 
     test_prefix_ops(context, "FILE:/tmp/foo", &krb5_fcc_ops);
     test_prefix_ops(context, "FILE", &krb5_fcc_ops);
     test_prefix_ops(context, "MEMORY", &krb5_mcc_ops);
     test_prefix_ops(context, "MEMORY:foo", &krb5_mcc_ops);
     test_prefix_ops(context, "/tmp/kaka", &krb5_fcc_ops);
+    test_prefix_ops(context, "SDB:", &krb5_scc_ops);
+    test_prefix_ops(context, "SDB:foo", &krb5_scc_ops);
 
     krb5_cc_destroy(context, id1);
     krb5_cc_destroy(context, id2);
