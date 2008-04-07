@@ -128,7 +128,8 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	     const unsigned char **pp, struct resource_record **ret_rr)
 {
     struct resource_record *rr;
-    int type, class, ttl, size;
+    int type, class, ttl;
+    unsigned size;
     int status;
     char host[MAXDNAME];
     const unsigned char *p = *pp;
