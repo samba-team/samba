@@ -553,7 +553,7 @@ fix_transited_encoding(krb5_context context,
 {
     krb5_error_code ret = 0;
     char **realms, **tmp;
-    int num_realms;
+    unsigned int num_realms;
     int i;
 
     switch (tr->tr_type) {
@@ -588,7 +588,7 @@ fix_transited_encoding(krb5_context context,
     }
     if(strcmp(client_realm, tgt_realm) && strcmp(server_realm, tgt_realm)) {
 	/* not us, so add the previous realm to transited set */
-	if (num_realms < 0 || num_realms + 1 > UINT_MAX/sizeof(*realms)) {
+	if (num_realms + 1 > UINT_MAX/sizeof(*realms)) {
 	    ret = ERANGE;
 	    goto free_realms;
 	}
