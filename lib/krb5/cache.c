@@ -406,11 +406,29 @@ environment_changed(krb5_context context)
 }
 
 /**
- * Set the default cc name for `context' to `name'.
+ * Switch the default default credential cache for a specific
+ * credcache type (and name for some implementations).
+ *
+ * @return Returns 0 or an error code.
  *
  * @ingroup krb5_ccache
  */
 
+krb5_error_code
+krb5_cc_switch(krb5_context context, krb5_ccache id)
+{
+
+    if (id->ops->set_default == NULL)
+	return 0;
+
+    return (*id->ops->set_default)(context, id);
+}
+
+/**
+ * Set the default cc name for `context' to `name'.
+ *
+ * @ingroup krb5_ccache
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_set_default_name(krb5_context context, const char *name)
@@ -440,7 +458,7 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
 	    }
 	    if (e == NULL) {
 		const krb5_cc_ops *ops = KRB5_DEFAULT_CCTYPE;
-		ret = (*ops->default_name)(context, &p);
+		ret = (*ops->get_default_name)(context, &p);
 		if (ret)
 		    return ret;
 	    }
