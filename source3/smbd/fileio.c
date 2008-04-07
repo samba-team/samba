@@ -188,6 +188,8 @@ static void update_write_time_handler(struct event_context *ctx,
 
 void trigger_write_time_update(struct files_struct *fsp)
 {
+	int delay;
+
 	if (fsp->write_time_forced) {
 		return;
 	}
@@ -197,11 +199,15 @@ void trigger_write_time_update(struct files_struct *fsp)
 	}
 	fsp->update_write_time_triggered = true;
 
+	delay = lp_parm_int(SNUM(fsp->conn),
+			    "smbd", "writetimeupdatedelay",
+			    WRITE_TIME_UPDATE_USEC_DELAY);
+
 	/* trigger the update 2 seconds later */
 	fsp->update_write_time_on_close = true;
 	fsp->update_write_time_event =
 		event_add_timed(smbd_event_context(), NULL,
-				timeval_current_ofs(2, 0),
+				timeval_current_ofs(0, delay),
 				"update_write_time_handler",
 				update_write_time_handler, fsp);
 }
