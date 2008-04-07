@@ -686,6 +686,7 @@ extern const krb5_cc_ops krb5_acc_ops;
 extern const krb5_cc_ops krb5_fcc_ops;
 extern const krb5_cc_ops krb5_mcc_ops;
 extern const krb5_cc_ops krb5_kcm_ops;
+extern const krb5_cc_ops krb5_scc_ops;
 
 extern const krb5_kt_ops krb5_fkt_ops;
 extern const krb5_kt_ops krb5_wrfkt_ops;
