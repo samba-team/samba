@@ -106,7 +106,7 @@ main(int argc, char **argv)
 
     char *path;
     char **args;
-    int i;
+    unsigned int i;
     int optind = 0;
 
     setprogname(argv[0]);
@@ -224,7 +224,7 @@ main(int argc, char **argv)
     execvp(path, args);
     if (errno == ENOENT || c_flag) {
 	char **sh_args = malloc ((i + 2) * sizeof(char *));
-	int j;
+	unsigned int j;
 
 	if (sh_args == NULL)
 	    errx (1, "Out of memory copying sh arguments");
