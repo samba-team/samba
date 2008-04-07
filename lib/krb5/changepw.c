@@ -522,7 +522,7 @@ change_password_loop (krb5_context	context,
     krb5_krbhst_handle handle = NULL;
     krb5_krbhst_info *hi;
     int sock;
-    int i;
+    unsigned int i;
     int done = 0;
     krb5_realm realm;
 
@@ -647,17 +647,14 @@ change_password_loop (krb5_context	context,
  out:
     krb5_krbhst_free (context, handle);
     krb5_auth_con_free (context, auth_context);
-    if (done)
-	return 0;
-    else {
-	if (ret == KRB5_KDC_UNREACH) {
-	    krb5_set_error_string(context,
-				  "unable to reach any changepw server "
-				  " in realm %s", realm);
-	    *result_code = KRB5_KPASSWD_HARDERROR;
-	}
-	return ret;
+
+    if (ret == KRB5_KDC_UNREACH) {
+	krb5_set_error_string(context,
+			      "unable to reach any changepw server "
+			      " in realm %s", realm);
+	*result_code = KRB5_KPASSWD_HARDERROR;
     }
+    return ret;
 }
 
 
