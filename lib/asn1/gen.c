@@ -294,13 +294,18 @@ generate_constant (const Symbol *s)
 	break;
     case objectidentifiervalue: {
 	struct objid *o, **list;
-	int i, len;
+	unsigned int i, len;
 
 	generate_header_of_codefile(s->gen_name);
 
 	len = 0;
 	for (o = s->value->u.objectidentifiervalue; o != NULL; o = o->next)
 	    len++;
+	if (len == 0) {
+	    printf("s->gen_name: %s",s->gen_name);
+	    fflush(stdout);
+	    break;
+	}
 	list = emalloc(sizeof(*list) * len);
 
 	i = 0;
@@ -308,8 +313,8 @@ generate_constant (const Symbol *s)
 	    list[i++] = o;
 
 	fprintf (headerfile, "/* OBJECT IDENTIFIER %s ::= { ", s->name);
-	for (i = len - 1 ; i >= 0; i--) {
-	    o = list[i];
+	for (i = len ; i > 0; i--) {
+	    o = list[i - 1];
 	    fprintf(headerfile, "%s(%d) ",
 		    o->label ? o->label : "label-less", o->value);
 	}
@@ -320,8 +325,8 @@ generate_constant (const Symbol *s)
 
 	fprintf (codefile, "static unsigned oid_%s_variable_num[%d] =  {",
 		 s->gen_name, len);
-	for (i = len - 1 ; i >= 0; i--) {
-	    fprintf(codefile, "%d%s ", list[i]->value, i > 0 ? "," : "");
+	for (i = len ; i > 0; i--) {
+	    fprintf(codefile, "%d%s ", list[i - 1]->value, i > 1 ? "," : "");
 	}
 	fprintf(codefile, "};\n");
 
