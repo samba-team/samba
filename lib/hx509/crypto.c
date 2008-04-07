@@ -1592,11 +1592,11 @@ _hx509_private_key_init(hx509_private_key *key,
 hx509_private_key
 _hx509_private_key_ref(hx509_private_key key)
 {
-    if (key->ref <= 0)
-	_hx509_abort("refcount <= 0");
-    key->ref++;
     if (key->ref == 0)
-	_hx509_abort("refcount == 0");
+	_hx509_abort("key refcount <= 0 on ref");
+    key->ref++;
+    if (key->ref == UINT_MAX)
+	_hx509_abort("key refcount == UINT_MAX on ref");
     return key;
 }
 
@@ -1612,8 +1612,8 @@ _hx509_private_key_free(hx509_private_key *key)
     if (key == NULL || *key == NULL)
 	return 0;
 
-    if ((*key)->ref <= 0)
-	_hx509_abort("refcount <= 0");
+    if ((*key)->ref == 0)
+	_hx509_abort("key refcount == 0 on free");
     if (--(*key)->ref > 0)
 	return 0;
 
