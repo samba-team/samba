@@ -175,7 +175,6 @@ scc_free(krb5_scache *s)
     free(s);
 }
 
-#define TRACEME
 #ifdef TRACEME
 static void
 trace(void* ptr, const char * str)
@@ -690,24 +689,25 @@ scc_store_cred(krb5_context context,
 
     sqlite3_bind_int(s->icred, 1, s->cid);
     {
+	krb5_enctype etype = 0;
 	int kvno = 0;
 	Ticket t;
 	size_t len;
 
 	ret = decode_Ticket(creds->ticket.data, 
 			    creds->ticket.length, &t, &len);
-	if (ret) {
-	    krb5_set_error_string(context, "Failed to decode ticket");
-	    return ret;
+	if (ret == 0) {
+	    if(t.enc_part.kvno)
+		kvno = *t.enc_part.kvno;
+
+	    etype = t.enc_part.etype;
+
+	    free_Ticket(&t);
 	}
 
-	if(t.enc_part.kvno)
-	    kvno = *t.enc_part.kvno;
-
 	sqlite3_bind_int(s->icred, 2, kvno);
-	sqlite3_bind_int(s->icred, 3, t.enc_part.etype);
+	sqlite3_bind_int(s->icred, 3, etype);
 
-	free_Ticket(&t);
     }
 
     sqlite3_bind_blob(s->icred, 4, data.data, data.length, free_data);
@@ -1003,12 +1003,85 @@ scc_remove_cred(krb5_context context,
 {
     krb5_scache *s = SCACHE(id);
     krb5_error_code ret;
+    sqlite3_stmt *stmt;
+    sqlite_uint64 credid = 0;
+    const void *data = NULL;
+    size_t len = 0;
 
     ret = make_database(context, s);
     if (ret)
 	return ret;
 
-    return 0;
+    ret = prepare_stmt(context, s->db, &stmt, 
+		       "SELECT cred,oid FROM credentials "
+		       "WHERE cid = ?");
+    if (ret)
+	return ret;
+
+    sqlite3_bind_int(stmt, 1, s->cid);
+
+    /* find credential... */
+    while (1) {
+	krb5_creds creds;
+
+	ret = sqlite3_step(stmt);
+	if (ret == SQLITE_DONE) {
+	    ret = 0;
+	    break;
+	} else if (ret != SQLITE_ROW) {
+	    krb5_set_error_string(context, "Database failed: %s", 
+				  sqlite3_errmsg(s->db));
+	    ret = KRB5_CC_IO;
+	    break;
+	}
+
+	if (sqlite3_column_type(stmt, 0) != SQLITE_BLOB) {
+	    krb5_set_error_string(context, "credential of wrong type "
+				  "for SCACHE:%s:%s", 
+				  s->name, s->file);
+	    ret = KRB5_CC_END;
+	    break;
+	}
+
+	data = sqlite3_column_blob(stmt, 0);
+	len = sqlite3_column_bytes(stmt, 0);
+
+	ret = decode_creds(context, data, len, &creds);
+	if (ret) {
+	    krb5_set_error_string(context, "failed to decode creds");
+	    break;
+	}
+	
+	ret = krb5_compare_creds(context, which, mcreds, &creds);
+	krb5_free_cred_contents(context, &creds);
+	if (ret) {
+	    credid = sqlite3_column_int64(stmt, 1);
+	    ret = 0;
+	    break;
+	}
+    }
+
+    sqlite3_finalize(stmt);
+
+    if (id) {
+	ret = prepare_stmt(context, s->db, &stmt, 
+			   "DELETE FROM credentials WHERE oid=?");
+	if (ret)
+	    return ret;
+	sqlite3_bind_int(stmt, 1, credid);
+
+	do {
+	    ret = sqlite3_step(stmt);
+	} while (ret == SQLITE_ROW);
+	sqlite3_finalize(stmt);
+	if (ret != SQLITE_DONE) {
+	    krb5_set_error_string(context, "failed to delete credentail");
+	    ret = KRB5_CC_IO;
+	} else
+	    ret = 0;
+    }
+
+    return ret;
 }
 
 static krb5_error_code
@@ -1111,7 +1184,9 @@ scc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 }
 
 static krb5_error_code
-scc_get_cache_next(krb5_context context, krb5_cc_cursor cursor, krb5_ccache *id)
+scc_get_cache_next(krb5_context context,
+		   krb5_cc_cursor cursor,
+		   krb5_ccache *id)
 {
     struct cache_iter *ctx = cursor;
     krb5_error_code ret;
@@ -1174,7 +1249,8 @@ scc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     if (ret)
 	return ret;
 
-    ret = exec_stmt(context, sfrom->db, "BEGIN IMMEDIATE TRANSACTION", KRB5_CC_IO);
+    ret = exec_stmt(context, sfrom->db,
+		    "BEGIN IMMEDIATE TRANSACTION", KRB5_CC_IO);
     if (ret) return ret;
 
     if (sto->cid != SCACHE_INVALID_CID) {
@@ -1186,7 +1262,8 @@ scc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 	} while (ret == SQLITE_ROW);
 	sqlite3_reset(sfrom->dcache);
 	if (ret != SQLITE_DONE) {
-	    krb5_set_error_string(context, "Failed to delete old cache: %d", ret);
+	    krb5_set_error_string(context, 
+				  "Failed to delete old cache: %d", ret);
 	    goto rollback;
 	}
     }
