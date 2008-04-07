@@ -1360,6 +1360,7 @@ scc_set_default(krb5_context context, krb5_ccache id)
  */
 
 const krb5_cc_ops krb5_scc_ops = {
+    KRB5_CC_OPS_VERSION,
     "SDB",
     scc_get_name,
     scc_resolve,

@@ -179,7 +179,7 @@ dist_libkrb5_la_SOURCES =			\
 nodist_libkrb5_la_SOURCES =			\
 	$(ERR_FILES)
 
-libkrb5_la_LDFLAGS = -version-info 24:0:0
+libkrb5_la_LDFLAGS = -version-info 25:0:0
 
 if versionscript
 libkrb5_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
