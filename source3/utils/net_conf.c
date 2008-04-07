@@ -243,7 +243,7 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 	DEBUG(3,("net_conf_import: reading configuration from file %s.\n",
 		filename));
 
-	werr = smbconf_init_txt_simple(mem_ctx, &txt_ctx, filename);
+	werr = smbconf_init_txt_simple(mem_ctx, &txt_ctx, filename, true);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
