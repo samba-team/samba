@@ -494,6 +494,22 @@ static WERROR smbconf_txt_delete_parameter(struct smbconf_ctx *ctx,
 	return WERR_NOT_SUPPORTED;
 }
 
+static WERROR smbconf_txt_get_includes(struct smbconf_ctx *ctx,
+				       const char *service,
+				       uint32_t *num_includes,
+				       char ***includes)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+static WERROR smbconf_txt_set_includes(struct smbconf_ctx *ctx,
+				       const char *service,
+				       uint32_t num_includes,
+				       const char **includes)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
 static struct smbconf_ops smbconf_ops_txt = {
 	.init			= smbconf_txt_init,
 	.shutdown		= smbconf_txt_shutdown,
@@ -508,7 +524,9 @@ static struct smbconf_ops smbconf_ops_txt = {
 	.delete_share		= smbconf_txt_delete_share,
 	.set_parameter		= smbconf_txt_set_parameter,
 	.get_parameter		= smbconf_txt_get_parameter,
-	.delete_parameter	= smbconf_txt_delete_parameter
+	.delete_parameter	= smbconf_txt_delete_parameter,
+	.get_includes		= smbconf_txt_get_includes,
+	.set_includes		= smbconf_txt_set_includes,
 };
 
 
