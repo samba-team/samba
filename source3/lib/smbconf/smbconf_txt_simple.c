@@ -129,7 +129,8 @@ static bool smbconf_txt_do_parameter(const char *param_name,
 	param_values = cache->param_values[cache->current_share];
 	num_params   = cache->num_params[cache->current_share];
 
-	if (smbconf_find_in_array(param_name, param_names, num_params, &idx))
+	if (!(tpd->verbatim) &&
+	    smbconf_find_in_array(param_name, param_names, num_params, &idx))
 	{
 		TALLOC_FREE(param_values[idx]);
 		param_values[idx] = talloc_strdup(cache, param_value);
