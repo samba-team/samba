@@ -68,6 +68,7 @@ static const struct {
     { ccIteratorEnd,		KRB5_CC_END },
     { ccErrNoMem,		KRB5_CC_NOMEM },
     { ccErrServerUnavailable,	KRB5_CC_NOSUPP },
+    { ccErrInvalidCCache,	KRB5_CC_BADNAME },
     { ccNoError,		0 }
 };
 
