@@ -539,7 +539,9 @@ main(int argc, char **argv)
     test_mcache(context);
     test_init_vs_destroy(context, &krb5_mcc_ops);
     test_init_vs_destroy(context, &krb5_fcc_ops);
+#if 0
     test_init_vs_destroy(context, &krb5_acc_ops);
+#endif
     test_init_vs_destroy(context, &krb5_scc_ops);
     test_mcc_default();
     test_def_cc_name(context);
@@ -570,6 +572,8 @@ main(int argc, char **argv)
     test_copy(context, "MEMORY", "FILE");
     test_copy(context, "SDB", "FILE");
     test_copy(context, "FILE", "SDB");
+    test_copy(context, "SDB", "MEMORY");
+    test_copy(context, "MEMORY", "SDB");
 
     test_move(context, "FILE");
     test_move(context, "MEMORY");
