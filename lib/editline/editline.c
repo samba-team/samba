@@ -278,12 +278,10 @@ static void
 columns(int ac, unsigned char **av)
 {
     unsigned char	*p;
-    int		i;
-    int		j;
+    size_t	len;
     int		k;
-    int		len;
     int		skip;
-    int		longest;
+    unsigned int longest, i, j;
     int		cols;
 
     /* Find longest name, determine column count from that. */
