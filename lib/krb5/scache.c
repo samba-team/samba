@@ -525,6 +525,9 @@ scc_destroy(krb5_context context,
     krb5_scache *s = SCACHE(id);
     int ret;
 
+    if (s->cid == SCACHE_INVALID_CID)
+	return 0;
+
     sqlite3_bind_int(s->dcache, 1, s->cid);
     do {
 	ret = sqlite3_step(s->dcache);
@@ -1002,7 +1005,7 @@ scc_default_name(krb5_context context, char **str)
 
 
 /**
- * Variable containing the SCACHE based credential cache implemention.
+ * Variable containing the SDB based credential cache implemention.
  *
  * @ingroup krb5_ccache
  */
