@@ -1,5 +1,10 @@
 2008-04-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/test_cc.c: test remove
+
+	* lib/krb5/fcache.c: Make the remove cred slight more atomic, now
+	it might lose creds, but there will be no empty cache at any time.
+
 	* lib/krb5/scache.c: Do credential iteration by temporary table.
 
 2008-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
