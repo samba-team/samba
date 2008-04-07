@@ -171,38 +171,27 @@ sub PythonStruct($$$$$$)
 
 	$self->pidl("");
 
-	$self->pidl("static PyObject *py_$name\_getattr(PyObject *obj, char *name)");
-	$self->pidl("{");
-	$self->indent;
+	my $getsetters = "NULL";
+
 	if ($#{$d->{ELEMENTS}} > -1) {
-		$self->pidl("$cname *object = py_talloc_get_ptr(obj);");
 		foreach my $e (@{$d->{ELEMENTS}}) {
-			$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
 			my $varname = "object->$e->{NAME}";
+			$self->pidl("static PyObject *py_$name\_get_$e->{NAME}(PyObject *obj, void *closure)");
+			$self->pidl("{");
 			$self->indent;
+			$self->pidl("$cname *object = py_talloc_get_ptr(obj);");
 			$self->pidl("PyObject *py_$e->{NAME};");
 			$self->ConvertObjectToPython("py_talloc_get_mem_ctx(obj)", $env, $e, $varname, "py_$e->{NAME}");
 			$self->pidl("return py_$e->{NAME};");
 			$self->deindent;
 			$self->pidl("}");
-		}
-	}
-	$self->pidl("PyErr_SetString(PyExc_AttributeError, \"no such attribute\");");
-	$self->pidl("return NULL;");
-	$self->deindent;
-	$self->pidl("}");
-	$self->pidl("");
+			$self->pidl("");
 
-	$self->pidl("static int py_$name\_setattr(PyObject *py_obj, char *name, PyObject *value)");
-	$self->pidl("{");
-	$self->indent;
-	if ($#{$d->{ELEMENTS}} > -1) {
-		$self->pidl("$cname *object = py_talloc_get_ptr(py_obj);");
-		my $mem_ctx = "py_talloc_get_mem_ctx(py_obj)";
-		foreach my $e (@{$d->{ELEMENTS}}) {
-			$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
-			my $varname = "object->$e->{NAME}";
+			$self->pidl("static int py_$name\_set_$e->{NAME}(PyObject *py_obj, PyObject *value, void *closure)");
+			$self->pidl("{");
 			$self->indent;
+			$self->pidl("$cname *object = py_talloc_get_ptr(py_obj);");
+			my $mem_ctx = "py_talloc_get_mem_ctx(py_obj)";
 			my $l = $e->{LEVELS}[0];
 			my $nl = GetNextLevel($e, $l);
 			if ($l->{TYPE} eq "POINTER" and 
@@ -214,13 +203,20 @@ sub PythonStruct($$$$$$)
 			$self->pidl("return 0;");
 			$self->deindent;
 			$self->pidl("}");
+		$self->pidl("");
 		}
+
+		$getsetters = "py_$name\_getsetters";
+		$self->pidl("static PyGetSetDef ".$getsetters."[] = {");
+		$self->indent;
+		foreach my $e (@{$d->{ELEMENTS}}) {
+			$self->pidl("{ discard_const_p(char, \"$e->{NAME}\"), py_$name\_get_$e->{NAME}, py_$name\_set_$e->{NAME} },");
+		}
+		$self->pidl("{ NULL }");
+		$self->deindent;
+		$self->pidl("};");
+		$self->pidl("");
 	}
-	$self->pidl("PyErr_SetString(PyExc_AttributeError, \"no such attribute\");");
-	$self->pidl("return -1;");
-	$self->deindent;
-	$self->pidl("}");
-	$self->pidl("");
 
 	$self->pidl("static PyObject *py_$name\_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)");
 	$self->pidl("{");
@@ -244,8 +240,7 @@ sub PythonStruct($$$$$$)
 	$self->pidl(".tp_name = \"$modulename.$prettyname\",");
 	$self->pidl(".tp_basicsize = sizeof(py_talloc_Object),");
 	$self->pidl(".tp_dealloc = py_talloc_dealloc,");
-	$self->pidl(".tp_getattr = py_$name\_getattr,");
-	$self->pidl(".tp_setattr = py_$name\_setattr,");
+	$self->pidl(".tp_getset = $getsetters,");
 	$self->pidl(".tp_repr = py_talloc_default_repr,");
 	$self->pidl(".tp_doc = $docstring,");
 	$self->pidl(".tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,");
