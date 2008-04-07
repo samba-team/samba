@@ -1093,8 +1093,9 @@ bool cli_send_tconX(struct cli_state *cli,
 	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) &&
 	    *pass && passlen != 24) {
 		if (!lp_client_lanman_auth()) {
-			DEBUG(1, ("Server requested LANMAN password (share-level security) but 'client use lanman auth'"
-				  " is disabled\n"));
+			DEBUG(1, ("Server requested LANMAN password "
+				  "(share-level security) but "
+				  "'client lanman auth' is disabled\n"));
 			return False;
 		}
 
