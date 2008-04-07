@@ -483,7 +483,6 @@ static NTSTATUS srv_enc_spnego_negotiate(connection_struct *conn,
 	NTSTATUS status;
 	DATA_BLOB blob = data_blob_null;
 	DATA_BLOB secblob = data_blob_null;
-	bool got_kerberos_mechanism = false;
 	char *kerb_mech = NULL;
 
 	blob = data_blob_const(*ppdata, *p_data_size);
