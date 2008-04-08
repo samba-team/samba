@@ -1004,6 +1004,14 @@ index	krb5PrincipalName	eq
 
 @end itemize
 
+@subsection smbk5pwd overlay
+
+The smbk5pwd overlay, updates the krb5Key and krb5KeyVersionNumber
+appropriately when it receives an LDAP Password change Extended
+Operation:
+
+@url{http://www.openldap.org/devel/cvsweb.cgi/contrib/slapd-modules/smbk5pwd/README?hideattic=1&sortbydate=0}
+
 @subsection Troubleshooting guide
 
 @url{https://sec.miljovern.no/bin/view/Info/TroubleshootingGuide}
