@@ -13,19 +13,19 @@ interface frsapi
 {
 	/****************/
 	/* Function 0x00 */
-	void FRSAPI_VERIFY_PROMOTION();
+	[todo] void FRSAPI_VERIFY_PROMOTION();
 
 	/****************/
 	/* Function 0x01 */
-	void FRSAPI_PROMOTION_STATUS();
+	[todo] void FRSAPI_PROMOTION_STATUS();
 
 	/****************/
 	/* Function 0x02 */
-	void FRSAPI_START_DEMOTION();
+	[todo] void FRSAPI_START_DEMOTION();
 
 	/****************/
 	/* Function 0x03 */
-	void FRSAPI_COMMIT_DEMOTION();
+	[todo] void FRSAPI_COMMIT_DEMOTION();
 
 	/****************/
 	/* Function 0x04 */
@@ -49,7 +49,7 @@ interface frsapi
 
 	/****************/
 	/* Function 0x06 */
-	void FRSAPI_VERIFY_PROMOTION_W();
+	[todo] void FRSAPI_VERIFY_PROMOTION_W();
 
 	/****************/
 	/* Function 0x07 */
@@ -106,7 +106,7 @@ interface frsapi
 
 	/****************/
 	/* Function 0x09 */
-	void FRSAPI_WRITER_COMMAND();
+	[todo] void FRSAPI_WRITER_COMMAND();
 
 	/****************/
 	/* Function 0x0a */

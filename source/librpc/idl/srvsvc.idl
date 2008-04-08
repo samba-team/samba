@@ -1370,7 +1370,7 @@ import "security.idl", "svcctl.idl";
 
 	/******************/
 	/* Function: 0x22 */
-	WERROR srvsvc_NETRPRNAMECANONICALIZE(
+	[todo] WERROR srvsvc_NETRPRNAMECANONICALIZE(
 		);
 
 	/******************/
@@ -1464,56 +1464,56 @@ import "security.idl", "svcctl.idl";
 
 	/******************/
 	/* Function: 0x2b */
-	WERROR srvsvc_NETRDFSGETVERSION(
+	[todo] WERROR srvsvc_NETRDFSGETVERSION(
 		);
 
 	/******************/
 	/* Function: 0x2c */
-	WERROR srvsvc_NETRDFSCREATELOCALPARTITION(
+	[todo] WERROR srvsvc_NETRDFSCREATELOCALPARTITION(
 		);
 
 	/******************/
 	/* Function: 0x2d */
-	WERROR srvsvc_NETRDFSDELETELOCALPARTITION(
+	[todo] WERROR srvsvc_NETRDFSDELETELOCALPARTITION(
 		);
 
 	/******************/
 	/* Function: 0x2e */
-	WERROR srvsvc_NETRDFSSETLOCALVOLUMESTATE(
+	[todo] WERROR srvsvc_NETRDFSSETLOCALVOLUMESTATE(
 		);
 
 	/******************/
 	/* Function: 0x2f */
-	WERROR srvsvc_NETRDFSSETSERVERINFO(
+	[todo] WERROR srvsvc_NETRDFSSETSERVERINFO(
 		);
 
 	/******************/
 	/* Function: 0x30 */
-	WERROR srvsvc_NETRDFSCREATEEXITPOINT(
+	[todo] WERROR srvsvc_NETRDFSCREATEEXITPOINT(
 		);
 
 	/******************/
 	/* Function: 0x31 */
-	WERROR srvsvc_NETRDFSDELETEEXITPOINT(
+	[todo] WERROR srvsvc_NETRDFSDELETEEXITPOINT(
 		);
 
 	/******************/
 	/* Function: 0x32 */
-	WERROR srvsvc_NETRDFSMODIFYPREFIX(
+	[todo] WERROR srvsvc_NETRDFSMODIFYPREFIX(
 		);
 
 	/******************/
 	/* Function: 0x33 */
-	WERROR srvsvc_NETRDFSFIXLOCALVOLUME(
+	[todo] WERROR srvsvc_NETRDFSFIXLOCALVOLUME(
 		);
 
 	/******************/
 	/* Function: 0x34 */
-	WERROR srvsvc_NETRDFSMANAGERREPORTSITEINFO(
+	[todo] WERROR srvsvc_NETRDFSMANAGERREPORTSITEINFO(
 		);
 
 	/******************/
 	/* Function: 0x35 */
-	WERROR srvsvc_NETRSERVERTRANSPORTDELEX(
+	[todo] WERROR srvsvc_NETRSERVERTRANSPORTDELEX(
 		);
 }

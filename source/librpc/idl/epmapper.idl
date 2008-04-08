@@ -310,5 +310,5 @@ interface epmapper
 
 	/**********************/
 	/* Function 0x07      */
-	error_status_t epm_MapAuth();
+	[todo] error_status_t epm_MapAuth();
 }

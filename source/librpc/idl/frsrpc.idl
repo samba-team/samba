@@ -128,41 +128,41 @@ interface frsrpc
 
 	/*****************/
 	/* Function 0x01 */
-	void FRSRPC_VERIFY_PROMOTION_PARENT();
+	[todo] void FRSRPC_VERIFY_PROMOTION_PARENT();
 
 	/*****************/
 	/* Function 0x02 */
-	void FRSRPC_START_PROMOTION_PARENT();
+	[todo] void FRSRPC_START_PROMOTION_PARENT();
 
 	/*****************/
 	/* Function 0x03 */
-	void FRSRPC_NOP();
+	[todo] void FRSRPC_NOP();
 
 	/*****************/
 	/* Function 0x04 */
-	void FRSRPC_BACKUP_COMPLETE();
+	[todo] void FRSRPC_BACKUP_COMPLETE();
 
 	/*****************/
 	/* Function 0x05 */
-	void FRSRPC_BACKUP_COMPLETE_5();
+	[todo] void FRSRPC_BACKUP_COMPLETE_5();
 
 	/*****************/
 	/* Function 0x06 */
-	void FRSRPC_BACKUP_COMPLETE_6();
+	[todo] void FRSRPC_BACKUP_COMPLETE_6();
 
 	/*****************/
 	/* Function 0x07 */
-	void FRSRPC_BACKUP_COMPLETE_7();
+	[todo] void FRSRPC_BACKUP_COMPLETE_7();
 
 	/*****************/
 	/* Function 0x08 */
-	void FRSRPC_BACKUP_COMPLETE_8();
+	[todo] void FRSRPC_BACKUP_COMPLETE_8();
 
 	/*****************/
 	/* Function 0x09 */
-	void FRSRPC_BACKUP_COMPLETE_9();
+	[todo] void FRSRPC_BACKUP_COMPLETE_9();
 
 	/*****************/
 	/* Function 0x0a */
-	void FRSRPC_VERIFY_PROMOTION_PARENT_EX();
+	[todo] void FRSRPC_VERIFY_PROMOTION_PARENT_EX();
 }

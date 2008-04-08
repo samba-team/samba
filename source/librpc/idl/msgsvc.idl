@@ -7,10 +7,10 @@
 	helpstring("Messaging Service")
 ] interface msgsvc
 {
-	void NetrMessageNameAdd();
-	void NetrMessageNameEnum();
-	void NetrMessageNameGetInfo();
-	void NetrMessageNameDel();
+	[todo] void NetrMessageNameAdd();
+	[todo] void NetrMessageNameEnum();
+	[todo] void NetrMessageNameGetInfo();
+	[todo] void NetrMessageNameDel();
 }
 
 [
@@ -18,5 +18,5 @@
 	version(1.0)
 ] interface msgsvcsend
 {
-	void NetrSendMessage();
+	[todo] void NetrSendMessage();
 }
