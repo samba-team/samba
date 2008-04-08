@@ -213,6 +213,30 @@ bool dmapi_new_session(void)
 }
 
 /* 
+    only call this when exiting from master smbd process. DMAPI sessions
+    are long-lived kernel resources we ought to share across smbd processes.
+    However, we must free them when all smbd processes are finished to
+    allow other subsystems clean up properly. Not freeing DMAPI session
+    blocks certain HSM implementations from proper shutdown.
+*/
+bool dmapi_destroy_session(void)
+{
+	if (samba_dmapi_session != DM_NO_SESSION) {
+		become_root();
+		if (!dm_destroy_session(samba_dmapi_session)) {
+			session_num--;
+			samba_dmapi_session = DM_NO_SESSION;
+		} else {
+			DEBUG(0,("Couldn't destroy DMAPI session: %s\n",
+				 strerror(errno)));
+		}
+		unbecome_root();
+	}
+	return samba_dmapi_session == DM_NO_SESSION;
+}
+
+
+/* 
    This is default implementation of dmapi_file_flags() that is 
    called from VFS is_offline() call to know whether file is offline.
    For GPFS-specific version see modules/vfs_tsmsm.c. It might be
