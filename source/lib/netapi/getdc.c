@@ -50,7 +50,10 @@ WERROR NetGetDCName_r(struct libnetapi_ctx *ctx,
 				     ctx->username,
 				     ctx->workgroup,
 				     ctx->password,
-				     0, Undefined, NULL);
+				     CLI_FULL_CONNECTION_USE_KERBEROS |
+				     CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS |
+				     CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK,
+				     Undefined, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
@@ -103,7 +106,10 @@ WERROR NetGetAnyDCName_r(struct libnetapi_ctx *ctx,
 				     ctx->username,
 				     ctx->workgroup,
 				     ctx->password,
-				     0, Undefined, NULL);
+				     CLI_FULL_CONNECTION_USE_KERBEROS |
+				     CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS |
+				     CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK,
+				     Undefined, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
@@ -174,7 +180,10 @@ WERROR DsGetDcName_r(struct libnetapi_ctx *ctx,
 				     ctx->username,
 				     ctx->workgroup,
 				     ctx->password,
-				     0, Undefined, NULL);
+				     CLI_FULL_CONNECTION_USE_KERBEROS |
+				     CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS |
+				     CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK,
+				     Undefined, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
