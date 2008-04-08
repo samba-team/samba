@@ -201,8 +201,6 @@ sub mk_fedora_ds($$$)
 
 	my $pidfile = "$fedora_ds_dir/logs/slapd-samba4.pid";
 
-	system("$self->{bindir}/ad2oLschema $configuration -H $ldapdir/schema-tmp.ldb --option=convert:target=fedora-ds -I $self->{setupdir}/schema-map-fedora-ds-1.0 -O $ldapdir/99_ad.ldif >&2") == 0 or die("schema conversion for Fedora DS failed");
-
 my $dir = getcwd();
 chdir "$ENV{FEDORA_DS_ROOT}/bin" || die;
 	if (system("perl $ENV{FEDORA_DS_ROOT}/sbin/setup-ds.pl --silent --file=$fedora_ds_inf >&2") != 0) {
@@ -221,9 +219,6 @@ sub mk_openldap($$$)
 	my $slapd_conf = "$ldapdir/slapd.conf";
 	my $pidfile = "$ldapdir/slapd.pid";
 	my $modconf = "$ldapdir/modules.conf";
-
-	#This uses the backend provision we just did, to read out the schema
-	system("$self->{bindir}/ad2oLschema $configuration --option=convert:target=openldap -H $ldapdir/schema-tmp.ldb -I $self->{setupdir}/schema-map-openldap-2.3 -O $ldapdir/backend-schema.schema >&2") == 0 or die("schema conversion for OpenLDAP failed");
 
 	my $oldpath = $ENV{PATH};
 	my $olpath = "";

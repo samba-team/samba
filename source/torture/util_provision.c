@@ -105,6 +105,10 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 		PyDict_SetItemString(parameters, "configdn", 
 				     PyString_FromString(settings->config_dn_str));
 	
+	if (settings->server_dn_str) 
+		PyDict_SetItemString(parameters, "serverdn", 
+				     PyString_FromString(settings->server_dn_str));
+	
 	if (settings->site_name) 
 		PyDict_SetItemString(parameters, "sitename", 
 				     PyString_FromString(settings->site_name));
