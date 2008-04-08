@@ -369,7 +369,7 @@ sub PythonFunctionBody($$$)
 				$signature .= "$e->{NAME}, ";
 			} else {
 				$self->pidl("result = $py_name;");
-				$signature .= "result";
+				$signature .= $e->{NAME};
 			}
 		}
 	}
@@ -382,11 +382,10 @@ sub PythonFunctionBody($$$)
 		my $conv = $self->ConvertObjectToPythonData("r", $fn->{RETURN_TYPE}, "r->out.result");
 		if ($result_size > 1) {
 			$self->pidl("PyTuple_SetItem(result, $i, $conv);");
-			$signature .= "result";
 		} else {
 			$self->pidl("result = $conv;");
-			$signature .= "result";
 		}
+		$signature .= "result";
 	}
 
 	if (substr($signature, -2) eq ", ") {
