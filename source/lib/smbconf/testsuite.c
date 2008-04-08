@@ -19,6 +19,36 @@
 
 #include "includes.h"
 
+static bool test_get_includes(struct smbconf_ctx *ctx)
+{
+	WERROR werr;
+	bool ret = false;
+	uint32_t count;
+	uint32_t num_includes = 0;
+	char **includes = NULL;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+
+	printf("test: get_includes\n");
+	werr = smbconf_get_includes(ctx, mem_ctx, GLOBAL_NAME,
+				    &num_includes, &includes);
+	if (!W_ERROR_IS_OK(werr)) {
+		printf("failure: get_includes - %s\n", dos_errstr(werr));
+		goto done;
+	}
+
+	printf("got %u includes%s\n", num_includes,
+	       (num_includes > 0) ? ":" : ".");
+	for (count = 0; count < num_includes; count++) {
+		printf("%s\n", includes[count]);
+	}
+
+	printf("success: get_includes\n");
+	ret = true;
+
+done:
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
 
 static bool torture_smbconf_txt(void)
 {
@@ -37,6 +67,8 @@ static bool torture_smbconf_txt(void)
 		goto done;
 	}
 	printf("success: init\n");
+
+	ret &= test_get_includes(conf_ctx);
 
 	smbconf_shutdown(conf_ctx);
 
