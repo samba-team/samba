@@ -154,7 +154,7 @@ struct _krb5_krb_auth_data;
 #include <krb5_err.h>
 #include <asn1_err.h>
 #ifdef PKINIT
-#include <hx509_err.h>
+#include <hx509.h>
 #endif
 #include <krb5-private.h>
 
@@ -264,5 +264,23 @@ typedef struct krb5_context_data {
 #ifndef KRB5_ADDRESSLESS_DEFAULT
 #define KRB5_ADDRESSLESS_DEFAULT TRUE
 #endif
+
+#ifdef PKINIT
+
+struct krb5_pk_identity {
+    hx509_context hx509ctx;
+    hx509_verify_ctx verify_ctx;
+    hx509_certs certs;
+    hx509_certs anchors;
+    hx509_certs certpool;
+    hx509_revoke_ctx revokectx;
+};
+
+enum {
+    PKINIT_WIN2K = 1,
+    PKINIT_27 = 2
+};
+
+#endif /* PKINIT */
 
 #endif /* __KRB5_LOCL_H__ */
