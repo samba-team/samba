@@ -45,11 +45,6 @@ RCSID("$Id$");
 #include <hx509.h>
 #include "crypto-headers.h"
 
-enum pkinit_type {
-    PKINIT_COMPAT_WIN2K = 1,
-    PKINIT_COMPAT_27 = 3
-};
-
 struct pk_client_params {
     enum pkinit_type type;
     BIGNUM *dh_public_key;
@@ -566,7 +561,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	    goto out;
 	}
 
-	client_params->type = PKINIT_COMPAT_WIN2K;
+	client_params->type = PKINIT_WIN2K;
 	client_params->nonce = ap.pkAuthenticator.nonce;
 
 	if (ap.clientPublicValue) {
@@ -597,7 +592,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	    goto out;
 	}
 
-	client_params->type = PKINIT_COMPAT_27;
+	client_params->type = PKINIT_27;
 	client_params->nonce = ap.pkAuthenticator.nonce;
 
 	if (ap.clientPublicValue) {
@@ -690,7 +685,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
      */
 
     switch (client_params->type) {
-    case PKINIT_COMPAT_WIN2K: {
+    case PKINIT_WIN2K: {
 	int i = 0;
 	if (_kdc_find_padata(req, &i, KRB5_PADATA_PK_AS_09_BINDING) == NULL
 	    && config->pkinit_require_binding == 0)
@@ -699,7 +694,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	}
 	break;
     }
-    case PKINIT_COMPAT_27:
+    case PKINIT_27:
 	break;
     default:
 	krb5_abortx(context, "internal pkinit error");
@@ -803,7 +798,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
     if (ret) 
 	goto out;
 
-    if (client_params->type == PKINIT_COMPAT_WIN2K) {
+    if (client_params->type == PKINIT_WIN2K) {
 	ret = hx509_cms_wrap_ContentInfo(oid_id_pkcs7_signedData(),
 					 &signed_data,
 					 &buf);
@@ -988,7 +983,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
     } else
 	enctype = ETYPE_DES3_CBC_SHA1;
 
-    if (client_params->type == PKINIT_COMPAT_27) {
+    if (client_params->type == PKINIT_27) {
 	PA_PK_AS_REP rep;
 	const char *type, *other = "";
 
@@ -1084,7 +1079,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
 	kdc_log(context, config, 0, "PK-INIT using %s %s", type, other);
 
-    } else if (client_params->type == PKINIT_COMPAT_WIN2K) {
+    } else if (client_params->type == PKINIT_WIN2K) {
 	PA_PK_AS_REP_Win2k rep;
 	ContentInfo info;
 
