@@ -65,7 +65,7 @@ import "lsa.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x01 */
-	NTSTATUS eventlog_BackupEventLogW();
+	[todo] NTSTATUS eventlog_BackupEventLogW();
 	
 	/******************/
 	/* Function: 0x02 */
@@ -75,7 +75,7 @@ import "lsa.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x03 */
-	NTSTATUS eventlog_DeregisterEventSource();
+	[todo] NTSTATUS eventlog_DeregisterEventSource();
 
 	/******************/
 	/* Function: 0x04 */
@@ -86,11 +86,11 @@ import "lsa.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x05 */
-	NTSTATUS eventlog_GetOldestRecord();
+	[todo] NTSTATUS eventlog_GetOldestRecord();
 
 	/******************/
 	/* Function: 0x06 */
-	NTSTATUS eventlog_ChangeNotify();
+	[todo] NTSTATUS eventlog_ChangeNotify();
 
 	/******************/
 	/* Function: 0x07 */
@@ -105,11 +105,11 @@ import "lsa.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x08 */
-	NTSTATUS eventlog_RegisterEventSourceW();
+	[todo] NTSTATUS eventlog_RegisterEventSourceW();
 
 	/******************/
 	/* Function: 0x09 */
-	NTSTATUS eventlog_OpenBackupEventLogW();
+	[todo] NTSTATUS eventlog_OpenBackupEventLogW();
 
 	/******************/
 	/* Function: 0x0a */
@@ -125,51 +125,51 @@ import "lsa.idl", "security.idl";
 
 	/*****************/
 	/* Function 0x0b */
-	NTSTATUS eventlog_ReportEventW();
+	[todo] NTSTATUS eventlog_ReportEventW();
 
 	/*****************/
 	/* Function 0x0c */
-	NTSTATUS eventlog_ClearEventLogA();
+	[todo] NTSTATUS eventlog_ClearEventLogA();
 	
 	/******************/
 	/* Function: 0x0d */
-	NTSTATUS eventlog_BackupEventLogA();
+	[todo] NTSTATUS eventlog_BackupEventLogA();
 
 	/*****************/
 	/* Function 0x0e */
-	NTSTATUS eventlog_OpenEventLogA();
+	[todo] NTSTATUS eventlog_OpenEventLogA();
 
 	/*****************/
 	/* Function 0x0f */
-	NTSTATUS eventlog_RegisterEventSourceA();
+	[todo] NTSTATUS eventlog_RegisterEventSourceA();
 
 	/*****************/
 	/* Function 0x10 */
-	NTSTATUS eventlog_OpenBackupEventLogA();
+	[todo] NTSTATUS eventlog_OpenBackupEventLogA();
 
 	/*****************/
 	/* Function 0x11 */
-	NTSTATUS eventlog_ReadEventLogA();
+	[todo] NTSTATUS eventlog_ReadEventLogA();
 
 	/*****************/
 	/* Function 0x12 */
-	NTSTATUS eventlog_ReportEventA();
+	[todo] NTSTATUS eventlog_ReportEventA();
 
 	/*****************/
 	/* Function 0x13 */
-	NTSTATUS eventlog_RegisterClusterSvc();
+	[todo] NTSTATUS eventlog_RegisterClusterSvc();
 
 	/*****************/
 	/* Function 0x14 */
-	NTSTATUS eventlog_DeregisterClusterSvc();
+	[todo] NTSTATUS eventlog_DeregisterClusterSvc();
 
 	/*****************/
 	/* Function 0x15 */
-	NTSTATUS eventlog_WriteClusterEvents();
+	[todo] NTSTATUS eventlog_WriteClusterEvents();
 
 	/*****************/
 	/* Function 0x16 */
-	NTSTATUS eventlog_GetLogIntormation();
+	[todo] NTSTATUS eventlog_GetLogIntormation();
 
 	/*****************/
 	/* Function 0x17 */

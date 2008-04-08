@@ -386,14 +386,14 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x05 */
-	WERROR spoolss_AddPrinter(
+	[todo] WERROR spoolss_AddPrinter(
  		/* This function is not implemented in Samba 3 as no
  		   clients have been observed using it. */
 	);
 
 	/******************/
 	/* Function: 0x06 */
-	WERROR spoolss_DeletePrinter(
+	[todo] WERROR spoolss_DeletePrinter(
 	);
 
 	/******************/
@@ -442,7 +442,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x09 */
-	WERROR spoolss_AddPrinterDriver(
+	[todo] WERROR spoolss_AddPrinterDriver(
 	);
 
 	typedef struct {
@@ -564,7 +564,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x0b */
-	WERROR spoolss_GetPrinterDriver(
+	[todo] WERROR spoolss_GetPrinterDriver(
 	);
 
 	/******************/
@@ -602,7 +602,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x0e */
-	WERROR spoolss_AddPrintProcessor(
+	[todo] WERROR spoolss_AddPrintProcessor(
 	);
 
 	/******************/
@@ -644,7 +644,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x10 */
-	WERROR spoolss_GetPrintProcessorDirectory(
+	[todo] WERROR spoolss_GetPrintProcessorDirectory(
 	);
 
 	/******************/
@@ -713,12 +713,12 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x18 */
-	WERROR spoolss_AddJob(
+	[todo] WERROR spoolss_AddJob(
 	);
 
 	/******************/
 	/* Function: 0x19 */
-	WERROR spoolss_ScheduleJob(
+	[todo] WERROR spoolss_ScheduleJob(
 	);
 
 	/******************/
@@ -806,7 +806,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x1c */
-	WERROR spoolss_WaitForPrinterChange(
+	[todo] WERROR spoolss_WaitForPrinterChange(
 	);
 
 	/******************/
@@ -1022,79 +1022,79 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x26 */
-	WERROR spoolss_ConfigurePort(
+	[todo] WERROR spoolss_ConfigurePort(
 	);
 
 	/******************/
 	/* Function: 0x27 */
-	WERROR spoolss_DeletePort(
+	[todo] WERROR spoolss_DeletePort(
 	);
 
 	/******************/
 	/* Function: 0x28 */
-	WERROR spoolss_CreatePrinterIC(
+	[todo] WERROR spoolss_CreatePrinterIC(
 	);
 
 	/******************/
 	/* Function: 0x29 */
-	WERROR spoolss_PlayGDIScriptOnPrinterIC(
+	[todo] WERROR spoolss_PlayGDIScriptOnPrinterIC(
 	);
 
 	/******************/
 	/* Function: 0x2a */
-	WERROR spoolss_DeletePrinterIC(
+	[todo] WERROR spoolss_DeletePrinterIC(
 	);
 
 	/******************/
 	/* Function: 0x2b */
-	WERROR spoolss_AddPrinterConnection(
+	[todo] WERROR spoolss_AddPrinterConnection(
 	);
 
 	/******************/
 	/* Function: 0x2c */
-	WERROR spoolss_DeletePrinterConnection(
+	[todo] WERROR spoolss_DeletePrinterConnection(
 	);
 
 	/******************/
 	/* Function: 0x2d */
-	WERROR spoolss_PrinterMessageBox(
+	[todo] WERROR spoolss_PrinterMessageBox(
 		/* Marked as obsolete in MSDN.  "Not necessary and has
 		   no effect". */
 	);
 
 	/******************/
 	/* Function: 0x2e */
-	WERROR spoolss_AddMonitor(
+	[todo] WERROR spoolss_AddMonitor(
 	);
 
 	/******************/
 	/* Function: 0x2f */
-	WERROR spoolss_DeleteMonitor(
+	[todo] WERROR spoolss_DeleteMonitor(
 	);
 
 	/******************/
 	/* Function: 0x30 */
-	WERROR spoolss_DeletePrintProcessor(
+	[todo] WERROR spoolss_DeletePrintProcessor(
 	);
 
 	/******************/
 	/* Function: 0x31 */
-	WERROR spoolss_AddPrintProvidor(
+	[todo] WERROR spoolss_AddPrintProvidor(
 	);
 
 	/******************/
 	/* Function: 0x32 */
-	WERROR spoolss_DeletePrintProvidor(
+	[todo] WERROR spoolss_DeletePrintProvidor(
 	);
 
 	/******************/
 	/* Function: 0x33 */
-	WERROR spoolss_EnumPrintProcDataTypes(
+	[todo] WERROR spoolss_EnumPrintProcDataTypes(
 	);
 
 	/******************/
 	/* Function: 0x34 */
-	WERROR spoolss_ResetPrinter(
+	[todo] WERROR spoolss_ResetPrinter(
 	);
 
 	/******************/
@@ -1115,12 +1115,12 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x36 */
-	WERROR spoolss_FindFirstPrinterChangeNotification(
+	[todo] WERROR spoolss_FindFirstPrinterChangeNotification(
 	);
 
 	/******************/
 	/* Function: 0x37 */
-	WERROR spoolss_FindNextPrinterChangeNotification(
+	[todo] WERROR spoolss_FindNextPrinterChangeNotification(
 	);
 
 	/******************/
@@ -1131,7 +1131,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x39 */
-	WERROR spoolss_RouterFindFirstPrinterChangeNotificationOld(
+	[todo] WERROR spoolss_RouterFindFirstPrinterChangeNotificationOld(
 	);
 
 	/******************/
@@ -1147,7 +1147,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x3b */
-	WERROR spoolss_RouterReplyPrinter(
+	[todo] WERROR spoolss_RouterReplyPrinter(
 	);
 
 	/******************/
@@ -1158,22 +1158,22 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x3d */
-	WERROR spoolss_AddPortEx(
+	[todo] WERROR spoolss_AddPortEx(
 	);
 
 	/******************/
 	/* Function: 0x3e */
-	WERROR spoolss_RouterFindFirstPrinterChangeNotification(
+	[todo] WERROR spoolss_RouterFindFirstPrinterChangeNotification(
 	);
 
 	/******************/
 	/* Function: 0x3f */
-	WERROR spoolss_SpoolerInit(
+	[todo] WERROR spoolss_SpoolerInit(
 	);
 
 	/******************/
 	/* Function: 0x40 */
-	WERROR spoolss_ResetPrinterEx(
+	[todo] WERROR spoolss_ResetPrinterEx(
 	);
 
 	typedef [enum16bit] enum {
@@ -1239,7 +1239,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x42 */
-	WERROR spoolss_RouterRefreshPrinterChangeNotification(
+	[todo] WERROR spoolss_RouterRefreshPrinterChangeNotification(
 	);
 
 	typedef struct {
@@ -1295,7 +1295,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x44 */
-	WERROR spoolss_44(
+	[todo] WERROR spoolss_44(
 	);
 
 	typedef struct {
@@ -1399,7 +1399,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x47 */
-	WERROR spoolss_47(
+	[todo] WERROR spoolss_47(
 	);
 
 	/******************/
@@ -1425,17 +1425,17 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x4a */
-	WERROR spoolss_4a(
+	[todo] WERROR spoolss_4a(
 	);
 
 	/******************/
 	/* Function: 0x4b */
-	WERROR spoolss_4b(
+	[todo] WERROR spoolss_4b(
 	);
 
 	/******************/
 	/* Function: 0x4c */
-	WERROR spoolss_4c(
+	[todo] WERROR spoolss_4c(
 	);
 
 	/******************/
@@ -1492,32 +1492,32 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x52 */
-	WERROR spoolss_DeletePrinterKey(
+	[todo] WERROR spoolss_DeletePrinterKey(
 	);
 
 	/******************/
 	/* Function: 0x53 */
-	WERROR spoolss_53(
+	[todo] WERROR spoolss_53(
 	);
 
 	/******************/
 	/* Function: 0x54 */
-	WERROR spoolss_DeletePrinterDriverEx(
+	[todo] WERROR spoolss_DeletePrinterDriverEx(
 	);
 
 	/******************/
 	/* Function: 0x55 */
-	WERROR spoolss_55(
+	[todo] WERROR spoolss_55(
 	);
 
 	/******************/
 	/* Function: 0x56 */
-	WERROR spoolss_56(
+	[todo] WERROR spoolss_56(
 	);
 
 	/******************/
 	/* Function: 0x57 */
-	WERROR spoolss_57(
+	[todo] WERROR spoolss_57(
 	);
 
 	/******************/
@@ -1536,36 +1536,36 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x59 */
-	[public] WERROR spoolss_AddPrinterDriverEx(
+	[public,todo] WERROR spoolss_AddPrinterDriverEx(
 	);
 
 	/******************/
 	/* Function: 0x5a */
-	WERROR spoolss_5a(
+	[todo] WERROR spoolss_5a(
 	);
 
 	/******************/
 	/* Function: 0x5b */
-	WERROR spoolss_5b(
+	[todo] WERROR spoolss_5b(
 	);
 
 	/******************/
 	/* Function: 0x5c */
-	WERROR spoolss_5c(
+	[todo] WERROR spoolss_5c(
 	);
 
 	/******************/
 	/* Function: 0x5d */
-	WERROR spoolss_5d(
+	[todo] WERROR spoolss_5d(
 	);
 
 	/******************/
 	/* Function: 0x5e */
-	WERROR spoolss_5e(
+	[todo] WERROR spoolss_5e(
 	);
 
 	/******************/
 	/* Function: 0x5f */
-	WERROR spoolss_5f(
+	[todo] WERROR spoolss_5f(
 	);
 }
