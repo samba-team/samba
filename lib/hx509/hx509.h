@@ -33,6 +33,12 @@
 
 /* $Id$ */
 
+#ifndef HEIMDAL_HX509_H
+#define HEIMDAL_HX509_H 1
+
+#include <heim_asn1.h>
+#include <rfc2459_asn1.h>
+
 typedef struct hx509_cert_attribute_data *hx509_cert_attribute;
 typedef struct hx509_cert_data *hx509_cert;
 typedef struct hx509_certs_data *hx509_certs;
@@ -146,3 +152,6 @@ typedef enum  {
 } hx509_hostname_type;
 
 #include <hx509-protos.h>
+#include <hx509_err.h>
+
+#endif /* HEIMDAL_HX509_H */
