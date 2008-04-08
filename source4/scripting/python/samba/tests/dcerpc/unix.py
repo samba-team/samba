@@ -26,5 +26,11 @@ class UnixinfoTests(unittest.TestCase):
         self.conn = unixinfo.unixinfo("ncalrpc:", get_loadparm())
 
     def test_getpwuid(self):
-        (count, infos) = self.conn.GetPWUid(1, [0])
-        self.assertEquals(1, len(infos))
+        infos = self.conn.GetPWUid(range(512))
+        self.assertEquals(512, len(infos))
+
+    def test_gidtosid(self):
+        self.conn.GidToSid(1000)
+
+    def test_uidtosid(self):
+        self.conn.UidToSid(1000)
