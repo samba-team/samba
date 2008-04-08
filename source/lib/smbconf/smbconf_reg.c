@@ -337,8 +337,8 @@ static char *smbconf_format_registry_value(TALLOC_CTX *mem_ctx,
 	case REG_MULTI_SZ: {
 		uint32 j;
 		for (j = 0; j < value->v.multi_sz.num_strings; j++) {
-			result = talloc_asprintf(mem_ctx, "%s \"%s\" ",
-						 result,
+			result = talloc_asprintf(mem_ctx, "%s\"%s\" ",
+						 result ? result : "" ,
 						 value->v.multi_sz.strings[j]);
 			if (result == NULL) {
 				break;
