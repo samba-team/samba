@@ -17,6 +17,18 @@ enum NET_API_STATUS
 #endif
 ;
 
+struct DOMAIN_CONTROLLER_INFO {
+	const char * domain_controller_name;
+	const char * domain_controller_address;
+	uint32_t domain_controller_address_type;
+	struct GUID domain_guid;
+	const char * domain_name;
+	const char * dns_forest_name;
+	uint32_t flags;
+	const char * dc_site_name;
+	const char * client_site_name;
+};
+
 
 struct NetJoinDomain {
 	struct {
@@ -132,6 +144,23 @@ struct NetGetAnyDCName {
 
 	struct {
 		uint8_t **buffer;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct DsGetDcName {
+	struct {
+		const char * server_name;/* [unique] */
+		const char * domain_name;/* [ref] */
+		struct GUID *domain_guid;/* [unique] */
+		const char * site_name;/* [unique] */
+		uint32_t flags;
+	} in;
+
+	struct {
+		struct DOMAIN_CONTROLLER_INFO **dc_info;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 

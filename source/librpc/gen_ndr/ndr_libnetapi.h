@@ -22,10 +22,15 @@
 
 #define NDR_NETGETANYDCNAME (0x07)
 
-#define NDR_LIBNETAPI_CALL_COUNT (8)
+#define NDR_DSGETDCNAME (0x08)
+
+#define NDR_LIBNETAPI_CALL_COUNT (9)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
+enum ndr_err_code ndr_push_DOMAIN_CONTROLLER_INFO(struct ndr_push *ndr, int ndr_flags, const struct DOMAIN_CONTROLLER_INFO *r);
+enum ndr_err_code ndr_pull_DOMAIN_CONTROLLER_INFO(struct ndr_pull *ndr, int ndr_flags, struct DOMAIN_CONTROLLER_INFO *r);
+void ndr_print_DOMAIN_CONTROLLER_INFO(struct ndr_print *ndr, const char *name, const struct DOMAIN_CONTROLLER_INFO *r);
 enum ndr_err_code ndr_push_NetJoinDomain(struct ndr_push *ndr, int flags, const struct NetJoinDomain *r);
 enum ndr_err_code ndr_pull_NetJoinDomain(struct ndr_pull *ndr, int flags, struct NetJoinDomain *r);
 void ndr_print_NetJoinDomain(struct ndr_print *ndr, const char *name, int flags, const struct NetJoinDomain *r);
@@ -50,4 +55,7 @@ void ndr_print_NetGetDCName(struct ndr_print *ndr, const char *name, int flags, 
 enum ndr_err_code ndr_push_NetGetAnyDCName(struct ndr_push *ndr, int flags, const struct NetGetAnyDCName *r);
 enum ndr_err_code ndr_pull_NetGetAnyDCName(struct ndr_pull *ndr, int flags, struct NetGetAnyDCName *r);
 void ndr_print_NetGetAnyDCName(struct ndr_print *ndr, const char *name, int flags, const struct NetGetAnyDCName *r);
+enum ndr_err_code ndr_push_DsGetDcName(struct ndr_push *ndr, int flags, const struct DsGetDcName *r);
+enum ndr_err_code ndr_pull_DsGetDcName(struct ndr_pull *ndr, int flags, struct DsGetDcName *r);
+void ndr_print_DsGetDcName(struct ndr_print *ndr, const char *name, int flags, const struct DsGetDcName *r);
 #endif /* _HEADER_NDR_libnetapi */
