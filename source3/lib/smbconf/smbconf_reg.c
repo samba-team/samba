@@ -457,6 +457,8 @@ static WERROR smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 	uint32_t tmp_num_values = 0;
 	char **tmp_valnames = NULL;
 	char **tmp_valstrings = NULL;
+	uint32_t num_includes = 0;
+	char **includes = NULL;
 
 	if ((num_values == NULL) || (value_names == NULL) ||
 	    (value_strings == NULL))
@@ -501,7 +503,28 @@ static WERROR smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	werr = WERR_OK;
+	/* now add the includes at the end */
+	werr = smbconf_reg_get_includes_internal(tmp_ctx, key, &num_includes,
+						 &includes);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+	for (count = 0; count < num_includes; count++) {
+		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_valnames,
+						   tmp_num_values, "include");
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+
+		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_valstrings,
+						   tmp_num_values,
+						   includes[count]);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+
+		tmp_num_values++;
+	}
 
 	*num_values = tmp_num_values;
 	if (tmp_num_values > 0) {
