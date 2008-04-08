@@ -677,8 +677,8 @@ import "security.idl";
 	/* Function:      0x20 */
 	NTSTATUS lsa_LookupPrivName (
 		[in]     policy_handle *handle,
-		[in]     lsa_LUID *luid,
-		[out,unique]        lsa_StringLarge *name
+		[in,ref] lsa_LUID *luid,
+		[out,ref] lsa_StringLarge **name
 		);
 
 
