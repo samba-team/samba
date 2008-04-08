@@ -1,3 +1,7 @@
+2008-04-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/scache.c (scc_alloc): %x is unsigned int.
+	
 2008-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/version-script.map: Sort and add krb5_cc_switch.
