@@ -1128,7 +1128,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfo(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
 					   struct policy_handle *trustdom_handle /* [in] [ref] */,
 					   enum lsa_TrustDomInfoEnum level /* [in]  */,
-					   union lsa_TrustedDomainInfo *info /* [out] [unique,switch_is(level)] */)
+					   union lsa_TrustedDomainInfo **info /* [out] [ref,switch_is(level)] */)
 {
 	struct lsa_QueryTrustedDomainInfo r;
 	NTSTATUS status;
@@ -1161,9 +1161,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfo(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (info && r.out.info) {
-		*info = *r.out.info;
-	}
+	*info = *r.out.info;
 
 	/* Return result */
 	return r.out.result;
