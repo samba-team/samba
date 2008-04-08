@@ -803,7 +803,7 @@ import "security.idl";
 		[in]                   policy_handle          *handle,
 		[in,ref]               lsa_String             *trusted_domain,
 		[in]                   lsa_TrustDomInfoEnum   level,
-		[out,ref,switch_is(level)] lsa_TrustedDomainInfo *info
+		[out,ref,switch_is(level)] lsa_TrustedDomainInfo **info
 		);
 
 	/**********************/
