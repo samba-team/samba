@@ -10,6 +10,8 @@ CC=@CC@
 PICFLAG=@PICFLAG@
 LDFLAGS=@PIE_LDFLAGS@ @LDFLAGS@
 DYNEXP=@DYNEXP@
+NETAPI_LIBS=$(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+CMDLINE_LIBS=$(NETAPI_LIBS) @POPTLIBS@
 
 # Compile a source file.
 COMPILE_CC = $(CC) -I. $(FLAGS) $(PICFLAG) -c $< -o $@
@@ -46,22 +48,23 @@ bin/.dummy:
 		echo "$(COMPILE_CC)" 1>&2;\
 		$(COMPILE_CC) >/dev/null 2>&1
 
-GETDC_OBJ = getdc/getdc.o
-NETDOMJOIN_OBJ = netdomjoin/netdomjoin.o
+CMDLINE_OBJ = common.o
+GETDC_OBJ = getdc/getdc.o $(CMDLINE_OBJ)
+NETDOMJOIN_OBJ = netdomjoin/netdomjoin.o $(CMDLINE_OBJ)
 NETDOMJOIN_GUI_OBJ = netdomjoin-gui/netdomjoin-gui.o
-GETJOINABLEOUS_OBJ = getjoinableous/getjoinableous.o
+GETJOINABLEOUS_OBJ = getjoinableous/getjoinableous.o $(CMDLINE_OBJ)
 
 bin/getdc@EXEEXT@: $(BINARY_PREREQS) $(GETDC_OBJ)
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(GETDC_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(GETDC_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 bin/getjoinableous@EXEEXT@: $(BINARY_PREREQS) $(GETJOINABLEOUS_OBJ)
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(GETJOINABLEOUS_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(GETJOINABLEOUS_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 bin/netdomjoin@EXEEXT@: $(BINARY_PREREQS) $(NETDOMJOIN_OBJ)
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NETDOMJOIN_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(NETDOMJOIN_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 bin/netdomjoin-gui@EXEEXT@: $(BINARY_PREREQS) $(NETDOMJOIN_GUI_OBJ)
 	@echo Linking $@

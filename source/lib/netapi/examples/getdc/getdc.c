@@ -25,33 +25,62 @@
 
 #include <netapi.h>
 
-int main(int argc, char **argv)
+#include "common.h"
+
+int main(int argc, const char **argv)
 {
 	NET_API_STATUS status;
 	struct libnetapi_ctx *ctx = NULL;
+
+	const char *hostname = NULL;
+	const char *domain = NULL;
 	uint8_t *buffer = NULL;
 
-	if (argc < 3) {
-		printf("usage: getdc <hostname> <domain>\n");
-		return -1;
-	}
+	poptContext pc;
+	int opt;
+
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		POPT_COMMON_LIBNETAPI_EXAMPLES
+		POPT_TABLEEND
+	};
 
 	status = libnetapi_init(&ctx);
 	if (status != 0) {
 		return status;
 	}
 
-	libnetapi_set_username(ctx, "");
-	libnetapi_set_password(ctx, "");
+	pc = poptGetContext("getdc", argc, argv, long_options, 0);
 
-	status = NetGetDCName(argv[1], argv[2], &buffer);
+	poptSetOtherOptionHelp(pc, "hostname domainname");
+	while((opt = poptGetNextOpt(pc)) != -1) {
+	}
+
+	if (!poptPeekArg(pc)) {
+		poptPrintHelp(pc, stderr, 0);
+		goto out;
+	}
+	hostname = poptGetArg(pc);
+
+	if (!poptPeekArg(pc)) {
+		poptPrintHelp(pc, stderr, 0);
+		goto out;
+	}
+	domain = poptGetArg(pc);
+
+	/* NetGetDCName */
+
+	status = NetGetDCName(hostname, domain, &buffer);
 	if (status != 0) {
 		printf("GetDcName failed with: %s\n", libnetapi_errstr(status));
 	} else {
 		printf("%s\n", (char *)buffer);
 	}
+
+ out:
 	NetApiBufferFree(buffer);
 	libnetapi_free(ctx);
+	poptFreeContext(pc);
 
 	return status;
 }
