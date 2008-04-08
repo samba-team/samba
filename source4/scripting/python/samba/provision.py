@@ -265,7 +265,8 @@ def provision_paths_from_lp(lp, dnsdomain):
     return paths
 
 def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None, serverrole=None,
-              rootdn=None, domaindn=None, configdn=None, schemadn=None, sitename=None):
+                rootdn=None, domaindn=None, configdn=None, schemadn=None, serverdn=None, 
+                sitename=None):
 
     if hostname is None:
         hostname = socket.gethostname().split(".")[0].lower()
@@ -287,7 +288,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None, serverrole=
 
     if lp.get("realm").upper() != realm:
         raise Exception("realm '%s' in %s must match chosen realm '%s'" %
-                        (lp.get("realm"), smbconf, realm))
+                        (lp.get("realm"), lp.configfile(), realm))
     
     dnsdomain = dnsdomain.lower()
 
@@ -332,6 +333,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None, serverrole=
     names.netbiosname = netbiosname
     names.hostname = hostname
     names.sitename = sitename
+    names.serverdn = "CN=%s,CN=Servers,CN=%s,CN=Sites,%s" % (netbiosname, sitename, configdn)
     
     return names
     
@@ -543,9 +545,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
         samdb.load_ldif_file_add(setup_path("provision_init.ldif"))
 
         message("Setting up sam.ldb rootDSE")
-        setup_samdb_rootdse(samdb, setup_path, names.schemadn, names.domaindn, names.hostname, 
-                            names.dnsdomain, names.realm, names.rootdn, names.configdn, names.netbiosname,
-                            names.sitename)
+        setup_samdb_rootdse(samdb, setup_path, names)
 
         if erase:
             message("Erasing data from partitions")
@@ -656,25 +656,22 @@ def setup_idmapdb(path, setup_path, session_info, credentials, lp):
     idmap_ldb.load_ldif_file_add(setup_path("idmap_init.ldif"))
     return idmap_ldb
 
-def setup_samdb_rootdse(samdb, setup_path, schemadn, domaindn, hostname, 
-                        dnsdomain, realm, rootdn, configdn, netbiosname,
-                        sitename):
+def setup_samdb_rootdse(samdb, setup_path, names):
     """Setup the SamDB rootdse.
 
     :param samdb: Sam Database handle
     :param setup_path: Obtain setup path
     """
     setup_add_ldif(samdb, setup_path("provision_rootdse_add.ldif"), {
-        "SCHEMADN": schemadn, 
-        "NETBIOSNAME": netbiosname,
-        "DNSDOMAIN": dnsdomain,
-        "DEFAULTSITE": sitename,
-        "REALM": realm,
-        "DNSNAME": "%s.%s" % (hostname, dnsdomain),
-        "DOMAINDN": domaindn,
-        "ROOTDN": rootdn,
-        "CONFIGDN": configdn,
-        "VERSION": samba.version(),
+        "SCHEMADN": names.schemadn, 
+        "NETBIOSNAME": names.netbiosname,
+        "DNSDOMAIN": names.dnsdomain,
+        "REALM": names.realm,
+        "DNSNAME": "%s.%s" % (names.hostname, names.dnsdomain),
+        "DOMAINDN": names.domaindn,
+        "ROOTDN": names.rootdn,
+        "CONFIGDN": names.configdn,
+        "SERVERDN": names.serverdn,
         })
         
 
@@ -879,7 +876,8 @@ FILL_DRS = "DRS"
 
 def provision(setup_dir, message, session_info, 
               credentials, smbconf=None, targetdir=None, samdb_fill=FILL_FULL, realm=None, 
-              rootdn=None, domaindn=None, schemadn=None, configdn=None,
+              rootdn=None, domaindn=None, schemadn=None, configdn=None, 
+              serverdn=None,
               domain=None, hostname=None, hostip=None, hostip6=None, 
               domainsid=None, adminpass=None, krbtgtpass=None, domainguid=None, 
               policyguid=None, invocationid=None, machinepass=None, 
@@ -932,7 +930,8 @@ def provision(setup_dir, message, session_info,
 
     names = guess_names(lp=lp, hostname=hostname, domain=domain, 
                         dnsdomain=realm, serverrole=serverrole, sitename=sitename,
-                        rootdn=rootdn, domaindn=domaindn, configdn=configdn, schemadn=schemadn)
+                        rootdn=rootdn, domaindn=domaindn, configdn=configdn, schemadn=schemadn,
+                        serverdn=serverdn)
 
     paths = provision_paths_from_lp(lp, names.dnsdomain)
 
@@ -1046,8 +1045,8 @@ def provision(setup_dir, message, session_info,
 
     message("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php" % paths.phpldapadminconfig)
 
-    message("Once the above files are installed, your server will be ready to use")
-    message("Server Type:    %s" % serverrole)
+    message("Once the above files are installed, your Samba4 server will be ready to use")
+    message("Server Role:    %s" % serverrole)
     message("Hostname:       %s" % names.hostname)
     message("NetBIOS Domain: %s" % names.domain)
     message("DNS Domain:     %s" % names.dnsdomain)
@@ -1064,12 +1063,13 @@ def provision(setup_dir, message, session_info,
 def provision_become_dc(setup_dir=None,
                         smbconf=None, targetdir=None, realm=None, 
                         rootdn=None, domaindn=None, schemadn=None, configdn=None,
+                        serverdn=None,
                         domain=None, hostname=None, domainsid=None, 
                         adminpass=None, krbtgtpass=None, domainguid=None, 
                         policyguid=None, invocationid=None, machinepass=None, 
                         dnspass=None, root=None, nobody=None, nogroup=None, users=None, 
                         wheel=None, backup=None, aci=None, serverrole=None, 
-                        ldap_backend=None, ldap_backend_type=None, sitename=DEFAULTSITE):
+                        ldap_backend=None, ldap_backend_type=None, sitename=None):
 
     def message(text):
 	"""print a message if quiet is not set."""
@@ -1077,7 +1077,7 @@ def provision_become_dc(setup_dir=None,
 
     provision(setup_dir, message, system_session(), None,
               smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS, realm=realm, 
-              rootdn=rootdn, domaindn=domaindn, schemadn=schemadn, configdn=configdn, 
+              rootdn=rootdn, domaindn=domaindn, schemadn=schemadn, configdn=configdn, serverdn=serverdn,
               domain=domain, hostname=hostname, hostip="127.0.0.1", domainsid=domainsid, machinepass=machinepass, serverrole="domain controller", sitename=sitename);
     
 
@@ -1096,7 +1096,7 @@ def provision_backend(setup_dir=None, message=None,
                       smbconf=None, targetdir=None, realm=None, 
                       rootdn=None, domaindn=None, schemadn=None, configdn=None,
                       domain=None, hostname=None, adminpass=None, root=None, serverrole=None, 
-                      ldap_backend_type=None):
+                      ldap_backend_type=None, ldap_backend_port=None):
 
     def setup_path(file):
         return os.path.join(setup_dir, file)
@@ -1144,7 +1144,12 @@ def provision_backend(setup_dir=None, message=None,
                    {"SCHEMADN": names.schemadn})
 
     if ldap_backend_type == "fedora-ds":
-        setup_file(setup_path("fedora-ds.inf"), paths.fedoradsinf, 
+        if ldap_backend_port is not None:
+            serverport = "ServerPort=%d" % ldap_backend_port
+        else:
+            serverport = ""
+
+        setup_file(setup_path("fedorads.inf"), paths.fedoradsinf, 
                    {"ROOT": root,
                     "HOSTNAME": hostname,
                     "DNSDOMAIN": names.dnsdomain,
@@ -1152,19 +1157,18 @@ def provision_backend(setup_dir=None, message=None,
                     "DOMAINDN": names.domaindn,
                     "LDAPMANAGERDN": names.ldapmanagerdn,
                     "LDAPMANAGERPASS": adminpass, 
-                    "SERVERPORT": ""})
+                    "SERVERPORT": serverport})
         
-        setup_file(setup_path("fedora-partitions.ldif"), paths.fedoradspartitions, 
+        setup_file(setup_path("fedorads-partitions.ldif"), paths.fedoradspartitions, 
                    {"CONFIGDN": names.configdn,
                     "SCHEMADN": names.schemadn,
                     })
         
-        setup_file(setup_path("fedora-partitions.ldif"), paths.fedoradspartitions, 
-                   {"CONFIGDN": names.configdn,
-                    "SCHEMADN": names.schemadn,
-                    })
         mapping = "schema-map-fedora-ds-1.0"
         backend_schema = "99_ad.ldif"
+        
+        slapdcommand="Initailise Fedora DS with: setup-ds.pl --file=%s" % paths.fedoradsinf
+       
     elif ldap_backend_type == "openldap":
         attrs = ["linkID", "lDAPDisplayName"]
 	res = schemadb.search(expression="(&(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1)))(objectclass=attributeSchema))", base=names.schemadn, scope=SCOPE_SUBTREE, attrs=attrs);
@@ -1215,13 +1219,25 @@ refint_attributes""" + refint_attributes + "\n";
         
 
         ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
-        message("Start slapd with: slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri)
-                
+        if ldap_backend_port is not None:
+            server_port_string = " -h ldap://0.0.0.0:%d" % ldap_backend_port
+        else:
+            server_port_string = ""
+        slapdcommand="Start slapd with:    slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri + server_port_string
 
     schema_command = "bin/ad2oLschema --option=convert:target=" + ldap_backend_type + " -I " + setup_path(mapping) + " -H tdb://" + schemadb_path + " -O " + os.path.join(paths.ldapdir, backend_schema);
 
     os.system(schema_command)
 
+
+    message("Your %s Backend for Samba4 is now configured, and is ready to be started" % ( ldap_backend_type) )
+    message("Server Role:         %s" % serverrole)
+    message("Hostname:            %s" % names.hostname)
+    message("DNS Domain:          %s" % names.dnsdomain)
+    message("Base DN:             %s" % names.domaindn)
+    message("LDAP admin DN:       %s" % names.ldapmanagerdn)
+    message("LDAP admin password: %s" % adminpass)
+    message(slapdcommand)
 
 
 def create_phpldapadmin_config(path, setup_path, ldapi_uri):

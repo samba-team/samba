@@ -84,6 +84,7 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 	settings.netbios_name = p->dest_dsa->netbios_name;
 	settings.realm = torture_join_dom_dns_name(s->tj);
 	settings.domain = torture_join_dom_netbios_name(s->tj);
+	settings.server_dn_str = torture_join_server_dn_str(s->tj);
 	settings.machine_password = cli_credentials_get_password(s->machine_account);
 	settings.targetdir = s->targetdir;
 

@@ -42,27 +42,28 @@ static bool test_tempdir(struct torture_context *tctx)
 static bool test_provision(struct torture_context *tctx)
 {
 	NTSTATUS status;
-	struct provision_settings settings;
-	char *location = NULL;
-	torture_assert_ntstatus_ok(tctx, torture_temp_dir(tctx, "torture_provision", &location), 
+	struct provision_settings *settings = talloc(tctx, struct provision_settings);
+	char *targetdir = NULL;
+
+	torture_assert_ntstatus_ok(tctx, torture_temp_dir(tctx, "torture_provision", &targetdir), 
 				   "torture_temp_dir should return NT_STATUS_OK" );
+	settings->targetdir = talloc_steal(settings, targetdir);
 
-	settings.dns_name = "example.com";
-	settings.site_name = "SOME-SITE-NAME";
-	settings.root_dn_str = "DC=EXAMPLE,DC=COM";
-	settings.domain_dn_str = "DC=EXAMPLE,DC=COM";
-	settings.config_dn_str = NULL;
-	settings.schema_dn_str = NULL;
-	settings.invocation_id = NULL;
-	settings.netbios_name = "FOO";
-	settings.realm = "EXAMPLE.COM";
-	settings.domain = "EXAMPLE";
-	settings.ntds_guid = NULL;
-	settings.ntds_dn_str = NULL;
-	settings.machine_password = "geheim";
-	settings.targetdir = location;
+	settings->dns_name = "example.com";
+	settings->site_name = "SOME-SITE-NAME";
+	settings->root_dn_str = "DC=EXAMPLE,DC=COM";
+	settings->domain_dn_str = "DC=EXAMPLE,DC=COM";
+	settings->config_dn_str = NULL;
+	settings->schema_dn_str = NULL;
+	settings->invocation_id = NULL;
+	settings->netbios_name = "FOO";
+	settings->realm = "EXAMPLE.COM";
+	settings->domain = "EXAMPLE";
+	settings->ntds_guid = NULL;
+	settings->ntds_dn_str = NULL;
+	settings->machine_password = "geheim";
 
-	status = provision_bare(tctx, tctx->lp_ctx, &settings);
+	status = provision_bare(settings, tctx->lp_ctx, settings);
 			
 	torture_assert_ntstatus_ok(tctx, status, "provision");
 
