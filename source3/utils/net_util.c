@@ -21,13 +21,6 @@
 #include "includes.h"
 #include "utils/net.h"
 
-bool is_valid_policy_hnd(const POLICY_HND *hnd)
-{
-	POLICY_HND tmp;
-	ZERO_STRUCT(tmp);
-	return (memcmp(&tmp, hnd, sizeof(tmp)) != 0);
-}
-
 NTSTATUS net_rpc_lookup_name(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			     const char *name, const char **ret_domain,
 			     const char **ret_name, DOM_SID *ret_sid,
