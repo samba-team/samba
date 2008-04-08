@@ -183,6 +183,7 @@ cat >$SERVERCONFFILE<<EOF
 	path = $PREFIX_ABS/tmp
 	read only = no
 	smbd:sharedelay = 100000
+	smbd:writetimeupdatedelay = 500000
 	map hidden = yes
 	map system = yes
 	create mask = 755

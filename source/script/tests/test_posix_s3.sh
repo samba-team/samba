@@ -55,6 +55,7 @@ skipped="$skipped RAW-SFILEINFO"
 echo "WARNING: Skipping tests $skipped"
 
 ADDARGS="$ADDARGS --option=torture:sharedelay=100000"
+ADDARGS="$ADDARGS --option=torture:writetimeupdatedelay=500000"
 
 failed=0
 for t in $tests; do
