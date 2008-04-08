@@ -1709,7 +1709,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoBySid(struct rpc_pipe_client *cli,
 						struct policy_handle *handle /* [in] [ref] */,
 						struct dom_sid2 *dom_sid /* [in] [ref] */,
 						enum lsa_TrustDomInfoEnum level /* [in]  */,
-						union lsa_TrustedDomainInfo *info /* [out] [unique,switch_is(level)] */)
+						union lsa_TrustedDomainInfo **info /* [out] [ref,switch_is(level)] */)
 {
 	struct lsa_QueryTrustedDomainInfoBySid r;
 	NTSTATUS status;
@@ -1743,9 +1743,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoBySid(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (info && r.out.info) {
-		*info = *r.out.info;
-	}
+	*info = *r.out.info;
 
 	/* Return result */
 	return r.out.result;
@@ -2086,7 +2084,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 						 struct policy_handle *handle /* [in] [ref] */,
 						 struct lsa_String *trusted_domain /* [in] [ref] */,
 						 enum lsa_TrustDomInfoEnum level /* [in]  */,
-						 union lsa_TrustedDomainInfo *info /* [out] [ref,switch_is(level)] */)
+						 union lsa_TrustedDomainInfo **info /* [out] [ref,switch_is(level)] */)
 {
 	struct lsa_QueryTrustedDomainInfoByName r;
 	NTSTATUS status;
@@ -2298,7 +2296,7 @@ NTSTATUS rpccli_lsa_QueryDomainInformationPolicy(struct rpc_pipe_client *cli,
 						 TALLOC_CTX *mem_ctx,
 						 struct policy_handle *handle /* [in] [ref] */,
 						 uint16_t level /* [in]  */,
-						 union lsa_DomainInformationPolicy *info /* [out] [unique,switch_is(level)] */)
+						 union lsa_DomainInformationPolicy **info /* [out] [ref,switch_is(level)] */)
 {
 	struct lsa_QueryDomainInformationPolicy r;
 	NTSTATUS status;
@@ -2331,9 +2329,7 @@ NTSTATUS rpccli_lsa_QueryDomainInformationPolicy(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (info && r.out.info) {
-		*info = *r.out.info;
-	}
+	*info = *r.out.info;
 
 	/* Return result */
 	return r.out.result;
