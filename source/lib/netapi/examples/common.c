@@ -1,7 +1,10 @@
 #include <stdlib.h>
 #include <string.h>
-#include <netapi.h>
+#include <sys/types.h>
+#include <inttypes.h>
+
 #include <popt.h>
+#include <netapi.h>
 
 void popt_common_callback(poptContext con,
 			 enum poptCallbackReason reason,
