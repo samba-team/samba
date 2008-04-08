@@ -36,6 +36,7 @@ extern void inituuid(void);
 extern void init_net(void);
 extern void initecho(void);
 extern void initdfs(void);
+extern void initdrsuapi(void);
 extern void initwinreg(void);
 extern void initepmapper(void);
 extern void initinitshutdown(void);
