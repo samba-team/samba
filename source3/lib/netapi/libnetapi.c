@@ -391,3 +391,53 @@ NET_API_STATUS NetGetAnyDCName(const char * server_name /* [in] [unique] */,
 	return r.out.result;
 }
 
+/****************************************************************
+ DsGetDcName
+****************************************************************/
+
+NET_API_STATUS DsGetDcName(const char * server_name /* [in] [unique] */,
+			   const char * domain_name /* [in] [ref] */,
+			   struct GUID *domain_guid /* [in] [unique] */,
+			   const char * site_name /* [in] [unique] */,
+			   uint32_t flags /* [in] */,
+			   struct DOMAIN_CONTROLLER_INFO **dc_info /* [out] [ref] */)
+{
+	struct DsGetDcName r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.domain_name = domain_name;
+	r.in.domain_guid = domain_guid;
+	r.in.site_name = site_name;
+	r.in.flags = flags;
+
+	/* Out parameters */
+	r.out.dc_info = dc_info;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(DsGetDcName, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = DsGetDcName_l(ctx, &r);
+	} else {
+		werr = DsGetDcName_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(DsGetDcName, &r);
+	}
+
+	return r.out.result;
+}
+

@@ -31,6 +31,37 @@ typedef enum {
 /****************************************************************
 ****************************************************************/
 
+#ifndef _HEADER_misc
+
+struct GUID {
+	uint32_t time_low;
+	uint16_t time_mid;
+	uint16_t time_hi_and_version;
+	uint8_t clock_seq[2];
+	uint8_t node[6];
+};
+
+#endif /* _HEADER_misc */
+
+#ifndef _HEADER_libnetapi
+
+struct DOMAIN_CONTROLLER_INFO {
+	const char * domain_controller_name;
+	const char * domain_controller_address;
+	uint32_t domain_controller_address_type;
+	struct GUID domain_guid;
+	const char * domain_name;
+	const char * dns_foreset_name;
+	uint32_t flags;
+	const char * dc_site_name;
+	const char * client_site_name;
+};
+
+#endif /* _HEADER_libnetapi */
+
+/****************************************************************
+****************************************************************/
+
 struct libnetapi_ctx {
 	char *debuglevel;
 	char *error_string;
@@ -134,4 +165,15 @@ NET_API_STATUS NetGetAnyDCName(const char * server_name /* [in] */,
 			       const char * domain_name /* [in] */,
 			       uint8_t **buffer /* [out] [ref] */);
 
+
+/****************************************************************
+ DsGetDcName
+****************************************************************/
+
+NET_API_STATUS DsGetDcName(const char * server_name /* [in] [unique] */,
+			   const char * domain_name /* [in] [ref] */,
+			   struct GUID *domain_guid /* [in] [unique] */,
+			   const char * site_name /* [in] [unique] */,
+			   uint32_t flags /* [in] */,
+			   struct DOMAIN_CONTROLLER_INFO **dc_info /* [out] [ref] */);
 #endif
