@@ -316,7 +316,7 @@ scc_alloc(krb5_context context, const char *name)
 	}
     } else {
 	_krb5_expand_default_cc_name(context, KRB5_SCACHE_DB, &s->file);
-	asprintf(&s->name, "unique-%08x", (unsigned long)s);
+	asprintf(&s->name, "unique-%08x", (unsigned int)s);
     }
     if (s->file == NULL || s->name == NULL) {
 	scc_free(s);
