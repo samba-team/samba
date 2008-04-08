@@ -19,72 +19,61 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <sys/types.h>
 #include <inttypes.h>
 
 #include <netapi.h>
 
-char *get_string_param(const char *param)
-{
-	char *p;
+#include "common.h"
 
-	p = strchr(param, '=');
-	if (!p) {
-		return NULL;
-	}
-
-	return (p+1);
-}
-
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	NET_API_STATUS status;
-	const char *server_name = NULL;
+	const char *host_name = NULL;
 	const char *domain_name = NULL;
-	const char *account = NULL;
-	const char *password = NULL;
 	const char **ous = NULL;
 	uint32_t num_ous = 0;
 	struct libnetapi_ctx *ctx = NULL;
 	int i;
+
+	poptContext pc;
+	int opt;
+
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		{ "domain", 0, POPT_ARG_STRING, NULL, 'D', "Domain name", "DOMAIN" },
+		POPT_COMMON_LIBNETAPI_EXAMPLES
+		POPT_TABLEEND
+	};
 
 	status = libnetapi_init(&ctx);
 	if (status != 0) {
 		return status;
 	}
 
-	if (argc < 2) {
-		printf("usage: getjoinableous\n");
-		printf("\t<hostname> [domain=DOMAIN] <user=USER> <password=PASSWORD>\n");
-		return 0;
-	}
+	pc = poptGetContext("getjoinableous", argc, argv, long_options, 0);
 
-	if (argc > 2) {
-		server_name = argv[1];
-	}
-
-	for (i=0; i<argc; i++) {
-		if (strncasecmp(argv[i], "domain", strlen("domain"))== 0) {
-			domain_name = get_string_param(argv[i]);
-		}
-		if (strncasecmp(argv[i], "user", strlen("user"))== 0) {
-			account = get_string_param(argv[i]);
-			libnetapi_set_username(ctx, account);
-		}
-		if (strncasecmp(argv[i], "password", strlen("password"))== 0) {
-			password = get_string_param(argv[i]);
-			libnetapi_set_password(ctx, password);
-		}
-		if (strncasecmp(argv[i], "debug", strlen("debug"))== 0) {
-			const char *str = NULL;
-			str = get_string_param(argv[i]);
-			libnetapi_set_debuglevel(ctx, str);
+	poptSetOtherOptionHelp(pc, "hostname domainname");
+	while((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+			case 'D':
+				domain_name = poptGetOptArg(pc);
+				break;
 		}
 	}
 
-	status = NetGetJoinableOUs(server_name,
+	if (!poptPeekArg(pc)) {
+		poptPrintHelp(pc, stderr, 0);
+		goto out;
+	}
+	host_name = poptGetArg(pc);
+
+	/* NetGetJoinableOUs */
+
+	status = NetGetJoinableOUs(host_name,
 				   domain_name,
-				   account,
-				   password,
+				   ctx->username,
+				   ctx->password,
 				   &num_ous,
 				   &ous);
 	if (status != 0) {
@@ -97,9 +86,10 @@ int main(int argc, char **argv)
 		}
 	}
 
+ out:
 	NetApiBufferFree(ous);
-
 	libnetapi_free(ctx);
+	poptFreeContext(pc);
 
 	return status;
 }
