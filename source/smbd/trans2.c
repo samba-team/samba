@@ -7468,7 +7468,8 @@ void reply_trans2(struct smb_request *req)
 	unsigned int psoff;
 	unsigned int pscnt;
 	unsigned int tran_call;
-	int size;
+	unsigned int size;
+	unsigned int av_size;
 	struct trans_state *state;
 	NTSTATUS result;
 
@@ -7486,6 +7487,7 @@ void reply_trans2(struct smb_request *req)
 	pscnt = SVAL(req->inbuf, smb_pscnt);
 	tran_call = SVAL(req->inbuf, smb_setup0);
 	size = smb_len(req->inbuf) + 4;
+	av_size = smb_len(req->inbuf);
 
 	result = allow_new_trans(conn->pending_trans, req->mid);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -7578,12 +7580,17 @@ void reply_trans2(struct smb_request *req)
 			END_PROFILE(SMBtrans2);
 			return;
 		}
-		if ((dsoff+dscnt < dsoff) || (dsoff+dscnt < dscnt))
+
+		if (dscnt > state->total_data ||
+				dsoff+dscnt < dsoff) {
 			goto bad_param;
-		if ((smb_base(req->inbuf)+dsoff+dscnt
-		     > (char *)req->inbuf + size) ||
-		    (smb_base(req->inbuf)+dsoff+dscnt < smb_base(req->inbuf)))
+		}
+
+		if (dsoff > av_size ||
+				dscnt > av_size ||
+				dsoff+dscnt > av_size) {
 			goto bad_param;
+		}
 
 		memcpy(state->data,smb_base(req->inbuf)+dsoff,dscnt);
 	}
@@ -7601,12 +7608,17 @@ void reply_trans2(struct smb_request *req)
 			END_PROFILE(SMBtrans2);
 			return;
 		} 
-		if ((psoff+pscnt < psoff) || (psoff+pscnt < pscnt))
+
+		if (pscnt > state->total_param ||
+				psoff+pscnt < psoff) {
 			goto bad_param;
-		if ((smb_base(req->inbuf)+psoff+pscnt
-		     > (char *)req->inbuf + size) ||
-		    (smb_base(req->inbuf)+psoff+pscnt < smb_base(req->inbuf)))
+		}
+
+		if (psoff > av_size ||
+				pscnt > av_size ||
+				psoff+pscnt > av_size) {
 			goto bad_param;
+		}
 
 		memcpy(state->param,smb_base(req->inbuf)+psoff,pscnt);
 	}
@@ -7655,7 +7667,8 @@ void reply_transs2(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
 	struct trans_state *state;
-	int size;
+	unsigned int size;
+	unsigned int av_size;
 
 	START_PROFILE(SMBtranss2);
 
@@ -7668,6 +7681,7 @@ void reply_transs2(struct smb_request *req)
 	}
 
 	size = smb_len(req->inbuf)+4;
+	av_size = smb_len(req->inbuf);
 
 	for (state = conn->pending_trans; state != NULL;
 	     state = state->next) {
@@ -7706,36 +7720,38 @@ void reply_transs2(struct smb_request *req)
 		goto bad_param;
 
 	if (pcnt) {
-		if (pdisp+pcnt > state->total_param)
+		if (pdisp > state->total_param ||
+				pcnt > state->total_param ||
+				pdisp+pcnt > state->total_param ||
+				pdisp+pcnt < pdisp) {
 			goto bad_param;
-		if ((pdisp+pcnt < pdisp) || (pdisp+pcnt < pcnt))
+		}
+
+		if (poff > av_size ||
+				pcnt > av_size ||
+				poff+pcnt > av_size ||
+				poff+pcnt < poff) {
 			goto bad_param;
-		if (pdisp > state->total_param)
-			goto bad_param;
-		if ((smb_base(req->inbuf) + poff + pcnt
-		     > (char *)req->inbuf + size) ||
-		    (smb_base(req->inbuf) + poff + pcnt < smb_base(req->inbuf)))
-			goto bad_param;
-		if (state->param + pdisp < state->param)
-			goto bad_param;
+		}
 
 		memcpy(state->param+pdisp,smb_base(req->inbuf)+poff,
 		       pcnt);
 	}
 
 	if (dcnt) {
-		if (ddisp+dcnt > state->total_data)
+		if (ddisp > state->total_data ||
+				dcnt > state->total_data ||
+				ddisp+dcnt > state->total_data ||
+				ddisp+dcnt < ddisp) {
 			goto bad_param;
-		if ((ddisp+dcnt < ddisp) || (ddisp+dcnt < dcnt))
+		}
+
+		if (ddisp > av_size ||
+				dcnt > av_size ||
+				ddisp+dcnt > av_size ||
+				ddisp+dcnt < ddisp) {
 			goto bad_param;
-		if (ddisp > state->total_data)
-			goto bad_param;
-		if ((smb_base(req->inbuf) + doff + dcnt
-		     > (char *)req->inbuf + size) ||
-		    (smb_base(req->inbuf) + doff + dcnt < smb_base(req->inbuf)))
-			goto bad_param;
-		if (state->data + ddisp < state->data)
-			goto bad_param;
+		}
 
 		memcpy(state->data+ddisp, smb_base(req->inbuf)+doff,
 		       dcnt);      
