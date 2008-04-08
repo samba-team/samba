@@ -777,6 +777,7 @@ done:
 }
 
 static WERROR smbconf_reg_get_includes(struct smbconf_ctx *ctx,
+				       TALLOC_CTX *mem_ctx,
 				       const char *service,
 				       uint32_t *num_includes,
 				       char ***includes)

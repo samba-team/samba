@@ -495,6 +495,7 @@ static WERROR smbconf_txt_delete_parameter(struct smbconf_ctx *ctx,
 }
 
 static WERROR smbconf_txt_get_includes(struct smbconf_ctx *ctx,
+				       TALLOC_CTX *mem_ctx,
 				       const char *service,
 				       uint32_t *num_includes,
 				       char ***includes)
