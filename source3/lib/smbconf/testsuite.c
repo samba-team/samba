@@ -91,6 +91,7 @@ int main(int argc, const char **argv)
 {
 	bool ret;
 	poptContext pc;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	struct poptOption long_options[] = {
 		POPT_COMMON_CONFIGFILE
@@ -121,5 +122,6 @@ int main(int argc, const char **argv)
 	ret = torture_smbconf();
 
 done:
+	TALLOC_FREE(mem_ctx);
 	return ret ? 0 : -1;
 }
