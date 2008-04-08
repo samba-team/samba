@@ -89,6 +89,37 @@ static bool torture_smbconf(void)
 
 int main(int argc, const char **argv)
 {
-	bool ret = torture_smbconf();
+	bool ret;
+	poptContext pc;
+
+	struct poptOption long_options[] = {
+		POPT_COMMON_CONFIGFILE
+		{0, 0, 0, 0}
+	};
+
+	load_case_tables();
+
+	/* parse options */
+	pc = poptGetContext("smbconftort", argc, (const char **)argv,
+			    long_options, 0);
+
+	while(poptGetNextOpt(pc) != -1) { }
+
+	poptFreeContext(pc);
+
+	ret = lp_load(get_dyn_CONFIGFILE(),
+		      true,  /* globals_only */
+		      false, /* save_defaults */
+		      false, /* add_ipc */
+		      true   /* initialize globals */);
+
+	if (!ret) {
+		printf("failure: error loading the configuration\n");
+		goto done;
+	}
+
+	ret = torture_smbconf();
+
+done:
 	return ret ? 0 : -1;
 }
