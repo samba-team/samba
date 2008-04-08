@@ -1,5 +1,12 @@
 2008-04-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/pkinit.c: Rename constants to match global header.
+
+	* lib/krb5/pkinit.c: Drop krb5_pk_identity and rename constants to
+	match global header.
+
+	* kdc/pkinit.c: Pick up krb5_pk_identity from krb5_locl.h.
+
 	* lib/krb5/scache.c (scc_alloc): %x is unsigned int.
 	
 2008-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
