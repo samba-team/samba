@@ -149,7 +149,7 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 	int ret, lerrno;
 	bool offline;
 	char *buf;
-	int buflen;
+	size_t buflen;
 
         /* if the file has more than FILE_IS_ONLINE_RATIO of blocks available,
 	   then assume it is not offline (it may not be 100%, as it could be sparse) */
