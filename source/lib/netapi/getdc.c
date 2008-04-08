@@ -19,16 +19,16 @@
 
 #include "includes.h"
 
+#include "librpc/gen_ndr/libnetapi.h"
 #include "lib/netapi/netapi.h"
+#include "lib/netapi/libnetapi.h"
 #include "libnet/libnet.h"
 
 /********************************************************************
 ********************************************************************/
 
-static WERROR NetGetDCNameLocal(struct libnetapi_ctx *ctx,
-				const char *server_name,
-				const char *domain_name,
-				uint8_t **buffer)
+WERROR NetGetDCName_l(struct libnetapi_ctx *ctx,
+		      struct NetGetDCName *r)
 {
 	return WERR_NOT_SUPPORTED;
 }
@@ -36,17 +36,15 @@ static WERROR NetGetDCNameLocal(struct libnetapi_ctx *ctx,
 /********************************************************************
 ********************************************************************/
 
-static WERROR NetGetDCNameRemote(struct libnetapi_ctx *ctx,
-				 const char *server_name,
-				 const char *domain_name,
-				 uint8_t **buffer)
+WERROR NetGetDCName_r(struct libnetapi_ctx *ctx,
+		      struct NetGetDCName *r)
 {
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
 
-	status = cli_full_connection(&cli, NULL, server_name,
+	status = cli_full_connection(&cli, NULL, r->in.server_name,
 				     NULL, 0,
 				     "IPC$", "IPC",
 				     ctx->username,
@@ -64,12 +62,12 @@ static WERROR NetGetDCNameRemote(struct libnetapi_ctx *ctx,
 	if (!pipe_cli) {
 		werr = ntstatus_to_werror(status);
 		goto done;
-	};
+	}
 
 	status = rpccli_netr_GetDcName(pipe_cli, ctx,
-				       server_name,
-				       domain_name,
-				       (const char **)buffer,
+				       r->in.server_name,
+				       r->in.domain_name,
+				       (const char **)r->out.buffer,
 				       &werr);
  done:
 	if (cli) {
@@ -82,59 +80,8 @@ static WERROR NetGetDCNameRemote(struct libnetapi_ctx *ctx,
 /********************************************************************
 ********************************************************************/
 
-static WERROR libnetapi_NetGetDCName(struct libnetapi_ctx *ctx,
-				     const char *server_name,
-				     const char *domain_name,
-				     uint8_t **buffer)
-{
-	if (!server_name || is_myname_or_ipaddr(server_name)) {
-		return NetGetDCNameLocal(ctx,
-					 server_name,
-					 domain_name,
-					 buffer);
-	}
-
-	return NetGetDCNameRemote(ctx,
-				  server_name,
-				  domain_name,
-				  buffer);
-}
-
-/****************************************************************
- NetGetDCName
-****************************************************************/
-
-NET_API_STATUS NetGetDCName(const char *server_name,
-			    const char *domain_name,
-			    uint8_t **buffer)
-{
-	struct libnetapi_ctx *ctx = NULL;
-	NET_API_STATUS status;
-	WERROR werr;
-
-	status = libnetapi_getctx(&ctx);
-	if (status != 0) {
-		return status;
-	}
-
-	werr = libnetapi_NetGetDCName(ctx,
-				      server_name,
-				      domain_name,
-				      buffer);
-	if (!W_ERROR_IS_OK(werr)) {
-		return W_ERROR_V(werr);
-	}
-
-	return NET_API_STATUS_SUCCESS;
-}
-
-/********************************************************************
-********************************************************************/
-
-static WERROR NetGetAnyDCNameLocal(struct libnetapi_ctx *ctx,
-				   const char *server_name,
-				   const char *domain_name,
-				   uint8_t **buffer)
+WERROR NetGetAnyDCName_l(struct libnetapi_ctx *ctx,
+			 struct NetGetAnyDCName *r)
 {
 	return WERR_NOT_SUPPORTED;
 }
@@ -142,17 +89,15 @@ static WERROR NetGetAnyDCNameLocal(struct libnetapi_ctx *ctx,
 /********************************************************************
 ********************************************************************/
 
-static WERROR NetGetAnyDCNameRemote(struct libnetapi_ctx *ctx,
-				    const char *server_name,
-				    const char *domain_name,
-				    uint8_t **buffer)
+WERROR NetGetAnyDCName_r(struct libnetapi_ctx *ctx,
+			 struct NetGetAnyDCName *r)
 {
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
 
-	status = cli_full_connection(&cli, NULL, server_name,
+	status = cli_full_connection(&cli, NULL, r->in.server_name,
 				     NULL, 0,
 				     "IPC$", "IPC",
 				     ctx->username,
@@ -173,9 +118,9 @@ static WERROR NetGetAnyDCNameRemote(struct libnetapi_ctx *ctx,
 	};
 
 	status = rpccli_netr_GetAnyDCName(pipe_cli, ctx,
-					  server_name,
-					  domain_name,
-					  (const char **)buffer,
+					  r->in.server_name,
+					  r->in.domain_name,
+					  (const char **)r->out.buffer,
 					  &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
@@ -187,53 +132,4 @@ static WERROR NetGetAnyDCNameRemote(struct libnetapi_ctx *ctx,
 
 	return werr;
 
-}
-
-/********************************************************************
-********************************************************************/
-
-static WERROR libnetapi_NetGetAnyDCName(struct libnetapi_ctx *ctx,
-					const char *server_name,
-					const char *domain_name,
-					uint8_t **buffer)
-{
-	if (!server_name || is_myname_or_ipaddr(server_name)) {
-		return NetGetAnyDCNameLocal(ctx,
-					    server_name,
-					    domain_name,
-					    buffer);
-	}
-
-	return NetGetAnyDCNameRemote(ctx,
-				     server_name,
-				     domain_name,
-				     buffer);
-}
-
-/****************************************************************
- NetGetAnyDCName
-****************************************************************/
-
-NET_API_STATUS NetGetAnyDCName(const char *server_name,
-			       const char *domain_name,
-			       uint8_t **buffer)
-{
-	struct libnetapi_ctx *ctx = NULL;
-	NET_API_STATUS status;
-	WERROR werr;
-
-	status = libnetapi_getctx(&ctx);
-	if (status != 0) {
-		return status;
-	}
-
-	werr = libnetapi_NetGetAnyDCName(ctx,
-					 server_name,
-					 domain_name,
-					 buffer);
-	if (!W_ERROR_IS_OK(werr)) {
-		return W_ERROR_V(werr);
-	}
-
-	return NET_API_STATUS_SUCCESS;
 }

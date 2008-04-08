@@ -21,22 +21,12 @@
 #define __LIB_NETAPI_H__
 
 /****************************************************************
- include some basic headers
-****************************************************************/
-
-#include <inttypes.h>
-
-/****************************************************************
  NET_API_STATUS
 ****************************************************************/
 
-#define NET_API_STATUS uint32_t
-#define NET_API_STATUS_SUCCESS 0
-
-/****************************************************************
-****************************************************************/
-
-#define LIBNETAPI_LOCAL_SERVER(x) (!x || is_myname_or_ipaddr(x))
+typedef enum {
+	NET_API_STATUS_SUCCESS = 0
+} NET_API_STATUS;
 
 /****************************************************************
 ****************************************************************/
@@ -76,72 +66,72 @@ NET_API_STATUS NetApiBufferFree(void *buffer);
  NetJoinDomain
 ****************************************************************/
 
-NET_API_STATUS NetJoinDomain(const char *server,
-			     const char *domain,
-			     const char *account_ou,
-			     const char *account,
-			     const char *password,
-			     uint32_t join_options);
+NET_API_STATUS NetJoinDomain(const char * server /* [in] */,
+			     const char * domain /* [in] [ref] */,
+			     const char * account_ou /* [in] */,
+			     const char * account /* [in] */,
+			     const char * password /* [in] */,
+			     uint32_t join_flags /* [in] */);
 
 /****************************************************************
  NetUnjoinDomain
 ****************************************************************/
 
-NET_API_STATUS NetUnjoinDomain(const char *server_name,
-			       const char *account,
-			       const char *password,
-			       uint32_t unjoin_flags);
+NET_API_STATUS NetUnjoinDomain(const char * server_name /* [in] */,
+			       const char * account /* [in] */,
+			       const char * password /* [in] */,
+			       uint32_t unjoin_flags /* [in] */);
 
 /****************************************************************
  NetGetJoinInformation
 ****************************************************************/
 
-NET_API_STATUS NetGetJoinInformation(const char *server_name,
-				     const char **name_buffer,
-				     uint16_t *name_type);
+NET_API_STATUS NetGetJoinInformation(const char * server_name /* [in] */,
+				     const char * *name_buffer /* [out] [ref] */,
+				     uint16_t *name_type /* [out] [ref] */);
 
 /****************************************************************
  NetGetJoinableOUs
 ****************************************************************/
 
-NET_API_STATUS NetGetJoinableOUs(const char *server_name,
-				 const char *domain,
-				 const char *account,
-				 const char *password,
-				 uint32_t *ou_count,
-				 const char ***ous);
+NET_API_STATUS NetGetJoinableOUs(const char * server_name /* [in] */,
+				 const char * domain /* [in] [ref] */,
+				 const char * account /* [in] */,
+				 const char * password /* [in] */,
+				 uint32_t *ou_count /* [out] [ref] */,
+				 const char * **ous /* [out] [ref] */);
 
 /****************************************************************
  NetServerGetInfo
 ****************************************************************/
 
-NET_API_STATUS NetServerGetInfo(const char *server_name,
-				uint32_t level,
-				uint8_t **buffer);
+NET_API_STATUS NetServerGetInfo(const char * server_name /* [in] */,
+				uint32_t level /* [in] */,
+				uint8_t **buffer /* [out] [ref] */);
 
 /****************************************************************
  NetServerSetInfo
 ****************************************************************/
 
-NET_API_STATUS NetServerSetInfo(const char *server_name,
-				uint32_t level,
-				uint8_t *buffer,
-				uint32_t *parm_error);
+NET_API_STATUS NetServerSetInfo(const char * server_name /* [in] */,
+				uint32_t level /* [in] */,
+				uint8_t *buffer /* [in] [ref] */,
+				uint32_t *parm_error /* [out] [ref] */);
 
 /****************************************************************
  NetGetDCName
 ****************************************************************/
 
-NET_API_STATUS NetGetDCName(const char *server_name,
-			    const char *domain_name,
-			    uint8_t **buffer);
+NET_API_STATUS NetGetDCName(const char * server_name /* [in] */,
+			    const char * domain_name /* [in] */,
+			    uint8_t **buffer /* [out] [ref] */);
 
 /****************************************************************
  NetGetAnyDCName
 ****************************************************************/
 
-NET_API_STATUS NetGetAnyDCName(const char *server_name,
-			       const char *domain_name,
-			       uint8_t **buffer);
+NET_API_STATUS NetGetAnyDCName(const char * server_name /* [in] */,
+			       const char * domain_name /* [in] */,
+			       uint8_t **buffer /* [out] [ref] */);
 
 #endif

@@ -19,75 +19,72 @@
 
 #include "includes.h"
 
+#include "librpc/gen_ndr/libnetapi.h"
 #include "lib/netapi/netapi.h"
+#include "lib/netapi/libnetapi.h"
 #include "libnet/libnet.h"
 
 /****************************************************************
 ****************************************************************/
 
-static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
-				 const char *server_name,
-				 const char *domain_name,
-				 const char *account_ou,
-				 const char *Account,
-				 const char *password,
-				 uint32_t join_flags)
+WERROR NetJoinDomain_l(struct libnetapi_ctx *mem_ctx,
+		       struct NetJoinDomain *r)
 {
-	struct libnet_JoinCtx *r = NULL;
+	struct libnet_JoinCtx *j = NULL;
 	WERROR werr;
 
-	if (!domain_name) {
+	if (!r->in.domain) {
 		return WERR_INVALID_PARAM;
 	}
 
-	werr = libnet_init_JoinCtx(mem_ctx, &r);
+	werr = libnet_init_JoinCtx(mem_ctx, &j);
 	W_ERROR_NOT_OK_RETURN(werr);
 
-	r->in.domain_name = talloc_strdup(mem_ctx, domain_name);
-	W_ERROR_HAVE_NO_MEMORY(r->in.domain_name);
+	j->in.domain_name = talloc_strdup(mem_ctx, r->in.domain);
+	W_ERROR_HAVE_NO_MEMORY(j->in.domain_name);
 
-	if (join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
+	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 		NTSTATUS status;
 		struct netr_DsRGetDCNameInfo *info = NULL;
 		uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 				 DS_WRITABLE_REQUIRED |
 				 DS_RETURN_DNS_NAME;
-		status = dsgetdcname(mem_ctx, domain_name,
+		status = dsgetdcname(mem_ctx, r->in.domain,
 				     NULL, NULL, flags, &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			libnetapi_set_error_string(mem_ctx,
 				"%s", get_friendly_nt_error_msg(status));
 			return ntstatus_to_werror(status);
 		}
-		r->in.dc_name = talloc_strdup(mem_ctx,
+		j->in.dc_name = talloc_strdup(mem_ctx,
 					      info->dc_unc);
-		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
+		W_ERROR_HAVE_NO_MEMORY(j->in.dc_name);
 	}
 
-	if (account_ou) {
-		r->in.account_ou = talloc_strdup(mem_ctx, account_ou);
-		W_ERROR_HAVE_NO_MEMORY(r->in.account_ou);
+	if (r->in.account_ou) {
+		j->in.account_ou = talloc_strdup(mem_ctx, r->in.account_ou);
+		W_ERROR_HAVE_NO_MEMORY(j->in.account_ou);
 	}
 
-	if (Account) {
-		r->in.admin_account = talloc_strdup(mem_ctx, Account);
-		W_ERROR_HAVE_NO_MEMORY(r->in.admin_account);
+	if (r->in.account) {
+		j->in.admin_account = talloc_strdup(mem_ctx, r->in.account);
+		W_ERROR_HAVE_NO_MEMORY(j->in.admin_account);
 	}
 
-	if (password) {
-		r->in.admin_password = talloc_strdup(mem_ctx, password);
-		W_ERROR_HAVE_NO_MEMORY(r->in.admin_password);
+	if (r->in.password) {
+		j->in.admin_password = talloc_strdup(mem_ctx, r->in.password);
+		W_ERROR_HAVE_NO_MEMORY(j->in.admin_password);
 	}
 
-	r->in.join_flags = join_flags;
-	r->in.modify_config = true;
-	r->in.debug = true;
+	j->in.join_flags = r->in.join_flags;
+	j->in.modify_config = true;
+	j->in.debug = true;
 
-	werr = libnet_Join(mem_ctx, r);
-	if (!W_ERROR_IS_OK(werr) && r->out.error_string) {
-		libnetapi_set_error_string(mem_ctx, "%s", r->out.error_string);
+	werr = libnet_Join(mem_ctx, j);
+	if (!W_ERROR_IS_OK(werr) && j->out.error_string) {
+		libnetapi_set_error_string(mem_ctx, "%s", j->out.error_string);
 	}
-	TALLOC_FREE(r);
+	TALLOC_FREE(j);
 
 	return werr;
 }
@@ -95,13 +92,8 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-static WERROR NetJoinDomainRemote(struct libnetapi_ctx *ctx,
-				  const char *server_name,
-				  const char *domain_name,
-				  const char *account_ou,
-				  const char *Account,
-				  const char *password,
-				  uint32_t join_flags)
+WERROR NetJoinDomain_r(struct libnetapi_ctx *ctx,
+		       struct NetJoinDomain *r)
 {
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
@@ -110,7 +102,7 @@ static WERROR NetJoinDomainRemote(struct libnetapi_ctx *ctx,
 	WERROR werr;
 	unsigned int old_timeout = 0;
 
-	status = cli_full_connection(&cli, NULL, server_name,
+	status = cli_full_connection(&cli, NULL, r->in.server,
 				     NULL, 0,
 				     "IPC$", "IPC",
 				     ctx->username,
@@ -130,20 +122,23 @@ static WERROR NetJoinDomainRemote(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	if (password) {
+	if (r->in.password) {
 		encode_wkssvc_join_password_buffer(ctx,
-						   password,
+						   r->in.password,
 						   &cli->user_session_key,
 						   &encrypted_password);
 	}
 
-	old_timeout = cli_set_timeout(cli, 60000);
+	old_timeout = cli_set_timeout(cli, 600000);
 
 	status = rpccli_wkssvc_NetrJoinDomain2(pipe_cli, ctx,
-					       server_name, domain_name,
-					       account_ou, Account,
+					       r->in.server,
+					       r->in.domain,
+					       r->in.account_ou,
+					       r->in.account,
 					       encrypted_password,
-					       join_flags, &werr);
+					       r->in.join_flags,
+					       &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
@@ -151,92 +146,21 @@ static WERROR NetJoinDomainRemote(struct libnetapi_ctx *ctx,
 
  done:
 	if (cli) {
-		cli_set_timeout(cli, old_timeout);
+		if (old_timeout) {
+			cli_set_timeout(cli, old_timeout);
+		}
 		cli_shutdown(cli);
 	}
 
 	return werr;
 }
-
 /****************************************************************
 ****************************************************************/
 
-static WERROR libnetapi_NetJoinDomain(struct libnetapi_ctx *ctx,
-				      const char *server_name,
-				      const char *domain_name,
-				      const char *account_ou,
-				      const char *Account,
-				      const char *password,
-				      uint32_t join_flags)
+WERROR NetUnjoinDomain_l(struct libnetapi_ctx *mem_ctx,
+			 struct NetUnjoinDomain *r)
 {
-	if (!domain_name) {
-		return WERR_INVALID_PARAM;
-	}
-
-	if (!server_name || is_myname_or_ipaddr(server_name)) {
-
-		return NetJoinDomainLocal(ctx,
-					  server_name,
-					  domain_name,
-					  account_ou,
-					  Account,
-					  password,
-					  join_flags);
-	}
-
-	return NetJoinDomainRemote(ctx,
-				   server_name,
-				   domain_name,
-				   account_ou,
-				   Account,
-				   password,
-				   join_flags);
-}
-
-/****************************************************************
- NetJoinDomain
-****************************************************************/
-
-NET_API_STATUS NetJoinDomain(const char *server_name,
-			     const char *domain_name,
-			     const char *account_ou,
-			     const char *Account,
-			     const char *password,
-			     uint32_t join_flags)
-{
-	struct libnetapi_ctx *ctx = NULL;
-	NET_API_STATUS status;
-	WERROR werr;
-
-	status = libnetapi_getctx(&ctx);
-	if (status != 0) {
-		return status;
-	}
-
-	werr = libnetapi_NetJoinDomain(ctx,
-				       server_name,
-				       domain_name,
-				       account_ou,
-				       Account,
-				       password,
-				       join_flags);
-	if (!W_ERROR_IS_OK(werr)) {
-		return W_ERROR_V(werr);
-	}
-
-	return NET_API_STATUS_SUCCESS;
-}
-
-/****************************************************************
-****************************************************************/
-
-static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
-				   const char *server_name,
-				   const char *account,
-				   const char *password,
-				   uint32_t unjoin_flags)
-{
-	struct libnet_UnjoinCtx *r = NULL;
+	struct libnet_UnjoinCtx *u = NULL;
 	struct dom_sid domain_sid;
 	const char *domain = NULL;
 	WERROR werr;
@@ -245,7 +169,7 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 		return WERR_SETUP_NOT_JOINED;
 	}
 
-	werr = libnet_init_UnjoinCtx(mem_ctx, &r);
+	werr = libnet_init_UnjoinCtx(mem_ctx, &u);
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	if (lp_realm()) {
@@ -254,9 +178,9 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 		domain = lp_workgroup();
 	}
 
-	if (server_name) {
-		r->in.dc_name = talloc_strdup(mem_ctx, server_name);
-		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
+	if (r->in.server_name) {
+		u->in.dc_name = talloc_strdup(mem_ctx, r->in.server_name);
+		W_ERROR_HAVE_NO_MEMORY(u->in.dc_name);
 	} else {
 		NTSTATUS status;
 		struct netr_DsRGetDCNameInfo *info = NULL;
@@ -272,33 +196,35 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 				get_friendly_nt_error_msg(status));
 			return ntstatus_to_werror(status);
 		}
-		r->in.dc_name = talloc_strdup(mem_ctx,
+		u->in.dc_name = talloc_strdup(mem_ctx,
 					      info->dc_unc);
-		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
+		W_ERROR_HAVE_NO_MEMORY(u->in.dc_name);
+
+		u->in.domain_name = domain;
 	}
 
-	if (account) {
-		r->in.admin_account = talloc_strdup(mem_ctx, account);
-		W_ERROR_HAVE_NO_MEMORY(r->in.admin_account);
+	if (r->in.account) {
+		u->in.admin_account = talloc_strdup(mem_ctx, r->in.account);
+		W_ERROR_HAVE_NO_MEMORY(u->in.admin_account);
 	}
 
-	if (password) {
-		r->in.admin_password = talloc_strdup(mem_ctx, password);
-		W_ERROR_HAVE_NO_MEMORY(r->in.admin_password);
+	if (r->in.password) {
+		u->in.admin_password = talloc_strdup(mem_ctx, r->in.password);
+		W_ERROR_HAVE_NO_MEMORY(u->in.admin_password);
 	}
 
-	r->in.domain_name = domain;
-	r->in.unjoin_flags = unjoin_flags;
-	r->in.modify_config = true;
-	r->in.debug = true;
+	u->in.domain_name = domain;
+	u->in.unjoin_flags = r->in.unjoin_flags;
+	u->in.modify_config = true;
+	u->in.debug = true;
 
-	r->in.domain_sid = &domain_sid;
+	u->in.domain_sid = &domain_sid;
 
-	werr = libnet_Unjoin(mem_ctx, r);
-	if (!W_ERROR_IS_OK(werr) && r->out.error_string) {
-		libnetapi_set_error_string(mem_ctx, "%s", r->out.error_string);
+	werr = libnet_Unjoin(mem_ctx, u);
+	if (!W_ERROR_IS_OK(werr) && u->out.error_string) {
+		libnetapi_set_error_string(mem_ctx, "%s", u->out.error_string);
 	}
-	TALLOC_FREE(r);
+	TALLOC_FREE(u);
 
 	return werr;
 }
@@ -306,11 +232,8 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-static WERROR NetUnjoinDomainRemote(struct libnetapi_ctx *ctx,
-				    const char *server_name,
-				    const char *account,
-				    const char *password,
-				    uint32_t unjoin_flags)
+WERROR NetUnjoinDomain_r(struct libnetapi_ctx *ctx,
+			 struct NetUnjoinDomain *r)
 {
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
@@ -319,7 +242,7 @@ static WERROR NetUnjoinDomainRemote(struct libnetapi_ctx *ctx,
 	WERROR werr;
 	unsigned int old_timeout = 0;
 
-	status = cli_full_connection(&cli, NULL, server_name,
+	status = cli_full_connection(&cli, NULL, r->in.server_name,
 				     NULL, 0,
 				     "IPC$", "IPC",
 				     ctx->username,
@@ -339,9 +262,9 @@ static WERROR NetUnjoinDomainRemote(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	if (password) {
+	if (r->in.password) {
 		encode_wkssvc_join_password_buffer(ctx,
-						   password,
+						   r->in.password,
 						   &cli->user_session_key,
 						   &encrypted_password);
 	}
@@ -349,10 +272,10 @@ static WERROR NetUnjoinDomainRemote(struct libnetapi_ctx *ctx,
 	old_timeout = cli_set_timeout(cli, 60000);
 
 	status = rpccli_wkssvc_NetrUnjoinDomain2(pipe_cli, ctx,
-						 server_name,
-						 account,
+						 r->in.server_name,
+						 r->in.account,
 						 encrypted_password,
-						 unjoin_flags,
+						 r->in.unjoin_flags,
 						 &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
@@ -371,72 +294,15 @@ static WERROR NetUnjoinDomainRemote(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
-static WERROR libnetapi_NetUnjoinDomain(struct libnetapi_ctx *ctx,
-					const char *server_name,
-					const char *account,
-					const char *password,
-					uint32_t unjoin_flags)
-{
-	if (!server_name || is_myname_or_ipaddr(server_name)) {
-
-		return NetUnjoinDomainLocal(ctx,
-					    server_name,
-					    account,
-					    password,
-					    unjoin_flags);
-	}
-
-	return NetUnjoinDomainRemote(ctx,
-				     server_name,
-				     account,
-				     password,
-				     unjoin_flags);
-}
-
-/****************************************************************
- NetUnjoinDomain
-****************************************************************/
-
-NET_API_STATUS NetUnjoinDomain(const char *server_name,
-			       const char *account,
-			       const char *password,
-			       uint32_t unjoin_flags)
-{
-	struct libnetapi_ctx *ctx = NULL;
-	NET_API_STATUS status;
-	WERROR werr;
-
-	status = libnetapi_getctx(&ctx);
-	if (status != 0) {
-		return status;
-	}
-
-	werr = libnetapi_NetUnjoinDomain(ctx,
-					 server_name,
-					 account,
-					 password,
-					 unjoin_flags);
-	if (!W_ERROR_IS_OK(werr)) {
-		return W_ERROR_V(werr);
-	}
-
-	return NET_API_STATUS_SUCCESS;
-}
-
-/****************************************************************
-****************************************************************/
-
-static WERROR NetGetJoinInformationRemote(struct libnetapi_ctx *ctx,
-					  const char *server_name,
-					  const char **name_buffer,
-					  uint16_t *name_type)
+WERROR NetGetJoinInformation_r(struct libnetapi_ctx *ctx,
+			       struct NetGetJoinInformation *r)
 {
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
 
-	status = cli_full_connection(&cli, NULL, server_name,
+	status = cli_full_connection(&cli, NULL, r->in.server_name,
 				     NULL, 0,
 				     "IPC$", "IPC",
 				     ctx->username,
@@ -457,9 +323,9 @@ static WERROR NetGetJoinInformationRemote(struct libnetapi_ctx *ctx,
 	}
 
 	status = rpccli_wkssvc_NetrGetJoinInformation(pipe_cli, ctx,
-						      server_name,
-						      name_buffer,
-						      (enum wkssvc_NetJoinStatus *)name_type,
+						      r->in.server_name,
+						      r->out.name_buffer,
+						      (enum wkssvc_NetJoinStatus *)r->out.name_type,
 						      &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
@@ -477,17 +343,15 @@ static WERROR NetGetJoinInformationRemote(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
-static WERROR NetGetJoinInformationLocal(struct libnetapi_ctx *ctx,
-					 const char *server_name,
-					 const char **name_buffer,
-					 uint16_t *name_type)
+WERROR NetGetJoinInformation_l(struct libnetapi_ctx *ctx,
+			       struct NetGetJoinInformation *r)
 {
 	if ((lp_security() == SEC_ADS) && lp_realm()) {
-		*name_buffer = talloc_strdup(ctx, lp_realm());
+		*r->out.name_buffer = talloc_strdup(ctx, lp_realm());
 	} else {
-		*name_buffer = talloc_strdup(ctx, lp_workgroup());
+		*r->out.name_buffer = talloc_strdup(ctx, lp_workgroup());
 	}
-	if (!*name_buffer) {
+	if (!*r->out.name_buffer) {
 		return WERR_NOMEM;
 	}
 
@@ -495,73 +359,22 @@ static WERROR NetGetJoinInformationLocal(struct libnetapi_ctx *ctx,
 		case ROLE_DOMAIN_MEMBER:
 		case ROLE_DOMAIN_PDC:
 		case ROLE_DOMAIN_BDC:
-			*name_type = NetSetupDomainName;
+			*r->out.name_type = NetSetupDomainName;
 			break;
 		case ROLE_STANDALONE:
 		default:
-			*name_type = NetSetupWorkgroupName;
+			*r->out.name_type = NetSetupWorkgroupName;
 			break;
 	}
 
 	return WERR_OK;
 }
 
-static WERROR libnetapi_NetGetJoinInformation(struct libnetapi_ctx *ctx,
-					      const char *server_name,
-					      const char **name_buffer,
-					      uint16_t *name_type)
-{
-	if (!server_name || is_myname_or_ipaddr(server_name)) {
-		return NetGetJoinInformationLocal(ctx,
-						  server_name,
-						  name_buffer,
-						  name_type);
-	}
-
-	return NetGetJoinInformationRemote(ctx,
-					   server_name,
-					   name_buffer,
-					   name_type);
-}
-
-/****************************************************************
- NetGetJoinInformation
-****************************************************************/
-
-NET_API_STATUS NetGetJoinInformation(const char *server_name,
-				     const char **name_buffer,
-				     uint16_t *name_type)
-{
-	struct libnetapi_ctx *ctx = NULL;
-	NET_API_STATUS status;
-	WERROR werr;
-
-	status = libnetapi_getctx(&ctx);
-	if (status != 0) {
-		return status;
-	}
-
-	werr = libnetapi_NetGetJoinInformation(ctx,
-					       server_name,
-					       name_buffer,
-					       name_type);
-	if (!W_ERROR_IS_OK(werr)) {
-		return W_ERROR_V(werr);
-	}
-
-	return NET_API_STATUS_SUCCESS;
-}
-
 /****************************************************************
 ****************************************************************/
 
-static WERROR NetGetJoinableOUsLocal(struct libnetapi_ctx *ctx,
-				     const char *server_name,
-				     const char *domain,
-				     const char *account,
-				     const char *password,
-				     uint32_t *ou_count,
-				     const char ***ous)
+WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
+			   struct NetGetJoinableOUs *r)
 {
 #ifdef WITH_ADS
 	NTSTATUS status;
@@ -571,7 +384,7 @@ static WERROR NetGetJoinableOUsLocal(struct libnetapi_ctx *ctx,
 	uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 			 DS_RETURN_DNS_NAME;
 
-	status = dsgetdcname(ctx, domain,
+	status = dsgetdcname(ctx, r->in.domain,
 			     NULL, NULL, flags, &info);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnetapi_set_error_string(ctx, "%s",
@@ -579,21 +392,21 @@ static WERROR NetGetJoinableOUsLocal(struct libnetapi_ctx *ctx,
 		return ntstatus_to_werror(status);
 	}
 
-	ads = ads_init(domain, domain, info->dc_unc);
+	ads = ads_init(r->in.domain, r->in.domain, info->dc_unc);
 	if (!ads) {
 		return WERR_GENERAL_FAILURE;
 	}
 
 	SAFE_FREE(ads->auth.user_name);
-	if (account) {
-		ads->auth.user_name = SMB_STRDUP(account);
+	if (r->in.account) {
+		ads->auth.user_name = SMB_STRDUP(r->in.account);
 	} else if (ctx->username) {
 		ads->auth.user_name = SMB_STRDUP(ctx->username);
 	}
 
 	SAFE_FREE(ads->auth.password);
-	if (password) {
-		ads->auth.password = SMB_STRDUP(password);
+	if (r->in.password) {
+		ads->auth.password = SMB_STRDUP(r->in.password);
 	} else if (ctx->password) {
 		ads->auth.password = SMB_STRDUP(ctx->password);
 	}
@@ -605,8 +418,8 @@ static WERROR NetGetJoinableOUsLocal(struct libnetapi_ctx *ctx,
 	}
 
 	ads_status = ads_get_joinable_ous(ads, ctx,
-					  (char ***)ous,
-					  (size_t *)ou_count);
+					  (char ***)r->out.ous,
+					  (size_t *)r->out.ou_count);
 	if (!ADS_ERR_OK(ads_status)) {
 		ads_destroy(&ads);
 		return WERR_DEFAULT_JOIN_REQUIRED;
@@ -622,13 +435,8 @@ static WERROR NetGetJoinableOUsLocal(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
-static WERROR NetGetJoinableOUsRemote(struct libnetapi_ctx *ctx,
-				      const char *server_name,
-				      const char *domain,
-				      const char *account,
-				      const char *password,
-				      uint32_t *ou_count,
-				      const char ***ous)
+WERROR NetGetJoinableOUs_r(struct libnetapi_ctx *ctx,
+			   struct NetGetJoinableOUs *r)
 {
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
@@ -636,7 +444,7 @@ static WERROR NetGetJoinableOUsRemote(struct libnetapi_ctx *ctx,
 	NTSTATUS status;
 	WERROR werr;
 
-	status = cli_full_connection(&cli, NULL, server_name,
+	status = cli_full_connection(&cli, NULL, r->in.server_name,
 				     NULL, 0,
 				     "IPC$", "IPC",
 				     ctx->username,
@@ -656,20 +464,20 @@ static WERROR NetGetJoinableOUsRemote(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	if (password) {
+	if (r->in.password) {
 		encode_wkssvc_join_password_buffer(ctx,
-						   password,
+						   r->in.password,
 						   &cli->user_session_key,
 						   &encrypted_password);
 	}
 
 	status = rpccli_wkssvc_NetrGetJoinableOus2(pipe_cli, ctx,
-						   server_name,
-						   domain,
-						   account,
+						   r->in.server_name,
+						   r->in.domain,
+						   r->in.account,
 						   encrypted_password,
-						   ou_count,
-						   ous,
+						   r->out.ou_count,
+						   r->out.ous,
 						   &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
@@ -682,68 +490,4 @@ static WERROR NetGetJoinableOUsRemote(struct libnetapi_ctx *ctx,
 	}
 
 	return werr;
-}
-
-/****************************************************************
-****************************************************************/
-
-static WERROR libnetapi_NetGetJoinableOUs(struct libnetapi_ctx *ctx,
-					  const char *server_name,
-					  const char *domain,
-					  const char *account,
-					  const char *password,
-					  uint32_t *ou_count,
-					  const char ***ous)
-{
-	if (!server_name || is_myname_or_ipaddr(server_name)) {
-		return NetGetJoinableOUsLocal(ctx,
-					      server_name,
-					      domain,
-					      account,
-					      password,
-					      ou_count,
-					      ous);
-	}
-
-	return NetGetJoinableOUsRemote(ctx,
-				       server_name,
-				       domain,
-				       account,
-				       password,
-				       ou_count,
-				       ous);
-}
-
-/****************************************************************
- NetGetJoinableOUs
-****************************************************************/
-
-NET_API_STATUS NetGetJoinableOUs(const char *server_name,
-				 const char *domain,
-				 const char *account,
-				 const char *password,
-				 uint32_t *ou_count,
-				 const char ***ous)
-{
-	struct libnetapi_ctx *ctx = NULL;
-	NET_API_STATUS status;
-	WERROR werr;
-
-	status = libnetapi_getctx(&ctx);
-	if (status != 0) {
-		return status;
-	}
-
-	werr = libnetapi_NetGetJoinableOUs(ctx,
-					   server_name,
-					   domain,
-					   account,
-					   password,
-					   ou_count,
-					   ous);
-	if (!W_ERROR_IS_OK(werr)) {
-		return W_ERROR_V(werr);
-	}
-
-	return NET_API_STATUS_SUCCESS;
 }
