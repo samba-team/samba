@@ -81,6 +81,13 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 		setenv(KRB5_ENV_CCNAME, ctx->krb5_cc_env, 1);
 	}
 
+	ctx->username = talloc_strdup(frame, getenv("USER"));
+	if (!ctx->username) {
+		TALLOC_FREE(frame);
+		fprintf(stderr, "out of memory\n");
+		return W_ERROR_V(WERR_NOMEM);
+	}
+
 	libnetapi_initialized = true;
 
 	*context = stat_ctx = ctx;
@@ -162,7 +169,8 @@ NET_API_STATUS libnetapi_set_username(struct libnetapi_ctx *ctx,
 				      const char *username)
 {
 	TALLOC_FREE(ctx->username);
-	ctx->username = talloc_strdup(ctx, username);
+	ctx->username = talloc_strdup(ctx, username ? username : "");
+
 	if (!ctx->username) {
 		return W_ERROR_V(WERR_NOMEM);
 	}
