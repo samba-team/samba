@@ -44,7 +44,7 @@ static struct reg_private_data *rpd(struct smbconf_ctx *ctx)
 /*
  * check whether a given value name is forbidden in registry (smbconf)
  */
-static bool registry_smbconf_valname_forbidden(const char *valname)
+static bool smbconf_reg_valname_forbidden(const char *valname)
 {
 	/* hard code the list of forbidden names here for now */
 	const char *forbidden_valnames[] = {
@@ -244,7 +244,7 @@ static WERROR smbconf_reg_set_value(struct registry_key *key,
 		goto done;
 	}
 
-	if (registry_smbconf_valname_forbidden(canon_valname)) {
+	if (smbconf_reg_valname_forbidden(canon_valname)) {
 		DEBUG(5, ("Parameter '%s' not allowed in registry.\n",
 			  canon_valname));
 		werr = WERR_INVALID_PARAM;
