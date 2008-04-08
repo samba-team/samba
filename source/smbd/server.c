@@ -918,6 +918,15 @@ static void exit_server_common(enum server_exit_reason how,
 	}
 #endif
 
+#ifdef USE_DMAPI
+	/* Destroy Samba DMAPI session only if we are master smbd process */
+	if (am_parent) {
+		if (!dmapi_destroy_session()) {
+			DEBUG(0,("Unable to close Samba DMAPI session\n"));
+		}
+	}
+#endif
+
 	locking_end();
 	printing_end();
 
