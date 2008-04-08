@@ -21,7 +21,7 @@ $VERSION = '0.01';
 sub new($) {
 	my ($class) = @_;
 	my $self = { res => "", res_hdr => "", tabs => "", constants => {},
-	             module_methods => []};
+	             module_methods => [], module_objects => [], module_types => []};
 	bless($self, $class);
 }
 
@@ -163,46 +163,35 @@ sub FromPythonToUnionFunction($$$$$)
 	$self->pidl("return ret;");
 }
 
-sub PythonStruct($$$$)
+sub PythonStruct($$$$$$)
 {
-	my ($self, $name, $cname, $d) = @_;
+	my ($self, $modulename, $prettyname, $name, $cname, $d) = @_;
 
 	my $env = GenerateStructEnv($d, "object");
 
 	$self->pidl("");
 
-	$self->pidl("static PyObject *py_$name\_getattr(PyObject *obj, char *name)");
-	$self->pidl("{");
-	$self->indent;
+	my $getsetters = "NULL";
+
 	if ($#{$d->{ELEMENTS}} > -1) {
-		$self->pidl("$cname *object = py_talloc_get_ptr(obj);");
 		foreach my $e (@{$d->{ELEMENTS}}) {
-			$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
 			my $varname = "object->$e->{NAME}";
+			$self->pidl("static PyObject *py_$name\_get_$e->{NAME}(PyObject *obj, void *closure)");
+			$self->pidl("{");
 			$self->indent;
+			$self->pidl("$cname *object = py_talloc_get_ptr(obj);");
 			$self->pidl("PyObject *py_$e->{NAME};");
 			$self->ConvertObjectToPython("py_talloc_get_mem_ctx(obj)", $env, $e, $varname, "py_$e->{NAME}");
 			$self->pidl("return py_$e->{NAME};");
 			$self->deindent;
 			$self->pidl("}");
-		}
-	}
-	$self->pidl("PyErr_SetString(PyExc_AttributeError, \"no such attribute\");");
-	$self->pidl("return NULL;");
-	$self->deindent;
-	$self->pidl("}");
-	$self->pidl("");
+			$self->pidl("");
 
-	$self->pidl("static int py_$name\_setattr(PyObject *py_obj, char *name, PyObject *value)");
-	$self->pidl("{");
-	$self->indent;
-	if ($#{$d->{ELEMENTS}} > -1) {
-		$self->pidl("$cname *object = py_talloc_get_ptr(py_obj);");
-		my $mem_ctx = "py_talloc_get_mem_ctx(py_obj)";
-		foreach my $e (@{$d->{ELEMENTS}}) {
-			$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
-			my $varname = "object->$e->{NAME}";
+			$self->pidl("static int py_$name\_set_$e->{NAME}(PyObject *py_obj, PyObject *value, void *closure)");
+			$self->pidl("{");
 			$self->indent;
+			$self->pidl("$cname *object = py_talloc_get_ptr(py_obj);");
+			my $mem_ctx = "py_talloc_get_mem_ctx(py_obj)";
 			my $l = $e->{LEVELS}[0];
 			my $nl = GetNextLevel($e, $l);
 			if ($l->{TYPE} eq "POINTER" and 
@@ -214,52 +203,60 @@ sub PythonStruct($$$$)
 			$self->pidl("return 0;");
 			$self->deindent;
 			$self->pidl("}");
+		$self->pidl("");
 		}
+
+		$getsetters = "py_$name\_getsetters";
+		$self->pidl("static PyGetSetDef ".$getsetters."[] = {");
+		$self->indent;
+		foreach my $e (@{$d->{ELEMENTS}}) {
+			$self->pidl("{ discard_const_p(char, \"$e->{NAME}\"), py_$name\_get_$e->{NAME}, py_$name\_set_$e->{NAME} },");
+		}
+		$self->pidl("{ NULL }");
+		$self->deindent;
+		$self->pidl("};");
+		$self->pidl("");
 	}
-	$self->pidl("PyErr_SetString(PyExc_AttributeError, \"no such attribute\");");
-	$self->pidl("return -1;");
-	$self->deindent;
-	$self->pidl("}");
-	$self->pidl("");
 
-	$self->pidl_hdr("PyAPI_DATA(PyTypeObject) $name\_Type;\n");
-	$self->pidl_hdr("#define $name\_Check(op) PyObject_TypeCheck(op, &$name\_Type)\n");
-	$self->pidl_hdr("#define $name\_CheckExact(op) ((op)->ob_type == &$name\_Type)\n");
-	$self->pidl_hdr("\n");
-	$self->pidl("PyTypeObject $name\_Type = {");
-	$self->indent;
-	$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
-	$self->pidl(".tp_name = \"$name\",");
-	$self->pidl(".tp_basicsize = sizeof(py_talloc_Object),");
-	$self->pidl(".tp_dealloc = py_talloc_dealloc,");
-	$self->pidl(".tp_getattr = py_$name\_getattr,");
-	$self->pidl(".tp_setattr = py_$name\_setattr,");
-	$self->pidl(".tp_repr = py_talloc_default_repr,");
-	$self->deindent;
-	$self->pidl("};");
-
-	$self->pidl("");
-
-	my $py_fnname = "py_$name";
-	$self->pidl("static PyObject *$py_fnname(PyObject *self, PyObject *args)");
+	$self->pidl("static PyObject *py_$name\_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)");
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("$cname *ret = talloc_zero(NULL, $cname);");
 	$self->pidl("return py_talloc_import(&$name\_Type, ret);");
 	$self->deindent;
 	$self->pidl("}");
+
 	$self->pidl("");
 
-	return $py_fnname;
+	$self->pidl_hdr("PyAPI_DATA(PyTypeObject) $name\_Type;\n");
+	$self->pidl_hdr("#define $name\_Check(op) PyObject_TypeCheck(op, &$name\_Type)\n");
+	$self->pidl_hdr("#define $name\_CheckExact(op) ((op)->ob_type == &$name\_Type)\n");
+	$self->pidl_hdr("\n");
+	my $docstring = ($self->DocString($d, $name) or "NULL");
+	my $typeobject = "$name\_Type";
+	$self->pidl("PyTypeObject $typeobject = {");
+	$self->indent;
+	$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
+	$self->pidl(".tp_name = \"$modulename.$prettyname\",");
+	$self->pidl(".tp_basicsize = sizeof(py_talloc_Object),");
+	$self->pidl(".tp_dealloc = py_talloc_dealloc,");
+	$self->pidl(".tp_getset = $getsetters,");
+	$self->pidl(".tp_repr = py_talloc_default_repr,");
+	$self->pidl(".tp_doc = $docstring,");
+	$self->pidl(".tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,");
+	$self->pidl(".tp_new = py_$name\_new,");
+	$self->deindent;
+	$self->pidl("};");
+
+	$self->pidl("");
+
+	return "&$typeobject";
 }
 
-sub PythonFunction($$$)
+sub PythonFunctionBody($$$)
 {
-	my ($self, $fn, $iface) = @_;
+	my ($self, $fn, $iface, $prettyname) = @_;
 
-	$self->pidl("static PyObject *py_$fn->{NAME}(PyObject *self, PyObject *args, PyObject *kwargs)");
-	$self->pidl("{");
-	$self->indent;
 	$self->pidl("$iface\_InterfaceObject *iface = ($iface\_InterfaceObject *)self;");
 	$self->pidl("NTSTATUS status;");
 	$self->pidl("TALLOC_CTX *mem_ctx = talloc_new(NULL);");
@@ -273,6 +270,8 @@ sub PythonFunction($$$)
 	my $args_string = "";
 	my $args_names = "";
 
+	my $signature = "S.$prettyname(";
+
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		$self->pidl("PyObject *py_$e->{NAME};");
 		if (grep(/out/,@{$e->{DIRECTION}})) {
@@ -282,8 +281,14 @@ sub PythonFunction($$$)
 			$args_format .= "O";
 			$args_string .= ", &py_$e->{NAME}";
 			$args_names .= "\"$e->{NAME}\", ";
+			$signature .= "$e->{NAME}, ";
 		}
 	}
+	if (substr($signature, -2) eq ", ") {
+		$signature = substr($signature, 0, -2);
+	}
+	$signature.= ") -> ";
+
 	$self->pidl("const char *kwnames[] = {");
 	$self->indent;
 	$self->pidl($args_names . "NULL");
@@ -314,6 +319,9 @@ sub PythonFunction($$$)
 
 	if ($result_size > 1) {
 		$self->pidl("result = PyTuple_New($result_size);");
+		$signature .= "(";
+	} elsif ($result_size == 0) {
+		$signature .= "None";
 	}
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
@@ -323,8 +331,10 @@ sub PythonFunction($$$)
 			if ($result_size > 1) {
 				$self->pidl("PyTuple_SetItem(result, $i, $py_name);");
 				$i++;
+				$signature .= "$e->{NAME}, ";
 			} else {
 				$self->pidl("result = $py_name;");
+				$signature .= "result";
 			}
 		}
 	}
@@ -337,16 +347,55 @@ sub PythonFunction($$$)
 		my $conv = $self->ConvertObjectToPythonData("r", $fn->{RETURN_TYPE}, "r->out.result");
 		if ($result_size > 1) {
 			$self->pidl("PyTuple_SetItem(result, $i, $conv);");
+			$signature .= "result";
 		} else {
 			$self->pidl("result = $conv;");
+			$signature .= "result";
 		}
+	}
+
+	if (substr($signature, -2) eq ", ") {
+		$signature = substr($signature, 0, -2);
+	}
+	if ($result_size > 1) {
+		$signature .= ")";
 	}
 
 	$self->pidl("talloc_free(mem_ctx);");
 	$self->pidl("return result;");
+
+	return $signature;
+}
+
+sub PythonFunction($$$)
+{
+	my ($self, $fn, $iface, $prettyname) = @_;
+
+	my $fnname = "py_$fn->{NAME}";
+	my $docstring = $self->DocString($fn, $fn->{NAME});
+
+	$self->pidl("static PyObject *$fnname(PyObject *self, PyObject *args, PyObject *kwargs)");
+	$self->pidl("{");
+	$self->indent;
+	if (has_property($fn, "todo")) {
+		$self->pidl("PyErr_SetString(PyExc_NotImplementedError, \"No marshalling code available yet for $prettyname\");");
+		$self->pidl("return NULL;");
+		unless ($docstring) { $docstring = "NULL"; }
+	} else {
+		my $signature = $self->PythonFunctionBody($fn, $iface, $prettyname);
+
+		if ($docstring) {
+			$docstring = "\"$signature\\n\\n\"$docstring";
+		} else {
+			$docstring = "\"$signature\"";
+		}
+	}
+
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
+
+	return ($fnname, $docstring);
 }
 
 sub handle_werror($$$$)
@@ -377,9 +426,9 @@ sub handle_ntstatus($$$$)
 	$self->pidl("");
 }
 
-sub PythonType($$$)
+sub PythonType($$$$)
 {
-	my ($self, $d, $interface, $basename) = @_;
+	my ($self, $modulename, $d, $interface, $basename) = @_;
 
 	my $actual_ctype = $d;
 	if ($actual_ctype->{TYPE} eq "TYPEDEF") {
@@ -387,19 +436,20 @@ sub PythonType($$$)
 	}
 
 	if ($actual_ctype->{TYPE} eq "STRUCT") {
-		my $py_fnname;
-		if ($d->{TYPE} eq "STRUCT") {
-			$py_fnname = $self->PythonStruct($d->{NAME}, mapTypeName($d), $d);
-		} else {
-			$py_fnname = $self->PythonStruct($d->{NAME}, mapTypeName($d), $d->{DATA});
-		}
-
+		my $typeobject;
 		my $fn_name = $d->{NAME};
 
 		$fn_name =~ s/^$interface->{NAME}_//;
 		$fn_name =~ s/^$basename\_//;
 
-		$self->register_module_method($fn_name, $py_fnname, "METH_NOARGS", "NULL");
+
+		if ($d->{TYPE} eq "STRUCT") {
+			$typeobject = $self->PythonStruct($modulename, $fn_name, $d->{NAME}, mapTypeName($d), $d);
+		} else {
+			$typeobject = $self->PythonStruct($modulename, $fn_name, $d->{NAME}, mapTypeName($d), $d->{DATA});
+		}
+
+		$self->register_module_typeobject($fn_name, $typeobject);
 	}
 
 	if ($d->{TYPE} eq "ENUM" or $d->{TYPE} eq "BITMAP") {
@@ -429,6 +479,18 @@ sub PythonType($$$)
 	}
 }
 
+sub DocString($$$)
+{
+	my ($self, $d, $name) = @_;
+	if (has_property($d, "helpstring")) {
+		my $docstring = uc("py_doc_$name");
+		$self->pidl("#define $docstring ".has_property($d, "helpstring"));
+		return $docstring;
+	}
+
+	return undef;
+}
+
 sub Interface($$$)
 {
 	my($self,$interface,$basename) = @_;
@@ -443,7 +505,7 @@ sub Interface($$$)
 	foreach my $d (@{$interface->{TYPES}}) {
 		next if has_property($d, "nopython");
 
-		$self->PythonType($d, $interface, $basename);
+		$self->PythonType($basename, $d, $interface, $basename);
 	}
 
 	if (defined $interface->{PROPERTIES}->{uuid}) {
@@ -457,25 +519,27 @@ sub Interface($$$)
 
 		$self->pidl("");
 
+		my @fns = ();
+
 		foreach my $d (@{$interface->{FUNCTIONS}}) {
 			next if not defined($d->{OPNUM});
 			next if has_property($d, "nopython");
 
-			$self->PythonFunction($d, $interface->{NAME});
+			my $prettyname = $d->{NAME};
+
+			$prettyname =~ s/^$interface->{NAME}_//;
+			$prettyname =~ s/^$basename\_//;
+
+			my ($fnname, $fndocstring) = $self->PythonFunction($d, $interface->{NAME}, $prettyname);
+
+			push (@fns, [$fnname, $prettyname, $fndocstring]);
 		}
 
 		$self->pidl("static PyMethodDef interface_$interface->{NAME}\_methods[] = {");
 		$self->indent;
-		foreach my $d (@{$interface->{FUNCTIONS}}) {
-			next if not defined($d->{OPNUM});
-			next if has_property($d, "nopython");
-
-			my $fn_name = $d->{NAME};
-
-			$fn_name =~ s/^$interface->{NAME}_//;
-			$fn_name =~ s/^$basename\_//;
-
-			$self->pidl("{ \"$fn_name\", (PyCFunction)py_$d->{NAME}, METH_VARARGS|METH_KEYWORDS, NULL },");
+		foreach my $d (@fns) {
+			my ($c_fn, $prettyname, $docstring) = @$d;
+			$self->pidl("{ \"$prettyname\", (PyCFunction)$c_fn, METH_VARARGS|METH_KEYWORDS, $docstring },");
 		}
 		$self->pidl("{ NULL, NULL, 0, NULL }");
 		$self->deindent;
@@ -492,29 +556,7 @@ sub Interface($$$)
 		$self->pidl("}");
 		$self->pidl("");
 
-		$self->pidl("static PyObject *interface_$interface->{NAME}_getattr(PyObject *obj, char *name)");
-		$self->pidl("{");
-		$self->indent;
-		$self->pidl("return Py_FindMethod(interface_$interface->{NAME}\_methods, obj, name);");
-		$self->deindent;
-		$self->pidl("}");
-
-		$self->pidl("");
-
-		$self->pidl("PyTypeObject $interface->{NAME}_InterfaceType = {");
-		$self->indent;
-		$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
-		$self->pidl(".tp_name = \"$interface->{NAME}\",");
-		$self->pidl(".tp_basicsize = sizeof($interface->{NAME}_InterfaceObject),");
-		$self->pidl(".tp_dealloc = interface_$interface->{NAME}_dealloc,");
-		$self->pidl(".tp_getattr = interface_$interface->{NAME}_getattr,");
-		$self->deindent;
-		$self->pidl("};");
-
-		$self->pidl("");
-
-		$self->register_module_method($interface->{NAME}, "interface_$interface->{NAME}", "METH_VARARGS|METH_KEYWORDS", "NULL");
-		$self->pidl("static PyObject *interface_$interface->{NAME}(PyObject *self, PyObject *args, PyObject *kwargs)");
+		$self->pidl("static PyObject *interface_$interface->{NAME}_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)");
 		$self->pidl("{");
 		$self->indent;
 		$self->pidl("$interface->{NAME}_InterfaceObject *ret;");
@@ -574,6 +616,38 @@ sub Interface($$$)
 		$self->pidl("}");
 		
 		$self->pidl("");
+
+		my $signature = 
+"\"$interface->{NAME}(binding, lp_ctx=None, credentials=None) -> Connection to DCE/RPC interface.\\n\"
+\"\\n\"
+\"binding should be a DCE/RPC binding string (for example: ncacn_ip_tcp:127.0.0.1)\\n\"
+\"lp_ctx should be a path to a smb.conf file or a param.LoadParm object\\n\"
+\"credentials should be a credentials.Credentials object.\\n\\n\"";
+
+		my $docstring = $self->DocString($interface, $interface->{NAME});
+
+		if ($docstring) {
+			$docstring = "$signature$docstring";
+		} else {
+			$docstring = $signature;
+		}
+
+		$self->pidl("PyTypeObject $interface->{NAME}_InterfaceType = {");
+		$self->indent;
+		$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
+		$self->pidl(".tp_name = \"$basename.$interface->{NAME}\",");
+		$self->pidl(".tp_basicsize = sizeof($interface->{NAME}_InterfaceObject),");
+		$self->pidl(".tp_dealloc = interface_$interface->{NAME}_dealloc,");
+		$self->pidl(".tp_methods = interface_$interface->{NAME}_methods,");
+		$self->pidl(".tp_doc = $docstring,");
+		$self->pidl(".tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,");
+		$self->pidl(".tp_new = interface_$interface->{NAME}_new,");
+		$self->deindent;
+		$self->pidl("};");
+
+		$self->pidl("");
+
+		$self->register_module_typeobject($interface->{NAME}, "&$interface->{NAME}_InterfaceType");
 	}
 
 	$self->pidl_hdr("\n");
@@ -585,6 +659,22 @@ sub register_module_method($$$$$)
 	my ($self, $fn_name, $pyfn_name, $flags, $doc) = @_;
 
 	push (@{$self->{module_methods}}, [$fn_name, $pyfn_name, $flags, $doc])
+}
+
+sub register_module_typeobject($$$)
+{
+	my ($self, $name, $py_name) = @_;
+
+	$self->register_module_object($name, "(PyObject *)$py_name");
+
+	push (@{$self->{module_types}}, [$name, $py_name])
+}
+
+sub register_module_object($$$)
+{
+	my ($self, $name, $py_name) = @_;
+
+	push (@{$self->{module_objects}}, [$name, $py_name])
 }
 
 sub assign($$$)
@@ -929,7 +1019,20 @@ sub Parse($$$$$)
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("PyObject *m;");
-	$self->pidl("m = Py_InitModule(\"$basename\", $basename\_methods);");
+	$self->pidl("");
+
+	foreach (@{$self->{module_types}}) {
+		my ($object_name, $c_name) = @$_;
+		$self->pidl("if (PyType_Ready($c_name) < 0)");
+		$self->pidl("\treturn;");
+	}
+
+	$self->pidl("");
+
+	$self->pidl("m = Py_InitModule3(\"$basename\", $basename\_methods, \"$basename DCE/RPC\");");
+	$self->pidl("if (m == NULL)");
+	$self->pidl("\treturn;");
+	$self->pidl("");
 	foreach my $name (keys %{$self->{constants}}) {
 		my $py_obj;
 		my ($ctype, $cvar) = @{$self->{constants}->{$name}};
@@ -943,6 +1046,13 @@ sub Parse($$$$$)
 
 		$self->pidl("PyModule_AddObject(m, \"$name\", $py_obj);");
 	}
+
+	foreach (@{$self->{module_objects}}) {
+		my ($object_name, $c_name) = @$_;
+		$self->pidl("Py_INCREF($c_name);");
+		$self->pidl("PyModule_AddObject(m, \"$object_name\", $c_name);");
+	}
+
 	$self->deindent;
 	$self->pidl("}");
     return ($self->{res_hdr}, $self->{res});

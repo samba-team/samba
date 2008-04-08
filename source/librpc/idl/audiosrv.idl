@@ -5,19 +5,19 @@
 	helpstring("Audio Server")
 ] interface audiosrv
 {
-	void audiosrv_CreatezoneFactoriesList();
-	void audiosrv_CreateGfxFactoriesList();
-	void audiosrv_CreateGfxList();
-	void audiosrv_RemoveGfx();
-	void audiosrv_AddGfx();
-	void audiosrv_ModifyGfx();
-	void audiosrv_OpenGfx();
-	void audiosrv_Logon();
-	void audiosrv_Logoff();
-	void audiosrv_RegisterSessionNotificationEvent();
-	void audiosrv_UnregisterSessionNotificationEvent();
-	void audiosrv_SessionConnectState();
-	void audiosrv_DriverOpenDrvRegKey();
-	void audiosrv_AdvisePreferredDeviceChange();
-	void audiosrv_GetPnpInfo();
+	[todo] void audiosrv_CreatezoneFactoriesList();
+	[todo] void audiosrv_CreateGfxFactoriesList();
+	[todo] void audiosrv_CreateGfxList();
+	[todo] void audiosrv_RemoveGfx();
+	[todo] void audiosrv_AddGfx();
+	[todo] void audiosrv_ModifyGfx();
+	[todo] void audiosrv_OpenGfx();
+	[todo] void audiosrv_Logon();
+	[todo] void audiosrv_Logoff();
+	[todo] void audiosrv_RegisterSessionNotificationEvent();
+	[todo] void audiosrv_UnregisterSessionNotificationEvent();
+	[todo] void audiosrv_SessionConnectState();
+	[todo] void audiosrv_DriverOpenDrvRegKey();
+	[todo] void audiosrv_AdvisePreferredDeviceChange();
+	[todo] void audiosrv_GetPnpInfo();
 }
