@@ -45,16 +45,6 @@ RCSID("$Id$");
 #include <hx509.h>
 #include "crypto-headers.h"
 
-/* XXX copied from lib/krb5/pkinit.c */
-struct krb5_pk_identity {
-    hx509_context hx509ctx;
-    hx509_verify_ctx verify_ctx;
-    hx509_certs certs;
-    hx509_certs anchors;
-    hx509_certs certpool;
-    hx509_revoke_ctx revoke;
-};
-
 enum pkinit_type {
     PKINIT_COMPAT_WIN2K = 1,
     PKINIT_COMPAT_27 = 3
