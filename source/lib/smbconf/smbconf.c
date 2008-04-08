@@ -349,6 +349,21 @@ WERROR smbconf_get_includes(struct smbconf_ctx *ctx,
 				      includes);
 }
 
+WERROR smbconf_get_global_includes(struct smbconf_ctx *ctx,
+				   TALLOC_CTX *mem_ctx,
+				   uint32_t *num_includes, char ***includes)
+{
+	WERROR werr;
+
+	werr = smbconf_global_check(ctx);
+	if (W_ERROR_IS_OK(werr)) {
+		werr = smbconf_get_includes(ctx, mem_ctx, GLOBAL_NAME,
+					    num_includes, includes);
+	}
+
+	return werr;
+}
+
 WERROR smbconf_set_includes(struct smbconf_ctx *ctx,
 			    const char *service,
 			    uint32_t num_includes, const char **includes)
@@ -358,4 +373,19 @@ WERROR smbconf_set_includes(struct smbconf_ctx *ctx,
 	}
 
 	return ctx->ops->set_includes(ctx, service, num_includes, includes);
+}
+
+WERROR smbconf_set_global_includes(struct smbconf_ctx *ctx,
+				   uint32_t num_includes,
+				   const char **includes)
+{
+	WERROR werr;
+
+	werr = smbconf_global_check(ctx);
+	if (W_ERROR_IS_OK(werr)) {
+		werr = smbconf_set_includes(ctx, GLOBAL_NAME,
+					    num_includes, includes);
+	}
+
+	return werr;
 }
