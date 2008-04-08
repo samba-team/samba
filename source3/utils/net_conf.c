@@ -127,6 +127,9 @@ static WERROR import_process_service(struct smbconf_ctx *conf_ctx,
 {
 	uint32_t idx;
 	WERROR werr = WERR_OK;
+	uint32_t num_includes = 0;
+	char **includes = NULL;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (opt_testmode) {
 		d_printf("[%s]\n", servicename);
@@ -148,17 +151,42 @@ static WERROR import_process_service(struct smbconf_ctx *conf_ctx,
 			d_printf("\t%s = %s\n", param_names[idx],
 				 param_values[idx]);
 		} else {
-			werr = smbconf_set_parameter(conf_ctx,
-						     servicename,
-						     param_names[idx],
-						     param_values[idx]);
-			if (!W_ERROR_IS_OK(werr)) {
-				goto done;
+			if (strequal(param_names[idx], "include")) {
+				includes = TALLOC_REALLOC_ARRAY(mem_ctx,
+								includes,
+								char *,
+								num_includes+1);
+				if (includes == NULL) {
+					werr = WERR_NOMEM;
+					goto done;
+				}
+				includes[num_includes] =
+					talloc_strdup(includes,
+						      param_values[idx]);
+				if (includes[num_includes] == NULL) {
+					werr = WERR_NOMEM;
+					goto done;
+				}
+				num_includes++;
+			} else {
+				werr = smbconf_set_parameter(conf_ctx,
+							     servicename,
+							     param_names[idx],
+							     param_values[idx]);
+				if (!W_ERROR_IS_OK(werr)) {
+					goto done;
+				}
 			}
 		}
 	}
 
+	if (!opt_testmode) {
+		werr = smbconf_set_includes(conf_ctx, servicename, num_includes,
+					    (const char **)includes);
+	}
+
 done:
+	TALLOC_FREE(mem_ctx);
 	return werr;
 }
 
