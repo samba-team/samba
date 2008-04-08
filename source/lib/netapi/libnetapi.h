@@ -64,4 +64,14 @@ WERROR NetGetAnyDCName_r(struct libnetapi_ctx *ctx,
 			 struct NetGetAnyDCName *r);
 WERROR NetGetAnyDCName_l(struct libnetapi_ctx *ctx,
 			 struct NetGetAnyDCName *r);
+NET_API_STATUS DsGetDcName(const char * server_name /* [in] [unique] */,
+			   const char * domain_name /* [in] [ref] */,
+			   struct GUID *domain_guid /* [in] [unique] */,
+			   const char * site_name /* [in] [unique] */,
+			   uint32_t flags /* [in] */,
+			   struct DOMAIN_CONTROLLER_INFO **dc_info /* [out] [ref] */);
+WERROR DsGetDcName_r(struct libnetapi_ctx *ctx,
+		     struct DsGetDcName *r);
+WERROR DsGetDcName_l(struct libnetapi_ctx *ctx,
+		     struct DsGetDcName *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */

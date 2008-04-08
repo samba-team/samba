@@ -133,3 +133,79 @@ WERROR NetGetAnyDCName_r(struct libnetapi_ctx *ctx,
 	return werr;
 
 }
+
+/********************************************************************
+********************************************************************/
+
+WERROR DsGetDcName_l(struct libnetapi_ctx *ctx,
+		     struct DsGetDcName *r)
+{
+	NTSTATUS status;
+
+	status = dsgetdcname(ctx,
+			     r->in.domain_name,
+			     r->in.domain_guid,
+			     r->in.site_name,
+			     r->in.flags,
+			     (struct netr_DsRGetDCNameInfo **)r->out.dc_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		libnetapi_set_error_string(ctx,
+			"failed to find DC: %s",
+			get_friendly_nt_error_msg(status));
+	}
+
+	return ntstatus_to_werror(status);
+}
+
+/********************************************************************
+********************************************************************/
+
+WERROR DsGetDcName_r(struct libnetapi_ctx *ctx,
+		     struct DsGetDcName *r)
+{
+	WERROR werr;
+	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+
+	status = cli_full_connection(&cli, NULL, r->in.server_name,
+				     NULL, 0,
+				     "IPC$", "IPC",
+				     ctx->username,
+				     ctx->workgroup,
+				     ctx->password,
+				     0, Undefined, NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON,
+					    &status);
+	if (!pipe_cli) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_netr_DsRGetDCName(pipe_cli,
+					  ctx,
+					  r->in.server_name,
+					  r->in.domain_name,
+					  r->in.domain_guid,
+					  NULL,
+					  r->in.flags,
+					  (struct netr_DsRGetDCNameInfo **)r->out.dc_info,
+					  &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+ done:
+	if (cli) {
+		cli_shutdown(cli);
+	}
+
+	return werr;
+}
