@@ -58,7 +58,7 @@ void odb_set_ops(const struct opendb_ops *new_ops)
   talloc_free(). We need the messaging_ctx to allow for pending open
   notifications.
 */
-_PUBLIC_ struct odb_context *odb_init(TALLOC_CTX *mem_ctx, 
+struct odb_context *odb_init(TALLOC_CTX *mem_ctx, 
 				      struct ntvfs_context *ntvfs_ctx)
 {
 	if (ops == NULL) {
@@ -75,13 +75,13 @@ _PUBLIC_ struct odb_context *odb_init(TALLOC_CTX *mem_ctx,
   get a lock on a entry in the odb. This call returns a lock handle,
   which the caller should unlock using talloc_free().
 */
-_PUBLIC_ struct odb_lock *odb_lock(TALLOC_CTX *mem_ctx,
+struct odb_lock *odb_lock(TALLOC_CTX *mem_ctx,
 				   struct odb_context *odb, DATA_BLOB *file_key)
 {
 	return ops->odb_lock(mem_ctx, odb, file_key);
 }
 
-_PUBLIC_ DATA_BLOB odb_get_key(TALLOC_CTX *mem_ctx, struct odb_lock *lck)
+DATA_BLOB odb_get_key(TALLOC_CTX *mem_ctx, struct odb_lock *lck)
 {
 	return ops->odb_get_key(mem_ctx, lck);
 }
@@ -95,7 +95,7 @@ _PUBLIC_ DATA_BLOB odb_get_key(TALLOC_CTX *mem_ctx, struct odb_lock *lck)
   Note that the path is only used by the delete on close logic, not
   for comparing with other filenames
 */
-_PUBLIC_ NTSTATUS odb_open_file(struct odb_lock *lck,
+NTSTATUS odb_open_file(struct odb_lock *lck,
 				void *file_handle, const char *path,
 				int *fd, bool allow_level_II_oplock,
 				uint32_t oplock_level, uint32_t *oplock_granted)
@@ -109,7 +109,7 @@ _PUBLIC_ NTSTATUS odb_open_file(struct odb_lock *lck,
 /*
   register a pending open file in the open files database
 */
-_PUBLIC_ NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
+NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
 {
 	return ops->odb_open_file_pending(lck, private);
 }
@@ -118,7 +118,7 @@ _PUBLIC_ NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
 /*
   remove a opendb entry
 */
-_PUBLIC_ NTSTATUS odb_close_file(struct odb_lock *lck, void *file_handle,
+NTSTATUS odb_close_file(struct odb_lock *lck, void *file_handle,
 				 const char **delete_path)
 {
 	return ops->odb_close_file(lck, file_handle, delete_path);
@@ -128,7 +128,7 @@ _PUBLIC_ NTSTATUS odb_close_file(struct odb_lock *lck, void *file_handle,
 /*
   remove a pending opendb entry
 */
-_PUBLIC_ NTSTATUS odb_remove_pending(struct odb_lock *lck, void *private)
+NTSTATUS odb_remove_pending(struct odb_lock *lck, void *private)
 {
 	return ops->odb_remove_pending(lck, private);
 }
@@ -137,7 +137,7 @@ _PUBLIC_ NTSTATUS odb_remove_pending(struct odb_lock *lck, void *private)
 /*
   rename the path in a open file
 */
-_PUBLIC_ NTSTATUS odb_rename(struct odb_lock *lck, const char *path)
+NTSTATUS odb_rename(struct odb_lock *lck, const char *path)
 {
 	return ops->odb_rename(lck, path);
 }
@@ -145,7 +145,7 @@ _PUBLIC_ NTSTATUS odb_rename(struct odb_lock *lck, const char *path)
 /*
   get back the path of an open file
 */
-_PUBLIC_ NTSTATUS odb_get_path(struct odb_lock *lck, const char **path)
+NTSTATUS odb_get_path(struct odb_lock *lck, const char **path)
 {
 	return ops->odb_get_path(lck, path);
 }
@@ -153,7 +153,7 @@ _PUBLIC_ NTSTATUS odb_get_path(struct odb_lock *lck, const char **path)
 /*
   update delete on close flag on an open file
 */
-_PUBLIC_ NTSTATUS odb_set_delete_on_close(struct odb_lock *lck, bool del_on_close)
+NTSTATUS odb_set_delete_on_close(struct odb_lock *lck, bool del_on_close)
 {
 	return ops->odb_set_delete_on_close(lck, del_on_close);
 }
@@ -162,7 +162,7 @@ _PUBLIC_ NTSTATUS odb_set_delete_on_close(struct odb_lock *lck, bool del_on_clos
   return the current value of the delete_on_close bit, and how many
   people still have the file open
 */
-_PUBLIC_ NTSTATUS odb_get_delete_on_close(struct odb_context *odb, 
+NTSTATUS odb_get_delete_on_close(struct odb_context *odb, 
 					  DATA_BLOB *key, bool *del_on_close)
 {
 	return ops->odb_get_delete_on_close(odb, key, del_on_close);
@@ -173,7 +173,7 @@ _PUBLIC_ NTSTATUS odb_get_delete_on_close(struct odb_context *odb,
   determine if a file can be opened with the given share_access,
   create_options and access_mask
 */
-_PUBLIC_ NTSTATUS odb_can_open(struct odb_lock *lck,
+NTSTATUS odb_can_open(struct odb_lock *lck,
 			       uint32_t stream_id, uint32_t share_access,
 			       uint32_t access_mask, bool delete_on_close,
 			       uint32_t open_disposition, bool break_to_none)
@@ -182,13 +182,13 @@ _PUBLIC_ NTSTATUS odb_can_open(struct odb_lock *lck,
 				 delete_on_close, open_disposition, break_to_none);
 }
 
-_PUBLIC_ NTSTATUS odb_update_oplock(struct odb_lock *lck, void *file_handle,
+NTSTATUS odb_update_oplock(struct odb_lock *lck, void *file_handle,
 				    uint32_t oplock_level)
 {
 	return ops->odb_update_oplock(lck, file_handle, oplock_level);
 }
 
-_PUBLIC_ NTSTATUS odb_break_oplocks(struct odb_lock *lck)
+NTSTATUS odb_break_oplocks(struct odb_lock *lck)
 {
 	return ops->odb_break_oplocks(lck);
 }

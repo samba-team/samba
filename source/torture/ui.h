@@ -368,5 +368,20 @@ bool torture_setting_bool(struct torture_context *test,
 struct torture_suite *torture_find_suite(struct torture_suite *parent, 
 										 const char *name);
 
+NTSTATUS torture_temp_dir(struct torture_context *tctx, 
+				   const char *prefix, 
+				   char **tempdir);
+
+struct torture_test *torture_tcase_add_simple_test(struct torture_tcase *tcase,
+		const char *name,
+		bool (*run) (struct torture_context *test, void *tcase_data));
+
+
+bool torture_suite_init_tcase(struct torture_suite *suite, 
+			      struct torture_tcase *tcase, 
+			      const char *name);
+
+struct torture_context *torture_context_init(TALLOC_CTX *mem_ctx, 
+					     const struct torture_ui_ops *ui_ops);
 
 #endif /* __TORTURE_UI_H__ */

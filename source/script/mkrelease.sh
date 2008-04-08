@@ -1,10 +1,15 @@
 #!/bin/sh
 
-TMPDIR=`mktemp samba-XXXXX`
-rm $TMPDIR || exit 1
-svn export . $TMPDIR || exit 1
+if [ ! -d ".git" -o `dirname $0` != "./source/script" ]; then
+	echo "Run this script from the top-level directory in the"
+	echo "repository as: ./source/script/mkrelease.sh"
+	exit 1
+fi
 
-( cd $TMPDIR/source
+TMPDIR=`mktemp -d samba-XXXXX`
+(git archive --format=tar HEAD | (cd $TMPDIR/ && tar xf -))
+
+( cd $TMPDIR/source || exit 1
  ./autogen.sh || exit 1
  ./configure || exit 1
  make dist  || exit 1
@@ -12,7 +17,8 @@ svn export . $TMPDIR || exit 1
 
 VERSION=`sed -n 's/^SAMBA_VERSION_STRING=//p' $TMPDIR/source/version.h`
 mv $TMPDIR samba-$VERSION || exit 1
-tar -cf samba-$VERSION.tar samba-$VERSION || exit 1
+tar -cf samba-$VERSION.tar samba-$VERSION || (rm -rf samba-$VERSION; exit 1)
+rm -rf samba-$VERSION || exit 1
 echo "Now run: "
 echo "gpg --detach-sign --armor samba-$VERSION.tar"
 echo "gzip samba-$VERSION.tar" 

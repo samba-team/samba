@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
 
@@ -409,7 +410,7 @@ struct smbcli_request *smb_raw_setfileinfo_send(struct smbcli_tree *tree,
 /****************************************************************************
  Set file info (async send)
 ****************************************************************************/
-NTSTATUS smb_raw_setfileinfo(struct smbcli_tree *tree,
+_PUBLIC_ NTSTATUS smb_raw_setfileinfo(struct smbcli_tree *tree,
 			     union smb_setfileinfo *parms)
 {
 	struct smbcli_request *req = smb_raw_setfileinfo_send(tree, parms);
@@ -420,7 +421,7 @@ NTSTATUS smb_raw_setfileinfo(struct smbcli_tree *tree,
 /****************************************************************************
  Set path info (async send)
 ****************************************************************************/
-struct smbcli_request *smb_raw_setpathinfo_send(struct smbcli_tree *tree,
+_PUBLIC_ struct smbcli_request *smb_raw_setpathinfo_send(struct smbcli_tree *tree,
 					     union smb_setfileinfo *parms)
 {
 	DATA_BLOB blob;
@@ -456,7 +457,7 @@ struct smbcli_request *smb_raw_setpathinfo_send(struct smbcli_tree *tree,
 /****************************************************************************
  Set path info (sync interface)
 ****************************************************************************/
-NTSTATUS smb_raw_setpathinfo(struct smbcli_tree *tree,
+_PUBLIC_ NTSTATUS smb_raw_setpathinfo(struct smbcli_tree *tree,
 			     union smb_setfileinfo *parms)
 {
 	struct smbcli_request *req = smb_raw_setpathinfo_send(tree, parms);

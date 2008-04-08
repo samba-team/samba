@@ -1,6 +1,7 @@
 mkinclude auth/config.mk
 mkinclude ldap/config.mk
 mkinclude security/config.mk
+mkinclude wbclient/config.mk
 
 [SUBSYSTEM::LIBSAMBA-ERRORS]
 
@@ -54,13 +55,13 @@ LIBCLI_NBT_OBJ_FILES = $(addprefix libcli/nbt/, \
 
 [PYTHON::python_libcli_nbt]
 SWIG_FILE = swig/libcli_nbt.i
-PUBLIC_DEPENDENCIES = LIBCLI_NBT DYNCONFIG LIBSAMBA-CONFIG
+PUBLIC_DEPENDENCIES = LIBCLI_NBT DYNCONFIG LIBSAMBA-HOSTCONFIG
 
 python_libcli_nbt_OBJ_FILES = libcli/swig/libcli_nbt_wrap.o
 
 [PYTHON::python_libcli_smb]
 SWIG_FILE = swig/libcli_smb.i
-PUBLIC_DEPENDENCIES = LIBCLI_SMB DYNCONFIG LIBSAMBA-CONFIG
+PUBLIC_DEPENDENCIES = LIBCLI_SMB DYNCONFIG LIBSAMBA-HOSTCONFIG
 
 python_libcli_smb_OBJ_FILES = libcli/swig/libcli_smb_wrap.o
 
@@ -79,7 +80,7 @@ PUBLIC_DEPENDENCIES = LIBCLI_LDAP
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBLDB
 
 LIBCLI_CLDAP_OBJ_FILES = libcli/cldap/cldap.o
-PUBLIC_HEADERS += libcli/cldap/cldap.h
+# PUBLIC_HEADERS += libcli/cldap/cldap.h
 
 [SUBSYSTEM::LIBCLI_WREPL]
 PRIVATE_PROTO_HEADER = wrepl/winsrepl_proto.h
@@ -96,7 +97,7 @@ LIBCLI_RESOLVE_OBJ_FILES = libcli/resolve/resolve.o
 
 [SUBSYSTEM::LP_RESOLVE]
 PRIVATE_PROTO_HEADER = resolve/lp_proto.h
-PRIVATE_DEPENDENCIES = LIBCLI_NBT LIBSAMBA-CONFIG LIBNETIF 
+PRIVATE_DEPENDENCIES = LIBCLI_NBT LIBSAMBA-HOSTCONFIG LIBNETIF 
 
 LP_RESOLVE_OBJ_FILES = $(addprefix libcli/resolve/, \
 					  bcast.o nbtlist.o wins.o \
@@ -123,7 +124,7 @@ LIBCLI_SMB_OBJ_FILES = $(addprefix libcli/, \
 		climessage.o \
 		clideltree.o)
 
-PUBLIC_HEADERS += libcli/libcli.h
+# PUBLIC_HEADERS += libcli/libcli.h
 
 [SUBSYSTEM::LIBCLI_RAW]
 PRIVATE_PROTO_HEADER = raw/raw_proto.h

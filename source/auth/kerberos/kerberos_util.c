@@ -24,6 +24,7 @@
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "auth/credentials/credentials.h"
+#include "auth/credentials/credentials_proto.h"
 #include "auth/credentials/credentials_krb5.h"
 
 struct principal_container {
@@ -634,7 +635,7 @@ int smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 	return ret;
 }
 
-_PUBLIC_ int smb_krb5_create_memory_keytab(TALLOC_CTX *parent_ctx,
+int smb_krb5_create_memory_keytab(TALLOC_CTX *parent_ctx,
 					   struct cli_credentials *machine_account,
 					   struct smb_krb5_context *smb_krb5_context,
 					   const char **enctype_strings,

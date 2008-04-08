@@ -1,6 +1,6 @@
 # An expect script to setup a directory and share for an smbtorture test.
 # Copyright Brad Henry <brad@samba.org> 2006
-# Released under the GNU GPL v2 or later.
+# Released under the GNU GPL version 3 or later.
 
 proc setup_test { remote_prompt sharepath sharename username local_hostname \
 			local_ip hosts_file_path backup_hosts_filename } {

@@ -26,7 +26,6 @@
 #include "includes.h"
 #include "registry.h"
 #include "param/param.h"
-#include "hive.h"
 
 typedef struct registry_context reg;
 typedef struct hive_key hive_key;

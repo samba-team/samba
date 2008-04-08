@@ -33,7 +33,7 @@ registry_OBJ_FILES = $(addprefix lib/registry/, interface.o util.o samba.o \
 					patchfile_dotreg.o patchfile_preg.o patchfile.o regf.o \
 					hive.o local.o ldb.o dir.o rpc.o)
 
-PUBLIC_HEADERS += $(addprefix lib/registry/, registry.h hive.h patchfile.h)
+PUBLIC_HEADERS += lib/registry/registry.h
 
 [SUBSYSTEM::registry_common]
 PUBLIC_DEPENDENCIES = registry
@@ -46,7 +46,7 @@ registry_common_OBJ_FILES = lib/registry/tools/common.o
 [BINARY::regdiff]
 INSTALLDIR = BINDIR
 PRIVATE_DEPENDENCIES = \
-		LIBSAMBA-CONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS
+		LIBSAMBA-HOSTCONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS
 # End BINARY regdiff
 ################################################
 
@@ -59,7 +59,7 @@ MANPAGES += lib/registry/man/regdiff.1
 [BINARY::regpatch]
 INSTALLDIR = BINDIR
 PRIVATE_DEPENDENCIES = \
-		LIBSAMBA-CONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS \
+		LIBSAMBA-HOSTCONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS \
 		registry_common
 # End BINARY regpatch
 ################################################
@@ -73,7 +73,7 @@ MANPAGES += lib/registry/man/regpatch.1
 [BINARY::regshell]
 INSTALLDIR = BINDIR
 PRIVATE_DEPENDENCIES = \
-		LIBSAMBA-CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS \
+		LIBSAMBA-HOSTCONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS \
 		SMBREADLINE registry_common
 # End BINARY regshell
 ################################################
@@ -87,7 +87,7 @@ MANPAGES += lib/registry/man/regshell.1
 [BINARY::regtree]
 INSTALLDIR = BINDIR
 PRIVATE_DEPENDENCIES = \
-		LIBSAMBA-CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS \
+		LIBSAMBA-HOSTCONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS \
 		registry_common
 # End BINARY regtree
 ################################################

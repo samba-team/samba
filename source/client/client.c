@@ -50,6 +50,7 @@
 #include "lib/smbreadline/smbreadline.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
+#include "librpc/rpc/dcerpc.h"
 
 struct smbclient_context {
 	char *remote_cur_dir;

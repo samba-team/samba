@@ -28,13 +28,14 @@ import pwd
 import grp
 import time
 import uuid, misc
-from socket import gethostname, gethostbyname
+import socket
 import param
 import registry
 import samba
 from auth import system_session
 from samba import Ldb, substitute_var, valid_netbios_name, check_all_substituted
 from samba.samdb import SamDB
+from samba.idmap import IDmapDB
 import security
 import urllib
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
@@ -267,7 +268,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None, serverrole=
               rootdn=None, domaindn=None, configdn=None, schemadn=None, sitename=None):
 
     if hostname is None:
-        hostname = gethostname().split(".")[0].lower()
+        hostname = socket.gethostname().split(".")[0].lower()
 
     netbiosname = hostname.upper()
     if not valid_netbios_name(netbiosname):
@@ -348,7 +349,7 @@ def load_or_make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrol
 
     if not os.path.exists(smbconf):
         if hostname is None:
-            hostname = gethostname().split(".")[0].lower()
+            hostname = socket.gethostname().split(".")[0].lower()
 
         if serverrole is None:
             serverrole = "standalone"
@@ -397,45 +398,30 @@ def load_or_make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrol
 
     return lp
 
-def setup_name_mappings(ldb, sid, domaindn, root, nobody, nogroup, users, 
-                        wheel, backup):
+def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
+                        users_gid, wheel_gid):
     """setup reasonable name mappings for sam names to unix names.
-    
-    :param ldb: SamDB object.
+
+    :param samdb: SamDB object.
+    :param idmap: IDmap db object.
     :param sid: The domain sid.
     :param domaindn: The domain DN.
-    :param root: Name of the UNIX root user.
-    :param nobody: Name of the UNIX nobody user.
-    :param nogroup: Name of the unix nobody group.
-    :param users: Name of the unix users group.
-    :param wheel: Name of the wheel group (users that can become root).
-    :param backup: Name of the backup group."""
+    :param root_uid: uid of the UNIX root user.
+    :param nobody_uid: uid of the UNIX nobody user.
+    :param users_gid: gid of the UNIX users group.
+    :param wheel_gid: gid of the UNIX wheel group."""
     # add some foreign sids if they are not present already
-    ldb.add_foreign(domaindn, "S-1-5-7", "Anonymous")
-    ldb.add_foreign(domaindn, "S-1-1-0", "World")
-    ldb.add_foreign(domaindn, "S-1-5-2", "Network")
-    ldb.add_foreign(domaindn, "S-1-5-18", "System")
-    ldb.add_foreign(domaindn, "S-1-5-11", "Authenticated Users")
+    samdb.add_foreign(domaindn, "S-1-5-7", "Anonymous")
+    samdb.add_foreign(domaindn, "S-1-1-0", "World")
+    samdb.add_foreign(domaindn, "S-1-5-2", "Network")
+    samdb.add_foreign(domaindn, "S-1-5-18", "System")
+    samdb.add_foreign(domaindn, "S-1-5-11", "Authenticated Users")
 
-    # some well known sids
-    ldb.setup_name_mapping(domaindn, "S-1-5-7", nobody)
-    ldb.setup_name_mapping(domaindn, "S-1-1-0", nogroup)
-    ldb.setup_name_mapping(domaindn, "S-1-5-2", nogroup)
-    ldb.setup_name_mapping(domaindn, "S-1-5-18", root)
-    ldb.setup_name_mapping(domaindn, "S-1-5-11", users)
-    ldb.setup_name_mapping(domaindn, "S-1-5-32-544", wheel)
-    ldb.setup_name_mapping(domaindn, "S-1-5-32-545", users)
-    ldb.setup_name_mapping(domaindn, "S-1-5-32-546", nogroup)
-    ldb.setup_name_mapping(domaindn, "S-1-5-32-551", backup)
+    idmap.setup_name_mapping("S-1-5-7", idmap.TYPE_UID, nobody_uid)
+    idmap.setup_name_mapping("S-1-5-32-544", idmap.TYPE_GID, wheel_gid)
 
-    # and some well known domain rids
-    ldb.setup_name_mapping(domaindn, sid + "-500", root)
-    ldb.setup_name_mapping(domaindn, sid + "-518", wheel)
-    ldb.setup_name_mapping(domaindn, sid + "-519", wheel)
-    ldb.setup_name_mapping(domaindn, sid + "-512", wheel)
-    ldb.setup_name_mapping(domaindn, sid + "-513", users)
-    ldb.setup_name_mapping(domaindn, sid + "-520", wheel)
-
+    idmap.setup_name_mapping(sid + "-500", idmap.TYPE_UID, root_uid)
+    idmap.setup_name_mapping(sid + "-513", idmap.TYPE_GID, users_gid)
 
 def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info, 
                            credentials, names,
@@ -663,8 +649,8 @@ def setup_idmapdb(path, setup_path, session_info, credentials, lp):
     if os.path.exists(path):
         os.unlink(path)
 
-    idmap_ldb = Ldb(path, session_info=session_info, credentials=credentials,
-                    lp=lp)
+    idmap_ldb = IDmapDB(path, session_info=session_info,
+                        credentials=credentials, lp=lp)
 
     idmap_ldb.erase()
     idmap_ldb.load_ldif_file_add(setup_path("idmap_init.ldif"))
@@ -695,13 +681,8 @@ def setup_samdb_rootdse(samdb, setup_path, schemadn, domaindn, hostname,
 def setup_self_join(samdb, names,
                     machinepass, dnspass, 
                     domainsid, invocationid, setup_path,
-                    policyguid, hostguid=None):
+                    policyguid):
     """Join a host to its own domain."""
-    if hostguid is not None:
-        hostguid_add = "objectGUID: %s" % hostguid
-    else:
-        hostguid_add = ""
-
     setup_add_ldif(samdb, setup_path("provision_self_join.ldif"), { 
               "CONFIGDN": names.configdn, 
               "SCHEMADN": names.schemadn,
@@ -714,7 +695,6 @@ def setup_self_join(samdb, names,
               "DNSPASS_B64": b64encode(dnspass),
               "REALM": names.realm,
               "DOMAIN": names.domain,
-              "HOSTGUID_ADD": hostguid_add,
               "DNSDOMAIN": names.dnsdomain})
     setup_add_ldif(samdb, setup_path("provision_group_policy.ldif"), { 
               "POLICYGUID": policyguid,
@@ -727,7 +707,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                 names, message, 
                 domainsid, aci, domainguid, policyguid, 
                 fill, adminpass, krbtgtpass, 
-                machinepass, hostguid, invocationid, dnspass,
+                machinepass, invocationid, dnspass,
                 serverrole, ldap_backend=None, 
                 ldap_backend_type=None):
     """Setup a complete SAM Database.
@@ -880,7 +860,6 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                                 dnspass=dnspass,  
                                 machinepass=machinepass, 
                                 domainsid=domainsid, policyguid=policyguid,
-                                hostguid=hostguid, 
                                 setup_path=setup_path)
 
     #We want to setup the index last, as adds are faster unindexed
@@ -901,8 +880,8 @@ FILL_DRS = "DRS"
 def provision(setup_dir, message, session_info, 
               credentials, smbconf=None, targetdir=None, samdb_fill=FILL_FULL, realm=None, 
               rootdn=None, domaindn=None, schemadn=None, configdn=None,
-              domain=None, hostname=None, hostip=None, domainsid=None, 
-              hostguid=None, adminpass=None, krbtgtpass=None, domainguid=None, 
+              domain=None, hostname=None, hostip=None, hostip6=None, 
+              domainsid=None, adminpass=None, krbtgtpass=None, domainguid=None, 
               policyguid=None, invocationid=None, machinepass=None, 
               dnspass=None, root=None, nobody=None, nogroup=None, users=None, 
               wheel=None, backup=None, aci=None, serverrole=None, 
@@ -931,18 +910,21 @@ def provision(setup_dir, message, session_info,
     if dnspass is None:
         dnspass = misc.random_password(12)
     if root is None:
-        root = findnss(pwd.getpwnam, ["root"])[0]
+        root_uid = findnss(pwd.getpwnam, ["root"])[2]
+    else:
+        root_uid = findnss(pwd.getpwnam, [root])[2]
     if nobody is None:
-        nobody = findnss(pwd.getpwnam, ["nobody"])[0]
-    if nogroup is None:
-        nogroup = findnss(grp.getgrnam, ["nogroup", "nobody"])[0]
+        nobody_uid = findnss(pwd.getpwnam, ["nobody"])[2]
+    else:
+        nobody_uid = findnss(pwd.getpwnam, [nobody])[2]
     if users is None:
-        users = findnss(grp.getgrnam, ["users", "guest", "other", "unknown", 
-                        "usr"])[0]
+        users_gid = findnss(grp.getgrnam, ["users"])[2]
+    else:
+        users_gid = findnss(grp.getgrnam, [users])[2]
     if wheel is None:
-        wheel = findnss(grp.getgrnam, ["wheel", "root", "staff", "adm"])[0]
-    if backup is None:
-        backup = findnss(grp.getgrnam, ["backup", "wheel", "root", "staff"])[0]
+        wheel_gid = findnss(grp.getgrnam, ["wheel", "adm"])[2]
+    else:
+        wheel_gid = findnss(grp.getgrnam, [wheel])[2]
     if aci is None:
         aci = "# no aci for local ldb"
 
@@ -955,7 +937,12 @@ def provision(setup_dir, message, session_info,
     paths = provision_paths_from_lp(lp, names.dnsdomain)
 
     if hostip is None:
-        hostip = gethostbyname(names.hostname)
+        hostip = socket.getaddrinfo(names.hostname, None, socket.AF_INET, socket.AI_CANONNAME, socket.IPPROTO_IP)[0][-1][0]
+
+    if hostip6 is None:
+        try:
+            hostip6 = socket.getaddrinfo(names.hostname, None, socket.AF_INET6, socket.AI_CANONNAME, socket.IPPROTO_IP)[0][-1][0]
+        except socket.gaierror: pass
 
     if serverrole is None:
         serverrole = lp.get("server role")
@@ -974,10 +961,6 @@ def provision(setup_dir, message, session_info,
             # provision-backend will set this path suggested slapd command line / fedorads.inf
             ldap_backend = "ldapi://" % urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
              
-    message("set DOMAIN SID: %s" % str(domainsid))
-    message("Provisioning for %s in realm %s" % (names.domain, realm))
-    message("Using administrator password: %s" % adminpass)
-
     # only install a new shares config db if there is none
     if not os.path.exists(paths.shareconf):
         message("Setting up share.ldb")
@@ -1000,8 +983,8 @@ def provision(setup_dir, message, session_info,
                       credentials=credentials, lp=lp)
 
     message("Setting up idmap db")
-    setup_idmapdb(paths.idmapdb, setup_path, session_info=session_info,
-                  credentials=credentials, lp=lp)
+    idmap = setup_idmapdb(paths.idmapdb, setup_path, session_info=session_info,
+                          credentials=credentials, lp=lp)
 
     samdb = setup_samdb(paths.samdb, setup_path, session_info=session_info, 
                         credentials=credentials, lp=lp, names=names,
@@ -1010,7 +993,7 @@ def provision(setup_dir, message, session_info,
                         aci=aci, domainguid=domainguid, policyguid=policyguid, 
                         fill=samdb_fill, 
                         adminpass=adminpass, krbtgtpass=krbtgtpass,
-                        hostguid=hostguid, invocationid=invocationid, 
+                        invocationid=invocationid, 
                         machinepass=machinepass, dnspass=dnspass,
                         serverrole=serverrole, ldap_backend=ldap_backend, 
                         ldap_backend_type=ldap_backend_type)
@@ -1032,10 +1015,10 @@ def provision(setup_dir, message, session_info,
                            machinepass=machinepass, dnsdomain=names.dnsdomain)
 
     if samdb_fill == FILL_FULL:
-        setup_name_mappings(samdb, str(domainsid), names.domaindn, root=root, 
-                            nobody=nobody, nogroup=nogroup, wheel=wheel, 
-                            users=users, backup=backup)
-   
+        setup_name_mappings(samdb, idmap, str(domainsid), names.domaindn,
+                            root_uid=root_uid, nobody_uid=nobody_uid,
+                            users_gid=users_gid, wheel_gid=wheel_gid)
+
         message("Setting up sam.ldb rootDSE marking as synchronized")
         setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
 
@@ -1051,18 +1034,25 @@ def provision(setup_dir, message, session_info,
                                        scope=SCOPE_SUBTREE)
             assert isinstance(hostguid, str)
             
-            message("Setting up DNS zone: %s" % names.dnsdomain)
             create_zone_file(paths.dns, setup_path, samdb, 
-                             hostname=names.hostname, hostip=hostip, dnsdomain=names.dnsdomain,
+                             hostname=names.hostname, hostip=hostip,
+                             hostip6=hostip6, dnsdomain=names.dnsdomain,
                              domaindn=names.domaindn, dnspass=dnspass, realm=names.realm, 
                              domainguid=domainguid, hostguid=hostguid)
             message("Please install the zone located in %s into your DNS server" % paths.dns)
             
-    message("Setting up phpLDAPadmin configuration")
     create_phpldapadmin_config(paths.phpldapadminconfig, setup_path, 
                                ldapi_url)
 
     message("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php" % paths.phpldapadminconfig)
+
+    message("Once the above files are installed, your server will be ready to use")
+    message("Server Type:    %s" % serverrole)
+    message("Hostname:       %s" % names.hostname)
+    message("NetBIOS Domain: %s" % names.domain)
+    message("DNS Domain:     %s" % names.dnsdomain)
+    message("DOMAIN SID:     %s" % str(domainsid))
+    message("Admin password: %s" % adminpass)
 
     result = ProvisionResult()
     result.domaindn = domaindn
@@ -1075,7 +1065,7 @@ def provision_become_dc(setup_dir=None,
                         smbconf=None, targetdir=None, realm=None, 
                         rootdn=None, domaindn=None, schemadn=None, configdn=None,
                         domain=None, hostname=None, domainsid=None, 
-                        hostguid=None, adminpass=None, krbtgtpass=None, domainguid=None, 
+                        adminpass=None, krbtgtpass=None, domainguid=None, 
                         policyguid=None, invocationid=None, machinepass=None, 
                         dnspass=None, root=None, nobody=None, nogroup=None, users=None, 
                         wheel=None, backup=None, aci=None, serverrole=None, 
@@ -1112,7 +1102,7 @@ def provision_backend(setup_dir=None, message=None,
         return os.path.join(setup_dir, file)
 
     if hostname is None:
-        hostname = gethostname().split(".")[0].lower()
+        hostname = socket.gethostname().split(".")[0].lower()
 
     if root is None:
         root = findnss(pwd.getpwnam, ["root"])[0]
@@ -1245,7 +1235,7 @@ def create_phpldapadmin_config(path, setup_path, ldapi_uri):
 
 
 def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn, 
-                  hostip, hostname, dnspass, realm, domainguid, hostguid):
+                  hostip, hostip6, hostname, dnspass, realm, domainguid, hostguid):
     """Write out a DNS zone file, from the info in the current database.
     
     :param path: Path of the new file.
@@ -1253,7 +1243,8 @@ def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn,
     :param samdb: SamDB object
     :param dnsdomain: DNS Domain name
     :param domaindn: DN of the Domain
-    :param hostip: Local IP
+    :param hostip: Local IPv4 IP
+    :param hostip6: Local IPv6 IP
     :param hostname: Local hostname
     :param dnspass: Password for DNS
     :param realm: Realm name
@@ -1261,6 +1252,13 @@ def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn,
     :param hostguid: GUID of the host.
     """
     assert isinstance(domainguid, str)
+
+    hostip6_base_line = ""
+    hostip6_host_line = ""
+
+    if hostip6 is not None:
+        hostip6_base_line = "			IN AAAA	" + hostip6
+        hostip6_host_line = hostname + "		IN AAAA	" + hostip6
 
     setup_file(setup_path("provision.zone"), path, {
             "DNSPASS_B64": b64encode(dnspass),
@@ -1272,6 +1270,8 @@ def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn,
             "DATESTRING": time.strftime("%Y%m%d%H"),
             "DEFAULTSITE": DEFAULTSITE,
             "HOSTGUID": hostguid,
+            "HOSTIP6_BASE_LINE": hostip6_base_line,
+            "HOSTIP6_HOST_LINE": hostip6_host_line,
         })
 
 def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename):

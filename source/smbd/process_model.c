@@ -79,7 +79,7 @@ _PUBLIC_ NTSTATUS register_process_model(const void *_ops)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS process_model_init(struct loadparm_context *lp_ctx)
+_PUBLIC_ NTSTATUS process_model_init(struct loadparm_context *lp_ctx)
 {
 	extern NTSTATUS process_model_standard_init(void);
 	extern NTSTATUS process_model_prefork_init(void);
@@ -98,7 +98,7 @@ NTSTATUS process_model_init(struct loadparm_context *lp_ctx)
 /*
   return the operations structure for a named backend of the specified type
 */
-const struct model_ops *process_model_byname(const char *name)
+_PUBLIC_ const struct model_ops *process_model_byname(const char *name)
 {
 	int i;
 

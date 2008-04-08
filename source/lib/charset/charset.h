@@ -18,6 +18,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* This is a public header file that is installed as part of Samba. 
+ * If you remove any functions or change their signature, update 
+ * the so version number. */
+
 #ifndef __CHARSET_H__
 #define __CHARSET_H__
 
@@ -74,11 +78,71 @@ struct loadparm_context;
 struct smb_iconv_convenience;
 extern struct smb_iconv_convenience *global_smb_iconv_convenience;
 
-#include "lib/charset/charset_proto.h"
-
 /* replace some string functions with multi-byte
    versions */
 #define strlower(s) strlower_m(s)
 #define strupper(s) strupper_m(s)
 
+char *strchr_m(const char *s, char c);
+size_t strlen_m_term(const char *s);
+size_t strlen_m(const char *s);
+char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength);
+void string_replace_w(char *s, char oldc, char newc);
+bool strcsequal_w(const char *s1,const char *s2);
+bool strequal_w(const char *s1, const char *s2);
+int strncasecmp_m(const char *s1, const char *s2, size_t n);
+bool next_token(const char **ptr,char *buff, const char *sep, size_t bufsize);
+int strcasecmp_m(const char *s1, const char *s2);
+size_t count_chars_w(const char *s, char c);
+void strupper_m(char *s);
+void strlower_m(char *s);
+char *strupper_talloc(TALLOC_CTX *ctx, const char *src);
+char *strlower_talloc(TALLOC_CTX *ctx, const char *src);
+bool strhasupper(const char *string);
+bool strhaslower(const char *string);
+char *strrchr_m(const char *s, char c);
+char *strchr_m(const char *s, char c);
+
+/* codepoints */
+codepoint_t next_codepoint(struct smb_iconv_convenience *ic, 
+			    const char *str, size_t *size);
+ssize_t push_codepoint(struct smb_iconv_convenience *ic, 
+				char *str, codepoint_t c);
+codepoint_t toupper_w(codepoint_t val);
+codepoint_t tolower_w(codepoint_t val);
+int codepoint_cmpi(codepoint_t c1, codepoint_t c2);
+ssize_t push_string(struct smb_iconv_convenience *ic, void *dest, const char *src, size_t dest_len, int flags);
+ssize_t pull_string(struct smb_iconv_convenience *ic,
+		    char *dest, const void *src, size_t dest_len, size_t src_len, int flags);
+ssize_t convert_string(struct smb_iconv_convenience *ic,
+				charset_t from, charset_t to,
+				void const *src, size_t srclen, 
+				void *dest, size_t destlen);
+ssize_t convert_string_talloc_descriptor(TALLOC_CTX *ctx, smb_iconv_t descriptor, void const *src, size_t srclen, void **dest);
+ssize_t convert_string_talloc(TALLOC_CTX *ctx, 
+				       struct smb_iconv_convenience *ic, 
+				       charset_t from, charset_t to, 
+				       void const *src, size_t srclen, 
+				       void **dest);
+ssize_t push_ascii_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, char **dest, const char *src);
+ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, void **dest, const char *src);
+ssize_t push_utf8_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, char **dest, const char *src);
+ssize_t pull_ascii_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, char **dest, const char *src);
+ssize_t pull_ucs2_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, char **dest, const void *src);
+ssize_t pull_utf8_talloc(TALLOC_CTX *ctx, struct smb_iconv_convenience *ic, char **dest, const char *src);
+
+/* iconv */
+smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode);
+int smb_iconv_close(smb_iconv_t cd);
+size_t smb_iconv(smb_iconv_t cd, 
+		 const char **inbuf, size_t *inbytesleft,
+		 char **outbuf, size_t *outbytesleft);
+smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode, 
+			      const char *fromcode, bool native_iconv);
+
+/* iconv convenience */
+struct smb_iconv_convenience *smb_iconv_convenience_init(TALLOC_CTX *mem_ctx,
+							 const char *dos_charset,
+							 const char *unix_charset,
+							 bool native_iconv);
 #endif /* __CHARSET_H__ */

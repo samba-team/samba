@@ -163,7 +163,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_expand(struct ndr_push *ndr, uint32_t extra_
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
+_PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...)
 {
 	va_list ap;
 	char *s = NULL;
@@ -181,7 +181,7 @@ _PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, 
 	free(s);
 }
 
-_PUBLIC_ void ndr_print_string_helper(struct ndr_print *ndr, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
+_PUBLIC_ void ndr_print_string_helper(struct ndr_print *ndr, const char *format, ...)
 {
 	va_list ap;
 	int i;
@@ -346,7 +346,7 @@ _PUBLIC_ void ndr_set_flags(uint32_t *pflags, uint32_t new_flags)
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_error(struct ndr_pull *ndr,
 				 enum ndr_err_code ndr_err,
-				 const char *format, ...) _PRINTF_ATTRIBUTE(3,4)
+				 const char *format, ...)
 {
 	char *s=NULL;
 	va_list ap;
@@ -367,7 +367,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_error(struct ndr_pull *ndr,
 */
 _PUBLIC_ enum ndr_err_code ndr_push_error(struct ndr_push *ndr,
 				 enum ndr_err_code ndr_err,
-				 const char *format, ...)  _PRINTF_ATTRIBUTE(3,4)
+				 const char *format, ...)
 {
 	char *s=NULL;
 	va_list ap;

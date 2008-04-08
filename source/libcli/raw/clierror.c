@@ -25,7 +25,7 @@
 /***************************************************************************
  Return an error message from the last response
 ****************************************************************************/
-const char *smbcli_errstr(struct smbcli_tree *tree)
+_PUBLIC_ const char *smbcli_errstr(struct smbcli_tree *tree)
 {   
 	switch (tree->session->transport->error.etype) {
 	case ETYPE_SMB:
@@ -45,7 +45,7 @@ const char *smbcli_errstr(struct smbcli_tree *tree)
 
 
 /* Return the 32-bit NT status code from the last packet */
-NTSTATUS smbcli_nt_error(struct smbcli_tree *tree)
+_PUBLIC_ NTSTATUS smbcli_nt_error(struct smbcli_tree *tree)
 {
 	switch (tree->session->transport->error.etype) {
 	case ETYPE_SMB:

@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "libcli/libcli.h"
 #include "system/filesys.h"
 #include "torture/util.h"

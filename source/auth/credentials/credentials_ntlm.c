@@ -27,7 +27,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "auth/credentials/credentials.h"
 
-void cli_credentials_get_ntlm_username_domain(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, 
+_PUBLIC_ void cli_credentials_get_ntlm_username_domain(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, 
 					      const char **username, 
 					      const char **domain) 
 {
@@ -40,7 +40,7 @@ void cli_credentials_get_ntlm_username_domain(struct cli_credentials *cred, TALL
 	}
 }
 
-NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, 
+_PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, 
 					   int *flags,
 					   DATA_BLOB challenge, DATA_BLOB target_info, 
 					   DATA_BLOB *_lm_response, DATA_BLOB *_nt_response, 

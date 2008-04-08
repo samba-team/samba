@@ -52,14 +52,14 @@ parser.add_option("--domain-sid", type="string", metavar="SID",
 		help="set domainsid (otherwise random)")
 parser.add_option("--policy-guid", type="string", metavar="GUID",
 				  help="set policy guid")
+parser.add_option("--invocationid", type="string", metavar="GUID", 
+		  help="set invocationid (otherwise random)")
 parser.add_option("--host-name", type="string", metavar="HOSTNAME", 
 		help="set hostname")
 parser.add_option("--host-ip", type="string", metavar="IPADDRESS", 
-		help="set ipaddress")
-parser.add_option("--host-guid", type="string", metavar="GUID", 
-		help="set hostguid (otherwise random)")
-parser.add_option("--invocationid", type="string", metavar="GUID", 
-		help="set invocationid (otherwise random)")
+		help="set IPv4 ipaddress")
+parser.add_option("--host-ip6", type="string", metavar="IP6ADDRESS", 
+		help="set IPv6 ipaddress")
 parser.add_option("--adminpass", type="string", metavar="PASSWORD", 
 		help="choose admin password (otherwise random)")
 parser.add_option("--krbtgtpass", type="string", metavar="PASSWORD", 
@@ -111,7 +111,8 @@ if opts.realm is None or opts.domain is None:
 	parser.print_usage()
 	sys.exit(1)
 
-smbconf = sambaopts.get_loadparm().configfile()
+lp = sambaopts.get_loadparm()
+smbconf = lp.configfile()
 
 if opts.aci is not None:
 	print "set ACI: %s" % opts.aci
@@ -123,7 +124,7 @@ elif opts.server_role == "member":
 else:
         server_role = opts.server_role
 
-creds = credopts.get_credentials()
+creds = credopts.get_credentials(lp)
 
 setup_dir = opts.setupdir
 if setup_dir is None:
@@ -140,7 +141,7 @@ provision(setup_dir, message,
           samdb_fill=samdb_fill, realm=opts.realm, domain=opts.domain,
           domainguid=opts.domain_guid, domainsid=opts.domain_sid,
           policyguid=opts.policy_guid, hostname=opts.host_name,
-          hostip=opts.host_ip, hostguid=opts.host_guid, 
+          hostip=opts.host_ip, hostip6=opts.host_ip6,
           invocationid=opts.invocationid, adminpass=opts.adminpass,
           krbtgtpass=opts.krbtgtpass, machinepass=opts.machinepass,
           dnspass=opts.dnspass, root=opts.root, nobody=opts.nobody,
@@ -148,12 +149,3 @@ provision(setup_dir, message,
           aci=opts.aci, serverrole=server_role, 
           ldap_backend=opts.ldap_backend, 
           ldap_backend_type=opts.ldap_backend_type)
-
-message("To reproduce this provision, run with:")
-def shell_escape(arg):
-    if " " in arg:
-        return '"%s"' % arg
-    return arg
-message(" ".join([shell_escape(arg) for arg in sys.argv]))
-
-message("All OK")

@@ -66,7 +66,6 @@ source/lib/tdr/tdr_proto.h
 source/lib/util/pidfile.h
 source/lib/util/unix_privs.h
 source/lib/util/util_proto.h
-source/lib/util/wrap_xattr.h
 source/lib/util/asn1_proto.h
 source/libcli/finddcs.h
 source/libcli/libcli_proto.h
@@ -190,8 +189,6 @@ source/dsdb/schema/proto.h
 source/lib/crypto/test_proto.h
 source/lib/registry/tests/proto.h
 source/lib/util/apidocs
-source/lib/util/util_ldb.h
-source/libcli/ldap/ldap_ndr.h
 source/libcli/resolve/lp_proto.h
 source/apidocs
 *.swp

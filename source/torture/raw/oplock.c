@@ -21,6 +21,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/security.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
 #include "lib/events/events.h"

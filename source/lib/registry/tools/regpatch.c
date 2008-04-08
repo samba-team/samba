@@ -23,7 +23,6 @@
 #include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/registry/tools/common.h"
-#include "lib/registry/patchfile.h"
 #include "param/param.h"
 
 int main(int argc, char **argv)

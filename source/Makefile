@@ -82,8 +82,8 @@ libraries:: $(STATIC_LIBS) $(SHARED_LIBS)
 modules:: $(PLUGINS)
 headers:: $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
 manpages:: $(MANPAGES)
-all:: showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries modules pythonmods
-everything:: all libraries headers
+all:: showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries modules pythonmods libraries headers
+everything:: all
 
 LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)=$(builddir)/bin/shared
 

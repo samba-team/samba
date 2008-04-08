@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "libcli/libcli.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 
 struct search_private {
 	struct clilist_file_info *dirlist;

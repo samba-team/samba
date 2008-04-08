@@ -12,8 +12,6 @@ LIBTDB_OBJ_FILES = $(addprefix lib/tdb/common/, \
 	open.o traverse.o freelist.o \
 	error.o transaction.o)
 
-PUBLIC_HEADERS += $(tdbdir)/include/tdb.h
-
 ################################################
 # Start BINARY tdbtool
 [BINARY::tdbtool]

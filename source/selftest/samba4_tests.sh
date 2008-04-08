@@ -266,7 +266,7 @@ fi
 bbdir=$incdir/../../testprogs/blackbox
 
 plantest "blackbox.smbclient" dc $bbdir/test_smbclient.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX" 
-plantest "blackbox.kinit" dc $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" 
+plantest "blackbox.kinit" dc $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" $CONFIGURATION 
 plantest "blackbox.cifsdd" dc $bbdir/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" 
 plantest "blackbox.nmblookup" dc $samba4srcdir/utils/tests/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP" 
 plantest "blackbox.nmblookup" member $samba4srcdir/utils/tests/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP"
@@ -338,6 +338,7 @@ plantest "provision.python" none $SUBUNITRUN samba.tests.provision
 plantest "samba3.python" none $SUBUNITRUN samba.tests.samba3
 plantest "samr.python" dc $SUBUNITRUN samba.tests.dcerpc.sam
 plantest "samdb.python" dc $SUBUNITRUN samba.tests.samdb
+plantest "unixinfo.python" dc $SUBUNITRUN samba.tests.dcerpc.unix
 plantest "events.python" none PYTHONPATH="$PYTHONPATH:lib/events" $SUBUNITRUN tests
 plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
 plantest "rpcecho.python" dc $SUBUNITRUN samba.tests.dcerpc.rpcecho

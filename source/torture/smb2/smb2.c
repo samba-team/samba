@@ -46,7 +46,7 @@ static bool wrap_simple_1smb2_test(struct torture_context *torture_ctx,
 	return ret;
 }
 
-_PUBLIC_ struct torture_test *torture_suite_add_1smb2_test(struct torture_suite *suite,
+struct torture_test *torture_suite_add_1smb2_test(struct torture_suite *suite,
 							   const char *name,
 							   bool (*run) (struct torture_context *,
 									struct smb2_tree *))

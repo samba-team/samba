@@ -23,6 +23,7 @@ samba4bindir=`dirname $0`/../../source/bin
 smbclient=$samba4bindir/smbclient
 samba4kinit=$samba4bindir/samba4kinit
 net=$samba4bindir/net
+enableaccount="$samba4bindir/smbpython `dirname $0`/../../source/setup/enableaccount"
 
 testit() {
 	name="$1"
@@ -60,8 +61,10 @@ KRB5CCNAME="$PREFIX/tmpccache"
 export KRB5CCNAME
 
 echo $PASSWORD > ./tmppassfile
+#testit "kinit with keytab" $samba4kinit --keytab=$PREFIX/dc/private/secrets.keytab $SERVER\$@$REALM   || failed=`expr $failed + 1`
 testit "kinit with password" $samba4kinit --password-file=./tmppassfile --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
-testit "kinit with pkinit" $samba4kinit --request-pac --pk-user=FILE:$PREFIX/dc/private/tls/admincert.pem,$PREFIX/dc/private/tls/adminkey.pem $USERNAME@$REALM || failed=`expr $failed + 1`
+testit "kinit with pkinit" $samba4kinit --request-pac --renewable --pk-user=FILE:$PREFIX/dc/private/tls/admincert.pem,$PREFIX/dc/private/tls/adminkey.pem $USERNAME@$REALM || failed=`expr $failed + 1`
+testit "kinit renew ticket" $samba4kinit --request-pac -R
 
 test_smbclient "Test login with kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
@@ -70,18 +73,23 @@ testit "check time with kerberos ccache" $VALGRIND $net time $SERVER $CONFIGURAT
 
 testit "add user with kerberos ccache" $VALGRIND $net user add nettestuser $CONFIGURATION  -k yes $@ || failed=`expr $failed + 1`
 USERPASS=testPass@12%
+echo $USERPASS > ./tmpuserpassfile
 
 testit "set user password with kerberos ccache" $VALGRIND $net password set $DOMAIN\\nettestuser $USERPASS $CONFIGURATION  -k yes $@ || failed=`expr $failed + 1`
 
-#KRB5CCNAME=`pwd`/tmpuserccache
-#export KRB5CCNAME
-#
-#testit "kinit with user password" bin/samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
-#
-#KRB5CCNAME=`pwd`/tmpccache
-#export KRB5CCNAME
+testit "enable user with kerberos cache" $VALGRIND $enableaccount nettestuser -H ldap://$SERVER -k yes $@ || failed=`expr $failed + 1`
 
-testit "del user with kerberos ccache" $VALGRIND $net user delete nettestuser $CONFIGURATION  -k yes $@ || failed=`expr $failed + 1`
+KRB5CCNAME="$PREFIX/tmpuserccache"
+export KRB5CCNAME
 
-rm -f tmpccfile tmppassfile tmpuserccache
+testit "kinit with user password" $samba4bindir/samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+
+test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+
+KRB5CCNAME="$PREFIX/tmpccache"
+export KRB5CCNAME
+
+testit "del user with kerberos ccache" $VALGRIND $net user delete nettestuser $CONFIGURATION -k yes $@ || failed=`expr $failed + 1`
+
+rm -f tmpccfile tmppassfile tmpuserpassfile tmpuserccache
 exit $failed

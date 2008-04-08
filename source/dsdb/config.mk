@@ -18,7 +18,7 @@ SAMDB_OBJ_FILES = $(addprefix dsdb/, \
 		samdb/cracknames.o \
 		repl/replicated_objects.o)
 
-PUBLIC_HEADERS += dsdb/samdb/samdb.h
+# PUBLIC_HEADERS += dsdb/samdb/samdb.h
 
 [SUBSYSTEM::SAMDB_COMMON]
 PRIVATE_PROTO_HEADER = common/proto.h
@@ -38,7 +38,7 @@ SAMDB_SCHEMA_OBJ_FILES = $(addprefix dsdb/schema/, \
 		schema_syntax.o \
 		schema_constructed.o)
 
-PUBLIC_HEADERS += dsdb/schema/schema.h
+# PUBLIC_HEADERS += dsdb/schema/schema.h
 
 #######################
 # Start SUBSYSTEM DREPL_SRV

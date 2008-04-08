@@ -1,7 +1,7 @@
 /*
 	server status library for SWAT
 
-	released under the GNU GPL Version 2 or later
+	released under the GNU GPL Version 3 or later
 */
 
 

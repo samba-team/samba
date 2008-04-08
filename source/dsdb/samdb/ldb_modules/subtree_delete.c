@@ -160,6 +160,12 @@ static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 
+	ret = ldb_set_timeout_from_prev_req(module->ldb, req, new_req);
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	ac->search_req = new_req;
 	if (req == NULL) {
 		ldb_oom(ac->module->ldb);

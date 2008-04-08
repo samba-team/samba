@@ -35,7 +35,7 @@
  */
 
 
-_PUBLIC_ bool lp_is_mydomain(struct loadparm_context *lp_ctx, 
+bool lp_is_mydomain(struct loadparm_context *lp_ctx, 
 			     const char *domain)
 {
 	return strequal(lp_workgroup(lp_ctx), domain);
@@ -45,7 +45,7 @@ _PUBLIC_ bool lp_is_mydomain(struct loadparm_context *lp_ctx,
   see if a string matches either our primary or one of our secondary 
   netbios aliases. do a case insensitive match
 */
-_PUBLIC_ bool lp_is_myname(struct loadparm_context *lp_ctx, const char *name)
+bool lp_is_myname(struct loadparm_context *lp_ctx, const char *name)
 {
 	const char **aliases;
 	int i;
@@ -68,7 +68,7 @@ _PUBLIC_ bool lp_is_myname(struct loadparm_context *lp_ctx, const char *name)
 /**
  A useful function for returning a path in the Samba lock directory.
 **/
-_PUBLIC_ char *lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
+char *lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 			 const char *name)
 {
 	char *fname, *dname;
@@ -101,7 +101,7 @@ _PUBLIC_ char *lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
  * @retval Pointer to a talloc'ed string containing the full path.
  **/
 
-_PUBLIC_ char *config_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
+char *config_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 			   const char *name)
 {
 	char *fname, *config_dir, *p;
@@ -127,7 +127,7 @@ _PUBLIC_ char *config_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
  *
  * @retval Pointer to a talloc'ed string containing the full path.
  **/
-_PUBLIC_ char *private_path(TALLOC_CTX* mem_ctx, 
+char *private_path(TALLOC_CTX* mem_ctx, 
 			    struct loadparm_context *lp_ctx,
 			    const char *name)
 {
@@ -147,7 +147,7 @@ _PUBLIC_ char *private_path(TALLOC_CTX* mem_ctx,
   for smbd go. If NULL is passed for name then return the directory 
   path itself
 */
-_PUBLIC_ char *smbd_tmp_path(TALLOC_CTX *mem_ctx, 
+char *smbd_tmp_path(TALLOC_CTX *mem_ctx, 
 			     struct loadparm_context *lp_ctx, 
 			     const char *name)
 {
@@ -171,7 +171,7 @@ _PUBLIC_ char *smbd_tmp_path(TALLOC_CTX *mem_ctx,
 /**
  * Obtain the init function from a shared library file
  */
-_PUBLIC_ init_module_fn load_module(TALLOC_CTX *mem_ctx, const char *path)
+init_module_fn load_module(TALLOC_CTX *mem_ctx, const char *path)
 {
 	void *handle;
 	void *init_fn;
@@ -198,7 +198,7 @@ _PUBLIC_ init_module_fn load_module(TALLOC_CTX *mem_ctx, const char *path)
  * Obtain list of init functions from the modules in the specified
  * directory
  */
-_PUBLIC_ init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
+init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 {
 	DIR *dir;
 	struct dirent *entry;
@@ -240,7 +240,7 @@ _PUBLIC_ init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
  *
  * @return true if all functions ran successfully, false otherwise
  */
-_PUBLIC_ bool run_init_functions(init_module_fn *fns)
+bool run_init_functions(init_module_fn *fns)
 {
 	int i;
 	bool ret = true;
@@ -268,7 +268,7 @@ static char *modules_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
  * Will return an array of function pointers to initialization functions
  */
 
-_PUBLIC_ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *subsystem)
+init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *subsystem)
 {
 	char *path = modules_path(mem_ctx, lp_ctx, subsystem);
 	init_module_fn *ret;
@@ -280,7 +280,7 @@ _PUBLIC_ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, struct loadparm
 	return ret;
 }
 
-_PUBLIC_ const char *lp_messaging_path(TALLOC_CTX *mem_ctx, 
+const char *lp_messaging_path(TALLOC_CTX *mem_ctx, 
 				       struct loadparm_context *lp_ctx)
 {
 	return smbd_tmp_path(mem_ctx, lp_ctx, "messaging");

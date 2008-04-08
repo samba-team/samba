@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
 
@@ -711,7 +712,7 @@ NTSTATUS smb_raw_fileinfo_recv(struct smbcli_request *req,
 /****************************************************************************
  Query file info (sync interface)
 ****************************************************************************/
-NTSTATUS smb_raw_fileinfo(struct smbcli_tree *tree,
+_PUBLIC_ NTSTATUS smb_raw_fileinfo(struct smbcli_tree *tree,
 			  TALLOC_CTX *mem_ctx,
 			  union smb_fileinfo *parms)
 {
@@ -722,7 +723,7 @@ NTSTATUS smb_raw_fileinfo(struct smbcli_tree *tree,
 /****************************************************************************
  Query path info (async send)
 ****************************************************************************/
-struct smbcli_request *smb_raw_pathinfo_send(struct smbcli_tree *tree,
+_PUBLIC_ struct smbcli_request *smb_raw_pathinfo_send(struct smbcli_tree *tree,
 					     union smb_fileinfo *parms)
 {
 	DATA_BLOB data;
@@ -756,7 +757,7 @@ struct smbcli_request *smb_raw_pathinfo_send(struct smbcli_tree *tree,
 /****************************************************************************
  Query path info (async recv)
 ****************************************************************************/
-NTSTATUS smb_raw_pathinfo_recv(struct smbcli_request *req,
+_PUBLIC_ NTSTATUS smb_raw_pathinfo_recv(struct smbcli_request *req,
 			       TALLOC_CTX *mem_ctx,
 			       union smb_fileinfo *parms)
 {
@@ -767,7 +768,7 @@ NTSTATUS smb_raw_pathinfo_recv(struct smbcli_request *req,
 /****************************************************************************
  Query path info (sync interface)
 ****************************************************************************/
-NTSTATUS smb_raw_pathinfo(struct smbcli_tree *tree,
+_PUBLIC_ NTSTATUS smb_raw_pathinfo(struct smbcli_tree *tree,
 			  TALLOC_CTX *mem_ctx,
 			  union smb_fileinfo *parms)
 {

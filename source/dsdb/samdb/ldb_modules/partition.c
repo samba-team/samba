@@ -6,7 +6,7 @@
    Copyright (C) Stefan Metzmacher <metze@samba.org> 2007
 
    * NOTICE: this module is NOT released under the GNU LGPL license as
-   * other ldb code. This module is release under the GNU GPL v2 or
+   * other ldb code. This module is release under the GNU GPL v3 or
    * later license.
 
    This program is free software; you can redistribute it and/or modify
@@ -87,7 +87,7 @@ static struct ldb_module *make_module_for_next_request(TALLOC_CTX *mem_ctx,
 						       struct ldb_module *module)
 {
 	struct ldb_module *current;
-_PUBLIC_ 	static const struct ldb_module_ops ops; /* zero */
+	static const struct ldb_module_ops ops; /* zero */
 	current = talloc_zero(mem_ctx, struct ldb_module);
 	if (current == NULL) {
 		return module;

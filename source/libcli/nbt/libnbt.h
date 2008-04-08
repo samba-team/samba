@@ -23,6 +23,7 @@
 #define __LIBNBT_H__
 
 #include "librpc/gen_ndr/nbt.h"
+#include "librpc/ndr/libndr.h"
 
 /*
   possible states for pending requests
@@ -273,6 +274,78 @@ struct nbt_name_release {
 	} out;
 };
 
-#include "libcli/nbt/nbt_proto.h"
+struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx, 
+					     struct event_context *event_ctx,
+					     struct smb_iconv_convenience *iconv_convenience);
+struct nbt_name_request *nbt_name_query_send(struct nbt_name_socket *nbtsock,
+					     struct nbt_name_query *io);
+NTSTATUS nbt_name_query_recv(struct nbt_name_request *req, 
+			     TALLOC_CTX *mem_ctx, struct nbt_name_query *io);
+NTSTATUS nbt_name_query(struct nbt_name_socket *nbtsock, 
+			TALLOC_CTX *mem_ctx, struct nbt_name_query *io);
+struct nbt_name_request *nbt_name_status_send(struct nbt_name_socket *nbtsock,
+					      struct nbt_name_status *io);
+NTSTATUS nbt_name_status_recv(struct nbt_name_request *req, 
+			     TALLOC_CTX *mem_ctx, struct nbt_name_status *io);
+NTSTATUS nbt_name_status(struct nbt_name_socket *nbtsock, 
+			TALLOC_CTX *mem_ctx, struct nbt_name_status *io);
+
+NTSTATUS nbt_name_dup(TALLOC_CTX *mem_ctx, struct nbt_name *name, struct nbt_name *newname);
+NTSTATUS nbt_name_to_blob(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, DATA_BLOB *blob, struct nbt_name *name);
+NTSTATUS nbt_name_from_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, struct nbt_name *name);
+void nbt_choose_called_name(TALLOC_CTX *mem_ctx, struct nbt_name *n, const char *name, int type);
+char *nbt_name_string(TALLOC_CTX *mem_ctx, const struct nbt_name *name);
+NTSTATUS nbt_name_register(struct nbt_name_socket *nbtsock, 
+			   TALLOC_CTX *mem_ctx, struct nbt_name_register *io);
+NTSTATUS nbt_name_refresh(struct nbt_name_socket *nbtsock, 
+			   TALLOC_CTX *mem_ctx, struct nbt_name_refresh *io);
+NTSTATUS nbt_name_release(struct nbt_name_socket *nbtsock, 
+			   TALLOC_CTX *mem_ctx, struct nbt_name_release *io);
+NTSTATUS nbt_name_register_wins(struct nbt_name_socket *nbtsock,
+				TALLOC_CTX *mem_ctx,
+				struct nbt_name_register_wins *io);
+NTSTATUS nbt_name_refresh_wins(struct nbt_name_socket *nbtsock,
+				TALLOC_CTX *mem_ctx,
+				struct nbt_name_refresh_wins *io);
+NTSTATUS nbt_name_register_recv(struct nbt_name_request *req, 
+				TALLOC_CTX *mem_ctx, struct nbt_name_register *io);
+struct nbt_name_request *nbt_name_register_send(struct nbt_name_socket *nbtsock,
+						struct nbt_name_register *io);
+NTSTATUS nbt_name_release_recv(struct nbt_name_request *req, 
+			       TALLOC_CTX *mem_ctx, struct nbt_name_release *io);
+
+struct nbt_name_request *nbt_name_release_send(struct nbt_name_socket *nbtsock,
+					       struct nbt_name_release *io);
+
+NTSTATUS nbt_name_refresh_recv(struct nbt_name_request *req, 
+			       TALLOC_CTX *mem_ctx, struct nbt_name_refresh *io);
+
+NTSTATUS nbt_set_incoming_handler(struct nbt_name_socket *nbtsock,
+				  void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *, 
+						  struct socket_address *),
+				  void *private);
+NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock, 
+			     struct socket_address *dest,
+			     struct nbt_name_packet *request);
+
+
+NDR_SCALAR_PROTO(wrepl_nbt_name, const struct nbt_name *)
+NDR_SCALAR_PROTO(nbt_string, const char *);
+NDR_BUFFER_PROTO(nbt_name, struct nbt_name)
+NTSTATUS nbt_rcode_to_ntstatus(uint8_t rcode);
+
+struct composite_context;
+struct composite_context *nbt_name_register_bcast_send(struct nbt_name_socket *nbtsock,
+						       struct nbt_name_register_bcast *io);
+NTSTATUS nbt_name_register_bcast_recv(struct composite_context *c);
+struct composite_context *nbt_name_register_wins_send(struct nbt_name_socket *nbtsock,
+						      struct nbt_name_register_wins *io);
+NTSTATUS nbt_name_refresh_wins_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+				     struct nbt_name_refresh_wins *io);
+struct composite_context *nbt_name_refresh_wins_send(struct nbt_name_socket *nbtsock,
+						      struct nbt_name_refresh_wins *io);
+NTSTATUS nbt_name_register_wins_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+				     struct nbt_name_register_wins *io);
+
 
 #endif /* __LIBNBT_H__ */

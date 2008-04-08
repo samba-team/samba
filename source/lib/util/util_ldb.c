@@ -33,7 +33,7 @@ int gendb_search_v(struct ldb_context *ldb,
 		   struct ldb_message ***msgs,
 		   const char * const *attrs,
 		   const char *format,
-		   va_list ap)  _PRINTF_ATTRIBUTE(6,0)
+		   va_list ap) 
 {
 	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
 	struct ldb_result *res;
@@ -85,7 +85,7 @@ int gendb_search(struct ldb_context *ldb,
 		 struct ldb_dn *basedn,
 		 struct ldb_message ***res,
 		 const char * const *attrs,
-		 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
+		 const char *format, ...) 
 {
 	va_list ap;
 	int count;

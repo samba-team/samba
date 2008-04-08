@@ -122,7 +122,7 @@ endef
 define proto_header_template
 $(1): $(2) ;
 	@echo "Creating $$@"
-	@$$(PERL) $$(srcdir)/script/mkproto.pl --srcdir=$$(srcdir) --builddir=$$(builddir) --all=$$@ $$^
+	@$$(PERL) $$(srcdir)/script/mkproto.pl --srcdir=$$(srcdir) --builddir=$$(builddir) --public=/dev/null --private=$$@ $$^
 endef
 
 # Shared module

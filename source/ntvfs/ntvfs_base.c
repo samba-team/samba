@@ -43,7 +43,7 @@ static int num_backends;
 
   The 'type' is used to specify whether this is for a disk, printer or IPC$ share
 */
-_PUBLIC_ NTSTATUS ntvfs_register(const struct ntvfs_ops *ops,
+NTSTATUS ntvfs_register(const struct ntvfs_ops *ops,
 				 const struct ntvfs_critical_sizes *const sizes)
 {
 	struct ntvfs_ops *new_ops;
@@ -84,7 +84,7 @@ _PUBLIC_ NTSTATUS ntvfs_register(const struct ntvfs_ops *ops,
 /*
   return the operations structure for a named backend of the specified type
 */
-_PUBLIC_ const struct ntvfs_ops *ntvfs_backend_byname(const char *name, enum ntvfs_type type)
+const struct ntvfs_ops *ntvfs_backend_byname(const char *name, enum ntvfs_type type)
 {
 	int i;
 
@@ -107,12 +107,12 @@ _PUBLIC_ const struct ntvfs_ops *ntvfs_backend_byname(const char *name, enum ntv
 
 static const NTVFS_CURRENT_CRITICAL_SIZES(critical_sizes);
 
-_PUBLIC_ const struct ntvfs_critical_sizes *ntvfs_interface_version(void)
+const struct ntvfs_critical_sizes *ntvfs_interface_version(void)
 {
 	return &critical_sizes;
 }
 
-_PUBLIC_ bool ntvfs_interface_differs(const struct ntvfs_critical_sizes *const iface)
+bool ntvfs_interface_differs(const struct ntvfs_critical_sizes *const iface)
 {
 	/* The comparison would be easier with memcmp, but compiler-interset
 	 * alignment padding is not guaranteed to be zeroed.

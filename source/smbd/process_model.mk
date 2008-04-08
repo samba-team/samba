@@ -44,6 +44,6 @@ process_model_prefork_OBJ_FILES = smbd/process_prefork.o
 
 [SUBSYSTEM::process_model]
 PRIVATE_PROTO_HEADER = process_model_proto.h
-PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBSAMBA-CONFIG
+PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG
 
 process_model_OBJ_FILES = smbd/process_model.o

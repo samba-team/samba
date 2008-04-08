@@ -2529,7 +2529,6 @@ static swig_module_info swig_module = {swig_types, 25, 0, 0, 0, 0};
 #include "includes.h"
 #include "registry.h"
 #include "param/param.h"
-#include "hive.h"
 
 typedef struct registry_context reg;
 typedef struct hive_key hive_key;

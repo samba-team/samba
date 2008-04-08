@@ -2,7 +2,7 @@
 	client side js functions for registry editing
 
 	Copyright Andrew Tridgell 2005
-	released under the GNU GPL Version 2 or later
+	released under the GNU GPL Version 3 or later
 */
 
 

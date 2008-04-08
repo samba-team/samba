@@ -23,6 +23,7 @@
 #include "libcli/libcli.h"
 #include "libcli/composite/composite.h"
 #include "librpc/rpc/dcerpc.h"
+#include "librpc/rpc/dcerpc_proto.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 

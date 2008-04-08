@@ -28,6 +28,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 #include "dsdb/common/flags.h"
 #include "dsdb/common/proto.h"
 #include "libcli/ldap/ldap_ndr.h"
@@ -1530,7 +1531,7 @@ static bool samdb_password_complexity_ok(const char *pass)
 
   The caller should probably have a transaction wrapping this
 */
-_PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
+NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			    struct ldb_dn *user_dn,
 			    struct ldb_dn *domain_dn,
 			    struct ldb_message *mod,
@@ -1770,7 +1771,7 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
   and actually performs the password change
 
 */
-_PUBLIC_ NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
+NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 				const struct dom_sid *user_sid,
 				const char *new_pass,
 				struct samr_Password *lmNewHash, 

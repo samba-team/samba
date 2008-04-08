@@ -24,6 +24,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 #include "librpc/rpc/dcerpc.h"
+#include "librpc/rpc/dcerpc_proto.h"
 
 /* transport private information used by SMB pipe transport */
 struct smb_private {
@@ -540,7 +541,7 @@ NTSTATUS dcerpc_pipe_open_smb_recv(struct composite_context *c)
 	return status;
 }
 
-NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p,
+_PUBLIC_ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p,
 			      struct smbcli_tree *tree,
 			      const char *pipe_name)
 {
@@ -552,7 +553,7 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p,
 /*
   return the SMB tree used for a dcerpc over SMB pipe
 */
-struct smbcli_tree *dcerpc_smb_tree(struct dcerpc_connection *c)
+_PUBLIC_ struct smbcli_tree *dcerpc_smb_tree(struct dcerpc_connection *c)
 {
 	struct smb_private *smb;
 
@@ -567,7 +568,7 @@ struct smbcli_tree *dcerpc_smb_tree(struct dcerpc_connection *c)
 /*
   return the SMB fnum used for a dcerpc over SMB pipe (hack for torture operations)
 */
-uint16_t dcerpc_smb_fnum(struct dcerpc_connection *c)
+_PUBLIC_ uint16_t dcerpc_smb_fnum(struct dcerpc_connection *c)
 {
 	struct smb_private *smb;
 

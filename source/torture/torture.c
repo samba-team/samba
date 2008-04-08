@@ -45,7 +45,7 @@ bool torture_register_suite(struct torture_suite *suite)
 }
 
 
-int torture_init(void)
+_PUBLIC_ int torture_init(void)
 {
 	extern NTSTATUS torture_base_init(void);
 	extern NTSTATUS torture_ldap_init(void);

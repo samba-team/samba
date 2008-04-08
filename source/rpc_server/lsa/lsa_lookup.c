@@ -360,7 +360,7 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct loadparm_context *lp_ctx,
 		return NT_STATUS_OK;
 	}
 
-	/* need to add a call into sidmap to check for a allocated sid */
+	/* need to check for an allocated sid */
 
 	return NT_STATUS_INVALID_SID;
 }
@@ -466,8 +466,7 @@ static NTSTATUS dcesrv_lsa_lookup_sid(struct lsa_policy_state *state, TALLOC_CTX
 		return NT_STATUS_OK;
 	}
 
-	/* need to re-add a call into sidmap to check for a allocated sid */
-	/* status = sidmap_allocated_sid_lookup(state->sidmap, mem_ctx, sid, name, rtype); */
+	/* need to re-add a check for an allocated sid */
 
 	return NT_STATUS_NOT_FOUND;
 }

@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "auth/auth_proto.h"
 #include "param/param.h"
 
 /**

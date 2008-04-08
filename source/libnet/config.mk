@@ -10,12 +10,6 @@ LIBSAMBA-NET_OBJ_FILES = $(addprefix libnet/, \
 	libnet_lookup.o libnet_domain.o userinfo.o groupinfo.o userman.o \
 	groupman.o prereq_domain.o)
 
-PUBLIC_HEADERS += $(addprefix libnet/, libnet.h libnet_join.h libnet_lookup.h libnet_passwd.h \
-				 libnet_rpc.h libnet_share.h libnet_time.h \
-				 libnet_user.h libnet_site.h libnet_vampire.h \
-				 userinfo.h userman.h)
-
-
 [PYTHON::swig_net]
 PRIVATE_DEPENDENCIES = LIBSAMBA-NET
 SWIG_FILE = net.i

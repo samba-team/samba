@@ -37,6 +37,8 @@
 #include "lib/messaging/irpc.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
+#include "libcli/ldap/ldap.h"
+#include "libcli/ldap/ldap_proto.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "dsdb/samdb/samdb.h"
@@ -155,8 +157,10 @@ static NTSTATUS ldapsrv_decode(void *private, DATA_BLOB blob)
 	}
 
 	data_blob_free(&blob);
-	ldapsrv_process_message(conn, msg);
+	talloc_steal(conn, msg);
 	asn1_free(asn1);
+
+	ldapsrv_process_message(conn, msg);
 	return NT_STATUS_OK;
 }
 

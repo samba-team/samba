@@ -25,6 +25,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "util/util_ldb.h"
 #include "auth/auth.h"
+#include "auth/auth_proto.h"
 #include "auth/auth_sam.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
