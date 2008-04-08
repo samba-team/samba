@@ -63,6 +63,12 @@ static bool smbconf_reg_valname_forbidden(const char *valname)
 	return false;
 }
 
+static bool smbconf_reg_valname_valid(const char *valname)
+{
+	return (lp_parameter_is_valid(valname) &&
+		!smbconf_reg_valname_forbidden(valname));
+}
+
 /**
  * Open a registry key specified by "path"
  */
@@ -448,6 +454,7 @@ static WERROR smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 	uint32_t count;
 	struct registry_value *valvalue = NULL;
 	char *valname = NULL;
+	uint32_t tmp_num_values = 0;
 	char **tmp_valnames = NULL;
 	char **tmp_valstrings = NULL;
 
@@ -471,19 +478,24 @@ static WERROR smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 	{
 		char *valstring;
 
+		if (!smbconf_reg_valname_valid(valname)) {
+			continue;
+		}
+
 		werr = smbconf_add_string_to_array(tmp_ctx,
 						   &tmp_valnames,
-						   count, valname);
+						   tmp_num_values, valname);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
 
 		valstring = smbconf_format_registry_value(tmp_ctx, valvalue);
 		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_valstrings,
-						   count, valstring);
+						   tmp_num_values, valstring);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
+		tmp_num_values++;
 	}
 	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
 		goto done;
@@ -491,8 +503,8 @@ static WERROR smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 
 	werr = WERR_OK;
 
-	*num_values = count;
-	if (count > 0) {
+	*num_values = tmp_num_values;
+	if (tmp_num_values > 0) {
 		*value_names = talloc_move(mem_ctx, &tmp_valnames);
 		*value_strings = talloc_move(mem_ctx, &tmp_valstrings);
 	} else {
