@@ -1,5 +1,8 @@
 2008-04-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/setup.texi: Add text about smbk5pwd overlay from Buchan
+	Milne.
+	
 	* lib/krb5/krb5_locl.h: Name the pkinit type enum.
 
 	* kdc/pkinit.c: Rename constants to match global header.
