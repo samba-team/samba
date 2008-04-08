@@ -99,6 +99,7 @@ int main(int argc, const char **argv)
 	};
 
 	load_case_tables();
+	dbf = x_stderr;
 
 	/* parse options */
 	pc = poptGetContext("smbconftort", argc, (const char **)argv,
