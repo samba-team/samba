@@ -140,9 +140,7 @@ static bool torture_smbconf_txt(void)
 
 	smbconf_shutdown(conf_ctx);
 
-	ret = true;
-
-	printf("success: text backend\n");
+	printf("%s: text backend\n", ret ? "success" : "failure");
 
 done:
 	TALLOC_FREE(mem_ctx);
@@ -172,9 +170,7 @@ static bool torture_smbconf_reg(void)
 
 	smbconf_shutdown(conf_ctx);
 
-	ret = true;
-
-	printf("success: registry backend\n");
+	printf("%s: registry backend\n", ret ? "success" : "failure");
 
 done:
 	TALLOC_FREE(mem_ctx);
