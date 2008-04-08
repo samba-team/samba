@@ -1049,7 +1049,7 @@ struct lsa_LookupPrivName {
 	} in;
 
 	struct {
-		struct lsa_StringLarge *name;/* [unique] */
+		struct lsa_StringLarge **name;/* [ref] */
 		NTSTATUS result;
 	} out;
 
