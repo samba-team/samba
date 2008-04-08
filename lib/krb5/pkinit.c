@@ -45,8 +45,6 @@ struct krb5_dh_moduli {
 
 #ifdef PKINIT
 
-#include <heim_asn1.h>
-#include <rfc2459_asn1.h>
 #include <cms_asn1.h>
 #include <pkcs8_asn1.h>
 #include <pkcs9_asn1.h>
@@ -55,22 +53,6 @@ struct krb5_dh_moduli {
 #include <asn1_err.h>
 
 #include <der.h>
-
-#include <hx509.h>
-
-enum {
-    COMPAT_WIN2K = 1,
-    COMPAT_IETF = 2
-};
-
-struct krb5_pk_identity {
-    hx509_context hx509ctx;
-    hx509_verify_ctx verify_ctx;
-    hx509_certs certs;
-    hx509_certs anchors;
-    hx509_certs certpool;
-    hx509_revoke_ctx revokectx;
-};
 
 struct krb5_pk_cert {
     hx509_cert cert;
@@ -524,7 +506,7 @@ pk_mk_padata(krb5_context context,
     krb5_data_zero(&sd_buf);
     memset(&content_info, 0, sizeof(content_info));
 
-    if (ctx->type == COMPAT_WIN2K) {
+    if (ctx->type == PKINIT_WIN2K) {
 	AuthPack_Win2k ap;
 	krb5_timestamp sec;
 	int32_t usec;
@@ -561,7 +543,7 @@ pk_mk_padata(krb5_context context,
 	    krb5_abortx(context, "internal ASN1 encoder error");
 
 	oid = oid_id_pkcs7_data();
-    } else if (ctx->type == COMPAT_IETF) {
+    } else if (ctx->type == PKINIT_27) {
 	AuthPack ap;
 	
 	memset(&ap, 0, sizeof(ap));
@@ -599,7 +581,7 @@ pk_mk_padata(krb5_context context,
 	goto out;
     }
 
-    if (ctx->type == COMPAT_WIN2K) {
+    if (ctx->type == PKINIT_WIN2K) {
 	PA_PK_AS_REQ_Win2k winreq;
 
 	pa_type = KRB5_PADATA_PK_AS_REQ_WIN;
@@ -612,7 +594,7 @@ pk_mk_padata(krb5_context context,
 			   &winreq, &size, ret);
 	free_PA_PK_AS_REQ_Win2k(&winreq);
 
-    } else if (ctx->type == COMPAT_IETF) {
+    } else if (ctx->type == PKINIT_27) {
 	PA_PK_AS_REQ req;
 
 	pa_type = KRB5_PADATA_PK_AS_REQ;
@@ -656,7 +638,7 @@ pk_mk_padata(krb5_context context,
     if (ret)
 	free(buf.data);
 
-    if (ret == 0 && ctx->type == COMPAT_WIN2K)
+    if (ret == 0 && ctx->type == PKINIT_WIN2K)
 	krb5_padata_add(context, md, KRB5_PADATA_PK_AS_09_BINDING, NULL, 0);
 
 out:
@@ -691,9 +673,9 @@ _krb5_pk_mk_padata(krb5_context context,
 					 req_body->realm,
 					 "pkinit_win2k_require_binding",
 					 NULL);
-	ctx->type = COMPAT_WIN2K;
+	ctx->type = PKINIT_WIN2K;
     } else
-	ctx->type = COMPAT_IETF;
+	ctx->type = PKINIT_27;
 
     ctx->require_eku = 
 	krb5_config_get_bool_default(context, NULL,
@@ -1031,7 +1013,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 #endif
 
     /* win2k uses ContentInfo */
-    if (type == COMPAT_WIN2K) {
+    if (type == PKINIT_WIN2K) {
 	heim_oid type;
 	heim_octet_string out;
 
@@ -1070,7 +1052,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     }
 
 #if 0
-    if (type == COMPAT_WIN2K) {
+    if (type == PKINIT_WIN2K) {
 	if (der_heim_oid_cmp(&contentType, oid_id_pkcs7_data()) != 0) {
 	    krb5_set_error_string(context, "PKINIT: reply key, wrong oid");
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
@@ -1086,12 +1068,12 @@ pk_rd_pa_reply_enckey(krb5_context context,
 #endif
 
     switch(type) {
-    case COMPAT_WIN2K:
+    case PKINIT_WIN2K:
 	ret = get_reply_key(context, &content, req_buffer, key);
 	if (ret != 0 && ctx->require_binding == 0)
 	    ret = get_reply_key_win(context, &content, nonce, key);
 	break;
-    case COMPAT_IETF:
+    case PKINIT_27:
 	ret = get_reply_key(context, &content, req_buffer, key);
 	break;
     }
@@ -1298,7 +1280,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
     size_t size;
 
     /* Check for IETF PK-INIT first */
-    if (ctx->type == COMPAT_IETF) {
+    if (ctx->type == PKINIT_27) {
 	PA_PK_AS_REP rep;
 	heim_octet_string os, data;
 	heim_oid oid;
@@ -1346,7 +1328,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 				    nonce, pa, key);
 	    break;
 	case choice_PA_PK_AS_REP_encKeyPack:
-	    ret = pk_rd_pa_reply_enckey(context, COMPAT_IETF, &data, &oid, realm, 
+	    ret = pk_rd_pa_reply_enckey(context, PKINIT_27, &data, &oid, realm, 
 					ctx, etype, hi, nonce, req_buffer, pa, key);
 	    break;
 	default:
@@ -1356,7 +1338,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	der_free_oid(&oid);
 	free_PA_PK_AS_REP(&rep);
 
-    } else if (ctx->type == COMPAT_WIN2K) {
+    } else if (ctx->type == PKINIT_WIN2K) {
 	PA_PK_AS_REP_Win2k w2krep;
 
 	/* Check for Windows encoding of the AS-REP pa data */ 
@@ -1395,7 +1377,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 		return ret;
 	    }
 
-	    ret = pk_rd_pa_reply_enckey(context, COMPAT_WIN2K, &data, &oid, realm,
+	    ret = pk_rd_pa_reply_enckey(context, PKINIT_WIN2K, &data, &oid, realm,
 					ctx, etype, hi, nonce, req_buffer, pa, key);
 	    der_free_octet_string(&data);
 	    der_free_oid(&oid);
