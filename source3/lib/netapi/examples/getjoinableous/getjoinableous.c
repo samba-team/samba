@@ -19,6 +19,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include <netapi.h>
 
