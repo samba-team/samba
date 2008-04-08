@@ -3367,3 +3367,11 @@ NTSTATUS split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
 	}
 	return NT_STATUS_OK;
 }
+
+bool is_valid_policy_hnd(const POLICY_HND *hnd)
+{
+	POLICY_HND tmp;
+	ZERO_STRUCT(tmp);
+	return (memcmp(&tmp, hnd, sizeof(tmp)) != 0);
+}
+
