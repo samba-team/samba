@@ -630,8 +630,8 @@ import "security.idl";
 	/* Function:       0x1a */
 	NTSTATUS lsa_QueryTrustedDomainInfo(
 		[in]     policy_handle                   *trustdom_handle,
-		[in]     lsa_TrustDomInfoEnum             level, 
-		[out,switch_is(level),unique] lsa_TrustedDomainInfo *info
+		[in]     lsa_TrustDomInfoEnum             level,
+		[out,switch_is(level),ref] lsa_TrustedDomainInfo **info
 		);
 
 	/* Function:     0x1b */
