@@ -208,7 +208,8 @@ TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 	bin/masktest@EXEEXT@ bin/locktest@EXEEXT@ \
 	bin/locktest2@EXEEXT@ bin/nsstest@EXEEXT@ bin/vfstest@EXEEXT@ \
 	bin/pdbtest@EXEEXT@ bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
-	bin/tdbtorture@EXEEXT@
+	bin/tdbtorture@EXEEXT@ \
+	bin/smbconftort@EXEEXT@
 
 BIN_PROGS = @EXTRA_BIN_PROGS@ \
 	$(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) $(BIN_PROGS4) 
@@ -843,7 +844,8 @@ SMBCONFTORT_OBJ = $(SMBCONFTORT_OBJ0) \
 		  $(RPC_PARSE_OBJ1) \
 		  $(LIBSAMBA_OBJ) \
 		  $(DOSERR_OBJ) \
-		  $(SECRETS_OBJ)
+		  $(SECRETS_OBJ) \
+		  $(POPT_LIB_OBJ)
 
 LIBNET_OBJ = libnet/libnet_join.o \
 	     librpc/gen_ndr/ndr_libnet_join.o
