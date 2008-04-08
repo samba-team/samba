@@ -46,7 +46,7 @@ RCSID("$Id$");
 #include "crypto-headers.h"
 
 struct pk_client_params {
-    enum pkinit_type type;
+    enum krb5_pk_type type;
     BIGNUM *dh_public_key;
     hx509_cert cert;
     unsigned nonce;
