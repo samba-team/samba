@@ -38,9 +38,8 @@ static krb5_error_code
 rr13(unsigned char *buf, size_t len)
 {
     unsigned char *tmp;
-    size_t bytes = (len + 7) / 8;
-    size_t i;
-
+    int bytes = (len + 7) / 8;
+    int i;
     if(len == 0)
 	return 0;
     {
@@ -85,7 +84,7 @@ rr13(unsigned char *buf, size_t len)
 static void
 add1(unsigned char *a, unsigned char *b, size_t len)
 {
-    size_t i;
+    int i;
     int carry = 0;
     for(i = len - 1; i >= 0; i--){
 	int x = a[i] + b[i] + carry;
