@@ -500,7 +500,59 @@ static WERROR smbconf_txt_get_includes(struct smbconf_ctx *ctx,
 				       uint32_t *num_includes,
 				       char ***includes)
 {
-	return WERR_NOT_SUPPORTED;
+	WERROR werr;
+	bool found;
+	uint32_t sidx, count;
+	TALLOC_CTX *tmp_ctx = NULL;
+	uint32_t tmp_num_includes = 0;
+	char **tmp_includes = NULL;
+
+	werr = smbconf_txt_load_file(ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	found = smbconf_find_in_array(service,
+				      pd(ctx)->cache->share_names,
+				      pd(ctx)->cache->num_shares,
+				      &sidx);
+	if (!found) {
+		return WERR_NO_SUCH_SERVICE;
+	}
+
+	tmp_ctx = talloc_stackframe();
+
+	for (count = 0; count < pd(ctx)->cache->num_params[sidx]; count++) {
+		if (strequal(pd(ctx)->cache->param_names[sidx][count],
+			     "include"))
+		{
+			werr = smbconf_add_string_to_array(tmp_ctx,
+				&tmp_includes,
+				tmp_num_includes,
+				pd(ctx)->cache->param_values[sidx][count]);
+			if (!W_ERROR_IS_OK(werr)) {
+				goto done;
+			}
+			tmp_num_includes++;
+		}
+	}
+
+	*num_includes = tmp_num_includes;
+	if (*num_includes > 0) {
+		*includes = talloc_move(mem_ctx, &tmp_includes);
+		if (*includes == NULL) {
+			werr = WERR_NOMEM;
+			goto done;
+		}
+	} else {
+		*includes = NULL;
+	}
+
+	werr = WERR_OK;
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return werr;
 }
 
 static WERROR smbconf_txt_set_includes(struct smbconf_ctx *ctx,
