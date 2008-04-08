@@ -1,3 +1,7 @@
+2008-04-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hx509.h: Make self-standing by including missing files.
+
 2008-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ks_p11.c: Use unsigned where appropriate.
