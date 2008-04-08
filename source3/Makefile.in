@@ -834,6 +834,17 @@ LIBSMBCONF_OBJ = lib/smbconf/smbconf.o lib/smbconf/smbconf_util.o \
 		 lib/smbconf/smbconf_reg.o \
 		 lib/smbconf/smbconf_txt_simple.o
 
+SMBCONFTORT_OBJ0 = lib/smbconf/testsuite.o
+
+SMBCONFTORT_OBJ = $(SMBCONFTORT_OBJ0) \
+		  $(LIB_NONSMBD_OBJ) \
+		  $(PARAM_OBJ) \
+		  $(ERRORMAP_OBJ) \
+		  $(RPC_PARSE_OBJ1) \
+		  $(LIBSAMBA_OBJ) \
+		  $(DOSERR_OBJ) \
+		  $(SECRETS_OBJ)
+
 LIBNET_OBJ = libnet/libnet_join.o \
 	     librpc/gen_ndr/ndr_libnet_join.o
 
@@ -1156,6 +1167,8 @@ talloctort : SHOWFLAGS bin/talloctort@EXEEXT@
 
 replacetort : SHOWFLAGS bin/replacetort@EXEEXT@
 
+smbconftort : SHOWFLAGS bin/smbconftort@EXEEXT@
+
 timelimit : SHOWFLAGS bin/timelimit@EXEEXT@
 
 nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ @WINBIND_NSS@ \
@@ -1181,7 +1194,7 @@ idl:
 #####################################################################
 
 
-everything: all libtalloc libsmbclient libnetapi debug2html smbfilter talloctort replacetort modules torture \
+everything: all libtalloc libsmbclient libnetapi debug2html smbfilter talloctort replacetort smbconftort modules torture \
 	$(EVERYTHING_PROGS)
 
 .SUFFIXES:
@@ -1413,6 +1426,12 @@ bin/replacetort@EXEEXT@: $(REPLACETORT_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@
 	@echo Linking $@
 	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(REPLACETORT_OBJ) $(LDFLAGS) \
 		$(DYNEXP) $(LIBS) @POPTLIBS@ @LIBTALLOC_LIBS@
+
+bin/smbconftort@EXEEXT@: $(SMBCONFTORT_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIBTDB_SHARED@
+	@echo Linking $@
+	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(SMBCONFTORT_OBJ) $(LDFLAGS) \
+		$(DYNEXP) $(LIBS) $(LDAP_LIBS) @POPTLIBS@ \
+		@LIBTALLOC_LIBS@ @LIBTDB_LIBS@
 
 bin/masktest@EXEEXT@: $(BINARY_PREREQS) $(MASKTEST_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIBTDB_SHARED@
 	@echo Linking $@
