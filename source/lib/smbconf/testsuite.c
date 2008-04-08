@@ -61,6 +61,63 @@ done:
 	return ret;
 }
 
+static bool test_set_get_includes(struct smbconf_ctx *ctx)
+{
+	WERROR werr;
+	uint32_t count;
+	bool ret = false;
+	const char *set_includes[] = {
+		"/path/to/include1",
+		"/path/to/include2"
+	};
+	uint32_t set_num_includes = 2;
+	char **get_includes = NULL;
+	uint32_t get_num_includes = 0;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+
+	printf("test: set_get_includes\n");
+
+	werr = smbconf_set_global_includes(ctx, set_num_includes, set_includes);
+	if (!W_ERROR_IS_OK(werr)) {
+		printf("failure: get_set_includes (setting includes) - %s\n",
+		       dos_errstr(werr));
+		goto done;
+	}
+
+	werr = smbconf_get_global_includes(ctx, mem_ctx, &get_num_includes,
+					   &get_includes);
+	if (!W_ERROR_IS_OK(werr)) {
+		printf("failure: get_set_includes (getting includes) - %s\n",
+		       dos_errstr(werr));
+		goto done;
+	}
+
+	if (get_num_includes != set_num_includes) {
+		printf("failure: get_set_includes - set %d includes, got %d\n",
+		       set_num_includes, get_num_includes);
+		goto done;
+	}
+
+	for (count = 0; count < get_num_includes; count++) {
+		if (!strequal(set_includes[count], get_includes[count])) {
+			printf("expected: \n");
+			print_strings("* ", set_num_includes, set_includes);
+			printf("got: \n");
+			print_strings("* ", get_num_includes,
+				      (const char **)get_includes);
+			printf("failure: get_set_includes - data mismatch:\n");
+			goto done;
+		}
+	}
+
+	printf("success: set_includes\n");
+	ret = true;
+
+done:
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
 static bool torture_smbconf_txt(void)
 {
 	WERROR werr;
@@ -111,6 +168,7 @@ static bool torture_smbconf_reg(void)
 	printf("success: init\n");
 
 	ret &= test_get_includes(conf_ctx);
+	ret &= test_set_get_includes(conf_ctx);
 
 	smbconf_shutdown(conf_ctx);
 
