@@ -1,0 +1,71 @@
+/*
+  libnetapi interface definition
+*/
+
+cpp_quote("#define LIBNETAPI_LOCAL_SERVER(x) (!x || is_myname_or_ipaddr(x))")
+
+[
+	pointer_default(unique)
+]
+interface libnetapi
+{
+	[public] typedef [v1_enum] enum {
+		NERR_Success=0
+	} NET_API_STATUS;
+
+	[nopush,nopull] NET_API_STATUS NetJoinDomain(
+		[in,unique] string *server,
+		[in,ref] string *domain,
+		[in,unique] string *account_ou,
+		[in,unique] string *account,
+		[in,unique] string *password,
+		[in] uint32 join_flags
+		);
+
+	[nopush,nopull] NET_API_STATUS NetUnjoinDomain(
+		[in,unique] string *server_name,
+		[in,unique] string *account,
+		[in,unique] string *password,
+		[in] uint32 unjoin_flags
+		);
+
+	[nopush,nopull] NET_API_STATUS NetGetJoinInformation(
+		[in,unique] string *server_name,
+		[out] string **name_buffer,
+		[out] uint16 *name_type
+		);
+
+	[nopush,nopull] NET_API_STATUS NetGetJoinableOUs(
+		[in,unique] string *server_name,
+		[in,ref] string *domain,
+		[in,unique] string *account,
+		[in,unique] string *password,
+		[out] uint32 *ou_count,
+		[out] string ***ous
+		);
+
+	[nopush,nopull] NET_API_STATUS NetServerGetInfo(
+		[in,unique] string *server_name,
+		[in] uint32 level,
+		[out] uint8 **buffer
+		);
+
+	[nopush,nopull] NET_API_STATUS NetServerSetInfo(
+		[in,unique] string *server_name,
+		[in] uint32 level,
+		[in] uint8 *buffer,
+		[out] uint32 *parm_error
+		);
+
+	[nopush,nopull] NET_API_STATUS NetGetDCName(
+		[in,unique] string *server_name,
+		[in,unique] string *domain_name,
+		[out] uint8 **buffer
+		);
+
+	[nopush,nopull] NET_API_STATUS NetGetAnyDCName(
+		[in,unique] string *server_name,
+		[in,unique] string *domain_name,
+		[out] uint8 **buffer
+		);
+}
