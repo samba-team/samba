@@ -272,7 +272,21 @@ sub PythonFunctionBody($$$)
 
 	my $signature = "S.$prettyname(";
 
+	my %metadata_args = ();
+
+	sub get_var($) { my $x = shift; $x =~ s/\*//g; return $x; }
+
+	# Determine arguments that are metadata for other arguments (size_is/length_is)
 	foreach my $e (@{$fn->{ELEMENTS}}) {
+		 if (has_property($e, "length_is")) {
+			$metadata_args{get_var($e->{PROPERTIES}->{length_is})} = $e->{NAME};
+		 } elsif (has_property($e, "size_is")) {
+			$metadata_args{get_var($e->{PROPERTIES}->{size_is})} = $e->{NAME};
+		 }
+	}
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next if ($metadata_args{$e->{NAME}});
 		$self->pidl("PyObject *py_$e->{NAME};");
 		if (grep(/out/,@{$e->{DIRECTION}})) {
 			$result_size++;
@@ -307,7 +321,16 @@ sub PythonFunctionBody($$$)
 	}
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
-		if (grep(/in/,@{$e->{DIRECTION}})) {
+		next unless (grep(/in/,@{$e->{DIRECTION}}));
+		if ($metadata_args{$e->{NAME}}) {
+			my $val = "PyList_Size(py_".$metadata_args{$e->{NAME}}.")";
+			if ($e->{LEVELS}[0]->{TYPE} eq "POINTER") {
+				$self->pidl("r->in.$e->{NAME} = talloc_ptrtype(mem_ctx, r->in.$e->{NAME});");
+				$self->pidl("*r->in.$e->{NAME} = $val;");
+			} else {
+				$self->pidl("r->in.$e->{NAME} = PyList_Size(py_".$metadata_args{$e->{NAME}}.");");
+			}
+		} else {
 			$self->ConvertObjectFromPython($env, "mem_ctx", $e, "py_$e->{NAME}", "r->in.$e->{NAME}", "talloc_free(mem_ctx); return NULL;");
 		}
 	}
@@ -325,6 +348,7 @@ sub PythonFunctionBody($$$)
 	}
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next if ($metadata_args{$e->{NAME}});
 		my $py_name = "py_$e->{NAME}";
 		if (grep(/out/,@{$e->{DIRECTION}})) {
 			$self->ConvertObjectToPython("r", $env, $e, "r->out.$e->{NAME}", $py_name);
