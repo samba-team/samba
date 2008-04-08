@@ -108,7 +108,9 @@ WERROR NetJoinDomain_r(struct libnetapi_ctx *ctx,
 				     ctx->username,
 				     ctx->workgroup,
 				     ctx->password,
-				     0, Undefined, NULL);
+				     CLI_FULL_CONNECTION_USE_KERBEROS |
+				     CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS,
+				     Undefined, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
@@ -248,7 +250,9 @@ WERROR NetUnjoinDomain_r(struct libnetapi_ctx *ctx,
 				     ctx->username,
 				     ctx->workgroup,
 				     ctx->password,
-				     0, Undefined, NULL);
+				     CLI_FULL_CONNECTION_USE_KERBEROS |
+				     CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS,
+				     Undefined, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
@@ -308,7 +312,9 @@ WERROR NetGetJoinInformation_r(struct libnetapi_ctx *ctx,
 				     ctx->username,
 				     ctx->workgroup,
 				     ctx->password,
-				     0, Undefined, NULL);
+				     CLI_FULL_CONNECTION_USE_KERBEROS |
+				     CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS,
+				     Undefined, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
@@ -450,7 +456,9 @@ WERROR NetGetJoinableOUs_r(struct libnetapi_ctx *ctx,
 				     ctx->username,
 				     ctx->workgroup,
 				     ctx->password,
-				     0, Undefined, NULL);
+				     CLI_FULL_CONNECTION_USE_KERBEROS |
+				     CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS,
+				     Undefined, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
