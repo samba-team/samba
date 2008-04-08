@@ -99,6 +99,8 @@ static bool torture_smbconf_reg(void)
 	}
 	printf("success: init\n");
 
+	ret &= test_get_includes(conf_ctx);
+
 	smbconf_shutdown(conf_ctx);
 
 	ret = true;
