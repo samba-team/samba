@@ -276,7 +276,7 @@ struct krb5_pk_identity {
     hx509_revoke_ctx revokectx;
 };
 
-enum {
+enum krb5_pk_type {
     PKINIT_WIN2K = 1,
     PKINIT_27 = 2
 };
