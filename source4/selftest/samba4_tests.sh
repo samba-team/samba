@@ -338,6 +338,7 @@ plantest "provision.python" none $SUBUNITRUN samba.tests.provision
 plantest "samba3.python" none $SUBUNITRUN samba.tests.samba3
 plantest "samr.python" dc $SUBUNITRUN samba.tests.dcerpc.sam
 plantest "samdb.python" dc $SUBUNITRUN samba.tests.samdb
+plantest "unixinfo.python" dc $SUBUNITRUN samba.tests.dcerpc.unix
 plantest "events.python" none PYTHONPATH="$PYTHONPATH:lib/events" $SUBUNITRUN tests
 plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
 plantest "rpcecho.python" dc $SUBUNITRUN samba.tests.dcerpc.rpcecho
