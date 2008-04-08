@@ -39,6 +39,8 @@
 #include <string.h>
 #include <err.h>
 
+#include <roken.h>
+
 #include "windlocl.h"
 #include "normalize_table.h"
 
