@@ -44,7 +44,7 @@ static struct reg_private_data *rpd(struct smbconf_ctx *ctx)
 /*
  * check whether a given value name is forbidden in registry (smbconf)
  */
-bool registry_smbconf_valname_forbidden(const char *valname)
+static bool registry_smbconf_valname_forbidden(const char *valname)
 {
 	/* hard code the list of forbidden names here for now */
 	const char *forbidden_valnames[] = {
