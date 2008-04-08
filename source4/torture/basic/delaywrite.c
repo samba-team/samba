@@ -632,9 +632,20 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 }
 
 #define COMPARE_WRITE_TIME_CMP(given, correct, cmp) do { \
+	uint64_t r = 10*1000*1000; \
 	NTTIME g = (given).basic_info.out.write_time; \
+	NTTIME gr = (g / r) * r; \
 	NTTIME c = (correct).basic_info.out.write_time; \
-	if (g cmp c) { \
+	NTTIME cr = (c / r) * r; \
+	bool strict = torture_setting_bool(tctx, "strict mode", false); \
+	bool err = false; \
+	if (strict && (g cmp c)) { \
+		err = true; \
+	} else if (gr cmp cr) { \
+		/* handle filesystem without high resolution timestamps */ \
+		err = true; \
+	} \
+	if (err) { \
 		torture_result(tctx, TORTURE_FAIL, __location__": wrong write_time (%s)%s(%llu) %s (%s)%s(%llu)", \
 				#given, nt_time_string(tctx, g), (unsigned long long)g, \
 				#cmp, #correct, nt_time_string(tctx, c), (unsigned long long)c); \
