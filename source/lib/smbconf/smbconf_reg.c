@@ -379,6 +379,60 @@ static char *smbconf_format_registry_value(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+static WERROR smbconf_reg_get_includes_internal(TALLOC_CTX *mem_ctx,
+						struct registry_key *key,
+						uint32_t *num_includes,
+						char ***includes)
+{
+	WERROR werr;
+	uint32_t count;
+	struct registry_value *value = NULL;
+	char **tmp_includes = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+
+	if (!smbconf_value_exists(key, INCLUDES_VALNAME)) {
+		/* no includes */
+		goto done;
+	}
+
+	werr = reg_queryvalue(tmp_ctx, key, INCLUDES_VALNAME, &value);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	if (value->type != REG_MULTI_SZ) {
+		/* wront type -- ignore */
+		goto done;
+	}
+
+	for (count = 0; count < value->v.multi_sz.num_strings; count++)
+	{
+		werr = smbconf_add_string_to_array(tmp_ctx,
+					&tmp_includes,
+					count,
+					value->v.multi_sz.strings[count]);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+	}
+
+	if (count > 0) {
+		*includes = talloc_move(mem_ctx, &tmp_includes);
+		if (*includes == NULL) {
+			werr = WERR_NOMEM;
+			goto done;
+		}
+		*num_includes = count;
+	} else {
+		*num_includes = 0;
+		*includes = NULL;
+	}
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return werr;
+}
+
 /**
  * Get the values of a key as a list of value names
  * and a list of value strings (ordered)
@@ -852,10 +906,7 @@ static WERROR smbconf_reg_get_includes(struct smbconf_ctx *ctx,
 				       char ***includes)
 {
 	WERROR werr;
-	uint32_t count;
 	struct registry_key *key = NULL;
-	struct registry_value *value = NULL;
-	char **tmp_includes = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
 	werr = smbconf_reg_open_service_key(tmp_ctx, ctx, service,
@@ -864,43 +915,8 @@ static WERROR smbconf_reg_get_includes(struct smbconf_ctx *ctx,
 		goto done;
 	}
 
-	if (!smbconf_value_exists(key, INCLUDES_VALNAME)) {
-		/* no includes */
-		goto done;
-	}
-
-	werr = reg_queryvalue(tmp_ctx, key, INCLUDES_VALNAME, &value);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	if (value->type != REG_MULTI_SZ) {
-		/* wront type -- ignore */
-		goto done;
-	}
-
-	for (count = 0; count < value->v.multi_sz.num_strings; count++)
-	{
-		werr = smbconf_add_string_to_array(tmp_ctx,
-					&tmp_includes,
-					count,
-					value->v.multi_sz.strings[count]);
-		if (!W_ERROR_IS_OK(werr)) {
-			goto done;
-		}
-	}
-
-	if (count > 0) {
-		*includes = talloc_move(mem_ctx, &tmp_includes);
-		if (*includes == NULL) {
-			werr = WERR_NOMEM;
-			goto done;
-		}
-		*num_includes = count;
-	} else {
-		*num_includes = 0;
-		*includes = NULL;
-	}
+	werr = smbconf_reg_get_includes_internal(mem_ctx, key, num_includes,
+						 includes);
 
 done:
 	TALLOC_FREE(tmp_ctx);
