@@ -161,7 +161,7 @@ NTSTATUS rpccli_lsa_LookupPrivName(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   struct policy_handle *handle /* [in] [ref] */,
 				   struct lsa_LUID *luid /* [in] [ref] */,
-				   struct lsa_StringLarge *name /* [out] [unique] */);
+				   struct lsa_StringLarge **name /* [out] [ref] */);
 NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,
 					  struct policy_handle *handle /* [in] [ref] */,

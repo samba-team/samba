@@ -2521,7 +2521,7 @@ static bool api_lsa_LookupPrivName(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.name = talloc_zero(r, struct lsa_StringLarge);
+	r->out.name = talloc_zero(r, struct lsa_StringLarge *);
 	if (r->out.name == NULL) {
 		talloc_free(r);
 		return false;

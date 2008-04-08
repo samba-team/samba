@@ -1398,7 +1398,7 @@ NTSTATUS rpccli_lsa_LookupPrivName(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   struct policy_handle *handle /* [in] [ref] */,
 				   struct lsa_LUID *luid /* [in] [ref] */,
-				   struct lsa_StringLarge *name /* [out] [unique] */)
+				   struct lsa_StringLarge **name /* [out] [ref] */)
 {
 	struct lsa_LookupPrivName r;
 	NTSTATUS status;
@@ -1431,9 +1431,7 @@ NTSTATUS rpccli_lsa_LookupPrivName(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (name && r.out.name) {
-		*name = *r.out.name;
-	}
+	*name = *r.out.name;
 
 	/* Return result */
 	return r.out.result;

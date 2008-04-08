@@ -7674,9 +7674,12 @@ static enum ndr_err_code ndr_push_lsa_LookupPrivName(struct ndr_push *ndr, int f
 		NDR_CHECK(ndr_push_lsa_LUID(ndr, NDR_SCALARS, r->in.luid));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.name));
-		if (r->out.name) {
-			NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.name));
+		if (r->out.name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.name));
+		if (*r->out.name) {
+			NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.name));
 		}
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -7689,6 +7692,7 @@ static enum ndr_err_code ndr_pull_lsa_LookupPrivName(struct ndr_pull *ndr, int f
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_luid_0;
 	TALLOC_CTX *_mem_save_name_0;
+	TALLOC_CTX *_mem_save_name_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -7706,20 +7710,28 @@ static enum ndr_err_code ndr_pull_lsa_LookupPrivName(struct ndr_pull *ndr, int f
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.luid, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_lsa_LUID(ndr, NDR_SCALARS, r->in.luid));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_luid_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_PULL_ALLOC(ndr, r->out.name);
+		ZERO_STRUCTP(r->out.name);
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.name);
+		}
+		_mem_save_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.name, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_name));
 		if (_ptr_name) {
-			NDR_PULL_ALLOC(ndr, r->out.name);
+			NDR_PULL_ALLOC(ndr, *r->out.name);
 		} else {
-			r->out.name = NULL;
+			*r->out.name = NULL;
 		}
-		if (r->out.name) {
-			_mem_save_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.name, 0);
-			NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.name));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_name_0, 0);
+		if (*r->out.name) {
+			_mem_save_name_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.name, 0);
+			NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.name));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_name_1, 0);
 		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_name_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -7750,9 +7762,12 @@ _PUBLIC_ void ndr_print_lsa_LookupPrivName(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		ndr_print_ptr(ndr, "name", r->out.name);
 		ndr->depth++;
-		if (r->out.name) {
-			ndr_print_lsa_StringLarge(ndr, "name", r->out.name);
+		ndr_print_ptr(ndr, "name", *r->out.name);
+		ndr->depth++;
+		if (*r->out.name) {
+			ndr_print_lsa_StringLarge(ndr, "name", *r->out.name);
 		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
