@@ -27,6 +27,60 @@ _PUBLIC_ void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, 
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_DOMAIN_CONTROLLER_INFO(struct ndr_push *ndr, int ndr_flags, const struct DOMAIN_CONTROLLER_INFO *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->domain_controller_name));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->domain_controller_address));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->domain_controller_address_type));
+		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->domain_guid));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->domain_name));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->dns_forest_name));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->flags));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->dc_site_name));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->client_site_name));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_DOMAIN_CONTROLLER_INFO(struct ndr_pull *ndr, int ndr_flags, struct DOMAIN_CONTROLLER_INFO *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->domain_controller_name));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->domain_controller_address));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->domain_controller_address_type));
+		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->domain_guid));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->domain_name));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->dns_forest_name));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->flags));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->dc_site_name));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->client_site_name));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_DOMAIN_CONTROLLER_INFO(struct ndr_print *ndr, const char *name, const struct DOMAIN_CONTROLLER_INFO *r)
+{
+	ndr_print_struct(ndr, name, "DOMAIN_CONTROLLER_INFO");
+	ndr->depth++;
+	ndr_print_string(ndr, "domain_controller_name", r->domain_controller_name);
+	ndr_print_string(ndr, "domain_controller_address", r->domain_controller_address);
+	ndr_print_uint32(ndr, "domain_controller_address_type", r->domain_controller_address_type);
+	ndr_print_GUID(ndr, "domain_guid", &r->domain_guid);
+	ndr_print_string(ndr, "domain_name", r->domain_name);
+	ndr_print_string(ndr, "dns_forest_name", r->dns_forest_name);
+	ndr_print_uint32(ndr, "flags", r->flags);
+	ndr_print_string(ndr, "dc_site_name", r->dc_site_name);
+	ndr_print_string(ndr, "client_site_name", r->client_site_name);
+	ndr->depth--;
+}
+
 _PUBLIC_ void ndr_print_NetJoinDomain(struct ndr_print *ndr, const char *name, int flags, const struct NetJoinDomain *r)
 {
 	ndr_print_struct(ndr, name, "NetJoinDomain");
@@ -366,6 +420,59 @@ _PUBLIC_ void ndr_print_NetGetAnyDCName(struct ndr_print *ndr, const char *name,
 		ndr->depth++;
 		if (*r->out.buffer) {
 			ndr_print_uint8(ndr, "buffer", **r->out.buffer);
+		}
+		ndr->depth--;
+		ndr->depth--;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+_PUBLIC_ void ndr_print_DsGetDcName(struct ndr_print *ndr, const char *name, int flags, const struct DsGetDcName *r)
+{
+	ndr_print_struct(ndr, name, "DsGetDcName");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "DsGetDcName");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "server_name", r->in.server_name);
+		ndr->depth++;
+		if (r->in.server_name) {
+			ndr_print_string(ndr, "server_name", r->in.server_name);
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "domain_name", r->in.domain_name);
+		ndr->depth++;
+		ndr_print_string(ndr, "domain_name", r->in.domain_name);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "domain_guid", r->in.domain_guid);
+		ndr->depth++;
+		if (r->in.domain_guid) {
+			ndr_print_GUID(ndr, "domain_guid", r->in.domain_guid);
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "site_name", r->in.site_name);
+		ndr->depth++;
+		if (r->in.site_name) {
+			ndr_print_string(ndr, "site_name", r->in.site_name);
+		}
+		ndr->depth--;
+		ndr_print_uint32(ndr, "flags", r->in.flags);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "DsGetDcName");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "dc_info", r->out.dc_info);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "dc_info", *r->out.dc_info);
+		ndr->depth++;
+		if (*r->out.dc_info) {
+			ndr_print_DOMAIN_CONTROLLER_INFO(ndr, "dc_info", *r->out.dc_info);
 		}
 		ndr->depth--;
 		ndr->depth--;
