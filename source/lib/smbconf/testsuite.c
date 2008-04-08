@@ -19,11 +19,24 @@
 
 #include "includes.h"
 
+static void print_strings(const char *prefix,
+			  uint32_t num_strings, const char **strings)
+{
+	uint32_t count;
+
+	if (prefix == NULL) {
+		prefix = "";
+	}
+
+	for (count = 0; count < num_strings; count++) {
+		printf("%s%s\n", prefix, strings[count]);
+	}
+}
+
 static bool test_get_includes(struct smbconf_ctx *ctx)
 {
 	WERROR werr;
 	bool ret = false;
-	uint32_t count;
 	uint32_t num_includes = 0;
 	char **includes = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
@@ -38,9 +51,7 @@ static bool test_get_includes(struct smbconf_ctx *ctx)
 
 	printf("got %u includes%s\n", num_includes,
 	       (num_includes > 0) ? ":" : ".");
-	for (count = 0; count < num_includes; count++) {
-		printf("%s\n", includes[count]);
-	}
+	print_strings("", num_includes, (const char **)includes);
 
 	printf("success: get_includes\n");
 	ret = true;
