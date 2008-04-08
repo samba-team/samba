@@ -232,7 +232,7 @@ sub PythonStruct($$$$$$)
 	$self->pidl_hdr("#define $name\_Check(op) PyObject_TypeCheck(op, &$name\_Type)\n");
 	$self->pidl_hdr("#define $name\_CheckExact(op) ((op)->ob_type == &$name\_Type)\n");
 	$self->pidl_hdr("\n");
-	my $docstring = $self->DocString($d, $name);
+	my $docstring = ($self->DocString($d, $name) or "NULL");
 	my $typeobject = "$name\_Type";
 	$self->pidl("PyTypeObject $typeobject = {");
 	$self->indent;
@@ -374,10 +374,10 @@ sub PythonFunction($$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	if ($docstring eq "NULL") {
-		$docstring = "\"$signature\"";
-	} else {
+	if ($docstring) {
 		$docstring = "\"$signature\\n\\n\"$docstring";
+	} else {
+		$docstring = "\"$signature\"";
 	}
 
 	return ($fnname, $docstring);
@@ -468,12 +468,12 @@ sub DocString($$$)
 {
 	my ($self, $d, $name) = @_;
 	if (has_property($d, "helpstring")) {
-		my $docstring = "py_doc_$name";
-		$self->pidl("static const char ".$docstring."[] = ".has_property($d, "helpstring").";");
+		my $docstring = uc("py_doc_$name");
+		$self->pidl("#define $docstring ".has_property($d, "helpstring"));
 		return $docstring;
 	}
 
-	return "NULL";
+	return undef;
 }
 
 sub Interface($$$)
@@ -602,8 +602,21 @@ sub Interface($$$)
 		
 		$self->pidl("");
 
+		my $signature = 
+"\"$interface->{NAME}(binding, lp_ctx=None, credentials=None) -> Connection to DCE/RPC interface.\\n\"
+\"\\n\"
+\"binding should be a DCE/RPC binding string (for example: ncacn_ip_tcp:127.0.0.1)\\n\"
+\"lp_ctx should be a path to a smb.conf file or a param.LoadParm object\\n\"
+\"credentials should be a credentials.Credentials object.\\n\\n\"";
 
 		my $docstring = $self->DocString($interface, $interface->{NAME});
+
+		if ($docstring) {
+			$docstring = "$signature$docstring";
+		} else {
+			$docstring = $signature;
+		}
+
 		$self->pidl("PyTypeObject $interface->{NAME}_InterfaceType = {");
 		$self->indent;
 		$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
