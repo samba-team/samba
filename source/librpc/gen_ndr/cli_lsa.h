@@ -199,7 +199,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoBySid(struct rpc_pipe_client *cli,
 						struct policy_handle *handle /* [in] [ref] */,
 						struct dom_sid2 *dom_sid /* [in] [ref] */,
 						enum lsa_TrustDomInfoEnum level /* [in]  */,
-						union lsa_TrustedDomainInfo *info /* [out] [unique,switch_is(level)] */);
+						union lsa_TrustedDomainInfo **info /* [out] [ref,switch_is(level)] */);
 NTSTATUS rpccli_lsa_SetTrustedDomainInfo(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_lsa_DeleteTrustedDomain(struct rpc_pipe_client *cli,
@@ -236,7 +236,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 						 struct policy_handle *handle /* [in] [ref] */,
 						 struct lsa_String *trusted_domain /* [in] [ref] */,
 						 enum lsa_TrustDomInfoEnum level /* [in]  */,
-						 union lsa_TrustedDomainInfo *info /* [out] [ref,switch_is(level)] */);
+						 union lsa_TrustedDomainInfo **info /* [out] [ref,switch_is(level)] */);
 NTSTATUS rpccli_lsa_SetTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 					       TALLOC_CTX *mem_ctx,
 					       struct policy_handle *handle /* [in] [ref] */,
@@ -258,7 +258,7 @@ NTSTATUS rpccli_lsa_QueryDomainInformationPolicy(struct rpc_pipe_client *cli,
 						 TALLOC_CTX *mem_ctx,
 						 struct policy_handle *handle /* [in] [ref] */,
 						 uint16_t level /* [in]  */,
-						 union lsa_DomainInformationPolicy *info /* [out] [unique,switch_is(level)] */);
+						 union lsa_DomainInformationPolicy **info /* [out] [ref,switch_is(level)] */);
 NTSTATUS rpccli_lsa_SetDomainInformationPolicy(struct rpc_pipe_client *cli,
 					       TALLOC_CTX *mem_ctx,
 					       struct policy_handle *handle /* [in] [ref] */,
