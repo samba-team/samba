@@ -6064,7 +6064,7 @@ static int map_parameter(const char *pszParmName)
 
 	/* Warn only if it isn't parametric option */
 	if (strchr(pszParmName, ':') == NULL)
-		DEBUG(0, ("Unknown parameter encountered: \"%s\"\n", pszParmName));
+		DEBUG(1, ("Unknown parameter encountered: \"%s\"\n", pszParmName));
 	/* We do return 'fail' for parametric options as well because they are
 	   stored in different storage
 	 */
