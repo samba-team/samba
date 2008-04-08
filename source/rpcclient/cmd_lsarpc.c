@@ -1043,7 +1043,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	union lsa_TrustedDomainInfo info;
+	union lsa_TrustedDomainInfo *info = NULL;
 	enum lsa_TrustDomInfoEnum info_class = 1;
 	struct lsa_String trusted_domain;
 
@@ -1070,7 +1070,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	display_trust_dom_info(mem_ctx, &info, info_class, cli->pwd.password);
+	display_trust_dom_info(mem_ctx, info, info_class, cli->pwd.password);
 
  done:
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
