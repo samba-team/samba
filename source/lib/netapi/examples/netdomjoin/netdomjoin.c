@@ -25,96 +25,78 @@
 
 #include <netapi.h>
 
-char *get_string_param(const char *param)
-{
-	char *p;
+#include "common.h"
 
-	p = strchr(param, '=');
-	if (!p) {
-		return NULL;
-	}
+enum {
+	OPT_OU = 1000
+};
 
-	return (p+1);
-}
-
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	NET_API_STATUS status;
-	const char *server_name = NULL;
+	const char *host_name = NULL;
 	const char *domain_name = NULL;
 	const char *account_ou = NULL;
-	const char *Account = NULL;
+	const char *account = NULL;
 	const char *password = NULL;
-	uint32_t join_flags = 3;
+	uint32_t join_flags = 0x00000023;
 	struct libnetapi_ctx *ctx = NULL;
-	int i;
+
+	poptContext pc;
+	int opt;
+
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		{ "ou", 0, POPT_ARG_STRING, &account_ou, 'U', "Account ou", "ACCOUNT_OU" },
+		{ "domain", 0, POPT_ARG_STRING, &domain_name, 'U', "Domain name (required)", "DOMAIN" },
+		{ "userd", 0, POPT_ARG_STRING, &account, 'U', "Domain admin account", "USERNAME" },
+		{ "passwordd", 0, POPT_ARG_STRING, &password, 'U', "Domain admin password", "PASSWORD" },
+		POPT_COMMON_LIBNETAPI_EXAMPLES
+		POPT_TABLEEND
+	};
+
 
 	status = libnetapi_init(&ctx);
 	if (status != 0) {
 		return status;
 	}
 
-	if (argc < 2) {
-		printf("usage: netdomjoin\n");
-		printf("\t[hostname] [domain=DOMAIN] <ou=OU> "
-		       "<usero=USERO> <passwordo=PASSWORDO> "
-		       "<userd=USERD> <passwordd=PASSWORDD> "
-		       "<debug=DEBUGLEVEL>\n");
-		return 0;
+	pc = poptGetContext("netdomjoin", argc, argv, long_options, 0);
+
+	poptSetOtherOptionHelp(pc, "hostname");
+	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
-	if (argc > 2) {
-		server_name = argv[1];
+	if (!poptPeekArg(pc)) {
+		poptPrintHelp(pc, stderr, 0);
+		goto out;
+	}
+	host_name = poptGetArg(pc);
+
+	if (!domain_name) {
+		poptPrintHelp(pc, stderr, 0);
+		goto out;
 	}
 
-	for (i=0; i<argc; i++) {
-		if (strncasecmp(argv[i], "ou", strlen("ou")) == 0) {
-			account_ou = get_string_param(argv[i]);
-		}
-		if (strncasecmp(argv[i], "domain", strlen("domain"))== 0) {
-			domain_name = get_string_param(argv[i]);
-		}
-		if (strncasecmp(argv[i], "userd", strlen("userd"))== 0) {
-			Account = get_string_param(argv[i]);
-		}
-		if (strncasecmp(argv[i], "passwordd", strlen("passwordd"))== 0) {
-			password = get_string_param(argv[i]);
-		}
-		if (strncasecmp(argv[i], "usero", strlen("usero"))== 0) {
-			const char *str = NULL;
-			str = get_string_param(argv[i]);
-			libnetapi_set_username(ctx, str);
-		}
-		if (strncasecmp(argv[i], "passwordo", strlen("passwordo"))== 0) {
-			const char *str = NULL;
-			str = get_string_param(argv[i]);
-			libnetapi_set_password(ctx, str);
-		}
-		if (strncasecmp(argv[i], "debug", strlen("debug"))== 0) {
-			const char *str = NULL;
-			str = get_string_param(argv[i]);
-			libnetapi_set_debuglevel(ctx, str);
-		}
-	}
+	/* NetJoinDomain */
 
-	status = NetJoinDomain(server_name,
+	status = NetJoinDomain(host_name,
 			       domain_name,
 			       account_ou,
-			       Account,
+			       account,
 			       password,
 			       join_flags);
 	if (status != 0) {
 		const char *errstr = NULL;
 		errstr = libnetapi_get_error_string(ctx, status);
-		if (!errstr) {
-			errstr = libnetapi_errstr(status);
-		}
 		printf("Join failed with: %s\n", errstr);
 	} else {
 		printf("Successfully joined\n");
 	}
 
+ out:
 	libnetapi_free(ctx);
+	poptFreeContext(pc);
 
 	return status;
 }
