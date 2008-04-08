@@ -68,4 +68,26 @@ interface libnetapi
 		[in,unique] string *domain_name,
 		[out] uint8 **buffer
 		);
+
+	[public] typedef struct {
+		string domain_controller_name;
+		string domain_controller_address;
+		uint32 domain_controller_address_type;
+		GUID domain_guid;
+		string domain_name;
+		string dns_forest_name;
+		uint32 flags;
+		string dc_site_name;
+		string client_site_name;
+	} DOMAIN_CONTROLLER_INFO;
+
+	[nopush,nopull] NET_API_STATUS DsGetDcName(
+		[in,unique] string *server_name,
+		[in,ref] string *domain_name,
+		[in,unique] GUID *domain_guid,
+		[in,unique] string *site_name,
+		[in] uint32 flags,
+		[out,ref] DOMAIN_CONTROLLER_INFO **dc_info
+		);
+
 }
