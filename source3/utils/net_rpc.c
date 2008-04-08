@@ -6128,7 +6128,7 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 				      const char *trusted_dom_name)
 {
 	NTSTATUS nt_status;
-	union lsa_TrustedDomainInfo info;
+	union lsa_TrustedDomainInfo *info = NULL;
 	char *cleartextpwd = NULL;
 	DATA_BLOB data;
 
@@ -6143,12 +6143,8 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 		goto done;
 	}
 
-	data = data_blob(NULL, info.password.password->length);
-
-	memcpy(data.data,
-	       info.password.password->data,
-	       info.password.password->length);
-	data.length = info.password.password->length;
+	data = data_blob(info->password.password->data,
+			 info->password.password->length);
 
 	cleartextpwd = decrypt_trustdom_secret(pipe_hnd->cli->pwd.password,
 					       &data);

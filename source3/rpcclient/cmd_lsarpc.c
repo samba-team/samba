@@ -1001,7 +1001,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID dom_sid;
 	uint32 access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	union lsa_TrustedDomainInfo info;
+	union lsa_TrustedDomainInfo *info = NULL;
 	enum lsa_TrustDomInfoEnum info_class = 1;
 
 	if (argc > 3 || argc < 2) {
@@ -1028,7 +1028,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	display_trust_dom_info(mem_ctx, &info, info_class, cli->pwd.password);
+	display_trust_dom_info(mem_ctx, info, info_class, cli->pwd.password);
 
  done:
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
@@ -1085,7 +1085,7 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 	POLICY_HND pol, trustdom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	union lsa_TrustedDomainInfo info;
+	union lsa_TrustedDomainInfo *info = NULL;
 	DOM_SID dom_sid;
 	enum lsa_TrustDomInfoEnum info_class = 1;
 
@@ -1123,7 +1123,7 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	display_trust_dom_info(mem_ctx, &info, info_class, cli->pwd.password);
+	display_trust_dom_info(mem_ctx, info, info_class, cli->pwd.password);
 
  done:
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
