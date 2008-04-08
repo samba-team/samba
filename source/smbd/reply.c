@@ -7029,7 +7029,7 @@ void reply_setattrE(struct smb_request *req)
 	} else {
 		if (SMB_VFS_STAT(conn, fsp->fsp_name, &sbuf) == -1) {
 			status = map_nt_error_from_unix(errno);
-			reply_nterror(req, status)
+			reply_nterror(req, status);
 			END_PROFILE(SMBsetattrE);
 			return;
 		}
@@ -7038,7 +7038,7 @@ void reply_setattrE(struct smb_request *req)
 	status = smb_set_file_time(conn, fsp, fsp->fsp_name,
 				   &sbuf, ts, true);
 	if (!NT_STATUS_IS_OK(status)) {
-		reply_doserror(req, ERRDOS, ERRnoaccess)
+		reply_doserror(req, ERRDOS, ERRnoaccess);
 		END_PROFILE(SMBsetattrE);
 		return;
 	}
