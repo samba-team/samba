@@ -664,6 +664,7 @@ HEIMDAL_KRB5_1.0 {
 		krb5_mcc_ops;
 		krb5_acc_ops;
 		krb5_fcc_ops;
+		krb5_scc_ops;
 		krb5_kcm_ops;
 		krb4_fkt_ops;
 		krb5_wrfkt_ops;
