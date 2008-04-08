@@ -94,7 +94,7 @@ int main(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	struct poptOption long_options[] = {
-		POPT_COMMON_CONFIGFILE
+		POPT_COMMON_SAMBA
 		{0, 0, 0, 0}
 	};
 
