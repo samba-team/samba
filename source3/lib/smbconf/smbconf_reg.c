@@ -41,6 +41,28 @@ static struct reg_private_data *rpd(struct smbconf_ctx *ctx)
 	return (struct reg_private_data *)(ctx->data);
 }
 
+/*
+ * check whether a given value name is forbidden in registry (smbconf)
+ */
+bool registry_smbconf_valname_forbidden(const char *valname)
+{
+	/* hard code the list of forbidden names here for now */
+	const char *forbidden_valnames[] = {
+		"lock directory",
+		"lock dir",
+		"config backend",
+		NULL
+	};
+	const char **forbidden = NULL;
+
+	for (forbidden = forbidden_valnames; *forbidden != NULL; forbidden++) {
+		if (strwicmp(valname, *forbidden) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
 /**
  * Open a registry key specified by "path"
  */
