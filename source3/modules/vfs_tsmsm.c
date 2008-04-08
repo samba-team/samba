@@ -72,6 +72,7 @@ struct tsmsm_struct {
 	float online_ratio;
 	char *hsmscript;
 	const char *attrib_name;
+	const char *attrib_value;
 };
 
 static void tsmsm_free_data(void **pptr) {
@@ -111,7 +112,11 @@ static int tsmsm_connect(struct vfs_handle_struct *handle,
 	tsmd->attrib_name = lp_parm_talloc_string(SNUM(handle->conn), tsmname, 
 						  "dmapi attribute", DM_ATTRIB_OBJECT);
 	talloc_steal(tsmd, tsmd->attrib_name);
-
+	
+	tsmd->attrib_value = lp_parm_talloc_string(SNUM(handle->conn), "tsmsm", 
+						   "dmapi value", NULL);
+	talloc_steal(tsmd, tsmd->attrib_value);
+	
 	/* retrieve 'online ratio'. In case of error default to FILE_IS_ONLINE_RATIO */
 	fres = lp_parm_const_string(SNUM(handle->conn), tsmname, 
 				    "online ratio", NULL);
@@ -143,7 +148,8 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 	dm_attrname_t dmname;
 	int ret, lerrno;
 	bool offline;
-	char buf[1];
+	char *buf;
+	int buflen;
 
         /* if the file has more than FILE_IS_ONLINE_RATIO of blocks available,
 	   then assume it is not offline (it may not be 100%, as it could be sparse) */
@@ -181,11 +187,24 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 	memset(&dmname, 0, sizeof(dmname));
 	strlcpy((char *)&dmname.an_chars[0], tsmd->attrib_name, sizeof(dmname.an_chars));
 
+	if (tsmd->attrib_value != NULL) {
+		buflen = strlen(tsmd->attrib_value);
+	} else {
+		buflen = 1;
+	}
+	buf = talloc_zero_size(tsmd, buflen);
+	if (buf == NULL) {
+		DEBUG(0,("out of memory in tsmsm_is_offline -- assuming online (%s)\n", path));
+		errno = ENOMEM;
+		offline = false;
+		goto done;
+	}
+
 	lerrno = 0;
 
 	do {
 		ret = dm_get_dmattr(*dmsession_id, dmhandle, dmhandle_len, 
-				    DM_NO_TOKEN, &dmname, sizeof(buf), buf, &rlen);
+				    DM_NO_TOKEN, &dmname, buflen, buf, &rlen);
 		if (ret == -1 && errno == EINVAL) {
 			DEBUG(0, ("Stale DMAPI session, re-creating it.\n"));
 			lerrno = EINVAL;
@@ -202,8 +221,14 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 		}
 	} while (ret == -1 && lerrno == EINVAL);
 
-	/* its offline if the specified DMAPI attribute exists */
-	offline = (ret == 0 || (ret == -1 && errno == E2BIG));
+	/* check if we need a specific attribute value */
+	if (tsmd->attrib_value != NULL) {
+		offline = (ret == 0 && rlen == buflen && 
+			    memcmp(buf, tsmd->attrib_value, buflen) == 0);
+	} else {
+		/* its offline if the specified DMAPI attribute exists */
+		offline = (ret == 0 || (ret == -1 && errno == E2BIG));
+	}
 
 	DEBUG(10,("dm_get_dmattr %s ret=%d (%s)\n", path, ret, strerror(errno)));
 
@@ -212,6 +237,7 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 	dm_handle_free(dmhandle, dmhandle_len);	
 
 done:
+	talloc_free(buf);
 	unbecome_root();
 	return offline;
 }
