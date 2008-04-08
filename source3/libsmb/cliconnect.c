@@ -1652,6 +1652,11 @@ again:
 	else if (flags & CLI_FULL_CONNECTION_USE_KERBEROS)
 		cli->use_kerberos = True;
 
+	if ((flags & CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS) &&
+	     cli->use_kerberos) {
+		cli->fallback_after_kerberos = true;
+	}
+
 	if (!cli_negprot(cli)) {
 		DEBUG(1,("failed negprot\n"));
 		nt_status = cli_nt_error(cli);
