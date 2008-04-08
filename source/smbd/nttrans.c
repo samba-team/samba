@@ -2978,7 +2978,8 @@ int reply_nttrans(connection_struct *conn,
 	uint32 psoff = IVAL(inbuf,smb_nt_ParameterOffset);
 	uint32 dscnt = IVAL(inbuf,smb_nt_DataCount);
 	uint32 dsoff = IVAL(inbuf,smb_nt_DataOffset);
-	
+	uint32 av_size = size-4;
+
 	uint16 function_code = SVAL( inbuf, smb_nt_Function);
 	NTSTATUS result;
 	struct trans_state *state;
@@ -3049,11 +3050,17 @@ int reply_nttrans(connection_struct *conn,
 			END_PROFILE(SMBnttrans);
 			return(ERROR_DOS(ERRDOS,ERRnomem));
 		} 
-		if ((dsoff+dscnt < dsoff) || (dsoff+dscnt < dscnt))
+
+		if (dscnt > state->total_data ||
+				dsoff+dscnt < dsoff) {
 			goto bad_param;
-		if ((smb_base(inbuf)+dsoff+dscnt > inbuf + size) ||
-		    (smb_base(inbuf)+dsoff+dscnt < smb_base(inbuf)))
+		}
+
+		if (dsoff > av_size ||
+				dscnt > av_size ||
+				dsoff+dscnt > av_size) {
 			goto bad_param;
+		}
 
 		memcpy(state->data,smb_base(inbuf)+dsoff,dscnt);
 	}
@@ -3069,11 +3076,17 @@ int reply_nttrans(connection_struct *conn,
 			END_PROFILE(SMBnttrans);
 			return(ERROR_DOS(ERRDOS,ERRnomem));
 		} 
-		if ((psoff+pscnt < psoff) || (psoff+pscnt < pscnt))
+
+		if (pscnt > state->total_param ||
+				psoff+pscnt < psoff) {
 			goto bad_param;
-		if ((smb_base(inbuf)+psoff+pscnt > inbuf + size) ||
-		    (smb_base(inbuf)+psoff+pscnt < smb_base(inbuf)))
+		}
+
+		if (psoff > av_size ||
+				pscnt > av_size ||
+				psoff+pscnt > av_size) {
 			goto bad_param;
+		}
 
 		memcpy(state->param,smb_base(inbuf)+psoff,pscnt);
 	}
@@ -3144,7 +3157,8 @@ int reply_nttranss(connection_struct *conn,  char *inbuf,char *outbuf,
 		   int size,int bufsize)
 {
 	int outsize = 0;
-	unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
+	uint32_t pcnt,poff,dcnt,doff,pdisp,ddisp;
+	uint32_t av_size = size-4;
 	struct trans_state *state;
 
 	START_PROFILE(SMBnttranss);
@@ -3188,34 +3202,38 @@ int reply_nttranss(connection_struct *conn,  char *inbuf,char *outbuf,
 		goto bad_param;
 
 	if (pcnt) {
-		if (pdisp+pcnt > state->total_param)
+		if (pdisp > state->total_param ||
+				pcnt > state->total_param ||
+				pdisp+pcnt > state->total_param ||
+				pdisp+pcnt < pdisp) {
 			goto bad_param;
-		if ((pdisp+pcnt < pdisp) || (pdisp+pcnt < pcnt))
+		}
+
+		if (poff > av_size ||
+				pcnt > av_size ||
+				poff+pcnt > av_size ||
+				poff+pcnt < poff) {
 			goto bad_param;
-		if (pdisp > state->total_param)
-			goto bad_param;
-		if ((smb_base(inbuf) + poff + pcnt > inbuf + size) ||
-		    (smb_base(inbuf) + poff + pcnt < smb_base(inbuf)))
-			goto bad_param;
-		if (state->param + pdisp < state->param)
-			goto bad_param;
+		}
 
 		memcpy(state->param+pdisp,smb_base(inbuf)+poff,
 		       pcnt);
 	}
 
 	if (dcnt) {
-		if (ddisp+dcnt > state->total_data)
+		if (ddisp > state->total_data ||
+				dcnt > state->total_data ||
+				ddisp+dcnt > state->total_data ||
+				ddisp+dcnt < ddisp) {
 			goto bad_param;
-		if ((ddisp+dcnt < ddisp) || (ddisp+dcnt < dcnt))
+		}
+
+		if (ddisp > av_size ||
+				dcnt > av_size ||
+				ddisp+dcnt > av_size ||
+				ddisp+dcnt < ddisp) {
 			goto bad_param;
-		if (ddisp > state->total_data)
-			goto bad_param;
-		if ((smb_base(inbuf) + doff + dcnt > inbuf + size) ||
-		    (smb_base(inbuf) + doff + dcnt < smb_base(inbuf)))
-			goto bad_param;
-		if (state->data + ddisp < state->data)
-			goto bad_param;
+		}
 
 		memcpy(state->data+ddisp, smb_base(inbuf)+doff,
 		       dcnt);      
