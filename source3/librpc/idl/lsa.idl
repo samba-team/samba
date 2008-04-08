@@ -745,9 +745,9 @@ import "security.idl";
 	/* Function:   0x27 */
 	NTSTATUS lsa_QueryTrustedDomainInfoBySid(
 		[in]               policy_handle         *handle,
-		[in]               dom_sid2              *dom_sid,
-		[in]                   lsa_TrustDomInfoEnum  level, 
-		[out,switch_is(level),unique] lsa_TrustedDomainInfo *info
+		[in,ref]           dom_sid2              *dom_sid,
+		[in]               lsa_TrustDomInfoEnum  level,
+		[out,switch_is(level),ref] lsa_TrustedDomainInfo **info
         );
 
 	/* Function:     0x28 */
