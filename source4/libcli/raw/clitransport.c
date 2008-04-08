@@ -21,12 +21,14 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "lib/socket/socket.h"
 #include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/stream/packet.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
+#include "libcli/nbt/libnbt.h"
 
 
 /*
@@ -322,7 +324,7 @@ static void idle_handler(struct event_context *ev,
   setup the idle handler for a transport
   the period is in microseconds
 */
-void smbcli_transport_idle_handler(struct smbcli_transport *transport, 
+_PUBLIC_ void smbcli_transport_idle_handler(struct smbcli_transport *transport, 
 				   void (*idle_func)(struct smbcli_transport *, void *),
 				   uint64_t period,
 				   void *private)
@@ -502,7 +504,7 @@ error:
   process some read/write requests that are pending
   return false if the socket is dead
 */
-bool smbcli_transport_process(struct smbcli_transport *transport)
+_PUBLIC_ bool smbcli_transport_process(struct smbcli_transport *transport)
 {
 	NTSTATUS status;
 	size_t npending;
@@ -599,7 +601,7 @@ void smbcli_transport_send(struct smbcli_request *req)
 /****************************************************************************
  Send an SMBecho (async send)
 *****************************************************************************/
-struct smbcli_request *smb_raw_echo_send(struct smbcli_transport *transport,
+_PUBLIC_ struct smbcli_request *smb_raw_echo_send(struct smbcli_transport *transport,
 					 struct smb_echo *p)
 {
 	struct smbcli_request *req;

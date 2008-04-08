@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "ntvfs/ntvfs.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "param/param.h"
 
 #define BLOB_CHECK(cmd) do { \

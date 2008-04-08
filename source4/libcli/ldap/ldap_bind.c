@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "libcli/ldap/ldap.h"
+#include "libcli/ldap/ldap_proto.h"
 #include "libcli/ldap/ldap_client.h"
 #include "lib/tls/tls.h"
 #include "auth/gensec/gensec.h"
@@ -35,7 +36,7 @@ struct ldap_simple_creds {
 	const char *pw;
 };
 
-NTSTATUS ldap_rebind(struct ldap_connection *conn)
+_PUBLIC_ NTSTATUS ldap_rebind(struct ldap_connection *conn)
 {
 	NTSTATUS status;
 	struct ldap_simple_creds *creds;
@@ -88,7 +89,7 @@ static struct ldap_message *new_ldap_simple_bind_msg(struct ldap_connection *con
 /*
   perform a simple username/password bind
 */
-NTSTATUS ldap_bind_simple(struct ldap_connection *conn, 
+_PUBLIC_ NTSTATUS ldap_bind_simple(struct ldap_connection *conn, 
 			  const char *userdn, const char *password)
 {
 	struct ldap_request *req;
@@ -199,7 +200,7 @@ static struct ldap_message *new_ldap_sasl_bind_msg(struct ldap_connection *conn,
 /*
   perform a sasl bind using the given credentials
 */
-NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, 
+_PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, 
 			struct cli_credentials *creds,
 			struct loadparm_context *lp_ctx)
 {

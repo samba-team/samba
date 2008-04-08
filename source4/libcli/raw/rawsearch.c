@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 
 /****************************************************************************
  Old style search backend - process output.
@@ -718,7 +719,7 @@ static NTSTATUS smb_raw_t2search_backend(struct smbcli_tree *tree,
 
 /* Implements trans2findfirst2 and old search
  */
-NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
+_PUBLIC_ NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
 			      TALLOC_CTX *mem_ctx,
 			      union smb_search_first *io, void *private,
 			      smbcli_search_callback callback)

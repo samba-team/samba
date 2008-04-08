@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "system/time.h"
 #include "system/wait.h"
 #include "system/filesys.h"

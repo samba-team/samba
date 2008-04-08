@@ -866,6 +866,7 @@ my %property_list = (
 	"nosize"		=> ["FUNCTION", "TYPEDEF"],
 	"noprint"		=> ["FUNCTION", "TYPEDEF"],
 	"noejs"			=> ["FUNCTION", "TYPEDEF"],
+	"todo"			=> ["FUNCTION"],
 
 	# union
 	"switch_is"		=> ["ELEMENT"],

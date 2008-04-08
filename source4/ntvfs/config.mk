@@ -79,7 +79,7 @@ PRIVATE_PROTO_HEADER = ntvfs_proto.h
 
 ntvfs_OBJ_FILES = $(addprefix ntvfs/, ntvfs_base.o ntvfs_generic.o ntvfs_interface.o ntvfs_util.o)
 
-PUBLIC_HEADERS += ntvfs/ntvfs.h
+# PUBLIC_HEADERS += ntvfs/ntvfs.h
 #
 # End SUBSYSTEM NTVFS
 ################################################

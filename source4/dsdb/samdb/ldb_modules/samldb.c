@@ -5,7 +5,7 @@
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
 
    * NOTICE: this module is NOT released under the GNU LGPL license as
-   * other ldb code. This module is release under the GNU GPL v2 or
+   * other ldb code. This module is release under the GNU GPL v3 or
    * later license.
 
    This program is free software; you can redistribute it and/or modify

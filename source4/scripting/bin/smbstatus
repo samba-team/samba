@@ -3,7 +3,7 @@ exec smbscript "$0" ${1+"$@"}
 /*
   provide information on connected users and open files
   Copyright Andrew Tridgell 2005
-  Released under the GNU GPL v2 or later
+  Released under the GNU GPL version 3 or later
 */	
 
 libinclude("base.js");

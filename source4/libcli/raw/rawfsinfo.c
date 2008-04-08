@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 
 /****************************************************************************
@@ -326,7 +327,7 @@ failed:
 /****************************************************************************
  Query FSInfo raw interface (sync interface)
 ****************************************************************************/
-NTSTATUS smb_raw_fsinfo(struct smbcli_tree *tree, 
+_PUBLIC_ NTSTATUS smb_raw_fsinfo(struct smbcli_tree *tree, 
 			TALLOC_CTX *mem_ctx, 
 			union smb_fsinfo *fsinfo)
 {

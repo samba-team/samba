@@ -2,7 +2,7 @@
 	server side js functions for encoding/decoding objects into linear strings
 
 	Copyright Andrew Tridgell 2005
-	released under the GNU GPL Version 2 or later
+	released under the GNU GPL Version 3 or later
 */
 /*
 	usage:

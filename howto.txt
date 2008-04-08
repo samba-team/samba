@@ -16,6 +16,13 @@ aimed at production use of Samba4.
 Step 1: download Samba4
 -----------------------
 
+If you have downloaded the Samba4 code via a tarball released from the
+samba.org website, Step 1 has already been completed for you.  For testing
+with the version released in the tarball, you may continue on to Step 2.  Note
+that the references below to the top-level directory named "samba4" will
+instead be based on the name of the tarball downloaded (e.g.
+"samba-4.0.0alpha3" for the tarball samba-4.0.0alpha3.tar.gz).
+
 There are 2 methods of doing this:
 
   method 1:  "rsync -avz samba.org::ftp/unpacked/samba_4_0_test/ samba4"
@@ -50,10 +57,7 @@ Run this::
 
   $ cd samba4/source
   $ ./configure
-  $ make proto all
-
-If you have gcc 3.4 or newer, then substitute "pch" for "proto" to
-greatly speed up the compile process (about 5x faster).
+  $ make
 
 Step 3: install Samba4
 ----------------------
@@ -120,13 +124,9 @@ in your $PATH. Make sure you run the right version!
 Step 7: testing Samba4
 ----------------------
 
-try these commands::
+try this command::
 
   $ smbclient //localhost/test -Uadministrator%SOMEPASSWORD
-
-or::
-
-  $ ./script/tests/test_posix.sh //localhost/test administrator SOMEPASSWORD
 
 
 NOTE about filesystem support

@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libcli/nbt/libnbt.h"
+#include "libcli/nbt/nbt_proto.h"
 #include "libcli/composite/composite.h"
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
@@ -94,7 +95,7 @@ failed:
 /*
   wait for a registration reply
 */
-NTSTATUS nbt_name_register_recv(struct nbt_name_request *req, 
+_PUBLIC_ NTSTATUS nbt_name_register_recv(struct nbt_name_request *req, 
 				TALLOC_CTX *mem_ctx, struct nbt_name_register *io)
 {
 	NTSTATUS status;
@@ -136,7 +137,7 @@ NTSTATUS nbt_name_register_recv(struct nbt_name_request *req,
 /*
   synchronous name registration request
 */
-NTSTATUS nbt_name_register(struct nbt_name_socket *nbtsock, 
+_PUBLIC_ NTSTATUS nbt_name_register(struct nbt_name_socket *nbtsock, 
 			   TALLOC_CTX *mem_ctx, struct nbt_name_register *io)
 {
 	struct nbt_name_request *req = nbt_name_register_send(nbtsock, io);
@@ -207,7 +208,7 @@ done:
 /*
   the async send call for a 4 stage name registration
 */
-struct composite_context *nbt_name_register_bcast_send(struct nbt_name_socket *nbtsock,
+_PUBLIC_ struct composite_context *nbt_name_register_bcast_send(struct nbt_name_socket *nbtsock,
 						       struct nbt_name_register_bcast *io)
 {
 	struct composite_context *c;
@@ -256,7 +257,7 @@ failed:
 /*
   broadcast 4 part name register - recv
 */
-NTSTATUS nbt_name_register_bcast_recv(struct composite_context *c)
+_PUBLIC_ NTSTATUS nbt_name_register_bcast_recv(struct composite_context *c)
 {
 	NTSTATUS status;
 	status = composite_wait(c);
@@ -355,7 +356,7 @@ done:
 /*
   the async send call for a multi-server WINS register
 */
-struct composite_context *nbt_name_register_wins_send(struct nbt_name_socket *nbtsock,
+_PUBLIC_ struct composite_context *nbt_name_register_wins_send(struct nbt_name_socket *nbtsock,
 						      struct nbt_name_register_wins *io)
 {
 	struct composite_context *c;
@@ -414,7 +415,7 @@ failed:
 /*
   multi-homed WINS name register - recv side
 */
-NTSTATUS nbt_name_register_wins_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+_PUBLIC_ NTSTATUS nbt_name_register_wins_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 				     struct nbt_name_register_wins *io)
 {
 	NTSTATUS status;
@@ -432,7 +433,7 @@ NTSTATUS nbt_name_register_wins_recv(struct composite_context *c, TALLOC_CTX *me
 /*
   multi-homed WINS register - sync interface
 */
-NTSTATUS nbt_name_register_wins(struct nbt_name_socket *nbtsock,
+_PUBLIC_ NTSTATUS nbt_name_register_wins(struct nbt_name_socket *nbtsock,
 				TALLOC_CTX *mem_ctx,
 				struct nbt_name_register_wins *io)
 {

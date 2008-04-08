@@ -9,10 +9,9 @@ LIBCLI_LDAP_OBJ_FILES = $(addprefix libcli/ldap/, \
 					   ldap_msg.o ldap_ildap.o ldap_controls.o)
 
 
-PUBLIC_HEADERS += libcli/ldap/ldap.h
+PUBLIC_HEADERS += libcli/ldap/ldap.h libcli/ldap/ldap_ndr.h
 
 [SUBSYSTEM::LDAP_ENCODE]
-PRIVATE_PROTO_HEADER = ldap_ndr.h
 # FIXME PRIVATE_DEPENDENCIES = LIBLDB
 
 LDAP_ENCODE_OBJ_FILES = libcli/ldap/ldap_ndr.o

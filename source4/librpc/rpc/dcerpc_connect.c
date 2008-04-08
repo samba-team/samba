@@ -30,6 +30,7 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "librpc/rpc/dcerpc.h"
+#include "librpc/rpc/dcerpc_proto.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
@@ -705,7 +706,7 @@ static void dcerpc_connect_timeout_handler(struct event_context *ev, struct time
   start a request to open a rpc connection to a rpc pipe, using
   specified binding structure to determine the endpoint and options
 */
-struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
+_PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
 						     struct dcerpc_binding *binding,
 						     const struct ndr_interface_table *table,
 						     struct cli_credentials *credentials,
@@ -782,7 +783,7 @@ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
 /*
   receive result of a request to open a rpc connection to a rpc pipe
 */
-NTSTATUS dcerpc_pipe_connect_b_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+_PUBLIC_ NTSTATUS dcerpc_pipe_connect_b_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 				    struct dcerpc_pipe **p)
 {
 	NTSTATUS status;
@@ -804,7 +805,7 @@ NTSTATUS dcerpc_pipe_connect_b_recv(struct composite_context *c, TALLOC_CTX *mem
   open a rpc connection to a rpc pipe, using the specified 
   binding structure to determine the endpoint and options - sync version
 */
-NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
+_PUBLIC_ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 			       struct dcerpc_pipe **pp,
 			       struct dcerpc_binding *binding,
 			       const struct ndr_interface_table *table,
@@ -833,7 +834,7 @@ static void continue_pipe_connect_b(struct composite_context *ctx);
   binding to determine the endpoint and options.
   The string is to be parsed to a binding structure first.
 */
-struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,
+_PUBLIC_ struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,
 						   const char *binding,
 						   const struct ndr_interface_table *table,
 						   struct cli_credentials *credentials,
@@ -928,7 +929,7 @@ NTSTATUS dcerpc_pipe_connect_recv(struct composite_context *c,
   Open a rpc connection to a rpc pipe, using the specified string
   binding to determine the endpoint and options - sync version
 */
-NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, 
+_PUBLIC_ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, 
 			     struct dcerpc_pipe **pp, 
 			     const char *binding,
 			     const struct ndr_interface_table *table,

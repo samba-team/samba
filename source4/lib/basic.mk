@@ -27,7 +27,7 @@ PRIVATE_DEPENDENCIES = TDB_WRAP
 
 GENCACHE_OBJ_FILES = gencache/gencache.o
 
-PUBLIC_HEADERS += lib/gencache/gencache.h
+# PUBLIC_HEADERS += lib/gencache/gencache.h
 
 [SUBSYSTEM::LDB_WRAP]
 PUBLIC_DEPENDENCIES = LIBLDB

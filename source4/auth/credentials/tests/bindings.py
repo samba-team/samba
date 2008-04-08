@@ -67,6 +67,8 @@ class CredentialsTests(unittest.TestCase):
         self.assertTrue(self.creds.is_anonymous())
         self.creds.set_username("somebody")
         self.assertFalse(self.creds.is_anonymous())
+        self.creds.set_anonymous()
+        self.assertTrue(self.creds.is_anonymous())
 
     def test_workstation(self):
         # FIXME: This is uninitialised, it should be None

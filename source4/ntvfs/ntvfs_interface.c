@@ -22,7 +22,7 @@
 #include "ntvfs/ntvfs.h"
 
 /* connect/disconnect */
-_PUBLIC_ NTSTATUS ntvfs_connect(struct ntvfs_request *req, const char *sharename)
+NTSTATUS ntvfs_connect(struct ntvfs_request *req, const char *sharename)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->connect) {
@@ -31,7 +31,7 @@ _PUBLIC_ NTSTATUS ntvfs_connect(struct ntvfs_request *req, const char *sharename
 	return ntvfs->ops->connect(ntvfs, req, sharename);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_disconnect(struct ntvfs_context *ntvfs_ctx)
+NTSTATUS ntvfs_disconnect(struct ntvfs_context *ntvfs_ctx)
 {
 	struct ntvfs_module_context *ntvfs;
 	if (ntvfs_ctx == NULL) {
@@ -46,7 +46,7 @@ _PUBLIC_ NTSTATUS ntvfs_disconnect(struct ntvfs_context *ntvfs_ctx)
 
 /* async setup - called by a backend that wants to setup any state for
    a async request */
-_PUBLIC_ NTSTATUS ntvfs_async_setup(struct ntvfs_request *req, void *private)
+NTSTATUS ntvfs_async_setup(struct ntvfs_request *req, void *private)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->async_setup) {
@@ -56,7 +56,7 @@ _PUBLIC_ NTSTATUS ntvfs_async_setup(struct ntvfs_request *req, void *private)
 }
 
 /* filesystem operations */
-_PUBLIC_ NTSTATUS ntvfs_fsinfo(struct ntvfs_request *req, union smb_fsinfo *fs)
+NTSTATUS ntvfs_fsinfo(struct ntvfs_request *req, union smb_fsinfo *fs)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->fsinfo) {
@@ -66,7 +66,7 @@ _PUBLIC_ NTSTATUS ntvfs_fsinfo(struct ntvfs_request *req, union smb_fsinfo *fs)
 }
 
 /* path operations */
-_PUBLIC_ NTSTATUS ntvfs_unlink(struct ntvfs_request *req, union smb_unlink *unl)
+NTSTATUS ntvfs_unlink(struct ntvfs_request *req, union smb_unlink *unl)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->unlink) {
@@ -75,7 +75,7 @@ _PUBLIC_ NTSTATUS ntvfs_unlink(struct ntvfs_request *req, union smb_unlink *unl)
 	return ntvfs->ops->unlink(ntvfs, req, unl);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_chkpath(struct ntvfs_request *req, union smb_chkpath *cp)
+NTSTATUS ntvfs_chkpath(struct ntvfs_request *req, union smb_chkpath *cp)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->chkpath) {
@@ -84,7 +84,7 @@ _PUBLIC_ NTSTATUS ntvfs_chkpath(struct ntvfs_request *req, union smb_chkpath *cp
 	return ntvfs->ops->chkpath(ntvfs, req, cp);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_qpathinfo(struct ntvfs_request *req, union smb_fileinfo *st)
+NTSTATUS ntvfs_qpathinfo(struct ntvfs_request *req, union smb_fileinfo *st)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->qpathinfo) {
@@ -93,7 +93,7 @@ _PUBLIC_ NTSTATUS ntvfs_qpathinfo(struct ntvfs_request *req, union smb_fileinfo 
 	return ntvfs->ops->qpathinfo(ntvfs, req, st);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_setpathinfo(struct ntvfs_request *req, union smb_setfileinfo *st)
+NTSTATUS ntvfs_setpathinfo(struct ntvfs_request *req, union smb_setfileinfo *st)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->setpathinfo) {
@@ -102,7 +102,7 @@ _PUBLIC_ NTSTATUS ntvfs_setpathinfo(struct ntvfs_request *req, union smb_setfile
 	return ntvfs->ops->setpathinfo(ntvfs, req, st);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_open(struct ntvfs_request *req, union smb_open *oi)
+NTSTATUS ntvfs_open(struct ntvfs_request *req, union smb_open *oi)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->open) {
@@ -111,7 +111,7 @@ _PUBLIC_ NTSTATUS ntvfs_open(struct ntvfs_request *req, union smb_open *oi)
 	return ntvfs->ops->open(ntvfs, req, oi);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_mkdir(struct ntvfs_request *req, union smb_mkdir *md)
+NTSTATUS ntvfs_mkdir(struct ntvfs_request *req, union smb_mkdir *md)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->mkdir) {
@@ -120,7 +120,7 @@ _PUBLIC_ NTSTATUS ntvfs_mkdir(struct ntvfs_request *req, union smb_mkdir *md)
 	return ntvfs->ops->mkdir(ntvfs, req, md);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_rmdir(struct ntvfs_request *req, struct smb_rmdir *rd)
+NTSTATUS ntvfs_rmdir(struct ntvfs_request *req, struct smb_rmdir *rd)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->rmdir) {
@@ -129,7 +129,7 @@ _PUBLIC_ NTSTATUS ntvfs_rmdir(struct ntvfs_request *req, struct smb_rmdir *rd)
 	return ntvfs->ops->rmdir(ntvfs, req, rd);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_rename(struct ntvfs_request *req, union smb_rename *ren)
+NTSTATUS ntvfs_rename(struct ntvfs_request *req, union smb_rename *ren)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->rename) {
@@ -138,7 +138,7 @@ _PUBLIC_ NTSTATUS ntvfs_rename(struct ntvfs_request *req, union smb_rename *ren)
 	return ntvfs->ops->rename(ntvfs, req, ren);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_copy(struct ntvfs_request *req, struct smb_copy *cp)
+NTSTATUS ntvfs_copy(struct ntvfs_request *req, struct smb_copy *cp)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->copy) {
@@ -148,7 +148,7 @@ _PUBLIC_ NTSTATUS ntvfs_copy(struct ntvfs_request *req, struct smb_copy *cp)
 }
 
 /* directory search */
-_PUBLIC_ NTSTATUS ntvfs_search_first(struct ntvfs_request *req, union smb_search_first *io, void *private,
+NTSTATUS ntvfs_search_first(struct ntvfs_request *req, union smb_search_first *io, void *private,
 				     bool ntvfs_callback(void *private, const union smb_search_data *file))
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
@@ -158,7 +158,7 @@ _PUBLIC_ NTSTATUS ntvfs_search_first(struct ntvfs_request *req, union smb_search
 	return ntvfs->ops->search_first(ntvfs, req, io, private, ntvfs_callback);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_search_next(struct ntvfs_request *req, union smb_search_next *io, void *private,
+NTSTATUS ntvfs_search_next(struct ntvfs_request *req, union smb_search_next *io, void *private,
 				    bool ntvfs_callback(void *private, const union smb_search_data *file))
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
@@ -168,7 +168,7 @@ _PUBLIC_ NTSTATUS ntvfs_search_next(struct ntvfs_request *req, union smb_search_
 	return ntvfs->ops->search_next(ntvfs, req, io, private, ntvfs_callback);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_search_close(struct ntvfs_request *req, union smb_search_close *io)
+NTSTATUS ntvfs_search_close(struct ntvfs_request *req, union smb_search_close *io)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->search_close) {
@@ -178,7 +178,7 @@ _PUBLIC_ NTSTATUS ntvfs_search_close(struct ntvfs_request *req, union smb_search
 }
 
 /* operations on open files */
-_PUBLIC_ NTSTATUS ntvfs_ioctl(struct ntvfs_request *req, union smb_ioctl *io)
+NTSTATUS ntvfs_ioctl(struct ntvfs_request *req, union smb_ioctl *io)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->ioctl) {
@@ -187,7 +187,7 @@ _PUBLIC_ NTSTATUS ntvfs_ioctl(struct ntvfs_request *req, union smb_ioctl *io)
 	return ntvfs->ops->ioctl(ntvfs, req, io);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_read(struct ntvfs_request *req, union smb_read *io)
+NTSTATUS ntvfs_read(struct ntvfs_request *req, union smb_read *io)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->read) {
@@ -196,7 +196,7 @@ _PUBLIC_ NTSTATUS ntvfs_read(struct ntvfs_request *req, union smb_read *io)
 	return ntvfs->ops->read(ntvfs, req, io);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_write(struct ntvfs_request *req, union smb_write *io)
+NTSTATUS ntvfs_write(struct ntvfs_request *req, union smb_write *io)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->write) {
@@ -205,7 +205,7 @@ _PUBLIC_ NTSTATUS ntvfs_write(struct ntvfs_request *req, union smb_write *io)
 	return ntvfs->ops->write(ntvfs, req, io);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_seek(struct ntvfs_request *req, union smb_seek *io)
+NTSTATUS ntvfs_seek(struct ntvfs_request *req, union smb_seek *io)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->seek) {
@@ -214,7 +214,7 @@ _PUBLIC_ NTSTATUS ntvfs_seek(struct ntvfs_request *req, union smb_seek *io)
 	return ntvfs->ops->seek(ntvfs, req, io);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_flush(struct ntvfs_request *req,
+NTSTATUS ntvfs_flush(struct ntvfs_request *req,
 			      union smb_flush *flush)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
@@ -224,7 +224,7 @@ _PUBLIC_ NTSTATUS ntvfs_flush(struct ntvfs_request *req,
 	return ntvfs->ops->flush(ntvfs, req, flush);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_lock(struct ntvfs_request *req, union smb_lock *lck)
+NTSTATUS ntvfs_lock(struct ntvfs_request *req, union smb_lock *lck)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->lock) {
@@ -233,7 +233,7 @@ _PUBLIC_ NTSTATUS ntvfs_lock(struct ntvfs_request *req, union smb_lock *lck)
 	return ntvfs->ops->lock(ntvfs, req, lck);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_qfileinfo(struct ntvfs_request *req, union smb_fileinfo *info)
+NTSTATUS ntvfs_qfileinfo(struct ntvfs_request *req, union smb_fileinfo *info)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->qfileinfo) {
@@ -242,7 +242,7 @@ _PUBLIC_ NTSTATUS ntvfs_qfileinfo(struct ntvfs_request *req, union smb_fileinfo 
 	return ntvfs->ops->qfileinfo(ntvfs, req, info);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_setfileinfo(struct ntvfs_request *req, union smb_setfileinfo *info)
+NTSTATUS ntvfs_setfileinfo(struct ntvfs_request *req, union smb_setfileinfo *info)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->setfileinfo) {
@@ -251,7 +251,7 @@ _PUBLIC_ NTSTATUS ntvfs_setfileinfo(struct ntvfs_request *req, union smb_setfile
 	return ntvfs->ops->setfileinfo(ntvfs, req, info);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_close(struct ntvfs_request *req, union smb_close *io)
+NTSTATUS ntvfs_close(struct ntvfs_request *req, union smb_close *io)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->close) {
@@ -261,7 +261,7 @@ _PUBLIC_ NTSTATUS ntvfs_close(struct ntvfs_request *req, union smb_close *io)
 }
 
 /* trans interface - used by IPC backend for pipes and RAP calls */
-_PUBLIC_ NTSTATUS ntvfs_trans(struct ntvfs_request *req, struct smb_trans2 *trans)
+NTSTATUS ntvfs_trans(struct ntvfs_request *req, struct smb_trans2 *trans)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->trans) {
@@ -271,7 +271,7 @@ _PUBLIC_ NTSTATUS ntvfs_trans(struct ntvfs_request *req, struct smb_trans2 *tran
 }
 
 /* trans2 interface - only used by CIFS backend to prover complete passthru for testing */
-_PUBLIC_ NTSTATUS ntvfs_trans2(struct ntvfs_request *req, struct smb_trans2 *trans2)
+NTSTATUS ntvfs_trans2(struct ntvfs_request *req, struct smb_trans2 *trans2)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->trans2) {
@@ -281,7 +281,7 @@ _PUBLIC_ NTSTATUS ntvfs_trans2(struct ntvfs_request *req, struct smb_trans2 *tra
 }
 
 /* printing specific operations */
-_PUBLIC_ NTSTATUS ntvfs_lpq(struct ntvfs_request *req, union smb_lpq *lpq)
+NTSTATUS ntvfs_lpq(struct ntvfs_request *req, union smb_lpq *lpq)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->lpq) {
@@ -291,7 +291,7 @@ _PUBLIC_ NTSTATUS ntvfs_lpq(struct ntvfs_request *req, union smb_lpq *lpq)
 }
 
 /* logoff - called when a vuid is closed */
-_PUBLIC_ NTSTATUS ntvfs_logoff(struct ntvfs_request *req)
+NTSTATUS ntvfs_logoff(struct ntvfs_request *req)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->logoff) {
@@ -300,7 +300,7 @@ _PUBLIC_ NTSTATUS ntvfs_logoff(struct ntvfs_request *req)
 	return ntvfs->ops->logoff(ntvfs, req);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_exit(struct ntvfs_request *req)
+NTSTATUS ntvfs_exit(struct ntvfs_request *req)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->exit) {
@@ -312,7 +312,7 @@ _PUBLIC_ NTSTATUS ntvfs_exit(struct ntvfs_request *req)
 /*
   change notify request
 */
-_PUBLIC_ NTSTATUS ntvfs_notify(struct ntvfs_request *req, union smb_notify *info)
+NTSTATUS ntvfs_notify(struct ntvfs_request *req, union smb_notify *info)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->notify) {
@@ -324,7 +324,7 @@ _PUBLIC_ NTSTATUS ntvfs_notify(struct ntvfs_request *req, union smb_notify *info
 /*
   cancel an outstanding async request
 */
-_PUBLIC_ NTSTATUS ntvfs_cancel(struct ntvfs_request *req)
+NTSTATUS ntvfs_cancel(struct ntvfs_request *req)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->cancel) {
@@ -334,7 +334,7 @@ _PUBLIC_ NTSTATUS ntvfs_cancel(struct ntvfs_request *req)
 }
 
 /* initial setup */
-_PUBLIC_ NTSTATUS ntvfs_next_connect(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_connect(struct ntvfs_module_context *ntvfs, 
 				     struct ntvfs_request *req, const char *sharename)
 {
 	if (!ntvfs->next || !ntvfs->next->ops->connect) {
@@ -343,7 +343,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_connect(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->connect(ntvfs->next, req, sharename);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_disconnect(struct ntvfs_module_context *ntvfs)
+NTSTATUS ntvfs_next_disconnect(struct ntvfs_module_context *ntvfs)
 {
 	if (!ntvfs->next || !ntvfs->next->ops->disconnect) {
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -352,7 +352,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_disconnect(struct ntvfs_module_context *ntvfs)
 }
 
 /* async_setup - called when setting up for a async request */
-_PUBLIC_ NTSTATUS ntvfs_next_async_setup(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_async_setup(struct ntvfs_module_context *ntvfs, 
 					 struct ntvfs_request *req, 
 					 void *private)
 {
@@ -363,7 +363,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_async_setup(struct ntvfs_module_context *ntvfs,
 }
 
 /* filesystem operations */
-_PUBLIC_ NTSTATUS ntvfs_next_fsinfo(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_fsinfo(struct ntvfs_module_context *ntvfs, 
 				    struct ntvfs_request *req,
 				    union smb_fsinfo *fs)
 {
@@ -374,7 +374,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_fsinfo(struct ntvfs_module_context *ntvfs,
 }
 
 /* path operations */
-_PUBLIC_ NTSTATUS ntvfs_next_unlink(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_unlink(struct ntvfs_module_context *ntvfs, 
 				    struct ntvfs_request *req,
 				    union smb_unlink *unl)
 {
@@ -384,7 +384,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_unlink(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->unlink(ntvfs->next, req, unl);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_chkpath(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_chkpath(struct ntvfs_module_context *ntvfs, 
 				     struct ntvfs_request *req,
 				     union smb_chkpath *cp)
 {
@@ -394,7 +394,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_chkpath(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->chkpath(ntvfs->next, req, cp);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_qpathinfo(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_qpathinfo(struct ntvfs_module_context *ntvfs, 
 				       struct ntvfs_request *req,
 				       union smb_fileinfo *st)
 {
@@ -404,7 +404,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_qpathinfo(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->qpathinfo(ntvfs->next, req, st);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_setpathinfo(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_setpathinfo(struct ntvfs_module_context *ntvfs, 
 					 struct ntvfs_request *req,
 					 union smb_setfileinfo *st)
 {
@@ -414,7 +414,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_setpathinfo(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->setpathinfo(ntvfs->next, req, st);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_mkdir(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_mkdir(struct ntvfs_module_context *ntvfs, 
 				   struct ntvfs_request *req,
 				   union smb_mkdir *md)
 {
@@ -424,7 +424,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_mkdir(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->mkdir(ntvfs->next, req, md);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_rmdir(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_rmdir(struct ntvfs_module_context *ntvfs, 
 				   struct ntvfs_request *req,
 				   struct smb_rmdir *rd)
 {
@@ -434,7 +434,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_rmdir(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->rmdir(ntvfs->next, req, rd);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_rename(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_rename(struct ntvfs_module_context *ntvfs, 
 				    struct ntvfs_request *req,
 				    union smb_rename *ren)
 {
@@ -444,7 +444,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_rename(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->rename(ntvfs->next, req, ren);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_copy(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_copy(struct ntvfs_module_context *ntvfs, 
 				  struct ntvfs_request *req,
 				  struct smb_copy *cp)
 {
@@ -454,7 +454,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_copy(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->copy(ntvfs->next, req, cp);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_open(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_open(struct ntvfs_module_context *ntvfs, 
 				  struct ntvfs_request *req,
 				  union smb_open *oi)
 {
@@ -466,7 +466,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_open(struct ntvfs_module_context *ntvfs,
 
 
 /* directory search */
-_PUBLIC_ NTSTATUS ntvfs_next_search_first(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_search_first(struct ntvfs_module_context *ntvfs, 
 					  struct ntvfs_request *req,
 					  union smb_search_first *io, void *private,
 					  bool (*callback)(void *private, const union smb_search_data *file))
@@ -477,7 +477,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_search_first(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->search_first(ntvfs->next, req, io, private, callback);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_search_next(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_search_next(struct ntvfs_module_context *ntvfs, 
 					 struct ntvfs_request *req,
 					 union smb_search_next *io, void *private,
 					 bool (*callback)(void *private, const union smb_search_data *file))
@@ -488,7 +488,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_search_next(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->search_next(ntvfs->next, req, io, private, callback);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_search_close(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_search_close(struct ntvfs_module_context *ntvfs, 
 					  struct ntvfs_request *req,
 					  union smb_search_close *io)
 {
@@ -499,7 +499,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_search_close(struct ntvfs_module_context *ntvfs,
 }
 
 /* operations on open files */
-_PUBLIC_ NTSTATUS ntvfs_next_ioctl(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_ioctl(struct ntvfs_module_context *ntvfs, 
 				   struct ntvfs_request *req,
 				   union smb_ioctl *io)
 {
@@ -509,7 +509,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_ioctl(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->ioctl(ntvfs->next, req, io);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_read(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_read(struct ntvfs_module_context *ntvfs, 
 				  struct ntvfs_request *req,
 				  union smb_read *io)
 {
@@ -519,7 +519,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_read(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->read(ntvfs->next, req, io);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_write(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_write(struct ntvfs_module_context *ntvfs, 
 				   struct ntvfs_request *req,
 				   union smb_write *io)
 {
@@ -529,7 +529,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_write(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->write(ntvfs->next, req, io);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_seek(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_seek(struct ntvfs_module_context *ntvfs, 
 				  struct ntvfs_request *req,
 				  union smb_seek *io)
 {
@@ -539,7 +539,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_seek(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->seek(ntvfs->next, req, io);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_flush(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_flush(struct ntvfs_module_context *ntvfs, 
 				   struct ntvfs_request *req,
 				   union smb_flush *flush)
 {
@@ -549,7 +549,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_flush(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->flush(ntvfs->next, req, flush);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_lock(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_lock(struct ntvfs_module_context *ntvfs, 
 				  struct ntvfs_request *req,
 				  union smb_lock *lck)
 {
@@ -559,7 +559,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_lock(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->lock(ntvfs->next, req, lck);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_qfileinfo(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_qfileinfo(struct ntvfs_module_context *ntvfs, 
 				       struct ntvfs_request *req,
 				       union smb_fileinfo *info)
 {
@@ -569,7 +569,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_qfileinfo(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->qfileinfo(ntvfs->next, req, info);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_setfileinfo(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_setfileinfo(struct ntvfs_module_context *ntvfs, 
 					 struct ntvfs_request *req,
 					 union smb_setfileinfo *info)
 {
@@ -579,7 +579,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_setfileinfo(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->setfileinfo(ntvfs->next, req, info);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_close(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_close(struct ntvfs_module_context *ntvfs, 
 				   struct ntvfs_request *req,
 				   union smb_close *io)
 {
@@ -590,7 +590,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_close(struct ntvfs_module_context *ntvfs,
 }
 
 /* trans interface - used by IPC backend for pipes and RAP calls */
-_PUBLIC_ NTSTATUS ntvfs_next_trans(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_trans(struct ntvfs_module_context *ntvfs, 
 				   struct ntvfs_request *req,
 				   struct smb_trans2 *trans)
 {
@@ -601,7 +601,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_trans(struct ntvfs_module_context *ntvfs,
 }
 
 /* trans2 interface - only used by CIFS backend to prover complete passthru for testing */
-_PUBLIC_ NTSTATUS ntvfs_next_trans2(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_trans2(struct ntvfs_module_context *ntvfs, 
 				    struct ntvfs_request *req,
 				    struct smb_trans2 *trans2)
 {
@@ -614,7 +614,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_trans2(struct ntvfs_module_context *ntvfs,
 /*
   change notify request
 */
-_PUBLIC_ NTSTATUS ntvfs_next_notify(struct ntvfs_module_context *ntvfs,
+NTSTATUS ntvfs_next_notify(struct ntvfs_module_context *ntvfs,
 				    struct ntvfs_request *req,
 				    union smb_notify *info)
 {
@@ -625,7 +625,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_notify(struct ntvfs_module_context *ntvfs,
 }
 
 /* cancel - called to cancel an outstanding async request */
-_PUBLIC_ NTSTATUS ntvfs_next_cancel(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_cancel(struct ntvfs_module_context *ntvfs, 
 				    struct ntvfs_request *req)
 {
 	if (!ntvfs->next || !ntvfs->next->ops->cancel) {
@@ -635,7 +635,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_cancel(struct ntvfs_module_context *ntvfs,
 }
 
 /* printing specific operations */
-_PUBLIC_ NTSTATUS ntvfs_next_lpq(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_lpq(struct ntvfs_module_context *ntvfs, 
 				 struct ntvfs_request *req,
 				 union smb_lpq *lpq)
 {
@@ -647,7 +647,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_lpq(struct ntvfs_module_context *ntvfs,
 
 
 /* logoff - called when a vuid is closed */
-_PUBLIC_ NTSTATUS ntvfs_next_logoff(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_logoff(struct ntvfs_module_context *ntvfs, 
 				    struct ntvfs_request *req)
 {
 	if (!ntvfs->next || !ntvfs->next->ops->logoff) {
@@ -656,7 +656,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_logoff(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->logoff(ntvfs->next, req);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_next_exit(struct ntvfs_module_context *ntvfs, 
+NTSTATUS ntvfs_next_exit(struct ntvfs_module_context *ntvfs, 
 				  struct ntvfs_request *req)
 {
 	if (!ntvfs->next || !ntvfs->next->ops->exit) {
@@ -666,7 +666,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_exit(struct ntvfs_module_context *ntvfs,
 }
 
 /* oplock helpers */
-_PUBLIC_ NTSTATUS ntvfs_set_oplock_handler(struct ntvfs_context *ntvfs,
+NTSTATUS ntvfs_set_oplock_handler(struct ntvfs_context *ntvfs,
 					   NTSTATUS (*handler)(void *private_data, struct ntvfs_handle *handle, uint8_t level),
 					   void *private_data)
 {
@@ -675,7 +675,7 @@ _PUBLIC_ NTSTATUS ntvfs_set_oplock_handler(struct ntvfs_context *ntvfs,
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_ NTSTATUS ntvfs_send_oplock_break(struct ntvfs_module_context *ntvfs,
+NTSTATUS ntvfs_send_oplock_break(struct ntvfs_module_context *ntvfs,
 					  struct ntvfs_handle *handle, uint8_t level)
 {
 	if (!ntvfs->ctx->oplock.handler) {
@@ -686,7 +686,7 @@ _PUBLIC_ NTSTATUS ntvfs_send_oplock_break(struct ntvfs_module_context *ntvfs,
 }
 
 /* client connection callback */
-_PUBLIC_ NTSTATUS ntvfs_set_addr_callbacks(struct ntvfs_context *ntvfs,
+NTSTATUS ntvfs_set_addr_callbacks(struct ntvfs_context *ntvfs,
 					   struct socket_address *(*my_addr)(void *private_data, TALLOC_CTX *mem_ctx),
 					   struct socket_address *(*peer_addr)(void *private_data, TALLOC_CTX *mem_ctx),
 					   void *private_data)
@@ -697,7 +697,7 @@ _PUBLIC_ NTSTATUS ntvfs_set_addr_callbacks(struct ntvfs_context *ntvfs,
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_ struct socket_address *ntvfs_get_my_addr(struct ntvfs_module_context *ntvfs, TALLOC_CTX *mem_ctx)
+struct socket_address *ntvfs_get_my_addr(struct ntvfs_module_context *ntvfs, TALLOC_CTX *mem_ctx)
 {
 	if (!ntvfs->ctx->client.get_my_addr) {
 		return NULL;
@@ -706,7 +706,7 @@ _PUBLIC_ struct socket_address *ntvfs_get_my_addr(struct ntvfs_module_context *n
 	return ntvfs->ctx->client.get_my_addr(ntvfs->ctx->client.private_data, mem_ctx);
 }
 
-_PUBLIC_ struct socket_address *ntvfs_get_peer_addr(struct ntvfs_module_context *ntvfs, TALLOC_CTX *mem_ctx)
+struct socket_address *ntvfs_get_peer_addr(struct ntvfs_module_context *ntvfs, TALLOC_CTX *mem_ctx)
 {
 	if (!ntvfs->ctx->client.get_peer_addr) {
 		return NULL;

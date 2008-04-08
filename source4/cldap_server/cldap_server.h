@@ -29,4 +29,6 @@ struct cldapd_server {
 	struct ldb_context *samctx;
 };
 
+struct ldap_SearchRequest;
+
 #include "cldap_server/proto.h"

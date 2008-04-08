@@ -23,6 +23,7 @@
 #include "scripting/ejs/smbcalls.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/ndr/libndr.h"
 
 /*
   usage:

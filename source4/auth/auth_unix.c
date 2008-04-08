@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "auth/auth_proto.h"
 #include "system/passwd.h" /* needed by some systems for struct passwd */
 #include "lib/socket/socket.h" 
 #include "auth/pam_errors.h"

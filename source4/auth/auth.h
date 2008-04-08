@@ -190,6 +190,63 @@ struct auth_critical_sizes {
 
 #include "auth/session.h"
 #include "auth/system_session_proto.h"
-#include "auth/auth_proto.h"
+
+struct ldb_message;
+struct ldb_context;
+NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, const uint8_t **_chal);
+NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
+			    struct ldb_context *sam_ctx,
+			    uint32_t logon_parameters,
+			    struct ldb_message *msg,
+			    struct ldb_message *msg_domain_ref,
+			    const char *logon_workstation,
+			    const char *name_for_logs);
+struct auth_session_info *system_session(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
+NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
+					   const char *netbios_name,
+					   struct ldb_message *msg,
+					   struct ldb_message *msg_domain_ref,
+					   DATA_BLOB user_sess_key, DATA_BLOB lm_sess_key,
+					   struct auth_serversupplied_info **_server_info);
+NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx, 
+					   struct loadparm_context *lp_ctx,
+					   struct auth_session_info **_session_info) ;
+NTSTATUS auth_nt_status_squash(NTSTATUS nt_status);
+
+NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods, 
+				     struct event_context *ev,
+				     struct messaging_context *msg,
+				     struct loadparm_context *lp_ctx,
+				     struct auth_context **auth_ctx);
+
+NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx, 
+			     struct event_context *ev,
+			     struct messaging_context *msg,
+			     struct loadparm_context *lp_ctx,
+			     struct auth_context **auth_ctx);
+
+NTSTATUS auth_check_password(struct auth_context *auth_ctx,
+			     TALLOC_CTX *mem_ctx,
+			     const struct auth_usersupplied_info *user_info, 
+			     struct auth_serversupplied_info **server_info);
+NTSTATUS auth_init(void);
+NTSTATUS auth_register(const struct auth_operations *ops);
+NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
+					   struct event_context *ev,
+					   struct messaging_context *msg,
+					   struct loadparm_context *lp_ctx,
+					   const char *nt4_domain,
+					   const char *nt4_username,
+					   const char *password,
+					   struct auth_session_info **session_info);
+NTSTATUS auth_check_password_recv(struct auth_check_password_request *req,
+				  TALLOC_CTX *mem_ctx,
+				  struct auth_serversupplied_info **server_info);
+
+void auth_check_password_send(struct auth_context *auth_ctx,
+			      const struct auth_usersupplied_info *user_info,
+			      void (*callback)(struct auth_check_password_request *req, void *private_data),
+			      void *private_data);
+NTSTATUS auth_context_set_challenge(struct auth_context *auth_ctx, const uint8_t chal[8], const char *set_by);
 
 #endif /* _SMBAUTH_H_ */

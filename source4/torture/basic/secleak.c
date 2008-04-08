@@ -22,10 +22,12 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
 #include "system/time.h"
 #include "libcli/smb_composite/smb_composite.h"
+#include "libcli/smb_composite/proto.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 

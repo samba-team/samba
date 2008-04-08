@@ -32,7 +32,7 @@
 */
 
 /* This hardcoded value should go into a ldb database! */
-_PUBLIC_ enum srvsvc_PlatformId dcesrv_common_get_platform_id(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+enum srvsvc_PlatformId dcesrv_common_get_platform_id(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	enum srvsvc_PlatformId id;
 
@@ -41,7 +41,7 @@ _PUBLIC_ enum srvsvc_PlatformId dcesrv_common_get_platform_id(TALLOC_CTX *mem_ct
 	return id;
 }
 
-_PUBLIC_ const char *dcesrv_common_get_server_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, const char *server_unc)
+const char *dcesrv_common_get_server_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, const char *server_unc)
 {
 	const char *p = server_unc;
 
@@ -64,25 +64,25 @@ const char *dcesrv_common_get_domain_name(TALLOC_CTX *mem_ctx, struct dcesrv_con
 }
 
 /* This hardcoded value should go into a ldb database! */
-_PUBLIC_ uint32_t dcesrv_common_get_version_major(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+uint32_t dcesrv_common_get_version_major(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	return lp_parm_int(lp_ctx, NULL, "server_info", "version_major", 5);
 }
 
 /* This hardcoded value should go into a ldb database! */
-_PUBLIC_ uint32_t dcesrv_common_get_version_minor(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+uint32_t dcesrv_common_get_version_minor(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	return lp_parm_int(lp_ctx, NULL, "server_info", "version_minor", 2);
 }
 
 /* This hardcoded value should go into a ldb database! */
-_PUBLIC_ uint32_t dcesrv_common_get_version_build(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+uint32_t dcesrv_common_get_version_build(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	return lp_parm_int(lp_ctx, NULL, "server_info", "version_build", 3790);
 }
 
 /* This hardcoded value should go into a ldb database! */
-_PUBLIC_ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	int default_server_announce = 0;
 	default_server_announce |= SV_TYPE_WORKSTATION;
@@ -158,56 +158,56 @@ _PUBLIC_ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dces
 }
 
 /* This hardcoded value should go into a ldb database! */
-_PUBLIC_ const char *dcesrv_common_get_lan_root(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+const char *dcesrv_common_get_lan_root(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	return talloc_strdup(mem_ctx, "");
 }
 
 /* This hardcoded value should go into a ldb database! */
-_PUBLIC_ uint32_t dcesrv_common_get_users(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+uint32_t dcesrv_common_get_users(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	return -1;
 }
 
 /* This hardcoded value should go into a ldb database! */
-_PUBLIC_ uint32_t dcesrv_common_get_disc(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+uint32_t dcesrv_common_get_disc(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	return 15;
 }
 
 /* This hardcoded value should go into a ldb database! */
-_PUBLIC_ uint32_t dcesrv_common_get_hidden(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+uint32_t dcesrv_common_get_hidden(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	return 0;
 }
 
 /* This hardcoded value should go into a ldb database! */
-_PUBLIC_ uint32_t dcesrv_common_get_announce(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+uint32_t dcesrv_common_get_announce(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	return 240;
 }
 
 /* This hardcoded value should go into a ldb database! */
-_PUBLIC_ uint32_t dcesrv_common_get_anndelta(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+uint32_t dcesrv_common_get_anndelta(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	return 3000;
 }
 
 /* This hardcoded value should go into a ldb database! */
-_PUBLIC_ uint32_t dcesrv_common_get_licenses(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+uint32_t dcesrv_common_get_licenses(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	return 0;
 }
 
 /* This hardcoded value should go into a ldb database! */
-_PUBLIC_ const char *dcesrv_common_get_userpath(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+const char *dcesrv_common_get_userpath(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	return talloc_strdup(mem_ctx, "c:\\");
 }
 
 #define INVALID_SHARE_NAME_CHARS " \"*+,./:;<=>?[\\]|"
 
-_PUBLIC_ bool dcesrv_common_validate_share_name(TALLOC_CTX *mem_ctx, const char *share_name)
+bool dcesrv_common_validate_share_name(TALLOC_CTX *mem_ctx, const char *share_name)
 {
 	if (strpbrk(share_name, INVALID_SHARE_NAME_CHARS)) {
 		return false;

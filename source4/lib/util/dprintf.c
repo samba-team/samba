@@ -42,7 +42,7 @@ void d_set_iconv(smb_iconv_t cd)
 	display_cd = cd;
 }
 
-_PUBLIC_ int d_vfprintf(FILE *f, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0)
+_PUBLIC_ int d_vfprintf(FILE *f, const char *format, va_list ap) 
 {
 	char *p, *p2;
 	int ret, clen;
@@ -85,7 +85,7 @@ _PUBLIC_ int d_vfprintf(FILE *f, const char *format, va_list ap) _PRINTF_ATTRIBU
 }
 
 
-_PUBLIC_ int d_fprintf(FILE *f, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
+_PUBLIC_ int d_fprintf(FILE *f, const char *format, ...) 
 {
 	int ret;
 	va_list ap;
@@ -97,7 +97,7 @@ _PUBLIC_ int d_fprintf(FILE *f, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
 	return ret;
 }
 
-_PUBLIC_ int d_printf(const char *format, ...) _PRINTF_ATTRIBUTE(1,2)
+_PUBLIC_ int d_printf(const char *format, ...)
 {
 	int ret;
 	va_list ap;

@@ -28,6 +28,7 @@
 #include "samba3/samba3.h"
 #include "libcli/security/security.h"
 #include "torture/torture.h"
+#include "auth/session_proto.h"
 
 static bool torture_pac_self_check(struct torture_context *tctx)
 {
@@ -659,7 +660,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	return true;
 }
 
-_PUBLIC_ struct torture_suite *torture_pac(TALLOC_CTX *mem_ctx)
+struct torture_suite *torture_pac(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "PAC");
 

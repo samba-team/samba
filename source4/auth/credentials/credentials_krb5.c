@@ -25,10 +25,11 @@
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "auth/credentials/credentials.h"
+#include "auth/credentials/credentials_proto.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "param/param.h"
 
-int cli_credentials_get_krb5_context(struct cli_credentials *cred, 
+_PUBLIC_ int cli_credentials_get_krb5_context(struct cli_credentials *cred, 
 				     struct loadparm_context *lp_ctx,
 				     struct smb_krb5_context **smb_krb5_context) 
 {
@@ -52,7 +53,7 @@ int cli_credentials_get_krb5_context(struct cli_credentials *cred,
  * otherwise we might have problems with the krb5 context already
  * being here.
  */
-NTSTATUS cli_credentials_set_krb5_context(struct cli_credentials *cred, 
+_PUBLIC_ NTSTATUS cli_credentials_set_krb5_context(struct cli_credentials *cred, 
 					  struct smb_krb5_context *smb_krb5_context)
 {
 	if (!talloc_reference(cred, smb_krb5_context)) {
@@ -126,7 +127,7 @@ static int free_dccache(struct ccache_container *ccc) {
 	return 0;
 }
 
-int cli_credentials_set_ccache(struct cli_credentials *cred, 
+_PUBLIC_ int cli_credentials_set_ccache(struct cli_credentials *cred, 
 			       struct loadparm_context *lp_ctx,
 			       const char *name, 
 			       enum credentials_obtained obtained)
@@ -251,7 +252,7 @@ static int cli_credentials_new_ccache(struct cli_credentials *cred,
 	return ret;
 }
 
-int cli_credentials_get_ccache(struct cli_credentials *cred, 
+_PUBLIC_ int cli_credentials_get_ccache(struct cli_credentials *cred, 
 			       struct loadparm_context *lp_ctx,
 			       struct ccache_container **ccc)
 {
@@ -315,7 +316,7 @@ void cli_credentials_invalidate_client_gss_creds(struct cli_credentials *cred,
 	}
 }
 
-void cli_credentials_invalidate_ccache(struct cli_credentials *cred, 
+_PUBLIC_ void cli_credentials_invalidate_ccache(struct cli_credentials *cred, 
 				       enum credentials_obtained obtained)
 {
 	/* If the caller just changed the username/password etc, then
@@ -346,7 +347,7 @@ static int free_gssapi_creds(struct gssapi_creds_container *gcc)
 	return 0;
 }
 
-int cli_credentials_get_client_gss_creds(struct cli_credentials *cred, 
+_PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred, 
 					 struct loadparm_context *lp_ctx,
 					 struct gssapi_creds_container **_gcc) 
 {
@@ -454,7 +455,7 @@ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
  * attached to this context.  If this hasn't been done or set before,
  * it will be generated from the password.
  */
-int cli_credentials_get_keytab(struct cli_credentials *cred, 
+_PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred, 
 			       struct loadparm_context *lp_ctx,
 			       struct keytab_container **_ktc)
 {
@@ -508,7 +509,7 @@ int cli_credentials_get_keytab(struct cli_credentials *cred,
 /* Given the name of a keytab (presumably in the format
  * FILE:/etc/krb5.keytab), open it and attach it */
 
-int cli_credentials_set_keytab_name(struct cli_credentials *cred, 
+_PUBLIC_ int cli_credentials_set_keytab_name(struct cli_credentials *cred, 
 				    struct loadparm_context *lp_ctx,
 				    const char *keytab_name, 
 				    enum credentials_obtained obtained) 
@@ -547,7 +548,7 @@ int cli_credentials_set_keytab_name(struct cli_credentials *cred,
 	return ret;
 }
 
-int cli_credentials_update_keytab(struct cli_credentials *cred, 
+_PUBLIC_ int cli_credentials_update_keytab(struct cli_credentials *cred, 
 				  struct loadparm_context *lp_ctx) 
 {
 	krb5_error_code ret;
@@ -583,7 +584,7 @@ int cli_credentials_update_keytab(struct cli_credentials *cred,
 
 /* Get server gss credentials (in gsskrb5, this means the keytab) */
 
-int cli_credentials_get_server_gss_creds(struct cli_credentials *cred, 
+_PUBLIC_ int cli_credentials_get_server_gss_creds(struct cli_credentials *cred, 
 					 struct loadparm_context *lp_ctx,
 					 struct gssapi_creds_container **_gcc) 
 {
@@ -657,7 +658,7 @@ int cli_credentials_get_server_gss_creds(struct cli_credentials *cred,
  * Set Kerberos KVNO
  */
 
-void cli_credentials_set_kvno(struct cli_credentials *cred,
+_PUBLIC_ void cli_credentials_set_kvno(struct cli_credentials *cred,
 			      int kvno)
 {
 	cred->kvno = kvno;
@@ -667,7 +668,7 @@ void cli_credentials_set_kvno(struct cli_credentials *cred,
  * Return Kerberos KVNO
  */
 
-int cli_credentials_get_kvno(struct cli_credentials *cred)
+_PUBLIC_ int cli_credentials_get_kvno(struct cli_credentials *cred)
 {
 	return cred->kvno;
 }
@@ -693,7 +694,7 @@ const char *cli_credentials_get_salt_principal(struct cli_credentials *cred)
 	return cred->salt_principal;
 }
 
-void cli_credentials_set_salt_principal(struct cli_credentials *cred, const char *principal) 
+_PUBLIC_ void cli_credentials_set_salt_principal(struct cli_credentials *cred, const char *principal) 
 {
 	cred->salt_principal = talloc_strdup(cred, principal);
 }

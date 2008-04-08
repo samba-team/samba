@@ -1,7 +1,7 @@
 /*
 	auth js library functions
 	Copyright Andrew Tridgell 2005
-	released under the GNU GPL v2 or later
+	released under the GNU GPL version 3 or later
 */
 
 

@@ -34,7 +34,8 @@ extern int torture_failures;
 extern int torture_numasync;
 
 struct torture_test;
+int torture_init(void);
+bool torture_register_suite(struct torture_suite *suite);
 
-#include "torture/proto.h"
 
 #endif /* __TORTURE_H__ */

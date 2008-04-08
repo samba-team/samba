@@ -26,6 +26,8 @@
 #include "auth/gensec/gensec.h"
 #include "lib/util/dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
+#include "rpc_server/dcerpc_server_proto.h"
+#include "librpc/rpc/dcerpc_proto.h"
 #include "lib/events/events.h"
 #include "smbd/service_task.h"
 #include "smbd/service_stream.h"
@@ -298,7 +300,7 @@ static int dcesrv_endpoint_destructor(struct dcesrv_connection *p)
 /*
   connect to a dcerpc endpoint
 */
-NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
+_PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				 TALLOC_CTX *mem_ctx,
 				 const struct dcesrv_endpoint *ep,
 				 struct auth_session_info *session_info,

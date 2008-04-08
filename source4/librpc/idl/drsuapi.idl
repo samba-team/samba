@@ -666,7 +666,7 @@ interface drsuapi
 		/* TODO ... */
 	} drsuapi_DsReplicaAddOptions;
 
-	WERROR DRSUAPI_REPLICA_ADD();
+	[todo] WERROR DRSUAPI_REPLICA_ADD();
 
 	/*****************/
         /* Function 0x06 */
@@ -676,7 +676,7 @@ interface drsuapi
 		/* TODO ... */
 	} drsuapi_DsReplicaDeleteOptions;
 
-	WERROR DRSUAPI_REPLICA_DEL();
+	[todo] WERROR DRSUAPI_REPLICA_DEL();
 
 	/*****************/
         /* Function 0x07 */
@@ -685,11 +685,11 @@ interface drsuapi
 		DRSUAPI_DS_REPLICA_MODIFY_WRITEABLE			= 0x00000002
 	} drsuapi_DsReplicaModifyOptions;
 
-	WERROR DRSUAPI_REPLICA_MODIFY();
+	[todo] WERROR DRSUAPI_REPLICA_MODIFY();
 
 	/*****************/
         /* Function 0x08 */
-	WERROR DRSUAPI_VERIFY_NAMES();
+	[todo] WERROR DRSUAPI_VERIFY_NAMES();
 
 	/*****************/
         /* Function 0x09 */
@@ -732,7 +732,7 @@ interface drsuapi
 		[case(1)] drsuapi_DsGetMembershipsRequest1 req1;
 	} drsuapi_DsGetMembershipsRequest;
 
-	WERROR drsuapi_DsGetMemberships(
+	[todo] WERROR drsuapi_DsGetMemberships(
 		[in] policy_handle *bind_handle,
 		[in,out] int32 level,
 		[in] [switch_is(level)] drsuapi_DsGetMembershipsRequest req,
@@ -741,7 +741,7 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x0a */
-	WERROR DRSUAPI_INTER_DOMAIN_MOVE();
+	[todo] WERROR DRSUAPI_INTER_DOMAIN_MOVE();
 
 	/*****************/
         /* Function 0x0b */
@@ -774,7 +774,7 @@ interface drsuapi
 		[case(1)] drsuapi_DsGetNT4ChangeLogInfo1 info1;
 	} drsuapi_DsGetNT4ChangeLogInfo;
 
-	WERROR drsuapi_DsGetNT4ChangeLog(
+	[todo] WERROR drsuapi_DsGetNT4ChangeLog(
 		[in] policy_handle *bind_handle,
 		[in,out] uint32 level,
 		[in] [switch_is(level)] drsuapi_DsGetNT4ChangeLogRequest req,
@@ -849,7 +849,7 @@ interface drsuapi
 		[case(1)] drsuapi_DsNameCtr1 *ctr1;
 	} drsuapi_DsNameCtr;
 
-	WERROR drsuapi_DsCrackNames(
+	[todo] WERROR drsuapi_DsCrackNames(
 		[in] policy_handle *bind_handle,
 		[in, out] int32 level,
 		[in,switch_is(level)] drsuapi_DsNameRequest req,
@@ -920,7 +920,7 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x0f */
-	WERROR DRSUAPI_REMOVE_DS_DOMAIN();
+	[todo] WERROR DRSUAPI_REMOVE_DS_DOMAIN();
 
 	/*****************/
         /* Function 0x10 */
@@ -1138,7 +1138,7 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x12 */
-	WERROR DRSUAPI_EXECUTE_KCC();
+	[todo] WERROR DRSUAPI_EXECUTE_KCC();
 
 	/*****************/
 	/* Function 0x13 */
@@ -1419,7 +1419,7 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x14 */
-	WERROR DRSUAPI_ADD_SID_HISTORY();
+	[todo] WERROR DRSUAPI_ADD_SID_HISTORY();
 
 	/*****************/
         /* Function 0x15 */
@@ -1452,11 +1452,11 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x16 */
-	WERROR DRSUAPI_REPLICA_VERIFY_OBJECTS();
+	[todo] WERROR DRSUAPI_REPLICA_VERIFY_OBJECTS();
 
 	/*****************/
         /* Function 0x17 */
-	WERROR DRSUAPI_GET_OBJECT_EXISTENCE();
+	[todo] WERROR DRSUAPI_GET_OBJECT_EXISTENCE();
 
 	/*****************/
         /* Function 0x18 */

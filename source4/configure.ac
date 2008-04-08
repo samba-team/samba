@@ -26,14 +26,16 @@ m4_include(lib/popt/samba.m4)
 m4_include(lib/charset/config.m4)
 m4_include(lib/socket/config.m4)
 m4_include(nsswitch/nsstest.m4)
+m4_include(pidl/config.m4)
 
 AC_CONFIG_FILES(lib/registry/registry.pc)
 AC_CONFIG_FILES(librpc/dcerpc.pc)
 AC_CONFIG_FILES(librpc/ndr.pc)
 AC_CONFIG_FILES(torture/torture.pc)
 AC_CONFIG_FILES(auth/gensec/gensec.pc)
-AC_CONFIG_FILES(param/samba-config.pc)
+AC_CONFIG_FILES(param/samba-hostconfig.pc)
 AC_CONFIG_FILES(librpc/dcerpc_samr.pc)
+AC_CONFIG_FILES(librpc/dcerpc_atsvc.pc)
 
 SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.2.0,
 	[],

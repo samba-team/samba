@@ -32,8 +32,6 @@
 #include "lib/util/util_ldb.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
-static struct tdb_wrap *tdb;
-
 /**
  * Use a TDB to store an incrementing random seed.
  *
@@ -42,42 +40,31 @@ static struct tdb_wrap *tdb;
  * 
  * @note Not called by systems with a working /dev/urandom.
  */
-static void get_rand_seed(int *new_seed) 
+static void get_rand_seed(struct tdb_wrap *secretsdb, int *new_seed) 
 {
 	*new_seed = getpid();
-	if (tdb != NULL) {
-		tdb_change_int32_atomic(tdb->tdb, "INFO/random_seed", new_seed, 1);
+	if (secretsdb != NULL) {
+		tdb_change_int32_atomic(secretsdb->tdb, "INFO/random_seed", new_seed, 1);
 	}
-}
-
-/**
- * close the secrets database
- */
-void secrets_shutdown(void)
-{
-       talloc_free(tdb);
 }
 
 /**
  * open up the secrets database
  */
-bool secrets_init(struct loadparm_context *lp_ctx)
+struct tdb_wrap *secrets_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	char *fname;
 	uint8_t dummy;
+	struct tdb_wrap *tdb;
 
-	if (tdb != NULL)
-		return true;
+	fname = private_path(mem_ctx, lp_ctx, "secrets.tdb");
 
-	fname = private_path(NULL, lp_ctx, "secrets.tdb");
-
-	tdb = tdb_wrap_open(talloc_autofree_context(), fname, 0, TDB_DEFAULT, 
-						O_RDWR|O_CREAT, 0600);
+	tdb = tdb_wrap_open(mem_ctx, fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 
 	if (!tdb) {
 		DEBUG(0,("Failed to open %s\n", fname));
 		talloc_free(fname);
-		return false;
+		return NULL;
 	}
 	talloc_free(fname);
 
@@ -87,12 +74,12 @@ bool secrets_init(struct loadparm_context *lp_ctx)
 	 * This avoids a problem where systems without /dev/urandom
 	 * could send the same challenge to multiple clients
 	 */
-	set_rand_reseed_callback(get_rand_seed);
+	set_rand_reseed_callback((void (*) (void *, int *))get_rand_seed, tdb);
 
 	/* Ensure that the reseed is done now, while we are root, etc */
 	generate_random_buffer(&dummy, sizeof(dummy));
 
-	return true;
+	return tdb;
 }
 
 /**

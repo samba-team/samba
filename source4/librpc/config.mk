@@ -3,7 +3,7 @@
 [LIBRARY::LIBNDR]
 PRIVATE_PROTO_HEADER = ndr/libndr_proto.h
 PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBTALLOC LIBSAMBA-UTIL CHARSET \
-					  LIBSAMBA-CONFIG
+					  LIBSAMBA-HOSTCONFIG
 
 LIBNDR_OBJ_FILES = $(addprefix librpc/ndr/, ndr.o ndr_basic.o ndr_string.o uuid.o)
 
@@ -21,7 +21,7 @@ PUBLIC_HEADERS += librpc/ndr/libndr.h
 [BINARY::ndrdump]
 INSTALLDIR = BINDIR
 PRIVATE_DEPENDENCIES = \
-		LIBSAMBA-CONFIG \
+		LIBSAMBA-HOSTCONFIG \
 		LIBSAMBA-UTIL \
 		LIBPOPT \
 		POPT_SAMBA \
@@ -457,10 +457,13 @@ RPC_NDR_SVCCTL_OBJ_FILES = librpc/gen_ndr/ndr_svcctl_c.o
 
 PUBLIC_HEADERS += librpc/gen_ndr/ndr_svcctl_c.h
 
-[SUBSYSTEM::dcerpc_atsvc]
+[LIBRARY::dcerpc_atsvc]
 PUBLIC_DEPENDENCIES = dcerpc NDR_ATSVC
+VERSION = 0.0.1
+SO_VERSION = 0
 
 dcerpc_atsvc_OBJ_FILES = librpc/gen_ndr/ndr_atsvc_c.o
+PC_FILES += librpc/dcerpc_atsvc.pc
 
 PUBLIC_HEADERS += librpc/gen_ndr/ndr_atsvc_c.h
 
@@ -504,10 +507,10 @@ PUBLIC_DEPENDENCIES = dcerpc NDR_INITSHUTDOWN
 
 RPC_NDR_INITSHUTDOWN_OBJ_FILES = librpc/gen_ndr/ndr_initshutdown_c.o
 
-[SUBSYSTEM::dcerpc_mgmt]
+[SUBSYSTEM::RPC_NDR_MGMT]
 PRIVATE_DEPENDENCIES = NDR_MGMT
 
-dcerpc_mgmt_OBJ_FILES = librpc/gen_ndr/ndr_mgmt_c.o
+RPC_NDR_MGMT_OBJ_FILES = librpc/gen_ndr/ndr_mgmt_c.o
 
 [SUBSYSTEM::RPC_NDR_PROTECTED_STORAGE]
 PUBLIC_DEPENDENCIES = dcerpc NDR_PROTECTED_STORAGE
@@ -574,6 +577,7 @@ PRIVATE_DEPENDENCIES = \
 		samba-socket LIBCLI_RESOLVE LIBCLI_SMB LIBCLI_SMB2 \
 		LIBNDR NDR_DCERPC RPC_NDR_EPMAPPER \
 		NDR_SCHANNEL RPC_NDR_NETLOGON \
+		RPC_NDR_MGMT \
 		gensec LIBCLI_AUTH LIBCLI_RAW \
 		LP_RESOLVE
 PUBLIC_DEPENDENCIES = CREDENTIALS 
@@ -709,7 +713,7 @@ RPC_EJS_IRPC_OBJ_FILES = librpc/gen_ndr/ndr_irpc_ejs.o
 
 [PYTHON::swig_dcerpc]
 SWIG_FILE = rpc/dcerpc.i
-PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-CONFIG dcerpc_samr RPC_NDR_LSA DYNCONFIG
+PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG dcerpc_samr RPC_NDR_LSA DYNCONFIG
 
 swig_dcerpc_OBJ_FILES = librpc/rpc/dcerpc_wrap.o
 
@@ -765,6 +769,21 @@ python_lsa_OBJ_FILES = librpc/gen_ndr/py_lsa.o
 PRIVATE_DEPENDENCIES = RPC_NDR_WKSSVC
 
 python_wkssvc_OBJ_FILES = librpc/gen_ndr/py_wkssvc.o
+
+[PYTHON::python_dfs]
+PRIVATE_DEPENDENCIES = RPC_NDR_DFS
+
+python_dfs_OBJ_FILES = gen_ndr/py_dfs.o
+
+[PYTHON::python_unixinfo]
+PRIVATE_DEPENDENCIES = RPC_NDR_UNIXINFO
+
+python_unixinfo_OBJ_FILES = gen_ndr/py_unixinfo.o
+
+[PYTHON::python_drsuapi]
+PRIVATE_DEPENDENCIES = RPC_NDR_DRSUAPI
+
+python_drsuapi_OBJ_FILES = gen_ndr/py_drsuapi.o
 
 [PYTHON::python_dcerpc_security]
 

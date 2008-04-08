@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 
 #define SETUP_REQUEST(cmd, wct, buflen) do { \
 	req = smbcli_request_setup(tree, cmd, wct, buflen); \
@@ -29,7 +30,7 @@
 /****************************************************************************
  low level read operation (async send)
 ****************************************************************************/
-struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_read *parms)
+_PUBLIC_ struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_read *parms)
 {
 	bool bigoffset = false;
 	struct smbcli_request *req = NULL; 
@@ -115,7 +116,7 @@ struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_rea
 /****************************************************************************
  low level read operation (async recv)
 ****************************************************************************/
-NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *parms)
+_PUBLIC_ NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *parms)
 {
 	if (!smbcli_request_receive(req) ||
 	    smbcli_request_is_error(req)) {
@@ -197,7 +198,7 @@ failed:
 /****************************************************************************
  low level read operation (sync interface)
 ****************************************************************************/
-NTSTATUS smb_raw_read(struct smbcli_tree *tree, union smb_read *parms)
+_PUBLIC_ NTSTATUS smb_raw_read(struct smbcli_tree *tree, union smb_read *parms)
 {
 	struct smbcli_request *req = smb_raw_read_send(tree, parms);
 	return smb_raw_read_recv(req, parms);
@@ -207,7 +208,7 @@ NTSTATUS smb_raw_read(struct smbcli_tree *tree, union smb_read *parms)
 /****************************************************************************
  raw write interface (async send)
 ****************************************************************************/
-struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_write *parms)
+_PUBLIC_ struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_write *parms)
 {
 	bool bigoffset = false;
 	struct smbcli_request *req = NULL; 
@@ -341,7 +342,7 @@ failed:
 /****************************************************************************
  raw write interface (sync interface)
 ****************************************************************************/
-NTSTATUS smb_raw_write(struct smbcli_tree *tree, union smb_write *parms)
+_PUBLIC_ NTSTATUS smb_raw_write(struct smbcli_tree *tree, union smb_write *parms)
 {
 	struct smbcli_request *req = smb_raw_write_send(tree, parms);
 	return smb_raw_write_recv(req, parms);

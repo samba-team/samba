@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "libcli/raw/ioctl.h"
 #include "libcli/libcli.h"
 #include "system/filesys.h"

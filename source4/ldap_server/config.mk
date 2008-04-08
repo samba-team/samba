@@ -10,7 +10,7 @@ PRIVATE_DEPENDENCIES = CREDENTIALS \
 		LIBCLI_LDAP SAMDB \
 		process_model \
 		gensec \
-		LIBSAMBA-CONFIG
+		LIBSAMBA-HOSTCONFIG
 # End SUBSYSTEM SMB
 #######################
 

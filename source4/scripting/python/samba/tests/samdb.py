@@ -38,6 +38,7 @@ class SamDBTestCase(TestCaseInTempDir):
         policyguid = uuid.random()
         setup_path = lambda x: os.path.join("setup", x)
         creds = Credentials()
+        creds.set_anonymous()
         domainsid = security.random_sid()
         hostguid = uuid.random()
         path = os.path.join(self.tempdir, "samdb.ldb")

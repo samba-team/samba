@@ -39,6 +39,10 @@ typedef struct cli_credentials cli_credentials;
     $1 = NULL;
 }
 
+%constant int AUTO_USE_KERBEROS = CRED_AUTO_USE_KERBEROS;
+%constant int DONT_USE_KERBEROS = CRED_DONT_USE_KERBEROS;
+%constant int MUST_USE_KERBEROS = CRED_MUST_USE_KERBEROS;
+
 %{
 #include "librpc/gen_ndr/samr.h" /* for struct samr_Password */
 %}
@@ -52,7 +56,7 @@ typedef struct cli_credentials cli_credentials;
 typedef struct cli_credentials {
     %extend {
         cli_credentials(void) {
-            return cli_credentials_init_anon(NULL);
+            return cli_credentials_init(NULL);
         }
         /* username */
         const char *get_username(void);
@@ -74,12 +78,17 @@ typedef struct cli_credentials {
         bool set_realm(const char *val, 
                        enum credentials_obtained=CRED_SPECIFIED);
 
+	/* Kerberos */
+        void set_kerberos_state(enum credentials_use_kerberos use_kerberos);
+
         void parse_string(const char *text,
-                       enum credentials_obtained=CRED_SPECIFIED);
+ 	                  enum credentials_obtained=CRED_SPECIFIED);
 
         /* bind dn */
         const char *get_bind_dn(void);
         bool set_bind_dn(const char *bind_dn);
+
+   	void set_anonymous();
 
         /* workstation name */
         const char *get_workstation(void);

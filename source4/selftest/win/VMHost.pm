@@ -3,7 +3,7 @@
 # A perl object to provide a simple, unified method of handling some
 # VMware Server VM management functions using the perl and VIX API's.
 # Copyright Brad Henry <brad@samba.org> 2006
-# Released under the GNU GPL v2 or later.
+# Released under the GNU GPL version 3 or later.
 
 # VMware Perl API
 use VMware::VmPerl;

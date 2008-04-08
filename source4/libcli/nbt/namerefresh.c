@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libcli/nbt/libnbt.h"
+#include "libcli/nbt/nbt_proto.h"
 #include "libcli/composite/composite.h"
 #include "lib/socket/socket.h"
 #include "param/param.h"
@@ -86,7 +87,7 @@ failed:
 /*
   wait for a refresh reply
 */
-NTSTATUS nbt_name_refresh_recv(struct nbt_name_request *req, 
+_PUBLIC_ NTSTATUS nbt_name_refresh_recv(struct nbt_name_request *req, 
 			       TALLOC_CTX *mem_ctx, struct nbt_name_refresh *io)
 {
 	NTSTATUS status;
@@ -128,7 +129,7 @@ NTSTATUS nbt_name_refresh_recv(struct nbt_name_request *req,
 /*
   synchronous name refresh request
 */
-NTSTATUS nbt_name_refresh(struct nbt_name_socket *nbtsock, 
+_PUBLIC_ NTSTATUS nbt_name_refresh(struct nbt_name_socket *nbtsock, 
 			   TALLOC_CTX *mem_ctx, struct nbt_name_refresh *io)
 {
 	struct nbt_name_request *req = nbt_name_refresh_send(nbtsock, io);
@@ -217,7 +218,7 @@ done:
 /**
   the async send call for a multi-server WINS refresh
 */
-struct composite_context *nbt_name_refresh_wins_send(struct nbt_name_socket *nbtsock,
+_PUBLIC_ struct composite_context *nbt_name_refresh_wins_send(struct nbt_name_socket *nbtsock,
 						      struct nbt_name_refresh_wins *io)
 {
 	struct composite_context *c;
@@ -274,7 +275,7 @@ failed:
 /*
   multi-homed WINS name refresh - recv side
 */
-NTSTATUS nbt_name_refresh_wins_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+_PUBLIC_ NTSTATUS nbt_name_refresh_wins_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 				     struct nbt_name_refresh_wins *io)
 {
 	NTSTATUS status;
@@ -292,7 +293,7 @@ NTSTATUS nbt_name_refresh_wins_recv(struct composite_context *c, TALLOC_CTX *mem
 /*
   multi-homed WINS refresh - sync interface
 */
-NTSTATUS nbt_name_refresh_wins(struct nbt_name_socket *nbtsock,
+_PUBLIC_ NTSTATUS nbt_name_refresh_wins(struct nbt_name_socket *nbtsock,
 				TALLOC_CTX *mem_ctx,
 				struct nbt_name_refresh_wins *io)
 {

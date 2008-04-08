@@ -25,7 +25,7 @@
 #include "ntvfs/ntvfs.h"
 
 
-_PUBLIC_ struct ntvfs_request *ntvfs_request_create(struct ntvfs_context *ctx, TALLOC_CTX *mem_ctx,
+struct ntvfs_request *ntvfs_request_create(struct ntvfs_context *ctx, TALLOC_CTX *mem_ctx,
 						    struct auth_session_info *session_info,
 						    uint16_t smbpid,
 						    struct timeval request_time,
@@ -62,7 +62,7 @@ failed:
 	return NULL;
 }
 
-_PUBLIC_ NTSTATUS ntvfs_async_state_push(struct ntvfs_module_context *ntvfs,
+NTSTATUS ntvfs_async_state_push(struct ntvfs_module_context *ntvfs,
 					 struct ntvfs_request *req,
 					 void *private_data,
 					 void (*send_fn)(struct ntvfs_request *))
@@ -84,7 +84,7 @@ _PUBLIC_ NTSTATUS ntvfs_async_state_push(struct ntvfs_module_context *ntvfs,
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_ void ntvfs_async_state_pop(struct ntvfs_request *req)
+void ntvfs_async_state_pop(struct ntvfs_request *req)
 {
 	struct ntvfs_async_state *async;
 
@@ -98,7 +98,7 @@ _PUBLIC_ void ntvfs_async_state_pop(struct ntvfs_request *req)
 	talloc_free(async);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_handle_new(struct ntvfs_module_context *ntvfs,
+NTSTATUS ntvfs_handle_new(struct ntvfs_module_context *ntvfs,
 				   struct ntvfs_request *req,
 				   struct ntvfs_handle **h)
 {
@@ -108,7 +108,7 @@ _PUBLIC_ NTSTATUS ntvfs_handle_new(struct ntvfs_module_context *ntvfs,
 	return ntvfs->ctx->handles.create_new(ntvfs->ctx->handles.private_data, req, h);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_handle_set_backend_data(struct ntvfs_handle *h,
+NTSTATUS ntvfs_handle_set_backend_data(struct ntvfs_handle *h,
 						struct ntvfs_module_context *ntvfs,
 						TALLOC_CTX *private_data)
 {
@@ -137,7 +137,7 @@ _PUBLIC_ NTSTATUS ntvfs_handle_set_backend_data(struct ntvfs_handle *h,
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_ void *ntvfs_handle_get_backend_data(struct ntvfs_handle *h,
+void *ntvfs_handle_get_backend_data(struct ntvfs_handle *h,
 					     struct ntvfs_module_context *ntvfs)
 {
 	struct ntvfs_handle_data *d;
@@ -150,7 +150,7 @@ _PUBLIC_ void *ntvfs_handle_get_backend_data(struct ntvfs_handle *h,
 	return NULL;
 }
 
-_PUBLIC_ void ntvfs_handle_remove_backend_data(struct ntvfs_handle *h,
+void ntvfs_handle_remove_backend_data(struct ntvfs_handle *h,
 					       struct ntvfs_module_context *ntvfs)
 {
 	struct ntvfs_handle_data *d,*n;
@@ -169,7 +169,7 @@ _PUBLIC_ void ntvfs_handle_remove_backend_data(struct ntvfs_handle *h,
 	h->ctx->handles.destroy(h->ctx->handles.private_data, h);
 }
 
-_PUBLIC_ struct ntvfs_handle *ntvfs_handle_search_by_wire_key(struct ntvfs_module_context *ntvfs,
+struct ntvfs_handle *ntvfs_handle_search_by_wire_key(struct ntvfs_module_context *ntvfs,
 							      struct ntvfs_request *req,
 							      const DATA_BLOB *key)
 {
@@ -179,12 +179,12 @@ _PUBLIC_ struct ntvfs_handle *ntvfs_handle_search_by_wire_key(struct ntvfs_modul
 	return ntvfs->ctx->handles.search_by_wire_key(ntvfs->ctx->handles.private_data, req, key);
 }
 
-_PUBLIC_ DATA_BLOB ntvfs_handle_get_wire_key(struct ntvfs_handle *h, TALLOC_CTX *mem_ctx)
+DATA_BLOB ntvfs_handle_get_wire_key(struct ntvfs_handle *h, TALLOC_CTX *mem_ctx)
 {
 	return h->ctx->handles.get_wire_key(h->ctx->handles.private_data, h, mem_ctx);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_set_handle_callbacks(struct ntvfs_context *ntvfs,
+NTSTATUS ntvfs_set_handle_callbacks(struct ntvfs_context *ntvfs,
 					     NTSTATUS (*create_new)(void *private_data, struct ntvfs_request *req, struct ntvfs_handle **h),
 					     NTSTATUS (*make_valid)(void *private_data, struct ntvfs_handle *h),
 					     void (*destroy)(void *private_data, struct ntvfs_handle *h),

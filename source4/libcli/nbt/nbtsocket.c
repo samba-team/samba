@@ -423,7 +423,7 @@ failed:
 /*
   send off a nbt name reply
 */
-NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock, 
+_PUBLIC_ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock, 
 			     struct socket_address *dest,
 			     struct nbt_name_packet *request)
 {
@@ -486,7 +486,7 @@ NTSTATUS nbt_name_request_recv(struct nbt_name_request *req)
 /*
   setup a handler for incoming requests
 */
-NTSTATUS nbt_set_incoming_handler(struct nbt_name_socket *nbtsock,
+_PUBLIC_ NTSTATUS nbt_set_incoming_handler(struct nbt_name_socket *nbtsock,
 				  void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *, 
 						  struct socket_address *),
 				  void *private)
@@ -501,7 +501,7 @@ NTSTATUS nbt_set_incoming_handler(struct nbt_name_socket *nbtsock,
 /*
   turn a NBT rcode into a NTSTATUS
 */
-NTSTATUS nbt_rcode_to_ntstatus(uint8_t rcode)
+_PUBLIC_ NTSTATUS nbt_rcode_to_ntstatus(uint8_t rcode)
 {
 	int i;
 	struct {

@@ -8,7 +8,7 @@ mkinclude credentials/config.mk
 PRIVATE_PROTO_HEADER = session_proto.h
 PUBLIC_DEPENDENCIES = CREDENTIALS
 
-PUBLIC_HEADERS += auth/session.h
+# PUBLIC_HEADERS += auth/session.h
 
 auth_session_OBJ_FILES = $(addprefix auth/, session.o)
 
@@ -95,7 +95,7 @@ PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBSECURITY SAMDB CREDENTIALS
 
 service_auth_OBJ_FILES = $(addprefix auth/, auth.o auth_util.o auth_simple.o)
 
-PUBLIC_HEADERS += auth/auth.h
+# PUBLIC_HEADERS += auth/auth.h
 
 [PYTHON::swig_auth]
 PUBLIC_DEPENDENCIES = auth_system_session

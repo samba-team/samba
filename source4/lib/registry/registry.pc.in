@@ -5,8 +5,8 @@ includedir=@includedir@
 
 Name: registry
 Description: Windows-style registry library
-Requires: ldb
-Requires.private: 
+Requires: talloc
+Requires.private: ldb
 Version: 0.0.1
 Libs: -L${libdir} -lregistry 
 Cflags: -I${includedir}  -DHAVE_IMMEDIATE_STRUCTURES=1

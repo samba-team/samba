@@ -24,6 +24,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "rpc_server/common/common.h"
+#include "rpc_server/common/proto.h"
 #include "auth/auth.h"
 #include "libcli/security/security.h"
 #include "system/time.h"

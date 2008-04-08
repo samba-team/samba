@@ -25,8 +25,6 @@
  *  Description: add schema check functionality
  *
  *  Author: Simo Sorce
- *
- *  License: GNU GPL v2 or Later
  */
 
 #include "includes.h"

@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "libcli/libcli.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "param/param.h"

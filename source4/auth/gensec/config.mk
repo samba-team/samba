@@ -13,7 +13,7 @@ gensec_VERSION = 0.0.1
 gensec_SOVERSION = 0
 gensec_OBJ_FILES = $(addprefix auth/gensec/, gensec.o socket.o)
 
-PUBLIC_HEADERS += $(addprefix auth/gensec/, gensec.h spnego.h)
+PUBLIC_HEADERS += auth/gensec/gensec.h
 
 ################################################
 # Start MODULE gensec_krb5

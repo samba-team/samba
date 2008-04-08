@@ -16,6 +16,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* This is a public header file that is installed as part of Samba. 
+ * If you remove any functions or change their signature, update 
+ * the so version number. */
+
 #ifndef _SAMBA_DATABLOB_H_
 #define _SAMBA_DATABLOB_H_
 

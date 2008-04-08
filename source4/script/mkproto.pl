@@ -192,6 +192,7 @@ sub process_file($$$)
 
 		if ($line =~ /^_PUBLIC_ FN_/) {
 			handle_loadparm($public_file, $line);
+			handle_loadparm($private_file, $line);
 			next;
 		}
 

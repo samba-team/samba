@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/rpc/dcerpc_proto.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 
@@ -236,7 +237,7 @@ const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 /*
   form a binding string from a binding structure
 */
-char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b)
+_PUBLIC_ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b)
 {
 	char *s = talloc_strdup(mem_ctx, "");
 	int i;
@@ -302,7 +303,7 @@ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b)
 /*
   parse a binding string into a dcerpc_binding structure
 */
-NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_binding **b_out)
+_PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_binding **b_out)
 {
 	struct dcerpc_binding *b;
 	char *options;
@@ -437,7 +438,7 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct ndr_syntax_id *syntax)
+_PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct ndr_syntax_id *syntax)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("floor_get_lhs_data");
 	struct ndr_pull *ndr = ndr_pull_init_blob(&epm_floor->lhs.lhs_data, mem_ctx, NULL);
@@ -633,7 +634,7 @@ enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot)
 	return (unsigned int)-1;
 }
 
-enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tower)
+_PUBLIC_ enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tower)
 {
 	int i;
 
@@ -659,7 +660,7 @@ enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tower)
 	return (unsigned int)-1;
 }
 
-NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, 
 				   struct epm_tower *tower, 
 				   struct dcerpc_binding **b_out)
 {
@@ -715,7 +716,7 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding, struct epm_tower *tower)
+_PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding, struct epm_tower *tower)
 {
 	const enum epm_protocol *protseq = NULL;
 	int num_protocols = -1, i;
@@ -1009,7 +1010,7 @@ NTSTATUS dcerpc_epm_map_binding_recv(struct composite_context *c)
 /*
   Get endpoint mapping for rpc connection
 */
-NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding,
+_PUBLIC_ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding,
 				const struct ndr_interface_table *table, struct event_context *ev,
 				struct loadparm_context *lp_ctx)
 {
@@ -1329,7 +1330,7 @@ NTSTATUS dcerpc_pipe_auth_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 
    This may change *p, as it rebinds to a new pipe due to authentication fallback
 */
-NTSTATUS dcerpc_pipe_auth(TALLOC_CTX *mem_ctx,
+_PUBLIC_ NTSTATUS dcerpc_pipe_auth(TALLOC_CTX *mem_ctx,
 			  struct dcerpc_pipe **p, 
 			  struct dcerpc_binding *binding,
 			  const struct ndr_interface_table *table,
@@ -1355,7 +1356,7 @@ NTSTATUS dcerpc_generic_session_key(struct dcerpc_connection *c,
 /*
   fetch the user session key - may be default (above) or the SMB session key
 */
-NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
+_PUBLIC_ NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
 				  DATA_BLOB *session_key)
 {
 	return p->conn->security_state.session_key(p->conn, session_key);
@@ -1368,7 +1369,7 @@ NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
 
   this triggers on a debug level of >= 10
 */
-void dcerpc_log_packet(const struct ndr_interface_table *ndr,
+_PUBLIC_ void dcerpc_log_packet(const struct ndr_interface_table *ndr,
 		       uint32_t opnum, uint32_t flags, 
 		       DATA_BLOB *pkt)
 {
@@ -1403,7 +1404,7 @@ void dcerpc_log_packet(const struct ndr_interface_table *ndr,
 
   this uses dcerpc_alter_context() to create a new dcerpc context_id
 */
-NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p, 
+_PUBLIC_ NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p, 
 				  struct dcerpc_pipe **pp2,
 				  const struct ndr_interface_table *table)
 {

@@ -1,7 +1,7 @@
 /*
 	backend code for Samba4 management
 	Copyright Andrew Tridgell 2005
-	Released under the GNU GPL v2 or later
+	Released under the GNU GPL version 3 or later
 */
 
 

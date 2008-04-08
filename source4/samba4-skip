@@ -46,3 +46,4 @@ nss.test						# Fails
 samba4.samba3sam.python		# Conversion from EJS not yet finished
 samba4.samdb.python			# Not finished yet
 raw.offline 			# Samba 4 doesn't have much offline support yet
+winreg*  #Does not authenticate against the target server

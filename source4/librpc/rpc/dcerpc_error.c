@@ -40,7 +40,7 @@ static const struct dcerpc_fault_table dcerpc_faults[] =
 	{ NULL,					0}	
 };
 
-const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code)
+_PUBLIC_ const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code)
 {
 	int idx = 0;
 

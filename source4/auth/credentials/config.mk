@@ -9,7 +9,7 @@ PRIVATE_DEPENDENCIES = \
 
 CREDENTIALS_OBJ_FILES = $(addprefix auth/credentials/, credentials.o credentials_files.o credentials_ntlm.o credentials_krb5.o ../kerberos/kerberos_util.o)
 
-PUBLIC_HEADERS += $(addprefix auth/credentials/, credentials.h credentials_krb5.h)
+PUBLIC_HEADERS += auth/credentials/credentials.h
 
 [PYTHON::swig_credentials]
 PUBLIC_DEPENDENCIES = CREDENTIALS LIBCMDLINE_CREDENTIALS

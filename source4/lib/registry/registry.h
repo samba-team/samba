@@ -22,11 +22,196 @@
 #define _REGISTRY_H
 
 struct registry_context;
+struct loadparm_context;
+struct smb_iconv_convenience;
 
 #include <talloc.h>
+#include "libcli/util/werror.h"
 #include "librpc/gen_ndr/security.h"
-#include "lib/registry/hive.h"
 #include "libcli/util/ntstatus.h"
+#include "util/time.h"
+#include "util/data_blob.h"
+
+/**
+ * The hive API. This API is generally used for
+ * reading a specific file that contains just one hive.
+ *
+ * Good examples are .DAT (NTUSER.DAT) files.
+ *
+ * This API does not have any notification support (that
+ * should be provided by the registry implementation), nor
+ * does it understand what predefined keys are.
+ */
+
+struct hive_key {
+	const struct hive_operations *ops;
+};
+
+struct hive_operations {
+	const char *name;
+
+	/**
+	 * Open a specific subkey
+	 */
+	WERROR (*enum_key) (TALLOC_CTX *mem_ctx,
+			    const struct hive_key *key, uint32_t idx,
+			    const char **name,
+			    const char **classname,
+			    NTTIME *last_mod_time);
+
+	/**
+	 * Open a subkey by name
+	 */
+	WERROR (*get_key_by_name) (TALLOC_CTX *mem_ctx,
+				   const struct hive_key *key, const char *name,
+				   struct hive_key **subkey);
+
+	/**
+	 * Add a new key.
+	 */
+	WERROR (*add_key) (TALLOC_CTX *ctx,
+			   const struct hive_key *parent_key, const char *name,
+			   const char *classname,
+			   struct security_descriptor *desc,
+			   struct hive_key **key);
+	/**
+	 * Remove an existing key.
+	 */
+	WERROR (*del_key) (const struct hive_key *key, const char *name);
+
+	/**
+	 * Force write of a key to disk.
+	 */
+	WERROR (*flush_key) (struct hive_key *key);
+
+	/**
+	 * Retrieve a registry value with a specific index.
+	 */
+	WERROR (*enum_value) (TALLOC_CTX *mem_ctx,
+			      struct hive_key *key, int idx,
+			      const char **name, uint32_t *type,
+			      DATA_BLOB *data);
+
+	/**
+	 * Retrieve a registry value with the specified name
+	 */
+	WERROR (*get_value_by_name) (TALLOC_CTX *mem_ctx,
+				     struct hive_key *key, const char *name,
+				     uint32_t *type, DATA_BLOB *data);
+
+	/**
+	 * Set a value on the specified registry key.
+	 */
+	WERROR (*set_value) (struct hive_key *key, const char *name,
+			     uint32_t type, const DATA_BLOB data);
+
+	/**
+	 * Remove a value.
+	 */
+	WERROR (*delete_value) (struct hive_key *key, const char *name);
+
+	/* Security Descriptors */
+
+	/**
+	 * Change the security descriptor on a registry key.
+	 *
+	 * This should return WERR_NOT_SUPPORTED if the underlying
+	 * format does not have a mechanism for storing
+	 * security descriptors.
+	 */
+	WERROR (*set_sec_desc) (struct hive_key *key,
+				const struct security_descriptor *desc);
+
+	/**
+	 * Retrieve the security descriptor on a registry key.
+	 *
+	 * This should return WERR_NOT_SUPPORTED if the underlying
+	 * format does not have a mechanism for storing
+	 * security descriptors.
+	 */
+	WERROR (*get_sec_desc) (TALLOC_CTX *ctx,
+				const struct hive_key *key,
+				struct security_descriptor **desc);
+
+	/**
+	 * Retrieve general information about a key.
+	 */
+	WERROR (*get_key_info) (TALLOC_CTX *mem_ctx,
+				const struct hive_key *key,
+				const char **classname,
+				uint32_t *num_subkeys,
+				uint32_t *num_values,
+				NTTIME *last_change_time,
+				uint32_t *max_subkeynamelen,
+				uint32_t *max_valnamelen,
+				uint32_t *max_valbufsize);
+};
+
+struct cli_credentials;
+struct auth_session_info;
+
+WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
+		     struct auth_session_info *session_info,
+		     struct cli_credentials *credentials,
+		     struct loadparm_context *lp_ctx,
+		     struct hive_key **root);
+WERROR hive_key_get_info(TALLOC_CTX *mem_ctx, const struct hive_key *key,
+			 const char **classname, uint32_t *num_subkeys,
+			 uint32_t *num_values, NTTIME *last_change_time,
+			 uint32_t *max_subkeynamelen,
+			 uint32_t *max_valnamelen, uint32_t *max_valbufsize);
+WERROR hive_key_add_name(TALLOC_CTX *ctx, const struct hive_key *parent_key,
+			 const char *name, const char *classname,
+			 struct security_descriptor *desc,
+			 struct hive_key **key);
+WERROR hive_key_del(const struct hive_key *key, const char *name);
+WERROR hive_get_key_by_name(TALLOC_CTX *mem_ctx,
+			    const struct hive_key *key, const char *name,
+			    struct hive_key **subkey);
+WERROR hive_enum_key(TALLOC_CTX *mem_ctx,
+		     const struct hive_key *key, uint32_t idx,
+		     const char **name,
+		     const char **classname,
+		     NTTIME *last_mod_time);
+
+WERROR hive_key_set_value(struct hive_key *key, const char *name,
+		      uint32_t type, const DATA_BLOB data);
+
+WERROR hive_get_value(TALLOC_CTX *mem_ctx,
+		      struct hive_key *key, const char *name,
+		      uint32_t *type, DATA_BLOB *data);
+WERROR hive_get_value_by_index(TALLOC_CTX *mem_ctx,
+			       struct hive_key *key, uint32_t idx,
+			       const char **name,
+			       uint32_t *type, DATA_BLOB *data);
+
+WERROR hive_key_del_value(struct hive_key *key, const char *name);
+
+WERROR hive_key_flush(struct hive_key *key);
+
+
+/* Individual backends */
+WERROR reg_open_directory(TALLOC_CTX *parent_ctx,
+			  const char *location, struct hive_key **key);
+WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx,
+			  const char *location, struct smb_iconv_convenience *iconv_convenience,
+			  struct hive_key **key);
+WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
+			 struct auth_session_info *session_info,
+			 struct cli_credentials *credentials,
+			 struct loadparm_context *lp_ctx,
+			 struct hive_key **k);
+
+
+WERROR reg_create_directory(TALLOC_CTX *parent_ctx,
+			    const char *location, struct hive_key **key);
+WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx,
+			    struct smb_iconv_convenience *iconv_convenience,
+			    const char *location,
+			    int major_version,
+			    struct hive_key **key);
+
+
 
 /* Handles for the predefined keys */
 #define HKEY_CLASSES_ROOT		0x80000000
@@ -65,8 +250,6 @@ struct registry_key
 {
 	struct registry_context *context;
 };
-
-#include "lib/registry/patchfile.h"
 
 struct registry_value
 {
@@ -284,6 +467,35 @@ WERROR reg_get_security(TALLOC_CTX *mem_ctx,
 
 WERROR reg_set_security(struct registry_key *key,
 			struct security_descriptor *security);
+
+struct reg_diff_callbacks {
+	WERROR (*add_key) (void *callback_data, const char *key_name);
+	WERROR (*set_value) (void *callback_data, const char *key_name,
+			     const char *value_name, uint32_t value_type,
+			     DATA_BLOB value);
+	WERROR (*del_value) (void *callback_data, const char *key_name,
+			     const char *value_name);
+	WERROR (*del_key) (void *callback_data, const char *key_name);
+	WERROR (*del_all_values) (void *callback_data, const char *key_name);
+	WERROR (*done) (void *callback_data);
+};
+
+WERROR reg_diff_apply(struct registry_context *ctx, const char *filename);
+
+WERROR reg_generate_diff(struct registry_context *ctx1,
+			 struct registry_context *ctx2,
+			 const struct reg_diff_callbacks *callbacks,
+			 void *callback_data);
+WERROR reg_dotreg_diff_save(TALLOC_CTX *ctx, const char *filename,
+			    struct smb_iconv_convenience *iconv_convenience,
+			    struct reg_diff_callbacks **callbacks,
+			    void **callback_data);
+WERROR reg_generate_diff_key(struct registry_key *oldkey,
+			     struct registry_key *newkey,
+			     const char *path,
+			     const struct reg_diff_callbacks *callbacks,
+			     void *callback_data);
+
 
 
 #endif /* _REGISTRY_H */

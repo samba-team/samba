@@ -3,14 +3,14 @@
 #	add a new user to a Samba4 server
 #	Copyright Andrew Tridgell 2005
 #	Copyright Jelmer Vernooij 2008
-#	Released under the GNU GPL v2 or later
+#	Released under the GNU GPL version 3 or later
 #
 
 import samba.getopt as options
 import optparse
 import pwd
 import sys
-
+from getpass import getpass
 from auth import system_session
 from samba.samdb import SamDB
 
@@ -40,9 +40,7 @@ username = args[0]
 if len(args) > 1:
 	password = args[1]
 else:
-	random_init(local)
-	options.password = randpass(12)
-	print "chose random password %s\n" % password
+	password = getpass("New Password: ")
 
 if opts.unixname is None:
 	opts.unixname = username

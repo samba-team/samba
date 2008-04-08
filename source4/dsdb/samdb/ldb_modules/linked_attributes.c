@@ -520,6 +520,12 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 			
 			talloc_steal(new_req, attrs);
 			
+			ret = ldb_set_timeout_from_prev_req(module->ldb, req, new_req);
+			
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+
 			/* Create a spot in the list for the requests */
 			ac->down_req = talloc_realloc(ac, ac->down_req, 
 						      struct ldb_request *, ac->num_requests + 1);
@@ -568,6 +574,12 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 			
 			talloc_steal(new_req, attrs);
 			
+			ret = ldb_set_timeout_from_prev_req(module->ldb, req, new_req);
+			
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+
 			/* Create a spot in the list for the requests */
 			ac->down_req = talloc_realloc(ac, ac->down_req, 
 						      struct ldb_request *, ac->num_requests + 1);
@@ -629,7 +641,11 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 			
 			talloc_steal(new_req, new_msg);
 			
-			ldb_set_timeout_from_prev_req(module->ldb, req, new_req);
+			ret = ldb_set_timeout_from_prev_req(module->ldb, req, new_req);
+			
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 			
 			/* Now add it to the list */
 			ac->down_req = talloc_realloc(ac, ac->down_req, 
@@ -752,6 +768,12 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
 
 	talloc_steal(new_req, attrs);
 
+	ret = ldb_set_timeout_from_prev_req(module->ldb, req, new_req);
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	ac->search_req = new_req;
 	ac->step = LA_SEARCH;
 	return ldb_next_request(module, new_req);
@@ -804,6 +826,12 @@ static int linked_attributes_delete(struct ldb_module *module, struct ldb_reques
 	}
 
 	talloc_steal(new_req, attrs);
+
+	ret = ldb_set_timeout_from_prev_req(module->ldb, req, new_req);
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	ac->search_req = new_req;
 	ac->step = LA_SEARCH;

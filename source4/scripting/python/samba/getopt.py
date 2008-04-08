@@ -18,7 +18,7 @@
 #
 
 import optparse
-from credentials import Credentials
+from credentials import Credentials, AUTO_USE_KERBEROS, DONT_USE_KERBEROS, MUST_USE_KERBEROS
 
 class SambaOptions(optparse.OptionGroup):
     def __init__(self, parser):
@@ -65,6 +65,9 @@ class CredentialsOptions(optparse.OptionGroup):
                         help="Workgroup", callback=self._parse_workgroup)
         self.add_option("-N", "--no-pass", action="store_true",
                         help="Don't ask for a password")
+        self.add_option("-k", "--kerberos", metavar="KERBEROS", 
+                        action="callback", type=str,
+                        help="Use Kerberos", callback=self._set_kerberos)
         self.creds = Credentials()
 
     def _parse_username(self, option, opt_str, arg, parser):
@@ -76,11 +79,17 @@ class CredentialsOptions(optparse.OptionGroup):
     def _set_password(self, option, opt_str, arg, parser):
         self.creds.set_password(arg)
 
+    def _set_kerberos(self, option, opt_str, arg, parser):
+        if bool(arg) or arg.lower() == "yes":
+            self.creds.set_kerberos_state(MUST_USE_KERBEROS)
+        else:
+            self.creds.set_kerberos_state(DONT_USE_KERBEROS)
+
     def _set_simple_bind_dn(self, option, opt_str, arg, parser):
         self.creds.set_bind_dn(arg)
 
-    def get_credentials(self):
-        self.creds.guess()
+    def get_credentials(self, lp):
+        self.creds.guess(lp)
         if not self.no_pass:
             self.creds.set_cmdline_callbacks()
         return self.creds

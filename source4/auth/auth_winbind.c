@@ -23,6 +23,8 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "auth/auth_proto.h"
+#include "auth/session_proto.h"
 #include "nsswitch/winbind_client.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_winbind.h"

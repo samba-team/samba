@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "lib/util/dlinklist.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 
 #define TORTURE_TRANS_DATA 0
 
@@ -192,7 +193,7 @@ failed:
 	return smbcli_request_destroy(req);
 }
 
-NTSTATUS smb_raw_trans_recv(struct smbcli_request *req,
+_PUBLIC_ NTSTATUS smb_raw_trans_recv(struct smbcli_request *req,
 			     TALLOC_CTX *mem_ctx,
 			     struct smb_trans2 *parms)
 {
@@ -365,7 +366,7 @@ struct smbcli_request *smb_raw_trans_send_backend(struct smbcli_tree *tree,
   trans/trans2 raw async interface - only BLOBs used in this interface.
   note that this doesn't yet support multi-part requests
 */
-struct smbcli_request *smb_raw_trans_send(struct smbcli_tree *tree,
+_PUBLIC_ struct smbcli_request *smb_raw_trans_send(struct smbcli_tree *tree,
 				       struct smb_trans2 *parms)
 {
 	return smb_raw_trans_send_backend(tree, parms, SMBtrans);
@@ -394,7 +395,7 @@ NTSTATUS smb_raw_trans2(struct smbcli_tree *tree,
 /*
   trans synchronous blob interface
 */
-NTSTATUS smb_raw_trans(struct smbcli_tree *tree,
+_PUBLIC_ NTSTATUS smb_raw_trans(struct smbcli_tree *tree,
 		       TALLOC_CTX *mem_ctx,
 		       struct smb_trans2 *parms)
 {
@@ -631,7 +632,7 @@ NTSTATUS smb_raw_nttrans(struct smbcli_tree *tree,
   TODO: we only need to avoid multi-part replies because the
   multi-part trans receive code is broken.
 */
-size_t smb_raw_max_trans_data(struct smbcli_tree *tree, size_t param_size)
+_PUBLIC_ size_t smb_raw_max_trans_data(struct smbcli_tree *tree, size_t param_size)
 {
 	return tree->session->transport->negotiate.max_xmit - (70 + param_size);
 }

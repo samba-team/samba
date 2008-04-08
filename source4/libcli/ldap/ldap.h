@@ -254,6 +254,8 @@ struct cli_credentials;
 struct dom_sid;
 struct asn1_data;
 
-#include "libcli/ldap/ldap_proto.h"
+struct ldap_message *new_ldap_message(TALLOC_CTX *mem_ctx);
+NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg);
+bool ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ctx);
 
 #endif

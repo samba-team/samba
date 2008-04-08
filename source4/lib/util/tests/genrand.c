@@ -22,14 +22,14 @@
 #include "includes.h"
 #include "torture/torture.h"
 
-static void dummy_reseed(int *d)
+static void dummy_reseed(void *userdata, int *d)
 {
 	*d = 42;
 }
 
 static bool test_reseed_callback(struct torture_context *tctx)
 {
-	set_rand_reseed_callback(dummy_reseed);
+	set_rand_reseed_callback(dummy_reseed, NULL);
 	return true;
 }
 

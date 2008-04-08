@@ -9,50 +9,50 @@ interface browser
 {
 	/******************/
 	/* Function  0x00 */
-	NTSTATUS BrowserrServerEnum();
+	[todo] NTSTATUS BrowserrServerEnum();
 
 	/******************/
 	/* Function  0x01 */
-	NTSTATUS BrowserrDebugCall();
+	[todo] NTSTATUS BrowserrDebugCall();
 
 	/******************/
 	/* Function  0x02 */
-	NTSTATUS BrowserrQueryOtherDomains();
+	[todo] NTSTATUS BrowserrQueryOtherDomains();
 
 	/******************/
 	/* Function  0x03 */
-	NTSTATUS BrowserrResetNetlogonState();
+	[todo] NTSTATUS BrowserrResetNetlogonState();
 
 	/******************/
 	/* Function  0x04 */
-	NTSTATUS BrowserrDebugTrace();
+	[todo] NTSTATUS BrowserrDebugTrace();
 
 	/******************/
 	/* Function  0x05 */
-	NTSTATUS BrowserrQueryStatistics();
+	[todo] NTSTATUS BrowserrQueryStatistics();
 
 	/******************/
 	/* Function  0x06 */
-	NTSTATUS BrowserResetStatistics();
+	[todo] NTSTATUS BrowserResetStatistics();
 
 	/******************/
 	/* Function  0x07 */
-	NTSTATUS NetrBrowserStatisticsClear();
+	[todo] NTSTATUS NetrBrowserStatisticsClear();
 
 	/******************/
 	/* Function  0x08 */
-	NTSTATUS NetrBrowserStatisticsGet();
+	[todo] NTSTATUS NetrBrowserStatisticsGet();
 
 	/******************/
 	/* Function  0x09 */
-	NTSTATUS BrowserrSetNetlogonState();
+	[todo] NTSTATUS BrowserrSetNetlogonState();
 
 	/******************/
 	/* Function  0x0a */
-	NTSTATUS BrowserrQueryEmulatedDomains();
+	[todo] NTSTATUS BrowserrQueryEmulatedDomains();
 
 	/******************/
 	/* Function  0x0b */
-	NTSTATUS BrowserrServerEnumEx();
+	[todo] NTSTATUS BrowserrServerEnumEx();
 
 }

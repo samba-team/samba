@@ -10,7 +10,7 @@
  (used by DCOM)
  */
 
-import "orpc.idl";
+import "misc.idl", "orpc.idl";
 
 [ 
 	uuid("99fcfec4-5260-101b-bbcb-00aa0021347a"),

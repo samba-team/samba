@@ -73,7 +73,7 @@ static NTSTATUS samdb_privilege_setup_sid(void *samctx, TALLOC_CTX *mem_ctx,
   setup the privilege mask for this security token based on our
   local SAM
 */
-_PUBLIC_ NTSTATUS samdb_privilege_setup(struct loadparm_context *lp_ctx, struct security_token *token)
+NTSTATUS samdb_privilege_setup(struct loadparm_context *lp_ctx, struct security_token *token)
 {
 	void *samctx;
 	TALLOC_CTX *mem_ctx;
