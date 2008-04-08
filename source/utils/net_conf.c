@@ -314,9 +314,11 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
-		werr = smbconf_drop(conf_ctx);
-		if (!W_ERROR_IS_OK(werr)) {
-			goto done;
+		if (!opt_testmode) {
+			werr = smbconf_drop(conf_ctx);
+			if (!W_ERROR_IS_OK(werr)) {
+				goto done;
+			}
 		}
 		for (sidx = 0; sidx < num_shares; sidx++) {
 			werr = import_process_service(conf_ctx,
