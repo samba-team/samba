@@ -64,7 +64,7 @@ struct krb5_pk_init_ctx_data {
     krb5_data *clientDHNonce;
     struct krb5_dh_moduli **m;
     hx509_peer_info peer;
-    int type;
+    enum krb5_pk_type type;
     unsigned int require_binding:1;
     unsigned int require_eku:1;
     unsigned int require_krbtgt_otherName:1;
