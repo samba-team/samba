@@ -1,5 +1,7 @@
 2008-04-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5_locl.h: Name the pkinit type enum.
+
 	* kdc/pkinit.c: Rename constants to match global header.
 
 	* lib/krb5/pkinit.c: Drop krb5_pk_identity and rename constants to
