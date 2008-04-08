@@ -253,17 +253,10 @@ sub PythonStruct($$$$$$)
 	return "&$typeobject";
 }
 
-sub PythonFunction($$$)
+sub PythonFunctionBody($$$)
 {
 	my ($self, $fn, $iface, $prettyname) = @_;
 
-	my $docstring = $self->DocString($fn, $fn->{NAME});
-
-	my $fnname = "py_$fn->{NAME}";
-
-	$self->pidl("static PyObject *$fnname(PyObject *self, PyObject *args, PyObject *kwargs)");
-	$self->pidl("{");
-	$self->indent;
 	$self->pidl("$iface\_InterfaceObject *iface = ($iface\_InterfaceObject *)self;");
 	$self->pidl("NTSTATUS status;");
 	$self->pidl("TALLOC_CTX *mem_ctx = talloc_new(NULL);");
@@ -370,15 +363,37 @@ sub PythonFunction($$$)
 
 	$self->pidl("talloc_free(mem_ctx);");
 	$self->pidl("return result;");
+
+	return $signature;
+}
+
+sub PythonFunction($$$)
+{
+	my ($self, $fn, $iface, $prettyname) = @_;
+
+	my $fnname = "py_$fn->{NAME}";
+	my $docstring = $self->DocString($fn, $fn->{NAME});
+
+	$self->pidl("static PyObject *$fnname(PyObject *self, PyObject *args, PyObject *kwargs)");
+	$self->pidl("{");
+	$self->indent;
+	if (has_property($fn, "todo")) {
+		$self->pidl("PyErr_SetString(PyExc_NotImplementedError, \"No marshalling code available yet for $prettyname\");");
+		$self->pidl("return NULL;");
+		unless ($docstring) { $docstring = "NULL"; }
+	} else {
+		my $signature = $self->PythonFunctionBody($fn, $iface, $prettyname);
+
+		if ($docstring) {
+			$docstring = "\"$signature\\n\\n\"$docstring";
+		} else {
+			$docstring = "\"$signature\"";
+		}
+	}
+
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
-
-	if ($docstring) {
-		$docstring = "\"$signature\\n\\n\"$docstring";
-	} else {
-		$docstring = "\"$signature\"";
-	}
 
 	return ($fnname, $docstring);
 }
