@@ -20,6 +20,8 @@
 #include "includes.h"
 #include "smbconf_private.h"
 
+#define INCLUDES_VALNAME "includes"
+
 struct reg_private_data {
 	NT_USER_TOKEN *token;
 	bool open;		/* did _we_ open the registry? */
@@ -259,6 +261,51 @@ static WERROR smbconf_reg_set_value(struct registry_key *key,
 	}
 
 done:
+	return werr;
+}
+
+static WERROR smbconf_reg_set_multi_sz_value(struct registry_key *key,
+					     const char *valname,
+					     const uint32_t num_strings,
+					     const char **strings)
+{
+	WERROR werr;
+	struct registry_value *value;
+	uint32_t count;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+
+	if (strings == NULL) {
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	value = TALLOC_ZERO_P(tmp_ctx, struct registry_value);
+
+	value->type = REG_MULTI_SZ;
+	value->v.multi_sz.num_strings = num_strings;
+	value->v.multi_sz.strings = TALLOC_ARRAY(tmp_ctx, char *, num_strings);
+	if (value->v.multi_sz.strings == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+	for (count = 0; count < num_strings; count++) {
+		value->v.multi_sz.strings[count] =
+			talloc_strdup(value->v.multi_sz.strings,
+				      strings[count]);
+		if (value->v.multi_sz.strings[count] == NULL) {
+			werr = WERR_NOMEM;
+			goto done;
+		}
+	}
+
+	werr = reg_setvalue(key, valname, value);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(5, ("Error adding value '%s' to key '%s': %s\n",
+			  valname, key->key->name, dos_errstr(werr)));
+	}
+
+done:
+	TALLOC_FREE(tmp_ctx);
 	return werr;
 }
 
@@ -782,7 +829,60 @@ static WERROR smbconf_reg_get_includes(struct smbconf_ctx *ctx,
 				       uint32_t *num_includes,
 				       char ***includes)
 {
-	return WERR_NOT_SUPPORTED;
+	WERROR werr;
+	uint32_t count;
+	struct registry_key *key = NULL;
+	struct registry_value *value = NULL;
+	char **tmp_includes = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+
+	werr = smbconf_reg_open_service_key(tmp_ctx, ctx, service,
+					    REG_KEY_READ, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	if (!smbconf_value_exists(key, INCLUDES_VALNAME)) {
+		/* no includes */
+		goto done;
+	}
+
+	werr = reg_queryvalue(tmp_ctx, key, INCLUDES_VALNAME, &value);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	if (value->type != REG_MULTI_SZ) {
+		/* wront type -- ignore */
+		goto done;
+	}
+
+	for (count = 0; count < value->v.multi_sz.num_strings; count++)
+	{
+		werr = smbconf_add_string_to_array(tmp_ctx,
+					&tmp_includes,
+					count,
+					value->v.multi_sz.strings[count]);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+	}
+
+	if (count > 0) {
+		*includes = talloc_move(mem_ctx, &tmp_includes);
+		if (*includes == NULL) {
+			werr = WERR_NOMEM;
+			goto done;
+		}
+		*num_includes = count;
+	} else {
+		*num_includes = 0;
+		*includes = NULL;
+	}
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return werr;
 }
 
 static WERROR smbconf_reg_set_includes(struct smbconf_ctx *ctx,
@@ -790,7 +890,22 @@ static WERROR smbconf_reg_set_includes(struct smbconf_ctx *ctx,
 				       uint32_t num_includes,
 				       const char **includes)
 {
-	return WERR_NOT_SUPPORTED;
+	WERROR werr = WERR_OK;
+	struct registry_key *key = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+
+	werr = smbconf_reg_open_service_key(tmp_ctx, ctx, service,
+					    REG_KEY_ALL, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = smbconf_reg_set_multi_sz_value(key, INCLUDES_VALNAME,
+					      num_includes, includes);
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return werr;
 }
 
 
