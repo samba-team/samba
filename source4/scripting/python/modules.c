@@ -47,6 +47,7 @@ static void initdcerpc_security(void) {}
 extern void initlsa(void);
 extern void initsvcctl(void);
 extern void initwkssvc(void);
+extern void initunixinfo(void);
 extern void init_libcli_nbt(void);
 extern void init_libcli_smb(void);
 
