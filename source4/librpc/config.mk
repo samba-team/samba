@@ -654,5 +654,17 @@ PRIVATE_DEPENDENCIES = RPC_NDR_LSA
 OBJ_FILES = gen_ndr/py_wkssvc.o
 PRIVATE_DEPENDENCIES = RPC_NDR_WKSSVC
 
+[PYTHON::python_dfs]
+OBJ_FILES = gen_ndr/py_dfs.o
+PRIVATE_DEPENDENCIES = RPC_NDR_DFS
+
+[PYTHON::python_unixinfo]
+OBJ_FILES = gen_ndr/py_unixinfo.o
+PRIVATE_DEPENDENCIES = RPC_NDR_UNIXINFO
+
+[PYTHON::python_drsuapi]
+OBJ_FILES = gen_ndr/py_drsuapi.o
+PRIVATE_DEPENDENCIES = RPC_NDR_DRSUAPI
+
 [PYTHON::python_dcerpc_security]
 OBJ_FILES = gen_ndr/py_security.o
