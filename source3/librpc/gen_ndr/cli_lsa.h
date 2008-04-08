@@ -131,7 +131,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfo(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
 					   struct policy_handle *trustdom_handle /* [in] [ref] */,
 					   enum lsa_TrustDomInfoEnum level /* [in]  */,
-					   union lsa_TrustedDomainInfo *info /* [out] [unique,switch_is(level)] */);
+					   union lsa_TrustedDomainInfo **info /* [out] [ref,switch_is(level)] */);
 NTSTATUS rpccli_lsa_SetInformationTrustedDomain(struct rpc_pipe_client *cli,
 						TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_lsa_OpenSecret(struct rpc_pipe_client *cli,
