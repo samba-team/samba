@@ -48,7 +48,7 @@ XFILE *x_stderr = &_x_stderr;
 /* simulate setvbuf() */
 int x_setvbuf(XFILE *f, char *buf, int mode, size_t size)
 {
-	x_fflush(f);
+	if (x_fflush(f) != 0) return -1;
 	if (f->bufused) return -1;
 
 	/* on files being read full buffering is the only option */
@@ -151,7 +151,7 @@ int x_fclose(XFILE *f)
 	int ret;
 
 	/* make sure we flush any buffered data */
-	x_fflush(f);
+	(void)x_fflush(f);
 
 	ret = close(f->fd);
 	f->fd = -1;
@@ -190,7 +190,9 @@ size_t x_fwrite(const void *p, size_t size, size_t nmemb, XFILE *f)
 
 		if (n == 0) {
 			/* it's full, flush it */
-			x_fflush(f);
+			if (x_fflush(f) != 0) {
+				return -1;
+			}
 			continue;
 		}
 
@@ -205,7 +207,9 @@ size_t x_fwrite(const void *p, size_t size, size_t nmemb, XFILE *f)
 		int i;
 		for (i=(size*nmemb)-1; i>=0; i--) {
 			if (*(i+(const char *)p) == '\n') {
-				x_fflush(f);
+				if (x_fflush(f) != 0) {
+					return -1;
+				}
 				break;
 			}
 		}
