@@ -337,6 +337,7 @@ WERROR smbconf_delete_global_parameter(struct smbconf_ctx *ctx,
 }
 
 WERROR smbconf_get_includes(struct smbconf_ctx *ctx,
+			    TALLOC_CTX *mem_ctx,
 			    const char *service,
 			    uint32_t *num_includes, char ***includes)
 {
@@ -344,7 +345,8 @@ WERROR smbconf_get_includes(struct smbconf_ctx *ctx,
 		return WERR_NO_SUCH_SERVICE;
 	}
 
-	return ctx->ops->get_includes(ctx, service, num_includes, includes);
+	return ctx->ops->get_includes(ctx, mem_ctx, service, num_includes,
+				      includes);
 }
 
 WERROR smbconf_set_includes(struct smbconf_ctx *ctx,
