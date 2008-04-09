@@ -74,4 +74,12 @@ WERROR DsGetDcName_r(struct libnetapi_ctx *ctx,
 		     struct DsGetDcName *r);
 WERROR DsGetDcName_l(struct libnetapi_ctx *ctx,
 		     struct DsGetDcName *r);
+NET_API_STATUS NetUserAdd(const char * server_name /* [in] [unique] */,
+			  uint32_t level /* [in] */,
+			  uint8_t *buffer /* [in] [ref] */,
+			  uint32_t *parm_error /* [out] [ref] */);
+WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
+		    struct NetUserAdd *r);
+WERROR NetUserAdd_l(struct libnetapi_ctx *ctx,
+		    struct NetUserAdd *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */

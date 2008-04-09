@@ -57,6 +57,21 @@ struct DOMAIN_CONTROLLER_INFO {
 	const char * client_site_name;
 };
 
+struct USER_INFO_0 {
+	const char * usri0_name;
+};
+
+struct USER_INFO_1 {
+	const char * usri1_name;
+	const char * usri1_password;
+	uint32_t usri1_password_age;
+	uint32_t usri1_priv;
+	const char * usri1_home_dir;
+	const char * usri1_comment;
+	uint32_t usri1_flags;
+	const char * usri1_script_path;
+};
+
 #endif /* _HEADER_libnetapi */
 
 /****************************************************************
@@ -176,4 +191,13 @@ NET_API_STATUS DsGetDcName(const char * server_name /* [in] [unique] */,
 			   const char * site_name /* [in] [unique] */,
 			   uint32_t flags /* [in] */,
 			   struct DOMAIN_CONTROLLER_INFO **dc_info /* [out] [ref] */);
+
+/****************************************************************
+ NetUserAdd
+****************************************************************/
+
+NET_API_STATUS NetUserAdd(const char * server_name /* [in] */,
+			  uint32_t level /* [in] */,
+			  uint8_t *buffer /* [in] [ref] */,
+			  uint32_t *parm_error /* [out] [ref] */);
 #endif
