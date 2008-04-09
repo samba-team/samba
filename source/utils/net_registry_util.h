@@ -24,8 +24,10 @@
 
 void print_registry_key(const char *keyname, NTTIME *modtime);
 
-void print_registry_value(const char *valname,
-			  const struct registry_value *valvalue);
+void print_registry_value(const struct registry_value *valvalue);
+
+void print_registry_value_with_name(const char *valname,
+				    const struct registry_value *valvalue);
 
 /**
  * Split path into hive name and subkeyname

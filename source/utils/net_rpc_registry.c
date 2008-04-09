@@ -661,7 +661,7 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	}
 
 	for (i=0; i<num_values; i++) {
-		print_registry_value(names[i], values[i]);
+		print_registry_value_with_name(names[i], values[i]);
 	}
 
 	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key, NULL);

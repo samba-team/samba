@@ -156,7 +156,7 @@ static int net_registry_enumerate(int argc, const char **argv)
 	     W_ERROR_IS_OK(werr);
 	     count++)
 	{
-		print_registry_value(valname, valvalue);
+		print_registry_value_with_name(valname, valvalue);
 	}
 	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
 		goto done;
