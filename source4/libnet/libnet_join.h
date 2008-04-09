@@ -79,5 +79,22 @@ struct libnet_Join {
 	} out;
 };
 
+struct libnet_set_join_secrets {
+	struct {
+		const char *domain_name;
+		const char *realm;
+		const char *netbios_name;
+		const char *account_name;
+		enum netr_SchannelType join_type;
+		const char *join_password;
+		int kvno;
+		struct dom_sid *domain_sid;
+	} in;
+	
+	struct {
+		const char *error_string;
+	} out;
+};
+
 
 #endif /* __LIBNET_JOIN_H__ */
