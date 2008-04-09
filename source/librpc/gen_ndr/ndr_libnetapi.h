@@ -28,7 +28,9 @@
 
 #define NDR_NETUSERDEL (0x0a)
 
-#define NDR_LIBNETAPI_CALL_COUNT (11)
+#define NDR_NETUSERENUM (0x0b)
+
+#define NDR_LIBNETAPI_CALL_COUNT (12)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -74,4 +76,7 @@ void ndr_print_NetUserAdd(struct ndr_print *ndr, const char *name, int flags, co
 enum ndr_err_code ndr_push_NetUserDel(struct ndr_push *ndr, int flags, const struct NetUserDel *r);
 enum ndr_err_code ndr_pull_NetUserDel(struct ndr_pull *ndr, int flags, struct NetUserDel *r);
 void ndr_print_NetUserDel(struct ndr_print *ndr, const char *name, int flags, const struct NetUserDel *r);
+enum ndr_err_code ndr_push_NetUserEnum(struct ndr_push *ndr, int flags, const struct NetUserEnum *r);
+enum ndr_err_code ndr_pull_NetUserEnum(struct ndr_pull *ndr, int flags, struct NetUserEnum *r);
+void ndr_print_NetUserEnum(struct ndr_print *ndr, const char *name, int flags, const struct NetUserEnum *r);
 #endif /* _HEADER_NDR_libnetapi */
