@@ -4150,7 +4150,7 @@ _krb5_pk_kdf(krb5_context context,
 	     const Ticket *ticket,
 	     krb5_keyblock *key)
 {
-    struct encryption_type *et = _find_enctype(enctype);
+    struct encryption_type *et;
     krb5_error_code ret;
     krb5_data other;
     size_t keylen, offset;
@@ -4158,11 +4158,19 @@ _krb5_pk_kdf(krb5_context context,
     unsigned char *keydata;
     unsigned char shaoutput[20];
 
-    if (der_heim_oid_cmp(oid_id_pkinit_kdf_ah_sha1(), ai->algorithm) != 0) {
+    if (der_heim_oid_cmp(oid_id_pkinit_kdf_ah_sha1(), &ai->algorithm) != 0) {
 	krb5_set_error_string(context, "kdf not supported");
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
+    if (ai->parameters != NULL &&
+	(ai->parameters->length != 2 || 
+	 memcmp(ai->parameters->data, "\x05\x00", 2) != 0)) 
+    {
+	krb5_set_error_string(context, "kdf params not NULL or the NULL-type");
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
 
+    et = _find_enctype(enctype);
     if(et == NULL) {
 	krb5_set_error_string(context, "encryption type %d not supported",
 			      enctype);
@@ -4202,7 +4210,7 @@ _krb5_pk_kdf(krb5_context context,
 
 	offset += sizeof(shaoutput);
 	counter++;
-    } while (keylen < offset);
+    } while(offset < keylen);
     memset(shaoutput, 0, sizeof(shaoutput));
 
     free(other.data);
