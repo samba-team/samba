@@ -697,24 +697,25 @@ HEIMDAL_KRB5_1.0 {
 		_krb5_krb_cr_err_reply;
 
 		# Shared with libkdc
-		_krb5_principalname2krb5_principal;
-		_krb5_principal2principalname;
-		_krb5_s4u2self_to_checksumdata;
-		_krb5_put_int;
-		_krb5_get_int;
-		_krb5_pk_load_id;
-		_krb5_parse_moduli;
-		_krb5_pk_mk_ContentInfo;
-		_krb5_dh_group_ok;
-		_krb5_pk_octetstring2key;
-		_krb5_pk_allow_proxy_certificate;
-		_krb5_pac_sign;
-		_krb5_plugin_find;
-		_krb5_plugin_get_symbol;
-		_krb5_plugin_get_next;
-		_krb5_plugin_free;
 		_krb5_AES_string_to_default_iterator;
+		_krb5_dh_group_ok;
 		_krb5_get_host_realm_int;
+		_krb5_get_int;
+		_krb5_pac_sign;
+		_krb5_parse_moduli;
+		_krb5_pk_allow_proxy_certificate;
+		_krb5_pk_kdf;
+		_krb5_pk_load_id;
+		_krb5_pk_mk_ContentInfo;
+		_krb5_pk_octetstring2key;
+		_krb5_plugin_find;
+		_krb5_plugin_free;
+		_krb5_plugin_get_next;
+		_krb5_plugin_get_symbol;
+		_krb5_principal2principalname;
+		_krb5_principalname2krb5_principal;
+		_krb5_put_int;
+		_krb5_s4u2self_to_checksumdata;
 
 		# testing
 		_krb5_aes_cts_encrypt;
