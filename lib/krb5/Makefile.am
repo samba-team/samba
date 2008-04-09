@@ -36,6 +36,7 @@ TESTS =						\
 	test_plugin				\
 	test_princ				\
 	test_pkinit_dh2key			\
+	test_pknistkdf				\
 	test_time
 
 check_PROGRAMS = $(TESTS) test_hostname
