@@ -200,4 +200,12 @@ NET_API_STATUS NetUserAdd(const char * server_name /* [in] */,
 			  uint32_t level /* [in] */,
 			  uint8_t *buffer /* [in] [ref] */,
 			  uint32_t *parm_error /* [out] [ref] */);
+
+/****************************************************************
+ NetUserDel
+****************************************************************/
+
+NET_API_STATUS NetUserDel(const char * server_name /* [in] */,
+			  const char * user_name /* [in] */);
+
 #endif

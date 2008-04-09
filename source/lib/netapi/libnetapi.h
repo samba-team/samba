@@ -82,4 +82,10 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 		    struct NetUserAdd *r);
 WERROR NetUserAdd_l(struct libnetapi_ctx *ctx,
 		    struct NetUserAdd *r);
+NET_API_STATUS NetUserDel(const char * server_name /* [in] [unique] */,
+			  const char * user_name /* [in] [ref] */);
+WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
+		    struct NetUserDel *r);
+WERROR NetUserDel_l(struct libnetapi_ctx *ctx,
+		    struct NetUserDel *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */
