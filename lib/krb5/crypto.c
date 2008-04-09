@@ -33,6 +33,7 @@
 
 #include "krb5_locl.h"
 RCSID("$Id$");
+#include <pkinit_asn1.h>
 
 #undef CRYPTO_DEBUG
 #ifdef CRYPTO_DEBUG
@@ -4049,6 +4050,134 @@ _krb5_pk_octetstring2key(krb5_context context,
     free(keydata);
     return ret;
 }
+
+static krb5_error_code
+encode_otherinfo(krb5_context context,
+		 const AlgorithmIdentifier *algorithmID,
+		 krb5_const_principal client,
+		 krb5_const_principal server,
+		 krb5_enctype enctype,
+		 const krb5_data *as_req,
+		 const krb5_data *pk_as_rep,
+		 const Ticket *ticket,
+		 krb5_data *other)
+{
+    PkinitSP80056AOtherInfo otherinfo;
+    PkinitSuppPubInfo pubinfo;
+    krb5_error_code ret;
+    krb5_data pub;
+    size_t size;
+
+    krb5_data_zero(other);
+    memset(&otherinfo, 0, sizeof(otherinfo));
+    memset(&pubinfo, 0, sizeof(pubinfo));
+
+    pubinfo.enctype = enctype;
+    pubinfo.as_REQ = *as_req;
+    pubinfo.pk_as_rep = *pk_as_rep;
+    pubinfo.ticket = *ticket;
+    ASN1_MALLOC_ENCODE(PkinitSuppPubInfo, pub.data, pub.length,
+		       &pubinfo, &size, ret);
+    if (ret) {
+	krb5_set_error_string(context, "out of memory");
+	return ret;
+    }
+    if (pub.length != size)
+	krb5_abortx(context, "asn1 compiler internal error");
+
+    otherinfo.algorithmID = *algorithmID;
+
+    /* XXX set from client/KRB5PrincipalName */
+    krb5_data_zero(&otherinfo.partyUInfo); 
+    /* XXX set from server/KRB5PrincipalName */
+    krb5_data_zero(&otherinfo.partyVInfo); 
+
+    otherinfo.suppPubInfo = &pub;
+    
+    ASN1_MALLOC_ENCODE(PkinitSP80056AOtherInfo, other->data, other->length, 
+		       &otherinfo, &size, ret);
+    free(pub.data);
+    if (ret) {
+	krb5_set_error_string(context, "out of memory");
+	return ret;
+    }
+    if (other->length != size)
+	krb5_abortx(context, "asn1 compiler internal error");
+
+    return 0;
+}
+
+krb5_error_code
+_krb5_pk_kdf(krb5_context context,
+	     const AlgorithmIdentifier *algorithmID,
+	     const void *dhdata,
+	     size_t dhsize,
+	     krb5_const_principal client,
+	     krb5_const_principal server,
+	     krb5_enctype enctype,
+	     const krb5_data *as_req,
+	     const krb5_data *pk_as_rep,
+	     const Ticket *ticket,
+	     krb5_keyblock *key)
+{
+    struct encryption_type *et = _find_enctype(enctype);
+    krb5_error_code ret;
+    krb5_data other;
+    size_t keylen, offset;
+    uint32_t counter = 1;
+    unsigned char *keydata;
+    unsigned char shaoutput[20];
+
+    if(et == NULL) {
+	krb5_set_error_string(context, "encryption type %d not supported",
+			      enctype);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    keylen = (et->keytype->bits + 7) / 8;
+
+    keydata = malloc(keylen);
+    if (keydata == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
+
+    ret = encode_otherinfo(context, algorithmID, client, server, 
+			   enctype, as_req, pk_as_rep, ticket, &other);
+    if (ret) {
+	free(keydata);
+	return ret;
+    }
+
+    offset = 0;
+    do {
+	unsigned char cdata[4];
+	SHA_CTX m;
+	
+	SHA1_Init(&m);
+	_krb5_put_int(cdata, counter, 4);
+	SHA1_Update(&m, cdata, 4);
+	SHA1_Update(&m, dhdata, dhsize);
+	SHA1_Update(&m, other.data, other.length);
+	SHA1_Final(shaoutput, &m);
+
+	memcpy((unsigned char *)keydata + offset,
+	       shaoutput,
+	       min(keylen - offset, sizeof(shaoutput)));
+
+	offset += sizeof(shaoutput);
+	counter++;
+    } while (keylen < offset);
+    memset(shaoutput, 0, sizeof(shaoutput));
+
+    free(other.data);
+
+    ret = krb5_random_to_key(context, enctype, keydata, keylen, key);
+    memset(keydata, 0, sizeof(keylen));
+    free(keydata);
+
+    return ret;
+}
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_crypto_prf_length(krb5_context context,
