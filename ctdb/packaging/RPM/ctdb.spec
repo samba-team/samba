@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 32
+Release: 33
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,12 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Thu Apr 10 2008 : Version 1.0.33
+ - Add facilities to include site local adaptations to the eventscript
+   by /etc/ctdb/rc.local which will be read by all eventscripts.
+ - Add a "ctdb version" command.
+ - Secure the domain socket with proper permissions from Chris Cowan
+ - Bugfixes for AIX from Chris Cowan
 * Wed Apr 02 2008 : Version 1.0.32
  - Add a control to have a node execute the eventscripts with arbitrary
    command line arguments.
