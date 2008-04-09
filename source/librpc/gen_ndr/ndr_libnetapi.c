@@ -599,3 +599,34 @@ _PUBLIC_ void ndr_print_NetUserAdd(struct ndr_print *ndr, const char *name, int 
 	ndr->depth--;
 }
 
+_PUBLIC_ void ndr_print_NetUserDel(struct ndr_print *ndr, const char *name, int flags, const struct NetUserDel *r)
+{
+	ndr_print_struct(ndr, name, "NetUserDel");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "NetUserDel");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "server_name", r->in.server_name);
+		ndr->depth++;
+		if (r->in.server_name) {
+			ndr_print_string(ndr, "server_name", r->in.server_name);
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "user_name", r->in.user_name);
+		ndr->depth++;
+		ndr_print_string(ndr, "user_name", r->in.user_name);
+		ndr->depth--;
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "NetUserDel");
+		ndr->depth++;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
