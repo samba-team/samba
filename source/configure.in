@@ -307,6 +307,18 @@ AC_CACHE_CHECK([that the C compiler understands -w2],samba_cv_HAVE_w2, [
   samba_cv_HAVE_w2=yes,samba_cv_HAVE_w2=no,samba_cv_HAVE_w2=cross)])
 if test x"$samba_cv_HAVE_w2" = x"yes"; then
    Werror_FLAGS="-w2"
+else
+dnl Check if the C compiler understands -errwarn
+AC_CACHE_CHECK([that the C compiler understands -errwarn],samba_cv_HAVE_errwarn, [
+  AC_TRY_RUN_STRICT([
+   int main(void)
+   {
+	return 0;
+   }],[-errwarn=%all],[$CPPFLAGS],[$LDFLAGS],
+   samba_cv_HAVE_errwarn=yes,samba_cv_HAVE_errwarn=no,samba_cv_HAVE_errwarn=cross)])
+if test x"$samba_cv_HAVE_errwarn" = x"yes"; then
+   Werror_FLAGS="-errwarn=%all"
+fi
 fi
 fi
 
