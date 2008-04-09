@@ -256,7 +256,8 @@ static int print_command(int argc, char **argv)
 
 		/* Add job to end of queue */
 
-		queue.dptr = SMB_MALLOC(value.dsize + sizeof(struct vlp_job));
+		queue.dptr = (unsigned char *)SMB_MALLOC(value.dsize +
+							sizeof(struct vlp_job));
 		if (!queue.dptr) return 1;
 
 		memcpy(queue.dptr, value.dptr, value.dsize);
