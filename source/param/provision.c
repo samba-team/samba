@@ -20,12 +20,11 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "lib/ldb_wrap.h"
-#include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
-#include "torture/util.h"
 #include "librpc/ndr/libndr.h"
 
 #include "param/param.h"
+#include "param/provision.h"
 #include <Python.h>
 #include "scripting/python/modules.h"
 

@@ -30,7 +30,7 @@ class RpcEchoTests(unittest.TestCase):
         self.assertEquals(2, self.conn.AddOne(1))
 
     def test_echodata(self):
-        self.assertEquals([1,2,3], self.conn.EchoData(3, [1, 2, 3]))
+        self.assertEquals([1,2,3], self.conn.EchoData([1, 2, 3]))
 
     def test_call(self):
         self.assertEquals(u"foobar", self.conn.TestCall(u"foobar"))
