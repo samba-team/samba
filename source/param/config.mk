@@ -12,6 +12,10 @@ PRIVATE_PROTO_HEADER = proto.h
 
 PUBLIC_HEADERS += param/param.h
 
+[SUBSYSTEM::PROVISION]
+OBJ_FILES = provision.o
+PRIVATE_DEPENDENCIES = LIBPYTHON
+
 #################################
 # Start SUBSYSTEM share
 [SUBSYSTEM::share]
