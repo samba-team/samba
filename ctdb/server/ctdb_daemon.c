@@ -596,7 +596,7 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 
 	if (chown(ctdb->daemon.name, geteuid(), getegid()) != 0 ||
 	    chmod(ctdb->daemon.name, 0700) != 0) {
-		DEBUG(DEBUG_CRIT,("Unable to secure ctdb socket '%s', ctdb->daemon.name\n"));
+		DEBUG(DEBUG_CRIT,("Unable to secure ctdb socket '%s', ctdb->daemon.name\n", ctdb->daemon.name));
 		goto failed;
 	} 
 
