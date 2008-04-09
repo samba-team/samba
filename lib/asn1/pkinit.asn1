@@ -171,6 +171,14 @@ ReplyKeyPack-Win2k ::= SEQUENCE {
 	...
 }
 
+PkinitSP80056AOtherInfo ::= SEQUENCE { 
+	algorithmID   AlgorithmIdentifier, 
+	partyUInfo     [0] OCTET STRING, 
+	partyVInfo     [1] OCTET STRING, 
+	suppPubInfo    [2] OCTET STRING OPTIONAL, 
+	suppPrivInfo   [3] OCTET STRING OPTIONAL 
+}
+
 PkinitSuppPubInfo ::= SEQUENCE {
        enctype           [0] INTEGER (-2147483648..2147483647),
        as-REQ            [1] OCTET STRING,
