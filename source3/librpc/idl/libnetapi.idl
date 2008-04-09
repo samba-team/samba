@@ -90,4 +90,25 @@ interface libnetapi
 		[out,ref] DOMAIN_CONTROLLER_INFO **dc_info
 		);
 
+	[public] typedef struct {
+		string usri0_name;
+	} USER_INFO_0;
+
+	[public] typedef struct {
+		string usri1_name;
+		string usri1_password;
+		uint32 usri1_password_age;
+		uint32 usri1_priv;
+		string usri1_home_dir;
+		string usri1_comment;
+		uint32 usri1_flags;
+		string usri1_script_path;
+	} USER_INFO_1;
+
+	[nopush,nopull] NET_API_STATUS NetUserAdd(
+		[in,unique] string *server_name,
+		[in] uint32 level,
+		[in,ref] uint8 *buffer,
+		[out,ref] uint32 *parm_error
+		);
 }
