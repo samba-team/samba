@@ -5,7 +5,7 @@ pidl-testcov: pidl/Makefile
 	cd pidl && cover -test
 
 installpidl:: pidl/Makefile
-	$(MAKE) -C pidl install_vendor PREFIX=$(prefix)
+	$(MAKE) -C pidl install_vendor VENDORPREFIX=$(prefix)
 
 ifeq ($(HAVE_PERL_EXTUTILS_MAKEMAKER),1)
 install:: installpidl

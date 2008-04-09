@@ -42,6 +42,7 @@ extern void initepmapper(void);
 extern void initinitshutdown(void);
 static void initdcerpc_misc(void) {} 
 extern void initmgmt(void);
+extern void initnet(void);
 extern void initatsvc(void);
 extern void initsamr(void);
 static void initdcerpc_security(void) {}

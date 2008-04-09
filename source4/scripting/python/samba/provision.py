@@ -264,9 +264,11 @@ def provision_paths_from_lp(lp, dnsdomain):
 
     return paths
 
+
 def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None, serverrole=None,
                 rootdn=None, domaindn=None, configdn=None, schemadn=None, serverdn=None, 
                 sitename=None):
+    """Guess configuration settings to use."""
 
     if hostname is None:
         hostname = socket.gethostname().split(".")[0].lower()
@@ -400,6 +402,7 @@ def load_or_make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrol
 
     return lp
 
+
 def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
                         users_gid, wheel_gid):
     """setup reasonable name mappings for sam names to unix names.
@@ -424,6 +427,7 @@ def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
 
     idmap.setup_name_mapping(sid + "-500", idmap.TYPE_UID, root_uid)
     idmap.setup_name_mapping(sid + "-513", idmap.TYPE_GID, users_gid)
+
 
 def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info, 
                            credentials, names,
@@ -637,6 +641,7 @@ def setup_registry(path, setup_path, session_info, credentials, lp):
     assert os.path.exists(provision_reg)
     reg.diff_apply(provision_reg)
 
+
 def setup_idmapdb(path, setup_path, session_info, credentials, lp):
     """Setup the idmap database.
 
@@ -655,6 +660,7 @@ def setup_idmapdb(path, setup_path, session_info, credentials, lp):
     idmap_ldb.erase()
     idmap_ldb.load_ldif_file_add(setup_path("idmap_init.ldif"))
     return idmap_ldb
+
 
 def setup_samdb_rootdse(samdb, setup_path, names):
     """Setup the SamDB rootdse.
@@ -1060,6 +1066,7 @@ def provision(setup_dir, message, session_info,
     result.samdb = samdb
     return result
 
+
 def provision_become_dc(setup_dir=None,
                         smbconf=None, targetdir=None, realm=None, 
                         rootdn=None, domaindn=None, schemadn=None, configdn=None,
@@ -1081,7 +1088,11 @@ def provision_become_dc(setup_dir=None,
               domain=domain, hostname=hostname, hostip="127.0.0.1", domainsid=domainsid, machinepass=machinepass, serverrole="domain controller", sitename=sitename);
     
 
-def setup_db_config(setup_path, file, dbdir):
+def setup_db_config(setup_path, dbdir):
+    """Setup a Berkeley database.
+    
+    :param setup_path: Setup path function.
+    :param dbdir: Database directory."""
     if not os.path.isdir(os.path.join(dbdir, "bdb-logs")):
         os.makedirs(os.path.join(dbdir, "bdb-logs"), 0700);
     if not os.path.isdir(os.path.join(dbdir, "tmp")):
@@ -1211,12 +1222,11 @@ refint_attributes""" + refint_attributes + "\n";
         setup_file(setup_path("modules.conf"), paths.modulesconf,
                    {"REALM": names.realm})
         
-        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "db", "user"))
-        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "db", "config"))
-        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "db", "schema"))
+        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "user"))
+        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "config"))
+        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "schema"))
         mapping = "schema-map-openldap-2.3"
         backend_schema = "backend-schema.schema"
-        
 
         ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
         if ldap_backend_port is not None:

@@ -38,6 +38,7 @@
 #include "auth/auth.h"
 #include "param/param.h"
 #include "torture/util.h"
+#include "param/provision.h"
 
 struct test_become_dc_state {
 	struct libnet_context *ctx;

@@ -16,8 +16,8 @@ PUBLIC_DEPENDENCIES = \
 PUBLIC_HEADERS += torture/torture.h torture/ui.h
 
 [SUBSYSTEM::TORTURE_UTIL]
-OBJ_FILES = util_smb.o util_provision.o
-PRIVATE_DEPENDENCIES = LIBCLI_RAW LIBPYTHON smbcalls
+OBJ_FILES = util_smb.o
+PRIVATE_DEPENDENCIES = LIBCLI_RAW LIBPYTHON smbcalls PROVISION
 PUBLIC_DEPENDENCIES = POPT_CREDENTIALS
 
 #################################

@@ -20,29 +20,6 @@
 #ifndef _TORTURE_PROVISION_H_
 #define _TORTURE_PROVISION_H_
 
-struct provision_settings {
-	const char *dns_name;
-	const char *site_name;
-	const char *root_dn_str; 
-	const char *domain_dn_str;
-	const char *config_dn_str;
-	const char *schema_dn_str;
-	const char *server_dn_str;
-	const struct GUID *invocation_id;
-	const char *netbios_name;
-	const char *host_ip;
-	const char *realm;
-	const char *domain;
-	const struct GUID *ntds_guid;
-	const char *ntds_dn_str;
-	const char *machine_password;
-	const char *targetdir;
-};
-
-NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
-						struct provision_settings *settings);
-
-
 /**
   setup a directory ready for a test
 */
