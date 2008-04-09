@@ -5174,7 +5174,7 @@ FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
 FN_GLOBAL_INTEGER(lp_lock_spin_time, &Globals.iLockSpinTime)
 FN_GLOBAL_INTEGER(lp_usershare_max_shares, &Globals.iUsershareMaxShares)
 FN_GLOBAL_CONST_STRING(lp_socket_options, &Globals.szSocketOptions)
-FN_GLOBAL_INTEGER(lp_config_backend, &Globals.ConfigBackend);
+FN_GLOBAL_INTEGER(lp_config_backend, &Globals.ConfigBackend)
 
 FN_LOCAL_STRING(lp_preexec, szPreExec)
 FN_LOCAL_STRING(lp_postexec, szPostExec)
@@ -5194,7 +5194,7 @@ FN_GLOBAL_STRING(lp_cups_server, &Globals.szCupsServer)
 FN_GLOBAL_STRING(lp_iprint_server, &Globals.szIPrintServer)
 FN_GLOBAL_CONST_STRING(lp_ctdbd_socket, &Globals.ctdbdSocket)
 FN_GLOBAL_LIST(lp_cluster_addresses, &Globals.szClusterAddresses)
-FN_GLOBAL_BOOL(lp_clustering, &Globals.clustering);
+FN_GLOBAL_BOOL(lp_clustering, &Globals.clustering)
 FN_LOCAL_STRING(lp_printcommand, szPrintcommand)
 FN_LOCAL_STRING(lp_lpqcommand, szLpqcommand)
 FN_LOCAL_STRING(lp_lprmcommand, szLprmcommand)
