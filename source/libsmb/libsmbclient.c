@@ -6364,7 +6364,7 @@ smbc_free_context(SMBCCTX *context,
         SAFE_FREE(context->netbios_name);
         SAFE_FREE(context->user);
         
-        DEBUG(3, ("Context %p succesfully freed\n", context));
+        DEBUG(3, ("Context %p successfully freed\n", context));
         SAFE_FREE(context->internal);
         SAFE_FREE(context);
         return 0;

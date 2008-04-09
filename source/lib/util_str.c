@@ -2142,7 +2142,7 @@ char* ipstr_list_make(char** ipstr_list, const struct ip_service* ip_list, int i
  * @param ipstr ip string list to be parsed 
  * @param ip_list pointer to array of ip addresses which is
  *        allocated by this function and must be freed by caller
- * @return number of succesfully parsed addresses
+ * @return number of successfully parsed addresses
  **/
  
 int ipstr_list_parse(const char* ipstr_list, struct ip_service **ip_list)

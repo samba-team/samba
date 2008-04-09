@@ -994,7 +994,7 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 		ldap_state->paged_results = True;
 	}
 
-	DEBUG(3, ("ldap_connect_system: succesful connection to the LDAP server\n"));
+	DEBUG(3, ("ldap_connect_system: successful connection to the LDAP server\n"));
 	DEBUGADD(10, ("ldap_connect_system: LDAP server %s support paged results\n", 
 		ldap_state->paged_results ? "does" : "does not"));
 	return rc;
@@ -1062,7 +1062,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 
 	ldap_state->last_ping = time(NULL);
 	ldap_state->pid = sys_getpid();
-	DEBUG(4,("The LDAP server is succesfully connected\n"));
+	DEBUG(4,("The LDAP server is successfully connected\n"));
 
 	return LDAP_SUCCESS;
 }

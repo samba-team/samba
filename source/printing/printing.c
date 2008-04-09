@@ -2539,7 +2539,7 @@ BOOL print_job_end(int snum, uint32 jobid, enum file_close_type close_type)
 
 fail:
 
-	/* The print job was not succesfully started. Cleanup */
+	/* The print job was not successfully started. Cleanup */
 	/* Still need to add proper error return propagation! 010122:JRR */
 	unlink(pjob->filename);
 	pjob_delete(sharename, jobid);

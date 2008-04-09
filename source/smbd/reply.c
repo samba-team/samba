@@ -2071,7 +2071,7 @@ NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype,
 			}
 			if (SMB_VFS_UNLINK(conn,fname) == 0) {
 				count++;
-				DEBUG(3,("unlink_internals: succesful unlink "
+				DEBUG(3,("unlink_internals: successful unlink "
 					 "[%s]\n",fname));
 				notify_fname(conn, NOTIFY_ACTION_REMOVED,
 					     FILE_NOTIFY_CHANGE_FILE_NAME,
