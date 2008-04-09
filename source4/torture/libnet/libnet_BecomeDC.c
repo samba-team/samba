@@ -76,7 +76,6 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	settings.dns_name = p->dest_dsa->dns_name;
 	settings.site_name = p->dest_dsa->site_name;
 	settings.root_dn_str = p->forest->root_dn_str;
 	settings.domain_dn_str = p->domain->dn_str;
