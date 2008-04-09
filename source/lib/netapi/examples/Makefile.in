@@ -21,7 +21,8 @@ PROGS = bin/getdc@EXEEXT@ \
 	bin/dsgetdc@EXEEXT@ \
 	bin/netdomjoin@EXEEXT@ \
 	bin/netdomjoin-gui@EXEEXT@ \
-	bin/getjoinableous@EXEEXT@
+	bin/getjoinableous@EXEEXT@ \
+	bin/user_add@EXEEXT@
 
 all: $(PROGS)
 
@@ -55,6 +56,7 @@ DSGETDC_OBJ = dsgetdc/dsgetdc.o $(CMDLINE_OBJ)
 NETDOMJOIN_OBJ = netdomjoin/netdomjoin.o $(CMDLINE_OBJ)
 NETDOMJOIN_GUI_OBJ = netdomjoin-gui/netdomjoin-gui.o
 GETJOINABLEOUS_OBJ = getjoinableous/getjoinableous.o $(CMDLINE_OBJ)
+USERADD_OBJ = user/user_add.o $(CMDLINE_OBJ)
 
 bin/getdc@EXEEXT@: $(BINARY_PREREQS) $(GETDC_OBJ)
 	@echo Linking $@
@@ -75,6 +77,10 @@ bin/netdomjoin@EXEEXT@: $(BINARY_PREREQS) $(NETDOMJOIN_OBJ)
 bin/netdomjoin-gui@EXEEXT@: $(BINARY_PREREQS) $(NETDOMJOIN_GUI_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) $(GTK_FLAGS) -o $@ $(NETDOMJOIN_GUI_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(GTK_LIBS)
+
+bin/user_add@EXEEXT@: $(BINARY_PREREQS) $(USERADD_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(USERADD_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 clean:
 	-rm -f $(PROGS)
