@@ -720,7 +720,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 					 &machine_account,
 					 &machine_krb5_principal);
 		if (!NT_STATUS_IS_OK(result)) {
-			goto done;
+			goto anon_fallback;
 		}
 
 		if (lp_security() == SEC_ADS) {
@@ -802,6 +802,8 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 				ipc_domain, ipc_username ));
 		}
 	}
+
+ anon_fallback:
 
 	/* Fall back to anonymous connection, this might fail later */
 
