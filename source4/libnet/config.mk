@@ -10,6 +10,7 @@ OBJ_FILES = \
 		libnet_become_dc.o \
 		libnet_unbecome_dc.o \
 		libnet_vampire.o \
+		libnet_samsync.o \
 		libnet_samdump.o \
 		libnet_samdump_keytab.o \
 		libnet_samsync_ldb.o \
