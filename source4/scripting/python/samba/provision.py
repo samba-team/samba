@@ -690,6 +690,7 @@ def setup_self_join(samdb, names,
               "CONFIGDN": names.configdn, 
               "SCHEMADN": names.schemadn,
               "DOMAINDN": names.domaindn,
+              "SERVERDN": names.serverdn,
               "INVOCATIONID": invocationid,
               "NETBIOSNAME": names.netbiosname,
               "DEFAULTSITE": names.sitename,
@@ -773,6 +774,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "NETBIOSNAME": names.netbiosname,
             "DEFAULTSITE": names.sitename,
             "CONFIGDN": names.configdn,
+            "SERVERDN": names.serverdn,
             "POLICYGUID": policyguid,
             "DOMAINDN": names.domaindn,
             "DOMAINGUID_MOD": domainguid_mod,
@@ -803,6 +805,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "NETBIOSNAME": names.netbiosname,
             "DEFAULTSITE": names.sitename,
             "CONFIGDN": names.configdn,
+            "SERVERDN": names.serverdn
             })
 
         message("Setting up sam.ldb Samba4 schema")
@@ -821,6 +824,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "DOMAIN": names.domain,
             "SCHEMADN": names.schemadn,
             "DOMAINDN": names.domaindn,
+            "SERVERDN": names.serverdn
             })
 
         message("Setting up display specifiers")
@@ -845,6 +849,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "NETBIOSNAME": names.netbiosname,
             "DEFAULTSITE": names.sitename,
             "CONFIGDN": names.configdn,
+            "SERVERDN": names.serverdn
             })
 
         if fill == FILL_FULL:
