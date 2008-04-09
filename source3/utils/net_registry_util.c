@@ -32,10 +32,8 @@ void print_registry_key(const char *keyname, NTTIME *modtime)
 	d_printf("\n");
 }
 
-void print_registry_value(const char *valname,
-			  const struct registry_value *valvalue)
+void print_registry_value(const struct registry_value *valvalue)
 {
-	d_printf("Valuename  = %s\n", valname);
 	d_printf("Type       = %s\n",
 		 reg_type_lookup(valvalue->type));
 	switch(valvalue->type) {
@@ -62,6 +60,13 @@ void print_registry_value(const char *valname,
 		d_printf("Value      = <unprintable>\n");
 		break;
 	}
+}
+
+void print_registry_value_with_name(const char *valname,
+				    const struct registry_value *valvalue)
+{
+	d_printf("Valuename  = %s\n", valname);
+	print_registry_value(valvalue);
 	d_printf("\n");
 }
 
