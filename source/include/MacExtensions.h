@@ -236,7 +236,7 @@ enum {
 ** that contains the icon data, icon size, icon type, the file type, and file creator.
 **		
 **
-** The server returns only that the call was successful or not. 
+** The server returns only that the call was successful or not.
 */
 #define SMB_MAC_DT_ADD_ICON	  0x309
 
