@@ -487,3 +487,45 @@ NET_API_STATUS NetUserAdd(const char * server_name /* [in] [unique] */,
 	return r.out.result;
 }
 
+/****************************************************************
+ NetUserDel
+****************************************************************/
+
+NET_API_STATUS NetUserDel(const char * server_name /* [in] [unique] */,
+			  const char * user_name /* [in] [ref] */)
+{
+	struct NetUserDel r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.user_name = user_name;
+
+	/* Out parameters */
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetUserDel, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetUserDel_l(ctx, &r);
+	} else {
+		werr = NetUserDel_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetUserDel, &r);
+	}
+
+	return r.out.result;
+}
+

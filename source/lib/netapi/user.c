@@ -356,3 +356,193 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 
 	return werr;
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
+		    struct NetUserDel *r)
+{
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	NTSTATUS status;
+	WERROR werr;
+	uint32_t resume_handle = 0;
+	uint32_t num_entries = 0;
+	POLICY_HND connect_handle, builtin_handle, domain_handle, user_handle;
+	struct samr_SamArray *sam = NULL;
+	const char *domain_name = NULL;
+	struct lsa_String lsa_domain_name, lsa_account_name;
+	struct samr_Ids user_rids, name_types;
+	struct dom_sid2 *domain_sid = NULL;
+	struct dom_sid2 user_sid;
+	bool domain_found = true;
+	int i;
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(builtin_handle);
+	ZERO_STRUCT(domain_handle);
+	ZERO_STRUCT(user_handle);
+
+	status = cli_full_connection(&cli, NULL, r->in.server_name,
+				     NULL, 0,
+				     "IPC$", "IPC",
+				     ctx->username,
+				     ctx->workgroup,
+				     ctx->password,
+				     CLI_FULL_CONNECTION_USE_KERBEROS |
+				     CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS,
+				     Undefined, NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &status);
+	if (!pipe_cli) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_try_samr_connects(pipe_cli, ctx,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  &connect_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_EnumDomains(pipe_cli, ctx,
+					 &connect_handle,
+					 &resume_handle,
+					 &sam,
+					 0xffffffff,
+					 &num_entries);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	for (i=0; i<num_entries; i++) {
+
+		domain_name = sam->entries[i].name.string;
+
+		if (strequal(domain_name, builtin_domain_name())) {
+			continue;
+		}
+
+		domain_found = true;
+		break;
+	}
+
+	if (!domain_found) {
+		werr = WERR_NO_SUCH_DOMAIN;
+		goto done;
+	}
+
+	init_lsa_String(&lsa_domain_name, domain_name);
+
+	status = rpccli_samr_LookupDomain(pipe_cli, ctx,
+					  &connect_handle,
+					  &lsa_domain_name,
+					  &domain_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
+					&connect_handle,
+					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					domain_sid,
+					&domain_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
+					&connect_handle,
+					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					CONST_DISCARD(DOM_SID *, &global_sid_Builtin),
+					&builtin_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	init_lsa_String(&lsa_account_name, r->in.user_name);
+
+	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+					 &domain_handle,
+					 1,
+					 &lsa_account_name,
+					 &user_rids,
+					 &name_types);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_OpenUser(pipe_cli, ctx,
+				      &domain_handle,
+				      STD_RIGHT_DELETE_ACCESS,
+				      user_rids.ids[0],
+				      &user_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	sid_compose(&user_sid, domain_sid, user_rids.ids[0]);
+
+	status = rpccli_samr_RemoveMemberFromForeignDomain(pipe_cli, ctx,
+							   &builtin_handle,
+							   &user_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_DeleteUser(pipe_cli, ctx,
+					&user_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	werr = WERR_OK;
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	if (is_valid_policy_hnd(&user_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &user_handle);
+	}
+	if (is_valid_policy_hnd(&builtin_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
+	}
+	if (is_valid_policy_hnd(&domain_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
+	}
+	if (is_valid_policy_hnd(&connect_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+	}
+
+	cli_shutdown(cli);
+
+	return werr;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserDel_l(struct libnetapi_ctx *ctx,
+		    struct NetUserDel *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
