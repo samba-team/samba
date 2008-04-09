@@ -115,7 +115,7 @@ const char *wbcErrorString(wbcErr error)
 	}
 
 	return "unknown wbcErr value";
-};
+}
 
 /** @brief Free library allocated memory
  *
