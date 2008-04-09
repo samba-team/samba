@@ -884,6 +884,11 @@ static WERROR smbconf_reg_get_parameter(struct smbconf_ctx *ctx,
 		goto done;
 	}
 
+	if (!smbconf_reg_valname_valid(param)) {
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
 	if (!smbconf_value_exists(key, param)) {
 		werr = WERR_INVALID_PARAM;
 		goto done;
@@ -920,6 +925,11 @@ static WERROR smbconf_reg_delete_parameter(struct smbconf_ctx *ctx,
 	werr = smbconf_reg_open_service_key(mem_ctx, ctx, service,
 					    REG_KEY_ALL, &key);
 	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	if (!smbconf_reg_valname_valid(param)) {
+		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
 
