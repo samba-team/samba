@@ -4075,7 +4075,7 @@ encode_uvinfo(krb5_context context, krb5_const_principal p, krb5_data *data)
 
 static krb5_error_code
 encode_otherinfo(krb5_context context,
-		 const AlgorithmIdentifier *algorithmID,
+		 const AlgorithmIdentifier *ai,
 		 krb5_const_principal client,
 		 krb5_const_principal server,
 		 krb5_enctype enctype,
@@ -4119,7 +4119,7 @@ encode_otherinfo(krb5_context context,
 	return ret;
     }
 
-    otherinfo.algorithmID = *algorithmID;
+    otherinfo.algorithmID = *ai;
     otherinfo.suppPubInfo = &pub;
     
     ASN1_MALLOC_ENCODE(PkinitSP80056AOtherInfo, other->data, other->length, 
@@ -4139,7 +4139,7 @@ encode_otherinfo(krb5_context context,
 
 krb5_error_code
 _krb5_pk_kdf(krb5_context context,
-	     const AlgorithmIdentifier *algorithmID,
+	     const AlgorithmIdentifier *ai,
 	     const void *dhdata,
 	     size_t dhsize,
 	     krb5_const_principal client,
@@ -4158,6 +4158,11 @@ _krb5_pk_kdf(krb5_context context,
     unsigned char *keydata;
     unsigned char shaoutput[20];
 
+    if (der_heim_oid_cmp(oid_id_pkinit_kdf_ah_sha1(), ai->algorithm) != 0) {
+	krb5_set_error_string(context, "kdf not supported");
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+
     if(et == NULL) {
 	krb5_set_error_string(context, "encryption type %d not supported",
 			      enctype);
@@ -4171,7 +4176,7 @@ _krb5_pk_kdf(krb5_context context,
 	return ENOMEM;
     }
 
-    ret = encode_otherinfo(context, algorithmID, client, server, 
+    ret = encode_otherinfo(context, ai, client, server, 
 			   enctype, as_req, pk_as_rep, ticket, &other);
     if (ret) {
 	free(keydata);
