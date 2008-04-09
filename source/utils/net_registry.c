@@ -260,6 +260,42 @@ done:
 	return ret;
 }
 
+static int net_registry_getvalue(int argc, const char **argv)
+{
+	WERROR werr;
+	int ret = -1;
+	struct registry_key *key = NULL;
+	struct registry_value *value = NULL;
+	TALLOC_CTX *ctx = talloc_stackframe();
+
+	if (argc != 2) {
+		d_fprintf(stderr, "usage: net rpc registry getvalue <key> "
+				  "<valuename>\n");
+		goto done;
+	}
+
+	werr = open_key(ctx, argv[0], REG_KEY_READ, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "open_key failed: %s\n", dos_errstr(werr));
+		goto done;
+	}
+
+	werr = reg_queryvalue(ctx, key, argv[1], &value);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "reg_queryvalue failed: %s\n",
+			  dos_errstr(werr));
+		goto done;
+	}
+
+	print_registry_value(value);
+
+	ret = 0;
+
+done:
+	TALLOC_FREE(ctx);
+	return ret;
+}
+
 static int net_registry_setvalue(int argc, const char **argv)
 {
 	WERROR werr;
@@ -413,6 +449,11 @@ int net_registry(int argc, const char **argv)
 			"deletekey",
 			net_registry_deletekey,
 			"Delete a registry key"
+		},
+		{
+			"getvalue",
+			net_registry_getvalue,
+			"Print a registry value",
 		},
 		{
 			"setvalue",
