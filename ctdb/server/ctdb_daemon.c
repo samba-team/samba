@@ -582,18 +582,7 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 		return -1;
 	}
 
-	set_nonblocking(ctdb->daemon.sd);
 	set_close_on_exec(ctdb->daemon.sd);
-
-#if 0
-	/* AIX doesn't like this :( */
-	if (fchown(ctdb->daemon.sd, geteuid(), getegid()) != 0 ||
-	    fchmod(ctdb->daemon.sd, 0700) != 0) {
-		DEBUG(DEBUG_CRIT,("Unable to secure ctdb socket '%s', ctdb->daemon.name\n"));
-		goto failed;
-	}
-#endif
-
 	set_nonblocking(ctdb->daemon.sd);
 
 	memset(&addr, 0, sizeof(addr));
@@ -604,6 +593,14 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 		DEBUG(DEBUG_CRIT,("Unable to bind on ctdb socket '%s'\n", ctdb->daemon.name));
 		goto failed;
 	}	
+
+	if (chown(ctdb->daemon.name, geteuid(), getegid()) != 0 ||
+	    chmod(ctdb->daemon.name, 0700) != 0) {
+		DEBUG(DEBUG_CRIT,("Unable to secure ctdb socket '%s', ctdb->daemon.name\n"));
+		goto failed;
+	} 
+
+
 	if (listen(ctdb->daemon.sd, 10) != 0) {
 		DEBUG(DEBUG_CRIT,("Unable to listen on ctdb socket '%s'\n", ctdb->daemon.name));
 		goto failed;
