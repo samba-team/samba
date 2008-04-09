@@ -111,4 +111,9 @@ interface libnetapi
 		[in,ref] uint8 *buffer,
 		[out,ref] uint32 *parm_error
 		);
+
+	[nopush,nopull] NET_API_STATUS NetUserDel(
+		[in,unique] string *server_name,
+		[in,ref] string *user_name
+		);
 }
