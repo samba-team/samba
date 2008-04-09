@@ -5614,14 +5614,16 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 	{
 		NTTIME notime;
 		struct samr_LogonHours hours;
+		struct lsa_BinaryString parameters;
 		const int units_per_week = 168;
 		uchar pwbuf[516];
 
 		encode_pw_buffer(pwbuf, argv[1], STR_UNICODE);
 
 		ZERO_STRUCT(notime);
-
 		ZERO_STRUCT(hours);
+		ZERO_STRUCT(parameters);
+
 		hours.bits = talloc_array(mem_ctx, uint8_t, units_per_week);
 		if (!hours.bits) {
 			result = NT_STATUS_NO_MEMORY;
@@ -5634,7 +5636,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 				      notime, notime, notime,
 				      notime, notime, notime,
 				      NULL, NULL, NULL, NULL, NULL,
-				      NULL, NULL, NULL, NULL, NULL,
+				      NULL, NULL, NULL, NULL, &parameters,
 				      0, 0, ACB_DOMTRUST, SAMR_FIELD_ACCT_FLAGS,
 				      hours,
 				      0, 0, 0, 0, 0, 0, 0,
