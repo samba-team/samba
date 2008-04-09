@@ -196,4 +196,17 @@ struct NetUserAdd {
 
 };
 
+
+struct NetUserDel {
+	struct {
+		const char * server_name;/* [unique] */
+		const char * user_name;/* [ref] */
+	} in;
+
+	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_libnetapi */
