@@ -127,7 +127,7 @@ static bool ads_keytab_verify_ticket(krb5_context context,
 				/* workaround for MIT: 
 				* as krb5_ktfile_get_entry will explicitly
 				* close the krb5_keytab as soon as krb5_rd_req
-				* has sucessfully decrypted the ticket but the
+				* has sucsessfully decrypted the ticket but the
 				* ticket is not valid yet (due to clockskew)
 				* there is no point in querying more keytab
 				* entries - Guenther */
