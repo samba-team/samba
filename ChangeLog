@@ -1,5 +1,8 @@
 2008-04-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/crypto.c: Check kdf params. calculate the second half
+	of the key.
+
 	* lib/krb5/Makefile.am: Add test_pknistkdf
 
 	* lib/krb5/test_pknistkdf.c: Test the new pkinit nist kdf.
