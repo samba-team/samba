@@ -133,57 +133,55 @@ static WERROR import_process_service(struct smbconf_ctx *conf_ctx,
 
 	if (opt_testmode) {
 		d_printf("[%s]\n", servicename);
-	} else {
-		if (smbconf_share_exists(conf_ctx, servicename)) {
-			werr = smbconf_delete_share(conf_ctx, servicename);
-			if (!W_ERROR_IS_OK(werr)) {
-				goto done;
-			}
+		for (idx = 0; idx < num_params; idx ++) {
+			d_printf("\t%s = %s\n", param_names[idx],
+				 param_values[idx]);
 		}
-		werr = smbconf_create_share(conf_ctx, servicename);
+		d_printf("\n");
+		goto done;
+	}
+
+	if (smbconf_share_exists(conf_ctx, servicename)) {
+		werr = smbconf_delete_share(conf_ctx, servicename);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
 	}
+	werr = smbconf_create_share(conf_ctx, servicename);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
 
 	for (idx = 0; idx < num_params; idx ++) {
-		if (opt_testmode) {
-			d_printf("\t%s = %s\n", param_names[idx],
-				 param_values[idx]);
+		if (strequal(param_names[idx], "include")) {
+			includes = TALLOC_REALLOC_ARRAY(mem_ctx,
+							includes,
+							char *,
+							num_includes+1);
+			if (includes == NULL) {
+				werr = WERR_NOMEM;
+				goto done;
+			}
+			includes[num_includes] = talloc_strdup(includes,
+							param_values[idx]);
+			if (includes[num_includes] == NULL) {
+				werr = WERR_NOMEM;
+				goto done;
+			}
+			num_includes++;
 		} else {
-			if (strequal(param_names[idx], "include")) {
-				includes = TALLOC_REALLOC_ARRAY(mem_ctx,
-								includes,
-								char *,
-								num_includes+1);
-				if (includes == NULL) {
-					werr = WERR_NOMEM;
-					goto done;
-				}
-				includes[num_includes] =
-					talloc_strdup(includes,
-						      param_values[idx]);
-				if (includes[num_includes] == NULL) {
-					werr = WERR_NOMEM;
-					goto done;
-				}
-				num_includes++;
-			} else {
-				werr = smbconf_set_parameter(conf_ctx,
-							     servicename,
-							     param_names[idx],
-							     param_values[idx]);
-				if (!W_ERROR_IS_OK(werr)) {
-					goto done;
-				}
+			werr = smbconf_set_parameter(conf_ctx,
+						     servicename,
+						     param_names[idx],
+						     param_values[idx]);
+			if (!W_ERROR_IS_OK(werr)) {
+				goto done;
 			}
 		}
 	}
 
-	if (!opt_testmode) {
-		werr = smbconf_set_includes(conf_ctx, servicename, num_includes,
-					    (const char **)includes);
-	}
+	werr = smbconf_set_includes(conf_ctx, servicename, num_includes,
+				    (const char **)includes);
 
 done:
 	TALLOC_FREE(mem_ctx);
