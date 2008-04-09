@@ -546,3 +546,200 @@ WERROR NetUserDel_l(struct libnetapi_ctx *ctx,
 {
 	return WERR_NOT_SUPPORTED;
 }
+
+/****************************************************************
+****************************************************************/
+
+static WERROR convert_samr_samarray_to_USER_INFO_buffer(TALLOC_CTX *mem_ctx,
+							struct samr_SamArray *sam_array,
+							uint32_t level,
+							uint8_t **buffer)
+{
+	struct USER_INFO_0 *info0 = NULL;
+	int i;
+
+	switch (level) {
+		case 0:
+			info0 = TALLOC_ZERO_ARRAY(mem_ctx, struct USER_INFO_0,
+						  sam_array->count);
+			W_ERROR_HAVE_NO_MEMORY(info0);
+
+			for (i=0; i<sam_array->count; i++) {
+				info0[i].usri0_name = talloc_strdup(mem_ctx,
+					sam_array->entries[i].name.string);
+				W_ERROR_HAVE_NO_MEMORY(info0[i].usri0_name);
+			}
+
+			*buffer = (uint8_t *)talloc_memdup(mem_ctx, info0,
+				sizeof(struct USER_INFO_0) * sam_array->count);
+			W_ERROR_HAVE_NO_MEMORY(*buffer);
+			break;
+		default:
+			return WERR_NOT_SUPPORTED;
+	}
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
+		     struct NetUserEnum *r)
+{
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	struct policy_handle connect_handle;
+	struct dom_sid2 *domain_sid = NULL;
+	struct policy_handle domain_handle;
+	struct samr_SamArray *sam = NULL;
+	uint32_t num_entries = 0;
+	int i;
+	const char *domain_name = NULL;
+	bool domain_found = true;
+	uint32_t dom_resume_handle = 0;
+	struct lsa_String lsa_domain_name;
+
+	NTSTATUS status;
+	WERROR werr;
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(domain_handle);
+
+	switch (r->in.level) {
+		case 0:
+			break;
+		case 1:
+		case 2:
+		case 3:
+		case 10:
+		case 11:
+		case 20:
+		case 23:
+		default:
+			return WERR_NOT_SUPPORTED;
+	}
+
+	status = cli_full_connection(&cli, NULL, r->in.server_name,
+				     NULL, 0,
+				     "IPC$", "IPC",
+				     ctx->username,
+				     ctx->workgroup,
+				     ctx->password,
+				     CLI_FULL_CONNECTION_USE_KERBEROS |
+				     CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS,
+				     Undefined, NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &status);
+	if (!pipe_cli) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_try_samr_connects(pipe_cli, ctx,
+					  SAMR_ACCESS_OPEN_DOMAIN |
+					  SAMR_ACCESS_ENUM_DOMAINS,
+					  &connect_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_EnumDomains(pipe_cli, ctx,
+					 &connect_handle,
+					 &dom_resume_handle,
+					 &sam,
+					 0xffffffff,
+					 &num_entries);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	for (i=0; i<num_entries; i++) {
+
+		domain_name = sam->entries[i].name.string;
+
+		if (strequal(domain_name, builtin_domain_name())) {
+			continue;
+		}
+
+		domain_found = true;
+		break;
+	}
+
+	if (!domain_found) {
+		werr = WERR_NO_SUCH_DOMAIN;
+		goto done;
+	}
+
+	init_lsa_String(&lsa_domain_name, domain_name);
+
+	status = rpccli_samr_LookupDomain(pipe_cli, ctx,
+					  &connect_handle,
+					  &lsa_domain_name,
+					  &domain_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_OpenDomain(pipe_cli,
+					ctx,
+					&connect_handle,
+					SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2 |
+					SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS |
+					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					domain_sid,
+					&domain_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_EnumDomainUsers(pipe_cli,
+					     ctx,
+					     &domain_handle,
+					     r->in.resume_handle,
+					     r->in.filter,
+					     &sam,
+					     r->in.prefmaxlen,
+					     r->out.entries_read);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	werr = convert_samr_samarray_to_USER_INFO_buffer(ctx, sam,
+							 r->in.level,
+							 r->out.buffer);
+
+ done:
+	if (is_valid_policy_hnd(&domain_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
+	}
+	if (is_valid_policy_hnd(&connect_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+	}
+
+	if (cli) {
+		cli_shutdown(cli);
+	}
+
+	return werr;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserEnum_l(struct libnetapi_ctx *ctx,
+		     struct NetUserEnum *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
