@@ -6,6 +6,7 @@
 #ifndef _HEADER_libnetapi
 #define _HEADER_libnetapi
 
+#define ERROR_MORE_DATA	( 234L )
 enum NET_API_STATUS
 #ifndef USE_UINT_ENUMS
  {
@@ -204,6 +205,26 @@ struct NetUserDel {
 	} in;
 
 	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetUserEnum {
+	struct {
+		const char * server_name;/* [unique] */
+		uint32_t level;
+		uint32_t filter;
+		uint32_t prefmaxlen;
+		uint32_t *resume_handle;/* [ref] */
+	} in;
+
+	struct {
+		uint8_t **buffer;/* [ref] */
+		uint32_t *entries_read;/* [ref] */
+		uint32_t *total_entries;/* [ref] */
+		uint32_t *resume_handle;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 
