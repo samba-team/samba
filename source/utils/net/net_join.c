@@ -100,3 +100,70 @@ int net_join_help(struct net_context *ctx, int argc, const char **argv)
 	d_printf("Joins domain as either member or backup domain controller.\n");
 	return 0;	
 }
+
+int net_vampire(struct net_context *ctx, int argc, const char **argv) 
+{
+	NTSTATUS status;
+	struct libnet_context *libnetctx;
+	struct libnet_Vampire *r;
+	char *tmp, *targetdir = NULL;
+	const char *domain_name;
+
+	switch (argc) {
+		case 0: /* no args -> fail */
+			return net_vampire_usage(ctx, argc, argv);
+		case 1: /* only DOMAIN */
+			tmp = talloc_strdup(ctx->mem_ctx, argv[0]);
+			break;
+		case 2: /* domain and target dir */
+			tmp = talloc_strdup(ctx->mem_ctx, argv[0]);
+			targetdir = talloc_strdup(ctx->mem_ctx, argv[1]);
+			break;
+		default: /* too many args -> fail */
+			return net_vampire_usage(ctx, argc, argv);
+	}
+
+	domain_name = tmp;
+
+	libnetctx = libnet_context_init(NULL, ctx->lp_ctx);
+	if (!libnetctx) {
+		return -1;	
+	}
+	libnetctx->cred = ctx->credentials;
+	r = talloc(ctx->mem_ctx, struct libnet_Vampire);
+	if (!r) {
+		return -1;
+	}
+	/* prepare parameters for the vampire */
+	r->in.netbios_name  = lp_netbios_name(ctx->lp_ctx);
+	r->in.domain_name   = domain_name;
+	r->in.targetdir	    = targetdir;
+	r->out.error_string = NULL;
+
+	/* do the domain vampire */
+	status = libnet_Vampire(libnetctx, r, r);
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "Vampire of domain failed: %s\n",
+			  r->out.error_string ? r->out.error_string : nt_errstr(status));
+		talloc_free(r);
+		talloc_free(libnetctx);
+		return -1;
+	}
+	d_printf("Vampired domain %s (%s)\n", r->out.domain_name, dom_sid_string(ctx->mem_ctx, r->out.domain_sid));
+
+	talloc_free(libnetctx);
+	return 0;
+}
+
+int net_vampire_usage(struct net_context *ctx, int argc, const char **argv)
+{
+	d_printf("net vampire <domain> [options]\n");
+	return 0;	
+}
+
+int net_vampire_help(struct net_context *ctx, int argc, const char **argv)
+{
+	d_printf("Vampires domain as either member or backup domain controller.\n");
+	return 0;	
+}

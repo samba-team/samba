@@ -37,6 +37,7 @@
 #include "lib/ldb_wrap.h"
 #include "auth/auth.h"
 #include "param/param.h"
+#include "param/provision.h"
 
 /* 
 List of tasks vampire.py must perform:
@@ -52,7 +53,6 @@ List of tasks vampire.py must perform:
 
 */
 struct vampire_state {
-	struct libnet_context *ctx;
 	const char *netbios_name;
 	struct libnet_JoinDomain *join;
 	struct cli_credentials *machine_account;
@@ -93,7 +93,7 @@ static NTSTATUS vampire_prepare_db(void *private_data,
 	settings.schema_dn_str = p->forest->schema_dn_str;
 	settings.netbios_name = p->dest_dsa->netbios_name;
 	settings.realm = s->join->out.realm;
-	settings.domain = s->join->out.domain;
+	settings.domain = s->join->out.domain_name;
 	settings.server_dn_str = p->dest_dsa->server_dn_str;
 	settings.machine_password = generate_random_str(s, 16);
 	settings.targetdir = s->targetdir;
@@ -115,18 +115,13 @@ static NTSTATUS vampire_prepare_db(void *private_data,
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 	
-	/* We must set these up to ensure the replMetaData is written correctly, before our NTDS Settings entry is replicated */
+	/* We must set these up to ensure the replMetaData is written correctly, 
+	   before our NTDS Settings entry is replicated */
 	ok = samdb_set_ntds_invocation_id(s->ldb, &p->dest_dsa->invocation_id);
 	if (!ok) {
 		DEBUG(0,("Failed to set cached ntds invocationId\n"));
 		return NT_STATUS_FOOBAR;
 	}
-	ok = samdb_set_ntds_objectGUID(s->ldb, &p->dest_dsa->ntds_guid);
-	if (!ok) {
-		DEBUG(0,("Failed to set cached ntds objectGUID\n"));
-		return NT_STATUS_FOOBAR;
-	}
-	
 	s->lp_ctx = lp_ctx;
 
         return NT_STATUS_OK;
@@ -591,10 +586,11 @@ static NTSTATUS vampire_store_chunk(void *private_data,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS libnet_vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, 
-			struct libnet_vampire *r)
+NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, 
+			struct libnet_Vampire *r)
 {
 	struct libnet_JoinDomain *join;
+	struct libnet_set_join_secrets *set_secrets;
 	struct libnet_BecomeDC b;
 	struct libnet_UnbecomeDC u;
 	struct vampire_state *s;
@@ -651,6 +647,8 @@ NTSTATUS libnet_vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	
 	s->join = join;
 
+	s->targetdir = r->in.targetdir;
+
 	ZERO_STRUCT(b);
 	b.in.domain_dns_name		= join->out.realm;
 	b.in.domain_netbios_name	= join->out.domain_name;
@@ -665,7 +663,7 @@ NTSTATUS libnet_vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	b.in.callbacks.config_chunk	= vampire_store_chunk;
 	b.in.callbacks.domain_chunk	= vampire_store_chunk;
 
-	status = libnet_BecomeDC(s->ctx, s, &b);
+	status = libnet_BecomeDC(ctx, s, &b);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("libnet_BecomeDC() failed - %s\n", nt_errstr(status));
 		talloc_free(s);
@@ -703,4 +701,32 @@ NTSTATUS libnet_vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 		talloc_free(s);
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
+
+	set_secrets = talloc_zero(s, struct libnet_set_join_secrets);
+	if (!set_secrets) {
+		return NT_STATUS_NO_MEMORY;
+	}
+		
+	set_secrets->in.domain_name = join->out.domain_name;
+	set_secrets->in.realm = join->out.realm;
+	set_secrets->in.account_name = account_name;
+	set_secrets->in.netbios_name = netbios_name;
+	set_secrets->in.join_type = SEC_CHAN_BDC;
+	set_secrets->in.join_password = join->out.join_password;
+	set_secrets->in.kvno = join->out.kvno;
+	set_secrets->in.domain_sid = join->out.domain_sid;
+	
+	status = libnet_set_join_secrets(ctx, set_secrets, set_secrets);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_steal(mem_ctx, set_secrets->out.error_string);
+		talloc_free(s);
+		return status;
+	}
+
+	r->out.domain_name = talloc_steal(r, join->out.domain_name);
+	r->out.domain_sid = talloc_steal(r, join->out.domain_sid);
+	talloc_free(s);
+	
+	return NT_STATUS_OK;
+
 }

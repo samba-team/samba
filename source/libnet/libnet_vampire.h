@@ -22,13 +22,16 @@
 #ifndef __LIBNET_VAMPIRE_H__
 #define __LIBNET_VAMPIRE_H__
 
-struct libnet_vampire {
+struct libnet_Vampire {
 	struct {
 		const char *domain_name;
 		const char *netbios_name;
+		const char *targetdir;
 	} in;
 	
 	struct {
+		struct dom_sid *domain_sid;
+		const char *domain_name;
 		const char *error_string;
 	} out;
 };
