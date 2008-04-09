@@ -118,6 +118,61 @@ done:
 	return ret;
 }
 
+static bool test_delete_includes(struct smbconf_ctx *ctx)
+{
+	WERROR werr;
+	bool ret = false;
+	const char *set_includes[] = {
+		"/path/to/include",
+	};
+	uint32_t set_num_includes = 1;
+	char **get_includes = NULL;
+	uint32_t get_num_includes = 0;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+
+	printf("test: delete_includes\n");
+
+	werr = smbconf_set_global_includes(ctx, set_num_includes, set_includes);
+	if (!W_ERROR_IS_OK(werr)) {
+		printf("failure: delete_includes (setting includes) - %s\n",
+		       dos_errstr(werr));
+		goto done;
+	}
+
+	werr = smbconf_delete_global_includes(ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		printf("failure: delete_includes (deleting includes) - %s\n",
+		       dos_errstr(werr));
+		goto done;
+	}
+
+	werr = smbconf_get_global_includes(ctx, mem_ctx, &get_num_includes,
+					   &get_includes);
+	if (!W_ERROR_IS_OK(werr)) {
+		printf("failure: delete_includes (getting includes) - %s\n",
+		       dos_errstr(werr));
+		goto done;
+	}
+
+	if (get_num_includes != 0) {
+		printf("failure: delete_includes (not empty after delete)\n");
+		goto done;
+	}
+
+	werr = smbconf_delete_global_includes(ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		printf("failuer: delete_includes (delete empty includes) - "
+		       "%s\n", dos_errstr(werr));
+		goto done;
+	}
+
+	printf("success: delete_includes\n");
+	ret = true;
+
+done:
+	return ret;
+}
+
 static bool torture_smbconf_txt(void)
 {
 	WERROR werr;
@@ -167,6 +222,7 @@ static bool torture_smbconf_reg(void)
 
 	ret &= test_get_includes(conf_ctx);
 	ret &= test_set_get_includes(conf_ctx);
+	ret &= test_delete_includes(conf_ctx);
 
 	smbconf_shutdown(conf_ctx);
 
