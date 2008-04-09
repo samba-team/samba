@@ -271,6 +271,8 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 
 	werr = smbconf_init_txt_simple(mem_ctx, &txt_ctx, filename, true);
 	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("error loading file '%s': %s\n", filename,
+			 dos_errstr(werr));
 		goto done;
 	}
 
