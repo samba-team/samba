@@ -4052,6 +4052,28 @@ _krb5_pk_octetstring2key(krb5_context context,
 }
 
 static krb5_error_code
+encode_uvinfo(krb5_context context, krb5_const_principal p, krb5_data *data)
+{
+    KRB5PrincipalName pn;
+    krb5_error_code ret;
+    size_t size;
+
+    pn.principalName = p->name;
+    pn.realm = p->realm;
+
+    ASN1_MALLOC_ENCODE(KRB5PrincipalName, data->data, data->length,
+		       &pn, &size, ret);
+    if (ret) {
+	krb5_data_zero(data);
+	krb5_set_error_string(context, "Failed to encode KRB5PrincipalName");
+	return ret;
+    }
+    if (data->length != size)
+	krb5_abortx(context, "asn1 compiler internal error");
+    return 0;
+}
+
+static krb5_error_code
 encode_otherinfo(krb5_context context,
 		 const AlgorithmIdentifier *algorithmID,
 		 krb5_const_principal client,
@@ -4085,17 +4107,25 @@ encode_otherinfo(krb5_context context,
     if (pub.length != size)
 	krb5_abortx(context, "asn1 compiler internal error");
 
+    ret = encode_uvinfo(context, client, &otherinfo.partyUInfo);
+    if (ret) {
+	free(pub.data);
+	return ret;
+    }
+    ret = encode_uvinfo(context, server, &otherinfo.partyVInfo);
+    if (ret) {
+	free(otherinfo.partyUInfo.data);
+	free(pub.data);
+	return ret;
+    }
+
     otherinfo.algorithmID = *algorithmID;
-
-    /* XXX set from client/KRB5PrincipalName */
-    krb5_data_zero(&otherinfo.partyUInfo); 
-    /* XXX set from server/KRB5PrincipalName */
-    krb5_data_zero(&otherinfo.partyVInfo); 
-
     otherinfo.suppPubInfo = &pub;
     
     ASN1_MALLOC_ENCODE(PkinitSP80056AOtherInfo, other->data, other->length, 
 		       &otherinfo, &size, ret);
+    free(otherinfo.partyUInfo.data);
+    free(otherinfo.partyVInfo.data);
     free(pub.data);
     if (ret) {
 	krb5_set_error_string(context, "out of memory");
@@ -4124,7 +4154,7 @@ _krb5_pk_kdf(krb5_context context,
     krb5_error_code ret;
     krb5_data other;
     size_t keylen, offset;
-    uint32_t counter = 1;
+    uint32_t counter;
     unsigned char *keydata;
     unsigned char shaoutput[20];
 
@@ -4149,6 +4179,7 @@ _krb5_pk_kdf(krb5_context context,
     }
 
     offset = 0;
+    counter = 1;
     do {
 	unsigned char cdata[4];
 	SHA_CTX m;
