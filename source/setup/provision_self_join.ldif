@@ -36,7 +36,7 @@ isCriticalSystemObject: TRUE
 sambaPassword:: ${DNSPASS_B64}
 showInAdvancedViewOnly: TRUE
 
-dn: CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
+dn: ${SERVERDN}
 objectClass: top
 objectClass: server
 cn: ${NETBIOSNAME}
@@ -44,7 +44,7 @@ systemFlags: 1375731712
 dNSHostName: ${DNSNAME}
 serverReference: CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
 
-dn: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
+dn: CN=NTDS Settings,${SERVERDN}
 objectClass: top
 objectClass: applicationSettings
 objectClass: nTDSDSA

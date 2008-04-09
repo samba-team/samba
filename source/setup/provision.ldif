@@ -30,7 +30,7 @@ objectclass: rIDManager
 cn: RID Manager$
 systemFlags: 2348810240
 isCriticalSystemObject: TRUE
-fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
+fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
 rIDAvailablePool: 4611686014132423217
 
 dn: CN=DomainUpdates,CN=System,${DOMAINDN}
@@ -50,7 +50,7 @@ objectclass: infrastructureUpdate
 cn: Infrastructure
 systemFlags: 2348810240
 isCriticalSystemObject: TRUE
-fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
+fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
 
 dn: CN=Builtin,${DOMAINDN}
 objectClass: top
