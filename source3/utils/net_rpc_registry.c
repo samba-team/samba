@@ -488,6 +488,104 @@ static int rpc_registry_deletevalue( int argc, const char **argv )
 		rpc_registry_deletevalue_internal, argc, argv );
 }
 
+static NTSTATUS rpc_registry_getvalue_internal(const DOM_SID *domain_sid,
+					       const char *domain_name,
+					       struct cli_state *cli,
+					       struct rpc_pipe_client *pipe_hnd,
+					       TALLOC_CTX *mem_ctx,
+					       int argc,
+					       const char **argv)
+{
+	struct policy_handle hive_hnd, key_hnd;
+	NTSTATUS status;
+	WERROR werr;
+	struct winreg_String valuename;
+	struct registry_value *value = NULL;
+	enum winreg_Type type = REG_NONE;
+	uint8_t *data = NULL;
+	uint32_t data_size = 0;
+	uint32_t value_length = 0;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+
+	ZERO_STRUCT(valuename);
+
+	status = registry_openkey(tmp_ctx, pipe_hnd, argv[0],
+				  SEC_RIGHTS_MAXIMUM_ALLOWED,
+				  &hive_hnd, &key_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "registry_openkey failed: %s\n",
+			  nt_errstr(status));
+		return status;
+	}
+
+	valuename.name = argv[1];
+
+	/*
+	 * call QueryValue once with data == NULL to get the
+	 * needed memory size to be allocated, then allocate
+	 * data buffer and call again.
+	 */
+	status = rpccli_winreg_QueryValue(pipe_hnd, tmp_ctx, &key_hnd,
+					  &valuename,
+					  &type,
+					  data,
+					  &data_size,
+					  &value_length,
+					  NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "registry_queryvalue failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	data = (uint8 *)TALLOC(tmp_ctx, data_size);
+	value_length = 0;
+
+	status = rpccli_winreg_QueryValue(pipe_hnd, tmp_ctx, &key_hnd,
+					  &valuename,
+					  &type,
+					  data,
+					  &data_size,
+					  &value_length,
+					  NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "registry_queryvalue failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	werr = registry_pull_value(tmp_ctx, &value, type, data,
+				   data_size, value_length);
+	if (!W_ERROR_IS_OK(werr)) {
+		status = werror_to_ntstatus(werr);
+		goto done;
+	}
+
+	print_registry_value(value);
+
+done:
+	rpccli_winreg_CloseKey(pipe_hnd, tmp_ctx, &key_hnd, NULL);
+	rpccli_winreg_CloseKey(pipe_hnd, tmp_ctx, &hive_hnd, NULL);
+
+	TALLOC_FREE(tmp_ctx);
+
+	return status;
+}
+
+static int rpc_registry_getvalue(int argc, const char **argv)
+{
+	if (argc != 2) {
+		d_fprintf(stderr, "usage: net rpc registry deletevalue <key> "
+			  "<valuename>\n");
+		return -1;
+	}
+
+	return run_rpc_command(NULL, PI_WINREG, 0,
+		rpc_registry_getvalue_internal, argc, argv);
+}
+
 static NTSTATUS rpc_registry_createkey_internal(const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli,
@@ -1069,6 +1167,8 @@ int net_rpc_registry(int argc, const char **argv)
 		  "Create a new registry key" },
 		{ "deletekey",  rpc_registry_deletekey,
 		  "Delete a registry key" },
+		{ "getvalue", rpc_registry_getvalue,
+		  "Print a registry value" },
 		{ "setvalue",  rpc_registry_setvalue,
 		  "Set a new registry value" },
 		{ "deletevalue",  rpc_registry_deletevalue,
