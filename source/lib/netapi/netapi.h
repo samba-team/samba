@@ -23,10 +23,11 @@
 /****************************************************************
  NET_API_STATUS
 ****************************************************************/
-
 typedef enum {
 	NET_API_STATUS_SUCCESS = 0
 } NET_API_STATUS;
+
+#define ERROR_MORE_DATA	( 234L )
 
 /****************************************************************
 ****************************************************************/
@@ -207,5 +208,18 @@ NET_API_STATUS NetUserAdd(const char * server_name /* [in] */,
 
 NET_API_STATUS NetUserDel(const char * server_name /* [in] */,
 			  const char * user_name /* [in] */);
+
+/****************************************************************
+ NetUserEnum
+****************************************************************/
+
+NET_API_STATUS NetUserEnum(const char * server_name /* [in] */,
+			   uint32_t level /* [in] */,
+			   uint32_t filter /* [in] */,
+			   uint8_t **buffer /* [out] [ref] */,
+			   uint32_t prefmaxlen /* [in] */,
+			   uint32_t *entries_read /* [out] [ref] */,
+			   uint32_t *total_entries /* [out] [ref] */,
+			   uint32_t *resume_handle /* [in,out] [ref] */);
 
 #endif
