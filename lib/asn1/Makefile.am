@@ -323,6 +323,10 @@ gen_files_pkinit =					\
 	asn1_id_pkinit_san.x				\
 	asn1_id_pkinit_ms_eku.x				\
 	asn1_id_pkinit_ms_san.x				\
+	asn1_id_pkinit_kdf.x				\
+	asn1_id_pkinit_kdf_ah_sha1.x			\
+	asn1_id_pkinit_kdf_ah_sha256.x			\
+	asn1_id_pkinit_kdf_ah_sha512.x			\
 	asn1_MS_UPN_SAN.x				\
 	asn1_DHNonce.x					\
 	asn1_KDFAlgorithmId.x				\
