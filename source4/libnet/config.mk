@@ -1,5 +1,6 @@
 [SUBSYSTEM::LIBSAMBA-NET]
 PRIVATE_PROTO_HEADER = libnet_proto.h
+PRIVATE_DEPENDENCIES = PROVISION
 OBJ_FILES = \
 		libnet.o \
 		libnet_passwd.o \
