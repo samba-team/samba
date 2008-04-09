@@ -22,7 +22,8 @@ PROGS = bin/getdc@EXEEXT@ \
 	bin/netdomjoin@EXEEXT@ \
 	bin/netdomjoin-gui@EXEEXT@ \
 	bin/getjoinableous@EXEEXT@ \
-	bin/user_add@EXEEXT@
+	bin/user_add@EXEEXT@ \
+	bin/user_del@EXEEXT@
 
 all: $(PROGS)
 
@@ -57,6 +58,7 @@ NETDOMJOIN_OBJ = netdomjoin/netdomjoin.o $(CMDLINE_OBJ)
 NETDOMJOIN_GUI_OBJ = netdomjoin-gui/netdomjoin-gui.o
 GETJOINABLEOUS_OBJ = getjoinableous/getjoinableous.o $(CMDLINE_OBJ)
 USERADD_OBJ = user/user_add.o $(CMDLINE_OBJ)
+USERDEL_OBJ = user/user_del.o $(CMDLINE_OBJ)
 
 bin/getdc@EXEEXT@: $(BINARY_PREREQS) $(GETDC_OBJ)
 	@echo Linking $@
@@ -81,6 +83,10 @@ bin/netdomjoin-gui@EXEEXT@: $(BINARY_PREREQS) $(NETDOMJOIN_GUI_OBJ)
 bin/user_add@EXEEXT@: $(BINARY_PREREQS) $(USERADD_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(USERADD_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
+
+bin/user_del@EXEEXT@: $(BINARY_PREREQS) $(USERDEL_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(USERDEL_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 clean:
 	-rm -f $(PROGS)
