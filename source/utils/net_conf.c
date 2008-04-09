@@ -278,7 +278,11 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 			net_conf_import_usage(argc, argv);
 			goto done;
 		case 2:
-			servicename = argv[1];
+			servicename = talloc_strdup_lower(mem_ctx, argv[1]);
+			if (servicename == NULL) {
+				d_printf("error: out of memory!\n");
+				goto done;
+			}
 		case 1:
 			filename = argv[0];
 			break;
@@ -434,7 +438,11 @@ static int net_conf_showshare(struct smbconf_ctx *conf_ctx,
 		goto done;
 	}
 
-	sharename = argv[0];
+	sharename = talloc_strdup_lower(mem_ctx, argv[0]);
+	if (sharename == NULL) {
+		d_printf("error: out of memory!\n");
+		goto done;
+	}
 
 	werr = smbconf_get_share(conf_ctx, mem_ctx, sharename, &num_params,
 				 &param_names, &param_values);
@@ -475,6 +483,7 @@ static int net_conf_addshare(struct smbconf_ctx *conf_ctx,
 	const char *guest_ok = "no";
 	const char *writeable = "no";
 	SMB_STRUCT_STAT sbuf;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	switch (argc) {
 		case 0:
@@ -522,7 +531,12 @@ static int net_conf_addshare(struct smbconf_ctx *conf_ctx,
 			}
 		case 2:
 			path = argv[1];
-			sharename = strdup_lower(argv[0]);
+			sharename = talloc_strdup_lower(mem_ctx, argv[0]);
+			if (sharename == NULL) {
+				d_printf("error: out of memory!\n");
+				goto done;
+			}
+
 			break;
 	}
 
@@ -634,7 +648,7 @@ static int net_conf_addshare(struct smbconf_ctx *conf_ctx,
 	ret = 0;
 
 done:
-	SAFE_FREE(sharename);
+	TALLOC_FREE(mem_ctx);
 	return ret;
 }
 
@@ -644,12 +658,17 @@ static int net_conf_delshare(struct smbconf_ctx *conf_ctx,
 	int ret = -1;
 	const char *sharename = NULL;
 	WERROR werr = WERR_OK;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (argc != 1) {
 		net_conf_delshare_usage(argc, argv);
 		goto done;
 	}
-	sharename = argv[0];
+	sharename = talloc_strdup_lower(mem_ctx, argv[0]);
+	if (sharename == NULL) {
+		d_printf("error: out of memory!\n");
+		goto done;
+	}
 
 	werr = smbconf_delete_share(conf_ctx, sharename);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -660,6 +679,7 @@ static int net_conf_delshare(struct smbconf_ctx *conf_ctx,
 
 	ret = 0;
 done:
+	TALLOC_FREE(mem_ctx);
 	return ret;
 }
 
@@ -671,13 +691,22 @@ static int net_conf_setparm(struct smbconf_ctx *conf_ctx,
 	char *service = NULL;
 	char *param = NULL;
 	const char *value_str = NULL;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (argc != 3) {
 		net_conf_setparm_usage(argc, argv);
 		goto done;
 	}
-	service = strdup_lower(argv[0]);
-	param = strdup_lower(argv[1]);
+	service = talloc_strdup_lower(mem_ctx, argv[0]);
+	if (service == NULL) {
+		d_printf("error: out of memory!\n");
+		goto done;
+	}
+	param = talloc_strdup_lower(mem_ctx, argv[1]);
+	if (param == NULL) {
+		d_printf("error: out of memory!\n");
+		goto done;
+	}
 	value_str = argv[2];
 
 	if (!smbconf_share_exists(conf_ctx, service)) {
@@ -700,8 +729,7 @@ static int net_conf_setparm(struct smbconf_ctx *conf_ctx,
 	ret = 0;
 
 done:
-	SAFE_FREE(service);
-	SAFE_FREE(param);
+	TALLOC_FREE(mem_ctx);
 	return ret;
 }
 
@@ -721,8 +749,16 @@ static int net_conf_getparm(struct smbconf_ctx *conf_ctx,
 		net_conf_getparm_usage(argc, argv);
 		goto done;
 	}
-	service = strdup_lower(argv[0]);
-	param = strdup_lower(argv[1]);
+	service = talloc_strdup_lower(mem_ctx, argv[0]);
+	if (service == NULL) {
+		d_printf("error: out of memory!\n");
+		goto done;
+	}
+	param = talloc_strdup_lower(mem_ctx, argv[1]);
+	if (param == NULL) {
+		d_printf("error: out of memory!\n");
+		goto done;
+	}
 
 	werr = smbconf_get_parameter(conf_ctx, mem_ctx, service, param, &valstr);
 
@@ -746,8 +782,6 @@ static int net_conf_getparm(struct smbconf_ctx *conf_ctx,
 
 	ret = 0;
 done:
-	SAFE_FREE(service);
-	SAFE_FREE(param);
 	TALLOC_FREE(mem_ctx);
 	return ret;
 }
@@ -759,13 +793,22 @@ static int net_conf_delparm(struct smbconf_ctx *conf_ctx,
 	WERROR werr = WERR_OK;
 	char *service = NULL;
 	char *param = NULL;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (argc != 2) {
 		net_conf_delparm_usage(argc, argv);
 		goto done;
 	}
-	service = strdup_lower(argv[0]);
-	param = strdup_lower(argv[1]);
+	service = talloc_strdup_lower(mem_ctx, argv[0]);
+	if (service == NULL) {
+		d_printf("error: out of memory!\n");
+		goto done;
+	}
+	param = talloc_strdup_lower(mem_ctx, argv[1]);
+	if (param == NULL) {
+		d_printf("error: out of memory!\n");
+		goto done;
+	}
 
 	werr = smbconf_delete_parameter(conf_ctx, service, param);
 
@@ -788,8 +831,7 @@ static int net_conf_delparm(struct smbconf_ctx *conf_ctx,
 	ret = 0;
 
 done:
-	SAFE_FREE(service);
-	SAFE_FREE(param);
+	TALLOC_FREE(mem_ctx);
 	return ret;
 }
 
