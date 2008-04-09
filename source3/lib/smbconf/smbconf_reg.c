@@ -399,6 +399,9 @@ static WERROR smbconf_reg_get_includes_internal(TALLOC_CTX *mem_ctx,
 
 	if (!smbconf_value_exists(key, INCLUDES_VALNAME)) {
 		/* no includes */
+		*num_includes = 0;
+		*includes = NULL;
+		werr = WERR_OK;
 		goto done;
 	}
 
