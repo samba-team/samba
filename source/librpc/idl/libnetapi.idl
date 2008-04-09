@@ -9,6 +9,8 @@ cpp_quote("#define LIBNETAPI_LOCAL_SERVER(x) (!x || is_myname_or_ipaddr(x))")
 ]
 interface libnetapi
 {
+	const int ERROR_MORE_DATA = 234L;
+
 	[public] typedef [v1_enum] enum {
 		NERR_Success=0
 	} NET_API_STATUS;
@@ -115,5 +117,16 @@ interface libnetapi
 	[nopush,nopull] NET_API_STATUS NetUserDel(
 		[in,unique] string *server_name,
 		[in,ref] string *user_name
+		);
+
+	[nopush,nopull] NET_API_STATUS NetUserEnum(
+		[in,unique] string *server_name,
+		[in] uint32 level,
+		[in] uint32 filter,
+		[out,ref] uint8 **buffer,
+		[in] uint32 prefmaxlen,
+		[out,ref] uint32 *entries_read,
+		[out,ref] uint32 *total_entries,
+		[in,out,ref] uint32 *resume_handle
 		);
 }
