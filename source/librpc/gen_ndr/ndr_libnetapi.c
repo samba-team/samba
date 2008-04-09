@@ -81,6 +81,87 @@ _PUBLIC_ void ndr_print_DOMAIN_CONTROLLER_INFO(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_0(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_0 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri0_name));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_0(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_0 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri0_name));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_0(struct ndr_print *ndr, const char *name, const struct USER_INFO_0 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_0");
+	ndr->depth++;
+	ndr_print_string(ndr, "usri0_name", r->usri0_name);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_1(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1_name));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1_password));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri1_password_age));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri1_priv));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1_home_dir));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1_comment));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri1_flags));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1_script_path));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_1(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1_name));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1_password));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri1_password_age));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri1_priv));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1_home_dir));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1_comment));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri1_flags));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1_script_path));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_USER_INFO_1(struct ndr_print *ndr, const char *name, const struct USER_INFO_1 *r)
+{
+	ndr_print_struct(ndr, name, "USER_INFO_1");
+	ndr->depth++;
+	ndr_print_string(ndr, "usri1_name", r->usri1_name);
+	ndr_print_string(ndr, "usri1_password", r->usri1_password);
+	ndr_print_uint32(ndr, "usri1_password_age", r->usri1_password_age);
+	ndr_print_uint32(ndr, "usri1_priv", r->usri1_priv);
+	ndr_print_string(ndr, "usri1_home_dir", r->usri1_home_dir);
+	ndr_print_string(ndr, "usri1_comment", r->usri1_comment);
+	ndr_print_uint32(ndr, "usri1_flags", r->usri1_flags);
+	ndr_print_string(ndr, "usri1_script_path", r->usri1_script_path);
+	ndr->depth--;
+}
+
 _PUBLIC_ void ndr_print_NetJoinDomain(struct ndr_print *ndr, const char *name, int flags, const struct NetJoinDomain *r)
 {
 	ndr_print_struct(ndr, name, "NetJoinDomain");
@@ -475,6 +556,42 @@ _PUBLIC_ void ndr_print_DsGetDcName(struct ndr_print *ndr, const char *name, int
 			ndr_print_DOMAIN_CONTROLLER_INFO(ndr, "dc_info", *r->out.dc_info);
 		}
 		ndr->depth--;
+		ndr->depth--;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+_PUBLIC_ void ndr_print_NetUserAdd(struct ndr_print *ndr, const char *name, int flags, const struct NetUserAdd *r)
+{
+	ndr_print_struct(ndr, name, "NetUserAdd");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "NetUserAdd");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "server_name", r->in.server_name);
+		ndr->depth++;
+		if (r->in.server_name) {
+			ndr_print_string(ndr, "server_name", r->in.server_name);
+		}
+		ndr->depth--;
+		ndr_print_uint32(ndr, "level", r->in.level);
+		ndr_print_ptr(ndr, "buffer", r->in.buffer);
+		ndr->depth++;
+		ndr_print_uint8(ndr, "buffer", *r->in.buffer);
+		ndr->depth--;
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "NetUserAdd");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "parm_error", r->out.parm_error);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "parm_error", *r->out.parm_error);
 		ndr->depth--;
 		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
 		ndr->depth--;
