@@ -115,7 +115,7 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 			DEBUG(3, ("auth_get_challenge: getting challenge from authentication method %s FAILED.\n", 
 				  auth_method->name));
 		} else {
-			DEBUG(5, ("auth_get_challenge: sucessfully got challenge from module %s\n", auth_method->name));
+			DEBUG(5, ("auth_get_challenge: successfully got challenge from module %s\n", auth_method->name));
 			auth_context->challenge = challenge;
 			challenge_set_by = auth_method->name;
 			auth_context->challenge_set_method = auth_method;

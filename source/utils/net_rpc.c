@@ -5883,7 +5883,7 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 	}
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100,("sucessfully vampired trusted domain [%s], sid: [%s], password: [%s]\n",  
+	DEBUG(100,("successfully vampired trusted domain [%s], sid: [%s], password: [%s]\n",  
 		trusted_dom_name, sid_string_static(&dom_sid), cleartextpwd));
 #endif
 
