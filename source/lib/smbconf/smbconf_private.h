@@ -58,6 +58,8 @@ struct smbconf_ops {
 	WERROR (*set_includes)(struct smbconf_ctx *ctx,
 			       const char *service,
 			       uint32_t num_includes, const char **includes);
+	WERROR (*delete_includes)(struct smbconf_ctx *ctx,
+				  const char *service);
 };
 
 struct smbconf_ctx {

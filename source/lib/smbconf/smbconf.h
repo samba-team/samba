@@ -99,5 +99,7 @@ WERROR smbconf_set_includes(struct smbconf_ctx *ctx,
 WERROR smbconf_set_global_includes(struct smbconf_ctx *ctx,
 				   uint32_t num_includes,
 				   const char **includes);
+WERROR smbconf_delete_includes(struct smbconf_ctx *ctx, const char *service);
+WERROR smbconf_delete_global_includes(struct smbconf_ctx *ctx);
 
 #endif /*  _LIBSMBCONF_H_  */

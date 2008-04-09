@@ -999,6 +999,30 @@ done:
 	return werr;
 }
 
+static WERROR smbconf_reg_delete_includes(struct smbconf_ctx *ctx,
+					  const char *service)
+{
+	WERROR werr = WERR_OK;
+	struct registry_key *key = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+
+	werr = smbconf_reg_open_service_key(tmp_ctx, ctx, service,
+					    REG_KEY_ALL, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	if (!smbconf_value_exists(key, INCLUDES_VALNAME)) {
+		goto done;
+	}
+
+	werr = reg_deletevalue(key, INCLUDES_VALNAME);
+
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return werr;
+}
 
 struct smbconf_ops smbconf_ops_reg = {
 	.init			= smbconf_reg_init,
@@ -1017,6 +1041,7 @@ struct smbconf_ops smbconf_ops_reg = {
 	.delete_parameter	= smbconf_reg_delete_parameter,
 	.get_includes		= smbconf_reg_get_includes,
 	.set_includes		= smbconf_reg_set_includes,
+	.delete_includes	= smbconf_reg_delete_includes,
 };
 
 
