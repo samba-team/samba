@@ -568,6 +568,13 @@ static WERROR smbconf_txt_set_includes(struct smbconf_ctx *ctx,
 	return WERR_NOT_SUPPORTED;
 }
 
+static WERROR smbconf_txt_delete_includes(struct smbconf_ctx *ctx,
+					  const char *service)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+
 static struct smbconf_ops smbconf_ops_txt = {
 	.init			= smbconf_txt_init,
 	.shutdown		= smbconf_txt_shutdown,
@@ -585,6 +592,7 @@ static struct smbconf_ops smbconf_ops_txt = {
 	.delete_parameter	= smbconf_txt_delete_parameter,
 	.get_includes		= smbconf_txt_get_includes,
 	.set_includes		= smbconf_txt_set_includes,
+	.delete_includes	= smbconf_txt_delete_includes,
 };
 
 

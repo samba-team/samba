@@ -389,3 +389,25 @@ WERROR smbconf_set_global_includes(struct smbconf_ctx *ctx,
 
 	return werr;
 }
+
+
+WERROR smbconf_delete_includes(struct smbconf_ctx *ctx, const char *service)
+{
+	if (!smbconf_share_exists(ctx, service)) {
+		return WERR_NO_SUCH_SERVICE;
+	}
+
+	return ctx->ops->delete_includes(ctx, service);
+}
+
+WERROR smbconf_delete_global_includes(struct smbconf_ctx *ctx)
+{
+	WERROR werr;
+
+	werr = smbconf_global_check(ctx);
+	if (W_ERROR_IS_OK(werr)) {
+		werr = smbconf_delete_includes(ctx, GLOBAL_NAME);
+	}
+
+	return werr;
+}
