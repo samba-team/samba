@@ -945,6 +945,32 @@ char *strdup_lower(const char *s)
 	return out_buffer;
 }
 
+char *talloc_strdup_lower(TALLOC_CTX *ctx, const char *s)
+{
+	size_t size;
+	smb_ucs2_t *buffer = NULL;
+	char *out_buffer;
+
+	size = push_ucs2_talloc(ctx, &buffer, s);
+	if (size == -1 || !buffer) {
+		TALLOC_FREE(buffer);
+		return NULL;
+	}
+
+	strlower_w(buffer);
+
+	size = pull_ucs2_talloc(ctx, &out_buffer, buffer);
+	TALLOC_FREE(buffer);
+
+	if (size == (size_t)-1) {
+		TALLOC_FREE(out_buffer);
+		return NULL;
+	}
+
+	return out_buffer;
+}
+
+
 size_t ucs2_align(const void *base_ptr, const void *p, int flags)
 {
 	if (flags & (STR_NOALIGN|STR_ASCII))
