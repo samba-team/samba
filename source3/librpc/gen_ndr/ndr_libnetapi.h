@@ -24,13 +24,21 @@
 
 #define NDR_DSGETDCNAME (0x08)
 
-#define NDR_LIBNETAPI_CALL_COUNT (9)
+#define NDR_NETUSERADD (0x09)
+
+#define NDR_LIBNETAPI_CALL_COUNT (10)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
 enum ndr_err_code ndr_push_DOMAIN_CONTROLLER_INFO(struct ndr_push *ndr, int ndr_flags, const struct DOMAIN_CONTROLLER_INFO *r);
 enum ndr_err_code ndr_pull_DOMAIN_CONTROLLER_INFO(struct ndr_pull *ndr, int ndr_flags, struct DOMAIN_CONTROLLER_INFO *r);
 void ndr_print_DOMAIN_CONTROLLER_INFO(struct ndr_print *ndr, const char *name, const struct DOMAIN_CONTROLLER_INFO *r);
+enum ndr_err_code ndr_push_USER_INFO_0(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_0 *r);
+enum ndr_err_code ndr_pull_USER_INFO_0(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_0 *r);
+void ndr_print_USER_INFO_0(struct ndr_print *ndr, const char *name, const struct USER_INFO_0 *r);
+enum ndr_err_code ndr_push_USER_INFO_1(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1 *r);
+enum ndr_err_code ndr_pull_USER_INFO_1(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1 *r);
+void ndr_print_USER_INFO_1(struct ndr_print *ndr, const char *name, const struct USER_INFO_1 *r);
 enum ndr_err_code ndr_push_NetJoinDomain(struct ndr_push *ndr, int flags, const struct NetJoinDomain *r);
 enum ndr_err_code ndr_pull_NetJoinDomain(struct ndr_pull *ndr, int flags, struct NetJoinDomain *r);
 void ndr_print_NetJoinDomain(struct ndr_print *ndr, const char *name, int flags, const struct NetJoinDomain *r);
@@ -58,4 +66,7 @@ void ndr_print_NetGetAnyDCName(struct ndr_print *ndr, const char *name, int flag
 enum ndr_err_code ndr_push_DsGetDcName(struct ndr_push *ndr, int flags, const struct DsGetDcName *r);
 enum ndr_err_code ndr_pull_DsGetDcName(struct ndr_pull *ndr, int flags, struct DsGetDcName *r);
 void ndr_print_DsGetDcName(struct ndr_print *ndr, const char *name, int flags, const struct DsGetDcName *r);
+enum ndr_err_code ndr_push_NetUserAdd(struct ndr_push *ndr, int flags, const struct NetUserAdd *r);
+enum ndr_err_code ndr_pull_NetUserAdd(struct ndr_pull *ndr, int flags, struct NetUserAdd *r);
+void ndr_print_NetUserAdd(struct ndr_print *ndr, const char *name, int flags, const struct NetUserAdd *r);
 #endif /* _HEADER_NDR_libnetapi */

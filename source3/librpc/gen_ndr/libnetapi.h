@@ -29,6 +29,21 @@ struct DOMAIN_CONTROLLER_INFO {
 	const char * client_site_name;
 };
 
+struct USER_INFO_0 {
+	const char * usri0_name;
+};
+
+struct USER_INFO_1 {
+	const char * usri1_name;
+	const char * usri1_password;
+	uint32_t usri1_password_age;
+	uint32_t usri1_priv;
+	const char * usri1_home_dir;
+	const char * usri1_comment;
+	uint32_t usri1_flags;
+	const char * usri1_script_path;
+};
+
 
 struct NetJoinDomain {
 	struct {
@@ -161,6 +176,21 @@ struct DsGetDcName {
 
 	struct {
 		struct DOMAIN_CONTROLLER_INFO **dc_info;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetUserAdd {
+	struct {
+		const char * server_name;/* [unique] */
+		uint32_t level;
+		uint8_t *buffer;/* [ref] */
+	} in;
+
+	struct {
+		uint32_t *parm_error;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 
