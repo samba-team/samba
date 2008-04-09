@@ -984,8 +984,15 @@ static WERROR smbconf_reg_set_includes(struct smbconf_ctx *ctx,
 		goto done;
 	}
 
-	werr = smbconf_reg_set_multi_sz_value(key, INCLUDES_VALNAME,
-					      num_includes, includes);
+	if (num_includes == 0) {
+		if (!smbconf_value_exists(key, INCLUDES_VALNAME)) {
+			goto done;
+		}
+		werr = reg_deletevalue(key, INCLUDES_VALNAME);
+	} else {
+		werr = smbconf_reg_set_multi_sz_value(key, INCLUDES_VALNAME,
+						      num_includes, includes);
+	}
 
 done:
 	TALLOC_FREE(tmp_ctx);
