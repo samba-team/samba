@@ -328,6 +328,6 @@ startstop_nfslock() {
 # load a site local config file
 ########################################################
 
-[ -x $CTDB_BASE/rc.local] && {
+[ -x $CTDB_BASE/rc.local ] && {
 	. $CTDB_BASE/rc.local
 }
