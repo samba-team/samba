@@ -61,8 +61,8 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	DEBUG(0,("New Server[%s] in Site[%s]\n", settings->dns_name, 
-			 settings->site_name));
+	DEBUG(0,("New Server in Site[%s]\n", 
+		 settings->site_name));
 
 	DEBUG(0,("DSA Instance [%s]\n"
 		"\tobjectGUID[%s]\n"
