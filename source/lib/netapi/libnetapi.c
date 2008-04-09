@@ -441,3 +441,49 @@ NET_API_STATUS DsGetDcName(const char * server_name /* [in] [unique] */,
 	return r.out.result;
 }
 
+/****************************************************************
+ NetUserAdd
+****************************************************************/
+
+NET_API_STATUS NetUserAdd(const char * server_name /* [in] [unique] */,
+			  uint32_t level /* [in] */,
+			  uint8_t *buffer /* [in] [ref] */,
+			  uint32_t *parm_error /* [out] [ref] */)
+{
+	struct NetUserAdd r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.level = level;
+	r.in.buffer = buffer;
+
+	/* Out parameters */
+	r.out.parm_error = parm_error;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetUserAdd, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetUserAdd_l(ctx, &r);
+	} else {
+		werr = NetUserAdd_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetUserAdd, &r);
+	}
+
+	return r.out.result;
+}
+
