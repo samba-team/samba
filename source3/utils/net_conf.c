@@ -109,6 +109,11 @@ static int net_conf_delparm_usage(int argc, const char **argv)
 	return -1;
 }
 
+static int net_conf_getincludes_usage(int argc, const char **argv)
+{
+	d_printf("USAGE: net conf getincludes <section>\n");
+	return -1;
+}
 
 /**********************************************************************
  *
@@ -775,6 +780,46 @@ done:
 	return ret;
 }
 
+static int net_conf_getincludes(struct smbconf_ctx *conf_ctx,
+				int argc, const char **argv)
+{
+	WERROR werr;
+	uint32_t num_includes;
+	uint32_t count;
+	char *service;
+	char **includes = NULL;
+	int ret = -1;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+
+	if (argc != 1) {
+		net_conf_getincludes_usage(argc, argv);
+		goto done;
+	}
+
+	service = talloc_strdup_lower(mem_ctx, argv[0]);
+	if (service == NULL) {
+		d_printf("error: out of memory!\n");
+		goto done;
+	}
+
+	werr = smbconf_get_includes(conf_ctx, mem_ctx, service,
+				    &num_includes, &includes);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("error getting includes: %s\n", dos_errstr(werr));
+		goto done;
+	}
+
+	for (count = 0; count < num_includes; count++) {
+		d_printf("include = %s\n", includes[count]);
+	}
+
+	ret = 0;
+
+done:
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
 
 /**********************************************************************
  *
@@ -875,6 +920,8 @@ int net_conf(int argc, const char **argv)
 		 "Retrieve the value of a parameter."},
 		{"delparm", net_conf_delparm,
 		 "Delete a parameter."},
+		{"getincludes", net_conf_getincludes,
+		 "Show the includes of a share definition."},
 		{NULL, NULL, NULL}
 	};
 
