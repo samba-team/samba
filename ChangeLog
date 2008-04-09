@@ -1,3 +1,8 @@
+2008-04-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/crypto.c: First version of KDF in
+	draft-ietf-krb-wg-pkinit-alg-agility-03.txt.
+	
 2008-04-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/setup.texi: Add text about smbk5pwd overlay from Buchan
