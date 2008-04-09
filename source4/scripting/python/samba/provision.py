@@ -1011,13 +1011,6 @@ def provision(setup_dir, message, session_info,
        os.makedirs(os.path.join(policy_path, "User"), 0755)
        if not os.path.isdir(paths.netlogon):
             os.makedirs(paths.netlogon, 0755)
-       secrets_ldb = Ldb(paths.secrets, session_info=session_info, 
-                         credentials=credentials, lp=lp)
-       secretsdb_become_dc(secrets_ldb, setup_path, domain=domain, realm=names.realm,
-                           netbiosname=names.netbiosname, domainsid=domainsid, 
-                           keytab_path=paths.keytab, samdb_url=paths.samdb, 
-                           dns_keytab_path=paths.dns_keytab, dnspass=dnspass, 
-                           machinepass=machinepass, dnsdomain=names.dnsdomain)
 
     if samdb_fill == FILL_FULL:
         setup_name_mappings(samdb, idmap, str(domainsid), names.domaindn,
@@ -1029,6 +1022,14 @@ def provision(setup_dir, message, session_info,
 
         # Only make a zone file on the first DC, it should be replicated with DNS replication
         if serverrole == "domain controller":
+            secrets_ldb = Ldb(paths.secrets, session_info=session_info, 
+                              credentials=credentials, lp=lp)
+            secretsdb_become_dc(secrets_ldb, setup_path, domain=domain, realm=names.realm,
+                                netbiosname=names.netbiosname, domainsid=domainsid, 
+                                keytab_path=paths.keytab, samdb_url=paths.samdb, 
+                                dns_keytab_path=paths.dns_keytab, dnspass=dnspass, 
+                                machinepass=machinepass, dnsdomain=names.dnsdomain)
+
             samdb = SamDB(paths.samdb, session_info=session_info, 
                       credentials=credentials, lp=lp)
 
