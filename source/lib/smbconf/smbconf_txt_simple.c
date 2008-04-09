@@ -175,8 +175,13 @@ static WERROR smbconf_txt_init_cache(struct smbconf_ctx *ctx)
 static WERROR smbconf_txt_load_file(struct smbconf_ctx *ctx)
 {
 	WERROR werr;
-	uint64_t new_csn = (uint64_t)file_modtime(ctx->path);
+	uint64_t new_csn;
 
+	if (!file_exist(ctx->path, NULL)) {
+		return WERR_BADFILE;
+	}
+
+	new_csn = (uint64_t)file_modtime(ctx->path);
 	if (new_csn == pd(ctx)->csn) {
 		return WERR_OK;
 	}
