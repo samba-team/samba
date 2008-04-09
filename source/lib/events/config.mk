@@ -30,11 +30,9 @@ INIT_FUNCTION = s4_events_standard_init
 
 ##############################
 # Start SUBSYSTEM LIBEVENTS
-[LIBRARY::LIBEVENTS]
+[SUBSYSTEM::LIBEVENTS]
 OBJ_FILES = events.o events_timed.o events_signal.o
 PUBLIC_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL
-SO_VERSION = 0
-VERSION = 0.0.1
 # End SUBSYSTEM LIBEVENTS
 ##############################
 
