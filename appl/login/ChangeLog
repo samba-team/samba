@@ -1,5 +1,9 @@
-2006-12-05  Love Hörnquist Åstrand  <lha@it.su.se>
+2008-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* utmp_login.c: Remove utmp warning on mac os x
+
+2006-12-05  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* limits_conf.c: Clear errno before calling the strtol
 	functions. From Paul Stoeber to OpenBSD by Ray Lai and Björn
 	Sandell.
