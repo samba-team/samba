@@ -150,7 +150,25 @@ int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 	memcpy(rec.dptr, header, sizeof(*header));
 	memcpy(rec.dptr + sizeof(*header), data.dptr, data.dsize);
 
-	ret = tdb_store(ctdb_db->ltdb->tdb, key, rec, TDB_REPLACE);
+	/* if this is a persistent database without NOSYNC then we
+	   will do this via a transaction */
+	if (ctdb_db->persistent && !(ctdb_db->client_tdb_flags & TDB_NOSYNC)) {
+		ret = tdb_transaction_start(ctdb_db->ltdb->tdb);
+		if (ret != 0) {
+			DEBUG(DEBUG_CRIT, ("Failed to start local transaction\n"));
+			goto failed;
+		}
+		ret = tdb_store(ctdb_db->ltdb->tdb, key, rec, TDB_REPLACE);
+		if (ret != 0) {
+			tdb_transaction_cancel(ctdb_db->ltdb->tdb);
+			goto failed;
+		}
+		ret = tdb_transaction_commit(ctdb_db->ltdb->tdb);
+	} else {
+		ret = tdb_store(ctdb_db->ltdb->tdb, key, rec, TDB_REPLACE);
+	}
+
+failed:
 	talloc_free(rec.dptr);
 
 	return ret;
