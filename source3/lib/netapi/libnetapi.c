@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/libnetapi.h"
 #include "lib/netapi/netapi.h"
+#include "lib/netapi/netapi_private.h"
 #include "libnetapi.h"
 #include "librpc/gen_ndr/ndr_libnetapi.h"
 
