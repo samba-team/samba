@@ -106,6 +106,7 @@
 struct krb5_pk_identity;
 struct krb5_pk_cert;
 struct ContentInfo;
+struct AlgorithmIdentifier;
 struct _krb5_krb_auth_data;
 struct krb5_dh_moduli;
 #include "crypto-headers.h"
