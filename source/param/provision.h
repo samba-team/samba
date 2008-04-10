@@ -39,7 +39,13 @@ struct provision_settings {
 	const char *targetdir;
 };
 
+/* FIXME: Rename this to hostconfig ? */
+struct provision_result {
+	const char *domaindn;
+};
+
 NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
-						struct provision_settings *settings);
+						struct provision_settings *settings,
+						struct provision_result *result);
 
 #endif /* _PROVISION_H_ */

@@ -1082,7 +1082,7 @@ def provision_become_dc(setup_dir=None,
 	"""print a message if quiet is not set."""
         print text
 
-    provision(setup_dir, message, system_session(), None,
+    return provision(setup_dir, message, system_session(), None,
               smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS, realm=realm, 
               rootdn=rootdn, domaindn=domaindn, schemadn=schemadn, configdn=configdn, serverdn=serverdn,
               domain=domain, hostname=hostname, hostip="127.0.0.1", domainsid=domainsid, machinepass=machinepass, serverrole="domain controller", sitename=sitename);

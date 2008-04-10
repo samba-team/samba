@@ -29,9 +29,10 @@
 #include "scripting/python/modules.h"
 
 NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
-			struct provision_settings *settings)
+			struct provision_settings *settings, 
+			struct provision_result *result)
 {
-	PyObject *provision_mod, *provision_dict, *provision_fn, *result, *parameters;
+	PyObject *provision_mod, *provision_dict, *provision_fn, *py_result, *parameters;
 	
 	DEBUG(0,("Provision for Become-DC test using python\n"));
 
@@ -115,15 +116,17 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	PyDict_SetItemString(parameters, "machinepass", 
 			     PyString_FromString(settings->machine_password));
 
-	result = PyEval_CallObjectWithKeywords(provision_fn, NULL, parameters);
+	py_result = PyEval_CallObjectWithKeywords(provision_fn, NULL, parameters);
 
 	Py_DECREF(parameters);
 
-	if (result == NULL) {
+	if (py_result == NULL) {
 		PyErr_Print();
 		PyErr_Clear();
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	result->domaindn = talloc_strdup(mem_ctx, PyString_AsString(PyObject_GetAttrString(py_result, "domaindn")));
 
 	return NT_STATUS_OK;
 }
