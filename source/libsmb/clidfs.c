@@ -46,6 +46,7 @@ static struct cm_cred_struct {
 	char *password;
 	bool got_pass;
 	bool use_kerberos;
+	bool fallback_after_kerberos;
 	int signing_state;
 } cm_creds;
 
@@ -172,6 +173,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 
 	c->protocol = max_protocol;
 	c->use_kerberos = cm_creds.use_kerberos;
+	c->fallback_after_kerberos = cm_creds.fallback_after_kerberos;
 	cli_setup_signing_state(c, cm_creds.signing_state);
 
 	if (!cli_session_request(c, &calling, &called)) {
@@ -199,7 +201,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 		return NULL;
 	}
 
-	if (!cm_creds.got_pass) {
+	if (!cm_creds.got_pass && !cm_creds.use_kerberos) {
 		char *pass = getpass("Password: ");
 		if (pass) {
 			cm_set_password(pass);
@@ -461,6 +463,9 @@ static void cm_set_password(const char *newpass)
 	}
 }
 
+/****************************************************************************
+****************************************************************************/
+
 void cli_cm_set_credentials(void)
 {
 	SAFE_FREE(cm_creds.username);
@@ -471,6 +476,7 @@ void cli_cm_set_credentials(void)
 	}
 
 	cm_creds.use_kerberos = get_cmdline_auth_info_use_kerberos();
+	cm_creds.fallback_after_kerberos = false;
 	cm_creds.signing_state = get_cmdline_auth_info_signing_state();
 }
 
@@ -488,6 +494,51 @@ void cli_cm_set_port(int port_number)
 void cli_cm_set_dest_name_type(int type)
 {
 	name_type = type;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+void cli_cm_set_signing_state(int state)
+{
+	cm_creds.signing_state = state;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+void cli_cm_set_username(const char *username)
+{
+	SAFE_FREE(cm_creds.username);
+	cm_creds.username = SMB_STRDUP(username);
+}
+
+/****************************************************************************
+****************************************************************************/
+
+void cli_cm_set_password(const char *newpass)
+{
+	SAFE_FREE(cm_creds.password);
+	cm_creds.password = SMB_STRDUP(newpass);
+	if (cm_creds.password) {
+		cm_creds.got_pass = true;
+	}
+}
+
+/****************************************************************************
+****************************************************************************/
+
+void cli_cm_set_use_kerberos(void)
+{
+	cm_creds.use_kerberos = true;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+void cli_cm_set_fallback_after_kerberos(void)
+{
+	cm_creds.fallback_after_kerberos = true;
 }
 
 /****************************************************************************
