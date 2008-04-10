@@ -30,9 +30,9 @@
 static WERROR NetServerGetInfo_l_1005(struct libnetapi_ctx *ctx,
 				      uint8_t **buffer)
 {
-	struct srvsvc_NetSrvInfo1005 info1005;
+	struct SERVER_INFO_1005 info1005;
 
-	info1005.comment = lp_serverstring();
+	info1005.sv1005_comment = lp_serverstring();
 	*buffer = (uint8_t *)talloc_memdup(ctx, &info1005, sizeof(info1005));
 	if (!*buffer) {
 		return WERR_NOMEM;
