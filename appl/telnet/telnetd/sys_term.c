@@ -67,6 +67,11 @@ int	utmp_len = MaxHostNameLen;
 #endif
 #endif
 
+/* really, mac os uses wtmpx (or asl) */
+#ifdef __APPLE__
+#undef _PATH_WTMP
+#endif
+
 #if !defined(WTMP_FILE) && defined(_PATH_WTMP)
 #define WTMP_FILE _PATH_WTMP
 #endif
