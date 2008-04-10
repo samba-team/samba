@@ -206,10 +206,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_DB_ATTACH:
-		return ctdb_control_db_attach(ctdb, indata, outdata, false);
+		return ctdb_control_db_attach(ctdb, indata, outdata, srvid, false);
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
-		return ctdb_control_db_attach(ctdb, indata, outdata, true);
+		return ctdb_control_db_attach(ctdb, indata, outdata, srvid, true);
 
 	case CTDB_CONTROL_SET_CALL: {
 		struct ctdb_control_set_call *sc = 
