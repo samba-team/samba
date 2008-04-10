@@ -142,6 +142,7 @@ struct send_to_kdc;
 struct krb5_pk_identity;
 struct krb5_pk_cert;
 struct ContentInfo;
+struct AlgorithmIdentifier;
 typedef struct krb5_pk_init_ctx_data *krb5_pk_init_ctx;
 struct krb5_dh_moduli;
 
