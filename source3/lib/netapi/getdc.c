@@ -50,10 +50,8 @@ WERROR NetGetDCName_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON,
-					    &status);
-	if (!pipe_cli) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_open_pipe(ctx, cli, PI_NETLOGON, &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -92,12 +90,10 @@ WERROR NetGetAnyDCName_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON,
-					    &status);
-	if (!pipe_cli) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_open_pipe(ctx, cli, PI_NETLOGON, &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
-	};
+	}
 
 	status = rpccli_netr_GetAnyDCName(pipe_cli, ctx,
 					  r->in.server_name,
@@ -152,10 +148,8 @@ WERROR DsGetDcName_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON,
-					    &status);
-	if (!pipe_cli) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_open_pipe(ctx, cli, PI_NETLOGON, &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
