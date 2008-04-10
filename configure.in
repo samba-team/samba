@@ -198,6 +198,7 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS([\
 	arpa/ftp.h				\
 	arpa/telnet.h				\
+	asl.h					\
 	bind/bitypes.h				\
 	bsdsetjmp.h				\
 	curses.h				\
