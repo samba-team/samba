@@ -123,19 +123,7 @@ static void flush_caches(void)
 
 	if (!wcache_invalidate_cache()) {
 		DEBUG(0, ("invalidating the cache failed; revalidate the cache\n"));
-		/* Close the cache to be able to valdite the cache */
-		close_winbindd_cache();
-		/*
-		 * Ensure all cache and idmap caches are consistent
-		 * before we initialize the cache again.
-		 */
-		if (winbindd_validate_cache() < 0) {
-			DEBUG(0, ("winbindd cache tdb corrupt and no backup "
-				  "could be restore.\n"));
-		}
-
-		/* Initialize cache again. */
-		if (!initialize_winbindd_cache()) {
+		if (!winbindd_cache_validate_and_initialize()) {
 			exit(1);
 		}
 	}
@@ -1194,14 +1182,9 @@ int main(int argc, char **argv, char **envp)
 
 	/*
 	 * Ensure all cache and idmap caches are consistent
-	 * before we startup.
+	 * and initialized before we startup.
 	 */
-	if (winbindd_validate_cache() < 0) {
-		DEBUG(0, ("corrupted tdb found, trying to restore backup\n"));
-	}
-
-	/* Initialize cache (ensure version is correct). */
-	if (!initialize_winbindd_cache()) {
+	if (!winbindd_cache_validate_and_initialize()) {
 		exit(1);
 	}
 
