@@ -270,6 +270,10 @@
 #define NERR_BASE (2100)
 #endif
 
+#ifndef MAX_NERR
+#define MAX_NERR (NERR_BASE+899)
+#endif
+
 #define WERR_DFS_NO_SUCH_VOL            W_ERROR(NERR_BASE+562)
 #define WERR_DFS_NO_SUCH_SHARE          W_ERROR(NERR_BASE+565)
 #define WERR_DFS_NO_SUCH_SERVER         W_ERROR(NERR_BASE+573)
