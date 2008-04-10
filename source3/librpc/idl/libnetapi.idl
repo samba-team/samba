@@ -46,6 +46,10 @@ interface libnetapi
 		[out] string ***ous
 		);
 
+	[public] typedef struct {
+		string sv1005_comment;
+	} SERVER_INFO_1005;
+
 	[nopush,nopull] NET_API_STATUS NetServerGetInfo(
 		[in,unique] string *server_name,
 		[in] uint32 level,
