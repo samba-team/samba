@@ -185,9 +185,8 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &status);
-	if (!pipe_cli) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -378,9 +377,8 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &status);
-	if (!pipe_cli) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -602,9 +600,8 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &status);
-	if (!pipe_cli) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
