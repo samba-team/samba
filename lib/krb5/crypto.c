@@ -4139,7 +4139,7 @@ encode_otherinfo(krb5_context context,
 
 krb5_error_code
 _krb5_pk_kdf(krb5_context context,
-	     const AlgorithmIdentifier *ai,
+	     const struct AlgorithmIdentifier *ai,
 	     const void *dhdata,
 	     size_t dhsize,
 	     krb5_const_principal client,
