@@ -18,6 +18,10 @@ enum NET_API_STATUS
 #endif
 ;
 
+struct SERVER_INFO_1005 {
+	const char * sv1005_comment;
+};
+
 struct DOMAIN_CONTROLLER_INFO {
 	const char * domain_controller_name;
 	const char * domain_controller_address;
