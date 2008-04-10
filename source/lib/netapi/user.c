@@ -180,18 +180,8 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 			goto done;
 	}
 
-	status = cli_full_connection(&cli, NULL, r->in.server_name,
-				     NULL, 0,
-				     "IPC$", "IPC",
-				     ctx->username,
-				     ctx->workgroup,
-				     ctx->password,
-				     CLI_FULL_CONNECTION_USE_KERBEROS |
-				     CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS,
-				     Undefined, NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -353,8 +343,6 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
 	}
 
-	cli_shutdown(cli);
-
 	return werr;
 }
 
@@ -385,18 +373,8 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(domain_handle);
 	ZERO_STRUCT(user_handle);
 
-	status = cli_full_connection(&cli, NULL, r->in.server_name,
-				     NULL, 0,
-				     "IPC$", "IPC",
-				     ctx->username,
-				     ctx->workgroup,
-				     ctx->password,
-				     CLI_FULL_CONNECTION_USE_KERBEROS |
-				     CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS,
-				     Undefined, NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -534,8 +512,6 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
 	}
 
-	cli_shutdown(cli);
-
 	return werr;
 }
 
@@ -621,18 +597,8 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 			return WERR_NOT_SUPPORTED;
 	}
 
-	status = cli_full_connection(&cli, NULL, r->in.server_name,
-				     NULL, 0,
-				     "IPC$", "IPC",
-				     ctx->username,
-				     ctx->workgroup,
-				     ctx->password,
-				     CLI_FULL_CONNECTION_USE_KERBEROS |
-				     CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS,
-				     Undefined, NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -721,15 +687,15 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 							 r->out.buffer);
 
  done:
+	if (!cli) {
+		return werr;
+	}
+
 	if (is_valid_policy_hnd(&domain_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
 	}
 	if (is_valid_policy_hnd(&connect_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
-	}
-
-	if (cli) {
-		cli_shutdown(cli);
 	}
 
 	return werr;

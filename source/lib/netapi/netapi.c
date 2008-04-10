@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "lib/netapi/netapi.h"
+#include "lib/netapi/netapi_private.h"
 
 extern bool AllowDebugChange;
 
@@ -113,6 +114,7 @@ NET_API_STATUS libnetapi_getctx(struct libnetapi_ctx **ctx)
 
 NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 {
+	libnetapi_shutdown_cm(ctx);
 
 	if (ctx->krb5_cc_env) {
 		char *env = getenv(KRB5_ENV_CCNAME);
