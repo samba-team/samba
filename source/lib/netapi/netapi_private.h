@@ -29,4 +29,8 @@ WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 				     const char *server_name,
 				     struct cli_state **cli);
 WERROR libnetapi_shutdown_cm(struct libnetapi_ctx *ctx);
+WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
+			   struct cli_state *cli,
+			   int pipe_idx,
+			   struct rpc_pipe_client **pipe_cli);
 #endif
