@@ -73,3 +73,113 @@ WERROR libnetapi_shutdown_cm(struct libnetapi_ctx *ctx)
 
 	return WERR_OK;
 }
+
+/********************************************************************
+********************************************************************/
+
+struct client_pipe_connection {
+	struct client_pipe_connection *prev, *next;
+	struct rpc_pipe_client *pipe;
+};
+
+static struct client_pipe_connection *pipe_connections;
+
+/********************************************************************
+********************************************************************/
+
+static struct rpc_pipe_client *pipe_cm_find(struct cli_state *cli,
+					    int pipe_idx,
+					    NTSTATUS *status)
+{
+	struct client_pipe_connection *p;
+
+	for (p = pipe_connections; p; p = p->next) {
+
+		if (!p->pipe->cli) {
+			*status = NT_STATUS_PIPE_EMPTY;
+			return NULL;
+		}
+
+		if (strequal(cli->desthost, p->pipe->cli->desthost) &&
+		    pipe_idx == p->pipe->pipe_idx) {
+			*status = NT_STATUS_OK;
+			return p->pipe;
+		}
+	}
+
+	*status = NT_STATUS_PIPE_NOT_AVAILABLE;
+
+	return NULL;
+}
+
+/********************************************************************
+********************************************************************/
+
+static struct rpc_pipe_client *pipe_cm_connect(TALLOC_CTX *mem_ctx,
+					       struct cli_state *cli,
+					       int pipe_idx,
+					       NTSTATUS *status)
+{
+	struct client_pipe_connection *p;
+
+	p = TALLOC_ZERO_ARRAY(mem_ctx, struct client_pipe_connection, 1);
+	if (!p) {
+		*status = NT_STATUS_NO_MEMORY;
+		return NULL;
+	}
+
+	p->pipe = cli_rpc_pipe_open_noauth(cli, pipe_idx, status);
+	if (!p->pipe) {
+		TALLOC_FREE(p);
+		return NULL;
+	}
+
+	DLIST_ADD(pipe_connections, p);
+
+	return p->pipe;
+}
+
+/********************************************************************
+********************************************************************/
+
+static struct rpc_pipe_client *pipe_cm_open(TALLOC_CTX *ctx,
+					    struct cli_state *cli,
+					    int pipe_idx,
+					    NTSTATUS *status)
+{
+	struct rpc_pipe_client *p;
+
+	p = pipe_cm_find(cli, pipe_idx, status);
+	if (!p) {
+		p = pipe_cm_connect(ctx, cli, pipe_idx, status);
+	}
+
+	return p;
+}
+
+/********************************************************************
+********************************************************************/
+
+WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
+			   struct cli_state *cli,
+			   int pipe_idx,
+			   struct rpc_pipe_client **pipe_cli)
+{
+	NTSTATUS status;
+
+	if (!cli || !pipe_cli) {
+		return WERR_INVALID_PARAM;
+	}
+
+	*pipe_cli = pipe_cm_open(ctx, cli, pipe_idx, &status);
+	if (!*pipe_cli) {
+		libnetapi_set_error_string(ctx, "failed to open PIPE %s: %s",
+			cli_get_pipe_name(pipe_idx),
+			get_friendly_nt_error_msg(status));
+		return WERR_DEST_NOT_FOUND;
+	}
+
+	return WERR_OK;
+}
+
+
