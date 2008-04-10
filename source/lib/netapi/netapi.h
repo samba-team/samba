@@ -52,7 +52,7 @@ struct DOMAIN_CONTROLLER_INFO {
 	uint32_t domain_controller_address_type;
 	struct GUID domain_guid;
 	const char * domain_name;
-	const char * dns_foreset_name;
+	const char * dns_forest_name;
 	uint32_t flags;
 	const char * dc_site_name;
 	const char * client_site_name;
