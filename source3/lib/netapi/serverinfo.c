@@ -70,18 +70,8 @@ WERROR NetServerGetInfo_r(struct libnetapi_ctx *ctx,
 	WERROR werr;
 	union srvsvc_NetSrvInfo info;
 
-	status = cli_full_connection(&cli, NULL, r->in.server_name,
-				     NULL, 0,
-				     "IPC$", "IPC",
-				     ctx->username,
-				     ctx->workgroup,
-				     ctx->password,
-				     CLI_FULL_CONNECTION_USE_KERBEROS |
-				     CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS,
-				     Undefined, NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -109,10 +99,6 @@ WERROR NetServerGetInfo_r(struct libnetapi_ctx *ctx,
 	}
 
  done:
-	if (cli) {
-		cli_shutdown(cli);
-	}
-
 	return werr;
 }
 
@@ -186,18 +172,8 @@ WERROR NetServerSetInfo_r(struct libnetapi_ctx *ctx,
 	WERROR werr;
 	union srvsvc_NetSrvInfo info;
 
-	status = cli_full_connection(&cli, NULL, r->in.server_name,
-				     NULL, 0,
-				     "IPC$", "IPC",
-				     ctx->username,
-				     ctx->workgroup,
-				     ctx->password,
-				     CLI_FULL_CONNECTION_USE_KERBEROS |
-				     CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS,
-				     Undefined, NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -229,9 +205,5 @@ WERROR NetServerSetInfo_r(struct libnetapi_ctx *ctx,
 	}
 
  done:
-	if (cli) {
-		cli_shutdown(cli);
-	}
-
 	return werr;
 }

@@ -45,19 +45,8 @@ WERROR NetGetDCName_r(struct libnetapi_ctx *ctx,
 	NTSTATUS status;
 	WERROR werr;
 
-	status = cli_full_connection(&cli, NULL, r->in.server_name,
-				     NULL, 0,
-				     "IPC$", "IPC",
-				     ctx->username,
-				     ctx->workgroup,
-				     ctx->password,
-				     CLI_FULL_CONNECTION_USE_KERBEROS |
-				     CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS |
-				     CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK,
-				     Undefined, NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -74,9 +63,6 @@ WERROR NetGetDCName_r(struct libnetapi_ctx *ctx,
 				       (const char **)r->out.buffer,
 				       &werr);
  done:
-	if (cli) {
-		cli_shutdown(cli);
-	}
 
 	return werr;
 }
@@ -101,19 +87,8 @@ WERROR NetGetAnyDCName_r(struct libnetapi_ctx *ctx,
 	NTSTATUS status;
 	WERROR werr;
 
-	status = cli_full_connection(&cli, NULL, r->in.server_name,
-				     NULL, 0,
-				     "IPC$", "IPC",
-				     ctx->username,
-				     ctx->workgroup,
-				     ctx->password,
-				     CLI_FULL_CONNECTION_USE_KERBEROS |
-				     CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS |
-				     CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK,
-				     Undefined, NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -133,9 +108,6 @@ WERROR NetGetAnyDCName_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
  done:
-	if (cli) {
-		cli_shutdown(cli);
-	}
 
 	return werr;
 
@@ -175,19 +147,8 @@ WERROR DsGetDcName_r(struct libnetapi_ctx *ctx,
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 
-	status = cli_full_connection(&cli, NULL, r->in.server_name,
-				     NULL, 0,
-				     "IPC$", "IPC",
-				     ctx->username,
-				     ctx->workgroup,
-				     ctx->password,
-				     CLI_FULL_CONNECTION_USE_KERBEROS |
-				     CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS |
-				     CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK,
-				     Undefined, NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -213,9 +174,5 @@ WERROR DsGetDcName_r(struct libnetapi_ctx *ctx,
 	}
 
  done:
-	if (cli) {
-		cli_shutdown(cli);
-	}
-
 	return werr;
 }
