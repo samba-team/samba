@@ -58,6 +58,9 @@ RCSID("$Id$");
 #ifdef HAVE_UTMPX_H
 #include <utmpx.h>
 #endif
+#ifdef HAVE_ASL_H
+#include <asl.h>
+#endif
 #include <roken.h>
 #include "extern.h"
 
@@ -69,8 +72,32 @@ RCSID("$Id$");
 #endif
 #endif
 
-void
-ftpd_logwtmp(char *line, char *name, char *host)
+#ifdef HAVE_ASL_H
+static void
+ftpd_logwtmp_asl(char *line, char *name, char *host)
+{
+    static aslmsg m = NULL;
+    static int init = 0;
+
+    if (!init) {
+	init = 1;
+	m = asl_new(ASL_TYPE_MSG);
+	if (m == NULL)
+	    return;
+	asl_set(m, ASL_KEY_FACILITY, "org.h5l.ftpd");
+    }
+    if (m)
+	asl_log(NULL, m, ASL_LEVEL_NOTICE,
+		"host %s/%s user %s%sconnected pid %d",
+		host, line, name, name[0] ? " " : "dis", (int)getpid());
+}
+
+#endif
+
+#ifndef HAVE_ASL_H
+
+static void
+ftpd_logwtmp_wtmp(char *line, char *name, char *host)
 {
     static int init = 0;
     static int fd;
@@ -135,4 +162,16 @@ ftpd_logwtmp(char *line, char *name, char *host)
 	write(fdx, &utx, sizeof(struct utmpx));
 #endif	
     }
+}
+
+#endif /* !HAVE_ASL_H */
+
+void
+ftpd_logwtmp(char *line, char *name, char *host)
+{
+#ifdef HAVE_ASL_H
+    ftpd_logwtmp_asl(line, name, host);
+#else
+    ftpd_logwtmp_wtmp(line, name, host);
+#endif    
 }
