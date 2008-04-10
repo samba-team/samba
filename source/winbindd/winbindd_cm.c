@@ -1145,28 +1145,31 @@ static bool receive_getdc_response(struct sockaddr_storage *dc_ss,
 	/* This should be (buf-4)+SVAL(buf-4, smb_vwv12)... */
 	p = buf+SVAL(buf, smb_vwv10);
 
-	if (CVAL(p,0) != SAMLOGON_R) {
+	switch (CVAL(p, 0)) {
+	case SAMLOGON_R:
+	case SAMLOGON_UNK_R:
+		p+=2;
+		pull_ucs2(buf, dcname, p, sizeof(dcname), PTR_DIFF(buf+len, p),
+			  STR_TERMINATE|STR_NOALIGN);
+		p = skip_unibuf(p, PTR_DIFF(buf+len, p));
+		pull_ucs2(buf, user, p, sizeof(user), PTR_DIFF(buf+len, p),
+			  STR_TERMINATE|STR_NOALIGN);
+		p = skip_unibuf(p, PTR_DIFF(buf+len, p));
+		pull_ucs2(buf, domain, p, sizeof(domain), PTR_DIFF(buf+len, p),
+			  STR_TERMINATE|STR_NOALIGN);
+		p = skip_unibuf(p, PTR_DIFF(buf+len, p));
+
+		if (!strequal(domain, domain_name)) {
+			DEBUG(3, ("GetDC: Expected domain %s, got %s\n",
+				  domain_name, domain));
+			return False;
+		}
+		break;
+
+	default:
 		DEBUG(8, ("GetDC got invalid response type %d\n", CVAL(p, 0)));
 		return False;
 	}
-
-	p+=2;
-	pull_ucs2(buf, dcname, p, sizeof(dcname), PTR_DIFF(buf+len, p),
-		  STR_TERMINATE|STR_NOALIGN);
-	p = skip_unibuf(p, PTR_DIFF(buf+len, p));
-	pull_ucs2(buf, user, p, sizeof(dcname), PTR_DIFF(buf+len, p),
-		  STR_TERMINATE|STR_NOALIGN);
-	p = skip_unibuf(p, PTR_DIFF(buf+len, p));
-	pull_ucs2(buf, domain, p, sizeof(dcname), PTR_DIFF(buf+len, p),
-		  STR_TERMINATE|STR_NOALIGN);
-	p = skip_unibuf(p, PTR_DIFF(buf+len, p));
-
-	if (!strequal(domain, domain_name)) {
-		DEBUG(3, ("GetDC: Expected domain %s, got %s\n",
-			  domain_name, domain));
-		return False;
-	}
-
 	p = dcname;
 	if (*p == '\\')	p += 1;
 	if (*p == '\\')	p += 1;
