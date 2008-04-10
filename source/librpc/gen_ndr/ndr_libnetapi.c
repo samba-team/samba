@@ -27,6 +27,36 @@ _PUBLIC_ void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, 
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_1005(struct ndr_push *ndr, int ndr_flags, const struct SERVER_INFO_1005 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->sv1005_comment));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_1005(struct ndr_pull *ndr, int ndr_flags, struct SERVER_INFO_1005 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->sv1005_comment));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVER_INFO_1005(struct ndr_print *ndr, const char *name, const struct SERVER_INFO_1005 *r)
+{
+	ndr_print_struct(ndr, name, "SERVER_INFO_1005");
+	ndr->depth++;
+	ndr_print_string(ndr, "sv1005_comment", r->sv1005_comment);
+	ndr->depth--;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_DOMAIN_CONTROLLER_INFO(struct ndr_push *ndr, int ndr_flags, const struct DOMAIN_CONTROLLER_INFO *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
