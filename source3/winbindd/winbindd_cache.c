@@ -3476,6 +3476,20 @@ int winbindd_validate_cache_nobackup(void)
 	return ret;
 }
 
+bool winbindd_cache_validate_and_initialize(void)
+{
+	close_winbindd_cache();
+
+	if (lp_winbind_offline_logon()) {
+		if (winbindd_validate_cache() < 0) {
+			DEBUG(0, ("winbindd cache tdb corrupt and no backup "
+				  "could be restored.\n"));
+		}
+	}
+
+	return initialize_winbindd_cache();
+}
+
 /*********************************************************************
  ********************************************************************/
 
