@@ -42,6 +42,8 @@ struct provision_settings {
 /* FIXME: Rename this to hostconfig ? */
 struct provision_result {
 	const char *domaindn;
+        struct ldb_context *samdb;
+        struct loadparm_context *lp_ctx;
 };
 
 NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
