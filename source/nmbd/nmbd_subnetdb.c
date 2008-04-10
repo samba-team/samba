@@ -199,11 +199,16 @@ bool create_subnets(void)
 	int i;
 	struct in_addr unicast_ip, ipzero;
 
-	if(num_interfaces == 0) {
-		void (*saved_handler)(int);
+  try_interfaces_again:
 
+	if (iface_count_v4() == 0) {
 		DEBUG(0,("create_subnets: No local interfaces !\n"));
 		DEBUG(0,("create_subnets: Waiting for an interface to appear ...\n"));
+	}
+
+	/* We only count IPv4 interfaces here. */
+	while (iface_count_v4() == 0) {
+		void (*saved_handler)(int);
 
 		/*
 		 * Whilst we're waiting for an interface, allow SIGTERM to
@@ -212,11 +217,8 @@ bool create_subnets(void)
 
 		saved_handler = CatchSignal( SIGTERM, SIGNAL_CAST SIG_DFL );
 
-		/* We only count IPv4 interfaces here. */
-		while (iface_count_v4() == 0) {
-			sleep(5);
-			load_interfaces();
-		}
+		sleep(5);
+		load_interfaces();
 
 		/*
 		 * We got an interface, restore our normal term handler.
@@ -268,9 +270,19 @@ bool create_subnets(void)
 
         /* We must have at least one subnet. */
 	if (subnetlist == NULL) {
-		DEBUG(0,("create_subnets: unable to create any subnet from "
-				"given interfaces. nmbd is terminating\n"));
-		return False;
+		void (*saved_handler)(int);
+
+		DEBUG(0,("create_subnets: Unable to create any subnet from "
+				"given interfaces. Is your interface line in "
+				"smb.conf correct ?\n"));
+
+		saved_handler = CatchSignal( SIGTERM, SIGNAL_CAST SIG_DFL );
+
+		sleep(5);
+		load_interfaces();
+
+		CatchSignal( SIGTERM, SIGNAL_CAST saved_handler );
+		goto try_interfaces_again;
 	}
 
 	if (lp_we_are_a_wins_server()) {
