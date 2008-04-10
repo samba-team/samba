@@ -1027,7 +1027,7 @@ static int net_sam_provision(int argc, const char **argv)
 			goto failed;
 		}
 
-		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_POSIXGROUP);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_POSIXGROUP);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_GROUPMAP);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "cn", uname);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", wname);
@@ -1081,7 +1081,7 @@ domu_done:
 			goto failed;
 		}
 
-		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_POSIXGROUP);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_POSIXGROUP);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_GROUPMAP);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "cn", uname);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", wname);
@@ -1300,7 +1300,7 @@ doma_done:
 
 		sid_compose(&gsid, get_global_sam_sid(), DOMAIN_GROUP_RID_GUESTS);
 
-		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_POSIXGROUP);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_POSIXGROUP);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_GROUPMAP);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "cn", uname);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", wname);
