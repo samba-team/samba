@@ -1,3 +1,7 @@
+2008-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* configure.in: Check for <asl.h>.
+
 2008-04-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/version-script.map: sort and export _krb5_pk_kdf
