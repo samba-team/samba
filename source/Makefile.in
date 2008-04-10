@@ -808,6 +808,7 @@ CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	     $(DISPLAY_SEC_OBJ) 
 
 LIBNETAPI_OBJ1 = lib/netapi/netapi.o \
+		 lib/netapi/cm.o \
 		 librpc/gen_ndr/ndr_libnetapi.o \
 		 lib/netapi/libnetapi.o \
 		 lib/netapi/joindomain.o \
