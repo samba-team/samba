@@ -48,10 +48,6 @@
 
 #define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
 
-struct srvsvc_NetSrvInfo1005 {
-	const char *comment;/* [unique,charset(UTF16)] */
-};
-
 static gboolean verbose = FALSE;
 
 typedef struct join_state {
@@ -173,10 +169,10 @@ static void callback_apply_description_change(GtkWidget *widget,
 	struct join_state *state = (struct join_state *)data;
 	NET_API_STATUS status = 0;
 	uint32_t parm_err = 0;
-	struct srvsvc_NetSrvInfo1005 info1005;
+	struct SERVER_INFO_1005 info1005;
 	GtkWidget *dialog;
 
-	info1005.comment = state->comment_new;
+	info1005.sv1005_comment = state->comment_new;
 
 	status = NetServerSetInfo(NULL, 1005, (uint8_t *)&info1005, &parm_err); 
 	if (status) {
@@ -1556,7 +1552,7 @@ static int initialize_join_state(struct join_state *state,
 	}
 
 	{
-		struct srvsvc_NetSrvInfo1005 *info1005 = NULL;
+		struct SERVER_INFO_1005 *info1005 = NULL;
 		uint8_t *buffer = NULL;
 
 		status = NetServerGetInfo(NULL, 1005, &buffer);
@@ -1566,9 +1562,9 @@ static int initialize_join_state(struct join_state *state,
 			return status;
 		}
 
-		info1005 = (struct srvsvc_NetSrvInfo1005 *)buffer;
+		info1005 = (struct SERVER_INFO_1005 *)buffer;
 
-		state->comment = strdup(info1005->comment);
+		state->comment = strdup(info1005->sv1005_comment);
 		if (!state->comment) {
 			return -1;
 		}
