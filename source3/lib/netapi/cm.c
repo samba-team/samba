@@ -20,6 +20,7 @@
 #include "includes.h"
 
 #include "lib/netapi/netapi.h"
+#include "lib/netapi/netapi_private.h"
 
 /********************************************************************
 ********************************************************************/
@@ -54,8 +55,7 @@ WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 			      false, false);
 	if (!cli_ipc) {
 		libnetapi_set_error_string(ctx,
-			"Failed to connect to IPC$ share on %s",
-			server_name);
+			"Failed to connect to IPC$ share on %s", server_name);
 		return WERR_CAN_NOT_COMPLETE;
 	}
 
