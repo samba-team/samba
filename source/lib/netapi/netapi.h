@@ -58,6 +58,10 @@ struct DOMAIN_CONTROLLER_INFO {
 	const char * client_site_name;
 };
 
+struct SERVER_INFO_1005 {
+	const char * sv1005_comment;
+};
+
 struct USER_INFO_0 {
 	const char * usri0_name;
 };
