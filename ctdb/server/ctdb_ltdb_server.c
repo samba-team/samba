@@ -296,18 +296,11 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, boo
   a client has asked to attach a new database
  */
 int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
-			       TDB_DATA *outdata, uint64_t tdb_flags, 
-			       bool persistent)
+			       TDB_DATA *outdata, bool persistent)
 {
 	const char *db_name = (const char *)indata.dptr;
 	struct ctdb_db_context *db;
 	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
-
-	/* the client can optionally pass additional tdb flags, but we
-	   only allow a subset of those on the database in ctdb. Note
-	   that tdb_flags is passed in via the (otherwise unused)
-	   srvid to the attach control */
-	tdb_flags &= TDB_NOSYNC;
 
 	/* If the node is inactive it is not part of the cluster
 	   and we should not allow clients to attach to any
@@ -324,7 +317,6 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	if (db) {
 		outdata->dptr  = (uint8_t *)&db->db_id;
 		outdata->dsize = sizeof(db->db_id);
-		db->client_tdb_flags |= tdb_flags;
 		return 0;
 	}
 
@@ -337,9 +329,6 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 		DEBUG(DEBUG_ERR,("Failed to find db handle for name '%s'\n", db_name));
 		return -1;
 	}
-
-	/* remember the flags the client has specified */
-	db->client_tdb_flags = tdb_flags;
 
 	outdata->dptr  = (uint8_t *)&db->db_id;
 	outdata->dsize = sizeof(db->db_id);

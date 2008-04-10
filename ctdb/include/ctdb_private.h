@@ -400,7 +400,6 @@ struct ctdb_db_context {
 	struct ctdb_registered_call *calls; /* list of registered calls */
 	uint32_t seqnum;
 	struct timed_event *te;
-	uint32_t client_tdb_flags;
 };
 
 
@@ -911,7 +910,7 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 			     void *private_data);
 
 int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata, 
-			       TDB_DATA *outdata, uint64_t tdb_flags, bool persistent);
+			       TDB_DATA *outdata, bool persistent);
 
 int ctdb_daemon_set_call(struct ctdb_context *ctdb, uint32_t db_id,
 			 ctdb_fn_t fn, int id);
