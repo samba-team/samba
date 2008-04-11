@@ -44,6 +44,7 @@ static bool test_provision(struct torture_context *tctx)
 {
 	NTSTATUS status;
 	struct provision_settings *settings = talloc_zero(tctx, struct provision_settings);
+	struct provision_result result;
 	char *targetdir = NULL;
 
 	torture_assert_ntstatus_ok(tctx, torture_temp_dir(tctx, "torture_provision", &targetdir), 
@@ -64,9 +65,12 @@ static bool test_provision(struct torture_context *tctx)
 	settings->ntds_dn_str = NULL;
 	settings->machine_password = "geheim";
 
-	status = provision_bare(settings, tctx->lp_ctx, settings);
+	status = provision_bare(settings, tctx->lp_ctx, settings, &result);
 			
 	torture_assert_ntstatus_ok(tctx, status, "provision");
+
+	torture_assert_str_equal(tctx, result.domaindn, "DC=EXAMPLE,DC=COM", 
+				 "domaindn incorrect");
 
 	return true;
 }

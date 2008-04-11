@@ -1,6 +1,6 @@
 [LIBRARY::LIBSAMBA-HOSTCONFIG]
 VERSION = 0.0.1
-SO_VERSION = 1
+SO_VERSION = 0
 OBJ_FILES = loadparm.o \
 			generic.o \
 			util.o \
