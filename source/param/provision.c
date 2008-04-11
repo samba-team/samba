@@ -68,10 +68,8 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 		 settings->site_name));
 
 	DEBUG(0,("DSA Instance [%s]\n"
-		"\tobjectGUID[%s]\n"
 		"\tinvocationId[%s]\n",
 		settings->ntds_dn_str,
-		settings->ntds_guid == NULL?"None":GUID_string(mem_ctx, settings->ntds_guid),
 		settings->invocation_id == NULL?"None":GUID_string(mem_ctx, settings->invocation_id)));
 
 	DEBUG(0,("Pathes under targetdir[%s]\n",
