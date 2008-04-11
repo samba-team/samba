@@ -161,6 +161,10 @@ struct hc_EVP_MD_CTX {
     void *ptr;
 };
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 /*
  * Avaible crypto algs
  */
@@ -257,5 +261,9 @@ int	EVP_BytesToKey(const EVP_CIPHER *, const EVP_MD *,
 void	OpenSSL_add_all_algorithms(void);
 void	OpenSSL_add_all_algorithms_conf(void);
 void	OpenSSL_add_all_algorithms_noconf(void);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif /* HEIM_EVP_H */
