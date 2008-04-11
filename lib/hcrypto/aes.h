@@ -58,6 +58,10 @@ typedef struct aes_key {
     int rounds;
 } AES_KEY;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int AES_set_encrypt_key(const unsigned char *, const int, AES_KEY *);
 int AES_set_decrypt_key(const unsigned char *, const int, AES_KEY *);
 
@@ -67,5 +71,9 @@ void AES_decrypt(const unsigned char *, unsigned char *, const AES_KEY *);
 void AES_cbc_encrypt(const unsigned char *, unsigned char *,
 		     const unsigned long, const AES_KEY *,
 		     unsigned char *, int);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif /* HEIM_AES_H */
