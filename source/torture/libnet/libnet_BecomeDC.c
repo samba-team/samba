@@ -67,6 +67,7 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 {
 	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
 	struct provision_settings settings;
+	struct provision_result result;
 	NTSTATUS status;
 	bool ok;
 	struct loadparm_context *lp_ctx = loadparm_init(s);
@@ -88,7 +89,7 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 	settings.machine_password = cli_credentials_get_password(s->machine_account);
 	settings.targetdir = s->targetdir;
 
-	status = provision_bare(s, s->lp_ctx, &settings);
+	status = provision_bare(s, s->lp_ctx, &settings, &result);
 	
 	smbconf = talloc_asprintf(lp_ctx, "%s/%s", s->targetdir, "/etc/smb.conf");
 
