@@ -37,6 +37,8 @@
 RCSID("$Id$");
 #endif
 
+#define HC_DEPRECATED
+
 #ifdef KRB5
 #include <krb5-types.h>
 #endif
@@ -71,6 +73,9 @@ RCSID("$Id$");
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+
+#undef __attribute__
+#define __attribute__(X)
 
 /*
  * Generate "random" data by checksumming a file.
@@ -239,7 +244,7 @@ static RETSIGTYPE
  * It takes about 40ms/byte random data.
  * It's not neccessary to be root to run it.
  */
-void
+void HC_DEPRECATED
 DES_rand_data(void *outdata, int size)
 {
     unsigned char *data = outdata;
@@ -311,7 +316,7 @@ DES_rand_data(void *outdata, int size)
     signal(SIGALRM, osa != SIG_ERR ? osa : SIG_DFL);
 }
 #else
-void
+void HC_DEPRECATED
 DES_rand_data(void *outdata, int size)
 {
   unsigned char *data = outdata;
@@ -319,7 +324,7 @@ DES_rand_data(void *outdata, int size)
 }
 #endif
 
-void
+void HC_DEPRECATED
 DES_generate_random_block(DES_cblock *block)
 {
   DES_rand_data((unsigned char *)block, sizeof(*block));
@@ -327,13 +332,13 @@ DES_generate_random_block(DES_cblock *block)
 
 #define DES_rand_data_key hc_DES_rand_data_key
 
-void
+void HC_DEPRECATED
 DES_rand_data_key(DES_cblock *key);
 
 /*
  * Generate a "random" DES key.
  */
-void
+void HC_DEPRECATED
 DES_rand_data_key(DES_cblock *key)
 {
     unsigned char data[8];
@@ -362,7 +367,7 @@ DES_rand_data_key(DES_cblock *key)
 int
 DES_mem_rand8(unsigned char *data);
 
-int
+int HC_DEPRECATED
 DES_mem_rand8(unsigned char *data)
 {
   return 1;
@@ -394,7 +399,7 @@ memcpy((char *)sequence_index, (ll), sizeof(sequence_index));
 /*
  * Set the sequnce number to this value (a long long).
  */
-void
+void HC_DEPRECATED
 DES_set_sequence_number(void *ll)
 {
     set_sequence_number(ll);
@@ -403,7 +408,7 @@ DES_set_sequence_number(void *ll)
 /*
  * Set the generator seed and reset the sequence number to 0.
  */
-void
+void HC_DEPRECATED
 DES_set_random_generator_seed(DES_cblock *seed)
 {
     DES_set_key(seed, &sequence_seed);
@@ -416,7 +421,7 @@ DES_set_random_generator_seed(DES_cblock *seed)
  * using the random block sequence, fixup
  * parity and skip weak keys.
  */
-int
+int HC_DEPRECATED
 DES_new_random_key(DES_cblock *key)
 {
     if (!initialized)
@@ -442,7 +447,7 @@ DES_new_random_key(DES_cblock *key)
  * kept.
  *
  */
-void 
+void HC_DEPRECATED
 DES_init_random_number_generator(DES_cblock *seed)
 {
     struct timeval now;
@@ -467,7 +472,7 @@ DES_init_random_number_generator(DES_cblock *seed)
 }
 
 /* This is for backwards compatibility. */
-void
+void HC_DEPRECATED
 DES_random_key(DES_cblock *ret)
 {
     DES_new_random_key(ret);
