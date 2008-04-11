@@ -862,7 +862,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   $(PASSWD_UTIL_OBJ) utils/net_dns.o utils/net_ads_gpo.o \
 	   utils/net_conf.o \
 	   utils/net_registry.o \
-	   auth/token_util.o utils/net_dom.o nsswitch/wb_client.o
+	   auth/token_util.o utils/net_dom.o
 
 # these are not processed by make proto
 NET_OBJ2 = utils/net_registry_util.o
