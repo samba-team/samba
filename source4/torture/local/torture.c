@@ -61,7 +61,6 @@ static bool test_provision(struct torture_context *tctx)
 	settings->realm = "EXAMPLE.COM";
 	settings->domain = "EXAMPLE";
 	settings->netbios_name = "torture";
-	settings->ntds_guid = NULL;
 	settings->ntds_dn_str = NULL;
 	settings->machine_password = "geheim";
 

@@ -32,7 +32,6 @@ struct provision_settings {
 	const char *host_ip;
 	const char *realm;
 	const char *domain;
-	const struct GUID *ntds_guid;
 	const char *ntds_dn_str;
 	const char *machine_password;
 	const char *targetdir;
