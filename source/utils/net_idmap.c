@@ -101,9 +101,10 @@ static int net_idmap_restore(int argc, const char **argv)
 	while (!feof(input)) {
 		char line[128], sid_string[128];
 		int len;
-		DOM_SID sid;
-		struct id_map map;
+		struct wbcDomainSid sid;
+		enum id_type type = ID_TYPE_NOT_SPECIFIED;
 		unsigned long idval;
+		wbcErr wbc_status;
 
 		if (fgets(line, 127, input) == NULL)
 			break;
@@ -114,21 +115,23 @@ static int net_idmap_restore(int argc, const char **argv)
 			line[len-1] = '\0';
 
 		if (sscanf(line, "GID %lu %128s", &idval, sid_string) == 2) {
-			map.xid.type = ID_TYPE_GID;
-			map.xid.id = idval;
+			type = ID_TYPE_GID;
 		} else if (sscanf(line, "UID %lu %128s", &idval, sid_string) == 2) {
-			map.xid.type = ID_TYPE_UID;
-			map.xid.id = idval;
+			type = ID_TYPE_UID;
 		} else if (sscanf(line, "USER HWM %lu", &idval) == 1) {
 			/* set uid hwm */
-			if (! winbind_set_uid_hwm(idval)) {
-				d_fprintf(stderr, "Could not set USER HWM\n");
+			wbc_status = wbcSetUidHwm(idval);
+			if (!WBC_ERROR_IS_OK(wbc_status)) {
+				d_fprintf(stderr, "Could not set USER HWM: %s\n",
+					  wbcErrorString(wbc_status));
 			}
 			continue;
 		} else if (sscanf(line, "GROUP HWM %lu", &idval) == 1) {
 			/* set gid hwm */
-			if (! winbind_set_gid_hwm(idval)) {
-				d_fprintf(stderr, "Could not set GROUP HWM\n");
+			wbc_status = wbcSetGidHwm(idval);
+			if (!WBC_ERROR_IS_OK(wbc_status)) {
+				d_fprintf(stderr, "Could not set GROUP HWM: %s\n",
+					  wbcErrorString(wbc_status));
 			}
 			continue;
 		} else {
@@ -136,20 +139,25 @@ static int net_idmap_restore(int argc, const char **argv)
 			continue;
 		}
 
-		if (!string_to_sid(&sid, sid_string)) {
-			d_fprintf(stderr, "ignoring invalid sid [%s]\n", sid_string);
+		wbc_status = wbcStringToSid(sid_string, &sid);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			d_fprintf(stderr, "ignoring invalid sid [%s]: %s\n",
+				  sid_string, wbcErrorString(wbc_status));
 			continue;
 		}
-		map.sid = &sid;
 
-		if (!winbind_set_mapping(&map)) {
-			d_fprintf(stderr, "Could not set mapping of %s %lu to sid %s\n",
-				 (map.xid.type == ID_TYPE_GID) ? "GID" : "UID",
-				 (unsigned long)map.xid.id,
-				  sid_string_tos(map.sid));
+		if (type == ID_TYPE_UID) {
+			wbc_status = wbcSetUidMapping(idval, &sid);
+		} else {
+			wbc_status = wbcSetGidMapping(idval, &sid);
+		}
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			d_fprintf(stderr, "Could not set mapping of %s %lu to sid %s: %s\n",
+				 (type == ID_TYPE_GID) ? "GID" : "UID",
+				 idval, sid_string,
+				 wbcErrorString(wbc_status));
 			continue;
 		}
-			 
 	}
 
 	if (input != stdin) {
