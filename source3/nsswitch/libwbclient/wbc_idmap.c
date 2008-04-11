@@ -272,3 +272,152 @@ wbcErr wbcAllocateGid(gid_t *pgid)
 	return wbc_status;
 }
 
+/* we can't include smb.h here... */
+#define _ID_TYPE_UID 1
+#define _ID_TYPE_GID 2
+
+/** @brief Set an user id mapping
+ *
+ * @param uid       Uid of the desired mapping.
+ * @param *sid      Pointer to the sid of the diresired mapping.
+ *
+ * @return #wbcErr
+ **/
+wbcErr wbcSetUidMapping(uid_t uid, const struct wbcDomainSid *sid)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	char *sid_string = NULL;
+
+	if (!sid) {
+		return WBC_ERR_INVALID_PARAM;
+	}
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Make request */
+
+	request.data.dual_idmapset.id = uid;
+	request.data.dual_idmapset.type = _ID_TYPE_UID;
+
+	wbc_status = wbcSidToString(sid, &sid_string);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	strncpy(request.data.dual_idmapset.sid, sid_string,
+		sizeof(request.data.dual_idmapset.sid)-1);
+	wbcFreeMemory(sid_string);
+
+	wbc_status = wbcRequestResponse(WINBINDD_SET_MAPPING,
+					&request, &response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+ done:
+	return wbc_status;
+}
+
+/** @brief Set a group id mapping
+ *
+ * @param gid       Gid of the desired mapping.
+ * @param *sid      Pointer to the sid of the diresired mapping.
+ *
+ * @return #wbcErr
+ **/
+wbcErr wbcSetGidMapping(gid_t gid, const struct wbcDomainSid *sid)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	char *sid_string = NULL;
+
+	if (!sid) {
+		return WBC_ERR_INVALID_PARAM;
+	}
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Make request */
+
+	request.data.dual_idmapset.id = gid;
+	request.data.dual_idmapset.type = _ID_TYPE_GID;
+
+	wbc_status = wbcSidToString(sid, &sid_string);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	strncpy(request.data.dual_idmapset.sid, sid_string,
+		sizeof(request.data.dual_idmapset.sid)-1);
+	wbcFreeMemory(sid_string);
+
+	wbc_status = wbcRequestResponse(WINBINDD_SET_MAPPING,
+					&request, &response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+ done:
+	return wbc_status;
+}
+
+/** @brief Set the highwater mark for allocated uids.
+ *
+ * @param uid_hwm      The new uid highwater mark value
+ *
+ * @return #wbcErr
+ **/
+wbcErr wbcSetUidHwm(uid_t uid_hwm)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Make request */
+
+	request.data.dual_idmapset.id = uid_hwm;
+	request.data.dual_idmapset.type = _ID_TYPE_UID;
+
+	wbc_status = wbcRequestResponse(WINBINDD_SET_HWM,
+					&request, &response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+ done:
+	return wbc_status;
+}
+
+/** @brief Set the highwater mark for allocated gids.
+ *
+ * @param uid_hwm      The new gid highwater mark value
+ *
+ * @return #wbcErr
+ **/
+wbcErr wbcSetGidHwm(gid_t gid_hwm)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Make request */
+
+	request.data.dual_idmapset.id = gid_hwm;
+	request.data.dual_idmapset.type = _ID_TYPE_GID;
+
+	wbc_status = wbcRequestResponse(WINBINDD_SET_HWM,
+					&request, &response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+ done:
+	return wbc_status;
+}
