@@ -1,5 +1,13 @@
 2008-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rnd_keys.c: deprecated.
+	
+	* des.h: c++ wrappers + deprecated.
+
+	* aes.h: c++ wrappers
+
+	* des.h: c++ wrappers + deprecated
+
 	* rnd_keys.c: Use matching prototypes, prompted by bug report by
 	David Rosenstrauch.
 
