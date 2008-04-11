@@ -77,14 +77,8 @@ static NTSTATUS vampire_prepare_db(void *private_data,
 {
 	struct vampire_state *s = talloc_get_type(private_data, struct vampire_state);
 	struct provision_settings settings;
+	struct provision_result result;
 	NTSTATUS status;
-	bool ok;
-	struct loadparm_context *lp_ctx = loadparm_init(s);
-	char *smbconf;
-
-	if (!lp_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	settings.site_name = p->dest_dsa->site_name;
 	settings.root_dn_str = p->forest->root_dn_str;
@@ -98,31 +92,14 @@ static NTSTATUS vampire_prepare_db(void *private_data,
 	settings.machine_password = generate_random_str(s, 16);
 	settings.targetdir = s->targetdir;
 
-	status = provision_bare(s, s->lp_ctx, &settings);
-	
-	smbconf = talloc_asprintf(lp_ctx, "%s/%s", s->targetdir, "/etc/smb.conf");
+	status = provision_bare(s, s->lp_ctx, &settings, &result);
 
-	ok = lp_load(lp_ctx, smbconf);
-	if (!ok) {
-		DEBUG(0,("Failed load freshly generated smb.conf '%s'\n", smbconf));
-		return NT_STATUS_INVALID_PARAMETER;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	s->ldb = samdb_connect(s, lp_ctx, 
-			       system_session(s, lp_ctx));
-	if (!s->ldb) {
-		DEBUG(0,("Failed to open '%s'\n", lp_sam_url(lp_ctx)));
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-	
-	/* We must set these up to ensure the replMetaData is written correctly, 
-	   before our NTDS Settings entry is replicated */
-	ok = samdb_set_ntds_invocation_id(s->ldb, &p->dest_dsa->invocation_id);
-	if (!ok) {
-		DEBUG(0,("Failed to set cached ntds invocationId\n"));
-		return NT_STATUS_FOOBAR;
-	}
-	s->lp_ctx = lp_ctx;
+	s->ldb = result.samdb;
+	s->lp_ctx = result.lp_ctx;
 
         return NT_STATUS_OK;
 
