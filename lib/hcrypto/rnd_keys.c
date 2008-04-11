@@ -312,9 +312,10 @@ DES_rand_data(void *outdata, int size)
 }
 #else
 void
-DES_rand_data(unsigned char *p, int s)
+DES_rand_data(void *outdata, int size)
 {
-  des_not_rand_data (p, s);
+  unsigned char *data = outdata;
+  des_not_rand_data (data, size);
 }
 #endif
 
