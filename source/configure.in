@@ -4700,6 +4700,13 @@ AC_ARG_WITH([static-libs],
 		done], [])],
 	[])
 
+#
+# WORKAROUND:
+#   until we have organized other internal subsystems (as util, registrt
+#   and smbconf) into shared libraries, we CAN NOT link libnetapi
+#   dynamically to samba programs.
+#
+LINK_LIBNETAPI=STATIC
 
 SMB_LIBRARY(talloc)
 SMB_LIBRARY(tdb)
