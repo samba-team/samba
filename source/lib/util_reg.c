@@ -112,10 +112,3 @@ WERROR reg_pull_multi_sz(TALLOC_CTX *mem_ctx, const void *buf, size_t len,
 
 	return WERR_OK;
 }
-
-void normalize_dbkey(char *key)
-{
-	size_t len = strlen(key);
-	string_sub(key, "\\", "/", len+1);
-	strupper_m(key);
-}
