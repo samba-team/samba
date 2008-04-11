@@ -413,7 +413,8 @@ LIBSMB_ERR_OBJ0 = $(NTERR_OBJ) $(DOSERR_OBJ) $(ERRORMAP_OBJ) $(DCE_RPC_ERR_OBJ) 
 		  libsmb/smbdes.o libsmb/smbencrypt.o libsmb/ntlmssp_parse.o
 
 LIBSMB_ERR_OBJ = $(LIBSMB_ERR_OBJ0) \
-		 $(RPC_PARSE_OBJ1)
+		 $(RPC_PARSE_OBJ1) \
+		 $(SECRETS_OBJ)
 
 LIBSMB_OBJ0 = \
 	       libsmb/ntlm_check.o \
@@ -421,8 +422,7 @@ LIBSMB_OBJ0 = \
 	       libsmb/ntlmssp_sign.o
 
 LIBSAMBA_OBJ = $(LIBSMB_OBJ0) \
-	       $(LIBSMB_ERR_OBJ) \
-	       $(SECRETS_OBJ)
+	       $(LIBSMB_ERR_OBJ)
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clikrb5.o libsmb/clispnego.o libsmb/asn1.o \
