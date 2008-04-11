@@ -87,6 +87,7 @@ class ProvisionNames:
         self.domain = None
         self.hostname = None
         self.sitename = None
+        self.smbconf = None
     
 class ProvisionResult:
     def __init__(self):
@@ -261,6 +262,8 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.sysvol = lp.get("path", "sysvol")
 
     paths.netlogon = lp.get("path", "netlogon")
+
+    paths.smbconf = lp.configfile()
 
     return paths
 
@@ -1009,12 +1012,24 @@ def provision(setup_dir, message, session_info,
                         ldap_backend_type=ldap_backend_type)
 
     if lp.get("server role") == "domain controller":
-       policy_path = os.path.join(paths.sysvol, names.dnsdomain, "Policies", 
-                                  "{" + policyguid + "}")
-       os.makedirs(policy_path, 0755)
-       os.makedirs(os.path.join(policy_path, "Machine"), 0755)
-       os.makedirs(os.path.join(policy_path, "User"), 0755)
-       if not os.path.isdir(paths.netlogon):
+        if paths.netlogon is None:
+            message("Existing smb.conf does not have a [netlogon] share, but you are configuring a DC.")
+            message("Please either remove %s or see the template at %s" % 
+                    ( paths.smbconf, setup_path("provision.smb.conf.dc")))
+            assert(paths.netlogon is not None)
+
+        if paths.sysvol is None:
+            message("Existing smb.conf does not have a [sysvol] share, but you are configuring a DC.")
+            message("Please either remove %s or see the template at %s" % 
+                    (paths.smbconf, setup_path("provision.smb.conf.dc")))
+            assert(paths.sysvol is not None)            
+            
+        policy_path = os.path.join(paths.sysvol, names.dnsdomain, "Policies", 
+                                   "{" + policyguid + "}")
+        os.makedirs(policy_path, 0755)
+        os.makedirs(os.path.join(policy_path, "Machine"), 0755)
+        os.makedirs(os.path.join(policy_path, "User"), 0755)
+        if not os.path.isdir(paths.netlogon):
             os.makedirs(paths.netlogon, 0755)
 
     if samdb_fill == FILL_FULL:
