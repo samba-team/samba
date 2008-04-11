@@ -407,17 +407,21 @@ LIBNMB_OBJ = libsmb/unexpected.o libsmb/namecache.o libsmb/nmblib.o \
 NTERR_OBJ = libsmb/nterr.o
 DOSERR_OBJ = libsmb/doserr.o
 ERRORMAP_OBJ = libsmb/errormap.o
+DCE_RPC_ERR_OBJ = libsmb/dcerpc_err.o
 
-LIBSMB_ERR_OBJ = $(NTERR_OBJ) $(DOSERR_OBJ) $(ERRORMAP_OBJ)
+LIBSMB_ERR_OBJ0 = $(NTERR_OBJ) $(DOSERR_OBJ) $(ERRORMAP_OBJ) $(DCE_RPC_ERR_OBJ) \
+		  libsmb/smbdes.o libsmb/smbencrypt.o libsmb/ntlmssp_parse.o
+
+LIBSMB_ERR_OBJ = $(LIBSMB_ERR_OBJ0) \
+		 $(RPC_PARSE_OBJ1)
 
 LIBSMB_OBJ0 = \
-	       libsmb/dcerpc_err.o libsmb/smbdes.o \
-	       libsmb/smbencrypt.o libsmb/ntlm_check.o \
-	       libsmb/ntlmssp.o libsmb/ntlmssp_parse.o libsmb/ntlmssp_sign.o
+	       libsmb/ntlm_check.o \
+	       libsmb/ntlmssp.o \
+	       libsmb/ntlmssp_sign.o
 
 LIBSAMBA_OBJ = $(LIBSMB_OBJ0) \
-	       $(LIBSMB_ERR_OBJ) \
-	       $(RPC_PARSE_OBJ1)
+	       $(LIBSMB_ERR_OBJ)
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clikrb5.o libsmb/clispnego.o libsmb/asn1.o \
