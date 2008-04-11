@@ -82,21 +82,33 @@ typedef struct DES_key_schedule
  *
  */
 
+#if !defined(__GNUC__) && !defined(__attribute__)
+#define __attribute__(x)
+#endif
+
+#ifndef HC_DEPRECATED
+#define HC_DEPRECATED __attribute__((deprecated))
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int	DES_set_odd_parity(DES_cblock *);
 int	DES_is_weak_key(DES_cblock *);
 int	DES_set_key(DES_cblock *, DES_key_schedule *);
 int	DES_set_key_checked(DES_cblock *, DES_key_schedule *);
 int	DES_key_sched(DES_cblock *, DES_key_schedule *);
-int	DES_new_random_key(DES_cblock *);
+int	HC_DEPRECATED DES_new_random_key(DES_cblock *);
 void	DES_string_to_key(const char *, DES_cblock *);
 int	DES_read_password(DES_cblock *, char *, int);
 
-void	DES_rand_data(void *, int);
-void	DES_set_random_generator_seed(DES_cblock *);
-void	DES_generate_random_block(DES_cblock *);
-void	DES_set_sequence_number(void *);
-void 	DES_init_random_number_generator(DES_cblock *);
-void	DES_random_key(DES_cblock *);
+void	HC_DEPRECATED DES_rand_data(void *, int);
+void	HC_DEPRECATED DES_set_random_generator_seed(DES_cblock *);
+void	HC_DEPRECATED DES_generate_random_block(DES_cblock *);
+void	HC_DEPRECATED DES_set_sequence_number(void *);
+void 	HC_DEPRECATED DES_init_random_number_generator(DES_cblock *);
+void	HC_DEPRECATED DES_random_key(DES_cblock *);
 
 
 void	DES_encrypt(uint32_t [2], DES_key_schedule *, int);
@@ -110,8 +122,8 @@ void	DES_cbc_encrypt(const void *, void *, long,
 void	DES_ede3_cbc_encrypt(const void *, void *, long, 
 			     DES_key_schedule *, DES_key_schedule *, 
 			     DES_key_schedule *, DES_cblock *, int);
-void DES_cfb64_encrypt(const void *, void *, long,
-		       DES_key_schedule *, DES_cblock *, int *, int);
+void	DES_cfb64_encrypt(const void *, void *, long,
+			  DES_key_schedule *, DES_cblock *, int *, int);
 
 
 uint32_t DES_cbc_cksum(const void *, DES_cblock *,
@@ -119,6 +131,10 @@ uint32_t DES_cbc_cksum(const void *, DES_cblock *,
 
 
 void	_DES_ipfp_test(void);
+
+#ifdef  __cplusplus
+}
+#endif
 
 
 #endif /* _DESperate_H */
