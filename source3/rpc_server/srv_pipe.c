@@ -614,11 +614,6 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 
 	ZERO_STRUCT(reply);
 
-	memset(p->user_name, '\0', sizeof(p->user_name));
-	memset(p->pipe_user_name, '\0', sizeof(p->pipe_user_name));
-	memset(p->domain, '\0', sizeof(p->domain));
-	memset(p->wks, '\0', sizeof(p->wks));
-
 	/* Set up for non-authenticated user. */
 	TALLOC_FREE(p->pipe_user.nt_user_token);
 	p->pipe_user.ut.ngroups = 0;
@@ -656,14 +651,10 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 			return False;
 		}
 	}
-	
-	fstrcpy(p->user_name, a->ntlmssp_state->user);
-	fstrcpy(p->pipe_user_name, a->server_info->unix_name);
-	fstrcpy(p->domain, a->ntlmssp_state->domain);
-	fstrcpy(p->wks, a->ntlmssp_state->workstation);
 
-	DEBUG(5,("pipe_ntlmssp_verify_final: OK: user: %s domain: %s workstation: %s\n",
-		p->user_name, p->domain, p->wks));
+	DEBUG(5, ("pipe_ntlmssp_verify_final: OK: user: %s domain: %s "
+		  "workstation: %s\n", a->ntlmssp_state->user,
+		  a->ntlmssp_state->domain, a->ntlmssp_state->workstation));
 
 	/*
 	 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
