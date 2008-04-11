@@ -853,7 +853,7 @@ SMBCONFTORT_OBJ0 = lib/smbconf/testsuite.o
 SMBCONFTORT_OBJ = $(SMBCONFTORT_OBJ0) \
 		  $(LIB_NONSMBD_OBJ) \
 		  $(PARAM_OBJ) \
-		  $(LIBSAMBA_OBJ) \
+		  $(LIBSMB_ERR_OBJ) \
 		  $(POPT_LIB_OBJ)
 
 LIBNET_OBJ = libnet/libnet_join.o \
