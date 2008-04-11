@@ -159,7 +159,12 @@ static int dochild(int master, const char *slavedev, const struct passwd *pass,
 		DEBUG(3, ("More weirdness, could not open %s\n", slavedev));
 		return (False);
 	}
-#if defined(TIOCSCTTY)
+#if defined(TIOCSCTTY) && !defined(SUNOS5)
+	/*
+	 * On patched Solaris 10 TIOCSCTTY is defined but seems not to work,
+	 * see the discussion under
+	 * https://bugzilla.samba.org/show_bug.cgi?id=5366.
+	 */
 	if (ioctl(slave, TIOCSCTTY, 0) < 0)
 	{
 		DEBUG(3, ("Error in ioctl call for slave pty\n"));
