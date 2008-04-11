@@ -28,10 +28,6 @@ struct smbconf_csn {
 };
 
 /*
- * WARNING: this api is still subject to change.
- */
-
-/*
  * initialization functions for the available modules
  * (a dispatcher might be added in the future)
  */
