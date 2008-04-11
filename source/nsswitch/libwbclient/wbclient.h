@@ -346,6 +346,14 @@ wbcErr wbcAllocateUid(uid_t *puid);
 
 wbcErr wbcAllocateGid(gid_t *pgid);
 
+wbcErr wbcSetUidMapping(uid_t uid, const struct wbcDomainSid *sid);
+
+wbcErr wbcSetGidMapping(gid_t gid, const struct wbcDomainSid *sid);
+
+wbcErr wbcSetUidHwm(uid_t uid_hwm);
+
+wbcErr wbcSetGidHwm(gid_t gid_hwm);
+
 /*
  * NSS Lookup User/Group details
  */
