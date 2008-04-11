@@ -1,3 +1,8 @@
+2008-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rnd_keys.c: Use matching prototypes, prompted by bug report by
+	David Rosenstrauch.
+
 2008-03-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* camellia.h: Drop unused defined that originates from aes.
