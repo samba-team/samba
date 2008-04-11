@@ -204,6 +204,15 @@ o   Michael Adam <obnox@samba.org>
     * Fix build of bin/net on Solaris.
     * Reformat the parm table of loadparm to use named initializers.
     * Fix %I macro expansion for IPv4 mapped IPv6 addresses.
+    * Convert registry.tdb to use dbwrap and fix memleaks.
+    * Several make test fixes and improvements.
+    * Rename libnet_conf to libsmbconf and introduce backend abstraction layer.
+    * Add text backend to libsmbconf, based on params.c.
+    * Fix handling of includes in registry libsmbconf backend.
+    * Fix net conf import by reading from text backend.
+    * Add a "net registry" command to locally access the registry.
+    * Add testsuites for libsmbconf and "net registry".
+    * Fix Coverity IDs 517, 536, 545.
 
 
 o   Jeremy Allison <jra@samba.org>
