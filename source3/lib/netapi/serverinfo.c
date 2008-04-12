@@ -90,7 +90,7 @@ WERROR NetServerGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	*r->out.buffer = talloc_memdup(ctx, &info, sizeof(info));
+	*r->out.buffer = (uint8_t *)talloc_memdup(ctx, &info, sizeof(info));
 	if (!*r->out.buffer) {
 		werr = WERR_NOMEM;
 		goto done;
