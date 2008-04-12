@@ -157,6 +157,7 @@ static void reload_interfaces(time_t t)
 {
 	static time_t lastt;
 	int n;
+	bool print_waiting_msg = true;
 	struct subnet_record *subrec;
 
 	if (t && ((t - lastt) < NMBD_INTERFACES_RELOAD)) {
@@ -173,7 +174,6 @@ static void reload_interfaces(time_t t)
 	/* the list of probed interfaces has changed, we may need to add/remove
 	   some subnets */
 	load_interfaces();
-
 
 	/* find any interfaces that need adding */
 	for (n=iface_count() - 1; n >= 0; n--) {
@@ -235,8 +235,11 @@ static void reload_interfaces(time_t t)
 	/* We need to wait if there are no subnets... */
 	if (FIRST_SUBNET == NULL) {
 
-		DEBUG(0,("reload_interfaces: "
-			"No subnets to listen to. Waiting..\n"));
+		if (print_waiting_msg) {
+			DEBUG(0,("reload_interfaces: "
+				"No subnets to listen to. Waiting..\n"));
+			print_waiting_msg = false;
+		}
 
 		/*
 		 * Whilst we're waiting for an interface, allow SIGTERM to
