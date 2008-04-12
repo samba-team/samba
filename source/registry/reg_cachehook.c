@@ -38,9 +38,15 @@ static char *keyname_to_path(TALLOC_CTX *mem_ctx, const char *keyname)
 
 	path = talloc_asprintf(mem_ctx, "\\%s", keyname);
 	if (path == NULL) {
+		DEBUG(0, ("talloc_asprintf failed!\n"));
 		return NULL;
 	}
+
 	path = talloc_string_sub(mem_ctx, path, "\\", "/");
+	if (path == NULL) {
+		DEBUG(0, ("talloc_string_sub_failed!\n"));
+	}
+
 	return path;
 }
 
