@@ -84,6 +84,7 @@ typedef struct join_state {
 	uint16_t server_role;
 	gboolean settings_changed;
 	gboolean hostname_changed;
+	uint32_t stored_num_ous;
 } join_state;
 
 static void debug(const char *format, ...)
@@ -932,11 +933,15 @@ static void callback_do_getous(GtkWidget *widget,
 		return;
 	}
 
+	for (i=0; i<state->stored_num_ous; i++) {
+		gtk_combo_box_remove_text(GTK_COMBO_BOX(state->entry_ou_list), 0);
+	}
 	for (i=0; i<num_ous && ous[i] != NULL; i++) {
 		gtk_combo_box_append_text(GTK_COMBO_BOX(state->entry_ou_list),
 					  ous[i]);
 	}
 	NetApiBufferFree(ous);
+	state->stored_num_ous = num_ous;
 	gtk_combo_box_set_active(GTK_COMBO_BOX(state->entry_ou_list), num_ous-1);
 }
 
