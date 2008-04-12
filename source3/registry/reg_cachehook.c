@@ -28,6 +28,22 @@
 static SORTED_TREE *cache_tree = NULL;
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
 
+static char *keyname_to_path(TALLOC_CTX *mem_ctx, const char *keyname)
+{
+	char *path = NULL;
+
+	if ((keyname == NULL)) {
+		return NULL;
+	}
+
+	path = talloc_asprintf(mem_ctx, "\\%s", keyname);
+	if (path == NULL) {
+		return NULL;
+	}
+	path = talloc_string_sub(mem_ctx, path, "\\", "/");
+	return path;
+}
+
 /**********************************************************************
  Initialize the cache tree if it has not been initialized yet.
  *********************************************************************/
@@ -53,19 +69,11 @@ bool reghook_cache_init( void )
 
 bool reghook_cache_add(const char *keyname, REGISTRY_OPS *ops)
 {
-	TALLOC_CTX *ctx = talloc_tos();
 	char *key = NULL;
 
-	if ((keyname == NULL) || (ops == NULL)) {
-		return false;
-	}
+	key = keyname_to_path(talloc_tos(), keyname);
 
-	key = talloc_asprintf(ctx, "\\%s", keyname);
-	if (!key) {
-		return false;
-	}
-	key = talloc_string_sub(ctx, key, "\\", "/");
-	if (!key) {
+	if ((key == NULL) || (ops == NULL)) {
 		return false;
 	}
 
@@ -82,28 +90,14 @@ bool reghook_cache_add(const char *keyname, REGISTRY_OPS *ops)
 REGISTRY_OPS *reghook_cache_find(const char *keyname)
 {
 	char *key;
-	int len;
 	REGISTRY_OPS *ops;
-	
-	if ( !keyname )
-		return NULL;
-	
-	/* prepend the string with a '\' character */
-	
-	len = strlen( keyname );
-	if ( !(key = (char *)SMB_MALLOC( len + 2 )) ) {
-		DEBUG(0,("reghook_cache_find: malloc failed for string [%s] !?!?!\n",
-			keyname));
+
+	key = keyname_to_path(talloc_tos(), keyname);
+
+	if (key == NULL) {
 		return NULL;
 	}
 
-	*key = '\\';
-	strncpy( key+1, keyname, len+1);
-	
-	/* swap to a form understood by the SORTED_TREE */
-
-	string_sub( key, "\\", "/", 0 );
-		
 	DEBUG(10,("reghook_cache_find: Searching for keyname [%s]\n", key));
 	
 	ops = (REGISTRY_OPS *)pathtree_find(cache_tree, key);
@@ -111,7 +105,7 @@ REGISTRY_OPS *reghook_cache_find(const char *keyname)
 	DEBUG(10, ("reghook_cache_find: found ops %p for key [%s]\n",
 		   ops ? (void *)ops : 0, key));
 	
-	SAFE_FREE( key );
+	TALLOC_FREE(key);
 	
 	return ops;
 }
