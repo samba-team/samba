@@ -749,6 +749,11 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 	}
 #endif
 
+#ifdef DEVELOPER
+	/* Quieten valgrind on test. */
+	memset(&lock, '\0', sizeof(lock));
+#endif
+
 	lock.context.smbpid = smbpid;
 	lock.context.pid = pid;
 	lock.context.tid = br_lck->fsp->conn->cnum;
