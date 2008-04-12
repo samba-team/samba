@@ -86,7 +86,7 @@ bool init_registry( void )
 	reghook_cache_init();
 
 	for ( i=0; reg_hooks[i].keyname; i++ ) {
-		if ( !reghook_cache_add(&reg_hooks[i]) )
+		if (!reghook_cache_add(reg_hooks[i].keyname, reg_hooks[i].ops))
 			goto fail;
 	}
 
