@@ -102,14 +102,14 @@ REGISTRY_OPS *reghook_cache_find(const char *keyname)
 	}
 
 	DEBUG(10,("reghook_cache_find: Searching for keyname [%s]\n", key));
-	
+
 	ops = (REGISTRY_OPS *)pathtree_find(cache_tree, key);
 
 	DEBUG(10, ("reghook_cache_find: found ops %p for key [%s]\n",
 		   ops ? (void *)ops : 0, key));
-	
+
 	TALLOC_FREE(key);
-	
+
 	return ops;
 }
 
@@ -120,6 +120,6 @@ REGISTRY_OPS *reghook_cache_find(const char *keyname)
 void reghook_dump_cache( int debuglevel )
 {
 	DEBUG(debuglevel,("reghook_dump_cache: Starting cache dump now...\n"));
-	
+
 	pathtree_print_keys( cache_tree, debuglevel );
 }
