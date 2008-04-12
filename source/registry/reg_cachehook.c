@@ -76,7 +76,7 @@ bool reghook_cache_add(const char *keyname, REGISTRY_OPS *ops)
 }
 
 /**********************************************************************
- Initialize the cache tree
+ Find a key in the cache.
  *********************************************************************/
 
 REGISTRY_OPS *reghook_cache_find(const char *keyname)
@@ -117,7 +117,7 @@ REGISTRY_OPS *reghook_cache_find(const char *keyname)
 }
 
 /**********************************************************************
- Initialize the cache tree
+ Print out the cache tree structure for debugging.
  *********************************************************************/
 
 void reghook_dump_cache( int debuglevel )
