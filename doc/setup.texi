@@ -306,7 +306,7 @@ on Kerberos 4 support having been included at compile-time, using
 
 524 is a service that allows the KDC to convert Kerberos 5 tickets to
 Kerberos 4 tickets for backward compatibility. See also Using 2b
-tokens with AFS in @xref{Things in search for a better place}.
+tokens with AFS in @xref{AFS}.
 
 524 can be turned on by adding this to the configuration file
 

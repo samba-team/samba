@@ -10,6 +10,8 @@ see setup how to set it up.
 The KDC will also have kaserver emulation and be able to handle
 AFS-clients that use @code{klog}.
 
+For more about AFS, see the section @xref{AFS}.
+
 @menu
 * Principal conversion issues::  
 * Converting a version 4 database::  
@@ -214,6 +216,8 @@ is no salting of the password at all. To make sure AFS-compatible keys
 are added to each principals when they are created or their password are
 changed, @samp{afs3-salt} should be added to
 @samp{[kadmin]default_keys}.
+
+For more about AFS, see the section @xref{AFS}.
 
 @subsection Transarc AFS Windows client
 
