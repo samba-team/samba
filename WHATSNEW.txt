@@ -260,6 +260,27 @@ o   Derrell Lipman <derrell@samba.org>
     * Fix use of AuthDataWithContext capability.
 
 
+o   Stefan Metzmacher <metze@samba.org>
+    * Add dbwrap_tdb2 backend, useful for cluster setups.
+    * Add more functions to libwbclient:
+      - wbcGetGroups()
+      - wbcInterfaceDetails()
+      - wbcListUsers()
+      - wbcListGroups()
+      - wbcLookupUserSids()
+      - wbcSetUidMapping()
+      - wbcSetGidMapping()
+      - wbcSetUidHwm()
+      - wbcSetGidHwm()
+    * Let wbinfo use libwbclient where possible.
+    * Let net use only libwbclient to access winbindd.
+    * Make socket wrapper pcap support more portable.
+    * Some libreplace backports from v4-0-test.
+    * Store the write time in the locking.tdb,
+      so that smbd passes the BASE-DELAYWRITE test.
+    * Run RAW-SEARCH and BASE-DELAYWRITE by 'make test'.
+
+
 o   Karolin Seeger <kseeger@samba.org>
     * Fix usage message for "net idmap dump".
 
