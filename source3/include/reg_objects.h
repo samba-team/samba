@@ -159,7 +159,7 @@ typedef struct _RegistryKey {
 	uint32		type;
 	char		*name; 		/* full name of registry key */
 	uint32 		access_granted;
-	REGISTRY_HOOK	*hook;	
+	REGISTRY_OPS	*ops;
 } REGISTRY_KEY;
 
 struct registry_key {

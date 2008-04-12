@@ -71,7 +71,6 @@ bool registry_init_smbconf(void)
 {
 	bool ret = false;
 	int saved_errno = 0;
-	static REGISTRY_HOOK smbconf_reg_hook = {KEY_SMBCONF, &smbconf_reg_ops};
 
 	DEBUG(10, ("registry_init_smbconf called\n"));
 
@@ -90,7 +89,7 @@ bool registry_init_smbconf(void)
 		goto done;
 	}
 	reghook_cache_init();
-	if (!reghook_cache_add(&smbconf_reg_hook)) {
+	if (!reghook_cache_add(KEY_SMBCONF, &smbconf_reg_ops)) {
 		DEBUG(1, ("Error adding smbconf reghooks to reghook cache.\n"));
 		goto done;
 	}

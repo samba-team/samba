@@ -86,8 +86,8 @@ static WERROR construct_registry_sd(TALLOC_CTX *ctx, SEC_DESC **psd)
 
 bool store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
 {
-	if ( key->hook && key->hook->ops && key->hook->ops->store_subkeys )
-		return key->hook->ops->store_subkeys( key->name, subkeys );
+	if (key->ops && key->ops->store_subkeys)
+		return key->ops->store_subkeys(key->name, subkeys);
 
 	return false;
 }
@@ -98,8 +98,8 @@ bool store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
 
 bool store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 {
-	if ( key->hook && key->hook->ops && key->hook->ops->store_values )
-		return key->hook->ops->store_values( key->name, val );
+	if (key->ops && key->ops->store_values)
+		return key->ops->store_values(key->name, val);
 
 	return false;
 }
@@ -113,8 +113,8 @@ int fetch_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkey_ctr )
 {
 	int result = -1;
 
-	if ( key->hook && key->hook->ops && key->hook->ops->fetch_subkeys )
-		result = key->hook->ops->fetch_subkeys( key->name, subkey_ctr );
+	if (key->ops && key->ops->fetch_subkeys)
+		result = key->ops->fetch_subkeys(key->name, subkey_ctr);
 
 	return result;
 }
@@ -128,10 +128,10 @@ int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 	int result = -1;
 
 	DEBUG(10, ("fetch_reg_values called for key '%s' (ops %p)\n", key->name,
-		   (key->hook && key->hook->ops) ? (void *)key->hook->ops : NULL));
+		   (key->ops) ? (void *)key->ops : NULL));
 
-	if ( key->hook && key->hook->ops && key->hook->ops->fetch_values )
-		result = key->hook->ops->fetch_values( key->name, val );
+	if (key->ops && key->ops->fetch_values)
+		result = key->ops->fetch_values(key->name, val);
 
 	return result;
 }
@@ -152,9 +152,9 @@ bool regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted,
 	/* use the default security check if the backend has not defined its
 	 * own */
 
-	if (key->hook && key->hook->ops && key->hook->ops->reg_access_check) {
-		return key->hook->ops->reg_access_check( key->name, requested,
-							 granted, token );
+	if (key->ops && key->ops->reg_access_check) {
+		return key->ops->reg_access_check(key->name, requested,
+						  granted, token);
 	}
 
 	/*
@@ -189,9 +189,8 @@ WERROR regkey_get_secdesc(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
 	struct security_descriptor *secdesc;
 	WERROR werr;
 
-	if (key->hook && key->hook->ops && key->hook->ops->get_secdesc) {
-		werr = key->hook->ops->get_secdesc(mem_ctx, key->name,
-						   psecdesc);
+	if (key->ops && key->ops->get_secdesc) {
+		werr = key->ops->get_secdesc(mem_ctx, key->name, psecdesc);
 		if (W_ERROR_IS_OK(werr)) {
 			return WERR_OK;
 		}
@@ -209,8 +208,8 @@ WERROR regkey_get_secdesc(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
 WERROR regkey_set_secdesc(REGISTRY_KEY *key,
 			  struct security_descriptor *psecdesc)
 {
-	if (key->hook && key->hook->ops && key->hook->ops->set_secdesc) {
-		return key->hook->ops->set_secdesc(key->name, psecdesc);
+	if (key->ops && key->ops->set_secdesc) {
+		return key->ops->set_secdesc(key->name, psecdesc);
 	}
 
 	return WERR_ACCESS_DENIED;
@@ -222,9 +221,9 @@ WERROR regkey_set_secdesc(REGISTRY_KEY *key,
  */
 bool reg_subkeys_need_update(REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys)
 {
-	if (key->hook && key->hook->ops && key->hook->ops->subkeys_need_update)
+	if (key->ops && key->ops->subkeys_need_update)
 	{
-		return key->hook->ops->subkeys_need_update(subkeys);
+		return key->ops->subkeys_need_update(subkeys);
 	}
 
 	return false;
@@ -236,9 +235,9 @@ bool reg_subkeys_need_update(REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys)
  */
 bool reg_values_need_update(REGISTRY_KEY *key, REGVAL_CTR *values)
 {
-	if (key->hook && key->hook->ops && key->hook->ops->values_need_update)
+	if (key->ops && key->ops->values_need_update)
 	{
-		return key->hook->ops->values_need_update(values);
+		return key->ops->values_need_update(values);
 	}
 
 	return false;
