@@ -862,7 +862,7 @@ static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level,
 
 	switch (level) {
 	case TDB_DEBUG_FATAL:
-		debug_level = 0;
+		debuglevel = 0;
 		break;
 	case TDB_DEBUG_ERROR:
 		debuglevel = 1;
