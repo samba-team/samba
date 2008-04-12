@@ -27,7 +27,6 @@
 
 static SORTED_TREE *cache_tree = NULL;
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
-static REGISTRY_HOOK default_hook = { KEY_TREE_ROOT, &regdb_ops };
 
 /**********************************************************************
  Initialize the cache tree if it has not been initialized yet.
@@ -36,7 +35,7 @@ static REGISTRY_HOOK default_hook = { KEY_TREE_ROOT, &regdb_ops };
 bool reghook_cache_init( void )
 {
 	if (cache_tree == NULL) {
-		cache_tree = pathtree_init(&default_hook, NULL);
+		cache_tree = pathtree_init(&regdb_ops, NULL);
 		if (cache_tree !=0) {
 			DEBUG(10, ("reghook_cache_init: new tree with default "
 				   "ops %p for key [%s]\n", (void *)&regdb_ops,
@@ -48,20 +47,20 @@ bool reghook_cache_init( void )
 }
 
 /**********************************************************************
- Add a new REGISTRY_HOOK to the cache.  Note that the keyname
+ Add a new registry hook to the cache.  Note that the keyname
  is not in the exact format that a SORTED_TREE expects.
  *********************************************************************/
 
-bool reghook_cache_add( REGISTRY_HOOK *hook )
+bool reghook_cache_add(const char *keyname, REGISTRY_OPS *ops)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *key = NULL;
 
-	if (!hook) {
+	if ((keyname == NULL) || (ops == NULL)) {
 		return false;
 	}
 
-	key = talloc_asprintf(ctx, "\\%s", hook->keyname);
+	key = talloc_asprintf(ctx, "\\%s", keyname);
 	if (!key) {
 		return false;
 	}
@@ -71,20 +70,20 @@ bool reghook_cache_add( REGISTRY_HOOK *hook )
 	}
 
 	DEBUG(10, ("reghook_cache_add: Adding ops %p for key [%s]\n",
-		   (void *)hook->ops, key));
+		   (void *)ops, key));
 
-	return pathtree_add( cache_tree, key, hook );
+	return pathtree_add(cache_tree, key, ops);
 }
 
 /**********************************************************************
  Initialize the cache tree
  *********************************************************************/
 
-REGISTRY_HOOK* reghook_cache_find( const char *keyname )
+REGISTRY_OPS *reghook_cache_find(const char *keyname)
 {
 	char *key;
 	int len;
-	REGISTRY_HOOK *hook;
+	REGISTRY_OPS *ops;
 	
 	if ( !keyname )
 		return NULL;
@@ -107,14 +106,14 @@ REGISTRY_HOOK* reghook_cache_find( const char *keyname )
 		
 	DEBUG(10,("reghook_cache_find: Searching for keyname [%s]\n", key));
 	
-	hook = (REGISTRY_HOOK *)pathtree_find( cache_tree, key ) ;
+	ops = (REGISTRY_OPS *)pathtree_find(cache_tree, key);
 
 	DEBUG(10, ("reghook_cache_find: found ops %p for key [%s]\n",
-		   hook ? (void *)hook->ops : 0, key));
+		   ops ? (void *)ops : 0, key));
 	
 	SAFE_FREE( key );
 	
-	return hook;
+	return ops;
 }
 
 /**********************************************************************

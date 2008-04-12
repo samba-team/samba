@@ -183,9 +183,9 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 	
 	/* Look up the table of registry I/O operations */
 
-	if ( !(key->hook = reghook_cache_find( key->name )) ) {
-		DEBUG(0,("reg_open_onelevel: Failed to assign a "
-			 "REGISTRY_HOOK to [%s]\n", key->name ));
+	if ( !(key->ops = reghook_cache_find( key->name )) ) {
+		DEBUG(0,("reg_open_onelevel: Failed to assign "
+			 "REGISTRY_OPS to [%s]\n", key->name ));
 		result = WERR_BADFILE;
 		goto done;
 	}
@@ -733,9 +733,9 @@ static WERROR reg_load_tree(REGF_FILE *regfile, const char *topkeypath,
 
 	/* initialize the REGISTRY_KEY structure */
 
-	registry_key.hook = reghook_cache_find(topkeypath);
-	if (!registry_key.hook) {
-		DEBUG(0, ("reg_load_tree: Failed to assigned a REGISTRY_HOOK "
+	registry_key.ops = reghook_cache_find(topkeypath);
+	if (!registry_key.ops) {
+		DEBUG(0, ("reg_load_tree: Failed to assign  REGISTRY_OPS "
 			  "to [%s]\n", topkeypath));
 		return WERR_BADFILE;
 	}
@@ -898,8 +898,8 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 		return WERR_NOMEM;
 	}
 
-	registry_key.hook = reghook_cache_find(registry_key.name);
-	if (registry_key.hook == NULL) {
+	registry_key.ops = reghook_cache_find(registry_key.name);
+	if (registry_key.ops == NULL) {
 		return WERR_BADFILE;
 	}
 
