@@ -569,9 +569,9 @@ static void db_tdb2_queue_change(struct db_tdb2_ctx *db_ctx, const TDB_DATA key)
 	}
 	db_ctx->changes.keys = keys;
 
-	keys[db_ctx->changes.num_keys].data = talloc_memdup(keys,
-							    key.dptr,
-							    key.dsize);
+	keys[db_ctx->changes.num_keys].data = (uint8_t *)talloc_memdup(keys,
+								key.dptr,
+								key.dsize);
 	if (!keys[db_ctx->changes.num_keys].data) {
 		goto overflow;
 	}
