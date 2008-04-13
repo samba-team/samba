@@ -261,4 +261,12 @@ NET_API_STATUS NetUserEnum(const char * server_name /* [in] */,
 			   uint32_t *total_entries /* [out] [ref] */,
 			   uint32_t *resume_handle /* [in,out] [ref] */);
 
+NET_API_STATUS NetQueryDisplayInformation(const char * server_name /* [in] [unique] */,
+					  uint32_t level /* [in] */,
+					  uint32_t idx /* [in] */,
+					  uint32_t entries_requested /* [in] */,
+					  uint32_t prefmaxlen /* [in] */,
+					  uint32_t *entries_read /* [out] [ref] */,
+					  void **buffer /* [out] [noprint,ref] */);
+
 #endif
