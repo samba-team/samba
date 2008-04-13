@@ -68,10 +68,8 @@ bool init_registry( void )
 	WERROR werr;
 	bool ret = false;
 
-	werr = regdb_init();
+	werr = registry_init_common();
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0, ("Failed to initialize the registry: %s\n",
-			  dos_errstr(werr)));
 		goto fail;
 	}
 
@@ -84,13 +82,6 @@ bool init_registry( void )
 	}
 
 	/* build the cache tree of registry hooks */
-
-	werr = reghook_cache_init();
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0, ("Failed to initialize the reghook cache: %s\n",
-			  dos_errstr(werr)));
-		goto fail;
-	}
 
 	for ( i=0; reg_hooks[i].keyname; i++ ) {
 		werr = reghook_cache_add(reg_hooks[i].keyname, reg_hooks[i].ops);
