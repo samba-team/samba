@@ -117,6 +117,10 @@ NET_API_STATUS libnetapi_getctx(struct libnetapi_ctx **ctx)
 
 NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 {
+	if (!ctx) {
+		return NET_API_STATUS_SUCCESS;
+	}
+
 	libnetapi_shutdown_cm(ctx);
 
 	if (ctx->krb5_cc_env) {
