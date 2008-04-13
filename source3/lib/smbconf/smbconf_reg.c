@@ -576,7 +576,7 @@ static WERROR smbconf_reg_init(struct smbconf_ctx *ctx, const char *path)
 	}
 	rpd(ctx)->open = false;
 
-	if (!registry_init_smbconf()) {
+	if (!registry_init_smbconf(path)) {
 		werr = WERR_REG_IO_FAILURE;
 		goto done;
 	}
