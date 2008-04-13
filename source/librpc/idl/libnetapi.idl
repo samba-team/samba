@@ -133,4 +133,39 @@ interface libnetapi
 		[out,ref] uint32 *total_entries,
 		[in,out,ref] uint32 *resume_handle
 		);
+
+	[public] typedef struct {
+		string usri1_name;
+		string usri1_comment;
+		uint32 usri1_flags;
+		string usri1_full_name;
+		uint32 usri1_user_id;
+		uint32 usri1_next_index;
+	} NET_DISPLAY_USER;
+
+	[public] typedef struct {
+		string usri2_name;
+		string usri2_comment;
+		uint32 usri2_flags;
+		uint32 usri2_user_id;
+		uint32 usri2_next_index;
+	} NET_DISPLAY_MACHINE;
+
+	[public] typedef struct {
+		string grpi3_name;
+		string grpi3_comment;
+		uint32 grpi3_group_id;
+		uint32 grpi3_attributes;
+		uint32 grpi3_next_index;
+	} NET_DISPLAY_GROUP;
+
+	[nopush,nopull] NET_API_STATUS NetQueryDisplayInformation(
+		[in,unique] string *server_name,
+		[in] uint32 level,
+		[in] uint32 idx,
+		[in] uint32 entries_requested,
+		[in] uint32 prefmaxlen,
+		[out,ref] uint32 *entries_read,
+		[out,ref,noprint] void **buffer
+		);
 }
