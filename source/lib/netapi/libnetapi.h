@@ -100,4 +100,15 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 		     struct NetUserEnum *r);
 WERROR NetUserEnum_l(struct libnetapi_ctx *ctx,
 		     struct NetUserEnum *r);
+NET_API_STATUS NetQueryDisplayInformation(const char * server_name /* [in] [unique] */,
+					  uint32_t level /* [in] */,
+					  uint32_t idx /* [in] */,
+					  uint32_t entries_requested /* [in] */,
+					  uint32_t prefmaxlen /* [in] */,
+					  uint32_t *entries_read /* [out] [ref] */,
+					  void **buffer /* [out] [noprint,ref] */);
+WERROR NetQueryDisplayInformation_r(struct libnetapi_ctx *ctx,
+				    struct NetQueryDisplayInformation *r);
+WERROR NetQueryDisplayInformation_l(struct libnetapi_ctx *ctx,
+				    struct NetQueryDisplayInformation *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */

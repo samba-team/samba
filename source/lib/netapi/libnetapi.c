@@ -585,3 +585,55 @@ NET_API_STATUS NetUserEnum(const char * server_name /* [in] [unique] */,
 	return r.out.result;
 }
 
+/****************************************************************
+ NetQueryDisplayInformation
+****************************************************************/
+
+NET_API_STATUS NetQueryDisplayInformation(const char * server_name /* [in] [unique] */,
+					  uint32_t level /* [in] */,
+					  uint32_t idx /* [in] */,
+					  uint32_t entries_requested /* [in] */,
+					  uint32_t prefmaxlen /* [in] */,
+					  uint32_t *entries_read /* [out] [ref] */,
+					  void **buffer /* [out] [noprint,ref] */)
+{
+	struct NetQueryDisplayInformation r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.level = level;
+	r.in.idx = idx;
+	r.in.entries_requested = entries_requested;
+	r.in.prefmaxlen = prefmaxlen;
+
+	/* Out parameters */
+	r.out.entries_read = entries_read;
+	r.out.buffer = buffer;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetQueryDisplayInformation, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetQueryDisplayInformation_l(ctx, &r);
+	} else {
+		werr = NetQueryDisplayInformation_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetQueryDisplayInformation, &r);
+	}
+
+	return r.out.result;
+}
+
