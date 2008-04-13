@@ -85,7 +85,12 @@ bool init_registry( void )
 
 	/* build the cache tree of registry hooks */
 
-	reghook_cache_init();
+	werr = reghook_cache_init();
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0, ("Failed to initialize the reghook cache: %s\n",
+			  dos_errstr(werr)));
+		goto fail;
+	}
 
 	for ( i=0; reg_hooks[i].keyname; i++ ) {
 		if (!reghook_cache_add(reg_hooks[i].keyname, reg_hooks[i].ops))

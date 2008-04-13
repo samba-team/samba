@@ -36,7 +36,12 @@ bool registry_init_basic(void)
 	}
 	regdb_close();
 
-	reghook_cache_init();
+	werr = reghook_cache_init();
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("Failed to initialize the reghook cache: %s\n",
+			  dos_errstr(werr)));
+		return false;
+	}
 
 	return true;
 }

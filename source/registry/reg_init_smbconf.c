@@ -94,7 +94,13 @@ bool registry_init_smbconf(const char *keyname)
 		goto done;
 	}
 
-	reghook_cache_init();
+	werr = reghook_cache_init();
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("Failed to initialize the reghook cache: %s\n",
+			  dos_errstr(werr)));
+		goto done;
+	}
+
 	if (!reghook_cache_add(keyname, &smbconf_reg_ops)) {
 		DEBUG(1, ("Failed to add smbconf reghooks to reghook cache\n"));
 		goto done;
