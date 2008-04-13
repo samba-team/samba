@@ -169,7 +169,7 @@ int net_samsync_ldb(struct net_context *ctx, int argc, const char **argv)
 
 int net_samsync_ldb_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("net samsync_ldb\n");
+	d_printf("net samsync\n");
 	return 0;	
 }
 

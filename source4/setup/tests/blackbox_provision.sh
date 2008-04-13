@@ -31,6 +31,8 @@ testit "simple-default" $PYTHON ./setup/provision $CONFIGURATION --domain=FOO --
 testit "simple-dc" $PYTHON ./setup/provision $CONFIGURATION --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/simple-dc
 testit "simple-member" $PYTHON ./setup/provision $CONFIGURATION --server-role="member" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-member
 testit "simple-standalone" $PYTHON ./setup/provision $CONFIGURATION --server-role="standalone" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-standalone
+testit "blank-dc" $PYTHON ./setup/provision $CONFIGURATION --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/simple-dc --blank
+testit "partitions-only-dc" $PYTHON ./setup/provision $CONFIGURATION --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/simple-dc --partitions-only
 
 reprovision() {
 	$PYTHON ./setup/provision $CONFIGURATION --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/reprovision"

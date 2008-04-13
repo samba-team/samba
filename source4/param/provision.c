@@ -64,14 +64,12 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	DEBUG(0,("New Server[%s] in Site[%s]\n", settings->dns_name, 
-			 settings->site_name));
+	DEBUG(0,("New Server in Site[%s]\n", 
+		 settings->site_name));
 
 	DEBUG(0,("DSA Instance [%s]\n"
-		"\tobjectGUID[%s]\n"
 		"\tinvocationId[%s]\n",
 		settings->ntds_dn_str,
-		settings->ntds_guid == NULL?"None":GUID_string(mem_ctx, settings->ntds_guid),
 		settings->invocation_id == NULL?"None":GUID_string(mem_ctx, settings->invocation_id)));
 
 	DEBUG(0,("Pathes under targetdir[%s]\n",
