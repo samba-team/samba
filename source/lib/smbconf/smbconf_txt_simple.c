@@ -223,6 +223,9 @@ static WERROR smbconf_txt_init(struct smbconf_ctx *ctx, const char *path)
 	}
 
 	ctx->data = TALLOC_ZERO_P(ctx, struct txt_private_data);
+	if (ctx->data == NULL) {
+		return WERR_NOMEM;
+	}
 
 	return WERR_OK;
 }
