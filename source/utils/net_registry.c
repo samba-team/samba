@@ -473,7 +473,7 @@ int net_registry(int argc, const char **argv)
 	{ NULL, NULL, NULL }
 	};
 
-	if (!registry_init_basic()) {
+	if (!W_ERROR_IS_OK(registry_init_basic())) {
 		return -1;
 	}
 
