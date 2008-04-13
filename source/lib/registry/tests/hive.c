@@ -220,7 +220,7 @@ static bool test_get_value(struct torture_context *tctx, const void *test_data)
 	torture_assert_int_equal(tctx, value.length, 4, "value length");
 	torture_assert_int_equal(tctx, type, REG_DWORD, "value type");
 
-	torture_assert_int_equal(tctx, data, IVAL(value.data, 0),
+	torture_assert_mem_equal(tctx, &data, value.data, sizeof(uint32_t),
 				 "value data");
 
 	return true;

@@ -253,6 +253,15 @@ void torture_result(struct torture_context *test,
 	} \
 	} while(0)
 
+#define torture_assert_mem_equal(torture_ctx,got,expected,len,cmt)\
+	do { const void *__got = (got), *__expected = (expected); \
+	if (memcmp(__got, __expected, len) != 0) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+					   __location__": "#got" of len %d did not match"#expected": %s", len, cmt); \
+		return false; \
+	} \
+	} while(0)
+
 #define torture_assert_file_contains_text(torture_ctx,filename,expected,cmt)\
 	do { \
 	char *__got; \
