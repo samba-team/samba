@@ -65,11 +65,13 @@ REGISTRY_HOOK reg_hooks[] = {
 bool init_registry( void )
 {
 	int i;
+	WERROR werr;
 	bool ret = false;
 
-	if ( !regdb_init() ) {
+	werr = regdb_init();
+	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0, ("init_registry: failed to initialize the registry "
-			  "tdb!\n"));
+			  "(%s)\n", dos_errstr(werr)));
 		goto fail;
 	}
 
