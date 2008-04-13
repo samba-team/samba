@@ -36,7 +36,10 @@ WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	}
 
 	cli_cm_set_signing_state(Undefined);
-	cli_cm_set_use_kerberos();
+
+	if (ctx->use_kerberos) {
+		cli_cm_set_use_kerberos();
+	}
 
 	if (ctx->password) {
 		cli_cm_set_password(ctx->password);
@@ -46,7 +49,8 @@ WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	}
 
 	if (ctx->username && ctx->username[0] &&
-	    ctx->password && ctx->password[0]) {
+	    ctx->password && ctx->password[0] &&
+	    ctx->use_kerberos) {
 		cli_cm_set_fallback_after_kerberos();
 	}
 

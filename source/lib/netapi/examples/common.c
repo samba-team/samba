@@ -48,6 +48,9 @@ void popt_common_callback(poptContext con,
 		case 'p':
 			libnetapi_set_password(ctx, arg);
 			break;
+		case 'k':
+			libnetapi_set_use_kerberos(ctx);
+			break;
 	}
 }
 
@@ -56,6 +59,7 @@ struct poptOption popt_common_netapi_examples[] = {
 	{ "user", 'U', POPT_ARG_STRING, NULL, 'U', "Username used for connection", "USERNAME" },
 	{ "password", 'p', POPT_ARG_STRING, NULL, 'p', "Password used for connection", "PASSWORD" },
 	{ "debuglevel", 'd', POPT_ARG_STRING, NULL, 'd', "Debuglevel", "DEBUGLEVEL" },
+	{ "kerberos", 'k', POPT_ARG_NONE, NULL, 'k', "Use Kerberos", NULL },
 	POPT_TABLEEND
 };
 

@@ -89,6 +89,7 @@ struct libnetapi_ctx {
 	char *workgroup;
 	char *password;
 	char *krb5_cc_env;
+	int use_kerberos;
 };
 
 /****************************************************************
@@ -129,6 +130,11 @@ NET_API_STATUS libnetapi_set_password(struct libnetapi_ctx *ctx,
 
 NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx,
 				       const char *workgroup);
+
+/****************************************************************
+****************************************************************/
+
+NET_API_STATUS libnetapi_set_use_kerberos(struct libnetapi_ctx *ctx);
 
 /****************************************************************
 ****************************************************************/

@@ -211,6 +211,15 @@ NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
+NET_API_STATUS libnetapi_set_use_kerberos(struct libnetapi_ctx *ctx)
+{
+	ctx->use_kerberos = true;
+	return NET_API_STATUS_SUCCESS;
+}
+
+/****************************************************************
+****************************************************************/
+
 const char *libnetapi_errstr(NET_API_STATUS status)
 {
 	if (status & 0xc0000000) {
