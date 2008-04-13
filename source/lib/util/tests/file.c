@@ -45,9 +45,9 @@ static bool test_file_load_save(struct torture_context *tctx)
 	data = file_load(TEST_FILENAME, &len, mem_ctx);
 	torture_assert(tctx, data, "loading file");
 
-	torture_assert(tctx, len == strlen(TEST_DATA), "Length");
+	torture_assert_int_equal(tctx, len, strlen(TEST_DATA), "Length");
 	
-	torture_assert(tctx, memcmp(data, TEST_DATA, len) == 0, "Contents");
+	torture_assert_mem_equal(tctx, data, TEST_DATA, len, "Contents");
 
 	unlink(TEST_FILENAME);
 	return true;
