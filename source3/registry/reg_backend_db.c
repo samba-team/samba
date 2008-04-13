@@ -720,6 +720,7 @@ fail:
 
 int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 {
+	WERROR werr;
 	char *path = NULL;
 	uint32 num_items;
 	uint8 *buf;
@@ -764,7 +765,12 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 
 	for (i=0; i<num_items; i++) {
 		len += tdb_unpack(buf+len, buflen-len, "f", subkeyname);
-		regsubkey_ctr_addkey(ctr, subkeyname);
+		werr = regsubkey_ctr_addkey(ctr, subkeyname);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(5, ("regdb_fetch_keys: regsubkey_ctr_addkey "
+				  "failed: %s\n", dos_errstr(werr)));
+			goto fail;
+		}
 	}
 
 	DEBUG(11,("regdb_fetch_keys: Exit [%d] items\n", num_items));
