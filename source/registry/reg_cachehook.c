@@ -56,16 +56,17 @@ static char *keyname_to_path(TALLOC_CTX *mem_ctx, const char *keyname)
 
 WERROR reghook_cache_init(void)
 {
-	if (cache_tree == NULL) {
-		cache_tree = pathtree_init(&regdb_ops, NULL);
-		if (cache_tree == NULL) {
-			return WERR_NOMEM;
-		}
-		DEBUG(10, ("reghook_cache_init: new tree with default "
-			   "ops %p for key [%s]\n", (void *)&regdb_ops,
-			   KEY_TREE_ROOT));
+	if (cache_tree != NULL) {
+		return WERR_OK;
 	}
 
+	cache_tree = pathtree_init(&regdb_ops, NULL);
+	if (cache_tree == NULL) {
+		return WERR_NOMEM;
+	}
+	DEBUG(10, ("reghook_cache_init: new tree with default "
+		   "ops %p for key [%s]\n", (void *)&regdb_ops,
+		   KEY_TREE_ROOT));
 	return WERR_OK;
 }
 
