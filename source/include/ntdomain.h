@@ -325,17 +325,6 @@ typedef struct smb_np_struct {
 	void *   (*namedpipe_create)(const char *pipe_name, 
 					  connection_struct *conn, uint16 vuid);
 
-	/* call to perform a write / read namedpipe transaction.
-	 * TransactNamedPipe is weird: it returns whether there
-	 * is more data outstanding to be read, and the
-	 * caller is expected to take note and follow up with
-	 * read requests.
-	 */
-	ssize_t  (*namedpipe_transact)(void *np_state,
-	                               char *data, int len,
-	                               char *rdata, int rlen,
-	                               bool *pipe_outstanding);
-
 	/* call to perform a write namedpipe operation
 	 */
 	ssize_t  (*namedpipe_write)(void * np_state,
