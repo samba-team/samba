@@ -1055,5 +1055,5 @@ struct smbconf_ops smbconf_ops_reg = {
 WERROR smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 			const char *path)
 {
-	return smbconf_init(mem_ctx, conf_ctx, path, &smbconf_ops_reg);
+	return smbconf_init_internal(mem_ctx, conf_ctx, path, &smbconf_ops_reg);
 }
