@@ -479,7 +479,5 @@ int net_registry(int argc, const char **argv)
 
 	ret = net_run_function2(argc, argv, "net registry", func);
 
-	regdb_close();
-
 	return ret;
 }
