@@ -68,7 +68,7 @@ static int DoAddSourceCommand( int argc, char **argv, bool debugflag, char *exen
 		return -1;
 	}
 	/* must open the registry before we access it */
-	if ( !regdb_init(  ) ) {
+	if (!W_ERROR_IS_OK(regdb_init())) {
 		printf( "Can't open the registry.\n" );
 		return -1;
 	}
