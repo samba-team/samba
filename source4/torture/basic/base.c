@@ -590,7 +590,7 @@ static bool rw_torture2(struct torture_context *tctx,
 			break;
 		}
 
-		torture_assert(tctx, memcmp(buf_rd, buf, buf_size) == 0, 
+		torture_assert_mem_equal(tctx, buf_rd, buf, buf_size, 
 			"read/write compare failed\n");
 	}
 
