@@ -77,7 +77,7 @@ WERROR reghook_cache_init(void)
 
 bool reghook_cache_add(const char *keyname, REGISTRY_OPS *ops)
 {
-	bool ret;
+	WERROR werr;
 	char *key = NULL;
 
 	key = keyname_to_path(talloc_tos(), keyname);
@@ -89,9 +89,9 @@ bool reghook_cache_add(const char *keyname, REGISTRY_OPS *ops)
 	DEBUG(10, ("reghook_cache_add: Adding ops %p for key [%s]\n",
 		   (void *)ops, key));
 
-	ret = pathtree_add(cache_tree, key, ops);
+	werr = pathtree_add(cache_tree, key, ops);
 	TALLOC_FREE(key);
-	return ret;
+	return W_ERROR_IS_OK(werr);
 }
 
 /**********************************************************************

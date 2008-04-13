@@ -191,23 +191,23 @@ static TREE_NODE* pathtree_find_child( TREE_NODE *node, char* key )
  Add a new node into the tree given a key path and a blob of data
  *************************************************************************/
 
- bool pathtree_add( SORTED_TREE *tree, const char *path, void *data_p )
+ WERROR pathtree_add( SORTED_TREE *tree, const char *path, void *data_p )
 {
 	char *str, *base, *path2;
 	TREE_NODE *current, *next;
-	bool ret = True;
+	WERROR ret = WERR_OK;
 	
 	DEBUG(8,("pathtree_add: Enter\n"));
 		
 	if ( !path || *path != '/' ) {
 		DEBUG(0,("pathtree_add: Attempt to add a node with a bad path [%s]\n",
 			path ? path : "NULL" ));
-		return False;
+		return WERR_INVALID_PARAM;
 	}
 	
 	if ( !tree ) {
 		DEBUG(0,("pathtree_add: Attempt to add a node to an uninitialized tree!\n"));
-		return False;
+		return WERR_INVALID_PARAM;
 	}
 	
 	/* move past the first '/' */
@@ -216,7 +216,7 @@ static TREE_NODE* pathtree_find_child( TREE_NODE *node, char* key )
 	path2 = SMB_STRDUP( path );
 	if ( !path2 ) {
 		DEBUG(0,("pathtree_add: strdup() failed on string [%s]!?!?!\n", path));
-		return False;
+		return WERR_NOMEM;
 	}
 	
 
@@ -244,7 +244,7 @@ static TREE_NODE* pathtree_find_child( TREE_NODE *node, char* key )
 			next = pathtree_birth_child( current, base );
 			if ( !next ) {
 				DEBUG(0,("pathtree_add: Failed to create new child!\n"));
-				ret =  False;
+				ret = WERR_NOMEM;
 				goto done;
 			}
 		}
