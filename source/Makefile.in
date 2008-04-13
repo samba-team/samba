@@ -1982,6 +1982,10 @@ bin/registry.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/registry.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) libgpo/gpext/registry.o
 
+bin/scripts.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/scripts.o
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) libgpo/gpext/scripts.o
+
 #########################################################
 ## IdMap NSS plugins
 
