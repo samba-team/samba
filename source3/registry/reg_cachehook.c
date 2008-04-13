@@ -28,26 +28,30 @@
 static SORTED_TREE *cache_tree = NULL;
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
 
-static char *keyname_to_path(TALLOC_CTX *mem_ctx, const char *keyname)
+static WERROR keyname_to_path(TALLOC_CTX *mem_ctx, const char *keyname,
+			      char **path)
 {
-	char *path = NULL;
+	char *tmp_path = NULL;
 
-	if ((keyname == NULL)) {
-		return NULL;
+	if ((keyname == NULL) || (path == NULL)) {
+		return WERR_INVALID_PARAM;
 	}
 
-	path = talloc_asprintf(mem_ctx, "\\%s", keyname);
-	if (path == NULL) {
+	tmp_path = talloc_asprintf(mem_ctx, "\\%s", keyname);
+	if (tmp_path == NULL) {
 		DEBUG(0, ("talloc_asprintf failed!\n"));
-		return NULL;
+		return WERR_NOMEM;
 	}
 
-	path = talloc_string_sub(mem_ctx, path, "\\", "/");
-	if (path == NULL) {
+	tmp_path = talloc_string_sub(mem_ctx, tmp_path, "\\", "/");
+	if (tmp_path == NULL) {
 		DEBUG(0, ("talloc_string_sub_failed!\n"));
+		return WERR_NOMEM;
 	}
 
-	return path;
+	*path = tmp_path;
+
+	return WERR_OK;
 }
 
 /**********************************************************************
@@ -80,16 +84,21 @@ bool reghook_cache_add(const char *keyname, REGISTRY_OPS *ops)
 	WERROR werr;
 	char *key = NULL;
 
-	key = keyname_to_path(talloc_tos(), keyname);
-
-	if ((key == NULL) || (ops == NULL)) {
+	if ((keyname == NULL) || (ops == NULL)) {
 		return false;
+	}
+
+	werr = keyname_to_path(talloc_tos(), keyname, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
 	}
 
 	DEBUG(10, ("reghook_cache_add: Adding ops %p for key [%s]\n",
 		   (void *)ops, key));
 
 	werr = pathtree_add(cache_tree, key, ops);
+
+done:
 	TALLOC_FREE(key);
 	return W_ERROR_IS_OK(werr);
 }
@@ -100,13 +109,17 @@ bool reghook_cache_add(const char *keyname, REGISTRY_OPS *ops)
 
 REGISTRY_OPS *reghook_cache_find(const char *keyname)
 {
-	char *key;
-	REGISTRY_OPS *ops;
+	WERROR werr;
+	char *key = NULL;
+	REGISTRY_OPS *ops = NULL;
 
-	key = keyname_to_path(talloc_tos(), keyname);
-
-	if (key == NULL) {
+	if (keyname == NULL) {
 		return NULL;
+	}
+
+	werr = keyname_to_path(talloc_tos(), keyname, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
 	}
 
 	DEBUG(10,("reghook_cache_find: Searching for keyname [%s]\n", key));
@@ -116,6 +129,7 @@ REGISTRY_OPS *reghook_cache_find(const char *keyname)
 	DEBUG(10, ("reghook_cache_find: found ops %p for key [%s]\n",
 		   ops ? (void *)ops : 0, key));
 
+done:
 	TALLOC_FREE(key);
 
 	return ops;
