@@ -29,8 +29,11 @@ struct smbconf_csn {
 
 /*
  * initialization functions for the available modules
- * (a dispatcher might be added in the future)
  */
+
+WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
+		    const char *source);
+
 WERROR smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 			const char *path);
 
