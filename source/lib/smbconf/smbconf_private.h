@@ -68,8 +68,8 @@ struct smbconf_ctx {
 	void *data; /* private data for use in backends */
 };
 
-WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
-		    const char *path, struct smbconf_ops *ops);
+WERROR smbconf_init_internal(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
+			     const char *path, struct smbconf_ops *ops);
 
 WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
 				   char ***array,

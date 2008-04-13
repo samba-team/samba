@@ -607,7 +607,7 @@ WERROR smbconf_init_txt_simple(TALLOC_CTX *mem_ctx,
 {
 	WERROR werr;
 
-	werr = smbconf_init(mem_ctx, conf_ctx, path, &smbconf_ops_txt);
+	werr = smbconf_init_internal(mem_ctx, conf_ctx, path, &smbconf_ops_txt);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
