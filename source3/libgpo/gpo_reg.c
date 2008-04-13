@@ -60,8 +60,9 @@ WERROR gp_init_reg_ctx(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	if (!registry_init_basic()) {
-		return WERR_CAN_NOT_COMPLETE;
+	werr = registry_init_basic();
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
 	tmp_ctx = TALLOC_ZERO_P(mem_ctx, struct gp_registry_context);
