@@ -262,6 +262,7 @@ o   Volker Lendecke <vl@samba.org>
     * Change default bufsize to 512k.
     * Fix Coverity IDs 473, 481, 506, 507, 525, 526, 527, 528, 529, 530, 537,
       538, 547, 548, 551, 552, 553, 554, 555, 557, 558, 559, 563, 564, 567.
+      ... and half a ton more
     * Fix some warnings in the tsmsm module.
     * Fix warnings.
     * BUG 4901: Fix "ldap passwd sync = only".
@@ -269,6 +270,18 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 5307: Fix notify changes.
     * BUG 5317: Fix debug output in domain_client_validate.
     * BUG 5338: Fix format string issue in rpcclient.
+    * Convert account_pol.tdb and share_info.tdb to dbwrap
+    * Protect group_mapping.tdb ops with transactions
+    * BUG 5366: "passwd program" should work on Solaris 10 again now
+    * A level 25 setuserinfo does change the pwdlastset, fixes XP joins
+    * BUG 5350: A Samba DC trusting NT4 should do an anon session setup
+    * BUG 5375: Fix a segfault with "security=share" and [in]valid users
+    * Fix printing from DOS clients -- introduced by inbuf/outbuf rewrite
+    * Fix wbinfo -a trusted\\user%password on a Samba DC with trusts
+    * BUG 5341: Fix async smbclient get command on Solaris
+    * Make winbind use NetSamLogonEx when possible
+    * Merge fixes in the 3-0-ctdb cluster code
+    * Fix a segfault in snprintf replacement code
 
 
 o   Derrell Lipman <derrell@samba.org>
