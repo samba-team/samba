@@ -39,8 +39,8 @@ static int smbconf_destroy_ctx(struct smbconf_ctx *ctx)
  * After the work with the configuration is completed, smbconf_shutdown()
  * should be called.
  */
-WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
-		    const char *path, struct smbconf_ops *ops)
+WERROR smbconf_init_internal(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
+			     const char *path, struct smbconf_ops *ops)
 {
 	WERROR werr = WERR_OK;
 	struct smbconf_ctx *ctx;
