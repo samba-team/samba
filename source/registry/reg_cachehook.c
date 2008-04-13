@@ -79,13 +79,13 @@ WERROR reghook_cache_init(void)
  is not in the exact format that a SORTED_TREE expects.
  *********************************************************************/
 
-bool reghook_cache_add(const char *keyname, REGISTRY_OPS *ops)
+WERROR reghook_cache_add(const char *keyname, REGISTRY_OPS *ops)
 {
 	WERROR werr;
 	char *key = NULL;
 
 	if ((keyname == NULL) || (ops == NULL)) {
-		return false;
+		return WERR_INVALID_PARAM;
 	}
 
 	werr = keyname_to_path(talloc_tos(), keyname, &key);
@@ -100,7 +100,7 @@ bool reghook_cache_add(const char *keyname, REGISTRY_OPS *ops)
 
 done:
 	TALLOC_FREE(key);
-	return W_ERROR_IS_OK(werr);
+	return werr;
 }
 
 /**********************************************************************

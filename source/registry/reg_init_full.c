@@ -93,8 +93,10 @@ bool init_registry( void )
 	}
 
 	for ( i=0; reg_hooks[i].keyname; i++ ) {
-		if (!reghook_cache_add(reg_hooks[i].keyname, reg_hooks[i].ops))
+		werr = reghook_cache_add(reg_hooks[i].keyname, reg_hooks[i].ops);
+		if (!W_ERROR_IS_OK(werr)) {
 			goto fail;
+		}
 	}
 
 	if ( DEBUGLEVEL >= 20 )
