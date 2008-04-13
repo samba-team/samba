@@ -707,3 +707,22 @@ WERROR NetUserEnum_l(struct libnetapi_ctx *ctx,
 	return WERR_NOT_SUPPORTED;
 }
 
+/****************************************************************
+****************************************************************/
+
+
+WERROR NetQueryDisplayInformation_r(struct libnetapi_ctx *ctx,
+				    struct NetQueryDisplayInformation *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+
+WERROR NetQueryDisplayInformation_l(struct libnetapi_ctx *ctx,
+				    struct NetQueryDisplayInformation *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
