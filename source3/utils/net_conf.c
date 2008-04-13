@@ -266,6 +266,7 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 	int ret = -1;
 	const char *filename = NULL;
 	const char *servicename = NULL;
+	char *conf_source = NULL;
 	TALLOC_CTX *mem_ctx;
 	struct smbconf_ctx *txt_ctx;
 	WERROR werr;
@@ -291,7 +292,13 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 	DEBUG(3,("net_conf_import: reading configuration from file %s.\n",
 		filename));
 
-	werr = smbconf_init_txt_simple(mem_ctx, &txt_ctx, filename);
+	conf_source = talloc_asprintf(mem_ctx, "file:%s", filename);
+	if (conf_source == NULL) {
+		d_printf("error: out of memory!\n");
+		goto done;
+	}
+
+	werr = smbconf_init(mem_ctx, &txt_ctx, conf_source);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_printf("error loading file '%s': %s\n", filename,
 			 dos_errstr(werr));
@@ -969,7 +976,7 @@ static int net_conf_wrap_function(int (*fn)(struct smbconf_ctx *,
 	struct smbconf_ctx *conf_ctx;
 	int ret = -1;
 
-	werr = smbconf_init_reg(mem_ctx, &conf_ctx, NULL);
+	werr = smbconf_init(mem_ctx, &conf_ctx, "registry:");
 
 	if (!W_ERROR_IS_OK(werr)) {
 		return -1;
