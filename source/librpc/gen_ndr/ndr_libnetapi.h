@@ -30,7 +30,9 @@
 
 #define NDR_NETUSERENUM (0x0b)
 
-#define NDR_LIBNETAPI_CALL_COUNT (12)
+#define NDR_NETQUERYDISPLAYINFORMATION (0x0c)
+
+#define NDR_LIBNETAPI_CALL_COUNT (13)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -46,6 +48,15 @@ void ndr_print_USER_INFO_0(struct ndr_print *ndr, const char *name, const struct
 enum ndr_err_code ndr_push_USER_INFO_1(struct ndr_push *ndr, int ndr_flags, const struct USER_INFO_1 *r);
 enum ndr_err_code ndr_pull_USER_INFO_1(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_1 *r);
 void ndr_print_USER_INFO_1(struct ndr_print *ndr, const char *name, const struct USER_INFO_1 *r);
+enum ndr_err_code ndr_push_NET_DISPLAY_USER(struct ndr_push *ndr, int ndr_flags, const struct NET_DISPLAY_USER *r);
+enum ndr_err_code ndr_pull_NET_DISPLAY_USER(struct ndr_pull *ndr, int ndr_flags, struct NET_DISPLAY_USER *r);
+void ndr_print_NET_DISPLAY_USER(struct ndr_print *ndr, const char *name, const struct NET_DISPLAY_USER *r);
+enum ndr_err_code ndr_push_NET_DISPLAY_MACHINE(struct ndr_push *ndr, int ndr_flags, const struct NET_DISPLAY_MACHINE *r);
+enum ndr_err_code ndr_pull_NET_DISPLAY_MACHINE(struct ndr_pull *ndr, int ndr_flags, struct NET_DISPLAY_MACHINE *r);
+void ndr_print_NET_DISPLAY_MACHINE(struct ndr_print *ndr, const char *name, const struct NET_DISPLAY_MACHINE *r);
+enum ndr_err_code ndr_push_NET_DISPLAY_GROUP(struct ndr_push *ndr, int ndr_flags, const struct NET_DISPLAY_GROUP *r);
+enum ndr_err_code ndr_pull_NET_DISPLAY_GROUP(struct ndr_pull *ndr, int ndr_flags, struct NET_DISPLAY_GROUP *r);
+void ndr_print_NET_DISPLAY_GROUP(struct ndr_print *ndr, const char *name, const struct NET_DISPLAY_GROUP *r);
 enum ndr_err_code ndr_push_NetJoinDomain(struct ndr_push *ndr, int flags, const struct NetJoinDomain *r);
 enum ndr_err_code ndr_pull_NetJoinDomain(struct ndr_pull *ndr, int flags, struct NetJoinDomain *r);
 void ndr_print_NetJoinDomain(struct ndr_print *ndr, const char *name, int flags, const struct NetJoinDomain *r);
@@ -82,4 +93,7 @@ void ndr_print_NetUserDel(struct ndr_print *ndr, const char *name, int flags, co
 enum ndr_err_code ndr_push_NetUserEnum(struct ndr_push *ndr, int flags, const struct NetUserEnum *r);
 enum ndr_err_code ndr_pull_NetUserEnum(struct ndr_pull *ndr, int flags, struct NetUserEnum *r);
 void ndr_print_NetUserEnum(struct ndr_print *ndr, const char *name, int flags, const struct NetUserEnum *r);
+enum ndr_err_code ndr_push_NetQueryDisplayInformation(struct ndr_push *ndr, int flags, const struct NetQueryDisplayInformation *r);
+enum ndr_err_code ndr_pull_NetQueryDisplayInformation(struct ndr_pull *ndr, int flags, struct NetQueryDisplayInformation *r);
+void ndr_print_NetQueryDisplayInformation(struct ndr_print *ndr, const char *name, int flags, const struct NetQueryDisplayInformation *r);
 #endif /* _HEADER_NDR_libnetapi */
