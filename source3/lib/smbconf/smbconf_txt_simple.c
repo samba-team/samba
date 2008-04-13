@@ -602,8 +602,7 @@ static struct smbconf_ops smbconf_ops_txt = {
  */
 WERROR smbconf_init_txt_simple(TALLOC_CTX *mem_ctx,
 			       struct smbconf_ctx **conf_ctx,
-			       const char *path,
-			       bool verbatim)
+			       const char *path)
 {
 	WERROR werr;
 
@@ -612,7 +611,7 @@ WERROR smbconf_init_txt_simple(TALLOC_CTX *mem_ctx,
 		return werr;
 	}
 
-	pd(*conf_ctx)->verbatim = verbatim;
+	pd(*conf_ctx)->verbatim = true;
 
 	return smbconf_txt_load_file(*conf_ctx);
 }
