@@ -794,10 +794,12 @@ void dump_reg_val(int lvl, const char *direction,
 
 	switch (val->type) {
 		case REG_DWORD:
-			DEBUG(lvl,("%d\n", (int)val->v.dword));
+			DEBUG(lvl,("%d (0x%08x)\n",
+				(int)val->v.dword, val->v.dword));
 			break;
 		case REG_QWORD:
-			DEBUG(lvl,("%d\n", (int)val->v.qword));
+			DEBUG(lvl,("%d (0x%016lx)\n",
+				(int)val->v.qword, val->v.qword));
 			break;
 		case REG_SZ:
 			DEBUG(lvl,("%s (length: %d)\n",
