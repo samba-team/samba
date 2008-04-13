@@ -318,16 +318,17 @@ bool init_registry_data(void)
  Open the registry database
  ***********************************************************************/
  
-bool regdb_init(void)
+WERROR regdb_init(void)
 {
 	const char *vstring = "INFO/version";
 	uint32 vers_id;
+	WERROR werr;
 
 	if (regdb) {
 		DEBUG(10, ("regdb_init: incrementing refcount (%d)\n",
 			  regdb_refcount));
 		regdb_refcount++;
-		return true;
+		return WERR_OK;
 	}
 
 	regdb = db_open_trans(NULL, state_path("registry.tdb"), 0,
@@ -336,9 +337,10 @@ bool regdb_init(void)
 		regdb = db_open_trans(NULL, state_path("registry.tdb"), 0,
 				      REG_TDB_FLAGS, O_RDWR|O_CREAT, 0600);
 		if (!regdb) {
+			werr = ntstatus_to_werror(map_nt_error_from_unix(errno));
 			DEBUG(0,("regdb_init: Failed to open registry %s (%s)\n",
 				state_path("registry.tdb"), strerror(errno) ));
-			return false;
+			return werr;
 		}
 		
 		DEBUG(10,("regdb_init: Successfully created registry tdb\n"));
@@ -357,14 +359,14 @@ bool regdb_init(void)
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("regdb_init: error storing %s = %d: %s\n",
 				  vstring, REGVER_V1, nt_errstr(status)));
-			return false;
+			return ntstatus_to_werror(status);
 		} else {
 			DEBUG(10, ("regdb_init: stored %s = %d\n",
 				  vstring, REGVER_V1));
 		}
 	}
 
-	return true;
+	return WERR_OK;
 }
 
 /***********************************************************************

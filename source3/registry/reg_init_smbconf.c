@@ -69,8 +69,8 @@ done:
  */
 bool registry_init_smbconf(const char *keyname)
 {
+	WERROR werr;
 	bool ret = false;
-	int saved_errno = 0;
 
 	DEBUG(10, ("registry_init_smbconf called\n"));
 
@@ -80,13 +80,9 @@ bool registry_init_smbconf(const char *keyname)
 		keyname = KEY_SMBCONF;
 	}
 
-	if (!regdb_init()) {
-		saved_errno = errno;
-		DEBUG(1, ("Can't open the registry"));
-		if (saved_errno) {
-			DEBUGADD(1, (": %s", strerror(saved_errno)));
-		}
-		DEBUGADD(1, (".\n"));
+	werr = regdb_init();
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("Can't open the registry: %s\n", dos_errstr(werr)));
 		goto done;
 	}
 	if (!init_registry_key(keyname)) {

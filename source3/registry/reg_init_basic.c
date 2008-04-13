@@ -24,17 +24,13 @@
 
 bool registry_init_basic(void)
 {
-	int saved_errno = 0;
+	WERROR werr;
 
 	DEBUG(10, ("registry_init_basic called\n"));
 
-	if (!regdb_init()) {
-		saved_errno = errno;
-		DEBUG(1, ("Can't open the registry"));
-		if (saved_errno) {
-			DEBUGADD(1, (": %s", strerror(saved_errno)));
-		}
-		DEBUGADD(1, (".\n"));
+	werr = regdb_init();
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("Can't open the registry: %s\n", dos_errstr(werr)));
 		return false;
 	}
 	regdb_close();
