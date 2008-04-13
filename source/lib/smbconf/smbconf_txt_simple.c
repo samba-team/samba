@@ -227,6 +227,8 @@ static WERROR smbconf_txt_init(struct smbconf_ctx *ctx, const char *path)
 		return WERR_NOMEM;
 	}
 
+	pd(ctx)->verbatim = true;
+
 	return WERR_OK;
 }
 
@@ -613,8 +615,6 @@ WERROR smbconf_init_txt_simple(TALLOC_CTX *mem_ctx,
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
-
-	pd(*conf_ctx)->verbatim = true;
 
 	return smbconf_txt_load_file(*conf_ctx);
 }
