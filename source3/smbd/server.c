@@ -1323,7 +1323,7 @@ extern void build_options(bool screen);
 
 	namecache_enable();
 
-	if (!W_ERROR_IS_OK(init_registry()))
+	if (!W_ERROR_IS_OK(registry_init_full()))
 		exit(1);
 
 #if 0

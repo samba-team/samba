@@ -62,7 +62,7 @@ REGISTRY_HOOK reg_hooks[] = {
  with all available backens.
  ***********************************************************************/
 
-WERROR init_registry(void)
+WERROR registry_init_full(void)
 {
 	int i;
 	WERROR werr;
