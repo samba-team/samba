@@ -706,11 +706,305 @@ WERROR NetUserEnum_l(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
+static WERROR convert_samr_dispinfo_to_NET_DISPLAY_USER(TALLOC_CTX *mem_ctx,
+							struct samr_DispInfoGeneral *info,
+							uint32_t *entries_read,
+							void **buffer)
+{
+	struct NET_DISPLAY_USER *user = NULL;
+	int i;
+
+	user = TALLOC_ZERO_ARRAY(mem_ctx,
+				 struct NET_DISPLAY_USER,
+				 info->count);
+	W_ERROR_HAVE_NO_MEMORY(user);
+
+	for (i = 0; i < info->count; i++) {
+		user[i].usri1_name = talloc_strdup(mem_ctx,
+			info->entries[i].account_name.string);
+		user[i].usri1_comment = talloc_strdup(mem_ctx,
+			info->entries[i].description.string);
+		user[i].usri1_flags =
+			info->entries[i].acct_flags;
+		user[i].usri1_full_name = talloc_strdup(mem_ctx,
+			info->entries[i].full_name.string);
+		user[i].usri1_user_id =
+			info->entries[i].rid;
+		user[i].usri1_next_index =
+			info->entries[i].idx;
+
+		if (!user[i].usri1_name) {
+			return WERR_NOMEM;
+		}
+	}
+
+	*buffer = talloc_memdup(mem_ctx, user,
+		sizeof(struct NET_DISPLAY_USER) * info->count);
+	W_ERROR_HAVE_NO_MEMORY(*buffer);
+
+	*entries_read = info->count;
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static WERROR convert_samr_dispinfo_to_NET_DISPLAY_MACHINE(TALLOC_CTX *mem_ctx,
+							   struct samr_DispInfoFull *info,
+							   uint32_t *entries_read,
+							   void **buffer)
+{
+	struct NET_DISPLAY_MACHINE *machine = NULL;
+	int i;
+
+	machine = TALLOC_ZERO_ARRAY(mem_ctx,
+				    struct NET_DISPLAY_MACHINE,
+				    info->count);
+	W_ERROR_HAVE_NO_MEMORY(machine);
+
+	for (i = 0; i < info->count; i++) {
+		machine[i].usri2_name = talloc_strdup(mem_ctx,
+			info->entries[i].account_name.string);
+		machine[i].usri2_comment = talloc_strdup(mem_ctx,
+			info->entries[i].description.string);
+		machine[i].usri2_flags =
+			info->entries[i].acct_flags;
+		machine[i].usri2_user_id =
+			info->entries[i].rid;
+		machine[i].usri2_next_index =
+			info->entries[i].idx;
+
+		if (!machine[i].usri2_name) {
+			return WERR_NOMEM;
+		}
+	}
+
+	*buffer = talloc_memdup(mem_ctx, machine,
+		sizeof(struct NET_DISPLAY_MACHINE) * info->count);
+	W_ERROR_HAVE_NO_MEMORY(*buffer);
+
+	*entries_read = info->count;
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static WERROR convert_samr_dispinfo_to_NET_DISPLAY_GROUP(TALLOC_CTX *mem_ctx,
+							 struct samr_DispInfoFullGroups *info,
+							 uint32_t *entries_read,
+							 void **buffer)
+{
+	struct NET_DISPLAY_GROUP *group = NULL;
+	int i;
+
+	group = TALLOC_ZERO_ARRAY(mem_ctx,
+				  struct NET_DISPLAY_GROUP,
+				  info->count);
+	W_ERROR_HAVE_NO_MEMORY(group);
+
+	for (i = 0; i < info->count; i++) {
+		group[i].grpi3_name = talloc_strdup(mem_ctx,
+			info->entries[i].account_name.string);
+		group[i].grpi3_comment = talloc_strdup(mem_ctx,
+			info->entries[i].description.string);
+		group[i].grpi3_group_id =
+			info->entries[i].rid;
+		group[i].grpi3_attributes =
+			info->entries[i].acct_flags;
+		group[i].grpi3_next_index =
+			info->entries[i].idx;
+
+		if (!group[i].grpi3_name) {
+			return WERR_NOMEM;
+		}
+	}
+
+	*buffer = talloc_memdup(mem_ctx, group,
+		sizeof(struct NET_DISPLAY_GROUP) * info->count);
+	W_ERROR_HAVE_NO_MEMORY(*buffer);
+
+	*entries_read = info->count;
+
+	return WERR_OK;
+
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR convert_samr_dispinfo_to_NET_DISPLAY(TALLOC_CTX *mem_ctx,
+					    union samr_DispInfo *info,
+					    uint32_t level,
+					    uint32_t *entries_read,
+					    void **buffer)
+{
+	switch (level) {
+		case 1:
+			return convert_samr_dispinfo_to_NET_DISPLAY_USER(mem_ctx,
+									 &info->info1,
+									 entries_read,
+									 buffer);
+		case 2:
+			return convert_samr_dispinfo_to_NET_DISPLAY_MACHINE(mem_ctx,
+									    &info->info2,
+									    entries_read,
+									    buffer);
+		case 3:
+			return convert_samr_dispinfo_to_NET_DISPLAY_GROUP(mem_ctx,
+									  &info->info3,
+									  entries_read,
+									  buffer);
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
 
 WERROR NetQueryDisplayInformation_r(struct libnetapi_ctx *ctx,
 				    struct NetQueryDisplayInformation *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	struct policy_handle connect_handle;
+	struct dom_sid2 *domain_sid = NULL;
+	struct policy_handle domain_handle;
+	union samr_DispInfo info;
+	struct samr_SamArray *sam = NULL;
+	uint32_t num_entries = 0;
+	int i;
+	const char *domain_name = NULL;
+	bool domain_found = true;
+	uint32_t dom_resume_handle = 0;
+	struct lsa_String lsa_domain_name;
+
+	uint32_t total_size = 0;
+	uint32_t returned_size = 0;
+
+	NTSTATUS status;
+	WERROR werr;
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(domain_handle);
+
+	switch (r->in.level) {
+		case 1:
+		case 2:
+		case 3:
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	status = rpccli_try_samr_connects(pipe_cli, ctx,
+					  SAMR_ACCESS_OPEN_DOMAIN |
+					  SAMR_ACCESS_ENUM_DOMAINS,
+					  &connect_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_EnumDomains(pipe_cli, ctx,
+					 &connect_handle,
+					 &dom_resume_handle,
+					 &sam,
+					 0xffffffff,
+					 &num_entries);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	for (i=0; i<num_entries; i++) {
+
+		domain_name = sam->entries[i].name.string;
+
+		if (strequal(domain_name, builtin_domain_name())) {
+			continue;
+		}
+
+		domain_found = true;
+		break;
+	}
+
+	if (!domain_found) {
+		werr = WERR_NO_SUCH_DOMAIN;
+		goto done;
+	}
+
+	init_lsa_String(&lsa_domain_name, domain_name);
+
+	status = rpccli_samr_LookupDomain(pipe_cli, ctx,
+					  &connect_handle,
+					  &lsa_domain_name,
+					  &domain_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_OpenDomain(pipe_cli,
+					ctx,
+					&connect_handle,
+					SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS |
+					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					domain_sid,
+					&domain_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_QueryDisplayInfo2(pipe_cli,
+					       ctx,
+					       &domain_handle,
+					       r->in.level,
+					       r->in.idx,
+					       r->in.entries_requested,
+					       r->in.prefmaxlen,
+					       &total_size,
+					       &returned_size,
+					       &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	werr = convert_samr_dispinfo_to_NET_DISPLAY(ctx, &info,
+						    r->in.level,
+						    r->out.entries_read,
+						    r->out.buffer);
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	if (is_valid_policy_hnd(&domain_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
+	}
+	if (is_valid_policy_hnd(&connect_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+	}
+
+	return werr;
+
 }
 
 /****************************************************************
