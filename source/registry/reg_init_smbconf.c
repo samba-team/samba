@@ -67,10 +67,9 @@ done:
  * for use in places where not the whole registry is needed,
  * e.g. utils/net_conf.c and loadparm.c
  */
-bool registry_init_smbconf(const char *keyname)
+WERROR registry_init_smbconf(const char *keyname)
 {
 	WERROR werr;
-	bool ret = false;
 
 	DEBUG(10, ("registry_init_smbconf called\n"));
 
@@ -99,9 +98,7 @@ bool registry_init_smbconf(const char *keyname)
 		goto done;
 	}
 
-	ret = true;
-
 done:
 	regdb_close();
-	return ret;
+	return werr;
 }
