@@ -30,7 +30,8 @@ bool registry_init_basic(void)
 
 	werr = regdb_init();
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(1, ("Can't open the registry: %s\n", dos_errstr(werr)));
+		DEBUG(1, ("Failed to initialize the registry: %s\n",
+			  dos_errstr(werr)));
 		return false;
 	}
 	regdb_close();

@@ -70,16 +70,15 @@ bool init_registry( void )
 
 	werr = regdb_init();
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0, ("init_registry: failed to initialize the registry "
-			  "(%s)\n", dos_errstr(werr)));
+		DEBUG(0, ("Failed to initialize the registry: %s\n",
+			  dos_errstr(werr)));
 		goto fail;
 	}
 
 	/* setup the necessary keys and values */
 
 	if ( !init_registry_data() ) {
-		DEBUG(0, ("regdb_init: Failed to initialize data in "
-			  "registry!\n"));
+		DEBUG(0, ("Failed to initialize data in registry!\n"));
 		goto fail;
 	}
 
