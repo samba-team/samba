@@ -67,12 +67,18 @@ done:
  * for use in places where not the whole registry is needed,
  * e.g. utils/net_conf.c and loadparm.c
  */
-bool registry_init_smbconf(void)
+bool registry_init_smbconf(const char *keyname)
 {
 	bool ret = false;
 	int saved_errno = 0;
 
 	DEBUG(10, ("registry_init_smbconf called\n"));
+
+	if (keyname == NULL) {
+		DEBUG(10, ("registry_init_smbconf: defaulting to key '%s'\n",
+			   KEY_SMBCONF));
+		keyname = KEY_SMBCONF;
+	}
 
 	if (!regdb_init()) {
 		saved_errno = errno;
@@ -83,13 +89,13 @@ bool registry_init_smbconf(void)
 		DEBUGADD(1, (".\n"));
 		goto done;
 	}
-	if (!init_registry_key(KEY_SMBCONF)) {
+	if (!init_registry_key(keyname)) {
 		DEBUG(1, ("Could not initialize registry key '%s'\n",
-			  KEY_SMBCONF));
+			  keyname));
 		goto done;
 	}
 	reghook_cache_init();
-	if (!reghook_cache_add(KEY_SMBCONF, &smbconf_reg_ops)) {
+	if (!reghook_cache_add(keyname, &smbconf_reg_ops)) {
 		DEBUG(1, ("Error adding smbconf reghooks to reghook cache.\n"));
 		goto done;
 	}
