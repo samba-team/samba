@@ -6486,7 +6486,7 @@ bool service_ok(int iService)
 /*
  * process_registry_globals
  */
-static bool process_registry_globals(bool (*pfunc)(const char *, const char *, void *))
+static bool process_registry_globals(void)
 {
 	WERROR werr;
 	char **param_names;
@@ -6518,13 +6518,14 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *, v
 	}
 
 	for (count = 0; count < num_params; count++) {
-		ret = pfunc(param_names[count], param_values[count], NULL);
+		ret = do_parameter(param_names[count], param_values[count],
+				   NULL);
 		if (ret != true) {
 			goto done;
 		}
 	}
 
-	ret = pfunc("registry shares", "yes", NULL);
+	ret = do_parameter("registry shares", "yes", NULL);
 	/* store the csn */
 	smbconf_changed(conf_ctx, &conf_last_csn, NULL, NULL);
 
@@ -8711,7 +8712,7 @@ bool lp_load(const char *pszFname,
 				       add_ipc, initialize_globals);
 		}
 	} else if (lp_config_backend_is_registry()) {
-		bRetval = process_registry_globals(do_parameter);
+		bRetval = process_registry_globals();
 	} else {
 		DEBUG(0, ("Illegal config  backend given: %d\n",
 			  lp_config_backend()));
