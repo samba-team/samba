@@ -49,6 +49,31 @@ struct USER_INFO_1 {
 	const char * usri1_script_path;
 };
 
+struct NET_DISPLAY_USER {
+	const char * usri1_name;
+	const char * usri1_comment;
+	uint32_t usri1_flags;
+	const char * usri1_full_name;
+	uint32_t usri1_user_id;
+	uint32_t usri1_next_index;
+};
+
+struct NET_DISPLAY_MACHINE {
+	const char * usri2_name;
+	const char * usri2_comment;
+	uint32_t usri2_flags;
+	uint32_t usri2_user_id;
+	uint32_t usri2_next_index;
+};
+
+struct NET_DISPLAY_GROUP {
+	const char * grpi3_name;
+	const char * grpi3_comment;
+	uint32_t grpi3_group_id;
+	uint32_t grpi3_attributes;
+	uint32_t grpi3_next_index;
+};
+
 
 struct NetJoinDomain {
 	struct {
@@ -229,6 +254,24 @@ struct NetUserEnum {
 		uint32_t *entries_read;/* [ref] */
 		uint32_t *total_entries;/* [ref] */
 		uint32_t *resume_handle;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetQueryDisplayInformation {
+	struct {
+		const char * server_name;/* [unique] */
+		uint32_t level;
+		uint32_t idx;
+		uint32_t entries_requested;
+		uint32_t prefmaxlen;
+	} in;
+
+	struct {
+		uint32_t *entries_read;/* [ref] */
+		void **buffer;/* [noprint,ref] */
 		enum NET_API_STATUS result;
 	} out;
 

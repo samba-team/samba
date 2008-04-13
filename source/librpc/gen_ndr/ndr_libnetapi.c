@@ -192,6 +192,135 @@ _PUBLIC_ void ndr_print_USER_INFO_1(struct ndr_print *ndr, const char *name, con
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_NET_DISPLAY_USER(struct ndr_push *ndr, int ndr_flags, const struct NET_DISPLAY_USER *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1_name));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1_comment));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri1_flags));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri1_full_name));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri1_user_id));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri1_next_index));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_NET_DISPLAY_USER(struct ndr_pull *ndr, int ndr_flags, struct NET_DISPLAY_USER *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1_name));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1_comment));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri1_flags));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri1_full_name));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri1_user_id));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri1_next_index));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_NET_DISPLAY_USER(struct ndr_print *ndr, const char *name, const struct NET_DISPLAY_USER *r)
+{
+	ndr_print_struct(ndr, name, "NET_DISPLAY_USER");
+	ndr->depth++;
+	ndr_print_string(ndr, "usri1_name", r->usri1_name);
+	ndr_print_string(ndr, "usri1_comment", r->usri1_comment);
+	ndr_print_uint32(ndr, "usri1_flags", r->usri1_flags);
+	ndr_print_string(ndr, "usri1_full_name", r->usri1_full_name);
+	ndr_print_uint32(ndr, "usri1_user_id", r->usri1_user_id);
+	ndr_print_uint32(ndr, "usri1_next_index", r->usri1_next_index);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_NET_DISPLAY_MACHINE(struct ndr_push *ndr, int ndr_flags, const struct NET_DISPLAY_MACHINE *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri2_name));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->usri2_comment));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri2_flags));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri2_user_id));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->usri2_next_index));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_NET_DISPLAY_MACHINE(struct ndr_pull *ndr, int ndr_flags, struct NET_DISPLAY_MACHINE *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri2_name));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri2_comment));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri2_flags));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri2_user_id));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri2_next_index));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_NET_DISPLAY_MACHINE(struct ndr_print *ndr, const char *name, const struct NET_DISPLAY_MACHINE *r)
+{
+	ndr_print_struct(ndr, name, "NET_DISPLAY_MACHINE");
+	ndr->depth++;
+	ndr_print_string(ndr, "usri2_name", r->usri2_name);
+	ndr_print_string(ndr, "usri2_comment", r->usri2_comment);
+	ndr_print_uint32(ndr, "usri2_flags", r->usri2_flags);
+	ndr_print_uint32(ndr, "usri2_user_id", r->usri2_user_id);
+	ndr_print_uint32(ndr, "usri2_next_index", r->usri2_next_index);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_NET_DISPLAY_GROUP(struct ndr_push *ndr, int ndr_flags, const struct NET_DISPLAY_GROUP *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->grpi3_name));
+		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->grpi3_comment));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->grpi3_group_id));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->grpi3_attributes));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->grpi3_next_index));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_NET_DISPLAY_GROUP(struct ndr_pull *ndr, int ndr_flags, struct NET_DISPLAY_GROUP *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->grpi3_name));
+		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->grpi3_comment));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->grpi3_group_id));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->grpi3_attributes));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->grpi3_next_index));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_NET_DISPLAY_GROUP(struct ndr_print *ndr, const char *name, const struct NET_DISPLAY_GROUP *r)
+{
+	ndr_print_struct(ndr, name, "NET_DISPLAY_GROUP");
+	ndr->depth++;
+	ndr_print_string(ndr, "grpi3_name", r->grpi3_name);
+	ndr_print_string(ndr, "grpi3_comment", r->grpi3_comment);
+	ndr_print_uint32(ndr, "grpi3_group_id", r->grpi3_group_id);
+	ndr_print_uint32(ndr, "grpi3_attributes", r->grpi3_attributes);
+	ndr_print_uint32(ndr, "grpi3_next_index", r->grpi3_next_index);
+	ndr->depth--;
+}
+
 _PUBLIC_ void ndr_print_NetJoinDomain(struct ndr_print *ndr, const char *name, int flags, const struct NetJoinDomain *r)
 {
 	ndr_print_struct(ndr, name, "NetJoinDomain");
@@ -708,6 +837,41 @@ _PUBLIC_ void ndr_print_NetUserEnum(struct ndr_print *ndr, const char *name, int
 		ndr_print_ptr(ndr, "resume_handle", r->out.resume_handle);
 		ndr->depth++;
 		ndr_print_uint32(ndr, "resume_handle", *r->out.resume_handle);
+		ndr->depth--;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+_PUBLIC_ void ndr_print_NetQueryDisplayInformation(struct ndr_print *ndr, const char *name, int flags, const struct NetQueryDisplayInformation *r)
+{
+	ndr_print_struct(ndr, name, "NetQueryDisplayInformation");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "NetQueryDisplayInformation");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "server_name", r->in.server_name);
+		ndr->depth++;
+		if (r->in.server_name) {
+			ndr_print_string(ndr, "server_name", r->in.server_name);
+		}
+		ndr->depth--;
+		ndr_print_uint32(ndr, "level", r->in.level);
+		ndr_print_uint32(ndr, "idx", r->in.idx);
+		ndr_print_uint32(ndr, "entries_requested", r->in.entries_requested);
+		ndr_print_uint32(ndr, "prefmaxlen", r->in.prefmaxlen);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "NetQueryDisplayInformation");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "entries_read", r->out.entries_read);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "entries_read", *r->out.entries_read);
 		ndr->depth--;
 		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
 		ndr->depth--;
