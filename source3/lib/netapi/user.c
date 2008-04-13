@@ -320,12 +320,8 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 	goto done;
 
  failed:
-	status = rpccli_samr_DeleteUser(pipe_cli, ctx,
-					&user_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
+	rpccli_samr_DeleteUser(pipe_cli, ctx,
+			       &user_handle);
 
  done:
 	if (!cli) {
