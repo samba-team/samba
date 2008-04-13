@@ -62,11 +62,10 @@ REGISTRY_HOOK reg_hooks[] = {
  with all available backens.
  ***********************************************************************/
 
-bool init_registry( void )
+WERROR init_registry(void)
 {
 	int i;
 	WERROR werr;
-	bool ret = false;
 
 	werr = registry_init_common();
 	if (!W_ERROR_IS_OK(werr)) {
@@ -99,10 +98,8 @@ bool init_registry( void )
 	eventlog_init_keys();
 	perfcount_init_keys();
 
-	ret = true;
-
 fail:
 	/* close and let each smbd open up as necessary */
 	regdb_close();
-	return ret;
+	return werr;
 }
