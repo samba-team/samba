@@ -847,7 +847,8 @@ LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ1) $(LIBNET_OBJ) \
 
 LIBSMBCONF_OBJ = lib/smbconf/smbconf.o lib/smbconf/smbconf_util.o \
 		 lib/smbconf/smbconf_reg.o \
-		 lib/smbconf/smbconf_txt_simple.o
+		 lib/smbconf/smbconf_txt_simple.o \
+		 lib/smbconf/smbconf_init.o
 
 SMBCONFTORT_OBJ0 = lib/smbconf/testsuite.o
 
