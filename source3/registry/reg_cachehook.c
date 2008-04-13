@@ -58,7 +58,7 @@ bool reghook_cache_init( void )
 {
 	if (cache_tree == NULL) {
 		cache_tree = pathtree_init(&regdb_ops, NULL);
-		if (cache_tree !=0) {
+		if (cache_tree != NULL) {
 			DEBUG(10, ("reghook_cache_init: new tree with default "
 				   "ops %p for key [%s]\n", (void *)&regdb_ops,
 				   KEY_TREE_ROOT));
