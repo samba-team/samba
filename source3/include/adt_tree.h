@@ -47,7 +47,7 @@ SORTED_TREE*  pathtree_init( void *data_p, int (cmp_fn)(void*, void*) );
 
 /* add a new path component */
 
-bool          pathtree_add( SORTED_TREE *tree, const char *path, void *data_p );
+WERROR        pathtree_add( SORTED_TREE *tree, const char *path, void *data_p );
 
 /* search path */
 
