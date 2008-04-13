@@ -6,9 +6,9 @@
 
     <rewriteURI
 			uriStartString="http://www.samba.org/samba/DTD/"
-			rewritePrefix="file://@DIR@/build/DTD/"/>
+			rewritePrefix="file://@BUILDDIR@/build/DTD/"/>
 
     <rewriteURI
 			uriStartString="http://www.gnu.org/licenses/"
-			rewritePrefix="file://@DIR@/Samba3-ByExample/"/>
+			rewritePrefix="file://@BUILDDIR@/Samba3-ByExample/"/>
 </catalog>
