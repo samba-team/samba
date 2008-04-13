@@ -1,9 +1,11 @@
 /* 
    Unix SMB/CIFS implementation.
    
-   Extract the user/system database from a remote SamSync server
+   Extract the user/system database from a remote server
 
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
+   Copyright (C) Stefan Metzmacher	2004-2006
+   Copyright (C) Brad Henry 2005
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2008
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,378 +24,686 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
-#include "libcli/auth/libcli_auth.h"
-#include "auth/gensec/gensec.h"
-#include "auth/credentials/credentials.h"
-#include "auth/gensec/schannel_proto.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
-#include "librpc/gen_ndr/ndr_netlogon_c.h"
+#include "lib/events/events.h"
+#include "dsdb/samdb/samdb.h"
+#include "lib/util/dlinklist.h"
+#include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
+#include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/ndr_drsuapi.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "librpc/gen_ndr/ndr_misc.h"
+#include "system/time.h"
+#include "lib/ldb_wrap.h"
+#include "auth/auth.h"
 #include "param/param.h"
+#include "param/provision.h"
 
+/* 
+List of tasks vampire.py must perform:
+- Domain Join
+ - but don't write the secrets.ldb
+ - results for this should be enough to handle the provision
+- if vampire method is samsync 
+ - Provision using these results 
+  - do we still want to support this NT4 technology?
+- Start samsync with libnet code
+ - provision in the callback 
+- Write out the secrets database, using the code from libnet_Join
 
-/**
- * Decrypt and extract the user's passwords.  
- * 
- * The writes decrypted (no longer 'RID encrypted' or arcfour encrypted) passwords back into the structure
- */
-static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
-			 struct creds_CredentialState *creds,
-			 bool rid_crypt,
-			 enum netr_SamDatabaseID database,
-			 struct netr_DELTA_ENUM *delta,
-			 char **error_string) 
-{
-
-	uint32_t rid = delta->delta_id_union.rid;
-	struct netr_DELTA_USER *user = delta->delta_union.user;
-	struct samr_Password lm_hash;
-	struct samr_Password nt_hash;
-	const char *username = user->account_name.string;
-
-	if (rid_crypt) {
-		if (user->lm_password_present) {
-			sam_rid_crypt(rid, user->lmpassword.hash, lm_hash.hash, 0);
-			user->lmpassword = lm_hash;
-		}
-		
-		if (user->nt_password_present) {
-			sam_rid_crypt(rid, user->ntpassword.hash, nt_hash.hash, 0);
-			user->ntpassword = nt_hash;
-		}
-	}
-
-	if (user->user_private_info.SensitiveData) {
-		DATA_BLOB data;
-		struct netr_USER_KEYS keys;
-		enum ndr_err_code ndr_err;
-		data.data = user->user_private_info.SensitiveData;
-		data.length = user->user_private_info.DataLength;
-		creds_arcfour_crypt(creds, data.data, data.length);
-		user->user_private_info.SensitiveData = data.data;
-		user->user_private_info.DataLength = data.length;
-
-		ndr_err = ndr_pull_struct_blob(&data, mem_ctx, NULL, &keys, (ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			*error_string = talloc_asprintf(mem_ctx, "Failed to parse Sensitive Data for %s:", username);
-			dump_data(10, data.data, data.length);
-			return ndr_map_error2ntstatus(ndr_err);
-		}
-
-		if (keys.keys.keys2.lmpassword.length == 16) {
-			if (rid_crypt) {
-				sam_rid_crypt(rid, keys.keys.keys2.lmpassword.pwd.hash, lm_hash.hash, 0);
-				user->lmpassword = lm_hash;
-			} else {
-				user->lmpassword = keys.keys.keys2.lmpassword.pwd;
-			}
-			user->lm_password_present = true;
-		}
-		if (keys.keys.keys2.ntpassword.length == 16) {
-			if (rid_crypt) {
-				sam_rid_crypt(rid, keys.keys.keys2.ntpassword.pwd.hash, nt_hash.hash, 0);
-				user->ntpassword = nt_hash;
-			} else {
-				user->ntpassword = keys.keys.keys2.ntpassword.pwd;
-			}
-			user->nt_password_present = true;
-		}
-		/* TODO: rid decrypt history fields */
-	}
-	return NT_STATUS_OK;
-}
-
-/**
- * Decrypt and extract the secrets
- * 
- * The writes decrypted secrets back into the structure
- */
-static NTSTATUS fix_secret(TALLOC_CTX *mem_ctx,
-			   struct creds_CredentialState *creds,
-			   enum netr_SamDatabaseID database,
-			   struct netr_DELTA_ENUM *delta,
-			   char **error_string) 
-{
-	struct netr_DELTA_SECRET *secret = delta->delta_union.secret;
-	creds_arcfour_crypt(creds, secret->current_cipher.cipher_data, 
-			    secret->current_cipher.maxlen); 
-
-	creds_arcfour_crypt(creds, secret->old_cipher.cipher_data, 
-			    secret->old_cipher.maxlen); 
-
-	return NT_STATUS_OK;
-}
-
-/**
- * Fix up the delta, dealing with encryption issues so that the final
- * callback need only do the printing or application logic
- */
-
-static NTSTATUS fix_delta(TALLOC_CTX *mem_ctx, 		
-			  struct creds_CredentialState *creds,
-			  bool rid_crypt,
-			  enum netr_SamDatabaseID database,
-			  struct netr_DELTA_ENUM *delta,
-			  char **error_string)
-{
-	NTSTATUS nt_status = NT_STATUS_OK;
-	*error_string = NULL;
-	switch (delta->delta_type) {
-	case NETR_DELTA_USER:
-	{
-		nt_status = fix_user(mem_ctx, 
-				     creds,
-				     rid_crypt,
-				     database,
-				     delta,
-				     error_string);
-		break;
-	}
-	case NETR_DELTA_SECRET:
-	{
-		nt_status = fix_secret(mem_ctx, 
-				       creds,
-				       database,
-				       delta,
-				       error_string);
-		break;
-	}
-	default:
-		break;
-	}
-	return nt_status;
-}
-
-NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_SamSync *r)
-{
-	NTSTATUS nt_status, dbsync_nt_status;
-	TALLOC_CTX *samsync_ctx, *loop_ctx, *delta_ctx;
-	struct creds_CredentialState *creds;
-	struct netr_DatabaseSync dbsync;
+*/
+struct vampire_state {
+	const char *netbios_name;
+	struct libnet_JoinDomain *join;
 	struct cli_credentials *machine_account;
-	struct dcerpc_pipe *p;
-	struct libnet_context *machine_net_ctx;
-	struct libnet_RpcConnect *c;
-	struct libnet_SamSync_state *state;
-	const enum netr_SamDatabaseID database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS}; 
-	int i;
+	struct dsdb_schema *self_made_schema;
+	const struct dsdb_schema *schema;
 
-	samsync_ctx = talloc_named(mem_ctx, 0, "SamSync top context");
+	struct ldb_context *ldb;
 
-	if (!r->in.machine_account) { 
-		machine_account = cli_credentials_init(samsync_ctx);
-		if (!machine_account) {
-			talloc_free(samsync_ctx);
+	struct {
+		uint32_t object_count;
+		struct drsuapi_DsReplicaObjectListItemEx *first_object;
+		struct drsuapi_DsReplicaObjectListItemEx *last_object;
+	} schema_part;
+
+	const char *targetdir;
+
+	struct loadparm_context *lp_ctx;
+};
+
+static NTSTATUS vampire_prepare_db(void *private_data,
+					      const struct libnet_BecomeDC_PrepareDB *p)
+{
+	struct vampire_state *s = talloc_get_type(private_data, struct vampire_state);
+	struct provision_settings settings;
+	struct provision_result result;
+	NTSTATUS status;
+
+	settings.site_name = p->dest_dsa->site_name;
+	settings.root_dn_str = p->forest->root_dn_str;
+	settings.domain_dn_str = p->domain->dn_str;
+	settings.config_dn_str = p->forest->config_dn_str;
+	settings.schema_dn_str = p->forest->schema_dn_str;
+	settings.netbios_name = p->dest_dsa->netbios_name;
+	settings.realm = s->join->out.realm;
+	settings.domain = s->join->out.domain_name;
+	settings.server_dn_str = p->dest_dsa->server_dn_str;
+	settings.machine_password = generate_random_str(s, 16);
+	settings.targetdir = s->targetdir;
+
+	status = provision_bare(s, s->lp_ctx, &settings, &result);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	s->ldb = result.samdb;
+	s->lp_ctx = result.lp_ctx;
+
+        return NT_STATUS_OK;
+
+
+}
+
+static NTSTATUS vampire_check_options(void *private_data,
+					     const struct libnet_BecomeDC_CheckOptions *o)
+{
+	struct vampire_state *s = talloc_get_type(private_data, struct vampire_state);
+
+	DEBUG(0,("Become DC [%s] of Domain[%s]/[%s]\n",
+		s->netbios_name,
+		o->domain->netbios_name, o->domain->dns_name));
+
+	DEBUG(0,("Promotion Partner is Server[%s] from Site[%s]\n",
+		o->source_dsa->dns_name, o->source_dsa->site_name));
+
+	DEBUG(0,("Options:crossRef behavior_version[%u]\n"
+		       "\tschema object_version[%u]\n"
+		       "\tdomain behavior_version[%u]\n"
+		       "\tdomain w2k3_update_revision[%u]\n", 
+		o->forest->crossref_behavior_version,
+		o->forest->schema_object_version,
+		o->domain->behavior_version,
+		o->domain->w2k3_update_revision));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS vampire_apply_schema(struct vampire_state *s,
+				  const struct libnet_BecomeDC_StoreChunk *c)
+{
+	WERROR status;
+	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
+	uint32_t total_object_count;
+	uint32_t object_count;
+	struct drsuapi_DsReplicaObjectListItemEx *first_object;
+	struct drsuapi_DsReplicaObjectListItemEx *cur;
+	uint32_t linked_attributes_count;
+	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
+	const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector;
+	struct dsdb_extended_replicated_objects *objs;
+	struct repsFromTo1 *s_dsa;
+	char *tmp_dns_name;
+	struct ldb_message *msg;
+	struct ldb_val prefixMap_val;
+	struct ldb_message_element *prefixMap_el;
+	struct ldb_val schemaInfo_val;
+	uint32_t i;
+	int ret;
+	bool ok;
+
+	DEBUG(0,("Analyze and apply schema objects\n"));
+
+	s_dsa			= talloc_zero(s, struct repsFromTo1);
+	NT_STATUS_HAVE_NO_MEMORY(s_dsa);
+	s_dsa->other_info	= talloc(s_dsa, struct repsFromTo1OtherInfo);
+	NT_STATUS_HAVE_NO_MEMORY(s_dsa->other_info);
+
+	switch (c->ctr_level) {
+	case 1:
+		mapping_ctr			= &c->ctr1->mapping_ctr;
+		total_object_count		= c->ctr1->total_object_count;
+		object_count			= s->schema_part.object_count;
+		first_object			= s->schema_part.first_object;
+		linked_attributes_count		= 0;
+		linked_attributes		= NULL;
+		s_dsa->highwatermark		= c->ctr1->new_highwatermark;
+		s_dsa->source_dsa_obj_guid	= c->ctr1->source_dsa_guid;
+		s_dsa->source_dsa_invocation_id = c->ctr1->source_dsa_invocation_id;
+		uptodateness_vector		= NULL; /* TODO: map it */
+		break;
+	case 6:
+		mapping_ctr			= &c->ctr6->mapping_ctr;
+		total_object_count		= c->ctr6->total_object_count;
+		object_count			= s->schema_part.object_count;
+		first_object			= s->schema_part.first_object;
+		linked_attributes_count		= 0; /* TODO: ! */
+		linked_attributes		= NULL; /* TODO: ! */;
+		s_dsa->highwatermark		= c->ctr6->new_highwatermark;
+		s_dsa->source_dsa_obj_guid	= c->ctr6->source_dsa_guid;
+		s_dsa->source_dsa_invocation_id = c->ctr6->source_dsa_invocation_id;
+		uptodateness_vector		= c->ctr6->uptodateness_vector;
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	s_dsa->replica_flags		= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS;
+	memset(s_dsa->schedule, 0x11, sizeof(s_dsa->schedule));
+
+	tmp_dns_name	= GUID_string(s_dsa->other_info, &s_dsa->source_dsa_obj_guid);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
+	tmp_dns_name	= talloc_asprintf_append_buffer(tmp_dns_name, "._msdcs.%s", c->forest->dns_name);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
+	s_dsa->other_info->dns_name = tmp_dns_name;
+
+	for (cur = first_object; cur; cur = cur->next_object) {
+		bool is_attr = false;
+		bool is_class = false;
+
+		for (i=0; i < cur->object.attribute_ctr.num_attributes; i++) {
+			struct drsuapi_DsReplicaAttribute *a;
+			uint32_t j;
+			const char *oid = NULL;
+
+			a = &cur->object.attribute_ctr.attributes[i];
+			status = dsdb_map_int2oid(s->self_made_schema, a->attid, s, &oid);
+			if (!W_ERROR_IS_OK(status)) {
+				return werror_to_ntstatus(status);
+			}
+
+			switch (a->attid) {
+			case DRSUAPI_ATTRIBUTE_objectClass:
+				for (j=0; j < a->value_ctr.num_values; j++) {
+					uint32_t val = 0xFFFFFFFF;
+
+					if (a->value_ctr.values[i].blob
+					    && a->value_ctr.values[i].blob->length == 4) {
+						val = IVAL(a->value_ctr.values[i].blob->data,0);
+					}
+
+					if (val == DRSUAPI_OBJECTCLASS_attributeSchema) {
+						is_attr = true;
+					}
+					if (val == DRSUAPI_OBJECTCLASS_classSchema) {
+						is_class = true;
+					}
+				}
+
+				break;
+			default:
+				break;
+			}
+		}
+
+		if (is_attr) {
+			struct dsdb_attribute *sa;
+
+			sa = talloc_zero(s->self_made_schema, struct dsdb_attribute);
+			NT_STATUS_HAVE_NO_MEMORY(sa);
+
+			status = dsdb_attribute_from_drsuapi(s->self_made_schema, &cur->object, s, sa);
+			if (!W_ERROR_IS_OK(status)) {
+				return werror_to_ntstatus(status);
+			}
+
+			DLIST_ADD_END(s->self_made_schema->attributes, sa, struct dsdb_attribute *);
+		}
+
+		if (is_class) {
+			struct dsdb_class *sc;
+
+			sc = talloc_zero(s->self_made_schema, struct dsdb_class);
+			NT_STATUS_HAVE_NO_MEMORY(sc);
+
+			status = dsdb_class_from_drsuapi(s->self_made_schema, &cur->object, s, sc);
+			if (!W_ERROR_IS_OK(status)) {
+				return werror_to_ntstatus(status);
+			}
+
+			DLIST_ADD_END(s->self_made_schema->classes, sc, struct dsdb_class *);
+		}
+	}
+
+	/* attach the schema to the ldb */
+	ret = dsdb_set_schema(s->ldb, s->self_made_schema);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_FOOBAR;
+	}
+	/* we don't want to access the self made schema anymore */
+	s->self_made_schema = NULL;
+	s->schema = dsdb_get_schema(s->ldb);
+
+	status = dsdb_extended_replicated_objects_commit(s->ldb,
+							 c->partition->nc.dn,
+							 mapping_ctr,
+							 object_count,
+							 first_object,
+							 linked_attributes_count,
+							 linked_attributes,
+							 s_dsa,
+							 uptodateness_vector,
+							 c->gensec_skey,
+							 s, &objs);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
+		return werror_to_ntstatus(status);
+	}
+
+	if (lp_parm_bool(s->lp_ctx, NULL, "become dc", "dump objects", false)) {
+		for (i=0; i < objs->num_objects; i++) {
+			struct ldb_ldif ldif;
+			fprintf(stdout, "#\n");
+			ldif.changetype = LDB_CHANGETYPE_NONE;
+			ldif.msg = objs->objects[i].msg;
+			ldb_ldif_write_file(s->ldb, stdout, &ldif);
+			NDR_PRINT_DEBUG(replPropertyMetaDataBlob, objs->objects[i].meta_data);
+		}
+	}
+
+	msg = ldb_msg_new(objs);
+	NT_STATUS_HAVE_NO_MEMORY(msg);
+	msg->dn = objs->partition_dn;
+
+	status = dsdb_get_oid_mappings_ldb(s->schema, msg, &prefixMap_val, &schemaInfo_val);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("Failed dsdb_get_oid_mappings_ldb(%s)\n", win_errstr(status)));
+		return werror_to_ntstatus(status);
+	}
+
+	/* we only add prefixMap here, because schemaInfo is a replicated attribute and already applied */
+	ret = ldb_msg_add_value(msg, "prefixMap", &prefixMap_val, &prefixMap_el);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_FOOBAR;
+	}
+	prefixMap_el->flags = LDB_FLAG_MOD_REPLACE;
+
+	ret = ldb_modify(s->ldb, msg);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to add prefixMap and schemaInfo %s\n", ldb_strerror(ret)));
+		return NT_STATUS_FOOBAR;
+	}
+
+	talloc_free(s_dsa);
+	talloc_free(objs);
+
+	/* reopen the ldb */
+	talloc_free(s->ldb); /* this also free's the s->schema, because dsdb_set_schema() steals it */
+	s->schema = NULL;
+
+	DEBUG(0,("Reopen the SAM LDB with system credentials and a already stored schema\n"));
+	s->ldb = samdb_connect(s, s->lp_ctx, 
+			       system_session(s, s->lp_ctx));
+	if (!s->ldb) {
+		DEBUG(0,("Failed to reopen sam.ldb\n"));
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	/* We must set these up to ensure the replMetaData is written correctly, before our NTDS Settings entry is replicated */
+	ok = samdb_set_ntds_invocation_id(s->ldb, &c->dest_dsa->invocation_id);
+	if (!ok) {
+		DEBUG(0,("Failed to set cached ntds invocationId\n"));
+		return NT_STATUS_FOOBAR;
+	}
+	ok = samdb_set_ntds_objectGUID(s->ldb, &c->dest_dsa->ntds_guid);
+	if (!ok) {
+		DEBUG(0,("Failed to set cached ntds objectGUID\n"));
+		return NT_STATUS_FOOBAR;
+	}
+
+	s->schema = dsdb_get_schema(s->ldb);
+	if (!s->schema) {
+		DEBUG(0,("Failed to get loaded dsdb_schema\n"));
+		return NT_STATUS_FOOBAR;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS vampire_schema_chunk(void *private_data,
+					    const struct libnet_BecomeDC_StoreChunk *c)
+{
+	struct vampire_state *s = talloc_get_type(private_data, struct vampire_state);
+	WERROR status;
+	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
+	uint32_t total_object_count;
+	uint32_t object_count;
+	struct drsuapi_DsReplicaObjectListItemEx *first_object;
+	struct drsuapi_DsReplicaObjectListItemEx *cur;
+
+	switch (c->ctr_level) {
+	case 1:
+		mapping_ctr		= &c->ctr1->mapping_ctr;
+		total_object_count	= c->ctr1->total_object_count;
+		object_count		= c->ctr1->object_count;
+		first_object		= c->ctr1->first_object;
+		break;
+	case 6:
+		mapping_ctr		= &c->ctr6->mapping_ctr;
+		total_object_count	= c->ctr6->total_object_count;
+		object_count		= c->ctr6->object_count;
+		first_object		= c->ctr6->first_object;
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (total_object_count) {
+		DEBUG(0,("Schema-DN[%s] objects[%u/%u]\n",
+			c->partition->nc.dn, object_count, total_object_count));
+	} else {
+		DEBUG(0,("Schema-DN[%s] objects[%u]\n",
+		c->partition->nc.dn, object_count));
+	}
+
+	if (!s->schema) {
+		s->self_made_schema = dsdb_new_schema(s, lp_iconv_convenience(s->lp_ctx));
+
+		NT_STATUS_HAVE_NO_MEMORY(s->self_made_schema);
+
+		status = dsdb_load_oid_mappings_drsuapi(s->self_made_schema, mapping_ctr);
+		if (!W_ERROR_IS_OK(status)) {
+			return werror_to_ntstatus(status);
+		}
+
+		s->schema = s->self_made_schema;
+	} else {
+		status = dsdb_verify_oid_mappings_drsuapi(s->schema, mapping_ctr);
+		if (!W_ERROR_IS_OK(status)) {
+			return werror_to_ntstatus(status);
+		}
+	}
+
+	if (!s->schema_part.first_object) {
+		s->schema_part.object_count = object_count;
+		s->schema_part.first_object = talloc_steal(s, first_object);
+	} else {
+		s->schema_part.object_count		+= object_count;
+		s->schema_part.last_object->next_object = talloc_steal(s->schema_part.last_object,
+								       first_object);
+	}
+	for (cur = first_object; cur->next_object; cur = cur->next_object) {}
+	s->schema_part.last_object = cur;
+
+	if (c->partition->highwatermark.tmp_highest_usn == c->partition->highwatermark.highest_usn) {
+		return vampire_apply_schema(s, c);
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS vampire_store_chunk(void *private_data,
+					   const struct libnet_BecomeDC_StoreChunk *c)
+{
+	struct vampire_state *s = talloc_get_type(private_data, struct vampire_state);
+	WERROR status;
+	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
+	uint32_t total_object_count;
+	uint32_t object_count;
+	struct drsuapi_DsReplicaObjectListItemEx *first_object;
+	uint32_t linked_attributes_count;
+	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
+	const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector;
+	struct dsdb_extended_replicated_objects *objs;
+	struct repsFromTo1 *s_dsa;
+	char *tmp_dns_name;
+	uint32_t i;
+
+	s_dsa			= talloc_zero(s, struct repsFromTo1);
+	NT_STATUS_HAVE_NO_MEMORY(s_dsa);
+	s_dsa->other_info	= talloc(s_dsa, struct repsFromTo1OtherInfo);
+	NT_STATUS_HAVE_NO_MEMORY(s_dsa->other_info);
+
+	switch (c->ctr_level) {
+	case 1:
+		mapping_ctr			= &c->ctr1->mapping_ctr;
+		total_object_count		= c->ctr1->total_object_count;
+		object_count			= c->ctr1->object_count;
+		first_object			= c->ctr1->first_object;
+		linked_attributes_count		= 0;
+		linked_attributes		= NULL;
+		s_dsa->highwatermark		= c->ctr1->new_highwatermark;
+		s_dsa->source_dsa_obj_guid	= c->ctr1->source_dsa_guid;
+		s_dsa->source_dsa_invocation_id = c->ctr1->source_dsa_invocation_id;
+		uptodateness_vector		= NULL; /* TODO: map it */
+		break;
+	case 6:
+		mapping_ctr			= &c->ctr6->mapping_ctr;
+		total_object_count		= c->ctr6->total_object_count;
+		object_count			= c->ctr6->object_count;
+		first_object			= c->ctr6->first_object;
+		linked_attributes_count		= c->ctr6->linked_attributes_count;
+		linked_attributes		= c->ctr6->linked_attributes;
+		s_dsa->highwatermark		= c->ctr6->new_highwatermark;
+		s_dsa->source_dsa_obj_guid	= c->ctr6->source_dsa_guid;
+		s_dsa->source_dsa_invocation_id = c->ctr6->source_dsa_invocation_id;
+		uptodateness_vector		= c->ctr6->uptodateness_vector;
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	s_dsa->replica_flags		= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
+					| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS;
+	memset(s_dsa->schedule, 0x11, sizeof(s_dsa->schedule));
+
+	tmp_dns_name	= GUID_string(s_dsa->other_info, &s_dsa->source_dsa_obj_guid);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
+	tmp_dns_name	= talloc_asprintf_append_buffer(tmp_dns_name, "._msdcs.%s", c->forest->dns_name);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
+	s_dsa->other_info->dns_name = tmp_dns_name;
+
+	if (total_object_count) {
+		DEBUG(0,("Partition[%s] objects[%u/%u]\n",
+			c->partition->nc.dn, object_count, total_object_count));
+	} else {
+		DEBUG(0,("Partition[%s] objects[%u]\n",
+		c->partition->nc.dn, object_count));
+	}
+
+	status = dsdb_extended_replicated_objects_commit(s->ldb,
+							 c->partition->nc.dn,
+							 mapping_ctr,
+							 object_count,
+							 first_object,
+							 linked_attributes_count,
+							 linked_attributes,
+							 s_dsa,
+							 uptodateness_vector,
+							 c->gensec_skey,
+							 s, &objs);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
+		return werror_to_ntstatus(status);
+	}
+
+	if (lp_parm_bool(s->lp_ctx, NULL, "become dc", "dump objects", false)) {
+		for (i=0; i < objs->num_objects; i++) {
+			struct ldb_ldif ldif;
+			fprintf(stdout, "#\n");
+			ldif.changetype = LDB_CHANGETYPE_NONE;
+			ldif.msg = objs->objects[i].msg;
+			ldb_ldif_write_file(s->ldb, stdout, &ldif);
+			NDR_PRINT_DEBUG(replPropertyMetaDataBlob, objs->objects[i].meta_data);
+		}
+	}
+	talloc_free(s_dsa);
+	talloc_free(objs);
+
+	for (i=0; i < linked_attributes_count; i++) {
+		const struct dsdb_attribute *sa;
+
+		if (!linked_attributes[i].identifier) {
+			return NT_STATUS_FOOBAR;		
+		}
+
+		if (!linked_attributes[i].value.blob) {
+			return NT_STATUS_FOOBAR;		
+		}
+
+		sa = dsdb_attribute_by_attributeID_id(s->schema,
+						      linked_attributes[i].attid);
+		if (!sa) {
+			return NT_STATUS_FOOBAR;
+		}
+
+		if (lp_parm_bool(s->lp_ctx, NULL, "become dc", "dump objects", false)) {
+			DEBUG(0,("# %s\n", sa->lDAPDisplayName));
+			NDR_PRINT_DEBUG(drsuapi_DsReplicaLinkedAttribute, &linked_attributes[i]);
+			dump_data(0,
+				linked_attributes[i].value.blob->data,
+				linked_attributes[i].value.blob->length);
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, 
+			struct libnet_Vampire *r)
+{
+	struct libnet_JoinDomain *join;
+	struct libnet_set_join_secrets *set_secrets;
+	struct libnet_BecomeDC b;
+	struct libnet_UnbecomeDC u;
+	struct vampire_state *s;
+	struct ldb_message *msg;
+	int ldb_ret;
+	uint32_t i;
+	NTSTATUS status;
+
+	const char *account_name;
+	const char *netbios_name;
+	
+	r->out.error_string = NULL;
+
+	s = talloc_zero(mem_ctx , struct vampire_state);
+	if (!s) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	join = talloc_zero(s, struct libnet_JoinDomain);
+	if (!join) {
+		return NT_STATUS_NO_MEMORY;
+	}
+		
+	if (r->in.netbios_name != NULL) {
+		netbios_name = r->in.netbios_name;
+	} else {
+		netbios_name = talloc_reference(join, lp_netbios_name(ctx->lp_ctx));
+		if (!netbios_name) {
+			r->out.error_string = NULL;
+			talloc_free(s);
 			return NT_STATUS_NO_MEMORY;
 		}
-		cli_credentials_set_conf(machine_account, ctx->lp_ctx);
-		nt_status = cli_credentials_set_machine_account(machine_account, ctx->lp_ctx);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			r->out.error_string = talloc_strdup(mem_ctx, "Could not obtain machine account password - are we joined to the domain?");
-			talloc_free(samsync_ctx);
-			return nt_status;
-		}
-	} else {
-		machine_account = r->in.machine_account;
 	}
 
-	/* We cannot do this unless we are a BDC.  Check, before we get odd errors later */
-	if (cli_credentials_get_secure_channel_type(machine_account) != SEC_CHAN_BDC) {
-		r->out.error_string
-			= talloc_asprintf(mem_ctx, 
-					  "Our join to domain %s is not as a BDC (%d), please rejoin as a BDC",
-					  cli_credentials_get_domain(machine_account),
-					  cli_credentials_get_secure_channel_type(machine_account));
-		talloc_free(samsync_ctx);
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-	}
-
-	c = talloc(samsync_ctx, struct libnet_RpcConnect);
-	if (!c) {
+	account_name = talloc_asprintf(join, "%s$", netbios_name);
+	if (!account_name) {
 		r->out.error_string = NULL;
-		talloc_free(samsync_ctx);
+		talloc_free(s);
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	join->in.domain_name	= r->in.domain_name;
+	join->in.account_name	= account_name;
+	join->in.netbios_name	= netbios_name;
+	join->in.level		= LIBNET_JOINDOMAIN_AUTOMATIC;
+	join->in.acct_type	= ACB_WSTRUST;
+	join->in.recreate_account = false;
+	status = libnet_JoinDomain(ctx, join, join);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_steal(mem_ctx, join->out.error_string);
+		talloc_free(s);
+		return status;
+	}
+	
+	s->join = join;
+
+	s->targetdir = r->in.targetdir;
+
+	ZERO_STRUCT(b);
+	b.in.domain_dns_name		= join->out.realm;
+	b.in.domain_netbios_name	= join->out.domain_name;
+	b.in.domain_sid			= join->out.domain_sid;
+	b.in.source_dsa_address		= join->out.samr_binding->host;
+	b.in.dest_dsa_netbios_name	= netbios_name;
+
+	b.in.callbacks.private_data	= s;
+	b.in.callbacks.check_options	= vampire_check_options;
+	b.in.callbacks.prepare_db       = vampire_prepare_db;
+	b.in.callbacks.schema_chunk	= vampire_schema_chunk;
+	b.in.callbacks.config_chunk	= vampire_store_chunk;
+	b.in.callbacks.domain_chunk	= vampire_store_chunk;
+
+	status = libnet_BecomeDC(ctx, s, &b);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("libnet_BecomeDC() failed - %s\n", nt_errstr(status));
+		talloc_free(s);
+		return status;
+	}
+
+	msg = ldb_msg_new(s);
+	if (!msg) {
+		printf("ldb_msg_new() failed\n");
+		talloc_free(s);
+		return NT_STATUS_NO_MEMORY;
+	}
+	msg->dn = ldb_dn_new(msg, s->ldb, "@ROOTDSE");
+	if (!msg->dn) {
+		printf("ldb_msg_new(@ROOTDSE) failed\n");
+		talloc_free(s);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	c->level              = LIBNET_RPC_CONNECT_DC_INFO;
-	if (r->in.binding_string) {
-		c->in.binding = r->in.binding_string;
-		c->in.name    = NULL;
-	} else {
-		c->in.binding = NULL;
-		c->in.name    = cli_credentials_get_domain(machine_account);
-	}
-	
-	/* prepare connect to the NETLOGON pipe of PDC */
-	c->in.dcerpc_iface      = &ndr_table_netlogon;
-
-	/* We must do this as the machine, not as any command-line
-	 * user.  So we override the credentials in the
-	 * libnet_context */
-	machine_net_ctx = talloc(samsync_ctx, struct libnet_context);
-	if (!machine_net_ctx) {
-		r->out.error_string = NULL;
-		talloc_free(samsync_ctx);
+	ldb_ret = ldb_msg_add_string(msg, "isSynchronized", "TRUE");
+	if (ldb_ret != LDB_SUCCESS) {
+		printf("ldb_msg_add_string(msg, isSynchronized, TRUE) failed: %d\n", ldb_ret);
+		talloc_free(s);
 		return NT_STATUS_NO_MEMORY;
 	}
-	*machine_net_ctx = *ctx;
-	machine_net_ctx->cred = machine_account;
 
-	/* connect to the NETLOGON pipe of the PDC */
-	nt_status = libnet_RpcConnect(machine_net_ctx, samsync_ctx, c);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		if (r->in.binding_string) {
-			r->out.error_string = talloc_asprintf(mem_ctx,
-							      "Connection to NETLOGON pipe of DC %s failed: %s",
-							      r->in.binding_string, c->out.error_string);
-		} else {
-			r->out.error_string = talloc_asprintf(mem_ctx,
-							      "Connection to NETLOGON pipe of DC for %s failed: %s",
-							      c->in.name, c->out.error_string);
-		}
-		talloc_free(samsync_ctx);
-		return nt_status;
+	for (i=0; i < msg->num_elements; i++) {
+		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
 	}
 
-	/* This makes a new pipe, on which we can do schannel.  We
-	 * should do this in the RpcConnect code, but the abstaction
-	 * layers do not suit yet */
-
-	nt_status = dcerpc_secondary_connection(c->out.dcerpc_pipe, &p,
-						c->out.dcerpc_pipe->binding);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						      "Secondary connection to NETLOGON pipe of DC %s failed: %s",
-						      dcerpc_server_name(p), nt_errstr(nt_status));
-		talloc_free(samsync_ctx);
-		return nt_status;
+	printf("mark ROOTDSE with isSynchronized=TRUE\n");
+	ldb_ret = ldb_modify(s->ldb, msg);
+	if (ldb_ret != LDB_SUCCESS) {
+		printf("ldb_modify() failed: %d\n", ldb_ret);
+		talloc_free(s);
+		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
-	nt_status = dcerpc_bind_auth_schannel(samsync_ctx, p, &ndr_table_netlogon,
-					      machine_account, ctx->lp_ctx, DCERPC_AUTH_LEVEL_PRIVACY);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						      "SCHANNEL authentication to NETLOGON pipe of DC %s failed: %s",
-						      dcerpc_server_name(p), nt_errstr(nt_status));
-		talloc_free(samsync_ctx);
-		return nt_status;
+	set_secrets = talloc_zero(s, struct libnet_set_join_secrets);
+	if (!set_secrets) {
+		return NT_STATUS_NO_MEMORY;
 	}
-
-	state = talloc(samsync_ctx, struct libnet_SamSync_state);
-	if (!state) {
-		r->out.error_string = NULL;
-		talloc_free(samsync_ctx);
-		return nt_status;
-	}		
-
-	state->domain_name     = c->out.domain_name;
-	state->domain_sid      = c->out.domain_sid;
-	state->realm           = c->out.realm;
-	state->domain_guid     = c->out.guid;
-	state->machine_net_ctx = machine_net_ctx;
-	state->netlogon_pipe   = p;
-
-	/* initialise the callback layer.  It may wish to contact the
-	 * server with ldap, now we know the name */
+		
+	set_secrets->in.domain_name = join->out.domain_name;
+	set_secrets->in.realm = join->out.realm;
+	set_secrets->in.account_name = account_name;
+	set_secrets->in.netbios_name = netbios_name;
+	set_secrets->in.join_type = SEC_CHAN_BDC;
+	set_secrets->in.join_password = join->out.join_password;
+	set_secrets->in.kvno = join->out.kvno;
+	set_secrets->in.domain_sid = join->out.domain_sid;
 	
-	if (r->in.init_fn) {
-		char *error_string;
-		nt_status = r->in.init_fn(samsync_ctx, 
-					  r->in.fn_ctx,
-					  state, 
-					  &error_string); 
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			r->out.error_string = talloc_steal(mem_ctx, error_string);
-			talloc_free(samsync_ctx);
-			return nt_status;
-		}
+	status = libnet_set_join_secrets(ctx, set_secrets, set_secrets);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_steal(mem_ctx, set_secrets->out.error_string);
+		talloc_free(s);
+		return status;
 	}
 
-	/* get NETLOGON credentials */
+	r->out.domain_name = talloc_steal(r, join->out.domain_name);
+	r->out.domain_sid = talloc_steal(r, join->out.domain_sid);
+	talloc_free(s);
+	
+	return NT_STATUS_OK;
 
-	nt_status = dcerpc_schannel_creds(p->conn->security_state.generic_state, samsync_ctx, &creds);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		r->out.error_string = talloc_strdup(mem_ctx, "Could not obtain NETLOGON credentials from DCERPC/GENSEC layer");
-		talloc_free(samsync_ctx);
-		return nt_status;
-	}
-
-	/* Setup details for the synchronisation */
-	dbsync.in.logon_server = talloc_asprintf(samsync_ctx, "\\\\%s", dcerpc_server_name(p));
-	dbsync.in.computername = cli_credentials_get_workstation(machine_account);
-	dbsync.in.preferredmaximumlength = (uint32_t)-1;
-	ZERO_STRUCT(dbsync.in.return_authenticator);
-
-	for (i=0;i< ARRAY_SIZE(database_ids); i++) { 
-		dbsync.in.sync_context = 0;
-		dbsync.in.database_id = database_ids[i]; 
-		
-		do {
-			int d;
-			loop_ctx = talloc_named(samsync_ctx, 0, "DatabaseSync loop context");
-			creds_client_authenticator(creds, &dbsync.in.credential);
-			
-			dbsync_nt_status = dcerpc_netr_DatabaseSync(p, loop_ctx, &dbsync);
-			if (!NT_STATUS_IS_OK(dbsync_nt_status) &&
-			    !NT_STATUS_EQUAL(dbsync_nt_status, STATUS_MORE_ENTRIES)) {
-				r->out.error_string = talloc_asprintf(mem_ctx, "DatabaseSync failed - %s", nt_errstr(nt_status));
-				talloc_free(samsync_ctx);
-				return nt_status;
-			}
-			
-			if (!creds_client_check(creds, &dbsync.out.return_authenticator.cred)) {
-				r->out.error_string = talloc_strdup(mem_ctx, "Credential chaining on incoming DatabaseSync failed");
-				talloc_free(samsync_ctx);
-				return NT_STATUS_ACCESS_DENIED;
-			}
-			
-			dbsync.in.sync_context = dbsync.out.sync_context;
-			
-			/* For every single remote 'delta' entry: */
-			for (d=0; d < dbsync.out.delta_enum_array->num_deltas; d++) {
-				char *error_string = NULL;
-				delta_ctx = talloc_named(loop_ctx, 0, "DatabaseSync delta context");
-				/* 'Fix' elements, by decrypting and
-				 * de-obfuscating the data */
-				nt_status = fix_delta(delta_ctx, 
-						      creds, 
-						      r->in.rid_crypt,
-						      dbsync.in.database_id,
-						      &dbsync.out.delta_enum_array->delta_enum[d], 
-						      &error_string);
-				if (!NT_STATUS_IS_OK(nt_status)) {
-					r->out.error_string = talloc_steal(mem_ctx, error_string);
-					talloc_free(samsync_ctx);
-					return nt_status;
-				}
-
-				/* Now call the callback.  This will
-				 * do something like print the data or
-				 * write to an ldb */
-				nt_status = r->in.delta_fn(delta_ctx, 
-							   r->in.fn_ctx,
-							   dbsync.in.database_id,
-							   &dbsync.out.delta_enum_array->delta_enum[d], 
-							   &error_string);
-				if (!NT_STATUS_IS_OK(nt_status)) {
-					r->out.error_string = talloc_steal(mem_ctx, error_string);
-					talloc_free(samsync_ctx);
-					return nt_status;
-				}
-				talloc_free(delta_ctx);
-			}
-			talloc_free(loop_ctx);
-		} while (NT_STATUS_EQUAL(dbsync_nt_status, STATUS_MORE_ENTRIES));
-		
-		if (!NT_STATUS_IS_OK(dbsync_nt_status)) {
-			r->out.error_string = talloc_asprintf(mem_ctx, "libnet_SamSync_netlogon failed: unexpected inconsistancy. Should not get error %s here", nt_errstr(nt_status));
-			talloc_free(samsync_ctx);
-			return dbsync_nt_status;
-		}
-		nt_status = NT_STATUS_OK;
-	}
-	talloc_free(samsync_ctx);
-	return nt_status;
 }
-

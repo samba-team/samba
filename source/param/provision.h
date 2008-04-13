@@ -21,7 +21,6 @@
 #define _PROVISION_H_
 
 struct provision_settings {
-	const char *dns_name;
 	const char *site_name;
 	const char *root_dn_str; 
 	const char *domain_dn_str;
@@ -33,7 +32,6 @@ struct provision_settings {
 	const char *host_ip;
 	const char *realm;
 	const char *domain;
-	const struct GUID *ntds_guid;
 	const char *ntds_dn_str;
 	const char *machine_password;
 	const char *targetdir;

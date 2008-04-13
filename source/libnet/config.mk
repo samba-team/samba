@@ -1,5 +1,6 @@
 [SUBSYSTEM::LIBSAMBA-NET]
 PRIVATE_PROTO_HEADER = libnet_proto.h
+PRIVATE_DEPENDENCIES = PROVISION
 OBJ_FILES = \
 		libnet.o \
 		libnet_passwd.o \
@@ -10,6 +11,7 @@ OBJ_FILES = \
 		libnet_become_dc.o \
 		libnet_unbecome_dc.o \
 		libnet_vampire.o \
+		libnet_samsync.o \
 		libnet_samdump.o \
 		libnet_samdump_keytab.o \
 		libnet_samsync_ldb.o \

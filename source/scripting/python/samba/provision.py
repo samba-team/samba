@@ -87,6 +87,7 @@ class ProvisionNames:
         self.domain = None
         self.hostname = None
         self.sitename = None
+        self.smbconf = None
     
 class ProvisionResult:
     def __init__(self):
@@ -261,6 +262,8 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.sysvol = lp.get("path", "sysvol")
 
     paths.netlogon = lp.get("path", "netlogon")
+
+    paths.smbconf = lp.configfile()
 
     return paths
 
@@ -690,6 +693,7 @@ def setup_self_join(samdb, names,
               "CONFIGDN": names.configdn, 
               "SCHEMADN": names.schemadn,
               "DOMAINDN": names.domaindn,
+              "SERVERDN": names.serverdn,
               "INVOCATIONID": invocationid,
               "NETBIOSNAME": names.netbiosname,
               "DEFAULTSITE": names.sitename,
@@ -737,8 +741,6 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         return samdb
 
     message("Pre-loading the Samba 4 and AD schema")
-    samdb = SamDB(path, session_info=session_info, 
-                  credentials=credentials, lp=lp)
     samdb.set_domain_sid(domainsid)
     if serverrole == "domain controller":
         samdb.set_invocation_id(invocationid)
@@ -773,6 +775,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "NETBIOSNAME": names.netbiosname,
             "DEFAULTSITE": names.sitename,
             "CONFIGDN": names.configdn,
+            "SERVERDN": names.serverdn,
             "POLICYGUID": policyguid,
             "DOMAINDN": names.domaindn,
             "DOMAINGUID_MOD": domainguid_mod,
@@ -803,6 +806,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "NETBIOSNAME": names.netbiosname,
             "DEFAULTSITE": names.sitename,
             "CONFIGDN": names.configdn,
+            "SERVERDN": names.serverdn
             })
 
         message("Setting up sam.ldb Samba4 schema")
@@ -821,6 +825,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "DOMAIN": names.domain,
             "SCHEMADN": names.schemadn,
             "DOMAINDN": names.domaindn,
+            "SERVERDN": names.serverdn
             })
 
         message("Setting up display specifiers")
@@ -845,6 +850,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "NETBIOSNAME": names.netbiosname,
             "DEFAULTSITE": names.sitename,
             "CONFIGDN": names.configdn,
+            "SERVERDN": names.serverdn
             })
 
         if fill == FILL_FULL:
@@ -1004,20 +1010,25 @@ def provision(setup_dir, message, session_info,
                         ldap_backend_type=ldap_backend_type)
 
     if lp.get("server role") == "domain controller":
-       policy_path = os.path.join(paths.sysvol, names.dnsdomain, "Policies", 
-                                  "{" + policyguid + "}")
-       os.makedirs(policy_path, 0755)
-       os.makedirs(os.path.join(policy_path, "Machine"), 0755)
-       os.makedirs(os.path.join(policy_path, "User"), 0755)
-       if not os.path.isdir(paths.netlogon):
+        if paths.netlogon is None:
+            message("Existing smb.conf does not have a [netlogon] share, but you are configuring a DC.")
+            message("Please either remove %s or see the template at %s" % 
+                    ( paths.smbconf, setup_path("provision.smb.conf.dc")))
+            assert(paths.netlogon is not None)
+
+        if paths.sysvol is None:
+            message("Existing smb.conf does not have a [sysvol] share, but you are configuring a DC.")
+            message("Please either remove %s or see the template at %s" % 
+                    (paths.smbconf, setup_path("provision.smb.conf.dc")))
+            assert(paths.sysvol is not None)            
+            
+        policy_path = os.path.join(paths.sysvol, names.dnsdomain, "Policies", 
+                                   "{" + policyguid + "}")
+        os.makedirs(policy_path, 0755)
+        os.makedirs(os.path.join(policy_path, "Machine"), 0755)
+        os.makedirs(os.path.join(policy_path, "User"), 0755)
+        if not os.path.isdir(paths.netlogon):
             os.makedirs(paths.netlogon, 0755)
-       secrets_ldb = Ldb(paths.secrets, session_info=session_info, 
-                         credentials=credentials, lp=lp)
-       secretsdb_become_dc(secrets_ldb, setup_path, domain=domain, realm=names.realm,
-                           netbiosname=names.netbiosname, domainsid=domainsid, 
-                           keytab_path=paths.keytab, samdb_url=paths.samdb, 
-                           dns_keytab_path=paths.dns_keytab, dnspass=dnspass, 
-                           machinepass=machinepass, dnsdomain=names.dnsdomain)
 
     if samdb_fill == FILL_FULL:
         setup_name_mappings(samdb, idmap, str(domainsid), names.domaindn,
@@ -1029,6 +1040,14 @@ def provision(setup_dir, message, session_info,
 
         # Only make a zone file on the first DC, it should be replicated with DNS replication
         if serverrole == "domain controller":
+            secrets_ldb = Ldb(paths.secrets, session_info=session_info, 
+                              credentials=credentials, lp=lp)
+            secretsdb_become_dc(secrets_ldb, setup_path, domain=domain, realm=names.realm,
+                                netbiosname=names.netbiosname, domainsid=domainsid, 
+                                keytab_path=paths.keytab, samdb_url=paths.samdb, 
+                                dns_keytab_path=paths.dns_keytab, dnspass=dnspass, 
+                                machinepass=machinepass, dnsdomain=names.dnsdomain)
+
             samdb = SamDB(paths.samdb, session_info=session_info, 
                       credentials=credentials, lp=lp)
 
