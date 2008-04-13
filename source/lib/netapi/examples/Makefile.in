@@ -24,7 +24,8 @@ PROGS = bin/getdc@EXEEXT@ \
 	bin/getjoinableous@EXEEXT@ \
 	bin/user_add@EXEEXT@ \
 	bin/user_del@EXEEXT@ \
-	bin/user_enum@EXEEXT@
+	bin/user_enum@EXEEXT@ \
+	bin/user_dispinfo@EXEEXT@
 
 all: $(PROGS)
 
@@ -61,6 +62,7 @@ GETJOINABLEOUS_OBJ = getjoinableous/getjoinableous.o $(CMDLINE_OBJ)
 USERADD_OBJ = user/user_add.o $(CMDLINE_OBJ)
 USERDEL_OBJ = user/user_del.o $(CMDLINE_OBJ)
 USERENUM_OBJ = user/user_enum.o $(CMDLINE_OBJ)
+USERDISPINFO_OBJ = user/user_dispinfo.o $(CMDLINE_OBJ)
 
 bin/getdc@EXEEXT@: $(BINARY_PREREQS) $(GETDC_OBJ)
 	@echo Linking $@
@@ -93,6 +95,10 @@ bin/user_del@EXEEXT@: $(BINARY_PREREQS) $(USERDEL_OBJ)
 bin/user_enum@EXEEXT@: $(BINARY_PREREQS) $(USERENUM_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(USERENUM_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
+
+bin/user_dispinfo@EXEEXT@: $(BINARY_PREREQS) $(USERDISPINFO_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(USERDISPINFO_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 clean:
 	-rm -f $(PROGS)
