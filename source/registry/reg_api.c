@@ -771,7 +771,11 @@ static WERROR reg_load_tree(REGF_FILE *regfile, const char *topkeypath,
 
 	key->subkey_index = 0;
 	while ((subkey = regfio_fetch_subkey( regfile, key ))) {
-		regsubkey_ctr_addkey(subkeys, subkey->keyname);
+		result = regsubkey_ctr_addkey(subkeys, subkey->keyname);
+		if (!W_ERROR_IS_OK(result)) {
+			TALLOC_FREE(subkeys);
+			return result;
+		}
 	}
 
 	/* write this key and values out */
