@@ -77,7 +77,8 @@ bool init_registry( void )
 
 	/* setup the necessary keys and values */
 
-	if ( !init_registry_data() ) {
+	werr = init_registry_data();
+	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0, ("Failed to initialize data in registry!\n"));
 		goto fail;
 	}

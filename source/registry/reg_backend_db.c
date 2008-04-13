@@ -91,9 +91,9 @@ static struct builtin_regkey_value builtin_registry_values[] = {
  * Initialize a key in the registry:
  * create each component key of the specified path.
  */
-static bool init_registry_key_internal(const char *add_path)
+static WERROR init_registry_key_internal(const char *add_path)
 {
-	bool ret = false;
+	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *path = NULL;
 	char *base = NULL;
@@ -108,6 +108,7 @@ static bool init_registry_key_internal(const char *add_path)
 	path = talloc_strdup(frame, add_path);
 	base = talloc_strdup(frame, "");
 	if (!path || !base) {
+		werr = WERR_NOMEM;
 		goto fail;
 	}
 	p = path;
@@ -119,11 +120,13 @@ static bool init_registry_key_internal(const char *add_path)
 		if (*base) {
 			base = talloc_asprintf(frame, "%s\\", base);
 			if (!base) {
+				werr = WERR_NOMEM;
 				goto fail;
 			}
 		}
 		base = talloc_asprintf_append(base, "%s", keyname);
 		if (!base) {
+			werr = WERR_NOMEM;
 			goto fail;
 		}
 
@@ -131,11 +134,13 @@ static bool init_registry_key_internal(const char *add_path)
 
 		subkeyname = talloc_strdup(frame, "");
 		if (!subkeyname) {
+			werr = WERR_NOMEM;
 			goto fail;
 		}
 		if (*p) {
 			remaining = talloc_strdup(frame, p);
 			if (!remaining) {
+				werr = WERR_NOMEM;
 				goto fail;
 			}
 			p2 = remaining;
@@ -145,6 +150,7 @@ static bool init_registry_key_internal(const char *add_path)
 			{
 				subkeyname = talloc_strdup(frame,p2);
 				if (!subkeyname) {
+					werr = WERR_NOMEM;
 					goto fail;
 				}
 			}
@@ -160,22 +166,28 @@ static bool init_registry_key_internal(const char *add_path)
 
 		if (!(subkeys = TALLOC_ZERO_P(frame, REGSUBKEY_CTR))) {
 			DEBUG(0,("talloc() failure!\n"));
+			werr = WERR_NOMEM;
 			goto fail;
 		}
 
 		regdb_fetch_keys(base, subkeys);
 		if (*subkeyname) {
-			regsubkey_ctr_addkey( subkeys, subkeyname);
+			werr = regsubkey_ctr_addkey(subkeys, subkeyname);
+			if (!W_ERROR_IS_OK(werr)) {
+				goto fail;
+			}
 		}
 		if (!regdb_store_keys( base, subkeys)) {
+			werr = WERR_CAN_NOT_COMPLETE;
 			goto fail;
 		}
 	}
 
-	ret = true;
+	werr = WERR_OK;
+
 fail:
 	TALLOC_FREE(frame);
-	return ret;
+	return werr;
 }
 
 /**
@@ -183,38 +195,42 @@ fail:
  * create each component key of the specified path,
  * wrapped in one db transaction.
  */
-bool init_registry_key(const char *add_path)
+WERROR init_registry_key(const char *add_path)
 {
+	WERROR werr;
+
 	if (regdb->transaction_start(regdb) != 0) {
 		DEBUG(0, ("init_registry_key: transaction_start failed\n"));
-		return false;
+		return WERR_REG_IO_FAILURE;
 	}
 
-	if (!init_registry_key_internal(add_path)) {
+	werr = init_registry_key_internal(add_path);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto fail;
 	}
 
 	if (regdb->transaction_commit(regdb) != 0) {
 		DEBUG(0, ("init_registry_key: Could not commit transaction\n"));
-		return false;
+		return WERR_REG_IO_FAILURE;
 	}
 
-	return true;
+	return WERR_OK;
 
 fail:
 	if (regdb->transaction_cancel(regdb) != 0) {
 		smb_panic("init_registry_key: transaction_cancel failed\n");
 	}
 
-	return false;
+	return werr;
 }
 
 /***********************************************************************
  Open the registry data in the tdb
  ***********************************************************************/
 
-bool init_registry_data(void)
+WERROR init_registry_data(void)
 {
+	WERROR werr;
 	TALLOC_CTX *frame = NULL;
 	REGVAL_CTR *values;
 	int i;
@@ -231,13 +247,14 @@ bool init_registry_data(void)
 	if (regdb->transaction_start(regdb) != 0) {
 		DEBUG(0, ("init_registry_data: tdb_transaction_start "
 			  "failed\n"));
-		return false;
+		return WERR_REG_IO_FAILURE;
 	}
 
 	/* loop over all of the predefined paths and add each component */
 
 	for (i=0; builtin_registry_paths[i] != NULL; i++) {
-		if (!init_registry_key_internal(builtin_registry_paths[i])) {
+		werr = init_registry_key_internal(builtin_registry_paths[i]);
+		if (!W_ERROR_IS_OK(werr)) {
 			goto fail;
 		}
 	}
@@ -250,6 +267,7 @@ bool init_registry_data(void)
 
 		values = TALLOC_ZERO_P(frame, REGVAL_CTR);
 		if (values == NULL) {
+			werr = WERR_NOMEM;
 			goto fail;
 		}
 
@@ -297,10 +315,10 @@ bool init_registry_data(void)
 	if (regdb->transaction_commit(regdb) != 0) {
 		DEBUG(0, ("init_registry_data: Could not commit "
 			  "transaction\n"));
-		return false;
+		return WERR_REG_IO_FAILURE;
 	}
 
-	return true;
+	return WERR_OK;
 
  fail:
 
@@ -311,7 +329,7 @@ bool init_registry_data(void)
 			  "failed\n");
 	}
 
-	return false;
+	return werr;
 }
 
 /***********************************************************************
