@@ -36,8 +36,7 @@ WERROR smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 
 WERROR smbconf_init_txt_simple(TALLOC_CTX *mem_ctx,
 			       struct smbconf_ctx **conf_ctx,
-			       const char *path,
-			       bool verbatim);
+			       const char *path);
 
 /*
  * the smbconf API functions

@@ -183,7 +183,7 @@ static bool torture_smbconf_txt(void)
 	printf("test: text backend\n");
 
 	printf("test: init\n");
-	werr = smbconf_init_txt_simple(mem_ctx, &conf_ctx, NULL, true);
+	werr = smbconf_init_txt_simple(mem_ctx, &conf_ctx, NULL);
 	if (!W_ERROR_IS_OK(werr)) {
 		printf("failure: init failed: %s\n", dos_errstr(werr));
 		ret = false;
