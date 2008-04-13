@@ -82,17 +82,17 @@ bool registry_init_smbconf(const char *keyname)
 
 	werr = regdb_init();
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(1, ("Can't open the registry: %s\n", dos_errstr(werr)));
+		DEBUG(1, ("Failed to initialize the registry: %s\n",
+			  dos_errstr(werr)));
 		goto done;
 	}
 	if (!init_registry_key(keyname)) {
-		DEBUG(1, ("Could not initialize registry key '%s'\n",
-			  keyname));
+		DEBUG(1, ("Failed to initialize registry key '%s'\n", keyname));
 		goto done;
 	}
 	reghook_cache_init();
 	if (!reghook_cache_add(keyname, &smbconf_reg_ops)) {
-		DEBUG(1, ("Error adding smbconf reghooks to reghook cache.\n"));
+		DEBUG(1, ("Failed to add smbconf reghooks to reghook cache\n"));
 		goto done;
 	}
 
