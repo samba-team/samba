@@ -6506,7 +6506,7 @@ static bool process_registry_globals(void)
 
 	if (conf_ctx == NULL) {
 		/* first time */
-		werr = smbconf_init_reg(NULL, &conf_ctx, NULL);
+		werr = smbconf_init(NULL, &conf_ctx, "registry:");
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -6617,7 +6617,7 @@ bool lp_file_list_changed(void)
 	if (lp_config_backend_is_registry()) {
 		if (conf_ctx == NULL) {
 			WERROR werr;
-			werr = smbconf_init_reg(NULL, &conf_ctx, NULL);
+			werr = smbconf_init(NULL, &conf_ctx, "registry:");
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(0, ("error opening configuration: %s\n",
 					  dos_errstr(werr)));
