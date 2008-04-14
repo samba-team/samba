@@ -22,6 +22,32 @@
 <sect1>
 <title>The Samba (Posix) VFS layer</title>
 
+<para>While most of Samba deployments are done using POSIX-compatible operating systems,
+there is clearly more to a file system than what is required by POSIX when it comes to
+adopting semantics of NT file system. Since Samba 2.2 all file-system related operations
+go through an abstraction layer for virtual file system (VFS) that is modelled after
+both POSIX and additional functions needed to transform NTFS semantics.
+</para>
+
+<para>
+This abstraction layer now provides more features than a regular POSIX file system could
+fill in. It is not required that all of them should be implemented by your
+particular file system.  However, when those features are available, Samba would advertize them to a
+CIFS client and they might be used by an application and in case of Windows client that
+might mean a client expects even more additional functionality when it encounters
+those features. There is a practical reason to allow handling of this snowfall without modifying
+the Samba core and it is fulfilled by providing an infrastructure to dynamically load
+VFS modules at run time.
+</para>
+
+<para>Each VFS module could implement a number of VFS operations. The way it does it is
+irrelevant, only two things actually matter: whether specific implementation wants to cooperate
+with other modules' implementations or not, and whether module needs to store additional
+information that is specific to a context it is operating in. Multiple VFS modules could
+be loaded at the same time and it is even possible to load several instances of the same
+VFS module with different parameters.
+</para>
+
 <sect2>
 <title>The general interface</title>
 
