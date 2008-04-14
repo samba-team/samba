@@ -36,6 +36,8 @@
 #include "librpc/rpc/dcerpc.h"
 #include "param/param.h"
 
+#include "auth/credentials/credentials.h"
+
 static bool run_matching(struct torture_context *torture,
 						 const char *prefix, 
 						 const char *expr,
@@ -673,7 +675,7 @@ int main(int argc,char *argv[])
 		exit(1);
 	}
 
-	torture = torture_context_init(talloc_autofree_context(), ui_ops);
+	torture = torture_context_init(cli_credentials_get_event_context(cmdline_credentials), ui_ops);
 	if (basedir != NULL) {
 		if (basedir[0] != '/') {
 			fprintf(stderr, "Please specify an absolute path to --basedir\n");

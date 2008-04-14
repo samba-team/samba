@@ -22,6 +22,7 @@
 #include "libnet/libnet.h"
 #include "utils/net/net.h"
 #include "system/time.h"
+#include "lib/events/events.h"
 
 /*
  * Code for getting the remote time
@@ -42,7 +43,7 @@ int net_time(struct net_context *ctx, int argc, const char **argv)
 		return net_time_usage(ctx, argc, argv);
 	}
 
-	libnetctx = libnet_context_init(NULL, ctx->lp_ctx);
+	libnetctx = libnet_context_init(event_context_find(ctx), ctx->lp_ctx);
 	if (!libnetctx) {
 		return -1;	
 	}
@@ -53,7 +54,7 @@ int net_time(struct net_context *ctx, int argc, const char **argv)
 	r.generic.in.server_name	= server_name;
 
 	/* get the time */
-	status = libnet_RemoteTOD(libnetctx, ctx->mem_ctx, &r);
+	status = libnet_RemoteTOD(libnetctx, ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("net_time: %s\n",r.generic.out.error_string));
 		return -1;
