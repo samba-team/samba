@@ -209,6 +209,7 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 	case RAW_OPEN_SMB2:
 		io->smb2.out.file.ntvfs		= io2->generic.out.file.ntvfs;
 		io->smb2.out.oplock_level	= 0;
+		io->smb2.out.reserved		= 0;
 		io->smb2.out.create_action	= io2->generic.out.create_action;
 		io->smb2.out.create_time	= io2->generic.out.create_time;
 		io->smb2.out.access_time	= io2->generic.out.access_time;
