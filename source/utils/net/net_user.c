@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "utils/net/net.h"
 #include "libnet/libnet.h"
+#include "lib/events/events.h"
 #include "auth/credentials/credentials.h"
 
 static int net_user_add(struct net_context *ctx, int argc, const char **argv)
@@ -36,14 +37,14 @@ static int net_user_add(struct net_context *ctx, int argc, const char **argv)
 		return net_user_usage(ctx, argc, argv);
 		break;
 	case 1:
-		user_name = talloc_strdup(ctx->mem_ctx, argv[0]);
+		user_name = talloc_strdup(ctx, argv[0]);
 		break;
 	default:
 		return net_user_usage(ctx, argc, argv);
 	}
 
 	/* libnet context init and its params */
-	lnet_ctx = libnet_context_init(NULL, ctx->lp_ctx);
+	lnet_ctx = libnet_context_init(event_context_find(ctx), ctx->lp_ctx);
 	if (!lnet_ctx) return -1;
 
 	lnet_ctx->cred = ctx->credentials;
@@ -52,7 +53,7 @@ static int net_user_add(struct net_context *ctx, int argc, const char **argv)
 	r.in.user_name       = user_name;
 	r.in.domain_name     = cli_credentials_get_domain(lnet_ctx->cred);
 
-	status = libnet_CreateUser(lnet_ctx, ctx->mem_ctx, &r);
+	status = libnet_CreateUser(lnet_ctx, ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to add user account: %s\n",
 			  r.out.error_string));
@@ -76,14 +77,14 @@ static int net_user_delete(struct net_context *ctx, int argc, const char **argv)
 		return net_user_usage(ctx, argc, argv);
 		break;
 	case 1:
-		user_name = talloc_strdup(ctx->mem_ctx, argv[0]);
+		user_name = talloc_strdup(ctx, argv[0]);
 		break;
 	default:
 		return net_user_usage(ctx, argc, argv);
 	}
 
 	/* libnet context init and its params */
-	lnet_ctx = libnet_context_init(NULL, ctx->lp_ctx);
+	lnet_ctx = libnet_context_init(event_context_find(ctx), ctx->lp_ctx);
 	if (!lnet_ctx) return -1;
 
 	lnet_ctx->cred = ctx->credentials;
@@ -92,7 +93,7 @@ static int net_user_delete(struct net_context *ctx, int argc, const char **argv)
 	r.in.user_name       = user_name;
 	r.in.domain_name     = cli_credentials_get_domain(lnet_ctx->cred);
 
-	status = libnet_DeleteUser(lnet_ctx, ctx->mem_ctx, &r);
+	status = libnet_DeleteUser(lnet_ctx, ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to delete user account: %s\n",
 			  r.out.error_string));

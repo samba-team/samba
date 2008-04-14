@@ -22,11 +22,12 @@
 #include "libnet.h"
 #include "param/param.h"
 #include "libcli/security/security.h"
+#include "lib/events/events.h"
 
-struct libnet_context *py_net_ctx(PyObject *obj)
+struct libnet_context *py_net_ctx(PyObject *obj, struct event_context *ev)
 {
 	/* FIXME: Use obj */
-	return libnet_context_init(NULL, global_loadparm);
+	return libnet_context_init(ev, global_loadparm);
 }
 
 static PyObject *py_net_join(PyObject *cls, PyObject *args, PyObject *kwargs)
@@ -35,6 +36,7 @@ static PyObject *py_net_join(PyObject *cls, PyObject *args, PyObject *kwargs)
 	NTSTATUS status;
 	PyObject *result;
 	TALLOC_CTX *mem_ctx;
+	struct event_context *ev;
 	struct libnet_context *libnet_ctx;
 	const char *kwnames[] = { "domain_name", "netbios_name", "join_type", "level", NULL };
 
@@ -43,9 +45,12 @@ static PyObject *py_net_join(PyObject *cls, PyObject *args, PyObject *kwargs)
 					 &r.in.join_type, &r.in.level))
 		return NULL;
 
-	mem_ctx = talloc_new(NULL);
+	/* FIXME: we really need to get a context from the caller or we may end
+	 * up with 2 event contexts */
+	ev = event_context_init(NULL);
+	mem_ctx = talloc_new(ev);
 
-	libnet_ctx = py_net_ctx(cls);
+	libnet_ctx = py_net_ctx(cls, ev);
 
 	status = libnet_Join(libnet_ctx, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {

@@ -22,6 +22,7 @@
 #include "utils/net/net.h"
 #include "libnet/libnet.h"
 #include "system/filesys.h"
+#include "lib/events/events.h"
 #include "auth/credentials/credentials.h"
 
 /*
@@ -46,13 +47,13 @@ static int net_password_change(struct net_context *ctx, int argc, const char **a
 	if (argc > 0 && argv[0]) {
 		new_password = argv[0];
 	} else {
-		password_prompt = talloc_asprintf(ctx->mem_ctx, "Enter new password for account [%s\\%s]:", 
+		password_prompt = talloc_asprintf(ctx, "Enter new password for account [%s\\%s]:", 
 							cli_credentials_get_domain(ctx->credentials), 
 							cli_credentials_get_username(ctx->credentials));
 		new_password = getpass(password_prompt);
 	}
 
-	libnetctx = libnet_context_init(NULL, ctx->lp_ctx);
+	libnetctx = libnet_context_init(event_context_find(ctx), ctx->lp_ctx);
 	if (!libnetctx) {
 		return -1;	
 	}
@@ -66,7 +67,7 @@ static int net_password_change(struct net_context *ctx, int argc, const char **a
 	r.generic.in.newpassword	= new_password;
 
 	/* do password change */
-	status = libnet_ChangePassword(libnetctx, ctx->mem_ctx, &r);
+	status = libnet_ChangePassword(libnetctx, ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("net_password_change: %s\n",r.generic.out.error_string));
 		return -1;
@@ -101,10 +102,10 @@ static int net_password_set(struct net_context *ctx, int argc, const char **argv
 		case 0: /* no args -> fail */
 			return net_password_set_usage(ctx, argc, argv);
 		case 1: /* only DOM\\user; prompt for password */
-			tmp = talloc_strdup(ctx->mem_ctx, argv[0]);
+			tmp = talloc_strdup(ctx, argv[0]);
 			break;
 		case 2: /* DOM\\USER and password */
-			tmp = talloc_strdup(ctx->mem_ctx, argv[0]);
+			tmp = talloc_strdup(ctx, argv[0]);
 			new_password = argv[1];
 			break;
 		default: /* too mayn args -> fail */
@@ -115,19 +116,19 @@ static int net_password_set(struct net_context *ctx, int argc, const char **argv
 	if ((p = strchr_m(tmp,'\\'))) {
 		*p = 0;
 		domain_name = tmp;
-		account_name = talloc_strdup(ctx->mem_ctx, p+1);
+		account_name = talloc_strdup(ctx, p+1);
 	} else {
 		account_name = tmp;
 		domain_name = cli_credentials_get_domain(ctx->credentials);
 	}
 
 	if (!new_password) {
-		password_prompt = talloc_asprintf(ctx->mem_ctx, "Enter new password for account [%s\\%s]:", 
+		password_prompt = talloc_asprintf(ctx, "Enter new password for account [%s\\%s]:", 
 							domain_name, account_name);
 		new_password = getpass(password_prompt);
 	}
 
-	libnetctx = libnet_context_init(NULL, ctx->lp_ctx);
+	libnetctx = libnet_context_init(event_context_find(ctx), ctx->lp_ctx);
 	if (!libnetctx) {
 		return -1;	
 	}
@@ -140,7 +141,7 @@ static int net_password_set(struct net_context *ctx, int argc, const char **argv
 	r.generic.in.newpassword	= new_password;
 
 	/* do password change */
-	status = libnet_SetPassword(libnetctx, ctx->mem_ctx, &r);
+	status = libnet_SetPassword(libnetctx, ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("net_password_set: %s\n",r.generic.out.error_string));
 		return -1;

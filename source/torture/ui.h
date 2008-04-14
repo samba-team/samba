@@ -390,7 +390,7 @@ bool torture_suite_init_tcase(struct torture_suite *suite,
 			      struct torture_tcase *tcase, 
 			      const char *name);
 
-struct torture_context *torture_context_init(TALLOC_CTX *mem_ctx, 
+struct torture_context *torture_context_init(struct event_context *event_ctx, 
 					     const struct torture_ui_ops *ui_ops);
 
 #endif /* __TORTURE_UI_H__ */
