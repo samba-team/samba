@@ -18,14 +18,13 @@
 #
 
 import winreg
-from param import LoadParm
 import unittest
-from samba.tests import get_loadparm
+from samba.tests import RpcInterfaceTestCase
 
-class WinregTests(unittest.TestCase):
+class WinregTests(RpcInterfaceTestCase):
     def setUp(self):
-        lp_ctx = get_loadparm()
-        self.conn = winreg.winreg("ncalrpc:", lp_ctx)
+        lp = self.get_loadparm()
+        self.conn = winreg.winreg("ncalrpc:", lp, self.get_credentials())
 
     def get_hklm(self):
         return self.conn.OpenHKLM(None, 
