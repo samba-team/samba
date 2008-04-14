@@ -27,14 +27,14 @@
 #include "auth/credentials/credentials.h"
 #include "lib/cmdline/popt_common.h"
 
-struct torture_context *torture_context_init(TALLOC_CTX *mem_ctx, 
+struct torture_context *torture_context_init(struct event_context *event_ctx, 
 					     const struct torture_ui_ops *ui_ops)
 {
-	struct torture_context *torture = talloc_zero(mem_ctx, 
+	struct torture_context *torture = talloc_zero(event_ctx, 
 						      struct torture_context);
 	torture->ui_ops = ui_ops;
 	torture->returncode = true;
-	torture->ev = cli_credentials_get_event_context(cmdline_credentials);
+	torture->ev = event_ctx;
 
 	if (ui_ops->init)
 		ui_ops->init(torture);
