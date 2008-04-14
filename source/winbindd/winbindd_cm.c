@@ -199,9 +199,8 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 
 	/* Leave messages blocked - we will never process one. */
 
-	/* tdb needs special fork handling */
-	if (tdb_reopen_all(1) == -1) {
-		DEBUG(0,("tdb_reopen_all failed.\n"));
+	if (!reinit_after_fork(winbind_messaging_context())) {
+		DEBUG(0,("reinit_after_fork() failed\n"));
 		_exit(0);
 	}
 

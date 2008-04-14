@@ -1005,9 +1005,8 @@ static bool fork_domain_child(struct winbindd_child *child)
 	state.sock = fdpair[0];
 	close(fdpair[1]);
 
-	/* tdb needs special fork handling */
-	if (tdb_reopen_all(1) == -1) {
-		DEBUG(0,("tdb_reopen_all failed.\n"));
+	if (!reinit_after_fork(winbind_messaging_context())) {
+		DEBUG(0,("reinit_after_fork() failed\n"));
 		_exit(0);
 	}
 
