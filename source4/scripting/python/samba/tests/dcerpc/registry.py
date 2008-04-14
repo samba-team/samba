@@ -23,8 +23,8 @@ from samba.tests import RpcInterfaceTestCase
 
 class WinregTests(RpcInterfaceTestCase):
     def setUp(self):
-        self.conn = winreg.winreg("ncalrpc:", self.get_loadparm(), 
-                                  self.get_credentials())
+        lp = self.get_loadparm()
+        self.conn = winreg.winreg("ncalrpc:", lp, self.get_credentials())
 
     def get_hklm(self):
         return self.conn.OpenHKLM(None, 
