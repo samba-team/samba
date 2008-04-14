@@ -816,6 +816,11 @@ static int net_ads_leave(int argc, const char **argv)
 	struct libnet_UnjoinCtx *r = NULL;
 	WERROR werr;
 
+	if (!*lp_realm()) {
+		d_fprintf(stderr, "No realm set, are we joined ?\n");
+		return -1;
+	}
+
 	if (!(ctx = talloc_init("net_ads_leave"))) {
 		d_fprintf(stderr, "Could not initialise talloc context.\n");
 		return -1;
