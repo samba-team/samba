@@ -124,6 +124,7 @@ _PUBLIC_ NTSTATUS sys_notify_register(struct sys_notify_backend *backend)
 _PUBLIC_ NTSTATUS sys_notify_init(void)
 {
 	static bool initialized = false;
+	extern NTSTATUS sys_notify_inotify_init(void);
 
 	init_module_fn static_init[] = { STATIC_sys_notify_MODULES };
 
