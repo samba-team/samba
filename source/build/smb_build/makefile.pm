@@ -220,6 +220,10 @@ sub SharedLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
+	if (!defined($ctx->{LIBRARY_SONAME})) {
+		$ctx->{LIBRARY_SONAME} = "";
+	}
+
 	$self->output("SHARED_LIBS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n") if (defined($ctx->{SO_VERSION}));
 
 	$self->_prepare_list($ctx, "DEPEND_LIST");
