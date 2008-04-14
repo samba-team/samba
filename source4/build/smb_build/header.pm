@@ -44,6 +44,7 @@ sub _prepare_build_h($)
 			$DEFINE->{VAL} .= "\t$_, \\\n";
 		}
 
+		die("Invalid sentinel") unless ($key->{INIT_FUNCTION_SENTINEL});
 		$DEFINE->{VAL} .= "\t$key->{INIT_FUNCTION_SENTINEL} \n";
 
 		push(@defines,$DEFINE);

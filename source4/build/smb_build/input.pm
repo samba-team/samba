@@ -84,11 +84,14 @@ sub check_module($$$)
 
 	return if ($mod->{ENABLE} ne "YES");
 
+
 	if (exists($INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTION_TYPE})) {
 		$mod->{INIT_FUNCTION_TYPE} = $INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTION_TYPE};
 	} else {
 		$mod->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)";
 	}
+
+	unless (defined($mod->{INIT_FUNCTION_SENTINEL})) { $mod->{INIT_FUNCTION_SENTINEL} = "NULL"; }
 
 	if (not defined($mod->{OUTPUT_TYPE})) {
 		if (not defined($INPUT->{$mod->{SUBSYSTEM}}->{TYPE})) {
