@@ -40,6 +40,24 @@ static int global_ctdb_connection_pid;
 
 struct ctdbd_connection *messaging_ctdbd_connection(void)
 {
+	if (global_ctdb_connection_pid == 0 &&
+	    global_ctdbd_connection == NULL) {
+		struct event_context *ev;
+		struct messaging_context *msg;
+
+		ev = event_context_init(NULL);
+		if (!msg) {
+			DEBUG(0,("event_context_init failed\n"));
+		}
+
+		msg = messaging_init(NULL, procid_self(), ev);
+		if (!msg) {
+			DEBUG(0,("messaging_init failed\n"));
+		}
+
+		db_tdb2_setup_messaging(msg, false);
+	}
+
 	if (global_ctdb_connection_pid != getpid()) {
 		DEBUG(0,("messaging_ctdbd_connection():"
 			 "valid for pid[%d] but it's [%d]\n",
