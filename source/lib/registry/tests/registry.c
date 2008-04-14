@@ -428,7 +428,7 @@ static bool test_get_value(struct torture_context *tctx, void *_data)
 	torture_assert_werr_ok(tctx, error, "getting value");
 
 	torture_assert_int_equal(tctx, 4, data.length, "value length ok");
-	torture_assert(tctx, memcmp(data.data, &value, 4) == 0,
+	torture_assert_mem_equal(tctx, data.data, &value, 4,
 				    "value content ok");
 	torture_assert_int_equal(tctx, REG_DWORD, type, "value type");
 
@@ -496,7 +496,7 @@ static bool test_list_values(struct torture_context *tctx, void *_data)
 
 	torture_assert_str_equal(tctx, name, "bar", "value name");
 	torture_assert_int_equal(tctx, 4, data.length, "value length");
-	torture_assert(tctx, memcmp(data.data, &value, 4) == 0,
+	torture_assert_mem_equal(tctx, data.data, &value, 4,
 		       "value content");
 	torture_assert_int_equal(tctx, REG_DWORD, type, "value type");
 
