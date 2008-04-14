@@ -1268,6 +1268,12 @@ static int sort_gensec(struct gensec_security_ops **gs1, struct gensec_security_
 _PUBLIC_ NTSTATUS gensec_init(struct loadparm_context *lp_ctx)
 {
 	static bool initialized = false;
+	extern NTSTATUS gensec_sasl_init(void);
+	extern NTSTATUS gensec_krb5_init(void);
+	extern NTSTATUS gensec_schannel_init(void);
+	extern NTSTATUS gensec_spnego_init(void);
+	extern NTSTATUS gensec_gssapi_init(void);
+	extern NTSTATUS gensec_ntlmssp_init(void);
 
 	init_module_fn static_init[] = { STATIC_gensec_MODULES };
 	init_module_fn *shared_init;
