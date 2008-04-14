@@ -1414,13 +1414,6 @@ static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	if (r->in.modify_config && !lp_config_backend_is_registry()) {
-		libnet_join_set_error_string(mem_ctx, r,
-			"Configuration manipulation requested but not "
-			"supported by backend");
-		return WERR_NOT_SUPPORTED;
-	}
-
 	if (IS_DC) {
 		return WERR_SETUP_DOMAIN_CONTROLLER;
 	}
@@ -1564,6 +1557,57 @@ WERROR libnet_init_UnjoinCtx(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static WERROR libnet_join_check_config(TALLOC_CTX *mem_ctx,
+				       struct libnet_JoinCtx *r)
+{
+	/* check if configuration is already set correctly */
+
+	switch (r->out.domain_is_ad) {
+		case false:
+			if ((strequal(lp_workgroup(),
+				      r->out.netbios_domain_name)) &&
+			    (lp_security() == SEC_DOMAIN)) {
+				/* nothing to be done */
+				return WERR_OK;
+			}
+			break;
+		case true:
+			if ((strequal(lp_workgroup(),
+				      r->out.netbios_domain_name)) &&
+			    (strequal(lp_realm(),
+				      r->out.dns_domain_name)) &&
+			    ((lp_security() == SEC_ADS) ||
+			     (lp_security() == SEC_DOMAIN))) {
+				/* nothing to be done */
+				return WERR_OK;
+			}
+			break;
+	}
+
+	/* check if we are supposed to manipulate configuration */
+
+	if (!r->in.modify_config) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"Invalid configuration and configuration modification "
+			"was not requested");
+		return WERR_CAN_NOT_COMPLETE;
+	}
+
+	/* check if we are able to manipulate configuration */
+
+	if (!lp_config_backend_is_registry()) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"Configuration manipulation requested but not "
+			"supported by backend");
+		return WERR_NOT_SUPPORTED;
+	}
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 				struct libnet_JoinCtx *r)
 {
@@ -1624,6 +1668,11 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 			"failed to lookup DC info for domain '%s' over rpc: %s",
 			r->in.domain_name, get_friendly_nt_error_msg(status));
 		return ntstatus_to_werror(status);
+	}
+
+	werr = libnet_join_check_config(mem_ctx, r);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
 	}
 
 	status = libnet_join_joindomain_rpc(mem_ctx, r, cli);
@@ -1802,13 +1851,6 @@ static WERROR libnet_unjoin_pre_processing(TALLOC_CTX *mem_ctx,
 		libnet_unjoin_set_error_string(mem_ctx, r,
 			"Failed to parse domain name");
 		return WERR_INVALID_PARAM;
-	}
-
-	if (r->in.modify_config && !lp_config_backend_is_registry()) {
-		libnet_unjoin_set_error_string(mem_ctx, r,
-			"Configuration manipulation requested but not "
-			"supported by backend");
-		return WERR_NOT_SUPPORTED;
 	}
 
 	if (IS_DC) {
