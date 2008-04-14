@@ -263,10 +263,10 @@ sub MergedObj($$)
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->output(<< "__EOD__"
 #
-$ctx->{RESULT_MERGED_OBJ}: \$($ctx->{NAME}_OBJ_LIST)
+$ctx->{RESULT_MERGED_OBJ}: \$($ctx->{NAME}_OBJ_FILES)
 	\@echo Partially linking \$@
 	\@mkdir -p \$(\@D)
-	\$(PARTLINK) -o \$@ \$($ctx->{NAME}_OBJ_LIST)
+	\$(PARTLINK) -o \$@ \$($ctx->{NAME}_OBJ_FILES)
 
 __EOD__
 );
@@ -275,8 +275,6 @@ __EOD__
 sub StaticLibrary($$)
 {
 	my ($self,$ctx) = @_;
-
-	return unless (defined($ctx->{OBJ_FILES}));
 
 	$self->output("STATIC_LIBS += $ctx->{TARGET_STATIC_LIBRARY}\n") if ($ctx->{TYPE} eq "LIBRARY");
 
@@ -338,13 +336,13 @@ sub ProtoHeader($$)
 {
 	my ($self,$ctx) = @_;
 
-	my $priv = "\$(addprefix $ctx->{BASEDIR}/, $ctx->{PRIVATE_PROTO_HEADER})";
+	my $priv = "$ctx->{BASEDIR}/$ctx->{PRIVATE_PROTO_HEADER}";
 	$self->output("PROTO_HEADERS += $priv\n");
 
-	$self->output("$priv: $ctx->{MK_FILE} \$($ctx->{NAME}_OBJ_LIST:.o=.c) \$(srcdir)/script/mkproto.pl\n");
+	$self->output("$priv: $ctx->{MK_FILE} \$($ctx->{NAME}_OBJ_FILES:.o=.c) \$(srcdir)/script/mkproto.pl\n");
 	$self->output("\t\@echo \"Creating \$@\"\n");
 	$self->output("\t\@mkdir -p \$(\@D)\n");
-	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --srcdir=\$(srcdir) --builddir=\$(builddir) --public=/dev/null --private=\$@ \$($ctx->{NAME}_OBJ_LIST)\n\n");
+	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --srcdir=\$(srcdir) --builddir=\$(builddir) --public=/dev/null --private=\$@ \$($ctx->{NAME}_OBJ_FILES)\n\n");
 }
 
 sub write($$)
@@ -382,7 +380,6 @@ sub CFlags($$)
 
 	my $src_ne_build = ($srcdir ne $builddir) ? 1 : 0;
 
-	return unless defined ($key->{OBJ_LIST});
 	return unless defined ($key->{FINAL_CFLAGS});
 	return unless (@{$key->{FINAL_CFLAGS}} > 0);
 
@@ -396,19 +393,19 @@ sub CFlags($$)
 	my @cflags = ();
 	foreach my $flag (@sorted_cflags) {
 		if($src_ne_build) {
-				if($flag =~ m#^-I([^/].*$)#) {
-					my $dir = $1;
-					$dir =~ s#^\$\((?:src|build)dir\)/?##;
+			if($flag =~ m#^-I([^/].*$)#) {
+				my $dir = $1;
+				$dir =~ s#^\$\((?:src|build)dir\)/?##;
 				push(@cflags, "-I$builddir/$dir", "-I$srcdir/$dir");
-					next;
-				}
+				next;
+			}
 		}
 		push(@cflags, $flag);
 	}
 	
 	my $cflags = join(' ', @cflags);
 
-	$self->output("\$(patsubst %.ho,%.d,\$($key->{NAME}_OBJ_LIST:.o=.d)) \$($key->{NAME}_OBJ_LIST): CFLAGS+= $cflags\n");
+	$self->output("\$(patsubst %.ho,%.d,\$($key->{NAME}_OBJ_FILES:.o=.d)) \$($key->{NAME}_OBJ_FILES): CFLAGS+= $cflags\n");
 }
 
 1;
