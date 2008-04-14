@@ -114,11 +114,11 @@ int net_vampire(struct net_context *ctx, int argc, const char **argv)
 		case 0: /* no args -> fail */
 			return net_vampire_usage(ctx, argc, argv);
 		case 1: /* only DOMAIN */
-			tmp = talloc_strdup(ctx->mem_ctx, argv[0]);
+			tmp = talloc_strdup(ctx, argv[0]);
 			break;
 		case 2: /* domain and target dir */
-			tmp = talloc_strdup(ctx->mem_ctx, argv[0]);
-			targetdir = talloc_strdup(ctx->mem_ctx, argv[1]);
+			tmp = talloc_strdup(ctx, argv[0]);
+			targetdir = talloc_strdup(ctx, argv[1]);
 			break;
 		default: /* too many args -> fail */
 			return net_vampire_usage(ctx, argc, argv);
@@ -131,7 +131,7 @@ int net_vampire(struct net_context *ctx, int argc, const char **argv)
 		return -1;	
 	}
 	libnetctx->cred = ctx->credentials;
-	r = talloc(ctx->mem_ctx, struct libnet_Vampire);
+	r = talloc(ctx, struct libnet_Vampire);
 	if (!r) {
 		return -1;
 	}
@@ -151,7 +151,7 @@ int net_vampire(struct net_context *ctx, int argc, const char **argv)
 		talloc_free(libnetctx);
 		return -1;
 	}
-	d_printf("Vampired domain %s (%s)\n", r->out.domain_name, dom_sid_string(ctx->mem_ctx, r->out.domain_sid));
+	d_printf("Vampired domain %s (%s)\n", r->out.domain_name, dom_sid_string(ctx, r->out.domain_sid));
 
 	talloc_free(libnetctx);
 	return 0;
