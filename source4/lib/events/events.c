@@ -105,6 +105,7 @@ static void event_backend_init(void)
 	NTSTATUS s4_events_standard_init(void);
 	NTSTATUS s4_events_select_init(void);
 	NTSTATUS s4_events_epoll_init(void);
+	NTSTATUS s4_events_aio_init(void);
 	init_module_fn static_init[] = { STATIC_LIBEVENTS_MODULES };
 	if (event_backends) return;
 	run_init_functions(static_init);
