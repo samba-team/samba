@@ -297,52 +297,42 @@ static bool wbinfo_get_userdomgroups(const char *user_sid_str)
 
 /* Convert NetBIOS name to IP */
 
-static bool wbinfo_wins_byname(char *name)
+static bool wbinfo_wins_byname(const char *name)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	const char *ip = NULL;
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	/* Send request */
-
-	fstrcpy(request.data.winsreq, name);
-
-	if (winbindd_request_response(WINBINDD_WINS_BYNAME, &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	wbc_status = wbcResolveWinsByName(name, &ip);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
 	}
 
 	/* Display response */
 
-	d_printf("%s\n", response.data.winsresp);
+	d_printf("%s\n", ip);
+
+	wbcFreeMemory(ip);
 
 	return true;
 }
 
 /* Convert IP to NetBIOS name */
 
-static bool wbinfo_wins_byip(char *ip)
+static bool wbinfo_wins_byip(const char *ip)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	const char *name = NULL;
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	/* Send request */
-
-	fstrcpy(request.data.winsreq, ip);
-
-	if (winbindd_request_response(WINBINDD_WINS_BYIP, &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	wbc_status = wbcResolveWinsByIP(ip, &name);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
 	}
 
 	/* Display response */
 
-	d_printf("%s\n", response.data.winsresp);
+	d_printf("%s\n", name);
+
+	wbcFreeMemory(name);
 
 	return true;
 }
