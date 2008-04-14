@@ -401,4 +401,10 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 			     struct wbcAuthUserInfo **info,
 			     struct wbcAuthErrorInfo **error);
 
+/*
+ * Resolve functions
+ */
+wbcErr wbcResolveWinsByName(const char *name, const char **ip);
+wbcErr wbcResolveWinsByIP(const char *ip, const char **name);
+
 #endif      /* _WBCLIENT_H */
