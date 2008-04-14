@@ -57,7 +57,7 @@ To generate the docs, you need to have the following packages installed:
  * docbook-utils
  * xsltproc
  * pngtopnm and pnmtops (from the netpbm utilities)
- * dia
+ * inkscape
 
 For generating PDF (thru LaTeX):
  * db2latex (from http://db2latex.sf.net/). Make sure to get CVS version

@@ -56,9 +56,9 @@ release: manpages3 htmlman3 html pdf
 clean:
 	@echo "Cleaning up..." 
 	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
-	rm -f $(patsubst %.dia,%.png,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
-			$(patsubst %.dia,%.pdf,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
-			$(patsubst %.dia,%.eps,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia)))
+	rm -f $(patsubst %.svg,%.png,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
+			$(patsubst %.svg,%.pdf,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-svg))) \
+			$(patsubst %.svg,%.eps,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-svg)))
 	rm -f *.xml *.d *.tpt *.tex *.loc *.toc *.lof *.glo *.idx *.aux
 	rm -f *-images-html*
 	rm -f *-images-latex-* latexfigures
@@ -161,10 +161,10 @@ $(PDFDIR)/%.pdf: %.pdf
 		--stringparam txtbasedir "$(TXTDIR)/$*/" \
 		--stringparam target "$*" \
 		-o $@ xslt/generate-dependencies.xsl $<
-	@echo "$*-images-latex-dia = \$$(wildcard \$$(addsuffix .dia, \$$($*-images-latex)))" >> $@
+	@echo "$*-images-latex-svg = \$$(wildcard \$$(addsuffix .svg, \$$($*-images-latex)))" >> $@
 	@echo "$*-images-latex-eps: \$$(addsuffix .eps, \$$($*-images-latex))" >> $@
-	@echo "$*-images-latex-pdf: \$$(patsubst %.dia, %.pdf, \$$($*-images-latex-dia))" >> $@
-	@echo "$*-images-latex-png: \$$(filter-out \$$(patsubst %.dia,%.png,\$$($*-images-latex-dia)), \$$(addsuffix .png, \$$($*-images-latex)))" >> $@
+	@echo "$*-images-latex-pdf: \$$(patsubst %.svg, %.pdf, \$$($*-images-latex-svg))" >> $@
+	@echo "$*-images-latex-png: \$$(filter-out \$$(patsubst %.svg,%.png,\$$($*-images-latex-svg)), \$$(addsuffix .png, \$$($*-images-latex)))" >> $@
 
 	@echo >> $@
 	@echo "\$$(HTMLDIR)/%: $*/%" >> $@
@@ -192,6 +192,9 @@ endif
 # Adobe PDF files
 %.pdf: %.tex %.ind latexfigures %-images-latex-png %-images-latex-pdf
 	-$(PDFLATEX) $<
+	-$(PDFLATEX) $<
+	-$(PDFLATEX) $<
+	-$(PDFLATEX) $<
 	$(THUMBPDF) --quiet $*.pdf
 	-$(PDFLATEX) $<
 
@@ -203,11 +206,14 @@ $(DVIDIR)/%.dvi: %.dvi
 %.dvi: %.tex %.idx %-images-latex-eps
 	-$(LATEX) $< 
 
-%.eps: %.dia
-	$(DIA) -t eps-builtin -e $@ $<
+%.eps: %.svg
+	$(INKSCAPE) -z -f $< --export-eps=$@
 
-%.png: %.dia
-	$(DIA) -e $@ $<
+%.png: %.svg
+	$(INKSCAPE) -z -f $< --export-png=$@
+
+#%.pdf: %.svg
+#	$(INKSCAPE) -z -f $< --export-pdf=$@
 
 %.pdf: %.eps
 	$(EPSTOPDF) $<
