@@ -35,6 +35,8 @@ from samba.provision import (provision,
                              FILL_FULL, FILL_NT4SYNC,
                              FILL_DRS)
 
+# how do we make this case insensitive??
+
 parser = optparse.OptionParser("provision [options]")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
