@@ -918,27 +918,27 @@ int net_ads_testjoin(int argc, const char **argv)
   Simple configu checks before beginning the join
  ********************************************************************/
 
-static NTSTATUS check_ads_config( void )
+static WERROR check_ads_config( void )
 {
 	if (lp_server_role() != ROLE_DOMAIN_MEMBER ) {
 		d_printf("Host is not configured as a member server.\n");
-		return NT_STATUS_INVALID_DOMAIN_ROLE;
+		return WERR_INVALID_DOMAIN_ROLE;
 	}
 
 	if (strlen(global_myname()) > 15) {
 		d_printf("Our netbios name can be at most 15 chars long, "
 			 "\"%s\" is %u chars long\n", global_myname(),
 			 (unsigned int)strlen(global_myname()));
-		return NT_STATUS_NAME_TOO_LONG;
+		return WERR_INVALID_COMPUTER_NAME;
 	}
 
 	if ( lp_security() == SEC_ADS && !*lp_realm()) {
 		d_fprintf(stderr, "realm must be set in in %s for ADS "
 			"join to succeed.\n", get_dyn_CONFIGFILE());
-		return NT_STATUS_INVALID_PARAMETER;
+		return WERR_INVALID_PARAM;
 	}
 
-	return NT_STATUS_OK;
+	return WERR_OK;
 }
 
 /*******************************************************************
@@ -1096,7 +1096,6 @@ static int net_ads_join_usage(int argc, const char **argv)
 
 int net_ads_join(int argc, const char **argv)
 {
-	NTSTATUS nt_status;
 	TALLOC_CTX *ctx = NULL;
 	struct libnet_JoinCtx *r = NULL;
 	const char *domain = lp_realm();
@@ -1108,10 +1107,9 @@ int net_ads_join(int argc, const char **argv)
 	const char *os_name = NULL;
 	const char *os_version = NULL;
 
-	nt_status = check_ads_config();
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	werr = check_ads_config();
+	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Invalid configuration.  Exiting....\n");
-		werr = ntstatus_to_werror(nt_status);
 		goto fail;
 	}
 
