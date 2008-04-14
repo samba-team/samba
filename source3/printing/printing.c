@@ -1406,6 +1406,11 @@ void start_background_queue(void)
 		/* Child. */
 		DEBUG(5,("start_background_queue: background LPQ thread started\n"));
 
+		if (!reinit_after_fork(smbd_messaging_context())) {
+			DEBUG(0,("reinit_after_fork() failed\n"));
+			smb_panic("reinit_after_fork() failed");
+		}
+
 		claim_connection( NULL, "smbd lpq backend",
 			FLAG_MSG_GENERAL|FLAG_MSG_SMBD|FLAG_MSG_PRINT_GENERAL);
 
