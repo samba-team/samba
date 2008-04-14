@@ -1,3 +1,8 @@
+2008-04-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* wind.h: Make wind_stringprep match prototype in .c file. pointed
+	out by David Rosenstrauch.
+	
 2008-04-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test-normalize.c: include roken.h
