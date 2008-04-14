@@ -249,10 +249,10 @@ _PUBLIC_ WERROR reg_get_sec_desc(TALLOC_CTX *ctx,
 		return WERR_INVALID_PARAM;
 
 	/* A 'real' set function has preference */
-	if (key->context->ops->get_security == NULL)
+	if (key->context->ops->get_sec_desc == NULL)
 		return WERR_NOT_SUPPORTED;
 
-	return key->context->ops->get_security(ctx, key, secdesc);
+	return key->context->ops->get_sec_desc(ctx, key, secdesc);
 }
 
 /**
@@ -283,27 +283,14 @@ _PUBLIC_ WERROR reg_key_flush(struct registry_key *key)
 	return key->context->ops->flush_key(key);
 }
 
-_PUBLIC_ WERROR reg_get_security(TALLOC_CTX *mem_ctx,
-				 const struct registry_key *key,
-				 struct security_descriptor **security)
-{
-	if (key == NULL)
-		return WERR_INVALID_PARAM;
-
-	if (key->context->ops->get_security == NULL)
-		return WERR_NOT_SUPPORTED;
-
-	return key->context->ops->get_security(mem_ctx, key, security);
-}
-
-_PUBLIC_ WERROR reg_set_security(struct registry_key *key,
+_PUBLIC_ WERROR reg_set_sec_desc(struct registry_key *key,
 				 struct security_descriptor *security)
 {
 	if (key == NULL)
 		return WERR_INVALID_PARAM;
 
-	if (key->context->ops->set_security == NULL)
+	if (key->context->ops->set_sec_desc == NULL)
 		return WERR_NOT_SUPPORTED;
 
-	return key->context->ops->set_security(key, security);
+	return key->context->ops->set_sec_desc(key, security);
 }

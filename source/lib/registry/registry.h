@@ -184,6 +184,12 @@ WERROR hive_get_value_by_index(TALLOC_CTX *mem_ctx,
 			       struct hive_key *key, uint32_t idx,
 			       const char **name,
 			       uint32_t *type, DATA_BLOB *data);
+WERROR hive_get_sec_desc(TALLOC_CTX *mem_ctx,
+			 struct hive_key *key,
+			 struct security_descriptor **security);
+
+WERROR hive_set_sec_desc(struct hive_key *key, 
+			 const struct security_descriptor *security);
 
 WERROR hive_key_del_value(struct hive_key *key, const char *name);
 
@@ -311,11 +317,11 @@ struct registry_operations {
 			      uint32_t *type,
 			      DATA_BLOB *data);
 
-	WERROR (*get_security) (TALLOC_CTX *mem_ctx,
+	WERROR (*get_sec_desc) (TALLOC_CTX *mem_ctx,
 				const struct registry_key *key,
 				struct security_descriptor **security);
 
-	WERROR (*set_security) (struct registry_key *key,
+	WERROR (*set_sec_desc) (struct registry_key *key,
 				const struct security_descriptor *security);
 
 	WERROR (*load_key) (struct registry_key *key,
@@ -461,12 +467,8 @@ struct registry_key *reg_import_hive_key(struct registry_context *ctx,
 					 struct hive_key *hive,
 					 uint32_t predef_key,
 					 const char **elements);
-WERROR reg_get_security(TALLOC_CTX *mem_ctx,
-			const struct registry_key *key,
-			struct security_descriptor **security);
-
-WERROR reg_set_security(struct registry_key *key,
-			struct security_descriptor *security);
+WERROR reg_set_sec_desc(struct registry_key *key,
+			const struct security_descriptor *security);
 
 struct reg_diff_callbacks {
 	WERROR (*add_key) (void *callback_data, const char *key_name);
@@ -490,6 +492,9 @@ WERROR reg_dotreg_diff_save(TALLOC_CTX *ctx, const char *filename,
 			    struct smb_iconv_convenience *iconv_convenience,
 			    struct reg_diff_callbacks **callbacks,
 			    void **callback_data);
+WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename,
+			  struct reg_diff_callbacks **callbacks,
+			  void **callback_data);
 WERROR reg_generate_diff_key(struct registry_key *oldkey,
 			     struct registry_key *newkey,
 			     const char *path,

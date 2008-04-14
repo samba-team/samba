@@ -143,6 +143,24 @@ WERROR hive_get_value_by_index(TALLOC_CTX *mem_ctx,
 	return key->ops->enum_value(mem_ctx, key, idx, name, type, data);
 }
 
+WERROR hive_get_sec_desc(TALLOC_CTX *mem_ctx,
+			 struct hive_key *key, 
+			 struct security_descriptor **security)
+{
+	if (key->ops->get_sec_desc == NULL)
+		return WERR_NOT_SUPPORTED;
+
+	return key->ops->get_sec_desc(mem_ctx, key, security);
+}
+
+WERROR hive_set_sec_desc(struct hive_key *key, 
+			 const struct security_descriptor *security)
+{
+	if (key->ops->set_sec_desc == NULL)
+		return WERR_NOT_SUPPORTED;
+
+	return key->ops->set_sec_desc(key, security);
+}
 
 WERROR hive_key_del_value(struct hive_key *key, const char *name)
 {

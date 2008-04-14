@@ -387,11 +387,11 @@ static bool test_security(struct torture_context *tctx, void *_data)
 					 SEC_ACE_FLAG_OBJECT_INHERIT,
 					 NULL);
 
-	error = reg_set_security(subkey, osd);
-	torture_assert_werr_ok(tctx, error, "setting security");
+	error = reg_set_sec_desc(subkey, osd);
+	torture_assert_werr_ok(tctx, error, "setting security descriptor");
 
-	error = reg_get_security(tctx, subkey, &nsd);
-	torture_assert_werr_ok (tctx, error, "setting security");
+	error = reg_get_sec_desc(tctx, subkey, &nsd);
+	torture_assert_werr_ok (tctx, error, "getting security descriptor");
 
 	torture_assert(tctx, security_descriptor_equal(osd, nsd),
 		       "security descriptor changed!");

@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/winreg.h"
 #include "system/filesys.h"
 #include "param/param.h"
+#include "libcli/security/security.h"
 
 static bool test_del_nonexistant_key(struct torture_context *tctx,
 				     const void *test_data)
@@ -297,6 +298,57 @@ static bool test_list_values(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_hive_security(struct torture_context *tctx, const void *_data)
+{
+	struct hive_key *subkey = NULL;
+        const struct hive_key *root = _data;
+	WERROR error;
+	struct security_descriptor *osd, *nsd;
+	
+	osd = security_descriptor_dacl_create(tctx,
+					 0,
+					 NULL, NULL,
+					 SID_NT_AUTHENTICATED_USERS,
+					 SEC_ACE_TYPE_ACCESS_ALLOWED,
+					 SEC_GENERIC_ALL,
+					 SEC_ACE_FLAG_OBJECT_INHERIT,
+					 NULL);
+
+
+	error = hive_key_add_name(tctx, root, "SecurityKey", NULL,
+				  osd, &subkey);
+	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
+
+	error = hive_get_sec_desc(tctx, subkey, &nsd);
+	torture_assert_werr_ok (tctx, error, "getting security descriptor");
+
+	torture_assert(tctx, security_descriptor_equal(osd, nsd),
+		       "security descriptor changed!");
+
+	/* Create a fresh security descriptor */	
+	talloc_free(osd);
+	osd = security_descriptor_dacl_create(tctx,
+					 0,
+					 NULL, NULL,
+					 SID_NT_AUTHENTICATED_USERS,
+					 SEC_ACE_TYPE_ACCESS_ALLOWED,
+					 SEC_GENERIC_ALL,
+					 SEC_ACE_FLAG_OBJECT_INHERIT,
+					 NULL);
+
+	error = hive_set_sec_desc(subkey, osd);
+	torture_assert_werr_ok(tctx, error, "setting security descriptor");
+	
+	printf("The second one is done.\n");
+	error = hive_get_sec_desc(tctx, subkey, &nsd);
+	torture_assert_werr_ok (tctx, error, "getting security descriptor");
+	
+	torture_assert(tctx, security_descriptor_equal(osd, nsd),
+		       "security descriptor changed!");
+
+	return true;
+}
+
 static void tcase_add_tests(struct torture_tcase *tcase)
 {
 	torture_tcase_add_simple_test_const(tcase, "del_nonexistant_key",
@@ -324,6 +376,8 @@ static void tcase_add_tests(struct torture_tcase *tcase)
 						test_del_key);
 	torture_tcase_add_simple_test_const(tcase, "del_value",
 						test_del_value);
+	torture_tcase_add_simple_test_const(tcase, "check hive security",
+						test_hive_security);
 }
 
 static bool hive_setup_dir(struct torture_context *tctx, void **data)
@@ -381,7 +435,7 @@ static bool hive_setup_regf(struct torture_context *tctx, void **data)
 	char *dirname;
 	NTSTATUS status;
 
-	status = torture_temp_dir(tctx, "hive-dir", &dirname);
+	status = torture_temp_dir(tctx, "hive-regf", &dirname);
 	if (!NT_STATUS_IS_OK(status))
 		return false;
 
