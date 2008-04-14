@@ -7,39 +7,6 @@
 
 package output;
 use strict;
-use smb_build::config;
-
-sub add_dir_str($$)
-{
-	my ($dir,$file) = @_;
-	my $dirsep = "/";
-
-	$dir =~ s/^\.$//g;
-	$dir =~ s/^\.\///g;
-
-	$dirsep = "" if ($dir eq "");
-
-	my $ret = $file;
-	if (substr($ret, 0, 1) ne "\$") {
-		$ret = "$dir$dirsep$file";
-		$ret =~ s/([^\/\.]+)\/\.\.\///g;
-		$ret =~ s/([^\/\.]+)\/\.\.\///g;
-	}
-
-	return $ret;
-}
-
-sub add_dir_array($$)
-{
-	my ($dir,$files) = @_;
-	my @ret = ();
-
-	foreach (@{$files}) {
-		push (@ret, add_dir_str($dir, $_));
-	}
-
-	return @ret;
-}
 
 sub generate_shared_library($)
 {
@@ -80,10 +47,8 @@ sub generate_shared_library($)
 
 	$lib->{LIBRARY_DEBUGNAME} = $lib->{LIBRARY_REALNAME};
 
-	if (defined($lib->{VERSION}) and $config::config{SONAMEFLAG} ne "#") {
-		$lib->{LIBRARY_SONAME} = "$lib->{LIBRARY_REALNAME}.\$($lib->{NAME}_SOVERSION)";
-		$lib->{LIBRARY_REALNAME} = "$lib->{LIBRARY_REALNAME}.\$($lib->{NAME}_VERSION)";
-	} 
+	$lib->{LIBRARY_SONAME} = "\$(if \$($lib->{NAME}_SOVERSION),$lib->{LIBRARY_REALNAME}.\$($lib->{NAME}_SOVERSION),$lib->{LIBRARY_REALNAME})";
+	$lib->{LIBRARY_REALNAME} = "\$(if \$($lib->{NAME}_VERSION),$lib->{LIBRARY_REALNAME}.\$($lib->{NAME}_VERSION),$lib->{LIBRARY_REALNAME})";
 	
 	$lib->{RESULT_SHARED_LIBRARY} = "$lib->{SHAREDDIR}/$lib->{LIBRARY_REALNAME}";
 	$lib->{OUTPUT_SHARED_LIBRARY} = "-l$link_name";
@@ -97,11 +62,9 @@ sub generate_merged_obj($)
 	my $link_name = $lib->{NAME};
 	$link_name =~ s/^LIB//;
 
-	if (defined($lib->{OBJ_FILES})) {
-		$lib->{MERGED_OBJNAME} = lc($link_name).".o";
-		$lib->{RESULT_MERGED_OBJ} = $lib->{OUTPUT_MERGED_OBJ} = "bin/mergedobj/$lib->{MERGED_OBJNAME}";
-		$lib->{TARGET_MERGED_OBJ} = $lib->{RESULT_MERGED_OBJ};
-	}
+	$lib->{MERGED_OBJNAME} = lc($link_name).".o";
+	$lib->{RESULT_MERGED_OBJ} = $lib->{OUTPUT_MERGED_OBJ} = "bin/mergedobj/$lib->{MERGED_OBJNAME}";
+	$lib->{TARGET_MERGED_OBJ} = $lib->{RESULT_MERGED_OBJ};
 }
 
 sub generate_static_library($)
@@ -116,12 +79,10 @@ sub generate_static_library($)
 
 	$lib->{LIBRARY_NAME} = "lib".lc($link_name).".a";
 
-	if (defined($lib->{OBJ_FILES})) {
-		$lib->{RESULT_STATIC_LIBRARY} = "bin/static/$lib->{LIBRARY_NAME}";
-		$lib->{TARGET_STATIC_LIBRARY} = $lib->{RESULT_STATIC_LIBRARY};
-		$lib->{STATICDIR} = 'bin/static';
-		$lib->{OUTPUT_STATIC_LIBRARY} = "-l".lc($link_name);
-	}
+	$lib->{RESULT_STATIC_LIBRARY} = "bin/static/$lib->{LIBRARY_NAME}";
+	$lib->{TARGET_STATIC_LIBRARY} = $lib->{RESULT_STATIC_LIBRARY};
+	$lib->{STATICDIR} = 'bin/static';
+	$lib->{OUTPUT_STATIC_LIBRARY} = "-l".lc($link_name);
 }
 
 sub generate_binary($)
@@ -159,10 +120,6 @@ sub create_output($$)
 
 	foreach $part (values %{$depend}) {
 		next unless(defined($part->{OUTPUT_TYPE}));
-
-		# Combine object lists
-		my @list = add_dir_array($part->{BASEDIR}, $part->{OBJ_FILES});
-		push(@{$part->{OBJ_LIST}}, @list) if defined($part->{OBJ_FILES});
 
 		generate_binary($part) if grep(/BINARY/, @{$part->{OUTPUT_TYPE}});
 		generate_shared_library($part) if grep(/SHARED_LIBRARY/, @{$part->{OUTPUT_TYPE}});
