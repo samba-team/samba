@@ -20,6 +20,25 @@
 from subunit import SubunitTestRunner
 import sys
 from unittest import TestProgram
+import optparse
+import os
+import param
+import samba.getopt as options
+import samba.tests
+
+parser = optparse.OptionParser("subunitrun [options] <tests>")
+credopts = options.CredentialsOptions(parser)
+parser.add_option_group(credopts)
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
+parser.add_option_group(options.VersionOptions(parser))
+
+args = parser.parse_args()[1]
+
+samba.tests.cmdline_loadparm = sambaopts.get_loadparm()
+samba.tests.cmdline_credentials = credopts.get_credentials(samba.tests.cmdline_loadparm)
+
+param.cvar.default_config = samba.tests.cmdline_loadparm
 
 runner = SubunitTestRunner()
-TestProgram(module=None, argv=sys.argv, testRunner=runner)
+program = TestProgram(module=None, argv=[sys.argv[0]] + args, testRunner=runner)
