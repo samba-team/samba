@@ -223,7 +223,7 @@ bool dmapi_destroy_session(void)
 {
 	if (samba_dmapi_session != DM_NO_SESSION) {
 		become_root();
-		if (!dm_destroy_session(samba_dmapi_session)) {
+		if (0 == dm_destroy_session(samba_dmapi_session)) {
 			session_num--;
 			samba_dmapi_session = DM_NO_SESSION;
 		} else {
