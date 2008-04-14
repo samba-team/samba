@@ -94,8 +94,10 @@ static bool share_info_db_init(void)
 	}
 
 	if (vers_id != SHARE_DATABASE_VERSION_V2) {
-		if (share_db->traverse(share_db, delete_fn, NULL) != 0) {
-			DEBUG(0, ("wipe_all failed\n"));
+		int ret;
+		ret = share_db->traverse(share_db, delete_fn, NULL);
+		if (ret < 0) {
+			DEBUG(0, ("traverse failed\n"));
 			goto cancel;
 		}
 		if (dbwrap_store_int32(share_db, vstring,
