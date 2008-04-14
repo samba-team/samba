@@ -11,9 +11,7 @@ PUBLIC_DEPENDENCIES = \
 		LIBPOPT
 
 
-torture_OBJ_FILES = \
-		torture.o \
-		ui.o
+torture_OBJ_FILES = $(addprefix torture/, torture.o ui.o)
 
 PUBLIC_HEADERS += torture/torture.h torture/ui.h
 
@@ -21,7 +19,7 @@ PUBLIC_HEADERS += torture/torture.h torture/ui.h
 PRIVATE_DEPENDENCIES = LIBCLI_RAW LIBPYTHON smbcalls PROVISION
 PUBLIC_DEPENDENCIES = POPT_CREDENTIALS
 
-TORTURE_UTIL_OBJ_FILES = util_smb.o
+TORTURE_UTIL_OBJ_FILES = torture/util_smb.o
 
 #################################
 # Start SUBSYSTEM TORTURE_BASIC

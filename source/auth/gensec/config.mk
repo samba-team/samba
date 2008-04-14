@@ -19,7 +19,7 @@ PUBLIC_HEADERS += auth/gensec/gensec.h
 [MODULE::gensec_krb5]
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_krb5_init
-PRIVATE_DEPENDENCIES = CREDENTIALS KERBEROS service_auth auth_sam
+PRIVATE_DEPENDENCIES = CREDENTIALS KERBEROS auth auth_sam
 # End MODULE gensec_krb5
 ################################################
 

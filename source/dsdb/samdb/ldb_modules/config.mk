@@ -22,7 +22,7 @@ INIT_FUNCTION = repl_meta_data_module_module_ops
 ################################################
 
 ldb_repl_meta_data_OBJ_FILES = \
-		repl_meta_data.o
+		dsdb/samdb/ldb_modules/repl_meta_data.o
 
 ################################################
 # Start MODULE ldb_dsdb_cache
@@ -35,7 +35,7 @@ INIT_FUNCTION = dsdb_cache_module_module_ops
 ################################################
 
 ldb_dsdb_cache_OBJ_FILES = \
-		dsdb_cache.o
+		dsdb/samdb/ldb_modules/dsdb_cache.o
 
 ################################################
 # Start MODULE ldb_schema_fsmo
@@ -48,7 +48,7 @@ INIT_FUNCTION = schema_fsmo_module_module_ops
 ################################################
 
 ldb_schema_fsmo_OBJ_FILES = \
-		schema_fsmo.o
+		dsdb/samdb/ldb_modules/schema_fsmo.o
 
 ################################################
 # Start MODULE ldb_naming_fsmo
@@ -61,7 +61,7 @@ INIT_FUNCTION = naming_fsmo_module_module_ops
 ################################################
 
 ldb_naming_fsmo_OBJ_FILES = \
-		naming_fsmo.o
+		dsdb/samdb/ldb_modules/naming_fsmo.o
 
 ################################################
 # Start MODULE ldb_pdc_fsmo
@@ -74,7 +74,7 @@ INIT_FUNCTION = pdc_fsmo_module_module_ops
 ################################################
 
 ldb_pdc_fsmo_OBJ_FILES = \
-		pdc_fsmo.o
+		dsdb/samdb/ldb_modules/pdc_fsmo.o
 
 ################################################
 # Start MODULE ldb_samldb
@@ -88,7 +88,7 @@ INIT_FUNCTION = samldb_module_module_ops
 ################################################
 
 ldb_samldb_OBJ_FILES = \
-		samldb.o
+		dsdb/samdb/ldb_modules/samldb.o
 
 ################################################
 # Start MODULE ldb_samba3sam
@@ -103,7 +103,7 @@ PRIVATE_DEPENDENCIES = LIBTALLOC ldb_map SMBPASSWD NSS_WRAPPER LIBSECURITY \
 ################################################
 
 ldb_samba3sam_OBJ_FILES = \
-		samba3sam.o
+		dsdb/samdb/ldb_modules/samba3sam.o
 
 ################################################
 # Start MODULE ldb_simple_ldap_map
@@ -119,7 +119,7 @@ ALIASES = entryuuid nsuniqueid
 ################################################
 
 ldb_simple_ldap_map_OBJ_FILES = \
-		simple_ldap_map.o
+		dsdb/samdb/ldb_modules/simple_ldap_map.o
 
 # ################################################
 # # Start MODULE ldb_proxy
