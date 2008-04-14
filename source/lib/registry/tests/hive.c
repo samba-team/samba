@@ -339,7 +339,6 @@ static bool test_hive_security(struct torture_context *tctx, const void *_data)
 	error = hive_set_sec_desc(subkey, osd);
 	torture_assert_werr_ok(tctx, error, "setting security descriptor");
 	
-	printf("The second one is done.\n");
 	error = hive_get_sec_desc(tctx, subkey, &nsd);
 	torture_assert_werr_ok (tctx, error, "getting security descriptor");
 	
