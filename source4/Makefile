@@ -24,7 +24,7 @@ $(srcdir)/version.h: $(srcdir)/VERSION
 
 .DEFAULT_GOAL := all
 
-ifneq ($(automatic_deps),yes)
+ifneq ($(automatic_dependencies),yes)
 ALL_PREDEP = proto
 .NOTPARALLEL:
 endif
