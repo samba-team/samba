@@ -1344,8 +1344,10 @@ extern void build_options(bool screen);
 	   smbd is launched via inetd and we fork a copy of 
 	   ourselves here */
 
-	if ( is_daemon && !interactive )
-		start_background_queue(); 
+	if (is_daemon && !interactive
+	    && lp_parm_bool(-1, "smbd", "backgroundqueue", true)) {
+		start_background_queue();
+	}
 
 	if (!open_sockets_smbd(is_daemon, interactive, ports))
 		exit(1);
