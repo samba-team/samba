@@ -1159,6 +1159,12 @@ int net_ads_join(int argc, const char **argv)
 		}
 	}
 
+	if (!*domain) {
+		d_fprintf(stderr, "Please supply a valid domain name\n");
+		werr = WERR_INVALID_PARAM;
+		goto fail;
+	}
+
 	/* Do the domain join here */
 
 	r->in.domain_name	= domain;
