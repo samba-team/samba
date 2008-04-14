@@ -85,15 +85,13 @@ class LdbExtensionTests(TestCaseInTempDir):
             os.unlink(path)
 
 
-def get_loadparm():
-    import param
-    lp = param.LoadParm()
-    lp.load(os.getenv("SMB_CONF_PATH"))
-    return lp
+cmdline_loadparm = None
+cmdline_credentials = None
 
 class RpcInterfaceTestCase(unittest.TestCase):
     def get_loadparm(self):
-        return get_loadparm()
+        assert cmdline_loadparm is not None
+        return cmdline_loadparm
 
     def get_credentials(self):
-        return None
+        return cmdline_credentials
