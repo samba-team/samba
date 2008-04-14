@@ -1,5 +1,6 @@
 [SUBSYSTEM::DYNCONFIG]
-OBJ_FILES = dynconfig.o
+
+DYNCONFIG_OBJ_FILES = dynconfig.o
 
 # set these to where to find various files
 # These can be overridden by command line switches (see smbd(8))
