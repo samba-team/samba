@@ -938,12 +938,6 @@ static NTSTATUS check_ads_config( void )
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!secrets_init()) {
-		DEBUG(1,("Failed to initialise secrets database\n"));
-		/* This is a good bet for failure of secrets_init ... */
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	return NT_STATUS_OK;
 }
 
