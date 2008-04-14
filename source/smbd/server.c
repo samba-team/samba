@@ -741,17 +741,9 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 								sizeof(remaddr)),
 								false);
 
-				/* Reset the state of the random
-				 * number generation system, so
-				 * children do not get the same random
-				 * numbers as each other */
-
-				set_need_random_reseed();
-				/* tdb needs special fork handling - remove
-				 * CLEAR_IF_FIRST flags */
-				if (tdb_reopen_all(1) == -1) {
-					DEBUG(0,("tdb_reopen_all failed.\n"));
-					smb_panic("tdb_reopen_all failed");
+				if (!reinit_after_fork(smbd_messaging_context())) {
+					DEBUG(0,("reinit_after_fork() failed\n"));
+					smb_panic("reinit_after_fork() failed");
 				}
 
 				return True;
@@ -1384,12 +1376,10 @@ extern void build_options(bool screen);
 	/* Setup aio signal handler. */
 	initialize_async_io_handler();
 
-	/*
-	 * For clustering, we need to re-init our ctdbd connection after the
-	 * fork
-	 */
-	if (!NT_STATUS_IS_OK(messaging_reinit(smbd_messaging_context())))
+	if (!reinit_after_fork(smbd_messaging_context())) {
+		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
+	}
 
 	/* register our message handlers */
 	messaging_register(smbd_messaging_context(), NULL,
