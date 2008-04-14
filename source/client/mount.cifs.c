@@ -38,6 +38,7 @@
 #include <string.h>
 #include <mntent.h>
 #include <fcntl.h>
+#include <limits.h>
 
 #define MOUNT_CIFS_VERSION_MAJOR "1"
 #define MOUNT_CIFS_VERSION_MINOR "10"
