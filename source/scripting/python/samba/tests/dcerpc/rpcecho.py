@@ -19,12 +19,11 @@
 
 import echo
 import unittest
-from samba.tests import get_loadparm
+from samba.tests import RpcInterfaceTestCase
 
-class RpcEchoTests(unittest.TestCase):
+class RpcEchoTests(RpcInterfaceTestCase):
     def setUp(self):
-        lp_ctx = get_loadparm()
-        self.conn = echo.rpcecho("ncalrpc:", lp_ctx)
+        self.conn = echo.rpcecho("ncalrpc:", self.get_loadparm())
 
     def test_addone(self):
         self.assertEquals(2, self.conn.AddOne(1))

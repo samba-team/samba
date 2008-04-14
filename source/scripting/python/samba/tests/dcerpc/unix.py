@@ -18,12 +18,11 @@
 #
 
 import unixinfo
-import unittest
-from samba.tests import get_loadparm
+from samba.tests import RpcInterfaceTestCase
 
-class UnixinfoTests(unittest.TestCase):
+class UnixinfoTests(RpcInterfaceTestCase):
     def setUp(self):
-        self.conn = unixinfo.unixinfo("ncalrpc:", get_loadparm())
+        self.conn = unixinfo.unixinfo("ncalrpc:", self.get_loadparm())
 
     def test_getpwuid(self):
         infos = self.conn.GetPWUid(range(512))
