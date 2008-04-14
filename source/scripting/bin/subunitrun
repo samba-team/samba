@@ -38,8 +38,7 @@ args = parser.parse_args()[1]
 samba.tests.cmdline_loadparm = sambaopts.get_loadparm()
 samba.tests.cmdline_credentials = credopts.get_credentials(samba.tests.cmdline_loadparm)
 
-import pdb
-pdb.set_trace()
+param.cvar.default_config = samba.tests.cmdline_loadparm
 
 runner = SubunitTestRunner()
 program = TestProgram(module=None, argv=[sys.argv[0]] + args, testRunner=runner)
