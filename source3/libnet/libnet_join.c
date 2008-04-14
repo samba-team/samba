@@ -1288,6 +1288,10 @@ static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 
 		werr = smbconf_set_global_parameter(ctx, "security", "user");
 		W_ERROR_NOT_OK_GOTO_DONE(werr);
+
+		werr = smbconf_delete_global_parameter(ctx, "workgroup");
+		W_ERROR_NOT_OK_GOTO_DONE(werr);
+
 		smbconf_delete_global_parameter(ctx, "realm");
 	}
 
