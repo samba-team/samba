@@ -1,84 +1,85 @@
 [SUBSYSTEM::EJSRPC]
-OBJ_FILES = \
-		ejsrpc.o
+
+EJSRPC_OBJ_FILES = scripting/ejs/ejsrpc.o
 
 [MODULE::smbcalls_config]
-OBJ_FILES = smbcalls_config.o
 OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_config
 
+smbcalls_config_OBJ_FILES = scripting/ejs/smbcalls_config.o
+
 [MODULE::smbcalls_ldb]
-OBJ_FILES = smbcalls_ldb.o
 OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_ldb
 PRIVATE_DEPENDENCIES = LIBLDB SAMDB LIBNDR
 
+smbcalls_ldb_OBJ_FILES = scripting/ejs/smbcalls_ldb.o
+
 [MODULE::smbcalls_reg]
-OBJ_FILES = smbcalls_reg.o
 SUBSYSTEM = smbcalls
 OUTPUT_TYPE = MERGED_OBJ
 INIT_FUNCTION = smb_setup_ejs_reg
 PRIVATE_DEPENDENCIES = registry SAMDB LIBNDR
 
+smbcalls_reg_OBJ_FILES = scripting/ejs/smbcalls_reg.o
+
 [MODULE::smbcalls_nbt]
-OBJ_FILES = smbcalls_nbt.o
 SUBSYSTEM = smbcalls
 OUTPUT_TYPE = MERGED_OBJ
 INIT_FUNCTION = smb_setup_ejs_nbt
 
+smbcalls_nbt_OBJ_FILES = scripting/ejs/smbcalls_nbt.o
+
 [MODULE::smbcalls_rand]
-OBJ_FILES = smbcalls_rand.o
 SUBSYSTEM = smbcalls
 OUTPUT_TYPE = MERGED_OBJ
 INIT_FUNCTION = smb_setup_ejs_random
 
+smbcalls_rand_OBJ_FILES = scripting/ejs/smbcalls_rand.o
+
 [MODULE::smbcalls_nss]
-OBJ_FILES = smbcalls_nss.o
 SUBSYSTEM = smbcalls
 OUTPUT_TYPE = MERGED_OBJ
 INIT_FUNCTION = smb_setup_ejs_nss
 PRIVATE_DEPENDENCIES = NSS_WRAPPER
 
+smbcalls_nss_OBJ_FILES = scripting/ejs/smbcalls_nss.o
+
 [MODULE::smbcalls_data]
-OBJ_FILES = smbcalls_data.o
 SUBSYSTEM = smbcalls
 OUTPUT_TYPE = MERGED_OBJ
 INIT_FUNCTION = smb_setup_ejs_datablob
 
+smbcalls_data_OBJ_FILES = scripting/ejs/smbcalls_data.o
+
 [MODULE::smbcalls_auth]
-OBJ_FILES = smbcalls_auth.o
 OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_auth
-PRIVATE_DEPENDENCIES = auth
+PRIVATE_DEPENDENCIES = service_auth
+
+smbcalls_auth_OBJ_FILES = scripting/ejs/smbcalls_auth.o
 
 [MODULE::smbcalls_string]
-OBJ_FILES = smbcalls_string.o
 SUBSYSTEM = smbcalls
 OUTPUT_TYPE = MERGED_OBJ
 INIT_FUNCTION = smb_setup_ejs_string
 
+smbcalls_string_OBJ_FILES = scripting/ejs/smbcalls_string.o
+
 [MODULE::smbcalls_sys]
-OBJ_FILES = smbcalls_sys.o
 SUBSYSTEM = smbcalls
 OUTPUT_TYPE = MERGED_OBJ
 INIT_FUNCTION = smb_setup_ejs_system
+
+smbcalls_sys_OBJ_FILES = scripting/ejs/smbcalls_sys.o
 
 mkinclude ejsnet/config.mk
 
 [SUBSYSTEM::smbcalls]
 PRIVATE_PROTO_HEADER = proto.h
-OBJ_FILES = \
-		smbcalls.o \
-		smbcalls_cli.o \
-		smbcalls_rpc.o \
-		smbcalls_options.o \
-		smbcalls_creds.o \
-		smbcalls_param.o \
-		mprutil.o \
-		literal.o
 PRIVATE_DEPENDENCIES = \
 		EJS LIBSAMBA-UTIL \
 		EJSRPC MESSAGING \
@@ -87,11 +88,21 @@ PRIVATE_DEPENDENCIES = \
 		dcerpc \
 		NDR_TABLE
 
+smbcalls_OBJ_FILES = $(addprefix scripting/ejs/, \
+		smbcalls.o \
+		smbcalls_cli.o \
+		smbcalls_rpc.o \
+		smbcalls_options.o \
+		smbcalls_creds.o \
+		smbcalls_param.o \
+		mprutil.o \
+		literal.o)
+
 #######################
 # Start BINARY SMBSCRIPT
 [BINARY::smbscript]
-OBJ_FILES = \
-		smbscript.o
 PRIVATE_DEPENDENCIES = EJS LIBSAMBA-UTIL smbcalls LIBSAMBA-HOSTCONFIG
 # End BINARY SMBSCRIPT
 #######################
+
+smbscript_OBJ_FILES = scripting/ejs/smbscript.o

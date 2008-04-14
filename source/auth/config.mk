@@ -89,13 +89,13 @@ PRIVATE_PROTO_HEADER = pam_errors.h
 #SO_VERSION = 0
 PAM_ERRORS_OBJ_FILES = $(addprefix auth/, pam_errors.o)
 
-[MODULE::service_auth]
+[MODULE::auth]
 INIT_FUNCTION = server_service_auth_init
 SUBSYSTEM = smbd
 PRIVATE_PROTO_HEADER = auth_proto.h
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBSECURITY SAMDB CREDENTIALS 
 
-service_auth_OBJ_FILES = $(addprefix auth/, auth.o auth_util.o auth_simple.o)
+auth_OBJ_FILES = $(addprefix auth/, auth.o auth_util.o auth_simple.o)
 
 # PUBLIC_HEADERS += auth/auth.h
 

@@ -34,6 +34,8 @@ PRIVATE_DEPENDENCIES = \
 		share \
 		CLUSTER
 
+smbd_OBJ_FILES = smbd/server.o
+
 MANPAGES += smbd/smbd.8
 # End BINARY smbd
 #################################
