@@ -1,13 +1,12 @@
 [SUBSYSTEM::LIBWINBIND-CLIENT]
-OBJ_FILES = wb_common.o
 PRIVATE_DEPENDENCIES = SOCKET_WRAPPER
+
+LIBWINBIND-CLIENT_OBJ_FILES = nsswitch/wb_common.o
 
 #################################
 # Start BINARY nsstest
 [BINARY::nsstest]
 INSTALLDIR = BINDIR
-OBJ_FILES = \
-		nsstest.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-UTIL \
 		LIBREPLACE_EXT \
@@ -15,12 +14,12 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY nsstest
 #################################
 
+nsstest_OBJ_FILES = nsswitch/nsstest.o
+
 #################################
 # Start BINARY wbinfo
 [BINARY::wbinfo]
 INSTALLDIR = BINDIR
-OBJ_FILES = \
-		wbinfo.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-UTIL \
 		LIBREPLACE_EXT \
@@ -30,3 +29,6 @@ PRIVATE_DEPENDENCIES = \
 		LIBWINBIND-CLIENT
 # End BINARY nsstest
 #################################
+
+wbinfo_OBJ_FILES = \
+		nsswitch/wbinfo.o

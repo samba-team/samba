@@ -1,4 +1,7 @@
 [LIBRARY::LIBTALLOC]
 OUTPUT_TYPE = STATIC_LIBRARY
-OBJ_FILES = talloc.o
 CFLAGS = -Ilib/talloc
+
+LIBTALLOC_OBJ_FILES = lib/talloc/talloc.o
+
+MANPAGES += $(tallocdir)/talloc.3

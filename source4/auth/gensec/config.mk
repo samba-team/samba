@@ -10,7 +10,7 @@ PUBLIC_DEPENDENCIES = \
 # End SUBSYSTEM gensec
 #################################
 
-gnesec_OBJ_FILES = $(addprefix auth/gensec/, gensec.o socket.o)
+gensec_OBJ_FILES = $(addprefix auth/gensec/, gensec.o socket.o)
 
 PUBLIC_HEADERS += auth/gensec/gensec.h
 
@@ -19,11 +19,11 @@ PUBLIC_HEADERS += auth/gensec/gensec.h
 [MODULE::gensec_krb5]
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_krb5_init
-PRIVATE_DEPENDENCIES = CREDENTIALS KERBEROS auth auth_sam
+PRIVATE_DEPENDENCIES = CREDENTIALS KERBEROS service_auth auth_sam
 # End MODULE gensec_krb5
 ################################################
 
-gensec_krb5_OBJ_FILES = gensec_krb5.o 
+gensec_krb5_OBJ_FILES = $(addprefix auth/gensec/, gensec_krb5.o)
 
 ################################################
 # Start MODULE gensec_gssapi
@@ -34,7 +34,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_GSSAPI CREDENTIALS KERBEROS
 # End MODULE gensec_gssapi
 ################################################
 
-gensec_gssapi_OBJ_FILES = gensec_gssapi.o 
+gensec_gssapi_OBJ_FILES = $(addprefix auth/gensec/, gensec_gssapi.o)
 
 ################################################
 # Start MODULE cyrus_sasl
@@ -45,7 +45,7 @@ PRIVATE_DEPENDENCIES = CREDENTIALS SASL
 # End MODULE cyrus_sasl
 ################################################
 
-cyrus_sasl_OBJ_FILES = auth/gensec/cyrus_sasl.o 
+cyrus_sasl_OBJ_FILES = $(addprefix auth/gensec/, cyrus_sasl.o)
 
 ################################################
 # Start MODULE gensec_spnego
@@ -77,9 +77,8 @@ gensec_schannel_OBJ_FILES = $(addprefix auth/gensec/, schannel.o schannel_sign.o
 [SUBSYSTEM::SCHANNELDB]
 PRIVATE_PROTO_HEADER = schannel_state.h
 PRIVATE_DEPENDENCIES = LDB_WRAP SAMDB
-#
 # End SUBSYSTEM SCHANNELDB
 ################################################
 
-SCHANNELDB_OBJ_FILES = auth/gensec/schannel_state.o
+SCHANNELDB_OBJ_FILES = $(addprefix auth/gensec/, schannel_state.o)
 
