@@ -46,7 +46,7 @@ static bool netrserverauthenticate3_in_check(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, r->in.secure_channel_type, 2, "secure channel type");
 	torture_assert_str_equal(tctx, r->in.computer_name, "NATIVE-2K", "computer name");
 	torture_assert_int_equal(tctx, *r->in.negotiate_flags, 0x6007ffff, "negotiate flags");
-	torture_assert(tctx, memcmp(cred_expected, r->in.credentials->data, 8) == 0, "credentials");
+	torture_assert_mem_equal(tctx, cred_expected, r->in.credentials->data, 8, "credentials");
 	return true;
 }
 
@@ -59,7 +59,7 @@ static bool netrserverauthenticate3_out_check(struct torture_context *tctx,
 											struct netr_ServerAuthenticate3 *r)
 {
 	uint8_t cred_expected[8] = { 0x22, 0x0c, 0x86, 0x8a, 0xe9, 0x92, 0x93, 0xc9 };
-	torture_assert(tctx, memcmp(cred_expected, r->out.credentials->data, 8) == 0, "credentials");
+	torture_assert_mem_equal(tctx, cred_expected, r->out.credentials->data, 8, "credentials");
 	torture_assert_int_equal(tctx, *r->out.negotiate_flags, 0x6007ffff, "negotiate flags");
 	torture_assert_int_equal(tctx, *r->out.rid, 0x454, "rid");
 	torture_assert_ntstatus_ok(tctx, r->out.result, "return code");
@@ -85,7 +85,7 @@ static bool netrserverreqchallenge_in_check(struct torture_context *tctx,
 	uint8_t cred_expected[8] = { 0xa3, 0x2c, 0xa2, 0x95, 0x40, 0xcc, 0xb7, 0xbb };
 	torture_assert_str_equal(tctx, r->in.server_name, "\\\\NATIVE-DC.NATIVE.BASE", "server name");
 	torture_assert_str_equal(tctx, r->in.computer_name, "NATIVE-2K", "account name");
-	torture_assert(tctx, memcmp(cred_expected, r->in.credentials->data, 8) == 0, "credentials");
+	torture_assert_mem_equal(tctx, cred_expected, r->in.credentials->data, 8, "credentials");
 
 	return true;
 }
@@ -98,7 +98,7 @@ static bool netrserverreqchallenge_out_check(struct torture_context *tctx,
 											struct netr_ServerReqChallenge *r)
 {
 	uint8_t cred_expected[8] = { 0x22, 0xfc, 0xc1, 0x17, 0xc0, 0xae, 0x27, 0x8e };
-	torture_assert(tctx, memcmp(cred_expected, r->out.credentials->data, 8) == 0, "credentials");
+	torture_assert_mem_equal(tctx, cred_expected, r->out.credentials->data, 8, "credentials");
 	torture_assert_ntstatus_ok(tctx, r->out.result, "return code");
 
 	return true;

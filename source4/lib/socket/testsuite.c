@@ -86,7 +86,7 @@ static bool test_udp(struct torture_context *tctx)
 
 	torture_assert_int_equal(tctx, nread, size, "Unexpected recvfrom size");
 
-	torture_assert(tctx, memcmp(blob2.data, blob.data, size) == 0,
+	torture_assert_mem_equal(tctx, blob2.data, blob.data, size,
 		"Bad data in recvfrom");
 
 	generate_random_buffer(blob.data, blob.length);
@@ -104,7 +104,7 @@ static bool test_udp(struct torture_context *tctx)
 	torture_assert_int_equal(tctx, from_addr->port, srv_addr->port, 
 				   "Unexpected recvfrom port");
 
-	torture_assert(tctx, memcmp(blob2.data, blob.data, size) == 0, 
+	torture_assert_mem_equal(tctx, blob2.data, blob.data, size,
 		"Bad data in recvfrom");
 
 	talloc_free(sock1);
@@ -181,7 +181,7 @@ static bool test_tcp(struct torture_context *tctx)
 
 	torture_assert_int_equal(tctx, nread, size, "Unexpected recvfrom size");
 
-	torture_assert(tctx, memcmp(blob2.data, blob.data, size) == 0, 
+	torture_assert_mem_equal(tctx, blob2.data, blob.data, size, 
 				   "Bad data in recv");
 	return true;
 }
