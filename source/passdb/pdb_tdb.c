@@ -775,6 +775,7 @@ static int tdbsam_convert_one(struct db_record *rec, void *priv)
 static bool tdbsam_convert(struct db_context *db, int32 from)
 {
 	struct tdbsam_convert_state state;
+	int ret;
 
 	state.from = from;
 	state.success = true;
@@ -784,7 +785,8 @@ static bool tdbsam_convert(struct db_context *db, int32 from)
 		return false;
 	}
 
-	if (db->traverse(db, tdbsam_convert_one, &state) != 0) {
+	ret = db->traverse(db, tdbsam_convert_one, &state);
+	if (ret < 0) {
 		DEBUG(0, ("traverse failed\n"));
 		goto cancel;
 	}
