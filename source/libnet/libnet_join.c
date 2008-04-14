@@ -642,36 +642,19 @@ static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************
- Do the domain join
+ Lookup domain dc's info
 ****************************************************************/
 
-static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
-					   struct libnet_JoinCtx *r)
+static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
+					  struct libnet_JoinCtx *r,
+					  struct cli_state **cli)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	POLICY_HND sam_pol, domain_pol, user_pol, lsa_pol;
+	POLICY_HND lsa_pol;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	char *acct_name;
-	struct lsa_String lsa_acct_name;
-	uint32_t user_rid;
-	uint32_t acct_flags = ACB_WSTRUST;
-	uchar pwbuf[532];
-	struct MD5Context md5ctx;
-	uchar md5buffer[16];
-	DATA_BLOB digested_session_key;
-	uchar md4_trust_password[16];
 	union lsa_PolicyInformation *info = NULL;
-	struct samr_Ids user_rids;
-	struct samr_Ids name_types;
-	union samr_UserInfo user_info;
 
-	if (!r->in.machine_password) {
-		r->in.machine_password = talloc_strdup(mem_ctx, generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH));
-		NT_STATUS_HAVE_NO_MEMORY(r->in.machine_password);
-	}
-
-	status = cli_full_connection(&cli, NULL,
+	status = cli_full_connection(cli, NULL,
 				     r->in.dc_name,
 				     NULL, 0,
 				     "IPC$", "IPC",
@@ -685,7 +668,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &status);
+	pipe_hnd = cli_rpc_pipe_open_noauth(*cli, PI_LSARPC, &status);
 	if (!pipe_hnd) {
 		DEBUG(0,("Error connecting to LSA pipe. Error was %s\n",
 			nt_errstr(status)));
@@ -724,6 +707,43 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
 	cli_rpc_pipe_close(pipe_hnd);
+
+ done:
+	return status;
+}
+
+/****************************************************************
+ Do the domain join
+****************************************************************/
+
+static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
+					   struct libnet_JoinCtx *r,
+					   struct cli_state *cli)
+{
+	struct rpc_pipe_client *pipe_hnd = NULL;
+	POLICY_HND sam_pol, domain_pol, user_pol;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	char *acct_name;
+	struct lsa_String lsa_acct_name;
+	uint32_t user_rid;
+	uint32_t acct_flags = ACB_WSTRUST;
+	uchar pwbuf[532];
+	struct MD5Context md5ctx;
+	uchar md5buffer[16];
+	DATA_BLOB digested_session_key;
+	uchar md4_trust_password[16];
+	struct samr_Ids user_rids;
+	struct samr_Ids name_types;
+	union samr_UserInfo user_info;
+
+	ZERO_STRUCT(sam_pol);
+	ZERO_STRUCT(domain_pol);
+	ZERO_STRUCT(user_pol);
+
+	if (!r->in.machine_password) {
+		r->in.machine_password = talloc_strdup(mem_ctx, generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH));
+		NT_STATUS_HAVE_NO_MEMORY(r->in.machine_password);
+	}
 
 	/* Open the domain */
 
@@ -796,7 +816,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 					"administrator privileges");
 			}
 
-			return status;
+			goto done;
 		}
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
@@ -915,14 +935,23 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
-	cli_rpc_pipe_close(pipe_hnd);
-
 	status = NT_STATUS_OK;
+
  done:
-	if (cli) {
-		cli_shutdown(cli);
+	if (!pipe_hnd) {
+		return status;
 	}
+
+	if (is_valid_policy_hnd(&sam_pol)) {
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &sam_pol);
+	}
+	if (is_valid_policy_hnd(&domain_pol)) {
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
+	}
+	if (is_valid_policy_hnd(&user_pol)) {
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
+	}
+	cli_rpc_pipe_close(pipe_hnd);
 
 	return status;
 }
@@ -1535,6 +1564,8 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 				struct libnet_JoinCtx *r)
 {
 	NTSTATUS status;
+	WERROR werr;
+	struct cli_state *cli = NULL;
 #ifdef WITH_ADS
 	ADS_STATUS ads_status;
 #endif /* WITH_ADS */
@@ -1583,31 +1614,49 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 	}
 #endif /* WITH_ADS */
 
-	status = libnet_join_joindomain_rpc(mem_ctx, r);
+	status = libnet_join_lookup_dc_rpc(mem_ctx, r, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_join_set_error_string(mem_ctx, r,
-			"failed to join domain over rpc: %s",
-			get_friendly_nt_error_msg(status));
-		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-			return WERR_SETUP_ALREADY_JOINED;
-		}
+			"failed to lookup DC info for domain '%s' over rpc: %s",
+			r->in.domain_name, get_friendly_nt_error_msg(status));
 		return ntstatus_to_werror(status);
 	}
 
+	status = libnet_join_joindomain_rpc(mem_ctx, r, cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to join domain '%s' over rpc: %s",
+			r->in.domain_name, get_friendly_nt_error_msg(status));
+		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+			return WERR_SETUP_ALREADY_JOINED;
+		}
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
 	if (!libnet_join_joindomain_store_secrets(mem_ctx, r)) {
-		return WERR_SETUP_NOT_JOINED;
+		werr = WERR_SETUP_NOT_JOINED;
+		goto done;
 	}
 
 #ifdef WITH_ADS
 	if (r->out.domain_is_ad) {
 		ads_status  = libnet_join_post_processing_ads(mem_ctx, r);
 		if (!ADS_ERR_OK(ads_status)) {
-			return WERR_GENERAL_FAILURE;
+			werr = WERR_GENERAL_FAILURE;
+			goto done;
 		}
 	}
 #endif /* WITH_ADS */
 
-	return WERR_OK;
+	werr = WERR_OK;
+
+ done:
+	if (cli) {
+		cli_shutdown(cli);
+	}
+
+	return werr;
 }
 
 /****************************************************************
