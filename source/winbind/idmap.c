@@ -654,7 +654,7 @@ NTSTATUS idmap_xids_to_sids(struct idmap_context *idmap_ctx,
 							&id[i].sid);
 		}
 		if (!NT_STATUS_IS_OK(id[i].status)) {
-			DEBUG(1, ("idmapping failed for id[%d]\n", i));
+			DEBUG(1, ("idmapping xid_to_sid failed for id[%d]\n", i));
 			error_count++;
 		}
 	}
@@ -699,7 +699,7 @@ NTSTATUS idmap_sids_to_xids(struct idmap_context *idmap_ctx,
 							&id[i].unixid);
 		}
 		if (!NT_STATUS_IS_OK(id[i].status)) {
-			DEBUG(1, ("idmapping failed for id[%d]\n", i));
+			DEBUG(1, ("idmapping sid_to_xid failed for id[%d]\n", i));
 			error_count++;
 		}
 	}

@@ -42,17 +42,6 @@ sub _prepare_build_h($)
 		$DEFINE->{VAL} = "\\\n";
 		foreach (@{$key->{INIT_FUNCTIONS}}) {
 			$DEFINE->{VAL} .= "\t$_, \\\n";
-			unless (/{/) {
-				my $fn = $key->{INIT_FUNCTION_TYPE};
-				my $n = $_;
-				if ($fn =~ /\(\*\)/) {
-					$fn =~ s/\(\*\)/$n/;
-					$output .= "$fn;\n";
-				} else {
-					$n =~ s/\&//;
-					$output .= "$fn $n;\n";
-				}
-			}
 		}
 
 		$DEFINE->{VAL} .= "\t$key->{INIT_FUNCTION_SENTINEL} \n";

@@ -167,7 +167,8 @@ static void smb2srv_read_send(struct ntvfs_request *ntvfs)
 
 	/* TODO: avoid the memcpy */
 	SMB2SRV_CHECK(smb2_push_o16s32_blob(&req->out, 0x02, io->smb2.out.data));
-	SBVAL(req->out.body,	0x08,	io->smb2.out.unknown1);
+	SIVAL(req->out.body,	0x08,	io->smb2.out.remaining);
+	SIVAL(req->out.body,	0x0C,	io->smb2.out.reserved);
 
 	smb2srv_send_reply(req);
 }
@@ -185,8 +186,11 @@ void smb2srv_read_recv(struct smb2srv_request *req)
 	io->smb2.in.length		= IVAL(req->in.body, 0x04);
 	io->smb2.in.offset		= BVAL(req->in.body, 0x08);
 	io->smb2.in.file.ntvfs		= smb2srv_pull_handle(req, req->in.body, 0x10);
-	io->smb2.in.unknown1		= BVAL(req->in.body, 0x20);
-	io->smb2.in.unknown2		= BVAL(req->in.body, 0x28);
+	io->smb2.in.min_count		= IVAL(req->in.body, 0x20);
+	io->smb2.in.channel		= IVAL(req->in.body, 0x24);
+	io->smb2.in.remaining		= IVAL(req->in.body, 0x28);
+	io->smb2.in.channel_offset      = SVAL(req->in.body, 0x2C);
+	io->smb2.in.channel_length      = SVAL(req->in.body, 0x2E);
 
 	SMB2SRV_CHECK_FILE_HANDLE(io->smb2.in.file.ntvfs);
 
