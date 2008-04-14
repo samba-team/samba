@@ -46,6 +46,8 @@
 #include "lib/ldb/include/ldb.h"
 #include "librpc/rpc/dcerpc.h"
 #include "param/param.h"
+#include "lib/events/events.h"
+#include "auth/credentials/credentials.h"
 
 /*
   run a function from a function table. If not found then
@@ -140,7 +142,7 @@ static int binary_net(int argc, const char **argv)
 	int rc;
 	int argc_new;
 	const char **argv_new;
-	TALLOC_CTX *mem_ctx;
+	struct event_context *ev;
 	struct net_context *ctx = NULL;
 	poptContext pc;
 	struct poptOption long_options[] = {
@@ -183,17 +185,21 @@ static int binary_net(int argc, const char **argv)
 
 	dcerpc_init();
 
-	mem_ctx = talloc_init("net_context");
-	ctx = talloc(mem_ctx, struct net_context);
+	ev = event_context_init(NULL);
+	if (!ev) {
+		d_printf("Failed to create an event context\n");
+		exit(1);
+	}
+	ctx = talloc(ev, struct net_context);
 	if (!ctx) {
-		d_printf("talloc_init(net_context) failed\n");
+		d_printf("Failed to talloc a net_context\n");
 		exit(1);
 	}
 
 	ZERO_STRUCTP(ctx);
-	ctx->mem_ctx = mem_ctx;
 	ctx->lp_ctx = cmdline_lp_ctx;
 	ctx->credentials = cmdline_credentials;
+	cli_credentials_set_event_context(ctx->credentials, ev);
 
 	rc = net_run_function(ctx, argc_new-1, argv_new+1, net_functable, net_usage);
 
@@ -201,7 +207,7 @@ static int binary_net(int argc, const char **argv)
 		DEBUG(0,("return code = %d\n", rc));
 	}
 
-	talloc_free(mem_ctx);
+	talloc_free(ev);
 	return rc;
 }
 
