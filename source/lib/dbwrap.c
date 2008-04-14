@@ -131,6 +131,7 @@ struct db_context *db_open_trans(TALLOC_CTX *mem_ctx,
 		}
 		/* allow ctdb for individual databases to be disabled */
 		if (lp_parm_bool(-1, "ctdb", partname, true)) {
+			struct db_context *result = NULL;
 			result = db_open_ctdb(mem_ctx, partname, hash_size,
 					      tdb_flags, open_flags, mode);
 			if (result == NULL) {
@@ -139,6 +140,7 @@ struct db_context *db_open_trans(TALLOC_CTX *mem_ctx,
 				smb_panic("failed to attach to a ctdb "
 					  "database");
 			}
+			return result;
 		}
 	}
 #endif
