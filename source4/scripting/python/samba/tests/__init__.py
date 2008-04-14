@@ -90,3 +90,10 @@ def get_loadparm():
     lp = param.LoadParm()
     lp.load(os.getenv("SMB_CONF_PATH"))
     return lp
+
+class RpcInterfaceTestCase(unittest.TestCase):
+    def get_loadparm(self):
+        return get_loadparm()
+
+    def get_credentials(self):
+        return None
