@@ -112,6 +112,7 @@ _PUBLIC_ NTSTATUS sys_lease_register(const struct sys_lease_ops *backend)
 _PUBLIC_ NTSTATUS sys_lease_init(void)
 {
 	static bool initialized = false;
+	extern NTSTATUS sys_lease_linux_init(void);
 
 	init_module_fn static_init[] = { STATIC_sys_lease_MODULES };
 
