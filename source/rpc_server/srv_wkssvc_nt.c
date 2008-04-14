@@ -340,6 +340,7 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p,
 	j->in.admin_account	= admin_account;
 	j->in.admin_password	= cleartext_pwd;
 	j->in.debug		= true;
+	j->in.modify_config     = lp_config_backend_is_registry();
 
 	become_root();
 	werr = libnet_Join(p->mem_ctx, j);
