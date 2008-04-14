@@ -839,6 +839,7 @@ static int net_ads_leave(int argc, const char **argv)
 	r->in.domain_name	= lp_realm();
 	r->in.admin_account	= opt_user_name;
 	r->in.admin_password	= net_prompt_pass(opt_user_name);
+	r->in.modify_config	= lp_config_backend_is_registry();
 	r->in.unjoin_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 				  WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE;
 
@@ -1111,11 +1112,15 @@ int net_ads_join(int argc, const char **argv)
 	int i;
 	const char *os_name = NULL;
 	const char *os_version = NULL;
+	bool modify_config = lp_config_backend_is_registry();
 
-	werr = check_ads_config();
-	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "Invalid configuration.  Exiting....\n");
-		goto fail;
+	if (!modify_config) {
+
+		werr = check_ads_config();
+		if (!W_ERROR_IS_OK(werr)) {
+			d_fprintf(stderr, "Invalid configuration.  Exiting....\n");
+			goto fail;
+		}
 	}
 
 	if (!(ctx = talloc_init("net_ads_join"))) {
@@ -1182,6 +1187,7 @@ int net_ads_join(int argc, const char **argv)
 	r->in.admin_account	= opt_user_name;
 	r->in.admin_password	= net_prompt_pass(opt_user_name);
 	r->in.debug		= true;
+	r->in.modify_config	= modify_config;
 	r->in.join_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 				  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
 				  WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED;
@@ -1217,8 +1223,8 @@ int net_ads_join(int argc, const char **argv)
 			use_in_memory_ccache();
 			asprintf( &ads_dns->auth.user_name, "%s$", global_myname() );
 			ads_dns->auth.password = secrets_fetch_machine_password(
-				lp_workgroup(), NULL, NULL );
-			ads_dns->auth.realm = SMB_STRDUP( lp_realm() );
+				r->out.netbios_domain_name, NULL, NULL );
+			ads_dns->auth.realm = SMB_STRDUP( r->out.dns_domain_name );
 			ads_kinit_password( ads_dns );
 		}
 
