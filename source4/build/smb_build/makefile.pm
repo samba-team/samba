@@ -326,9 +326,9 @@ sub PythonFiles($$)
 
 	foreach (@{$ctx->{PYTHON_FILES}}) {
 		my $target = "bin/python/".basename($_);
-		my $source = "\$(addprefix $ctx->{BASEDIR}/, $target)";
+		my $source = "\$(addprefix $ctx->{BASEDIR}/, $_)";
 		$self->output("$target: $source\n\n");
-		$self->output("PYTHON_PYS += $source\n");
+		$self->output("PYTHON_PYS += $target\n");
 	}
 }
 

@@ -22,18 +22,8 @@ python_misc_OBJ_FILES = scripting/python/misc_wrap.o
 
 PYDOCTOR_MODULES=bin/python/ldb.py bin/python/auth.py bin/python/credentials.py bin/python/registry.py bin/python/tdb.py bin/python/security.py bin/python/events.py bin/python/net.py
 
-pythonmods:: $(PYTHON_PYS) $(PYTHON_MODS)
-
-bin/python/%.py: 
-	mkdir -p $(@D)
-	cp $< $@
-
 installpython:: pythonmods
 	@$(SHELL) $(srcdir)/script/installpython.sh \
 		$(INSTALLPERMS) \
 		$(DESTDIR)$(PYTHONDIR) \
 		scripting/python bin/python
-
-clean::
-	@echo "Removing python modules"
-	@rm -rf bin/python/*
