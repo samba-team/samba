@@ -187,3 +187,84 @@ wbcErr wbcDomainInfo(const char *domain, struct wbcDomainInfo **dinfo)
 
 	return wbc_status;
 }
+
+
+/** @brief Resolve a NetbiosName via WINS
+ *
+ * @param name         Name to resolve
+ * @param *ip          Pointer to the ip address string
+ *
+ * @return #wbcErr
+ *
+ **/
+wbcErr wbcResolveWinsByName(const char *name, const char **ip)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	const char *ipaddr;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	strncpy(request.data.winsreq, name,
+		sizeof(request.data.winsreq)-1);
+
+	wbc_status = wbcRequestResponse(WINBINDD_WINS_BYNAME,
+					&request,
+					&response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	/* Display response */
+
+	ipaddr = talloc_strdup(NULL, response.data.winsresp);
+	BAIL_ON_PTR_ERROR(ipaddr, wbc_status);
+
+	*ip = ipaddr;
+	wbc_status = WBC_ERR_SUCCESS;
+
+ done:
+	return wbc_status;
+}
+
+/** @brief Resolve an IP address via WINS into a NetbiosName
+ *
+ * @param ip          The ip address string
+ * @param *name       Pointer to the name
+ *
+ * @return #wbcErr
+ *
+ **/
+wbcErr wbcResolveWinsByIP(const char *ip, const char **name)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	const char *name_str;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	strncpy(request.data.winsreq, ip,
+		sizeof(request.data.winsreq)-1);
+
+	wbc_status = wbcRequestResponse(WINBINDD_WINS_BYIP,
+					&request,
+					&response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	/* Display response */
+
+	name_str = talloc_strdup(NULL, response.data.winsresp);
+	BAIL_ON_PTR_ERROR(name_str, wbc_status);
+
+	*name = name_str;
+	wbc_status = WBC_ERR_SUCCESS;
+
+ done:
+	return wbc_status;
+}
