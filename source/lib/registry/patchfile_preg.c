@@ -42,30 +42,30 @@ static WERROR preg_read_utf16(struct smb_iconv_convenience *ic, int fd, char *c)
 /* FIXME These functions need to be implemented */
 static WERROR reg_preg_diff_add_key(void *_data, const char *key_name)
 {
-	return WERR_OK;
+	return WERR_NOT_SUPPORTED;
 }
 
 static WERROR reg_preg_diff_del_key(void *_data, const char *key_name)
 {
-	return WERR_OK;
+	return WERR_NOT_SUPPORTED;
 }
 
 static WERROR reg_preg_diff_set_value(void *_data, const char *key_name,
 				      const char *value_name,
 				      uint32_t value_type, DATA_BLOB value_data)
 {
-	return WERR_OK;
+	return WERR_NOT_SUPPORTED;
 }
 
 static WERROR reg_preg_diff_del_value(void *_data, const char *key_name,
 				      const char *value_name)
 {
-	return WERR_OK;
+	return WERR_NOT_SUPPORTED;
 }
 
 static WERROR reg_preg_diff_del_all_values(void *_data, const char *key_name)
 {
-	return WERR_OK;
+	return WERR_NOT_SUPPORTED;
 }
 
 static WERROR reg_preg_diff_done(void *_data)
@@ -149,6 +149,8 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 		ret = WERR_GENERAL_FAILURE;
 		goto cleanup;
 	}
+	preg_header.version = IVAL(&preg_header.version, 0);
+
 	if (strncmp(preg_header.hdr, "PReg", 4) != 0) {
 		DEBUG(0, ("This file is not a valid preg registry file\n"));
 		ret = WERR_GENERAL_FAILURE;
@@ -193,6 +195,8 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 			ret = WERR_GENERAL_FAILURE;
 			goto cleanup;
 		}
+		value_type = IVAL(&value_type, 0);
+
 		/* Read past delimiter */
 		buf_ptr = buf;
 		if (!(W_ERROR_IS_OK(preg_read_utf16(iconv_convenience, fd, buf_ptr)) &&

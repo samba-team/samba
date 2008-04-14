@@ -20,7 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* FIXME Newer .REG files, created by Windows XP and above use unicode UTF-16 */
+/* FIXME Newer .REG files, created by Windows XP and above use unicode UCS-2 */
 
 #include "includes.h"
 #include "lib/registry/registry.h"
