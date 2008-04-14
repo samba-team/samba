@@ -54,7 +54,6 @@
 			<xsl:text> </xsl:text><xsl:value-of select="surname"/>
 			<xsl:choose>
 				<xsl:when test="affiliation/address/email != ''">
-					<xsl:text> &lt;</xsl:text>
 					<xsl:element name="ulink">
 						<xsl:attribute name="noescape">
 						<xsl:text>1</xsl:text>
@@ -63,9 +62,7 @@
 							<xsl:text>mailto:</xsl:text>
 							<xsl:value-of select="affiliation/address/email"/>
 						</xsl:attribute>
-						<xsl:value-of select="affiliation/address/email"/>
 					</xsl:element>
-					<xsl:text>&gt;</xsl:text>
 				</xsl:when>
 			</xsl:choose>
 			<xsl:choose>
