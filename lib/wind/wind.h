@@ -58,9 +58,9 @@ typedef unsigned int wind_profile_flags;
 #define WIND_RW_BE	2
 #define WIND_RW_BOM	4
 
-int wind_stringprep(const unsigned *in, size_t in_len,
-		    unsigned *out, size_t *out_len,
-		    wind_profile_flags flags);
+int wind_stringprep(const uint32_t *, size_t,
+		    uint32_t *, size_t *,
+		    wind_profile_flags);
 int wind_profile(const char *, wind_profile_flags *);
 
 int wind_punycode_label_toascii(const uint32_t *, size_t,
