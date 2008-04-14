@@ -278,7 +278,21 @@ static WERROR local_get_key_info(TALLOC_CTX *mem_ctx,
 				 last_change_time, max_subkeynamelen, 
 				 max_valnamelen, max_valbufsize);
 }
+static WERROR local_get_sec_desc(TALLOC_CTX *mem_ctx, 
+				 const struct registry_key *key, 
+				 struct security_descriptor **security)
+{
+	const struct local_key *local = (const struct local_key *)key;
 
+	return hive_get_sec_desc(mem_ctx, local->hive_key, security);
+}
+static WERROR local_set_sec_desc(struct registry_key *key, 
+				 const struct security_descriptor *security)
+{
+	const struct local_key *local = (const struct local_key *)key;
+
+	return hive_set_sec_desc(local->hive_key, security);
+}
 const static struct registry_operations local_ops = {
 	.name = "local",
 	.open_key = local_open_key,
@@ -292,6 +306,8 @@ const static struct registry_operations local_ops = {
 	.delete_value = local_delete_value,
 	.flush_key = local_flush_key,
 	.get_key_info = local_get_key_info,
+	.get_sec_desc = local_get_sec_desc,
+	.set_sec_desc = local_set_sec_desc,
 };
 
 WERROR reg_open_local(TALLOC_CTX *mem_ctx, struct registry_context **ctx,
