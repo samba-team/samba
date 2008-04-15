@@ -121,8 +121,14 @@ static bool smbconf_txt_do_parameter(const char *param_name,
 	struct txt_cache *cache = tpd->cache;
 
 	if (cache->num_shares == 0) {
-		/* not in any share ... */
-		return false;
+		/*
+		 * not in any share yet,
+		 * initialize the "empty" section (NULL):
+		 * parameters without a previous [section] are stored here.
+		 */
+		if (!smbconf_txt_do_section(NULL, private_data)) {
+			return false;
+		}
 	}
 
 	param_names  = cache->param_names[cache->current_share];
@@ -301,10 +307,21 @@ static WERROR smbconf_txt_get_share_names(struct smbconf_ctx *ctx,
 		goto done;
 	}
 
-	/* make sure "global" is always listed first */
+	/* make sure "global" is always listed first,
+	 * possibly after NULL section */
+
+	if (smbconf_share_exists(ctx, NULL)) {
+		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
+						   0, NULL);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+		added_count++;
+	}
+
 	if (smbconf_share_exists(ctx, GLOBAL_NAME)) {
 		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
-						   0, GLOBAL_NAME);
+						   added_count, GLOBAL_NAME);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -312,7 +329,9 @@ static WERROR smbconf_txt_get_share_names(struct smbconf_ctx *ctx,
 	}
 
 	for (count = 0; count < pd(ctx)->cache->num_shares; count++) {
-		if (strequal(pd(ctx)->cache->share_names[count], GLOBAL_NAME)) {
+		if (strequal(pd(ctx)->cache->share_names[count], GLOBAL_NAME) ||
+		    (pd(ctx)->cache->share_names[count] == NULL))
+		{
 			continue;
 		}
 
