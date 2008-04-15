@@ -158,8 +158,9 @@ krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
 	    goto out;
 	}
 	if (p->pac->buffers[i].offset_lo < header_end) {
-	    krb5_set_error_string(context, "PAC offset inside header: %d %d",
-				  p->pac->buffers[i].offset_lo, header_end);
+	    krb5_set_error_string(context, "PAC offset inside header: %lu %lu",
+				  (unsigned long)p->pac->buffers[i].offset_lo, 
+				  (unsigned long)header_end);
 	    ret = EINVAL;
 	    goto out;
 	}
