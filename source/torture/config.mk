@@ -1,24 +1,22 @@
 # TORTURE subsystem
 [LIBRARY::torture]
-SO_VERSION = 0
-VERSION = 0.0.1
-PC_FILE = torture.pc
 PRIVATE_PROTO_HEADER = proto.h
-OBJ_FILES = \
-		torture.o \
-		ui.o
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-HOSTCONFIG \
 		LIBSAMBA-UTIL \
 		LIBTALLOC \
 		LIBPOPT
 
+PC_FILES += torture/torture.pc
+torture_OBJ_FILES = $(addprefix torture/, torture.o ui.o)
+
 PUBLIC_HEADERS += torture/torture.h torture/ui.h
 
 [SUBSYSTEM::TORTURE_UTIL]
-OBJ_FILES = util_smb.o
 PRIVATE_DEPENDENCIES = LIBCLI_RAW LIBPYTHON smbcalls PROVISION
 PUBLIC_DEPENDENCIES = POPT_CREDENTIALS
+
+TORTURE_UTIL_OBJ_FILES = $(addprefix torture/, util_smb.o)
 
 #################################
 # Start SUBSYSTEM TORTURE_BASIC
@@ -27,31 +25,33 @@ SUBSYSTEM = torture
 INIT_FUNCTION = torture_base_init
 PRIVATE_PROTO_HEADER = \
 		basic/proto.h
-OBJ_FILES = \
-		basic/base.o \
-		basic/misc.o \
-		basic/scanner.o \
-		basic/utable.o \
-		basic/charset.o \
-		basic/mangle_test.o \
-		basic/denytest.o \
-		basic/aliases.o \
-		basic/locking.o \
-		basic/secleak.o \
-		basic/rename.o \
-		basic/dir.o \
-		basic/delete.o \
-		basic/unlink.o \
-		basic/disconnect.o \
-		basic/delaywrite.o \
-		basic/attr.o \
-		basic/properties.o 
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_SMB POPT_CREDENTIALS \
 		TORTURE_UTIL LIBCLI_RAW \
 		TORTURE_RAW
 # End SUBSYSTEM TORTURE_BASIC
 #################################
+
+TORTURE_BASIC_OBJ_FILES = $(addprefix torture/basic/,  \
+		base.o \
+		misc.o \
+		scanner.o \
+		utable.o \
+		charset.o \
+		mangle_test.o \
+		denytest.o \
+		aliases.o \
+		locking.o \
+		secleak.o \
+		rename.o \
+		dir.o \
+		delete.o \
+		unlink.o \
+		disconnect.o \
+		delaywrite.o \
+		attr.o \
+		properties.o)
+
 
 #################################
 # Start SUBSYSTEM TORTURE_RAW
@@ -60,58 +60,52 @@ SUBSYSTEM = torture
 INIT_FUNCTION = torture_raw_init
 PRIVATE_PROTO_HEADER = \
 		raw/proto.h
-OBJ_FILES = \
-		raw/qfsinfo.o \
-		raw/qfileinfo.o \
-		raw/setfileinfo.o \
-		raw/search.o \
-		raw/close.o \
-		raw/open.o \
-		raw/mkdir.o \
-		raw/oplock.o \
-		raw/notify.o \
-		raw/mux.o \
-		raw/ioctl.o \
-		raw/chkpath.o \
-		raw/unlink.o \
-		raw/read.o \
-		raw/context.o \
-		raw/write.o \
-		raw/lock.o \
-		raw/pingpong.o \
-		raw/lockbench.o \
-		raw/openbench.o \
-		raw/rename.o \
-		raw/eas.o \
-		raw/streams.o \
-		raw/acls.o \
-		raw/seek.o \
-		raw/samba3hide.o \
-		raw/samba3misc.o \
-		raw/composite.o \
-		raw/raw.o \
-		raw/offline.o
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_SMB LIBCLI_LSA LIBCLI_SMB_COMPOSITE \
 		POPT_CREDENTIALS TORTURE_UTIL
 # End SUBSYSTEM TORTURE_RAW
 #################################
 
+TORTURE_RAW_OBJ_FILES = $(addprefix torture/raw/, \
+		qfsinfo.o \
+		qfileinfo.o \
+		setfileinfo.o \
+		search.o \
+		close.o \
+		open.o \
+		mkdir.o \
+		oplock.o \
+		notify.o \
+		mux.o \
+		ioctl.o \
+		chkpath.o \
+		unlink.o \
+		read.o \
+		context.o \
+		write.o \
+		lock.o \
+		pingpong.o \
+		lockbench.o \
+		openbench.o \
+		rename.o \
+		eas.o \
+		streams.o \
+		acls.o \
+		seek.o \
+		samba3hide.o \
+		samba3misc.o \
+		composite.o \
+		raw.o \
+		offline.o)
+
+
 mkinclude smb2/config.mk
 mkinclude winbind/config.mk
 
 [SUBSYSTEM::TORTURE_NDR]
 PRIVATE_PROTO_HEADER = ndr/proto.h
-OBJ_FILES = ndr/ndr.o \
-			ndr/winreg.o \
-			ndr/atsvc.o \
-			ndr/lsa.o \
-			ndr/epmap.o \
-			ndr/dfs.o \
-			ndr/netlogon.o \
-			ndr/drsuapi.o \
-			ndr/spoolss.o \
-			ndr/samr.o
+
+TORTURE_NDR_OBJ_FILES = $(addprefix torture/ndr/, ndr.o winreg.o atsvc.o lsa.o epmap.o dfs.o netlogon.o drsuapi.o spoolss.o samr.o)
 
 [MODULE::torture_rpc]
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
@@ -120,50 +114,6 @@ SUBSYSTEM = torture
 INIT_FUNCTION = torture_rpc_init
 PRIVATE_PROTO_HEADER = \
 		rpc/proto.h
-OBJ_FILES = \
-		rpc/join.o \
-		rpc/lsa.o \
-		rpc/lsa_lookup.o \
-		rpc/session_key.o \
-		rpc/echo.o \
-		rpc/dfs.o \
-		rpc/drsuapi.o \
-		rpc/drsuapi_cracknames.o \
-		rpc/dssync.o \
-		rpc/spoolss.o \
-		rpc/spoolss_notify.o \
-		rpc/spoolss_win.o \
-		rpc/unixinfo.o \
-		rpc/samr.o \
-		rpc/samr_accessmask.o \
-		rpc/wkssvc.o \
-		rpc/srvsvc.o \
-		rpc/svcctl.o \
-		rpc/atsvc.o \
-		rpc/eventlog.o \
-		rpc/epmapper.o \
-		rpc/winreg.o \
-		rpc/initshutdown.o \
-		rpc/oxidresolve.o \
-		rpc/remact.o \
-		rpc/mgmt.o \
-		rpc/scanner.o \
-		rpc/autoidl.o \
-		rpc/countcalls.o \
-		rpc/testjoin.o \
-		rpc/schannel.o \
-		rpc/netlogon.o \
-		rpc/samlogon.o \
-		rpc/samsync.o \
-		rpc/bind.o \
-		rpc/dssetup.o \
-		rpc/alter_context.o \
-		rpc/bench.o \
-		rpc/samba3rpc.o \
-		rpc/rpc.o \
-		rpc/async_bind.o \
-		rpc/handles.o \
-		rpc/frsapi.o
 PRIVATE_DEPENDENCIES = \
 		NDR_TABLE RPC_NDR_UNIXINFO dcerpc_samr RPC_NDR_WINREG RPC_NDR_INITSHUTDOWN \
 		RPC_NDR_OXIDRESOLVER RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL \
@@ -172,7 +122,16 @@ PRIVATE_DEPENDENCIES = \
 		RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_ROT RPC_NDR_DSSETUP \
 		RPC_NDR_REMACT RPC_NDR_OXIDRESOLVER WB_HELPER LIBSAMBA-NET \
 		LIBCLI_AUTH POPT_CREDENTIALS TORTURE_LDAP TORTURE_UTIL TORTURE_RAP \
-		dcerpc_server service process_model
+		dcerpc_server service process_model ntvfs SERVICE_SMB
+
+torture_rpc_OBJ_FILES = $(addprefix torture/rpc/, \
+		join.o lsa.o lsa_lookup.o session_key.o echo.o dfs.o drsuapi.o \
+		drsuapi_cracknames.o dssync.o spoolss.o spoolss_notify.o spoolss_win.o \
+		unixinfo.o samr.o samr_accessmask.o wkssvc.o srvsvc.o svcctl.o atsvc.o \
+		eventlog.o epmapper.o winreg.o initshutdown.o oxidresolve.o remact.o mgmt.o \
+		scanner.o autoidl.o countcalls.o testjoin.o schannel.o netlogon.o samlogon.o \
+		samsync.o bind.o dssetup.o alter_context.o bench.o samba3rpc.o rpc.o async_bind.o \
+		handles.o frsapi.o)
 
 #################################
 # Start SUBSYSTEM TORTURE_RAP
@@ -181,11 +140,11 @@ SUBSYSTEM = torture
 INIT_FUNCTION = torture_rap_init
 PRIVATE_PROTO_HEADER = \
 		rap/proto.h
-OBJ_FILES = \
-		rap/rap.o
 PRIVATE_DEPENDENCIES = TORTURE_UTIL LIBCLI_SMB
 # End SUBSYSTEM TORTURE_RAP
 #################################
+
+TORTURE_RAP_OBJ_FILES = torture/rap/rap.o
 
 #################################
 # Start SUBSYSTEM TORTURE_AUTH
@@ -193,14 +152,13 @@ PRIVATE_DEPENDENCIES = TORTURE_UTIL LIBCLI_SMB
 SUBSYSTEM = torture
 PRIVATE_PROTO_HEADER = \
 		auth/proto.h
-OBJ_FILES = \
-		auth/ntlmssp.o \
-		auth/pac.o
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_SMB gensec auth KERBEROS \
 		POPT_CREDENTIALS SMBPASSWD
 # End SUBSYSTEM TORTURE_AUTH
 #################################
+
+TORTURE_AUTH_OBJ_FILES = $(addprefix torture/auth/, ntlmssp.o pac.o)
 
 mkinclude local/config.mk
 
@@ -212,11 +170,10 @@ INIT_FUNCTION = torture_nbench_init
 PRIVATE_DEPENDENCIES = TORTURE_UTIL 
 PRIVATE_PROTO_HEADER = \
 		nbench/proto.h
-OBJ_FILES = \
-		nbench/nbio.o \
-		nbench/nbench.o
 # End MODULE TORTURE_NBENCH
 #################################
+
+TORTURE_NBENCH_OBJ_FILES = $(addprefix torture/nbench/, nbio.o nbench.o)
 
 #################################
 # Start MODULE TORTURE_UNIX
@@ -226,12 +183,10 @@ INIT_FUNCTION = torture_unix_init
 PRIVATE_DEPENDENCIES = TORTURE_UTIL 
 PRIVATE_PROTO_HEADER = \
 		unix/proto.h
-OBJ_FILES = \
-		unix/unix.o \
-		unix/whoami.o \
-		unix/unix_info2.o
 # End MODULE TORTURE_UNIX
 #################################
+
+TORTURE_UNIX_OBJ_FILES = $(addprefix torture/unix/, unix.o whoami.o unix_info2.o)
 
 #################################
 # Start SUBSYSTEM TORTURE_LDAP
@@ -240,17 +195,13 @@ SUBSYSTEM = torture
 INIT_FUNCTION = torture_ldap_init
 PRIVATE_PROTO_HEADER = \
 		ldap/proto.h
-OBJ_FILES = \
-		ldap/common.o \
-		ldap/basic.o \
-		ldap/schema.o \
-		ldap/uptodatevector.o \
-		ldap/cldap.o \
-		ldap/cldapbench.o
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_LDAP LIBCLI_CLDAP SAMDB POPT_CREDENTIALS
 # End SUBSYSTEM TORTURE_LDAP
 #################################
+
+TORTURE_LDAP_OBJ_FILES = $(addprefix torture/ldap/, common.o basic.o schema.o uptodatevector.o cldap.o cldapbench.o)
+
 
 #################################
 # Start SUBSYSTEM TORTURE_NBT
@@ -259,18 +210,14 @@ SUBSYSTEM = torture
 INIT_FUNCTION = torture_nbt_init
 PRIVATE_PROTO_HEADER = \
 		nbt/proto.h
-OBJ_FILES = \
-		nbt/query.o \
-		nbt/register.o \
-		nbt/wins.o \
-		nbt/winsbench.o \
-		nbt/winsreplication.o \
-		nbt/dgram.o \
-		nbt/nbt.o
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_SMB LIBCLI_NBT LIBCLI_DGRAM LIBCLI_WREPL torture_rpc
 # End SUBSYSTEM TORTURE_NBT
 #################################
+
+TORTURE_NBT_OBJ_FILES = $(addprefix torture/nbt/, query.o register.o \
+	wins.o winsbench.o winsreplication.o dgram.o nbt.o)
+
 
 #################################
 # Start SUBSYSTEM TORTURE_NET
@@ -279,21 +226,6 @@ SUBSYSTEM = torture
 INIT_FUNCTION = torture_net_init
 PRIVATE_PROTO_HEADER = \
 		libnet/proto.h
-OBJ_FILES = \
-		libnet/libnet.o \
-		libnet/utils.o \
-		libnet/userinfo.o \
-		libnet/userman.o \
-		libnet/groupinfo.o \
-		libnet/groupman.o \
-		libnet/domain.o \
-		libnet/libnet_lookup.o \
-		libnet/libnet_user.o \
-		libnet/libnet_group.o \
-		libnet/libnet_share.o \
-		libnet/libnet_rpc.o \
-		libnet/libnet_domain.o \
-		libnet/libnet_BecomeDC.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-NET \
 		POPT_CREDENTIALS \
@@ -301,12 +233,16 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM TORTURE_NET
 #################################
 
+TORTURE_NET_OBJ_FILES = $(addprefix torture/libnet/, libnet.o \
+					   utils.o userinfo.o userman.o groupinfo.o groupman.o \
+					   domain.o libnet_lookup.o libnet_user.o libnet_group.o \
+					   libnet_share.o libnet_rpc.o libnet_domain.o libnet_BecomeDC.o)
+
+
 #################################
 # Start BINARY smbtorture
 [BINARY::smbtorture]
 INSTALLDIR = BINDIR
-OBJ_FILES = \
-		smbtorture.o
 PRIVATE_DEPENDENCIES = \
 		torture \
 		LIBPOPT \
@@ -318,14 +254,14 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY smbtorture
 #################################
 
+smbtorture_OBJ_FILES = torture/smbtorture.o
+
 MANPAGES += torture/man/smbtorture.1
 
 #################################
 # Start BINARY gentest
 [BINARY::gentest]
 INSTALLDIR = BINDIR
-OBJ_FILES = \
-		gentest.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-HOSTCONFIG \
 		LIBSAMBA-UTIL \
@@ -337,14 +273,14 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY gentest
 #################################
 
+gentest_OBJ_FILES = torture/gentest.o
+
 MANPAGES += torture/man/gentest.1
 
 #################################
 # Start BINARY masktest
 [BINARY::masktest]
 INSTALLDIR = BINDIR
-OBJ_FILES = \
-		masktest.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-HOSTCONFIG \
 		LIBSAMBA-UTIL \
@@ -355,14 +291,14 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY masktest
 #################################
 
+masktest_OBJ_FILES = torture/masktest.o
+
 MANPAGES += torture/man/masktest.1
 
 #################################
 # Start BINARY locktest
 [BINARY::locktest]
 INSTALLDIR = BINDIR
-OBJ_FILES = \
-		locktest.o
 PRIVATE_DEPENDENCIES = \
 		LIBPOPT \
 		POPT_SAMBA \
@@ -372,6 +308,8 @@ PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-HOSTCONFIG
 # End BINARY locktest
 #################################
+
+locktest_OBJ_FILES = torture/locktest.o
 
 MANPAGES += torture/man/locktest.1
 

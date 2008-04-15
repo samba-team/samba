@@ -56,7 +56,7 @@ static bool test_NetShareAdd(TALLOC_CTX *mem_ctx,
 
 	printf("Creating share %s\n", sharename);
 
-	if (!(libnetctx = libnet_context_init(NULL, tctx->lp_ctx))) {
+	if (!(libnetctx = libnet_context_init(tctx->ev, tctx->lp_ctx))) {
 		return false;
 	}
 
@@ -96,7 +96,7 @@ static bool test_NetShareDel(TALLOC_CTX *mem_ctx,
 
 	printf("Deleting share %s\n", sharename);
 
-	if (!(libnetctx = libnet_context_init(NULL, tctx->lp_ctx))) {
+	if (!(libnetctx = libnet_context_init(tctx->ev, tctx->lp_ctx))) {
 		return false;
 	}
 

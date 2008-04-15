@@ -25,20 +25,29 @@
 import samba
 import misc
 import ldb
+from samba.idmap import IDmapDB
+import pwd
 
 class SamDB(samba.Ldb):
     """The SAM database."""
+
     def __init__(self, url=None, session_info=None, credentials=None, 
                  modules_dir=None, lp=None):
         """Open the Sam Database.
 
         :param url: URL of the database.
         """
+        self.lp = lp
         super(SamDB, self).__init__(session_info=session_info, credentials=credentials,
                                     modules_dir=modules_dir, lp=lp)
         assert misc.dsdb_set_global_schema(self) == 0
         if url:
             self.connect(url)
+        else:
+            self.connect(lp.get("sam database"))
+
+    def connect(self, url):
+        super(SamDB, self).connect(misc.private_path(self.lp, url))
 
     def add_foreign(self, domaindn, sid, desc):
         """Add a foreign security principle."""
@@ -101,9 +110,26 @@ userAccountControl: %u
         #  now the real work
         self.add({"dn": user_dn, 
             "sAMAccountName": username,
-            "unixName": unixname,
             "sambaPassword": password,
             "objectClass": "user"})
+
+        res = self.search(user_dn, scope=ldb.SCOPE_BASE,
+                          expression="objectclass=*",
+                          attrs=["objectSid"])
+        assert(len(res) == 1)
+        user_sid = self.schema_format_value("objectSid", res[0]["objectSid"][0])
+        
+        
+        try:
+            idmap = IDmapDB(lp=self.lp)
+
+            user = pwd.getpwnam(unixname)
+            # setup ID mapping for this UID
+            
+            idmap.setup_name_mapping(user_sid, idmap.TYPE_UID, user[2])
+
+        except KeyError:
+            pass
 
         #  modify the userAccountControl to remove the disabled bit
         self.enable_account(user_dn)

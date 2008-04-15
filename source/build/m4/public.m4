@@ -4,8 +4,6 @@ dnl Copyright (C) 2004 Stefan Metzmacher
 dnl Copyright (C) 2004-2005 Jelmer Vernooij
 dnl Published under the GPL
 dnl
-dnl SMB_SUBSYSTEM(name,obj_files,required_subsystems)
-dnl
 dnl SMB_EXT_LIB_FROM_PKGCONFIG(name,pkg-config name,[ACTION-IF-FOUND],[ACTION-IF-NOT-FOUND])
 dnl
 dnl SMB_EXT_LIB(name,libs,cflags,cppflags,ldflags)
@@ -22,16 +20,15 @@ dnl SMB_SUBSYSTEM(name,obj_files,required_subsystems,cflags)
 AC_DEFUN([SMB_SUBSYSTEM],
 [
 MAKE_SETTINGS="$MAKE_SETTINGS
-$1_OBJ_FILES = $2
 $1_CFLAGS = $4
 $1_ENABLE = YES
+$1_OBJ_FILES = $2
 "
 
 SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 ###################################
 # Start Subsystem $1
 @<:@SUBSYSTEM::$1@:>@
-OBJ_FILES = \$($1_OBJ_FILES)
 PRIVATE_DEPENDENCIES = $3
 CFLAGS = \$($1_CFLAGS)
 ENABLE = YES
@@ -44,20 +41,17 @@ dnl SMB_LIBRARY(name,obj_files,required_subsystems,version,so_version,cflags,ldf
 AC_DEFUN([SMB_LIBRARY],
 [
 MAKE_SETTINGS="$MAKE_SETTINGS
-$1_OBJ_FILES = $2
 $1_CFLAGS = $6
 $1_LDFLAGS = $7
 $1_ENABLE = YES
+$1_OBJ_FILES = $2
 "
 
 SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
 ###################################
 # Start Library $1
 @<:@LIBRARY::$1@:>@
-OBJ_FILES = \$($1_OBJ_FILES)
 PRIVATE_DEPENDENCIES = $3
-VERSION = $4
-SO_VERSION = $5 
 CFLAGS = \$($1_CFLAGS)
 LDFLAGS = \$($1_LDFLAGS)
 ENABLE = YES

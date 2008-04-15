@@ -187,6 +187,18 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	bool opt_interactive = false;
 	int opt;
 	poptContext pc;
+	extern NTSTATUS server_service_wrepl_init(void);
+	extern NTSTATUS server_service_kdc_init(void);
+	extern NTSTATUS server_service_ldap_init(void);
+	extern NTSTATUS server_service_web_init(void);
+	extern NTSTATUS server_service_ldap_init(void);
+	extern NTSTATUS server_service_winbind_init(void);
+	extern NTSTATUS server_service_nbtd_init(void);
+	extern NTSTATUS server_service_auth_init(void);
+	extern NTSTATUS server_service_cldapd_init(void);
+	extern NTSTATUS server_service_smb_init(void);
+	extern NTSTATUS server_service_drepl_init(void);
+	extern NTSTATUS server_service_rpc_init(void);
 	init_module_fn static_init[] = { STATIC_service_MODULES };
 	init_module_fn *shared_init;
 	struct event_context *event_ctx;
