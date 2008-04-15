@@ -757,7 +757,7 @@ fcc_set_flags(krb5_context context,
     return 0; /* XXX */
 }
 
-static krb5_error_code
+static int
 fcc_get_version(krb5_context context,
 		krb5_ccache id)
 {

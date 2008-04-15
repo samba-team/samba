@@ -815,7 +815,7 @@ acc_set_flags(krb5_context context,
     return 0;
 }
 
-static krb5_error_code
+static int
 acc_get_version(krb5_context context,
 		krb5_ccache id)
 {

@@ -823,7 +823,7 @@ kcm_set_flags(krb5_context context,
     return ret;
 }
 
-static krb5_error_code
+static int
 kcm_get_version(krb5_context context,
 		krb5_ccache id)
 {
