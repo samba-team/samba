@@ -1,5 +1,7 @@
 2008-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ca.c: BasicConstraints.pathLenConstraint unsigned int.
+
 	* sel-lex.l: Prefix sel_error with _hx509_ since its global on
 	platforms w/o symbol versioning.
 	
