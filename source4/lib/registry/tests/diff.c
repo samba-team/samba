@@ -211,20 +211,28 @@ static bool diff_setup_tcase(struct torture_context *tctx, void **data)
 	error = reg_mount_hive(r2_ctx, r2_hkcu, HKEY_CURRENT_USER, NULL);
 	torture_assert_werr_ok(tctx, error, "Mounting hive failed");
 
-	error = r1_ctx->ops->get_predefined_key(r2_ctx, HKEY_LOCAL_MACHINE, &key);
+	error = r1_ctx->ops->get_predefined_key(r1_ctx, HKEY_CURRENT_USER, &key);
+	torture_assert_werr_ok(tctx, error, "Opening HKEY_CURRENT_USER failed");
+	error = r1_ctx->ops->create_key(r1_ctx, key, "Network", NULL, NULL, &newkey);
+	torture_assert_werr_ok(tctx, error, "Opening HKCU\\Network failed");
+	error = r1_ctx->ops->create_key(r1_ctx, newkey, "L", NULL, NULL, &newkey);
+	torture_assert_werr_ok(tctx, error, "Opening HKCU\\Network\\L failed");
+
+	error = r2_ctx->ops->get_predefined_key(r2_ctx, HKEY_LOCAL_MACHINE, &key);
 	torture_assert_werr_ok(tctx, error, "Opening HKEY_LOCAL_MACHINE failed");
-	error = r1_ctx->ops->create_key(r2_ctx, key, "Software", NULL, NULL, &newkey);
+	error = r2_ctx->ops->create_key(r2_ctx, key, "Software", NULL, NULL, &newkey);
 	torture_assert_werr_ok(tctx, error, "Creating HKLM\\Sofware failed");
-	error = r1_ctx->ops->create_key(r2_ctx, newkey, "Microsoft", NULL, NULL, &newkey);
+	error = r2_ctx->ops->create_key(r2_ctx, newkey, "Microsoft", NULL, NULL, &newkey);
 	torture_assert_werr_ok(tctx, error, "Creating HKLM\\Software\\Microsoft failed");
-	error = r1_ctx->ops->create_key(r2_ctx, newkey, "Windows", NULL, NULL, &newkey);
+	error = r2_ctx->ops->create_key(r2_ctx, newkey, "Windows", NULL, NULL, &newkey);
 	torture_assert_werr_ok(tctx, error, "Creating HKLM\\Software\\Microsoft\\Windows failed");
-	error = r1_ctx->ops->create_key(r2_ctx, newkey, "CurrentVersion", NULL, NULL, &newkey);
+	error = r2_ctx->ops->create_key(r2_ctx, newkey, "CurrentVersion", NULL, NULL, &newkey);
 	torture_assert_werr_ok(tctx, error, "Creating HKLM\\..\\Windows\\CurrentVersion failed");
-	error = r1_ctx->ops->create_key(r2_ctx, newkey, "Policies", NULL, NULL, &newkey);
+	error = r2_ctx->ops->create_key(r2_ctx, newkey, "Policies", NULL, NULL, &newkey);
 	torture_assert_werr_ok(tctx, error, "Creating HKLM\\..\\CurrentVersion\\Policies failed");
-	error = r1_ctx->ops->create_key(r2_ctx, newkey, "Explorer", NULL, NULL, &newkey);
+	error = r2_ctx->ops->create_key(r2_ctx, newkey, "Explorer", NULL, NULL, &newkey);
 	torture_assert_werr_ok(tctx, error, "Creating HKLM\\..\\Policies\\Explorer failed");
+
 
 	blob.data = (void *)talloc(r2_ctx, uint32_t);
 	SIVAL(blob.data, 0, 0x03ffffff);
