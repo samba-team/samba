@@ -111,12 +111,14 @@ bool smbconf_find_in_array(const char *string, char **list,
 {
 	uint32_t i;
 
-	if ((string == NULL) || (list == NULL)) {
+	if (list == NULL) {
 		return false;
 	}
 
 	for (i = 0; i < num_entries; i++) {
-		if (strequal(string, list[i])) {
+		if (((string == NULL) && (list[i] == NULL)) ||
+		    strequal(string, list[i]))
+		{
 			if (entry != NULL) {
 				*entry = i;
 			}
