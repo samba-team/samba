@@ -36,7 +36,11 @@ extern "C" {
 #define CAMELLIA_TABLE_BYTE_LEN 272
 #define CAMELLIA_TABLE_WORD_LEN (CAMELLIA_TABLE_BYTE_LEN / 4)
 
-typedef unsigned int KEY_TABLE_TYPE[CAMELLIA_TABLE_WORD_LEN];
+/* u32 must be 32bit word */
+typedef uint32_t u32;
+typedef unsigned char u8;
+
+typedef u32 KEY_TABLE_TYPE[CAMELLIA_TABLE_WORD_LEN];
 
 
 void Camellia_Ekeygen(const int keyBitLength,
