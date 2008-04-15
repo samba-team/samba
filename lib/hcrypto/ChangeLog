@@ -4,6 +4,9 @@
 	file.  Use u32 to define KEY_TABLE_TYPE, avoids warning on
 	platfors where u32 is not unsigned int.
 
+	* camellia-ntt.c: Move the typedef u<num> to camellia-ntt.h
+	header file.
+
 	* camellia.h: Drop need to camellia-ntt.h by including some more
 	defines.
 
