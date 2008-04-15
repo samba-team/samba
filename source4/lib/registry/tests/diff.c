@@ -24,6 +24,7 @@
 #include "lib/registry/registry.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/winreg.h"
+#include "param/param.h"
 
 struct diff_tcase_data {
 	struct registry_context *r1_ctx;
@@ -56,13 +57,12 @@ static bool test_generate_diff(struct torture_context *tctx, void *tcase_data)
 static bool test_diff_load(struct torture_context *tctx, void *tcase_data)
 {
 	struct diff_tcase_data *td = tcase_data;
-	struct smb_iconv_convenience *iconv_convenience;
+	struct smb_iconv_convenience *ic;
 	struct reg_diff_callbacks *callbacks;
 	void *data;
 	WERROR error;
 
-	iconv_convenience = smb_iconv_convenience_init(tctx, "CP850", "UTF-8", 1);
-
+	ic = lp_iconv_convenience(tctx->lp_ctx);
 
 	error = reg_diff_load(td->filename, iconv_convenience, callbacks, data);
 	torture_assert_werr_ok(tctx, error, "reg_diff_load");
@@ -244,13 +244,16 @@ static bool diff_setup_tcase(struct torture_context *tctx, void **data)
 static bool diff_setup_preg_tcase (struct torture_context *tctx, void **data)
 {
 	struct diff_tcase_data *td;
+	struct smb_iconv_convenience *ic;
 	WERROR error;
 
 	diff_setup_tcase(tctx, data);
 	td = *data;
-	
+
+	ic = lp_iconv_convenience(tctx->lp_ctx);
+
 	td->filename = talloc_asprintf(tctx, "%s/test.pol", td->tempdir);
-	error = reg_preg_diff_save(tctx, td->filename, &td->callbacks, &td->callback_data);
+	error = reg_preg_diff_save(tctx, td->filename, ic, &td->callbacks, &td->callback_data);
 	torture_assert_werr_ok(tctx, error, "reg_preg_diff_save");
 
 	return true;
@@ -259,16 +262,16 @@ static bool diff_setup_preg_tcase (struct torture_context *tctx, void **data)
 static bool diff_setup_dotreg_tcase (struct torture_context *tctx, void **data)
 {
 	struct diff_tcase_data *td;
-	struct smb_iconv_convenience *iconv_convenience;
+	struct smb_iconv_convenience *ic;
 	WERROR error;
 
 	diff_setup_tcase(tctx, data);
 	td = *data;
 
-	iconv_convenience = smb_iconv_convenience_init(tctx, "CP850", "UTF-8", 1);
+	ic = lp_iconv_convenience(tctx->lp_ctx);
 	
 	td->filename = talloc_asprintf(tctx, "%s/test.reg", td->tempdir);
-	error = reg_dotreg_diff_save(tctx, td->filename, iconv_convenience, &td->callbacks, &td->callback_data);
+	error = reg_dotreg_diff_save(tctx, td->filename, ic, &td->callbacks, &td->callback_data);
 	torture_assert_werr_ok(tctx, error, "reg_dotreg_diff_save");
 
 	return true;
