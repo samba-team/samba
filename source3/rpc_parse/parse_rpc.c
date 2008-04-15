@@ -234,6 +234,21 @@ const char *cli_get_pipe_name(int pipe_idx)
 	return &pipe_names[pipe_idx].client_pipe[5];
 }
 
+/****************************************************************************
+ Return the pipe idx from the syntax.
+ ****************************************************************************/
+int cli_get_pipe_idx(const RPC_IFACE *syntax)
+{
+	int i;
+	for (i = 0; pipe_names[i].client_pipe; i++) {
+		if (GUID_equal(&pipe_names[i].abstr_syntax.uuid, &syntax->uuid) &&
+		    pipe_names[i].abstr_syntax.version == syntax->version)
+			return i;
+	}
+
+	return -1;
+}
+
 /*******************************************************************
  Inits an RPC_HDR structure.
 ********************************************************************/

@@ -74,7 +74,7 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 
 	prs_init_empty( &r_ps, req, UNMARSHALL );
 
-	status = rpc_api_pipe_req(req->pipe->cli, req->opnum, &req->q_ps, &r_ps); 
+	status = rpc_api_pipe_req(req->pipe->rpc_cli, req->opnum, &req->q_ps, &r_ps); 
 
 	prs_mem_free( &req->q_ps );
 
@@ -104,8 +104,6 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-
-
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -117,12 +115,21 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, struct dcerpc_pipe
 	struct dcerpc_pipe *p = talloc(parent_ctx, struct dcerpc_pipe);
 	struct dcerpc_binding *binding;
 	NTSTATUS nt_status;
+	int idx;
+	RPC_IFACE iface_syntax;
 
 	nt_status = dcerpc_parse_binding(p, binding_string, &binding);
 
 	if (NT_STATUS_IS_ERR(nt_status)) {
-		DEBUG(1, ("Unable to parse binding string '%s'", binding));
+		DEBUG(1, ("Unable to parse binding string '%s'", binding_string));
+		talloc_free(p);
 		return nt_status;
+	}
+
+	if (binding->transport != NCACN_NP) {
+		DEBUG(0, ("Only ncacn_np supported"));
+		talloc_free(p);
+		return NT_STATUS_NOT_SUPPORTED;
 	}
 
 	/* FIXME: Actually use loadparm_context.. */
@@ -137,6 +144,28 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, struct dcerpc_pipe
 					get_cmdline_auth_info_password(),
 					get_cmdline_auth_info_use_kerberos() ? CLI_FULL_CONNECTION_USE_KERBEROS : 0,
 					get_cmdline_auth_info_signing_state(), NULL);
+
+	if (NT_STATUS_IS_ERR(nt_status)) {
+		talloc_free(p);
+		return nt_status;
+	}
+
+	iface_syntax.uuid = table->syntax_id.uuid;
+	iface_syntax.version = table->syntax_id.if_version;
+
+	idx = cli_get_pipe_idx(&iface_syntax);
+	if (idx < 0) {
+		DEBUG(0, ("Unable to find interface index"));
+		talloc_free(p);
+		return NT_STATUS_OBJECT_PATH_INVALID;
+	}
+
+	p->rpc_cli = cli_rpc_pipe_open_noauth(p->cli, idx, &nt_status);
+
+	if (p->rpc_cli == NULL) {
+		talloc_free(p);
+		return nt_status;
+	}
 
 	p->table = table;
 
