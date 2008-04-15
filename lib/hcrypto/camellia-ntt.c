@@ -37,10 +37,6 @@
 #include <krb5-types.h>
 #include "camellia-ntt.h"
 
-/* u32 must be 32bit word */
-typedef uint32_t u32;
-typedef unsigned char u8;
-
 /* key constants */
 
 #define CAMELLIA_SIGMA1L (0xA09E667FL)
