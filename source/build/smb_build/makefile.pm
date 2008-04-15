@@ -244,7 +244,9 @@ $ctx->{RESULT_SHARED_LIBRARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL
 __EOD__
 );
 	if ($ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
-		$self->output("\t\@test \$($ctx->{NAME}_VERSION) = \$($ctx->{NAME}_SOVERSION) || ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}\n");
+		$self->output("ifneq (\$($ctx->{NAME}_VERSION),\$($ctx->{NAME}_SOVERSION))\n");
+		$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}\n");
+		$self->output("endif\n");
 	}
 	$self->output("ifdef $ctx->{NAME}_SOVERSION\n");
 	$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}\n");
