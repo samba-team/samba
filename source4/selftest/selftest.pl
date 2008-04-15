@@ -239,9 +239,9 @@ sub run_testsuite($$$$$$)
 	$msg_ops->start_test([], $name);
 
 	unless (open(RESULT, "$cmd 2>&1|")) {
+		$statistics->{TESTS_ERROR}++;
 		$msg_ops->end_test([], $name, "error", 1, "Unable to run $cmd: $!");
 		$statistics->{SUITES_FAIL}++;
-		$statistics->{TESTS_ERROR}++;
 		return 0;
 	}
 
