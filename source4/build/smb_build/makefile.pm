@@ -214,9 +214,6 @@ sub SharedLibraryPrimitives($$)
 {
 	my ($self,$ctx) = @_;
 
-	$self->output("$ctx->{NAME}_SOVERSION = $ctx->{SO_VERSION}\n") if (defined($ctx->{SO_VERSION}));
-	$self->output("$ctx->{NAME}_VERSION = $ctx->{VERSION}\n") if (defined($ctx->{VERSION}));
-
 	if (not grep(/STATIC_LIBRARY/, @{$ctx->{OUTPUT_TYPE}})) {
 		$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 		$self->_prepare_list($ctx, "FULL_OBJ_LIST");
@@ -231,7 +228,7 @@ sub SharedLibrary($$)
 		$ctx->{LIBRARY_SONAME} = "";
 	}
 
-	$self->output("SHARED_LIBS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n") if (defined($ctx->{SO_VERSION}));
+	$self->output("SHARED_LIBS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
 
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");

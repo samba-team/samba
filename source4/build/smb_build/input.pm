@@ -125,16 +125,6 @@ sub check_library($$$)
 
 	unless (defined($lib->{OUTPUT_TYPE})) { $lib->{OUTPUT_TYPE} = $default_ot; }
 
-	if (defined($lib->{VERSION}) and not defined($lib->{SO_VERSION})) {
-		print "$lib->{NAME}: Please specify SO_VERSION when specifying VERSION\n";
-		return;
-	}
-
-	if (defined($lib->{SO_VERSION}) and not defined($lib->{VERSION})) {
-		print "$lib->{NAME}: Please specify VERSION when specifying SO_VERSION\n";
-		return;
-	}
-
 	unless (defined($lib->{INIT_FUNCTION_TYPE})) { $lib->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)"; }
 	unless (defined($lib->{INIT_FUNCTION_SENTINEL})) { $lib->{INIT_FUNCTION_SENTINEL} = "NULL"; }
 	unless (defined($lib->{INSTALLDIR})) { $lib->{INSTALLDIR} = "LIBDIR"; }

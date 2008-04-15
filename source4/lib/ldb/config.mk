@@ -119,18 +119,20 @@ ldb_tdb_OBJ_FILES = $(addprefix lib/ldb/ldb_tdb/, ldb_tdb.o ldb_search.o ldb_pac
 ################################################
 # Start SUBSYSTEM ldb
 [LIBRARY::LIBLDB]
-VERSION = 0.0.1
-SO_VERSION = 0
 CFLAGS = -Ilib/ldb/include
-PC_FILE = ldb.pc
 INIT_FUNCTION_TYPE = extern const struct ldb_module_ops
 PUBLIC_DEPENDENCIES = \
 		LIBTALLOC
 PRIVATE_DEPENDENCIES = \
 		SOCKET_WRAPPER
+
+PC_FILES += $(ldbdir)/ldb.pc
 #
 # End SUBSYSTEM ldb
 ################################################
+
+LIBLDB_VERSION = 0.0.1
+LIBLDB_SOVERSION = 0
 
 LIBLDB_OBJ_FILES = $(addprefix lib/ldb/common/, ldb.o ldb_ldif.o ldb_parse.o ldb_msg.o ldb_utf8.o ldb_debug.o ldb_modules.o ldb_match.o ldb_attributes.o attrib_handlers.o ldb_dn.o ldb_controls.o qsort.o)
 

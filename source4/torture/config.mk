@@ -1,8 +1,5 @@
 # TORTURE subsystem
 [LIBRARY::torture]
-SO_VERSION = 0
-VERSION = 0.0.1
-PC_FILE = torture.pc
 PRIVATE_PROTO_HEADER = proto.h
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-HOSTCONFIG \
@@ -10,7 +7,7 @@ PUBLIC_DEPENDENCIES = \
 		LIBTALLOC \
 		LIBPOPT
 
-
+PC_FILES += torture/torture.pc
 torture_OBJ_FILES = $(addprefix torture/, torture.o ui.o)
 
 PUBLIC_HEADERS += torture/torture.h torture/ui.h
@@ -19,7 +16,7 @@ PUBLIC_HEADERS += torture/torture.h torture/ui.h
 PRIVATE_DEPENDENCIES = LIBCLI_RAW LIBPYTHON smbcalls PROVISION
 PUBLIC_DEPENDENCIES = POPT_CREDENTIALS
 
-TORTURE_UTIL_OBJ_FILES = torture/util_smb.o
+TORTURE_UTIL_OBJ_FILES = $(addprefix torture/, util_smb.o)
 
 #################################
 # Start SUBSYSTEM TORTURE_BASIC

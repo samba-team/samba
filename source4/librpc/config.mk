@@ -1,20 +1,18 @@
 ################################################
 # Start SUBSYSTEM LIBNDR
 [LIBRARY::LIBNDR]
-VERSION = 0.0.1
-SO_VERSION = 0
-PC_FILE = ndr.pc
 PRIVATE_PROTO_HEADER = ndr/libndr_proto.h
 PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBTALLOC LIBSAMBA-UTIL CHARSET \
 					  LIBSAMBA-HOSTCONFIG
+
+LIBNDR_OBJ_FILES = $(addprefix librpc/ndr/, ndr.o ndr_basic.o ndr_string.o uuid.o)
+
+PC_FILES += librpc/ndr.pc
+LIBNDR_VERSION = 0.0.1
+LIBNDR_SOVERSION = 0
+
 # End SUBSYSTEM LIBNDR
 ################################################
-
-LIBNDR_OBJ_FILES = \
-		librpc/ndr/ndr.o \
-		librpc/ndr/ndr_basic.o \
-		librpc/ndr/ndr_string.o \
-		librpc/ndr/uuid.o
 
 PUBLIC_HEADERS += librpc/ndr/libndr.h
 
@@ -430,10 +428,11 @@ RPC_NDR_UNIXINFO_OBJ_FILES = librpc/gen_ndr/ndr_unixinfo_c.o
 
 [LIBRARY::dcerpc_samr]
 PUBLIC_DEPENDENCIES = dcerpc NDR_SAMR 
-PC_FILE = dcerpc_samr.pc
-VERSION = 0.0.1
-SO_VERSION = 0
 
+PC_FILES += librpc/dcerpc_samr.pc
+
+dcerpc_samr_VERSION = 0.0.1
+dcerpc_samr_SOVERSION = 0
 dcerpc_samr_OBJ_FILES = librpc/gen_ndr/ndr_samr_c.o
 
 [SUBSYSTEM::RPC_NDR_SPOOLSS]
@@ -460,11 +459,12 @@ PUBLIC_HEADERS += librpc/gen_ndr/ndr_svcctl_c.h
 
 [LIBRARY::dcerpc_atsvc]
 PUBLIC_DEPENDENCIES = dcerpc NDR_ATSVC
-PC_FILE = dcerpc_atsvc.pc
-VERSION = 0.0.1
-SO_VERSION = 0
+
+dcerpc_atsvc_VERSION = 0.0.1
+dcerpc_atsvc_SOVERSION = 0
 
 dcerpc_atsvc_OBJ_FILES = librpc/gen_ndr/ndr_atsvc_c.o
+PC_FILES += librpc/dcerpc_atsvc.pc
 
 PUBLIC_HEADERS += librpc/gen_ndr/ndr_atsvc_c.h
 
@@ -573,9 +573,6 @@ PUBLIC_HEADERS += $(addprefix librpc/, gen_ndr/dcerpc.h gen_ndr/ndr_dcerpc.h)
 ################################################
 # Start SUBSYSTEM dcerpc
 [LIBRARY::dcerpc]
-VERSION = 0.0.1
-SO_VERSION = 0
-PC_FILE = dcerpc.pc
 PRIVATE_PROTO_HEADER = rpc/dcerpc_proto.h
 PRIVATE_DEPENDENCIES = \
 		samba-socket LIBCLI_RESOLVE LIBCLI_SMB LIBCLI_SMB2 \
@@ -587,6 +584,10 @@ PRIVATE_DEPENDENCIES = \
 PUBLIC_DEPENDENCIES = CREDENTIALS 
 # End SUBSYSTEM dcerpc
 ################################################
+
+PC_FILES += librpc/dcerpc.pc
+dcerpc_VERSION = 0.0.1
+dcerpc_SOVERSION = 0
 
 dcerpc_OBJ_FILES = $(addprefix librpc/rpc/, dcerpc.o dcerpc_auth.o dcerpc_schannel.o dcerpc_util.o \
 				  dcerpc_error.o dcerpc_smb.o dcerpc_smb2.o dcerpc_sock.o dcerpc_connect.o dcerpc_secondary.o)
