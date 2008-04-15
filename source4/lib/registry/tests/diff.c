@@ -37,11 +37,6 @@ struct diff_tcase_data {
 
 static bool test_generate_diff(struct torture_context *tctx, void *tcase_data)
 {
-	/* WERROR reg_generate_diff(struct registry_context *ctx1,
-				  struct registry_context *ctx2,
-				  const struct reg_diff_callbacks *callbacks,
-				  void *callback_data)
-				  */
 	WERROR error;
 	struct diff_tcase_data *td = tcase_data;
 
@@ -97,8 +92,6 @@ static bool test_diff_apply(struct torture_context *tctx, void *tcase_data)
 	error = td->r1_ctx->ops->open_key(td->r1_ctx, key, "Explorer", &key);
 	torture_assert_werr_ok(tctx, error, "Opening HKLM\\..\\Policies\\Explorer failed");
 
-	
-
 	return true;
 }
 
@@ -141,6 +134,7 @@ static bool test_generate_diff_key_null(struct torture_context *tctx, void *tcas
 
 	return true;
 }
+
 static void tcase_add_tests (struct torture_tcase *tcase) 
 {
 	torture_tcase_add_simple_test(tcase, "test_generate_diff_key_add",
@@ -284,23 +278,18 @@ static bool diff_setup_dotreg_tcase (struct torture_context *tctx, void **data)
 
 	return true;
 }
-static bool diff_teardown_tcase (struct torture_context *tctx, void *data)
-{
-	/* Done is called by generate_diff itself! */
 
-	return true;
-}
 struct torture_suite *torture_registry_diff(TALLOC_CTX *mem_ctx)
 {
 	struct torture_tcase *tcase;
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "DIFF");
 
 	tcase = torture_suite_add_tcase(suite, "PReg");
-	torture_tcase_set_fixture(tcase, diff_setup_preg_tcase, diff_teardown_tcase);
+	torture_tcase_set_fixture(tcase, diff_setup_preg_tcase, NULL);
 	tcase_add_tests(tcase);
 
 	tcase = torture_suite_add_tcase(suite, "dotreg");
-	torture_tcase_set_fixture(tcase, diff_setup_dotreg_tcase, diff_teardown_tcase);
+	torture_tcase_set_fixture(tcase, diff_setup_dotreg_tcase, NULL);
 	tcase_add_tests(tcase);
 
 	return suite;
