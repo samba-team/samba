@@ -590,6 +590,7 @@ dcerpc_VERSION = 0.0.1
 dcerpc_SOVERSION = 0
 
 dcerpc_OBJ_FILES = $(addprefix librpc/rpc/, dcerpc.o dcerpc_auth.o dcerpc_schannel.o dcerpc_util.o \
+				   binding.o \
 				  dcerpc_error.o dcerpc_smb.o dcerpc_smb2.o dcerpc_sock.o dcerpc_connect.o dcerpc_secondary.o)
 
 
