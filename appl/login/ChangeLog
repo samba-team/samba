@@ -1,5 +1,7 @@
 2008-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* utmp_login.c: Reorder to avoid prototype.
+
 	* login_locl.h: If cygwin doesnt have WTMPX_FILE, it uses wtmp for
 	wtmpx http://www.cygwin.com/ml/cygwin/2006-12/msg00630.html
 	
