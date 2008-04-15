@@ -238,7 +238,13 @@ sub run_testsuite($$$$$$)
 
 	$msg_ops->start_test([], $name);
 
-	open(RESULT, "$cmd 2>&1|");
+	unless (open(RESULT, "$cmd 2>&1|")) {
+		$msg_ops->end_test([], $name, "error", 1, "Unable to run $cmd: $!");
+		$statistics->{SUITES_FAIL}++;
+		$statistics->{TESTS_ERROR}++;
+		return 0;
+	}
+
 	my $expected_ret = parse_results(
 		$msg_ops, $statistics, *RESULT, \&expecting_failure, [$name]);
 
@@ -251,16 +257,14 @@ sub run_testsuite($$$$$$)
 	$ret = 0 unless $ret == 1;
 
 	if ($ret == 1) {
-		$msg_ops->end_test([], $name, "success", $expected_ret != $ret, undef);
+		$msg_ops->end_test([], $name, "success", $expected_ret != $ret, undef); 
 	} else {
-		$msg_ops->end_test([], $name, "failure", $expected_ret != $ret, 
-					       "Returned $ret");
+		$msg_ops->end_test([], $name, "failure", $expected_ret != $ret, "Returned $ret");
 	}
 
 	cleanup_pcap($pcap_file, $expected_ret, $ret);
 
-	if (not $opt_socket_wrapper_keep_pcap and 
-		defined($pcap_file)) {
+	if (not $opt_socket_wrapper_keep_pcap and defined($pcap_file)) {
 		$msg_ops->output_msg("PCAP FILE: $pcap_file\n");
 	}
 
