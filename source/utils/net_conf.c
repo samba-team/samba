@@ -150,10 +150,18 @@ static WERROR import_process_service(struct smbconf_ctx *conf_ctx,
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (opt_testmode) {
-		d_printf("[%s]\n", servicename);
-		for (idx = 0; idx < num_params; idx ++) {
-			d_printf("\t%s = %s\n", param_names[idx],
-				 param_values[idx]);
+		if (servicename != NULL) {
+			d_printf("[%s]\n", servicename);
+			for (idx = 0; idx < num_params; idx++) {
+				d_printf("\t%s = %s\n", param_names[idx],
+					 param_values[idx]);
+			}
+		}
+		else {
+			for (idx = 0; idx < num_params; idx++) {
+				d_printf("%s = %s\n", param_names[idx],
+					 param_values[idx]);
+			}
 		}
 		d_printf("\n");
 		goto done;
