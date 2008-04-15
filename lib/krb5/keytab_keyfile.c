@@ -52,7 +52,7 @@ RCSID("$Id$");
 #define AFS_SERVERMAGICKRBCONF "/usr/afs/etc/krb.conf"
 
 struct akf_data {
-    int num_entries;
+    uint32_t num_entries;
     char *filename;
     char *cell;
     char *realm;
@@ -203,7 +203,7 @@ akf_start_seq_get(krb5_context context,
     }
 
     c->sp = krb5_storage_from_fd(c->fd);
-    ret = krb5_ret_int32(c->sp, &d->num_entries);
+    ret = krb5_ret_uint32(c->sp, &d->num_entries);
     if(ret) {
 	krb5_storage_free(c->sp);
 	close(c->fd);
