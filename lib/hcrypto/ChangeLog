@@ -1,5 +1,14 @@
-2008-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
+2008-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* camellia-ntt.h: Move the typedef u<num> to camellia-ntt.h header
+	file.  Use u32 to define KEY_TABLE_TYPE, avoids warning on
+	platfors where u32 is not unsigned int.
+
+	* camellia.h: Drop need to camellia-ntt.h by including some more
+	defines.
+
+2008-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* rnd_keys.c: deprecated.
 	
 	* des.h: c++ wrappers + deprecated.
