@@ -19,6 +19,9 @@ BNLD_FLAGS = $(LDFLAGS) $(SYS_LDFLAGS)
 HOSTCC_FLAGS = -D_SAMBA_HOSTCC_ $(CFLAGS)
 HOSTLD_FLAGS = $(LDFLAGS) $(SYS_LDFLAGS)
 
+$(srcdir)/version.h: $(srcdir)/VERSION
+	@$(SHELL) script/mkversion.sh VERSION $(srcdir)/version.h $(srcdir)/
+
 .DEFAULT_GOAL := all
 
 ifneq ($(automatic_dependencies),yes)
@@ -26,8 +29,29 @@ ALL_PREDEP = proto
 .NOTPARALLEL:
 endif
 
-include rules.mk
+regen_version::
+	@$(SHELL) script/mkversion.sh VERSION $(srcdir)/version.h $(srcdir)/
+
+clean_pch::
+	@echo "Removing precompiled headers"
+	@-rm -f include/includes.h.gch
+
+pch:: clean_pch include/includes.h.gch
+
+.DEFAULT_GOAL := all
+
+ifneq ($(automatic_dependencies),yes)
+ALL_PREDEP = proto
+.NOTPARALLEL:
+endif
+
+include build/make/rules.mk
+include build/make/python.mk
 include data.mk
+
+BINARIES += $(BIN_PROGS) $(SBIN_PROGS)
+
+pythonmods:: $(PYTHON_PYS) $(PYTHON_SO)
 
 DEP_FILES = $(patsubst %.ho,%.hd,$(patsubst %.o,%.d,$(ALL_OBJS))) \
 		   include/includes.d
@@ -55,7 +79,7 @@ endif
 DEFAULT_HEADERS = $(srcdir)/lib/util/dlinklist.h \
 		  $(srcdir)/version.h
 
-binaries::
+binaries:: $(BINARIES)
 libraries:: $(STATIC_LIBS) $(SHARED_LIBS)
 modules:: $(PLUGINS)
 headers:: $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)

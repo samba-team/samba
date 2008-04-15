@@ -23,14 +23,11 @@ my $section_types = {
 		SWIG_FILE => "string",
 		"PRIVATE_DEPENDENCIES"	=> "list",
 		"PUBLIC_DEPENDENCIES"	=> "list",
-		"OBJ_FILES" => "list",
 		"ENABLE"		=> "bool",
 		"LDFLAGS"		=> "list",
 		"CFLAGS"		=> "list",
 	},
 	"SUBSYSTEM" => {
-		"OBJ_FILES"		=> "list",
-
 		"PRIVATE_DEPENDENCIES"	=> "list",
 		"PUBLIC_DEPENDENCIES"	=> "list",
 
@@ -47,7 +44,6 @@ my $section_types = {
 		"SUBSYSTEM"		=> "string",
 
 		"INIT_FUNCTION"		=> "string",
-		"OBJ_FILES"		=> "list",
 
 		"PRIVATE_DEPENDENCIES"	=> "list",
 
@@ -62,7 +58,6 @@ my $section_types = {
 		"CFLAGS"		=> "list"
 		},
 	"BINARY" => {
-		"OBJ_FILES"		=> "list",
 
 		"PRIVATE_DEPENDENCIES"	=> "list",
 
@@ -78,17 +73,11 @@ my $section_types = {
 		"USE_HOSTCC"		=> "bool"
 		},
 	"LIBRARY" => {
-		"VERSION"		=> "string",
-		"SO_VERSION"		=> "string",
 		"LIBRARY_REALNAME" => "string",
 
-		"PC_FILE" => "string",
-		
 		"INIT_FUNCTION_TYPE"	=> "string",
 		"INIT_FUNCTION_SENTINEL" => "string",
 		"OUTPUT_TYPE"		=> "list",
-
-		"OBJ_FILES"		=> "list",
 
 		"PRIVATE_DEPENDENCIES"	=> "list",
 		"PUBLIC_DEPENDENCIES"	=> "list",
@@ -223,6 +212,9 @@ sub run_config_mk($$$$)
 		{
 			$section = $1;
 			$infragment = 0;
+
+			$result->{$section}{EXISTS}{KEY} = "EXISTS";
+			$result->{$section}{EXISTS}{VAL} = 1;
 			next;
 		}
 
@@ -233,6 +225,7 @@ sub run_config_mk($$$$)
 			$subdir =~ s/^\.$//g;
 			$subdir =~ s/^\.\///g;
 			$subdir .= "/" if ($subdir ne "");
+			$makefile .= "basedir := $subdir\n";
 			$makefile .= run_config_mk($input, $srcdir, $builddir, $subdir.$subfile);
 			next;
 		}
@@ -280,6 +273,7 @@ sub run_config_mk($$$$)
 		$input->{$name}{BASEDIR} = $basedir;
 
 		foreach my $key (values %{$result->{$section}}) {
+			next if ($key->{KEY} eq "EXISTS");
 			$key->{VAL} = smb_build::input::strtrim($key->{VAL});
 			my $vartype = $sectype->{$key->{KEY}};
 			if (not defined($vartype)) {

@@ -311,7 +311,7 @@ _PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
 	
-	tj = talloc(NULL, struct test_join);
+	tj = talloc(tctx, struct test_join);
 	if (!tj) return NULL;
 
 	libnet_r = talloc(tj, struct libnet_JoinDomain);
@@ -320,7 +320,7 @@ _PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
 		return NULL;
 	}
 	
-	libnet_ctx = libnet_context_init(NULL, tctx->lp_ctx);	
+	libnet_ctx = libnet_context_init(tctx->ev, tctx->lp_ctx);	
 	if (!libnet_ctx) {
 		talloc_free(tj);
 		return NULL;

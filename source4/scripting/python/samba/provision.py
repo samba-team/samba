@@ -1166,6 +1166,7 @@ def provision_backend(setup_dir=None, message=None,
                            "NETBIOSNAME": names.netbiosname,
                            "DEFAULTSITE": DEFAULTSITE,
                            "CONFIGDN": names.configdn,
+                           "SERVERDN": names.serverdn
                            })
     
     setup_add_ldif(schemadb, setup_path("schema_samba4.ldif"), 
@@ -1241,9 +1242,9 @@ refint_attributes""" + refint_attributes + "\n";
         setup_file(setup_path("modules.conf"), paths.modulesconf,
                    {"REALM": names.realm})
         
-        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "user"))
-        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "config"))
-        setup_db_config(setup_path, file, os.path.join(paths.ldapdir, "schema"))
+        setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "user")))
+        setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "config")))
+        setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "schema")))
         mapping = "schema-map-openldap-2.3"
         backend_schema = "backend-schema.schema"
 

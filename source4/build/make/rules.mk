@@ -1,3 +1,6 @@
+# Rules file for Samba 4
+# This relies on GNU make.
+#
 # Dependencies command
 DEPENDS = $(CC) -M -MG -MP -MT $(<:.c=.o) -MT $@ \
     $(CFLAGS) $(CPPFLAGS) $< -o $@
@@ -26,22 +29,14 @@ PCHCOMPILE = @$(CC) -Ilib/replace \
 # Partial linking
 PARTLINK = @$(PROG_LD) -r
 
+make_utility_dir = $(srcdir)/build/make/
+
 include/config.h:
 	@echo "include/config.h not present"
 	@echo "You need to rerun ./autogen.sh and ./configure"
 	@/bin/false
 
-$(srcdir)/version.h: $(srcdir)/VERSION
-	@$(SHELL) script/mkversion.sh VERSION $(srcdir)/version.h $(srcdir)/
-
-regen_version::
-	@$(SHELL) script/mkversion.sh VERSION $(srcdir)/version.h $(srcdir)/
-
-clean_pch::
-	@echo "Removing precompiled headers"
-	@-rm -f include/includes.h.gch
-
-pch:: clean_pch include/includes.h.gch
+pch::
 
 clean:: clean_pch
 	@echo Removing objects
@@ -51,7 +46,7 @@ clean:: clean_pch
 	@echo Removing binaries
 	@-rm -f $(BIN_PROGS) $(SBIN_PROGS) $(BINARIES) $(TORTURE_PROGS)
 	@echo Removing libraries
-	@-rm -f $(STATIC_LIBRARIES) $(SHARED_LIBRARIES)
+	@-rm -f $(STATIC_LIBS) $(SHARED_LIBS)
 	@-rm -f bin/static/*.a bin/shared/*.$(SHLIBEXT) bin/mergedobj/*.o
 	@echo Removing modules
 	@-rm -f bin/modules/*/*.$(SHLIBEXT)
@@ -94,6 +89,103 @@ unused_macros:
 	@$(STLD) $(STLD_FLAGS) $@ $^
 
 ###############################################################################
+# Templates
+###############################################################################
+
+# Partially link
+# Arguments: target object file, source object files
+define partial_link_template 
+$(1): $(2) ;
+	@echo Partially linking $$@
+	@mkdir -p $$(@D)
+	$$(PARTLINK) -o $$@ $$^
+endef
+
+# Link a binary
+# Arguments: target file, depends, flags
+define binary_link_template
+$(1): $(2) ;
+	@echo Linking $$@
+	@$$(BNLD) $$(BNLD_FLAGS) $$(INTERN_LDFLAGS) -o $$@ $$(INSTALL_LINK_FLAGS) $(3)
+endef
+
+# Link a host-machine binary
+# Arguments: target file, depends, flags
+define host_binary_link_template
+$(1): $(2) ;
+	@echo Linking $$@
+	@$$(HOSTLD) $$(HOSTLD_FLAGS) -L$${builddir}/bin/static -o $$@ $$(INSTALL_LINK_FLAGS) $(3)
+endef
+
+# Create a prototype header
+# Arguments: header file, c files
+define proto_header_template
+$(1): $(2) ;
+	@echo "Creating $$@"
+	@$$(PERL) $$(srcdir)/script/mkproto.pl --srcdir=$$(srcdir) --builddir=$$(builddir) --public=/dev/null --private=$$@ $$^
+endef
+
+# Shared module
+# Arguments: Target, dependencies, objects
+define shared_module_template
+
+$(1): $(2) ;
+	@echo Linking $$@
+	@mkdir -p $$(@D)
+	@$$(MDLD) $$(LDFLAGS) $$(MDLD_FLAGS) $$(INTERN_LDFLAGS) -o $$@ $$(INSTALL_LINK_FLAGS) $(3)
+
+endef
+
+# Shared library
+# Arguments: Target, dependencies, link flags, soname
+define shared_library_template
+$(1): $(2)
+	@echo Linking $$@
+	@mkdir -p $$(@D)
+	@$$(SHLD) $$(LDFLAGS) $$(SHLD_FLAGS) $$(INTERN_LDFLAGS) -o $$@ $$(INSTALL_LINK_FLAGS) \
+		$(3) \
+		$$(if $$(SONAMEFLAG), $$(SONAMEFLAG)$(notdir $(4)))
+
+ifneq ($(notdir $(1)),$(notdir $(4)))
+$(4): $(1)
+	@echo "Creating symbolic link for $$@"
+	@ln -fs $$(<F) $$@
+endif
+
+ifneq ($(notdir $(1)),$(notdir $(5)))
+$(5): $(1)
+	@echo "Creating symbolic link for $$@"
+	@ln -fs $$(<F) $$@
+endif
+endef
+
+# Shared alias
+# Arguments: Target, subsystem name, alias name
+define shared_module_alias_template
+bin/modules/$(2)/$(3).$$(SHLIBEXT): $(1)
+	@ln -fs $$(<F) $$@
+
+PLUGINS += bin/modules/$(2)/$(3).$$(SHLIBEXT)
+
+uninstallplugins::
+	@-rm $$(DESTDIR)$$(modulesdir)/$(2)/$(3).$$(SHLIBEXT)
+installplugins::
+	@ln -fs $(1) $$(DESTDIR)$$(modulesdir)/$(2)/$(3).$$(SHLIBEXT)
+
+endef
+
+define shared_module_install_template
+installplugins:: bin/modules/$(1)/$(2)
+	@echo Installing$(2) as $$(DESTDIR)$$(modulesdir)/$(1)/$(2)
+	@mkdir -p $$(DESTDIR)$$(modulesdir)/$(1)/
+	@cp bin/modules/$(1)/$(2) $$(DESTDIR)$$(modulesdir)/$(1)/$(2)
+uninstallplugins::
+	@echo Uninstalling $$(DESTDIR)$$(modulesdir)/$(1)/$(2)
+	@-rm $$(DESTDIR)$$(modulesdir)/$(1)/$(2)
+
+endef
+
+###############################################################################
 # File types
 ###############################################################################
 
@@ -119,11 +211,9 @@ include/includes.d: include/includes.h
 	@echo "Compiling $<"
 	@-mkdir -p `dirname $@`
 	@$(COMPILE) && exit 0 ; \
-		echo "The following command failed:" 1>&2;\
-		$(COMPILE) >/dev/null 2>&1
+	$(COMPILE) 
 
 
-#		echo "$(COMPILE)" 1>&2;\
 
 .c.ho:
 	@echo "Compiling $< with host compiler"
@@ -139,11 +229,18 @@ include/includes.d: include/includes.h
 
 .y.c:
 	@echo "Building $< with $(YACC)"
-	@-$(srcdir)/script/yacc_compile.sh "$(YACC)" "$<" "$@"
+	@-$(make_utility_dir)/yacc_compile.sh "$(YACC)" "$<" "$@"
 
 .l.c:
 	@echo "Building $< with $(LEX)"
-	@-$(srcdir)/script/lex_compile.sh "$(LEX)" "$<" "$@"
+	@-$(make_utility_dir)/script/lex_compile.sh "$(LEX)" "$<" "$@"
+
+%.a:
+	@echo Linking $@
+	@rm -f $@
+	@mkdir -p $(@D)
+	@$(STLD) $(STLD_FLAGS) $@ $^
+
 
 DOCBOOK_MANPAGE_URL = http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl
 

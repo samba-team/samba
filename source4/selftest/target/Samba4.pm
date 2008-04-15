@@ -521,7 +521,7 @@ sub provision($$$$$$)
 	my $ncalrpcdir = "$prefix_abs/ncalrpc";
 	my $lockdir = "$prefix_abs/lockdir";
 	my $winbindd_socket_dir = "$prefix_abs/winbind_socket";
-	my $winbindd_priv_pipe_dir = "$piddir/smbd.tmp/winbind_pipe";
+	my $winbindd_priv_pipe_dir = "$privatedir/smbd.tmp/winbind_pipe";
 	my $nsswrap_passwd = "$etcdir/passwd";
 	my $nsswrap_group = "$etcdir/group";
 

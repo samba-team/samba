@@ -11,7 +11,6 @@ lib/charset/charset.h: lib/charset/charset_proto.h
 include/includes.h: \
 		include/config.h \
 		lib/charset/charset.h \
-		param/proto.h \
 		librpc/gen_ndr/misc.h
 
 heimdal_basics: \

@@ -265,6 +265,7 @@ fi
 
 bbdir=$incdir/../../testprogs/blackbox
 
+plantest "blackbox.ndrdump" dc $bbdir/test_ndrdump.sh
 plantest "blackbox.smbclient" dc $bbdir/test_smbclient.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX" 
 plantest "blackbox.kinit" dc $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" $CONFIGURATION 
 plantest "blackbox.cifsdd" dc $bbdir/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" 
@@ -301,7 +302,7 @@ done
 
 WB_OPTS="--option=\"torture:strict mode=yes\""
 WB_OPTS="${WB_OPTS} --option=\"torture:timelimit=1\""
-WB_OPTS="${WB_OPTS} --option=\"torture:winbindd separator=\\\\\""
+WB_OPTS="${WB_OPTS} --option=\"torture:winbindd separator=/\""
 WB_OPTS="${WB_OPTS} --option=\"torture:winbindd private pipe dir=\$WINBINDD_PRIV_PIPE_DIR\""
 WB_OPTS="${WB_OPTS} --option=\"torture:winbindd netbios name=\$SERVER\""
 WB_OPTS="${WB_OPTS} --option=\"torture:winbindd netbios domain=\$DOMAIN\""
@@ -342,7 +343,7 @@ plantest "unixinfo.python" dc $SUBUNITRUN samba.tests.dcerpc.unix
 plantest "events.python" none PYTHONPATH="$PYTHONPATH:lib/events" $SUBUNITRUN tests
 plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
 plantest "rpcecho.python" dc $SUBUNITRUN samba.tests.dcerpc.rpcecho
-plantest "winreg.python" dc $SUBUNITRUN samba.tests.dcerpc.registry
+plantest "winreg.python" dc $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.dcerpc.registry
 plantest "ldap.python" dc $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantest "blackbox.samba3dump" none $PYTHON scripting/bin/samba3dump $samba4srcdir/../testdata/samba3
 rm -rf $PREFIX/upgrade

@@ -45,15 +45,9 @@ else:
 if opts.unixname is None:
 	opts.unixname = username
 
-try:
-	pwd.getpwnam(opts.unixname)
-except KeyError:
-	print "ERROR: Unix user '%s' does not exist" % opts.unixname
-	sys.exit(1)
-
-creds = credopts.get_credentials()
-
 lp = sambaopts.get_loadparm()
+creds = credopts.get_credentials(lp)
+
 samdb = SamDB(url=lp.get("sam database"), session_info=system_session(), 
               credentials=creds, lp=lp)
 samdb.newuser(username, opts.unixname, password)
