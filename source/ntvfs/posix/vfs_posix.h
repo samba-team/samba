@@ -169,6 +169,14 @@ struct pvfs_file_handle {
 	/* we need this hook back to our parent for lock destruction */
 	struct pvfs_state *pvfs;
 
+	struct {
+		bool update_triggered;
+		struct timed_event *update_event;
+		bool update_on_close;
+		NTTIME close_time;
+		bool update_forced;
+	} write_time;
+
 	/* the open went through to completion */
 	bool open_completed;
 };

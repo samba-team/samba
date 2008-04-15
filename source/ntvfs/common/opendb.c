@@ -97,11 +97,13 @@ DATA_BLOB odb_get_key(TALLOC_CTX *mem_ctx, struct odb_lock *lck)
 */
 NTSTATUS odb_open_file(struct odb_lock *lck,
 				void *file_handle, const char *path,
-				int *fd, bool allow_level_II_oplock,
+				int *fd, NTTIME open_write_time,
+				bool allow_level_II_oplock,
 				uint32_t oplock_level, uint32_t *oplock_granted)
 {
 	return ops->odb_open_file(lck, file_handle, path,
-				  fd, allow_level_II_oplock,
+				  fd, open_write_time,
+				  allow_level_II_oplock,
 				  oplock_level, oplock_granted);
 }
 
@@ -159,15 +161,23 @@ NTSTATUS odb_set_delete_on_close(struct odb_lock *lck, bool del_on_close)
 }
 
 /*
-  return the current value of the delete_on_close bit, and how many
-  people still have the file open
+  update the write time on an open file
 */
-NTSTATUS odb_get_delete_on_close(struct odb_context *odb, 
-					  DATA_BLOB *key, bool *del_on_close)
+NTSTATUS odb_set_write_time(struct odb_lock *lck,
+			    NTTIME write_time, bool force)
 {
-	return ops->odb_get_delete_on_close(odb, key, del_on_close);
+	return ops->odb_set_write_time(lck, write_time, force);
 }
 
+/*
+  return the current value of the delete_on_close bit,
+  and the current write time.
+*/
+NTSTATUS odb_get_file_infos(struct odb_context *odb, DATA_BLOB *key,
+			    bool *del_on_close, NTTIME *write_time)
+{
+	return ops->odb_get_file_infos(odb, key, del_on_close, write_time);
+}
 
 /*
   determine if a file can be opened with the given share_access,

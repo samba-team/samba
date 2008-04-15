@@ -280,6 +280,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
 	f->handle->oplock            = NULL;
+	ZERO_STRUCT(f->handle->write_time);
 	f->handle->open_completed    = false;
 
 	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
@@ -317,7 +318,8 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 
 		/* now really mark the file as open */
 		status = odb_open_file(lck, f->handle, name->full_name,
-				       NULL, false, OPLOCK_NONE, NULL);
+				       NULL, name->dos.write_time,
+				       false, OPLOCK_NONE, NULL);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(lck);
@@ -377,7 +379,8 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		}
 
 		status = odb_open_file(lck, f->handle, name->full_name,
-				       NULL, false, OPLOCK_NONE, NULL);
+				       NULL, name->dos.write_time,
+				       false, OPLOCK_NONE, NULL);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			goto cleanup_delete;
@@ -594,8 +597,8 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		DATA_BLOB locking_key;
 		status = pvfs_locking_key(parent, req, &locking_key);
 		NT_STATUS_NOT_OK_RETURN(status);
-		status = odb_get_delete_on_close(pvfs->odb_context, &locking_key, 
-						 &del_on_close);
+		status = odb_get_file_infos(pvfs->odb_context, &locking_key,
+					    &del_on_close, NULL);
 		NT_STATUS_NOT_OK_RETURN(status);
 		if (del_on_close) {
 			return NT_STATUS_DELETE_PENDING;
@@ -730,10 +733,12 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	f->handle->mode              = 0;
 	f->handle->oplock            = NULL;
 	f->handle->have_opendb_entry = true;
+	ZERO_STRUCT(f->handle->write_time);
 	f->handle->open_completed    = false;
 
 	status = odb_open_file(lck, f->handle, name->full_name,
-			       &f->handle->fd, allow_level_II_oplock,
+			       &f->handle->fd, name->dos.write_time,
+			       allow_level_II_oplock,
 			       oplock_level, &oplock_granted);
 	talloc_free(lck);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1334,6 +1339,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	f->handle->mode              = 0;
 	f->handle->oplock            = NULL;
 	f->handle->have_opendb_entry = false;
+	ZERO_STRUCT(f->handle->write_time);
 	f->handle->open_completed    = false;
 
 	/* form the lock context used for byte range locking and
@@ -1437,7 +1443,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	/* now really mark the file as open */
 	status = odb_open_file(lck, f->handle, name->full_name,
-			       &f->handle->fd, allow_level_II_oplock,
+			       &f->handle->fd, name->dos.write_time,
+			       allow_level_II_oplock,
 			       oplock_level, &oplock_granted);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1915,8 +1922,8 @@ bool pvfs_delete_on_close_set(struct pvfs_state *pvfs, struct pvfs_file_handle *
 	NTSTATUS status;
 	bool del_on_close;
 
-	status = odb_get_delete_on_close(pvfs->odb_context, &h->odb_locking_key, 
-					 &del_on_close);
+	status = odb_get_file_infos(pvfs->odb_context, &h->odb_locking_key, 
+				    &del_on_close, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("WARNING: unable to determine delete on close status for open file\n"));
 		return false;
