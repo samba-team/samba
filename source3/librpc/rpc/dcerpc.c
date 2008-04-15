@@ -61,6 +61,8 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p, const struct 
 
 	ret->opnum = opnum;
 
+	ret->pipe = p;
+
 	return ret;
 }
 
@@ -104,7 +106,7 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return NT_STATUS_OK;
 }
 
 _PUBLIC_ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, struct dcerpc_pipe **pp, 
