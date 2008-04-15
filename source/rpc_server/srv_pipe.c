@@ -986,9 +986,9 @@ bool check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
 	for ( i=0; pipe_names[i].client_pipe; i++ ) {
 		DEBUGADD(10,("checking %s\n", pipe_names[i].client_pipe));
 		if ( strequal(pipe_names[i].client_pipe, pname)
-			&& (abstract->version == pipe_names[i].abstr_syntax.version) 
+			&& (abstract->if_version == pipe_names[i].abstr_syntax.if_version) 
 			&& (memcmp(&abstract->uuid, &pipe_names[i].abstr_syntax.uuid, sizeof(struct GUID)) == 0)
-			&& (transfer->version == pipe_names[i].trans_syntax.version)
+			&& (transfer->if_version == pipe_names[i].trans_syntax.if_version)
 			&& (memcmp(&transfer->uuid, &pipe_names[i].trans_syntax.uuid, sizeof(struct GUID)) == 0) ) {
 			struct api_struct 	*fns = NULL;
 			int 			n_fns = 0;

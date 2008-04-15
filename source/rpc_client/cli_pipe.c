@@ -1690,7 +1690,7 @@ static bool check_bind_response(RPC_HDR_BA *hdr_ba, const int pipe_idx, RPC_IFAC
 #endif 	/* JERRY */
 
 	/* check the transfer syntax */
-	if ((hdr_ba->transfer.version != transfer->version) ||
+	if ((hdr_ba->transfer.if_version != transfer->if_version) ||
 	     (memcmp(&hdr_ba->transfer.uuid, &transfer->uuid, sizeof(transfer->uuid)) !=0)) {
 		DEBUG(2,("bind_rpc_pipe: transfer syntax differs\n"));
 		return False;

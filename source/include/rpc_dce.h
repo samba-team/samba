@@ -157,10 +157,7 @@ enum schannel_direction {
 #define RPC_MAX_PDU_FRAG_LEN 0x10b8			/* this is what w2k sets */
 
 /* RPC_IFACE */
-typedef struct rpc_iface_info {
-	struct GUID uuid;  /* 16 bytes of rpc interface identification */
-	uint32 version;    /* the interface version number */
-} RPC_IFACE;
+typedef struct ndr_syntax_id RPC_IFACE;
 
 #define RPC_IFACE_LEN (UUID_SIZE + 4)
 
