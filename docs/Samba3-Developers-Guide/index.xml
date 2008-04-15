@@ -53,6 +53,7 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 <!-- Contents -->
 <toc/>
 
+<?latex \pagenumbering{arabic} ?>
 <!-- Chapters -->
 <part>
 	<title>The protocol</title>
