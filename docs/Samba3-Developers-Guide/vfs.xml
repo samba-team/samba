@@ -22,39 +22,138 @@
 <sect1>
 <title>The Samba (Posix) VFS layer</title>
 
-<para>While most of Samba deployments are done using POSIX-compatible operating systems,
-there is clearly more to a file system than what is required by POSIX when it comes to
-adopting semantics of NT file system. Since Samba 2.2 all file-system related operations
-go through an abstraction layer for virtual file system (VFS) that is modelled after
-both POSIX and additional functions needed to transform NTFS semantics.
+<para>While most of Samba deployments are done using POSIX-compatible
+operating systems, there is clearly more to a file system than what is
+required by POSIX when it comes to adopting semantics of NT file
+system. Since Samba 2.2 all file-system related operations go through
+an abstraction layer for virtual file system (VFS) that is modelled
+after both POSIX and additional functions needed to transform NTFS
+semantics.
 </para>
 
 <para>
-This abstraction layer now provides more features than a regular POSIX file system could
-fill in. It is not required that all of them should be implemented by your
-particular file system.  However, when those features are available, Samba would advertize them to a
-CIFS client and they might be used by an application and in case of Windows client that
-might mean a client expects even more additional functionality when it encounters
-those features. There is a practical reason to allow handling of this snowfall without modifying
-the Samba core and it is fulfilled by providing an infrastructure to dynamically load
-VFS modules at run time.
+This abstraction layer now provides more features than a regular POSIX
+file system could fill in. It is not required that all of them should
+be implemented by your particular file system.  However, when those
+features are available, Samba would advertize them to a CIFS client
+and they might be used by an application and in case of Windows client
+that might mean a client expects even more additional functionality
+when it encounters those features. There is a practical reason to
+allow handling of this snowfall without modifying the Samba core and
+it is fulfilled by providing an infrastructure to dynamically load VFS
+modules at run time.
 </para>
 
-<para>Each VFS module could implement a number of VFS operations. The way it does it is
-irrelevant, only two things actually matter: whether specific implementation wants to cooperate
-with other modules' implementations or not, and whether module needs to store additional
-information that is specific to a context it is operating in. Multiple VFS modules could
-be loaded at the same time and it is even possible to load several instances of the same
-VFS module with different parameters.
+<para>Each VFS module could implement a number of VFS operations. The
+way it does it is irrelevant, only two things actually matter: whether
+specific implementation wants to cooperate with other modules'
+implementations or not, and whether module needs to store additional
+information that is specific to a context it is operating in. Multiple
+VFS modules could be loaded at the same time and it is even possible
+to load several instances of the same VFS module with different
+parameters.
 </para>
 
 <sect2>
 <title>The general interface</title>
 
+<para>A VFS module has three major components:
+<itemizedlist>
+<listitem><emphasis>An initialization function</emphasis> that is
+called during the module load to register implemented
+operations.</listitem>
+<listitem><emphasis>An operations table</emphasis> representing a
+mapping between statically defined module functions and VFS layer
+operations.</listitem>
+<listitem><emphasis>Module functions</emphasis> that do actual
+work.</listitem>
+</itemizedlist>
+</para>
+
+<para>While this structure has been first applied to the VFS
+subsystem, it is now commonly used across all Samba 3 subsystems that
+support loadable modules. In fact, one module could provide a number
+of interfaces to different subsystems by exposing different
+<emphasis>operation tables</emphasis> through separate
+<emphasis>initialization functions</emphasis>.</para>
+
+<para><emphasis>An initialization function</emphasis> is used to
+register module with Samba run-time. As Samba internal structures and
+API are changed over lifetime, each released version has a VFS
+interface version that is increased as VFS development progresses or
+any of underlying Samba structures are changed in binary-incompatible
+way. When VFS module is compiled in, VFS interface version of that
+Samba environment is embedded into the module's binary object and is
+checked by the Samba core upon module load. If VFS interface number
+reported by the module isn't the same Samba core knows about, version
+conflict is detected and module dropped to avoid any potential memory
+corruption when accessing (changed) Samba structures.
+</para>
+
+<para>Therefore, initialization function passes three parameters to the
+VFS registration function, <literal>smb_register_vfs()</literal>
+<itemizedlist>
+  <listitem><emphasis>interface version number</emphasis>, as constant
+  <literal>SMB_VFS_INTERFACE_VERSION</literal>, </listitem>
+  <listitem><emphasis>module name</emphasis>, under which Samba core
+  will know it, and</listitem>
+  <listitem><emphasis>an operations' table</emphasis>.</listitem>
+</itemizedlist>
+</para>
+
+<para>The <emphasis>operations' table</emphasis> defines which
+functions in the module would correspond to specific VFS operations
+and how those functions would co-operate with the rest of VFS
+subsystem. Each operation could perform in a following ways:
+<itemizedlist>
+  <listitem><emphasis>transparent</emphasis>, meaning that while
+  operation is overriden, the module will still call a previous
+  implementation, before or after its own action. This mode is
+  indicated by the constant
+  <literal>SMB_VFS_LAYER_TRANSPARENT</literal>;
+  </listitem>
+  <listitem><emphasis>opaque</emphasis>, for the implementations that
+  are terminating sequence of actions. For example, it is used to
+  implement POSIX operation on top of non-POSIX file system or even
+  not a file system at all, like a database for a personal audio
+  collection. Use constant <literal>SMB_VFS_LAYER_OPAQUE</literal> for
+  this mode;</listitem>
+  <listitem><emphasis>splitter</emphasis>, a way when some file system
+  activity is done in addition to the transparently calling previous
+  implentation. This usually involves mangling the result of that call
+  before returning it back to the caller. This mode is selected by
+  <literal>SMB_VFS_LAYER_SPLITTER</literal> constant;</listitem>
+  <listitem><emphasis>logger</emphasis> does not change anything or
+  performs any additional VFS operations. When
+  <emphasis>logger</emphasis> module acts, information about
+  operations is logged somewhere using an external facility (or
+  Samba's own debugging tools) but not the VFS layer. In order to
+  describe this type of activity use constant
+  <literal>SMB_VFS_LAYER_LOGGER</literal>;
+  </listitem>
+  <listitem>On contrary, <emphasis>scanner</emphasis> module does call
+  other VFS operations while processing the data that goes through the
+  system. This type of operation is indicated by the
+  <literal>SMB_VFS_LAYER_SCANNER</literal> constant.</listitem>
+</itemizedlist>
+</para>
+
+<para>Fundamentally, there are three types:
+<emphasis>transparent</emphasis>, <emphasis>opaque</emphasis>, and
+<emphasis>logger</emphasis>. <emphasis>Splitter</emphasis> and
+<emphasis>scanner</emphasis> may confuse developers (and indeed they
+are confused as our experience has shown) but this separation is to
+better expose the nature of a module's actions. Most of modules
+developed so far are either one of those three fundamental types with
+transparent and opaque being prevalent.
+</para>
+
 <para>
-Each VFS operation has a vfs_op_type, a function pointer and a handle pointer in the
-struct vfs_ops and tree macros to make it easier to call the operations.
-(Take a look at <filename>include/vfs.h</filename> and <filename>include/vfs_macros.h</filename>.)
+Each VFS operation has a vfs_op_type, a function pointer and a handle
+pointer in the struct vfs_ops and tree macros to make it easier to
+call the operations.  (Take a look at
+<filename>include/vfs.h</filename> and
+<filename>include/vfs_macros.h</filename>.)
 </para>
 
 <para><programlisting>
