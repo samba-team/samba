@@ -81,6 +81,9 @@ sub end_testsuite($$$$$)
 	my $out = "";
 
 	if ($unexpected) {
+		if ($result eq "success" and not defined($reason)) {
+			$reason = "Expected negative exit code, got positive exit code";
+		} 
 		$self->output_msg("ERROR: $reason\n");
 		push (@{$self->{suitesfailed}}, $name);
 	} else {
