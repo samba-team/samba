@@ -192,7 +192,7 @@ bool smbconf_share_exists(struct smbconf_ctx *ctx,
 WERROR smbconf_create_share(struct smbconf_ctx *ctx,
 			    const char *servicename)
 {
-	if (smbconf_share_exists(ctx, servicename)) {
+	if ((servicename != NULL) && smbconf_share_exists(ctx, servicename)) {
 		return WERR_ALREADY_EXISTS;
 	}
 
