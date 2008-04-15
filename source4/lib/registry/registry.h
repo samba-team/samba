@@ -500,6 +500,10 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 			     const char *path,
 			     const struct reg_diff_callbacks *callbacks,
 			     void *callback_data);
+WERROR reg_diff_load(const char *filename,
+	             struct smb_iconv_convenience *iconv_convenience,
+		     const struct reg_diff_callbacks *callbacks,
+		     void *callback_data);
 
 
 

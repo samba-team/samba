@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    Reading Registry.pol PReg registry files
 
-   Copyright (C) Wilco Baan Hofman 2006
+   Copyright (C) Wilco Baan Hofman 2006-2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -71,7 +71,7 @@ static WERROR reg_preg_diff_del_all_values(void *_data, const char *key_name)
 static WERROR reg_preg_diff_done(void *_data)
 {
 	struct preg_data *data = (struct preg_data *)_data;
-
+	
 	close(data->fd);
 	talloc_free(data);
 	return WERR_OK;
@@ -95,15 +95,15 @@ _PUBLIC_ WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename,
 	*callback_data = data;
 
 	if (filename) {
-		data->fd = open(filename, O_CREAT, 0755);
-		if (data->fd == -1) {
+		data->fd = open(filename, O_CREAT|O_WRONLY, 0755);
+		if (data->fd < 0) {
 			DEBUG(0, ("Unable to open %s\n", filename));
 			return WERR_BADFILE;
 		}
 	} else {
 		data->fd = STDOUT_FILENO;
 	}
-	snprintf(preg_header.hdr, 4, "PReg");
+	memcpy(preg_header.hdr, "PReg", 4);
 	SIVAL(&preg_header, 4, 1);
 	write(data->fd, (uint8_t *)&preg_header,8);
 
