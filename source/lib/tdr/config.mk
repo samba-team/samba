@@ -2,6 +2,7 @@
 CFLAGS = -Ilib/tdr
 PRIVATE_PROTO_HEADER = tdr_proto.h
 PUBLIC_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL
-OBJ_FILES = tdr.o
+
+TDR_OBJ_FILES = lib/tdr/tdr.o
 
 PUBLIC_HEADERS += lib/tdr/tdr.h

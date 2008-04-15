@@ -84,13 +84,19 @@ sub check_module($$$)
 
 	return if ($mod->{ENABLE} ne "YES");
 
+
 	if (exists($INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTION_TYPE})) {
 		$mod->{INIT_FUNCTION_TYPE} = $INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTION_TYPE};
 	} else {
 		$mod->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)";
 	}
 
+	unless (defined($mod->{INIT_FUNCTION_SENTINEL})) { $mod->{INIT_FUNCTION_SENTINEL} = "NULL"; }
+
 	if (not defined($mod->{OUTPUT_TYPE})) {
+		if (not defined($INPUT->{$mod->{SUBSYSTEM}}->{TYPE})) {
+			die("Invalid type for subsystem $mod->{SUBSYSTEM}");
+		}
 		if ($INPUT->{$mod->{SUBSYSTEM}}->{TYPE} eq "EXT_LIB") {
 			$mod->{OUTPUT_TYPE} = undef;
 		} else {
@@ -107,7 +113,7 @@ sub check_module($$$)
 	} 
 	if (grep(/MERGED_OBJ/, @{$mod->{OUTPUT_TYPE}})) {
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS}}, $mod->{INIT_FUNCTION}) if defined($mod->{INIT_FUNCTION});
-		unshift (@{$INPUT->{$mod->{SUBSYSTEM}}{PRIVATE_DEPENDENCIES}}, $mod->{NAME});
+		push (@{$INPUT->{$mod->{SUBSYSTEM}}{PRIVATE_DEPENDENCIES}}, $mod->{NAME});
 	}
 }
 
@@ -118,16 +124,6 @@ sub check_library($$$)
 	return if ($lib->{ENABLE} ne "YES");
 
 	unless (defined($lib->{OUTPUT_TYPE})) { $lib->{OUTPUT_TYPE} = $default_ot; }
-
-	if (defined($lib->{VERSION}) and not defined($lib->{SO_VERSION})) {
-		print "$lib->{NAME}: Please specify SO_VERSION when specifying VERSION\n";
-		return;
-	}
-
-	if (defined($lib->{SO_VERSION}) and not defined($lib->{VERSION})) {
-		print "$lib->{NAME}: Please specify VERSION when specifying SO_VERSION\n";
-		return;
-	}
 
 	unless (defined($lib->{INIT_FUNCTION_TYPE})) { $lib->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)"; }
 	unless (defined($lib->{INIT_FUNCTION_SENTINEL})) { $lib->{INIT_FUNCTION_SENTINEL} = "NULL"; }
@@ -151,7 +147,6 @@ sub check_python($$$)
 		$dirname .= "/" unless $dirname =~ /\/$/;
 		$dirname = "" if $dirname eq "./";
 
-		$python->{OBJ_FILES} = ["$dirname$basename\_wrap.o"];
 		$python->{LIBRARY_REALNAME} = "_$basename.\$(SHLIBEXT)";
 		$python->{PYTHON_FILES} = ["$dirname$basename.py"];
 		push (@{$python->{CFLAGS}}, "\$(CFLAG_NO_UNUSED_MACROS)");
@@ -189,7 +184,6 @@ sub add_implicit($$)
 	$INPUT->{$n} = {
 		TYPE => "MAKE_RULE",
 		NAME => $n,
-		TARGET => "",
 		OUTPUT_TYPE => undef,
 		LIBS => ["\$(".uc($n)."_LIBS)"],
 		LDFLAGS => ["\$(".uc($n)."_LDFLAGS)"],
@@ -249,7 +243,7 @@ sub check($$$$$)
 
 	foreach my $part (values %$INPUT) {
 		$part->{LINK_FLAGS} = [];
-		$part->{FULL_OBJ_LIST} = ["\$($part->{NAME}_OBJ_LIST)"];
+		$part->{FULL_OBJ_LIST} = ["\$($part->{NAME}_OBJ_FILES)"];
 
 		if ($part->{TYPE} eq "SUBSYSTEM") { 
 			check_subsystem($INPUT, $part, $subsys_ot);

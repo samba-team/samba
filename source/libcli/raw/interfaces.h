@@ -1706,19 +1706,27 @@ union smb_read {
 
 			/* static body buffer 48 (0x30) bytes */
 			/* uint16_t buffer_code;  0x31 = 0x30 + 1 */
-			uint16_t _pad;
+			uint8_t _pad;
+			uint8_t reserved;
 			uint32_t length;
 			uint64_t offset;
 			/* struct smb2_handle handle; */
-			uint64_t unknown1; /* 0x0000000000000000 */
-			uint64_t unknown2; /* 0x0000000000000000 */
+			uint32_t min_count;
+			uint32_t channel;
+			uint32_t remaining;
+			/* the docs give no indication of what
+			   these channel variables are for */
+			uint16_t channel_offset;
+			uint16_t channel_length;
 		} in;
 		struct {
 			/* static body buffer 16 (0x10) bytes */
 			/* uint16_t buffer_code;  0x11 = 0x10 + 1 */
-			/* uint16_t data_ofs; */
+			/* uint8_t data_ofs; */
+			/* uint8_t reserved; */
 			/* uint32_t data_size; */
-			uint64_t unknown1; /* 0x0000000000000000 */
+			uint32_t remaining;
+			uint32_t reserved;
 
 			/* dynamic body */
 			DATA_BLOB data;

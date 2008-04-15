@@ -86,6 +86,14 @@ testit "kinit with user password" $samba4bindir/samba4kinit --password-file=./tm
 
 test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
+NEWUSERPASS=testPaSS@34%
+testit "change user password" $VALGRIND $net password change -W$DOMAIN -U$DOMAIN\\nettestuser%$USERPASS $CONFIGURATION  -k no $NEWUSERPASS $@ || failed=`expr $failed + 1`
+
+echo $NEWUSERPASS > ./tmpuserpassfile
+testit "kinit with user password" $samba4bindir/samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+
+test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+
 KRB5CCNAME="$PREFIX/tmpccache"
 export KRB5CCNAME
 

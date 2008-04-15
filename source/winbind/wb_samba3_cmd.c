@@ -30,6 +30,8 @@
 #include "librpc/gen_ndr/netlogon.h"
 #include "libcli/security/security.h"
 #include "auth/pam_errors.h"
+#include "auth/credentials/credentials.h"
+#include "smbd/service_task.h"
 
 /* 
    Send off the reply to an async Samba3 query, handling filling in the PAM, NTSTATUS and string errors.
@@ -110,10 +112,12 @@ NTSTATUS wbsrv_samba3_netbios_name(struct wbsrv_samba3_call *s3call)
 
 NTSTATUS wbsrv_samba3_priv_pipe_dir(struct wbsrv_samba3_call *s3call)
 {
-	s3call->response.result			= WINBINDD_OK;
-	s3call->response.extra_data.data =
-		smbd_tmp_path(s3call, s3call->wbconn->lp_ctx, WINBINDD_SAMBA3_PRIVILEGED_SOCKET);
-	NT_STATUS_HAVE_NO_MEMORY(s3call->response.extra_data.data);
+	char *path = smbd_tmp_path(s3call, s3call->wbconn->lp_ctx, WINBINDD_SAMBA3_PRIVILEGED_SOCKET);
+	NT_STATUS_HAVE_NO_MEMORY(path);
+	s3call->response.result		 = WINBINDD_OK;
+	s3call->response.extra_data.data = path;
+		
+	s3call->response.length += strlen(path) + 1;
 	return NT_STATUS_OK;
 }
 
@@ -123,41 +127,67 @@ NTSTATUS wbsrv_samba3_ping(struct wbsrv_samba3_call *s3call)
 	return NT_STATUS_OK;
 }
 
-#if 0
-/* 
-   Validate that we have a working pipe to the domain controller.
-   Return any NT error found in the process
+/* Plaintext authentication 
+   
+   This interface is used by ntlm_auth in it's 'basic' authentication
+   mode, as well as by pam_winbind to authenticate users where we are
+   given a plaintext password.
 */
 
-static void checkmachacc_recv_creds(struct composite_context *ctx);
+static void check_machacc_recv(struct composite_context *ctx);
 
 NTSTATUS wbsrv_samba3_check_machacc(struct wbsrv_samba3_call *s3call)
 {
+	NTSTATUS status;
+	struct cli_credentials *creds;
 	struct composite_context *ctx;
+	struct wbsrv_service *service =
+		s3call->wbconn->listen_socket->service;
 
-	DEBUG(5, ("wbsrv_samba3_check_machacc called\n"));
+	/* Create a credentials structure */
+	creds = cli_credentials_init(s3call);
+	if (creds == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	ctx = wb_cmd_checkmachacc_send(s3call->call);
-	NT_STATUS_HAVE_NO_MEMORY(ctx);
+	cli_credentials_set_event_context(creds, service->task->event_ctx);
 
-	ctx->async.fn = checkmachacc_recv_creds;
+	cli_credentials_set_conf(creds, service->task->lp_ctx);
+
+	/* Connect the machine account to the credentials */
+	status = cli_credentials_set_machine_account(creds, service->task->lp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(creds);
+		return status;
+	}
+
+	ctx = wb_cmd_pam_auth_send(s3call, service, creds);
+
+	if (!ctx) {
+		talloc_free(creds);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ctx->async.fn = check_machacc_recv;
 	ctx->async.private_data = s3call;
-	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
 	return NT_STATUS_OK;
 }
-	
-static void checkmachacc_recv_creds(struct composite_context *ctx)
+
+static void check_machacc_recv(struct composite_context *ctx)
 {
 	struct wbsrv_samba3_call *s3call =
 		talloc_get_type(ctx->async.private_data,
 				struct wbsrv_samba3_call);
 	NTSTATUS status;
 
-	status = wb_cmd_checkmachacc_recv(ctx);
+	status = wb_cmd_pam_auth_recv(ctx);
 
+	if (!NT_STATUS_IS_OK(status)) goto done;
+
+ done:
 	wbsrv_samba3_async_auth_epilogue(status, s3call);
 }
-#endif
 
 /*
   Find the name of a suitable domain controller, by query on the
@@ -543,6 +573,7 @@ NTSTATUS wbsrv_samba3_pam_auth(struct wbsrv_samba3_call *s3call)
 	struct composite_context *ctx;
 	struct wbsrv_service *service =
 		s3call->wbconn->listen_socket->service;
+	struct cli_credentials *credentials;
 	char *user, *domain;
 
 	if (!wb_samba3_split_username(s3call, s3call->wbconn->lp_ctx,
@@ -551,8 +582,17 @@ NTSTATUS wbsrv_samba3_pam_auth(struct wbsrv_samba3_call *s3call)
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	ctx = wb_cmd_pam_auth_send(s3call, service, domain, user,
-				   s3call->request.data.auth.pass);
+	credentials = cli_credentials_init(s3call);
+	if (!credentials) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	cli_credentials_set_conf(credentials, service->task->lp_ctx);
+	cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
+	cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
+
+	cli_credentials_set_password(credentials, s3call->request.data.auth.pass, CRED_SPECIFIED);
+
+	ctx = wb_cmd_pam_auth_send(s3call, service, credentials);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = pam_auth_recv;

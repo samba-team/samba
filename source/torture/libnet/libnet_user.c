@@ -241,7 +241,7 @@ bool torture_createuser(struct torture_context *torture)
 
 	mem_ctx = talloc_init("test_createuser");
 
-	ctx = libnet_context_init(NULL, torture->lp_ctx);
+	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
 
 	req.in.user_name = TEST_USERNAME;
@@ -287,7 +287,7 @@ bool torture_deleteuser(struct torture_context *torture)
 
 	prep_mem_ctx = talloc_init("prepare test_deleteuser");
 
-	ctx = libnet_context_init(NULL, torture->lp_ctx);
+	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
 
 	req.in.user_name = TEST_USERNAME;
@@ -482,7 +482,7 @@ bool torture_modifyuser(struct torture_context *torture)
 
 	prep_mem_ctx = talloc_init("prepare test_deleteuser");
 
-	ctx = libnet_context_init(NULL, torture->lp_ctx);
+	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
 
 	status = torture_rpc_connection(torture,
@@ -616,7 +616,7 @@ bool torture_userinfo_api(struct torture_context *torture)
 
 	prep_mem_ctx = talloc_init("prepare torture user info");
 
-	ctx = libnet_context_init(NULL, torture->lp_ctx);
+	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
 
 	status = torture_rpc_connection(torture,
@@ -681,7 +681,7 @@ bool torture_userlist(struct torture_context *torture)
 	struct libnet_UserList req;
 	int i;
 
-	ctx = libnet_context_init(NULL, torture->lp_ctx);
+	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);

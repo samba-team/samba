@@ -76,6 +76,9 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 		 settings->targetdir));
 	parameters = PyDict_New();
 
+	PyDict_SetItemString(parameters, "smbconf", 
+			     PyString_FromString(lp_configfile(lp_ctx)));
+
 	PyDict_SetItemString(parameters, "rootdn", 
 						 PyString_FromString(settings->root_dn_str));
 	if (settings->targetdir != NULL)
@@ -129,7 +132,6 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	result->domaindn = talloc_strdup(mem_ctx, PyString_AsString(PyObject_GetAttrString(py_result, "domaindn")));
 
 	/* FIXME paths */
-	/* FIXME samdb */
 	result->lp_ctx = lp_from_py_object(PyObject_GetAttrString(py_result, "lp"));
 	result->samdb = ldb_context_from_py_object(PyObject_GetAttrString(py_result, "samdb"));
 

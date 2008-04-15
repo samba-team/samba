@@ -1,11 +1,16 @@
 pidl/Makefile: pidl/Makefile.PL
-	cd pidl && $(PERL) Makefile.PL 
+	cd pidl && $(PERL) Makefile.PL PREFIX=$(prefix)
 
 pidl-testcov: pidl/Makefile
 	cd pidl && cover -test
 
 installpidl:: pidl/Makefile
-	$(MAKE) -C pidl install_vendor VENDORPREFIX=$(prefix)
+	$(MAKE) -C pidl install_vendor VENDORPREFIX=$(prefix) \
+		                           INSTALLVENDORLIB=$(libdir) \
+								   INSTALLVENDORBIN=$(bindir) \
+								   INSTALLVENDORSCRIPT=$(bindir) \
+								   INSTALLVENDORMAN1DIR=$(mandir)/man1 \
+								   INSTALLVENDORMAN3DIR=$(mandir)/man3
 
 ifeq ($(HAVE_PERL_EXTUTILS_MAKEMAKER),1)
 install:: installpidl
