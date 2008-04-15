@@ -16,18 +16,56 @@ Testsuite behaviour
 Exit code
 ------------
 The testsuites should exit with a non-zero exit code if at least one 
-test failed. 
+test failed. Skipped tests should not influence the exit code.
 
 Output format
 -------------
+Testsuites can simply use the exit code to indicate whether all of their 
+tests have succeeded or one or more have failed. It is also possible to 
+provide more granular information using the Subunit protocol. 
 
+This protocol works by writing simple messages to standard output. Any 
+messages that can not be interpreted by this protocol are considered comments 
+for the last announced test.
+
+Accepted commands are:
+
+test
+~~~~~~~~~~~~
 test: <NAME>
-success: <NAME> 
-failure: <NAME> 
-error: <NAME>
-skip: <NAME>
 
-failure: <NAME> [ EXTENDED DESCRIPTION ]
+Announce that a new test with the specified name is starting
+
+success
+~~~~~~~~~~~~~~~
+success: <NAME> 
+
+Announce that the test with the specified name is done and ran successfully.
+
+failure
+~~~~~~~~~~~~~~~
+failure: <NAME> 
+failure: <NAME> [ REASON ]
+
+Announce that the test with the specified name failed. Optionally, it is 
+possible to specify a reason it failed.
+
+skip
+~~~~~~~~~~~~
+skip: <NAME>
+skip: <NAME> [ REASON ]
+
+Announce that the test with the specified name was skipped. Optionally a 
+reason can be specified.
+
+knownfail
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+knownfail: <NAME>
+knownfail: <NAME> [ REASON ]
+
+Announce that the test with the specified name was run and failed as expected.
+Alternatively it is also possible to simply return "failure:" here but 
+specify in the samba4-knownfailures file that it is failing.
 
 Environments
 ============
@@ -40,6 +78,7 @@ The following environments are currently available:
  - none: No server set up, no variables set.
  - dc: Domain controller set up. The following environment variables will 
    be set:
+
      * USERNAME: Administrator user name
 	 * PASSWORD: Administrator password
 	 * DOMAIN: Domain name
@@ -51,6 +90,7 @@ The following environments are currently available:
 
  - member: Domain controller and member server that is joined to it set up. The
    following environment variables will be set:
+
      * USERNAME: Domain administrator user name
 	 * PASSWORD: Domain administrator password
 	 * DOMAIN: Domain name
