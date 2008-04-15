@@ -52,8 +52,7 @@ _gsskrb5_import_sec_context (
     krb5_data data;
     gss_buffer_desc buffer;
     krb5_keyblock keyblock;
-    int32_t tmp;
-    int32_t flags;
+    int32_t flags, tmp;
     gsskrb5_ctx ctx;
     gss_name_t name;
 
@@ -96,8 +95,9 @@ _gsskrb5_import_sec_context (
     /* retrieve the auth context */
 
     ac = ctx->auth_context;
-    if (krb5_ret_uint32 (sp, &ac->flags) != 0)
+    if (krb5_ret_int32 (sp, &tmp) != 0)
 	goto failure;
+    ac->flags = tmp;
     if (flags & SC_LOCAL_ADDRESS) {
 	if (krb5_ret_address (sp, localp = &local) != 0)
 	    goto failure;
