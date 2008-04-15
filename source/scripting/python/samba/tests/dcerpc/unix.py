@@ -27,6 +27,8 @@ class UnixinfoTests(RpcInterfaceTestCase):
     def test_getpwuid(self):
         infos = self.conn.GetPWUid(range(512))
         self.assertEquals(512, len(infos))
+        self.assertEquals("", infos[0].shell)
+        self.assertEquals("", infos[0].homedir)
 
     def test_gidtosid(self):
         self.conn.GidToSid(1000)
