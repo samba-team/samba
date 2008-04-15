@@ -35,7 +35,8 @@ struct cli_credentials;
 
 struct dcerpc_pipe {
 	const struct ndr_interface_table *table;
-	struct rpc_pipe_client *cli;
+	struct cli_state *cli;
+	struct rpc_pipe_client *rpc_cli;
 };
 
 struct rpc_request {
