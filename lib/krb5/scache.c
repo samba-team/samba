@@ -1269,7 +1269,7 @@ scc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 	sqlite3_reset(sfrom->dcache);
 	if (ret != SQLITE_DONE) {
 	    krb5_set_error_string(context, 
-				  "Failed to delete old cache: %d", ret);
+				  "Failed to delete old cache: %d", (int)ret);
 	    goto rollback;
 	}
     }
@@ -1282,7 +1282,8 @@ scc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     } while (ret == SQLITE_ROW);
     sqlite3_reset(sfrom->ucachen);
     if (ret != SQLITE_DONE) {
-	krb5_set_error_string(context, "Failed to update new cache: %d", ret);
+	krb5_set_error_string(context, 
+			      "Failed to update new cache: %d", (int)ret);
 	goto rollback;
     }
 
