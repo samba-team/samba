@@ -1252,7 +1252,7 @@ krb5_sname_to_principal (krb5_context context,
 	
     if(type != KRB5_NT_SRV_HST && type != KRB5_NT_UNKNOWN) {
 	krb5_set_error_string (context, "unsupported name type %d",
-			       type);
+			       (int)type);
 	return KRB5_SNAME_UNSUPP_NAMETYPE;
     }
     if(hostname == NULL) {
