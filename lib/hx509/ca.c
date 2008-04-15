@@ -1225,7 +1225,7 @@ ca_sign(hx509_context context,
     {
 	BasicConstraints bc;
 	int aCA = 1;
-	uint32_t path;
+	unsigned int path;
 
 	memset(&bc, 0, sizeof(bc));
 
