@@ -461,13 +461,17 @@ k_hasafs(void)
     if (ret == 0)
 	goto done;
 
+#ifdef VIOC_SYSCALL_DEV_OPENAFS
     ret = try_ioctlpath("/dev/openafs_ioctl", 
 			VIOC_SYSCALL_DEV_OPENAFS, MACOS_DEV_POINT);
     if (ret == 0)
 	goto done;
+#endif
+#ifdef VIOC_SYSCALL_DEV
     ret = try_ioctlpath("/dev/nnpfs_ioctl", VIOC_SYSCALL_DEV, MACOS_DEV_POINT);
     if (ret == 0)
 	goto done;
+#endif
 
 #if defined(AFS_SYSCALL) || defined(AFS_SYSCALL2) || defined(AFS_SYSCALL3)
     {
