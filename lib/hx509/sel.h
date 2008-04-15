@@ -68,3 +68,5 @@ struct hx_expr_input {
 extern struct hx_expr_input _hx509_expr_input;
 
 int yyparse(void);
+
+#define yyerror(msg)  sel_yyerror(msg )

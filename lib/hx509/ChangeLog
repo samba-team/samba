@@ -1,3 +1,11 @@
+2008-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* sel.h: rename yyerror to sel_yyerror in the whole library, not
+	just the lexer
+
+	* sel-lex.l: rename yyerror to sel_yyerror in the whole library,
+	not just the lexer
+
 2008-04-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* hx509.h: Make self-standing by including missing files.

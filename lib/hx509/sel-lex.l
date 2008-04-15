@@ -51,8 +51,6 @@ static void sel_yyerror (char *);
 
 struct hx_expr_input _hx509_expr_input;
 
-#define yyerror(msg)  sel_yyerror(msg )
-
 #define YY_NO_UNPUT 1
 
 #undef YY_INPUT
