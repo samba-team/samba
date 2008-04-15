@@ -86,41 +86,6 @@ void utmp_login(char *tty, const char *username, const char *hostname)
 
 /* update utmp and wtmp - the BSD way */
 
-static void prepare_utmp (struct utmp *, char *, const char *, const char *);
-
-void utmp_login(char *tty, const char *username, const char *hostname)
-{
-    struct utmp utmp;
-    int fd;
-
-    prepare_utmp (&utmp, tty, username, hostname);
-
-#ifdef HAVE_SETUTENT
-    utmpname(_PATH_UTMP);
-    setutent();
-    pututline(&utmp);
-    endutent();
-#else
-
-#ifdef HAVE_TTYSLOT
-    {
-      int ttyno;
-      ttyno = ttyslot();
-      if (ttyno > 0 && (fd = open(_PATH_UTMP, O_WRONLY, 0)) >= 0) {
-	lseek(fd, (long)(ttyno * sizeof(struct utmp)), SEEK_SET);
-	write(fd, &utmp, sizeof(struct utmp));
-	close(fd);
-      }
-    }
-#endif /* HAVE_TTYSLOT */
-#endif /* HAVE_SETUTENT */
-
-    if ((fd = open(_PATH_WTMP, O_WRONLY|O_APPEND, 0)) >= 0) {
-	write(fd, &utmp, sizeof(struct utmp));
-	close(fd);
-    }
-}
-
 static void
 prepare_utmp (struct utmp *utmp, char *tty, 
 	      const char *username, const char *hostname)
@@ -160,6 +125,39 @@ prepare_utmp (struct utmp *utmp, char *tty,
 # ifdef HAVE_STRUCT_UTMP_UT_ID
     strncpy(utmp->ut_id, make_id(ttyx), sizeof(utmp->ut_id));
 # endif
+}
+
+void utmp_login(char *tty, const char *username, const char *hostname)
+{
+    struct utmp utmp;
+    int fd;
+
+    prepare_utmp (&utmp, tty, username, hostname);
+
+#ifdef HAVE_SETUTENT
+    utmpname(_PATH_UTMP);
+    setutent();
+    pututline(&utmp);
+    endutent();
+#else
+
+#ifdef HAVE_TTYSLOT
+    {
+      int ttyno;
+      ttyno = ttyslot();
+      if (ttyno > 0 && (fd = open(_PATH_UTMP, O_WRONLY, 0)) >= 0) {
+	lseek(fd, (long)(ttyno * sizeof(struct utmp)), SEEK_SET);
+	write(fd, &utmp, sizeof(struct utmp));
+	close(fd);
+      }
+    }
+#endif /* HAVE_TTYSLOT */
+#endif /* HAVE_SETUTENT */
+
+    if ((fd = open(_PATH_WTMP, O_WRONLY|O_APPEND, 0)) >= 0) {
+	write(fd, &utmp, sizeof(struct utmp));
+	close(fd);
+    }
 }
 
 #endif /* !HAVE_UTMPX_H */
