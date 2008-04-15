@@ -1621,7 +1621,7 @@ static const struct {
 	{ "moveip",          control_moveip,		false, "move/failover an ip address to another node", "<ip> <node>"},
 	{ "addip",           control_addip,		false, "add a ip address to a node", "<ip/mask> <iface>"},
 	{ "delip",           control_delip,		false, "delete an ip address from a node", "<ip>"},
-	{ "eventscript",     control_eventscript,	false, "run the eventscript with the given parameters on a node", "<arguments>"},
+	{ "eventscript",     control_eventscript,	true, "run the eventscript with the given parameters on a node", "<arguments>"},
 };
 
 /*
