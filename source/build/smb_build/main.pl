@@ -44,8 +44,7 @@ my $mkenv = new smb_build::makefile(\%config::config, $mkfile);
 
 my $shared_libs_used = 0;
 foreach my $key (values %$OUTPUT) {
-	$mkenv->_prepare_list($key, "OBJ_LIST");
-	push(@{$mkenv->{all_objs}}, "\$($key->{NAME}_OBJ_LIST)");
+	push(@{$mkenv->{all_objs}}, "\$($key->{NAME}_OBJ_FILES)");
 }
 
 foreach my $key (values %$OUTPUT) {
