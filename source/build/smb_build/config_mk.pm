@@ -73,12 +73,8 @@ my $section_types = {
 		"USE_HOSTCC"		=> "bool"
 		},
 	"LIBRARY" => {
-		"VERSION"		=> "string",
-		"SO_VERSION"		=> "string",
 		"LIBRARY_REALNAME" => "string",
 
-		"PC_FILE" => "string",
-		
 		"INIT_FUNCTION_TYPE"	=> "string",
 		"INIT_FUNCTION_SENTINEL" => "string",
 		"OUTPUT_TYPE"		=> "list",
