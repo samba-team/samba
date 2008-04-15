@@ -36,8 +36,6 @@
 #ifndef HEIM_CAMELLIA_H
 #define HEIM_CAMELLIA_H 1
 
-#include "camellia-ntt.h"
-
 /* symbol renaming */
 #define CAMELLIA_set_key hc_CAMELLIA_set_encrypt_key
 #define CAMELLIA_encrypt hc_CAMELLIA_encrypt
@@ -49,13 +47,15 @@
  */
 
 #define CAMELLIA_BLOCK_SIZE 16
+#define CAMELLIA_TABLE_BYTE_LEN 272
+#define CAMELLIA_TABLE_WORD_LEN (CAMELLIA_TABLE_BYTE_LEN / 4)
 
 #define CAMELLIA_ENCRYPT 1
 #define CAMELLIA_DECRYPT 0
 
 typedef struct camellia_key {
     unsigned int bits;
-    KEY_TABLE_TYPE key;
+    uint32_t key[CAMELLIA_TABLE_WORD_LEN];
 } CAMELLIA_KEY;
 
 int CAMELLIA_set_key(const unsigned char *, const int, CAMELLIA_KEY *);
