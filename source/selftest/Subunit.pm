@@ -20,15 +20,22 @@ sub parse_results($$$$$)
 			$msg_ops->control_msg($_);
 			$msg_ops->start_test($open_tests, $1);
 			push (@$open_tests, $1);
-		} elsif (/^(success|successful|failure|skip|error): (.*?)( \[)?([ \t]*)\n/) {
+		} elsif (/^(success|successful|failure|skip|knownfail|error): (.*?)( \[)?([ \t]*)\n/) {
 			$msg_ops->control_msg($_);
 			my $reason = undef;
 			if ($3) {
 				$reason = "";
 				# reason may be specified in next lines
+				my $terminated = 0;
 				while(<$fh>) {
 					$msg_ops->control_msg($_);
-					if ($_ eq "]\n") { last; } else { $reason .= $_; }
+					if ($_ eq "]\n") { $terminated = 1; last; } else { $reason .= $_; }
+				}
+				
+				unless ($terminated) {
+					$statistics->{TESTS_ERROR}++;
+					$msg_ops->end_test($open_tests, $2, $1, 1, "reason interrupted");
+					return 1;
 				}
 			}
 			my $result = $1;
@@ -53,6 +60,10 @@ sub parse_results($$$$$)
 					$msg_ops->end_test($open_tests, $2, $1, 1, $reason);
 					$unexpected_fail++;
 				}
+			} elsif ($1 eq "knownfail") {
+				pop(@$open_tests); #FIXME: Check that popped value == $2
+				$statistics->{TESTS_EXPECTED_FAIL}++;
+				$msg_ops->end_test($open_tests, $2, $1, 0, $reason);
 			} elsif ($1 eq "skip") {
 				$statistics->{TESTS_SKIP}++;
 				pop(@$open_tests); #FIXME: Check that popped value == $2
