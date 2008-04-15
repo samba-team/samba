@@ -246,11 +246,16 @@ static int net_conf_list(struct smbconf_ctx *conf_ctx,
 	}
 
 	for (share_count = 0; share_count < num_shares; share_count++) {
-		d_printf("[%s]\n", share_names[share_count]);
+		const char *indent = "";
+		if (share_names[share_count] != NULL) {
+			d_printf("[%s]\n", share_names[share_count]);
+			indent = "\t";
+		}
 		for (param_count = 0; param_count < num_params[share_count];
 		     param_count++)
 		{
-			d_printf("\t%s = %s\n",
+			d_printf("%s%s = %s\n",
+				 indent,
 				 param_names[share_count][param_count],
 				 param_values[share_count][param_count]);
 		}
