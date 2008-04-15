@@ -302,7 +302,7 @@ done
 
 WB_OPTS="--option=\"torture:strict mode=yes\""
 WB_OPTS="${WB_OPTS} --option=\"torture:timelimit=1\""
-WB_OPTS="${WB_OPTS} --option=\"torture:winbindd separator=\\\\\""
+WB_OPTS="${WB_OPTS} --option=\"torture:winbindd separator=/\""
 WB_OPTS="${WB_OPTS} --option=\"torture:winbindd private pipe dir=\$WINBINDD_PRIV_PIPE_DIR\""
 WB_OPTS="${WB_OPTS} --option=\"torture:winbindd netbios name=\$SERVER\""
 WB_OPTS="${WB_OPTS} --option=\"torture:winbindd netbios domain=\$DOMAIN\""

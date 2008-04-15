@@ -181,7 +181,8 @@ static bool torture_winbind_struct_netbios_name(struct torture_context *torture)
 	expected = torture_setting_string(torture,
 					  "winbindd netbios name",
 					  lp_netbios_name(torture->lp_ctx));
-
+	expected = strupper_talloc(torture, expected);
+	
 	torture_assert_str_equal(torture,
 				 rep.data.netbios_name, expected,
 				 "winbindd's netbios name doesn't match");
