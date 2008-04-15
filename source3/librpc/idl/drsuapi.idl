@@ -627,8 +627,8 @@ interface drsuapi
 	WERROR drsuapi_DsGetNCChanges(
 		[in] policy_handle *bind_handle,
 		[in,out,ref] int32 *level,
-		[in,switch_is(*level)] drsuapi_DsGetNCChangesRequest req,
-		[out,switch_is(*level)] drsuapi_DsGetNCChangesCtr ctr
+		[in,ref,switch_is(*level)] drsuapi_DsGetNCChangesRequest *req,
+		[out,ref,switch_is(*level)] drsuapi_DsGetNCChangesCtr *ctr
 		);
 
 	/*****************/
@@ -734,9 +734,10 @@ interface drsuapi
 
 	WERROR drsuapi_DsGetMemberships(
 		[in] policy_handle *bind_handle,
-		[in,out] int32 level,
-		[in] [switch_is(level)] drsuapi_DsGetMembershipsRequest req,
-		[out] [switch_is(level)] drsuapi_DsGetMembershipsCtr ctr
+		[in] int32 level,
+		[in,ref] [switch_is(level)] drsuapi_DsGetMembershipsRequest *req,
+		[out,ref] int32 *level_out,
+		[out,ref] [switch_is(*level_out)] drsuapi_DsGetMembershipsCtr *ctr
 		);
 
 	/*****************/
@@ -776,9 +777,10 @@ interface drsuapi
 
 	WERROR drsuapi_DsGetNT4ChangeLog(
 		[in] policy_handle *bind_handle,
-		[in,out] uint32 level,
-		[in] [switch_is(level)] drsuapi_DsGetNT4ChangeLogRequest req,
-		[out] [switch_is(level)] drsuapi_DsGetNT4ChangeLogInfo info
+		[in] uint32 level,
+		[in,ref] [switch_is(level)] drsuapi_DsGetNT4ChangeLogRequest *req,
+		[out,ref] uint32 *level_out,
+		[out,ref] [switch_is(*level_out)] drsuapi_DsGetNT4ChangeLogInfo *info
 		);
 
 	/*****************/
@@ -851,9 +853,10 @@ interface drsuapi
 
 	WERROR drsuapi_DsCrackNames(
 		[in] policy_handle *bind_handle,
-		[in, out] int32 level,
-		[in,switch_is(level)] drsuapi_DsNameRequest req,
-		[out,switch_is(level)] drsuapi_DsNameCtr ctr
+		[in] int32 level,
+		[in,ref,switch_is(level)] drsuapi_DsNameRequest *req,
+		[out,ref] int32 *level_out,
+		[out,ref,switch_is(*level_out)] drsuapi_DsNameCtr *ctr
 		);
 
 	/*****************/
@@ -886,9 +889,10 @@ interface drsuapi
 
 	WERROR drsuapi_DsWriteAccountSpn(
 		[in] policy_handle *bind_handle,
-		[in,out] int32 level,
-		[in,switch_is(level)] drsuapi_DsWriteAccountSpnRequest req,
-		[out,switch_is(level)] drsuapi_DsWriteAccountSpnResult res
+		[in] int32 level,
+		[in,ref,switch_is(level)] drsuapi_DsWriteAccountSpnRequest *req,
+		[out,ref] int32 *level_out,
+		[out,ref,switch_is(*level_out)] drsuapi_DsWriteAccountSpnResult *res
 		);
 
 	/*****************/
@@ -913,9 +917,10 @@ interface drsuapi
 
 	WERROR drsuapi_DsRemoveDSServer(
 		[in] policy_handle *bind_handle,
-		[in,out] int32 level,
-		[in,switch_is(level)] drsuapi_DsRemoveDSServerRequest req,
-		[out,switch_is(level)] drsuapi_DsRemoveDSServerResult res
+		[in] int32 level,
+		[in,ref,switch_is(level)] drsuapi_DsRemoveDSServerRequest *req,
+		[out,ref] int32 *level_out,
+		[out,ref,switch_is(*level_out)] drsuapi_DsRemoveDSServerResult *res
 		);
 
 	/*****************/
@@ -1013,9 +1018,9 @@ interface drsuapi
 	WERROR drsuapi_DsGetDomainControllerInfo(
 		[in] policy_handle *bind_handle,
 		[in] int32 level,
-		[in,switch_is(level)] drsuapi_DsGetDCInfoRequest req,
-		[out] int32 level_out,
-		[out,switch_is(level_out)] drsuapi_DsGetDCInfoCtr ctr
+		[in,ref,switch_is(level)] drsuapi_DsGetDCInfoRequest *req,
+		[out,ref] int32 *level_out,
+		[out,ref,switch_is(*level_out)] drsuapi_DsGetDCInfoCtr *ctr
 		);
 
 	/*****************/
@@ -1131,9 +1136,10 @@ interface drsuapi
 
 	[public] WERROR drsuapi_DsAddEntry(
 		[in] policy_handle *bind_handle,
-		[in,out] int32 level,
-		[in,switch_is(level)] drsuapi_DsAddEntryRequest req,
-		[out,switch_is(level)] drsuapi_DsAddEntryCtr ctr
+		[in] int32 level,
+		[in,ref,switch_is(level)] drsuapi_DsAddEntryRequest *req,
+		[out,ref] int32 *level_out,
+		[out,ref,switch_is(*level_out)] drsuapi_DsAddEntryCtr *ctr
 		);
 
 	/*****************/
@@ -1257,7 +1263,7 @@ interface drsuapi
 	typedef [switch_type(drsuapi_DsReplicaOpType)] union {
 		[case(DRSUAPI_DS_REPLICA_OP_TYPE_SYNC)]		drsuapi_DsReplicaSyncOptions sync;
 		[case(DRSUAPI_DS_REPLICA_OP_TYPE_ADD)]		drsuapi_DsReplicaAddOptions add;
-		[case(DRSUAPI_DS_REPLICA_OP_TYPE_DELETE)]	drsuapi_DsReplicaDeleteOptions delete;
+		[case(DRSUAPI_DS_REPLICA_OP_TYPE_DELETE)]	drsuapi_DsReplicaDeleteOptions op_delete;
 		[case(DRSUAPI_DS_REPLICA_OP_TYPE_MODIFY)]	drsuapi_DsReplicaModifyOptions modify;
 		[case(DRSUAPI_DS_REPLICA_OP_TYPE_UPDATE_REFS)]	drsuapi_DsReplicaUpdateRefsOptions update_refs;
 		[default] uint32 unknown;
@@ -1412,9 +1418,9 @@ interface drsuapi
 	WERROR drsuapi_DsReplicaGetInfo(
 		[in] policy_handle *bind_handle,
 		[in] drsuapi_DsReplicaGetInfoLevel level,
-		[in,switch_is(level)] drsuapi_DsReplicaGetInfoRequest req,
-		[out] drsuapi_DsReplicaInfoType info_type,
-		[out,switch_is(info_type)] drsuapi_DsReplicaInfo info
+		[in,ref,switch_is(level)] drsuapi_DsReplicaGetInfoRequest *req,
+		[out,ref] drsuapi_DsReplicaInfoType *info_type,
+		[out,ref,switch_is(*info_type)] drsuapi_DsReplicaInfo *info
 		);
 
 	/*****************/
@@ -1444,9 +1450,10 @@ interface drsuapi
 
 	WERROR drsuapi_DsGetMemberships2(
 		[in] policy_handle *bind_handle,
-		[in,out] int32 level,
-		[in] [switch_is(level)] drsuapi_DsGetMemberships2Request req,
-		[out] [switch_is(level)] drsuapi_DsGetMemberships2Ctr ctr
+		[in] int32 level,
+		[in,ref] [switch_is(level)] drsuapi_DsGetMemberships2Request *req,
+		[out,ref] int32 *level_out,
+		[out,ref] [switch_is(*level_out)] drsuapi_DsGetMemberships2Ctr *ctr
 		);
 
 
@@ -1489,8 +1496,8 @@ interface drsuapi
 	WERROR drsuapi_QuerySitesByCost(
 		[in] policy_handle *bind_handle,
 		[in] int32 level,
-		[in] [switch_is(level)] drsuapi_QuerySitesByCostRequest req,
-		[out] int32 level_out,
-		[out] [switch_is(level_out)] drsuapi_QuerySitesByCostCtr ctr
+		[in,ref] [switch_is(level)] drsuapi_QuerySitesByCostRequest *req,
+		[out,ref] int32 *level_out,
+		[out,ref] [switch_is(*level_out)] drsuapi_QuerySitesByCostCtr *ctr
 	);
 }
