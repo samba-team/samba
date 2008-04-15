@@ -889,6 +889,11 @@ static bool open_sockets(bool isdaemon, int port)
 
 	pidfile_create("nmbd");
 
+	if (!reinit_after_fork(nmbd_messaging_context())) {
+		DEBUG(0,("reinit_after_fork() failed\n"));
+		exit(1);
+	}
+
 	/* get broadcast messages */
 	claim_connection(NULL,"",FLAG_MSG_GENERAL|FLAG_MSG_DBWRAP);
 
