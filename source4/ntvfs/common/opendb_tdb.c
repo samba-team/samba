@@ -452,7 +452,8 @@ static NTSTATUS odb_tdb_open_can_internal(struct odb_context *odb,
 */
 static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 				  void *file_handle, const char *path,
-				  int *fd, bool allow_level_II_oplock,
+				  int *fd, NTTIME open_write_time,
+				  bool allow_level_II_oplock,
 				  uint32_t oplock_level, uint32_t *oplock_granted)
 {
 	struct odb_context *odb = lck->odb;
@@ -472,6 +473,10 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 	if (lck->file.path == NULL) {
 		lck->file.path = talloc_strdup(lck, path);
 		NT_STATUS_HAVE_NO_MEMORY(lck->file.path);
+	}
+
+	if (lck->file.open_write_time == 0) {
+		lck->file.open_write_time = open_write_time;
 	}
 
 	/*
@@ -785,20 +790,53 @@ static NTSTATUS odb_tdb_set_delete_on_close(struct odb_lock *lck, bool del_on_cl
 }
 
 /*
+  update the write time on an open file
+*/
+static NTSTATUS odb_tdb_set_write_time(struct odb_lock *lck,
+				       NTTIME write_time, bool force)
+{
+	if (lck->file.path == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (lck->file.changed_write_time != 0 && !force) {
+		return NT_STATUS_OK;
+	}
+
+	lck->file.changed_write_time = write_time;
+
+	return odb_push_record(lck, &lck->file);
+}
+
+/*
   return the current value of the delete_on_close bit, and how many
   people still have the file open
 */
-static NTSTATUS odb_tdb_get_delete_on_close(struct odb_context *odb, 
-					    DATA_BLOB *key, bool *del_on_close)
+static NTSTATUS odb_tdb_get_file_infos(struct odb_context *odb, DATA_BLOB *key,
+				       bool *del_on_close, NTTIME *write_time)
 {
 	struct odb_lock *lck;
 
-	(*del_on_close) = false;
+	if (del_on_close) {
+		*del_on_close = false;
+	}
+	if (write_time) {
+		*write_time = 0;
+	}
 
 	lck = odb_lock(odb, odb, key);
 	NT_STATUS_HAVE_NO_MEMORY(lck);
 
-	(*del_on_close) = lck->file.delete_on_close;
+	if (del_on_close) {
+		*del_on_close = lck->file.delete_on_close;
+	}
+	if (write_time) {
+		if (lck->file.changed_write_time == 0) {
+			*write_time = lck->file.open_write_time;
+		} else {
+			*write_time = lck->file.changed_write_time;
+		}
+	}
 
 	talloc_free(lck);
 
@@ -852,7 +890,8 @@ static const struct opendb_ops opendb_tdb_ops = {
 	.odb_rename              = odb_tdb_rename,
 	.odb_get_path            = odb_tdb_get_path,
 	.odb_set_delete_on_close = odb_tdb_set_delete_on_close,
-	.odb_get_delete_on_close = odb_tdb_get_delete_on_close,
+	.odb_set_write_time      = odb_tdb_set_write_time,
+	.odb_get_file_infos      = odb_tdb_get_file_infos,
 	.odb_can_open            = odb_tdb_can_open,
 	.odb_update_oplock       = odb_tdb_update_oplock,
 	.odb_break_oplocks       = odb_tdb_break_oplocks
