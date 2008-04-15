@@ -61,7 +61,7 @@ _PUBLIC_ WERROR reg_open_samba(TALLOC_CTX *mem_ctx,
 {
 	WERROR result;
 
-	result = reg_open_local(mem_ctx, ctx, session_info, credentials);
+	result = reg_open_local(mem_ctx, ctx);
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
 	}
