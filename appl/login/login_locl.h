@@ -126,6 +126,14 @@
 #endif
 #endif
 
+/* if cygwin doesnt have WTMPX_FILE, it uses wtmp for wtmpx
+ * http://www.cygwin.com/ml/cygwin/2006-12/msg00630.html */
+#ifdef __CYGWIN__
+#ifndef WTMPX_FILE
+#define WTMPX_FILE WTMP_FILE
+#endif
+#endif
+
 #ifndef _PATH_LOGACCESS
 #define _PATH_LOGACCESS SYSCONFDIR "/login.access"
 #endif /* _PATH_LOGACCESS */
