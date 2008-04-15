@@ -48,7 +48,7 @@ static struct registry_context *open_backend(poptContext pc,
 					remote_host, NULL);
 		break;
 	case REG_NULL:
-		error = reg_open_local(NULL, &ctx, NULL, cmdline_credentials);
+		error = reg_open_local(NULL, &ctx);
 		break;
 	}
 

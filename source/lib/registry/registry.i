@@ -57,9 +57,7 @@ const char *str_regtype(int type);
 }
 
 %rename(Registry) reg_open_local;
-WERROR reg_open_local(TALLOC_CTX *parent_ctx, struct registry_context **ctx,
-                      struct auth_session_info *session_info,
-                      struct cli_credentials *credentials);
+WERROR reg_open_local(TALLOC_CTX *parent_ctx, struct registry_context **ctx);
 
 %typemap(in,noblock=1) const char ** {
   /* Check if is a list */

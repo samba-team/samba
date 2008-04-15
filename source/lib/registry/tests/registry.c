@@ -517,7 +517,7 @@ static bool setup_local_registry(struct torture_context *tctx, void **data)
 	struct hive_key *hive_key;
 	const char *filename;
 
-	error = reg_open_local(tctx, &rctx, NULL, NULL);
+	error = reg_open_local(tctx, &rctx);
 	torture_assert_werr_ok(tctx, error, "Opening local registry failed");
 
 	status = torture_temp_dir(tctx, "registry-local", &tempdir);

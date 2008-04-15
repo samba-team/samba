@@ -37,9 +37,6 @@ struct registry_local {
 		struct hive_key *key;
 		struct mountpoint *prev, *next;
 	} *mountpoints;
-
-	struct auth_session_info *session_info;
-	struct cli_credentials *credentials;
 };
 
 struct local_key {
@@ -294,9 +291,7 @@ const static struct registry_operations local_ops = {
 	.get_key_info = local_get_key_info,
 };
 
-WERROR reg_open_local(TALLOC_CTX *mem_ctx, struct registry_context **ctx,
-		      struct auth_session_info *session_info,
-		      struct cli_credentials *credentials)
+WERROR reg_open_local(TALLOC_CTX *mem_ctx, struct registry_context **ctx)
 {
 	struct registry_local *ret = talloc_zero(mem_ctx,
 						 struct registry_local);
@@ -304,8 +299,6 @@ WERROR reg_open_local(TALLOC_CTX *mem_ctx, struct registry_context **ctx,
 	W_ERROR_HAVE_NO_MEMORY(ret);
 
 	ret->ops = &local_ops;
-	ret->session_info = session_info;
-	ret->credentials = credentials;
 
 	*ctx = (struct registry_context *)ret;
 
