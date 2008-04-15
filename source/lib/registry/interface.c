@@ -284,7 +284,7 @@ _PUBLIC_ WERROR reg_key_flush(struct registry_key *key)
 }
 
 _PUBLIC_ WERROR reg_set_sec_desc(struct registry_key *key,
-				 struct security_descriptor *security)
+				 const struct security_descriptor *security)
 {
 	if (key == NULL)
 		return WERR_INVALID_PARAM;
