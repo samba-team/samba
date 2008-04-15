@@ -82,7 +82,7 @@ WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
 {
 	char **new_array = NULL;
 
-	if ((array == NULL) || (string == NULL)) {
+	if (array == NULL) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -91,10 +91,14 @@ WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
 		return WERR_NOMEM;
 	}
 
-	new_array[count] = talloc_strdup(new_array, string);
-	if (new_array[count] == NULL) {
-		TALLOC_FREE(new_array);
-		return WERR_NOMEM;
+	if (string == NULL) {
+		new_array[count] = NULL;
+	} else {
+		new_array[count] = talloc_strdup(new_array, string);
+		if (new_array[count] == NULL) {
+			TALLOC_FREE(new_array);
+			return WERR_NOMEM;
+		}
 	}
 
 	*array = new_array;
