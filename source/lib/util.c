@@ -990,6 +990,36 @@ void become_daemon(bool Fork, bool no_process_group)
 				  attach it to the logfile */
 }
 
+bool reinit_after_fork(struct messaging_context *msg_ctx)
+{
+	NTSTATUS status;
+
+	/* Reset the state of the random
+	 * number generation system, so
+	 * children do not get the same random
+	 * numbers as each other */
+	set_need_random_reseed();
+
+	/* tdb needs special fork handling */
+	if (tdb_reopen_all(1) == -1) {
+		DEBUG(0,("tdb_reopen_all failed.\n"));
+		return false;
+	}
+
+	/*
+	 * For clustering, we need to re-init our ctdbd connection after the
+	 * fork
+	 */
+	status = messaging_reinit(msg_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("messaging_reinit() failed: %s\n",
+			 nt_errstr(status)));
+		return false;
+	}
+
+	return true;
+}
+
 /****************************************************************************
  Put up a yes/no prompt.
 ****************************************************************************/
