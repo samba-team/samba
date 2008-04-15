@@ -3,7 +3,7 @@
    Reading .REG files
 
    Copyright (C) Jelmer Vernooij 2004-2007
-   Copyright (C) Wilco Baan Hofman 2006
+   Copyright (C) Wilco Baan Hofman 2006-2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -112,8 +112,8 @@ _PUBLIC_ WERROR reg_dotreg_diff_save(TALLOC_CTX *ctx, const char *filename,
 	data->iconv_convenience = iconv_convenience;
 
 	if (filename) {
-		data->fd = open(filename, O_CREAT, 0755);
-		if (data->fd == -1) {
+		data->fd = open(filename, O_CREAT|O_WRONLY, 0755);
+		if (data->fd < 0) {
 			DEBUG(0, ("Unable to open %s\n", filename));
 			return WERR_BADFILE;
 		}
@@ -121,7 +121,7 @@ _PUBLIC_ WERROR reg_dotreg_diff_save(TALLOC_CTX *ctx, const char *filename,
 		data->fd = STDOUT_FILENO;
 	}
 
-	fdprintf(data->fd, "%s\n", HEADER_STRING);
+	fdprintf(data->fd, "%s\n\n", HEADER_STRING);
 
 	*callbacks = talloc(ctx, struct reg_diff_callbacks);
 

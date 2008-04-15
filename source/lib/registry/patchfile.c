@@ -45,7 +45,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 			     void *callback_data)
 {
 	int i;
-	struct registry_key *t1, *t2;
+	struct registry_key *t1 = NULL, *t2 = NULL;
 	char *tmppath;
 	const char *keyname1;
 	WERROR error, error1, error2;
@@ -295,7 +295,7 @@ _PUBLIC_ WERROR reg_diff_load(const char *filename,
 
 	/* Reset position in file */
 	lseek(fd, 0, SEEK_SET);
-#if 0
+#if 0 /* These backends are not supported yet. */
 	if (strncmp(hdr, "CREG", 4) == 0) {
 		/* Must be a W9x CREG Config.pol file */
 		return reg_creg_diff_load(diff, fd);
