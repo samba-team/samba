@@ -66,7 +66,7 @@
 
 	<xsl:template match="smbconfblock/smbconfoption">
 		<xsl:element name="member">
-			<xsl:element name="term">
+			<xsl:element name="indexterm">
 					<xsl:value-of select="@name"/>
 			</xsl:element>
 			<xsl:choose>
@@ -168,4 +168,5 @@
 
 		</xsl:element>
 	</xsl:template>
+
 </xsl:stylesheet>

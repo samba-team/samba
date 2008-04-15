@@ -53,7 +53,7 @@
 		</xsl:variable>
 
 		<xsl:variable name="term">
-			<xsl:element name="term">
+			<xsl:element name="indexterm">
 				<xsl:copy-of select="$anchor"/>
 				<xsl:value-of select="@name"/>
 				<xsl:value-of select="$context"/>
