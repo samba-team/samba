@@ -1,5 +1,8 @@
 2008-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/test_forward.c: Don't print krb5_error_code since we
+	are using krb5_err().
+
 	* lib/krb5/ticket.c: Cast krb5_error_code to int to avoid warning.
 
 	* lib/krb5/scache.c: Cast krb5_error_code to int to avoid warning.
