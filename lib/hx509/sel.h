@@ -76,5 +76,7 @@ extern struct hx_expr_input _hx509_expr_input;
 #define yynerrs _hx509_sel_yynerrs
 #define yywrap  _hx509_sel_yywrap
 
-int _hx509_sel_yyparse(void);
+int  _hx509_sel_yyparse(void);
+int  _hx509_sel_yylex(void);
+void _hx509_sel_yyerror(char *);
 
