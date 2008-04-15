@@ -555,7 +555,7 @@ NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli,
 		*type = *r.out.type;
 	}
 	if (value && r.out.value) {
-		memcpy(value, r.out.value, *r.in.size);
+		memcpy(value, r.out.value, *r.in.size * sizeof(*value));
 	}
 	if (size && r.out.size) {
 		*size = *r.out.size;
@@ -933,7 +933,7 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli,
 		*type = *r.out.type;
 	}
 	if (data && r.out.data) {
-		memcpy(data, r.out.data, *r.in.data_size);
+		memcpy(data, r.out.data, *r.in.data_size * sizeof(*data));
 	}
 	if (data_size && r.out.data_size) {
 		*data_size = *r.out.data_size;
@@ -1511,9 +1511,9 @@ NTSTATUS rpccli_winreg_QueryMultipleValues(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(values, r.out.values, r.in.num_values);
+	memcpy(values, r.out.values, r.in.num_values * sizeof(*values));
 	if (buffer && r.out.buffer) {
-		memcpy(buffer, r.out.buffer, *r.in.buffer_size);
+		memcpy(buffer, r.out.buffer, *r.in.buffer_size * sizeof(*buffer));
 	}
 	*buffer_size = *r.out.buffer_size;
 

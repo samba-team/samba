@@ -611,7 +611,7 @@ NTSTATUS rpccli_PNP_GetDeviceRegProp(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*unknown1 = *r.out.unknown1;
-	memcpy(buffer, r.out.buffer, *r.in.buffer_size);
+	memcpy(buffer, r.out.buffer, *r.in.buffer_size * sizeof(*buffer));
 	*buffer_size = *r.out.buffer_size;
 	*needed = *r.out.needed;
 
