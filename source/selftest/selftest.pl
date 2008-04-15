@@ -256,10 +256,12 @@ sub run_testsuite($$$$$$)
 	my $ret = close(RESULT);
 	$ret = 0 unless $ret == 1;
 
+	my $exitcode = $? >> 8;
+
 	if ($ret == 1) {
 		$msg_ops->end_test([], $name, "success", $expected_ret != $ret, undef); 
 	} else {
-		$msg_ops->end_test([], $name, "failure", $expected_ret != $ret, "Returned $ret");
+		$msg_ops->end_test([], $name, "failure", $expected_ret != $ret, "Exit code was $exitcode");
 	}
 
 	cleanup_pcap($pcap_file, $expected_ret, $ret);
