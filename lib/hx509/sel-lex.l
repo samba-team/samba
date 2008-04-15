@@ -47,7 +47,7 @@ unsigned lineno = 1;
 static char * handle_string(void);
 static int lex_input(char *, int);
 static void error_message (const char *format, ...);
-static void sel_yyerror (char *);
+void sel_yyerror (char *);
 
 struct hx_expr_input _hx509_expr_input;
 
@@ -91,7 +91,7 @@ error_message (const char *format, ...)
      va_end (args);
 }
 
-static void
+void
 sel_yyerror (char *s)
 {
     error_message("%s", s);
