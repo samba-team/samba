@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/samr.h"
 #include "auth/auth.h"
 #include "param/param.h"
+#include "lib/events/events.h"
 
 static int net_samdump_keytab_usage(struct net_context *ctx, int argc, const char **argv)
 {
@@ -53,7 +54,7 @@ static int net_samdump_keytab(struct net_context *ctx, int argc, const char **ar
 		break;
 	}
 
-	libnetctx = libnet_context_init(NULL, ctx->lp_ctx);
+	libnetctx = libnet_context_init(event_context_find(ctx), ctx->lp_ctx);
 	if (!libnetctx) {
 		return -1;	
 	}
@@ -63,7 +64,7 @@ static int net_samdump_keytab(struct net_context *ctx, int argc, const char **ar
 	r.in.machine_account = NULL;
 	r.in.binding_string = NULL;
 
-	status = libnet_SamDump_keytab(libnetctx, ctx->mem_ctx, &r);
+	status = libnet_SamDump_keytab(libnetctx, ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("libnet_SamDump returned %s: %s\n",
 			 nt_errstr(status),
@@ -99,7 +100,7 @@ int net_samdump(struct net_context *ctx, int argc, const char **argv)
 		return rc;
 	}
 
-	libnetctx = libnet_context_init(NULL, ctx->lp_ctx);
+	libnetctx = libnet_context_init(event_context_find(ctx), ctx->lp_ctx);
 	if (!libnetctx) {
 		return -1;	
 	}
@@ -109,7 +110,7 @@ int net_samdump(struct net_context *ctx, int argc, const char **argv)
 	r.in.machine_account = NULL;
 	r.in.binding_string = NULL;
 
-	status = libnet_SamDump(libnetctx, ctx->mem_ctx, &r);
+	status = libnet_SamDump(libnetctx, ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("libnet_SamDump returned %s: %s\n",
 			 nt_errstr(status),
@@ -141,7 +142,7 @@ int net_samsync_ldb(struct net_context *ctx, int argc, const char **argv)
 	struct libnet_context *libnetctx;
 	struct libnet_samsync_ldb r;
 
-	libnetctx = libnet_context_init(NULL, ctx->lp_ctx);
+	libnetctx = libnet_context_init(event_context_find(ctx), ctx->lp_ctx);
 	if (!libnetctx) {
 		return -1;	
 	}

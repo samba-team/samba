@@ -586,6 +586,8 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	s->lp_ctx = ctx->lp_ctx;
+
 	join = talloc_zero(s, struct libnet_JoinDomain);
 	if (!join) {
 		return NT_STATUS_NO_MEMORY;

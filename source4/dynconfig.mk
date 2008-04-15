@@ -1,5 +1,6 @@
 [SUBSYSTEM::DYNCONFIG]
-OBJ_FILES = dynconfig.o
+
+DYNCONFIG_OBJ_FILES = dynconfig.o
 
 # set these to where to find various files
 # These can be overridden by command line switches (see smbd(8))
@@ -21,5 +22,4 @@ PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\" \
 
 dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $<
-	@$(CC) $(CFLAGS) $(CPPFLAGS) $(PICFLAG) \
-		$(PATH_FLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $(PICFLAG) $(PATH_FLAGS) -c $< -o $@

@@ -4,8 +4,6 @@
 # Start BINARY ntlm_auth
 [BINARY::ntlm_auth]
 INSTALLDIR = BINDIR
-OBJ_FILES = \
-		ntlm_auth.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-HOSTCONFIG \
 		LIBSAMBA-UTIL \
@@ -20,20 +18,22 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ntlm_auth
 #################################
 
+ntlm_auth_OBJ_FILES = utils/ntlm_auth.o
+
 MANPAGES += utils/man/ntlm_auth.1
 
 #################################
 # Start BINARY getntacl
 [BINARY::getntacl]
 INSTALLDIR = BINDIR
-OBJ_FILES = \
-		getntacl.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-HOSTCONFIG \
 		LIBSAMBA-UTIL \
 		NDR_XATTR \
 		WRAP_XATTR \
 		LIBSAMBA-ERRORS
+
+getntacl_OBJ_FILES = utils/getntacl.o
 
 # End BINARY getntacl
 #################################
@@ -45,27 +45,25 @@ MANPAGES += utils/man/getntacl.1
 [BINARY::setntacl]
 # disabled until rewritten
 #INSTALLDIR = BINDIR
-OBJ_FILES = \
-		setntacl.o
 # End BINARY setntacl
 #################################
+
+setntacl_OBJ_FILES = utils/setntacl.o
 
 #################################
 # Start BINARY setnttoken
 [BINARY::setnttoken]
 INSTALLDIR = BINDIR
-OBJ_FILES = \
-		setnttoken.o
 PRIVATE_DEPENDENCIES =
 # End BINARY setnttoken
 #################################
+
+setnttoken_OBJ_FILES = utils/setnttoken.o
 
 #################################
 # Start BINARY nmblookup
 [BINARY::nmblookup]
 INSTALLDIR = BINDIR
-OBJ_FILES = \
-		nmblookup.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-HOSTCONFIG \
 		LIBSAMBA-UTIL \
@@ -77,12 +75,12 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY nmblookup
 #################################
 
+nmblookup_OBJ_FILES = utils/nmblookup.o
+
 #################################
 # Start BINARY testparm
 [BINARY::testparm]
 INSTALLDIR = BINDIR
-OBJ_FILES = \
-		testparm.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-HOSTCONFIG \
 		LIBSAMBA-UTIL \
@@ -93,3 +91,5 @@ PRIVATE_DEPENDENCIES = \
 		CHARSET
 # End BINARY testparm
 #################################
+
+testparm_OBJ_FILES = utils/testparm.o
