@@ -56,8 +56,10 @@ knownfail() {
         status=$?
         if [ x$status = x0 ]; then
                 echo "failure: $name [unexpected success]"
+				status=1
         else
                 echo "knownfail: $name"
+				status=0
         fi
         return $status
 }
@@ -178,7 +180,7 @@ testit "wbinfo -i against $TARGET" $wbinfo -i "$DOMAIN/$USERNAME" || failed=`exp
 # this does not work
 knownfail "wbinfo --uid-info against $TARGET" $wbinfo --uid-info $admin_sid
 knownfail "wbinfo --group-info against $TARGET" $wbinfo --group-info "S-1-22-2-0"
-knownfail "wbinfo -r against $TARGET" $wbinfo "$DOMAIN/$USERNAME"
+knownfail "wbinfo -r against $TARGET" $wbinfo -r "$DOMAIN/$USERNAME"
 
 testit "wbinfo --user-domgroups against $TARGET" $wbinfo --user-domgroups $admin_sid || failed=`expr $failed + 1`
 
