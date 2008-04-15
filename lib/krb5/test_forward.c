@@ -97,11 +97,11 @@ main(int argc, char **argv)
 
     ret = krb5_cc_default(context, &id);
     if (ret)
-	krb5_err(context, 1, ret, "krb5_cc_default failed: %d", ret);
+	krb5_err(context, 1, ret, "krb5_cc_default failed");
 
     ret = krb5_auth_con_init(context, &ac);
     if (ret)
-	krb5_err(context, 1, ret, "krb5_auth_con_init failed: %d", ret);
+	krb5_err(context, 1, ret, "krb5_auth_con_init failed");
 
     krb5_auth_con_addflags(context, ac,
 			   KRB5_AUTH_CONTEXT_CLEAR_FORWARDED_CRED, NULL);
