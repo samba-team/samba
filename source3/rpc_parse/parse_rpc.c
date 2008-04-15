@@ -326,7 +326,7 @@ static bool smb_io_rpc_iface(const char *desc, RPC_IFACE *ifc, prs_struct *ps, i
 	if (!smb_io_uuid(  "uuid", &ifc->uuid, ps, depth))
 		return False;
 
-	if(!prs_uint32 ("version", ps, depth, &ifc->version))
+	if(!prs_uint32 ("version", ps, depth, &ifc->if_version))
 		return False;
 
 	return True;
