@@ -86,11 +86,29 @@ testit "Comparing files" diff tmpfile-old tmpfile || failed=`expr $failed + 1`
 runcmd "Creating directory, Changing directory, Going back" 'mkdir bla; cd bla; cd ..; rmdir bla' || failed=`expr $failed + 1`
 # enable recurse, create nested directory
 runcmd "Creating nested directory" 'mkdir bla/bloe' || failed=`expr $failed + 1`
-# remove parent directory
-runcmd "Removing directory" 'rmdir bla/bloe' || failed=`expr $failed + 1`
 # remove child directory
+runcmd "Removing directory" 'rmdir bla/bloe' || failed=`expr $failed + 1`
+# remove parent directory
 runcmd "Removing directory" 'rmdir bla'|| failed=`expr $failed + 1`
+# enable recurse, create nested directory
+runcmd "Creating nested directory" 'mkdir bla' || failed=`expr $failed + 1`
+# rename bla to bla2
+runcmd "rename of nested directory" 'rename bla bla2' || failed=`expr $failed + 1`
+# deltree
+runcmd "deltree of nested directory" 'deltree bla2' || failed=`expr $failed + 1`
 # run fsinfo
+runcmd "Getting file system info" 'fsinfo allocation'|| failed=`expr $failed + 1`
+runcmd "Getting file system info" 'fsinfo volume'|| failed=`expr $failed + 1`
+runcmd "Getting file system info" 'fsinfo volumeinfo'|| failed=`expr $failed + 1`
+runcmd "Getting file system info" 'fsinfo sizeinfo'|| failed=`expr $failed + 1`
+runcmd "Getting file system info" 'fsinfo deviceinfo'|| failed=`expr $failed + 1`
+runcmd "Getting file system info" 'fsinfo attributeinfo'|| failed=`expr $failed + 1`
+runcmd "Getting file system info" 'fsinfo volume-information'|| failed=`expr $failed + 1`
+runcmd "Getting file system info" 'fsinfo size-information'|| failed=`expr $failed + 1`
+runcmd "Getting file system info" 'fsinfo device-information'|| failed=`expr $failed + 1`
+runcmd "Getting file system info" 'fsinfo attribute-information'|| failed=`expr $failed + 1`
+runcmd "Getting file system info" 'fsinfo quota-information'|| failed=`expr $failed + 1`
+runcmd "Getting file system info" 'fsinfo fullsize-information'|| failed=`expr $failed + 1`
 runcmd "Getting file system info" 'fsinfo objectid'|| failed=`expr $failed + 1`
 
 # put that file
@@ -98,6 +116,7 @@ runcmd "Putting file" 'put tmpfile'|| failed=`expr $failed + 1`
 # get that file
 mv tmpfile tmpfile-old
 runcmd "Getting file" 'get tmpfile'|| failed=`expr $failed + 1`
+runcmd "Getting file EA info" 'eainfo tmpfile'|| failed=`expr $failed + 1`
 # remove that file
 runcmd "Removing file" 'rm tmpfile' || failed=`expr $failed + 1`
 # compare locally
@@ -110,6 +129,11 @@ runcmd "Getting file again" 'get tmpfilex' || failed=`expr $failed + 1`
 testit "Comparing files" diff tmpfilex tmpfile || failed=`expr $failed + 1`
 # remove that file
 runcmd "Removing file" 'rm tmpfilex'|| failed=`expr $failed + 1`
+
+runcmd "Lookup name" "lookup $DOMAIN\\$USERNAME" || failed=`expr $failed + 1`
+
+#Fails unless there are privilages
+#runcmd "Lookup privs of name" "privileges $DOMAIN\\$USERNAME" || failed=`expr $failed + 1`
 
 # do some simple operations using old protocol versions
 runcmd "List directory with LANMAN1" 'ls' -m LANMAN1 || failed=`expr $failed + 1`
