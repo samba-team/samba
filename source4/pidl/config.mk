@@ -1,5 +1,5 @@
 pidl/Makefile: pidl/Makefile.PL
-	cd pidl && $(PERL) Makefile.PL 
+	cd pidl && $(PERL) Makefile.PL PREFIX=$(prefix)
 
 pidl-testcov: pidl/Makefile
 	cd pidl && cover -test
