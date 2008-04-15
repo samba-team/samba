@@ -536,7 +536,8 @@ pk_mk_padata(krb5_context context,
 			   &ap, &size, ret);
 	free_AuthPack_Win2k(&ap);
 	if (ret) {
-	    krb5_set_error_string(context, "AuthPack_Win2k: %d", ret);
+	    krb5_set_error_string(context, "AuthPack_Win2k: %d", 
+				  (int)ret);
 	    goto out;
 	}
 	if (buf.length != size)
@@ -557,7 +558,7 @@ pk_mk_padata(krb5_context context,
 	ASN1_MALLOC_ENCODE(AuthPack, buf.data, buf.length, &ap, &size, ret);
 	free_AuthPack(&ap);
 	if (ret) {
-	    krb5_set_error_string(context, "AuthPack: %d", ret);
+	    krb5_set_error_string(context, "AuthPack: %d", (int)ret);
 	    goto out;
 	}
 	if (buf.length != size)
@@ -628,7 +629,7 @@ pk_mk_padata(krb5_context context,
     } else
 	krb5_abortx(context, "internal pkinit error");
     if (ret) {
-	krb5_set_error_string(context, "PA-PK-AS-REQ %d", ret);
+	krb5_set_error_string(context, "PA-PK-AS-REQ %d", (int)ret);
 	goto out;
     }
     if (buf.length != size)
@@ -1358,7 +1359,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 					&size);
 	if (ret) {
 	    krb5_set_error_string(context, "PKINIT: Failed decoding windows "
-				  "pkinit reply %d", ret);
+				  "pkinit reply %d", (int)ret);
 	    return ret;
 	}
 
