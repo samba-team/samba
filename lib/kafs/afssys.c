@@ -54,8 +54,10 @@ struct devdata {
     unsigned long param6;
     unsigned long retval;
 };
+#ifdef _IOWR
 #define VIOC_SYSCALL_DEV _IOWR('C', 2, struct devdata)
 #define VIOC_SYSCALL_DEV_OPENAFS _IOWR('C', 1, struct devdata)
+#endif
 
 
 int _kafs_debug; /* this should be done in a better way */
@@ -439,10 +441,14 @@ k_hasafs(void)
 		goto done;
 	}
 	if (strncmp("/dev/", env, 5) == 0) {
+#ifdef VIOC_SYSCALL_DEV
 	    if (try_ioctlpath(env, VIOC_SYSCALL_DEV, MACOS_DEV_POINT) == 0)
 		goto done;
+#endif
+#ifdef VIOC_SYSCALL_DEV_OPENAFS
 	    if (try_ioctlpath(env,VIOC_SYSCALL_DEV_OPENAFS,MACOS_DEV_POINT) ==0)
 		goto done;
+#endif
 	}
     }
 
