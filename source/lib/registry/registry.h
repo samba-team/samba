@@ -493,6 +493,7 @@ WERROR reg_dotreg_diff_save(TALLOC_CTX *ctx, const char *filename,
 			    struct reg_diff_callbacks **callbacks,
 			    void **callback_data);
 WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename,
+			  struct smb_iconv_convenience *ic,
 			  struct reg_diff_callbacks **callbacks,
 			  void **callback_data);
 WERROR reg_generate_diff_key(struct registry_key *oldkey,

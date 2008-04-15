@@ -23,9 +23,12 @@
 #include "lib/registry/registry.h"
 #include "system/filesys.h"
 #include "param/param.h"
+#include "librpc/gen_ndr/winreg.h"
 
 struct preg_data {
 	int fd;
+	TALLOC_CTX *ctx;
+	struct smb_iconv_convenience *ic;
 };
 
 static WERROR preg_read_utf16(struct smb_iconv_convenience *ic, int fd, char *c)
@@ -38,25 +41,69 @@ static WERROR preg_read_utf16(struct smb_iconv_convenience *ic, int fd, char *c)
 	push_codepoint(ic, c, v);
 	return WERR_OK;
 }
+static WERROR preg_write_utf16(struct smb_iconv_convenience *ic, int fd, const char *string)
+{
+	codepoint_t v;
+	uint16_t i;
+	size_t size;
 
-/* FIXME These functions need to be implemented */
+	for (i = 0; i < strlen(string); i+=size) {
+		v = next_codepoint(ic, &string[i], &size);
+		if (write(fd, &v, 2) < 2) {
+			return WERR_GENERAL_FAILURE;
+		}
+	}
+	return WERR_OK;
+}
+/* PReg does not support adding keys. */
 static WERROR reg_preg_diff_add_key(void *_data, const char *key_name)
 {
-	return WERR_NOT_SUPPORTED;
-}
-
-static WERROR reg_preg_diff_del_key(void *_data, const char *key_name)
-{
-	return WERR_NOT_SUPPORTED;
+	return WERR_OK;
 }
 
 static WERROR reg_preg_diff_set_value(void *_data, const char *key_name,
 				      const char *value_name,
 				      uint32_t value_type, DATA_BLOB value_data)
 {
-	return WERR_NOT_SUPPORTED;
+	struct preg_data *data = _data;
+	uint32_t buf;
+	
+	preg_write_utf16(data->ic, data->fd, "[");
+	preg_write_utf16(data->ic, data->fd, key_name);
+	preg_write_utf16(data->ic, data->fd, ";");
+	preg_write_utf16(data->ic, data->fd, value_name);
+	preg_write_utf16(data->ic, data->fd, ";");
+	SIVAL(&buf, 0, value_type);
+	write(data->fd, &buf, sizeof(uint32_t));
+	preg_write_utf16(data->ic, data->fd, ";");
+	SIVAL(&buf, 0, value_data.length);
+	write(data->fd, &buf, sizeof(uint32_t));
+	preg_write_utf16(data->ic, data->fd, ";");
+	write(data->fd, value_data.data, value_data.length);
+	preg_write_utf16(data->ic, data->fd, "]");
+	
+	return WERR_OK;
 }
 
+static WERROR reg_preg_diff_del_key(void *_data, const char *key_name)
+{
+	struct preg_data *data = _data;
+	char *parent_name;
+	DATA_BLOB blob;
+
+	parent_name = talloc_strndup(data->ctx, key_name, strrchr(key_name, '\\')-key_name);
+	blob.data = (void *)talloc_strndup(data->ctx, key_name, 
+			strlen(key_name)-(strrchr(key_name, '\\')-key_name));
+	blob.length = strlen((char *)blob.data)+1;
+	
+
+	/* FIXME: These values should be accumulated to be written at done(). */
+	reg_preg_diff_set_value(_data, parent_name, "**DeleteKeys", REG_SZ, blob);
+		
+	return WERR_OK;
+}
+
+/* FIXME These functions need to be implemented */
 static WERROR reg_preg_diff_del_value(void *_data, const char *key_name,
 				      const char *value_name)
 {
@@ -81,6 +128,7 @@ static WERROR reg_preg_diff_done(void *_data)
  * Save registry diff
  */
 _PUBLIC_ WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename,
+				   struct smb_iconv_convenience *ic,
 				   struct reg_diff_callbacks **callbacks,
 				   void **callback_data)
 {
@@ -103,9 +151,13 @@ _PUBLIC_ WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename,
 	} else {
 		data->fd = STDOUT_FILENO;
 	}
+
 	memcpy(preg_header.hdr, "PReg", 4);
 	SIVAL(&preg_header, 4, 1);
 	write(data->fd, (uint8_t *)&preg_header,8);
+
+	data->ctx = ctx;
+	data->ic = ic;
 
 	*callbacks = talloc(ctx, struct reg_diff_callbacks);
 
@@ -179,7 +231,8 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 		       *buf_ptr != ';' && buf_ptr-buf < buf_size) {
 			buf_ptr++;
 		}
-		key = talloc_asprintf(mem_ctx, "\\%s", buf);
+		buf[buf_ptr-buf] = '\0';
+		key = talloc_strdup(mem_ctx, buf);
 
 		/* Get the name */
 		buf_ptr = buf;
@@ -187,6 +240,7 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 		       *buf_ptr != ';' && buf_ptr-buf < buf_size) {
 			buf_ptr++;
 		}
+		buf[buf_ptr-buf] = '\0';
 		value_name = talloc_strdup(mem_ctx, buf);
 
 		/* Get the type */

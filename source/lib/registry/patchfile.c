@@ -320,12 +320,33 @@ static WERROR reg_diff_apply_add_key(void *_ctx, const char *key_name)
 {
 	struct registry_context *ctx = (struct registry_context *)_ctx;
 	struct registry_key *tmp;
+	char *buf, *buf_ptr;
 	WERROR error;
 
+	/* Recursively create the path */
+	buf = talloc_strdup(ctx, key_name);
+	buf_ptr = buf;
+
+	while (*buf_ptr++ != '\0' ) {
+		if (*buf_ptr == '\\') {
+			*buf_ptr = '\0';
+			error = reg_key_add_abs(ctx, ctx, buf, 0, NULL, &tmp);
+
+			if (!W_ERROR_EQUAL(error, WERR_ALREADY_EXISTS) &&
+				    !W_ERROR_IS_OK(error)) {
+				DEBUG(0, ("Error adding new key '%s': %s\n",
+					key_name, win_errstr(error)));
+				return error;
+			}
+			*buf_ptr++ = '\\';
+		}
+	}
+
+	/* Add the key */
 	error = reg_key_add_abs(ctx, ctx, key_name, 0, NULL, &tmp);
 
 	if (!W_ERROR_EQUAL(error, WERR_ALREADY_EXISTS) &&
-	    !W_ERROR_IS_OK(error)) {
+		    !W_ERROR_IS_OK(error)) {
 		DEBUG(0, ("Error adding new key '%s': %s\n",
 			key_name, win_errstr(error)));
 		return error;
