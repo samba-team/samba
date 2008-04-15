@@ -1,3 +1,8 @@
+2008-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* krb5/import_sec_context.c: Use tmp to read ac->flags value to
+	avoid warning.
+
 2008-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* mech/gss_mech_switch.c: Use unsigned where appropriate.
