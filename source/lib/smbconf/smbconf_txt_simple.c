@@ -121,8 +121,14 @@ static bool smbconf_txt_do_parameter(const char *param_name,
 	struct txt_cache *cache = tpd->cache;
 
 	if (cache->num_shares == 0) {
-		/* not in any share ... */
-		return false;
+		/*
+		 * not in any share yet,
+		 * initialize the "empty" section (NULL):
+		 * parameters without a previous [section] are stored here.
+		 */
+		if (!smbconf_txt_do_section(NULL, private_data)) {
+			return false;
+		}
 	}
 
 	param_names  = cache->param_names[cache->current_share];
