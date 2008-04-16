@@ -301,7 +301,7 @@ for t in $NBT_TESTS; do
 	plansmbtorturetest "$t" dc //\$SERVER/_none_ -U\$USERNAME%\$PASSWORD 
 done
 
-WB_OPTS="--option=\"torture:strict mode=yes\""
+WB_OPTS="--option=\"torture:strict mode=no\""
 WB_OPTS="${WB_OPTS} --option=\"torture:timelimit=1\""
 WB_OPTS="${WB_OPTS} --option=\"torture:winbindd separator=/\""
 WB_OPTS="${WB_OPTS} --option=\"torture:winbindd private pipe dir=\$WINBINDD_PRIV_PIPE_DIR\""
