@@ -262,7 +262,7 @@ static bool torture_winbind_struct_check_machacc(struct torture_context *torture
 
 	torture_assert_str_equal(torture,
 				 rep.data.auth.error_string,
-				 nt_errstr(NT_STATUS_OK),
+				 get_friendly_nt_error_msg(NT_STATUS_OK),
 				 "WINBINDD_CHECK_MACHACC ok: error_string");
 
 	torture_assert_int_equal(torture,
