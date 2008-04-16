@@ -137,6 +137,7 @@ NTSTATUS torture_smb2_init(void)
 	torture_suite_add_simple_test(suite, "FIND", torture_smb2_find);
 	torture_suite_add_suite(suite, torture_smb2_lock_init());
 	torture_suite_add_simple_test(suite, "NOTIFY", torture_smb2_notify);
+	torture_suite_add_2smb2_test(suite, "PERSISTENT-HANDLES1", torture_smb2_persistent_handles1);
 
 	suite->description = talloc_strdup(suite, "SMB2-specific tests");
 
