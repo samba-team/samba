@@ -427,13 +427,13 @@ bool torture_bench_open(struct torture_context *torture)
 	tv = timeval_current();	
 
 	if (progress) {
-		report_te = event_add_timed(ev, state, timeval_current_ofs(1, 0), 
+		report_te = event_add_timed(torture->ev, state, timeval_current_ofs(1, 0), 
 					    report_rate, state);
 	}
 
 	printf("Running for %d seconds\n", timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
-		event_loop_once(ev);
+		event_loop_once(torture->ev);
 
 		if (open_failed) {
 			DEBUG(0,("open failed\n"));

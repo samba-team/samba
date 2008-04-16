@@ -374,7 +374,7 @@ bool torture_bench_lock(struct torture_context *torture)
 	tv = timeval_current();	
 
 	if (progress) {
-		event_add_timed(ev, state, timeval_current_ofs(1, 0), report_rate, state);
+		event_add_timed(torture->ev, state, timeval_current_ofs(1, 0), report_rate, state);
 	}
 
 	printf("Running for %d seconds\n", timelimit);
