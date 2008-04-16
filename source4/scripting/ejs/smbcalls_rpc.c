@@ -73,7 +73,7 @@ static int ejs_irpc_connect(MprVarHandle eid, int argc, char **argv)
 
 	p->server_name = argv[0];
 
-	ev = event_context_find(p);
+	ev = mprEventCtx();
 
 	/* create a messaging context, looping as we have no way to
 	   allocate temporary server ids automatically */
@@ -158,7 +158,7 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, char **argv)
 		cli_credentials_set_anonymous(creds);
 	}
 
-	ev = event_context_find(mprMemCtx());
+	ev = mprEventCtx();
 
 	status = dcerpc_pipe_connect(this, &p, binding, iface, creds, ev,
 				     mprLpCtx());
