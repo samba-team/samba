@@ -25,21 +25,7 @@ samba4kinit=$samba4bindir/samba4kinit
 net=$samba4bindir/net
 enableaccount="$samba4bindir/smbpython `dirname $0`/../../source/setup/enableaccount"
 
-testit() {
-	name="$1"
-	shift
-	cmdline="$*"
-	echo "test: $name"
-	$cmdline
-	status=$?
-	if [ x$status = x0 ]; then
-		echo "success: $name"
-	else
-		echo "failure: $name"
-	fi
-	return $status
-}
-
+. `dirname $0`/subunit.sh
 
 test_smbclient() {
 	name="$1"

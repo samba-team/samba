@@ -5,7 +5,6 @@ mkinclude charset/config.mk
 mkinclude ldb-samba/config.mk
 mkinclude tls/config.mk
 mkinclude registry/config.mk
-mkinclude policy/config.mk
 mkinclude messaging/config.mk
 mkinclude events/config.mk
 mkinclude cmdline/config.mk
