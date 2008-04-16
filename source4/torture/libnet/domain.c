@@ -74,7 +74,6 @@ bool torture_domainopen(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct libnet_context *net_ctx;
-	struct event_context *evt_ctx;
 	TALLOC_CTX *mem_ctx;
 	bool ret = true;
 	struct policy_handle h;
@@ -82,8 +81,7 @@ bool torture_domainopen(struct torture_context *torture)
 
 	mem_ctx = talloc_init("test_domain_open");
 
-	evt_ctx = event_context_find(torture);
-	net_ctx = libnet_context_init(evt_ctx, torture->lp_ctx);
+	net_ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 
 	status = torture_rpc_connection(torture, 
 					&net_ctx->samr.pipe,
