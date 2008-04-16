@@ -7,6 +7,7 @@
 package Parse::Pidl::Samba4::NDR::Client;
 
 use Parse::Pidl::Samba4 qw(choose_header is_intree);
+use Parse::Pidl::Util qw(has_property);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -15,30 +16,45 @@ use strict;
 
 my($res,$res_hdr);
 
-#####################################################################
-# parse a function
-sub ParseFunction($$)
+sub ParseFunctionSend($$$)
 {
-	my ($interface, $fn) = @_;
-	my $name = $fn->{NAME};
+	my ($interface, $fn, $name) = @_;
 	my $uname = uc $name;
 
-	$res_hdr .= "\nstruct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);
-NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);
-";
+	my $proto = "struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)";
 
-	$res .= "
-struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)
-{
+	$res_hdr .= "\n$proto;\n";
+
+	$res .= "$proto\n{\n";
+
+	if (has_property($fn, "todo")) {
+		$res .= "\treturn NULL;\n";
+	} else {
+		$res .= "
 	if (p->conn->flags & DCERPC_DEBUG_PRINT_IN) {
 		NDR_PRINT_IN_DEBUG($name, r);
 	}
 	
 	return dcerpc_ndr_request_send(p, NULL, &ndr_table_$interface->{NAME}, NDR_$uname, mem_ctx, r);
+";
+	}
+
+	$res .= "}\n\n";
 }
 
-NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)
+sub ParseFunctionSync($$$)
 {
+	my ($interface, $fn, $name) = @_;
+
+	my $proto = "NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)";
+
+	$res_hdr .= "\n$proto;\n";
+	$res .= "$proto\n{\n";
+
+	if (has_property($fn, "todo")) {
+		$res .= "\treturn NT_STATUS_NOT_IMPLEMENTED;\n";
+	} else {
+		$res .= "
 	struct rpc_request *req;
 	NTSTATUS status;
 	
@@ -58,8 +74,20 @@ NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *
 	$res .= 
 "
 	return status;
-}
 ";
+	}
+
+	$res .= "}\n\n";
+}
+
+#####################################################################
+# parse a function
+sub ParseFunction($$)
+{
+	my ($interface, $fn) = @_;
+
+	ParseFunctionSend($interface, $fn, $fn->{NAME});
+	ParseFunctionSync($interface, $fn, $fn->{NAME});
 }
 
 my %done;
