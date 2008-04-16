@@ -85,6 +85,7 @@ werror_code_struct dos_errs[] =
 	{ "WERR_LOGON_FAILURE", WERR_LOGON_FAILURE },
 	{ "WERR_PASSWORD_RESTRICTION", WERR_PASSWORD_RESTRICTION },
 	{ "WERR_NO_SUCH_DOMAIN", WERR_NO_SUCH_DOMAIN },
+	{ "WERR_NONE_MAPPED", WERR_NONE_MAPPED },
 	{ "WERR_INVALID_SECURITY_DESCRIPTOR", WERR_INVALID_SECURITY_DESCRIPTOR },
 	{ "WERR_INVALID_DOMAIN_STATE", WERR_INVALID_DOMAIN_STATE },
 	{ "WERR_INVALID_DOMAIN_ROLE", WERR_INVALID_DOMAIN_ROLE },
@@ -130,6 +131,7 @@ werror_str_struct dos_err_strs[] = {
 	{ WERR_TIME_SKEW, "Time difference between client and server" },
 	{ WERR_USER_ALREADY_EXISTS, "User already exists" },
 	{ WERR_PASSWORD_RESTRICTION, "Password does not meet restrictions" },
+	{ WERR_NONE_MAPPED, "Could not map names to SIDs" },
 };
 
 /*****************************************************************************
