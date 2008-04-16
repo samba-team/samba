@@ -784,7 +784,7 @@ static WERROR smbconf_reg_get_share_names(struct smbconf_ctx *ctx,
 	/* make sure "global" is always listed first */
 	if (smbconf_share_exists(ctx, GLOBAL_NAME)) {
 		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
-						   1, GLOBAL_NAME);
+						   added_count, GLOBAL_NAME);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
