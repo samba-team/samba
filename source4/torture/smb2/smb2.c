@@ -69,6 +69,61 @@ struct torture_test *torture_suite_add_1smb2_test(struct torture_suite *suite,
 	return test;
 }
 
+
+static bool wrap_simple_2smb2_test(struct torture_context *torture_ctx,
+				   struct torture_tcase *tcase,
+				   struct torture_test *test)
+{
+	bool (*fn) (struct torture_context *, struct smb2_tree *, struct smb2_tree *);
+	bool ret;
+
+	struct smb2_tree *tree1;
+	struct smb2_tree *tree2;
+	TALLOC_CTX *mem_ctx = talloc_new(torture_ctx);
+
+	if (!torture_smb2_connection(torture_ctx, &tree1) ||
+	    !torture_smb2_connection(torture_ctx, &tree2)) {
+		return false;
+	}
+
+	talloc_steal(mem_ctx, tree1);
+	talloc_steal(mem_ctx, tree2);
+
+	fn = test->fn;
+
+	ret = fn(torture_ctx, tree1, tree2);
+
+	/* the test may already closed some of the connections */
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+
+_PUBLIC_ struct torture_test *torture_suite_add_2smb2_test(struct torture_suite *suite,
+							   const char *name,
+							   bool (*run)(struct torture_context *,
+								       struct smb2_tree *,
+								       struct smb2_tree *))
+{
+	struct torture_test *test;
+	struct torture_tcase *tcase;
+
+	tcase = torture_suite_add_tcase(suite, name);
+
+	test = talloc(tcase, struct torture_test);
+
+	test->name = talloc_strdup(test, name);
+	test->description = NULL;
+	test->run = wrap_simple_2smb2_test;
+	test->fn = run;
+	test->dangerous = false;
+
+	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+
+	return test;
+}
+
 NTSTATUS torture_smb2_init(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "SMB2");
