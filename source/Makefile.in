@@ -151,7 +151,7 @@ LIBTDB_SHARED_TARGET=@LIBTDB_SHARED_TARGET@
 LIBTDB_STATIC_TARGET=@LIBTDB_STATIC_TARGET@
 LIBTDB=$(LIBTDB_STATIC_TARGET) @LIBTDB_SHARED@
 LIBTDB_SYMS=$(srcdir)/exports/libtdb.syms
-LIBTDB_HEADERS=@tdbdir@/include/tdb.h
+LIBTDB_HEADERS=$(srcdir)/@tdbdir@/include/tdb.h
 
 LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
@@ -2131,7 +2131,7 @@ installlibtalloc: installdirs libtalloc
 	-$(INSTALLLIBCMD_SH) $(LIBTALLOC_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) $(LIBTALLOC_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) @tallocdir@/talloc.h $(DESTDIR)${prefix}/include
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/@tallocdir@/talloc.h $(DESTDIR)${prefix}/include
 
 installlibtdb: installdirs libtdb
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
