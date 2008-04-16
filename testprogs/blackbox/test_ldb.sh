@@ -14,6 +14,8 @@ PREFIX=$3
 shift 2
 options="$*"
 
+. `dirname $0`/subunit.sh
+
 check() {
 	name="$1"
 	shift
