@@ -151,8 +151,6 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 	state->domain->libnet_ctx->cred = cli_credentials_init(state->domain);
 	if (state->domain->libnet_ctx->cred == NULL) goto failed;
 
-	cli_credentials_set_event_context(state->domain->libnet_ctx->cred, service->task->event_ctx);
-
 	cli_credentials_set_conf(state->domain->libnet_ctx->cred, service->task->lp_ctx);
 
 	/* Connect the machine account to the credentials */

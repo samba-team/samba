@@ -245,7 +245,6 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 
 	/* anonymous credentials for rpc connection used to get endpoint mapping */
 	anon_creds = cli_credentials_init(mem_ctx);
-	cli_credentials_set_event_context(anon_creds, ev);
 	cli_credentials_set_anonymous(anon_creds);
 
 	/*

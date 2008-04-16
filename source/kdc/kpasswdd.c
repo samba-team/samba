@@ -474,7 +474,7 @@ bool kpasswdd_process(struct kdc_server *kdc,
 	 * we already have, rather than a new context */	
 	cli_credentials_set_krb5_context(server_credentials, kdc->smb_krb5_context);
 	cli_credentials_set_conf(server_credentials, kdc->task->lp_ctx);
-	nt_status = cli_credentials_set_stored_principal(server_credentials, kdc->task->lp_ctx, "kadmin/changepw");
+	nt_status = cli_credentials_set_stored_principal(server_credentials, kdc->task->event_ctx, kdc->task->lp_ctx, "kadmin/changepw");
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		ret = kpasswdd_make_unauth_error_reply(kdc, mem_ctx, 
 						       KRB5_KPASSWD_HARDERROR,

@@ -171,7 +171,6 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		if (!credentials) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		cli_credentials_set_event_context(credentials, ntvfs->ctx->event_ctx);
 		cli_credentials_set_conf(credentials, ntvfs->ctx->lp_ctx);
 		cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
 		if (domain) {
@@ -181,7 +180,6 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	} else if (machine_account) {
 		DEBUG(5, ("CIFS backend: Using machine account\n"));
 		credentials = cli_credentials_init(private);
-		cli_credentials_set_event_context(credentials, ntvfs->ctx->event_ctx);
 		cli_credentials_set_conf(credentials, ntvfs->ctx->lp_ctx);
 		if (domain) {
 			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
