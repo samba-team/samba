@@ -19,7 +19,6 @@
 
 #include "includes.h"
 #include "utils/net.h"
-#include "lib/netapi/netapi.h"
 
 static int net_dom_usage(int argc, const char **argv)
 {
@@ -130,7 +129,6 @@ static int net_dom_unjoin(int argc, const char **argv)
 		cli_shutdown(cli);
 	}
 
-	/* libnetapi_free(ctx); */
 	return ret;
 }
 
@@ -244,7 +242,6 @@ static int net_dom_join(int argc, const char **argv)
 		cli_shutdown(cli);
 	}
 
-	/* libnetapi_free(ctx); */
 	return ret;
 }
 
