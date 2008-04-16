@@ -591,22 +591,24 @@ static bool wbinfo_dsgetdcname(const char *domain_name, uint32_t flags)
 
 static bool wbinfo_check_secret(void)
 {
-	struct winbindd_response response;
-	NSS_STATUS result;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcAuthErrorInfo *error = NULL;
 
-	ZERO_STRUCT(response);
-
-	result = winbindd_request_response(WINBINDD_CHECK_MACHACC, NULL, &response);
+	wbc_status = wbcCheckTrustCredentials(NULL, &error);
 
 	d_printf("checking the trust secret via RPC calls %s\n",
-		 (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
+		 WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
 
-	if (result != NSS_STATUS_SUCCESS)
+	if (wbc_status == WBC_ERR_AUTH_ERROR) {
 		d_fprintf(stderr, "error code was %s (0x%x)\n",
-		 	 response.data.auth.nt_status_string,
-		 	 response.data.auth.nt_status);
+			  error->nt_string, error->nt_status);
+		wbcFreeMemory(error);
+	}
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
 
-	return result == NSS_STATUS_SUCCESS;	
+	return true;
 }
 
 /* Convert uid to sid */
