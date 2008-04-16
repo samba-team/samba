@@ -43,13 +43,14 @@ static void wbsrv_samba3_async_auth_epilogue(NTSTATUS status,
 	struct winbindd_response *resp = &s3call->response;
 	if (!NT_STATUS_IS_OK(status)) {
 		resp->result = WINBINDD_ERROR;
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
-					nt_errstr(status));
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
-					get_friendly_nt_error_msg(status));
 	} else {
 		resp->result = WINBINDD_OK;
 	}
+	
+	WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
+				nt_errstr(status));
+	WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
+				get_friendly_nt_error_msg(status));
 
 	resp->data.auth.pam_error = nt_status_to_pam(status);
 	resp->data.auth.nt_status = NT_STATUS_V(status);
