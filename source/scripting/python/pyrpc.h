@@ -17,6 +17,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _PYRPC_H_
+#define _PYRPC_H_
+
 #define PY_CHECK_TYPE(type, var, fail) \
 	if (!type ## _Check(var)) {\
 		PyErr_Format(PyExc_TypeError, "Expected type %s", type ## _Type.tp_name); \
@@ -32,3 +35,5 @@
 #ifndef PyAPI_DATA
 #   define PyAPI_DATA(RTYPE) extern RTYPE
 #endif
+
+#endif /* _PYRPC_H_ */
