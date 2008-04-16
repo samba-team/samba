@@ -1199,7 +1199,7 @@ int net_ads_join(int argc, const char **argv)
 
 	/* Check the short name of the domain */
 
-	if (!strequal(lp_workgroup(), r->out.netbios_domain_name)) {
+	if (!modify_config && !strequal(lp_workgroup(), r->out.netbios_domain_name)) {
 		d_printf("The workgroup in %s does not match the short\n", get_dyn_CONFIGFILE());
 		d_printf("domain name obtained from the server.\n");
 		d_printf("Using the name [%s] from the server.\n", r->out.netbios_domain_name);
@@ -1209,11 +1209,16 @@ int net_ads_join(int argc, const char **argv)
 
 	d_printf("Using short domain name -- %s\n", r->out.netbios_domain_name);
 
-	d_printf("Joined '%s' to realm '%s'\n", r->in.machine_name,
-		r->out.dns_domain_name);
+	if (r->out.dns_domain_name) {
+		d_printf("Joined '%s' to realm '%s'\n", r->in.machine_name,
+			r->out.dns_domain_name);
+	} else {
+		d_printf("Joined '%s' to domain '%s'\n", r->in.machine_name,
+			r->out.netbios_domain_name);
+	}
 
 #if defined(WITH_DNS_UPDATES)
-	{
+	if (r->out.domain_is_ad) {
 		/* We enter this block with user creds */
 		ADS_STRUCT *ads_dns = NULL;
 
