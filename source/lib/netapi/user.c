@@ -27,15 +27,6 @@
 /****************************************************************
 ****************************************************************/
 
-WERROR NetUserAdd_l(struct libnetapi_ctx *ctx,
-		    struct NetUserAdd *r)
-{
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
-****************************************************************/
-
 static void convert_USER_INFO_1_to_samr_user_info25(struct USER_INFO_1 *info1,
 						    DATA_BLOB *user_session_key,
 						    struct samr_UserInfo25 *info25)
@@ -344,6 +335,20 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
+WERROR NetUserAdd_l(struct libnetapi_ctx *ctx,
+		    struct NetUserAdd *r)
+{
+	/* for now just talk to local RPC server */
+	if (!r->in.server_name) {
+		r->in.server_name = "localhost";
+	}
+
+	return NetUserAdd_r(ctx, r);
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 		    struct NetUserDel *r)
 {
@@ -515,7 +520,12 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 WERROR NetUserDel_l(struct libnetapi_ctx *ctx,
 		    struct NetUserDel *r)
 {
-	return WERR_NOT_SUPPORTED;
+	/* for now just talk to local RPC server */
+	if (!r->in.server_name) {
+		r->in.server_name = "localhost";
+	}
+
+	return NetUserDel_r(ctx, r);
 }
 
 /****************************************************************
