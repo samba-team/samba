@@ -273,7 +273,9 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 		DEBUG(3, ("No machine account credentials specified\n"));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	} else {
-		ret = cli_credentials_get_server_gss_creds(machine_account, gensec_security->lp_ctx, &gcc);
+		ret = cli_credentials_get_server_gss_creds(machine_account, 
+							   gensec_security->event_ctx, 
+							   gensec_security->lp_ctx, &gcc);
 		if (ret) {
 			DEBUG(1, ("Aquiring acceptor credentials failed: %s\n", 
 				  error_message(ret)));
@@ -359,7 +361,9 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	ret = cli_credentials_get_client_gss_creds(creds, gensec_security->lp_ctx, &gcc);
+	ret = cli_credentials_get_client_gss_creds(creds, 
+						   gensec_security->event_ctx, 
+						   gensec_security->lp_ctx, &gcc);
 	switch (ret) {
 	case 0:
 		break;
@@ -1361,12 +1365,12 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		cli_credentials_set_event_context(session_info->credentials, gensec_security->event_ctx);
 		cli_credentials_set_conf(session_info->credentials, gensec_security->lp_ctx);
 		/* Just so we don't segfault trying to get at a username */
 		cli_credentials_set_anonymous(session_info->credentials);
 		
 		ret = cli_credentials_set_client_gss_creds(session_info->credentials, 
+							   gensec_security->event_ctx,
 							   gensec_security->lp_ctx, 
 							   gensec_gssapi_state->delegated_cred_handle,
 							   CRED_SPECIFIED);
