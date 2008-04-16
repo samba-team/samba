@@ -79,6 +79,7 @@ void smb2srv_create_recv(struct smb2srv_request *req)
 	SMB2SRV_CHECK(smb2_pull_o32s32_blob(&req->in, io, req->in.body+0x30, &blob));
 	/* TODO: parse the blob */
 	ZERO_STRUCT(io->smb2.in.eas);
+	ZERO_STRUCT(io->smb2.in.blobs);
 
 	/* the VFS backend does not yet handle NULL filenames */
 	if (io->smb2.in.fname == NULL) {
