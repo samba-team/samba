@@ -419,3 +419,55 @@ done:
 
 	return wbc_status;
 }
+
+/** @brief Trigger a verification of the trust credentials of a specific domain
+ *
+ * @param *domain      The name of the domain, only NULL for the default domain is
+ *                     supported yet. Other values than NULL will result in
+ *                     WBC_ERR_NOT_IMPLEMENTED.
+ * @param error        Output details on WBC_ERR_AUTH_ERROR
+ *
+ * @return #wbcErr
+ *
+ **/
+wbcErr wbcCheckTrustCredentials(const char *domain,
+				struct wbcAuthErrorInfo **error)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	const char *name_str;
+
+	if (domain) {
+		/*
+		 * the current protocol doesn't support
+		 * specifying a domain
+		 */
+		wbc_status = WBC_ERR_NOT_IMPLEMENTED;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	wbc_status = wbcRequestResponse(WINBINDD_CHECK_MACHACC,
+					&request,
+					&response);
+	if (response.data.auth.nt_status != 0) {
+		if (error) {
+			wbc_status = wbc_create_error_info(NULL,
+							   &response,
+							   error);
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		wbc_status = WBC_ERR_AUTH_ERROR;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+ done:
+	return wbc_status;
+}
