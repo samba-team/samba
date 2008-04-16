@@ -1169,6 +1169,13 @@ static struct functable net_func[] = {
 	rc = net_run_function(argc_new-1, argv_new+1, net_func, net_help);
 	
 	DEBUG(2,("return code = %d\n", rc));
+
+	{
+		struct libnetapi_ctx *ctx = NULL;
+		libnetapi_getctx(&ctx);
+		libnetapi_free(ctx);
+	}
+
 	TALLOC_FREE(frame);
 	return rc;
 }

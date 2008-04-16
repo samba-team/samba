@@ -22,6 +22,8 @@
  * include
  */
 
+#include "lib/netapi/netapi.h"
+
 typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *,
 				const char *, 
 				struct cli_state *cli,
