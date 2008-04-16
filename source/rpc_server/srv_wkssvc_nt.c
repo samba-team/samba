@@ -406,6 +406,7 @@ WERROR _wkssvc_NetrUnjoinDomain2(pipes_struct *p,
 	u->in.admin_account	= admin_account;
 	u->in.admin_password	= cleartext_pwd;
 	u->in.debug		= true;
+	u->in.modify_config     = lp_config_backend_is_registry();
 
 	become_root();
 	werr = libnet_Unjoin(p->mem_ctx, u);
