@@ -121,7 +121,7 @@ static void continue_socket(struct composite_context *creq)
 	struct smbcli_socket *sock;
 	struct smb2_transport *transport;
 	struct smb2_request *req;
-	uint16_t dialects[1];
+	uint16_t dialects[2];
 
 	c->status = smbcli_sock_connect_recv(creq, state, &sock);
 	if (!composite_is_ok(c)) return;
@@ -130,11 +130,12 @@ static void continue_socket(struct composite_context *creq)
 	if (composite_nomem(transport, c)) return;
 
 	ZERO_STRUCT(state->negprot);
-	state->negprot.in.dialect_count = 1;
+	state->negprot.in.dialect_count = 2;
 	state->negprot.in.security_mode = 0;
 	state->negprot.in.capabilities  = 0;
 	unix_to_nt_time(&state->negprot.in.start_time, time(NULL));
-	dialects[0] = SMB2_DIALECT_REVISION;
+	dialects[0] = 0;
+	dialects[1] = SMB2_DIALECT_REVISION;
 	state->negprot.in.dialects = dialects;
 
 	req = smb2_negprot_send(transport, &state->negprot);
