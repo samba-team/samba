@@ -730,8 +730,34 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 
 static int rpc_user_add(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PI_SAMR, 0, rpc_user_add_internals,
-			       argc, argv);
+	NET_API_STATUS status;
+	struct USER_INFO_1 info1;
+	uint32_t parm_error = 0;
+
+	if (argc < 1) {
+		d_printf("User must be specified\n");
+		rpc_user_usage(argc, argv);
+		return 0;
+	}
+
+	ZERO_STRUCT(info1);
+
+	info1.usri1_name = argv[0];
+	if (argc == 2) {
+		info1.usri1_password = argv[1];
+	}
+
+	status = NetUserAdd(opt_host, 1, (uint8_t *)&info1, &parm_error);
+
+	if (status != 0) {
+		d_fprintf(stderr, "Failed to add user '%s' with: %s.\n",
+			argv[0], libnetapi_get_error_string(NULL, status));
+		return -1;
+	} else {
+		d_printf("Added user '%s'.\n", argv[0]);
+	}
+
+	return 0;
 }
 
 /** 
