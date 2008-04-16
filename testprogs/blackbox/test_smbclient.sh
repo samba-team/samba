@@ -21,20 +21,7 @@ failed=0
 samba4bindir=`dirname $0`/../../source/bin
 smbclient=$samba4bindir/smbclient
 
-testit() {
-	name="$1"
-	shift
-	cmdline="$*"
-	echo "test: $name"
-	$cmdline
-	status=$?
-	if [ x$status = x0 ]; then
-		echo "success: $name"
-	else
-		echo "failure: $name"
-	fi
-	return $status
-}
+. `dirname $0`/subunit.sh
 
 runcmd() {
 	name="$1"
