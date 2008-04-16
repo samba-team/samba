@@ -407,4 +407,10 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 wbcErr wbcResolveWinsByName(const char *name, const char **ip);
 wbcErr wbcResolveWinsByIP(const char *ip, const char **name);
 
+/*
+ * Trusted domain functions
+ */
+wbcErr wbcCheckTrustCredentials(const char *domain,
+				struct wbcAuthErrorInfo **error);
+
 #endif      /* _WBCLIENT_H */
