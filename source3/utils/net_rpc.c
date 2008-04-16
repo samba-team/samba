@@ -987,8 +987,26 @@ static int rpc_user_rename(int argc, const char **argv)
 
 static int rpc_user_delete(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PI_SAMR, 0, rpc_user_del_internals,
-			       argc, argv);
+	NET_API_STATUS status;
+
+	if (argc < 1) {
+		d_printf("User must be specified\n");
+		rpc_user_usage(argc, argv);
+		return 0;
+	}
+
+	status = NetUserDel(opt_host, argv[0]);
+
+	if (status != 0) {
+                d_fprintf(stderr, "Failed to delete user '%s' with: %s.\n",
+			  argv[0],
+			  libnetapi_get_error_string(NULL, status));
+		return -1;
+        } else {
+                d_printf("Deleted user '%s'.\n", argv[0]);
+        }
+
+	return 0;
 }
 
 /** 
@@ -1360,6 +1378,9 @@ static NTSTATUS rpc_user_list_internals(const DOM_SID *domain_sid,
 
 int net_rpc_user(int argc, const char **argv) 
 {
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+
 	struct functable func[] = {
 		{"add", rpc_user_add},
 		{"info", rpc_user_info},
@@ -1368,7 +1389,14 @@ int net_rpc_user(int argc, const char **argv)
 		{"rename", rpc_user_rename},
 		{NULL, NULL}
 	};
-	
+
+	status = libnetapi_init(&ctx);
+	if (status != 0) {
+		return -1;
+	}
+	libnetapi_set_username(ctx, opt_user_name);
+	libnetapi_set_password(ctx, opt_password);
+
 	if (argc == 0) {
 		return run_rpc_command(NULL,PI_SAMR, 0, 
 				       rpc_user_list_internals,
