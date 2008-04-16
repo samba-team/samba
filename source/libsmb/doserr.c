@@ -67,6 +67,7 @@ werror_code_struct dos_errs[] =
 	{ "WERR_NO_LOGON_SERVERS", WERR_NO_LOGON_SERVERS },
 	{ "WERR_NO_SUCH_LOGON_SESSION", WERR_NO_SUCH_LOGON_SESSION },
 	{ "WERR_USER_ALREADY_EXISTS", WERR_USER_ALREADY_EXISTS },
+	{ "WERR_NO_SUCH_USER", WERR_NO_SUCH_USER },
 	{ "WERR_PRINTER_DRIVER_IN_USE", WERR_PRINTER_DRIVER_IN_USE },
 	{ "WERR_STATUS_MORE_ENTRIES  ", WERR_STATUS_MORE_ENTRIES },
 	{ "WERR_DFS_NO_SUCH_VOL", WERR_DFS_NO_SUCH_VOL },
@@ -132,6 +133,7 @@ werror_str_struct dos_err_strs[] = {
 	{ WERR_USER_ALREADY_EXISTS, "User already exists" },
 	{ WERR_PASSWORD_RESTRICTION, "Password does not meet restrictions" },
 	{ WERR_NONE_MAPPED, "Could not map names to SIDs" },
+	{ WERR_NO_SUCH_USER, "No such User" },
 };
 
 /*****************************************************************************
