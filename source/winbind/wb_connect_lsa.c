@@ -62,8 +62,11 @@ struct composite_context *wb_init_lsa_send(TALLOC_CTX *mem_ctx,
 
 	/* this will make the secondary connection on the same IPC$ share, 
 	   secured with SPNEGO or NTLMSSP */
-	ctx = dcerpc_secondary_connection_send(domain->netlogon_pipe,
-					       domain->lsa_binding);
+	ctx = dcerpc_secondary_auth_connection_send(domain->netlogon_pipe,
+						    domain->lsa_binding,
+						    &ndr_table_lsarpc,
+						    domain->libnet_ctx->cred,
+						    domain->libnet_ctx->lp_ctx);
 	composite_continue(state->ctx, ctx, init_lsa_recv_pipe, state);
 	return result;
 	
@@ -79,8 +82,8 @@ static void init_lsa_recv_pipe(struct composite_context *ctx)
 		talloc_get_type(ctx->async.private_data,
 				struct init_lsa_state);
 
-	state->ctx->status = dcerpc_secondary_connection_recv(ctx, 
-							      &state->lsa_pipe);
+	state->ctx->status = dcerpc_secondary_auth_connection_recv(ctx, state,
+								   &state->lsa_pipe);
 	if (!composite_is_ok(state->ctx)) return;
 			
 	state->handle = talloc(state, struct policy_handle);
