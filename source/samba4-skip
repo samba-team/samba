@@ -5,11 +5,11 @@ base.casetable
 base.nttrans
 .*base.bench.holdcon.*				# Very slow
 base.scan.maxfid
-raw.hold.oplock
-raw.ping.pong
+raw.hold.oplock		# Not a test, but a way to block other clients for a test
+raw.ping.pong		# Needs second server to test
 rpc.samr_accessmask
 raw.scan.eamax
-raw.qfileinfo.ipc
+samba4.ntvfs.cifs.raw.qfileinfo.ipc
 base.utable
 base.smb
 smb2.notify
