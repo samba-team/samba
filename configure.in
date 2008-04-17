@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_REVISION($Revision$)
-AC_PREREQ([2.61])
+AC_PREREQ(2.62)
 test -z "$CFLAGS" && CFLAGS="-g"
 AC_INIT([Heimdal],[1.1.99],[heimdal-bugs@h5l.org])
 AC_CONFIG_SRCDIR([kuser/kinit.c])
@@ -50,7 +50,7 @@ libdir="$libdir$abilibdirext"
 
 AC_C___ATTRIBUTE__
 
-LT_INIT([enable-shared enable-static win32-dll])
+LT_INIT([shared static win32-dll])
 
 AM_CONDITIONAL(ENABLE_SHARED, test "$enable_shared" = "yes")
 rk_VERSIONSCRIPT
