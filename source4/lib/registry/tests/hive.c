@@ -363,7 +363,7 @@ static bool hive_setup_ldb(struct torture_context *tctx, void **data)
 
 	rmdir(dirname);
 
-	error = reg_open_ldb_file(tctx, dirname, NULL, NULL, tctx->lp_ctx, &key);
+	error = reg_open_ldb_file(tctx, dirname, NULL, NULL, tctx->ev, tctx->lp_ctx, &key);
 	if (!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to initialize ldb hive\n");
 		return false;

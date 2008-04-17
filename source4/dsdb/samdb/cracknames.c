@@ -1197,6 +1197,7 @@ NTSTATUS crack_service_principal_name(struct ldb_context *sam_ctx,
 }
 
 NTSTATUS crack_name_to_nt4_name(TALLOC_CTX *mem_ctx, 
+				struct event_context *ev_ctx, 
 				struct loadparm_context *lp_ctx,
 				uint32_t format_offered,
 				const char *name, 
@@ -1214,7 +1215,7 @@ NTSTATUS crack_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	ldb = samdb_connect(mem_ctx, lp_ctx, system_session(mem_ctx, lp_ctx));
+	ldb = samdb_connect(mem_ctx, ev_ctx, lp_ctx, system_session(mem_ctx, lp_ctx));
 	if (ldb == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -1259,6 +1260,7 @@ NTSTATUS crack_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS crack_auto_name_to_nt4_name(TALLOC_CTX *mem_ctx,
+				     struct event_context *ev_ctx, 
 				     struct loadparm_context *lp_ctx,
 				     const char *name,
 				     const char **nt4_domain,
@@ -1283,5 +1285,5 @@ NTSTATUS crack_auto_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 		format_offered = DRSUAPI_DS_NAME_FORMAT_CANONICAL;
 	}
 
-	return crack_name_to_nt4_name(mem_ctx, lp_ctx, format_offered, name, nt4_domain, nt4_account);
+	return crack_name_to_nt4_name(mem_ctx, ev_ctx, lp_ctx, format_offered, name, nt4_domain, nt4_account);
 }

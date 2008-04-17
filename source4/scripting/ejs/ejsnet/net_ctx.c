@@ -50,7 +50,7 @@ static int ejs_net_context(MprVarHandle eid, int argc, struct MprVar **argv)
 		ejsSetErrorMsg(eid, "talloc_new() failed");
 		return -1;
 	}
-	ev = event_context_find(event_mem_ctx);
+	ev = mprEventCtx();
 
 	ctx = libnet_context_init(ev, mprLpCtx());
 	/* IF we generated a new event context, it will be under here,

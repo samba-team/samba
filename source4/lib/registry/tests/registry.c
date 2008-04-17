@@ -524,7 +524,7 @@ static bool setup_local_registry(struct torture_context *tctx, void **data)
 	torture_assert_ntstatus_ok(tctx, status, "Creating temp dir failed");
 
 	filename = talloc_asprintf(tctx, "%s/classes_root.ldb", tempdir);
-	error = reg_open_ldb_file(tctx, filename, NULL, NULL, tctx->lp_ctx, &hive_key);
+	error = reg_open_ldb_file(tctx, filename, NULL, NULL, tctx->ev, tctx->lp_ctx, &hive_key);
 	torture_assert_werr_ok(tctx, error, "Opening classes_root file failed");
 
 	error = reg_mount_hive(rctx, hive_key, HKEY_CLASSES_ROOT, NULL);

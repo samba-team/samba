@@ -93,6 +93,10 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 		return NULL;
 	}
 
+	if (ev == NULL) {
+		return NULL;
+	}
+
 	notify = talloc(mem_ctx, struct notify_context);
 	if (notify == NULL) {
 		return NULL;

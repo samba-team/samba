@@ -116,7 +116,7 @@ bool torture_bench_cldap(struct torture_context *torture)
 	make_nbt_name_server(&name, torture_setting_string(torture, "host", NULL));
 
 	/* do an initial name resolution to find its IP */
-	status = resolve_name(lp_resolve_context(torture->lp_ctx), &name, torture, &address, event_context_find(torture));
+	status = resolve_name(lp_resolve_context(torture->lp_ctx), &name, torture, &address, torture->ev);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to resolve %s - %s\n",
 		       name.name, nt_errstr(status));

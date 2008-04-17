@@ -157,6 +157,7 @@ static void smbsrv_accept(struct stream_connection *conn)
 	smbsrv_management_init(smb_conn);
 
 	if (!NT_STATUS_IS_OK(share_get_context_by_name(smb_conn, lp_share_backend(smb_conn->lp_ctx), 
+						       smb_conn->connection->event.ctx,
 						       smb_conn->lp_ctx, &(smb_conn->share_context)))) {
 		smbsrv_terminate_connection(smb_conn, "share_init failed!");
 		return;
@@ -206,7 +207,7 @@ static void smbsrv_preopen_ldb(struct task_server *task)
 	/* yes, this looks strange. It is a hack to preload the
 	   schema. I'd like to share most of the ldb context with the
 	   child too. That will come later */
-	talloc_free(samdb_connect(task, task->lp_ctx, NULL));
+	talloc_free(samdb_connect(task, task->event_ctx, task->lp_ctx, NULL));
 }
 
 /*

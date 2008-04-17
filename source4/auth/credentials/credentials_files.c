@@ -30,6 +30,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "param/param.h"
+#include "lib/events/events.h"
 
 /**
  * Read a file descriptor, and parse it for a password (eg from a file or stdin)
@@ -169,6 +170,7 @@ _PUBLIC_ bool cli_credentials_parse_file(struct cli_credentials *cred, const cha
  * @retval NTSTATUS error detailing any failure
  */
 _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred, 
+					      struct event_context *event_ctx,
 				     struct loadparm_context *lp_ctx,
 				     struct ldb_context *ldb,
 				     const char *base,
@@ -305,13 +307,13 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	 * (chewing CPU time) from the password */
 	keytab = ldb_msg_find_attr_as_string(msgs[0], "krb5Keytab", NULL);
 	if (keytab) {
-		cli_credentials_set_keytab_name(cred, lp_ctx, keytab, CRED_SPECIFIED);
+		cli_credentials_set_keytab_name(cred, event_ctx, lp_ctx, keytab, CRED_SPECIFIED);
 	} else {
 		keytab = ldb_msg_find_attr_as_string(msgs[0], "privateKeytab", NULL);
 		if (keytab) {
 			keytab = talloc_asprintf(mem_ctx, "FILE:%s", private_path(mem_ctx, lp_ctx, keytab));
 			if (keytab) {
-				cli_credentials_set_keytab_name(cred, lp_ctx, keytab, CRED_SPECIFIED);
+				cli_credentials_set_keytab_name(cred, event_ctx, lp_ctx, keytab, CRED_SPECIFIED);
 			}
 		}
 	}
@@ -336,7 +338,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	cred->machine_account_pending = false;
 	filter = talloc_asprintf(cred, SECRETS_PRIMARY_DOMAIN_FILTER, 
 				       cli_credentials_get_domain(cred));
-	return cli_credentials_set_secrets(cred, lp_ctx, NULL, 
+	return cli_credentials_set_secrets(cred, event_context_find(cred), lp_ctx, NULL, 
 					   SECRETS_PRIMARY_DOMAIN_DN,
 					   filter);
 }
@@ -348,6 +350,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
  * @retval NTSTATUS error detailing any failure
  */
 NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred,
+			            struct event_context *event_ctx,
 				    struct loadparm_context *lp_ctx)
 {
 	char *filter;
@@ -358,7 +361,7 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred,
 	filter = talloc_asprintf(cred, SECRETS_KRBTGT_SEARCH,
 				       cli_credentials_get_realm(cred),
 				       cli_credentials_get_domain(cred));
-	return cli_credentials_set_secrets(cred, lp_ctx, NULL, 
+	return cli_credentials_set_secrets(cred, event_ctx, lp_ctx, NULL, 
 					   SECRETS_PRINCIPALS_DN,
 					   filter);
 }
@@ -370,6 +373,7 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred,
  * @retval NTSTATUS error detailing any failure
  */
 _PUBLIC_ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
+						       struct event_context *event_ctx,
 					      struct loadparm_context *lp_ctx,
 					      const char *serviceprincipal)
 {
@@ -382,7 +386,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *c
 				 cli_credentials_get_realm(cred),
 				 cli_credentials_get_domain(cred),
 				 serviceprincipal);
-	return cli_credentials_set_secrets(cred, lp_ctx, NULL, 
+	return cli_credentials_set_secrets(cred, event_ctx, lp_ctx, NULL, 
 					   SECRETS_PRINCIPALS_DN, filter);
 }
 

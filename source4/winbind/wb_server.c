@@ -149,7 +149,7 @@ static void winbind_task_init(struct task_server *task)
 		return;
 	}
 
-	service->idmap_ctx = idmap_init(service, task->lp_ctx);
+	service->idmap_ctx = idmap_init(service, task->event_ctx, task->lp_ctx);
 	if (service->idmap_ctx == NULL) {
 		task_server_terminate(task, "Failed to load idmap database");
 		return;

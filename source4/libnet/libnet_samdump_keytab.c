@@ -26,8 +26,10 @@
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "param/param.h"
+#include "lib/events/events.h"
 
 static NTSTATUS samdump_keytab_handle_user(TALLOC_CTX *mem_ctx,
+					   struct event_context *event_ctx,
 					   struct loadparm_context *lp_ctx,
 					    const char *keytab_name,
 					    struct netr_DELTA_ENUM *delta) 
@@ -53,12 +55,12 @@ static NTSTATUS samdump_keytab_handle_user(TALLOC_CTX *mem_ctx,
 	 * pass a value in here */
 	cli_credentials_set_kvno(credentials, 0);
 	cli_credentials_set_nt_hash(credentials, &user->ntpassword, CRED_SPECIFIED);
-	ret = cli_credentials_set_keytab_name(credentials, lp_ctx, keytab_name, CRED_SPECIFIED);
+	ret = cli_credentials_set_keytab_name(credentials, event_ctx, lp_ctx, keytab_name, CRED_SPECIFIED);
 	if (ret) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	ret = cli_credentials_update_keytab(credentials, lp_ctx);
+	ret = cli_credentials_update_keytab(credentials, event_ctx, lp_ctx);
 	if (ret) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -82,6 +84,7 @@ static NTSTATUS libnet_samdump_keytab_fn(TALLOC_CTX *mem_ctx,
 		/* not interested in builtin users */
 		if (database == SAM_DATABASE_DOMAIN) {
 			nt_status = samdump_keytab_handle_user(mem_ctx, 
+							       event_context_find(mem_ctx),
 							       global_loadparm,
 							       keytab_name,
 							       delta);

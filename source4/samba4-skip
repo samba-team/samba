@@ -5,11 +5,11 @@ base.casetable
 base.nttrans
 .*base.bench.holdcon.*				# Very slow
 base.scan.maxfid
-raw.hold.oplock
-raw.ping.pong
+raw.hold.oplock		# Not a test, but a way to block other clients for a test
+raw.ping.pong		# Needs second server to test
 rpc.samr_accessmask
 raw.scan.eamax
-raw.qfileinfo.ipc
+samba4.ntvfs.cifs.raw.qfileinfo.ipc
 base.utable
 base.smb
 smb2.notify
@@ -38,10 +38,14 @@ rpc.initshutdown					# Not provided by Samba 4
 rpc.svcctl							# Not provided by Samba 4
 rpc.atsvc							# Not provided by Samba 4
 rpc.frsapi							# Not provided by Samba 4
-.*samba3.*							# Samba3-specific test
+^samba4.base.samba3.*						# Samba3-specific test
+^samba4.ntvfs.cifs.base.samba3.*				# Samba3-specific test
+^samba4.raw.samba3.*						# Samba3-specific test
+^samba4.ntvfs.cifs.raw.samba3.*					# Samba3-specific test
+samba4.ntvfs.cifs.raw.
+^samba4.rpc..*samba3.*						# Samba3-specific test
 ^samba4.net.domopen.*$				# Hangs for some reason
 ^samba4.net.api.become.dc.*$			# Fails
-winbind							# FIXME: This should not be skipped
 nss.test						# Fails
 samba4.samba3sam.python		# Conversion from EJS not yet finished
 samba4.samdb.python			# Not finished yet

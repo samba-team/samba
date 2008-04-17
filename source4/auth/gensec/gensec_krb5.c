@@ -118,7 +118,9 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 
 	talloc_set_destructor(gensec_krb5_state, gensec_krb5_destroy); 
 
-	if (cli_credentials_get_krb5_context(creds, gensec_security->lp_ctx, &gensec_krb5_state->smb_krb5_context)) {
+	if (cli_credentials_get_krb5_context(creds, 
+					     gensec_security->event_ctx, 
+					     gensec_security->lp_ctx, &gensec_krb5_state->smb_krb5_context)) {
 		talloc_free(gensec_krb5_state);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
@@ -248,7 +250,9 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 
 	principal = gensec_get_target_principal(gensec_security);
 
-	ret = cli_credentials_get_ccache(gensec_get_credentials(gensec_security), gensec_security->lp_ctx, &ccache_container);
+	ret = cli_credentials_get_ccache(gensec_get_credentials(gensec_security), 
+				         gensec_security->event_ctx, 
+					 gensec_security->lp_ctx, &ccache_container);
 	switch (ret) {
 	case 0:
 		break;
@@ -446,7 +450,9 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 		}	
 
 		/* Grab the keytab, however generated */
-		ret = cli_credentials_get_keytab(gensec_get_credentials(gensec_security), gensec_security->lp_ctx, &keytab);
+		ret = cli_credentials_get_keytab(gensec_get_credentials(gensec_security), 
+					         gensec_security->event_ctx, 
+						 gensec_security->lp_ctx, &keytab);
 		if (ret) {
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
@@ -597,7 +603,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		DEBUG(5, ("krb5_ticket_get_authorization_data_type failed to find PAC: %s\n", 
 			  smb_get_krb5_error_message(context, 
 						     ret, mem_ctx)));
-		nt_status = sam_get_server_info_principal(mem_ctx, gensec_security->lp_ctx, principal_string,
+		nt_status = sam_get_server_info_principal(mem_ctx, gensec_security->event_ctx, gensec_security->lp_ctx, principal_string,
 							  &server_info);
 		krb5_free_principal(context, client_principal);
 		free(principal_string);
@@ -645,7 +651,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = auth_generate_session_info(mem_ctx, gensec_security->lp_ctx, server_info, &session_info);
+	nt_status = auth_generate_session_info(mem_ctx, gensec_security->event_ctx, gensec_security->lp_ctx, server_info, &session_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
