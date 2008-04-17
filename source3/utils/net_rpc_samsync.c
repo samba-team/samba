@@ -1028,7 +1028,6 @@ static NTSTATUS fetch_domain_info(uint32_t rid,
 				  struct netr_DELTA_DOMAIN *r)
 {
 	time_t u_max_age, u_min_age, u_logout;
-	time_t u_lockoutreset, u_lockouttime;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	const char *domname;
 	struct netr_AcctLockStr *lockstr = NULL;
@@ -1045,11 +1044,6 @@ static NTSTATUS fetch_domain_info(uint32_t rid,
 	u_max_age = uint64s_nt_time_to_unix_abs((uint64 *)&r->max_password_age);
 	u_min_age = uint64s_nt_time_to_unix_abs((uint64 *)&r->min_password_age);
 	u_logout = uint64s_nt_time_to_unix_abs((uint64 *)&r->force_logoff_time);
-
-	if (lockstr) {
-		u_lockoutreset = uint64s_nt_time_to_unix_abs(&lockstr->reset_count);
-		u_lockouttime = uint64s_nt_time_to_unix_abs((uint64_t *)&lockstr->lockout_duration);
-	}
 
 	domname = r->domain_name.string;
 	if (!domname) {
@@ -1081,6 +1075,11 @@ static NTSTATUS fetch_domain_info(uint32_t rid,
 		return nt_status;
 
 	if (lockstr) {
+		time_t u_lockoutreset, u_lockouttime;
+
+		u_lockoutreset = uint64s_nt_time_to_unix_abs(&lockstr->reset_count);
+		u_lockouttime = uint64s_nt_time_to_unix_abs((uint64_t *)&lockstr->lockout_duration);
+
 		if (!pdb_set_account_policy(AP_BAD_ATTEMPT_LOCKOUT,
 					    lockstr->bad_attempt_lockout))
 			return nt_status;

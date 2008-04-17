@@ -169,8 +169,11 @@
 #define reply_botherror(req,status,eclass,ecode) reply_both_error(req,eclass,ecode,status,__LINE__,__FILE__)
 #define reply_unixerror(req,defclass,deferror) reply_unix_error(req,defclass,deferror,NT_STATUS_OK,__LINE__,__FILE__)
 
+#if 0
+/* defined in IDL */
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10
+#endif
 
 #define SMB_ROUNDUP(x,r) ( ((x)%(r)) ? ( (((x)+(r))/(r))*(r) ) : (x))
 
