@@ -603,7 +603,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		DEBUG(5, ("krb5_ticket_get_authorization_data_type failed to find PAC: %s\n", 
 			  smb_get_krb5_error_message(context, 
 						     ret, mem_ctx)));
-		nt_status = sam_get_server_info_principal(mem_ctx, gensec_security->lp_ctx, principal_string,
+		nt_status = sam_get_server_info_principal(mem_ctx, gensec_security->event_ctx, gensec_security->lp_ctx, principal_string,
 							  &server_info);
 		krb5_free_principal(context, client_principal);
 		free(principal_string);
@@ -651,7 +651,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = auth_generate_session_info(mem_ctx, gensec_security->lp_ctx, server_info, &session_info);
+	nt_status = auth_generate_session_info(mem_ctx, gensec_security->event_ctx, gensec_security->lp_ctx, server_info, &session_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);

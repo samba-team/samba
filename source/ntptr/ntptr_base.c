@@ -120,7 +120,8 @@ const struct ntptr_critical_sizes *ntptr_interface_version(void)
 /*
   create a ntptr_context with a specified NTPTR backend
 */
-NTSTATUS ntptr_init_context(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
+NTSTATUS ntptr_init_context(TALLOC_CTX *mem_ctx, struct event_context *ev_ctx,
+			    struct loadparm_context *lp_ctx,
 			    const char *providor, struct ntptr_context **_ntptr)
 {
 	NTSTATUS status;
@@ -134,6 +135,7 @@ NTSTATUS ntptr_init_context(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx
 	NT_STATUS_HAVE_NO_MEMORY(ntptr);
 	ntptr->private_data	= NULL;
 	ntptr->ops		= ntptr_backend_byname(providor);
+	ntptr->ev_ctx		= ev_ctx;
 	ntptr->lp_ctx		= lp_ctx;
 
 	if (!ntptr->ops) {

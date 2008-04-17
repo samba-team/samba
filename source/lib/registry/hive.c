@@ -28,6 +28,7 @@
 _PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
 			      struct auth_session_info *session_info,
 			      struct cli_credentials *credentials,
+			      struct event_context *ev_ctx,
 			      struct loadparm_context *lp_ctx,
 			      struct hive_key **root)
 {
@@ -57,7 +58,7 @@ _PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
 	} else if (!strncmp(peek, "TDB file", 8)) {
 		close(fd);
 		return reg_open_ldb_file(parent_ctx, location, session_info,
-					 credentials, lp_ctx, root);
+					 credentials, ev_ctx, lp_ctx, root);
 	}
 
 	return WERR_BADFILE;

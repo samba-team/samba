@@ -624,7 +624,7 @@ static void kdc_task_init(struct task_server *task)
 	}
 	kdc->config->num_db = 1;
 		
-	status = kdc_hdb_ldb_create(kdc, task->lp_ctx, 
+	status = kdc_hdb_ldb_create(kdc, task->event_ctx, task->lp_ctx, 
 				    kdc->smb_krb5_context->krb5_context, 
 				    &kdc->config->db[0], NULL);
 	if (!NT_STATUS_IS_OK(status)) {

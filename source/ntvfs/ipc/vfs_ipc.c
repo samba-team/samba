@@ -805,7 +805,7 @@ static NTSTATUS ipc_trans(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 
 	if (strequal(trans->in.trans_name, "\\PIPE\\LANMAN"))
-		return ipc_rap_call(req, ntvfs->ctx->lp_ctx, trans);
+		return ipc_rap_call(req, ntvfs->ctx->event_ctx, ntvfs->ctx->lp_ctx, trans);
 
        	if (trans->in.setup_count != 2) {
 		return NT_STATUS_INVALID_PARAMETER;

@@ -149,10 +149,12 @@ struct hive_operations {
 
 struct cli_credentials;
 struct auth_session_info;
+struct event_context;
 
 WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
 		     struct auth_session_info *session_info,
 		     struct cli_credentials *credentials,
+		     struct event_context *ev_ctx,
 		     struct loadparm_context *lp_ctx,
 		     struct hive_key **root);
 WERROR hive_key_get_info(TALLOC_CTX *mem_ctx, const struct hive_key *key,
@@ -199,6 +201,7 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx,
 WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
 			 struct auth_session_info *session_info,
 			 struct cli_credentials *credentials,
+			 struct event_context *ev_ctx,
 			 struct loadparm_context *lp_ctx,
 			 struct hive_key **k);
 
@@ -359,6 +362,7 @@ WERROR reg_open_local(TALLOC_CTX *mem_ctx,
 
 WERROR reg_open_samba(TALLOC_CTX *mem_ctx,
 		      struct registry_context **ctx,
+		      struct event_context *ev_ctx,
 		      struct loadparm_context *lp_ctx,
 		      struct auth_session_info *session_info,
 		      struct cli_credentials *credentials);

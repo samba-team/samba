@@ -409,7 +409,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 	conn->server_credentials = server_credentials;
 
 	/* Connections start out anonymous */
-	if (!NT_STATUS_IS_OK(auth_anonymous_session_info(conn, conn->lp_ctx, &conn->session_info))) {
+	if (!NT_STATUS_IS_OK(auth_anonymous_session_info(conn, c->event.ctx, conn->lp_ctx, &conn->session_info))) {
 		ldapsrv_terminate_connection(conn, "failed to setup anonymous session info");
 		return;
 	}
@@ -478,7 +478,8 @@ static NTSTATUS add_socket(struct event_context *event_context,
 	}
 
 	/* Load LDAP database */
-	ldb = samdb_connect(ldap_service, lp_ctx, system_session(ldap_service, lp_ctx));
+	ldb = samdb_connect(ldap_service, ldap_service->task->event_ctx, 
+			    lp_ctx, system_session(ldap_service, lp_ctx));
 	if (!ldb) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
