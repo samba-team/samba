@@ -1656,8 +1656,8 @@ static bool valid_pipe_name(const int pipe_idx, RPC_IFACE *abstract, RPC_IFACE *
 
 	/* copy the required syntaxes out so we can do the right bind */
 	
-	*transfer = pipe_names[pipe_idx].trans_syntax;
-	*abstract = pipe_names[pipe_idx].abstr_syntax;
+	*transfer = *pipe_names[pipe_idx].trans_syntax;
+	*abstract = *pipe_names[pipe_idx].abstr_syntax;
 
 	return True;
 }
