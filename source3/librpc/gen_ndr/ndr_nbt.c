@@ -2075,20 +2075,18 @@ static enum ndr_err_code ndr_push_nbt_netlogon_announce_uas(struct ndr_push *ndr
 		for (cntr_dbchange_0 = 0; cntr_dbchange_0 < r->db_count; cntr_dbchange_0++) {
 			NDR_CHECK(ndr_push_nbt_db_change(ndr, NDR_SCALARS, &r->dbchange[cntr_dbchange_0]));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_dom_sid(&r->sid, ndr->flags)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_dom_sid0(&r->sid, ndr->flags)));
 		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
-			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->_pad2));
-			ndr->flags = _flags_save_DATA_BLOB;
+			struct ndr_push *_ndr_sid;
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_sid, 0, ndr_size_dom_sid0(&r->sid, ndr->flags)));
+			NDR_CHECK(ndr_push_dom_sid0(_ndr_sid, NDR_SCALARS|NDR_BUFFERS, &r->sid));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_sid, 0, ndr_size_dom_sid0(&r->sid, ndr->flags)));
 		}
-		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, &r->sid));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->nt_version));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lmnt_token));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm20_token));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_BUFFERS, &r->sid));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2143,18 +2141,16 @@ static enum ndr_err_code ndr_pull_nbt_netlogon_announce_uas(struct ndr_pull *ndr
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dbchange_0, 0);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sid_size));
 		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
-			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->_pad2));
-			ndr->flags = _flags_save_DATA_BLOB;
+			struct ndr_pull *_ndr_sid;
+			NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_sid, 0, r->sid_size));
+			NDR_CHECK(ndr_pull_dom_sid0(_ndr_sid, NDR_SCALARS|NDR_BUFFERS, &r->sid));
+			NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_sid, 0, r->sid_size));
 		}
-		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, &r->sid));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->nt_version));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lmnt_token));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lm20_token));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_BUFFERS, &r->sid));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2184,9 +2180,8 @@ _PUBLIC_ void ndr_print_nbt_netlogon_announce_uas(struct ndr_print *ndr, const c
 		}
 	}
 	ndr->depth--;
-	ndr_print_uint32(ndr, "sid_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_dom_sid(&r->sid, ndr->flags):r->sid_size);
-	ndr_print_DATA_BLOB(ndr, "_pad2", r->_pad2);
-	ndr_print_dom_sid(ndr, "sid", &r->sid);
+	ndr_print_uint32(ndr, "sid_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_dom_sid0(&r->sid, ndr->flags):r->sid_size);
+	ndr_print_dom_sid0(ndr, "sid", &r->sid);
 	ndr_print_uint32(ndr, "nt_version", r->nt_version);
 	ndr_print_uint16(ndr, "lmnt_token", r->lmnt_token);
 	ndr_print_uint16(ndr, "lm20_token", r->lm20_token);
@@ -3024,20 +3019,18 @@ static enum ndr_err_code ndr_push_nbt_ntlogon_sam_logon(struct ndr_push *ndr, in
 			ndr->flags = _flags_save_string;
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->acct_control));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_dom_sid(&r->sid, ndr->flags)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_dom_sid0(&r->sid, ndr->flags)));
 		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
-			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->_pad));
-			ndr->flags = _flags_save_DATA_BLOB;
+			struct ndr_push *_ndr_sid;
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_sid, 0, ndr_size_dom_sid0(&r->sid, ndr->flags)));
+			NDR_CHECK(ndr_push_dom_sid0(_ndr_sid, NDR_SCALARS|NDR_BUFFERS, &r->sid));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_sid, 0, ndr_size_dom_sid0(&r->sid, ndr->flags)));
 		}
-		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, &r->sid));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->nt_version));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lmnt_token));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm20_token));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_BUFFERS, &r->sid));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -3068,18 +3061,16 @@ static enum ndr_err_code ndr_pull_nbt_ntlogon_sam_logon(struct ndr_pull *ndr, in
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->acct_control));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sid_size));
 		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
-			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->_pad));
-			ndr->flags = _flags_save_DATA_BLOB;
+			struct ndr_pull *_ndr_sid;
+			NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_sid, 0, r->sid_size));
+			NDR_CHECK(ndr_pull_dom_sid0(_ndr_sid, NDR_SCALARS|NDR_BUFFERS, &r->sid));
+			NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_sid, 0, r->sid_size));
 		}
-		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, &r->sid));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->nt_version));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lmnt_token));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lm20_token));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_BUFFERS, &r->sid));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -3093,9 +3084,8 @@ _PUBLIC_ void ndr_print_nbt_ntlogon_sam_logon(struct ndr_print *ndr, const char 
 	ndr_print_string(ndr, "user_name", r->user_name);
 	ndr_print_string(ndr, "mailslot_name", r->mailslot_name);
 	ndr_print_uint32(ndr, "acct_control", r->acct_control);
-	ndr_print_uint32(ndr, "sid_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_dom_sid(&r->sid, ndr->flags):r->sid_size);
-	ndr_print_DATA_BLOB(ndr, "_pad", r->_pad);
-	ndr_print_dom_sid(ndr, "sid", &r->sid);
+	ndr_print_uint32(ndr, "sid_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_dom_sid0(&r->sid, ndr->flags):r->sid_size);
+	ndr_print_dom_sid0(ndr, "sid", &r->sid);
 	ndr_print_uint32(ndr, "nt_version", r->nt_version);
 	ndr_print_uint16(ndr, "lmnt_token", r->lmnt_token);
 	ndr_print_uint16(ndr, "lm20_token", r->lm20_token);
