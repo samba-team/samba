@@ -308,7 +308,7 @@ extern \"C\" {
 if ($opt_E) {
     $public_h_header .= "#ifndef $opt_E
 #if defined(_WIN32)
-#define $opt_E _stdcall
+#define $opt_E _stdcall __declspec(dllimport)
 #else
 #define $opt_E
 #endif
@@ -318,7 +318,7 @@ if ($opt_E) {
     
     $private_h_header .= "#ifndef $opt_E
 #if defined(_WIN32)
-#define $opt_E _stdcall
+#define $opt_E _stdcall __declspec(dllimport)
 #else
 #define $opt_E
 #endif
