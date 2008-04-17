@@ -1,5 +1,9 @@
 2008-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* configure.in: Use LT_INIT the right way.
+
+	* lib/krb5/Makefile.am: Update make-proto usage.
+
 	* configure.in: Run autoupdate, use LT_INIT().
 
 2008-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
