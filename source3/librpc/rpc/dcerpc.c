@@ -118,7 +118,6 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, struct dcerpc_pipe
 	struct dcerpc_binding *binding;
 	NTSTATUS nt_status;
 	int idx;
-	RPC_IFACE iface_syntax;
 
 	nt_status = dcerpc_parse_binding(p, binding_string, &binding);
 
@@ -152,10 +151,7 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, struct dcerpc_pipe
 		return nt_status;
 	}
 
-	iface_syntax.uuid = table->syntax_id.uuid;
-	iface_syntax.version = table->syntax_id.if_version;
-
-	idx = cli_get_pipe_idx(&iface_syntax);
+	idx = cli_get_pipe_idx(&table->syntax_id);
 	if (idx < 0) {
 		DEBUG(0, ("Unable to find interface index"));
 		talloc_free(p);
