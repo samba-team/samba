@@ -26,6 +26,7 @@
 #include "includes.h"
 #include "registry.h"
 #include "param/param.h"
+#include "events/events.h"
 
 typedef struct registry_context reg;
 typedef struct hive_key hive_key;
@@ -41,6 +42,7 @@ typedef struct hive_key hive_key;
 %import "../../auth/credentials/credentials.i"
 %import "../../libcli/util/errors.i"
 %import "../../param/param.i"
+%import "../events/events.i"
 
 /* Utility functions */
 
@@ -132,6 +134,7 @@ typedef struct registry_context {
 WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
                      struct auth_session_info *session_info,
                      struct cli_credentials *credentials,
+                     struct event_context *ev_ctx,
                      struct loadparm_context *lp_ctx,
                      struct hive_key **root);
 
@@ -139,6 +142,7 @@ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
 WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
              struct auth_session_info *session_info,
              struct cli_credentials *credentials,
+             struct event_context *ev_ctx,
              struct loadparm_context *lp_ctx,
              struct hive_key **k);
 
@@ -165,6 +169,7 @@ typedef struct hive_key {
 
 WERROR reg_open_samba(TALLOC_CTX *mem_ctx,
                       struct registry_context **ctx,
+                      struct event_context *ev_ctx,
                       struct loadparm_context *lp_ctx,
                       struct auth_session_info *session_info,
                       struct cli_credentials *credentials);

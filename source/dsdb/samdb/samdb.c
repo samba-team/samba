@@ -71,11 +71,12 @@ char *samdb_relative_path(struct ldb_context *ldb,
   return an opaque context pointer on success, or NULL on failure
  */
 struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx, 
+				  struct event_context *ev_ctx,
 				  struct loadparm_context *lp_ctx,
 				  struct auth_session_info *session_info)
 {
 	struct ldb_context *ldb;
-	ldb = ldb_wrap_connect(mem_ctx, lp_ctx, 
+	ldb = ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, 
 			       lp_sam_url(lp_ctx), session_info,
 			       NULL, 0, NULL);
 	if (!ldb) {
@@ -98,6 +99,8 @@ int samdb_copy_template(struct ldb_context *ldb,
 	struct ldb_context *templates_ldb;
 	char *templates_ldb_path; 
 	struct ldb_dn *basedn;
+	struct event_context *event_ctx;
+	struct loadparm_context *lp_ctx;
 
 	templates_ldb = talloc_get_type(ldb_get_opaque(ldb, "templates_ldb"), struct ldb_context);
 
@@ -109,8 +112,11 @@ int samdb_copy_template(struct ldb_context *ldb,
 			*errstring = talloc_asprintf(msg, "samdb_copy_template: ERROR: Failed to contruct path for template db");
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
+		
+		event_ctx = (struct event_context *)ldb_get_opaque(ldb, "EventContext");
+		lp_ctx = (struct loadparm_context *)ldb_get_opaque(ldb, "loadparm");
 
-		templates_ldb = ldb_wrap_connect(ldb, (struct loadparm_context *)ldb_get_opaque(ldb, "loadparm"), 
+		templates_ldb = ldb_wrap_connect(ldb, event_ctx, lp_ctx, 
 						templates_ldb_path, NULL,
 						NULL, 0, NULL);
 		talloc_free(templates_ldb_path);
@@ -184,6 +190,7 @@ int samdb_copy_template(struct ldb_context *ldb,
  Create the SID list for this user.
 ****************************************************************************/
 NTSTATUS security_token_create(TALLOC_CTX *mem_ctx, 
+			       struct event_context *ev_ctx, 
 			       struct loadparm_context *lp_ctx,
 			       struct dom_sid *user_sid,
 			       struct dom_sid *group_sid, 
@@ -242,7 +249,7 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	}
 
 	/* setup the privilege mask for this token */
-	status = samdb_privilege_setup(lp_ctx, ptoken);
+	status = samdb_privilege_setup(ev_ctx, lp_ctx, ptoken);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(ptoken);
 		return status;

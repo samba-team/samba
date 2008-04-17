@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "libcli/raw/interfaces.h"
 #include "libcli/rap/rap.h"
+#include "events/events.h"
 #include "ntvfs/ipc/proto.h"
 #include "librpc/ndr/libndr.h"
 #include "param/param.h"
@@ -100,11 +101,14 @@ struct rap_call {
 
 	struct ndr_pull *ndr_pull_param;
 	struct ndr_pull *ndr_pull_data;
+
+	struct event_context *event_ctx;
 };
 
 #define RAPNDR_FLAGS (LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 
 static struct rap_call *new_rap_srv_call(TALLOC_CTX *mem_ctx,
+					 struct event_context *ev_ctx,
 					 struct loadparm_context *lp_ctx,
 					 struct smb_trans2 *trans)
 {
@@ -118,6 +122,7 @@ static struct rap_call *new_rap_srv_call(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCTP(call);
 
 	call->lp_ctx = talloc_reference(call, lp_ctx);
+	call->event_ctx = ev_ctx;
 
 	call->mem_ctx = mem_ctx;
 
@@ -271,7 +276,7 @@ static NTSTATUS _rap_netshareenum(struct rap_call *call)
 		break;
 	}
 
-	result = rap_netshareenum(call, call->lp_ctx, &r);
+	result = rap_netshareenum(call, call->event_ctx, call->lp_ctx, &r);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -430,7 +435,7 @@ static const struct
 	{NULL, -1, api_Unsupported}
 };
 
-NTSTATUS ipc_rap_call(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
+NTSTATUS ipc_rap_call(TALLOC_CTX *mem_ctx, struct event_context *event_ctx, struct loadparm_context *lp_ctx,
 		      struct smb_trans2 *trans)
 {
 	int i;
@@ -440,7 +445,7 @@ NTSTATUS ipc_rap_call(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	struct ndr_push *final_param;
 	struct ndr_push *final_data;
 
-	call = new_rap_srv_call(mem_ctx, lp_ctx, trans);
+	call = new_rap_srv_call(mem_ctx, event_ctx, lp_ctx, trans);
 
 	if (call == NULL)
 		return NT_STATUS_NO_MEMORY;

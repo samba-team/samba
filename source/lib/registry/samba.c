@@ -26,6 +26,7 @@
  */
 
 static WERROR mount_samba_hive(struct registry_context *ctx,
+			       struct event_context *event_ctx,
 			       struct loadparm_context *lp_ctx,
 			       struct auth_session_info *auth_info,
 			       struct cli_credentials *creds,
@@ -40,11 +41,11 @@ static WERROR mount_samba_hive(struct registry_context *ctx,
 				   lp_private_dir(lp_ctx),
 				   name);
 
-	error = reg_open_hive(ctx, location, auth_info, creds, lp_ctx, &hive);
+	error = reg_open_hive(ctx, location, auth_info, creds, event_ctx, lp_ctx, &hive);
 
 	if (W_ERROR_EQUAL(error, WERR_BADFILE))
 		error = reg_open_ldb_file(ctx, location, auth_info,
-					  creds, lp_ctx, &hive);
+					  creds, event_ctx, lp_ctx, &hive);
 
 	if (!W_ERROR_IS_OK(error))
 		return error;
@@ -55,6 +56,7 @@ static WERROR mount_samba_hive(struct registry_context *ctx,
 
 _PUBLIC_ WERROR reg_open_samba(TALLOC_CTX *mem_ctx,
 			       struct registry_context **ctx,
+			       struct event_context *ev_ctx,
 			       struct loadparm_context *lp_ctx,
 			       struct auth_session_info *session_info,
 			       struct cli_credentials *credentials)
@@ -66,18 +68,18 @@ _PUBLIC_ WERROR reg_open_samba(TALLOC_CTX *mem_ctx,
 		return result;
 	}
 
-	mount_samba_hive(*ctx, lp_ctx, session_info, credentials,
+	mount_samba_hive(*ctx, ev_ctx, lp_ctx, session_info, credentials,
 			 "hklm", HKEY_LOCAL_MACHINE);
 
-	mount_samba_hive(*ctx, lp_ctx, session_info, credentials,
+	mount_samba_hive(*ctx, ev_ctx, lp_ctx, session_info, credentials,
 			 "hkcr", HKEY_CLASSES_ROOT);
 
 	/* FIXME: Should be mounted from NTUSER.DAT in the home directory of the
 	 * current user */
-	mount_samba_hive(*ctx, lp_ctx, session_info, credentials,
+	mount_samba_hive(*ctx, ev_ctx, lp_ctx, session_info, credentials,
 			 "hkcu", HKEY_CURRENT_USER);
 
-	mount_samba_hive(*ctx, lp_ctx, session_info, credentials,
+	mount_samba_hive(*ctx, ev_ctx, lp_ctx, session_info, credentials,
 			 "hku", HKEY_USERS);
 
 	/* FIXME: Different hive backend for HKEY_CLASSES_ROOT: merged view of HKEY_LOCAL_MACHINE\Software\Classes

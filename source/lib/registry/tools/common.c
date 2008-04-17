@@ -42,6 +42,7 @@ struct registry_context *reg_common_open_remote(const char *remote,
 }
 
 struct registry_key *reg_common_open_file(const char *path,
+					  struct event_context *ev_ctx,
 					  struct loadparm_context *lp_ctx,
 					  struct cli_credentials *creds)
 {
@@ -49,7 +50,7 @@ struct registry_key *reg_common_open_file(const char *path,
 	struct registry_context *h = NULL;
 	WERROR error;
 
-	error = reg_open_hive(NULL, path, NULL, creds, lp_ctx, &hive_root);
+	error = reg_open_hive(NULL, path, NULL, creds, ev_ctx, lp_ctx, &hive_root);
 
 	if(!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to open '%s': %s \n",
@@ -67,12 +68,14 @@ struct registry_key *reg_common_open_file(const char *path,
 	return reg_import_hive_key(h, hive_root, -1, NULL);
 }
 
-struct registry_context *reg_common_open_local(struct cli_credentials *creds, struct loadparm_context *lp_ctx)
+struct registry_context *reg_common_open_local(struct cli_credentials *creds, 
+					       struct event_context *ev_ctx, 
+					       struct loadparm_context *lp_ctx)
 {
 	WERROR error;
 	struct registry_context *h = NULL;
 
-	error = reg_open_samba(NULL, &h, lp_ctx, NULL, creds);
+	error = reg_open_samba(NULL, &h, ev_ctx, lp_ctx, NULL, creds);
 
 	if(!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to open local registry:%s \n",

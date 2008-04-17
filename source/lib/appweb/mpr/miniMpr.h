@@ -274,6 +274,8 @@ extern void mprSetCtx(void *ctx);
 extern void *mprMemCtx(void);
 struct loadparm_context;
 extern struct loadparm_context *mprLpCtx(void);
+struct event_context;
+extern struct event_context *mprEventCtx(void);
 
 /* This function needs to be provided by anyone using ejs */
 void ejs_exception(const char *reason);

@@ -369,7 +369,6 @@ bool torture_bench_open(struct torture_context *torture)
 	int i;
 	int timelimit = torture_setting_int(torture, "timelimit", 10);
 	struct timeval tv;
-	struct event_context *ev = event_context_find(mem_ctx);
 	struct benchopen_state *state;
 	int total = 0;
 	int total_retries = 0;
@@ -387,8 +386,8 @@ bool torture_bench_open(struct torture_context *torture)
 		state[i].tctx = torture;
 		state[i].mem_ctx = talloc_new(state);
 		state[i].client_num = i;
-		state[i].ev = ev;
-		if (!torture_open_connection_ev(&state[i].cli, i, torture, ev)) {
+		state[i].ev = torture->ev;
+		if (!torture_open_connection_ev(&state[i].cli, i, torture, torture->ev)) {
 			return false;
 		}
 		talloc_steal(mem_ctx, state);
@@ -428,13 +427,13 @@ bool torture_bench_open(struct torture_context *torture)
 	tv = timeval_current();	
 
 	if (progress) {
-		report_te = event_add_timed(ev, state, timeval_current_ofs(1, 0), 
+		report_te = event_add_timed(torture->ev, state, timeval_current_ofs(1, 0), 
 					    report_rate, state);
 	}
 
 	printf("Running for %d seconds\n", timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
-		event_loop_once(ev);
+		event_loop_once(torture->ev);
 
 		if (open_failed) {
 			DEBUG(0,("open failed\n"));

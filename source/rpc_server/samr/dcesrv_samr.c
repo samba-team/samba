@@ -156,7 +156,7 @@ static NTSTATUS dcesrv_samr_Connect(struct dcesrv_call_state *dce_call, TALLOC_C
 	}
 
 	/* make sure the sam database is accessible */
-	c_state->sam_ctx = samdb_connect(c_state, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info); 
+	c_state->sam_ctx = samdb_connect(c_state, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info); 
 	if (c_state->sam_ctx == NULL) {
 		talloc_free(c_state);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
@@ -4135,7 +4135,7 @@ static NTSTATUS dcesrv_samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TAL
 
 	ZERO_STRUCT(r->out.info);
 
-	sam_ctx = samdb_connect(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info); 
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info); 
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}

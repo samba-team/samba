@@ -484,8 +484,7 @@ static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_
 	return ret;
 }
 
-static int samldb_fill_user_or_computer_object(struct ldb_module *module, const struct ldb_message *msg,
-							       struct ldb_message **ret_msg)
+static int samldb_fill_user_or_computer_object(struct ldb_module *module, const struct ldb_message *msg, struct ldb_message **ret_msg)
 {
 	int ret;
 	char *name;

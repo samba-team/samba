@@ -219,12 +219,15 @@ plantest "rpc.echo on ncacn_np over smb2" dc $smb4torture ncacn_np:"\$SERVER[smb
 # Tests against the NTVFS POSIX backend
 NTVFSARGS="--option=torture:sharedelay=100000 --option=torture:oplocktimeout=3"
 smb2=`$smb4torture --list | grep "^SMB2-" | xargs`
-raw=`$smb4torture --list | grep "^RAW-" | xargs`
+#The QFILEINFO-IPC test needs to be on ipc$
+raw=`$smb4torture --list | grep "^RAW-" | grep -v "RAW-QFILEINFO-IPC"| xargs`
 base=`$smb4torture --list | grep "^BASE-" | xargs`
 
 for t in $base $raw $smb2; do
     plansmbtorturetest "$t" dc $ADDARGS //\$SERVER/tmp -U"\$USERNAME"%"\$PASSWORD" $NTVFSARGS
 done
+
+plansmbtorturetest "RAW-QFILEINFO-IPC" dc $ADDARGS //\$SERVER/ipc$ -U"\$USERNAME"%"\$PASSWORD"
 
 rap=`$smb4torture --list | grep "^RAP-" | xargs`
 for t in $rap; do
@@ -285,7 +288,7 @@ done
 
 DATADIR=$samba4srcdir/../testdata
 
-plantest "js.samba3sam" none $SCRIPTDIR/samba3sam.js $CONFIGURATION `pwd` $DATADIR/samba3/
+plantest "js.samba3sam" none $samba4bindir/smbscript $SCRIPTDIR/samba3sam.js $CONFIGURATION `pwd` $DATADIR/samba3/
 
 # Domain Member Tests
 

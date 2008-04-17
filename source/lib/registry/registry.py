@@ -59,6 +59,7 @@ def _swig_setattr_nondynamic_method(set):
 
 import credentials
 import param
+import events
 reg_get_predef_name = _registry.reg_get_predef_name
 str_regtype = _registry.str_regtype
 Registry = _registry.Registry

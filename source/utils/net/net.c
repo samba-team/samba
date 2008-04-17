@@ -200,7 +200,6 @@ static int binary_net(int argc, const char **argv)
 	ctx->lp_ctx = cmdline_lp_ctx;
 	ctx->credentials = cmdline_credentials;
 	ctx->event_ctx = ev;
-	cli_credentials_set_event_context(ctx->credentials, ev);
 
 	rc = net_run_function(ctx, argc_new-1, argv_new+1, net_functable, net_usage);
 

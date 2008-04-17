@@ -107,7 +107,7 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 	struct dcesrv_connection *dcesrv_conn = NULL;
 	struct auth_session_info *session_info = NULL;
 
-	status = auth_anonymous_session_info(srv_conn, dcesrv_sock->dcesrv_ctx->lp_ctx, &session_info);
+	status = auth_anonymous_session_info(srv_conn, srv_conn->event.ctx, dcesrv_sock->dcesrv_ctx->lp_ctx, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("dcesrv_sock_accept: auth_anonymous_session_info failed: %s\n", 
 			nt_errstr(status)));

@@ -47,9 +47,12 @@ struct share_info {
 	void *value;
 };
 
+struct event_context;
+
 struct share_ops {
 	const char *name;
-	NTSTATUS (*init)(TALLOC_CTX *, const struct share_ops*, struct loadparm_context *lp_ctx,
+	NTSTATUS (*init)(TALLOC_CTX *, const struct share_ops*, struct event_context *ev_ctx,
+			 struct loadparm_context *lp_ctx,
 			 struct share_context **);
 	const char *(*string_option)(struct share_config *, const char *, const char *);
 	int (*int_option)(struct share_config *, const char *, int);

@@ -182,12 +182,12 @@ static void tcase_add_share_tests(struct torture_tcase *tcase)
 
 static bool setup_ldb(struct torture_context *tctx, void **data)
 {
-	return NT_STATUS_IS_OK(share_get_context_by_name(tctx, "ldb", tctx->lp_ctx, (struct share_context **)data));
+	return NT_STATUS_IS_OK(share_get_context_by_name(tctx, "ldb", tctx->ev, tctx->lp_ctx, (struct share_context **)data));
 }
 
 static bool setup_classic(struct torture_context *tctx, void **data)
 {
-	return NT_STATUS_IS_OK(share_get_context_by_name(tctx, "classic", tctx->lp_ctx, (struct share_context **)data));
+	return NT_STATUS_IS_OK(share_get_context_by_name(tctx, "classic", tctx->ev, tctx->lp_ctx, (struct share_context **)data));
 }
 
 static bool teardown(struct torture_context *tctx, void *data)

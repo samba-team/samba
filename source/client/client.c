@@ -32,6 +32,7 @@
 #include "includes.h"
 #include "version.h"
 #include "libcli/libcli.h"
+#include "lib/events/events.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
@@ -3044,7 +3045,7 @@ static bool do_connect(struct smbclient_context *ctx,
 	
 	status = smbcli_full_connection(ctx, &ctx->cli, server, ports,
 					share, NULL, cred, resolve_ctx, 
-					cli_credentials_get_event_context(cred),
+					event_context_init(NULL),
 					options);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to \\\\%s\\%s failed - %s\n", 

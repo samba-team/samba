@@ -578,6 +578,3 @@ struct torture_test *torture_tcase_add_simple_test(struct torture_tcase *tcase,
 
 	return test;
 }
-
-
-

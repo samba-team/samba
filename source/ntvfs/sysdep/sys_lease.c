@@ -55,7 +55,7 @@ _PUBLIC_ struct sys_lease_context *sys_lease_context_create(struct share_config 
 	}
 
 	if (ev == NULL) {
-		ev = event_context_find(mem_ctx);
+		return NULL;
 	}
 
 	ctx = talloc_zero(mem_ctx, struct sys_lease_context);

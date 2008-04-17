@@ -725,7 +725,7 @@ NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
 	NTSTATUS nt_status;
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 
-	nt_status = auth_generate_session_info(gensec_ntlmssp_state, gensec_security->lp_ctx, gensec_ntlmssp_state->server_info, session_info);
+	nt_status = auth_generate_session_info(gensec_ntlmssp_state, gensec_security->event_ctx, gensec_security->lp_ctx, gensec_ntlmssp_state->server_info, session_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	(*session_info)->session_key = data_blob_talloc(*session_info, 

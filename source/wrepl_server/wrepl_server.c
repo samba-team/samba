@@ -35,9 +35,10 @@
 #include "lib/socket/netif.h"
 
 static struct ldb_context *wins_config_db_connect(TALLOC_CTX *mem_ctx, 
+						  struct event_context *ev_ctx,
 						  struct loadparm_context *lp_ctx)
 {
-	return ldb_wrap_connect(mem_ctx, lp_ctx, private_path(mem_ctx, 
+	return ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, private_path(mem_ctx, 
 			        lp_ctx, lp_wins_config_url(lp_ctx)),
 				system_session(mem_ctx, lp_ctx), NULL, 0, NULL);
 }
@@ -83,12 +84,12 @@ static NTSTATUS wreplsrv_open_winsdb(struct wreplsrv_service *service,
 		owner = iface_n_ip(ifaces, 0);
 	}
 
-	service->wins_db     = winsdb_connect(service, lp_ctx, owner, WINSDB_HANDLE_CALLER_WREPL);
+	service->wins_db     = winsdb_connect(service, service->task->event_ctx, lp_ctx, owner, WINSDB_HANDLE_CALLER_WREPL);
 	if (!service->wins_db) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
-	service->config.ldb = wins_config_db_connect(service, lp_ctx);
+	service->config.ldb = wins_config_db_connect(service, service->task->event_ctx, lp_ctx);
 	if (!service->config.ldb) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}

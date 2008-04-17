@@ -151,8 +151,6 @@ NTSTATUS wbsrv_samba3_check_machacc(struct wbsrv_samba3_call *s3call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	cli_credentials_set_event_context(creds, service->task->event_ctx);
-
 	cli_credentials_set_conf(creds, service->task->lp_ctx);
 
 	/* Connect the machine account to the credentials */

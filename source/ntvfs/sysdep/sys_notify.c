@@ -52,7 +52,7 @@ _PUBLIC_ struct sys_notify_context *sys_notify_context_create(struct share_confi
 	}
 
 	if (ev == NULL) {
-		ev = event_context_find(mem_ctx);
+		return NULL;
 	}
 
 	ctx = talloc_zero(mem_ctx, struct sys_notify_context);
