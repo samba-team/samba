@@ -208,7 +208,21 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 
 	case RAW_OPEN_SMB2:
 		io->smb2.out.file.ntvfs		= io2->generic.out.file.ntvfs;
-		io->smb2.out.oplock_level	= 0;
+		switch (io2->generic.out.oplock_level) {
+		case OPLOCK_BATCH:
+			io->smb2.out.oplock_level = SMB2_OPLOCK_LEVEL_BATCH;
+			break;
+		case OPLOCK_EXCLUSIVE:
+			io->smb2.out.oplock_level = SMB2_OPLOCK_LEVEL_EXCLUSIVE;
+			break;
+		case OPLOCK_LEVEL_II:
+			io->smb2.out.oplock_level = SMB2_OPLOCK_LEVEL_II;
+			break;
+		default:
+			io->smb2.out.oplock_level = SMB2_OPLOCK_LEVEL_NONE;
+			break;
+		}
+		io->smb2.out.reserved		= 0;
 		io->smb2.out.create_action	= io2->generic.out.create_action;
 		io->smb2.out.create_time	= io2->generic.out.create_time;
 		io->smb2.out.access_time	= io2->generic.out.access_time;
@@ -484,7 +498,18 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 		status = ntvfs->ops->open(ntvfs, req, io2);
 		break;
 	case RAW_OPEN_SMB2:
-		io2->generic.in.flags		= 0;
+		switch (io->smb2.in.oplock_level) {
+		case SMB2_OPLOCK_LEVEL_BATCH:
+			io2->generic.in.flags = NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK |
+						NTCREATEX_FLAGS_REQUEST_OPLOCK;
+			break;
+		case SMB2_OPLOCK_LEVEL_EXCLUSIVE:
+			io2->generic.in.flags = NTCREATEX_FLAGS_REQUEST_OPLOCK;
+			break;
+		default:
+			io2->generic.in.flags = 0;
+			break;
+		}
 		io2->generic.in.root_fid	= 0;
 		io2->generic.in.access_mask	= io->smb2.in.desired_access;
 		io2->generic.in.alloc_size	= 0;
