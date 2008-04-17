@@ -695,6 +695,12 @@ nogroup:x:65534:nobody
 	my @provision_options = ();
 	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$nsswrap_passwd\"");
 	push (@provision_options, "NSS_WRAPPER_GROUP=\"$nsswrap_group\"");
+	if (defined($ENV{GDB_PROVISION})) {
+		push (@provision_options, "gdb --args");
+	}
+	if (defined($ENV{VALGRIND_PROVISION})) {
+		push (@provision_options, "valgrind");
+	}
 	if (defined($ENV{PROVISION_EJS})) {
 		push (@provision_options, "$self->{bindir}/smbscript");
 		push (@provision_options, "$self->{setupdir}/provision.js");
