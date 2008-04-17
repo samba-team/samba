@@ -68,14 +68,15 @@ static bool test_keyinfo_nums(struct torture_context *tctx, void *test_data)
 	struct hive_key *root = (struct hive_key *)test_data;
 	WERROR error;
 	struct hive_key *subkey;
-	uint32_t data = 42;
+	char data[4];
+	SIVAL(data, 0, 42);
 
 	error = hive_key_add_name(tctx, root, "Nested Keyll", NULL,
 				  NULL, &subkey);
 	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
 
 	error = hive_key_set_value(root, "Answer", REG_DWORD,
-			       data_blob_talloc(tctx, &data, sizeof(data)));
+			       data_blob_talloc(tctx, data, sizeof(data)));
 	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	/* This is a new backend. There should be no subkeys and no
@@ -119,7 +120,8 @@ static bool test_del_recursive(struct torture_context *tctx,
 	struct hive_key *subkey2;
 	const struct hive_key *root = (const struct hive_key *)test_data;
 	TALLOC_CTX *mem_ctx = tctx;
-	uint32_t data = 42;
+	char data[4];
+	SIVAL(data, 0, 42);
 
 	/* Create a new key under the root */
 	error = hive_key_add_name(mem_ctx, root, "Parent Key", NULL,
@@ -133,7 +135,7 @@ static bool test_del_recursive(struct torture_context *tctx,
 
 	/* Create a new value under "Child Key" */
 	error = hive_key_set_value(subkey2, "Answer Recursive", REG_DWORD,
-			       data_blob_talloc(mem_ctx, &data, sizeof(data)));
+			       data_blob_talloc(mem_ctx, data, sizeof(data)));
 	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	/* Deleting "Parent Key" will also delete "Child Key" and the value. */
@@ -179,14 +181,15 @@ static bool test_set_value(struct torture_context *tctx,
 	struct hive_key *subkey;
 	const struct hive_key *root = (const struct hive_key *)test_data;
 	TALLOC_CTX *mem_ctx = tctx;
-	uint32_t data = 42;
+	char data[4];
+	SIVAL(data, 0, 42);
 
 	error = hive_key_add_name(mem_ctx, root, "YA Nested Key", NULL,
 				  NULL, &subkey);
 	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
 
 	error = hive_key_set_value(subkey, "Answer", REG_DWORD,
-			       data_blob_talloc(mem_ctx, &data, sizeof(data)));
+			       data_blob_talloc(mem_ctx, data, sizeof(data)));
 	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	return true;
@@ -198,9 +201,11 @@ static bool test_get_value(struct torture_context *tctx, const void *test_data)
 	struct hive_key *subkey;
 	const struct hive_key *root = (const struct hive_key *)test_data;
 	TALLOC_CTX *mem_ctx = tctx;
-	uint32_t data = 42;
+	char data[4];
 	uint32_t type;
 	DATA_BLOB value;
+
+	SIVAL(data, 0, 42);
 
 	error = hive_key_add_name(mem_ctx, root, "EYA Nested Key", NULL,
 				  NULL, &subkey);
@@ -211,7 +216,7 @@ static bool test_get_value(struct torture_context *tctx, const void *test_data)
 				  "getting missing value");
 
 	error = hive_key_set_value(subkey, "Answer", REG_DWORD,
-			       data_blob_talloc(mem_ctx, &data, sizeof(data)));
+			       data_blob_talloc(mem_ctx, data, sizeof(data)));
 	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	error = hive_get_value(mem_ctx, subkey, "Answer", &type, &value);
@@ -232,16 +237,18 @@ static bool test_del_value(struct torture_context *tctx, const void *test_data)
 	struct hive_key *subkey;
 	const struct hive_key *root = (const struct hive_key *)test_data;
 	TALLOC_CTX *mem_ctx = tctx;
-	uint32_t data = 42;
+	char data[4];
 	uint32_t type;
 	DATA_BLOB value;
+
+	SIVAL(data, 0, 42);
 
 	error = hive_key_add_name(mem_ctx, root, "EEYA Nested Key", NULL,
 							 NULL, &subkey);
 	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
 
 	error = hive_key_set_value(subkey, "Answer", REG_DWORD,
-			       data_blob_talloc(mem_ctx, &data, sizeof(data)));
+			       data_blob_talloc(mem_ctx, data, sizeof(data)));
 	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	error = hive_key_del_value(subkey, "Answer");
@@ -264,17 +271,19 @@ static bool test_list_values(struct torture_context *tctx,
 	struct hive_key *subkey;
 	const struct hive_key *root = (const struct hive_key *)test_data;
 	TALLOC_CTX *mem_ctx = tctx;
-	uint32_t data = 42;
+	char data[4];
 	uint32_t type;
 	DATA_BLOB value;
 	const char *name;
+	int data_val = 42;
+	SIVAL(data, 0, data_val);
 
 	error = hive_key_add_name(mem_ctx, root, "AYAYA Nested Key", NULL,
 				  NULL, &subkey);
 	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
 
 	error = hive_key_set_value(subkey, "Answer", REG_DWORD,
-			       data_blob_talloc(mem_ctx, &data, sizeof(data)));
+			       data_blob_talloc(mem_ctx, data, sizeof(data)));
 	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	error = hive_get_value_by_index(mem_ctx, subkey, 0, &name,
@@ -287,7 +296,7 @@ static bool test_list_values(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, type, REG_DWORD, "value type");
 	
 	
-	torture_assert_int_equal(tctx, data, IVAL(value.data, 0), "value data");
+	torture_assert_int_equal(tctx, data_val, IVAL(value.data, 0), "value data");
 
 	error = hive_get_value_by_index(mem_ctx, subkey, 1, &name,
 					&type, &value);
