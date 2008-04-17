@@ -493,7 +493,7 @@ static bool test_list_values(struct torture_context *tctx, void *_data)
 		return false;
 
 	error = reg_val_set(subkey, "bar", REG_DWORD,
-			    data_blob_talloc(tctx, value, sizeof(val)));
+			    data_blob_talloc(tctx, value, sizeof(value)));
 	torture_assert_werr_ok (tctx, error, "setting value");
 
 	error = reg_key_get_value_by_index(tctx, subkey, 0, &name,
