@@ -82,7 +82,7 @@ uint32_t dcesrv_common_get_version_build(TALLOC_CTX *mem_ctx, struct loadparm_co
 }
 
 /* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct event_context *event_ctx, struct dcesrv_context *dce_ctx)
 {
 	int default_server_announce = 0;
 	default_server_announce |= SV_TYPE_WORKSTATION;
@@ -118,7 +118,7 @@ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dcesrv_contex
 				break;
 			}
 			/* open main ldb */
-			samctx = samdb_connect(tmp_ctx, dce_ctx->lp_ctx, anonymous_session(tmp_ctx, dce_ctx->lp_ctx));
+			samctx = samdb_connect(tmp_ctx, event_ctx, dce_ctx->lp_ctx, anonymous_session(tmp_ctx, event_ctx, dce_ctx->lp_ctx));
 			if (samctx == NULL) {
 				DEBUG(2,("Unable to open samdb in determining server announce flags\n"));
 			} else {

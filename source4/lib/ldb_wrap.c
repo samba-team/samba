@@ -94,6 +94,7 @@ static int ldb_wrap_destructor(struct ldb_context *ldb)
   TODO:  We need an error_string parameter
  */
 struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
+				     struct event_context *ev,
 				     struct loadparm_context *lp_ctx,
 				     const char *url,
 				     struct auth_session_info *session_info,
@@ -103,7 +104,6 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 {
 	struct ldb_context *ldb;
 	int ret;
-	struct event_context *ev;
 	char *real_url = NULL;
 	size_t *startup_blocks;
 
@@ -115,10 +115,9 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	ldb_set_modules_dir(ldb, 
 			    talloc_asprintf(ldb, "%s/ldb", lp_modulesdir(lp_ctx)));
 
-	/* we want to use the existing event context if possible. This
-	   relies on the fact that in smbd, everything is a child of
-	   the main event_context */
-	ev = event_context_find(ldb);
+	if (ev == NULL) {
+		ev = event_context_find(mem_ctx);
+	}
 
 	if (ldb_set_opaque(ldb, "EventContext", ev)) {
 		talloc_free(ldb);

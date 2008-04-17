@@ -985,7 +985,8 @@ NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 		owner = iface_n_ip(ifaces, 0);
 	}
 
-	nbtsrv->winssrv->wins_db     = winsdb_connect(nbtsrv->winssrv, nbtsrv->task->lp_ctx,
+	nbtsrv->winssrv->wins_db     = winsdb_connect(nbtsrv->winssrv, nbtsrv->task->event_ctx, 
+						      nbtsrv->task->lp_ctx,
 						      owner, WINSDB_HANDLE_CALLER_NBTD);
 	if (!nbtsrv->winssrv->wins_db) {
 		return NT_STATUS_INTERNAL_DB_ERROR;

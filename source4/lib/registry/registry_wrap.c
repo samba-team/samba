@@ -2478,29 +2478,30 @@ SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags)
 #define SWIGTYPE_p_auth_session_info swig_types[1]
 #define SWIGTYPE_p_char swig_types[2]
 #define SWIGTYPE_p_cli_credentials swig_types[3]
-#define SWIGTYPE_p_hive_key swig_types[4]
-#define SWIGTYPE_p_int swig_types[5]
-#define SWIGTYPE_p_loadparm_context swig_types[6]
-#define SWIGTYPE_p_loadparm_service swig_types[7]
-#define SWIGTYPE_p_long_long swig_types[8]
-#define SWIGTYPE_p_p_char swig_types[9]
-#define SWIGTYPE_p_p_hive_key swig_types[10]
-#define SWIGTYPE_p_p_registry_context swig_types[11]
-#define SWIGTYPE_p_p_registry_key swig_types[12]
-#define SWIGTYPE_p_param_context swig_types[13]
-#define SWIGTYPE_p_param_opt swig_types[14]
-#define SWIGTYPE_p_param_section swig_types[15]
-#define SWIGTYPE_p_reg_diff_callbacks swig_types[16]
-#define SWIGTYPE_p_registry_context swig_types[17]
-#define SWIGTYPE_p_registry_key swig_types[18]
-#define SWIGTYPE_p_short swig_types[19]
-#define SWIGTYPE_p_signed_char swig_types[20]
-#define SWIGTYPE_p_unsigned_char swig_types[21]
-#define SWIGTYPE_p_unsigned_int swig_types[22]
-#define SWIGTYPE_p_unsigned_long_long swig_types[23]
-#define SWIGTYPE_p_unsigned_short swig_types[24]
-static swig_type_info *swig_types[26];
-static swig_module_info swig_module = {swig_types, 25, 0, 0, 0, 0};
+#define SWIGTYPE_p_event_context swig_types[4]
+#define SWIGTYPE_p_hive_key swig_types[5]
+#define SWIGTYPE_p_int swig_types[6]
+#define SWIGTYPE_p_loadparm_context swig_types[7]
+#define SWIGTYPE_p_loadparm_service swig_types[8]
+#define SWIGTYPE_p_long_long swig_types[9]
+#define SWIGTYPE_p_p_char swig_types[10]
+#define SWIGTYPE_p_p_hive_key swig_types[11]
+#define SWIGTYPE_p_p_registry_context swig_types[12]
+#define SWIGTYPE_p_p_registry_key swig_types[13]
+#define SWIGTYPE_p_param_context swig_types[14]
+#define SWIGTYPE_p_param_opt swig_types[15]
+#define SWIGTYPE_p_param_section swig_types[16]
+#define SWIGTYPE_p_reg_diff_callbacks swig_types[17]
+#define SWIGTYPE_p_registry_context swig_types[18]
+#define SWIGTYPE_p_registry_key swig_types[19]
+#define SWIGTYPE_p_short swig_types[20]
+#define SWIGTYPE_p_signed_char swig_types[21]
+#define SWIGTYPE_p_unsigned_char swig_types[22]
+#define SWIGTYPE_p_unsigned_int swig_types[23]
+#define SWIGTYPE_p_unsigned_long_long swig_types[24]
+#define SWIGTYPE_p_unsigned_short swig_types[25]
+static swig_type_info *swig_types[27];
+static swig_module_info swig_module = {swig_types, 26, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -2547,6 +2548,7 @@ static swig_module_info swig_module = {swig_types, 25, 0, 0, 0, 0};
 #include "includes.h"
 #include "registry.h"
 #include "param/param.h"
+#include "events/events.h"
 
 typedef struct registry_context reg;
 typedef struct hive_key hive_key;
@@ -3462,8 +3464,9 @@ SWIGINTERN PyObject *_wrap_hive_key(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
   char *arg2 = (char *) 0 ;
   struct auth_session_info *arg3 = (struct auth_session_info *) 0 ;
   struct cli_credentials *arg4 = (struct cli_credentials *) 0 ;
-  struct loadparm_context *arg5 = (struct loadparm_context *) 0 ;
-  struct hive_key **arg6 = (struct hive_key **) 0 ;
+  struct event_context *arg5 = (struct event_context *) 0 ;
+  struct loadparm_context *arg6 = (struct loadparm_context *) 0 ;
+  struct hive_key **arg7 = (struct hive_key **) 0 ;
   WERROR result;
   int res2 ;
   char *buf2 = 0 ;
@@ -3474,21 +3477,25 @@ SWIGINTERN PyObject *_wrap_hive_key(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
   int res4 = 0 ;
   void *argp5 = 0 ;
   int res5 = 0 ;
-  struct hive_key *tmp6 ;
+  void *argp6 = 0 ;
+  int res6 = 0 ;
+  struct hive_key *tmp7 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
   PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
   char *  kwnames[] = {
-    (char *) "location",(char *) "session_info",(char *) "credentials",(char *) "lp_ctx", NULL 
+    (char *) "location",(char *) "session_info",(char *) "credentials",(char *) "ev_ctx",(char *) "lp_ctx", NULL 
   };
   
   arg3 = NULL;
   arg4 = NULL;
-  arg5 = loadparm_init(NULL);
+  arg5 = event_context_init(NULL);
+  arg6 = loadparm_init(NULL);
   arg1 = NULL;
-  arg6 = &tmp6;
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOO:hive_key",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
+  arg7 = &tmp7;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOOO:hive_key",kwnames,&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
   res2 = SWIG_AsCharPtrAndSize(obj0, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "hive_key" "', argument " "2"" of type '" "char const *""'");
@@ -3509,13 +3516,20 @@ SWIGINTERN PyObject *_wrap_hive_key(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
     arg4 = (struct cli_credentials *)(argp4);
   }
   if (obj3) {
-    res5 = SWIG_ConvertPtr(obj3, &argp5,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    res5 = SWIG_ConvertPtr(obj3, &argp5,SWIGTYPE_p_event_context, 0 |  0 );
     if (!SWIG_IsOK(res5)) {
-      SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "hive_key" "', argument " "5"" of type '" "struct loadparm_context *""'"); 
+      SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "hive_key" "', argument " "5"" of type '" "struct event_context *""'"); 
     }
-    arg5 = (struct loadparm_context *)(argp5);
+    arg5 = (struct event_context *)(argp5);
   }
-  result = reg_open_hive(arg1,(char const *)arg2,arg3,arg4,arg5,arg6);
+  if (obj4) {
+    res6 = SWIG_ConvertPtr(obj4, &argp6,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    if (!SWIG_IsOK(res6)) {
+      SWIG_exception_fail(SWIG_ArgError(res6), "in method '" "hive_key" "', argument " "6"" of type '" "struct loadparm_context *""'"); 
+    }
+    arg6 = (struct loadparm_context *)(argp6);
+  }
+  result = reg_open_hive(arg1,(char const *)arg2,arg3,arg4,arg5,arg6,arg7);
   if (!W_ERROR_IS_OK(result)) {
     PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V(result), win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
@@ -3524,7 +3538,7 @@ SWIGINTERN PyObject *_wrap_hive_key(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
     resultobj = Py_None;
   }
   Py_XDECREF(resultobj);
-  resultobj = SWIG_NewPointerObj(*arg6, SWIGTYPE_p_hive_key, 0);
+  resultobj = SWIG_NewPointerObj(*arg7, SWIGTYPE_p_hive_key, 0);
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return resultobj;
 fail:
@@ -3539,8 +3553,9 @@ SWIGINTERN PyObject *_wrap_open_ldb(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
   char *arg2 = (char *) 0 ;
   struct auth_session_info *arg3 = (struct auth_session_info *) 0 ;
   struct cli_credentials *arg4 = (struct cli_credentials *) 0 ;
-  struct loadparm_context *arg5 = (struct loadparm_context *) 0 ;
-  struct hive_key **arg6 = (struct hive_key **) 0 ;
+  struct event_context *arg5 = (struct event_context *) 0 ;
+  struct loadparm_context *arg6 = (struct loadparm_context *) 0 ;
+  struct hive_key **arg7 = (struct hive_key **) 0 ;
   WERROR result;
   int res2 ;
   char *buf2 = 0 ;
@@ -3551,21 +3566,25 @@ SWIGINTERN PyObject *_wrap_open_ldb(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
   int res4 = 0 ;
   void *argp5 = 0 ;
   int res5 = 0 ;
-  struct hive_key *tmp6 ;
+  void *argp6 = 0 ;
+  int res6 = 0 ;
+  struct hive_key *tmp7 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
   PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
   char *  kwnames[] = {
-    (char *) "location",(char *) "session_info",(char *) "credentials",(char *) "lp_ctx", NULL 
+    (char *) "location",(char *) "session_info",(char *) "credentials",(char *) "ev_ctx",(char *) "lp_ctx", NULL 
   };
   
   arg3 = NULL;
   arg4 = NULL;
-  arg5 = loadparm_init(NULL);
+  arg5 = event_context_init(NULL);
+  arg6 = loadparm_init(NULL);
   arg1 = NULL;
-  arg6 = &tmp6;
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOO:open_ldb",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
+  arg7 = &tmp7;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOOO:open_ldb",kwnames,&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
   res2 = SWIG_AsCharPtrAndSize(obj0, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "open_ldb" "', argument " "2"" of type '" "char const *""'");
@@ -3586,13 +3605,20 @@ SWIGINTERN PyObject *_wrap_open_ldb(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
     arg4 = (struct cli_credentials *)(argp4);
   }
   if (obj3) {
-    res5 = SWIG_ConvertPtr(obj3, &argp5,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    res5 = SWIG_ConvertPtr(obj3, &argp5,SWIGTYPE_p_event_context, 0 |  0 );
     if (!SWIG_IsOK(res5)) {
-      SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "open_ldb" "', argument " "5"" of type '" "struct loadparm_context *""'"); 
+      SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "open_ldb" "', argument " "5"" of type '" "struct event_context *""'"); 
     }
-    arg5 = (struct loadparm_context *)(argp5);
+    arg5 = (struct event_context *)(argp5);
   }
-  result = reg_open_ldb_file(arg1,(char const *)arg2,arg3,arg4,arg5,arg6);
+  if (obj4) {
+    res6 = SWIG_ConvertPtr(obj4, &argp6,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    if (!SWIG_IsOK(res6)) {
+      SWIG_exception_fail(SWIG_ArgError(res6), "in method '" "open_ldb" "', argument " "6"" of type '" "struct loadparm_context *""'"); 
+    }
+    arg6 = (struct loadparm_context *)(argp6);
+  }
+  result = reg_open_ldb_file(arg1,(char const *)arg2,arg3,arg4,arg5,arg6,arg7);
   if (!W_ERROR_IS_OK(result)) {
     PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V(result), win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
@@ -3601,7 +3627,7 @@ SWIGINTERN PyObject *_wrap_open_ldb(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
     resultobj = Py_None;
   }
   Py_XDECREF(resultobj);
-  resultobj = SWIG_NewPointerObj(*arg6, SWIGTYPE_p_hive_key, 0);
+  resultobj = SWIG_NewPointerObj(*arg7, SWIGTYPE_p_hive_key, 0);
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return resultobj;
 fail:
@@ -3696,9 +3722,10 @@ SWIGINTERN PyObject *_wrap_open_samba(PyObject *SWIGUNUSEDPARM(self), PyObject *
   PyObject *resultobj = 0;
   TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
   struct registry_context **arg2 = (struct registry_context **) 0 ;
-  struct loadparm_context *arg3 = (struct loadparm_context *) 0 ;
-  struct auth_session_info *arg4 = (struct auth_session_info *) 0 ;
-  struct cli_credentials *arg5 = (struct cli_credentials *) 0 ;
+  struct event_context *arg3 = (struct event_context *) 0 ;
+  struct loadparm_context *arg4 = (struct loadparm_context *) 0 ;
+  struct auth_session_info *arg5 = (struct auth_session_info *) 0 ;
+  struct cli_credentials *arg6 = (struct cli_credentials *) 0 ;
   WERROR result;
   struct registry_context *tmp2 ;
   void *argp3 = 0 ;
@@ -3707,41 +3734,52 @@ SWIGINTERN PyObject *_wrap_open_samba(PyObject *SWIGUNUSEDPARM(self), PyObject *
   int res4 = 0 ;
   void *argp5 = 0 ;
   int res5 = 0 ;
+  void *argp6 = 0 ;
+  int res6 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
   char *  kwnames[] = {
-    (char *) "lp_ctx",(char *) "session_info",(char *) "credentials", NULL 
+    (char *) "ev_ctx",(char *) "lp_ctx",(char *) "session_info",(char *) "credentials", NULL 
   };
   
-  arg3 = loadparm_init(NULL);
-  arg4 = NULL;
+  arg3 = event_context_init(NULL);
+  arg4 = loadparm_init(NULL);
   arg5 = NULL;
+  arg6 = NULL;
   arg1 = NULL;
   arg2 = &tmp2;
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OOO:open_samba",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OOOO:open_samba",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
   if (obj0) {
-    res3 = SWIG_ConvertPtr(obj0, &argp3,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    res3 = SWIG_ConvertPtr(obj0, &argp3,SWIGTYPE_p_event_context, 0 |  0 );
     if (!SWIG_IsOK(res3)) {
-      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "open_samba" "', argument " "3"" of type '" "struct loadparm_context *""'"); 
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "open_samba" "', argument " "3"" of type '" "struct event_context *""'"); 
     }
-    arg3 = (struct loadparm_context *)(argp3);
+    arg3 = (struct event_context *)(argp3);
   }
   if (obj1) {
-    res4 = SWIG_ConvertPtr(obj1, &argp4,SWIGTYPE_p_auth_session_info, 0 |  0 );
+    res4 = SWIG_ConvertPtr(obj1, &argp4,SWIGTYPE_p_loadparm_context, 0 |  0 );
     if (!SWIG_IsOK(res4)) {
-      SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "open_samba" "', argument " "4"" of type '" "struct auth_session_info *""'"); 
+      SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "open_samba" "', argument " "4"" of type '" "struct loadparm_context *""'"); 
     }
-    arg4 = (struct auth_session_info *)(argp4);
+    arg4 = (struct loadparm_context *)(argp4);
   }
   if (obj2) {
-    res5 = SWIG_ConvertPtr(obj2, &argp5,SWIGTYPE_p_cli_credentials, 0 |  0 );
+    res5 = SWIG_ConvertPtr(obj2, &argp5,SWIGTYPE_p_auth_session_info, 0 |  0 );
     if (!SWIG_IsOK(res5)) {
-      SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "open_samba" "', argument " "5"" of type '" "struct cli_credentials *""'"); 
+      SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "open_samba" "', argument " "5"" of type '" "struct auth_session_info *""'"); 
     }
-    arg5 = (struct cli_credentials *)(argp5);
+    arg5 = (struct auth_session_info *)(argp5);
   }
-  result = reg_open_samba(arg1,arg2,arg3,arg4,arg5);
+  if (obj3) {
+    res6 = SWIG_ConvertPtr(obj3, &argp6,SWIGTYPE_p_cli_credentials, 0 |  0 );
+    if (!SWIG_IsOK(res6)) {
+      SWIG_exception_fail(SWIG_ArgError(res6), "in method '" "open_samba" "', argument " "6"" of type '" "struct cli_credentials *""'"); 
+    }
+    arg6 = (struct cli_credentials *)(argp6);
+  }
+  result = reg_open_samba(arg1,arg2,arg3,arg4,arg5,arg6);
   if (!W_ERROR_IS_OK(result)) {
     PyObject *obj = Py_BuildValue((char *)"(i,s)", W_ERROR_V(result), win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
@@ -3786,6 +3824,7 @@ static swig_type_info _swigt__p_TALLOC_CTX = {"_p_TALLOC_CTX", "TALLOC_CTX *", 0
 static swig_type_info _swigt__p_auth_session_info = {"_p_auth_session_info", "struct auth_session_info *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_cli_credentials = {"_p_cli_credentials", "struct cli_credentials *|cli_credentials *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_event_context = {"_p_event_context", "struct event_context *|event *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_hive_key = {"_p_hive_key", "struct hive_key *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_int = {"_p_int", "intptr_t *|int *|int_least32_t *|int_fast32_t *|int32_t *|int_fast16_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_loadparm_context = {"_p_loadparm_context", "struct loadparm_context *|loadparm_context *", 0, 0, (void*)0, 0};
@@ -3813,6 +3852,7 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_auth_session_info,
   &_swigt__p_char,
   &_swigt__p_cli_credentials,
+  &_swigt__p_event_context,
   &_swigt__p_hive_key,
   &_swigt__p_int,
   &_swigt__p_loadparm_context,
@@ -3840,6 +3880,7 @@ static swig_cast_info _swigc__p_TALLOC_CTX[] = {  {&_swigt__p_TALLOC_CTX, 0, 0, 
 static swig_cast_info _swigc__p_auth_session_info[] = {  {&_swigt__p_auth_session_info, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_char[] = {  {&_swigt__p_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_cli_credentials[] = {  {&_swigt__p_cli_credentials, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_event_context[] = {  {&_swigt__p_event_context, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_hive_key[] = {  {&_swigt__p_hive_key, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_int[] = {  {&_swigt__p_int, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_loadparm_context[] = {  {&_swigt__p_loadparm_context, 0, 0, 0},{0, 0, 0, 0}};
@@ -3867,6 +3908,7 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_auth_session_info,
   _swigc__p_char,
   _swigc__p_cli_credentials,
+  _swigc__p_event_context,
   _swigc__p_hive_key,
   _swigc__p_int,
   _swigc__p_loadparm_context,

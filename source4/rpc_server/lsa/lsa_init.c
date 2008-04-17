@@ -50,7 +50,7 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	/* make sure the sam database is accessible */
-	state->sam_ldb = samdb_connect(state, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info); 
+	state->sam_ldb = samdb_connect(state, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info); 
 	if (state->sam_ldb == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}

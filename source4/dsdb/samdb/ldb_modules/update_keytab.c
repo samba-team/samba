@@ -90,7 +90,7 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool delet
 	}
 
 	cli_credentials_set_conf(item->creds, ldb_get_opaque(module->ldb, "loadparm"));
-	status = cli_credentials_set_secrets(item->creds, ldb_get_opaque(module->ldb, "event_ctx"), ldb_get_opaque(module->ldb, "loadparm"), module->ldb, NULL, filter);
+	status = cli_credentials_set_secrets(item->creds, ldb_get_opaque(module->ldb, "EventContext"), ldb_get_opaque(module->ldb, "loadparm"), module->ldb, NULL, filter);
 	talloc_free(filter);
 	if (NT_STATUS_IS_OK(status)) {
 		if (delete) {
@@ -158,7 +158,7 @@ static int update_kt_end_trans(struct ldb_module *module)
 	struct dn_list *p;
 	for (p=data->changed_dns; p; p = p->next) {
 		int kret;
-		kret = cli_credentials_update_keytab(p->creds, ldb_get_opaque(module->ldb, "event_ctx"), ldb_get_opaque(module->ldb, "loadparm"));
+		kret = cli_credentials_update_keytab(p->creds, ldb_get_opaque(module->ldb, "EventContext"), ldb_get_opaque(module->ldb, "loadparm"));
 		if (kret != 0) {
 			talloc_free(data->changed_dns);
 			data->changed_dns = NULL;

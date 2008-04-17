@@ -27,6 +27,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
+#include "smbd/service_stream.h"
 
 #define VALID_DN_SYNTAX(dn,i) do {\
 	if (!(dn)) {\
@@ -56,6 +57,7 @@ static int map_ldb_error(struct ldb_context *ldb, int err, const char **errstrin
 NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn) 
 {
 	conn->ldb = ldb_wrap_connect(conn, 
+				     conn->connection->event.ctx,
 				     conn->lp_ctx,
 				     lp_sam_url(conn->lp_ctx), 
 				     conn->session_info,
