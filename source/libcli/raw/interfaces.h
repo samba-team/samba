@@ -1587,6 +1587,14 @@ union smb_open {
 
 			/* optional list of extended attributes */
 			struct smb_ea_list eas;
+
+			struct smb2_create_blobs {
+				uint32_t num_blobs;
+				struct smb2_create_blob {
+					const char *tag;
+					DATA_BLOB data;
+				} *blobs;
+			} blobs;
 		} in;
 		struct {
 			union smb_handle file;

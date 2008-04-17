@@ -114,9 +114,12 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	io->out.security_mode      = 0; /* no signing yet */
 	io->out.dialect_revision   = SMB2_DIALECT_REVISION;
 	io->out.capabilities       = 0;
-	io->out.max_transact_size  = 0x10000;
-	io->out.max_read_size      = 0x10000;
-	io->out.max_write_size     = 0x10000;
+	io->out.max_transact_size  = lp_parm_ulong(req->smb_conn->lp_ctx, NULL, 
+						   "smb2", "max transaction size", 0x10000);
+	io->out.max_read_size      = lp_parm_ulong(req->smb_conn->lp_ctx, NULL, 
+						   "smb2", "max read size", 0x10000);
+	io->out.max_write_size     = lp_parm_ulong(req->smb_conn->lp_ctx, NULL, 
+						   "smb2", "max write size", 0x10000);
 	io->out.system_time	   = timeval_to_nttime(&current_time);
 	io->out.server_start_time  = timeval_to_nttime(&boot_time);
 	io->out.reserved2          = 0;

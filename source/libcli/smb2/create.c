@@ -28,30 +28,59 @@
 /*
   add a blob to a smb2_create attribute blob
 */
-NTSTATUS smb2_create_blob_add(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, 
-			      const char *tag,
-			      DATA_BLOB add, bool last)
+static NTSTATUS smb2_create_blob_push_one(TALLOC_CTX *mem_ctx, DATA_BLOB *buffer,
+					  const struct smb2_create_blob *blob,
+					  bool last)
 {
-	uint32_t ofs = blob->length;
-	size_t tag_length = strlen(tag);
-	uint8_t pad = smb2_padding_size(add.length+tag_length, 8);
-	if (!data_blob_realloc(mem_ctx, blob, 
-			       blob->length + 0x14 + tag_length + add.length + pad))
+	uint32_t ofs = buffer->length;
+	size_t tag_length = strlen(blob->tag);
+	uint8_t pad = smb2_padding_size(blob->data.length+tag_length, 4);
+
+	if (!data_blob_realloc(mem_ctx, buffer,
+			       buffer->length + 0x14 + tag_length + blob->data.length + pad))
 		return NT_STATUS_NO_MEMORY;
-	
+
 	if (last) {
-		SIVAL(blob->data, ofs+0x00, 0);
+		SIVAL(buffer->data, ofs+0x00, 0);
 	} else {
-		SIVAL(blob->data, ofs+0x00, 0x14 + tag_length + add.length + pad);
+		SIVAL(buffer->data, ofs+0x00, 0x14 + tag_length + blob->data.length + pad);
 	}
-	SSVAL(blob->data, ofs+0x04, 0x10); /* offset of tag */
-	SIVAL(blob->data, ofs+0x06, tag_length); /* tag length */
-	SSVAL(blob->data, ofs+0x0A, 0x14 + tag_length); /* offset of data */
-	SIVAL(blob->data, ofs+0x0C, add.length);
-	memcpy(blob->data+ofs+0x10, tag, tag_length);
-	SIVAL(blob->data, ofs+0x10+tag_length, 0); /* pad? */
-	memcpy(blob->data+ofs+0x14+tag_length, add.data, add.length);
-	memset(blob->data+ofs+0x14+tag_length+add.length, 0, pad);
+	SSVAL(buffer->data, ofs+0x04, 0x10); /* offset of tag */
+	SIVAL(buffer->data, ofs+0x06, tag_length); /* tag length */
+	SSVAL(buffer->data, ofs+0x0A, 0x14 + tag_length); /* offset of data */
+	SIVAL(buffer->data, ofs+0x0C, blob->data.length);
+	memcpy(buffer->data+ofs+0x10, blob->tag, tag_length);
+	SIVAL(buffer->data, ofs+0x10+tag_length, 0); /* pad? */
+	memcpy(buffer->data+ofs+0x14+tag_length, blob->data.data, blob->data.length);
+	memset(buffer->data+ofs+0x14+tag_length+blob->data.length, 0, pad);
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smb2_create_blob_add(TALLOC_CTX *mem_ctx, struct smb2_create_blobs *b,
+			      const char *tag, DATA_BLOB data)
+{
+	struct smb2_create_blob *array;
+
+	array = talloc_realloc(mem_ctx, b->blobs,
+			       struct smb2_create_blob,
+			       b->num_blobs + 1);
+	NT_STATUS_HAVE_NO_MEMORY(array);
+	b->blobs = array;
+
+	b->blobs[b->num_blobs].tag = talloc_strdup(b->blobs, tag);
+	NT_STATUS_HAVE_NO_MEMORY(b->blobs[b->num_blobs].tag);
+
+	if (data.data) {
+		b->blobs[b->num_blobs].data = data_blob_talloc(b->blobs,
+							       data.data,
+							       data.length);
+		NT_STATUS_HAVE_NO_MEMORY(b->blobs[b->num_blobs].data.data);
+	} else {
+		b->blobs[b->num_blobs].data = data_blob(NULL, 0);
+	}
+
+	b->num_blobs += 1;
 
 	return NT_STATUS_OK;
 }
@@ -64,6 +93,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 	struct smb2_request *req;
 	NTSTATUS status;
 	DATA_BLOB blob = data_blob(NULL, 0);
+	uint32_t i;
 
 	req = smb2_request_init_tree(tree, SMB2_OP_CREATE, 0x38, true, 0);
 	if (req == NULL) return NULL;
@@ -89,7 +119,8 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 		DATA_BLOB b = data_blob_talloc(req, NULL, 
 					       ea_list_size_chained(io->in.eas.num_eas, io->in.eas.eas));
 		ea_put_list_chained(b.data, io->in.eas.num_eas, io->in.eas.eas);
-		status = smb2_create_blob_add(req, &blob, SMB2_CREATE_TAG_EXTA, b, false);
+		status = smb2_create_blob_add(req, &io->in.blobs,
+					      SMB2_CREATE_TAG_EXTA, b);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(req);
 			return NULL;
@@ -99,13 +130,30 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 
 	/* an empty MxAc tag seems to be used to ask the server to
 	   return the maximum access mask allowed on the file */
-	status = smb2_create_blob_add(req, &blob, SMB2_CREATE_TAG_MXAC, 
-				      data_blob(NULL, 0), true);
-
+	status = smb2_create_blob_add(req, &io->in.blobs,
+				      SMB2_CREATE_TAG_MXAC, data_blob(NULL, 0));
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
 		return NULL;
 	}
+
+	for (i=0; i < io->in.blobs.num_blobs; i++) {
+		bool last = false;
+		const struct smb2_create_blob *c;
+
+		if ((i + 1) == io->in.blobs.num_blobs) {
+			last = true;
+		}
+
+		c = &io->in.blobs.blobs[i];
+		status = smb2_create_blob_push_one(req, &blob,
+						   c, last);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(req);
+			return NULL;
+		}
+	}
+
 	status = smb2_push_o32s32_blob(&req->out, 0x30, blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
