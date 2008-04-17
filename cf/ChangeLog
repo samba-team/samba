@@ -1,5 +1,8 @@
 2008-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* krb-ipv6.m4: Rename cache variable to AC_CACHE_CHECK to make the
+	cached.
+	
 	* win32.m4: replace _export with __declspec(dllexport)
 
 	* make-proto.pl: Add __declspec(dllimport) to the exported
