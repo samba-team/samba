@@ -1,5 +1,7 @@
 2008-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* win32.m4: Export _FUNCTION and _VARIABLE for _win32 magic
+
 	* krb-ipv6.m4: Rename cache variable to AC_CACHE_CHECK to make the
 	cached.
 	
