@@ -3,7 +3,7 @@
 
    Winbind client API
 
-   Copyright (C) Gerald (Jerry) Carter 2007
+   Copyright (C) Gerald (Jerry) Carter 2007-2008
 
 
    This library is free software; you can redistribute it and/or
@@ -170,11 +170,11 @@ wbcErr wbcDomainInfo(const char *domain, struct wbcDomainInfo **dinfo)
 	BAIL_ON_WBC_ERROR(wbc_status);
 
 	if (response.data.domain_info.native_mode)
-		info->flags |= WBC_DOMINFO_NATIVE;
+		info->domain_flags |= WBC_DOMINFO_NATIVE;
 	if (response.data.domain_info.active_directory)
-		info->flags |= WBC_DOMINFO_AD;
+		info->domain_flags |= WBC_DOMINFO_AD;
 	if (response.data.domain_info.primary)
-		info->flags |= WBC_DOMINFO_PRIMARY;
+		info->domain_flags |= WBC_DOMINFO_PRIMARY;
 
 	*dinfo = info;
 
@@ -266,5 +266,216 @@ wbcErr wbcResolveWinsByIP(const char *ip, const char **name)
 	wbc_status = WBC_ERR_SUCCESS;
 
  done:
+	return wbc_status;
+}
+
+/**
+ */
+
+static wbcErr process_domain_info_string(TALLOC_CTX *ctx, 
+					 struct wbcDomainInfo *info,
+					 char *info_string)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	char *r = NULL;
+	char *s = NULL;
+
+	if (!info || !info_string) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	r = info_string;
+
+	/* Short Name */
+	if ((s = strchr(r, '\\')) == NULL) {
+		wbc_status = WBC_ERR_INVALID_RESPONSE;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+	*s = '\0';
+	s++;
+
+	info->short_name = talloc_strdup(ctx, r);
+	BAIL_ON_PTR_ERROR(info->short_name, wbc_status);
+
+
+	/* DNS Name */
+	r = s;
+	if ((s = strchr(r, '\\')) == NULL) {
+		wbc_status = WBC_ERR_INVALID_RESPONSE;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+	*s = '\0';
+	s++;
+
+	info->dns_name = talloc_strdup(ctx, r);
+	BAIL_ON_PTR_ERROR(info->dns_name, wbc_status);
+
+	/* SID */
+	r = s;
+	if ((s = strchr(r, '\\')) == NULL) {
+		wbc_status = WBC_ERR_INVALID_RESPONSE;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+	*s = '\0';
+	s++;
+
+	wbc_status = wbcStringToSid(r, &info->sid);
+	BAIL_ON_WBC_ERROR(wbc_status);
+	
+	/* Trust type */
+	r = s;
+	if ((s = strchr(r, '\\')) == NULL) {
+		wbc_status = WBC_ERR_INVALID_RESPONSE;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+	*s = '\0';
+	s++;
+
+	if (strcmp(r, "None") == 0) {
+		info->trust_type = WBC_DOMINFO_TRUSTTYPE_NONE;
+	} else if (strcmp(r, "External") == 0) {
+		info->trust_type = WBC_DOMINFO_TRUSTTYPE_EXTERNAL;
+	} else if (strcmp(r, "Forest") == 0) {
+		info->trust_type = WBC_DOMINFO_TRUSTTYPE_FOREST;
+	} else if (strcmp(r, "In Forest") == 0) {
+		info->trust_type = WBC_DOMINFO_TRUSTTYPE_IN_FOREST;
+	} else {
+		wbc_status = WBC_ERR_INVALID_RESPONSE;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	/* Transitive */
+	r = s;
+	if ((s = strchr(r, '\\')) == NULL) {
+		wbc_status = WBC_ERR_INVALID_RESPONSE;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+	*s = '\0';
+	s++;
+
+	if (strcmp(r, "Yes") == 0) {
+		info->trust_flags |= WBC_DOMINFO_TRUST_TRANSITIVE;		
+	}
+	
+	/* Incoming */
+	r = s;
+	if ((s = strchr(r, '\\')) == NULL) {
+		wbc_status = WBC_ERR_INVALID_RESPONSE;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+	*s = '\0';
+	s++;
+
+	if (strcmp(r, "Yes") == 0) {
+		info->trust_flags |= WBC_DOMINFO_TRUST_INCOMING;		
+	}
+
+	/* Outgoing */
+	r = s;
+	if (r == NULL) {
+		wbc_status = WBC_ERR_INVALID_RESPONSE;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	if (strcmp(r, "Yes") == 0) {
+		info->trust_flags |= WBC_DOMINFO_TRUST_OUTGOING;		
+	}
+
+	wbc_status = WBC_ERR_SUCCESS;
+
+ done:
+	return wbc_status;
+}
+
+/** @brief Enumerate the domain trusts known by Winbind
+ *
+ * @param **domains     Pointer to the allocated domain list array
+ * @param *num_domains  Pointer to number of domains returned
+ *
+ * @return #wbcErr
+ *
+ **/
+wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
+{
+	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	char *p = NULL;
+	char *q = NULL;
+	char *extra_data = NULL;	
+	int count = 0;	
+	struct wbcDomainInfo *d_list = NULL;
+	int i = 0;
+	
+	*domains = NULL;
+	*num_domains = 0;
+	
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	wbc_status = wbcRequestResponse(WINBINDD_LIST_TRUSTDOM,
+					NULL,
+					&response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	/* Decode the response */
+
+	p = (char *)response.extra_data.data;
+
+	if (strlen(p) == 0) {
+		/* We should always at least get back our 
+		   own SAM domain */
+		
+		wbc_status = WBC_ERR_DOMAIN_NOT_FOUND;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	/* Count number of domains */
+
+	count = 0;	
+	while (p) {
+		count++;
+
+		if ((q = strchr(p, '\n')) != NULL)
+			q++;
+		p = q;		
+	}
+
+	d_list = talloc_array(NULL, struct wbcDomainInfo, count);
+	BAIL_ON_PTR_ERROR(d_list, wbc_status);
+
+	extra_data = strdup((char*)response.extra_data.data);
+	BAIL_ON_PTR_ERROR(extra_data, wbc_status);
+
+	p = extra_data;	
+
+	/* Outer loop processes the list of domain information */
+
+	for (i=0; i<count && p; i++) {
+		char *next = strchr(p, '\n');
+		
+		if (next) {
+			*next = '\0';
+			next++;
+		}
+
+		wbc_status = process_domain_info_string(d_list, &d_list[i], p);
+		BAIL_ON_WBC_ERROR(wbc_status);
+
+		p = next;
+	}
+
+	*domains = d_list;	
+	*num_domains = i;	
+	
+ done:
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		if (d_list)
+			talloc_free(d_list);
+		if (extra_data)
+			free(extra_data);
+	}
+
 	return wbc_status;
 }
