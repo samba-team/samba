@@ -57,7 +57,7 @@ struct registry_key *reg_common_open_file(const char *path,
 		return NULL;
 	}
 
-	error = reg_open_local(NULL, &h, NULL, creds);
+	error = reg_open_local(NULL, &h);
 	if (!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to initialize local registry: %s\n",
 			win_errstr(error));

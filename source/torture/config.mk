@@ -332,12 +332,10 @@ lcov-split:
 	@$(MAKE) $(COV_TARGET) $(COV_VARS) \
 		TEST_OPTIONS="--analyse-cmd=\"lcov --base-directory `pwd` --directory . --capture --output-file samba.info -t\""
 	-rm heimdal/lib/*/{lex,parse}.{gcda,gcno}
-	-rm lib/policy/*/{lex,parse}.{gcda,gcno}
 	genhtml -o coverage samba.info
 
 lcov: test_cov
 	-rm heimdal/lib/*/{lex,parse}.{gcda,gcno}
-	-rm lib/policy/*/{lex,parse}.{gcda,gcno}
 	lcov --base-directory `pwd` --directory . --capture --output-file samba.info
 	genhtml -o coverage samba.info
 

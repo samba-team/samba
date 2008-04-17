@@ -54,7 +54,7 @@ static int net_samdump_keytab(struct net_context *ctx, int argc, const char **ar
 		break;
 	}
 
-	libnetctx = libnet_context_init(event_context_find(ctx), ctx->lp_ctx);
+	libnetctx = libnet_context_init(ctx->event_ctx, ctx->lp_ctx);
 	if (!libnetctx) {
 		return -1;	
 	}
@@ -100,7 +100,7 @@ int net_samdump(struct net_context *ctx, int argc, const char **argv)
 		return rc;
 	}
 
-	libnetctx = libnet_context_init(event_context_find(ctx), ctx->lp_ctx);
+	libnetctx = libnet_context_init(ctx->event_ctx, ctx->lp_ctx);
 	if (!libnetctx) {
 		return -1;	
 	}
@@ -142,7 +142,7 @@ int net_samsync_ldb(struct net_context *ctx, int argc, const char **argv)
 	struct libnet_context *libnetctx;
 	struct libnet_samsync_ldb r;
 
-	libnetctx = libnet_context_init(event_context_find(ctx), ctx->lp_ctx);
+	libnetctx = libnet_context_init(ctx->event_ctx, ctx->lp_ctx);
 	if (!libnetctx) {
 		return -1;	
 	}

@@ -80,7 +80,7 @@ static const uint8_t netrserverreqchallenge_in_data[] = {
 };
 
 static bool netrserverreqchallenge_in_check(struct torture_context *tctx,
-											struct netr_ServerReqChallenge *r)
+					    struct netr_ServerReqChallenge *r)
 {
 	uint8_t cred_expected[8] = { 0xa3, 0x2c, 0xa2, 0x95, 0x40, 0xcc, 0xb7, 0xbb };
 	torture_assert_str_equal(tctx, r->in.server_name, "\\\\NATIVE-DC.NATIVE.BASE", "server name");
@@ -95,7 +95,7 @@ static const uint8_t netrserverreqchallenge_out_data[] = {
 };
 
 static bool netrserverreqchallenge_out_check(struct torture_context *tctx,
-											struct netr_ServerReqChallenge *r)
+					     struct netr_ServerReqChallenge *r)
 {
 	uint8_t cred_expected[8] = { 0x22, 0xfc, 0xc1, 0x17, 0xc0, 0xae, 0x27, 0x8e };
 	torture_assert_mem_equal(tctx, cred_expected, r->out.credentials->data, 8, "credentials");
