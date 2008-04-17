@@ -211,10 +211,10 @@ bool smb2_oob(struct smb2_request_buffer *buf, const uint8_t *ptr, size_t size)
 		return false;
 	}
 	/* be careful with wraparound! */
-	if (ptr < buf->body ||
-	    ptr >= buf->body + buf->body_size ||
+	if ((uintptr_t)ptr < (uintptr_t)buf->body ||
+	    (uintptr_t)ptr >= (uintptr_t)buf->body + buf->body_size ||
 	    size > buf->body_size ||
-	    ptr + size > buf->body + buf->body_size) {
+	    (uintptr_t)ptr + size > (uintptr_t)buf->body + buf->body_size) {
 		return true;
 	}
 	return false;
@@ -669,7 +669,7 @@ NTSTATUS smb2_push_o16s16_string(struct smb2_request_buffer *buf,
 	}
 
 	if (*str == 0) {
-		blob.data = str;
+		blob.data = discard_const(str);
 		blob.length = 0;
 		return smb2_push_o16s16_blob(buf, ofs, blob);
 	}
