@@ -372,21 +372,21 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 		char *q;
 
 		if (*p == '\0') {
-			wbc_status = WBC_INVALID_RESPONSE;
+			wbc_status = WBC_ERR_INVALID_RESPONSE;
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
 
 		(*types)[i] = (enum wbcSidType)strtoul(p, &q, 10);
 
 		if (*q != ' ') {
-			wbc_status = WBC_INVALID_RESPONSE;
+			wbc_status = WBC_ERR_INVALID_RESPONSE;
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
 
 		p = q+1;
 
 		if ((q = strchr(p, '\n')) == NULL) {
-			wbc_status = WBC_INVALID_RESPONSE;
+			wbc_status = WBC_ERR_INVALID_RESPONSE;
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
 
@@ -399,7 +399,7 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 	}
 
 	if (*p != '\0') {
-		wbc_status = WBC_INVALID_RESPONSE;
+		wbc_status = WBC_ERR_INVALID_RESPONSE;
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
@@ -471,7 +471,7 @@ wbcErr wbcLookupUserSids(const struct wbcDomainSid *user_sid,
 
 	if (response.data.num_entries &&
 	    !response.extra_data.data) {
-		wbc_status = WBC_INVALID_RESPONSE;
+		wbc_status = WBC_ERR_INVALID_RESPONSE;
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
