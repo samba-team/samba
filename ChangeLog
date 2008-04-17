@@ -1,5 +1,8 @@
 2008-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* configure.in: Lets try dependency tracking for automake 1.10 and
+	later.
+	
 	* configure.in: Use at least libtool-2.2.
 
 	* configure.in: Use LT_INIT the right way.
