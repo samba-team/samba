@@ -1,5 +1,7 @@
 2008-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* win32.m4: replace _export with __declspec(dllexport)
+
 	* make-proto.pl: Add __declspec(dllimport) to the exported
 	functions.
 	
