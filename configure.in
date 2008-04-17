@@ -293,8 +293,9 @@ if test "$ac_cv_header_netinfo_ni_h" = yes -a "$enable_netinfo" = yes; then
 fi
 
 dnl export symbols
-rk_WIN32_EXPORT(BUILD_KRB5_LIB, KRB5_LIB_FUNCTION)
-rk_WIN32_EXPORT(BUILD_ROKEN_LIB, ROKEN_LIB_FUNCTION)
+rk_WIN32_EXPORT(BUILD_KRB5_LIB, KRB5_LIB)
+rk_WIN32_EXPORT(BUILD_ROKEN_LIB, ROKEN_LIB)
+rk_WIN32_EXPORT(BUILD_GSSAPI_LIB, GSSAPI_LIB)
 
 dnl Checks for libraries.
 
