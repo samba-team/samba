@@ -1,5 +1,7 @@
 2008-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5: add __declspec() for windows.
+
 	* configure.in: Update rk_WIN32_EXPORT, add gssapi to
 	rk_WIN32_EXPORT.
 	
