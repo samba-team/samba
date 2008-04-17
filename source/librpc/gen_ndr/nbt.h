@@ -493,9 +493,8 @@ struct nbt_netlogon_announce_uas {
 	const char * unicode_domain;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t db_count;
 	struct nbt_db_change *dbchange;
-	uint32_t sid_size;/* [value(ndr_size_dom_sid(&sid,ndr->flags))] */
-	DATA_BLOB _pad2;/* [flag(LIBNDR_FLAG_ALIGN4)] */
-	struct dom_sid sid;
+	uint32_t sid_size;/* [value(ndr_size_dom_sid0(&sid,ndr->flags))] */
+	struct dom_sid0 sid;/* [subcontext_size(sid_size),subcontext(0)] */
 	uint32_t nt_version;
 	uint16_t lmnt_token;
 	uint16_t lm20_token;
@@ -607,9 +606,8 @@ struct nbt_ntlogon_sam_logon {
 	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * mailslot_name;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t acct_control;
-	uint32_t sid_size;/* [value(ndr_size_dom_sid(&sid,ndr->flags))] */
-	DATA_BLOB _pad;/* [flag(LIBNDR_FLAG_ALIGN4)] */
-	struct dom_sid sid;
+	uint32_t sid_size;/* [value(ndr_size_dom_sid0(&sid,ndr->flags))] */
+	struct dom_sid0 sid;/* [subcontext_size(sid_size),subcontext(0)] */
 	uint32_t nt_version;
 	uint16_t lmnt_token;
 	uint16_t lm20_token;

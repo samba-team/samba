@@ -31,6 +31,26 @@ size_t ndr_size_dom_sid(const struct dom_sid *sid, int flags)
 	return 8 + 4*sid->num_auths;
 }
 
+size_t ndr_size_dom_sid28(const struct dom_sid *sid, int flags)
+{
+	struct dom_sid zero_sid;
+
+	if (!sid) return 0;
+
+	ZERO_STRUCT(zero_sid);
+
+	if (memcmp(&zero_sid, sid, sizeof(zero_sid)) == 0) {
+		return 0;
+	}
+
+	return 8 + 4*sid->num_auths;
+}
+
+size_t ndr_size_dom_sid0(const struct dom_sid *sid, int flags)
+{
+	return ndr_size_dom_sid28(sid, flags);
+}
+
 /*
   return the wire size of a security_ace
 */
@@ -89,3 +109,9 @@ void ndr_print_dom_sid28(struct ndr_print *ndr, const char *name, const struct d
 {
 	ndr_print_dom_sid(ndr, name, sid);
 }
+
+void ndr_print_dom_sid0(struct ndr_print *ndr, const char *name, const struct dom_sid *sid)
+{
+	ndr_print_dom_sid(ndr, name, sid);
+}
+

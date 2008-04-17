@@ -187,3 +187,44 @@ enum ndr_err_code ndr_push_dom_sid28(struct ndr_push *ndr, int ndr_flags, const 
 
 	return NDR_ERR_SUCCESS;
 }
+
+/*
+  parse a dom_sid0 - this is a dom_sid in a variable byte buffer, which is maybe empty
+*/
+enum ndr_err_code ndr_pull_dom_sid0(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid)
+{
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NDR_ERR_SUCCESS;
+	}
+
+	if (ndr->data_size == ndr->offset) {
+		ZERO_STRUCTP(sid);
+		return NDR_ERR_SUCCESS;
+	}
+
+	return ndr_pull_dom_sid(ndr, ndr_flags, sid);
+}
+
+/*
+  push a dom_sid0 - this is a dom_sid in a variable byte buffer, which is maybe empty
+*/
+enum ndr_err_code ndr_push_dom_sid0(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid)
+{
+	struct dom_sid zero_sid;
+
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NDR_ERR_SUCCESS;
+	}
+
+	if (!sid) {
+		return NDR_ERR_SUCCESS;
+	}
+
+	ZERO_STRUCT(zero_sid);
+
+	if (memcmp(&zero_sid, sid, sizeof(zero_sid)) == 0) {
+		return NDR_ERR_SUCCESS;
+	}
+
+	return ndr_push_dom_sid(ndr, ndr_flags, sid);
+}
