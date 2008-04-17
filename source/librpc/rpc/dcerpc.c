@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   Samba utility functions
+   Samba 4-compatible DCE/RPC API on top of the Samba 3 DCE/RPC client library.
    Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008
    
    This program is free software; you can redistribute it and/or modify
@@ -20,6 +20,9 @@
 #include "includes.h"
 #include "librpc/rpc/dcerpc.h"
 
+/** 
+ * Send a struct-based RPC request using the Samba 3 RPC client library.
+ */
 struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p, const struct GUID *object, 
 					    const struct ndr_interface_table *table, uint32_t opnum, 
 					    TALLOC_CTX *mem_ctx, void *r)
@@ -66,6 +69,11 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p, const struct 
 	return ret;
 }
 
+/**
+ * Wait for a DCE/RPC request. 
+ *
+ * @note at the moment this is still sync, even though the API is async.
+ */
 NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 {
 	prs_struct r_ps;
@@ -109,6 +117,12 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	return NT_STATUS_OK;
 }
 
+/**
+ * Connect to a DCE/RPC interface.
+ * 
+ * @note lp_ctx and ev are ignored at the moment but present
+ * 	for API compatibility.
+ */
 _PUBLIC_ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, struct dcerpc_pipe **pp, 
 				      const char *binding_string, const struct ndr_interface_table *table, 
 				      struct cli_credentials *credentials, struct event_context *ev, 
