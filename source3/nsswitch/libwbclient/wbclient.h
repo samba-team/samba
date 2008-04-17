@@ -40,7 +40,7 @@ enum _wbcErrType {
 	WBC_ERR_INVALID_PARAM,  /**< An Invalid parameter was supplied **/
 	WBC_ERR_WINBIND_NOT_AVAILABLE,   /**< Winbind daemon is not available **/
 	WBC_ERR_DOMAIN_NOT_FOUND,        /**< Domain is not trusted or cannot be found **/
-	WBC_INVALID_RESPONSE,        /**< Winbind returned an invalid response **/
+	WBC_ERR_INVALID_RESPONSE,        /**< Winbind returned an invalid response **/
 	WBC_ERR_NSS_ERROR,            /**< NSS_STATUS error **/
 	WBC_ERR_AUTH_ERROR        /**< Authentication failed **/
 };
@@ -128,14 +128,31 @@ struct wbcDomainInfo {
 	char *short_name;
 	char *dns_name;
 	struct wbcDomainSid sid;
-	uint32_t flags;
+	uint32_t domain_flags;
+	uint32_t trust_flags;
+	uint32_t trust_type;
 };
 
-/* wbcDomainInfo->flags */
+/* wbcDomainInfo->domain_flags */
 
+#define WBC_DOMINFO_UNKNOWN           0x00000000
 #define WBC_DOMINFO_NATIVE            0x00000001
 #define WBC_DOMINFO_AD                0x00000002
 #define WBC_DOMINFO_PRIMARY           0x00000004
+
+/* wbcDomainInfo->trust_flags */
+
+#define WBC_DOMINFO_TRUST_TRANSITIVE  0x00000001
+#define WBC_DOMINFO_TRUST_INCOMING    0x00000002
+#define WBC_DOMINFO_TRUST_OUTGOING    0x00000004
+
+/* wbcDomainInfo->trust_type */
+
+#define WBC_DOMINFO_TRUSTTYPE_NONE       0x00000000
+#define WBC_DOMINFO_TRUSTTYPE_FOREST     0x00000001
+#define WBC_DOMINFO_TRUSTTYPE_IN_FOREST  0x00000002
+#define WBC_DOMINFO_TRUSTTYPE_EXTERNAL   0x00000003
+
 
 /**
  * @brief Auth User Parameters
@@ -389,6 +406,10 @@ wbcErr wbcGetGroups(const char *account,
 
 wbcErr wbcDomainInfo(const char *domain,
 		     struct wbcDomainInfo **info);
+
+wbcErr wbcListTrusts(struct wbcDomainInfo **domains, 
+		     size_t *num_domains);
+
 
 /*
  * Athenticate functions
