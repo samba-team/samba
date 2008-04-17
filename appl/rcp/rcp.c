@@ -10,11 +10,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *	This product includes software developed by the University of
- *	California, Berkeley and its contributors.
- * 4. Neither the name of the University nor the names of its contributors
+ * 3. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
@@ -118,16 +114,12 @@ main(int argc, char **argv)
 	remout = STDOUT_FILENO;
 
 	if (fflag) {			/* Follow "protocol", send data. */
-		response();
-		if (setuid(userid) < 0)
-			errx(1, "setuid failed");
+		(void)response();
 		source(argc, argv);
 		exit(errs);
 	}
 
 	if (tflag) {			/* Receive data. */
-		if (setuid(userid) < 0)
-			errx(1, "setuid failed");
 		sink(argc, argv);
 		exit(errs);
 	}
@@ -165,7 +157,7 @@ toremote(char *targ, int argc, char **argv)
 	if (*targ == 0)
 		targ = ".";
 
-	if ((thost = strchr(argv[argc - 1], '@'))) {
+	if ((thost = strchr(argv[argc - 1], '@')) != NULL) {
 		/* user@host */
 		*thost++ = 0;
 		tuser = argv[argc - 1];
@@ -177,6 +169,7 @@ toremote(char *targ, int argc, char **argv)
 		thost = argv[argc - 1];
 		tuser = NULL;
 	}
+	thost = unbracket(thost);
 
 	for (i = 0; i < argc - 1; i++) {
 		src = colon(argv[i]);
@@ -188,6 +181,7 @@ toremote(char *targ, int argc, char **argv)
 			host = strchr(argv[i], '@');
 			if (host) {
 				*host++ = '\0';
+				host = unbracket(host);
 				suser = argv[i];
 				if (*suser == '\0')
 					suser = pwd->pw_name;
@@ -200,16 +194,17 @@ toremote(char *targ, int argc, char **argv)
 				    tuser ? tuser : "", tuser ? "@" : "",
 				    thost, targ);
 			} else {
+				host = unbracket(argv[i]);
 				ret = asprintf(&bp,
 					 "exec %s%s %s -n %s %s '%s%s%s:%s'",
 					 _PATH_RSH, eflag ? " -e" : "", 
-					 argv[i], cmd, src,
+					 host, cmd, src,
 					 tuser ? tuser : "", tuser ? "@" : "",
 					 thost, targ);
 			}
 			if (ret == -1)
 				err (1, "malloc");
-			susystem(bp, userid);
+			susystem(bp);
 			free(bp);
 		} else {			/* local to remote */
 			if (remin == -1) {
@@ -223,8 +218,6 @@ toremote(char *targ, int argc, char **argv)
 				if (response() < 0)
 					exit(1);
 				free(bp);
-				if (setuid(userid) < 0)
-					errx(1, "setuid failed");
 			}
 			source(1, argv+i);
 		}
@@ -246,7 +239,7 @@ tolocal(int argc, char **argv)
 			    argv[i], argv[argc - 1]);
 			if (ret == -1)
 				err (1, "malloc");
-			if (susystem(bp, userid))
+			if (susystem(bp))
 				++errs;
 			free(bp);
 			continue;
@@ -275,8 +268,6 @@ tolocal(int argc, char **argv)
 		}
 		free(bp);
 		sink(1, argv + argc - 1);
-		if (seteuid(0) < 0)
-			exit(1);
 		close(remin);
 		remin = remout = -1;
 	}
@@ -289,7 +280,8 @@ source(int argc, char **argv)
 	static BUF buffer;
 	BUF *bp;
 	off_t i;
-	int amt, fd, haderr, indx, result;
+	off_t amt;
+	int fd, haderr, indx, result;
 	char *last, *name, buf[BUFSIZ];
 
 	for (indx = 0; indx < argc; ++indx) {
@@ -349,14 +341,14 @@ next:			close(fd);
 			if (i + amt > stb.st_size)
 				amt = stb.st_size - i;
 			if (!haderr) {
-				result = read(fd, bp->buf, amt);
+			        result = read(fd, bp->buf, (size_t)amt);
 				if (result != amt)
 					haderr = result >= 0 ? EIO : errno;
 			}
 			if (haderr)
 				write(remout, bp->buf, amt);
 			else {
-				result = write(remout, bp->buf, amt);
+			        result = write(remout, bp->buf, (size_t)amt);
 				if (result != amt)
 					haderr = result >= 0 ? EIO : errno;
 			}
@@ -404,7 +396,7 @@ rsource(char *name, struct stat *statp)
 		closedir(dirp);
 		return;
 	}
-	while ((dp = readdir(dirp))) {
+	while ((dp = readdir(dirp)) != NULL) {
 		if (dp->d_ino == 0)
 			continue;
 		if (!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
@@ -600,7 +592,7 @@ bad:			run_err("%s: %s", np, strerror(errno));
 			if (count == bp->cnt) {
 				/* Keep reading so we stay sync'd up. */
 				if (wrerr == NO) {
-					j = write(ofd, bp->buf, count);
+					j = write(ofd, bp->buf, (size_t)count);
 					if (j != count) {
 						wrerr = YES;
 						wrerrno = j >= 0 ? EIO : errno;
@@ -611,7 +603,7 @@ bad:			run_err("%s: %s", np, strerror(errno));
 			}
 		}
 		if (count != 0 && wrerr == NO &&
-		    (j = write(ofd, bp->buf, count)) != count) {
+		    (j = write(ofd, bp->buf, (size_t)count)) != count) {
 			wrerr = YES;
 			wrerrno = j >= 0 ? EIO : errno;
 		}

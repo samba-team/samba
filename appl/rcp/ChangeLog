@@ -1,3 +1,8 @@
+2008-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Sync with NetBSD rcp, add v6 parsing support and no setuid code
+	at all.
+
 2007-12-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Add missing files, from Buchan Milne.

@@ -61,6 +61,21 @@ colon(cp)
 	return (0);
 }
 
+char *
+unbracket(char *cp)
+{
+	char *ep;
+
+	if (*cp == '[') {
+		ep = cp + (strlen(cp) - 1);
+		if (*ep == ']') {
+			*ep = '\0';
+			++cp;
+		}
+	}
+	return (cp);
+}
+
 void
 verifydir(cp)
 	char *cp;
@@ -98,8 +113,7 @@ bad:	warnx("%s: invalid user name", cp0);
 }
 
 int
-susystem(s, userid)
-	int userid;
+susystem(s)
 	char *s;
 {
 	void (*istat)(int), (*qstat)(int);
@@ -112,8 +126,6 @@ susystem(s, userid)
 		return (127);
 
 	case 0:
-		if (setuid(userid) < 0)
-			_exit(127);
 		execl(_PATH_BSHELL, "sh", "-c", s, NULL);
 		_exit(127);
 	}
