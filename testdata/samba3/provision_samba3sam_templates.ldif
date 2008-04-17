@@ -33,7 +33,6 @@ pwdLastSet: 0
 primaryGroupID: 513
 accountExpires: -1
 logonCount: 0
-sAMAccountType: 805306368
 objectCategory: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
 
 dn: CN=TemplateComputer,CN=Templates
@@ -55,7 +54,6 @@ pwdLastSet: 0
 primaryGroupID: 513
 accountExpires: -1
 logonCount: 0
-sAMAccountType: 805306369
 objectCategory: CN=Computer,CN=Schema,CN=Configuration,${BASEDN}
 
 dn: CN=TemplateTrustingDomain,CN=Templates
@@ -74,7 +72,6 @@ lastLogon: 0
 primaryGroupID: 513
 accountExpires: -1
 logonCount: 0
-sAMAccountType: 805306370
 
 dn: CN=TemplateGroup,CN=Templates
 objectClass: top
@@ -83,7 +80,6 @@ objectClass: groupTemplate
 cn: TemplateGroup
 instanceType: 4
 groupType: -2147483646
-sAMAccountType: 268435456
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 
 # Currently this isn't used, we don't have a way to detect it different from an incoming alias
@@ -95,7 +91,6 @@ objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 # cn: TemplateAlias
 # instanceType: 4
 # groupType: -2147483644
-# sAMAccountType: 268435456
 
 dn: CN=TemplateForeignSecurityPrincipal,CN=Templates
 objectClass: top
