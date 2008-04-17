@@ -242,7 +242,7 @@ int cli_get_pipe_idx(const RPC_IFACE *syntax)
 	int i;
 	for (i = 0; pipe_names[i].client_pipe; i++) {
 		if (GUID_equal(&pipe_names[i].abstr_syntax.uuid, &syntax->uuid) &&
-		    pipe_names[i].abstr_syntax.version == syntax->version)
+		    pipe_names[i].abstr_syntax.if_version == syntax->if_version)
 			return i;
 	}
 
