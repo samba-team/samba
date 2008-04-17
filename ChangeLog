@@ -1,5 +1,8 @@
 2008-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* configure.in: Update rk_WIN32_EXPORT, add gssapi to
+	rk_WIN32_EXPORT.
+	
 	* configure.in: Lets try dependency tracking for automake 1.10 and
 	later.
 	
