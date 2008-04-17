@@ -594,11 +594,6 @@ typedef EncAPRepPart krb5_ap_rep_enc_part;
 
 #define KRB5_DIGEST_NAME ("digest")
 
-/* variables */
-
-extern const char *krb5_config_file;
-extern const char *krb5_defkeyname;
-
 typedef enum {
     KRB5_PROMPT_TYPE_PASSWORD		= 0x1,
     KRB5_PROMPT_TYPE_NEW_PASSWORD	= 0x2,
@@ -686,21 +681,6 @@ typedef struct krb5_verify_opt {
 #define KRB5_VERIFY_LREALMS		1
 #define KRB5_VERIFY_NO_ADDRESSES	2
 
-extern const krb5_cc_ops krb5_acc_ops;
-extern const krb5_cc_ops krb5_fcc_ops;
-extern const krb5_cc_ops krb5_mcc_ops;
-extern const krb5_cc_ops krb5_kcm_ops;
-extern const krb5_cc_ops krb5_scc_ops;
-
-extern const krb5_kt_ops krb5_fkt_ops;
-extern const krb5_kt_ops krb5_wrfkt_ops;
-extern const krb5_kt_ops krb5_javakt_ops;
-extern const krb5_kt_ops krb5_mkt_ops;
-extern const krb5_kt_ops krb5_akf_ops;
-extern const krb5_kt_ops krb4_fkt_ops;
-extern const krb5_kt_ops krb5_srvtab_fkt_ops;
-extern const krb5_kt_ops krb5_any_ops;
-
 #define KRB5_KPASSWD_VERS_CHANGEPW      1
 #define KRB5_KPASSWD_VERS_SETPW         0xff80
 
@@ -781,6 +761,27 @@ struct getargs;
 struct sockaddr;
 
 #include <krb5-protos.h>
+
+/* variables */
+
+extern KRB5_LIB_VARIABLE const char *krb5_config_file;
+extern KRB5_LIB_VARIABLE const char *krb5_defkeyname;
+
+
+extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_acc_ops;
+extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_fcc_ops;
+extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_mcc_ops;
+extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_kcm_ops;
+extern KRB5_LIB_VARIABLE const krb5_cc_ops krb5_scc_ops;
+
+extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_fkt_ops;
+extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_wrfkt_ops;
+extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_javakt_ops;
+extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_mkt_ops;
+extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_akf_ops;
+extern KRB5_LIB_VARIABLE const krb5_kt_ops krb4_fkt_ops;
+extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_srvtab_fkt_ops;
+extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_any_ops;
 
 #endif /* __KRB5_H__ */
 

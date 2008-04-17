@@ -909,7 +909,7 @@ fcc_default_name(krb5_context context, char **str)
  * @ingroup krb5_ccache
  */
 
-const krb5_cc_ops krb5_fcc_ops = {
+KRB5_LIB_VARIABLE const krb5_cc_ops krb5_fcc_ops = {
     KRB5_CC_OPS_VERSION,
     "FILE",
     fcc_get_name,
