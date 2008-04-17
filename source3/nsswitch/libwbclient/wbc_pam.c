@@ -436,7 +436,6 @@ wbcErr wbcCheckTrustCredentials(const char *domain,
 	struct winbindd_request request;
 	struct winbindd_response response;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	const char *name_str;
 
 	if (domain) {
 		/*
