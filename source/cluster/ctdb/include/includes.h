@@ -21,7 +21,7 @@ extern int LogLevel;
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
 
 #ifndef discard_const
-#define discard_const(ptr) ((void *)((intptr_t)(ptr)))
+#define discard_const(ptr) ((void *)((uintptr_t)(ptr)))
 #endif
 
 struct timeval timeval_zero(void);
