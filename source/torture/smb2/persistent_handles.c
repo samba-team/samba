@@ -52,44 +52,57 @@ bool torture_smb2_persistent_handles1(struct torture_context *tctx,
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_handle h1, h2;
-	struct smb2_create io;
+	struct smb2_create io1, io2;
 	NTSTATUS status;
 	const char *fname = "persistent_handles.dat";
 	DATA_BLOB b;
 	union smb_fileinfo qfinfo;
 	union smb_setfileinfo sfinfo;
 	bool ret = true;
+	uint64_t pos;
 
-	ZERO_STRUCT(io);
-	io.in.security_flags		= 0x00;
-	io.in.oplock_level		= SMB2_OPLOCK_LEVEL_BATCH;
-	io.in.impersonation_level	= NTCREATEX_IMPERSONATION_IMPERSONATION;
-	io.in.create_flags		= 0x00000000;
-	io.in.reserved			= 0x00000000;
-	io.in.desired_access		= SEC_RIGHTS_FILE_READ;
-	io.in.file_attributes		= 0x00000000;
-	io.in.share_access		= NTCREATEX_SHARE_ACCESS_READ |
+	smb2_util_unlink(tree1, fname);
+
+	ZERO_STRUCT(io1);
+	io1.in.security_flags		= 0x00;
+	io1.in.oplock_level		= SMB2_OPLOCK_LEVEL_BATCH;
+	io1.in.impersonation_level	= NTCREATEX_IMPERSONATION_IMPERSONATION;
+	io1.in.create_flags		= 0x00000000;
+	io1.in.reserved			= 0x00000000;
+	io1.in.desired_access		= SEC_RIGHTS_FILE_ALL;
+	io1.in.file_attributes		= FILE_ATTRIBUTE_NORMAL;
+	io1.in.share_access		= NTCREATEX_SHARE_ACCESS_READ |
+					  NTCREATEX_SHARE_ACCESS_WRITE |
 					  NTCREATEX_SHARE_ACCESS_DELETE;
-	io.in.create_disposition	= NTCREATEX_DISP_OPEN_IF;
-	io.in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
+	io1.in.create_disposition	= NTCREATEX_DISP_OPEN_IF;
+	io1.in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
 					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
 					  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
 					  0x00200000;
-	io.in.fname			= fname;
+	io1.in.fname			= fname;
 
 	b = data_blob_talloc(mem_ctx, NULL, 16);
 	SBVAL(b.data, 0, 0);
 	SBVAL(b.data, 8, 0);
 
-	status = smb2_create_blob_add(tree1, &io.in.blobs,
+	status = smb2_create_blob_add(tree1, &io1.in.blobs,
 				      SMB2_CREATE_TAG_DHNQ,
 				      b);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	status = smb2_create(tree1, mem_ctx, &io);
+	status = smb2_create(tree1, mem_ctx, &io1);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(io1.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
+	/*CHECK_VAL(io1.out.reserved, 0);*/
+	CHECK_VAL(io1.out.create_action, NTCREATEX_ACTION_CREATED);
+	CHECK_VAL(io1.out.alloc_size, 0);
+	CHECK_VAL(io1.out.size, 0);
+	CHECK_VAL(io1.out.file_attr, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.reserved2, 0);
 
-	h1 = io.out.file.handle;
+	/* TODO: check extra blob content */
+
+	h1 = io1.out.file.handle;
 
 	ZERO_STRUCT(qfinfo);
 	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
@@ -97,8 +110,9 @@ bool torture_smb2_persistent_handles1(struct torture_context *tctx,
 	status = smb2_getinfo_file(tree1, mem_ctx, &qfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(qfinfo.position_information.out.position, 0);
-	printf("position: %llu\n",
-	       (unsigned long long)qfinfo.position_information.out.position);
+	pos = qfinfo.position_information.out.position;
+	torture_comment(tctx, "position: %llu\n",
+			(unsigned long long)pos);
 
 	ZERO_STRUCT(sfinfo);
 	sfinfo.generic.level = RAW_SFILEINFO_POSITION_INFORMATION;
@@ -113,8 +127,9 @@ bool torture_smb2_persistent_handles1(struct torture_context *tctx,
 	status = smb2_getinfo_file(tree1, mem_ctx, &qfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(qfinfo.position_information.out.position, 0x1000);
-	printf("position: %llu\n",
-	       (unsigned long long)qfinfo.position_information.out.position);
+	pos = qfinfo.position_information.out.position;
+	torture_comment(tctx, "position: %llu\n",
+			(unsigned long long)pos);
 
 	talloc_free(tree1);
 	tree1 = NULL;
@@ -125,26 +140,29 @@ bool torture_smb2_persistent_handles1(struct torture_context *tctx,
 	status = smb2_getinfo_file(tree2, mem_ctx, &qfinfo);
 	CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
 
-	ZERO_STRUCT(io);
-	io.in.fname = fname;
+	ZERO_STRUCT(io2);
+	io2.in.fname = fname;
 
 	b = data_blob_talloc(tctx, NULL, 16);
 	SBVAL(b.data, 0, h1.data[0]);
 	SBVAL(b.data, 8, h1.data[1]);
 
-	status = smb2_create_blob_add(tree2, &io.in.blobs,
+	status = smb2_create_blob_add(tree2, &io2.in.blobs,
 				      SMB2_CREATE_TAG_DHNC,
 				      b);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("create1 failed - %s\n", nt_errstr(status));
-		return false;
-	}
 
-	status = smb2_create(tree2, mem_ctx, &io);
+	status = smb2_create(tree2, mem_ctx, &io2);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(io2.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
+	CHECK_VAL(io2.out.reserved, 0x00);
+	CHECK_VAL(io2.out.create_action, NTCREATEX_ACTION_EXISTED);
+	CHECK_VAL(io2.out.alloc_size, 0);
+	CHECK_VAL(io2.out.size, 0);
+	CHECK_VAL(io2.out.file_attr, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io2.out.reserved2, 0);
 
-	h2 = io.out.file.handle;
+	h2 = io2.out.file.handle;
 
 	ZERO_STRUCT(qfinfo);
 	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
@@ -152,11 +170,13 @@ bool torture_smb2_persistent_handles1(struct torture_context *tctx,
 	status = smb2_getinfo_file(tree2, mem_ctx, &qfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(qfinfo.position_information.out.position, 0x1000);
-	printf("position: %llu\n",
-	       (unsigned long long)qfinfo.position_information.out.position);
+	pos = qfinfo.position_information.out.position;
+	torture_comment(tctx, "position: %llu\n",
+			(unsigned long long)pos);
 
 	talloc_free(mem_ctx);
 
+	smb2_util_unlink(tree2, fname);
 done:
 	return ret;
 }
