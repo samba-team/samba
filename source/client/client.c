@@ -4514,12 +4514,20 @@ static int process(const char *base_directory)
 
 static int do_host_query(const char *query_host)
 {
+	struct sockaddr_storage ss;
+
 	cli = cli_cm_open(talloc_tos(), NULL,
 			query_host, "IPC$", true, smb_encrypt);
 	if (!cli)
 		return 1;
 
 	browse_host(true);
+
+	if (interpret_string_addr(&ss, query_host, 0) && (ss.ss_family != AF_INET)) {
+		d_printf("%s is an IPv6 address -- no workgroup available\n",
+			query_host);
+		return 1;
+	}
 
 	if (port != 139) {
 
