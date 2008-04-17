@@ -664,7 +664,8 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 					share, "A:",
 					ads->auth.user_name, NULL,
 					ads->auth.password,
-					CLI_FULL_CONNECTION_USE_KERBEROS,
+					CLI_FULL_CONNECTION_USE_KERBEROS |
+					CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS,
 					Undefined, NULL);
 			if (!NT_STATUS_IS_OK(result)) {
 				DEBUG(10,("check_refresh_gpo: "

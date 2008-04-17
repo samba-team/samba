@@ -1306,7 +1306,7 @@ static int draw_main_window(struct join_state *state)
 	{
 		/* Label */
 		label = gtk_label_new("Computer description:");
-/*		gtk_misc_set_alignment(GTK_MISC(label), 0, 0); */
+		gtk_misc_set_alignment(GTK_MISC(label), 0, 0);
 		gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 0, 1);
 		gtk_widget_show(label);
 
