@@ -48,7 +48,8 @@ static double timeval_elapsed(struct timeval *tv)
 }
 
 #define torture_assert_str_equal(test, arg1, arg2, desc) \
-	if (strcmp(arg1, arg2)) { \
+	if (arg1 == NULL && arg2 == NULL) {				\
+	} else if (strcmp(arg1, arg2)) {			\
 		printf("failure: %s [\n%s: Expected %s, got %s: %s\n]\n", \
 		   test, __location__, arg1, arg2, desc); \
 		return false; \
