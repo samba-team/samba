@@ -41,7 +41,6 @@ rpc.frsapi							# Not provided by Samba 4
 .*samba3.*							# Samba3-specific test
 ^samba4.net.domopen.*$				# Hangs for some reason
 ^samba4.net.api.become.dc.*$			# Fails
-winbind							# FIXME: This should not be skipped
 nss.test						# Fails
 samba4.samba3sam.python		# Conversion from EJS not yet finished
 samba4.samdb.python			# Not finished yet
