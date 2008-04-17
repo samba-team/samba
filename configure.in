@@ -50,6 +50,7 @@ libdir="$libdir$abilibdirext"
 
 AC_C___ATTRIBUTE__
 
+LT_PREREQ([2.2])
 LT_INIT([shared static win32-dll])
 
 AM_CONDITIONAL(ENABLE_SHARED, test "$enable_shared" = "yes")
