@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_REVISION($Revision$)
-AC_PREREQ([2.59])
+AC_PREREQ([2.61])
 test -z "$CFLAGS" && CFLAGS="-g"
 AC_INIT([Heimdal],[1.1.99],[heimdal-bugs@h5l.org])
 AC_CONFIG_SRCDIR([kuser/kinit.c])
@@ -50,7 +50,7 @@ libdir="$libdir$abilibdirext"
 
 AC_C___ATTRIBUTE__
 
-AC_PROG_LIBTOOL
+LT_INIT([enable-shared enable-static win32-dll])
 
 AM_CONDITIONAL(ENABLE_SHARED, test "$enable_shared" = "yes")
 rk_VERSIONSCRIPT
@@ -79,8 +79,7 @@ AM_CONDITIONAL(PKINIT, test "$enable_pk_init" != no)
 
 dnl path where the hdb directory is stored
 AC_ARG_WITH([hdbdir], 
-	[AC_HELP_STRING([--with-hdbdir],
-		[Default location for KDC database @<:@default=/var/heimdal@:>@])],
+	[AS_HELP_STRING([--with-hdbdir],[Default location for KDC database @<:@default=/var/heimdal@:>@])],
 	[],
 	[with_hdbdir=/var/heimdal])
 DIR_hdbdir="$with_hdbdir"
@@ -125,8 +124,7 @@ AC_SUBST(dpagaix_ldadd)
 AC_SUBST(dpagaix_ldflags)
 
 AC_ARG_ENABLE([afs-support],
-	AC_HELP_STRING([--disable-afs-support],
-		[if you don't want support for AFS]))
+	AS_HELP_STRING([--disable-afs-support],[if you don't want support for AFS]))
 if test "$enable_afs_support" = no; then
 	AC_DEFINE(NO_AFS, 1, [Define if you don't wan't support for AFS.])
 fi
