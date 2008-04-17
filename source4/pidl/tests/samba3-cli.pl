@@ -4,12 +4,12 @@
 use strict;
 use warnings;
 
-use Test::More tests => 8;
+use Test::More tests => 9;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
 use Parse::Pidl::Util qw(MyDumper);
-use Parse::Pidl::Samba3::ClientNDR qw(ParseFunction);
+use Parse::Pidl::Samba3::ClientNDR qw(ParseFunction ParseOutputArgument);
 use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv);
 
 # Make sure GenerateFunctionInEnv and GenerateFunctionOutEnv work
@@ -117,3 +117,12 @@ is($x->{res},
 }
 
 ");
+
+$x = new Parse::Pidl::Samba3::ClientNDR();
+
+$fn = { NAME => "bar", ELEMENTS => [ ], RETURN_TYPE => "WERROR" };
+my $e = { NAME => "foo", ORIGINAL => { FILE => "f", LINE => -1 },
+          LEVELS => [ { TYPE => "ARRAY", SIZE_IS => "mysize" }, { TYPE => "DATA", DATA_TYPE => "int" } ]};
+
+$x->ParseOutputArgument($fn, $e);
+is($x->{res}, "memcpy(foo, r.out.foo, mysize * sizeof(*foo));\n");

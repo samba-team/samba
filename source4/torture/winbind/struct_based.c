@@ -181,7 +181,8 @@ static bool torture_winbind_struct_netbios_name(struct torture_context *torture)
 	expected = torture_setting_string(torture,
 					  "winbindd netbios name",
 					  lp_netbios_name(torture->lp_ctx));
-
+	expected = strupper_talloc(torture, expected);
+	
 	torture_assert_str_equal(torture,
 				 rep.data.netbios_name, expected,
 				 "winbindd's netbios name doesn't match");
@@ -261,7 +262,7 @@ static bool torture_winbind_struct_check_machacc(struct torture_context *torture
 
 	torture_assert_str_equal(torture,
 				 rep.data.auth.error_string,
-				 nt_errstr(NT_STATUS_OK),
+				 get_friendly_nt_error_msg(NT_STATUS_OK),
 				 "WINBINDD_CHECK_MACHACC ok: error_string");
 
 	torture_assert_int_equal(torture,
@@ -294,6 +295,10 @@ static bool get_trusted_domains(struct torture_context *torture,
 	DO_STRUCT_REQ_REP(WINBINDD_LIST_TRUSTDOM, &req, &rep);
 
 	extra_data = (char *)rep.extra_data.data;
+	if (!extra_data) {
+		return true;
+	}
+
 	torture_assert(torture, extra_data, "NULL trust list");
 
 	while (next_token(&extra_data, line, "\n", sizeof(fstring))) {
@@ -355,7 +360,6 @@ static bool torture_winbind_struct_list_trustdom(struct torture_context *torture
 	DO_STRUCT_REQ_REP(WINBINDD_LIST_TRUSTDOM, &req, &rep);
 
 	list1 = (char *)rep.extra_data.data;
-	torture_assert(torture, list1, "NULL trust list");
 
 	torture_comment(torture, "%s\n", list1);
 
@@ -367,7 +371,6 @@ static bool torture_winbind_struct_list_trustdom(struct torture_context *torture
 	DO_STRUCT_REQ_REP(WINBINDD_LIST_TRUSTDOM, &req, &rep);
 
 	list2 = (char *)rep.extra_data.data;
-	torture_assert(torture, list2, "NULL trust list");
 
 	/*
 	 * The list_all_domains parameter should be ignored
@@ -380,7 +383,7 @@ static bool torture_winbind_struct_list_trustdom(struct torture_context *torture
 	ok = get_trusted_domains(torture, &listd);
 	torture_assert(torture, ok, "failed to get trust list");
 
-	for (i=0; listd[i].netbios_name; i++) {
+	for (i=0; listd && listd[i].netbios_name; i++) {
 		if (i == 0) {
 			struct dom_sid *builtin_sid;
 
@@ -423,7 +426,7 @@ static bool torture_winbind_struct_domain_info(struct torture_context *torture)
 	ok = get_trusted_domains(torture, &listd);
 	torture_assert(torture, ok, "failed to get trust list");
 
-	for (i=0; listd[i].netbios_name; i++) {
+	for (i=0; listd && listd[i].netbios_name; i++) {
 		struct winbindd_request req;
 		struct winbindd_response rep;
 		struct dom_sid *sid;
@@ -484,14 +487,14 @@ static bool torture_winbind_struct_getdcname(struct torture_context *torture)
 	bool ok;
 	bool strict = torture_setting_bool(torture, "strict mode", false);
 	struct torture_trust_domain *listd = NULL;
-	uint32_t i;
+	uint32_t i, count = 0;
 
 	torture_comment(torture, "Running WINBINDD_GETDCNAME (struct based)\n");
 
 	ok = get_trusted_domains(torture, &listd);
 	torture_assert(torture, ok, "failed to get trust list");
 
-	for (i=0; listd[i].netbios_name; i++) {
+	for (i=0; listd && listd[i].netbios_name; i++) {
 		struct winbindd_request req;
 		struct winbindd_response rep;
 
@@ -511,8 +514,13 @@ static bool torture_winbind_struct_getdcname(struct torture_context *torture)
 		/* TODO: check rep.data.dc_name; */
 		torture_comment(torture, "DOMAIN '%s' => DCNAME '%s'\n",
 				req.domain_name, rep.data.dc_name);
+		count++;
 	}
 
+	if (strict) {
+		torture_assert(torture, count > 0,
+			       "WiNBINDD_GETDCNAME was not tested");
+	}
 	return true;
 }
 
@@ -529,7 +537,7 @@ static bool torture_winbind_struct_dsgetdcname(struct torture_context *torture)
 	ok = get_trusted_domains(torture, &listd);
 	torture_assert(torture, ok, "failed to get trust list");
 
-	for (i=0; listd[i].netbios_name; i++) {
+	for (i=0; listd && listd[i].netbios_name; i++) {
 		struct winbindd_request req;
 		struct winbindd_response rep;
 

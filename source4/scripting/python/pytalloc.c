@@ -39,7 +39,7 @@ PyObject *py_talloc_import_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx,
 PyObject *py_talloc_default_repr(PyObject *py_obj)
 {
 	py_talloc_Object *obj = (py_talloc_Object *)py_obj;
+	PyTypeObject *type = (PyTypeObject*)PyObject_Type((PyObject *)obj);
 
-	return PyString_FromFormat("<talloc: %s>", 
-							   talloc_get_name(obj->talloc_ctx));
+	return PyString_FromFormat("<%s>", type->tp_name);
 }

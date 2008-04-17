@@ -21,20 +21,7 @@ failed=0
 samba4bindir=`dirname $0`/../../source/bin
 locktest=$samba4bindir/locktest
 
-testit() {
-	name="$1"
-	shift
-	cmdline="$*"
-	echo "test: $name"
-	$cmdline
-	status=$?
-	if [ x$status = x0 ]; then
-		echo "success: $name"
-	else
-		echo "failure: $name"
-	fi
-	return $status
-}
+. `dirname $0`/subunit.sh
 
 testit "locktest" $VALGRIND $locktest //$SERVER/test1 //$SERVER/test2 --num-ops=100  -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
 
