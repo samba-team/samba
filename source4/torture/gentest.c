@@ -36,18 +36,18 @@
 
 /* global options */
 static struct gentest_options {
-	bool showall;
-	bool analyze;
-	bool analyze_always;
-	bool analyze_continuous;
+	int showall;
+	int analyze;
+	int analyze_always;
+	int analyze_continuous;
 	uint_t max_open_handles;
 	uint_t seed;
 	uint_t numops;
-	bool use_oplocks;
+	int use_oplocks;
 	char **ignore_patterns;
 	const char *seeds_file;
-	bool use_preset_seeds;
-	bool fast_reconnect;
+	int use_preset_seeds;
+	int fast_reconnect;
 } options;
 
 /* mapping between open handles on the server and local handles */

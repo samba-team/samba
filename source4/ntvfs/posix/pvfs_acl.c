@@ -135,7 +135,7 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	}
 	sd = *psd;
 
-	ids = talloc_array(sd, struct id_mapping, 2);
+	ids = talloc_zero_array(sd, struct id_mapping, 2);
 	NT_STATUS_HAVE_NO_MEMORY(ids);
 
 	ids[0].unixid = talloc(ids, struct unixid);
