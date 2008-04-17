@@ -132,7 +132,8 @@ AC_CHECK_SIZEOF(off_t)
 AC_CHECK_SIZEOF(size_t)
 AC_CHECK_SIZEOF(ssize_t)
 
-AC_CHECK_TYPE(intptr_t, unsigned long long)
+AC_CHECK_TYPE(intptr_t, long long)
+AC_CHECK_TYPE(uintptr_t, unsigned long long)
 AC_CHECK_TYPE(ptrdiff_t, unsigned long long)
 
 if test x"$ac_cv_type_long_long" != x"yes";then
