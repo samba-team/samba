@@ -138,7 +138,7 @@ static wbcErr wbc_create_auth_info(TALLOC_CTX *mem_ctx,
 
 	p = (char *)resp->extra_data.data;
 	if (!p) {
-		wbc_status = WBC_INVALID_RESPONSE;
+		wbc_status = WBC_ERR_INVALID_RESPONSE;
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
@@ -149,7 +149,7 @@ static wbcErr wbc_create_auth_info(TALLOC_CTX *mem_ctx,
 		char *s = p;
 		char *e = strchr(p, '\n');
 		if (!e) {
-			wbc_status = WBC_INVALID_RESPONSE;
+			wbc_status = WBC_ERR_INVALID_RESPONSE;
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
 		e[0] = '\0';
@@ -157,7 +157,7 @@ static wbcErr wbc_create_auth_info(TALLOC_CTX *mem_ctx,
 
 		ret = sscanf(s, "0x%08X:0x%08X", &rid, &attrs);
 		if (ret != 2) {
-			wbc_status = WBC_INVALID_RESPONSE;
+			wbc_status = WBC_ERR_INVALID_RESPONSE;
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
 
@@ -173,7 +173,7 @@ static wbcErr wbc_create_auth_info(TALLOC_CTX *mem_ctx,
 		char *a;
 		char *e = strchr(p, '\n');
 		if (!e) {
-			wbc_status = WBC_INVALID_RESPONSE;
+			wbc_status = WBC_ERR_INVALID_RESPONSE;
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
 		e[0] = '\0';
@@ -181,7 +181,7 @@ static wbcErr wbc_create_auth_info(TALLOC_CTX *mem_ctx,
 
 		e = strchr(s, ':');
 		if (!e) {
-			wbc_status = WBC_INVALID_RESPONSE;
+			wbc_status = WBC_ERR_INVALID_RESPONSE;
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
 		e[0] = '\0';
@@ -190,7 +190,7 @@ static wbcErr wbc_create_auth_info(TALLOC_CTX *mem_ctx,
 		ret = sscanf(a, "0x%08X",
 			     &attrs);
 		if (ret != 1) {
-			wbc_status = WBC_INVALID_RESPONSE;
+			wbc_status = WBC_ERR_INVALID_RESPONSE;
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
 

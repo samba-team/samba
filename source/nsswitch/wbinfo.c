@@ -341,101 +341,67 @@ static bool wbinfo_wins_byip(const char *ip)
 
 static bool wbinfo_list_domains(bool list_all_domains, bool verbose)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-
+	struct wbcDomainInfo *domain_list = NULL;
+	size_t num_domains;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	bool print_all = !list_all_domains && verbose;
+	int i;
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	/* Send request */
-
-	request.data.list_all_domains = list_all_domains;
-
-	if (winbindd_request_response(WINBINDD_LIST_TRUSTDOM, &request, &response) !=
-	    NSS_STATUS_SUCCESS)
+	wbc_status = wbcListTrusts(&domain_list, &num_domains);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
+	}
 
-	/* Display response */
+	if (print_all) {
+		d_printf("%-16s%-24s%-12s%-12s%-5s%-5s\n", 
+			 "Domain Name", "DNS Domain", "Trust Type", 
+			 "Transitive", "In", "Out");
+	}
 
-	if (response.extra_data.data) {
-		const char *extra_data = (char *)response.extra_data.data;
-		char *name;
-		char *beg, *end;
-		TALLOC_CTX *frame = talloc_stackframe();
+	for (i=0; i<num_domains; i++) {
+		d_printf("%-16s", domain_list[i].short_name);
 
-		if (print_all) {
-			d_printf("%-16s%-24s%-12s%-12s%-5s%-5s\n", 
-				 "Domain Name", "DNS Domain", "Trust Type", 
-				 "Transitive", "In", "Out");
+		if (!print_all) {
+			d_printf("\n");	
+			continue;
 		}
 
-		while(next_token_talloc(frame,&extra_data,&name,"\n")) {
-			/* Print Domain Name */
-			if ((beg = strchr(name, '\\')) == NULL)
-				goto error;
-			*beg = 0;
-			beg++;
-			if ((end = strchr(beg, '\\')) == NULL)
-				goto error;
-			*end = 0;
+		d_printf("%-24s", domain_list[i].dns_name);
 
-			/* Print short name */
-
-			d_printf("%-16s", name);
-
-			if (!print_all) {
-				d_printf("\n");	
-				continue;
-			}
-
-			/* Print DNS domain */
-
-			if (beg) {
-				d_printf("%-24s", beg);
-			}
-
-			/* Skip SID */
-			beg = ++end;
-			if ((end = strchr(beg, '\\')) == NULL)
-				goto error;
-
-			/* Print Trust Type */
-			beg = ++end;
-			if ((end = strchr(beg, '\\')) == NULL)
-				goto error;
-			*end = 0;
-			d_printf("%-12s", beg);
-
-			/* Print Transitive */
-			beg = ++end;
-			if ((end = strchr(beg, '\\')) == NULL)
-				goto error;
-			*end = 0;
-			d_printf("%-12s", beg);
-
-			/* Print Incoming */
-			beg = ++end;
-			if ((end = strchr(beg, '\\')) == NULL)
-				goto error;
-			*end = 0;
-			d_printf("%-5s", beg);
-
-			/* Print Outgoing */
-			beg = ++end;
-			d_printf("%-5s\n", beg);
+		switch(domain_list[i].trust_type) {
+		case WBC_DOMINFO_TRUSTTYPE_NONE:
+			d_printf("None        ");
+			break;
+		case WBC_DOMINFO_TRUSTTYPE_FOREST:		
+			d_printf("Forest      ");
+			break;
+		case WBC_DOMINFO_TRUSTTYPE_EXTERNAL:		
+			d_printf("External    ");
+			break;
+		case WBC_DOMINFO_TRUSTTYPE_IN_FOREST:
+			d_printf("In-Forest   ");
+			break;
 		}
-		goto out;
 
-error:
-		d_fprintf(stderr, "Got invalid response: %s\n", extra_data);
-		TALLOC_FREE(frame);
-		SAFE_FREE(response.extra_data.data);
-		return false;
-out:
-		TALLOC_FREE(frame);
-		SAFE_FREE(response.extra_data.data);
+		if (domain_list[i].trust_flags & WBC_DOMINFO_TRUST_TRANSITIVE) {
+			d_printf("Yes         ");
+		} else {
+			d_printf("No          ");
+		}
+
+		if (domain_list[i].trust_flags & WBC_DOMINFO_TRUST_INCOMING) {
+			d_printf("Yes  ");
+		} else {
+			d_printf("No   ");
+		}
+
+		if (domain_list[i].trust_flags & WBC_DOMINFO_TRUST_OUTGOING) {
+			d_printf("Yes  ");
+		} else {
+			d_printf("No   ");
+		}
+
+		d_printf("\n");
 	}
 
 	return true;
@@ -519,12 +485,12 @@ static bool wbinfo_domain_info(const char *domain)
 	d_printf("SID               : %s\n", sid_str);
 
 	d_printf("Active Directory  : %s\n",
-		 (dinfo->flags & WBC_DOMINFO_AD) ? "Yes" : "No");
+		 (dinfo->domain_flags & WBC_DOMINFO_AD) ? "Yes" : "No");
 	d_printf("Native            : %s\n",
-		 (dinfo->flags & WBC_DOMINFO_NATIVE) ? "Yes" : "No");
+		 (dinfo->domain_flags & WBC_DOMINFO_NATIVE) ? "Yes" : "No");
 
 	d_printf("Primary           : %s\n",
-		 (dinfo->flags & WBC_DOMINFO_PRIMARY) ? "Yes" : "No");
+		 (dinfo->domain_flags & WBC_DOMINFO_PRIMARY) ? "Yes" : "No");
 
 	wbcFreeMemory(sid_str);
 	wbcFreeMemory(dinfo);
