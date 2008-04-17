@@ -40,7 +40,7 @@ enum _wbcErrType {
 	WBC_ERR_INVALID_PARAM,  /**< An Invalid parameter was supplied **/
 	WBC_ERR_WINBIND_NOT_AVAILABLE,   /**< Winbind daemon is not available **/
 	WBC_ERR_DOMAIN_NOT_FOUND,        /**< Domain is not trusted or cannot be found **/
-	WBC_INVALID_RESPONSE,        /**< Winbind returned an invalid response **/
+	WBC_ERR_INVALID_RESPONSE,        /**< Winbind returned an invalid response **/
 	WBC_ERR_NSS_ERROR,            /**< NSS_STATUS error **/
 	WBC_ERR_AUTH_ERROR        /**< Authentication failed **/
 };
