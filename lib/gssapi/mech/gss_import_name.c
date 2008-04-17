@@ -139,7 +139,7 @@ _gss_import_export_name(OM_uint32 *minor_status,
 	return (GSS_S_COMPLETE);
 }
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_import_name(OM_uint32 *minor_status,
     const gss_buffer_t input_name_buffer,
     const gss_OID input_name_type,

@@ -29,7 +29,7 @@
 #include "mech_locl.h"
 RCSID("$Id$");
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_compare_name(OM_uint32 *minor_status,
     const gss_name_t name1_arg,
     const gss_name_t name2_arg,

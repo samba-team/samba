@@ -29,7 +29,7 @@
 #include "mech_locl.h"
 RCSID("$Id$");
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_sign(OM_uint32 *minor_status,
     gss_ctx_id_t context_handle,
     int qop_req,

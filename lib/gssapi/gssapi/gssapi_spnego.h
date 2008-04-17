@@ -48,7 +48,7 @@ extern "C" {
  *  negotiation token is identified by the Object Identifier
  *  iso.org.dod.internet.security.mechanism.snego (1.3.6.1.5.5.2).
  */
-extern gss_OID GSS_SPNEGO_MECHANISM;
+extern GSSAPI_LIB_VARIABLE gss_OID GSS_SPNEGO_MECHANISM;
 #define gss_mech_spnego GSS_SPNEGO_MECHANISM
 
 #ifdef __cplusplus

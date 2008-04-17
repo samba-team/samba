@@ -43,7 +43,7 @@ updateusage(gss_cred_usage_t usage, int *usagemask)
 	*usagemask |= IUSAGE;
 }
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_inquire_cred(OM_uint32 *minor_status,
     const gss_cred_id_t cred_handle,
     gss_name_t *name_ret,

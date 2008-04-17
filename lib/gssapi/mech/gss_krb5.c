@@ -33,7 +33,7 @@ RCSID("$Id$");
 #include <roken.h>
 
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_krb5_copy_ccache(OM_uint32 *minor_status,
 		     gss_cred_id_t cred,
 		     krb5_ccache out)
@@ -91,7 +91,7 @@ gss_krb5_copy_ccache(OM_uint32 *minor_status,
     return ret;
 }
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_krb5_import_cred(OM_uint32 *minor_status,
 		     krb5_ccache id,
 		     krb5_principal keytab_principal,
@@ -186,7 +186,7 @@ out:
     return major_status;
 }
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gsskrb5_register_acceptor_identity(const char *identity)
 {
         struct _gss_mech_switch	*m;
@@ -208,7 +208,7 @@ gsskrb5_register_acceptor_identity(const char *identity)
 	return (GSS_S_COMPLETE);
 }
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gsskrb5_set_dns_canonicalize(int flag)
 {
         struct _gss_mech_switch	*m;
@@ -253,7 +253,7 @@ free_key(gss_krb5_lucid_key_t *key)
     memset(key, 0, sizeof(*key));
 }
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_krb5_export_lucid_sec_context(OM_uint32 *minor_status,
 				  gss_ctx_id_t *context_handle,
 				  OM_uint32 version,
@@ -396,7 +396,7 @@ out:
     return GSS_S_COMPLETE;
 }
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_krb5_free_lucid_sec_context(OM_uint32 *minor_status, void *c)
 {
     gss_krb5_lucid_context_v1_t *ctx = c;
@@ -424,7 +424,7 @@ gss_krb5_free_lucid_sec_context(OM_uint32 *minor_status, void *c)
  *
  */
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_krb5_set_allowable_enctypes(OM_uint32 *minor_status, 
 				gss_cred_id_t cred,
 				OM_uint32 num_enctypes,
@@ -478,7 +478,7 @@ out:
  *
  */
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *c)
 {
     struct _gss_mech_switch *m;
@@ -509,7 +509,7 @@ gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *c)
  *
  */
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_krb5_ccache_name(OM_uint32 *minor_status, 
 		     const char *name,
 		     const char **out_name)
@@ -541,7 +541,7 @@ gss_krb5_ccache_name(OM_uint32 *minor_status,
  *
  */
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
 					  gss_ctx_id_t context_handle,
 					  time_t *authtime)
@@ -596,7 +596,7 @@ gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
  *
  */
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
 					    gss_ctx_id_t context_handle,
 					    int ad_type,
@@ -769,7 +769,7 @@ out:
  *
  */
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gsskrb5_extract_service_keyblock(OM_uint32 *minor_status,
 				 gss_ctx_id_t context_handle,
 				 krb5_keyblock **keyblock)
@@ -780,7 +780,7 @@ gsskrb5_extract_service_keyblock(OM_uint32 *minor_status,
 			       keyblock);
 }
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gsskrb5_get_initiator_subkey(OM_uint32 *minor_status,
 			     gss_ctx_id_t context_handle,
 			     krb5_keyblock **keyblock)
@@ -791,7 +791,7 @@ gsskrb5_get_initiator_subkey(OM_uint32 *minor_status,
 			       keyblock);
 }
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gsskrb5_get_subkey(OM_uint32 *minor_status,
 		   gss_ctx_id_t context_handle,
 		   krb5_keyblock **keyblock)
@@ -802,7 +802,7 @@ gsskrb5_get_subkey(OM_uint32 *minor_status,
 			       keyblock);
 }
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gsskrb5_set_default_realm(const char *realm)
 {
         struct _gss_mech_switch	*m;
@@ -824,7 +824,7 @@ gsskrb5_set_default_realm(const char *realm)
 	return (GSS_S_COMPLETE);
 }
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_krb5_get_tkt_flags(OM_uint32 *minor_status,
 		       gss_ctx_id_t context_handle,
 		       OM_uint32 *tkt_flags)

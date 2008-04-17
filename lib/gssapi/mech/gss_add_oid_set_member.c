@@ -34,7 +34,7 @@
 #include "mech_locl.h"
 RCSID("$Id$");
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_add_oid_set_member (OM_uint32 * minor_status,
 			const gss_OID member_oid,
 			gss_OID_set * oid_set)

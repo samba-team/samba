@@ -29,7 +29,7 @@
 #include "mech_locl.h"
 RCSID("$Id$");
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_inquire_names_for_mech(OM_uint32 *minor_status,
     const gss_OID mechanism,
     gss_OID_set *name_types)

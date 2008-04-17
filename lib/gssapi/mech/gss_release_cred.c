@@ -29,7 +29,7 @@
 #include "mech_locl.h"
 RCSID("$Id$");
 
-OM_uint32
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_release_cred(OM_uint32 *minor_status, gss_cred_id_t *cred_handle)
 {
 	struct _gss_cred *cred = (struct _gss_cred *) *cred_handle;

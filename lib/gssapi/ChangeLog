@@ -1,3 +1,7 @@
+2008-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* add __declspec() for windows.
+
 2008-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* krb5/import_sec_context.c: Use tmp to read ac->flags value to
