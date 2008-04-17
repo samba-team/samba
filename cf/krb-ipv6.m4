@@ -9,7 +9,7 @@ if test "$withval" = "no"; then
 	ac_cv_lib_ipv6=no
 fi])
 save_CFLAGS="${CFLAGS}"
-AC_CACHE_CHECK([for IPv6 stack type], v6type,
+AC_CACHE_CHECK([for IPv6 stack type], rk_cv_v6type,
 [dnl check for different v6 implementations (by itojun)
 v6type=unknown
 v6lib=none
@@ -88,7 +88,7 @@ if test "$v6lib" != "none"; then
 fi
 ])
 
-AC_CACHE_CHECK([for IPv6], ac_cv_lib_ipv6, [
+AC_CACHE_CHECK([for IPv6], rk_cv_lib_ipv6, [
 AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -124,7 +124,7 @@ fi
 
 ## test for AIX missing in6addr_loopback
 if test "$ac_cv_lib_ipv6" = yes; then
-	AC_CACHE_CHECK([for in6addr_loopback],[ac_cv_var_in6addr_loopback],[
+	AC_CACHE_CHECK([for in6addr_loopback],[rk_cv_var_in6addr_loopback],[
 	AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
