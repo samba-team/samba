@@ -313,19 +313,21 @@ locktest_OBJ_FILES = torture/locktest.o
 
 MANPAGES += torture/man/locktest.1
 
+GCOV=0
+
 ifeq ($(MAKECMDGOALS),gcov)
-GCOV?=1
+GCOV=1
 endif
 
 ifeq ($(MAKECMDGOALS),lcov)
-GCOV?=1
+GCOV=1
 endif
 
 ifeq ($(MAKECMDGOALS),testcov-html)
-GCOV?=1
+GCOV=1
 endif
 
-ifdef GCOV
+ifeq ($(GCOV),1)
 CFLAGS += --coverage
 LDFLAGS += --coverage
 endif
