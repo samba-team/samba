@@ -6727,10 +6727,15 @@ static bool handle_netbios_aliases(int snum, const char *pszParmValue, char **pt
 /***************************************************************************
  Handle the include operation.
 ***************************************************************************/
+static bool bNoIncludes = false;
 
 static bool handle_include(int snum, const char *pszParmValue, char **ptr)
 {
 	char *fname;
+
+	if (bNoIncludes) {
+		return true;
+	}
 
 	if (strequal(pszParmValue, INCLUDE_REGISTRY_NAME)) {
 		if (bInGlobalSection) {
@@ -8651,11 +8656,12 @@ bool lp_is_in_client(void)
  False on failure.
 ***************************************************************************/
 
-bool lp_load(const char *pszFname,
-             bool global_only,
-             bool save_defaults,
-	     bool add_ipc,
-             bool initialize_globals)
+bool lp_load_ex(const char *pszFname,
+		bool global_only,
+		bool save_defaults,
+		bool add_ipc,
+		bool initialize_globals,
+		bool no_includes)
 {
 	char *n2 = NULL;
 	bool bRetval;
@@ -8663,10 +8669,11 @@ bool lp_load(const char *pszFname,
 
 	bRetval = False;
 
-	DEBUG(3, ("lp_load: refreshing parameters\n"));
+	DEBUG(3, ("lp_load_ex: refreshing parameters\n"));
 
 	bInGlobalSection = True;
 	bGlobalOnly = global_only;
+	bNoIncludes = no_includes;
 
 	init_globals(! initialize_globals);
 	debug_init();
@@ -8694,7 +8701,7 @@ bool lp_load(const char *pszFname,
 					current_user_info.domain,
 					pszFname);
 		if (!n2) {
-			smb_panic("lp_load: out of memory");
+			smb_panic("lp_load_ex: out of memory");
 		}
 
 		add_to_file_list(pszFname, n2);
@@ -8722,12 +8729,12 @@ bool lp_load(const char *pszFname,
 			 */
 			config_backend = CONFIG_BACKEND_REGISTRY;
 			/* start over */
-			DEBUG(1, ("lp_load: changing to config backend "
+			DEBUG(1, ("lp_load_ex: changing to config backend "
 				  "registry\n"));
 			init_globals(false);
 			lp_kill_all_services();
-			return lp_load(pszFname, global_only, save_defaults,
-				       add_ipc, initialize_globals);
+			return lp_load_ex(pszFname, global_only, save_defaults,
+				          add_ipc, initialize_globals, no_includes);
 		}
 	} else if (lp_config_backend_is_registry()) {
 		bRetval = process_registry_globals();
@@ -8762,7 +8769,33 @@ bool lp_load(const char *pszFname,
 
 	init_iconv();
 
+	bNoIncludes = false;
+
 	return (bRetval);
+}
+
+bool lp_load(const char *pszFname,
+	     bool global_only,
+	     bool save_defaults,
+	     bool add_ipc,
+	     bool initialize_globals)
+{
+	return lp_load_ex(pszFname,
+			  global_only,
+			  save_defaults,
+			  add_ipc,
+			  initialize_globals,
+			  false);
+}
+
+bool lp_load_initial_only(const char *pszFname)
+{
+	return lp_load_ex(pszFname,
+			  true,
+			  false,
+			  false,
+			  true,
+			  true);
 }
 
 /***************************************************************************
