@@ -209,13 +209,13 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 	case RAW_OPEN_SMB2:
 		io->smb2.out.file.ntvfs		= io2->generic.out.file.ntvfs;
 		switch (io2->generic.out.oplock_level) {
-		case OPLOCK_BATCH:
+		case BATCH_OPLOCK_RETURN:
 			io->smb2.out.oplock_level = SMB2_OPLOCK_LEVEL_BATCH;
 			break;
-		case OPLOCK_EXCLUSIVE:
+		case EXCLUSIVE_OPLOCK_RETURN:
 			io->smb2.out.oplock_level = SMB2_OPLOCK_LEVEL_EXCLUSIVE;
 			break;
-		case OPLOCK_LEVEL_II:
+		case LEVEL_II_OPLOCK_RETURN:
 			io->smb2.out.oplock_level = SMB2_OPLOCK_LEVEL_II;
 			break;
 		default:
