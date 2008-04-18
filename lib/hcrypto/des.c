@@ -31,7 +31,19 @@
  * SUCH DAMAGE.
  */
 
-/*
+/**
+ * @page page_des DES - Data Encryption Standard crypto interface
+ *
+ * See the library functions here: @ref hcrypto_des
+ *
+ *
+ * @section des_impl DES implementation history
+ *
+ * There was no complete BSD licensed, fast, GPL compatible
+ * implementation of DES, so Love wrote the part that was missing,
+ * fast key schedule setup and adapted the interface to the orignal
+ * libdes.
+ *
  * The document that got me started for real was "Efficient
  * Implementation of the Data Encryption Standard" by Dag Arne Osvik.
  * I never got to the PC1 transformation was working, instead I used
@@ -120,8 +132,15 @@ DES_is_weak_key(DES_cblock *key)
 }
 
 
-/*
+/**
+ * Setup a des key schedule from a key. The key is no longer needed
+ * after this transaction and can cleared.
  *
+ * @param key a key to initialize the key schedule with.
+ * @param ks a key schedule to initialize.
+ *
+ * @return 0 on success
+ * @ingroup hcrypto_des
  */
 
 int
