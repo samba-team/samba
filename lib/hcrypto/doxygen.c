@@ -69,6 +69,17 @@
  * Return values are diffrent in this module to be compatible with
  * OpenSSL interface. The diffrence is that on success 1 is returned
  * instead of the customary 0.
+
+ * @subsection History
+ *
+ * Eric Young implemented DES in the library libdes, that grew into
+ * libcrypto in the ssleay package. ssleay went into recession and
+ * then got picked up by the OpenSSL (htp://www.openssl.org/)
+ * project.
+ *
+ * libhcrypto is an independent implementation with no code decended
+ * from ssleay/openssl. Both includes some common imported code, for
+ * example the AES implementation.
  */
 
 /** @defgroup hcrypto_dh Diffie-Hellman functions
