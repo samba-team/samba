@@ -210,19 +210,9 @@ static int fb64_start(struct fb *fbp, int dir, int server)
 		/*
 		 * Create a random feed and send it over.
 		 */
-#ifndef OLD_DES_RANDOM_KEY
-		DES_random_key(&fbp->temp_feed);
-#else
-		/*
-		 * From des_cryp.man "If the des_check_key flag is non-zero,
-		 *  des_set_key will check that the key passed is
-		 *  of odd parity and is not a week or semi-weak key."
-		 */
-		do {
-			DES_random_key(fbp->temp_feed);
-			DES_set_odd_parity(fbp->temp_feed);
-		} while (DES_is_weak_key(fbp->temp_feed));
-#endif
+		if (DES_new_random_key(&fbp->temp_feed))
+		    abort();
+		    
 		DES_ecb_encrypt(&fbp->temp_feed,
 				&fbp->temp_feed,
 				&fbp->krbdes_sched, 1);
