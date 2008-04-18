@@ -579,6 +579,7 @@ interface nbt
 		[case(NTLOGON_SAM_LOGON)]       nbt_ntlogon_sam_logon logon;
 		[case(NTLOGON_SAM_LOGON_REPLY)] nbt_ntlogon_sam_logon_reply reply;
 		[case(NTLOGON_SAM_LOGON_REPLY15)] nbt_ntlogon_sam_logon_reply reply;
+		[case(NETLOGON_RESPONSE_FROM_PDC2)] nbt_netlogon_response_from_pdc2 reply2;
 	} nbt_ntlogon_request;
 
 	typedef [flag(NDR_NOALIGN),public] struct {
