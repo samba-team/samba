@@ -1,5 +1,9 @@
-2008-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
+2008-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* libtelnet/enc_des.c: Use DES_new_random_key().
+
+2008-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* telnetd/sys_term.c: Really, mac os uses wtmpx (or asl).
 
 2008-03-09  Love Hörnquist Åstrand  <lha@it.su.se>
