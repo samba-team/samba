@@ -431,9 +431,9 @@ static bool test_get_value(struct torture_context *tctx, void *_data)
 					  &data);
 	torture_assert_werr_ok(tctx, error, "getting value");
 
-	torture_assert_int_equal(tctx, 4, data.length, "value length ok");
-	torture_assert_mem_equal(tctx, data.data, value, 4,
-				    "value content ok");
+	torture_assert_int_equal(tctx, sizeof(value), data.length, "value length ok");
+	torture_assert_mem_equal(tctx, data.data, value, sizeof(value),
+				 "value content ok");
 	torture_assert_int_equal(tctx, REG_DWORD, type, "value type");
 
 	return true;
@@ -448,8 +448,9 @@ static bool test_del_value(struct torture_context *tctx, void *_data)
 	struct registry_key *subkey = NULL, *root;
 	WERROR error;
 	DATA_BLOB data;
-	uint32_t value = 42;
 	uint32_t type;
+	char value[4];
+	SIVAL(value, 0, 42);
 
 	if (!create_test_key(tctx, rctx, "Warschau", &root, &subkey))
 		return false;
@@ -460,7 +461,7 @@ static bool test_del_value(struct torture_context *tctx, void *_data)
 				  "getting missing value");
 
 	error = reg_val_set(subkey, __FUNCTION__, REG_DWORD,
-			    data_blob_talloc(tctx, &value, 4));
+			    data_blob_talloc(tctx, value, sizeof(value)));
 	torture_assert_werr_ok (tctx, error, "setting value");
 
 	error = reg_del_value(subkey, __FUNCTION__);
@@ -483,15 +484,16 @@ static bool test_list_values(struct torture_context *tctx, void *_data)
 	struct registry_key *subkey = NULL, *root;
 	WERROR error;
 	DATA_BLOB data;
-	uint32_t value = 42;
 	uint32_t type;
 	const char *name;
+	char value[4];
+	SIVAL(value, 0, 42);
 
 	if (!create_test_key(tctx, rctx, "Bonn", &root, &subkey))
 		return false;
 
 	error = reg_val_set(subkey, "bar", REG_DWORD,
-			    data_blob_talloc(tctx, &value, 4));
+			    data_blob_talloc(tctx, value, sizeof(value)));
 	torture_assert_werr_ok (tctx, error, "setting value");
 
 	error = reg_key_get_value_by_index(tctx, subkey, 0, &name,
@@ -499,8 +501,8 @@ static bool test_list_values(struct torture_context *tctx, void *_data)
 	torture_assert_werr_ok(tctx, error, "getting value");
 
 	torture_assert_str_equal(tctx, name, "bar", "value name");
-	torture_assert_int_equal(tctx, 4, data.length, "value length");
-	torture_assert_mem_equal(tctx, data.data, &value, 4,
+	torture_assert_int_equal(tctx, sizeof(value), data.length, "value length");
+	torture_assert_mem_equal(tctx, data.data, value, sizeof(value),
 		       "value content");
 	torture_assert_int_equal(tctx, REG_DWORD, type, "value type");
 
