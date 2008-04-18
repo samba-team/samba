@@ -720,6 +720,9 @@ static void list_users_recv(struct composite_context *ctx)
 	if (NT_STATUS_IS_OK(status)) {
 		s3call->response.extra_data.data = extra_data;
 		s3call->response.length += extra_data_len;
+		if (extra_data) {
+			s3call->response.length += 1;
+		}
 	}
 
 	wbsrv_samba3_async_epilogue(status, s3call);
