@@ -625,6 +625,7 @@ struct nbt_ntlogon_sam_logon_reply {
 union nbt_ntlogon_request {
 	struct nbt_ntlogon_sam_logon logon;/* [case(NTLOGON_SAM_LOGON)] */
 	struct nbt_ntlogon_sam_logon_reply reply;/* [case(NTLOGON_SAM_LOGON_REPLY)] */
+	struct nbt_netlogon_response_from_pdc2 reply2;/* [case(NETLOGON_RESPONSE_FROM_PDC2)] */
 }/* [nodiscriminant] */;
 
 struct nbt_ntlogon_packet {
