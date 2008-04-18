@@ -39,6 +39,10 @@
  * DES was created by IBM, modififed by NSA and then adopted by NBS
  * (now NIST) and published ad FIPS PUB 46 (updated by FIPS 46-1).
  *
+ * Since the 19th May 2005 DES was withdrawn by NIST and should no
+ * longer be used. See @ref page_evp for replacement encryption
+ * algorithms and interfaces.
+ *
  * Read more the iteresting history of DES on Wikipedia
  * http://www.wikipedia.org/wiki/Data_Encryption_Standard .
  *
@@ -263,7 +267,7 @@ store(const uint32_t v[2], unsigned char *b)
 }
 
 /**
- * Encrypt/decrypt a block using DES.
+ * Encrypt/decrypt a block using DES. Also called ECB mode
  *
  * @param u data to encrypt
  * @param ks key schedule to use
