@@ -1043,6 +1043,23 @@ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 		/* initialize output value */
 		lck->smb2.out.unknown1 = 0;
 		break;
+
+	case RAW_LOCK_SMB2_BREAK:
+		lck2->generic.level		= RAW_LOCK_GENERIC;
+		lck2->generic.in.file.ntvfs	= lck->smb2_break.in.file.ntvfs;
+		lck2->generic.in.mode		= LOCKING_ANDX_OPLOCK_RELEASE |
+						  ((lck->smb2_break.in.oplock_level << 8) & 0xFF00);
+		lck2->generic.in.timeout	= 0;
+		lck2->generic.in.ulock_cnt	= 0;
+		lck2->generic.in.lock_cnt	= 0;
+		lck2->generic.in.locks		= NULL;
+
+		/* initialize output value */
+		lck->smb2_break.out.oplock_level= lck->smb2_break.in.oplock_level;
+		lck->smb2_break.out.reserved	= lck->smb2_break.in.reserved;
+		lck->smb2_break.out.reserved2	= lck->smb2_break.in.reserved2;
+		lck->smb2_break.out.file	= lck->smb2_break.in.file;
+		break;
 	}
 
 	/* 
