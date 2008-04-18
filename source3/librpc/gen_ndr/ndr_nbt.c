@@ -3184,6 +3184,10 @@ static enum ndr_err_code ndr_push_nbt_ntlogon_request(struct ndr_push *ndr, int 
 				NDR_CHECK(ndr_push_nbt_ntlogon_sam_logon_reply(ndr, NDR_SCALARS, &r->reply));
 			break; }
 
+			case NETLOGON_RESPONSE_FROM_PDC2: {
+				NDR_CHECK(ndr_push_nbt_netlogon_response_from_pdc2(ndr, NDR_SCALARS, &r->reply2));
+			break; }
+
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
@@ -3199,6 +3203,9 @@ static enum ndr_err_code ndr_push_nbt_ntlogon_request(struct ndr_push *ndr, int 
 			break;
 
 			case NTLOGON_SAM_LOGON_REPLY15:
+			break;
+
+			case NETLOGON_RESPONSE_FROM_PDC2:
 			break;
 
 			default:
@@ -3226,6 +3233,10 @@ static enum ndr_err_code ndr_pull_nbt_ntlogon_request(struct ndr_pull *ndr, int 
 				NDR_CHECK(ndr_pull_nbt_ntlogon_sam_logon_reply(ndr, NDR_SCALARS, &r->reply));
 			break; }
 
+			case NETLOGON_RESPONSE_FROM_PDC2: {
+				NDR_CHECK(ndr_pull_nbt_netlogon_response_from_pdc2(ndr, NDR_SCALARS, &r->reply2));
+			break; }
+
 			default:
 				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
@@ -3240,6 +3251,9 @@ static enum ndr_err_code ndr_pull_nbt_ntlogon_request(struct ndr_pull *ndr, int 
 			break;
 
 			case NTLOGON_SAM_LOGON_REPLY15:
+			break;
+
+			case NETLOGON_RESPONSE_FROM_PDC2:
 			break;
 
 			default:
@@ -3265,6 +3279,10 @@ _PUBLIC_ void ndr_print_nbt_ntlogon_request(struct ndr_print *ndr, const char *n
 
 		case NTLOGON_SAM_LOGON_REPLY15:
 			ndr_print_nbt_ntlogon_sam_logon_reply(ndr, "reply", &r->reply);
+		break;
+
+		case NETLOGON_RESPONSE_FROM_PDC2:
+			ndr_print_nbt_netlogon_response_from_pdc2(ndr, "reply2", &r->reply2);
 		break;
 
 		default:
