@@ -1,5 +1,7 @@
 2008-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rand.c: Document, implement RAND_set_rand_engine().
+	
 	* doxygen.c: Add reference to DES, more quick links.
 
 	* rnd_keys.c: Reimplement using RAND_ interface.
