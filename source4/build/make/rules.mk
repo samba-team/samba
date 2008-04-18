@@ -211,7 +211,9 @@ include/includes.d: include/includes.h
 	@echo "Compiling $<"
 	@-mkdir -p `dirname $@`
 	@$(COMPILE) && exit 0 ; \
-	$(COMPILE) 
+		echo "The following command failed:" 1>&2;\
+		echo "$(COMPILE)" 1>&2;\
+		$(COMPILE) >/dev/null 2>&1
 
 
 
