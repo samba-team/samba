@@ -83,7 +83,6 @@ struct fb {
 	int need_start;
 	int state[2];
 	int keyid[2];
-	int once;
 	struct stinfo streams[2];
 };
 
@@ -395,12 +394,6 @@ static void fb64_session(Session_Key *key, int server, struct fb *fbp)
 	fb64_stream_key(fbp->krbdes_key, &fbp->streams[DIR_ENCRYPT-1]);
 	fb64_stream_key(fbp->krbdes_key, &fbp->streams[DIR_DECRYPT-1]);
 
-	if (fbp->once == 0) {
-#if !defined(OLD_DES_RANDOM_KEY) && !defined(HAVE_OPENSSL)
-		DES_init_random_number_generator(&fbp->krbdes_key);
-#endif
-		fbp->once = 1;
-	}
 	DES_set_key_checked((DES_cblock *)&fbp->krbdes_key,
 			    &fbp->krbdes_sched);
 	/*
