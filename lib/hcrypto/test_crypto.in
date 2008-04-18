@@ -51,14 +51,14 @@ ${engine} --rsa=${srcdir}/rsakey.der || \
 ${rsa} --loops=4 || { echo "rsa test for 4 loops failed" ; exit 1; }
 
 for a in unix fortuna egd ;do
-	${rand} --method=${a} crypto-test 2>error
+	${rand} --method=${a} --file=crypto-test 2>error
 	res=$?
 	if test "X$res" != X0 ; then
 	    grep "random not ready yet" error || exit 1
 	    echo "random method $a out for lunch"
 	    continue
 	fi
-	${rand} --method=${a} crypto-test2 2>error
+	${rand} --method=${a} --file=crypto-test2 2>error
 	res=$?
 	if test "X$res" != X0 ; then
 	    grep "random not ready yet" error || exit 1
