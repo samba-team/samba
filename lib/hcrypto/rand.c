@@ -48,8 +48,14 @@ RCSID("$Id$");
 #define O_BINARY 0
 #endif
 
+/**
+ * @page page_rand RAND - random number
+ *
+ * See the library functions here: @ref hcrypto_rand
+ */
 
 const static RAND_METHOD *selected_meth = NULL;
+const static ENGINE *selected_engine = NULL;
 
 static void
 init_method(void)
@@ -59,6 +65,16 @@ init_method(void)
     selected_meth = &hc_rand_fortuna_method;
 }
 
+/**
+ * Seed that random number generator. Secret material can securely be
+ * feed into the function, they will never be returned.
+ *
+ * @param indata seed data
+ * @param size length seed data
+ *
+ * @ingroup hcrypto_rand
+ */
+
 void
 RAND_seed(const void *indata, size_t size)
 {
@@ -66,6 +82,16 @@ RAND_seed(const void *indata, size_t size)
     (*selected_meth->seed)(indata, size);
 }
 
+/**
+ * Get a random block from the random generator, can be used for key material.
+ *
+ * @param outdata random data
+ * @param size length random data
+ *
+ * @return 1 on success, 0 on failure.
+ *
+ * @ingroup hcrypto_rand
+ */
 int
 RAND_bytes(void *outdata, size_t size)
 {
@@ -73,12 +99,34 @@ RAND_bytes(void *outdata, size_t size)
     return (*selected_meth->bytes)(outdata, size);
 }
 
+/**
+ * Reset and free memory used by the random generator.
+ *
+ * @ingroup hcrypto_rand
+ */
+
 void
 RAND_cleanup(void)
 {
-    init_method();
-    (*selected_meth->cleanup)();
+    RAND_METHOD *meth = selected_meth;
+    selected_meth = NULL;
+    if (meth)
+	(*meth->cleanup)();
+    if (selected_engine)
+	ENGINE_finish(selected_engine);
 }
+
+/**
+ * Seed that random number generator. Secret material can securely be
+ * feed into the function, they will never be returned.
+ *
+ * @param indata the input data.
+ * @param size size of in data.
+ * @param entropi entropi in data.
+ * 
+ *
+ * @ingroup hcrypto_rand
+ */
 
 void
 RAND_add(const void *indata, size_t size, double entropi)
@@ -87,12 +135,31 @@ RAND_add(const void *indata, size_t size, double entropi)
     (*selected_meth->add)(indata, size, entropi);
 }
 
+/**
+ * Get a random block from the random generator, should NOT be used for key material.
+ *
+ * @param outdata random data
+ * @param size length random data
+ *
+ * @return 1 on success, 0 on failure.
+ *
+ * @ingroup hcrypto_rand
+ */
+
 int
 RAND_pseudo_bytes(void *outdata, size_t size)
 {
     init_method();
     return (*selected_meth->pseudorand)(outdata, size);
 }
+
+/**
+ * Return status of the random generator
+ *
+ * @return 1 if the random generator can deliver random data.
+ *
+ * @ingroup hcrypto_rand
+ */
 
 int
 RAND_status(void)
@@ -101,26 +168,91 @@ RAND_status(void)
     return (*selected_meth->status)();
 }
 
+/**
+ * Set the default random method.
+ *
+ * @param meth set the new default method.
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_rand
+ */
+
 int
 RAND_set_rand_method(const RAND_METHOD *meth)
 {
+    const RAND_METHOD *old = selected_meth;
     selected_meth = meth;
+    if (old)
+	(*old->cleanup)();
+    if (selected_engine) {
+	ENGINE_finish(selected_engine);
+	selected_engine = NULL;
+    }
     return 1;
 }
+
+/**
+ * Get the default random method.
+ *
+ * @ingroup hcrypto_rand
+ */
 
 const RAND_METHOD *
 RAND_get_rand_method(void)
 {
+    init_method();
     return selected_meth;
 }
+
+/**
+ * Set the default random method from engine.
+ *
+ * @param engine use engine, if NULL is passed it, old method and engine is cleared.
+ *
+ * @return 1 on success, 0 on failure.
+ *
+ * @ingroup hcrypto_rand
+ */
 
 int
 RAND_set_rand_engine(ENGINE *engine)
 {
+    const RAND_METHOD *meth, *old = selected_meth;
+
+    if (engine) {
+	ENGINE_up_ref(engine);
+	meth = ENGINE_get_RAND(engine);
+	if (meth == NULL) {
+	    ENGINE_finish(engine);
+	    return 0;
+	}
+    } else {
+	meth = NULL;
+    }
+
+    if (old)
+	(*old->cleanup)();
+
+    if (selected_engine)
+	ENGINE_finish(selected_engine);
+
+    selected_engine = engine;
+    selected_meth = meth;
+
     return 1;
 }
 
 #define RAND_FILE_SIZE 1024
+
+/**
+ * Load a a file and feed it into RAND_seed().
+ *
+ * @param filename name of file to read.
+ * @param size minimum size to read.
+ *
+ * @ingroup hcrypto_rand
+ */
 
 int
 RAND_load_file(const char *filename, size_t size)
@@ -146,6 +278,15 @@ RAND_load_file(const char *filename, size_t size)
 
     return len ? 1 : 0;
 }
+
+/**
+ * Write of random numbers to a file to store for later initiation with RAND_load_file().
+ *
+ * @param filename name of file to write.
+ *
+ * @return 1 on success and non-one on failure.
+ * @ingroup hcrypto_rand
+ */
 
 int
 RAND_write_file(const char *filename)
@@ -174,6 +315,18 @@ RAND_write_file(const char *filename)
 
     return res;
 }
+
+/**
+ * Return the default random state filename for a user to use for
+ * RAND_load_file(), and RAND_write_file().
+ *
+ * @param filename buffer to hold file name.
+ * @param size size of buffer filename.
+ *
+ * @return the buffer filename or NULL on failure.
+ *
+ * @ingroup hcrypto_rand
+ */
 
 const char *
 RAND_file_name(char *filename, size_t size)
