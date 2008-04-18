@@ -55,10 +55,13 @@ static int version_flag;
 static int help_flag;
 static int len = 1024 * 1024;
 static char *rand_method;
+static char *filename;
 
 static struct getargs args[] = {
     { "length",	0,	arg_integer,	&len,
       "length", NULL },
+    { "file",	0,	arg_string,	&filename,
+      "file name", NULL },
     { "method",	0,	arg_string,	&rand_method,
       "method", NULL },
     { "version",	0,	arg_flag,	&version_flag,
@@ -81,7 +84,7 @@ usage (int ret)
     arg_printusage (args,
 		    sizeof(args)/sizeof(args[0]),
 		    NULL,
-		    "out-random-file");
+		    "");
     exit (ret);
 }
 
@@ -108,7 +111,7 @@ main(int argc, char **argv)
     argc -= idx;
     argv += idx;
 
-    if (argc < 1)
+    if (argc != 0)
 	usage(1);
 
     buffer = emalloc(len);
@@ -133,14 +136,46 @@ main(int argc, char **argv)
     if (RAND_bytes(buffer, len) != 1)
 	errx(1, "RAND_bytes");
 
-    rk_dumpdata(argv[0], buffer, len);
+    if (filename)
+	rk_dumpdata(filename, buffer, len);
+
+    /* head vs tail */
+    if (len >= 100000) {
+	int bit, i;
+	double res;
+	int bits[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+
+	for (i = 0; i < len; i++) {
+	    unsigned char c = ((unsigned char *)buffer)[i];
+	    for (bit = 0; bit < 8 && c; bit++) {
+		if (c & 1)
+		    bits[bit]++;
+		c = c >> 1;
+	    }
+	}
+	
+	for (bit = 0; bit < 8; bit++) {
+
+	    res = ((double)abs(len - bits[bit] * 2)) / (double)len;
+	    if (res > 0.005)
+		errx(1, "head%d vs tail%d > 0.5%%%% %lf == %d vs %d", 
+		     bit, bit, res, len, bits[bit]);
+
+	    printf("head vs tails bit%d: %lf\n", bit, res);
+	}
+    }
 
     free(buffer);
 
-    if (RAND_write_file("test.file") != 1)
-	errx(1, "RAND_write_file");
-    if (RAND_load_file("test.file", 1024) != 1)
-	errx(1, "RAND_load_file");
+    /* test write random file */
+    {
+	static const char *file = "test.file";
+	if (RAND_write_file(file) != 1)
+	    errx(1, "RAND_write_file");
+	if (RAND_load_file(file, 1024) != 1)
+	    errx(1, "RAND_load_file");
+	unlink(file);
+    }
 
     return 0;
 }
