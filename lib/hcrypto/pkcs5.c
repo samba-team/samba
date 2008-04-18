@@ -49,6 +49,22 @@ RCSID("$Id$");
 
 #include <roken.h>
 
+/**
+ * As descriped in PKCS5, convert a password, salt, and iteration counter into a crypto key.
+ *
+ * @param password Password.
+ * @param password_len Length of password.
+ * @param salt Salt
+ * @param salt_len Length of salt.
+ * @param iter iteration counter.
+ * @param keylen the output key length.
+ * @param key the output key.
+ *
+ * @return 1 on success, non 1 on failure.
+ *
+ * @ingroup hcrypto_misc
+ */
+
 int
 PKCS5_PBKDF2_HMAC_SHA1(const void * password, size_t password_len,
 		       const void * salt, size_t salt_len,
