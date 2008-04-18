@@ -54,6 +54,7 @@
  * - @subpage page_rand, @ref hcrypto_rand
  * - @subpage page_dh, @ref hcrypto_dh
  * - @subpage page_rsa, @ref hcrypto_rsa
+ * - @ref hcrypto_misc
  *
  * Older interfaces that you should not use:
  *
@@ -98,4 +99,4 @@
  * See the @ref page_des for description and examples.
  */
 /** @defgroup hcrypto_core hcrypto function controlling behavior */
-/** @defgroup hcrypto_misc hcrypto miscellaneous function */
+/** @defgroup hcrypto_misc hcrypto miscellaneous functions */
