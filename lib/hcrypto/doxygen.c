@@ -50,9 +50,13 @@
  *
  * Sections of this manual:
  *
- * - @subpage page_evp
- * - @subpage page_dh
- * - @subpage page_rsa
+ * - @subpage page_evp, @ref hcrypto_evp
+ * - @subpage page_dh, @ref hcrypto_dh
+ * - @subpage page_rsa, @ref hcrypto_rsa
+ *
+ * Older interfaces that you should not use:
+ *
+ * - @subpage page_des, @ref hcrypto_des
  *
  * @subsection control_functions Control functions
  *
@@ -74,5 +78,11 @@
  */
 /** @defgroup hcrypto_evp EVP generic crypto functions
  * See the @ref page_evp for description and examples.
+ */
+/** @defgroup hcrypto_rand RAND crypto functions
+ * See the @ref page_rand for description and examples.
+ */
+/** @defgroup hcrypto_des DES crypto functions
+ * See the @ref page_des for description and examples.
  */
 /** @defgroup hcrypto_core hcrypto function controlling behavior */
