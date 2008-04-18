@@ -21,5 +21,6 @@ TORTURE_SMB2_OBJ_FILES = $(addprefix torture/smb2/, \
 		lock.o \
 		notify.o \
 		smb2.o \
-		persistent_handles.o)
+		persistent_handles.o \
+		oplocks.o)
 
