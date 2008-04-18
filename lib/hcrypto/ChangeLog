@@ -1,5 +1,7 @@
 2008-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* pkcs5.c: Document PKCS5_PBKDF2_HMAC_SHA1.
+
 	* des.c: DES is withdrawn.
 
 	* des.c: Document using doxygen.
