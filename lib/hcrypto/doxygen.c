@@ -98,3 +98,4 @@
  * See the @ref page_des for description and examples.
  */
 /** @defgroup hcrypto_core hcrypto function controlling behavior */
+/** @defgroup hcrypto_misc hcrypto miscellaneous function */
