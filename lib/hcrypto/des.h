@@ -99,7 +99,6 @@ int	DES_is_weak_key(DES_cblock *);
 int	DES_set_key(DES_cblock *, DES_key_schedule *);
 int	DES_set_key_checked(DES_cblock *, DES_key_schedule *);
 int	DES_key_sched(DES_cblock *, DES_key_schedule *);
-int	HC_DEPRECATED DES_new_random_key(DES_cblock *);
 void	DES_string_to_key(const char *, DES_cblock *);
 int	DES_read_password(DES_cblock *, char *, int);
 
@@ -109,6 +108,7 @@ void	HC_DEPRECATED DES_generate_random_block(DES_cblock *);
 void	HC_DEPRECATED DES_set_sequence_number(void *);
 void 	HC_DEPRECATED DES_init_random_number_generator(DES_cblock *);
 void	HC_DEPRECATED DES_random_key(DES_cblock *);
+int	DES_new_random_key(DES_cblock *);
 
 
 void	DES_encrypt(uint32_t [2], DES_key_schedule *, int);
