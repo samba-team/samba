@@ -262,39 +262,63 @@ store(const uint32_t v[2], unsigned char *b)
     b[7] = (v[1] >>  0) & 0xff;
 }
 
-/*
+/**
+ * Encrypt/decrypt a block using DES.
  *
+ * @param u data to encrypt
+ * @param ks key schedule to use
+ * @param encp if non zero, encrypt. if zero, decrypt.
+ *
+ * @ingroup hcrypto_des
  */
 
 void
-DES_encrypt(uint32_t u[2], DES_key_schedule *ks, int forward_encrypt)
+DES_encrypt(uint32_t u[2], DES_key_schedule *ks, int encp)
 {
     IP(u);
-    desx(u, ks, forward_encrypt);
+    desx(u, ks, encp);
     FP(u);
 }
 
-/*
+/**
+ * Encrypt/decrypt a block using DES.
  *
+ * @param input data to encrypt
+ * @param output data to encrypt
+ * @param ks key schedule to use
+ * @param encp if non zero, encrypt. if zero, decrypt.
+ *
+ * @ingroup hcrypto_des
  */
 
 void
 DES_ecb_encrypt(DES_cblock *input, DES_cblock *output,
-		DES_key_schedule *ks, int forward_encrypt)
+		DES_key_schedule *ks, int encp)
 {
     uint32_t u[2];
     load(*input, u);
-    DES_encrypt(u, ks, forward_encrypt);
+    DES_encrypt(u, ks, encp);
     store(u, *output);
 }
 
-/*
+/**
+ * Encrypt/decrypt a block using DES in Chain Block Cipher mode (cbc).
  *
+ * The IV must always be diffrent for diffrent input data blocks.
+ *
+ * @param in data to encrypt
+ * @param out data to encrypt
+ * @param length length of data
+ * @param ks key schedule to use
+ * @param iv initial vector to use
+ * @param encp if non zero, encrypt. if zero, decrypt.
+ *
+ * @ingroup hcrypto_des
  */
 
 void
 DES_cbc_encrypt(const void *in, void *out, long length,
-		DES_key_schedule *ks, DES_cblock *iv, int forward_encrypt)
+		DES_key_schedule *ks, DES_cblock *iv, int encp)
 {
     const unsigned char *input = in;
     unsigned char *output = out;
@@ -303,7 +327,7 @@ DES_cbc_encrypt(const void *in, void *out, long length,
 
     load(*iv, uiv);
 
-    if (forward_encrypt) {
+    if (encp) {
 	while (length >= DES_CBLOCK_LEN) {
 	    load(input, u);
 	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
@@ -351,13 +375,26 @@ DES_cbc_encrypt(const void *in, void *out, long length,
     uiv[0] = 0; u[0] = 0; uiv[1] = 0; u[1] = 0;
 }
 
-/*
+/**
+ * Encrypt/decrypt a block using DES in Propagating Cipher Block
+ * Chaining mode. This mode is only used for Kerberos 4, and it should
+ * stay that way.
  *
+ * The IV must always be diffrent for diffrent input data blocks.
+ *
+ * @param in data to encrypt
+ * @param out data to encrypt
+ * @param length length of data
+ * @param ks key schedule to use
+ * @param iv initial vector to use
+ * @param encp if non zero, encrypt. if zero, decrypt.
+ *
+ * @ingroup hcrypto_des
  */
 
 void
 DES_pcbc_encrypt(const void *in, void *out, long length,
-		 DES_key_schedule *ks, DES_cblock *iv, int forward_encrypt)
+		 DES_key_schedule *ks, DES_cblock *iv, int encp)
 {
     const unsigned char *input = in;
     unsigned char *output = out;
@@ -366,7 +403,7 @@ DES_pcbc_encrypt(const void *in, void *out, long length,
 
     load(*iv, uiv);
 
-    if (forward_encrypt) {
+    if (encp) {
 	uint32_t t[2];
 	while (length >= DES_CBLOCK_LEN) {
 	    load(input, u);
@@ -421,10 +458,10 @@ DES_pcbc_encrypt(const void *in, void *out, long length,
 
 static void
 _des3_encrypt(uint32_t u[2], DES_key_schedule *ks1, DES_key_schedule *ks2, 
-	      DES_key_schedule *ks3, int forward_encrypt)
+	      DES_key_schedule *ks3, int encp)
 {
     IP(u);
-    if (forward_encrypt) {
+    if (encp) {
 	desx(u, ks1, 1); /* IP + FP cancel out each other */
 	desx(u, ks2, 0);
 	desx(u, ks3, 1);
@@ -436,8 +473,18 @@ _des3_encrypt(uint32_t u[2], DES_key_schedule *ks1, DES_key_schedule *ks2,
     FP(u);
 }
 
-/*
+/**
+ * Encrypt/decrypt a block using triple DES using EDE mode,
+ * encrypt/decrypt/encrypt.
  *
+ * @param input data to encrypt
+ * @param output data to encrypt
+ * @param ks1 key schedule to use
+ * @param ks2 key schedule to use
+ * @param ks3 key schedule to use
+ * @param encp if non zero, encrypt. if zero, decrypt.
+ *
+ * @ingroup hcrypto_des
  */
 
 void
@@ -446,24 +493,37 @@ DES_ecb3_encrypt(DES_cblock *input,
 		 DES_key_schedule *ks1,
 		 DES_key_schedule *ks2,
 		 DES_key_schedule *ks3,
-		 int forward_encrypt)
+		 int encp)
 {
     uint32_t u[2];
     load(*input, u);
-    _des3_encrypt(u, ks1, ks2, ks3, forward_encrypt);
+    _des3_encrypt(u, ks1, ks2, ks3, encp);
     store(u, *output);
     return;
 }
 
-/*
+/**
+ * Encrypt/decrypt using Triple DES in Chain Block Cipher mode (cbc).
  *
+ * The IV must always be diffrent for diffrent input data blocks.
+ *
+ * @param in data to encrypt
+ * @param out data to encrypt
+ * @param length length of data
+ * @param ks1 key schedule to use
+ * @param ks2 key schedule to use
+ * @param ks3 key schedule to use
+ * @param iv initial vector to use
+ * @param encp if non zero, encrypt. if zero, decrypt.
+ *
+ * @ingroup hcrypto_des
  */
 
 void
 DES_ede3_cbc_encrypt(const void *in, void *out,
 		     long length, DES_key_schedule *ks1, 
 		     DES_key_schedule *ks2, DES_key_schedule *ks3,
-		     DES_cblock *iv, int forward_encrypt)
+		     DES_cblock *iv, int encp)
 {
     const unsigned char *input = in;
     unsigned char *output = out;
@@ -472,7 +532,7 @@ DES_ede3_cbc_encrypt(const void *in, void *out,
 
     load(*iv, uiv);
 
-    if (forward_encrypt) {
+    if (encp) {
 	while (length >= DES_CBLOCK_LEN) {
 	    load(input, u);
 	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
@@ -521,14 +581,27 @@ DES_ede3_cbc_encrypt(const void *in, void *out,
     uiv[0] = 0; u[0] = 0; uiv[1] = 0; u[1] = 0;
 }
 
-/*
+/**
+ * Encrypt/decrypt using DES in cipher feedback mode with 64 bit
+ * feedback.
  *
+ * The IV must always be diffrent for diffrent input data blocks.
+ *
+ * @param in data to encrypt
+ * @param out data to encrypt
+ * @param length length of data
+ * @param ks key schedule to use
+ * @param iv initial vector to use
+ * @param num offset into in cipher block encryption/decryption stop last time.
+ * @param encp if non zero, encrypt. if zero, decrypt.
+ *
+ * @ingroup hcrypto_des
  */
 
 void
 DES_cfb64_encrypt(const void *in, void *out, 
 		  long length, DES_key_schedule *ks, DES_cblock *iv,
-		  int *num, int forward_encrypt)
+		  int *num, int encp)
 {
     const unsigned char *input = in;
     unsigned char *output = out;
@@ -539,7 +612,7 @@ DES_cfb64_encrypt(const void *in, void *out,
 
     assert(*num >= 0 && *num < DES_CBLOCK_LEN);
 
-    if (forward_encrypt) {
+    if (encp) {
 	int i = *num;
 
 	while (length > 0) {
@@ -586,8 +659,19 @@ DES_cfb64_encrypt(const void *in, void *out,
     }
 }
 
-/*
+/**
+ * Crete a checksum using DES in CBC encryption mode. This mode is
+ * only used for Kerberos 4, and it should stay that way.
  *
+ * The IV must always be diffrent for diffrent input data blocks.
+ *
+ * @param in data to checksum
+ * @param output the checksum
+ * @param length length of data
+ * @param ks key schedule to use
+ * @param iv initial vector to use
+ *
+ * @ingroup hcrypto_des
  */
 
 uint32_t
@@ -640,6 +724,16 @@ bitswap8(unsigned char b)
     return r;
 }
 
+/**
+ * Convert a string to a DES key. Use something like
+ * PKCS5_PBKDF2_HMAC_SHA1() to create key from passwords.
+ *
+ * @param str The string to convert to a key
+ * @param key the resulting key
+ *
+ * @ingroup hcrypto_des
+ */
+
 void
 DES_string_to_key(const char *str, DES_cblock *key)
 {
@@ -671,7 +765,13 @@ DES_string_to_key(const char *str, DES_cblock *key)
 }
 
 /*
+ * Read password from prompt and create a DES key.
  *
+ * @param key key to convert to
+ * @param prompt prompt to display user
+ * @param verify prompt twice.
+ *
+ * @return 1 on success, non 1 on failure.
  */
 
 int
@@ -681,7 +781,7 @@ DES_read_password(DES_cblock *key, char *prompt, int verify)
     int ret;
 
     ret = UI_UTIL_read_pw_string(buf, sizeof(buf) - 1, prompt, verify);
-    if (ret == 0)
+    if (ret == 1)
 	DES_string_to_key(buf, key);
     return ret;
 }
@@ -916,7 +1016,7 @@ FP(uint32_t v[2])
 }
 
 static void
-desx(uint32_t block[2], DES_key_schedule *ks, int forward_encrypt)
+desx(uint32_t block[2], DES_key_schedule *ks, int encp)
 {
     uint32_t *keys;
     uint32_t fval, work, right, left;
@@ -925,7 +1025,7 @@ desx(uint32_t block[2], DES_key_schedule *ks, int forward_encrypt)
     left = block[0];
     right = block[1];
 
-    if (forward_encrypt) {
+    if (encp) {
 	keys = &ks->ks[0];
 
 	for( round = 0; round < 8; round++ ) {
