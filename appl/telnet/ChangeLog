@@ -1,5 +1,8 @@
 2008-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* libtelnet/enc_des.c: No need to call
+	DES_init_random_number_generator, hcrypto is sane now.
+
 	* libtelnet/enc_des.c: Use DES_new_random_key().
 
 2008-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
