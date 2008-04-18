@@ -36,6 +36,11 @@
  *
  * See the library functions here: @ref hcrypto_des
  *
+ * DES was created by IBM, modififed by NSA and then adopted by NBS
+ * (now NIST) and published ad FIPS PUB 46 (updated by FIPS 46-1).
+ *
+ * Read more the iteresting history of DES on Wikipedia
+ * http://www.wikipedia.org/wiki/Data_Encryption_Standard .
  *
  * @section des_impl DES implementation history
  *
