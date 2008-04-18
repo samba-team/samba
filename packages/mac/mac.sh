@@ -23,7 +23,7 @@ echo "Configure"
 env \
   CFLAGS="-arch i386 -arch ppc" \
   LDFLAGS="-arch i386 -arch ppc" \
-  ${config} > log || exit 1
+  ${config} --disable-dependency-tracking > log || exit 1
 echo "Build"
 make all > /dev/null || exit 1
 echo "Run regression suite"
