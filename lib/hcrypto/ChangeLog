@@ -1,5 +1,7 @@
 2008-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* des.c: Document using doxygen.
+
 	* des.c: History of DES.
 
 	* doxygen.c: History of hcrypto.
