@@ -17,6 +17,8 @@ Release Notes - Heimdal - Version Heimdal 1.2
   [HEIMDAL-67] - Fix locking and store credential in atomic writes
                  in the FILE credential cache
   [HEIMDAL-106] - make compile on cygwin again
+  [HEIMDAL-107] - Replace old random key generation in des module
+                  and use it with RAND_ function instead
 
 * New Feature
   [HEIMDAL-3] - pkinit alg agility PRF test vectors
