@@ -209,7 +209,6 @@ static void init_domain_recv_netlogonpipe(struct composite_context *ctx)
 						   &state->domain->netlogon_pipe);
 	
 	if (!composite_is_ok(state->ctx)) {
-		talloc_free(state->domain->netlogon_binding);
 		return;
 	}
 	talloc_steal(state->domain->netlogon_pipe, state->domain->netlogon_binding);
