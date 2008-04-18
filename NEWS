@@ -1,7 +1,9 @@
 Release Notes - Heimdal - Version Heimdal 1.2
 
 * Bug
-  [HEIMDAL-10] - Follow-up on bug report for SEGFAULT in gss_display_name/gss_export_name when using SPNEGO
+
+  [HEIMDAL-10] - Follow-up on bug report for SEGFAULT in
+  		 gss_display_name/gss_export_name when using SPNEGO
   [HEIMDAL-15] - Re: [Heimdal-bugs] potential bug in Heimdal 1.1
   [HEIMDAL-17] - Remove support for depricated [libdefaults]capath
   [HEIMDAL-52] - hdb overwrite aliases for db databases
@@ -12,21 +14,26 @@ Release Notes - Heimdal - Version Heimdal 1.2
   [HEIMDAL-105] - rcp: sync rcp with upstream bsd rcp codebase
 
 * Improvement
-  [HEIMDAL-67] - Fix locking and store credential in atomic writes in the FILE credential cache
+  [HEIMDAL-67] - Fix locking and store credential in atomic writes
+                 in the FILE credential cache
   [HEIMDAL-106] - make compile on cygwin again
 
 * New Feature
   [HEIMDAL-3] - pkinit alg agility PRF test vectors
   [HEIMDAL-14] - Add libwind to Heimdal
   [HEIMDAL-16] - Use libwind in hx509
-  [HEIMDAL-55] - Add flag to krb5 to not add GSS-API INT|CONF to the negotiation
-  [HEIMDAL-74] - Add support to report extended error message back in AS-REQ to support windows clients
+  [HEIMDAL-55] - Add flag to krb5 to not add GSS-API INT|CONF to
+                 the negotiation
+  [HEIMDAL-74] - Add support to report extended error message back
+                 in AS-REQ to support windows clients
 
 * Task
-  [HEIMDAL-63] - Dont try key usage KRB5_KU_AP_REQ_AUTH for TGS-REQ. This drop compatibility with pre 0.3d KDCs.
+  [HEIMDAL-63] - Dont try key usage KRB5_KU_AP_REQ_AUTH for TGS-REQ.
+                 This drop compatibility with pre 0.3d KDCs.
   [HEIMDAL-64] - kcm: first implementation of kcm-move-cache
   [HEIMDAL-65] - Failed to compile with --disable-pk-init
-  [HEIMDAL-80] - verify that [VU#162289]: gcc silently discards some wraparound checks doesn't apply to Heimdal
+  [HEIMDAL-80] - verify that [VU#162289]: gcc silently discards some
+                 wraparound checks doesn't apply to Heimdal
 
 Changes in release 1.1
 
