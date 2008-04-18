@@ -51,6 +51,7 @@
  * Sections of this manual:
  *
  * - @subpage page_evp, @ref hcrypto_evp
+ * - @subpage page_rand, @ref hcrypto_rand
  * - @subpage page_dh, @ref hcrypto_dh
  * - @subpage page_rsa, @ref hcrypto_rsa
  *
