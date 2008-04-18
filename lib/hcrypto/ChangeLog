@@ -1,5 +1,7 @@
 2008-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_crypto.in: Use --file to test_rand.
+
 	* rand.c: Document, implement RAND_set_rand_engine().
 	
 	* doxygen.c: Add reference to DES, more quick links.
