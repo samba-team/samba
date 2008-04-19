@@ -104,7 +104,7 @@ static struct rpc_pipe_client *pipe_cm_find(struct cli_state *cli,
 			return NULL;
 		}
 
-		if (strequal(cli->desthost, p->pipe->cli->desthost) &&
+		if (strequal(cli->desthost, p->pipe->desthost) &&
 		    pipe_idx == p->pipe->pipe_idx) {
 			*status = NT_STATUS_OK;
 			return p->pipe;

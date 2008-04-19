@@ -279,7 +279,7 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
 				DEBUG(0,("cli_pipe_verify_ntlmssp: failed to unseal "
 					"packet from remote machine %s on pipe %s "
 					"fnum 0x%x. Error was %s.\n",
-					cli->cli->desthost,
+					cli->desthost,
 					cli->pipe_name,
 					(unsigned int)cli->fnum,
 					nt_errstr(status) ));
@@ -297,7 +297,7 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
 				DEBUG(0,("cli_pipe_verify_ntlmssp: check signing failed on "
 					"packet from remote machine %s on pipe %s "
 					"fnum 0x%x. Error was %s.\n",
-					cli->cli->desthost,
+					cli->desthost,
 					cli->pipe_name,
 					(unsigned int)cli->fnum,
 					nt_errstr(status) ));
@@ -400,7 +400,7 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 		DEBUG(3,("cli_pipe_verify_schannel: failed to decode PDU "
 				"Connection to remote machine %s "
 				"pipe %s fnum 0x%x.\n",
-				cli->cli->desthost,
+				cli->desthost,
 				cli->pipe_name,
 				(unsigned int)cli->fnum ));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -461,7 +461,7 @@ static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli, RPC_
 			if (prhdr->auth_len) {
 				DEBUG(3, ("cli_pipe_validate_rpc_response: Connection to remote machine %s "
 					"pipe %s fnum 0x%x - got non-zero auth len %u.\n",
-					cli->cli->desthost,
+					cli->desthost,
 					cli->pipe_name,
 					(unsigned int)cli->fnum,
 					(unsigned int)prhdr->auth_len ));
@@ -489,7 +489,7 @@ static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli, RPC_
 		default:
 			DEBUG(3, ("cli_pipe_validate_rpc_response: Connection to remote machine %s "
 				"pipe %s fnum %x - unknown internal auth type %u.\n",
-				cli->cli->desthost,
+				cli->desthost,
 				cli->pipe_name,
 				(unsigned int)cli->fnum,
 				cli->auth.auth_type ));
@@ -595,7 +595,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 		case RPC_BINDNACK:
 			DEBUG(1, ("cli_pipe_validate_current_pdu: Bind NACK received from remote machine %s "
 				"pipe %s fnum 0x%x!\n",
-				cli->cli->desthost,
+				cli->desthost,
 				cli->pipe_name,
 				(unsigned int)cli->fnum));
 			/* Use this for now... */
@@ -619,7 +619,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 			DEBUG(1, ("cli_pipe_validate_current_pdu: RPC fault code %s received from remote machine %s "
 				"pipe %s fnum 0x%x!\n",
 				dcerpc_errstr(NT_STATUS_V(fault_resp.status)),
-				cli->cli->desthost,
+				cli->desthost,
 				cli->pipe_name,
 				(unsigned int)cli->fnum));
 			if (NT_STATUS_IS_OK(fault_resp.status)) {
@@ -634,7 +634,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 			DEBUG(0, ("cli_pipe_validate_current_pdu: unknown packet type %u received "
 				"from remote machine %s pipe %s fnum 0x%x!\n",
 				(unsigned int)prhdr->pkt_type,
-				cli->cli->desthost,
+				cli->desthost,
 				cli->pipe_name,
 				(unsigned int)cli->fnum));
 			return NT_STATUS_INVALID_INFO_CLASS;
@@ -644,7 +644,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 		DEBUG(3, ("cli_pipe_validate_current_pdu: Connection to remote machine %s "
 			"pipe %s fnum %x got an unexpected RPC packet "
 			"type - %u, not %u\n",
-			cli->cli->desthost,
+			cli->desthost,
 			cli->pipe_name,
 			(unsigned int)cli->fnum,
 			prhdr->pkt_type,
@@ -764,7 +764,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	setup[1] = cli->fnum; /* Pipe file handle. */
 
 	DEBUG(5,("rpc_api_pipe: Remote machine %s pipe %s fnum 0x%x\n",
-		cli->cli->desthost,
+		cli->desthost,
 		cli->pipe_name,
 		(unsigned int)cli->fnum ));
 
@@ -783,7 +783,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	{
 		DEBUG(0, ("rpc_api_pipe: Remote machine %s pipe %s fnum 0x%x "
 			"returned critical error. Error was %s\n",
-			cli->cli->desthost,
+			cli->desthost,
 			cli->pipe_name,
 			(unsigned int)cli->fnum,
 			cli_errstr(cli->cli)));
@@ -800,7 +800,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	if (prdata == NULL) {
 		DEBUG(3,("rpc_api_pipe: Remote machine %s pipe %s "
 			"fnum 0x%x failed to return data.\n",
-			cli->cli->desthost,
+			cli->desthost,
 			cli->pipe_name,
 			(unsigned int)cli->fnum));
 		/* Yes - some calls can truely return no data... */
@@ -850,7 +850,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 				/* Set the data type correctly for big-endian data on the first packet. */
 				DEBUG(10,("rpc_api_pipe: On machine %s pipe %s fnum 0x%x "
 					"PDU data format is big-endian.\n",
-					cli->cli->desthost,
+					cli->desthost,
 					cli->pipe_name,
 					(unsigned int)cli->fnum));
 
@@ -887,7 +887,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	}
 
 	DEBUG(10,("rpc_api_pipe: Remote machine %s pipe %s fnum 0x%x returned %u bytes.\n",
-		cli->cli->desthost,
+		cli->desthost,
 		cli->pipe_name,
 		(unsigned int)cli->fnum,
 		(unsigned int)prs_data_size(rbuf) ));
@@ -1840,7 +1840,7 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 
 	DEBUG(5,("rpc_send_auth_auth3: Remote machine %s pipe %s "
 		"fnum 0x%x sent auth3 response ok.\n",
-		cli->cli->desthost,
+		cli->desthost,
 		cli->pipe_name,
 		(unsigned int)cli->fnum));
 
@@ -2018,7 +2018,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 
 	DEBUG(5,("rpc_finish_spnego_ntlmssp_bind: alter context request to "
 		"remote machine %s pipe %s fnum 0x%x.\n",
-		cli->cli->desthost,
+		cli->desthost,
 		cli->pipe_name,
 		(unsigned int)cli->fnum));
 
@@ -2081,7 +2081,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 
 	DEBUG(3,("rpc_pipe_bind: Remote machine %s pipe %s "
 		"fnum 0x%x bind request returned ok.\n",
-		cli->cli->desthost,
+		cli->desthost,
 		cli->pipe_name,
 		(unsigned int)cli->fnum));
 
@@ -2227,6 +2227,12 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 	result->pipe_idx = pipe_idx;
 	result->auth.auth_type = PIPE_AUTH_TYPE_NONE;
 	result->auth.auth_level = PIPE_AUTH_LEVEL_NONE;
+
+	result->desthost = talloc_strdup(result, cli->desthost);
+	if (result->desthost == NULL) {
+		TALLOC_FREE(result);
+		return NULL;
+	}
 
 	if (pipe_idx == PI_NETLOGON) {
 		/* Set up a netlogon credential chain for a netlogon pipe. */

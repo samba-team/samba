@@ -721,7 +721,8 @@ static bool net_spoolss_open_printer_ex(struct rpc_pipe_client *pipe_hnd,
 	WERROR result;
 	fstring servername, printername2;
 
-	slprintf(servername, sizeof(servername)-1, "\\\\%s", pipe_hnd->cli->desthost);
+	slprintf(servername, sizeof(servername)-1, "\\\\%s",
+		 pipe_hnd->desthost);
 
 	fstrcpy(printername2, servername);
 	fstrcat(printername2, "\\");

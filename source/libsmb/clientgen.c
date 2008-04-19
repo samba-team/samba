@@ -638,7 +638,7 @@ bool cli_rpc_pipe_close(struct rpc_pipe_client *cli)
                          "to machine %s.  Error was %s\n",
                          cli->pipe_name,
                          (int) cli->fnum,
-                         cli->cli->desthost,
+                         cli->desthost,
                          cli_errstr(cli->cli)));
 	}
 
@@ -647,7 +647,7 @@ bool cli_rpc_pipe_close(struct rpc_pipe_client *cli)
 	}
 
 	DEBUG(10,("cli_rpc_pipe_close: closed pipe %s to machine %s\n",
-		cli->pipe_name, cli->cli->desthost ));
+		cli->pipe_name, cli->desthost ));
 
 	DLIST_REMOVE(cli->cli->pipe_list, cli);
 	talloc_destroy(cli);
