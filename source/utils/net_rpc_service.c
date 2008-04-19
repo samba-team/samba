@@ -213,7 +213,7 @@ static NTSTATUS rpc_service_list_internal(const DOM_SID *domain_sid,
 	}
 
 	status = rpccli_svcctl_OpenSCManagerW(pipe_hnd, mem_ctx,
-					      pipe_hnd->cli->srv_name_slash,
+					      pipe_hnd->srv_name_slash,
 					      NULL,
 					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
 					      &hSCM,
@@ -272,7 +272,7 @@ static NTSTATUS rpc_service_status_internal(const DOM_SID *domain_sid,
 
 	/* Open the Service Control Manager */
 	status = rpccli_svcctl_OpenSCManagerW(pipe_hnd, mem_ctx,
-					      pipe_hnd->cli->srv_name_slash,
+					      pipe_hnd->srv_name_slash,
 					      NULL,
 					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
 					      &hSCM,
@@ -384,7 +384,7 @@ static NTSTATUS rpc_service_stop_internal(const DOM_SID *domain_sid,
 
 	/* Open the Service Control Manager */
 	status = rpccli_svcctl_OpenSCManagerW(pipe_hnd, mem_ctx,
-					      pipe_hnd->cli->srv_name_slash,
+					      pipe_hnd->srv_name_slash,
 					      NULL,
 					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
 					      &hSCM,
@@ -427,7 +427,7 @@ static NTSTATUS rpc_service_pause_internal(const DOM_SID *domain_sid,
 
 	/* Open the Service Control Manager */
 	status = rpccli_svcctl_OpenSCManagerW(pipe_hnd, mem_ctx,
-					      pipe_hnd->cli->srv_name_slash,
+					      pipe_hnd->srv_name_slash,
 					      NULL,
 					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
 					      &hSCM,
@@ -470,7 +470,7 @@ static NTSTATUS rpc_service_resume_internal(const DOM_SID *domain_sid,
 
 	/* Open the Service Control Manager */
 	status = rpccli_svcctl_OpenSCManagerW(pipe_hnd, mem_ctx,
-					      pipe_hnd->cli->srv_name_slash,
+					      pipe_hnd->srv_name_slash,
 					      NULL,
 					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
 					      &hSCM,
@@ -511,7 +511,7 @@ static NTSTATUS rpc_service_start_internal(const DOM_SID *domain_sid,
 
 	/* Open the Service Control Manager */
 	status = rpccli_svcctl_OpenSCManagerW(pipe_hnd, mem_ctx,
-					      pipe_hnd->cli->srv_name_slash,
+					      pipe_hnd->srv_name_slash,
 					      NULL,
 					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
 					      &hSCM,
