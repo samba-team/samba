@@ -333,7 +333,7 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 	/* This call can take a long time - allow the server to time out.
 	   35 seconds should do it. */
 
-	orig_timeout = cli_set_timeout(netlogon_pipe->cli, 35000);
+	orig_timeout = rpccli_set_timeout(netlogon_pipe, 35000);
 
 	req_domain = find_domain_from_name_noinit(state->request.domain_name);
 	if (req_domain == domain) {
@@ -352,7 +352,7 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 						  &werr);
 	}
 	/* And restore our original timeout. */
-	cli_set_timeout(netlogon_pipe->cli, orig_timeout);
+	rpccli_set_timeout(netlogon_pipe, orig_timeout);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(5,("Error requesting DCname for domain %s: %s\n",

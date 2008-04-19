@@ -750,14 +750,14 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	/* This call can take a long time - allow the server to time out.
 	   35 seconds should do it. */
 
-	orig_timeout = cli_set_timeout(cli->cli, 35000);
+	orig_timeout = rpccli_set_timeout(cli, 35000);
 
         result = rpccli_samr_QueryGroupMember(cli, mem_ctx,
 					      &group_pol,
 					      &rids);
 
 	/* And restore our original timeout. */
-	cli_set_timeout(cli->cli, orig_timeout);
+	rpccli_set_timeout(cli, orig_timeout);
 
 	rpccli_samr_Close(cli, mem_ctx, &group_pol);
 
