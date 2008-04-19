@@ -46,7 +46,7 @@ struct ctdbd_connection *messaging_ctdbd_connection(void)
 		struct messaging_context *msg;
 
 		ev = event_context_init(NULL);
-		if (!msg) {
+		if (!ev) {
 			DEBUG(0,("event_context_init failed\n"));
 		}
 
