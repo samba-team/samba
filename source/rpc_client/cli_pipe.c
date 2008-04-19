@@ -2330,12 +2330,12 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 
 	result->auth.a_u.ntlmssp_state = ntlmssp_state;
 
-	*perr = ntlmssp_set_username(ntlmssp_state, cli->user_name);
+	*perr = ntlmssp_set_username(ntlmssp_state, username);
 	if (!NT_STATUS_IS_OK(*perr)) {
 		goto err;
 	}
 
-	*perr = ntlmssp_set_domain(ntlmssp_state, cli->domain);	
+	*perr = ntlmssp_set_domain(ntlmssp_state, domain);
 	if (!NT_STATUS_IS_OK(*perr)) {
 		goto err;
 	}
