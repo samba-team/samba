@@ -150,11 +150,6 @@ NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 		return NT_STATUS_UNEXPECTED_IO_ERROR;
 	}
 
-	if (size < 0) {
-		DEBUG(5,("read return < 0!\n"));
-		return NT_STATUS_UNEXPECTED_IO_ERROR;
-	}
-
 	*rcvbuf = (uint8_t *)
 		(smb_base(cli_req->inbuf) + SVAL(cli_req->inbuf, smb_vwv6));
 	*received = size;
