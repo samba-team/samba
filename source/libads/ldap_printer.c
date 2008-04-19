@@ -296,7 +296,7 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 	
 	result = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
 					     "", MAXIMUM_ALLOWED_ACCESS, 
-					     servername, cli->cli->user_name, &pol);
+					     servername, cli->user_name, &pol);
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to open printer %s, error is %s.\n",
 			  printername, dos_errstr(result)));

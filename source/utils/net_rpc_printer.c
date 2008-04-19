@@ -994,7 +994,7 @@ static bool get_printer_info(struct rpc_pipe_client *pipe_hnd,
 
 	/* argument given, get a single printer by name */
 	if (!net_spoolss_open_printer_ex(pipe_hnd, mem_ctx, argv[0],
-			MAXIMUM_ALLOWED_ACCESS,	pipe_hnd->cli->user_name, &hnd)) 
+			MAXIMUM_ALLOWED_ACCESS,	pipe_hnd->user_name, &hnd))
 		return False;
 
 	if (!net_spoolss_getprinter(pipe_hnd, mem_ctx, &hnd, level, ctr)) {
@@ -1190,7 +1190,7 @@ static NTSTATUS rpc_printer_publish_internals_args(struct rpc_pipe_client *pipe_
 
 		/* open printer handle */
 		if (!net_spoolss_open_printer_ex(pipe_hnd, mem_ctx, sharename,
-			PRINTER_ALL_ACCESS, pipe_hnd->cli->user_name, &hnd)) 
+			PRINTER_ALL_ACCESS, pipe_hnd->user_name, &hnd))
 			goto done;
 
 		got_hnd = True;
@@ -1838,7 +1838,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid,
 
 		/* open src printer handle */
 		if (!net_spoolss_open_printer_ex(pipe_hnd, mem_ctx, sharename,
-			MAXIMUM_ALLOWED_ACCESS, pipe_hnd->cli->user_name, &hnd_src)) 
+			MAXIMUM_ALLOWED_ACCESS, pipe_hnd->user_name, &hnd_src))
 			goto done;
 
 		got_hnd_src = True;

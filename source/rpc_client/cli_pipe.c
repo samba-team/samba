@@ -2275,6 +2275,15 @@ struct rpc_pipe_client *cli_rpc_pipe_open_noauth(struct cli_state *cli, int pipe
 		return NULL;
 	}
 
+	result->domain = talloc_strdup(result, cli->domain);
+	result->user_name = talloc_strdup(result, cli->user_name);
+
+	if ((result->domain == NULL) || (result->user_name == NULL)) {
+		*perr = NT_STATUS_NO_MEMORY;
+		cli_rpc_pipe_close(result);
+		return NULL;
+	}
+
 	*perr = rpc_pipe_bind(result, PIPE_AUTH_TYPE_NONE, PIPE_AUTH_LEVEL_NONE);
 	if (!NT_STATUS_IS_OK(*perr)) {
 		int lvl = 0;
@@ -2330,8 +2339,14 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 	
 	result->auth.cli_auth_data_free_func = cli_ntlmssp_auth_free;
 
-	result->domain = domain;
-	result->user_name = username;
+	result->domain = talloc_strdup(result, domain);
+	result->user_name = talloc_strdup(result, username);
+
+	if ((result->domain == NULL) || (result->user_name == NULL)) {
+		*perr = NT_STATUS_NO_MEMORY;
+		goto err;
+	}
+
 	pwd_set_cleartext(&result->pwd, password);
 
 	*perr = ntlmssp_client_start(&ntlmssp_state);
