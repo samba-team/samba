@@ -1979,7 +1979,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 
 	/* Initialize the returning data struct. */
 	prs_mem_free(rbuf);
-	prs_init_empty(rbuf, cli->mem_ctx, UNMARSHALL);
+	prs_init_empty(rbuf, talloc_tos(), UNMARSHALL);
 
 	nt_status = rpc_api_pipe(cli, &rpc_out, rbuf, RPC_ALTCONTRESP);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2052,7 +2052,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	prs_init_empty(&rpc_out, cli->mem_ctx, MARSHALL);
+	prs_init_empty(&rpc_out, talloc_tos(), MARSHALL);
 
 	rpc_call_id = get_rpc_call_id();
 
@@ -2068,7 +2068,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 	}
 
 	/* Initialize the incoming data struct. */
-	prs_init_empty(&rbuf, cli->mem_ctx, UNMARSHALL);
+	prs_init_empty(&rbuf, talloc_tos(), UNMARSHALL);
 
 	/* send data on \PIPE\.  receive a response */
 	status = rpc_api_pipe(cli, &rpc_out, &rbuf, RPC_BINDACK);
@@ -2188,7 +2188,6 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 
 static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe_idx, NTSTATUS *perr)
 {
-	TALLOC_CTX *mem_ctx;
 	struct rpc_pipe_client *result;
 	int fnum;
 
@@ -2204,17 +2203,10 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 	/* The pipe name index must fall within our array */
 	SMB_ASSERT((pipe_idx >= 0) && (pipe_idx < PI_MAX_PIPES));
 
-	mem_ctx = talloc_init("struct rpc_pipe_client");
-	if (mem_ctx == NULL) {
-		return NULL;
-	}
-
-	result = TALLOC_ZERO_P(mem_ctx, struct rpc_pipe_client);
+	result = TALLOC_ZERO_P(NULL, struct rpc_pipe_client);
 	if (result == NULL) {
 		return NULL;
 	}
-
-	result->mem_ctx = mem_ctx;
 
 	result->pipe_name = cli_get_pipe_name(pipe_idx);
 
@@ -2226,7 +2218,7 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 			 result->pipe_name, cli->desthost,
 			 cli_errstr(cli)));
 		*perr = cli_get_nt_error(cli);
-		talloc_destroy(result->mem_ctx);
+		talloc_destroy(result);
 		return NULL;
 	}
 
@@ -2238,9 +2230,9 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 
 	if (pipe_idx == PI_NETLOGON) {
 		/* Set up a netlogon credential chain for a netlogon pipe. */
-		result->dc = TALLOC_ZERO_P(mem_ctx, struct dcinfo);
+		result->dc = TALLOC_ZERO_P(result, struct dcinfo);
 		if (result->dc == NULL) {
-			talloc_destroy(result->mem_ctx);
+			talloc_destroy(result);
 			return NULL;
 		}
 	}
@@ -2525,7 +2517,8 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 		return NULL;
 	}
 
-	result->auth.a_u.schannel_auth = TALLOC_ZERO_P(result->mem_ctx, struct schannel_auth_struct);
+	result->auth.a_u.schannel_auth = TALLOC_ZERO_P(
+		result, struct schannel_auth_struct);
 	if (!result->auth.a_u.schannel_auth) {
 		cli_rpc_pipe_close(result);
 		*perr = NT_STATUS_NO_MEMORY;
@@ -2693,8 +2686,8 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
 
 	/* Default service principal is "desthost$@realm" */
 	if (!service_princ) {
-		service_princ = talloc_asprintf(result->mem_ctx, "%s$@%s",
-			cli->desthost, lp_realm() );
+		service_princ = talloc_asprintf(result, "%s$@%s",
+						cli->desthost, lp_realm() );
 		if (!service_princ) {
 			cli_rpc_pipe_close(result);
 			return NULL;
@@ -2710,7 +2703,8 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
 		}
 	}
 
-	result->auth.a_u.kerberos_auth = TALLOC_ZERO_P(result->mem_ctx, struct kerberos_auth_struct);
+	result->auth.a_u.kerberos_auth = TALLOC_ZERO_P(
+		result, struct kerberos_auth_struct);
 	if (!result->auth.a_u.kerberos_auth) {
 		cli_rpc_pipe_close(result);
 		*perr = NT_STATUS_NO_MEMORY;

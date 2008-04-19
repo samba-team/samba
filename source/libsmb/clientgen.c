@@ -650,7 +650,7 @@ bool cli_rpc_pipe_close(struct rpc_pipe_client *cli)
 		cli->pipe_name, cli->cli->desthost ));
 
 	DLIST_REMOVE(cli->cli->pipe_list, cli);
-	talloc_destroy(cli->mem_ctx);
+	talloc_destroy(cli);
 	return ret;
 }
 
