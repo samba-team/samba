@@ -285,6 +285,9 @@ o   Stefan Metzmacher <metze@samba.org>
       - wbcSetGidMapping()
       - wbcSetUidHwm()
       - wbcSetGidHwm()
+      - wbcResolveWinsByName()
+      - wbcResolveWinsByIP()
+      - wbcCheckTrustCredentials()
     * Let wbinfo use libwbclient where possible.
     * Let net use only libwbclient to access winbindd.
     * Make socket wrapper pcap support more portable.
@@ -292,6 +295,11 @@ o   Stefan Metzmacher <metze@samba.org>
     * Store the write time in the locking.tdb,
       so that smbd passes the BASE-DELAYWRITE test.
     * Run RAW-SEARCH and BASE-DELAYWRITE by 'make test'.
+    * Let each process use its own connection to ctdb
+      in cluster mode.
+    * Add a reinit_after_fork() helper function to correct
+      reinitialize the same things in all cases.
+    * Fix a chicken and egg problem with "include = registry".
 
 
 o   Karolin Seeger <kseeger@samba.org>
