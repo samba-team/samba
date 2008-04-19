@@ -597,7 +597,7 @@ WERROR rpccli_spoolss_enum_ports(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
 
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper_m(server);
 
 	offered = 0;
@@ -777,7 +777,7 @@ WERROR rpccli_spoolss_getprinterdriver(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
 
-	fstrcpy(server, cli->cli->desthost);
+	fstrcpy(server, cli->desthost);
 	strupper_m(server);
 
 	offered = 0;
@@ -855,7 +855,7 @@ WERROR rpccli_spoolss_enumprinterdrivers (struct rpc_pipe_client *cli,
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
 
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper_m(server);
 
 	offered = 0;
@@ -938,7 +938,7 @@ WERROR rpccli_spoolss_getprinterdriverdir (struct rpc_pipe_client *cli,
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
 
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper_m(server);
 
 	offered = 0;
@@ -996,7 +996,7 @@ WERROR rpccli_spoolss_addprinterdriver (struct rpc_pipe_client *cli,
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
 	
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper_m(server);
 
 	make_spoolss_q_addprinterdriver( mem_ctx, &in, server, level, ctr );
@@ -1026,7 +1026,7 @@ WERROR rpccli_spoolss_addprinterex (struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	ZERO_STRUCT(out);
 	
         slprintf(client, sizeof(fstring)-1, "\\\\%s", global_myname());
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	
         strupper_m(client);
         strupper_m(server);
@@ -1061,7 +1061,7 @@ WERROR rpccli_spoolss_deleteprinterdriverex(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
 
-	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper_m(server);
 
 	make_spoolss_q_deleteprinterdriverex( mem_ctx, &in, server, arch, driver, version );
@@ -1091,7 +1091,7 @@ WERROR rpccli_spoolss_deleteprinterdriver (struct rpc_pipe_client *cli,
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
 
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper_m(server);
 
 	make_spoolss_q_deleteprinterdriver( mem_ctx, &in, server, arch, driver );

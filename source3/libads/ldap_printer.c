@@ -288,7 +288,7 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 	uint32 i;
 	POLICY_HND pol;
 
-	asprintf(&servername, "\\\\%s", cli->cli->desthost);
+	asprintf(&servername, "\\\\%s", cli->desthost);
 	asprintf(&printername, "%s\\%s", servername, printer);
 	if (!servername || !printername) {
 		DEBUG(3, ("Insufficient memory\n"));

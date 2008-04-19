@@ -49,7 +49,7 @@ static NTSTATUS rpc_sh_acct_do(TALLOC_CTX *mem_ctx,
 	/* Get sam policy handle */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {

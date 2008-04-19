@@ -43,7 +43,7 @@ static NTSTATUS just_change_the_password(struct rpc_pipe_client *cli, TALLOC_CTX
 		uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 
 		result = rpccli_netlogon_setup_creds(cli, 
-					cli->cli->desthost, /* server name */
+					cli->desthost, /* server name */
 					lp_workgroup(), /* domain */
 					global_myname(), /* client name */
 					global_myname(), /* machine account name */

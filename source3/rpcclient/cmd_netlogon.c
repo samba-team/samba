@@ -28,7 +28,7 @@ static WERROR cmd_netlogon_logon_ctrl2(struct rpc_pipe_client *cli,
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	WERROR werr;
-	const char *logon_server = cli->cli->desthost;
+	const char *logon_server = cli->desthost;
 	enum netr_LogonControlCode function_code = NETLOGON_CONTROL_REDISCOVER;
 	uint32_t level = 1;
 	union netr_CONTROL_DATA_INFORMATION data;
@@ -104,7 +104,7 @@ static WERROR cmd_netlogon_getanydcname(struct rpc_pipe_client *cli,
 	old_timeout = cli_set_timeout(cli->cli, MAX(cli->cli->timeout,30000)); /* 30 seconds. */
 
 	status = rpccli_netr_GetAnyDCName(cli, mem_ctx,
-					  cli->cli->desthost,
+					  cli->desthost,
 					  argv[1],
 					  &dcname,
 					  &werr);
@@ -143,7 +143,7 @@ static WERROR cmd_netlogon_getdcname(struct rpc_pipe_client *cli,
 	old_timeout = cli_set_timeout(cli->cli, MAX(cli->cli->timeout,30000)); /* 30 seconds. */
 
 	status = rpccli_netr_GetDcName(cli, mem_ctx,
-				       cli->cli->desthost,
+				       cli->desthost,
 				       argv[1],
 				       &dcname,
 				       &werr);
@@ -171,7 +171,7 @@ static WERROR cmd_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 	NTSTATUS result;
 	WERROR werr = WERR_OK;
 	uint32 flags = DS_RETURN_DNS_NAME;
-	const char *server_name = cli->cli->desthost;
+	const char *server_name = cli->desthost;
 	const char *domain_name;
 	struct GUID domain_guid = GUID_zero();
 	struct GUID site_guid = GUID_zero();
@@ -231,7 +231,7 @@ static WERROR cmd_netlogon_dsr_getdcnameex(struct rpc_pipe_client *cli,
 	WERROR result;
 	NTSTATUS status;
 	uint32_t flags = DS_RETURN_DNS_NAME;
-	const char *server_name = cli->cli->desthost;
+	const char *server_name = cli->desthost;
 	const char *domain_name;
 	const char *site_name = NULL;
 	struct GUID domain_guid = GUID_zero();
@@ -290,7 +290,7 @@ static WERROR cmd_netlogon_dsr_getdcnameex2(struct rpc_pipe_client *cli,
 	WERROR result;
 	NTSTATUS status;
 	uint32_t flags = DS_RETURN_DNS_NAME;
-	const char *server_name = cli->cli->desthost;
+	const char *server_name = cli->desthost;
 	const char *domain_name = NULL;
 	const char *client_account = NULL;
 	uint32_t mask = 0;
@@ -396,7 +396,7 @@ static WERROR cmd_netlogon_logon_ctrl(struct rpc_pipe_client *cli,
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	WERROR werr;
-	const char *logon_server = cli->cli->desthost;
+	const char *logon_server = cli->desthost;
 	enum netr_LogonControlCode function_code = 1;
 	uint32_t level = 1;
 	union netr_CONTROL_QUERY_INFORMATION info;
@@ -560,7 +560,7 @@ static NTSTATUS cmd_netlogon_sam_sync(struct rpc_pipe_client *cli,
                                       const char **argv)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	const char *logon_server = cli->cli->desthost;
+	const char *logon_server = cli->desthost;
 	const char *computername = global_myname();
 	struct netr_Authenticator credential;
 	struct netr_Authenticator return_authenticator;
@@ -625,7 +625,7 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct rpc_pipe_client *cli,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32_t tmp;
-	const char *logon_server = cli->cli->desthost;
+	const char *logon_server = cli->desthost;
 	const char *computername = global_myname();
 	struct netr_Authenticator credential;
 	struct netr_Authenticator return_authenticator;
@@ -759,7 +759,7 @@ static WERROR cmd_netlogon_gettrustrid(struct rpc_pipe_client *cli,
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	WERROR werr = WERR_GENERAL_FAILURE;
-	const char *server_name = cli->cli->desthost;
+	const char *server_name = cli->desthost;
 	const char *domain_name = lp_workgroup();
 	uint32_t rid = 0;
 
@@ -799,7 +799,7 @@ static WERROR cmd_netlogon_dsr_enumtrustdom(struct rpc_pipe_client *cli,
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	WERROR werr = WERR_GENERAL_FAILURE;
-	const char *server_name = cli->cli->desthost;
+	const char *server_name = cli->desthost;
 	uint32_t trust_flags = NETR_TRUST_FLAG_IN_FOREST;
 	struct netr_DomainTrustList trusts;
 
@@ -847,7 +847,7 @@ static WERROR cmd_netlogon_deregisterdnsrecords(struct rpc_pipe_client *cli,
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	WERROR werr = WERR_GENERAL_FAILURE;
-	const char *server_name = cli->cli->desthost;
+	const char *server_name = cli->desthost;
 	const char *domain = lp_workgroup();
 	const char *dns_host = NULL;
 
@@ -893,7 +893,7 @@ static WERROR cmd_netlogon_dsr_getforesttrustinfo(struct rpc_pipe_client *cli,
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	WERROR werr = WERR_GENERAL_FAILURE;
-	const char *server_name = cli->cli->desthost;
+	const char *server_name = cli->desthost;
 	const char *trusted_domain_name = NULL;
 	struct lsa_ForestTrustInformation *info = NULL;
 	uint32_t flags = 0;
@@ -939,7 +939,7 @@ static WERROR cmd_netlogon_enumtrusteddomains(struct rpc_pipe_client *cli,
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	WERROR werr = WERR_GENERAL_FAILURE;
-	const char *server_name = cli->cli->desthost;
+	const char *server_name = cli->desthost;
 	struct netr_Blob blob;
 
 
@@ -974,7 +974,7 @@ static WERROR cmd_netlogon_enumtrusteddomainsex(struct rpc_pipe_client *cli,
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	WERROR werr = WERR_GENERAL_FAILURE;
-	const char *server_name = cli->cli->desthost;
+	const char *server_name = cli->desthost;
 	struct netr_DomainTrustList list;
 
 	if (argc < 1 || argc > 3) {

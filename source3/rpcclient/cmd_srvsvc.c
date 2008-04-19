@@ -183,7 +183,7 @@ static WERROR cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli,
 		info_level = atoi(argv[1]);
 
 	server_name = talloc_asprintf_strupper_m(mem_ctx, "\\\\%s",
-						 cli->cli->desthost);
+						 cli->desthost);
 	W_ERROR_HAVE_NO_MEMORY(server_name);
 
 	status = rpccli_srvsvc_NetSrvGetInfo(cli, mem_ctx,
@@ -336,7 +336,7 @@ static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 	switch (opcode) {
 		case NDR_SRVSVC_NETSHAREENUM:
 			status = rpccli_srvsvc_NetShareEnum(cli, mem_ctx,
-							    cli->cli->desthost,
+							    cli->desthost,
 							    &info_ctr,
 							    preferred_len,
 							    &totalentries,
@@ -345,7 +345,7 @@ static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 			break;
 		case NDR_SRVSVC_NETSHAREENUMALL:
 			status = rpccli_srvsvc_NetShareEnumAll(cli, mem_ctx,
-							       cli->cli->desthost,
+							       cli->desthost,
 							       &info_ctr,
 							       preferred_len,
 							       &totalentries,
@@ -420,7 +420,7 @@ static WERROR cmd_srvsvc_net_share_get_info(struct rpc_pipe_client *cli,
 		info_level = atoi(argv[2]);
 
 	status = rpccli_srvsvc_NetShareGetInfo(cli, mem_ctx,
-					       cli->cli->desthost,
+					       cli->desthost,
 					       argv[1],
 					       info_level,
 					       &info,
@@ -468,7 +468,7 @@ static WERROR cmd_srvsvc_net_share_set_info(struct rpc_pipe_client *cli,
 
 	/* retrieve share info */
 	status = rpccli_srvsvc_NetShareGetInfo(cli, mem_ctx,
-					       cli->cli->desthost,
+					       cli->desthost,
 					       argv[1],
 					       info_level,
 					       &info_get,
@@ -482,7 +482,7 @@ static WERROR cmd_srvsvc_net_share_set_info(struct rpc_pipe_client *cli,
 
 	/* set share info */
 	status = rpccli_srvsvc_NetShareSetInfo(cli, mem_ctx,
-					       cli->cli->desthost,
+					       cli->desthost,
 					       argv[1],
 					       info_level,
 					       &info_get,
@@ -495,7 +495,7 @@ static WERROR cmd_srvsvc_net_share_set_info(struct rpc_pipe_client *cli,
 
 	/* re-retrieve share info and display */
 	status = rpccli_srvsvc_NetShareGetInfo(cli, mem_ctx,
-					       cli->cli->desthost,
+					       cli->desthost,
 					       argv[1],
 					       info_level,
 					       &info_get,
@@ -568,7 +568,7 @@ static WERROR cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli,
 	info_ctr.ctr.ctr3 = &ctr3;
 
 	status = rpccli_srvsvc_NetFileEnum(cli, mem_ctx,
-					   cli->cli->desthost,
+					   cli->desthost,
 					   NULL,
 					   NULL,
 					   &info_ctr,
@@ -603,7 +603,7 @@ static WERROR cmd_srvsvc_net_name_validate(struct rpc_pipe_client *cli,
 	}
 
 	status = rpccli_srvsvc_NetNameValidate(cli, mem_ctx,
-					       cli->cli->desthost,
+					       cli->desthost,
 					       argv[1],
 					       name_type,
 					       flags,
@@ -630,7 +630,7 @@ static WERROR cmd_srvsvc_net_file_get_sec(struct rpc_pipe_client *cli,
 	}
 
 	status = rpccli_srvsvc_NetGetFileSecurity(cli, mem_ctx,
-						  cli->cli->desthost,
+						  cli->desthost,
 						  argv[1],
 						  argv[2],
 						  SECINFO_DACL,
@@ -660,7 +660,7 @@ static WERROR cmd_srvsvc_net_sess_del(struct rpc_pipe_client *cli,
 	}
 
 	status = rpccli_srvsvc_NetSessDel(cli, mem_ctx,
-					  cli->cli->desthost,
+					  cli->desthost,
 					  argv[1],
 					  argv[2],
 					  &result);
@@ -744,7 +744,7 @@ static WERROR cmd_srvsvc_net_sess_enum(struct rpc_pipe_client *cli,
 	}
 
 	status = rpccli_srvsvc_NetSessEnum(cli, mem_ctx,
-					  cli->cli->desthost,
+					  cli->desthost,
 					  client,
 					  user,
 					  &info_ctr,
@@ -788,7 +788,7 @@ static WERROR cmd_srvsvc_net_disk_enum(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(info);
 
 	status = rpccli_srvsvc_NetDiskEnum(cli, mem_ctx,
-					   cli->cli->desthost,
+					   cli->desthost,
 					   level,
 					   &info,
 					   0xffffffff,
@@ -855,7 +855,7 @@ static WERROR cmd_srvsvc_net_conn_enum(struct rpc_pipe_client *cli,
 	}
 
 	status = rpccli_srvsvc_NetConnEnum(cli, mem_ctx,
-					   cli->cli->desthost,
+					   cli->desthost,
 					   path,
 					   &info_ctr,
 					   0xffffffff,

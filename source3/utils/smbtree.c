@@ -179,7 +179,7 @@ static bool get_rpc_shares(struct cli_state *cli,
 	info_ctr.ctr.ctr1 = &ctr1;
 
 	status = rpccli_srvsvc_NetShareEnumAll(pipe_hnd, mem_ctx,
-					       pipe_hnd->cli->desthost,
+					       pipe_hnd->desthost,
 					       &info_ctr,
 					       0xffffffff,
 					       &total_entries,

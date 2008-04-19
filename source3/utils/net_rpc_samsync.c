@@ -330,7 +330,7 @@ static void dump_database(struct rpc_pipe_client *pipe_hnd,
         NTSTATUS result;
 	int i;
         TALLOC_CTX *mem_ctx;
-	const char *logon_server = pipe_hnd->cli->desthost;
+	const char *logon_server = pipe_hnd->desthost;
 	const char *computername = global_myname();
 	struct netr_Authenticator credential;
 	struct netr_Authenticator return_authenticator;
@@ -1190,7 +1190,7 @@ static NTSTATUS fetch_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type,
         NTSTATUS result;
 	int i;
         TALLOC_CTX *mem_ctx;
-	const char *logon_server = pipe_hnd->cli->desthost;
+	const char *logon_server = pipe_hnd->desthost;
 	const char *computername = global_myname();
 	struct netr_Authenticator credential;
 	struct netr_Authenticator return_authenticator;
@@ -2011,7 +2011,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	uint32 num_deltas;
 	FILE *add_file = NULL, *mod_file = NULL, *ldif_file = NULL;
 	int num_alloced = 0, g_index = 0, a_index = 0;
-	const char *logon_server = pipe_hnd->cli->desthost;
+	const char *logon_server = pipe_hnd->desthost;
 	const char *computername = global_myname();
 	struct netr_Authenticator credential;
 	struct netr_Authenticator return_authenticator;

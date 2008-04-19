@@ -3650,7 +3650,7 @@ static bool browse_host_rpc(bool sort)
 	info_ctr.ctr.ctr1 = &ctr1;
 
 	status = rpccli_srvsvc_NetShareEnumAll(pipe_hnd, frame,
-					      pipe_hnd->cli->desthost,
+					      pipe_hnd->desthost,
 					      &info_ctr,
 					      0xffffffff,
 					      &total_entries,

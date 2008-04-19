@@ -755,7 +755,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	}
 
 	status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      SEC_RIGHTS_MAXIMUM_ALLOWED,
 				      &sam_pol);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1137,7 +1137,7 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	}
 
 	status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      SEC_RIGHTS_MAXIMUM_ALLOWED,
 				      &sam_pol);
 	if (!NT_STATUS_IS_OK(status)) {

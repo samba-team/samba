@@ -212,13 +212,13 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 		 */
 		DEBUG(0,("rpccli_netlogon_setup_creds: server %s "
 			"replied with bad credential\n",
-			cli->cli->desthost ));
+			cli->desthost ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	DEBUG(5,("rpccli_netlogon_setup_creds: server %s credential "
 		"chain established.\n",
-		cli->cli->desthost ));
+		cli->desthost ));
 
 	return NT_STATUS_OK;
 }
