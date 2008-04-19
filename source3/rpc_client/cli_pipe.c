@@ -2234,6 +2234,13 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 		return NULL;
 	}
 
+	result->srv_name_slash = talloc_asprintf_strupper_m(
+		result, "\\\\%s", result->desthost);
+	if (result->srv_name_slash == NULL) {
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
 	if (pipe_idx == PI_NETLOGON) {
 		/* Set up a netlogon credential chain for a netlogon pipe. */
 		result->dc = TALLOC_ZERO_P(result, struct dcinfo);

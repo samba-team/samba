@@ -45,7 +45,7 @@ NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
 
 	DEBUG(10,("rpccli_samr_chgpasswd_user\n"));
 
-	init_lsa_String(&server, cli->cli->srv_name_slash);
+	init_lsa_String(&server, cli->srv_name_slash);
 	init_lsa_String(&account, username);
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
@@ -105,7 +105,7 @@ NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
 
 	DEBUG(10,("rpccli_samr_chng_pswd_auth_crap\n"));
 
-	init_lsa_String(&server, cli->cli->srv_name_slash);
+	init_lsa_String(&server, cli->srv_name_slash);
 	init_lsa_String(&account, username);
 
 	memcpy(&new_nt_password.data, new_nt_password_blob.data, 516);
@@ -151,7 +151,7 @@ NTSTATUS rpccli_samr_chgpasswd3(struct rpc_pipe_client *cli,
 
 	DEBUG(10,("rpccli_samr_chgpasswd_user3\n"));
 
-	init_lsa_String(&server, cli->cli->srv_name_slash);
+	init_lsa_String(&server, cli->srv_name_slash);
 	init_lsa_String(&account, username);
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
@@ -242,7 +242,7 @@ NTSTATUS rpccli_try_samr_connects(struct rpc_pipe_client *cli,
 	info_in.info1 = info1;
 
 	status = rpccli_samr_Connect5(cli, mem_ctx,
-				      cli->cli->srv_name_slash,
+				      cli->srv_name_slash,
 				      access_mask,
 				      1,
 				      &info_in,
@@ -254,7 +254,7 @@ NTSTATUS rpccli_try_samr_connects(struct rpc_pipe_client *cli,
 	}
 
 	status = rpccli_samr_Connect4(cli, mem_ctx,
-				      cli->cli->srv_name_slash,
+				      cli->srv_name_slash,
 				      SAMR_CONNECT_W2K,
 				      access_mask,
 				      connect_pol);
@@ -263,7 +263,7 @@ NTSTATUS rpccli_try_samr_connects(struct rpc_pipe_client *cli,
 	}
 
 	status = rpccli_samr_Connect2(cli, mem_ctx,
-				      cli->cli->srv_name_slash,
+				      cli->srv_name_slash,
 				      access_mask,
 				      connect_pol);
 	return status;

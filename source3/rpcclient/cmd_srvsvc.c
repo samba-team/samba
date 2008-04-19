@@ -525,7 +525,7 @@ static WERROR cmd_srvsvc_net_remote_tod(struct rpc_pipe_client *cli,
 	}
 
 	status = rpccli_srvsvc_NetRemoteTOD(cli, mem_ctx,
-					    cli->cli->srv_name_slash,
+					    cli->srv_name_slash,
 					    &tod,
 					    &result);
 	if (!NT_STATUS_IS_OK(status)) {
