@@ -159,7 +159,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	generate_random_buffer(clnt_chal_send.data, 8);
 
 	/* Get the server challenge. */
-	result = rpccli_netr_ServerReqChallenge(cli, cli->mem_ctx,
+	result = rpccli_netr_ServerReqChallenge(cli, talloc_tos(),
 						dc->remote_machine,
 						clnt_name,
 						&clnt_chal_send,
@@ -180,7 +180,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	 * Send client auth-2 challenge and receive server repy.
 	 */
 
-	result = rpccli_netr_ServerAuthenticate2(cli, cli->mem_ctx,
+	result = rpccli_netr_ServerAuthenticate2(cli, talloc_tos(),
 						 dc->remote_machine,
 						 dc->mach_acct,
 						 sec_chan_type,

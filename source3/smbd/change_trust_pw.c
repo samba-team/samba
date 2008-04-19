@@ -82,7 +82,8 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 		goto failed;
 	}
 
-	nt_status = trust_pw_find_change_and_store_it(netlogon_pipe, netlogon_pipe->mem_ctx, domain);
+	nt_status = trust_pw_find_change_and_store_it(
+		netlogon_pipe, netlogon_pipe, domain);
   
 	cli_shutdown(cli);
 	cli = NULL;

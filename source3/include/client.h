@@ -60,8 +60,6 @@ struct cli_pipe_auth_data {
 struct rpc_pipe_client {
 	struct rpc_pipe_client *prev, *next;
 
-	TALLOC_CTX *mem_ctx;
-
 	struct cli_state *cli;
 
 	int pipe_idx;
