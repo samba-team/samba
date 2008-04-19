@@ -110,7 +110,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_fla
 
 	/* break up name into a list of components */
 	for (num_components=0;num_components<MAX_COMPONENTS;num_components++) {
-		uint8_t *component;
+		uint8_t *component = NULL;
 		NDR_CHECK(ndr_pull_component(ndr, &component, &offset, &max_offset));
 		if (component == NULL) break;
 		if (name) {
