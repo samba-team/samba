@@ -174,6 +174,8 @@ bool torture_smb2_persistent_handles1(struct torture_context *tctx,
 	torture_comment(tctx, "position: %llu\n",
 			(unsigned long long)pos);
 
+	smb2_util_close(tree2, h2);
+
 	talloc_free(mem_ctx);
 
 	smb2_util_unlink(tree2, fname);
