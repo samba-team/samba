@@ -598,7 +598,7 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 	/* This call can take a long time - allow the server to time out.
 	   35 seconds should do it. */
 
-	orig_timeout = cli_set_timeout(netlogon_pipe->cli, 35000);
+	orig_timeout = rpccli_set_timeout(netlogon_pipe, 35000);
 
 	if (our_domain->active_directory) {
 		struct netr_DsRGetDCNameInfo *domain_info = NULL;
@@ -638,7 +638,7 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 	}
 
 	/* And restore our original timeout. */
-	cli_set_timeout(netlogon_pipe->cli, orig_timeout);
+	rpccli_set_timeout(netlogon_pipe, orig_timeout);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("rpccli_netr_GetAnyDCName failed: %s\n",

@@ -2173,6 +2173,12 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 	return NT_STATUS_OK;
 }
 
+unsigned int rpccli_set_timeout(struct rpc_pipe_client *cli,
+				unsigned int timeout)
+{
+	return cli_set_timeout(cli->cli, timeout);
+}
+
 /****************************************************************************
  Open a named pipe over SMB to a remote server.
  *
