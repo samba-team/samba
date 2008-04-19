@@ -268,8 +268,9 @@ static int ejs_net_userinfo(MprVarHandle eid, int argc, char **argv)
 
 	/* call the libnet function */
 	req.in.domain_name = userman_domain;
-	req.in.user_name   = username;
-	
+	req.in.data.user_name   = username;
+	req.in.level = USER_INFO_BY_NAME;
+
 	status = libnet_UserInfo(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		ejsSetErrorMsg(eid, "%s", req.out.error_string);
