@@ -249,6 +249,7 @@ static int expect(int master, char *issue, char *expected)
 	bool match = False;
 
 	for (attempts = 0; attempts < 2; attempts++) {
+		NTSTATUS status;
 		if (!strequal(issue, ".")) {
 			if (lp_passwd_chat_debug())
 				DEBUG(100, ("expect: sending [%s]\n", issue));
@@ -269,7 +270,6 @@ static int expect(int master, char *issue, char *expected)
 		buffer[nread] = 0;
 
 		while (True) {
-			NTSTATUS status;
 			status = read_socket_with_timeout(
 				master, buffer + nread, 1,
 				sizeof(buffer) - nread - 1,
@@ -305,8 +305,8 @@ static int expect(int master, char *issue, char *expected)
 		if (match)
 			break;
 
-		if (len < 0) {
-			DEBUG(2, ("expect: %s\n", strerror(errno)));
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(2, ("expect: %s\n", nt_errstr(status)));
 			return False;
 		}
 	}
