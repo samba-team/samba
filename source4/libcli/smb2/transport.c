@@ -140,6 +140,44 @@ void smb2_transport_dead(struct smb2_transport *transport, NTSTATUS status)
 	}
 }
 
+static bool smb2_handle_oplock_break(struct smb2_transport *transport,
+				     const DATA_BLOB *blob)
+{
+	uint8_t *hdr;
+	uint16_t opcode;
+	uint64_t seqnum;
+
+	hdr = blob->data+NBT_HDR_SIZE;
+
+	if (blob->length < (SMB2_MIN_SIZE+0x18)) {
+		DEBUG(1,("Discarding smb2 oplock reply of size %u\n",
+			 blob->length));
+		return false;
+	}
+
+	opcode	= SVAL(hdr, SMB2_HDR_OPCODE);
+	seqnum	= BVAL(hdr, SMB2_HDR_MESSAGE_ID);
+
+	if ((opcode != SMB2_OP_BREAK) ||
+	    (seqnum != UINT64_MAX)) {
+		return false;
+	}
+
+	if (transport->oplock.handler) {
+		uint8_t *body = hdr+SMB2_HDR_BODY;
+		struct smb2_handle h;
+		uint8_t level;
+
+		level = CVAL(body, 0x02);
+		smb2_pull_handle(body+0x08, &h);
+
+		transport->oplock.handler(transport, &h, level,
+					  transport->oplock.private_data);
+	}
+
+	return true;
+}
+
 /*
   we have a full request in our receive buffer - match it to a pending request
   and process
@@ -165,6 +203,11 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 	if (len < SMB2_MIN_SIZE) {
 		DEBUG(1,("Discarding smb2 reply of size %d\n", len));
 		goto error;
+	}
+
+	if (smb2_handle_oplock_break(transport, &blob)) {
+		talloc_free(buffer);
+		return NT_STATUS_OK;
 	}
 
 	flags	= IVAL(hdr, SMB2_HDR_FLAGS);

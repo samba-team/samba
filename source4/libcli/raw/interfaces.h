@@ -1862,7 +1862,8 @@ enum smb_lock_level {
 	RAW_LOCK_LOCK,
 	RAW_LOCK_UNLOCK,
 	RAW_LOCK_LOCKX,
-	RAW_LOCK_SMB2
+	RAW_LOCK_SMB2,
+	RAW_LOCK_SMB2_BREAK
 };
 
 /* the generic interface is defined to be equal to the lockingX interface */
@@ -1925,6 +1926,20 @@ union smb_lock {
 			uint16_t unknown1;
 		} out;
 	} smb2;
+
+	/* SMB2 Break */
+	struct smb2_break {
+		enum smb_lock_level level;
+		struct {
+			union smb_handle file;
+
+			/* static body buffer 24 (0x18) bytes */
+			uint8_t oplock_level;
+			uint8_t reserved;
+			uint32_t reserved2;
+			/* struct smb2_handle handle; */
+		} in, out;
+	} smb2_break;
 };
 
 

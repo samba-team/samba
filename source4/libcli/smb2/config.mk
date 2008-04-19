@@ -6,5 +6,5 @@ LIBCLI_SMB2_OBJ_FILES = $(addprefix libcli/smb2/, \
 	transport.o request.o negprot.o session.o tcon.o \
 	create.o close.o connect.o getinfo.o write.o read.o \
 	setinfo.o find.o ioctl.o logoff.o tdis.o flush.o \
-	lock.o notify.o cancel.o keepalive.o)
+	lock.o notify.o cancel.o keepalive.o break.o)
 
