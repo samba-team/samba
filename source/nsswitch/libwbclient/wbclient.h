@@ -425,7 +425,7 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 /*
  * Resolve functions
  */
-wbcErr wbcResolveWinsByName(const char *name, const char **ip);
+wbcErr wbcResolveWinsByName(const char *name, char **ip);
 wbcErr wbcResolveWinsByIP(const char *ip, const char **name);
 
 /*
