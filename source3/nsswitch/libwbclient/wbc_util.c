@@ -197,12 +197,12 @@ wbcErr wbcDomainInfo(const char *domain, struct wbcDomainInfo **dinfo)
  * @return #wbcErr
  *
  **/
-wbcErr wbcResolveWinsByName(const char *name, const char **ip)
+wbcErr wbcResolveWinsByName(const char *name, char **ip)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	const char *ipaddr;
+	char *ipaddr;
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
