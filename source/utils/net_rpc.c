@@ -1221,8 +1221,8 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(domain_pol);
 	ZERO_STRUCT(user_pol);
 
-	result = net_rpc_lookup_name(mem_ctx, pipe_hnd->cli, argv[0],
-				     NULL, NULL, &sid, &type);
+	result = net_rpc_lookup_name(mem_ctx, rpc_pipe_np_smb_conn(pipe_hnd),
+				     argv[0], NULL, NULL, &sid, &type);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Could not lookup %s: %s\n", argv[0],
 			  nt_errstr(result));
@@ -2087,8 +2087,8 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	result = get_sid_from_name(pipe_hnd->cli, mem_ctx, member,
-				   &member_sid, &member_type);
+	result = get_sid_from_name(rpc_pipe_np_smb_conn(pipe_hnd), mem_ctx,
+				   member, &member_sid, &member_type);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Could not lookup up group member %s\n", member);
@@ -2282,8 +2282,8 @@ static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 	if (!sid_split_rid(&sid, &alias_rid))
 		return NT_STATUS_UNSUCCESSFUL;
 
-	result = get_sid_from_name(pipe_hnd->cli, mem_ctx, member,
-				   &member_sid, &member_type);
+	result = get_sid_from_name(rpc_pipe_np_smb_conn(pipe_hnd), mem_ctx,
+				   member, &member_sid, &member_type);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Could not lookup up group member %s\n", member);
@@ -2736,7 +2736,8 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 		return NT_STATUS_OK;
 	}
 
-	lsa_pipe = cli_rpc_pipe_open_noauth(pipe_hnd->cli, PI_LSARPC, &result);
+	lsa_pipe = cli_rpc_pipe_open_noauth(rpc_pipe_np_smb_conn(pipe_hnd),
+					    PI_LSARPC, &result);
 	if (!lsa_pipe) {
 		d_fprintf(stderr, "Couldn't open LSA pipe. Error was %s\n",
 			nt_errstr(result) );
@@ -4480,7 +4481,7 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 	int fnum;
 	SEC_DESC *share_sd = NULL;
 	SEC_DESC *root_sd = NULL;
-	struct cli_state *cli = pipe_hnd->cli;
+	struct cli_state *cli = rpc_pipe_np_smb_conn(pipe_hnd);
 	int i;
 	union srvsvc_NetShareInfo info;
 	WERROR result;
@@ -5945,8 +5946,8 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 	data = data_blob(info->password.password->data,
 			 info->password.password->length);
 
-	cleartextpwd = decrypt_trustdom_secret(pipe_hnd->cli->pwd.password,
-					       &data);
+	cleartextpwd = decrypt_trustdom_secret(
+		rpc_pipe_np_smb_conn(pipe_hnd)->pwd.password, &data);
 
 	if (cleartextpwd == NULL) {
 		DEBUG(0,("retrieved NULL password\n"));

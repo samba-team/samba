@@ -2140,6 +2140,11 @@ bool rpccli_is_pipe_idx(struct rpc_pipe_client *cli, int pipe_idx)
 	return (cli->abstract_syntax == pipe_names[pipe_idx].abstr_syntax);
 }
 
+struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p)
+{
+	return p->cli;
+}
+
 static int rpc_pipe_destructor(struct rpc_pipe_client *p)
 {
 	bool ret;

@@ -99,7 +99,7 @@ static struct rpc_pipe_client *pipe_cm_find(struct cli_state *cli,
 
 	for (p = pipe_connections; p; p = p->next) {
 
-		if (!p->pipe->cli) {
+		if (!rpc_pipe_np_smb_conn(p->pipe)) {
 			*status = NT_STATUS_PIPE_EMPTY;
 			return NULL;
 		}
