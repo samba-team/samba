@@ -409,7 +409,7 @@ void init_rpc_context(RPC_CONTEXT *rpc_ctx, uint16 context_id, RPC_IFACE *abstra
 	rpc_ctx->abstract = *abstract;
 
 	/* vers. of interface to use for replies */
-	rpc_ctx->transfer = transfer;
+	rpc_ctx->transfer = CONST_DISCARD(RPC_IFACE *, transfer);
 }
 
 /*******************************************************************
