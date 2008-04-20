@@ -202,10 +202,15 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	}
 
 	if (!cm_creds.got_pass && !cm_creds.use_kerberos) {
-		char *pass = getpass("Password: ");
+		char *label = NULL;
+		char *pass;
+		label = talloc_asprintf(ctx, "Enter %s's password: ",
+			cm_creds.username);
+		pass = getpass(label);
 		if (pass) {
 			cm_set_password(pass);
 		}
+		TALLOC_FREE(label);
 	}
 
 	username = cm_creds.username ? cm_creds.username : "";
