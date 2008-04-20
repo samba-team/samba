@@ -3,6 +3,7 @@
 include $(top_srcdir)/Makefile.am.common
 
 AM_CPPFLAGS += -I../asn1 -I$(srcdir)/../asn1 $(INCLUDE_hcrypto)
+AM_CPPFLAGS += $(INCLUDE_openldap) -DHDB_DB_DIR=\"$(DIR_hdbdir)\"
 
 BUILT_SOURCES = \
 	$(gen_files_hdb:.x=.c)	\
@@ -35,6 +36,7 @@ LDADD = libhdb.la \
 	$(LIB_hcrypto) \
 	$(LIB_roken) \
 	$(LIB_ldopen)
+
 
 if OPENLDAP_MODULE
 
@@ -72,12 +74,8 @@ dist_libhdb_la_SOURCES =			\
 
 nodist_libhdb_la_SOURCES = $(BUILT_SOURCES)
 
-AM_CPPFLAGS += $(INCLUDE_openldap)
-
 include_HEADERS = hdb.h hdb-protos.h
 nodist_include_HEADERS =  hdb_err.h hdb_asn1.h
-
-libhdb_la_CPPFLAGS = -DHDB_DB_DIR=\"$(DIR_hdbdir)\"
 
 libhdb_la_LIBADD = \
 	$(LIB_com_err) \
