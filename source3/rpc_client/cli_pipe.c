@@ -373,7 +373,7 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 			(unsigned int)RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len ));
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
-                                                                                                                             
+
 	if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, current_pdu, 0)) {
 		DEBUG(0,("cli_pipe_verify_schannel: failed to unmarshall RPC_HDR_AUTH.\n"));
 		return NT_STATUS_BUFFER_TOO_SMALL;
@@ -627,7 +627,6 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 			} else {
 				return fault_resp.status;
 			}
-			
 		}
 
 		default:
@@ -750,7 +749,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	uint32 max_data = cli->max_xmit_frag ? cli->max_xmit_frag : RPC_MAX_PDU_FRAG_LEN;
 	uint32 current_rbuf_offset = 0;
 	prs_struct current_pdu;
-	
+
 #ifdef DEVELOPER
 	/* Ensure we're not sending too much. */
 	SMB_ASSERT(data_len <= max_data);
@@ -1311,14 +1310,14 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 	}
 
 	/* Finally marshall the blob. */
-	                                                                                               
+
 	if (!prs_copy_data_in(outgoing_pdu, (const char *)auth_blob.data, NTLMSSP_SIG_SIZE)) {
 		DEBUG(0,("add_ntlmssp_auth_footer: failed to add %u bytes auth blob.\n",
 			(unsigned int)NTLMSSP_SIG_SIZE));
 		data_blob_free(&auth_blob);
 		return NT_STATUS_NO_MEMORY;
 	}
-                                                                                                                                
+
 	data_blob_free(&auth_blob);
 	return NT_STATUS_OK;
 }
@@ -1383,7 +1382,7 @@ static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 			&verf,
 			outgoing_pdu,
 			0);
-                                                                                               
+
 	return NT_STATUS_OK;
 }
 
@@ -1687,7 +1686,7 @@ static NTSTATUS create_rpc_bind_auth3(struct rpc_pipe_client *cli,
 	init_rpc_hdr(&hdr, RPC_AUTH3, RPC_FLG_FIRST|RPC_FLG_LAST, rpc_call_id,
 		     RPC_HEADER_LEN + 4 /* pad */ + RPC_HDR_AUTH_LEN + pauth_blob->length,
 		     pauth_blob->length );
-	
+
 	/* Marshall it. */
 	if(!smb_io_rpc_hdr("hdr", &hdr, rpc_out, 0)) {
 		DEBUG(0,("create_rpc_bind_auth3: failed to marshall RPC_HDR.\n"));
@@ -1762,11 +1761,11 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 
 	server_response = data_blob(NULL, phdr->auth_len);
 	prs_copy_data_out((char *)server_response.data, rbuf, phdr->auth_len);
-	
+
 	nt_status = ntlmssp_update(cli->auth.a_u.ntlmssp_state,
 				   server_response,
 				   &client_reply);
-	
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("rpc_finish_auth3_bind: NTLMSSP update using server blob failed.\n"));
 		data_blob_free(&server_response);
@@ -1888,7 +1887,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 
 	server_spnego_response = data_blob(NULL, phdr->auth_len);
 	prs_copy_data_out((char *)server_spnego_response.data, rbuf, phdr->auth_len);
-	
+
 	/* The server might give us back two challenges - tmp_blob is for the second. */
 	if (!spnego_parse_challenge(server_spnego_response, &server_ntlm_response, &tmp_blob)) {
 		data_blob_free(&server_spnego_response);
@@ -1904,7 +1903,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 	nt_status = ntlmssp_update(cli->auth.a_u.ntlmssp_state,
 				   server_ntlm_response,
 				   &client_reply);
-	
+
 	/* Finished with the server_ntlm response */
 	data_blob_free(&server_ntlm_response);
 
@@ -2324,7 +2323,7 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 	if (result == NULL) {
 		return NULL;
 	}
-	
+
 	result->auth.cli_auth_data_free_func = cli_ntlmssp_auth_free;
 
 	TALLOC_FREE(result->domain);
@@ -2377,7 +2376,7 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 	} else if (auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL | NTLMSSP_NEGOTIATE_SIGN;
 	}
-	
+
 	*perr = rpc_pipe_bind(result, auth_type, auth_level);
 	if (!NT_STATUS_IS_OK(*perr)) {
 		DEBUG(0, ("cli_rpc_pipe_open_ntlmssp_internal: cli_rpc_pipe_bind failed with error %s\n",
