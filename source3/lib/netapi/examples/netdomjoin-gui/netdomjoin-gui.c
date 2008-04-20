@@ -650,6 +650,9 @@ static void callback_do_join(GtkWidget *widget,
 			err_str = libnetapi_get_error_string(state->ctx, status);
 			g_print("callback_do_join: failed to unjoin (%s)\n",
 				err_str);
+#if 0
+
+	/* in fact we shouldn't annoy the user with an error message here */
 
 			dialog = gtk_message_dialog_new(GTK_WINDOW(state->window_parent),
 							GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -662,6 +665,7 @@ static void callback_do_join(GtkWidget *widget,
 			gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
 			gtk_dialog_run(GTK_DIALOG(dialog));
 			gtk_widget_destroy(dialog);
+#endif
 		}
 
 	}
