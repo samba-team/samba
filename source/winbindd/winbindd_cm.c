@@ -1432,33 +1432,27 @@ void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 	}
 
 	if (conn->samr_pipe != NULL) {
-		if (!cli_rpc_pipe_close(conn->samr_pipe)) {
-			/* Ok, it must be dead. Drop timeout to 0.5 sec. */
-			if (conn->cli) {
-				cli_set_timeout(conn->cli, 500);
-			}
+		TALLOC_FREE(conn->samr_pipe);
+		/* Ok, it must be dead. Drop timeout to 0.5 sec. */
+		if (conn->cli) {
+			cli_set_timeout(conn->cli, 500);
 		}
-		conn->samr_pipe = NULL;
 	}
 
 	if (conn->lsa_pipe != NULL) {
-		if (!cli_rpc_pipe_close(conn->lsa_pipe)) {
-			/* Ok, it must be dead. Drop timeout to 0.5 sec. */
-			if (conn->cli) {
-				cli_set_timeout(conn->cli, 500);
-			}
+		TALLOC_FREE(conn->lsa_pipe);
+		/* Ok, it must be dead. Drop timeout to 0.5 sec. */
+		if (conn->cli) {
+			cli_set_timeout(conn->cli, 500);
 		}
-		conn->lsa_pipe = NULL;
 	}
 
 	if (conn->netlogon_pipe != NULL) {
-		if (!cli_rpc_pipe_close(conn->netlogon_pipe)) {
-			/* Ok, it must be dead. Drop timeout to 0.5 sec. */
-			if (conn->cli) {
-				cli_set_timeout(conn->cli, 500);
-			}
+		TALLOC_FREE(conn->netlogon_pipe);
+		/* Ok, it must be dead. Drop timeout to 0.5 sec. */
+		if (conn->cli) {
+			cli_set_timeout(conn->cli, 500);
 		}
-		conn->netlogon_pipe = NULL;
 	}
 
 	if (conn->cli) {
@@ -1711,7 +1705,7 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 								  DS_ROLE_BASIC_INFORMATION,
 								  &info,
 								  &werr);
-	cli_rpc_pipe_close(cli);
+	TALLOC_FREE(cli);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(5, ("set_dc_type_and_flags_connect: rpccli_ds_getprimarydominfo "
@@ -1745,7 +1739,7 @@ no_dssetup:
 		DEBUG(5, ("set_dc_type_and_flags_connect: Could not bind to "
 			  "PI_LSARPC on domain %s: (%s)\n",
 			  domain->name, nt_errstr(result)));
-		cli_rpc_pipe_close(cli);
+		TALLOC_FREE(cli);
 		TALLOC_FREE(mem_ctx);
 		return;
 	}
@@ -1825,7 +1819,7 @@ done:
 	DEBUG(5,("set_dc_type_and_flags_connect: domain %s is %srunning active directory.\n",
 		  domain->name, domain->active_directory ? "" : "NOT "));
 
-	cli_rpc_pipe_close(cli);
+	TALLOC_FREE(cli);
 
 	TALLOC_FREE(mem_ctx);
 
@@ -1971,7 +1965,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	DEBUG(10,("cm_connect_sam: ntlmssp-sealed rpccli_samr_Connect2 "
 		  "failed for domain %s, error was %s. Trying schannel\n",
 		  domain->name, nt_errstr(result) ));
-	cli_rpc_pipe_close(conn->samr_pipe);
+	TALLOC_FREE(conn->samr_pipe);
 
  schannel:
 
@@ -2006,7 +2000,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	DEBUG(10,("cm_connect_sam: schannel-sealed rpccli_samr_Connect2 failed "
 		  "for domain %s, error was %s. Trying anonymous\n",
 		  domain->name, nt_errstr(result) ));
-	cli_rpc_pipe_close(conn->samr_pipe);
+	TALLOC_FREE(conn->samr_pipe);
 
  anonymous:
 
@@ -2108,7 +2102,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	DEBUG(10,("cm_connect_lsa: rpccli_lsa_open_policy failed, trying "
 		  "schannel\n"));
 
-	cli_rpc_pipe_close(conn->lsa_pipe);
+	TALLOC_FREE(conn->lsa_pipe);
 
  schannel:
 
@@ -2143,7 +2137,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	DEBUG(10,("cm_connect_lsa: rpccli_lsa_open_policy failed, trying "
 		  "anonymous\n"));
 
-	cli_rpc_pipe_close(conn->lsa_pipe);
+	TALLOC_FREE(conn->lsa_pipe);
 
  anonymous:
 
@@ -2218,7 +2212,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	if (!get_trust_pw_hash(domain->name, mach_pwd, &account_name,
 			       &sec_chan_type))
 	{
-		cli_rpc_pipe_close(netlogon_pipe);
+		TALLOC_FREE(netlogon_pipe);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
@@ -2233,14 +2227,14 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		 &neg_flags);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		cli_rpc_pipe_close(netlogon_pipe);
+		TALLOC_FREE(netlogon_pipe);
 		return result;
 	}
 
 	if ((lp_client_schannel() == True) &&
 			((neg_flags & NETLOGON_NEG_SCHANNEL) == 0)) {
 		DEBUG(3, ("Server did not offer schannel\n"));
-		cli_rpc_pipe_close(netlogon_pipe);
+		TALLOC_FREE(netlogon_pipe);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -2273,7 +2267,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 						    &result);
 
 	/* We can now close the initial netlogon pipe. */
-	cli_rpc_pipe_close(netlogon_pipe);
+	TALLOC_FREE(netlogon_pipe);
 
 	if (conn->netlogon_pipe == NULL) {
 		DEBUG(3, ("Could not open schannel'ed NETLOGON pipe. Error "

@@ -3658,7 +3658,7 @@ static bool browse_host_rpc(bool sort)
 					      &werr);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(werr)) {
-		cli_rpc_pipe_close(pipe_hnd);
+		TALLOC_FREE(pipe_hnd);
 		TALLOC_FREE(frame);
 		return false;
 	}
@@ -3668,7 +3668,7 @@ static bool browse_host_rpc(bool sort)
 		browse_fn(info.name, info.type, info.comment, NULL);
 	}
 
-	cli_rpc_pipe_close(pipe_hnd);
+	TALLOC_FREE(pipe_hnd);
 	TALLOC_FREE(frame);
 	return true;
 }

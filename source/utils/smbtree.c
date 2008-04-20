@@ -188,7 +188,7 @@ static bool get_rpc_shares(struct cli_state *cli,
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(werr)) {
 		TALLOC_FREE(mem_ctx);
-		cli_rpc_pipe_close(pipe_hnd);
+		TALLOC_FREE(pipe_hnd);
 		return False;
 	}
 
@@ -198,7 +198,7 @@ static bool get_rpc_shares(struct cli_state *cli,
 	}
 
 	TALLOC_FREE(mem_ctx);
-	cli_rpc_pipe_close(pipe_hnd);
+	TALLOC_FREE(pipe_hnd);
 	return True;
 }
 

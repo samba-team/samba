@@ -706,7 +706,7 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 	}
 
 	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
-	cli_rpc_pipe_close(pipe_hnd);
+	TALLOC_FREE(pipe_hnd);
 
  done:
 	return status;
@@ -951,7 +951,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	if (is_valid_policy_hnd(&user_pol)) {
 		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 	}
-	cli_rpc_pipe_close(pipe_hnd);
+	TALLOC_FREE(pipe_hnd);
 
 	return status;
 }
@@ -1217,7 +1217,7 @@ done:
 	if (pipe_hnd) {
 		rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
 		rpccli_samr_Close(pipe_hnd, mem_ctx, &sam_pol);
-		cli_rpc_pipe_close(pipe_hnd);
+		TALLOC_FREE(pipe_hnd);
 	}
 
 	if (cli) {

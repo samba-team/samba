@@ -75,7 +75,7 @@ NTSTATUS net_rpc_lookup_name(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	if (is_valid_policy_hnd(&pol)) {
 		rpccli_lsa_Close(lsa_pipe, mem_ctx, &pol);
 	}
-	cli_rpc_pipe_close(lsa_pipe);
+	TALLOC_FREE(lsa_pipe);
 
 	return result;
 }
