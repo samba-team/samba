@@ -134,7 +134,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	struct dcinfo *dc;
 	bool retried = false;
 
-	SMB_ASSERT(cli->pipe_idx == PI_NETLOGON);
+	SMB_ASSERT(rpccli_is_pipe_idx(cli, PI_NETLOGON));
 
 	dc = cli->dc;
 	if (!dc) {

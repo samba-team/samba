@@ -39,7 +39,7 @@ find_lsa_pipe_hnd(struct cli_state *ipc_cli)
              pipe_hnd;
              pipe_hnd = pipe_hnd->next) {
                 
-		if (pipe_hnd->pipe_idx == PI_LSARPC) {
+		if (rpccli_is_pipe_idx(pipe_hnd, PI_LSARPC)) {
 			return pipe_hnd;
 		}
 	}

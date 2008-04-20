@@ -1092,8 +1092,8 @@ static NTSTATUS create_schannel_auth_rpc_bind_req( struct rpc_pipe_client *cli,
 static NTSTATUS create_bind_or_alt_ctx_internal(enum RPC_PKT_TYPE pkt_type,
 						prs_struct *rpc_out, 
 						uint32 rpc_call_id,
-						RPC_IFACE *abstract,
-						RPC_IFACE *transfer,
+						const RPC_IFACE *abstract,
+						const RPC_IFACE *transfer,
 						RPC_HDR_AUTH *phdr_auth,
 						prs_struct *pauth_info)
 {
@@ -1174,7 +1174,8 @@ static NTSTATUS create_bind_or_alt_ctx_internal(enum RPC_PKT_TYPE pkt_type,
 static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 				prs_struct *rpc_out, 
 				uint32 rpc_call_id,
-				RPC_IFACE *abstract, RPC_IFACE *transfer,
+				const RPC_IFACE *abstract,
+				const RPC_IFACE *transfer,
 				enum pipe_auth_type auth_type,
 				enum pipe_auth_level auth_level)
 {
@@ -1639,34 +1640,7 @@ static bool rpc_pipe_set_hnd_state(struct rpc_pipe_client *cli,
  Check the rpc bind acknowledge response.
 ****************************************************************************/
 
-static bool valid_pipe_name(const int pipe_idx, RPC_IFACE *abstract, RPC_IFACE *transfer)
-{
-	if ( pipe_idx >= PI_MAX_PIPES ) {
-		DEBUG(0,("valid_pipe_name: Programmer error!  Invalid pipe index [%d]\n",
-			pipe_idx));
-		return False;
-	}
-
-	DEBUG(5,("Bind Abstract Syntax: "));	
-	dump_data(5, (uint8 *)&pipe_names[pipe_idx].abstr_syntax, 
-	          sizeof(pipe_names[pipe_idx].abstr_syntax));
-	DEBUG(5,("Bind Transfer Syntax: "));
-	dump_data(5, (uint8 *)&pipe_names[pipe_idx].trans_syntax,
-	          sizeof(pipe_names[pipe_idx].trans_syntax));
-
-	/* copy the required syntaxes out so we can do the right bind */
-	
-	*transfer = *pipe_names[pipe_idx].trans_syntax;
-	*abstract = *pipe_names[pipe_idx].abstr_syntax;
-
-	return True;
-}
-
-/****************************************************************************
- Check the rpc bind acknowledge response.
-****************************************************************************/
-
-static bool check_bind_response(RPC_HDR_BA *hdr_ba, const int pipe_idx, RPC_IFACE *transfer)
+static bool check_bind_response(RPC_HDR_BA *hdr_ba, const RPC_IFACE *transfer)
 {
 	if ( hdr_ba->addr.len == 0) {
 		DEBUG(4,("Ignoring length check -- ASU bug (server didn't fill in the pipe name correctly)"));
@@ -1839,8 +1813,8 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
  ********************************************************************/
 
 static NTSTATUS create_rpc_alter_context(uint32 rpc_call_id,
-					RPC_IFACE *abstract,
-					RPC_IFACE *transfer,
+					const RPC_IFACE *abstract,
+					const RPC_IFACE *transfer,
 					enum pipe_auth_level auth_level,
 					const DATA_BLOB *pauth_blob, /* spnego auth blob already created. */
 					prs_struct *rpc_out)
@@ -1883,8 +1857,8 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
                                 RPC_HDR *phdr,
                                 prs_struct *rbuf,
                                 uint32 rpc_call_id,
-				RPC_IFACE *abstract,
-				RPC_IFACE *transfer,
+				const RPC_IFACE *abstract,
+				const RPC_IFACE *transfer,
                                 enum pipe_auth_type auth_type,
                                 enum pipe_auth_level auth_level)
 {
@@ -2018,8 +1992,6 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 {
 	RPC_HDR hdr;
 	RPC_HDR_BA hdr_ba;
-	RPC_IFACE abstract;
-	RPC_IFACE transfer;
 	prs_struct rpc_out;
 	prs_struct rbuf;
 	uint32 rpc_call_id;
@@ -2031,17 +2003,14 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 		(unsigned int)auth_type,
 		(unsigned int)auth_level ));
 
-	if (!valid_pipe_name(cli->pipe_idx, &abstract, &transfer)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	prs_init_empty(&rpc_out, talloc_tos(), MARSHALL);
 
 	rpc_call_id = get_rpc_call_id();
 
 	/* Marshall the outgoing data. */
 	status = create_rpc_bind_req(cli, &rpc_out, rpc_call_id,
-				&abstract, &transfer,
+				cli->abstract_syntax,
+				cli->transfer_syntax,
 				auth_type,
 				auth_level);
 
@@ -2081,7 +2050,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	if(!check_bind_response(&hdr_ba, cli->pipe_idx, &transfer)) {
+	if(!check_bind_response(&hdr_ba, cli->transfer_syntax)) {
 		DEBUG(2,("rpc_pipe_bind: check_bind_response failed.\n"));
 		prs_mem_free(&rbuf);
 		return NT_STATUS_BUFFER_TOO_SMALL;
@@ -2111,7 +2080,8 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
 			/* Need to send alter context request and reply. */
 			status = rpc_finish_spnego_ntlmssp_bind(cli, &hdr, &rbuf, rpc_call_id,
-						&abstract, &transfer,
+						cli->abstract_syntax,
+						cli->transfer_syntax,
 						auth_type, auth_level);
 			if (!NT_STATUS_IS_OK(status)) {
 				prs_mem_free(&rbuf);
@@ -2162,6 +2132,11 @@ unsigned int rpccli_set_timeout(struct rpc_pipe_client *cli,
 	return cli_set_timeout(cli->cli, timeout);
 }
 
+bool rpccli_is_pipe_idx(struct rpc_pipe_client *cli, int pipe_idx)
+{
+	return (cli->abstract_syntax == pipe_names[pipe_idx].abstr_syntax);
+}
+
 /****************************************************************************
  Open a named pipe over SMB to a remote server.
  *
@@ -2189,6 +2164,13 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 		return NULL;
 	}
 
+	if ( pipe_idx >= PI_MAX_PIPES ) {
+		DEBUG(0, ("cli_rpc_pipe_open: Programmer error!  Invalid pipe "
+			  "index [%d]\n", pipe_idx));
+		*perr = NT_STATUS_INVALID_PARAMETER;
+		return NULL;
+	}
+
 	/* The pipe name index must fall within our array */
 	SMB_ASSERT((pipe_idx >= 0) && (pipe_idx < PI_MAX_PIPES));
 
@@ -2213,7 +2195,8 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 
 	result->fnum = fnum;
 	result->cli = cli;
-	result->pipe_idx = pipe_idx;
+	result->abstract_syntax = pipe_names[pipe_idx].abstr_syntax;
+	result->transfer_syntax = pipe_names[pipe_idx].trans_syntax;
 	result->auth.auth_type = PIPE_AUTH_TYPE_NONE;
 	result->auth.auth_level = PIPE_AUTH_LEVEL_NONE;
 
