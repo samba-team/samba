@@ -2164,25 +2164,49 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 		return NULL;
 	}
 
-	if ( pipe_idx >= PI_MAX_PIPES ) {
-		DEBUG(0, ("cli_rpc_pipe_open: Programmer error!  Invalid pipe "
-			  "index [%d]\n", pipe_idx));
-		*perr = NT_STATUS_INVALID_PARAMETER;
-		return NULL;
-	}
-
 	/* The pipe name index must fall within our array */
 	SMB_ASSERT((pipe_idx >= 0) && (pipe_idx < PI_MAX_PIPES));
 
 	result = TALLOC_ZERO_P(NULL, struct rpc_pipe_client);
 	if (result == NULL) {
+		*perr = NT_STATUS_NO_MEMORY;
 		return NULL;
 	}
 
 	result->pipe_name = cli_get_pipe_name(pipe_idx);
 
-	fnum = cli_nt_create(cli, result->pipe_name, DESIRED_ACCESS_PIPE);
+	result->cli = cli;
+	result->abstract_syntax = pipe_names[pipe_idx].abstr_syntax;
+	result->transfer_syntax = pipe_names[pipe_idx].trans_syntax;
+	result->auth.auth_type = PIPE_AUTH_TYPE_NONE;
+	result->auth.auth_level = PIPE_AUTH_LEVEL_NONE;
 
+	result->domain = talloc_strdup(result, cli->domain);
+	result->user_name = talloc_strdup(result, cli->user_name);
+	result->desthost = talloc_strdup(result, cli->desthost);
+	result->srv_name_slash = talloc_asprintf_strupper_m(
+		result, "\\\\%s", result->desthost);
+
+	if ((result->domain == NULL)
+	    || (result->user_name == NULL)
+	    || (result->desthost == NULL)
+	    || (result->srv_name_slash == NULL)) {
+		*perr = NT_STATUS_NO_MEMORY;
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
+	if (pipe_idx == PI_NETLOGON) {
+		/* Set up a netlogon credential chain for a netlogon pipe. */
+		result->dc = TALLOC_ZERO_P(result, struct dcinfo);
+		if (result->dc == NULL) {
+			*perr = NT_STATUS_NO_MEMORY;
+			TALLOC_FREE(result);
+			return NULL;
+		}
+	}
+
+	fnum = cli_nt_create(cli, result->pipe_name, DESIRED_ACCESS_PIPE);
 	if (fnum == -1) {
 		DEBUG(1,("cli_rpc_pipe_open: cli_nt_create failed on pipe %s "
 			 "to machine %s.  Error was %s\n",
@@ -2194,33 +2218,6 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 	}
 
 	result->fnum = fnum;
-	result->cli = cli;
-	result->abstract_syntax = pipe_names[pipe_idx].abstr_syntax;
-	result->transfer_syntax = pipe_names[pipe_idx].trans_syntax;
-	result->auth.auth_type = PIPE_AUTH_TYPE_NONE;
-	result->auth.auth_level = PIPE_AUTH_LEVEL_NONE;
-
-	result->desthost = talloc_strdup(result, cli->desthost);
-	if (result->desthost == NULL) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
-
-	result->srv_name_slash = talloc_asprintf_strupper_m(
-		result, "\\\\%s", result->desthost);
-	if (result->srv_name_slash == NULL) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
-
-	if (pipe_idx == PI_NETLOGON) {
-		/* Set up a netlogon credential chain for a netlogon pipe. */
-		result->dc = TALLOC_ZERO_P(result, struct dcinfo);
-		if (result->dc == NULL) {
-			talloc_destroy(result);
-			return NULL;
-		}
-	}
 
 	DLIST_ADD(cli->pipe_list, result);
 	*perr = NT_STATUS_OK;
@@ -2241,19 +2238,10 @@ struct rpc_pipe_client *cli_rpc_pipe_open_noauth(struct cli_state *cli, int pipe
 		return NULL;
 	}
 
-	result->domain = talloc_strdup(result, cli->domain);
-	result->user_name = talloc_strdup(result, cli->user_name);
-
-	if ((result->domain == NULL) || (result->user_name == NULL)) {
-		*perr = NT_STATUS_NO_MEMORY;
-		cli_rpc_pipe_close(result);
-		return NULL;
-	}
-
 	*perr = rpc_pipe_bind(result, PIPE_AUTH_TYPE_NONE, PIPE_AUTH_LEVEL_NONE);
 	if (!NT_STATUS_IS_OK(*perr)) {
 		int lvl = 0;
-		if (pipe_idx == PI_DSSETUP) {
+		if (rpccli_is_pipe_idx(result, PI_DSSETUP)) {
 			/* non AD domains just don't have this pipe, avoid
 			 * level 0 statement in that case - gd */
 			lvl = 3;
@@ -2304,6 +2292,9 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 	}
 	
 	result->auth.cli_auth_data_free_func = cli_ntlmssp_auth_free;
+
+	TALLOC_FREE(result->domain);
+	TALLOC_FREE(result->user_name);
 
 	result->domain = talloc_strdup(result, domain);
 	result->user_name = talloc_strdup(result, username);
@@ -2525,7 +2516,14 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 		return NULL;
 	}
 
-	result->domain = domain;
+	TALLOC_FREE(result->domain);
+	result->domain = talloc_strdup(result, domain);
+	if (result->domain == NULL) {
+		cli_rpc_pipe_close(result);
+		*perr = NT_STATUS_NO_MEMORY;
+		return NULL;
+	}
+
 	memcpy(result->auth.a_u.schannel_auth->sess_key, pdc->sess_key, 16);
 
 	*perr = rpc_pipe_bind(result, PIPE_AUTH_TYPE_SCHANNEL, auth_level);
