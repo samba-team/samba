@@ -1672,23 +1672,6 @@ static bool check_bind_response(RPC_HDR_BA *hdr_ba, const int pipe_idx, RPC_IFAC
 		DEBUG(4,("Ignoring length check -- ASU bug (server didn't fill in the pipe name correctly)"));
 	}
 
-# if 0	/* JERRY -- apparently ASU forgets to fill in the server pipe name sometimes */
-	if ( !strequal(hdr_ba->addr.str, pipe_names[pipe_idx].client_pipe) &&
-	     !strequal(hdr_ba->addr.str, pipe_names[pipe_idx].server_pipe) )
-	{
-		DEBUG(4,("bind_rpc_pipe: pipe_name %s != expected pipe %s.  oh well!\n",
-		         pipe_names[i].server_pipe ,hdr_ba->addr.str));
-		return False;
-	}
-	
-	DEBUG(5,("bind_rpc_pipe: server pipe_name found: %s\n", pipe_names[i].server_pipe ));
-
-	if (pipe_names[pipe_idx].server_pipe == NULL) {
-		DEBUG(2,("bind_rpc_pipe: pipe name %s unsupported\n", hdr_ba->addr.str));
-		return False;
-	}
-#endif 	/* JERRY */
-
 	/* check the transfer syntax */
 	if ((hdr_ba->transfer.if_version != transfer->if_version) ||
 	     (memcmp(&hdr_ba->transfer.uuid, &transfer->uuid, sizeof(transfer->uuid)) !=0)) {
