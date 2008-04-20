@@ -6733,11 +6733,10 @@ static bool handle_include(int snum, const char *pszParmValue, char **ptr)
 {
 	char *fname;
 
-	if (bNoIncludes) {
-		return true;
-	}
-
 	if (strequal(pszParmValue, INCLUDE_REGISTRY_NAME)) {
+		if (bNoIncludes) {
+			return true;
+		}
 		if (bInGlobalSection) {
 			return process_registry_globals();
 		} else {
