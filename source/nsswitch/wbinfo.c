@@ -321,7 +321,7 @@ static bool wbinfo_wins_byname(const char *name)
 static bool wbinfo_wins_byip(const char *ip)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	const char *name = NULL;
+	char *name = NULL;
 
 	wbc_status = wbcResolveWinsByIP(ip, &name);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
