@@ -252,7 +252,8 @@ static bool smb_io_rpc_hdr_bba(const char *desc,  RPC_HDR_BBA *rpc, prs_struct *
  Note the transfer pointer must remain valid until this is marshalled.
 ********************************************************************/
 
-void init_rpc_context(RPC_CONTEXT *rpc_ctx, uint16 context_id, RPC_IFACE *abstract, RPC_IFACE *transfer)
+void init_rpc_context(RPC_CONTEXT *rpc_ctx, uint16 context_id,
+		      const RPC_IFACE *abstract, const RPC_IFACE *transfer)
 {
 	rpc_ctx->context_id   = context_id   ; /* presentation context identifier (0x0) */
 	rpc_ctx->num_transfer_syntaxes = 1 ; /* the number of syntaxes (has always been 1?)(0x1) */

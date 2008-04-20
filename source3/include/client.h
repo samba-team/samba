@@ -62,9 +62,11 @@ struct rpc_pipe_client {
 
 	struct cli_state *cli;
 
-	int pipe_idx;
 	const char *pipe_name;
 	uint16 fnum;
+
+	const struct ndr_syntax_id *abstract_syntax;
+	const struct ndr_syntax_id *transfer_syntax;
 
 	const char *desthost;
 	const char *srv_name_slash;

@@ -35,7 +35,7 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 
-	SMB_ASSERT(cli->pipe_idx == p_idx);
+	SMB_ASSERT(rpccli_is_pipe_idx(cli, p_idx));
 	SMB_ASSERT(table->num_calls > opnum);
 
 	call = &table->calls[opnum];
