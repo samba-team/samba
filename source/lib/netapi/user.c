@@ -845,11 +845,11 @@ static WERROR convert_samr_dispinfo_to_NET_DISPLAY_GROUP(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-WERROR convert_samr_dispinfo_to_NET_DISPLAY(TALLOC_CTX *mem_ctx,
-					    union samr_DispInfo *info,
-					    uint32_t level,
-					    uint32_t *entries_read,
-					    void **buffer)
+static WERROR convert_samr_dispinfo_to_NET_DISPLAY(TALLOC_CTX *mem_ctx,
+						   union samr_DispInfo *info,
+						   uint32_t level,
+						   uint32_t *entries_read,
+						   void **buffer)
 {
 	switch (level) {
 		case 1:
