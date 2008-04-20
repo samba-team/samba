@@ -237,12 +237,12 @@ wbcErr wbcResolveWinsByName(const char *name, char **ip)
  * @return #wbcErr
  *
  **/
-wbcErr wbcResolveWinsByIP(const char *ip, const char **name)
+wbcErr wbcResolveWinsByIP(const char *ip, char **name)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	const char *name_str;
+	char *name_str;
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
