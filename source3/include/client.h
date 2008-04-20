@@ -68,11 +68,11 @@ struct rpc_pipe_client {
 	const struct ndr_syntax_id *abstract_syntax;
 	const struct ndr_syntax_id *transfer_syntax;
 
-	const char *desthost;
-	const char *srv_name_slash;
+	char *desthost;
+	char *srv_name_slash;
 
-	const char *domain;
-	const char *user_name;
+	char *domain;
+	char *user_name;
 	struct pwd_info pwd;
 
 	uint16 max_xmit_frag;
