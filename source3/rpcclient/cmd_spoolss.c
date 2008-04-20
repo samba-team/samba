@@ -2645,7 +2645,7 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 {
 	fstring printername, servername1, servername2;
 	char *printername_path = NULL;
-	struct cli_state *cli_server1 = cli->cli;
+	struct cli_state *cli_server1 = rpc_pipe_np_smb_conn(cli);
 	struct cli_state *cli_server2 = NULL;
 	struct rpc_pipe_client *cli2 = NULL;
 	POLICY_HND hPrinter1, hPrinter2;

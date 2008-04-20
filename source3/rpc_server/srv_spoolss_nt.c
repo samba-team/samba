@@ -164,7 +164,7 @@ static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 	/* if it's the last connection, deconnect the IPC$ share */
 	if (smb_connections==1) {
 
-		cli_shutdown( notify_cli_pipe->cli );
+		cli_shutdown( rpc_pipe_np_smb_conn(notify_cli_pipe) );
 		notify_cli_pipe = NULL; /* The above call shuts downn the pipe also. */
 
 		messaging_deregister(smbd_messaging_context(),
