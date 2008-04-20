@@ -300,7 +300,7 @@ static bool wbinfo_get_userdomgroups(const char *user_sid_str)
 static bool wbinfo_wins_byname(const char *name)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	const char *ip = NULL;
+	char *ip = NULL;
 
 	wbc_status = wbcResolveWinsByName(name, &ip);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
