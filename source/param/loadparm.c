@@ -8733,7 +8733,7 @@ bool lp_load_ex(const char *pszFname,
 			init_globals(false);
 			lp_kill_all_services();
 			return lp_load_ex(pszFname, global_only, save_defaults,
-				          add_ipc, initialize_globals,
+					  add_ipc, initialize_globals,
 					  allow_include_registry);
 		}
 	} else if (lp_config_backend_is_registry()) {
