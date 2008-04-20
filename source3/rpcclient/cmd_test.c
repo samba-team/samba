@@ -48,8 +48,8 @@ static NTSTATUS cmd_testme(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 
  done:
-	if (lsa_pipe != NULL) cli_rpc_pipe_close(lsa_pipe);
-	if (samr_pipe != NULL) cli_rpc_pipe_close(samr_pipe);
+	TALLOC_FREE(lsa_pipe);
+	TALLOC_FREE(samr_pipe);
 
 	return status;
 }

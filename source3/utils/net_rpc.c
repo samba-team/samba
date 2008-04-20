@@ -88,7 +88,7 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	*domain_sid = info->account_domain.sid;
 
 	rpccli_lsa_Close(lsa_pipe, mem_ctx, &pol);
-	cli_rpc_pipe_close(lsa_pipe);
+	TALLOC_FREE(lsa_pipe);
 
 	return NT_STATUS_OK;
 }
@@ -185,7 +185,7 @@ int run_rpc_command(struct cli_state *cli_arg,
 		
 	if (!(conn_flags & NET_FLAGS_NO_PIPE)) {
 		if (pipe_hnd) {
-			cli_rpc_pipe_close(pipe_hnd);
+			TALLOC_FREE(pipe_hnd);
 		}
 	}
 
@@ -1973,7 +1973,7 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 
  done:
 	if (pipe_hnd) {
-		cli_rpc_pipe_close(pipe_hnd);
+		TALLOC_FREE(pipe_hnd);
 	}
 
 	if (!NT_STATUS_IS_OK(result) && (StrnCaseCmp(name, "S-", 2) == 0)) {
@@ -2748,14 +2748,14 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Couldn't open LSA policy handle\n");
-		cli_rpc_pipe_close(lsa_pipe);
+		TALLOC_FREE(lsa_pipe);
 		return result;
 	}
 
 	alias_sids = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, num_members);
 	if (!alias_sids) {
 		d_fprintf(stderr, "Out of memory\n");
-		cli_rpc_pipe_close(lsa_pipe);
+		TALLOC_FREE(lsa_pipe);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -2770,7 +2770,7 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 	if (!NT_STATUS_IS_OK(result) &&
 	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED)) {
 		d_fprintf(stderr, "Couldn't lookup SIDs\n");
-		cli_rpc_pipe_close(lsa_pipe);
+		TALLOC_FREE(lsa_pipe);
 		return result;
 	}
 
@@ -2790,7 +2790,7 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 		}
 	}
 
-	cli_rpc_pipe_close(lsa_pipe);
+	TALLOC_FREE(lsa_pipe);
 	return NT_STATUS_OK;
 }
  
@@ -5652,7 +5652,7 @@ static NTSTATUS rpc_trustdom_get_pdc(struct cli_state *cli,
 				       domain_name,
 				       &buffer,
 				       NULL);
-	cli_rpc_pipe_close(netr);
+	TALLOC_FREE(netr);
 
 	if (NT_STATUS_IS_OK(status)) {
 		return status;
@@ -6248,7 +6248,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		return -1;
 	};
 	
-	cli_rpc_pipe_close(pipe_hnd);
+	TALLOC_FREE(pipe_hnd);
 
 	/*
 	 * Listing trusting domains (stored in passdb backend, if local)

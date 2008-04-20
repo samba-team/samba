@@ -1066,7 +1066,10 @@ static NTSTATUS create_schannel_auth_rpc_bind_req( struct rpc_pipe_client *cli,
 	/* Use lp_workgroup() if domain not specified */
 
 	if (!cli->domain || !cli->domain[0]) {
-		cli->domain = lp_workgroup();
+		cli->domain = talloc_strdup(cli, lp_workgroup());
+		if (cli->domain == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	init_rpc_auth_schannel_neg(&schannel_neg, cli->domain, global_myname());
@@ -2137,6 +2140,30 @@ bool rpccli_is_pipe_idx(struct rpc_pipe_client *cli, int pipe_idx)
 	return (cli->abstract_syntax == pipe_names[pipe_idx].abstr_syntax);
 }
 
+static int rpc_pipe_destructor(struct rpc_pipe_client *p)
+{
+	bool ret;
+
+	ret = cli_close(p->cli, p->fnum);
+	if (!ret) {
+		DEBUG(1, ("rpc_pipe_destructor: cli_close failed on pipe %s, "
+			  "fnum 0x%x to machine %s.  Error was %s\n",
+			  p->pipe_name, (int) p->fnum,
+			  p->desthost, cli_errstr(p->cli)));
+	}
+
+	if (p->auth.cli_auth_data_free_func) {
+		(*p->auth.cli_auth_data_free_func)(&p->auth);
+	}
+
+	DEBUG(10, ("rpc_pipe_destructor: closed pipe %s to machine %s\n",
+		   p->pipe_name, p->desthost ));
+
+	DLIST_REMOVE(p->cli->pipe_list, p);
+
+	return ret ? -1 : 0;
+}
+
 /****************************************************************************
  Open a named pipe over SMB to a remote server.
  *
@@ -2220,6 +2247,8 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 	result->fnum = fnum;
 
 	DLIST_ADD(cli->pipe_list, result);
+	talloc_set_destructor(result, rpc_pipe_destructor);
+
 	*perr = NT_STATUS_OK;
 
 	return result;
@@ -2248,7 +2277,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_noauth(struct cli_state *cli, int pipe
 		}
 		DEBUG(lvl, ("cli_rpc_pipe_open_noauth: rpc_pipe_bind for pipe %s failed with error %s\n",
 			cli_get_pipe_name(pipe_idx), nt_errstr(*perr) ));
-		cli_rpc_pipe_close(result);
+		TALLOC_FREE(result);
 		return NULL;
 	}
 
@@ -2360,7 +2389,7 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 
   err:
 
-	cli_rpc_pipe_close(result);
+	TALLOC_FREE(result);
 	return NULL;
 }
 
@@ -2481,7 +2510,7 @@ struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 	if (!get_schannel_session_key_common(netlogon_pipe, cli, domain,
 					     pneg_flags, perr))
 	{
-		cli_rpc_pipe_close(netlogon_pipe);
+		TALLOC_FREE(netlogon_pipe);
 		return NULL;
 	}
 
@@ -2511,7 +2540,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 	result->auth.a_u.schannel_auth = TALLOC_ZERO_P(
 		result, struct schannel_auth_struct);
 	if (!result->auth.a_u.schannel_auth) {
-		cli_rpc_pipe_close(result);
+		TALLOC_FREE(result);
 		*perr = NT_STATUS_NO_MEMORY;
 		return NULL;
 	}
@@ -2519,7 +2548,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 	TALLOC_FREE(result->domain);
 	result->domain = talloc_strdup(result, domain);
 	if (result->domain == NULL) {
-		cli_rpc_pipe_close(result);
+		TALLOC_FREE(result);
 		*perr = NT_STATUS_NO_MEMORY;
 		return NULL;
 	}
@@ -2530,7 +2559,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 	if (!NT_STATUS_IS_OK(*perr)) {
 		DEBUG(0, ("cli_rpc_pipe_open_schannel_with_key: cli_rpc_pipe_bind failed with error %s\n",
 			nt_errstr(*perr) ));
-		cli_rpc_pipe_close(result);
+		TALLOC_FREE(result);
 		return NULL;
 	}
 
@@ -2570,7 +2599,7 @@ static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_
 	if (!get_schannel_session_key_common(netlogon_pipe, cli, domain,
 					     pneg_flags, perr))
 	{
-		cli_rpc_pipe_close(netlogon_pipe);
+		TALLOC_FREE(netlogon_pipe);
 		return NULL;
 	}
 
@@ -2609,7 +2638,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state
 				domain, netlogon_pipe->dc, perr);
 
 	/* Now we've bound using the session key we can close the netlog pipe. */
-	cli_rpc_pipe_close(netlogon_pipe);
+	TALLOC_FREE(netlogon_pipe);
 
 	return result;
 }
@@ -2642,7 +2671,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel(struct cli_state *cli,
 				domain, netlogon_pipe->dc, perr);
 
 	/* Now we've bound using the session key we can close the netlog pipe. */
-	cli_rpc_pipe_close(netlogon_pipe);
+	TALLOC_FREE(netlogon_pipe);
 
 	return result;
 }
@@ -2687,7 +2716,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
 		service_princ = talloc_asprintf(result, "%s$@%s",
 						cli->desthost, lp_realm() );
 		if (!service_princ) {
-			cli_rpc_pipe_close(result);
+			TALLOC_FREE(result);
 			return NULL;
 		}
 	}
@@ -2696,7 +2725,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
 	if (username && password) {
 		int ret = kerberos_kinit_password(username, password, 0, NULL);
 		if (ret) {
-			cli_rpc_pipe_close(result);
+			TALLOC_FREE(result);
 			return NULL;
 		}
 	}
@@ -2704,7 +2733,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
 	result->auth.a_u.kerberos_auth = TALLOC_ZERO_P(
 		result, struct kerberos_auth_struct);
 	if (!result->auth.a_u.kerberos_auth) {
-		cli_rpc_pipe_close(result);
+		TALLOC_FREE(result);
 		*perr = NT_STATUS_NO_MEMORY;
 		return NULL;
 	}
@@ -2716,7 +2745,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(*perr)) {
 		DEBUG(0, ("cli_rpc_pipe_open_krb5: cli_rpc_pipe_bind failed with error %s\n",
 			nt_errstr(*perr) ));
-		cli_rpc_pipe_close(result);
+		TALLOC_FREE(result);
 		return NULL;
 	}
 
