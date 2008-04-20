@@ -2609,10 +2609,6 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 		return False;
 	}
 
-	/* make sure to save the cli_state pointer.  Keep its own talloc_ctx */
-
-	(*pp_pipe)->cli = the_cli;
-
 	return True;
 }
 
