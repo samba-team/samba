@@ -6727,14 +6727,14 @@ static bool handle_netbios_aliases(int snum, const char *pszParmValue, char **pt
 /***************************************************************************
  Handle the include operation.
 ***************************************************************************/
-static bool bNoIncludes = false;
+static bool bAllowIncludeRegistry = true;
 
 static bool handle_include(int snum, const char *pszParmValue, char **ptr)
 {
 	char *fname;
 
 	if (strequal(pszParmValue, INCLUDE_REGISTRY_NAME)) {
-		if (bNoIncludes) {
+		if (!bAllowIncludeRegistry) {
 			return true;
 		}
 		if (bInGlobalSection) {
@@ -8660,7 +8660,7 @@ bool lp_load_ex(const char *pszFname,
 		bool save_defaults,
 		bool add_ipc,
 		bool initialize_globals,
-		bool no_includes)
+		bool allow_include_registry)
 {
 	char *n2 = NULL;
 	bool bRetval;
@@ -8672,7 +8672,7 @@ bool lp_load_ex(const char *pszFname,
 
 	bInGlobalSection = True;
 	bGlobalOnly = global_only;
-	bNoIncludes = no_includes;
+	bAllowIncludeRegistry = allow_include_registry;
 
 	init_globals(! initialize_globals);
 	debug_init();
@@ -8733,7 +8733,8 @@ bool lp_load_ex(const char *pszFname,
 			init_globals(false);
 			lp_kill_all_services();
 			return lp_load_ex(pszFname, global_only, save_defaults,
-				          add_ipc, initialize_globals, no_includes);
+				          add_ipc, initialize_globals,
+					  allow_include_registry);
 		}
 	} else if (lp_config_backend_is_registry()) {
 		bRetval = process_registry_globals();
@@ -8768,7 +8769,7 @@ bool lp_load_ex(const char *pszFname,
 
 	init_iconv();
 
-	bNoIncludes = false;
+	bAllowIncludeRegistry = true;
 
 	return (bRetval);
 }
