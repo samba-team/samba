@@ -142,8 +142,8 @@ static ADS_STATUS libnet_join_connect_ads(TALLOC_CTX *mem_ctx,
 {
 	ADS_STATUS status;
 
-	status = libnet_connect_ads(r->in.domain_name,
-				    r->in.domain_name,
+	status = libnet_connect_ads(r->out.dns_domain_name,
+				    r->out.netbios_domain_name,
 				    r->in.dc_name,
 				    r->in.admin_account,
 				    r->in.admin_password,
@@ -1641,8 +1641,21 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
 	}
 
+	status = libnet_join_lookup_dc_rpc(mem_ctx, r, &cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to lookup DC info for domain '%s' over rpc: %s",
+			r->in.domain_name, get_friendly_nt_error_msg(status));
+		return ntstatus_to_werror(status);
+	}
+
+	werr = libnet_join_check_config(mem_ctx, r);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
 #ifdef WITH_ADS
-	if (r->in.account_ou) {
+	if (r->out.domain_is_ad && r->in.account_ou) {
 
 		ads_status = libnet_join_connect_ads(mem_ctx, r);
 		if (!ADS_ERR_OK(ads_status)) {
@@ -1661,19 +1674,6 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		r->in.join_flags &= ~WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE;
 	}
 #endif /* WITH_ADS */
-
-	status = libnet_join_lookup_dc_rpc(mem_ctx, r, &cli);
-	if (!NT_STATUS_IS_OK(status)) {
-		libnet_join_set_error_string(mem_ctx, r,
-			"failed to lookup DC info for domain '%s' over rpc: %s",
-			r->in.domain_name, get_friendly_nt_error_msg(status));
-		return ntstatus_to_werror(status);
-	}
-
-	werr = libnet_join_check_config(mem_ctx, r);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
 
 	status = libnet_join_joindomain_rpc(mem_ctx, r, cli);
 	if (!NT_STATUS_IS_OK(status)) {
