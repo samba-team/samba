@@ -1423,8 +1423,8 @@ static NTSTATUS resolve_ads(const char *name,
  resolve_hosts() when looking up DC's via SRV RR entries in DNS
 **********************************************************************/
 
-static NTSTATUS internal_resolve_name(const char *name,
-				int name_type,
+NTSTATUS internal_resolve_name(const char *name,
+			        int name_type,
 				const char *sitename,
 				struct ip_service **return_iplist,
 				int *return_count,
