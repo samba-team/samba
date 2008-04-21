@@ -213,8 +213,7 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const DOM_SID *
 		goto done;
 	}
 
-	blob.data = (uint8 *)data.dptr;
-	blob.length = data.dsize;
+	blob = data_blob_const(data.dptr, data.dsize);
 
 	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &r,
 				      (ndr_pull_flags_fn_t)ndr_pull_netsamlogoncache_entry);
