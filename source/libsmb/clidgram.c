@@ -126,7 +126,8 @@ static const char *mailslot_name(TALLOC_CTX *mem_ctx, struct in_addr dc_ip)
 			       NBT_MAILSLOT_GETDC, dc_ip.s_addr);
 }
 
-bool send_getdc_request(struct messaging_context *msg_ctx,
+bool send_getdc_request(TALLOC_CTX *mem_ctx,
+			struct messaging_context *msg_ctx,
 			struct sockaddr_storage *dc_ss,
 			const char *domain_name,
 			const DOM_SID *sid)
@@ -139,7 +140,6 @@ bool send_getdc_request(struct messaging_context *msg_ctx,
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dom_sid my_sid;
-	TALLOC_CTX *mem_ctx = talloc_tos();
 
 	ZERO_STRUCT(packet);
 	ZERO_STRUCT(my_sid);
@@ -193,14 +193,14 @@ bool send_getdc_request(struct messaging_context *msg_ctx,
 				 dc_ss);
 }
 
-bool receive_getdc_response(struct sockaddr_storage *dc_ss,
+bool receive_getdc_response(TALLOC_CTX *mem_ctx,
+			    struct sockaddr_storage *dc_ss,
 			    const char *domain_name,
 			    const char **dc_name)
 {
 	struct packet_struct *packet;
 	const char *my_mailslot = NULL;
 	struct in_addr dc_ip;
-	TALLOC_CTX *mem_ctx = talloc_tos();
 	DATA_BLOB blob;
 	struct nbt_ntlogon_packet r;
 	union dgram_message_body p;
