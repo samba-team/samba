@@ -5,6 +5,7 @@
    Copyright Andrew Tridgell 1994-1998
    Copyright Andrew Bartlett 2002
    Copyright Rodrigo Fernandez-Vizarra 2005 
+   Copyright James Peach 2008
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
