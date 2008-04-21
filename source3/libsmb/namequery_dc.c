@@ -99,7 +99,7 @@ static bool ads_dc_name(const char *domain,
 		}
 
 #ifdef HAVE_KRB5
-		if (is_our_primary_domain(domain) && (ads->config.flags & ADS_KDC)) {
+		if (is_our_primary_domain(domain) && (ads->config.flags & NBT_SERVER_KDC)) {
 			if (ads_closest_dc(ads)) {
 				/* We're going to use this KDC for this realm/domain.
 				   If we are using sites, then force the krb5 libs

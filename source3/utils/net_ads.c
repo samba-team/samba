@@ -118,16 +118,16 @@ static int net_ads_cldap_netlogon(ADS_STRUCT *ads)
 		 "\tIs writable:                                %s\n"
 		 "\tHas a hardware clock:                       %s\n"
 		 "\tIs a non-domain NC serviced by LDAP server: %s\n",
-		 (reply.server_type & ADS_PDC) ? "yes" : "no",
-		 (reply.server_type & ADS_GC) ? "yes" : "no",
-		 (reply.server_type & ADS_LDAP) ? "yes" : "no",
-		 (reply.server_type & ADS_DS) ? "yes" : "no",
-		 (reply.server_type & ADS_KDC) ? "yes" : "no",
-		 (reply.server_type & ADS_TIMESERV) ? "yes" : "no",
-		 (reply.server_type & ADS_CLOSEST) ? "yes" : "no",
-		 (reply.server_type & ADS_WRITABLE) ? "yes" : "no",
-		 (reply.server_type & ADS_GOOD_TIMESERV) ? "yes" : "no",
-		 (reply.server_type & ADS_NDNC) ? "yes" : "no");
+		 (reply.server_type & NBT_SERVER_PDC) ? "yes" : "no",
+		 (reply.server_type & NBT_SERVER_GC) ? "yes" : "no",
+		 (reply.server_type & NBT_SERVER_LDAP) ? "yes" : "no",
+		 (reply.server_type & NBT_SERVER_DS) ? "yes" : "no",
+		 (reply.server_type & NBT_SERVER_KDC) ? "yes" : "no",
+		 (reply.server_type & NBT_SERVER_TIMESERV) ? "yes" : "no",
+		 (reply.server_type & NBT_SERVER_CLOSEST) ? "yes" : "no",
+		 (reply.server_type & NBT_SERVER_WRITABLE) ? "yes" : "no",
+		 (reply.server_type & NBT_SERVER_GOOD_TIMESERV) ? "yes" : "no",
+		 (reply.server_type & DS_SERVER_NDNC) ? "yes" : "no");
 
 	printf("Forest:\t\t\t%s\n", reply.forest);
 	printf("Domain:\t\t\t%s\n", reply.dns_domain);

@@ -225,26 +225,26 @@ static bool check_cldap_reply_required_flags(uint32_t ret_flags,
 					     uint32_t req_flags)
 {
 	if (req_flags & DS_PDC_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & ADS_PDC);
+		RETURN_ON_FALSE(ret_flags & NBT_SERVER_PDC);
 
 	if (req_flags & DS_GC_SERVER_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & ADS_GC);
+		RETURN_ON_FALSE(ret_flags & NBT_SERVER_GC);
 
 	if (req_flags & DS_ONLY_LDAP_NEEDED)
-		RETURN_ON_FALSE(ret_flags & ADS_LDAP);
+		RETURN_ON_FALSE(ret_flags & NBT_SERVER_LDAP);
 
 	if ((req_flags & DS_DIRECTORY_SERVICE_REQUIRED) ||
 	    (req_flags & DS_DIRECTORY_SERVICE_PREFERRED))
-		RETURN_ON_FALSE(ret_flags & ADS_DS);
+		RETURN_ON_FALSE(ret_flags & NBT_SERVER_DS);
 
 	if (req_flags & DS_KDC_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & ADS_KDC);
+		RETURN_ON_FALSE(ret_flags & NBT_SERVER_KDC);
 
 	if (req_flags & DS_TIMESERV_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & ADS_TIMESERV);
+		RETURN_ON_FALSE(ret_flags & NBT_SERVER_TIMESERV);
 
 	if (req_flags & DS_WRITABLE_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & ADS_WRITABLE);
+		RETURN_ON_FALSE(ret_flags & NBT_SERVER_WRITABLE);
 
 	return true;
 }
