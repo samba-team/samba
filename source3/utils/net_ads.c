@@ -81,8 +81,7 @@ static const char *assume_own_realm(void)
 static int net_ads_cldap_netlogon(ADS_STRUCT *ads)
 {
 	char addr[INET6_ADDRSTRLEN];
-	struct cldap_netlogon_reply reply;
-	struct GUID tmp_guid;
+	struct nbt_cldap_netlogon_5 reply;
 
 	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
 	if ( !ads_cldap_netlogon(addr, ads->server.realm, &reply ) ) {
@@ -106,8 +105,7 @@ static int net_ads_cldap_netlogon(ADS_STRUCT *ads)
 		break;
 	}
 
-	smb_uuid_unpack(reply.guid, &tmp_guid);
-	d_printf("GUID: %s\n", smb_uuid_string(talloc_tos(), tmp_guid));
+	d_printf("GUID: %s\n", smb_uuid_string(talloc_tos(), reply.domain_uuid));
 
 	d_printf("Flags:\n"
 		 "\tIs a PDC:                                   %s\n"
@@ -120,31 +118,30 @@ static int net_ads_cldap_netlogon(ADS_STRUCT *ads)
 		 "\tIs writable:                                %s\n"
 		 "\tHas a hardware clock:                       %s\n"
 		 "\tIs a non-domain NC serviced by LDAP server: %s\n",
-		 (reply.flags & ADS_PDC) ? "yes" : "no",
-		 (reply.flags & ADS_GC) ? "yes" : "no",
-		 (reply.flags & ADS_LDAP) ? "yes" : "no",
-		 (reply.flags & ADS_DS) ? "yes" : "no",
-		 (reply.flags & ADS_KDC) ? "yes" : "no",
-		 (reply.flags & ADS_TIMESERV) ? "yes" : "no",
-		 (reply.flags & ADS_CLOSEST) ? "yes" : "no",
-		 (reply.flags & ADS_WRITABLE) ? "yes" : "no",
-		 (reply.flags & ADS_GOOD_TIMESERV) ? "yes" : "no",
-		 (reply.flags & ADS_NDNC) ? "yes" : "no");
+		 (reply.server_type & ADS_PDC) ? "yes" : "no",
+		 (reply.server_type & ADS_GC) ? "yes" : "no",
+		 (reply.server_type & ADS_LDAP) ? "yes" : "no",
+		 (reply.server_type & ADS_DS) ? "yes" : "no",
+		 (reply.server_type & ADS_KDC) ? "yes" : "no",
+		 (reply.server_type & ADS_TIMESERV) ? "yes" : "no",
+		 (reply.server_type & ADS_CLOSEST) ? "yes" : "no",
+		 (reply.server_type & ADS_WRITABLE) ? "yes" : "no",
+		 (reply.server_type & ADS_GOOD_TIMESERV) ? "yes" : "no",
+		 (reply.server_type & ADS_NDNC) ? "yes" : "no");
 
 	printf("Forest:\t\t\t%s\n", reply.forest);
-	printf("Domain:\t\t\t%s\n", reply.domain);
-	printf("Domain Controller:\t%s\n", reply.hostname);
+	printf("Domain:\t\t\t%s\n", reply.dns_domain);
+	printf("Domain Controller:\t%s\n", reply.pdc_dns_name);
 
-	printf("Pre-Win2k Domain:\t%s\n", reply.netbios_domain);
-	printf("Pre-Win2k Hostname:\t%s\n", reply.netbios_hostname);
+	printf("Pre-Win2k Domain:\t%s\n", reply.domain);
+	printf("Pre-Win2k Hostname:\t%s\n", reply.pdc_name);
 
-	if (*reply.unk) printf("Unk:\t\t\t%s\n", reply.unk);
 	if (*reply.user_name) printf("User name:\t%s\n", reply.user_name);
 
-	printf("Server Site Name :\t\t%s\n", reply.server_site_name);
-	printf("Client Site Name :\t\t%s\n", reply.client_site_name);
+	printf("Server Site Name :\t\t%s\n", reply.server_site);
+	printf("Client Site Name :\t\t%s\n", reply.client_site);
 
-	d_printf("NT Version: %d\n", reply.version);
+	d_printf("NT Version: %d\n", reply.nt_version);
 	d_printf("LMNT Token: %.2x\n", reply.lmnt_token);
 	d_printf("LM20 Token: %.2x\n", reply.lm20_token);
 
@@ -379,7 +376,7 @@ static int net_ads_workgroup(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	char addr[INET6_ADDRSTRLEN];
-	struct cldap_netlogon_reply reply;
+	struct nbt_cldap_netlogon_5 reply;
 
 	if (!ADS_ERR_OK(ads_startup_nobind(False, &ads))) {
 		d_fprintf(stderr, "Didn't find the cldap server!\n");
@@ -397,7 +394,7 @@ static int net_ads_workgroup(int argc, const char **argv)
 		return -1;
 	}
 
-	d_printf("Workgroup: %s\n", reply.netbios_domain);
+	d_printf("Workgroup: %s\n", reply.domain);
 
 	ads_destroy(&ads);
 

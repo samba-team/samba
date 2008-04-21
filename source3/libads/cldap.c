@@ -21,72 +21,6 @@
 #include "includes.h"
 
 /*
-  These seem to be strings as described in RFC1035 4.1.4 and can be:
-
-   - a sequence of labels ending in a zero octet
-   - a pointer
-   - a sequence of labels ending with a pointer
-
-  A label is a byte where the first two bits must be zero and the remaining
-  bits represent the length of the label followed by the label itself.
-  Therefore, the length of a label is at max 64 bytes.  Under RFC1035, a
-  sequence of labels cannot exceed 255 bytes.
-
-  A pointer consists of a 14 bit offset from the beginning of the data.
-
-  struct ptr {
-    unsigned ident:2; // must be 11
-    unsigned offset:14; // from the beginning of data
-  };
-
-  This is used as a method to compress the packet by eliminated duplicate
-  domain components.  Since a UDP packet should probably be < 512 bytes and a
-  DNS name can be up to 255 bytes, this actually makes a lot of sense.
-*/
-static unsigned pull_netlogon_string(char *ret, const char *ptr,
-				     const char *data)
-{
-	char *pret = ret;
-	int followed_ptr = 0;
-	unsigned ret_len = 0;
-
-	memset(pret, 0, MAX_DNS_LABEL);
-	do {
-		if ((*ptr & 0xc0) == 0xc0) {
-			uint16 len;
-
-			if (!followed_ptr) {
-				ret_len += 2;
-				followed_ptr = 1;
-			}
-			len = ((ptr[0] & 0x3f) << 8) | ptr[1];
-			ptr = data + len;
-		} else if (*ptr) {
-			uint8 len = (uint8)*(ptr++);
-
-			if ((pret - ret + len + 1) >= MAX_DNS_LABEL) {
-				DEBUG(1,("DC returning too long DNS name\n"));
-				return 0;
-			}
-
-			if (pret != ret) {
-				*pret = '.';
-				pret++;
-			}
-			memcpy(pret, ptr, len);
-			pret += len;
-			ptr += len;
-
-			if (!followed_ptr) {
-				ret_len += (len + 1);
-			}
-		}
-	} while (*ptr);
-
-	return followed_ptr ? ret_len : ret_len + 1;
-}
-
-/*
   do a cldap netlogon query
 */
 static int send_cldap_netlogon(int sock, const char *domain, 
@@ -182,7 +116,7 @@ static void gotalarm_sig(void)
 /*
   receive a cldap netlogon reply
 */
-static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
+static int recv_cldap_netlogon(int sock, struct nbt_cldap_netlogon_5 *reply)
 {
 	int ret;
 	ASN1_DATA data;
@@ -193,7 +127,8 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	int i1;
 	/* half the time of a regular ldap timeout, not less than 3 seconds. */
 	unsigned int al_secs = MAX(3,lp_ldap_timeout()/2);
-	char *p;
+	union nbt_cldap_netlogon p;
+	enum ndr_err_code ndr_err;
 
 	blob = data_blob(NULL, 8192);
 	if (blob.data == NULL) {
@@ -247,33 +182,17 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 		return -1;
 	}
 
-	p = (char *)os3.data;
-
-	reply->type = IVAL(p, 0); p += 4;
-	reply->flags = IVAL(p, 0); p += 4;
-
-	memcpy(&reply->guid.info, p, UUID_FLAT_SIZE);
-	p += UUID_FLAT_SIZE;
-
-	p += pull_netlogon_string(reply->forest, p, (const char *)os3.data);
-	p += pull_netlogon_string(reply->domain, p, (const char *)os3.data);
-	p += pull_netlogon_string(reply->hostname, p, (const char *)os3.data);
-	p += pull_netlogon_string(reply->netbios_domain, p, (const char *)os3.data);
-	p += pull_netlogon_string(reply->netbios_hostname, p, (const char *)os3.data);
-	p += pull_netlogon_string(reply->unk, p, (const char *)os3.data);
-
-	if (reply->type == SAMLOGON_AD_R) {
-		p += pull_netlogon_string(reply->user_name, p, (const char *)os3.data);
-	} else {
-		*reply->user_name = 0;
+	ndr_err = ndr_pull_union_blob_all(&os3, talloc_tos(), &p, 5,
+		       (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return -1;
 	}
 
-	p += pull_netlogon_string(reply->server_site_name, p, (const char *)os3.data);
-	p += pull_netlogon_string(reply->client_site_name, p, (const char *)os3.data);
+	*reply = p.logon5;
 
-	reply->version = IVAL(p, 0);
-	reply->lmnt_token = SVAL(p, 4);
-	reply->lm20_token = SVAL(p, 6);
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_UNION_DEBUG(nbt_cldap_netlogon, 5, &p);
+	}
 
 	data_blob_free(&os1);
 	data_blob_free(&os2);
@@ -289,7 +208,7 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
   do a cldap netlogon query.  Always 389/udp
 *******************************************************************/
 
-bool ads_cldap_netlogon(const char *server, const char *realm,  struct cldap_netlogon_reply *reply)
+bool ads_cldap_netlogon(const char *server, const char *realm,  struct nbt_cldap_netlogon_5 *reply)
 {
 	int sock;
 	int ret;

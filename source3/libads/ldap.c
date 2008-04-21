@@ -176,7 +176,7 @@ bool ads_closest_dc(ADS_STRUCT *ads)
 bool ads_try_connect(ADS_STRUCT *ads, const char *server )
 {
 	char *srv;
-	struct cldap_netlogon_reply cldap_reply;
+	struct nbt_cldap_netlogon_5 cldap_reply;
 
 	if (!server || !*server) {
 		return False;
@@ -199,7 +199,7 @@ bool ads_try_connect(ADS_STRUCT *ads, const char *server )
 
 	/* Check the CLDAP reply flags */
 
-	if ( !(cldap_reply.flags & ADS_LDAP) ) {
+	if ( !(cldap_reply.server_type & ADS_LDAP) ) {
 		DEBUG(1,("ads_try_connect: %s's CLDAP reply says it is not an LDAP server!\n",
 			srv));
 		SAFE_FREE( srv );
@@ -215,20 +215,20 @@ bool ads_try_connect(ADS_STRUCT *ads, const char *server )
 	SAFE_FREE(ads->config.client_site_name);
 	SAFE_FREE(ads->server.workgroup);
 
-	ads->config.flags	       = cldap_reply.flags;
-	ads->config.ldap_server_name   = SMB_STRDUP(cldap_reply.hostname);
-	strupper_m(cldap_reply.domain);
-	ads->config.realm              = SMB_STRDUP(cldap_reply.domain);
+	ads->config.flags	       = cldap_reply.server_type;
+	ads->config.ldap_server_name   = SMB_STRDUP(cldap_reply.pdc_dns_name);
+	ads->config.realm              = SMB_STRDUP(cldap_reply.dns_domain);
+	strupper_m(ads->config.realm);
 	ads->config.bind_path          = ads_build_dn(ads->config.realm);
-	if (*cldap_reply.server_site_name) {
+	if (*cldap_reply.server_site) {
 		ads->config.server_site_name =
-			SMB_STRDUP(cldap_reply.server_site_name);
+			SMB_STRDUP(cldap_reply.server_site);
 	}
-	if (*cldap_reply.client_site_name) {
+	if (*cldap_reply.client_site) {
 		ads->config.client_site_name =
-			SMB_STRDUP(cldap_reply.client_site_name);
+			SMB_STRDUP(cldap_reply.client_site);
 	}
-	ads->server.workgroup          = SMB_STRDUP(cldap_reply.netbios_domain);
+	ads->server.workgroup          = SMB_STRDUP(cldap_reply.domain);
 
 	ads->ldap.port = LDAP_PORT;
 	if (!interpret_string_addr(&ads->ldap.ss, srv, 0)) {
@@ -242,7 +242,7 @@ bool ads_try_connect(ADS_STRUCT *ads, const char *server )
 	SAFE_FREE(srv);
 
 	/* Store our site name. */
-	sitename_store( cldap_reply.domain, cldap_reply.client_site_name );
+	sitename_store( cldap_reply.domain, cldap_reply.client_site);
 
 	return True;
 }
