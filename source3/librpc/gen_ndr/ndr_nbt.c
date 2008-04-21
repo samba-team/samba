@@ -2577,7 +2577,7 @@ _PUBLIC_ void ndr_print_nbt_cldap_netlogon_3(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_nbt_cldap_netlogon_5(struct ndr_push *ndr, int ndr_flags, const struct nbt_cldap_netlogon_5 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_nbt_cldap_netlogon_5(struct ndr_push *ndr, int ndr_flags, const struct nbt_cldap_netlogon_5 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2601,7 +2601,7 @@ static enum ndr_err_code ndr_push_nbt_cldap_netlogon_5(struct ndr_push *ndr, int
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_nbt_cldap_netlogon_5(struct ndr_pull *ndr, int ndr_flags, struct nbt_cldap_netlogon_5 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_nbt_cldap_netlogon_5(struct ndr_pull *ndr, int ndr_flags, struct nbt_cldap_netlogon_5 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2991,6 +2991,7 @@ _PUBLIC_ void ndr_print_nbt_ntlogon_command(struct ndr_print *ndr, const char *n
 		case NTLOGON_SAM_LOGON: val = "NTLOGON_SAM_LOGON"; break;
 		case NTLOGON_SAM_LOGON_REPLY: val = "NTLOGON_SAM_LOGON_REPLY"; break;
 		case NTLOGON_SAM_LOGON_REPLY15: val = "NTLOGON_SAM_LOGON_REPLY15"; break;
+		case NTLOGON_RESPONSE_FROM_PDC2: val = "NTLOGON_RESPONSE_FROM_PDC2"; break;
 	}
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
@@ -3184,7 +3185,7 @@ static enum ndr_err_code ndr_push_nbt_ntlogon_request(struct ndr_push *ndr, int 
 				NDR_CHECK(ndr_push_nbt_ntlogon_sam_logon_reply(ndr, NDR_SCALARS, &r->reply));
 			break; }
 
-			case NETLOGON_RESPONSE_FROM_PDC2: {
+			case NTLOGON_RESPONSE_FROM_PDC2: {
 				NDR_CHECK(ndr_push_nbt_netlogon_response_from_pdc2(ndr, NDR_SCALARS, &r->reply2));
 			break; }
 
@@ -3205,7 +3206,7 @@ static enum ndr_err_code ndr_push_nbt_ntlogon_request(struct ndr_push *ndr, int 
 			case NTLOGON_SAM_LOGON_REPLY15:
 			break;
 
-			case NETLOGON_RESPONSE_FROM_PDC2:
+			case NTLOGON_RESPONSE_FROM_PDC2:
 			break;
 
 			default:
@@ -3233,7 +3234,7 @@ static enum ndr_err_code ndr_pull_nbt_ntlogon_request(struct ndr_pull *ndr, int 
 				NDR_CHECK(ndr_pull_nbt_ntlogon_sam_logon_reply(ndr, NDR_SCALARS, &r->reply));
 			break; }
 
-			case NETLOGON_RESPONSE_FROM_PDC2: {
+			case NTLOGON_RESPONSE_FROM_PDC2: {
 				NDR_CHECK(ndr_pull_nbt_netlogon_response_from_pdc2(ndr, NDR_SCALARS, &r->reply2));
 			break; }
 
@@ -3253,7 +3254,7 @@ static enum ndr_err_code ndr_pull_nbt_ntlogon_request(struct ndr_pull *ndr, int 
 			case NTLOGON_SAM_LOGON_REPLY15:
 			break;
 
-			case NETLOGON_RESPONSE_FROM_PDC2:
+			case NTLOGON_RESPONSE_FROM_PDC2:
 			break;
 
 			default:
@@ -3281,7 +3282,7 @@ _PUBLIC_ void ndr_print_nbt_ntlogon_request(struct ndr_print *ndr, const char *n
 			ndr_print_nbt_ntlogon_sam_logon_reply(ndr, "reply", &r->reply);
 		break;
 
-		case NETLOGON_RESPONSE_FROM_PDC2:
+		case NTLOGON_RESPONSE_FROM_PDC2:
 			ndr_print_nbt_netlogon_response_from_pdc2(ndr, "reply2", &r->reply2);
 		break;
 

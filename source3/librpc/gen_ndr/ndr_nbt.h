@@ -57,6 +57,8 @@ enum ndr_err_code ndr_pull_nbt_netlogon_packet(struct ndr_pull *ndr, int ndr_fla
 void ndr_print_nbt_netlogon_packet(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_packet *r);
 void ndr_print_nbt_cldap_netlogon_1(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_1 *r);
 void ndr_print_nbt_cldap_netlogon_3(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_3 *r);
+enum ndr_err_code ndr_push_nbt_cldap_netlogon_5(struct ndr_push *ndr, int ndr_flags, const struct nbt_cldap_netlogon_5 *r);
+enum ndr_err_code ndr_pull_nbt_cldap_netlogon_5(struct ndr_pull *ndr, int ndr_flags, struct nbt_cldap_netlogon_5 *r);
 void ndr_print_nbt_cldap_netlogon_5(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_5 *r);
 void ndr_print_nbt_cldap_netlogon_13(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_13 *r);
 enum ndr_err_code ndr_push_nbt_cldap_netlogon(struct ndr_push *ndr, int ndr_flags, const union nbt_cldap_netlogon *r);
