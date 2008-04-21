@@ -1031,7 +1031,7 @@ WERROR rpccli_spoolss_addprinterex (struct rpc_pipe_client *cli, TALLOC_CTX *mem
         strupper_m(client);
         strupper_m(server);
 
-	fstrcpy  (user, cli->user_name);
+	fstrcpy  (user, cli->auth->user_name);
 
 	make_spoolss_q_addprinterex( mem_ctx, &in, server, client, 
 		user, level, ctr);
