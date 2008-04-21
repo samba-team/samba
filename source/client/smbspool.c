@@ -53,6 +53,7 @@
  * Local functions...
  */
 
+static int		get_exit_code(struct cli_state *cli, NTSTATUS nt_status);
 static void		list_devices(void);
 static struct cli_state *smb_complete_connection(const char *, const char *,int , const char *, const char *, const char *, const char *, int, int *need_auth);
 static struct cli_state	*smb_connect(const char *, const char *, int, const char *, const char *, const char *, const char *, int *need_auth);
@@ -234,8 +235,7 @@ static bool smb_encrypt;
     port=atoi(sep);
   }
   else 
-  	port=0;
-	
+    port = 445;
  
  /*
   * Setup the SAMBA server state...
@@ -263,10 +263,7 @@ static bool smb_encrypt;
     if ((cli = smb_connect(workgroup, server, port, printer, username, password, argv[2], &need_auth)) == NULL)
     {
       if (need_auth)
-      {
-        fputs("ATTR: auth-info-required=username,password\n", stderr);
 	exit(2);
-      }
       else if (getenv("CLASS") == NULL)
       {
         fprintf(stderr, "ERROR: Unable to connect to CIFS host, will retry in 60 seconds...\n");
@@ -319,6 +316,54 @@ static bool smb_encrypt;
 
 
 /*
+ * 'get_exit_code()' - Get the backend exit code based on the current error.
+ */
+
+static int
+get_exit_code(struct cli_state *cli,
+              NTSTATUS         nt_status)
+{
+  int i;
+  static const NTSTATUS auth_errors[] =
+  { /* List of NTSTATUS errors that are considered authentication errors */
+    NT_STATUS_ACCESS_DENIED, NT_STATUS_ACCESS_VIOLATION,
+    NT_STATUS_SHARING_VIOLATION, NT_STATUS_PRIVILEGE_NOT_HELD,
+    NT_STATUS_INVALID_ACCOUNT_NAME, NT_STATUS_NO_SUCH_USER,
+    NT_STATUS_WRONG_PASSWORD, NT_STATUS_LOGON_FAILURE,
+    NT_STATUS_ACCOUNT_RESTRICTION, NT_STATUS_INVALID_LOGON_HOURS,
+    NT_STATUS_PASSWORD_EXPIRED, NT_STATUS_ACCOUNT_DISABLED
+  };
+
+
+  fprintf(stderr, "DEBUG: get_exit_code(cli=%p, nt_status=%x)\n", cli, nt_status);
+
+  for (i = 0; i < (int)(sizeof(auth_errors) / sizeof(auth_errors[0])); i ++)
+    if (NT_STATUS_V(nt_status) == NT_STATUS_V(auth_errors[i]))
+    {
+      if (cli)
+      {
+	if (cli->use_kerberos || (cli->capabilities & CAP_EXTENDED_SECURITY))
+	  fputs("ATTR: auth-info-required=negotiate\n", stderr);
+	else
+	  fputs("ATTR: auth-info-required=username,password\n", stderr);
+      }
+
+     /*
+      * 2 = authentication required...
+      */
+
+      return (2);
+    }
+
+ /*
+  * 1 = fail
+  */
+
+  return (1);
+}
+
+
+/*
  * 'list_devices()' - List the available printers seen on the network...
  */
 
@@ -346,16 +391,6 @@ static struct cli_state
 {
   struct cli_state  *cli;    /* New connection */    
   NTSTATUS nt_status;
-  int i;
-  static const NTSTATUS auth_errors[] =
-  { /* List of NTSTATUS errors that are considered authentication errors */
-    NT_STATUS_ACCESS_DENIED, NT_STATUS_ACCESS_VIOLATION,
-    NT_STATUS_SHARING_VIOLATION, NT_STATUS_PRIVILEGE_NOT_HELD,
-    NT_STATUS_INVALID_ACCOUNT_NAME, NT_STATUS_NO_SUCH_USER,
-    NT_STATUS_WRONG_PASSWORD, NT_STATUS_LOGON_FAILURE,
-    NT_STATUS_ACCOUNT_RESTRICTION, NT_STATUS_INVALID_LOGON_HOURS,
-    NT_STATUS_PASSWORD_EXPIRED, NT_STATUS_ACCOUNT_DISABLED
-  };
 
   /* Start the SMB connection */
   *need_auth = 0;
@@ -367,7 +402,7 @@ static struct cli_state
     return NULL;      
   }
     
-  /* We pretty much guarentee password must be valid or a pointer
+  /* We pretty much guarantee password must be valid or a pointer
      to a 0 char. */
   if (!password) {
     *need_auth = 1;
@@ -382,12 +417,8 @@ static struct cli_state
   {
     fprintf(stderr,"ERROR: Session setup failed: %s\n", nt_errstr(nt_status));
 
-    for (i = 0; i < (int)(sizeof(auth_errors) / sizeof(auth_errors[0])); i ++)
-      if (NT_STATUS_V(nt_status) == NT_STATUS_V(auth_errors[i]))
-      {
+    if (get_exit_code(cli, nt_status) == 2)
 	*need_auth = 1;
-	break;
-      }
 
     cli_shutdown(cli);
 
@@ -397,14 +428,9 @@ static struct cli_state
   if (!cli_send_tconX(cli, share, "?????", password, strlen(password)+1)) 
   {
     fprintf(stderr, "ERROR: Tree connect failed (%s)\n", cli_errstr(cli));
-    nt_status = cli_nt_error(cli);
 
-    for (i = 0; i < (int)(sizeof(auth_errors) / sizeof(auth_errors[0])); i ++)
-      if (NT_STATUS_V(nt_status) == NT_STATUS_V(auth_errors[i]))
-      {
+    if (get_exit_code(cli, cli_nt_error(cli)) == 2)
 	*need_auth = 1;
-	break;
-      }
 
     cli_shutdown(cli);
 
@@ -466,7 +492,10 @@ smb_connect(const char *workgroup,	/* I - Workgroup */
       cli = smb_complete_connection(myname, server, port, username, 
                                     password, workgroup, share, 0, need_auth);
       if (cli) 
-        return cli;
+    {
+      fputs("DEBUG: Connected with username/password...\n", stderr);
+      return (cli);
+    }
   }
   
   /* 
@@ -476,10 +505,13 @@ smb_connect(const char *workgroup,	/* I - Workgroup */
                                 workgroup, share, 
                                 CLI_FULL_CONNECTION_USE_KERBEROS, need_auth);
 
-  if (cli ) { return cli; }
+  if (cli)
+  {
+    fputs("DEBUG: Connected using Kerberos...\n", stderr);
+    return (cli);
+  }
 
   /* give a chance for a passwordless NTLMSSP session setup */
-
   pwd = getpwuid(geteuid());
   if (pwd == NULL) {
      return NULL;
@@ -488,7 +520,11 @@ smb_connect(const char *workgroup,	/* I - Workgroup */
   cli = smb_complete_connection(myname, server, port, pwd->pw_name, "", 
                                 workgroup, share, 0, need_auth);
 
-  if (cli) { return cli; }
+  if (cli)
+  {
+    fputs("DEBUG: Connected with NTLMSSP...\n", stderr);
+    return (cli);
+  }
 
   /*
    * last try. Use anonymous authentication
@@ -536,7 +572,7 @@ smb_print(struct cli_state *cli,	/* I - SMB connection */
   {
     fprintf(stderr, "ERROR: %s opening remote spool %s\n",
             cli_errstr(cli), title);
-    return (1);
+    return (get_exit_code(cli, cli_nt_error(cli)));
   }
 
  /*
@@ -552,8 +588,13 @@ smb_print(struct cli_state *cli,	/* I - SMB connection */
   {
     if (cli_write(cli, fnum, 0, buffer, tbytes, nbytes) != nbytes)
     {
+      int status = get_exit_code(cli, cli_nt_error(cli));
+
       fprintf(stderr, "ERROR: Error writing spool: %s\n", cli_errstr(cli));
-      break;
+      fprintf(stderr, "DEBUG: Returning status %d...\n", status);
+      cli_close(cli, fnum);
+
+      return (status);
     }
 
     tbytes += nbytes;
@@ -563,7 +604,7 @@ smb_print(struct cli_state *cli,	/* I - SMB connection */
   {
     fprintf(stderr, "ERROR: %s closing remote spool %s\n",
             cli_errstr(cli), title);
-    return (1);
+    return (get_exit_code(cli, cli_nt_error(cli)));
   }
   else
     return (0);
