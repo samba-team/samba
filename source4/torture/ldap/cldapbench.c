@@ -51,13 +51,15 @@ static void request_handler(struct cldap_request *req)
 */
 static bool bench_cldap(struct torture_context *tctx, const char *address)
 {
-	struct cldap_socket *cldap = cldap_socket_init(tctx, NULL, lp_iconv_convenience(tctx->lp_ctx));
+	struct cldap_socket *cldap;
 	int num_sent=0;
 	struct timeval tv = timeval_current();
 	bool ret = true;
 	int timelimit = torture_setting_int(tctx, "timelimit", 10);
 	struct cldap_netlogon search;
 	struct bench_state *state;
+
+	cldap = cldap_socket_init(tctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
 
 	state = talloc_zero(tctx, struct bench_state);
 

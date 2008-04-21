@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
+#include "lib/events/events.h"
 #include "system/time.h"
 #include "system/filesys.h"
 #include "libcli/raw/request.h"
@@ -154,7 +155,8 @@ static bool connect_servers_fast(void)
 /***************************************************** 
 connect to the servers
 *******************************************************/
-static bool connect_servers(struct loadparm_context *lp_ctx)
+static bool connect_servers(struct event_context *ev,
+			    struct loadparm_context *lp_ctx)
 {
 	int i, j;
 
@@ -193,7 +195,7 @@ static bool connect_servers(struct loadparm_context *lp_ctx)
 							servers[i].share_name, NULL, 
 							servers[i].credentials, 
 							lp_resolve_context(lp_ctx), 
-							NULL, &smb_options);
+							ev, &smb_options);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Failed to connect to \\\\%s\\%s - %s\n",
 				       servers[i].server_name, servers[i].share_name,
@@ -1937,11 +1939,11 @@ static struct {
   run the test with the current set of op_parms parameters
   return the number of operations that completed successfully
 */
-static int run_test(struct loadparm_context *lp_ctx)
+static int run_test(struct event_context *ev, struct loadparm_context *lp_ctx)
 {
 	int op, i;
 
-	if (!connect_servers(lp_ctx)) {
+	if (!connect_servers(ev, lp_ctx)) {
 		printf("Failed to connect to servers\n");
 		exit(1);
 	}
@@ -2018,7 +2020,8 @@ static int run_test(struct loadparm_context *lp_ctx)
    perform a backtracking analysis of the minimal set of operations
    to generate an error
 */
-static void backtrack_analyze(struct loadparm_context *lp_ctx)
+static void backtrack_analyze(struct event_context *ev,
+			      struct loadparm_context *lp_ctx)
 {
 	int chunk, ret;
 
@@ -2039,7 +2042,7 @@ static void backtrack_analyze(struct loadparm_context *lp_ctx)
 			}
 			printf("Testing %d ops with %d-%d disabled\n", 
 			       options.numops, base, max-1);
-			ret = run_test(lp_ctx);
+			ret = run_test(ev, lp_ctx);
 			printf("Completed %d of %d ops\n", ret, options.numops);
 			for (i=base;i<max; i++) {
 				op_parms[i].disabled = false;
@@ -2071,7 +2074,7 @@ static void backtrack_analyze(struct loadparm_context *lp_ctx)
 	} while (chunk > 0);
 
 	printf("Reduced to %d ops\n", options.numops);
-	ret = run_test(lp_ctx);
+	ret = run_test(ev, lp_ctx);
 	if (ret != options.numops - 1) {
 		printf("Inconsistent result? ret=%d numops=%d\n", ret, options.numops);
 	}
@@ -2080,7 +2083,8 @@ static void backtrack_analyze(struct loadparm_context *lp_ctx)
 /* 
    start the main gentest process
 */
-static bool start_gentest(struct loadparm_context *lp_ctx)
+static bool start_gentest(struct event_context *ev,
+			  struct loadparm_context *lp_ctx)
 {
 	int op;
 	int ret;
@@ -2116,15 +2120,15 @@ static bool start_gentest(struct loadparm_context *lp_ctx)
 		}
 	}
 
-	ret = run_test(lp_ctx);
+	ret = run_test(ev, lp_ctx);
 
 	if (ret != options.numops && options.analyze) {
 		options.numops = ret+1;
-		backtrack_analyze(lp_ctx);
+		backtrack_analyze(ev, lp_ctx);
 	} else if (options.analyze_always) {
-		backtrack_analyze(lp_ctx);
+		backtrack_analyze(ev, lp_ctx);
 	} else if (options.analyze_continuous) {
-		while (run_test(lp_ctx) == options.numops) ;
+		while (run_test(ev, lp_ctx) == options.numops) ;
 	}
 
 	return ret == options.numops;
@@ -2171,6 +2175,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 	int i, username_count=0;
 	bool ret;
 	char *ignore_file=NULL;
+	struct event_context *ev;
 	struct loadparm_context *lp_ctx;
 	poptContext pc;
 	int argc_new;
@@ -2278,9 +2283,11 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 
 	printf("seed=%u\n", options.seed);
 
+	ev = event_context_init(talloc_autofree_context());
+
 	gensec_init(lp_ctx);
 
-	ret = start_gentest(lp_ctx);
+	ret = start_gentest(ev, lp_ctx);
 
 	if (ret) {
 		printf("gentest completed - no errors\n");

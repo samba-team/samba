@@ -30,6 +30,7 @@
 #include "param/param.h"
 #include "dynconfig.h"
 #include "libcli/resolve/resolve.h"
+#include "lib/events/events.h"
 
 static bool showall = false;
 static bool old_list = false;
@@ -73,6 +74,7 @@ static char *reg_test(struct smbcli_state *cli, char *pattern, char *long_name, 
 return a connection to a server
 *******************************************************/
 static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx, 
+					struct event_context *ev,
 					char *share, const char **ports,
 					struct smbcli_options *options)
 {
@@ -92,7 +94,7 @@ static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx,
 					server, 
 					ports,
 					share, NULL,
-					cmdline_credentials, resolve_ctx, NULL,
+					cmdline_credentials, resolve_ctx, ev,
 					options);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -291,6 +293,7 @@ static void usage(poptContext pc)
 	struct smbcli_state *cli;	
 	int opt;
 	int seed;
+	struct event_context *ev;
 	struct loadparm_context *lp_ctx;
 	struct smbcli_options options;
 	poptContext pc;
@@ -352,11 +355,13 @@ static void usage(poptContext pc)
 
 	lp_ctx = cmdline_lp_ctx;
 
+	ev = event_context_init(talloc_autofree_context());
+
 	gensec_init(lp_ctx);
 
 	lp_smbcli_options(lp_ctx, &options);
 
-	cli = connect_one(lp_resolve_context(lp_ctx), share, 
+	cli = connect_one(lp_resolve_context(lp_ctx), ev, share, 
 			  lp_smb_ports(lp_ctx), &options);
 	if (!cli) {
 		DEBUG(0,("Failed to connect to %s\n", share));
