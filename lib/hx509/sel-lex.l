@@ -34,6 +34,10 @@
 
 /* $Id$ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #undef ECHO
 
 #include <stdio.h>
