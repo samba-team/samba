@@ -185,6 +185,7 @@ This manual is last updated @value{UPDATED} for version
 * Setting up a CA::
 * CMS signing and encryption::
 * Certificate matching::
+* Software PKCS 11 module::
 
 @detailmenu
  --- The Detailed Node Listing ---
@@ -208,6 +209,10 @@ CMS signing and encryption
 Certificate matching
 
 * Matching syntax::
+
+Software PKCS 11 module
+
+* How to use the PKCS11 module::
 
 @end detailmenu
 @end menu
@@ -615,12 +620,12 @@ the RSA, Inc standard PKCS7.
 
 
 @node Certificate matching, Matching syntax, CMS background, Top
-@section Certificate matching
+@chapter Certificate matching
 
 To match certificates hx509 have a special query language to match
 certifictes in queries and ACLs.
 
-@node Matching syntax, , Certificate matching, Top
+@node Matching syntax, Software PKCS 11 module, Certificate matching, Top
 @section Matching syntax
 
 This is the language definitions somewhat slopply descriped:
@@ -645,6 +650,28 @@ word =
      STRING,
      %@{variable@}
 
+@end example
+
+@node Software PKCS 11 module, How to use the PKCS11 module, Matching syntax, Top
+@chapter Software PKCS 11 module
+
+PKCS11 is a standard created by RSA, Inc to support hardware and
+software encryption modules. It can be used by smartcard to expose the
+crypto primitives inside without exposing the crypto keys.
+
+Hx509 includes a software implementation of PKCS11 that runs within the
+memory space of the process and thus exposes the keys to the
+application.
+
+@node How to use the PKCS11 module, , Software PKCS 11 module, Top
+@section How to use the PKCS11 module
+
+@example
+$ cat > ~/.soft-pkcs11.rc <<EOF
+mycert	cert	User certificate	FILE:/Users/lha/Private/pkinit.pem
+app-fatal	true
+EOF
+$ kinit -C PKCS11:/usr/heimdal/lib/hx509.so lha@@EXAMPLE.ORG
 @end example
 
 
