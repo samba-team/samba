@@ -307,6 +307,15 @@ struct loadparm_context *lp_from_py_object(PyObject *py_obj)
         return lp_ctx;
     }
 
+    if (py_obj == Py_None) {
+        lp_ctx = loadparm_init(NULL);
+        if (!lp_load_default(lp_ctx)) {
+            talloc_free(lp_ctx);
+            return NULL;
+        }
+        return lp_ctx;
+    }
+
     if (SWIG_ConvertPtr(py_obj, (void *)&lp_ctx, SWIGTYPE_p_loadparm_context, 0 |  0 ) < 0)
         return NULL;
     return lp_ctx;
