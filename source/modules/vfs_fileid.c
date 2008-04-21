@@ -190,7 +190,7 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 
 	data->device_mapping_fn	= fileid_device_mapping_fsid;
 	algorithm = lp_parm_const_string(SNUM(handle->conn),
-					 "fileid", "algorithm",
+					 "fileid", "mapping",
 					 "fsname");
 	if (strcmp("fsname", algorithm) == 0) {
 		data->device_mapping_fn	= fileid_device_mapping_fsname;
