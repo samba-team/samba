@@ -1,42 +1,46 @@
 /*
- * Unix SMB/CIFS implementation. SMB backend for the Common UNIX Printing
- * System ("CUPS") Copyright 1999 by Easy Software Products Copyright Andrew
- * Tridgell 1994-1998 Copyright Andrew Bartlett 2002 Copyright Rodrigo
- * Fernandez-Vizarra 2005 Copyright James Peach 2008
- *
- * This program is free software; you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free
- * Software Foundation; either version 3 of the License, or (at your option)
- * any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+   Unix SMB/CIFS implementation.
+   SMB backend for the Common UNIX Printing System ("CUPS")
+
+   Copyright (C) Easy Software Products	    1999
+   Copyright (C) Andrew Tridgell	    1994-1998
+   Copyright (C) Andrew Bartlett	    2002
+   Copyright (C) Rodrigo Fernandez-Vizarra  2005
+   Copyright (C) James Peach		    2008
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include "includes.h"
 
 /*
-   Starting with CUPS 1.3, Kerberos support is provided by cupsd including
-   the forwarding of user credentials via the authenticated session between
-   user and server and the KRB5CCNAME environment variable which will point
-   to a temporary file or an in-memory representation depending on the version
-   of Kerberos you use.  As a result, all of the ticket code that used to
-   live here has been removed, and we depend on the user session (if you
-   run smbspool by hand) or cupsd to provide the necessary Kerberos info.
-
-   Also, the AUTH_USERNAME and AUTH_PASSWORD environment variables provide
-   for per-job authentication for non-Kerberized printing.  We use those
-   if there is no username and password specified in the device URI.
-
-   Finally, if we have an authentication failure we return exit code 2
-   which tells CUPS to hold the job for authentication and bug the user
-   to get the necessary credentials.
-*/
+ * Starting with CUPS 1.3, Kerberos support is provided by cupsd including
+ * the forwarding of user credentials via the authenticated session between
+ * user and server and the KRB5CCNAME environment variable which will point
+ * to a temporary file or an in-memory representation depending on the version
+ * of Kerberos you use.  As a result, all of the ticket code that used to
+ * live here has been removed, and we depend on the user session (if you
+ * run smbspool by hand) or cupsd to provide the necessary Kerberos info.
+ *
+ * Also, the AUTH_USERNAME and AUTH_PASSWORD environment variables provide
+ * for per-job authentication for non-Kerberized printing.  We use those
+ * if there is no username and password specified in the device URI.
+ *
+ * Finally, if we have an authentication failure we return exit code 2
+ * which tells CUPS to hold the job for authentication and bug the user
+ * to get the necessary credentials.
+ */
 
 #define MAX_RETRY_CONNECT        3
 
@@ -94,36 +98,41 @@ main(int argc,			/* I - Number of command-line arguments */
 	 * we expect the URI in argv[0]. Detect the case where it is in
 	 * argv[1] and cope
 	 */
-	if (argc > 2 && strncmp(argv[0], "smb://", 6) && !strncmp(argv[1], "smb://", 6)) {
+	if (argc > 2 && strncmp(argv[0], "smb://", 6) &&
+	    strncmp(argv[1], "smb://", 6) == 0) {
 		argv++;
 		argc--;
 	}
+
 	if (argc == 1) {
 		/*
-	         * NEW!  In CUPS 1.1 the backends are run with no arguments to list the
-	         *       available devices.  These can be devices served by this backend
-	         *       or any other backends (i.e. you can have an SNMP backend that
-	         *       is only used to enumerate the available network printers... :)
+	         * NEW!  In CUPS 1.1 the backends are run with no arguments
+		 * to list the available devices.  These can be devices
+		 * served by this backend or any other backends (i.e. you
+		 * can have an SNMP backend that is only used to enumerate
+		 * the available network printers... :)
 	         */
 
 		list_devices();
 		status = 0;
 		goto done;
 	}
+
 	if (argc < 6 || argc > 7) {
-		fprintf(stderr, "Usage: %s [DEVICE_URI] job-id user title copies options [file]\n",
+		fprintf(stderr,
+"Usage: %s [DEVICE_URI] job-id user title copies options [file]\n"
+"       The DEVICE_URI environment variable can also contain the\n"
+"       destination printer:\n"
+"\n"
+"           smb://[username:password@][workgroup/]server[:port]/printer\n",
 			argv[0]);
-		fputs("       The DEVICE_URI environment variable can also contain the\n", stderr);
-		fputs("       destination printer:\n", stderr);
-		fputs("\n", stderr);
-		fputs("           smb://[username:password@][workgroup/]server[:port]/printer\n", stderr);
 		goto done;
 	}
+
 	/*
          * If we have 7 arguments, print the file named on the command-line.
          * Otherwise, print data from stdin...
          */
-
 
 	if (argc == 6) {
 		/*
@@ -135,19 +144,20 @@ main(int argc,			/* I - Number of command-line arguments */
 	} else if ((fp = fopen(argv[6], "rb")) == NULL) {
 		perror("ERROR: Unable to open print file");
 		goto done;
-	} else
+	} else {
 		copies = atoi(argv[4]);
+	}
 
 	/*
          * Find the URI...
          */
 
 	dev_uri = getenv("DEVICE_URI");
-	if (dev_uri)
+	if (dev_uri) {
 		strncpy(uri, dev_uri, sizeof(uri) - 1);
-	else if (strncmp(argv[0], "smb://", 6) == 0)
+	} else if (strncmp(argv[0], "smb://", 6) == 0) {
 		strncpy(uri, argv[0], sizeof(uri) - 1);
-	else {
+	} else {
 		fputs("ERROR: No device URI found in DEVICE_URI environment variable or argv[0] !\n", stderr);
 		goto done;
 	}
@@ -178,11 +188,13 @@ main(int argc,			/* I - Number of command-line arguments */
 		}
 		username = uri_unescape_alloc(tmp);
 	} else {
-		if ((username = getenv("AUTH_USERNAME")) == NULL)
+		if ((username = getenv("AUTH_USERNAME")) == NULL) {
 			username = null_str;
+		}
 
-		if ((password = getenv("AUTH_PASSWORD")) == NULL)
+		if ((password = getenv("AUTH_PASSWORD")) == NULL) {
 			password = null_str;
+		}
 
 		server = uri + 6;
 	}
@@ -193,6 +205,7 @@ main(int argc,			/* I - Number of command-line arguments */
 		fputs("ERROR: Bad URI - need printer name!\n", stderr);
 		goto done;
 	}
+
 	*sep++ = '\0';
 	tmp2 = sep;
 
@@ -216,8 +229,9 @@ main(int argc,			/* I - Number of command-line arguments */
 		*sep++ = '\0';
 
 		port = atoi(sep);
-	} else
+	} else {
 		port = 445;
+	}
 
 	/*
          * Setup the SAMBA server state...
@@ -233,13 +247,17 @@ main(int argc,			/* I - Number of command-line arguments */
 		fprintf(stderr, "ERROR: Can't load %s - run testparm to debug it\n", get_dyn_CONFIGFILE());
 		goto done;
 	}
-	if (workgroup == NULL)
+
+	if (workgroup == NULL) {
 		workgroup = lp_workgroup();
+	}
 
 	load_interfaces();
 
 	do {
-		if ((cli = smb_connect(workgroup, server, port, printer, username, password, argv[2], &need_auth)) == NULL) {
+		cli = smb_connect(workgroup, server, port, printer,
+			username, password, argv[2], &need_auth);
+		if (cli == NULL) {
 			if (need_auth)
 				exit(2);
 			else if (getenv("CLASS") == NULL) {
@@ -251,13 +269,13 @@ main(int argc,			/* I - Number of command-line arguments */
 				goto done;
 			}
 		}
-	}
-	while ((cli == NULL) && (tries < MAX_RETRY_CONNECT));
+	} while ((cli == NULL) && (tries < MAX_RETRY_CONNECT));
 
 	if (cli == NULL) {
 		fprintf(stderr, "ERROR: Unable to connect to CIFS host after (tried %d times)\n", tries);
 		goto done;
 	}
+
 	/*
          * Now that we are connected to the server, ignore SIGTERM so that we
          * can finish out any page data the driver sends (e.g. to eject the
@@ -265,16 +283,20 @@ main(int argc,			/* I - Number of command-line arguments */
          * stdin (otherwise you can't cancel raw jobs...)
          */
 
-	if (argc < 7)
+	if (argc < 7) {
 		CatchSignal(SIGTERM, SIG_IGN);
+	}
 
 	/*
          * Queue the job...
          */
 
-	for (i = 0; i < copies; i++)
-		if ((status = smb_print(cli, argv[3] /* title */ , fp)) != 0)
+	for (i = 0; i < copies; i++) {
+		status = smb_print(cli, argv[3] /* title */ , fp);
+		if (status != 0) {
 			break;
+		}
+	}
 
 	cli_shutdown(cli);
 
@@ -297,10 +319,13 @@ static int
 get_exit_code(struct cli_state * cli,
 	      NTSTATUS nt_status)
 {
-	int             i;
+	int i;
+
+	/* List of NTSTATUS errors that are considered
+	 * authentication errors
+	 */
 	static const NTSTATUS auth_errors[] =
-	{			/* List of NTSTATUS errors that are considered
-				 * authentication errors */
+	{
 		NT_STATUS_ACCESS_DENIED, NT_STATUS_ACCESS_VIOLATION,
 		NT_STATUS_SHARING_VIOLATION, NT_STATUS_PRIVILEGE_NOT_HELD,
 		NT_STATUS_INVALID_ACCOUNT_NAME, NT_STATUS_NO_SUCH_USER,
@@ -312,20 +337,26 @@ get_exit_code(struct cli_state * cli,
 
 	fprintf(stderr, "DEBUG: get_exit_code(cli=%p, nt_status=%x)\n", cli, nt_status);
 
-	for (i = 0; i < (int) (sizeof(auth_errors) / sizeof(auth_errors[0])); i++)
-		if (NT_STATUS_V(nt_status) == NT_STATUS_V(auth_errors[i])) {
-			if (cli) {
-				if (cli->use_kerberos || (cli->capabilities & CAP_EXTENDED_SECURITY))
-					fputs("ATTR: auth-info-required=negotiate\n", stderr);
-				else
-					fputs("ATTR: auth-info-required=username,password\n", stderr);
-			}
-			/*
-		         * 2 = authentication required...
-		         */
-
-			return (2);
+	for (i = 0; i < ARRAY_SIZE(auth_errors); i++) {
+		if (!NT_STATUS_EQUAL(nt_status, auth_errors[i])) {
+			continue;
 		}
+
+		if (cli) {
+			if (cli->use_kerberos || (cli->capabilities & CAP_EXTENDED_SECURITY))
+				fputs("ATTR: auth-info-required=negotiate\n", stderr);
+			else
+				fputs("ATTR: auth-info-required=username,password\n", stderr);
+		}
+
+		/*
+		 * 2 = authentication required...
+		 */
+
+		return (2);
+
+	}
+
 	/*
          * 1 = fail
          */
@@ -349,8 +380,7 @@ list_devices(void)
 }
 
 
-static struct cli_state
-               *
+static struct cli_state *
 smb_complete_connection(const char *myname,
 			const char *server,
 			int port,
@@ -372,6 +402,7 @@ smb_complete_connection(const char *myname,
 		fprintf(stderr, "ERROR: Connection failed: %s\n", nt_errstr(nt_status));
 		return NULL;
 	}
+
 	/*
 	 * We pretty much guarantee password must be valid or a pointer to a
 	 * 0 char.
@@ -380,6 +411,7 @@ smb_complete_connection(const char *myname,
 		*need_auth = 1;
 		return NULL;
 	}
+
 	nt_status = cli_session_setup(cli, username,
 				      password, strlen(password) + 1,
 				      password, strlen(password) + 1,
@@ -387,18 +419,21 @@ smb_complete_connection(const char *myname,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr, "ERROR: Session setup failed: %s\n", nt_errstr(nt_status));
 
-		if (get_exit_code(cli, nt_status) == 2)
+		if (get_exit_code(cli, nt_status) == 2) {
 			*need_auth = 1;
+		}
 
 		cli_shutdown(cli);
 
 		return NULL;
 	}
+
 	if (!cli_send_tconX(cli, share, "?????", password, strlen(password) + 1)) {
 		fprintf(stderr, "ERROR: Tree connect failed (%s)\n", cli_errstr(cli));
 
-		if (get_exit_code(cli, cli_nt_error(cli)) == 2)
+		if (get_exit_code(cli, cli_nt_error(cli)) == 2) {
 			*need_auth = 1;
+		}
 
 		cli_shutdown(cli);
 
@@ -443,11 +478,11 @@ smb_connect(const char *workgroup,	/* I - Workgroup */
 	/*
          * Get the names and addresses of the client and server...
          */
-
 	myname = get_myname(talloc_tos());
 	if (!myname) {
 		return NULL;
 	}
+
 	/*
 	 * See if we have a username first.  This is for backwards compatible
 	 * behavior with 3.0.14a
@@ -461,6 +496,7 @@ smb_connect(const char *workgroup,	/* I - Workgroup */
 			return (cli);
 		}
 	}
+
 	/*
 	 * Try to use the user kerberos credentials (if any) to authenticate
 	 */
@@ -472,11 +508,13 @@ smb_connect(const char *workgroup,	/* I - Workgroup */
 		fputs("DEBUG: Connected using Kerberos...\n", stderr);
 		return (cli);
 	}
+
 	/* give a chance for a passwordless NTLMSSP session setup */
 	pwd = getpwuid(geteuid());
 	if (pwd == NULL) {
 		return NULL;
 	}
+
 	cli = smb_complete_connection(myname, server, port, pwd->pw_name, "",
 				      workgroup, share, 0, need_auth);
 
@@ -484,6 +522,7 @@ smb_connect(const char *workgroup,	/* I - Workgroup */
 		fputs("DEBUG: Connected with NTLMSSP...\n", stderr);
 		return (cli);
 	}
+
 	/*
          * last try. Use anonymous authentication
          */
@@ -511,26 +550,30 @@ smb_print(struct cli_state * cli,	/* I - SMB connection */
 	int             nbytes,	/* Number of bytes read */
 	                tbytes;	/* Total bytes read */
 	char            buffer[8192],	/* Buffer for copy */
-	               *ptr;	/* Pointer into tile */
+	               *ptr;	/* Pointer into title */
 
 
 	/*
          * Sanitize the title...
          */
 
-	for (ptr = title; *ptr; ptr++)
-		if (!isalnum((int) *ptr) && !isspace((int) *ptr))
+	for (ptr = title; *ptr; ptr++) {
+		if (!isalnum((int) *ptr) && !isspace((int) *ptr)) {
 			*ptr = '_';
+		}
+	}
 
 	/*
          * Open the printer device...
          */
 
-	if ((fnum = cli_open(cli, title, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE)) == -1) {
+	fnum = cli_open(cli, title, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
+	if (fnum == -1) {
 		fprintf(stderr, "ERROR: %s opening remote spool %s\n",
 			cli_errstr(cli), title);
 		return (get_exit_code(cli, cli_nt_error(cli)));
 	}
+
 	/*
          * Copy the file to the printer...
          */
@@ -542,7 +585,7 @@ smb_print(struct cli_state * cli,	/* I - SMB connection */
 
 	while ((nbytes = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
 		if (cli_write(cli, fnum, 0, buffer, tbytes, nbytes) != nbytes) {
-			int             status = get_exit_code(cli, cli_nt_error(cli));
+			int status = get_exit_code(cli, cli_nt_error(cli));
 
 			fprintf(stderr, "ERROR: Error writing spool: %s\n", cli_errstr(cli));
 			fprintf(stderr, "DEBUG: Returning status %d...\n", status);
@@ -557,18 +600,20 @@ smb_print(struct cli_state * cli,	/* I - SMB connection */
 		fprintf(stderr, "ERROR: %s closing remote spool %s\n",
 			cli_errstr(cli), title);
 		return (get_exit_code(cli, cli_nt_error(cli)));
-	} else
+	} else {
 		return (0);
+	}
 }
 
-static char    *
+static char *
 uri_unescape_alloc(const char *uritok)
 {
-	char           *ret;
+	char *ret;
 
 	ret = (char *) SMB_STRDUP(uritok);
-	if (!ret)
+	if (!ret) {
 		return NULL;
+	}
 
 	rfc1738_unescape(ret);
 	return ret;
