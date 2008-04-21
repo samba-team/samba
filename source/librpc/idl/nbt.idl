@@ -494,7 +494,7 @@ interface nbt
 		uint16               lm20_token;
 	} nbt_cldap_netlogon_3;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32               type;
 		nbt_server_type      server_type;
 		GUID                 domain_uuid;
