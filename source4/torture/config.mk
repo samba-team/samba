@@ -86,6 +86,7 @@ TORTURE_RAW_OBJ_FILES = $(addprefix torture/raw/, \
 		lock.o \
 		pingpong.o \
 		lockbench.o \
+		lookuprate.o \
 		openbench.o \
 		rename.o \
 		eas.o \
