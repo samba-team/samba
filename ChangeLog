@@ -1,3 +1,13 @@
+2008-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/hx509.texi: About the pkcs11 module.
+
+	* doc/hx509.texi: Pick up version from vars.texi
+
+	* doc/hx509.texi: No MIT code in hx509.
+
+	* hx509 now includes a pkcs11 implementation.
+
 2008-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/Makefile.am: Move OpenLDAP includes to AM_CPPFLAGS to
