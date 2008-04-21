@@ -89,6 +89,7 @@ int opt_testmode = False;
 int opt_have_ip = False;
 struct sockaddr_storage opt_dest_ip;
 bool smb_encrypt;
+struct libnetapi_ctx *netapi_ctx = NULL;
 
 extern bool AllowDebugChange;
 
@@ -1170,11 +1171,7 @@ static struct functable net_func[] = {
 	
 	DEBUG(2,("return code = %d\n", rc));
 
-	{
-		struct libnetapi_ctx *ctx = NULL;
-		libnetapi_getctx(&ctx);
-		libnetapi_free(ctx);
-	}
+	libnetapi_free(netapi_ctx);
 
 	TALLOC_FREE(frame);
 	return rc;
