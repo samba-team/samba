@@ -6,6 +6,7 @@
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 static enum ndr_err_code ndr_push_netr_UasInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_UasInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
