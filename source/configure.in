@@ -4742,7 +4742,7 @@ AC_ARG_WITH([static-libs],
 
 #
 # WORKAROUND:
-#   until we have organized other internal subsystems (as util, registrt
+#   until we have organized other internal subsystems (as util, registry
 #   and smbconf) into shared libraries, we CAN NOT link libnetapi
 #   dynamically to samba programs.
 #
