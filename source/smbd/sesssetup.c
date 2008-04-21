@@ -1184,22 +1184,25 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 static int shutdown_other_smbds(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 				void *p)
 {
-	struct sessionid *sessionid = (struct sessionid *)dbuf.dptr;
+	struct sessionid sessionid;
 	const char *ip = (const char *)p;
 
-	if (!process_exists(pid_to_procid(sessionid->pid))) {
+	SMB_ASSERT(dbuf.dsize == sizeof(sessionid));
+	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
+
+	if (!process_exists(pid_to_procid(sessionid.pid))) {
 		return 0;
 	}
 
-	if (sessionid->pid == sys_getpid()) {
+	if (sessionid.pid == sys_getpid()) {
 		return 0;
 	}
 
-	if (strcmp(ip, sessionid->ip_addr) != 0) {
+	if (strcmp(ip, sessionid.ip_addr) != 0) {
 		return 0;
 	}
 
-	message_send_pid(pid_to_procid(sessionid->pid), MSG_SHUTDOWN,
+	message_send_pid(pid_to_procid(sessionid.pid), MSG_SHUTDOWN,
 			 NULL, 0, True);
 	return 0;
 }
