@@ -177,6 +177,8 @@ bool ads_try_connect(ADS_STRUCT *ads, const char *server )
 {
 	char *srv;
 	struct nbt_cldap_netlogon_5 cldap_reply;
+	TALLOC_CTX *mem_ctx = NULL;
+	bool ret = false;
 
 	if (!server || !*server) {
 		return False;
@@ -185,16 +187,22 @@ bool ads_try_connect(ADS_STRUCT *ads, const char *server )
 	DEBUG(5,("ads_try_connect: sending CLDAP request to %s (realm: %s)\n", 
 		server, ads->server.realm));
 
+	mem_ctx = talloc_init("ads_try_connect");
+	if (!mem_ctx) {
+		DEBUG(0,("out of memory\n"));
+		return false;
+	}
+
 	/* this copes with inet_ntoa brokenness */
 	
 	srv = SMB_STRDUP(server);
 
 	ZERO_STRUCT( cldap_reply );
 
-	if ( !ads_cldap_netlogon( srv, ads->server.realm, &cldap_reply ) ) {
+	if ( !ads_cldap_netlogon(mem_ctx, srv, ads->server.realm, &cldap_reply ) ) {
 		DEBUG(3,("ads_try_connect: CLDAP request %s failed.\n", srv));
-		SAFE_FREE( srv );
-		return False;
+		ret = false;
+		goto out;
 	}
 
 	/* Check the CLDAP reply flags */
@@ -202,8 +210,8 @@ bool ads_try_connect(ADS_STRUCT *ads, const char *server )
 	if ( !(cldap_reply.server_type & ADS_LDAP) ) {
 		DEBUG(1,("ads_try_connect: %s's CLDAP reply says it is not an LDAP server!\n",
 			srv));
-		SAFE_FREE( srv );
-		return False;
+		ret = false;
+		goto out;
 	}
 
 	/* Fill in the ads->config values */
@@ -235,16 +243,19 @@ bool ads_try_connect(ADS_STRUCT *ads, const char *server )
 		DEBUG(1,("ads_try_connect: unable to convert %s "
 			"to an address\n",
 			srv));
-		SAFE_FREE( srv );
-		return False;
+		ret = false;
+		goto out;
 	}
-
-	SAFE_FREE(srv);
 
 	/* Store our site name. */
 	sitename_store( cldap_reply.domain, cldap_reply.client_site);
 
-	return True;
+	ret = true;
+ out:
+	SAFE_FREE(srv);
+	TALLOC_FREE(mem_ctx);
+
+	return ret;
 }
 
 /**********************************************************************
