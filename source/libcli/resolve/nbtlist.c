@@ -110,10 +110,9 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 	struct nbtlist_state *state;
 	int i;
 
-	c = composite_create(event_ctx, event_ctx);
+	c = composite_create(mem_ctx, event_ctx);
 	if (c == NULL) return NULL;
 
-	c->event_ctx = talloc_reference(c, event_ctx);
 	if (composite_nomem(c->event_ctx, c)) return c;
 
 	state = talloc(c, struct nbtlist_state);

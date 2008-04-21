@@ -451,17 +451,15 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) goto failed;
 
+	c->event_ctx = talloc_reference(c, event_ctx);
+	if (c->event_ctx == NULL) goto failed;
+
 	state = talloc_zero(c, struct connect_state);
 	if (state == NULL) goto failed;
-
-	if (event_ctx == NULL) {
-		event_ctx = event_context_init(mem_ctx);
-	}
 
 	state->io = io;
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
-	c->event_ctx = talloc_reference(c, event_ctx);
 	c->private_data = state;
 
 	state->stage = CONNECT_RESOLVE;

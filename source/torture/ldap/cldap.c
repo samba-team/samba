@@ -38,12 +38,14 @@
 */
 static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 {
-	struct cldap_socket *cldap = cldap_socket_init(tctx, NULL, lp_iconv_convenience(tctx->lp_ctx));
+	struct cldap_socket *cldap;
 	NTSTATUS status;
 	struct cldap_netlogon search, empty_search;
 	union nbt_cldap_netlogon n1;
 	struct GUID guid;
 	int i;
+
+	cldap = cldap_socket_init(tctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
 
 	ZERO_STRUCT(search);
 	search.in.dest_address = dest;
@@ -244,12 +246,14 @@ static void cldap_dump_results(struct cldap_search *search)
 */
 static bool test_cldap_generic(struct torture_context *tctx, const char *dest)
 {
-	struct cldap_socket *cldap = cldap_socket_init(tctx, NULL, lp_iconv_convenience(tctx->lp_ctx));
+	struct cldap_socket *cldap;
 	NTSTATUS status;
 	struct cldap_search search;
 	const char *attrs1[] = { "currentTime", "highestCommittedUSN", NULL };
 	const char *attrs2[] = { "currentTime", "highestCommittedUSN", "netlogon", NULL };
 	const char *attrs3[] = { "netlogon", NULL };
+
+	cldap = cldap_socket_init(tctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
 
 	ZERO_STRUCT(search);
 	search.in.dest_address = dest;

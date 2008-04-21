@@ -296,7 +296,7 @@ static bool test_appendacl(struct smbcli_state *cli, struct torture_context *tct
 		c[i]->async.private_data = count;
 	}
 
-	event_ctx = talloc_reference(tctx, cli->tree->session->transport->socket->event.ctx);
+	event_ctx = tctx->ev;
 	printf("waiting for completion\n");
 	while (*count != num_ops) {
 		event_loop_once(event_ctx);
@@ -354,7 +354,7 @@ static bool test_fsinfo(struct smbcli_state *cli, struct torture_context *tctx)
 
 	printf("testing parallel queryfsinfo [Object ID] with %d ops\n", torture_numops);
 
-	event_ctx = talloc_reference(tctx, cli->tree->session->transport->socket->event.ctx);
+	event_ctx = tctx->ev;
 	c = talloc_array(tctx, struct composite_context *, torture_numops);
 
 	for (i=0; i<torture_numops; i++) {

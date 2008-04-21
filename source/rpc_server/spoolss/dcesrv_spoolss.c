@@ -1156,7 +1156,8 @@ static WERROR dcesrv_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct dcesrv_
 	creds = cli_credentials_init_anon(mem_ctx); /* FIXME: Use machine credentials instead ? */
 
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, binding, &ndr_table_spoolss, 
-				  creds, NULL, dce_call->conn->dce_ctx->lp_ctx);
+				       creds, dce_call->event_ctx,
+				       dce_call->conn->dce_ctx->lp_ctx);
 
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(0, ("unable to call back to %s\n", r->in.str));
