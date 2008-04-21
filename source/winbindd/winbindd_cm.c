@@ -1024,7 +1024,8 @@ static bool add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
  convert an ip to a name
 *******************************************************************/
 
-static bool dcip_to_name(const struct winbindd_domain *domain,
+static bool dcip_to_name(TALLOC_CTX *mem_ctx,
+		const struct winbindd_domain *domain,
 		struct sockaddr_storage *pss,
 		fstring name )
 {
@@ -1091,13 +1092,13 @@ static bool dcip_to_name(const struct winbindd_domain *domain,
 
 	/* try GETDC requests next */
 
-	if (send_getdc_request(winbind_messaging_context(),
+	if (send_getdc_request(mem_ctx, winbind_messaging_context(),
 			       pss, domain->name, &domain->sid)) {
 		const char *dc_name = NULL;
 		int i;
 		smb_msleep(100);
 		for (i=0; i<5; i++) {
-			if (receive_getdc_response(pss, domain->name, &dc_name)) {
+			if (receive_getdc_response(mem_ctx, pss, domain->name, &dc_name)) {
 				fstrcpy(name, dc_name);
 				namecache_store(name, 0x20, 1, &ip_list);
 				return True;
@@ -1291,7 +1292,7 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Try to figure out the name */
-	if (dcip_to_name(domain, pss, dcname)) {
+	if (dcip_to_name(mem_ctx, domain, pss, dcname)) {
 		return True;
 	}
 
@@ -1336,7 +1337,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 						AI_NUMERICHOST)) {
 				return NT_STATUS_UNSUCCESSFUL;
 			}
-			if (dcip_to_name( domain, &ss, saf_name )) {
+			if (dcip_to_name(mem_ctx, domain, &ss, saf_name )) {
 				fstrcpy( domain->dcname, saf_name );
 			} else {
 				winbind_add_failed_connection_entry(
