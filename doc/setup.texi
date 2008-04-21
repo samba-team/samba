@@ -1252,7 +1252,7 @@ Apr 20 02:08:08  Apr 20 12:08:08  krbtgt/EXAMPLE.ORG@@EXAMPLE.ORG
 Using PKCS11 it can look like this instead:
 
 @example
-$ kinit -C PKCS11:/tmp/pkcs11/lib/soft-pkcs11.so lha@@EXAMPLE.ORG
+$ kinit -C PKCS11:/usr/heimdal/lib/hx509.so lha@@EXAMPLE.ORG
 PIN code for SoftToken (slot):
 $ klist
 Credentials cache: API:4
