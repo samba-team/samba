@@ -117,6 +117,7 @@ extern int opt_testmode;
 
 extern int opt_have_ip;
 extern struct sockaddr_storage opt_dest_ip;
+extern struct libnetapi_ctx *netapi_ctx;
 
 extern const char *share_type[];
 
