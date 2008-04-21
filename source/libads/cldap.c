@@ -116,7 +116,9 @@ static void gotalarm_sig(void)
 /*
   receive a cldap netlogon reply
 */
-static int recv_cldap_netlogon(int sock, struct nbt_cldap_netlogon_5 *reply)
+static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
+			       int sock,
+			       struct nbt_cldap_netlogon_5 *reply)
 {
 	int ret;
 	ASN1_DATA data;
@@ -182,7 +184,7 @@ static int recv_cldap_netlogon(int sock, struct nbt_cldap_netlogon_5 *reply)
 		return -1;
 	}
 
-	ndr_err = ndr_pull_union_blob_all(&os3, talloc_tos(), &p, 5,
+	ndr_err = ndr_pull_union_blob_all(&os3, mem_ctx, &p, 5,
 		       (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;
@@ -208,7 +210,10 @@ static int recv_cldap_netlogon(int sock, struct nbt_cldap_netlogon_5 *reply)
   do a cldap netlogon query.  Always 389/udp
 *******************************************************************/
 
-bool ads_cldap_netlogon(const char *server, const char *realm,  struct nbt_cldap_netlogon_5 *reply)
+bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
+			const char *server,
+			const char *realm,
+			struct nbt_cldap_netlogon_5 *reply)
 {
 	int sock;
 	int ret;
@@ -225,7 +230,7 @@ bool ads_cldap_netlogon(const char *server, const char *realm,  struct nbt_cldap
 		close(sock);
 		return False;
 	}
-	ret = recv_cldap_netlogon(sock, reply);
+	ret = recv_cldap_netlogon(mem_ctx, sock, reply);
 	close(sock);
 
 	if (ret == -1) {

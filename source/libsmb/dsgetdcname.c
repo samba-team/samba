@@ -203,7 +203,7 @@ static NTSTATUS dsgetdcname_cache_refresh(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(r);
 
-	if (ads_cldap_netlogon(info->dc_unc,
+	if (ads_cldap_netlogon(mem_ctx, info->dc_unc,
 			       info->domain_name, &r)) {
 
 		dsgetdcname_cache_delete(mem_ctx, domain_name);
@@ -618,7 +618,7 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 
 		DEBUG(10,("LDAP ping to %s\n", dclist[i].hostname));
 
-		if ((ads_cldap_netlogon(dclist[i].hostname,
+		if ((ads_cldap_netlogon(mem_ctx, dclist[i].hostname,
 					domain_name, &r)) &&
 		    (check_cldap_reply_required_flags(r.server_type, flags))) {
 			valid_dc = true;
