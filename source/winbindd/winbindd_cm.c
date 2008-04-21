@@ -1054,7 +1054,7 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 
 			DEBUG(10,("dcip_to_name: flags = 0x%x\n", (unsigned int)ads->config.flags));
 
-			if (domain->primary && (ads->config.flags & ADS_KDC)) {
+			if (domain->primary && (ads->config.flags & NBT_SERVER_KDC)) {
 				if (ads_closest_dc(ads)) {
 					char *sitename = sitename_fetch(ads->config.realm);
 
