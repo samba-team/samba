@@ -134,7 +134,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	struct dcinfo *dc;
 	bool retried = false;
 
-	SMB_ASSERT(cli->pipe_idx == PI_NETLOGON);
+	SMB_ASSERT(rpccli_is_pipe_idx(cli, PI_NETLOGON));
 
 	dc = cli->dc;
 	if (!dc) {
@@ -159,7 +159,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	generate_random_buffer(clnt_chal_send.data, 8);
 
 	/* Get the server challenge. */
-	result = rpccli_netr_ServerReqChallenge(cli, cli->mem_ctx,
+	result = rpccli_netr_ServerReqChallenge(cli, talloc_tos(),
 						dc->remote_machine,
 						clnt_name,
 						&clnt_chal_send,
@@ -180,7 +180,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	 * Send client auth-2 challenge and receive server repy.
 	 */
 
-	result = rpccli_netr_ServerAuthenticate2(cli, cli->mem_ctx,
+	result = rpccli_netr_ServerAuthenticate2(cli, talloc_tos(),
 						 dc->remote_machine,
 						 dc->mach_acct,
 						 sec_chan_type,
@@ -212,13 +212,13 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 		 */
 		DEBUG(0,("rpccli_netlogon_setup_creds: server %s "
 			"replied with bad credential\n",
-			cli->cli->desthost ));
+			cli->desthost ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	DEBUG(5,("rpccli_netlogon_setup_creds: server %s credential "
 		"chain established.\n",
-		cli->cli->desthost ));
+		cli->desthost ));
 
 	return NT_STATUS_OK;
 }

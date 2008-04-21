@@ -221,7 +221,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	domain_sid = info->account_domain.sid;
 
 	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
-	cli_rpc_pipe_close(pipe_hnd); /* Done with this pipe */
+	TALLOC_FREE(pipe_hnd); /* Done with this pipe */
 
 	/* Bail out if domain didn't get set. */
 	if (!domain) {
@@ -238,7 +238,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	}
 
 	CHECK_RPC_ERR(rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-					   pipe_hnd->cli->desthost,
+					   pipe_hnd->desthost,
 					   SEC_RIGHTS_MAXIMUM_ALLOWED,
 					   &sam_pol),
 		      "could not connect to SAM database");
@@ -368,7 +368,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 					 &set_info);
 
 	rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
-	cli_rpc_pipe_close(pipe_hnd); /* Done with this pipe */
+	TALLOC_FREE(pipe_hnd); /* Done with this pipe */
 
 	/* Now check the whole process from top-to-bottom */
 
@@ -429,10 +429,10 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 			goto done;
 		}
-		cli_rpc_pipe_close(netlogon_schannel_pipe);
+		TALLOC_FREE(netlogon_schannel_pipe);
 	}
 
-	cli_rpc_pipe_close(pipe_hnd);
+	TALLOC_FREE(pipe_hnd);
 
 	/* Now store the secret in the secrets database */
 

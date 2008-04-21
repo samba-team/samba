@@ -330,7 +330,7 @@ static void dump_database(struct rpc_pipe_client *pipe_hnd,
         NTSTATUS result;
 	int i;
         TALLOC_CTX *mem_ctx;
-	const char *logon_server = pipe_hnd->cli->desthost;
+	const char *logon_server = pipe_hnd->desthost;
 	const char *computername = global_myname();
 	struct netr_Authenticator credential;
 	struct netr_Authenticator return_authenticator;
@@ -1028,7 +1028,6 @@ static NTSTATUS fetch_domain_info(uint32_t rid,
 				  struct netr_DELTA_DOMAIN *r)
 {
 	time_t u_max_age, u_min_age, u_logout;
-	time_t u_lockoutreset, u_lockouttime;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	const char *domname;
 	struct netr_AcctLockStr *lockstr = NULL;
@@ -1045,11 +1044,6 @@ static NTSTATUS fetch_domain_info(uint32_t rid,
 	u_max_age = uint64s_nt_time_to_unix_abs((uint64 *)&r->max_password_age);
 	u_min_age = uint64s_nt_time_to_unix_abs((uint64 *)&r->min_password_age);
 	u_logout = uint64s_nt_time_to_unix_abs((uint64 *)&r->force_logoff_time);
-
-	if (lockstr) {
-		u_lockoutreset = uint64s_nt_time_to_unix_abs(&lockstr->reset_count);
-		u_lockouttime = uint64s_nt_time_to_unix_abs((uint64_t *)&lockstr->lockout_duration);
-	}
 
 	domname = r->domain_name.string;
 	if (!domname) {
@@ -1081,6 +1075,11 @@ static NTSTATUS fetch_domain_info(uint32_t rid,
 		return nt_status;
 
 	if (lockstr) {
+		time_t u_lockoutreset, u_lockouttime;
+
+		u_lockoutreset = uint64s_nt_time_to_unix_abs(&lockstr->reset_count);
+		u_lockouttime = uint64s_nt_time_to_unix_abs((uint64_t *)&lockstr->lockout_duration);
+
 		if (!pdb_set_account_policy(AP_BAD_ATTEMPT_LOCKOUT,
 					    lockstr->bad_attempt_lockout))
 			return nt_status;
@@ -1191,7 +1190,7 @@ static NTSTATUS fetch_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type,
         NTSTATUS result;
 	int i;
         TALLOC_CTX *mem_ctx;
-	const char *logon_server = pipe_hnd->cli->desthost;
+	const char *logon_server = pipe_hnd->desthost;
 	const char *computername = global_myname();
 	struct netr_Authenticator credential;
 	struct netr_Authenticator return_authenticator;
@@ -2012,7 +2011,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	uint32 num_deltas;
 	FILE *add_file = NULL, *mod_file = NULL, *ldif_file = NULL;
 	int num_alloced = 0, g_index = 0, a_index = 0;
-	const char *logon_server = pipe_hnd->cli->desthost;
+	const char *logon_server = pipe_hnd->desthost;
 	const char *computername = global_myname();
 	struct netr_Authenticator credential;
 	struct netr_Authenticator return_authenticator;

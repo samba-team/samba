@@ -607,37 +607,34 @@ static size_t get_posix_pending_close_entries(TALLOC_CTX *mem_ctx,
  to delete all locks on this fsp before this function is called.
 ****************************************************************************/
 
-NTSTATUS fd_close_posix(struct files_struct *fsp)
+int fd_close_posix(struct files_struct *fsp)
 {
 	int saved_errno = 0;
 	int ret;
 	int *fd_array = NULL;
 	size_t count, i;
 
-	if (!lp_locking(fsp->conn->params) || !lp_posix_locking(fsp->conn->params)) {
+	if (!lp_locking(fsp->conn->params) ||
+	    !lp_posix_locking(fsp->conn->params))
+	{
 		/*
 		 * No locking or POSIX to worry about or we want POSIX semantics
 		 * which will lose all locks on all fd's open on this dev/inode,
 		 * just close.
 		 */
-		ret = SMB_VFS_CLOSE(fsp,fsp->fh->fd);
-		fsp->fh->fd = -1;
-		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
-		}
-		return NT_STATUS_OK;
+		return close(fsp->fh->fd);
 	}
 
 	if (get_windows_lock_ref_count(fsp)) {
 
 		/*
-		 * There are outstanding locks on this dev/inode pair on other fds.
-		 * Add our fd to the pending close tdb and set fsp->fh->fd to -1.
+		 * There are outstanding locks on this dev/inode pair on
+		 * other fds. Add our fd to the pending close tdb and set
+		 * fsp->fh->fd to -1.
 		 */
 
 		add_fd_to_close_entry(fsp);
-		fsp->fh->fd = -1;
-		return NT_STATUS_OK;
+		return 0;
 	}
 
 	/*
@@ -648,10 +645,11 @@ NTSTATUS fd_close_posix(struct files_struct *fsp)
 	count = get_posix_pending_close_entries(talloc_tos(), fsp, &fd_array);
 
 	if (count) {
-		DEBUG(10,("fd_close_posix: doing close on %u fd's.\n", (unsigned int)count ));
+		DEBUG(10,("fd_close_posix: doing close on %u fd's.\n",
+			  (unsigned int)count));
 
 		for(i = 0; i < count; i++) {
-			if (SMB_VFS_CLOSE(fsp,fd_array[i]) == -1) {
+			if (close(fd_array[i]) == -1) {
 				saved_errno = errno;
 			}
 		}
@@ -673,20 +671,14 @@ NTSTATUS fd_close_posix(struct files_struct *fsp)
 	 * Finally close the fd associated with this fsp.
 	 */
 
-	ret = SMB_VFS_CLOSE(fsp,fsp->fh->fd);
+	ret = close(fsp->fh->fd);
 
 	if (ret == 0 && saved_errno != 0) {
 		errno = saved_errno;
 		ret = -1;
-	} 
-
-	fsp->fh->fd = -1;
-
-	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
 	}
 
-	return NT_STATUS_OK;
+	return ret;
 }
 
 /****************************************************************************

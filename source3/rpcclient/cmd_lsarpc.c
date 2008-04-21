@@ -1137,7 +1137,7 @@ static NTSTATUS cmd_lsa_get_username(struct rpc_pipe_client *cli,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	const char *servername = cli->cli->desthost;
+	const char *servername = cli->desthost;
 	struct lsa_String *account_name = NULL;
 	struct lsa_String *authority_name = NULL;
 

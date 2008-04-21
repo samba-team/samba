@@ -177,8 +177,9 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		}
 	}
 
-	if (NT_STATUS_IS_OK(result = rpccli_samr_chgpasswd_user(pipe_hnd, pipe_hnd->mem_ctx, user_name, 
-							     new_passwd, old_passwd))) {
+	result = rpccli_samr_chgpasswd_user(pipe_hnd, talloc_tos(),
+					    user_name, new_passwd, old_passwd);
+	if (NT_STATUS_IS_OK(result)) {
 		/* Great - it all worked! */
 		cli_shutdown(cli);
 		return NT_STATUS_OK;
@@ -195,7 +196,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	}
 
 	/* OK, that failed, so try again... */
-	cli_rpc_pipe_close(pipe_hnd);
+	TALLOC_FREE(pipe_hnd);
 	
 	/* Try anonymous NTLMSSP... */
 	cli_init_creds(cli, "", "", NULL);
@@ -206,11 +207,9 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &result);
 
 	if ( pipe_hnd &&
-		(NT_STATUS_IS_OK(result = rpccli_samr_chgpasswd_user(pipe_hnd,
-						pipe_hnd->mem_ctx,
-						user_name, 
-						new_passwd,
-						old_passwd)))) {
+		(NT_STATUS_IS_OK(result = rpccli_samr_chgpasswd_user(
+					 pipe_hnd, talloc_tos(), user_name,
+					 new_passwd, old_passwd)))) {
 		/* Great - it all worked! */
 		cli_shutdown(cli);
 		return NT_STATUS_OK;

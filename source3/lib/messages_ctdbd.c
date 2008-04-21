@@ -35,10 +35,36 @@ struct messaging_ctdbd_context {
  * This is a Samba3 hack/optimization. Routines like process_exists need to
  * talk to ctdbd, and they don't get handed a messaging context.
  */
-struct ctdbd_connection *global_ctdbd_connection;
+static struct ctdbd_connection *global_ctdbd_connection;
+static int global_ctdb_connection_pid;
 
 struct ctdbd_connection *messaging_ctdbd_connection(void)
 {
+	if (global_ctdb_connection_pid == 0 &&
+	    global_ctdbd_connection == NULL) {
+		struct event_context *ev;
+		struct messaging_context *msg;
+
+		ev = event_context_init(NULL);
+		if (!ev) {
+			DEBUG(0,("event_context_init failed\n"));
+		}
+
+		msg = messaging_init(NULL, procid_self(), ev);
+		if (!msg) {
+			DEBUG(0,("messaging_init failed\n"));
+		}
+
+		db_tdb2_setup_messaging(msg, false);
+	}
+
+	if (global_ctdb_connection_pid != getpid()) {
+		DEBUG(0,("messaging_ctdbd_connection():"
+			 "valid for pid[%d] but it's [%d]\n",
+			 global_ctdb_connection_pid, getpid()));
+		smb_panic("messaging_ctdbd_connection() invalid process\n");
+	}
+
 	return global_ctdbd_connection;
 }
 
@@ -66,6 +92,7 @@ static int messaging_ctdbd_destructor(struct messaging_ctdbd_context *ctx)
 	/*
 	 * The global connection just went away
 	 */
+	global_ctdb_connection_pid = 0;
 	global_ctdbd_connection = NULL;
 	return 0;
 }
@@ -107,6 +134,7 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 		return status;
 	}
 
+	global_ctdb_connection_pid = getpid();
 	global_ctdbd_connection = ctx->conn;
 	talloc_set_destructor(ctx, messaging_ctdbd_destructor);
 

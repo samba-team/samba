@@ -88,7 +88,7 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	*domain_sid = info->account_domain.sid;
 
 	rpccli_lsa_Close(lsa_pipe, mem_ctx, &pol);
-	cli_rpc_pipe_close(lsa_pipe);
+	TALLOC_FREE(lsa_pipe);
 
 	return NT_STATUS_OK;
 }
@@ -185,7 +185,7 @@ int run_rpc_command(struct cli_state *cli_arg,
 		
 	if (!(conn_flags & NET_FLAGS_NO_PIPE)) {
 		if (pipe_hnd) {
-			cli_rpc_pipe_close(pipe_hnd);
+			TALLOC_FREE(pipe_hnd);
 		}
 	}
 
@@ -451,7 +451,7 @@ NTSTATUS rpc_info_internals(const DOM_SID *domain_sid,
 
 	/* Get sam policy handle */
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -571,156 +571,6 @@ static int rpc_user_usage(int argc, const char **argv)
 /** 
  * Add a new user to a remote RPC server
  *
- * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
- *
- * @param domain_sid The domain sid acquired from the remote server
- * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
- *
- * @return Normal NTSTATUS return.
- **/
-
-static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
-				const char *domain_name, 
-				struct cli_state *cli,
-				struct rpc_pipe_client *pipe_hnd,
-				TALLOC_CTX *mem_ctx, 
-				int argc, const char **argv)
-{
-	
-	POLICY_HND connect_pol, domain_pol, user_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	const char *acct_name;
-	struct lsa_String lsa_acct_name;
-	uint32 acb_info;
-	uint32 acct_flags, user_rid;
-	uint32_t access_granted = 0;
-	struct samr_Ids user_rids, name_types;
-
-	if (argc < 1) {
-		d_printf("User must be specified\n");
-		rpc_user_usage(argc, argv);
-		return NT_STATUS_OK;
-	}
-
-	acct_name = argv[0];
-	init_lsa_String(&lsa_acct_name, acct_name);
-
-	/* Get sam policy handle */
-
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-	
-	/* Get domain policy handle */
-
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
-					&connect_pol,
-					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
-					&domain_pol);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	/* Create domain user */
-
-	acb_info = ACB_NORMAL;
-	acct_flags = SEC_GENERIC_READ | SEC_GENERIC_WRITE | SEC_GENERIC_EXECUTE |
-		     SEC_STD_WRITE_DAC | SEC_STD_DELETE |
-		     SAMR_USER_ACCESS_SET_PASSWORD |
-		     SAMR_USER_ACCESS_GET_ATTRIBUTES |
-		     SAMR_USER_ACCESS_SET_ATTRIBUTES;
-
-	result = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
-					 &domain_pol,
-					 &lsa_acct_name,
-					 acb_info,
-					 acct_flags,
-					 &user_pol,
-					 &access_granted,
-					 &user_rid);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	if (argc == 2) {
-
-		union samr_UserInfo info;
-		uchar pwbuf[516];
-
-		result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
-						 &domain_pol,
-						 1,
-						 &lsa_acct_name,
-						 &user_rids,
-						 &name_types);
-
-		if (!NT_STATUS_IS_OK(result)) {
-			goto done;
-		}
-
-		result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
-					      &domain_pol,
-					      MAXIMUM_ALLOWED_ACCESS,
-					      user_rids.ids[0],
-					      &user_pol);
-
-		if (!NT_STATUS_IS_OK(result)) {
-			goto done;
-		}
-
-		/* Set password on account */
-
-		encode_pw_buffer(pwbuf, argv[1], STR_UNICODE);
-
-		init_samr_user_info24(&info.info24, pwbuf, 24);
-
-		SamOEMhashBlob(info.info24.password.data, 516,
-			       &cli->user_session_key);
-
-		result = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
-						  &user_pol,
-						  24,
-						  &info);
-
-		if (!NT_STATUS_IS_OK(result)) {
-			d_fprintf(stderr, "Failed to set password for user %s - %s\n", 
-				 acct_name, nt_errstr(result));
-
-			result = rpccli_samr_DeleteUser(pipe_hnd, mem_ctx,
-							&user_pol);
-
-			if (!NT_STATUS_IS_OK(result)) {
-				d_fprintf(stderr, "Failed to delete user %s - %s\n", 
-					 acct_name, nt_errstr(result));
-				 return result;
-			}
-		}
-
-	}
- done:
-	if (!NT_STATUS_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to add user '%s' with %s.\n",
-			  acct_name, nt_errstr(result));
-	} else {
-		d_printf("Added user '%s'.\n", acct_name);
-	}
-	return result;
-}
-
-/** 
- * Add a new user to a remote RPC server
- *
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
@@ -730,115 +580,34 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 
 static int rpc_user_add(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PI_SAMR, 0, rpc_user_add_internals,
-			       argc, argv);
-}
-
-/** 
- * Delete a user from a remote RPC server
- *
- * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
- *
- * @param domain_sid The domain sid acquired from the remote server
- * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
- *
- * @return Normal NTSTATUS return.
- **/
-
-static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid, 
-					const char *domain_name, 
-					struct cli_state *cli, 
-					struct rpc_pipe_client *pipe_hnd,
-					TALLOC_CTX *mem_ctx, 
-					int argc,
-					const char **argv)
-{
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	POLICY_HND connect_pol, domain_pol, user_pol;
-	const char *acct_name;
+	NET_API_STATUS status;
+	struct USER_INFO_1 info1;
+	uint32_t parm_error = 0;
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
 		rpc_user_usage(argc, argv);
-		return NT_STATUS_OK;
+		return 0;
 	}
 
-	acct_name = argv[0];
+	ZERO_STRUCT(info1);
 
-	/* Get sam policy and domain handles */
-
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
+	info1.usri1_name = argv[0];
+	if (argc == 2) {
+		info1.usri1_password = argv[1];
 	}
 
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
-					&connect_pol,
-					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
-					&domain_pol);
+	status = NetUserAdd(opt_host, 1, (uint8_t *)&info1, &parm_error);
 
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
+	if (status != 0) {
+		d_fprintf(stderr, "Failed to add user '%s' with: %s.\n",
+			argv[0], libnetapi_get_error_string(NULL, status));
+		return -1;
+	} else {
+		d_printf("Added user '%s'.\n", argv[0]);
 	}
 
-	/* Get handle on user */
-
-	{
-		struct samr_Ids user_rids, name_types;
-		struct lsa_String lsa_acct_name;
-
-		init_lsa_String(&lsa_acct_name, acct_name);
-
-		result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
-						 &domain_pol,
-						 1,
-						 &lsa_acct_name,
-						 &user_rids,
-						 &name_types);
-
-		if (!NT_STATUS_IS_OK(result)) {
-			goto done;
-		}
-
-		result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
-					      &domain_pol,
-					      MAXIMUM_ALLOWED_ACCESS,
-					      user_rids.ids[0],
-					      &user_pol);
-
-		if (!NT_STATUS_IS_OK(result)) {
-			goto done;
-		}
-	}
-
-	/* Delete user */
-
-	result = rpccli_samr_DeleteUser(pipe_hnd, mem_ctx,
-					&user_pol);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
- done:
-	if (!NT_STATUS_IS_OK(result)) {
-                d_fprintf(stderr, "Failed to delete user '%s' with %s.\n",
-			  acct_name, nt_errstr(result));
-        } else {
-                d_printf("Deleted user '%s'.\n", acct_name);
-        }
-
-	return result;
+	return 0;
 }
 
 /** 
@@ -885,7 +654,7 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 	/* Get sam policy handle */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 
@@ -987,8 +756,26 @@ static int rpc_user_rename(int argc, const char **argv)
 
 static int rpc_user_delete(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PI_SAMR, 0, rpc_user_del_internals,
-			       argc, argv);
+	NET_API_STATUS status;
+
+	if (argc < 1) {
+		d_printf("User must be specified\n");
+		rpc_user_usage(argc, argv);
+		return 0;
+	}
+
+	status = NetUserDel(opt_host, argv[0]);
+
+	if (status != 0) {
+                d_fprintf(stderr, "Failed to delete user '%s' with: %s.\n",
+			  argv[0],
+			  libnetapi_get_error_string(NULL, status));
+		return -1;
+        } else {
+                d_printf("Deleted user '%s'.\n", argv[0]);
+        }
+
+	return 0;
 }
 
 /** 
@@ -1042,7 +829,7 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
 	/* Get sam policy and domain handles */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 
@@ -1173,7 +960,7 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 	/* Get sam policy handle */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
@@ -1291,7 +1078,7 @@ static NTSTATUS rpc_user_list_internals(const DOM_SID *domain_sid,
 	/* Get sam policy handle */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1360,6 +1147,9 @@ static NTSTATUS rpc_user_list_internals(const DOM_SID *domain_sid,
 
 int net_rpc_user(int argc, const char **argv) 
 {
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+
 	struct functable func[] = {
 		{"add", rpc_user_add},
 		{"info", rpc_user_info},
@@ -1368,7 +1158,14 @@ int net_rpc_user(int argc, const char **argv)
 		{"rename", rpc_user_rename},
 		{NULL, NULL}
 	};
-	
+
+	status = libnetapi_init(&ctx);
+	if (status != 0) {
+		return -1;
+	}
+	libnetapi_set_username(ctx, opt_user_name);
+	libnetapi_set_password(ctx, opt_password);
+
 	if (argc == 0) {
 		return run_rpc_command(NULL,PI_SAMR, 0, 
 				       rpc_user_list_internals,
@@ -1424,8 +1221,8 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(domain_pol);
 	ZERO_STRUCT(user_pol);
 
-	result = net_rpc_lookup_name(mem_ctx, pipe_hnd->cli, argv[0],
-				     NULL, NULL, &sid, &type);
+	result = net_rpc_lookup_name(mem_ctx, rpc_pipe_np_smb_conn(pipe_hnd),
+				     argv[0], NULL, NULL, &sid, &type);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Could not lookup %s: %s\n", argv[0],
 			  nt_errstr(result));
@@ -1446,7 +1243,7 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 	}
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1814,7 +1611,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 	}
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 
@@ -2012,7 +1809,7 @@ static NTSTATUS rpc_group_add_internals(const DOM_SID *domain_sid,
 	/* Get sam policy handle */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
@@ -2082,7 +1879,7 @@ static NTSTATUS rpc_alias_add_internals(const DOM_SID *domain_sid,
 	/* Get sam policy handle */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
@@ -2176,7 +1973,7 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 
  done:
 	if (pipe_hnd) {
-		cli_rpc_pipe_close(pipe_hnd);
+		TALLOC_FREE(pipe_hnd);
 	}
 
 	if (!NT_STATUS_IS_OK(result) && (StrnCaseCmp(name, "S-", 2) == 0)) {
@@ -2218,7 +2015,7 @@ static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 
 	/* Get sam policy handle */
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2290,8 +2087,8 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	result = get_sid_from_name(pipe_hnd->cli, mem_ctx, member,
-				   &member_sid, &member_type);
+	result = get_sid_from_name(rpc_pipe_np_smb_conn(pipe_hnd), mem_ctx,
+				   member, &member_sid, &member_type);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Could not lookup up group member %s\n", member);
@@ -2300,7 +2097,7 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 
 	/* Get sam policy handle */
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2419,7 +2216,7 @@ static NTSTATUS rpc_del_groupmem(struct rpc_pipe_client *pipe_hnd,
 
 	/* Get sam policy handle */
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result))
@@ -2485,8 +2282,8 @@ static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 	if (!sid_split_rid(&sid, &alias_rid))
 		return NT_STATUS_UNSUCCESSFUL;
 
-	result = get_sid_from_name(pipe_hnd->cli, mem_ctx, member,
-				   &member_sid, &member_type);
+	result = get_sid_from_name(rpc_pipe_np_smb_conn(pipe_hnd), mem_ctx,
+				   member, &member_sid, &member_type);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Could not lookup up group member %s\n", member);
@@ -2495,7 +2292,7 @@ static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 
 	/* Get sam policy handle */
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2642,7 +2439,7 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 	/* Get sam policy handle */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2939,7 +2736,8 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 		return NT_STATUS_OK;
 	}
 
-	lsa_pipe = cli_rpc_pipe_open_noauth(pipe_hnd->cli, PI_LSARPC, &result);
+	lsa_pipe = cli_rpc_pipe_open_noauth(rpc_pipe_np_smb_conn(pipe_hnd),
+					    PI_LSARPC, &result);
 	if (!lsa_pipe) {
 		d_fprintf(stderr, "Couldn't open LSA pipe. Error was %s\n",
 			nt_errstr(result) );
@@ -2951,14 +2749,14 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Couldn't open LSA policy handle\n");
-		cli_rpc_pipe_close(lsa_pipe);
+		TALLOC_FREE(lsa_pipe);
 		return result;
 	}
 
 	alias_sids = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, num_members);
 	if (!alias_sids) {
 		d_fprintf(stderr, "Out of memory\n");
-		cli_rpc_pipe_close(lsa_pipe);
+		TALLOC_FREE(lsa_pipe);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -2973,7 +2771,7 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 	if (!NT_STATUS_IS_OK(result) &&
 	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED)) {
 		d_fprintf(stderr, "Couldn't lookup SIDs\n");
-		cli_rpc_pipe_close(lsa_pipe);
+		TALLOC_FREE(lsa_pipe);
 		return result;
 	}
 
@@ -2993,7 +2791,7 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 		}
 	}
 
-	cli_rpc_pipe_close(lsa_pipe);
+	TALLOC_FREE(lsa_pipe);
 	return NT_STATUS_OK;
 }
  
@@ -3013,7 +2811,7 @@ static NTSTATUS rpc_group_members_internals(const DOM_SID *domain_sid,
 	/* Get sam policy handle */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 
@@ -3126,7 +2924,7 @@ static NTSTATUS rpc_group_rename_internals(const DOM_SID *domain_sid,
 	/* Get sam policy handle */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 
@@ -3287,7 +3085,7 @@ static NTSTATUS rpc_share_add_internals(const DOM_SID *domain_sid,
 	info.info2 = &info2;
 
 	status = rpccli_srvsvc_NetShareAdd(pipe_hnd, mem_ctx,
-					   pipe_hnd->cli->desthost,
+					   pipe_hnd->desthost,
 					   level,
 					   &info,
 					   &parm_error,
@@ -3332,7 +3130,7 @@ static NTSTATUS rpc_share_del_internals(const DOM_SID *domain_sid,
 	WERROR result;
 
 	return rpccli_srvsvc_NetShareDel(pipe_hnd, mem_ctx,
-					 pipe_hnd->cli->desthost,
+					 pipe_hnd->desthost,
 					 argv[0],
 					 0,
 					 &result);
@@ -3398,7 +3196,7 @@ static WERROR get_share_info(struct rpc_pipe_client *pipe_hnd,
 		info_ctr->level = level;
 
 		status = rpccli_srvsvc_NetShareEnumAll(pipe_hnd, mem_ctx,
-						       pipe_hnd->cli->desthost,
+						       pipe_hnd->desthost,
 						       info_ctr,
 						       preferred_len,
 						       &total_entries,
@@ -3409,7 +3207,7 @@ static WERROR get_share_info(struct rpc_pipe_client *pipe_hnd,
 
 	/* request just one share */
 	status = rpccli_srvsvc_NetShareGetInfo(pipe_hnd, mem_ctx,
-					       pipe_hnd->cli->desthost,
+					       pipe_hnd->desthost,
 					       argv[0],
 					       level,
 					       &info,
@@ -3628,7 +3426,7 @@ static NTSTATUS rpc_share_migrate_shares_internals(const DOM_SID *domain_sid,
 		info.info502 = &info502;
 
 		nt_status = rpccli_srvsvc_NetShareAdd(srvsvc_pipe, mem_ctx,
-						      srvsvc_pipe->cli->desthost,
+						      srvsvc_pipe->desthost,
 						      502,
 						      &info,
 						      &parm_error,
@@ -4051,7 +3849,7 @@ static NTSTATUS rpc_share_migrate_security_internals(const DOM_SID *domain_sid,
 
 		/* finally modify the share on the dst server */
 		nt_status = rpccli_srvsvc_NetShareSetInfo(srvsvc_pipe, mem_ctx,
-							  srvsvc_pipe->cli->desthost,
+							  srvsvc_pipe->desthost,
 							  info502.name,
 							  level,
 							  &info,
@@ -4344,7 +4142,7 @@ static NTSTATUS rpc_aliaslist_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol;
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 
@@ -4683,7 +4481,7 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 	int fnum;
 	SEC_DESC *share_sd = NULL;
 	SEC_DESC *root_sd = NULL;
-	struct cli_state *cli = pipe_hnd->cli;
+	struct cli_state *cli = rpc_pipe_np_smb_conn(pipe_hnd);
 	int i;
 	union srvsvc_NetShareInfo info;
 	WERROR result;
@@ -4691,7 +4489,7 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 	uint16 cnum;
 
 	status = rpccli_srvsvc_NetShareGetInfo(pipe_hnd, mem_ctx,
-					       pipe_hnd->cli->desthost,
+					       pipe_hnd->desthost,
 					       netname,
 					       502,
 					       &info,
@@ -5010,7 +4808,7 @@ static NTSTATUS rpc_sh_share_add(TALLOC_CTX *mem_ctx,
 	info.info2 = &info2;
 
 	status = rpccli_srvsvc_NetShareAdd(pipe_hnd, mem_ctx,
-					   pipe_hnd->cli->desthost,
+					   pipe_hnd->desthost,
 					   2,
 					   &info,
 					   &parm_err,
@@ -5033,7 +4831,7 @@ static NTSTATUS rpc_sh_share_delete(TALLOC_CTX *mem_ctx,
 	}
 
 	status = rpccli_srvsvc_NetShareDel(pipe_hnd, mem_ctx,
-					   pipe_hnd->cli->desthost,
+					   pipe_hnd->desthost,
 					   argv[0],
 					   0,
 					   &result);
@@ -5056,7 +4854,7 @@ static NTSTATUS rpc_sh_share_info(TALLOC_CTX *mem_ctx,
 	}
 
 	status = rpccli_srvsvc_NetShareGetInfo(pipe_hnd, mem_ctx,
-					       pipe_hnd->cli->desthost,
+					       pipe_hnd->desthost,
 					       argv[0],
 					       2,
 					       &info,
@@ -5128,7 +4926,7 @@ static NTSTATUS rpc_file_close_internals(const DOM_SID *domain_sid,
 					const char **argv)
 {
 	return rpccli_srvsvc_NetFileClose(pipe_hnd, mem_ctx, 
-					    pipe_hnd->cli->desthost, 
+					    pipe_hnd->desthost,
 					    atoi(argv[0]), NULL);
 }
 
@@ -5209,7 +5007,7 @@ static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
 	info_ctr.ctr.ctr3 = &ctr3;
 
 	status = rpccli_srvsvc_NetFileEnum(pipe_hnd, mem_ctx,
-					   pipe_hnd->cli->desthost,
+					   pipe_hnd->desthost,
 					   NULL,
 					   username,
 					   &info_ctr,
@@ -5574,7 +5372,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 
 	/* Get samr policy handle */
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -5730,7 +5528,7 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 
 	/* Get samr policy handle */
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->cli->desthost,
+				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -5855,7 +5653,7 @@ static NTSTATUS rpc_trustdom_get_pdc(struct cli_state *cli,
 				       domain_name,
 				       &buffer,
 				       NULL);
-	cli_rpc_pipe_close(netr);
+	TALLOC_FREE(netr);
 
 	if (NT_STATUS_IS_OK(status)) {
 		return status;
@@ -6148,8 +5946,8 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 	data = data_blob(info->password.password->data,
 			 info->password.password->length);
 
-	cleartextpwd = decrypt_trustdom_secret(pipe_hnd->cli->pwd.password,
-					       &data);
+	cleartextpwd = decrypt_trustdom_secret(
+		rpc_pipe_np_smb_conn(pipe_hnd)->pwd.password, &data);
 
 	if (cleartextpwd == NULL) {
 		DEBUG(0,("retrieved NULL password\n"));
@@ -6451,7 +6249,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		return -1;
 	};
 	
-	cli_rpc_pipe_close(pipe_hnd);
+	TALLOC_FREE(pipe_hnd);
 
 	/*
 	 * Listing trusting domains (stored in passdb backend, if local)
@@ -6472,7 +6270,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 
 	/* SamrConnect2 */
 	nt_status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-					 pipe_hnd->cli->desthost,
+					 pipe_hnd->desthost,
 					 SA_RIGHT_SAM_OPEN_DOMAIN,
 					 &connect_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {

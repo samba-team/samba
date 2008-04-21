@@ -1023,6 +1023,8 @@ int main(int argc, char **argv, char **envp)
 
 	load_case_tables();
 
+	db_tdb2_setup_messaging(NULL, false);
+
 	/* Initialise for running in non-root mode */
 
 	sec_init();
@@ -1102,7 +1104,19 @@ int main(int argc, char **argv, char **envp)
 	DEBUG(0,("winbindd version %s started.\n", SAMBA_VERSION_STRING));
 	DEBUGADD(0,("%s\n", COPYRIGHT_STARTUP_MESSAGE));
 
-	db_tdb2_setup_messaging(NULL, false);
+	if (!lp_load_initial_only(get_dyn_CONFIGFILE())) {
+		DEBUG(0, ("error opening config file\n"));
+		exit(1);
+	}
+
+	/* Initialise messaging system */
+
+	if (winbind_messaging_context() == NULL) {
+		DEBUG(0, ("unable to initialize messaging system\n"));
+		exit(1);
+	}
+
+	db_tdb2_setup_messaging(winbind_messaging_context(), true);
 
 	if (!reload_services_file()) {
 		DEBUG(0, ("error opening config file\n"));
@@ -1175,10 +1189,8 @@ int main(int argc, char **argv, char **envp)
 
 	TimeInit();
 
-	/* Initialise messaging system */
-
-	if (winbind_messaging_context() == NULL) {
-		DEBUG(0, ("unable to initialize messaging system\n"));
+	if (!reinit_after_fork(winbind_messaging_context())) {
+		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
 	}
 
@@ -1218,8 +1230,6 @@ int main(int argc, char **argv, char **envp)
 	messaging_register(winbind_messaging_context(), NULL,
 			   MSG_WINBIND_DUMP_DOMAIN_LIST,
 			   winbind_msg_dump_domain_list);
-
-	db_tdb2_setup_messaging(winbind_messaging_context(), true);
 
 	netsamlogon_cache_init(); /* Non-critical */
 	

@@ -617,54 +617,16 @@ struct cli_state *cli_initialise(void)
 }
 
 /****************************************************************************
- External interface.
- Close an open named pipe over SMB. Free any authentication data.
- Returns false if the cli_close call failed.
- ****************************************************************************/
-
-bool cli_rpc_pipe_close(struct rpc_pipe_client *cli)
-{
-	bool ret;
-
-	if (!cli) {
-		return false;
-	}
-
-	ret = cli_close(cli->cli, cli->fnum);
-
-	if (!ret) {
-		DEBUG(1,("cli_rpc_pipe_close: cli_close failed on pipe %s, "
-                         "fnum 0x%x "
-                         "to machine %s.  Error was %s\n",
-                         cli->pipe_name,
-                         (int) cli->fnum,
-                         cli->cli->desthost,
-                         cli_errstr(cli->cli)));
-	}
-
-	if (cli->auth.cli_auth_data_free_func) {
-		(*cli->auth.cli_auth_data_free_func)(&cli->auth);
-	}
-
-	DEBUG(10,("cli_rpc_pipe_close: closed pipe %s to machine %s\n",
-		cli->pipe_name, cli->cli->desthost ));
-
-	DLIST_REMOVE(cli->cli->pipe_list, cli);
-	talloc_destroy(cli->mem_ctx);
-	return ret;
-}
-
-/****************************************************************************
  Close all pipes open on this session.
 ****************************************************************************/
 
 void cli_nt_pipes_close(struct cli_state *cli)
 {
-	struct rpc_pipe_client *cp, *next;
-
-	for (cp = cli->pipe_list; cp; cp = next) {
-		next = cp->next;
-		cli_rpc_pipe_close(cp);
+	while (cli->pipe_list != NULL) {
+		/*
+		 * No TALLOC_FREE here!
+		 */
+		talloc_free(cli->pipe_list);
 	}
 }
 

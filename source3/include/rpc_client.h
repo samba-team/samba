@@ -91,7 +91,7 @@
 #define CLI_DO_RPC_WERR( pcli, ctx, p_idx, opnum, q_in, r_out, \
                              q_ps, r_ps, q_io_fn, r_io_fn, default_error ) \
 {\
-	SMB_ASSERT(pcli->pipe_idx == p_idx); \
+	SMB_ASSERT(rpccli_is_pipe_idx(pcli, p_idx)); \
 	if (!prs_init( &q_ps, RPC_MAX_PDU_FRAG_LEN, ctx, MARSHALL )) { \
 		return WERR_NOMEM;\
 	}\

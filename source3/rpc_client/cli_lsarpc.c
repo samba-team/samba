@@ -108,7 +108,7 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 	}
 
 	return rpccli_lsa_OpenPolicy2(cli, mem_ctx,
-				      cli->cli->srv_name_slash,
+				      cli->srv_name_slash,
 				      &attr,
 				      des_access,
 				      pol);

@@ -169,7 +169,7 @@ static void fetch_machine_sid(struct cli_state *cli)
 	sid_copy(&domain_sid, info->account_domain.sid);
 
 	rpccli_lsa_Close(lsapipe, mem_ctx, &pol);
-	cli_rpc_pipe_close(lsapipe);
+	TALLOC_FREE(lsapipe);
 	talloc_destroy(mem_ctx);
 
 	return;
@@ -177,7 +177,7 @@ static void fetch_machine_sid(struct cli_state *cli)
  error:
 
 	if (lsapipe) {
-		cli_rpc_pipe_close(lsapipe);
+		TALLOC_FREE(lsapipe);
 	}
 
 	fprintf(stderr, "could not obtain sid for domain %s\n", cli->domain);
@@ -336,7 +336,7 @@ static NTSTATUS cmd_set_ss_level(void)
 
 			if (tmp_set->rpc_pipe->auth.auth_type != pipe_default_auth_type ||
 					tmp_set->rpc_pipe->auth.auth_level != pipe_default_auth_level) {
-				cli_rpc_pipe_close(tmp_set->rpc_pipe);
+				TALLOC_FREE(tmp_set->rpc_pipe);
 				tmp_set->rpc_pipe = NULL;
 			}
 		}
@@ -420,7 +420,7 @@ static NTSTATUS cmd_timeout(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 					continue;
 				}
 
-				cli_set_timeout(tmp_set->rpc_pipe->cli, timeout);
+				rpccli_set_timeout(tmp_set->rpc_pipe, timeout);
 			}
 		}
 	}

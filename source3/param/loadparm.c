@@ -70,6 +70,14 @@ extern userdom_struct current_user_info;
 #define HOMES_NAME "homes"
 #endif
 
+/* the special value for the include parameter
+ * to be interpreted not as a file name but to
+ * trigger loading of the global smb.conf options
+ * from registry. */
+#ifndef INCLUDE_REGISTRY_NAME
+#define INCLUDE_REGISTRY_NAME "registry"
+#endif
+
 static bool in_client = False;		/* Not in the client by default */
 static struct smbconf_csn conf_last_csn;
 static struct smbconf_ctx *conf_ctx = NULL;
@@ -6486,7 +6494,7 @@ bool service_ok(int iService)
 /*
  * process_registry_globals
  */
-static bool process_registry_globals(bool (*pfunc)(const char *, const char *, void *))
+static bool process_registry_globals(void)
 {
 	WERROR werr;
 	char **param_names;
@@ -6518,13 +6526,14 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *, v
 	}
 
 	for (count = 0; count < num_params; count++) {
-		ret = pfunc(param_names[count], param_values[count], NULL);
+		ret = do_parameter(param_names[count], param_values[count],
+				   NULL);
 		if (ret != true) {
 			goto done;
 		}
 	}
 
-	ret = pfunc("registry shares", "yes", NULL);
+	ret = do_parameter("registry shares", "yes", NULL);
 	/* store the csn */
 	smbconf_changed(conf_ctx, &conf_last_csn, NULL, NULL);
 
@@ -6718,10 +6727,24 @@ static bool handle_netbios_aliases(int snum, const char *pszParmValue, char **pt
 /***************************************************************************
  Handle the include operation.
 ***************************************************************************/
+static bool bAllowIncludeRegistry = true;
 
 static bool handle_include(int snum, const char *pszParmValue, char **ptr)
 {
 	char *fname;
+
+	if (strequal(pszParmValue, INCLUDE_REGISTRY_NAME)) {
+		if (!bAllowIncludeRegistry) {
+			return true;
+		}
+		if (bInGlobalSection) {
+			return process_registry_globals();
+		} else {
+			DEBUG(1, ("\"include = registry\" only effective "
+				  "in %s section\n", GLOBAL_NAME));
+			return false;
+		}
+	}
 
 	fname = alloc_sub_basic(get_current_username(),
 				current_user_info.domain,
@@ -8632,11 +8655,12 @@ bool lp_is_in_client(void)
  False on failure.
 ***************************************************************************/
 
-bool lp_load(const char *pszFname,
-             bool global_only,
-             bool save_defaults,
-	     bool add_ipc,
-             bool initialize_globals)
+bool lp_load_ex(const char *pszFname,
+		bool global_only,
+		bool save_defaults,
+		bool add_ipc,
+		bool initialize_globals,
+		bool allow_include_registry)
 {
 	char *n2 = NULL;
 	bool bRetval;
@@ -8644,10 +8668,11 @@ bool lp_load(const char *pszFname,
 
 	bRetval = False;
 
-	DEBUG(3, ("lp_load: refreshing parameters\n"));
+	DEBUG(3, ("lp_load_ex: refreshing parameters\n"));
 
 	bInGlobalSection = True;
 	bGlobalOnly = global_only;
+	bAllowIncludeRegistry = allow_include_registry;
 
 	init_globals(! initialize_globals);
 	debug_init();
@@ -8675,7 +8700,7 @@ bool lp_load(const char *pszFname,
 					current_user_info.domain,
 					pszFname);
 		if (!n2) {
-			smb_panic("lp_load: out of memory");
+			smb_panic("lp_load_ex: out of memory");
 		}
 
 		add_to_file_list(pszFname, n2);
@@ -8703,15 +8728,16 @@ bool lp_load(const char *pszFname,
 			 */
 			config_backend = CONFIG_BACKEND_REGISTRY;
 			/* start over */
-			DEBUG(1, ("lp_load: changing to config backend "
+			DEBUG(1, ("lp_load_ex: changing to config backend "
 				  "registry\n"));
 			init_globals(false);
 			lp_kill_all_services();
-			return lp_load(pszFname, global_only, save_defaults,
-				       add_ipc, initialize_globals);
+			return lp_load_ex(pszFname, global_only, save_defaults,
+					  add_ipc, initialize_globals,
+					  allow_include_registry);
 		}
 	} else if (lp_config_backend_is_registry()) {
-		bRetval = process_registry_globals(do_parameter);
+		bRetval = process_registry_globals();
 	} else {
 		DEBUG(0, ("Illegal config  backend given: %d\n",
 			  lp_config_backend()));
@@ -8743,7 +8769,33 @@ bool lp_load(const char *pszFname,
 
 	init_iconv();
 
+	bAllowIncludeRegistry = true;
+
 	return (bRetval);
+}
+
+bool lp_load(const char *pszFname,
+	     bool global_only,
+	     bool save_defaults,
+	     bool add_ipc,
+	     bool initialize_globals)
+{
+	return lp_load_ex(pszFname,
+			  global_only,
+			  save_defaults,
+			  add_ipc,
+			  initialize_globals,
+			  false);
+}
+
+bool lp_load_initial_only(const char *pszFname)
+{
+	return lp_load_ex(pszFname,
+			  true,
+			  false,
+			  false,
+			  true,
+			  true);
 }
 
 /***************************************************************************

@@ -40,7 +40,7 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 		return NET_API_STATUS_SUCCESS;
 	}
 
-#ifdef DEVELOPER
+#if 0
 	talloc_enable_leak_report();
 #endif
 	frame = talloc_stackframe();
@@ -253,8 +253,9 @@ NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx,
 ****************************************************************/
 
 const char *libnetapi_get_error_string(struct libnetapi_ctx *ctx,
-				       NET_API_STATUS status)
+				       NET_API_STATUS status_in)
 {
+	NET_API_STATUS status;
 	struct libnetapi_ctx *tmp_ctx = ctx;
 
 	if (!tmp_ctx) {
@@ -268,7 +269,7 @@ const char *libnetapi_get_error_string(struct libnetapi_ctx *ctx,
 		return tmp_ctx->error_string;
 	}
 
-	return libnetapi_errstr(status);
+	return libnetapi_errstr(status_in);
 }
 
 /****************************************************************

@@ -29,176 +29,14 @@
 interface/version dce/rpc pipe identification
 ********************************************************************/
 
-#define TRANS_SYNT_V2                       \
-{                                           \
-	{                                   \
-		0x8a885d04, 0x1ceb, 0x11c9, \
-		{ 0x9f, 0xe8 },             \
-		{ 0x08, 0x00,               \
-       		  0x2b, 0x10, 0x48, 0x60 }  \
-	}, 0x02                             \
-}
-
-#define SYNT_NETLOGON_V2                    \
-{                                           \
-	{                                   \
-		0x8a885d04, 0x1ceb, 0x11c9, \
-		{ 0x9f, 0xe8 },             \
-		{ 0x08, 0x00,               \
-		  0x2b, 0x10, 0x48, 0x60 }  \
-	}, 0x02                             \
-}
-
-#define SYNT_WKSSVC_V1                      \
-{                                           \
-	{                                   \
-		0x6bffd098, 0xa112, 0x3610, \
-		{ 0x98, 0x33 },             \
-		{ 0x46, 0xc3,               \
-		  0xf8, 0x7e, 0x34, 0x5a }  \
-	}, 0x01                             \
-}
-
-#define SYNT_SRVSVC_V3                      \
-{                                           \
-	{                                   \
-		0x4b324fc8, 0x1670, 0x01d3, \
-		{ 0x12, 0x78 },             \
-		{ 0x5a, 0x47,               \
-		  0xbf, 0x6e, 0xe1, 0x88 }  \
-	}, 0x03                             \
-}
-
-#define SYNT_LSARPC_V0                      \
-{                                           \
-	{                                   \
-		0x12345778, 0x1234, 0xabcd, \
-		{ 0xef, 0x00 },             \
-		{ 0x01, 0x23,               \
-		  0x45, 0x67, 0x89, 0xab }  \
-	}, 0x00                             \
-}
-
-#define SYNT_LSARPC_V0_DS                \
-{                                           \
-	{                                   \
-		0x3919286a, 0xb10c, 0x11d0, \
-		{ 0x9b, 0xa8 },             \
-		{ 0x00, 0xc0,               \
-		  0x4f, 0xd9, 0x2e, 0xf5 }  \
-	}, 0x00                             \
-}
-
-#define SYNT_SAMR_V1                        \
-{                                           \
-	{                                   \
-		0x12345778, 0x1234, 0xabcd, \
-		{ 0xef, 0x00 },             \
-		{ 0x01, 0x23,               \
-		  0x45, 0x67, 0x89, 0xac }  \
-	}, 0x01                             \
-}
-
-#define SYNT_NETLOGON_V1                    \
-{                                           \
-	{                                   \
-		0x12345678, 0x1234, 0xabcd, \
-		{ 0xef, 0x00 },             \
-		{ 0x01, 0x23,               \
-		  0x45, 0x67, 0xcf, 0xfb }  \
-	}, 0x01                             \
-}
-
-#define SYNT_WINREG_V1                      \
-{                                           \
-	{                                   \
-		0x338cd001, 0x2244, 0x31f1, \
-		{ 0xaa, 0xaa },             \
-		{ 0x90, 0x00,               \
-		  0x38, 0x00, 0x10, 0x03 }  \
-	}, 0x01                             \
-}
-
-#define SYNT_SPOOLSS_V1                     \
-{                                           \
-	{                                   \
-		0x12345678, 0x1234, 0xabcd, \
-		{ 0xef, 0x00 },             \
-		{ 0x01, 0x23,               \
-		  0x45, 0x67, 0x89, 0xab }  \
-	}, 0x01                             \
-}
-
-#define SYNT_NONE_V0                        \
-{                                           \
-	{                                   \
-		0x0, 0x0, 0x0,              \
-		{ 0x00, 0x00 },             \
-		{ 0x00, 0x00,               \
-		  0x00, 0x00, 0x00, 0x00 }  \
-	}, 0x00                             \
-}
-
-#define SYNT_NETDFS_V3                      \
-{                                           \
-        {                                   \
-                0x4fc742e0, 0x4a10, 0x11cf, \
-                { 0x82, 0x73 },             \
-		{ 0x00, 0xaa,               \
-                  0x00, 0x4a, 0xe6, 0x73 }  \
-        }, 0x03                             \
-}
-
-#define SYNT_ECHO_V1                        \
-{                                           \
-        {                                   \
-                0x60a15ec5, 0x4de8, 0x11d7, \
-                { 0xa6, 0x37 },             \
-		{ 0x00, 0x50,               \
-                  0x56, 0xa2, 0x01, 0x82 }  \
-        }, 0x01                             \
-}
-
-#define SYNT_SHUTDOWN_V1                    \
-{                                           \
-        {                                   \
-                0x894de0c0, 0x0d55, 0x11d3, \
-                { 0xa3, 0x22 },             \
-		{ 0x00, 0xc0,               \
-                  0x4f, 0xa3, 0x21, 0xa1 }  \
-        }, 0x01                             \
-}
-
-#define SYNT_SVCCTL_V2                      \
-{                                           \
-	{                                   \
-		0x367abb81, 0x9844, 0x35f1, \
-                { 0xad, 0x32 },             \
-                { 0x98, 0xf0,               \
-                  0x38, 0x00, 0x10, 0x03 }  \
-	}, 0x02                             \
-}
-
-
-#define SYNT_EVENTLOG_V0		    \
-{					    \
-	{				    \
-		0x82273fdc, 0xe32a, 0x18c3, \
-		{ 0x3f, 0x78 },		    \
-		{ 0x82, 0x79,		    \
-		  0x29, 0xdc, 0x23, 0xea }  \
-	}, 0x00				    \
-}
-
-#define SYNT_NTSVCS_V1                      \
-{                                           \
-	{                                   \
-		0x8d9f4e40, 0xa03d, 0x11ce, \
-		{ 0x8f, 0x69},		    \
-                { 0x08, 0x00,               \
-                  0x3e, 0x30, 0x05, 0x1b }  \
-	}, 0x01                             \
-}
+const struct ndr_syntax_id syntax_spoolss = {
+	{
+		0x12345678, 0x1234, 0xabcd,
+		{ 0xef, 0x00 },
+		{ 0x01, 0x23,
+		  0x45, 0x67, 0x89, 0xab }
+	}, 0x01
+};
 
 /*
  * IMPORTANT!!  If you update this structure, make sure to
@@ -207,22 +45,21 @@ interface/version dce/rpc pipe identification
 
 const struct pipe_id_info pipe_names [] =
 {
-	/* client pipe , abstract syntax       , server pipe   , transfer syntax */
-	{ PIPE_LSARPC  , SYNT_LSARPC_V0        , PIPE_LSASS    , TRANS_SYNT_V2 },
-	{ PIPE_LSARPC  , SYNT_LSARPC_V0_DS     , PIPE_LSASS    , TRANS_SYNT_V2 },
-	{ PIPE_SAMR    , SYNT_SAMR_V1          , PIPE_LSASS    , TRANS_SYNT_V2 },
-	{ PIPE_NETLOGON, SYNT_NETLOGON_V1      , PIPE_LSASS    , TRANS_SYNT_V2 },
-	{ PIPE_SRVSVC  , SYNT_SRVSVC_V3        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
-	{ PIPE_WKSSVC  , SYNT_WKSSVC_V1        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
-	{ PIPE_WINREG  , SYNT_WINREG_V1        , PIPE_WINREG   , TRANS_SYNT_V2 },
-	{ PIPE_SPOOLSS , SYNT_SPOOLSS_V1       , PIPE_SPOOLSS  , TRANS_SYNT_V2 },
-	{ PIPE_NETDFS  , SYNT_NETDFS_V3        , PIPE_NETDFS   , TRANS_SYNT_V2 },
-	{ PIPE_ECHO    , SYNT_ECHO_V1          , PIPE_ECHO     , TRANS_SYNT_V2 },
-	{ PIPE_SHUTDOWN, SYNT_SHUTDOWN_V1      , PIPE_SHUTDOWN , TRANS_SYNT_V2 },
-	{ PIPE_SVCCTL  , SYNT_SVCCTL_V2        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
-	{ PIPE_EVENTLOG, SYNT_EVENTLOG_V0      , PIPE_EVENTLOG , TRANS_SYNT_V2 },
-	{ PIPE_NTSVCS  , SYNT_NTSVCS_V1        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
-	{ NULL         , SYNT_NONE_V0          , NULL          , SYNT_NONE_V0  }
+	{ PIPE_LSARPC  , &ndr_table_lsarpc.syntax_id, PIPE_LSASS    , &ndr_transfer_syntax },
+	{ PIPE_LSARPC  , &ndr_table_dssetup.syntax_id, PIPE_LSASS    , &ndr_transfer_syntax },
+	{ PIPE_SAMR    , &ndr_table_samr.syntax_id, PIPE_LSASS    , &ndr_transfer_syntax },
+	{ PIPE_NETLOGON, &ndr_table_netlogon.syntax_id, PIPE_LSASS    , &ndr_transfer_syntax },
+	{ PIPE_SRVSVC  , &ndr_table_srvsvc.syntax_id, PIPE_NTSVCS   , &ndr_transfer_syntax },
+	{ PIPE_WKSSVC  , &ndr_table_wkssvc.syntax_id, PIPE_NTSVCS   , &ndr_transfer_syntax },
+	{ PIPE_WINREG  , &ndr_table_winreg.syntax_id, PIPE_WINREG   , &ndr_transfer_syntax },
+	{ PIPE_SPOOLSS , &syntax_spoolss        , PIPE_SPOOLSS  , &ndr_transfer_syntax },
+	{ PIPE_NETDFS  , &ndr_table_netdfs.syntax_id, PIPE_NETDFS   , &ndr_transfer_syntax },
+	{ PIPE_ECHO    , &ndr_table_rpcecho.syntax_id, PIPE_ECHO     , &ndr_transfer_syntax },
+	{ PIPE_SHUTDOWN, &ndr_table_initshutdown.syntax_id, PIPE_SHUTDOWN , &ndr_transfer_syntax },
+	{ PIPE_SVCCTL  , &ndr_table_svcctl.syntax_id, PIPE_NTSVCS   , &ndr_transfer_syntax },
+	{ PIPE_EVENTLOG, &ndr_table_eventlog.syntax_id, PIPE_EVENTLOG , &ndr_transfer_syntax },
+	{ PIPE_NTSVCS  , &ndr_table_ntsvcs.syntax_id, PIPE_NTSVCS   , &ndr_transfer_syntax },
+	{ NULL         , NULL                  , NULL          , NULL }
 };
 
 /****************************************************************************
@@ -232,6 +69,21 @@ const struct pipe_id_info pipe_names [] =
 const char *cli_get_pipe_name(int pipe_idx)
 {
 	return &pipe_names[pipe_idx].client_pipe[5];
+}
+
+/****************************************************************************
+ Return the pipe idx from the syntax.
+ ****************************************************************************/
+int cli_get_pipe_idx(const RPC_IFACE *syntax)
+{
+	int i;
+	for (i = 0; pipe_names[i].client_pipe; i++) {
+		if (GUID_equal(&pipe_names[i].abstr_syntax->uuid, &syntax->uuid) &&
+		    pipe_names[i].abstr_syntax->if_version == syntax->if_version)
+			return i;
+	}
+
+	return -1;
 }
 
 /*******************************************************************
@@ -326,7 +178,7 @@ static bool smb_io_rpc_iface(const char *desc, RPC_IFACE *ifc, prs_struct *ps, i
 	if (!smb_io_uuid(  "uuid", &ifc->uuid, ps, depth))
 		return False;
 
-	if(!prs_uint32 ("version", ps, depth, &ifc->version))
+	if(!prs_uint32 ("version", ps, depth, &ifc->if_version))
 		return False;
 
 	return True;
@@ -400,7 +252,8 @@ static bool smb_io_rpc_hdr_bba(const char *desc,  RPC_HDR_BBA *rpc, prs_struct *
  Note the transfer pointer must remain valid until this is marshalled.
 ********************************************************************/
 
-void init_rpc_context(RPC_CONTEXT *rpc_ctx, uint16 context_id, RPC_IFACE *abstract, RPC_IFACE *transfer)
+void init_rpc_context(RPC_CONTEXT *rpc_ctx, uint16 context_id,
+		      const RPC_IFACE *abstract, const RPC_IFACE *transfer)
 {
 	rpc_ctx->context_id   = context_id   ; /* presentation context identifier (0x0) */
 	rpc_ctx->num_transfer_syntaxes = 1 ; /* the number of syntaxes (has always been 1?)(0x1) */
@@ -409,7 +262,7 @@ void init_rpc_context(RPC_CONTEXT *rpc_ctx, uint16 context_id, RPC_IFACE *abstra
 	rpc_ctx->abstract = *abstract;
 
 	/* vers. of interface to use for replies */
-	rpc_ctx->transfer = transfer;
+	rpc_ctx->transfer = CONST_DISCARD(RPC_IFACE *, transfer);
 }
 
 /*******************************************************************
