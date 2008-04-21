@@ -1,3 +1,7 @@
+2008-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* sel-lex.l: Include <config.h>
+
 2008-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Update make-proto usage.
