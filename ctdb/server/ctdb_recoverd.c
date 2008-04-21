@@ -1914,6 +1914,7 @@ static enum monitor_result verify_recmode(struct ctdb_context *ctdb, struct ctdb
 
 
 struct verify_recmaster_data {
+	struct ctdb_recoverd *rec;
 	uint32_t count;
 	uint32_t pnn;
 	enum monitor_result status;
@@ -1942,6 +1943,7 @@ static void verify_recmaster_callback(struct ctdb_client_control_state *state)
 	*/
 	if (state->status != rmdata->pnn) {
 		DEBUG(DEBUG_ERR,("Node %d does not agree we are the recmaster. Need a new recmaster election\n", state->c->hdr.destnode));
+		ctdb_set_culprit(rmdata->rec, state->c->hdr.destnode);
 		rmdata->status = MONITOR_ELECTION_NEEDED;
 	}
 
@@ -1950,8 +1952,9 @@ static void verify_recmaster_callback(struct ctdb_client_control_state *state)
 
 
 /* verify that all nodes agree that we are the recmaster */
-static enum monitor_result verify_recmaster(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t pnn)
+static enum monitor_result verify_recmaster(struct ctdb_recoverd *rec, struct ctdb_node_map *nodemap, uint32_t pnn)
 {
+	struct ctdb_context *ctdb = rec->ctdb;
 	struct verify_recmaster_data *rmdata;
 	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 	struct ctdb_client_control_state *state;
@@ -1960,6 +1963,7 @@ static enum monitor_result verify_recmaster(struct ctdb_context *ctdb, struct ct
 	
 	rmdata = talloc(mem_ctx, struct verify_recmaster_data);
 	CTDB_NO_MEMORY_FATAL(ctdb, rmdata);
+	rmdata->rec    = rec;
 	rmdata->count  = 0;
 	rmdata->pnn    = pnn;
 	rmdata->status = MONITOR_OK;
@@ -2453,7 +2457,7 @@ again:
 
 
 	/* verify that all active nodes agree that we are the recmaster */
-	switch (verify_recmaster(ctdb, nodemap, pnn)) {
+	switch (verify_recmaster(rec, nodemap, pnn)) {
 	case MONITOR_RECOVERY_NEEDED:
 		/* can not happen */
 		goto again;
