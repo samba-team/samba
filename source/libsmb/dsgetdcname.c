@@ -196,7 +196,7 @@ static NTSTATUS dsgetdcname_cache_refresh(TALLOC_CTX *mem_ctx,
 					  const char *site_name,
 					  struct netr_DsRGetDCNameInfo *info)
 {
-	struct cldap_netlogon_reply r;
+	struct nbt_cldap_netlogon_5 r;
 
 	/* check if matching entry is older then 15 minutes, if yes, send
 	 * CLDAP/MAILSLOT ping again and store the cached data */
@@ -606,12 +606,11 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 {
 	int i = 0;
 	bool valid_dc = false;
-	struct cldap_netlogon_reply r;
+	struct nbt_cldap_netlogon_5 r;
 	const char *dc_hostname, *dc_domain_name;
 	const char *dc_address;
 	uint32_t dc_address_type;
 	uint32_t dc_flags;
-	struct GUID dc_guid;
 
 	for (i=0; i<num_dcs; i++) {
 
@@ -621,7 +620,7 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 
 		if ((ads_cldap_netlogon(dclist[i].hostname,
 					domain_name, &r)) &&
-		    (check_cldap_reply_required_flags(r.flags, flags))) {
+		    (check_cldap_reply_required_flags(r.server_type, flags))) {
 			valid_dc = true;
 		    	break;
 		}
@@ -633,25 +632,25 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
 
-	dc_flags = r.flags;
+	dc_flags = r.server_type;
 
 	if (flags & DS_RETURN_FLAT_NAME) {
-		if (!strlen(r.netbios_hostname) || !strlen(r.netbios_domain)) {
+		if (!strlen(r.pdc_name) || !strlen(r.domain)) {
 			return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 		}
-		dc_hostname = r.netbios_hostname;
-		dc_domain_name = r.netbios_domain;
-	} else if (flags & DS_RETURN_DNS_NAME) {
-		if (!strlen(r.hostname) || !strlen(r.domain)) {
-			return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-		}
-		dc_hostname = r.hostname;
+		dc_hostname = r.pdc_name;
 		dc_domain_name = r.domain;
+	} else if (flags & DS_RETURN_DNS_NAME) {
+		if (!strlen(r.pdc_dns_name) || !strlen(r.dns_domain)) {
+			return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		}
+		dc_hostname = r.pdc_dns_name;
+		dc_domain_name = r.dns_domain;
 		dc_flags |= DS_DNS_DOMAIN | DS_DNS_CONTROLLER;
 	} else {
 		/* FIXME */
-		dc_hostname = r.hostname;
-		dc_domain_name = r.domain;
+		dc_hostname = r.pdc_dns_name;
+		dc_domain_name = r.dns_domain;
 		dc_flags |= DS_DNS_DOMAIN | DS_DNS_CONTROLLER;
 	}
 
@@ -663,11 +662,10 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 		dc_address_type = DS_ADDRESS_TYPE_INET;
 	} else {
 		dc_address = talloc_asprintf(mem_ctx, "\\\\%s",
-					     r.netbios_hostname);
+					     r.pdc_name);
 		dc_address_type = DS_ADDRESS_TYPE_NETBIOS;
 	}
 	NT_STATUS_HAVE_NO_MEMORY(dc_address);
-	smb_uuid_unpack(r.guid, &dc_guid);
 
 	if (r.forest) {
 		dc_flags |= DS_DNS_FOREST;
@@ -677,12 +675,12 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 					   dc_hostname,
 					   dc_address,
 					   dc_address_type,
-					   &dc_guid,
+					   &r.domain_uuid,
 					   dc_domain_name,
 					   r.forest,
 					   dc_flags,
-					   r.server_site_name,
-					   r.client_site_name,
+					   r.server_site,
+					   r.client_site,
 					   info);
 
 }
