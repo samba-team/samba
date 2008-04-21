@@ -5,6 +5,7 @@
 #include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/samr.h"
 #include "librpc/gen_ndr/security.h"
+#include "librpc/gen_ndr/nbt.h"
 #ifndef _HEADER_netlogon
 #define _HEADER_netlogon
 
@@ -707,15 +708,15 @@ enum netr_DsRGetDCNameInfo_AddressType
 ;
 
 /* bitmap netr_DsR_DcFlags */
-#define DS_SERVER_PDC ( 0x00000001 )
-#define DS_SERVER_GC ( 0x00000004 )
-#define DS_SERVER_LDAP ( 0x00000008 )
-#define DS_SERVER_DS ( 0x00000010 )
-#define DS_SERVER_KDC ( 0x00000020 )
-#define DS_SERVER_TIMESERV ( 0x00000040 )
-#define DS_SERVER_CLOSEST ( 0x00000080 )
-#define DS_SERVER_WRITABLE ( 0x00000100 )
-#define DS_SERVER_GOOD_TIMESERV ( 0x00000200 )
+#define DS_SERVER_PDC ( NBT_SERVER_PDC )
+#define DS_SERVER_GC ( NBT_SERVER_GC )
+#define DS_SERVER_LDAP ( NBT_SERVER_LDAP )
+#define DS_SERVER_DS ( NBT_SERVER_DS )
+#define DS_SERVER_KDC ( NBT_SERVER_KDC )
+#define DS_SERVER_TIMESERV ( NBT_SERVER_TIMESERV )
+#define DS_SERVER_CLOSEST ( NBT_SERVER_CLOSEST )
+#define DS_SERVER_WRITABLE ( NBT_SERVER_WRITABLE )
+#define DS_SERVER_GOOD_TIMESERV ( NBT_SERVER_GOOD_TIMESERV )
 #define DS_SERVER_NDNC ( 0x00000400 )
 #define DS_SERVER_SELECT_SECRET_DOMAIN_6 ( 0x00000800 )
 #define DS_SERVER_FULL_SECRET_DOMAIN_6 ( 0x00001000 )
