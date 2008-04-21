@@ -630,26 +630,22 @@ void sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const DATA_BLOB *sessi
 }
 
 /* Decrypts password-blob with session-key
- * @param pass		password for session-key
+ * @param nt_hash	NT hash for the session key
  * @param data_in 	DATA_BLOB encrypted password
  *
  * Returns cleartext password in CH_UNIX 
  * Caller must free the returned string
  */
 
-char *decrypt_trustdom_secret(const char *pass, DATA_BLOB *data_in)
+char *decrypt_trustdom_secret(uint8_t nt_hash[16], DATA_BLOB *data_in)
 {
 	DATA_BLOB data_out, sess_key;
-	uchar nt_hash[16];
 	uint32_t length;
 	uint32_t version;
 	fstring cleartextpwd;
 
-	if (!data_in || !pass)
+	if (!data_in || !nt_hash)
 		return NULL;
-
-	/* generate md4 password-hash derived from the NT UNICODE password */
-	E_md4hash(pass, nt_hash);
 
 	/* hashed twice with md4 */
 	mdfour(nt_hash, nt_hash, 16);

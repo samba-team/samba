@@ -5929,6 +5929,7 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 	NTSTATUS nt_status;
 	union lsa_TrustedDomainInfo *info = NULL;
 	char *cleartextpwd = NULL;
+	uint8_t nt_hash[16];
 	DATA_BLOB data;
 
 	nt_status = rpccli_lsa_QueryTrustedDomainInfoBySid(pipe_hnd, mem_ctx,
@@ -5945,8 +5946,12 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 	data = data_blob(info->password.password->data,
 			 info->password.password->length);
 
-	cleartextpwd = decrypt_trustdom_secret(
-		rpc_pipe_np_smb_conn(pipe_hnd)->pwd.password, &data);
+	if (!rpccli_get_pwd_hash(pipe_hnd, nt_hash)) {
+		DEBUG(0, ("Could not retrieve password hash\n"));
+		goto done;
+	}
+
+	cleartextpwd = decrypt_trustdom_secret(nt_hash, &data);
 
 	if (cleartextpwd == NULL) {
 		DEBUG(0,("retrieved NULL password\n"));

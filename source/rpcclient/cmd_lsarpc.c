@@ -948,7 +948,8 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 	return result;
 }
 
-static void display_trust_dom_info_4(struct lsa_TrustDomainInfoPassword *p, const char *password)
+static void display_trust_dom_info_4(struct lsa_TrustDomainInfoPassword *p,
+				     uint8_t nt_hash[16])
 {
 	char *pwd, *pwd_old;
 	
@@ -958,8 +959,8 @@ static void display_trust_dom_info_4(struct lsa_TrustDomainInfoPassword *p, cons
 	memcpy(data.data, p->password->data, p->password->length);
 	memcpy(data_old.data, p->old_password->data, p->old_password->length);
 	
-	pwd 	= decrypt_trustdom_secret(password, &data);
-	pwd_old = decrypt_trustdom_secret(password, &data_old);
+	pwd 	= decrypt_trustdom_secret(nt_hash, &data);
+	pwd_old = decrypt_trustdom_secret(nt_hash, &data_old);
 	
 	d_printf("Password:\t%s\n", pwd);
 	d_printf("Old Password:\t%s\n", pwd_old);
@@ -974,11 +975,11 @@ static void display_trust_dom_info_4(struct lsa_TrustDomainInfoPassword *p, cons
 static void display_trust_dom_info(TALLOC_CTX *mem_ctx,
 				   union lsa_TrustedDomainInfo *info,
 				   enum lsa_TrustDomInfoEnum info_class,
-				   const char *pass)
+				   uint8_t nt_hash[16])
 {
 	switch (info_class) {
 		case LSA_TRUSTED_DOMAIN_INFO_PASSWORD:
-			display_trust_dom_info_4(&info->password, pass);
+			display_trust_dom_info_4(&info->password, nt_hash);
 			break;
 		default: {
 			const char *str = NULL;
@@ -1003,6 +1004,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 	uint32 access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	union lsa_TrustedDomainInfo *info = NULL;
 	enum lsa_TrustDomInfoEnum info_class = 1;
+	uint8_t nt_hash[16];
 
 	if (argc > 3 || argc < 2) {
 		printf("Usage: %s [sid] [info_class]\n", argv[0]);
@@ -1028,7 +1030,12 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	display_trust_dom_info(mem_ctx, info, info_class, cli->pwd.password);
+	if (!rpccli_get_pwd_hash(cli, nt_hash)) {
+		d_fprintf(stderr, "Could not get pwd hash\n");
+		goto done;
+	}
+
+	display_trust_dom_info(mem_ctx, info, info_class, nt_hash);
 
  done:
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
@@ -1046,6 +1053,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 	union lsa_TrustedDomainInfo *info = NULL;
 	enum lsa_TrustDomInfoEnum info_class = 1;
 	struct lsa_String trusted_domain;
+	uint8_t nt_hash[16];
 
 	if (argc > 3 || argc < 2) {
 		printf("Usage: %s [name] [info_class]\n", argv[0]);
@@ -1070,7 +1078,12 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	display_trust_dom_info(mem_ctx, info, info_class, cli->pwd.password);
+	if (!rpccli_get_pwd_hash(cli, nt_hash)) {
+		d_fprintf(stderr, "Could not get pwd hash\n");
+		goto done;
+	}
+
+	display_trust_dom_info(mem_ctx, info, info_class, nt_hash);
 
  done:
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
@@ -1088,6 +1101,7 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 	union lsa_TrustedDomainInfo *info = NULL;
 	DOM_SID dom_sid;
 	enum lsa_TrustDomInfoEnum info_class = 1;
+	uint8_t nt_hash[16];
 
 	if (argc > 3 || argc < 2) {
 		printf("Usage: %s [sid] [info_class]\n", argv[0]);
@@ -1123,7 +1137,12 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	display_trust_dom_info(mem_ctx, info, info_class, cli->pwd.password);
+	if (!rpccli_get_pwd_hash(cli, nt_hash)) {
+		d_fprintf(stderr, "Could not get pwd hash\n");
+		goto done;
+	}
+
+	display_trust_dom_info(mem_ctx, info, info_class, nt_hash);
 
  done:
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
