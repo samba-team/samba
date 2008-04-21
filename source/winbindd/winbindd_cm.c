@@ -1093,10 +1093,12 @@ static bool dcip_to_name(const struct winbindd_domain *domain,
 
 	if (send_getdc_request(winbind_messaging_context(),
 			       pss, domain->name, &domain->sid)) {
+		const char *dc_name = NULL;
 		int i;
 		smb_msleep(100);
 		for (i=0; i<5; i++) {
-			if (receive_getdc_response(pss, domain->name, name)) {
+			if (receive_getdc_response(pss, domain->name, &dc_name)) {
+				fstrcpy(name, dc_name);
 				namecache_store(name, 0x20, 1, &ip_list);
 				return True;
 			}
