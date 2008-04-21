@@ -555,7 +555,7 @@ struct nbt_cldap_netlogon_5 {
 	uint32_t nt_version;/* [value(5)] */
 	uint16_t lmnt_token;
 	uint16_t lm20_token;
-};
+}/* [public] */;
 
 struct nbt_cldap_netlogon_13 {
 	uint32_t type;
@@ -590,13 +590,15 @@ enum nbt_ntlogon_command
  {
 	NTLOGON_SAM_LOGON=0x12,
 	NTLOGON_SAM_LOGON_REPLY=0x13,
-	NTLOGON_SAM_LOGON_REPLY15=0x15
+	NTLOGON_SAM_LOGON_REPLY15=0x15,
+	NTLOGON_RESPONSE_FROM_PDC2=0x17
 }
 #else
  { __donnot_use_enum_nbt_ntlogon_command=0x7FFFFFFF}
 #define NTLOGON_SAM_LOGON ( 0x12 )
 #define NTLOGON_SAM_LOGON_REPLY ( 0x13 )
 #define NTLOGON_SAM_LOGON_REPLY15 ( 0x15 )
+#define NTLOGON_RESPONSE_FROM_PDC2 ( 0x17 )
 #endif
 ;
 
@@ -625,7 +627,7 @@ struct nbt_ntlogon_sam_logon_reply {
 union nbt_ntlogon_request {
 	struct nbt_ntlogon_sam_logon logon;/* [case(NTLOGON_SAM_LOGON)] */
 	struct nbt_ntlogon_sam_logon_reply reply;/* [case(NTLOGON_SAM_LOGON_REPLY)] */
-	struct nbt_netlogon_response_from_pdc2 reply2;/* [case(NETLOGON_RESPONSE_FROM_PDC2)] */
+	struct nbt_netlogon_response_from_pdc2 reply2;/* [case(NTLOGON_RESPONSE_FROM_PDC2)] */
 }/* [nodiscriminant] */;
 
 struct nbt_ntlogon_packet {
