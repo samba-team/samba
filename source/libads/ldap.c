@@ -151,14 +151,14 @@ bool ads_sitename_match(ADS_STRUCT *ads)
 
 bool ads_closest_dc(ADS_STRUCT *ads)
 {
-	if (ads->config.flags & ADS_CLOSEST) {
-		DEBUG(10,("ads_closest_dc: ADS_CLOSEST flag set\n"));
+	if (ads->config.flags & NBT_SERVER_CLOSEST) {
+		DEBUG(10,("ads_closest_dc: NBT_SERVER_CLOSEST flag set\n"));
 		return True;
 	}
 
 	/* not sure if this can ever happen */
 	if (ads_sitename_match(ads)) {
-		DEBUG(10,("ads_closest_dc: ADS_CLOSEST flag not set but sites match\n"));
+		DEBUG(10,("ads_closest_dc: NBT_SERVER_CLOSEST flag not set but sites match\n"));
 		return True;
 	}
 
@@ -207,7 +207,7 @@ bool ads_try_connect(ADS_STRUCT *ads, const char *server )
 
 	/* Check the CLDAP reply flags */
 
-	if ( !(cldap_reply.server_type & ADS_LDAP) ) {
+	if ( !(cldap_reply.server_type & NBT_SERVER_LDAP) ) {
 		DEBUG(1,("ads_try_connect: %s's CLDAP reply says it is not an LDAP server!\n",
 			srv));
 		ret = false;

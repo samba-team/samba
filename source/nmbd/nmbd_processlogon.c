@@ -424,8 +424,8 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					}
 					q += 4;
 
-					SIVAL(q, 0, ADS_PDC|ADS_GC|ADS_LDAP|ADS_DS|
-						ADS_KDC|ADS_TIMESERV|ADS_CLOSEST|ADS_WRITABLE);
+					SIVAL(q, 0, NBT_SERVER_PDC|NBT_SERVER_GC|NBT_SERVER_LDAP|NBT_SERVER_DS|
+						NBT_SERVER_KDC|NBT_SERVER_TIMESERV|NBT_SERVER_CLOSEST|NBT_SERVER_WRITABLE);
 					q += 4;
 
 					/* Push Domain GUID */

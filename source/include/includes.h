@@ -673,7 +673,6 @@ typedef char fstring[FSTRING_LEN];
 #include "messages.h"
 #include "locking.h"
 #include "smb.h"
-#include "ads_cldap.h"
 #include "nameserv.h"
 #include "secrets.h"
 #include "byteorder.h"
