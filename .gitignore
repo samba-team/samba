@@ -1,6 +1,7 @@
 *.o
 *.po
 *~
+semantic.cache
 source/TAGS
 source/client/client_proto.h
 source/libnet/libnet_proto.h
