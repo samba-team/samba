@@ -14,14 +14,16 @@
 @syncodeindex pg cp
 @c %**end of header
 
+@include vars.texi
+
 @set UPDATED $Date$
-@set VERSION 1.0
+@set VERSION @value{PACKAGE_VERSION}
 @set EDITION 1.0
 
 @ifinfo
 @dircategory Security
 @direntry
-* hx509: (hx509).           The X.509 distribution from KTH
+* hx509: (hx509).               The X.509 distribution from KTH
 @end direntry
 @end ifinfo
 
