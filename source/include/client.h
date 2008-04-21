@@ -77,7 +77,7 @@ struct rpc_pipe_client {
 	uint16 max_xmit_frag;
 	uint16 max_recv_frag;
 
-	struct cli_pipe_auth_data auth;
+	struct cli_pipe_auth_data *auth;
 
 	/* The following is only non-null on a netlogon pipe. */
 	struct dcinfo *dc;
