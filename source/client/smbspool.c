@@ -22,12 +22,24 @@
 
 #include "includes.h"
 
-#define TICKET_CC_DIR            "/tmp"
-#define CC_PREFIX                "krb5cc_" /* prefix of the ticket cache */
-#define CC_MAX_FILE_LEN          24   
-#define CC_MAX_FILE_PATH_LEN     (sizeof(TICKET_CC_DIR)-1)+ CC_MAX_FILE_LEN+2   
-#define OVERWRITE                1   
-#define KRB5CCNAME               "KRB5CCNAME"
+/*
+   Starting with CUPS 1.3, Kerberos support is provided by cupsd including
+   the forwarding of user credentials via the authenticated session between
+   user and server and the KRB5CCNAME environment variable which will point
+   to a temporary file or an in-memory representation depending on the version
+   of Kerberos you use.  As a result, all of the ticket code that used to
+   live here has been removed, and we depend on the user session (if you
+   run smbspool by hand) or cupsd to provide the necessary Kerberos info.
+
+   Also, the AUTH_USERNAME and AUTH_PASSWORD environment variables provide
+   for per-job authentication for non-Kerberized printing.  We use those
+   if there is no username and password specified in the device URI.
+
+   Finally, if we have an authentication failure we return exit code 2
+   which tells CUPS to hold the job for authentication and bug the user
+   to get the necessary credentials.
+*/
+
 #define MAX_RETRY_CONNECT        3
 
 
@@ -42,8 +54,8 @@
  */
 
 static void		list_devices(void);
-static struct cli_state *smb_complete_connection(const char *, const char *,int , const char *, const char *, const char *, const char *, int);
-static struct cli_state	*smb_connect(const char *, const char *, int, const char *, const char *, const char *, const char *);
+static struct cli_state *smb_complete_connection(const char *, const char *,int , const char *, const char *, const char *, const char *, int, int *need_auth);
+static struct cli_state	*smb_connect(const char *, const char *, int, const char *, const char *, const char *, const char *, int *need_auth);
 static int		smb_print(struct cli_state *, char *, FILE *);
 static char *		uri_unescape_alloc(const char *);
 #if 0
@@ -177,9 +189,13 @@ static bool smb_encrypt;
   }
   else
   {
-    username = null_str;
-    password = null_str;
-    server   = uri + 6;
+    if ((username = getenv("AUTH_USERNAME")) == NULL)
+      username = null_str;
+
+    if ((password = getenv("AUTH_PASSWORD")) == NULL)
+      password = null_str;
+
+    server = uri + 6;
   }
 
   tmp = server;
@@ -244,12 +260,17 @@ static bool smb_encrypt;
 
   do
   {
-    if ((cli = smb_connect(workgroup, server, port, printer, username, password, argv[2])) == NULL)
+    if ((cli = smb_connect(workgroup, server, port, printer, username, password, argv[2], &need_auth)) == NULL)
     {
-      if (getenv("CLASS") == NULL)
+      if (need_auth)
+      {
+        fputs("ATTR: auth-info-required=username,password\n", stderr);
+	exit(2);
+      }
+      else if (getenv("CLASS") == NULL)
       {
         fprintf(stderr, "ERROR: Unable to connect to CIFS host, will retry in 60 seconds...\n");
-        sleep (60); /* should just waiting and retrying fix authentication  ??? */
+        sleep(60);
         tries++;
       }
       else
@@ -312,68 +333,6 @@ list_devices(void)
 }
 
 
-/*
- * get the name of the newest ticket cache for the uid user.
- * pam_krb5 defines a non default ticket cache for each user
- */
-static
-char * get_ticket_cache( uid_t uid )
-{
-  char *ticket_file = NULL;
-  SMB_STRUCT_DIR *tcdir;                  /* directory where ticket caches are stored */
-  SMB_STRUCT_DIRENT *dirent;   /* directory entry */
-  char *filename = NULL;       /* holds file names on the tmp directory */
-  SMB_STRUCT_STAT buf;        
-  char user_cache_prefix[CC_MAX_FILE_LEN];
-  char file_path[CC_MAX_FILE_PATH_LEN];
-  time_t t = 0;
-
-  snprintf(user_cache_prefix, CC_MAX_FILE_LEN, "%s%d", CC_PREFIX, uid );
-  tcdir = sys_opendir( TICKET_CC_DIR );
-  if ( tcdir == NULL ) 
-    return NULL; 
-  
-  while ( (dirent = sys_readdir( tcdir ) ) ) 
-  { 
-    filename = dirent->d_name;
-    snprintf(file_path, CC_MAX_FILE_PATH_LEN,"%s/%s", TICKET_CC_DIR, filename); 
-    if (sys_stat(file_path, &buf) == 0 ) 
-    {
-      if ( ( buf.st_uid == uid ) && ( S_ISREG(buf.st_mode) ) ) 
-      {
-        /*
-         * check the user id of the file to prevent denial of
-         * service attacks by creating fake ticket caches for the 
-         * user
-         */
-        if ( strstr( filename, user_cache_prefix ) ) 
-        {
-          if ( buf.st_mtime > t ) 
-          { 
-            /*
-             * a newer ticket cache found 
-             */
-            free(ticket_file);
-            ticket_file=SMB_STRDUP(file_path);
-            t = buf.st_mtime;
-          }
-        }
-      }
-    }
-  }
-
-  sys_closedir(tcdir);
-
-  if ( ticket_file == NULL )
-  {
-    /* no ticket cache found */
-    fprintf(stderr, "ERROR: No ticket cache found for userid=%d\n", uid);
-    return NULL;
-  }
-
-  return ticket_file;
-}
-
 static struct cli_state 
 *smb_complete_connection(const char *myname,
             const char *server,
@@ -382,81 +341,54 @@ static struct cli_state
             const char *password, 
             const char *workgroup, 
             const char *share,
-            int flags)
+            int flags,
+	    int *need_auth)
 {
   struct cli_state  *cli;    /* New connection */    
   NTSTATUS nt_status;
-  
+  int i;
+  static const NTSTATUS auth_errors[] =
+  { /* List of NTSTATUS errors that are considered authentication errors */
+    NT_STATUS_ACCESS_DENIED, NT_STATUS_ACCESS_VIOLATION,
+    NT_STATUS_SHARING_VIOLATION, NT_STATUS_PRIVILEGE_NOT_HELD,
+    NT_STATUS_INVALID_ACCOUNT_NAME, NT_STATUS_NO_SUCH_USER,
+    NT_STATUS_WRONG_PASSWORD, NT_STATUS_LOGON_FAILURE,
+    NT_STATUS_ACCOUNT_RESTRICTION, NT_STATUS_INVALID_LOGON_HOURS,
+    NT_STATUS_PASSWORD_EXPIRED, NT_STATUS_ACCOUNT_DISABLED
+  };
+
   /* Start the SMB connection */
+  *need_auth = 0;
   nt_status = cli_start_connection( &cli, myname, server, NULL, port, 
                                     Undefined, flags, NULL);
   if (!NT_STATUS_IS_OK(nt_status)) 
   {
+    fprintf(stderr,"ERROR: Connection failed: %s\n", nt_errstr(nt_status));
     return NULL;      
   }
     
   /* We pretty much guarentee password must be valid or a pointer
      to a 0 char. */
   if (!password) {
+    *need_auth = 1;
     return NULL;
   }
   
-  if ( (username) && (*username) && 
-      (strlen(password) == 0 ) && 
-       (cli->use_kerberos) ) 
+  nt_status = cli_session_setup(cli, username,
+				password, strlen(password)+1,
+				password, strlen(password)+1,
+				workgroup);
+  if (!NT_STATUS_IS_OK(nt_status))
   {
-    /* Use kerberos authentication */
-    struct passwd *pw;
-    char *cache_file;
-    
-    
-    if ( !(pw = sys_getpwnam(username)) ) {
-      fprintf(stderr,"ERROR Can not get %s uid\n", username);
-      cli_shutdown(cli);
-      return NULL;
-    }
+    fprintf(stderr,"ERROR: Session setup failed: %s\n", nt_errstr(nt_status));
 
-    /*
-     * Get the ticket cache of the user to set KRB5CCNAME env
-     * variable
-     */
-    cache_file = get_ticket_cache( pw->pw_uid );
-    if ( cache_file == NULL ) 
-    {
-      fprintf(stderr, "ERROR: Can not get the ticket cache for %s\n", username);
-      cli_shutdown(cli);
-      return NULL;
-    }
+    for (i = 0; i < (int)(sizeof(auth_errors) / sizeof(auth_errors[0])); i ++)
+      if (NT_STATUS_V(nt_status) == NT_STATUS_V(auth_errors[i]))
+      {
+	*need_auth = 1;
+	break;
+      }
 
-    if ( setenv(KRB5CCNAME, cache_file, OVERWRITE) < 0 ) 
-    {
-      fprintf(stderr, "ERROR: Can not add KRB5CCNAME to the environment");
-      cli_shutdown(cli);
-      free(cache_file);
-      return NULL;
-    }
-    free(cache_file);
-
-    /*
-     * Change the UID of the process to be able to read the kerberos
-     * ticket cache
-     */
-    setuid(pw->pw_uid);
-
-  }
-   
-   
-  if (!NT_STATUS_IS_OK(cli_session_setup(cli, username,
-					 password, strlen(password)+1, 
-					 password, strlen(password)+1,
-					 workgroup)))
-  {
-    fprintf(stderr,"ERROR: Session setup failed: %s\n", cli_errstr(cli));
-    if (NT_STATUS_V(cli_nt_error(cli)) == 
-        NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED))
-    {
-      fprintf(stderr, "did you forget to run kinit?\n");
-    }
     cli_shutdown(cli);
 
     return NULL;
@@ -465,7 +397,17 @@ static struct cli_state
   if (!cli_send_tconX(cli, share, "?????", password, strlen(password)+1)) 
   {
     fprintf(stderr, "ERROR: Tree connect failed (%s)\n", cli_errstr(cli));
+    nt_status = cli_nt_error(cli);
+
+    for (i = 0; i < (int)(sizeof(auth_errors) / sizeof(auth_errors[0])); i ++)
+      if (NT_STATUS_V(nt_status) == NT_STATUS_V(auth_errors[i]))
+      {
+	*need_auth = 1;
+	break;
+      }
+
     cli_shutdown(cli);
+
     return NULL;
   }
     
@@ -493,14 +435,15 @@ static struct cli_state
  * 'smb_connect()' - Return a connection to a server.
  */
 
-static struct cli_state *    /* O - SMB connection */
-smb_connect(const char *workgroup,    /* I - Workgroup */
-            const char *server,    /* I - Server */
-            const int port,    /* I - Port */
-            const char *share,    /* I - Printer */
-            const char *username,    /* I - Username */
-            const char *password,    /* I - Password */
-      const char *jobusername)   /* I - User who issued the print job */
+static struct cli_state *		/* O - SMB connection */
+smb_connect(const char *workgroup,	/* I - Workgroup */
+            const char *server,		/* I - Server */
+            const int port,		/* I - Port */
+            const char *share,		/* I - Printer */
+            const char *username,	/* I - Username */
+            const char *password,	/* I - Password */
+            const char *jobusername,	/* I - User who issued the print job */
+            int *need_auth)		/* O - Need authentication? */
 {
   struct cli_state  *cli;    /* New connection */
   char *myname = NULL;    /* Client name */
@@ -518,10 +461,10 @@ smb_connect(const char *workgroup,    /* I - Workgroup */
   /* See if we have a username first.  This is for backwards compatible 
      behavior with 3.0.14a */
 
-  if ( username &&  *username )
+  if (username &&  *username && !getenv("KRB5CCNAME"))
   {
       cli = smb_complete_connection(myname, server, port, username, 
-                                    password, workgroup, share, 0 );
+                                    password, workgroup, share, 0, need_auth);
       if (cli) 
         return cli;
   }
@@ -531,7 +474,7 @@ smb_connect(const char *workgroup,    /* I - Workgroup */
    */
   cli = smb_complete_connection(myname, server, port, jobusername, "", 
                                 workgroup, share, 
-                                CLI_FULL_CONNECTION_USE_KERBEROS );
+                                CLI_FULL_CONNECTION_USE_KERBEROS, need_auth);
 
   if (cli ) { return cli; }
 
@@ -543,7 +486,7 @@ smb_connect(const char *workgroup,    /* I - Workgroup */
   }
 
   cli = smb_complete_connection(myname, server, port, pwd->pw_name, "", 
-                                workgroup, share, 0);
+                                workgroup, share, 0, need_auth);
 
   if (cli) { return cli; }
 
@@ -552,7 +495,7 @@ smb_connect(const char *workgroup,    /* I - Workgroup */
    */
 
   cli = smb_complete_connection(myname, server, port, "", "", 
-                                workgroup, share, 0);
+                                workgroup, share, 0, need_auth);
   /*
    * Return the new connection...
    */
