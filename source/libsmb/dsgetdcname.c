@@ -391,15 +391,60 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 				    const char *domain_name,
 				    uint32_t flags,
 				    struct ip_service_name **returned_dclist,
-				    int *return_count)
+				    int *returned_count)
 {
+	NTSTATUS status;
+	enum nbt_name_type name_type = NBT_NAME_LOGON;
+	struct ip_service *iplist;
+	int i;
+	struct ip_service_name *dclist = NULL;
+	int count;
+
+	*returned_dclist = NULL;
+	*returned_count = 0;
+
 	if (lp_disable_netbios()) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	/* FIXME: code here */
+	if (flags & DS_PDC_REQUIRED) {
+		name_type = NBT_NAME_PDC;
+	}
 
-	return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	status = internal_resolve_name(domain_name, name_type, NULL,
+				       &iplist, &count,
+				       "lmhosts wins bcast");
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("discover_dc_netbios: failed to find DC\n"));
+		return status;
+	}
+
+	dclist = TALLOC_ZERO_ARRAY(mem_ctx, struct ip_service_name, count);
+	if (!dclist) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<count; i++) {
+
+		char addr[INET6_ADDRSTRLEN];
+		struct ip_service_name *r = &dclist[i];
+
+		print_sockaddr(addr, sizeof(addr),
+			       &iplist[i].ss);
+
+		r->ss	= iplist[i].ss;
+		r->port = iplist[i].port;
+		r->hostname = talloc_strdup(mem_ctx, addr);
+		if (!r->hostname) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+	}
+
+	*returned_dclist = dclist;
+	*returned_count = count;
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************
@@ -688,16 +733,130 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static struct event_context *ev_context(void)
+{
+	static struct event_context *ctx;
+
+	if (!ctx && !(ctx = event_context_init(NULL))) {
+		smb_panic("Could not init event context");
+	}
+	return ctx;
+}
+
+/****************************************************************
+****************************************************************/
+
+static struct messaging_context *msg_context(TALLOC_CTX *mem_ctx)
+{
+	static struct messaging_context *ctx;
+
+	if (!ctx && !(ctx = messaging_init(mem_ctx, server_id_self(),
+					   ev_context()))) {
+		smb_panic("Could not init messaging context");
+	}
+	return ctx;
+}
+
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 				   const char *domain_name,
 				   uint32_t flags,
-				   struct ip_service_name **dclist,
+				   struct ip_service_name *dclist,
 				   int num_dcs,
 				   struct netr_DsRGetDCNameInfo **info)
 {
-	/* FIXME: code here */
+	struct sockaddr_storage ss;
+	struct ip_service ip_list;
+	enum nbt_name_type name_type = NBT_NAME_LOGON;
 
-	return NT_STATUS_NOT_SUPPORTED;
+	int i;
+	const char *dc_hostname, *dc_domain_name;
+	const char *dc_address;
+	uint32_t dc_address_type;
+	uint32_t dc_flags = 0;
+	const char *dc_name = NULL;
+	fstring tmp_dc_name;
+	struct messaging_context *msg_ctx = msg_context(mem_ctx);
+
+	if (flags & DS_PDC_REQUIRED) {
+		name_type = NBT_NAME_PDC;
+	}
+
+	DEBUG(10,("process_dc_netbios\n"));
+
+	for (i=0; i<num_dcs; i++) {
+
+		ip_list.ss = dclist[i].ss;
+		ip_list.port = 0;
+
+		if (!interpret_string_addr(&ss, dclist[i].hostname, AI_NUMERICHOST)) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		if (send_getdc_request(mem_ctx, msg_ctx,
+				       &dclist[i].ss, domain_name, NULL))
+		{
+			int k;
+			smb_msleep(100);
+			for (k=0; k<5; k++) {
+				if (receive_getdc_response(mem_ctx,
+							   &dclist[i].ss,
+							   domain_name,
+							   &dc_name)) {
+					namecache_store(dc_name, NBT_NAME_SERVER, 1, &ip_list);
+					dc_hostname = dc_name;
+					dc_domain_name = talloc_strdup_upper(mem_ctx, domain_name);
+					NT_STATUS_HAVE_NO_MEMORY(dc_domain_name);
+					goto make_reply;
+				}
+				smb_msleep(500);
+			}
+		}
+
+		if (name_status_find(domain_name,
+				     name_type,
+				     NBT_NAME_SERVER,
+				     &dclist[i].ss,
+				     tmp_dc_name))
+		{
+			dc_hostname = tmp_dc_name;
+			dc_domain_name = talloc_strdup_upper(mem_ctx, domain_name);
+			namecache_store(dc_name, NBT_NAME_SERVER, 1, &ip_list);
+			goto make_reply;
+		}
+	}
+
+	return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+
+ make_reply:
+
+	if (flags & DS_IP_REQUIRED) {
+		char addr[INET6_ADDRSTRLEN];
+		print_sockaddr(addr, sizeof(addr), &dclist[i].ss);
+		dc_address = talloc_asprintf(mem_ctx, "\\\\%s", addr);
+		dc_address_type = DS_ADDRESS_TYPE_INET;
+	} else {
+		dc_address = talloc_asprintf(mem_ctx, "\\\\%s", dc_hostname);
+		dc_address_type = DS_ADDRESS_TYPE_NETBIOS;
+	}
+
+	if (flags & DS_PDC_REQUIRED) {
+		dc_flags |= NBT_SERVER_PDC | NBT_SERVER_WRITABLE;
+	}
+
+	return make_domain_controller_info(mem_ctx,
+					   dc_hostname,
+					   dc_address,
+					   dc_address_type,
+					   NULL,
+					   dc_domain_name,
+					   NULL,
+					   dc_flags,
+					   NULL,
+					   NULL,
+					   info);
 }
 
 /****************************************************************
@@ -711,7 +870,7 @@ static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
 				       struct netr_DsRGetDCNameInfo **info)
 {
 	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-	struct ip_service_name *dclist;
+	struct ip_service_name *dclist = NULL;
 	int num_dcs;
 
 	DEBUG(10,("dsgetdcname_rediscover\n"));
@@ -723,7 +882,7 @@ static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
 		NT_STATUS_NOT_OK_RETURN(status);
 
 		return process_dc_netbios(mem_ctx, domain_name, flags,
-					  &dclist, num_dcs, info);
+					  dclist, num_dcs, info);
 	}
 
 	if (flags & DS_IS_DNS_NAME) {
@@ -752,7 +911,7 @@ static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
 				     &num_dcs);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	return process_dc_netbios(mem_ctx, domain_name, flags, &dclist,
+	return process_dc_netbios(mem_ctx, domain_name, flags, dclist,
 				  num_dcs, info);
 }
 
