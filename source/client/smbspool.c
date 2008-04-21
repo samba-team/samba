@@ -57,8 +57,10 @@
 
 static int      get_exit_code(struct cli_state * cli, NTSTATUS nt_status);
 static void     list_devices(void);
-static struct cli_state *smb_complete_connection(const char *, const char *, int, const char *, const char *, const char *, const char *, int, int *need_auth);
-static struct cli_state *smb_connect(const char *, const char *, int, const char *, const char *, const char *, const char *, int *need_auth);
+static struct cli_state *smb_complete_connection(const char *, const char *,
+	int, const char *, const char *, const char *, const char *, int, bool *need_auth);
+static struct cli_state *smb_connect(const char *, const char *, int, const
+	char *, const char *, const char *, const char *, bool *need_auth);
 static int      smb_print(struct cli_state *, char *, FILE *);
 static char    *uri_unescape_alloc(const char *);
 #if 0
@@ -89,6 +91,7 @@ main(int argc,			/* I - Number of command-line arguments */
 	struct cli_state *cli;	/* SMB interface */
 	char            null_str[1];
 	int             tries = 0;
+	bool		need_auth = true;
 	const char     *dev_uri;
 	TALLOC_CTX     *frame = talloc_stackframe();
 
@@ -258,9 +261,9 @@ main(int argc,			/* I - Number of command-line arguments */
 		cli = smb_connect(workgroup, server, port, printer,
 			username, password, argv[2], &need_auth);
 		if (cli == NULL) {
-			if (need_auth)
+			if (need_auth) {
 				exit(2);
-			else if (getenv("CLASS") == NULL) {
+			} else if (getenv("CLASS") == NULL) {
 				fprintf(stderr, "ERROR: Unable to connect to CIFS host, will retry in 60 seconds...\n");
 				sleep(60);
 				tries++;
@@ -335,7 +338,8 @@ get_exit_code(struct cli_state * cli,
 	};
 
 
-	fprintf(stderr, "DEBUG: get_exit_code(cli=%p, nt_status=%x)\n", cli, nt_status);
+	fprintf(stderr, "DEBUG: get_exit_code(cli=%p, nt_status=%x)\n",
+		cli, NT_STATUS_V(nt_status));
 
 	for (i = 0; i < ARRAY_SIZE(auth_errors); i++) {
 		if (!NT_STATUS_EQUAL(nt_status, auth_errors[i])) {
@@ -389,13 +393,13 @@ smb_complete_connection(const char *myname,
 			const char *workgroup,
 			const char *share,
 			int flags,
-			int *need_auth)
+			bool *need_auth)
 {
 	struct cli_state *cli;	/* New connection */
 	NTSTATUS        nt_status;
 
 	/* Start the SMB connection */
-	*need_auth = 0;
+	*need_auth = false;
 	nt_status = cli_start_connection(&cli, myname, server, NULL, port,
 					 Undefined, flags, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -408,7 +412,7 @@ smb_complete_connection(const char *myname,
 	 * 0 char.
 	 */
 	if (!password) {
-		*need_auth = 1;
+		*need_auth = true;
 		return NULL;
 	}
 
@@ -420,7 +424,7 @@ smb_complete_connection(const char *myname,
 		fprintf(stderr, "ERROR: Session setup failed: %s\n", nt_errstr(nt_status));
 
 		if (get_exit_code(cli, nt_status) == 2) {
-			*need_auth = 1;
+			*need_auth = true;
 		}
 
 		cli_shutdown(cli);
@@ -432,7 +436,7 @@ smb_complete_connection(const char *myname,
 		fprintf(stderr, "ERROR: Tree connect failed (%s)\n", cli_errstr(cli));
 
 		if (get_exit_code(cli, cli_nt_error(cli)) == 2) {
-			*need_auth = 1;
+			*need_auth = true;
 		}
 
 		cli_shutdown(cli);
@@ -469,7 +473,7 @@ smb_connect(const char *workgroup,	/* I - Workgroup */
 	    const char *username,	/* I - Username */
 	    const char *password,	/* I - Password */
 	    const char *jobusername,	/* I - User who issued the print job */
-	    int *need_auth)
+	    bool *need_auth)
 {				/* O - Need authentication? */
 	struct cli_state *cli;	/* New connection */
 	char           *myname = NULL;	/* Client name */
