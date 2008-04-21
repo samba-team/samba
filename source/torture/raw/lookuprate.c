@@ -23,6 +23,7 @@
 #include "torture/torture.h"
 #include "torture/basic/proto.h"
 #include "libcli/libcli.h"
+#include "torture/util.h"
 #include "lib/cmdline/popt_common.h"
 #include "auth/credentials/credentials.h"
 
