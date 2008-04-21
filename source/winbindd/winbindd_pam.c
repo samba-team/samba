@@ -1307,6 +1307,27 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 			goto done;
 		}
 
+		/* It is really important to try SamLogonEx here,
+		 * because in a clustered environment, we want to use
+		 * one machine account from multiple physical
+		 * computers.  
+		 *
+		 * With a normal SamLogon call, we must keep the
+		 * credentials chain updated and intact between all
+		 * users of the machine account (which would imply
+		 * cross-node communication for every NTLM logon).
+		 *
+		 * (The credentials chain is not per NETLOGON pipe
+		 * connection, but globally on the server/client pair
+		 * by machine name).
+		 *
+		 * When using SamLogonEx, the credentials are not
+		 * supplied, but the session key is implied by the
+		 * wrapping SamLogon context.
+		 * 
+		 *  -- abartlet 21 April 2008
+		 */
+
 		logon_fn = contact_domain->can_do_samlogon_ex
 			? rpccli_netlogon_sam_network_logon_ex
 			: rpccli_netlogon_sam_network_logon;
