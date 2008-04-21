@@ -1,3 +1,7 @@
+2008-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* stringprep.c: Use <string.h> instead of <strings.h>.
+	
 2008-04-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* wind.h: Make wind_stringprep match prototype in .c file. pointed
