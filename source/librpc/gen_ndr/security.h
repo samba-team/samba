@@ -5,6 +5,7 @@
 #include "librpc/gen_ndr/misc.h"
 #define dom_sid2 dom_sid
 #define dom_sid28 dom_sid
+#define dom_sid0 dom_sid
 #ifndef _HEADER_security
 #define _HEADER_security
 

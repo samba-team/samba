@@ -151,7 +151,7 @@ LIBTDB_SHARED_TARGET=@LIBTDB_SHARED_TARGET@
 LIBTDB_STATIC_TARGET=@LIBTDB_STATIC_TARGET@
 LIBTDB=$(LIBTDB_STATIC_TARGET) @LIBTDB_SHARED@
 LIBTDB_SYMS=$(srcdir)/exports/libtdb.syms
-LIBTDB_HEADERS=@tdbdir@/include/tdb.h
+LIBTDB_HEADERS=$(srcdir)/@tdbdir@/include/tdb.h
 
 LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
@@ -292,7 +292,8 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 librpc/gen_ndr/ndr_dssetup.o \
 		 librpc/gen_ndr/ndr_notify.o \
 		 librpc/gen_ndr/ndr_xattr.o \
-		 librpc/gen_ndr/ndr_ntsvcs.o
+		 librpc/gen_ndr/ndr_ntsvcs.o \
+		 librpc/gen_ndr/ndr_nbt.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -403,7 +404,8 @@ LIBADS_SERVER_OBJ = libads/kerberos_verify.o libads/authdata.o \
 SECRETS_OBJ = passdb/secrets.o passdb/machine_sid.o
 
 LIBNMB_OBJ = libsmb/unexpected.o libsmb/namecache.o libsmb/nmblib.o \
-	     libsmb/namequery.o libsmb/conncache.o libads/dns.o
+	     libsmb/namequery.o libsmb/conncache.o libads/dns.o \
+	     libcli/nbt/nbtname.o
 
 NTERR_OBJ = libsmb/nterr.o
 DOSERR_OBJ = libsmb/doserr.o
@@ -443,7 +445,9 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       $(RPC_CLIENT_OBJ1) rpc_client/cli_reg.o $(RPC_CLIENT_OBJ) \
 	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o  \
 	       rpc_client/cli_svcctl.o \
-	       rpc_client/init_samr.o
+	       rpc_client/init_samr.o \
+		   librpc/rpc/dcerpc.o \
+		   librpc/rpc/binding.o
 
 LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_dfs.o \
@@ -969,7 +973,8 @@ REPLACETORT_OBJ = lib/replace/test/testsuite.o \
 
 NDRDUMP_OBJ = librpc/tools/ndrdump.o \
 			  $(PARAM_OBJ) $(LIBNDR_GEN_OBJ) \
-			  $(LIBSAMBA_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ)
+			  $(LIBSAMBA_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
+			  libcli/nbt/nbtname.o
 
 DEBUG2HTML_OBJ = utils/debug2html.o utils/debugparse.o
 
@@ -1191,7 +1196,7 @@ modules: SHOWFLAGS $(MODULES)
 IDL_FILES = lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
 	srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl notify.idl \
 	epmapper.idl messaging.idl xattr.idl misc.idl samr.idl security.idl \
-	dssetup.idl krb5pac.idl ntsvcs.idl libnetapi.idl
+	dssetup.idl krb5pac.idl ntsvcs.idl libnetapi.idl drsuapi.idl nbt.idl
 
 idl:
 	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \
@@ -2007,7 +2012,7 @@ bin/ntlm_auth@EXEEXT@: $(BINARY_PREREQS) $(NTLM_AUTH_OBJ) $(PARAM_OBJ) \
 		@POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
 		@LIBTALLOC_LIBS@ @LIBTDB_LIBS@ @WINBIND_LIBS@
 
-bin/pam_smbpass.@SHLIBEXT@: $(BINARY_PREREQS) $(PAM_SMBPASS_OBJ) @LIBTALLOC_SHARED@ @LIBWBCLIENT_SHARED@
+bin/pam_smbpass.@SHLIBEXT@: $(BINARY_PREREQS) $(PAM_SMBPASS_OBJ) @LIBTALLOC_SHARED@ @LIBWBCLIENT_SHARED@ @LIBTDB_SHARED@
 	@echo "Linking shared library $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_SMBPASS_OBJ) -lpam $(DYNEXP) \
 		$(LIBS) $(LDAP_LIBS) $(KRB5LIBS) $(NSCD_LIBS) \
@@ -2131,7 +2136,7 @@ installlibtalloc: installdirs libtalloc
 	-$(INSTALLLIBCMD_SH) $(LIBTALLOC_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) $(LIBTALLOC_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) @tallocdir@/talloc.h $(DESTDIR)${prefix}/include
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/@tallocdir@/talloc.h $(DESTDIR)${prefix}/include
 
 installlibtdb: installdirs libtdb
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)

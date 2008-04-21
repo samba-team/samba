@@ -199,9 +199,8 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 
 	/* Leave messages blocked - we will never process one. */
 
-	/* tdb needs special fork handling */
-	if (tdb_reopen_all(1) == -1) {
-		DEBUG(0,("tdb_reopen_all failed.\n"));
+	if (!reinit_after_fork(winbind_messaging_context())) {
+		DEBUG(0,("reinit_after_fork() failed\n"));
 		_exit(0);
 	}
 
@@ -599,7 +598,7 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 	/* This call can take a long time - allow the server to time out.
 	   35 seconds should do it. */
 
-	orig_timeout = cli_set_timeout(netlogon_pipe->cli, 35000);
+	orig_timeout = rpccli_set_timeout(netlogon_pipe, 35000);
 
 	if (our_domain->active_directory) {
 		struct netr_DsRGetDCNameInfo *domain_info = NULL;
@@ -639,7 +638,7 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 	}
 
 	/* And restore our original timeout. */
-	cli_set_timeout(netlogon_pipe->cli, orig_timeout);
+	rpccli_set_timeout(netlogon_pipe, orig_timeout);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("rpccli_netr_GetAnyDCName failed: %s\n",
@@ -1021,167 +1020,6 @@ static bool add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-static void mailslot_name(struct in_addr dc_ip, fstring name)
-{
-	fstr_sprintf(name, "\\MAILSLOT\\NET\\GETDC%X", dc_ip.s_addr);
-}
-
-static bool send_getdc_request(struct sockaddr_storage *dc_ss,
-			       const char *domain_name,
-			       const DOM_SID *sid)
-{
-	char outbuf[1024];
-	struct in_addr dc_ip;
-	char *p;
-	fstring my_acct_name;
-	fstring my_mailslot;
-	size_t sid_size;
-
-	if (dc_ss->ss_family != AF_INET) {
-		return false;
-	}
-
-	dc_ip = ((struct sockaddr_in *)dc_ss)->sin_addr;
-	mailslot_name(dc_ip, my_mailslot);
-
-	memset(outbuf, '\0', sizeof(outbuf));
-
-	p = outbuf;
-
-	SCVAL(p, 0, SAMLOGON);
-	p++;
-
-	SCVAL(p, 0, 0); /* Count pointer ... */
-	p++;
-
-	SIVAL(p, 0, 0); /* The sender's token ... */
-	p += 2;
-
-	p += dos_PutUniCode(p, global_myname(),
-			sizeof(outbuf) - PTR_DIFF(p, outbuf), True);
-	fstr_sprintf(my_acct_name, "%s$", global_myname());
-	p += dos_PutUniCode(p, my_acct_name,
-			sizeof(outbuf) - PTR_DIFF(p, outbuf), True);
-
-	if (strlen(my_mailslot)+1 > sizeof(outbuf) - PTR_DIFF(p, outbuf)) {
-		return false;
-	}
-
-	memcpy(p, my_mailslot, strlen(my_mailslot)+1);
-	p += strlen(my_mailslot)+1;
-
-	if (sizeof(outbuf) - PTR_DIFF(p, outbuf) < 8) {
-		return false;
-	}
-
-	SIVAL(p, 0, 0x80);
-	p+=4;
-
-	sid_size = ndr_size_dom_sid(sid, 0);
-
-	SIVAL(p, 0, sid_size);
-	p+=4;
-
-	p = ALIGN4(p, outbuf);
-	if (PTR_DIFF(p, outbuf) > sizeof(outbuf)) {
-		return false;
-	}
-
-	if (sid_size + 8 > sizeof(outbuf) - PTR_DIFF(p, outbuf)) {
-		return false;
-	}
-	sid_linearize(p, sizeof(outbuf) - PTR_DIFF(p, outbuf), sid);
-
-	p += sid_size;
-
-	SIVAL(p, 0, 1);
-	SSVAL(p, 4, 0xffff);
-	SSVAL(p, 6, 0xffff);
-	p+=8;
-
-	return cli_send_mailslot(winbind_messaging_context(),
-				 False, "\\MAILSLOT\\NET\\NTLOGON", 0,
-				 outbuf, PTR_DIFF(p, outbuf),
-				 global_myname(), 0, domain_name, 0x1c,
-				 dc_ss);
-}
-
-static bool receive_getdc_response(struct sockaddr_storage *dc_ss,
-				   const char *domain_name,
-				   fstring dc_name)
-{
-	struct packet_struct *packet;
-	fstring my_mailslot;
-	char *buf, *p;
-	fstring dcname, user, domain;
-	int len;
-	struct in_addr dc_ip;
-
-	if (dc_ss->ss_family != AF_INET) {
-		return false;
-	}
-	dc_ip = ((struct sockaddr_in *)dc_ss)->sin_addr;
-	mailslot_name(dc_ip, my_mailslot);
-
-	packet = receive_unexpected(DGRAM_PACKET, 0, my_mailslot);
-
-	if (packet == NULL) {
-		DEBUG(5, ("Did not receive packet for %s\n", my_mailslot));
-		return False;
-	}
-
-	DEBUG(5, ("Received packet for %s\n", my_mailslot));
-
-	buf = packet->packet.dgram.data;
-	len = packet->packet.dgram.datasize;
-
-	if (len < 70) {
-		/* 70 is a completely arbitrary value to make sure
-		   the SVAL below does not read uninitialized memory */
-		DEBUG(3, ("GetDC got short response\n"));
-		return False;
-	}
-
-	/* This should be (buf-4)+SVAL(buf-4, smb_vwv12)... */
-	p = buf+SVAL(buf, smb_vwv10);
-
-	switch (CVAL(p, 0)) {
-	case SAMLOGON_R:
-	case SAMLOGON_UNK_R:
-		p+=2;
-		pull_ucs2(buf, dcname, p, sizeof(dcname), PTR_DIFF(buf+len, p),
-			  STR_TERMINATE|STR_NOALIGN);
-		p = skip_unibuf(p, PTR_DIFF(buf+len, p));
-		pull_ucs2(buf, user, p, sizeof(user), PTR_DIFF(buf+len, p),
-			  STR_TERMINATE|STR_NOALIGN);
-		p = skip_unibuf(p, PTR_DIFF(buf+len, p));
-		pull_ucs2(buf, domain, p, sizeof(domain), PTR_DIFF(buf+len, p),
-			  STR_TERMINATE|STR_NOALIGN);
-		p = skip_unibuf(p, PTR_DIFF(buf+len, p));
-
-		if (!strequal(domain, domain_name)) {
-			DEBUG(3, ("GetDC: Expected domain %s, got %s\n",
-				  domain_name, domain));
-			return False;
-		}
-		break;
-
-	default:
-		DEBUG(8, ("GetDC got invalid response type %d\n", CVAL(p, 0)));
-		return False;
-	}
-	p = dcname;
-	if (*p == '\\')	p += 1;
-	if (*p == '\\')	p += 1;
-
-	fstrcpy(dc_name, p);
-
-	DEBUG(10, ("GetDC gave name %s for domain %s\n",
-		   dc_name, domain));
-
-	return True;
-}
-
 /*******************************************************************
  convert an ip to a name
 *******************************************************************/
@@ -1253,7 +1091,8 @@ static bool dcip_to_name(const struct winbindd_domain *domain,
 
 	/* try GETDC requests next */
 
-	if (send_getdc_request(pss, domain->name, &domain->sid)) {
+	if (send_getdc_request(winbind_messaging_context(),
+			       pss, domain->name, &domain->sid)) {
 		int i;
 		smb_msleep(100);
 		for (i=0; i<5; i++) {
@@ -1593,33 +1432,27 @@ void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 	}
 
 	if (conn->samr_pipe != NULL) {
-		if (!cli_rpc_pipe_close(conn->samr_pipe)) {
-			/* Ok, it must be dead. Drop timeout to 0.5 sec. */
-			if (conn->cli) {
-				cli_set_timeout(conn->cli, 500);
-			}
+		TALLOC_FREE(conn->samr_pipe);
+		/* Ok, it must be dead. Drop timeout to 0.5 sec. */
+		if (conn->cli) {
+			cli_set_timeout(conn->cli, 500);
 		}
-		conn->samr_pipe = NULL;
 	}
 
 	if (conn->lsa_pipe != NULL) {
-		if (!cli_rpc_pipe_close(conn->lsa_pipe)) {
-			/* Ok, it must be dead. Drop timeout to 0.5 sec. */
-			if (conn->cli) {
-				cli_set_timeout(conn->cli, 500);
-			}
+		TALLOC_FREE(conn->lsa_pipe);
+		/* Ok, it must be dead. Drop timeout to 0.5 sec. */
+		if (conn->cli) {
+			cli_set_timeout(conn->cli, 500);
 		}
-		conn->lsa_pipe = NULL;
 	}
 
 	if (conn->netlogon_pipe != NULL) {
-		if (!cli_rpc_pipe_close(conn->netlogon_pipe)) {
-			/* Ok, it must be dead. Drop timeout to 0.5 sec. */
-			if (conn->cli) {
-				cli_set_timeout(conn->cli, 500);
-			}
+		TALLOC_FREE(conn->netlogon_pipe);
+		/* Ok, it must be dead. Drop timeout to 0.5 sec. */
+		if (conn->cli) {
+			cli_set_timeout(conn->cli, 500);
 		}
-		conn->netlogon_pipe = NULL;
 	}
 
 	if (conn->cli) {
@@ -1770,7 +1603,7 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 	}	
 
 	result = rpccli_netr_DsrEnumerateDomainTrusts(cli, mem_ctx,
-						      cli->cli->desthost,
+						      cli->desthost,
 						      flags,
 						      &trusts,
 						      NULL);
@@ -1872,7 +1705,7 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 								  DS_ROLE_BASIC_INFORMATION,
 								  &info,
 								  &werr);
-	cli_rpc_pipe_close(cli);
+	TALLOC_FREE(cli);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(5, ("set_dc_type_and_flags_connect: rpccli_ds_getprimarydominfo "
@@ -1906,7 +1739,7 @@ no_dssetup:
 		DEBUG(5, ("set_dc_type_and_flags_connect: Could not bind to "
 			  "PI_LSARPC on domain %s: (%s)\n",
 			  domain->name, nt_errstr(result)));
-		cli_rpc_pipe_close(cli);
+		TALLOC_FREE(cli);
 		TALLOC_FREE(mem_ctx);
 		return;
 	}
@@ -1986,7 +1819,7 @@ done:
 	DEBUG(5,("set_dc_type_and_flags_connect: domain %s is %srunning active directory.\n",
 		  domain->name, domain->active_directory ? "" : "NOT "));
 
-	cli_rpc_pipe_close(cli);
+	TALLOC_FREE(cli);
 
 	TALLOC_FREE(mem_ctx);
 
@@ -2123,7 +1956,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		  domain_name, machine_account));
 
 	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
-				      conn->samr_pipe->cli->desthost,
+				      conn->samr_pipe->desthost,
 				      SEC_RIGHTS_MAXIMUM_ALLOWED,
 				      &conn->sam_connect_handle);
 	if (NT_STATUS_IS_OK(result)) {
@@ -2132,7 +1965,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	DEBUG(10,("cm_connect_sam: ntlmssp-sealed rpccli_samr_Connect2 "
 		  "failed for domain %s, error was %s. Trying schannel\n",
 		  domain->name, nt_errstr(result) ));
-	cli_rpc_pipe_close(conn->samr_pipe);
+	TALLOC_FREE(conn->samr_pipe);
 
  schannel:
 
@@ -2158,7 +1991,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		  "schannel.\n", domain->name ));
 
 	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
-				      conn->samr_pipe->cli->desthost,
+				      conn->samr_pipe->desthost,
 				      SEC_RIGHTS_MAXIMUM_ALLOWED,
 				      &conn->sam_connect_handle);
 	if (NT_STATUS_IS_OK(result)) {
@@ -2167,7 +2000,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	DEBUG(10,("cm_connect_sam: schannel-sealed rpccli_samr_Connect2 failed "
 		  "for domain %s, error was %s. Trying anonymous\n",
 		  domain->name, nt_errstr(result) ));
-	cli_rpc_pipe_close(conn->samr_pipe);
+	TALLOC_FREE(conn->samr_pipe);
 
  anonymous:
 
@@ -2181,7 +2014,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	}
 
 	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
-				      conn->samr_pipe->cli->desthost,
+				      conn->samr_pipe->desthost,
 				      SEC_RIGHTS_MAXIMUM_ALLOWED,
 				      &conn->sam_connect_handle);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2269,7 +2102,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	DEBUG(10,("cm_connect_lsa: rpccli_lsa_open_policy failed, trying "
 		  "schannel\n"));
 
-	cli_rpc_pipe_close(conn->lsa_pipe);
+	TALLOC_FREE(conn->lsa_pipe);
 
  schannel:
 
@@ -2304,7 +2137,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	DEBUG(10,("cm_connect_lsa: rpccli_lsa_open_policy failed, trying "
 		  "anonymous\n"));
 
-	cli_rpc_pipe_close(conn->lsa_pipe);
+	TALLOC_FREE(conn->lsa_pipe);
 
  anonymous:
 
@@ -2379,7 +2212,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	if (!get_trust_pw_hash(domain->name, mach_pwd, &account_name,
 			       &sec_chan_type))
 	{
-		cli_rpc_pipe_close(netlogon_pipe);
+		TALLOC_FREE(netlogon_pipe);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
@@ -2394,14 +2227,14 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		 &neg_flags);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		cli_rpc_pipe_close(netlogon_pipe);
+		TALLOC_FREE(netlogon_pipe);
 		return result;
 	}
 
 	if ((lp_client_schannel() == True) &&
 			((neg_flags & NETLOGON_NEG_SCHANNEL) == 0)) {
 		DEBUG(3, ("Server did not offer schannel\n"));
-		cli_rpc_pipe_close(netlogon_pipe);
+		TALLOC_FREE(netlogon_pipe);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -2434,7 +2267,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 						    &result);
 
 	/* We can now close the initial netlogon pipe. */
-	cli_rpc_pipe_close(netlogon_pipe);
+	TALLOC_FREE(netlogon_pipe);
 
 	if (conn->netlogon_pipe == NULL) {
 		DEBUG(3, ("Could not open schannel'ed NETLOGON pipe. Error "

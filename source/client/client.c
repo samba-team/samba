@@ -3650,7 +3650,7 @@ static bool browse_host_rpc(bool sort)
 	info_ctr.ctr.ctr1 = &ctr1;
 
 	status = rpccli_srvsvc_NetShareEnumAll(pipe_hnd, frame,
-					      pipe_hnd->cli->desthost,
+					      pipe_hnd->desthost,
 					      &info_ctr,
 					      0xffffffff,
 					      &total_entries,
@@ -3658,7 +3658,7 @@ static bool browse_host_rpc(bool sort)
 					      &werr);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(werr)) {
-		cli_rpc_pipe_close(pipe_hnd);
+		TALLOC_FREE(pipe_hnd);
 		TALLOC_FREE(frame);
 		return false;
 	}
@@ -3668,7 +3668,7 @@ static bool browse_host_rpc(bool sort)
 		browse_fn(info.name, info.type, info.comment, NULL);
 	}
 
-	cli_rpc_pipe_close(pipe_hnd);
+	TALLOC_FREE(pipe_hnd);
 	TALLOC_FREE(frame);
 	return true;
 }
@@ -4514,12 +4514,20 @@ static int process(const char *base_directory)
 
 static int do_host_query(const char *query_host)
 {
+	struct sockaddr_storage ss;
+
 	cli = cli_cm_open(talloc_tos(), NULL,
 			query_host, "IPC$", true, smb_encrypt);
 	if (!cli)
 		return 1;
 
 	browse_host(true);
+
+	if (interpret_string_addr(&ss, query_host, 0) && (ss.ss_family != AF_INET)) {
+		d_printf("%s is an IPv6 address -- no workgroup available\n",
+			query_host);
+		return 1;
+	}
 
 	if (port != 139) {
 

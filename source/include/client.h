@@ -60,16 +60,19 @@ struct cli_pipe_auth_data {
 struct rpc_pipe_client {
 	struct rpc_pipe_client *prev, *next;
 
-	TALLOC_CTX *mem_ctx;
-
 	struct cli_state *cli;
 
-	int pipe_idx;
 	const char *pipe_name;
 	uint16 fnum;
 
-	const char *domain;
-	const char *user_name;
+	const struct ndr_syntax_id *abstract_syntax;
+	const struct ndr_syntax_id *transfer_syntax;
+
+	char *desthost;
+	char *srv_name_slash;
+
+	char *domain;
+	char *user_name;
 	struct pwd_info pwd;
 
 	uint16 max_xmit_frag;
@@ -123,7 +126,6 @@ struct cli_state {
 	int privileges;
 
 	fstring desthost;
-	fstring srv_name_slash;
 
 	/* The credentials used to open the cli_state connection. */
 	fstring domain;

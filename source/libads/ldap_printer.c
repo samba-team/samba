@@ -288,16 +288,15 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 	uint32 i;
 	POLICY_HND pol;
 
-	asprintf(&servername, "\\\\%s", cli->cli->desthost);
-	asprintf(&printername, "%s\\%s", servername, printer);
-	if (!servername || !printername) {
+	if ((asprintf(&servername, "\\\\%s", cli->desthost) == -1)
+	    || (asprintf(&printername, "%s\\%s", servername, printer) == -1)) {
 		DEBUG(3, ("Insufficient memory\n"));
 		return WERR_NOMEM;
 	}
 	
 	result = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
 					     "", MAXIMUM_ALLOWED_ACCESS, 
-					     servername, cli->cli->user_name, &pol);
+					     servername, cli->user_name, &pol);
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to open printer %s, error is %s.\n",
 			  printername, dos_errstr(result)));

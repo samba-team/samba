@@ -575,8 +575,6 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 			   MSG_SMB_INJECT_FAULT, msg_inject_fault);
 #endif
 
-	db_tdb2_setup_messaging(smbd_messaging_context(), true);
-
 	/* now accept incoming connections - forking a new process
 	   for each incoming connection */
 	DEBUG(2,("waiting for a connection\n"));
@@ -741,17 +739,9 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 								sizeof(remaddr)),
 								false);
 
-				/* Reset the state of the random
-				 * number generation system, so
-				 * children do not get the same random
-				 * numbers as each other */
-
-				set_need_random_reseed();
-				/* tdb needs special fork handling - remove
-				 * CLEAR_IF_FIRST flags */
-				if (tdb_reopen_all(1) == -1) {
-					DEBUG(0,("tdb_reopen_all failed.\n"));
-					smb_panic("tdb_reopen_all failed");
+				if (!reinit_after_fork(smbd_messaging_context())) {
+					DEBUG(0,("reinit_after_fork() failed\n"));
+					smb_panic("reinit_after_fork() failed");
 				}
 
 				return True;
@@ -1103,6 +1093,8 @@ extern void build_options(bool screen);
 
 	TimeInit();
 
+	db_tdb2_setup_messaging(NULL, false);
+
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);
 #endif
@@ -1226,10 +1218,18 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
+	if (!lp_load_initial_only(get_dyn_CONFIGFILE())) {
+		DEBUG(0, ("error opening config file\n"));
+		exit(1);
+	}
+
+	if (smbd_messaging_context() == NULL)
+		exit(1);
+
 	/*
 	 * Do this before reload_services.
 	 */
-	db_tdb2_setup_messaging(NULL, false);
+	db_tdb2_setup_messaging(smbd_messaging_context(), true);
 
 	if (!reload_services(False))
 		return(-1);	
@@ -1285,10 +1285,12 @@ extern void build_options(bool screen);
 	if (is_daemon)
 		pidfile_create("smbd");
 
-	/* Setup all the TDB's - including CLEAR_IF_FIRST tdb's. */
-
-	if (smbd_messaging_context() == NULL)
+	if (!reinit_after_fork(smbd_messaging_context())) {
+		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
+	}
+
+	/* Setup all the TDB's - including CLEAR_IF_FIRST tdb's. */
 
 	if (smbd_memcache() == NULL) {
 		exit(1);
@@ -1344,8 +1346,10 @@ extern void build_options(bool screen);
 	   smbd is launched via inetd and we fork a copy of 
 	   ourselves here */
 
-	if ( is_daemon && !interactive )
-		start_background_queue(); 
+	if (is_daemon && !interactive
+	    && lp_parm_bool(-1, "smbd", "backgroundqueue", true)) {
+		start_background_queue();
+	}
 
 	if (!open_sockets_smbd(is_daemon, interactive, ports))
 		exit(1);
@@ -1381,13 +1385,6 @@ extern void build_options(bool screen);
 
 	/* Setup aio signal handler. */
 	initialize_async_io_handler();
-
-	/*
-	 * For clustering, we need to re-init our ctdbd connection after the
-	 * fork
-	 */
-	if (!NT_STATUS_IS_OK(messaging_reinit(smbd_messaging_context())))
-		exit(1);
 
 	/* register our message handlers */
 	messaging_register(smbd_messaging_context(), NULL,

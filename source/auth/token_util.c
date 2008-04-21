@@ -105,6 +105,8 @@ NT_USER_TOKEN *get_root_nt_token( void )
 	token = create_local_nt_token(NULL, &u_sid, False,
 				      1, &global_sid_Builtin_Administrators);
 
+	token->privileges = se_disk_operators;
+
 	memcache_add_talloc(
 		NULL, SINGLETON_CACHE_TALLOC,
 		data_blob_string_const("root_nt_token"), token);

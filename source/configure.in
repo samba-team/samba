@@ -33,9 +33,9 @@ AC_SUBST(TALLOC_OBJS)
 
 # TODO: These should come from m4_include(lib/tdb/libtdb.m4)
 # but currently this fails: things have to get merged from s4.
-tdbdir="${srcdir-.}/lib/tdb"
+tdbdir="lib/tdb"
 AC_SUBST(tdbdir)
-TDB_CFLAGS="-I$tdbdir/include"
+TDB_CFLAGS="-I${srcdir-.}/$tdbdir/include"
 AC_SUBST(TDB_CFLAGS)
 TDB_OBJ="common/tdb.o common/dump.o common/transaction.o common/error.o common/traverse.o"
 TDB_OBJ="$TDB_OBJ common/freelist.o common/freelistcheck.o common/io.o common/lock.o common/open.o"
@@ -307,6 +307,18 @@ AC_CACHE_CHECK([that the C compiler understands -w2],samba_cv_HAVE_w2, [
   samba_cv_HAVE_w2=yes,samba_cv_HAVE_w2=no,samba_cv_HAVE_w2=cross)])
 if test x"$samba_cv_HAVE_w2" = x"yes"; then
    Werror_FLAGS="-w2"
+else
+dnl Check if the C compiler understands -errwarn
+AC_CACHE_CHECK([that the C compiler understands -errwarn],samba_cv_HAVE_errwarn, [
+  AC_TRY_RUN_STRICT([
+   int main(void)
+   {
+	return 0;
+   }],[-errwarn=%all],[$CPPFLAGS],[$LDFLAGS],
+   samba_cv_HAVE_errwarn=yes,samba_cv_HAVE_errwarn=no,samba_cv_HAVE_errwarn=cross)])
+if test x"$samba_cv_HAVE_errwarn" = x"yes"; then
+   Werror_FLAGS="-errwarn=%all"
+fi
 fi
 fi
 

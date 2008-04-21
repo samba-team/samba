@@ -287,7 +287,7 @@ net_share_enum_rpc(struct cli_state *cli,
 
         /* Issue the NetShareEnum RPC call and retrieve the response */
 	nt_status = rpccli_srvsvc_NetShareEnumAll(pipe_hnd, talloc_tos(),
-						  pipe_hnd->cli->desthost,
+						  pipe_hnd->desthost,
 						  &info_ctr,
 						  preferred_len,
 						  &total_entries,
@@ -319,7 +319,7 @@ net_share_enum_rpc(struct cli_state *cli,
 
 done:
         /* Close the server service pipe */
-        cli_rpc_pipe_close(pipe_hnd);
+        TALLOC_FREE(pipe_hnd);
 
         /* Tell 'em if it worked */
         return W_ERROR_IS_OK(result) ? 0 : -1;

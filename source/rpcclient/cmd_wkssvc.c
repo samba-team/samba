@@ -41,7 +41,7 @@ static WERROR cmd_wkssvc_wkstagetinfo(struct rpc_pipe_client *cli,
 		level = atoi(argv[1]);
 	}
 
-	server_name = cli->cli->desthost;
+	server_name = cli->desthost;
 
 	status = rpccli_wkssvc_NetWkstaGetInfo(cli, mem_ctx,
 					       server_name,
@@ -66,7 +66,7 @@ static WERROR cmd_wkssvc_getjoininformation(struct rpc_pipe_client *cli,
 	NTSTATUS status;
 	WERROR werr;
 
-	server_name = cli->cli->desthost;
+	server_name = cli->desthost;
 	name_buffer = "";
 
 	status = rpccli_wkssvc_NetrGetJoinInformation(cli, mem_ctx,
@@ -90,9 +90,9 @@ static WERROR cmd_wkssvc_messagebuffersend(struct rpc_pipe_client *cli,
 					   int argc,
 					   const char **argv)
 {
-	const char *server_name = cli->cli->desthost;
-	const char *message_name = cli->cli->desthost;
-	const char *message_sender_name = cli->cli->desthost;
+	const char *server_name = cli->desthost;
+	const char *message_name = cli->desthost;
+	const char *message_sender_name = cli->desthost;
 	smb_ucs2_t *message_buffer = NULL;
 	size_t message_size = 0;
 	const char *message = "my message";
@@ -135,7 +135,7 @@ static WERROR cmd_wkssvc_enumeratecomputernames(struct rpc_pipe_client *cli,
 	struct wkssvc_ComputerNamesCtr *ctr = NULL;
 	WERROR werr;
 
-	server_name = cli->cli->desthost;
+	server_name = cli->desthost;
 
 	if (argc >= 2) {
 		name_type = atoi(argv[1]);

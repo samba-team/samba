@@ -789,7 +789,7 @@ void dump_reg_val(int lvl, const char *direction,
 
 	type_str = reg_type_lookup(val->type);
 
-	DEBUG(lvl,("\tdump_reg_val: %s '%s' '%s' %s: ",
+	DEBUG(lvl,("\tdump_reg_val:\t%s '%s'\n\t\t\t'%s' %s: ",
 		direction, key, subkey, type_str));
 
 	switch (val->type) {

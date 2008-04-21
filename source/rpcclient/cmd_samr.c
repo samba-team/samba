@@ -735,13 +735,14 @@ static NTSTATUS cmd_samr_query_groupmem(struct rpc_pipe_client *cli,
 		goto done;
 
 	/* Make sure to wait for our DC's reply */
-	old_timeout = cli_set_timeout(cli->cli, MAX(cli->cli->timeout,30000)); /* 30 seconds. */
+	old_timeout = rpccli_set_timeout(cli, 30000); /* 30 seconds. */
+	rpccli_set_timeout(cli, MAX(30000, old_timeout)); /* At least 30 sec */
 
 	result = rpccli_samr_QueryGroupMember(cli, mem_ctx,
 					      &group_pol,
 					      &rids);
 
-	cli_set_timeout(cli->cli, old_timeout);
+	rpccli_set_timeout(cli, old_timeout);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
