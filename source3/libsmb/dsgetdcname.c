@@ -524,8 +524,8 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 
 		struct ip_service_name *r = &dclist[count];
 
-		r->port = dcs[i].port;
-		r->hostname = dcs[i].hostname;
+		r->port = dcs[count].port;
+		r->hostname = dcs[count].hostname;
 
 		if (!(flags & DS_IP_REQUIRED)) {
 			count++;
