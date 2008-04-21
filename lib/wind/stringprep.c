@@ -36,7 +36,7 @@
 #endif
 #include "windlocl.h"
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 #include <errno.h>
 
 RCSID("$Id$");
