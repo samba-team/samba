@@ -2139,6 +2139,18 @@ bool rpccli_is_pipe_idx(struct rpc_pipe_client *cli, int pipe_idx)
 	return (cli->abstract_syntax == pipe_names[pipe_idx].abstr_syntax);
 }
 
+bool rpccli_get_pwd_hash(struct rpc_pipe_client *cli, uint8_t nt_hash[16])
+{
+	if (!((cli->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP)
+	      || (cli->auth.auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP))) {
+		E_md4hash(cli->cli->pwd.password, nt_hash);
+		return true;
+	}
+
+	memcpy(nt_hash, cli->auth.a_u.ntlmssp_state->nt_hash, 16);
+	return true;
+}
+
 struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p)
 {
 	return p->cli;
@@ -2336,8 +2348,6 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 		*perr = NT_STATUS_NO_MEMORY;
 		goto err;
 	}
-
-	pwd_set_cleartext(&result->pwd, password);
 
 	*perr = ntlmssp_client_start(&ntlmssp_state);
 	if (!NT_STATUS_IS_OK(*perr)) {
