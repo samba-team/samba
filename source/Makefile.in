@@ -282,15 +282,13 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 librpc/gen_ndr/ndr_winreg.o \
 		 librpc/gen_ndr/ndr_initshutdown.o \
 		 librpc/gen_ndr/ndr_srvsvc.o \
-		 librpc/gen_ndr/ndr_svcctl.o \
 		 librpc/gen_ndr/ndr_eventlog.o \
 		 librpc/gen_ndr/ndr_netlogon.o \
 		 librpc/gen_ndr/ndr_samr.o \
 		 librpc/gen_ndr/ndr_dssetup.o \
 		 librpc/gen_ndr/ndr_notify.o \
 		 librpc/gen_ndr/ndr_xattr.o \
-		 librpc/gen_ndr/ndr_ntsvcs.o \
-		 librpc/gen_ndr/ndr_nbt.o
+		 librpc/gen_ndr/ndr_ntsvcs.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -396,9 +394,12 @@ LIBADS_SERVER_OBJ = libads/kerberos_verify.o libads/authdata.o \
 
 SECRETS_OBJ = passdb/secrets.o passdb/machine_sid.o
 
+LIBNBT_OBJ = libcli/nbt/nbtname.o \
+	     librpc/gen_ndr/ndr_nbt.o \
+	     librpc/gen_ndr/ndr_svcctl.o
+
 LIBNMB_OBJ = libsmb/unexpected.o libsmb/namecache.o libsmb/nmblib.o \
-	     libsmb/namequery.o libsmb/conncache.o libads/dns.o \
-	     libcli/nbt/nbtname.o
+	     libsmb/namequery.o libsmb/conncache.o libads/dns.o
 
 NTERR_OBJ = libsmb/nterr.o
 DOSERR_OBJ = libsmb/doserr.o
@@ -431,6 +432,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/smb_seal.o libsmb/async_smb.o \
 	     $(LIBSAMBA_OBJ) \
 	     $(LIBNMB_OBJ) \
+	     $(LIBNBT_OBJ)
 
 RPC_CLIENT_OBJ1 = rpc_client/cli_netlogon.o
 
@@ -963,9 +965,9 @@ REPLACETORT_OBJ = lib/replace/test/testsuite.o \
 		$(LIBREPLACE_OBJ)
 
 NDRDUMP_OBJ = librpc/tools/ndrdump.o \
-			  $(PARAM_OBJ) $(LIBNDR_GEN_OBJ) \
-			  $(LIBSAMBA_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
-			  libcli/nbt/nbtname.o
+	      $(PARAM_OBJ) $(LIBNDR_GEN_OBJ) \
+	      $(LIBSAMBA_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
+	      librpc/gen_ndr/ndr_svcctl.o
 
 DEBUG2HTML_OBJ = utils/debug2html.o utils/debugparse.o
 

@@ -120,9 +120,10 @@ bool cli_send_mailslot(struct messaging_context *msg_ctx,
 						  (uint8 *)&p, sizeof(p)));
 }
 
-static void mailslot_name(struct in_addr dc_ip, fstring name)
+static const char *mailslot_name(TALLOC_CTX *mem_ctx, struct in_addr dc_ip)
 {
-	fstr_sprintf(name, "\\MAILSLOT\\NET\\GETDC%X", dc_ip.s_addr);
+	return talloc_asprintf(mem_ctx, "%s%X",
+			       NBT_MAILSLOT_GETDC, dc_ip.s_addr);
 }
 
 bool send_getdc_request(struct messaging_context *msg_ctx,
@@ -130,100 +131,91 @@ bool send_getdc_request(struct messaging_context *msg_ctx,
 			const char *domain_name,
 			const DOM_SID *sid)
 {
-	char outbuf[1024];
 	struct in_addr dc_ip;
-	char *p;
-	fstring my_acct_name;
-	fstring my_mailslot;
-	size_t sid_size;
+	const char *my_acct_name = NULL;
+	const char *my_mailslot = NULL;
+	struct nbt_ntlogon_packet packet;
+	struct nbt_ntlogon_sam_logon *s;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct dom_sid my_sid;
+	TALLOC_CTX *mem_ctx = talloc_tos();
+
+	ZERO_STRUCT(packet);
+	ZERO_STRUCT(my_sid);
 
 	if (dc_ss->ss_family != AF_INET) {
 		return false;
 	}
 
-	dc_ip = ((struct sockaddr_in *)dc_ss)->sin_addr;
-	mailslot_name(dc_ip, my_mailslot);
-
-	memset(outbuf, '\0', sizeof(outbuf));
-
-	p = outbuf;
-
-	SCVAL(p, 0, SAMLOGON);
-	p++;
-
-	SCVAL(p, 0, 0); /* Count pointer ... */
-	p++;
-
-	SIVAL(p, 0, 0); /* The sender's token ... */
-	p += 2;
-
-	p += dos_PutUniCode(p, global_myname(),
-			sizeof(outbuf) - PTR_DIFF(p, outbuf), True);
-	fstr_sprintf(my_acct_name, "%s$", global_myname());
-	p += dos_PutUniCode(p, my_acct_name,
-			sizeof(outbuf) - PTR_DIFF(p, outbuf), True);
-
-	if (strlen(my_mailslot)+1 > sizeof(outbuf) - PTR_DIFF(p, outbuf)) {
-		return false;
-	}
-
-	memcpy(p, my_mailslot, strlen(my_mailslot)+1);
-	p += strlen(my_mailslot)+1;
-
-	if (sizeof(outbuf) - PTR_DIFF(p, outbuf) < 8) {
-		return false;
-	}
-
-	SIVAL(p, 0, 0x80);
-	p+=4;
-
-	sid_size = ndr_size_dom_sid(sid, 0);
-
-	SIVAL(p, 0, sid_size);
-	p+=4;
-
-	p = ALIGN4(p, outbuf);
-	if (PTR_DIFF(p, outbuf) > sizeof(outbuf)) {
-		return false;
-	}
-
-	if (sid_size + 8 > sizeof(outbuf) - PTR_DIFF(p, outbuf)) {
-		return false;
-	}
 	if (sid) {
-		sid_linearize(p, sizeof(outbuf) - PTR_DIFF(p, outbuf), sid);
+		my_sid = *sid;
 	}
 
-	p += sid_size;
+	dc_ip = ((struct sockaddr_in *)dc_ss)->sin_addr;
+	my_mailslot = mailslot_name(mem_ctx, dc_ip);
+	if (!my_mailslot) {
+		return false;
+	}
 
-	SIVAL(p, 0, 1);
-	SSVAL(p, 4, 0xffff);
-	SSVAL(p, 6, 0xffff);
-	p+=8;
+	my_acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname());
+	if (!my_acct_name) {
+		return false;
+	}
+
+	packet.command	= NTLOGON_SAM_LOGON;
+	s		= &packet.req.logon;
+
+	s->request_count	= 0;
+	s->computer_name	= global_myname();
+	s->user_name		= my_acct_name;
+	s->mailslot_name	= my_mailslot;
+	s->acct_control		= ACB_WSTRUST;
+	s->sid			= my_sid;
+	s->nt_version		= 1;
+	s->lmnt_token		= 0xffff;
+	s->lm20_token		= 0xffff;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(nbt_ntlogon_packet, &packet);
+	}
+
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &packet,
+		       (ndr_push_flags_fn_t)ndr_push_nbt_ntlogon_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return false;
+	}
 
 	return cli_send_mailslot(msg_ctx,
-				 False, "\\MAILSLOT\\NET\\NTLOGON", 0,
-				 outbuf, PTR_DIFF(p, outbuf),
+				 false, NBT_MAILSLOT_NTLOGON, 0,
+				 (char *)blob.data, blob.length,
 				 global_myname(), 0, domain_name, 0x1c,
 				 dc_ss);
 }
 
 bool receive_getdc_response(struct sockaddr_storage *dc_ss,
 			    const char *domain_name,
-			    fstring dc_name)
+			    const char **dc_name)
 {
 	struct packet_struct *packet;
-	fstring my_mailslot;
-	char *buf, *p;
-	fstring dcname, user, domain;
-	int len;
+	const char *my_mailslot = NULL;
 	struct in_addr dc_ip;
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	DATA_BLOB blob;
+	struct nbt_ntlogon_packet r;
+	union dgram_message_body p;
+	enum ndr_err_code ndr_err;
 
 	if (dc_ss->ss_family != AF_INET) {
 		return false;
 	}
+
 	dc_ip = ((struct sockaddr_in *)dc_ss)->sin_addr;
-	mailslot_name(dc_ip, my_mailslot);
+
+	my_mailslot = mailslot_name(mem_ctx, dc_ip);
+	if (!my_mailslot) {
+		return false;
+	}
 
 	packet = receive_unexpected(DGRAM_PACKET, 0, my_mailslot);
 
@@ -234,52 +226,63 @@ bool receive_getdc_response(struct sockaddr_storage *dc_ss,
 
 	DEBUG(5, ("Received packet for %s\n", my_mailslot));
 
-	buf = packet->packet.dgram.data;
-	len = packet->packet.dgram.datasize;
+	blob = data_blob_const(packet->packet.dgram.data,
+			       packet->packet.dgram.datasize);
 
-	if (len < 70) {
-		/* 70 is a completely arbitrary value to make sure
-		   the SVAL below does not read uninitialized memory */
-		DEBUG(3, ("GetDC got short response\n"));
-		return False;
+	if (blob.length < 4) {
+		DEBUG(0,("invalid length: %d\n", (int)blob.length));
+		return false;
 	}
 
-	/* This should be (buf-4)+SVAL(buf-4, smb_vwv12)... */
-	p = buf+SVAL(buf, smb_vwv10);
-
-	switch (CVAL(p, 0)) {
-	case SAMLOGON_R:
-	case SAMLOGON_UNK_R:
-		p+=2;
-		pull_ucs2(buf, dcname, p, sizeof(dcname), PTR_DIFF(buf+len, p),
-			  STR_TERMINATE|STR_NOALIGN);
-		p = skip_unibuf(p, PTR_DIFF(buf+len, p));
-		pull_ucs2(buf, user, p, sizeof(user), PTR_DIFF(buf+len, p),
-			  STR_TERMINATE|STR_NOALIGN);
-		p = skip_unibuf(p, PTR_DIFF(buf+len, p));
-		pull_ucs2(buf, domain, p, sizeof(domain), PTR_DIFF(buf+len, p),
-			  STR_TERMINATE|STR_NOALIGN);
-		p = skip_unibuf(p, PTR_DIFF(buf+len, p));
-
-		if (!strequal(domain, domain_name)) {
-			DEBUG(3, ("GetDC: Expected domain %s, got %s\n",
-				  domain_name, domain));
-			return False;
-		}
-		break;
-
-	default:
-		DEBUG(8, ("GetDC got invalid response type %d\n", CVAL(p, 0)));
-		return False;
+	if (RIVAL(blob.data,0) != DGRAM_SMB) {
+		DEBUG(0,("invalid packet\n"));
+		return false;
 	}
-	p = dcname;
-	if (*p == '\\')	p += 1;
-	if (*p == '\\')	p += 1;
 
-	fstrcpy(dc_name, p);
+	blob.data += 4;
+	blob.length -= 4;
+
+	ndr_err = ndr_pull_union_blob_all(&blob, mem_ctx, &p, DGRAM_SMB,
+		       (ndr_pull_flags_fn_t)ndr_pull_dgram_smb_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0,("failed to parse packet\n"));
+		return false;
+	}
+
+	if (p.smb.smb_command != SMB_TRANSACTION) {
+		DEBUG(0,("invalid smb_command: %d\n", p.smb.smb_command));
+		return false;
+	}
+
+	blob = p.smb.body.trans.data;
+
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &r,
+		       (ndr_pull_flags_fn_t)ndr_pull_nbt_ntlogon_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0,("failed to parse packet\n"));
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(nbt_ntlogon_packet, &r);
+	}
+
+	if (!strequal(r.req.reply.domain, domain_name)) {
+		DEBUG(3, ("GetDC: Expected domain %s, got %s\n",
+			  domain_name, r.req.reply.domain));
+		return false;
+	}
+
+	*dc_name = talloc_strdup(mem_ctx, r.req.reply.server);
+	if (!*dc_name) {
+		return false;
+	}
+
+	if (**dc_name == '\\')	*dc_name += 1;
+	if (**dc_name == '\\')	*dc_name += 1;
 
 	DEBUG(10, ("GetDC gave name %s for domain %s\n",
-		   dc_name, domain));
+		   *dc_name, r.req.reply.domain));
 
 	return True;
 }
