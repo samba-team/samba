@@ -1821,7 +1821,7 @@ NTSTATUS rpccli_samr_GetDisplayEnumerationIndex(struct rpc_pipe_client *cli,
 						TALLOC_CTX *mem_ctx,
 						struct policy_handle *domain_handle /* [in] [ref] */,
 						uint16_t level /* [in]  */,
-						struct lsa_String name /* [in]  */,
+						struct lsa_String *name /* [in] [ref] */,
 						uint32_t *idx /* [out] [ref] */)
 {
 	struct samr_GetDisplayEnumerationIndex r;
@@ -2165,7 +2165,7 @@ NTSTATUS rpccli_samr_GetDisplayEnumerationIndex2(struct rpc_pipe_client *cli,
 						 TALLOC_CTX *mem_ctx,
 						 struct policy_handle *domain_handle /* [in] [ref] */,
 						 uint16_t level /* [in]  */,
-						 struct lsa_String name /* [in]  */,
+						 struct lsa_String *name /* [in] [ref] */,
 						 uint32_t *idx /* [out] [ref] */)
 {
 	struct samr_GetDisplayEnumerationIndex2 r;
