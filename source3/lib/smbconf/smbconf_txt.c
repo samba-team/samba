@@ -1,6 +1,6 @@
 /*
  *  Unix SMB/CIFS implementation.
- *  libsmbconf - Samba configuration library, simple text backend
+ *  libsmbconf - Samba configuration library, text backend
  *  Copyright (C) Michael Adam 2008
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -211,7 +211,7 @@ static WERROR smbconf_txt_load_file(struct smbconf_ctx *ctx)
 
 /**********************************************************************
  *
- * smbconf operations: simple text implementations
+ * smbconf operations: text backend implementations
  *
  **********************************************************************/
 
