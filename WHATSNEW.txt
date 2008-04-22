@@ -85,9 +85,18 @@ Registry Configuration Backend
 ==============================
 
 Samba is now able to use a registry based configuration backed to
-supplement smb.conf setting.  This feature may be enabled by setting
-"config backend = registry" and "registry shares = yes" in the [global]
-section of smb.conf and may be managed using the "net conf" command.
+supplement smb.conf settings.  This feature may be enabled by setting
+"config backend = registry" in the [global] section of smb.conf for a
+registry only configuration, or by specifying "include = registry" to
+include global options from registry for a mixed setup.
+
+The new parameter "registry shares = yes" in the [global] section of
+smb.conf can be used to activate share definitions from registry.
+These shares are loaded on demand by the server. Registry shares are
+automatically activated by the global registry options above.
+
+The configuration stored in registry can be conveniently managed using
+the "net conf" command.
 
 More information may be obtained from the smb.conf(5) and net(8) man
 pages.
