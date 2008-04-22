@@ -276,6 +276,7 @@ o   Volker Lendecke <vl@samba.org>
     * Make winbind use NetSamLogonEx when possible.
     * Merge fixes in the 3-0-ctdb cluster code.
     * Fix a segfault in snprintf replacement code.
+    * Fix a regression for wbinfo --group-info if winbind separator is set
 
 
 o   Derrell Lipman <derrell@samba.org>
