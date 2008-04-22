@@ -624,9 +624,9 @@ static struct smbconf_ops smbconf_ops_txt = {
  * initialize the smbconf text backend
  * the only function that is exported from this module
  */
-WERROR smbconf_init_txt_simple(TALLOC_CTX *mem_ctx,
-			       struct smbconf_ctx **conf_ctx,
-			       const char *path)
+WERROR smbconf_init_txt(TALLOC_CTX *mem_ctx,
+			struct smbconf_ctx **conf_ctx,
+			const char *path)
 {
 	WERROR werr;
 
