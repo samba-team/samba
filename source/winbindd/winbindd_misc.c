@@ -173,20 +173,29 @@ void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 	}
 
 	for ( i = 0; i < num_domains; i++ ) {
+		struct winbindd_domain *domain;
+		bool is_online = true;		
+
 		d = &dom_list[i];
+		domain = find_domain_from_name_noinit(d->domain_name);
+		if (domain) {
+			is_online = domain->online;
+		}
+
 		if ( !extra_data ) {
 			extra_data = talloc_asprintf(state->mem_ctx, 
-						     "%s\\%s\\%s\\%s\\%s\\%s\\%s",
+						     "%s\\%s\\%s\\%s\\%s\\%s\\%s\\%s",
 						     d->domain_name,
 						     d->dns_name ? d->dns_name : d->domain_name,
 						     sid_string_talloc(state->mem_ctx, &d->sid),
 						     get_trust_type_string(d),
 						     trust_is_transitive(d) ? "Yes" : "No",
 						     trust_is_inbound(d) ? "Yes" : "No",
-						     trust_is_outbound(d) ? "Yes" : "No");
+						     trust_is_outbound(d) ? "Yes" : "No",
+						     is_online ? "Online" : "Offline" );
 		} else {
 			extra_data = talloc_asprintf(state->mem_ctx, 
-						     "%s\n%s\\%s\\%s\\%s\\%s\\%s\\%s",
+						     "%s\n%s\\%s\\%s\\%s\\%s\\%s\\%s\\%s",
 						     extra_data,
 						     d->domain_name,
 						     d->dns_name ? d->dns_name : d->domain_name,
@@ -194,7 +203,8 @@ void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 						     get_trust_type_string(d),
 						     trust_is_transitive(d) ? "Yes" : "No",
 						     trust_is_inbound(d) ? "Yes" : "No",
-						     trust_is_outbound(d) ? "Yes" : "No");
+						     trust_is_outbound(d) ? "Yes" : "No",
+						     is_online ? "Online" : "Offline" );
 		}
 	}
 	

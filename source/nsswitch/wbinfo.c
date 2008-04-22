@@ -419,38 +419,42 @@ static bool wbinfo_list_own_domain(void)
 /* show sequence numbers */
 static bool wbinfo_show_sequence(const char *domain)
 {
-	struct winbindd_request  request;
-	struct winbindd_response response;
+	d_printf("This command has been deprecated.  Please use the --online-status option instead.\n");
+	return false;
+}
 
-	ZERO_STRUCT(response);
-	ZERO_STRUCT(request);
+/* show sequence numbers */
+static bool wbinfo_show_onlinestatus(const char *domain)
+{
+	struct wbcDomainInfo *domain_list = NULL;
+	size_t num_domains;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	int i;
 
-	if ( domain )
-		fstrcpy( request.domain_name, domain );
-
-	/* Send request */
-
-	if (winbindd_request_response(WINBINDD_SHOW_SEQUENCE, &request, &response) !=
-	    NSS_STATUS_SUCCESS)
+	wbc_status = wbcListTrusts(&domain_list, &num_domains);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return false;
+	}
 
-	/* Display response */
+	for (i=0; i<num_domains; i++) {
+		bool is_offline;
 
-	if (domain) {
-		d_printf("%s : ", domain);
-		if (response.data.sequence_number == (uint32_t)-1) {
-			d_printf("DISCONNECTED\n");
-		} else {
-			d_printf("%d\n", response.data.sequence_number);
+		if (domain) {
+			if (!strequal(domain_list[i].short_name, domain)) {
+				continue;
+			}
 		}
-	} else if (response.extra_data.data) {
-		char *extra_data = (char *)response.extra_data.data;
-		d_printf("%s", extra_data);
-		SAFE_FREE(response.extra_data.data);
+
+		is_offline = (domain_list[i].domain_flags & WBC_DOMINFO_DOMAIN_OFFLINE);
+		
+		d_printf("%s : %s\n", 
+			 domain_list[i].short_name,
+			 is_offline ? "offline" : "online" );
 	}
 
 	return true;
 }
+
 
 /* Show domain info */
 
@@ -1317,7 +1321,8 @@ enum {
 	OPT_LIST_OWN_DOMAIN,
 	OPT_UID_INFO,
 	OPT_GROUP_INFO,
-	OPT_VERBOSE
+	OPT_VERBOSE,
+	OPT_ONLINESTATUS
 };
 
 int main(int argc, char **argv, char **envp)
@@ -1357,6 +1362,7 @@ int main(int argc, char **argv, char **envp)
 		{ "all-domains", 0, POPT_ARG_NONE, 0, OPT_LIST_ALL_DOMAINS, "List all domains (trusted and own domain)" },
 		{ "own-domain", 0, POPT_ARG_NONE, 0, OPT_LIST_OWN_DOMAIN, "List own domain" },
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "Show sequence numbers of all domains" },
+		{ "online-status", 0, POPT_ARG_NONE, 0, OPT_ONLINESTATUS, "Show whether domains are marked as online or offline"},
 		{ "domain-info", 'D', POPT_ARG_STRING, &string_arg, 'D', "Show most of the info we have about the domain" },
 		{ "user-info", 'i', POPT_ARG_STRING, &string_arg, 'i', "Get user info", "USER" },
 		{ "uid-info", 0, POPT_ARG_INT, &int_arg, OPT_UID_INFO, "Get user info from uid", "UID" },
@@ -1526,6 +1532,12 @@ int main(int argc, char **argv, char **envp)
 		case OPT_SEQUENCE:
 			if (!wbinfo_show_sequence(opt_domain_name)) {
 				d_fprintf(stderr, "Could not show sequence numbers\n");
+				goto done;
+			}
+			break;
+		case OPT_ONLINESTATUS:
+			if (!wbinfo_show_onlinestatus(opt_domain_name)) {
+				d_fprintf(stderr, "Could not show online-status\n");
 				goto done;
 			}
 			break;

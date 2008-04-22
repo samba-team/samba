@@ -373,13 +373,26 @@ static wbcErr process_domain_info_string(TALLOC_CTX *ctx,
 
 	/* Outgoing */
 	r = s;
+	if ((s = strchr(r, '\\')) == NULL) {
+		wbc_status = WBC_ERR_INVALID_RESPONSE;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+	*s = '\0';
+	s++;
+
+	if (strcmp(r, "Yes") == 0) {
+		info->trust_flags |= WBC_DOMINFO_TRUST_OUTGOING;		
+	}
+
+	/* Online/Offline status */
+
+	r = s;
 	if (r == NULL) {
 		wbc_status = WBC_ERR_INVALID_RESPONSE;
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
-
-	if (strcmp(r, "Yes") == 0) {
-		info->trust_flags |= WBC_DOMINFO_TRUST_OUTGOING;		
+	if ( strcmp(r, "Offline") == 0) {
+		info->domain_flags |= WBC_DOMINFO_DOMAIN_OFFLINE;
 	}
 
 	wbc_status = WBC_ERR_SUCCESS;
