@@ -172,6 +172,7 @@ smb.conf changes
 
     Parameter Name                      Description     Default
     --------------                      -----------     -------
+    administrative share		New		No
     client lanman auth			Changed Default	No
     client ldap sasl wrapping		New		plain
     client plaintext auth		Changed Default	No
@@ -180,7 +181,6 @@ smb.conf changes
     config backend			New		file
     ctdb socket				New		""
     debug class				New		No
-    administrative share		New		No
     lanman auth				Changed Default	No
     ldap debug level			New		0
     ldap debug threshold		New		10
