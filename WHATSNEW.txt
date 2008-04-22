@@ -226,6 +226,7 @@ o   Michael Adam <obnox@samba.org>
     * Fix handling of includes in registry libsmbconf backend.
     * Fix net conf import by reading from text backend.
     * Add a "net registry" command to locally access the registry.
+    * Add getvalue subcommand to "net rpc registry".
     * Add testsuites for libsmbconf and "net registry".
     * Fix Coverity IDs 517, 536, 545.
     * Remove unneeded REGISTRY_HOOKS layer from reghook cache
