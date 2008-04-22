@@ -27,12 +27,17 @@ struct smbconf_csn {
 	uint64_t csn;
 };
 
-/*
- * initialization functions for the available modules
- */
 
+/**
+ * intialization dispatcher function.
+ * takes source string in the form of "backend:path"
+ */
 WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 		    const char *source);
+
+/**
+ * initialization functions for the available modules
+ */
 
 WERROR smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 			const char *path);
