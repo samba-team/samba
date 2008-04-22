@@ -28,6 +28,7 @@
 #include "cmdline.h"
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
+#include "../common/rb_tree.h"
 
 static void usage(void);
 
@@ -785,6 +786,84 @@ static int tickle_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 }
 
 
+struct node_ip {
+	uint32_t pnn;
+	struct sockaddr_in sin;
+};
+
+void getips_store_callback(void *param, void *data)
+{
+	struct node_ip *node_ip = (struct node_ip *)data;
+	struct ctdb_all_public_ips *ips = param;
+	int i;
+
+	i = ips->num++;
+	ips->ips[i].pnn = node_ip->pnn;
+	ips->ips[i].sin = node_ip->sin;
+}
+
+void getips_count_callback(void *param, void *data)
+{
+	uint32_t *count = param;
+
+	(*count)++;
+}
+
+static int
+control_get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx, struct ctdb_all_public_ips **ips)
+{
+	struct ctdb_all_public_ips *tmp_ips;
+	struct ctdb_node_map *nodemap=NULL;
+	trbt_tree_t *tree;
+	int i, j, len, ret;
+	uint32_t count;
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, tmp_ctx, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
+		return ret;
+	}
+
+	tree = trbt_create(tmp_ctx, 0);
+
+	for(i=0;i<nodemap->num;i++){
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+
+		/* read the public ip list from this node */
+		ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), nodemap->nodes[i].pnn, tmp_ctx, &tmp_ips);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get public ip list from node %u\n", nodemap->nodes[i].pnn));
+			return -1;
+		}
+	
+		for (j=0; j<tmp_ips->num;j++) {
+			struct node_ip *node_ip;
+
+			node_ip = talloc(tmp_ctx, struct node_ip);
+			node_ip->pnn = tmp_ips->ips[j].pnn;
+			node_ip->sin = tmp_ips->ips[j].sin;
+
+			trbt_insert32(tree, tmp_ips->ips[j].sin.sin_addr.s_addr, node_ip);
+		}
+		talloc_free(tmp_ips);
+	}
+
+	/* traverse */
+	count = 0;
+	trbt_traversearray32(tree, 1, getips_count_callback, &count);
+
+	len = offsetof(struct ctdb_all_public_ips, ips) + 
+		count*sizeof(struct ctdb_public_ip);
+	tmp_ips = talloc_zero_size(tmp_ctx, len);
+	trbt_traversearray32(tree, 1, getips_store_callback, tmp_ips);
+
+	*ips = tmp_ips;
+
+	return 0;
+}
+
 /*
   display public ip status
  */
@@ -794,8 +873,13 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_all_public_ips *ips;
 
-	/* read the public ip list from this node */
-	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &ips);
+	if (options.pnn == CTDB_BROADCAST_ALL) {
+		/* read the list of public ips from all nodes */
+		ret = control_get_all_public_ips(ctdb, tmp_ctx, &ips);
+	} else {
+		/* read the public ip list from this node */
+		ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &ips);
+	}
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get public ips from node %u\n", options.pnn));
 		talloc_free(tmp_ctx);
@@ -805,7 +889,11 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 	if (options.machinereadable){
 		printf(":Public IP:Node:\n");
 	} else {
-		printf("Public IPs on node %u\n", options.pnn);
+		if (options.pnn == CTDB_BROADCAST_ALL) {
+			printf("Public IPs on ALL nodes\n");
+		} else {
+			printf("Public IPs on node %u\n", options.pnn);
+		}
 	}
 
 	for (i=1;i<=ips->num;i++) {
@@ -1582,7 +1670,7 @@ static const struct {
 	{ "listvars",        control_listvars,          true,  "list tunable variables"},
 	{ "statistics",      control_statistics,        false, "show statistics" },
 	{ "statisticsreset", control_statistics_reset,  true,  "reset statistics"},
-	{ "ip",              control_ip,                true,  "show which public ip's that ctdb manages" },
+	{ "ip",              control_ip,                false,  "show which public ip's that ctdb manages" },
 	{ "process-exists",  control_process_exists,    true,  "check if a process exists on a node",  "<pid>"},
 	{ "getdbmap",        control_getdbmap,          true,  "show the database map" },
 	{ "catdb",           control_catdb,             true,  "dump a database" ,                     "<dbname>"},
