@@ -302,10 +302,6 @@ static WERROR smbconf_txt_get_share_names(struct smbconf_ctx *ctx,
 	}
 
 	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
 
 	/* make sure "global" is always listed first,
 	 * possibly after NULL section */
@@ -411,10 +407,6 @@ static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
 	}
 
 	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
 
 	tmp_service = TALLOC_ZERO_P(tmp_ctx, struct smbconf_service);
 	if (tmp_service == NULL) {
