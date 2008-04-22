@@ -106,10 +106,6 @@ WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 	}
 
 	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
 
 	werr = smbconf_get_share_names(ctx, tmp_ctx, &tmp_num_shares,
 				       &tmp_share_names);
