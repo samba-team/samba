@@ -1358,7 +1358,7 @@ struct samr_GetDisplayEnumerationIndex {
 	struct {
 		struct policy_handle *domain_handle;/* [ref] */
 		uint16_t level;
-		struct lsa_String name;
+		struct lsa_String *name;/* [ref] */
 	} in;
 
 	struct {
@@ -1470,7 +1470,7 @@ struct samr_GetDisplayEnumerationIndex2 {
 	struct {
 		struct policy_handle *domain_handle;/* [ref] */
 		uint16_t level;
-		struct lsa_String name;
+		struct lsa_String *name;/* [ref] */
 	} in;
 
 	struct {
