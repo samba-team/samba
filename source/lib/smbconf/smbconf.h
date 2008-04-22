@@ -27,6 +27,13 @@ struct smbconf_csn {
 	uint64_t csn;
 };
 
+struct smbconf_service {
+	char *name;
+	uint32_t num_params;
+	char **param_names;
+	char **param_values;
+};
+
 
 /**
  * intialization dispatcher function.
