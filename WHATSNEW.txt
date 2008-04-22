@@ -206,6 +206,7 @@ o   Michael Adam <obnox@samba.org>
     * Fix %I macro expansion for IPv4 mapped IPv6 addresses.
     * Convert registry.tdb to use dbwrap and fix memleaks.
     * Several make test fixes and improvements.
+    * Several libreplace extensions and fixes (portet from v4-0-test).
     * Rename libnet_conf to libsmbconf and introduce backend abstraction layer.
     * Add text backend to libsmbconf, based on params.c.
     * Fix handling of includes in registry libsmbconf backend.
@@ -213,6 +214,16 @@ o   Michael Adam <obnox@samba.org>
     * Add a "net registry" command to locally access the registry.
     * Add testsuites for libsmbconf and "net registry".
     * Fix Coverity IDs 517, 536, 545.
+    * Remove unneeded REGISTRY_HOOKS layer from reghook cache
+      to allow plugging one backend to multiple keys more easily.
+    * Add smbconf_init dispatcher taking source strings like "backend:path"
+    * Fix handling of dangling parameters (without share) in libsmbconf.
+    * Introduce special meaning of "include = registry" to complement
+      the registry-only configuration of "config backend = registry".
+    * Enhance error propagation by making several registry functions
+      return WERROR.
+    * Fix loading of registry shares in smbd by fixing the token.
+    * Fix a segfault in tdb_wrap_log().
 
 
 o   Jeremy Allison <jra@samba.org>
