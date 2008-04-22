@@ -2566,6 +2566,67 @@ static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static NTSTATUS cmd_samr_get_dispinfo_idx(struct rpc_pipe_client *cli,
+					  TALLOC_CTX *mem_ctx,
+					  int argc, const char **argv)
+{
+	NTSTATUS status;
+	struct policy_handle connect_handle;
+	struct policy_handle domain_handle;
+	uint16_t level = 1;
+	struct lsa_String name;
+	uint32_t idx = 0;
+
+	if (argc < 2 || argc > 3) {
+		printf("Usage: %s name level\n", argv[0]);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	init_lsa_String(&name, argv[1]);
+
+	if (argc == 3) {
+		level = atoi(argv[2]);
+	}
+
+	status = rpccli_try_samr_connects(cli, mem_ctx,
+					  SEC_RIGHTS_MAXIMUM_ALLOWED,
+					  &connect_handle);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = rpccli_samr_OpenDomain(cli, mem_ctx,
+					&connect_handle,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					&domain_sid,
+					&domain_handle);
+
+	if (!NT_STATUS_IS_OK(status))
+		goto done;
+
+
+	status = rpccli_samr_GetDisplayEnumerationIndex(cli, mem_ctx,
+							&domain_handle,
+							level,
+							&name,
+							&idx);
+
+	if (NT_STATUS_IS_OK(status)) {
+		printf("idx: %d\n", idx);
+	}
+ done:
+
+	if (is_valid_policy_hnd(&domain_handle)) {
+		rpccli_samr_Close(cli, mem_ctx, &domain_handle);
+	}
+	if (is_valid_policy_hnd(&connect_handle)) {
+		rpccli_samr_Close(cli, mem_ctx, &connect_handle);
+	}
+
+	return status;
+
+}
 /* List of commands exported by this module */
 
 struct cmd_set samr_commands[] = {
@@ -2603,5 +2664,6 @@ struct cmd_set samr_commands[] = {
 	{ "lookupdomain",       RPC_RTYPE_NTSTATUS, cmd_samr_lookup_domain,         NULL, PI_SAMR, NULL, "Lookup Domain Name", "" },
 	{ "chgpasswd2",         RPC_RTYPE_NTSTATUS, cmd_samr_chgpasswd2,            NULL, PI_SAMR, NULL, "Change user password", "" },
 	{ "chgpasswd3",         RPC_RTYPE_NTSTATUS, cmd_samr_chgpasswd3,            NULL, PI_SAMR, NULL, "Change user password", "" },
+	{ "getdispinfoidx",     RPC_RTYPE_NTSTATUS, cmd_samr_get_dispinfo_idx,      NULL, PI_SAMR, NULL, "Get Display Information Index", "" },
 	{ NULL }
 };
