@@ -63,8 +63,8 @@ static struct smbcli_state *connect_to_server(struct torture_context *tctx)
 					lp_smb_ports(tctx->lp_ctx),
 					share, NULL,
 					cmdline_credentials, 
-					lp_resolve_context(tctx->lp_ctx), NULL, 
-					&options);
+					lp_resolve_context(tctx->lp_ctx),
+					tctx->ev, &options);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("failed to connect to //%s/%s: %s\n",

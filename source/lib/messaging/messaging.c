@@ -544,6 +544,10 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct socket_address *path;
 
+	if (ev == NULL) {
+		return NULL;
+	}
+
 	msg = talloc_zero(mem_ctx, struct messaging_context);
 	if (msg == NULL) {
 		return NULL;
@@ -554,10 +558,6 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(msg);
 		return NULL;
-	}
-
-	if (ev == NULL) {
-		ev = event_context_init(msg);
 	}
 
 	/* create the messaging directory if needed */

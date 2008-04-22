@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "system/passwd.h"
+#include "lib/events/events.h"
 
 static fstring password;
 static fstring username;
@@ -137,7 +138,8 @@ static bool try_unlock(struct smbcli_state *c, int fstype,
 return a connection to a server
 *******************************************************/
 static struct smbcli_state *connect_one(char *share, const char **ports,
-					struct smb_options *options)
+					struct smb_options *optionsi,
+					struct event_context *ev)
 {
 	struct smbcli_state *c;
 	char *server_n;
@@ -165,7 +167,7 @@ static struct smbcli_state *connect_one(char *share, const char **ports,
 
 	nt_status = smbcli_full_connection(NULL, 
 			   &c, myname, server_n, ports, share, NULL,
-			   username, lp_workgroup(), password, NULL,
+			   username, lp_workgroup(), password, ev,
 			   options);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("smbcli_full_connection failed with error %s\n", nt_errstr(nt_status)));
@@ -183,6 +185,7 @@ static void reconnect(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 		      int fnum[NSERVERS][NUMFSTYPES][NCONNECTIONS][NFILES],
 		      const char **ports,
 		      struct smbcli_options *options,
+		      struct event_context *ev,
 		      char *share1, char *share2)
 {
 	int server, conn, f, fstype;
@@ -201,7 +204,7 @@ static void reconnect(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 			smbcli_ulogoff(cli[server][conn]);
 			talloc_free(cli[server][conn]);
 		}
-		cli[server][conn] = connect_one(share[server], ports, options);
+		cli[server][conn] = connect_one(share[server], ports, options, ev);
 		if (!cli[server][conn]) {
 			DEBUG(0,("Failed to connect to %s\n", share[server]));
 			exit(1);
@@ -347,7 +350,11 @@ static int retest(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
    we then do random locking ops in tamdem on the 4 fnums from each
    server and ensure that the results match
  */
-static void test_locks(char *share1, char *share2, char *nfspath1, char *nfspath2, const char **ports, struct smbcli_options *options)
+static void test_locks(char *share1, char *share2,
+			char *nfspath1, char *nfspath2,
+			const char **ports,
+			struct smbcli_options *options,
+			struct event_context *ev)
 {
 	struct smbcli_state *cli[NSERVERS][NCONNECTIONS];
 	char *nfs[NSERVERS];
@@ -376,7 +383,7 @@ static void test_locks(char *share1, char *share2, char *nfspath1, char *nfspath
 		recorded[n].needed = true;
 	}
 
-	reconnect(cli, nfs, fnum, ports, options, share1, share2);
+	reconnect(cli, nfs, fnum, ports, options, ev, share1, share2);
 	open_files(cli, nfs, fnum);
 	n = retest(cli, nfs, fnum, numops);
 
@@ -387,7 +394,7 @@ static void test_locks(char *share1, char *share2, char *nfspath1, char *nfspath
 		n1 = n;
 
 		close_files(cli, nfs, fnum);
-		reconnect(cli, nfs, fnum, ports, options, share1, share2);
+		reconnect(cli, nfs, fnum, ports, options, ev, share1, share2);
 		open_files(cli, nfs, fnum);
 
 		for (i=0;i<n-1;i++) {
@@ -414,7 +421,7 @@ static void test_locks(char *share1, char *share2, char *nfspath1, char *nfspath
 	}
 
 	close_files(cli, nfs, fnum);
-	reconnect(cli, nfs, fnum, ports, options, share1, share2);
+	reconnect(cli, nfs, fnum, ports, options, ev, share1, share2);
 	open_files(cli, nfs, fnum);
 	showall = true;
 	n1 = retest(cli, nfs, fnum, n);
@@ -466,6 +473,7 @@ static void usage(void)
 	char *p;
 	int seed;
 	struct loadparm_context *lp_ctx;
+	struct event_context *ev;
 
 	setlinebuf(stdout);
 
@@ -542,10 +550,12 @@ static void usage(void)
 	DEBUG(0,("seed=%u\n", seed));
 	srandom(seed);
 
+	ev = event_context_init(talloc_autofree_context());
+
 	locking_init(1);
 	lp_smbcli_options(lp_ctx, &options);
 	test_locks(share1, share2, nfspath1, nfspath2, lp_smb_ports(lp_ctx),
-		   &options);
+		   &options, ev);
 
 	return(0);
 }

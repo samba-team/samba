@@ -64,7 +64,7 @@ static void netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 static bool nbt_test_netlogon(struct torture_context *tctx)
 {
 	struct dgram_mailslot_handler *dgmslot;
-	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(tctx, NULL, 
+	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(tctx, tctx->ev, 
 								 lp_iconv_convenience(tctx->lp_ctx));
 	struct socket_address *dest;
 	const char *myaddress;
@@ -147,7 +147,7 @@ static bool nbt_test_netlogon(struct torture_context *tctx)
 static bool nbt_test_netlogon2(struct torture_context *tctx)
 {
 	struct dgram_mailslot_handler *dgmslot;
-	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(tctx, NULL,
+	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(tctx, tctx->ev,
 								 lp_iconv_convenience(tctx->lp_ctx));
 	struct socket_address *dest;
 	const char *myaddress;
@@ -257,7 +257,7 @@ static void ntlogon_handler(struct dgram_mailslot_handler *dgmslot,
 static bool nbt_test_ntlogon(struct torture_context *tctx)
 {
 	struct dgram_mailslot_handler *dgmslot;
-	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(tctx, NULL,
+	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(tctx, tctx->ev,
 								 lp_iconv_convenience(tctx->lp_ctx));
 	struct socket_address *dest;
 	struct test_join *join_ctx;

@@ -59,12 +59,7 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 	if (result == NULL) goto failed;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
 
-	if (event_ctx != NULL) {
-		result->event_ctx = talloc_reference(result, event_ctx);
-	} else {
-		result->event_ctx = event_context_init(result);
-	}
-
+	result->event_ctx = talloc_reference(result, event_ctx);
 	if (result->event_ctx == NULL) goto failed;
 
 	state = talloc(result, struct sock_connect_state);
@@ -202,6 +197,11 @@ _PUBLIC_ struct smbcli_socket *smbcli_sock_connect_byname(const char *host, cons
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct smbcli_socket *result;
 
+	if (event_ctx == NULL) {
+		DEBUG(0, ("Invalid NULL event context passed in as parameter\n"));
+		return NULL;
+	}
+
 	if (tmp_ctx == NULL) {
 		DEBUG(0, ("talloc_new failed\n"));
 		return NULL;
@@ -210,16 +210,6 @@ _PUBLIC_ struct smbcli_socket *smbcli_sock_connect_byname(const char *host, cons
 	name = talloc_strdup(tmp_ctx, host);
 	if (name == NULL) {
 		DEBUG(0, ("talloc_strdup failed\n"));
-		talloc_free(tmp_ctx);
-		return NULL;
-	}
-
-	if (event_ctx == NULL) {
-		event_ctx = event_context_init(mem_ctx);
-	}
-
-	if (event_ctx == NULL) {
-		DEBUG(0, ("event_context_init failed\n"));
 		talloc_free(tmp_ctx);
 		return NULL;
 	}

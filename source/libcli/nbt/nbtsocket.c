@@ -318,11 +318,7 @@ _PUBLIC_ struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
 	nbtsock = talloc(mem_ctx, struct nbt_name_socket);
 	if (nbtsock == NULL) goto failed;
 
-	if (event_ctx == NULL) {
-		nbtsock->event_ctx = event_context_init(nbtsock);
-	} else {
-		nbtsock->event_ctx = talloc_reference(nbtsock, event_ctx);
-	}
+	nbtsock->event_ctx = talloc_reference(nbtsock, event_ctx);
 	if (nbtsock->event_ctx == NULL) goto failed;
 
 	status = socket_create("ip", SOCKET_TYPE_DGRAM, &nbtsock->sock, 0);
