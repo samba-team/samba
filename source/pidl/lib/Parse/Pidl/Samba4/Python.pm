@@ -599,6 +599,7 @@ sub Interface($$$)
 		$self->pidl("struct loadparm_context *lp_ctx = NULL;");
 		$self->pidl("PyObject *py_lp_ctx = Py_None, *py_credentials = Py_None;");
 		$self->pidl("TALLOC_CTX *mem_ctx = NULL;");
+		$self->pidl("struct event_context *event_ctx;");
 		$self->pidl("NTSTATUS status;");
 		$self->pidl("");
 		$self->pidl("const char *kwnames[] = {");
@@ -634,9 +635,11 @@ sub Interface($$$)
 
 		$self->pidl("ret = PyObject_New($interface->{NAME}_InterfaceObject, &$interface->{NAME}_InterfaceType);");
 		$self->pidl("");
+		$self->pidl("event_ctx = event_context_init(mem_ctx);");
+		$self->pidl("");
 
 		$self->pidl("status = dcerpc_pipe_connect(NULL, &ret->pipe, binding_string, ");
-		$self->pidl("             &ndr_table_$interface->{NAME}, credentials, NULL, lp_ctx);");
+		$self->pidl("             &ndr_table_$interface->{NAME}, credentials, event_ctx, lp_ctx);");
 		$self->handle_ntstatus("status", "NULL", "mem_ctx");
 
 		$self->pidl("ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;");
@@ -1020,6 +1023,7 @@ sub Parse($$$$$)
 #include \"librpc/rpc/dcerpc.h\"
 #include \"scripting/python/pytalloc.h\"
 #include \"scripting/python/pyrpc.h\"
+#include \"lib/events/events.h\"
 #include \"$hdr\"
 #include \"$ndr_hdr\"
 #include \"$py_hdr\"
