@@ -201,7 +201,6 @@ again:
 		SAFE_FREE(buf);
 		return NULL;
 	}
-	SAFE_FREE(buf);
 	return &grp;
 }
 
@@ -240,7 +239,6 @@ again:
 		SAFE_FREE(buf);
 		return NULL;
 	}
-	SAFE_FREE(buf);
 	return &grp;
 }
 
@@ -280,7 +278,6 @@ again:
 		SAFE_FREE(buf);
 		return NULL;
 	}
-	SAFE_FREE(buf);
 	return &grp;
 }
 
