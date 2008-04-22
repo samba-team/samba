@@ -36,8 +36,8 @@ struct smbconf_ops {
 	WERROR (*create_share)(struct smbconf_ctx *ctx, const char *service);
 	WERROR (*get_share)(struct smbconf_ctx *ctx,
 			    TALLOC_CTX *mem_ctx,
-			    const char *servicename, uint32_t *num_params,
-			    char ***param_names, char ***param_values);
+			    const char *servicename,
+			    struct smbconf_service **service);
 	WERROR (*delete_share)(struct smbconf_ctx *ctx,
 				    const char *servicename);
 	WERROR (*set_parameter)(struct smbconf_ctx *ctx,

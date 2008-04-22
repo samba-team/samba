@@ -138,10 +138,7 @@ static int net_conf_delincludes_usage(int argc, const char **argv)
  * This functions process a service previously loaded with libsmbconf.
  */
 static WERROR import_process_service(struct smbconf_ctx *conf_ctx,
-				     const char *servicename,
-				     const uint32_t num_params,
-				     const char **param_names,
-				     const char **param_values)
+				     struct smbconf_service *service)
 {
 	uint32_t idx;
 	WERROR werr = WERR_OK;
@@ -151,31 +148,32 @@ static WERROR import_process_service(struct smbconf_ctx *conf_ctx,
 
 	if (opt_testmode) {
 		const char *indent = "";
-		if (servicename != NULL) {
-			d_printf("[%s]\n", servicename);
+		if (service->name != NULL) {
+			d_printf("[%s]\n", service->name);
 			indent = "\t";
 		}
-		for (idx = 0; idx < num_params; idx++) {
-			d_printf("%s%s = %s\n", indent, param_names[idx],
-				 param_values[idx]);
+		for (idx = 0; idx < service->num_params; idx++) {
+			d_printf("%s%s = %s\n", indent,
+				 service->param_names[idx],
+				 service->param_values[idx]);
 		}
 		d_printf("\n");
 		goto done;
 	}
 
-	if (smbconf_share_exists(conf_ctx, servicename)) {
-		werr = smbconf_delete_share(conf_ctx, servicename);
+	if (smbconf_share_exists(conf_ctx, service->name)) {
+		werr = smbconf_delete_share(conf_ctx, service->name);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
 	}
-	werr = smbconf_create_share(conf_ctx, servicename);
+	werr = smbconf_create_share(conf_ctx, service->name);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
-	for (idx = 0; idx < num_params; idx ++) {
-		if (strequal(param_names[idx], "include")) {
+	for (idx = 0; idx < service->num_params; idx ++) {
+		if (strequal(service->param_names[idx], "include")) {
 			includes = TALLOC_REALLOC_ARRAY(mem_ctx,
 							includes,
 							char *,
@@ -185,7 +183,7 @@ static WERROR import_process_service(struct smbconf_ctx *conf_ctx,
 				goto done;
 			}
 			includes[num_includes] = talloc_strdup(includes,
-							param_values[idx]);
+						service->param_values[idx]);
 			if (includes[num_includes] == NULL) {
 				werr = WERR_NOMEM;
 				goto done;
@@ -193,16 +191,16 @@ static WERROR import_process_service(struct smbconf_ctx *conf_ctx,
 			num_includes++;
 		} else {
 			werr = smbconf_set_parameter(conf_ctx,
-						     servicename,
-						     param_names[idx],
-						     param_values[idx]);
+						     service->name,
+						     service->param_names[idx],
+						     service->param_values[idx]);
 			if (!W_ERROR_IS_OK(werr)) {
 				goto done;
 			}
 		}
 	}
 
-	werr = smbconf_set_includes(conf_ctx, servicename, num_includes,
+	werr = smbconf_set_includes(conf_ctx, service->name, num_includes,
 				    (const char **)includes);
 
 done:
@@ -224,11 +222,8 @@ static int net_conf_list(struct smbconf_ctx *conf_ctx,
 	int ret = -1;
 	TALLOC_CTX *mem_ctx;
 	uint32_t num_shares;
-	char **share_names;
-	uint32_t *num_params;
-	char ***param_names;
-	char ***param_values;
 	uint32_t share_count, param_count;
+	struct smbconf_service **shares = NULL;
 
 	mem_ctx = talloc_stackframe();
 
@@ -237,8 +232,7 @@ static int net_conf_list(struct smbconf_ctx *conf_ctx,
 		goto done;
 	}
 
-	werr = smbconf_get_config(conf_ctx, mem_ctx, &num_shares, &share_names,
-				  &num_params, &param_names, &param_values);
+	werr = smbconf_get_config(conf_ctx, mem_ctx, &num_shares, &shares);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error getting config: %s\n",
 			  dos_errstr(werr));
@@ -247,17 +241,18 @@ static int net_conf_list(struct smbconf_ctx *conf_ctx,
 
 	for (share_count = 0; share_count < num_shares; share_count++) {
 		const char *indent = "";
-		if (share_names[share_count] != NULL) {
-			d_printf("[%s]\n", share_names[share_count]);
+		if (shares[share_count]->name != NULL) {
+			d_printf("[%s]\n", shares[share_count]->name);
 			indent = "\t";
 		}
-		for (param_count = 0; param_count < num_params[share_count];
+		for (param_count = 0;
+		     param_count < shares[share_count]->num_params;
 		     param_count++)
 		{
 			d_printf("%s%s = %s\n",
 				 indent,
-				 param_names[share_count][param_count],
-				 param_values[share_count][param_count]);
+				 shares[share_count]->param_names[param_count],
+				 shares[share_count]->param_values[param_count]);
 		}
 		d_printf("\n");
 	}
@@ -320,35 +315,25 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 	}
 
 	if (servicename != NULL) {
-		char **param_names, **param_values;
-		uint32_t num_params;
+		struct smbconf_service *service = NULL;
 
 		werr = smbconf_get_share(txt_ctx, mem_ctx,
 					 servicename,
-					 &num_params,
-					 &param_names,
-					 &param_values);
+					 &service);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
-		werr = import_process_service(conf_ctx,
-					      servicename,
-					      num_params,
-					      (const char **)param_names,
-					      (const char **)param_values);
+		werr = import_process_service(conf_ctx, service);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
 	} else {
-		char **share_names, ***param_names, ***param_values;
-		uint32_t num_shares, *num_params, sidx;
+		struct smbconf_service **services = NULL;
+		uint32_t num_shares, sidx;
 
 		werr = smbconf_get_config(txt_ctx, mem_ctx,
 					  &num_shares,
-					  &share_names,
-					  &num_params,
-					  &param_names,
-					  &param_values);
+					  &services);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -359,11 +344,7 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 			}
 		}
 		for (sidx = 0; sidx < num_shares; sidx++) {
-			werr = import_process_service(conf_ctx,
-					share_names[sidx],
-					num_params[sidx],
-					(const char **)param_names[sidx],
-					(const char **)param_values[sidx]);
+			werr = import_process_service(conf_ctx, services[sidx]);
 			if (!W_ERROR_IS_OK(werr)) {
 				goto done;
 			}
@@ -442,10 +423,8 @@ static int net_conf_showshare(struct smbconf_ctx *conf_ctx,
 	WERROR werr = WERR_OK;
 	const char *sharename = NULL;
 	TALLOC_CTX *mem_ctx;
-	uint32_t num_params;
 	uint32_t count;
-	char **param_names;
-	char **param_values;
+	struct smbconf_service *service = NULL;
 
 	mem_ctx = talloc_stackframe();
 
@@ -460,8 +439,7 @@ static int net_conf_showshare(struct smbconf_ctx *conf_ctx,
 		goto done;
 	}
 
-	werr = smbconf_get_share(conf_ctx, mem_ctx, sharename, &num_params,
-				 &param_names, &param_values);
+	werr = smbconf_get_share(conf_ctx, mem_ctx, sharename, &service);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_printf("error getting share parameters: %s\n",
 			 dos_errstr(werr));
@@ -470,9 +448,9 @@ static int net_conf_showshare(struct smbconf_ctx *conf_ctx,
 
 	d_printf("[%s]\n", sharename);
 
-	for (count = 0; count < num_params; count++) {
-		d_printf("\t%s = %s\n", param_names[count],
-			 param_values[count]);
+	for (count = 0; count < service->num_params; count++) {
+		d_printf("\t%s = %s\n", service->param_names[count],
+			 service->param_values[count]);
 	}
 
 	ret = 0;
