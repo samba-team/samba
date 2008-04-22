@@ -135,10 +135,10 @@ struct wbcDomainInfo {
 
 /* wbcDomainInfo->domain_flags */
 
-#define WBC_DOMINFO_UNKNOWN           0x00000000
-#define WBC_DOMINFO_NATIVE            0x00000001
-#define WBC_DOMINFO_AD                0x00000002
-#define WBC_DOMINFO_PRIMARY           0x00000004
+#define WBC_DOMINFO_DOMAIN_UNKNOWN    0x00000000
+#define WBC_DOMINFO_DOMAIN_NATIVE     0x00000001
+#define WBC_DOMINFO_DOMAIN_AD         0x00000002
+#define WBC_DOMINFO_DOMAIN_PRIMARY    0x00000004
 
 /* wbcDomainInfo->trust_flags */
 
