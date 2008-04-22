@@ -63,8 +63,7 @@ WERROR smbconf_drop(struct smbconf_ctx *ctx);
 WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 			  TALLOC_CTX *mem_ctx,
 			  uint32_t *num_shares,
-			  char ***share_names, uint32_t **num_params,
-			  char ****param_names, char ****param_values);
+			  struct smbconf_service ***services);
 WERROR smbconf_get_share_names(struct smbconf_ctx *ctx,
 			       TALLOC_CTX *mem_ctx,
 			       uint32_t *num_shares,
@@ -73,8 +72,8 @@ bool smbconf_share_exists(struct smbconf_ctx *ctx, const char *servicename);
 WERROR smbconf_create_share(struct smbconf_ctx *ctx, const char *servicename);
 WERROR smbconf_get_share(struct smbconf_ctx *ctx,
 			 TALLOC_CTX *mem_ctx,
-			 const char *servicename, uint32_t *num_params,
-			 char ***param_names, char ***param_values);
+			 const char *servicename,
+			 struct smbconf_service **service);
 WERROR smbconf_delete_share(struct smbconf_ctx *ctx,
 			    const char *servicename);
 WERROR smbconf_set_parameter(struct smbconf_ctx *ctx,
