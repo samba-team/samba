@@ -37,6 +37,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/flags.h"
 #include "param/param.h"
+#include "lib/events/events.h"
 
 char *samdb_relative_path(struct ldb_context *ldb,
 				 TALLOC_CTX *mem_ctx, 
@@ -115,6 +116,12 @@ int samdb_copy_template(struct ldb_context *ldb,
 		
 		event_ctx = (struct event_context *)ldb_get_opaque(ldb, "EventContext");
 		lp_ctx = (struct loadparm_context *)ldb_get_opaque(ldb, "loadparm");
+
+		/* FIXME: need to remove this wehn we finally pass the event
+		 * context around in ldb */
+		if (event_ctx == NULL) {
+			event_ctx = event_context_init(templates_ldb);
+		}
 
 		templates_ldb = ldb_wrap_connect(ldb, event_ctx, lp_ctx, 
 						templates_ldb_path, NULL,

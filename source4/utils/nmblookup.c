@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/socket/socket.h"
+#include "lib/events/events.h"
 #include "system/network.h"
 #include "system/locale.h"
 #include "lib/socket/netif.h"
@@ -180,7 +181,7 @@ static NTSTATUS do_node_query(struct nbt_name_socket *nbtsock,
 }
 
 
-static bool process_one(struct loadparm_context *lp_ctx, 
+static bool process_one(struct loadparm_context *lp_ctx, struct event_context *ev,
 			struct interface *ifaces, const char *name, int nbt_port)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
@@ -211,7 +212,7 @@ static bool process_one(struct loadparm_context *lp_ctx,
 		node_name = talloc_strdup(tmp_ctx, name);
 	}
 
-	nbtsock = nbt_name_socket_init(tmp_ctx, NULL, lp_iconv_convenience(lp_ctx));
+	nbtsock = nbt_name_socket_init(tmp_ctx, ev, lp_iconv_convenience(lp_ctx));
 	
 	if (options.root_port) {
 		all_zero_addr = socket_address_from_strings(tmp_ctx, nbtsock->sock->backend_name, 
@@ -271,6 +272,7 @@ int main(int argc, const char *argv[])
 {
 	bool ret = true;
 	struct interface *ifaces;
+	struct event_context *ev;
 	poptContext pc;
 	int opt;
 	enum {
@@ -356,12 +358,16 @@ int main(int argc, const char *argv[])
 	}
 
 	load_interfaces(NULL, lp_interfaces(cmdline_lp_ctx), &ifaces);
-	
+
+	ev = event_context_init(talloc_autofree_context());
+
 	while (poptPeekArg(pc)) {
 		const char *name = poptGetArg(pc);
 
-		ret &= process_one(cmdline_lp_ctx, ifaces, name, lp_nbt_port(cmdline_lp_ctx));
+		ret &= process_one(cmdline_lp_ctx, ev, ifaces, name, lp_nbt_port(cmdline_lp_ctx));
 	}
+
+	talloc_free(ev);
 
 	talloc_free(ifaces);
 

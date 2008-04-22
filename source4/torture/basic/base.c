@@ -55,7 +55,8 @@ static struct smbcli_state *open_nbt_connection(struct torture_context *tctx)
 
 	lp_smbcli_options(tctx->lp_ctx, &options);
 
-	if (!smbcli_socket_connect(cli, host, lp_smb_ports(tctx->lp_ctx), lp_resolve_context(tctx->lp_ctx), &options)) {
+	if (!smbcli_socket_connect(cli, host, lp_smb_ports(tctx->lp_ctx), tctx->ev,
+				   lp_resolve_context(tctx->lp_ctx), &options)) {
 		torture_comment(tctx, "Failed to connect with %s\n", host);
 		goto failed;
 	}

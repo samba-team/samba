@@ -24,6 +24,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "libcli/resolve/resolve.h"
 #include "libcli/raw/libcliraw.h"
+#include "lib/events/events.h"
 
 #include "cifsdd.h"
 #include "param/param.h"
@@ -354,6 +355,7 @@ static void print_transfer_stats(void)
 }
 
 static struct dd_iohandle * open_file(struct resolve_context *resolve_ctx, 
+				      struct event_context *ev,
 				      const char * which, const char **ports,
 				      struct smbcli_options *smb_options)
 {
@@ -375,13 +377,13 @@ static struct dd_iohandle * open_file(struct resolve_context *resolve_ctx,
 
 	if (strcmp(which, "if") == 0) {
 		path = check_arg_pathname("if");
-		handle = dd_open_path(resolve_ctx, path, ports, 
+		handle = dd_open_path(resolve_ctx, ev, path, ports,
 				      check_arg_numeric("ibs"), options,
 				      smb_options);
 	} else if (strcmp(which, "of") == 0) {
 		options |= DD_WRITE;
 		path = check_arg_pathname("of");
-		handle = dd_open_path(resolve_ctx, path, ports, 
+		handle = dd_open_path(resolve_ctx, ev, path, ports,
 				      check_arg_numeric("obs"), options,
 				      smb_options);
 	} else {
@@ -396,7 +398,7 @@ static struct dd_iohandle * open_file(struct resolve_context *resolve_ctx,
 	return(handle);
 }
 
-static int copy_files(struct loadparm_context *lp_ctx)
+static int copy_files(struct event_context *ev, struct loadparm_context *lp_ctx)
 {
 	uint8_t *	iobuf;	/* IO buffer. */
 	uint64_t	iomax;	/* Size of the IO buffer. */
@@ -433,12 +435,12 @@ static int copy_files(struct loadparm_context *lp_ctx)
 	DEBUG(4, ("IO buffer size is %llu, max xmit is %d\n",
 			(unsigned long long)iomax, options.max_xmit));
 
-	if (!(ifile = open_file(lp_resolve_context(lp_ctx), "if", 
+	if (!(ifile = open_file(lp_resolve_context(lp_ctx), ev, "if",
 				lp_smb_ports(lp_ctx), &options))) {
 		return(FILESYS_EXIT_CODE);
 	}
 
-	if (!(ofile = open_file(lp_resolve_context(lp_ctx), "of", 
+	if (!(ofile = open_file(lp_resolve_context(lp_ctx), ev, "of",
 				lp_smb_ports(lp_ctx), &options))) {
 		return(FILESYS_EXIT_CODE);
 	}
@@ -528,6 +530,7 @@ int main(int argc, const char ** argv)
 {
 	int i;
 	const char ** dd_args;
+	struct event_context *ev;
 
 	poptContext pctx;
 	struct poptOption poptions[] = {
@@ -578,6 +581,8 @@ int main(int argc, const char ** argv)
 		}
 	}
 
+	ev = event_context_init(talloc_autofree_context());
+
 	gensec_init(cmdline_lp_ctx);
 	dump_args();
 
@@ -599,7 +604,7 @@ int main(int argc, const char ** argv)
 
 	CatchSignal(SIGINT, dd_handle_signal);
 	CatchSignal(SIGUSR1, dd_handle_signal);
-	return(copy_files(cmdline_lp_ctx));
+	return(copy_files(ev, cmdline_lp_ctx));
 }
 
 /* vim: set sw=8 sts=8 ts=8 tw=79 : */

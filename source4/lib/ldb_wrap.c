@@ -116,7 +116,7 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 			    talloc_asprintf(ldb, "%s/ldb", lp_modulesdir(lp_ctx)));
 
 	if (ev == NULL) {
-		ev = event_context_find(mem_ctx);
+		return NULL;
 	}
 
 	if (ldb_set_opaque(ldb, "EventContext", ev)) {

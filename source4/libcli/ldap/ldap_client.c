@@ -48,17 +48,13 @@ _PUBLIC_ struct ldap_connection *ldap4_new_connection(TALLOC_CTX *mem_ctx,
 {
 	struct ldap_connection *conn;
 
-	conn = talloc_zero(mem_ctx, struct ldap_connection);
-	if (conn == NULL) {
+	if (ev == NULL) {
 		return NULL;
 	}
 
-	if (ev == NULL) {
-		ev = event_context_init(conn);
-		if (ev == NULL) {
-			talloc_free(conn);
-			return NULL;
-		}
+	conn = talloc_zero(mem_ctx, struct ldap_connection);
+	if (conn == NULL) {
+		return NULL;
 	}
 
 	conn->next_messageid  = 1;

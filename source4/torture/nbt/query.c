@@ -47,7 +47,7 @@ static void increment_handler(struct nbt_name_request *req)
 */
 static bool bench_namequery(struct torture_context *tctx)
 {
-	struct nbt_name_socket *nbtsock = nbt_name_socket_init(tctx, NULL,
+	struct nbt_name_socket *nbtsock = nbt_name_socket_init(tctx, tctx->ev,
 							       lp_iconv_convenience(tctx->lp_ctx));
 	int num_sent=0;
 	struct result_struct *result;

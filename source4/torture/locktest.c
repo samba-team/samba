@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
+#include "lib/events/events.h"
 #include "system/filesys.h"
 #include "system/time.h"
 #include "pstring.h"
@@ -107,7 +108,8 @@ static struct record *recorded;
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct smbcli_state *connect_one(struct loadparm_context *lp_ctx,
+static struct smbcli_state *connect_one(struct event_context *ev,
+					struct loadparm_context *lp_ctx,
 					char *share, int snum, int conn)
 {
 	struct smbcli_state *c;
@@ -162,7 +164,7 @@ static struct smbcli_state *connect_one(struct loadparm_context *lp_ctx,
 						share, NULL,
 						servers[snum], 
 						lp_resolve_context(lp_ctx),
-						NULL, &options);
+						ev, &options);
 		if (!NT_STATUS_IS_OK(status)) {
 			sleep(2);
 		}
@@ -176,7 +178,8 @@ static struct smbcli_state *connect_one(struct loadparm_context *lp_ctx,
 }
 
 
-static void reconnect(struct loadparm_context *lp_ctx,
+static void reconnect(struct event_context *ev,
+		      struct loadparm_context *lp_ctx,
 		      struct smbcli_state *cli[NSERVERS][NCONNECTIONS], int fnum[NSERVERS][NCONNECTIONS][NFILES],
 		      char *share[NSERVERS])
 {
@@ -193,7 +196,7 @@ static void reconnect(struct loadparm_context *lp_ctx,
 			}
 			talloc_free(cli[server][conn]);
 		}
-		cli[server][conn] = connect_one(lp_ctx, share[server], 
+		cli[server][conn] = connect_one(ev, lp_ctx, share[server], 
 						server, conn);
 		if (!cli[server][conn]) {
 			DEBUG(0,("Failed to connect to %s\n", share[server]));
@@ -396,7 +399,9 @@ static int retest(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
    we then do random locking ops in tamdem on the 4 fnums from each
    server and ensure that the results match
  */
-static int test_locks(struct loadparm_context *lp_ctx, char *share[NSERVERS])
+static int test_locks(struct event_context *ev,
+		      struct loadparm_context *lp_ctx,
+		      char *share[NSERVERS])
 {
 	struct smbcli_state *cli[NSERVERS][NCONNECTIONS];
 	int fnum[NSERVERS][NCONNECTIONS][NFILES];
@@ -447,7 +452,7 @@ static int test_locks(struct loadparm_context *lp_ctx, char *share[NSERVERS])
 #endif
 	}
 
-	reconnect(lp_ctx, cli, fnum, share);
+	reconnect(ev, lp_ctx, cli, fnum, share);
 	open_files(cli, fnum);
 	n = retest(cli, fnum, numops);
 
@@ -465,7 +470,7 @@ static int test_locks(struct loadparm_context *lp_ctx, char *share[NSERVERS])
 		n1 = n;
 
 		close_files(cli, fnum);
-		reconnect(lp_ctx, cli, fnum, share);
+		reconnect(ev, lp_ctx, cli, fnum, share);
 		open_files(cli, fnum);
 
 		for (i=0;i<n-skip;i+=skip) {
@@ -503,7 +508,7 @@ static int test_locks(struct loadparm_context *lp_ctx, char *share[NSERVERS])
 	}
 
 	close_files(cli, fnum);
-	reconnect(lp_ctx, cli, fnum, share);
+	reconnect(ev, lp_ctx, cli, fnum, share);
 	open_files(cli, fnum);
 	showall = true;
 	n1 = retest(cli, fnum, n);
@@ -543,6 +548,7 @@ static void usage(poptContext pc)
 	int opt;
 	int seed, server;
 	int username_count=0;
+	struct event_context *ev;
 	struct loadparm_context *lp_ctx;
 	poptContext pc;
 	int argc_new, i;
@@ -631,12 +637,14 @@ static void usage(poptContext pc)
 		servers[1] = servers[0];
 	}
 
+	ev = event_context_init(talloc_autofree_context());
+
 	gensec_init(lp_ctx);
 
 	DEBUG(0,("seed=%u base=%d range=%d min_length=%d\n", 
 		 seed, lock_base, lock_range, min_length));
 	srandom(seed);
 
-	return test_locks(lp_ctx, share);
+	return test_locks(ev, lp_ctx, share);
 }
 

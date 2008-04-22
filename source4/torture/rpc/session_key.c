@@ -158,7 +158,11 @@ static bool test_secrets(struct torture_context *torture, const void *_data)
 	binding->flags |= settings->bindoptions;
 
 	torture_assert_ntstatus_ok(torture, 
-				   dcerpc_pipe_connect_b(torture, &p, binding, &ndr_table_lsarpc, cmdline_credentials, NULL, torture->lp_ctx),
+				   dcerpc_pipe_connect_b(torture, &p, binding,
+							 &ndr_table_lsarpc,
+							 cmdline_credentials,
+							 torture->ev,
+							 torture->lp_ctx),
 				   "connect");
 
 	if (!test_lsa_OpenPolicy2(p, torture, &handle)) {
