@@ -58,7 +58,6 @@ struct cli_pipe_auth_data {
 		NTLMSSP_STATE *ntlmssp_state;
 		struct kerberos_auth_struct *kerberos_auth;
 	} a_u;
-	void (*cli_auth_data_free_func)(struct cli_pipe_auth_data *);
 };
 
 struct rpc_pipe_client {
