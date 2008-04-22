@@ -139,6 +139,7 @@ struct wbcDomainInfo {
 #define WBC_DOMINFO_DOMAIN_NATIVE     0x00000001
 #define WBC_DOMINFO_DOMAIN_AD         0x00000002
 #define WBC_DOMINFO_DOMAIN_PRIMARY    0x00000004
+#define WBC_DOMINFO_DOMAIN_OFFLINE    0x00000008
 
 /* wbcDomainInfo->trust_flags */
 
