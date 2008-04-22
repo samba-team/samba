@@ -170,11 +170,11 @@ wbcErr wbcDomainInfo(const char *domain, struct wbcDomainInfo **dinfo)
 	BAIL_ON_WBC_ERROR(wbc_status);
 
 	if (response.data.domain_info.native_mode)
-		info->domain_flags |= WBC_DOMINFO_NATIVE;
+		info->domain_flags |= WBC_DOMINFO_DOMAIN_NATIVE;
 	if (response.data.domain_info.active_directory)
-		info->domain_flags |= WBC_DOMINFO_AD;
+		info->domain_flags |= WBC_DOMINFO_DOMAIN_AD;
 	if (response.data.domain_info.primary)
-		info->domain_flags |= WBC_DOMINFO_PRIMARY;
+		info->domain_flags |= WBC_DOMINFO_DOMAIN_PRIMARY;
 
 	*dinfo = info;
 

@@ -485,12 +485,12 @@ static bool wbinfo_domain_info(const char *domain)
 	d_printf("SID               : %s\n", sid_str);
 
 	d_printf("Active Directory  : %s\n",
-		 (dinfo->domain_flags & WBC_DOMINFO_AD) ? "Yes" : "No");
+		 (dinfo->domain_flags & WBC_DOMINFO_DOMAIN_AD) ? "Yes" : "No");
 	d_printf("Native            : %s\n",
-		 (dinfo->domain_flags & WBC_DOMINFO_NATIVE) ? "Yes" : "No");
+		 (dinfo->domain_flags & WBC_DOMINFO_DOMAIN_NATIVE) ? "Yes" : "No");
 
 	d_printf("Primary           : %s\n",
-		 (dinfo->domain_flags & WBC_DOMINFO_PRIMARY) ? "Yes" : "No");
+		 (dinfo->domain_flags & WBC_DOMINFO_DOMAIN_PRIMARY) ? "Yes" : "No");
 
 	wbcFreeMemory(sid_str);
 	wbcFreeMemory(dinfo);
