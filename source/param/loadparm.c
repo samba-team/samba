@@ -6497,9 +6497,7 @@ bool service_ok(int iService)
 static bool process_registry_globals(void)
 {
 	WERROR werr;
-	char **param_names;
-	char **param_values;
-	uint32_t num_params;
+	struct smbconf_service *service = NULL;
 	uint32_t count;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	bool ret = false;
@@ -6519,14 +6517,14 @@ static bool process_registry_globals(void)
 		goto done;
 	}
 
-	werr = smbconf_get_share(conf_ctx, mem_ctx, GLOBAL_NAME,
-				 &num_params, &param_names, &param_values);
+	werr = smbconf_get_share(conf_ctx, mem_ctx, GLOBAL_NAME, &service);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
-	for (count = 0; count < num_params; count++) {
-		ret = do_parameter(param_names[count], param_values[count],
+	for (count = 0; count < service->num_params; count++) {
+		ret = do_parameter(service->param_names[count],
+				   service->param_values[count],
 				   NULL);
 		if (ret != true) {
 			goto done;

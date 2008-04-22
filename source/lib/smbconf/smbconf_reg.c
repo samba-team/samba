@@ -875,23 +875,44 @@ static WERROR smbconf_reg_create_share(struct smbconf_ctx *ctx,
 static WERROR smbconf_reg_get_share(struct smbconf_ctx *ctx,
 				    TALLOC_CTX *mem_ctx,
 				    const char *servicename,
-				    uint32_t *num_params,
-				    char ***param_names, char ***param_values)
+				    struct smbconf_service **service)
 {
 	WERROR werr = WERR_OK;
 	struct registry_key *key = NULL;
+	struct smbconf_service *tmp_service = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
-	werr = smbconf_reg_open_service_key(mem_ctx, ctx, servicename,
+	werr = smbconf_reg_open_service_key(tmp_ctx, ctx, servicename,
 					    REG_KEY_READ, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
-	werr = smbconf_reg_get_values(mem_ctx, key, num_params,
-				      param_names, param_values);
+	tmp_service = TALLOC_ZERO_P(tmp_ctx, struct smbconf_service);
+	if (tmp_service == NULL) {
+		werr =  WERR_NOMEM;
+		goto done;
+	}
+
+	if (servicename != NULL) {
+		tmp_service->name = talloc_strdup(tmp_service, servicename);
+		if (tmp_service->name == NULL) {
+			werr = WERR_NOMEM;
+			goto done;
+		}
+	}
+
+	werr = smbconf_reg_get_values(tmp_service, key,
+				      &(tmp_service->num_params),
+				      &(tmp_service->param_names),
+				      &(tmp_service->param_values));
+
+	if (W_ERROR_IS_OK(werr)) {
+		*service = talloc_move(mem_ctx, &tmp_service);
+	}
 
 done:
-	TALLOC_FREE(key);
+	TALLOC_FREE(tmp_ctx);
 	return werr;
 }
 

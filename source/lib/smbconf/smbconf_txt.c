@@ -389,15 +389,13 @@ static WERROR smbconf_txt_create_share(struct smbconf_ctx *ctx,
 static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
 				    TALLOC_CTX *mem_ctx,
 				    const char *servicename,
-				    uint32_t *num_params,
-				    char ***param_names, char ***param_values)
+				    struct smbconf_service **service)
 {
 	WERROR werr;
 	uint32_t sidx, count;
 	bool found;
 	TALLOC_CTX *tmp_ctx = NULL;
-	char **tmp_param_names = NULL;
-	char **tmp_param_values = NULL;
+	struct smbconf_service *tmp_service = NULL;
 
 	werr = smbconf_txt_load_file(ctx);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -418,16 +416,30 @@ static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
 		goto done;
 	}
 
+	tmp_service = TALLOC_ZERO_P(tmp_ctx, struct smbconf_service);
+	if (tmp_service == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	if (servicename != NULL) {
+		tmp_service->name = talloc_strdup(tmp_service, servicename);
+		if (tmp_service->name == NULL) {
+			werr = WERR_NOMEM;
+			goto done;
+		}
+	}
+
 	for (count = 0; count < pd(ctx)->cache->num_params[sidx]; count++) {
-		werr = smbconf_add_string_to_array(tmp_ctx,
-				&tmp_param_names,
+		werr = smbconf_add_string_to_array(tmp_service,
+				&(tmp_service->param_names),
 				count,
 				pd(ctx)->cache->param_names[sidx][count]);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
-		werr = smbconf_add_string_to_array(tmp_ctx,
-				&tmp_param_values,
+		werr = smbconf_add_string_to_array(tmp_service,
+				&(tmp_service->param_values),
 				count,
 				pd(ctx)->cache->param_values[sidx][count]);
 		if (!W_ERROR_IS_OK(werr)) {
@@ -435,13 +447,11 @@ static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
 		}
 	}
 
-	*num_params = count;
+	tmp_service->num_params = count;
 	if (count > 0) {
-		*param_names = talloc_move(mem_ctx, &tmp_param_names);
-		*param_values = talloc_move(mem_ctx, &tmp_param_values);
+		*service = talloc_move(mem_ctx, &tmp_service);
 	} else {
-		*param_names = NULL;
-		*param_values = NULL;
+		*service = NULL;
 	}
 
 done:

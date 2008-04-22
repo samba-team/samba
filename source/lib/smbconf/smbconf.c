@@ -91,22 +91,16 @@ WERROR smbconf_drop(struct smbconf_ctx *ctx)
 WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 			  TALLOC_CTX *mem_ctx,
 			  uint32_t *num_shares,
-			  char ***share_names, uint32_t **num_params,
-			  char ****param_names, char ****param_values)
+			  struct smbconf_service ***services)
 {
 	WERROR werr = WERR_OK;
 	TALLOC_CTX *tmp_ctx = NULL;
 	uint32_t tmp_num_shares;
 	char **tmp_share_names;
-	uint32_t *tmp_num_params;
-	char ***tmp_param_names;
-	char ***tmp_param_values;
+	struct smbconf_service **tmp_services;
 	uint32_t count;
 
-	if ((num_shares == NULL) || (share_names == NULL) ||
-	    (num_params == NULL) || (param_names == NULL) ||
-	    (param_values == NULL))
-	{
+	if ((num_shares == NULL) || (services == NULL)) {
 		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
@@ -123,23 +117,18 @@ WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 		goto done;
 	}
 
-	tmp_num_params   = TALLOC_ARRAY(tmp_ctx, uint32_t, tmp_num_shares);
-	tmp_param_names  = TALLOC_ARRAY(tmp_ctx, char **, tmp_num_shares);
-	tmp_param_values = TALLOC_ARRAY(tmp_ctx, char **, tmp_num_shares);
+	tmp_services = TALLOC_ARRAY(tmp_ctx, struct smbconf_service *,
+				    tmp_num_shares);
 
-	if ((tmp_num_params == NULL) || (tmp_param_names == NULL) ||
-	    (tmp_param_values == NULL))
-	{
+	if (tmp_services == NULL) {
 		werr = WERR_NOMEM;
 		goto done;
 	}
 
 	for (count = 0; count < tmp_num_shares; count++) {
-		werr = smbconf_get_share(ctx, mem_ctx,
+		werr = smbconf_get_share(ctx, tmp_services,
 					 tmp_share_names[count],
-					 &tmp_num_params[count],
-					 &tmp_param_names[count],
-					 &tmp_param_values[count]);
+					 &tmp_services[count]);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -149,15 +138,9 @@ WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 
 	*num_shares = tmp_num_shares;
 	if (tmp_num_shares > 0) {
-		*share_names = talloc_move(mem_ctx, &tmp_share_names);
-		*num_params = talloc_move(mem_ctx, &tmp_num_params);
-		*param_names = talloc_move(mem_ctx, &tmp_param_names);
-		*param_values = talloc_move(mem_ctx, &tmp_param_values);
+		*services = talloc_move(mem_ctx, &tmp_services);
 	} else {
-		*share_names = NULL;
-		*num_params = NULL;
-		*param_names = NULL;
-		*param_values = NULL;
+		*services = NULL;
 	}
 
 done:
@@ -204,15 +187,14 @@ WERROR smbconf_create_share(struct smbconf_ctx *ctx,
  */
 WERROR smbconf_get_share(struct smbconf_ctx *ctx,
 			 TALLOC_CTX *mem_ctx,
-			 const char *servicename, uint32_t *num_params,
-			 char ***param_names, char ***param_values)
+			 const char *servicename,
+			 struct smbconf_service **service)
 {
 	if (!smbconf_share_exists(ctx, servicename)) {
 		return WERR_NO_SUCH_SERVICE;
 	}
 
-	return ctx->ops->get_share(ctx, mem_ctx, servicename, num_params,
-				   param_names, param_values);
+	return ctx->ops->get_share(ctx, mem_ctx, servicename, service);
 }
 
 /**
