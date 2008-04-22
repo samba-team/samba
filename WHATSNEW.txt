@@ -195,6 +195,8 @@ smb.conf changes
     winbind expand groups		New		1
     winbind rpc only			New		No
 
+    New special meaning of "include = registry".
+
 
 Changes since 3.2.0pre2:
 -----------------------
