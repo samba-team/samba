@@ -1924,7 +1924,7 @@ bool torture_samba3_rpc_srvsvc(struct torture_context *torture)
 
 	if (!(torture_open_connection_share(
 		      mem_ctx, &cli, torture, torture_setting_string(torture, "host", NULL),
-		      "IPC$", NULL))) {
+		      "IPC$", torture->ev))) {
 		talloc_free(mem_ctx);
 		return false;
 	}
@@ -1986,7 +1986,7 @@ bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 	if (!(torture_open_connection_share(
 		      mem_ctx, &cli,
 		      torture, torture_setting_string(torture, "host", NULL),
-		      "IPC$", NULL))) {
+		      "IPC$", torture->ev))) {
 		d_printf("IPC$ connection failed\n");
 		goto done;
 	}
@@ -2281,7 +2281,7 @@ bool torture_samba3_rpc_sharesec(struct torture_context *torture)
 
 	if (!(torture_open_connection_share(
 		      mem_ctx, &cli, torture, torture_setting_string(torture, "host", NULL),
-		      "IPC$", NULL))) {
+		      "IPC$", torture->ev))) {
 		d_printf("IPC$ connection failed\n");
 		talloc_free(mem_ctx);
 		return false;
@@ -2329,7 +2329,7 @@ bool torture_samba3_rpc_lsa(struct torture_context *torture)
 
 	if (!(torture_open_connection_share(
 		      mem_ctx, &cli, torture, torture_setting_string(torture, "host", NULL),
-		      "IPC$", NULL))) {
+		      "IPC$", torture->ev))) {
 		d_printf("IPC$ connection failed\n");
 		talloc_free(mem_ctx);
 		return false;
@@ -2611,7 +2611,7 @@ bool torture_samba3_rpc_spoolss(struct torture_context *torture)
 
 	if (!(torture_open_connection_share(
 		      mem_ctx, &cli, torture, torture_setting_string(torture, "host", NULL),
-		      "IPC$", NULL))) {
+		      "IPC$", torture->ev))) {
 		d_printf("IPC$ connection failed\n");
 		talloc_free(mem_ctx);
 		return false;
@@ -2797,7 +2797,7 @@ bool torture_samba3_rpc_wkssvc(struct torture_context *torture)
 
 	if (!(torture_open_connection_share(
 		      mem_ctx, &cli, torture, torture_setting_string(torture, "host", NULL),
-		      "IPC$", NULL))) {
+		      "IPC$", torture->ev))) {
 		d_printf("IPC$ connection failed\n");
 		talloc_free(mem_ctx);
 		return false;
