@@ -195,10 +195,7 @@ static WERROR smbconf_reg_create_service_key(TALLOC_CTX *mem_ctx,
 	/* create a new talloc ctx for creation. it will hold
 	 * the intermediate parent key (SMBCONF) for creation
 	 * and will be destroyed when leaving this function... */
-	if (!(create_ctx = talloc_stackframe())) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
+	create_ctx = talloc_stackframe();
 
 	werr = smbconf_reg_open_base_key(create_ctx, ctx, REG_KEY_WRITE,
 					 &create_parent);
@@ -471,10 +468,6 @@ static WERROR smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 	}
 
 	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
 
 	for (count = 0;
 	     werr = reg_enumvalue(tmp_ctx, key, count, &valname, &valvalue),
@@ -760,10 +753,6 @@ static WERROR smbconf_reg_get_share_names(struct smbconf_ctx *ctx,
 	}
 
 	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
 
 	/* if there are values in the base key, return NULL as share name */
 	werr = smbconf_reg_open_base_key(tmp_ctx, ctx,
