@@ -3348,23 +3348,18 @@ struct key_val_struct {
 static int cache_traverse_validate_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	int i;
+	unsigned int max_key_len = 1024;
 	struct tdb_validation_status *v_state = (struct tdb_validation_status *)state;
 
 	/* Paranoia check. */
-	if (kbuf.dsize > 1024) {
-		if (strncmp("UA/", (const char *)kbuf.dptr, 3) == 0) {
-			unsigned int max_key_len = 1024*1024;
-			if (kbuf.dsize > max_key_len) {
-				DEBUG(0,("cache_traverse_validate_fn: UA key to large (%u) > (%u)\n\n",
-					 (unsigned int)kbuf.dsize, (unsigned int)max_key_len ));
-				return 1;
-			} 
-		} else 	{
-
-				DEBUG(0,("cache_traverse_validate_fn: key length too large (%u) > 1024\n\n",
-					 (unsigned int)kbuf.dsize ));
-				return 1;
-			}
+	if (strncmp("UA/", (const char *)kbuf.dptr, 3) == 0) {
+		max_key_len = 1024 * 1024;
+	}
+	if (kbuf.dsize > max_key_len) {
+		DEBUG(0, ("cache_traverse_validate_fn: key length too large: "
+			  "(%u) > (%u)\n\n",
+			  (unsigned int)kbuf.dsize, (unsigned int)max_key_len));
+		return 1;
 	}
 
 	for (i = 0; key_val[i].keyname; i++) {
