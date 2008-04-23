@@ -164,7 +164,7 @@ void start_async_dns(void)
 	CatchSignal(SIGHUP, SIG_IGN);
         CatchSignal(SIGTERM, SIGNAL_CAST sig_term );
 
-	if (!reinit_after_fork(nmbd_messaging_context())) {
+	if (!reinit_after_fork(nmbd_messaging_context(), true)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		smb_panic("reinit_after_fork() failed");
 	}

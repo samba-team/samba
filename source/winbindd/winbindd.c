@@ -1189,7 +1189,7 @@ int main(int argc, char **argv, char **envp)
 
 	TimeInit();
 
-	if (!reinit_after_fork(winbind_messaging_context())) {
+	if (!reinit_after_fork(winbind_messaging_context(), false)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
 	}
