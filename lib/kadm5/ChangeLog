@@ -1,3 +1,9 @@
+2008-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ipropd_master.c: Only log "sending AYT" once, pointed out by Dr
+	A V Le Blanc.
+	
+
 2008-01-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* default_keys.c: Use hdb_free_keys().
