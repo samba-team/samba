@@ -2612,8 +2612,9 @@ static NTSTATUS cmd_samr_get_dispinfo_idx(struct rpc_pipe_client *cli,
 							&name,
 							&idx);
 
-	if (NT_STATUS_IS_OK(status)) {
-		printf("idx: %d\n", idx);
+	if (NT_STATUS_IS_OK(status) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
+		printf("idx: %d (0x%08x)\n", idx, idx);
 	}
  done:
 
