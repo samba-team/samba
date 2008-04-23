@@ -1839,19 +1839,33 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
  */
 static int dumpdb_fn(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, void *p)
 {
+	int i;
 	FILE *f = (FILE *)p;
-	char *keystr, *datastr;
 	struct ctdb_ltdb_header *h = (struct ctdb_ltdb_header *)data.dptr;
-
-	keystr  = hex_encode_talloc(ctdb, key.dptr, key.dsize);
-	datastr = hex_encode_talloc(ctdb, data.dptr+sizeof(*h), data.dsize-sizeof(*h));
 
 	fprintf(f, "dmaster: %u\n", h->dmaster);
 	fprintf(f, "rsn: %llu\n", (unsigned long long)h->rsn);
-	fprintf(f, "key: %s\ndata: %s\n", keystr, datastr);
 
-	talloc_free(keystr);
-	talloc_free(datastr);
+	fprintf(f, "key(%d) = \"", key.dsize);
+	for (i=0;i<key.dsize;i++) {
+		if (isascii(key.dptr[i])) {
+			fprintf(f, "%c", key.dptr[i]);
+		} else {
+			fprintf(f, "\\%02X", key.dptr[i]);
+		}
+	}
+	fprintf(f, "\"\n");
+
+	fprintf(f, "data(%d) = \"", data.dsize);
+	for (i=sizeof(*h);i<data.dsize;i++) {
+		if (isascii(data.dptr[i])) {
+			fprintf(f, "%c", data.dptr[i]);
+		} else {
+			fprintf(f, "\\%02X", data.dptr[i]);
+		}
+	}
+	fprintf(f, "\"\n");
+
 	return 0;
 }
 
