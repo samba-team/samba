@@ -296,6 +296,7 @@ static int traverse_sessionid(struct db_record *db, void *state)
 	};
 	TALLOC_CTX *frame = talloc_stackframe();
 	int ret = 0;
+	struct messaging_context *msg_ctx;
 
 	sec_init();
 	load_case_tables();
@@ -359,8 +360,9 @@ static int traverse_sessionid(struct db_record *db, void *state)
 		d_printf("using configfile = %s\n", get_dyn_CONFIGFILE());
 	}
 
-	if (!lp_load(get_dyn_CONFIGFILE(),False,False,False,True)) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", get_dyn_CONFIGFILE());
+	if (!lp_load_initial_only(get_dyn_CONFIGFILE())) {
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n",
+			get_dyn_CONFIGFILE());
 		ret = -1;
 		goto done;
 	}
@@ -370,8 +372,18 @@ static int traverse_sessionid(struct db_record *db, void *state)
 	 * the db_open() calls further down.
 	 */
 
-	messaging_init(NULL, procid_self(), event_context_init(NULL));
-	
+	msg_ctx = messaging_init(NULL, procid_self(),
+				 event_context_init(NULL));
+
+	db_tdb2_setup_messaging(msg_ctx, true);
+
+	if (!lp_load(get_dyn_CONFIGFILE(),False,False,False,True)) {
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n",
+			get_dyn_CONFIGFILE());
+		ret = -1;
+		goto done;
+	}
+
 	switch (profile_only) {
 		case 'P':
 			/* Dump profile data */
