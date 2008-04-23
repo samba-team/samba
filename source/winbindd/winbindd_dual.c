@@ -1005,7 +1005,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 	state.sock = fdpair[0];
 	close(fdpair[1]);
 
-	if (!reinit_after_fork(winbind_messaging_context())) {
+	if (!reinit_after_fork(winbind_messaging_context(), true)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		_exit(0);
 	}
