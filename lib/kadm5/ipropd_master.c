@@ -408,6 +408,8 @@ send_are_you_there (krb5_context context, slave *s)
     if (s->flags & (SLAVE_F_DEAD|SLAVE_F_AYT))
 	return 0;
 
+    krb5_warnx(context, "slave %s missing, sending AYT", s->name);
+
     s->flags |= SLAVE_F_AYT;
 
     data.data = buf;
@@ -909,10 +911,8 @@ main(int argc, char **argv)
 		    slave_dead(context, p);
 	    } else if (slave_gone_p (p))
 		slave_dead(context, p);
-	    else if (slave_missing_p (p)) {
-		krb5_warnx(context, "slave %s missing, sending AYT", p->name);
+	    else if (slave_missing_p (p))
 		send_are_you_there (context, p);
-	    }
 	}
 
 	if (ret && FD_ISSET(listen_fd, &readset)) {
