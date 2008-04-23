@@ -110,7 +110,7 @@ static WERROR smbconf_reg_open_path(TALLOC_CTX *mem_ctx,
 			     key);
 
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(1, ("Error opening registry path '%s': %s\n",
+		DEBUG(5, ("Error opening registry path '%s': %s\n",
 			  path, dos_errstr(werr)));
 	}
 
