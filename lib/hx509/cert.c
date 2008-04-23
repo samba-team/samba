@@ -2491,8 +2491,16 @@ hx509_cert_get_friendly_name(hx509_cert cert)
 
     a = hx509_cert_get_attribute(cert, oid_id_pkcs_9_at_friendlyName());
     if (a == NULL) {
-	/* XXX use subject name ? */
-	return NULL; 
+	hx509_name name;
+
+	ret = hx509_cert_get_subject(cert, &name);
+	if (ret)
+	    return NULL;
+	ret = hx509_name_to_string(name, &cert->friendlyname);
+	hx509_name_free(&name);
+	if (ret)
+	    return NULL;
+	return cert->friendlyname;
     }
 
     ret = decode_PKCS9_friendlyName(a->data.data, a->data.length, &n, &sz);
