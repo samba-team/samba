@@ -739,7 +739,8 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 								sizeof(remaddr)),
 								false);
 
-				if (!reinit_after_fork(smbd_messaging_context())) {
+				if (!reinit_after_fork(
+					    smbd_messaging_context(), true)) {
 					DEBUG(0,("reinit_after_fork() failed\n"));
 					smb_panic("reinit_after_fork() failed");
 				}
@@ -1285,7 +1286,7 @@ extern void build_options(bool screen);
 	if (is_daemon)
 		pidfile_create("smbd");
 
-	if (!reinit_after_fork(smbd_messaging_context())) {
+	if (!reinit_after_fork(smbd_messaging_context(), false)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
 	}

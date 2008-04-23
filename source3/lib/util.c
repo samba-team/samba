@@ -990,7 +990,8 @@ void become_daemon(bool Fork, bool no_process_group)
 				  attach it to the logfile */
 }
 
-bool reinit_after_fork(struct messaging_context *msg_ctx)
+bool reinit_after_fork(struct messaging_context *msg_ctx,
+		       bool parent_longlived)
 {
 	NTSTATUS status;
 
@@ -1001,7 +1002,7 @@ bool reinit_after_fork(struct messaging_context *msg_ctx)
 	set_need_random_reseed();
 
 	/* tdb needs special fork handling */
-	if (tdb_reopen_all(1) == -1) {
+	if (tdb_reopen_all(parent_longlived ? 1 : 0) == -1) {
 		DEBUG(0,("tdb_reopen_all failed.\n"));
 		return false;
 	}

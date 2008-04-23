@@ -1406,7 +1406,7 @@ void start_background_queue(void)
 		/* Child. */
 		DEBUG(5,("start_background_queue: background LPQ thread started\n"));
 
-		if (!reinit_after_fork(smbd_messaging_context())) {
+		if (!reinit_after_fork(smbd_messaging_context(), true)) {
 			DEBUG(0,("reinit_after_fork() failed\n"));
 			smb_panic("reinit_after_fork() failed");
 		}
