@@ -94,4 +94,4 @@ fi
 
 AC_SUBST(TARGETS)
 
-AC_OUTPUT( Makefile.settings)
+AC_OUTPUT( Makefile.settings build/catalog.xml)

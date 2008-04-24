@@ -53,11 +53,11 @@
 		</xsl:variable>
 
 		<xsl:variable name="term">
-			<xsl:element name="indexterm">
 				<xsl:copy-of select="$anchor"/>
-				<xsl:value-of select="@name"/>
-				<xsl:value-of select="$context"/>
-			</xsl:element>
+				<xsl:element name="title">
+					<xsl:value-of select="@name"/>
+					<xsl:value-of select="$context"/>
+				</xsl:element>
 		</xsl:variable>
 
 
@@ -120,8 +120,7 @@
 		</xsl:variable>
 
 		<xsl:for-each select="synonym">
-			<xsl:element name="varlistentry">
-				<xsl:text>&#10;</xsl:text>     
+			<xsl:element name="section">
 				<xsl:element name="indexterm">
 					<xsl:attribute name="significance">
 						<xsl:text>preferred</xsl:text>
@@ -133,7 +132,7 @@
 						<xsl:value-of select="$name"/>
 					</xsl:element>
 				</xsl:element>
-				<xsl:element name="term">
+				<xsl:element name="title">
 					<xsl:element name="anchor">
 						<xsl:attribute name="id">
 							<xsl:value-of select="translate(translate(string(.),' ',''), 'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
@@ -141,28 +140,46 @@
 					</xsl:element>
 					<xsl:value-of select="."/>
 				</xsl:element>
-				<xsl:element name="listitem">
-					<xsl:element name="para"><xsl:text>This parameter is a synonym for </xsl:text><xsl:copy-of select="$name"/><xsl:text>.</xsl:text></xsl:element>
+				<xsl:element name="variablelist">
+					<xsl:element name="varlistentry">
+						<xsl:element name="listitem">
+							<xsl:element name="para">
+								<xsl:text>This parameter is a synonym for </xsl:text>
+								<xsl:element name="link">
+									<xsl:attribute name="linkend">
+										<xsl:value-of select="translate(translate(string($name),' ',''), 'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
+									</xsl:attribute>
+									<xsl:value-of select="$name"/>
+								</xsl:element>
+								<xsl:text>.</xsl:text>
+							</xsl:element>
+						</xsl:element>
+					</xsl:element>
 				</xsl:element>
+				<xsl:text>&#10;</xsl:text>     
 			</xsl:element>
 		</xsl:for-each>
 
-		<xsl:element name="varlistentry">
-			<xsl:text>&#10;</xsl:text>     
-			<xsl:element name="indexterm">
-				<xsl:attribute name="significance">
-					<xsl:text>preferred</xsl:text>
-				</xsl:attribute>
-				<xsl:element name="primary">
-					<xsl:value-of select="@name"/>
+		<xsl:element name="section">
+					<xsl:element name="indexterm">
+						<xsl:attribute name="significance">
+							<xsl:text>preferred</xsl:text>
+						</xsl:attribute>
+						<xsl:element name="primary">
+						<xsl:value-of select="@name"/>
+						</xsl:element>
+					</xsl:element>
+					<xsl:copy-of select="$term"/>
+			<xsl:element name="variablelist">
+				<xsl:element name="varlistentry">
+					<xsl:element name="listitem">
+						<xsl:copy-of select="$content"/> <xsl:text>&#10;</xsl:text>
+						<xsl:copy-of select="$default"/> <xsl:text>&#10;</xsl:text>
+						<xsl:copy-of select="$examples"/> <xsl:text>&#10;</xsl:text>
+					</xsl:element>
 				</xsl:element>
 			</xsl:element>
-			<xsl:copy-of select="$term"/>
-			<xsl:element name="listitem">
-				<xsl:copy-of select="$content"/> <xsl:text>&#10;</xsl:text>
-				<xsl:copy-of select="$default"/> <xsl:text>&#10;</xsl:text>
-				<xsl:copy-of select="$examples"/> <xsl:text>&#10;</xsl:text>
-			</xsl:element>
+			<xsl:text>&#10;</xsl:text>
 		</xsl:element>
 	</xsl:template>
 </xsl:stylesheet>
