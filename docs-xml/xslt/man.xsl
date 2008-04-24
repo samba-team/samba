@@ -1,6 +1,7 @@
 <?xml version='1.0'?>
 <!-- vim:set sts=2 shiftwidth=2 syntax=xml: -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+	        xmlns:xlink='http://www.w3.org/1999/xlink'
                 version='1.0'>
 
 <xsl:import href="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl"/>
@@ -8,6 +9,7 @@
 <xsl:param name="chunk.section.depth" select="0"/>
 <xsl:param name="chunk.first.sections" select="1"/>
 <xsl:param name="use.id.as.filename" select="1"/>
+<xsl:param name="man.endnotes.are.numbered" select="0"/>
 
 <!-- 
     Our ulink stylesheet omits @url part if content was specified
