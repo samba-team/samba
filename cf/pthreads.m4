@@ -27,6 +27,11 @@ case "$host" in
 *-*-freebsd5*)
 	native_pthread_support=yes
 	;;
+*-*-openbsd*)
+	native_pthread_support=yes
+	PTHREADS_CFLAGS=-pthread
+	PTHREADS_LIBS=-pthread
+	;;
 *-*-linux* | *-*-linux-gnu)
 	case `uname -r` in
 	2.*)
