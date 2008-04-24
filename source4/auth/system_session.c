@@ -147,9 +147,10 @@ static NTSTATUS generate_session_info(TALLOC_CTX *mem_ctx,
 
 
 
-/**
-  Create a system session, with machine account credentials
-*/
+/* Create a security token for a session SYSTEM (the most
+ * trusted/prvilaged account), including the local machine account as
+ * the off-host credentials
+ */ 
 _PUBLIC_ struct auth_session_info *system_session(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx) 
 {
 	NTSTATUS nt_status;
