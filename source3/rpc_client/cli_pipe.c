@@ -82,6 +82,58 @@ static uint32 get_rpc_call_id(void)
 }
 
 /*******************************************************************
+ Read from a RPC named pipe
+ ********************************************************************/
+static NTSTATUS rpc_read_np(struct cli_state *cli, const char *pipe_name,
+			    int fnum, char *buf, off_t offset, size_t size,
+			    ssize_t *pnum_read)
+{
+       ssize_t num_read;
+
+       num_read = cli_read(cli, fnum, buf, offset, size);
+
+       DEBUG(5,("rpc_read_np: num_read = %d, read offset: %u, to read: %u\n",
+		(int)num_read, (unsigned int)offset, (unsigned int)size));
+
+       /*
+	* A dos error of ERRDOS/ERRmoredata is not an error.
+	*/
+       if (cli_is_dos_error(cli)) {
+	       uint32 ecode;
+	       uint8 eclass;
+	       cli_dos_error(cli, &eclass, &ecode);
+	       if (eclass != ERRDOS && ecode != ERRmoredata) {
+		       DEBUG(0,("rpc_read: DOS Error %d/%u (%s) in cli_read "
+				"on fnum 0x%x\n", eclass, (unsigned int)ecode,
+				cli_errstr(cli), fnum));
+		       return dos_to_ntstatus(eclass, ecode);
+	       }
+       }
+
+       /*
+	* Likewise for NT_STATUS_BUFFER_TOO_SMALL
+	*/
+       if (cli_is_nt_error(cli)) {
+	       if (!NT_STATUS_EQUAL(cli_nt_error(cli),
+				    NT_STATUS_BUFFER_TOO_SMALL)) {
+		       DEBUG(0,("rpc_read: Error (%s) in cli_read on fnum "
+				"0x%x\n", nt_errstr(cli_nt_error(cli)), fnum));
+		       return cli_nt_error(cli);
+	       }
+       }
+
+       if (num_read == -1) {
+	       DEBUG(0,("rpc_read: Error - cli_read on fnum 0x%x returned "
+			"-1\n", fnum));
+	       return cli_get_nt_error(cli);
+       }
+
+       *pnum_read = num_read;
+       return NT_STATUS_OK;
+}
+
+
+/*******************************************************************
  Use SMBreadX to get rest of one fragment's worth of rpc data.
  Will expand the current_pdu struct to the correct size.
  ********************************************************************/
@@ -115,50 +167,35 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 	pdata = prs_data_p(current_pdu) + *current_pdu_offset;
 
 	do {
+		NTSTATUS status;
+
 		/* read data using SMBreadX */
 		if (size > (size_t)data_to_read) {
 			size = (size_t)data_to_read;
 		}
 
-		num_read = cli_read(cli->trans.np.cli, cli->trans.np.fnum,
-				    pdata, (off_t)stream_offset, size);
-
-		DEBUG(5,("rpc_read: num_read = %d, read offset: %u, to read: %u\n",
-			(int)num_read, (unsigned int)stream_offset, (unsigned int)data_to_read));
-
-        	/*
-	         * A dos error of ERRDOS/ERRmoredata is not an error.
-		 */
-		if (cli_is_dos_error(cli->trans.np.cli)) {
-			uint32 ecode;
-			uint8 eclass;
-			cli_dos_error(cli->trans.np.cli, &eclass, &ecode);
-			if (eclass != ERRDOS && ecode != ERRmoredata) {
-				DEBUG(0,("rpc_read: DOS Error %d/%u (%s) in cli_read on pipe %s\n",
-					eclass, (unsigned int)ecode,
-					cli_errstr(cli->trans.np.cli),
-					rpccli_pipe_txt(debug_ctx(), cli)));
-				return dos_to_ntstatus(eclass, ecode);
+		switch (cli->transport_type) {
+		case NCACN_NP:
+			status = rpc_read_np(cli->trans.np.cli,
+					     cli->trans.np.pipe_name,
+					     cli->trans.np.fnum, pdata,
+					     (off_t)stream_offset, size,
+					     &num_read);
+			break;
+		case NCACN_IP_TCP:
+			status = NT_STATUS_OK;
+			num_read = sys_read(cli->trans.tcp.sock, pdata, size);
+			if (num_read == -1) {
+				status = map_nt_error_from_unix(errno);
 			}
-		}
-
-        	/*
-	         * Likewise for NT_STATUS_BUFFER_TOO_SMALL
-		 */
-		if (cli_is_nt_error(cli->trans.np.cli)) {
-			if (!NT_STATUS_EQUAL(cli_nt_error(cli->trans.np.cli),
-					     NT_STATUS_BUFFER_TOO_SMALL)) {
-				DEBUG(0,("rpc_read: Error (%s) in cli_read on pipe %s\n",
-					nt_errstr(cli_nt_error(cli->trans.np.cli)),
-					rpccli_pipe_txt(debug_ctx(), cli)));
-				return cli_nt_error(cli->trans.np.cli);
+			if (num_read == 0) {
+				status = NT_STATUS_END_OF_FILE;
 			}
-		}
-
-		if (num_read == -1) {
-			DEBUG(0,("rpc_read: Error - cli_read on pipe %s returned -1\n",
-				 rpccli_pipe_txt(debug_ctx(), cli)));
-			return cli_get_nt_error(cli->trans.np.cli);
+			break;
+		default:
+			DEBUG(0, ("unknown transport type %d\n",
+				  cli->transport_type));
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 
 		data_to_read -= num_read;
@@ -738,7 +775,6 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	char *rparam = NULL;
 	uint32 rparam_len = 0;
-	uint16 setup[2];
 	char *pdata = prs_data_p(data);
 	uint32 data_len = prs_offset(data);
 	char *prdata = NULL;
@@ -755,32 +791,71 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	/* Set up the current pdu parse struct. */
 	prs_init_empty(&current_pdu, prs_get_mem_context(rbuf), UNMARSHALL);
 
-	/* Create setup parameters - must be in native byte order. */
-	setup[0] = TRANSACT_DCERPCCMD; 
-	setup[1] = cli->trans.np.fnum; /* Pipe file handle. */
-
 	DEBUG(5,("rpc_api_pipe: %s\n", rpccli_pipe_txt(debug_ctx(), cli)));
 
-	/*
-	 * Send the last (or only) fragment of an RPC request. For small
-	 * amounts of data (about 1024 bytes or so) the RPC request and response
-	 * appears in a SMBtrans request and response.
-	 */
+	switch (cli->transport_type) {
+	case NCACN_NP: {
+		uint16 setup[2];
+		/* Create setup parameters - must be in native byte order. */
+		setup[0] = TRANSACT_DCERPCCMD;
+		setup[1] = cli->trans.np.fnum; /* Pipe file handle. */
 
-	if (!cli_api_pipe(cli->trans.np.cli, "\\PIPE\\",
-	          setup, 2, 0,                     /* Setup, length, max */
-	          NULL, 0, 0,                      /* Params, length, max */
-	          pdata, data_len, max_data,   	   /* data, length, max */
-	          &rparam, &rparam_len,            /* return params, len */
-	          &prdata, &rdata_len))            /* return data, len */
+		/*
+		 * Send the last (or only) fragment of an RPC request. For
+		 * small amounts of data (about 1024 bytes or so) the RPC
+		 * request and response appears in a SMBtrans request and
+		 * response.
+		 */
+
+		if (!cli_api_pipe(cli->trans.np.cli, "\\PIPE\\",
+				  setup, 2, 0,     /* Setup, length, max */
+				  NULL, 0, 0,      /* Params, length, max */
+				  pdata, data_len, max_data, /* data, length,
+							      * max */
+				  &rparam, &rparam_len, /* return params,
+							 * len */
+				  &prdata, &rdata_len)) /* return data, len */
+		{
+			DEBUG(0, ("rpc_api_pipe: %s returned critical error. "
+				  "Error was %s\n",
+				  rpccli_pipe_txt(debug_ctx(), cli),
+				  cli_errstr(cli->trans.np.cli)));
+			ret = cli_get_nt_error(cli->trans.np.cli);
+			SAFE_FREE(rparam);
+			SAFE_FREE(prdata);
+			goto err;
+		}
+		break;
+	}
+	case NCACN_IP_TCP:
 	{
-		DEBUG(0, ("rpc_api_pipe: %s returned critical error. Error "
-			  "was %s\n", rpccli_pipe_txt(debug_ctx(), cli),
-			  cli_errstr(cli->trans.np.cli)));
-		ret = cli_get_nt_error(cli->trans.np.cli);
-		SAFE_FREE(rparam);
-		SAFE_FREE(prdata);
-		goto err;
+		ssize_t nwritten, nread;
+		nwritten = write_data(cli->trans.tcp.sock, pdata, data_len);
+		if (nwritten == -1) {
+			ret = map_nt_error_from_unix(errno);
+			DEBUG(0, ("rpc_api_pipe: write_data returned %s\n",
+				  strerror(errno)));
+			goto err;
+		}
+		rparam = NULL;
+		prdata = SMB_MALLOC_ARRAY(char, 1);
+		if (prdata != NULL) {
+			nread = sys_read(cli->trans.tcp.sock, prdata, 1);
+		}
+		if (nread == 0) {
+			SAFE_FREE(prdata);
+		}
+		if (nread == -1) {
+			ret = NT_STATUS_END_OF_FILE;
+			goto err;
+		}
+		rdata_len = nread;
+		break;
+	}
+	default:
+		DEBUG(0, ("unknown transport type %d\n",
+			  cli->transport_type));
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	/* Throw away returned params - we know we won't use them. */
@@ -1557,16 +1632,39 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
 			return ret;
 		} else {
 			/* More packets to come - write and continue. */
-			ssize_t num_written = cli_write(cli->trans.np.cli,
+			ssize_t num_written;
+
+			switch (cli->transport_type) {
+			case NCACN_NP:
+				num_written = cli_write(cli->trans.np.cli,
 							cli->trans.np.fnum,
 							8, /* 8 means message mode. */
 							prs_data_p(&outgoing_pdu),
 							(off_t)0,
 							(size_t)hdr.frag_len);
 
-			if (num_written != hdr.frag_len) {
-				prs_mem_free(&outgoing_pdu);
-				return cli_get_nt_error(cli->trans.np.cli);
+				if (num_written != hdr.frag_len) {
+					prs_mem_free(&outgoing_pdu);
+					return cli_get_nt_error(
+						cli->trans.np.cli);
+				}
+				break;
+			case NCACN_IP_TCP:
+				num_written = write_data(
+					cli->trans.tcp.sock,
+					prs_data_p(&outgoing_pdu),
+					(size_t)hdr.frag_len);
+				if (num_written != hdr.frag_len) {
+					NTSTATUS status;
+					status = map_nt_error_from_unix(errno);
+					prs_mem_free(&outgoing_pdu);
+					return status;
+				}
+				break;
+			default:
+				DEBUG(0, ("unknown transport type %d\n",
+					  cli->transport_type));
+				return NT_STATUS_INTERNAL_ERROR;
 			}
 		}
 
@@ -1774,17 +1872,36 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 		return nt_status;
 	}
 
-	/* 8 here is named pipe message mode. */
-	ret = cli_write(cli->trans.np.cli, cli->trans.np.fnum,
-			0x8, prs_data_p(&rpc_out), 0,
+	switch (cli->transport_type) {
+	case NCACN_NP:
+		/* 8 here is named pipe message mode. */
+		ret = cli_write(cli->trans.np.cli, cli->trans.np.fnum,
+				0x8, prs_data_p(&rpc_out), 0,
 				(size_t)prs_offset(&rpc_out));
+		break;
+
+		if (ret != (ssize_t)prs_offset(&rpc_out)) {
+			nt_status = cli_get_nt_error(cli->trans.np.cli);
+		}
+	case NCACN_IP_TCP:
+		ret = write_data(cli->trans.tcp.sock, prs_data_p(&rpc_out),
+				 (size_t)prs_offset(&rpc_out));
+		if (ret != (ssize_t)prs_offset(&rpc_out)) {
+			nt_status = map_nt_error_from_unix(errno);
+		}
+		break;
+	default:
+		DEBUG(0, ("unknown transport type %d\n", cli->transport_type));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	if (ret != (ssize_t)prs_offset(&rpc_out)) {
-		DEBUG(0,("rpc_send_auth_auth3: cli_write failed. Return was %d\n", (int)ret));
+		DEBUG(0,("rpc_send_auth_auth3: write failed. Return was %s\n",
+			 nt_errstr(nt_status)));
 		prs_mem_free(&rpc_out);
 		data_blob_free(&client_reply);
 		data_blob_free(&server_response);
-		return cli_get_nt_error(cli->trans.np.cli);
+		return nt_status;
 	}
 
 	DEBUG(5,("rpc_send_auth_auth3: %s sent auth3 response ok.\n",
@@ -1972,8 +2089,8 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
  Do an rpc bind.
 ****************************************************************************/
 
-static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
-			      struct cli_pipe_auth_data *auth)
+NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
+		       struct cli_pipe_auth_data *auth)
 {
 	RPC_HDR hdr;
 	RPC_HDR_BA hdr_ba;
@@ -2361,6 +2478,59 @@ NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
 	TALLOC_FREE(result);
 	return NT_STATUS_NO_MEMORY;
 }
+
+/********************************************************************
+ Create a named pipe struct, connecting to a tcp port
+ ********************************************************************/
+NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
+			   uint16_t port,
+			   const struct ndr_syntax_id *abstract_syntax,
+			   struct rpc_pipe_client **presult)
+{
+	struct rpc_pipe_client *result;
+	struct sockaddr_storage addr;
+	NTSTATUS status;
+
+	result = talloc(mem_ctx, struct rpc_pipe_client);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	result->transport_type = NCACN_IP_TCP;
+
+	result->abstract_syntax = abstract_syntax;
+	result->transfer_syntax = &ndr_transfer_syntax;
+
+	result->desthost = talloc_strdup(result, host);
+	result->srv_name_slash = talloc_asprintf_strupper_m(
+		result, "\\\\%s", result->desthost);
+	if ((result->desthost == NULL) || (result->srv_name_slash == NULL)) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
+	result->max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
+
+	if (!resolve_name(host, &addr, 0)) {
+		status = NT_STATUS_NOT_FOUND;
+		goto fail;
+	}
+
+	result->trans.tcp.sock = open_socket_out(SOCK_STREAM, &addr, port, 60);
+	if (result->trans.tcp.sock == -1) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	*presult = result;
+	return NT_STATUS_OK;
+
+ fail:
+	TALLOC_FREE(result);
+	return status;
+}
+
 
 /****************************************************************************
  Open a named pipe over SMB to a remote server.
