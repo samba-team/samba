@@ -130,7 +130,8 @@ bool send_getdc_request(TALLOC_CTX *mem_ctx,
 			struct messaging_context *msg_ctx,
 			struct sockaddr_storage *dc_ss,
 			const char *domain_name,
-			const DOM_SID *sid)
+			const DOM_SID *sid,
+			uint32_t nt_version)
 {
 	struct in_addr dc_ip;
 	const char *my_acct_name = NULL;
@@ -172,7 +173,7 @@ bool send_getdc_request(TALLOC_CTX *mem_ctx,
 	s->mailslot_name	= my_mailslot;
 	s->acct_control		= ACB_WSTRUST;
 	s->sid			= my_sid;
-	s->nt_version		= 1;
+	s->nt_version		= nt_version;
 	s->lmnt_token		= 0xffff;
 	s->lm20_token		= 0xffff;
 
