@@ -207,6 +207,9 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 	union dgram_message_body p;
 	enum ndr_err_code ndr_err;
 
+	const char *returned_dc = NULL;
+	const char *returned_domain = NULL;
+
 	if (dc_ss->ss_family != AF_INET) {
 		return false;
 	}
@@ -268,13 +271,27 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 		NDR_PRINT_DEBUG(nbt_ntlogon_packet, &r);
 	}
 
-	if (!strequal(r.req.reply.domain, domain_name)) {
+	switch (r.command) {
+		case NTLOGON_SAM_LOGON_REPLY:
+		case NTLOGON_SAM_LOGON_REPLY15:
+			returned_domain = r.req.reply.domain;
+			returned_dc = r.req.reply.server;
+			break;
+		case NTLOGON_RESPONSE_FROM_PDC2:
+			returned_domain = r.req.reply2.domain;
+			returned_dc = r.req.reply2.pdc_name;
+			break;
+		default:
+			return false;
+	}
+
+	if (!strequal(returned_domain, domain_name)) {
 		DEBUG(3, ("GetDC: Expected domain %s, got %s\n",
-			  domain_name, r.req.reply.domain));
+			  domain_name, returned_domain));
 		return false;
 	}
 
-	*dc_name = talloc_strdup(mem_ctx, r.req.reply.server);
+	*dc_name = talloc_strdup(mem_ctx, returned_dc);
 	if (!*dc_name) {
 		return false;
 	}
@@ -283,7 +300,7 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 	if (**dc_name == '\\')	*dc_name += 1;
 
 	DEBUG(10, ("GetDC gave name %s for domain %s\n",
-		   *dc_name, r.req.reply.domain));
+		   *dc_name, returned_domain));
 
 	return True;
 }
