@@ -4992,10 +4992,15 @@ bool printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3 )
 static bool drv_file_in_use( char* file, NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
 {
 	int i = 0;
-	
+
 	if ( !info )
 		return False;
-		
+
+	/* mz: skip files that are in the list but already deleted */
+	if (!file || !file[0]) {
+		return false;
+	}
+
 	if ( strequal(file, info->driverpath) )
 		return True;
 
@@ -5108,6 +5113,12 @@ static bool trim_overlap_drv_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *src,
   
   Upon return, *info has been modified to only contain the driver files
   which are not in use
+
+  Fix from mz:
+
+  This needs to check all drivers to ensure that all files in use
+  have been removed from *info, not just the ones in the first
+  match.
 ****************************************************************************/
 
 bool printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
@@ -5117,7 +5128,8 @@ bool printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
 	uint32 				version;
 	fstring 			*list = NULL;
 	NT_PRINTER_DRIVER_INFO_LEVEL 	driver;
-	
+	bool in_use = false;
+
 	if ( !info )
 		return False;
 	
@@ -5152,9 +5164,10 @@ bool printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
 			
 		if ( !strequal(info->name, driver.info_3->name) ) {
 			if ( trim_overlap_drv_files(info, driver.info_3) ) {
-				free_a_printer_driver(driver, 3);
-				SAFE_FREE( list );
-				return True;
+				/* mz: Do not instantly return -
+				 * we need to ensure this file isn't
+				 * also in use by other drivers. */
+				in_use = true;
 			}
 		}
 
@@ -5170,7 +5183,7 @@ bool printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
 	if ( DEBUGLEVEL >= 20 )
 		dump_a_printer_driver( driver, 3 );
 
-	return False;
+	return in_use;
 }
 
 /****************************************************************************
