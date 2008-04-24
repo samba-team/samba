@@ -609,6 +609,53 @@ control_get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx, struc
 }
 
 
+/* 
+ * scans all other nodes and returns a pnn for another node that can host this 
+ * ip address or -1
+ */
+static int
+find_other_host_for_public_ip(struct ctdb_context *ctdb, struct sockaddr_in *addr)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_all_public_ips *ips;
+	struct ctdb_node_map *nodemap=NULL;
+	int i, j, ret;
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, tmp_ctx, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	for(i=0;i<nodemap->num;i++){
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+		if (nodemap->nodes[i].pnn == options.pnn) {
+			continue;
+		}
+
+		/* read the public ip list from this node */
+		ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), nodemap->nodes[i].pnn, tmp_ctx, &ips);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get public ip list from node %u\n", nodemap->nodes[i].pnn));
+			return -1;
+		}
+
+		for (j=0;j<ips->num;j++) {
+			if (ctdb_same_ip(addr, &ips->ips[j].sin)) {
+				talloc_free(tmp_ctx);
+				return nodemap->nodes[i].pnn;
+			}
+		}
+		talloc_free(ips);
+	}
+
+	talloc_free(tmp_ctx);
+	return -1;
+}
+
 /*
   add a public ip address to a node
  */
@@ -687,11 +734,14 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
  */
 static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
+	int i, ret;
 	struct sockaddr_in addr;
 	struct ctdb_control_ip_iface pub;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_all_public_ips *ips;
 
 	if (argc != 1) {
+		talloc_free(tmp_ctx);
 		usage();
 	}
 
@@ -705,12 +755,44 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 	pub.mask  = 0;
 	pub.len   = 0;
 
+	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &ips);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get public ip list from cluster\n"));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	
+	for (i=0;i<ips->num;i++) {
+		if (ctdb_same_ip(&addr, &ips->ips[i].sin)) {
+			break;
+		}
+	}
+
+	if (i==ips->num) {
+		DEBUG(DEBUG_ERR, ("This node does not support this public address '%s'\n",
+			inet_ntoa(addr.sin_addr)));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	if (ips->ips[i].pnn == options.pnn) {
+		ret = find_other_host_for_public_ip(ctdb, &addr);
+		if (ret != -1) {
+			ret = control_send_release(ctdb, ret, &addr);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR, ("Failed to migrate this ip to another node. Use moveip of recover to reassign this address to a node\n"));
+			}
+		}
+	}
+
 	ret = ctdb_ctrl_del_public_ip(ctdb, TIMELIMIT(), options.pnn, &pub);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to del public ip from node %u\n", options.pnn));
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 
+	talloc_free(tmp_ctx);
 	return 0;
 }
 
