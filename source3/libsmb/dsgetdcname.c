@@ -777,6 +777,10 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 	uint32_t dc_address_type;
 	uint32_t dc_flags = 0;
 	const char *dc_name = NULL;
+	const char *dc_forest = NULL;
+	const char *dc_server_site = NULL;
+	const char *dc_client_site = NULL;
+	struct GUID *dc_domain_guid = NULL;
 	fstring tmp_dc_name;
 	struct messaging_context *msg_ctx = msg_context(mem_ctx);
 	struct nbt_ntlogon_packet *reply = NULL;
@@ -798,7 +802,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 
 		if (send_getdc_request(mem_ctx, msg_ctx,
 				       &dclist[i].ss, domain_name,
-				       NULL, 1))
+				       NULL, 11))
 		{
 			int k;
 			smb_msleep(100);
@@ -835,6 +839,25 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 
  make_reply:
 
+	if (reply && reply->command == NTLOGON_RESPONSE_FROM_PDC2) {
+
+		dc_flags |= reply->req.reply2.server_type;
+		dc_forest = reply->req.reply2.forest;
+		dc_server_site = reply->req.reply2.server_site;
+		dc_client_site = reply->req.reply2.client_site;
+
+		dc_domain_guid = &reply->req.reply2.domain_uuid;
+
+		if (flags & DS_RETURN_DNS_NAME) {
+			dc_domain_name = reply->req.reply2.dns_domain;
+			dc_hostname = reply->req.reply2.pdc_dns_name;
+			dc_flags |= DS_DNS_DOMAIN | DS_DNS_CONTROLLER;
+		} else if (flags & DS_RETURN_FLAT_NAME) {
+			dc_domain_name = reply->req.reply2.domain;
+			dc_hostname = reply->req.reply2.pdc_name;
+		}
+	}
+
 	if (flags & DS_IP_REQUIRED) {
 		char addr[INET6_ADDRSTRLEN];
 		print_sockaddr(addr, sizeof(addr), &dclist[i].ss);
@@ -849,16 +872,20 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 		dc_flags |= NBT_SERVER_PDC | NBT_SERVER_WRITABLE;
 	}
 
+	if (dc_forest) {
+		dc_flags |= DS_DNS_FOREST;
+	}
+
 	return make_domain_controller_info(mem_ctx,
 					   dc_hostname,
 					   dc_address,
 					   dc_address_type,
-					   NULL,
+					   dc_domain_guid,
 					   dc_domain_name,
-					   NULL,
+					   dc_forest,
 					   dc_flags,
-					   NULL,
-					   NULL,
+					   dc_server_site,
+					   dc_client_site,
 					   info);
 }
 
