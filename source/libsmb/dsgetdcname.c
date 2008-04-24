@@ -796,7 +796,8 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 		}
 
 		if (send_getdc_request(mem_ctx, msg_ctx,
-				       &dclist[i].ss, domain_name, NULL))
+				       &dclist[i].ss, domain_name,
+				       NULL, 1))
 		{
 			int k;
 			smb_msleep(100);
