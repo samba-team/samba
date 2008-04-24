@@ -1,6 +1,7 @@
 /* 
    Mount helper utility for Linux CIFS VFS (virtual filesystem) client
-   Copyright (C) 2003,2005 Steve French  (sfrench@us.ibm.com)
+   Copyright (C) 2003,2008 Steve French  (sfrench@us.ibm.com)
+   Copyright (C) 2008 Jeremy Allison (jra@samba.org)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -66,6 +67,13 @@
 #define MAX_UNC_LEN 1024
 
 #define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
+
+#ifndef SAFE_FREE
+#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
+#endif
+
+#define MOUNT_PASSWD_SIZE 64
+#define DOMAIN_SIZE 64
 
 const char *thisprogram;
 int verboseflag = 0;
@@ -152,10 +160,7 @@ static void mount_cifs_usage(void)
 	printf("\nTo display the version number of the mount helper:");
 	printf("\n\t%s -V\n",thisprogram);
 
-	if(mountpassword) {
-		memset(mountpassword,0,64);
-		free(mountpassword);
-	}
+	SAFE_FREE(mountpassword);
 	exit(1);
 }
 
@@ -214,16 +219,13 @@ static int open_cred_file(char * file_name)
 				if(length > 4086) {
 					printf("mount.cifs failed due to malformed username in credentials file");
 					memset(line_buf,0,4096);
-					if(mountpassword) {
-						memset(mountpassword,0,64);
-					}
 					exit(1);
 				} else {
 					got_user = 1;
 					user_name = (char *)calloc(1 + length,1);
 					/* BB adding free of user_name string before exit,
 						not really necessary but would be cleaner */
-					strncpy(user_name,temp_val, length);
+					strlcpy(user_name,temp_val, length+1);
 				}
 			}
 		} else if (strncasecmp("password",line_buf+i,8) == 0) {
@@ -231,26 +233,23 @@ static int open_cred_file(char * file_name)
 			if(temp_val) {
 				/* go past equals sign */
 				temp_val++;
-				for(length = 0;length<65;length++) {
+				for(length = 0;length<MOUNT_PASSWD_SIZE+1;length++) {
 					if ((temp_val[length] == '\n')
 					    || (temp_val[length] == '\0')) {
 						break;
 					}
 				}
-				if(length > 64) {
+				if(length > MOUNT_PASSWD_SIZE) {
 					printf("mount.cifs failed: password in credentials file too long\n");
 					memset(line_buf,0, 4096);
-					if(mountpassword) {
-						memset(mountpassword,0,64);
-					}
 					exit(1);
 				} else {
 					if(mountpassword == NULL) {
-						mountpassword = (char *)calloc(65,1);
+						mountpassword = (char *)calloc(MOUNT_PASSWD_SIZE+1,1);
 					} else
-						memset(mountpassword,0,64);
+						memset(mountpassword,0,MOUNT_PASSWD_SIZE);
 					if(mountpassword) {
-						strncpy(mountpassword,temp_val,length);
+						strlcpy(mountpassword,temp_val,MOUNT_PASSWD_SIZE+1);
 						got_password = 1;
 					}
 				}
@@ -262,25 +261,22 @@ static int open_cred_file(char * file_name)
                                 temp_val++;
 				if(verboseflag)
 					printf("\nDomain %s\n",temp_val);
-                                for(length = 0;length<65;length++) {
+                                for(length = 0;length<DOMAIN_SIZE+1;length++) {
 					if ((temp_val[length] == '\n')
 					    || (temp_val[length] == '\0')) {
 						break;
 					}
                                 }
-                                if(length > 64) {
+                                if(length > DOMAIN_SIZE) {
                                         printf("mount.cifs failed: domain in credentials file too long\n");
-                                        if(mountpassword) {
-                                                memset(mountpassword,0,64);
-                                        }
                                         exit(1);
                                 } else {
                                         if(domain_name == NULL) {
-                                                domain_name = (char *)calloc(65,1);
+                                                domain_name = (char *)calloc(DOMAIN_SIZE+1,1);
                                         } else
-                                                memset(domain_name,0,64);
+                                                memset(domain_name,0,DOMAIN_SIZE);
                                         if(domain_name) {
-                                                strncpy(domain_name,temp_val,length);
+                                                strlcpy(domain_name,temp_val,DOMAIN_SIZE+1);
                                                 got_domain = 1;
                                         }
                                 }
@@ -289,10 +285,7 @@ static int open_cred_file(char * file_name)
 
 	}
 	fclose(fs);
-	if(line_buf) {
-		memset(line_buf,0,4096);
-		free(line_buf);
-	}
+	SAFE_FREE(line_buf);
 	return 0;
 }
 
@@ -303,9 +296,9 @@ static int get_password_from_file(int file_descript, char * filename)
 	char c;
 
 	if(mountpassword == NULL)
-		mountpassword = (char *)calloc(65,1);
+		mountpassword = (char *)calloc(MOUNT_PASSWD_SIZE+1,1);
 	else 
-		memset(mountpassword, 0, 64);
+		memset(mountpassword, 0, MOUNT_PASSWD_SIZE);
 
 	if (mountpassword == NULL) {
 		printf("malloc failed\n");
@@ -322,11 +315,10 @@ static int get_password_from_file(int file_descript, char * filename)
 	}
 	/* else file already open and fd provided */
 
-	for(i=0;i<64;i++) {
+	for(i=0;i<MOUNT_PASSWD_SIZE;i++) {
 		rc = read(file_descript,&c,1);
 		if(rc < 0) {
 			printf("mount.cifs failed. Error %s reading password file\n",strerror(errno));
-			memset(mountpassword,0,64);
 			if(filename != NULL)
 				close(file_descript);
 			exit(1);
@@ -343,8 +335,9 @@ static int get_password_from_file(int file_descript, char * filename)
 				mountpassword[i] = c;
 		}
 	}
-	if((i == 64) && (verboseflag)) {
-		printf("\nWarning: password longer than 64 characters specified in cifs password file");
+	if((i == MOUNT_PASSWD_SIZE) && (verboseflag)) {
+		printf("\nWarning: password longer than %d characters specified in cifs password file",
+			MOUNT_PASSWD_SIZE);
 	}
 	got_password = 1;
 	if(filename != NULL) {
@@ -431,13 +424,13 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 					if(percent_char) {
 						*percent_char = ',';
 						if(mountpassword == NULL)
-							mountpassword = (char *)calloc(65,1);
+							mountpassword = (char *)calloc(MOUNT_PASSWD_SIZE+1,1);
 						if(mountpassword) {
 							if(got_password)
 								printf("\nmount.cifs warning - password specified twice\n");
 							got_password = 1;
 							percent_char++;
-							strncpy(mountpassword, percent_char,64);
+							strlcpy(mountpassword, percent_char,MOUNT_PASSWD_SIZE+1);
 						/*  remove password from username */
 							while(*percent_char != 0) {
 								*percent_char = ',';
@@ -711,7 +704,7 @@ nocopy:
 		out_len = strlen(out);
 	}
 
-	free(*optionsp);
+	SAFE_FREE(*optionsp);
 	*optionsp = out;
 	return 0;
 }
@@ -739,7 +732,7 @@ static void check_for_comma(char ** ppasswrd)
 
 	if(number_of_commas == 0)
 		return;
-	if(number_of_commas > 64) {
+	if(number_of_commas > MOUNT_PASSWD_SIZE) {
 		/* would otherwise overflow the mount options buffer */
 		printf("\nInvalid password. Password contains too many commas.\n");
 		return;
@@ -758,7 +751,7 @@ static void check_for_comma(char ** ppasswrd)
 	}
 	new_pass_buf[len+number_of_commas] = 0;
 
-	free(*ppasswrd);
+	SAFE_FREE(*ppasswrd);
 	*ppasswrd = new_pass_buf;
 	
 	return;
@@ -889,8 +882,8 @@ static char * parse_server(char ** punc_name)
 					return NULL;
 				}
 				*share = '/';
-				strncpy((*punc_name)+2,unc_name,length);
-				free(unc_name);
+				strlcpy((*punc_name)+2,unc_name,length+1);
+				SAFE_FREE(unc_name);
 				unc_name = *punc_name;
 				unc_name[length+2] = 0;
 				goto continue_unc_parsing;
@@ -1116,9 +1109,6 @@ int main(int argc, char ** argv)
 			MOUNT_CIFS_VERSION_MAJOR,
 			MOUNT_CIFS_VERSION_MINOR,
 			MOUNT_CIFS_VENDOR_SUFFIX);
-			if(mountpassword) {
-				memset(mountpassword,0,64);
-			}
 			exit (0);
 		case 'w':
 			flags &= ~MS_RDONLY;
@@ -1179,10 +1169,10 @@ int main(int argc, char ** argv)
 			break;
 		case 'p':
 			if(mountpassword == NULL)
-				mountpassword = (char *)calloc(65,1);
+				mountpassword = (char *)calloc(MOUNT_PASSWD_SIZE+1,1);
 			if(mountpassword) {
 				got_password = 1;
-				strncpy(mountpassword,optarg,64);
+				strlcpy(mountpassword,optarg,MOUNT_PASSWD_SIZE+1);
 			}
 			break;
 		case 'S':
@@ -1206,7 +1196,7 @@ int main(int argc, char ** argv)
 		if(mountpassword == NULL)
 			mountpassword = (char *)calloc(65,1);
 		if(mountpassword) {
-			strncpy(mountpassword,getenv("PASSWD"),64);
+			strlcpy(mountpassword,getenv("PASSWD"),MOUNT_PASSWD_SIZE);
 			got_password = 1;
 		}
 	} else if (getenv("PASSWD_FD")) {
@@ -1272,7 +1262,14 @@ int main(int argc, char ** argv)
 	}
        
 	if(got_password == 0) {
-		mountpassword = getpass("Password: "); /* BB obsolete */
+		char *tmp_pass = getpass("Password: "); /* BB obsolete sys call but
+							   no good replacement yet. */
+		mountpassword = (char *)calloc(MOUNT_PASSWD_SIZE+1,1);
+		if (!tmp_pass || !mountpassword) {
+			printf("Password not entered, exiting\n");
+			return -1;
+		}
+		strlcpy(mountpassword, tmp_pass, MOUNT_PASSWD_SIZE+1);
 		got_password = 1;
 	}
 	/* FIXME launch daemon (handles dfs name resolution and credential change) 
@@ -1296,9 +1293,8 @@ mount_retry:
 		optlen += strlen(ipaddr) + 4;
 	if(mountpassword)
 		optlen += strlen(mountpassword) + 6;
-	if(options)
-		free(options);
-	options_size = optlen + 10 + 64;
+	SAFE_FREE(options);
+	options_size = optlen + 10 + DOMAIN_SIZE;
 	options = (char *)malloc(options_size /* space for commas in password */ + 8 /* space for domain=  , domain name itself was counted as part of the length username string above */);
 
 	if(options == NULL) {
@@ -1420,8 +1416,7 @@ mount_retry:
 			mountent.mnt_passno = 0;
 			rc = addmntent(pmntfile,&mountent);
 			endmntent(pmntfile);
-			if(mountent.mnt_opts)
-				free(mountent.mnt_opts);
+			SAFE_FREE(mountent.mnt_opts);
 		} else {
 		    printf("could not update mount table\n");
 		}
@@ -1431,22 +1426,12 @@ mount_exit:
 	if(mountpassword) {
 		int len = strlen(mountpassword);
 		memset(mountpassword,0,len);
-		free(mountpassword);
+		SAFE_FREE(mountpassword);
 	}
 
-	if(options) {
-		memset(options,0,optlen);
-		free(options);
-	}
-
-	if(orgoptions) {
-		memset(orgoptions,0,orgoptlen);
-		free(orgoptions);
-	}
-	if(resolved_path) {
-		free(resolved_path);
-	}
-
-	free(share_name);
+	SAFE_FREE(options);
+	SAFE_FREE(orgoptions);
+	SAFE_FREE(resolved_path);
+	SAFE_FREE(share_name);
 	return rc;
 }
