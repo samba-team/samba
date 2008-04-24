@@ -225,9 +225,7 @@ hosts:		files wins
 	determine which user and group ids correspond to Windows NT user
 	and group rids. </para>
 
-        <para>See the <smbconfoption><name>idmap
-        domains</name></smbconfoption> or the old <smbconfoption><name>idmap
-	backend</name></smbconfoption> parameters in
+        <para>See the <smbconfoption name="idmap domains"/> or the old <smbconfoption name="idmap backend"/> parameters in
         <filename>smb.conf</filename> for options for sharing this
         database, such as via LDAP.</para>
 </refsect1>
@@ -374,8 +372,7 @@ auth  required    /lib/security/pam_unix.so \
 	<para>If more than one UNIX machine is running <command>winbindd</command>,
 	then in general the user and groups ids allocated by winbindd will not
 	be the same.  The user and group ids will only be valid for the local
-	machine, unless a shared <smbconfoption><name>idmap
-	backend</name></smbconfoption> is configured.</para>
+	machine, unless a shared <smbconfoption name="idmap backend"/> is configured.</para>
 
 	<para>If the the Windows NT SID to UNIX user and group id mapping
 	file is damaged or destroyed then the mappings will be lost. </para>
