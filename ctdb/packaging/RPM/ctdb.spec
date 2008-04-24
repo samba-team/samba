@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 33
+Release: 34
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,16 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Thu Apr 24 2008 : Version 1.0.34
+ - When deleting a public ip from a node, try to migrate the ip to a different
+   node first.
+ - Change catdb to produce output similar to tdbdump
+ - When adding a new public ip address, if this ip does not exist yet in
+   the cluster, then grab the ip on the local node and activate it.
+ - When a node disagrees with the recmaster on WHO is the recmaster, then
+   mark that node as a recovery culprit so it will eventually become
+   banned.
+ - Make ctdb eventscript support the -n all argument.
 * Thu Apr 10 2008 : Version 1.0.33
  - Add facilities to include site local adaptations to the eventscript
    by /etc/ctdb/rc.local which will be read by all eventscripts.
