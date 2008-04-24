@@ -197,7 +197,8 @@ bool send_getdc_request(TALLOC_CTX *mem_ctx,
 bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 			    struct sockaddr_storage *dc_ss,
 			    const char *domain_name,
-			    const char **dc_name)
+			    const char **dc_name,
+			    struct nbt_ntlogon_packet **reply)
 {
 	struct packet_struct *packet;
 	const char *my_mailslot = NULL;
@@ -298,6 +299,14 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 
 	if (**dc_name == '\\')	*dc_name += 1;
 	if (**dc_name == '\\')	*dc_name += 1;
+
+	if (reply) {
+		*reply = talloc_memdup(mem_ctx, &r,
+			sizeof(struct nbt_ntlogon_packet));
+		if (!*reply) {
+			return false;
+		}
+	}
 
 	DEBUG(10, ("GetDC gave name %s for domain %s\n",
 		   *dc_name, returned_domain));
