@@ -9626,12 +9626,15 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 
 	/* copy data into the reply */
 
-	r_u->ctr.size        	= r_u->needed;
+	/* mz: Vista x64 returns 0x6f7 (The stub received bad data), if the
+	   response buffer size is != the offered buffer size
+
+		r_u->ctr.size           = r_u->needed;
+	*/
+	r_u->ctr.size           = in_size;
 
 	r_u->ctr.size_of_array 	= r_u->returned;
 	r_u->ctr.values 	= enum_values;
-
-
 
 done:
 	if ( printer )
