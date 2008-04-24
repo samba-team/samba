@@ -7,6 +7,7 @@
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:samba="http://www.samba.org/samba/DTD/samba-doc"
+        xmlns:xlink='http://www.w3.org/1999/xlink'
 	version="1.1">
 
 	<xsl:output method="xml" encoding="UTF-8" doctype-public="-//OASIS//DTD DocBook XML V4.2//EN" indent="yes" doctype-system="http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd"/>
@@ -21,7 +22,7 @@
 		</xsl:copy>
 	</xsl:template>
 
-	<xsl:template name="smbconfoption">
+	<xsl:template name="xsmbconfoption">
 		<xsl:param name="name"/>
 		<xsl:param name="content"/>
 		<xsl:variable name="linkcontent">
@@ -45,10 +46,12 @@
 				<xsl:value-of select="$linkcontent"/>
 			</xsl:when>
 			<xsl:otherwise>
+				<xsl:variable name="newid"><xsl:value-of select="translate(translate(string($name),' ',''),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/></xsl:variable>
 				<xsl:element name="link">
 					<xsl:attribute name="linkend">
-						<xsl:value-of select="translate(translate(string($name),' ',''),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
+						<xsl:value-of select="$newid"/>
 					</xsl:attribute>
+					<xsl:attribute name="xlink:href">smb.conf.5.html#<xsl:value-of select="$newid"/></xsl:attribute>
 					<xsl:value-of select="$linkcontent"/>
 				</xsl:element>
 			</xsl:otherwise>
@@ -58,7 +61,7 @@
 	<xsl:template match="related">
 		<xsl:element name="para">
 			<xsl:text>Related command: </xsl:text>
-			<xsl:call-template name="smbconfoption">
+			<xsl:call-template name="xsmbconfoption">
 				<xsl:with-param name="name" select="text()"/>
 			</xsl:call-template>
 		</xsl:element>
@@ -100,9 +103,9 @@
 	</xsl:template>
 
 	<xsl:template match="smbconfoption">
-		<xsl:call-template name="smbconfoption">
+		<xsl:call-template name="xsmbconfoption">
 			<xsl:with-param name="name" select="@name"/>
-			<xsl:with-param name="content"><xsl:copy-of select="text()"/></xsl:with-param>
+			<xsl:with-param name="content" select="text()"/>
 		</xsl:call-template>
 	</xsl:template>
 

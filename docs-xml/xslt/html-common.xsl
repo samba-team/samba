@@ -10,7 +10,7 @@
 <xsl:param name="bridgehead.in.toc" select="1"/>
 <xsl:param name="citerefentry.link" select="'1'"/>
 <xsl:param name="css.decoration" select="1"/>
-<xsl:param name="html.stylesheet" select="'samba.css'"/>
+<xsl:param name="html.stylesheet" select="'../samba.css'"/>
 <xsl:param name="html.stylesheet.type">text/css</xsl:param>
 <xsl:param name="use.extensions" select="'0'"/>
 <xsl:param name="use.id.as.filename" select="'1'"/>

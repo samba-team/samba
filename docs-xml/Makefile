@@ -59,7 +59,7 @@ clean:
 	rm -f $(patsubst %.svg,%.png,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
 			$(patsubst %.svg,%.pdf,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-svg))) \
 			$(patsubst %.svg,%.eps,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-svg)))
-	rm -f *.xml *.d *.tpt *.tex *.loc *.toc *.lof *.glo *.idx *.aux
+	rm -f *-attributions.xml *.d *.tpt *.tex *.loc *.toc *.lof *.glo *.idx *.aux
 	rm -f *-images-html*
 	rm -f *-images-latex-* latexfigures
 	rm -f xslt/figures/*pdf
@@ -92,11 +92,11 @@ validate: $(addsuffix -validate,$(MAIN_DOCS))
 $(DOCBOOKDIR)/%.xml: %/index.xml xslt/expand-sambadoc.xsl
 	@echo "Converting Samba-specific tags for $*..."
 	@mkdir -p $(@D)
-	$(XSLTPROC) --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
+	$(XSLTPROC) --stringparam latex.imagebasedir "$*/"  --stringparam noreference 0  --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
 $(DOCBOOKDIR)/manpages-3/%.xml: $(MANPAGEDIR3)/%.xml xslt/expand-sambadoc.xsl
 	@mkdir -p $(@D)
-	$(XSLTPROC) --xinclude --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
+	$(XSLTPROC) --xinclude --stringparam noreference 0 --output $@ xslt/expand-sambadoc.xsl $<
 
 $(DOCBOOKDIR)/manpages-3/index.xml: $(MANPAGES3) xslt/manpage-summary.xsl
 	@mkdir -p $(@D)
