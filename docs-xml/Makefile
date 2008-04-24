@@ -92,11 +92,11 @@ validate: $(addsuffix -validate,$(MAIN_DOCS))
 $(DOCBOOKDIR)/%.xml: %/index.xml xslt/expand-sambadoc.xsl
 	@echo "Converting Samba-specific tags for $*..."
 	@mkdir -p $(@D)
-	$(XSLTPROC) --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
+	$(XSLTPROC) --stringparam latex.imagebasedir "$*/"  --stringparam noreference 0  --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
 $(DOCBOOKDIR)/manpages-3/%.xml: $(MANPAGEDIR3)/%.xml xslt/expand-sambadoc.xsl
 	@mkdir -p $(@D)
-	$(XSLTPROC) --xinclude --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
+	$(XSLTPROC) --xinclude --stringparam noreference 0 --output $@ xslt/expand-sambadoc.xsl $<
 
 $(DOCBOOKDIR)/manpages-3/index.xml: $(MANPAGES3) xslt/manpage-summary.xsl
 	@mkdir -p $(@D)

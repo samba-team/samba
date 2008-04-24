@@ -183,8 +183,7 @@
 		  <varlistentry>
 		  <term>Full-Username</term>
                 <listitem><para>The fully qualified username, expected to be in
-                Samba's <smbconfoption><name>unix
-                charset</name></smbconfoption> and qualified with the
+                Samba's <smbconfoption name="unix charset"/> and qualified with the
                 <smbconfoption name="winbind separator"/>.
                 </para>
 
