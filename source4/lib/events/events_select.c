@@ -23,12 +23,17 @@
 
 */
 
+#if _SAMBA_BUILD_
 #include "includes.h"
+#include "lib/util/dlinklist.h"
+#else
+#include "replace.h"
+#include "events_util.h"
+#endif
 #include "system/filesys.h"
 #include "system/select.h"
-#include "lib/util/dlinklist.h"
-#include "lib/events/events.h"
-#include "lib/events/events_internal.h"
+#include "events.h"
+#include "events_internal.h"
 
 struct select_event_context {
 	/* a pointer back to the generic event_context */
@@ -216,7 +221,9 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 		   made readable and that should have removed
 		   the event, so this must be a bug. This is a
 		   fatal error. */
+#if _SAMBA_BUILD_
 		DEBUG(0,("ERROR: EBADF on select_event_loop_once\n"));
+#endif
 		select_ev->exit_code = EBADF;
 		return -1;
 	}
