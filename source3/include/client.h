@@ -63,10 +63,18 @@ struct cli_pipe_auth_data {
 struct rpc_pipe_client {
 	struct rpc_pipe_client *prev, *next;
 
-	struct cli_state *cli;
+	enum dcerpc_transport_t transport_type;
 
-	const char *pipe_name;
-	uint16 fnum;
+	union {
+		struct {
+			struct cli_state *cli;
+			const char *pipe_name;
+			uint16 fnum;
+		} np;
+		struct {
+			int sock;
+		} tcp;
+	} trans ;
 
 	const struct ndr_syntax_id *abstract_syntax;
 	const struct ndr_syntax_id *transfer_syntax;

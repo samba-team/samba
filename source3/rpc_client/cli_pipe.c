@@ -64,8 +64,9 @@ static char *rpccli_pipe_txt(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli)
 {
 	char *result;
 	result = talloc_asprintf(mem_ctx, "host %s, pipe %s, fnum 0x%x",
-				 cli->desthost, cli->pipe_name,
-				 (unsigned int)(cli->fnum));
+				 cli->desthost,
+				 cli->trans.np.pipe_name,
+				 (unsigned int)(cli->trans.np.fnum));
 	SMB_ASSERT(result != NULL);
 	return result;
 }
@@ -119,8 +120,8 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 			size = (size_t)data_to_read;
 		}
 
-		num_read = cli_read(cli->cli, cli->fnum, pdata,
-					 (off_t)stream_offset, size);
+		num_read = cli_read(cli->trans.np.cli, cli->trans.np.fnum,
+				    pdata, (off_t)stream_offset, size);
 
 		DEBUG(5,("rpc_read: num_read = %d, read offset: %u, to read: %u\n",
 			(int)num_read, (unsigned int)stream_offset, (unsigned int)data_to_read));
@@ -128,14 +129,14 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
         	/*
 	         * A dos error of ERRDOS/ERRmoredata is not an error.
 		 */
-		if (cli_is_dos_error(cli->cli)) {
+		if (cli_is_dos_error(cli->trans.np.cli)) {
 			uint32 ecode;
 			uint8 eclass;
-			cli_dos_error(cli->cli, &eclass, &ecode);
+			cli_dos_error(cli->trans.np.cli, &eclass, &ecode);
 			if (eclass != ERRDOS && ecode != ERRmoredata) {
 				DEBUG(0,("rpc_read: DOS Error %d/%u (%s) in cli_read on pipe %s\n",
 					eclass, (unsigned int)ecode,
-					cli_errstr(cli->cli),
+					cli_errstr(cli->trans.np.cli),
 					rpccli_pipe_txt(debug_ctx(), cli)));
 				return dos_to_ntstatus(eclass, ecode);
 			}
@@ -144,19 +145,20 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
         	/*
 	         * Likewise for NT_STATUS_BUFFER_TOO_SMALL
 		 */
-		if (cli_is_nt_error(cli->cli)) {
-			if (!NT_STATUS_EQUAL(cli_nt_error(cli->cli), NT_STATUS_BUFFER_TOO_SMALL)) {
+		if (cli_is_nt_error(cli->trans.np.cli)) {
+			if (!NT_STATUS_EQUAL(cli_nt_error(cli->trans.np.cli),
+					     NT_STATUS_BUFFER_TOO_SMALL)) {
 				DEBUG(0,("rpc_read: Error (%s) in cli_read on pipe %s\n",
-					nt_errstr(cli_nt_error(cli->cli)),
+					nt_errstr(cli_nt_error(cli->trans.np.cli)),
 					rpccli_pipe_txt(debug_ctx(), cli)));
-				return cli_nt_error(cli->cli);
+				return cli_nt_error(cli->trans.np.cli);
 			}
 		}
 
 		if (num_read == -1) {
 			DEBUG(0,("rpc_read: Error - cli_read on pipe %s returned -1\n",
 				 rpccli_pipe_txt(debug_ctx(), cli)));
-			return cli_get_nt_error(cli->cli);
+			return cli_get_nt_error(cli->trans.np.cli);
 		}
 
 		data_to_read -= num_read;
@@ -755,7 +757,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 
 	/* Create setup parameters - must be in native byte order. */
 	setup[0] = TRANSACT_DCERPCCMD; 
-	setup[1] = cli->fnum; /* Pipe file handle. */
+	setup[1] = cli->trans.np.fnum; /* Pipe file handle. */
 
 	DEBUG(5,("rpc_api_pipe: %s\n", rpccli_pipe_txt(debug_ctx(), cli)));
 
@@ -765,7 +767,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	 * appears in a SMBtrans request and response.
 	 */
 
-	if (!cli_api_pipe(cli->cli, "\\PIPE\\",
+	if (!cli_api_pipe(cli->trans.np.cli, "\\PIPE\\",
 	          setup, 2, 0,                     /* Setup, length, max */
 	          NULL, 0, 0,                      /* Params, length, max */
 	          pdata, data_len, max_data,   	   /* data, length, max */
@@ -774,8 +776,8 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	{
 		DEBUG(0, ("rpc_api_pipe: %s returned critical error. Error "
 			  "was %s\n", rpccli_pipe_txt(debug_ctx(), cli),
-			  cli_errstr(cli->cli)));
-		ret = cli_get_nt_error(cli->cli);
+			  cli_errstr(cli->trans.np.cli)));
+		ret = cli_get_nt_error(cli->trans.np.cli);
 		SAFE_FREE(rparam);
 		SAFE_FREE(prdata);
 		goto err;
@@ -1540,12 +1542,13 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
 			ret = rpc_api_pipe(cli, &outgoing_pdu, out_data, RPC_RESPONSE);
 			prs_mem_free(&outgoing_pdu);
 
-			if (DEBUGLEVEL >= 50) {
+			if ((DEBUGLEVEL >= 50)
+			    && (cli->transport_type == NCACN_NP)) {
 				char *dump_name = NULL;
 				/* Also capture received data */
 				if (asprintf(&dump_name, "%s/reply_%s_%d",
-						get_dyn_LOGFILEBASE(), cli->pipe_name,
-						op_num) > 0) {
+					     get_dyn_LOGFILEBASE(),
+					     cli->trans.np.pipe_name, op_num) > 0) {
 					prs_dump(dump_name, op_num, out_data);
 					SAFE_FREE(dump_name);
 				}
@@ -1554,14 +1557,16 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
 			return ret;
 		} else {
 			/* More packets to come - write and continue. */
-			ssize_t num_written = cli_write(cli->cli, cli->fnum, 8, /* 8 means message mode. */
+			ssize_t num_written = cli_write(cli->trans.np.cli,
+							cli->trans.np.fnum,
+							8, /* 8 means message mode. */
 							prs_data_p(&outgoing_pdu),
 							(off_t)0,
 							(size_t)hdr.frag_len);
 
 			if (num_written != hdr.frag_len) {
 				prs_mem_free(&outgoing_pdu);
-				return cli_get_nt_error(cli->cli);
+				return cli_get_nt_error(cli->trans.np.cli);
 			}
 		}
 
@@ -1770,7 +1775,8 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 	}
 
 	/* 8 here is named pipe message mode. */
-	ret = cli_write(cli->cli, cli->fnum, 0x8, prs_data_p(&rpc_out), 0,
+	ret = cli_write(cli->trans.np.cli, cli->trans.np.fnum,
+			0x8, prs_data_p(&rpc_out), 0,
 				(size_t)prs_offset(&rpc_out));
 
 	if (ret != (ssize_t)prs_offset(&rpc_out)) {
@@ -1778,7 +1784,7 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 		prs_mem_free(&rpc_out);
 		data_blob_free(&client_reply);
 		data_blob_free(&server_response);
-		return cli_get_nt_error(cli->cli);
+		return cli_get_nt_error(cli->trans.np.cli);
 	}
 
 	DEBUG(5,("rpc_send_auth_auth3: %s sent auth3 response ok.\n",
@@ -2104,7 +2110,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 unsigned int rpccli_set_timeout(struct rpc_pipe_client *cli,
 				unsigned int timeout)
 {
-	return cli_set_timeout(cli->cli, timeout);
+	return cli_set_timeout(cli->trans.np.cli, timeout);
 }
 
 bool rpccli_is_pipe_idx(struct rpc_pipe_client *cli, int pipe_idx)
@@ -2114,39 +2120,48 @@ bool rpccli_is_pipe_idx(struct rpc_pipe_client *cli, int pipe_idx)
 
 bool rpccli_get_pwd_hash(struct rpc_pipe_client *cli, uint8_t nt_hash[16])
 {
-	if (!((cli->auth->auth_type == PIPE_AUTH_TYPE_NTLMSSP)
-	      || (cli->auth->auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP))) {
-		E_md4hash(cli->cli->pwd.password, nt_hash);
+	if ((cli->auth->auth_type == PIPE_AUTH_TYPE_NTLMSSP)
+	    || (cli->auth->auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP)) {
+		memcpy(nt_hash, cli->auth->a_u.ntlmssp_state->nt_hash, 16);
 		return true;
 	}
 
-	memcpy(nt_hash, cli->auth->a_u.ntlmssp_state->nt_hash, 16);
-	return true;
+	if (cli->transport_type == NCACN_NP) {
+		E_md4hash(cli->trans.np.cli->pwd.password, nt_hash);
+		return true;
+	}
+
+	return false;
 }
 
 struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p)
 {
-	return p->cli;
+	if (p->transport_type == NCACN_NP) {
+		return p->trans.np.cli;
+	}
+	return NULL;
 }
 
 static int rpc_pipe_destructor(struct rpc_pipe_client *p)
 {
-	bool ret;
+	if (p->transport_type == NCACN_NP) {
+		bool ret;
+		ret = cli_close(p->trans.np.cli, p->trans.np.fnum);
+		if (!ret) {
+			DEBUG(1, ("rpc_pipe_destructor: cli_close failed on "
+				  "pipe %s. Error was %s\n",
+				  rpccli_pipe_txt(debug_ctx(), p),
+				  cli_errstr(p->trans.np.cli)));
+		}
 
-	ret = cli_close(p->cli, p->fnum);
-	if (!ret) {
-		DEBUG(1, ("rpc_pipe_destructor: cli_close failed on pipe %s. "
-			  "Error was %s\n",
-			  rpccli_pipe_txt(debug_ctx(), p),
-			  cli_errstr(p->cli)));
+		DEBUG(10, ("rpc_pipe_destructor: closed %s\n",
+			   rpccli_pipe_txt(debug_ctx(), p)));
+
+		DLIST_REMOVE(p->trans.np.cli->pipe_list, p);
+		return ret ? -1 : 0;
 	}
 
-	DEBUG(10, ("rpc_pipe_destructor: closed %s\n",
-		   rpccli_pipe_txt(debug_ctx(), p)));
-
-	DLIST_REMOVE(p->cli->pipe_list, p);
-
-	return ret ? -1 : 0;
+	return -1;
 }
 
 NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
@@ -2383,9 +2398,11 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 		return NULL;
 	}
 
-	result->pipe_name = cli_get_pipe_name(pipe_idx);
+	result->transport_type = NCACN_NP;
 
-	result->cli = cli;
+	result->trans.np.pipe_name = cli_get_pipe_name(pipe_idx);
+
+	result->trans.np.cli = cli;
 	result->abstract_syntax = pipe_names[pipe_idx].abstr_syntax;
 	result->transfer_syntax = pipe_names[pipe_idx].trans_syntax;
 	result->desthost = talloc_strdup(result, cli->desthost);
@@ -2408,18 +2425,19 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 		}
 	}
 
-	fnum = cli_nt_create(cli, result->pipe_name, DESIRED_ACCESS_PIPE);
+	fnum = cli_nt_create(cli, result->trans.np.pipe_name,
+			     DESIRED_ACCESS_PIPE);
 	if (fnum == -1) {
 		DEBUG(1,("cli_rpc_pipe_open: cli_nt_create failed on pipe %s "
 			 "to machine %s.  Error was %s\n",
-			 result->pipe_name, cli->desthost,
+			 result->trans.np.pipe_name, cli->desthost,
 			 cli_errstr(cli)));
 		*perr = cli_get_nt_error(cli);
 		talloc_destroy(result);
 		return NULL;
 	}
 
-	result->fnum = fnum;
+	result->trans.np.fnum = fnum;
 
 	DLIST_ADD(cli->pipe_list, result);
 	talloc_set_destructor(result, rpc_pipe_destructor);
@@ -2483,8 +2501,9 @@ struct rpc_pipe_client *cli_rpc_pipe_open_noauth(struct cli_state *cli, int pipe
 		return NULL;
 	}
 
-	DEBUG(10,("cli_rpc_pipe_open_noauth: opened pipe %s to machine %s and bound anonymously.\n",
-			result->pipe_name, cli->desthost ));
+	DEBUG(10,("cli_rpc_pipe_open_noauth: opened pipe %s to machine "
+		  "%s and bound anonymously.\n", result->trans.np.pipe_name,
+		  cli->desthost ));
 
 	return result;
 }
@@ -2529,7 +2548,7 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 
 	DEBUG(10,("cli_rpc_pipe_open_ntlmssp_internal: opened pipe %s to "
 		"machine %s and bound NTLMSSP as user %s\\%s.\n",
-		result->pipe_name, cli->desthost,
+		result->trans.np.pipe_name, cli->desthost,
 		domain, username ));
 
 	return result;
@@ -2710,7 +2729,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
 		"for domain %s "
 		"and bound using schannel.\n",
-		result->pipe_name, cli->desthost, domain ));
+		result->trans.np.pipe_name, cli->desthost, domain ));
 
 	return result;
 }
