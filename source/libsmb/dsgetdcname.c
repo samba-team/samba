@@ -779,6 +779,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 	const char *dc_name = NULL;
 	fstring tmp_dc_name;
 	struct messaging_context *msg_ctx = msg_context(mem_ctx);
+	struct nbt_ntlogon_packet *reply = NULL;
 
 	if (flags & DS_PDC_REQUIRED) {
 		name_type = NBT_NAME_PDC;
@@ -805,7 +806,8 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 				if (receive_getdc_response(mem_ctx,
 							   &dclist[i].ss,
 							   domain_name,
-							   &dc_name)) {
+							   &dc_name,
+							   &reply)) {
 					namecache_store(dc_name, NBT_NAME_SERVER, 1, &ip_list);
 					dc_hostname = dc_name;
 					dc_domain_name = talloc_strdup_upper(mem_ctx, domain_name);
