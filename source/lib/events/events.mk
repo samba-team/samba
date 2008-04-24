@@ -1,0 +1,59 @@
+dirs::
+	@mkdir -p lib
+
+LIBEVENTS_SONAME = libevents.$(SHLIBEXT).0
+LIBEVENTS_SOLIB = libevents.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+LIBEVENTS = libevents.a
+
+clean::
+	rm -f $(LIBEVENTS_SONAME) $(LIBEVENTS_SOLIB) libevents.a libevents.$(SHLIBEXT)
+	rm -f events.pc
+
+build-python:: _libevents.$(SHLIBEXT)
+
+events_wrap.o: $(eventsdir)/events_wrap.c
+	$(CC) $(PICFLAG) -c $(eventsdir)/events_wrap.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
+
+_libevents.$(SHLIBEXT): libevents.$(SHLIBEXT) events_wrap.o
+	$(SHLD) $(SHLD_FLAGS) -o $@ events_wrap.o -L. -levents `$(PYTHON_CONFIG) --libs`
+
+install:: installdirs installbin installheaders installlibs \
+		  $(PYTHON_INSTALL_TARGET)
+
+install-python:: build-python
+	mkdir -p $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(0, prefix='$(prefix)')"` \
+		$(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='$(prefix)')"`
+	cp $(eventsdir)/events.py $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(0, prefix='$(prefix)')"`
+	cp _libevents.$(SHLIBEXT) $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='$(prefix)')"`
+
+check-python:: build-python
+	$(LIB_PATH_VAR)=. PYTHONPATH=".:$(eventsdir)" $(PYTHON) $(eventsdir)/python/tests/simple.py
+
+install-swig::
+	mkdir -p $(DESTDIR)`$(SWIG) -swiglib`
+	cp events.i $(DESTDIR)`$(SWIG) -swiglib`
+
+clean::
+	rm -f _libevents.$(SHLIBEXT)
+
+installdirs::
+	mkdir -p $(DESTDIR)$(includedir)
+	mkdir -p $(DESTDIR)$(libdir)
+	mkdir -p $(DESTDIR)$(libdir)/pkgconfig
+
+installheaders:: installdirs
+	cp $(srcdir)/events.h $(DESTDIR)$(includedir)
+
+installlibs:: all installdirs
+	cp events.pc $(DESTDIR)$(libdir)/pkgconfig
+	cp libevents.a $(LIBEVENTS_SOLIB) $(DESTDIR)$(libdir)
+
+libevents.a: $(EVENTS_OBJ)
+	ar -rv libevents.a $(EVENTS_OBJ)
+
+libevents.$(SHLIBEXT): $(LIBEVENTS_SOLIB)
+	ln -fs $< $@
+
+$(LIBEVENTS_SONAME): $(LIBEVENTS_SOLIB)
+	ln -fs $< $@
