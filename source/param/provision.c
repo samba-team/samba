@@ -20,19 +20,21 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "lib/ldb_wrap.h"
-#include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
-#include "torture/util.h"
 #include "librpc/ndr/libndr.h"
 
 #include "param/param.h"
+#include "param/provision.h"
 #include <Python.h>
 #include "scripting/python/modules.h"
 
 NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
-			struct provision_settings *settings)
+			struct provision_settings *settings, 
+			struct provision_result *result)
 {
-	PyObject *provision_mod, *provision_dict, *provision_fn, *result, *parameters;
+	extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);
+	struct ldb_context *ldb_context_from_py_object(PyObject *py_obj);
+	PyObject *provision_mod, *provision_dict, *provision_fn, *py_result, *parameters;
 	
 	DEBUG(0,("Provision for Become-DC test using python\n"));
 
@@ -62,19 +64,20 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	DEBUG(0,("New Server[%s] in Site[%s]\n", settings->dns_name, 
-			 settings->site_name));
+	DEBUG(0,("New Server in Site[%s]\n", 
+		 settings->site_name));
 
 	DEBUG(0,("DSA Instance [%s]\n"
-		"\tobjectGUID[%s]\n"
 		"\tinvocationId[%s]\n",
 		settings->ntds_dn_str,
-		settings->ntds_guid == NULL?"None":GUID_string(mem_ctx, settings->ntds_guid),
 		settings->invocation_id == NULL?"None":GUID_string(mem_ctx, settings->invocation_id)));
 
 	DEBUG(0,("Pathes under targetdir[%s]\n",
 		 settings->targetdir));
 	parameters = PyDict_New();
+
+	PyDict_SetItemString(parameters, "smbconf", 
+			     PyString_FromString(lp_configfile(lp_ctx)));
 
 	PyDict_SetItemString(parameters, "rootdn", 
 						 PyString_FromString(settings->root_dn_str));
@@ -105,6 +108,10 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 		PyDict_SetItemString(parameters, "configdn", 
 				     PyString_FromString(settings->config_dn_str));
 	
+	if (settings->server_dn_str) 
+		PyDict_SetItemString(parameters, "serverdn", 
+				     PyString_FromString(settings->server_dn_str));
+	
 	if (settings->site_name) 
 		PyDict_SetItemString(parameters, "sitename", 
 				     PyString_FromString(settings->site_name));
@@ -112,15 +119,21 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	PyDict_SetItemString(parameters, "machinepass", 
 			     PyString_FromString(settings->machine_password));
 
-	result = PyEval_CallObjectWithKeywords(provision_fn, NULL, parameters);
+	py_result = PyEval_CallObjectWithKeywords(provision_fn, NULL, parameters);
 
 	Py_DECREF(parameters);
 
-	if (result == NULL) {
+	if (py_result == NULL) {
 		PyErr_Print();
 		PyErr_Clear();
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	result->domaindn = talloc_strdup(mem_ctx, PyString_AsString(PyObject_GetAttrString(py_result, "domaindn")));
+
+	/* FIXME paths */
+	result->lp_ctx = lp_from_py_object(PyObject_GetAttrString(py_result, "lp"));
+	result->samdb = ldb_context_from_py_object(PyObject_GetAttrString(py_result, "samdb"));
 
 	return NT_STATUS_OK;
 }

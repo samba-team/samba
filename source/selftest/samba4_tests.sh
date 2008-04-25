@@ -219,12 +219,15 @@ plantest "rpc.echo on ncacn_np over smb2" dc $smb4torture ncacn_np:"\$SERVER[smb
 # Tests against the NTVFS POSIX backend
 NTVFSARGS="--option=torture:sharedelay=100000 --option=torture:oplocktimeout=3"
 smb2=`$smb4torture --list | grep "^SMB2-" | xargs`
-raw=`$smb4torture --list | grep "^RAW-" | xargs`
+#The QFILEINFO-IPC test needs to be on ipc$
+raw=`$smb4torture --list | grep "^RAW-" | grep -v "RAW-QFILEINFO-IPC"| xargs`
 base=`$smb4torture --list | grep "^BASE-" | xargs`
 
 for t in $base $raw $smb2; do
     plansmbtorturetest "$t" dc $ADDARGS //\$SERVER/tmp -U"\$USERNAME"%"\$PASSWORD" $NTVFSARGS
 done
+
+plansmbtorturetest "RAW-QFILEINFO-IPC" dc $ADDARGS //\$SERVER/ipc$ -U"\$USERNAME"%"\$PASSWORD"
 
 rap=`$smb4torture --list | grep "^RAP-" | xargs`
 for t in $rap; do
@@ -265,6 +268,7 @@ fi
 
 bbdir=$incdir/../../testprogs/blackbox
 
+plantest "blackbox.ndrdump" dc $bbdir/test_ndrdump.sh
 plantest "blackbox.smbclient" dc $bbdir/test_smbclient.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX" 
 plantest "blackbox.kinit" dc $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" $CONFIGURATION 
 plantest "blackbox.cifsdd" dc $bbdir/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" 
@@ -273,6 +277,8 @@ plantest "blackbox.nmblookup" member $samba4srcdir/utils/tests/test_nmblookup.sh
 plantest "blackbox.locktest" dc $bbdir/test_locktest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
 plantest "blackbox.masktest" dc $bbdir/test_masktest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
 plantest "blackbox.gentest" dc $bbdir/test_gentest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
+plantest "blackbox.wbinfo" dc $bbdir/test_wbinfo.sh "\$DOMAIN" "\$USERNAME" "\$PASSWORD" "dc"
+plantest "blackbox.wbinfo" member $bbdir/test_wbinfo.sh "\$DOMAIN" "\$DC_USERNAME" "\$DC_PASSWORD" "member"
 
 # Tests using the "Simple" NTVFS backend
 
@@ -282,7 +288,7 @@ done
 
 DATADIR=$samba4srcdir/../testdata
 
-plantest "js.samba3sam" none $SCRIPTDIR/samba3sam.js $CONFIGURATION `pwd` $DATADIR/samba3/
+plantest "js.samba3sam" none $samba4bindir/smbscript $SCRIPTDIR/samba3sam.js $CONFIGURATION `pwd` $DATADIR/samba3/
 
 # Domain Member Tests
 
@@ -291,7 +297,6 @@ plantest "rpc.echo against member server with domain creds" member $VALGRIND $sm
 plantest "rpc.samr against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR" "$*"
 plantest "rpc.samr.users against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-USERS" "$*"
 plantest "rpc.samr.passwords against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-PASSWORDS" "$*"
-plantest "wbinfo -a against member server with domain creds" member $VALGRIND $samba4bindir/wbinfo -a "\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
 
 NBT_TESTS=`$smb4torture --list | grep "^NBT-" | xargs`
 
@@ -299,9 +304,9 @@ for t in $NBT_TESTS; do
 	plansmbtorturetest "$t" dc //\$SERVER/_none_ -U\$USERNAME%\$PASSWORD 
 done
 
-WB_OPTS="--option=\"torture:strict mode=yes\""
+WB_OPTS="--option=\"torture:strict mode=no\""
 WB_OPTS="${WB_OPTS} --option=\"torture:timelimit=1\""
-WB_OPTS="${WB_OPTS} --option=\"torture:winbindd separator=\\\\\""
+WB_OPTS="${WB_OPTS} --option=\"torture:winbindd separator=/\""
 WB_OPTS="${WB_OPTS} --option=\"torture:winbindd private pipe dir=\$WINBINDD_PRIV_PIPE_DIR\""
 WB_OPTS="${WB_OPTS} --option=\"torture:winbindd netbios name=\$SERVER\""
 WB_OPTS="${WB_OPTS} --option=\"torture:winbindd netbios domain=\$DOMAIN\""
@@ -342,7 +347,7 @@ plantest "unixinfo.python" dc $SUBUNITRUN samba.tests.dcerpc.unix
 plantest "events.python" none PYTHONPATH="$PYTHONPATH:lib/events" $SUBUNITRUN tests
 plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
 plantest "rpcecho.python" dc $SUBUNITRUN samba.tests.dcerpc.rpcecho
-plantest "winreg.python" dc $SUBUNITRUN samba.tests.dcerpc.registry
+plantest "winreg.python" dc $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.dcerpc.registry
 plantest "ldap.python" dc $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantest "blackbox.samba3dump" none $PYTHON scripting/bin/samba3dump $samba4srcdir/../testdata/samba3
 rm -rf $PREFIX/upgrade

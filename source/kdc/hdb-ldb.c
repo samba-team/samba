@@ -50,6 +50,7 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "libcli/auth/libcli_auth.h"
 #include "param/param.h"
+#include "events/events.h"
 
 enum hdb_ldb_ent_type 
 { HDB_LDB_ENT_TYPE_CLIENT, HDB_LDB_ENT_TYPE_SERVER, 
@@ -1106,6 +1107,7 @@ static krb5_error_code LDB_destroy(krb5_context context, HDB *db)
  * code */
 
 NTSTATUS kdc_hdb_ldb_create(TALLOC_CTX *mem_ctx, 
+			    struct event_context *ev_ctx, 
 			    struct loadparm_context *lp_ctx,
 			    krb5_context context, struct HDB **db, const char *arg)
 {
@@ -1137,7 +1139,7 @@ NTSTATUS kdc_hdb_ldb_create(TALLOC_CTX *mem_ctx,
 					   CRED_DONT_USE_KERBEROS);
 
 	/* Setup the link to LDB */
-	(*db)->hdb_db = samdb_connect(*db, lp_ctx, session_info);
+	(*db)->hdb_db = samdb_connect(*db, ev_ctx, lp_ctx, session_info);
 	if ((*db)->hdb_db == NULL) {
 		DEBUG(1, ("hdb_ldb_create: Cannot open samdb for KDC backend!"));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
@@ -1168,7 +1170,7 @@ krb5_error_code hdb_ldb_create(krb5_context context, struct HDB **db, const char
 {
 	NTSTATUS nt_status;
 	/* The global kdc_mem_ctx and kdc_lp_ctx, Disgusting, ugly hack, but it means one less private hook */
-	nt_status = kdc_hdb_ldb_create(kdc_mem_ctx, kdc_lp_ctx, 
+	nt_status = kdc_hdb_ldb_create(kdc_mem_ctx, event_context_find(kdc_mem_ctx), kdc_lp_ctx, 
 				       context, db, arg);
 
 	if (NT_STATUS_IS_OK(nt_status)) {

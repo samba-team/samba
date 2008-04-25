@@ -241,7 +241,7 @@ bool torture_createuser(struct torture_context *torture)
 
 	mem_ctx = talloc_init("test_createuser");
 
-	ctx = libnet_context_init(NULL, torture->lp_ctx);
+	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
 
 	req.in.user_name = TEST_USERNAME;
@@ -287,7 +287,7 @@ bool torture_deleteuser(struct torture_context *torture)
 
 	prep_mem_ctx = talloc_init("prepare test_deleteuser");
 
-	ctx = libnet_context_init(NULL, torture->lp_ctx);
+	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
 
 	req.in.user_name = TEST_USERNAME;
@@ -482,7 +482,7 @@ bool torture_modifyuser(struct torture_context *torture)
 
 	prep_mem_ctx = talloc_init("prepare test_deleteuser");
 
-	ctx = libnet_context_init(NULL, torture->lp_ctx);
+	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
 
 	status = torture_rpc_connection(torture,
@@ -530,7 +530,8 @@ bool torture_modifyuser(struct torture_context *torture)
 
 		ZERO_STRUCT(user_req);
 		user_req.in.domain_name = lp_workgroup(torture->lp_ctx);
-		user_req.in.user_name = name;
+		user_req.in.data.user_name = name;
+		user_req.in.level = USER_INFO_BY_NAME;
 
 		status = libnet_UserInfo(ctx, torture, &user_req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -616,7 +617,7 @@ bool torture_userinfo_api(struct torture_context *torture)
 
 	prep_mem_ctx = talloc_init("prepare torture user info");
 
-	ctx = libnet_context_init(NULL, torture->lp_ctx);
+	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
 
 	status = torture_rpc_connection(torture,
@@ -642,7 +643,8 @@ bool torture_userinfo_api(struct torture_context *torture)
 	ZERO_STRUCT(req);
 	
 	req.in.domain_name = domain_name.string;
-	req.in.user_name   = name;
+	req.in.data.user_name   = name;
+	req.in.level = USER_INFO_BY_NAME;
 
 	status = libnet_UserInfo(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -681,7 +683,7 @@ bool torture_userlist(struct torture_context *torture)
 	struct libnet_UserList req;
 	int i;
 
-	ctx = libnet_context_init(NULL, torture->lp_ctx);
+	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);

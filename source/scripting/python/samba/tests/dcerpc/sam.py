@@ -18,12 +18,11 @@
 #
 
 import samr
-import unittest
-from samba.tests import get_loadparm
+from samba.tests import RpcInterfaceTestCase
 
-class SamrTests(unittest.TestCase):
+class SamrTests(RpcInterfaceTestCase):
     def setUp(self):
-        self.conn = samr.samr("ncalrpc:", get_loadparm())
+        self.conn = samr.samr("ncalrpc:", self.get_loadparm())
 
     def test_connect5(self):
         (level, info, handle) = self.conn.Connect5(None, 0, 1, samr.ConnectInfo1())

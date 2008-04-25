@@ -43,8 +43,7 @@ my $mkenv = new smb_build::makefile(\%config::config, $mkfile);
 
 my $shared_libs_used = 0;
 foreach my $key (values %$OUTPUT) {
-	$mkenv->_prepare_list($key, "OBJ_LIST");
-	push(@{$mkenv->{all_objs}}, "\$($key->{NAME}_OBJ_LIST)");
+	push(@{$mkenv->{all_objs}}, "\$($key->{NAME}_OBJ_FILES)");
 }
 
 foreach my $key (values %$OUTPUT) {
@@ -52,7 +51,7 @@ foreach my $key (values %$OUTPUT) {
 
 	$mkenv->StaticLibraryPrimitives($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->MergedObj($key) if grep(/MERGED_OBJ/, @{$key->{OUTPUT_TYPE}});
-	$mkenv->SharedLibraryPrimitives($key) if ($key->{TYPE} eq "LIBRARY") and
+	$kenv->SharedLibraryPrimitives($key) if ($key->{TYPE} eq "LIBRARY") and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	if ($key->{TYPE} eq "LIBRARY" and 
 	    ${$key->{OUTPUT_TYPE}}[0] eq "SHARED_LIBRARY") {
@@ -68,21 +67,20 @@ foreach my $key (values %$OUTPUT) {
 foreach my $key (values %$OUTPUT) {
 	next unless defined $key->{OUTPUT_TYPE};
 
-	$mkenv->Integrated($key) if grep(/INTEGRATED/, @{$key->{OUTPUT_TYPE}});
+ 	$mkenv->Integrated($key) if grep(/INTEGRATED/, @{$key->{OUTPUT_TYPE}});
 }
 
 foreach my $key (values %$OUTPUT) {
 	next unless defined $key->{OUTPUT_TYPE};
-
 	$mkenv->StaticLibrary($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
+
 	$mkenv->SharedLibrary($key) if ($key->{TYPE} eq "LIBRARY") and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->SharedModule($key) if ($key->{TYPE} eq "MODULE" and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}}));
 	$mkenv->PythonModule($key) if ($key->{TYPE} eq "PYTHON");
 	$mkenv->Binary($key) if grep(/BINARY/, @{$key->{OUTPUT_TYPE}});
-	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER}) or 
-					 defined($key->{PUBLIC_PROTO_HEADER});
+	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER});
 	$mkenv->InitFunctions($key) if defined($key->{INIT_FUNCTIONS});
 }
 

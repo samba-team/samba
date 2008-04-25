@@ -78,3 +78,8 @@ bool dsdb_set_ntds_invocation_id(struct ldb_context *ldb, const char *guid)
     return samdb_set_ntds_invocation_id(ldb, &invocation_id_in);
 }
 %}
+
+char *private_path(TALLOC_CTX* mem_ctx, 
+     		   struct loadparm_context *lp_ctx,
+	           const char *name);
+

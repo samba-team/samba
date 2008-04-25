@@ -70,7 +70,7 @@ NTSTATUS ntptr_register(const void *_ops)
 
 NTSTATUS ntptr_init(struct loadparm_context *lp_ctx)
 {
-	extern int ntptr_simple_ldb_init(void);
+	extern NTSTATUS ntptr_simple_ldb_init(void);
 	init_module_fn static_init[] = { STATIC_ntptr_MODULES };
 	init_module_fn *shared_init = load_samba_modules(NULL, lp_ctx, "ntptr");
 
@@ -119,7 +119,8 @@ const struct ntptr_critical_sizes *ntptr_interface_version(void)
 /*
   create a ntptr_context with a specified NTPTR backend
 */
-NTSTATUS ntptr_init_context(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
+NTSTATUS ntptr_init_context(TALLOC_CTX *mem_ctx, struct event_context *ev_ctx,
+			    struct loadparm_context *lp_ctx,
 			    const char *providor, struct ntptr_context **_ntptr)
 {
 	NTSTATUS status;
@@ -133,6 +134,7 @@ NTSTATUS ntptr_init_context(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx
 	NT_STATUS_HAVE_NO_MEMORY(ntptr);
 	ntptr->private_data	= NULL;
 	ntptr->ops		= ntptr_backend_byname(providor);
+	ntptr->ev_ctx		= ev_ctx;
 	ntptr->lp_ctx		= lp_ctx;
 
 	if (!ntptr->ops) {

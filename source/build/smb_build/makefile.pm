@@ -139,6 +139,14 @@ sub SharedModule($$)
 	}
 }
 
+sub StaticLibraryPrimitives($$)
+{
+	my ($self,$ctx) = @_;
+ 
+ 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
+	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
+}
+
 sub SharedLibraryPrimitives($$)
 {
 	my ($self,$ctx) = @_;

@@ -35,12 +35,14 @@ class SambaOptions(optparse.OptionGroup):
         self._configfile = arg
 
     def get_loadparm(self):
-        import param
+        import os, param
         lp = param.LoadParm()
-        if self._configfile is None:
-            lp.load_default()
-        else:
+        if self._configfile is not None:
             lp.load(self._configfile)
+        elif os.getenv("SMB_CONF_PATH") is not None:
+            lp.load(os.getenv("SMB_CONF_PATH"))
+        else:
+            lp.load_default()
         return lp
 
 class VersionOptions(optparse.OptionGroup):

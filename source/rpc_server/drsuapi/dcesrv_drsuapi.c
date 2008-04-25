@@ -58,7 +58,7 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	/*
 	 * connect to the samdb
 	 */
-	b_state->sam_ctx = samdb_connect(b_state, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info); 
+	b_state->sam_ctx = samdb_connect(b_state, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info); 
 	if (!b_state->sam_ctx) {
 		return WERR_FOOBAR;
 	}

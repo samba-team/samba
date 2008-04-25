@@ -23,7 +23,7 @@ LIBSAMBA-UTIL_OBJ_FILES = $(addprefix lib/util/, \
 		mutex.o \
 		idtree.o \
 		become_daemon.o \
-		params.o
+		params.o)
 
 PUBLIC_HEADERS += $(addprefix lib/util/, util.h \
 				 attr.h \

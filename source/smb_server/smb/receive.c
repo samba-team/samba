@@ -65,111 +65,16 @@ NTSTATUS smbsrv_send_oplock_break(void *p, struct ntvfs_handle *ntvfs, uint8_t l
 
 static void switch_message(int type, struct smbsrv_request *req);
 
-/****************************************************************************
-receive a SMB request header from the wire, forming a request_context
-from the result
-****************************************************************************/
-NTSTATUS smbsrv_recv_smb_request(void *private, DATA_BLOB blob)
-{
-	struct smbsrv_connection *smb_conn = talloc_get_type(private, struct smbsrv_connection);
-	struct smbsrv_request *req;
-	struct timeval cur_time = timeval_current();
-	uint8_t command;
-
-	smb_conn->statistics.last_request_time = cur_time;
-
-	/* see if its a special NBT packet */
-	if (CVAL(blob.data, 0) != 0) {
-		req = smbsrv_init_request(smb_conn);
-		NT_STATUS_HAVE_NO_MEMORY(req);
-
-		ZERO_STRUCT(req->in);
-
-		req->in.buffer = talloc_steal(req, blob.data);
-		req->in.size = blob.length;
-		req->request_time = cur_time;
-
-		smbsrv_reply_special(req);
-		return NT_STATUS_OK;
-	}
-
-	if ((NBT_HDR_SIZE + MIN_SMB_SIZE) > blob.length) {
-		DEBUG(2,("Invalid SMB packet: length %ld\n", (long)blob.length));
-		smbsrv_terminate_connection(smb_conn, "Invalid SMB packet");
-		return NT_STATUS_OK;
-	}
-
-	/* Make sure this is an SMB packet */
-	if (IVAL(blob.data, NBT_HDR_SIZE) != SMB_MAGIC) {
-		DEBUG(2,("Non-SMB packet of length %ld. Terminating connection\n",
-			 (long)blob.length));
-		smbsrv_terminate_connection(smb_conn, "Non-SMB packet");
-		return NT_STATUS_OK;
-	}
-
-	req = smbsrv_init_request(smb_conn);
-	NT_STATUS_HAVE_NO_MEMORY(req);
-
-	req->in.buffer = talloc_steal(req, blob.data);
-	req->in.size = blob.length;
-	req->request_time = cur_time;
-	req->chained_fnum = -1;
-	req->in.allocated = req->in.size;
-	req->in.hdr = req->in.buffer + NBT_HDR_SIZE;
-	req->in.vwv = req->in.hdr + HDR_VWV;
-	req->in.wct = CVAL(req->in.hdr, HDR_WCT);
-	if (req->in.vwv + VWV(req->in.wct) <= req->in.buffer + req->in.size) {
-		req->in.data = req->in.vwv + VWV(req->in.wct) + 2;
-		req->in.data_size = SVAL(req->in.vwv, VWV(req->in.wct));
-
-		/* the bcc length is only 16 bits, but some packets
-		   (such as SMBwriteX) can be much larger than 64k. We
-		   detect this by looking for a large non-chained NBT
-		   packet (at least 64k bigger than what is
-		   specified). If it is detected then the NBT size is
-		   used instead of the bcc size */
-		if (req->in.data_size + 0x10000 <= 
-		    req->in.size - PTR_DIFF(req->in.data, req->in.buffer) &&
-		    (req->in.wct < 1 || SVAL(req->in.vwv, VWV(0)) == SMB_CHAIN_NONE)) {
-			/* its an oversized packet! fun for all the family */
-			req->in.data_size = req->in.size - PTR_DIFF(req->in.data,req->in.buffer);
-		}
-	}
-
-	if (NBT_HDR_SIZE + MIN_SMB_SIZE + 2*req->in.wct > req->in.size) {
-		DEBUG(2,("Invalid SMB word count %d\n", req->in.wct));
-		smbsrv_terminate_connection(req->smb_conn, "Invalid SMB packet");
-		return NT_STATUS_OK;
-	}
- 
-	if (NBT_HDR_SIZE + MIN_SMB_SIZE + 2*req->in.wct + req->in.data_size > req->in.size) {
-		DEBUG(2,("Invalid SMB buffer length count %d\n", 
-			 (int)req->in.data_size));
-		smbsrv_terminate_connection(req->smb_conn, "Invalid SMB packet");
-		return NT_STATUS_OK;
-	}
-
-	req->flags2	= SVAL(req->in.hdr, HDR_FLG2);
-
-	/* fix the bufinfo */
-	smbsrv_setup_bufinfo(req);
-
-	if (!smbsrv_signing_check_incoming(req)) {
-		smbsrv_send_error(req, NT_STATUS_ACCESS_DENIED);
-		return NT_STATUS_OK;
-	}
-
-	command = CVAL(req->in.hdr, HDR_COM);
-	switch_message(command, req);
-	return NT_STATUS_OK;
-}
-
 /*
   These flags determine some of the permissions required to do an operation 
 */
 #define NEED_SESS		(1<<0)
 #define NEED_TCON		(1<<1)
 #define SIGNING_NO_REPLY	(1<<2)
+/* does VWV(0) of the request hold chaining information */
+#define AND_X			(1<<3)
+/* The 64Kb question: are requests > 64K valid? */
+#define LARGE_REQUEST	(1<<4)
 
 /* 
    define a list of possible SMB messages and their corresponding
@@ -180,6 +85,7 @@ static const struct smb_message_struct
 {
 	const char *name;
 	void (*fn)(struct smbsrv_request *);
+#define message_flags(type) smb_messages[(type) & 0xff].flags
 	int flags;
 }
  smb_messages[256] = {
@@ -219,7 +125,7 @@ static const struct smb_message_struct
 /* 0x21 */ { NULL, NULL, 0 },
 /* 0x22 */ { "SMBsetattrE",	smbsrv_reply_setattrE,		NEED_SESS|NEED_TCON },
 /* 0x23 */ { "SMBgetattrE",	smbsrv_reply_getattrE,		NEED_SESS|NEED_TCON },
-/* 0x24 */ { "SMBlockingX",	smbsrv_reply_lockingX,		NEED_SESS|NEED_TCON },
+/* 0x24 */ { "SMBlockingX",	smbsrv_reply_lockingX,		NEED_SESS|NEED_TCON|AND_X },
 /* 0x25 */ { "SMBtrans",	smbsrv_reply_trans,		NEED_SESS|NEED_TCON },
 /* 0x26 */ { "SMBtranss",	smbsrv_reply_transs,		NEED_SESS|NEED_TCON },
 /* 0x27 */ { "SMBioctl",	smbsrv_reply_ioctl,		NEED_SESS|NEED_TCON },
@@ -228,9 +134,9 @@ static const struct smb_message_struct
 /* 0x2a */ { "SMBmove",		NULL,				NEED_SESS|NEED_TCON },
 /* 0x2b */ { "SMBecho",		smbsrv_reply_echo,		0 },
 /* 0x2c */ { "SMBwriteclose",	smbsrv_reply_writeclose,	NEED_SESS|NEED_TCON },
-/* 0x2d */ { "SMBopenX",	smbsrv_reply_open_and_X,	NEED_SESS|NEED_TCON },
-/* 0x2e */ { "SMBreadX",	smbsrv_reply_read_and_X,	NEED_SESS|NEED_TCON },
-/* 0x2f */ { "SMBwriteX",	smbsrv_reply_write_and_X,	NEED_SESS|NEED_TCON},
+/* 0x2d */ { "SMBopenX",	smbsrv_reply_open_and_X,	NEED_SESS|NEED_TCON|AND_X },
+/* 0x2e */ { "SMBreadX",	smbsrv_reply_read_and_X,	NEED_SESS|NEED_TCON|AND_X },
+/* 0x2f */ { "SMBwriteX",	smbsrv_reply_write_and_X,	NEED_SESS|NEED_TCON|AND_X|LARGE_REQUEST},
 /* 0x30 */ { NULL, NULL, 0 },
 /* 0x31 */ { NULL, NULL, 0 },
 /* 0x32 */ { "SMBtrans2",	smbsrv_reply_trans2,		NEED_SESS|NEED_TCON },
@@ -298,9 +204,9 @@ static const struct smb_message_struct
 /* 0x70 */ { "SMBtcon",		smbsrv_reply_tcon,		NEED_SESS },
 /* 0x71 */ { "SMBtdis",		smbsrv_reply_tdis,		NEED_TCON },
 /* 0x72 */ { "SMBnegprot",	smbsrv_reply_negprot,		0 },
-/* 0x73 */ { "SMBsesssetupX",	smbsrv_reply_sesssetup,		0 },
-/* 0x74 */ { "SMBulogoffX",	smbsrv_reply_ulogoffX,		NEED_SESS }, /* ulogoff doesn't give a valid TID */
-/* 0x75 */ { "SMBtconX",	smbsrv_reply_tcon_and_X,	NEED_SESS },
+/* 0x73 */ { "SMBsesssetupX",	smbsrv_reply_sesssetup,		AND_X },
+/* 0x74 */ { "SMBulogoffX",	smbsrv_reply_ulogoffX,		NEED_SESS|AND_X }, /* ulogoff doesn't give a valid TID */
+/* 0x75 */ { "SMBtconX",	smbsrv_reply_tcon_and_X,	NEED_SESS|AND_X },
 /* 0x76 */ { NULL, NULL, 0 },
 /* 0x77 */ { NULL, NULL, 0 },
 /* 0x78 */ { NULL, NULL, 0 },
@@ -343,9 +249,9 @@ static const struct smb_message_struct
 /* 0x9d */ { NULL, NULL, 0 },
 /* 0x9e */ { NULL, NULL, 0 },
 /* 0x9f */ { NULL, NULL, 0 },
-/* 0xa0 */ { "SMBnttrans",	smbsrv_reply_nttrans,		NEED_SESS|NEED_TCON },
+/* 0xa0 */ { "SMBnttrans",	smbsrv_reply_nttrans,		NEED_SESS|NEED_TCON|LARGE_REQUEST },
 /* 0xa1 */ { "SMBnttranss",	smbsrv_reply_nttranss,		NEED_SESS|NEED_TCON },
-/* 0xa2 */ { "SMBntcreateX",	smbsrv_reply_ntcreate_and_X,	NEED_SESS|NEED_TCON },
+/* 0xa2 */ { "SMBntcreateX",	smbsrv_reply_ntcreate_and_X,	NEED_SESS|NEED_TCON|AND_X },
 /* 0xa3 */ { NULL, NULL, 0 },
 /* 0xa4 */ { "SMBntcancel",	smbsrv_reply_ntcancel,		NEED_SESS|NEED_TCON|SIGNING_NO_REPLY },
 /* 0xa5 */ { "SMBntrename",	smbsrv_reply_ntrename,		NEED_SESS|NEED_TCON },
@@ -440,6 +346,111 @@ static const struct smb_message_struct
 /* 0xfe */ { NULL, NULL, 0 },
 /* 0xff */ { NULL, NULL, 0 }
 };
+
+/****************************************************************************
+receive a SMB request header from the wire, forming a request_context
+from the result
+****************************************************************************/
+NTSTATUS smbsrv_recv_smb_request(void *private, DATA_BLOB blob)
+{
+	struct smbsrv_connection *smb_conn = talloc_get_type(private, struct smbsrv_connection);
+	struct smbsrv_request *req;
+	struct timeval cur_time = timeval_current();
+	uint8_t command;
+
+	smb_conn->statistics.last_request_time = cur_time;
+
+	/* see if its a special NBT packet */
+	if (CVAL(blob.data, 0) != 0) {
+		req = smbsrv_init_request(smb_conn);
+		NT_STATUS_HAVE_NO_MEMORY(req);
+
+		ZERO_STRUCT(req->in);
+
+		req->in.buffer = talloc_steal(req, blob.data);
+		req->in.size = blob.length;
+		req->request_time = cur_time;
+
+		smbsrv_reply_special(req);
+		return NT_STATUS_OK;
+	}
+
+	if ((NBT_HDR_SIZE + MIN_SMB_SIZE) > blob.length) {
+		DEBUG(2,("Invalid SMB packet: length %ld\n", (long)blob.length));
+		smbsrv_terminate_connection(smb_conn, "Invalid SMB packet");
+		return NT_STATUS_OK;
+	}
+
+	/* Make sure this is an SMB packet */
+	if (IVAL(blob.data, NBT_HDR_SIZE) != SMB_MAGIC) {
+		DEBUG(2,("Non-SMB packet of length %ld. Terminating connection\n",
+			 (long)blob.length));
+		smbsrv_terminate_connection(smb_conn, "Non-SMB packet");
+		return NT_STATUS_OK;
+	}
+
+	req = smbsrv_init_request(smb_conn);
+	NT_STATUS_HAVE_NO_MEMORY(req);
+
+	req->in.buffer = talloc_steal(req, blob.data);
+	req->in.size = blob.length;
+	req->request_time = cur_time;
+	req->chained_fnum = -1;
+	req->in.allocated = req->in.size;
+	req->in.hdr = req->in.buffer + NBT_HDR_SIZE;
+	req->in.vwv = req->in.hdr + HDR_VWV;
+	req->in.wct = CVAL(req->in.hdr, HDR_WCT);
+
+	command = CVAL(req->in.hdr, HDR_COM);
+
+	if (req->in.vwv + VWV(req->in.wct) <= req->in.buffer + req->in.size) {
+		req->in.data = req->in.vwv + VWV(req->in.wct) + 2;
+		req->in.data_size = SVAL(req->in.vwv, VWV(req->in.wct));
+
+		/* the bcc length is only 16 bits, but some packets
+		   (such as SMBwriteX) can be much larger than 64k. We
+		   detect this by looking for a large non-chained NBT
+		   packet (at least 64k bigger than what is
+		   specified). If it is detected then the NBT size is
+		   used instead of the bcc size */
+		if (req->in.data_size + 0x10000 <= 
+		    req->in.size - PTR_DIFF(req->in.data, req->in.buffer) &&
+			( message_flags(command) & LARGE_REQUEST) &&
+			( !(message_flags(command) & AND_X) ||
+		      (req->in.wct < 1 || SVAL(req->in.vwv, VWV(0)) == SMB_CHAIN_NONE) )
+			) {
+			/* its an oversized packet! fun for all the family */
+			req->in.data_size = req->in.size - PTR_DIFF(req->in.data,req->in.buffer);
+		}
+	}
+
+	if (NBT_HDR_SIZE + MIN_SMB_SIZE + 2*req->in.wct > req->in.size) {
+		DEBUG(2,("Invalid SMB word count %d\n", req->in.wct));
+		smbsrv_terminate_connection(req->smb_conn, "Invalid SMB packet");
+		return NT_STATUS_OK;
+	}
+ 
+	if (NBT_HDR_SIZE + MIN_SMB_SIZE + 2*req->in.wct + req->in.data_size > req->in.size) {
+		DEBUG(2,("Invalid SMB buffer length count %d\n", 
+			 (int)req->in.data_size));
+		smbsrv_terminate_connection(req->smb_conn, "Invalid SMB packet");
+		return NT_STATUS_OK;
+	}
+
+	req->flags2	= SVAL(req->in.hdr, HDR_FLG2);
+
+	/* fix the bufinfo */
+	smbsrv_setup_bufinfo(req);
+
+	if (!smbsrv_signing_check_incoming(req)) {
+		smbsrv_send_error(req, NT_STATUS_ACCESS_DENIED);
+		return NT_STATUS_OK;
+	}
+
+	command = CVAL(req->in.hdr, HDR_COM);
+	switch_message(command, req);
+	return NT_STATUS_OK;
+}
 
 /****************************************************************************
 return a string containing the function name of a SMB command

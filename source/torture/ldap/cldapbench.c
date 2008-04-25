@@ -51,13 +51,15 @@ static void request_handler(struct cldap_request *req)
 */
 static bool bench_cldap(struct torture_context *tctx, const char *address)
 {
-	struct cldap_socket *cldap = cldap_socket_init(tctx, NULL, lp_iconv_convenience(tctx->lp_ctx));
+	struct cldap_socket *cldap;
 	int num_sent=0;
 	struct timeval tv = timeval_current();
 	bool ret = true;
 	int timelimit = torture_setting_int(tctx, "timelimit", 10);
 	struct cldap_netlogon search;
 	struct bench_state *state;
+
+	cldap = cldap_socket_init(tctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
 
 	state = talloc_zero(tctx, struct bench_state);
 
@@ -116,7 +118,7 @@ bool torture_bench_cldap(struct torture_context *torture)
 	make_nbt_name_server(&name, torture_setting_string(torture, "host", NULL));
 
 	/* do an initial name resolution to find its IP */
-	status = resolve_name(lp_resolve_context(torture->lp_ctx), &name, torture, &address, event_context_find(torture));
+	status = resolve_name(lp_resolve_context(torture->lp_ctx), &name, torture, &address, torture->ev);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to resolve %s - %s\n",
 		       name.name, nt_errstr(status));

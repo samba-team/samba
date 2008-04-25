@@ -30,7 +30,7 @@
  * 1. Setup a CLDAP socket.
  * 2. Lookup the default Site-Name.
  */
-NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_JoinSite *r)
+NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct libnet_JoinSite *r)
 {
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
@@ -55,7 +55,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_JoinSite *r)
 	search.in.acct_control = -1;
 	search.in.version = 6;
 
-	cldap = cldap_socket_init(tmp_ctx, NULL, lp_iconv_convenience(global_loadparm));
+	cldap = cldap_socket_init(tmp_ctx, lctx->event_ctx, lp_iconv_convenience(global_loadparm));
 	status = cldap_netlogon(cldap, tmp_ctx, &search);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
@@ -148,7 +148,7 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 	}
 
 	make_nbt_name_client(&name, libnet_r->out.samr_binding->host);
-	status = resolve_name(lp_resolve_context(ctx->lp_ctx), &name, r, &dest_addr, NULL);
+	status = resolve_name(lp_resolve_context(ctx->lp_ctx), &name, r, &dest_addr, ctx->event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
@@ -161,7 +161,7 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 	r->in.domain_dn_str = libnet_r->out.domain_dn_str;
 	r->in.cldap_port = lp_cldap_port(ctx->lp_ctx);
 
-	status = libnet_FindSite(tmp_ctx, r);
+	status = libnet_FindSite(tmp_ctx, ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_r->out.error_string =
 			talloc_steal(libnet_r, r->out.error_string);

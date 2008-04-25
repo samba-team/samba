@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/misc.h"
 
 struct ccache_container;
+struct event_context;
 
 /* In order of priority */
 enum credentials_obtained { 
@@ -121,9 +122,6 @@ struct cli_credentials {
 
 	/* Whether any callback is currently running */
 	bool callback_running;
-
-	/* an event context for anyone wanting to use the credentials */
-	struct event_context *ev;
 };
 
 struct ldb_context;
@@ -152,12 +150,15 @@ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_
 const char *cli_credentials_get_realm(struct cli_credentials *cred);
 const char *cli_credentials_get_username(struct cli_credentials *cred);
 int cli_credentials_get_krb5_context(struct cli_credentials *cred, 
+				     struct event_context *event_ctx,
 				     struct loadparm_context *lp_ctx,
 				     struct smb_krb5_context **smb_krb5_context);
 int cli_credentials_get_ccache(struct cli_credentials *cred, 
+			       struct event_context *event_ctx,
 			       struct loadparm_context *lp_ctx,
 			       struct ccache_container **ccc);
 int cli_credentials_get_keytab(struct cli_credentials *cred, 
+			       struct event_context *event_ctx,
 			       struct loadparm_context *lp_ctx,
 			       struct keytab_container **_ktc);
 const char *cli_credentials_get_domain(struct cli_credentials *cred);
@@ -168,15 +169,15 @@ void cli_credentials_set_conf(struct cli_credentials *cred,
 			      struct loadparm_context *lp_ctx);
 const char *cli_credentials_get_principal(struct cli_credentials *cred, TALLOC_CTX *mem_ctx);
 int cli_credentials_get_server_gss_creds(struct cli_credentials *cred, 
+					 struct event_context *event_ctx,
 					 struct loadparm_context *lp_ctx,
 					 struct gssapi_creds_container **_gcc);
 int cli_credentials_get_client_gss_creds(struct cli_credentials *cred, 
+					 struct event_context *event_ctx,
 					 struct loadparm_context *lp_ctx,
 					 struct gssapi_creds_container **_gcc);
-void cli_credentials_set_event_context(struct cli_credentials *cred, struct event_context *ev);
 void cli_credentials_set_kerberos_state(struct cli_credentials *creds, 
 					enum credentials_use_kerberos use_kerberos);
-struct event_context *cli_credentials_get_event_context(struct cli_credentials *cred);
 bool cli_credentials_set_domain(struct cli_credentials *cred, 
 				const char *val, 
 				enum credentials_obtained obtained);
@@ -199,6 +200,7 @@ void cli_credentials_set_netlogon_creds(struct cli_credentials *cred,
 NTSTATUS cli_credentials_set_krb5_context(struct cli_credentials *cred, 
 					  struct smb_krb5_context *smb_krb5_context);
 NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
+					      struct event_context *event_ctx,
 					      struct loadparm_context *lp_ctx,
 					      const char *serviceprincipal);
 NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred,
@@ -220,14 +222,17 @@ bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
 				 const struct samr_Password *nt_hash, 
 				 enum credentials_obtained obtained);
 int cli_credentials_set_keytab_name(struct cli_credentials *cred, 
+				    struct event_context *event_ctx,
 				    struct loadparm_context *lp_ctx,
 				    const char *keytab_name, 
 				    enum credentials_obtained obtained);
 int cli_credentials_update_keytab(struct cli_credentials *cred, 
+				  struct event_context *event_ctx,
 				  struct loadparm_context *lp_ctx);
 void cli_credentials_set_gensec_features(struct cli_credentials *creds, uint32_t gensec_features);
 uint32_t cli_credentials_get_gensec_features(struct cli_credentials *creds);
 int cli_credentials_set_ccache(struct cli_credentials *cred, 
+			       struct event_context *event_ctx,
 			       struct loadparm_context *lp_ctx,
 			       const char *name, 
 			       enum credentials_obtained obtained);
@@ -239,6 +244,7 @@ void cli_credentials_invalidate_ccache(struct cli_credentials *cred,
 void cli_credentials_set_salt_principal(struct cli_credentials *cred, const char *principal);
 enum credentials_use_kerberos cli_credentials_get_kerberos_state(struct cli_credentials *creds);
 NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred, 
+				     struct event_context *event_ctx,
 				     struct loadparm_context *lp_ctx,
 				     struct ldb_context *ldb,
 				     const char *base,

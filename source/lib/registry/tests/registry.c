@@ -281,7 +281,8 @@ static bool test_query_key_nums(struct torture_context *tctx, void *_data)
 	struct registry_key *root, *subkey1, *subkey2;
 	WERROR error;
 	uint32_t num_subkeys, num_values;
-	uint32_t data = 42;
+	char data[4];
+	SIVAL(data, 0, 42);
 
 	if (!create_test_key(tctx, rctx, "Berlin", &root, &subkey1))
 		return false;
@@ -353,13 +354,15 @@ static bool test_set_value(struct torture_context *tctx, void *_data)
 	struct registry_context *rctx = (struct registry_context *)_data;
 	struct registry_key *subkey = NULL, *root;
 	WERROR error;
-	uint32_t data = 42;
+	char data[4];
+
+	SIVAL(data, 0, 42);
 
 	if (!create_test_key(tctx, rctx, "Dusseldorf", &root, &subkey))
 		return false;
 
 	error = reg_val_set(subkey, "Answer", REG_DWORD,
-			    data_blob_talloc(tctx, &data, sizeof(data)));
+			    data_blob_talloc(tctx, data, sizeof(data)));
 	torture_assert_werr_ok (tctx, error, "setting value");
 
 	return true;
@@ -408,8 +411,9 @@ static bool test_get_value(struct torture_context *tctx, void *_data)
 	struct registry_key *subkey = NULL, *root;
 	WERROR error;
 	DATA_BLOB data;
-	uint32_t value = 42;
+	char value[4];
 	uint32_t type;
+	SIVAL(value, 0, 42);
 
 	if (!create_test_key(tctx, rctx, "Duisburg", &root, &subkey))
 		return false;
@@ -420,16 +424,16 @@ static bool test_get_value(struct torture_context *tctx, void *_data)
 				  "getting missing value");
 
 	error = reg_val_set(subkey, __FUNCTION__, REG_DWORD,
-			    data_blob_talloc(tctx, &value, 4));
+			    data_blob_talloc(tctx, value, sizeof(value)));
 	torture_assert_werr_ok(tctx, error, "setting value");
 
 	error = reg_key_get_value_by_name(tctx, subkey, __FUNCTION__, &type,
 					  &data);
 	torture_assert_werr_ok(tctx, error, "getting value");
 
-	torture_assert_int_equal(tctx, 4, data.length, "value length ok");
-	torture_assert(tctx, memcmp(data.data, &value, 4) == 0,
-				    "value content ok");
+	torture_assert_int_equal(tctx, sizeof(value), data.length, "value length ok");
+	torture_assert_mem_equal(tctx, data.data, value, sizeof(value),
+				 "value content ok");
 	torture_assert_int_equal(tctx, REG_DWORD, type, "value type");
 
 	return true;
@@ -444,8 +448,9 @@ static bool test_del_value(struct torture_context *tctx, void *_data)
 	struct registry_key *subkey = NULL, *root;
 	WERROR error;
 	DATA_BLOB data;
-	uint32_t value = 42;
 	uint32_t type;
+	char value[4];
+	SIVAL(value, 0, 42);
 
 	if (!create_test_key(tctx, rctx, "Warschau", &root, &subkey))
 		return false;
@@ -456,7 +461,7 @@ static bool test_del_value(struct torture_context *tctx, void *_data)
 				  "getting missing value");
 
 	error = reg_val_set(subkey, __FUNCTION__, REG_DWORD,
-			    data_blob_talloc(tctx, &value, 4));
+			    data_blob_talloc(tctx, value, sizeof(value)));
 	torture_assert_werr_ok (tctx, error, "setting value");
 
 	error = reg_del_value(subkey, __FUNCTION__);
@@ -479,15 +484,16 @@ static bool test_list_values(struct torture_context *tctx, void *_data)
 	struct registry_key *subkey = NULL, *root;
 	WERROR error;
 	DATA_BLOB data;
-	uint32_t value = 42;
 	uint32_t type;
 	const char *name;
+	char value[4];
+	SIVAL(value, 0, 42);
 
 	if (!create_test_key(tctx, rctx, "Bonn", &root, &subkey))
 		return false;
 
 	error = reg_val_set(subkey, "bar", REG_DWORD,
-			    data_blob_talloc(tctx, &value, 4));
+			    data_blob_talloc(tctx, value, sizeof(value)));
 	torture_assert_werr_ok (tctx, error, "setting value");
 
 	error = reg_key_get_value_by_index(tctx, subkey, 0, &name,
@@ -495,8 +501,8 @@ static bool test_list_values(struct torture_context *tctx, void *_data)
 	torture_assert_werr_ok(tctx, error, "getting value");
 
 	torture_assert_str_equal(tctx, name, "bar", "value name");
-	torture_assert_int_equal(tctx, 4, data.length, "value length");
-	torture_assert(tctx, memcmp(data.data, &value, 4) == 0,
+	torture_assert_int_equal(tctx, sizeof(value), data.length, "value length");
+	torture_assert_mem_equal(tctx, data.data, value, sizeof(value),
 		       "value content");
 	torture_assert_int_equal(tctx, REG_DWORD, type, "value type");
 
@@ -517,14 +523,14 @@ static bool setup_local_registry(struct torture_context *tctx, void **data)
 	struct hive_key *hive_key;
 	const char *filename;
 
-	error = reg_open_local(tctx, &rctx, NULL, NULL);
+	error = reg_open_local(tctx, &rctx);
 	torture_assert_werr_ok(tctx, error, "Opening local registry failed");
 
 	status = torture_temp_dir(tctx, "registry-local", &tempdir);
 	torture_assert_ntstatus_ok(tctx, status, "Creating temp dir failed");
 
 	filename = talloc_asprintf(tctx, "%s/classes_root.ldb", tempdir);
-	error = reg_open_ldb_file(tctx, filename, NULL, NULL, tctx->lp_ctx, &hive_key);
+	error = reg_open_ldb_file(tctx, filename, NULL, NULL, tctx->ev, tctx->lp_ctx, &hive_key);
 	torture_assert_werr_ok(tctx, error, "Opening classes_root file failed");
 
 	error = reg_mount_hive(rctx, hive_key, HKEY_CLASSES_ROOT, NULL);

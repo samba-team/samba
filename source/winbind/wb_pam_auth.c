@@ -214,14 +214,11 @@ NTSTATUS wb_cmd_pam_auth_crap_recv(struct composite_context *c,
 
 struct composite_context *wb_cmd_pam_auth_send(TALLOC_CTX *mem_ctx,
 					       struct wbsrv_service *service,
-					       const char *domain,
-					       const char *user,
-					       const char *password)
+					       struct cli_credentials *credentials)
 {
-	struct cli_credentials *credentials;
 	const char *workstation;
 	NTSTATUS status;
-
+	const char *user, *domain;
 	DATA_BLOB chal, nt_resp, lm_resp, names_blob;
 	int flags = CLI_CRED_NTLM_AUTH;
 	if (lp_client_lanman_auth(service->task->lp_ctx)) {
@@ -233,16 +230,6 @@ struct composite_context *wb_cmd_pam_auth_send(TALLOC_CTX *mem_ctx,
 	}
 
 	DEBUG(5, ("wbsrv_samba3_pam_auth called\n"));
-
-	credentials = cli_credentials_init(mem_ctx);
-	if (!credentials) {
-		return NULL;
-	}
-	cli_credentials_set_conf(credentials, service->task->lp_ctx);
-	cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
-	cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
-
-	cli_credentials_set_password(credentials, password, CRED_SPECIFIED);
 
 	chal = data_blob_talloc(mem_ctx, NULL, 8);
 	if (!chal.data) {
@@ -269,7 +256,7 @@ struct composite_context *wb_cmd_pam_auth_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	return wb_cmd_pam_auth_crap_send(mem_ctx, service,
-					 0 /* logon parameters */, 
+					 MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT|MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT /* logon parameters */, 
 					 domain, user, workstation,
 					 chal, nt_resp, lm_resp);
 }

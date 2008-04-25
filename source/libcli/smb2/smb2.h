@@ -21,6 +21,8 @@
 
 #include "libcli/raw/request.h"
 
+struct smb2_handle;
+
 struct smb2_options {
 	uint32_t timeout;
 };
@@ -58,6 +60,15 @@ struct smb2_transport {
 		void *private;
 		uint_t period;
 	} idle;
+
+	struct {
+		/* a oplock break request handler */
+		bool (*handler)(struct smb2_transport *transport,
+				const struct smb2_handle *handle,
+				uint8_t level, void *private_data);
+		/* private data passed to the oplock handler */
+		void *private_data;
+	} oplock;
 };
 
 

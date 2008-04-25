@@ -440,9 +440,8 @@ interface nbt
 		nstring          unicode_domain;
 		uint32           db_count;
 		nbt_db_change    dbchange[db_count];
-		[value(ndr_size_dom_sid(&sid, ndr->flags))] uint32 sid_size;
-		[flag(NDR_ALIGN4)] DATA_BLOB _pad2;
-		dom_sid          sid;
+		[value(ndr_size_dom_sid0(&sid, ndr->flags))] uint32 sid_size;
+		[subcontext(0),subcontext_size(sid_size)] dom_sid0 sid;
 		uint32           nt_version;
 		uint16           lmnt_token;
 		uint16           lm20_token;
@@ -560,9 +559,8 @@ interface nbt
 		nstring              user_name;
 		astring              mailslot_name;
 		uint32               acct_control;
-		[value(ndr_size_dom_sid(&sid, ndr->flags))] uint32 sid_size;
-		[flag(NDR_ALIGN4)]   DATA_BLOB _pad;
-		dom_sid              sid;
+		[value(ndr_size_dom_sid0(&sid, ndr->flags))] uint32 sid_size;
+		[subcontext(0),subcontext_size(sid_size)] dom_sid0 sid;
 		uint32               nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;

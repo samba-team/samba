@@ -201,8 +201,6 @@ sub mk_fedora_ds($$$)
 
 	my $pidfile = "$fedora_ds_dir/logs/slapd-samba4.pid";
 
-	system("$self->{bindir}/ad2oLschema $configuration -H $ldapdir/schema-tmp.ldb --option=convert:target=fedora-ds -I $self->{setupdir}/schema-map-fedora-ds-1.0 -O $ldapdir/99_ad.ldif >&2") == 0 or die("schema conversion for Fedora DS failed");
-
 my $dir = getcwd();
 chdir "$ENV{FEDORA_DS_ROOT}/bin" || die;
 	if (system("perl $ENV{FEDORA_DS_ROOT}/sbin/setup-ds.pl --silent --file=$fedora_ds_inf >&2") != 0) {
@@ -221,9 +219,6 @@ sub mk_openldap($$$)
 	my $slapd_conf = "$ldapdir/slapd.conf";
 	my $pidfile = "$ldapdir/slapd.pid";
 	my $modconf = "$ldapdir/modules.conf";
-
-	#This uses the backend provision we just did, to read out the schema
-	system("$self->{bindir}/ad2oLschema $configuration --option=convert:target=openldap -H $ldapdir/schema-tmp.ldb -I $self->{setupdir}/schema-map-openldap-2.3 -O $ldapdir/backend-schema.schema >&2") == 0 or die("schema conversion for OpenLDAP failed");
 
 	my $oldpath = $ENV{PATH};
 	my $olpath = "";
@@ -526,7 +521,7 @@ sub provision($$$$$$)
 	my $ncalrpcdir = "$prefix_abs/ncalrpc";
 	my $lockdir = "$prefix_abs/lockdir";
 	my $winbindd_socket_dir = "$prefix_abs/winbind_socket";
-	my $winbindd_priv_pipe_dir = "$piddir/smbd.tmp/winbind_pipe";
+	my $winbindd_priv_pipe_dir = "$privatedir/smbd.tmp/winbind_pipe";
 	my $nsswrap_passwd = "$etcdir/passwd";
 	my $nsswrap_group = "$etcdir/group";
 
@@ -700,6 +695,12 @@ nogroup:x:65534:nobody
 	my @provision_options = ();
 	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$nsswrap_passwd\"");
 	push (@provision_options, "NSS_WRAPPER_GROUP=\"$nsswrap_group\"");
+	if (defined($ENV{GDB_PROVISION})) {
+		push (@provision_options, "gdb --args");
+	}
+	if (defined($ENV{VALGRIND_PROVISION})) {
+		push (@provision_options, "valgrind");
+	}
 	if (defined($ENV{PROVISION_EJS})) {
 		push (@provision_options, "$self->{bindir}/smbscript");
 		push (@provision_options, "$self->{setupdir}/provision.js");

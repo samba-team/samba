@@ -1560,7 +1560,7 @@ bool torture_rpc_samsync(struct torture_context *torture)
 	status = dcerpc_pipe_connect_b(samsync_state,
 				       &samsync_state->p, b, 
 					   &ndr_table_netlogon,
-				       credentials, NULL, torture->lp_ctx);
+				       credentials, torture->ev, torture->lp_ctx);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to server as a BDC: %s\n", nt_errstr(status));
@@ -1598,7 +1598,7 @@ bool torture_rpc_samsync(struct torture_context *torture)
 				       &samsync_state->p_netlogon_wksta, 
 				       b_netlogon_wksta, 
 					   &ndr_table_netlogon,
-				       credentials_wksta, NULL, torture->lp_ctx);
+				       credentials_wksta, torture->ev, torture->lp_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to server as a Workstation: %s\n", nt_errstr(status));

@@ -42,7 +42,11 @@ _PUBLIC_ struct composite_context *composite_create(TALLOC_CTX *mem_ctx,
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (!c) return NULL;
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
-	c->event_ctx = ev;
+	c->event_ctx = talloc_reference(c, ev);
+	if (!c->event_ctx) {
+		talloc_free(c);
+		return NULL;
+	}
 
 	return c;
 }

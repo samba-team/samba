@@ -136,19 +136,14 @@ struct composite_context *resolve_name_send(struct resolve_context *ctx,
 	struct composite_context *c;
 	struct resolve_state *state;
 
-	c = composite_create(event_ctx, event_ctx);
-	if (c == NULL) return NULL;
-
-	if (ctx == NULL) {
+	if (ctx == NULL || event_ctx == NULL) {
 		composite_error(c, NT_STATUS_INVALID_PARAMETER);
 		return c;
 	}
 
-	if (event_ctx == NULL) {
-		c->event_ctx = event_context_init(c);
-	} else {
-		c->event_ctx = talloc_reference(c, event_ctx);
-	}
+	c = composite_create(ctx, event_ctx);
+	if (c == NULL) return NULL;
+
 	if (composite_nomem(c->event_ctx, c)) return c;
 
 	state = talloc(c, struct resolve_state);

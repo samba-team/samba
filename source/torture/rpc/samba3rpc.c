@@ -89,7 +89,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 					lp_smb_ports(torture->lp_ctx),
 					"IPC$", NULL, cmdline_credentials,
 					lp_resolve_context(torture->lp_ctx),
-					NULL, &options);
+					torture->ev, &options);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
 			 nt_errstr(status));
@@ -303,7 +303,7 @@ bool torture_bind_samba3(struct torture_context *torture)
 					lp_smb_ports(torture->lp_ctx),
 					"IPC$", NULL, cmdline_credentials,
 					lp_resolve_context(torture->lp_ctx),
-					NULL, &options);
+					torture->ev, &options);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
 			 nt_errstr(status));
@@ -1220,7 +1220,7 @@ bool torture_netlogon_samba3(struct torture_context *torture)
 					lp_smb_ports(torture->lp_ctx),
 					"IPC$", NULL, anon_creds, 
 					lp_resolve_context(torture->lp_ctx),
-					NULL, &options);
+					torture->ev, &options);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
 			 nt_errstr(status));
@@ -1307,7 +1307,7 @@ static bool test_join3(struct torture_context *tctx,
 					lp_smb_ports(tctx->lp_ctx),
 					"IPC$", NULL, smb_creds, 
 					lp_resolve_context(tctx->lp_ctx),
-					NULL, &options);
+					tctx->ev, &options);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
 			 nt_errstr(status));
@@ -1682,7 +1682,7 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 		lp_smb_ports(torture->lp_ctx),
 		"IPC$", NULL, cmdline_credentials, 
 		lp_resolve_context(torture->lp_ctx),
-		NULL, &options);
+		torture->ev, &options);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) smbcli_full_connection failed: %s\n",
 			 __location__, nt_errstr(status));
@@ -1709,7 +1709,7 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 		lp_smb_ports(torture->lp_ctx),
 		"IPC$", NULL, anon_creds, 
 		lp_resolve_context(torture->lp_ctx),
-		NULL, &options);
+		torture->ev, &options);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) anon smbcli_full_connection failed: %s\n",
 			 __location__, nt_errstr(status));
@@ -1924,7 +1924,7 @@ bool torture_samba3_rpc_srvsvc(struct torture_context *torture)
 
 	if (!(torture_open_connection_share(
 		      mem_ctx, &cli, torture, torture_setting_string(torture, "host", NULL),
-		      "IPC$", NULL))) {
+		      "IPC$", torture->ev))) {
 		talloc_free(mem_ctx);
 		return false;
 	}
@@ -1986,7 +1986,7 @@ bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 	if (!(torture_open_connection_share(
 		      mem_ctx, &cli,
 		      torture, torture_setting_string(torture, "host", NULL),
-		      "IPC$", NULL))) {
+		      "IPC$", torture->ev))) {
 		d_printf("IPC$ connection failed\n");
 		goto done;
 	}
@@ -2281,7 +2281,7 @@ bool torture_samba3_rpc_sharesec(struct torture_context *torture)
 
 	if (!(torture_open_connection_share(
 		      mem_ctx, &cli, torture, torture_setting_string(torture, "host", NULL),
-		      "IPC$", NULL))) {
+		      "IPC$", torture->ev))) {
 		d_printf("IPC$ connection failed\n");
 		talloc_free(mem_ctx);
 		return false;
@@ -2329,7 +2329,7 @@ bool torture_samba3_rpc_lsa(struct torture_context *torture)
 
 	if (!(torture_open_connection_share(
 		      mem_ctx, &cli, torture, torture_setting_string(torture, "host", NULL),
-		      "IPC$", NULL))) {
+		      "IPC$", torture->ev))) {
 		d_printf("IPC$ connection failed\n");
 		talloc_free(mem_ctx);
 		return false;
@@ -2611,7 +2611,7 @@ bool torture_samba3_rpc_spoolss(struct torture_context *torture)
 
 	if (!(torture_open_connection_share(
 		      mem_ctx, &cli, torture, torture_setting_string(torture, "host", NULL),
-		      "IPC$", NULL))) {
+		      "IPC$", torture->ev))) {
 		d_printf("IPC$ connection failed\n");
 		talloc_free(mem_ctx);
 		return false;
@@ -2797,7 +2797,7 @@ bool torture_samba3_rpc_wkssvc(struct torture_context *torture)
 
 	if (!(torture_open_connection_share(
 		      mem_ctx, &cli, torture, torture_setting_string(torture, "host", NULL),
-		      "IPC$", NULL))) {
+		      "IPC$", torture->ev))) {
 		d_printf("IPC$ connection failed\n");
 		talloc_free(mem_ctx);
 		return false;

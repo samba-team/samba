@@ -28,20 +28,17 @@ struct libnet_context *libnet_context_init(struct event_context *ev,
 {
 	struct libnet_context *ctx;
 
+	/* We require an event context here */
+	if (!ev) {
+		return NULL;
+	}
+
 	/* create brand new libnet context */ 
 	ctx = talloc(ev, struct libnet_context);
 	if (!ctx) {
 		return NULL;
 	}
 
-	/* events */
-	if (ev == NULL) {
-		ev = event_context_find(ctx);
-		if (ev == NULL) {
-			talloc_free(ctx);
-			return NULL;
-		}
-	}
 	ctx->event_ctx = ev;
 	ctx->lp_ctx = lp_ctx;
 

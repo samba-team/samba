@@ -250,11 +250,7 @@ struct cldap_socket *cldap_socket_init(TALLOC_CTX *mem_ctx,
 	cldap = talloc(mem_ctx, struct cldap_socket);
 	if (cldap == NULL) goto failed;
 
-	if (event_ctx == NULL) {
-		cldap->event_ctx = event_context_init(cldap);
-	} else {
-		cldap->event_ctx = talloc_reference(cldap, event_ctx);
-	}
+	cldap->event_ctx = talloc_reference(cldap, event_ctx);
 	if (cldap->event_ctx == NULL) goto failed;
 
 	cldap->idr = idr_init(cldap);
@@ -601,7 +597,10 @@ NTSTATUS cldap_netlogon_recv(struct cldap_request *req,
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 	struct cldap_search search;
+	struct cldap_socket *cldap;
 	DATA_BLOB *data;
+
+	cldap = req->cldap;
 
 	status = cldap_search_recv(req, mem_ctx, &search);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -620,7 +619,7 @@ NTSTATUS cldap_netlogon_recv(struct cldap_request *req,
 	data = search.out.response->attributes[0].values;
 
 	ndr_err = ndr_pull_union_blob_all(data, mem_ctx, 
-					  req->cldap->iconv_convenience,
+					  cldap->iconv_convenience,
 					  &io->out.netlogon,
 					  io->in.version & 0xF,
 					  (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);

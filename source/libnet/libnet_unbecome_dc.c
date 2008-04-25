@@ -310,7 +310,7 @@ static NTSTATUS unbecomeDC_ldap_connect(struct libnet_UnbecomeDC_state *s)
 	url = talloc_asprintf(s, "ldap://%s/", s->source_dsa.dns_name);
 	NT_STATUS_HAVE_NO_MEMORY(url);
 
-	s->ldap.ldb = ldb_wrap_connect(s, s->libnet->lp_ctx, url,
+	s->ldap.ldb = ldb_wrap_connect(s, s->libnet->event_ctx, s->libnet->lp_ctx, url,
 				       NULL,
 				       s->libnet->cred,
 				       0, NULL);

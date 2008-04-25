@@ -4,7 +4,11 @@
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBNDR NDR_MISC
+<<<<<<< HEAD:source/dsdb/samdb/ldb_modules/config.mk
 INIT_FUNCTION = LDB_MODULE(objectguid)
+=======
+INIT_FUNCTION = objectguid_module_module_ops
+>>>>>>> 5f3a70f285ad8a412105c0e498e486f93fc279bc:source/dsdb/samdb/ldb_modules/config.mk
 # End MODULE ldb_objectguid
 ################################################
 
@@ -21,7 +25,8 @@ INIT_FUNCTION = LDB_MODULE(repl_meta_data)
 # End MODULE ldb_repl_meta_data
 ################################################
 
-ldb_repl_meta_data_OBJ_FILES = dsdb/samdb/ldb_modules/repl_meta_data.o
+ldb_repl_meta_data_OBJ_FILES = \
+		dsdb/samdb/ldb_modules/repl_meta_data.o
 
 ################################################
 # Start MODULE ldb_dsdb_cache
@@ -33,7 +38,8 @@ INIT_FUNCTION = LDB_MODULE(dsdb_cache)
 # End MODULE ldb_dsdb_cache
 ################################################
 
-ldb_dsdb_cache_OBJ_FILES = dsdb/samdb/ldb_modules/dsdb_cache.o
+ldb_dsdb_cache_OBJ_FILES = \
+		dsdb/samdb/ldb_modules/dsdb_cache.o
 
 ################################################
 # Start MODULE ldb_schema_fsmo
@@ -45,7 +51,8 @@ INIT_FUNCTION = LDB_MODULE(schema_fsmo)
 # End MODULE ldb_schema_fsmo
 ################################################
 
-ldb_schema_fsmo_OBJ_FILES = dsdb/samdb/ldb_modules/schema_fsmo.o
+ldb_schema_fsmo_OBJ_FILES = \
+		dsdb/samdb/ldb_modules/schema_fsmo.o
 
 ################################################
 # Start MODULE ldb_naming_fsmo
@@ -57,7 +64,8 @@ INIT_FUNCTION = LDB_MODULE(naming_fsmo)
 # End MODULE ldb_naming_fsmo
 ################################################
 
-ldb_naming_fsmo_OBJ_FILES = dsdb/samdb/ldb_modules/naming_fsmo.o
+ldb_naming_fsmo_OBJ_FILES = \
+		dsdb/samdb/ldb_modules/naming_fsmo.o
 
 ################################################
 # Start MODULE ldb_pdc_fsmo
@@ -69,7 +77,8 @@ INIT_FUNCTION = LDB_MODULE(pdc_fsmo)
 # End MODULE ldb_pdc_fsmo
 ################################################
 
-ldb_pdc_fsmo_OBJ_FILES = dsdb/samdb/ldb_modules/pdc_fsmo.o
+ldb_pdc_fsmo_OBJ_FILES = \
+		dsdb/samdb/ldb_modules/pdc_fsmo.o
 
 ################################################
 # Start MODULE ldb_samldb
@@ -78,10 +87,12 @@ SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC LDAP_ENCODE NDR_MISC SAMDB
 INIT_FUNCTION = LDB_MODULE(samldb)
+#
 # End MODULE ldb_samldb
 ################################################
 
-ldb_samldb_OBJ_FILES = dsdb/samdb/ldb_modules/samldb.o
+ldb_samldb_OBJ_FILES = \
+		dsdb/samdb/ldb_modules/samldb.o
 
 ################################################
 # Start MODULE ldb_samba3sam
@@ -94,7 +105,8 @@ PRIVATE_DEPENDENCIES = LIBTALLOC ldb_map SMBPASSWD NSS_WRAPPER LIBSECURITY \
 # End MODULE ldb_samldb
 ################################################
 
-ldb_samba3sam_OBJ_FILES = dsdb/samdb/ldb_modules/samba3sam.o
+ldb_samba3sam_OBJ_FILES = \
+		dsdb/samdb/ldb_modules/samba3sam.o
 
 ################################################
 # Start MODULE ldb_simple_ldap_map
@@ -108,7 +120,8 @@ ALIASES = entryuuid nsuniqueid
 # End MODULE ldb_entryuuid
 ################################################
 
-ldb_simple_ldap_map_OBJ_FILES = dsdb/samdb/ldb_modules/simple_ldap_map.o
+ldb_simple_ldap_map_OBJ_FILES = \
+		dsdb/samdb/ldb_modules/simple_ldap_map.o
 
 # ################################################
 # # Start MODULE ldb_proxy

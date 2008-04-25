@@ -54,6 +54,8 @@ parser.add_option("--quiet", help="Be quiet", action="store_true")
 parser.add_option("--ldap-backend-type", type="choice", metavar="LDAP-BACKEND-TYPE", 
 		help="LDB mapping module to use for the LDAP backend",
 		choices=["fedora-ds", "openldap"])
+parser.add_option("--ldap-backend-port", type="int", metavar="PORT", 
+		help="TCP Port LDAP server should listen to (default ldapi only)")
 parser.add_option("--server-role", type="choice", metavar="ROLE",
 		  choices=["domain controller", "dc", "member server", "member", "standalone"],
 		help="Set server role to provision for (default standalone)")
@@ -89,10 +91,9 @@ if setup_dir is None:
 	setup_dir = "setup"
 
 provision_backend(setup_dir=setup_dir, message=message, smbconf=smbconf, targetdir=opts.targetdir,
-          realm=opts.realm, domain=opts.domain,
-          hostname=opts.host_name,
-          adminpass=opts.ldap_manager_pass,
-          root=opts.root, serverrole=server_role, 
-          ldap_backend_type=opts.ldap_backend_type)
-
-message("All OK")
+		  realm=opts.realm, domain=opts.domain,
+		  hostname=opts.host_name,
+		  adminpass=opts.ldap_manager_pass,
+		  root=opts.root, serverrole=server_role, 
+		  ldap_backend_type=opts.ldap_backend_type,
+		  ldap_backend_port=opts.ldap_backend_port)

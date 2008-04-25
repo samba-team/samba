@@ -134,7 +134,6 @@ static bool test_ping_speed(struct torture_context *tctx)
 	talloc_free(msg_client_ctx);
 	talloc_free(msg_server_ctx);
 
-	talloc_free(ev);
 	return true;
 }
 

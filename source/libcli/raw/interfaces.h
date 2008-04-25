@@ -1587,6 +1587,14 @@ union smb_open {
 
 			/* optional list of extended attributes */
 			struct smb_ea_list eas;
+
+			struct smb2_create_blobs {
+				uint32_t num_blobs;
+				struct smb2_create_blob {
+					const char *tag;
+					DATA_BLOB data;
+				} *blobs;
+			} blobs;
 		} in;
 		struct {
 			union smb_handle file;
@@ -1706,19 +1714,27 @@ union smb_read {
 
 			/* static body buffer 48 (0x30) bytes */
 			/* uint16_t buffer_code;  0x31 = 0x30 + 1 */
-			uint16_t _pad;
+			uint8_t _pad;
+			uint8_t reserved;
 			uint32_t length;
 			uint64_t offset;
 			/* struct smb2_handle handle; */
-			uint64_t unknown1; /* 0x0000000000000000 */
-			uint64_t unknown2; /* 0x0000000000000000 */
+			uint32_t min_count;
+			uint32_t channel;
+			uint32_t remaining;
+			/* the docs give no indication of what
+			   these channel variables are for */
+			uint16_t channel_offset;
+			uint16_t channel_length;
 		} in;
 		struct {
 			/* static body buffer 16 (0x10) bytes */
 			/* uint16_t buffer_code;  0x11 = 0x10 + 1 */
-			/* uint16_t data_ofs; */
+			/* uint8_t data_ofs; */
+			/* uint8_t reserved; */
 			/* uint32_t data_size; */
-			uint64_t unknown1; /* 0x0000000000000000 */
+			uint32_t remaining;
+			uint32_t reserved;
 
 			/* dynamic body */
 			DATA_BLOB data;
@@ -1846,7 +1862,8 @@ enum smb_lock_level {
 	RAW_LOCK_LOCK,
 	RAW_LOCK_UNLOCK,
 	RAW_LOCK_LOCKX,
-	RAW_LOCK_SMB2
+	RAW_LOCK_SMB2,
+	RAW_LOCK_SMB2_BREAK
 };
 
 /* the generic interface is defined to be equal to the lockingX interface */
@@ -1909,6 +1926,20 @@ union smb_lock {
 			uint16_t unknown1;
 		} out;
 	} smb2;
+
+	/* SMB2 Break */
+	struct smb2_break {
+		enum smb_lock_level level;
+		struct {
+			union smb_handle file;
+
+			/* static body buffer 24 (0x18) bytes */
+			uint8_t oplock_level;
+			uint8_t reserved;
+			uint32_t reserved2;
+			/* struct smb2_handle handle; */
+		} in, out;
+	} smb2_break;
 };
 
 

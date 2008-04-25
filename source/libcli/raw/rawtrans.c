@@ -40,10 +40,10 @@ static bool raw_trans_oob(struct smbcli_request *req,
 	ptr = req->in.hdr + offset;
 	
 	/* be careful with wraparound! */
-	if (ptr < req->in.data ||
-	    ptr >= req->in.data + req->in.data_size ||
+	if ((uintptr_t)ptr < (uintptr_t)req->in.data ||
+	    (uintptr_t)ptr >= (uintptr_t)req->in.data + req->in.data_size ||
 	    count > req->in.data_size ||
-	    ptr + count > req->in.data + req->in.data_size) {
+	    (uintptr_t)ptr + count > (uintptr_t)req->in.data + req->in.data_size) {
 		return true;
 	}
 	return false;	

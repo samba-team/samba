@@ -23,3 +23,9 @@ python_misc_OBJ_FILES = scripting/python/misc_wrap.o
 _PY_FILES = $(shell find scripting/python -name "*.py")
 
 $(foreach pyfile, $(_PY_FILES),$(eval $(call python_py_module_template,$(patsubst scripting/python/%,%,$(pyfile)),$(pyfile))))
+
+installpython:: pythonmods
+	@$(SHELL) $(srcdir)/script/installpython.sh \
+		$(INSTALLPERMS) \
+		$(DESTDIR)$(PYTHONDIR) \
+		scripting/python bin/python

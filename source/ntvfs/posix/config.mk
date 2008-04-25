@@ -36,7 +36,8 @@ OUTPUT_TYPE = MERGED_OBJ
 INIT_FUNCTION = ntvfs_posix_init 
 PRIVATE_PROTO_HEADER = vfs_posix_proto.h
 #PRIVATE_DEPENDENCIES = pvfs_acl_xattr pvfs_acl_nfs4
-PRIVATE_DEPENDENCIES = NDR_XATTR WRAP_XATTR BLKID ntvfs_common MESSAGING pvfs_aio
+PRIVATE_DEPENDENCIES = NDR_XATTR WRAP_XATTR BLKID ntvfs_common MESSAGING pvfs_aio \
+					   LIBWBCLIENT
 # End MODULE ntvfs_posix
 ################################################
 

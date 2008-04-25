@@ -55,7 +55,7 @@ _PUBLIC_ struct sys_lease_context *sys_lease_context_create(struct share_config 
 	}
 
 	if (ev == NULL) {
-		ev = event_context_find(mem_ctx);
+		return NULL;
 	}
 
 	ctx = talloc_zero(mem_ctx, struct sys_lease_context);
@@ -112,6 +112,7 @@ _PUBLIC_ NTSTATUS sys_lease_register(const struct sys_lease_ops *backend)
 _PUBLIC_ NTSTATUS sys_lease_init(void)
 {
 	static bool initialized = false;
+	extern NTSTATUS sys_lease_linux_init(void);
 
 	init_module_fn static_init[] = { STATIC_sys_lease_MODULES };
 

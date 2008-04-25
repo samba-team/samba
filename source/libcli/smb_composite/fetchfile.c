@@ -62,7 +62,6 @@ static NTSTATUS fetchfile_connect(struct composite_context *c,
 	state->creq->async.fn = fetchfile_composite_handler;
 
 	state->stage = FETCHFILE_READ;
-	c->event_ctx = talloc_reference(c, state->creq->event_ctx);
 
 	return NT_STATUS_OK;
 }
@@ -158,7 +157,6 @@ struct composite_context *smb_composite_fetchfile_send(struct smb_composite_fetc
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	state->stage = FETCHFILE_CONNECT;
-	c->event_ctx = talloc_reference(c, state->creq->event_ctx);
 	c->private_data = state;
 
 	return c;
