@@ -161,15 +161,15 @@
 		</xsl:for-each>
 
 		<xsl:element name="section">
-					<xsl:element name="indexterm">
-						<xsl:attribute name="significance">
-							<xsl:text>preferred</xsl:text>
-						</xsl:attribute>
-						<xsl:element name="primary">
-						<xsl:value-of select="@name"/>
-						</xsl:element>
-					</xsl:element>
-					<xsl:copy-of select="$term"/>
+			<xsl:element name="indexterm">
+				<xsl:attribute name="significance">
+					<xsl:text>preferred</xsl:text>
+				</xsl:attribute>
+				<xsl:element name="primary">
+				<xsl:value-of select="@name"/>
+				</xsl:element>
+			</xsl:element>
+			<xsl:copy-of select="$term"/>
 			<xsl:element name="variablelist">
 				<xsl:element name="varlistentry">
 					<xsl:element name="listitem">
