@@ -420,7 +420,7 @@ static NTSTATUS cmd_timeout(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 					continue;
 				}
 
-				rpccli_set_timeout(tmp_set->rpc_pipe, timeout);
+				cli_set_timeout(tmp_set->rpc_pipe->cli, timeout);
 			}
 		}
 	}
