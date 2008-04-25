@@ -55,8 +55,11 @@
 		<xsl:variable name="term">
 				<xsl:copy-of select="$anchor"/>
 				<xsl:element name="title">
+					<xsl:text>&#10;</xsl:text>
+					<xsl:text>&#10;</xsl:text>
 					<xsl:value-of select="@name"/>
 					<xsl:value-of select="$context"/>
+					<xsl:text>&#10;</xsl:text>
 				</xsl:element>
 		</xsl:variable>
 
