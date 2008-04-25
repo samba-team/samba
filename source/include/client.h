@@ -73,6 +73,7 @@ struct rpc_pipe_client {
 
 	char *domain;
 	char *user_name;
+	struct pwd_info pwd;
 
 	uint16 max_xmit_frag;
 	uint16 max_recv_frag;
