@@ -24,7 +24,7 @@
 #  ->  "3.0.0"                                         #
 ########################################################
 SAMBA_VERSION_MAJOR=3
-SAMBA_VERSION_MINOR=2
+SAMBA_VERSION_MINOR=3
 SAMBA_VERSION_RELEASE=0
 
 ########################################################
@@ -46,7 +46,7 @@ SAMBA_VERSION_REVISION=
 # e.g. SAMBA_VERSION_PRE_RELEASE=1                     #
 #  ->  "2.2.9pre1"                                     #
 ########################################################
-SAMBA_VERSION_PRE_RELEASE=3
+SAMBA_VERSION_PRE_RELEASE=1
 
 ########################################################
 # For 'rc' releases the version will be                #
