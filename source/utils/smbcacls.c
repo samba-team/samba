@@ -103,7 +103,9 @@ static NTSTATUS cli_lsa_lookup_sid(struct cli_state *cli,
 
 	status = NT_STATUS_OK;
  fail:
-	TALLOC_FREE(p);
+	if (p != NULL) {
+		cli_rpc_pipe_close(p);
+	}
 	cli_tdis(cli);
 	cli->cnum = orig_cnum;
 	TALLOC_FREE(frame);
@@ -149,7 +151,9 @@ static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
 
 	status = NT_STATUS_OK;
  fail:
-	TALLOC_FREE(p);
+	if (p != NULL) {
+		cli_rpc_pipe_close(p);
+	}
 	cli_tdis(cli);
 	cli->cnum = orig_cnum;
 	TALLOC_FREE(frame);

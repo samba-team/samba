@@ -85,7 +85,7 @@ static NTSTATUS net_sh_run(struct rpc_sh_ctx *ctx, struct rpc_sh_cmd *cmd,
 
 	status = cmd->fn(mem_ctx, ctx, pipe_hnd, argc, argv);
 
-	TALLOC_FREE(pipe_hnd);
+	cli_rpc_pipe_close(pipe_hnd);
 
 	talloc_destroy(mem_ctx);
 

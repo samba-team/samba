@@ -196,7 +196,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	}
 
 	/* OK, that failed, so try again... */
-	TALLOC_FREE(pipe_hnd);
+	cli_rpc_pipe_close(pipe_hnd);
 	
 	/* Try anonymous NTLMSSP... */
 	cli_init_creds(cli, "", "", NULL);
