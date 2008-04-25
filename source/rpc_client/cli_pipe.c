@@ -2482,24 +2482,6 @@ struct rpc_pipe_client *cli_rpc_pipe_open_noauth(struct cli_state *cli, int pipe
 		return NULL;
 	}
 
-	/*
-	 * This is a bit of an abstraction violation due to the fact that an
-	 * anonymous bind on an authenticated SMB inherits the user/domain
-	 * from the enclosing SMB creds
-	 */
-
-	TALLOC_FREE(auth->user_name);
-	TALLOC_FREE(auth->domain);
-
-	auth->user_name = talloc_strdup(auth, cli->user_name);
-	auth->domain = talloc_strdup(auth, cli->domain);
-
-	if ((auth->user_name == NULL) || (auth->domain == NULL)) {
-		*perr = NT_STATUS_NO_MEMORY;
-		TALLOC_FREE(result);
-		return NULL;
-	}
-
 	*perr = rpc_pipe_bind(result, auth);
 	if (!NT_STATUS_IS_OK(*perr)) {
 		int lvl = 0;
