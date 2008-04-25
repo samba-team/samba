@@ -2431,6 +2431,7 @@ NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
 				   const char *password,
 				   struct cli_pipe_auth_data **presult)
 {
+#ifdef HAVE_KRB5
 	struct cli_pipe_auth_data *result;
 
 	if ((username != NULL) && (password != NULL)) {
@@ -2477,6 +2478,9 @@ NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
  fail:
 	TALLOC_FREE(result);
 	return NT_STATUS_NO_MEMORY;
+#else
+	return NT_STATUS_NOT_SUPPORTED;
+#endif
 }
 
 /********************************************************************
