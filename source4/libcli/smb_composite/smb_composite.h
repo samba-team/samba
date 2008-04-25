@@ -83,8 +83,8 @@ struct smb_composite_savefile {
     - socket establishment
     - session request
     - negprot
-    - session setup
-    - tree connect
+    - session setup (if credentials are not NULL)
+    - tree connect (if service is not NULL)
 */
 struct smb_composite_connect {
 	struct {
@@ -101,6 +101,7 @@ struct smb_composite_connect {
 	struct {
 		struct smbcli_tree *tree;
 		bool anonymous_fallback_done;
+		DATA_BLOB negprot_challenge;
 	} out;
 };
 
