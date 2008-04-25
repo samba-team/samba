@@ -160,6 +160,9 @@ static void mount_cifs_usage(void)
 	printf("\nTo display the version number of the mount helper:");
 	printf("\n\t%s -V\n",thisprogram);
 
+	if(mountpassword) {
+		memset(mountpassword,0,MOUNT_PASSWD_SIZE);
+	}
 	SAFE_FREE(mountpassword);
 	exit(1);
 }
@@ -219,6 +222,9 @@ static int open_cred_file(char * file_name)
 				if(length > 4086) {
 					printf("mount.cifs failed due to malformed username in credentials file");
 					memset(line_buf,0,4096);
+					if(mountpassword) {
+						memset(mountpassword,0,MOUNT_PASSWD_SIZE);
+					}
 					exit(1);
 				} else {
 					got_user = 1;
@@ -285,6 +291,9 @@ static int open_cred_file(char * file_name)
 
 	}
 	fclose(fs);
+	if(line_buf) {
+		memset(line_buf,0,4096);
+	}
 	SAFE_FREE(line_buf);
 	return 0;
 }
@@ -319,6 +328,7 @@ static int get_password_from_file(int file_descript, char * filename)
 		rc = read(file_descript,&c,1);
 		if(rc < 0) {
 			printf("mount.cifs failed. Error %s reading password file\n",strerror(errno));
+			memset(mountpassword,0,MOUNT_PASSWD_SIZE);
 			if(filename != NULL)
 				close(file_descript);
 			exit(1);
@@ -1109,6 +1119,9 @@ int main(int argc, char ** argv)
 			MOUNT_CIFS_VERSION_MAJOR,
 			MOUNT_CIFS_VERSION_MINOR,
 			MOUNT_CIFS_VENDOR_SUFFIX);
+			if(mountpassword) {
+				memset(mountpassword,0,MOUNT_PASSWD_SIZE);
+			}
 			exit (0);
 		case 'w':
 			flags &= ~MS_RDONLY;
@@ -1194,7 +1207,7 @@ int main(int argc, char ** argv)
 
 	if (getenv("PASSWD")) {
 		if(mountpassword == NULL)
-			mountpassword = (char *)calloc(65,1);
+			mountpassword = (char *)calloc(MOUNT_PASSWD_SIZE+1,1);
 		if(mountpassword) {
 			strlcpy(mountpassword,getenv("PASSWD"),MOUNT_PASSWD_SIZE);
 			got_password = 1;
@@ -1429,8 +1442,16 @@ mount_exit:
 		SAFE_FREE(mountpassword);
 	}
 
-	SAFE_FREE(options);
-	SAFE_FREE(orgoptions);
+	if(options) {
+		memset(options,0,optlen);
+		SAFE_FREE(options);
+	}
+
+	if(orgoptions) {
+		memset(orgoptions,0,orgoptlen);
+		SAFE_FREE(orgoptions);
+	}
+
 	SAFE_FREE(resolved_path);
 	SAFE_FREE(share_name);
 	return rc;
