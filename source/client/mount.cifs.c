@@ -520,7 +520,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 				printf("CIFS: invalid domain name\n");
 				return 1;	/* needs_arg; */
 			}
-			if (strnlen(value, 65) < 65) {
+			if (strnlen(value, DOMAIN_SIZE+1) < DOMAIN_SIZE+1) {
 				got_domain = 1;
 			} else {
 				printf("domain name too long\n");
@@ -1198,9 +1198,9 @@ int main(int argc, char ** argv)
 
 	if (getenv("PASSWD")) {
 		if(mountpassword == NULL)
-			mountpassword = (char *)calloc(65,1);
+			mountpassword = (char *)calloc(MOUNT_PASSWD_SIZE+1,1);
 		if(mountpassword) {
-			strlcpy(mountpassword,getenv("PASSWD"),MOUNT_PASSWD_SIZE);
+			strlcpy(mountpassword,getenv("PASSWD"),MOUNT_PASSWD_SIZE+1);
 			got_password = 1;
 		}
 	} else if (getenv("PASSWD_FD")) {
