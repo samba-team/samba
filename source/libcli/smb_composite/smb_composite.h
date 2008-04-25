@@ -101,7 +101,6 @@ struct smb_composite_connect {
 	struct {
 		struct smbcli_tree *tree;
 		bool anonymous_fallback_done;
-		DATA_BLOB negprot_challenge;
 	} out;
 };
 
