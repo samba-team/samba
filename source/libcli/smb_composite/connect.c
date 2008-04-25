@@ -38,7 +38,9 @@ enum connect_stage {CONNECT_RESOLVE,
 		    CONNECT_NEGPROT,
 		    CONNECT_SESSION_SETUP,
 		    CONNECT_SESSION_SETUP_ANON,
-		    CONNECT_TCON};
+		    CONNECT_TCON,
+		    CONNECT_DONE
+};
 
 struct connect_state {
 	enum connect_stage stage;
@@ -97,8 +99,7 @@ static NTSTATUS connect_tcon(struct composite_context *c,
 						      state->io_tcon->tconx.out.fs_type);
 	}
 
-	/* all done! */
-	c->state = COMPOSITE_STATE_DONE;
+	state->stage = CONNECT_DONE;
 
 	return NT_STATUS_OK;
 }
@@ -203,6 +204,13 @@ static NTSTATUS connect_session_setup(struct composite_context *c,
 	
 	state->session->vuid = state->io_setup->out.vuid;
 	
+	/* If we don't have a remote share name then this indicates that
+	 * we don't want to do a tree connect */
+	if (!io->in.service) {
+		state->stage = CONNECT_DONE;
+		return NT_STATUS_OK;
+	}
+
 	/* setup for a tconx */
 	io->out.tree = smbcli_tree_init(state->session, state, true);
 	NT_STATUS_HAVE_NO_MEMORY(io->out.tree);
@@ -251,10 +259,23 @@ static NTSTATUS connect_negprot(struct composite_context *c,
 	status = smb_raw_negotiate_recv(state->req);
 	NT_STATUS_NOT_OK_RETURN(status);
 
+	if (!(state->transport->negotiate.capabilities & CAP_EXTENDED_SECURITY)) {
+		io->out.negprot_challenge = state->transport->negotiate.secblob;
+	} else {
+		io->out.negprot_challenge = data_blob(NULL, 0);
+	}
+
+	/* If we don't have any credentials then this indicates that
+	 * we don't want to do a session setup */
+	if (!io->in.credentials) {
+		state->stage = CONNECT_DONE;
+		return NT_STATUS_OK;
+	}
+
 	/* next step is a session setup */
 	state->session = smbcli_session_init(state->transport, state, true);
 	NT_STATUS_HAVE_NO_MEMORY(state->session);
-
+	
 	state->io_setup = talloc(c, struct smb_composite_sesssetup);
 	NT_STATUS_HAVE_NO_MEMORY(state->io_setup);
 
@@ -272,6 +293,7 @@ static NTSTATUS connect_negprot(struct composite_context *c,
 
 	state->creq->async.fn = composite_handler;
 	state->creq->async.private_data = c;
+
 	state->stage = CONNECT_SESSION_SETUP;
 	
 	return NT_STATUS_OK;
@@ -405,13 +427,11 @@ static void state_handler(struct composite_context *c)
 		break;
 	}
 
-	if (!NT_STATUS_IS_OK(c->status)) {
-		c->state = COMPOSITE_STATE_ERROR;
-	}
-
-	if (c->state >= COMPOSITE_STATE_DONE &&
-	    c->async.fn) {
-		c->async.fn(c);
+	if (state->stage == CONNECT_DONE) {
+		/* all done! */
+		composite_done(c);
+	} else {
+		composite_is_ok(c);
 	}
 }
 
