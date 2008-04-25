@@ -122,9 +122,6 @@ static NTSTATUS connect_session_setup_anon(struct composite_context *c,
 	state->session->vuid = state->io_setup->out.vuid;
 	
 	/* setup for a tconx */
-	io->out.tree = smbcli_tree_init(state->session, state, true);
-	NT_STATUS_HAVE_NO_MEMORY(io->out.tree);
-
 	state->io_tcon = talloc(c, union smb_tcon);
 	NT_STATUS_HAVE_NO_MEMORY(state->io_tcon);
 
@@ -211,10 +208,6 @@ static NTSTATUS connect_session_setup(struct composite_context *c,
 		return NT_STATUS_OK;
 	}
 
-	/* setup for a tconx */
-	io->out.tree = smbcli_tree_init(state->session, state, true);
-	NT_STATUS_HAVE_NO_MEMORY(io->out.tree);
-
 	state->io_tcon = talloc(c, union smb_tcon);
 	NT_STATUS_HAVE_NO_MEMORY(state->io_tcon);
 
@@ -259,11 +252,14 @@ static NTSTATUS connect_negprot(struct composite_context *c,
 	status = smb_raw_negotiate_recv(state->req);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	if (!(state->transport->negotiate.capabilities & CAP_EXTENDED_SECURITY)) {
-		io->out.negprot_challenge = state->transport->negotiate.secblob;
-	} else {
-		io->out.negprot_challenge = data_blob(NULL, 0);
-	}
+	/* next step is a session setup */
+	state->session = smbcli_session_init(state->transport, state, true);
+	NT_STATUS_HAVE_NO_MEMORY(state->session);
+	
+	/* setup for a tconx (or at least have the structure ready to
+	 * return, if we won't go that far) */
+	io->out.tree = smbcli_tree_init(state->session, state, true);
+	NT_STATUS_HAVE_NO_MEMORY(io->out.tree);
 
 	/* If we don't have any credentials then this indicates that
 	 * we don't want to do a session setup */
@@ -272,10 +268,6 @@ static NTSTATUS connect_negprot(struct composite_context *c,
 		return NT_STATUS_OK;
 	}
 
-	/* next step is a session setup */
-	state->session = smbcli_session_init(state->transport, state, true);
-	NT_STATUS_HAVE_NO_MEMORY(state->session);
-	
 	state->io_setup = talloc(c, struct smb_composite_sesssetup);
 	NT_STATUS_HAVE_NO_MEMORY(state->io_setup);
 
