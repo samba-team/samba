@@ -436,6 +436,7 @@ static NTSTATUS create_aio_child(struct aio_child_list *children,
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fdpair) == -1) {
 		status = map_nt_error_from_unix(errno);
 		DEBUG(10, ("socketpair() failed: %s\n", strerror(errno)));
+		TALLOC_FREE(result);
 		goto fail;
 	}
 
