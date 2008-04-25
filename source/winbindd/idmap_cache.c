@@ -70,8 +70,12 @@ struct idmap_cache_ctx *idmap_cache_init(TALLOC_CTX *memctx)
 	return cache;
 }
 
-static NTSTATUS idmap_cache_build_sidkey(TALLOC_CTX *ctx, char **sidkey,
-					 const struct id_map *id)
+void idmap_cache_shutdown(struct idmap_cache_ctx *cache)
+{
+	talloc_free(cache);
+}
+
+NTSTATUS idmap_cache_build_sidkey(TALLOC_CTX *ctx, char **sidkey, const struct id_map *id)
 {
 	fstring sidstr;
 
@@ -85,8 +89,7 @@ static NTSTATUS idmap_cache_build_sidkey(TALLOC_CTX *ctx, char **sidkey,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS idmap_cache_build_idkey(TALLOC_CTX *ctx, char **idkey,
-					const struct id_map *id)
+NTSTATUS idmap_cache_build_idkey(TALLOC_CTX *ctx, char **idkey, const struct id_map *id)
 {
 	*idkey = talloc_asprintf(ctx, "IDMAP/%s/%lu",
 				(id->xid.type==ID_TYPE_UID)?"UID":"GID",
@@ -253,7 +256,7 @@ done:
 	return ret;
 }
 
-static NTSTATUS idmap_cache_fill_map(struct id_map *id, const char *value)
+NTSTATUS idmap_cache_fill_map(struct id_map *id, const char *value)
 {
 	char *rem;
 
@@ -299,6 +302,14 @@ failed:
 	DEBUG(1, ("invalid value: %s\n", value));
 	id->status = ID_UNKNOWN;
 	return NT_STATUS_INTERNAL_DB_CORRUPTION;
+}
+
+bool idmap_cache_is_negative(const char *val)
+{
+	if ( ! strcmp("IDMAP/NEGATIVE", val)) {
+		return True;
+	}
+	return False;
 }
 
 /* search the cahce for the SID an return a mapping if found *
