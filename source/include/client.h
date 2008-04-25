@@ -67,7 +67,6 @@ struct rpc_pipe_client {
 	uint16 fnum;
 
 	const char *desthost;
-	const char *srv_name_slash;
 
 	const char *domain;
 	const char *user_name;
@@ -124,6 +123,7 @@ struct cli_state {
 	int privileges;
 
 	fstring desthost;
+	fstring srv_name_slash;
 
 	/* The credentials used to open the cli_state connection. */
 	fstring domain;

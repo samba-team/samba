@@ -1492,6 +1492,8 @@ NTSTATUS cli_connect(struct cli_state *cli,
 	}
 
 	fstrcpy(cli->desthost, host);
+	fstr_sprintf(cli->srv_name_slash, "\\\\%s", cli->desthost);
+	strupper_m(cli->srv_name_slash);
 
 	/* allow hostnames of the form NAME#xx and do a netbios lookup */
 	if ((p = strchr(cli->desthost, '#'))) {
