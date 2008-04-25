@@ -49,10 +49,6 @@ struct print_job_info {
 struct cli_pipe_auth_data {
 	enum pipe_auth_type auth_type; /* switch for the union below. Defined in ntdomain.h */
 	enum pipe_auth_level auth_level; /* defined in ntdomain.h */
-
-	char *domain;
-	char *user_name;
-
 	union {
 		struct schannel_auth_struct *schannel_auth;
 		NTLMSSP_STATE *ntlmssp_state;
@@ -74,6 +70,9 @@ struct rpc_pipe_client {
 
 	char *desthost;
 	char *srv_name_slash;
+
+	char *domain;
+	char *user_name;
 
 	uint16 max_xmit_frag;
 	uint16 max_recv_frag;

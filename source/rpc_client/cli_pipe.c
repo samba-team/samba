@@ -1067,15 +1067,14 @@ static NTSTATUS create_schannel_auth_rpc_bind_req( struct rpc_pipe_client *cli,
 
 	/* Use lp_workgroup() if domain not specified */
 
-	if (!cli->auth->domain || !cli->auth->domain[0]) {
-		cli->auth->domain = talloc_strdup(cli, lp_workgroup());
-		if (cli->auth->domain == NULL) {
+	if (!cli->domain || !cli->domain[0]) {
+		cli->domain = talloc_strdup(cli, lp_workgroup());
+		if (cli->domain == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
-	init_rpc_auth_schannel_neg(&schannel_neg, cli->auth->domain,
-				   global_myname());
+	init_rpc_auth_schannel_neg(&schannel_neg, cli->domain, global_myname());
 
 	/*
 	 * Now marshall the data into the auth parse_struct.
@@ -2236,14 +2235,14 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 	result->auth->auth_type = PIPE_AUTH_TYPE_NONE;
 	result->auth->auth_level = PIPE_AUTH_LEVEL_NONE;
 
-	result->auth->domain = talloc_strdup(result, cli->domain);
-	result->auth->user_name = talloc_strdup(result, cli->user_name);
+	result->domain = talloc_strdup(result, cli->domain);
+	result->user_name = talloc_strdup(result, cli->user_name);
 	result->desthost = talloc_strdup(result, cli->desthost);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
 		result, "\\\\%s", result->desthost);
 
-	if ((result->auth->domain == NULL)
-	    || (result->auth->user_name == NULL)
+	if ((result->domain == NULL)
+	    || (result->user_name == NULL)
 	    || (result->desthost == NULL)
 	    || (result->srv_name_slash == NULL)) {
 		*perr = NT_STATUS_NO_MEMORY;
@@ -2350,14 +2349,13 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 
 	result->auth->cli_auth_data_free_func = cli_ntlmssp_auth_free;
 
-	TALLOC_FREE(result->auth->domain);
-	TALLOC_FREE(result->auth->user_name);
+	TALLOC_FREE(result->domain);
+	TALLOC_FREE(result->user_name);
 
-	result->auth->domain = talloc_strdup(result, domain);
-	result->auth->user_name = talloc_strdup(result, username);
+	result->domain = talloc_strdup(result, domain);
+	result->user_name = talloc_strdup(result, username);
 
-	if ((result->auth->domain == NULL)
-	    || (result->auth->user_name == NULL)) {
+	if ((result->domain == NULL) || (result->user_name == NULL)) {
 		*perr = NT_STATUS_NO_MEMORY;
 		goto err;
 	}
@@ -2572,9 +2570,9 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 		return NULL;
 	}
 
-	TALLOC_FREE(result->auth->domain);
-	result->auth->domain = talloc_strdup(result, domain);
-	if (result->auth->domain == NULL) {
+	TALLOC_FREE(result->domain);
+	result->domain = talloc_strdup(result, domain);
+	if (result->domain == NULL) {
 		TALLOC_FREE(result);
 		*perr = NT_STATUS_NO_MEMORY;
 		return NULL;
