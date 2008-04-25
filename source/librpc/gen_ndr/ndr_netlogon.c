@@ -15085,7 +15085,7 @@ static const char * const netlogon_authservice_strings[] = {
 };
 
 static const struct ndr_interface_string_array netlogon_authservices = {
-	.count	= 3,
+	.count	= 1,
 	.names	= netlogon_authservice_strings
 };
 

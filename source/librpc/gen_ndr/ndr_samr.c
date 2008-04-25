@@ -12656,7 +12656,7 @@ static const char * const samr_authservice_strings[] = {
 };
 
 static const struct ndr_interface_string_array samr_authservices = {
-	.count	= 3,
+	.count	= 1,
 	.names	= samr_authservice_strings
 };
 

@@ -138,7 +138,7 @@ NTSTATUS rpccli_epm_Lookup(struct rpc_pipe_client *cli,
 	/* Return variables */
 	*entry_handle = *r.out.entry_handle;
 	*num_ents = *r.out.num_ents;
-	memcpy(entries, r.out.entries, r.in.max_ents);
+	memcpy(entries, r.out.entries, r.in.max_ents * sizeof(*entries));
 
 	/* Return result */
 	return NT_STATUS_OK;
@@ -188,7 +188,7 @@ NTSTATUS rpccli_epm_Map(struct rpc_pipe_client *cli,
 	/* Return variables */
 	*entry_handle = *r.out.entry_handle;
 	*num_towers = *r.out.num_towers;
-	memcpy(towers, r.out.towers, r.in.max_towers);
+	memcpy(towers, r.out.towers, r.in.max_towers * sizeof(*towers));
 
 	/* Return result */
 	return NT_STATUS_OK;

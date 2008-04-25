@@ -1493,7 +1493,7 @@ static const char * const rpcecho_authservice_strings[] = {
 };
 
 static const struct ndr_interface_string_array rpcecho_authservices = {
-	.count	= 3,
+	.count	= 1,
 	.names	= rpcecho_authservice_strings
 };
 

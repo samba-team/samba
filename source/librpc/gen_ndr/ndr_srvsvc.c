@@ -19634,7 +19634,7 @@ static const char * const srvsvc_authservice_strings[] = {
 };
 
 static const struct ndr_interface_string_array srvsvc_authservices = {
-	.count	= 3,
+	.count	= 1,
 	.names	= srvsvc_authservice_strings
 };
 

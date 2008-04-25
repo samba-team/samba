@@ -12527,7 +12527,7 @@ static const char * const lsarpc_authservice_strings[] = {
 };
 
 static const struct ndr_interface_string_array lsarpc_authservices = {
-	.count	= 5,
+	.count	= 1,
 	.names	= lsarpc_authservice_strings
 };
 

@@ -1663,7 +1663,7 @@ NTSTATUS rpccli_srvsvc_NetPathCanonicalize(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(can_path, r.out.can_path, r.in.maxbuf);
+	memcpy(can_path, r.out.can_path, r.in.maxbuf * sizeof(*can_path));
 	*pathtype = *r.out.pathtype;
 
 	/* Return result */
