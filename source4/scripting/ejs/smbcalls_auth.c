@@ -55,7 +55,7 @@ static int ejs_doauth(MprVarHandle eid,
 		msg = c->msg_ctx;
 	} else {
 		/* Hope we can find the event context somewhere up there... */
-		ev = event_context_find(tmp_ctx);
+		ev = mprEventCtx();
 		msg = messaging_client_init(tmp_ctx, lp_messaging_path(tmp_ctx, mprLpCtx()), 
 					    lp_iconv_convenience(mprLpCtx()), ev);
 	}
@@ -109,7 +109,7 @@ static int ejs_doauth(MprVarHandle eid,
 		goto done;
 	}
 
-	nt_status = auth_generate_session_info(tmp_ctx, mprLpCtx(), server_info, &session_info);
+	nt_status = auth_generate_session_info(tmp_ctx, mprEventCtx(), mprLpCtx(), server_info, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "report", mprString("Session Info generation failed"));
 		mprSetPropertyValue(auth, "result", mprCreateBoolVar(false));

@@ -1194,6 +1194,7 @@ static NTSTATUS libnet_samsync_ldb_init(TALLOC_CTX *mem_ctx,
 		ldap_url = talloc_asprintf(state, "ldap://%s", server);
 		
 		state->remote_ldb = ldb_wrap_connect(mem_ctx, 
+						     state->samsync_state->machine_net_ctx->event_ctx,
 						     state->samsync_state->machine_net_ctx->lp_ctx, 
 						     ldap_url, 
 						     NULL, state->samsync_state->machine_net_ctx->cred,
@@ -1222,6 +1223,7 @@ NTSTATUS libnet_samsync_ldb(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, str
 	state->trusted_domains = NULL;
 
 	state->sam_ldb         = ldb_wrap_connect(mem_ctx, 
+						  ctx->event_ctx,
 						  ctx->lp_ctx, 
 						  lp_sam_url(ctx->lp_ctx), 
 						  r->in.session_info,

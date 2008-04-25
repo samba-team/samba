@@ -235,7 +235,7 @@ bool torture_groupinfo_api(struct torture_context *torture)
 
 	prep_mem_ctx = talloc_init("prepare torture group info");
 
-	ctx = libnet_context_init(NULL, torture->lp_ctx);
+	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
 
 	status = torture_rpc_connection(torture,
@@ -300,7 +300,7 @@ bool torture_grouplist(struct torture_context *torture)
 	struct libnet_GroupList req;
 	int i;
 
-	ctx = libnet_context_init(NULL, torture->lp_ctx);
+	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);
@@ -361,7 +361,7 @@ bool torture_creategroup(struct torture_context *torture)
 
 	mem_ctx = talloc_init("test_creategroup");
 
-	ctx = libnet_context_init(NULL, torture->lp_ctx);
+	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
 
 	req.in.group_name = TEST_GROUPNAME;

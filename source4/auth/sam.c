@@ -428,6 +428,7 @@ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 				   
 /* Used in the gensec_gssapi and gensec_krb5 server-side code, where the PAC isn't available */
 NTSTATUS sam_get_server_info_principal(TALLOC_CTX *mem_ctx, 
+				       struct event_context *event_ctx,
 				       struct loadparm_context *lp_ctx,
 				       const char *principal,
 				       struct auth_serversupplied_info **server_info)
@@ -445,7 +446,7 @@ NTSTATUS sam_get_server_info_principal(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sam_ctx = samdb_connect(tmp_ctx, lp_ctx, system_session(tmp_ctx, lp_ctx));
+	sam_ctx = samdb_connect(tmp_ctx, event_ctx, lp_ctx, system_session(tmp_ctx, lp_ctx));
 	if (sam_ctx == NULL) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;

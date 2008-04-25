@@ -67,15 +67,13 @@ NTSTATUS wb_sids2xids_recv(struct composite_context *ctx,
 			   struct id_mapping **ids)
 {
 	NTSTATUS status = composite_wait(ctx);
+	struct sids2xids_state *state =	talloc_get_type(ctx->private_data,
+							struct sids2xids_state);
 
 	DEBUG(5, ("wb_sids2xids_recv called\n"));
 
-	if (NT_STATUS_IS_OK(status)) {
-		struct sids2xids_state *state =
-			talloc_get_type(ctx->private_data,
-				struct sids2xids_state);
-		*ids = state->ids;
-	}
+	*ids = state->ids;
+
 	talloc_free(ctx);
 	return status;
 }

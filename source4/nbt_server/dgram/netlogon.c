@@ -54,7 +54,7 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 		return;
 	}
 
-	samctx = samdb_connect(packet, iface->nbtsrv->task->lp_ctx, anonymous_session(packet, iface->nbtsrv->task->lp_ctx));
+	samctx = samdb_connect(packet, iface->nbtsrv->task->event_ctx, iface->nbtsrv->task->lp_ctx, anonymous_session(packet, iface->nbtsrv->task->event_ctx, iface->nbtsrv->task->lp_ctx));
 	if (samctx == NULL) {
 		DEBUG(2,("Unable to open sam in getdc reply\n"));
 		return;
@@ -125,7 +125,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 		return;
 	}
 
-	samctx = samdb_connect(packet, iface->nbtsrv->task->lp_ctx, anonymous_session(packet, iface->nbtsrv->task->lp_ctx));
+	samctx = samdb_connect(packet, iface->nbtsrv->task->event_ctx, iface->nbtsrv->task->lp_ctx, anonymous_session(packet, iface->nbtsrv->task->event_ctx, iface->nbtsrv->task->lp_ctx));
 	if (samctx == NULL) {
 		DEBUG(2,("Unable to open sam in getdc reply\n"));
 		return;

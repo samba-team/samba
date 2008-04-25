@@ -272,7 +272,28 @@ sub PythonFunctionBody($$$)
 
 	my $signature = "S.$prettyname(";
 
+	my $metadata_args = { in => {}, out => {} };
+
+	sub get_var($) { my $x = shift; $x =~ s/\*//g; return $x; }
+
+	# Determine arguments that are metadata for other arguments (size_is/length_is)
 	foreach my $e (@{$fn->{ELEMENTS}}) {
+		foreach my $dir (@{$e->{DIRECTION}}) {
+			 my $main = undef;
+			 if (has_property($e, "length_is")) {
+			 	$main = get_var($e->{PROPERTIES}->{length_is});
+			 } elsif (has_property($e, "size_is")) {
+			 	$main = get_var($e->{PROPERTIES}->{size_is});
+			 }
+			 if ($main) { 
+				 $metadata_args->{$dir}->{$main} = $e->{NAME}; 
+			 }
+		 }
+	}
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next if (($metadata_args->{in}->{$e->{NAME}} and grep(/in/, @{$e->{DIRECTION}})) or 
+		         ($metadata_args->{out}->{$e->{NAME}}) and grep(/out/, @{$e->{DIRECTION}}));
 		$self->pidl("PyObject *py_$e->{NAME};");
 		if (grep(/out/,@{$e->{DIRECTION}})) {
 			$result_size++;
@@ -301,14 +322,27 @@ sub PythonFunctionBody($$$)
 	$self->pidl("return NULL;");
 	$self->deindent;
 	$self->pidl("}");
+	$self->pidl("");
 
 	if ($fn->{RETURN_TYPE}) {
 		$result_size++ unless ($fn->{RETURN_TYPE} eq "WERROR" or $fn->{RETURN_TYPE} eq "NTSTATUS");
 	}
 
+	my $fail = "talloc_free(mem_ctx); return NULL;";
 	foreach my $e (@{$fn->{ELEMENTS}}) {
-		if (grep(/in/,@{$e->{DIRECTION}})) {
-			$self->ConvertObjectFromPython($env, "mem_ctx", $e, "py_$e->{NAME}", "r->in.$e->{NAME}", "talloc_free(mem_ctx); return NULL;");
+		next unless (grep(/in/,@{$e->{DIRECTION}}));
+		if ($metadata_args->{in}->{$e->{NAME}}) {
+			my $py_var = "py_".$metadata_args->{in}->{$e->{NAME}};
+			$self->pidl("PY_CHECK_TYPE(PyList, $py_var, $fail);");
+			my $val = "PyList_Size($py_var)";
+			if ($e->{LEVELS}[0]->{TYPE} eq "POINTER") {
+				$self->pidl("r->in.$e->{NAME} = talloc_ptrtype(mem_ctx, r->in.$e->{NAME});");
+				$self->pidl("*r->in.$e->{NAME} = $val;");
+			} else {
+				$self->pidl("r->in.$e->{NAME} = $val;");
+			}
+		} else {
+			$self->ConvertObjectFromPython($env, "mem_ctx", $e, "py_$e->{NAME}", "r->in.$e->{NAME}", $fail);
 		}
 	}
 	$self->pidl("status = dcerpc_$fn->{NAME}(iface->pipe, mem_ctx, r);");
@@ -325,6 +359,7 @@ sub PythonFunctionBody($$$)
 	}
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next if ($metadata_args->{out}->{$e->{NAME}});
 		my $py_name = "py_$e->{NAME}";
 		if (grep(/out/,@{$e->{DIRECTION}})) {
 			$self->ConvertObjectToPython("r", $env, $e, "r->out.$e->{NAME}", $py_name);
@@ -334,7 +369,7 @@ sub PythonFunctionBody($$$)
 				$signature .= "$e->{NAME}, ";
 			} else {
 				$self->pidl("result = $py_name;");
-				$signature .= "result";
+				$signature .= $e->{NAME};
 			}
 		}
 	}
@@ -347,11 +382,10 @@ sub PythonFunctionBody($$$)
 		my $conv = $self->ConvertObjectToPythonData("r", $fn->{RETURN_TYPE}, "r->out.result");
 		if ($result_size > 1) {
 			$self->pidl("PyTuple_SetItem(result, $i, $conv);");
-			$signature .= "result";
 		} else {
 			$self->pidl("result = $conv;");
-			$signature .= "result";
 		}
+		$signature .= "result";
 	}
 
 	if (substr($signature, -2) eq ", ") {
@@ -563,8 +597,9 @@ sub Interface($$$)
 		$self->pidl("const char *binding_string;");
 		$self->pidl("struct cli_credentials *credentials;");
 		$self->pidl("struct loadparm_context *lp_ctx = NULL;");
-		$self->pidl("PyObject *py_lp_ctx = NULL, *py_credentials = Py_None;");
+		$self->pidl("PyObject *py_lp_ctx = Py_None, *py_credentials = Py_None;");
 		$self->pidl("TALLOC_CTX *mem_ctx = NULL;");
+		$self->pidl("struct event_context *event_ctx;");
 		$self->pidl("NTSTATUS status;");
 		$self->pidl("");
 		$self->pidl("const char *kwnames[] = {");
@@ -575,21 +610,17 @@ sub Interface($$$)
 		$self->pidl("extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);");
 		$self->pidl("extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);");
 		$self->pidl("");
-		$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"sO|O:$interface->{NAME}\", discard_const_p(char *, kwnames), &binding_string, &py_lp_ctx, &py_credentials)) {");
+		$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"s|OO:$interface->{NAME}\", discard_const_p(char *, kwnames), &binding_string, &py_lp_ctx, &py_credentials)) {");
 		$self->indent;
 		$self->pidl("return NULL;");
 		$self->deindent;
 		$self->pidl("}");
 		$self->pidl("");
-		$self->pidl("if (py_lp_ctx != NULL) {");
-		$self->indent;
 		$self->pidl("lp_ctx = lp_from_py_object(py_lp_ctx);");
 		$self->pidl("if (lp_ctx == NULL) {");
 		$self->indent;
 		$self->pidl("PyErr_SetString(PyExc_TypeError, \"Expected loadparm context\");");
 		$self->pidl("return NULL;");
-		$self->deindent;
-		$self->pidl("}");
 		$self->deindent;
 		$self->pidl("}");
 		$self->pidl("");
@@ -604,9 +635,11 @@ sub Interface($$$)
 
 		$self->pidl("ret = PyObject_New($interface->{NAME}_InterfaceObject, &$interface->{NAME}_InterfaceType);");
 		$self->pidl("");
+		$self->pidl("event_ctx = event_context_init(mem_ctx);");
+		$self->pidl("");
 
 		$self->pidl("status = dcerpc_pipe_connect(NULL, &ret->pipe, binding_string, ");
-		$self->pidl("             &ndr_table_$interface->{NAME}, credentials, NULL, lp_ctx);");
+		$self->pidl("             &ndr_table_$interface->{NAME}, credentials, event_ctx, lp_ctx);");
 		$self->handle_ntstatus("status", "NULL", "mem_ctx");
 
 		$self->pidl("ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;");
@@ -918,16 +951,15 @@ sub ConvertObjectToPythonLevel($$$$$)
 			$self->pidl("}");
 		}
 	} elsif ($l->{TYPE} eq "ARRAY") {
-		if (is_charset_array($e, $l)) {
+		my $pl = GetPrevLevel($e, $l);
+		if ($pl && $pl->{TYPE} eq "POINTER") {
 			$var_name = get_pointer_to($var_name);
+		}
+
+		if (is_charset_array($e, $l)) {
 			# FIXME: Use Unix charset setting rather than utf-8
 			$self->pidl("$py_var = PyUnicode_Decode($var_name, strlen($var_name), \"utf-8\", \"ignore\");");
 		} else {
-			my $pl = GetPrevLevel($e, $l);
-			if ($pl && $pl->{TYPE} eq "POINTER") {
-				$var_name = get_pointer_to($var_name);
-			}
-
 			die("No SIZE_IS for array $var_name") unless (defined($l->{SIZE_IS}));
 			my $length = $l->{SIZE_IS};
 			if (defined($l->{LENGTH_IS})) {
@@ -991,6 +1023,7 @@ sub Parse($$$$$)
 #include \"librpc/rpc/dcerpc.h\"
 #include \"scripting/python/pytalloc.h\"
 #include \"scripting/python/pyrpc.h\"
+#include \"lib/events/events.h\"
 #include \"$hdr\"
 #include \"$ndr_hdr\"
 #include \"$py_hdr\"

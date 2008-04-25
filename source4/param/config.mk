@@ -1,9 +1,14 @@
 [LIBRARY::LIBSAMBA-HOSTCONFIG]
-VERSION = 0.0.1
-SO_VERSION = 1
 PUBLIC_DEPENDENCIES = LIBSAMBA-UTIL 
 PRIVATE_DEPENDENCIES = DYNCONFIG LIBREPLACE_EXT CHARSET
-PRIVATE_PROTO_HEADER = proto.h
+
+LIBSAMBA-HOSTCONFIG_VERSION = 0.0.1
+LIBSAMBA-HOSTCONFIG-SOVERSION = 0
+
+LIBSAMBA-HOSTCONFIG_OBJ_FILES = param/loadparm.o \
+			param/generic.o \
+			param/util.o \
+			lib/version.o
 
 LIBSAMBA-CONFIG_OBJ_FILES = param/loadparm.o \
 			param/params.o \
@@ -14,6 +19,11 @@ LIBSAMBA-CONFIG_OBJ_FILES = param/loadparm.o \
 PUBLIC_HEADERS += param/param.h
 
 PC_FILES += param/samba-hostconfig.pc
+
+[SUBSYSTEM::PROVISION]
+PRIVATE_DEPENDENCIES = LIBPYTHON
+
+PROVISION_OBJ_FILES = param/provision.o
 
 #################################
 # Start SUBSYSTEM share

@@ -178,12 +178,11 @@ static bool _test_DsBind(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct event_context *event = NULL;
 
 	status = dcerpc_pipe_connect_b(ctx,
 				       &b->pipe, ctx->drsuapi_binding, 
 				       &ndr_table_drsuapi,
-				       credentials, event, tctx->lp_ctx);
+				       credentials, tctx->ev, tctx->lp_ctx);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to server as a BDC: %s\n", nt_errstr(status));
@@ -254,10 +253,11 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	struct drsuapi_DsCrackNames r;
 	struct drsuapi_DsNameString names[1];
 	bool ret = true;
-
-	struct cldap_socket *cldap = cldap_socket_init(ctx, NULL, lp_iconv_convenience(tctx->lp_ctx));
+	struct cldap_socket *cldap;
 	struct cldap_netlogon search;
-	
+
+	cldap = cldap_socket_init(ctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
+
 	r.in.bind_handle		= &ctx->admin.drsuapi.bind_handle;
 	r.in.level			= 1;
 	r.in.req.req1.codepage		= 1252; /* western european */

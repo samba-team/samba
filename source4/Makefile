@@ -24,7 +24,7 @@ $(srcdir)/version.h: $(srcdir)/VERSION
 
 .DEFAULT_GOAL := all
 
-ifneq ($(automatic_deps),yes)
+ifneq ($(automatic_dependencies),yes)
 ALL_PREDEP = proto
 .NOTPARALLEL:
 endif
@@ -50,6 +50,8 @@ include build/make/python.mk
 include data.mk
 
 BINARIES += $(BIN_PROGS) $(SBIN_PROGS)
+
+pythonmods:: $(PYTHON_PYS) $(PYTHON_SO)
 
 DEP_FILES = $(patsubst %.ho,%.hd,$(patsubst %.o,%.d,$(ALL_OBJS))) \
 		   include/includes.d

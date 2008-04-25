@@ -251,6 +251,14 @@ fail:
 
 #ifdef SWIGPYTHON
 %{
+struct ldb_context *ldb_context_from_py_object(PyObject *py_obj)
+{
+        struct ldb_context *ldb_ctx;
+    if (SWIG_ConvertPtr(py_obj, (void *)&ldb_ctx, SWIGTYPE_p_ldb_context, 0 |  0 ) < 0)
+        return NULL;
+    return ldb_ctx;
+}
+
 int ldb_dn_from_pyobject(TALLOC_CTX *mem_ctx, PyObject *object, 
                          struct ldb_context *ldb_ctx, ldb_dn **dn)
 {

@@ -849,7 +849,7 @@ interface drsuapi
 		[case(1)] drsuapi_DsNameCtr1 *ctr1;
 	} drsuapi_DsNameCtr;
 
-	[todo] WERROR drsuapi_DsCrackNames(
+	WERROR drsuapi_DsCrackNames(
 		[in] policy_handle *bind_handle,
 		[in, out] int32 level,
 		[in,switch_is(level)] drsuapi_DsNameRequest req,

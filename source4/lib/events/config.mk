@@ -33,10 +33,8 @@ EVENTS_STANDARD_OBJ_FILES = lib/events/events_standard.o
 
 ##############################
 # Start SUBSYSTEM LIBEVENTS
-[LIBRARY::LIBEVENTS]
+[SUBSYSTEM::LIBEVENTS]
 PUBLIC_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL
-SO_VERSION = 0
-VERSION = 0.0.1
 # End SUBSYSTEM LIBEVENTS
 ##############################
 

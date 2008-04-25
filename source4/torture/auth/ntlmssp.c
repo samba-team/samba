@@ -33,7 +33,8 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 	TALLOC_CTX *mem_ctx = tctx;
 
 	torture_assert_ntstatus_ok(tctx, 
-		gensec_client_start(mem_ctx, &gensec_security, NULL, tctx->lp_ctx),
+		gensec_client_start(mem_ctx, &gensec_security,
+				    tctx->ev, tctx->lp_ctx),
 		"gensec client start");
 
 	gensec_set_credentials(gensec_security, cmdline_credentials);
@@ -69,7 +70,7 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 
 	torture_assert_int_equal(tctx, sig.length, expected_sig.length, "Wrong sig length");
 
-	torture_assert(tctx, 0 == memcmp(sig.data, expected_sig.data, sig.length),
+	torture_assert_mem_equal(tctx, sig.data, expected_sig.data, sig.length,
 				   "data mismatch");
 
 	torture_assert_ntstatus_equal(tctx, 
@@ -87,7 +88,8 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 	talloc_free(gensec_security);
 
 	torture_assert_ntstatus_ok(tctx, 
-		gensec_client_start(mem_ctx, &gensec_security, NULL, tctx->lp_ctx),
+		gensec_client_start(mem_ctx, &gensec_security,
+				    tctx->ev, tctx->lp_ctx),
 		"Failed to start GENSEC for NTLMSSP");
 
 	gensec_set_credentials(gensec_security, cmdline_credentials);
@@ -123,7 +125,7 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 
 	torture_assert_int_equal(tctx, sig.length, expected_sig.length, "Wrong sig length");
 
-	torture_assert(tctx,  0 == memcmp(sig.data+8, expected_sig.data+8, sig.length-8),
+	torture_assert_mem_equal(tctx, sig.data+8, expected_sig.data+8, sig.length-8,
 				   "data mismatch");
 
 	torture_assert_ntstatus_equal(tctx, 

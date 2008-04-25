@@ -14,40 +14,24 @@ USERNAME=$2
 PASSWORD=$3
 DOMAIN=$4
 
+. `dirname $0`/subunit.sh
+
 samba4bindir=`dirname $0`/../../source/bin
 DD=$samba4bindir/cifsdd
 
 SHARE=tmp
 DEBUGLEVEL=1
 
-failed=0
-
-testit() {
-	name="$1"
-	shift
-	cmdline="$*"
-	echo "test: $name"
-	$cmdline
-	status=$?
-	if [ x$status = x0 ]; then
-		echo "success: $name"
-	else
-		echo "failure: $name"
-		failed=`expr $failed + 1`
-	fi
-	return $status
-}
-
 runcopy() {
 	message="$1"
 	shift
 	
 	testit "$message" $VALGRIND $DD $CONFIGURATION --debuglevel=$DEBUGLEVEL -W "$DOMAIN" -U "$USERNAME"%"$PASSWORD" \
-	    "$@"
+	    "$@" || failed=`expr $failed + 1`
 }
 
 compare() {
-    testit "$1" cmp "$2" "$3"
+    testit "$1" cmp "$2" "$3" || failed=`expr $failed + 1`
 }
 
 sourcepath=tempfile.src.$$

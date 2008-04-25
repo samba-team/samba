@@ -84,13 +84,19 @@ sub check_module($$$)
 
 	return if ($mod->{ENABLE} ne "YES");
 
+
 	if (exists($INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTION_TYPE})) {
 		$mod->{INIT_FUNCTION_TYPE} = $INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTION_TYPE};
 	} else {
 		$mod->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)";
 	}
 
+	unless (defined($mod->{INIT_FUNCTION_SENTINEL})) { $mod->{INIT_FUNCTION_SENTINEL} = "NULL"; }
+
 	if (not defined($mod->{OUTPUT_TYPE})) {
+		if (not defined($INPUT->{$mod->{SUBSYSTEM}}->{TYPE})) {
+			die("Invalid type for subsystem $mod->{SUBSYSTEM}");
+		}
 		if ($INPUT->{$mod->{SUBSYSTEM}}->{TYPE} eq "EXT_LIB") {
 			$mod->{OUTPUT_TYPE} = undef;
 		} else {
@@ -118,16 +124,6 @@ sub check_library($$$)
 	return if ($lib->{ENABLE} ne "YES");
 
 	unless (defined($lib->{OUTPUT_TYPE})) { $lib->{OUTPUT_TYPE} = $default_ot; }
-
-	if (defined($lib->{VERSION}) and not defined($lib->{SO_VERSION})) {
-		print "$lib->{NAME}: Please specify SO_VERSION when specifying VERSION\n";
-		return;
-	}
-
-	if (defined($lib->{SO_VERSION}) and not defined($lib->{VERSION})) {
-		print "$lib->{NAME}: Please specify VERSION when specifying SO_VERSION\n";
-		return;
-	}
 
 	unless (defined($lib->{INIT_FUNCTION_TYPE})) { $lib->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)"; }
 	unless (defined($lib->{INIT_FUNCTION_SENTINEL})) { $lib->{INIT_FUNCTION_SENTINEL} = "NULL"; }

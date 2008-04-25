@@ -376,7 +376,7 @@ bool torture_ldap_schema(struct torture_context *torture)
 
 	url = talloc_asprintf(torture, "ldap://%s/", host);
 
-	ldb = ldb_wrap_connect(torture, torture->lp_ctx, url,
+	ldb = ldb_wrap_connect(torture, torture->ev, torture->lp_ctx, url,
 			       NULL,
 			       cmdline_credentials,
 			       0, NULL);

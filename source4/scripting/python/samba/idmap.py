@@ -21,6 +21,7 @@
 """Convenience functions for using the idmap database."""
 
 import samba
+import misc
 import ldb
 
 class IDmapDB(samba.Ldb):
@@ -37,11 +38,17 @@ class IDmapDB(samba.Ldb):
 
         :param url: URL of the database.
         """
+        self.lp = lp
+
         super(IDmapDB, self).__init__(session_info=session_info, credentials=credentials,
                                     modules_dir=modules_dir, lp=lp)
         if url:
             self.connect(url)
+        else:
+            self.connect(lp.get("idmap database"))
 
+    def connect(self, url):
+        super(IDmapDB, self).connect(misc.private_path(self.lp, url))
 
     def setup_name_mapping(self, sid, type, unixid):
         """Setup a mapping between a sam name and a unix name.

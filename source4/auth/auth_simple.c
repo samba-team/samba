@@ -90,7 +90,7 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 	}
 
 	if (session_info) {
-		nt_status = auth_generate_session_info(tmp_ctx, lp_ctx, server_info, session_info);
+		nt_status = auth_generate_session_info(tmp_ctx, ev, lp_ctx, server_info, session_info);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			talloc_steal(mem_ctx, *session_info);

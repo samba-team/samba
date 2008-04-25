@@ -258,7 +258,7 @@ static bool test_schannel(struct torture_context *tctx,
 	b->flags |= dcerpc_flags;
 
 	status = dcerpc_pipe_connect_b(tctx, &p, b, &ndr_table_samr,
-				       credentials, NULL, tctx->lp_ctx);
+				       credentials, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, 
 		"Failed to connect with schannel");
 
@@ -270,7 +270,7 @@ static bool test_schannel(struct torture_context *tctx,
 	 * the second */
 
 	/* Swap the binding details from SAMR to NETLOGON */
-	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_netlogon, NULL, tctx->lp_ctx);
+	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_netlogon, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "epm map");
 
 	status = dcerpc_secondary_connection(p, &p_netlogon, 
@@ -296,7 +296,7 @@ static bool test_schannel(struct torture_context *tctx,
 		"Failed to process schannel secured NETLOGON EX ops");
 
 	/* Swap the binding details from SAMR to LSARPC */
-	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_lsarpc, NULL, tctx->lp_ctx);
+	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_lsarpc, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "epm map");
 
 	status = dcerpc_secondary_connection(p, &p_lsa, 
@@ -328,7 +328,7 @@ static bool test_schannel(struct torture_context *tctx,
 	b->flags |= dcerpc_flags;
 
 	status = dcerpc_pipe_connect_b(tctx, &p_samr2, b, &ndr_table_samr,
-				       credentials, NULL, tctx->lp_ctx);
+				       credentials, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, 
 		"Failed to connect with schannel");
 
@@ -337,7 +337,7 @@ static bool test_schannel(struct torture_context *tctx,
 			"Failed to process schannel secured SAMR ops (on fresh connection)");
 
 	/* Swap the binding details from SAMR to NETLOGON */
-	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_netlogon, NULL, tctx->lp_ctx);
+	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_netlogon, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "epm");
 
 	status = dcerpc_secondary_connection(p_samr2, &p_netlogon2, 
@@ -370,7 +370,7 @@ static bool test_schannel(struct torture_context *tctx,
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 
 	status = dcerpc_pipe_connect_b(tctx, &p_netlogon3, b, &ndr_table_netlogon,
-				       credentials, NULL, tctx->lp_ctx);
+				       credentials, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "Failed to connect without schannel");
 
 	torture_assert(tctx, !test_netlogon_ex_ops(p_netlogon3, tctx, credentials, creds),
@@ -453,12 +453,12 @@ bool torture_rpc_schannel2(struct torture_context *torture)
 
 	printf("Opening first connection\n");
 	status = dcerpc_pipe_connect_b(torture, &p1, b, &ndr_table_netlogon,
-				       credentials1, NULL, torture->lp_ctx);
+				       credentials1, torture->ev, torture->lp_ctx);
 	torture_assert_ntstatus_ok(torture, status, "Failed to connect with schannel");
 
 	torture_comment(torture, "Opening second connection\n");
 	status = dcerpc_pipe_connect_b(torture, &p2, b, &ndr_table_netlogon,
-				       credentials2, NULL, torture->lp_ctx);
+				       credentials2, torture->ev, torture->lp_ctx);
 	torture_assert_ntstatus_ok(torture, status, "Failed to connect with schannel");
 
 	credentials1->netlogon_creds = NULL;

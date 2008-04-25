@@ -40,7 +40,7 @@ bool torture_nbt_browse(struct torture_context *torture)
 	name.scope = NULL;
 
 	/* do an initial name resolution to find its IP */
-	status = resolve_name(&name, mem_ctx, &address, NULL);
+	status = resolve_name(&name, mem_ctx, &address, torture->ev);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to resolve %s - %s\n",
 		       name.name, nt_errstr(status));

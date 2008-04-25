@@ -13,10 +13,10 @@ torture_OBJ_FILES = $(addprefix torture/, torture.o ui.o)
 PUBLIC_HEADERS += torture/torture.h torture/ui.h
 
 [SUBSYSTEM::TORTURE_UTIL]
-PRIVATE_DEPENDENCIES = LIBCLI_RAW LIBPYTHON smbcalls
+PRIVATE_DEPENDENCIES = LIBCLI_RAW LIBPYTHON smbcalls PROVISION
 PUBLIC_DEPENDENCIES = POPT_CREDENTIALS
 
-TORTURE_UTIL_OBJ_FILES = $(addprefix torture/, util_smb.o util_provision.o)
+TORTURE_UTIL_OBJ_FILES = $(addprefix torture/, util_smb.o)
 
 #################################
 # Start SUBSYSTEM TORTURE_BASIC
@@ -86,6 +86,7 @@ TORTURE_RAW_OBJ_FILES = $(addprefix torture/raw/, \
 		lock.o \
 		pingpong.o \
 		lockbench.o \
+		lookuprate.o \
 		openbench.o \
 		rename.o \
 		eas.o \
@@ -313,31 +314,34 @@ locktest_OBJ_FILES = torture/locktest.o
 
 MANPAGES += torture/man/locktest.1
 
+GCOV=0
+
+ifeq ($(MAKECMDGOALS),gcov)
+GCOV=1
+endif
+
+ifeq ($(MAKECMDGOALS),lcov)
+GCOV=1
+endif
+
+ifeq ($(MAKECMDGOALS),testcov-html)
+GCOV=1
+endif
+
+ifeq ($(GCOV),1)
+CFLAGS += --coverage
+LDFLAGS += --coverage
+endif
+
 COV_TARGET = test
 
-COV_VARS = \
-	CFLAGS="$(CFLAGS) --coverage" \
-	LDFLAGS="$(LDFLAGS) --coverage"
-
-test_cov:
-	-$(MAKE) $(COV_TARGET) $(COV_VARS)
-
-gcov: test_cov
+gcov: test
 	for I in $(sort $(dir $(ALL_OBJS))); \
 		do $(GCOV) -p -o $$I $$I/*.c; \
 	done
 
-lcov-split: 
-	rm -f samba.info
-	@$(MAKE) $(COV_TARGET) $(COV_VARS) \
-		TEST_OPTIONS="--analyse-cmd=\"lcov --base-directory `pwd` --directory . --capture --output-file samba.info -t\""
+lcov: test
 	-rm heimdal/lib/*/{lex,parse}.{gcda,gcno}
-	-rm lib/policy/*/{lex,parse}.{gcda,gcno}
-	genhtml -o coverage samba.info
-
-lcov: test_cov
-	-rm heimdal/lib/*/{lex,parse}.{gcda,gcno}
-	-rm lib/policy/*/{lex,parse}.{gcda,gcno}
 	lcov --base-directory `pwd` --directory . --capture --output-file samba.info
 	genhtml -o coverage samba.info
 

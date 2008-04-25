@@ -24,7 +24,7 @@ from ldb import Dn
 import param
 import unittest
 
-lp = samba.tests.get_loadparm()
+lp = samba.tests.cmdline_loadparm
 
 setup_dir = "setup"
 def setup_path(file):

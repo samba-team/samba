@@ -65,7 +65,7 @@ NTSTATUS torture_ldap_connection(struct torture_context *tctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	*conn = ldap4_new_connection(tctx, tctx->lp_ctx, NULL);
+	*conn = ldap4_new_connection(tctx, tctx->lp_ctx, tctx->ev);
 
 	status = ldap_connect(*conn, url);
 	if (!NT_STATUS_IS_OK(status)) {

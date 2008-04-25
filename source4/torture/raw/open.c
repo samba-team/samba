@@ -1350,21 +1350,19 @@ static bool test_raw_open_multi(struct torture_context *tctx)
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
 	int i, num_files = 3;
-	struct event_context *ev;
 	int num_ok = 0;
 	int num_collision = 0;
 	
-	ev = cli_credentials_get_event_context(cmdline_credentials);
 	clients = talloc_array(mem_ctx, struct smbcli_state *, num_files);
 	requests = talloc_array(mem_ctx, struct smbcli_request *, num_files);
 	ios = talloc_array(mem_ctx, union smb_open, num_files);
-	if ((ev == NULL) || (clients == NULL) || (requests == NULL) ||
+	if ((tctx->ev == NULL) || (clients == NULL) || (requests == NULL) ||
 	    (ios == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
 		return false;
 	}
 
-	if (!torture_open_connection_share(mem_ctx, &cli, tctx, host, share, ev)) {
+	if (!torture_open_connection_share(mem_ctx, &cli, tctx, host, share, tctx->ev)) {
 		return false;
 	}
 
@@ -1372,7 +1370,7 @@ static bool test_raw_open_multi(struct torture_context *tctx)
 
 	for (i=0; i<num_files; i++) {
 		if (!torture_open_connection_share(mem_ctx, &(clients[i]),
-						   tctx, host, share, ev)) {
+						   tctx, host, share, tctx->ev)) {
 			DEBUG(0, ("Could not open %d'th connection\n", i));
 			return false;
 		}
@@ -1441,7 +1439,7 @@ static bool test_raw_open_multi(struct torture_context *tctx)
 			break;
 		}
 
-		if (event_loop_once(ev) != 0) {
+		if (event_loop_once(tctx->ev) != 0) {
 			DEBUG(0, ("event_loop_once failed\n"));
 			return false;
 		}

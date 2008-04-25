@@ -21,7 +21,7 @@ from credentials import Credentials
 import os
 from samba.provision import setup_samdb
 from samba.samdb import SamDB
-from samba.tests import get_loadparm, TestCaseInTempDir
+from samba.tests import cmdline_loadparm, TestCaseInTempDir
 import security
 from unittest import TestCase
 import uuid
@@ -43,7 +43,7 @@ class SamDBTestCase(TestCaseInTempDir):
         hostguid = uuid.random()
         path = os.path.join(self.tempdir, "samdb.ldb")
         self.samdb = setup_samdb(path, setup_path, system_session(), creds, 
-                                 get_loadparm(), schemadn, configdn, 
+                                 cmdline_loadparm, schemadn, configdn, 
                                  self.domaindn, "example.com", "EXAMPLE.COM", 
                                  "FOO", lambda x: None, "foo", domaindn, 
                                  False, domainsid, "# no aci", domainguid, 

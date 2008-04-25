@@ -5,7 +5,6 @@ mkinclude charset/config.mk
 mkinclude ldb-samba/config.mk
 mkinclude tls/config.mk
 mkinclude registry/config.mk
-mkinclude policy/config.mk
 mkinclude messaging/config.mk
 mkinclude events/config.mk
 mkinclude cmdline/config.mk
@@ -41,3 +40,5 @@ PUBLIC_DEPENDENCIES = LIBTDB
 
 TDB_WRAP_OBJ_FILES = lib/tdb_wrap.o
 PUBLIC_HEADERS += lib/tdb_wrap.h
+
+SMBREADLINE_OBJ_LIST = $(SMBREADLINE_OBJ_FILES)

@@ -459,8 +459,9 @@ PUBLIC_HEADERS += librpc/gen_ndr/ndr_svcctl_c.h
 
 [LIBRARY::dcerpc_atsvc]
 PUBLIC_DEPENDENCIES = dcerpc NDR_ATSVC
-VERSION = 0.0.1
-SO_VERSION = 0
+
+dcerpc_atsvc_VERSION = 0.0.1
+dcerpc_atsvc_SOVERSION = 0
 
 dcerpc_atsvc_OBJ_FILES = librpc/gen_ndr/ndr_atsvc_c.o
 PC_FILES += librpc/dcerpc_atsvc.pc
@@ -588,7 +589,7 @@ PC_FILES += librpc/dcerpc.pc
 dcerpc_VERSION = 0.0.1
 dcerpc_SOVERSION = 0
 
-dcerpc_OBJ_FILES = $(addprefix librpc/rpc/, dcerpc.o dcerpc_auth.o dcerpc_schannel.o dcerpc_util.o \
+dcerpc_OBJ_FILES = $(addprefix librpc/rpc/, dcerpc.o dcerpc_auth.o dcerpc_schannel.o dcerpc_util.o binding.o \
 				  dcerpc_error.o dcerpc_smb.o dcerpc_smb2.o dcerpc_sock.o dcerpc_connect.o dcerpc_secondary.o)
 
 
@@ -718,73 +719,84 @@ PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG dcer
 swig_dcerpc_OBJ_FILES = librpc/rpc/dcerpc_wrap.o
 
 [PYTHON::python_echo]
-PRIVATE_DEPENDENCIES = RPC_NDR_ECHO
+PRIVATE_DEPENDENCIES = RPC_NDR_ECHO PYTALLOC
 
 python_echo_OBJ_FILES = librpc/gen_ndr/py_echo.o
 
 [PYTHON::python_winreg]
-PRIVATE_DEPENDENCIES = RPC_NDR_WINREG python_misc
+PRIVATE_DEPENDENCIES = RPC_NDR_WINREG python_misc PYTALLOC
 
 python_winreg_OBJ_FILES = librpc/gen_ndr/py_winreg.o
 
 [PYTHON::python_dcerpc_misc]
+PRIVATE_DEPENDENCIES = PYTALLOC
 
 python_dcerpc_misc_OBJ_FILES = librpc/gen_ndr/py_misc.o
 
 [PYTHON::python_initshutdown]
-PRIVATE_DEPENDENCIES = RPC_NDR_INITSHUTDOWN
+PRIVATE_DEPENDENCIES = RPC_NDR_INITSHUTDOWN PYTALLOC
 
 python_initshutdown_OBJ_FILES = librpc/gen_ndr/py_initshutdown.o
 
 [PYTHON::python_epmapper]
+PRIVATE_DEPENDENCIES = PYTALLOC
 
 python_epmapper_OBJ_FILES = librpc/gen_ndr/py_epmapper.o
 
 [PYTHON::python_mgmt]
-PRIVATE_DEPENDENCIES = dcerpc_mgmt
+PRIVATE_DEPENDENCIES = dcerpc_mgmt PYTALLOC
 
 python_mgmt_OBJ_FILES = librpc/gen_ndr/py_mgmt.o
 
 [PYTHON::python_atsvc]
-PRIVATE_DEPENDENCIES = dcerpc_atsvc
+PRIVATE_DEPENDENCIES = dcerpc_atsvc PYTALLOC
 
 python_atsvc_OBJ_FILES = librpc/gen_ndr/py_atsvc.o
 
 [PYTHON::python_samr]
-PRIVATE_DEPENDENCIES = dcerpc_samr
+PRIVATE_DEPENDENCIES = dcerpc_samr PYTALLOC
+
+python_samr_OBJ_FILES = librpc/gen_ndr/py_samr.o
 
 python_samr_OBJ_FILES = librpc/gen_ndr/py_samr.o
 
 [PYTHON::python_svcctl]
-PRIVATE_DEPENDENCIES = RPC_NDR_SVCCTL
+PRIVATE_DEPENDENCIES = RPC_NDR_SVCCTL PYTALLOC
 
 python_svcctl_OBJ_FILES = librpc/gen_ndr/py_svcctl.o
 
 [PYTHON::python_lsa]
-PRIVATE_DEPENDENCIES = RPC_NDR_LSA
+PRIVATE_DEPENDENCIES = RPC_NDR_LSA PYTALLOC
+
+python_lsa_OBJ_FILES = librpc/gen_ndr/py_lsa.o
 
 python_lsa_OBJ_FILES = librpc/gen_ndr/py_lsa.o
 
 [PYTHON::python_wkssvc]
-PRIVATE_DEPENDENCIES = RPC_NDR_WKSSVC
+PRIVATE_DEPENDENCIES = RPC_NDR_WKSSVC PYTALLOC
 
 python_wkssvc_OBJ_FILES = librpc/gen_ndr/py_wkssvc.o
 
 [PYTHON::python_dfs]
-PRIVATE_DEPENDENCIES = RPC_NDR_DFS
+PRIVATE_DEPENDENCIES = RPC_NDR_DFS PYTALLOC
+
+python_dfs_OBJ_FILES = librpc/gen_ndr/py_dfs.o
 
 python_dfs_OBJ_FILES = gen_ndr/py_dfs.o
 
 [PYTHON::python_unixinfo]
-PRIVATE_DEPENDENCIES = RPC_NDR_UNIXINFO
+PRIVATE_DEPENDENCIES = RPC_NDR_UNIXINFO PYTALLOC
 
-python_unixinfo_OBJ_FILES = gen_ndr/py_unixinfo.o
+python_unixinfo_OBJ_FILES = librpc/gen_ndr/py_unixinfo.o
 
 [PYTHON::python_drsuapi]
-PRIVATE_DEPENDENCIES = RPC_NDR_DRSUAPI
+PRIVATE_DEPENDENCIES = RPC_NDR_DRSUAPI PYTALLOC
+
+python_drsuapi_OBJ_FILES = librpc/gen_ndr/py_drsuapi.o
 
 python_drsuapi_OBJ_FILES = gen_ndr/py_drsuapi.o
 
 [PYTHON::python_dcerpc_security]
+PRIVATE_DEPENDENCIES = PYTALLOC
 
 python_dcerpc_security_OBJ_FILES = librpc/gen_ndr/py_security.o

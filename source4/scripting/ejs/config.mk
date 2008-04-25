@@ -62,6 +62,8 @@ PRIVATE_DEPENDENCIES = service_auth
 
 smbcalls_auth_OBJ_FILES = scripting/ejs/smbcalls_auth.o
 
+smbcalls_auth_OBJ_FILES = scripting/ejs/smbcalls_auth.o
+
 [MODULE::smbcalls_string]
 SUBSYSTEM = smbcalls
 OUTPUT_TYPE = MERGED_OBJ
@@ -101,7 +103,6 @@ smbcalls_OBJ_FILES = $(addprefix scripting/ejs/, \
 #######################
 # Start BINARY SMBSCRIPT
 [BINARY::smbscript]
-INSTALLDIR = BINDIR
 PRIVATE_DEPENDENCIES = EJS LIBSAMBA-UTIL smbcalls LIBSAMBA-HOSTCONFIG
 # End BINARY SMBSCRIPT
 #######################

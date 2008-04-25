@@ -52,7 +52,6 @@ static NTSTATUS fsinfo_connect(struct composite_context *c,
 	state->req->async.fn = fsinfo_raw_handler;
 
 	state->stage = FSINFO_QUERY;
-	c->event_ctx = talloc_reference(c, state->req->session->transport->socket->event.ctx);
 
 	return NT_STATUS_OK;
 }
@@ -158,7 +157,6 @@ struct composite_context *smb_composite_fsinfo_send(struct smbcli_tree *tree,
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	state->stage = FSINFO_CONNECT;
-	c->event_ctx = talloc_reference(c, tree->session->transport->socket->event.ctx);
 	c->private_data = state;
 
 	state->creq = smb_composite_connect_send(state->connect, state,

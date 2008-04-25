@@ -71,5 +71,6 @@ version = _misc.version
 dsdb_set_global_schema = _misc.dsdb_set_global_schema
 ldb_register_samba_handlers = _misc.ldb_register_samba_handlers
 dsdb_set_ntds_invocation_id = _misc.dsdb_set_ntds_invocation_id
+private_path = _misc.private_path
 
 

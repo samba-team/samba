@@ -83,7 +83,7 @@ _PUBLIC_ NTSTATUS torture_rpc_connection(struct torture_context *tctx,
 
 	status = dcerpc_pipe_connect_b(tctx, 
 				     p, binding, table,
-				     cmdline_credentials, NULL, tctx->lp_ctx);
+				     cmdline_credentials, tctx->ev, tctx->lp_ctx);
  
 	if (NT_STATUS_IS_ERR(status)) {
 		printf("Failed to connect to remote server: %s %s\n", 
@@ -113,7 +113,7 @@ NTSTATUS torture_rpc_connection_transport(struct torture_context *tctx,
 	binding->assoc_group_id = assoc_group_id;
 
 	status = dcerpc_pipe_connect_b(tctx, p, binding, table,
-				       cmdline_credentials, NULL, tctx->lp_ctx);
+				       cmdline_credentials, tctx->ev, tctx->lp_ctx);
 					   
 	if (NT_STATUS_IS_ERR(status)) {
 		*p = NULL;
@@ -147,7 +147,7 @@ static bool torture_rpc_setup_machine(struct torture_context *tctx,
 				&(tcase_data->pipe),
 				binding,
 				tcase->table,
-				tcase_data->credentials, NULL, tctx->lp_ctx);
+				tcase_data->credentials, tctx->ev, tctx->lp_ctx);
 
 	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
 
@@ -205,7 +205,7 @@ static bool torture_rpc_setup_anonymous(struct torture_context *tctx,
 				&(tcase_data->pipe),
 				binding,
 				tcase->table,
-				tcase_data->credentials, NULL, tctx->lp_ctx);
+				tcase_data->credentials, tctx->ev, tctx->lp_ctx);
 
 	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
 
