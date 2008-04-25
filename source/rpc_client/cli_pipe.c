@@ -1994,7 +1994,8 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 ****************************************************************************/
 
 static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
-			      struct cli_pipe_auth_data *auth)
+			enum pipe_auth_type auth_type,
+			enum pipe_auth_level auth_level)
 {
 	RPC_HDR hdr;
 	RPC_HDR_BA hdr_ba;
@@ -2006,10 +2007,8 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 	DEBUG(5,("Bind RPC Pipe[%x]: %s auth_type %u, auth_level %u\n",
 		(unsigned int)cli->fnum,
 		cli->pipe_name,
-		(unsigned int)auth->auth_type,
-		(unsigned int)auth->auth_level ));
-
-	cli->auth = talloc_move(cli, &auth);
+		(unsigned int)auth_type,
+		(unsigned int)auth_level ));
 
 	prs_init_empty(&rpc_out, talloc_tos(), MARSHALL);
 
@@ -2019,8 +2018,8 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 	status = create_rpc_bind_req(cli, &rpc_out, rpc_call_id,
 				cli->abstract_syntax,
 				cli->transfer_syntax,
-				cli->auth->auth_type,
-				cli->auth->auth_level);
+				auth_type,
+				auth_level);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		prs_mem_free(&rpc_out);
@@ -2068,7 +2067,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 	cli->max_recv_frag = hdr_ba.bba.max_rsize;
 
 	/* For authenticated binds we may need to do 3 or 4 leg binds. */
-	switch(cli->auth->auth_type) {
+	switch(auth_type) {
 
 		case PIPE_AUTH_TYPE_NONE:
 		case PIPE_AUTH_TYPE_SCHANNEL:
@@ -2077,10 +2076,8 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 
 		case PIPE_AUTH_TYPE_NTLMSSP:
 			/* Need to send AUTH3 packet - no reply. */
-			status = rpc_finish_auth3_bind(
-				cli, &hdr, &rbuf, rpc_call_id,
-				cli->auth->auth_type,
-				cli->auth->auth_level);
+			status = rpc_finish_auth3_bind(cli, &hdr, &rbuf, rpc_call_id,
+						auth_type, auth_level);
 			if (!NT_STATUS_IS_OK(status)) {
 				prs_mem_free(&rbuf);
 				return status;
@@ -2089,10 +2086,10 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 
 		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
 			/* Need to send alter context request and reply. */
-			status = rpc_finish_spnego_ntlmssp_bind(
-				cli, &hdr, &rbuf, rpc_call_id,
-				cli->abstract_syntax, cli->transfer_syntax,
-				cli->auth->auth_type, cli->auth->auth_level);
+			status = rpc_finish_spnego_ntlmssp_bind(cli, &hdr, &rbuf, rpc_call_id,
+						cli->abstract_syntax,
+						cli->transfer_syntax,
+						auth_type, auth_level);
 			if (!NT_STATUS_IS_OK(status)) {
 				prs_mem_free(&rbuf);
 				return status;
@@ -2103,23 +2100,22 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 			/* */
 
 		default:
-			DEBUG(0,("cli_finish_bind_auth: unknown auth type "
-				 "%u\n", (unsigned int)cli->auth->auth_type));
+			DEBUG(0,("cli_finish_bind_auth: unknown auth type %u\n",
+				(unsigned int)auth_type ));
 			prs_mem_free(&rbuf);
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	/* For NTLMSSP ensure the server gave us the auth_level we wanted. */
-	if (cli->auth->auth_type == PIPE_AUTH_TYPE_NTLMSSP
-	    || cli->auth->auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
-		if (cli->auth->auth_level == PIPE_AUTH_LEVEL_INTEGRITY) {
+	if (auth_type == PIPE_AUTH_TYPE_NTLMSSP || auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
+		if (auth_level == PIPE_AUTH_LEVEL_INTEGRITY) {
 			if (!(cli->auth->a_u.ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
 				DEBUG(0,("cli_finish_bind_auth: requested NTLMSSSP signing and server refused.\n"));
 				prs_mem_free(&rbuf);
 				return NT_STATUS_INVALID_PARAMETER;
 			}
 		}
-		if (cli->auth->auth_level == PIPE_AUTH_LEVEL_INTEGRITY) {
+		if (auth_level == PIPE_AUTH_LEVEL_INTEGRITY) {
 			if (!(cli->auth->a_u.ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
 				DEBUG(0,("cli_finish_bind_auth: requested NTLMSSSP sealing and server refused.\n"));
 				prs_mem_free(&rbuf);
@@ -2127,6 +2123,11 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 			}
 		}
 	}
+
+	/* Pipe is bound - set up auth_type and auth_level data. */
+
+	cli->auth->auth_type = auth_type;
+	cli->auth->auth_level = auth_level;
 
 	prs_mem_free(&rbuf);
 	return NT_STATUS_OK;
@@ -2170,6 +2171,10 @@ static int rpc_pipe_destructor(struct rpc_pipe_client *p)
 			  "fnum 0x%x to machine %s.  Error was %s\n",
 			  p->pipe_name, (int) p->fnum,
 			  p->desthost, cli_errstr(p->cli)));
+	}
+
+	if (p->auth->cli_auth_data_free_func) {
+		(*p->auth->cli_auth_data_free_func)(p->auth);
 	}
 
 	DEBUG(10, ("rpc_pipe_destructor: closed pipe %s to machine %s\n",
@@ -2323,12 +2328,12 @@ static int cli_auth_kerberos_data_destructor(struct kerberos_auth_struct *auth)
 	return 0;
 }
 
-NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
-				   enum pipe_auth_level auth_level,
-				   const char *service_princ,
-				   const char *username,
-				   const char *password,
-				   struct cli_pipe_auth_data **presult)
+NTSTATUS rpccli_krb5_bind_data(TALLOC_CTX *mem_ctx,
+			       enum pipe_auth_level auth_level,
+			       const char *service_princ,
+			       const char *username,
+			       const char *password,
+			       struct cli_pipe_auth_data **presult)
 {
 	struct cli_pipe_auth_data *result;
 
@@ -2414,16 +2419,31 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 		return NULL;
 	}
 
+	result->auth = TALLOC_ZERO_P(result, struct cli_pipe_auth_data);
+	if (result->auth == NULL) {
+		*perr = NT_STATUS_NO_MEMORY;
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
 	result->pipe_name = cli_get_pipe_name(pipe_idx);
 
 	result->cli = cli;
 	result->abstract_syntax = pipe_names[pipe_idx].abstr_syntax;
 	result->transfer_syntax = pipe_names[pipe_idx].trans_syntax;
+	result->auth->auth_type = PIPE_AUTH_TYPE_NONE;
+	result->auth->auth_level = PIPE_AUTH_LEVEL_NONE;
+
+	result->auth->domain = talloc_strdup(result, cli->domain);
+	result->auth->user_name = talloc_strdup(result, cli->user_name);
 	result->desthost = talloc_strdup(result, cli->desthost);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
 		result, "\\\\%s", result->desthost);
 
-	if ((result->desthost == NULL) || (result->srv_name_slash == NULL)) {
+	if ((result->auth->domain == NULL)
+	    || (result->auth->user_name == NULL)
+	    || (result->desthost == NULL)
+	    || (result->srv_name_slash == NULL)) {
 		*perr = NT_STATUS_NO_MEMORY;
 		TALLOC_FREE(result);
 		return NULL;
@@ -2467,22 +2487,13 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 struct rpc_pipe_client *cli_rpc_pipe_open_noauth(struct cli_state *cli, int pipe_idx, NTSTATUS *perr)
 {
 	struct rpc_pipe_client *result;
-	struct cli_pipe_auth_data *auth;
 
 	result = cli_rpc_pipe_open(cli, pipe_idx, perr);
 	if (result == NULL) {
 		return NULL;
 	}
 
-	*perr = rpccli_anon_bind_data(result, &auth);
-	if (!NT_STATUS_IS_OK(*perr)) {
-		DEBUG(0, ("rpccli_anon_bind_data returned %s\n",
-			  nt_errstr(*perr)));
-		TALLOC_FREE(result);
-		return NULL;
-	}
-
-	*perr = rpc_pipe_bind(result, auth);
+	*perr = rpc_pipe_bind(result, PIPE_AUTH_TYPE_NONE, PIPE_AUTH_LEVEL_NONE);
 	if (!NT_STATUS_IS_OK(*perr)) {
 		int lvl = 0;
 		if (rpccli_is_pipe_idx(result, PI_DSSETUP)) {
@@ -2503,6 +2514,18 @@ struct rpc_pipe_client *cli_rpc_pipe_open_noauth(struct cli_state *cli, int pipe
 }
 
 /****************************************************************************
+ Free function for NTLMSSP auth.
+ ****************************************************************************/
+
+static void cli_ntlmssp_auth_free(struct cli_pipe_auth_data *auth)
+{
+	if (auth->a_u.ntlmssp_state) {
+		ntlmssp_end(&auth->a_u.ntlmssp_state);
+		auth->a_u.ntlmssp_state = NULL;
+	}
+}
+
+/****************************************************************************
  Open a named pipe to an SMB server and bind using NTLMSSP or SPNEGO NTLMSSP
  ****************************************************************************/
 
@@ -2516,24 +2539,66 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 						NTSTATUS *perr)
 {
 	struct rpc_pipe_client *result;
-	struct cli_pipe_auth_data *auth;
+	NTLMSSP_STATE *ntlmssp_state = NULL;
 
 	result = cli_rpc_pipe_open(cli, pipe_idx, perr);
 	if (result == NULL) {
 		return NULL;
 	}
 
-	*perr = rpccli_ntlmssp_bind_data(
-		result, auth_type, auth_level, domain, username,
-		cli->pwd.null_pwd ? NULL : password, &auth);
-	if (!NT_STATUS_IS_OK(*perr)) {
-		DEBUG(0, ("rpccli_ntlmssp_bind_data returned %s\n",
-			  nt_errstr(*perr)));
-		TALLOC_FREE(result);
-		return NULL;
+	result->auth->cli_auth_data_free_func = cli_ntlmssp_auth_free;
+
+	TALLOC_FREE(result->auth->domain);
+	TALLOC_FREE(result->auth->user_name);
+
+	result->auth->domain = talloc_strdup(result, domain);
+	result->auth->user_name = talloc_strdup(result, username);
+
+	if ((result->auth->domain == NULL)
+	    || (result->auth->user_name == NULL)) {
+		*perr = NT_STATUS_NO_MEMORY;
+		goto err;
 	}
 
-	*perr = rpc_pipe_bind(result, auth);
+	*perr = ntlmssp_client_start(&ntlmssp_state);
+	if (!NT_STATUS_IS_OK(*perr)) {
+		goto err;
+	}
+
+	result->auth->a_u.ntlmssp_state = ntlmssp_state;
+
+	*perr = ntlmssp_set_username(ntlmssp_state, username);
+	if (!NT_STATUS_IS_OK(*perr)) {
+		goto err;
+	}
+
+	*perr = ntlmssp_set_domain(ntlmssp_state, domain);
+	if (!NT_STATUS_IS_OK(*perr)) {
+		goto err;
+	}
+
+	if (cli->pwd.null_pwd) {
+		*perr = ntlmssp_set_password(ntlmssp_state, NULL);
+		if (!NT_STATUS_IS_OK(*perr)) {
+			goto err;
+		}
+	} else {
+		*perr = ntlmssp_set_password(ntlmssp_state, password);
+		if (!NT_STATUS_IS_OK(*perr)) {
+			goto err;
+		}
+	}
+
+	/* Turn off sign+seal to allow selected auth level to turn it back on. */
+	ntlmssp_state->neg_flags &= ~(NTLMSSP_NEGOTIATE_SIGN|NTLMSSP_NEGOTIATE_SEAL);
+
+	if (auth_level == PIPE_AUTH_LEVEL_INTEGRITY) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+	} else if (auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL | NTLMSSP_NEGOTIATE_SIGN;
+	}
+
+	*perr = rpc_pipe_bind(result, auth_type, auth_level);
 	if (!NT_STATUS_IS_OK(*perr)) {
 		DEBUG(0, ("cli_rpc_pipe_open_ntlmssp_internal: cli_rpc_pipe_bind failed with error %s\n",
 			nt_errstr(*perr) ));
@@ -2691,23 +2756,31 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 					NTSTATUS *perr)
 {
 	struct rpc_pipe_client *result;
-	struct cli_pipe_auth_data *auth;
 
 	result = cli_rpc_pipe_open(cli, pipe_idx, perr);
 	if (result == NULL) {
 		return NULL;
 	}
 
-	*perr = rpccli_schannel_bind_data(result, domain, auth_level,
-					  pdc, &auth);
-	if (!NT_STATUS_IS_OK(*perr)) {
-		DEBUG(0, ("rpccli_schannel_bind_data returned %s\n",
-			  nt_errstr(*perr)));
+	result->auth->a_u.schannel_auth = TALLOC_ZERO_P(
+		result, struct schannel_auth_struct);
+	if (!result->auth->a_u.schannel_auth) {
 		TALLOC_FREE(result);
+		*perr = NT_STATUS_NO_MEMORY;
 		return NULL;
 	}
 
-	*perr = rpc_pipe_bind(result, auth);
+	TALLOC_FREE(result->auth->domain);
+	result->auth->domain = talloc_strdup(result, domain);
+	if (result->auth->domain == NULL) {
+		TALLOC_FREE(result);
+		*perr = NT_STATUS_NO_MEMORY;
+		return NULL;
+	}
+
+	memcpy(result->auth->a_u.schannel_auth->sess_key, pdc->sess_key, 16);
+
+	*perr = rpc_pipe_bind(result, PIPE_AUTH_TYPE_SCHANNEL, auth_level);
 	if (!NT_STATUS_IS_OK(*perr)) {
 		DEBUG(0, ("cli_rpc_pipe_open_schannel_with_key: cli_rpc_pipe_bind failed with error %s\n",
 			nt_errstr(*perr) ));
@@ -2828,6 +2901,19 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel(struct cli_state *cli,
 	return result;
 }
 
+#ifdef HAVE_KRB5
+
+/****************************************************************************
+ Free function for the kerberos spcific data.
+ ****************************************************************************/
+
+static void kerberos_auth_struct_free(struct cli_pipe_auth_data *a)
+{
+	data_blob_free(&a->a_u.kerberos_auth->session_key);
+}
+
+#endif
+
 /****************************************************************************
  Open a named pipe to an SMB server and bind using krb5 (bind type 16).
  The idea is this can be called with service_princ, username and password all
@@ -2844,23 +2930,43 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
 {
 #ifdef HAVE_KRB5
 	struct rpc_pipe_client *result;
-	struct cli_pipe_auth_data *auth;
 
 	result = cli_rpc_pipe_open(cli, pipe_idx, perr);
 	if (result == NULL) {
 		return NULL;
 	}
 
-	*perr = rpccli_kerberos_bind_data(result, auth_level, service_princ,
-					  username, password, &auth);
-	if (!NT_STATUS_IS_OK(*perr)) {
-		DEBUG(0, ("rpccli_kerberos_bind_data returned %s\n",
-			  nt_errstr(*perr)));
+	/* Default service principal is "desthost$@realm" */
+	if (!service_princ) {
+		service_princ = talloc_asprintf(result, "%s$@%s",
+						cli->desthost, lp_realm() );
+		if (!service_princ) {
+			TALLOC_FREE(result);
+			return NULL;
+		}
+	}
+
+	/* Only get a new TGT if username/password are given. */
+	if (username && password) {
+		int ret = kerberos_kinit_password(username, password, 0, NULL);
+		if (ret) {
+			TALLOC_FREE(result);
+			return NULL;
+		}
+	}
+
+	result->auth->a_u.kerberos_auth = TALLOC_ZERO_P(
+		result, struct kerberos_auth_struct);
+	if (!result->auth->a_u.kerberos_auth) {
 		TALLOC_FREE(result);
+		*perr = NT_STATUS_NO_MEMORY;
 		return NULL;
 	}
 
-	*perr = rpc_pipe_bind(result, auth);
+	result->auth->a_u.kerberos_auth->service_principal = service_princ;
+	result->auth->cli_auth_data_free_func = kerberos_auth_struct_free;
+
+	*perr = rpc_pipe_bind(result, PIPE_AUTH_TYPE_KRB5, auth_level);
 	if (!NT_STATUS_IS_OK(*perr)) {
 		DEBUG(0, ("cli_rpc_pipe_open_krb5: cli_rpc_pipe_bind failed with error %s\n",
 			nt_errstr(*perr) ));
