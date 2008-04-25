@@ -1195,7 +1195,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	}
 
 	result = rpccli_netr_DsrEnumerateDomainTrusts(cli, mem_ctx,
-						      cli->desthost,
+						      cli->cli->desthost,
 						      flags,
 						      &trusts,
 						      NULL);

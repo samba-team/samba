@@ -451,7 +451,7 @@ NTSTATUS rpc_info_internals(const DOM_SID *domain_sid,
 
 	/* Get sam policy handle */
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -654,7 +654,7 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 	/* Get sam policy handle */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 
@@ -829,7 +829,7 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
 	/* Get sam policy and domain handles */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 
@@ -960,7 +960,7 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 	/* Get sam policy handle */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
@@ -1078,7 +1078,7 @@ static NTSTATUS rpc_user_list_internals(const DOM_SID *domain_sid,
 	/* Get sam policy handle */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1242,7 +1242,7 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 	}
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1610,7 +1610,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 	}
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 
@@ -1808,7 +1808,7 @@ static NTSTATUS rpc_group_add_internals(const DOM_SID *domain_sid,
 	/* Get sam policy handle */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
@@ -1878,7 +1878,7 @@ static NTSTATUS rpc_alias_add_internals(const DOM_SID *domain_sid,
 	/* Get sam policy handle */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
@@ -2014,7 +2014,7 @@ static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 
 	/* Get sam policy handle */
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2096,7 +2096,7 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 
 	/* Get sam policy handle */
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2215,7 +2215,7 @@ static NTSTATUS rpc_del_groupmem(struct rpc_pipe_client *pipe_hnd,
 
 	/* Get sam policy handle */
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result))
@@ -2291,7 +2291,7 @@ static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 
 	/* Get sam policy handle */
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2438,7 +2438,7 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 	/* Get sam policy handle */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2809,7 +2809,7 @@ static NTSTATUS rpc_group_members_internals(const DOM_SID *domain_sid,
 	/* Get sam policy handle */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 
@@ -2922,7 +2922,7 @@ static NTSTATUS rpc_group_rename_internals(const DOM_SID *domain_sid,
 	/* Get sam policy handle */
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 
@@ -3083,7 +3083,7 @@ static NTSTATUS rpc_share_add_internals(const DOM_SID *domain_sid,
 	info.info2 = &info2;
 
 	status = rpccli_srvsvc_NetShareAdd(pipe_hnd, mem_ctx,
-					   pipe_hnd->desthost,
+					   pipe_hnd->cli->desthost,
 					   level,
 					   &info,
 					   &parm_error,
@@ -3128,7 +3128,7 @@ static NTSTATUS rpc_share_del_internals(const DOM_SID *domain_sid,
 	WERROR result;
 
 	return rpccli_srvsvc_NetShareDel(pipe_hnd, mem_ctx,
-					 pipe_hnd->desthost,
+					 pipe_hnd->cli->desthost,
 					 argv[0],
 					 0,
 					 &result);
@@ -3194,7 +3194,7 @@ static WERROR get_share_info(struct rpc_pipe_client *pipe_hnd,
 		info_ctr->level = level;
 
 		status = rpccli_srvsvc_NetShareEnumAll(pipe_hnd, mem_ctx,
-						       pipe_hnd->desthost,
+						       pipe_hnd->cli->desthost,
 						       info_ctr,
 						       preferred_len,
 						       &total_entries,
@@ -3205,7 +3205,7 @@ static WERROR get_share_info(struct rpc_pipe_client *pipe_hnd,
 
 	/* request just one share */
 	status = rpccli_srvsvc_NetShareGetInfo(pipe_hnd, mem_ctx,
-					       pipe_hnd->desthost,
+					       pipe_hnd->cli->desthost,
 					       argv[0],
 					       level,
 					       &info,
@@ -3424,7 +3424,7 @@ static NTSTATUS rpc_share_migrate_shares_internals(const DOM_SID *domain_sid,
 		info.info502 = &info502;
 
 		nt_status = rpccli_srvsvc_NetShareAdd(srvsvc_pipe, mem_ctx,
-						      srvsvc_pipe->desthost,
+						      srvsvc_pipe->cli->desthost,
 						      502,
 						      &info,
 						      &parm_error,
@@ -3847,7 +3847,7 @@ static NTSTATUS rpc_share_migrate_security_internals(const DOM_SID *domain_sid,
 
 		/* finally modify the share on the dst server */
 		nt_status = rpccli_srvsvc_NetShareSetInfo(srvsvc_pipe, mem_ctx,
-							  srvsvc_pipe->desthost,
+							  srvsvc_pipe->cli->desthost,
 							  info502.name,
 							  level,
 							  &info,
@@ -4140,7 +4140,7 @@ static NTSTATUS rpc_aliaslist_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol;
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 
@@ -4487,7 +4487,7 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 	uint16 cnum;
 
 	status = rpccli_srvsvc_NetShareGetInfo(pipe_hnd, mem_ctx,
-					       pipe_hnd->desthost,
+					       pipe_hnd->cli->desthost,
 					       netname,
 					       502,
 					       &info,
@@ -4806,7 +4806,7 @@ static NTSTATUS rpc_sh_share_add(TALLOC_CTX *mem_ctx,
 	info.info2 = &info2;
 
 	status = rpccli_srvsvc_NetShareAdd(pipe_hnd, mem_ctx,
-					   pipe_hnd->desthost,
+					   pipe_hnd->cli->desthost,
 					   2,
 					   &info,
 					   &parm_err,
@@ -4829,7 +4829,7 @@ static NTSTATUS rpc_sh_share_delete(TALLOC_CTX *mem_ctx,
 	}
 
 	status = rpccli_srvsvc_NetShareDel(pipe_hnd, mem_ctx,
-					   pipe_hnd->desthost,
+					   pipe_hnd->cli->desthost,
 					   argv[0],
 					   0,
 					   &result);
@@ -4852,7 +4852,7 @@ static NTSTATUS rpc_sh_share_info(TALLOC_CTX *mem_ctx,
 	}
 
 	status = rpccli_srvsvc_NetShareGetInfo(pipe_hnd, mem_ctx,
-					       pipe_hnd->desthost,
+					       pipe_hnd->cli->desthost,
 					       argv[0],
 					       2,
 					       &info,
@@ -4924,7 +4924,7 @@ static NTSTATUS rpc_file_close_internals(const DOM_SID *domain_sid,
 					const char **argv)
 {
 	return rpccli_srvsvc_NetFileClose(pipe_hnd, mem_ctx, 
-					    pipe_hnd->desthost,
+					    pipe_hnd->cli->desthost, 
 					    atoi(argv[0]), NULL);
 }
 
@@ -5005,7 +5005,7 @@ static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
 	info_ctr.ctr.ctr3 = &ctr3;
 
 	status = rpccli_srvsvc_NetFileEnum(pipe_hnd, mem_ctx,
-					   pipe_hnd->desthost,
+					   pipe_hnd->cli->desthost,
 					   NULL,
 					   username,
 					   &info_ctr,
@@ -5370,7 +5370,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 
 	/* Get samr policy handle */
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -5526,7 +5526,7 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 
 	/* Get samr policy handle */
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -6268,7 +6268,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 
 	/* SamrConnect2 */
 	nt_status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-					 pipe_hnd->desthost,
+					 pipe_hnd->cli->desthost,
 					 SA_RIGHT_SAM_OPEN_DOMAIN,
 					 &connect_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {

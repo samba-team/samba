@@ -1613,7 +1613,7 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 	}	
 
 	result = rpccli_netr_DsrEnumerateDomainTrusts(cli, mem_ctx,
-						      cli->desthost,
+						      cli->cli->desthost,
 						      flags,
 						      &trusts,
 						      NULL);
@@ -1966,7 +1966,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		  domain_name, machine_account));
 
 	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
-				      conn->samr_pipe->desthost,
+				      conn->samr_pipe->cli->desthost,
 				      SEC_RIGHTS_MAXIMUM_ALLOWED,
 				      &conn->sam_connect_handle);
 	if (NT_STATUS_IS_OK(result)) {
@@ -2001,7 +2001,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		  "schannel.\n", domain->name ));
 
 	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
-				      conn->samr_pipe->desthost,
+				      conn->samr_pipe->cli->desthost,
 				      SEC_RIGHTS_MAXIMUM_ALLOWED,
 				      &conn->sam_connect_handle);
 	if (NT_STATUS_IS_OK(result)) {
@@ -2024,7 +2024,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	}
 
 	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
-				      conn->samr_pipe->desthost,
+				      conn->samr_pipe->cli->desthost,
 				      SEC_RIGHTS_MAXIMUM_ALLOWED,
 				      &conn->sam_connect_handle);
 	if (!NT_STATUS_IS_OK(result)) {

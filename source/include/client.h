@@ -66,8 +66,6 @@ struct rpc_pipe_client {
 	const char *pipe_name;
 	uint16 fnum;
 
-	const char *desthost;
-
 	const char *domain;
 	const char *user_name;
 	struct pwd_info pwd;
