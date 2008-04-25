@@ -156,3 +156,25 @@ DATA_BLOB data_blob_talloc_zero(TALLOC_CTX *mem_ctx, size_t length)
 	data_blob_clear(&blob);
 	return blob;
 }
+
+/**
+print the data_blob as hex string
+**/
+_PUBLIC_ char *data_blob_hex_string(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob)
+{
+	int i;
+	char *hex_string;
+
+	hex_string = talloc_array(mem_ctx, char, (blob->length*2)+1);
+	if (!hex_string) {
+		return NULL;
+	}
+
+	for (i = 0; i < blob->length; i++)
+		slprintf(&hex_string[i*2], 3, "%02X", blob->data[i]);
+
+	hex_string[(blob->length*2)] = '\0';
+	return hex_string;
+}
+
+
