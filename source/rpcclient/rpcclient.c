@@ -334,10 +334,8 @@ static NTSTATUS cmd_set_ss_level(void)
 				continue;
 			}
 
-			if ((tmp_set->rpc_pipe->auth->auth_type
-			     != pipe_default_auth_type)
-			    || (tmp_set->rpc_pipe->auth->auth_level
-				!= pipe_default_auth_level)) {
+			if (tmp_set->rpc_pipe->auth.auth_type != pipe_default_auth_type ||
+					tmp_set->rpc_pipe->auth.auth_level != pipe_default_auth_level) {
 				TALLOC_FREE(tmp_set->rpc_pipe);
 				tmp_set->rpc_pipe = NULL;
 			}

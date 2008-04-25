@@ -39,7 +39,7 @@ static NTSTATUS just_change_the_password(struct rpc_pipe_client *cli, TALLOC_CTX
 	/* Check if the netlogon pipe is open using schannel. If so we
 	   already have valid creds. If not we must set them up. */
 
-	if (cli->auth->auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
+	if (cli->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
 		uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 
 		result = rpccli_netlogon_setup_creds(cli, 
