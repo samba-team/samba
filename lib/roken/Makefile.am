@@ -12,7 +12,7 @@ libroken_la_CPPFLAGS = -DBUILD_ROKEN_LIB
 
 AM_CPPFLAGS += $(libroken_la_CPPFLAGS)
 
-noinst_PROGRAMS = make-roken snprintf-test resolve-test
+noinst_PROGRAMS = make-roken snprintf-test resolve-test rkpty
 
 nodist_make_roken_SOURCES = make-roken.c
 
