@@ -69,6 +69,7 @@ static const struct {
 	const char *name;
 	uint32_t flag;
 } ncacn_options[] = {
+	{ "", 0 }
 };
 
 const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
