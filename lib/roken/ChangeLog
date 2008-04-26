@@ -1,3 +1,7 @@
+2008-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rkpty.c: pty testing application
+
 2008-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* resolve.c: Use unsigned where appropriate.
