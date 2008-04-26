@@ -83,6 +83,8 @@ ADS_STATUS ads_search_retry_sid(ADS_STRUCT *ads, LDAPMessage **res,
 
 LDAPMessage *ads_first_entry(ADS_STRUCT *ads, LDAPMessage *res);
 LDAPMessage *ads_next_entry(ADS_STRUCT *ads, LDAPMessage *res);
+LDAPMessage *ads_first_message(ADS_STRUCT *ads, LDAPMessage *res);
+LDAPMessage *ads_next_message(ADS_STRUCT *ads, LDAPMessage *res);
 void ads_process_results(ADS_STRUCT *ads, LDAPMessage *res,
 			 BOOL(*fn)(char *, void **, void *),
 			 void *data_area);

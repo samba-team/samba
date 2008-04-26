@@ -788,8 +788,8 @@ static ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 
 		/* this relies on the way that ldap_add_result_entry() works internally. I hope
 		   that this works on all ldap libs, but I have only tested with openldap */
-		for (msg = ads_first_entry(ads, res2); msg; msg = next) {
-			next = ads_next_entry(ads, msg);
+		for (msg = ads_first_message(ads, res2); msg; msg = next) {
+			next = ads_next_message(ads, msg);
 			ldap_add_result_entry((LDAPMessage **)res, msg);
 		}
 		/* note that we do not free res2, as the memory is now
@@ -1920,6 +1920,28 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  LDAPMessage *ads_next_entry(ADS_STRUCT *ads, LDAPMessage *res)
 {
 	return ldap_next_entry(ads->ld, res);
+}
+
+/**
+ * pull the first message from a ADS result
+ * @param ads connection to ads server
+ * @param res Results of search
+ * @return first message from result
+ **/
+ LDAPMessage *ads_first_message(ADS_STRUCT *ads, LDAPMessage *res)
+{
+	return ldap_first_message(ads->ld, res);
+}
+
+/**
+ * pull the next message from a ADS result
+ * @param ads connection to ads server
+ * @param res Results of search
+ * @return next message from result
+ **/
+ LDAPMessage *ads_next_message(ADS_STRUCT *ads, LDAPMessage *res)
+{
+	return ldap_next_message(ads->ld, res);
 }
 
 /**
