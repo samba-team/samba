@@ -327,9 +327,14 @@ gcov: test
 		do $(GCOV) -p -o $$I $$I/*.c; \
 	done
 
-lcov: test
+samba.info: test
 	-rm heimdal/lib/*/{lex,parse}.{gcda,gcno}
 	lcov --base-directory `pwd` --directory . --capture --output-file samba.info
-	genhtml -o coverage samba.info
+
+lcov: samba.info
+	genhtml -o coverage $<
 
 testcov-html:: lcov
+
+clean::
+	@rm -f samba.info
