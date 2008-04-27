@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
+#include "torture/smbtorture.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/lsa.h"
