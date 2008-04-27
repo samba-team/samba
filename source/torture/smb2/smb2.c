@@ -21,7 +21,7 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 
-#include "torture/torture.h"
+#include "torture/smbtorture.h"
 #include "torture/smb2/proto.h"
 #include "lib/util/dlinklist.h"
 

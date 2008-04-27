@@ -17,7 +17,7 @@
  */
 
 #include "includes.h"
-#include "torture/ui.h"
+#include "torture/torture.h"
 
 #include "lib/crypto/crypto.h"
 

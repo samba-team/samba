@@ -23,7 +23,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "librpc/rpc/dcerpc.h"
 #include "torture/rpc/rpc.h"
-#include "torture/torture.h"
+#include "torture/smbtorture.h"
 #include "librpc/ndr/ndr_table.h"
 #include "lib/util/dlinklist.h"
 

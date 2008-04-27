@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "param/param.h"
 #include "system/filesys.h"
-#include "torture/torture.h"
+#include "torture/smbtorture.h"
 #include "torture/basic/proto.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"

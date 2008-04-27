@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "torture/ui.h"
+#include "torture/torture.h"
 
 static bool test_string_sub_simple(struct torture_context *tctx)
 {

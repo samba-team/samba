@@ -28,7 +28,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "libcli/raw/libcliraw.h"
 #include "torture/rpc/proto.h"
-#include "torture/ui.h"
+#include "torture/torture.h"
 
 struct torture_rpc_tcase {
 	struct torture_tcase tcase;
