@@ -32,10 +32,22 @@
  */
 
 #include "config.h"
+
+#ifndef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#ifdef HAVE_PTY_H
+#include <pty.h>
+#endif
+#ifdef HAVE_UTIL_H
 #include <util.h>
+#endif
 
 #include "roken.h"
 #include <getarg.h>
