@@ -1,5 +1,7 @@
 2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rand.c: Drop const warnings.
+
 	* des.h: Sort options.
 
 2008-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
