@@ -1,3 +1,8 @@
+2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rkpty.c: Add timeout, add password command, add diffrent
+	verbosity levels.
+
 2008-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rkpty.c: pty testing application
