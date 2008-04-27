@@ -1,5 +1,7 @@
 2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rkpty.c: More includes.
+
 	* rkpty.c: Add timeout, add password command, add diffrent
 	verbosity levels.
 
