@@ -1,5 +1,7 @@
 2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* des.h: Add DES_check_key_parity, deprecate DES_set_key.
+
 	* version-script.map: Export DES_check_key_parity.
 
 	* des.h: DES_set_odd_parity "returns" void.
