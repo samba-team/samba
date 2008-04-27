@@ -99,7 +99,7 @@ DES_set_random_generator_seed(DES_cblock *seed)
  * @ingroup hcrypto_des
  */
 
-int
+int HC_DEPRECATED
 DES_new_random_key(DES_cblock *key)
 {
     do {
