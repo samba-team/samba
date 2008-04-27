@@ -55,7 +55,7 @@ RCSID("$Id$");
  */
 
 const static RAND_METHOD *selected_meth = NULL;
-const static ENGINE *selected_engine = NULL;
+static ENGINE *selected_engine = NULL;
 
 static void
 init_method(void)
@@ -108,12 +108,16 @@ RAND_bytes(void *outdata, size_t size)
 void
 RAND_cleanup(void)
 {
-    RAND_METHOD *meth = selected_meth;
+    const RAND_METHOD *meth = selected_meth;
+    ENGINE *engine = selected_engine;
+
     selected_meth = NULL;
+    selected_engine = NULL;
+
     if (meth)
 	(*meth->cleanup)();
-    if (selected_engine)
-	ENGINE_finish(selected_engine);
+    if (engine)
+	ENGINE_finish(engine);
 }
 
 /**
