@@ -41,6 +41,8 @@ parse_reply_test_CFLAGS  = -DTEST_RESOLVE
 
 test_readenv_SOURCES = test-readenv.c test-mem.c
 
+rkpty_LDADD = $(LIB_openpty) $(LDADD)
+
 parse_time_test_SOURCES = parse_time-test.c test-mem.c
 
 strpftime_test_SOURCES	= strpftime-test.c strpftime-test.h
