@@ -33,6 +33,7 @@ HEIMDAL_CRYPTO_1.0 {
 		hc_DES_cbc_cksum;
 		hc_DES_cbc_encrypt;
 		hc_DES_cfb64_encrypt;
+		hc_DES_check_key_parity;
 		hc_DES_ecb3_encrypt;
 		hc_DES_ecb_encrypt;
 		hc_DES_ede3_cbc_encrypt;
