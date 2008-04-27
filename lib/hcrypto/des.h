@@ -41,6 +41,7 @@
 #define DES_cbc_cksum hc_DES_cbc_cksum
 #define DES_cbc_encrypt hc_DES_cbc_encrypt
 #define DES_cfb64_encrypt hc_DES_cfb64_encrypt
+#define DES_check_key_parity hc_DES_check_key_parity
 #define DES_ecb3_encrypt hc_DES_ecb3_encrypt
 #define DES_ecb_encrypt hc_DES_ecb_encrypt
 #define DES_ede3_cbc_encrypt hc_DES_ede3_cbc_encrypt
@@ -95,9 +96,11 @@ extern "C" {
 #endif
 
 void	DES_set_odd_parity(DES_cblock *);
+int	DES_check_key_parity(DES_cblock *);
 int	DES_is_weak_key(DES_cblock *);
-int	DES_set_key(DES_cblock *, DES_key_schedule *);
+int	HC_DEPRECATED DES_set_key(DES_cblock *, DES_key_schedule *);
 int	DES_set_key_checked(DES_cblock *, DES_key_schedule *);
+int	DES_set_key_unchecked(DES_cblock *, DES_key_schedule *);
 int	DES_key_sched(DES_cblock *, DES_key_schedule *);
 void	DES_string_to_key(const char *, DES_cblock *);
 int	DES_read_password(DES_cblock *, char *, int);
