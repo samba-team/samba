@@ -94,7 +94,7 @@ typedef struct DES_key_schedule
 extern "C" {
 #endif
 
-int	DES_set_odd_parity(DES_cblock *);
+void	DES_set_odd_parity(DES_cblock *);
 int	DES_is_weak_key(DES_cblock *);
 int	DES_set_key(DES_cblock *, DES_key_schedule *);
 int	DES_set_key_checked(DES_cblock *, DES_key_schedule *);
