@@ -16,7 +16,7 @@ SCRIPT_TESTS = \
 	check-kadmin \
 	check-kdc \
 	check-keys \
-	check-kpasswd \
+	check-kpasswdd \
 	check-pkinit \
 	check-iprop \
 	check-referral \
@@ -149,7 +149,7 @@ CLEANFILES= \
 EXTRA_DIST = \
 	check-kadmin.in \
 	check-kdc.in \
-	check-kpasswd.in \
+	check-kpasswdd.in \
 	check-keys.in \
 	check-referral.in \
 	check-uu.in \
