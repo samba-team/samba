@@ -1,3 +1,7 @@
+2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-kpasswd.in: use rkpty to test kpasswd/kpasswdd
+
 2008-03-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-referral.in: Fix status messages.
