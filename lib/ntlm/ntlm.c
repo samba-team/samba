@@ -876,7 +876,7 @@ splitandenc(unsigned char *hash,
     ((unsigned char*)key)[7] = (hash[6] << 1);
 
     DES_set_odd_parity(&key);
-    DES_set_key(&key, &sched);
+    DES_set_key_unchecked(&key, &sched);
     DES_ecb_encrypt((DES_cblock *)challange, (DES_cblock *)answer, &sched, 1);
     memset(&sched, 0, sizeof(sched));
     memset(key, 0, sizeof(key));
