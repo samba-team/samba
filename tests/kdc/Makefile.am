@@ -16,6 +16,7 @@ SCRIPT_TESTS = \
 	check-kadmin \
 	check-kdc \
 	check-keys \
+	check-kpasswd \
 	check-pkinit \
 	check-iprop \
 	check-referral \
@@ -25,6 +26,7 @@ TESTS = $(SCRIPT_TESTS)
 
 port = 49188
 admport = 49189
+pwport = 49190
 
 if HAVE_DLOPEN
 do_dlopen = -e 's,[@]DLOPEN[@],true,g'
@@ -36,6 +38,7 @@ do_subst = sed $(do_dlopen) \
 	-e 's,[@]srcdir[@],$(srcdir),g' \
 	-e 's,[@]port[@],$(port),g' \
 	-e 's,[@]admport[@],$(admport),g' \
+	-e 's,[@]pwport[@],$(pwport),g' \
 	-e 's,[@]objdir[@],$(top_builddir)/tests/kdc,g' \
 	-e 's,[@]EGREP[@],$(EGREP),g' 
 
@@ -80,6 +83,11 @@ check-referral: check-referral.in Makefile
 	$(do_subst) < $(srcdir)/check-referral.in > check-referral.tmp
 	chmod +x check-referral.tmp
 	mv check-referral.tmp check-referral
+
+check-kpasswdd: check-kpasswdd.in Makefile
+	$(do_subst) < $(srcdir)/check-kpasswdd.in > check-kpasswdd.tmp
+	chmod +x check-kpasswdd.tmp
+	mv check-kpasswdd.tmp check-kpasswdd
 
 krb5.conf: krb5.conf.in Makefile
 	$(do_subst) \
@@ -141,6 +149,7 @@ CLEANFILES= \
 EXTRA_DIST = \
 	check-kadmin.in \
 	check-kdc.in \
+	check-kpasswd.in \
 	check-keys.in \
 	check-referral.in \
 	check-uu.in \
