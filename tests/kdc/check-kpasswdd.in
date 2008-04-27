@@ -123,11 +123,12 @@ pw=ak4unandsop39NuJ
 echo "Changing password"
 cat > cpw.tmp <<EOF
 expect Password
-send foo\n
+password foo\n
 expect New password
 send ${pw}\n
 expect New password
 send ${pw}\n
+expect Success
 EOF
 
 ../../lib/roken/rkpty cpw.tmp ../../kpasswd/kpasswd foo@${R} || \
