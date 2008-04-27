@@ -44,7 +44,7 @@ rpc_server/common/common.h: dcerpc_server/common.h
 libcli/auth/credentials.h: domain_credentials.h
 lib/charset/charset.h: charset.h
 libcli/ldap/ldap.h: ldap.h
-torture/torture.h: torture.h
+lib/torture/torture.h: torture.h
 libcli/libcli.h: client.h
 librpc/gen_ndr/nbt.h: gen_ndr/nbt.h
 librpc/gen_ndr/svcctl.h: gen_ndr/svcctl.h
@@ -60,7 +60,7 @@ lib/util/asn1.h: samba/asn1.h
 libcli/util/error.h: core/error.h
 lib/tdb_wrap.h: tdb_wrap.h
 lib/ldb_wrap.h: ldb_wrap.h
-torture/ui.h: torture/ui.h
+torture/smbtorture.h: smbtorture.h
 librpc/gen_ndr/winbind.h: gen_ndr/winbind.h
 param/share.h: share.h
 lib/util/util_tdb.h: util_tdb.h
