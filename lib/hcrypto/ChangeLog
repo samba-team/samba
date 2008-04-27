@@ -1,3 +1,7 @@
+2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* des.h: Sort options.
+
 2008-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* pkcs5.c: Document PKCS5_PBKDF2_HMAC_SHA1.
