@@ -209,12 +209,13 @@ static int fb64_start(struct fb *fbp, int dir, int server)
 		/*
 		 * Create a random feed and send it over.
 		 */
-		if (DES_new_random_key(&fbp->temp_feed))
-		    abort();
-		    
-		DES_ecb_encrypt(&fbp->temp_feed,
-				&fbp->temp_feed,
-				&fbp->krbdes_sched, 1);
+		do {
+		    if (RAND_bytes(fbp->temp_feed, 
+				   sizeof(*fbp->temp_feed)) != 1)
+			abort();
+		    DES_set_odd_parity(&fbp->temp_feed);
+		} while(DES_is_weak_key(&fbp->temp_feed));
+
 		p = fbp->fb_feed + 3;
 		*p++ = ENCRYPT_IS;
 		p++;
@@ -393,6 +394,8 @@ static void fb64_session(Session_Key *key, int server, struct fb *fbp)
 
 	fb64_stream_key(fbp->krbdes_key, &fbp->streams[DIR_ENCRYPT-1]);
 	fb64_stream_key(fbp->krbdes_key, &fbp->streams[DIR_DECRYPT-1]);
+
+	RAND_seed(key->data, key->length);
 
 	DES_set_key_checked((DES_cblock *)&fbp->krbdes_key,
 			    &fbp->krbdes_sched);
