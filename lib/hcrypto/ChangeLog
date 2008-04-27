@@ -1,5 +1,9 @@
 2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* version-script.map: Export DES_check_key_parity.
+
+	* des.h: DES_set_odd_parity "returns" void.
+
 	* rand.c: Drop const warnings.
 
 	* des.h: Sort options.
