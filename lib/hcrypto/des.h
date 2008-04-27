@@ -37,30 +37,30 @@
 #define _DESperate_H 1
 
 /* symbol renaming */
-#define DES_set_odd_parity hc_DES_set_odd_parity
+#define	_DES_ipfp_test _hc_DES_ipfp_test
+#define DES_cbc_cksum hc_DES_cbc_cksum
+#define DES_cbc_encrypt hc_DES_cbc_encrypt
+#define DES_cfb64_encrypt hc_DES_cfb64_encrypt
+#define DES_ecb3_encrypt hc_DES_ecb3_encrypt
+#define DES_ecb_encrypt hc_DES_ecb_encrypt
+#define DES_ede3_cbc_encrypt hc_DES_ede3_cbc_encrypt
+#define DES_encrypt hc_DES_encrypt
+#define DES_generate_random_block hc_DES_generate_random_block
+#define DES_init_random_number_generator hc_DES_init_random_number_generator
 #define DES_is_weak_key hc_DES_is_weak_key
 #define DES_key_sched hc_DES_key_sched
+#define DES_new_random_key hc_DES_new_random_key
+#define DES_pcbc_encrypt hc_DES_pcbc_encrypt
+#define DES_rand_data hc_DES_rand_data
+#define DES_random_key hc_DES_random_key
+#define DES_read_password hc_DES_read_password
 #define DES_set_key hc_DES_set_key
 #define DES_set_key_checked hc_DES_set_key_checked
 #define DES_set_key_sched hc_DES_set_key_sched
-#define DES_new_random_key hc_DES_new_random_key
-#define DES_string_to_key hc_DES_string_to_key
-#define DES_read_password hc_DES_read_password
-#define DES_rand_data hc_DES_rand_data
+#define DES_set_odd_parity hc_DES_set_odd_parity
 #define DES_set_random_generator_seed hc_DES_set_random_generator_seed
-#define DES_generate_random_block hc_DES_generate_random_block
 #define DES_set_sequence_number hc_DES_set_sequence_number
-#define DES_init_random_number_generator hc_DES_init_random_number_generator
-#define DES_random_key hc_DES_random_key
-#define DES_encrypt hc_DES_encrypt
-#define DES_ecb_encrypt hc_DES_ecb_encrypt
-#define DES_ecb3_encrypt hc_DES_ecb3_encrypt
-#define DES_pcbc_encrypt hc_DES_pcbc_encrypt
-#define DES_cbc_encrypt hc_DES_cbc_encrypt
-#define DES_cbc_cksum hc_DES_cbc_cksum
-#define DES_ede3_cbc_encrypt hc_DES_ede3_cbc_encrypt
-#define DES_cfb64_encrypt hc_DES_cfb64_encrypt
-#define	_DES_ipfp_test _hc_DES_ipfp_test
+#define DES_string_to_key hc_DES_string_to_key
 
 /*
  *
