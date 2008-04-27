@@ -41,7 +41,8 @@
 #include <getarg.h>
 
 struct command {
-    enum { CMD_EXPECT = 0, CMD_SEND } type;
+    enum { CMD_EXPECT = 0, CMD_SEND, CMD_PASSWORD } type;
+    unsigned int lineno;
     char *str;
     struct command *next;
 };
@@ -52,10 +53,20 @@ struct command {
 
 static struct command *commands, **next = &commands;
 
+static sig_atomic_t alarmset = 0;
+
 static int verbose;
+static int timeout = 10;
 static int master;
 static int slave;
 static char line[256] = { 0 };
+
+static void
+caught_signal(int signo)
+{
+    alarmset = signo;
+}
+
 
 static void
 open_pty(void)
@@ -88,7 +99,7 @@ parse_configuration(const char *fn)
     struct command *c;
     char s[1024];
     char *str;
-    int lineno = 0;
+    unsigned int lineno = 0;
     FILE *cmd;
 
     cmd = fopen(fn, "r");
@@ -104,6 +115,7 @@ parse_configuration(const char *fn)
 	if (c == NULL)
 	    errx(1, "malloc");
 
+	c->lineno = lineno;
 	(*next) = c;
 	next = &(c->next);
 
@@ -112,6 +124,9 @@ parse_configuration(const char *fn)
 	    c->str = str;
 	} else if ((str = iscmd(s, "send ")) != NULL) {
 	    c->type = CMD_SEND;
+	    c->str = str;
+	} else if ((str = iscmd(s, "password ")) != NULL) {
+	    c->type = CMD_PASSWORD;
 	    c->str = str;
 	} else
 	    errx(1, "Invalid command on line %d: %s", lineno, s);
@@ -136,9 +151,13 @@ eval_parent(pid_t pid)
     for (c = commands; c != NULL; c = c->next) {
 	switch(c->type) {
 	case CMD_EXPECT:
+	    if (verbose)
+		printf("[expecting %s]", c->str);
 	    len = 0;
+	    alarm(timeout);
 	    while((sret = read(master, &in, sizeof(in))) > 0) {
-		if (verbose)
+		alarm(timeout);
+		if (verbose > 1)
 		    printf("%c", in);
 		if (c->str[len] != in) {
 		    len = 0;
@@ -148,14 +167,24 @@ eval_parent(pid_t pid)
 		if (c->str[len] == '\0')
 		    break;
 	    }
+	    alarm(0);
+	    if (alarmset == SIGALRM)
+		errx(1, "timeout waiting for %s (line %u)", 
+		     c->str, c->lineno);
+	    else if (alarmset)
+		errx(1, "got a signal %d waiting for %s (line %u)", 
+		     alarmset, c->str, c->lineno);
 	    if (sret <= 0)
-		errx(1, "end command while waiting for %s", c->str);
+		errx(1, "end command while waiting for %s (line %u)",
+		     c->str, c->lineno);
 	    break;
-	case CMD_SEND: {
+	case CMD_SEND:
+	case CMD_PASSWORD: {
 	    size_t i = 0;
+	    const char *msg = (c->type == CMD_PASSWORD) ? "****" : c->str;
 
 	    if (verbose)
-		printf("[output]");
+		printf("[send %s]", msg);
 
 	    len = strlen(c->str);
 
@@ -168,13 +197,14 @@ eval_parent(pid_t pid)
 		    case 'r': ctrl = '\r'; break;
 		    case 't': ctrl = '\t'; break;
 		    default:
-			errx(1, "unknown control char %c", c->str[i]);
+			errx(1, "unknown control char %c (line %u)", 
+			     c->str[i], c->lineno);
 		    }
 		    if (net_write(master, &ctrl, 1) != 1)
-			errx(1, "command refused input");
+			errx(1, "command refused input (line %u)", c->lineno);
 		} else {
 		    if (net_write(master, &c->str[i], 1) != 1)
-			errx(1, "command refused input");
+			errx(1, "command refused input (line %u)", c->lineno);
 		}
 		i++;
 	    }
@@ -185,8 +215,11 @@ eval_parent(pid_t pid)
 	}
     }
     while(read(master, &in, sizeof(in)) > 0)
-	if (verbose)
+	if (verbose > 1)
 	    printf("%c", in);
+
+    if (verbose)
+	printf("[end of program]\n");
 
     /*
      * Fetch status from child
@@ -212,7 +245,8 @@ eval_parent(pid_t pid)
  */
 
 static struct getargs args[] = {
-    { "verbose", 	'v', arg_flag, &verbose, "verbose debugging" }
+    { "timeout", 	't', arg_integer, &timeout, "timout", "seconds" },
+    { "verbose", 	'v', arg_counter, &verbose, "verbose debugging" }
 };
 
 static void
@@ -237,13 +271,12 @@ main(int argc, char **argv)
     argc -= optidx;
 
     if (argc < 2)
-	errx(1, "to few arguments");
+	usage(1);
 
     parse_configuration(argv[0]);
 
     argv += 1;
     argc -= 1;
-
 
     open_pty();
 
@@ -265,6 +298,15 @@ main(int argc, char **argv)
 	err(1, "Failed to exec: %s", argv[0]);
     default:
 	close(slave);
+	{
+	    struct sigaction sa;
+
+	    sa.sa_handler = caught_signal;
+	    sa.sa_flags = 0;
+	    sigemptyset (&sa.sa_mask);
+	    
+	    sigaction(SIGALRM, &sa, NULL);
+	}
 
 	return eval_parent(pid);
     }
