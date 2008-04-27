@@ -1,5 +1,7 @@
 2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* getaddrinfo-test.c: drop )
+
 	* Makefile.am: Add rkpty.
 
 	* rkpty.c: More includes.
