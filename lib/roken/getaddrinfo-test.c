@@ -122,7 +122,7 @@ main(int argc, char **argv)
 	usage (0);
 
     if (version_flag) {
-	fprintf (stderr, "%s from %s-%s)\n", getprogname(), PACKAGE, VERSION);
+	fprintf (stderr, "%s from %s-%s\n", getprogname(), PACKAGE, VERSION);
 	return 0;
     }
 
