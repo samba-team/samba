@@ -67,8 +67,11 @@ static struct command *commands, **next = &commands;
 
 static sig_atomic_t alarmset = 0;
 
-static int verbose;
 static int timeout = 10;
+static int verbose;
+static int help_flag;
+static int version_flag;
+
 static int master;
 static int slave;
 static char line[256] = { 0 };
@@ -258,7 +261,9 @@ eval_parent(pid_t pid)
 
 static struct getargs args[] = {
     { "timeout", 	't', arg_integer, &timeout, "timout", "seconds" },
-    { "verbose", 	'v', arg_counter, &verbose, "verbose debugging" }
+    { "verbose", 	'v', arg_counter, &verbose, "verbose debugging" },
+    { "version",	0, arg_flag,	&version_flag, "print version" },
+    { "help",		0, arg_flag,	&help_flag, NULL }
 };
 
 static void
@@ -278,6 +283,14 @@ main(int argc, char **argv)
 
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
 	usage(1);
+
+    if (help_flag)
+	usage (0);
+
+    if (version_flag) {
+	fprintf (stderr, "%s from %s-%s\n", getprogname(), PACKAGE, VERSION);
+	return 0;
+    }
 
     argv += optidx;
     argc -= optidx;
