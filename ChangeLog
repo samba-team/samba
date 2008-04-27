@@ -1,3 +1,7 @@
+2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kaserver.c: Use DES_set_key_unchecked().
+
 2008-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/hx509.texi: About the pkcs11 module.
