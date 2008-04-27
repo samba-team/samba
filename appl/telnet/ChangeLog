@@ -1,3 +1,13 @@
+2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* libtelnet/enc_des.c: Use RAND_bytes() + DES_is_weak_key() to
+	generate random DES key. Introdunce random by feeding the des
+	session key into the random pool when the keys is recived instead
+	of encrypt the random key with the kerberos key.
+	
+	This avoid depenency on DES_new_random_key() that doesn't exists
+	in OpenSSL.
+
 2008-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* libtelnet/enc_des.c: No need to call
