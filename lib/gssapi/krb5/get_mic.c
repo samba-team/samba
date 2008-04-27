@@ -88,7 +88,7 @@ mic_des
 
   memset (&zero, 0, sizeof(zero));
   memcpy (&deskey, key->keyvalue.data, sizeof(deskey));
-  DES_set_key (&deskey, &schedule);
+  DES_set_key_unchecked (&deskey, &schedule);
   DES_cbc_cksum ((void *)hash, (void *)hash, sizeof(hash),
 		 &schedule, &zero);
   memcpy (p - 8, hash, 8);	/* SGN_CKSUM */
@@ -108,7 +108,7 @@ mic_des
 	  (ctx->more_flags & LOCAL) ? 0 : 0xFF,
 	  4);
 
-  DES_set_key (&deskey, &schedule);
+  DES_set_key_unchecked (&deskey, &schedule);
   DES_cbc_encrypt ((void *)p, (void *)p, 8,
 		   &schedule, (DES_cblock *)(p + 8), DES_ENCRYPT);
 

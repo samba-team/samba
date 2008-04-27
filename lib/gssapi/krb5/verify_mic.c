@@ -83,7 +83,7 @@ verify_mic_des
   memset (&zero, 0, sizeof(zero));
   memcpy (&deskey, key->keyvalue.data, sizeof(deskey));
 
-  DES_set_key (&deskey, &schedule);
+  DES_set_key_unchecked (&deskey, &schedule);
   DES_cbc_cksum ((void *)hash, (void *)hash, sizeof(hash),
 		 &schedule, &zero);
   if (memcmp (p - 8, hash, 8) != 0) {
@@ -97,7 +97,7 @@ verify_mic_des
   HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
 
   p -= 16;
-  DES_set_key (&deskey, &schedule);
+  DES_set_key_unchecked (&deskey, &schedule);
   DES_cbc_encrypt ((void *)p, (void *)p, 8,
 		   &schedule, (DES_cblock *)hash, DES_DECRYPT);
 
