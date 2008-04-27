@@ -46,6 +46,24 @@
  * Read more the iteresting history of DES on Wikipedia
  * http://www.wikipedia.org/wiki/Data_Encryption_Standard .
  *
+ * @section des_keygen DES key generation
+ *
+ * To generate a DES key safely you have to use the code-snippet
+ * below. This is because the DES_random_key() can fail with an
+ * abort() in case of and failure to start the random generator.
+ *
+ * There is a replacement function DES_new_random_key(), however that
+ * function does not exists in OpenSSL.
+ *
+ * @code
+ * DES_cblock key;
+ * do {
+ *     if (RAND_rand(&key, sizeof(key)) != 1)
+ *          goto failure;
+ *     DES_set_odd_parity(key);
+ * } while (DES_is_weak_key(&key));
+ * @endcode
+ *
  * @section des_impl DES implementation history
  *
  * There was no complete BSD licensed, fast, GPL compatible
@@ -69,6 +87,8 @@
 RCSID("$Id$");
 #endif
 
+#define HC_DEPRECATED
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -91,17 +111,39 @@ static void FP(uint32_t [2]);
 	x = ( ((x)<<(2)) & 0xffffffc) | ((x) >> 26);	\
     }
 
-/*
+/**
+ * Set the parity of the key block, used to generate a des key from a
+ * random key. See @ref des_keygen.
  *
+ * @param key key to fixup the parity for.
+ * @ingroup hcrypto_des
  */
 
-int
+void
 DES_set_odd_parity(DES_cblock *key)
 {
-    int i;
+    unsigned int i;
     for (i = 0; i < DES_CBLOCK_LEN; i++)
 	(*key)[i] = odd_parity[(*key)[i]];
-    return 0;
+}
+
+/**
+ * Check if the key have correct parity.
+ *
+ * @param key key to check the parity.
+ * @return 1 on success, 0 on failure.
+ * @ingroup hcrypto_des
+ */
+
+int HC_DEPRECATED
+DES_check_key_parity(DES_cblock *key)
+{
+    unsigned int i;
+
+    for (i = 0; i <  DES_CBLOCK_LEN; i++)
+	if ((*key)[i] != odd_parity[(*key)[i]])
+	    return 0;
+    return 1;
 }
 
 /*
@@ -128,6 +170,16 @@ static DES_cblock weak_keys[] = {
     {0xFE,0xE0,0xFE,0xE0,0xFE,0xF1,0xFE,0xF1}
 };
 
+/**
+ * Checks if the key is any of the weaks keys that makes DES attacks
+ * trival.
+ *
+ * @param key key to check.
+ *
+ * @return 1 if the key is weak, 0 otherwise.
+ * @ingroup hcrypto_des
+ */
+
 int
 DES_is_weak_key(DES_cblock *key)
 {
@@ -140,10 +192,28 @@ DES_is_weak_key(DES_cblock *key)
     return 0;
 }
 
+/**
+ * Setup a des key schedule from a key. Deprecated function, use
+ * DES_set_key_unchecked() or DES_set_key_checked() instead.
+ *
+ * @param key a key to initialize the key schedule with.
+ * @param ks a key schedule to initialize.
+ *
+ * @return 0 on success
+ * @ingroup hcrypto_des
+ */
+
+int HC_DEPRECATED
+DES_set_key(DES_cblock *key, DES_key_schedule *ks)
+{
+    return DES_set_key_checked(key, ks);
+}
 
 /**
  * Setup a des key schedule from a key. The key is no longer needed
  * after this transaction and can cleared.
+ *
+ * Does NOT check that the key is weak for or have wrong parity.
  *
  * @param key a key to initialize the key schedule with.
  * @param ks a key schedule to initialize.
@@ -153,7 +223,7 @@ DES_is_weak_key(DES_cblock *key)
  */
 
 int
-DES_set_key(DES_cblock *key, DES_key_schedule *ks)
+DES_set_key_unchecked(DES_cblock *key, DES_key_schedule *ks)
 {
     uint32_t t1, t2;
     uint32_t c, d;
@@ -212,28 +282,46 @@ DES_set_key(DES_cblock *key, DES_key_schedule *ks)
     return 0;
 }
 
-/*
+/**
+ * Just like DES_set_key_unchecked() except checking that the key is
+ * not weak for or have correct parity.
  *
+ * @param key a key to initialize the key schedule with.
+ * @param ks a key schedule to initialize.
+ *
+ * @return 0 on success, -1 on invalid parity, -2 on weak key.
+ * @ingroup hcrypto_des
  */
 
 int
 DES_set_key_checked(DES_cblock *key, DES_key_schedule *ks)
 {
+    if (!DES_check_key_parity(key)) {
+	memset(ks, 0, sizeof(*ks));
+	return -1;
+    }
     if (DES_is_weak_key(key)) {
 	memset(ks, 0, sizeof(*ks));
-	return 1;
+	return -2;
     }
     return DES_set_key(key, ks);
 }
 
-/*
- * Compatibility function for eay libdes
+/**
+ * Compatibility function for eay libdes, works just like
+ * DES_set_key_checked().
+ *
+ * @param key a key to initialize the key schedule with.
+ * @param ks a key schedule to initialize.
+ *
+ * @return 0 on success, -1 on invalid parity, -2 on weak key.
+ * @ingroup hcrypto_des
  */
 
 int
 DES_key_sched(DES_cblock *key, DES_key_schedule *ks)
 {
-    return DES_set_key(key, ks);
+    return DES_set_key_checked(key, ks);
 }
 
 /*
@@ -768,8 +856,10 @@ DES_string_to_key(const char *str, DES_cblock *key)
 	k[7] ^= 0xF0;
 }
 
-/*
- * Read password from prompt and create a DES key.
+/**
+ * Read password from prompt and create a DES key. Internal uses
+ * DES_string_to_key(). Really, go use a really string2key function
+ * like PKCS5_PBKDF2_HMAC_SHA1().
  *
  * @param key key to convert to
  * @param prompt prompt to display user
