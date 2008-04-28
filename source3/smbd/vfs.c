@@ -177,7 +177,7 @@ bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 		goto fail;
 	}
 
-	handle = TALLOC_ZERO_P(conn->mem_ctx,vfs_handle_struct);
+	handle = TALLOC_ZERO_P(conn, vfs_handle_struct);
 	if (!handle) {
 		DEBUG(0,("TALLOC_ZERO() failed!\n"));
 		goto fail;
@@ -185,7 +185,7 @@ bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 	memcpy(&handle->vfs_next, &conn->vfs, sizeof(struct vfs_ops));
 	handle->conn = conn;
 	if (module_param) {
-		handle->param = talloc_strdup(conn->mem_ctx, module_param);
+		handle->param = talloc_strdup(conn, module_param);
 	}
 	DLIST_ADD(conn->vfs_handles, handle);
 
@@ -232,7 +232,7 @@ void *vfs_add_fsp_extension_notype(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
 	ext = (struct vfs_fsp_data *)TALLOC_ZERO(
-		handle->conn->mem_ctx, sizeof(struct vfs_fsp_data) + ext_size);
+		handle->conn, sizeof(struct vfs_fsp_data) + ext_size);
 	if (ext == NULL) {
 		return NULL;
 	}

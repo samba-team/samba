@@ -92,7 +92,6 @@ thinking the server is still available.
 ****************************************************************************/
 connection_struct *conn_new(void)
 {
-	TALLOC_CTX *mem_ctx;
 	connection_struct *conn;
 	int i;
         int find_offset = 1;
@@ -140,18 +139,12 @@ find_again:
 		return NULL;
 	}
 
-	if ((mem_ctx=talloc_init("connection_struct"))==NULL) {
-		DEBUG(0,("talloc_init(connection_struct) failed!\n"));
-		return NULL;
-	}
-
-	if (!(conn=TALLOC_ZERO_P(mem_ctx, connection_struct)) ||
-	    !(conn->params = TALLOC_P(mem_ctx, struct share_params))) {
+	if (!(conn=TALLOC_ZERO_P(NULL, connection_struct)) ||
+	    !(conn->params = TALLOC_P(conn, struct share_params))) {
 		DEBUG(0,("TALLOC_ZERO() failed!\n"));
-		TALLOC_FREE(mem_ctx);
+		TALLOC_FREE(conn);
 		return NULL;
 	}
-	conn->mem_ctx = mem_ctx;
 	conn->cnum = i;
 
 	bitmap_set(bmap, i);
@@ -262,7 +255,6 @@ void conn_clear_vuid_cache(uint16 vuid)
 void conn_free_internal(connection_struct *conn)
 {
  	vfs_handle_struct *handle = NULL, *thandle = NULL;
- 	TALLOC_CTX *mem_ctx = NULL;
 	struct trans_state *state = NULL;
 
 	/* Free vfs_connection_struct */
@@ -292,9 +284,8 @@ void conn_free_internal(connection_struct *conn)
 	string_free(&conn->connectpath);
 	string_free(&conn->origpath);
 
-	mem_ctx = conn->mem_ctx;
 	ZERO_STRUCTP(conn);
-	talloc_destroy(mem_ctx);
+	talloc_destroy(conn);
 }
 
 /****************************************************************************
