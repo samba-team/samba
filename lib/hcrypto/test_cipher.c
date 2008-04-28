@@ -59,7 +59,6 @@ struct tests {
     size_t datasize;
     void *indata;
     void *outdata;
-    size_t outdatasize;
 };
 
 struct tests aes_tests[] = {
@@ -87,12 +86,14 @@ struct tests rc2_40_tests[] = {
 
 struct tests des_ede3_tests[] = {
     { "des-ede3",
-      "1917ffe6bb772efc297643bc63567e9a002e4d431d5ffd58",
+      "\x19\x17\xff\xe6\xbb\x77\x2e\xfc"
+      "\x29\x76\x43\xbc\x63\x56\x7e\x9a"
+      "\x00\x2e\x4d\x43\x1d\x5f\xfd\x58",
       24,
       "\xbf\x9a\x12\xb7\x26\x69\xfd\x05",
       16,
       "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
-      "\x9d\x50\xf4\xc6\x01\xdb\x45\x49\x11\x8f\x36\x06\x06\x08\x2e\xe5"
+      "\x55\x95\x97\x76\xa9\x6c\x66\x40\x64\xc7\xf4\x1c\x21\xb7\x14\x1b"
     }
 };
 
@@ -131,7 +132,7 @@ test_cipher(const EVP_CIPHER *c, struct tests *t)
     if (memcmp(d, t->outdata, t->datasize) != 0) {
 	char *s;
 	hex_encode(d, t->datasize, &s);
-	errx(1, "%s: decrypt not the same: %s\n", t->name, s);
+	errx(1, "%s: encrypt not the same: %s", t->name, s);
     }
 
     if (!EVP_Cipher(&dctx, d, d, t->datasize))
@@ -140,7 +141,7 @@ test_cipher(const EVP_CIPHER *c, struct tests *t)
     if (memcmp(d, t->indata, t->datasize) != 0) {
 	char *s;
 	hex_encode(d, t->datasize, &s);
-	errx(1, "%s: decrypt not the same: %s\n", t->name, s);
+	errx(1, "%s: decrypt not the same: %s", t->name, s);
     }
 
     EVP_CIPHER_CTX_cleanup(&ectx);
