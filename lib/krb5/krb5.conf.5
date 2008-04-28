@@ -163,8 +163,12 @@ manual page.
 This is deprecated, see the 
 .Li capaths
 section below.
+.It Li default_cc_type = Va cctype
+sets the default credentials type.
 .It Li default_cc_name = Va ccname
 the default credentials cache name.
+If you want to change the type only use
+.Li default_cc_type .
 The string can contain variables that are expanded on runtime.
 Only support variable now is
 .Li %{uid}
