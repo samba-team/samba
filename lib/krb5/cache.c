@@ -456,6 +456,17 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
 	    }
 	    if (e == NULL) {
 		const krb5_cc_ops *ops = KRB5_DEFAULT_CCTYPE;
+		e = krb5_config_get_string(context, NULL, "libdefaults",
+					   "default_cc_type", NULL);
+		if (e) {
+		    ops = krb5_cc_get_prefix_ops(context, e);
+		    if (ops == NULL) {
+			krb5_set_error_string(context,
+					      "Credential cache type %s "
+					      "is unknown", e);
+			return KRB5_CC_UNKNOWN_TYPE;
+		    }
+		}
 		ret = (*ops->get_default_name)(context, &p);
 		if (ret)
 		    return ret;
