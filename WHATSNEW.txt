@@ -208,6 +208,10 @@ Changes since 3.2.0pre3:
 -----------------------
 
 
+o   Steven Danneman <sdanneman@sd-ubuntu.(none)>
+    * Bug 5419: Fix memory leak in ads_do_search_all_args() when enumerating 
+      1000s of entries 
+
 
 Changes since 3.2.0pre2:
 -----------------------
