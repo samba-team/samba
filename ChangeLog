@@ -1,5 +1,9 @@
-2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+2008-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/cache.c: Pick up [libdefaults]default_cc_type
+
+2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/kaserver.c: Use DES_set_key_unchecked().
 
 2008-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
