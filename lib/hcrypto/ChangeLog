@@ -1,3 +1,7 @@
+2008-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* des.c: Remove inifinite loop in DES_set_key().
+
 2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* des.c: Document missing functions, add DES_check_key_parity().
