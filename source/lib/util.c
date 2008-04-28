@@ -1907,10 +1907,10 @@ bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensit
  if possible.
 ********************************************************************/
  
-void set_namearray(name_compare_entry **ppname_array, char *namelist)
+void set_namearray(name_compare_entry **ppname_array, const char *namelist)
 {
 	char *name_end;
-	char *nameptr = namelist;
+	const char *nameptr = namelist;
 	int num_entries = 0;
 	int i;
 
