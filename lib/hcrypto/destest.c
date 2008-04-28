@@ -58,10 +58,10 @@ ecb_test(char key[8], char in[8], char out[8])
     DES_key_schedule s;
 
     memcpy(k, key, 8);
-    DES_set_odd_parity(&k);
     memcpy(indata, in, 8);
     memcpy(ansdata, out, 8);
-    DES_set_key(&k, &s);
+    DES_set_odd_parity(&k);
+    DES_set_key_unchecked(&k, &s);
     DES_ecb_encrypt(&indata, &outdata, &s, 1);
     if (memcmp(outdata, ansdata, sizeof(ansdata)) != 0)
 	errx(1, "des: encrypt");
@@ -82,9 +82,12 @@ ebc3_test(char key1[8], char key2[8], char key3[8], char in[8], char out[8])
     memcpy(k3, key3, 8);
     memcpy(indata, in, 8);
     memcpy(ansdata, out, 8);
-    DES_set_key(&k1, &s1);
-    DES_set_key(&k2, &s2);
-    DES_set_key(&k3, &s3);
+    DES_set_odd_parity(&k1);
+    DES_set_odd_parity(&k2);
+    DES_set_odd_parity(&k3);
+    DES_set_key_unchecked(&k1, &s1);
+    DES_set_key_unchecked(&k2, &s2);
+    DES_set_key_unchecked(&k3, &s3);
     DES_ecb3_encrypt(&indata, &outdata, &s1, &s2, &s3, 1);
     if (memcmp(outdata, ansdata, sizeof(ansdata)) != 0)
 	errx(1, "des3: encrypt");
@@ -105,7 +108,8 @@ cbc_test(char key1[8], char iv[8], char in[24], char out[24])
     memcpy(ivdata, iv, 8);
     memcpy(indata, in, 24);
     memcpy(ansdata, out, 24);
-    DES_set_key(&k1, &s1);
+    DES_set_odd_parity(&k1);
+    DES_set_key_unchecked(&k1, &s1);
     DES_cbc_encrypt(indata, outdata, 24, &s1, &ivdata, 1);
     if (memcmp(outdata, ansdata, sizeof(ansdata)) != 0)
 	errx(1, "cbc: encrypt");
@@ -126,7 +130,8 @@ cfb64_test(char key1[8], char iv[8], char in[23], char out[23])
     memcpy(k1, key1, 8);
     memcpy(indata, in, 23);
     memcpy(ansdata, out, 23);
-    DES_set_key(&k1, &s1);
+    DES_set_odd_parity(&k1);
+    DES_set_key_unchecked(&k1, &s1);
     num = 0;
     memcpy(ivdata, iv, 8);
     DES_cfb64_encrypt(indata, outdata, 23, &s1, &ivdata, &num, 1);
@@ -154,9 +159,12 @@ cbc3_test(char key1[8], char key2[8], char key3[8],
     memcpy(ivdata, iv, 8);
     memcpy(indata, in, 24);
     memcpy(ansdata, out, 24);
-    DES_set_key(&k1, &s1);
-    DES_set_key(&k2, &s2);
-    DES_set_key(&k3, &s3);
+    DES_set_odd_parity(&k1);
+    DES_set_odd_parity(&k2);
+    DES_set_odd_parity(&k3);
+    DES_set_key_unchecked(&k1, &s1);
+    DES_set_key_unchecked(&k2, &s2);
+    DES_set_key_unchecked(&k3, &s3);
     memcpy(&ivec_copy, &ivdata, sizeof(ivec_copy));
     DES_ede3_cbc_encrypt(indata, outdata, 24,
 			 &s1, &s2, &s3, &ivec_copy, 1);
@@ -182,7 +190,8 @@ pcbc_test(char key1[8], char iv[8], char in[24], char out[24])
     memcpy(ivdata, iv, 8);
     memcpy(indata, in, 24);
     memcpy(ansdata, out, 24);
-    DES_set_key(&k1, &s1);
+    DES_set_odd_parity(&k1);
+    DES_set_key_unchecked(&k1, &s1);
     DES_pcbc_encrypt(indata, outdata, 24, &s1, &ivdata, 1);
     if (memcmp(outdata, ansdata, sizeof(ansdata)) != 0)
 	errx(1, "pcbc: encrypt");
@@ -204,7 +213,8 @@ cbc_cksum(char key1[8], char iv[8], char *in, size_t len,
     memcpy(ivdata, iv, 8);
     memcpy(indata, in, len);
     memcpy(ansdata, out, 8);
-    DES_set_key(&k1, &s1);
+    DES_set_odd_parity(&k1);
+    DES_set_key_unchecked(&k1, &s1);
     r = DES_cbc_cksum(indata, &outdata, len, &s1, &ivdata);
     if (ret != r)
 	errx(1, "cbc_cksum: cksum error");
