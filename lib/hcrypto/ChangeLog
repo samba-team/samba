@@ -1,5 +1,9 @@
 2008-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_cipher.c: unbreak des-test
+
+	* evp.c: Fixup key parity before going ahead and using the key.
+
 	* evp.c: use DES_set_key_unchecked().
 
 	* des.c: Remove inifinite loop in DES_set_key().
