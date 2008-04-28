@@ -304,7 +304,7 @@ DES_set_key_checked(DES_cblock *key, DES_key_schedule *ks)
 	memset(ks, 0, sizeof(*ks));
 	return -2;
     }
-    return DES_set_key(key, ks);
+    return DES_set_key_unchecked(key, ks);
 }
 
 /**
