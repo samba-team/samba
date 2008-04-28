@@ -1050,10 +1050,19 @@ des_ede3_cbc_init(EVP_CIPHER_CTX *ctx,
 		  int encp)
 {
     struct des_ede3_cbc *k = ctx->cipher_data;
+    DES_cblock deskey;
 
-    DES_set_key_unchecked((DES_cblock *)(key), &k->ks[0]);
-    DES_set_key_unchecked((DES_cblock *)(key + 8), &k->ks[1]);
-    DES_set_key_unchecked((DES_cblock *)(key + 16), &k->ks[2]);
+    memcpy(&deskey, key, sizeof(deskey));
+    DES_set_odd_parity(&deskey);
+    DES_set_key_unchecked(&deskey, &k->ks[0]);
+
+    memcpy(&deskey, key + 8, sizeof(deskey));
+    DES_set_odd_parity(&deskey);
+    DES_set_key_unchecked(&deskey, &k->ks[1]);
+
+    memcpy(&deskey, key + 16, sizeof(deskey));
+    DES_set_odd_parity(&deskey);
+    DES_set_key_unchecked(&deskey, &k->ks[2]);
 
     return 1;
 }
