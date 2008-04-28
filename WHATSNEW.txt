@@ -1,9 +1,9 @@
                    =================================
-                   Release Notes for Samba 3.2.0pre3
-                               Apr 25, 2008
+                   Release Notes for Samba 3.2.0rc1
+                               May 23, 2008
                    =================================
 
-This is the third preview release of Samba 3.2.0.  This is *not*
+This is the first release candidate of Samba 3.2.0.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -202,6 +202,11 @@ smb.conf changes
     winbind rpc only			New		No
 
     New special meaning of "include = registry".
+
+
+Changes since 3.2.0pre3:
+-----------------------
+
 
 
 Changes since 3.2.0pre2:
