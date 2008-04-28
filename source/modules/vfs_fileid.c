@@ -182,7 +182,7 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 	struct fileid_handle_data *data;
 	const char *algorithm;
 
-	data = talloc_zero(handle->conn->mem_ctx, struct fileid_handle_data);
+	data = talloc_zero(handle->conn, struct fileid_handle_data);
 	if (!data) {
 		DEBUG(0, ("talloc_zero() failed\n"));
 		return -1;

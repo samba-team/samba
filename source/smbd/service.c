@@ -529,12 +529,12 @@ static NTSTATUS find_forced_user(connection_struct *conn, bool vuser_is_guest, f
 	char *fuser, *found_username;
 	NTSTATUS result;
 
-	if (!(fuser = talloc_string_sub(conn->mem_ctx, lp_force_user(snum), "%S",
+	if (!(fuser = talloc_string_sub(conn, lp_force_user(snum), "%S",
 					lp_servicename(snum)))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result = create_token_from_username(conn->mem_ctx, fuser, vuser_is_guest,
+	result = create_token_from_username(conn, fuser, vuser_is_guest,
 					    &conn->uid, &conn->gid, &found_username,
 					    &conn->nt_user_token);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -697,7 +697,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			*status = NT_STATUS_NO_SUCH_USER;
 			return NULL;
 		}
-		status2 = create_token_from_username(conn->mem_ctx, pass->pw_name, True,
+		status2 = create_token_from_username(conn, pass->pw_name, True,
 						     &conn->uid, &conn->gid,
 						     &found_username,
 						     &conn->nt_user_token);
@@ -757,7 +757,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			return NULL;
 		}
 		pass = Get_Pwnam_alloc(talloc_tos(), user);
-		status2 = create_token_from_username(conn->mem_ctx, pass->pw_name, True,
+		status2 = create_token_from_username(conn, pass->pw_name, True,
 						     &conn->uid, &conn->gid,
 						     &found_username,
 						     &conn->nt_user_token);
@@ -903,7 +903,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					   sid_string_dbg(sid)));
 				continue;
 			}
-			if (!add_gid_to_array_unique(conn->mem_ctx, gid, &conn->groups,
+			if (!add_gid_to_array_unique(conn, gid, &conn->groups,
 						&conn->ngroups)) {
 				DEBUG(0, ("add_gid_to_array_unique failed\n"));
 				conn_free(conn);
@@ -1017,7 +1017,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	}
 
 	if ((!conn->printer) && (!conn->ipc)) {
-		conn->notify_ctx = notify_init(conn->mem_ctx, server_id_self(),
+		conn->notify_ctx = notify_init(conn, server_id_self(),
 					       smbd_messaging_context(),
 					       smbd_event_context(),
 					       conn);

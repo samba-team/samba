@@ -2595,7 +2595,7 @@ void reply_nttrans(struct smb_request *req)
 		return;
 	}
 
-	if ((state = TALLOC_P(conn->mem_ctx, struct trans_state)) == NULL) {
+	if ((state = TALLOC_P(conn, struct trans_state)) == NULL) {
 		reply_doserror(req, ERRSRV, ERRaccess);
 		END_PROFILE(SMBnttrans);
 		return;
