@@ -425,6 +425,11 @@ The default value is account .
 .It Li hdb-ldap-create-base Va creation dn
 is the dn that will be appended to the principal when creating entries.
 Default value is the search dn.
+.It Li enable-digest = Va BOOL
+Should the kdc answer digest requests. The default is FALSE.
+.It Li digests_allowed = Va list of digests
+Specifies the digests the kdc will reply to. The default is
+.Li ntlm-v2 .
 .El
 .It Li [kadmin]
 .Bl -tag -width "xxx" -offset indent
