@@ -139,8 +139,6 @@ echo "check that foo is still there"
 ${klist} -l | grep foo@ >/dev/null || { ec=1 ; eval "${testfailed}"; }
 ${kswitch} -p foo@${R} || { ec=1 ; eval "${testfailed}"; }
 echo "delete foo"
-${klist}
-${klist} -l
 ${kdestroy} || { ec=1 ; eval "${testfailed}"; }
 echo "check that foo is gone"
 ${klist} -l | grep foo@ >/dev/null && { ec=1 ; eval "${testfailed}"; }
