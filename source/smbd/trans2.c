@@ -1196,6 +1196,32 @@ static NTSTATUS unix_perms_from_wire( connection_struct *conn,
 }
 
 /****************************************************************************
+ Needed to show the msdfs symlinks as directories. Modifies psbuf
+ to be a directory if it's a msdfs link.
+****************************************************************************/
+
+static bool check_msdfs_link(connection_struct *conn,
+				const char *pathname,
+				SMB_STRUCT_STAT *psbuf)
+{
+	int saved_errno = errno;
+	if(lp_host_msdfs() &&
+		lp_msdfs_root(SNUM(conn)) &&
+		is_msdfs_link(conn, pathname, psbuf)) {
+
+		DEBUG(5,("check_msdfs_link: Masquerading msdfs link %s "
+			"as a directory\n",
+			pathname));
+		psbuf->st_mode = (psbuf->st_mode & 0xFFF) | S_IFDIR;
+		errno = saved_errno;
+		return true;
+	}
+	errno = saved_errno;
+	return false;
+}
+
+
+/****************************************************************************
  Get a level dependent lanman2 dir entry.
 ****************************************************************************/
 
@@ -1360,16 +1386,8 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				/* Needed to show the msdfs symlinks as
 				 * directories */
 
-				if(lp_host_msdfs() &&
-				   lp_msdfs_root(SNUM(conn)) &&
-				   ((ms_dfs_link = is_msdfs_link(conn, pathreal, &sbuf)) == True)) {
-					DEBUG(5,("get_lanman2_dir_entry: Masquerading msdfs link %s "
-						"as a directory\n",
-						pathreal));
-					sbuf.st_mode = (sbuf.st_mode & 0xFFF) | S_IFDIR;
-
-				} else {
-
+				ms_dfs_link = check_msdfs_link(conn, pathreal, &sbuf);
+				if (!ms_dfs_link) {
 					DEBUG(5,("get_lanman2_dir_entry:Couldn't stat [%s] (%s)\n",
 						pathreal,strerror(errno)));
 					TALLOC_FREE(pathreal);
@@ -3806,6 +3824,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	struct ea_list *ea_list = NULL;
 	uint32 access_mask = 0x12019F; /* Default - GENERIC_EXECUTE mapping from Windows */
 	char *lock_data = NULL;
+	bool ms_dfs_link = false;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!params) {
@@ -3959,10 +3978,15 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 				reply_unixerror(req, ERRDOS, ERRbadpath);
 				return;
 			}
+
 		} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,fname,&sbuf) && (info_level != SMB_INFO_IS_NAME_VALID)) {
-			DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
-			reply_unixerror(req, ERRDOS, ERRbadpath);
-			return;
+			ms_dfs_link = check_msdfs_link(conn,fname,&sbuf);
+
+			if (!ms_dfs_link) {
+				DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
+				reply_unixerror(req, ERRDOS, ERRbadpath);
+				return;
+			}
 		}
 
 		fileid = vfs_file_id_from_sbuf(conn, &sbuf);
@@ -3987,7 +4011,11 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	else
 		base_name = p+1;
 
-	mode = dos_mode(conn,fname,&sbuf);
+	if (ms_dfs_link) {
+		mode = dos_mode_msdfs(conn,fname,&sbuf);
+	} else {
+		mode = dos_mode(conn,fname,&sbuf);
+	}
 	if (!mode)
 		mode = FILE_ATTRIBUTE_NORMAL;
 
