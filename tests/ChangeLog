@@ -1,3 +1,7 @@
+2008-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-cc.in: Test SDB combinations.
+
 2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-kpasswdd.in: Wait for success, use password command to
