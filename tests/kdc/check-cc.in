@@ -38,7 +38,7 @@ srcdir="@srcdir@"
 objdir="@objdir@"
 EGREP="@EGREP@"
 
-testfailed="echo test failed; cat messages.log; exit 1"
+testfailed="echo test failed; exit 1"
 
 # If there is no useful db support compile in, disable test
 ../db/have-db || exit 77
@@ -51,7 +51,7 @@ pwport=@pwport@
 kinit="${TESTS_ENVIRONMENT} ../../kuser/kinit --password-file=${objdir}/foopassword --no-afslog"
 klist="${TESTS_ENVIRONMENT} ../../kuser/klist"
 kswitch="${TESTS_ENVIRONMENT} ../../kuser/kswitch"
-kdestroy="${TESTS_ENVIRONMENT} ../../kuser/kdestroy"
+kdestroy="${TESTS_ENVIRONMENT} ../../kuser/kdestroy --no-unlog"
 kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
 kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
 
@@ -107,34 +107,45 @@ ec=0
 (cat ${objdir}/krb5.conf ; 			\
  echo '' ;					\
  echo '[libdefaults]' ; 			\
- echo "    default_cc_name = SDB:Default-cache:${objdir}/krb5scc.tmp" ; \
+ echo "    default_cc_type = SDB" ;		\
  echo '' ) 					\
     > ${objdir}/krb5-cc.conf
 
 
-rm "${objdir}/krb5scc.tmp"
-
 echo "getting default tickets"; > messages.log
 ${kinit} foo@${R} || { ec=1 ; eval "${testfailed}"; }
-${klist} -l
 ${kswitch} -p foo@${R} || { ec=1 ; eval "${testfailed}"; }
 ${klist} -l | grep foo@ >/dev/null || { ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
-
-rm "${objdir}/krb5scc.tmp"
 
 echo "getting both tickets"; > messages.log
 ${kinit} -c SDB:1 foo@${R} || { ec=1 ; eval "${testfailed}"; }
 ${kinit} -c SDB:2 bar@${R} || { ec=1 ; eval "${testfailed}"; }
-${klist} -l
+echo "switch foo"
 ${kswitch} -p foo@${R} || { ec=1 ; eval "${testfailed}"; }
+${klist} | head -2 | grep foo@ >/dev/null || { ec=1 ; eval "${testfailed}"; }
 ${klist} -l | grep foo@ >/dev/null || { ec=1 ; eval "${testfailed}"; }
 ${klist} -l | grep bar@ >/dev/null || { ec=1 ; eval "${testfailed}"; }
+echo "switch bar"
 ${kswitch} -p bar@${R} || { ec=1 ; eval "${testfailed}"; }
+${klist} | head -2 | grep bar@ >/dev/null || { ec=1 ; eval "${testfailed}"; }
 ${klist} -l | grep foo@ >/dev/null || { ec=1 ; eval "${testfailed}"; }
 ${klist} -l | grep bar@ >/dev/null || { ec=1 ; eval "${testfailed}"; }
+echo "delete bar"
 ${kdestroy}
-
+echo "check that bar is gone"
+${klist} -l | grep bar@ >/dev/null && { ec=1 ; eval "${testfailed}"; }
+echo "check that foo is still there"
+${klist} -l | grep foo@ >/dev/null || { ec=1 ; eval "${testfailed}"; }
+${kswitch} -p foo@${R} || { ec=1 ; eval "${testfailed}"; }
+echo "delete foo"
+${klist}
+${klist} -l
+${kdestroy} || { ec=1 ; eval "${testfailed}"; }
+echo "check that foo is gone"
+${klist} -l | grep foo@ >/dev/null && { ec=1 ; eval "${testfailed}"; }
+echo "check that bar is gone"
+${klist} -l | grep bar@ >/dev/null && { ec=1 ; eval "${testfailed}"; }
 
 
 echo "killing kdc (${kdcpid})"
