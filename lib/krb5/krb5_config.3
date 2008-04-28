@@ -275,10 +275,10 @@ will be converted to
 .Fn krb5_config_get_string
 returns a
 .Ft "const char *"
-to a string in the configuration database.  The string not be valid
-after reload of the configuration database
+to a string in the configuration database.  The string may not be valid
+after a reload of the configuration database
 .\" or a call to .Fn krb5_config_set_string ,
-so a caller should make a local copy if its need to keep the database.
+so a caller should make a local copy if it needs to keep the string.
 .Pp
 .Fn krb5_config_free_strings
 free
