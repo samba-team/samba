@@ -1,5 +1,7 @@
 2008-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/Makefile.am: test SDB cache.
+	
 	* kdc/check-cc.in: Test SDB combinations.
 
 2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
