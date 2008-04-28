@@ -12,6 +12,7 @@ check_PROGRAMS = ap-req
 check_SCRIPTS = $(SCRIPT_TESTS) 
 
 SCRIPT_TESTS = \
+	check-cc \
 	check-digest \
 	check-kadmin \
 	check-kdc \
@@ -89,6 +90,11 @@ check-kpasswdd: check-kpasswdd.in Makefile
 	chmod +x check-kpasswdd.tmp
 	mv check-kpasswdd.tmp check-kpasswdd
 
+check-cc: check-cc.in Makefile
+	$(do_subst) < $(srcdir)/check-cc.in > check-cc.tmp
+	chmod +x check-cc.tmp
+	mv check-cc.tmp check-cc
+
 krb5.conf: krb5.conf.in Makefile
 	$(do_subst) \
 	   -e 's,[@]kdc[@],,g' < $(srcdir)/krb5.conf.in > krb5.conf.tmp
@@ -121,10 +127,11 @@ CLEANFILES= \
 	digest-reply \
 	foopassword \
 	krb5.conf \
+	krb5.conf.keys \
+	krb5-cc.conf \
 	krb5-slave.conf \
 	krb5-pkinit.conf \
 	krb5-pkinit-win.conf \
-	krb5.conf.keys \
 	signal \
 	messages.log \
 	o2cache.krb5 \
@@ -147,22 +154,23 @@ CLEANFILES= \
 	test-rc-file.rc
 
 EXTRA_DIST = \
+	check-cc.in \
+	check-digest.in \
+	check-iprop.in \
 	check-kadmin.in \
 	check-kdc.in \
-	check-kpasswdd.in \
 	check-keys.in \
+	check-kpasswdd.in \
+	check-pkinit.in \
 	check-referral.in \
 	check-uu.in \
-	check-pkinit.in \
-	check-iprop.in \
-	check-digest.in \
+	donotexists.txt \
 	heimdal.acl \
+	iprop-acl \
+	krb5-pkinit.conf.in \
 	krb5.conf.in \
 	krb5.conf.keys.in \
-	krb5-pkinit.conf.in \
-	iprop-acl \
-	wait-kdc.sh \
-	pki-mapping \
 	ntlm-user-file.txt \
+	pki-mapping \
 	uuserver.txt \
-	donotexists.txt
+	wait-kdc.sh

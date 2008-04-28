@@ -1,0 +1,145 @@
+#!/bin/sh
+#
+# Copyright (c) 2006 - 2008 Kungliga Tekniska Högskolan
+# (Royal Institute of Technology, Stockholm, Sweden). 
+# All rights reserved. 
+#
+# Redistribution and use in source and binary forms, with or without 
+# modification, are permitted provided that the following conditions 
+# are met: 
+#
+# 1. Redistributions of source code must retain the above copyright 
+#    notice, this list of conditions and the following disclaimer. 
+#
+# 2. Redistributions in binary form must reproduce the above copyright 
+#    notice, this list of conditions and the following disclaimer in the 
+#    documentation and/or other materials provided with the distribution. 
+#
+# 3. Neither the name of the Institute nor the names of its contributors 
+#    may be used to endorse or promote products derived from this software 
+#    without specific prior written permission. 
+#
+# THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+# SUCH DAMAGE. 
+#
+# $Id$
+#
+
+srcdir="@srcdir@"
+objdir="@objdir@"
+EGREP="@EGREP@"
+
+testfailed="echo test failed; cat messages.log; exit 1"
+
+# If there is no useful db support compile in, disable test
+../db/have-db || exit 77
+
+R=TEST.H5L.SE
+
+port=@port@
+pwport=@pwport@
+
+kinit="${TESTS_ENVIRONMENT} ../../kuser/kinit --password-file=${objdir}/foopassword --no-afslog"
+klist="${TESTS_ENVIRONMENT} ../../kuser/klist"
+kswitch="${TESTS_ENVIRONMENT} ../../kuser/kswitch"
+kdestroy="${TESTS_ENVIRONMENT} ../../kuser/kdestroy"
+kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
+kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
+
+
+server=host/datan.test.h5l.se
+cache="FILE:${objdir}/cache.krb5"
+keytabfile=${objdir}/server.keytab
+keytab="FILE:${keytabfile}"
+
+KRB5_CONFIG="${objdir}/krb5-cc.conf"
+export KRB5_CONFIG
+
+rm -f ${keytabfile}
+rm -f current-db*
+rm -f out-*
+rm -f mkey.file*
+
+> messages.log
+
+cp "${objdir}/krb5.conf" "${objdir}/krb5-cc.conf"
+
+echo Creating database
+${kadmin} \
+    init \
+    --realm-max-ticket-life=1day \
+    --realm-max-renewable-life=1month \
+    ${R} || exit 1
+
+${kadmin} add -p foo --use-defaults foo@${R} || exit 1
+${kadmin} add -p foo --use-defaults bar@${R} || exit 1
+${kadmin} add -p kaka --use-defaults ${server}@${R} || exit 1
+${kadmin} ext -k ${keytab} ${server}@${R} || exit 1
+
+echo "Doing database check"
+${kadmin} check ${R} || exit 1
+
+echo foo > ${objdir}/foopassword
+
+echo Starting kdc
+${kdc} &
+kdcpid=$!
+
+sh ${srcdir}/wait-kdc.sh
+if [ "$?" != 0 ] ; then
+    kill ${kdcpid}
+    exit 1
+fi
+
+trap "kill ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
+
+ec=0
+
+(cat ${objdir}/krb5.conf ; 			\
+ echo '' ;					\
+ echo '[libdefaults]' ; 			\
+ echo "    default_cc_name = SDB:Default-cache:${objdir}/krb5scc.tmp" ; \
+ echo '' ) 					\
+    > ${objdir}/krb5-cc.conf
+
+
+rm "${objdir}/krb5scc.tmp"
+
+echo "getting default tickets"; > messages.log
+${kinit} foo@${R} || { ec=1 ; eval "${testfailed}"; }
+${klist} -l
+${kswitch} -p foo@${R} || { ec=1 ; eval "${testfailed}"; }
+${klist} -l | grep foo@ >/dev/null || { ec=1 ; eval "${testfailed}"; }
+${kdestroy}
+
+rm "${objdir}/krb5scc.tmp"
+
+echo "getting both tickets"; > messages.log
+${kinit} -c SDB:1 foo@${R} || { ec=1 ; eval "${testfailed}"; }
+${kinit} -c SDB:2 bar@${R} || { ec=1 ; eval "${testfailed}"; }
+${klist} -l
+${kswitch} -p foo@${R} || { ec=1 ; eval "${testfailed}"; }
+${klist} -l | grep foo@ >/dev/null || { ec=1 ; eval "${testfailed}"; }
+${klist} -l | grep bar@ >/dev/null || { ec=1 ; eval "${testfailed}"; }
+${kswitch} -p bar@${R} || { ec=1 ; eval "${testfailed}"; }
+${klist} -l | grep foo@ >/dev/null || { ec=1 ; eval "${testfailed}"; }
+${klist} -l | grep bar@ >/dev/null || { ec=1 ; eval "${testfailed}"; }
+${kdestroy}
+
+
+
+echo "killing kdc (${kdcpid})"
+kill $kdcpid || exit 1
+
+trap "" EXIT
+
+exit $ec
