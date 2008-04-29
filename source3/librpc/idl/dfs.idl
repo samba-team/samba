@@ -14,7 +14,8 @@
 	typedef [v1_enum] enum {
 		DFS_MANAGER_VERSION_NT4		= 1,
 		DFS_MANAGER_VERSION_W2K		= 2,
-		DFS_MANAGER_VERSION_W2K3	= 4
+		DFS_MANAGER_VERSION_W2K3	= 4,
+		DFS_MANAGER_VERSION_W2K8	= 6
 	} dfs_ManagerVersion;
 
 	[public] void dfs_GetManagerVersion(
