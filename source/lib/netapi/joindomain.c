@@ -282,6 +282,7 @@ WERROR NetGetJoinInformation_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
+	const char *buffer = NULL;
 
 	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -295,13 +296,16 @@ WERROR NetGetJoinInformation_r(struct libnetapi_ctx *ctx,
 
 	status = rpccli_wkssvc_NetrGetJoinInformation(pipe_cli, ctx,
 						      r->in.server_name,
-						      r->out.name_buffer,
+						      &buffer,
 						      (enum wkssvc_NetJoinStatus *)r->out.name_type,
 						      &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
 	}
+
+	*r->out.name_buffer = talloc_strdup(ctx, buffer);
+	W_ERROR_HAVE_NO_MEMORY(*r->out.name_buffer);
 
  done:
 	return werr;
