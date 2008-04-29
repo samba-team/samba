@@ -172,7 +172,6 @@ static WERROR cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli,
 	union srvsvc_NetSrvInfo info;
 	WERROR result;
 	NTSTATUS status;
-	const char *server_name;
 
 	if (argc > 2) {
 		printf("Usage: %s [infolevel]\n", argv[0]);
@@ -182,12 +181,8 @@ static WERROR cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli,
 	if (argc == 2)
 		info_level = atoi(argv[1]);
 
-	server_name = talloc_asprintf_strupper_m(mem_ctx, "\\\\%s",
-						 cli->desthost);
-	W_ERROR_HAVE_NO_MEMORY(server_name);
-
 	status = rpccli_srvsvc_NetSrvGetInfo(cli, mem_ctx,
-					     server_name,
+					     cli->srv_name_slash,
 					     info_level,
 					     &info,
 					     &result);
