@@ -593,7 +593,8 @@ static char **ads_push_strvals(TALLOC_CTX *ctx, const char **in_vals)
 {
 	char **values;
 	int i;
-       
+	size_t size;
+
 	if (!in_vals) return NULL;
 	for (i=0; in_vals[i]; i++)
 		; /* count values */
@@ -601,7 +602,7 @@ static char **ads_push_strvals(TALLOC_CTX *ctx, const char **in_vals)
 	if (!values) return NULL;
 
 	for (i=0; in_vals[i]; i++) {
-		if (push_utf8_talloc(ctx, &values[i], in_vals[i]) == (size_t) -1) {
+		if (!push_utf8_talloc(ctx, &values[i], in_vals[i], &size)) {
 			TALLOC_FREE(values);
 			return NULL;
 		}
@@ -616,6 +617,7 @@ static char **ads_pull_strvals(TALLOC_CTX *ctx, const char **in_vals)
 {
 	char **values;
 	int i;
+	size_t converted_size;
        
 	if (!in_vals) return NULL;
 	for (i=0; in_vals[i]; i++)
@@ -624,7 +626,11 @@ static char **ads_pull_strvals(TALLOC_CTX *ctx, const char **in_vals)
 	if (!values) return NULL;
 
 	for (i=0; in_vals[i]; i++) {
-		pull_utf8_talloc(ctx, &values[i], in_vals[i]);
+		if (!pull_utf8_talloc(ctx, &values[i], in_vals[i],
+				      &converted_size)) {
+			DEBUG(0,("ads_pull_strvals: pull_utf8_talloc failed: "
+				 "%s", strerror(errno)));
+		}
 	}
 	return values;
 }
@@ -652,6 +658,7 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 {
 	int rc, i, version;
 	char *utf8_expr, *utf8_path, **search_attrs;
+	size_t converted_size;
 	LDAPControl PagedResults, NoReferrals, ExternalCtrl, *controls[4], **rcontrols;
 	BerElement *cookie_be = NULL;
 	struct berval *cookie_bv= NULL;
@@ -669,8 +676,9 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 	/* 0 means the conversion worked but the result was empty 
 	   so we only fail if it's -1.  In any case, it always 
 	   at least nulls out the dest */
-	if ((push_utf8_talloc(ctx, &utf8_expr, expr) == (size_t)-1) ||
-	    (push_utf8_talloc(ctx, &utf8_path, bind_path) == (size_t)-1)) {
+	if (!push_utf8_talloc(ctx, &utf8_expr, expr, &converted_size) ||
+	    !push_utf8_talloc(ctx, &utf8_path, bind_path, &converted_size))
+	{
 		rc = LDAP_NO_MEMORY;
 		goto done;
 	}
@@ -967,6 +975,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 {
 	int rc;
 	char *utf8_expr, *utf8_path, **search_attrs = NULL;
+	size_t converted_size;
 	TALLOC_CTX *ctx;
 
 	*res = NULL;
@@ -978,8 +987,9 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 	/* 0 means the conversion worked but the result was empty 
 	   so we only fail if it's negative.  In any case, it always 
 	   at least nulls out the dest */
-	if ((push_utf8_talloc(ctx, &utf8_expr, expr) == (size_t)-1) ||
-	    (push_utf8_talloc(ctx, &utf8_path, bind_path) == (size_t)-1)) {
+	if (!push_utf8_talloc(ctx, &utf8_expr, expr, &converted_size) ||
+	    !push_utf8_talloc(ctx, &utf8_path, bind_path, &converted_size))
+	{
 		DEBUG(1,("ads_do_search: push_utf8_talloc() failed!"));
 		rc = LDAP_NO_MEMORY;
 		goto done;
@@ -1077,6 +1087,7 @@ void ads_memfree(ADS_STRUCT *ads, void *mem)
  char *ads_get_dn(ADS_STRUCT *ads, LDAPMessage *msg)
 {
 	char *utf8_dn, *unix_dn;
+	size_t converted_size;
 
 	utf8_dn = ldap_get_dn(ads->ldap.ld, msg);
 
@@ -1085,7 +1096,7 @@ void ads_memfree(ADS_STRUCT *ads, void *mem)
 		return NULL;
 	}
 
-	if (pull_utf8_allocate(&unix_dn, utf8_dn) == (size_t)-1) {
+	if (!pull_utf8_allocate(&unix_dn, utf8_dn, &converted_size)) {
 		DEBUG(0,("ads_get_dn: string conversion failure utf8 [%s]\n",
 			utf8_dn ));
 		return NULL;
@@ -1287,6 +1298,7 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 {
 	int ret,i;
 	char *utf8_dn = NULL;
+	size_t converted_size;
 	/* 
 	   this control is needed to modify that contains a currently 
 	   non-existent attribute (but allowable for the object) to run
@@ -1300,7 +1312,7 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 	controls[0] = &PermitModify;
 	controls[1] = NULL;
 
-	if (push_utf8_allocate(&utf8_dn, mod_dn) == -1) {
+	if (!push_utf8_allocate(&utf8_dn, mod_dn, &converted_size)) {
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
@@ -1325,8 +1337,9 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
 {
 	int ret, i;
 	char *utf8_dn = NULL;
+	size_t converted_size;
 
-	if (push_utf8_allocate(&utf8_dn, new_dn) == -1) {
+	if (!push_utf8_allocate(&utf8_dn, new_dn, &converted_size)) {
 		DEBUG(1, ("ads_gen_add: push_utf8_allocate failed!"));
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
@@ -1351,7 +1364,8 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 {
 	int ret;
 	char *utf8_dn = NULL;
-	if (push_utf8_allocate(&utf8_dn, del_dn) == -1) {
+	size_t converted_size;
+	if (!push_utf8_allocate(&utf8_dn, del_dn, &converted_size)) {
 		DEBUG(1, ("ads_del_dn: push_utf8_allocate failed!"));
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
@@ -2012,6 +2026,7 @@ static bool ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *da
 {
 	LDAPMessage *msg;
 	TALLOC_CTX *ctx;
+	size_t converted_size;
 
 	if (!(ctx = talloc_init("ads_process_results")))
 		return;
@@ -2031,7 +2046,14 @@ static bool ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *da
 			char *field;
 			bool string; 
 
-			pull_utf8_talloc(ctx, &field, utf8_field);
+			if (!pull_utf8_talloc(ctx, &field, utf8_field,
+					      &converted_size))
+			{
+				DEBUG(0,("ads_process_results: "
+					 "pull_utf8_talloc failed: %s",
+					 strerror(errno)));
+			}
+
 			string = fn(ads, field, NULL, data_area);
 
 			if (string) {
@@ -2127,18 +2149,16 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	char **values;
 	char *ret = NULL;
 	char *ux_string;
-	size_t rc;
+	size_t converted_size;
 
 	values = ldap_get_values(ads->ldap.ld, msg, field);
 	if (!values)
 		return NULL;
 	
-	if (values[0]) {
-		rc = pull_utf8_talloc(mem_ctx, &ux_string, 
-				      values[0]);
-		if (rc != (size_t)-1)
-			ret = ux_string;
-		
+	if (values[0] && pull_utf8_talloc(mem_ctx, &ux_string, values[0],
+					  &converted_size))
+	{
+		ret = ux_string;
 	}
 	ldap_value_free(values);
 	return ret;
@@ -2159,6 +2179,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	char **values;
 	char **ret = NULL;
 	int i;
+	size_t converted_size;
 
 	values = ldap_get_values(ads->ldap.ld, msg, field);
 	if (!values)
@@ -2173,7 +2194,9 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	}
 
 	for (i=0;i<*num_values;i++) {
-		if (pull_utf8_talloc(mem_ctx, &ret[i], values[i]) == -1) {
+		if (!pull_utf8_talloc(mem_ctx, &ret[i], values[i],
+				      &converted_size))
+		{
 			ldap_value_free(values);
 			return NULL;
 		}

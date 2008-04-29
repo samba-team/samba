@@ -1699,6 +1699,7 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		struct berval *retdata = NULL;
 		char *utf8_password;
 		char *utf8_dn;
+		size_t converted_size;
 
 		if (!ldap_state->is_nds_ldap) {
 
@@ -1710,11 +1711,14 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 			}
 		}
 
-		if (push_utf8_allocate(&utf8_password, pdb_get_plaintext_passwd(newpwd)) == (size_t)-1) {
+		if (!push_utf8_allocate(&utf8_password,
+					pdb_get_plaintext_passwd(newpwd),
+					&converted_size))
+		{
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (push_utf8_allocate(&utf8_dn, dn) == (size_t)-1) {
+		if (!push_utf8_allocate(&utf8_dn, dn, &converted_size)) {
 			SAFE_FREE(utf8_password);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -4404,6 +4408,7 @@ static bool ldapuser2displayentry(struct ldap_search_state *state,
 				  struct samr_displayentry *result)
 {
 	char **vals;
+	size_t converted_size;
 	DOM_SID sid;
 	uint32 acct_flags;
 
@@ -4429,27 +4434,40 @@ static bool ldapuser2displayentry(struct ldap_search_state *state,
 		DEBUG(5, ("\"uid\" not found\n"));
 		return False;
 	}
-	pull_utf8_talloc(mem_ctx,
-			 CONST_DISCARD(char **, &result->account_name),
-			 vals[0]);
+	if (!pull_utf8_talloc(mem_ctx,
+			      CONST_DISCARD(char **, &result->account_name),
+			      vals[0], &converted_size))
+	{
+		DEBUG(0,("ldapuser2displayentry: pull_utf8_talloc failed: %s",
+			 strerror(errno)));
+	}
+
 	ldap_value_free(vals);
 
 	vals = ldap_get_values(ld, entry, "displayName");
 	if ((vals == NULL) || (vals[0] == NULL))
 		DEBUG(8, ("\"displayName\" not found\n"));
-	else
-		pull_utf8_talloc(mem_ctx,
-				 CONST_DISCARD(char **, &result->fullname),
-				 vals[0]);
+	else if (!pull_utf8_talloc(mem_ctx,
+				   CONST_DISCARD(char **, &result->fullname),
+				   vals[0], &converted_size))
+	{
+		DEBUG(0,("ldapuser2displayentry: pull_utf8_talloc failed: %s",
+			 strerror(errno)));
+	}
+
 	ldap_value_free(vals);
 
 	vals = ldap_get_values(ld, entry, "description");
 	if ((vals == NULL) || (vals[0] == NULL))
 		DEBUG(8, ("\"description\" not found\n"));
-	else
-		pull_utf8_talloc(mem_ctx,
-				 CONST_DISCARD(char **, &result->description),
-				 vals[0]);
+	else if (!pull_utf8_talloc(mem_ctx,
+				   CONST_DISCARD(char **, &result->description),
+				   vals[0], &converted_size))
+	{
+		DEBUG(0,("ldapuser2displayentry: pull_utf8_talloc failed: %s",
+			 strerror(errno)));
+	}
+
 	ldap_value_free(vals);
 
 	if ((result->account_name == NULL) ||
@@ -4536,6 +4554,7 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 				   struct samr_displayentry *result)
 {
 	char **vals;
+	size_t converted_size;
 	DOM_SID sid;
 	uint16 group_type;
 
@@ -4575,14 +4594,22 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 			DEBUG(5, ("\"cn\" not found\n"));
 			return False;
 		}
-		pull_utf8_talloc(mem_ctx,
-				 CONST_DISCARD(char **, &result->account_name),
-				 vals[0]);
+		if (!pull_utf8_talloc(mem_ctx,
+				      CONST_DISCARD(char **,
+						    &result->account_name),
+				      vals[0], &converted_size))
+		{
+			DEBUG(0,("ldapgroup2displayentry: pull_utf8_talloc "
+				  "failed: %s", strerror(errno)));
+		}
 	}
-	else {
-		pull_utf8_talloc(mem_ctx,
-				 CONST_DISCARD(char **, &result->account_name),
-				 vals[0]);
+	else if (!pull_utf8_talloc(mem_ctx,
+				   CONST_DISCARD(char **,
+						 &result->account_name),
+				   vals[0], &converted_size))
+	{
+		DEBUG(0,("ldapgroup2displayentry: pull_utf8_talloc failed: %s",
+			  strerror(errno)));
 	}
 
 	ldap_value_free(vals);
@@ -4590,10 +4617,13 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 	vals = ldap_get_values(ld, entry, "description");
 	if ((vals == NULL) || (vals[0] == NULL))
 		DEBUG(8, ("\"description\" not found\n"));
-	else
-		pull_utf8_talloc(mem_ctx,
-				 CONST_DISCARD(char **, &result->description),
-				 vals[0]);
+	else if (!pull_utf8_talloc(mem_ctx,
+				   CONST_DISCARD(char **, &result->description),
+				   vals[0], &converted_size))
+	{
+		DEBUG(0,("ldapgroup2displayentry: pull_utf8_talloc failed: %s",
+			  strerror(errno)));
+	}
 	ldap_value_free(vals);
 
 	if ((result->account_name == NULL) ||

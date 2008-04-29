@@ -178,7 +178,7 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	char *p;
 	char **names, **tmp;
 	size_t num_names;
-	ssize_t sizeret;
+	ssize_t sizeret = -1;
 
 	if (!lp_ea_support(SNUM(conn))) {
 		*pnames = NULL;
@@ -504,7 +504,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *fname, s
 static struct ea_list *read_ea_name_list(TALLOC_CTX *ctx, const char *pdata, size_t data_size)
 {
 	struct ea_list *ea_list_head = NULL;
-	size_t offset = 0;
+	size_t converted_size, offset = 0;
 
 	while (offset + 2 < data_size) {
 		struct ea_list *eal = TALLOC_ZERO_P(ctx, struct ea_list);
@@ -522,7 +522,11 @@ static struct ea_list *read_ea_name_list(TALLOC_CTX *ctx, const char *pdata, siz
 		if (pdata[offset + namelen] != '\0') {
 			return NULL;
 		}
-		pull_ascii_talloc(ctx, &eal->ea.name, &pdata[offset]);
+		if (!pull_ascii_talloc(ctx, &eal->ea.name, &pdata[offset],
+				       &converted_size)) {
+			DEBUG(0,("read_ea_name_list: pull_ascii_talloc "
+				 "failed: %s", strerror(errno)));
+		}
 		if (!eal->ea.name) {
 			return NULL;
 		}
@@ -544,6 +548,7 @@ struct ea_list *read_ea_list_entry(TALLOC_CTX *ctx, const char *pdata, size_t da
 	struct ea_list *eal = TALLOC_ZERO_P(ctx, struct ea_list);
 	uint16 val_len;
 	unsigned int namelen;
+	size_t converted_size;
 
 	if (!eal) {
 		return NULL;
@@ -565,7 +570,10 @@ struct ea_list *read_ea_list_entry(TALLOC_CTX *ctx, const char *pdata, size_t da
 	if (pdata[namelen + 4] != '\0') {
 		return NULL;
 	}
-	pull_ascii_talloc(ctx, &eal->ea.name, pdata + 4);
+	if (!pull_ascii_talloc(ctx, &eal->ea.name, pdata + 4, &converted_size)) {
+		DEBUG(0,("read_ea_list_entry: pull_ascii_talloc failed: %s",
+			 strerror(errno)));
+	}
 	if (!eal->ea.name) {
 		return NULL;
 	}
@@ -3665,10 +3673,10 @@ static NTSTATUS marshall_stream_info(unsigned int num_streams,
 		size_t namelen;
 		smb_ucs2_t *namebuf;
 
-		namelen = push_ucs2_talloc(talloc_tos(), &namebuf,
-					    streams[i].name);
-
-		if ((namelen == (size_t)-1) || (namelen <= 2)) {
+		if (!push_ucs2_talloc(talloc_tos(), &namebuf,
+				      streams[i].name, &namelen) ||
+		    namelen <= 2)
+		{
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 

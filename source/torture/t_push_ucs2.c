@@ -12,9 +12,10 @@ static int check_push_ucs2(const char *orig)
 	smb_ucs2_t *dest = NULL;
 	char *orig2 = NULL;
 	int ret;
+	size_t converted_size;
 
-	push_ucs2_allocate(&dest, orig);
-	pull_ucs2_allocate(&orig2, dest);
+	push_ucs2_allocate(&dest, orig, &converted_size);
+	pull_ucs2_allocate(&orig2, dest, &converted_size);
 	ret = strcmp(orig, orig2);
 	if (ret) {
 		fprintf(stderr, "orig: %s\n", orig);

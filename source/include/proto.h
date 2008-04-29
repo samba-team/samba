@@ -366,9 +366,9 @@ size_t convert_string(charset_t from, charset_t to,
 bool convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 			     void const *src, size_t srclen, void *dst,
 			     size_t *converted_size, bool allow_bad_conv);
-size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
-			     void const *src, size_t srclen, void *dst,
-			     bool allow_bad_conv);
+bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
+			   void const *src, size_t srclen, void *dst,
+			   size_t *converted_size, bool allow_bad_conv);
 size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen);
 char *strdup_upper(const char *s);
 char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *s);
@@ -379,16 +379,17 @@ size_t ucs2_align(const void *base_ptr, const void *p, int flags);
 size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags);
 size_t push_ascii_fstring(void *dest, const char *src);
 size_t push_ascii_nstring(void *dest, const char *src);
-size_t push_ascii_allocate(char **dest, const char *src);
+bool push_ascii_allocate(char **dest, const char *src, size_t *converted_size);
 size_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, int flags);
 size_t pull_ascii_fstring(char *dest, const void *src);
 size_t pull_ascii_nstring(char *dest, size_t dest_len, const void *src);
 size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags);
-size_t push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src);
-size_t push_ucs2_allocate(smb_ucs2_t **dest, const char *src);
+bool push_ucs2_allocate(smb_ucs2_t **dest, const char *src,
+			size_t *converted_size);
 size_t push_utf8_fstring(void *dest, const char *src);
-size_t push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src);
-size_t push_utf8_allocate(char **dest, const char *src);
+bool push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
+		      size_t *converted_size);
+bool push_utf8_allocate(char **dest, const char *src, size_t *converted_size);
 size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_len, size_t src_len, int flags);
 size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 			const void *base_ptr,
@@ -397,11 +398,17 @@ size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 			size_t src_len,
 			int flags);
 size_t pull_ucs2_fstring(char *dest, const void *src);
-size_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const smb_ucs2_t *src);
-size_t pull_ucs2_allocate(char **dest, const smb_ucs2_t *src);
-size_t pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src);
-size_t pull_utf8_allocate(char **dest, const char *src);
-size_t pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src);
+bool push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src,
+		      size_t *converted_size);
+bool pull_ucs2_allocate(char **dest, const smb_ucs2_t *src,
+			size_t *converted_size);
+bool pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
+		      size_t *converted_size);
+bool pull_utf8_allocate(char **dest, const char *src, size_t *converted_size);
+bool pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const smb_ucs2_t *src,
+		      size_t *converted_size);
+bool pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
+		       size_t *converted_size);
 size_t push_string_fn(const char *function, unsigned int line,
 		      const void *base_ptr, uint16 flags2,
 		      void *dest, const char *src,

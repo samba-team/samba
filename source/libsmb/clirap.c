@@ -904,14 +904,14 @@ bool cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
 		tmp_buf[nlen] = 0;
 		tmp_buf[nlen+1] = 0;
 
-		size = convert_string_talloc(streams, CH_UTF16, CH_UNIX,
-					     tmp_buf, nlen+2, &vstr,
-					     false);
-		TALLOC_FREE(tmp_buf);
-
-		if (size == -1) {
+		if (!convert_string_talloc(streams, CH_UTF16, CH_UNIX, tmp_buf,
+					   nlen+2, &vstr, &size, false))
+		{
+			TALLOC_FREE(tmp_buf);
 			goto fail;
 		}
+
+		TALLOC_FREE(tmp_buf);
 		streams[num_streams].name = (char *)vstr;
 		num_streams++;
 

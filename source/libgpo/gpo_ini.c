@@ -57,6 +57,7 @@ static NTSTATUS convert_file_from_ucs2(TALLOC_CTX *mem_ctx,
 	char *tmp_name = NULL;
 	NTSTATUS status;
 	size_t n = 0;
+	size_t converted_size;
 
 	if (!filename_out) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -81,10 +82,9 @@ static NTSTATUS convert_file_from_ucs2(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	n = convert_string_talloc(mem_ctx, CH_UTF16LE, CH_UNIX,
-				  data_in, n, &data_out, False);
-
-	if (n == -1) {
+	if (!convert_string_talloc(mem_ctx, CH_UTF16LE, CH_UNIX, data_in, n,
+				   &data_out, &converted_size, False))
+	{
 		status = NT_STATUS_INVALID_BUFFER_SIZE;
 		goto out;
 	}
@@ -99,10 +99,10 @@ static NTSTATUS convert_file_from_ucs2(TALLOC_CTX *mem_ctx,
 		DEBUG(11,("convert_file_from_ucs2: "
 			 "%s skipping utf8 BOM\n", tmp_name));
 		data_out += 3;
-		n -= 3;
+		converted_size -= 3;
 	}
 
-	if (sys_write(tmp_fd, data_out, n) != n) {
+	if (sys_write(tmp_fd, data_out, converted_size) != converted_size) {
 		status = map_nt_error_from_unix(errno);
 		goto out;
 	}

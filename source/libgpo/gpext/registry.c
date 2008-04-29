@@ -258,6 +258,7 @@ static bool gp_reg_entry_from_file_entry(TALLOC_CTX *mem_ctx,
 	char *key = NULL;
 	char *value = NULL;
 	enum gp_reg_action action = GP_REG_ACTION_NONE;
+	size_t converted_size;
 
 	ZERO_STRUCTP(*reg_entry);
 
@@ -268,12 +269,16 @@ static bool gp_reg_entry_from_file_entry(TALLOC_CTX *mem_ctx,
 	if (strlen_w((const smb_ucs2_t *)file_entry->key.buffer) <= 0)
 		return false;
 
-	if (!pull_ucs2_talloc(mem_ctx, &key, file_entry->key.buffer))
+	if (!pull_ucs2_talloc(mem_ctx, &key, file_entry->key.buffer,
+			      &converted_size))
+	{
 		return false;
+	}
 
-	if (strlen_w((const smb_ucs2_t *)file_entry->value.buffer) > 0) {
-		if (!pull_ucs2_talloc(mem_ctx, &value,
-				      file_entry->value.buffer))
+	if (strlen_w((const smb_ucs2_t *)file_entry->value.buffer) > 0 &&
+	    !pull_ucs2_talloc(mem_ctx, &value, file_entry->value.buffer,
+			      &converted_size))
+	{
 			return false;
 	}
 
@@ -294,9 +299,13 @@ static bool gp_reg_entry_from_file_entry(TALLOC_CTX *mem_ctx,
 		case REG_NONE:
 			break;
 		case REG_SZ:
-			data->v.sz.len = pull_ucs2_talloc(mem_ctx,
-					&data->v.sz.str,
-					(const smb_ucs2_t *)file_entry->data);
+			if (!pull_ucs2_talloc(mem_ctx, &data->v.sz.str,
+					      (const smb_ucs2_t *)
+					      file_entry->data,
+					      &data->v.sz.len)) {
+				data->v.sz.len = -1;
+			}
+
 			break;
 		case REG_DWORD_BIG_ENDIAN:
 		case REG_EXPAND_SZ:

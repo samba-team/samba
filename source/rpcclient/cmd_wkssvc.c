@@ -103,10 +103,9 @@ static WERROR cmd_wkssvc_messagebuffersend(struct rpc_pipe_client *cli,
 		message = argv[1];
 	}
 
-	message_size = push_ucs2_talloc(mem_ctx,
-					&message_buffer,
-					message);
-	if (message_size == -1) {
+	if (!push_ucs2_talloc(mem_ctx, &message_buffer, message,
+			      &message_size))
+	{
 		return WERR_NOMEM;
 	}
 
