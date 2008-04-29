@@ -25,6 +25,7 @@ _PUBLIC_ void ndr_print_dfs_ManagerVersion(struct ndr_print *ndr, const char *na
 		case DFS_MANAGER_VERSION_NT4: val = "DFS_MANAGER_VERSION_NT4"; break;
 		case DFS_MANAGER_VERSION_W2K: val = "DFS_MANAGER_VERSION_W2K"; break;
 		case DFS_MANAGER_VERSION_W2K3: val = "DFS_MANAGER_VERSION_W2K3"; break;
+		case DFS_MANAGER_VERSION_W2K8: val = "DFS_MANAGER_VERSION_W2K8"; break;
 	}
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
