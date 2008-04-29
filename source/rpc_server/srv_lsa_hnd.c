@@ -268,7 +268,7 @@ bool pipe_access_check(pipes_struct *p)
 			return False;
 		}
 
-		if (user->guest) {
+		if (user->server_info->guest) {
 			return False;
 		}
 	}

@@ -269,7 +269,6 @@ int register_existing_vuid(uint16 vuid,
 
 	talloc_steal(vuser, vuser->server_info);
 
-	vuser->guest = server_info->guest;
 	fstrcpy(vuser->user.unix_name, server_info->unix_name);
 
 	/* This is a potentially untrusted username */
@@ -286,7 +285,7 @@ int register_existing_vuid(uint16 vuid,
 			(unsigned int)vuser->server_info->uid,
 			(unsigned int)vuser->server_info->gid,
 			vuser->user.unix_name, vuser->user.smb_name,
-			vuser->user.domain, vuser->guest ));
+			vuser->user.domain, vuser->server_info->guest ));
 
 	DEBUG(3, ("register_existing_vuid: User name: %s\t"
 		"Real name: %s\n", vuser->user.unix_name,
@@ -320,12 +319,12 @@ int register_existing_vuid(uint16 vuid,
 
 	vuser->homes_snum = -1;
 
-	if (!vuser->guest) {
+	if (!vuser->server_info->guest) {
 		vuser->homes_snum = register_homes_share(
 			vuser->user.unix_name);
 	}
 
-	if (srv_is_signing_negotiated() && !vuser->guest &&
+	if (srv_is_signing_negotiated() && !vuser->server_info->guest &&
 			!srv_signing_started()) {
 		/* Try and turn on server signing on the first non-guest
 		 * sessionsetup. */

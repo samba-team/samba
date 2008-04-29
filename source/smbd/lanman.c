@@ -4572,7 +4572,7 @@ void api_reply(connection_struct *conn, uint16 vuid,
 	if (api_commands[i].auth_user && lp_restrict_anonymous()) {
 		user_struct *user = get_valid_user_struct(vuid);
 
-		if (!user || user->guest) {
+		if (!user || user->server_info->guest) {
 			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return;
 		}

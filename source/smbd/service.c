@@ -714,7 +714,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		TALLOC_FREE(pass);
 		DEBUG(3,("Guest only user %s\n",user));
 	} else if (vuser) {
-		if (vuser->guest) {
+		if (vuser->server_info->guest) {
 			if (!lp_guest_ok(snum)) {
 				DEBUG(2, ("guest user (from session setup) "
 					  "not permitted to access this share "
@@ -740,7 +740,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		conn->gid = vuser->server_info->gid;
 		string_set(&conn->user,vuser->user.unix_name);
 		fstrcpy(user,vuser->user.unix_name);
-		guest = vuser->guest; 
+		guest = vuser->server_info->guest;
 	} else if (lp_security() == SEC_SHARE) {
 		NTSTATUS status2;
 		char *found_username = NULL;
@@ -825,7 +825,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		NTSTATUS status2;
 
 		status2 = find_forced_user(conn,
-				(vuser != NULL) && vuser->guest,
+				(vuser != NULL) && vuser->server_info->guest,
 				user);
 		if (!NT_STATUS_IS_OK(status2)) {
 			conn_free(conn);
