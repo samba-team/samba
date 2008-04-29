@@ -27,6 +27,8 @@
 static struct db_context *regdb = NULL;
 static int regdb_refcount;
 
+static bool regdb_key_exists(const char *key);
+
 /* List the deepest path into the registry.  All part components will be created.*/
 
 /* If you want to have a part of the path controlled by the tdb and part by
@@ -724,6 +726,21 @@ static TDB_DATA regdb_fetch_key_internal(const char *key, TALLOC_CTX *mem_ctx)
 
 	return dbwrap_fetch_bystring(regdb, mem_ctx, path);
 }
+
+
+static bool regdb_key_exists(const char *key)
+{
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	TDB_DATA value;
+	bool ret;
+
+	value = regdb_fetch_key_internal(key, mem_ctx);
+	ret = (value.dptr != NULL);
+
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
 
 /***********************************************************************
  Retrieve an array of strings containing subkeys.  Memory should be
