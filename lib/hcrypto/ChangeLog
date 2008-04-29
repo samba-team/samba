@@ -1,3 +1,7 @@
+2008-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* evp.c: EVP_MD_CTX_init already implemented.
+
 2008-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* evp.[ch]: deprecate functions that are needed for exported
