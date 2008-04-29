@@ -79,6 +79,13 @@ struct hc_evp_md {
     evp_md_cleanup cleanup;
 };
 
+struct hc_EVP_MD_CTX {
+    const EVP_MD *md;
+    ENGINE *engine;
+    void *ptr;
+};
+
+
 /**
  * Return the output size of the message digest function.
  *
