@@ -155,12 +155,6 @@ struct hc_CIPHER_CTX {
     unsigned char final[EVP_MAX_BLOCK_LENGTH];
 };
 
-struct hc_EVP_MD_CTX {
-    const EVP_MD *md;
-    ENGINE *engine;
-    void *ptr;
-};
-
 #ifdef  __cplusplus
 extern "C" {
 #endif
