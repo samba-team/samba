@@ -866,7 +866,6 @@ int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 	char *keystr = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	int ret = 0;
-	int dbret = -1;
 	TDB_DATA value;
 
 	DEBUG(10,("regdb_fetch_values: Looking for value of key [%s] \n", key));
@@ -882,10 +881,7 @@ int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 
 	values->seqnum = regdb_get_seqnum();
 
-	dbret = regdb->fetch(regdb, ctx, string_term_tdb_data(keystr), &value);
-	if (dbret != 0) {
-		goto done;
-	}
+	value = dbwrap_fetch_bystring(regdb, ctx, keystr);
 
 	if (!value.dptr) {
 		/* all keys have zero values by default */
