@@ -293,6 +293,9 @@ do_init:
 	/* loop over all of the predefined paths and add each component */
 
 	for (i=0; builtin_registry_paths[i] != NULL; i++) {
+		if (regdb_key_exists(builtin_registry_paths[i])) {
+			continue;
+		}
 		werr = init_registry_key_internal(builtin_registry_paths[i]);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto fail;
