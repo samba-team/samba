@@ -57,6 +57,7 @@
 #define DES_read_password hc_DES_read_password
 #define DES_set_key hc_DES_set_key
 #define DES_set_key_checked hc_DES_set_key_checked
+#define DES_set_key_unchecked hc_DES_set_key_unchecked
 #define DES_set_key_sched hc_DES_set_key_sched
 #define DES_set_odd_parity hc_DES_set_odd_parity
 #define DES_set_random_generator_seed hc_DES_set_random_generator_seed

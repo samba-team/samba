@@ -51,6 +51,7 @@ HEIMDAL_CRYPTO_1.0 {
 		hc_DES_read_password;
 		hc_DES_set_key;
 		hc_DES_set_key_checked;
+		hc_DES_set_key_unchecked;
 		hc_DES_set_odd_parity;
 		hc_DES_set_random_generator_seed;
 		hc_DES_set_sequence_number;
