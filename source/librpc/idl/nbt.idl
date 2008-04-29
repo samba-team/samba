@@ -411,6 +411,12 @@ interface nbt
 		NBT_SERVER_FULL_SECRET_DOMAIN_6		= 0x00001000
 	} nbt_server_type;
 
+	typedef struct {
+		uint32			sa_family;
+		[flag(NDR_BIG_ENDIAN)]	ipv4address pdc_ip;
+		[flag(NDR_REMAINING)]	DATA_BLOB remaining;
+	} nbt_dc_sock_addr;
+
 	/* response from pdc - type2 */
 	typedef struct {
 		[flag(NDR_ALIGN4)]   DATA_BLOB _pad;
@@ -424,11 +430,8 @@ interface nbt
 		nbt_string           user_name;
 		nbt_string           server_site;
 		nbt_string           client_site;
-		uint8                unknown;
-		uint32               unknown2;
-		[flag(NDR_BIG_ENDIAN)]
-	          ipv4address          pdc_ip;
-		uint32               unknown3[2];
+		uint8                dc_sock_addr_size;
+		[subcontext(0),subcontext_size(dc_sock_addr_size)] nbt_dc_sock_addr dc_sock_addr;
 		nbt_netlogon_version nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
@@ -539,11 +542,8 @@ interface nbt
 		nbt_string           user_name;
 		nbt_string           server_site;
 		nbt_string           client_site;
-		uint8                unknown;
-		uint32               unknown2;
-		[flag(NDR_BIG_ENDIAN)]
-	          ipv4address          pdc_ip;
-		uint32               unknown3[2];
+		uint8                dc_sock_addr_size;
+		[subcontext(0),subcontext_size(dc_sock_addr_size)] nbt_dc_sock_addr dc_sock_addr;
 		[value(13)] nbt_netlogon_version nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
