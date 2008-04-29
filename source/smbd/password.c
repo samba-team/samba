@@ -201,6 +201,37 @@ int register_initial_vuid(void)
 	return vuser->vuid;
 }
 
+static int register_homes_share(const char *username)
+{
+	int result;
+	struct passwd *pwd;
+
+	result = lp_servicenumber(username);
+	if (result != -1) {
+		DEBUG(3, ("Using static (or previously created) service for "
+			  "user '%s'; path = '%s'\n", username,
+			  lp_pathname(result)));
+		return result;
+	}
+
+	pwd = getpwnam_alloc(talloc_tos(), username);
+
+	if ((pwd == NULL) || (pwd->pw_dir[0] == '\0')) {
+		DEBUG(3, ("No home directory defined for user '%s'\n",
+			  username));
+		TALLOC_FREE(pwd);
+		return -1;
+	}
+
+	DEBUG(3, ("Adding homes service for user '%s' using home directory: "
+		  "'%s'\n", username, pwd->pw_dir));
+
+	result = add_home_service(username, username, pwd->pw_dir);
+
+	TALLOC_FREE(pwd);
+	return result;
+}
+
 /**
  *  register that a valid login has been performed, establish 'session'.
  *  @param server_info The token returned from the authentication process.
@@ -271,26 +302,6 @@ int register_existing_vuid(uint16 vuid,
 		const char *logon_script =
 			pdb_get_logon_script(server_info->sam_account);
 
-		if (!IS_SAM_DEFAULT(server_info->sam_account,
-					PDB_UNIXHOMEDIR)) {
-			const char *unix_homedir =
-				pdb_get_unix_homedir(server_info->sam_account);
-			if (unix_homedir) {
-				vuser->unix_homedir = unix_homedir;
-			}
-		} else {
-			struct passwd *passwd =
-				getpwnam_alloc(vuser, vuser->user.unix_name);
-			if (passwd) {
-				vuser->unix_homedir = passwd->pw_dir;
-				/* Ensure that the unix_homedir now
-				 * belongs to vuser, so it goes away
-				 * with it, not with passwd below: */
-				talloc_steal(vuser, vuser->unix_homedir);
-				TALLOC_FREE(passwd);
-			}
-		}
-
 		if (logon_script) {
 			vuser->logon_script = logon_script;
 		}
@@ -336,23 +347,10 @@ int register_existing_vuid(uint16 vuid,
 	If a share exists by this name (autoloaded or not) reuse it . */
 
 	vuser->homes_snum = -1;
-	if ( (!vuser->guest) && vuser->unix_homedir && *(vuser->unix_homedir)) {
-		int servicenumber = lp_servicenumber(vuser->user.unix_name);
-		if ( servicenumber == -1 ) {
-			DEBUG(3, ("Adding homes service for user '%s' using "
-				"home directory: '%s'\n",
-				vuser->user.unix_name, vuser->unix_homedir));
-			vuser->homes_snum =
-				add_home_service(vuser->user.unix_name,
-						vuser->user.unix_name,
-						vuser->unix_homedir);
-		} else {
-			DEBUG(3, ("Using static (or previously created) "
-				"service for user '%s'; path = '%s'\n",
-				vuser->user.unix_name,
-				lp_pathname(servicenumber) ));
-			vuser->homes_snum = servicenumber;
-		}
+
+	if (!vuser->guest) {
+		vuser->homes_snum = register_homes_share(
+			vuser->user.unix_name);
 	}
 
 	if (srv_is_signing_negotiated() && !vuser->guest &&
