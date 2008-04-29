@@ -517,7 +517,6 @@ EVP_md_null(void)
 }
 
 #if 0
-void	EVP_MD_CTX_init(EVP_MD_CTX *ctx);
 int	EVP_DigestInit(EVP_MD_CTX *ctx, const EVP_MD *type);
 int	EVP_DigestFinal(EVP_MD_CTX *ctx,unsigned char *md,unsigned int *s);
 int	EVP_SignFinal(EVP_MD_CTX *, void *, size_t *, EVP_PKEY *);
