@@ -516,6 +516,7 @@ void reply_negprot(struct smb_request *req)
 	int num_cliprotos;
 	char **cliprotos;
 	int i;
+	size_t converted_size;
 
 	static bool done_negprot = False;
 
@@ -555,8 +556,8 @@ void reply_negprot(struct smb_request *req)
 
 		cliprotos = tmp;
 
-		if (pull_ascii_talloc(cliprotos, &cliprotos[num_cliprotos], p)
-		    == (size_t)-1) {
+		if (!pull_ascii_talloc(cliprotos, &cliprotos[num_cliprotos], p,
+				       &converted_size)) {
 			DEBUG(0, ("pull_ascii_talloc failed\n"));
 			TALLOC_FREE(cliprotos);
 			reply_nterror(req, NT_STATUS_NO_MEMORY);

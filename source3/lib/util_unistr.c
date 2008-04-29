@@ -312,14 +312,12 @@ int rpcstr_pull_unistr2_fstring(char *dest, UNISTR2 *src)
 char *rpcstr_pull_unistr2_talloc(TALLOC_CTX *ctx, const UNISTR2 *src)
 {
 	char *dest = NULL;
-	size_t dest_len = convert_string_talloc(ctx,
-				CH_UTF16LE,
-				CH_UNIX,
-				src->buffer,
-				src->uni_str_len * 2,
-				(void *)&dest,
-				true);
-	if (dest_len == (size_t)-1) {
+	size_t dest_len;
+
+	if (!convert_string_talloc(ctx, CH_UTF16LE, CH_UNIX, src->buffer,
+				   src->uni_str_len * 2, (void *)&dest,
+				   &dest_len, true))
+	{
 		return NULL;
 	}
 
@@ -364,7 +362,11 @@ int rpcstr_push(void *dest, const char *src, size_t dest_len, int flags)
 
 int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src)
 {
-	return push_ucs2_talloc(ctx, dest, src);
+	size_t size;
+	if (push_ucs2_talloc(ctx, dest, src, &size))
+		return size;
+	else
+		return -1;
 }
 
 /*******************************************************************

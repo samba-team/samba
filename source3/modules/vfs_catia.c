@@ -36,12 +36,13 @@ static char *catia_string_replace(TALLOC_CTX *ctx,
 	smb_ucs2_t *ptr = NULL;
 	smb_ucs2_t old = oldc;
 	char *ret = NULL;
+	size_t converted_size;
 
 	if (!s) {
 		return NULL;
 	}
 
-	if (push_ucs2_talloc(ctx, &tmpbuf, s) == -1) {
+	if (!push_ucs2_talloc(ctx, &tmpbuf, s, &converted_size)) {
 		return NULL;
 	}
 
@@ -53,7 +54,7 @@ static char *catia_string_replace(TALLOC_CTX *ctx,
 		}
 	}
 
-	if (pull_ucs2_talloc(ctx, &ret, tmpbuf) == -1) {
+	if (!pull_ucs2_talloc(ctx, &ret, tmpbuf, &converted_size)) {
 		TALLOC_FREE(tmpbuf);
 		return NULL;
 	}

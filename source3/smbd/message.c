@@ -45,7 +45,7 @@ static void msg_deliver(struct msg_state *state)
 	int i;
 	int fd;
 	char *msg;
-	int len;
+	size_t len;
 	ssize_t sz;
 	fstring alpha_buf;
 	char *s;
@@ -72,18 +72,17 @@ static void msg_deliver(struct msg_state *state)
 	 * Incoming message is in DOS codepage format. Convert to UNIX.
 	 */
 
-	len = convert_string_talloc(
-		talloc_tos(), CH_DOS, CH_UNIX, state->msg,
-		talloc_get_size(state->msg), (void *)&msg, true);
-
-	if (len == -1) {
+	if (!convert_string_talloc(talloc_tos(), CH_DOS, CH_UNIX, state->msg,
+				   talloc_get_size(state->msg), (void *)&msg,
+				   &len, true)) {
 		DEBUG(3, ("Conversion failed, delivering message in DOS "
 			  "codepage format\n"));
 		msg = state->msg;
 	}
 
 	for (i = 0; i < len; i++) {
-		if ((msg[i] == '\r') && (i < (len-1)) && (msg[i+1] == '\n')) {
+		if ((msg[i] == '\r') &&
+		    (i < (len-1)) && (msg[i+1] == '\n')) {
 			continue;
 		}
 		sz = write(fd, &msg[i], 1);

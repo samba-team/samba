@@ -3242,6 +3242,7 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 	const char *attrs[] = {"objectGUID", NULL};
 	struct GUID guid;
 	WERROR win_rc = WERR_OK;
+	size_t converted_size;
 
 	DEBUG(5, ("publishing printer %s\n", printer->info_2->printername));
 
@@ -3264,13 +3265,13 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 		return WERR_SERVER_UNAVAILABLE;
 	}
 	/* Now convert to CH_UNIX. */
-	if (pull_utf8_allocate(&srv_dn, srv_dn_utf8) == (size_t)-1) {
+	if (!pull_utf8_allocate(&srv_dn, srv_dn_utf8, &converted_size)) {
 		ldap_memfree(srv_dn_utf8);
 		ldap_memfree(srv_cn_utf8);
 		ads_destroy(&ads);
 		return WERR_SERVER_UNAVAILABLE;
 	}
-	if (pull_utf8_allocate(&srv_cn_0, srv_cn_utf8[0]) == (size_t)-1) {
+	if (!pull_utf8_allocate(&srv_cn_0, srv_cn_utf8[0], &converted_size)) {
 		ldap_memfree(srv_dn_utf8);
 		ldap_memfree(srv_cn_utf8);
 		ads_destroy(&ads);
