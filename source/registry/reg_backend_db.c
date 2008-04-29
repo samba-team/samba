@@ -201,6 +201,10 @@ WERROR init_registry_key(const char *add_path)
 {
 	WERROR werr;
 
+	if (regdb_key_exists(add_path)) {
+		return WERR_OK;
+	}
+
 	if (regdb->transaction_start(regdb) != 0) {
 		DEBUG(0, ("init_registry_key: transaction_start failed\n"));
 		return WERR_REG_IO_FAILURE;
