@@ -301,14 +301,6 @@ const char *pdb_get_homedir(const struct samu *sampass)
 	return sampass->home_dir;
 }
 
-const char *pdb_get_unix_homedir(const struct samu *sampass)
-{
-	if (sampass->unix_pw ) {
-		return sampass->unix_pw->pw_dir;
-	}
-	return NULL;
-}
-
 const char *pdb_get_dir_drive(const struct samu *sampass)
 {
 	return sampass->dir_drive;
