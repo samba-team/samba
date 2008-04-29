@@ -1,3 +1,9 @@
+2008-04-29  Björn Sandell <biorn@chalmers.se>
+
+	* des.h: Add DES_set_key_unchecked
+
+	* version-script.map: Export DES_set_key_unchecked
+
 2008-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* evp.c: EVP_MD_CTX_init already implemented.
