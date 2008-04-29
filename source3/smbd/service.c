@@ -736,8 +736,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			}
 		}
 		conn->vuid = vuser->vuid;
-		conn->uid = vuser->uid;
-		conn->gid = vuser->gid;
+		conn->uid = vuser->server_info->uid;
+		conn->gid = vuser->server_info->gid;
 		string_set(&conn->user,vuser->user.unix_name);
 		fstrcpy(user,vuser->user.unix_name);
 		guest = vuser->guest; 

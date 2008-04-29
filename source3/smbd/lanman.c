@@ -3338,8 +3338,9 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 	   Don't depend on vuser being non-null !!. JRA */
 	user_struct *vuser = get_valid_user_struct(vuid);
 	if(vuser != NULL) {
-		DEBUG(3,("  Username of UID %d is %s\n", (int)vuser->uid,
-			vuser->user.unix_name));
+		DEBUG(3,("  Username of UID %d is %s\n",
+			 (int)vuser->server_info->uid,
+			 vuser->user.unix_name));
 	}
 
 	if (!str1 || !str2 || !UserName || !p) {
@@ -3589,8 +3590,9 @@ static bool api_WWkstaUserLogon(connection_struct *conn,uint16 vuid,
 	}
 
 	if(vuser != NULL) {
-		DEBUG(3,("  Username of UID %d is %s\n", (int)vuser->uid, 
-			vuser->user.unix_name));
+		DEBUG(3,("  Username of UID %d is %s\n",
+			 (int)vuser->server_info->uid,
+			 vuser->user.unix_name));
 	}
 
 	uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
