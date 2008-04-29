@@ -237,10 +237,43 @@ fail:
 WERROR init_registry_data(void)
 {
 	WERROR werr;
-	TALLOC_CTX *frame = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
 	REGVAL_CTR *values;
 	int i;
 	UNISTR2 data;
+
+	/*
+	 * First, check for the existence of the needed keys and values.
+	 * If all do already exist, we can save the writes.
+	 */
+	for (i=0; builtin_registry_paths[i] != NULL; i++) {
+		if (!regdb_key_exists(builtin_registry_paths[i])) {
+			goto do_init;
+		}
+	}
+
+	for (i=0; builtin_registry_values[i].path != NULL; i++) {
+		values = TALLOC_ZERO_P(frame, REGVAL_CTR);
+		if (values == NULL) {
+			werr = WERR_NOMEM;
+			goto done;
+		}
+
+		regdb_fetch_values(builtin_registry_values[i].path, values);
+		if (!regval_ctr_key_exists(values,
+					builtin_registry_values[i].valuename))
+		{
+			TALLOC_FREE(values);
+			goto do_init;
+		}
+
+		TALLOC_FREE(values);
+	}
+
+	werr = WERR_OK;
+	goto done;
+
+do_init:
 
 	/*
 	 * There are potentially quite a few store operations which are all
@@ -253,7 +286,8 @@ WERROR init_registry_data(void)
 	if (regdb->transaction_start(regdb) != 0) {
 		DEBUG(0, ("init_registry_data: tdb_transaction_start "
 			  "failed\n"));
-		return WERR_REG_IO_FAILURE;
+		werr = WERR_REG_IO_FAILURE;
+		goto done;
 	}
 
 	/* loop over all of the predefined paths and add each component */
@@ -266,8 +300,6 @@ WERROR init_registry_data(void)
 	}
 
 	/* loop over all of the predefined values and add each component */
-
-	frame = talloc_stackframe();
 
 	for (i=0; builtin_registry_values[i].path != NULL; i++) {
 
@@ -316,25 +348,24 @@ WERROR init_registry_data(void)
 		TALLOC_FREE(values);
 	}
 
-	TALLOC_FREE(frame);
-
 	if (regdb->transaction_commit(regdb) != 0) {
 		DEBUG(0, ("init_registry_data: Could not commit "
 			  "transaction\n"));
-		return WERR_REG_IO_FAILURE;
+		werr = WERR_REG_IO_FAILURE;
+	} else {
+		werr = WERR_OK;
 	}
 
-	return WERR_OK;
+	goto done;
 
- fail:
-
-	TALLOC_FREE(frame);
-
+fail:
 	if (regdb->transaction_cancel(regdb) != 0) {
 		smb_panic("init_registry_data: tdb_transaction_cancel "
 			  "failed\n");
 	}
 
+done:
+	TALLOC_FREE(frame);
 	return werr;
 }
 
