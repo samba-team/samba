@@ -268,9 +268,6 @@ int register_existing_vuid(uint16 vuid,
 	pdb_get_fullname(server_info->sam_account));
 
 	{
-		/* Keep the homedir handy */
-		const char *homedir =
-			pdb_get_homedir(server_info->sam_account);
 		const char *logon_script =
 			pdb_get_logon_script(server_info->sam_account);
 
@@ -294,9 +291,6 @@ int register_existing_vuid(uint16 vuid,
 			}
 		}
 
-		if (homedir) {
-			vuser->homedir = homedir;
-		}
 		if (logon_script) {
 			vuser->logon_script = logon_script;
 		}
