@@ -298,14 +298,6 @@ int register_existing_vuid(uint16 vuid,
 	fstrcpy(vuser->user.full_name,
 	pdb_get_fullname(server_info->sam_account));
 
-	{
-		const char *logon_script =
-			pdb_get_logon_script(server_info->sam_account);
-
-		if (logon_script) {
-			vuser->logon_script = logon_script;
-		}
-	}
 	vuser->session_key = session_key;
 
 	DEBUG(10,("register_existing_vuid: (%u,%u) %s %s %s guest=%d\n",
