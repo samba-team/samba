@@ -1,5 +1,11 @@
 2008-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* evp.h: Internalize hc_EVP_MD_CTX.
+	
+	* evp.c: Internalize hc_EVP_MD_CTX.
+	
+	* mdtest.c: Use EVP_MD_CTX_create()/EVP_MD_CTX_destroy().
+	
 	* test_cipher.c: unbreak des-test
 
 	* evp.c: Fixup key parity before going ahead and using the key.
