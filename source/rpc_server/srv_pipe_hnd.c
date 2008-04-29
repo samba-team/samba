@@ -342,7 +342,7 @@ static void *make_internal_rpc_pipe_p(const char *pipe_name,
 	if (vuser) {
 		p->session_key = data_blob(vuser->session_key.data, vuser->session_key.length);
 		p->pipe_user.nt_user_token = dup_nt_token(
-			NULL, vuser->nt_user_token);
+			NULL, vuser->server_info->ptok);
 	}
 
 	/*

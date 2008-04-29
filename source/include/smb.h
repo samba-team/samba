@@ -1789,8 +1789,6 @@ typedef struct user_struct {
 	int n_groups;
 	gid_t *groups;
 
-	NT_USER_TOKEN *nt_user_token;
-
 	DATA_BLOB session_key;
 
 	char *session_keystr; /* used by utmp and pam session code.  
