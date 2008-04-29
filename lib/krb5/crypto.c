@@ -179,7 +179,7 @@ static void
 krb5_DES_schedule(krb5_context context,
 		  struct key_data *key)
 {
-    DES_set_key(key->key->keyvalue.data, key->schedule->data);
+    DES_set_key_unchecked(key->key->keyvalue.data, key->schedule->data);
 }
 
 #ifdef ENABLE_AFS_STRING_TO_KEY
@@ -246,12 +246,12 @@ krb5_DES_AFS3_Transarc_string_to_key (krb5_data pw,
     memcpy(&ivec, "kerberos", 8);
     memcpy(&temp_key, "kerberos", 8);
     DES_set_odd_parity (&temp_key);
-    DES_set_key (&temp_key, &schedule);
+    DES_set_key_unchecked (&temp_key, &schedule);
     DES_cbc_cksum ((void*)password, &ivec, passlen, &schedule, &ivec);
 
     memcpy(&temp_key, &ivec, 8);
     DES_set_odd_parity (&temp_key);
-    DES_set_key (&temp_key, &schedule);
+    DES_set_key_unchecked (&temp_key, &schedule);
     DES_cbc_cksum ((void*)password, key, passlen, &schedule, &ivec);
     memset(&schedule, 0, sizeof(schedule));
     memset(&temp_key, 0, sizeof(temp_key));
@@ -306,7 +306,7 @@ DES_string_to_key_int(unsigned char *data, size_t length, DES_cblock *key)
     DES_set_odd_parity(key);
     if(DES_is_weak_key(key))
 	(*key)[7] ^= 0xF0;
-    DES_set_key(key, &schedule);
+    DES_set_key_unchecked(key, &schedule);
     DES_cbc_cksum((void*)data, key, length, &schedule, key);
     memset(&schedule, 0, sizeof(schedule));
     DES_set_odd_parity(key);
@@ -391,9 +391,9 @@ DES3_schedule(krb5_context context,
 {
     DES_cblock *k = key->key->keyvalue.data;
     DES_key_schedule *s = key->schedule->data;
-    DES_set_key(&k[0], &s[0]);
-    DES_set_key(&k[1], &s[1]);
-    DES_set_key(&k[2], &s[2]);
+    DES_set_key_unchecked(&k[0], &s[0]);
+    DES_set_key_unchecked(&k[1], &s[1]);
+    DES_set_key_unchecked(&k[2], &s[2]);
 }
 
 /*
@@ -454,7 +454,7 @@ DES3_string_to_key(krb5_context context,
 	    DES_set_odd_parity(keys + i);
 	    if(DES_is_weak_key(keys + i))
 		xor(keys + i, (const unsigned char*)"\0\0\0\0\0\0\0\xf0");
-	    DES_set_key(keys + i, &s[i]);
+	    DES_set_key_unchecked(keys + i, &s[i]);
 	}
 	memset(&ivec, 0, sizeof(ivec));
 	DES_ede3_cbc_encrypt(tmp,
