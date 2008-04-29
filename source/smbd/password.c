@@ -269,24 +269,6 @@ int register_existing_vuid(uint16 vuid,
 
 	talloc_steal(vuser, vuser->server_info);
 
-	/* the next functions should be done by a SID mapping system (SMS) as
-	 * the new real sam db won't have reference to unix uids or gids
-	 */
-
-	vuser->uid = server_info->uid;
-	vuser->gid = server_info->gid;
-
-	vuser->n_groups = server_info->n_groups;
-	if (vuser->n_groups) {
-		if (!(vuser->groups = (gid_t *)talloc_memdup(vuser,
-					server_info->groups,
-					sizeof(gid_t)*vuser->n_groups))) {
-			DEBUG(0,("register_existing_vuid: "
-				"failed to talloc_memdup vuser->groups\n"));
-			goto fail;
-		}
-	}
-
 	vuser->guest = server_info->guest;
 	fstrcpy(vuser->user.unix_name, server_info->unix_name);
 
@@ -301,8 +283,8 @@ int register_existing_vuid(uint16 vuid,
 	vuser->session_key = session_key;
 
 	DEBUG(10,("register_existing_vuid: (%u,%u) %s %s %s guest=%d\n",
-			(unsigned int)vuser->uid,
-			(unsigned int)vuser->gid,
+			(unsigned int)vuser->server_info->uid,
+			(unsigned int)vuser->server_info->gid,
 			vuser->user.unix_name, vuser->user.smb_name,
 			vuser->user.domain, vuser->guest ));
 
@@ -317,8 +299,8 @@ int register_existing_vuid(uint16 vuid,
 	}
 
 	DEBUG(3,("register_existing_vuid: UNIX uid %d is UNIX user %s, "
-		"and will be vuid %u\n",
-		(int)vuser->uid,vuser->user.unix_name, vuser->vuid));
+		"and will be vuid %u\n", (int)vuser->server_info->uid,
+		 vuser->user.unix_name, vuser->vuid));
 
 	next_vuid++;
 	num_validated_vuids++;

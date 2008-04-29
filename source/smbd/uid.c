@@ -177,7 +177,7 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 		return(True);
 	} else if ((current_user.conn == conn) && 
 		   (vuser != 0) && (current_user.vuid == vuid) && 
-		   (current_user.ut.uid == vuser->uid)) {
+		   (current_user.ut.uid == vuser->server_info->uid)) {
 		DEBUG(4,("change_to_user: Skipping user change - already "
 			 "user\n"));
 		return(True);
@@ -200,10 +200,10 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 		num_groups = conn->ngroups;
 		token = conn->nt_user_token;
 	} else if (vuser) {
-		uid = conn->admin_user ? 0 : vuser->uid;
-		gid = vuser->gid;
-		num_groups = vuser->n_groups;
-		group_list  = vuser->groups;
+		uid = conn->admin_user ? 0 : vuser->server_info->uid;
+		gid = vuser->server_info->gid;
+		num_groups = vuser->server_info->n_groups;
+		group_list  = vuser->server_info->groups;
 		token = vuser->server_info->ptok;
 	} else {
 		DEBUG(2,("change_to_user: Invalid vuid used %d in accessing "

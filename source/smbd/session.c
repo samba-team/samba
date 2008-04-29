@@ -168,8 +168,8 @@ bool session_claim(user_struct *vuser)
 	fstrcpy(sessionid.hostname, hostname);
 	sessionid.id_num = i;  /* Only valid for utmp sessions */
 	sessionid.pid = pid;
-	sessionid.uid = vuser->uid;
-	sessionid.gid = vuser->gid;
+	sessionid.uid = vuser->server_info->uid;
+	sessionid.gid = vuser->server_info->gid;
 	fstrcpy(sessionid.remote_machine, get_remote_machine_name());
 	fstrcpy(sessionid.ip_addr_str,
 		client_addr(get_client_fd(),addr,sizeof(addr)));
