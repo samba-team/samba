@@ -873,14 +873,10 @@ int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 	if (!keystr) {
 		return 0;
 	}
-	keystr = normalize_reg_path(ctx, keystr);
-	if (!keystr) {
-		goto done;
-	}
 
 	values->seqnum = regdb_get_seqnum();
 
-	value = dbwrap_fetch_bystring(regdb, ctx, keystr);
+	value = regdb_fetch_key_internal(keystr, ctx);
 
 	if (!value.dptr) {
 		/* all keys have zero values by default */
