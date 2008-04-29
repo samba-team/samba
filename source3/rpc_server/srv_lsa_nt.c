@@ -1468,7 +1468,7 @@ NTSTATUS _lsa_GetUserName(pipes_struct *p,
 	if (vuser == NULL)
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 
-	if (vuser->guest) {
+	if (vuser->server_info->guest) {
 		/*
 		 * I'm 99% sure this is not the right place to do this,
 		 * global_sid_Anonymous should probably be put into the token

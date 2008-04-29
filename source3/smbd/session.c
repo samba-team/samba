@@ -75,7 +75,7 @@ bool session_claim(user_struct *vuser)
 
 	/* don't register sessions for the guest user - its just too
 	   expensive to go through pam session code for browsing etc */
-	if (vuser->guest) {
+	if (vuser->server_info->guest) {
 		return True;
 	}
 
