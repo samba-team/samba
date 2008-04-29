@@ -310,9 +310,7 @@ int register_existing_vuid(uint16 vuid,
 		"Real name: %s\n", vuser->user.unix_name,
 		vuser->user.full_name));
 
-	if (server_info->ptok) {
-		vuser->nt_user_token = dup_nt_token(vuser, server_info->ptok);
-	} else {
+	if (!server_info->ptok) {
 		DEBUG(1, ("register_existing_vuid: server_info does not "
 			"contain a user_token - cannot continue\n"));
 		goto fail;

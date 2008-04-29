@@ -97,15 +97,15 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 		}
 	}
 
-	if (!user_ok_token(vuser->user.unix_name, vuser->nt_user_token, snum))
+	if (!user_ok_token(vuser->user.unix_name, vuser->server_info->ptok,
+			   snum))
 		return(False);
 
-	readonly_share = is_share_read_only_for_token(vuser->user.unix_name,
-						      vuser->nt_user_token,
-						      SNUM(conn));
+	readonly_share = is_share_read_only_for_token(
+		vuser->user.unix_name, vuser->server_info->ptok, SNUM(conn));
 
 	token = conn->nt_user_token ?
-		conn->nt_user_token : vuser->nt_user_token;
+		conn->nt_user_token : vuser->server_info->ptok;
 
 	if (!readonly_share &&
 	    !share_access_check(token, lp_servicename(snum),
@@ -132,7 +132,7 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 	ent->read_only = readonly_share;
 
 	ent->admin_user = token_contains_name_in_list(
-		vuser->user.unix_name, NULL, vuser->nt_user_token,
+		vuser->user.unix_name, NULL, vuser->server_info->ptok,
 		lp_admin_users(SNUM(conn)));
 
 	conn->read_only = ent->read_only;
@@ -204,7 +204,7 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 		gid = vuser->gid;
 		num_groups = vuser->n_groups;
 		group_list  = vuser->groups;
-		token = vuser->nt_user_token;
+		token = vuser->server_info->ptok;
 	} else {
 		DEBUG(2,("change_to_user: Invalid vuid used %d in accessing "
 			 "share %s.\n",vuid, lp_servicename(snum) ));

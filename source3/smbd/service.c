@@ -725,7 +725,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			}
 		} else {
 			if (!user_ok_token(vuser->user.unix_name,
-					   vuser->nt_user_token, snum)) {
+					   vuser->server_info->ptok, snum)) {
 				DEBUG(2, ("user '%s' (from session setup) not "
 					  "permitted to access this share "
 					  "(%s)\n", vuser->user.unix_name,
@@ -861,7 +861,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			 * group. vuser has a token to copy */
 			
 			conn->nt_user_token = dup_nt_token(
-				NULL, vuser->nt_user_token);
+				NULL, vuser->server_info->ptok);
 			if (conn->nt_user_token == NULL) {
 				DEBUG(0, ("dup_nt_token failed\n"));
 				conn_free(conn);
@@ -948,7 +948,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		bool can_write = False;
 		NT_USER_TOKEN *token = conn->nt_user_token ?
 			conn->nt_user_token :
-			(vuser ? vuser->nt_user_token : NULL);
+			(vuser ? vuser->server_info->ptok : NULL);
 
 		/*
 		 * I don't believe this can happen. But the
