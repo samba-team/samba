@@ -739,11 +739,10 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 	}
 
 	/* convert to key format */
-	path = talloc_string_sub(frame, path, "\\", "/");
+	path = normalize_reg_path(frame, path);
 	if (!path) {
 		goto fail;
 	}
-	strupper_m(path);
 
 	ctr->seqnum = regdb_get_seqnum();
 
