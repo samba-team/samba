@@ -349,13 +349,26 @@ interface nbt
 		NETLOGON_RESPONSE_FROM_PDC_USER  = 0x19
 	} nbt_netlogon_command;
 
+	typedef [flag(NDR_LITTLE_ENDIAN),bitmap32bit] bitmap {
+		NETLOGON_VERSION_1			= 0x00000001,
+		NETLOGON_VERSION_5			= 0x00000002,
+		NETLOGON_VERSION_5EX			= 0x00000004,
+		NETLOGON_VERSION_5EX_WITH_IP		= 0x00000008,
+		NETLOGON_VERSION_WITH_CLOSEST_SITE	= 0x00000010,
+		NETLOGON_VERSION_AVOID_NT4_EMUL		= 0x01000000,
+		NETLOGON_VERSION_PDC			= 0x10000000,
+		NETLOGON_VERSION_IP			= 0x20000000,
+		NETLOGON_VERSION_LOCAL			= 0x40000000,
+		NETLOGON_VERSION_GC			= 0x80000000
+	} nbt_netlogon_version;
+
 	/* query for pdc request */
 	typedef struct {
 		astring              computer_name;
 		astring              mailslot_name;
 		[flag(NDR_ALIGN2)]   DATA_BLOB _pad;
 		nstring              unicode_name;
-		uint32               nt_version;
+		nbt_netlogon_version nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
 	} nbt_netlogon_query_for_pdc;
@@ -367,7 +380,7 @@ interface nbt
 		nstring              user_name;
 		astring              mailslot_name;
 		uint32               unknown[2];
-		uint32               nt_version;
+		nbt_netlogon_version nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
 	} nbt_netlogon_query_for_pdc2;
@@ -378,7 +391,7 @@ interface nbt
 		[flag(NDR_ALIGN2)]   DATA_BLOB _pad;
 		nstring              unicode_pdc_name;
 		nstring              domain_name;
-		uint32               nt_version;
+		nbt_netlogon_version nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
 	} nbt_netlogon_response_from_pdc;
@@ -413,7 +426,7 @@ interface nbt
 		[flag(NDR_BIG_ENDIAN)]
 	          ipv4address          pdc_ip;
 		uint32               unknown3[2];
-		uint32               nt_version;
+		nbt_netlogon_version nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
 	} nbt_netlogon_response_from_pdc2;
@@ -442,7 +455,7 @@ interface nbt
 		nbt_db_change    dbchange[db_count];
 		[value(ndr_size_dom_sid0(&sid, ndr->flags))] uint32 sid_size;
 		[subcontext(0),subcontext_size(sid_size)] dom_sid0 sid;
-		uint32           nt_version;
+		nbt_netlogon_version nt_version;
 		uint16           lmnt_token;
 		uint16           lm20_token;
 	} nbt_netlogon_announce_uas;
@@ -472,7 +485,7 @@ interface nbt
 		nstring              pdc_name;
 		nstring              user_name;
 		nstring              domain_name;
-		[value(1)] uint32    nt_version;
+		[value(1)] nbt_netlogon_version nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
 	} nbt_cldap_netlogon_1;
@@ -489,7 +502,7 @@ interface nbt
 		nbt_string           pdc_dns_name;
 		ipv4address          pdc_ip;
 		nbt_server_type      server_type;
-		[value(3)] uint32    nt_version;
+		[value(3)] nbt_netlogon_version nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
 	} nbt_cldap_netlogon_3;
@@ -506,7 +519,7 @@ interface nbt
 		nbt_string           user_name;
 		nbt_string           server_site;
 		nbt_string           client_site;
-		[value(5)] uint32    nt_version;
+		[value(5)] nbt_netlogon_version nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
 	} nbt_cldap_netlogon_5;
@@ -528,7 +541,7 @@ interface nbt
 		[flag(NDR_BIG_ENDIAN)]
 	          ipv4address          pdc_ip;
 		uint32               unknown3[2];
-		[value(13)] uint32   nt_version;
+		[value(13)] nbt_netlogon_version nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
 	} nbt_cldap_netlogon_13;
@@ -562,7 +575,7 @@ interface nbt
 		uint32               acct_control;
 		[value(ndr_size_dom_sid0(&sid, ndr->flags))] uint32 sid_size;
 		[subcontext(0),subcontext_size(sid_size)] dom_sid0 sid;
-		uint32               nt_version;
+		nbt_netlogon_version nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
 	} nbt_ntlogon_sam_logon;
@@ -571,7 +584,7 @@ interface nbt
 		nstring              server;
 		nstring              user_name;
 		nstring              domain;
-		uint32               nt_version;
+		nbt_netlogon_version nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
 	} nbt_ntlogon_sam_logon_reply;
