@@ -733,7 +733,6 @@ static TDB_DATA regdb_fetch_key_internal(const char *key, TALLOC_CTX *mem_ctx)
 int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 {
 	WERROR werr;
-	char *path = NULL;
 	uint32 num_items;
 	uint8 *buf;
 	uint32 buflen, len;
@@ -745,14 +744,9 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 
 	DEBUG(11,("regdb_fetch_keys: Enter key => [%s]\n", key ? key : "NULL"));
 
-	path = normalize_reg_path(frame, key);
-	if (!path) {
-		goto fail;
-	}
-
 	ctr->seqnum = regdb_get_seqnum();
 
-	value = dbwrap_fetch_bystring(regdb, frame, path);
+	value = regdb_fetch_key_internal(key, frame);
 
 	buf = value.dptr;
 	buflen = value.dsize;
