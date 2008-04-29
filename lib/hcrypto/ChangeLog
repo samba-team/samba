@@ -1,5 +1,8 @@
 2008-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* evp.[ch]: deprecate functions that are needed for exported
+	EVP_MD_CTX.
+
 	* evp.h: Internalize hc_EVP_MD_CTX.
 	
 	* evp.c: Internalize hc_EVP_MD_CTX.

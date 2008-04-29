@@ -37,6 +37,8 @@
 
 RCSID("$Id$");
 
+#define HC_DEPRECATED
+
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -142,7 +144,7 @@ EVP_MD_CTX_create(void)
  * @ingroup hcrypto_evp
  */
 
-void
+void HC_DEPRECATED
 EVP_MD_CTX_init(EVP_MD_CTX *ctx)
 {
     memset(ctx, 0, sizeof(*ctx));
@@ -173,7 +175,7 @@ EVP_MD_CTX_destroy(EVP_MD_CTX *ctx)
  * @ingroup hcrypto_evp
  */
 
-int
+int HC_DEPRECATED
 EVP_MD_CTX_cleanup(EVP_MD_CTX *ctx)
 {
     if (ctx->md && ctx->md->cleanup)
