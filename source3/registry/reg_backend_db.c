@@ -728,7 +728,6 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 	int i;
 	fstring subkeyname;
 	int ret = -1;
-	int dbret = -1;
 	TALLOC_CTX *frame = talloc_stackframe();
 	TDB_DATA value;
 
@@ -748,10 +747,7 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 
 	ctr->seqnum = regdb_get_seqnum();
 
-	dbret = regdb->fetch(regdb, frame, string_term_tdb_data(path), &value);
-	if (dbret != 0) {
-		goto fail;
-	}
+	value = dbwrap_fetch_bystring(regdb, frame, path);
 
 	buf = value.dptr;
 	buflen = value.dsize;
