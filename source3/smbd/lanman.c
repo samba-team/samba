@@ -3476,17 +3476,14 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 	}
 
 	if (uLevel == 1 || uLevel == 2) {
-		const char *homedir = "";
-		if (vuser != NULL) {
-			homedir = pdb_get_homedir(
-				vuser->server_info->sam_account);
-		}
 		memset(p+22,' ',16);	/* password */
 		SIVALS(p,38,-1);		/* password age */
 		SSVAL(p,42,
 		conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
-		strlcpy(p2, homedir, PTR_DIFF(endp,p2));
+		strlcpy(p2, vuser ? pdb_get_homedir(
+				vuser->server_info->sam_account) : "",
+			PTR_DIFF(endp,p2));
 		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
@@ -3495,7 +3492,9 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		*p2++ = 0;
 		SSVAL(p,52,0);		/* flags */
 		SIVAL(p,54,PTR_DIFF(p2,*rdata));		/* script_path */
-		strlcpy(p2,vuser && vuser->logon_script ? vuser->logon_script : "",PTR_DIFF(endp,p2));
+		strlcpy(p2, vuser ? pdb_get_logon_script(
+				vuser->server_info->sam_account) : "",
+			PTR_DIFF(endp,p2));
 		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
@@ -3648,7 +3647,8 @@ static bool api_WWkstaUserLogon(connection_struct *conn,uint16 vuid,
 		}
 
 		PACKS(&desc,"z",lp_workgroup());/* domain */
-		PACKS(&desc,"z", vuser && vuser->logon_script ? vuser->logon_script :""); /* script path */
+		PACKS(&desc,"z", vuser ? pdb_get_logon_script(
+			      vuser->server_info->sam_account) : ""); /* script path */
 		PACKI(&desc,"D",0x00000000);		/* reserved */
 	}
 
