@@ -44,10 +44,12 @@ enum ndr_err_code ndr_push_nbt_dgram_packet(struct ndr_push *ndr, int ndr_flags,
 enum ndr_err_code ndr_pull_nbt_dgram_packet(struct ndr_pull *ndr, int ndr_flags, struct nbt_dgram_packet *r);
 void ndr_print_nbt_dgram_packet(struct ndr_print *ndr, const char *name, const struct nbt_dgram_packet *r);
 void ndr_print_nbt_netlogon_command(struct ndr_print *ndr, const char *name, enum nbt_netlogon_command r);
+void ndr_print_nbt_netlogon_version(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_nbt_netlogon_query_for_pdc(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_query_for_pdc *r);
 void ndr_print_nbt_netlogon_query_for_pdc2(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_query_for_pdc2 *r);
 void ndr_print_nbt_netlogon_response_from_pdc(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_response_from_pdc *r);
 void ndr_print_nbt_server_type(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_nbt_dc_sock_addr(struct ndr_print *ndr, const char *name, const struct nbt_dc_sock_addr *r);
 void ndr_print_nbt_netlogon_response_from_pdc2(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_response_from_pdc2 *r);
 void ndr_print_nbt_db_change(struct ndr_print *ndr, const char *name, const struct nbt_db_change *r);
 void ndr_print_nbt_netlogon_announce_uas(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_announce_uas *r);
