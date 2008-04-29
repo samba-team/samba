@@ -713,6 +713,18 @@ fail:
 }
 
 
+static TDB_DATA regdb_fetch_key_internal(const char *key, TALLOC_CTX *mem_ctx)
+{
+	char *path = NULL;
+
+	path = normalize_reg_path(mem_ctx, key);
+	if (!path) {
+		return make_tdb_data(NULL, 0);
+	}
+
+	return dbwrap_fetch_bystring(regdb, mem_ctx, path);
+}
+
 /***********************************************************************
  Retrieve an array of strings containing subkeys.  Memory should be
  released by the caller.
