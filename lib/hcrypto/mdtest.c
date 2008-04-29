@@ -274,7 +274,7 @@ static int
 hash_test (struct hash_foo *hash, struct test *tests)
 {
     struct test *t;
-    EVP_MD_CTX ectx;
+    EVP_MD_CTX *ectx;
     unsigned int esize;
     void *ctx = malloc(hash->psize);
     unsigned char *res = malloc(hash->hsize);
@@ -283,8 +283,8 @@ hash_test (struct hash_foo *hash, struct test *tests)
     for (t = tests; t->str; ++t) {
 	char buf[1000];
 
-	EVP_MD_CTX_init(&ectx);
-	EVP_DigestInit_ex(&ectx, hash->evp(), NULL);
+	ectx = EVP_MD_CTX_create();
+	EVP_DigestInit_ex(ectx, hash->evp(), NULL);
 	    
 	(*hash->init)(ctx);
 	if(strcmp(t->str, ONE_MILLION_A) == 0) {
@@ -292,11 +292,11 @@ hash_test (struct hash_foo *hash, struct test *tests)
 	    memset(buf, 'a', sizeof(buf));
 	    for(i = 0; i < 1000; i++) {
 		(*hash->update)(ctx, buf, sizeof(buf));
-		EVP_DigestUpdate(&ectx, buf, sizeof(buf));
+		EVP_DigestUpdate(ectx, buf, sizeof(buf));
 	    }
 	} else {
 	    (*hash->update)(ctx, (unsigned char *)t->str, strlen(t->str));
-	    EVP_DigestUpdate(&ectx, t->str, strlen(t->str));
+	    EVP_DigestUpdate(ectx, t->str, strlen(t->str));
 	}
 
 	(*hash->final) (res, ctx);
@@ -320,8 +320,8 @@ hash_test (struct hash_foo *hash, struct test *tests)
 	    return 1;
 	}
 	
-	EVP_DigestFinal_ex(&ectx, res, &esize);
-	EVP_MD_CTX_cleanup(&ectx);
+	EVP_DigestFinal_ex(ectx, res, &esize);
+	EVP_MD_CTX_destroy(ectx);
 
 	if (hash->hsize != esize) {
 	    printf("EVP %s returned wrong hash size\n", hash->name);
