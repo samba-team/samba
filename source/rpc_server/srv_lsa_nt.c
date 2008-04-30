@@ -1479,8 +1479,8 @@ NTSTATUS _lsa_GetUserName(pipes_struct *p,
 			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
-		username = vuser->user.smb_name;
-		domname = vuser->user.domain;
+		username = vuser->server_info->sanitized_username;
+		domname = pdb_get_domain(vuser->server_info->sam_account);
 	}
 
 	account_name = TALLOC_ZERO_P(p->mem_ctx, struct lsa_String);

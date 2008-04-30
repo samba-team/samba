@@ -1989,7 +1989,8 @@ static bool is_owner(struct current_user *user, const char *servicename,
 		return False;
 
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
-		return strequal(pjob->user, vuser->user.smb_name);
+		return strequal(pjob->user,
+				vuser->server_info->sanitized_username);
 	} else {
 		return strequal(pjob->user, uidtoname(user->ut.uid));
 	}
@@ -2438,8 +2439,10 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname, NT_DE
 
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
 		fstrcpy(pjob.user, lp_printjob_username(snum));
-		standard_sub_basic(vuser->user.smb_name, vuser->user.domain, 
-				   pjob.user, sizeof(pjob.user)-1);
+		standard_sub_basic(
+			vuser->server_info->sanitized_username,
+			pdb_get_domain(vuser->server_info->sam_account),
+			pjob.user, sizeof(pjob.user)-1);
 		/* ensure NULL termination */ 
 		pjob.user[sizeof(pjob.user)-1] = '\0'; 
 	} else {

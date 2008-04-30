@@ -1387,7 +1387,13 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 		if(session_tag != UID_FIELD_INVALID) {
 			vuser = get_valid_user_struct(session_tag);
 			if (vuser) {
-				set_current_user_info(&vuser->user);
+				set_current_user_info(
+					vuser->server_info->sanitized_username,
+					vuser->server_info->unix_name,
+					pdb_get_fullname(vuser->server_info
+							 ->sam_account),
+					pdb_get_domain(vuser->server_info
+						       ->sam_account));
 			}
 		}
 	}

@@ -1778,8 +1778,6 @@ typedef struct user_struct {
 	struct user_struct *next, *prev;
 	uint16 vuid; /* Tag for this entry. */
 
-	userdom_struct user;
-
 	char *session_keystr; /* used by utmp and pam session code.  
 				 TDB key string */
 	int homes_snum;

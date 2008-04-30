@@ -1107,6 +1107,7 @@ static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_inf
 	DOM_SID guest_sid;
 	bool ret;
 	char zeros[16];
+	fstring tmp;
 
 	if ( !(sampass = samu_new( NULL )) ) {
 		return NT_STATUS_NO_MEMORY;
@@ -1144,6 +1145,9 @@ static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_inf
 	ZERO_STRUCT(zeros);
 	(*server_info)->user_session_key = data_blob(zeros, sizeof(zeros));
 	(*server_info)->lm_session_key = data_blob(zeros, sizeof(zeros));
+
+	alpha_strcpy(tmp, pdb_get_username(sampass), ". _-$", sizeof(tmp));
+	(*server_info)->sanitized_username = talloc_strdup(*server_info, tmp);
 
 	return NT_STATUS_OK;
 }
@@ -1196,6 +1200,12 @@ static auth_serversupplied_info *copy_serverinfo(auth_serversupplied_info *src)
 	dst->pam_handle = NULL;
 	dst->unix_name = talloc_strdup(dst, src->unix_name);
 	if (!dst->unix_name) {
+		TALLOC_FREE(dst);
+		return NULL;
+	}
+
+	dst->sanitized_username = talloc_strdup(dst, src->sanitized_username);
+	if (!dst->sanitized_username) {
 		TALLOC_FREE(dst);
 		return NULL;
 	}

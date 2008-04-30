@@ -3340,7 +3340,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 	if(vuser != NULL) {
 		DEBUG(3,("  Username of UID %d is %s\n",
 			 (int)vuser->server_info->uid,
-			 vuser->user.unix_name));
+			 vuser->server_info->unix_name));
 	}
 
 	if (!str1 || !str2 || !UserName || !p) {
@@ -3413,7 +3413,9 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 
 		/* EEK! the cifsrap.txt doesn't have this in!!!! */
 		SIVAL(p,usri11_full_name,PTR_DIFF(p2,p)); /* full name */
-		strlcpy(p2,((vuser != NULL) ? vuser->user.full_name : UserName),PTR_DIFF(endp,p2));
+		strlcpy(p2,((vuser != NULL)
+			    ? pdb_get_fullname(vuser->server_info->sam_account)
+			    : UserName),PTR_DIFF(endp,p2));
 		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
@@ -3503,7 +3505,9 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		if (uLevel == 2) {
 			SIVAL(p,60,0);		/* auth_flags */
 			SIVAL(p,64,PTR_DIFF(p2,*rdata)); /* full_name */
-   			strlcpy(p2,((vuser != NULL) ? vuser->user.full_name : UserName),PTR_DIFF(endp,p2));
+			strlcpy(p2,((vuser != NULL)
+				    ? pdb_get_fullname(vuser->server_info->sam_account)
+				    : UserName),PTR_DIFF(endp,p2));
 			p2 = skip_string(*rdata,*rdata_len,p2);
 			if (!p2) {
 				return False;
@@ -3592,7 +3596,7 @@ static bool api_WWkstaUserLogon(connection_struct *conn,uint16 vuid,
 	if(vuser != NULL) {
 		DEBUG(3,("  Username of UID %d is %s\n",
 			 (int)vuser->server_info->uid,
-			 vuser->user.unix_name));
+			 vuser->server_info->unix_name));
 	}
 
 	uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
