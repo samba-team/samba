@@ -50,7 +50,6 @@ unsigned lineno = 1;
 
 static char * handle_string(void);
 static int lex_input(char *, int);
-static void error_message (const char *format, ...);
 
 struct hx_expr_input _hx509_expr_input;
 
@@ -81,25 +80,6 @@ TAILMATCH		{ return kw_TAILMATCH; }
 [ \t]			;
 %%
 
-void
-error_message (const char *format, ...)
-{
-     va_list args;
-
-     if (_hx509_expr_input.error)
-         free(_hx509_expr_input.error);
-
-     va_start (args, format);
-     vasprintf(&_hx509_expr_input.error, format, args);
-     va_end (args);
-}
-
-void
-_hx509_sel_yyerror (char *s)
-{
-    error_message("%s", s);
-}
-
 static char *
 handle_string(void)
 {
@@ -115,7 +95,7 @@ handle_string(void)
 	    continue;
 	}
 	if(c == '\n'){
-	    error_message("unterminated string");
+	    _hx509_sel_yyerror("unterminated string");
 	    lineno++;
 	    break;
 	}
