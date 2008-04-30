@@ -487,7 +487,7 @@ interface nbt
 	   quite identical to, the netlogon structures above */
 
 	typedef struct {
-		uint16               type;
+		nbt_netlogon_command type;
 		nstring              pdc_name;
 		nstring              user_name;
 		nstring              domain_name;
@@ -497,7 +497,7 @@ interface nbt
 	} nbt_cldap_netlogon_1;
 
 	typedef struct {
-		uint16               type;
+		nbt_netlogon_command type;
 		nstring              pdc_name;
 		nstring              user_name;
 		nstring              domain_name;
@@ -514,7 +514,8 @@ interface nbt
 	} nbt_cldap_netlogon_3;
 
 	typedef [public] struct {
-		uint32               type;
+		nbt_netlogon_command type;
+		uint16               sbz;
 		nbt_server_type      server_type;
 		GUID                 domain_uuid;
 		nbt_string           forest;
@@ -531,7 +532,8 @@ interface nbt
 	} nbt_cldap_netlogon_5;
 
 	typedef struct {
-		uint32               type;
+		nbt_netlogon_command type;
+		uint16               sbz;
 		nbt_server_type      server_type;
 		GUID                 domain_uuid;
 		nbt_string           forest;
