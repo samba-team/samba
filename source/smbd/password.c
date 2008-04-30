@@ -119,8 +119,6 @@ void invalidate_vuid(uint16 vuid)
 
 	session_yield(vuser);
 
-	data_blob_free(&vuser->session_key);
-
 	if (vuser->auth_ntlmssp_state) {
 		auth_ntlmssp_end(&vuser->auth_ntlmssp_state);
 	}
@@ -252,7 +250,6 @@ static int register_homes_share(const char *username)
 
 int register_existing_vuid(uint16 vuid,
 			auth_serversupplied_info *server_info,
-			DATA_BLOB session_key,
 			DATA_BLOB response_blob,
 			const char *smb_name)
 {
@@ -278,8 +275,6 @@ int register_existing_vuid(uint16 vuid,
 	fstrcpy(vuser->user.domain, pdb_get_domain(server_info->sam_account));
 	fstrcpy(vuser->user.full_name,
 	pdb_get_fullname(server_info->sam_account));
-
-	vuser->session_key = session_key;
 
 	DEBUG(10,("register_existing_vuid: (%u,%u) %s %s %s guest=%d\n",
 			(unsigned int)vuser->server_info->uid,
@@ -328,7 +323,7 @@ int register_existing_vuid(uint16 vuid,
 			!srv_signing_started()) {
 		/* Try and turn on server signing on the first non-guest
 		 * sessionsetup. */
-		srv_set_signing(vuser->session_key, response_blob);
+		srv_set_signing(vuser->server_info->user_session_key, response_blob);
 	}
 
 	/* fill in the current_user_info struct */

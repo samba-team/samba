@@ -560,9 +560,13 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	if (!is_partial_auth_vuid(sess_vuid)) {
 		sess_vuid = register_initial_vuid();
 	}
+
+	data_blob_free(&server_info->user_session_key);
+	server_info->user_session_key = session_key;
+	session_key = data_blob_null;
+
 	sess_vuid = register_existing_vuid(sess_vuid,
 					server_info,
-					session_key,
 					nullblob,
 					client);
 
@@ -573,7 +577,6 @@ static void reply_spnego_kerberos(struct smb_request *req,
 
 	if (sess_vuid == UID_FIELD_INVALID ) {
 		ret = NT_STATUS_LOGON_FAILURE;
-		data_blob_free(&session_key);
 	} else {
 		/* current_user_info is changed on new vuid */
 		reload_services( True );
@@ -649,14 +652,19 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 			(*auth_ntlmssp_state)->ntlmssp_state->session_key.length);
 
 		if (!is_partial_auth_vuid(vuid)) {
-			data_blob_free(&session_key);
 			nt_status = NT_STATUS_LOGON_FAILURE;
 			goto out;
 		}
+
+		data_blob_free(&server_info->user_session_key);
+		server_info->user_session_key =
+			data_blob(
+			(*auth_ntlmssp_state)->ntlmssp_state->session_key.data,
+			(*auth_ntlmssp_state)->ntlmssp_state->session_key.length);
+
 		/* register_existing_vuid keeps the server info */
 		if (register_existing_vuid(vuid,
-				server_info,
-				session_key, nullblob,
+				server_info, nullblob,
 				(*auth_ntlmssp_state)->ntlmssp_state->user) !=
 					vuid) {
 			data_blob_free(&session_key);
@@ -1398,8 +1406,6 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	bool doencrypt = global_encrypted_passwords_negotiated;
 
-	DATA_BLOB session_key;
-
 	START_PROFILE(SMBsesssetupX);
 
 	ZERO_STRUCT(lm_resp);
@@ -1747,13 +1753,6 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		return;
 	}
 
-	if (server_info->user_session_key.data) {
-		session_key = data_blob(server_info->user_session_key.data,
-				server_info->user_session_key.length);
-	} else {
-		session_key = data_blob_null;
-	}
-
 	data_blob_clear_free(&plaintext_password);
 
 	/* it's ok - setup a reply */
@@ -1772,7 +1771,6 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	if (lp_security() == SEC_SHARE) {
 		sess_vuid = UID_FIELD_INVALID;
-		data_blob_free(&session_key);
 		TALLOC_FREE(server_info);
 	} else {
 		/* Ignore the initial vuid. */
@@ -1780,7 +1778,6 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		if (sess_vuid == UID_FIELD_INVALID) {
 			data_blob_free(&nt_resp);
 			data_blob_free(&lm_resp);
-			data_blob_free(&session_key);
 			reply_nterror(req, nt_status_squash(
 					      NT_STATUS_LOGON_FAILURE));
 			END_PROFILE(SMBsesssetupX);
@@ -1789,13 +1786,11 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		/* register_existing_vuid keeps the server info */
 		sess_vuid = register_existing_vuid(sess_vuid,
 					server_info,
-					session_key,
 					nt_resp.data ? nt_resp : lm_resp,
 					sub_user);
 		if (sess_vuid == UID_FIELD_INVALID) {
 			data_blob_free(&nt_resp);
 			data_blob_free(&lm_resp);
-			data_blob_free(&session_key);
 			reply_nterror(req, nt_status_squash(
 					      NT_STATUS_LOGON_FAILURE));
 			END_PROFILE(SMBsesssetupX);
