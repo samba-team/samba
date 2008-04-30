@@ -746,11 +746,13 @@ LDAP_dn2principal(krb5_context context, HDB * db, const char *dn,
     if (ret)
 	goto out;
 
-    rc = ldap_search_s(HDB2LDAP(db), dn, LDAP_SCOPE_SUBTREE,
-		       filter, krb5principal_attrs,
-		       0, &res);
+    rc = ldap_search_ext_s(HDB2LDAP(db), dn, LDAP_SCOPE_SUBTREE,
+			   filter, krb5principal_attrs, 0,
+			   NULL, NULL, NULL,
+			   0, &res);
     if (check_ldap(context, db, rc)) {
-	krb5_set_error_string(context, "ldap_search_s: filter: %s error: %s",
+	krb5_set_error_string(context, "ldap_search_ext_s: "
+			      "filter: %s error: %s",
 			      filter, ldap_err2string(rc));
 	ret = HDB_ERR_NOENTRY;
 	goto out;
@@ -806,10 +808,14 @@ LDAP__lookup_princ(krb5_context context,
     if (ret)
 	goto out;
 
-    rc = ldap_search_s(HDB2LDAP(db), HDB2BASE(db), LDAP_SCOPE_SUBTREE, filter, 
-		       krb5kdcentry_attrs, 0, msg);
+    rc = ldap_search_ext_s(HDB2LDAP(db), HDB2BASE(db), 
+			   LDAP_SCOPE_SUBTREE, filter, 
+			   krb5kdcentry_attrs, 0,
+			   NULL, NULL, NULL,
+			   0, msg);
     if (check_ldap(context, db, rc)) {
-	krb5_set_error_string(context, "ldap_search_s: filter: %s - error: %s",
+	krb5_set_error_string(context, "ldap_search_ext_s: "
+			      "filter: %s - error: %s",
 			      filter, ldap_err2string(rc));
 	ret = HDB_ERR_NOENTRY;
 	goto out;
@@ -834,11 +840,13 @@ LDAP__lookup_princ(krb5_context context,
 	if (ret)
 	    goto out;
 
-	rc = ldap_search_s(HDB2LDAP(db), HDB2BASE(db), LDAP_SCOPE_SUBTREE, 
-			   filter, krb5kdcentry_attrs, 0, msg);
+	rc = ldap_search_ext_s(HDB2LDAP(db), HDB2BASE(db), LDAP_SCOPE_SUBTREE, 
+			       filter, krb5kdcentry_attrs, 0,
+			       NULL, NULL, NULL,
+			       0, msg);
 	if (check_ldap(context, db, rc)) {
 	    krb5_set_error_string(context, 
-				  "ldap_search_s: filter: %s error: %s",
+				  "ldap_search_ext_s: filter: %s error: %s",
 				  filter, ldap_err2string(rc));
 	    ret = HDB_ERR_NOENTRY;
 	    goto out;
@@ -1366,7 +1374,7 @@ LDAP_seq(krb5_context context, HDB * db, unsigned flags, hdb_entry_ex * entry)
 		&& parserc != LDAP_MORE_RESULTS_TO_RETURN) {
 	        krb5_set_error_string(context, "ldap_parse_result: %s",
 				      ldap_err2string(parserc));
-		ldap_abandon(HDB2LDAP(db), msgid);
+		ldap_abandon_ext(HDB2LDAP(db), msgid, NULL, NULL);
 	    }
 	    ret = HDB_ERR_NOENTRY;
 	    HDBSETMSGID(db, -1);
@@ -1380,7 +1388,7 @@ LDAP_seq(krb5_context context, HDB * db, unsigned flags, hdb_entry_ex * entry)
 	default:
 	    /* Some unspecified error (timeout?). Abandon. */
 	    ldap_msgfree(e);
-	    ldap_abandon(HDB2LDAP(db), msgid);
+	    ldap_abandon_ext(HDB2LDAP(db), msgid, NULL, NULL);
 	    ret = HDB_ERR_NOENTRY;
 	    HDBSETMSGID(db, -1);
 	    break;
@@ -1413,10 +1421,11 @@ LDAP_firstkey(krb5_context context, HDB *db, unsigned flags,
     if (ret)
 	return ret;
 
-    msgid = ldap_search(HDB2LDAP(db), HDB2BASE(db),
+    ret = ldap_search_ext(HDB2LDAP(db), HDB2BASE(db),
 			LDAP_SCOPE_SUBTREE,
 			"(|(objectClass=krb5Principal)(objectClass=sambaSamAccount))",
-			krb5kdcentry_attrs, 0);
+			krb5kdcentry_attrs, 0,
+			NULL, NULL, NULL, 0, &msgid);
     if (msgid < 0)
 	return HDB_ERR_NOENTRY;
 
@@ -1588,12 +1597,12 @@ LDAP_store(krb5_context context, HDB * db, unsigned flags,
     /* write entry into directory */
     if (e == NULL) {
 	/* didn't exist before */
-	rc = ldap_add_s(HDB2LDAP(db), dn, mods);
-	errfn = "ldap_add_s";
+	rc = ldap_add_ext_s(HDB2LDAP(db), dn, mods, NULL, NULL );
+	errfn = "ldap_add_ext_s";
     } else {
 	/* already existed, send deltas only */
-	rc = ldap_modify_s(HDB2LDAP(db), dn, mods);
-	errfn = "ldap_modify_s";
+	rc = ldap_modify_ext_s(HDB2LDAP(db), dn, mods, NULL, NULL );
+	errfn = "ldap_modify_ext_s";
     }
 
     if (check_ldap(context, db, rc)) {
@@ -1652,9 +1661,9 @@ LDAP_remove(krb5_context context, HDB *db, krb5_const_principal principal)
 	goto out;
     }
 
-    rc = ldap_delete_s(HDB2LDAP(db), dn);
+    rc = ldap_delete_ext_s(HDB2LDAP(db), dn, NULL, NULL );
     if (check_ldap(context, db, rc)) {
-	krb5_set_error_string(context, "ldap_delete_s: %s", 
+	krb5_set_error_string(context, "ldap_delete_ext_s: %s", 
 			      ldap_err2string(rc));
 	ret = HDB_ERR_CANT_LOCK_DB;
     } else
