@@ -220,3 +220,13 @@ _hx509_expr_parse(const char *buf)
 
     return _hx509_expr_input.expr;
 }
+
+void
+_hx509_sel_yyerror (char *s)
+{
+     if (_hx509_expr_input.error)
+         free(_hx509_expr_input.error);
+     
+     _hx509_expr_input.error = strdup(s);
+}
+
