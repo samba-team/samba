@@ -527,6 +527,10 @@ void winbind_child_died(pid_t pid)
 		return;
 	}
 
+	/* This will be re-added in fork_domain_child() */
+
+	DLIST_REMOVE(children, child);
+	
 	remove_fd_event(&child->event);
 	close(child->event.fd);
 	child->event.fd = 0;
