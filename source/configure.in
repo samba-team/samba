@@ -5729,6 +5729,7 @@ case "$host_os" in
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris.o \
 		    nsswitch/winbind_nss_linux.o"
 		WINBIND_NSS_EXTRA_LIBS="-lsocket"
+		PAM_WINBIND_EXTRA_LIBS="-lsocket"
 		;;
 	*hpux11*)
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris.o"
@@ -5823,6 +5824,7 @@ AC_SUBST(WINBIND_NSS_LDSHFLAGS)
 AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
 AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
 AC_SUBST(NSSSONAMEVERSIONSUFFIX)
+AC_SUBST(PAM_WINBIND_EXTRA_LIBS)
 
 AC_SUBST(WINBIND_KRB5_LOCATOR)
 
