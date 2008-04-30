@@ -203,7 +203,14 @@ static bool ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 		DEBUG(1,("ads_dns_parse_rr_srv: Failed to uncompress name!\n"));
 		return False;
 	}
+
 	srv->hostname = talloc_strdup( ctx, dcname );
+
+	DEBUG(10,("ads_dns_parse_rr_srv: Parsed %s [%u, %u, %u]\n", 
+		  srv->hostname, 
+		  srv->priority,
+		  srv->weight,
+		  srv->port));
 
 	return True;
 }
@@ -285,7 +292,7 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
                               uint8 **buf, int *resp_length )
 {
 	uint8 *buffer = NULL;
-	size_t buf_len;
+	size_t buf_len = 0;
 	int resp_len = NS_PACKETSZ;
 	static time_t last_dns_check = 0;
 	static NTSTATUS last_dns_status = NT_STATUS_OK;
@@ -346,7 +353,26 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 			last_dns_check = time(NULL);
 			return last_dns_status;
 		}
-	} while ( buf_len < resp_len && resp_len < MAX_DNS_PACKET_SIZE );
+
+		/* On AIX, Solaris, and possibly some older glibc systems (e.g. SLES8)
+		   truncated replies never give back a resp_len > buflen
+		   which ends up causing DNS resolve failures on large tcp DNS replies */
+
+		if (buf_len == resp_len) {
+			if (resp_len == MAX_DNS_PACKET_SIZE) {
+				DEBUG(1,("dns_send_req: DNS reply too large when resolving %s\n",
+					name));
+				TALLOC_FREE( buffer );
+				last_dns_status = NT_STATUS_BUFFER_TOO_SMALL;
+				last_dns_check = time(NULL);
+				return last_dns_status;
+			}
+
+			resp_len = MIN(resp_len*2, MAX_DNS_PACKET_SIZE);
+		}
+
+
+	} while ( buf_len < resp_len && resp_len <= MAX_DNS_PACKET_SIZE );
 
 	*buf = buffer;
 	*resp_length = resp_len;
@@ -429,7 +455,7 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
 		if (!ads_dns_parse_query(ctx, buffer,
 					buffer+resp_len, &p, &q)) {
 			DEBUG(1,("ads_dns_lookup_srv: "
-				"Failed to parse query record!\n"));
+				 "Failed to parse query record [%d]!\n", rrnum));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -440,7 +466,7 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
 		if (!ads_dns_parse_rr_srv(ctx, buffer, buffer+resp_len,
 					&p, &dcs[rrnum])) {
 			DEBUG(1,("ads_dns_lookup_srv: "
-				"Failed to parse answer record!\n"));
+				 "Failed to parse answer recordi [%d]!\n", rrnum));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -455,7 +481,7 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
 		if (!ads_dns_parse_rr( ctx, buffer,
 					buffer+resp_len, &p, &rr)) {
 			DEBUG(1,("ads_dns_lookup_srv: "
-				"Failed to parse authority record!\n"));
+				 "Failed to parse authority record! [%d]\n", rrnum));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -469,7 +495,7 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
 		if (!ads_dns_parse_rr(ctx, buffer, buffer+resp_len,
 					&p, &rr)) {
 			DEBUG(1,("ads_dns_lookup_srv: Failed "
-				"to parse additional records section!\n"));
+				 "to parse additional records section! [%d]\n", rrnum));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
