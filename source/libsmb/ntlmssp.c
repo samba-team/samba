@@ -95,6 +95,8 @@ void debug_ntlmssp_flags(uint32 neg_flags)
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_NTLM2\n"));
 	if (neg_flags & NTLMSSP_CHAL_TARGET_INFO) 
 		DEBUGADD(4, ("  NTLMSSP_CHAL_TARGET_INFO\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_VERSION)
+		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_VERSION\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_128) 
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_128\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) 
@@ -449,8 +451,8 @@ static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 
 	/* Woop Woop - unknown flag for Windows compatibility...
 	   What does this really do ? JRA. */
-	if (!(neg_flags & NTLMSSP_UNKNOWN_02000000)) {
-		ntlmssp_state->neg_flags &= ~NTLMSSP_UNKNOWN_02000000;
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_VERSION)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_VERSION;
 	}
 
 	if ((neg_flags & NTLMSSP_REQUEST_TARGET)) {
@@ -934,7 +936,7 @@ NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
 	(*ntlmssp_state)->neg_flags = 
 		NTLMSSP_NEGOTIATE_128 |
 		NTLMSSP_NEGOTIATE_56 |
-		NTLMSSP_UNKNOWN_02000000 |
+		NTLMSSP_NEGOTIATE_VERSION |
 		NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_NEGOTIATE_NTLM2 |
