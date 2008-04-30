@@ -1,5 +1,9 @@
-2008-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+2008-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* sel-lex.l: Use _hx509_sel_yyerror() instead of error_message().
+	
+2008-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* sel-lex.l: Include <config.h>
 
 2008-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
