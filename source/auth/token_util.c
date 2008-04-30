@@ -210,7 +210,7 @@ static NTSTATUS create_builtin_users( void )
 
 	status = pdb_create_builtin_alias( BUILTIN_ALIAS_RID_USERS );
 	if ( !NT_STATUS_IS_OK(status) ) {
-		DEBUG(0,("create_builtin_users: Failed to create Users\n"));
+		DEBUG(5,("create_builtin_users: Failed to create Users\n"));
 		return status;
 	}
 
@@ -221,7 +221,7 @@ static NTSTATUS create_builtin_users( void )
 		sid_append_rid(&dom_users, DOMAIN_GROUP_RID_USERS );
 		status = pdb_add_aliasmem( &global_sid_Builtin_Users, &dom_users);
 		if ( !NT_STATUS_IS_OK(status) ) {
-			DEBUG(0,("create_builtin_administrators: Failed to add Domain Users to"
+			DEBUG(4,("create_builtin_administrators: Failed to add Domain Users to"
 				" Users\n"));
 			return status;
 		}
@@ -244,7 +244,7 @@ static NTSTATUS create_builtin_administrators( void )
 
 	status = pdb_create_builtin_alias( BUILTIN_ALIAS_RID_ADMINS );
 	if ( !NT_STATUS_IS_OK(status) ) {
-		DEBUG(0,("create_builtin_administrators: Failed to create Administrators\n"));
+		DEBUG(5,("create_builtin_administrators: Failed to create Administrators\n"));
 		return status;
 	}
 
@@ -255,7 +255,7 @@ static NTSTATUS create_builtin_administrators( void )
 		sid_append_rid(&dom_admins, DOMAIN_GROUP_RID_ADMINS);
 		status = pdb_add_aliasmem( &global_sid_Builtin_Administrators, &dom_admins );
 		if ( !NT_STATUS_IS_OK(status) ) {
-			DEBUG(0,("create_builtin_administrators: Failed to add Domain Admins"
+			DEBUG(4,("create_builtin_administrators: Failed to add Domain Admins"
 				" Administrators\n"));
 			return status;
 		}
@@ -273,7 +273,7 @@ static NTSTATUS create_builtin_administrators( void )
 	if ( ret ) {
 		status = pdb_add_aliasmem( &global_sid_Builtin_Administrators, &root_sid );
 		if ( !NT_STATUS_IS_OK(status) ) {
-			DEBUG(0,("create_builtin_administrators: Failed to add root"
+			DEBUG(4,("create_builtin_administrators: Failed to add root"
 				" Administrators\n"));
 			return status;
 		}
@@ -381,7 +381,8 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 			become_root();
 			status = create_builtin_administrators( );
 			if ( !NT_STATUS_IS_OK(status) ) {
-				DEBUG(2,("create_local_nt_token: Failed to create BUILTIN\\Administrators group!\n"));
+				DEBUG(2,("WARNING: Failed to create BUILTIN\\Administrators "
+					 "group!  Can Winbind allocate gids?\n"));
 				/* don't fail, just log the message */
 			}
 			unbecome_root();
@@ -408,7 +409,8 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 			become_root();
 			status = create_builtin_users( );
 			if ( !NT_STATUS_IS_OK(status) ) {
-				DEBUG(2,("create_local_nt_token: Failed to create BUILTIN\\Users group!\n"));
+				DEBUG(2,("WARNING: Failed to create BUILTIN\\Users group! "
+					 "Can Winbind allocate gids?\n"));
 				/* don't fail, just log the message */
 			}
 			unbecome_root();
