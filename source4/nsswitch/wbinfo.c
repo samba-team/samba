@@ -614,6 +614,23 @@ static bool wbinfo_sid_to_gid(char *sid)
 	return true;
 }
 
+static const char *sid_type_lookup(enum lsa_SidType r)
+{
+	switch (r) {
+		case SID_NAME_USE_NONE: return "SID_NAME_USE_NONE"; break;
+		case SID_NAME_USER: return "SID_NAME_USER"; break;
+		case SID_NAME_DOM_GRP: return "SID_NAME_DOM_GRP"; break;
+		case SID_NAME_DOMAIN: return "SID_NAME_DOMAIN"; break;
+		case SID_NAME_ALIAS: return "SID_NAME_ALIAS"; break;
+		case SID_NAME_WKN_GRP: return "SID_NAME_WKN_GRP"; break;
+		case SID_NAME_DELETED: return "SID_NAME_DELETED"; break;
+		case SID_NAME_INVALID: return "SID_NAME_INVALID"; break;
+		case SID_NAME_UNKNOWN: return "SID_NAME_UNKNOWN"; break;
+		case SID_NAME_COMPUTER: return "SID_NAME_COMPUTER"; break;
+	}
+	return "Invalid sid type\n";
+}
+
 /* Convert sid to string */
 
 static bool wbinfo_lookupsid(char *sid)
@@ -634,28 +651,11 @@ static bool wbinfo_lookupsid(char *sid)
 
 	/* Display response */
 
-	d_printf("%s%c%s %d\n", response.data.name.dom_name, 
-		 winbind_separator(), response.data.name.name, 
-		 response.data.name.type);
+	d_printf("%s%c%s %s\n", response.data.name.dom_name,
+		 winbind_separator(), response.data.name.name,
+		 sid_type_lookup(response.data.name.type));
 
 	return true;
-}
-
-static const char *sid_type_lookup(enum lsa_SidType r)
-{
-	switch (r) {
-		case SID_NAME_USE_NONE: return "SID_NAME_USE_NONE"; break;
-		case SID_NAME_USER: return "SID_NAME_USER"; break;
-		case SID_NAME_DOM_GRP: return "SID_NAME_DOM_GRP"; break;
-		case SID_NAME_DOMAIN: return "SID_NAME_DOMAIN"; break;
-		case SID_NAME_ALIAS: return "SID_NAME_ALIAS"; break;
-		case SID_NAME_WKN_GRP: return "SID_NAME_WKN_GRP"; break;
-		case SID_NAME_DELETED: return "SID_NAME_DELETED"; break;
-		case SID_NAME_INVALID: return "SID_NAME_INVALID"; break;
-		case SID_NAME_UNKNOWN: return "SID_NAME_UNKNOWN"; break;
-		case SID_NAME_COMPUTER: return "SID_NAME_COMPUTER"; break;
-	}
-	return "Invalid sid type\n";
 }
 
 /* Convert string to sid */
