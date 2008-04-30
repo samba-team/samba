@@ -167,7 +167,7 @@ int get_my_ip_address( struct sockaddr_storage **pp_ss )
 			continue;
 		}
 #if defined(HAVE_IPV6)
-		if ((nics[i].ip.ss_family == AF_INET)) {
+		if ((nics[i].ip.ss_family == AF_INET6)) {
 			memcpy(&list[count++], &nics[i].ip,
 			       sizeof(struct sockaddr_storage));
 		} else
