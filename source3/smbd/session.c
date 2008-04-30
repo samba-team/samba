@@ -164,7 +164,7 @@ bool session_claim(user_struct *vuser)
 		hostname = client_addr(get_client_fd(),addr,sizeof(addr));
 	}
 
-	fstrcpy(sessionid.username, vuser->user.unix_name);
+	fstrcpy(sessionid.username, vuser->server_info->unix_name);
 	fstrcpy(sessionid.hostname, hostname);
 	sessionid.id_num = i;  /* Only valid for utmp sessions */
 	sessionid.pid = pid;

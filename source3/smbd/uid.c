@@ -97,12 +97,14 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 		}
 	}
 
-	if (!user_ok_token(vuser->user.unix_name, vuser->server_info->ptok,
+	if (!user_ok_token(vuser->server_info->unix_name,
+			   vuser->server_info->ptok,
 			   snum))
 		return(False);
 
 	readonly_share = is_share_read_only_for_token(
-		vuser->user.unix_name, vuser->server_info->ptok, SNUM(conn));
+		vuser->server_info->unix_name, vuser->server_info->ptok,
+		SNUM(conn));
 
 	token = conn->nt_user_token ?
 		conn->nt_user_token : vuser->server_info->ptok;
@@ -132,7 +134,7 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 	ent->read_only = readonly_share;
 
 	ent->admin_user = token_contains_name_in_list(
-		vuser->user.unix_name, NULL, vuser->server_info->ptok,
+		vuser->server_info->unix_name, NULL, vuser->server_info->ptok,
 		lp_admin_users(SNUM(conn)));
 
 	conn->read_only = ent->read_only;
@@ -188,7 +190,8 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 	if ((vuser) && !check_user_ok(conn, vuser, snum)) {
 		DEBUG(2,("change_to_user: SMB user %s (unix user %s, vuid %d) "
 			 "not permitted access to share %s.\n",
-			 vuser->user.smb_name, vuser->user.unix_name, vuid,
+			 vuser->server_info->sanitized_username,
+			 vuser->server_info->unix_name, vuid,
 			 lp_servicename(snum)));
 		return False;
 	}

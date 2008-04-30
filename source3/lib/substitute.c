@@ -213,11 +213,18 @@ static const char *get_smb_user_name(void)
 /*******************************************************************
  Setup the strings used by substitutions. Called per packet. Ensure
  %U name is set correctly also.
+
+ smb_name must be sanitized by alpha_strcpy
 ********************************************************************/
 
-void set_current_user_info(const userdom_struct *pcui)
+void set_current_user_info(const char *smb_name, const char *unix_name,
+			   const char *full_name, const char *domain)
 {
-	current_user_info = *pcui;
+	fstrcpy(current_user_info.smb_name, smb_name);
+	fstrcpy(current_user_info.unix_name, unix_name);
+	fstrcpy(current_user_info.full_name, full_name);
+	fstrcpy(current_user_info.domain, domain);
+
 	/* The following is safe as current_user_info.smb_name
 	 * has already been sanitised in register_existing_vuid. */
 

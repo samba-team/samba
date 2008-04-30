@@ -724,11 +724,12 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 				      return NULL;
 			}
 		} else {
-			if (!user_ok_token(vuser->user.unix_name,
+			if (!user_ok_token(vuser->server_info->unix_name,
 					   vuser->server_info->ptok, snum)) {
 				DEBUG(2, ("user '%s' (from session setup) not "
 					  "permitted to access this share "
-					  "(%s)\n", vuser->user.unix_name,
+					  "(%s)\n",
+					  vuser->server_info->unix_name,
 					  lp_servicename(snum)));
 				conn_free(conn);
 				*status = NT_STATUS_ACCESS_DENIED;
@@ -738,8 +739,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		conn->vuid = vuser->vuid;
 		conn->uid = vuser->server_info->uid;
 		conn->gid = vuser->server_info->gid;
-		string_set(&conn->user,vuser->user.unix_name);
-		fstrcpy(user,vuser->user.unix_name);
+		string_set(&conn->user,vuser->server_info->unix_name);
+		fstrcpy(user,vuser->server_info->unix_name);
 		guest = vuser->server_info->guest;
 	} else if (lp_security() == SEC_SHARE) {
 		NTSTATUS status2;

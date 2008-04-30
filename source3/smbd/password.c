@@ -253,40 +253,36 @@ int register_existing_vuid(uint16 vuid,
 			DATA_BLOB response_blob,
 			const char *smb_name)
 {
-	user_struct *vuser = get_partial_auth_user_struct(vuid);
+	fstring tmp;
+	user_struct *vuser;
+
+	vuser = get_partial_auth_user_struct(vuid);
 	if (!vuser) {
 		goto fail;
 	}
 
 	/* Use this to keep tabs on all our info from the authentication */
-	vuser->server_info = server_info;
-
-	/* Ensure that the server_info will disappear with
-	 * the vuser it is now attached to */
-
-	talloc_steal(vuser, vuser->server_info);
-
-	fstrcpy(vuser->user.unix_name, server_info->unix_name);
+	vuser->server_info = talloc_move(vuser, &server_info);
 
 	/* This is a potentially untrusted username */
-	alpha_strcpy(vuser->user.smb_name, smb_name, ". _-$",
-		sizeof(vuser->user.smb_name));
+	alpha_strcpy(tmp, smb_name, ". _-$", sizeof(tmp));
 
-	fstrcpy(vuser->user.domain, pdb_get_domain(server_info->sam_account));
-	fstrcpy(vuser->user.full_name,
-	pdb_get_fullname(server_info->sam_account));
+	vuser->server_info->sanitized_username = talloc_strdup(
+		server_info, tmp);
 
 	DEBUG(10,("register_existing_vuid: (%u,%u) %s %s %s guest=%d\n",
-			(unsigned int)vuser->server_info->uid,
-			(unsigned int)vuser->server_info->gid,
-			vuser->user.unix_name, vuser->user.smb_name,
-			vuser->user.domain, vuser->server_info->guest ));
+		  (unsigned int)vuser->server_info->uid,
+		  (unsigned int)vuser->server_info->gid,
+		  vuser->server_info->unix_name,
+		  vuser->server_info->sanitized_username,
+		  pdb_get_domain(vuser->server_info->sam_account),
+		  vuser->server_info->guest ));
 
 	DEBUG(3, ("register_existing_vuid: User name: %s\t"
-		"Real name: %s\n", vuser->user.unix_name,
-		vuser->user.full_name));
+		  "Real name: %s\n", vuser->server_info->unix_name,
+		  pdb_get_fullname(vuser->server_info->sam_account)));
 
-	if (!server_info->ptok) {
+	if (!vuser->server_info->ptok) {
 		DEBUG(1, ("register_existing_vuid: server_info does not "
 			"contain a user_token - cannot continue\n"));
 		goto fail;
@@ -294,7 +290,7 @@ int register_existing_vuid(uint16 vuid,
 
 	DEBUG(3,("register_existing_vuid: UNIX uid %d is UNIX user %s, "
 		"and will be vuid %u\n", (int)vuser->server_info->uid,
-		 vuser->user.unix_name, vuser->vuid));
+		 vuser->server_info->unix_name, vuser->vuid));
 
 	next_vuid++;
 	num_validated_vuids++;
@@ -316,7 +312,7 @@ int register_existing_vuid(uint16 vuid,
 
 	if (!vuser->server_info->guest) {
 		vuser->homes_snum = register_homes_share(
-			vuser->user.unix_name);
+			vuser->server_info->unix_name);
 	}
 
 	if (srv_is_signing_negotiated() && !vuser->server_info->guest &&
@@ -327,7 +323,12 @@ int register_existing_vuid(uint16 vuid,
 	}
 
 	/* fill in the current_user_info struct */
-	set_current_user_info( &vuser->user );
+	set_current_user_info(
+		vuser->server_info->sanitized_username,
+		vuser->server_info->unix_name,
+		pdb_get_fullname(vuser->server_info->sam_account),
+		pdb_get_domain(vuser->server_info->sam_account));
+
 	return vuser->vuid;
 
   fail:
