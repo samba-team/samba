@@ -1780,8 +1780,6 @@ typedef struct user_struct {
 
 	userdom_struct user;
 
-	DATA_BLOB session_key;
-
 	char *session_keystr; /* used by utmp and pam session code.  
 				 TDB key string */
 	int homes_snum;
