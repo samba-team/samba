@@ -442,7 +442,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	if (pw) {
 		/* if a real user check pam account restrictions */
 		/* only really perfomed if "obey pam restriction" is true */
-		/* do this before an eventual mappign to guest occurs */
+		/* do this before an eventual mapping to guest occurs */
 		ret = smb_pam_accountcheck(pw->pw_name);
 		if (  !NT_STATUS_IS_OK(ret)) {
 			DEBUG(1,("PAM account restriction "
