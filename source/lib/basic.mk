@@ -16,6 +16,7 @@ mkinclude util/config.mk
 mkinclude tdr/config.mk
 mkinclude dbwrap/config.mk
 mkinclude crypto/config.mk
+mkinclude torture/config.mk
 
 [SUBSYSTEM::LIBCOMPRESSION]
 

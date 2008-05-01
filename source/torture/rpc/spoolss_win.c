@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "torture/torture.h"
-#include "torture/ui.h"
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_server/dcerpc_server.h"

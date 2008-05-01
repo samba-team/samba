@@ -1,17 +1,3 @@
-# TORTURE subsystem
-[LIBRARY::torture]
-PRIVATE_PROTO_HEADER = proto.h
-PUBLIC_DEPENDENCIES = \
-		LIBSAMBA-HOSTCONFIG \
-		LIBSAMBA-UTIL \
-		LIBTALLOC \
-		LIBPOPT
-
-PC_FILES += torture/torture.pc
-torture_OBJ_FILES = $(addprefix torture/, torture.o ui.o)
-
-PUBLIC_HEADERS += torture/torture.h torture/ui.h
-
 [SUBSYSTEM::TORTURE_UTIL]
 PRIVATE_DEPENDENCIES = LIBCLI_RAW LIBPYTHON smbcalls PROVISION
 PUBLIC_DEPENDENCIES = POPT_CREDENTIALS
@@ -255,8 +241,9 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY smbtorture
 #################################
 
-smbtorture_OBJ_FILES = torture/smbtorture.o
+smbtorture_OBJ_FILES = torture/smbtorture.o torture/torture.o 
 
+PUBLIC_HEADERS += torture/smbtorture.h
 MANPAGES += torture/man/smbtorture.1
 
 #################################
@@ -340,9 +327,14 @@ gcov: test
 		do $(GCOV) -p -o $$I $$I/*.c; \
 	done
 
-lcov: test
+samba.info: test
 	-rm heimdal/lib/*/{lex,parse}.{gcda,gcno}
 	lcov --base-directory `pwd` --directory . --capture --output-file samba.info
-	genhtml -o coverage samba.info
+
+lcov: samba.info
+	genhtml -o coverage $<
 
 testcov-html:: lcov
+
+clean::
+	@rm -f samba.info

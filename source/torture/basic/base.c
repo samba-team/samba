@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
+#include "torture/smbtorture.h"
 #include "torture/basic/proto.h"
 #include "libcli/libcli.h"
 #include "libcli/raw/raw_proto.h"
