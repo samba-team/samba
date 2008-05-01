@@ -236,6 +236,7 @@ static int open_cred_file(char * file_name)
 				for(length = 0;length<MOUNT_PASSWD_SIZE+1;length++) {
 					if ((temp_val[length] == '\n')
 					    || (temp_val[length] == '\0')) {
+						temp_val[length] = '\0';
 						break;
 					}
 				}
@@ -264,6 +265,7 @@ static int open_cred_file(char * file_name)
                                 for(length = 0;length<DOMAIN_SIZE+1;length++) {
 					if ((temp_val[length] == '\n')
 					    || (temp_val[length] == '\0')) {
+						temp_val[length] = '\0';
 						break;
 					}
                                 }
