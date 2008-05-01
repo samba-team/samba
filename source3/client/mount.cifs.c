@@ -213,6 +213,7 @@ static int open_cred_file(char * file_name)
 				for(length = 0;length<4087;length++) {
 					if ((temp_val[length] == '\n')
 					    || (temp_val[length] == '\0')) {
+						temp_val[length] = '\0';
 						break;
 					}
 				}
@@ -332,6 +333,7 @@ static int get_password_from_file(int file_descript, char * filename)
 			break;
 		} else /* read valid character */ {
 			if((c == 0) || (c == '\n')) {
+				mountpassword[i] = '\0';
 				break;
 			} else 
 				mountpassword[i] = c;
