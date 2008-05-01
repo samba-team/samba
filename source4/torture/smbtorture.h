@@ -18,10 +18,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __TORTURE_H__
-#define __TORTURE_H__
+#ifndef __SMBTORTURE_H__
+#define __SMBTORTURE_H__
 
-#include "torture/ui.h"
+#include "torture/torture.h"
 
 struct smbcli_state;
 
@@ -37,5 +37,4 @@ struct torture_test;
 int torture_init(void);
 bool torture_register_suite(struct torture_suite *suite);
 
-
-#endif /* __TORTURE_H__ */
+#endif /* __SMBTORTURE_H__ */

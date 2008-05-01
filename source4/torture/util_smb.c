@@ -28,7 +28,6 @@
 #include "system/shmem.h"
 #include "system/wait.h"
 #include "system/time.h"
-#include "torture/ui.h"
 #include "torture/torture.h"
 #include "util/dlinklist.h"
 #include "auth/credentials/credentials.h"
