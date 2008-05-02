@@ -12,6 +12,7 @@ Release Notes - Heimdal - Version Heimdal 1.2
   [HEIMDAL-62] - Fix printing of sig_atomic_t
   [HEIMDAL-87] - heimdal 1.1 not building under cygwin in hcrypto
   [HEIMDAL-105] - rcp: sync rcp with upstream bsd rcp codebase
+  [HEIMDAL-117] - Use libtool to detect symbol versioning (Debian Bug#453241)
 
 * Improvement
   [HEIMDAL-67] - Fix locking and store credential in atomic writes
