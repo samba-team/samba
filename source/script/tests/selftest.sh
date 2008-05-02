@@ -6,7 +6,7 @@ if [ $# != 3 ]; then
 fi
 
 SMBTORTURE4=$3
-TESTS=$2
+SUBTESTS=$2
 
 ##
 ## create the test directory
@@ -290,7 +290,7 @@ START=`date`
 
  failed=0
 
- . $SCRIPTDIR/tests_$TESTS.sh
+ . $SCRIPTDIR/tests_$SUBTESTS.sh
  exit $failed
 )
 failed=$?
