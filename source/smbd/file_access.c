@@ -183,3 +183,30 @@ bool can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_ST
 	return can_access_file(conn, fname, psbuf, FILE_WRITE_DATA);
 }
 
+/****************************************************************************
+ Check for an existing default Windows ACL on a directory.
+****************************************************************************/
+
+bool directory_has_default_acl(connection_struct *conn, const char *fname)
+{
+	/* returns talloced off tos. */
+	struct security_descriptor *secdesc = NULL;
+	unsigned int i;
+	NTSTATUS status = SMB_VFS_GET_NT_ACL(conn, fname,
+				DACL_SECURITY_INFORMATION, &secdesc);
+
+	if (!NT_STATUS_IS_OK(status) || secdesc == NULL) {
+		return false;
+	}
+
+	for (i = 0; i < secdesc->dacl->num_aces; i++) {
+		struct security_ace *psa = &secdesc->dacl->aces[i];
+		if (psa->flags & (SEC_ACE_FLAG_OBJECT_INHERIT|
+				SEC_ACE_FLAG_CONTAINER_INHERIT)) {
+			TALLOC_FREE(secdesc);
+			return true;
+		}
+	}
+	TALLOC_FREE(secdesc);
+	return false;
+}
