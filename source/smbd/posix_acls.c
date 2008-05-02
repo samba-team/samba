@@ -3814,6 +3814,26 @@ int chmod_acl(connection_struct *conn, const char *name, mode_t mode)
 }
 
 /****************************************************************************
+ Check for an existing default POSIX ACL on a directory.
+****************************************************************************/
+
+static bool directory_has_default_posix_acl(connection_struct *conn, const char *fname)
+{
+	SMB_ACL_T def_acl = SMB_VFS_SYS_ACL_GET_FILE( conn, fname, SMB_ACL_TYPE_DEFAULT);
+	bool has_acl = False;
+	SMB_ACL_ENTRY_T entry;
+
+	if (def_acl != NULL && (SMB_VFS_SYS_ACL_GET_ENTRY(conn, def_acl, SMB_ACL_FIRST_ENTRY, &entry) == 1)) {
+		has_acl = True;
+	}
+
+	if (def_acl) {
+	        SMB_VFS_SYS_ACL_FREE_ACL(conn, def_acl);
+	}
+        return has_acl;
+}
+
+/****************************************************************************
  If the parent directory has no default ACL but it does have an Access ACL,
  inherit this Access ACL to file name.
 ****************************************************************************/
@@ -3821,7 +3841,7 @@ int chmod_acl(connection_struct *conn, const char *name, mode_t mode)
 int inherit_access_acl(connection_struct *conn, const char *inherit_from_dir,
 		       const char *name, mode_t mode)
 {
-	if (directory_has_default_acl(conn, inherit_from_dir))
+	if (directory_has_default_posix_acl(conn, inherit_from_dir))
 		return 0;
 
 	return copy_access_acl(conn, inherit_from_dir, name, mode);
@@ -3850,26 +3870,6 @@ int fchmod_acl(files_struct *fsp, mode_t mode)
 
 	SMB_VFS_SYS_ACL_FREE_ACL(conn, posix_acl);
 	return ret;
-}
-
-/****************************************************************************
- Check for an existing default POSIX ACL on a directory.
-****************************************************************************/
-
-bool directory_has_default_acl(connection_struct *conn, const char *fname)
-{
-	SMB_ACL_T def_acl = SMB_VFS_SYS_ACL_GET_FILE( conn, fname, SMB_ACL_TYPE_DEFAULT);
-	bool has_acl = False;
-	SMB_ACL_ENTRY_T entry;
-
-	if (def_acl != NULL && (SMB_VFS_SYS_ACL_GET_ENTRY(conn, def_acl, SMB_ACL_FIRST_ENTRY, &entry) == 1)) {
-		has_acl = True;
-	}
-
-	if (def_acl) {
-	        SMB_VFS_SYS_ACL_FREE_ACL(conn, def_acl);
-	}
-        return has_acl;
 }
 
 /****************************************************************************
@@ -4309,4 +4309,29 @@ SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 	conn_free_internal( &conn );
 
 	return ret_sd;
+}
+
+/****************************************************************************
+ Check for an existing default Windows ACL on a directory.
+****************************************************************************/
+
+bool directory_has_default_acl(connection_struct *conn, const char *fname)
+{
+	SEC_DESC *psd = NULL; /* returns talloced off tos. */
+	unsigned int i;
+	NTSTATUS status = SMB_VFS_GET_NT_ACL(conn, fname,
+				DACL_SECURITY_INFORMATION, &psd);
+
+	if (!NT_STATUS_IS_OK(status) || psd == NULL) {
+		return false;
+	}
+
+	for (i = 0; i < psd->dacl->num_aces; i++) {
+		SEC_ACE *psa = &psd->dacl->aces[i];
+		if (psa->flags & (SEC_ACE_FLAG_OBJECT_INHERIT|
+				SEC_ACE_FLAG_CONTAINER_INHERIT)) {
+			return true;
+		}
+	}
+	return false;
 }
