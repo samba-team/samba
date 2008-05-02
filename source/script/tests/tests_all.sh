@@ -64,7 +64,7 @@ posix_s3() {
 	fi
 }
 
-if test "x$RUNTESTS" = "x" ; then
+if test "x$TESTS" = "x" ; then
 	local_s3
 	smbtorture_s3
 	smbtorture_s3_encrypted
@@ -75,7 +75,7 @@ if test "x$RUNTESTS" = "x" ; then
 	net_registry
 	posix_s3
 else
-	for THIS_TEST in $RUNTESTS; do
+	for THIS_TEST in $TESTS; do
 		$THIS_TEST
 	done
 fi
