@@ -323,7 +323,7 @@ static NTSTATUS open_file(files_struct *fsp,
 
 			/* Inherit the ACL if required */
 			if (lp_inherit_perms(SNUM(conn))) {
-				inherit_access_acl(conn, parent_dir, path,
+				inherit_access_posix_acl(conn, parent_dir, path,
 						   unx_mode);
 			}
 
@@ -2058,7 +2058,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	}
 
 	if (lp_inherit_perms(SNUM(conn))) {
-		inherit_access_acl(conn, parent_dir, name, mode);
+		inherit_access_posix_acl(conn, parent_dir, name, mode);
 	}
 
 	if (!(file_attributes & FILE_FLAG_POSIX_SEMANTICS)) {

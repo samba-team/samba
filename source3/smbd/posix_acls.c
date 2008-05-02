@@ -3783,7 +3783,7 @@ static int chmod_acl_internals( connection_struct *conn, SMB_ACL_T posix_acl, mo
  resulting ACL on TO.  Note that name is in UNIX character set.
 ****************************************************************************/
 
-static int copy_access_acl(connection_struct *conn, const char *from, const char *to, mode_t mode)
+static int copy_access_posix_acl(connection_struct *conn, const char *from, const char *to, mode_t mode)
 {
 	SMB_ACL_T posix_acl = NULL;
 	int ret = -1;
@@ -3810,7 +3810,7 @@ static int copy_access_acl(connection_struct *conn, const char *from, const char
 
 int chmod_acl(connection_struct *conn, const char *name, mode_t mode)
 {
-	return copy_access_acl(conn, name, name, mode);
+	return copy_access_posix_acl(conn, name, name, mode);
 }
 
 /****************************************************************************
@@ -3838,13 +3838,13 @@ static bool directory_has_default_posix_acl(connection_struct *conn, const char 
  inherit this Access ACL to file name.
 ****************************************************************************/
 
-int inherit_access_acl(connection_struct *conn, const char *inherit_from_dir,
+int inherit_access_posix_acl(connection_struct *conn, const char *inherit_from_dir,
 		       const char *name, mode_t mode)
 {
 	if (directory_has_default_posix_acl(conn, inherit_from_dir))
 		return 0;
 
-	return copy_access_acl(conn, inherit_from_dir, name, mode);
+	return copy_access_posix_acl(conn, inherit_from_dir, name, mode);
 }
 
 /****************************************************************************
