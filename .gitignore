@@ -1,6 +1,8 @@
 *.o
 *.po
 *~
+*.swp
+*.patch
 semantic.cache
 source/TAGS
 source/client/client_proto.h
@@ -38,6 +40,7 @@ source/cscope.out
 source/torture.tdb
 source/pkgconfig/*.pc
 source/st
+source/exports/libtdb.syms
 examples/VFS/Makefile
 examples/VFS/config.log
 examples/VFS/config.status
