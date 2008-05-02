@@ -42,9 +42,9 @@ ntlm_auth_s3() {
 	|| failed=`expr $failed + $?`
 }
 
-net_registry() {
-	echo "RUNNING SUBTESTS net_registry"
-	$SCRIPTDIR/test_net_registry.sh \
+net_s3() {
+	echo "RUNNING SUBTESTS net_s3"
+	$SCRIPTDIR/test_net_s3.sh \
 	|| failed=`expr $failed + $?`
 }
 
@@ -72,7 +72,7 @@ if test "x$TESTS" = "x" ; then
 	smbclient_s3_encrypted
 	wbinfo_s3
 	ntlm_auth_s3
-	net_registry
+	net_s3
 	posix_s3
 else
 	for THIS_TEST in $TESTS; do
