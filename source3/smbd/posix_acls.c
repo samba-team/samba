@@ -4310,28 +4310,3 @@ SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 
 	return ret_sd;
 }
-
-/****************************************************************************
- Check for an existing default Windows ACL on a directory.
-****************************************************************************/
-
-bool directory_has_default_acl(connection_struct *conn, const char *fname)
-{
-	SEC_DESC *psd = NULL; /* returns talloced off tos. */
-	unsigned int i;
-	NTSTATUS status = SMB_VFS_GET_NT_ACL(conn, fname,
-				DACL_SECURITY_INFORMATION, &psd);
-
-	if (!NT_STATUS_IS_OK(status) || psd == NULL) {
-		return false;
-	}
-
-	for (i = 0; i < psd->dacl->num_aces; i++) {
-		SEC_ACE *psa = &psd->dacl->aces[i];
-		if (psa->flags & (SEC_ACE_FLAG_OBJECT_INHERIT|
-				SEC_ACE_FLAG_CONTAINER_INHERIT)) {
-			return true;
-		}
-	}
-	return false;
-}
