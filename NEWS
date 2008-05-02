@@ -32,6 +32,7 @@ Release Notes - Heimdal - Version Heimdal 1.2
   [HEIMDAL-74] - Add support to report extended error message back
                  in AS-REQ to support windows clients
   [HEIMDAL-116] - test pty based application (using rkpty)
+  [HEIMDAL-120] - Use new OpenLDAP API (older deprecated)
 
 * Task
   [HEIMDAL-63] - Dont try key usage KRB5_KU_AP_REQ_AUTH for TGS-REQ.
