@@ -67,7 +67,6 @@
 #include <gssapi_mech.h>
 
 #include "spnego_asn1.h"
-#include "mech/utils.h"
 #include <der.h>
 
 #include <roken.h>

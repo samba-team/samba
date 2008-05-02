@@ -1,3 +1,8 @@
+2008-05-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* spnego: Changes from doug barton to make spnego indepedant of
+	the heimdal version of the plugin system.
+
 2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* krb5: use DES_set_key_unchecked()
