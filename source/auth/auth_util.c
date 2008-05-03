@@ -985,7 +985,7 @@ bool user_in_group(const char *username, const char *groupname)
 
 
 /***************************************************************************
- Make (and fill) a user_info struct from a 'struct passwd' by conversion 
+ Make (and fill) a server_info struct from a 'struct passwd' by conversion
  to a struct samu
 ***************************************************************************/
 
