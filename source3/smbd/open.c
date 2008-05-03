@@ -391,7 +391,6 @@ static NTSTATUS open_file(files_struct *fsp,
 	fsp->modified = False;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
-	fsp->is_stat = False;
 	if (conn->aio_write_behind_list &&
 	    is_in_path(path, conn->aio_write_behind_list, conn->case_sensitive)) {
 		fsp->aio_write_behind = True;
@@ -1571,7 +1570,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			}
 
 			if (((can_access_mask & FILE_WRITE_DATA) && !CAN_WRITE(conn)) ||
-			    !can_access_file(conn,fname,psbuf,can_access_mask)) {
+			    !can_access_file_data(conn,fname,psbuf,can_access_mask)) {
 				can_access = False;
 			}
 
@@ -2223,7 +2222,6 @@ NTSTATUS open_directory(connection_struct *conn,
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = True;
-	fsp->is_stat = False;
 	fsp->posix_open = (file_attributes & FILE_FLAG_POSIX_SEMANTICS) ? True : False;
 
 	string_set(&fsp->fsp_name,fname);
@@ -2303,58 +2301,6 @@ NTSTATUS create_directory(connection_struct *conn, struct smb_request *req, cons
 	}
 
 	return status;
-}
-
-/****************************************************************************
- Open a pseudo-file (no locking checks - a 'stat' open).
-****************************************************************************/
-
-NTSTATUS open_file_stat(connection_struct *conn, struct smb_request *req,
-			const char *fname, SMB_STRUCT_STAT *psbuf,
-			files_struct **result)
-{
-	files_struct *fsp = NULL;
-	NTSTATUS status;
-
-	if (!VALID_STAT(*psbuf)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* Can't 'stat' open directories. */
-	if(S_ISDIR(psbuf->st_mode)) {
-		return NT_STATUS_FILE_IS_A_DIRECTORY;
-	}
-
-	status = file_new(conn, &fsp);
-	if(!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	DEBUG(5,("open_file_stat: 'opening' file %s\n", fname));
-
-	/*
-	 * Setup the files_struct for it.
-	 */
-	
-	fsp->mode = psbuf->st_mode;
-	fsp->file_id = vfs_file_id_from_sbuf(conn, psbuf);
-	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
-	fsp->file_pid = req ? req->smbpid : 0;
-	fsp->can_lock = False;
-	fsp->can_read = False;
-	fsp->can_write = False;
-	fsp->print_file = False;
-	fsp->modified = False;
-	fsp->oplock_type = NO_OPLOCK;
-	fsp->sent_oplock_break = NO_BREAK_SENT;
-	fsp->is_directory = False;
-	fsp->is_stat = True;
-	string_set(&fsp->fsp_name,fname);
-
-	conn->num_files_open++;
-
-	*result = fsp;
-	return NT_STATUS_OK;
 }
 
 /****************************************************************************

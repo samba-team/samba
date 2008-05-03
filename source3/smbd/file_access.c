@@ -25,7 +25,7 @@ extern struct current_user current_user;
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_ACLS
 
-static bool can_access_file_acl(struct connection_struct *conn,
+bool can_access_file_acl(struct connection_struct *conn,
 				const char * fname, SMB_STRUCT_STAT *psbuf,
 				uint32_t access_mask)
 {
@@ -125,7 +125,7 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
  Note this doesn't take into account share write permissions.
 ****************************************************************************/
 
-bool can_access_file(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf, uint32 access_mask)
+bool can_access_file_data(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf, uint32 access_mask)
 {
 	if (!(access_mask & (FILE_READ_DATA|FILE_WRITE_DATA))) {
 		return False;
@@ -134,7 +134,7 @@ bool can_access_file(connection_struct *conn, const char *fname, SMB_STRUCT_STAT
 
 	/* some fast paths first */
 
-	DEBUG(10,("can_access_file: requesting 0x%x on file %s\n",
+	DEBUG(10,("can_access_file_data: requesting 0x%x on file %s\n",
 		(unsigned int)access_mask, fname ));
 
 	if (current_user.ut.uid == 0 || conn->admin_user) {
@@ -180,7 +180,7 @@ bool can_access_file(connection_struct *conn, const char *fname, SMB_STRUCT_STAT
 
 bool can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf)
 {
-	return can_access_file(conn, fname, psbuf, FILE_WRITE_DATA);
+	return can_access_file_data(conn, fname, psbuf, FILE_WRITE_DATA);
 }
 
 /****************************************************************************

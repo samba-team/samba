@@ -1363,10 +1363,6 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, UNIX_USER_TOKE
 		  delete_on_close ? "Adding" : "Removing", fsp->fnum,
 		  fsp->fsp_name ));
 
-	if (fsp->is_stat) {
-		return True;
-	}
-
 	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL,
 				  NULL);
 	if (lck == NULL) {

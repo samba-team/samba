@@ -508,7 +508,6 @@ typedef struct files_struct {
 	bool print_file;
 	bool modified;
 	bool is_directory;
-	bool is_stat;
 	bool aio_write_behind;
 	bool lockdb_clean;
 	bool initial_delete_on_close; /* Only set at NTCreateX if file was created. */

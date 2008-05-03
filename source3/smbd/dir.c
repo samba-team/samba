@@ -925,11 +925,6 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 
 static bool user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
 {
-	SEC_DESC *psd = NULL;
-	files_struct *fsp;
-	NTSTATUS status;
-	uint32 access_granted;
-
 	/*
 	 * If user is a member of the Admin group
 	 * we never hide files from them.
@@ -941,36 +936,7 @@ static bool user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 
 	SMB_ASSERT(VALID_STAT(*pst));
 
-	/* Pseudo-open the file (note - no fd's created). */
-
-	if(S_ISDIR(pst->st_mode)) {
-		 status = open_directory(conn, NULL, name, pst,
-			READ_CONTROL_ACCESS,
-			FILE_SHARE_READ|FILE_SHARE_WRITE,
-			FILE_OPEN,
-			0, /* no create options. */
-			FILE_ATTRIBUTE_DIRECTORY,
-			NULL, &fsp);
-	} else {
-		status = open_file_stat(conn, NULL, name, pst, &fsp);
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return False;
-	}
-
-	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
-	status = SMB_VFS_FGET_NT_ACL(fsp,
-			(OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|DACL_SECURITY_INFORMATION), &psd);
-	close_file(fsp, NORMAL_CLOSE);
-
-	/* No access if SD get failed. */
-	if (!NT_STATUS_IS_OK(status)) {
-		return False;
-	}
-
-	return se_access_check(psd, current_user.nt_user_token, FILE_READ_DATA,
-                                 &access_granted, &status);
+	return can_access_file_acl(conn, name, pst, FILE_READ_DATA);
 }
 
 /*******************************************************************
@@ -982,12 +948,6 @@ static bool user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 
 static bool user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
 {
-	SEC_DESC *psd = NULL;
-	files_struct *fsp;
-	int info;
-	NTSTATUS status;
-	uint32 access_granted;
-
 	/*
 	 * If user is a member of the Admin group
 	 * we never hide files from them.
@@ -1003,33 +963,9 @@ static bool user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 
 	if(S_ISDIR(pst->st_mode)) {
 		return True;
-	} else {
-		status = open_file_ntcreate(conn, NULL, name, pst,
-			FILE_WRITE_ATTRIBUTES,
-			FILE_SHARE_READ|FILE_SHARE_WRITE,
-			FILE_OPEN,
-			0,
-			FILE_ATTRIBUTE_NORMAL,
-			INTERNAL_OPEN_ONLY,
-			&info, &fsp);
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		return False;
-	}
-
-	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
-	status = SMB_VFS_FGET_NT_ACL(fsp,
-			(OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|DACL_SECURITY_INFORMATION), &psd);
-	close_file(fsp, NORMAL_CLOSE);
-
-	/* No access if SD get failed. */
-	if (!NT_STATUS_IS_OK(status)) {
-		return False;
-	}
-
-	return se_access_check(psd, current_user.nt_user_token, FILE_WRITE_DATA,
-                                 &access_granted, &status);
+	return can_write_to_file(conn, name, pst);
 }
 
 /*******************************************************************
