@@ -1027,7 +1027,7 @@ static bool fetch_uid_from_cache( uid_t *puid, const DOM_SID *psid )
 	DATA_BLOB cache_value;
 
 	if (!memcache_lookup(NULL, SID_UID_CACHE,
-			     data_blob_const(psid, sizeof(*psid)),
+			     data_blob_const(psid, ndr_size_dom_sid(psid, 0)),
 			     &cache_value)) {
 		return false;
 	}
@@ -1045,11 +1045,11 @@ static bool fetch_uid_from_cache( uid_t *puid, const DOM_SID *psid )
 void store_uid_sid_cache(const DOM_SID *psid, uid_t uid)
 {
 	memcache_add(NULL, SID_UID_CACHE,
-		     data_blob_const(psid, sizeof(*psid)),
+		     data_blob_const(psid, ndr_size_dom_sid(psid, 0)),
 		     data_blob_const(&uid, sizeof(uid)));
 	memcache_add(NULL, UID_SID_CACHE,
 		     data_blob_const(&uid, sizeof(uid)),
-		     data_blob_const(psid, sizeof(*psid)));
+		     data_blob_const(psid, ndr_size_dom_sid(psid, 0)));
 }
 
 /*****************************************************************
@@ -1081,7 +1081,7 @@ static bool fetch_gid_from_cache(gid_t *pgid, const DOM_SID *psid)
 	DATA_BLOB cache_value;
 
 	if (!memcache_lookup(NULL, SID_UID_CACHE,
-			     data_blob_const(psid, sizeof(*psid)),
+			     data_blob_const(psid, ndr_size_dom_sid(psid, 0)),
 			     &cache_value)) {
 		return false;
 	}
@@ -1099,11 +1099,11 @@ static bool fetch_gid_from_cache(gid_t *pgid, const DOM_SID *psid)
 void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 {
 	memcache_add(NULL, SID_GID_CACHE,
-		     data_blob_const(psid, sizeof(*psid)),
+		     data_blob_const(psid, ndr_size_dom_sid(psid, 0)),
 		     data_blob_const(&gid, sizeof(gid)));
 	memcache_add(NULL, GID_SID_CACHE,
 		     data_blob_const(&gid, sizeof(gid)),
-		     data_blob_const(psid, sizeof(*psid)));
+		     data_blob_const(psid, ndr_size_dom_sid(psid, 0)));
 }
 
 /*****************************************************************
