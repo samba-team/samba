@@ -703,20 +703,6 @@ static NTSTATUS close_directory(files_struct *fsp, enum file_close_type close_ty
 }
 
 /****************************************************************************
- Close a 'stat file' opened internally.
-****************************************************************************/
-  
-static NTSTATUS close_stat(files_struct *fsp)
-{
-	/*
-	 * Do the code common to files and directories.
-	 */
-	close_filestruct(fsp);
-	file_free(fsp);
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
  Close a files_struct.
 ****************************************************************************/
   
@@ -727,8 +713,6 @@ NTSTATUS close_file(files_struct *fsp, enum file_close_type close_type)
 
 	if(fsp->is_directory) {
 		status = close_directory(fsp, close_type);
-	} else if (fsp->is_stat) {
-		status = close_stat(fsp);
 	} else if (fsp->fake_file_handle != NULL) {
 		status = close_fake_file(fsp);
 	} else {

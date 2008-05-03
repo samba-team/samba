@@ -2206,13 +2206,20 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = open_file_stat(conn, NULL, filename, &st, &fsp);
+	nt_status = open_file_ntcreate(conn, NULL, filename, &st,
+				FILE_WRITE_ATTRIBUTES,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				FILE_OPEN,
+				0,
+				FILE_ATTRIBUTE_NORMAL,
+				INTERNAL_OPEN_ONLY,
+				NULL, &fsp);
 
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
 		/* Perhaps it is a directory */
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_IS_A_DIRECTORY))
 			nt_status = open_directory(conn, NULL, filename, &st,
-						FILE_READ_ATTRIBUTES,
+						FILE_WRITE_ATTRIBUTES,
 						FILE_SHARE_READ|FILE_SHARE_WRITE,
 						FILE_OPEN,
 						0,
