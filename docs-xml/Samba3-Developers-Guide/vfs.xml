@@ -553,7 +553,7 @@ you can set this function pointer to NULL.</para></listitem>
 <title>Upgrading to the New VFS Interface</title>
 
 <sect2>
-<title>Upgrading from 2.2.* and 3.0aplha modules</title>
+<title>Upgrading from 2.2.* and 3.0alpha modules</title>
 
 <orderedlist>
 <listitem><para>
@@ -833,7 +833,7 @@ static int example_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
 </para></listitem>
 
 <listitem><para>
-To make it easy to build 3rd party modules it would be usefull to provide
+To make it easy to build 3rd party modules it would be useful to provide
 configure.in, (configure), install.sh and Makefile.in with the module.
 (Take a look at the example in <filename>examples/VFS</filename>.)
 </para>
