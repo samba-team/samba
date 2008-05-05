@@ -54,6 +54,10 @@ endif
 lib_LTLIBRARIES = libhdb.la $(ldap_so)
 libhdb_la_LDFLAGS = -version-info 11:0:2
 
+if versionscript
+libhdb_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
+endif
+
 noinst_PROGRAMS = test_dbinfo
 
 dist_libhdb_la_SOURCES =			\
