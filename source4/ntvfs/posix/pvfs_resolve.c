@@ -57,7 +57,9 @@ static int component_compare(struct pvfs_state *pvfs, const char *comp, const ch
   TODO: add a cache for previously resolved case-insensitive names
   TODO: add mangled name support
 */
-static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs, struct pvfs_filename *name)
+static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs,
+				 struct pvfs_filename *name,
+				 uint_t flags)
 {
 	/* break into a series of components */
 	int num_components;
@@ -175,7 +177,7 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs, struct pvfs_filename *
 	name->full_name = partial_name;
 
 	if (name->exists) {
-		return pvfs_fill_dos_info(pvfs, name, -1);
+		return pvfs_fill_dos_info(pvfs, name, flags, -1);
 	}
 
 	return NT_STATUS_OK;
@@ -515,7 +517,7 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		/* we need to search for a matching name */
 		saved_name = (*name)->full_name;
 		(*name)->full_name = dir_name;
-		status = pvfs_case_search(pvfs, *name);
+		status = pvfs_case_search(pvfs, *name, flags);
 		if (!NT_STATUS_IS_OK(status)) {
 			/* the directory doesn't exist */
 			(*name)->full_name = saved_name;
@@ -536,11 +538,11 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	/* if we can stat() the full name now then we are done */
 	if (stat((*name)->full_name, &(*name)->st) == 0) {
 		(*name)->exists = true;
-		return pvfs_fill_dos_info(pvfs, *name, -1);
+		return pvfs_fill_dos_info(pvfs, *name, flags, -1);
 	}
 
 	/* search for a matching filename */
-	status = pvfs_case_search(pvfs, *name);
+	status = pvfs_case_search(pvfs, *name, flags);
 
 	return status;
 }
@@ -556,7 +558,7 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 */
 NTSTATUS pvfs_resolve_partial(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 			      const char *unix_dir, const char *fname,
-			      struct pvfs_filename **name)
+			      uint_t flags, struct pvfs_filename **name)
 {
 	NTSTATUS status;
 
@@ -581,7 +583,7 @@ NTSTATUS pvfs_resolve_partial(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	(*name)->stream_name = NULL;
 	(*name)->stream_id = 0;
 
-	status = pvfs_fill_dos_info(pvfs, *name, -1);
+	status = pvfs_fill_dos_info(pvfs, *name, flags, -1);
 
 	return status;
 }
@@ -593,7 +595,7 @@ NTSTATUS pvfs_resolve_partial(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
   to update the pvfs_filename stat information, and by pvfs_open()
 */
 NTSTATUS pvfs_resolve_name_fd(struct pvfs_state *pvfs, int fd,
-			      struct pvfs_filename *name)
+			      struct pvfs_filename *name, uint_t flags)
 {
 	dev_t device = (dev_t)0;
 	ino_t inode = 0;
@@ -626,7 +628,7 @@ NTSTATUS pvfs_resolve_name_fd(struct pvfs_state *pvfs, int fd,
 
 	name->exists = true;
 	
-	return pvfs_fill_dos_info(pvfs, name, fd);
+	return pvfs_fill_dos_info(pvfs, name, flags, fd);
 }
 
 /*
@@ -703,7 +705,11 @@ NTSTATUS pvfs_resolve_name_handle(struct pvfs_state *pvfs,
 		talloc_free(lck);
 	}
 
-	status = pvfs_resolve_name_fd(pvfs, h->fd, h->name);
+	/*
+	 * TODO: pass PVFS_RESOLVE_NO_OPENDB and get
+	 *       the write time from odb_lock() above.
+	 */
+	status = pvfs_resolve_name_fd(pvfs, h->fd, h->name, 0);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	return NT_STATUS_OK;
@@ -755,7 +761,7 @@ NTSTATUS pvfs_resolve_parent(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	(*name)->stream_name = NULL;
 	(*name)->stream_id = 0;
 
-	status = pvfs_fill_dos_info(pvfs, *name, -1);
+	status = pvfs_fill_dos_info(pvfs, *name, PVFS_RESOLVE_NO_OPENDB, -1);
 
 	return status;
 }

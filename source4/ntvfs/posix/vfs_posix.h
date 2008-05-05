@@ -228,6 +228,7 @@ struct pvfs_search_state {
 /* flags to pvfs_resolve_name() */
 #define PVFS_RESOLVE_WILDCARD    (1<<0)
 #define PVFS_RESOLVE_STREAMS     (1<<1)
+#define PVFS_RESOLVE_NO_OPENDB   (1<<2)
 
 /* flags in pvfs->flags */
 #define PVFS_FLAG_CI_FILESYSTEM  (1<<0) /* the filesystem is case insensitive */

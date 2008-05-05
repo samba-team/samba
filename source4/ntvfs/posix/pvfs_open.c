@@ -641,7 +641,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	}
 
 	/* re-resolve the open fd */
-	status = pvfs_resolve_name_fd(pvfs, fd, name);
+	status = pvfs_resolve_name_fd(pvfs, fd, name, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		close(fd);
 		return status;
@@ -1483,7 +1483,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* re-resolve the open fd */
-	status = pvfs_resolve_name_fd(f->pvfs, fd, f->handle->name);
+	status = pvfs_resolve_name_fd(f->pvfs, fd, f->handle->name, PVFS_RESOLVE_NO_OPENDB);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);
 		return status;
