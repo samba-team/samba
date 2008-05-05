@@ -828,6 +828,7 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 	}
 
 	GET_INFO_BOTH(finfo1,pinfo1);
+	COMPARE_WRITE_TIME_GREATER(pinfo1, pinfo0);
 
 	/* sure any further write doesn't update the write time */
 	start = timeval_current();
@@ -982,6 +983,7 @@ static bool test_delayed_write_update4(struct torture_context *tctx,
 	}
 
 	GET_INFO_BOTH(finfo1,pinfo1);
+	COMPARE_WRITE_TIME_GREATER(pinfo1, pinfo0);
 
 	/* sure any further write doesn't update the write time */
 	start = timeval_current();
