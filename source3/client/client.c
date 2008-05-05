@@ -4875,6 +4875,11 @@ static int do_message_op(void)
 			argv[0], get_dyn_CONFIGFILE());
 	}
 
+	if (get_cmdline_auth_info_use_machine_account() &&
+	    !set_cmdline_auth_info_machine_account_creds()) {
+		exit(-1);
+	}
+
 	load_interfaces();
 
 	if (service_opt && service) {

@@ -371,7 +371,20 @@ static struct cli_state *connect_one(const char *share)
 	struct cli_state *c;
 	struct sockaddr_storage ss;
 	NTSTATUS nt_status;
+	uint32_t flags = 0;
+
 	zero_addr(&ss);
+
+	if (get_cmdline_auth_info_use_machine_account() &&
+	    !set_cmdline_auth_info_machine_account_creds()) {
+		return NULL;
+	}
+
+	if (get_cmdline_auth_info_use_kerberos()) {
+		flags |= CLI_FULL_CONNECTION_USE_KERBEROS |
+			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
+
+	}
 
 	if (!get_cmdline_auth_info_got_pass()) {
 		char *pass = getpass("Password: ");
@@ -386,7 +399,7 @@ static struct cli_state *connect_one(const char *share)
 					    get_cmdline_auth_info_username(),
 					    lp_workgroup(),
 					    get_cmdline_auth_info_password(),
-					    0,
+					    flags,
 					    get_cmdline_auth_info_signing_state(),
 					    NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {

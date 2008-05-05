@@ -291,7 +291,8 @@ static struct user_auth_info cmdline_auth_info = {
 	false,	/* got_pass */
 	false,	/* use_kerberos */
 	Undefined, /* signing state */
-	false	/* smb_encrypt */
+	false,	/* smb_encrypt */
+	false   /* use machine account */
 };
 
 const char *get_cmdline_auth_info_username(void)
@@ -370,6 +371,11 @@ void set_cmdline_auth_info_smb_encrypt(void)
 	cmdline_auth_info.smb_encrypt = true;
 }
 
+void set_cmdline_auth_info_use_machine_account(void)
+{
+	cmdline_auth_info.use_machine_account = true;
+}
+
 bool get_cmdline_auth_info_got_pass(void)
 {
 	return cmdline_auth_info.got_pass;
@@ -378,6 +384,11 @@ bool get_cmdline_auth_info_got_pass(void)
 bool get_cmdline_auth_info_smb_encrypt(void)
 {
 	return cmdline_auth_info.smb_encrypt;
+}
+
+bool get_cmdline_auth_info_use_machine_account(void)
+{
+	return cmdline_auth_info.use_machine_account;
 }
 
 bool get_cmdline_auth_info_copy(struct user_auth_info *info)
@@ -389,6 +400,42 @@ bool get_cmdline_auth_info_copy(struct user_auth_info *info)
 	if (!info->username || !info->password) {
 		return false;
 	}
+	return true;
+}
+
+bool set_cmdline_auth_info_machine_account_creds(void)
+{
+	char *pass = NULL;
+	char *account = NULL;
+
+	if (!get_cmdline_auth_info_use_machine_account()) {
+		return false;
+	}
+
+	if (!secrets_init()) {
+		d_printf("ERROR: Unable to open secrets database\n");
+		return false;
+	}
+
+	if (asprintf(&account, "%s$@%s", global_myname(), lp_realm()) < 0) {
+		return false;
+	}
+
+	pass = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
+	if (!pass) {
+		d_printf("ERROR: Unable to fetch machine password for "
+			"%s in domain %s\n",
+			account, lp_workgroup());
+		SAFE_FREE(account);
+		return false;
+	}
+
+	set_cmdline_auth_info_username(account);
+	set_cmdline_auth_info_password(pass);
+
+	SAFE_FREE(account);
+	SAFE_FREE(pass);
+
 	return true;
 }
 
