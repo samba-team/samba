@@ -24,7 +24,7 @@
 #include "auth/ntlm/auth_proto.h"
 #include "system/passwd.h" /* needed by some systems for struct passwd */
 #include "lib/socket/socket.h" 
-#include "auth/pam_errors.h"
+#include "auth/ntlm/pam_errors.h"
 #include "param/param.h"
 
 /* TODO: look at how to best fill in parms retrieveing a struct passwd info
