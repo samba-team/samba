@@ -145,7 +145,7 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 {
 	size_t size = (size_t)cli->max_recv_frag;
 	uint32 stream_offset = 0;
-	ssize_t num_read;
+	ssize_t num_read = 0;
 	char *pdata;
 	ssize_t extra_data_size = ((ssize_t)*current_pdu_offset) + ((ssize_t)data_to_read) - (ssize_t)prs_data_size(current_pdu);
 
@@ -839,9 +839,10 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 		}
 		rparam = NULL;
 		prdata = SMB_MALLOC_ARRAY(char, 1);
-		if (prdata != NULL) {
-			nread = sys_read(cli->trans.tcp.sock, prdata, 1);
+		if (prdata == NULL) {
+			return NT_STATUS_NO_MEMORY;
 		}
+		nread = sys_read(cli->trans.tcp.sock, prdata, 1);
 		if (nread == 0) {
 			SAFE_FREE(prdata);
 		}
