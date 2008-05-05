@@ -123,9 +123,9 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 		return False;
 	}
 
-	i = conn->vuid_cache.entries % VUID_CACHE_SIZE;
-	if (conn->vuid_cache.entries < VUID_CACHE_SIZE)
-		conn->vuid_cache.entries++;
+	i = conn->vuid_cache.entries;
+	conn->vuid_cache.entries =
+		(conn->vuid_cache.entries + 1) % VUID_CACHE_SIZE;
 
 	ent = &conn->vuid_cache.array[i];
 	ent->vuid = vuser->vuid;
