@@ -1032,6 +1032,7 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 		fstring name )
 {
 	struct ip_service ip_list;
+	uint32_t nt_version = NETLOGON_VERSION_1;
 
 	ip_list.ss = *pss;
 	ip_list.port = 0;
@@ -1095,7 +1096,8 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 	/* try GETDC requests next */
 
 	if (send_getdc_request(mem_ctx, winbind_messaging_context(),
-			       pss, domain->name, &domain->sid, 1)) {
+			       pss, domain->name, &domain->sid,
+			       nt_version)) {
 		const char *dc_name = NULL;
 		int i;
 		smb_msleep(100);
