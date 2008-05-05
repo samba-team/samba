@@ -784,6 +784,9 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 	fstring tmp_dc_name;
 	struct messaging_context *msg_ctx = msg_context(mem_ctx);
 	struct nbt_ntlogon_packet *reply = NULL;
+	uint32_t nt_version = NETLOGON_VERSION_1 |
+			      NETLOGON_VERSION_5 |
+			      NETLOGON_VERSION_5EX_WITH_IP;
 
 	if (flags & DS_PDC_REQUIRED) {
 		name_type = NBT_NAME_PDC;
@@ -802,7 +805,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 
 		if (send_getdc_request(mem_ctx, msg_ctx,
 				       &dclist[i].ss, domain_name,
-				       NULL, 11))
+				       NULL, nt_version))
 		{
 			int k;
 			smb_msleep(100);
