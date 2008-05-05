@@ -830,7 +830,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 		{
 			dc_hostname = tmp_dc_name;
 			dc_domain_name = talloc_strdup_upper(mem_ctx, domain_name);
-			namecache_store(dc_name, NBT_NAME_SERVER, 1, &ip_list);
+			namecache_store(tmp_dc_name, NBT_NAME_SERVER, 1, &ip_list);
 			goto make_reply;
 		}
 	}
