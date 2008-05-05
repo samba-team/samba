@@ -1,3 +1,8 @@
+2008-05-05  Love Hörnquist Åstrand  <lha@kth.se>
+
+	* spnego/spnego_locl.h: Add back "mech/utils.h", its needed for
+	oid/buffer functions.
+
 2008-05-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* spnego: Changes from doug barton to make spnego indepedant of
