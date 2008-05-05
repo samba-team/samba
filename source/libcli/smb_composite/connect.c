@@ -59,25 +59,6 @@ static void request_handler(struct smbcli_request *);
 static void composite_handler(struct composite_context *);
 
 /*
-  setup a negprot send 
-*/
-static NTSTATUS connect_send_negprot(struct composite_context *c, 
-				     struct smb_composite_connect *io)
-{
-	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
-
-	state->req = smb_raw_negotiate_send(state->transport, io->in.options.unicode, io->in.options.max_protocol);
-	NT_STATUS_HAVE_NO_MEMORY(state->req);
-
-	state->req->async.fn = request_handler;
-	state->req->async.private = c;
-	state->stage = CONNECT_NEGPROT;
-	
-	return NT_STATUS_OK;
-}
-
-
-/*
   a tree connect request has completed
 */
 static NTSTATUS connect_tcon(struct composite_context *c, 
@@ -287,6 +268,24 @@ static NTSTATUS connect_negprot(struct composite_context *c,
 	state->creq->async.private_data = c;
 
 	state->stage = CONNECT_SESSION_SETUP;
+	
+	return NT_STATUS_OK;
+}
+
+/*
+  setup a negprot send 
+*/
+static NTSTATUS connect_send_negprot(struct composite_context *c, 
+				     struct smb_composite_connect *io)
+{
+	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
+
+	state->req = smb_raw_negotiate_send(state->transport, io->in.options.unicode, io->in.options.max_protocol);
+	NT_STATUS_HAVE_NO_MEMORY(state->req);
+
+	state->req->async.fn = request_handler;
+	state->req->async.private = c;
+	state->stage = CONNECT_NEGPROT;
 	
 	return NT_STATUS_OK;
 }
