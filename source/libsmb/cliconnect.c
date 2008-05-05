@@ -795,6 +795,8 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	int i;
 	bool got_kerberos_mechanism = False;
 	DATA_BLOB blob;
+	const char *p = NULL;
+	char *account = NULL;
 
 	DEBUG(3,("Doing spnego session setup (blob length=%lu)\n", (unsigned long)cli->secblob.length));
 
@@ -925,7 +927,17 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 
 ntlmssp:
 
-	return ADS_ERROR_NT(cli_session_setup_ntlmssp(cli, user, pass, domain));
+	account = talloc_strdup(talloc_tos(), user);
+	ADS_ERROR_HAVE_NO_MEMORY(account);
+
+	/* when falling back to ntlmssp while authenticating with a machine
+	 * account strip off the realm - gd */
+
+	if ((p = strchr_m(user, '@')) != NULL) {
+		account[PTR_DIFF(p,user)] = '\0';
+	}
+
+	return ADS_ERROR_NT(cli_session_setup_ntlmssp(cli, account, pass, domain));
 }
 
 /****************************************************************************
@@ -1869,12 +1881,18 @@ struct cli_state *get_ipc_connect(char *server,
 {
         struct cli_state *cli;
 	NTSTATUS nt_status;
+	uint32_t flags = CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK;
+
+	if (user_info->use_kerberos) {
+		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
+	}
 
 	nt_status = cli_full_connection(&cli, NULL, server, server_ss, 0, "IPC$", "IPC", 
 					user_info->username ? user_info->username : "",
 					lp_workgroup(),
 					user_info->password ? user_info->password : "",
-					CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK, Undefined, NULL);
+					flags,
+					Undefined, NULL);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return cli;
