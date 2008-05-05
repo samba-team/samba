@@ -1,9 +1,10 @@
 /* 
    Unix SMB/CIFS implementation.
-   Authenticate to a remote server
-   Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) Andrew Bartlett 2001
-
+   Authenticate by using a remote server
+   Copyright (C) Andrew Bartlett         2001-2002, 2008
+   Copyright (C) Jelmer Vernooij              2002
+   Copyright (C) Stefan Metzmacher            2005
+   
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -19,359 +20,206 @@
 */
 
 #include "includes.h"
+#include "auth/auth.h"
+#include "auth/auth_proto.h"
+#include "auth/credentials/credentials.h"
+#include "libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_samr.h"
+#include "libcli/smb_composite/smb_composite.h"
+#include "param/param.h"
+#include "libcli/resolve/resolve.h"
 
-/****************************************************************************
- Support for server level security.
-****************************************************************************/
+/* This version of 'security=server' rewirtten from scratch for Samba4
+ * libraries in 2008 */
 
-static struct smbcli_state *server_cryptkey(TALLOC_CTX *mem_ctx, bool unicode, int maxprotocol, struct resolve_context *resolve_ctx)
+
+static NTSTATUS server_want_check(struct auth_method_context *ctx,
+			      		    TALLOC_CTX *mem_ctx,
+					    const struct auth_usersupplied_info *user_info)
 {
-	struct smbcli_state *cli = NULL;
-	fstring desthost;
-	struct in_addr dest_ip;
-	const char *p;
-	char *pserver;
-	bool connected_ok = false;
-
-	if (!(cli = smbcli_initialise(cli)))
-		return NULL;
-
-	/* security = server just can't function with spnego */
-	cli->use_spnego = false;
-
-        pserver = talloc_strdup(mem_ctx, lp_passwordserver());
-	p = pserver;
-
-        while(next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
-		strupper(desthost);
-
-		if(!resolve_name(resolve_ctx, desthost, &dest_ip, 0x20)) {
-			DEBUG(1,("server_cryptkey: Can't resolve address for %s\n",desthost));
-			continue;
-		}
-
-		if (ismyip(dest_ip)) {
-			DEBUG(1,("Password server loop - disabling password server %s\n",desthost));
-			continue;
-		}
-
-		/* we use a mutex to prevent two connections at once - when a 
-		   Win2k PDC get two connections where one hasn't completed a 
-		   session setup yet it will send a TCP reset to the first 
-		   connection (tridge) */
-
-		if (!grab_server_mutex(desthost)) {
-			return NULL;
-		}
-
-		if (smbcli_connect(cli, desthost, &dest_ip)) {
-			DEBUG(3,("connected to password server %s\n",desthost));
-			connected_ok = true;
-			break;
-		}
-	}
-
-	if (!connected_ok) {
-		release_server_mutex();
-		DEBUG(0,("password server not available\n"));
-		talloc_free(cli);
-		return NULL;
-	}
-	
-	if (!attempt_netbios_session_request(cli, lp_netbios_name(), 
-					     desthost, &dest_ip)) {
-		release_server_mutex();
-		DEBUG(1,("password server fails session request\n"));
-		talloc_free(cli);
-		return NULL;
-	}
-	
-	if (strequal(desthost,myhostname(mem_ctx))) {
-		exit_server("Password server loop!");
-	}
-	
-	DEBUG(3,("got session\n"));
-
-	if (!smbcli_negprot(cli, unicode, maxprotocol)) {
-		DEBUG(1,("%s rejected the negprot\n",desthost));
-		release_server_mutex();
-		talloc_free(cli);
-		return NULL;
-	}
-
-	if (cli->protocol < PROTOCOL_LANMAN2 ||
-	    !(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
-		DEBUG(1,("%s isn't in user level security mode\n",desthost));
-		release_server_mutex();
-		talloc_free(cli);
-		return NULL;
-	}
-
-	/* Get the first session setup done quickly, to avoid silly 
-	   Win2k bugs.  (The next connection to the server will kill
-	   this one... 
-	*/
-
-	if (!smbcli_session_setup(cli, "", "", 0, "", 0,
-			       "")) {
-		DEBUG(0,("%s rejected the initial session setup (%s)\n",
-			 desthost, smbcli_errstr(cli)));
-		release_server_mutex();
-		talloc_free(cli);
-		return NULL;
-	}
-	
-	release_server_mutex();
-	
-	DEBUG(3,("password server OK\n"));
-	
-	return cli;
-}
-
-/****************************************************************************
- Clean up our allocated cli.
-****************************************************************************/
-
-static void free_server_private_data(void **private_data_pointer) 
-{
-	struct smbcli_state **cli = (struct smbcli_state **)private_data_pointer;
-	if (*cli && (*cli)->initialised) {
-		talloc_free(*cli);
-	}
-}
-
-/****************************************************************************
- Get the challenge out of a password server.
-****************************************************************************/
-
-static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_context,
-					   void **my_private_data, 
-					   TALLOC_CTX *mem_ctx)
-{
-	struct smbcli_state *cli = server_cryptkey(mem_ctx, lp_cli_maxprotocol(auth_context->lp_ctx));
-	
-	if (cli) {
-		DEBUG(3,("using password server validation\n"));
-
-		if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
-			/* We can't work with unencrypted password servers
-			   unless 'encrypt passwords = no' */
-			DEBUG(5,("make_auth_info_server: Server is unencrypted, no challenge available..\n"));
-			
-			/* However, it is still a perfectly fine connection
-			   to pass that unencrypted password over */
-			*my_private_data = (void *)cli;
-			return data_blob(NULL, 0);
-			
-		} else if (cli->secblob.length < 8) {
-			/* We can't do much if we don't get a full challenge */
-			DEBUG(2,("make_auth_info_server: Didn't receive a full challenge from server\n"));
-			talloc_free(cli);
-			return data_blob(NULL, 0);
-		}
-
-		*my_private_data = (void *)cli;
-
-		/* The return must be allocated on the caller's mem_ctx, as our own will be
-		   destoyed just after the call. */
-		return data_blob_talloc(auth_context->mem_ctx, cli->secblob.data,8);
-	} else {
-		return data_blob(NULL, 0);
-	}
-}
-
-
-/****************************************************************************
- Check for a valid username and password in security=server mode.
-  - Validate a password with the password server.
-****************************************************************************/
-
-static NTSTATUS check_smbserver_security(const struct auth_context *auth_context,
-					 void *my_private_data, 
-					 TALLOC_CTX *mem_ctx,
-					 const auth_usersupplied_info *user_info, 
-					 auth_serversupplied_info **server_info)
-{
-	struct smbcli_state *cli;
-	static uint8_t badpass[24];
-	static fstring baduser; 
-	static bool tested_password_server = false;
-	static bool bad_password_server = false;
-	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
-	bool locally_made_cli = false;
-
-	/* 
-	 * Check that the requested domain is not our own machine name.
-	 * If it is, we should never check the PDC here, we use our own local
-	 * password file.
-	 */
-
-	if (lp_is_myname(auth_context->lp_ctx, user_info->domain.str)) {
-		DEBUG(3,("check_smbserver_security: Requested domain was for this machine.\n"));
-		return NT_STATUS_LOGON_FAILURE;
-	}
-
-	cli = my_private_data;
-	
-	if (cli) {
-	} else {
-		cli = server_cryptkey(mem_ctx, lp_unicode(auth_context->lp_ctx), lp_cli_maxprotocol(auth_context->lp_ctx), lp_resolve_context(auth_context->lp_ctx));
-		locally_made_cli = true;
-	}
-
-	if (!cli || !cli->initialised) {
-		DEBUG(1,("password server is not connected (cli not initilised)\n"));
-		return NT_STATUS_LOGON_FAILURE;
-	}  
-	
-	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
-		if (user_info->encrypted) {
-			DEBUG(1,("password server %s is plaintext, but we are encrypted. This just can't work :-(\n", cli->desthost));
-			return NT_STATUS_LOGON_FAILURE;		
-		}
-	} else {
-		if (memcmp(cli->secblob.data, auth_context->challenge.data, 8) != 0) {
-			DEBUG(1,("the challenge that the password server (%s) supplied us is not the one we gave our client. This just can't work :-(\n", cli->desthost));
-			return NT_STATUS_LOGON_FAILURE;		
-		}
-	}
-
-	if(badpass[0] == 0)
-		memset(badpass, 0x1f, sizeof(badpass));
-
-	if((user_info->nt_resp.length == sizeof(badpass)) && 
-	   !memcmp(badpass, user_info->nt_resp.data, sizeof(badpass))) {
-		/* 
-		 * Very unlikely, our random bad password is the same as the users
-		 * password.
-		 */
-		memset(badpass, badpass[0]+1, sizeof(badpass));
-	}
-
-	if(baduser[0] == 0) {
-		fstrcpy(baduser, INVALID_USER_PREFIX);
-		fstrcat(baduser, lp_netbios_name());
-	}
-
-	/*
-	 * Attempt a session setup with a totally incorrect password.
-	 * If this succeeds with the guest bit *NOT* set then the password
-	 * server is broken and is not correctly setting the guest bit. We
-	 * need to detect this as some versions of NT4.x are broken. JRA.
-	 */
-
-	/* I sure as hell hope that there aren't servers out there that take 
-	 * NTLMv2 and have this bug, as we don't test for that... 
-	 *  - abartlet@samba.org
-	 */
-
-	if ((!tested_password_server) && (lp_paranoid_server_security())) {
-		if (smbcli_session_setup(cli, baduser, (char *)badpass, sizeof(badpass), 
-					(char *)badpass, sizeof(badpass), user_info->domain.str)) {
-
-			/*
-			 * We connected to the password server so we
-			 * can say we've tested it.
-			 */
-			tested_password_server = true;
-
-			if ((SVAL(cli->inbuf,smb_vwv2) & 1) == 0) {
-				DEBUG(0,("server_validate: password server %s allows users as non-guest \
-with a bad password.\n", cli->desthost));
-				DEBUG(0,("server_validate: This is broken (and insecure) behaviour. Please do not \
-use this machine as the password server.\n"));
-				smbcli_ulogoff(cli);
-
-				/*
-				 * Password server has the bug.
-				 */
-				bad_password_server = true;
-				return NT_STATUS_LOGON_FAILURE;
-			}
-			smbcli_ulogoff(cli);
-		}
-	} else {
-
-		/*
-		 * We have already tested the password server.
-		 * Fail immediately if it has the bug.
-		 */
-
-		if(bad_password_server) {
-			DEBUG(0,("server_validate: [1] password server %s allows users as non-guest \
-with a bad password.\n", cli->desthost));
-			DEBUG(0,("server_validate: [1] This is broken (and insecure) behaviour. Please do not \
-use this machine as the password server.\n"));
-			return NT_STATUS_LOGON_FAILURE;
-		}
-	}
-
-	/*
-	 * Now we know the password server will correctly set the guest bit, or is
-	 * not guest enabled, we can try with the real password.
-	 */
-
-	if (!user_info->encrypted) {
-		/* Plaintext available */
-		if (!smbcli_session_setup(cli, user_info->smb_name.str, 
-				       (char *)user_info->plaintext_password.data, 
-				       user_info->plaintext_password.length, 
-				       NULL, 0,
-				       user_info->domain.str)) {
-			DEBUG(1,("password server %s rejected the password\n", cli->desthost));
-			/* Make this smbcli_nt_error() when the conversion is in */
-			nt_status = smbcli_nt_error(cli);
-		} else {
-			nt_status = NT_STATUS_OK;
-		}
-	} else {
-		if (!smbcli_session_setup(cli, user_info->smb_name.str, 
-				       (char *)user_info->lm_resp.data, 
-				       user_info->lm_resp.length, 
-				       (char *)user_info->nt_resp.data, 
-				       user_info->nt_resp.length, 
-				       user_info->domain.str)) {
-			DEBUG(1,("password server %s rejected the password\n", cli->desthost));
-			/* Make this smbcli_nt_error() when the conversion is in */
-			nt_status = smbcli_nt_error(cli);
-		} else {
-			nt_status = NT_STATUS_OK;
-		}
-	}
-
-	/* if logged in as guest then reject */
-	if ((SVAL(cli->inbuf,smb_vwv2) & 1) != 0) {
-		DEBUG(1,("password server %s gave us guest only\n", cli->desthost));
-		nt_status = NT_STATUS_LOGON_FAILURE;
-	}
-
-	smbcli_ulogoff(cli);
-
-	if NT_STATUS_IS_OK(nt_status) {
-		struct passwd *pass = Get_Pwnam(user_info->internal_username.str);
-		if (pass) {
-			nt_status = make_server_info_pw(auth_context, server_info, pass);
-		} else {
-			nt_status = NT_STATUS_NO_SUCH_USER;
-		}
-	}
-
-	if (locally_made_cli) {
-		talloc_free(cli);
-	}
-
-	return(nt_status);
-}
-
-NTSTATUS auth_init_smbserver(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
-{
-	if (!make_auth_methods(auth_context, auth_method)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	(*auth_method)->name = "smbserver";
-	(*auth_method)->auth = check_smbserver_security;
-	(*auth_method)->get_chal = auth_get_challenge_server;
-	(*auth_method)->send_keepalive = send_server_keepalive;
-	(*auth_method)->free_private_data = free_server_private_data;
 	return NT_STATUS_OK;
+}
+/** 
+ * The challenge from the target server, when operating in security=server
+ **/
+static NTSTATUS server_get_challenge(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx, DATA_BLOB *_blob)
+{
+	struct smb_composite_connect io;
+	struct smbcli_options smb_options;
+	const char **host_list;
+	NTSTATUS status;
+
+	/* Make a connection to the target server, found by 'password server' in smb.conf */
+	
+	lp_smbcli_options(ctx->auth_ctx->lp_ctx, &smb_options);
+
+	/* Make a negprot, WITHOUT SPNEGO, so we get a challenge nice an easy */
+	io.in.options.use_spnego = false;
+
+	/* Hope we don't get * (the default), as this won't work... */
+	host_list = lp_passwordserver(ctx->auth_ctx->lp_ctx); 
+	if (!host_list) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	io.in.dest_host = host_list[0];
+	if (strequal(io.in.dest_host, "*")) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	io.in.dest_ports = lp_smb_ports(ctx->auth_ctx->lp_ctx); 
+
+	io.in.called_name = strupper_talloc(mem_ctx, io.in.dest_host);
+
+	/* We don't want to get as far as the session setup */
+	io.in.credentials = NULL;
+	io.in.service = NULL;
+
+	io.in.workgroup = ""; /* only used with SPNEGO, disabled above */
+
+	io.in.options = smb_options;
+
+	status = smb_composite_connect(&io, mem_ctx, lp_resolve_context(ctx->auth_ctx->lp_ctx),
+				       ctx->auth_ctx->event_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		*_blob = io.out.tree->session->transport->negotiate.secblob;
+		ctx->private_data = talloc_steal(ctx, io.out.tree->session);
+	}
+	return NT_STATUS_OK;
+}
+
+/** 
+ * Return an error based on username
+ *
+ * This function allows the testing of obsure errors, as well as the generation
+ * of NT_STATUS -> DOS error mapping tables.
+ *
+ * This module is of no value to end-users.
+ *
+ * The password is ignored.
+ *
+ * @return An NTSTATUS value based on the username
+ **/
+
+static NTSTATUS server_check_password(struct auth_method_context *ctx,
+				      TALLOC_CTX *mem_ctx,
+				      const struct auth_usersupplied_info *user_info, 
+				      struct auth_serversupplied_info **_server_info)
+{
+	NTSTATUS nt_status;
+	struct auth_serversupplied_info *server_info;
+	struct cli_credentials *creds;
+	const char *user;
+	struct smb_composite_sesssetup session_setup;
+
+	struct smbcli_session *session = talloc_get_type(ctx->private_data, struct smbcli_session);
+
+	creds = cli_credentials_init(mem_ctx);
+
+	NT_STATUS_HAVE_NO_MEMORY(creds);
+	
+	cli_credentials_set_username(creds, user_info->client.account_name, CRED_SPECIFIED);
+	cli_credentials_set_domain(creds, user_info->client.domain_name, CRED_SPECIFIED);
+
+	switch (user_info->password_state) {
+	case AUTH_PASSWORD_PLAIN:
+		cli_credentials_set_password(creds, user_info->password.plaintext, 
+					     CRED_SPECIFIED);
+		break;
+	case AUTH_PASSWORD_HASH:
+		cli_credentials_set_nt_hash(creds, user_info->password.hash.nt,
+					    CRED_SPECIFIED);
+		break;
+		
+	case AUTH_PASSWORD_RESPONSE:
+		cli_credentials_set_ntlm_response(creds, &user_info->password.response.lanman, &user_info->password.response.nt, CRED_SPECIFIED);
+		break;
+	}
+
+	session_setup.in.sesskey = session->transport->negotiate.sesskey;
+	session_setup.in.capabilities = session->transport->negotiate.capabilities;
+
+	session_setup.in.credentials = creds;
+	session_setup.in.workgroup = ""; /* Only used with SPNEGO, which we are not doing */
+
+	/* Check password with remove server - this should be async some day */
+	nt_status = smb_composite_sesssetup(session, &session_setup);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
+	NT_STATUS_HAVE_NO_MEMORY(server_info);
+
+	server_info->account_sid = dom_sid_parse_talloc(server_info, SID_NT_ANONYMOUS);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->account_sid);
+
+	/* is this correct? */
+	server_info->primary_group_sid = dom_sid_parse_talloc(server_info, SID_BUILTIN_GUESTS);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->primary_group_sid);
+
+	server_info->n_domain_groups = 0;
+	server_info->domain_groups = NULL;
+
+	/* annoying, but the Anonymous really does have a session key, 
+	   and it is all zeros! */
+	server_info->user_session_key = data_blob(NULL, 0);
+	server_info->lm_session_key = data_blob(NULL, 0);
+
+	server_info->account_name = talloc_strdup(server_info, user_info->client.account_name);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->account_name);
+
+	server_info->domain_name = talloc_strdup(server_info, user_info->client.domain_name);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->domain_name);
+
+	server_info->full_name = NULL;
+
+	server_info->logon_script = talloc_strdup(server_info, "");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_script);
+
+	server_info->profile_path = talloc_strdup(server_info, "");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->profile_path);
+
+	server_info->home_directory = talloc_strdup(server_info, "");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->home_directory);
+
+	server_info->home_drive = talloc_strdup(server_info, "");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->home_drive);
+
+	server_info->last_logon = 0;
+	server_info->last_logoff = 0;
+	server_info->acct_expiry = 0;
+	server_info->last_password_change = 0;
+	server_info->allow_password_change = 0;
+	server_info->force_password_change = 0;
+
+	server_info->logon_count = 0;
+	server_info->bad_password_count = 0;
+
+	server_info->acct_flags = ACB_NORMAL;
+
+	server_info->authenticated = false;
+
+	*_server_info = server_info;
+
+	return nt_status;
+}
+
+static const struct auth_operations server_auth_ops = {
+	.name		= "server",
+	.get_challenge	= server_get_challenge,
+	.want_check	= server_want_check,
+	.check_password	= server_check_password
+};
+
+_PUBLIC_ NTSTATUS auth_server_init(void)
+{
+	NTSTATUS ret;
+
+	ret = auth_register(&server_auth_ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register 'server' auth backend!\n"));
+		return ret;
+	}
+
+	return ret;
 }

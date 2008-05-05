@@ -521,6 +521,7 @@ _PUBLIC_ NTSTATUS auth_init(void)
 	extern NTSTATUS auth_anonymous_init(void);
 	extern NTSTATUS auth_unix_init(void);
 	extern NTSTATUS auth_sam_init(void);
+	extern NTSTATUS auth_server_init(void);
 
 	init_module_fn static_init[] = { STATIC_auth_MODULES };
 	

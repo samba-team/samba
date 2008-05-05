@@ -55,6 +55,18 @@ SUBSYSTEM = auth
 auth_anonymous_OBJ_FILES = $(addprefix auth/, auth_anonymous.o)
 
 #######################
+# Start MODULE auth_anonymous
+[MODULE::auth_server]
+INIT_FUNCTION = auth_server_init
+SUBSYSTEM = auth
+PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBCLI_SMB
+OUTPUT_TYPE = SHARED_LIBRARY
+# End MODULE auth_server
+#######################
+
+auth_server_OBJ_FILES = $(addprefix auth/, auth_server.o)
+
+#######################
 # Start MODULE auth_winbind
 [MODULE::auth_winbind]
 INIT_FUNCTION = auth_winbind_init
