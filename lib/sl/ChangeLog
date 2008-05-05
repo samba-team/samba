@@ -1,3 +1,7 @@
+2008-05-05  Love Hörnquist Åstrand  <lha@vit.local>
+
+	* drop libss and make_cmds
+
 2007-07-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: roken_rename.h is a dist_ source k
