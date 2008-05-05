@@ -217,6 +217,7 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 {
 	int sock;
 	int ret;
+	uint32_t nt_version = NETLOGON_VERSION_5 | NETLOGON_VERSION_5EX;
 
 	sock = open_udp_socket(server, LDAP_PORT );
 	if (sock == -1) {
@@ -225,7 +226,7 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	ret = send_cldap_netlogon(sock, realm, global_myname(), 6);
+	ret = send_cldap_netlogon(sock, realm, global_myname(), nt_version);
 	if (ret != 0) {
 		close(sock);
 		return False;
