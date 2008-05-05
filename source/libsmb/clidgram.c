@@ -301,8 +301,8 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 	if (**dc_name == '\\')	*dc_name += 1;
 
 	if (reply) {
-		*reply = talloc_memdup(mem_ctx, &r,
-			sizeof(struct nbt_ntlogon_packet));
+		*reply = (struct nbt_ntlogon_packet *)talloc_memdup(
+			mem_ctx, &r, sizeof(struct nbt_ntlogon_packet));
 		if (!*reply) {
 			return false;
 		}
