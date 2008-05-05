@@ -84,7 +84,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 						      in pvfs_list_seek_ofs() for 
 						      how we cope with this */
 
-	status = pvfs_resolve_partial(pvfs, file, unix_path, fname, &name);
+	status = pvfs_resolve_partial(pvfs, file, unix_path, fname, 0, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
