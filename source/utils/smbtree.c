@@ -302,6 +302,12 @@ static bool print_tree(struct user_auth_info *user_info)
 
 	/* Parse command line args */
 
+	if (get_cmdline_auth_info_use_machine_account() &&
+	    !set_cmdline_auth_info_machine_account_creds()) {
+		TALLOC_FREE(frame);
+		return 1;
+	}
+
 	if (!get_cmdline_auth_info_got_pass()) {
 		char *pass = getpass("Password: ");
 		if (pass) {
