@@ -525,16 +525,6 @@ typedef struct files_struct {
 #include "ntquotas.h"
 #include "sysquotas.h"
 
-/*
- * Structure used to keep directory state information around.
- * Used in NT change-notify code.
- */
-
-typedef struct {
-	time_t modify_time;
-	time_t status_time;
-} dir_status_struct;
-
 struct vuid_cache_entry {
 	uint16 vuid;
 	bool read_only;
