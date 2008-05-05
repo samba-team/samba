@@ -1459,7 +1459,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 	*/
 	jucn[cnt].service_name = talloc_strdup(ctx,service_name);
 	jucn[cnt].volume_name = talloc_strdup(ctx, "");
-	if (!jucn[cnt].service_name || jucn[cnt].volume_name) {
+	if (!jucn[cnt].service_name || !jucn[cnt].volume_name) {
 		goto out;
 	}
 	jucn[cnt].referral_count = 1;
