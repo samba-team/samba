@@ -237,7 +237,7 @@ void conn_clear_vuid_cache(uint16 vuid)
 			conn->vuid = UID_FIELD_INVALID;
 		}
 
-		for (i=0; i<VUID_CACHE_SIZE; i++) {
+		for (i=0;i<conn->vuid_cache.entries && i< VUID_CACHE_SIZE;i++) {
 			if (conn->vuid_cache.array[i].vuid == vuid) {
 				struct vuid_cache_entry *ent = &conn->vuid_cache.array[i];
 				ent->vuid = UID_FIELD_INVALID;
