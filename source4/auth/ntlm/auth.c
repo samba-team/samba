@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "lib/util/dlinklist.h"
 #include "auth/auth.h"
-#include "auth/auth_proto.h"
+#include "auth/ntlm/auth_proto.h"
 #include "lib/events/events.h"
 #include "build.h"
 #include "param/param.h"
