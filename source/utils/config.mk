@@ -13,6 +13,7 @@ PRIVATE_DEPENDENCIES = \
 		gensec \
 		LIBCLI_RESOLVE \
 		auth \
+		ntlm_check \
 		MESSAGING \
 		LIBEVENTS
 # End BINARY ntlm_auth
