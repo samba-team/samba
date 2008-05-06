@@ -640,6 +640,82 @@ static NTSTATUS find_forced_group(bool force_user,
 }
 
 /****************************************************************************
+  Create an auth_serversupplied_info structure for a connection_struct
+****************************************************************************/
+
+static NTSTATUS create_connection_server_info(TALLOC_CTX *mem_ctx, int snum,
+                                              struct auth_serversupplied_info *vuid_serverinfo,
+					      DATA_BLOB password,
+                                              struct auth_serversupplied_info **presult)
+{
+        if (lp_guest_only(snum)) {
+                return make_server_info_guest(mem_ctx, presult);
+        }
+
+        if (vuid_serverinfo != NULL) {
+
+		struct auth_serversupplied_info *result;
+
+                /*
+                 * This is the normal security != share case where we have a
+                 * valid vuid from the session setup.                 */
+
+                if (vuid_serverinfo->guest) {
+                        if (!lp_guest_ok(snum)) {
+                                DEBUG(2, ("guest user (from session setup) "
+                                          "not permitted to access this share "
+                                          "(%s)\n", lp_servicename(snum)));
+                                return NT_STATUS_ACCESS_DENIED;
+                        }
+                } else {
+                        if (!user_ok_token(vuid_serverinfo->unix_name,
+                                           vuid_serverinfo->ptok, snum)) {
+                                DEBUG(2, ("user '%s' (from session setup) not "
+                                          "permitted to access this share "
+                                          "(%s)\n",
+                                          vuid_serverinfo->unix_name,
+                                          lp_servicename(snum)));
+                                return NT_STATUS_ACCESS_DENIED;
+                        }
+                }
+
+                result = copy_serverinfo(mem_ctx, vuid_serverinfo);
+		if (result == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		*presult = result;
+		return NT_STATUS_OK;
+        }
+
+        if (lp_security() == SEC_SHARE) {
+
+                fstring user;
+		bool guest;
+
+                /* add the sharename as a possible user name if we
+                   are in share mode security */
+
+                add_session_user(lp_servicename(snum));
+
+                /* shall we let them in? */
+
+                if (!authorise_login(snum,user,password,&guest)) {
+                        DEBUG( 2, ( "Invalid username/password for [%s]\n",
+                                    lp_servicename(snum)) );
+			return NT_STATUS_WRONG_PASSWORD;
+                }
+
+		return make_serverinfo_from_username(mem_ctx, user, guest,
+						     presult);
+        }
+
+	DEBUG(0, ("invalid VUID (vuser) but not in security=share\n"));
+	return NT_STATUS_ACCESS_DENIED;
+}
+
+
+/****************************************************************************
   Make a connection, given the snum to connect to, and the vuser of the
   connecting user if appropriate.
 ****************************************************************************/
