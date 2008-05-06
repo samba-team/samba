@@ -124,7 +124,7 @@ static ssize_t default_sys_recvfile(int fromfd,
 	return (ssize_t)total_written;
 }
 
-#if defined(HAVE_SPLICE_SYSCALL)
+#if defined(HAVE_LINUX_SPLICE)
 
 /*
  * Try and use the Linux system call to do this.
@@ -134,15 +134,31 @@ static ssize_t default_sys_recvfile(int fromfd,
  * from the network in the case of return != -1.
  */
 
+
 ssize_t sys_recvfile(int fromfd,
 			int tofd,
 			SMB_OFF_T offset,
 			size_t count)
 {
+	static bool try_splice_call = true;
 	size_t total_written = 0;
 
 	if (count == 0) {
 		return 0;
+	}
+
+	/*
+	 * Older Linux kernels have splice for sendfile,
+	 * but it fails for recvfile. Ensure we only try
+	 * this once and always fall back to the userspace
+	 * implementation if recvfile splice fails. JRA.
+	 */
+
+	if (!try_splice_call) {
+		return default_sys_recvfile(fromfd,
+				tofd,
+				offset,
+				count);
 	}
 
 	while (total_written < count) {
@@ -155,7 +171,8 @@ ssize_t sys_recvfile(int fromfd,
 		if (ret == -1) {
 			if (errno != EINTR) {
 				if (total_written == 0 &&
-						errno == EBADF || errno == EINVAL) {
+						(errno == EBADF || errno == EINVAL)) {
+					try_splice_call = false;
 					return default_sys_recvfile(fromfd,
 								tofd,
 								offset,
