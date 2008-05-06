@@ -609,7 +609,6 @@ typedef struct connection_struct {
 	unsigned cnum; /* an index passed over the wire */
 	struct share_params *params;
 	bool force_user;
-	bool force_group;
 	struct vuid_cache vuid_cache;
 	struct dptr_struct *dirptr;
 	bool printer;
