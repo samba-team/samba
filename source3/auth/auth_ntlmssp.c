@@ -122,7 +122,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 		return nt_status;
 	}
 
-	auth_ntlmssp_state->server_info->was_mapped |= username_was_mapped;
+	auth_ntlmssp_state->server_info->nss_token |= username_was_mapped;
 
 	nt_status = create_local_token(auth_ntlmssp_state->server_info);
 

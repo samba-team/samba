@@ -270,9 +270,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 						info3);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
-			if (user_info->was_mapped) {
-				(*server_info)->was_mapped = user_info->was_mapped;
-			}
+			(*server_info)->nss_token |= user_info->was_mapped;
 
 			if ( ! (*server_info)->guest) {
 				/* if a real user check pam account restrictions */

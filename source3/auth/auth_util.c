@@ -634,7 +634,7 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 	 */
 
 	if (((lp_server_role() == ROLE_DOMAIN_MEMBER) && !winbind_ping()) ||
-	    (server_info->was_mapped)) {
+	    (server_info->nss_token)) {
 		status = create_token_from_username(server_info,
 						    server_info->unix_name,
 						    server_info->guest,
@@ -1626,7 +1626,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 			sizeof(info3->base.LMSessKey.key));
 	}
 
-	result->was_mapped = username_was_mapped;
+	result->nss_token |= username_was_mapped;
 
 	*server_info = result;
 
@@ -1859,7 +1859,7 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 			sizeof(info->lm_session_key));
 	}
 
-	result->was_mapped = username_was_mapped;
+	result->nss_token |= username_was_mapped;
 
 	*server_info = result;
 
