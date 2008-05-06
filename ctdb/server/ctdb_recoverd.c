@@ -2017,8 +2017,15 @@ ctdb_recoverd_write_pnn_connect_count(struct ctdb_recoverd *rec)
 	const char count = rec->num_connected;
 	struct ctdb_context *ctdb = talloc_get_type(rec->ctdb, struct ctdb_context);
 
+	if (rec->rec_file_fd == -1) {
+		DEBUG(DEBUG_CRIT,(__location__ " Unable to write pnn count. pnnfile is not open.\n"));
+		return;
+	} 
+
 	if (pwrite(rec->rec_file_fd, &count, 1, ctdb->pnn) == -1) {
 		DEBUG(DEBUG_CRIT, (__location__ " Failed to write pnn count\n"));
+		close(rec->rec_file_fd);
+		rec->rec_file_fd = -1;
 	}
 }
 
@@ -2038,8 +2045,8 @@ ctdb_recoverd_get_pnn_lock(struct ctdb_recoverd *rec)
 	DEBUG(DEBUG_INFO, ("Setting PNN lock for pnn:%d\n", ctdb->pnn));
 
 	if (rec->rec_file_fd != -1) {
-		DEBUG(DEBUG_CRIT, (__location__ " rec_lock_fd is already open. Aborting\n"));
-		exit(10);
+		close(rec->rec_file_fd);
+		rec->rec_file_fd = -1;
 	}
 
 	pnnfile = talloc_asprintf(rec, "%s.pnn", ctdb->recovery_lock_file);
@@ -2049,7 +2056,8 @@ ctdb_recoverd_get_pnn_lock(struct ctdb_recoverd *rec)
 	if (rec->rec_file_fd == -1) {
 		DEBUG(DEBUG_CRIT,(__location__ " Unable to open %s - (%s)\n", 
 			 pnnfile, strerror(errno)));
-		exit(10);
+		talloc_free(pnnfile);
+		return;
 	}
 
 	set_close_on_exec(rec->rec_file_fd);
@@ -2063,12 +2071,12 @@ ctdb_recoverd_get_pnn_lock(struct ctdb_recoverd *rec)
 		close(rec->rec_file_fd);
 		rec->rec_file_fd = -1;
 		DEBUG(DEBUG_CRIT,(__location__ " Failed to get pnn lock on '%s'\n", pnnfile));
-		exit(10);
+		talloc_free(pnnfile);
+		return;
 	}
 
 
 	DEBUG(DEBUG_NOTICE,(__location__ " Got pnn lock on '%s'\n", pnnfile));
-
 	talloc_free(pnnfile);
 
 	/* we start out with 0 connected nodes */
@@ -2085,6 +2093,9 @@ static void ctdb_update_pnn_count(struct event_context *ev, struct timed_event *
 	struct ctdb_recoverd *rec     = talloc_get_type(p, struct ctdb_recoverd);
 	struct ctdb_context *ctdb     = rec->ctdb;
 	struct ctdb_node_map *nodemap = rec->nodemap;
+
+	/* close and reopen the pnn lock file */
+	ctdb_recoverd_get_pnn_lock(rec);
 
 	ctdb_recoverd_write_pnn_connect_count(rec);
 
@@ -2108,6 +2119,10 @@ static void ctdb_update_pnn_count(struct event_context *ev, struct timed_event *
 		return;
 	}
 	if (ctdb->recovery_lock_fd == -1) {
+		DEBUG(DEBUG_ERR, (__location__ " Lost reclock pnn file. Yielding recmaster role\n"));
+		close(ctdb->recovery_lock_fd);
+		ctdb->recovery_lock_fd = -1;
+		force_election(rec, ctdb->pnn, rec->nodemap);
 		return;
 	}
 	for (i=0; i<nodemap->num; i++) {
