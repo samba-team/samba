@@ -8,19 +8,19 @@ incdir=`dirname $0`
 failed=0
 
 net_misc() {
-	echo "Running misc tests"
+	echo "RUNNING SUBTESTS net_misc"
 	$SCRIPTDIR/test_net_misc.sh \
 	|| failed=`expr $failed + $?`
 }
 
 net_registry() {
-	echo "Running local registry tests"
+	echo "RUNNING SUBTESTS net_registry"
 	$SCRIPTDIR/test_net_registry.sh \
 	|| failed=`expr $failed + $?`
 }
 
 net_rpc_registry() {
-	echo "Running remote registry tests"
+	echo "RUNNING SUBTESTS net_rpc_registry"
 	$SCRIPTDIR/test_net_registry.sh rpc \
 	|| failed=`expr $failed + $?`
 }
