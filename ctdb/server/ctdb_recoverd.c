@@ -2688,6 +2688,37 @@ static void ctdb_recoverd_parent(struct event_context *ev, struct fd_event *fde,
 }
 
 /*
+  called regularly to verify that the recovery daemon is still running
+ */
+static void ctdb_check_recd(struct event_context *ev, struct timed_event *te, 
+			      struct timeval yt, void *p)
+{
+	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
+
+	/* make sure we harvest the child if signals are blocked for some
+	   reason
+	*/
+	waitpid(ctdb->recoverd_pid, 0, WNOHANG);
+
+	if (kill(ctdb->recoverd_pid, 0) != 0) {
+		DEBUG(DEBUG_ERR,("Recovery daemon (pid:%d) is no longer running. Shutting down main daemon\n", (int)ctdb->recoverd_pid));
+
+		ctdb_stop_recoverd(ctdb);
+		ctdb_stop_keepalive(ctdb);
+		ctdb_stop_monitoring(ctdb);
+		ctdb_release_all_ips(ctdb);
+		ctdb->methods->shutdown(ctdb);
+		ctdb_event_script(ctdb, "shutdown");
+
+		exit(10);	
+	}
+
+	event_add_timed(ctdb->ev, ctdb, 
+			timeval_current_ofs(30, 0),
+			ctdb_check_recd, ctdb);
+}
+
+/*
   startup the recovery daemon as a child of the main ctdb daemon
  */
 int ctdb_start_recoverd(struct ctdb_context *ctdb)
@@ -2708,6 +2739,9 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 	
 	if (ctdb->recoverd_pid != 0) {
 		close(fd[0]);
+		event_add_timed(ctdb->ev, ctdb, 
+				timeval_current_ofs(30, 0),
+				ctdb_check_recd, ctdb);
 		return 0;
 	}
 
