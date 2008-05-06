@@ -1152,6 +1152,44 @@ static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_inf
 	return NT_STATUS_OK;
 }
 
+/****************************************************************************
+  Fake a auth_serversupplied_info just from a username
+****************************************************************************/
+
+NTSTATUS make_serverinfo_from_username(TALLOC_CTX *mem_ctx,
+				       const char *username,
+				       bool is_guest,
+				       struct auth_serversupplied_info **presult)
+{
+	struct auth_serversupplied_info *result;
+	NTSTATUS status;
+
+	result = make_server_info(mem_ctx);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	result->nss_token = true;
+	result->guest = is_guest;
+
+	result->unix_name = talloc_strdup(result, username);
+	if (result->unix_name == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = create_local_token(result);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(result);
+		return status;
+	}
+
+	*presult = result;
+	return NT_STATUS_OK;
+}
+
+
 struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
 						 auth_serversupplied_info *src)
 {
