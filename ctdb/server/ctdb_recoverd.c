@@ -1481,6 +1481,13 @@ static void ctdb_election_data(struct ctdb_recoverd *rec, struct election_messag
 			em->num_connected++;
 		}
 	}
+
+	/* we shouldnt try to win this election if we cant be a recmaster */
+	if ((ctdb->capabilities & CTDB_CAP_RECMASTER) == 0) {
+		em->num_connected = 0;
+		em->priority_time = timeval_current();
+	}
+
 	talloc_free(nodemap);
 }
 
@@ -1493,6 +1500,11 @@ static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message
 	int cmp = 0;
 
 	ctdb_election_data(rec, &myem);
+
+	/* we cant win if we dont have the recmaster capability */
+	if ((rec->ctdb->capabilities & CTDB_CAP_RECMASTER) == 0) {
+		return false;
+	}
 
 	/* we cant win if we are banned */
 	if (rec->node_flags & NODE_FLAGS_BANNED) {
