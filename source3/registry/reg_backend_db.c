@@ -770,15 +770,64 @@ static TDB_DATA regdb_fetch_key_internal(TALLOC_CTX *mem_ctx, const char *key)
 }
 
 
+/**
+ * Check for the existence of a key.
+ *
+ * Existence of a key is authoritatively defined by its
+ * existence in the list of subkeys of its parent key.
+ * The exeption of this are keys without a parent key,
+ * i.e. the "base" keys (HKLM, HKCU, ...).
+ */
 static bool regdb_key_exists(const char *key)
 {
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	TDB_DATA value;
-	bool ret;
+	bool ret = false;
+	char *path, *p;
 
-	value = regdb_fetch_key_internal(mem_ctx, key);
-	ret = (value.dptr != NULL);
+	if (key == NULL) {
+		goto done;
+	}
 
+	path = normalize_reg_path(mem_ctx, key);
+	if (path == NULL) {
+		DEBUG(0, ("out of memory! (talloc failed)\n"));
+		goto done;
+	}
+
+	if (*path == '\0') {
+		goto done;
+	}
+
+	p = strrchr(path, '/');
+	if (p == NULL) {
+		/* this is a base key */
+		value = regdb_fetch_key_internal(mem_ctx, path);
+		ret = (value.dptr != NULL);
+	} else {
+		/* get the list of subkeys of the parent key */
+		uint32 num_items, len, i;
+		fstring subkeyname;
+
+		*p = '\0';
+		p++;
+		value = regdb_fetch_key_internal(mem_ctx, path);
+		if (value.dptr == NULL) {
+			goto done;
+		}
+
+		len = tdb_unpack(value.dptr, value.dsize, "d", &num_items);
+		for (i = 0; i < num_items; i++) {
+			len += tdb_unpack(value.dptr +len, value.dsize -len,
+					  "f", &subkeyname);
+			if (strequal(subkeyname, p)) {
+				ret = true;
+				goto done;
+			}
+		}
+	}
+
+done:
 	TALLOC_FREE(mem_ctx);
 	return ret;
 }
