@@ -268,7 +268,7 @@ int register_existing_vuid(uint16 vuid,
 	alpha_strcpy(tmp, smb_name, ". _-$", sizeof(tmp));
 
 	vuser->server_info->sanitized_username = talloc_strdup(
-		server_info, tmp);
+		vuser->server_info, tmp);
 
 	DEBUG(10,("register_existing_vuid: (%u,%u) %s %s %s guest=%d\n",
 		  (unsigned int)vuser->server_info->uid,
