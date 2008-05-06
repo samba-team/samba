@@ -947,7 +947,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 				 &group_sid);
 
 		}
-		conn->force_group = True;
 	}
 
 	if (conn->nt_user_token != NULL) {
