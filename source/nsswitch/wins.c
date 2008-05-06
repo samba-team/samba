@@ -140,6 +140,9 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 		in_addr_to_sockaddr_storage(&ss, *bcast);
 		pss = name_query(fd,name,0x00,True,True,&ss,count, &flags, NULL);
 		if (pss) {
+			if ((ret = SMB_MALLOC_P(struct in_addr)) == NULL) {
+				return NULL;
+			}
 			*ret = ((struct sockaddr_in *)pss)->sin_addr;
 			break;
 		}
