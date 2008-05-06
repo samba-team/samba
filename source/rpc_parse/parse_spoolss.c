@@ -2130,7 +2130,12 @@ static BOOL smb_io_reldevmode(const char *desc, RPC_BUFFER *buffer, int depth, D
 		}
 		
 		buffer->string_at_end -= ((*devmode)->size + (*devmode)->driverextra);
-		
+
+		/* mz:  we have to align the device mode for VISTA */
+		if (buffer->string_at_end % 4) {
+			buffer->string_at_end += 4 - (buffer->string_at_end % 4);
+		}
+
 		if(!prs_set_offset(ps, buffer->string_at_end))
 			return False;
 		
