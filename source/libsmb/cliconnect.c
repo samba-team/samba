@@ -928,7 +928,9 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 ntlmssp:
 
 	account = talloc_strdup(talloc_tos(), user);
-	ADS_ERROR_HAVE_NO_MEMORY(account);
+	if (!account) {
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 
 	/* when falling back to ntlmssp while authenticating with a machine
 	 * account strip off the realm - gd */
