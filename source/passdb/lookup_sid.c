@@ -1012,8 +1012,9 @@ static bool fetch_sid_from_uid_cache(DOM_SID *psid, uid_t uid)
 		return false;
 	}
 
-	SMB_ASSERT(cache_value.length == sizeof(*psid));
-	memcpy(psid, cache_value.data, sizeof(*psid));
+	memcpy(psid, cache_value.data, MIN(sizeof(*psid), cache_value.length));
+	SMB_ASSERT(cache_value.length >= offsetof(struct dom_sid, id_auth));
+	SMB_ASSERT(cache_value.length == ndr_size_dom_sid(psid, 0));
 
 	return true;
 }
@@ -1066,8 +1067,9 @@ static bool fetch_sid_from_gid_cache(DOM_SID *psid, gid_t gid)
 		return false;
 	}
 
-	SMB_ASSERT(cache_value.length == sizeof(*psid));
-	memcpy(psid, cache_value.data, sizeof(*psid));
+	memcpy(psid, cache_value.data, MIN(sizeof(*psid), cache_value.length));
+	SMB_ASSERT(cache_value.length >= offsetof(struct dom_sid, id_auth));
+	SMB_ASSERT(cache_value.length == ndr_size_dom_sid(psid, 0));
 
 	return true;
 }
