@@ -19,8 +19,15 @@ net_registry() {
 	|| failed=`expr $failed + $?`
 }
 
+net_rpc_registry() {
+	echo "Running remote registry tests"
+	$SCRIPTDIR/test_net_registry.sh rpc \
+	|| failed=`expr $failed + $?`
+}
+
 net_misc
 net_registry
+net_rpc_registry
 
 testok $0 $failed
 
