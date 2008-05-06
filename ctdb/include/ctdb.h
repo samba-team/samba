@@ -536,4 +536,13 @@ uint32_t *list_of_vnnmap_nodes(struct ctdb_context *ctdb,
 
 int ctdb_read_pnn_lock(int fd, int32_t pnn);
 
+/*
+  get capabilities of a remote node
+ */
+int ctdb_ctrl_getcapabilities(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *capabilities);
+
+struct ctdb_client_control_state *ctdb_ctrl_getcapabilities_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode);
+
+int ctdb_ctrl_getcapabilities_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *capabilities);
+
 #endif

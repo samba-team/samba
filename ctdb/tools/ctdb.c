@@ -1203,6 +1203,32 @@ static int control_getmonmode(struct ctdb_context *ctdb, int argc, const char **
 
 
 /*
+  display capabilities of a remote node
+ */
+static int control_getcapabilities(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t capabilities;
+	int ret;
+
+	ret = ctdb_ctrl_getcapabilities(ctdb, TIMELIMIT(), options.pnn, &capabilities);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get capabilities from node %u\n", options.pnn));
+		return ret;
+	}
+	
+	if (!options.machinereadable){
+		printf("RECMASTER: %s\n", (capabilities&CTDB_CAP_RECMASTER)?"YES":"NO");
+		printf("LMASTER: %s\n", (capabilities&CTDB_CAP_LMASTER)?"YES":"NO");
+	} else {
+		printf(":RECMASTER:LMASTER:\n");
+		printf(":%d:%d:\n",
+			!!(capabilities&CTDB_CAP_RECMASTER),
+			!!(capabilities&CTDB_CAP_LMASTER));
+	}
+	return 0;
+}
+
+/*
   disable monitoring on a  node
  */
 static int control_disable_monmode(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -1808,6 +1834,7 @@ static const struct {
 	{ "getdbmap",        control_getdbmap,          true,  "show the database map" },
 	{ "catdb",           control_catdb,             true,  "dump a database" ,                     "<dbname>"},
 	{ "getmonmode",      control_getmonmode,        true,  "show monitoring mode" },
+	{ "getcapabilities", control_getcapabilities,   true,  "show node capabilities" },
 	{ "disablemonitor",      control_disable_monmode,        true,  "set monitoring mode to DISABLE" },
 	{ "enablemonitor",      control_enable_monmode,        true,  "set monitoring mode to ACTIVE" },
 	{ "setdebug",        control_setdebug,          true,  "set debug level",                      "<EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG>" },

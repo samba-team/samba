@@ -200,6 +200,10 @@ int main(int argc, const char *argv[])
 		}
 	}
 
+	/* set ctdbd capabilities */
+	/* We can be an lmaster, we can also be a recmaster */
+	ctdb->capabilities = CTDB_CAP_LMASTER | CTDB_CAP_RECMASTER;
+
 	/* tell ctdb what nodes are available */
 	ctdb_load_nodes_file(ctdb);
 

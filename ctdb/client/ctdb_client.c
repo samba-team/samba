@@ -2871,3 +2871,43 @@ ctdb_read_pnn_lock(int fd, int32_t pnn)
 	return c;
 }
 
+/*
+  get capabilities of a remote node
+ */
+struct ctdb_client_control_state *
+ctdb_ctrl_getcapabilities_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode)
+{
+	return ctdb_control_send(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_CAPABILITIES, 0, tdb_null, 
+			   mem_ctx, &timeout, NULL);
+}
+
+int ctdb_ctrl_getcapabilities_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *capabilities)
+{
+	int ret;
+	int32_t res;
+
+	ret = ctdb_control_recv(ctdb, state, mem_ctx, NULL, &res, NULL);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_ctrl_getcapabilities_recv failed\n"));
+		return -1;
+	}
+
+	if (capabilities) {
+		*capabilities = (uint32_t)res;
+	}
+
+	return 0;
+}
+
+int ctdb_ctrl_getcapabilities(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *capabilities)
+{
+	struct ctdb_client_control_state *state;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	int ret;
+
+	state = ctdb_ctrl_getcapabilities_send(ctdb, tmp_ctx, timeout, destnode);
+	ret = ctdb_ctrl_getcapabilities_recv(ctdb, tmp_ctx, state, capabilities);
+	talloc_free(tmp_ctx);
+	return ret;
+}

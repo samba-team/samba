@@ -332,6 +332,10 @@ enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN
 #define CTDB_MONITORING_ACTIVE		0
 #define CTDB_MONITORING_DISABLED	1
 
+/* The different capabilities of the ctdb daemon. */
+#define CTDB_CAP_RECMASTER		0x00000001
+#define CTDB_CAP_LMASTER		0x00000002
+
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
@@ -356,6 +360,7 @@ struct ctdb_context {
 	uint32_t num_nodes;
 	uint32_t num_connected;
 	unsigned flags;
+	uint32_t capabilities;
 	struct idr_context *idr;
 	uint16_t idr_cnt;
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
@@ -513,6 +518,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_ADD_PUBLIC_IP           = 77,
 		    CTDB_CONTROL_DEL_PUBLIC_IP           = 78,
 		    CTDB_CONTROL_RUN_EVENTSCRIPTS        = 79,
+		    CTDB_CONTROL_GET_CAPABILITIES	 = 80,
 };	
 
 /*
