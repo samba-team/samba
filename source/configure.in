@@ -5664,6 +5664,26 @@ if test x"$samba_cv_HAVE_POSIX_FADVISE" = x"yes"; then
              [Whether posix_fadvise is available])
 fi
 
+############################################
+# See if we have the Linux splice syscall.
+
+AC_CACHE_CHECK([for Linux splice],
+                samba_cv_HAVE_LINUX_SPLICE,[
+    AC_TRY_LINK([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <fcntl.h>],
+    [long ret = splice(0,0,1,0,400,0);],
+    samba_cv_HAVE_LINUX_SPLICE=yes,
+    samba_cv_HAVE_LINUX_SPLICE=no)])
+
+if test x"$samba_cv_HAVE_LINUX_SPLICE" = x"yes"; then
+  AC_DEFINE(HAVE_LINUX_SPLICE,1,
+             [Whether Linux splice is available])
+fi
+
+AC_HAVE_DECL(splice, [#include <fcntl.h>])
 
 
 #################################################
