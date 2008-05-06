@@ -756,13 +756,17 @@ fail:
 static TDB_DATA regdb_fetch_key_internal(TALLOC_CTX *mem_ctx, const char *key)
 {
 	char *path = NULL;
+	TDB_DATA data;
 
 	path = normalize_reg_path(mem_ctx, key);
 	if (!path) {
 		return make_tdb_data(NULL, 0);
 	}
 
-	return dbwrap_fetch_bystring(regdb, mem_ctx, path);
+	data = dbwrap_fetch_bystring(regdb, mem_ctx, path);
+
+	TALLOC_FREE(path);
+	return data;
 }
 
 
