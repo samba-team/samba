@@ -91,6 +91,23 @@
 # the node with "ctdb enable"
 # CTDB_START_AS_DISABLED="yes"
 
+# LMASTER and RECMASTER capabilities.
+# By default all nodes are capable of both being LMASTER for records and
+# also for taking the RECMASTER role and perform recovery.
+# These parameters can be used to disable these two roles on a node.
+# Note: If there are NO available nodes left in a cluster that can perform
+# the RECMASTER role, the cluster will not be able to recover from a failure
+# and will remain in RECOVERY mode until an RECMASTER capable node becomes
+# available. Same for LMASTER.
+# These parametersd are useful for scenarios where you have one "remote" node
+# in a cluster and you do not want the remote node to be fully participating
+# in the cluster and slow things down.
+# For that case, set both roles to "no" for the remote node on the remote site
+# but leave the roles default to "yes" on the primary nodes in the central
+# datacentre.
+# CTDB_CAPABILITY_RECMASTER=yes
+# CTDB_CAPABILITY_LMASTER=yes
+
 # where to log messages
 # the default is /var/log/log.ctdb
 # CTDB_LOGFILE=/var/log/log.ctdb
