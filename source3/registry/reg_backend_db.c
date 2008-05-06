@@ -753,7 +753,7 @@ fail:
 }
 
 
-static TDB_DATA regdb_fetch_key_internal(const char *key, TALLOC_CTX *mem_ctx)
+static TDB_DATA regdb_fetch_key_internal(TALLOC_CTX *mem_ctx, const char *key)
 {
 	char *path = NULL;
 
@@ -772,7 +772,7 @@ static bool regdb_key_exists(const char *key)
 	TDB_DATA value;
 	bool ret;
 
-	value = regdb_fetch_key_internal(key, mem_ctx);
+	value = regdb_fetch_key_internal(mem_ctx, key);
 	ret = (value.dptr != NULL);
 
 	TALLOC_FREE(mem_ctx);
@@ -801,7 +801,7 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 
 	ctr->seqnum = regdb_get_seqnum();
 
-	value = regdb_fetch_key_internal(key, frame);
+	value = regdb_fetch_key_internal(frame, key);
 
 	buf = value.dptr;
 	buflen = value.dsize;
@@ -931,7 +931,7 @@ int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 
 	values->seqnum = regdb_get_seqnum();
 
-	value = regdb_fetch_key_internal(keystr, ctx);
+	value = regdb_fetch_key_internal(ctx, keystr);
 
 	if (!value.dptr) {
 		/* all keys have zero values by default */
