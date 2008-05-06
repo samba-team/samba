@@ -2671,8 +2671,11 @@ int ctdb_ctrl_end_recovery(struct ctdb_context *ctdb, struct timeval timeout, ui
 static void async_callback(struct ctdb_client_control_state *state)
 {
 	struct client_async_data *data = talloc_get_type(state->async.private_data, struct client_async_data);
+	struct ctdb_context *ctdb = talloc_get_type(state->ctdb, struct ctdb_context);
 	int ret;
+	TDB_DATA outdata;
 	int32_t res;
+	uint32_t destnode = state->c->hdr.destnode;
 
 	/* one more node has responded with recmode data */
 	data->count--;
@@ -2690,12 +2693,15 @@ static void async_callback(struct ctdb_client_control_state *state)
 	
 	state->async.fn = NULL;
 
-	ret = ctdb_control_recv(state->ctdb, state, data, NULL, &res, NULL);
+	ret = ctdb_control_recv(ctdb, state, data, &outdata, &res, NULL);
 	if ((ret != 0) || (res != 0)) {
 		if ( !data->dont_log_errors) {
 			DEBUG(DEBUG_ERR,("Async operation failed with ret=%d res=%d\n", ret, (int)res));
 		}
 		data->fail_count++;
+	}
+	if ((ret == 0) && (data->callback != NULL)) {
+		data->callback(ctdb, destnode, res, outdata);
 	}
 }
 
@@ -2739,15 +2745,17 @@ int ctdb_client_async_control(struct ctdb_context *ctdb,
 				uint32_t *nodes,
 				struct timeval timeout,
 				bool dont_log_errors,
-				TDB_DATA data)
+				TDB_DATA data,
+			        client_async_callback client_callback)
 {
 	struct client_async_data *async_data;
 	struct ctdb_client_control_state *state;
 	int j, num_nodes;
-	
+
 	async_data = talloc_zero(ctdb, struct client_async_data);
 	CTDB_NO_MEMORY_FATAL(ctdb, async_data);
 	async_data->dont_log_errors = dont_log_errors;
+	async_data->callback = client_callback;
 
 	num_nodes = talloc_get_size(nodes) / sizeof(uint32_t);
 
@@ -2886,15 +2894,16 @@ int ctdb_ctrl_getcapabilities_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ct
 {
 	int ret;
 	int32_t res;
+	TDB_DATA outdata;
 
-	ret = ctdb_control_recv(ctdb, state, mem_ctx, NULL, &res, NULL);
-	if (ret != 0) {
+	ret = ctdb_control_recv(ctdb, state, mem_ctx, &outdata, &res, NULL);
+	if ( (ret != 0) || (res != 0) ) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_ctrl_getcapabilities_recv failed\n"));
 		return -1;
 	}
 
 	if (capabilities) {
-		*capabilities = (uint32_t)res;
+		*capabilities = *((uint32_t *)outdata.dptr);
 	}
 
 	return 0;

@@ -199,6 +199,11 @@ struct ctdb_node {
 	uint32_t rx_cnt;
 	uint32_t tx_cnt;
 
+	/* used to track node capabilities, is only valid/tracked inside the
+	   recovery daemon.
+	*/
+	uint32_t capabilities;
+
 	/* a list of controls pending to this node, so we can time them out quickly
 	   if the node becomes disconnected */
 	struct daemon_control_state *pending_controls;
@@ -1276,10 +1281,13 @@ int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb);
 int ctdb_set_child_logging(struct ctdb_context *ctdb);
 
 
+typedef void (*client_async_callback)(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata);
+
 struct client_async_data {
 	bool dont_log_errors;
 	uint32_t count;
 	uint32_t fail_count;
+	client_async_callback callback;
 };
 void ctdb_client_async_add(struct client_async_data *data, struct ctdb_client_control_state *state);
 int ctdb_client_async_wait(struct ctdb_context *ctdb, struct client_async_data *data);
@@ -1288,12 +1296,14 @@ int ctdb_client_async_control(struct ctdb_context *ctdb,
 				uint32_t *nodes,
 				struct timeval timeout,
 				bool dont_log_errors,
-				TDB_DATA data);
+				TDB_DATA data,
+			        client_async_callback client_callback);
 
 void ctdb_load_nodes_file(struct ctdb_context *ctdb);
 
 int ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode);
 
 int32_t ctdb_dump_memory(struct ctdb_context *ctdb, TDB_DATA *outdata);
+int32_t ctdb_control_get_capabilities(struct ctdb_context *ctdb, TDB_DATA *outdata);
 
 #endif

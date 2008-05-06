@@ -443,7 +443,7 @@ struct sockaddr_in *sin)
 	/* send release ip to all nodes */
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_RELEASE_IP,
 			list_of_active_nodes(ctdb, nodemap, ctdb, true),
-			TIMELIMIT(), false, data) != 0) {
+			TIMELIMIT(), false, data, NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to send 'ReleaseIP' to all nodes.\n"));
 		return -1;
 	}

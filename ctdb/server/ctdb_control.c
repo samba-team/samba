@@ -390,7 +390,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_del_public_address(ctdb, indata);
 
 	case CTDB_CONTROL_GET_CAPABILITIES:
-		return ctdb->capabilities;
+		return ctdb_control_get_capabilities(ctdb, outdata);
 
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));

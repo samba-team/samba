@@ -212,7 +212,7 @@ static int run_recovered_eventscript(struct ctdb_context *ctdb, struct ctdb_node
 
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_END_RECOVERY,
 			list_of_active_nodes(ctdb, nodemap, tmp_ctx, true),
-			CONTROL_TIMEOUT(), false, tdb_null) != 0) {
+			CONTROL_TIMEOUT(), false, tdb_null, NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event. Recovery failed.\n"));
 		talloc_free(tmp_ctx);
 		return -1;
@@ -234,8 +234,42 @@ static int run_startrecovery_eventscript(struct ctdb_context *ctdb, struct ctdb_
 
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_START_RECOVERY,
 			list_of_active_nodes(ctdb, nodemap, tmp_ctx, true),
-			CONTROL_TIMEOUT(), false, tdb_null) != 0) {
+			CONTROL_TIMEOUT(), false, tdb_null, NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'startrecovery' event. Recovery failed.\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+static void async_getcap_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata)
+{
+	if ( (outdata.dsize != sizeof(uint32_t)) || (outdata.dptr == NULL) ) {
+		DEBUG(DEBUG_ERR, (__location__ " Invalid lenght/pointer for getcap callback : %d %p\n", outdata.dsize, outdata.dptr));
+		return;
+	}
+	ctdb->nodes[node_pnn]->capabilities = *((uint32_t *)outdata.dptr);
+}
+
+/*
+  update the node capabilities for all connected nodes
+ */
+static int update_capabilities(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+{
+	uint32_t *nodes;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(ctdb);
+	CTDB_NO_MEMORY(ctdb, tmp_ctx);
+
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_CAPABILITIES,
+					nodes, CONTROL_TIMEOUT(),
+					false, tdb_null, async_getcap_callback) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed to read node capabilities.\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
@@ -262,7 +296,7 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 	if (rec_mode == CTDB_RECOVERY_ACTIVE) {
 		if (ctdb_client_async_control(ctdb, CTDB_CONTROL_FREEZE,
 						nodes, CONTROL_TIMEOUT(),
-						false, tdb_null) != 0) {
+						false, tdb_null, NULL) != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Unable to freeze nodes. Recovery failed.\n"));
 			talloc_free(tmp_ctx);
 			return -1;
@@ -275,7 +309,7 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_SET_RECMODE,
 					nodes, CONTROL_TIMEOUT(),
-					false, data) != 0) {
+					false, data, NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode. Recovery failed.\n"));
 		talloc_free(tmp_ctx);
 		return -1;
@@ -284,7 +318,7 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 	if (rec_mode == CTDB_RECOVERY_NORMAL) {
 		if (ctdb_client_async_control(ctdb, CTDB_CONTROL_THAW,
 						nodes, CONTROL_TIMEOUT(),
-						false, tdb_null) != 0) {
+						false, tdb_null, NULL) != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Unable to thaw nodes. Recovery failed.\n"));
 			talloc_free(tmp_ctx);
 			return -1;
@@ -311,7 +345,7 @@ static int set_recovery_master(struct ctdb_context *ctdb, struct ctdb_node_map *
 
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_SET_RECMASTER,
 			list_of_active_nodes(ctdb, nodemap, tmp_ctx, true),
-			CONTROL_TIMEOUT(), false, data) != 0) {
+			CONTROL_TIMEOUT(), false, data, NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recmaster. Recovery failed.\n"));
 		talloc_free(tmp_ctx);
 		return -1;
@@ -1142,7 +1176,7 @@ static int push_recdb_database(struct ctdb_context *ctdb, uint32_t dbid,
 
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_PUSH_DB,
 			list_of_active_nodes(ctdb, nodemap, tmp_ctx, true),
-			CONTROL_TIMEOUT(), false, outdata) != 0) {
+			CONTROL_TIMEOUT(), false, outdata, NULL) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to push recdb records to nodes for db 0x%x\n", dbid));
 		talloc_free(recdata);
 		talloc_free(tmp_ctx);
@@ -1198,7 +1232,7 @@ static int recover_database(struct ctdb_recoverd *rec,
 
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_WIPE_DATABASE,
 			list_of_active_nodes(ctdb, nodemap, recdb, true),
-			CONTROL_TIMEOUT(), false, data) != 0) {
+			CONTROL_TIMEOUT(), false, data, NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to wipe database. Recovery failed.\n"));
 		talloc_free(recdb);
 		return -1;
@@ -1321,7 +1355,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_START,
 			list_of_active_nodes(ctdb, nodemap, mem_ctx, true),
-			CONTROL_TIMEOUT(), false, data) != 0) {
+			CONTROL_TIMEOUT(), false, data, NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to start transactions. Recovery failed.\n"));
 		return -1;
 	}
@@ -1340,7 +1374,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	/* commit all the changes */
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_COMMIT,
 			list_of_active_nodes(ctdb, nodemap, mem_ctx, true),
-			CONTROL_TIMEOUT(), false, data) != 0) {
+			CONTROL_TIMEOUT(), false, data, NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to commit recovery changes. Recovery failed.\n"));
 		return -1;
 	}
@@ -1348,19 +1382,45 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - committed databases\n"));
 	
 
+	/* update the capabilities for all nodes */
+	ret = update_capabilities(ctdb, nodemap);
+	if (ret!=0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
+		return -1;
+	}
+
 	/* build a new vnn map with all the currently active and
 	   unbanned nodes */
 	generation = new_generation();
 	vnnmap = talloc(mem_ctx, struct ctdb_vnn_map);
 	CTDB_NO_MEMORY(ctdb, vnnmap);
 	vnnmap->generation = generation;
-	vnnmap->size = rec->num_active;
+	vnnmap->size = 0;
 	vnnmap->map = talloc_zero_array(vnnmap, uint32_t, vnnmap->size);
+	CTDB_NO_MEMORY(ctdb, vnnmap->map);
 	for (i=j=0;i<nodemap->num;i++) {
-		if (!(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
-			vnnmap->map[j++] = nodemap->nodes[i].pnn;
+		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+			continue;
 		}
+		if (!(ctdb->nodes[i]->capabilities & CTDB_CAP_LMASTER)) {
+			/* this node can not be an lmaster */
+			DEBUG(DEBUG_DEBUG, ("Node %d cant be a LMASTER, skipping it\n", i));
+			continue;
+		}
+
+		vnnmap->size++;
+		vnnmap->map = talloc_realloc_size(vnnmap, vnnmap->map, vnnmap->size);
+		CTDB_NO_MEMORY(ctdb, vnnmap->map);
+		vnnmap->map[j++] = nodemap->nodes[i].pnn;
+
 	}
+	if (vnnmap->size == 0) {
+		DEBUG(DEBUG_NOTICE, ("No suitable lmasters found. Adding local node (recmaster) anyway.\n"));
+		vnnmap->size++;
+		vnnmap->map = talloc_realloc_size(vnnmap, vnnmap->map, vnnmap->size);
+		CTDB_NO_MEMORY(ctdb, vnnmap->map);
+		vnnmap->map[0] = pnn;
+	}	
 
 	/* update to the new vnnmap on all nodes */
 	ret = update_vnnmap_on_all_nodes(ctdb, nodemap, pnn, vnnmap, mem_ctx);
