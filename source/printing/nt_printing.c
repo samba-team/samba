@@ -75,7 +75,7 @@ STANDARD_MAPPING printserver_std_mapping = {
 
 /* Map generic permissions to job object specific permissions */
 
-const struct generic_mapping job_generic_mapping = {
+GENERIC_MAPPING job_generic_mapping = {
 	JOB_READ,
 	JOB_WRITE,
 	JOB_EXECUTE,
