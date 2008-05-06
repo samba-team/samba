@@ -429,7 +429,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 			/* We might have been asked to remap this oid,
 			 * due to a conflict, or lack of
 			 * implementation */
-			for (j=0; syntax_oid && oid_map[j].old_oid; j++) {
+			for (j=0; syntax_oid && oid_map && oid_map[j].old_oid; j++) {
 				if (strcasecmp(syntax_oid, oid_map[j].old_oid) == 0) {
 					syntax_oid =  oid_map[j].new_oid;
 					break;
@@ -494,7 +494,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		}
 
 		/* We might have been asked to remap this oid, due to a conflict */
-		for (j=0; oid_map[j].old_oid; j++) {
+		for (j=0; oid_map && oid_map[j].old_oid; j++) {
 			if (strcasecmp(oid, oid_map[j].old_oid) == 0) {
 				oid =  oid_map[j].new_oid;
 				break;
