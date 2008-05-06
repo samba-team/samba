@@ -120,9 +120,7 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 		return nt_status;
 	}
 
-	if (user_info->was_mapped) {
-		(*server_info)->was_mapped = user_info->was_mapped;
-	}
+	(*server_info)->nss_token |= user_info->was_mapped;
 
         return nt_status;
 }

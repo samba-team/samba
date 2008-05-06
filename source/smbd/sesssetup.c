@@ -530,9 +530,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		}
 	}
 
-	if (username_was_mapped) {
-		server_info->was_mapped = username_was_mapped;
-	}
+	server_info->nss_token |= username_was_mapped;
 
 	/* we need to build the token for the user. make_server_info_guest()
 	   already does this */

@@ -67,7 +67,11 @@ typedef struct auth_serversupplied_info {
 	
 	void *pam_handle;
 
-	bool was_mapped;	/* Did the username map match? */
+	/*
+	 * This is a token from /etc/passwd and /etc/group
+	 */
+	bool nss_token;
+
 	char *unix_name;
 
 	/*
