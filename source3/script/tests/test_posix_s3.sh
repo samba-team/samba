@@ -46,6 +46,10 @@ unix="UNIX-INFO2"
 
 tests="$base $raw $rpc $unix"
 
+if test "x$POSIX_SUBTESTS" != "x" ; then
+	tests="$POSIX_SUBTESTS"
+fi
+
 skipped="BASE-CHARSET BASE-TCONDEV"
 skipped="$skipped RAW-ACLS RAW-COMPOSITE RAW-CONTEXT"
 skipped="$skipped RAW-IOCTL"
