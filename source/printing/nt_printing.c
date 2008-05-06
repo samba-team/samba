@@ -73,6 +73,15 @@ STANDARD_MAPPING printserver_std_mapping = {
 	SERVER_ALL_ACCESS
 };
 
+/* Map generic permissions to job object specific permissions */
+
+const struct generic_mapping job_generic_mapping = {
+	JOB_READ,
+	JOB_WRITE,
+	JOB_EXECUTE,
+	JOB_ALL_ACCESS
+};
+
 /* We need one default form to support our default printer. Msoft adds the
 forms it wants and in the ORDER it wants them (note: DEVMODE papersize is an
 array index). Letter is always first, so (for the current code) additions
@@ -5450,6 +5459,17 @@ void map_printer_permissions(SEC_DESC *sd)
 	}
 }
 
+void map_job_permissions(SEC_DESC *sd)
+{
+	int i;
+
+	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
+		se_map_generic(&sd->dacl->aces[i].access_mask,
+			       &job_generic_mapping);
+	}
+}
+
+
 /****************************************************************************
  Check a user has permissions to perform the given operation.  We use the
  permission constants defined in include/rpc_spoolss.h to check the various
@@ -5531,19 +5551,12 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 			return False;
 		}
 
-		/* Now this is the bit that really confuses me.  The access
-		   type needs to be changed from JOB_ACCESS_ADMINISTER to
-		   PRINTER_ACCESS_ADMINISTER for this to work.  Something
-		   to do with the child (job) object becoming like a
-		   printer??  -tpot */
-
-		access_type = PRINTER_ACCESS_ADMINISTER;
+		map_job_permissions(secdesc->sec);
+	} else {
+		map_printer_permissions(secdesc->sec);
 	}
-	
-	/* Check access */
-	
-	map_printer_permissions(secdesc->sec);
 
+	/* Check access */
 	result = se_access_check(secdesc->sec, user->nt_user_token, access_type,
 				 &access_granted, &status);
 
