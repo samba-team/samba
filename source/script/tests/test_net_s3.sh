@@ -14,7 +14,7 @@ net_misc() {
 }
 
 net_registry() {
-	echo "Running registry tests"
+	echo "Running local registry tests"
 	$SCRIPTDIR/test_net_registry.sh \
 	|| failed=`expr $failed + $?`
 }
