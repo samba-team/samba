@@ -1152,11 +1152,12 @@ static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_inf
 	return NT_STATUS_OK;
 }
 
-static auth_serversupplied_info *copy_serverinfo(auth_serversupplied_info *src)
+struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
+						 auth_serversupplied_info *src)
 {
 	auth_serversupplied_info *dst;
 
-	dst = make_server_info(NULL);
+	dst = make_server_info(mem_ctx);
 	if (dst == NULL) {
 		return NULL;
 	}
@@ -1225,7 +1226,7 @@ bool init_guest_info(void)
 
 NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
 {
-	*server_info = copy_serverinfo(guest_info);
+	*server_info = copy_serverinfo(NULL, guest_info);
 	return (*server_info != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 }
 
