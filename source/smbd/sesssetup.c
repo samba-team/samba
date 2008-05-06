@@ -45,7 +45,7 @@ static NTSTATUS do_map_to_guest(NTSTATUS status,
 		    (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD)) {
 			DEBUG(3,("No such user %s [%s] - using guest account\n",
 				 user, domain));
-			status = make_server_info_guest(server_info);
+			status = make_server_info_guest(NULL, server_info);
 		}
 	}
 
@@ -53,7 +53,7 @@ static NTSTATUS do_map_to_guest(NTSTATUS status,
 		if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD) {
 			DEBUG(3,("Registered username %s for guest access\n",
 				user));
-			status = make_server_info_guest(server_info);
+			status = make_server_info_guest(NULL, server_info);
 		}
 	}
 
@@ -488,7 +488,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	reload_services(True);
 
 	if ( map_domainuser_to_guest ) {
-		make_server_info_guest(&server_info);
+		make_server_info_guest(NULL, &server_info);
 	} else if (logon_info) {
 		/* pass the unmapped username here since map_username()
 		   will be called again from inside make_server_info_info3() */

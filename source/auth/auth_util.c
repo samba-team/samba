@@ -1224,9 +1224,10 @@ bool init_guest_info(void)
 	return NT_STATUS_IS_OK(make_new_server_info_guest(&guest_info));
 }
 
-NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
+NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx,
+				auth_serversupplied_info **server_info)
 {
-	*server_info = copy_serverinfo(NULL, guest_info);
+	*server_info = copy_serverinfo(mem_ctx, guest_info);
 	return (*server_info != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 }
 
@@ -1477,7 +1478,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE( sam_account );
 		if ( lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID ) {
-		 	make_server_info_guest(server_info); 
+			make_server_info_guest(NULL, server_info);
 			return NT_STATUS_OK;
 		}
 		return nt_status;
@@ -1729,7 +1730,7 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE( result );
 		if ( lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID ) {
-			make_server_info_guest(server_info);
+			make_server_info_guest(NULL, server_info);
 			return NT_STATUS_OK;
 		}
 		return nt_status;
