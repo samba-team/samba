@@ -723,7 +723,7 @@ static NTSTATUS create_connection_server_info(TALLOC_CTX *mem_ctx, int snum,
 static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					       DATA_BLOB password, 
 					       const char *pdev,
-					       NTSTATUS *status)
+					       NTSTATUS *pstatus)
 {
 	struct passwd *pass = NULL;
 	bool guest = False;
@@ -734,19 +734,20 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	int ret;
 	char addr[INET6_ADDRSTRLEN];
 	bool on_err_call_dis_hook = false;
+	NTSTATUS status;
 
 	*user = 0;
 	fstrcpy(dev, pdev);
 	SET_STAT_INVALID(st);
 
-	if (NT_STATUS_IS_ERR(*status = share_sanity_checks(snum, dev))) {
+	if (NT_STATUS_IS_ERR(*pstatus = share_sanity_checks(snum, dev))) {
 		return NULL;
 	}	
 
 	conn = conn_new();
 	if (!conn) {
 		DEBUG(0,("Couldn't find free connection.\n"));
-		*status = NT_STATUS_INSUFFICIENT_RESOURCES;
+		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
 		return NULL;
 	}
 
@@ -755,7 +756,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	if (lp_guest_only(snum)) {
 		const char *guestname = lp_guestaccount();
-		NTSTATUS status2;
 		char *found_username = NULL;
 
 		guest = True;
@@ -764,17 +764,17 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			DEBUG(0,("make_connection_snum: Invalid guest "
 				 "account %s??\n",guestname));
 			conn_free(conn);
-			*status = NT_STATUS_NO_SUCH_USER;
+			*pstatus = NT_STATUS_NO_SUCH_USER;
 			return NULL;
 		}
-		status2 = create_token_from_username(conn, pass->pw_name, True,
-						     &conn->uid, &conn->gid,
-						     &found_username,
-						     &conn->nt_user_token);
-		if (!NT_STATUS_IS_OK(status2)) {
+		status = create_token_from_username(conn, pass->pw_name, True,
+						    &conn->uid, &conn->gid,
+						    &found_username,
+						    &conn->nt_user_token);
+		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(pass);
 			conn_free(conn);
-			*status = status2;
+			*pstatus = status;
 			return NULL;
 		}
 		fstrcpy(user, found_username);
@@ -790,7 +790,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					  "not permitted to access this share "
 					  "(%s)\n", lp_servicename(snum)));
 				      conn_free(conn);
-				      *status = NT_STATUS_ACCESS_DENIED;
+				      *pstatus = NT_STATUS_ACCESS_DENIED;
 				      return NULL;
 			}
 		} else {
@@ -802,7 +802,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					  vuser->server_info->unix_name,
 					  lp_servicename(snum)));
 				conn_free(conn);
-				*status = NT_STATUS_ACCESS_DENIED;
+				*pstatus = NT_STATUS_ACCESS_DENIED;
 				return NULL;
 			}
 		}
@@ -824,7 +824,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			DEBUG( 2, ( "Invalid username/password for [%s]\n", 
 				    lp_servicename(snum)) );
 			conn_free(conn);
-			*status = NT_STATUS_WRONG_PASSWORD;
+			*pstatus = NT_STATUS_WRONG_PASSWORD;
 			return NULL;
 		}
 		pass = Get_Pwnam_alloc(talloc_tos(), user);
@@ -835,7 +835,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		TALLOC_FREE(pass);
 		if (!NT_STATUS_IS_OK(status2)) {
 			conn_free(conn);
-			*status = status2;
+			*pstatus = status2;
 			return NULL;
 		}
 		fstrcpy(user, found_username);
@@ -845,7 +845,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	} else {
 		DEBUG(0, ("invalid VUID (vuser) but not in security=share\n"));
 		conn_free(conn);
-		*status = NT_STATUS_ACCESS_DENIED;
+		*pstatus = NT_STATUS_ACCESS_DENIED;
 		return NULL;
 	}
 
@@ -893,14 +893,12 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	 */
 	
 	if (*lp_force_user(snum)) {
-		NTSTATUS status2;
-
-		status2 = find_forced_user(conn,
+		status = find_forced_user(conn,
 				(vuser != NULL) && vuser->server_info->guest,
 				user);
-		if (!NT_STATUS_IS_OK(status2)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			conn_free(conn);
-			*status = status2;
+			*pstatus = status;
 			return NULL;
 		}
 		string_set(&conn->user,user);
@@ -914,15 +912,13 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	 */
 	
 	if (*lp_force_group(snum)) {
-		NTSTATUS status2;
 		DOM_SID group_sid;
 
-		status2 = find_forced_group(conn->force_user,
-					    snum, user,
-					    &group_sid, &conn->gid);
-		if (!NT_STATUS_IS_OK(status2)) {
+		status = find_forced_group(conn->force_user, snum, user,
+					   &group_sid, &conn->gid);
+		if (!NT_STATUS_IS_OK(status)) {
 			conn_free(conn);
-			*status = status2;
+			*pstatus = status;
 			return NULL;
 		}
 
@@ -936,7 +932,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			if (conn->nt_user_token == NULL) {
 				DEBUG(0, ("dup_nt_token failed\n"));
 				conn_free(conn);
-				*status = NT_STATUS_NO_MEMORY;
+				*pstatus = NT_STATUS_NO_MEMORY;
 				return NULL;
 			}
 		}
@@ -978,7 +974,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 						&conn->ngroups)) {
 				DEBUG(0, ("add_gid_to_array_unique failed\n"));
 				conn_free(conn);
-				*status = NT_STATUS_NO_MEMORY;
+				*pstatus = NT_STATUS_NO_MEMORY;
 				return NULL;
 			}
 		}
@@ -993,14 +989,14 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					lp_pathname(snum));
 		if (!s) {
 			conn_free(conn);
-			*status = NT_STATUS_NO_MEMORY;
+			*pstatus = NT_STATUS_NO_MEMORY;
 			return NULL;
 		}
 
 		if (!set_conn_connectpath(conn,s)) {
 			TALLOC_FREE(s);
 			conn_free(conn);
-			*status = NT_STATUS_NO_MEMORY;
+			*pstatus = NT_STATUS_NO_MEMORY;
 			return NULL;
 		}
 		DEBUG(3,("Connect path is '%s' for service [%s]\n",s,
@@ -1033,7 +1029,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 				 "NT token.\n",
 				  lp_servicename(snum)));
 			conn_free(conn);
-			*status = NT_STATUS_ACCESS_DENIED;
+			*pstatus = NT_STATUS_ACCESS_DENIED;
 			return NULL;
 		}
 
@@ -1051,7 +1047,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					 "descriptor.\n",
 					  lp_servicename(snum)));
 				conn_free(conn);
-				*status = NT_STATUS_ACCESS_DENIED;
+				*pstatus = NT_STATUS_ACCESS_DENIED;
 				return NULL;
 			} else {
 				conn->read_only = True;
@@ -1064,7 +1060,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		DEBUG(0, ("vfs_init failed for service %s\n",
 			  lp_servicename(snum)));
 		conn_free(conn);
-		*status = NT_STATUS_BAD_NETWORK_NAME;
+		*pstatus = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
 	}
 
@@ -1082,7 +1078,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 				lp_servicename(snum),
 				conn->connectpath));
 			conn_free(conn);
-			*status = NT_STATUS_BAD_NETWORK_NAME;
+			*pstatus = NT_STATUS_BAD_NETWORK_NAME;
 			return NULL;
 		}
 	}
@@ -1106,7 +1102,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		DEBUG(1, ("Max connections (%d) exceeded for %s\n",
 			  lp_max_connections(snum), lp_servicename(snum)));
 		conn_free(conn);
-		*status = NT_STATUS_INSUFFICIENT_RESOURCES;
+		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
 		return NULL;
 	}  
 
@@ -1116,7 +1112,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (!claim_connection(conn, lp_servicename(snum), 0)) {
 		DEBUG(1, ("Could not store connections entry\n"));
 		conn_free(conn);
-		*status = NT_STATUS_INTERNAL_DB_ERROR;
+		*pstatus = NT_STATUS_INTERNAL_DB_ERROR;
 		return NULL;
 	}  
 
@@ -1138,7 +1134,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 				 "connection\n", ret));
 			yield_connection(conn, lp_servicename(snum));
 			conn_free(conn);
-			*status = NT_STATUS_ACCESS_DENIED;
+			*pstatus = NT_STATUS_ACCESS_DENIED;
 			return NULL;
 		}
 	}
@@ -1149,7 +1145,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		DEBUG(0,("Can't become connected user!\n"));
 		yield_connection(conn, lp_servicename(snum));
 		conn_free(conn);
-		*status = NT_STATUS_LOGON_FAILURE;
+		*pstatus = NT_STATUS_LOGON_FAILURE;
 		return NULL;
 	}
 
@@ -1172,7 +1168,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		if (ret != 0 && lp_preexec_close(snum)) {
 			DEBUG(1,("preexec gave %d - failing connection\n",
 				 ret));
-			*status = NT_STATUS_ACCESS_DENIED;
+			*pstatus = NT_STATUS_ACCESS_DENIED;
 			goto err_root_exit;
 		}
 	}
@@ -1196,7 +1192,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	if (SMB_VFS_CONNECT(conn, lp_servicename(snum), user) < 0) {
 		DEBUG(0,("make_connection: VFS make connection failed!\n"));
-		*status = NT_STATUS_UNSUCCESSFUL;
+		*pstatus = NT_STATUS_UNSUCCESSFUL;
 		goto err_root_exit;
 	}
 
@@ -1220,7 +1216,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 				 conn->connectpath, lp_servicename(snum),
 				 strerror(errno) ));
 		}
-		*status = NT_STATUS_BAD_NETWORK_NAME;
+		*pstatus = NT_STATUS_BAD_NETWORK_NAME;
 		goto err_root_exit;
 	}
 
