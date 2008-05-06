@@ -636,6 +636,27 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 
 	regdb_fetch_keys(key, old_subkeys);
 
+	/*
+	 * Make the store operation as safe as possible without transactions:
+	 *
+	 * (1) For each subkey removed from ctr compared with old_subkeys:
+	 *
+	 *     (a) First delete the value db entry.
+	 *
+	 *     (b) Next delete the secdesc db record.
+	 *
+	 *     (c) Then delete the subkey list entry.
+	 *
+	 * (2) Now write the list of subkeys of the parent key,
+	 *     deleting removed entries and adding new ones.
+	 *
+	 * (3) Finally create the subkey list entries for the added keys.
+	 *
+	 * This way if we crash half-way in between deleting the subkeys
+	 * and storing the parent's list of subkeys, no old data can pop up
+	 * out of the blue when re-adding keys later on.
+	 */
+
 	/* store the subkey list for the parent */
 
 	if (!regdb_store_keys_internal(key, ctr) ) {
