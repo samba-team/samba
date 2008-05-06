@@ -34,6 +34,7 @@ int main(int argc, const char **argv)
 
 	const char *hostname = NULL;
 	const char *domain = NULL;
+	uint32_t flags = 0;
 	struct DOMAIN_CONTROLLER_INFO *info = NULL;
 
 	poptContext pc;
@@ -42,6 +43,7 @@ int main(int argc, const char **argv)
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		POPT_COMMON_LIBNETAPI_EXAMPLES
+		{ "flags", 0, POPT_ARG_INT, NULL, 'f', "Query flags", "FLAGS" },
 		POPT_TABLEEND
 	};
 
@@ -54,6 +56,10 @@ int main(int argc, const char **argv)
 
 	poptSetOtherOptionHelp(pc, "hostname domainname");
 	while((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+			case 'f':
+				sscanf(poptGetOptArg(pc), "%x", &flags);
+		}
 	}
 
 	if (!poptPeekArg(pc)) {
@@ -70,15 +76,21 @@ int main(int argc, const char **argv)
 
 	/* DsGetDcName */
 
-	status = DsGetDcName(hostname, domain, NULL, NULL, 0, &info);
+	status = DsGetDcName(hostname, domain, NULL, NULL, flags, &info);
 	if (status != 0) {
 		printf("DsGetDcName failed with: %s\n",
 			libnetapi_errstr(status));
 		return status;
 	}
 
-	printf("domain %s has name: %s\n",
-		info->domain_name, info->domain_controller_name);
+	printf("DC Name:\t\t%s\n", info->domain_controller_name);
+	printf("DC Address:\t\t%s\n", info->domain_controller_address);
+	printf("DC Address Type:\t%d\n", info->domain_controller_address_type);
+	printf("Domain Name:\t\t%s\n", info->domain_name);
+	printf("DNS Forest Name:\t%s\n", info->dns_forest_name);
+	printf("DC flags:\t\t0x%08x\n", info->flags);
+	printf("DC Sitename:\t\t%s\n", info->dc_site_name);
+	printf("Client Sitename:\t%s\n", info->client_site_name);
 
  out:
 	NetApiBufferFree(info);
