@@ -426,7 +426,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 			   "builtin") ? 1:0;
 
 	l.in.connect_handle = &conn_handle;
-	domain_name.string = enumdom.out.sam->entries[0].name.string;
+	domain_name.string = enumdom.out.sam->entries[dom_idx].name.string;
 	*domain = talloc_strdup(mem_ctx, domain_name.string);
 	l.in.domain_name = &domain_name;
 
