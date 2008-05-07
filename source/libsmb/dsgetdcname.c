@@ -552,11 +552,6 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 		r->port = dcs[count].port;
 		r->hostname = dcs[count].hostname;
 
-		if (!(flags & DS_IP_REQUIRED)) {
-			count++;
-			continue;
-		}
-
 		/* If we don't have an IP list for a name, lookup it up */
 
 		if (!dcs[i].ss_s) {
