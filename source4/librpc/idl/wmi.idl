@@ -414,7 +414,7 @@ interface IWbemClassObject : IUnknown
 	uint32 __PROPERTY_COUNT;
 	WbemProperty properties[__PROPERTY_COUNT];
 	uint8 default_flags[__PROPERTY_COUNT];
-	CIMVAR default_values[__PROPERTY_COUNT];
+	uint32 /*CIMVAR*/ default_values[__PROPERTY_COUNT];
     } WbemClass;
 
     typedef [public] struct
@@ -439,7 +439,7 @@ interface IWbemClassObject : IUnknown
 	uint8 u1_0;
 	[relative,charset(UTF16)] uint16 *__CLASS;
 	uint8 *default_flags;
-	CIMVAR *data;
+	uint32 /*CIMVAR*/ *data;
 	uint32 u2_4;
 	uint8 u3_1;
     } WbemInstance;
