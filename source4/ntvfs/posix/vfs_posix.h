@@ -169,9 +169,6 @@ struct pvfs_file_handle {
 	/* we need this hook back to our parent for lock destruction */
 	struct pvfs_state *pvfs;
 
-	/* have we set a sticky write time that we should remove on close */
-	bool sticky_write_time;
-
 	/* the open went through to completion */
 	bool open_completed;
 };

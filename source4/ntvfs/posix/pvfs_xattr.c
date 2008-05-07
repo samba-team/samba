@@ -162,7 +162,7 @@ NTSTATUS pvfs_dosattrib_load(struct pvfs_state *pvfs, struct pvfs_filename *name
 	struct xattr_DosAttrib attrib;
 	TALLOC_CTX *mem_ctx = talloc_new(name);
 	struct xattr_DosInfo1 *info1;
-	struct xattr_DosInfo2 *info2;
+	struct xattr_DosInfo2Old *info2;
 
 	if (name->stream_name != NULL) {
 		name->stream_exists = false;
@@ -210,7 +210,11 @@ NTSTATUS pvfs_dosattrib_load(struct pvfs_state *pvfs, struct pvfs_filename *name
 		break;
 
 	case 2:
-		info2 = &attrib.info.info2;
+		/*
+		 * Note: This is only used to parse existing values from disk
+		 *       We use xattr_DosInfo1 again for storing new values
+		 */
+		info2 = &attrib.info.oldinfo2;
 		name->dos.attrib = pvfs_attrib_normalise(info2->attrib, 
 							 name->st.st_mode);
 		name->dos.ea_size = info2->ea_size;
@@ -225,9 +229,6 @@ NTSTATUS pvfs_dosattrib_load(struct pvfs_state *pvfs, struct pvfs_filename *name
 			name->dos.change_time = info2->change_time;
 		}
 		name->dos.flags = info2->flags;
-		if (name->dos.flags & XATTR_ATTRIB_FLAG_STICKY_WRITE_TIME) {
-			name->dos.write_time = info2->write_time;
-		}
 		break;
 
 	default:
@@ -250,26 +251,23 @@ NTSTATUS pvfs_dosattrib_load(struct pvfs_state *pvfs, struct pvfs_filename *name
 NTSTATUS pvfs_dosattrib_save(struct pvfs_state *pvfs, struct pvfs_filename *name, int fd)
 {
 	struct xattr_DosAttrib attrib;
-	struct xattr_DosInfo2 *info2;
+	struct xattr_DosInfo1 *info1;
 
 	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
 		return NT_STATUS_OK;
 	}
 
-	attrib.version = 2;
-	info2 = &attrib.info.info2;
+	attrib.version = 1;
+	info1 = &attrib.info.info1;
 
 	name->dos.attrib = pvfs_attrib_normalise(name->dos.attrib, name->st.st_mode);
 
-	info2->attrib      = name->dos.attrib;
-	info2->ea_size     = name->dos.ea_size;
-	info2->size        = name->st.st_size;
-	info2->alloc_size  = name->dos.alloc_size;
-	info2->create_time = name->dos.create_time;
-	info2->change_time = name->dos.change_time;
-	info2->write_time  = name->dos.write_time;
-	info2->flags       = name->dos.flags;
-	info2->name        = "";
+	info1->attrib      = name->dos.attrib;
+	info1->ea_size     = name->dos.ea_size;
+	info1->size        = name->st.st_size;
+	info1->alloc_size  = name->dos.alloc_size;
+	info1->create_time = name->dos.create_time;
+	info1->change_time = name->dos.change_time;
 
 	return pvfs_xattr_ndr_save(pvfs, name->full_name, fd, 
 				   XATTR_DOSATTRIB_NAME, &attrib, 
