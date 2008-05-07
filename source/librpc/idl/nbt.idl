@@ -551,7 +551,7 @@ interface nbt
 		uint16               lm20_token;
 	} nbt_cldap_netlogon_13;
 
-	typedef struct {
+	typedef [public] struct {
 		nbt_netlogon_command type;
 		uint16               sbz;
 		nbt_server_type      server_type;
