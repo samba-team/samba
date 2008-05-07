@@ -196,22 +196,14 @@ static NTSTATUS dsgetdcname_cache_refresh(TALLOC_CTX *mem_ctx,
 					  const char *site_name,
 					  struct netr_DsRGetDCNameInfo *info)
 {
-	uint32_t nt_version = NETLOGON_VERSION_1;
+	struct netr_DsRGetDCNameInfo *dc_info;
 
-	/* check if matching entry is older then 15 minutes, if yes, send
-	 * CLDAP/MAILSLOT ping again and store the cached data */
-
-	if (ads_cldap_netlogon(mem_ctx, info->dc_unc,
-			       info->domain_name, &nt_version, NULL)) {
-
-		dsgetdcname_cache_delete(mem_ctx, domain_name);
-
-		return dsgetdcname_cache_store(mem_ctx,
-					       info->domain_name,
-					       info);
-	}
-
-	return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	return dsgetdcname(mem_ctx,
+			   domain_name,
+			   domain_guid,
+			   site_name,
+			   flags | DS_FORCE_REDISCOVERY,
+			   &dc_info);
 }
 
 /****************************************************************
