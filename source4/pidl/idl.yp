@@ -67,16 +67,23 @@ interface_names:
 	| interface_names 'interface' identifier ';' { push(@{$_[1]}, $_[2]); $_[1] }
 ;
 
-interface: property_list 'interface' identifier '{' definitions '}' optional_semicolon
+interface: property_list 'interface' identifier base_interface '{' definitions '}' optional_semicolon
           {{
                "TYPE" => "INTERFACE", 
 	       "PROPERTIES" => $_[1],
 	       "NAME" => $_[3],
-	       "DATA" => $_[5],
+		   "BASE" => $_[4],
+	       "DATA" => $_[6],
 		   "FILE" => $_[0]->YYData->{FILE},
 		   "LINE" => $_[0]->YYData->{LINE},
           }}
 ;
+
+base_interface:
+    #empty
+    | ':' identifier { $_[2] }
+;
+
 
 cpp_quote: 'cpp_quote' '(' text ')'
 	{{

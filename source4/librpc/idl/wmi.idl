@@ -207,8 +207,6 @@ interface IWbemClassObject : IUnknown
         WBEM_INFINITE = 0xFFFFFFFF
     } WBEM_TIMEOUT_TYPE;
 
-    typedef [public,nopull,nopush,noprint,string,charset(UTF16)] uint16 *CIMSTRING;
-
     typedef [public,v1_enum] enum
     {
         CIM_EMPTY = 0,
@@ -295,7 +293,7 @@ interface IWbemClassObject : IUnknown
 
     typedef [public] struct {
 	uint32 count;
-	[relative] CIMSTRING item[count];
+	[relative,charset(UTF16)] uint16 *item[count];
     } arr_CIMSTRING;
 
     typedef [public] struct {
@@ -317,9 +315,9 @@ interface IWbemClassObject : IUnknown
 	[case(CIM_REAL32)] uint32 v_real32;
 	[case(CIM_REAL64)] udlong v_real64;
 	[case(CIM_BOOLEAN)] uint16 v_boolean;
-	[case(CIM_STRING),relative] CIMSTRING v_string;
-	[case(CIM_DATETIME),relative] CIMSTRING v_datetime;
-	[case(CIM_REFERENCE),relative] CIMSTRING v_reference;
+	[case(CIM_STRING),relative,charset(UTF16)] uint16 *v_string;
+	[case(CIM_DATETIME),relative,charset(UTF16)] uint16 *v_datetime;
+	[case(CIM_REFERENCE),relative,charset(UTF16)] uint16 *v_reference;
 	[case(CIM_OBJECT),subcontext(4),relative] WbemClassObject *v_object;
 
 	[case(CIM_ARR_SINT8),relative] arr_int8 *a_sint8;
@@ -368,7 +366,7 @@ interface IWbemClassObject : IUnknown
 
     typedef [public,nopush,nopull] struct
     {
-	[relative] CIMSTRING name;
+	[relative,charset(UTF16)] uint16 *name;
 	WBEM_FLAVOR_TYPE flavors;
 	CIMTYPE_ENUMERATION cimtype;
 	[switch_is(cimtype)] CIMVAR value;
@@ -391,14 +389,14 @@ interface IWbemClassObject : IUnknown
 
     typedef [public] struct
     {
-	[relative] CIMSTRING name;
+	[relative,charset(UTF16)] uint16 *name;
 	[relative] WbemPropertyDesc *desc;
     } WbemProperty;
 
     typedef [public,nopull,nopush] struct
     {
 	uint32 count;
-	[ref] CIMSTRING item[count];
+	[ref,charset(UTF16)] uint16 *item[count];
     } CIMSTRINGS;
 
     typedef [public,bitmap8bit] bitmap {
@@ -409,7 +407,7 @@ interface IWbemClassObject : IUnknown
     typedef [public,nopush,nopull,noprint,flag(NDR_NOALIGN)] struct
     {
 	uint8 u_0;
-	[relative, null_is_ffffffff] CIMSTRING __CLASS;
+	[relative, null_is_ffffffff,charset(UTF16)] uint16 *__CLASS;
 	uint32 data_size;
 	CIMSTRINGS __DERIVATION;
 	WbemQualifiers qualifiers;
@@ -421,7 +419,7 @@ interface IWbemClassObject : IUnknown
 
     typedef [public] struct
     {
-	[relative,null_is_ffffffff] CIMSTRING name;
+	[relative,null_is_ffffffff,charset(UTF16)] uint16 *name;
 	uint32 u0;
 	uint32 u1;
 	[relative] WbemQualifiers *qualifiers;
@@ -439,7 +437,7 @@ interface IWbemClassObject : IUnknown
     typedef [public,flag(NDR_NOALIGN),nopush,nopull,noprint] struct
     {
 	uint8 u1_0;
-	[relative] CIMSTRING __CLASS;
+	[relative,charset(UTF16)] uint16 *__CLASS;
 	uint8 *default_flags;
 	CIMVAR *data;
 	uint32 u2_4;
@@ -449,8 +447,8 @@ interface IWbemClassObject : IUnknown
     typedef [public,nopush,nopull,noprint,flag(NDR_NOALIGN)] struct
     {
 	WCO_FLAGS flags;
-	[ref] CIMSTRING __SERVER;
-	[ref] CIMSTRING __NAMESPACE;
+	[ref,charset(UTF16)] uint16 *__SERVER;
+	[ref,charset(UTF16)] uint16 *__NAMESPACE;
 	WbemClass *sup_class;
 	WbemMethods *sup_methods;
 	WbemClass *obj_class;
@@ -465,7 +463,7 @@ interface IWbemClassObject : IUnknown
 //	[value(clSize)] uint32 _wsize;
 //	[flag(NDR_NOALIGN)] uint16 asData[clSize];
 //    } BSTR1;
-    typedef [public,nopush,nopull,noprint,string,charset(UTF16)] uint16 *BSTR;
+    //typedef [public,nopush,nopull,noprint,string,charset(UTF16)] uint16 *BSTR;
 
     WERROR OpenNamespace(
 //        [in] BSTR *strNamespace,
