@@ -557,6 +557,11 @@ static NTSTATUS find_forced_group(bool force_user,
 
 	groupname = talloc_string_sub(talloc_tos(), groupname,
 				      "%S", lp_servicename(snum));
+	if (groupname == NULL) {
+		DEBUG(1, ("talloc_string_sub failed\n"));
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	if (!lookup_name_smbconf(talloc_tos(), groupname,
 			 LOOKUP_NAME_ALL|LOOKUP_NAME_GROUP,
