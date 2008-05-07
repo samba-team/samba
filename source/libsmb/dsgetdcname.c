@@ -466,14 +466,6 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 	struct ip_service_name *dclist = NULL;
 	int count = 0;
 
-	if ((!(flags & DS_DIRECTORY_SERVICE_REQUIRED)) &&
-	    (!(flags & DS_KDC_REQUIRED)) &&
-	    (!(flags & DS_GC_SERVER_REQUIRED)) &&
-	    (!(flags & DS_PDC_REQUIRED))) {
-	    	DEBUG(1,("discover_dc_dns: invalid flags\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	if (flags & DS_PDC_REQUIRED) {
 		status = ads_dns_query_pdc(mem_ctx, domain_name,
 					   &dcs, &numdcs);
@@ -490,9 +482,8 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 		status = ads_dns_query_dcs_guid(mem_ctx, domain_name,
 						domain_guid, &dcs, &numdcs);
 	} else {
-		/* FIXME: ? */
-	    	DEBUG(1,("discover_dc_dns: not enough input\n"));
-		status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		status = ads_dns_query_dcs(mem_ctx, domain_name, site_name,
+					   &dcs, &numdcs);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
