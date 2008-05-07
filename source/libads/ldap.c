@@ -199,7 +199,7 @@ bool ads_try_connect(ADS_STRUCT *ads, const char *server )
 
 	ZERO_STRUCT( cldap_reply );
 
-	if ( !ads_cldap_netlogon(mem_ctx, srv, ads->server.realm, &cldap_reply ) ) {
+	if ( !ads_cldap_netlogon_5(mem_ctx, srv, ads->server.realm, &cldap_reply ) ) {
 		DEBUG(3,("ads_try_connect: CLDAP request %s failed.\n", srv));
 		ret = false;
 		goto out;

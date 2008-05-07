@@ -3,6 +3,7 @@
    net ads cldap functions 
    Copyright (C) 2001 Andrew Tridgell (tridge@samba.org)
    Copyright (C) 2003 Jim McDonough (jmcd@us.ibm.com)
+   Copyright (C) 2008 Guenther Deschner (gd@samba.org)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -118,7 +119,8 @@ static void gotalarm_sig(void)
 */
 static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 			       int sock,
-			       struct nbt_cldap_netlogon_5 *reply)
+			       uint32_t *nt_version,
+			       union nbt_cldap_netlogon **reply)
 {
 	int ret;
 	ASN1_DATA data;
@@ -129,8 +131,7 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 	int i1;
 	/* half the time of a regular ldap timeout, not less than 3 seconds. */
 	unsigned int al_secs = MAX(3,lp_ldap_timeout()/2);
-	union nbt_cldap_netlogon p;
-	enum ndr_err_code ndr_err;
+	union nbt_cldap_netlogon *r = NULL;
 
 	blob = data_blob(NULL, 8192);
 	if (blob.data == NULL) {
@@ -184,16 +185,23 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	ndr_err = ndr_pull_union_blob_all(&os3, mem_ctx, &p, 5,
-		       (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+	r = TALLOC_ZERO_P(mem_ctx, union nbt_cldap_netlogon);
+	if (!r) {
+		errno = ENOMEM;
+		data_blob_free(&os1);
+		data_blob_free(&os2);
+		data_blob_free(&os3);
+		data_blob_free(&blob);
 		return -1;
 	}
 
-	*reply = p.logon5;
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_UNION_DEBUG(nbt_cldap_netlogon, 5, &p);
+	if (!pull_mailslot_cldap_reply(mem_ctx, &os3, r, nt_version)) {
+		data_blob_free(&os1);
+		data_blob_free(&os2);
+		data_blob_free(&os3);
+		data_blob_free(&blob);
+		TALLOC_FREE(r);
+		return -1;
 	}
 
 	data_blob_free(&os1);
@@ -202,6 +210,12 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 	data_blob_free(&blob);
 	
 	asn1_free(&data);
+
+	if (reply) {
+		*reply = r;
+	} else {
+		TALLOC_FREE(r);
+	}
 
 	return 0;
 }
@@ -213,11 +227,11 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 			const char *server,
 			const char *realm,
-			struct nbt_cldap_netlogon_5 *reply)
+			uint32_t *nt_version,
+			union nbt_cldap_netlogon **reply)
 {
 	int sock;
 	int ret;
-	uint32_t nt_version = NETLOGON_VERSION_5 | NETLOGON_VERSION_5EX;
 
 	sock = open_udp_socket(server, LDAP_PORT );
 	if (sock == -1) {
@@ -226,12 +240,12 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	ret = send_cldap_netlogon(sock, realm, global_myname(), nt_version);
+	ret = send_cldap_netlogon(sock, realm, global_myname(), *nt_version);
 	if (ret != 0) {
 		close(sock);
 		return False;
 	}
-	ret = recv_cldap_netlogon(mem_ctx, sock, reply);
+	ret = recv_cldap_netlogon(mem_ctx, sock, nt_version, reply);
 	close(sock);
 
 	if (ret == -1) {
@@ -239,4 +253,31 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 	}
 
 	return True;
+}
+
+/*******************************************************************
+  do a cldap netlogon query.  Always 389/udp
+*******************************************************************/
+
+bool ads_cldap_netlogon_5(TALLOC_CTX *mem_ctx,
+			  const char *server,
+			  const char *realm,
+			  struct nbt_cldap_netlogon_5 *reply5)
+{
+	uint32_t nt_version = NETLOGON_VERSION_5 | NETLOGON_VERSION_5EX;
+	union nbt_cldap_netlogon *reply = NULL;
+	bool ret;
+
+	ret = ads_cldap_netlogon(mem_ctx, server, realm, &nt_version, &reply);
+	if (!ret) {
+		return false;
+	}
+
+	if (nt_version != (NETLOGON_VERSION_5 | NETLOGON_VERSION_5EX)) {
+		return false;
+	}
+
+	*reply5 = reply->logon5;
+
+	return true;
 }
