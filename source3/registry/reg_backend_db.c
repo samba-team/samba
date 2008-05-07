@@ -979,7 +979,7 @@ int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 
 	keystr = talloc_asprintf(ctx, "%s/%s", REG_VALUE_PREFIX, key);
 	if (!keystr) {
-		return 0;
+		goto done;
 	}
 
 	values->seqnum = regdb_get_seqnum();
