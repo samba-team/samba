@@ -633,6 +633,32 @@ static NTSTATUS make_domain_controller_info(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static uint32_t map_ds_flags_to_nt_version(uint32_t flags)
+{
+	uint32_t nt_version = 0;
+
+	if (flags & DS_PDC_REQUIRED) {
+		nt_version |= NETLOGON_VERSION_PDC;
+	}
+
+	if (flags & DS_GC_SERVER_REQUIRED) {
+		nt_version |= NETLOGON_VERSION_GC;
+	}
+
+	if (flags & DS_TRY_NEXTCLOSEST_SITE) {
+		nt_version |= NETLOGON_VERSION_WITH_CLOSEST_SITE;
+	}
+
+	if (flags & DS_IP_REQUIRED) {
+		nt_version |= NETLOGON_VERSION_IP;
+	}
+
+	return nt_version;
+}
+
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 			       const char *domain_name,
 			       uint32_t flags,
@@ -782,6 +808,8 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 	if (flags & DS_PDC_REQUIRED) {
 		name_type = NBT_NAME_PDC;
 	}
+
+	nt_version |= map_ds_flags_to_nt_version(flags);
 
 	DEBUG(10,("process_dc_netbios\n"));
 
