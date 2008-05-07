@@ -523,31 +523,6 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS find_forced_user(connection_struct *conn, bool vuser_is_guest, fstring username)
-{
-	int snum = conn->params->service;
-	char *fuser, *found_username;
-	NTSTATUS result;
-
-	if (!(fuser = talloc_string_sub(conn, lp_force_user(snum), "%S",
-					lp_servicename(snum)))) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	result = create_token_from_username(conn, fuser, vuser_is_guest,
-					    &conn->uid, &conn->gid, &found_username,
-					    &conn->nt_user_token);
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
-	}
-
-	fstrcpy(username, found_username);
-
-	TALLOC_FREE(fuser);
-	TALLOC_FREE(found_username);
-	return NT_STATUS_OK;
-}
-
 /*
  * Go through lookup_name etc to find the force'd group.  
  *
@@ -766,13 +741,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		conn->force_user = true;
 	}
 
-	conn->vuid = (vuser != NULL) ? vuser->vuid : UID_FIELD_INVALID;
 
-	conn->uid = conn->server_info->uid;
-	conn->gid = conn->server_info->gid;
-	string_set(&conn->user, conn->server_info->unix_name);
-
-	add_session_user(conn->user);
+	add_session_user(conn->server_info->unix_name);
 
 	safe_strcpy(conn->client_address,
 			client_addr(get_client_fd(),addr,sizeof(addr)), 
@@ -815,19 +785,38 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	 */
 	
 	if (*lp_force_user(snum)) {
-		fstring tmp;
-		fstrcpy(tmp, conn->user);
-		status = find_forced_user(conn,
-				(vuser != NULL) && vuser->server_info->guest,
-				tmp);
+		char *fuser;
+		struct auth_serversupplied_info *forced_serverinfo;
+
+		fuser = talloc_string_sub(conn, lp_force_user(snum), "%S",
+					  lp_servicename(snum));
+		if (fuser == NULL) {
+			conn_free(conn);
+			*pstatus = NT_STATUS_NO_MEMORY;
+			return NULL;
+		}
+
+		status = make_serverinfo_from_username(
+			conn, fuser, conn->server_info->guest,
+			&forced_serverinfo);
 		if (!NT_STATUS_IS_OK(status)) {
 			conn_free(conn);
 			*pstatus = status;
 			return NULL;
 		}
+
+		TALLOC_FREE(conn->server_info);
+		conn->server_info = forced_serverinfo;
+
 		conn->force_user = True;
-		DEBUG(3,("Forced user %s\n",tmp));
+		DEBUG(3,("Forced user %s\n", fuser));
 	}
+
+	conn->vuid = (vuser != NULL) ? vuser->vuid : UID_FIELD_INVALID;
+
+	conn->uid = conn->server_info->uid;
+	conn->gid = conn->server_info->gid;
+	string_set(&conn->user, conn->server_info->unix_name);
 
 	/*
 	 * If force group is true, then override
