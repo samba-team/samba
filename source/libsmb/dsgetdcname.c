@@ -853,6 +853,8 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 			      NETLOGON_VERSION_5EX;
 	uint32_t ret_flags = 0;
 
+	nt_version |= map_ds_flags_to_nt_version(flags);
+
 	for (i=0; i<num_dcs; i++) {
 
 		DEBUG(10,("LDAP ping to %s\n", dclist[i].hostname));
