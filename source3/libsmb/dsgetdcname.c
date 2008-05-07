@@ -963,7 +963,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 				       NULL, nt_version))
 		{
 			int k;
-			smb_msleep(100);
+			smb_msleep(300);
 			for (k=0; k<5; k++) {
 				if (receive_getdc_response(mem_ctx,
 							   &dclist[i].ss,
@@ -976,7 +976,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 					NT_STATUS_HAVE_NO_MEMORY(dc_domain_name);
 					goto make_reply;
 				}
-				smb_msleep(500);
+				smb_msleep(1500);
 			}
 		}
 
