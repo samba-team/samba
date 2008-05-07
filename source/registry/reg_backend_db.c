@@ -1118,6 +1118,11 @@ static WERROR regdb_set_secdesc(const char *key,
 	WERROR err = WERR_NOMEM;
 	TDB_DATA tdbdata;
 
+	if (!regdb_key_exists(key)) {
+		err = WERR_BADFILE;
+		goto done;
+	}
+
 	tdbkey = talloc_asprintf(mem_ctx, "%s/%s", REG_SECDESC_PREFIX, key);
 	if (tdbkey == NULL) {
 		goto done;
