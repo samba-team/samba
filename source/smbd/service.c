@@ -725,18 +725,14 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					       const char *pdev,
 					       NTSTATUS *pstatus)
 {
-	struct passwd *pass = NULL;
-	bool guest = False;
 	connection_struct *conn;
 	SMB_STRUCT_STAT st;
-	fstring user;
 	fstring dev;
 	int ret;
 	char addr[INET6_ADDRSTRLEN];
 	bool on_err_call_dis_hook = false;
 	NTSTATUS status;
 
-	*user = 0;
 	fstrcpy(dev, pdev);
 	SET_STAT_INVALID(st);
 
@@ -754,102 +750,33 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	conn->params->service = snum;
 	conn->nt_user_token = NULL;
 
-	if (lp_guest_only(snum)) {
-		const char *guestname = lp_guestaccount();
-		char *found_username = NULL;
+	status = create_connection_server_info(
+		conn, snum, vuser ? vuser->server_info : NULL, password,
+		&conn->server_info);
 
-		guest = True;
-		pass = getpwnam_alloc(talloc_tos(), guestname);
-		if (!pass) {
-			DEBUG(0,("make_connection_snum: Invalid guest "
-				 "account %s??\n",guestname));
-			conn_free(conn);
-			*pstatus = NT_STATUS_NO_SUCH_USER;
-			return NULL;
-		}
-		status = create_token_from_username(conn, pass->pw_name, True,
-						    &conn->uid, &conn->gid,
-						    &found_username,
-						    &conn->nt_user_token);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(pass);
-			conn_free(conn);
-			*pstatus = status;
-			return NULL;
-		}
-		fstrcpy(user, found_username);
-		string_set(&conn->user,user);
-		conn->force_user = True;
-		TALLOC_FREE(found_username);
-		TALLOC_FREE(pass);
-		DEBUG(3,("Guest only user %s\n",user));
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("create_connection_server_info failed: %s\n",
+			  nt_errstr(status)));
+		*pstatus = status;
+		conn_free(conn);
+		return NULL;
+	}
+
+	if (lp_guest_only(snum)) {
+		string_set(&conn->user, conn->server_info->unix_name);
+		conn->force_user = true;
+		DEBUG(3,("Guest only user %s\n", conn->user));
 	} else if (vuser) {
-		if (vuser->server_info->guest) {
-			if (!lp_guest_ok(snum)) {
-				DEBUG(2, ("guest user (from session setup) "
-					  "not permitted to access this share "
-					  "(%s)\n", lp_servicename(snum)));
-				      conn_free(conn);
-				      *pstatus = NT_STATUS_ACCESS_DENIED;
-				      return NULL;
-			}
-		} else {
-			if (!user_ok_token(vuser->server_info->unix_name,
-					   vuser->server_info->ptok, snum)) {
-				DEBUG(2, ("user '%s' (from session setup) not "
-					  "permitted to access this share "
-					  "(%s)\n",
-					  vuser->server_info->unix_name,
-					  lp_servicename(snum)));
-				conn_free(conn);
-				*pstatus = NT_STATUS_ACCESS_DENIED;
-				return NULL;
-			}
-		}
 		conn->vuid = vuser->vuid;
 		conn->uid = vuser->server_info->uid;
 		conn->gid = vuser->server_info->gid;
 		string_set(&conn->user,vuser->server_info->unix_name);
-		fstrcpy(user,vuser->server_info->unix_name);
-		guest = vuser->server_info->guest;
 	} else if (lp_security() == SEC_SHARE) {
-		NTSTATUS status2;
-		char *found_username = NULL;
-
-		/* add it as a possible user name if we 
-		   are in share mode security */
-		add_session_user(lp_servicename(snum));
-		/* shall we let them in? */
-		if (!authorise_login(snum,user,password,&guest)) {
-			DEBUG( 2, ( "Invalid username/password for [%s]\n", 
-				    lp_servicename(snum)) );
-			conn_free(conn);
-			*pstatus = NT_STATUS_WRONG_PASSWORD;
-			return NULL;
-		}
-		pass = Get_Pwnam_alloc(talloc_tos(), user);
-		status2 = create_token_from_username(conn, pass->pw_name, True,
-						     &conn->uid, &conn->gid,
-						     &found_username,
-						     &conn->nt_user_token);
-		TALLOC_FREE(pass);
-		if (!NT_STATUS_IS_OK(status2)) {
-			conn_free(conn);
-			*pstatus = status2;
-			return NULL;
-		}
-		fstrcpy(user, found_username);
-		string_set(&conn->user,user);
-		TALLOC_FREE(found_username);
+		string_set(&conn->user, conn->server_info->unix_name);
 		conn->force_user = True;
-	} else {
-		DEBUG(0, ("invalid VUID (vuser) but not in security=share\n"));
-		conn_free(conn);
-		*pstatus = NT_STATUS_ACCESS_DENIED;
-		return NULL;
 	}
 
-	add_session_user(user);
+	add_session_user(conn->user);
 
 	safe_strcpy(conn->client_address,
 			client_addr(get_client_fd(),addr,sizeof(addr)), 
@@ -881,7 +808,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	conn->veto_oplock_list = NULL;
 	conn->aio_write_behind_list = NULL;
 	string_set(&conn->dirpath,"");
-	string_set(&conn->user,user);
 
 	conn->read_only = lp_readonly(SNUM(conn));
 	conn->admin_user = False;
@@ -895,15 +821,14 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (*lp_force_user(snum)) {
 		status = find_forced_user(conn,
 				(vuser != NULL) && vuser->server_info->guest,
-				user);
+				conn->user);
 		if (!NT_STATUS_IS_OK(status)) {
 			conn_free(conn);
 			*pstatus = status;
 			return NULL;
 		}
-		string_set(&conn->user,user);
 		conn->force_user = True;
-		DEBUG(3,("Forced user %s\n",user));	  
+		DEBUG(3,("Forced user %s\n",conn->user));
 	}
 
 	/*
@@ -914,7 +839,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (*lp_force_group(snum)) {
 		DOM_SID group_sid;
 
-		status = find_forced_group(conn->force_user, snum, user,
+		status = find_forced_group(conn->force_user, snum,
+					   conn->user,
 					   &group_sid, &conn->gid);
 		if (!NT_STATUS_IS_OK(status)) {
 			conn_free(conn);
@@ -1189,7 +1115,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	   to allow any filesystems needing user credentials to initialize
 	   themselves. */
 
-	if (SMB_VFS_CONNECT(conn, lp_servicename(snum), user) < 0) {
+	if (SMB_VFS_CONNECT(conn, lp_servicename(snum), conn->user) < 0) {
 		DEBUG(0,("make_connection: VFS make connection failed!\n"));
 		*pstatus = NT_STATUS_UNSUCCESSFUL;
 		goto err_root_exit;
@@ -1256,7 +1182,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			 conn->client_address );
 		dbgtext( "%s", srv_is_signing_active() ? "signed " : "");
 		dbgtext( "connect to service %s ", lp_servicename(snum) );
-		dbgtext( "initially as user %s ", user );
+		dbgtext( "initially as user %s ", conn->user );
 		dbgtext( "(uid=%d, gid=%d) ", (int)geteuid(), (int)getegid() );
 		dbgtext( "(pid %d)\n", (int)sys_getpid() );
 	}

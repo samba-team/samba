@@ -623,6 +623,8 @@ typedef struct connection_struct {
 	struct vfs_ops vfs_opaque;			/* OPAQUE Filesystem operations */
 	struct vfs_handle_struct *vfs_handles;		/* for the new plugins */
 
+	struct auth_serversupplied_info *server_info;
+
 	char *user; /* name of user who *opened* this connection */
 	uid_t uid; /* uid of user who *opened* this connection */
 	gid_t gid; /* gid of user who *opened* this connection */
