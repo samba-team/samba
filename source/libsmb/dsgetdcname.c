@@ -945,7 +945,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 	const char *dc_name = NULL;
 	fstring tmp_dc_name;
 	struct messaging_context *msg_ctx = msg_context(mem_ctx);
-	union nbt_cldap_netlogon *reply = NULL;
+	union nbt_cldap_netlogon *r = NULL;
 	uint32_t nt_version = NETLOGON_VERSION_1 |
 			      NETLOGON_VERSION_5 |
 			      NETLOGON_VERSION_5EX_WITH_IP;
@@ -979,7 +979,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 							   domain_name,
 							   &nt_version,
 							   &dc_name,
-							   &reply)) {
+							   &r)) {
 					namecache_store(dc_name, NBT_NAME_SERVER, 1, &ip_list);
 					goto make_reply;
 				}
@@ -995,8 +995,8 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 		{
 			struct nbt_cldap_netlogon_1 logon1;
 
-			reply = TALLOC_ZERO_P(mem_ctx, union nbt_cldap_netlogon);
-			NT_STATUS_HAVE_NO_MEMORY(reply);
+			r = TALLOC_ZERO_P(mem_ctx, union nbt_cldap_netlogon);
+			NT_STATUS_HAVE_NO_MEMORY(r);
 
 			ZERO_STRUCT(logon1);
 
@@ -1007,7 +1007,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 			logon1.domain_name = talloc_strdup_upper(mem_ctx, domain_name);
 			NT_STATUS_HAVE_NO_MEMORY(logon1.domain_name);
 
-			reply->logon1 = logon1;
+			r->logon1 = logon1;
 
 			namecache_store(tmp_dc_name, NBT_NAME_SERVER, 1, &ip_list);
 
@@ -1020,7 +1020,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
  make_reply:
 
 	return make_dc_info_from_cldap_reply(mem_ctx, flags, &dclist[i].ss,
-					     nt_version, reply, info);
+					     nt_version, r, info);
 }
 
 /****************************************************************
