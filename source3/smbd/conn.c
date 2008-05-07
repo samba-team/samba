@@ -237,9 +237,12 @@ void conn_clear_vuid_cache(uint16 vuid)
 			conn->vuid = UID_FIELD_INVALID;
 		}
 
-		for (i=0;i<conn->vuid_cache.entries && i< VUID_CACHE_SIZE;i++) {
-			if (conn->vuid_cache.array[i].vuid == vuid) {
-				struct vuid_cache_entry *ent = &conn->vuid_cache.array[i];
+		for (i=0; i<VUID_CACHE_SIZE; i++) {
+			struct vuid_cache_entry *ent;
+
+			ent = &conn->vuid_cache.array[i];
+
+			if (ent->vuid == vuid) {
 				ent->vuid = UID_FIELD_INVALID;
 				ent->read_only = False;
 				ent->admin_user = False;

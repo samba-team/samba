@@ -65,9 +65,9 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 	bool readonly_share;
 	NT_USER_TOKEN *token;
 
-	for (i=0;i<conn->vuid_cache.entries && i< VUID_CACHE_SIZE;i++) {
-		if (conn->vuid_cache.array[i].vuid == vuser->vuid) {
-			ent = &conn->vuid_cache.array[i];
+	for (i=0; i<VUID_CACHE_SIZE; i++) {
+		ent = &conn->vuid_cache.array[i];
+		if (ent->vuid == vuser->vuid) {
 			conn->read_only = ent->read_only;
 			conn->admin_user = ent->admin_user;
 			return(True);
@@ -102,11 +102,11 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 		return False;
 	}
 
-	i = conn->vuid_cache.entries % VUID_CACHE_SIZE;
-	if (conn->vuid_cache.entries < VUID_CACHE_SIZE)
-		conn->vuid_cache.entries++;
+	ent = &conn->vuid_cache.array[conn->vuid_cache.next_entry];
 
-	ent = &conn->vuid_cache.array[i];
+	conn->vuid_cache.next_entry =
+		(conn->vuid_cache.next_entry + 1) % VUID_CACHE_SIZE;
+
 	ent->vuid = vuser->vuid;
 	ent->read_only = readonly_share;
 
