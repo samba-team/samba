@@ -217,6 +217,38 @@ static NTSTATUS dsgetdcname_cache_refresh(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static uint32_t get_cldap_reply_server_flags(union nbt_cldap_netlogon *r,
+					     uint32_t nt_version)
+{
+	switch (nt_version & 0x000000ff) {
+		case 0:
+		case 1:
+			return 0;
+		case 2:
+		case 3:
+			return r->logon3.server_type;
+		case 4:
+		case 5:
+		case 6:
+		case 7:
+			return r->logon5.server_type;
+		case 8:
+		case 9:
+		case 10:
+		case 11:
+		case 12:
+		case 13:
+		case 14:
+		case 15:
+			return r->logon13.server_type;
+		default:
+			return r->logon29.server_type;
+	}
+}
+
+/****************************************************************
+****************************************************************/
+
 #define RETURN_ON_FALSE(x) if (!x) return false;
 
 static bool check_cldap_reply_required_flags(uint32_t ret_flags,
