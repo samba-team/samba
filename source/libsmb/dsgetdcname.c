@@ -640,6 +640,7 @@ static NTSTATUS make_domain_controller_info(TALLOC_CTX *mem_ctx,
 	if (forest_name) {
 		info->forest_name = talloc_strdup(mem_ctx, forest_name);
 		NT_STATUS_HAVE_NO_MEMORY(info->forest_name);
+		flags |= DS_DNS_FOREST;
 	}
 
 	info->dc_flags = flags;
@@ -658,6 +659,151 @@ static NTSTATUS make_domain_controller_info(TALLOC_CTX *mem_ctx,
 	*info_out = info;
 
 	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
+					      uint32_t flags,
+					      struct sockaddr_storage *ss,
+					      uint32_t nt_version,
+					      union nbt_cldap_netlogon *r,
+					      struct netr_DsRGetDCNameInfo **info)
+{
+	const char *dc_hostname, *dc_domain_name;
+	const char *dc_address = NULL;
+	const char *dc_forest = NULL;
+	uint32_t dc_address_type = 0;
+	uint32_t dc_flags = 0;
+	struct GUID *dc_domain_guid = NULL;
+	const char *dc_server_site = NULL;
+	const char *dc_client_site = NULL;
+
+	char addr[INET6_ADDRSTRLEN];
+
+	print_sockaddr(addr, sizeof(addr), ss);
+
+	dc_address = talloc_asprintf(mem_ctx, "\\\\%s", addr);
+	NT_STATUS_HAVE_NO_MEMORY(dc_address);
+	dc_address_type = DS_ADDRESS_TYPE_INET;
+
+	switch (nt_version & 0x000000ff) {
+		case 0:
+			return NT_STATUS_INVALID_PARAMETER;
+		case 1:
+			dc_hostname	= r->logon1.pdc_name;
+			dc_domain_name	= r->logon1.domain_name;
+			if (flags & DS_PDC_REQUIRED) {
+				dc_flags = NBT_SERVER_WRITABLE | NBT_SERVER_PDC;
+			}
+			break;
+		case 2:
+		case 3:
+			switch (flags & 0xf0000000) {
+				case DS_RETURN_FLAT_NAME:
+					dc_hostname	= r->logon3.pdc_name;
+					dc_domain_name	= r->logon3.domain_name;
+					break;
+				case DS_RETURN_DNS_NAME:
+				default:
+					dc_hostname	= r->logon3.pdc_dns_name;
+					dc_domain_name	= r->logon3.dns_domain;
+					dc_flags |= DS_DNS_DOMAIN | DS_DNS_CONTROLLER;
+					break;
+			}
+
+			dc_flags	|= r->logon3.server_type;
+			dc_forest	= r->logon3.forest;
+			dc_domain_guid	= &r->logon3.domain_uuid;
+
+			break;
+		case 4:
+		case 5:
+		case 6:
+		case 7:
+			switch (flags & 0xf0000000) {
+				case DS_RETURN_FLAT_NAME:
+					dc_hostname	= r->logon5.pdc_name;
+					dc_domain_name	= r->logon5.domain;
+					break;
+				case DS_RETURN_DNS_NAME:
+				default:
+					dc_hostname	= r->logon5.pdc_dns_name;
+					dc_domain_name	= r->logon5.dns_domain;
+					dc_flags |= DS_DNS_DOMAIN | DS_DNS_CONTROLLER;
+					break;
+			}
+
+			dc_flags	|= r->logon5.server_type;
+			dc_forest	= r->logon5.forest;
+			dc_domain_guid	= &r->logon5.domain_uuid;
+			dc_server_site	= r->logon5.server_site;
+			dc_client_site	= r->logon5.client_site;
+
+			break;
+		case 8:
+		case 9:
+		case 10:
+		case 11:
+		case 12:
+		case 13:
+		case 14:
+		case 15:
+			switch (flags & 0xf0000000) {
+				case DS_RETURN_FLAT_NAME:
+					dc_hostname	= r->logon13.pdc_name;
+					dc_domain_name	= r->logon13.domain;
+					break;
+				case DS_RETURN_DNS_NAME:
+				default:
+					dc_hostname	= r->logon13.pdc_dns_name;
+					dc_domain_name	= r->logon13.dns_domain;
+					dc_flags |= DS_DNS_DOMAIN | DS_DNS_CONTROLLER;
+					break;
+			}
+
+			dc_flags	|= r->logon13.server_type;
+			dc_forest	= r->logon13.forest;
+			dc_domain_guid	= &r->logon13.domain_uuid;
+			dc_server_site	= r->logon13.server_site;
+			dc_client_site	= r->logon13.client_site;
+
+			break;
+		default:
+			switch (flags & 0xf0000000) {
+				case DS_RETURN_FLAT_NAME:
+					dc_hostname	= r->logon29.pdc_name;
+					dc_domain_name	= r->logon29.domain;
+					break;
+				case DS_RETURN_DNS_NAME:
+				default:
+					dc_hostname	= r->logon29.pdc_dns_name;
+					dc_domain_name	= r->logon29.dns_domain;
+					dc_flags |= DS_DNS_DOMAIN | DS_DNS_CONTROLLER;
+					break;
+			}
+
+			dc_flags	|= r->logon29.server_type;
+			dc_forest	= r->logon29.forest;
+			dc_domain_guid	= &r->logon29.domain_uuid;
+			dc_server_site	= r->logon29.server_site;
+			dc_client_site	= r->logon29.client_site;
+
+			break;
+	}
+
+	return make_domain_controller_info(mem_ctx,
+					   dc_hostname,
+					   dc_address,
+					   dc_address_type,
+					   dc_domain_guid,
+					   dc_domain_name,
+					   dc_forest,
+					   dc_flags,
+					   dc_server_site,
+					   dc_client_site,
+					   info);
 }
 
 /****************************************************************
