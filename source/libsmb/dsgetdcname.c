@@ -254,6 +254,10 @@ static uint32_t get_cldap_reply_server_flags(union nbt_cldap_netlogon *r,
 static bool check_cldap_reply_required_flags(uint32_t ret_flags,
 					     uint32_t req_flags)
 {
+	if (ret_flags == 0) {
+		return true;
+	}
+
 	if (req_flags & DS_PDC_REQUIRED)
 		RETURN_ON_FALSE(ret_flags & NBT_SERVER_PDC);
 
@@ -844,23 +848,26 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 {
 	int i = 0;
 	bool valid_dc = false;
-	struct nbt_cldap_netlogon_5 r;
-	const char *dc_hostname, *dc_domain_name;
-	const char *dc_address;
-	uint32_t dc_address_type;
-	uint32_t dc_flags;
+	union nbt_cldap_netlogon *r = NULL;
+	uint32_t nt_version = NETLOGON_VERSION_5 |
+			      NETLOGON_VERSION_5EX;
+	uint32_t ret_flags = 0;
 
 	for (i=0; i<num_dcs; i++) {
 
-		ZERO_STRUCT(r);
-
 		DEBUG(10,("LDAP ping to %s\n", dclist[i].hostname));
 
-		if ((ads_cldap_netlogon(mem_ctx, dclist[i].hostname,
-					domain_name, &r)) &&
-		    (check_cldap_reply_required_flags(r.server_type, flags))) {
-			valid_dc = true;
-		    	break;
+		if (ads_cldap_netlogon(mem_ctx, dclist[i].hostname,
+					domain_name,
+					&nt_version,
+					&r))
+		{
+			ret_flags = get_cldap_reply_server_flags(r, nt_version);
+
+			if (check_cldap_reply_required_flags(ret_flags, flags)) {
+				valid_dc = true;
+				break;
+			}
 		}
 
 		continue;
@@ -870,57 +877,8 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
 
-	dc_flags = r.server_type;
-
-	if (flags & DS_RETURN_FLAT_NAME) {
-		if (!strlen(r.pdc_name) || !strlen(r.domain)) {
-			return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-		}
-		dc_hostname = r.pdc_name;
-		dc_domain_name = r.domain;
-	} else if (flags & DS_RETURN_DNS_NAME) {
-		if (!strlen(r.pdc_dns_name) || !strlen(r.dns_domain)) {
-			return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-		}
-		dc_hostname = r.pdc_dns_name;
-		dc_domain_name = r.dns_domain;
-		dc_flags |= DS_DNS_DOMAIN | DS_DNS_CONTROLLER;
-	} else {
-		/* FIXME */
-		dc_hostname = r.pdc_dns_name;
-		dc_domain_name = r.dns_domain;
-		dc_flags |= DS_DNS_DOMAIN | DS_DNS_CONTROLLER;
-	}
-
-	if (flags & DS_IP_REQUIRED) {
-		char addr[INET6_ADDRSTRLEN];
-		print_sockaddr(addr, sizeof(addr), &dclist[i].ss);
-		dc_address = talloc_asprintf(mem_ctx, "\\\\%s",
-						addr);
-		dc_address_type = DS_ADDRESS_TYPE_INET;
-	} else {
-		dc_address = talloc_asprintf(mem_ctx, "\\\\%s",
-					     r.pdc_name);
-		dc_address_type = DS_ADDRESS_TYPE_NETBIOS;
-	}
-	NT_STATUS_HAVE_NO_MEMORY(dc_address);
-
-	if (r.forest) {
-		dc_flags |= DS_DNS_FOREST;
-	}
-
-	return make_domain_controller_info(mem_ctx,
-					   dc_hostname,
-					   dc_address,
-					   dc_address_type,
-					   &r.domain_uuid,
-					   dc_domain_name,
-					   r.forest,
-					   dc_flags,
-					   r.server_site,
-					   r.client_site,
-					   info);
-
+	return make_dc_info_from_cldap_reply(mem_ctx, flags, &dclist[i].ss,
+					     nt_version, r, info);
 }
 
 /****************************************************************
