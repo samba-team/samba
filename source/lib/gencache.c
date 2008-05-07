@@ -324,7 +324,7 @@ bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob, bool *expired)
  * @retval false on failure
  **/
 
-bool gencache_set_data_blob(const char *keystr, DATA_BLOB *blob, time_t timeout)
+bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob, time_t timeout)
 {
 	bool ret = False;
 	int tdb_ret;
