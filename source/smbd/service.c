@@ -762,19 +762,15 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		return NULL;
 	}
 
-	if (lp_guest_only(snum)) {
-		string_set(&conn->user, conn->server_info->unix_name);
+	if ((lp_guest_only(snum)) || (lp_security() == SEC_SHARE)) {
 		conn->force_user = true;
-		DEBUG(3,("Guest only user %s\n", conn->user));
-	} else if (vuser) {
-		conn->vuid = vuser->vuid;
-		conn->uid = vuser->server_info->uid;
-		conn->gid = vuser->server_info->gid;
-		string_set(&conn->user,vuser->server_info->unix_name);
-	} else if (lp_security() == SEC_SHARE) {
-		string_set(&conn->user, conn->server_info->unix_name);
-		conn->force_user = True;
 	}
+
+	conn->vuid = (vuser != NULL) ? vuser->vuid : UID_FIELD_INVALID;
+
+	conn->uid = conn->server_info->uid;
+	conn->gid = conn->server_info->gid;
+	string_set(&conn->user, conn->server_info->unix_name);
 
 	add_session_user(conn->user);
 
@@ -819,16 +815,18 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	 */
 	
 	if (*lp_force_user(snum)) {
+		fstring tmp;
+		fstrcpy(tmp, conn->user);
 		status = find_forced_user(conn,
 				(vuser != NULL) && vuser->server_info->guest,
-				conn->user);
+				tmp);
 		if (!NT_STATUS_IS_OK(status)) {
 			conn_free(conn);
 			*pstatus = status;
 			return NULL;
 		}
 		conn->force_user = True;
-		DEBUG(3,("Forced user %s\n",conn->user));
+		DEBUG(3,("Forced user %s\n",tmp));
 	}
 
 	/*
