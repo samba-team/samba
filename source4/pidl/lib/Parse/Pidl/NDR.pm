@@ -876,6 +876,7 @@ my %property_list = (
 	"unique"		=> ["ELEMENT"],
 	"ignore"		=> ["ELEMENT"],
 	"relative"		=> ["ELEMENT"],
+	"null_is_ffffffff" => ["ELEMENT"],
 	"relative_base"		=> ["TYPEDEF", "STRUCT", "UNION"],
 
 	"gensize"		=> ["TYPEDEF", "STRUCT", "UNION"],

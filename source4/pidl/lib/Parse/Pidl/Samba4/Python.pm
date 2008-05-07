@@ -1025,6 +1025,9 @@ sub ConvertObjectToPythonData($$$$$)
 		return $self->ConvertScalarToPython(Parse::Pidl::Typelist::bitmap_type_fn($actual_ctype), $cvar);
 	} elsif ($actual_ctype->{TYPE} eq "SCALAR") {
 		return $self->ConvertScalarToPython($actual_ctype->{NAME}, $cvar);
+	} elsif ($actual_ctype->{TYPE} eq "UNION") {
+		# FIXME: Should be fatal() rather than die()
+		die("union without discriminant: " . mapTypeName($ctype) . ": $cvar");
 	} elsif ($actual_ctype->{TYPE} eq "STRUCT" or $actual_ctype->{TYPE} eq "INTERFACE") {
 		return "py_talloc_import_ex(&$ctype->{NAME}_Type, $mem_ctx, $cvar)";
 	}
