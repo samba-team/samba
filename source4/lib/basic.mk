@@ -1,6 +1,28 @@
-[SUBSYSTEM::LZXPRESS]
+# LIB BASIC subsystem
+mkinclude samba3/config.mk
+mkinclude socket/config.mk
+mkinclude charset/config.mk
+mkinclude ldb-samba/config.mk
+mkinclude tls/config.mk
+mkinclude registry/config.mk
+mkinclude messaging/config.mk
+mkinclude events/config.mk
+mkinclude cmdline/config.mk
+mkinclude socket_wrapper/config.mk
+mkinclude nss_wrapper/config.mk
+mkinclude appweb/config.mk
+mkinclude stream/config.mk
+mkinclude util/config.mk
+mkinclude tdr/config.mk
+mkinclude dbwrap/config.mk
+mkinclude crypto/config.mk
+mkinclude torture/config.mk
+mkinclude com/config.mk
+mkinclude wmi/config.mk
 
-LZXPRESS_OBJ_FILES = $(libcompressionsrcdir)/lzxpress.o
+[SUBSYSTEM::LIBCOMPRESSION]
+
+LIBCOMPRESSION_OBJ_FILES = lib/compression/mszip.o
 
 [SUBSYSTEM::GENCACHE]
 PRIVATE_DEPENDENCIES = TDB_WRAP
