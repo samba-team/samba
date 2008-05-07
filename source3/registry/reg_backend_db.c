@@ -977,6 +977,10 @@ int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 
 	DEBUG(10,("regdb_fetch_values: Looking for value of key [%s] \n", key));
 
+	if (!regdb_key_exists(key)) {
+		goto done;
+	}
+
 	keystr = talloc_asprintf(ctx, "%s/%s", REG_VALUE_PREFIX, key);
 	if (!keystr) {
 		goto done;
