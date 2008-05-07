@@ -670,6 +670,41 @@ static void callback_do_join(GtkWidget *widget,
 
 	}
 
+	/* before prompting for creds, make sure we can find a dc */
+
+	if (domain_join) {
+
+		struct DOMAIN_CONTROLLER_INFO *dc_info = NULL;
+
+		status = DsGetDcName(NULL,
+				     state->name_buffer_new,
+				     NULL,
+				     NULL,
+				     0,
+				     &dc_info);
+		if (status != 0) {
+			err_str = libnetapi_get_error_string(state->ctx, status);
+			g_print("callback_do_join: failed find dc (%s)\n", err_str);
+
+			dialog = gtk_message_dialog_new(GTK_WINDOW(state->window_parent),
+							GTK_DIALOG_DESTROY_WITH_PARENT,
+							GTK_MESSAGE_ERROR,
+							GTK_BUTTONS_CLOSE,
+							"Failed to find a domain controller for domain: \"%s\": %s",
+							state->name_buffer_new,
+							err_str);
+
+			gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+			g_signal_connect_swapped(dialog, "response",
+						 G_CALLBACK(gtk_widget_destroy),
+						 dialog);
+
+			gtk_widget_show(dialog);
+
+			return;
+		}
+	}
+
 	if (join_creds_required) {
 		if (!state->account || !state->password) {
 			debug("callback_do_join: no creds yet\n");
