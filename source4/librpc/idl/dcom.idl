@@ -305,5 +305,3 @@ interface IStream : IUnknown
 {
 	interface IStream;
 }
-
-#include "dcom_wmi.inc"
