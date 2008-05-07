@@ -386,7 +386,7 @@ LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o \
 	     libads/krb5_setpw.o libads/ldap_user.o \
 	     libads/ads_struct.o libads/kerberos_keytab.o \
              libads/disp_sec.o libads/ads_utils.o libads/ldap_utils.o \
-	     libads/cldap.o libads/ldap_schema.o libads/util.o libads/ndr.o
+	     libads/ldap_schema.o libads/util.o libads/ndr.o
 
 LIBADS_SERVER_OBJ = libads/kerberos_verify.o libads/authdata.o \
 		    librpc/ndr/ndr_krb5pac.o \
@@ -421,6 +421,8 @@ LIBSMB_OBJ0 = \
 LIBSAMBA_OBJ = $(LIBSMB_OBJ0) \
 	       $(LIBSMB_ERR_OBJ)
 
+CLDAP_OBJ = libads/cldap.o
+
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clikrb5.o libsmb/clispnego.o libsmb/asn1.o \
 	     libsmb/clirap.o libsmb/clierror.o libsmb/climessage.o \
@@ -432,7 +434,8 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/smb_seal.o libsmb/async_smb.o \
 	     $(LIBSAMBA_OBJ) \
 	     $(LIBNMB_OBJ) \
-	     $(LIBNBT_OBJ)
+	     $(LIBNBT_OBJ) \
+	     $(CLDAP_OBJ)
 
 RPC_CLIENT_OBJ1 = rpc_client/cli_netlogon.o
 

@@ -281,3 +281,87 @@ bool ads_cldap_netlogon_5(TALLOC_CTX *mem_ctx,
 
 	return true;
 }
+
+/****************************************************************
+****************************************************************/
+
+bool pull_mailslot_cldap_reply(TALLOC_CTX *mem_ctx,
+			       const DATA_BLOB *blob,
+			       union nbt_cldap_netlogon *r,
+			       uint32_t *nt_version)
+{
+	enum ndr_err_code ndr_err;
+	uint32_t nt_version_query = ((*nt_version) & 0x000000ff);
+	uint16_t command = 0;
+
+	ndr_err = ndr_pull_struct_blob(blob, mem_ctx, &command,
+			(ndr_pull_flags_fn_t)ndr_pull_uint16);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return false;
+	}
+
+	switch (command) {
+		case 0x13: /* 19 */
+		case 0x15: /* 21 */
+		case 0x17: /* 23 */
+			 break;
+		default:
+			DEBUG(1,("got unexpected command: %d (0x%08x)\n",
+				command, command));
+			return false;
+	}
+
+	ndr_err = ndr_pull_union_blob_all(blob, mem_ctx, r, nt_version_query,
+		       (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
+	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		goto done;
+	}
+
+	/* when the caller requested just those nt_version bits that the server
+	 * was able to reply to, we are fine and all done. otherwise we need to
+	 * assume downgraded replies which are painfully parsed here - gd */
+
+	if (nt_version_query & NETLOGON_VERSION_WITH_CLOSEST_SITE) {
+		nt_version_query &= ~NETLOGON_VERSION_WITH_CLOSEST_SITE;
+	}
+	ndr_err = ndr_pull_union_blob_all(blob, mem_ctx, r, nt_version_query,
+		       (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
+	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		goto done;
+	}
+	if (nt_version_query & NETLOGON_VERSION_5EX_WITH_IP) {
+		nt_version_query &= ~NETLOGON_VERSION_5EX_WITH_IP;
+	}
+	ndr_err = ndr_pull_union_blob_all(blob, mem_ctx, r, nt_version_query,
+		       (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
+	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		goto done;
+	}
+	if (nt_version_query & NETLOGON_VERSION_5EX) {
+		nt_version_query &= ~NETLOGON_VERSION_5EX;
+	}
+	ndr_err = ndr_pull_union_blob_all(blob, mem_ctx, r, nt_version_query,
+		       (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
+	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		goto done;
+	}
+	if (nt_version_query & NETLOGON_VERSION_5) {
+		nt_version_query &= ~NETLOGON_VERSION_5;
+	}
+	ndr_err = ndr_pull_union_blob_all(blob, mem_ctx, r, nt_version_query,
+		       (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
+	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		goto done;
+	}
+
+	return false;
+
+ done:
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_UNION_DEBUG(nbt_cldap_netlogon, nt_version_query, r);
+	}
+
+	*nt_version = nt_version_query;
+
+	return true;
+}
