@@ -587,6 +587,8 @@ interface nbt
 		[case(11)] nbt_cldap_netlogon_13 logon13;
 		[case(12)] nbt_cldap_netlogon_13 logon13;
 		[case(13)] nbt_cldap_netlogon_13 logon13;
+		[case(14)] nbt_cldap_netlogon_13 logon13;
+		[case(15)] nbt_cldap_netlogon_13 logon13;
 		[default]  nbt_cldap_netlogon_29 logon29;
 	} nbt_cldap_netlogon;
 
