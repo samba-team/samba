@@ -2976,6 +2976,14 @@ _PUBLIC_ enum ndr_err_code ndr_push_nbt_cldap_netlogon(struct ndr_push *ndr, int
 					NDR_CHECK(ndr_push_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
 				break; }
 
+				case 14: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
+				case 15: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
 				default: {
 					NDR_CHECK(ndr_push_nbt_cldap_netlogon_29(ndr, NDR_SCALARS, &r->logon29));
 				break; }
@@ -3025,6 +3033,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_nbt_cldap_netlogon(struct ndr_push *ndr, int
 				break;
 
 				case 13:
+				break;
+
+				case 14:
+				break;
+
+				case 15:
 				break;
 
 				default:
@@ -3102,6 +3116,14 @@ _PUBLIC_ enum ndr_err_code ndr_pull_nbt_cldap_netlogon(struct ndr_pull *ndr, int
 					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
 				break; }
 
+				case 14: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
+				case 15: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
 				default: {
 					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_29(ndr, NDR_SCALARS, &r->logon29));
 				break; }
@@ -3150,6 +3172,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_nbt_cldap_netlogon(struct ndr_pull *ndr, int
 				break;
 
 				case 13:
+				break;
+
+				case 14:
+				break;
+
+				case 15:
 				break;
 
 				default:
@@ -3224,6 +3252,14 @@ _PUBLIC_ void ndr_print_nbt_cldap_netlogon(struct ndr_print *ndr, const char *na
 			break;
 
 			case 13:
+				ndr_print_nbt_cldap_netlogon_13(ndr, "logon13", &r->logon13);
+			break;
+
+			case 14:
+				ndr_print_nbt_cldap_netlogon_13(ndr, "logon13", &r->logon13);
+			break;
+
+			case 15:
 				ndr_print_nbt_cldap_netlogon_13(ndr, "logon13", &r->logon13);
 			break;
 
