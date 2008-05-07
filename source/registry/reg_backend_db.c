@@ -852,6 +852,10 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 
 	DEBUG(11,("regdb_fetch_keys: Enter key => [%s]\n", key ? key : "NULL"));
 
+	if (!regdb_key_exists(key)) {
+		goto fail;
+	}
+
 	ctr->seqnum = regdb_get_seqnum();
 
 	value = regdb_fetch_key_internal(frame, key);
