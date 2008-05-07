@@ -1077,6 +1077,11 @@ static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
 
 	DEBUG(10, ("regdb_get_secdesc: Getting secdesc of key [%s]\n", key));
 
+	if (!regdb_key_exists(key)) {
+		err = WERR_BADFILE;
+		goto done;
+	}
+
 	tdbkey = talloc_asprintf(tmp_ctx, "%s/%s", REG_SECDESC_PREFIX, key);
 	if (tdbkey == NULL) {
 		err = WERR_NOMEM;
