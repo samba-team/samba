@@ -543,9 +543,6 @@ static NTSTATUS find_forced_group(bool force_user,
 	bool user_must_be_member = False;
 	gid_t gid;
 
-	ZERO_STRUCTP(pgroup_sid);
-	*pgid = (gid_t)-1;
-
 	groupname = talloc_strdup(talloc_tos(), lp_force_group(snum));
 	if (groupname == NULL) {
 		DEBUG(1, ("talloc_strdup failed\n"));
