@@ -925,18 +925,10 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 	enum nbt_name_type name_type = NBT_NAME_LOGON;
 
 	int i;
-	const char *dc_hostname, *dc_domain_name;
-	const char *dc_address;
-	uint32_t dc_address_type;
-	uint32_t dc_flags = 0;
 	const char *dc_name = NULL;
-	const char *dc_forest = NULL;
-	const char *dc_server_site = NULL;
-	const char *dc_client_site = NULL;
-	struct GUID *dc_domain_guid = NULL;
 	fstring tmp_dc_name;
 	struct messaging_context *msg_ctx = msg_context(mem_ctx);
-	struct nbt_ntlogon_packet *reply = NULL;
+	union nbt_cldap_netlogon *reply = NULL;
 	uint32_t nt_version = NETLOGON_VERSION_1 |
 			      NETLOGON_VERSION_5 |
 			      NETLOGON_VERSION_5EX_WITH_IP;
@@ -968,12 +960,10 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 				if (receive_getdc_response(mem_ctx,
 							   &dclist[i].ss,
 							   domain_name,
+							   &nt_version,
 							   &dc_name,
 							   &reply)) {
 					namecache_store(dc_name, NBT_NAME_SERVER, 1, &ip_list);
-					dc_hostname = dc_name;
-					dc_domain_name = talloc_strdup_upper(mem_ctx, domain_name);
-					NT_STATUS_HAVE_NO_MEMORY(dc_domain_name);
 					goto make_reply;
 				}
 				smb_msleep(1500);
@@ -986,9 +976,24 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 				     &dclist[i].ss,
 				     tmp_dc_name))
 		{
-			dc_hostname = tmp_dc_name;
-			dc_domain_name = talloc_strdup_upper(mem_ctx, domain_name);
+			struct nbt_cldap_netlogon_1 logon1;
+
+			reply = TALLOC_ZERO_P(mem_ctx, union nbt_cldap_netlogon);
+			NT_STATUS_HAVE_NO_MEMORY(reply);
+
+			ZERO_STRUCT(logon1);
+
+			nt_version = NETLOGON_VERSION_1;
+
+			logon1.nt_version = nt_version;
+			logon1.pdc_name = tmp_dc_name;
+			logon1.domain_name = talloc_strdup_upper(mem_ctx, domain_name);
+			NT_STATUS_HAVE_NO_MEMORY(logon1.domain_name);
+
+			reply->logon1 = logon1;
+
 			namecache_store(tmp_dc_name, NBT_NAME_SERVER, 1, &ip_list);
+
 			goto make_reply;
 		}
 	}
@@ -997,54 +1002,8 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 
  make_reply:
 
-	if (reply && reply->command == NTLOGON_RESPONSE_FROM_PDC2) {
-
-		dc_flags |= reply->req.reply2.server_type;
-		dc_forest = reply->req.reply2.forest;
-		dc_server_site = reply->req.reply2.server_site;
-		dc_client_site = reply->req.reply2.client_site;
-
-		dc_domain_guid = &reply->req.reply2.domain_uuid;
-
-		if (flags & DS_RETURN_DNS_NAME) {
-			dc_domain_name = reply->req.reply2.dns_domain;
-			dc_hostname = reply->req.reply2.pdc_dns_name;
-			dc_flags |= DS_DNS_DOMAIN | DS_DNS_CONTROLLER;
-		} else if (flags & DS_RETURN_FLAT_NAME) {
-			dc_domain_name = reply->req.reply2.domain;
-			dc_hostname = reply->req.reply2.pdc_name;
-		}
-	}
-
-	if (flags & DS_IP_REQUIRED) {
-		char addr[INET6_ADDRSTRLEN];
-		print_sockaddr(addr, sizeof(addr), &dclist[i].ss);
-		dc_address = talloc_asprintf(mem_ctx, "\\\\%s", addr);
-		dc_address_type = DS_ADDRESS_TYPE_INET;
-	} else {
-		dc_address = talloc_asprintf(mem_ctx, "\\\\%s", dc_hostname);
-		dc_address_type = DS_ADDRESS_TYPE_NETBIOS;
-	}
-
-	if (flags & DS_PDC_REQUIRED) {
-		dc_flags |= NBT_SERVER_PDC | NBT_SERVER_WRITABLE;
-	}
-
-	if (dc_forest) {
-		dc_flags |= DS_DNS_FOREST;
-	}
-
-	return make_domain_controller_info(mem_ctx,
-					   dc_hostname,
-					   dc_address,
-					   dc_address_type,
-					   dc_domain_guid,
-					   dc_domain_name,
-					   dc_forest,
-					   dc_flags,
-					   dc_server_site,
-					   dc_client_site,
-					   info);
+	return make_dc_info_from_cldap_reply(mem_ctx, flags, &dclist[i].ss,
+					     nt_version, reply, info);
 }
 
 /****************************************************************
