@@ -621,7 +621,12 @@ static NTSTATUS make_domain_controller_info(TALLOC_CTX *mem_ctx,
 	}
 
 	if (dc_address) {
-		info->dc_address = talloc_strdup(mem_ctx, dc_address);
+		if (!(dc_address[0] == '\\' && dc_address[1] == '\\')) {
+			info->dc_address = talloc_asprintf(mem_ctx, "\\\\%s",
+							   dc_address);
+		} else {
+			info->dc_address = talloc_strdup(mem_ctx, dc_address);
+		}
 		NT_STATUS_HAVE_NO_MEMORY(info->dc_address);
 	}
 
@@ -681,16 +686,21 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 
 	char addr[INET6_ADDRSTRLEN];
 
-	print_sockaddr(addr, sizeof(addr), ss);
-
-	dc_address = talloc_asprintf(mem_ctx, "\\\\%s", addr);
-	NT_STATUS_HAVE_NO_MEMORY(dc_address);
-	dc_address_type = DS_ADDRESS_TYPE_INET;
+	if (ss) {
+		print_sockaddr(addr, sizeof(addr), ss);
+		dc_address = addr;
+		dc_address_type = DS_ADDRESS_TYPE_INET;
+	}
 
 	switch (nt_version & 0x000000ff) {
 		case 0:
 			return NT_STATUS_INVALID_PARAMETER;
 		case 1:
+			if (!ss) {
+				dc_address	= r->logon1.pdc_name;
+				dc_address_type	= DS_ADDRESS_TYPE_NETBIOS;
+			}
+
 			dc_hostname	= r->logon1.pdc_name;
 			dc_domain_name	= r->logon1.domain_name;
 			if (flags & DS_PDC_REQUIRED) {
@@ -699,6 +709,11 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 			break;
 		case 2:
 		case 3:
+			if (!ss) {
+				dc_address	= r->logon3.pdc_ip;
+				dc_address_type	= DS_ADDRESS_TYPE_INET;
+			}
+
 			switch (flags & 0xf0000000) {
 				case DS_RETURN_FLAT_NAME:
 					dc_hostname	= r->logon3.pdc_name;
@@ -721,6 +736,11 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 		case 5:
 		case 6:
 		case 7:
+			if (!ss) {
+				dc_address	= r->logon5.pdc_name;
+				dc_address_type	= DS_ADDRESS_TYPE_NETBIOS;
+			}
+
 			switch (flags & 0xf0000000) {
 				case DS_RETURN_FLAT_NAME:
 					dc_hostname	= r->logon5.pdc_name;
@@ -749,6 +769,11 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 		case 13:
 		case 14:
 		case 15:
+			if (!ss) {
+				dc_address	= r->logon13.dc_sock_addr.pdc_ip;
+				dc_address_type	= DS_ADDRESS_TYPE_INET;
+			}
+
 			switch (flags & 0xf0000000) {
 				case DS_RETURN_FLAT_NAME:
 					dc_hostname	= r->logon13.pdc_name;
@@ -770,6 +795,11 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 
 			break;
 		default:
+			if (!ss) {
+				dc_address	= r->logon29.dc_sock_addr.pdc_ip;
+				dc_address_type	= DS_ADDRESS_TYPE_INET;
+			}
+
 			switch (flags & 0xf0000000) {
 				case DS_RETURN_FLAT_NAME:
 					dc_hostname	= r->logon29.pdc_name;
