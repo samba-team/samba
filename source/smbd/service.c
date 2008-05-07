@@ -561,7 +561,7 @@ static NTSTATUS find_forced_group(bool force_user,
 				  gid_t *pgid)
 {
 	NTSTATUS result = NT_STATUS_NO_SUCH_GROUP;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *frame = talloc_stackframe();
 	DOM_SID group_sid;
 	enum lsa_SidType type;
 	char *groupname;
@@ -571,13 +571,7 @@ static NTSTATUS find_forced_group(bool force_user,
 	ZERO_STRUCTP(pgroup_sid);
 	*pgid = (gid_t)-1;
 
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		DEBUG(0, ("talloc_new failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	groupname = talloc_strdup(mem_ctx, lp_force_group(snum));
+	groupname = talloc_strdup(talloc_tos(), lp_force_group(snum));
 	if (groupname == NULL) {
 		DEBUG(1, ("talloc_strdup failed\n"));
 		result = NT_STATUS_NO_MEMORY;
@@ -589,10 +583,10 @@ static NTSTATUS find_forced_group(bool force_user,
 		groupname += 1;
 	}
 
-	groupname = talloc_string_sub(mem_ctx, groupname,
+	groupname = talloc_string_sub(talloc_tos(), groupname,
 				      "%S", lp_servicename(snum));
 
-	if (!lookup_name_smbconf(mem_ctx, groupname,
+	if (!lookup_name_smbconf(talloc_tos(), groupname,
 			 LOOKUP_NAME_ALL|LOOKUP_NAME_GROUP,
 			 NULL, NULL, &group_sid, &type)) {
 		DEBUG(10, ("lookup_name_smbconf(%s) failed\n",
@@ -641,7 +635,7 @@ static NTSTATUS find_forced_group(bool force_user,
 
 	result = NT_STATUS_OK;
  done:
-	TALLOC_FREE(mem_ctx);
+	TALLOC_FREE(frame);
 	return result;
 }
 
