@@ -1018,6 +1018,10 @@ bool regdb_store_values( const char *key, REGVAL_CTR *values )
 
 	DEBUG(10,("regdb_store_values: Looking for value of key [%s] \n", key));
 
+	if (!regdb_key_exists(key)) {
+		goto done;
+	}
+
 	ZERO_STRUCT(data);
 
 	len = regdb_pack_values(values, data.dptr, data.dsize);
