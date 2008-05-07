@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 34
+Release: 35
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,26 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Wed May 7 2008 : Version 1.0.35
+ - During recovery, when we define the new set of lmasters (vnnmap)
+   only consider those nodes that have the can-be-lmaster capability
+   when we create the vnnmap. unless there are no nodes available which
+   supports this capability in which case we allow the recmaster to
+   become lmaster capable (temporarily).
+ - Extend the async framework so that we can use paralell async calls
+   to controls that return data.
+ - If we do not have the "can be recmaster" capability, make sure we will
+   lose any recmaster elections, unless there are no nodes available that
+   have the capability, in which case we "take/win" the election anyway.
+ - Close and reopen the reclock pnn file at regular intervals.
+   Make it a non-fatal event if we occasionally fail to open/read/write
+   to this file.
+ - Monitor that the recovery daemon is still running from the main ctdb
+   daemon and shutdown the main daemon when recovery daemon has terminated.
+ - Add a "ctdb getcapabilities" command to read the capabilities off a node.
+ - Define two new capabilities : can be recmaster and can be lmaster
+   and default both capabilities to YES.
+ - Log denied tcp connection attempts with DEBUG_ERR and not DEBUG_WARNING
 * Thu Apr 24 2008 : Version 1.0.34
  - When deleting a public ip from a node, try to migrate the ip to a different
    node first.
