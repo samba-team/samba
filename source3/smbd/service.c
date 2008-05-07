@@ -743,7 +743,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		conn->force_user = true;
 	}
 
-
 	add_session_user(conn->server_info->unix_name);
 
 	safe_strcpy(conn->client_address,
@@ -780,13 +779,13 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	conn->read_only = lp_readonly(SNUM(conn));
 	conn->admin_user = False;
 
-	/*
-	 * If force user is true, then store the given userid and the gid of
-	 * the user we're forcing.
-	 * For auxiliary groups see below.
-	 */
-	
 	if (*lp_force_user(snum)) {
+
+		/*
+		 * Replace conn->server_info with a completely faked up one
+		 * from the username we are forced into :-)
+		 */
+
 		char *fuser;
 		struct auth_serversupplied_info *forced_serverinfo;
 
@@ -814,85 +813,30 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		DEBUG(3,("Forced user %s\n", fuser));
 	}
 
-	conn->vuid = (vuser != NULL) ? vuser->vuid : UID_FIELD_INVALID;
-
-	conn->uid = conn->server_info->uid;
-	conn->gid = conn->server_info->gid;
-	string_set(&conn->user, conn->server_info->unix_name);
-
 	/*
 	 * If force group is true, then override
 	 * any groupid stored for the connecting user.
 	 */
-	
-	if (*lp_force_group(snum)) {
-		DOM_SID group_sid;
 
-		status = find_forced_group(conn->force_user, snum,
-					   conn->user,
-					   &group_sid, &conn->gid);
+	if (*lp_force_group(snum)) {
+
+		status = find_forced_group(
+			conn->force_user, snum, conn->user,
+			&conn->server_info->ptok->user_sids[1],
+			&conn->server_info->gid);
+
 		if (!NT_STATUS_IS_OK(status)) {
 			conn_free(conn);
 			*pstatus = status;
 			return NULL;
 		}
-
-		if ((conn->nt_user_token == NULL) && (vuser != NULL)) {
-
-			/* Not force user and not security=share, but force
-			 * group. vuser has a token to copy */
-			
-			conn->nt_user_token = dup_nt_token(
-				NULL, vuser->server_info->ptok);
-			if (conn->nt_user_token == NULL) {
-				DEBUG(0, ("dup_nt_token failed\n"));
-				conn_free(conn);
-				*pstatus = NT_STATUS_NO_MEMORY;
-				return NULL;
-			}
-		}
-
-		/* If conn->nt_user_token is still NULL, we have
-		 * security=share. This means ignore the SID, as we had no
-		 * vuser to copy from */
-
-		if (conn->nt_user_token != NULL) {
-			/* Overwrite the primary group sid */
-			sid_copy(&conn->nt_user_token->user_sids[1],
-				 &group_sid);
-
-		}
 	}
 
-	if (conn->nt_user_token != NULL) {
-		size_t i;
+	conn->vuid = (vuser != NULL) ? vuser->vuid : UID_FIELD_INVALID;
 
-		/* We have a share-specific token from force [user|group].
-		 * This means we have to create the list of unix groups from
-		 * the list of sids. */
-
-		conn->ngroups = 0;
-		conn->groups = NULL;
-
-		for (i=0; i<conn->nt_user_token->num_sids; i++) {
-			gid_t gid;
-			DOM_SID *sid = &conn->nt_user_token->user_sids[i];
-
-			if (!sid_to_gid(sid, &gid)) {
-				DEBUG(10, ("Could not convert SID %s to gid, "
-					   "ignoring it\n",
-					   sid_string_dbg(sid)));
-				continue;
-			}
-			if (!add_gid_to_array_unique(conn, gid, &conn->groups,
-						&conn->ngroups)) {
-				DEBUG(0, ("add_gid_to_array_unique failed\n"));
-				conn_free(conn);
-				*pstatus = NT_STATUS_NO_MEMORY;
-				return NULL;
-			}
-		}
-	}
+	conn->uid = conn->server_info->uid;
+	conn->gid = conn->server_info->gid;
+	string_set(&conn->user, conn->server_info->unix_name);
 
 	{
 		char *s = talloc_sub_advanced(talloc_tos(),
