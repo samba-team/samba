@@ -197,14 +197,15 @@ bool send_getdc_request(TALLOC_CTX *mem_ctx,
 bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 			    struct sockaddr_storage *dc_ss,
 			    const char *domain_name,
+			    uint32_t *nt_version,
 			    const char **dc_name,
-			    struct nbt_ntlogon_packet **reply)
+			    union nbt_cldap_netlogon **reply)
 {
 	struct packet_struct *packet;
 	const char *my_mailslot = NULL;
 	struct in_addr dc_ip;
 	DATA_BLOB blob;
-	struct nbt_ntlogon_packet r;
+	union nbt_cldap_netlogon r;
 	union dgram_message_body p;
 	enum ndr_err_code ndr_err;
 
@@ -259,31 +260,50 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(dgram_smb_packet, &p);
+	}
+
 	blob = p.smb.body.trans.data;
 
-	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &r,
-		       (ndr_pull_flags_fn_t)ndr_pull_nbt_ntlogon_packet);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0,("failed to parse packet\n"));
+	if (!pull_mailslot_cldap_reply(mem_ctx, &blob,
+				       &r, nt_version))
+	{
 		return false;
 	}
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(nbt_ntlogon_packet, &r);
-	}
-
-	switch (r.command) {
-		case NTLOGON_SAM_LOGON_REPLY:
-		case NTLOGON_SAM_LOGON_REPLY15:
-			returned_domain = r.req.reply.domain;
-			returned_dc = r.req.reply.server;
+	switch (*nt_version) {
+		case 1:
+			returned_domain = r.logon1.domain_name;
+			returned_dc = r.logon1.pdc_name;
 			break;
-		case NTLOGON_RESPONSE_FROM_PDC2:
-			returned_domain = r.req.reply2.domain;
-			returned_dc = r.req.reply2.pdc_name;
+		case 2:
+		case 3:
+			returned_domain = r.logon3.domain_name;
+			returned_dc = r.logon3.pdc_name;
+			break;
+		case 4:
+		case 5:
+		case 6:
+		case 7:
+			returned_domain = r.logon5.domain;
+			returned_dc = r.logon5.pdc_name;
+			break;
+		case 8:
+		case 9:
+		case 10:
+		case 11:
+		case 12:
+		case 13:
+		case 14:
+		case 15:
+			returned_domain = r.logon13.domain;
+			returned_dc = r.logon13.pdc_name;
 			break;
 		default:
-			return false;
+			returned_domain = r.logon29.domain;
+			returned_dc = r.logon29.pdc_name;
+			break;
 	}
 
 	if (!strequal(returned_domain, domain_name)) {
@@ -301,8 +321,8 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 	if (**dc_name == '\\')	*dc_name += 1;
 
 	if (reply) {
-		*reply = (struct nbt_ntlogon_packet *)talloc_memdup(
-			mem_ctx, &r, sizeof(struct nbt_ntlogon_packet));
+		*reply = (union nbt_cldap_netlogon *)talloc_memdup(
+			mem_ctx, &r, sizeof(union nbt_cldap_netlogon));
 		if (!*reply) {
 			return false;
 		}

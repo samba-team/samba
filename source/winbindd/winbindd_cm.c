@@ -1103,6 +1103,7 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 		smb_msleep(100);
 		for (i=0; i<5; i++) {
 			if (receive_getdc_response(mem_ctx, pss, domain->name,
+						   &nt_version,
 						   &dc_name, NULL)) {
 				fstrcpy(name, dc_name);
 				namecache_store(name, 0x20, 1, &ip_list);
