@@ -62,6 +62,8 @@ getnameinfo
 gai_strerror
 getifaddrs
 freeifaddrs
+utime
+utimes
 
 Types:
 bool

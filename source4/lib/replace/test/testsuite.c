@@ -872,6 +872,149 @@ static int test_getifaddrs(void)
 	return true;
 }
 
+static int test_utime(void)
+{
+	struct utimbuf u;
+	struct stat st1, st2, st3;
+	int fd;
+
+	printf("test: utime\n");
+	unlink(TESTFILE);
+
+	fd = open(TESTFILE, O_RDWR|O_CREAT, 0600);
+	if (fd == -1) {
+		printf("failure: utime [\n"
+		       "creating '%s' failed - %s\n]\n",
+		       TESTFILE, strerror(errno));
+		return false;
+	}
+
+	if (fstat(fd, &st1) != 0) {
+		printf("failure: utime [\n"
+		       "fstat (1) failed - %s\n]\n",
+		       strerror(errno));
+		return false;
+	}
+
+	u.actime = st1.st_atime + 300;
+	u.modtime = st1.st_mtime - 300;
+	if (utime(TESTFILE, &u) != 0) {
+		printf("failure: utime [\n"
+		       "utime(&u) failed - %s\n]\n",
+		       strerror(errno));
+		return false;
+	}
+
+	if (fstat(fd, &st2) != 0) {
+		printf("failure: utime [\n"
+		       "fstat (2) failed - %s\n]\n",
+		       strerror(errno));
+		return false;
+	}
+
+	if (utime(TESTFILE, NULL) != 0) {
+		printf("failure: utime [\n"
+		       "utime(NULL) failed - %s\n]\n",
+		       strerror(errno));
+		return false;
+	}
+
+	if (fstat(fd, &st3) != 0) {
+		printf("failure: utime [\n"
+		       "fstat (3) failed - %s\n]\n",
+		       strerror(errno));
+		return false;
+	}
+
+#define CMP_VAL(a,c,b) do { \
+	if (a c b) { \
+		printf("failure: utime [\n" \
+		       "%s: %s(%d) %s %s(%d)\n]\n", \
+		       __location__, \
+		       #a, (int)a, #c, #b, (int)b); \
+		return false; \
+	} \
+} while(0)
+#define EQUAL_VAL(a,b) CMP_VAL(a,!=,b)
+#define GREATER_VAL(a,b) CMP_VAL(a,<=,b)
+#define LESSER_VAL(a,b) CMP_VAL(a,>=,b)
+
+	EQUAL_VAL(st2.st_atime, st1.st_atime + 300);
+	EQUAL_VAL(st2.st_mtime, st1.st_mtime - 300);
+	LESSER_VAL(st3.st_atime, st2.st_atime);
+	GREATER_VAL(st3.st_mtime, st2.st_mtime);
+
+#undef CMP_VAL
+#undef EQUAL_VAL
+#undef GREATER_VAL
+#undef LESSER_VAL
+
+	unlink(TESTFILE);
+	printf("success: utime\n");
+	return true;
+}
+
+static int test_utimes(void)
+{
+	struct timeval tv[2];
+	struct stat st1, st2;
+	int fd;
+
+	printf("test: utimes\n");
+	unlink(TESTFILE);
+
+	fd = open(TESTFILE, O_RDWR|O_CREAT, 0600);
+	if (fd == -1) {
+		printf("failure: utimes [\n"
+		       "creating '%s' failed - %s\n]\n",
+		       TESTFILE, strerror(errno));
+		return false;
+	}
+
+	if (fstat(fd, &st1) != 0) {
+		printf("failure: utimes [\n"
+		       "fstat (1) failed - %s\n]\n",
+		       strerror(errno));
+		return false;
+	}
+
+	ZERO_STRUCT(tv);
+	tv[0].tv_sec = st1.st_atime + 300;
+	tv[1].tv_sec = st1.st_mtime - 300;
+	if (utimes(TESTFILE, tv) != 0) {
+		printf("failure: utimes [\n"
+		       "utimes(tv) failed - %s\n]\n",
+		       strerror(errno));
+		return false;
+	}
+
+	if (fstat(fd, &st2) != 0) {
+		printf("failure: utimes [\n"
+		       "fstat (2) failed - %s\n]\n",
+		       strerror(errno));
+		return false;
+	}
+
+#define EQUAL_VAL(a,b) do { \
+	if (a != b) { \
+		printf("failure: utimes [\n" \
+		       "%s: %s(%d) != %s(%d)\n]\n", \
+		       __location__, \
+		       #a, (int)a, #b, (int)b); \
+		return false; \
+	} \
+} while(0)
+
+	EQUAL_VAL(st2.st_atime, st1.st_atime + 300);
+	EQUAL_VAL(st2.st_mtime, st1.st_mtime - 300);
+
+#undef EQUAL_VAL
+
+	unlink(TESTFILE);
+	printf("success: utimes\n");
+	return true;
+}
+
 struct torture_context;
 bool torture_local_replace(struct torture_context *ctx)
 {
@@ -920,6 +1063,8 @@ bool torture_local_replace(struct torture_context *ctx)
 	ret &= test_socketpair();
 	ret &= test_strptime();
 	ret &= test_getifaddrs();
+	ret &= test_utime();
+	ret &= test_utimes();
 
 	return ret;
 }
