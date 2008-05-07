@@ -532,7 +532,7 @@ struct vuid_cache_entry {
 };
 
 struct vuid_cache {
-	unsigned int entries;
+	unsigned int next_entry;
 	struct vuid_cache_entry array[VUID_CACHE_SIZE];
 };
 
