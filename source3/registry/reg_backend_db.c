@@ -583,6 +583,10 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 	TALLOC_CTX *ctx = talloc_stackframe();
 	NTSTATUS status;
 
+	if (!regdb_key_is_base_key(key) && !regdb_key_exists(key)) {
+		goto fail;
+	}
+
 	/*
 	 * fetch a list of the old subkeys so we can determine if anything has
 	 * changed
