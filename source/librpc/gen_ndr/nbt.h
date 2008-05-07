@@ -617,7 +617,7 @@ struct nbt_cldap_netlogon_29 {
 	uint32_t nt_version;/* [value(29)] */
 	uint16_t lmnt_token;
 	uint16_t lm20_token;
-};
+}/* [public] */;
 
 union nbt_cldap_netlogon {
 	struct nbt_cldap_netlogon_1 logon1;/* [case(0)] */
