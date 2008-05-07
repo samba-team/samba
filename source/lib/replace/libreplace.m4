@@ -276,7 +276,6 @@ m4_include(repdir.m4)
 AC_CHECK_FUNCS([syslog printf memset memcpy],,[AC_MSG_ERROR([Required function not found])])
 
 echo "LIBREPLACE_BROKEN_CHECKS: END"
-AC_LIBREPLACE_NETWORK_CHECKS
 ]) dnl end AC_LIBREPLACE_BROKEN_CHECKS
 
 AC_DEFUN_ONCE(AC__LIBREPLACE_ALL_CHECKS_START,
