@@ -100,8 +100,6 @@ fi
 
 AC_CHECK_FUNCS(socketpair,[],[LIBREPLACEOBJ="${LIBREPLACEOBJ} socketpair.o"])
 
-AC_CHECK_FUNCS(inet_ntoa,[],[LIBREPLACEOBJ="${LIBREPLACEOBJ} inet_ntoa.o"])
-
 AC_CACHE_CHECK([for broken inet_ntoa],libreplace_cv_REPLACE_INET_NTOA,[
 AC_TRY_RUN([
 #include <stdio.h>
@@ -116,8 +114,11 @@ if (strcmp(inet_ntoa(ip),"18.52.86.120") &&
     strcmp(inet_ntoa(ip),"120.86.52.18")) { exit(0); }
 exit(1);}],
            libreplace_cv_REPLACE_INET_NTOA=yes,libreplace_cv_REPLACE_INET_NTOA=no,libreplace_cv_REPLACE_INET_NTOA=cross)])
+
+AC_CHECK_FUNCS(inet_ntoa,[],[libreplace_cv_REPLACE_INET_NTOA=yes])
 if test x"$libreplace_cv_REPLACE_INET_NTOA" = x"yes"; then
     AC_DEFINE(REPLACE_INET_NTOA,1,[Whether inet_ntoa should be replaced])
+    LIBREPLACEOBJ="${LIBREPLACEOBJ} inet_ntoa.o"
 fi
 
 AC_CHECK_FUNCS(inet_aton,[],[LIBREPLACEOBJ="${LIBREPLACEOBJ} inet_aton.o"])
