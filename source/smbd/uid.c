@@ -2,17 +2,17 @@
    Unix SMB/CIFS implementation.
    uid/user handling
    Copyright (C) Andrew Tridgell 1992-1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -36,21 +36,21 @@ bool change_to_guest(void)
 		if (!pass)
 			return(False);
 	}
-	
+
 #ifdef AIX
 	/* MWW: From AIX FAQ patch to WU-ftpd: call initgroups before 
 	   setting IDs */
 	initgroups(pass->pw_name, pass->pw_gid);
 #endif
-	
+
 	set_sec_ctx(pass->pw_uid, pass->pw_gid, 0, NULL, NULL);
-	
+
 	current_user.conn = NULL;
 	current_user.vuid = UID_FIELD_INVALID;
 
 	TALLOC_FREE(pass);
 	pass = NULL;
-	
+
 	return True;
 }
 
@@ -136,7 +136,7 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 	NT_USER_TOKEN *token = NULL;
 	int num_groups = 0;
 	gid_t *group_list = NULL;
-	
+
 	if (!conn) {
 		DEBUG(2,("change_to_user: Connection not open\n"));
 		return(False);
@@ -228,7 +228,7 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 			gid_to_sid(&token->user_sids[1], gid);
 		}
 	}
-	
+
 	/* Now set current_user since we will immediately also call
 	   set_sec_ctx() */
 
@@ -250,7 +250,7 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 
 	DEBUG(5,("change_to_user uid=(%d,%d) gid=(%d,%d)\n",
 		 (int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));
-  
+
 	return(True);
 }
 
@@ -310,29 +310,29 @@ struct conn_ctx {
 	connection_struct *conn;
 	uint16 vuid;
 };
- 
+
 /* A stack of current_user connection contexts. */
- 
+
 static struct conn_ctx conn_ctx_stack[MAX_SEC_CTX_DEPTH];
 static int conn_ctx_stack_ndx;
 
 static void push_conn_ctx(void)
 {
 	struct conn_ctx *ctx_p;
- 
+
 	/* Check we don't overflow our stack */
- 
+
 	if (conn_ctx_stack_ndx == MAX_SEC_CTX_DEPTH) {
 		DEBUG(0, ("Connection context stack overflow!\n"));
 		smb_panic("Connection context stack overflow!\n");
 	}
- 
+
 	/* Store previous user context */
 	ctx_p = &conn_ctx_stack[conn_ctx_stack_ndx];
- 
+
 	ctx_p->conn = current_user.conn;
 	ctx_p->vuid = current_user.vuid;
- 
+
 	DEBUG(3, ("push_conn_ctx(%u) : conn_ctx_stack_ndx = %d\n",
 		(unsigned int)ctx_p->vuid, conn_ctx_stack_ndx ));
 
@@ -342,7 +342,7 @@ static void push_conn_ctx(void)
 static void pop_conn_ctx(void)
 {
 	struct conn_ctx *ctx_p;
- 
+
 	/* Check for stack underflow. */
 
 	if (conn_ctx_stack_ndx == 0) {
