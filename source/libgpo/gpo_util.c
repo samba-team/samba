@@ -750,28 +750,3 @@ NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_NO_SUCH_FILE;
 }
 
-/****************************************************************
-****************************************************************/
-
-ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
-				TALLOC_CTX *mem_ctx,
-				const char *dn,
-				struct nt_user_token **token)
-{
-	struct nt_user_token *ad_token = NULL;
-	ADS_STATUS status;
-	NTSTATUS ntstatus;
-
-	status = ads_get_sid_token(ads, mem_ctx, dn, &ad_token);
-	if (!ADS_ERR_OK(status)) {
-		return status;
-	}
-
-	ntstatus = merge_nt_token(mem_ctx, ad_token, get_system_token(),
-				  token);
-	if (!NT_STATUS_IS_OK(ntstatus)) {
-		return ADS_ERROR_NT(ntstatus);
-	}
-
-	return ADS_SUCCESS;
-}
