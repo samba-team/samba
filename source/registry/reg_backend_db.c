@@ -657,7 +657,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 	 * out of the blue when re-adding keys later on.
 	 */
 
-	/* now delete removed keys */
+	/* (1) delete removed keys' lists (values/secdesc/subkeys) */
 
 	num_subkeys = regsubkey_ctr_numkeys(old_subkeys);
 	for (i=0; i<num_subkeys; i++) {
