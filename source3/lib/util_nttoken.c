@@ -38,13 +38,11 @@ NT_USER_TOKEN *dup_nt_token(TALLOC_CTX *mem_ctx, const NT_USER_TOKEN *ptoken)
 	if (!ptoken)
 		return NULL;
 
-	token = TALLOC_P(mem_ctx, NT_USER_TOKEN);
+	token = TALLOC_ZERO_P(mem_ctx, NT_USER_TOKEN);
 	if (token == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}
-
-	ZERO_STRUCTP(token);
 
 	if (ptoken->user_sids && ptoken->num_sids) {
 		token->user_sids = (DOM_SID *)talloc_memdup(
