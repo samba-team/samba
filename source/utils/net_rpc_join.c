@@ -1,6 +1,6 @@
-/* 
-   Samba Unix/Linux SMB client library 
-   Distributed SMB/CIFS Server Management Utility 
+/*
+   Samba Unix/Linux SMB client library
+   Distributed SMB/CIFS Server Management Utility
    Copyright (C) 2001 Andrew Bartlett (abartlet@samba.org)
    Copyright (C) Tim Potter     2001
    Copyright (C) 2008 Guenther Deschner
@@ -9,15 +9,15 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
- 
+
 #include "includes.h"
 #include "utils/net.h"
 
@@ -463,7 +463,7 @@ done:
 			printf("Joined domain %s.\n",domain);
 		}
 	}
-	
+
 	cli_shutdown(cli);
 
 	SAFE_FREE(clear_trust_password);

@@ -273,7 +273,7 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 	initialize_krb5_error_table();
 	rc = krb5_init_context(&ctx);
 	if (rc) {
-		DEBUG(1,("krb5_init_context failed (%s)\n", 
+		DEBUG(1,("krb5_init_context failed (%s)\n",
 			 error_message(rc)));
 		return -1;
 	}
@@ -448,9 +448,9 @@ int net_lookup(struct net_context *c, int argc, const char **argv)
 			return table[i].fn(c, argc-1, argv+1);
 	}
 
-	/* Default to lookup a hostname so 'net lookup foo#1b' can be 
+	/* Default to lookup a hostname so 'net lookup foo#1b' can be
 	   used instead of 'net lookup host foo#1b'.  The host syntax
-	   is a bit confusing as non #00 names can't really be 
+	   is a bit confusing as non #00 names can't really be
 	   considered hosts as such. */
 
 	return net_lookup_host(c, argc, argv);

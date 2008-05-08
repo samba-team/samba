@@ -140,7 +140,7 @@ int net_help_share(struct net_context *c, int argc, const char **argv)
 	 "net [<method>] share MIGRATE SHARES <sharename> [misc. options] [targets]"
 	 "\n\tMigrates shares from remote to local server\n\n"
 	 "net [<method>] share MIGRATE SECURITY <sharename> [misc. options] [targets]"
-	 "\n\tMigrates share-ACLs from remote to local server\n\n" 
+	 "\n\tMigrates share-ACLs from remote to local server\n\n"
 	 "net [<method>] share MIGRATE ALL <sharename> [misc. options] [targets]"
 	 "\n\tMigrates shares (including directories, files) from remote\n"
 	 "\tto local server\n\n"
@@ -253,7 +253,7 @@ static int net_usage(struct net_context *c, int argc, const char **argv)
 int net_help(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
-		{"ADS", net_ads_help},	
+		{"ADS", net_ads_help},
 		{"RAP", net_rap_help},
 		{"RPC", net_rpc_help},
 
