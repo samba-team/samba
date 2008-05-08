@@ -3453,3 +3453,22 @@ bool is_valid_policy_hnd(const POLICY_HND *hnd)
 	return (memcmp(&tmp, hnd, sizeof(tmp)) != 0);
 }
 
+/****************************************************************
+ strip off leading '\\' from a hostname
+****************************************************************/
+
+const char *strip_hostname(const char *s)
+{
+	if (!s) {
+		return NULL;
+	}
+
+	if (strlen_m(s) < 3) {
+		return s;
+	}
+
+	if (s[0] == '\\') s++;
+	if (s[0] == '\\') s++;
+
+	return s;
+}
