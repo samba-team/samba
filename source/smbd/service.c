@@ -833,14 +833,13 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	conn->vuid = (vuser != NULL) ? vuser->vuid : UID_FIELD_INVALID;
 
-	conn->uid = conn->server_info->uid;
-	conn->gid = conn->server_info->gid;
 	string_set(&conn->user, conn->server_info->unix_name);
 
 	{
 		char *s = talloc_sub_advanced(talloc_tos(),
 					lp_servicename(SNUM(conn)), conn->user,
-					conn->connectpath, conn->gid,
+					conn->connectpath,
+					conn->server_info->gid,
 					get_current_username(),
 					current_user_info.domain,
 					lp_pathname(snum));
@@ -960,7 +959,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (*lp_rootpreexec(snum)) {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
 					lp_servicename(SNUM(conn)), conn->user,
-					conn->connectpath, conn->gid,
+					conn->connectpath,
+					conn->server_info->gid,
 					get_current_username(),
 					current_user_info.domain,
 					lp_rootpreexec(snum));
@@ -997,7 +997,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (*lp_preexec(snum)) {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
 					lp_servicename(SNUM(conn)), conn->user,
-					conn->connectpath, conn->gid,
+					conn->connectpath,
+					conn->server_info->gid,
 					get_current_username(),
 					current_user_info.domain,
 					lp_preexec(snum));
@@ -1316,7 +1317,8 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	    change_to_user(conn, vuid))  {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
 					lp_servicename(SNUM(conn)), conn->user,
-					conn->connectpath, conn->gid,
+					conn->connectpath,
+					conn->server_info->gid,
 					get_current_username(),
 					current_user_info.domain,
 					lp_postexec(SNUM(conn)));
@@ -1330,7 +1332,8 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	if (*lp_rootpostexec(SNUM(conn)))  {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
 					lp_servicename(SNUM(conn)), conn->user,
-					conn->connectpath, conn->gid,
+					conn->connectpath,
+					conn->server_info->gid,
 					get_current_username(),
 					current_user_info.domain,
 					lp_rootpostexec(SNUM(conn)));

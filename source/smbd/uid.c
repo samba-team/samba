@@ -157,7 +157,7 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 	 */
 
 	if((lp_security() == SEC_SHARE) && (current_user.conn == conn) &&
-	   (current_user.ut.uid == conn->uid)) {
+	   (current_user.ut.uid == conn->server_info->uid)) {
 		DEBUG(4,("change_to_user: Skipping user change - already "
 			 "user\n"));
 		return(True);
@@ -186,10 +186,10 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 	 */
 
 	if (conn->force_user) /* security = share sets this too */ {
-		uid = conn->uid;
-		gid = conn->gid;
-	        group_list = conn->groups;
-		num_groups = conn->ngroups;
+		uid = conn->server_info->uid;
+		gid = conn->server_info->gid;
+	        group_list = conn->server_info->groups;
+		num_groups = conn->server_info->n_groups;
 	} else if (vuser) {
 		uid = conn->admin_user ? 0 : vuser->server_info->uid;
 		gid = conn->server_info->gid;
@@ -220,15 +220,15 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 
 			int i;
 			for (i = 0; i < num_groups; i++) {
-				if (group_list[i] == conn->gid) {
-					gid = conn->gid;
+				if (group_list[i] == conn->server_info->gid) {
+					gid = conn->server_info->gid;
 					gid_to_sid(&conn->server_info->ptok
 						   ->user_sids[1], gid);
 					break;
 				}
 			}
 		} else {
-			gid = conn->gid;
+			gid = conn->server_info->gid;
 			gid_to_sid(&conn->server_info->ptok->user_sids[1],
 				   gid);
 		}

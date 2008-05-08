@@ -152,8 +152,8 @@ bool claim_connection(connection_struct *conn, const char *name,
 	crec.pid = procid_self();
 	crec.cnum = conn?conn->cnum:-1;
 	if (conn) {
-		crec.uid = conn->uid;
-		crec.gid = conn->gid;
+		crec.uid = conn->server_info->uid;
+		crec.gid = conn->server_info->gid;
 		strlcpy(crec.servicename, lp_servicename(SNUM(conn)),
 			sizeof(crec.servicename));
 	}
