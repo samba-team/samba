@@ -715,7 +715,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 		goto cancel;
 	}
 
-	/* now create records for any subkeys that don't already exist */
+	/* (3) now create records for any subkeys that don't already exist */
 
 	num_subkeys = regsubkey_ctr_numkeys(ctr);
 
