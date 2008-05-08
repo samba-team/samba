@@ -103,7 +103,6 @@ NSSINFOLIBDIR = $(LIBDIR)/nss_info
 CHARSETLIBDIR = $(LIBDIR)/charset
 AUTHLIBDIR = $(LIBDIR)/auth
 CONFIGLIBDIR = $(LIBDIR)/config
-GPEXTLIBDIR = $(LIBDIR)/gpext
 CONFIGDIR = @configdir@
 VARDIR = @localstatedir@
 MANDIR = @mandir@
@@ -234,10 +233,8 @@ IDMAP_MODULES = @IDMAP_MODULES@
 CHARSET_MODULES = @CHARSET_MODULES@
 AUTH_MODULES = @AUTH_MODULES@
 NSS_INFO_MODULES = @NSS_INFO_MODULES@
-GPEXT_MODULES = @GPEXT_MODULES@
 MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) \
-          $(CHARSET_MODULES) $(AUTH_MODULES) $(NSS_INFO_MODULES) \
-	  $(GPEXT_MODULES)
+          $(CHARSET_MODULES) $(AUTH_MODULES) $(NSS_INFO_MODULES)
 
 ######################################################################
 # object file lists
@@ -1143,8 +1140,6 @@ nss_modules : $(NSS_MODULES)
 
 pam_modules : $(PAM_MODULES)
 
-gpext_modules : SHOWFLAGS $(GPEXT_MODULES)
-
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
 pam_winbind : SHOWFLAGS bin/pam_winbind.@SHLIBEXT@
@@ -1981,10 +1976,6 @@ bin/aio_fork.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AIO_FORK_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_AIO_FORK_OBJ)
 
-bin/registry.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/registry.o
-	@echo "Building plugin $@"
-	@$(SHLD_MODULE) libgpo/gpext/registry.o
-
 #########################################################
 ## IdMap NSS plugins
 
@@ -2095,7 +2086,6 @@ installmodules: modules installdirs
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(NSSINFOLIBDIR) $(NSS_INFO_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(CHARSETLIBDIR) $(CHARSET_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(AUTHLIBDIR) $(AUTH_MODULES)
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(GPEXTLIBDIR) $(GPEXT_MODULES)
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(PDBLIBDIR) ldapsam.@SHLIBEXT@ NDS_ldapsam.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(PDBLIBDIR) ldapsam.@SHLIBEXT@ NDS_ldapsam_compat.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(PDBLIBDIR) ldapsam.@SHLIBEXT@ ldapsam_compat.@SHLIBEXT@
@@ -2218,7 +2208,6 @@ uninstallmodules:
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(IDMAPLIBDIR) $(IDMAP_MODULES)
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(CHARSETLIBDIR) $(CHARSET_MODULES)
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(AUTHLIBDIR) $(AUTH_MODULES)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(GPEXTLIBDIR) $(GPEXT_MODULES)
 
 uninstallscripts:
 	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS_BIN) $(DESTDIR)$(BINDIR) $(SCRIPTS)
