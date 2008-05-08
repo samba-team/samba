@@ -785,7 +785,7 @@ static NTSTATUS make_domain_controller_info(TALLOC_CTX *mem_ctx,
 		NT_STATUS_HAVE_NO_MEMORY(info->domain_name);
 	}
 
-	if (forest_name) {
+	if (forest_name && *forest_name) {
 		info->forest_name = talloc_strdup(mem_ctx, forest_name);
 		NT_STATUS_HAVE_NO_MEMORY(info->forest_name);
 		flags |= DS_DNS_FOREST;
