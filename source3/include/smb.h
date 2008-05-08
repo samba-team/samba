@@ -627,18 +627,10 @@ typedef struct connection_struct {
 	struct auth_serversupplied_info *server_info;
 
 	char *user; /* name of user who *opened* this connection */
-	uid_t uid; /* uid of user who *opened* this connection */
-	gid_t gid; /* gid of user who *opened* this connection */
 	char client_address[INET6_ADDRSTRLEN]; /* String version of client IP address. */
 
 	uint16 vuid; /* vuid of user who *opened* this connection, or UID_FIELD_INVALID */
 
-	/* following groups stuff added by ih */
-
-	/* This groups info is valid for the user that *opened* the connection */
-	size_t ngroups;
-	gid_t *groups;
-	
 	time_t lastused;
 	time_t lastused_count;
 	bool used;

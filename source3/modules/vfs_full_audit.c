@@ -694,7 +694,8 @@ static char *audit_prefix(TALLOC_CTX *ctx, connection_struct *conn)
 	}
 	return talloc_sub_advanced(ctx,
 			lp_servicename(SNUM(conn)), conn->user,
-			conn->connectpath, conn->gid,
+			conn->connectpath,
+			conn->server_info->gid,
 			get_current_username(),
 			current_user_info.domain,
 			prefix);
