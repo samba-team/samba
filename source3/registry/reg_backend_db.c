@@ -657,14 +657,6 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 	 * out of the blue when re-adding keys later on.
 	 */
 
-	/* store the subkey list for the parent */
-
-	if (!regdb_store_keys_internal(key, ctr) ) {
-		DEBUG(0,("regdb_store_keys: Failed to store new subkey list "
-			 "for parent [%s]\n", key));
-		goto cancel;
-	}
-
 	/* now delete removed keys */
 
 	num_subkeys = regsubkey_ctr_numkeys(old_subkeys);
@@ -714,6 +706,14 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 	}
 
 	TALLOC_FREE(old_subkeys);
+
+	/* (2) store the subkey list for the parent */
+
+	if (!regdb_store_keys_internal(key, ctr) ) {
+		DEBUG(0,("regdb_store_keys: Failed to store new subkey list "
+			 "for parent [%s]\n", key));
+		goto cancel;
+	}
 
 	/* now create records for any subkeys that don't already exist */
 
