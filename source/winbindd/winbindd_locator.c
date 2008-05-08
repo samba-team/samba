@@ -75,14 +75,11 @@ static enum winbindd_result dual_dsgetdcname(struct winbindd_domain *domain,
 	}
 
 	if (info->dc_address) {
-		dc = info->dc_address;
-		if ((dc[0] == '\\') && (dc[1] == '\\')) {
-			dc += 2;
-		}
+		dc = strip_hostname(info->dc_address);
 	}
 
 	if ((!dc || !is_ipaddress_v4(dc)) && info->dc_unc) {
-		dc = info->dc_unc;
+		dc = strip_hostname(info->dc_unc);
 	}
 
 	if (!dc || !*dc) {
