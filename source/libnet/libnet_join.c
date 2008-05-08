@@ -1622,6 +1622,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		struct netr_DsRGetDCNameInfo *info;
 		const char *dc;
 		status = dsgetdcname(mem_ctx,
+				     r->in.msg_ctx,
 				     r->in.domain_name,
 				     NULL,
 				     NULL,
@@ -1778,6 +1779,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 		struct netr_DsRGetDCNameInfo *info;
 		const char *dc;
 		status = dsgetdcname(mem_ctx,
+				     r->in.msg_ctx,
 				     r->in.domain_name,
 				     NULL,
 				     NULL,
