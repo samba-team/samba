@@ -43,6 +43,8 @@ static struct {
 	int         no_setsched;
 	int         use_syslog;
 	int         start_as_disabled;
+	int         no_lmaster;
+	int         no_recmaster;
 } options = {
 	.nlist = ETCDIR "/ctdb/nodes",
 	.transport = "tcp",
@@ -120,6 +122,8 @@ int main(int argc, const char *argv[])
 		{ "nosetsched", 0, POPT_ARG_NONE, &options.no_setsched, 0, "disable setscheduler SCHED_FIFO call", NULL },
 		{ "syslog", 0, POPT_ARG_NONE, &options.use_syslog, 0, "log messages to syslog", NULL },
 		{ "start-as-disabled", 0, POPT_ARG_NONE, &options.start_as_disabled, 0, "Node starts in disabled state", NULL },
+		{ "no-lmaster", 0, POPT_ARG_NONE, &options.no_lmaster, 0, "disable lmaster role on this node", NULL },
+		{ "no-recmaster", 0, POPT_ARG_NONE, &options.no_recmaster, 0, "disable recmaster role on this node", NULL },
 		POPT_TABLEEND
 	};
 	int opt, ret;
@@ -198,6 +202,15 @@ int main(int argc, const char *argv[])
 			DEBUG(DEBUG_ALERT,("ctdb_set_address failed - %s\n", ctdb_errstr(ctdb)));
 			exit(1);
 		}
+	}
+
+	/* set ctdbd capabilities */
+	ctdb->capabilities = 0;
+	if (options.no_lmaster == 0) {
+		ctdb->capabilities |= CTDB_CAP_LMASTER;
+	}
+	if (options.no_recmaster == 0) {
+		ctdb->capabilities |= CTDB_CAP_RECMASTER;
 	}
 
 	/* tell ctdb what nodes are available */
