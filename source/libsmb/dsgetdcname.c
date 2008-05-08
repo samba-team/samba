@@ -330,6 +330,7 @@ static NTSTATUS store_cldap_reply(TALLOC_CTX *mem_ctx,
 ****************************************************************/
 
 static NTSTATUS dsgetdcname_cache_refresh(TALLOC_CTX *mem_ctx,
+					  struct messaging_context *msg_ctx,
 					  const char *domain_name,
 					  struct GUID *domain_guid,
 					  uint32_t flags,
@@ -339,6 +340,7 @@ static NTSTATUS dsgetdcname_cache_refresh(TALLOC_CTX *mem_ctx,
 	struct netr_DsRGetDCNameInfo *dc_info;
 
 	return dsgetdcname(mem_ctx,
+			   msg_ctx,
 			   domain_name,
 			   domain_guid,
 			   site_name,
@@ -494,6 +496,7 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 ****************************************************************/
 
 static NTSTATUS dsgetdcname_cached(TALLOC_CTX *mem_ctx,
+				   struct messaging_context *msg_ctx,
 				   const char *domain_name,
 				   struct GUID *domain_guid,
 				   uint32_t flags,
@@ -516,7 +519,8 @@ static NTSTATUS dsgetdcname_cached(TALLOC_CTX *mem_ctx,
 	}
 
 	if (expired) {
-		status = dsgetdcname_cache_refresh(mem_ctx, domain_name,
+		status = dsgetdcname_cache_refresh(mem_ctx, msg_ctx,
+						   domain_name,
 						   domain_guid, flags,
 						   site_name, *info);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1119,6 +1123,7 @@ static struct messaging_context *msg_context(TALLOC_CTX *mem_ctx)
 ****************************************************************/
 
 static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
+				   struct messaging_context *msg_ctx,
 				   const char *domain_name,
 				   uint32_t flags,
 				   struct ip_service_name *dclist,
@@ -1132,11 +1137,14 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 	int i;
 	const char *dc_name = NULL;
 	fstring tmp_dc_name;
-	struct messaging_context *msg_ctx = msg_context(mem_ctx);
 	union nbt_cldap_netlogon *r = NULL;
 	uint32_t nt_version = NETLOGON_VERSION_1 |
 			      NETLOGON_VERSION_5 |
 			      NETLOGON_VERSION_5EX_WITH_IP;
+
+	if (!msg_ctx) {
+		msg_ctx = msg_context(mem_ctx);
+	}
 
 	if (flags & DS_PDC_REQUIRED) {
 		name_type = NBT_NAME_PDC;
@@ -1221,6 +1229,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 ****************************************************************/
 
 static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
+				       struct messaging_context *msg_ctx,
 				       const char *domain_name,
 				       struct GUID *domain_guid,
 				       uint32_t flags,
@@ -1239,7 +1248,7 @@ static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
 					     &dclist, &num_dcs);
 		NT_STATUS_NOT_OK_RETURN(status);
 
-		return process_dc_netbios(mem_ctx, domain_name, flags,
+		return process_dc_netbios(mem_ctx, msg_ctx, domain_name, flags,
 					  dclist, num_dcs, info);
 	}
 
@@ -1269,7 +1278,7 @@ static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
 				     &num_dcs);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	return process_dc_netbios(mem_ctx, domain_name, flags, dclist,
+	return process_dc_netbios(mem_ctx, msg_ctx, domain_name, flags, dclist,
 				  num_dcs, info);
 }
 
@@ -1280,6 +1289,7 @@ static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
 ********************************************************************/
 
 NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
+		     struct messaging_context *msg_ctx,
 		     const char *domain_name,
 		     struct GUID *domain_guid,
 		     const char *site_name,
@@ -1306,7 +1316,7 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 		goto rediscover;
 	}
 
-	status = dsgetdcname_cached(mem_ctx, domain_name, domain_guid,
+	status = dsgetdcname_cached(mem_ctx, msg_ctx, domain_name, domain_guid,
 				    flags, site_name, &myinfo);
 	if (NT_STATUS_IS_OK(status)) {
 		*info = myinfo;
@@ -1318,7 +1328,7 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 	}
 
  rediscover:
-	status = dsgetdcname_rediscover(mem_ctx, domain_name,
+	status = dsgetdcname_rediscover(mem_ctx, msg_ctx, domain_name,
 					domain_guid, flags, site_name,
 					&myinfo);
 

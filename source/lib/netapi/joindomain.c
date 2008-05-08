@@ -51,7 +51,7 @@ WERROR NetJoinDomain_l(struct libnetapi_ctx *mem_ctx,
 		uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 				 DS_WRITABLE_REQUIRED |
 				 DS_RETURN_DNS_NAME;
-		status = dsgetdcname(mem_ctx, r->in.domain,
+		status = dsgetdcname(mem_ctx, NULL, r->in.domain,
 				     NULL, NULL, flags, &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			libnetapi_set_error_string(mem_ctx,
@@ -180,7 +180,7 @@ WERROR NetUnjoinDomain_l(struct libnetapi_ctx *mem_ctx,
 		uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 				 DS_WRITABLE_REQUIRED |
 				 DS_RETURN_DNS_NAME;
-		status = dsgetdcname(mem_ctx, domain,
+		status = dsgetdcname(mem_ctx, NULL, domain,
 				     NULL, NULL, flags, &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			libnetapi_set_error_string(mem_ctx,
@@ -360,7 +360,7 @@ WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 	uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 			 DS_RETURN_DNS_NAME;
 
-	status = dsgetdcname(ctx, r->in.domain,
+	status = dsgetdcname(ctx, NULL, r->in.domain,
 			     NULL, NULL, flags, &info);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnetapi_set_error_string(ctx, "%s",
