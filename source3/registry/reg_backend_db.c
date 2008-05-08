@@ -671,6 +671,21 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 			continue;
 		}
 
+		path = talloc_asprintf(ctx, "%s/%s/%s",
+				REG_VALUE_PREFIX,
+				key,
+				oldkeyname );
+		if (!path) {
+			goto cancel;
+		}
+		path = normalize_reg_path(ctx, path);
+		if (!path) {
+			goto cancel;
+		}
+		/* Ignore errors here, we might have no values around */
+		dbwrap_delete_bystring(regdb, path);
+		TALLOC_FREE(path);
+
 		path = talloc_asprintf(ctx, "%s/%s", key, oldkeyname);
 		if (!path) {
 			goto cancel;
@@ -684,24 +699,6 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 			DEBUG(1, ("Deleting %s failed\n", path));
 			goto cancel;
 		}
-
-		TALLOC_FREE(path);
-		path = talloc_asprintf(ctx, "%s/%s/%s",
-				REG_VALUE_PREFIX,
-				key,
-				oldkeyname );
-		if (!path) {
-			goto cancel;
-		}
-		path = normalize_reg_path(ctx, path);
-		if (!path) {
-			goto cancel;
-		}
-
-		/*
-		 * Ignore errors here, we might have no values around
-		 */
-		dbwrap_delete_bystring(regdb, path);
 		TALLOC_FREE(path);
 	}
 
