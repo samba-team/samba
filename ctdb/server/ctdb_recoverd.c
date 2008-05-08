@@ -1409,7 +1409,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		}
 
 		vnnmap->size++;
-		vnnmap->map = talloc_realloc_size(vnnmap, vnnmap->map, vnnmap->size);
+		vnnmap->map = talloc_realloc(vnnmap, vnnmap->map, uint32_t, vnnmap->size);
 		CTDB_NO_MEMORY(ctdb, vnnmap->map);
 		vnnmap->map[j++] = nodemap->nodes[i].pnn;
 
@@ -1417,7 +1417,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	if (vnnmap->size == 0) {
 		DEBUG(DEBUG_NOTICE, ("No suitable lmasters found. Adding local node (recmaster) anyway.\n"));
 		vnnmap->size++;
-		vnnmap->map = talloc_realloc_size(vnnmap, vnnmap->map, vnnmap->size);
+		vnnmap->map = talloc_realloc(vnnmap, vnnmap->map, uint32_t, vnnmap->size);
 		CTDB_NO_MEMORY(ctdb, vnnmap->map);
 		vnnmap->map[0] = pnn;
 	}	
