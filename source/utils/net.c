@@ -1,6 +1,6 @@
-/* 
-   Samba Unix/Linux SMB client library 
-   Distributed SMB/CIFS Server Management Utility 
+/*
+   Samba Unix/Linux SMB client library
+   Distributed SMB/CIFS Server Management Utility
    Copyright (C) 2001 Steve French  (sfrench@us.ibm.com)
    Copyright (C) 2001 Jim McDonough (jmcd@us.ibm.com)
    Copyright (C) 2001 Andrew Tridgell (tridge@samba.org)
@@ -15,15 +15,15 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
- 
+
 /*****************************************************/
 /*                                                   */
 /*   Distributed SMB/CIFS Server Management Utility  */
@@ -50,9 +50,9 @@
 #define YES_STRING              "Yes"
 #define NO_STRING               "No"
 
-/************************************************************************************/
-/*                       end of internationalization section                        */
-/************************************************************************************/
+/***********************************************************************/
+/* end of internationalization section                                 */
+/***********************************************************************/
 
 /* Yes, these buggers are globals.... */
 const char *opt_requester_name = NULL;
@@ -93,7 +93,7 @@ struct libnetapi_ctx *netapi_ctx = NULL;
 
 extern bool AllowDebugChange;
 
-uint32 get_sec_channel_type(const char *param) 
+uint32 get_sec_channel_type(const char *param)
 {
 	if (!(param && *param)) {
 		return get_default_sec_channel();
@@ -104,7 +104,7 @@ uint32 get_sec_channel_type(const char *param)
 			return SEC_CHAN_BDC;
 		} else if (strequal(param, "MEMBER")) {
 			return SEC_CHAN_WKSTA;
-#if 0			
+#if 0
 		} else if (strequal(param, "DOMAIN")) {
 			return SEC_CHAN_DOMAIN;
 #endif
@@ -116,13 +116,13 @@ uint32 get_sec_channel_type(const char *param)
 
 /*
   run a function from a function table. If not found then
-  call the specified usage function 
+  call the specified usage function
 */
-int net_run_function(int argc, const char **argv, struct functable *table, 
+int net_run_function(int argc, const char **argv, struct functable *table,
 		     int (*usage_fn)(int argc, const char **argv))
 {
 	int i;
-	
+
 	if (argc < 1) {
 		d_printf("\nUsage: \n");
 		return usage_fn(argc, argv);
@@ -341,7 +341,7 @@ NTSTATUS connect_to_ipc_krb5(struct cli_state **c,
 /**
  * Connect a server and open a given pipe
  *
- * @param cli_dst		A cli_state 
+ * @param cli_dst		A cli_state
  * @param pipe			The pipe to open
  * @param got_pipe		boolean that stores if we got a pipe
  *
@@ -391,7 +391,7 @@ NTSTATUS connect_dst_pipe(struct cli_state **cli_dst, struct rpc_pipe_client **p
  Use the local machine account (krb) and password for this session.
 ****************************************************************************/
 
-int net_use_krb_machine_account(void) 
+int net_use_krb_machine_account(void)
 {
 	char *user_name = NULL;
 
@@ -913,7 +913,7 @@ static uint32 get_maxrid(void)
 	if (!search_maxrid(pdb_search_aliases(get_global_sam_sid()),
 			   "aliases", &max_rid))
 		return 0;
-	
+
 	return max_rid;
 }
 
@@ -983,7 +983,7 @@ static struct functable net_func[] = {
 	{"VALIDATE", net_rap_validate},
 	{"GROUPMEMBER", net_rap_groupmember},
 	{"ADMIN", net_rap_admin},
-	{"SERVICE", net_rap_service},	
+	{"SERVICE", net_rap_service},
 	{"PASSWORD", net_rap_password},
 	{"CHANGETRUSTPW", net_changetrustpw},
 	{"CHANGESECRETPW", net_changesecretpw},
@@ -1072,10 +1072,10 @@ static struct functable net_func[] = {
 	/* set default debug level to 0 regardless of what smb.conf sets */
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
 	dbf = x_stderr;
-	
-	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
+
+	pc = poptGetContext(NULL, argc, (const char **) argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
-	
+
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case 'h':
@@ -1103,20 +1103,20 @@ static struct functable net_func[] = {
 			}
 			break;
 		default:
-			d_fprintf(stderr, "\nInvalid option %s: %s\n", 
+			d_fprintf(stderr, "\nInvalid option %s: %s\n",
 				 poptBadOption(pc, 0), poptStrerror(opt));
 			net_help(argc, argv);
 			exit(1);
 		}
 	}
-	
+
 	/*
 	 * Don't load debug level from smb.conf. It should be
 	 * set by cmdline arg or remain default (0)
 	 */
 	AllowDebugChange = False;
 	lp_load(get_dyn_CONFIGFILE(),True,False,False,True);
-	
+
  	argv_new = (const char **)poptGetArgs(pc);
 
 	argc_new = argc;
@@ -1142,17 +1142,17 @@ static struct functable net_func[] = {
 	if (!opt_workgroup) {
 		opt_workgroup = smb_xstrdup(lp_workgroup());
 	}
-	
+
 	if (!opt_target_workgroup) {
 		opt_target_workgroup = smb_xstrdup(lp_workgroup());
 	}
-	
+
 	if (!init_names())
 		exit(1);
 
 	load_interfaces();
-	
-	/* this makes sure that when we do things like call scripts, 
+
+	/* this makes sure that when we do things like call scripts,
 	   that it won't assert becouse we are not root */
 	sec_init();
 
@@ -1166,9 +1166,9 @@ static struct functable net_func[] = {
 	if (!opt_password) {
 		opt_password = getenv("PASSWD");
 	}
-  	 
+
 	rc = net_run_function(argc_new-1, argv_new+1, net_func, net_help);
-	
+
 	DEBUG(2,("return code = %d\n", rc));
 
 	libnetapi_free(netapi_ctx);

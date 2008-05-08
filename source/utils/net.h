@@ -1,31 +1,31 @@
-/* 
-   Samba Unix/Linux SMB client library 
-   Distributed SMB/CIFS Server Management Utility 
+/*
+   Samba Unix/Linux SMB client library
+   Distributed SMB/CIFS Server Management Utility
    Copyright (C) 2001 Andrew Bartlett (abartlet@samba.org)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
-/* 
+/*
  * A function of this type is passed to the '
- * run_rpc_command' wrapper.  Must go before the net_proto.h 
+ * run_rpc_command' wrapper.  Must go before the net_proto.h
  * include
  */
 
 #include "lib/netapi/netapi.h"
 
 typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *,
-				const char *, 
+				const char *,
 				struct cli_state *cli,
 				struct rpc_pipe_client *,
 				TALLOC_CTX *,
@@ -68,7 +68,7 @@ enum netdom_domain_t { ND_TYPE_NT4, ND_TYPE_AD };
 /* INCLUDE FILES */
 
 #include "utils/net_proto.h"
- 
+
 /* MACROS & DEFINES */
 
 #define NET_FLAGS_MASTER 			0x00000001
@@ -77,7 +77,7 @@ enum netdom_domain_t { ND_TYPE_NT4, ND_TYPE_AD };
 								   as the default remote host for this
 								   operation?  For example, localhost
 								   is insane for a 'join' operation.  */
-#define NET_FLAGS_PDC 				0x00000008	/* PDC only */ 
+#define NET_FLAGS_PDC 				0x00000008	/* PDC only */
 #define NET_FLAGS_ANONYMOUS 			0x00000010	/* use an anonymous connection */
 #define NET_FLAGS_NO_PIPE 			0x00000020	/* don't open an RPC pipe */
 
