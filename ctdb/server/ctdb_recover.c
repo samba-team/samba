@@ -957,3 +957,21 @@ int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA inda
 
 	return 0;
 }
+
+/*
+  report capabilities
+ */
+int32_t ctdb_control_get_capabilities(struct ctdb_context *ctdb, TDB_DATA *outdata)
+{
+	uint32_t *capabilities = NULL;
+
+	capabilities = talloc(outdata, uint32_t);
+	CTDB_NO_MEMORY(ctdb, capabilities);
+	*capabilities = ctdb->capabilities;
+
+	outdata->dsize = sizeof(uint32_t);
+	outdata->dptr = (uint8_t *)capabilities;
+
+	return 0;	
+}
+

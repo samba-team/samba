@@ -217,7 +217,7 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 	nodeid = ctdb_ip_to_nodeid(ctdb, incoming_node);
 
 	if (nodeid == -1) {
-		DEBUG(DEBUG_WARNING, ("Refused connection from unknown node %s\n", incoming_node));
+		DEBUG(DEBUG_ERR, ("Refused connection from unknown node %s\n", incoming_node));
 		close(fd);
 		return;
 	}

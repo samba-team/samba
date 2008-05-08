@@ -212,7 +212,7 @@ static int run_recovered_eventscript(struct ctdb_context *ctdb, struct ctdb_node
 
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_END_RECOVERY,
 			list_of_active_nodes(ctdb, nodemap, tmp_ctx, true),
-			CONTROL_TIMEOUT(), false, tdb_null) != 0) {
+			CONTROL_TIMEOUT(), false, tdb_null, NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event. Recovery failed.\n"));
 		talloc_free(tmp_ctx);
 		return -1;
@@ -234,8 +234,42 @@ static int run_startrecovery_eventscript(struct ctdb_context *ctdb, struct ctdb_
 
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_START_RECOVERY,
 			list_of_active_nodes(ctdb, nodemap, tmp_ctx, true),
-			CONTROL_TIMEOUT(), false, tdb_null) != 0) {
+			CONTROL_TIMEOUT(), false, tdb_null, NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'startrecovery' event. Recovery failed.\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+static void async_getcap_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata)
+{
+	if ( (outdata.dsize != sizeof(uint32_t)) || (outdata.dptr == NULL) ) {
+		DEBUG(DEBUG_ERR, (__location__ " Invalid lenght/pointer for getcap callback : %d %p\n", outdata.dsize, outdata.dptr));
+		return;
+	}
+	ctdb->nodes[node_pnn]->capabilities = *((uint32_t *)outdata.dptr);
+}
+
+/*
+  update the node capabilities for all connected nodes
+ */
+static int update_capabilities(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+{
+	uint32_t *nodes;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(ctdb);
+	CTDB_NO_MEMORY(ctdb, tmp_ctx);
+
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_CAPABILITIES,
+					nodes, CONTROL_TIMEOUT(),
+					false, tdb_null, async_getcap_callback) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed to read node capabilities.\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
@@ -262,7 +296,7 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 	if (rec_mode == CTDB_RECOVERY_ACTIVE) {
 		if (ctdb_client_async_control(ctdb, CTDB_CONTROL_FREEZE,
 						nodes, CONTROL_TIMEOUT(),
-						false, tdb_null) != 0) {
+						false, tdb_null, NULL) != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Unable to freeze nodes. Recovery failed.\n"));
 			talloc_free(tmp_ctx);
 			return -1;
@@ -275,7 +309,7 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_SET_RECMODE,
 					nodes, CONTROL_TIMEOUT(),
-					false, data) != 0) {
+					false, data, NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode. Recovery failed.\n"));
 		talloc_free(tmp_ctx);
 		return -1;
@@ -284,7 +318,7 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 	if (rec_mode == CTDB_RECOVERY_NORMAL) {
 		if (ctdb_client_async_control(ctdb, CTDB_CONTROL_THAW,
 						nodes, CONTROL_TIMEOUT(),
-						false, tdb_null) != 0) {
+						false, tdb_null, NULL) != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Unable to thaw nodes. Recovery failed.\n"));
 			talloc_free(tmp_ctx);
 			return -1;
@@ -311,7 +345,7 @@ static int set_recovery_master(struct ctdb_context *ctdb, struct ctdb_node_map *
 
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_SET_RECMASTER,
 			list_of_active_nodes(ctdb, nodemap, tmp_ctx, true),
-			CONTROL_TIMEOUT(), false, data) != 0) {
+			CONTROL_TIMEOUT(), false, data, NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recmaster. Recovery failed.\n"));
 		talloc_free(tmp_ctx);
 		return -1;
@@ -1142,7 +1176,7 @@ static int push_recdb_database(struct ctdb_context *ctdb, uint32_t dbid,
 
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_PUSH_DB,
 			list_of_active_nodes(ctdb, nodemap, tmp_ctx, true),
-			CONTROL_TIMEOUT(), false, outdata) != 0) {
+			CONTROL_TIMEOUT(), false, outdata, NULL) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to push recdb records to nodes for db 0x%x\n", dbid));
 		talloc_free(recdata);
 		talloc_free(tmp_ctx);
@@ -1198,7 +1232,7 @@ static int recover_database(struct ctdb_recoverd *rec,
 
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_WIPE_DATABASE,
 			list_of_active_nodes(ctdb, nodemap, recdb, true),
-			CONTROL_TIMEOUT(), false, data) != 0) {
+			CONTROL_TIMEOUT(), false, data, NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to wipe database. Recovery failed.\n"));
 		talloc_free(recdb);
 		return -1;
@@ -1321,7 +1355,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_START,
 			list_of_active_nodes(ctdb, nodemap, mem_ctx, true),
-			CONTROL_TIMEOUT(), false, data) != 0) {
+			CONTROL_TIMEOUT(), false, data, NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to start transactions. Recovery failed.\n"));
 		return -1;
 	}
@@ -1340,7 +1374,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	/* commit all the changes */
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_COMMIT,
 			list_of_active_nodes(ctdb, nodemap, mem_ctx, true),
-			CONTROL_TIMEOUT(), false, data) != 0) {
+			CONTROL_TIMEOUT(), false, data, NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to commit recovery changes. Recovery failed.\n"));
 		return -1;
 	}
@@ -1348,19 +1382,45 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - committed databases\n"));
 	
 
+	/* update the capabilities for all nodes */
+	ret = update_capabilities(ctdb, nodemap);
+	if (ret!=0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
+		return -1;
+	}
+
 	/* build a new vnn map with all the currently active and
 	   unbanned nodes */
 	generation = new_generation();
 	vnnmap = talloc(mem_ctx, struct ctdb_vnn_map);
 	CTDB_NO_MEMORY(ctdb, vnnmap);
 	vnnmap->generation = generation;
-	vnnmap->size = rec->num_active;
+	vnnmap->size = 0;
 	vnnmap->map = talloc_zero_array(vnnmap, uint32_t, vnnmap->size);
+	CTDB_NO_MEMORY(ctdb, vnnmap->map);
 	for (i=j=0;i<nodemap->num;i++) {
-		if (!(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
-			vnnmap->map[j++] = nodemap->nodes[i].pnn;
+		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+			continue;
 		}
+		if (!(ctdb->nodes[i]->capabilities & CTDB_CAP_LMASTER)) {
+			/* this node can not be an lmaster */
+			DEBUG(DEBUG_DEBUG, ("Node %d cant be a LMASTER, skipping it\n", i));
+			continue;
+		}
+
+		vnnmap->size++;
+		vnnmap->map = talloc_realloc_size(vnnmap, vnnmap->map, vnnmap->size);
+		CTDB_NO_MEMORY(ctdb, vnnmap->map);
+		vnnmap->map[j++] = nodemap->nodes[i].pnn;
+
 	}
+	if (vnnmap->size == 0) {
+		DEBUG(DEBUG_NOTICE, ("No suitable lmasters found. Adding local node (recmaster) anyway.\n"));
+		vnnmap->size++;
+		vnnmap->map = talloc_realloc_size(vnnmap, vnnmap->map, vnnmap->size);
+		CTDB_NO_MEMORY(ctdb, vnnmap->map);
+		vnnmap->map[0] = pnn;
+	}	
 
 	/* update to the new vnnmap on all nodes */
 	ret = update_vnnmap_on_all_nodes(ctdb, nodemap, pnn, vnnmap, mem_ctx);
@@ -1481,6 +1541,13 @@ static void ctdb_election_data(struct ctdb_recoverd *rec, struct election_messag
 			em->num_connected++;
 		}
 	}
+
+	/* we shouldnt try to win this election if we cant be a recmaster */
+	if ((ctdb->capabilities & CTDB_CAP_RECMASTER) == 0) {
+		em->num_connected = 0;
+		em->priority_time = timeval_current();
+	}
+
 	talloc_free(nodemap);
 }
 
@@ -1493,6 +1560,11 @@ static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message
 	int cmp = 0;
 
 	ctdb_election_data(rec, &myem);
+
+	/* we cant win if we dont have the recmaster capability */
+	if ((rec->ctdb->capabilities & CTDB_CAP_RECMASTER) == 0) {
+		return false;
+	}
 
 	/* we cant win if we are banned */
 	if (rec->node_flags & NODE_FLAGS_BANNED) {
@@ -1914,6 +1986,7 @@ static enum monitor_result verify_recmode(struct ctdb_context *ctdb, struct ctdb
 
 
 struct verify_recmaster_data {
+	struct ctdb_recoverd *rec;
 	uint32_t count;
 	uint32_t pnn;
 	enum monitor_result status;
@@ -1942,6 +2015,7 @@ static void verify_recmaster_callback(struct ctdb_client_control_state *state)
 	*/
 	if (state->status != rmdata->pnn) {
 		DEBUG(DEBUG_ERR,("Node %d does not agree we are the recmaster. Need a new recmaster election\n", state->c->hdr.destnode));
+		ctdb_set_culprit(rmdata->rec, state->c->hdr.destnode);
 		rmdata->status = MONITOR_ELECTION_NEEDED;
 	}
 
@@ -1950,8 +2024,9 @@ static void verify_recmaster_callback(struct ctdb_client_control_state *state)
 
 
 /* verify that all nodes agree that we are the recmaster */
-static enum monitor_result verify_recmaster(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t pnn)
+static enum monitor_result verify_recmaster(struct ctdb_recoverd *rec, struct ctdb_node_map *nodemap, uint32_t pnn)
 {
+	struct ctdb_context *ctdb = rec->ctdb;
 	struct verify_recmaster_data *rmdata;
 	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 	struct ctdb_client_control_state *state;
@@ -1960,6 +2035,7 @@ static enum monitor_result verify_recmaster(struct ctdb_context *ctdb, struct ct
 	
 	rmdata = talloc(mem_ctx, struct verify_recmaster_data);
 	CTDB_NO_MEMORY_FATAL(ctdb, rmdata);
+	rmdata->rec    = rec;
 	rmdata->count  = 0;
 	rmdata->pnn    = pnn;
 	rmdata->status = MONITOR_OK;
@@ -2013,8 +2089,15 @@ ctdb_recoverd_write_pnn_connect_count(struct ctdb_recoverd *rec)
 	const char count = rec->num_connected;
 	struct ctdb_context *ctdb = talloc_get_type(rec->ctdb, struct ctdb_context);
 
+	if (rec->rec_file_fd == -1) {
+		DEBUG(DEBUG_CRIT,(__location__ " Unable to write pnn count. pnnfile is not open.\n"));
+		return;
+	} 
+
 	if (pwrite(rec->rec_file_fd, &count, 1, ctdb->pnn) == -1) {
 		DEBUG(DEBUG_CRIT, (__location__ " Failed to write pnn count\n"));
+		close(rec->rec_file_fd);
+		rec->rec_file_fd = -1;
 	}
 }
 
@@ -2034,8 +2117,8 @@ ctdb_recoverd_get_pnn_lock(struct ctdb_recoverd *rec)
 	DEBUG(DEBUG_INFO, ("Setting PNN lock for pnn:%d\n", ctdb->pnn));
 
 	if (rec->rec_file_fd != -1) {
-		DEBUG(DEBUG_CRIT, (__location__ " rec_lock_fd is already open. Aborting\n"));
-		exit(10);
+		close(rec->rec_file_fd);
+		rec->rec_file_fd = -1;
 	}
 
 	pnnfile = talloc_asprintf(rec, "%s.pnn", ctdb->recovery_lock_file);
@@ -2045,7 +2128,8 @@ ctdb_recoverd_get_pnn_lock(struct ctdb_recoverd *rec)
 	if (rec->rec_file_fd == -1) {
 		DEBUG(DEBUG_CRIT,(__location__ " Unable to open %s - (%s)\n", 
 			 pnnfile, strerror(errno)));
-		exit(10);
+		talloc_free(pnnfile);
+		return;
 	}
 
 	set_close_on_exec(rec->rec_file_fd);
@@ -2059,12 +2143,12 @@ ctdb_recoverd_get_pnn_lock(struct ctdb_recoverd *rec)
 		close(rec->rec_file_fd);
 		rec->rec_file_fd = -1;
 		DEBUG(DEBUG_CRIT,(__location__ " Failed to get pnn lock on '%s'\n", pnnfile));
-		exit(10);
+		talloc_free(pnnfile);
+		return;
 	}
 
 
 	DEBUG(DEBUG_NOTICE,(__location__ " Got pnn lock on '%s'\n", pnnfile));
-
 	talloc_free(pnnfile);
 
 	/* we start out with 0 connected nodes */
@@ -2081,6 +2165,9 @@ static void ctdb_update_pnn_count(struct event_context *ev, struct timed_event *
 	struct ctdb_recoverd *rec     = talloc_get_type(p, struct ctdb_recoverd);
 	struct ctdb_context *ctdb     = rec->ctdb;
 	struct ctdb_node_map *nodemap = rec->nodemap;
+
+	/* close and reopen the pnn lock file */
+	ctdb_recoverd_get_pnn_lock(rec);
 
 	ctdb_recoverd_write_pnn_connect_count(rec);
 
@@ -2104,6 +2191,10 @@ static void ctdb_update_pnn_count(struct event_context *ev, struct timed_event *
 		return;
 	}
 	if (ctdb->recovery_lock_fd == -1) {
+		DEBUG(DEBUG_ERR, (__location__ " Lost reclock pnn file. Yielding recmaster role\n"));
+		close(ctdb->recovery_lock_fd);
+		ctdb->recovery_lock_fd = -1;
+		force_election(rec, ctdb->pnn, rec->nodemap);
 		return;
 	}
 	for (i=0; i<nodemap->num; i++) {
@@ -2453,7 +2544,7 @@ again:
 
 
 	/* verify that all active nodes agree that we are the recmaster */
-	switch (verify_recmaster(ctdb, nodemap, pnn)) {
+	switch (verify_recmaster(rec, nodemap, pnn)) {
 	case MONITOR_RECOVERY_NEEDED:
 		/* can not happen */
 		goto again;
@@ -2684,6 +2775,37 @@ static void ctdb_recoverd_parent(struct event_context *ev, struct fd_event *fde,
 }
 
 /*
+  called regularly to verify that the recovery daemon is still running
+ */
+static void ctdb_check_recd(struct event_context *ev, struct timed_event *te, 
+			      struct timeval yt, void *p)
+{
+	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
+
+	/* make sure we harvest the child if signals are blocked for some
+	   reason
+	*/
+	waitpid(ctdb->recoverd_pid, 0, WNOHANG);
+
+	if (kill(ctdb->recoverd_pid, 0) != 0) {
+		DEBUG(DEBUG_ERR,("Recovery daemon (pid:%d) is no longer running. Shutting down main daemon\n", (int)ctdb->recoverd_pid));
+
+		ctdb_stop_recoverd(ctdb);
+		ctdb_stop_keepalive(ctdb);
+		ctdb_stop_monitoring(ctdb);
+		ctdb_release_all_ips(ctdb);
+		ctdb->methods->shutdown(ctdb);
+		ctdb_event_script(ctdb, "shutdown");
+
+		exit(10);	
+	}
+
+	event_add_timed(ctdb->ev, ctdb, 
+			timeval_current_ofs(30, 0),
+			ctdb_check_recd, ctdb);
+}
+
+/*
   startup the recovery daemon as a child of the main ctdb daemon
  */
 int ctdb_start_recoverd(struct ctdb_context *ctdb)
@@ -2704,6 +2826,9 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 	
 	if (ctdb->recoverd_pid != 0) {
 		close(fd[0]);
+		event_add_timed(ctdb->ev, ctdb, 
+				timeval_current_ofs(30, 0),
+				ctdb_check_recd, ctdb);
 		return 0;
 	}
 

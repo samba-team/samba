@@ -1839,19 +1839,33 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
  */
 static int dumpdb_fn(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, void *p)
 {
+	int i;
 	FILE *f = (FILE *)p;
-	char *keystr, *datastr;
 	struct ctdb_ltdb_header *h = (struct ctdb_ltdb_header *)data.dptr;
-
-	keystr  = hex_encode_talloc(ctdb, key.dptr, key.dsize);
-	datastr = hex_encode_talloc(ctdb, data.dptr+sizeof(*h), data.dsize-sizeof(*h));
 
 	fprintf(f, "dmaster: %u\n", h->dmaster);
 	fprintf(f, "rsn: %llu\n", (unsigned long long)h->rsn);
-	fprintf(f, "key: %s\ndata: %s\n", keystr, datastr);
 
-	talloc_free(keystr);
-	talloc_free(datastr);
+	fprintf(f, "key(%d) = \"", key.dsize);
+	for (i=0;i<key.dsize;i++) {
+		if (isascii(key.dptr[i])) {
+			fprintf(f, "%c", key.dptr[i]);
+		} else {
+			fprintf(f, "\\%02X", key.dptr[i]);
+		}
+	}
+	fprintf(f, "\"\n");
+
+	fprintf(f, "data(%d) = \"", data.dsize);
+	for (i=sizeof(*h);i<data.dsize;i++) {
+		if (isascii(data.dptr[i])) {
+			fprintf(f, "%c", data.dptr[i]);
+		} else {
+			fprintf(f, "\\%02X", data.dptr[i]);
+		}
+	}
+	fprintf(f, "\"\n");
+
 	return 0;
 }
 
@@ -2657,8 +2671,11 @@ int ctdb_ctrl_end_recovery(struct ctdb_context *ctdb, struct timeval timeout, ui
 static void async_callback(struct ctdb_client_control_state *state)
 {
 	struct client_async_data *data = talloc_get_type(state->async.private_data, struct client_async_data);
+	struct ctdb_context *ctdb = talloc_get_type(state->ctdb, struct ctdb_context);
 	int ret;
+	TDB_DATA outdata;
 	int32_t res;
+	uint32_t destnode = state->c->hdr.destnode;
 
 	/* one more node has responded with recmode data */
 	data->count--;
@@ -2676,12 +2693,15 @@ static void async_callback(struct ctdb_client_control_state *state)
 	
 	state->async.fn = NULL;
 
-	ret = ctdb_control_recv(state->ctdb, state, data, NULL, &res, NULL);
+	ret = ctdb_control_recv(ctdb, state, data, &outdata, &res, NULL);
 	if ((ret != 0) || (res != 0)) {
 		if ( !data->dont_log_errors) {
 			DEBUG(DEBUG_ERR,("Async operation failed with ret=%d res=%d\n", ret, (int)res));
 		}
 		data->fail_count++;
+	}
+	if ((ret == 0) && (data->callback != NULL)) {
+		data->callback(ctdb, destnode, res, outdata);
 	}
 }
 
@@ -2725,15 +2745,17 @@ int ctdb_client_async_control(struct ctdb_context *ctdb,
 				uint32_t *nodes,
 				struct timeval timeout,
 				bool dont_log_errors,
-				TDB_DATA data)
+				TDB_DATA data,
+			        client_async_callback client_callback)
 {
 	struct client_async_data *async_data;
 	struct ctdb_client_control_state *state;
 	int j, num_nodes;
-	
+
 	async_data = talloc_zero(ctdb, struct client_async_data);
 	CTDB_NO_MEMORY_FATAL(ctdb, async_data);
 	async_data->dont_log_errors = dont_log_errors;
+	async_data->callback = client_callback;
 
 	num_nodes = talloc_get_size(nodes) / sizeof(uint32_t);
 
@@ -2857,3 +2879,44 @@ ctdb_read_pnn_lock(int fd, int32_t pnn)
 	return c;
 }
 
+/*
+  get capabilities of a remote node
+ */
+struct ctdb_client_control_state *
+ctdb_ctrl_getcapabilities_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode)
+{
+	return ctdb_control_send(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_CAPABILITIES, 0, tdb_null, 
+			   mem_ctx, &timeout, NULL);
+}
+
+int ctdb_ctrl_getcapabilities_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *capabilities)
+{
+	int ret;
+	int32_t res;
+	TDB_DATA outdata;
+
+	ret = ctdb_control_recv(ctdb, state, mem_ctx, &outdata, &res, NULL);
+	if ( (ret != 0) || (res != 0) ) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_ctrl_getcapabilities_recv failed\n"));
+		return -1;
+	}
+
+	if (capabilities) {
+		*capabilities = *((uint32_t *)outdata.dptr);
+	}
+
+	return 0;
+}
+
+int ctdb_ctrl_getcapabilities(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *capabilities)
+{
+	struct ctdb_client_control_state *state;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	int ret;
+
+	state = ctdb_ctrl_getcapabilities_send(ctdb, tmp_ctx, timeout, destnode);
+	ret = ctdb_ctrl_getcapabilities_recv(ctdb, tmp_ctx, state, capabilities);
+	talloc_free(tmp_ctx);
+	return ret;
+}

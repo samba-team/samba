@@ -199,6 +199,11 @@ struct ctdb_node {
 	uint32_t rx_cnt;
 	uint32_t tx_cnt;
 
+	/* used to track node capabilities, is only valid/tracked inside the
+	   recovery daemon.
+	*/
+	uint32_t capabilities;
+
 	/* a list of controls pending to this node, so we can time them out quickly
 	   if the node becomes disconnected */
 	struct daemon_control_state *pending_controls;
@@ -332,6 +337,10 @@ enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN
 #define CTDB_MONITORING_ACTIVE		0
 #define CTDB_MONITORING_DISABLED	1
 
+/* The different capabilities of the ctdb daemon. */
+#define CTDB_CAP_RECMASTER		0x00000001
+#define CTDB_CAP_LMASTER		0x00000002
+
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
@@ -356,6 +365,7 @@ struct ctdb_context {
 	uint32_t num_nodes;
 	uint32_t num_connected;
 	unsigned flags;
+	uint32_t capabilities;
 	struct idr_context *idr;
 	uint16_t idr_cnt;
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
@@ -400,7 +410,6 @@ struct ctdb_db_context {
 	struct ctdb_registered_call *calls; /* list of registered calls */
 	uint32_t seqnum;
 	struct timed_event *te;
-	uint32_t client_tdb_flags;
 };
 
 
@@ -514,6 +523,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_ADD_PUBLIC_IP           = 77,
 		    CTDB_CONTROL_DEL_PUBLIC_IP           = 78,
 		    CTDB_CONTROL_RUN_EVENTSCRIPTS        = 79,
+		    CTDB_CONTROL_GET_CAPABILITIES	 = 80,
 };	
 
 /*
@@ -911,7 +921,7 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 			     void *private_data);
 
 int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata, 
-			       TDB_DATA *outdata, uint64_t tdb_flags, bool persistent);
+			       TDB_DATA *outdata, bool persistent);
 
 int ctdb_daemon_set_call(struct ctdb_context *ctdb, uint32_t db_id,
 			 ctdb_fn_t fn, int id);
@@ -1271,10 +1281,13 @@ int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb);
 int ctdb_set_child_logging(struct ctdb_context *ctdb);
 
 
+typedef void (*client_async_callback)(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata);
+
 struct client_async_data {
 	bool dont_log_errors;
 	uint32_t count;
 	uint32_t fail_count;
+	client_async_callback callback;
 };
 void ctdb_client_async_add(struct client_async_data *data, struct ctdb_client_control_state *state);
 int ctdb_client_async_wait(struct ctdb_context *ctdb, struct client_async_data *data);
@@ -1283,12 +1296,14 @@ int ctdb_client_async_control(struct ctdb_context *ctdb,
 				uint32_t *nodes,
 				struct timeval timeout,
 				bool dont_log_errors,
-				TDB_DATA data);
+				TDB_DATA data,
+			        client_async_callback client_callback);
 
 void ctdb_load_nodes_file(struct ctdb_context *ctdb);
 
 int ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode);
 
 int32_t ctdb_dump_memory(struct ctdb_context *ctdb, TDB_DATA *outdata);
+int32_t ctdb_control_get_capabilities(struct ctdb_context *ctdb, TDB_DATA *outdata);
 
 #endif

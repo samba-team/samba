@@ -28,6 +28,7 @@
 #include "cmdline.h"
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
+#include "../common/rb_tree.h"
 
 static void usage(void);
 
@@ -416,6 +417,40 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 	return 0;
 }
 
+/* send a release ip to all nodes */
+static int control_send_release(struct ctdb_context *ctdb, uint32_t pnn,
+struct sockaddr_in *sin)
+{
+	int ret;
+	struct ctdb_public_ip pip;
+	TDB_DATA data;
+	struct ctdb_node_map *nodemap=NULL;
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		return ret;
+	}
+
+	/* send a moveip message to the recovery master */
+	pip.pnn = pnn;
+	pip.sin.sin_family = AF_INET;
+	pip.sin.sin_addr   = sin->sin_addr;
+	data.dsize = sizeof(pip);
+	data.dptr = (unsigned char *)&pip;
+
+
+	/* send release ip to all nodes */
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_RELEASE_IP,
+			list_of_active_nodes(ctdb, nodemap, ctdb, true),
+			TIMELIMIT(), false, data, NULL) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to send 'ReleaseIP' to all nodes.\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
 /*
   move/failover an ip address to a specific node
  */
@@ -425,9 +460,6 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 	struct sockaddr_in ip;
 	uint32_t value;
 	struct ctdb_all_public_ips *ips;
-	struct ctdb_public_ip pip;
-	TDB_DATA data;
-	struct ctdb_node_map *nodemap=NULL;
 	int i, ret;
 
 	if (argc < 2) {
@@ -440,12 +472,6 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 		return -1;
 	}
 
-
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-		return ret;
-	}
 
 	if (sscanf(argv[1], "%u", &pnn) != 1) {
 		DEBUG(DEBUG_ERR, ("Badly formed pnn\n"));
@@ -495,23 +521,139 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 		return -1;
 	}
 
-	/* send a moveip message to the recovery master */
-	pip.pnn = pnn;
-	pip.sin.sin_family = AF_INET;
-	pip.sin.sin_addr   = ips->ips[i].sin.sin_addr;
-	data.dsize = sizeof(pip);
-	data.dptr = (unsigned char *)&pip;
-
-
-	/* send release ip to all nodes */
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_RELEASE_IP,
-			list_of_active_nodes(ctdb, nodemap, ctdb, true),
-			TIMELIMIT(), false, data) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to send 'ReleaseIP' to all nodes.\n"));
+	ret = control_send_release(ctdb, pnn, &ips->ips[i].sin);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to send 'change ip' to all nodes\n"));;
 		return -1;
 	}
 
 	return 0;
+}
+
+struct node_ip {
+	uint32_t pnn;
+	struct sockaddr_in sin;
+};
+
+void getips_store_callback(void *param, void *data)
+{
+	struct node_ip *node_ip = (struct node_ip *)data;
+	struct ctdb_all_public_ips *ips = param;
+	int i;
+
+	i = ips->num++;
+	ips->ips[i].pnn = node_ip->pnn;
+	ips->ips[i].sin = node_ip->sin;
+}
+
+void getips_count_callback(void *param, void *data)
+{
+	uint32_t *count = param;
+
+	(*count)++;
+}
+
+static int
+control_get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx, struct ctdb_all_public_ips **ips)
+{
+	struct ctdb_all_public_ips *tmp_ips;
+	struct ctdb_node_map *nodemap=NULL;
+	trbt_tree_t *tree;
+	int i, j, len, ret;
+	uint32_t count;
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, tmp_ctx, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
+		return ret;
+	}
+
+	tree = trbt_create(tmp_ctx, 0);
+
+	for(i=0;i<nodemap->num;i++){
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+
+		/* read the public ip list from this node */
+		ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), nodemap->nodes[i].pnn, tmp_ctx, &tmp_ips);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get public ip list from node %u\n", nodemap->nodes[i].pnn));
+			return -1;
+		}
+	
+		for (j=0; j<tmp_ips->num;j++) {
+			struct node_ip *node_ip;
+
+			node_ip = talloc(tmp_ctx, struct node_ip);
+			node_ip->pnn = tmp_ips->ips[j].pnn;
+			node_ip->sin = tmp_ips->ips[j].sin;
+
+			trbt_insert32(tree, tmp_ips->ips[j].sin.sin_addr.s_addr, node_ip);
+		}
+		talloc_free(tmp_ips);
+	}
+
+	/* traverse */
+	count = 0;
+	trbt_traversearray32(tree, 1, getips_count_callback, &count);
+
+	len = offsetof(struct ctdb_all_public_ips, ips) + 
+		count*sizeof(struct ctdb_public_ip);
+	tmp_ips = talloc_zero_size(tmp_ctx, len);
+	trbt_traversearray32(tree, 1, getips_store_callback, tmp_ips);
+
+	*ips = tmp_ips;
+
+	return 0;
+}
+
+
+/* 
+ * scans all other nodes and returns a pnn for another node that can host this 
+ * ip address or -1
+ */
+static int
+find_other_host_for_public_ip(struct ctdb_context *ctdb, struct sockaddr_in *addr)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_all_public_ips *ips;
+	struct ctdb_node_map *nodemap=NULL;
+	int i, j, ret;
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, tmp_ctx, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	for(i=0;i<nodemap->num;i++){
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+		if (nodemap->nodes[i].pnn == options.pnn) {
+			continue;
+		}
+
+		/* read the public ip list from this node */
+		ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), nodemap->nodes[i].pnn, tmp_ctx, &ips);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get public ip list from node %u\n", nodemap->nodes[i].pnn));
+			return -1;
+		}
+
+		for (j=0;j<ips->num;j++) {
+			if (ctdb_same_ip(addr, &ips->ips[j].sin)) {
+				talloc_free(tmp_ctx);
+				return nodemap->nodes[i].pnn;
+			}
+		}
+		talloc_free(ips);
+	}
+
+	talloc_free(tmp_ctx);
+	return -1;
 }
 
 /*
@@ -519,23 +661,35 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
  */
 static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
+	int i, ret;
 	int len;
 	unsigned mask;
 	struct sockaddr_in addr;
 	struct ctdb_control_ip_iface *pub;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_all_public_ips *ips;
 
 	if (argc != 2) {
+		talloc_free(tmp_ctx);
 		usage();
 	}
 
 	if (!parse_ip_mask(argv[0], &addr, &mask)) {
 		DEBUG(DEBUG_ERR, ("Badly formed ip/mask : %s\n", argv[0]));
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 
+	ret = control_get_all_public_ips(ctdb, tmp_ctx, &ips);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get public ip list from cluster\n"));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+
 	len = offsetof(struct ctdb_control_ip_iface, iface) + strlen(argv[1]) + 1;
-	pub = talloc_size(ctdb, len); 
+	pub = talloc_size(tmp_ctx, len); 
 	CTDB_NO_MEMORY(ctdb, pub);
 
 	pub->sin   = addr;
@@ -546,9 +700,32 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 	ret = ctdb_ctrl_add_public_ip(ctdb, TIMELIMIT(), options.pnn, pub);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to add public ip to node %u\n", options.pnn));
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 
+
+	/* check if some other node is already serving this ip, if not,
+	 * we will claim it
+	 */
+	for (i=0;i<ips->num;i++) {
+		if (ctdb_same_ip(&addr, &ips->ips[i].sin)) {
+			break;
+		}
+	}
+	/* no one has this ip so we claim it */
+	if (i == ips->num) {
+		ret = control_send_release(ctdb, options.pnn, &addr);
+	} else {
+		ret = control_send_release(ctdb, ips->ips[i].pnn, &addr);
+	}
+
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to send 'change ip' to all nodes\n"));
+		return -1;
+	}
+
+	talloc_free(tmp_ctx);
 	return 0;
 }
 
@@ -557,11 +734,14 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
  */
 static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
+	int i, ret;
 	struct sockaddr_in addr;
 	struct ctdb_control_ip_iface pub;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_all_public_ips *ips;
 
 	if (argc != 1) {
+		talloc_free(tmp_ctx);
 		usage();
 	}
 
@@ -575,12 +755,44 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 	pub.mask  = 0;
 	pub.len   = 0;
 
+	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &ips);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get public ip list from cluster\n"));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	
+	for (i=0;i<ips->num;i++) {
+		if (ctdb_same_ip(&addr, &ips->ips[i].sin)) {
+			break;
+		}
+	}
+
+	if (i==ips->num) {
+		DEBUG(DEBUG_ERR, ("This node does not support this public address '%s'\n",
+			inet_ntoa(addr.sin_addr)));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	if (ips->ips[i].pnn == options.pnn) {
+		ret = find_other_host_for_public_ip(ctdb, &addr);
+		if (ret != -1) {
+			ret = control_send_release(ctdb, ret, &addr);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR, ("Failed to migrate this ip to another node. Use moveip of recover to reassign this address to a node\n"));
+			}
+		}
+	}
+
 	ret = ctdb_ctrl_del_public_ip(ctdb, TIMELIMIT(), options.pnn, &pub);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to del public ip from node %u\n", options.pnn));
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 
+	talloc_free(tmp_ctx);
 	return 0;
 }
 
@@ -794,8 +1006,13 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_all_public_ips *ips;
 
-	/* read the public ip list from this node */
-	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &ips);
+	if (options.pnn == CTDB_BROADCAST_ALL) {
+		/* read the list of public ips from all nodes */
+		ret = control_get_all_public_ips(ctdb, tmp_ctx, &ips);
+	} else {
+		/* read the public ip list from this node */
+		ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &ips);
+	}
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get public ips from node %u\n", options.pnn));
 		talloc_free(tmp_ctx);
@@ -805,7 +1022,11 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 	if (options.machinereadable){
 		printf(":Public IP:Node:\n");
 	} else {
-		printf("Public IPs on node %u\n", options.pnn);
+		if (options.pnn == CTDB_BROADCAST_ALL) {
+			printf("Public IPs on ALL nodes\n");
+		} else {
+			printf("Public IPs on node %u\n", options.pnn);
+		}
 	}
 
 	for (i=1;i<=ips->num;i++) {
@@ -980,6 +1201,32 @@ static int control_getmonmode(struct ctdb_context *ctdb, int argc, const char **
 	return 0;
 }
 
+
+/*
+  display capabilities of a remote node
+ */
+static int control_getcapabilities(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t capabilities;
+	int ret;
+
+	ret = ctdb_ctrl_getcapabilities(ctdb, TIMELIMIT(), options.pnn, &capabilities);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get capabilities from node %u\n", options.pnn));
+		return ret;
+	}
+	
+	if (!options.machinereadable){
+		printf("RECMASTER: %s\n", (capabilities&CTDB_CAP_RECMASTER)?"YES":"NO");
+		printf("LMASTER: %s\n", (capabilities&CTDB_CAP_LMASTER)?"YES":"NO");
+	} else {
+		printf(":RECMASTER:LMASTER:\n");
+		printf(":%d:%d:\n",
+			!!(capabilities&CTDB_CAP_RECMASTER),
+			!!(capabilities&CTDB_CAP_LMASTER));
+	}
+	return 0;
+}
 
 /*
   disable monitoring on a  node
@@ -1582,11 +1829,12 @@ static const struct {
 	{ "listvars",        control_listvars,          true,  "list tunable variables"},
 	{ "statistics",      control_statistics,        false, "show statistics" },
 	{ "statisticsreset", control_statistics_reset,  true,  "reset statistics"},
-	{ "ip",              control_ip,                true,  "show which public ip's that ctdb manages" },
+	{ "ip",              control_ip,                false,  "show which public ip's that ctdb manages" },
 	{ "process-exists",  control_process_exists,    true,  "check if a process exists on a node",  "<pid>"},
 	{ "getdbmap",        control_getdbmap,          true,  "show the database map" },
 	{ "catdb",           control_catdb,             true,  "dump a database" ,                     "<dbname>"},
 	{ "getmonmode",      control_getmonmode,        true,  "show monitoring mode" },
+	{ "getcapabilities", control_getcapabilities,   true,  "show node capabilities" },
 	{ "disablemonitor",      control_disable_monmode,        true,  "set monitoring mode to DISABLE" },
 	{ "enablemonitor",      control_enable_monmode,        true,  "set monitoring mode to ACTIVE" },
 	{ "setdebug",        control_setdebug,          true,  "set debug level",                      "<EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG>" },
@@ -1619,9 +1867,9 @@ static const struct {
 	{ "reloadnodes",     control_reload_nodes_file,		false, "reload the nodes file and restart the transport on all nodes"},
 	{ "getreclock",      control_getreclock,        false,  "get the path to the reclock file" },
 	{ "moveip",          control_moveip,		false, "move/failover an ip address to another node", "<ip> <node>"},
-	{ "addip",           control_addip,		false, "add a ip address to a node", "<ip/mask> <iface>"},
+	{ "addip",           control_addip,		true, "add a ip address to a node", "<ip/mask> <iface>"},
 	{ "delip",           control_delip,		false, "delete an ip address from a node", "<ip>"},
-	{ "eventscript",     control_eventscript,	false, "run the eventscript with the given parameters on a node", "<arguments>"},
+	{ "eventscript",     control_eventscript,	true, "run the eventscript with the given parameters on a node", "<arguments>"},
 };
 
 /*
