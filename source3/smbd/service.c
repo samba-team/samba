@@ -820,7 +820,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (*lp_force_group(snum)) {
 
 		status = find_forced_group(
-			conn->force_user, snum, conn->user,
+			conn->force_user, snum, conn->server_info->unix_name,
 			&conn->server_info->ptok->user_sids[1],
 			&conn->server_info->gid);
 
@@ -833,11 +833,10 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	conn->vuid = (vuser != NULL) ? vuser->vuid : UID_FIELD_INVALID;
 
-	string_set(&conn->user, conn->server_info->unix_name);
-
 	{
 		char *s = talloc_sub_advanced(talloc_tos(),
-					lp_servicename(SNUM(conn)), conn->user,
+					lp_servicename(SNUM(conn)),
+					conn->server_info->unix_name,
 					conn->connectpath,
 					conn->server_info->gid,
 					get_current_username(),
@@ -958,7 +957,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	/* execute any "root preexec = " line */
 	if (*lp_rootpreexec(snum)) {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
-					lp_servicename(SNUM(conn)), conn->user,
+					lp_servicename(SNUM(conn)),
+					conn->server_info->unix_name,
 					conn->connectpath,
 					conn->server_info->gid,
 					get_current_username(),
@@ -996,7 +996,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	/* execute any "preexec = " line */
 	if (*lp_preexec(snum)) {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
-					lp_servicename(SNUM(conn)), conn->user,
+					lp_servicename(SNUM(conn)),
+					conn->server_info->unix_name,
 					conn->connectpath,
 					conn->server_info->gid,
 					get_current_username(),
@@ -1029,7 +1030,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	   to allow any filesystems needing user credentials to initialize
 	   themselves. */
 
-	if (SMB_VFS_CONNECT(conn, lp_servicename(snum), conn->user) < 0) {
+	if (SMB_VFS_CONNECT(conn, lp_servicename(snum),
+			    conn->server_info->unix_name) < 0) {
 		DEBUG(0,("make_connection: VFS make connection failed!\n"));
 		*pstatus = NT_STATUS_UNSUCCESSFUL;
 		goto err_root_exit;
@@ -1096,7 +1098,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			 conn->client_address );
 		dbgtext( "%s", srv_is_signing_active() ? "signed " : "");
 		dbgtext( "connect to service %s ", lp_servicename(snum) );
-		dbgtext( "initially as user %s ", conn->user );
+		dbgtext( "initially as user %s ",
+			 conn->server_info->unix_name );
 		dbgtext( "(uid=%d, gid=%d) ", (int)geteuid(), (int)getegid() );
 		dbgtext( "(pid %d)\n", (int)sys_getpid() );
 	}
@@ -1316,7 +1319,8 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	if (*lp_postexec(SNUM(conn)) && 
 	    change_to_user(conn, vuid))  {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
-					lp_servicename(SNUM(conn)), conn->user,
+					lp_servicename(SNUM(conn)),
+					conn->server_info->unix_name,
 					conn->connectpath,
 					conn->server_info->gid,
 					get_current_username(),
@@ -1331,7 +1335,8 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	/* execute any "root postexec = " line */
 	if (*lp_rootpostexec(SNUM(conn)))  {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
-					lp_servicename(SNUM(conn)), conn->user,
+					lp_servicename(SNUM(conn)),
+					conn->server_info->unix_name,
 					conn->connectpath,
 					conn->server_info->gid,
 					get_current_username(),

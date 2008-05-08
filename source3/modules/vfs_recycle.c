@@ -432,7 +432,7 @@ static int recycle_unlink(vfs_handle_struct *handle, const char *file_name)
 	int rc = -1;
 
 	repository = talloc_sub_advanced(NULL, lp_servicename(SNUM(conn)),
-					conn->user,
+					conn->server_info->unix_name,
 					conn->connectpath,
 					conn->server_info->gid,
 					get_current_username(),

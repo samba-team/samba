@@ -2037,8 +2037,9 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 
 	/* access check */
 	if (current_user.ut.uid != 0) {
-		DEBUG(1,("get_user_quota: access_denied service [%s] user [%s]\n",
-			lp_servicename(SNUM(conn)),conn->user));
+		DEBUG(1,("get_user_quota: access_denied service [%s] user "
+			 "[%s]\n", lp_servicename(SNUM(conn)),
+			 conn->server_info->unix_name));
 		reply_doserror(req, ERRDOS, ERRnoaccess);
 		return;
 	}
@@ -2303,8 +2304,9 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 
 	/* access check */
 	if (current_user.ut.uid != 0) {
-		DEBUG(1,("set_user_quota: access_denied service [%s] user [%s]\n",
-			lp_servicename(SNUM(conn)),conn->user));
+		DEBUG(1,("set_user_quota: access_denied service [%s] user "
+			 "[%s]\n", lp_servicename(SNUM(conn)),
+			 conn->server_info->unix_name));
 		reply_doserror(req, ERRDOS, ERRnoaccess);
 		return;
 	}

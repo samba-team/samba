@@ -400,8 +400,9 @@ static NTSTATUS open_file(files_struct *fsp,
 	fsp->wcp = NULL; /* Write cache pointer. */
 
 	DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
-		 *current_user_info.smb_name ?
-		 current_user_info.smb_name : conn->user,fsp->fsp_name,
+		 *current_user_info.smb_name
+		 ? current_user_info.smb_name : conn->server_info->unix_name,
+		 fsp->fsp_name,
 		 BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
 		 conn->num_files_open + 1));
 
