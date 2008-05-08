@@ -688,6 +688,23 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 		dbwrap_delete_bystring(regdb, path);
 		TALLOC_FREE(path);
 
+		/* (b) Delete the secdesc for this key */
+
+		path = talloc_asprintf(ctx, "%s/%s/%s",
+				REG_SECDESC_PREFIX,
+				key,
+				oldkeyname );
+		if (!path) {
+			goto cancel;
+		}
+		path = normalize_reg_path(ctx, path);
+		if (!path) {
+			goto cancel;
+		}
+		/* Ignore errors here, we might have no values around */
+		dbwrap_delete_bystring(regdb, path);
+		TALLOC_FREE(path);
+
 		/* (c) Delete the list of subkeys of this key */
 
 		path = talloc_asprintf(ctx, "%s/%s", key, oldkeyname);
