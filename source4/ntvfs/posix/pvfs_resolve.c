@@ -712,6 +712,10 @@ NTSTATUS pvfs_resolve_name_handle(struct pvfs_state *pvfs,
 	status = pvfs_resolve_name_fd(pvfs, h->fd, h->name, 0);
 	NT_STATUS_NOT_OK_RETURN(status);
 
+	if (!null_nttime(h->write_time.close_time)) {
+		h->name->dos.write_time = h->write_time.close_time;
+	}
+
 	return NT_STATUS_OK;
 }
 
