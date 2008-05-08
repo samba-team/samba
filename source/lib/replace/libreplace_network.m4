@@ -102,6 +102,19 @@ if test x"$ac_cv_func_gethostbyname" = x"no"; then
 	fi
 fi
 
+dnl HP-UX has if_nametoindex in -lipv6
+AC_CHECK_FUNCS(if_nametoindex)
+if test x"$ac_cv_func_if_nametoindex" = x"no"; then
+	AC_CHECK_LIB_EXT(ipv6, LIBREPLACE_NETWORK_LIBS, if_nametoindex)
+	dnl We can't just call AC_CHECK_FUNCS(if_nametoindex) here,
+	dnl because the value has been cached.
+	if test x"$ac_cv_lib_ext_ipv6_if_nametoindex" = x"yes"
+	then
+		AC_DEFINE(HAVE_IF_NAMETOINDEX, 1,
+			  [Whether the system has if_nametoindex()])
+	fi
+fi
+
 # The following tests need LIBS="${LIBREPLACE_NETWORK_LIBS}"
 old_LIBS=$LIBS
 LIBS="${LIBREPLACE_NETWORK_LIBS}"
