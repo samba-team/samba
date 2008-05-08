@@ -671,6 +671,8 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 			continue;
 		}
 
+		/* (a) Delete the value list for this key */
+
 		path = talloc_asprintf(ctx, "%s/%s/%s",
 				REG_VALUE_PREFIX,
 				key,
@@ -685,6 +687,8 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 		/* Ignore errors here, we might have no values around */
 		dbwrap_delete_bystring(regdb, path);
 		TALLOC_FREE(path);
+
+		/* (c) Delete the list of subkeys of this key */
 
 		path = talloc_asprintf(ctx, "%s/%s", key, oldkeyname);
 		if (!path) {
