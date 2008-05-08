@@ -199,7 +199,7 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 
 	if((group_c = *lp_force_group(snum))) {
 
-		token = dup_nt_token(NULL, token);
+		token = dup_nt_token(talloc_tos(), token);
 		if (token == NULL) {
 			DEBUG(0, ("dup_nt_token failed\n"));
 			return False;
