@@ -244,6 +244,7 @@ void conn_clear_vuid_cache(uint16 vuid)
 
 			if (ent->vuid == vuid) {
 				ent->vuid = UID_FIELD_INVALID;
+				TALLOC_FREE(ent->server_info);
 				ent->read_only = False;
 				ent->admin_user = False;
 			}

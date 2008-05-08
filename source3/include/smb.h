@@ -527,6 +527,7 @@ typedef struct files_struct {
 
 struct vuid_cache_entry {
 	uint16 vuid;
+	struct auth_serversupplied_info *server_info;
 	bool read_only;
 	bool admin_user;
 };
@@ -637,7 +638,6 @@ typedef struct connection_struct {
 	/* This groups info is valid for the user that *opened* the connection */
 	size_t ngroups;
 	gid_t *groups;
-	NT_USER_TOKEN *nt_user_token;
 	
 	time_t lastused;
 	time_t lastused_count;

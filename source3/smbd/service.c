@@ -725,7 +725,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	}
 
 	conn->params->service = snum;
-	conn->nt_user_token = NULL;
 
 	status = create_connection_server_info(
 		conn, snum, vuser ? vuser->server_info : NULL, password,
@@ -871,32 +870,13 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	{
 		bool can_write = False;
-		NT_USER_TOKEN *token = conn->nt_user_token ?
-			conn->nt_user_token :
-			(vuser ? vuser->server_info->ptok : NULL);
 
-		/*
-		 * I don't believe this can happen. But the
-		 * logic above is convoluted enough to confuse
-		 * automated checkers, so be sure. JRA.
-		 */
-
-		if (token == NULL) {
-			DEBUG(0,("make_connection: connection to %s "
-				 "denied due to missing "
-				 "NT token.\n",
-				  lp_servicename(snum)));
-			conn_free(conn);
-			*pstatus = NT_STATUS_ACCESS_DENIED;
-			return NULL;
-		}
-
-		can_write = share_access_check(token,
-						    lp_servicename(snum),
-						    FILE_WRITE_DATA);
+		can_write = share_access_check(conn->server_info->ptok,
+					       lp_servicename(snum),
+					       FILE_WRITE_DATA);
 
 		if (!can_write) {
-			if (!share_access_check(token,
+			if (!share_access_check(conn->server_info->ptok,
 						lp_servicename(snum),
 						FILE_READ_DATA)) {
 				/* No access, read or write. */

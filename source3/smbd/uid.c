@@ -56,6 +56,9 @@ bool change_to_guest(void)
 
 /*******************************************************************
  Check if a username is OK.
+
+ This sets up conn->server_info with a copy related to this vuser that
+ later code can then mess with.
 ********************************************************************/
 
 static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
@@ -63,11 +66,11 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 	unsigned int i;
 	struct vuid_cache_entry *ent = NULL;
 	bool readonly_share;
-	NT_USER_TOKEN *token;
 
 	for (i=0; i<VUID_CACHE_SIZE; i++) {
 		ent = &conn->vuid_cache.array[i];
 		if (ent->vuid == vuser->vuid) {
+			conn->server_info = ent->server_info;
 			conn->read_only = ent->read_only;
 			conn->admin_user = ent->admin_user;
 			return(True);
@@ -83,11 +86,8 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 		vuser->server_info->unix_name, vuser->server_info->ptok,
 		SNUM(conn));
 
-	token = conn->nt_user_token ?
-		conn->nt_user_token : vuser->server_info->ptok;
-
 	if (!readonly_share &&
-	    !share_access_check(token, lp_servicename(snum),
+	    !share_access_check(vuser->server_info->ptok, lp_servicename(snum),
 				FILE_WRITE_DATA)) {
 		/* smb.conf allows r/w, but the security descriptor denies
 		 * write. Fall back to looking at readonly. */
@@ -96,7 +96,7 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 			 "security descriptor\n"));
 	}
 
-	if (!share_access_check(token, lp_servicename(snum),
+	if (!share_access_check(vuser->server_info->ptok, lp_servicename(snum),
 				readonly_share ?
 				FILE_READ_DATA : FILE_WRITE_DATA)) {
 		return False;
@@ -107,6 +107,14 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 	conn->vuid_cache.next_entry =
 		(conn->vuid_cache.next_entry + 1) % VUID_CACHE_SIZE;
 
+	TALLOC_FREE(ent->server_info);
+
+	ent->server_info = copy_serverinfo(conn, vuser->server_info);
+	if (ent->server_info == NULL) {
+		ent->vuid = UID_FIELD_INVALID;
+		return false;
+	}
+
 	ent->vuid = vuser->vuid;
 	ent->read_only = readonly_share;
 
@@ -116,6 +124,7 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 
 	conn->read_only = ent->read_only;
 	conn->admin_user = ent->admin_user;
+	conn->server_info = ent->server_info;
 
 	return(True);
 }
@@ -132,8 +141,6 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 	gid_t gid;
 	uid_t uid;
 	char group_c;
-	bool must_free_token = False;
-	NT_USER_TOKEN *token = NULL;
 	int num_groups = 0;
 	gid_t *group_list = NULL;
 
@@ -173,18 +180,21 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 		return False;
 	}
 
+	/*
+	 * conn->server_info is now correctly set up with a copy we can mess
+	 * with for force_group etc.
+	 */
+
 	if (conn->force_user) /* security = share sets this too */ {
 		uid = conn->uid;
 		gid = conn->gid;
 	        group_list = conn->groups;
 		num_groups = conn->ngroups;
-		token = conn->nt_user_token;
 	} else if (vuser) {
 		uid = conn->admin_user ? 0 : vuser->server_info->uid;
-		gid = vuser->server_info->gid;
-		num_groups = vuser->server_info->n_groups;
-		group_list  = vuser->server_info->groups;
-		token = vuser->server_info->ptok;
+		gid = conn->server_info->gid;
+		num_groups = conn->server_info->n_groups;
+		group_list  = conn->server_info->groups;
 	} else {
 		DEBUG(2,("change_to_user: Invalid vuid used %d in accessing "
 			 "share %s.\n",vuid, lp_servicename(snum) ));
@@ -199,13 +209,6 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 
 	if((group_c = *lp_force_group(snum))) {
 
-		token = dup_nt_token(talloc_tos(), token);
-		if (token == NULL) {
-			DEBUG(0, ("dup_nt_token failed\n"));
-			return False;
-		}
-		must_free_token = True;
-
 		if(group_c == '+') {
 
 			/*
@@ -219,13 +222,15 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 			for (i = 0; i < num_groups; i++) {
 				if (group_list[i] == conn->gid) {
 					gid = conn->gid;
-					gid_to_sid(&token->user_sids[1], gid);
+					gid_to_sid(&conn->server_info->ptok
+						   ->user_sids[1], gid);
 					break;
 				}
 			}
 		} else {
 			gid = conn->gid;
-			gid_to_sid(&token->user_sids[1], gid);
+			gid_to_sid(&conn->server_info->ptok->user_sids[1],
+				   gid);
 		}
 	}
 
@@ -236,14 +241,7 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 	current_user.ut.groups  = group_list;	
 
 	set_sec_ctx(uid, gid, current_user.ut.ngroups, current_user.ut.groups,
-		    token);
-
-	/*
-	 * Free the new token (as set_sec_ctx copies it).
-	 */
-
-	if (must_free_token)
-		TALLOC_FREE(token);
+		    conn->server_info->ptok);
 
 	current_user.conn = conn;
 	current_user.vuid = vuid;
