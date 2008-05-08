@@ -1,5 +1,5 @@
-/* 
-   Samba Unix/Linux SMB client library 
+/*
+   Samba Unix/Linux SMB client library
    net status command -- possible replacement for smbstatus
    Copyright (C) 2003 Volker Lendecke (vl@samba.org)
 
@@ -7,12 +7,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
@@ -37,12 +37,12 @@ static int show_session(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	if (*parseable) {
 		d_printf("%s\\%s\\%s\\%s\\%s\n",
 			 procid_str_static(&sessionid.pid), uidtoname(sessionid.uid),
-			 gidtoname(sessionid.gid), 
+			 gidtoname(sessionid.gid),
 			 sessionid.remote_machine, sessionid.hostname);
 	} else {
 		d_printf("%7s   %-12s  %-12s  %-12s (%s)\n",
 			 procid_str_static(&sessionid.pid), uidtoname(sessionid.uid),
-			 gidtoname(sessionid.gid), 
+			 gidtoname(sessionid.gid),
 			 sessionid.remote_machine, sessionid.hostname);
 	}
 
@@ -119,7 +119,7 @@ static int collect_pid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 
 	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
 
-	if (!process_exists(sessionid.pid)) 
+	if (!process_exists(sessionid.pid))
 		return 0;
 
 	ids->num_entries += 1;
@@ -161,7 +161,7 @@ static int show_share_parseable(struct db_record *rec,
 		 crec->servicename,procid_str_static(&crec->pid),
 		 guest ? "" : uidtoname(ids->entries[i].uid),
 		 guest ? "" : gidtoname(ids->entries[i].gid),
-		 crec->machine, 
+		 crec->machine,
 		 guest ? "" : ids->entries[i].hostname,
 		 time_to_asc(crec->start));
 

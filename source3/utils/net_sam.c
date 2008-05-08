@@ -452,7 +452,7 @@ static int net_sam_policy_show(struct net_context *c, int argc, const char **arg
 			  " \"<account policy>\" \n");
                 return -1;
         }
-	
+
 	account_policy = argv[0];
         field = account_policy_name_to_fieldnum(account_policy);
 
@@ -478,7 +478,7 @@ static int net_sam_policy_show(struct net_context *c, int argc, const char **arg
                         "fetch value!\n");
                 return -1;
         }
-	
+
 	printf("Account policy \"%s\" description: %s\n",
 	       account_policy, account_policy_get_desc(field));
         printf("Account policy \"%s\" value is: %d\n", account_policy,
@@ -901,16 +901,16 @@ static int net_sam_createbuiltingroup(struct net_context *c, int argc, const cha
 	}
 
 	/* validate the name and get the group */
-	
+
 	fstrcpy( groupname, "BUILTIN\\" );
 	fstrcat( groupname, argv[0] );
-	
+
 	if ( !lookup_name(talloc_tos(), groupname, LOOKUP_NAME_ALL, NULL,
 			  NULL, &sid, &type)) {
 		d_fprintf(stderr, "%s is not a BUILTIN group\n", argv[0]);
 		return -1;
 	}
-	
+
 	if ( !sid_peek_rid( &sid, &rid ) ) {
 		d_fprintf(stderr, "Failed to get RID for %s\n", argv[0]);
 		return -1;
@@ -964,7 +964,7 @@ static int net_sam_addmem(struct net_context *c, int argc, const char **argv)
 		}
 
 		if ( !lookup_sid(talloc_tos(), &member, &memberdomain,
-			&membername, &membertype) ) 
+			&membername, &membertype) )
 		{
 			d_fprintf(stderr, "Could not resolve SID %s\n", argv[1]);
 			return -1;
@@ -994,7 +994,7 @@ static int net_sam_addmem(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	d_printf("Added %s\\%s to %s\\%s\n", memberdomain, membername, 
+	d_printf("Added %s\\%s to %s\\%s\n", memberdomain, membername,
 		groupdomain, groupname);
 
 	return 0;
@@ -1086,7 +1086,7 @@ static int net_sam_listmem(struct net_context *c, int argc, const char **argv)
 	    (grouptype == SID_NAME_WKN_GRP)) {
 		DOM_SID *members = NULL;
 		size_t i, num_members = 0;
-		
+
 		status = pdb_enum_aliasmem(&group, &members, &num_members);
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1691,7 +1691,7 @@ int net_sam(struct net_context *c, int argc, const char **argv)
 		d_fprintf(stderr, "You are not root, most things won't "
 			  "work\n");
 	}
-	
+
 	return net_run_function2(c, argc, argv, "net sam", func);
 }
 
