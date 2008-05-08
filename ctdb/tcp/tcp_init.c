@@ -147,9 +147,6 @@ static const struct ctdb_methods ctdb_tcp_methods = {
 
 static int tcp_ctcp_destructor(struct ctdb_tcp *ctcp)
 {
-	if (ctcp->listen_fd) {
-		close(ctcp->listen_fd);
-	}
 	ctcp->ctdb->private_data = NULL;
 	ctcp->ctdb->methods = NULL;
 	
