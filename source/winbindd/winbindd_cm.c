@@ -655,13 +655,7 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 	}
 
 	/* rpccli_netr_GetAnyDCName gives us a name with \\ */
-	p = tmp;
-	if (*p == '\\') {
-		p+=1;
-	}
-	if (*p == '\\') {
-		p+=1;
-	}
+	p = strip_hostname(tmp);
 
 	fstrcpy(dcname, p);
 
