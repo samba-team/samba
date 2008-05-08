@@ -1591,7 +1591,6 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
-	struct utimbuf unix_times;
 
 	if (io->generic.level == RAW_CLOSE_SPLCLOSE) {
 		return NT_STATUS_DOS(ERRSRV, ERRerror);
@@ -1607,9 +1606,9 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (!null_time(io->generic.in.write_time)) {
-		unix_times.actime = 0;
-		unix_times.modtime = io->close.in.write_time;
-		utime(f->handle->name->full_name, &unix_times);
+		f->handle->write_time.update_forced = false;
+		f->handle->write_time.update_on_close = true;
+		unix_to_nt_time(&f->handle->write_time.close_time, io->generic.in.write_time);
 	}
 
 	if (io->generic.in.flags & SMB2_CLOSE_FLAGS_FULL_INFORMATION) {
