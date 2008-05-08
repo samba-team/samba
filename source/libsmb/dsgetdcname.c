@@ -812,6 +812,44 @@ static NTSTATUS make_domain_controller_info(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static void map_dc_and_domain_names(uint32_t flags,
+				    const char *dc_name,
+				    const char *domain_name,
+				    const char *dns_dc_name,
+				    const char *dns_domain_name,
+				    uint32_t *dc_flags,
+				    const char **hostname_p,
+				    const char **domain_p)
+{
+	switch (flags & 0xf0000000) {
+		case DS_RETURN_FLAT_NAME:
+			if (dc_name && domain_name &&
+			    *dc_name && *domain_name) {
+				*hostname_p = dc_name;
+				*domain_p = domain_name;
+				break;
+			}
+		case DS_RETURN_DNS_NAME:
+		default:
+			if (dns_dc_name && dns_domain_name &&
+			    *dns_dc_name && *dns_domain_name) {
+				*hostname_p = dns_dc_name;
+				*domain_p = dns_domain_name;
+				*dc_flags |= DS_DNS_DOMAIN | DS_DNS_CONTROLLER;
+				break;
+			}
+			if (dc_name && domain_name &&
+			    *dc_name && *domain_name) {
+				*hostname_p = dc_name;
+				*domain_p = domain_name;
+				break;
+			}
+	}
+}
+
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 					      uint32_t flags,
 					      struct sockaddr_storage *ss,
@@ -845,8 +883,15 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 				dc_address_type	= DS_ADDRESS_TYPE_NETBIOS;
 			}
 
-			dc_hostname	= r->logon1.pdc_name;
-			dc_domain_name	= r->logon1.domain_name;
+			map_dc_and_domain_names(flags,
+						r->logon1.pdc_name,
+						r->logon1.domain_name,
+						NULL,
+						NULL,
+						&dc_flags,
+						&dc_hostname,
+						&dc_domain_name);
+
 			if (flags & DS_PDC_REQUIRED) {
 				dc_flags = NBT_SERVER_WRITABLE | NBT_SERVER_PDC;
 			}
@@ -858,18 +903,14 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 				dc_address_type	= DS_ADDRESS_TYPE_INET;
 			}
 
-			switch (flags & 0xf0000000) {
-				case DS_RETURN_FLAT_NAME:
-					dc_hostname	= r->logon3.pdc_name;
-					dc_domain_name	= r->logon3.domain_name;
-					break;
-				case DS_RETURN_DNS_NAME:
-				default:
-					dc_hostname	= r->logon3.pdc_dns_name;
-					dc_domain_name	= r->logon3.dns_domain;
-					dc_flags |= DS_DNS_DOMAIN | DS_DNS_CONTROLLER;
-					break;
-			}
+			map_dc_and_domain_names(flags,
+						r->logon3.pdc_name,
+						r->logon3.domain_name,
+						r->logon3.pdc_dns_name,
+						r->logon3.dns_domain,
+						&dc_flags,
+						&dc_hostname,
+						&dc_domain_name);
 
 			dc_flags	|= r->logon3.server_type;
 			dc_forest	= r->logon3.forest;
@@ -885,18 +926,14 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 				dc_address_type	= DS_ADDRESS_TYPE_NETBIOS;
 			}
 
-			switch (flags & 0xf0000000) {
-				case DS_RETURN_FLAT_NAME:
-					dc_hostname	= r->logon5.pdc_name;
-					dc_domain_name	= r->logon5.domain;
-					break;
-				case DS_RETURN_DNS_NAME:
-				default:
-					dc_hostname	= r->logon5.pdc_dns_name;
-					dc_domain_name	= r->logon5.dns_domain;
-					dc_flags |= DS_DNS_DOMAIN | DS_DNS_CONTROLLER;
-					break;
-			}
+			map_dc_and_domain_names(flags,
+						r->logon5.pdc_name,
+						r->logon5.domain,
+						r->logon5.pdc_dns_name,
+						r->logon5.dns_domain,
+						&dc_flags,
+						&dc_hostname,
+						&dc_domain_name);
 
 			dc_flags	|= r->logon5.server_type;
 			dc_forest	= r->logon5.forest;
@@ -918,18 +955,14 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 				dc_address_type	= DS_ADDRESS_TYPE_INET;
 			}
 
-			switch (flags & 0xf0000000) {
-				case DS_RETURN_FLAT_NAME:
-					dc_hostname	= r->logon13.pdc_name;
-					dc_domain_name	= r->logon13.domain;
-					break;
-				case DS_RETURN_DNS_NAME:
-				default:
-					dc_hostname	= r->logon13.pdc_dns_name;
-					dc_domain_name	= r->logon13.dns_domain;
-					dc_flags |= DS_DNS_DOMAIN | DS_DNS_CONTROLLER;
-					break;
-			}
+			map_dc_and_domain_names(flags,
+						r->logon13.pdc_name,
+						r->logon13.domain,
+						r->logon13.pdc_dns_name,
+						r->logon13.dns_domain,
+						&dc_flags,
+						&dc_hostname,
+						&dc_domain_name);
 
 			dc_flags	|= r->logon13.server_type;
 			dc_forest	= r->logon13.forest;
@@ -944,18 +977,14 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 				dc_address_type	= DS_ADDRESS_TYPE_INET;
 			}
 
-			switch (flags & 0xf0000000) {
-				case DS_RETURN_FLAT_NAME:
-					dc_hostname	= r->logon29.pdc_name;
-					dc_domain_name	= r->logon29.domain;
-					break;
-				case DS_RETURN_DNS_NAME:
-				default:
-					dc_hostname	= r->logon29.pdc_dns_name;
-					dc_domain_name	= r->logon29.dns_domain;
-					dc_flags |= DS_DNS_DOMAIN | DS_DNS_CONTROLLER;
-					break;
-			}
+			map_dc_and_domain_names(flags,
+						r->logon29.pdc_name,
+						r->logon29.domain,
+						r->logon29.pdc_dns_name,
+						r->logon29.dns_domain,
+						&dc_flags,
+						&dc_hostname,
+						&dc_domain_name);
 
 			dc_flags	|= r->logon29.server_type;
 			dc_forest	= r->logon29.forest;
