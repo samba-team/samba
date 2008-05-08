@@ -2,6 +2,9 @@ AC_DEFUN_ONCE(AC_LIBREPLACE_NETWORK_CHECKS,
 [
 echo "LIBREPLACE_NETWORK_CHECKS: START"
 
+LIBREPLACE_NETWORK_OBJS=""
+LIBREPLACE_NETWORK_LIBS=""
+
 AC_CHECK_HEADERS(sys/socket.h netinet/in.h netdb.h arpa/inet.h)
 AC_CHECK_HEADERS(netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 
@@ -98,7 +101,13 @@ if test x"$ac_cv_func_gethostbyname" = x"no"; then
 	fi
 fi
 
-AC_CHECK_FUNCS(socketpair,[],[LIBREPLACEOBJ="${LIBREPLACEOBJ} socketpair.o"])
+# The following tests need LIBS="${LIBREPLACE_NETWORK_LIBS}"
+old_LIBS=$LIBS
+LIBS="${LIBREPLACE_NETWORK_LIBS}"
+SAVE_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS -I$libreplacedir"
+
+AC_CHECK_FUNCS(socketpair,[],[LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} socketpair.o"])
 
 AC_CACHE_CHECK([for broken inet_ntoa],libreplace_cv_REPLACE_INET_NTOA,[
 AC_TRY_RUN([
@@ -118,14 +127,14 @@ exit(1);}],
 AC_CHECK_FUNCS(inet_ntoa,[],[libreplace_cv_REPLACE_INET_NTOA=yes])
 if test x"$libreplace_cv_REPLACE_INET_NTOA" = x"yes"; then
     AC_DEFINE(REPLACE_INET_NTOA,1,[Whether inet_ntoa should be replaced])
-    LIBREPLACEOBJ="${LIBREPLACEOBJ} inet_ntoa.o"
+    LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} inet_ntoa.o"
 fi
 
-AC_CHECK_FUNCS(inet_aton,[],[LIBREPLACEOBJ="${LIBREPLACEOBJ} inet_aton.o"])
+AC_CHECK_FUNCS(inet_aton,[],[LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} inet_aton.o"])
 
-AC_CHECK_FUNCS(inet_ntop,[],[LIBREPLACEOBJ="${LIBREPLACEOBJ} inet_ntop.o"])
+AC_CHECK_FUNCS(inet_ntop,[],[LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} inet_ntop.o"])
 
-AC_CHECK_FUNCS(inet_pton,[],[LIBREPLACEOBJ="${LIBREPLACEOBJ} inet_pton.o"])
+AC_CHECK_FUNCS(inet_pton,[],[LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} inet_pton.o"])
 
 dnl test for getaddrinfo/getnameinfo
 AC_CACHE_CHECK([for getaddrinfo],libreplace_cv_HAVE_GETADDRINFO,[
@@ -157,7 +166,7 @@ if test x"$libreplace_cv_HAVE_GETADDRINFO" = x"yes"; then
 	AC_DEFINE(HAVE_FREEADDRINFO,1,[Whether the system has freeaddrinfo])
 	AC_DEFINE(HAVE_GAI_STRERROR,1,[Whether the system has gai_strerror])
 else
-	LIBREPLACEOBJ="${LIBREPLACEOBJ} getaddrinfo.o"
+	LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} getaddrinfo.o"
 fi
 
 AC_CHECK_HEADERS([ifaddrs.h])
@@ -195,16 +204,6 @@ fi
 
 ##################
 # look for a method of finding the list of network interfaces
-#
-# This tests need LIBS="${LIBREPLACE_NETWORK_LIBS}"
-#
-old_LIBS=$LIBS
-LIBS="${LIBREPLACE_NETWORK_LIBS}"
-SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I$libreplacedir"
-iface=no;
-##################
-# look for a method of finding the list of network interfaces
 iface=no;
 AC_CACHE_CHECK([for iface getifaddrs],libreplace_cv_HAVE_IFACE_GETIFADDRS,[
 AC_TRY_RUN([
@@ -222,7 +221,7 @@ AC_TRY_RUN([
 if test x"$libreplace_cv_HAVE_IFACE_GETIFADDRS" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_GETIFADDRS,1,[Whether iface getifaddrs is available])
 else
-	LIBREPLACEOBJ="${LIBREPLACEOBJ} getifaddrs.o"
+	LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} getifaddrs.o"
 fi
 
 
@@ -287,6 +286,8 @@ fi
 
 LIBS=$old_LIBS
 CPPFLAGS="$SAVE_CPPFLAGS"
+
+LIBREPLACEOBJ="${LIBREPLACEOBJ} ${LIBREPLACE_NETWORK_OBJS}"
 
 echo "LIBREPLACE_NETWORK_CHECKS: END"
 ]) dnl end AC_LIBREPLACE_NETWORK_CHECKS
