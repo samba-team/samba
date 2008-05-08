@@ -2826,8 +2826,10 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			
 			/* access check */
 			if (current_user.ut.uid != 0) {
-				DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
-					lp_servicename(SNUM(conn)),conn->user));
+				DEBUG(0,("set_user_quota: access_denied "
+					 "service [%s] user [%s]\n",
+					 lp_servicename(SNUM(conn)),
+					 conn->server_info->unix_name));
 				reply_doserror(req, ERRDOS, ERRnoaccess);
 				return;
 			}
@@ -3267,7 +3269,8 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				/* access check */
 				if ((current_user.ut.uid != 0)||!CAN_WRITE(conn)) {
 					DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
-						lp_servicename(SNUM(conn)),conn->user));
+						 lp_servicename(SNUM(conn)),
+						 conn->server_info->unix_name));
 					reply_doserror(req, ERRSRV, ERRaccess);
 					return;
 				}

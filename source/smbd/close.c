@@ -581,7 +581,7 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 	}
 
 	DEBUG(2,("%s closed file %s (numopen=%d) %s\n",
-		conn->user,fsp->fsp_name,
+		conn->server_info->unix_name,fsp->fsp_name,
 		conn->num_files_open,
 		nt_errstr(status) ));
 

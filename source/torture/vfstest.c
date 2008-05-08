@@ -563,7 +563,6 @@ int main(int argc, char *argv[])
 	sec_init();
 	conn_init();
 	vfs.conn = conn_new();
-	string_set(&vfs.conn->user,"vfstest");
 	for (i=0; i < 1024; i++)
 		vfs.files[i] = NULL;
 
