@@ -120,7 +120,8 @@ fi
 
 AC_CHECK_FUNCS(inet_aton,[],[LIBREPLACEOBJ="${LIBREPLACEOBJ} inet_aton.o"])
 
-m4_include(inet_ntop.m4)
+AC_CHECK_FUNCS(inet_ntop,[],[LIBREPLACEOBJ="${LIBREPLACEOBJ} inet_ntop.o"])
+
 m4_include(inet_pton.m4)
 m4_include(getaddrinfo.m4)
 m4_include(getifaddrs.m4)
