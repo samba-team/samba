@@ -118,6 +118,7 @@ WERROR DsGetDcName_l(struct libnetapi_ctx *ctx,
 	NTSTATUS status;
 
 	status = dsgetdcname(ctx,
+			     NULL,
 			     r->in.domain_name,
 			     r->in.domain_guid,
 			     r->in.site_name,
