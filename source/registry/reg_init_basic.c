@@ -22,34 +22,26 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
 
-WERROR registry_init_common(void)
-{
-	WERROR werr;
-
-	werr = regdb_init();
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0, ("Failed to initialize the registry: %s\n",
-			  dos_errstr(werr)));
-		goto done;
-	}
-
-	werr = reghook_cache_init();
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0, ("Failed to initialize the reghook cache: %s\n",
-			  dos_errstr(werr)));
-	}
-
-done:
-	return werr;
-}
-
 WERROR registry_init_basic(void)
 {
 	WERROR werr;
 
 	DEBUG(10, ("registry_init_basic called\n"));
 
-	werr = registry_init_common();
+	werr = regdb_init();
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("Failed to initialize the registry: %s\n",
+			  dos_errstr(werr)));
+		goto done;
+	}
+
+	werr = reghook_cache_init();
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("Failed to initialize the reghook cache: %s\n",
+			  dos_errstr(werr)));
+	}
+
+done:
 	regdb_close();
 	return werr;
 }
