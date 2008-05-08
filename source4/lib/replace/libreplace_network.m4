@@ -98,6 +98,8 @@ if test x"$ac_cv_func_gethostbyname" = x"no"; then
 	fi
 fi
 
+AC_CHECK_FUNCS(socketpair,[],[LIBREPLACEOBJ="${LIBREPLACEOBJ} socketpair.o"])
+
 AC_CHECK_FUNCS(inet_ntoa,[],[LIBREPLACEOBJ="${LIBREPLACEOBJ} inet_ntoa.o"])
 
 AC_CACHE_CHECK([for broken inet_ntoa],libreplace_cv_REPLACE_INET_NTOA,[
@@ -126,7 +128,6 @@ AC_CHECK_FUNCS(inet_pton,[],[LIBREPLACEOBJ="${LIBREPLACEOBJ} inet_pton.o"])
 
 m4_include(getaddrinfo.m4)
 m4_include(getifaddrs.m4)
-m4_include(socketpair.m4)
 
 echo "LIBREPLACE_NETWORK_CHECKS: END"
 ]) dnl end AC_LIBREPLACE_NETWORK_CHECKS
