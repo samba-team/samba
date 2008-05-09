@@ -3,7 +3,7 @@
 
 package Parse::Pidl::Samba4::COM::Header;
 
-use Parse::Pidl::Typelist qw(mapType);
+use Parse::Pidl::Typelist qw(mapTypeName);
 use Parse::Pidl::Util qw(has_property is_constant);
 
 use vars qw($VERSION);
@@ -18,7 +18,7 @@ sub GetArgumentProtoList($)
 
 	foreach my $a (@{$f->{ELEMENTS}}) {
 
-		$res .= ", " . mapType($a->{TYPE}) . " ";
+		$res .= ", " . mapTypeName($a->{TYPE}) . " ";
 
 		my $l = $a->{POINTERS};
 		$l-- if (Parse::Pidl::Typelist::scalar_is_reference($a->{TYPE}));
@@ -62,7 +62,7 @@ sub HeaderVTable($)
 
 	my $data = $interface->{DATA};
 	foreach my $d (@{$data}) {
-		$res .= "\t" . mapType($d->{RETURN_TYPE}) . " (*$d->{NAME}) (struct $interface->{NAME} *d, TALLOC_CTX *mem_ctx" . GetArgumentProtoList($d) . ");\\\n" if ($d->{TYPE} eq "FUNCTION");
+		$res .= "\t" . mapTypeName($d->{RETURN_TYPE}) . " (*$d->{NAME}) (struct $interface->{NAME} *d, TALLOC_CTX *mem_ctx" . GetArgumentProtoList($d) . ");\\\n" if ($d->{TYPE} eq "FUNCTION");
 	}
 	$res .= "\n";
 	$res .= "struct $interface->{NAME}_vtable {\n";

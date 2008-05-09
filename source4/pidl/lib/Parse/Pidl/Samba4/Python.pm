@@ -9,6 +9,7 @@ use Exporter;
 @ISA = qw(Exporter);
 
 use strict;
+use Parse::Pidl qw(warning fatal);
 use Parse::Pidl::Typelist qw(hasType resolveType getType mapTypeName expandAlias);
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred is_charset_array);
@@ -846,7 +847,7 @@ sub ConvertObjectFromPythonData($$$$$$)
 		return;
 	}
 
-	if ($actual_ctype->{TYPE} eq "STRUCT") {
+	if ($actual_ctype->{TYPE} eq "STRUCT" or $actual_ctype->{TYPE} eq "INTERFACE") {
 		$self->pidl("PY_CHECK_TYPE($ctype->{NAME}, $cvar, $fail);");
 		$self->assign($target, "py_talloc_get_ptr($cvar)");
 		return;
@@ -889,7 +890,7 @@ sub ConvertObjectFromPythonData($$$$$$)
 		return;
 	}
 
-	die("unknown type ".mapTypeName($ctype) . ": $cvar");
+	fatal($ctype, "unknown type $actual_ctype->{TYPE} for ".mapTypeName($ctype) . ": $cvar");
 
 }
 
@@ -1026,13 +1027,12 @@ sub ConvertObjectToPythonData($$$$$)
 	} elsif ($actual_ctype->{TYPE} eq "SCALAR") {
 		return $self->ConvertScalarToPython($actual_ctype->{NAME}, $cvar);
 	} elsif ($actual_ctype->{TYPE} eq "UNION") {
-		# FIXME: Should be fatal() rather than die()
-		die("union without discriminant: " . mapTypeName($ctype) . ": $cvar");
+		fatal($ctype, "union without discriminant: " . mapTypeName($ctype) . ": $cvar");
 	} elsif ($actual_ctype->{TYPE} eq "STRUCT" or $actual_ctype->{TYPE} eq "INTERFACE") {
 		return "py_talloc_import_ex(&$ctype->{NAME}_Type, $mem_ctx, $cvar)";
 	}
 
-	die("unknown type ".mapTypeName($ctype) . ": $cvar");
+	fatal($ctype, "unknown type $actual_ctype->{TYPE} for ".mapTypeName($ctype) . ": $cvar");
 }
 
 sub fail_on_null($$$)
