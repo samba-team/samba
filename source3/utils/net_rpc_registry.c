@@ -725,7 +725,7 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	struct registry_value **values = NULL;
 	
 	if (argc != 1 ) {
-		d_printf("Usage:    net rpc registry enumerate <path> [recurse]\n");
+		d_printf("Usage:    net rpc registry enumerate <path>\n");
 		d_printf("Example:  net rpc registry enumerate 'HKLM\\Software\\Samba'\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
