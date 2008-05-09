@@ -21,7 +21,7 @@ SRCDIR=`rpm --eval %_sourcedir`
 
 USERID=`id -u`
 GRPID=`id -g`
-VERSION='3.0.25'
+VERSION='3.2.0'
 REVISION='ctdb'
 SPECFILE="samba.spec"
 RPMVER=`rpm --version | awk '{print $3}'`
