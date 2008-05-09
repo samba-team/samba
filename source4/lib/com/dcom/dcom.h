@@ -26,7 +26,6 @@ struct dcerpc_pipe;
 
 #include "lib/com/com.h"
 #include "librpc/gen_ndr/orpc.h"
-#include "lib/com/dcom/proto.h"
 
 struct dcom_client_context {
 	struct cli_credentials *credentials;
@@ -37,5 +36,18 @@ struct dcom_client_context {
 		struct dcom_object_exporter *prev, *next;
 	} *object_exporters;
 };
+
+struct dcom_client_context *dcom_client_init(struct com_context *ctx, struct cli_credentials *credentials);
+struct dcom_object_exporter *object_exporter_by_oxid(struct com_context *ctx, uint64_t oxid);
+struct dcom_object_exporter *object_exporter_by_ip(struct com_context *ctx, struct IUnknown *ip);
+WERROR dcom_create_object(struct com_context *ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct IUnknown ***ip, WERROR *results);
+WERROR dcom_get_class_object(struct com_context *ctx, struct GUID *clsid, const char *server, struct GUID *iid, struct IUnknown **ip);
+NTSTATUS dcom_get_pipe(struct IUnknown *iface, struct dcerpc_pipe **pp);
+NTSTATUS dcom_OBJREF_from_IUnknown(struct OBJREF *o, struct IUnknown *p);
+NTSTATUS dcom_IUnknown_from_OBJREF(struct com_context *ctx, struct IUnknown **_p, struct OBJREF *o);
+uint64_t dcom_get_current_oxid(void);
+
+NTSTATUS dcom_register_proxy(struct IUnknown_vtable *proxy_vtable);
+struct IUnknown_vtable *dcom_proxy_vtable_by_iid(struct GUID *iid);
 
 #endif /* _DCOM_H */
