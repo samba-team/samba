@@ -2029,20 +2029,18 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 	char *qualname = NULL;
 	SMB_STRUCT_STAT st;
 	NTSTATUS nt_status;
-	WERROR werr;
+	WERROR werr = WERR_ACCESS_DENIED;
 	struct current_user user;
 	connection_struct *conn = NULL;
 	bool became_user = False;
 	TALLOC_CTX *ctx = p->mem_ctx;
-	struct sec_desc_buf *sd_buf;
+	struct sec_desc_buf *sd_buf = NULL;
+	files_struct *fsp = NULL;
 
 	ZERO_STRUCT(st);
 
-	werr = WERR_OK;
-
 	qualname = talloc_strdup(ctx, r->in.share);
 	if (!qualname) {
-		werr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
@@ -2064,14 +2062,12 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 
 	if (!become_user(conn, conn->vuid)) {
 		DEBUG(0,("_srvsvc_NetGetFileSecurity: Can't become connected user!\n"));
-		werr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 	became_user = True;
 
 	filename_in = talloc_strdup(ctx, r->in.file);
 	if (!filename_in) {
-		werr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
@@ -2079,7 +2075,6 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srvsvc_NetGetFileSecurity: bad pathname %s\n",
 			filename));
-		werr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
@@ -2087,11 +2082,37 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srvsvc_NetGetFileSecurity: can't access %s\n",
 			filename));
-		werr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
-	nt_status = SMB_VFS_GET_NT_ACL(conn, filename,
+	if (!(S_ISDIR(st.st_mode))) {
+        	nt_status = open_file_ntcreate(conn, NULL, filename, &st,
+				FILE_READ_ATTRIBUTES,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				FILE_OPEN,
+				0,
+				FILE_ATTRIBUTE_NORMAL,
+				0,
+				NULL, &fsp);
+
+	} else {
+		nt_status = open_directory(conn, NULL, filename, &st,
+				FILE_READ_ATTRIBUTES,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				FILE_OPEN,
+				0,
+				FILE_ATTRIBUTE_DIRECTORY,
+				NULL, &fsp);
+	}
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(3,("_srvsvc_NetGetFileSecurity: can't open %s\n",
+			filename));
+		werr = ntstatus_to_werror(nt_status);
+		goto error_exit;
+	}
+
+	nt_status = SMB_VFS_FGET_NT_ACL(fsp,
 				       (OWNER_SECURITY_INFORMATION
 					|GROUP_SECURITY_INFORMATION
 					|DACL_SECURITY_INFORMATION), &psd);
@@ -2118,17 +2139,25 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 
 	psd->dacl->revision = NT4_ACL_REVISION;
 
+	close_file(fsp, NORMAL_CLOSE);
+
 	unbecome_user();
 	close_cnum(conn, user.vuid);
-	return werr;
+	return WERR_OK;
 
 error_exit:
 
-	if (became_user)
-		unbecome_user();
+	if(fsp) {
+		close_file(fsp, NORMAL_CLOSE);
+	}
 
-	if (conn)
+	if (became_user) {
+		unbecome_user();
+	}
+
+	if (conn) {
 		close_cnum(conn, user.vuid);
+	}
 
 	return werr;
 }

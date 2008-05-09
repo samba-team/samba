@@ -1612,14 +1612,8 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	if (!lp_nt_acl_support(SNUM(conn))) {
 		status = get_null_nt_acl(talloc_tos(), &psd);
 	} else {
-		if (fsp->fh->fd != -1) {
-			status = SMB_VFS_FGET_NT_ACL(
-				fsp, security_info_wanted, &psd);
-		}
-		else {
-			status = SMB_VFS_GET_NT_ACL(
-				conn, fsp->fsp_name, security_info_wanted, &psd);
-		}
+		status = SMB_VFS_FGET_NT_ACL(
+			fsp, security_info_wanted, &psd);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
