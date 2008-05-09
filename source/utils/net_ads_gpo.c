@@ -22,7 +22,7 @@
 
 #ifdef HAVE_ADS
 
-static int net_ads_gpo_usage(int argc, const char **argv)
+static int net_ads_gpo_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf(
 		"net ads gpo <COMMAND>\n"\
@@ -41,7 +41,7 @@ static int net_ads_gpo_usage(int argc, const char **argv)
 	return -1;
 }
 
-static int net_ads_gpo_refresh(int argc, const char **argv)
+static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
 	ADS_STRUCT *ads;
@@ -65,7 +65,7 @@ static int net_ads_gpo_refresh(int argc, const char **argv)
 		return -1;
 	}
 
-	status = ads_startup(False, &ads);
+	status = ads_startup(c, false, &ads);
 	if (!ADS_ERR_OK(status)) {
 		printf("failed to connect AD server: %s\n", ads_errstr(status));
 		goto out;
@@ -128,7 +128,7 @@ static int net_ads_gpo_refresh(int argc, const char **argv)
 
 	printf("finished\n");
 
-	if (opt_verbose) {
+	if (c->opt_verbose) {
 
 		printf("* dumping GPO list\n");
 
@@ -173,7 +173,7 @@ static int net_ads_gpo_refresh(int argc, const char **argv)
 
 	printf("finished\n");
 
-	if (opt_verbose) {
+	if (c->opt_verbose) {
 
 		printf("* dumping GPO list from registry\n");
 
@@ -211,7 +211,7 @@ static int net_ads_gpo_refresh(int argc, const char **argv)
 	return 0;
 }
 
-static int net_ads_gpo_list_all(int argc, const char **argv)
+static int net_ads_gpo_list_all(struct net_context *c, int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
@@ -238,7 +238,7 @@ static int net_ads_gpo_list_all(int argc, const char **argv)
 		return -1;
 	}
 
-	status = ads_startup(False, &ads);
+	status = ads_startup(c, false, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -290,7 +290,7 @@ out:
 	return 0;
 }
 
-static int net_ads_gpo_list(int argc, const char **argv)
+static int net_ads_gpo_list(struct net_context *c, int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
@@ -312,7 +312,7 @@ static int net_ads_gpo_list(int argc, const char **argv)
 		goto out;
 	}
 
-	status = ads_startup(False, &ads);
+	status = ads_startup(c, false, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -357,7 +357,7 @@ out:
 }
 
 #if 0
-static int net_ads_gpo_apply(int argc, const char **argv)
+static int net_ads_gpo_apply(struct net_context *c, int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
 	ADS_STRUCT *ads;
@@ -383,7 +383,7 @@ static int net_ads_gpo_apply(int argc, const char **argv)
 		filter = cse_gpo_name_to_guid_string(argv[1]);
 	}
 
-	status = ads_startup(False, &ads);
+	status = ads_startup(c, false, &ads);
 	if (!ADS_ERR_OK(status)) {
 		printf("got: %s\n", ads_errstr(status));
 		goto out;
@@ -438,7 +438,7 @@ out:
 }
 #endif
 
-static int net_ads_gpo_link_get(int argc, const char **argv)
+static int net_ads_gpo_link_get(struct net_context *c, int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
@@ -455,7 +455,7 @@ static int net_ads_gpo_link_get(int argc, const char **argv)
 		return -1;
 	}
 
-	status = ads_startup(False, &ads);
+	status = ads_startup(c, false, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -476,7 +476,7 @@ out:
 	return 0;
 }
 
-static int net_ads_gpo_link_add(int argc, const char **argv)
+static int net_ads_gpo_link_add(struct net_context *c, int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
@@ -499,7 +499,7 @@ static int net_ads_gpo_link_add(int argc, const char **argv)
 		gpo_opt = atoi(argv[2]);
 	}
 
-	status = ads_startup(False, &ads);
+	status = ads_startup(c, false, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -519,7 +519,7 @@ out:
 
 #if 0 /* broken */
 
-static int net_ads_gpo_link_delete(int argc, const char **argv)
+static int net_ads_gpo_link_delete(struct net_context *c, int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
@@ -534,7 +534,7 @@ static int net_ads_gpo_link_delete(int argc, const char **argv)
 		return -1;
 	}
 
-	status = ads_startup(False, &ads);
+	status = ads_startup(c, false, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -554,7 +554,7 @@ out:
 
 #endif
 
-static int net_ads_gpo_get_gpo(int argc, const char **argv)
+static int net_ads_gpo_get_gpo(struct net_context *c, int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
@@ -571,7 +571,7 @@ static int net_ads_gpo_get_gpo(int argc, const char **argv)
 		return -1;
 	}
 
-	status = ads_startup(False, &ads);
+	status = ads_startup(c, false, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto out;
 	}
@@ -597,7 +597,7 @@ out:
 	return 0;
 }
 
-int net_ads_gpo(int argc, const char **argv)
+int net_ads_gpo(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		/* {"APPLY", net_ads_gpo_apply}, */
@@ -612,7 +612,7 @@ int net_ads_gpo(int argc, const char **argv)
 		{NULL, NULL}
 	};
 
-	return net_run_function(argc, argv, func, net_ads_gpo_usage);
+	return net_run_function(c, argc, argv, func, net_ads_gpo_usage);
 }
 
 #endif /* HAVE_ADS */

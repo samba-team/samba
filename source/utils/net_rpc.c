@@ -105,7 +105,8 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  * @return A shell status integer (0 for success)
  */
 
-int run_rpc_command(struct cli_state *cli_arg,
+int run_rpc_command(struct net_context *c,
+			struct cli_state *cli_arg,
 			const int pipe_idx,
 			int conn_flags,
 			rpc_command_fn fn,
@@ -121,7 +122,7 @@ int run_rpc_command(struct cli_state *cli_arg,
 
 	/* make use of cli_state handed over as an argument, if possible */
 	if (!cli_arg) {
-		nt_status = net_make_ipc_connection(conn_flags, &cli);
+		nt_status = net_make_ipc_connection(c, conn_flags, &cli);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("failed to make ipc connection: %s\n",
 				  nt_errstr(nt_status)));
@@ -175,7 +176,7 @@ int run_rpc_command(struct cli_state *cli_arg,
 		}
 	}
 	
-	nt_status = fn(domain_sid, domain_name, cli, pipe_hnd, mem_ctx, argc, argv);
+	nt_status = fn(c, domain_sid, domain_name, cli, pipe_hnd, mem_ctx, argc, argv);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("rpc command function failed! (%s)\n", nt_errstr(nt_status)));
@@ -214,7 +215,8 @@ int run_rpc_command(struct cli_state *cli_arg,
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_changetrustpw_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_changetrustpw_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -223,7 +225,7 @@ static NTSTATUS rpc_changetrustpw_internals(const DOM_SID *domain_sid,
 					const char **argv)
 {
 	
-	return trust_pw_find_change_and_store_it(pipe_hnd, mem_ctx, opt_target_workgroup);
+	return trust_pw_find_change_and_store_it(pipe_hnd, mem_ctx, c->opt_target_workgroup);
 }
 
 /** 
@@ -236,9 +238,9 @@ static NTSTATUS rpc_changetrustpw_internals(const DOM_SID *domain_sid,
  * @return A shell status integer (0 for success)
  **/
 
-int net_rpc_changetrustpw(int argc, const char **argv) 
+int net_rpc_changetrustpw(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
+	return run_rpc_command(c, NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC,
 			       rpc_changetrustpw_internals,
 			       argc, argv);
 }
@@ -263,7 +265,8 @@ int net_rpc_changetrustpw(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_oldjoin_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_oldjoin_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli, 
 					struct rpc_pipe_client *pipe_hnd,
@@ -308,16 +311,16 @@ static NTSTATUS rpc_oldjoin_internals(const DOM_SID *domain_sid,
 
 	E_md4hash(trust_passwd, orig_trust_passwd_hash);
 
-	result = trust_pw_change_and_store_it(pipe_hnd, mem_ctx, opt_target_workgroup,
+	result = trust_pw_change_and_store_it(pipe_hnd, mem_ctx, c->opt_target_workgroup,
 					      orig_trust_passwd_hash,
 					      sec_channel_type);
 
 	if (NT_STATUS_IS_OK(result))
-		printf("Joined domain %s.\n",opt_target_workgroup);
+		printf("Joined domain %s.\n", c->opt_target_workgroup);
 
 
-	if (!secrets_store_domain_sid(opt_target_workgroup, domain_sid)) {
-		DEBUG(0, ("error storing domain sid for %s\n", opt_target_workgroup));
+	if (!secrets_store_domain_sid(c->opt_target_workgroup, domain_sid)) {
+		DEBUG(0, ("error storing domain sid for %s\n", c->opt_target_workgroup));
 		result = NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -334,9 +337,9 @@ static NTSTATUS rpc_oldjoin_internals(const DOM_SID *domain_sid,
  * @return A shell status integer (0 for success)
  **/
 
-static int net_rpc_perform_oldjoin(int argc, const char **argv)
+static int net_rpc_perform_oldjoin(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PI_NETLOGON, 
+	return run_rpc_command(c, NULL, PI_NETLOGON,
 			       NET_FLAGS_NO_PIPE | NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
 			       rpc_oldjoin_internals,
 			       argc, argv);
@@ -354,9 +357,9 @@ static int net_rpc_perform_oldjoin(int argc, const char **argv)
  * @return A shell status integer (0 for success)
  **/
 
-static int net_rpc_oldjoin(int argc, const char **argv) 
+static int net_rpc_oldjoin(struct net_context *c, int argc, const char **argv)
 {
-	int rc = net_rpc_perform_oldjoin(argc, argv);
+	int rc = net_rpc_perform_oldjoin(c, argc, argv);
 
 	if (rc) {
 		d_fprintf(stderr, "Failed to join domain\n");
@@ -372,7 +375,7 @@ static int net_rpc_oldjoin(int argc, const char **argv)
  *              stripped
  **/
 
-static int rpc_join_usage(int argc, const char **argv) 
+static int rpc_join_usage(struct net_context *c, int argc, const char **argv)
 {	
 	d_printf("net rpc join -U <username>[%%password] <type>[options]\n"\
 		 "\t to join a domain with admin username & password\n"\
@@ -382,7 +385,7 @@ static int rpc_join_usage(int argc, const char **argv)
 		 "\t\t PDC - Join as a PDC\n"\
 		 "\t\t MEMBER - Join as a MEMBER server\n");
 
-	net_common_flags_usage(argc, argv);
+	net_common_flags_usage(c, argc, argv);
 	return -1;
 }
 
@@ -398,7 +401,7 @@ static int rpc_join_usage(int argc, const char **argv)
  * for a username/password.
  **/
 
-int net_rpc_join(int argc, const char **argv) 
+int net_rpc_join(struct net_context *c, int argc, const char **argv)
 {
 	if (lp_server_role() == ROLE_STANDALONE) {
 		d_printf("cannot join as standalone machine\n");
@@ -412,10 +415,10 @@ int net_rpc_join(int argc, const char **argv)
 		return -1;
 	}
 
-	if ((net_rpc_perform_oldjoin(argc, argv) == 0))
+	if ((net_rpc_perform_oldjoin(c, argc, argv) == 0))
 		return 0;
 	
-	return net_rpc_join_newstyle(argc, argv);
+	return net_rpc_join_newstyle(c, argc, argv);
 }
 
 /** 
@@ -434,7 +437,8 @@ int net_rpc_join(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-NTSTATUS rpc_info_internals(const DOM_SID *domain_sid,
+NTSTATUS rpc_info_internals(struct net_context *c,
+			const DOM_SID *domain_sid,
 			const char *domain_name, 
 			struct cli_state *cli,
 			struct rpc_pipe_client *pipe_hnd,
@@ -495,9 +499,9 @@ NTSTATUS rpc_info_internals(const DOM_SID *domain_sid,
  *              stripped
  **/
 
-int net_rpc_info(int argc, const char **argv) 
+int net_rpc_info(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PI_SAMR, NET_FLAGS_PDC, 
+	return run_rpc_command(c, NULL, PI_SAMR, NET_FLAGS_PDC,
 			       rpc_info_internals,
 			       argc, argv);
 }
@@ -510,7 +514,7 @@ int net_rpc_info(int argc, const char **argv)
  *
  * @param domain_sid The domain sid acquired from the remote server
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param mem_ctx Talloc context, destoyed on completion of thea function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
@@ -518,7 +522,8 @@ int net_rpc_info(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_getsid_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_getsid_internals(struct net_context *c,
+			const DOM_SID *domain_sid,
 			const char *domain_name, 
 			struct cli_state *cli,
 			struct rpc_pipe_client *pipe_hnd,
@@ -547,9 +552,10 @@ static NTSTATUS rpc_getsid_internals(const DOM_SID *domain_sid,
  *              stripped
  **/
 
-int net_rpc_getsid(int argc, const char **argv) 
+int net_rpc_getsid(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PI_SAMR, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
+	return run_rpc_command(c, NULL, PI_SAMR,
+			       NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC,
 			       rpc_getsid_internals,
 			       argc, argv);
 }
@@ -563,9 +569,9 @@ int net_rpc_getsid(int argc, const char **argv)
  *		stripped.
  **/
 
-static int rpc_user_usage(int argc, const char **argv)
+static int rpc_user_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_user(argc, argv);
+	return net_help_user(c, argc, argv);
 }
 
 /** 
@@ -578,7 +584,7 @@ static int rpc_user_usage(int argc, const char **argv)
  * @return A shell status integer (0 for success)
  **/
 
-static int rpc_user_add(int argc, const char **argv) 
+static int rpc_user_add(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
 	struct USER_INFO_1 info1;
@@ -586,7 +592,7 @@ static int rpc_user_add(int argc, const char **argv)
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
-		rpc_user_usage(argc, argv);
+		rpc_user_usage(c, argc, argv);
 		return 0;
 	}
 
@@ -597,11 +603,12 @@ static int rpc_user_add(int argc, const char **argv)
 		info1.usri1_password = argv[1];
 	}
 
-	status = NetUserAdd(opt_host, 1, (uint8_t *)&info1, &parm_error);
+	status = NetUserAdd(c->opt_host, 1, (uint8_t *)&info1, &parm_error);
 
 	if (status != 0) {
 		d_fprintf(stderr, "Failed to add user '%s' with: %s.\n",
-			argv[0], libnetapi_get_error_string(netapi_ctx, status));
+			argv[0], libnetapi_get_error_string(c->netapi_ctx,
+							    status));
 		return -1;
 	} else {
 		d_printf("Added user '%s'.\n", argv[0]);
@@ -626,7 +633,8 @@ static int rpc_user_add(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_user_rename_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -644,7 +652,7 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 
 	if (argc != 2) {
 		d_printf("Old and new username must be specified\n");
-		rpc_user_usage(argc, argv);
+		rpc_user_usage(c, argc, argv);
 		return NT_STATUS_OK;
 	}
 
@@ -738,9 +746,9 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
  * @return A shell status integer (0 for success)
  **/
 
-static int rpc_user_rename(int argc, const char **argv) 
+static int rpc_user_rename(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PI_SAMR, 0, rpc_user_rename_internals,
+	return run_rpc_command(c, NULL, PI_SAMR, 0, rpc_user_rename_internals,
 			       argc, argv);
 }
 
@@ -754,22 +762,22 @@ static int rpc_user_rename(int argc, const char **argv)
  * @return A shell status integer (0 for success)
  **/
 
-static int rpc_user_delete(int argc, const char **argv) 
+static int rpc_user_delete(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
-		rpc_user_usage(argc, argv);
+		rpc_user_usage(c, argc, argv);
 		return 0;
 	}
 
-	status = NetUserDel(opt_host, argv[0]);
+	status = NetUserDel(c->opt_host, argv[0]);
 
 	if (status != 0) {
                 d_fprintf(stderr, "Failed to delete user '%s' with: %s.\n",
 			  argv[0],
-			  libnetapi_get_error_string(netapi_ctx, status));
+			  libnetapi_get_error_string(c->netapi_ctx, status));
 		return -1;
         } else {
                 d_printf("Deleted user '%s'.\n", argv[0]);
@@ -794,7 +802,8 @@ static int rpc_user_delete(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid, 
+static NTSTATUS rpc_user_password_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli, 
 					struct rpc_pipe_client *pipe_hnd,
@@ -812,7 +821,7 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
-		rpc_user_usage(argc, argv);
+		rpc_user_usage(c, argc, argv);
 		return NT_STATUS_OK;
 	}
 	
@@ -911,9 +920,9 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
  * @return A shell status integer (0 for success)
  **/
 
-static int rpc_user_password(int argc, const char **argv) 
+static int rpc_user_password(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PI_SAMR, 0, rpc_user_password_internals,
+	return run_rpc_command(c, NULL, PI_SAMR, 0, rpc_user_password_internals,
 			       argc, argv);
 }
 
@@ -933,7 +942,8 @@ static int rpc_user_password(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_user_info_internals(struct net_context *c,
+			const DOM_SID *domain_sid,
 			const char *domain_name, 
 			struct cli_state *cli,
 			struct rpc_pipe_client *pipe_hnd,
@@ -954,7 +964,7 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
-		rpc_user_usage(argc, argv);
+		rpc_user_usage(c, argc, argv);
 		return NT_STATUS_OK;
 	}
 	/* Get sam policy handle */
@@ -1041,9 +1051,9 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
  * @return A shell status integer (0 for success)
  **/
 
-static int rpc_user_info(int argc, const char **argv) 
+static int rpc_user_info(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PI_SAMR, 0, rpc_user_info_internals,
+	return run_rpc_command(c, NULL, PI_SAMR, 0, rpc_user_info_internals,
 			       argc, argv);
 }
 
@@ -1063,7 +1073,8 @@ static int rpc_user_info(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_user_list_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_user_list_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -1097,7 +1108,7 @@ static NTSTATUS rpc_user_list_internals(const DOM_SID *domain_sid,
 	}
 
 	/* Query domain users */
-	if (opt_long_list_entries)
+	if (c->opt_long_list_entries)
 		d_printf("\nUser name             Comment"\
 			 "\n-----------------------------\n");
 	do {
@@ -1125,9 +1136,9 @@ static NTSTATUS rpc_user_list_internals(const DOM_SID *domain_sid,
 
 		for (i = 0; i < num_entries; i++) {
 			user = info.info1.entries[i].account_name.string;
-			if (opt_long_list_entries)
+			if (c->opt_long_list_entries)
 				desc = info.info1.entries[i].description.string;
-			if (opt_long_list_entries)
+			if (c->opt_long_list_entries)
 				printf("%-21.21s %s\n", user, desc);
 			else
 				printf("%s\n", user);
@@ -1145,7 +1156,7 @@ static NTSTATUS rpc_user_list_internals(const DOM_SID *domain_sid,
  *              stripped
  **/
 
-int net_rpc_user(int argc, const char **argv) 
+int net_rpc_user(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
 
@@ -1158,47 +1169,51 @@ int net_rpc_user(int argc, const char **argv)
 		{NULL, NULL}
 	};
 
-	status = libnetapi_init(&netapi_ctx);
+	status = libnetapi_init(&c->netapi_ctx);
 	if (status != 0) {
 		return -1;
 	}
-	libnetapi_set_username(netapi_ctx, opt_user_name);
-	libnetapi_set_password(netapi_ctx, opt_password);
+	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
+	libnetapi_set_password(c->netapi_ctx, c->opt_password);
 
 	if (argc == 0) {
-		return run_rpc_command(NULL,PI_SAMR, 0, 
+		return run_rpc_command(c, NULL,PI_SAMR, 0,
 				       rpc_user_list_internals,
 				       argc, argv);
 	}
 
-	return net_run_function(argc, argv, func, rpc_user_usage);
+	return net_run_function(c, argc, argv, func, rpc_user_usage);
 }
 
-static NTSTATUS rpc_sh_user_list(TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_sh_user_list(struct net_context *c,
+				 TALLOC_CTX *mem_ctx,
 				 struct rpc_sh_ctx *ctx,
 				 struct rpc_pipe_client *pipe_hnd,
 				 int argc, const char **argv)
 {
-	return rpc_user_list_internals(ctx->domain_sid, ctx->domain_name,
+	return rpc_user_list_internals(c, ctx->domain_sid, ctx->domain_name,
 				       ctx->cli, pipe_hnd, mem_ctx,
 				       argc, argv);
 }
 
-static NTSTATUS rpc_sh_user_info(TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_sh_user_info(struct net_context *c,
+				 TALLOC_CTX *mem_ctx,
 				 struct rpc_sh_ctx *ctx,
 				 struct rpc_pipe_client *pipe_hnd,
 				 int argc, const char **argv)
 {
-	return rpc_user_info_internals(ctx->domain_sid, ctx->domain_name,
+	return rpc_user_info_internals(c, ctx->domain_sid, ctx->domain_name,
 				       ctx->cli, pipe_hnd, mem_ctx,
 				       argc, argv);
 }
 
-static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_sh_handle_user(struct net_context *c,
+				   TALLOC_CTX *mem_ctx,
 				   struct rpc_sh_ctx *ctx,
 				   struct rpc_pipe_client *pipe_hnd,
 				   int argc, const char **argv,
 				   NTSTATUS (*fn)(
+					   struct net_context *c,
 					   TALLOC_CTX *mem_ctx,
 					   struct rpc_sh_ctx *ctx,
 					   struct rpc_pipe_client *pipe_hnd,
@@ -1220,7 +1235,7 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(domain_pol);
 	ZERO_STRUCT(user_pol);
 
-	result = net_rpc_lookup_name(mem_ctx, rpc_pipe_np_smb_conn(pipe_hnd),
+	result = net_rpc_lookup_name(c, mem_ctx, rpc_pipe_np_smb_conn(pipe_hnd),
 				     argv[0], NULL, NULL, &sid, &type);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Could not lookup %s: %s\n", argv[0],
@@ -1267,7 +1282,7 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = fn(mem_ctx, ctx, pipe_hnd, &user_pol, argc-1, argv+1);
+	result = fn(c, mem_ctx, ctx, pipe_hnd, &user_pol, argc-1, argv+1);
 
  done:
 	if (is_valid_policy_hnd(&user_pol)) {
@@ -1282,7 +1297,8 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-static NTSTATUS rpc_sh_user_show_internals(TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_sh_user_show_internals(struct net_context *c,
+					   TALLOC_CTX *mem_ctx,
 					   struct rpc_sh_ctx *ctx,
 					   struct rpc_pipe_client *pipe_hnd,
 					   POLICY_HND *user_hnd,
@@ -1311,12 +1327,13 @@ static NTSTATUS rpc_sh_user_show_internals(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-static NTSTATUS rpc_sh_user_show(TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_sh_user_show(struct net_context *c,
+				 TALLOC_CTX *mem_ctx,
 				 struct rpc_sh_ctx *ctx,
 				 struct rpc_pipe_client *pipe_hnd,
 				 int argc, const char **argv)
 {
-	return rpc_sh_handle_user(mem_ctx, ctx, pipe_hnd, argc, argv,
+	return rpc_sh_handle_user(c, mem_ctx, ctx, pipe_hnd, argc, argv,
 				  rpc_sh_user_show_internals);
 }
 
@@ -1331,7 +1348,8 @@ do { if (strequal(ctx->thiscmd, name)) { \
 	info->info21.fields_present |= SAMR_FIELD_##flag; } \
 } while (0);
 
-static NTSTATUS rpc_sh_user_str_edit_internals(TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_sh_user_str_edit_internals(struct net_context *c,
+					       TALLOC_CTX *mem_ctx,
 					       struct rpc_sh_ctx *ctx,
 					       struct rpc_pipe_client *pipe_hnd,
 					       POLICY_HND *user_hnd,
@@ -1405,16 +1423,18 @@ do { if (strequal(ctx->thiscmd, name)) { \
 		newflags = oldflags & ~ACB_##rec; \
 	} } } while (0);
 
-static NTSTATUS rpc_sh_user_str_edit(TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_sh_user_str_edit(struct net_context *c,
+				     TALLOC_CTX *mem_ctx,
 				     struct rpc_sh_ctx *ctx,
 				     struct rpc_pipe_client *pipe_hnd,
 				     int argc, const char **argv)
 {
-	return rpc_sh_handle_user(mem_ctx, ctx, pipe_hnd, argc, argv,
+	return rpc_sh_handle_user(c, mem_ctx, ctx, pipe_hnd, argc, argv,
 				  rpc_sh_user_str_edit_internals);
 }
 
-static NTSTATUS rpc_sh_user_flag_edit_internals(TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_sh_user_flag_edit_internals(struct net_context *c,
+						TALLOC_CTX *mem_ctx,
 						struct rpc_sh_ctx *ctx,
 						struct rpc_pipe_client *pipe_hnd,
 						POLICY_HND *user_hnd,
@@ -1479,16 +1499,18 @@ static NTSTATUS rpc_sh_user_flag_edit_internals(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-static NTSTATUS rpc_sh_user_flag_edit(TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_sh_user_flag_edit(struct net_context *c,
+				      TALLOC_CTX *mem_ctx,
 				      struct rpc_sh_ctx *ctx,
 				      struct rpc_pipe_client *pipe_hnd,
 				      int argc, const char **argv)
 {
-	return rpc_sh_handle_user(mem_ctx, ctx, pipe_hnd, argc, argv,
+	return rpc_sh_handle_user(c, mem_ctx, ctx, pipe_hnd, argc, argv,
 				  rpc_sh_user_flag_edit_internals);
 }
 
-struct rpc_sh_cmd *net_rpc_user_edit_cmds(TALLOC_CTX *mem_ctx,
+struct rpc_sh_cmd *net_rpc_user_edit_cmds(struct net_context *c,
+					  TALLOC_CTX *mem_ctx,
 					  struct rpc_sh_ctx *ctx)
 {
 	static struct rpc_sh_cmd cmds[] = {
@@ -1529,7 +1551,8 @@ struct rpc_sh_cmd *net_rpc_user_edit_cmds(TALLOC_CTX *mem_ctx,
 	return cmds;
 }
 
-struct rpc_sh_cmd *net_rpc_user_cmds(TALLOC_CTX *mem_ctx,
+struct rpc_sh_cmd *net_rpc_user_cmds(struct net_context *c,
+				     TALLOC_CTX *mem_ctx,
 				     struct rpc_sh_ctx *ctx)
 {
 	static struct rpc_sh_cmd cmds[] = {
@@ -1561,9 +1584,9 @@ struct rpc_sh_cmd *net_rpc_user_cmds(TALLOC_CTX *mem_ctx,
  *		stripped.
  **/
 
-static int rpc_group_usage(int argc, const char **argv)
+static int rpc_group_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_group(argc, argv);
+	return net_help_group(c, argc, argv);
 }
 
 /**
@@ -1582,7 +1605,8 @@ static int rpc_group_usage(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
                                                                                                              
-static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_group_delete_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -1605,7 +1629,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 
 	if (argc < 1) {
         	d_printf("specify group\n");
-		rpc_group_usage(argc,argv);
+		rpc_group_usage(c, argc,argv);
 		return NT_STATUS_OK; /* ok? */
 	}
 
@@ -1667,7 +1691,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
    			goto done;
 		}
 		
-		if (opt_verbose) {
+		if (c->opt_verbose) {
 			d_printf("Domain Group %s (rid: %d) has %d members\n",
 				argv[0],group_rid, rids->count);
 		}
@@ -1699,7 +1723,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 	        	}
 
 			if (info->info21.primary_gid == group_rid) {
-				if (opt_verbose) {
+				if (c->opt_verbose) {
 					d_printf("Group is primary group of %s\n",
 						info->info21.account_name.string);
 				}
@@ -1719,7 +1743,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		/* remove all group members */
 		for (i = 0; i < rids->count; i++)
 		{
-			if (opt_verbose) 
+			if (c->opt_verbose)
 				d_printf("Remove group member %d...",
 					rids->rids[i]);
 			result = rpccli_samr_DeleteGroupMember(pipe_hnd, mem_ctx,
@@ -1727,10 +1751,10 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 							       rids->rids[i]);
 
 			if (NT_STATUS_IS_OK(result)) {
-				if (opt_verbose)
+				if (c->opt_verbose)
 					d_printf("ok\n");
 			} else {
-				if (opt_verbose)
+				if (c->opt_verbose)
 					d_printf("failed\n");
 				goto done;
 			}	
@@ -1763,9 +1787,8 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		goto done;
 	}
          
-	
 	if (NT_STATUS_IS_OK(result)) {
-		if (opt_verbose)
+		if (c->opt_verbose)
 			d_printf("Deleted %s '%s'\n",sid_type_lookup(name_types.ids[0]),argv[0]);
 	} else {
 		d_fprintf(stderr, "Deleting of %s failed: %s\n",argv[0],
@@ -1777,13 +1800,14 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
         
 }
 
-static int rpc_group_delete(int argc, const char **argv)
+static int rpc_group_delete(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PI_SAMR, 0, rpc_group_delete_internals,
+	return run_rpc_command(c, NULL, PI_SAMR, 0, rpc_group_delete_internals,
                                argc,argv);
 }
 
-static NTSTATUS rpc_group_add_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_group_add_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -1799,7 +1823,7 @@ static NTSTATUS rpc_group_add_internals(const DOM_SID *domain_sid,
 
 	if (argc != 1) {
 		d_printf("Group name must be specified\n");
-		rpc_group_usage(argc, argv);
+		rpc_group_usage(c, argc, argv);
 		return NT_STATUS_OK;
 	}
 
@@ -1832,11 +1856,11 @@ static NTSTATUS rpc_group_add_internals(const DOM_SID *domain_sid,
 					       &rid);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	if (strlen(opt_comment) == 0) goto done;
+	if (strlen(c->opt_comment) == 0) goto done;
 
 	/* We've got a comment to set */
 
-	init_lsa_String(&group_info.description, opt_comment);
+	init_lsa_String(&group_info.description, c->opt_comment);
 
 	result = rpccli_samr_SetGroupInfo(pipe_hnd, mem_ctx,
 					  &group_pol,
@@ -1853,7 +1877,8 @@ static NTSTATUS rpc_group_add_internals(const DOM_SID *domain_sid,
 	return result;
 }
 
-static NTSTATUS rpc_alias_add_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_alias_add_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -1869,7 +1894,7 @@ static NTSTATUS rpc_alias_add_internals(const DOM_SID *domain_sid,
 
 	if (argc != 1) {
 		d_printf("Alias name must be specified\n");
-		rpc_group_usage(argc, argv);
+		rpc_group_usage(c, argc, argv);
 		return NT_STATUS_OK;
 	}
 
@@ -1902,11 +1927,11 @@ static NTSTATUS rpc_alias_add_internals(const DOM_SID *domain_sid,
 					    &rid);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	if (strlen(opt_comment) == 0) goto done;
+	if (strlen(c->opt_comment) == 0) goto done;
 
 	/* We've got a comment to set */
 
-	init_lsa_String(&alias_info.description, opt_comment);
+	init_lsa_String(&alias_info.description, c->opt_comment);
 
 	result = rpccli_samr_SetAliasInfo(pipe_hnd, mem_ctx,
 					  &alias_pol,
@@ -1924,14 +1949,14 @@ static NTSTATUS rpc_alias_add_internals(const DOM_SID *domain_sid,
 	return result;
 }
 
-static int rpc_group_add(int argc, const char **argv)
+static int rpc_group_add(struct net_context *c, int argc, const char **argv)
 {
-	if (opt_localgroup)
-		return run_rpc_command(NULL, PI_SAMR, 0,
+	if (c->opt_localgroup)
+		return run_rpc_command(c, NULL, PI_SAMR, 0,
 				       rpc_alias_add_internals,
 				       argc, argv);
 
-	return run_rpc_command(NULL, PI_SAMR, 0,
+	return run_rpc_command(c, NULL, PI_SAMR, 0,
 			       rpc_group_add_internals,
 			       argc, argv);
 }
@@ -2136,7 +2161,8 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 	return result;
 }
 
-static NTSTATUS rpc_group_addmem_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_group_addmem_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -2186,14 +2212,15 @@ static NTSTATUS rpc_group_addmem_internals(const DOM_SID *domain_sid,
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
-static int rpc_group_addmem(int argc, const char **argv)
+static int rpc_group_addmem(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PI_SAMR, 0,
+	return run_rpc_command(c, NULL, PI_SAMR, 0,
 			       rpc_group_addmem_internals,
 			       argc, argv);
 }
 
-static NTSTATUS rpc_del_groupmem(struct rpc_pipe_client *pipe_hnd,
+static NTSTATUS rpc_del_groupmem(struct net_context *c,
+				struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx,
 				const DOM_SID *group_sid,
 				const char *member)
@@ -2329,7 +2356,8 @@ static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 	return result;
 }
 
-static NTSTATUS rpc_group_delmem_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_group_delmem_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -2352,7 +2380,7 @@ static NTSTATUS rpc_group_delmem_internals(const DOM_SID *domain_sid,
 	}
 
 	if (group_type == SID_NAME_DOM_GRP) {
-		NTSTATUS result = rpc_del_groupmem(pipe_hnd, mem_ctx,
+		NTSTATUS result = rpc_del_groupmem(c, pipe_hnd, mem_ctx,
 						   &group_sid, argv[1]);
 
 		if (!NT_STATUS_IS_OK(result)) {
@@ -2379,9 +2407,9 @@ static NTSTATUS rpc_group_delmem_internals(const DOM_SID *domain_sid,
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
-static int rpc_group_delmem(int argc, const char **argv)
+static int rpc_group_delmem(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PI_SAMR, 0,
+	return run_rpc_command(c, NULL, PI_SAMR, 0,
 			       rpc_group_delmem_internals,
 			       argc, argv);
 }
@@ -2402,7 +2430,8 @@ static int rpc_group_delmem(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_group_list_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -2457,7 +2486,7 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 	}
 
 	/* Query domain groups */
-	if (opt_long_list_entries)
+	if (c->opt_long_list_entries)
 		d_printf("\nGroup name            Comment"\
 			 "\n-----------------------------\n");
 	do {
@@ -2493,7 +2522,7 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 			group = info.info3.entries[i].account_name.string;
 			desc = info.info3.entries[i].description.string;
 
-			if (opt_long_list_entries)
+			if (c->opt_long_list_entries)
 				printf("%-21.21s %-50.50s\n",
 				       group, desc);
 			else
@@ -2519,7 +2548,7 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 
 			const char *description = NULL;
 
-			if (opt_long_list_entries) {
+			if (c->opt_long_list_entries) {
 
 				POLICY_HND alias_pol;
 				union samr_AliasInfo *info = NULL;
@@ -2578,7 +2607,7 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 
 			const char *description = NULL;
 
-			if (opt_long_list_entries) {
+			if (c->opt_long_list_entries) {
 
 				POLICY_HND alias_pol;
 				union samr_AliasInfo *info = NULL;
@@ -2612,14 +2641,15 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 	return result;
 }
 
-static int rpc_group_list(int argc, const char **argv)
+static int rpc_group_list(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PI_SAMR, 0,
+	return run_rpc_command(c, NULL, PI_SAMR, 0,
 			       rpc_group_list_internals,
 			       argc, argv);
 }
 
-static NTSTATUS rpc_list_group_members(struct rpc_pipe_client *pipe_hnd,
+static NTSTATUS rpc_list_group_members(struct net_context *c,
+					struct rpc_pipe_client *pipe_hnd,
 					TALLOC_CTX *mem_ctx,
 					const char *domain_name,
 					const DOM_SID *domain_sid,
@@ -2677,7 +2707,7 @@ static NTSTATUS rpc_list_group_members(struct rpc_pipe_client *pipe_hnd,
 
 		for (i = 0; i < this_time; i++) {
 
-			if (opt_long_list_entries) {
+			if (c->opt_long_list_entries) {
 				printf("%s-%d %s\\%s %d\n", sid_str,
 				       group_rids[i], domain_name,
 				       names.names[i].string,
@@ -2695,7 +2725,8 @@ static NTSTATUS rpc_list_group_members(struct rpc_pipe_client *pipe_hnd,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
+static NTSTATUS rpc_list_alias_members(struct net_context *c,
+					struct rpc_pipe_client *pipe_hnd,
 					TALLOC_CTX *mem_ctx,
 					POLICY_HND *domain_pol,
 					uint32 rid)
@@ -2763,8 +2794,8 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 		sid_copy(&alias_sids[i], sid_array.sids[i].sid);
 	}
 
-	result = rpccli_lsa_lookup_sids(lsa_pipe, mem_ctx, &lsa_pol, num_members,
-				     alias_sids, 
+	result = rpccli_lsa_lookup_sids(lsa_pipe, mem_ctx, &lsa_pol,
+				     num_members,  alias_sids,
 				     &domains, &names, &types);
 
 	if (!NT_STATUS_IS_OK(result) &&
@@ -2778,7 +2809,7 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 		fstring sid_str;
 		sid_to_fstring(sid_str, &alias_sids[i]);
 
-		if (opt_long_list_entries) {
+		if (c->opt_long_list_entries) {
 			printf("%s %s\\%s %d\n", sid_str, 
 			       domains[i] ? domains[i] : "*unknown*", 
 			       names[i] ? names[i] : "*unknown*", types[i]);
@@ -2794,7 +2825,8 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 	return NT_STATUS_OK;
 }
  
-static NTSTATUS rpc_group_members_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_group_members_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -2877,31 +2909,32 @@ static NTSTATUS rpc_group_members_internals(const DOM_SID *domain_sid,
 	}
 
 	if (rid_types.ids[0] == SID_NAME_DOM_GRP) {
-		return rpc_list_group_members(pipe_hnd, mem_ctx, domain_name,
+		return rpc_list_group_members(c, pipe_hnd, mem_ctx, domain_name,
 					      domain_sid, &domain_pol,
 					      rids.ids[0]);
 	}
 
 	if (rid_types.ids[0] == SID_NAME_ALIAS) {
-		return rpc_list_alias_members(pipe_hnd, mem_ctx, &domain_pol,
+		return rpc_list_alias_members(c, pipe_hnd, mem_ctx, &domain_pol,
 					      rids.ids[0]);
 	}
 
 	return NT_STATUS_NO_SUCH_GROUP;
 }
 
-static int rpc_group_members(int argc, const char **argv)
+static int rpc_group_members(struct net_context *c, int argc, const char **argv)
 {
 	if (argc != 1) {
-		return rpc_group_usage(argc, argv);
+		return rpc_group_usage(c, argc, argv);
 	}
 
-	return run_rpc_command(NULL, PI_SAMR, 0,
+	return run_rpc_command(c, NULL, PI_SAMR, 0,
 			       rpc_group_members_internals,
 			       argc, argv);
 }
 
-static NTSTATUS rpc_group_rename_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_group_rename_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -2982,13 +3015,13 @@ static NTSTATUS rpc_group_rename_internals(const DOM_SID *domain_sid,
 	return NT_STATUS_NO_SUCH_GROUP;
 }
 
-static int rpc_group_rename(int argc, const char **argv)
+static int rpc_group_rename(struct net_context *c, int argc, const char **argv)
 {
 	if (argc != 2) {
-		return rpc_group_usage(argc, argv);
+		return rpc_group_usage(c, argc, argv);
 	}
 
-	return run_rpc_command(NULL, PI_SAMR, 0,
+	return run_rpc_command(c, NULL, PI_SAMR, 0,
 			       rpc_group_rename_internals,
 			       argc, argv);
 }
@@ -3000,7 +3033,7 @@ static int rpc_group_rename(int argc, const char **argv)
  *              stripped
  **/
 
-int net_rpc_group(int argc, const char **argv) 
+int net_rpc_group(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"add", rpc_group_add},
@@ -3014,19 +3047,19 @@ int net_rpc_group(int argc, const char **argv)
 	};
 	
 	if (argc == 0) {
-		return run_rpc_command(NULL, PI_SAMR, 0, 
+		return run_rpc_command(c, NULL, PI_SAMR, 0,
 				       rpc_group_list_internals,
 				       argc, argv);
 	}
 
-	return net_run_function(argc, argv, func, rpc_group_usage);
+	return net_run_function(c, argc, argv, func, rpc_group_usage);
 }
 
 /****************************************************************************/
 
-static int rpc_share_usage(int argc, const char **argv)
+static int rpc_share_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_share(argc, argv);
+	return net_help_share(c, argc, argv);
 }
 
 /** 
@@ -3044,7 +3077,8 @@ static int rpc_share_usage(int argc, const char **argv)
  *
  * @return Normal NTSTATUS return.
  **/
-static NTSTATUS rpc_share_add_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_share_add_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -3074,9 +3108,9 @@ static NTSTATUS rpc_share_add_internals(const DOM_SID *domain_sid,
 
 	info2.name		= sharename;
 	info2.type		= type;
-	info2.comment		= opt_comment;
+	info2.comment		= c->opt_comment;
 	info2.permissions	= perms;
-	info2.max_users		= opt_maxusers;
+	info2.max_users		= c->opt_maxusers;
 	info2.current_users	= num_users;
 	info2.path		= path;
 	info2.password		= password;
@@ -3092,13 +3126,13 @@ static NTSTATUS rpc_share_add_internals(const DOM_SID *domain_sid,
 	return status;
 }
 
-static int rpc_share_add(int argc, const char **argv)
+static int rpc_share_add(struct net_context *c, int argc, const char **argv)
 {
 	if ((argc < 1) || !strchr(argv[0], '=')) {
 		DEBUG(1,("Sharename or path not specified on add\n"));
-		return rpc_share_usage(argc, argv);
+		return rpc_share_usage(c, argc, argv);
 	}
-	return run_rpc_command(NULL, PI_SRVSVC, 0, 
+	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
 			       rpc_share_add_internals,
 			       argc, argv);
 }
@@ -3118,7 +3152,8 @@ static int rpc_share_add(int argc, const char **argv)
  *
  * @return Normal NTSTATUS return.
  **/
-static NTSTATUS rpc_share_del_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_share_del_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -3145,13 +3180,13 @@ static NTSTATUS rpc_share_del_internals(const DOM_SID *domain_sid,
  *
  * @return A shell status integer (0 for success)
  **/
-static int rpc_share_delete(int argc, const char **argv)
+static int rpc_share_delete(struct net_context *c, int argc, const char **argv)
 {
 	if (argc < 1) {
 		DEBUG(1,("Sharename not specified on delete\n"));
-		return rpc_share_usage(argc, argv);
+		return rpc_share_usage(c, argc, argv);
 	}
-	return run_rpc_command(NULL, PI_SRVSVC, 0, 
+	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
 			       rpc_share_del_internals,
 			       argc, argv);
 }
@@ -3162,19 +3197,21 @@ static int rpc_share_delete(int argc, const char **argv)
  * @param info1  pointer to SRV_SHARE_INFO_1 to format
  **/
 
-static void display_share_info_1(struct srvsvc_NetShareInfo1 *r)
+static void display_share_info_1(struct net_context *c,
+				 struct srvsvc_NetShareInfo1 *r)
 {
-	if (opt_long_list_entries) {
+	if (c->opt_long_list_entries) {
 		d_printf("%-12s %-8.8s %-50s\n",
 			 r->name,
-			 share_type[r->type & ~(STYPE_TEMPORARY|STYPE_HIDDEN)],
+			 c->share_type[r->type & ~(STYPE_TEMPORARY|STYPE_HIDDEN)],
 			 r->comment);
 	} else {
 		d_printf("%s\n", r->name);
 	}
 }
 
-static WERROR get_share_info(struct rpc_pipe_client *pipe_hnd,
+static WERROR get_share_info(struct net_context *c,
+			     struct rpc_pipe_client *pipe_hnd,
 			     TALLOC_CTX *mem_ctx,
 			     uint32 level,
 			     int argc,
@@ -3279,7 +3316,8 @@ done:
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_share_list_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_share_list_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -3298,20 +3336,21 @@ static NTSTATUS rpc_share_list_internals(const DOM_SID *domain_sid,
 	info_ctr.level = 1;
 	info_ctr.ctr.ctr1 = &ctr1;
 
-	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &info_ctr);
+	result = get_share_info(c, pipe_hnd, mem_ctx, level, argc, argv,
+				&info_ctr);
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
 	/* Display results */
 
-	if (opt_long_list_entries) {
+	if (c->opt_long_list_entries) {
 		d_printf(
 	"\nEnumerating shared resources (exports) on remote server:\n\n"\
 	"\nShare name   Type     Description\n"\
 	"----------   ----     -----------\n");
 	}
 	for (i = 0; i < info_ctr.ctr.ctr1->count; i++)
-		display_share_info_1(&info_ctr.ctr.ctr1->array[i]);
+		display_share_info_1(c, &info_ctr.ctr.ctr1->array[i]);
  done:
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
@@ -3322,9 +3361,10 @@ static NTSTATUS rpc_share_list_internals(const DOM_SID *domain_sid,
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  **/
-static int rpc_share_list(int argc, const char **argv)
+static int rpc_share_list(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PI_SRVSVC, 0, rpc_share_list_internals, argc, argv);
+	return run_rpc_command(c, NULL, PI_SRVSVC, 0, rpc_share_list_internals,
+			       argc, argv);
 }
 
 static bool check_share_availability(struct cli_state *cli, const char *netname)
@@ -3340,7 +3380,8 @@ static bool check_share_availability(struct cli_state *cli, const char *netname)
 	return True;
 }
 
-static bool check_share_sanity(struct cli_state *cli, const char *netname, uint32 type)
+static bool check_share_sanity(struct net_context *c, struct cli_state *cli,
+			       const char *netname, uint32 type)
 {
 	/* only support disk shares */
 	if (! ( type == STYPE_DISKTREE || type == (STYPE_DISKTREE | STYPE_HIDDEN)) ) {
@@ -3354,7 +3395,7 @@ static bool check_share_sanity(struct cli_state *cli, const char *netname, uint3
 	    strequal(netname,"global")) 
 		return False;
 
-	if (opt_exclude && in_list(netname, opt_exclude, False)) {
+	if (c->opt_exclude && in_list(netname, c->opt_exclude, False)) {
 		printf("excluding  [%s]\n", netname);
 		return False;
 	}
@@ -3378,7 +3419,8 @@ static bool check_share_sanity(struct cli_state *cli, const char *netname, uint3
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_share_migrate_shares_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_share_migrate_shares_internals(struct net_context *c,
+						const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -3395,12 +3437,13 @@ static NTSTATUS rpc_share_migrate_shares_internals(const DOM_SID *domain_sid,
 	uint32 level = 502; /* includes secdesc */
 	uint32_t parm_error = 0;
 
-	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &ctr_src);
+	result = get_share_info(c, pipe_hnd, mem_ctx, level, argc, argv,
+				&ctr_src);
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
 	/* connect destination PI_SRVSVC */
-        nt_status = connect_dst_pipe(&cli_dst, &srvsvc_pipe, PI_SRVSVC);
+        nt_status = connect_dst_pipe(c, &cli_dst, &srvsvc_pipe, PI_SRVSVC);
         if (!NT_STATUS_IS_OK(nt_status))
                 return nt_status;
 
@@ -3414,7 +3457,7 @@ static NTSTATUS rpc_share_migrate_shares_internals(const DOM_SID *domain_sid,
 		/* reset error-code */
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 
-		if (!check_share_sanity(cli, info502.name, info502.type))
+		if (!check_share_sanity(c, cli, info502.name, info502.type))
 			continue;
 
 		/* finally add the share on the dst server */ 
@@ -3464,15 +3507,16 @@ done:
  *
  * @return A shell status integer (0 for success)
  **/
-static int rpc_share_migrate_shares(int argc, const char **argv)
+static int rpc_share_migrate_shares(struct net_context *c, int argc,
+				    const char **argv)
 {
 
-	if (!opt_host) {
+	if (!c->opt_host) {
 		printf("no server to migrate\n");
 		return -1;
 	}
 
-	return run_rpc_command(NULL, PI_SRVSVC, 0, 
+	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
 			       rpc_share_migrate_shares_internals,
 			       argc, argv);
 }
@@ -3485,16 +3529,20 @@ static int rpc_share_migrate_shares(int argc, const char **argv)
  * @param state	arg-pointer
  *
  **/
-static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state)
+static void copy_fn(const char *mnt, file_info *f,
+		    const char *mask, void *state)
 {
 	static NTSTATUS nt_status;
 	static struct copy_clistate *local_state;
 	static fstring filename, new_mask;
 	fstring dir;
 	char *old_dir;
+	struct net_context *c;
 
 	local_state = (struct copy_clistate *)state;
 	nt_status = NT_STATUS_UNSUCCESSFUL;
+
+	c = local_state->c;
 
 	if (strequal(f->name, ".") || strequal(f->name, ".."))
 		return;
@@ -3514,14 +3562,14 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 		{
 		case NET_MODE_SHARE_MIGRATE:
 			/* create that directory */
-			nt_status = net_copy_file(local_state->mem_ctx,
+			nt_status = net_copy_file(c, local_state->mem_ctx,
 						  local_state->cli_share_src,
 						  local_state->cli_share_dst,
 						  dir, dir,
-						  opt_acls? True : False,
-						  opt_attrs? True : False,
-						  opt_timestamps? True : False,
-						  False);
+						  c->opt_acls? true : false,
+						  c->opt_attrs? true : false,
+						  c->opt_timestamps? true:false,
+						  false);
 			break;
 		default:
 			d_fprintf(stderr, "Unsupported mode %d\n", net_mode_share);
@@ -3556,14 +3604,14 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 	switch (net_mode_share)
 	{
 	case NET_MODE_SHARE_MIGRATE:
-		nt_status = net_copy_file(local_state->mem_ctx, 
+		nt_status = net_copy_file(c, local_state->mem_ctx,
 					  local_state->cli_share_src, 
 					  local_state->cli_share_dst, 
 					  filename, filename, 
-					  opt_acls? True : False, 
-					  opt_attrs? True : False,
-					  opt_timestamps? True: False,
-					  True);
+					  c->opt_acls? true : false,
+					  c->opt_attrs? true : false,
+					  c->opt_timestamps? true: false,
+					  true);
 		break;
 	default:
 		d_fprintf(stderr, "Unsupported file mode %d\n", net_mode_share);
@@ -3614,7 +3662,8 @@ static bool sync_files(struct copy_clistate *cp_clistate, const char *mask)
  * Should set up ACL inheritance.
  **/
 
-bool copy_top_level_perms(struct copy_clistate *cp_clistate, 
+bool copy_top_level_perms(struct net_context *c,
+				struct copy_clistate *cp_clistate,
 				const char *sharename)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -3622,14 +3671,15 @@ bool copy_top_level_perms(struct copy_clistate *cp_clistate,
 	switch (net_mode_share) {
 	case NET_MODE_SHARE_MIGRATE:
 		DEBUG(3,("calling net_copy_fileattr for '.' directory in share %s\n", sharename));
-		nt_status = net_copy_fileattr(cp_clistate->mem_ctx,
+		nt_status = net_copy_fileattr(c,
+						cp_clistate->mem_ctx,
 						cp_clistate->cli_share_src, 
 						cp_clistate->cli_share_dst,
 						"\\", "\\",
-						opt_acls? True : False, 
-						opt_attrs? True : False,
-						opt_timestamps? True: False,
-						False);
+						c->opt_acls? true : false,
+						c->opt_attrs? true : false,
+						c->opt_timestamps? true: false,
+						false);
 		break;
 	default:
 		d_fprintf(stderr, "Unsupported mode %d\n", net_mode_share);
@@ -3661,7 +3711,8 @@ bool copy_top_level_perms(struct copy_clistate *cp_clistate,
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_share_migrate_files_internals(struct net_context *c,
+						const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -3680,9 +3731,10 @@ static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
 	const char *mask = "\\*";
 	char *dst = NULL;
 
-	dst = SMB_STRDUP(opt_destination?opt_destination:"127.0.0.1");
+	dst = SMB_STRDUP(c->opt_destination?c->opt_destination:"127.0.0.1");
 
-	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &ctr_src);
+	result = get_share_info(c, pipe_hnd, mem_ctx, level, argc, argv,
+				&ctr_src);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -3692,7 +3744,7 @@ static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
 		struct srvsvc_NetShareInfo502 info502 =
 			ctr_src.ctr.ctr502->array[i];
 
-		if (!check_share_sanity(cli, info502.name, info502.type))
+		if (!check_share_sanity(c, cli, info502.name, info502.type))
 			continue;
 
 		/* one might not want to mirror whole discs :) */
@@ -3712,18 +3764,19 @@ static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
 		}
 		printf("    [%s] files and directories %s ACLs, %s DOS Attributes %s\n", 
 			info502.name,
-			opt_acls ? "including" : "without", 
-			opt_attrs ? "including" : "without",
-			opt_timestamps ? "(preserving timestamps)" : "");
+			c->opt_acls ? "including" : "without",
+			c->opt_attrs ? "including" : "without",
+			c->opt_timestamps ? "(preserving timestamps)" : "");
 
 		cp_clistate.mem_ctx = mem_ctx;
 		cp_clistate.cli_share_src = NULL;
 		cp_clistate.cli_share_dst = NULL;
 		cp_clistate.cwd = NULL;
 		cp_clistate.attribute = aSYSTEM | aHIDDEN | aDIR;
+		cp_clistate.c = c;
 
 	        /* open share source */
-		nt_status = connect_to_service(&cp_clistate.cli_share_src,
+		nt_status = connect_to_service(c, &cp_clistate.cli_share_src,
 					       &cli->dest_ss, cli->desthost,
 					       info502.name, "A:");
 		if (!NT_STATUS_IS_OK(nt_status))
@@ -3733,7 +3786,7 @@ static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
 
 		if (net_mode_share == NET_MODE_SHARE_MIGRATE) {
 			/* open share destination */
-			nt_status = connect_to_service(&cp_clistate.cli_share_dst,
+			nt_status = connect_to_service(c, &cp_clistate.cli_share_dst,
 						       NULL, dst, info502.name, "A:");
 			if (!NT_STATUS_IS_OK(nt_status))
 				goto done;
@@ -3741,7 +3794,7 @@ static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
 			got_dst_share = True;
 		}
 
-		if (!copy_top_level_perms(&cp_clistate, info502.name)) {
+		if (!copy_top_level_perms(c, &cp_clistate, info502.name)) {
 			d_fprintf(stderr, "Could not handle the top level directory permissions for the share: %s\n", info502.name);
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 			goto done;
@@ -3768,15 +3821,15 @@ done:
 
 }
 
-static int rpc_share_migrate_files(int argc, const char **argv)
+static int rpc_share_migrate_files(struct net_context *c, int argc, const char **argv)
 {
 
-	if (!opt_host) {
+	if (!c->opt_host) {
 		printf("no server to migrate\n");
 		return -1;
 	}
 
-	return run_rpc_command(NULL, PI_SRVSVC, 0, 
+	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
 			       rpc_share_migrate_files_internals,
 			       argc, argv);
 }
@@ -3797,7 +3850,8 @@ static int rpc_share_migrate_files(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_share_migrate_security_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_share_migrate_security_internals(struct net_context *c,
+						const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -3815,13 +3869,14 @@ static NTSTATUS rpc_share_migrate_security_internals(const DOM_SID *domain_sid,
 	uint32 level = 502; /* includes secdesc */
 	uint32_t parm_error = 0;
 
-	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &ctr_src);
+	result = get_share_info(c, pipe_hnd, mem_ctx, level, argc, argv,
+				&ctr_src);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
 	/* connect destination PI_SRVSVC */
-        nt_status = connect_dst_pipe(&cli_dst, &srvsvc_pipe, PI_SRVSVC);
+        nt_status = connect_dst_pipe(c, &cli_dst, &srvsvc_pipe, PI_SRVSVC);
         if (!NT_STATUS_IS_OK(nt_status))
                 return nt_status;
 
@@ -3834,13 +3889,13 @@ static NTSTATUS rpc_share_migrate_security_internals(const DOM_SID *domain_sid,
 		/* reset error-code */
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 
-		if (!check_share_sanity(cli, info502.name, info502.type))
+		if (!check_share_sanity(c, cli, info502.name, info502.type))
 			continue;
 
 		printf("migrating: [%s], path: %s, comment: %s, including share-ACLs\n", 
 			info502.name, info502.path, info502.comment);
 
-		if (opt_verbose)
+		if (c->opt_verbose)
 			display_sec_desc(info502.sd_buf.sd);
 
 		/* FIXME: shouldn't we be able to just set the security descriptor ? */
@@ -3881,15 +3936,16 @@ done:
  *
  * @return A shell status integer (0 for success)
  **/
-static int rpc_share_migrate_security(int argc, const char **argv)
+static int rpc_share_migrate_security(struct net_context *c, int argc,
+				      const char **argv)
 {
 
-	if (!opt_host) {
+	if (!c->opt_host) {
 		printf("no server to migrate\n");
 		return -1;
 	}
 
-	return run_rpc_command(NULL, PI_SRVSVC, 0, 
+	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
 			       rpc_share_migrate_security_internals,
 			       argc, argv);
 }
@@ -3905,11 +3961,12 @@ static int rpc_share_migrate_security(int argc, const char **argv)
  * @return A shell status integer (0 for success)
  *
  **/
-static int rpc_share_migrate_all(int argc, const char **argv)
+static int rpc_share_migrate_all(struct net_context *c, int argc,
+				 const char **argv)
 {
 	int ret;
 
-	if (!opt_host) {
+	if (!c->opt_host) {
 		printf("no server to migrate\n");
 		return -1;
 	}
@@ -3917,15 +3974,19 @@ static int rpc_share_migrate_all(int argc, const char **argv)
 	/* order is important. we don't want to be locked out by the share-acl
 	 * before copying files - gd */
 	
-	ret = run_rpc_command(NULL, PI_SRVSVC, 0, rpc_share_migrate_shares_internals, argc, argv);
+	ret = run_rpc_command(c, NULL, PI_SRVSVC, 0,
+			      rpc_share_migrate_shares_internals, argc, argv);
 	if (ret)
 		return ret;
 
-	ret = run_rpc_command(NULL, PI_SRVSVC, 0, rpc_share_migrate_files_internals, argc, argv);
+	ret = run_rpc_command(c, NULL, PI_SRVSVC, 0,
+			      rpc_share_migrate_files_internals, argc, argv);
 	if (ret)
 		return ret;
 	
-	return run_rpc_command(NULL, PI_SRVSVC, 0, rpc_share_migrate_security_internals, argc, argv);
+	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
+			       rpc_share_migrate_security_internals, argc,
+			       argv);
 }
 
 
@@ -3935,7 +3996,7 @@ static int rpc_share_migrate_all(int argc, const char **argv)
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  **/
-static int rpc_share_migrate(int argc, const char **argv)
+static int rpc_share_migrate(struct net_context *c, int argc, const char **argv)
 {
 
 	struct functable func[] = {
@@ -3949,7 +4010,7 @@ static int rpc_share_migrate(int argc, const char **argv)
 
 	net_mode_share = NET_MODE_SHARE_MIGRATE;
 
-	return net_run_function(argc, argv, func, rpc_share_usage);
+	return net_run_function(c, argc, argv, func, rpc_share_usage);
 }
 
 struct full_alias {
@@ -4064,7 +4125,8 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
  * Dump server_aliases as names for debugging purposes.
  */
 
-static NTSTATUS rpc_aliaslist_dump(const DOM_SID *domain_sid,
+static NTSTATUS rpc_aliaslist_dump(struct net_context *c,
+				const DOM_SID *domain_sid,
 				const char *domain_name,
 				struct cli_state *cli,
 				struct rpc_pipe_client *pipe_hnd,
@@ -4129,7 +4191,8 @@ static NTSTATUS rpc_aliaslist_dump(const DOM_SID *domain_sid,
  * server_aliases.
  */
 
-static NTSTATUS rpc_aliaslist_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_aliaslist_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -4350,7 +4413,8 @@ static bool get_user_sids(const char *domain, const char *user, NT_USER_TOKEN *t
  * Get a list of all user tokens we want to look at
  **/
 
-static bool get_user_tokens(int *num_tokens, struct user_token **user_tokens)
+static bool get_user_tokens(struct net_context *c, int *num_tokens,
+			    struct user_token **user_tokens)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	uint32_t i, num_users;
@@ -4359,7 +4423,7 @@ static bool get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 	TALLOC_CTX *frame = NULL;
 
 	if (lp_winbind_use_default_domain() &&
-	    (opt_target_workgroup == NULL)) {
+	    (c->opt_target_workgroup == NULL)) {
 		d_fprintf(stderr, "winbind use default domain = yes set, "
 			 "please specify a workgroup\n");
 		return false;
@@ -4394,7 +4458,7 @@ static bool get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 		DEBUG(3, ("%s\n", users[i]));
 
 		if (p == NULL) {
-			fstrcpy(domain, opt_target_workgroup);
+			fstrcpy(domain, c->opt_target_workgroup);
 			fstrcpy(user, users[i]);
 		} else {
 			*p++ = '\0';
@@ -4603,7 +4667,8 @@ static void rpc_share_userlist_usage(void)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_share_allowedusers_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
+						const DOM_SID *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -4685,39 +4750,40 @@ static NTSTATUS rpc_share_allowedusers_internals(const DOM_SID *domain_sid,
 	return NT_STATUS_OK;
 }
 
-static int rpc_share_allowedusers(int argc, const char **argv)
+static int rpc_share_allowedusers(struct net_context *c, int argc,
+				  const char **argv)
 {
 	int result;
 
-	result = run_rpc_command(NULL, PI_SAMR, 0,
+	result = run_rpc_command(c, NULL, PI_SAMR, 0,
 				 rpc_aliaslist_internals,
 				 argc, argv);
 	if (result != 0)
 		return result;
 
-	result = run_rpc_command(NULL, PI_LSARPC, 0,
+	result = run_rpc_command(c, NULL, PI_LSARPC, 0,
 				 rpc_aliaslist_dump,
 				 argc, argv);
 	if (result != 0)
 		return result;
 
-	return run_rpc_command(NULL, PI_SRVSVC, 0,
+	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
 			       rpc_share_allowedusers_internals,
 			       argc, argv);
 }
 
-int net_usersidlist(int argc, const char **argv)
+int net_usersidlist(struct net_context *c, int argc, const char **argv)
 {
 	int num_tokens = 0;
 	struct user_token *tokens = NULL;
 	int i;
 
 	if (argc != 0) {
-		net_usersidlist_usage(argc, argv);
+		net_usersidlist_usage(c, argc, argv);
 		return 0;
 	}
 
-	if (!get_user_tokens(&num_tokens, &tokens)) {
+	if (!get_user_tokens(c, &num_tokens, &tokens)) {
 		DEBUG(0, ("Could not get the user/sid list\n"));
 		return 0;
 	}
@@ -4731,14 +4797,14 @@ int net_usersidlist(int argc, const char **argv)
 	return 1;
 }
 
-int net_usersidlist_usage(int argc, const char **argv)
+int net_usersidlist_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("net usersidlist\n"
 		 "\tprints out a list of all users the running winbind knows\n"
 		 "\tabout, together with all their SIDs. This is used as\n"
 		 "\tinput to the 'net rpc share allowedusers' command.\n\n");
 
-	net_common_flags_usage(argc, argv);
+	net_common_flags_usage(c, argc, argv);
 	return -1;
 }
 
@@ -4749,7 +4815,7 @@ int net_usersidlist_usage(int argc, const char **argv)
  *              stripped
  **/
 
-int net_rpc_share(int argc, const char **argv) 
+int net_rpc_share(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"add", rpc_share_add},
@@ -4761,24 +4827,26 @@ int net_rpc_share(int argc, const char **argv)
 	};
 
 	if (argc == 0)
-		return run_rpc_command(NULL, PI_SRVSVC, 0, 
+		return run_rpc_command(c, NULL, PI_SRVSVC, 0,
 				       rpc_share_list_internals,
 				       argc, argv);
 
-	return net_run_function(argc, argv, func, rpc_share_usage);
+	return net_run_function(c, argc, argv, func, rpc_share_usage);
 }
 
-static NTSTATUS rpc_sh_share_list(TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_sh_share_list(struct net_context *c,
+				  TALLOC_CTX *mem_ctx,
 				  struct rpc_sh_ctx *ctx,
 				  struct rpc_pipe_client *pipe_hnd,
 				  int argc, const char **argv)
 {
-	return rpc_share_list_internals(ctx->domain_sid, ctx->domain_name,
+	return rpc_share_list_internals(c, ctx->domain_sid, ctx->domain_name,
 					ctx->cli, pipe_hnd, mem_ctx,
 					argc, argv);
 }
 
-static NTSTATUS rpc_sh_share_add(TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_sh_share_add(struct net_context *c,
+				 TALLOC_CTX *mem_ctx,
 				 struct rpc_sh_ctx *ctx,
 				 struct rpc_pipe_client *pipe_hnd,
 				 int argc, const char **argv)
@@ -4816,7 +4884,8 @@ static NTSTATUS rpc_sh_share_add(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-static NTSTATUS rpc_sh_share_delete(TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_sh_share_delete(struct net_context *c,
+				    TALLOC_CTX *mem_ctx,
 				    struct rpc_sh_ctx *ctx,
 				    struct rpc_pipe_client *pipe_hnd,
 				    int argc, const char **argv)
@@ -4838,7 +4907,8 @@ static NTSTATUS rpc_sh_share_delete(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-static NTSTATUS rpc_sh_share_info(TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_sh_share_info(struct net_context *c,
+				  TALLOC_CTX *mem_ctx,
 				  struct rpc_sh_ctx *ctx,
 				  struct rpc_pipe_client *pipe_hnd,
 				  int argc, const char **argv)
@@ -4871,7 +4941,7 @@ static NTSTATUS rpc_sh_share_info(TALLOC_CTX *mem_ctx,
 	return werror_to_ntstatus(result);
 }
 
-struct rpc_sh_cmd *net_rpc_share_cmds(TALLOC_CTX *mem_ctx,
+struct rpc_sh_cmd *net_rpc_share_cmds(struct net_context *c, TALLOC_CTX *mem_ctx,
 				      struct rpc_sh_ctx *ctx)
 {
 	static struct rpc_sh_cmd cmds[] = {
@@ -4896,9 +4966,9 @@ struct rpc_sh_cmd *net_rpc_share_cmds(TALLOC_CTX *mem_ctx,
 
 /****************************************************************************/
 
-static int rpc_file_usage(int argc, const char **argv)
+static int rpc_file_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_file(argc, argv);
+	return net_help_file(c, argc, argv);
 }
 
 /** 
@@ -4907,6 +4977,7 @@ static int rpc_file_usage(int argc, const char **argv)
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
+ * @param c	A net_context structure
  * @param domain_sid The domain sid acquired from the remote server
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
@@ -4916,7 +4987,8 @@ static int rpc_file_usage(int argc, const char **argv)
  *
  * @return Normal NTSTATUS return.
  **/
-static NTSTATUS rpc_file_close_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_file_close_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -4938,14 +5010,14 @@ static NTSTATUS rpc_file_close_internals(const DOM_SID *domain_sid,
  *
  * @return A shell status integer (0 for success)
  **/
-static int rpc_file_close(int argc, const char **argv)
+static int rpc_file_close(struct net_context *c, int argc, const char **argv)
 {
 	if (argc < 1) {
 		DEBUG(1, ("No fileid given on close\n"));
-		return(rpc_file_usage(argc, argv));
+		return rpc_file_usage(c, argc, argv);
 	}
 
-	return run_rpc_command(NULL, PI_SRVSVC, 0, 
+	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
 			       rpc_file_close_internals,
 			       argc, argv);
 }
@@ -4968,6 +5040,7 @@ static void display_file_info_3(struct srvsvc_NetFileInfo3 *r)
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
+ * @param c	A net_context structure
  * @param domain_sid The domain sid acquired from the remote server
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
@@ -4978,7 +5051,8 @@ static void display_file_info_3(struct srvsvc_NetFileInfo3 *r)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
+static NTSTATUS rpc_file_list_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -5040,14 +5114,14 @@ static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
  * @return A shell status integer (0 for success)
  **/
 
-static int rpc_file_user(int argc, const char **argv)
+static int rpc_file_user(struct net_context *c, int argc, const char **argv)
 {
 	if (argc < 1) {
 		DEBUG(1, ("No username given\n"));
-		return(rpc_file_usage(argc, argv));
+		return rpc_file_usage(c, argc, argv);
 	}
 
-	return run_rpc_command(NULL, PI_SRVSVC, 0, 
+	return run_rpc_command(c, NULL, PI_SRVSVC, 0,
 			       rpc_file_list_internals,
 			       argc, argv);
 }
@@ -5059,7 +5133,7 @@ static int rpc_file_user(int argc, const char **argv)
  *              stripped
  **/
 
-int net_rpc_file(int argc, const char **argv) 
+int net_rpc_file(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"close", rpc_file_close},
@@ -5071,11 +5145,11 @@ int net_rpc_file(int argc, const char **argv)
 	};
 
 	if (argc == 0)
-		return run_rpc_command(NULL, PI_SRVSVC, 0, 
+		return run_rpc_command(c, NULL, PI_SRVSVC, 0,
 				       rpc_file_list_internals,
 				       argc, argv);
 
-	return net_run_function(argc, argv, func, rpc_file_usage);
+	return net_run_function(c, argc, argv, func, rpc_file_usage);
 }
 
 /** 
@@ -5084,6 +5158,7 @@ int net_rpc_file(int argc, const char **argv)
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
  *
+ * @param c	A net_context structure
  * @param domain_sid The domain sid aquired from the remote server
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on compleation of the function.
@@ -5094,7 +5169,8 @@ int net_rpc_file(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid, 
+static NTSTATUS rpc_shutdown_abort_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli, 
 					struct rpc_pipe_client *pipe_hnd,
@@ -5121,6 +5197,7 @@ static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid,
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
  *
+ * @param c	A net_context structure
  * @param domain_sid The domain sid aquired from the remote server
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on compleation of the function.
@@ -5131,7 +5208,8 @@ static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid,
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_reg_shutdown_abort_internals(const DOM_SID *domain_sid, 
+static NTSTATUS rpc_reg_shutdown_abort_internals(struct net_context *c,
+						const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli, 
 						struct rpc_pipe_client *pipe_hnd,
@@ -5162,9 +5240,10 @@ static NTSTATUS rpc_reg_shutdown_abort_internals(const DOM_SID *domain_sid,
  * @return A shell status integer (0 for success)
  **/
 
-static int rpc_shutdown_abort(int argc, const char **argv) 
+static int rpc_shutdown_abort(struct net_context *c, int argc,
+			      const char **argv)
 {
-	int rc = run_rpc_command(NULL, PI_INITSHUTDOWN, 0, 
+	int rc = run_rpc_command(c, NULL, PI_INITSHUTDOWN, 0,
 				 rpc_shutdown_abort_internals,
 				 argc, argv);
 
@@ -5173,7 +5252,7 @@ static int rpc_shutdown_abort(int argc, const char **argv)
 
 	DEBUG(1, ("initshutdown pipe didn't work, trying winreg pipe\n"));
 
-	return run_rpc_command(NULL, PI_WINREG, 0, 
+	return run_rpc_command(c, NULL, PI_WINREG, 0,
 			       rpc_reg_shutdown_abort_internals,
 			       argc, argv);
 }
@@ -5184,6 +5263,7 @@ static int rpc_shutdown_abort(int argc, const char **argv)
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
+ * @param c	A net_context structure
  * @param domain_sid The domain sid aquired from the remote server
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on compleation of the function.
@@ -5194,7 +5274,8 @@ static int rpc_shutdown_abort(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-NTSTATUS rpc_init_shutdown_internals(const DOM_SID *domain_sid,
+NTSTATUS rpc_init_shutdown_internals(struct net_context *c,
+				     const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli, 
 						struct rpc_pipe_client *pipe_hnd,
@@ -5208,11 +5289,11 @@ NTSTATUS rpc_init_shutdown_internals(const DOM_SID *domain_sid,
 	struct initshutdown_String msg_string;
 	struct initshutdown_String_sub s;
 
-	if (opt_comment) {
-		msg = opt_comment;
+	if (c->opt_comment) {
+		msg = c->opt_comment;
 	}
-	if (opt_timeout) {
-		timeout = opt_timeout;
+	if (c->opt_timeout) {
+		timeout = c->opt_timeout;
 	}
 
 	s.name = msg;
@@ -5220,7 +5301,8 @@ NTSTATUS rpc_init_shutdown_internals(const DOM_SID *domain_sid,
 
 	/* create an entry */
 	result = rpccli_initshutdown_Init(pipe_hnd, mem_ctx, NULL,
-			&msg_string, timeout, opt_force, opt_reboot, NULL);
+			&msg_string, timeout, c->opt_force, c->opt_reboot,
+			NULL);
 
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown of remote machine succeeded\n");
@@ -5237,6 +5319,7 @@ NTSTATUS rpc_init_shutdown_internals(const DOM_SID *domain_sid,
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
+ * @param c	A net_context structure
  * @param domain_sid The domain sid aquired from the remote server
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on compleation of the function.
@@ -5247,7 +5330,8 @@ NTSTATUS rpc_init_shutdown_internals(const DOM_SID *domain_sid,
  * @return Normal NTSTATUS return.
  **/
 
-NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
+NTSTATUS rpc_reg_shutdown_internals(struct net_context *c,
+				    const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli, 
 						struct rpc_pipe_client *pipe_hnd,
@@ -5262,19 +5346,20 @@ NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
 	NTSTATUS result;
 	WERROR werr;
 
-	if (opt_comment) {
-		msg = opt_comment;
+	if (c->opt_comment) {
+		msg = c->opt_comment;
 	}
 	s.name = msg;
 	msg_string.name = &s;
 
-	if (opt_timeout) {
-		timeout = opt_timeout;
+	if (c->opt_timeout) {
+		timeout = c->opt_timeout;
 	}
 
 	/* create an entry */
 	result = rpccli_winreg_InitiateSystemShutdown(pipe_hnd, mem_ctx, NULL,
-			&msg_string, timeout, opt_force, opt_reboot, &werr);
+			&msg_string, timeout, c->opt_force, c->opt_reboot,
+			&werr);
 
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown of remote machine succeeded\n");
@@ -5299,15 +5384,15 @@ NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
  * @return A shell status integer (0 for success)
  **/
 
-static int rpc_shutdown(int argc, const char **argv) 
+static int rpc_shutdown(struct net_context *c, int argc, const char **argv)
 {
-	int rc = run_rpc_command(NULL, PI_INITSHUTDOWN, 0, 
+	int rc = run_rpc_command(c, NULL, PI_INITSHUTDOWN, 0,
 				 rpc_init_shutdown_internals,
 				 argc, argv);
 
 	if (rc) {
 		DEBUG(1, ("initshutdown pipe failed, trying winreg pipe\n"));
-		rc = run_rpc_command(NULL, PI_WINREG, 0, 
+		rc = run_rpc_command(c, NULL, PI_WINREG, 0,
 				     rpc_reg_shutdown_internals, argc, argv);
 	}
 
@@ -5316,7 +5401,6 @@ static int rpc_shutdown(int argc, const char **argv)
 
 /***************************************************************************
   NT Domain trusts code (i.e. 'net rpc trustdom' functionality)
-  
  ***************************************************************************/
 
 /**
@@ -5324,6 +5408,7 @@ static int rpc_shutdown(int argc, const char **argv)
  * All parameters (except for argc and argv) are passed by run_rpc_command
  * function.
  *
+ * @param c	A net_context structure
  * @param domain_sid The domain sid acquired from the server
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
@@ -5334,7 +5419,8 @@ static int rpc_shutdown(int argc, const char **argv)
  * @return normal NTSTATUS return code
  */
 
-static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, 
+static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
+						const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -5468,11 +5554,11 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
  * @return Integer status (0 means success)
  **/
 
-static int rpc_trustdom_add(int argc, const char **argv)
+static int rpc_trustdom_add(struct net_context *c, int argc, const char **argv)
 {
 	if (argc > 0) {
-		return run_rpc_command(NULL, PI_SAMR, 0, rpc_trustdom_add_internals,
-		                       argc, argv);
+		return run_rpc_command(c, NULL, PI_SAMR, 0,
+				       rpc_trustdom_add_internals, argc, argv);
 	} else {
 		d_printf("Usage: net rpc trustdom add <domain>\n");
 		return -1;
@@ -5485,6 +5571,7 @@ static int rpc_trustdom_add(int argc, const char **argv)
  * All parameters (except for argc and argv) are passed by run_rpc_command
  * function.
  *
+ * @param c	A net_context structure
  * @param domain_sid The domain sid acquired from the server
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
@@ -5495,7 +5582,8 @@ static int rpc_trustdom_add(int argc, const char **argv)
  * @return normal NTSTATUS return code
  */
 
-static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid, 
+static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -5610,18 +5698,19 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
  * @return Integer status (0 means success)
  **/
 
-static int rpc_trustdom_del(int argc, const char **argv)
+static int rpc_trustdom_del(struct net_context *c, int argc, const char **argv)
 {
 	if (argc > 0) {
-		return run_rpc_command(NULL, PI_SAMR, 0, rpc_trustdom_del_internals,
-		                       argc, argv);
+		return run_rpc_command(c, NULL, PI_SAMR, 0,
+				       rpc_trustdom_del_internals, argc, argv);
 	} else {
 		d_printf("Usage: net rpc trustdom del <domain>\n");
 		return -1;
 	}
 }
 
-static NTSTATUS rpc_trustdom_get_pdc(struct cli_state *cli,
+static NTSTATUS rpc_trustdom_get_pdc(struct net_context *c,
+				     struct cli_state *cli,
 				     TALLOC_CTX *mem_ctx,
 				     const char *domain_name)
 {
@@ -5668,13 +5757,15 @@ static NTSTATUS rpc_trustdom_get_pdc(struct cli_state *cli,
  * Establish trust relationship to a trusting domain.
  * Interdomain account must already be created on remote PDC.
  *
+ * @param c    A net_context structure
  * @param argc standard argc
  * @param argv standard argv without initial components
  *
  * @return Integer status (0 means success)
  **/
 
-static int rpc_trustdom_establish(int argc, const char **argv)
+static int rpc_trustdom_establish(struct net_context *c, int argc,
+				  const char **argv)
 {
 	struct cli_state *cli = NULL;
 	struct sockaddr_storage server_ss;
@@ -5709,11 +5800,11 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 * opt_workgroup will be used by connection functions further,
 	 * hence it should be set to remote domain name instead of ours
 	 */
-	if (opt_workgroup) {
-		opt_workgroup = smb_xstrdup(domain_name);
+	if (c->opt_workgroup) {
+		c->opt_workgroup = smb_xstrdup(domain_name);
 	};
 
-	opt_user_name = acct_name;
+	c->opt_user_name = acct_name;
 
 	/* find the domain controller */
 	if (!net_find_pdc(&server_ss, pdc_name, domain_name)) {
@@ -5722,7 +5813,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	}
 
 	/* connect to ipc$ as username/password */
-	nt_status = connect_to_ipc(&cli, &server_ss, pdc_name);
+	nt_status = connect_to_ipc(c, &cli, &server_ss, pdc_name);
 	if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT)) {
 
 		/* Is it trusting domain account for sure ? */
@@ -5739,7 +5830,8 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 * Connect to \\server\ipc$ again (this time anonymously)
 	 */
 
-	nt_status = connect_to_ipc_anonymous(&cli, &server_ss, (char*)pdc_name);
+	nt_status = connect_to_ipc_anonymous(c, &cli, &server_ss,
+					     (char*)pdc_name);
 
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't connect to domain %s controller. Error was %s.\n",
@@ -5756,7 +5848,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 
 	/* Make sure we're talking to a proper server */
 
-	nt_status = rpc_trustdom_get_pdc(cli, mem_ctx, domain_name);
+	nt_status = rpc_trustdom_get_pdc(c, cli, mem_ctx, domain_name);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);
@@ -5808,7 +5900,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 * Store the password in secrets db
 	 */
 
-	if (!pdb_set_trusteddom_pw(domain_name, opt_password, domain_sid)) {
+	if (!pdb_set_trusteddom_pw(domain_name, c->opt_password, domain_sid)) {
 		DEBUG(0, ("Storing password for trusted domain failed.\n"));
 		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);
@@ -5839,13 +5931,15 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 /**
  * Revoke trust relationship to the remote domain
  *
+ * @param c    A net_context structure
  * @param argc standard argc
  * @param argv standard argv without initial components
  *
  * @return Integer status (0 means success)
  **/
 
-static int rpc_trustdom_revoke(int argc, const char **argv)
+static int rpc_trustdom_revoke(struct net_context *c, int argc,
+			       const char **argv)
 {
 	char* domain_name;
 	int rc = -1;
@@ -5878,7 +5972,8 @@ done:
  * @return Integer status returned to shell
  **/
  
-static int rpc_trustdom_usage(int argc, const char **argv)
+static int rpc_trustdom_usage(struct net_context *c, int argc,
+			      const char **argv)
 {
 	d_printf("  net rpc trustdom add \t\t add trusting domain's account\n");
 	d_printf("  net rpc trustdom del \t\t delete trusting domain's account\n");
@@ -5890,7 +5985,8 @@ static int rpc_trustdom_usage(int argc, const char **argv)
 }
 
 
-static NTSTATUS rpc_query_domain_sid(const DOM_SID *domain_sid, 
+static NTSTATUS rpc_query_domain_sid(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -5978,7 +6074,8 @@ done:
 	return nt_status;
 }
 
-static int rpc_trustdom_vampire(int argc, const char **argv)
+static int rpc_trustdom_vampire(struct net_context *c, int argc,
+				const char **argv)
 {
 	/* common variables */
 	TALLOC_CTX* mem_ctx;
@@ -6007,17 +6104,17 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 	 * or to remote one given in command line
 	 */
 
-	if (StrCaseCmp(opt_workgroup, lp_workgroup())) {
-		domain_name = opt_workgroup;
-		opt_target_workgroup = opt_workgroup;
+	if (StrCaseCmp(c->opt_workgroup, lp_workgroup())) {
+		domain_name = c->opt_workgroup;
+		c->opt_target_workgroup = c->opt_workgroup;
 	} else {
 		fstrcpy(pdc_name, global_myname());
 		domain_name = talloc_strdup(mem_ctx, lp_workgroup());
-		opt_target_workgroup = domain_name;
+		c->opt_target_workgroup = domain_name;
 	};
 
 	/* open \PIPE\lsarpc and open policy handle */
-	nt_status = net_make_ipc_connection(NET_FLAGS_PDC, &cli);
+	nt_status = net_make_ipc_connection(c, NET_FLAGS_PDC, &cli);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't connect to domain controller: %s\n",
 			  nt_errstr(nt_status)));
@@ -6121,7 +6218,7 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 	return 0;
 }
 
-static int rpc_trustdom_list(int argc, const char **argv)
+static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 {
 	/* common variables */
 	TALLOC_CTX* mem_ctx;
@@ -6156,17 +6253,17 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	 * or to remote one given in command line
 	 */
 	
-	if (StrCaseCmp(opt_workgroup, lp_workgroup())) {
-		domain_name = opt_workgroup;
-		opt_target_workgroup = opt_workgroup;
+	if (StrCaseCmp(c->opt_workgroup, lp_workgroup())) {
+		domain_name = c->opt_workgroup;
+		c->opt_target_workgroup = c->opt_workgroup;
 	} else {
 		fstrcpy(pdc_name, global_myname());
 		domain_name = talloc_strdup(mem_ctx, lp_workgroup());
-		opt_target_workgroup = domain_name;
+		c->opt_target_workgroup = domain_name;
 	};
 
 	/* open \PIPE\lsarpc and open policy handle */
-	nt_status = net_make_ipc_connection(NET_FLAGS_PDC, &cli);
+	nt_status = net_make_ipc_connection(c, NET_FLAGS_PDC, &cli);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't connect to domain controller: %s\n",
 			  nt_errstr(nt_status)));
@@ -6344,18 +6441,20 @@ static int rpc_trustdom_list(int argc, const char **argv)
 
 			/* set opt_* variables to remote domain */
 			strupper_m(str);
-			opt_workgroup = talloc_strdup(mem_ctx, str);
-			opt_target_workgroup = opt_workgroup;
+			c->opt_workgroup = talloc_strdup(mem_ctx, str);
+			c->opt_target_workgroup = c->opt_workgroup;
 
 			d_printf("%s%s", str, padding);
 
 			/* connect to remote domain controller */
-			nt_status = net_make_ipc_connection(
+			nt_status = net_make_ipc_connection(c,
 					NET_FLAGS_PDC | NET_FLAGS_ANONYMOUS,
 					&remote_cli);
 			if (NT_STATUS_IS_OK(nt_status)) {
 				/* query for domain's sid */
-				if (run_rpc_command(remote_cli, PI_LSARPC, 0, rpc_query_domain_sid, argc, argv))
+				if (run_rpc_command(c, remote_cli, PI_LSARPC, 0,
+						    rpc_query_domain_sid, argc,
+						    argv))
 					d_fprintf(stderr, "couldn't get domain's sid\n");
 
 				cli_shutdown(remote_cli);
@@ -6398,7 +6497,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
  * @return Integer status (0 means success)
  */
 
-static int rpc_trustdom(int argc, const char **argv)
+static int rpc_trustdom(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"add", rpc_trustdom_add},
@@ -6412,11 +6511,11 @@ static int rpc_trustdom(int argc, const char **argv)
 	};
 
 	if (argc == 0) {
-		rpc_trustdom_usage(argc, argv);
+		rpc_trustdom_usage(c, argc, argv);
 		return -1;
 	}
 
-	return (net_run_function(argc, argv, func, rpc_user_usage));
+	return net_run_function(c, argc, argv, func, rpc_user_usage);
 }
 
 /**
@@ -6425,7 +6524,7 @@ static int rpc_trustdom(int argc, const char **argv)
  *		if the host is not explicitly specified
  * @return  bool (true means rpc supported)
  */
-bool net_rpc_check(unsigned flags)
+bool net_rpc_check(struct net_context *c, unsigned flags)
 {
 	struct cli_state *cli;
 	bool ret = False;
@@ -6434,7 +6533,7 @@ bool net_rpc_check(unsigned flags)
 	NTSTATUS status;
 
 	/* flags (i.e. server type) may depend on command */
-	if (!net_find_server(NULL, flags, &server_ss, &server_name))
+	if (!net_find_server(c, NULL, flags, &server_ss, &server_name))
 		return False;
 
 	if ((cli = cli_initialise()) == NULL) {
@@ -6459,20 +6558,21 @@ bool net_rpc_check(unsigned flags)
 }
 
 /* dump sam database via samsync rpc calls */
-static int rpc_samdump(int argc, const char **argv) {
-		return run_rpc_command(NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS, rpc_samdump_internals,
-			       argc, argv);
+static int rpc_samdump(struct net_context *c, int argc, const char **argv) {
+	return run_rpc_command(c, NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS,
+			       rpc_samdump_internals, argc, argv);
 }
 
 /* syncronise sam database via samsync rpc calls */
-static int rpc_vampire(int argc, const char **argv) {
-	return run_rpc_command(NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS, rpc_vampire_internals,
-			       argc, argv);
+static int rpc_vampire(struct net_context *c, int argc, const char **argv) {
+	return run_rpc_command(c, NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS,
+			       rpc_vampire_internals,  argc, argv);
 }
 
 /** 
  * Migrate everything from a print-server
  *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
@@ -6484,52 +6584,64 @@ static int rpc_vampire(int argc, const char **argv) {
  * Applying ACLs should be the last step, because you're easily locked out
  *
  **/
-static int rpc_printer_migrate_all(int argc, const char **argv)
+static int rpc_printer_migrate_all(struct net_context *c, int argc,
+				   const char **argv)
 {
 	int ret;
 
-	if (!opt_host) {
+	if (!c->opt_host) {
 		printf("no server to migrate\n");
 		return -1;
 	}
 
-	ret = run_rpc_command(NULL, PI_SPOOLSS, 0, rpc_printer_migrate_printers_internals, argc, argv);
+	ret = run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+			      rpc_printer_migrate_printers_internals, argc,
+			      argv);
 	if (ret)
 		return ret;
 
-	ret = run_rpc_command(NULL, PI_SPOOLSS, 0, rpc_printer_migrate_drivers_internals, argc, argv);
+	ret = run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+			      rpc_printer_migrate_drivers_internals, argc,
+			      argv);
 	if (ret)
 		return ret;
 
-	ret = run_rpc_command(NULL, PI_SPOOLSS, 0, rpc_printer_migrate_forms_internals, argc, argv);
+	ret = run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+			      rpc_printer_migrate_forms_internals, argc, argv);
 	if (ret)
 		return ret;
 
-	ret = run_rpc_command(NULL, PI_SPOOLSS, 0, rpc_printer_migrate_settings_internals, argc, argv);
+	ret = run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+			      rpc_printer_migrate_settings_internals, argc,
+			      argv);
 	if (ret)
 		return ret;
 
-	return run_rpc_command(NULL, PI_SPOOLSS, 0, rpc_printer_migrate_security_internals, argc, argv);
+	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
+			       rpc_printer_migrate_security_internals, argc,
+			       argv);
 
 }
 
 /** 
  * Migrate print-drivers from a print-server
  *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  *
  * @return A shell status integer (0 for success)
  **/
-static int rpc_printer_migrate_drivers(int argc, const char **argv)
+static int rpc_printer_migrate_drivers(struct net_context *c, int argc,
+				       const char **argv)
 {
-	if (!opt_host) {
+	if (!c->opt_host) {
 		printf("no server to migrate\n");
 		return -1;
 	}
 
-	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
 			       rpc_printer_migrate_drivers_internals,
 			       argc, argv);
 }
@@ -6537,20 +6649,22 @@ static int rpc_printer_migrate_drivers(int argc, const char **argv)
 /** 
  * Migrate print-forms from a print-server
  *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  *
  * @return A shell status integer (0 for success)
  **/
-static int rpc_printer_migrate_forms(int argc, const char **argv)
+static int rpc_printer_migrate_forms(struct net_context *c, int argc,
+				     const char **argv)
 {
-	if (!opt_host) {
+	if (!c->opt_host) {
 		printf("no server to migrate\n");
 		return -1;
 	}
 
-	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
 			       rpc_printer_migrate_forms_internals,
 			       argc, argv);
 }
@@ -6558,20 +6672,22 @@ static int rpc_printer_migrate_forms(int argc, const char **argv)
 /** 
  * Migrate printers from a print-server
  *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  *
  * @return A shell status integer (0 for success)
  **/
-static int rpc_printer_migrate_printers(int argc, const char **argv)
+static int rpc_printer_migrate_printers(struct net_context *c, int argc,
+					const char **argv)
 {
-	if (!opt_host) {
+	if (!c->opt_host) {
 		printf("no server to migrate\n");
 		return -1;
 	}
 
-	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
 			       rpc_printer_migrate_printers_internals,
 			       argc, argv);
 }
@@ -6579,20 +6695,22 @@ static int rpc_printer_migrate_printers(int argc, const char **argv)
 /** 
  * Migrate printer-ACLs from a print-server
  *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  *
  * @return A shell status integer (0 for success)
  **/
-static int rpc_printer_migrate_security(int argc, const char **argv)
+static int rpc_printer_migrate_security(struct net_context *c, int argc,
+					const char **argv)
 {
-	if (!opt_host) {
+	if (!c->opt_host) {
 		printf("no server to migrate\n");
 		return -1;
 	}
 
-	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
 			       rpc_printer_migrate_security_internals,
 			       argc, argv);
 }
@@ -6600,32 +6718,36 @@ static int rpc_printer_migrate_security(int argc, const char **argv)
 /** 
  * Migrate printer-settings from a print-server
  *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  *
  * @return A shell status integer (0 for success)
  **/
-static int rpc_printer_migrate_settings(int argc, const char **argv)
+static int rpc_printer_migrate_settings(struct net_context *c, int argc,
+					const char **argv)
 {
-	if (!opt_host) {
+	if (!c->opt_host) {
 		printf("no server to migrate\n");
 		return -1;
 	}
 
-	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
 			       rpc_printer_migrate_settings_internals,
 			       argc, argv);
 }
 
 /** 
  * 'net rpc printer' entrypoint.
+ *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  **/
 
-int rpc_printer_migrate(int argc, const char **argv) 
+int rpc_printer_migrate(struct net_context *c, int argc, const char **argv)
 {
 
 	/* ouch: when addriver and setdriver are called from within
@@ -6643,23 +6765,24 @@ int rpc_printer_migrate(int argc, const char **argv)
 		{NULL, NULL}
 	};
 
-	return net_run_function(argc, argv, func, rpc_printer_usage);
+	return net_run_function(c, argc, argv, func, rpc_printer_usage);
 }
 
 
 /** 
  * List printers on a remote RPC server
  *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  *
  * @return A shell status integer (0 for success)
  **/
-static int rpc_printer_list(int argc, const char **argv)
+static int rpc_printer_list(struct net_context *c, int argc, const char **argv)
 {
 
-	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
 			       rpc_printer_list_internals,
 			       argc, argv);
 }
@@ -6667,16 +6790,18 @@ static int rpc_printer_list(int argc, const char **argv)
 /** 
  * List printer-drivers on a remote RPC server
  *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  *
  * @return A shell status integer (0 for success)
  **/
-static int rpc_printer_driver_list(int argc, const char **argv)
+static int rpc_printer_driver_list(struct net_context *c, int argc,
+				   const char **argv)
 {
 
-	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
 			       rpc_printer_driver_list_internals,
 			       argc, argv);
 }
@@ -6684,16 +6809,18 @@ static int rpc_printer_driver_list(int argc, const char **argv)
 /** 
  * Publish printer in ADS via MSRPC
  *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  *
  * @return A shell status integer (0 for success)
  **/
-static int rpc_printer_publish_publish(int argc, const char **argv)
+static int rpc_printer_publish_publish(struct net_context *c, int argc,
+				       const char **argv)
 {
 
-	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
 			       rpc_printer_publish_publish_internals,
 			       argc, argv);
 }
@@ -6701,16 +6828,17 @@ static int rpc_printer_publish_publish(int argc, const char **argv)
 /** 
  * Update printer in ADS via MSRPC
  *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  *
  * @return A shell status integer (0 for success)
  **/
-static int rpc_printer_publish_update(int argc, const char **argv)
+static int rpc_printer_publish_update(struct net_context *c, int argc, const char **argv)
 {
 
-	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
 			       rpc_printer_publish_update_internals,
 			       argc, argv);
 }
@@ -6718,16 +6846,18 @@ static int rpc_printer_publish_update(int argc, const char **argv)
 /** 
  * UnPublish printer in ADS via MSRPC
  *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  *
  * @return A shell status integer (0 for success)
  **/
-static int rpc_printer_publish_unpublish(int argc, const char **argv)
+static int rpc_printer_publish_unpublish(struct net_context *c, int argc,
+					 const char **argv)
 {
 
-	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
 			       rpc_printer_publish_unpublish_internals,
 			       argc, argv);
 }
@@ -6735,16 +6865,18 @@ static int rpc_printer_publish_unpublish(int argc, const char **argv)
 /** 
  * List published printers via MSRPC
  *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  *
  * @return A shell status integer (0 for success)
  **/
-static int rpc_printer_publish_list(int argc, const char **argv)
+static int rpc_printer_publish_list(struct net_context *c, int argc,
+				    const char **argv)
 {
 
-	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+	return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
 			       rpc_printer_publish_list_internals,
 			       argc, argv);
 }
@@ -6753,13 +6885,15 @@ static int rpc_printer_publish_list(int argc, const char **argv)
 /** 
  * Publish printer in ADS
  *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  *
  * @return A shell status integer (0 for success)
  **/
-static int rpc_printer_publish(int argc, const char **argv)
+static int rpc_printer_publish(struct net_context *c, int argc,
+			       const char **argv)
 {
 
 	struct functable func[] = {
@@ -6772,33 +6906,37 @@ static int rpc_printer_publish(int argc, const char **argv)
 	};
 
 	if (argc == 0)
-		return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+		return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
 			       rpc_printer_publish_list_internals,
 			       argc, argv);
 
-	return net_run_function(argc, argv, func, rpc_printer_usage);
+	return net_run_function(c, argc, argv, func, rpc_printer_usage);
 
 }
 
 
 /** 
  * Display rpc printer help page.
+ *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  **/
-int rpc_printer_usage(int argc, const char **argv)
+int rpc_printer_usage(struct net_context *c, int argc, const char **argv)
 {
-        return net_help_printer(argc, argv);
+        return net_help_printer(c, argc, argv);
 }
 
 /** 
  * 'net rpc printer' entrypoint.
+ *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  **/
-int net_rpc_printer(int argc, const char **argv) 
+int net_rpc_printer(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"list", rpc_printer_list},
@@ -6809,11 +6947,11 @@ int net_rpc_printer(int argc, const char **argv)
 	};
 
 	if (argc == 0)
-		return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+		return run_rpc_command(c, NULL, PI_SPOOLSS, 0,
 			       rpc_printer_list_internals,
 			       argc, argv);
 
-	return net_run_function(argc, argv, func, rpc_printer_usage);
+	return net_run_function(c, argc, argv, func, rpc_printer_usage);
 }
 
 /****************************************************************************/
@@ -6821,12 +6959,14 @@ int net_rpc_printer(int argc, const char **argv)
 
 /** 
  * Basic usage function for 'net rpc'
+ *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  **/
 
-int net_rpc_usage(int argc, const char **argv) 
+int net_rpc_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("  net rpc info \t\t\tshow basic info about a domain \n");
 	d_printf("  net rpc join \t\t\tto join a domain \n");
@@ -6863,12 +7003,14 @@ int net_rpc_usage(int argc, const char **argv)
 /**
  * Help function for 'net rpc'.  Calls command specific help if requested
  * or displays usage of net rpc
+ *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  **/
 
-int net_rpc_help(int argc, const char **argv)
+int net_rpc_help(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"join", rpc_join_usage},
@@ -6884,21 +7026,23 @@ int net_rpc_help(int argc, const char **argv)
 	};
 
 	if (argc == 0) {
-		net_rpc_usage(argc, argv);
+		net_rpc_usage(c, argc, argv);
 		return -1;
 	}
 
-	return (net_run_function(argc, argv, func, rpc_user_usage));
+	return net_run_function(c, argc, argv, func, rpc_user_usage);
 }
 
 /** 
  * 'net rpc' entrypoint.
+ *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  **/
 
-int net_rpc(int argc, const char **argv)
+int net_rpc(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"audit", net_rpc_audit},
@@ -6926,5 +7070,5 @@ int net_rpc(int argc, const char **argv)
 		{"help", net_rpc_help},
 		{NULL, NULL}
 	};
-	return net_run_function(argc, argv, func, net_rpc_usage);
+	return net_run_function(c, argc, argv, func, net_rpc_usage);
 }

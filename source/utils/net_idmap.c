@@ -14,7 +14,8 @@
    GNU General Public License for more details.
    
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include "includes.h"
 #include "utils/net.h"
@@ -54,12 +55,12 @@ static int net_idmap_dump_one_entry(TDB_CONTEXT *tdb,
 /***********************************************************
  Dump the current idmap
  **********************************************************/
-static int net_idmap_dump(int argc, const char **argv)
+static int net_idmap_dump(struct net_context *c, int argc, const char **argv)
 {
 	TDB_CONTEXT *idmap_tdb;
 
 	if ( argc != 1 )
-		return net_help_idmap( argc, argv );
+		return net_help_idmap(c, argc, argv );
 
 	idmap_tdb = tdb_open_log(argv[0], 0, TDB_DEFAULT, O_RDONLY, 0);
 
@@ -79,7 +80,7 @@ static int net_idmap_dump(int argc, const char **argv)
  Write entries from stdin to current local idmap
  **********************************************************/
 
-static int net_idmap_restore(int argc, const char **argv)
+static int net_idmap_restore(struct net_context *c, int argc, const char **argv)
 {
 	TALLOC_CTX *ctx;
 	FILE *input;
@@ -171,13 +172,13 @@ static int net_idmap_restore(int argc, const char **argv)
 /***********************************************************
  Delete a SID mapping from a winbindd_idmap.tdb
  **********************************************************/
-static int net_idmap_delete(int argc, const char **argv)
+static int net_idmap_delete(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("Not Implemented yet\n");
 	return -1;
 }
 
-static int net_idmap_set(int argc, const char **argv)
+static int net_idmap_set(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("Not Implemented yet\n");
 	return -1;
@@ -206,7 +207,7 @@ bool idmap_store_secret(const char *backend, bool alloc,
 }
 
 
-static int net_idmap_secret(int argc, const char **argv)
+static int net_idmap_secret(struct net_context *c, int argc, const char **argv)
 {
 	TALLOC_CTX *ctx;
 	const char *secret;
@@ -217,7 +218,7 @@ static int net_idmap_secret(int argc, const char **argv)
 	bool ret;
 
 	if (argc != 2) {
-		return net_help_idmap(argc, argv);
+		return net_help_idmap(c, argc, argv);
 	}
 
 	secret = argv[1];
@@ -276,7 +277,7 @@ static int net_idmap_secret(int argc, const char **argv)
 	return 0;
 }
 
-int net_help_idmap(int argc, const char **argv)
+int net_help_idmap(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("net idmap dump <inputfile>\n"\
 		 "    Dump current id mapping\n");
@@ -292,7 +293,7 @@ int net_help_idmap(int argc, const char **argv)
 	return -1;
 }
 
-static int net_idmap_aclmapset(int argc, const char **argv)
+static int net_idmap_aclmapset(struct net_context *c, int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
 	int result = -1;
@@ -359,7 +360,7 @@ fail:
 /***********************************************************
  Look at the current idmap
  **********************************************************/
-int net_idmap(int argc, const char **argv)
+int net_idmap(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"dump", net_idmap_dump},
@@ -372,7 +373,7 @@ int net_idmap(int argc, const char **argv)
 		{NULL, NULL}
 	};
 
-	return net_run_function(argc, argv, func, net_help_idmap);
+	return net_run_function(c, argc, argv, func, net_help_idmap);
 }
 
 

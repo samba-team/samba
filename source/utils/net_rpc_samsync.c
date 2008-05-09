@@ -399,7 +399,8 @@ static void dump_database(struct rpc_pipe_client *pipe_hnd,
 }
 
 /* dump sam database via samsync rpc calls */
-NTSTATUS rpc_samdump_internals(const DOM_SID *domain_sid,
+NTSTATUS rpc_samdump_internals(struct net_context *c,
+				const DOM_SID *domain_sid,
 				const char *domain_name,
 				struct cli_state *cli,
 				struct rpc_pipe_client *pipe_hnd,
@@ -2309,12 +2310,14 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 
 /**
  * Basic usage function for 'net rpc vampire'
+ *
+ * @param c	A net_context structure
  * @param argc  Standard main() style argc
  * @param argc  Standard main() style argv.  Initial components are already
  *              stripped
  **/
 
-int rpc_vampire_usage(int argc, const char **argv)
+int rpc_vampire_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("net rpc vampire [ldif [<ldif-filename>] [options]\n"
 		 "\t to pull accounts from a remote PDC where we are a BDC\n"
@@ -2322,13 +2325,14 @@ int rpc_vampire_usage(int argc, const char **argv)
 		 "\t\t ldif - put accounts in ldif format (file defaults to "
 		 "/tmp/tmp.ldif\n");
 
-	net_common_flags_usage(argc, argv);
+	net_common_flags_usage(c, argc, argv);
 	return -1;
 }
 
 
 /* dump sam database via samsync rpc calls */
-NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
+NTSTATUS rpc_vampire_internals(struct net_context *c,
+				const DOM_SID *domain_sid,
 				const char *domain_name,
 				struct cli_state *cli,
 				struct rpc_pipe_client *pipe_hnd,

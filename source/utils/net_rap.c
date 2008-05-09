@@ -47,9 +47,9 @@ static int errmsg_not_implemented(void)
 	return 0;
 }
 
-int net_rap_file_usage(int argc, const char **argv)
+int net_rap_file_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_file(argc, argv);
+	return net_help_file(c, argc, argv);
 }
 
 /***************************************************************************
@@ -74,16 +74,16 @@ static void one_file_fn(const char *pPath, const char *pUser, uint16 perms,
 }
 
 
-static int rap_file_close(int argc, const char **argv)
+static int rap_file_close(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
 	if (argc == 0) {
 		d_printf("\nMissing fileid of file to close\n\n");
-		return net_rap_file_usage(argc, argv);
+		return net_rap_file_usage(c, argc, argv);
 	}
 
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	ret = cli_NetFileClose(cli, atoi(argv[0]));
@@ -91,14 +91,14 @@ static int rap_file_close(int argc, const char **argv)
 	return ret;
 }
 
-static int rap_file_info(int argc, const char **argv)
+static int rap_file_info(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
 	if (argc == 0)
-		return net_rap_file_usage(argc, argv);
+		return net_rap_file_usage(c, argc, argv);
 	
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	ret = cli_NetFileGetInfo(cli, atoi(argv[0]), one_file_fn);
@@ -106,15 +106,15 @@ static int rap_file_info(int argc, const char **argv)
 	return ret;
 }
 
-static int rap_file_user(int argc, const char **argv)
+static int rap_file_user(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
 
 	if (argc == 0)
-		return net_rap_file_usage(argc, argv);
+		return net_rap_file_usage(c, argc, argv);
 
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
 		return -1;
 
 	/* list open files */
@@ -131,7 +131,7 @@ static int rap_file_user(int argc, const char **argv)
 	return ret;
 }
 
-int net_rap_file(int argc, const char **argv)
+int net_rap_file(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"CLOSE", rap_file_close},
@@ -144,7 +144,7 @@ int net_rap_file(int argc, const char **argv)
 		struct cli_state *cli;
 		int ret;
 		
-		if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+		if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                         return -1;
 
 		/* list open files */
@@ -161,12 +161,12 @@ int net_rap_file(int argc, const char **argv)
 		return ret;
 	}
 	
-	return net_run_function(argc, argv, func, net_rap_file_usage);
+	return net_run_function(c, argc, argv, func, net_rap_file_usage);
 }
 		       
-int net_rap_share_usage(int argc, const char **argv)
+int net_rap_share_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_share(argc, argv);
+	return net_help_share(c, argc, argv);
 }
 
 static void long_share_fn(const char *share_name, uint32 type, 
@@ -182,17 +182,17 @@ static void share_fn(const char *share_name, uint32 type,
 	d_printf("%s\n", share_name);
 }
 
-static int rap_share_delete(int argc, const char **argv)
+static int rap_share_delete(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
 	
 	if (argc == 0) {
 		d_printf("\n\nShare name not specified\n");
-		return net_rap_share_usage(argc, argv);
+		return net_rap_share_usage(c, argc, argv);
 	}
 
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	ret = cli_NetShareDelete(cli, argv[0]);
@@ -200,7 +200,7 @@ static int rap_share_delete(int argc, const char **argv)
 	return ret;
 }
 
-static int rap_share_add(int argc, const char **argv)
+static int rap_share_add(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
@@ -211,25 +211,25 @@ static int rap_share_add(int argc, const char **argv)
 
 	if (argc == 0) {
 		d_printf("\n\nShare name not specified\n");
-		return net_rap_share_usage(argc, argv);
+		return net_rap_share_usage(c, argc, argv);
 	}
 			
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	sharename = SMB_STRDUP(argv[0]);
 	p = strchr(sharename, '=');
 	if (p == NULL) {
 		d_printf("Server path not specified\n");
-		return net_rap_share_usage(argc, argv);
+		return net_rap_share_usage(c, argc, argv);
 	}
 	*p = 0;
 	strlcpy(sinfo.share_name, sharename, sizeof(sinfo.share_name));
 	sinfo.reserved1 = '\0';
 	sinfo.share_type = 0;
-	sinfo.comment = smb_xstrdup(opt_comment);
+	sinfo.comment = smb_xstrdup(c->opt_comment);
 	sinfo.perms = 0;
-	sinfo.maximum_users = opt_maxusers;
+	sinfo.maximum_users = c->opt_maxusers;
 	sinfo.active_users = 0;
 	sinfo.path = p+1;
 	memset(sinfo.password, '\0', sizeof(sinfo.password));
@@ -241,7 +241,7 @@ static int rap_share_add(int argc, const char **argv)
 }
 
 
-int net_rap_share(int argc, const char **argv)
+int net_rap_share(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"DELETE", rap_share_delete},
@@ -254,10 +254,10 @@ int net_rap_share(int argc, const char **argv)
 		struct cli_state *cli;
 		int ret;
 		
-		if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+		if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
 			return -1;
 		
-		if (opt_long_list_entries) {
+		if (c->opt_long_list_entries) {
 			d_printf(
 	"\nEnumerating shared resources (exports) on remote server:\n\n"\
 	"\nShare name   Type     Description\n"\
@@ -270,11 +270,10 @@ int net_rap_share(int argc, const char **argv)
 		return ret;
 	}
 
-	return net_run_function(argc, argv, func, net_rap_share_usage);
+	return net_run_function(c, argc, argv, func, net_rap_share_usage);
 }
 		    
-		
-int net_rap_session_usage(int argc, const char **argv)
+int net_rap_session_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf(
 	 "\nnet rap session [misc. options] [targets]"\
@@ -288,7 +287,7 @@ int net_rap_session_usage(int argc, const char **argv)
 	"\nnet rap session INFO <client_name>"\
 	"\n\tEnumerates all open files in specified session\n");
 
-	net_common_flags_usage(argc, argv);
+	net_common_flags_usage(c, argc, argv);
 	return -1;
 }
     
@@ -334,17 +333,17 @@ static void display_conns_func(uint16 conn_id, uint16 conn_type, uint16 opens,
 		 netname, share_type[conn_type], opens);
 }
 
-static int rap_session_info(int argc, const char **argv)
+static int rap_session_info(struct net_context *c, int argc, const char **argv)
 {
 	const char *sessname;
 	struct cli_state *cli;
 	int ret;
 	
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	if (argc == 0) 
-                return net_rap_session_usage(argc, argv);
+                return net_rap_session_usage(c, argc, argv);
 
 	sessname = argv[0];
 
@@ -361,23 +360,23 @@ static int rap_session_info(int argc, const char **argv)
 	return ret;
 }
 
-static int rap_session_delete(int argc, const char **argv)
+static int rap_session_delete(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
 	
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	if (argc == 0) 
-                return net_rap_session_usage(argc, argv);
+                return net_rap_session_usage(c, argc, argv);
 
 	ret = cli_NetSessionDel(cli, argv[0]);
 	cli_shutdown(cli);
 	return ret;
 }
 
-int net_rap_session(int argc, const char **argv)
+int net_rap_session(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"INFO", rap_session_info},
@@ -390,7 +389,7 @@ int net_rap_session(int argc, const char **argv)
 		struct cli_state *cli;
 		int ret;
 		
-		if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+		if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
 			return -1;
 
 		d_printf("Computer             User name            "\
@@ -403,7 +402,7 @@ int net_rap_session(int argc, const char **argv)
 		return ret;
 	}
 
-	return net_run_function(argc, argv, func, net_rap_session_usage);
+	return net_run_function(c, argc, argv, func, net_rap_session_usage);
 }
 	
 /****************************************************************************
@@ -416,23 +415,23 @@ static void display_server_func(const char *name, uint32 m,
 }
 
 
-int net_rap_server_usage(int argc, const char **argv)
+int net_rap_server_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("net rap server [misc. options] [target]\n\t"\
 		 "lists the servers in the specified domain or workgroup.\n");
 	d_printf("\n\tIf domain is not specified, it uses the current"\
 		 " domain or workgroup as\n\tthe default.\n");
 
-	net_common_flags_usage(argc, argv);
+	net_common_flags_usage(c, argc, argv);
 	return -1;
 }
 
-static int net_rap_server_name(int argc, const char *argv[])
+static int net_rap_server_name(struct net_context *c, int argc, const char *argv[])
 {
 	struct cli_state *cli;
 	char *name;
 
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	if (!cli_get_server_name(NULL, cli, &name)) {
@@ -448,23 +447,23 @@ static int net_rap_server_name(int argc, const char *argv[])
 	return 0;
 }
 		    
-int net_rap_server(int argc, const char **argv)
+int net_rap_server(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
 
 	if (argc > 0) {
 		if (strequal(argv[0], "name")) {
-			return net_rap_server_name(argc, argv);
+			return net_rap_server_name(c, argc, argv);
 		}
 		/* smb4k uses 'net [rap|rpc] server domain' to query servers in a domain */
 		/* Fall through for 'domain', any other forms will cause to show usage message */
 		if (!strequal(argv[0], "domain")) {
-			return net_rap_server_usage(argc-1, argv+1);
+			return net_rap_server_usage(c, argc-1, argv+1);
 		}
 	}
 
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	d_printf("\nEnumerating servers in this domain or workgroup: \n\n"\
@@ -477,22 +476,21 @@ int net_rap_server(int argc, const char **argv)
 	return ret;	
 }
 		      
-int net_rap_domain_usage(int argc, const char **argv)
+int net_rap_domain_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("net rap domain [misc. options] [target]\n\tlists the"\
 		 " domains or workgroups visible on the current network\n");
 
-	net_common_flags_usage(argc, argv);
+	net_common_flags_usage(c, argc, argv);
 	return -1;
 }
 
-		  
-int net_rap_domain(int argc, const char **argv)
+int net_rap_domain(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
 	
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	d_printf("\nEnumerating domains:\n\n"\
@@ -505,7 +503,7 @@ int net_rap_domain(int argc, const char **argv)
 	return ret;	
 }
 		      
-int net_rap_printq_usage(int argc, const char **argv)
+int net_rap_printq_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf(
 	 "net rap printq [misc. options] [targets]\n"\
@@ -518,7 +516,7 @@ int net_rap_printq_usage(int argc, const char **argv)
 	 "\tdeletes the specified job number on the target server, or the\n"\
 	 "\tprinter queue if no job number is specified\n");
 
-	net_common_flags_usage(argc, argv);
+	net_common_flags_usage(c, argc, argv);
 
 	return -1;
 }	
@@ -581,15 +579,15 @@ static void enum_jobs(uint16 jobid, const char *ownername,
     "------------------------------------------------------------------"\
     "-------------\n"
 
-static int rap_printq_info(int argc, const char **argv)
+static int rap_printq_info(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
 	
 	if (argc == 0) 
-                return net_rap_printq_usage(argc, argv);
+                return net_rap_printq_usage(c, argc, argv);
 
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	d_printf(PRINTQ_ENUM_DISPLAY, cli->desthost); /* list header */
@@ -598,15 +596,15 @@ static int rap_printq_info(int argc, const char **argv)
 	return ret;
 }
 
-static int rap_printq_delete(int argc, const char **argv)
+static int rap_printq_delete(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
 	
 	if (argc == 0) 
-                return net_rap_printq_usage(argc, argv);
+                return net_rap_printq_usage(c, argc, argv);
 
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	ret = cli_printjob_del(cli, atoi(argv[0]));
@@ -614,7 +612,7 @@ static int rap_printq_delete(int argc, const char **argv)
 	return ret;
 }
 
-int net_rap_printq(int argc, const char **argv)
+int net_rap_printq(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
@@ -626,7 +624,7 @@ int net_rap_printq(int argc, const char **argv)
 	};
 
 	if (argc == 0) {
-		if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+		if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
 			return -1;
 
 		d_printf(PRINTQ_ENUM_DISPLAY, cli->desthost); /* list header */
@@ -635,13 +633,12 @@ int net_rap_printq(int argc, const char **argv)
 		return ret;
 	}
 
-	return net_run_function(argc, argv, func, net_rap_printq_usage);
+	return net_run_function(c, argc, argv, func, net_rap_printq_usage);
 }
 
-	
-static int net_rap_user_usage(int argc, const char **argv)
+static int net_rap_user_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_user(argc, argv);
+	return net_help_user(c, argc, argv);
 } 
 	
 static void user_fn(const char *user_name, void *state)
@@ -662,17 +659,17 @@ static void group_member_fn(const char *user_name, void *state)
 	d_printf("%-21.21s\n", user_name);
 }
 
-static int rap_user_delete(int argc, const char **argv)
+static int rap_user_delete(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
 	
 	if (argc == 0) {
 		d_printf("\n\nUser name not specified\n");
-                return net_rap_user_usage(argc, argv);
+                return net_rap_user_usage(c, argc, argv);
 	}
 
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	ret = cli_NetUserDelete(cli, argv[0]);
@@ -680,7 +677,7 @@ static int rap_user_delete(int argc, const char **argv)
 	return ret;
 }
 
-static int rap_user_add(int argc, const char **argv)
+static int rap_user_add(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
@@ -688,19 +685,19 @@ static int rap_user_add(int argc, const char **argv)
 
 	if (argc == 0) {
 		d_printf("\n\nUser name not specified\n");
-                return net_rap_user_usage(argc, argv);
+                return net_rap_user_usage(c, argc, argv);
 	}
 
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 			
 	safe_strcpy(userinfo.user_name, argv[0], sizeof(userinfo.user_name)-1);
-	if (opt_flags == -1) 
-                opt_flags = 0x21; 
+	if (c->opt_flags == -1)
+                c->opt_flags = 0x21;
 			
-	userinfo.userflags = opt_flags;
+	userinfo.userflags = c->opt_flags;
 	userinfo.reserved1 = '\0';
-	userinfo.comment = smb_xstrdup(opt_comment);
+	userinfo.comment = smb_xstrdup(c->opt_comment);
 	userinfo.priv = 1; 
 	userinfo.home_dir = NULL;
 	userinfo.logon_script = NULL;
@@ -711,16 +708,16 @@ static int rap_user_add(int argc, const char **argv)
 	return ret;
 }
 
-static int rap_user_info(int argc, const char **argv)
+static int rap_user_info(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
 	if (argc == 0) {
 		d_printf("\n\nUser name not specified\n");
-                return net_rap_user_usage(argc, argv);
+                return net_rap_user_usage(c, argc, argv);
 	}
 
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	ret = cli_NetUserGetGroups(cli, argv[0], group_member_fn, NULL);
@@ -728,7 +725,7 @@ static int rap_user_info(int argc, const char **argv)
 	return ret;
 }
 
-int net_rap_user(int argc, const char **argv)
+int net_rap_user(struct net_context *c, int argc, const char **argv)
 {
 	int ret = -1;
 	struct functable func[] = {
@@ -740,9 +737,9 @@ int net_rap_user(int argc, const char **argv)
 
 	if (argc == 0) {
 		struct cli_state *cli;
-		if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+		if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                         goto done;
-		if (opt_long_list_entries) {
+		if (c->opt_long_list_entries) {
 			d_printf("\nUser name             Comment"\
 				 "\n-----------------------------\n");
 			ret = cli_RNetUserEnum(cli, long_user_fn, NULL);
@@ -754,7 +751,7 @@ int net_rap_user(int argc, const char **argv)
 		goto done;
 	}
 
-	ret = net_run_function(argc, argv, func, net_rap_user_usage);
+	ret = net_run_function(c, argc, argv, func, net_rap_user_usage);
  done:
 	if (ret != 0) {
 		DEBUG(1, ("Net user returned: %d\n", ret));
@@ -763,9 +760,9 @@ int net_rap_user(int argc, const char **argv)
 }
 
 
-int net_rap_group_usage(int argc, const char **argv)
+int net_rap_group_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_group(argc, argv);
+	return net_help_group(c, argc, argv);
 }
 
 static void long_group_fn(const char *group_name, const char *comment,
@@ -779,16 +776,16 @@ static void group_fn(const char *group_name, void *state)
 	d_printf("%-21.21s\n", group_name);
 }
 
-static int rap_group_delete(int argc, const char **argv)
+static int rap_group_delete(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
 	if (argc == 0) {
 		d_printf("\n\nGroup name not specified\n");
-                return net_rap_group_usage(argc, argv);
+                return net_rap_group_usage(c, argc, argv);
 	}
 
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	ret = cli_NetGroupDelete(cli, argv[0]);
@@ -796,7 +793,7 @@ static int rap_group_delete(int argc, const char **argv)
 	return ret;
 }
 
-static int rap_group_add(int argc, const char **argv)
+static int rap_group_add(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
@@ -804,23 +801,23 @@ static int rap_group_add(int argc, const char **argv)
 
 	if (argc == 0) {
 		d_printf("\n\nGroup name not specified\n");
-                return net_rap_group_usage(argc, argv);
+                return net_rap_group_usage(c, argc, argv);
 	}
 
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 			
 	/* BB check for length 21 or smaller explicitly ? BB */
 	safe_strcpy(grinfo.group_name, argv[0], sizeof(grinfo.group_name)-1);
 	grinfo.reserved1 = '\0';
-	grinfo.comment = smb_xstrdup(opt_comment);
+	grinfo.comment = smb_xstrdup(c->opt_comment);
 	
 	ret = cli_NetGroupAdd(cli, &grinfo);
 	cli_shutdown(cli);
 	return ret;
 }
 
-int net_rap_group(int argc, const char **argv)
+int net_rap_group(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"ADD", rap_group_add},
@@ -831,9 +828,9 @@ int net_rap_group(int argc, const char **argv)
 	if (argc == 0) {
 		struct cli_state *cli;
 		int ret;
-		if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+		if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                         return -1;
-		if (opt_long_list_entries) {
+		if (c->opt_long_list_entries) {
 			d_printf("Group name            Comment\n");
 			d_printf("-----------------------------\n");
 			ret = cli_RNetGroupEnum(cli, long_group_fn, NULL);
@@ -845,10 +842,10 @@ int net_rap_group(int argc, const char **argv)
 		return ret;
 	}
 
-	return net_run_function(argc, argv, func, net_rap_group_usage);
+	return net_run_function(c, argc, argv, func, net_rap_group_usage);
 }
 
-int net_rap_groupmember_usage(int argc, const char **argv)
+int net_rap_groupmember_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf(
 	 "net rap groupmember LIST <group> [misc. options] [targets]"\
@@ -858,21 +855,21 @@ int net_rap_groupmember_usage(int argc, const char **argv)
 	 "\nnet rap groupmember ADD <group> <user> [misc. options] [targets]"\
 	 "\n\t Add specified user to specified group\n");
 
-	net_common_flags_usage(argc, argv);
+	net_common_flags_usage(c, argc, argv);
 	return -1;
 }
 
 
-static int rap_groupmember_add(int argc, const char **argv)
+static int rap_groupmember_add(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
 	if (argc != 2) {
 		d_printf("\n\nGroup or user name not specified\n");
-                return net_rap_groupmember_usage(argc, argv);
+                return net_rap_groupmember_usage(c, argc, argv);
 	}
 
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	ret = cli_NetGroupAddUser(cli, argv[0], argv[1]);
@@ -880,16 +877,16 @@ static int rap_groupmember_add(int argc, const char **argv)
 	return ret;
 }
 
-static int rap_groupmember_delete(int argc, const char **argv)
+static int rap_groupmember_delete(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
 	if (argc != 2) {
 		d_printf("\n\nGroup or user name not specified\n");
-                return net_rap_groupmember_usage(argc, argv);
+                return net_rap_groupmember_usage(c, argc, argv);
 	}
 	
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	ret = cli_NetGroupDelUser(cli, argv[0], argv[1]);
@@ -897,16 +894,16 @@ static int rap_groupmember_delete(int argc, const char **argv)
 	return ret;
 }
 
-static int rap_groupmember_list(int argc, const char **argv)
+static int rap_groupmember_list(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
 	if (argc == 0) {
 		d_printf("\n\nGroup name not specified\n");
-                return net_rap_groupmember_usage(argc, argv);
+                return net_rap_groupmember_usage(c, argc, argv);
 	}
 
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	ret = cli_NetGroupGetUsers(cli, argv[0], group_member_fn, NULL ); 
@@ -914,7 +911,7 @@ static int rap_groupmember_list(int argc, const char **argv)
 	return ret;
 }
 
-int net_rap_groupmember(int argc, const char **argv)
+int net_rap_groupmember(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"ADD", rap_groupmember_add},
@@ -923,25 +920,25 @@ int net_rap_groupmember(int argc, const char **argv)
 		{NULL, NULL}
 	};
 	
-	return net_run_function(argc, argv, func, net_rap_groupmember_usage);
+	return net_run_function(c, argc, argv, func, net_rap_groupmember_usage);
 }
 
-int net_rap_validate_usage(int argc, const char **argv)
+int net_rap_validate_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("net rap validate <username> [password]\n"\
 		 "\tValidate user and password to check whether they"\
 		 " can access target server or domain\n");
 
-	net_common_flags_usage(argc, argv);
+	net_common_flags_usage(c, argc, argv);
 	return -1;
 }
 
-int net_rap_validate(int argc, const char **argv)
+int net_rap_validate(struct net_context *c, int argc, const char **argv)
 {
 	return errmsg_not_implemented();
 }
 
-int net_rap_service_usage(int argc, const char **argv)
+int net_rap_service_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("net rap service [misc. options] [targets] \n"\
 		 "\tlists all running service daemons on target server\n");
@@ -951,16 +948,16 @@ int net_rap_service_usage(int argc, const char **argv)
 	d_printf("\nnet rap service STOP <name> [misc. options] [targets]\n"\
 		 "\n\tStop named service on remote server\n");
     
-	net_common_flags_usage(argc, argv);
+	net_common_flags_usage(c, argc, argv);
 	return -1;
 }
 
-static int rap_service_start(int argc, const char **argv)
+static int rap_service_start(struct net_context *c, int argc, const char **argv)
 {
 	return errmsg_not_implemented();
 }
 
-static int rap_service_stop(int argc, const char **argv)
+static int rap_service_stop(struct net_context *c, int argc, const char **argv)
 {
 	return errmsg_not_implemented();
 }
@@ -971,7 +968,7 @@ static void service_fn(const char *service_name, const char *dummy,
 	d_printf("%-21.21s\n", service_name);
 }
 
-int net_rap_service(int argc, const char **argv)
+int net_rap_service(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"START", rap_service_start},
@@ -982,10 +979,10 @@ int net_rap_service(int argc, const char **argv)
 	if (argc == 0) {
 		struct cli_state *cli;
 		int ret;
-		if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+		if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
 			return -1;
 
-		if (opt_long_list_entries) {
+		if (c->opt_long_list_entries) {
 			d_printf("Service name          Comment\n");
 			d_printf("-----------------------------\n");
 			ret = cli_RNetServiceEnum(cli, long_group_fn, NULL);
@@ -995,10 +992,10 @@ int net_rap_service(int argc, const char **argv)
 		return ret;
 	}
 
-	return net_run_function(argc, argv, func, net_rap_service_usage);
+	return net_run_function(c, argc, argv, func, net_rap_service_usage);
 }
 
-int net_rap_password_usage(int argc, const char **argv)
+int net_rap_password_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf(
 	 "net rap password <user> <oldpwo> <newpw> [misc. options] [target]\n"\
@@ -1008,15 +1005,15 @@ int net_rap_password_usage(int argc, const char **argv)
 }
 
 
-int net_rap_password(int argc, const char **argv)
+int net_rap_password(struct net_context *c, int argc, const char **argv)
 {
 	struct cli_state *cli;
 	int ret;
 	
 	if (argc < 3) 
-                return net_rap_password_usage(argc, argv);
+                return net_rap_password_usage(c, argc, argv);
 
-	if (!NT_STATUS_IS_OK(net_make_ipc_connection(0, &cli)))
+	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
 	/* BB Add check for password lengths? */
@@ -1025,7 +1022,7 @@ int net_rap_password(int argc, const char **argv)
 	return ret;
 }
 
-int net_rap_admin_usage(int argc, const char **argv)
+int net_rap_admin_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf(
    "net rap admin <remote command> [cmd args [env]] [misc. options] [targets]"\
@@ -1035,14 +1032,14 @@ int net_rap_admin_usage(int argc, const char **argv)
 }
 
 
-int net_rap_admin(int argc, const char **argv)
+int net_rap_admin(struct net_context *c, int argc, const char **argv)
 {
 	return errmsg_not_implemented();
 }
 
 /* The help subsystem for the RAP subcommand */
 
-int net_rap_usage(int argc, const char **argv)
+int net_rap_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("  net rap domain \tto list domains \n"\
 		 "  net rap file \t\tto list open files on a server \n"\
@@ -1058,14 +1055,14 @@ int net_rap_usage(int argc, const char **argv)
 		 "  net rap help\n"\
 		 "\nType \"net help <option>\" to get more information on that option\n\n");
 
-	net_common_flags_usage(argc, argv);
+	net_common_flags_usage(c, argc, argv);
 	return -1;
 }
 
 /*
   handle "net rap help *" subcommands
 */
-int net_rap_help(int argc, const char **argv)
+int net_rap_help(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"FILE", net_rap_file_usage},
@@ -1083,12 +1080,12 @@ int net_rap_help(int argc, const char **argv)
 		{"PASSWORD", net_rap_password_usage},
 		{NULL, NULL}};
 
-	return net_run_function(argc, argv, func, net_rap_usage);
+	return net_run_function(c, argc, argv, func, net_rap_usage);
 }
 
 /* Entry-point for all the RAP functions. */
 
-int net_rap(int argc, const char **argv)
+int net_rap(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"FILE", net_rap_file},
@@ -1108,6 +1105,6 @@ int net_rap(int argc, const char **argv)
 		{NULL, NULL}
 	};
 	
-	return net_run_function(argc, argv, func, net_rap_usage);
+	return net_run_function(c, argc, argv, func, net_rap_usage);
 }
 

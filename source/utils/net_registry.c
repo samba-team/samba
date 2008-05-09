@@ -115,7 +115,8 @@ done:
  *
  */
 
-static int net_registry_enumerate(int argc, const char **argv)
+static int net_registry_enumerate(struct net_context *c, int argc,
+				  const char **argv)
 {
 	WERROR werr;
 	struct registry_key *key = NULL;
@@ -168,7 +169,8 @@ done:
 	return ret;
 }
 
-static int net_registry_createkey(int argc, const char **argv)
+static int net_registry_createkey(struct net_context *c, int argc,
+				  const char **argv)
 {
 	WERROR werr;
 	enum winreg_CreateAction action;
@@ -221,7 +223,8 @@ done:
 	return ret;
 }
 
-static int net_registry_deletekey(int argc, const char **argv)
+static int net_registry_deletekey(struct net_context *c, int argc,
+				  const char **argv)
 {
 	WERROR werr;
 	char *subkeyname;
@@ -260,7 +263,8 @@ done:
 	return ret;
 }
 
-static int net_registry_getvalue(int argc, const char **argv)
+static int net_registry_getvalue(struct net_context *c, int argc,
+				 const char **argv)
 {
 	WERROR werr;
 	int ret = -1;
@@ -296,7 +300,8 @@ done:
 	return ret;
 }
 
-static int net_registry_setvalue(int argc, const char **argv)
+static int net_registry_setvalue(struct net_context *c, int argc,
+				 const char **argv)
 {
 	WERROR werr;
 	struct registry_value value;
@@ -347,7 +352,8 @@ done:
 	return ret;
 }
 
-static int net_registry_deletevalue(int argc, const char **argv)
+static int net_registry_deletevalue(struct net_context *c, int argc,
+				    const char **argv)
 {
 	WERROR werr;
 	struct registry_key *key = NULL;
@@ -380,7 +386,8 @@ done:
 	return ret;
 }
 
-static int net_registry_getsd(int argc, const char **argv)
+static int net_registry_getsd(struct net_context *c, int argc,
+			      const char **argv)
 {
 	WERROR werr;
 	int ret = -1;
@@ -430,7 +437,7 @@ done:
 	return ret;
 }
 
-int net_registry(int argc, const char **argv)
+int net_registry(struct net_context *c, int argc, const char **argv)
 {
 	int ret = -1;
 
@@ -477,7 +484,7 @@ int net_registry(int argc, const char **argv)
 		return -1;
 	}
 
-	ret = net_run_function2(argc, argv, "net registry", func);
+	ret = net_run_function2(c, argc, argv, "net registry", func);
 
 	return ret;
 }

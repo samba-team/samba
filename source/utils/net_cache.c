@@ -14,8 +14,8 @@
    GNU General Public License for more details.
    
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
- 
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include "includes.h"
 #include "net.h"
@@ -145,10 +145,11 @@ static time_t parse_timeout(const char* timeout_str)
 /**
  * Add an entry to the cache. If it does exist, then set it.
  * 
+ * @param c	A net_context structure
  * @param argv key, value and timeout are passed in command line
  * @return 0 on success, otherwise failure
  **/
-static int net_cache_add(int argc, const char **argv)
+static int net_cache_add(struct net_context *c, int argc, const char **argv)
 {
 	const char *keystr, *datastr, *timeout_str;
 	time_t timeout;
@@ -183,10 +184,11 @@ static int net_cache_add(int argc, const char **argv)
 /**
  * Delete an entry in the cache
  * 
+ * @param c	A net_context structure
  * @param argv key to delete an entry of
  * @return 0 on success, otherwise failure
  **/
-static int net_cache_del(int argc, const char **argv)
+static int net_cache_del(struct net_context *c, int argc, const char **argv)
 {
 	const char *keystr = argv[0];
 	
@@ -208,10 +210,11 @@ static int net_cache_del(int argc, const char **argv)
 /**
  * Get and display an entry from the cache
  * 
+ * @param c	A net_context structure
  * @param argv key to search an entry of
  * @return 0 on success, otherwise failure
  **/
-static int net_cache_get(int argc, const char **argv)
+static int net_cache_get(struct net_context *c, int argc, const char **argv)
 {
 	const char* keystr = argv[0];
 	char* valuestr;
@@ -235,10 +238,11 @@ static int net_cache_get(int argc, const char **argv)
 /**
  * Search an entry/entries in the cache
  * 
+ * @param c	A net_context structure
  * @param argv key pattern to match the entries to
  * @return 0 on success, otherwise failure
  **/
-static int net_cache_search(int argc, const char **argv)
+static int net_cache_search(struct net_context *c, int argc, const char **argv)
 {
 	const char* pattern;
 	
@@ -256,10 +260,11 @@ static int net_cache_search(int argc, const char **argv)
 /**
  * List the contents of the cache
  * 
+ * @param c	A net_context structure
  * @param argv ignored in this functionailty
  * @return always returns 0
  **/
-static int net_cache_list(int argc, const char **argv)
+static int net_cache_list(struct net_context *c, int argc, const char **argv)
 {
 	const char* pattern = "*";
 	gencache_iterate(print_cache_entry, NULL, pattern);
@@ -271,10 +276,11 @@ static int net_cache_list(int argc, const char **argv)
 /**
  * Flush the whole cache
  * 
+ * @param c	A net_context structure
  * @param argv ignored in this functionality
  * @return always returns 0
  **/
-static int net_cache_flush(int argc, const char **argv)
+static int net_cache_flush(struct net_context *c, int argc, const char **argv)
 {
 	const char* pattern = "*";
 	gencache_iterate(delete_cache_entry, NULL, pattern);
@@ -286,10 +292,11 @@ static int net_cache_flush(int argc, const char **argv)
 /**
  * Short help
  *
+ * @param c	A net_context structure
  * @param argv ignored in this functionality
  * @return always returns -1
  **/
-static int net_cache_usage(int argc, const char **argv)
+static int net_cache_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("  net cache add \t add add new cache entry\n");
 	d_printf("  net cache del \t delete existing cache entry by key\n");
@@ -304,10 +311,11 @@ static int net_cache_usage(int argc, const char **argv)
 /**
  * Entry point to 'net cache' subfunctionality
  *
+ * @param c	A net_context structure
  * @param argv arguments passed to further called functions
  * @return whatever further functions return
  **/
-int net_cache(int argc, const char **argv)
+int net_cache(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"add", net_cache_add},
@@ -319,5 +327,5 @@ int net_cache(int argc, const char **argv)
 		{NULL, NULL}
 	};
 
-	return net_run_function(argc, argv, func, net_cache_usage);
+	return net_run_function(c, argc, argv, func, net_cache_usage);
 }

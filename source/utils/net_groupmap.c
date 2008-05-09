@@ -72,7 +72,7 @@ static void print_map_entry ( GROUP_MAP map, bool long_list )
 /*********************************************************
  List the groups.
 **********************************************************/
-static int net_groupmap_list(int argc, const char **argv)
+static int net_groupmap_list(struct net_context *c, int argc, const char **argv)
 {
 	size_t entries;
 	bool long_list = False;
@@ -80,7 +80,7 @@ static int net_groupmap_list(int argc, const char **argv)
 	fstring ntgroup = "";
 	fstring sid_string = "";
 
-	if (opt_verbose || opt_long_list_entries)
+	if (c->opt_verbose || c->opt_long_list_entries)
 		long_list = True;
 	
 	/* get the options */
@@ -148,7 +148,7 @@ static int net_groupmap_list(int argc, const char **argv)
  Add a new group mapping entry
 **********************************************************/
 
-static int net_groupmap_add(int argc, const char **argv)
+static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 {
 	DOM_SID sid;
 	fstring ntgroup = "";
@@ -293,7 +293,6 @@ static int net_groupmap_add(int argc, const char **argv)
 	if (!ntgroup[0] )
 		fstrcpy( ntgroup, unixgrp );
 		
-	
 	if (!NT_STATUS_IS_OK(add_initial_entry(gid, string_sid, sid_type, ntgroup, ntcomment))) {
 		d_fprintf(stderr, "adding entry for group %s failed!\n", ntgroup);
 		return -1;
@@ -304,7 +303,7 @@ static int net_groupmap_add(int argc, const char **argv)
 	return 0;
 }
 
-static int net_groupmap_modify(int argc, const char **argv)
+static int net_groupmap_modify(struct net_context *c, int argc, const char **argv)
 {
 	DOM_SID sid;
 	GROUP_MAP map;
@@ -436,7 +435,7 @@ static int net_groupmap_modify(int argc, const char **argv)
 	return 0;
 }
 
-static int net_groupmap_delete(int argc, const char **argv)
+static int net_groupmap_delete(struct net_context *c, int argc, const char **argv)
 {
 	DOM_SID sid;
 	fstring ntgroup = "";
@@ -490,7 +489,7 @@ static int net_groupmap_delete(int argc, const char **argv)
 	return 0;
 }
 
-static int net_groupmap_set(int argc, const char **argv)
+static int net_groupmap_set(struct net_context *c, int argc, const char **argv)
 {
 	const char *ntgroup = NULL;
 	struct group *grp = NULL;
@@ -503,7 +502,7 @@ static int net_groupmap_set(int argc, const char **argv)
 		return -1;
 	}
 
-	if ( opt_localgroup && opt_domaingroup ) {
+	if ( c->opt_localgroup && c->opt_domaingroup ) {
 		d_printf("Can only specify -L or -D, not both\n");
 		return -1;
 	}
@@ -540,11 +539,11 @@ static int net_groupmap_set(int argc, const char **argv)
 
 		map.gid = grp->gr_gid;
 
-		if (opt_rid == 0) {
+		if (c->opt_rid == 0) {
 			if ( pdb_rid_algorithm() )
-				opt_rid = algorithmic_pdb_gid_to_group_rid(map.gid);
+				c->opt_rid = algorithmic_pdb_gid_to_group_rid(map.gid);
 			else {
-				if ( !pdb_new_rid((uint32*)&opt_rid) ) {
+				if ( !pdb_new_rid((uint32*)&c->opt_rid) ) {
 					d_fprintf( stderr, "Could not allocate new RID\n");
 					return -1;
 				}
@@ -552,7 +551,7 @@ static int net_groupmap_set(int argc, const char **argv)
 		}
 
 		sid_copy(&map.sid, get_global_sam_sid());
-		sid_append_rid(&map.sid, opt_rid);
+		sid_append_rid(&map.sid, c->opt_rid);
 
 		map.sid_name_use = SID_NAME_DOM_GRP;
 		fstrcpy(map.nt_name, ntgroup);
@@ -567,7 +566,7 @@ static int net_groupmap_set(int argc, const char **argv)
 
 	/* Now we have a mapping entry, update that stuff */
 
-	if ( opt_localgroup || opt_domaingroup ) {
+	if ( c->opt_localgroup || c->opt_domaingroup ) {
 		if (map.sid_name_use == SID_NAME_WKN_GRP) {
 			d_fprintf(stderr, "Can't change type of the BUILTIN group %s\n",
 				 map.nt_name);
@@ -575,19 +574,19 @@ static int net_groupmap_set(int argc, const char **argv)
 		}
 	}
 
-	if (opt_localgroup)
+	if (c->opt_localgroup)
 		map.sid_name_use = SID_NAME_ALIAS;
 
-	if (opt_domaingroup)
+	if (c->opt_domaingroup)
 		map.sid_name_use = SID_NAME_DOM_GRP;
 
 	/* The case (opt_domaingroup && opt_localgroup) was tested for above */
 
-	if (strlen(opt_comment) > 0)
-		fstrcpy(map.comment, opt_comment);
+	if (strlen(c->opt_comment) > 0)
+		fstrcpy(map.comment, c->opt_comment);
 
-	if (strlen(opt_newntname) > 0)
-		fstrcpy(map.nt_name, opt_newntname);
+	if (strlen(c->opt_newntname) > 0)
+		fstrcpy(map.nt_name, c->opt_newntname);
 
 	if (grp != NULL)
 		map.gid = grp->gr_gid;
@@ -600,7 +599,7 @@ static int net_groupmap_set(int argc, const char **argv)
 	return 0;
 }
 
-static int net_groupmap_cleanup(int argc, const char **argv)
+static int net_groupmap_cleanup(struct net_context *c, int argc, const char **argv)
 {
 	GROUP_MAP *map = NULL;
 	size_t i, entries;
@@ -629,7 +628,7 @@ static int net_groupmap_cleanup(int argc, const char **argv)
 	return 0;
 }
 
-static int net_groupmap_addmem(int argc, const char **argv)
+static int net_groupmap_addmem(struct net_context *c, int argc, const char **argv)
 {
 	DOM_SID alias, member;
 
@@ -649,7 +648,7 @@ static int net_groupmap_addmem(int argc, const char **argv)
 	return 0;
 }
 
-static int net_groupmap_delmem(int argc, const char **argv)
+static int net_groupmap_delmem(struct net_context *c, int argc, const char **argv)
 {
 	DOM_SID alias, member;
 
@@ -669,7 +668,7 @@ static int net_groupmap_delmem(int argc, const char **argv)
 	return 0;
 }
 
-static int net_groupmap_listmem(int argc, const char **argv)
+static int net_groupmap_listmem(struct net_context *c, int argc, const char **argv)
 {
 	DOM_SID alias;
 	DOM_SID *members;
@@ -726,7 +725,7 @@ static bool print_alias_memberships(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-static int net_groupmap_memberships(int argc, const char **argv)
+static int net_groupmap_memberships(struct net_context *c, int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
 	DOM_SID *domain_sid, *builtin_sid, member;
@@ -759,7 +758,7 @@ static int net_groupmap_memberships(int argc, const char **argv)
 	return 0;
 }
 
-int net_help_groupmap(int argc, const char **argv)
+int net_help_groupmap(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("net groupmap add"\
 		"\n  Create a new group mapping\n");
@@ -789,7 +788,7 @@ int net_help_groupmap(int argc, const char **argv)
 /***********************************************************
  migrated functionality from smbgroupedit
  **********************************************************/
-int net_groupmap(int argc, const char **argv)
+int net_groupmap(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"add", net_groupmap_add},
@@ -813,8 +812,8 @@ int net_groupmap(int argc, const char **argv)
 	}
 	
 	if ( argc )
-		return net_run_function(argc, argv, func, net_help_groupmap);
+		return net_run_function(c, argc, argv, func, net_help_groupmap);
 
-	return net_help_groupmap( argc, argv );
+	return net_help_groupmap(c, argc, argv );
 }
 

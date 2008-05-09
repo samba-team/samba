@@ -22,7 +22,7 @@
 /********************************************************************
 ********************************************************************/
 
-static int net_help_audit(int argc, const char **argv)
+static int net_help_audit(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("net rpc audit list                       View configured Auditing policies\n");
 	d_printf("net rpc audit enable                     Enable Auditing\n");
@@ -61,7 +61,8 @@ static void print_auditing_category(const char *policy, const char *value)
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_audit_get_internal(const DOM_SID *domain_sid,
+static NTSTATUS rpc_audit_get_internal(struct net_context *c,
+				       const DOM_SID *domain_sid,
 				       const char *domain_name,
 				       struct cli_state *cli,
 				       struct rpc_pipe_client *pipe_hnd,
@@ -77,7 +78,7 @@ static NTSTATUS rpc_audit_get_internal(const DOM_SID *domain_sid,
 
 	if (argc < 1 || argc > 2) {
 		d_printf("insufficient arguments\n");
-		net_help_audit(argc, argv);
+		net_help_audit(c, argc, argv);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -128,7 +129,8 @@ static NTSTATUS rpc_audit_get_internal(const DOM_SID *domain_sid,
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_audit_set_internal(const DOM_SID *domain_sid,
+static NTSTATUS rpc_audit_set_internal(struct net_context *c,
+				       const DOM_SID *domain_sid,
 				       const char *domain_name,
 				       struct cli_state *cli,
 				       struct rpc_pipe_client *pipe_hnd,
@@ -143,7 +145,7 @@ static NTSTATUS rpc_audit_set_internal(const DOM_SID *domain_sid,
 
 	if (argc < 2 || argc > 3) {
 		d_printf("insufficient arguments\n");
-		net_help_audit(argc, argv);
+		net_help_audit(c, argc, argv);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -265,7 +267,8 @@ static NTSTATUS rpc_audit_enable_internal_ext(struct rpc_pipe_client *pipe_hnd,
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_audit_disable_internal(const DOM_SID *domain_sid,
+static NTSTATUS rpc_audit_disable_internal(struct net_context *c,
+					   const DOM_SID *domain_sid,
 					   const char *domain_name,
 					   struct cli_state *cli,
 					   struct rpc_pipe_client *pipe_hnd,
@@ -280,7 +283,8 @@ static NTSTATUS rpc_audit_disable_internal(const DOM_SID *domain_sid,
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_audit_enable_internal(const DOM_SID *domain_sid,
+static NTSTATUS rpc_audit_enable_internal(struct net_context *c,
+					  const DOM_SID *domain_sid,
 					  const char *domain_name,
 					  struct cli_state *cli,
 					  struct rpc_pipe_client *pipe_hnd,
@@ -295,7 +299,8 @@ static NTSTATUS rpc_audit_enable_internal(const DOM_SID *domain_sid,
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_audit_list_internal(const DOM_SID *domain_sid,
+static NTSTATUS rpc_audit_list_internal(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -359,52 +364,52 @@ static NTSTATUS rpc_audit_list_internal(const DOM_SID *domain_sid,
 /********************************************************************
 ********************************************************************/
 
-static int rpc_audit_get(int argc, const char **argv)
+static int rpc_audit_get(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PI_LSARPC, 0,
+	return run_rpc_command(c, NULL, PI_LSARPC, 0,
 		rpc_audit_get_internal, argc, argv);
 }
 
 /********************************************************************
 ********************************************************************/
 
-static int rpc_audit_set(int argc, const char **argv)
+static int rpc_audit_set(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PI_LSARPC, 0,
+	return run_rpc_command(c, NULL, PI_LSARPC, 0,
 		rpc_audit_set_internal, argc, argv);
 }
 
 /********************************************************************
 ********************************************************************/
 
-static int rpc_audit_enable(int argc, const char **argv)
+static int rpc_audit_enable(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PI_LSARPC, 0,
+	return run_rpc_command(c, NULL, PI_LSARPC, 0,
 		rpc_audit_enable_internal, argc, argv);
 }
 
 /********************************************************************
 ********************************************************************/
 
-static int rpc_audit_disable(int argc, const char **argv)
+static int rpc_audit_disable(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PI_LSARPC, 0,
+	return run_rpc_command(c, NULL, PI_LSARPC, 0,
 		rpc_audit_disable_internal, argc, argv);
 }
 
 /********************************************************************
 ********************************************************************/
 
-static int rpc_audit_list(int argc, const char **argv)
+static int rpc_audit_list(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PI_LSARPC, 0,
+	return run_rpc_command(c, NULL, PI_LSARPC, 0,
 		rpc_audit_list_internal, argc, argv);
 }
 
 /********************************************************************
 ********************************************************************/
 
-int net_rpc_audit(int argc, const char **argv)
+int net_rpc_audit(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"get", rpc_audit_get},
@@ -416,7 +421,7 @@ int net_rpc_audit(int argc, const char **argv)
 	};
 
 	if (argc)
-		return net_run_function(argc, argv, func, net_help_audit);
+		return net_run_function(c, argc, argv, func, net_help_audit);
 
-	return net_help_audit(argc, argv);
+	return net_help_audit(c, argc, argv);
 }

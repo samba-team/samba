@@ -19,7 +19,7 @@
 #include "includes.h"
 #include "utils/net.h"
 
-int net_lookup_usage(int argc, const char **argv)
+int net_lookup_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf(
 "  net lookup [host] HOSTNAME[#<type>]\n\tgives IP for a hostname\n\n"
@@ -36,7 +36,7 @@ int net_lookup_usage(int argc, const char **argv)
 }
 
 /* lookup a hostname giving an IP */
-static int net_lookup_host(int argc, const char **argv)
+static int net_lookup_host(struct net_context *c, int argc, const char **argv)
 {
 	struct sockaddr_storage ss;
 	int name_type = 0x20;
@@ -45,7 +45,7 @@ static int net_lookup_host(int argc, const char **argv)
 	char *p;
 
 	if (argc == 0)
-		return net_lookup_usage(argc, argv);
+		return net_lookup_usage(c, argc, argv);
 
 	p = strchr_m(name,'#');
 	if (p) {
@@ -88,7 +88,7 @@ static void print_ldap_srvlist(struct dns_rr_srv *dclist, int numdcs )
 }
 #endif
 
-static int net_lookup_ldap(int argc, const char **argv)
+static int net_lookup_ldap(struct net_context *c, int argc, const char **argv)
 {
 #ifdef HAVE_ADS
 	const char *domain;
@@ -104,7 +104,7 @@ static int net_lookup_ldap(int argc, const char **argv)
 	if (argc > 0)
 		domain = argv[0];
 	else
-		domain = opt_target_workgroup;
+		domain = c->opt_target_workgroup;
 
 	sitename = sitename_fetch(domain);
 
@@ -171,7 +171,7 @@ static int net_lookup_ldap(int argc, const char **argv)
 	return -1;
 }
 
-static int net_lookup_dc(int argc, const char **argv)
+static int net_lookup_dc(struct net_context *c, int argc, const char **argv)
 {
 	struct ip_service *ip_list;
 	struct sockaddr_storage ss;
@@ -185,7 +185,7 @@ static int net_lookup_dc(int argc, const char **argv)
 	if (sec_ads) {
 		domain = lp_realm();
 	} else {
-		domain = opt_target_workgroup;
+		domain = c->opt_target_workgroup;
 	}
 
 	if (argc > 0)
@@ -216,7 +216,7 @@ static int net_lookup_dc(int argc, const char **argv)
 	return 0;
 }
 
-static int net_lookup_pdc(int argc, const char **argv)
+static int net_lookup_pdc(struct net_context *c, int argc, const char **argv)
 {
 	struct sockaddr_storage ss;
 	char *pdc_str = NULL;
@@ -226,7 +226,7 @@ static int net_lookup_pdc(int argc, const char **argv)
 	if (lp_security() == SEC_ADS) {
 		domain = lp_realm();
 	} else {
-		domain = opt_target_workgroup;
+		domain = c->opt_target_workgroup;
 	}
 
 	if (argc > 0)
@@ -244,10 +244,10 @@ static int net_lookup_pdc(int argc, const char **argv)
 }
 
 
-static int net_lookup_master(int argc, const char **argv)
+static int net_lookup_master(struct net_context *c, int argc, const char **argv)
 {
 	struct sockaddr_storage master_ss;
-	const char *domain=opt_target_workgroup;
+	const char *domain = c->opt_target_workgroup;
 	char addr[INET6_ADDRSTRLEN];
 
 	if (argc > 0)
@@ -260,7 +260,7 @@ static int net_lookup_master(int argc, const char **argv)
 	return 0;
 }
 
-static int net_lookup_kdc(int argc, const char **argv)
+static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 {
 #ifdef HAVE_KRB5
 	krb5_error_code rc;
@@ -311,7 +311,7 @@ static int net_lookup_kdc(int argc, const char **argv)
 	return -1;
 }
 
-static int net_lookup_name(int argc, const char **argv)
+static int net_lookup_name(struct net_context *c, int argc, const char **argv)
 {
 	const char *dom, *name;
 	DOM_SID sid;
@@ -333,7 +333,7 @@ static int net_lookup_name(int argc, const char **argv)
 	return 0;
 }
 
-static int net_lookup_sid(int argc, const char **argv)
+static int net_lookup_sid(struct net_context *c, int argc, const char **argv)
 {
 	const char *dom, *name;
 	DOM_SID sid;
@@ -360,7 +360,7 @@ static int net_lookup_sid(int argc, const char **argv)
 	return 0;
 }
 
-static int net_lookup_dsgetdcname(int argc, const char **argv)
+static int net_lookup_dsgetdcname(struct net_context *c, int argc, const char **argv)
 {
 	NTSTATUS status;
 	const char *domain_name = NULL;
@@ -422,7 +422,7 @@ static int net_lookup_dsgetdcname(int argc, const char **argv)
 
 
 /* lookup hosts or IP addresses using internal samba lookup fns */
-int net_lookup(int argc, const char **argv)
+int net_lookup(struct net_context *c, int argc, const char **argv)
 {
 	int i;
 
@@ -441,11 +441,11 @@ int net_lookup(int argc, const char **argv)
 
 	if (argc < 1) {
 		d_printf("\nUsage: \n");
-		return net_lookup_usage(argc, argv);
+		return net_lookup_usage(c, argc, argv);
 	}
 	for (i=0; table[i].funcname; i++) {
 		if (StrCaseCmp(argv[0], table[i].funcname) == 0)
-			return table[i].fn(argc-1, argv+1);
+			return table[i].fn(c, argc-1, argv+1);
 	}
 
 	/* Default to lookup a hostname so 'net lookup foo#1b' can be 
@@ -453,5 +453,5 @@ int net_lookup(int argc, const char **argv)
 	   is a bit confusing as non #00 names can't really be 
 	   considered hosts as such. */
 
-	return net_lookup_host(argc, argv);
+	return net_lookup_host(c, argc, argv);
 }
