@@ -8783,7 +8783,7 @@ bool lp_load(const char *pszFname,
 			  save_defaults,
 			  add_ipc,
 			  initialize_globals,
-			  false);
+			  true);
 }
 
 bool lp_load_initial_only(const char *pszFname)
@@ -8793,7 +8793,7 @@ bool lp_load_initial_only(const char *pszFname)
 			  false,
 			  false,
 			  true,
-			  true);
+			  false);
 }
 
 /***************************************************************************
