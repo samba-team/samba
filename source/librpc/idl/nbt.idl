@@ -608,7 +608,22 @@ interface nbt
 		[case(13)] nbt_cldap_netlogon_13 logon13;
 		[case(14)] nbt_cldap_netlogon_13 logon13;
 		[case(15)] nbt_cldap_netlogon_13 logon13;
-		[default]  nbt_cldap_netlogon_29 logon29;
+		[case(16)] nbt_cldap_netlogon_1 logon1;
+		[case(17)] nbt_cldap_netlogon_1 logon1;
+		[case(18)] nbt_cldap_netlogon_3 logon3;
+		[case(19)] nbt_cldap_netlogon_3 logon3;
+		[case(20)] nbt_cldap_netlogon_15 logon15;
+		[case(21)] nbt_cldap_netlogon_15 logon15;
+		[case(22)] nbt_cldap_netlogon_15 logon15;
+		[case(23)] nbt_cldap_netlogon_15 logon15;
+		[case(24)] nbt_cldap_netlogon_15 logon15;
+		[case(25)] nbt_cldap_netlogon_15 logon15;
+		[case(26)] nbt_cldap_netlogon_15 logon15;
+		[case(27)] nbt_cldap_netlogon_15 logon15;
+		[case(28)] nbt_cldap_netlogon_15 logon15;
+		[case(29)] nbt_cldap_netlogon_29 logon29;
+		[case(30)] nbt_cldap_netlogon_29 logon29;
+		[case(31)] nbt_cldap_netlogon_29 logon29;
 	} nbt_cldap_netlogon;
 
 	/*******************************************/
