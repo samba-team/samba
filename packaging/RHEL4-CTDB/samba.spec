@@ -5,8 +5,8 @@ Summary: Samba SMB client and server
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name:         samba
-Version:      3.0.25
-Release:      ctdb.1
+Version:      3.2.0
+Release:      ctdb.test.090508
 Epoch:        0
 License: GNU GPL version 2
 Group: System Environment/Daemons
@@ -33,6 +33,13 @@ BuildRequires: pam-devel, readline-devel, fileutils, libacl-devel, openldap-deve
 # Working around perl dependency problem from docs
 %define __perl_requires %{SOURCE998}
 
+# rpm screws up the arch lib dir when using --target on RHEL5
+%ifarch i386 i486 i586 i686 ppc s390
+%define _libarch lib
+%else
+%define _libarch %_lib
+%endif
+
 
 %description
 Samba is the protocol by which a lot of PC-related machines share
@@ -46,7 +53,7 @@ TCP/IP (NetBT) protocols and does NOT need the NetBEUI (Microsoft Raw
 NetBIOS frame) protocol.
 
 
-#######################################################################
+######################################################################
 %package client
 Summary: Samba (SMB) client programs.
 Group: Applications/System
@@ -82,6 +89,15 @@ Provides: samba-swat = %{version}-%{release}
 The samba-swat package includes the new SWAT (Samba Web Administration
 Tool), for remotely managing Samba's smb.conf file using your favorite
 Web browser.
+
+%ifarch i386 i486 i586 i686 ppc s390
+%package winbind-32bit
+Summary:        Samba winbind compatibility package for 32bit apps on 64bit archs
+Group:          Applications/System
+
+%description winbind-32bit
+Compatibility package for 32 bit apps on 64 bit architecures
+%endif
 
 
 #######################################################################
@@ -146,8 +162,7 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
         --without-smbwrapper \
 	--with-pam \
 	--with-quotas \
-	--with-shared-modules=idmap_rid,idmap_ad \
-	--with-smbmount \
+	--with-shared-modules=idmap_rid,idmap_ad,idmap_tdb2 \
 	--with-syslog \
 	--with-utmp \
 	--with-cluster-support \
@@ -194,7 +209,7 @@ mkdir -p $RPM_BUILD_ROOT%{_includedir}
 mkdir -p $RPM_BUILD_ROOT%{_initrddir}
 mkdir -p $RPM_BUILD_ROOT{%{_libdir},%{_includedir}}
 mkdir -p $RPM_BUILD_ROOT%{_libdir}/samba/{auth,charset,idmap,vfs,pdb}
-mkdir -p $RPM_BUILD_ROOT/%{_lib}/security
+mkdir -p $RPM_BUILD_ROOT/%{_libarch}/security
 mkdir -p $RPM_BUILD_ROOT%{_mandir}
 mkdir -p $RPM_BUILD_ROOT%{_prefix}/{bin,sbin}
 mkdir -p $RPM_BUILD_ROOT%{_prefix}/lib
@@ -213,13 +228,13 @@ make DESTDIR=$RPM_BUILD_ROOT \
 cd ..
 
 # pam_smbpass
-cp source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_lib}/security/pam_smbpass.so
+cp source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_libarch}/security/pam_smbpass.so
 
 # NSS & PAM winbind support
-install -m 755 source/bin/pam_winbind.so $RPM_BUILD_ROOT/%{_lib}/security/pam_winbind.so
-install -m 755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_lib}/libnss_winbind.so
-install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_lib}/libnss_wins.so
-( cd $RPM_BUILD_ROOT/%{_lib};
+install -m 755 source/bin/pam_winbind.so $RPM_BUILD_ROOT/%{_libarch}/security/pam_winbind.so
+install -m 755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_libarch}/libnss_winbind.so
+install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_libarch}/libnss_wins.so
+( cd $RPM_BUILD_ROOT/%{_libarch};
   ln -sf libnss_winbind.so  libnss_winbind.so.2;
   ln -sf libnss_wins.so  libnss_wins.so.2 )
 
@@ -231,12 +246,12 @@ install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{_includedir}
 ln -s %{_libdir}/libsmbclient.so $RPM_BUILD_ROOT%{_libdir}/libsmbclient.so.0
 
 # make install puts libmsrpc.so in the wrong place on x86_64
-rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libmsrpc.so $RPM_BUILD_ROOT/usr/lib*/samba/libmsrpc.a || true
-install -m 755 source/bin/libmsrpc.so $RPM_BUILD_ROOT%{_libdir}/libmsrpc.so
-install -m 755 source/bin/libmsrpc.a $RPM_BUILD_ROOT%{_libdir}/libmsrpc.a
-install -m 644 source/include/libmsrpc.h $RPM_BUILD_ROOT%{_includedir}
-rm -f $RPM_BUILD_ROOT%{_libdir}/samba/libmsrpc.*
-ln -s /%{_libdir}/libmsrpc.so $RPM_BUILD_ROOT%{_libdir}/libmsrpc.so.0
+#rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libmsrpc.so $RPM_BUILD_ROOT/usr/lib*/samba/libmsrpc.a || true
+#install -m 755 source/bin/libmsrpc.so $RPM_BUILD_ROOT%{_libdir}/libmsrpc.so
+#install -m 755 source/bin/libmsrpc.a $RPM_BUILD_ROOT%{_libdir}/libmsrpc.a
+#install -m 644 source/include/libmsrpc.h $RPM_BUILD_ROOT%{_includedir}
+#rm -f $RPM_BUILD_ROOT%{_libdir}/samba/libmsrpc.*
+#ln -s /%{_libdir}/libmsrpc.so $RPM_BUILD_ROOT%{_libdir}/libmsrpc.so.0
 
 # make install puts libsmbsharemodes.so in the wrong place on x86_64
 rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libsmbsharemodes.so $RPM_BUILD_ROOT/usr/lib*/samba/libsmbsharemodes.a || true
@@ -247,15 +262,21 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/samba/libsmbsharemodes.*
 ln -s /%{_libdir}/libsmbsharemodes.so $RPM_BUILD_ROOT%{_libdir}/libsmbsharemodes.so.0
 
 # Install pam_smbpass.so
-install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_lib}/security/pam_smbpass.so
+install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_libarch}/security/pam_smbpass.so
+
+#
+ln -s %{_libdir}/samba/libwbclient.so $RPM_BUILD_ROOT/%{_libdir}/libwbclient.so.0
+ln -s %{_libdir}/samba/libtalloc.so $RPM_BUILD_ROOT/%{_libdir}/libtalloc.so.1
+ln -s %{_libdir}/samba/libtdb.so $RPM_BUILD_ROOT/%{_libdir}/libtdb.so.0
+ln -s %{_libdir}/samba/libnetapi.so $RPM_BUILD_ROOT/%{_libdir}/libnetapi.so.0
 
 ## cleanup
 /bin/rm -rf $RPM_BUILD_ROOT/usr/lib*/samba/security
 
 # we need a symlink for mount to recognise the smb and smbfs filesystem types
-ln -sf %{_prefix}/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
-ln -sf %{_prefix}/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
-/bin/rm -f $RPM_BUILD_ROOT/mount.smbfs
+#ln -sf %{_prefix}/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
+#ln -sf %{_prefix}/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
+#/bin/rm -f $RPM_BUILD_ROOT/mount.smbfs
 
 # Install the miscellany
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT%{_sysconfdir}/samba/lmhosts
@@ -408,7 +429,7 @@ fi
 %defattr(-,root,root)
 %config(noreplace) %{_sysconfdir}/xinetd.d/swat
 %dir %{_datadir}/swat
-%{_datadir}/swat/
+%{_datadir}/swat/*
 %{_sbindir}/swat
 %{_mandir}/man8/swat.8*
 %attr(755,root,root) %{_libdir}/samba/*.msg
@@ -417,16 +438,16 @@ fi
 
 %files client
 %defattr(-,root,root)
-/sbin/mount.smb
-/sbin/mount.smbfs
+#/sbin/mount.smb
+#/sbin/mount.smbfs
 /sbin/mount.cifs
 /sbin/umount.cifs
 
 %{_bindir}/rpcclient
 %{_bindir}/smbcacls
-%{_bindir}/smbmount
-%{_bindir}/smbmnt
-%{_bindir}/smbumount
+#%{_bindir}/smbmount
+#%{_bindir}/smbmnt
+#%{_bindir}/smbumount
 %{_bindir}/findsmb
 %{_bindir}/nmblookup
 %{_bindir}/smbget
@@ -436,9 +457,9 @@ fi
 %{_bindir}/smbtar
 %{_bindir}/smbtree
 
-%{_mandir}/man8/smbmnt.8*
-%{_mandir}/man8/smbmount.8*
-%{_mandir}/man8/smbumount.8*
+#%{_mandir}/man8/smbmnt.8*
+#%{_mandir}/man8/smbmount.8*
+#%{_mandir}/man8/smbumount.8*
 %{_mandir}/man8/mount.cifs.8.*
 %{_mandir}/man8/umount.cifs.8.*
 %{_mandir}/man8/smbspool.8*
@@ -463,20 +484,33 @@ fi
 %config(noreplace) %{_sysconfdir}/samba/lmhosts
 %{_initrddir}/winbind
 
-%attr(755,root,root) /%{_lib}/libnss_wins.so*
-%attr(755,root,root) /%{_lib}/libnss_winbind.so*
-%attr(755,root,root) /%{_lib}/security/pam_winbind.so
-%attr(755,root,root) /%{_lib}/security/pam_smbpass.so
+%attr(755,root,root) /%{_libarch}/libnss_wins.so*
+%attr(755,root,root) /%{_libarch}/libnss_winbind.so*
+%attr(755,root,root) /%{_libarch}/security/pam_winbind.so
+%attr(755,root,root) /%{_libarch}/security/pam_smbpass.so
 
 %{_includedir}/libsmbclient.h
 %{_libdir}/libsmbclient.*
-%{_includedir}/libmsrpc.h
-%{_libdir}/libmsrpc.*
+#%{_includedir}/libmsrpc.h
+#%{_libdir}/libmsrpc.*
 %{_includedir}/smb_share_modes.h
 %{_libdir}/libsmbsharemodes.*
 
 %{_libdir}/samba/*.dat
 %{_libdir}/samba/charset/*.so
+
+%{_includedir}/netapi.h
+%{_includedir}/wbclient.h
+%{_includedir}/talloc.h
+%{_includedir}/tdb.h
+%{_libdir}/samba/libnetapi.so*
+%{_libdir}/libnetapi.so*
+%{_libdir}/samba/libtalloc.so*
+%{_libdir}/libtalloc.so*
+%{_libdir}/samba/libtdb.so*
+%{_libdir}/libtdb.so*
+%{_libdir}/samba/libwbclient.so*
+%{_libdir}/libwbclient.so*
 
 %{_sbindir}/winbindd
 %{_bindir}/testparm
@@ -505,6 +539,14 @@ fi
 %{_mandir}/man8/net.8*
 %{_mandir}/man7/pam_winbind.7*
 %{_mandir}/man7/libsmbclient.7*
+
+%ifarch i386 i486 i586 i686 ppc s390
+%files winbind-32bit
+%attr(755,root,root) /%{_libarch}/libnss_winbind.so*
+%attr(755,root,root) /%{_libarch}/libnss_wins.so*
+%attr(755,root,root) /%{_libarch}/security/pam_winbind.so
+%endif
+
 
 %changelog
 * Fri Jan 16 2004 Gerald (Jerry) Carter <jerry@samba,org>
