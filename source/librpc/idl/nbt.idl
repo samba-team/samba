@@ -564,6 +564,25 @@ interface nbt
 		nbt_string           user_name;
 		nbt_string           server_site;
 		nbt_string           client_site;
+		nbt_string           next_closest_site;
+		[value(15)] nbt_netlogon_version nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_cldap_netlogon_15;
+
+	typedef [public] struct {
+		nbt_netlogon_command type;
+		uint16               sbz;
+		nbt_server_type      server_type;
+		GUID                 domain_uuid;
+		nbt_string           forest;
+		nbt_string           dns_domain;
+		nbt_string           pdc_dns_name;
+		nbt_string           domain;
+		nbt_string           pdc_name;
+		nbt_string           user_name;
+		nbt_string           server_site;
+		nbt_string           client_site;
 		uint8                dc_sock_addr_size;
 		[subcontext(0),subcontext_size(dc_sock_addr_size)] nbt_dc_sock_addr dc_sock_addr;
 		nbt_string           next_closest_site;
