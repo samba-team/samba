@@ -673,7 +673,7 @@ struct composite_context *dcom_proxy_IEnumWbemClassObject_Release_send(struct IU
         return c;
 }
 
-NTSTATUS dcom_proxy_IWbemClassObject_init()
+NTSTATUS dcom_proxy_IWbemClassObject_init(void)
 {
 	struct GUID clsid;
 	GUID_from_string("4590f812-1d3a-11d0-891f-00aa004b2e24", &clsid);

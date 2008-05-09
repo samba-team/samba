@@ -29,16 +29,14 @@
 #include "librpc/gen_ndr/ndr_remact_c.h"
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
 #include "librpc/gen_ndr/com_dcom.h"
-#include "librpc/rpc/dcerpc_table.h"
 
 #include "lib/com/dcom/dcom.h"
-#include "lib/com/proto.h"
-#include "lib/com/dcom/proto.h"
+#include "librpc/gen_ndr/com_wmi.h"
+#include "librpc/ndr/ndr_table.h"
 
 struct WBEMCLASS;
 struct WBEMOBJECT;
 enum CIMTYPE_ENUMERATION;
-NTSTATUS dcom_proxy_IWbemClassObject_init();
 
 #include "wmi/proto.h"
 
@@ -188,7 +186,7 @@ int main(int argc, char **argv)
         parse_args(argc, argv, &args);
 
 	dcerpc_init();
-	dcerpc_table_init();
+	ndr_table_init();
 
 	dcom_proxy_IUnknown_init();
 	dcom_proxy_IWbemLevel1Login_init();

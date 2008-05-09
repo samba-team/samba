@@ -1,4 +1,5 @@
 [SUBSYSTEM::WMI]
+PRIVATE_PROTO_HEADER = proto.h
 PUBLIC_DEPENDENCIES = RPC_NDR_OXIDRESOLVER \
 		NDR_DCOM \
 		RPC_NDR_REMACT \
@@ -6,12 +7,11 @@ PUBLIC_DEPENDENCIES = RPC_NDR_OXIDRESOLVER \
 		DCOM_PROXY_DCOM \
 		DCOM
 
-WMI_OBJ_FILES = $(addprefix lib/wmi/, wmicore.o wbemdata.o ../librpc/gen_ndr/dcom_p.o)
+WMI_OBJ_FILES = $(addprefix lib/wmi/, wmicore.o wbemdata.o ../../librpc/gen_ndr/dcom_p.o)
 
 #################################
 # Start BINARY wmic
 [BINARY::wmic]
-PRIVATE_PROTO_HEADER = proto.h
 INSTALLDIR = BINDIR
 PRIVATE_DEPENDENCIES = \
                 POPT_SAMBA \
@@ -34,10 +34,7 @@ PRIVATE_DEPENDENCIES = \
 				WMI
 
 wmis_OBJ_FILES = \
-                wmis.o \
-		wmicore.o \
-		wbemdata.o \
-		../librpc/gen_ndr/dcom_p.o
+                lib/wmi/tools/wmis.o
 
 # End BINARY wmis
 #################################
