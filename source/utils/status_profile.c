@@ -356,8 +356,6 @@ bool status_profile_dump(bool verbose)
 	d_printf("get_nt_acl_time:                %u\n", profile_p->get_nt_acl_time);
 	d_printf("fget_nt_acl_count:              %u\n", profile_p->fget_nt_acl_count);
 	d_printf("fget_nt_acl_time:               %u\n", profile_p->fget_nt_acl_time);
-	d_printf("set_nt_acl_count:               %u\n", profile_p->set_nt_acl_count);
-	d_printf("set_nt_acl_time:                %u\n", profile_p->set_nt_acl_time);
 	d_printf("fset_nt_acl_count:              %u\n", profile_p->fset_nt_acl_count);
 	d_printf("fset_nt_acl_time:               %u\n", profile_p->fset_nt_acl_time);
 	d_printf("chmod_acl_count:                %u\n", profile_p->chmod_acl_count);

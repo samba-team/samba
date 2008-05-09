@@ -212,14 +212,6 @@ static NTSTATUS zfsacl_fset_nt_acl(vfs_handle_struct *handle,
 	return zfs_set_nt_acl(handle, fsp, security_info_sent, psd);
 }
 
-static NTSTATUS zfsacl_set_nt_acl(vfs_handle_struct *handle,
-		       files_struct *fsp,
-		       const char *name, uint32 security_info_sent,
-		       SEC_DESC *psd)
-{
-	return zfs_set_nt_acl(handle, fsp, security_info_sent, psd);
-}
-
 /* VFS operations structure */
 
 static vfs_op_tuple zfsacl_ops[] = {
@@ -228,8 +220,6 @@ static vfs_op_tuple zfsacl_ops[] = {
 	{SMB_VFS_OP(zfsacl_get_nt_acl), SMB_VFS_OP_GET_NT_ACL,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(zfsacl_fset_nt_acl), SMB_VFS_OP_FSET_NT_ACL,
-	 SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(zfsacl_set_nt_acl), SMB_VFS_OP_SET_NT_ACL,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
 };

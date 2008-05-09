@@ -1045,14 +1045,6 @@ NTSTATUS afsacl_fset_nt_acl(vfs_handle_struct *handle,
 	return afs_set_nt_acl(handle, fsp, security_info_sent, psd);
 }
 
-NTSTATUS afsacl_set_nt_acl(vfs_handle_struct *handle,
-		       files_struct *fsp,
-		       const char *name, uint32 security_info_sent,
-		       SEC_DESC *psd)
-{
-	return afs_set_nt_acl(handle, fsp, security_info_sent, psd);
-}
-
 static int afsacl_connect(vfs_handle_struct *handle, 
 			  const char *service, 
 			  const char *user)
@@ -1077,8 +1069,6 @@ static vfs_op_tuple afsacl_ops[] = {
 	{SMB_VFS_OP(afsacl_get_nt_acl), SMB_VFS_OP_GET_NT_ACL,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(afsacl_fset_nt_acl), SMB_VFS_OP_FSET_NT_ACL,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(afsacl_set_nt_acl), SMB_VFS_OP_SET_NT_ACL,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
 };

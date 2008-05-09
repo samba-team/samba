@@ -770,13 +770,7 @@ static NTSTATUS set_sd(files_struct *fsp, uint8 *data, uint32 sd_len,
 		security_info_sent &= ~DACL_SECURITY_INFORMATION;
 	}
 
-	if (fsp->fh->fd != -1) {
-		status = SMB_VFS_FSET_NT_ACL(fsp, security_info_sent, psd);
-	}
-	else {
-		status = SMB_VFS_SET_NT_ACL(fsp, fsp->fsp_name,
-					    security_info_sent, psd);
-	}
+	status = SMB_VFS_FSET_NT_ACL(fsp, security_info_sent, psd);
 
 	TALLOC_FREE(psd);
 
