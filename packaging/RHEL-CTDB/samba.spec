@@ -273,11 +273,6 @@ ln -s %{_libdir}/samba/libnetapi.so $RPM_BUILD_ROOT/%{_libdir}/libnetapi.so.0
 ## cleanup
 /bin/rm -rf $RPM_BUILD_ROOT/usr/lib*/samba/security
 
-# we need a symlink for mount to recognise the smb and smbfs filesystem types
-#ln -sf %{_prefix}/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
-#ln -sf %{_prefix}/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
-#/bin/rm -f $RPM_BUILD_ROOT/mount.smbfs
-
 # Install the miscellany
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT%{_sysconfdir}/samba/lmhosts
 
@@ -438,16 +433,11 @@ fi
 
 %files client
 %defattr(-,root,root)
-#/sbin/mount.smb
-#/sbin/mount.smbfs
 /sbin/mount.cifs
 /sbin/umount.cifs
 
 %{_bindir}/rpcclient
 %{_bindir}/smbcacls
-#%{_bindir}/smbmount
-#%{_bindir}/smbmnt
-#%{_bindir}/smbumount
 %{_bindir}/findsmb
 %{_bindir}/nmblookup
 %{_bindir}/smbget
@@ -457,9 +447,6 @@ fi
 %{_bindir}/smbtar
 %{_bindir}/smbtree
 
-#%{_mandir}/man8/smbmnt.8*
-#%{_mandir}/man8/smbmount.8*
-#%{_mandir}/man8/smbumount.8*
 %{_mandir}/man8/mount.cifs.8.*
 %{_mandir}/man8/umount.cifs.8.*
 %{_mandir}/man8/smbspool.8*
