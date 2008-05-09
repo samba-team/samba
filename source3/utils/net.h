@@ -24,7 +24,8 @@
 
 #include "lib/netapi/netapi.h"
 
-typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *,
+typedef NTSTATUS (*rpc_command_fn)(struct net_context *c,
+				const DOM_SID *,
 				const char *,
 				struct cli_state *cli,
 				struct rpc_pipe_client *,
@@ -38,6 +39,7 @@ typedef struct copy_clistate {
 	struct cli_state *cli_share_dst;
 	char *cwd;
 	uint16 attribute;
+	struct net_context *c;
 }copy_clistate;
 
 struct rpc_sh_ctx {
@@ -54,16 +56,59 @@ struct rpc_sh_ctx {
 
 struct rpc_sh_cmd {
 	const char *name;
-	struct rpc_sh_cmd *(*sub)(TALLOC_CTX *mem_ctx,
+	struct rpc_sh_cmd *(*sub)(struct net_context *c,
+				  TALLOC_CTX *mem_ctx,
 				  struct rpc_sh_ctx *ctx);
 	int pipe_idx;
-	NTSTATUS (*fn)(TALLOC_CTX *mem_ctx, struct rpc_sh_ctx *ctx,
+	NTSTATUS (*fn)(struct net_context *c, TALLOC_CTX *mem_ctx,
+		       struct rpc_sh_ctx *ctx,
 		       struct rpc_pipe_client *pipe_hnd,
 		       int argc, const char **argv);
 	const char *help;
 };
 
 enum netdom_domain_t { ND_TYPE_NT4, ND_TYPE_AD };
+
+struct net_context {
+	const char *opt_requester_name;
+	const char *opt_host;
+	const char *opt_password;
+	const char *opt_user_name;
+	bool opt_user_specified;
+	const char *opt_workgroup;
+	int opt_long_list_entries;
+	int opt_reboot;
+	int opt_force;
+	int opt_stdin;
+	int opt_port;
+	int opt_verbose;
+	int opt_maxusers;
+	const char *opt_comment;
+	const char *opt_container;
+	int opt_flags;
+	int opt_timeout;
+	const char *opt_target_workgroup;
+	int opt_machine_pass;
+	int opt_localgroup;
+	int opt_domaingroup;
+	int do_talloc_report;
+	const char *opt_newntname;
+	int opt_rid;
+	int opt_acls;
+	int opt_attrs;
+	int opt_timestamps;
+	const char *opt_exclude;
+	const char *opt_destination;
+	int opt_testmode;
+
+	int opt_have_ip;
+	struct sockaddr_storage opt_dest_ip;
+	bool smb_encrypt;
+	struct libnetapi_ctx *netapi_ctx;
+
+	bool AllowDebugChange;
+	const char *share_type[];
+};
 
 /* INCLUDE FILES */
 
@@ -83,43 +128,6 @@ enum netdom_domain_t { ND_TYPE_NT4, ND_TYPE_AD };
 
 /* net share operation modes */
 #define NET_MODE_SHARE_MIGRATE 1
-
-extern int opt_maxusers;
-extern const char *opt_comment;
-extern const char *opt_container;
-extern int opt_flags;
-
-extern const char *opt_comment;
-
-extern const char *opt_target_workgroup;
-extern const char *opt_workgroup;
-extern int opt_long_list_entries;
-extern int opt_verbose;
-extern int opt_reboot;
-extern int opt_force;
-extern int opt_machine_pass;
-extern int opt_timeout;
-extern const char *opt_host;
-extern const char *opt_user_name;
-extern const char *opt_password;
-extern bool opt_user_specified;
-
-extern int opt_localgroup;
-extern int opt_domaingroup;
-extern const char *opt_newntname;
-extern int opt_rid;
-extern int opt_acls;
-extern int opt_attrs;
-extern int opt_timestamps;
-extern const char *opt_exclude;
-extern const char *opt_destination;
-extern int opt_testmode;
-
-extern int opt_have_ip;
-extern struct sockaddr_storage opt_dest_ip;
-extern struct libnetapi_ctx *netapi_ctx;
-
-extern const char *share_type[];
 
 /* Structure for mapping accounts to groups */
 /* Array element is the group rid */

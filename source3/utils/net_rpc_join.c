@@ -41,8 +41,8 @@
  * @return A shell status integer (0 for success)
  *
  **/
-NTSTATUS net_rpc_join_ok(const char *domain, const char *server,
-			 struct sockaddr_storage *pss)
+NTSTATUS net_rpc_join_ok(struct net_context *c, const char *domain,
+			 const char *server, struct sockaddr_storage *pss)
 {
 	enum security_types sec;
 	unsigned int conn_flags = NET_FLAGS_PDC;
@@ -57,7 +57,7 @@ NTSTATUS net_rpc_join_ok(const char *domain, const char *server,
 	if (sec == SEC_ADS) {
 		/* Connect to IPC$ using machine account's credentials. We don't use anonymous
 		   connection here, as it may be denied by server's local policy. */
-		net_use_machine_account();
+		net_use_machine_account(c);
 
 	} else {
 		/* some servers (e.g. WinNT) don't accept machine-authenticated
@@ -66,7 +66,8 @@ NTSTATUS net_rpc_join_ok(const char *domain, const char *server,
 	}
 
 	/* Connect to remote machine */
-	ntret = net_make_ipc_connection_ex(domain, server, pss, conn_flags, &cli);
+	ntret = net_make_ipc_connection_ex(c, domain, server, pss, conn_flags,
+					   &cli);
 	if (!NT_STATUS_IS_OK(ntret)) {
 		return ntret;
 	}
@@ -125,7 +126,7 @@ NTSTATUS net_rpc_join_ok(const char *domain, const char *server,
  *
  **/
 
-int net_rpc_join_newstyle(int argc, const char **argv) 
+int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 {
 
 	/* libsmb variables */
@@ -186,7 +187,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	/* Make authenticated connection to remote machine */
 
-	result = net_make_ipc_connection(NET_FLAGS_PDC, &cli);
+	result = net_make_ipc_connection(c, NET_FLAGS_PDC, &cli);
 	if (!NT_STATUS_IS_OK(result)) {
 		return 1;
 	}
@@ -448,7 +449,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	}
 
 	/* double-check, connection from scratch */
-	result = net_rpc_join_ok(domain, cli->desthost, &cli->dest_ss);
+	result = net_rpc_join_ok(c, domain, cli->desthost, &cli->dest_ss);
 	retval = NT_STATUS_IS_OK(result) ? 0 : -1;
 
 done:
@@ -476,13 +477,13 @@ done:
  * @return A shell status integer (0 for success)
  *
  **/
-int net_rpc_testjoin(int argc, const char **argv) 
+int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
 {
-	char *domain = smb_xstrdup(opt_target_workgroup);
+	char *domain = smb_xstrdup(c->opt_target_workgroup);
 	NTSTATUS nt_status;
 
 	/* Display success or failure */
-	nt_status = net_rpc_join_ok(domain, NULL, NULL);
+	nt_status = net_rpc_join_ok(c, domain, NULL, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr,"Join to domain '%s' is not valid: %s\n",
 			domain, nt_errstr(nt_status));

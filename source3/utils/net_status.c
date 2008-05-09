@@ -49,7 +49,7 @@ static int show_session(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	return 0;
 }
 
-static int net_status_sessions(int argc, const char **argv)
+static int net_status_sessions(struct net_context *c, int argc, const char **argv)
 {
 	TDB_CONTEXT *tdb;
 	bool parseable;
@@ -59,7 +59,7 @@ static int net_status_sessions(int argc, const char **argv)
 	} else if ((argc == 1) && strequal(argv[0], "parseable")) {
 		parseable = True;
 	} else {
-		return net_help_status(argc, argv);
+		return net_help_status(c, argc, argv);
 	}
 
 	if (!parseable) {
@@ -168,7 +168,7 @@ static int show_share_parseable(struct db_record *rec,
 	return 0;
 }
 
-static int net_status_shares_parseable(int argc, const char **argv)
+static int net_status_shares_parseable(struct net_context *c, int argc, const char **argv)
 {
 	struct sessionids ids;
 	TDB_CONTEXT *tdb;
@@ -194,7 +194,7 @@ static int net_status_shares_parseable(int argc, const char **argv)
 	return 0;
 }
 
-static int net_status_shares(int argc, const char **argv)
+static int net_status_shares(struct net_context *c, int argc, const char **argv)
 {
 	if (argc == 0) {
 
@@ -209,18 +209,18 @@ static int net_status_shares(int argc, const char **argv)
 	}
 
 	if ((argc != 1) || !strequal(argv[0], "parseable")) {
-		return net_help_status(argc, argv);
+		return net_help_status(c, argc, argv);
 	}
 
-	return net_status_shares_parseable(argc, argv);
+	return net_status_shares_parseable(c, argc, argv);
 }
 
-int net_status(int argc, const char **argv)
+int net_status(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"sessions", net_status_sessions},
 		{"shares", net_status_shares},
 		{NULL, NULL}
 	};
-	return net_run_function(argc, argv, func, net_help_status);
+	return net_run_function(c, argc, argv, func, net_help_status);
 }

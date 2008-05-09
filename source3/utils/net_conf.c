@@ -36,13 +36,15 @@
  *
  **********************************************************************/
 
-static int net_conf_list_usage(int argc, const char **argv)
+static int net_conf_list_usage(struct net_context *c, int argc,
+			       const char **argv)
 {
 	d_printf("USAGE: net conf list\n");
 	return -1;
 }
 
-static int net_conf_import_usage(int argc, const char**argv)
+static int net_conf_import_usage(struct net_context *c, int argc,
+				 const char**argv)
 {
 	d_printf("USAGE: net conf import [--test|-T] <filename> "
 		 "[<servicename>]\n"
@@ -53,25 +55,29 @@ static int net_conf_import_usage(int argc, const char**argv)
 	return -1;
 }
 
-static int net_conf_listshares_usage(int argc, const char **argv)
+static int net_conf_listshares_usage(struct net_context *c, int argc,
+				     const char **argv)
 {
 	d_printf("USAGE: net conf listshares\n");
 	return -1;
 }
 
-static int net_conf_drop_usage(int argc, const char **argv)
+static int net_conf_drop_usage(struct net_context *c, int argc,
+			       const char **argv)
 {
 	d_printf("USAGE: net conf drop\n");
 	return -1;
 }
 
-static int net_conf_showshare_usage(int argc, const char **argv)
+static int net_conf_showshare_usage(struct net_context *c, int argc,
+				    const char **argv)
 {
 	d_printf("USAGE: net conf showshare <sharename>\n");
 	return -1;
 }
 
-static int net_conf_addshare_usage(int argc, const char **argv)
+static int net_conf_addshare_usage(struct net_context *c, int argc,
+				   const char **argv)
 {
 	d_printf("USAGE: net conf addshare <sharename> <path> "
 		 "[writeable={y|N} [guest_ok={y|N} [<comment>]]\n"
@@ -85,43 +91,50 @@ static int net_conf_addshare_usage(int argc, const char **argv)
 	return -1;
 }
 
-static int net_conf_delshare_usage(int argc, const char **argv)
+static int net_conf_delshare_usage(struct net_context *c, int argc,
+				   const char **argv)
 {
 	d_printf("USAGE: net conf delshare <sharename>\n");
 	return -1;
 }
 
-static int net_conf_setparm_usage(int argc, const char **argv)
+static int net_conf_setparm_usage(struct net_context *c, int argc,
+				  const char **argv)
 {
 	d_printf("USAGE: net conf setparm <section> <param> <value>\n");
 	return -1;
 }
 
-static int net_conf_getparm_usage(int argc, const char **argv)
+static int net_conf_getparm_usage(struct net_context *c, int argc,
+				  const char **argv)
 {
 	d_printf("USAGE: net conf getparm <section> <param>\n");
 	return -1;
 }
 
-static int net_conf_delparm_usage(int argc, const char **argv)
+static int net_conf_delparm_usage(struct net_context *c, int argc,
+				  const char **argv)
 {
 	d_printf("USAGE: net conf delparm <section> <param>\n");
 	return -1;
 }
 
-static int net_conf_getincludes_usage(int argc, const char **argv)
+static int net_conf_getincludes_usage(struct net_context *c, int argc,
+				      const char **argv)
 {
 	d_printf("USAGE: net conf getincludes <section>\n");
 	return -1;
 }
 
-static int net_conf_setincludes_usage(int argc, const char **argv)
+static int net_conf_setincludes_usage(struct net_context *c, int argc,
+				      const char **argv)
 {
 	d_printf("USAGE: net conf setincludes <section> [<filename>]*\n");
 	return -1;
 }
 
-static int net_conf_delincludes_usage(int argc, const char **argv)
+static int net_conf_delincludes_usage(struct net_context *c, int argc,
+				      const char **argv)
 {
 	d_printf("USAGE: net conf delincludes <section>\n");
 	return -1;
@@ -137,7 +150,8 @@ static int net_conf_delincludes_usage(int argc, const char **argv)
 /**
  * This functions process a service previously loaded with libsmbconf.
  */
-static WERROR import_process_service(struct smbconf_ctx *conf_ctx,
+static WERROR import_process_service(struct net_context *c,
+				     struct smbconf_ctx *conf_ctx,
 				     struct smbconf_service *service)
 {
 	uint32_t idx;
@@ -146,7 +160,7 @@ static WERROR import_process_service(struct smbconf_ctx *conf_ctx,
 	char **includes = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	if (opt_testmode) {
+	if (c->opt_testmode) {
 		const char *indent = "";
 		if (service->name != NULL) {
 			d_printf("[%s]\n", service->name);
@@ -215,7 +229,7 @@ done:
  *
  **********************************************************************/
 
-static int net_conf_list(struct smbconf_ctx *conf_ctx,
+static int net_conf_list(struct net_context *c, struct smbconf_ctx *conf_ctx,
 			 int argc, const char **argv)
 {
 	WERROR werr = WERR_OK;
@@ -228,7 +242,7 @@ static int net_conf_list(struct smbconf_ctx *conf_ctx,
 	mem_ctx = talloc_stackframe();
 
 	if (argc != 0) {
-		net_conf_list_usage(argc, argv);
+		net_conf_list_usage(c, argc, argv);
 		goto done;
 	}
 
@@ -264,7 +278,7 @@ done:
 	return ret;
 }
 
-static int net_conf_import(struct smbconf_ctx *conf_ctx,
+static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 			   int argc, const char **argv)
 {
 	int ret = -1;
@@ -280,7 +294,7 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 	switch (argc) {
 		case 0:
 		default:
-			net_conf_import_usage(argc, argv);
+			net_conf_import_usage(c, argc, argv);
 			goto done;
 		case 2:
 			servicename = talloc_strdup_lower(mem_ctx, argv[1]);
@@ -309,7 +323,7 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 		goto done;
 	}
 
-	if (opt_testmode) {
+	if (c->opt_testmode) {
 		d_printf("\nTEST MODE - "
 			 "would import the following configuration:\n\n");
 	}
@@ -323,7 +337,7 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
-		werr = import_process_service(conf_ctx, service);
+		werr = import_process_service(c, conf_ctx, service);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -337,14 +351,15 @@ static int net_conf_import(struct smbconf_ctx *conf_ctx,
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
-		if (!opt_testmode) {
+		if (!c->opt_testmode) {
 			werr = smbconf_drop(conf_ctx);
 			if (!W_ERROR_IS_OK(werr)) {
 				goto done;
 			}
 		}
 		for (sidx = 0; sidx < num_shares; sidx++) {
-			werr = import_process_service(conf_ctx, services[sidx]);
+			werr = import_process_service(c, conf_ctx,
+						      services[sidx]);
 			if (!W_ERROR_IS_OK(werr)) {
 				goto done;
 			}
@@ -358,8 +373,9 @@ done:
 	return ret;
 }
 
-static int net_conf_listshares(struct smbconf_ctx *conf_ctx,
-			       int argc, const char **argv)
+static int net_conf_listshares(struct net_context *c,
+			       struct smbconf_ctx *conf_ctx, int argc,
+			       const char **argv)
 {
 	WERROR werr = WERR_OK;
 	int ret = -1;
@@ -370,7 +386,7 @@ static int net_conf_listshares(struct smbconf_ctx *conf_ctx,
 	mem_ctx = talloc_stackframe();
 
 	if (argc != 0) {
-		net_conf_listshares_usage(argc, argv);
+		net_conf_listshares_usage(c, argc, argv);
 		goto done;
 	}
 
@@ -392,14 +408,14 @@ done:
 	return ret;
 }
 
-static int net_conf_drop(struct smbconf_ctx *conf_ctx,
+static int net_conf_drop(struct net_context *c, struct smbconf_ctx *conf_ctx,
 			 int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr;
 
 	if (argc != 0) {
-		net_conf_drop_usage(argc, argv);
+		net_conf_drop_usage(c, argc, argv);
 		goto done;
 	}
 
@@ -416,8 +432,9 @@ done:
 	return ret;
 }
 
-static int net_conf_showshare(struct smbconf_ctx *conf_ctx,
-			      int argc, const char **argv)
+static int net_conf_showshare(struct net_context *c,
+			      struct smbconf_ctx *conf_ctx, int argc,
+			      const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
@@ -429,7 +446,7 @@ static int net_conf_showshare(struct smbconf_ctx *conf_ctx,
 	mem_ctx = talloc_stackframe();
 
 	if (argc != 1) {
-		net_conf_showshare_usage(argc, argv);
+		net_conf_showshare_usage(c, argc, argv);
 		goto done;
 	}
 
@@ -466,8 +483,9 @@ done:
  * This is a high level utility function of the net conf utility,
  * not a direct frontend to the smbconf API.
  */
-static int net_conf_addshare(struct smbconf_ctx *conf_ctx,
-			     int argc, const char **argv)
+static int net_conf_addshare(struct net_context *c,
+			     struct smbconf_ctx *conf_ctx, int argc,
+			     const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
@@ -483,13 +501,13 @@ static int net_conf_addshare(struct smbconf_ctx *conf_ctx,
 		case 0:
 		case 1:
 		default:
-			net_conf_addshare_usage(argc, argv);
+			net_conf_addshare_usage(c, argc, argv);
 			goto done;
 		case 5:
 			comment = argv[4];
 		case 4:
 			if (!strnequal(argv[3], "guest_ok=", 9)) {
-				net_conf_addshare_usage(argc, argv);
+				net_conf_addshare_usage(c, argc, argv);
 				goto done;
 			}
 			switch (argv[3][9]) {
@@ -502,12 +520,12 @@ static int net_conf_addshare(struct smbconf_ctx *conf_ctx,
 					guest_ok = "no";
 					break;
 				default:
-					net_conf_addshare_usage(argc, argv);
+					net_conf_addshare_usage(c, argc, argv);
 					goto done;
 			}
 		case 3:
 			if (!strnequal(argv[2], "writeable=", 10)) {
-				net_conf_addshare_usage(argc, argv);
+				net_conf_addshare_usage(c, argc, argv);
 				goto done;
 			}
 			switch (argv[2][10]) {
@@ -520,7 +538,7 @@ static int net_conf_addshare(struct smbconf_ctx *conf_ctx,
 					writeable = "no";
 					break;
 				default:
-					net_conf_addshare_usage(argc, argv);
+					net_conf_addshare_usage(c, argc, argv);
 					goto done;
 			}
 		case 2:
@@ -646,8 +664,9 @@ done:
 	return ret;
 }
 
-static int net_conf_delshare(struct smbconf_ctx *conf_ctx,
-			     int argc, const char **argv)
+static int net_conf_delshare(struct net_context *c,
+			     struct smbconf_ctx *conf_ctx, int argc,
+			     const char **argv)
 {
 	int ret = -1;
 	const char *sharename = NULL;
@@ -655,7 +674,7 @@ static int net_conf_delshare(struct smbconf_ctx *conf_ctx,
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (argc != 1) {
-		net_conf_delshare_usage(argc, argv);
+		net_conf_delshare_usage(c, argc, argv);
 		goto done;
 	}
 	sharename = talloc_strdup_lower(mem_ctx, argv[0]);
@@ -677,7 +696,7 @@ done:
 	return ret;
 }
 
-static int net_conf_setparm(struct smbconf_ctx *conf_ctx,
+static int net_conf_setparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 			    int argc, const char **argv)
 {
 	int ret = -1;
@@ -688,7 +707,7 @@ static int net_conf_setparm(struct smbconf_ctx *conf_ctx,
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (argc != 3) {
-		net_conf_setparm_usage(argc, argv);
+		net_conf_setparm_usage(c, argc, argv);
 		goto done;
 	}
 	service = talloc_strdup_lower(mem_ctx, argv[0]);
@@ -727,7 +746,7 @@ done:
 	return ret;
 }
 
-static int net_conf_getparm(struct smbconf_ctx *conf_ctx,
+static int net_conf_getparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 			    int argc, const char **argv)
 {
 	int ret = -1;
@@ -740,7 +759,7 @@ static int net_conf_getparm(struct smbconf_ctx *conf_ctx,
 	mem_ctx = talloc_stackframe();
 
 	if (argc != 2) {
-		net_conf_getparm_usage(argc, argv);
+		net_conf_getparm_usage(c, argc, argv);
 		goto done;
 	}
 	service = talloc_strdup_lower(mem_ctx, argv[0]);
@@ -780,7 +799,7 @@ done:
 	return ret;
 }
 
-static int net_conf_delparm(struct smbconf_ctx *conf_ctx,
+static int net_conf_delparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 			    int argc, const char **argv)
 {
 	int ret = -1;
@@ -790,7 +809,7 @@ static int net_conf_delparm(struct smbconf_ctx *conf_ctx,
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (argc != 2) {
-		net_conf_delparm_usage(argc, argv);
+		net_conf_delparm_usage(c, argc, argv);
 		goto done;
 	}
 	service = talloc_strdup_lower(mem_ctx, argv[0]);
@@ -829,7 +848,8 @@ done:
 	return ret;
 }
 
-static int net_conf_getincludes(struct smbconf_ctx *conf_ctx,
+static int net_conf_getincludes(struct net_context *c,
+				struct smbconf_ctx *conf_ctx,
 				int argc, const char **argv)
 {
 	WERROR werr;
@@ -841,7 +861,7 @@ static int net_conf_getincludes(struct smbconf_ctx *conf_ctx,
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (argc != 1) {
-		net_conf_getincludes_usage(argc, argv);
+		net_conf_getincludes_usage(c, argc, argv);
 		goto done;
 	}
 
@@ -869,7 +889,8 @@ done:
 	return ret;
 }
 
-static int net_conf_setincludes(struct smbconf_ctx *conf_ctx,
+static int net_conf_setincludes(struct net_context *c,
+				struct smbconf_ctx *conf_ctx,
 				int argc, const char **argv)
 {
 	WERROR werr;
@@ -880,7 +901,7 @@ static int net_conf_setincludes(struct smbconf_ctx *conf_ctx,
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (argc < 1) {
-		net_conf_setincludes_usage(argc, argv);
+		net_conf_setincludes_usage(c, argc, argv);
 		goto done;
 	}
 
@@ -910,7 +931,8 @@ done:
 	return ret;
 }
 
-static int net_conf_delincludes(struct smbconf_ctx *conf_ctx,
+static int net_conf_delincludes(struct net_context *c,
+				struct smbconf_ctx *conf_ctx,
 				int argc, const char **argv)
 {
 	WERROR werr;
@@ -919,7 +941,7 @@ static int net_conf_delincludes(struct smbconf_ctx *conf_ctx,
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (argc != 1) {
-		net_conf_delincludes_usage(argc, argv);
+		net_conf_delincludes_usage(c, argc, argv);
 		goto done;
 	}
 
@@ -954,7 +976,9 @@ done:
  * The wrapper calls handles opening and closing of the
  * configuration.
  */
-static int net_conf_wrap_function(int (*fn)(struct smbconf_ctx *,
+static int net_conf_wrap_function(struct net_context *c,
+				  int (*fn)(struct net_context *,
+					    struct smbconf_ctx *,
 					    int, const char **),
 				  int argc, const char **argv)
 {
@@ -969,7 +993,7 @@ static int net_conf_wrap_function(int (*fn)(struct smbconf_ctx *,
 		return -1;
 	}
 
-	ret = fn(conf_ctx, argc, argv);
+	ret = fn(c, conf_ctx, argc, argv);
 
 	smbconf_shutdown(conf_ctx);
 
@@ -983,7 +1007,8 @@ static int net_conf_wrap_function(int (*fn)(struct smbconf_ctx *,
  */
 struct conf_functable {
 	const char *funcname;
-	int (*fn)(struct smbconf_ctx *ctx, int argc, const char **argv);
+	int (*fn)(struct net_context *c, struct smbconf_ctx *ctx, int argc,
+		  const char **argv);
 	const char *helptext;
 };
 
@@ -991,8 +1016,8 @@ struct conf_functable {
  * This imitates net_run_function2 but calls the main functions
  * through the wrapper net_conf_wrap_function().
  */
-static int net_conf_run_function(int argc, const char **argv,
-				 const char *whoami,
+static int net_conf_run_function(struct net_context *c, int argc,
+				 const char **argv, const char *whoami,
 				 struct conf_functable *table)
 {
 	int i;
@@ -1000,7 +1025,7 @@ static int net_conf_run_function(int argc, const char **argv,
 	if (argc != 0) {
 		for (i=0; table[i].funcname; i++) {
 			if (StrCaseCmp(argv[0], table[i].funcname) == 0)
-				return net_conf_wrap_function(table[i].fn,
+				return net_conf_wrap_function(c, table[i].fn,
 							      argc-1,
 							      argv+1);
 		}
@@ -1018,7 +1043,7 @@ static int net_conf_run_function(int argc, const char **argv,
  * Entry-point for all the CONF functions.
  */
 
-int net_conf(int argc, const char **argv)
+int net_conf(struct net_context *c, int argc, const char **argv)
 {
 	int ret = -1;
 	struct conf_functable func_table[] = {
@@ -1051,7 +1076,7 @@ int net_conf(int argc, const char **argv)
 		{NULL, NULL, NULL}
 	};
 
-	ret = net_conf_run_function(argc, argv, "net conf", func_table);
+	ret = net_conf_run_function(c, argc, argv, "net conf", func_table);
 
 	return ret;
 }

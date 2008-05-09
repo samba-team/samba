@@ -190,7 +190,8 @@ done:
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_service_list_internal(const DOM_SID *domain_sid,
+static NTSTATUS rpc_service_list_internal(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -250,7 +251,8 @@ done:
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_service_status_internal(const DOM_SID *domain_sid,
+static NTSTATUS rpc_service_status_internal(struct net_context *c,
+						const DOM_SID *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -362,7 +364,8 @@ done:
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_service_stop_internal(const DOM_SID *domain_sid,
+static NTSTATUS rpc_service_stop_internal(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -405,7 +408,8 @@ static NTSTATUS rpc_service_stop_internal(const DOM_SID *domain_sid,
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_service_pause_internal(const DOM_SID *domain_sid,
+static NTSTATUS rpc_service_pause_internal(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -448,7 +452,8 @@ static NTSTATUS rpc_service_pause_internal(const DOM_SID *domain_sid,
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_service_resume_internal(const DOM_SID *domain_sid,
+static NTSTATUS rpc_service_resume_internal(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -491,7 +496,8 @@ static NTSTATUS rpc_service_resume_internal(const DOM_SID *domain_sid,
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_service_start_internal(const DOM_SID *domain_sid,
+static NTSTATUS rpc_service_start_internal(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -565,61 +571,61 @@ done:
 /********************************************************************
 ********************************************************************/
 
-static int rpc_service_list( int argc, const char **argv )
+static int rpc_service_list(struct net_context *c, int argc, const char **argv )
 {
-	return run_rpc_command( NULL, PI_SVCCTL, 0,
+	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
 		rpc_service_list_internal, argc, argv );
 }
 
 /********************************************************************
 ********************************************************************/
 
-static int rpc_service_start( int argc, const char **argv )
+static int rpc_service_start(struct net_context *c, int argc, const char **argv )
 {
-	return run_rpc_command( NULL, PI_SVCCTL, 0,
+	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
 		rpc_service_start_internal, argc, argv );
 }
 
 /********************************************************************
 ********************************************************************/
 
-static int rpc_service_stop( int argc, const char **argv )
+static int rpc_service_stop(struct net_context *c, int argc, const char **argv )
 {
-	return run_rpc_command( NULL, PI_SVCCTL, 0,
+	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
 		rpc_service_stop_internal, argc, argv );
 }
 
 /********************************************************************
 ********************************************************************/
 
-static int rpc_service_resume( int argc, const char **argv )
+static int rpc_service_resume(struct net_context *c, int argc, const char **argv )
 {
-	return run_rpc_command( NULL, PI_SVCCTL, 0,
+	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
 		rpc_service_resume_internal, argc, argv );
 }
 
 /********************************************************************
 ********************************************************************/
 
-static int rpc_service_pause( int argc, const char **argv )
+static int rpc_service_pause(struct net_context *c, int argc, const char **argv )
 {
-	return run_rpc_command( NULL, PI_SVCCTL, 0,
+	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
 		rpc_service_pause_internal, argc, argv );
 }
 
 /********************************************************************
 ********************************************************************/
 
-static int rpc_service_status( int argc, const char **argv )
+static int rpc_service_status(struct net_context *c, int argc, const char **argv )
 {
-	return run_rpc_command( NULL, PI_SVCCTL, 0,
+	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
 		rpc_service_status_internal, argc, argv );
 }
 
 /********************************************************************
 ********************************************************************/
 
-static int net_help_service( int argc, const char **argv )
+static int net_help_service(struct net_context *c, int argc, const char **argv )
 {
 	d_printf("net rpc service list               View configured Win32 services\n");
 	d_printf("net rpc service start <service>    Start a service\n");
@@ -634,7 +640,7 @@ static int net_help_service( int argc, const char **argv )
 /********************************************************************
 ********************************************************************/
 
-int net_rpc_service(int argc, const char **argv)
+int net_rpc_service(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"list", rpc_service_list},
@@ -647,7 +653,7 @@ int net_rpc_service(int argc, const char **argv)
 	};
 
 	if ( argc )
-		return net_run_function( argc, argv, func, net_help_service );
+		return net_run_function(c, argc, argv, func, net_help_service );
 
-	return net_help_service( argc, argv );
+	return net_help_service(c, argc, argv );
 }

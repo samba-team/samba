@@ -53,7 +53,8 @@ static int cs_destructor(struct con_struct *p)
  Create the connection to localhost.
 ********************************************************/
 
-static struct con_struct *create_cs(TALLOC_CTX *ctx, NTSTATUS *perr)
+static struct con_struct *create_cs(struct net_context *c,
+				    TALLOC_CTX *ctx, NTSTATUS *perr)
 {
 	NTSTATUS nt_status;
 	struct sockaddr_storage loopback_ss;
@@ -97,12 +98,12 @@ static struct con_struct *create_cs(TALLOC_CTX *ctx, NTSTATUS *perr)
 					&loopback_ss, 0,
 					"IPC$", "IPC",
 #if 0
-					opt_user_name,
-					opt_workgroup,
-					opt_password,
+					c->opt_user_name,
+					c->opt_workgroup,
+					c->opt_password,
 #else
 					"",
-					opt_workgroup,
+					c->opt_workgroup,
 					"",
 #endif
 					0,
@@ -152,7 +153,8 @@ static struct con_struct *create_cs(TALLOC_CTX *ctx, NTSTATUS *perr)
  The local smbd will also ask winbindd for us, so we don't have to.
 ********************************************************/
 
-NTSTATUS net_lookup_name_from_sid(TALLOC_CTX *ctx,
+NTSTATUS net_lookup_name_from_sid(struct net_context *c,
+				TALLOC_CTX *ctx,
 				DOM_SID *psid,
 				const char **ppdomain,
 				const char **ppname)
@@ -166,7 +168,7 @@ NTSTATUS net_lookup_name_from_sid(TALLOC_CTX *ctx,
 	*ppdomain = NULL;
 	*ppname = NULL;
 
-	csp = create_cs(ctx, &nt_status);
+	csp = create_cs(c, ctx, &nt_status);
 	if (csp == NULL) {
 		return nt_status;
 	}
@@ -194,14 +196,15 @@ NTSTATUS net_lookup_name_from_sid(TALLOC_CTX *ctx,
  Do a lookup_names call to localhost.
 ********************************************************/
 
-NTSTATUS net_lookup_sid_from_name(TALLOC_CTX *ctx, const char *full_name, DOM_SID *pret_sid)
+NTSTATUS net_lookup_sid_from_name(struct net_context *c, TALLOC_CTX *ctx,
+				  const char *full_name, DOM_SID *pret_sid)
 {
 	NTSTATUS nt_status;
 	struct con_struct *csp = NULL;
 	DOM_SID *sids = NULL;
 	enum lsa_SidType *types = NULL;
 
-	csp = create_cs(ctx, &nt_status);
+	csp = create_cs(c, ctx, &nt_status);
 	if (csp == NULL) {
 		return nt_status;
 	}

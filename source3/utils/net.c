@@ -5,11 +5,15 @@
    Copyright (C) 2001 Jim McDonough (jmcd@us.ibm.com)
    Copyright (C) 2001 Andrew Tridgell (tridge@samba.org)
    Copyright (C) 2001 Andrew Bartlett (abartlet@samba.org)
+   Copyright (C) 2008 Kai Blin (kai@samba.org)
 
    Originally written by Steve and Jim. Largely rewritten by tridge in
    November 2001.
 
    Reworked again by abartlet in December 2001
+
+   Another overhaul, moving functionality into plug-ins loaded on demand by Kai
+   in May 2008.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,45 +58,6 @@
 /* end of internationalization section                                 */
 /***********************************************************************/
 
-/* Yes, these buggers are globals.... */
-const char *opt_requester_name = NULL;
-const char *opt_host = NULL;
-const char *opt_password = NULL;
-const char *opt_user_name = NULL;
-bool opt_user_specified = False;
-const char *opt_workgroup = NULL;
-int opt_long_list_entries = 0;
-int opt_reboot = 0;
-int opt_force = 0;
-int opt_stdin = 0;
-int opt_port = 0;
-int opt_verbose = 0;
-int opt_maxusers = -1;
-const char *opt_comment = "";
-const char *opt_container = NULL;
-int opt_flags = -1;
-int opt_timeout = 0;
-const char *opt_target_workgroup = NULL;
-int opt_machine_pass = 0;
-int opt_localgroup = False;
-int opt_domaingroup = False;
-static int do_talloc_report=False;
-const char *opt_newntname = "";
-int opt_rid = 0;
-int opt_acls = 0;
-int opt_attrs = 0;
-int opt_timestamps = 0;
-const char *opt_exclude = NULL;
-const char *opt_destination = NULL;
-int opt_testmode = False;
-
-int opt_have_ip = False;
-struct sockaddr_storage opt_dest_ip;
-bool smb_encrypt;
-struct libnetapi_ctx *netapi_ctx = NULL;
-
-extern bool AllowDebugChange;
-
 uint32 get_sec_channel_type(const char *param)
 {
 	if (!(param && *param)) {
@@ -118,35 +83,37 @@ uint32 get_sec_channel_type(const char *param)
   run a function from a function table. If not found then
   call the specified usage function
 */
-int net_run_function(int argc, const char **argv, struct functable *table,
-		     int (*usage_fn)(int argc, const char **argv))
+int net_run_function(struct net_context *c, int argc, const char **argv,
+		     struct functable *table,
+		     int (*usage_fn)(struct net_context *c,
+				     int argc, const char **argv))
 {
 	int i;
 
 	if (argc < 1) {
 		d_printf("\nUsage: \n");
-		return usage_fn(argc, argv);
+		return usage_fn(c, argc, argv);
 	}
 	for (i=0; table[i].funcname; i++) {
 		if (StrCaseCmp(argv[0], table[i].funcname) == 0)
-			return table[i].fn(argc-1, argv+1);
+			return table[i].fn(c, argc-1, argv+1);
 	}
 	d_fprintf(stderr, "No command: %s\n", argv[0]);
-	return usage_fn(argc, argv);
+	return usage_fn(c, argc, argv);
 }
 
 /*
  * run a function from a function table.
  */
-int net_run_function2(int argc, const char **argv, const char *whoami,
-		      struct functable2 *table)
+int net_run_function2(struct net_context *c, int argc, const char **argv,
+		      const char *whoami, struct functable2 *table)
 {
 	int i;
 
 	if (argc != 0) {
 		for (i=0; table[i].funcname; i++) {
 			if (StrCaseCmp(argv[0], table[i].funcname) == 0)
-				return table[i].fn(argc-1, argv+1);
+				return table[i].fn(c, argc-1, argv+1);
 		}
 	}
 
@@ -162,7 +129,8 @@ int net_run_function2(int argc, const char **argv, const char *whoami,
  Connect to \\server\service.
 ****************************************************************************/
 
-NTSTATUS connect_to_service(struct cli_state **c,
+NTSTATUS connect_to_service(struct net_context *c,
+					struct cli_state **cli_ctx,
 					struct sockaddr_storage *server_ss,
 					const char *server_name,
 					const char *service_name,
@@ -170,16 +138,16 @@ NTSTATUS connect_to_service(struct cli_state **c,
 {
 	NTSTATUS nt_status;
 
-	opt_password = net_prompt_pass(opt_user_name);
-	if (!opt_password) {
+	c->opt_password = net_prompt_pass(c, c->opt_user_name);
+	if (!c->opt_password) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = cli_full_connection(c, NULL, server_name,
-					server_ss, opt_port,
+	nt_status = cli_full_connection(cli_ctx, NULL, server_name,
+					server_ss, c->opt_port,
 					service_name, service_type,
-					opt_user_name, opt_workgroup,
-					opt_password, 0, Undefined, NULL);
+					c->opt_user_name, c->opt_workgroup,
+					c->opt_password, 0, Undefined, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, "Could not connect to server %s\n", server_name);
 
@@ -199,11 +167,11 @@ NTSTATUS connect_to_service(struct cli_state **c,
 		return nt_status;
 	}
 
-	if (smb_encrypt) {
-		nt_status = cli_force_encryption(*c,
-					opt_user_name,
-					opt_password,
-					opt_workgroup);
+	if (c->smb_encrypt) {
+		nt_status = cli_force_encryption(*cli_ctx,
+					c->opt_user_name,
+					c->opt_password,
+					c->opt_workgroup);
 
 		if (NT_STATUS_EQUAL(nt_status,NT_STATUS_NOT_SUPPORTED)) {
 			d_printf("Encryption required and "
@@ -224,8 +192,8 @@ NTSTATUS connect_to_service(struct cli_state **c,
 		}
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			cli_shutdown(*c);
-			*c = NULL;
+			cli_shutdown(*cli_ctx);
+			*cli_ctx = NULL;
 		}
 	}
 
@@ -236,25 +204,28 @@ NTSTATUS connect_to_service(struct cli_state **c,
  Connect to \\server\ipc$.
 ****************************************************************************/
 
-NTSTATUS connect_to_ipc(struct cli_state **c,
+NTSTATUS connect_to_ipc(struct net_context *c,
+			struct cli_state **cli_ctx,
 			struct sockaddr_storage *server_ss,
 			const char *server_name)
 {
-	return connect_to_service(c, server_ss, server_name, "IPC$", "IPC");
+	return connect_to_service(c, cli_ctx, server_ss, server_name, "IPC$",
+				  "IPC");
 }
 
 /****************************************************************************
  Connect to \\server\ipc$ anonymously.
 ****************************************************************************/
 
-NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
+NTSTATUS connect_to_ipc_anonymous(struct net_context *c,
+				struct cli_state **cli_ctx,
 				struct sockaddr_storage *server_ss,
 				const char *server_name)
 {
 	NTSTATUS nt_status;
 
-	nt_status = cli_full_connection(c, opt_requester_name, server_name,
-					server_ss, opt_port,
+	nt_status = cli_full_connection(cli_ctx, c->opt_requester_name,
+					server_name, server_ss, c->opt_port,
 					"IPC$", "IPC",
 					"", "",
 					"", 0, Undefined, NULL);
@@ -292,28 +263,31 @@ static char *get_user_and_realm(const char *username)
  Connect to \\server\ipc$ using KRB5.
 ****************************************************************************/
 
-NTSTATUS connect_to_ipc_krb5(struct cli_state **c,
+NTSTATUS connect_to_ipc_krb5(struct net_context *c,
+			struct cli_state **cli_ctx,
 			struct sockaddr_storage *server_ss,
 			const char *server_name)
 {
 	NTSTATUS nt_status;
 	char *user_and_realm = NULL;
 
-	opt_password = net_prompt_pass(opt_user_name);
-	if (!opt_password) {
+	/* FIXME: Should get existing kerberos ticket if possible. */
+	c->opt_password = net_prompt_pass(c, c->opt_user_name);
+	if (!c->opt_password) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	user_and_realm = get_user_and_realm(opt_user_name);
+	user_and_realm = get_user_and_realm(c->opt_user_name);
 	if (!user_and_realm) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = cli_full_connection(c, NULL, server_name,
-					server_ss, opt_port,
+	nt_status = cli_full_connection(cli_ctx, NULL, server_name,
+					server_ss, c->opt_port,
 					"IPC$", "IPC",
-					user_and_realm, opt_workgroup,
-					opt_password, CLI_FULL_CONNECTION_USE_KERBEROS, 
+					user_and_realm, c->opt_workgroup,
+					c->opt_password,
+					CLI_FULL_CONNECTION_USE_KERBEROS,
 					Undefined, NULL);
 
 	SAFE_FREE(user_and_realm);
@@ -323,15 +297,15 @@ NTSTATUS connect_to_ipc_krb5(struct cli_state **c,
 		return nt_status;
 	}
 
-        if (smb_encrypt) {
-		nt_status = cli_cm_force_encryption(*c,
+        if (c->smb_encrypt) {
+		nt_status = cli_cm_force_encryption(*cli_ctx,
 					user_and_realm,
-					opt_password,
-					opt_workgroup,
+					c->opt_password,
+					c->opt_workgroup,
                                         "IPC$");
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			cli_shutdown(*c);
-			*c = NULL;
+			cli_shutdown(*cli_ctx);
+			*cli_ctx = NULL;
 		}
 	}
 
@@ -347,7 +321,8 @@ NTSTATUS connect_to_ipc_krb5(struct cli_state **c,
  *
  * @return Normal NTSTATUS return.
  **/
-NTSTATUS connect_dst_pipe(struct cli_state **cli_dst, struct rpc_pipe_client **pp_pipe_hnd, int pipe_num)
+NTSTATUS connect_dst_pipe(struct net_context *c, struct cli_state **cli_dst,
+			  struct rpc_pipe_client **pp_pipe_hnd, int pipe_num)
 {
 	NTSTATUS nt_status;
 	char *server_name = SMB_STRDUP("127.0.0.1");
@@ -358,15 +333,15 @@ NTSTATUS connect_dst_pipe(struct cli_state **cli_dst, struct rpc_pipe_client **p
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (opt_destination) {
+	if (c->opt_destination) {
 		SAFE_FREE(server_name);
-		if ((server_name = SMB_STRDUP(opt_destination)) == NULL) {
+		if ((server_name = SMB_STRDUP(c->opt_destination)) == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
 	/* make a connection to a named pipe */
-	nt_status = connect_to_ipc(&cli_tmp, NULL, server_name);
+	nt_status = connect_to_ipc(c, &cli_tmp, NULL, server_name);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		SAFE_FREE(server_name);
 		return nt_status;
@@ -391,7 +366,7 @@ NTSTATUS connect_dst_pipe(struct cli_state **cli_dst, struct rpc_pipe_client **p
  Use the local machine account (krb) and password for this session.
 ****************************************************************************/
 
-int net_use_krb_machine_account(void)
+int net_use_krb_machine_account(struct net_context *c)
 {
 	char *user_name = NULL;
 
@@ -400,11 +375,12 @@ int net_use_krb_machine_account(void)
 		exit(1);
 	}
 
-	opt_password = secrets_fetch_machine_password(opt_target_workgroup, NULL, NULL);
+	c->opt_password = secrets_fetch_machine_password(
+				c->opt_target_workgroup, NULL, NULL);
 	if (asprintf(&user_name, "%s$@%s", global_myname(), lp_realm()) == -1) {
 		return -1;
 	}
-	opt_user_name = user_name;
+	c->opt_user_name = user_name;
 	return 0;
 }
 
@@ -412,7 +388,7 @@ int net_use_krb_machine_account(void)
  Use the machine account name and password for this session.
 ****************************************************************************/
 
-int net_use_machine_account(void)
+int net_use_machine_account(struct net_context *c)
 {
 	char *user_name = NULL;
 
@@ -421,30 +397,32 @@ int net_use_machine_account(void)
 		exit(1);
 	}
 
-	opt_password = secrets_fetch_machine_password(opt_target_workgroup, NULL, NULL);
+	c->opt_password = secrets_fetch_machine_password(
+				c->opt_target_workgroup, NULL, NULL);
 	if (asprintf(&user_name, "%s$", global_myname()) == -1) {
 		return -1;
 	}
-	opt_user_name = user_name;
+	c->opt_user_name = user_name;
 	return 0;
 }
 
-bool net_find_server(const char *domain,
+bool net_find_server(struct net_context *c,
+			const char *domain,
 			unsigned flags,
 			struct sockaddr_storage *server_ss,
 			char **server_name)
 {
-	const char *d = domain ? domain : opt_target_workgroup;
+	const char *d = domain ? domain : c->opt_target_workgroup;
 
-	if (opt_host) {
-		*server_name = SMB_STRDUP(opt_host);
+	if (c->opt_host) {
+		*server_name = SMB_STRDUP(c->opt_host);
 	}
 
-	if (opt_have_ip) {
-		*server_ss = opt_dest_ip;
+	if (c->opt_have_ip) {
+		*server_ss = c->opt_dest_ip;
 		if (!*server_name) {
 			char addr[INET6_ADDRSTRLEN];
-			print_sockaddr(addr, sizeof(addr), &opt_dest_ip);
+			print_sockaddr(addr, sizeof(addr), &c->opt_dest_ip);
 			*server_name = SMB_STRDUP(addr);
 		}
 	} else if (*server_name) {
@@ -530,14 +508,16 @@ bool net_find_pdc(struct sockaddr_storage *server_ss,
 	return true;
 }
 
-NTSTATUS net_make_ipc_connection(unsigned flags, struct cli_state **pcli)
+NTSTATUS net_make_ipc_connection(struct net_context *c, unsigned flags,
+				 struct cli_state **pcli)
 {
-	return net_make_ipc_connection_ex(NULL, NULL, NULL, flags, pcli);
+	return net_make_ipc_connection_ex(c, NULL, NULL, NULL, flags, pcli);
 }
 
-NTSTATUS net_make_ipc_connection_ex(const char *domain, const char *server,
-                                    struct sockaddr_storage *pss, unsigned flags,
-				    struct cli_state **pcli)
+NTSTATUS net_make_ipc_connection_ex(struct net_context *c ,const char *domain,
+				    const char *server,
+				    struct sockaddr_storage *pss,
+				    unsigned flags, struct cli_state **pcli)
 {
 	char *server_name = NULL;
 	struct sockaddr_storage server_ss;
@@ -545,7 +525,8 @@ NTSTATUS net_make_ipc_connection_ex(const char *domain, const char *server,
 	NTSTATUS nt_status;
 
 	if ( !server || !pss ) {
-		if (!net_find_server(domain, flags, &server_ss, &server_name)) {
+		if (!net_find_server(c, domain, flags, &server_ss,
+				     &server_name)) {
 			d_fprintf(stderr, "Unable to find a suitable server\n");
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 			goto done;
@@ -556,9 +537,11 @@ NTSTATUS net_make_ipc_connection_ex(const char *domain, const char *server,
 	}
 
 	if (flags & NET_FLAGS_ANONYMOUS) {
-		nt_status = connect_to_ipc_anonymous(&cli, &server_ss, server_name);
+		nt_status = connect_to_ipc_anonymous(c, &cli, &server_ss,
+						     server_name);
 	} else {
-		nt_status = connect_to_ipc(&cli, &server_ss, server_name);
+		nt_status = connect_to_ipc(c, &cli, &server_ss,
+					   server_name);
 	}
 
 	/* store the server in the affinity cache if it was a PDC */
@@ -580,46 +563,46 @@ done:
 	return nt_status;
 }
 
-static int net_user(int argc, const char **argv)
+static int net_user(struct net_context *c, int argc, const char **argv)
 {
-	if (net_ads_check() == 0)
-		return net_ads_user(argc, argv);
+	if (net_ads_check(c) == 0)
+		return net_ads_user(c, argc, argv);
 
 	/* if server is not specified, default to PDC? */
-	if (net_rpc_check(NET_FLAGS_PDC))
-		return net_rpc_user(argc, argv);
+	if (net_rpc_check(c, NET_FLAGS_PDC))
+		return net_rpc_user(c, argc, argv);
 
-	return net_rap_user(argc, argv);
+	return net_rap_user(c, argc, argv);
 }
 
-static int net_group(int argc, const char **argv)
+static int net_group(struct net_context *c, int argc, const char **argv)
 {
-	if (net_ads_check() == 0)
-		return net_ads_group(argc, argv);
+	if (net_ads_check(c) == 0)
+		return net_ads_group(c, argc, argv);
 
-	if (argc == 0 && net_rpc_check(NET_FLAGS_PDC))
-		return net_rpc_group(argc, argv);
+	if (argc == 0 && net_rpc_check(c, NET_FLAGS_PDC))
+		return net_rpc_group(c,argc, argv);
 
-	return net_rap_group(argc, argv);
+	return net_rap_group(c, argc, argv);
 }
 
-static int net_join(int argc, const char **argv)
+static int net_join(struct net_context *c, int argc, const char **argv)
 {
-	if (net_ads_check_our_domain() == 0) {
-		if (net_ads_join(argc, argv) == 0)
+	if (net_ads_check_our_domain(c) == 0) {
+		if (net_ads_join(c, argc, argv) == 0)
 			return 0;
 		else
 			d_fprintf(stderr, "ADS join did not work, falling back to RPC...\n");
 	}
-	return net_rpc_join(argc, argv);
+	return net_rpc_join(c, argc, argv);
 }
 
-static int net_changetrustpw(int argc, const char **argv)
+static int net_changetrustpw(struct net_context *c, int argc, const char **argv)
 {
-	if (net_ads_check_our_domain() == 0)
-		return net_ads_changetrustpw(argc, argv);
+	if (net_ads_check_our_domain(c) == 0)
+		return net_ads_changetrustpw(c, argc, argv);
 
-	return net_rpc_changetrustpw(argc, argv);
+	return net_rpc_changetrustpw(c, argc, argv);
 }
 
 static void set_line_buffering(FILE *f)
@@ -627,19 +610,20 @@ static void set_line_buffering(FILE *f)
 	setvbuf(f, NULL, _IOLBF, 0);
 }
 
-static int net_changesecretpw(int argc, const char **argv)
+static int net_changesecretpw(struct net_context *c, int argc,
+			      const char **argv)
 {
         char *trust_pw;
         uint32 sec_channel_type = SEC_CHAN_WKSTA;
 
-	if(opt_force) {
-		if (opt_stdin) {
+	if(c->opt_force) {
+		if (c->opt_stdin) {
 			set_line_buffering(stdin);
 			set_line_buffering(stdout);
 			set_line_buffering(stderr);
 		}
 
-		trust_pw = get_pass("Enter machine password: ", opt_stdin);
+		trust_pw = get_pass("Enter machine password: ", c->opt_stdin);
 
 		if (!secrets_store_machine_password(trust_pw, lp_workgroup(), sec_channel_type)) {
 			    d_fprintf(stderr, "Unable to write the machine account password in the secrets database");
@@ -658,24 +642,24 @@ static int net_changesecretpw(int argc, const char **argv)
         return 0;
 }
 
-static int net_share(int argc, const char **argv)
+static int net_share(struct net_context *c, int argc, const char **argv)
 {
-	if (net_rpc_check(0))
-		return net_rpc_share(argc, argv);
-	return net_rap_share(argc, argv);
+	if (net_rpc_check(c, 0))
+		return net_rpc_share(c, argc, argv);
+	return net_rap_share(c, argc, argv);
 }
 
-static int net_file(int argc, const char **argv)
+static int net_file(struct net_context *c, int argc, const char **argv)
 {
-	if (net_rpc_check(0))
-		return net_rpc_file(argc, argv);
-	return net_rap_file(argc, argv);
+	if (net_rpc_check(c, 0))
+		return net_rpc_file(c, argc, argv);
+	return net_rap_file(c, argc, argv);
 }
 
 /*
  Retrieve our local SID or the SID for the specified name
  */
-static int net_getlocalsid(int argc, const char **argv)
+static int net_getlocalsid(struct net_context *c, int argc, const char **argv)
 {
         DOM_SID sid;
 	const char *name;
@@ -713,7 +697,7 @@ static int net_getlocalsid(int argc, const char **argv)
 	return 0;
 }
 
-static int net_setlocalsid(int argc, const char **argv)
+static int net_setlocalsid(struct net_context *c, int argc, const char **argv)
 {
 	DOM_SID sid;
 
@@ -733,7 +717,7 @@ static int net_setlocalsid(int argc, const char **argv)
 	return 0;
 }
 
-static int net_setdomainsid(int argc, const char **argv)
+static int net_setdomainsid(struct net_context *c, int argc, const char **argv)
 {
 	DOM_SID sid;
 
@@ -753,7 +737,7 @@ static int net_setdomainsid(int argc, const char **argv)
 	return 0;
 }
 
-static int net_getdomainsid(int argc, const char **argv)
+static int net_getdomainsid(struct net_context *c, int argc, const char **argv)
 {
 	DOM_SID domain_sid;
 	fstring sid_str;
@@ -789,20 +773,20 @@ static int net_getdomainsid(int argc, const char **argv)
 	sid_to_fstring(sid_str, &domain_sid);
 	d_printf("SID for local machine %s is: %s\n", global_myname(), sid_str);
 
-	if (!secrets_fetch_domain_sid(opt_workgroup, &domain_sid)) {
+	if (!secrets_fetch_domain_sid(c->opt_workgroup, &domain_sid)) {
 		d_fprintf(stderr, "Could not fetch domain SID\n");
 		return 1;
 	}
 
 	sid_to_fstring(sid_str, &domain_sid);
-	d_printf("SID for domain %s is: %s\n", opt_workgroup, sid_str);
+	d_printf("SID for domain %s is: %s\n", c->opt_workgroup, sid_str);
 
 	return 0;
 }
 
 #ifdef WITH_FAKE_KASERVER
 
-int net_help_afs(int argc, const char **argv)
+int net_help_afs(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("  net afs key filename\n"
 		 "\tImports a OpenAFS KeyFile into our secrets.tdb\n\n");
@@ -811,7 +795,7 @@ int net_help_afs(int argc, const char **argv)
 	return -1;
 }
 
-static int net_afs_key(int argc, const char **argv)
+static int net_afs_key(struct net_context *c, int argc, const char **argv)
 {
 	int fd;
 	struct afs_keyfile keyfile;
@@ -844,7 +828,8 @@ static int net_afs_key(int argc, const char **argv)
 	return 0;
 }
 
-static int net_afs_impersonate(int argc, const char **argv)
+static int net_afs_impersonate(struct net_context *c, int argc,
+			       const char **argv)
 {
 	char *token;
 
@@ -869,7 +854,7 @@ static int net_afs_impersonate(int argc, const char **argv)
 	return 0;
 }
 
-static int net_afs(int argc, const char **argv)
+static int net_afs(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"key", net_afs_key},
@@ -877,7 +862,7 @@ static int net_afs(int argc, const char **argv)
 		{"help", net_help_afs},
 		{NULL, NULL}
 	};
-	return net_run_function(argc, argv, func, net_help_afs);
+	return net_run_function(c, argc, argv, func, net_help_afs);
 }
 
 #endif /* WITH_FAKE_KASERVER */
@@ -917,7 +902,7 @@ static uint32 get_maxrid(void)
 	return max_rid;
 }
 
-static int net_maxrid(int argc, const char **argv)
+static int net_maxrid(struct net_context *c, int argc, const char **argv)
 {
 	uint32 rid;
 
@@ -939,16 +924,16 @@ static int net_maxrid(int argc, const char **argv)
 /****************************************************************************
 ****************************************************************************/
 
-const char *net_prompt_pass(const char *user)
+const char *net_prompt_pass(struct net_context *c, const char *user)
 {
 	char *prompt = NULL;
 	const char *pass = NULL;
 
-	if (opt_password) {
-		return opt_password;
+	if (c->opt_password) {
+		return c->opt_password;
 	}
 
-	if (opt_machine_pass) {
+	if (c->opt_machine_pass) {
 		return NULL;
 	}
 
@@ -1023,49 +1008,50 @@ static struct functable net_func[] = {
 	int argc_new = 0;
 	const char ** argv_new;
 	poptContext pc;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct net_context *c = talloc_zero(frame, struct net_context);
 
 	struct poptOption long_options[] = {
 		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
-		{"workgroup",	'w', POPT_ARG_STRING, &opt_target_workgroup},
-		{"user",	'U', POPT_ARG_STRING, &opt_user_name, 'U'},
+		{"workgroup",	'w', POPT_ARG_STRING, &c->opt_target_workgroup},
+		{"user",	'U', POPT_ARG_STRING, &c->opt_user_name, 'U'},
 		{"ipaddress",	'I', POPT_ARG_STRING, 0,'I'},
-		{"port",	'p', POPT_ARG_INT,    &opt_port},
-		{"myname",	'n', POPT_ARG_STRING, &opt_requester_name},
-		{"server",	'S', POPT_ARG_STRING, &opt_host},
+		{"port",	'p', POPT_ARG_INT,    &c->opt_port},
+		{"myname",	'n', POPT_ARG_STRING, &c->opt_requester_name},
+		{"server",	'S', POPT_ARG_STRING, &c->opt_host},
 		{"encrypt",	'e', POPT_ARG_NONE,   NULL, 'e', "Encrypt SMB transport (UNIX extended servers only)" },
-		{"container",	'c', POPT_ARG_STRING, &opt_container},
-		{"comment",	'C', POPT_ARG_STRING, &opt_comment},
-		{"maxusers",	'M', POPT_ARG_INT,    &opt_maxusers},
-		{"flags",	'F', POPT_ARG_INT,    &opt_flags},
-		{"long",	'l', POPT_ARG_NONE,   &opt_long_list_entries},
-		{"reboot",	'r', POPT_ARG_NONE,   &opt_reboot},
-		{"force",	'f', POPT_ARG_NONE,   &opt_force},
-		{"stdin",	'i', POPT_ARG_NONE,   &opt_stdin},
-		{"timeout",	't', POPT_ARG_INT,    &opt_timeout},
-		{"machine-pass",'P', POPT_ARG_NONE,   &opt_machine_pass},
-		{"myworkgroup", 'W', POPT_ARG_STRING, &opt_workgroup},
-		{"verbose",	'v', POPT_ARG_NONE,   &opt_verbose},
-		{"test",	'T', POPT_ARG_NONE,   &opt_testmode},
+		{"container",	'c', POPT_ARG_STRING, &c->opt_container},
+		{"comment",	'C', POPT_ARG_STRING, &c->opt_comment},
+		{"maxusers",	'M', POPT_ARG_INT,    &c->opt_maxusers},
+		{"flags",	'F', POPT_ARG_INT,    &c->opt_flags},
+		{"long",	'l', POPT_ARG_NONE,   &c->opt_long_list_entries},
+		{"reboot",	'r', POPT_ARG_NONE,   &c->opt_reboot},
+		{"force",	'f', POPT_ARG_NONE,   &c->opt_force},
+		{"stdin",	'i', POPT_ARG_NONE,   &c->opt_stdin},
+		{"timeout",	't', POPT_ARG_INT,    &c->opt_timeout},
+		{"machine-pass",'P', POPT_ARG_NONE,   &c->opt_machine_pass},
+		{"myworkgroup", 'W', POPT_ARG_STRING, &c->opt_workgroup},
+		{"verbose",	'v', POPT_ARG_NONE,   &c->opt_verbose},
+		{"test",	'T', POPT_ARG_NONE,   &c->opt_testmode},
 		/* Options for 'net groupmap set' */
-		{"local",       'L', POPT_ARG_NONE,   &opt_localgroup},
-		{"domain",      'D', POPT_ARG_NONE,   &opt_domaingroup},
-		{"ntname",      'N', POPT_ARG_STRING, &opt_newntname},
-		{"rid",         'R', POPT_ARG_INT,    &opt_rid},
+		{"local",       'L', POPT_ARG_NONE,   &c->opt_localgroup},
+		{"domain",      'D', POPT_ARG_NONE,   &c->opt_domaingroup},
+		{"ntname",      'N', POPT_ARG_STRING, &c->opt_newntname},
+		{"rid",         'R', POPT_ARG_INT,    &c->opt_rid},
 		/* Options for 'net rpc share migrate' */
-		{"acls",	0, POPT_ARG_NONE,     &opt_acls},
-		{"attrs",	0, POPT_ARG_NONE,     &opt_attrs},
-		{"timestamps",	0, POPT_ARG_NONE,     &opt_timestamps},
-		{"exclude",	'X', POPT_ARG_STRING, &opt_exclude},
-		{"destination",	0, POPT_ARG_STRING,   &opt_destination},
-		{"tallocreport", 0, POPT_ARG_NONE, &do_talloc_report},
+		{"acls",	0, POPT_ARG_NONE,     &c->opt_acls},
+		{"attrs",	0, POPT_ARG_NONE,     &c->opt_attrs},
+		{"timestamps",	0, POPT_ARG_NONE,     &c->opt_timestamps},
+		{"exclude",	'X', POPT_ARG_STRING, &c->opt_exclude},
+		{"destination",	0, POPT_ARG_STRING,   &c->opt_destination},
+		{"tallocreport", 0, POPT_ARG_NONE,    &c->do_talloc_report},
 
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0}
 	};
 
-	TALLOC_CTX *frame = talloc_stackframe();
 
-	zero_addr(&opt_dest_ip);
+	zero_addr(&c->opt_dest_ip);
 
 	load_case_tables();
 
@@ -1079,33 +1065,33 @@ static struct functable net_func[] = {
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case 'h':
-			net_help(argc, argv);
+			net_help(c, argc, argv);
 			exit(0);
 			break;
 		case 'e':
-			smb_encrypt=true;
+			c->smb_encrypt = true;
 			break;
 		case 'I':
-			if (!interpret_string_addr(&opt_dest_ip,
+			if (!interpret_string_addr(&c->opt_dest_ip,
 						poptGetOptArg(pc), 0)) {
 				d_fprintf(stderr, "\nInvalid ip address specified\n");
 			} else {
-				opt_have_ip = True;
+				c->opt_have_ip = true;
 			}
 			break;
 		case 'U':
-			opt_user_specified = True;
-			opt_user_name = SMB_STRDUP(opt_user_name);
-			p = strchr(opt_user_name,'%');
+			c->opt_user_specified = True;
+			c->opt_user_name = SMB_STRDUP(c->opt_user_name);
+			p = strchr(c->opt_user_name,'%');
 			if (p) {
 				*p = 0;
-				opt_password = p+1;
+				c->opt_password = p+1;
 			}
 			break;
 		default:
 			d_fprintf(stderr, "\nInvalid option %s: %s\n",
 				 poptBadOption(pc, 0), poptStrerror(opt));
-			net_help(argc, argv);
+			net_help(c, argc, argv);
 			exit(1);
 		}
 	}
@@ -1114,8 +1100,8 @@ static struct functable net_func[] = {
 	 * Don't load debug level from smb.conf. It should be
 	 * set by cmdline arg or remain default (0)
 	 */
-	AllowDebugChange = False;
-	lp_load(get_dyn_CONFIGFILE(),True,False,False,True);
+	c->AllowDebugChange = false;
+	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
 
  	argv_new = (const char **)poptGetArgs(pc);
 
@@ -1127,24 +1113,24 @@ static struct functable net_func[] = {
 		}
 	}
 
-	if (do_talloc_report) {
+	if (c->do_talloc_report) {
 		talloc_enable_leak_report();
 	}
 
-	if (opt_requester_name) {
-		set_global_myname(opt_requester_name);
+	if (c->opt_requester_name) {
+		set_global_myname(c->opt_requester_name);
 	}
 
-	if (!opt_user_name && getenv("LOGNAME")) {
-		opt_user_name = getenv("LOGNAME");
+	if (!c->opt_user_name && getenv("LOGNAME")) {
+		c->opt_user_name = getenv("LOGNAME");
 	}
 
-	if (!opt_workgroup) {
-		opt_workgroup = smb_xstrdup(lp_workgroup());
+	if (!c->opt_workgroup) {
+		c->opt_workgroup = smb_xstrdup(lp_workgroup());
 	}
 
-	if (!opt_target_workgroup) {
-		opt_target_workgroup = smb_xstrdup(lp_workgroup());
+	if (!c->opt_target_workgroup) {
+		c->opt_target_workgroup = smb_xstrdup(lp_workgroup());
 	}
 
 	if (!init_names())
@@ -1156,22 +1142,22 @@ static struct functable net_func[] = {
 	   that it won't assert becouse we are not root */
 	sec_init();
 
-	if (opt_machine_pass) {
+	if (c->opt_machine_pass) {
 		/* it is very useful to be able to make ads queries as the
 		   machine account for testing purposes and for domain leave */
 
-		net_use_krb_machine_account();
+		net_use_krb_machine_account(c);
 	}
 
-	if (!opt_password) {
-		opt_password = getenv("PASSWD");
+	if (!c->opt_password) {
+		c->opt_password = getenv("PASSWD");
 	}
 
-	rc = net_run_function(argc_new-1, argv_new+1, net_func, net_help);
+	rc = net_run_function(c, argc_new-1, argv_new+1, net_func, net_help);
 
 	DEBUG(2,("return code = %d\n", rc));
 
-	libnetapi_free(netapi_ctx);
+	libnetapi_free(c->netapi_ctx);
 
 	TALLOC_FREE(frame);
 	return rc;

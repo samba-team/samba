@@ -21,7 +21,8 @@
 #include "includes.h"
 #include "utils/net.h"
 
-NTSTATUS net_rpc_lookup_name(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+NTSTATUS net_rpc_lookup_name(struct net_context *c,
+			     TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			     const char *name, const char **ret_domain,
 			     const char **ret_name, DOM_SID *ret_sid,
 			     enum lsa_SidType *ret_type)

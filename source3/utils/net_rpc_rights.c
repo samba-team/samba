@@ -15,8 +15,8 @@
    GNU General Public License for more details.
    
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
- 
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include "includes.h"
 #include "utils/net.h"
 
@@ -308,7 +308,8 @@ static NTSTATUS enum_privileges_for_accounts(struct rpc_pipe_client *pipe_hnd,
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_rights_list_internal(const DOM_SID *domain_sid,
+static NTSTATUS rpc_rights_list_internal(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -325,7 +326,6 @@ static NTSTATUS rpc_rights_list_internal(const DOM_SID *domain_sid,
 	uint16 lang_id = 0;
 	uint16 lang_id_sys = 0;
 	uint16 lang_id_desc;
-	
 	
 	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, True, 
 		SEC_RIGHTS_MAXIMUM_ALLOWED, &pol);
@@ -427,7 +427,8 @@ done:
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_rights_grant_internal(const DOM_SID *domain_sid,
+static NTSTATUS rpc_rights_grant_internal(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -493,7 +494,8 @@ static NTSTATUS rpc_rights_grant_internal(const DOM_SID *domain_sid,
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_rights_revoke_internal(const DOM_SID *domain_sid,
+static NTSTATUS rpc_rights_revoke_internal(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -560,34 +562,34 @@ done:
 /********************************************************************
 ********************************************************************/
 
-static int rpc_rights_list( int argc, const char **argv )
+static int rpc_rights_list(struct net_context *c, int argc, const char **argv )
 {
-	return run_rpc_command( NULL, PI_LSARPC, 0, 
+	return run_rpc_command(c, NULL, PI_LSARPC, 0,
 		rpc_rights_list_internal, argc, argv );
 }
 
 /********************************************************************
 ********************************************************************/
 
-static int rpc_rights_grant( int argc, const char **argv )
+static int rpc_rights_grant(struct net_context *c, int argc, const char **argv )
 {
-	return run_rpc_command( NULL, PI_LSARPC, 0, 
+	return run_rpc_command(c, NULL, PI_LSARPC, 0,
 		rpc_rights_grant_internal, argc, argv );
 }
 
 /********************************************************************
 ********************************************************************/
 
-static int rpc_rights_revoke( int argc, const char **argv )
+static int rpc_rights_revoke(struct net_context *c, int argc, const char **argv)
 {
-	return run_rpc_command( NULL, PI_LSARPC, 0, 
+	return run_rpc_command(c, NULL, PI_LSARPC, 0,
 		rpc_rights_revoke_internal, argc, argv );
 }
 
 /********************************************************************
 ********************************************************************/
 
-static int net_help_rights( int argc, const char **argv )
+static int net_help_rights(struct net_context *c, int argc, const char **argv )
 {
 	d_printf("net rpc rights list [{accounts|privileges} [name|SID]]   View available or assigned privileges\n");
 	d_printf("net rpc rights grant <name|SID> <right>                  Assign privilege[s]\n");
@@ -598,14 +600,13 @@ static int net_help_rights( int argc, const char **argv )
 	d_printf("\n  net rpc rights grant 'VALE\\biddle' SePrintOperatorPrivilege SeDiskOperatorPrivilege\n");
 	d_printf("\nwould grant the printer admin and disk manager rights to the user 'VALE\\biddle'\n\n");
 	
-	
 	return -1;
 }
 
 /********************************************************************
 ********************************************************************/
 
-int net_rpc_rights(int argc, const char **argv) 
+int net_rpc_rights(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"list", rpc_rights_list},
@@ -615,41 +616,44 @@ int net_rpc_rights(int argc, const char **argv)
 	};
 	
 	if ( argc )
-		return net_run_function( argc, argv, func, net_help_rights );
+		return net_run_function(c, argc, argv, func, net_help_rights );
 		
-	return net_help_rights( argc, argv );
+	return net_help_rights(c, argc, argv );
 }
 
-static NTSTATUS rpc_sh_rights_list(TALLOC_CTX *mem_ctx, struct rpc_sh_ctx *ctx,
+static NTSTATUS rpc_sh_rights_list(struct net_context *c,
+				   TALLOC_CTX *mem_ctx, struct rpc_sh_ctx *ctx,
 				   struct rpc_pipe_client *pipe_hnd,
 				   int argc, const char **argv)
 {
-	return rpc_rights_list_internal(ctx->domain_sid, ctx->domain_name,
+	return rpc_rights_list_internal(c, ctx->domain_sid, ctx->domain_name,
 					ctx->cli, pipe_hnd, mem_ctx,
 					argc, argv);
 }
 
-static NTSTATUS rpc_sh_rights_grant(TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_sh_rights_grant(struct net_context *c,
+				    TALLOC_CTX *mem_ctx,
 				    struct rpc_sh_ctx *ctx,
 				    struct rpc_pipe_client *pipe_hnd,
 				    int argc, const char **argv)
 {
-	return rpc_rights_grant_internal(ctx->domain_sid, ctx->domain_name,
+	return rpc_rights_grant_internal(c, ctx->domain_sid, ctx->domain_name,
 					 ctx->cli, pipe_hnd, mem_ctx,
 					 argc, argv);
 }
 
-static NTSTATUS rpc_sh_rights_revoke(TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_sh_rights_revoke(struct net_context *c,
+				     TALLOC_CTX *mem_ctx,
 				     struct rpc_sh_ctx *ctx,
 				     struct rpc_pipe_client *pipe_hnd,
 				     int argc, const char **argv)
 {
-	return rpc_rights_revoke_internal(ctx->domain_sid, ctx->domain_name,
+	return rpc_rights_revoke_internal(c, ctx->domain_sid, ctx->domain_name,
 					  ctx->cli, pipe_hnd, mem_ctx,
 					  argc, argv);
 }
 
-struct rpc_sh_cmd *net_rpc_rights_cmds(TALLOC_CTX *mem_ctx,
+struct rpc_sh_cmd *net_rpc_rights_cmds(struct net_context *c, TALLOC_CTX *mem_ctx,
 				       struct rpc_sh_ctx *ctx)
 {
 	static struct rpc_sh_cmd cmds[] = {

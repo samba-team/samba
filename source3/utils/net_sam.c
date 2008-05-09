@@ -25,7 +25,8 @@
  * Set a user's data
  */
 
-static int net_sam_userset(int argc, const char **argv, const char *field,
+static int net_sam_userset(struct net_context *c, int argc, const char **argv,
+			   const char *field,
 			   bool (*fn)(struct samu *, const char *,
 				      enum pdb_value_state))
 {
@@ -81,39 +82,45 @@ static int net_sam_userset(int argc, const char **argv, const char *field,
 	return 0;
 }
 
-static int net_sam_set_fullname(int argc, const char **argv)
+static int net_sam_set_fullname(struct net_context *c, int argc,
+				const char **argv)
 {
-	return net_sam_userset(argc, argv, "fullname",
+	return net_sam_userset(c, argc, argv, "fullname",
 			       pdb_set_fullname);
 }
 
-static int net_sam_set_logonscript(int argc, const char **argv)
+static int net_sam_set_logonscript(struct net_context *c, int argc,
+				   const char **argv)
 {
-	return net_sam_userset(argc, argv, "logonscript",
+	return net_sam_userset(c, argc, argv, "logonscript",
 			       pdb_set_logon_script);
 }
 
-static int net_sam_set_profilepath(int argc, const char **argv)
+static int net_sam_set_profilepath(struct net_context *c, int argc,
+				   const char **argv)
 {
-	return net_sam_userset(argc, argv, "profilepath",
+	return net_sam_userset(c, argc, argv, "profilepath",
 			       pdb_set_profile_path);
 }
 
-static int net_sam_set_homedrive(int argc, const char **argv)
+static int net_sam_set_homedrive(struct net_context *c, int argc,
+				 const char **argv)
 {
-	return net_sam_userset(argc, argv, "homedrive",
+	return net_sam_userset(c, argc, argv, "homedrive",
 			       pdb_set_dir_drive);
 }
 
-static int net_sam_set_homedir(int argc, const char **argv)
+static int net_sam_set_homedir(struct net_context *c, int argc,
+			       const char **argv)
 {
-	return net_sam_userset(argc, argv, "homedir",
+	return net_sam_userset(c, argc, argv, "homedir",
 			       pdb_set_homedir);
 }
 
-static int net_sam_set_workstations(int argc, const char **argv)
+static int net_sam_set_workstations(struct net_context *c, int argc,
+				    const char **argv)
 {
-	return net_sam_userset(argc, argv, "workstations",
+	return net_sam_userset(c, argc, argv, "workstations",
 			       pdb_set_workstations);
 }
 
@@ -121,7 +128,8 @@ static int net_sam_set_workstations(int argc, const char **argv)
  * Set account flags
  */
 
-static int net_sam_set_userflag(int argc, const char **argv, const char *field,
+static int net_sam_set_userflag(struct net_context *c, int argc,
+				const char **argv, const char *field,
 				uint16 flag)
 {
 	struct samu *sam_acct = NULL;
@@ -184,31 +192,36 @@ static int net_sam_set_userflag(int argc, const char **argv, const char *field,
 	return 0;
 }
 
-static int net_sam_set_disabled(int argc, const char **argv)
+static int net_sam_set_disabled(struct net_context *c, int argc,
+				const char **argv)
 {
-	return net_sam_set_userflag(argc, argv, "disabled", ACB_DISABLED);
+	return net_sam_set_userflag(c, argc, argv, "disabled", ACB_DISABLED);
 }
 
-static int net_sam_set_pwnotreq(int argc, const char **argv)
+static int net_sam_set_pwnotreq(struct net_context *c, int argc,
+				const char **argv)
 {
-	return net_sam_set_userflag(argc, argv, "pwnotreq", ACB_PWNOTREQ);
+	return net_sam_set_userflag(c, argc, argv, "pwnotreq", ACB_PWNOTREQ);
 }
 
-static int net_sam_set_autolock(int argc, const char **argv)
+static int net_sam_set_autolock(struct net_context *c, int argc,
+				const char **argv)
 {
-	return net_sam_set_userflag(argc, argv, "autolock", ACB_AUTOLOCK);
+	return net_sam_set_userflag(c, argc, argv, "autolock", ACB_AUTOLOCK);
 }
 
-static int net_sam_set_pwnoexp(int argc, const char **argv)
+static int net_sam_set_pwnoexp(struct net_context *c, int argc,
+			       const char **argv)
 {
-	return net_sam_set_userflag(argc, argv, "pwnoexp", ACB_PWNOEXP);
+	return net_sam_set_userflag(c, argc, argv, "pwnoexp", ACB_PWNOEXP);
 }
 
 /*
  * Set pass last change time, based on force pass change now
  */
 
-static int net_sam_set_pwdmustchangenow(int argc, const char **argv)
+static int net_sam_set_pwdmustchangenow(struct net_context *c, int argc,
+					const char **argv)
 {
 	struct samu *sam_acct = NULL;
 	DOM_SID sid;
@@ -269,7 +282,8 @@ static int net_sam_set_pwdmustchangenow(int argc, const char **argv)
  * Set a user's or a group's comment
  */
 
-static int net_sam_set_comment(int argc, const char **argv)
+static int net_sam_set_comment(struct net_context *c, int argc,
+			       const char **argv)
 {
 	GROUP_MAP map;
 	DOM_SID sid;
@@ -290,7 +304,7 @@ static int net_sam_set_comment(int argc, const char **argv)
 	}
 
 	if (type == SID_NAME_USER) {
-		return net_sam_userset(argc, argv, "comment",
+		return net_sam_userset(c, argc, argv, "comment",
 				       pdb_set_acct_desc);
 	}
 
@@ -322,7 +336,7 @@ static int net_sam_set_comment(int argc, const char **argv)
 	return 0;
 }
 
-static int net_sam_set(int argc, const char **argv)
+static int net_sam_set(struct net_context *c, int argc, const char **argv)
 {
 	struct functable2 func[] = {
 		{ "homedir", net_sam_set_homedir,
@@ -352,14 +366,14 @@ static int net_sam_set(int argc, const char **argv)
 		{NULL, NULL}
 	};
 
-	return net_run_function2(argc, argv, "net sam set", func);
+	return net_run_function2(c, argc, argv, "net sam set", func);
 }
 
 /*
  * Manage account policies
  */
 
-static int net_sam_policy_set(int argc, const char **argv)
+static int net_sam_policy_set(struct net_context *c, int argc, const char **argv)
 {
 	const char *account_policy = NULL;
 	uint32 value = 0;
@@ -427,7 +441,7 @@ static int net_sam_policy_set(int argc, const char **argv)
 	return 0;
 }
 
-static int net_sam_policy_show(int argc, const char **argv)
+static int net_sam_policy_show(struct net_context *c, int argc, const char **argv)
 {
 	const char *account_policy = NULL;
         uint32 old_value;
@@ -472,7 +486,7 @@ static int net_sam_policy_show(int argc, const char **argv)
         return 0;
 }
 
-static int net_sam_policy_list(int argc, const char **argv)
+static int net_sam_policy_list(struct net_context *c, int argc, const char **argv)
 {
 	const char **names;
 	int count;
@@ -489,7 +503,7 @@ static int net_sam_policy_list(int argc, const char **argv)
         return -1;
 }
 
-static int net_sam_policy(int argc, const char **argv)
+static int net_sam_policy(struct net_context *c, int argc, const char **argv)
 {
         struct functable2 func[] = {
 		{ "list", net_sam_policy_list,
@@ -501,12 +515,13 @@ static int net_sam_policy(int argc, const char **argv)
                 {NULL, NULL}
         };
 
-        return net_run_function2(argc, argv, "net sam policy", func);
+        return net_run_function2(c, argc, argv, "net sam policy", func);
 }
 
 extern PRIVS privs[];
 
-static int net_sam_rights_list(int argc, const char **argv)
+static int net_sam_rights_list(struct net_context *c, int argc,
+			       const char **argv)
 {
 	SE_PRIV mask;
 
@@ -556,7 +571,8 @@ static int net_sam_rights_list(int argc, const char **argv)
 	return -1;
 }
 
-static int net_sam_rights_grant(int argc, const char **argv)
+static int net_sam_rights_grant(struct net_context *c, int argc,
+				const char **argv)
 {
 	DOM_SID sid;
 	enum lsa_SidType type;
@@ -589,7 +605,7 @@ static int net_sam_rights_grant(int argc, const char **argv)
 	return 0;
 }
 
-static int net_sam_rights_revoke(int argc, const char **argv)
+static int net_sam_rights_revoke(struct net_context *c, int argc, const char **argv)
 {
 	DOM_SID sid;
 	enum lsa_SidType type;
@@ -622,7 +638,7 @@ static int net_sam_rights_revoke(int argc, const char **argv)
 	return 0;
 }
 
-static int net_sam_rights(int argc, const char **argv)
+static int net_sam_rights(struct net_context *c, int argc, const char **argv)
 {
 	struct functable2 func[] = {
 		{ "list", net_sam_rights_list,
@@ -633,7 +649,7 @@ static int net_sam_rights(int argc, const char **argv)
 		  "Revoke a right" },
 		{ NULL }
 	};
-        return net_run_function2(argc, argv, "net sam rights", func);
+        return net_run_function2(c, argc, argv, "net sam rights", func);
 }
 
 /*
@@ -695,7 +711,7 @@ static NTSTATUS map_unix_group(const struct group *grp, GROUP_MAP *pmap)
 	return status;
 }
 
-static int net_sam_mapunixgroup(int argc, const char **argv)
+static int net_sam_mapunixgroup(struct net_context *c, int argc, const char **argv)
 {
 	NTSTATUS status;
 	GROUP_MAP map;
@@ -757,7 +773,7 @@ static NTSTATUS unmap_unix_group(const struct group *grp, GROUP_MAP *pmap)
         return status;
 }
 
-static int net_sam_unmapunixgroup(int argc, const char **argv)
+static int net_sam_unmapunixgroup(struct net_context *c, int argc, const char **argv)
 {
 	NTSTATUS status;
 	GROUP_MAP map;
@@ -791,7 +807,7 @@ static int net_sam_unmapunixgroup(int argc, const char **argv)
  * Create a local group
  */
 
-static int net_sam_createlocalgroup(int argc, const char **argv)
+static int net_sam_createlocalgroup(struct net_context *c, int argc, const char **argv)
 {
 	NTSTATUS status;
 	uint32 rid;
@@ -824,7 +840,7 @@ static int net_sam_createlocalgroup(int argc, const char **argv)
  * Delete a local group
  */
 
-static int net_sam_deletelocalgroup(int argc, const char **argv)
+static int net_sam_deletelocalgroup(struct net_context *c, int argc, const char **argv)
 {
 	DOM_SID sid;
         enum lsa_SidType type;
@@ -865,7 +881,7 @@ static int net_sam_deletelocalgroup(int argc, const char **argv)
  * Create a local group
  */
 
-static int net_sam_createbuiltingroup(int argc, const char **argv)
+static int net_sam_createbuiltingroup(struct net_context *c, int argc, const char **argv)
 {
 	NTSTATUS status;
 	uint32 rid;
@@ -917,7 +933,7 @@ static int net_sam_createbuiltingroup(int argc, const char **argv)
  * Add a group member
  */
 
-static int net_sam_addmem(int argc, const char **argv)
+static int net_sam_addmem(struct net_context *c, int argc, const char **argv)
 {
 	const char *groupdomain, *groupname, *memberdomain, *membername;
 	DOM_SID group, member;
@@ -988,7 +1004,7 @@ static int net_sam_addmem(int argc, const char **argv)
  * Delete a group member
  */
 
-static int net_sam_delmem(int argc, const char **argv)
+static int net_sam_delmem(struct net_context *c, int argc, const char **argv)
 {
 	const char *groupdomain, *groupname;
 	const char *memberdomain = NULL;
@@ -1048,7 +1064,7 @@ static int net_sam_delmem(int argc, const char **argv)
  * List group members
  */
 
-static int net_sam_listmem(int argc, const char **argv)
+static int net_sam_listmem(struct net_context *c, int argc, const char **argv)
 {
 	const char *groupdomain, *groupname;
 	DOM_SID group;
@@ -1104,7 +1120,7 @@ static int net_sam_listmem(int argc, const char **argv)
 /*
  * Do the listing
  */
-static int net_sam_do_list(int argc, const char **argv,
+static int net_sam_do_list(struct net_context *c, int argc, const char **argv,
 			   struct pdb_search *search, const char *what)
 {
 	bool verbose = (argc == 1);
@@ -1139,34 +1155,39 @@ static int net_sam_do_list(int argc, const char **argv,
 	return 0;
 }
 
-static int net_sam_list_users(int argc, const char **argv)
+static int net_sam_list_users(struct net_context *c, int argc,
+			      const char **argv)
 {
-	return net_sam_do_list(argc, argv, pdb_search_users(ACB_NORMAL),
+	return net_sam_do_list(c, argc, argv, pdb_search_users(ACB_NORMAL),
 			       "users");
 }
 
-static int net_sam_list_groups(int argc, const char **argv)
+static int net_sam_list_groups(struct net_context *c, int argc,
+			       const char **argv)
 {
-	return net_sam_do_list(argc, argv, pdb_search_groups(), "groups");
+	return net_sam_do_list(c, argc, argv, pdb_search_groups(), "groups");
 }
 
-static int net_sam_list_localgroups(int argc, const char **argv)
+static int net_sam_list_localgroups(struct net_context *c, int argc,
+				    const char **argv)
 {
-	return net_sam_do_list(argc, argv,
+	return net_sam_do_list(c, argc, argv,
 			       pdb_search_aliases(get_global_sam_sid()),
 			       "localgroups");
 }
 
-static int net_sam_list_builtin(int argc, const char **argv)
+static int net_sam_list_builtin(struct net_context *c, int argc,
+				const char **argv)
 {
-	return net_sam_do_list(argc, argv,
+	return net_sam_do_list(c, argc, argv,
 			       pdb_search_aliases(&global_sid_Builtin),
 			       "builtin");
 }
 
-static int net_sam_list_workstations(int argc, const char **argv)
+static int net_sam_list_workstations(struct net_context *c, int argc,
+				     const char **argv)
 {
-	return net_sam_do_list(argc, argv,
+	return net_sam_do_list(c, argc, argv,
 			       pdb_search_users(ACB_WSTRUST),
 			       "workstations");
 }
@@ -1175,7 +1196,7 @@ static int net_sam_list_workstations(int argc, const char **argv)
  * List stuff
  */
 
-static int net_sam_list(int argc, const char **argv)
+static int net_sam_list(struct net_context *c, int argc, const char **argv)
 {
 	struct functable2 func[] = {
 		{ "users", net_sam_list_users,
@@ -1191,14 +1212,14 @@ static int net_sam_list(int argc, const char **argv)
 		{NULL, NULL}
 	};
 
-	return net_run_function2(argc, argv, "net sam list", func);
+	return net_run_function2(c, argc, argv, "net sam list", func);
 }
 
 /*
  * Show details of SAM entries
  */
 
-static int net_sam_show(int argc, const char **argv)
+static int net_sam_show(struct net_context *c, int argc, const char **argv)
 {
 	DOM_SID sid;
 	enum lsa_SidType type;
@@ -1228,7 +1249,7 @@ static int net_sam_show(int argc, const char **argv)
  * if ldapsam:editposix is enabled
  */
 
-static int net_sam_provision(int argc, const char **argv)
+static int net_sam_provision(struct net_context *c, int argc, const char **argv)
 {
 	TALLOC_CTX *tc;
 	char *ldap_bk;
@@ -1630,7 +1651,7 @@ failed:
 /***********************************************************
  migrated functionality from smbgroupedit
  **********************************************************/
-int net_sam(int argc, const char **argv)
+int net_sam(struct net_context *c, int argc, const char **argv)
 {
 	struct functable2 func[] = {
 		{ "createbuiltingroup", net_sam_createbuiltingroup,
@@ -1671,6 +1692,6 @@ int net_sam(int argc, const char **argv)
 			  "work\n");
 	}
 	
-	return net_run_function2(argc, argv, "net sam", func);
+	return net_run_function2(c, argc, argv, "net sam", func);
 }
 

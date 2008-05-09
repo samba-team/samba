@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "utils/net.h"
 
-int net_common_methods_usage(int argc, const char**argv)
+int net_common_methods_usage(struct net_context *c, int argc, const char**argv)
 {
 	d_printf("Valid methods: (auto-detected if not specified)\n");
 	d_printf("\tads\t\t\t\tActive Directory (LDAP/Kerberos)\n");
@@ -30,7 +30,7 @@ int net_common_methods_usage(int argc, const char**argv)
 	return 0;
 }
 
-int net_common_flags_usage(int argc, const char **argv)
+int net_common_flags_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("Valid targets: choose one (none defaults to localhost)\n");
 	d_printf("\t-S or --server=<server>\t\tserver name\n");
@@ -52,7 +52,7 @@ int net_common_flags_usage(int argc, const char **argv)
 	return -1;
 }
 
-static int help_usage(int argc, const char **argv)
+static int help_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf(
 "\n"\
@@ -65,7 +65,7 @@ static int help_usage(int argc, const char **argv)
 	return -1;
 }
 
-int net_help_user(int argc, const char **argv)
+int net_help_user(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("\nnet [<method>] user [misc. options] [targets]"\
 		 "\n\tList users\n\n");
@@ -80,14 +80,14 @@ int net_help_user(int argc, const char **argv)
 		 " [targets]\n\tRename specified user\n\n");
 
 
-	net_common_methods_usage(argc, argv);
-	net_common_flags_usage(argc, argv);
+	net_common_methods_usage(c, argc, argv);
+	net_common_flags_usage(c, argc, argv);
 	d_printf("\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
 	d_printf("\t-c or --container=<container>\tLDAP container, defaults to cn=Users (for add in ADS only)\n");
 	return -1;
 }
 
-int net_help_group(int argc, const char **argv)
+int net_help_group(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("net [<method>] group [misc. options] [targets]"\
 		 "\n\tList user groups\n\n");
@@ -101,26 +101,26 @@ int net_help_group(int argc, const char **argv)
 	d_printf("\nnet rpc group MEMBERS <name>\n\tList Group Members\n\n");
 	d_printf("\nnet rpc group ADDMEM <group> <member>\n\tAdd Group Members\n\n");
 	d_printf("\nnet rpc group DELMEM <group> <member>\n\tDelete Group Members\n\n");
-	net_common_methods_usage(argc, argv);
-	net_common_flags_usage(argc, argv);
+	net_common_methods_usage(c, argc, argv);
+	net_common_flags_usage(c, argc, argv);
 	d_printf("\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
 	d_printf("\t-c or --container=<container>\tLDAP container, defaults to cn=Users (for add in ADS only)\n");
 	d_printf("\t-L or --localgroup\t\tWhen adding groups, create a local group (alias)\n");
 	return -1;
 }
 
-int net_help_join(int argc, const char **argv)
+int net_help_join(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("\nnet [<method>] join [misc. options]\n"
 		 "\tjoins this server to a domain\n");
 	d_printf("Valid methods: (auto-detected if not specified)\n");
 	d_printf("\tads\t\t\t\tActive Directory (LDAP/Kerberos)\n");
 	d_printf("\trpc\t\t\t\tDCE-RPC\n");
-	net_common_flags_usage(argc, argv);
+	net_common_flags_usage(c, argc, argv);
 	return -1;
 }
 
-int net_help_share(int argc, const char **argv)
+int net_help_share(struct net_context *c, int argc, const char **argv)
 {
 	d_printf(
 	 "\nnet [<method>] share [misc. options] [targets] \n"
@@ -145,8 +145,8 @@ int net_help_share(int argc, const char **argv)
 	 "\n\tMigrates shares (including directories, files) from remote\n"
 	 "\tto local server\n\n"
 	);
-	net_common_methods_usage(argc, argv);
-	net_common_flags_usage(argc, argv);
+	net_common_methods_usage(c, argc, argv);
+	net_common_flags_usage(c, argc, argv);
 	d_printf(
 	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n"
 	 "\t-M or --maxusers=<num>\t\tmax users allowed for share\n"
@@ -159,7 +159,7 @@ int net_help_share(int argc, const char **argv)
 	return -1;
 }
 
-int net_help_file(int argc, const char **argv)
+int net_help_file(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("net [<method>] file [misc. options] [targets]\n"\
 		 "\tlists all open files on file server\n\n");
@@ -171,12 +171,12 @@ int net_help_file(int argc, const char **argv)
 	d_printf("net [rap] file INFO <id> [misc. options] [targets]\n"\
 		 "\tdisplays information about the specified open file\n");
 
-	net_common_methods_usage(argc, argv);
-	net_common_flags_usage(argc, argv);
+	net_common_methods_usage(c, argc, argv);
+	net_common_flags_usage(c, argc, argv);
 	return -1;
 }
 
-int net_help_printer(int argc, const char **argv)
+int net_help_printer(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("net rpc printer LIST [printer] [misc. options] [targets]\n"\
 		 "\tlists all printers on print-server\n\n");
@@ -198,8 +198,8 @@ int net_help_printer(int argc, const char **argv)
 	d_printf("net rpc printer MIGRATE ALL [printer] [misc. options] [targets]"\
 		 "\n\tmigrates drivers, forms, queues, settings and acls from\n"\
 		 "\tremote to local print-server\n\n");
-	net_common_methods_usage(argc, argv);
-	net_common_flags_usage(argc, argv);
+	net_common_methods_usage(c, argc, argv);
+	net_common_flags_usage(c, argc, argv);
 	d_printf(
 	 "\t-v or --verbose\t\t\tgive verbose output\n"
 	 "\t      --destination\t\tmigration target server (default: localhost)\n");
@@ -208,7 +208,7 @@ int net_help_printer(int argc, const char **argv)
 }
 
 
-int net_help_status(int argc, const char **argv)
+int net_help_status(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("  net status sessions [parseable] "
 		 "Show list of open sessions\n");
@@ -217,7 +217,7 @@ int net_help_status(int argc, const char **argv)
 	return -1;
 }
 
-static int net_usage(int argc, const char **argv)
+static int net_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("  net time\t\tto view or set time information\n"\
 		 "  net lookup\t\tto lookup host name or ip address\n"\
@@ -243,14 +243,14 @@ static int net_usage(int argc, const char **argv)
 		 "  net rpc <command>\tto run RPC commands\n"\
 		 "\n"\
 		 "Type \"net help <option>\" to get more information on that option\n");
-	net_common_flags_usage(argc, argv);
+	net_common_flags_usage(c, argc, argv);
 	return -1;
 }
 
 /*
   handle "net help *" subcommands
 */
-int net_help(int argc, const char **argv)
+int net_help(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"ADS", net_ads_help},	
@@ -284,5 +284,5 @@ int net_help(int argc, const char **argv)
 		{"HELP", help_usage},
 		{NULL, NULL}};
 
-	return net_run_function(argc, argv, func, net_usage);
+	return net_run_function(c, argc, argv, func, net_usage);
 }

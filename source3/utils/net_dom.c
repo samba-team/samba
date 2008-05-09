@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "utils/net.h"
 
-static int net_dom_usage(int argc, const char **argv)
+static int net_dom_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("usage: net dom join "
 		 "<domain=DOMAIN> <ou=OU> <account=ACCOUNT> <password=PASSWORD> <reboot>\n");
@@ -30,7 +30,7 @@ static int net_dom_usage(int argc, const char **argv)
 	return -1;
 }
 
-int net_help_dom(int argc, const char **argv)
+int net_help_dom(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("net dom join"\
 		"\n  Join a remote machine\n");
@@ -40,7 +40,7 @@ int net_help_dom(int argc, const char **argv)
 	return -1;
 }
 
-static int net_dom_unjoin(int argc, const char **argv)
+static int net_dom_unjoin(struct net_context *c, int argc, const char **argv)
 {
 	struct libnetapi_ctx *ctx = NULL;
 	const char *server_name = NULL;
@@ -56,11 +56,11 @@ static int net_dom_unjoin(int argc, const char **argv)
 	int i;
 
 	if (argc < 1) {
-		return net_dom_usage(argc, argv);
+		return net_dom_usage(c, argc, argv);
 	}
 
-	if (opt_host) {
-		server_name = opt_host;
+	if (c->opt_host) {
+		server_name = c->opt_host;
 	}
 
 	for (i=0; i<argc; i++) {
@@ -82,8 +82,9 @@ static int net_dom_unjoin(int argc, const char **argv)
 	}
 
 	if (reboot) {
-		ntstatus = net_make_ipc_connection_ex(opt_workgroup, server_name,
-						      NULL, 0, &cli);
+		ntstatus = net_make_ipc_connection_ex(c, c->opt_workgroup,
+						      server_name, NULL, 0,
+						      &cli);
 		if (!NT_STATUS_IS_OK(ntstatus)) {
 			return -1;
 		}
@@ -94,8 +95,8 @@ static int net_dom_unjoin(int argc, const char **argv)
 		return -1;
 	}
 
-	libnetapi_set_username(ctx, opt_user_name);
-	libnetapi_set_password(ctx, opt_password);
+	libnetapi_set_username(ctx, c->opt_user_name);
+	libnetapi_set_password(ctx, c->opt_password);
 
 	status = NetUnjoinDomain(server_name, account, password, unjoin_flags);
 	if (status != 0) {
@@ -105,18 +106,19 @@ static int net_dom_unjoin(int argc, const char **argv)
 	}
 
 	if (reboot) {
-		opt_comment = "Shutting down due to a domain membership change";
-		opt_reboot = true;
-		opt_timeout = 30;
+		c->opt_comment = "Shutting down due to a domain membership "
+				 "change";
+		c->opt_reboot = true;
+		c->opt_timeout = 30;
 
-		ret = run_rpc_command(cli, PI_INITSHUTDOWN, 0,
+		ret = run_rpc_command(c, cli, PI_INITSHUTDOWN, 0,
 				      rpc_init_shutdown_internals,
 				      argc, argv);
 		if (ret == 0) {
 			goto done;
 		}
 
-		ret = run_rpc_command(cli, PI_WINREG, 0,
+		ret = run_rpc_command(c, cli, PI_WINREG, 0,
 				      rpc_reg_shutdown_internals,
 				      argc, argv);
 		goto done;
@@ -132,7 +134,7 @@ static int net_dom_unjoin(int argc, const char **argv)
 	return ret;
 }
 
-static int net_dom_join(int argc, const char **argv)
+static int net_dom_join(struct net_context *c, int argc, const char **argv)
 {
 	struct libnetapi_ctx *ctx = NULL;
 	const char *server_name = NULL;
@@ -150,14 +152,14 @@ static int net_dom_join(int argc, const char **argv)
 	int i;
 
 	if (argc < 1) {
-		return net_dom_usage(argc, argv);
+		return net_dom_usage(c, argc, argv);
 	}
 
-	if (opt_host) {
-		server_name = opt_host;
+	if (c->opt_host) {
+		server_name = c->opt_host;
 	}
 
-	if (opt_force) {
+	if (c->opt_force) {
 		join_flags |= WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED;
 	}
 
@@ -192,8 +194,9 @@ static int net_dom_join(int argc, const char **argv)
 	}
 
 	if (reboot) {
-		ntstatus = net_make_ipc_connection_ex(opt_workgroup, server_name,
-						      NULL, 0, &cli);
+		ntstatus = net_make_ipc_connection_ex(c, c->opt_workgroup,
+						      server_name, NULL, 0,
+						      &cli);
 		if (!NT_STATUS_IS_OK(ntstatus)) {
 			return -1;
 		}
@@ -206,8 +209,8 @@ static int net_dom_join(int argc, const char **argv)
 		return -1;
 	}
 
-	libnetapi_set_username(ctx, opt_user_name);
-	libnetapi_set_password(ctx, opt_password);
+	libnetapi_set_username(ctx, c->opt_user_name);
+	libnetapi_set_password(ctx, c->opt_password);
 
 	status = NetJoinDomain(server_name, domain_name, account_ou,
 			       Account, password, join_flags);
@@ -218,18 +221,19 @@ static int net_dom_join(int argc, const char **argv)
 	}
 
 	if (reboot) {
-		opt_comment = "Shutting down due to a domain membership change";
-		opt_reboot = true;
-		opt_timeout = 30;
+		c->opt_comment = "Shutting down due to a domain membership "
+				 "change";
+		c->opt_reboot = true;
+		c->opt_timeout = 30;
 
-		ret = run_rpc_command(cli, PI_INITSHUTDOWN, 0,
+		ret = run_rpc_command(c, cli, PI_INITSHUTDOWN, 0,
 				      rpc_init_shutdown_internals,
 				      argc, argv);
 		if (ret == 0) {
 			goto done;
 		}
 
-		ret = run_rpc_command(cli, PI_WINREG, 0,
+		ret = run_rpc_command(c, cli, PI_WINREG, 0,
 				      rpc_reg_shutdown_internals,
 				      argc, argv);
 		goto done;
@@ -245,7 +249,7 @@ static int net_dom_join(int argc, const char **argv)
 	return ret;
 }
 
-int net_dom(int argc, const char **argv)
+int net_dom(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"JOIN", net_dom_join},
@@ -254,5 +258,5 @@ int net_dom(int argc, const char **argv)
 		{NULL, NULL}
 	};
 
-	return net_run_function(argc, argv, func, net_dom_usage);
+	return net_run_function(c, argc, argv, func, net_dom_usage);
 }

@@ -727,14 +727,16 @@ typedef char fstring[FSTRING_LEN];
 #include "lib/smbconf/smbconf.h"
 
 /* used in net.c */
+struct net_context;
+
 struct functable {
 	const char *funcname;
-	int (*fn)(int argc, const char **argv);
+	int (*fn)(struct net_context *c, int argc, const char **argv);
 };
 
 struct functable2 {
 	const char *funcname;
-	int (*fn)(int argc, const char **argv);
+	int (*fn)(struct net_context *c, int argc, const char **argv);
 	const char *helptext;
 };
 

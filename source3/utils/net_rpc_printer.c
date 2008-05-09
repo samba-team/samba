@@ -14,8 +14,8 @@
    GNU General Public License for more details.
    
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
- 
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include "includes.h"
 #include "utils/net.h"
 
@@ -161,6 +161,7 @@ static void display_reg_value(const char *subkey, REGISTRY_VALUE value)
  * Copies ACLs, DOS-attributes and timestamps from one 
  * file or directory from one connected share to another connected share 
  *
+ * @param c			A net_context structure
  * @param mem_ctx		A talloc-context
  * @param cli_share_src		A connected cli_state 
  * @param cli_share_dst		A connected cli_state 
@@ -174,7 +175,8 @@ static void display_reg_value(const char *subkey, REGISTRY_VALUE value)
  * @return Normal NTSTATUS return.
  **/ 
 
-NTSTATUS net_copy_fileattr(TALLOC_CTX *mem_ctx,
+NTSTATUS net_copy_fileattr(struct net_context *c,
+		  TALLOC_CTX *mem_ctx,
 		  struct cli_state *cli_share_src,
 		  struct cli_state *cli_share_dst, 
 		  const char *src_name, const char *dst_name,
@@ -217,7 +219,7 @@ NTSTATUS net_copy_fileattr(TALLOC_CTX *mem_ctx,
 			goto out;
 		}
 
-		if (opt_verbose && DEBUGLEVEL >= 3)
+		if (c->opt_verbose && DEBUGLEVEL >= 3)
 			display_sec_desc(sd);
 	}
 
@@ -313,6 +315,7 @@ out:
 /**
  * Copy a file or directory from a connected share to another connected share 
  *
+ * @param c			A net_context structure
  * @param mem_ctx		A talloc-context
  * @param cli_share_src		A connected cli_state 
  * @param cli_share_dst		A connected cli_state 
@@ -326,7 +329,8 @@ out:
  * @return Normal NTSTATUS return.
  **/ 
 
-NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
+NTSTATUS net_copy_file(struct net_context *c,
+		       TALLOC_CTX *mem_ctx,
 		       struct cli_state *cli_share_src,
 		       struct cli_state *cli_share_dst, 
 		       const char *src_name, const char *dst_name,
@@ -348,7 +352,6 @@ NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 	if (cli_share_src == NULL || cli_share_dst == NULL)
 		goto out; 
 		
-
 	/* open on the originating server */
 	DEBUGADD(3,("opening %s %s on originating server\n", 
 		is_file ? "file":"dir", src_name));
@@ -390,7 +393,7 @@ NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 	}
 
 
-	if (opt_verbose) {
+	if (c->opt_verbose) {
 
 		d_printf("copying [\\\\%s\\%s%s] => [\\\\%s\\%s%s] "
 			 "%s ACLs and %s DOS Attributes %s\n", 
@@ -462,7 +465,7 @@ NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 	}
 
 	/* possibly we have to copy some file-attributes / acls / sd */
-	nt_status = net_copy_fileattr(mem_ctx, cli_share_src, cli_share_dst, 
+	nt_status = net_copy_fileattr(c, mem_ctx, cli_share_src, cli_share_dst,
 				      src_name, dst_name, copy_acls, 
 				      copy_attrs, copy_timestamps, is_file);
 	if (!NT_STATUS_IS_OK(nt_status))
@@ -496,6 +499,7 @@ out:
  * 	\\dst_server\print$\{arch}\file 
  * 
  * to be added via setdriver-calls later.
+ * @param c			A net_context structure
  * @param mem_ctx		A talloc-context
  * @param cli_share_src		A cli_state connected to source print$-share
  * @param cli_share_dst		A cli_state connected to destination print$-share
@@ -505,7 +509,8 @@ out:
  * @return Normal NTSTATUS return.
  **/ 
 
-static NTSTATUS net_copy_driverfile(TALLOC_CTX *mem_ctx,
+static NTSTATUS net_copy_driverfile(struct net_context *c,
+				    TALLOC_CTX *mem_ctx,
 				    struct cli_state *cli_share_src,
 				    struct cli_state *cli_share_dst, 
 				    char *file, const char *short_archi) {
@@ -539,8 +544,8 @@ static NTSTATUS net_copy_driverfile(TALLOC_CTX *mem_ctx,
 
 
 	/* finally copy the file */
-	nt_status = net_copy_file(mem_ctx, cli_share_src, cli_share_dst, 
-				  src_name, dst_name, False, False, False, True);
+	nt_status = net_copy_file(c, mem_ctx, cli_share_src, cli_share_dst,
+				  src_name, dst_name, false, false, false, true);
 	if (!NT_STATUS_IS_OK(nt_status))
 		goto out;
 
@@ -598,6 +603,7 @@ out:
  * Copy a print-driver (level 3) from one connected print$-share to another 
  * connected print$-share
  *
+ * @param c			A net_context structure
  * @param mem_ctx		A talloc-context
  * @param cli_share_src		A cli_state connected to a print$-share
  * @param cli_share_dst		A cli_state connected to a print$-share
@@ -607,7 +613,8 @@ out:
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS copy_print_driver_3(TALLOC_CTX *mem_ctx,
+static NTSTATUS copy_print_driver_3(struct net_context *c,
+		    TALLOC_CTX *mem_ctx,
 		    struct cli_state *cli_share_src, 
 		    struct cli_state *cli_share_dst, 
 		    const char *short_archi, DRIVER_INFO_3 *i1)
@@ -633,26 +640,26 @@ static NTSTATUS copy_print_driver_3(TALLOC_CTX *mem_ctx,
 	rpcstr_pull(helpfile, i1->helpfile.buffer, sizeof(helpfile), -1, STR_TERMINATE);
 
 
-	if (opt_verbose)
+	if (c->opt_verbose)
 		d_printf("copying driver: [%s], for architecture: [%s], version: [%d]\n", 
 			  name, short_archi, i1->version);
 	
-	nt_status = net_copy_driverfile(mem_ctx, cli_share_src, cli_share_dst, 
+	nt_status = net_copy_driverfile(c, mem_ctx, cli_share_src, cli_share_dst,
 		driverpath, short_archi);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 		
-	nt_status = net_copy_driverfile(mem_ctx, cli_share_src, cli_share_dst, 
+	nt_status = net_copy_driverfile(c, mem_ctx, cli_share_src, cli_share_dst,
 		datafile, short_archi);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 		
-	nt_status = net_copy_driverfile(mem_ctx, cli_share_src, cli_share_dst, 
+	nt_status = net_copy_driverfile(c, mem_ctx, cli_share_src, cli_share_dst,
 		configfile, short_archi);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 		
-	nt_status = net_copy_driverfile(mem_ctx, cli_share_src, cli_share_dst, 
+	nt_status = net_copy_driverfile(c, mem_ctx, cli_share_src, cli_share_dst,
 		helpfile, short_archi);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
@@ -664,7 +671,7 @@ static NTSTATUS copy_print_driver_3(TALLOC_CTX *mem_ctx,
 		
 		if (strlen(dependentfiles) > 0) {
 
-			nt_status = net_copy_driverfile(mem_ctx, 
+			nt_status = net_copy_driverfile(c, mem_ctx,
 					cli_share_src, cli_share_dst, 
 					dependentfiles, short_archi);
 			if (!NT_STATUS_IS_OK(nt_status))
@@ -879,7 +886,6 @@ static bool net_spoolss_enumforms(struct rpc_pipe_client *pipe_hnd,
 				int level,
 				uint32 *num_forms,
 				FORM_1 **forms)
-										       
 {
 	WERROR result;
 
@@ -1021,6 +1027,7 @@ out:
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
  *
+ * @param c	A net_context structure
  * @param domain_sid The domain sid aquired from the remote server
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on compleation of the function.
@@ -1031,7 +1038,8 @@ out:
  * @return Normal NTSTATUS return.
  **/
 
-NTSTATUS rpc_printer_list_internals(const DOM_SID *domain_sid,
+NTSTATUS rpc_printer_list_internals(struct net_context *c,
+					const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -1078,6 +1086,7 @@ NTSTATUS rpc_printer_list_internals(const DOM_SID *domain_sid,
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
  *
+ * @param c	A net_context structure
  * @param domain_sid The domain sid aquired from the remote server
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on compleation of the function.
@@ -1088,7 +1097,8 @@ NTSTATUS rpc_printer_list_internals(const DOM_SID *domain_sid,
  * @return Normal NTSTATUS return.
  **/
 
-NTSTATUS rpc_printer_driver_list_internals(const DOM_SID *domain_sid,
+NTSTATUS rpc_printer_driver_list_internals(struct net_context *c,
+						const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -1114,7 +1124,6 @@ NTSTATUS rpc_printer_driver_list_internals(const DOM_SID *domain_sid,
 		if (!net_spoolss_enumprinterdrivers(pipe_hnd, mem_ctx, level,
 				archi_table[i].long_archi, 
 				&num_drivers, &drv_ctr_enum)) {
-										
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
@@ -1238,7 +1247,8 @@ done:
 	return nt_status;
 }
 
-NTSTATUS rpc_printer_publish_publish_internals(const DOM_SID *domain_sid,
+NTSTATUS rpc_printer_publish_publish_internals(struct net_context *c,
+						const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -1249,7 +1259,8 @@ NTSTATUS rpc_printer_publish_publish_internals(const DOM_SID *domain_sid,
 	return rpc_printer_publish_internals_args(pipe_hnd, mem_ctx, argc, argv, SPOOL_DS_PUBLISH);
 }
 
-NTSTATUS rpc_printer_publish_unpublish_internals(const DOM_SID *domain_sid,
+NTSTATUS rpc_printer_publish_unpublish_internals(struct net_context *c,
+						const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -1260,7 +1271,8 @@ NTSTATUS rpc_printer_publish_unpublish_internals(const DOM_SID *domain_sid,
 	return rpc_printer_publish_internals_args(pipe_hnd, mem_ctx, argc, argv, SPOOL_DS_UNPUBLISH);
 }
 
-NTSTATUS rpc_printer_publish_update_internals(const DOM_SID *domain_sid,
+NTSTATUS rpc_printer_publish_update_internals(struct net_context *c,
+						const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -1277,6 +1289,7 @@ NTSTATUS rpc_printer_publish_update_internals(const DOM_SID *domain_sid,
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
  *
+ * @param c	A net_context structure
  * @param domain_sid The domain sid aquired from the remote server
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on compleation of the function.
@@ -1287,7 +1300,8 @@ NTSTATUS rpc_printer_publish_update_internals(const DOM_SID *domain_sid,
  * @return Normal NTSTATUS return.
  **/
 
-NTSTATUS rpc_printer_publish_list_internals(const DOM_SID *domain_sid,
+NTSTATUS rpc_printer_publish_list_internals(struct net_context *c,
+						const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -1349,7 +1363,7 @@ NTSTATUS rpc_printer_publish_list_internals(const DOM_SID *domain_sid,
 		switch (state) {
 			case SPOOL_DS_PUBLISH:
 				printf("printer [%s] is published", sharename);
-				if (opt_verbose)
+				if (c->opt_verbose)
 					printf(", guid: %s", guid);
 				printf("\n");
 				break;
@@ -1380,6 +1394,7 @@ done:
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
  *
+ * @param c	A net_context structure
  * @param domain_sid The domain sid aquired from the remote server
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on compleation of the function.
@@ -1390,7 +1405,8 @@ done:
  * @return Normal NTSTATUS return.
  **/
 
-NTSTATUS rpc_printer_migrate_security_internals(const DOM_SID *domain_sid,
+NTSTATUS rpc_printer_migrate_security_internals(struct net_context *c,
+						const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -1418,7 +1434,7 @@ NTSTATUS rpc_printer_migrate_security_internals(const DOM_SID *domain_sid,
 	DEBUG(3,("copying printer ACLs\n"));
 
 	/* connect destination PI_SPOOLSS */
-	nt_status = connect_dst_pipe(&cli_dst, &pipe_hnd_dst, PI_SPOOLSS);
+	nt_status = connect_dst_pipe(c, &cli_dst, &pipe_hnd_dst, PI_SPOOLSS);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
@@ -1494,7 +1510,7 @@ NTSTATUS rpc_printer_migrate_security_internals(const DOM_SID *domain_sid,
 		ctr_dst.printers_2->devmode = NULL; 
 		ctr_dst.printers_2->secdesc = dup_sec_desc(mem_ctx, ctr_src.printers_3->secdesc);
 
-		if (opt_verbose)
+		if (c->opt_verbose)
 			display_sec_desc(ctr_dst.printers_2->secdesc);
 		
 		if (!net_spoolss_setprinter(pipe_hnd_dst, mem_ctx, &hnd_dst, 2, &ctr_dst)) 
@@ -1540,6 +1556,7 @@ done:
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
  *
+ * @param c	A net_context structure
  * @param domain_sid The domain sid aquired from the remote server
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on compleation of the function.
@@ -1550,7 +1567,8 @@ done:
  * @return Normal NTSTATUS return.
  **/
 
-NTSTATUS rpc_printer_migrate_forms_internals(const DOM_SID *domain_sid,
+NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
+						const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -1578,7 +1596,7 @@ NTSTATUS rpc_printer_migrate_forms_internals(const DOM_SID *domain_sid,
 	DEBUG(3,("copying forms\n"));
 
 	/* connect destination PI_SPOOLSS */
-	nt_status = connect_dst_pipe(&cli_dst, &pipe_hnd_dst, PI_SPOOLSS);
+	nt_status = connect_dst_pipe(c, &cli_dst, &pipe_hnd_dst, PI_SPOOLSS);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
@@ -1660,7 +1678,7 @@ NTSTATUS rpc_printer_migrate_forms_internals(const DOM_SID *domain_sid,
 				rpcstr_pull(form_name, forms[f].name.buffer,
 					sizeof(form_name), -1, STR_TERMINATE);
 
-			if (opt_verbose)
+			if (c->opt_verbose)
 				d_printf("\tmigrating form # %d [%s] of type [%d]\n", 
 					f, form_name, forms[f].flag);
 
@@ -1723,6 +1741,7 @@ done:
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
  *
+ * @param c	A net_context structure
  * @param domain_sid The domain sid aquired from the remote server
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on compleation of the function.
@@ -1733,7 +1752,8 @@ done:
  * @return Normal NTSTATUS return.
  **/
 
-NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid,
+NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
+						const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -1766,12 +1786,12 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid,
 
 	DEBUG(3,("copying printer-drivers\n"));
 
-	nt_status = connect_dst_pipe(&cli_dst, &pipe_hnd_dst, PI_SPOOLSS);
+	nt_status = connect_dst_pipe(c, &cli_dst, &pipe_hnd_dst, PI_SPOOLSS);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
 	/* open print$-share on the src server */
-	nt_status = connect_to_service(&cli_share_src, &cli->dest_ss,
+	nt_status = connect_to_service(c, &cli_share_src, &cli->dest_ss,
 			cli->desthost, "print$", "A:");
 	if (!NT_STATUS_IS_OK(nt_status))
 		goto done;
@@ -1780,7 +1800,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid,
 
 
 	/* open print$-share on the dst server */
-	nt_status = connect_to_service(&cli_share_dst, &cli_dst->dest_ss,
+	nt_status = connect_to_service(c, &cli_share_dst, &cli_dst->dest_ss,
 			cli_dst->desthost, "print$", "A:");
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
@@ -1862,7 +1882,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid,
 			rpcstr_pull(drivername, drv_ctr_src.info3->name.buffer, 
 					sizeof(drivername), -1, STR_TERMINATE);
 
-			if (opt_verbose)
+			if (c->opt_verbose)
 				display_print_driver_3(drv_ctr_src.info3);
 
 
@@ -1873,7 +1893,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid,
 
 
 			/* copy driver-files */
-			nt_status = copy_print_driver_3(mem_ctx, cli_share_src, cli_share_dst, 
+			nt_status = copy_print_driver_3(c, mem_ctx, cli_share_src, cli_share_dst,
 							archi_table[i].short_archi, 
 							drv_ctr_src.info3);
 			if (!NT_STATUS_IS_OK(nt_status))
@@ -1952,6 +1972,7 @@ done:
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
  *
+ * @param c	A net_context structure
  * @param domain_sid The domain sid aquired from the remote server
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on compleation of the function.
@@ -1962,7 +1983,8 @@ done:
  * @return Normal NTSTATUS return.
  **/
 
-NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid,
+NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
+						const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -1985,7 +2007,7 @@ NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid,
 	DEBUG(3,("copying printers\n"));
 
 	/* connect destination PI_SPOOLSS */
-	nt_status = connect_dst_pipe(&cli_dst, &pipe_hnd_dst, PI_SPOOLSS);
+	nt_status = connect_dst_pipe(c, &cli_dst, &pipe_hnd_dst, PI_SPOOLSS);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
@@ -2109,6 +2131,7 @@ done:
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
  *
+ * @param c	A net_context structure
  * @param domain_sid The domain sid aquired from the remote server
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on compleation of the function.
@@ -2119,7 +2142,8 @@ done:
  * @return Normal NTSTATUS return.
  **/
 
-NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
+NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
+						const DOM_SID *domain_sid,
 						const char *domain_name, 
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -2153,7 +2177,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
 	DEBUG(3,("copying printer settings\n"));
 
 	/* connect destination PI_SPOOLSS */
-	nt_status = connect_dst_pipe(&cli_dst, &pipe_hnd_dst, PI_SPOOLSS);
+	nt_status = connect_dst_pipe(c, &cli_dst, &pipe_hnd_dst, PI_SPOOLSS);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
@@ -2303,7 +2327,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
 			if (W_ERROR_IS_OK(result)) {
 
 				/* display_value */
-				if (opt_verbose) 
+				if (c->opt_verbose)
 					display_reg_value(SPOOL_PRINTERDATA_KEY, value);
 
 				/* set_value */
@@ -2425,7 +2449,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
 						value.data_p = NULL;
 					}
 
-					if (opt_verbose) 
+					if (c->opt_verbose)
 						display_reg_value(subkey, value);
 
 					/* here we have to set all subkeys on the dst server */
@@ -2435,7 +2459,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
 							
 				} else {
 
-					if (opt_verbose) 
+					if (c->opt_verbose)
 						display_reg_value(subkey, *(reg_ctr->values[j]));
 
 					/* here we have to set all subkeys on the dst server */
