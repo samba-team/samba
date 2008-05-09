@@ -598,6 +598,25 @@ struct nbt_cldap_netlogon_13 {
 	uint16_t lm20_token;
 };
 
+struct nbt_cldap_netlogon_15 {
+	enum nbt_netlogon_command type;
+	uint16_t sbz;
+	uint32_t server_type;
+	struct GUID domain_uuid;
+	const char * forest;
+	const char * dns_domain;
+	const char * pdc_dns_name;
+	const char * domain;
+	const char * pdc_name;
+	const char * user_name;
+	const char * server_site;
+	const char * client_site;
+	const char * next_closest_site;
+	uint32_t nt_version;/* [value(15)] */
+	uint16_t lmnt_token;
+	uint16_t lm20_token;
+}/* [public] */;
+
 struct nbt_cldap_netlogon_29 {
 	enum nbt_netlogon_command type;
 	uint16_t sbz;
@@ -624,7 +643,8 @@ union nbt_cldap_netlogon {
 	struct nbt_cldap_netlogon_3 logon3;/* [case(2)] */
 	struct nbt_cldap_netlogon_5 logon5;/* [case(4)] */
 	struct nbt_cldap_netlogon_13 logon13;/* [case(8)] */
-	struct nbt_cldap_netlogon_29 logon29;/* [default] */
+	struct nbt_cldap_netlogon_15 logon15;/* [case(20)] */
+	struct nbt_cldap_netlogon_29 logon29;/* [case(29)] */
 }/* [public,nodiscriminant,flag(LIBNDR_FLAG_NOALIGN)] */;
 
 enum nbt_ntlogon_command
