@@ -206,10 +206,12 @@ static NTSTATUS map_logon29_from_cldap_reply(TALLOC_CTX *mem_ctx,
 	p->dc_sock_addr.sa_family = 2;
 	p->dc_sock_addr.pdc_ip = talloc_strdup(mem_ctx, addr);
 
-	switch (nt_version & 0x000000ff) {
+	switch (nt_version & 0x0000001f) {
 		case 0:
 			return NT_STATUS_INVALID_PARAMETER;
 		case 1:
+		case 16:
+		case 17:
 			p->pdc_name	= SET_STRING(r->logon1.pdc_name);
 			p->domain	= SET_STRING(r->logon1.domain_name);
 
@@ -220,6 +222,8 @@ static NTSTATUS map_logon29_from_cldap_reply(TALLOC_CTX *mem_ctx,
 			break;
 		case 2:
 		case 3:
+		case 18:
+		case 19:
 			p->pdc_name	= SET_STRING(r->logon3.pdc_name);
 			p->domain	= SET_STRING(r->logon3.domain_name);
 			p->pdc_dns_name	= SET_STRING(r->logon3.pdc_dns_name);
@@ -263,7 +267,29 @@ static NTSTATUS map_logon29_from_cldap_reply(TALLOC_CTX *mem_ctx,
 			p->client_site	= SET_STRING(r->logon13.client_site);
 
 			break;
-		default:
+		case 20:
+		case 21:
+		case 22:
+		case 23:
+		case 24:
+		case 25:
+		case 26:
+		case 27:
+		case 28:
+			p->pdc_name	= SET_STRING(r->logon15.pdc_name);
+			p->domain	= SET_STRING(r->logon15.domain);
+			p->pdc_dns_name	= SET_STRING(r->logon15.pdc_dns_name);
+			p->dns_domain	= SET_STRING(r->logon15.dns_domain);
+			p->server_type	= r->logon15.server_type;
+			p->forest	= SET_STRING(r->logon15.forest);
+			p->domain_uuid	= r->logon15.domain_uuid;
+			p->server_site	= SET_STRING(r->logon15.server_site);
+			p->client_site	= SET_STRING(r->logon15.client_site);
+
+			break;
+		case 29:
+		case 30:
+		case 31:
 			p->pdc_name	= SET_STRING(r->logon29.pdc_name);
 			p->domain	= SET_STRING(r->logon29.domain);
 			p->pdc_dns_name	= SET_STRING(r->logon29.pdc_dns_name);
@@ -276,6 +302,8 @@ static NTSTATUS map_logon29_from_cldap_reply(TALLOC_CTX *mem_ctx,
 			p->next_closest_site = SET_STRING(r->logon29.next_closest_site);
 
 			break;
+		default:
+			return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	return NT_STATUS_OK;
@@ -354,12 +382,16 @@ static NTSTATUS dsgetdcname_cache_refresh(TALLOC_CTX *mem_ctx,
 static uint32_t get_cldap_reply_server_flags(union nbt_cldap_netlogon *r,
 					     uint32_t nt_version)
 {
-	switch (nt_version & 0x000000ff) {
+	switch (nt_version & 0x0000001f) {
 		case 0:
 		case 1:
+		case 16:
+		case 17:
 			return 0;
 		case 2:
 		case 3:
+		case 18:
+		case 19:
 			return r->logon3.server_type;
 		case 4:
 		case 5:
@@ -375,8 +407,22 @@ static uint32_t get_cldap_reply_server_flags(union nbt_cldap_netlogon *r,
 		case 14:
 		case 15:
 			return r->logon13.server_type;
-		default:
+		case 20:
+		case 21:
+		case 22:
+		case 23:
+		case 24:
+		case 25:
+		case 26:
+		case 27:
+		case 28:
+			return r->logon15.server_type;
+		case 29:
+		case 30:
+		case 31:
 			return r->logon29.server_type;
+		default:
+			return 0;
 	}
 }
 
@@ -466,7 +512,7 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 	p.logon29 = r;
 
 	status = make_dc_info_from_cldap_reply(mem_ctx, flags, NULL,
-					       NETLOGON_VERSION_WITH_CLOSEST_SITE,
+					       29,
 					       &p, &info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -878,10 +924,11 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 		dc_address_type = DS_ADDRESS_TYPE_INET;
 	}
 
-	switch (nt_version & 0x000000ff) {
+	switch (nt_version & 0x0000001f) {
 		case 0:
-			return NT_STATUS_INVALID_PARAMETER;
 		case 1:
+		case 16:
+		case 17:
 			if (!ss) {
 				dc_address	= r->logon1.pdc_name;
 				dc_address_type	= DS_ADDRESS_TYPE_NETBIOS;
@@ -902,6 +949,8 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 			break;
 		case 2:
 		case 3:
+		case 18:
+		case 19:
 			if (!ss) {
 				dc_address	= r->logon3.pdc_ip;
 				dc_address_type	= DS_ADDRESS_TYPE_INET;
@@ -975,7 +1024,39 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 			dc_client_site	= r->logon13.client_site;
 
 			break;
-		default:
+		case 20:
+		case 21:
+		case 22:
+		case 23:
+		case 24:
+		case 25:
+		case 26:
+		case 27:
+		case 28:
+			if (!ss) {
+				dc_address	= r->logon15.pdc_name;
+				dc_address_type	= DS_ADDRESS_TYPE_NETBIOS;
+			}
+
+			map_dc_and_domain_names(flags,
+						r->logon15.pdc_name,
+						r->logon15.domain,
+						r->logon15.pdc_dns_name,
+						r->logon15.dns_domain,
+						&dc_flags,
+						&dc_hostname,
+						&dc_domain_name);
+
+			dc_flags	|= r->logon15.server_type;
+			dc_forest	= r->logon15.forest;
+			dc_domain_guid	= &r->logon15.domain_uuid;
+			dc_server_site	= r->logon15.server_site;
+			dc_client_site	= r->logon15.client_site;
+
+			break;
+		case 29:
+		case 30:
+		case 31:
 			if (!ss) {
 				dc_address	= r->logon29.dc_sock_addr.pdc_ip;
 				dc_address_type	= DS_ADDRESS_TYPE_INET;
@@ -997,6 +1078,8 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 			dc_client_site	= r->logon29.client_site;
 
 			break;
+		default:
+			return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	return make_domain_controller_info(mem_ctx,
