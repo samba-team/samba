@@ -211,9 +211,73 @@ Changes since 3.2.0pre3:
 -----------------------
 
 
+o   Michael Adam <obnox@samba.org>
+    * Move the posix pending close functionality down into the VFS layer.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 5452: Fix smbclient put.
+    * BUG 5095: Fix Manage Documents privilege.
+    * BUG 5434: Ensure the loaded password doesn't contain the '\n' at the end.
+    * Fix returning a directory value for a QPATHINFO on a msdfs link
+      with a non-dfs path.
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * Use more error-prone form of testing dm_destroy_session() return code.
+
+
+o   Günther Deschner <gd@samba.org>
+    * Fix wins null pointer crash in nss_wins module.
+    * Add -f switch for DsGetDCName() example and be more verbose on output.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Prevent Winbind cycle in children list when reaping dead child processes.
+    * BUG 5107: Fix handling of large DNS replies on AIX and Solaris.
+    * BUG 5429: Clarify log msgs re: failure to create
+      BUILTIN\{Administrators,Users}
+
+
+o   Eric Cronin <ecronin@gizmolabs.org>
+    * BUG 5184: Add Missing HAVE_UPDWTMPX check before using updwtmpx().
+
+
 o   Steven Danneman <sdanneman@sd-ubuntu.(none)>
     * Bug 5419: Fix memory leak in ads_do_search_all_args() when enumerating 
       1000s of entries 
+
+
+o   Holger Hetterich <hhetter@novell.com>
+    * Recognize and allow longer UA keys in winbindd_cache.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * Fix compile warnings.
+    * Increase log level for failed setsockopt call.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 5420: Fix build on IRIX.
+    * BUG 5398: Fix compiler warning.
+    * BUG 5399: Fix compiler warning.
+    * BUG 5400: Fix compiler warning.
+    * Fix a valgrind bug in the new [ug]id2sid cache.
+    * Fix Coverity IDs 565 and 222.
+    * Fix dfs_Enum: In form_junctions, correctly check for malloc failure.
+
+
+o   Tim Prouty <tim.prouty@isilon.com>
+    * Cleanup size_t return values in convert_string_allocate.
+
+
+o   Mike Sweet <msweet@apple.com>
+    * Fix Kerberos support for CUPS 1.3 in smbspool.
+
+
+o   Martin Zielinski <mz@seh.de>
+    * Fix printing with Vista.
+    * Fix deletion of files when they're in use by other drivers.
 
 
 Changes since 3.2.0pre2:
