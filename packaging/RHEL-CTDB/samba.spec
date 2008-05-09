@@ -40,6 +40,13 @@ BuildRequires: pam-devel, readline-devel, fileutils, libacl-devel, openldap-deve
 %define _libarch %_lib
 %endif
 
+# rpm screws up the arch lib dir when using --target on RHEL5
+%ifarch i386 i486 i586 i686 ppc s390
+%define _libarch lib
+%else
+%define _libarch %_lib
+%endif
+
 
 %description
 Samba is the protocol by which a lot of PC-related machines share
@@ -89,6 +96,15 @@ Provides: samba-swat = %{version}-%{release}
 The samba-swat package includes the new SWAT (Samba Web Administration
 Tool), for remotely managing Samba's smb.conf file using your favorite
 Web browser.
+
+%ifarch i386 i486 i586 i686 ppc s390
+%package winbind-32bit
+Summary:        Samba winbind compatibility package for 32bit apps on 64bit archs
+Group:          Applications/System
+
+%description winbind-32bit
+Compatibility package for 32 bit apps on 64 bit architecures
+%endif
 
 %ifarch i386 i486 i586 i686 ppc s390
 %package winbind-32bit
@@ -526,6 +542,14 @@ fi
 %{_mandir}/man8/net.8*
 %{_mandir}/man7/pam_winbind.7*
 %{_mandir}/man7/libsmbclient.7*
+
+%ifarch i386 i486 i586 i686 ppc s390
+%files winbind-32bit
+%attr(755,root,root) /%{_libarch}/libnss_winbind.so*
+%attr(755,root,root) /%{_libarch}/libnss_wins.so*
+%attr(755,root,root) /%{_libarch}/security/pam_winbind.so
+%endif
+
 
 %ifarch i386 i486 i586 i686 ppc s390
 %files winbind-32bit

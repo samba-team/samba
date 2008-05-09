@@ -89,7 +89,17 @@ cp -p ${SPECFILE} ${SPECDIR}
 ##
 echo "$(basename $0): Getting Ready to build release package"
 cd ${SPECDIR}
-${RPM} -ba --clean --rmsource $EXTRA_OPTIONS $SPECFILE
+${RPM} -ba $EXTRA_OPTIONS $SPECFILE
+[ `arch` = "x86_64" ] && {
+    echo "Building 32 bit winbind libs"
+    # hi ho, a hacking we will go ...
+    ln -sf /lib/libcom_err.so.2 /lib/libcom_err.so
+    ln -sf /lib/libuuid.so.1 /lib/libuuid.so
+    ${RPM} -ba --rebuild --target=i386 $SPECFILE
+}
+
+
+
 
 # restore original structure if docs were specified
 cd ../../
