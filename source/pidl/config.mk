@@ -6,7 +6,7 @@ pidl-testcov: pidl/Makefile
 
 installpidl:: pidl/Makefile
 	$(MAKE) -C pidl install_vendor VENDORPREFIX=$(prefix) \
-		                           INSTALLVENDORLIB=$(libdir) \
+		                           INSTALLVENDORLIB=$(datarootdir)/perl5 \
 								   INSTALLVENDORBIN=$(bindir) \
 								   INSTALLVENDORSCRIPT=$(bindir) \
 								   INSTALLVENDORMAN1DIR=$(mandir)/man1 \
