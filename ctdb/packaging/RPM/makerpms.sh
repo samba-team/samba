@@ -32,7 +32,7 @@ SPECFILE="ctdb.spec"
 RPMBUILD="rpmbuild"
 
 echo -n "Creating ctdb-${VERSION}.tar.gz ... "
-git archive --prefix=ctdb-${VERSION} | gzip -9 --rsyncable > ${SRCDIR}/ctdb-${VERSION}.tar.gz
+git archive --prefix=ctdb-${VERSION}/ HEAD | gzip -9 --rsyncable > ${SRCDIR}/ctdb-${VERSION}.tar.gz
 echo "Done."
 if [ $? -ne 0 ]; then
         echo "Build failed!"
