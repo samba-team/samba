@@ -1452,18 +1452,14 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated flags\n"));
 
 	/*
-	  if enabled, tell nodes to takeover their public IPs
+	  tell nodes to takeover their public IPs
 	 */
-	if (ctdb->vnn) {
-		rec->need_takeover_run = false;
-		ret = ctdb_takeover_run(ctdb, nodemap);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses\n"));
-			return -1;
-		}
-		DEBUG(DEBUG_INFO, (__location__ " Recovery - done takeover\n"));
+	rec->need_takeover_run = false;
+	ret = ctdb_takeover_run(ctdb, nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses\n"));
+		return -1;
 	}
-
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - takeip finished\n"));
 
 	/* execute the "recovered" event script on all nodes */
