@@ -263,12 +263,12 @@ int x_fflush(XFILE *f)
 
 	if (f->flags & X_FLAG_ERROR) return -1;
 
+	if (f->bufused == 0 || !f->buf) return 0;
+
 	if ((f->open_flags & O_ACCMODE) != O_WRONLY) {
 		errno = EINVAL;
 		return -1;
 	}
-
-	if (f->bufused == 0 || !f->buf) return 0;
 
 	ret = write(f->fd, f->buf, f->bufused);
 	if (ret == -1) return -1;
