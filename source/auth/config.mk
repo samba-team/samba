@@ -9,7 +9,7 @@ mkinclude credentials/config.mk
 PRIVATE_PROTO_HEADER = session_proto.h
 PUBLIC_DEPENDENCIES = CREDENTIALS
 
-# PUBLIC_HEADERS += auth/session.h
+PUBLIC_HEADERS += auth/session.h
 
 auth_session_OBJ_FILES = $(addprefix auth/, session.o)
 

@@ -71,7 +71,7 @@ ldb_wrap.o: $(ldbdir)/ldb_wrap.c
 	$(CC) $(PICFLAG) -c $(ldbdir)/ldb_wrap.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
 	
 _ldb.$(SHLIBEXT): $(LIBS) ldb_wrap.o
-	$(SHLD) $(SHLD_FLAGS) -o _ldb.$(SHLIBEXT) ldb_wrap.o $(LIB_FLAGS)
+	$(SHLD) $(SHLD_FLAGS) -o _ldb.$(SHLIBEXT) ldb_wrap.o $(LIB_FLAGS) `$(PYTHON_CONFIG) --ldflags`
 
 install-python:: build-python
 	mkdir -p $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(0, prefix='$(prefix)')"` \

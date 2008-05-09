@@ -39,6 +39,11 @@
 
 #ifdef HAVE_UTIME_H
 #include <utime.h>
+#else
+struct utimbuf {
+	time_t actime;       /* access time */
+	time_t modtime;      /* modification time */
+};
 #endif
 
 #ifndef HAVE_MKTIME
@@ -49,6 +54,16 @@ time_t rep_mktime(struct tm *t);
 #ifndef HAVE_TIMEGM
 /* define is in "replace.h" */
 time_t rep_timegm(struct tm *tm);
+#endif
+
+#ifndef HAVE_UTIME
+/* define is in "replace.h" */
+int rep_utime(const char *filename, const struct utimbuf *buf);
+#endif
+
+#ifndef HAVE_UTIMES
+/* define is in "replace.h" */
+int rep_utimes(const char *filename, const struct timeval tv[2]);
 #endif
 
 #endif
