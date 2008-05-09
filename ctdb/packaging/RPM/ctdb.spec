@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 35
+Release: 36
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,12 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Fri May 9 2008 : Version 1.0.36
+ - fix a memory corruption bug that could cause the recovery daemon to crash.
+ - fix a bug with distributing public ip addresses during recovery.
+   If the node that is the recovery master did NOT use public addresses,
+   then it assumed that no other node in the cluster used them either and
+   thus skipped the entire step of reallocating public addresses.
 * Wed May 7 2008 : Version 1.0.35
  - During recovery, when we define the new set of lmasters (vnnmap)
    only consider those nodes that have the can-be-lmaster capability
