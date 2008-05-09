@@ -8,7 +8,7 @@ Name:         samba
 Version:      3.2.0
 Release:      ctdb.test.090508
 Epoch:        0
-License: GNU GPL version 2
+License: GNU GPL version 3
 Group: System Environment/Daemons
 URL: http://www.samba.org/
 
