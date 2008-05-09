@@ -8,7 +8,7 @@ PIDL_EXTRA_ARGS="$*"
 
 [ -d $OUTDIR ] || mkdir -p $OUTDIR || exit 1
 
-PIDL="$PIDL --outputdir $OUTDIR --header --ndr-parser --server --client --swig --python $PIDL_EXTRA_ARGS"
+PIDL="$PIDL --outputdir $OUTDIR --header --ndr-parser --server --client --swig --python --dcom-proxy --com-header $PIDL_EXTRA_ARGS"
 
 if [ x$FULLBUILD = xFULL ]; then
       echo Rebuilding all idl files in $IDLDIR

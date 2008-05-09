@@ -483,6 +483,8 @@ my($opt_quiet) = 0;
 my($opt_outputdir) = '.';
 my($opt_verbose) = 0;
 my($opt_warn_compat) = 0;
+my($opt_dcom_proxy);
+my($opt_com_header);
 
 #########################################
 # display help text
@@ -523,6 +525,8 @@ Samba 4 output:
  --swig[=OUTFILE]        create swig wrapper file [BASENAME.i]
  --server[=OUTFILE]      create server boilerplate [ndr_BASENAME_s.c]
  --template              print a template for a pipe
+ --dcom-proxy[=OUTFILE]  create DCOM proxy [ndr_BASENAME_p.c]
+ --com-header[=OUTFILE]  create header for COM [com_BASENAME.h]
 
 Samba 3 output:
  --samba3-ndr-client[=OUTF] create client calls for Samba3 
@@ -566,6 +570,8 @@ my $result = GetOptions (
 		'python' => \$opt_python,
 	    'diff' => \$opt_diff,
 	    'swig:s' => \$opt_swig,
+        'dcom-proxy:s' => \$opt_dcom_proxy,
+		'com-header:s' => \$opt_com_header,
 	    'quiet' => \$opt_quiet,
 		'verbose' => \$opt_verbose,
 	    'warn-compat' => \$opt_warn_compat,
@@ -625,6 +631,25 @@ sub process_file($)
 		system("diff -wu $idl_file $tempfile");
 		unlink($tempfile);
 	}
+
+	my $comh_filename = ($opt_com_header or "$outputdir/com_$basename.h");
+	if (defined($opt_com_header)) {
+		require Parse::Pidl::Samba4::COM::Header;
+		my $res = Parse::Pidl::Samba4::COM::Header::Parse($pidl,"$outputdir/ndr_$basename.h");
+		if ($res) {
+			FileSave($comh_filename, $res);
+		}
+	}
+
+	if (defined($opt_dcom_proxy)) {
+		require Parse::Pidl::Samba4::COM::Proxy;
+		my $res = Parse::Pidl::Samba4::COM::Proxy::Parse($pidl,$comh_filename);
+		if ($res) {
+			my ($client) = ($opt_dcom_proxy or "$outputdir/$basename\_p.c");
+			FileSave($client, $res);
+		}
+	}
+
 
 	if ($opt_warn_compat) {
 		require Parse::Pidl::Compat;
