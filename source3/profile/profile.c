@@ -426,7 +426,6 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 	    "NT_transact_set_user_quota",/* PR_VALUE_NT_TRANSACT_SET_USER_QUOTA */
 	    "get_nt_acl",		/* PR_VALUE_GET_NT_ACL */
 	    "fget_nt_acl",		/* PR_VALUE_FGET_NT_ACL */
-	    "set_nt_acl",		/* PR_VALUE_SET_NT_ACL */
 	    "fset_nt_acl",		/* PR_VALUE_FSET_NT_ACL */
 	    "chmod_acl",		/* PR_VALUE_CHMOD_ACL */
 	    "fchmod_acl",		/* PR_VALUE_FCHMOD_ACL */

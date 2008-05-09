@@ -423,13 +423,6 @@ static NTSTATUS shadow_copy2_get_nt_acl(vfs_handle_struct *handle,
         SHADOW2_NTSTATUS_NEXT(GET_NT_ACL, (handle, name, security_info, ppdesc), NT_STATUS_ACCESS_DENIED);
 }
 
-static NTSTATUS shadow_copy2_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-			     const char *fname, uint32 security_info_sent,
-			     struct security_descriptor *psd)
-{
-        SHADOW2_NTSTATUS_NEXT(SET_NT_ACL, (handle, fsp, name, security_info_sent, psd), NT_STATUS_ACCESS_DENIED);
-}
-
 static int shadow_copy2_mkdir(vfs_handle_struct *handle,  const char *fname, mode_t mode)
 {
         SHADOW2_NEXT(MKDIR, (handle, name, mode), int, -1);
@@ -601,7 +594,6 @@ static vfs_op_tuple shadow_copy2_ops[] = {
 
         /* NT File ACL operations */
         {SMB_VFS_OP(shadow_copy2_get_nt_acl), SMB_VFS_OP_GET_NT_ACL, SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_set_nt_acl), SMB_VFS_OP_SET_NT_ACL, SMB_VFS_LAYER_TRANSPARENT},
 
         /* POSIX ACL operations */
         {SMB_VFS_OP(shadow_copy2_chmod_acl), SMB_VFS_OP_CHMOD_ACL, SMB_VFS_LAYER_TRANSPARENT},

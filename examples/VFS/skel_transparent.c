@@ -307,12 +307,6 @@ static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	return SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
 }
 
-static NTSTATUS skel_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-	const char *name, uint32 security_info_sent, SEC_DESC *psd)
-{
-	return SMB_VFS_NEXT_SET_NT_ACL(handle, fsp, name, security_info_sent, psd);
-}
-
 static int skel_chmod_acl(vfs_handle_struct *handle,  const char *name, mode_t mode)
 {
 	/* If the underlying VFS doesn't have ACL support... */
@@ -624,7 +618,6 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_fget_nt_acl),			SMB_VFS_OP_FGET_NT_ACL,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_get_nt_acl),			SMB_VFS_OP_GET_NT_ACL,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_fset_nt_acl),			SMB_VFS_OP_FSET_NT_ACL,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_set_nt_acl),			SMB_VFS_OP_SET_NT_ACL,		SMB_VFS_LAYER_TRANSPARENT},
 
 	/* POSIX ACL operations */
 

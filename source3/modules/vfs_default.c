@@ -1042,16 +1042,6 @@ static NTSTATUS vfswrap_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp
 	return result;
 }
 
-static NTSTATUS vfswrap_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char *name, uint32 security_info_sent, SEC_DESC *psd)
-{
-	NTSTATUS result;
-
-	START_PROFILE(set_nt_acl);
-	result = set_nt_acl(fsp, security_info_sent, psd);
-	END_PROFILE(set_nt_acl);
-	return result;
-}
-
 static int vfswrap_chmod_acl(vfs_handle_struct *handle,  const char *name, mode_t mode)
 {
 #ifdef HAVE_NO_ACL
@@ -1445,8 +1435,6 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_get_nt_acl),	SMB_VFS_OP_GET_NT_ACL,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_fset_nt_acl),	SMB_VFS_OP_FSET_NT_ACL,
-	 SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(vfswrap_set_nt_acl),	SMB_VFS_OP_SET_NT_ACL,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* POSIX ACL operations. */

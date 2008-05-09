@@ -293,14 +293,6 @@ static NTSTATUS catia_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
         return SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info, ppdesc);
 }
 
-static NTSTATUS catia_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-			     const char *name, uint32 security_info_sent,
-			     struct security_descriptor *psd)
-{
-        return SMB_VFS_NEXT_SET_NT_ACL(handle, fsp, name, security_info_sent,
-				       psd);
-}
-
 static int catia_chmod_acl(vfs_handle_struct *handle,
 			   const char *name, mode_t mode)
 {
@@ -361,8 +353,6 @@ SMB_VFS_LAYER_TRANSPARENT},
         /* NT File ACL operations */
 
         {SMB_VFS_OP(catia_get_nt_acl), SMB_VFS_OP_GET_NT_ACL,
-SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(catia_set_nt_acl), SMB_VFS_OP_SET_NT_ACL,
 SMB_VFS_LAYER_TRANSPARENT},
 
         /* POSIX ACL operations */

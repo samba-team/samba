@@ -2233,7 +2233,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 		}
 	}
 
-	nt_status = SMB_VFS_SET_NT_ACL(fsp, fsp->fsp_name,
+	nt_status = SMB_VFS_FSET_NT_ACL(fsp,
 				       r->in.securityinformation,
 				       r->in.sd_buf->sd);
 

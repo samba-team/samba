@@ -278,17 +278,6 @@ static char *cap_realpath(vfs_handle_struct *handle, const char *path, char *res
 	return SMB_VFS_NEXT_REALPATH(handle, path, resolved_path);
 }
 
-static NTSTATUS cap_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char *path, uint32 security_info_sent, struct security_descriptor *psd)
-{
-	char *cappath = capencode(talloc_tos(), path);
-
-	if (!cappath) {
-		errno = ENOMEM;
-		return NT_STATUS_NO_MEMORY;
-	}
-	return SMB_VFS_NEXT_SET_NT_ACL(handle, fsp, cappath, security_info_sent, psd);
-}
-
 static int cap_chmod_acl(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
 	char *cappath = capencode(talloc_tos(), path);
@@ -498,10 +487,6 @@ static vfs_op_tuple cap_op_tuples[] = {
 	{SMB_VFS_OP(cap_link),				SMB_VFS_OP_LINK,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(cap_mknod),			SMB_VFS_OP_MKNOD,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(cap_realpath),			SMB_VFS_OP_REALPATH,		SMB_VFS_LAYER_TRANSPARENT},
-
-	/* NT File ACL operations */
-
-	{SMB_VFS_OP(cap_set_nt_acl),			SMB_VFS_OP_SET_NT_ACL,		SMB_VFS_LAYER_TRANSPARENT},
 
 	/* POSIX ACL operations */
 

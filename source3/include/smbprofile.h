@@ -631,10 +631,6 @@ enum profile_stats_values
 #define fget_nt_acl_count __profile_stats_value(PR_VALUE_FGET_NT_ACL, count)
 #define fget_nt_acl_time __profile_stats_value(PR_VALUE_FGET_NT_ACL, time)
 
-	PR_VALUE_SET_NT_ACL,
-#define set_nt_acl_count __profile_stats_value(PR_VALUE_SET_NT_ACL, count)
-#define set_nt_acl_time __profile_stats_value(PR_VALUE_SET_NT_ACL, time)
-
 	PR_VALUE_FSET_NT_ACL,
 #define fset_nt_acl_count __profile_stats_value(PR_VALUE_FSET_NT_ACL, count)
 #define fset_nt_acl_time __profile_stats_value(PR_VALUE_FSET_NT_ACL, time)

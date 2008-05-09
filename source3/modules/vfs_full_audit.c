@@ -199,9 +199,6 @@ static NTSTATUS smb_full_audit_get_nt_acl(vfs_handle_struct *handle, files_struc
 static NTSTATUS smb_full_audit_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			      uint32 security_info_sent,
 			      SEC_DESC *psd);
-static NTSTATUS smb_full_audit_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-			     const char *name, uint32 security_info_sent,
-			     SEC_DESC *psd);
 static int smb_full_audit_chmod_acl(vfs_handle_struct *handle,
 			   const char *path, mode_t mode);
 static int smb_full_audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp,
@@ -431,8 +428,6 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_fset_nt_acl),	SMB_VFS_OP_FSET_NT_ACL,
 	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_set_nt_acl),	SMB_VFS_OP_SET_NT_ACL,
-	 SMB_VFS_LAYER_LOGGER},
 
 	/* POSIX ACL operations. */
 
@@ -593,7 +588,6 @@ static struct {
 	{ SMB_VFS_OP_FGET_NT_ACL,	"fget_nt_acl" },
 	{ SMB_VFS_OP_GET_NT_ACL,	"get_nt_acl" },
 	{ SMB_VFS_OP_FSET_NT_ACL,	"fset_nt_acl" },
-	{ SMB_VFS_OP_SET_NT_ACL,	"set_nt_acl" },
 	{ SMB_VFS_OP_CHMOD_ACL,	"chmod_acl" },
 	{ SMB_VFS_OP_FCHMOD_ACL,	"fchmod_acl" },
 	{ SMB_VFS_OP_SYS_ACL_GET_ENTRY,	"sys_acl_get_entry" },
@@ -1568,20 +1562,6 @@ static NTSTATUS smb_full_audit_fset_nt_acl(vfs_handle_struct *handle, files_stru
 	result = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
 
 	do_log(SMB_VFS_OP_FSET_NT_ACL, NT_STATUS_IS_OK(result), handle, "%s", fsp->fsp_name);
-
-	return result;
-}
-
-static NTSTATUS smb_full_audit_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-			     const char *name, uint32 security_info_sent,
-			     SEC_DESC *psd)
-{
-	NTSTATUS result;
-
-	result = SMB_VFS_NEXT_SET_NT_ACL(handle, fsp, name, security_info_sent,
-					 psd);
-
-	do_log(SMB_VFS_OP_SET_NT_ACL, NT_STATUS_IS_OK(result), handle, "%s", fsp->fsp_name);
 
 	return result;
 }
