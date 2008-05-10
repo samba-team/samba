@@ -109,7 +109,15 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 
 	TALLOC_FREE(ent->server_info);
 
-	ent->server_info = copy_serverinfo(conn, vuser->server_info);
+	/*
+	 * If force_user was set, all server_info's are based on the same
+	 * username-based faked one.
+	 */
+
+	ent->server_info = copy_serverinfo(
+		conn,
+		conn->force_user ? conn->server_info : vuser->server_info);
+
 	if (ent->server_info == NULL) {
 		ent->vuid = UID_FIELD_INVALID;
 		return false;
