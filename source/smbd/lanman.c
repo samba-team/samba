@@ -28,7 +28,6 @@
 #include "includes.h"
 
 extern struct current_user current_user;
-extern userdom_struct current_user_info;
 
 #ifdef CHECK_TYPES
 #undef CHECK_TYPES
@@ -105,7 +104,7 @@ static int CopyExpanded(connection_struct *conn,
 				conn->connectpath,
 				conn->server_info->gid,
 				get_current_username(),
-				current_user_info.domain,
+				pdb_get_domain(conn->server_info->sam_account),
 				buf);
 	if (!buf) {
 		*p_space_remaining = 0;
@@ -156,7 +155,7 @@ static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 				conn->connectpath,
 				conn->server_info->gid,
 				get_current_username(),
-				current_user_info.domain,
+				pdb_get_domain(conn->server_info->sam_account),
 				buf);
 	if (!buf) {
 		return 0;
@@ -186,7 +185,7 @@ static char *Expand(connection_struct *conn, int snum, char *s)
 				conn->connectpath,
 				conn->server_info->gid,
 				get_current_username(),
-				current_user_info.domain,
+				pdb_get_domain(conn->server_info->sam_account),
 				buf);
 }
 
@@ -3005,14 +3004,15 @@ static bool api_RNetServerGetInfo(connection_struct *conn,uint16 vuid,
 			SIVAL(p,6,0);
 		} else {
 			SIVAL(p,6,PTR_DIFF(p2,*rdata));
-			comment = talloc_sub_advanced(ctx,
-						lp_servicename(SNUM(conn)),
-						conn->server_info->unix_name,
-						conn->connectpath,
-						conn->server_info->gid,
-						get_current_username(),
-						current_user_info.domain,
-						comment);
+			comment = talloc_sub_advanced(
+				ctx,
+				lp_servicename(SNUM(conn)),
+				conn->server_info->unix_name,
+				conn->connectpath,
+				conn->server_info->gid,
+				get_current_username(),
+				pdb_get_domain(conn->server_info->sam_account),
+				comment);
 			if (comment) {
 				return false;
 			}
@@ -3111,7 +3111,7 @@ static bool api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid,
 	p += 4;
 
 	SIVAL(p,0,PTR_DIFF(p2,*rdata));
-	strlcpy(p2,current_user_info.smb_name,PTR_DIFF(endp,p2));
+	strlcpy(p2,conn->server_info->sanitized_username,PTR_DIFF(endp,p2));
 	p2 = skip_string(*rdata,*rdata_len,p2);
 	if (!p2) {
 		return False;
