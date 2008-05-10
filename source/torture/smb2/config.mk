@@ -2,7 +2,7 @@
 #################################
 # Start SUBSYSTEM TORTURE_SMB2
 [MODULE::TORTURE_SMB2]
-SUBSYSTEM = torture
+SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_smb2_init
 PRIVATE_PROTO_HEADER = \
 		proto.h

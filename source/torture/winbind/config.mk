@@ -2,7 +2,7 @@
 #################################
 # Start SUBSYSTEM TORTURE_WINBIND
 [MODULE::TORTURE_WINBIND]
-SUBSYSTEM = torture
+SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_winbind_init
 PRIVATE_PROTO_HEADER = \
 		proto.h
