@@ -139,6 +139,9 @@ $1_CPPFLAGS = $4
 $1_LDFLAGS = $5
 "
 
+SMB_INFO_EXT_LIBS="$SMB_INFO_EXT_LIBS
+@<:@EXT_LIB::$1@:>@
+"
 ])
 
 dnl SMB_ENABLE(name,default_build)
