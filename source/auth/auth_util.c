@@ -485,6 +485,14 @@ static auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx)
 	return result;
 }
 
+static char *sanitize_username(TALLOC_CTX *mem_ctx, const char *username)
+{
+	fstring tmp;
+
+	alpha_strcpy(tmp, username, ". _-$", sizeof(tmp));
+	return talloc_strdup(mem_ctx, tmp);
+}
+
 /***************************************************************************
  Make (and fill) a user_info struct from a struct samu
 ***************************************************************************/
@@ -522,6 +530,13 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	result->uid = pwd->pw_uid;
 	
 	TALLOC_FREE(pwd);
+
+	result->sanitized_username = sanitize_username(result,
+						       result->unix_name);
+	if (result->sanitized_username == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	status = pdb_enum_group_memberships(result, sampass,
 					    &result->sids, &gids,
@@ -983,7 +998,6 @@ bool user_in_group(const char *username, const char *groupname)
 	return user_in_group_sid(username, &group_sid);
 }
 
-
 /***************************************************************************
  Make (and fill) a server_info struct from a 'struct passwd' by conversion
  to a struct samu
@@ -1018,7 +1032,17 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 	}
 
 	result->sam_account = sampass;
+
 	result->unix_name = talloc_strdup(result, unix_username);
+	result->sanitized_username = sanitize_username(result, unix_username);
+
+	if ((result->unix_name == NULL)
+	    || (result->sanitized_username == NULL)) {
+		TALLOC_FREE(sampass);
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	result->uid = pwd->pw_uid;
 	result->gid = pwd->pw_gid;
 
@@ -1162,21 +1186,24 @@ NTSTATUS make_serverinfo_from_username(TALLOC_CTX *mem_ctx,
 				       struct auth_serversupplied_info **presult)
 {
 	struct auth_serversupplied_info *result;
+	struct passwd *pwd;
 	NTSTATUS status;
 
-	result = make_server_info(mem_ctx);
-	if (result == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	pwd = getpwnam_alloc(talloc_tos(), username);
+	if (pwd == NULL) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	status = make_server_info_pw(&result, pwd->pw_name, pwd);
+
+	TALLOC_FREE(pwd);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	result->nss_token = true;
 	result->guest = is_guest;
-
-	result->unix_name = talloc_strdup(result, username);
-	if (result->unix_name == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	status = create_local_token(result);
 
@@ -1624,6 +1651,13 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	result->sam_account = sam_account;
 	result->unix_name = talloc_strdup(result, found_username);
 
+	result->sanitized_username = sanitize_username(result,
+						       result->unix_name);
+	if (result->sanitized_username == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* Fill in the unix info we found on the way */
 
 	result->uid = uid;
@@ -1859,7 +1893,16 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 	result->sam_account = sam_account;
 	result->unix_name = talloc_strdup(result, found_username);
 
+	result->sanitized_username = sanitize_username(result,
+						       result->unix_name);
 	result->login_server = talloc_strdup(result, info->logon_server);
+
+	if ((result->unix_name == NULL)
+	    || (result->sanitized_username == NULL)
+	    || (result->login_server == NULL)) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Fill in the unix info we found on the way */
 
