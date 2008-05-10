@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "lib/util/dlinklist.h"
 #include "auth/auth.h"
-#include "auth/auth_proto.h"
+#include "auth/ntlm/auth_proto.h"
 #include "lib/events/events.h"
 #include "param/param.h"
 
@@ -520,6 +520,7 @@ _PUBLIC_ NTSTATUS auth_init(void)
 	extern NTSTATUS auth_anonymous_init(void);
 	extern NTSTATUS auth_unix_init(void);
 	extern NTSTATUS auth_sam_init(void);
+	extern NTSTATUS auth_server_init(void);
 
 	init_module_fn static_init[] = { STATIC_service_auth_MODULES };
 	

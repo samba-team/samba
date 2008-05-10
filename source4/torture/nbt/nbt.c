@@ -21,7 +21,7 @@
 #include "libcli/nbt/libnbt.h"
 #include "torture/torture.h"
 #include "torture/nbt/proto.h"
-#include "torture/ui.h"
+#include "torture/smbtorture.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
 

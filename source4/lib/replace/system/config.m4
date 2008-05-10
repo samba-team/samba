@@ -9,6 +9,7 @@ AC_CHECK_HEADERS(sys/select.h)
 # time
 AC_CHECK_HEADERS(sys/time.h utime.h)
 AC_HEADER_TIME
+AC_CHECK_FUNCS(utime utimes)
 
 # wait
 AC_HEADER_SYS_WAIT

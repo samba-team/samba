@@ -52,6 +52,20 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 	const struct samr_Password *nt_hash;
 	lm_session_key = data_blob(NULL, 0);
 
+	/* We may already have an NTLM response we prepared earlier.
+	 * This is used for NTLM pass-though authentication */
+	if (cred->nt_response.data || cred->lm_response.data) {
+		*_nt_response = cred->nt_response;
+		*_lm_response = cred->lm_response;
+
+		if (!cred->lm_response.data) {
+			*flags = *flags & ~CLI_CRED_LANMAN_AUTH;
+		}
+		*_lm_session_key = data_blob(NULL, 0);
+		*_session_key = data_blob(NULL, 0);
+		return NT_STATUS_OK;
+	}
+
 	nt_hash = cli_credentials_get_nt_hash(cred, mem_ctx);
 
 	cli_credentials_get_ntlm_username_domain(cred, mem_ctx, &user, &domain);
@@ -215,3 +229,41 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 	return NT_STATUS_OK;
 }
 	
+_PUBLIC_ bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
+				 const struct samr_Password *nt_hash, 
+				 enum credentials_obtained obtained)
+{
+	if (obtained >= cred->password_obtained) {
+		cli_credentials_set_password(cred, NULL, obtained);
+		if (nt_hash) {
+			cred->nt_hash = talloc(cred, struct samr_Password);
+			*cred->nt_hash = *nt_hash;
+		} else {
+			cred->nt_hash = NULL;
+		}
+		return true;
+	}
+
+	return false;
+}
+
+_PUBLIC_ bool cli_credentials_set_ntlm_response(struct cli_credentials *cred,
+						const DATA_BLOB *lm_response, 
+						const DATA_BLOB *nt_response, 
+						enum credentials_obtained obtained)
+{
+	if (obtained >= cred->password_obtained) {
+		cli_credentials_set_password(cred, NULL, obtained);
+		if (nt_response) {
+			cred->nt_response = data_blob_talloc(cred, nt_response->data, nt_response->length);
+			talloc_steal(cred, cred->nt_response.data);
+		}
+		if (nt_response) {
+			cred->lm_response = data_blob_talloc(cred, lm_response->data, lm_response->length);
+		}
+		return true;
+	}
+
+	return false;
+}
+

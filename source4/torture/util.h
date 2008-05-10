@@ -20,6 +20,11 @@
 #ifndef _TORTURE_PROVISION_H_
 #define _TORTURE_PROVISION_H_
 
+#include "torture/torture.h"
+
+struct smbcli_state;
+struct smbcli_tree;
+
 /**
   setup a directory ready for a test
 */

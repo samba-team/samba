@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/netlogon.h"
 #include "libcli/auth/libcli_auth.h"
 #include "param/param.h"
+#include "auth/ntlm/ntlm_check.h"
 
 /****************************************************************************
  Core of smb password checking routine.

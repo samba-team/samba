@@ -224,7 +224,6 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 {
 	NTSTATUS nt_status;
 	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
-	const char *password = cli_credentials_get_password(io->in.credentials);
 	DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, lp_iconv_convenience(global_loadparm), session->transport->socket->hostname, lp_workgroup(global_loadparm));
 	DATA_BLOB session_key;
 	int flags = CLI_CRED_NTLM_AUTH;
@@ -266,6 +265,7 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 		
 		data_blob_free(&session_key);
 	} else if (session->options.plaintext_auth) {
+		const char *password = cli_credentials_get_password(io->in.credentials);
 		state->setup.nt1.in.password1 = data_blob_talloc(state, password, strlen(password));
 		state->setup.nt1.in.password2 = data_blob(NULL, 0);
 	} else {

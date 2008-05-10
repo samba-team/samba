@@ -3124,11 +3124,6 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	const char *query_host = NULL;
 	bool message = false;
 	const char *desthost = NULL;
-#ifdef KANJI
-	const char *term_code = KANJI;
-#else
-	const char *term_code = "";
-#endif /* KANJI */
 	poptContext pc;
 	const char *service = NULL;
 	int port = 0;
@@ -3148,7 +3143,6 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 		{ "ip-address", 'I', POPT_ARG_STRING, NULL, 'I', "Use this IP to connect to", "IP" },
 		{ "stderr", 'E', POPT_ARG_NONE, NULL, 'E', "Write messages to stderr instead of stdout" },
 		{ "list", 'L', POPT_ARG_STRING, NULL, 'L', "Get a list of shares available on a host", "HOST" },
-		{ "terminal", 't', POPT_ARG_STRING, NULL, 't', "Terminal I/O code {sjis|euc|jis7|jis8|junet|hex}", "CODE" },
 		{ "directory", 'D', POPT_ARG_STRING, NULL, 'D', "Start from directory", "DIR" },
 		{ "command", 'c', POPT_ARG_STRING, &cmdstr, 'c', "Execute semicolon separated commands" }, 
 		{ "send-buffer", 'b', POPT_ARG_INT, NULL, 'b', "Changes the transmit/send buffer", "BYTES" },
@@ -3189,9 +3183,6 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 			break;
 		case 'L':
 			query_host = strdup(poptGetOptArg(pc));
-			break;
-		case 't':
-			term_code = strdup(poptGetOptArg(pc));
 			break;
 		case 'D':
 			base_directory = strdup(poptGetOptArg(pc));

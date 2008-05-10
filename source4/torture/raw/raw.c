@@ -18,10 +18,10 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
-#include "torture/raw/proto.h"
 #include "torture/util.h"
+#include "torture/smbtorture.h"
+#include "torture/raw/proto.h"
 
 NTSTATUS torture_raw_init(void)
 {
