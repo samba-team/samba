@@ -83,8 +83,8 @@ struct smb_composite_savefile {
     - socket establishment
     - session request
     - negprot
-    - session setup
-    - tree connect
+    - session setup (if credentials are not NULL)
+    - tree connect (if service is not NULL)
 */
 struct smb_composite_connect {
 	struct {

@@ -306,6 +306,8 @@ _PUBLIC_ bool cli_credentials_set_password(struct cli_credentials *cred,
 		cli_credentials_invalidate_ccache(cred, cred->password_obtained);
 
 		cred->nt_hash = NULL;
+		cred->lm_response = data_blob(NULL, 0);
+		cred->nt_response = data_blob(NULL, 0);
 		return true;
 	}
 
@@ -374,24 +376,6 @@ _PUBLIC_ const struct samr_Password *cli_credentials_get_nt_hash(struct cli_cred
 	} else {
 		return cred->nt_hash;
 	}
-}
-
-_PUBLIC_ bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
-				 const struct samr_Password *nt_hash, 
-				 enum credentials_obtained obtained)
-{
-	if (obtained >= cred->password_obtained) {
-		cli_credentials_set_password(cred, NULL, obtained);
-		if (nt_hash) {
-			cred->nt_hash = talloc(cred, struct samr_Password);
-			*cred->nt_hash = *nt_hash;
-		} else {
-			cred->nt_hash = NULL;
-		}
-		return true;
-	}
-
-	return false;
 }
 
 /**

@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "torture/ui.h"
 #include "torture/torture.h"
 #include "lib/util/dlinklist.h"
 #include "param/param.h"

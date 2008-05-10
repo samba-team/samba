@@ -30,6 +30,7 @@
 #include "auth/auth.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "auth/auth_sam.h"
+#include "auth/ntlm/ntlm_check.h"
 #include "pstring.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"

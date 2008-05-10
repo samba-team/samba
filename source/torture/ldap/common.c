@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "libcli/ldap/ldap_client.h"
-#include "torture/torture.h"
+#include "torture/smbtorture.h"
 #include "torture/ldap/proto.h"
 
 NTSTATUS torture_ldap_bind(struct ldap_connection *conn, const char *userdn, const char *password)

@@ -270,6 +270,9 @@ AC_DEFUN([AC_LIBREPLACE_LD_SHLIB_ALLOW_UNDEF_FLAG],
 		*darwin*)
 			LD_SHLIB_ALLOW_UNDEF_FLAG="-undefined dynamic_lookup"
 			;;
+		*aix*)
+			LD_SHLIB_ALLOW_UNDEF_FLAG="--Wl,-bnoentry"
+			;;
 	esac
 
 	AC_SUBST(LD_SHLIB_ALLOW_UNDEF_FLAG)

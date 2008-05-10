@@ -80,7 +80,12 @@ struct cli_credentials {
 
 	const char *bind_dn;
 
+	/* Allows authentication from a keytab or similar */
 	struct samr_Password *nt_hash;
+
+	/* Allows NTLM pass-though authentication */
+	DATA_BLOB lm_response;
+	DATA_BLOB nt_response;
 
 	struct ccache_container *ccache;
 	struct gssapi_creds_container *client_gss_creds;
@@ -221,6 +226,10 @@ void cli_credentials_set_kvno(struct cli_credentials *cred,
 bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
 				 const struct samr_Password *nt_hash, 
 				 enum credentials_obtained obtained);
+bool cli_credentials_set_ntlm_response(struct cli_credentials *cred,
+				       const DATA_BLOB *lm_response, 
+				       const DATA_BLOB *nt_response, 
+				       enum credentials_obtained obtained);
 int cli_credentials_set_keytab_name(struct cli_credentials *cred, 
 				    struct event_context *event_ctx,
 				    struct loadparm_context *lp_ctx,

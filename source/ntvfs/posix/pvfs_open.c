@@ -262,7 +262,6 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
 	f->handle->oplock            = NULL;
-	f->handle->sticky_write_time = false;
 	f->handle->open_completed    = false;
 
 	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
@@ -416,16 +415,6 @@ cleanup_delete:
 */
 static int pvfs_handle_destructor(struct pvfs_file_handle *h)
 {
-	/* the write time is no longer sticky */
-	if (h->sticky_write_time) {
-		NTSTATUS status;
-		status = pvfs_dosattrib_load(h->pvfs, h->name, h->fd);
-		if (NT_STATUS_IS_OK(status)) {
-			h->name->dos.flags &= ~XATTR_ATTRIB_FLAG_STICKY_WRITE_TIME;
-			pvfs_dosattrib_save(h->pvfs, h->name, h->fd);
-		}
-	}
-	
 	if ((h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
 	    h->name->stream_name) {
 		NTSTATUS status;
@@ -707,7 +696,6 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	f->handle->mode              = 0;
 	f->handle->oplock            = NULL;
 	f->handle->have_opendb_entry = true;
-	f->handle->sticky_write_time = false;
 	f->handle->open_completed    = false;
 
 	status = odb_open_file(lck, f->handle, name->full_name,
@@ -1257,7 +1245,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	f->handle->mode              = 0;
 	f->handle->oplock            = NULL;
 	f->handle->have_opendb_entry = false;
-	f->handle->sticky_write_time = false;
 	f->handle->open_completed    = false;
 
 	/* form the lock context used for byte range locking and
@@ -1478,10 +1465,6 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 	if (!null_time(io->close.in.write_time)) {
 		unix_times.actime = 0;
 		unix_times.modtime = io->close.in.write_time;
-		utime(f->handle->name->full_name, &unix_times);
-	} else if (f->handle->sticky_write_time) {
-		unix_times.actime = 0;
-		unix_times.modtime = nt_time_to_unix(f->handle->name->dos.write_time);
 		utime(f->handle->name->full_name, &unix_times);
 	}
 

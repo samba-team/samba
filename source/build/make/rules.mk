@@ -212,8 +212,7 @@ include/includes.d: include/includes.h
 	@-mkdir -p `dirname $@`
 	@$(COMPILE) && exit 0 ; \
 		echo "The following command failed:" 1>&2;\
-		echo "$(COMPILE)" 1>&2;\
-		$(COMPILE) >/dev/null 2>&1
+		echo "$(COMPILE)" 1>&2 && exit 1
 
 
 .c.ho:
@@ -234,7 +233,7 @@ include/includes.d: include/includes.h
 
 .l.c:
 	@echo "Building $< with $(LEX)"
-	@-$(make_utility_dir)/script/lex_compile.sh "$(LEX)" "$<" "$@"
+	@-$(make_utility_dir)/lex_compile.sh "$(LEX)" "$<" "$@"
 
 %.a:
 	@echo Linking $@

@@ -340,7 +340,7 @@ NDR_WINSREPL_OBJ_FILES = librpc/gen_ndr/ndr_winsrepl.o
 PUBLIC_DEPENDENCIES = LIBNDR NDR_NETLOGON
 
 NDR_WINBIND_OBJ_FILES = librpc/gen_ndr/ndr_winbind.o
-PUBLIC_HEADERS += librpc/gen_ndr/winbind.h
+#PUBLIC_HEADERS += librpc/gen_ndr/winbind.h
 
 librpc/idl-deps:
 	./librpc/idl-deps.pl librpc/idl/*.idl >$@

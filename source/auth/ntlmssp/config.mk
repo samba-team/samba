@@ -9,7 +9,7 @@ MSRPC_PARSE_OBJ_FILES = $(addprefix auth/ntlmssp/, ntlmssp_parse.o)
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_ntlmssp_init
 PRIVATE_PROTO_HEADER = proto.h
-PRIVATE_DEPENDENCIES = MSRPC_PARSE CREDENTIALS
+PRIVATE_DEPENDENCIES = MSRPC_PARSE CREDENTIALS auth
 OUTPUT_TYPE = MERGED_OBJ
 # End MODULE gensec_ntlmssp
 ################################################

@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "libcli/libcli.h"
-#include "torture/torture.h"
+#include "torture/smbtorture.h"
 #include "torture/util.h"
 #include "libcli/rap/rap.h"
 #include "libcli/raw/libcliraw.h"

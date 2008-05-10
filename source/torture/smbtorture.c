@@ -30,7 +30,7 @@
 #include "lib/events/events.h"
 #include "dynconfig.h"
 
-#include "torture/torture.h"
+#include "torture/smbtorture.h"
 #include "lib/util/dlinklist.h"
 #include "librpc/rpc/dcerpc.h"
 #include "param/param.h"
