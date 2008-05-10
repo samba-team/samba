@@ -78,12 +78,15 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 	}
 
 	if (!user_ok_token(vuser->server_info->unix_name,
+			   pdb_get_domain(vuser->server_info->sam_account),
 			   vuser->server_info->ptok,
 			   snum))
 		return(False);
 
 	readonly_share = is_share_read_only_for_token(
-		vuser->server_info->unix_name, vuser->server_info->ptok,
+		vuser->server_info->unix_name,
+		pdb_get_domain(vuser->server_info->sam_account),
+		vuser->server_info->ptok,
 		SNUM(conn));
 
 	if (!readonly_share &&
@@ -127,7 +130,9 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 	ent->read_only = readonly_share;
 
 	ent->admin_user = token_contains_name_in_list(
-		vuser->server_info->unix_name, NULL, vuser->server_info->ptok,
+		vuser->server_info->unix_name,
+		pdb_get_domain(vuser->server_info->sam_account),
+		NULL, vuser->server_info->ptok,
 		lp_admin_users(SNUM(conn)));
 
 	conn->read_only = ent->read_only;

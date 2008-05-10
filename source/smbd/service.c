@@ -646,6 +646,7 @@ static NTSTATUS create_connection_server_info(TALLOC_CTX *mem_ctx, int snum,
                         }
                 } else {
                         if (!user_ok_token(vuid_serverinfo->unix_name,
+					   pdb_get_domain(vuid_serverinfo->sam_account),
                                            vuid_serverinfo->ptok, snum)) {
                                 DEBUG(2, ("user '%s' (from session setup) not "
                                           "permitted to access this share "

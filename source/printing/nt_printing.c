@@ -5835,7 +5835,7 @@ bool print_access_check(struct current_user *user, int snum, int access_type)
         /* see if we need to try the printer admin list */
 
         if ((access_granted == 0) &&
-	    (token_contains_name_in_list(uidtoname(user->ut.uid), NULL,
+	    (token_contains_name_in_list(uidtoname(user->ut.uid), NULL, NULL,
 					 user->nt_user_token,
 					 lp_printer_admin(snum)))) {
 		talloc_destroy(mem_ctx);

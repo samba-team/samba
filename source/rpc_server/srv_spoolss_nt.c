@@ -1649,7 +1649,8 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			    !user_has_privileges(p->pipe_user.nt_user_token,
 						 &se_printop ) &&
 			    !token_contains_name_in_list(
-				    uidtoname(p->pipe_user.ut.uid), NULL,
+				    uidtoname(p->pipe_user.ut.uid),
+				    NULL, NULL,
 				    p->pipe_user.nt_user_token,
 				    lp_printer_admin(snum))) {
 				close_printer_handle(p, handle);
@@ -1703,7 +1704,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			return WERR_ACCESS_DENIED;
 		}
 
-		if (!user_ok_token(uidtoname(p->pipe_user.ut.uid),
+		if (!user_ok_token(uidtoname(p->pipe_user.ut.uid), NULL,
 				   p->pipe_user.nt_user_token, snum) ||
 		    !print_access_check(&p->pipe_user, snum,
 					printer_default->access_required)) {
@@ -2008,8 +2009,10 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 
 	if ( (p->pipe_user.ut.uid != 0)
 		&& !user_has_privileges(p->pipe_user.nt_user_token, &se_printop )
-		&& !token_contains_name_in_list( uidtoname(p->pipe_user.ut.uid),
-		    NULL, p->pipe_user.nt_user_token, lp_printer_admin(-1)) )
+		&& !token_contains_name_in_list(
+			uidtoname(p->pipe_user.ut.uid), NULL,
+			NULL, p->pipe_user.nt_user_token,
+			lp_printer_admin(-1)) )
 	{
 		return WERR_ACCESS_DENIED;
 	}
@@ -2103,8 +2106,9 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 
 	if ( (p->pipe_user.ut.uid != 0)
 		&& !user_has_privileges(p->pipe_user.nt_user_token, &se_printop )
-		&& !token_contains_name_in_list( uidtoname(p->pipe_user.ut.uid),
-		    NULL, p->pipe_user.nt_user_token, lp_printer_admin(-1)) )
+		&& !token_contains_name_in_list(
+			uidtoname(p->pipe_user.ut.uid), NULL, NULL,
+			p->pipe_user.nt_user_token, lp_printer_admin(-1)) )
 	{
 		return WERR_ACCESS_DENIED;
 	}
