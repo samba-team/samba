@@ -1,14 +1,18 @@
 pythonbuilddir = $(builddir)/bin/python
 
+installpython::
+	mkdir -p $(DESTDIR)$(pythondir)
+
 # Install Python
 # Arguments: Module path
 define python_module_template
 
 installpython:: $$(pythonbuilddir)/$(1) ;
-	cp $$< $$(DESTDIR)$$(PYTHONDIR)/$(1)
+	mkdir -p $$(DESTDIR)$$(pythondir)/$$(dir $(1))
+	cp $$< $$(DESTDIR)$$(pythondir)/$(1)
 
 uninstallpython:: 
-	rm -f $$(DESTDIR)$$(PYTHONDIR)/$(1) ;
+	rm -f $$(DESTDIR)$$(pythondir)/$(1) ;
 
 pythonmods:: $$(pythonbuilddir)/$(1) ;
 
