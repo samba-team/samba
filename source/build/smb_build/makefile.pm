@@ -127,7 +127,7 @@ sub SharedModule($$)
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
-	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{INIT_FUNCTION_TYPE} =~ /\(\*\)/) {
+	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{INIT_FUNCTION_TYPE} =~ /\(\*\)/ and not ($ctx->{INIT_FUNCTION} =~ /\(/)) {
 		$self->output("\$($ctx->{NAME}_OBJ_FILES): CFLAGS+=-D$ctx->{INIT_FUNCTION}=init_module\n");
 	}
 
