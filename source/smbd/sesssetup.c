@@ -652,7 +652,8 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 
 		data_blob_free(&server_info->user_session_key);
 		server_info->user_session_key =
-			data_blob(
+			data_blob_talloc(
+			server_info,
 			(*auth_ntlmssp_state)->ntlmssp_state->session_key.data,
 			(*auth_ntlmssp_state)->ntlmssp_state->session_key.length);
 
