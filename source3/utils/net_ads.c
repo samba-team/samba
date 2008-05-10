@@ -1295,7 +1295,7 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 		return -1;
 	}
 
-	status = ads_startup(True, &ads);
+	status = ads_startup(c, True, &ads);
 	if ( !ADS_ERR_OK(status) ) {
 		DEBUG(1, ("error on ads_startup: %s\n", ads_errstr(status)));
 		TALLOC_FREE(ctx);
