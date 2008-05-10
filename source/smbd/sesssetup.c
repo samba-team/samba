@@ -644,10 +644,6 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		DATA_BLOB nullblob = data_blob_null;
-		DATA_BLOB session_key =
-			data_blob(
-			(*auth_ntlmssp_state)->ntlmssp_state->session_key.data,
-			(*auth_ntlmssp_state)->ntlmssp_state->session_key.length);
 
 		if (!is_partial_auth_vuid(vuid)) {
 			nt_status = NT_STATUS_LOGON_FAILURE;
@@ -665,7 +661,6 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 				server_info, nullblob,
 				(*auth_ntlmssp_state)->ntlmssp_state->user) !=
 					vuid) {
-			data_blob_free(&session_key);
 			nt_status = NT_STATUS_LOGON_FAILURE;
 			goto out;
 		}
