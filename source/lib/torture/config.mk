@@ -6,7 +6,7 @@ PUBLIC_DEPENDENCIES = \
 		LIBTALLOC
 
 torture_VERSION = 0.0.1
-torture_SO_VERSION = 0
+torture_SOVERSION = 0
 
 PC_FILES += lib/torture/torture.pc
 torture_OBJ_FILES = $(addprefix lib/torture/, torture.o)
