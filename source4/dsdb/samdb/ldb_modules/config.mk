@@ -4,11 +4,7 @@
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBNDR NDR_MISC
-<<<<<<< HEAD:source/dsdb/samdb/ldb_modules/config.mk
 INIT_FUNCTION = LDB_MODULE(objectguid)
-=======
-INIT_FUNCTION = objectguid_module_module_ops
->>>>>>> 5f3a70f285ad8a412105c0e498e486f93fc279bc:source/dsdb/samdb/ldb_modules/config.mk
 # End MODULE ldb_objectguid
 ################################################
 

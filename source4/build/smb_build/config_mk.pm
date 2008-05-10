@@ -253,7 +253,7 @@ sub run_config_mk($$$$)
 			next;
 		}
 
-		die("$parsing_file:$linenum: Bad line while parsing $parsing_file");
+		die("$parsing_file:$linenum: Bad line");
 	}
 
 	$makefile .= "# }END $parsing_file\n";

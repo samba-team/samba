@@ -782,8 +782,6 @@ PRIVATE_DEPENDENCIES = RPC_NDR_DFS PYTALLOC
 
 python_dfs_OBJ_FILES = librpc/gen_ndr/py_dfs.o
 
-python_dfs_OBJ_FILES = gen_ndr/py_dfs.o
-
 [PYTHON::python_unixinfo]
 PRIVATE_DEPENDENCIES = RPC_NDR_UNIXINFO PYTALLOC
 
@@ -793,8 +791,6 @@ python_unixinfo_OBJ_FILES = librpc/gen_ndr/py_unixinfo.o
 PRIVATE_DEPENDENCIES = RPC_NDR_DRSUAPI PYTALLOC
 
 python_drsuapi_OBJ_FILES = librpc/gen_ndr/py_drsuapi.o
-
-python_drsuapi_OBJ_FILES = gen_ndr/py_drsuapi.o
 
 [PYTHON::python_dcerpc_security]
 PRIVATE_DEPENDENCIES = PYTALLOC
