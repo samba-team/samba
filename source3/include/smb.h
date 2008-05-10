@@ -624,6 +624,10 @@ typedef struct connection_struct {
 	struct vfs_ops vfs_opaque;			/* OPAQUE Filesystem operations */
 	struct vfs_handle_struct *vfs_handles;		/* for the new plugins */
 
+	/*
+	 * This represents the user information on this connection. Depending
+	 * on the vuid using this tid, this might change per SMB request.
+	 */
 	struct auth_serversupplied_info *server_info;
 
 	char *user; /* name of user who *opened* this connection */
