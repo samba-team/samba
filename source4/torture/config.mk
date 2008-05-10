@@ -241,7 +241,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY smbtorture
 #################################
 
-smbtorture_OBJ_FILES = torture/smbtorture.o 
+smbtorture_OBJ_FILES = torture/smbtorture.o torture/torture.o 
 
 PUBLIC_HEADERS += torture/smbtorture.h
 MANPAGES += torture/man/smbtorture.1
