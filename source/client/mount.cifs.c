@@ -1,6 +1,6 @@
 /* 
    Mount helper utility for Linux CIFS VFS (virtual filesystem) client
-   Copyright (C) 2003,2005 Steve French  (sfrench@us.ibm.com)
+   Copyright (C) 2003,2008 Steve French  (sfrench@us.ibm.com)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -153,6 +153,7 @@ static void mount_cifs_usage(void)
 	if(mountpassword) {
 		memset(mountpassword,0,64);
 		free(mountpassword);
+		mountpassword = NULL;
 	}
 	exit(1);
 }
@@ -290,6 +291,7 @@ static int open_cred_file(char * file_name)
 	if(line_buf) {
 		memset(line_buf,0,4096);
 		free(line_buf);
+		line_buf = NULL;
 	}
 	return 0;
 }
@@ -1226,7 +1228,16 @@ int main(int argc, char ** argv)
 	}
        
 	if(got_password == 0) {
-		mountpassword = getpass("Password: "); /* BB obsolete */
+		char *tmp_pass;
+		tmp_pass = getpass("Password: "); /* BB obsolete sys call but
+						     no good replacement yet */
+		mountpassword = (char *)calloc(65,1);
+		if (!tmp_pass || !mountpassword) {
+			printf("Password not entered, exiting.\n");
+			return -1;
+		}
+		strncpy(mountpassword, tmp_pass, 64);
+						 
 		got_password = 1;
 	}
 	/* FIXME launch daemon (handles dfs name resolution and credential change) 
@@ -1250,8 +1261,10 @@ mount_retry:
 		optlen += strlen(ipaddr) + 4;
 	if(mountpassword)
 		optlen += strlen(mountpassword) + 6;
-	if(options)
+	if(options) {
 		free(options);
+		options = NULL;
+	}
 	options_size = optlen + 10 + 64;
 	options = (char *)malloc(options_size /* space for commas in password */ + 8 /* space for domain=  , domain name itself was counted as part of the length username string above */);
 
@@ -1375,8 +1388,10 @@ mount_retry:
 			mountent.mnt_passno = 0;
 			rc = addmntent(pmntfile,&mountent);
 			endmntent(pmntfile);
-			if(mountent.mnt_opts)
+			if(mountent.mnt_opts) {
 				free(mountent.mnt_opts);
+				mountent.mnt_opts = NULL;
+			}
 		} else {
 		    printf("could not update mount table\n");
 		}
@@ -1387,23 +1402,28 @@ mount_exit:
 		int len = strlen(mountpassword);
 		memset(mountpassword,0,len);
 		free(mountpassword);
+		mountpassword = NULL;
 	}
 
 	if(options) {
 		memset(options,0,optlen);
 		free(options);
+		options = NULL;
 	}
 
 	if(orgoptions) {
 		memset(orgoptions,0,orgoptlen);
 		free(orgoptions);
+		orgoptions = NULL;
 	}
 	if(resolved_path) {
 		free(resolved_path);
+		resolved_path = NULL;
 	}
 
 	if(free_share_name) {
 		free(share_name);
+		share_name = NULL;
 		}
 	return rc;
 }
