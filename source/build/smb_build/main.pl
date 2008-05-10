@@ -51,7 +51,7 @@ foreach my $key (values %$OUTPUT) {
 
 	$mkenv->StaticLibraryPrimitives($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->MergedObj($key) if grep(/MERGED_OBJ/, @{$key->{OUTPUT_TYPE}});
-	$kenv->SharedLibraryPrimitives($key) if ($key->{TYPE} eq "LIBRARY") and
+	$mkenv->SharedLibraryPrimitives($key) if ($key->{TYPE} eq "LIBRARY") and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	if ($key->{TYPE} eq "LIBRARY" and 
 	    ${$key->{OUTPUT_TYPE}}[0] eq "SHARED_LIBRARY") {
