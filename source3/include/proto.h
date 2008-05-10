@@ -10237,11 +10237,14 @@ void reply_sesssetup_and_X(struct smb_request *req);
 /* The following definitions come from smbd/share_access.c  */
 
 bool token_contains_name_in_list(const char *username,
+				 const char *domain,
 				 const char *sharename,
 				 const struct nt_user_token *token,
 				 const char **list);
-bool user_ok_token(const char *username, struct nt_user_token *token, int snum);
+bool user_ok_token(const char *username, const char *domain,
+		   struct nt_user_token *token, int snum);
 bool is_share_read_only_for_token(const char *username,
+				  const char *domain,
 				  struct nt_user_token *token, int snum);
 
 /* The following definitions come from smbd/srvstr.c  */
