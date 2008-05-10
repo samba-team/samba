@@ -59,7 +59,7 @@ _PUBLIC_ int torture_init(void)
 	extern NTSTATUS torture_raw_init(void);
 	extern NTSTATUS torture_unix_init(void);
 	extern NTSTATUS torture_winbind_init(void);
-	init_module_fn static_init[] = { STATIC_torture_MODULES };
+	init_module_fn static_init[] = { STATIC_smbtorture_MODULES };
 	init_module_fn *shared_init = load_samba_modules(NULL, cmdline_lp_ctx, "torture");
 
 	run_init_functions(static_init);
