@@ -23,7 +23,6 @@
 #include "auth/auth.h"
 #include "auth/ntlm/auth_proto.h"
 #include "lib/events/events.h"
-#include "build.h"
 #include "param/param.h"
 
 /***************************************************************************

@@ -28,7 +28,6 @@
 #include "lib/cmdline/popt_common.h"
 #include "system/dir.h"
 #include "system/filesys.h"
-#include "build.h"
 #include "ldb/include/ldb.h"
 #include "registry/registry.h"
 #include "ntvfs/ntvfs.h"
@@ -199,7 +198,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	extern NTSTATUS server_service_smb_init(void);
 	extern NTSTATUS server_service_drepl_init(void);
 	extern NTSTATUS server_service_rpc_init(void);
-	init_module_fn static_init[] = { STATIC_service_MODULES };
+	init_module_fn static_init[] = { STATIC_smbd_MODULES };
 	init_module_fn *shared_init;
 	struct event_context *event_ctx;
 	NTSTATUS status;

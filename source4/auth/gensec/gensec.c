@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "lib/events/events.h"
-#include "build.h"
 #include "librpc/rpc/dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"

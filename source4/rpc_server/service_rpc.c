@@ -37,7 +37,6 @@
 #include "lib/messaging/irpc.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
-#include "build.h"
 #include "param/param.h"
 
 struct dcesrv_socket_context {
@@ -471,7 +470,7 @@ NTSTATUS server_service_rpc_init(void)
 	extern NTSTATUS dcerpc_server_samr_init(void);
 	extern NTSTATUS dcerpc_server_remote_init(void);
 	extern NTSTATUS dcerpc_server_lsa_init(void);
-	init_module_fn static_init[] = { STATIC_dcerpc_server_MODULES };
+	init_module_fn static_init[] = { STATIC_DCESRV_MODULES };
 	init_module_fn *shared_init = load_samba_modules(NULL, global_loadparm, "dcerpc_server");
 
 	run_init_functions(static_init);

@@ -23,8 +23,6 @@
 #include "lib/util/dlinklist.h"
 #include "param/param.h"
 #include "system/filesys.h"
-#include "auth/credentials/credentials.h"
-#include "lib/cmdline/popt_common.h"
 
 struct torture_context *torture_context_init(struct event_context *event_ctx, 
 					     const struct torture_ui_ops *ui_ops)

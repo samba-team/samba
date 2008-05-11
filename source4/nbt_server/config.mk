@@ -66,7 +66,7 @@ NBT_SERVER_OBJ_FILES = $(addprefix nbt_server/, \
 
 [MODULE::service_nbtd]
 INIT_FUNCTION = server_service_nbtd_init
-SUBSYSTEM = service
+SUBSYSTEM = smbd
 PRIVATE_DEPENDENCIES = NBT_SERVER process_model
 
 service_nbtd_OBJ_FILES = \

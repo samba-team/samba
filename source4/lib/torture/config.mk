@@ -5,6 +5,9 @@ PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-UTIL \
 		LIBTALLOC
 
+torture_VERSION = 0.0.1
+torture_SOVERSION = 0
+
 PC_FILES += lib/torture/torture.pc
 torture_OBJ_FILES = $(addprefix lib/torture/, torture.o)
 

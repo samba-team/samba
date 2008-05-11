@@ -3,9 +3,15 @@ PUBLIC_DEPENDENCIES = LIBSAMBA-UTIL
 PRIVATE_DEPENDENCIES = DYNCONFIG LIBREPLACE_EXT CHARSET
 
 LIBSAMBA-HOSTCONFIG_VERSION = 0.0.1
-LIBSAMBA-HOSTCONFIG-SOVERSION = 0
+LIBSAMBA-HOSTCONFIG_SOVERSION = 0
 
 LIBSAMBA-HOSTCONFIG_OBJ_FILES = param/loadparm.o \
+			param/generic.o \
+			param/util.o \
+			lib/version.o
+
+LIBSAMBA-CONFIG_OBJ_FILES = param/loadparm.o \
+			param/params.o \
 			param/generic.o \
 			param/util.o \
 			lib/version.o

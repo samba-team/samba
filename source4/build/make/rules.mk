@@ -176,7 +176,7 @@ endef
 
 define shared_module_install_template
 installplugins:: bin/modules/$(1)/$(2)
-	@echo Installing$(2) as $$(DESTDIR)$$(modulesdir)/$(1)/$(2)
+	@echo Installing $(2) as $$(DESTDIR)$$(modulesdir)/$(1)/$(2)
 	@mkdir -p $$(DESTDIR)$$(modulesdir)/$(1)/
 	@cp bin/modules/$(1)/$(2) $$(DESTDIR)$$(modulesdir)/$(1)/$(2)
 uninstallplugins::
@@ -212,8 +212,7 @@ include/includes.d: include/includes.h
 	@-mkdir -p `dirname $@`
 	@$(COMPILE) && exit 0 ; \
 		echo "The following command failed:" 1>&2;\
-		echo "$(COMPILE)" 1>&2 && exit 1
-
+		echo "$(subst ",\",$(COMPILE))" 1>&2 && exit 1
 
 
 .c.ho:
@@ -221,7 +220,7 @@ include/includes.d: include/includes.h
 	@-mkdir -p `dirname $@`
 	@$(HCOMPILE) && exit 0;\
 		echo "The following command failed:" 1>&2;\
-		echo "$(HCOMPILE)" 1>&2;\
+		echo "$(subst ",\",$(HCOMPILE))" 1>&2;\
 		$(HCOMPILE) >/dev/null 2>&1
 
 .h.h.gch:

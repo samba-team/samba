@@ -71,3 +71,8 @@ else
 	AC_MSG_ERROR([Python not found. Please install Python 2.x and its development headers/libraries.])
 fi
 
+AC_MSG_CHECKING(python library directory)
+pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 0, '\\${prefix}')"`
+AC_MSG_RESULT($pythondir)
+
+AC_SUBST(pythondir)

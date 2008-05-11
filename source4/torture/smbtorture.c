@@ -31,7 +31,6 @@
 #include "dynconfig.h"
 
 #include "torture/smbtorture.h"
-#include "build.h"
 #include "lib/util/dlinklist.h"
 #include "librpc/rpc/dcerpc.h"
 #include "param/param.h"

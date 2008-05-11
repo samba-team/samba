@@ -5,9 +5,15 @@ smbpython_OBJ_FILES = scripting/python/smbpython.o
 
 [SUBSYSTEM::LIBPYTHON]
 PUBLIC_DEPENDENCIES = EXT_LIB_PYTHON
+PRIVATE_DEPENDENCIES = PYTALLOC
 INIT_FUNCTION_SENTINEL = { NULL, NULL }
 
-LIBPYTHON_OBJ_FILES = $(addprefix scripting/python/, modules.o pytalloc.o)
+LIBPYTHON_OBJ_FILES = $(addprefix scripting/python/, modules.o)
+
+[SUBSYSTEM::PYTALLOC]
+PUBLIC_DEPENDENCIES = EXT_LIB_PYTHON
+
+PYTALLOC_OBJ_FILES = $(addprefix scripting/python/, pytalloc.o)
 
 [PYTHON::python_uuid]
 PRIVATE_DEPENDENCIES = LIBNDR 
@@ -20,10 +26,6 @@ SWIG_FILE = misc.i
 
 python_misc_OBJ_FILES = scripting/python/misc_wrap.o
 
-PYDOCTOR_MODULES=bin/python/ldb.py bin/python/auth.py bin/python/credentials.py bin/python/registry.py bin/python/tdb.py bin/python/security.py bin/python/events.py bin/python/net.py
+_PY_FILES = $(shell find scripting/python -name "*.py")
 
-installpython:: pythonmods
-	@$(SHELL) $(srcdir)/script/installpython.sh \
-		$(INSTALLPERMS) \
-		$(DESTDIR)$(PYTHONDIR) \
-		scripting/python bin/python
+$(foreach pyfile, $(_PY_FILES),$(eval $(call python_py_module_template,$(patsubst scripting/python/%,%,$(pyfile)),$(pyfile))))

@@ -44,7 +44,7 @@ SAMDB_SCHEMA_OBJ_FILES = $(addprefix dsdb/schema/, \
 # Start SUBSYSTEM DREPL_SRV
 [MODULE::DREPL_SRV]
 INIT_FUNCTION = server_service_drepl_init
-SUBSYSTEM = service
+SUBSYSTEM = smbd
 PRIVATE_PROTO_HEADER = repl/drepl_service_proto.h
 PRIVATE_DEPENDENCIES = \
 		SAMDB \
