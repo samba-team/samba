@@ -176,7 +176,7 @@ endef
 
 define shared_module_install_template
 installplugins:: bin/modules/$(1)/$(2)
-	@echo Installing$(2) as $$(DESTDIR)$$(modulesdir)/$(1)/$(2)
+	@echo Installing $(2) as $$(DESTDIR)$$(modulesdir)/$(1)/$(2)
 	@mkdir -p $$(DESTDIR)$$(modulesdir)/$(1)/
 	@cp bin/modules/$(1)/$(2) $$(DESTDIR)$$(modulesdir)/$(1)/$(2)
 uninstallplugins::
