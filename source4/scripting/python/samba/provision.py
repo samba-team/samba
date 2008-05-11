@@ -910,7 +910,7 @@ def provision(setup_dir, message, session_info,
         domainsid = security.Sid(domainsid)
 
     if policyguid is None:
-        policyguid = uuid.random()
+        policyguid = uuid.uuid4()
     if adminpass is None:
         adminpass = misc.random_password(12)
     if krbtgtpass is None:
@@ -960,7 +960,7 @@ def provision(setup_dir, message, session_info,
 
     assert serverrole in ("domain controller", "member server", "standalone")
     if invocationid is None and serverrole == "domain controller":
-        invocationid = uuid.random()
+        invocationid = uuid.uuid4()
 
     if not os.path.exists(paths.private_dir):
         os.mkdir(paths.private_dir)
