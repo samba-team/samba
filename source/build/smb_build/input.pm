@@ -170,6 +170,8 @@ sub check_binary($$)
 	return if ($bin->{ENABLE} ne "YES");
 
 	($bin->{BINARY} = (lc $bin->{NAME})) if not defined($bin->{BINARY});
+	unless (defined($bin->{INIT_FUNCTION_SENTINEL})) { $bin->{INIT_FUNCTION_SENTINEL} = "NULL"; }
+	unless (defined($bin->{INIT_FUNCTION_TYPE})) { $bin->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)"; }
 
 	$bin->{OUTPUT_TYPE} = ["BINARY"];
 	add_libreplace($bin);
