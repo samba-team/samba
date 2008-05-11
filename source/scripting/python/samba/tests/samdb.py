@@ -29,18 +29,18 @@ import uuid
 class SamDBTestCase(TestCaseInTempDir):
     def setUp(self):
         super(SamDBTestCase, self).setUp()
-        invocationid = uuid.random()
+        invocationid = uuid.uuid4()
         domaindn = "DC=COM,DC=EXAMPLE"
         self.domaindn = domaindn
         configdn = "CN=Configuration," + domaindn
         schemadn = "CN=Schema," + configdn
-        domainguid = uuid.random()
-        policyguid = uuid.random()
+        domainguid = uuid.uuid4()
+        policyguid = uuid.uuid4()
         setup_path = lambda x: os.path.join("setup", x)
         creds = Credentials()
         creds.set_anonymous()
         domainsid = security.random_sid()
-        hostguid = uuid.random()
+        hostguid = uuid.uuid4()
         path = os.path.join(self.tempdir, "samdb.ldb")
         self.samdb = setup_samdb(path, setup_path, system_session(), creds, 
                                  cmdline_loadparm, schemadn, configdn, 
