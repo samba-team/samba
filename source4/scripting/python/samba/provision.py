@@ -689,6 +689,7 @@ def setup_self_join(samdb, names,
                     domainsid, invocationid, setup_path,
                     policyguid):
     """Join a host to its own domain."""
+    assert isinstance(invocationid, str)
     setup_add_ldif(samdb, setup_path("provision_self_join.ldif"), { 
               "CONFIGDN": names.configdn, 
               "SCHEMADN": names.schemadn,
@@ -910,7 +911,7 @@ def provision(setup_dir, message, session_info,
         domainsid = security.Sid(domainsid)
 
     if policyguid is None:
-        policyguid = uuid.uuid4()
+        policyguid = str(uuid.uuid4())
     if adminpass is None:
         adminpass = misc.random_password(12)
     if krbtgtpass is None:
@@ -960,7 +961,7 @@ def provision(setup_dir, message, session_info,
 
     assert serverrole in ("domain controller", "member server", "standalone")
     if invocationid is None and serverrole == "domain controller":
-        invocationid = uuid.uuid4()
+        invocationid = str(uuid.uuid4())
 
     if not os.path.exists(paths.private_dir):
         os.mkdir(paths.private_dir)
