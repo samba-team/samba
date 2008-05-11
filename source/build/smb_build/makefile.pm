@@ -121,7 +121,7 @@ sub SharedModule($$)
 	$sane_subsystem =~ s/^lib//;
 	
 	$self->output("PLUGINS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
-	$self->output("\$(eval \$(call shared_module_install_template,$sane_subsystem, $ctx->{LIBRARY_REALNAME}))\n");
+	$self->output("\$(eval \$(call shared_module_install_template,$sane_subsystem,$ctx->{LIBRARY_REALNAME}))\n");
 
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
