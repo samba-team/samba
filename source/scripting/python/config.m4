@@ -64,7 +64,6 @@ SMB_EXT_LIB(EXT_LIB_PYTHON, [$PYTHON_LDFLAGS], [$PYTHON_CFLAGS])
 AC_MSG_CHECKING(working python module support)
 if test $working_python = yes; then
 	SMB_ENABLE(EXT_LIB_PYTHON,YES)
-	SMB_ENABLE(smbpython,YES)
 	SMB_ENABLE(LIBPYTHON,YES)
 	AC_MSG_RESULT([yes])
 else
