@@ -705,7 +705,7 @@ nogroup:x:65534:nobody
 		push (@provision_options, "$self->{bindir}/smbscript");
 		push (@provision_options, "$self->{setupdir}/provision.js");
 	} else {
-		push (@provision_options, "$self->{bindir}/smbpython");
+#		push (@provision_options, "$self->{bindir}/smbpython");
 		push (@provision_options, "$self->{setupdir}/provision");
 	}
 	push (@provision_options, split(' ', $configuration));

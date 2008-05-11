@@ -26,6 +26,8 @@ import getopt
 import optparse
 import os, sys
 
+sys.path.append("bin/python")
+
 import samba
 import param
 
