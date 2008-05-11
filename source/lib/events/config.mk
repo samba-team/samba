@@ -44,6 +44,6 @@ PUBLIC_HEADERS += $(addprefix lib/events/, events.h events_internal.h)
 
 [PYTHON::swig_events]
 SWIG_FILE = events.i
-PRIVATE_DEPENDENCIES = LIBEVENTS
+PRIVATE_DEPENDENCIES = LIBEVENTS LIBSAMBA-HOSTCONFIG
 
 swig_events_OBJ_FILES = lib/events/events_wrap.o
