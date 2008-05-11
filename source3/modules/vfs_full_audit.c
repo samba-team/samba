@@ -59,8 +59,6 @@
 
 #include "includes.h"
 
-extern userdom_struct current_user_info;
-
 static int vfs_full_audit_debug_level = DBGC_VFS;
 
 struct vfs_full_audit_private_data {
@@ -697,8 +695,8 @@ static char *audit_prefix(TALLOC_CTX *ctx, connection_struct *conn)
 			conn->server_info->unix_name,
 			conn->connectpath,
 			conn->server_info->gid,
-			get_current_username(),
-			current_user_info.domain,
+			conn->server_info->sanitized_username,
+			pdb_get_domain(conn->server_info->sam_account),
 			prefix);
 }
 

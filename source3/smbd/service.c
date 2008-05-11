@@ -840,8 +840,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					conn->server_info->unix_name,
 					conn->connectpath,
 					conn->server_info->gid,
-					get_current_username(),
-					current_user_info.domain,
+					conn->server_info->sanitized_username,
+					pdb_get_domain(conn->server_info->sam_account),
 					lp_pathname(snum));
 		if (!s) {
 			conn_free(conn);
@@ -962,8 +962,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					conn->server_info->unix_name,
 					conn->connectpath,
 					conn->server_info->gid,
-					get_current_username(),
-					current_user_info.domain,
+					conn->server_info->sanitized_username,
+					pdb_get_domain(conn->server_info->sam_account),
 					lp_rootpreexec(snum));
 		DEBUG(5,("cmd=%s\n",cmd));
 		ret = smbrun(cmd,NULL);
@@ -1001,8 +1001,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					conn->server_info->unix_name,
 					conn->connectpath,
 					conn->server_info->gid,
-					get_current_username(),
-					current_user_info.domain,
+					conn->server_info->sanitized_username,
+					pdb_get_domain(conn->server_info->sam_account),
 					lp_preexec(snum));
 		ret = smbrun(cmd,NULL);
 		TALLOC_FREE(cmd);
@@ -1324,8 +1324,8 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 					conn->server_info->unix_name,
 					conn->connectpath,
 					conn->server_info->gid,
-					get_current_username(),
-					current_user_info.domain,
+					conn->server_info->sanitized_username,
+					pdb_get_domain(conn->server_info->sam_account),
 					lp_postexec(SNUM(conn)));
 		smbrun(cmd,NULL);
 		TALLOC_FREE(cmd);
@@ -1340,8 +1340,8 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 					conn->server_info->unix_name,
 					conn->connectpath,
 					conn->server_info->gid,
-					get_current_username(),
-					current_user_info.domain,
+					conn->server_info->sanitized_username,
+					pdb_get_domain(conn->server_info->sam_account),
 					lp_rootpostexec(SNUM(conn)));
 		smbrun(cmd,NULL);
 		TALLOC_FREE(cmd);

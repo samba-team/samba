@@ -103,7 +103,7 @@ static int CopyExpanded(connection_struct *conn,
 				conn->server_info->unix_name,
 				conn->connectpath,
 				conn->server_info->gid,
-				get_current_username(),
+				conn->server_info->sanitized_username,
 				pdb_get_domain(conn->server_info->sam_account),
 				buf);
 	if (!buf) {
@@ -154,7 +154,7 @@ static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 				conn->server_info->unix_name,
 				conn->connectpath,
 				conn->server_info->gid,
-				get_current_username(),
+				conn->server_info->sanitized_username,
 				pdb_get_domain(conn->server_info->sam_account),
 				buf);
 	if (!buf) {
@@ -184,7 +184,7 @@ static char *Expand(connection_struct *conn, int snum, char *s)
 				conn->server_info->unix_name,
 				conn->connectpath,
 				conn->server_info->gid,
-				get_current_username(),
+				conn->server_info->sanitized_username,
 				pdb_get_domain(conn->server_info->sam_account),
 				buf);
 }
@@ -3010,7 +3010,7 @@ static bool api_RNetServerGetInfo(connection_struct *conn,uint16 vuid,
 				conn->server_info->unix_name,
 				conn->connectpath,
 				conn->server_info->gid,
-				get_current_username(),
+				conn->server_info->sanitized_username,
 				pdb_get_domain(conn->server_info->sam_account),
 				comment);
 			if (comment) {
