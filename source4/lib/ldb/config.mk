@@ -70,15 +70,9 @@ INIT_FUNCTION = LDB_MODULE(rdn_name)
 
 ldb_rdn_name_OBJ_FILES = lib/ldb/modules/rdn_name.o
 
-################################################
-# Start MODULE ldb_map
-[SUBSYSTEM::ldb_map]
-PRIVATE_DEPENDENCIES = LIBTALLOC
-CFLAGS = -Ilib/ldb/include -Ilib/ldb/ldb_map
-# End MODULE ldb_map
-################################################
-
 ldb_map_OBJ_FILES = $(addprefix lib/ldb/ldb_map/, ldb_map_inbound.o ldb_map_outbound.o ldb_map.o)
+
+$(ldb_map_OBJ_FILES): CFLAGS+=-Ilib/ldb/ldb_map
 
 ################################################
 # Start MODULE ldb_skel
@@ -134,7 +128,7 @@ PC_FILES += $(ldbdir)/ldb.pc
 LIBLDB_VERSION = 0.0.1
 LIBLDB_SOVERSION = 0
 
-LIBLDB_OBJ_FILES = $(addprefix lib/ldb/common/, ldb.o ldb_ldif.o ldb_parse.o ldb_msg.o ldb_utf8.o ldb_debug.o ldb_modules.o ldb_match.o ldb_attributes.o attrib_handlers.o ldb_dn.o ldb_controls.o qsort.o)
+LIBLDB_OBJ_FILES = $(addprefix lib/ldb/common/, ldb.o ldb_ldif.o ldb_parse.o ldb_msg.o ldb_utf8.o ldb_debug.o ldb_modules.o ldb_match.o ldb_attributes.o attrib_handlers.o ldb_dn.o ldb_controls.o qsort.o) $(ldb_map_OBJ_FILES)
 
 PUBLIC_HEADERS += $(ldbdir)/include/ldb.h $(ldbdir)/include/ldb_errors.h
 
