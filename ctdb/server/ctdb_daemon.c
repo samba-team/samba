@@ -71,6 +71,11 @@ static void print_exit_message(void)
 /* called when the "startup" event script has finished */
 static void ctdb_start_transport(struct ctdb_context *ctdb)
 {
+	if (ctdb->methods == NULL) {
+		DEBUG(DEBUG_ALERT,(__location__ " startup event finished but transport is DOWN.\n"));
+		ctdb_fatal(ctdb, "transport is not initialized but startup completed");
+	}
+
 	/* start the transport running */
 	if (ctdb->methods->start(ctdb) != 0) {
 		DEBUG(DEBUG_ALERT,("transport failed to start!\n"));
@@ -689,6 +694,11 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 		return -1;
 	}
 
+	if (ctdb->methods == NULL) {
+		DEBUG(DEBUG_ALERT,(__location__ " Can not initialize transport. ctdb->methods is NULL\n"));
+		ctdb_fatal(ctdb, "transport is unavailable. can not initialize.");
+	}
+
 	/* initialise the transport  */
 	if (ctdb->methods->initialise(ctdb) != 0) {
 		ctdb_fatal(ctdb, "transport failed to initialise");
@@ -742,6 +752,12 @@ struct ctdb_req_header *_ctdb_transport_allocate(struct ctdb_context *ctdb,
 
 	length = MAX(length, slength);
 	size = (length+(CTDB_DS_ALIGNMENT-1)) & ~(CTDB_DS_ALIGNMENT-1);
+
+	if (ctdb->methods == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Unable to allocate transport packet for operation %u of length %u. Transport is DOWN.\n",
+			 operation, (unsigned)length));
+		return NULL;
+	}
 
 	hdr = (struct ctdb_req_header *)ctdb->methods->allocate_pkt(mem_ctx, size);
 	if (hdr == NULL) {

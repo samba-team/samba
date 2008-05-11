@@ -276,7 +276,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		ctdb_stop_keepalive(ctdb);
 		ctdb_stop_monitoring(ctdb);
 		ctdb_release_all_ips(ctdb);
-		ctdb->methods->shutdown(ctdb);
+		if (ctdb->methods != NULL) {
+			ctdb->methods->shutdown(ctdb);
+		}
 		ctdb_event_script(ctdb, "shutdown");
 		DEBUG(DEBUG_NOTICE,("Received SHUTDOWN command. Stopping CTDB daemon.\n"));
 		exit(0);

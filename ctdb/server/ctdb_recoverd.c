@@ -2790,7 +2790,9 @@ static void ctdb_check_recd(struct event_context *ev, struct timed_event *te,
 		ctdb_stop_keepalive(ctdb);
 		ctdb_stop_monitoring(ctdb);
 		ctdb_release_all_ips(ctdb);
-		ctdb->methods->shutdown(ctdb);
+		if (ctdb->methods != NULL) {
+			ctdb->methods->shutdown(ctdb);
+		}
 		ctdb_event_script(ctdb, "shutdown");
 
 		exit(10);	
@@ -2831,7 +2833,9 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 	close(fd[1]);
 
 	/* shutdown the transport */
-	ctdb->methods->shutdown(ctdb);
+	if (ctdb->methods) {
+		ctdb->methods->shutdown(ctdb);
+	}
 
 	/* get a new event context */
 	talloc_free(ctdb->ev);
