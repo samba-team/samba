@@ -672,6 +672,17 @@ static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
+	if (!( strequal(pdp->servicename, lp_servicename(SNUM(conn)))
+			|| (strequal(pdp->servicename, HOMES_NAME)
+			&& strequal(lp_servicename(SNUM(conn)),
+				conn->server_info->sanitized_username) )) ) {
+
+		/* The given sharename doesn't match this connection. */
+		TALLOC_FREE(pdp);
+
+		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+	}
+
 	status = dfs_path_lookup(ctx, conn, path_in, pdp,
 			search_wcard_flag, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {

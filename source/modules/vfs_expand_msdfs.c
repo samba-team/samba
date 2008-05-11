@@ -148,7 +148,7 @@ static char *expand_msdfs_target(TALLOC_CTX *ctx,
 				conn->server_info->unix_name,
 				conn->connectpath,
 				conn->server_info->gid,
-				get_current_username(),
+				conn->server_info->sanitized_username,
 				current_user_info.domain,
 				targethost);
 

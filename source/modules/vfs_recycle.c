@@ -435,7 +435,7 @@ static int recycle_unlink(vfs_handle_struct *handle, const char *file_name)
 					conn->server_info->unix_name,
 					conn->connectpath,
 					conn->server_info->gid,
-					get_current_username(),
+					conn->server_info->sanitized_username,
 					current_user_info.domain,
 					recycle_repository(handle));
 	ALLOC_CHECK(repository, done);
