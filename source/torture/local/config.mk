@@ -1,7 +1,7 @@
 #################################
 # Start SUBSYSTEM TORTURE_LOCAL
 [MODULE::TORTURE_LOCAL]
-SUBSYSTEM = torture
+SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_local_init
 PRIVATE_PROTO_HEADER = \
 		proto.h

@@ -244,7 +244,6 @@ sub run_config_mk($$$$)
 			$infragment = 1;
 			next;
 		}
-
 		
 		# Assignment
 		if ($line =~ /^([a-zA-Z0-9_]+)[\t ]*=(.*)$/) {
@@ -254,7 +253,7 @@ sub run_config_mk($$$$)
 			next;
 		}
 
-		die("$parsing_file:$linenum: Bad line while parsing $parsing_file");
+		die("$parsing_file:$linenum: Bad line");
 	}
 
 	$makefile .= "# }END $parsing_file\n";

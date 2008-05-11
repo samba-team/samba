@@ -58,9 +58,6 @@
 #include "lib/events/events_internal.h"
 #include "lib/util/dlinklist.h"
 #include "param/param.h"
-#if _SAMBA_BUILD_
-#include "build.h"
-#endif
 
 struct event_ops_list {
 	struct event_ops_list *next, *prev;

@@ -4,7 +4,7 @@
 # Start SUBSYSTEM WEB
 [MODULE::WEB]
 INIT_FUNCTION = server_service_web_init
-SUBSYSTEM = service
+SUBSYSTEM = smbd
 PRIVATE_PROTO_HEADER = proto.h
 PRIVATE_DEPENDENCIES = ESP LIBTLS smbcalls process_model 
 # End SUBSYSTEM WEB

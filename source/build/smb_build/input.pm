@@ -94,10 +94,8 @@ sub check_module($$$)
 	unless (defined($mod->{INIT_FUNCTION_SENTINEL})) { $mod->{INIT_FUNCTION_SENTINEL} = "NULL"; }
 
 	if (not defined($mod->{OUTPUT_TYPE})) {
-		if (not defined($INPUT->{$mod->{SUBSYSTEM}}->{TYPE})) {
-			die("Invalid type for subsystem $mod->{SUBSYSTEM}");
-		}
-		if ($INPUT->{$mod->{SUBSYSTEM}}->{TYPE} eq "EXT_LIB") {
+		if ((not defined($INPUT->{$mod->{SUBSYSTEM}}->{TYPE})) or 
+			$INPUT->{$mod->{SUBSYSTEM}}->{TYPE} eq "EXT_LIB") {
 			$mod->{OUTPUT_TYPE} = undef;
 		} else {
 			$mod->{OUTPUT_TYPE} = $default_ot;
@@ -172,6 +170,8 @@ sub check_binary($$)
 	return if ($bin->{ENABLE} ne "YES");
 
 	($bin->{BINARY} = (lc $bin->{NAME})) if not defined($bin->{BINARY});
+	unless (defined($bin->{INIT_FUNCTION_SENTINEL})) { $bin->{INIT_FUNCTION_SENTINEL} = "NULL"; }
+	unless (defined($bin->{INIT_FUNCTION_TYPE})) { $bin->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)"; }
 
 	$bin->{OUTPUT_TYPE} = ["BINARY"];
 	add_libreplace($bin);
@@ -181,15 +181,13 @@ sub add_implicit($$)
 {
 	my ($INPUT, $n) = @_;
 
-	$INPUT->{$n} = {
-		TYPE => "MAKE_RULE",
-		NAME => $n,
-		OUTPUT_TYPE => undef,
-		LIBS => ["\$(".uc($n)."_LIBS)"],
-		LDFLAGS => ["\$(".uc($n)."_LDFLAGS)"],
-		CFLAGS => ["\$(".uc($n)."_CFLAGS)"],
-		CPPFLAGS => ["\$(".uc($n)."_CPPFLAGS)"]
-	};
+	$INPUT->{$n}->{TYPE} = "MAKE_RULE";
+	$INPUT->{$n}->{NAME} = $n;
+	$INPUT->{$n}->{OUTPUT_TYPE} = undef;
+	$INPUT->{$n}->{LIBS} = ["\$(".uc($n)."_LIBS)"];
+	$INPUT->{$n}->{LDFLAGS} = ["\$(".uc($n)."_LDFLAGS)"];
+	$INPUT->{$n}->{CFLAGS} = ["\$(".uc($n)."_CFLAGS)"];
+	$INPUT->{$n}->{CPPFLAGS} = ["\$(".uc($n)."_CPPFLAGS)"];
 }
 
 sub calc_unique_deps($$$$$$$$)
@@ -198,7 +196,7 @@ sub calc_unique_deps($$$$$$$$)
 	my ($name, $INPUT, $deps, $udeps, $withlibs, $forward, $pubonly, $busy) = @_;
 
 	foreach my $n (@$deps) {
-		add_implicit($INPUT, $n) unless (defined($INPUT->{$n}));
+		add_implicit($INPUT, $n) unless (defined($INPUT->{$n}) and defined($INPUT->{$n}->{TYPE}));
 		my $dep = $INPUT->{$n};
 		if (grep (/^$n$/, @$busy)) {
 			next if (@{$dep->{OUTPUT_TYPE}}[0] eq "MERGED_OBJ");
@@ -206,19 +204,19 @@ sub calc_unique_deps($$$$$$$$)
 		}
 		next if (grep /^$n$/, @$udeps);
 
-		push (@{$udeps}, $dep->{NAME}) if $forward;
+		push (@{$udeps}, $n) if $forward;
 
  		if (defined ($dep->{OUTPUT_TYPE}) && 
 			($withlibs or 
 			(@{$dep->{OUTPUT_TYPE}}[0] eq "MERGED_OBJ") or 
 			(@{$dep->{OUTPUT_TYPE}}[0] eq "STATIC_LIBRARY"))) {
-				push (@$busy, $dep->{NAME});
-			        calc_unique_deps($dep->{NAME}, $INPUT, $dep->{PUBLIC_DEPENDENCIES}, $udeps, $withlibs, $forward, $pubonly, $busy);
-			        calc_unique_deps($dep->{NAME}, $INPUT, $dep->{PRIVATE_DEPENDENCIES}, $udeps, $withlibs, $forward, $pubonly, $busy) unless $pubonly;
+				push (@$busy, $n);
+			        calc_unique_deps($n, $INPUT, $dep->{PUBLIC_DEPENDENCIES}, $udeps, $withlibs, $forward, $pubonly, $busy);
+			        calc_unique_deps($n, $INPUT, $dep->{PRIVATE_DEPENDENCIES}, $udeps, $withlibs, $forward, $pubonly, $busy) unless $pubonly;
 				pop (@$busy);
 	        }
 
-		unshift (@{$udeps}, $dep->{NAME}) unless $forward;
+		unshift (@{$udeps}, $n) unless $forward;
 	}
 }
 

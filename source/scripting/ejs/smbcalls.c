@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "param/param.h"
 #include "scripting/ejs/smbcalls.h"
-#include "build.h"
 #include "version.h"
 
 /*

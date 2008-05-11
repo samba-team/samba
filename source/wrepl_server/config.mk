@@ -4,7 +4,7 @@
 # Start SUBSYSTEM WREPL_SRV
 [MODULE::WREPL_SRV]
 INIT_FUNCTION = server_service_wrepl_init
-SUBSYSTEM = service
+SUBSYSTEM = smbd
 PRIVATE_PROTO_HEADER = wrepl_server_proto.h
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_WREPL WINSDB process_model 

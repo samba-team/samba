@@ -7,7 +7,7 @@ TORTURE_UTIL_OBJ_FILES = $(addprefix torture/, util_smb.o)
 #################################
 # Start SUBSYSTEM TORTURE_BASIC
 [MODULE::TORTURE_BASIC]
-SUBSYSTEM = torture
+SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_base_init
 PRIVATE_PROTO_HEADER = \
 		basic/proto.h
@@ -42,7 +42,7 @@ TORTURE_BASIC_OBJ_FILES = $(addprefix torture/basic/,  \
 #################################
 # Start SUBSYSTEM TORTURE_RAW
 [MODULE::TORTURE_RAW]
-SUBSYSTEM = torture
+SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_raw_init
 PRIVATE_PROTO_HEADER = \
 		raw/proto.h
@@ -97,7 +97,7 @@ TORTURE_NDR_OBJ_FILES = $(addprefix torture/ndr/, ndr.o winreg.o atsvc.o lsa.o e
 [MODULE::torture_rpc]
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
 #OUTPUT_TYPE = MERGED_OBJ
-SUBSYSTEM = torture
+SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_rpc_init
 PRIVATE_PROTO_HEADER = \
 		rpc/proto.h
@@ -123,7 +123,7 @@ torture_rpc_OBJ_FILES = $(addprefix torture/rpc/, \
 #################################
 # Start SUBSYSTEM TORTURE_RAP
 [MODULE::TORTURE_RAP]
-SUBSYSTEM = torture
+SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_rap_init
 PRIVATE_PROTO_HEADER = \
 		rap/proto.h
@@ -136,7 +136,7 @@ TORTURE_RAP_OBJ_FILES = torture/rap/rap.o
 #################################
 # Start SUBSYSTEM TORTURE_AUTH
 [MODULE::TORTURE_AUTH]
-SUBSYSTEM = torture
+SUBSYSTEM = smbtorture
 PRIVATE_PROTO_HEADER = \
 		auth/proto.h
 PRIVATE_DEPENDENCIES = \
@@ -152,7 +152,7 @@ mkinclude local/config.mk
 #################################
 # Start MODULE TORTURE_NBENCH
 [MODULE::TORTURE_NBENCH]
-SUBSYSTEM = torture
+SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_nbench_init
 PRIVATE_DEPENDENCIES = TORTURE_UTIL 
 PRIVATE_PROTO_HEADER = \
@@ -165,7 +165,7 @@ TORTURE_NBENCH_OBJ_FILES = $(addprefix torture/nbench/, nbio.o nbench.o)
 #################################
 # Start MODULE TORTURE_UNIX
 [MODULE::TORTURE_UNIX]
-SUBSYSTEM = torture
+SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_unix_init
 PRIVATE_DEPENDENCIES = TORTURE_UTIL 
 PRIVATE_PROTO_HEADER = \
@@ -178,7 +178,7 @@ TORTURE_UNIX_OBJ_FILES = $(addprefix torture/unix/, unix.o whoami.o unix_info2.o
 #################################
 # Start SUBSYSTEM TORTURE_LDAP
 [MODULE::TORTURE_LDAP]
-SUBSYSTEM = torture
+SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_ldap_init
 PRIVATE_PROTO_HEADER = \
 		ldap/proto.h
@@ -193,7 +193,7 @@ TORTURE_LDAP_OBJ_FILES = $(addprefix torture/ldap/, common.o basic.o schema.o up
 #################################
 # Start SUBSYSTEM TORTURE_NBT
 [MODULE::TORTURE_NBT]
-SUBSYSTEM = torture
+SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_nbt_init
 PRIVATE_PROTO_HEADER = \
 		nbt/proto.h
@@ -209,7 +209,7 @@ TORTURE_NBT_OBJ_FILES = $(addprefix torture/nbt/, query.o register.o \
 #################################
 # Start SUBSYSTEM TORTURE_NET
 [MODULE::TORTURE_NET]
-SUBSYSTEM = torture
+SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_net_init
 PRIVATE_PROTO_HEADER = \
 		libnet/proto.h

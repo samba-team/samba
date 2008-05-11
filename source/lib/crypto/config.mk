@@ -10,7 +10,7 @@ LIBCRYPTO_OBJ_FILES = $(addprefix lib/crypto/, \
 
 
 [MODULE::TORTURE_LIBCRYPTO]
-SUBSYSTEM = torture
+SUBSYSTEM = smbtorture
 PRIVATE_DEPENDENCIES = LIBCRYPTO
 PRIVATE_PROTO_HEADER = test_proto.h
 

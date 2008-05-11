@@ -22,7 +22,6 @@
 #include "lib/util/dlinklist.h"
 #include "lib/registry/registry.h"
 #include "system/filesys.h"
-#include "build.h"
 
 struct reg_key_path {
 	uint32_t predefined_key;

@@ -6,7 +6,6 @@
 #  Released under the GNU GPL				
 
 use smb_build::makefile;
-use smb_build::header;
 use smb_build::input;
 use smb_build::config_mk;
 use smb_build::output;
@@ -50,21 +49,18 @@ foreach my $key (values %$OUTPUT) {
 foreach my $key (values %$OUTPUT) {
 	next unless defined $key->{OUTPUT_TYPE};
 
+	$mkenv->StaticLibraryPrimitives($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->MergedObj($key) if grep(/MERGED_OBJ/, @{$key->{OUTPUT_TYPE}});
- 	$mkenv->StaticLibraryPrimitives($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
-	if (defined($key->{PC_FILE})) {
-		$mkenv->output("PC_FILES += $key->{BASEDIR}/$key->{PC_FILE}\n");
-	} 
 	$mkenv->SharedLibraryPrimitives($key) if ($key->{TYPE} eq "LIBRARY") and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	if ($key->{TYPE} eq "LIBRARY" and 
 	    ${$key->{OUTPUT_TYPE}}[0] eq "SHARED_LIBRARY") {
 		$shared_libs_used = 1;
 	}
-	$mkenv->SharedModulePrimitives($key) if ($key->{TYPE} eq "MODULE" or 
-								   $key->{TYPE} eq "PYTHON") and
-					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->PythonFiles($key) if defined($key->{PYTHON_FILES});
+	if ($key->{TYPE} eq "MODULE" and @{$key->{OUTPUT_TYPE}}[0] eq "MERGED_OBJ" and defined($key->{INIT_FUNCTION})) {
+		$mkenv->output("$key->{SUBSYSTEM}_INIT_FUNCTIONS += $key->{INIT_FUNCTION},\n");
+	}
 	$mkenv->CFlags($key);
 }
 
@@ -80,15 +76,15 @@ foreach my $key (values %$OUTPUT) {
 
 	$mkenv->SharedLibrary($key) if ($key->{TYPE} eq "LIBRARY") and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
-	$mkenv->SharedModule($key) if ($key->{TYPE} eq "MODULE" or 
-								   $key->{TYPE} eq "PYTHON") and
-					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
+	$mkenv->SharedModule($key) if ($key->{TYPE} eq "MODULE" and
+					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}}));
+	$mkenv->PythonModule($key) if ($key->{TYPE} eq "PYTHON");
 	$mkenv->Binary($key) if grep(/BINARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER});
+	$mkenv->InitFunctions($key) if defined($key->{INIT_FUNCTIONS});
 }
 
 $mkenv->write("data.mk");
-header::create_smb_build_h($OUTPUT, "include/build.h");
 
 summary::show($OUTPUT, \%config::config);
 
