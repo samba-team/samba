@@ -719,12 +719,12 @@ PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG dcer
 swig_dcerpc_OBJ_FILES = librpc/rpc/dcerpc_wrap.o
 
 [PYTHON::python_echo]
-PRIVATE_DEPENDENCIES = RPC_NDR_ECHO PYTALLOC
+PRIVATE_DEPENDENCIES = RPC_NDR_ECHO PYTALLOC param swig_credentials 
 
 python_echo_OBJ_FILES = librpc/gen_ndr/py_echo.o
 
 [PYTHON::python_winreg]
-PRIVATE_DEPENDENCIES = RPC_NDR_WINREG python_misc PYTALLOC
+PRIVATE_DEPENDENCIES = RPC_NDR_WINREG python_misc PYTALLOC param swig_credentials 
 
 python_winreg_OBJ_FILES = librpc/gen_ndr/py_winreg.o
 
@@ -734,61 +734,57 @@ PRIVATE_DEPENDENCIES = PYTALLOC
 python_dcerpc_misc_OBJ_FILES = librpc/gen_ndr/py_misc.o
 
 [PYTHON::python_initshutdown]
-PRIVATE_DEPENDENCIES = RPC_NDR_INITSHUTDOWN PYTALLOC
+PRIVATE_DEPENDENCIES = RPC_NDR_INITSHUTDOWN PYTALLOC param swig_credentials 
 
 python_initshutdown_OBJ_FILES = librpc/gen_ndr/py_initshutdown.o
 
 [PYTHON::python_epmapper]
-PRIVATE_DEPENDENCIES = PYTALLOC
+PRIVATE_DEPENDENCIES = PYTALLOC param swig_credentials 
 
 python_epmapper_OBJ_FILES = librpc/gen_ndr/py_epmapper.o
 
 [PYTHON::python_mgmt]
-PRIVATE_DEPENDENCIES = dcerpc_mgmt PYTALLOC
+PRIVATE_DEPENDENCIES = dcerpc_mgmt PYTALLOC param swig_credentials 
 
 python_mgmt_OBJ_FILES = librpc/gen_ndr/py_mgmt.o
 
 [PYTHON::python_atsvc]
-PRIVATE_DEPENDENCIES = dcerpc_atsvc PYTALLOC
+PRIVATE_DEPENDENCIES = dcerpc_atsvc PYTALLOC param swig_credentials 
 
 python_atsvc_OBJ_FILES = librpc/gen_ndr/py_atsvc.o
 
 [PYTHON::python_samr]
-PRIVATE_DEPENDENCIES = dcerpc_samr PYTALLOC
-
-python_samr_OBJ_FILES = librpc/gen_ndr/py_samr.o
+PRIVATE_DEPENDENCIES = dcerpc_samr PYTALLOC python_dcerpc_security python_lsa python_dcerpc_misc swig_credentials param
 
 python_samr_OBJ_FILES = librpc/gen_ndr/py_samr.o
 
 [PYTHON::python_svcctl]
-PRIVATE_DEPENDENCIES = RPC_NDR_SVCCTL PYTALLOC
+PRIVATE_DEPENDENCIES = RPC_NDR_SVCCTL PYTALLOC param swig_credentials 
 
 python_svcctl_OBJ_FILES = librpc/gen_ndr/py_svcctl.o
 
 [PYTHON::python_lsa]
-PRIVATE_DEPENDENCIES = RPC_NDR_LSA PYTALLOC
-
-python_lsa_OBJ_FILES = librpc/gen_ndr/py_lsa.o
+PRIVATE_DEPENDENCIES = RPC_NDR_LSA PYTALLOC param swig_credentials 
 
 python_lsa_OBJ_FILES = librpc/gen_ndr/py_lsa.o
 
 [PYTHON::python_wkssvc]
-PRIVATE_DEPENDENCIES = RPC_NDR_WKSSVC PYTALLOC
+PRIVATE_DEPENDENCIES = RPC_NDR_WKSSVC PYTALLOC param swig_credentials 
 
 python_wkssvc_OBJ_FILES = librpc/gen_ndr/py_wkssvc.o
 
 [PYTHON::python_dfs]
-PRIVATE_DEPENDENCIES = RPC_NDR_DFS PYTALLOC
+PRIVATE_DEPENDENCIES = RPC_NDR_DFS PYTALLOC param swig_credentials 
 
 python_dfs_OBJ_FILES = librpc/gen_ndr/py_dfs.o
 
 [PYTHON::python_unixinfo]
-PRIVATE_DEPENDENCIES = RPC_NDR_UNIXINFO PYTALLOC
+PRIVATE_DEPENDENCIES = RPC_NDR_UNIXINFO PYTALLOC param swig_credentials python_dcerpc_security python_dcerpc_misc
 
 python_unixinfo_OBJ_FILES = librpc/gen_ndr/py_unixinfo.o
 
 [PYTHON::python_drsuapi]
-PRIVATE_DEPENDENCIES = RPC_NDR_DRSUAPI PYTALLOC
+PRIVATE_DEPENDENCIES = RPC_NDR_DRSUAPI PYTALLOC param swig_credentials 
 
 python_drsuapi_OBJ_FILES = librpc/gen_ndr/py_drsuapi.o
 
