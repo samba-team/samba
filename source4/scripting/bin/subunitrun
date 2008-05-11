@@ -17,8 +17,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from subunit import SubunitTestRunner
 import sys
+sys.path.append("bin/python")
+
+from subunit import SubunitTestRunner
 from unittest import TestProgram
 import optparse
 import os
