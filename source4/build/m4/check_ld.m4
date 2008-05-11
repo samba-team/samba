@@ -151,36 +151,12 @@ if test $BLDSHARED = true; then
 				ac_cv_shmod_works=yes
 			rm -f shlib.${SHLIBEXT} shlib.o
 	])
-	if test $ac_cv_shlib_works = no -o $ac_cv_shmod_works = no; then
-		BLDSHARED=false
+	if test $ac_cv_shlib_works = no; then
+		AC_MSG_ERROR(unable to build shared libraries)
 	fi
-fi
-
-if test $BLDSHARED != true; then
-	SHLD="shared-libraries-disabled"
-	SHLD_FLAGS="shared-libraries-disabled"
-	MDLD="shared-modules-disabled"
-	MDLD_FLAGS="shared-modules-disabled"
-	SHLIBEXT="shared_libraries_disabled"
-	SONAMEFLAG="shared-libraries-disabled"
-	PICFLAG=""
-	AC_MSG_CHECKING([SHLD])
-	AC_MSG_RESULT([$SHLD])
-	AC_MSG_CHECKING([SHLD_FLAGS])
-	AC_MSG_RESULT([$SHLD_FLAGS])
-
-	AC_MSG_CHECKING([MDLD])
-	AC_MSG_RESULT([$MDLD])
-	AC_MSG_CHECKING([MDLD_FLAGS])
-	AC_MSG_RESULT([$MDLD_FLAGS])
-
-	AC_MSG_CHECKING([SHLIBEXT])
-	AC_MSG_RESULT([$SHLIBEXT])
-	AC_MSG_CHECKING([SONAMEFLAG])
-	AC_MSG_RESULT([$SONAMEFLAG])
-
-	AC_MSG_CHECKING([PICFLAG])
-	AC_MSG_RESULT([$PICFLAG])
+	if test $ac_cv_shmod_works = no; then
+		AC_MSG_ERROR(unable to build shared modules)
+	fi
 fi
 
 AC_DEFINE_UNQUOTED(SHLIBEXT, "$SHLIBEXT", [Shared library extension])
