@@ -55,9 +55,9 @@ static int net_status_sessions(struct net_context *c, int argc, const char **arg
 	bool parseable;
 
 	if (argc == 0) {
-		parseable = False;
+		parseable = false;
 	} else if ((argc == 1) && strequal(argv[0], "parseable")) {
-		parseable = True;
+		parseable = true;
 	} else {
 		return net_help_status(c, argc, argv);
 	}
@@ -140,7 +140,7 @@ static int show_share_parseable(struct db_record *rec,
 {
 	struct sessionids *ids = (struct sessionids *)state;
 	int i;
-	bool guest = True;
+	bool guest = true;
 
 	if (crec->cnum == -1)
 		return 0;
@@ -152,7 +152,7 @@ static int show_share_parseable(struct db_record *rec,
 	for (i=0; i<ids->num_entries; i++) {
 		struct server_id id = ids->entries[i].pid;
 		if (procid_equal(&id, &crec->pid)) {
-			guest = False;
+			guest = false;
 			break;
 		}
 	}

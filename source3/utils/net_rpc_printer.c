@@ -63,7 +63,7 @@ static void display_print_driver_3(DRIVER_INFO_3 *i1)
 	fstring defaultdatatype = "";
 
 	int length=0;
-	bool valid = True;
+	bool valid = true;
 
 	if (i1 == NULL)
 		return;
@@ -94,7 +94,7 @@ static void display_print_driver_3(DRIVER_INFO_3 *i1)
 		if (strlen(dependentfiles) > 0) {
 			d_printf ("\tDependentfiles: [%s]\n", dependentfiles);
 		} else {
-			valid = False;
+			valid = false;
 		}
 	}
 
@@ -621,7 +621,7 @@ static NTSTATUS copy_print_driver_3(struct net_context *c,
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	int length = 0;
-	bool valid = True;
+	bool valid = true;
 
 	fstring name = "";
 	fstring driverpath = "";
@@ -677,7 +677,7 @@ static NTSTATUS copy_print_driver_3(struct net_context *c,
 			if (!NT_STATUS_IS_OK(nt_status))
 				return nt_status;
 		} else {
-			valid = False;
+			valid = false;
 		}
 	}
 
@@ -712,10 +712,10 @@ static bool net_spoolss_enum_printers(struct rpc_pipe_client *pipe_hnd,
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf("cannot enum printers: %s\n", dos_errstr(result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 static bool net_spoolss_open_printer_ex(struct rpc_pipe_client *pipe_hnd,
@@ -747,19 +747,19 @@ static bool net_spoolss_open_printer_ex(struct rpc_pipe_client *pipe_hnd,
 	if (W_ERROR_V(result) == W_ERROR_V(WERR_ACCESS_DENIED)) {
 		d_fprintf(stderr, "no access to printer [%s] on [%s] for user [%s] granted\n",
 			printername2, servername, username);
-		return False;
+		return false;
 	}
 
 	if (!W_ERROR_IS_OK(result)) {
 		d_fprintf(stderr, "cannot open printer %s on server %s: %s\n",
 			printername2, servername, dos_errstr(result));
-		return False;
+		return false;
 	}
 
 	DEBUG(2,("got printer handle for printer: %s, server: %s\n",
 		printername2, servername));
 
-	return True;
+	return true;
 }
 
 static bool net_spoolss_getprinter(struct rpc_pipe_client *pipe_hnd,
@@ -775,10 +775,10 @@ static bool net_spoolss_getprinter(struct rpc_pipe_client *pipe_hnd,
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf("cannot get printer-info: %s\n", dos_errstr(result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 static bool net_spoolss_setprinter(struct rpc_pipe_client *pipe_hnd,
@@ -794,10 +794,10 @@ static bool net_spoolss_setprinter(struct rpc_pipe_client *pipe_hnd,
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf("cannot set printer-info: %s\n", dos_errstr(result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 
@@ -813,10 +813,10 @@ static bool net_spoolss_setprinterdata(struct rpc_pipe_client *pipe_hnd,
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf ("unable to set printerdata: %s\n", dos_errstr(result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 
@@ -833,10 +833,10 @@ static bool net_spoolss_enumprinterkey(struct rpc_pipe_client *pipe_hnd,
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf("enumprinterkey failed: %s\n", dos_errstr(result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 static bool net_spoolss_enumprinterdataex(struct rpc_pipe_client *pipe_hnd,
@@ -853,10 +853,10 @@ static bool net_spoolss_enumprinterdataex(struct rpc_pipe_client *pipe_hnd,
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf("enumprinterdataex failed: %s\n", dos_errstr(result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 
@@ -874,10 +874,10 @@ static bool net_spoolss_setprinterdataex(struct rpc_pipe_client *pipe_hnd,
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf("could not set printerdataex: %s\n", dos_errstr(result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 static bool net_spoolss_enumforms(struct rpc_pipe_client *pipe_hnd,
@@ -894,10 +894,10 @@ static bool net_spoolss_enumforms(struct rpc_pipe_client *pipe_hnd,
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf("could not enum forms: %s\n", dos_errstr(result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 static bool net_spoolss_enumprinterdrivers (struct rpc_pipe_client *pipe_hnd,
@@ -915,10 +915,10 @@ static bool net_spoolss_enumprinterdrivers (struct rpc_pipe_client *pipe_hnd,
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf("cannot enum drivers: %s\n", dos_errstr(result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 static bool net_spoolss_getprinterdriver(struct rpc_pipe_client *pipe_hnd,
@@ -941,10 +941,10 @@ static bool net_spoolss_getprinterdriver(struct rpc_pipe_client *pipe_hnd,
 		    W_ERROR_V(result) != W_ERROR_V(WERR_INVALID_ENVIRONMENT)) {
 			printf("cannot get driver: %s\n", dos_errstr(result));
 		}
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 
@@ -960,14 +960,14 @@ static bool net_spoolss_addprinterdriver(struct rpc_pipe_client *pipe_hnd,
 	/* be more verbose */
 	if (W_ERROR_V(result) == W_ERROR_V(WERR_ACCESS_DENIED)) {
 		printf("You are not allowed to add drivers\n");
-		return False;
+		return false;
 	}
 	if (!W_ERROR_IS_OK(result)) {
 		printf("cannot add driver: %s\n", dos_errstr(result));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 /**
@@ -992,7 +992,7 @@ static bool get_printer_info(struct rpc_pipe_client *pipe_hnd,
 		if (!net_spoolss_enum_printers(pipe_hnd, mem_ctx, NULL,
 				PRINTER_ENUM_LOCAL|PRINTER_ENUM_SHARED,
 				level, num_printers, ctr))
-			return False;
+			return false;
 
 		goto out;
 	}
@@ -1003,11 +1003,11 @@ static bool get_printer_info(struct rpc_pipe_client *pipe_hnd,
 					 MAXIMUM_ALLOWED_ACCESS,
 					 pipe_hnd->auth->user_name,
 					 &hnd))
-		return False;
+		return false;
 
 	if (!net_spoolss_getprinter(pipe_hnd, mem_ctx, &hnd, level, ctr)) {
 		rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd);
-		return False;
+		return false;
 	}
 
 	rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd);
@@ -1017,7 +1017,7 @@ static bool get_printer_info(struct rpc_pipe_client *pipe_hnd,
 out:
 	DEBUG(3,("got %d printers\n", *num_printers));
 
-	return True;
+	return true;
 
 }
 
@@ -1176,7 +1176,7 @@ static NTSTATUS rpc_printer_publish_internals_args(struct rpc_pipe_client *pipe_
 	char *printername, *sharename;
 	PRINTER_INFO_CTR ctr, ctr_pub;
 	POLICY_HND hnd;
-	bool got_hnd = False;
+	bool got_hnd = false;
 	WERROR result;
 	const char *action_str;
 
@@ -1204,7 +1204,7 @@ static NTSTATUS rpc_printer_publish_internals_args(struct rpc_pipe_client *pipe_
 			PRINTER_ALL_ACCESS, pipe_hnd->auth->user_name, &hnd))
 			goto done;
 
-		got_hnd = True;
+		got_hnd = true;
 
 		/* check for existing dst printer */
 		if (!net_spoolss_getprinter(pipe_hnd, mem_ctx, &hnd, level, &ctr_pub))
@@ -1316,7 +1316,7 @@ NTSTATUS rpc_printer_publish_list_internals(struct net_context *c,
 	char *guid;
 	PRINTER_INFO_CTR ctr, ctr_pub;
 	POLICY_HND hnd;
-	bool got_hnd = False;
+	bool got_hnd = false;
 	int state;
 
 	if (!get_printer_info(pipe_hnd, mem_ctx, 2, argc, argv, &num_printers, &ctr))
@@ -1345,7 +1345,7 @@ NTSTATUS rpc_printer_publish_list_internals(struct net_context *c,
 			PRINTER_ALL_ACCESS, cli->user_name, &hnd))
 			goto done;
 
-		got_hnd = True;
+		got_hnd = true;
 
 		/* check for existing dst printer */
 		if (!net_spoolss_getprinter(pipe_hnd, mem_ctx, &hnd, level, &ctr_pub))
@@ -1422,8 +1422,8 @@ NTSTATUS rpc_printer_migrate_security_internals(struct net_context *c,
 	uint32 num_printers;
 	uint32 level = 2;
 	char *printername, *sharename;
-	bool got_hnd_src = False;
-	bool got_hnd_dst = False;
+	bool got_hnd_src = false;
+	bool got_hnd_dst = false;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
 	POLICY_HND hnd_src, hnd_dst;
 	PRINTER_INFO_CTR ctr_src, ctr_dst, ctr_enum;
@@ -1487,14 +1487,14 @@ NTSTATUS rpc_printer_migrate_security_internals(struct net_context *c,
 			MAXIMUM_ALLOWED_ACCESS, cli->user_name, &hnd_src))
 			goto done;
 
-		got_hnd_src = True;
+		got_hnd_src = true;
 
 		/* open dst printer handle */
 		if (!net_spoolss_open_printer_ex(pipe_hnd_dst, mem_ctx, sharename,
 			PRINTER_ALL_ACCESS, cli_dst->user_name, &hnd_dst))
 			goto done;
 
-		got_hnd_dst = True;
+		got_hnd_dst = true;
 
 		/* check for existing dst printer */
 		if (!net_spoolss_getprinter(pipe_hnd_dst, mem_ctx, &hnd_dst, level, &ctr_dst))
@@ -1522,12 +1522,12 @@ NTSTATUS rpc_printer_migrate_security_internals(struct net_context *c,
 		/* close printer handles here */
 		if (got_hnd_src) {
 			rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd_src);
-			got_hnd_src = False;
+			got_hnd_src = false;
 		}
 
 		if (got_hnd_dst) {
 			rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
-			got_hnd_dst = False;
+			got_hnd_dst = false;
 		}
 
 	}
@@ -1582,8 +1582,8 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 	uint32 num_printers;
 	uint32 level = 1;
 	char *printername, *sharename;
-	bool got_hnd_src = False;
-	bool got_hnd_dst = False;
+	bool got_hnd_src = false;
+	bool got_hnd_dst = false;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
 	POLICY_HND hnd_src, hnd_dst;
 	PRINTER_INFO_CTR ctr_enum, ctr_dst;
@@ -1642,7 +1642,7 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 			MAXIMUM_ALLOWED_ACCESS, cli->user_name, &hnd_src))
 			goto done;
 
-		got_hnd_src = True;
+		got_hnd_src = true;
 
 
 		/* open dst printer handle */
@@ -1650,7 +1650,7 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 			PRINTER_ALL_ACCESS, cli->user_name, &hnd_dst))
 			goto done;
 
-		got_hnd_dst = True;
+		got_hnd_dst = true;
 
 
 		/* check for existing dst printer */
@@ -1710,12 +1710,12 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 		/* close printer handles here */
 		if (got_hnd_src) {
 			rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd_src);
-			got_hnd_src = False;
+			got_hnd_src = false;
 		}
 
 		if (got_hnd_dst) {
 			rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
-			got_hnd_dst = False;
+			got_hnd_dst = false;
 		}
 	}
 
@@ -1766,10 +1766,10 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 	uint32 num_printers;
 	uint32 level = 3;
 	char *printername, *sharename;
-	bool got_hnd_src = False;
-	bool got_hnd_dst = False;
-	bool got_src_driver_share = False;
-	bool got_dst_driver_share = False;
+	bool got_hnd_src = false;
+	bool got_hnd_dst = false;
+	bool got_src_driver_share = false;
+	bool got_dst_driver_share = false;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
 	POLICY_HND hnd_src, hnd_dst;
 	PRINTER_DRIVER_CTR drv_ctr_src, drv_ctr_dst;
@@ -1796,7 +1796,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 	if (!NT_STATUS_IS_OK(nt_status))
 		goto done;
 
-	got_src_driver_share = True;
+	got_src_driver_share = true;
 
 
 	/* open print$-share on the dst server */
@@ -1805,7 +1805,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
-	got_dst_driver_share = True;
+	got_dst_driver_share = true;
 
 
 	/* enum src printers */
@@ -1851,7 +1851,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 			PRINTER_ALL_ACCESS, cli->user_name, &hnd_dst))
 			goto done;
 
-		got_hnd_dst = True;
+		got_hnd_dst = true;
 
 		/* check for existing dst printer */
 		if (!net_spoolss_getprinter(pipe_hnd_dst, mem_ctx, &hnd_dst, 2, &info_ctr_dst))
@@ -1865,7 +1865,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 						 &hnd_src))
 			goto done;
 
-		got_hnd_src = True;
+		got_hnd_src = true;
 
 
 		/* in a first step call getdriver for each shared printer (per arch)
@@ -1931,13 +1931,13 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 		/* close dst */
 		if (got_hnd_dst) {
 			rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
-			got_hnd_dst = False;
+			got_hnd_dst = false;
 		}
 
 		/* close src */
 		if (got_hnd_src) {
 			rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd_src);
-			got_hnd_src = False;
+			got_hnd_src = false;
 		}
 	}
 
@@ -2000,8 +2000,8 @@ NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
 	struct cli_state *cli_dst = NULL;
 	POLICY_HND hnd_dst, hnd_src;
 	char *printername, *sharename;
-	bool got_hnd_src = False;
-	bool got_hnd_dst = False;
+	bool got_hnd_src = false;
+	bool got_hnd_dst = false;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
 
 	DEBUG(3,("copying printers\n"));
@@ -2053,7 +2053,7 @@ NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
 
 			DEBUG(1,("could not open printer: %s\n", sharename));
 		} else {
-			got_hnd_dst = True;
+			got_hnd_dst = true;
 		}
 
 		/* check for existing dst printer */
@@ -2064,7 +2064,7 @@ NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
 			/* close printer handle here - dst only, not got src yet. */
 			if (got_hnd_dst) {
 				rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
-				got_hnd_dst = False;
+				got_hnd_dst = false;
 			}
 			continue;
 		}
@@ -2077,7 +2077,7 @@ NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
 			MAXIMUM_ALLOWED_ACCESS, cli->user_name, &hnd_src))
 			goto done;
 
-		got_hnd_src = True;
+		got_hnd_src = true;
 
 		/* getprinter on the src server */
 		if (!net_spoolss_getprinter(pipe_hnd, mem_ctx, &hnd_src, level, &ctr_src))
@@ -2100,12 +2100,12 @@ NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
 		/* close printer handles here */
 		if (got_hnd_src) {
 			rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd_src);
-			got_hnd_src = False;
+			got_hnd_src = false;
 		}
 
 		if (got_hnd_dst) {
 			rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
-			got_hnd_dst = False;
+			got_hnd_dst = false;
 		}
 	}
 
@@ -2160,8 +2160,8 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 	uint32 num_printers, val_needed, data_needed;
 	uint32 level = 2;
 	char *printername, *sharename;
-	bool got_hnd_src = False;
-	bool got_hnd_dst = False;
+	bool got_hnd_src = false;
+	bool got_hnd_dst = false;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
 	POLICY_HND hnd_src, hnd_dst;
 	PRINTER_INFO_CTR ctr_enum, ctr_dst, ctr_dst_publish;
@@ -2231,7 +2231,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 			MAXIMUM_ALLOWED_ACCESS, cli->user_name, &hnd_src))
 			goto done;
 
-		got_hnd_src = True;
+		got_hnd_src = true;
 
 
 		/* open dst printer handle */
@@ -2239,7 +2239,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 			PRINTER_ALL_ACCESS, cli_dst->user_name, &hnd_dst))
 			goto done;
 
-		got_hnd_dst = True;
+		got_hnd_dst = true;
 
 
 		/* check for existing dst printer */
@@ -2267,7 +2267,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 
 			ctr_dst_publish.printers_7->action = SPOOL_DS_PUBLISH;
 
-			/* ignore False from setprinter due to WERR_IO_PENDING */
+			/* ignore false from setprinter due to WERR_IO_PENDING */
 	 		net_spoolss_setprinter(pipe_hnd_dst, mem_ctx, &hnd_dst, 7, &ctr_dst_publish);
 
 			DEBUG(3,("republished printer\n"));
@@ -2482,12 +2482,12 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 		/* close printer handles here */
 		if (got_hnd_src) {
 			rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd_src);
-			got_hnd_src = False;
+			got_hnd_src = false;
 		}
 
 		if (got_hnd_dst) {
 			rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
-			got_hnd_dst = False;
+			got_hnd_dst = false;
 		}
 
 	}
