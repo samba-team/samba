@@ -113,6 +113,7 @@ struct net_context {
 /* INCLUDE FILES */
 
 #include "utils/net_proto.h"
+#include "utils/net_help_common.h"
 
 /* MACROS & DEFINES */
 
