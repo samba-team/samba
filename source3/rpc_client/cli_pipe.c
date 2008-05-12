@@ -2485,7 +2485,7 @@ NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
 }
 
 /********************************************************************
- Create a named pipe struct, connecting to a tcp port
+ Create a rpc pipe client struct, connecting to a tcp port
  ********************************************************************/
 NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
 			   uint16_t port,
