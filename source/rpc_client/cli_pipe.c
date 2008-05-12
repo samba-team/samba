@@ -2383,7 +2383,7 @@ NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 
 NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
 				   enum pipe_auth_level auth_level,
-				   const struct dcinfo *pdc,
+				   const uint8_t sess_key[16],
 				   struct cli_pipe_auth_data **presult)
 {
 	struct cli_pipe_auth_data *result;
@@ -2408,7 +2408,8 @@ NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
 		goto fail;
 	}
 
-	memcpy(result->a_u.schannel_auth->sess_key, pdc->sess_key, 16);
+	memcpy(result->a_u.schannel_auth->sess_key, sess_key,
+	       sizeof(result->a_u.schannel_auth->sess_key));
 	result->a_u.schannel_auth->seq_num = 0;
 
 	*presult = result;
@@ -2880,7 +2881,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 	}
 
 	*perr = rpccli_schannel_bind_data(result, domain, auth_level,
-					  pdc, &auth);
+					  pdc->sess_key, &auth);
 	if (!NT_STATUS_IS_OK(*perr)) {
 		DEBUG(0, ("rpccli_schannel_bind_data returned %s\n",
 			  nt_errstr(*perr)));
