@@ -328,7 +328,7 @@ then
 	plantest "nss.test using winbind" member $VALGRIND $samba4bindir/nsstest $samba4bindir/shared/libnss_winbind.so
 fi
 
-PYTHON=bin/smbpython
+PYTHON=/usr/bin/python
 SUBUNITRUN="$PYTHON ./scripting/bin/subunitrun"
 plantest "ldb.python" none PYTHONPATH="$PYTHONPATH:lib/ldb/tests/python/" $SUBUNITRUN api
 plantest "credentials.python" none PYTHONPATH="$PYTHONPATH:auth/credentials/tests" $SUBUNITRUN bindings
