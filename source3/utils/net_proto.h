@@ -145,8 +145,6 @@ int net_groupmap(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_help.c  */
 
-int net_common_methods_usage(struct net_context *c, int argc, const char**argv);
-int net_common_flags_usage(struct net_context *c, int argc, const char **argv);
 int net_help_user(struct net_context *c, int argc, const char **argv);
 int net_help_group(struct net_context *c, int argc, const char **argv);
 int net_help_join(struct net_context *c, int argc, const char **argv);
