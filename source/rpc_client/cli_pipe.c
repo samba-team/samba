@@ -184,7 +184,7 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 			break;
 		case NCACN_IP_TCP:
 			status = NT_STATUS_OK;
-			num_read = sys_read(cli->trans.tcp.sock, pdata, size);
+			num_read = sys_read(cli->trans.sock.fd, pdata, size);
 			if (num_read == -1) {
 				status = map_nt_error_from_unix(errno);
 			}
@@ -830,7 +830,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	case NCACN_IP_TCP:
 	{
 		ssize_t nwritten, nread;
-		nwritten = write_data(cli->trans.tcp.sock, pdata, data_len);
+		nwritten = write_data(cli->trans.sock.fd, pdata, data_len);
 		if (nwritten == -1) {
 			ret = map_nt_error_from_unix(errno);
 			DEBUG(0, ("rpc_api_pipe: write_data returned %s\n",
@@ -842,7 +842,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 		if (prdata == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		nread = sys_read(cli->trans.tcp.sock, prdata, 1);
+		nread = sys_read(cli->trans.sock.fd, prdata, 1);
 		if (nread == 0) {
 			SAFE_FREE(prdata);
 		}
@@ -1652,7 +1652,7 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
 				break;
 			case NCACN_IP_TCP:
 				num_written = write_data(
-					cli->trans.tcp.sock,
+					cli->trans.sock.fd,
 					prs_data_p(&outgoing_pdu),
 					(size_t)hdr.frag_len);
 				if (num_written != hdr.frag_len) {
@@ -1885,7 +1885,7 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 			nt_status = cli_get_nt_error(cli->trans.np.cli);
 		}
 	case NCACN_IP_TCP:
-		ret = write_data(cli->trans.tcp.sock, prs_data_p(&rpc_out),
+		ret = write_data(cli->trans.sock.fd, prs_data_p(&rpc_out),
 				 (size_t)prs_offset(&rpc_out));
 		if (ret != (ssize_t)prs_offset(&rpc_out)) {
 			nt_status = map_nt_error_from_unix(errno);
@@ -2522,8 +2522,8 @@ NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
 		goto fail;
 	}
 
-	result->trans.tcp.sock = open_socket_out(SOCK_STREAM, &addr, port, 60);
-	if (result->trans.tcp.sock == -1) {
+	result->trans.sock.fd = open_socket_out(SOCK_STREAM, &addr, port, 60);
+	if (result->trans.sock.fd == -1) {
 		status = map_nt_error_from_unix(errno);
 		goto fail;
 	}

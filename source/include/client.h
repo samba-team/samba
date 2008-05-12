@@ -72,8 +72,8 @@ struct rpc_pipe_client {
 			uint16 fnum;
 		} np;
 		struct {
-			int sock;
-		} tcp;
+			int fd;
+		} sock;
 	} trans ;
 
 	const struct ndr_syntax_id *abstract_syntax;
