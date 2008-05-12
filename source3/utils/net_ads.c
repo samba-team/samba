@@ -1228,6 +1228,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 			ads_dns->auth.password = secrets_fetch_machine_password(
 				r->out.netbios_domain_name, NULL, NULL );
 			ads_dns->auth.realm = SMB_STRDUP( r->out.dns_domain_name );
+			strupper_m(ads_dns->auth.realm );
 			ads_kinit_password( ads_dns );
 		}
 
