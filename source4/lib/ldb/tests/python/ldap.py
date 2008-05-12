@@ -6,6 +6,8 @@ import getopt
 import optparse
 import sys
 
+sys.path.append("bin/python")
+
 import samba.getopt as options
 
 from auth import system_session

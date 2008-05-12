@@ -6,10 +6,14 @@
 #	Released under the GNU GPL version 3 or later
 #
 
+import sys
+
+# Find right directory when running from source tree
+sys.path.insert(0, "bin/python")
+
 import samba.getopt as options
 import optparse
 import pwd
-import sys
 from getpass import getpass
 from auth import system_session
 from samba.samdb import SamDB
