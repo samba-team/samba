@@ -65,7 +65,7 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		return result;
 	}
 
-	result = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, False,
+	result = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, false,
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
 				     &pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1615,7 +1615,7 @@ static NTSTATUS rpc_group_delete_internals(struct net_context *c,
 					const char **argv)
 {
 	POLICY_HND connect_pol, domain_pol, group_pol, user_pol;
-	bool group_is_primary = False;
+	bool group_is_primary = false;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32_t group_rid;
 	struct samr_RidTypeArray *rids = NULL;
@@ -1727,7 +1727,7 @@ static NTSTATUS rpc_group_delete_internals(struct net_context *c,
 					d_printf("Group is primary group of %s\n",
 						info->info21.account_name.string);
 				}
-				group_is_primary = True;
+				group_is_primary = true;
                         }
 
 			rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
@@ -1978,7 +1978,7 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 		goto done;
 	}
 
-	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, False,
+	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, false,
 				     SEC_RIGHTS_MAXIMUM_ALLOWED, &lsa_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2443,25 +2443,25 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 start_idx=0, max_entries=250, num_entries, i, loop_count = 0;
 	struct samr_SamArray *groups = NULL;
-	bool global = False;
-	bool local = False;
-	bool builtin = False;
+	bool global = false;
+	bool local = false;
+	bool builtin = false;
 
 	if (argc == 0) {
-		global = True;
-		local = True;
-		builtin = True;
+		global = true;
+		local = true;
+		builtin = true;
 	}
 
 	for (i=0; i<argc; i++) {
 		if (strequal(argv[i], "global"))
-			global = True;
+			global = true;
 
 		if (strequal(argv[i], "local"))
-			local = True;
+			local = true;
 
 		if (strequal(argv[i], "builtin"))
-			builtin = True;
+			builtin = true;
 	}
 
 	/* Get sam policy handle */
@@ -2774,7 +2774,7 @@ static NTSTATUS rpc_list_alias_members(struct net_context *c,
 		return result;
 	}
 
-	result = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, True,
+	result = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, true,
 				     SEC_RIGHTS_MAXIMUM_ALLOWED, &lsa_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -3371,13 +3371,13 @@ static bool check_share_availability(struct cli_state *cli, const char *netname)
 {
 	if (!cli_send_tconX(cli, netname, "A:", "", 0)) {
 		d_printf("skipping   [%s]: not a file share.\n", netname);
-		return False;
+		return false;
 	}
 
 	if (!cli_tdis(cli))
-		return False;
+		return false;
 
-	return True;
+	return true;
 }
 
 static bool check_share_sanity(struct net_context *c, struct cli_state *cli,
@@ -3386,18 +3386,18 @@ static bool check_share_sanity(struct net_context *c, struct cli_state *cli,
 	/* only support disk shares */
 	if (! ( type == STYPE_DISKTREE || type == (STYPE_DISKTREE | STYPE_HIDDEN)) ) {
 		printf("share [%s] is not a diskshare (type: %x)\n", netname, type);
-		return False;
+		return false;
 	}
 
 	/* skip builtin shares */
 	/* FIXME: should print$ be added too ? */
 	if (strequal(netname,"IPC$") || strequal(netname,"ADMIN$") ||
 	    strequal(netname,"global"))
-		return False;
+		return false;
 
-	if (c->opt_exclude && in_list(netname, c->opt_exclude, False)) {
+	if (c->opt_exclude && in_list(netname, c->opt_exclude, false)) {
 		printf("excluding  [%s]\n", netname);
-		return False;
+		return false;
 	}
 
 	return check_share_availability(cli, netname);
@@ -3644,16 +3644,16 @@ static bool sync_files(struct copy_clistate *cp_clistate, const char *mask)
 				mask, &targetcli, &targetpath ) ) {
 		d_fprintf(stderr, "cli_resolve_path %s failed with error: %s\n", 
 			mask, cli_errstr(cp_clistate->cli_share_src));
-		return False;
+		return false;
 	}
 
 	if (cli_list(targetcli, targetpath, cp_clistate->attribute, copy_fn, cp_clistate) == -1) {
 		d_fprintf(stderr, "listing %s failed with error: %s\n",
 			mask, cli_errstr(targetcli));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 
@@ -3689,10 +3689,10 @@ bool copy_top_level_perms(struct net_context *c,
 	if (!NT_STATUS_IS_OK(nt_status))  {
 		printf("Could handle directory attributes for top level directory of share %s. Error %s\n", 
 			sharename, nt_errstr(nt_status));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 /**
@@ -3726,8 +3726,8 @@ static NTSTATUS rpc_share_migrate_files_internals(struct net_context *c,
 	uint32 i;
 	uint32 level = 502;
 	struct copy_clistate cp_clistate;
-	bool got_src_share = False;
-	bool got_dst_share = False;
+	bool got_src_share = false;
+	bool got_dst_share = false;
 	const char *mask = "\\*";
 	char *dst = NULL;
 
@@ -3782,7 +3782,7 @@ static NTSTATUS rpc_share_migrate_files_internals(struct net_context *c,
 		if (!NT_STATUS_IS_OK(nt_status))
 			goto done;
 
-		got_src_share = True;
+		got_src_share = true;
 
 		if (net_mode_share == NET_MODE_SHARE_MIGRATE) {
 			/* open share destination */
@@ -3791,7 +3791,7 @@ static NTSTATUS rpc_share_migrate_files_internals(struct net_context *c,
 			if (!NT_STATUS_IS_OK(nt_status))
 				goto done;
 
-			got_dst_share = True;
+			got_dst_share = true;
 		}
 
 		if (!copy_top_level_perms(c, &cp_clistate, info502.name)) {
@@ -4138,7 +4138,7 @@ static NTSTATUS rpc_aliaslist_dump(struct net_context *c,
 	NTSTATUS result;
 	POLICY_HND lsa_pol;
 
-	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, True,
+	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
 				     &lsa_pol);
 	if (!NT_STATUS_IS_OK(result))
@@ -4252,9 +4252,9 @@ static bool is_sid_in_token(NT_USER_TOKEN *token, DOM_SID *sid)
 
 	for (i=0; i<token->num_sids; i++) {
 		if (sid_compare(sid, &token->user_sids[i]) == 0)
-			return True;
+			return true;
 	}
-	return False;
+	return false;
 }
 
 static void add_sid_to_token(NT_USER_TOKEN *token, DOM_SID *sid)
@@ -4294,10 +4294,10 @@ static bool is_alias_member(DOM_SID *sid, struct full_alias *alias)
 
 	for (i=0; i<alias->num_members; i++) {
 		if (sid_compare(sid, &alias->members[i]) == 0)
-			return True;
+			return true;
 	}
 
-	return False;
+	return false;
 }
 
 static void collect_sid_memberships(NT_USER_TOKEN *token, DOM_SID sid)
@@ -4489,7 +4489,7 @@ static bool get_user_tokens_from_file(FILE *f,
 		fstring line;
 
 		if (fgets(line, sizeof(line)-1, f) == NULL) {
-			return True;
+			return true;
 		}
 
 		if (line[strlen(line)-1] == '\n')
@@ -4503,7 +4503,7 @@ static bool get_user_tokens_from_file(FILE *f,
 
 			if (token == NULL) {
 				DEBUG(0, ("File does not begin with username"));
-				return False;
+				return false;
 			}
 
 			add_sid_to_token(&token->token, &sid);
@@ -4516,7 +4516,7 @@ static bool get_user_tokens_from_file(FILE *f,
 		*tokens = SMB_REALLOC_ARRAY(*tokens, struct user_token, *num_tokens);
 		if (*tokens == NULL) {
 			DEBUG(0, ("Could not realloc tokens\n"));
-			return False;
+			return false;
 		}
 
 		token = &((*tokens)[*num_tokens-1]);
@@ -4527,7 +4527,7 @@ static bool get_user_tokens_from_file(FILE *f,
 		continue;
 	}
 	
-	return False;
+	return false;
 }
 
 
@@ -5867,7 +5867,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 		return -1;
 	}
 
-	nt_status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, True, SEC_RIGHTS_QUERY_VALUE,
+	nt_status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, true, SEC_RIGHTS_QUERY_VALUE,
 	                                 &connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
@@ -6131,7 +6131,7 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 		return -1;
 	};
 
-	nt_status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, False, SEC_RIGHTS_QUERY_VALUE,
+	nt_status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, false, SEC_RIGHTS_QUERY_VALUE,
 					&connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
@@ -6280,7 +6280,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		return -1;
 	};
 
-	nt_status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, False, SEC_RIGHTS_QUERY_VALUE,
+	nt_status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, false, SEC_RIGHTS_QUERY_VALUE,
 					&connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
@@ -6527,17 +6527,17 @@ static int rpc_trustdom(struct net_context *c, int argc, const char **argv)
 bool net_rpc_check(struct net_context *c, unsigned flags)
 {
 	struct cli_state *cli;
-	bool ret = False;
+	bool ret = false;
 	struct sockaddr_storage server_ss;
 	char *server_name = NULL;
 	NTSTATUS status;
 
 	/* flags (i.e. server type) may depend on command */
 	if (!net_find_server(c, NULL, flags, &server_ss, &server_name))
-		return False;
+		return false;
 
 	if ((cli = cli_initialise()) == NULL) {
-		return False;
+		return false;
 	}
 
 	status = cli_connect(cli, server_name, &server_ss);
@@ -6551,7 +6551,7 @@ bool net_rpc_check(struct net_context *c, unsigned flags)
 	if (cli->protocol < PROTOCOL_NT1)
 		goto done;
 
-	ret = True;
+	ret = true;
  done:
 	cli_shutdown(cli);
 	return ret;

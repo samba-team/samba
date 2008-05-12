@@ -777,7 +777,7 @@ static NTSTATUS fetch_group_info(uint32_t rid,
 	DOM_SID group_sid;
 	fstring sid_string;
 	GROUP_MAP map;
-	bool insert = True;
+	bool insert = true;
 
 	fstrcpy(name, r->group_name.string);
 	fstrcpy(comment, r->description.string);
@@ -790,7 +790,7 @@ static NTSTATUS fetch_group_info(uint32_t rid,
 	if (pdb_getgrsid(&map, group_sid)) {
 		if ( map.gid != -1 )
 			grp = getgrgid(map.gid);
-		insert = False;
+		insert = false;
 	}
 
 	if (grp == NULL) {
@@ -909,7 +909,7 @@ static NTSTATUS fetch_group_mem_info(uint32_t rid,
 	unix_members = grp->gr_mem;
 
 	while (*unix_members) {
-		bool is_nt_member = False;
+		bool is_nt_member = false;
 		for (i=0; i < r->num_rids; i++) {
 			if (nt_members[i] == NULL) {
 				/* This was a primary group */
@@ -917,7 +917,7 @@ static NTSTATUS fetch_group_mem_info(uint32_t rid,
 			}
 
 			if (strcmp(*unix_members, nt_members[i]) == 0) {
-				is_nt_member = True;
+				is_nt_member = true;
 				break;
 			}
 		}
@@ -931,7 +931,7 @@ static NTSTATUS fetch_group_mem_info(uint32_t rid,
 	}
 
 	for (i=0; i < r->num_rids; i++) {
-		bool is_unix_member = False;
+		bool is_unix_member = false;
 
 		if (nt_members[i] == NULL) {
 			/* This was the primary group */
@@ -942,7 +942,7 @@ static NTSTATUS fetch_group_mem_info(uint32_t rid,
 
 		while (*unix_members) {
 			if (strcmp(*unix_members, nt_members[i]) == 0) {
-				is_unix_member = True;
+				is_unix_member = true;
 				break;
 			}
 			unix_members += 1;
@@ -970,7 +970,7 @@ static NTSTATUS fetch_alias_info(uint32_t rid,
 	DOM_SID alias_sid;
 	fstring sid_string;
 	GROUP_MAP map;
-	bool insert = True;
+	bool insert = true;
 
 	fstrcpy(name, r->alias_name.string);
 	fstrcpy(comment, r->description.string);
@@ -982,7 +982,7 @@ static NTSTATUS fetch_alias_info(uint32_t rid,
 
 	if (pdb_getgrsid(&map, alias_sid)) {
 		grp = getgrgid(map.gid);
-		insert = False;
+		insert = false;
 	}
 
 	if (grp == NULL) {
@@ -1620,7 +1620,7 @@ static int fprintf_attr(FILE *add_fd, const char *attr_name,
 	va_list ap;
 	char *value, *p, *base64;
 	DATA_BLOB base64_blob;
-	bool do_base64 = False;
+	bool do_base64 = false;
 	int res;
 
 	va_start(ap, fmt);
@@ -1631,25 +1631,25 @@ static int fprintf_attr(FILE *add_fd, const char *attr_name,
 
 	for (p=value; *p; p++) {
 		if (*p & 0x80) {
-			do_base64 = True;
+			do_base64 = true;
 			break;
 		}
 	}
 
 	if (!do_base64) {
-		bool only_whitespace = True;
+		bool only_whitespace = true;
 		for (p=value; *p; p++) {
 			/*
 			 * I know that this not multibyte safe, but we break
 			 * on the first non-whitespace character anyway.
 			 */
 			if (!isspace(*p)) {
-				only_whitespace = False;
+				only_whitespace = false;
 				break;
 			}
 		}
 		if (only_whitespace) {
-			do_base64 = True;
+			do_base64 = true;
 		}
 	}
 

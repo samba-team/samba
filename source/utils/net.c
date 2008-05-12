@@ -445,7 +445,7 @@ bool net_find_server(struct net_context *c,
 		}
 
 		if (!name_status_find(d, 0x1b, 0x20, &pdc_ss, dc_name)) {
-			return False;
+			return false;
 		}
 
 		*server_name = SMB_STRDUP(dc_name);
@@ -484,10 +484,10 @@ bool net_find_server(struct net_context *c,
 
 	if (!*server_name) {
 		DEBUG(1,("no server to connect to\n"));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 bool net_find_pdc(struct sockaddr_storage *server_ss,
@@ -672,7 +672,7 @@ static int net_getlocalsid(struct net_context *c, int argc, const char **argv)
 		name = global_myname();
 	}
 
-	if(!initialize_password_db(False, NULL)) {
+	if(!initialize_password_db(false, NULL)) {
 		DEBUG(0, ("WARNING: Could not open passdb - local sid may not reflect passdb\n"
 			  "backend knowledge (such as the sid stored in LDAP)\n"));
 	}
@@ -747,7 +747,7 @@ static int net_getdomainsid(struct net_context *c, int argc, const char **argv)
 		return 1;
 	}
 
-	if(!initialize_password_db(False, NULL)) {
+	if(!initialize_password_db(false, NULL)) {
 		DEBUG(0, ("WARNING: Could not open passdb - domain SID may "
 			  "not reflect passdb\n"
 			  "backend knowledge (such as the SID stored in "
@@ -875,14 +875,14 @@ static bool search_maxrid(struct pdb_search *search, const char *type,
 
 	if (search == NULL) {
 		d_fprintf(stderr, "get_maxrid: Could not search %s\n", type);
-		return False;
+		return false;
 	}
 
 	num_entries = pdb_search_entries(search, 0, 0xffffffff, &entries);
 	for (i=0; i<num_entries; i++)
 		*max_rid = MAX(*max_rid, entries[i].rid);
 	pdb_search_destroy(search);
-	return True;
+	return true;
 }
 
 static uint32 get_maxrid(void)
@@ -1080,7 +1080,7 @@ static struct functable net_func[] = {
 			}
 			break;
 		case 'U':
-			c->opt_user_specified = True;
+			c->opt_user_specified = true;
 			c->opt_user_name = SMB_STRDUP(c->opt_user_name);
 			p = strchr(c->opt_user_name,'%');
 			if (p) {

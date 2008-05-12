@@ -42,7 +42,7 @@ NTSTATUS net_rpc_lookup_name(struct net_context *c,
 		return result;
 	}
 
-	result = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, False, 
+	result = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, false,
 					SEC_RIGHTS_MAXIMUM_ALLOWED,
 					&pol);
 	if (!NT_STATUS_IS_OK(result)) {
