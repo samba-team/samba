@@ -63,10 +63,24 @@ static int map_pipe_auth_type_to_rpc_auth_type(enum pipe_auth_type auth_type)
 static char *rpccli_pipe_txt(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli)
 {
 	char *result;
-	result = talloc_asprintf(mem_ctx, "host %s, pipe %s, fnum 0x%x",
-				 cli->desthost,
-				 cli->trans.np.pipe_name,
-				 (unsigned int)(cli->trans.np.fnum));
+
+	switch (cli->transport_type) {
+	case NCACN_NP:
+		result = talloc_asprintf(mem_ctx, "host %s, pipe %s, "
+					 "fnum 0x%x",
+					 cli->desthost,
+					 cli->trans.np.pipe_name,
+					 (unsigned int)(cli->trans.np.fnum));
+		break;
+	case NCACN_IP_TCP:
+	case NCACN_UNIX_STREAM:
+		result = talloc_asprintf(mem_ctx, "host %s, fd %d",
+					 cli->desthost, cli->trans.sock.fd);
+		break;
+	default:
+		result = talloc_asprintf(mem_ctx, "host %s", cli->desthost);
+		break;
+	}
 	SMB_ASSERT(result != NULL);
 	return result;
 }
@@ -183,6 +197,7 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 					     &num_read);
 			break;
 		case NCACN_IP_TCP:
+		case NCACN_UNIX_STREAM:
 			status = NT_STATUS_OK;
 			num_read = sys_read(cli->trans.sock.fd, pdata, size);
 			if (num_read == -1) {
@@ -828,6 +843,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 		break;
 	}
 	case NCACN_IP_TCP:
+	case NCACN_UNIX_STREAM:
 	{
 		ssize_t nwritten, nread;
 		nwritten = write_data(cli->trans.sock.fd, pdata, data_len);
@@ -1651,6 +1667,7 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
 				}
 				break;
 			case NCACN_IP_TCP:
+			case NCACN_UNIX_STREAM:
 				num_written = write_data(
 					cli->trans.sock.fd,
 					prs_data_p(&outgoing_pdu),
@@ -1885,6 +1902,7 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 			nt_status = cli_get_nt_error(cli->trans.np.cli);
 		}
 	case NCACN_IP_TCP:
+	case NCACN_UNIX_STREAM:
 		ret = write_data(cli->trans.sock.fd, prs_data_p(&rpc_out),
 				 (size_t)prs_offset(&rpc_out));
 		if (ret != (ssize_t)prs_offset(&rpc_out)) {
@@ -2527,6 +2545,70 @@ NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
 	if (result->trans.sock.fd == -1) {
 		status = map_nt_error_from_unix(errno);
 		goto fail;
+	}
+
+	*presult = result;
+	return NT_STATUS_OK;
+
+ fail:
+	TALLOC_FREE(result);
+	return status;
+}
+
+/********************************************************************
+ Create a rpc pipe client struct, connecting to a unix domain socket
+ ********************************************************************/
+NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
+			       const struct ndr_syntax_id *abstract_syntax,
+			       struct rpc_pipe_client **presult)
+{
+	struct rpc_pipe_client *result;
+	struct sockaddr_un addr;
+	NTSTATUS status;
+
+	result = talloc(mem_ctx, struct rpc_pipe_client);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	result->transport_type = NCACN_UNIX_STREAM;
+
+	result->abstract_syntax = abstract_syntax;
+	result->transfer_syntax = &ndr_transfer_syntax;
+
+	result->desthost = get_myname(result);
+	result->srv_name_slash = talloc_asprintf_strupper_m(
+		result, "\\\\%s", result->desthost);
+	if ((result->desthost == NULL) || (result->srv_name_slash == NULL)) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
+	result->max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
+
+	result->trans.sock.fd = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (result->trans.sock.fd == -1) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	result->dc = TALLOC_ZERO_P(result, struct dcinfo);
+	if (result->dc == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	ZERO_STRUCT(addr);
+	addr.sun_family = AF_UNIX;
+	strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path));
+
+	if (sys_connect(result->trans.sock.fd,
+			(struct sockaddr *)&addr) == -1) {
+		DEBUG(0, ("connect(%s) failed: %s\n", socket_path,
+			  strerror(errno)));
+		close(result->trans.sock.fd);
+		return map_nt_error_from_unix(errno);
 	}
 
 	*presult = result;
