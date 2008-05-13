@@ -110,6 +110,10 @@ const char *wbcErrorString(wbcErr error)
 		return "WBC_ERR_INVALID_RESPONSE";
 	case WBC_ERR_NSS_ERROR:
 		return "WBC_ERR_NSS_ERROR";
+	case WBC_ERR_UNKNOWN_USER:
+		return "WBC_ERR_UNKNOWN_USER";
+	case WBC_ERR_UNKNOWN_GROUP:
+		return "WBC_ERR_UNKNOWN_GROUP";
 	case WBC_ERR_AUTH_ERROR:
 		return "WBC_ERR_AUTH_ERROR";
 	}

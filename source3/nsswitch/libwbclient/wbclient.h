@@ -42,7 +42,9 @@ enum _wbcErrType {
 	WBC_ERR_DOMAIN_NOT_FOUND,        /**< Domain is not trusted or cannot be found **/
 	WBC_ERR_INVALID_RESPONSE,        /**< Winbind returned an invalid response **/
 	WBC_ERR_NSS_ERROR,            /**< NSS_STATUS error **/
-	WBC_ERR_AUTH_ERROR        /**< Authentication failed **/
+	WBC_ERR_AUTH_ERROR,        /**< Authentication failed **/
+	WBC_ERR_UNKNOWN_USER,      /**< User account cannot be found */
+	WBC_ERR_UNKNOWN_GROUP      /**< Group account cannot be found */
 };
 
 typedef enum _wbcErrType wbcErr;
@@ -290,6 +292,15 @@ struct wbcAuthErrorInfo {
 };
 
 /*
+ * DomainControllerInfo struct
+ */
+struct wbcDomainControllerInfo {
+	char *dc_name;
+};
+
+
+
+/*
  * Memory Management
  */
 
@@ -411,6 +422,31 @@ wbcErr wbcDomainInfo(const char *domain,
 wbcErr wbcListTrusts(struct wbcDomainInfo **domains, 
 		     size_t *num_domains);
 
+/* Flags for wbcLookupDomainController */
+
+#define WBC_LOOKUP_DC_FORCE_REDISCOVERY        0x00000001
+#define WBC_LOOKUP_DC_DS_REQUIRED              0x00000010
+#define WBC_LOOKUP_DC_DS_PREFERRED             0x00000020
+#define WBC_LOOKUP_DC_GC_SERVER_REQUIRED       0x00000040
+#define WBC_LOOKUP_DC_PDC_REQUIRED             0x00000080
+#define WBC_LOOKUP_DC_BACKGROUND_ONLY          0x00000100
+#define WBC_LOOKUP_DC_IP_REQUIRED              0x00000200
+#define WBC_LOOKUP_DC_KDC_REQUIRED             0x00000400
+#define WBC_LOOKUP_DC_TIMESERV_REQUIRED        0x00000800
+#define WBC_LOOKUP_DC_WRITABLE_REQUIRED        0x00001000
+#define WBC_LOOKUP_DC_GOOD_TIMESERV_PREFERRED  0x00002000
+#define WBC_LOOKUP_DC_AVOID_SELF               0x00004000
+#define WBC_LOOKUP_DC_ONLY_LDAP_NEEDED         0x00008000
+#define WBC_LOOKUP_DC_IS_FLAT_NAME             0x00010000
+#define WBC_LOOKUP_DC_IS_DNS_NAME              0x00020000
+#define WBC_LOOKUP_DC_TRY_NEXTCLOSEST_SITE     0x00040000
+#define WBC_LOOKUP_DC_DS_6_REQUIRED            0x00080000
+#define WBC_LOOKUP_DC_RETURN_DNS_NAME          0x40000000
+#define WBC_LOOKUP_DC_RETURN_FLAT_NAME         0x80000000
+
+wbcErr wbcLookupDomainController(const char *domain,
+				 uint32_t flags,
+				 struct wbcDomainControllerInfo **dc_info);
 
 /*
  * Athenticate functions
@@ -423,6 +459,11 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 			     struct wbcAuthUserInfo **info,
 			     struct wbcAuthErrorInfo **error);
 
+wbcErr wbcLogoffUser(const char *username,
+		     uid_t uid,
+		     const char *ccfilename);
+
+
 /*
  * Resolve functions
  */
@@ -434,5 +475,6 @@ wbcErr wbcResolveWinsByIP(const char *ip, char **name);
  */
 wbcErr wbcCheckTrustCredentials(const char *domain,
 				struct wbcAuthErrorInfo **error);
+
 
 #endif      /* _WBCLIENT_H */

@@ -470,3 +470,55 @@ wbcErr wbcCheckTrustCredentials(const char *domain,
  done:
 	return wbc_status;
 }
+
+/** @brief Trigger a logoff notification to Winbind for a specific user
+ *
+ * @param username    Name of user to remove from Winbind's list of
+ *                    logged on users.
+ * @param uid         Uid assigned to the username
+ * @param ccfilename  Absolute path to the Krb5 credentials cache to
+ *                    be removed
+ *
+ * @return #wbcErr
+ *
+ **/
+
+wbcErr wbcLogoffUser(const char *username,
+		     uid_t uid,
+		     const char *ccfilename)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct passwd *pw = NULL;
+
+	/* validate input */
+
+	if (!username) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	strncpy(request.data.logoff.user, username,
+		sizeof(request.data.logoff.user)-1);
+	request.data.logoff.uid = uid;
+
+	if (ccfilename) {
+		strncpy(request.data.logoff.krb5ccname, ccfilename,
+			sizeof(request.data.logoff.krb5ccname)-1);
+	}
+
+	/* Send request */
+
+	wbc_status = wbcRequestResponse(WINBINDD_PAM_LOGOFF,
+					&request,
+					&response);
+
+	/* Take the response above and return it to the caller */
+
+ done:
+	return wbc_status;
+}
