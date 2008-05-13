@@ -24,6 +24,7 @@
 #define _WINBINDD_H
 
 #include "nsswitch/winbind_struct_protocol.h"
+#include "nsswitch/libwbclient/wbclient.h"
 
 #ifdef HAVE_LIBNSCD
 #include <libnscd.h>
