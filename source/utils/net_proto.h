@@ -138,6 +138,11 @@ int get_my_ip_address( struct sockaddr_storage **pp_ss );
 int net_help_dom(struct net_context *c, int argc, const char **argv);
 int net_dom(struct net_context *c, int argc, const char **argv);
 
+/* The following definitions come from utils/net_file.c  */
+
+int net_file_usage(struct net_context *c, int argc, const char **argv);
+int net_file(struct net_context *c, int argc, const char **argv);
+
 /* The following definitions come from utils/net_group.c  */
 
 int net_group_usage(struct net_context *c, int argc, const char **argv);
@@ -151,7 +156,6 @@ int net_groupmap(struct net_context *c, int argc, const char **argv);
 /* The following definitions come from utils/net_help.c  */
 
 int net_help_share(struct net_context *c, int argc, const char **argv);
-int net_help_file(struct net_context *c, int argc, const char **argv);
 int net_help_printer(struct net_context *c, int argc, const char **argv);
 int net_help_status(struct net_context *c, int argc, const char **argv);
 int net_help(struct net_context *c, int argc, const char **argv);

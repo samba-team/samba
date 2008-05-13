@@ -49,7 +49,7 @@ static int errmsg_not_implemented(void)
 
 int net_rap_file_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_file(c, argc, argv);
+	return net_file_usage(c, argc, argv);
 }
 
 /***************************************************************************

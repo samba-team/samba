@@ -615,13 +615,6 @@ static int net_share(struct net_context *c, int argc, const char **argv)
 	return net_rap_share(c, argc, argv);
 }
 
-static int net_file(struct net_context *c, int argc, const char **argv)
-{
-	if (net_rpc_check(c, 0))
-		return net_rpc_file(c, argc, argv);
-	return net_rap_file(c, argc, argv);
-}
-
 /*
  Retrieve our local SID or the SID for the specified name
  */
