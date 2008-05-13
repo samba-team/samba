@@ -46,7 +46,7 @@ static NTSTATUS parse_dfs_path(const char *pathname,
 				BOOL *ppath_contains_wcard)
 {
 	pstring pathname_local;
-	char *p,*temp;
+	char *p,*temp, *servicename;
 	NTSTATUS status = NT_STATUS_OK;
 	char sepchar;
 
@@ -107,17 +107,48 @@ static NTSTATUS parse_dfs_path(const char *pathname,
 	DEBUG(10,("parse_dfs_path: hostname: %s\n",pdp->hostname));
 
 	/* Parse out servicename. */
-	temp = p+1;
-	p = strchr_m(temp,sepchar);
+	servicename = p+1;
+	p = strchr_m(servicename,sepchar);
+	if (p) {
+		*p = '\0';
+	}
+
+	/* Is this really our servicename ? */
+	if (NULL == conn_find_byname(servicename)) {
+		DEBUG(10,("parse_dfs_path: %s is not our servicename\n",
+			servicename));
+
+		/*
+		 * Possibly client sent a local path by mistake.
+		 * Try and convert to a local path.
+		 */
+
+		pdp->hostname[0] = '\0';
+		pdp->servicename[0] = '\0';
+
+		/* Repair the path - replace the sepchar's
+		   we nulled out */
+		servicename--;
+		*servicename = sepchar;
+		if (p) {
+			*p = sepchar;
+		}
+
+		p = temp;
+		DEBUG(10,("parse_dfs_path: trying to convert %s "
+			"to a local path\n",
+			temp));
+		goto local_path;
+	}
+
+	fstrcpy(pdp->servicename,servicename);
+
+	DEBUG(10,("parse_dfs_path: servicename: %s\n",pdp->servicename));
+
 	if(p == NULL) {
-		fstrcpy(pdp->servicename,temp);
 		pdp->reqpath[0] = '\0';
 		return NT_STATUS_OK;
 	}
-	*p = '\0';
-	fstrcpy(pdp->servicename,temp);
-	DEBUG(10,("parse_dfs_path: servicename: %s\n",pdp->servicename));
-
 	p++;
 
   local_path:
