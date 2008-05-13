@@ -762,7 +762,7 @@ int net_rap_user(struct net_context *c, int argc, const char **argv)
 
 int net_rap_group_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_group(c, argc, argv);
+	return net_group_usage(c, argc, argv);
 }
 
 static void long_group_fn(const char *group_name, const char *comment,

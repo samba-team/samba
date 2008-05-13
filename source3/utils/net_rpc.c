@@ -1586,7 +1586,7 @@ struct rpc_sh_cmd *net_rpc_user_cmds(struct net_context *c,
 
 static int rpc_group_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_group(c, argc, argv);
+	return net_group_usage(c, argc, argv);
 }
 
 /**

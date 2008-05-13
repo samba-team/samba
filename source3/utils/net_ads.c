@@ -647,7 +647,7 @@ int net_ads_user(struct net_context *c, int argc, const char **argv)
 
 static int net_ads_group_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_group(c, argc, argv);
+	return net_group_usage(c, argc, argv);
 }
 
 static int ads_group_add(struct net_context *c, int argc, const char **argv)
