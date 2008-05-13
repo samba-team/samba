@@ -563,18 +563,6 @@ done:
 	return nt_status;
 }
 
-static int net_user(struct net_context *c, int argc, const char **argv)
-{
-	if (net_ads_check(c) == 0)
-		return net_ads_user(c, argc, argv);
-
-	/* if server is not specified, default to PDC? */
-	if (net_rpc_check(c, NET_FLAGS_PDC))
-		return net_rpc_user(c, argc, argv);
-
-	return net_rap_user(c, argc, argv);
-}
-
 static int net_group(struct net_context *c, int argc, const char **argv)
 {
 	if (net_ads_check(c) == 0)

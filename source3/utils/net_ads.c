@@ -434,7 +434,7 @@ static bool usergrp_display(ADS_STRUCT *ads, char *field, void **values, void *d
 
 static int net_ads_user_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_user(c, argc, argv);
+	return net_user_usage(c, argc, argv);
 }
 
 static int ads_user_add(struct net_context *c, int argc, const char **argv)

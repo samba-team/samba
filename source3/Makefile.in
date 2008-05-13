@@ -880,7 +880,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   utils/netlookup.o utils/net_sam.o utils/net_rpc_shell.o \
 	   utils/net_util.o utils/net_rpc_sh_acct.o utils/net_rpc_audit.o \
 	   $(PASSWD_UTIL_OBJ) utils/net_dns.o utils/net_ads_gpo.o \
-	   utils/net_conf.o utils/net_join.o\
+	   utils/net_conf.o utils/net_join.o utils/net_user.o \
 	   utils/net_registry.o \
 	   auth/token_util.o utils/net_dom.o
 

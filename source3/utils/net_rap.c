@@ -638,7 +638,7 @@ int net_rap_printq(struct net_context *c, int argc, const char **argv)
 
 static int net_rap_user_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_user(c, argc, argv);
+	return net_user_usage(c, argc, argv);
 }
 
 static void user_fn(const char *user_name, void *state)

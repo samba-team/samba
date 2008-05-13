@@ -571,7 +571,7 @@ int net_rpc_getsid(struct net_context *c, int argc, const char **argv)
 
 static int rpc_user_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_user(c, argc, argv);
+	return net_user_usage(c, argc, argv);
 }
 
 /**
