@@ -272,7 +272,7 @@ wbcErr wbcResolveWinsByIP(const char *ip, char **name)
 /**
  */
 
-static wbcErr process_domain_info_string(TALLOC_CTX *ctx, 
+static wbcErr process_domain_info_string(TALLOC_CTX *ctx,
 					 struct wbcDomainInfo *info,
 					 char *info_string)
 {
@@ -437,7 +437,7 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 	p = (char *)response.extra_data.data;
 
 	if (strlen(p) == 0) {
-		/* We should always at least get back our 
+		/* We should always at least get back our
 		   own SAM domain */
 		
 		wbc_status = WBC_ERR_DOMAIN_NOT_FOUND;
@@ -488,6 +488,64 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 			talloc_free(d_list);
 		if (extra_data)
 			free(extra_data);
+	}
+
+	return wbc_status;
+}
+
+/** @brief Enumerate the domain trusts known by Winbind
+ *
+ * @param domain        Name of the domain to query for a DC
+ * @flags               Bit flags used to control the domain location query
+ * @param *dc_info      Pointer to the returned domain controller information
+ *
+ * @return #wbcErr
+ *
+ **/
+
+
+
+wbcErr wbcLookupDomainController(const char *domain,
+				 uint32_t flags,
+				struct wbcDomainControllerInfo **dc_info)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct winbindd_request request;
+	struct winbindd_response response;
+	struct wbcDomainControllerInfo *dc = NULL;
+
+	/* validate input params */
+
+	if (!domain || !dc_info) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	strncpy(request.domain_name, domain, sizeof(request.domain_name)-1);
+
+	request.flags = flags;
+
+	dc = talloc(NULL, struct wbcDomainControllerInfo);
+	BAIL_ON_PTR_ERROR(dc, wbc_status);
+
+	/* Send request */
+
+	wbc_status = wbcRequestResponse(WINBINDD_DSGETDCNAME,
+					&request,
+					&response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	dc->dc_name = talloc_strdup(dc, response.data.dc_name);
+	BAIL_ON_PTR_ERROR(dc->dc_name, wbc_status);
+
+	*dc_info = dc;
+
+done:
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		talloc_free(dc);
 	}
 
 	return wbc_status;
