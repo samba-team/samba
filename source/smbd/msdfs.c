@@ -165,13 +165,13 @@ static NTSTATUS parse_dfs_path(const char *pathname,
 
 	pdp->servicename = servicename;
 
+	DEBUG(10,("parse_dfs_path: servicename: %s\n",pdp->servicename));
+
 	if(p == NULL) {
 		/* Client sent self referral \server\share. */
 		pdp->reqpath = eos_ptr; /* "" */
 		return NT_STATUS_OK;
 	}
-
-	DEBUG(10,("parse_dfs_path: servicename: %s\n",pdp->servicename));
 
 	p++;
 
