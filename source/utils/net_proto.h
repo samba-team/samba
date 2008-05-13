@@ -49,44 +49,7 @@ int net_run_function(struct net_context *c, int argc, const char **argv,
 				     int argc, const char **argv));
 int net_run_function2(struct net_context *c, int argc, const char **argv,
 		      const char *whoami, struct functable2 *table);
-NTSTATUS connect_to_service(struct net_context *c,
-					struct cli_state **cli_ctx,
-					struct sockaddr_storage *server_ss,
-					const char *server_name,
-					const char *service_name,
-					const char *service_type);
-NTSTATUS connect_to_ipc(struct net_context *c,
-			struct cli_state **cli_ctx,
-			struct sockaddr_storage *server_ss,
-			const char *server_name);
-NTSTATUS connect_to_ipc_anonymous(struct net_context *c,
-				struct cli_state **cli_ctx,
-				struct sockaddr_storage *server_ss,
-				const char *server_name);
-NTSTATUS connect_to_ipc_krb5(struct net_context *c,
-			struct cli_state **cli_ctx,
-			struct sockaddr_storage *server_ss,
-			const char *server_name);
-NTSTATUS connect_dst_pipe(struct net_context *c, struct cli_state **cli_dst,
-			  struct rpc_pipe_client **pp_pipe_hnd, int pipe_num);
-int net_use_krb_machine_account(struct net_context *c);
-int net_use_machine_account(struct net_context *c);
-bool net_find_server(struct net_context *c,
-			const char *domain,
-			unsigned flags,
-			struct sockaddr_storage *server_ss,
-			char **server_name);
-bool net_find_pdc(struct sockaddr_storage *server_ss,
-		fstring server_name,
-		const char *domain_name);
-NTSTATUS net_make_ipc_connection(struct net_context *c, unsigned flags,
-				 struct cli_state **pcli);
-NTSTATUS net_make_ipc_connection_ex(struct net_context *c ,const char *domain,
-				    const char *server,
-				    struct sockaddr_storage *pss,
-				    unsigned flags, struct cli_state **pcli);
 int net_help_afs(struct net_context *c, int argc, const char **argv);
-const char *net_prompt_pass(struct net_context *c, const char *user);
 
 /* The following definitions come from utils/net_ads.c  */
 
@@ -469,6 +432,43 @@ NTSTATUS net_rpc_lookup_name(struct net_context *c,
 			     const char *name, const char **ret_domain,
 			     const char **ret_name, DOM_SID *ret_sid,
 			     enum lsa_SidType *ret_type);
+NTSTATUS connect_to_service(struct net_context *c,
+					struct cli_state **cli_ctx,
+					struct sockaddr_storage *server_ss,
+					const char *server_name,
+					const char *service_name,
+					const char *service_type);
+NTSTATUS connect_to_ipc(struct net_context *c,
+			struct cli_state **cli_ctx,
+			struct sockaddr_storage *server_ss,
+			const char *server_name);
+NTSTATUS connect_to_ipc_anonymous(struct net_context *c,
+				struct cli_state **cli_ctx,
+				struct sockaddr_storage *server_ss,
+				const char *server_name);
+NTSTATUS connect_to_ipc_krb5(struct net_context *c,
+			struct cli_state **cli_ctx,
+			struct sockaddr_storage *server_ss,
+			const char *server_name);
+NTSTATUS connect_dst_pipe(struct net_context *c, struct cli_state **cli_dst,
+			  struct rpc_pipe_client **pp_pipe_hnd, int pipe_num);
+int net_use_krb_machine_account(struct net_context *c);
+int net_use_machine_account(struct net_context *c);
+bool net_find_server(struct net_context *c,
+			const char *domain,
+			unsigned flags,
+			struct sockaddr_storage *server_ss,
+			char **server_name);
+bool net_find_pdc(struct sockaddr_storage *server_ss,
+		fstring server_name,
+		const char *domain_name);
+NTSTATUS net_make_ipc_connection(struct net_context *c, unsigned flags,
+				 struct cli_state **pcli);
+NTSTATUS net_make_ipc_connection_ex(struct net_context *c ,const char *domain,
+				    const char *server,
+				    struct sockaddr_storage *pss,
+				    unsigned flags, struct cli_state **pcli);
+const char *net_prompt_pass(struct net_context *c, const char *user);
 
 /* The following definitions come from utils/netlookup.c  */
 
