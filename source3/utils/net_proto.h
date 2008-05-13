@@ -147,7 +147,6 @@ int net_groupmap(struct net_context *c, int argc, const char **argv);
 
 int net_help_user(struct net_context *c, int argc, const char **argv);
 int net_help_group(struct net_context *c, int argc, const char **argv);
-int net_help_join(struct net_context *c, int argc, const char **argv);
 int net_help_share(struct net_context *c, int argc, const char **argv);
 int net_help_file(struct net_context *c, int argc, const char **argv);
 int net_help_printer(struct net_context *c, int argc, const char **argv);
@@ -161,6 +160,11 @@ bool idmap_store_secret(const char *backend, bool alloc,
 			const char *secret);
 int net_help_idmap(struct net_context *c, int argc, const char **argv);
 int net_idmap(struct net_context *c, int argc, const char **argv);
+
+/* The following definitions come from utils/net_join.c  */
+
+int net_join_usage(struct net_context *c, int argc, const char **argv);
+int net_join(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_lookup.c  */
 

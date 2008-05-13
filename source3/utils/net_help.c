@@ -77,17 +77,6 @@ int net_help_group(struct net_context *c, int argc, const char **argv)
 	return -1;
 }
 
-int net_help_join(struct net_context *c, int argc, const char **argv)
-{
-	d_printf("\nnet [<method>] join [misc. options]\n"
-		 "\tjoins this server to a domain\n");
-	d_printf("Valid methods: (auto-detected if not specified)\n");
-	d_printf("\tads\t\t\t\tActive Directory (LDAP/Kerberos)\n");
-	d_printf("\trpc\t\t\t\tDCE-RPC\n");
-	net_common_flags_usage(c, argc, argv);
-	return -1;
-}
-
 int net_help_share(struct net_context *c, int argc, const char **argv)
 {
 	d_printf(
@@ -234,7 +223,7 @@ int net_help(struct net_context *c, int argc, const char **argv)
 		{"USER", net_help_user},
 		{"GROUP", net_help_group},
 		{"GROUPMAP", net_help_groupmap},
-		{"JOIN", net_help_join},
+		{"JOIN", net_join_usage},
 		{"DOM", net_help_dom},
 		{"VALIDATE", net_rap_validate_usage},
 		{"GROUPMEMBER", net_rap_groupmember_usage},
