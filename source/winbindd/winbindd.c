@@ -795,6 +795,27 @@ static bool remove_idle_client(void)
 	return False;
 }
 
+/* check if HUP has been received and reload files */
+void winbind_check_sighup(void)
+{
+	if (do_sighup) {
+
+		DEBUG(3, ("got SIGHUP\n"));
+
+		flush_caches();
+		reload_services_file();
+
+		do_sighup = False;
+	}
+}
+
+/* check if TERM has been received */
+void winbind_check_sigterm(void)
+{
+	if (do_sigterm)
+		terminate();
+}
+
 /* Process incoming clients on listen_sock.  We use a tricky non-blocking,
    non-forking, non-threaded model which allows us to handle many
    simultaneous connections while remaining impervious to many denial of
@@ -954,18 +975,8 @@ static void process_loop(void)
 
 	/* Check signal handling things */
 
-	if (do_sigterm)
-		terminate();
-
-	if (do_sighup) {
-
-		DEBUG(3, ("got SIGHUP\n"));
-
-		flush_caches();
-		reload_services_file();
-
-		do_sighup = False;
-	}
+	winbind_check_sigterm();
+	winbind_check_sighup();
 
 	if (do_sigusr2) {
 		print_winbindd_status();
