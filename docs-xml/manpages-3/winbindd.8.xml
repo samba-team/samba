@@ -470,7 +470,7 @@ auth  required    /lib/security/pam_unix.so \
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 3.0 of
+	<para>This man page is correct for version 3 of
         the Samba suite.</para>
 </refsect1>
 
