@@ -1014,6 +1014,10 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		lp_TALLOC_FREE();
 		main_loop_TALLOC_FREE();
 
+		/* check for signals */
+		winbind_check_sigterm();
+		winbind_check_sighup();
+
 		run_events(winbind_event_context(), 0, NULL, NULL);
 
 		GetTimeOfDay(&now);
