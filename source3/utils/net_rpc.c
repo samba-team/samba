@@ -4968,7 +4968,7 @@ struct rpc_sh_cmd *net_rpc_share_cmds(struct net_context *c, TALLOC_CTX *mem_ctx
 
 static int rpc_file_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_file(c, argc, argv);
+	return net_file_usage(c, argc, argv);
 }
 
 /**
