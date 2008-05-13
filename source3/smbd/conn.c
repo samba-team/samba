@@ -63,10 +63,10 @@ bool conn_snum_used(int snum)
 	return(False);
 }
 
-
 /****************************************************************************
-find a conn given a cnum
+ Find a conn given a cnum.
 ****************************************************************************/
+
 connection_struct *conn_find(unsigned cnum)
 {
 	int count=0;
@@ -74,6 +74,27 @@ connection_struct *conn_find(unsigned cnum)
 
 	for (conn=Connections;conn;conn=conn->next,count++) {
 		if (conn->cnum == cnum) {
+			if (count > 10) {
+				DLIST_PROMOTE(Connections, conn);
+			}
+			return conn;
+		}
+	}
+
+	return NULL;
+}
+
+/****************************************************************************
+ Find a conn given a service name.
+****************************************************************************/
+
+connection_struct *conn_find_byname(const char *service)
+{
+	int count=0;
+	connection_struct *conn;
+
+	for (conn=Connections;conn;conn=conn->next,count++) {
+		if (strequal(lp_servicename(SNUM(conn)),service)) {
 			if (count > 10) {
 				DLIST_PROMOTE(Connections, conn);
 			}
