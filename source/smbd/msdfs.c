@@ -49,6 +49,7 @@ static NTSTATUS parse_dfs_path(const char *pathname,
 {
 	char *pathname_local;
 	char *p,*temp;
+	char *servicename;
 	char *eos_ptr;
 	NTSTATUS status = NT_STATUS_OK;
 	char sepchar;
@@ -128,25 +129,48 @@ static NTSTATUS parse_dfs_path(const char *pathname,
 	DEBUG(10,("parse_dfs_path: hostname: %s\n",pdp->hostname));
 
 	/* Parse out servicename. */
-	temp = p+1;
-	p = strchr_m(temp,sepchar);
-	if(p == NULL) {
-		pdp->servicename = temp;
-		pdp->reqpath = eos_ptr; /* "" */
-		/* Is this really our servicename ? */
-		if (NULL == conn_find_byname(pdp->servicename)) {
-			DEBUG(10,("parse_dfs_path: %s is not our servicename\n",
-				pdp->servicename));
-			p = temp;
-			DEBUG(10,("parse_dfs_path: trying to convert %s "
-				"to a local path\n",
-				temp));
-			goto local_path;
+	servicename = p+1;
+	p = strchr_m(servicename,sepchar);
+	if (p) {
+		*p = '\0';
+	}
+
+	/* Is this really our servicename ? */
+	if (NULL == conn_find_byname(servicename)) {
+		DEBUG(10,("parse_dfs_path: %s is not our servicename\n",
+			servicename));
+
+		/*
+		 * Possibly client sent a local path by mistake.
+		 * Try and convert to a local path.
+		 */
+
+		pdp->hostname = eos_ptr; /* "" */
+		pdp->servicename = eos_ptr; /* "" */
+
+		/* Repair the path - replace the sepchar's
+		   we nulled out */
+		servicename--;
+		*servicename = sepchar;
+		if (p) {
+			*p = sepchar;
 		}
+
+		p = temp;
+		DEBUG(10,("parse_dfs_path: trying to convert %s "
+			"to a local path\n",
+			temp));
+		goto local_path;
+	}
+
+	pdp->servicename = servicename;
+
+	if(p == NULL) {
+		/* Client sent self referral \server\share. */
+		pdp->reqpath = eos_ptr; /* "" */
 		return NT_STATUS_OK;
 	}
-	*p = '\0';
-	pdp->servicename = temp;
+
 	DEBUG(10,("parse_dfs_path: servicename: %s\n",pdp->servicename));
 
 	p++;
