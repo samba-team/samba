@@ -52,7 +52,9 @@ posix_s3() {
 	echo "RUNNING TESTS posix_s3"
 	eval "$LIB_PATH_VAR="\$SAMBA4SHAREDDIR:\$$LIB_PATH_VAR"; export $LIB_PATH_VAR"
 	eval echo "$LIB_PATH_VAR=\$$LIB_PATH_VAR"
-	SMBTORTURE4VERSION=`$SMBTORTURE4 --version`
+	if [ -x "$SMBTORTURE4" ]; then
+		SMBTORTURE4VERSION=`$SMBTORTURE4 --version`
+	fi
 	if [ -n "$SMBTORTURE4" -a -n "$SMBTORTURE4VERSION" ];then
 		echo "Running Tests with Samba4's smbtorture"
 		echo $SMBTORTURE4VERSION
@@ -61,6 +63,7 @@ posix_s3() {
 		|| failed=`expr $failed + $?`
 	else
 		echo "Skip Tests with Samba4's smbtorture"
+		echo "Try to compile with --with-smbtorture4-path=PATH to enable"
 	fi
 }
 
