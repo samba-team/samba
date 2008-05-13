@@ -133,6 +133,16 @@ static NTSTATUS parse_dfs_path(const char *pathname,
 	if(p == NULL) {
 		pdp->servicename = temp;
 		pdp->reqpath = eos_ptr; /* "" */
+		/* Is this really our servicename ? */
+		if (NULL == conn_find_byname(pdp->servicename)) {
+			DEBUG(10,("parse_dfs_path: %s is not our servicename\n",
+				pdp->servicename));
+			p = temp;
+			DEBUG(10,("parse_dfs_path: trying to convert %s "
+				"to a local path\n",
+				temp));
+			goto local_path;
+		}
 		return NT_STATUS_OK;
 	}
 	*p = '\0';
