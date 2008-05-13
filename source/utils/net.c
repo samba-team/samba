@@ -586,17 +586,6 @@ static int net_group(struct net_context *c, int argc, const char **argv)
 	return net_rap_group(c, argc, argv);
 }
 
-static int net_join(struct net_context *c, int argc, const char **argv)
-{
-	if (net_ads_check_our_domain(c) == 0) {
-		if (net_ads_join(c, argc, argv) == 0)
-			return 0;
-		else
-			d_fprintf(stderr, "ADS join did not work, falling back to RPC...\n");
-	}
-	return net_rpc_join(c, argc, argv);
-}
-
 static int net_changetrustpw(struct net_context *c, int argc, const char **argv)
 {
 	if (net_ads_check_our_domain(c) == 0)
