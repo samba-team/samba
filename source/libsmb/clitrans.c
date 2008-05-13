@@ -112,6 +112,9 @@ bool cli_send_trans(struct cli_state *cli, int trans,
 			this_lparam = MIN(lparam-tot_param,cli->max_xmit - 500); /* hack */
 			this_ldata = MIN(ldata-tot_data,cli->max_xmit - (500+this_lparam));
 
+			client_set_trans_sign_state_off(cli, mid);
+			client_set_trans_sign_state_on(cli, mid);
+
 			cli_set_message(cli->outbuf,trans==SMBtrans?8:9,0,True);
 			SCVAL(cli->outbuf,smb_com,(trans==SMBtrans ? SMBtranss : SMBtranss2));
 
