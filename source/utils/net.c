@@ -563,17 +563,6 @@ done:
 	return nt_status;
 }
 
-static int net_group(struct net_context *c, int argc, const char **argv)
-{
-	if (net_ads_check(c) == 0)
-		return net_ads_group(c, argc, argv);
-
-	if (argc == 0 && net_rpc_check(c, NET_FLAGS_PDC))
-		return net_rpc_group(c,argc, argv);
-
-	return net_rap_group(c, argc, argv);
-}
-
 static int net_changetrustpw(struct net_context *c, int argc, const char **argv)
 {
 	if (net_ads_check_our_domain(c) == 0)
