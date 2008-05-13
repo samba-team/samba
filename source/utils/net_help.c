@@ -33,28 +33,6 @@ static int help_usage(struct net_context *c, int argc, const char **argv)
 	return -1;
 }
 
-int net_help_user(struct net_context *c, int argc, const char **argv)
-{
-	d_printf("\nnet [<method>] user [misc. options] [targets]"\
-		 "\n\tList users\n\n");
-	d_printf("net [<method>] user DELETE <name> [misc. options] [targets]"\
-		 "\n\tDelete specified user\n");
-	d_printf("\nnet [<method>] user INFO <name> [misc. options] [targets]"\
-		 "\n\tList the domain groups of the specified user\n");
-	d_printf("\nnet [<method>] user ADD <name> [password] [-c container] "\
-		 "[-F user flags] [misc. options]"\
-		 " [targets]\n\tAdd specified user\n");
-	d_printf("\nnet [<method>] user RENAME <oldusername> <newusername>"\
-		 " [targets]\n\tRename specified user\n\n");
-
-
-	net_common_methods_usage(c, argc, argv);
-	net_common_flags_usage(c, argc, argv);
-	d_printf("\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
-	d_printf("\t-c or --container=<container>\tLDAP container, defaults to cn=Users (for add in ADS only)\n");
-	return -1;
-}
-
 int net_help_group(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("net [<method>] group [misc. options] [targets]"\
@@ -220,7 +198,7 @@ int net_help(struct net_context *c, int argc, const char **argv)
 		{"SERVER", net_rap_server_usage},
 		{"DOMAIN", net_rap_domain_usage},
 		{"PRINTQ", net_rap_printq_usage},
-		{"USER", net_help_user},
+		{"USER", net_user_usage},
 		{"GROUP", net_help_group},
 		{"GROUPMAP", net_help_groupmap},
 		{"JOIN", net_join_usage},
