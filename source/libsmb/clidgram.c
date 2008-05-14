@@ -274,11 +274,16 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 
 	switch (*nt_version) {
 		case 1:
+		case 16:
+		case 17:
+
 			returned_domain = r.logon1.domain_name;
 			returned_dc = r.logon1.pdc_name;
 			break;
 		case 2:
 		case 3:
+		case 18:
+		case 19:
 			returned_domain = r.logon3.domain_name;
 			returned_dc = r.logon3.pdc_name;
 			break;
@@ -300,10 +305,26 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 			returned_domain = r.logon13.domain;
 			returned_dc = r.logon13.pdc_name;
 			break;
-		default:
+		case 20:
+		case 21:
+		case 22:
+		case 23:
+		case 24:
+		case 25:
+		case 26:
+		case 27:
+		case 28:
+			returned_domain = r.logon15.domain;
+			returned_dc = r.logon15.pdc_name;
+			break;
+		case 29:
+		case 30:
+		case 31:
 			returned_domain = r.logon29.domain;
 			returned_dc = r.logon29.pdc_name;
 			break;
+		default:
+			return false;
 	}
 
 	if (!strequal(returned_domain, domain_name)) {
