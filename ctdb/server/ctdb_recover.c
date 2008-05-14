@@ -180,7 +180,9 @@ ctdb_reload_nodes_event(struct event_context *ev, struct timed_event *te,
 	int ctdb_tcp_init(struct ctdb_context *);
 
 	/* shut down the transport */
-	ctdb->methods->shutdown(ctdb);
+	if (ctdb->methods != NULL) {
+		ctdb->methods->shutdown(ctdb);
+	}
 
 	/* start the transport again */
 	ctdb_load_nodes_file(ctdb);
@@ -188,6 +190,11 @@ ctdb_reload_nodes_event(struct event_context *ev, struct timed_event *te,
 	if (ret != 0) {
 		DEBUG(DEBUG_CRIT, (__location__ " Failed to init TCP\n"));
 		exit(1);
+	}
+
+	if (ctdb->methods == NULL) {
+		DEBUG(DEBUG_ALERT,(__location__ " Can not restart transport. ctdb->methods==NULL\n"));
+		ctdb_fatal(ctdb, "can not reinitialize transport.");
 	}
 	ctdb->methods->initialise(ctdb);
 	ctdb->methods->start(ctdb);

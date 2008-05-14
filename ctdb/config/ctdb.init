@@ -85,6 +85,19 @@ fi
 start() {
         killall -q ctdbd
 	echo -n $"Starting ctdbd service: "
+
+	# check all persistent databases that they look ok
+	PERSISTENT_DB_DIR="/var/ctdb/persistent"
+	[ -z "$CTDB_DBDIR" ] || {
+		PERSISTENT_DB_DIR="$CTDB_DBDIR/persistent"
+	}
+	for PDBASE in `ls $PERSISTENT_DB_DIR/*.tdb.[0-9]`; do
+		/usr/bin/tdbdump $PDBASE >/dev/null 2>/dev/null || {
+			echo "Persistent database $PDBASE is corrupted! CTDB will not start."
+			return 1
+		}
+	done
+
 	case $init_style in
 	    suse)
 		startproc /usr/sbin/ctdbd $CTDB_OPTIONS

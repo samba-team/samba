@@ -345,6 +345,11 @@ void ctdb_node_dead(struct ctdb_node *node)
 		 node->ctdb->name, node->name, node->ctdb->num_connected));
 	ctdb_daemon_cancel_controls(node->ctdb, node);
 
+	if (node->ctdb->methods == NULL) {
+		DEBUG(DEBUG_ALERT,(__location__ " Can not restart transport. ctdb->methods==NULL\n"));
+		ctdb_fatal(node->ctdb, "can not restart transport.");
+	}
+
 	node->ctdb->methods->restart(node);
 }
 
@@ -484,6 +489,11 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	if (hdr->destnode == ctdb->pnn) {
 		ctdb_defer_packet(ctdb, hdr);
 	} else {
+		if (ctdb->methods == NULL) {
+			DEBUG(DEBUG_ALERT, (__location__ " Can not queue packet. Transport is DOWN\n"));
+			return;
+		}
+
 		node->tx_cnt++;
 		if (ctdb->methods->queue_pkt(node, (uint8_t *)hdr, hdr->length) != 0) {
 			ctdb_fatal(ctdb, "Unable to queue packet\n");

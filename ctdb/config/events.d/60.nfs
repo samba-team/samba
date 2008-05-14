@@ -96,7 +96,7 @@ case $cmd in
 	ctdb_check_rpc "NFS" 100003 3
 
 	# and that its directories are available
-	nfs_dirs=$(exportfs | grep -v '^#' | awk {'print $1;'})
+	nfs_dirs=$(exportfs | grep -v '^#' | grep '^/' | awk {'print $1;'})
 	ctdb_check_directories "nfs" $nfs_dirs
 
 	# check that lockd responds to rpc requests

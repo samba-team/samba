@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 36
+Release: 37
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,15 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Mon May 12 2008 : Version 1.0.37
+ - When we shutdown ctdb we close the transport down before we run the 
+   "shutdown" eventscripts. If ctdb decides to send a packet to a remote node
+   after we have shutdown the transport but before we have shutdown ctdbd
+   itself this could lead to a SEGV instead of a clean shutdown. Fix.
+ - When using the "exportfs" command to extract which NFS export directories
+   to monitor,  exportfs violates the "principle of least surprise" and
+   sometimes report a single export line as two lines of text output
+   causing the monitoring to fail.
 * Fri May 9 2008 : Version 1.0.36
  - fix a memory corruption bug that could cause the recovery daemon to crash.
  - fix a bug with distributing public ip addresses during recovery.

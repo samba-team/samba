@@ -206,10 +206,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_DB_ATTACH:
-		return ctdb_control_db_attach(ctdb, indata, outdata, false);
+		return ctdb_control_db_attach(ctdb, indata, outdata, srvid, false);
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
-		return ctdb_control_db_attach(ctdb, indata, outdata, true);
+		return ctdb_control_db_attach(ctdb, indata, outdata, srvid, true);
 
 	case CTDB_CONTROL_SET_CALL: {
 		struct ctdb_control_set_call *sc = 
@@ -276,7 +276,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		ctdb_stop_keepalive(ctdb);
 		ctdb_stop_monitoring(ctdb);
 		ctdb_release_all_ips(ctdb);
-		ctdb->methods->shutdown(ctdb);
+		if (ctdb->methods != NULL) {
+			ctdb->methods->shutdown(ctdb);
+		}
 		ctdb_event_script(ctdb, "shutdown");
 		DEBUG(DEBUG_NOTICE,("Received SHUTDOWN command. Stopping CTDB daemon.\n"));
 		exit(0);
