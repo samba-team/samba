@@ -26,49 +26,18 @@ SRCDIR=`rpm --eval %_sourcedir`
 
 # At this point the SPECDIR and SRCDIR vaiables must have a value!
 
-USERID=`id -u`
-GRPID=`id -g`
 VERSION='1.0'
 REVISION=''
 SPECFILE="ctdb.spec"
-RPMVER=`rpm --version | awk '{print $3}'`
 RPMBUILD="rpmbuild"
 
-##
-## Check the RPM version (paranoid)
-##
-case $RPMVER in
-    4*)
-       echo "Supported RPM version [$RPMVER]"
-       ;;
-    *)
-       echo "Unknown RPM version: `rpm --version`"
-       exit 1
-       ;;
-esac
-
-if [ -f Makefile ]; then 
-	make distclean
-fi
-
-pushd .
-BASEDIR=`basename $PWD`
-cd ..
-chown -R ${USERID}.${GRPID} $BASEDIR
-rm -f ctdb-${VERSION}
-ln -s $BASEDIR ctdb-${VERSION} || exit 1
-REMOVE_LN=$PWD/ctdb-$VERSION
-
 echo -n "Creating ctdb-${VERSION}.tar.gz ... "
-tar --exclude=.bzr --exclude=.git --exclude .bzrignore --exclude="*~" --exclude=configure --exclude="test.db*" --exclude="#*" --exclude="push*.sh" --exclude="publish*.sh" -cf - ctdb-${VERSION}/. | gzip -9 --rsyncable > ${SRCDIR}/ctdb-${VERSION}.tar.gz
+git archive --prefix=ctdb-${VERSION}/ HEAD | gzip -9 --rsyncable > ${SRCDIR}/ctdb-${VERSION}.tar.gz
 echo "Done."
 if [ $? -ne 0 ]; then
         echo "Build failed!"
-	[ ${REMOVE_LN} ] && rm $REMOVE_LN
         exit 1
 fi
-
-popd
 
 
 ##
@@ -84,6 +53,5 @@ cd ${SPECDIR}
 ${RPMBUILD} -ba --clean --rmsource $EXTRA_OPTIONS $SPECFILE || exit 1
 
 echo "$(basename $0): Done."
-[ ${REMOVE_LN} ] && /bin/rm -f $REMOVE_LN
 
 exit 0

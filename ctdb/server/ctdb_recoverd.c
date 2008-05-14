@@ -247,7 +247,8 @@ static int run_startrecovery_eventscript(struct ctdb_context *ctdb, struct ctdb_
 static void async_getcap_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata)
 {
 	if ( (outdata.dsize != sizeof(uint32_t)) || (outdata.dptr == NULL) ) {
-		DEBUG(DEBUG_ERR, (__location__ " Invalid lenght/pointer for getcap callback : %d %p\n", outdata.dsize, outdata.dptr));
+		DEBUG(DEBUG_ERR, (__location__ " Invalid lenght/pointer for getcap callback : %u %p\n", 
+				  (unsigned)outdata.dsize, outdata.dptr));
 		return;
 	}
 	ctdb->nodes[node_pnn]->capabilities = *((uint32_t *)outdata.dptr);
@@ -1451,6 +1452,15 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated flags\n"));
 
+	/* disable recovery mode */
+	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_NORMAL);
+	if (ret!=0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to normal on cluster\n"));
+		return -1;
+	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - disabled recovery mode\n"));
+
 	/*
 	  tell nodes to takeover their public IPs
 	 */
@@ -1470,15 +1480,6 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	}
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - finished the recovered event\n"));
-
-	/* disable recovery mode */
-	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_NORMAL);
-	if (ret!=0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to normal on cluster\n"));
-		return -1;
-	}
-
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - disabled recovery mode\n"));
 
 	/* send a message to all clients telling them that the cluster 
 	   has been reconfigured */

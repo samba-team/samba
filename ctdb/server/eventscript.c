@@ -52,13 +52,30 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 {
 	char *options, *cmdstr;
 	int ret;
-	va_list ap2;
 	struct stat st;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	trbt_tree_t *tree;
 	DIR *dir;
 	struct dirent *de;
 	char *script;
+
+	options  = talloc_vasprintf(tmp_ctx, fmt, ap);
+	CTDB_NO_MEMORY(ctdb, options);
+
+	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
+		/* we guarantee that only some specifically allowed event scripts are run
+		   while in recovery */
+		const char *allowed_scripts[] = {"startrecovery", "shutdown" };
+		int i;
+		for (i=0;i<ARRAY_SIZE(allowed_scripts);i++) {
+			if (strcmp(options, allowed_scripts[i]) == 0) break;
+		}
+		if (i == ARRAY_SIZE(allowed_scripts)) {
+			DEBUG(0,("Refusing to run event scripts with option '%s' while in recovery\n",
+				 options));
+			return -1;
+		}
+	}
 
 	if (setpgid(0,0) != 0) {
 		DEBUG(DEBUG_ERR,("Failed to create process group for event scripts - %s\n",
@@ -146,11 +163,6 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 	   them
 	 */
 	while ((script=trbt_findfirstarray32(tree, 1)) != NULL) {
-		va_copy(ap2, ap);
-		options  = talloc_vasprintf(tmp_ctx, fmt, ap2);
-		va_end(ap2);
-		CTDB_NO_MEMORY(ctdb, options);
-
 		cmdstr = talloc_asprintf(tmp_ctx, "%s/%s %s", 
 				ctdb->event_script_dir,
 				script, options);
