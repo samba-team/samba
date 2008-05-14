@@ -28,7 +28,6 @@
 #include "events_util.h"
 #endif
 #include "system/filesys.h"
-#include "system/network.h"
 #include "events.h"
 #include "events_internal.h"
 #include <sys/epoll.h>
