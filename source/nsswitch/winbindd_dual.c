@@ -897,9 +897,6 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	ZERO_STRUCT(state);
 	state.pid = sys_getpid();
 
-	/* Stop zombies */
-	CatchChild();
-
 	/* Ensure we don't process messages whilst we're
 	   changing the disposition for the child. */
 	message_block();
@@ -927,6 +924,9 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	}
 
 	/* Child */
+
+	/* Stop zombies in children */
+	CatchChild();
 
 	state.sock = fdpair[0];
 	close(fdpair[1]);
