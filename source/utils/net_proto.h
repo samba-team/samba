@@ -49,7 +49,6 @@ int net_run_function(struct net_context *c, int argc, const char **argv,
 				     int argc, const char **argv));
 int net_run_function2(struct net_context *c, int argc, const char **argv,
 		      const char *whoami, struct functable2 *table);
-int net_help_afs(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_ads.c  */
 

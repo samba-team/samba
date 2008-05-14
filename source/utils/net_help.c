@@ -174,7 +174,7 @@ int net_help(struct net_context *c, int argc, const char **argv)
 		{"USERSHARE", net_usershare_usage},
 		{"USERSIDLIST", net_usersidlist_usage},
 #ifdef WITH_FAKE_KASERVER
-		{"AFS", net_help_afs},
+		{"AFS", net_afs_usage},
 #endif
 
 		{"HELP", help_usage},
