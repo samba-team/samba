@@ -80,7 +80,6 @@ extern userdom_struct current_user_info;
 
 static bool in_client = False;		/* Not in the client by default */
 static struct smbconf_csn conf_last_csn;
-static struct smbconf_ctx *conf_ctx = NULL;
 
 #define CONFIG_BACKEND_FILE 0
 #define CONFIG_BACKEND_REGISTRY 1
@@ -6491,6 +6490,23 @@ bool service_ok(int iService)
 	return (bRetval);
 }
 
+static struct smbconf_ctx *lp_smbconf_ctx(void)
+{
+	WERROR werr;
+	static struct smbconf_ctx *conf_ctx = NULL;
+
+	if (conf_ctx == NULL) {
+		werr = smbconf_init(NULL, &conf_ctx, "registry:");
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(1, ("error initializing registry configuration: "
+				  "%s\n", dos_errstr(werr)));
+			conf_ctx = NULL;
+		}
+	}
+
+	return conf_ctx;
+}
+
 /*
  * process_registry_globals
  */
@@ -6500,14 +6516,11 @@ static bool process_registry_globals(void)
 	struct smbconf_service *service = NULL;
 	uint32_t count;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	struct smbconf_ctx *conf_ctx = lp_smbconf_ctx();
 	bool ret = false;
 
 	if (conf_ctx == NULL) {
-		/* first time */
-		werr = smbconf_init(NULL, &conf_ctx, "registry:");
-		if (!W_ERROR_IS_OK(werr)) {
-			goto done;
-		}
+		goto done;
 	}
 
 	if (!smbconf_share_exists(conf_ctx, GLOBAL_NAME)) {
@@ -6613,14 +6626,10 @@ bool lp_file_list_changed(void)
  	DEBUG(6, ("lp_file_list_changed()\n"));
 
 	if (lp_config_backend_is_registry()) {
+		struct smbconf_ctx *conf_ctx = lp_smbconf_ctx();
+
 		if (conf_ctx == NULL) {
-			WERROR werr;
-			werr = smbconf_init(NULL, &conf_ctx, "registry:");
-			if (!W_ERROR_IS_OK(werr)) {
-				DEBUG(0, ("error opening configuration: %s\n",
-					  dos_errstr(werr)));
-				return false;
-			}
+			return false;
 		}
 		if (smbconf_changed(conf_ctx, &conf_last_csn, NULL, NULL)) {
 			DEBUGADD(6, ("registry config changed\n"));
