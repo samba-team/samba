@@ -117,7 +117,6 @@ int net_groupmap(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_help.c  */
 
-int net_help_printer(struct net_context *c, int argc, const char **argv);
 int net_help_status(struct net_context *c, int argc, const char **argv);
 int net_help(struct net_context *c, int argc, const char **argv);
 

@@ -33,38 +33,6 @@ static int help_usage(struct net_context *c, int argc, const char **argv)
 	return -1;
 }
 
-int net_help_printer(struct net_context *c, int argc, const char **argv)
-{
-	d_printf("net rpc printer LIST [printer] [misc. options] [targets]\n"\
-		 "\tlists all printers on print-server\n\n");
-	d_printf("net rpc printer DRIVER [printer] [misc. options] [targets]\n"\
-		 "\tlists all printer-drivers on print-server\n\n");
-	d_printf("net rpc printer PUBLISH action [printer] [misc. options] [targets]\n"\
-		 "\tpublishes printer settings in Active Directory\n"
-		 "\taction can be one of PUBLISH, UPDATE, UNPUBLISH or LIST\n\n");
-	d_printf("net rpc printer MIGRATE PRINTERS [printer] [misc. options] [targets]"\
-		 "\n\tmigrates printers from remote to local server\n\n");
-	d_printf("net rpc printer MIGRATE SETTINGS [printer] [misc. options] [targets]"\
-		 "\n\tmigrates printer-settings from remote to local server\n\n");
-	d_printf("net rpc printer MIGRATE DRIVERS [printer] [misc. options] [targets]"\
-		 "\n\tmigrates printer-drivers from remote to local server\n\n");
-	d_printf("net rpc printer MIGRATE FORMS [printer] [misc. options] [targets]"\
-		 "\n\tmigrates printer-forms from remote to local server\n\n");
-	d_printf("net rpc printer MIGRATE SECURITY [printer] [misc. options] [targets]"\
-		 "\n\tmigrates printer-ACLs from remote to local server\n\n");
-	d_printf("net rpc printer MIGRATE ALL [printer] [misc. options] [targets]"\
-		 "\n\tmigrates drivers, forms, queues, settings and acls from\n"\
-		 "\tremote to local print-server\n\n");
-	net_common_methods_usage(c, argc, argv);
-	net_common_flags_usage(c, argc, argv);
-	d_printf(
-	 "\t-v or --verbose\t\t\tgive verbose output\n"
-	 "\t      --destination\t\tmigration target server (default: localhost)\n");
-
-	return -1;
-}
-
-
 int net_help_status(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("  net status sessions [parseable] "
