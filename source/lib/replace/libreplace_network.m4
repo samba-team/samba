@@ -2,6 +2,10 @@ AC_DEFUN_ONCE(AC_LIBREPLACE_NETWORK_CHECKS,
 [
 echo "LIBREPLACE_NETWORK_CHECKS: START"
 
+AC_DEFINE(LIBREPLACE_NETWORK_CHECKS, 1, [LIBREPLACE_NETWORK_CHECKS were used])
+LIBREPLACE_NETWORK_OBJS=""
+LIBREPLACE_NETWORK_LIBS=""
+
 AC_CHECK_HEADERS(sys/socket.h netinet/in.h netdb.h arpa/inet.h)
 AC_CHECK_HEADERS(netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 
@@ -58,14 +62,246 @@ AC_CHECK_MEMBER(struct sockaddr_storage.__ss_family,
 fi
 fi
 
-m4_include(socket.m4)
-m4_include(inet_ntop.m4)
-m4_include(inet_pton.m4)
-m4_include(inet_aton.m4)
-m4_include(inet_ntoa.m4)
-m4_include(getaddrinfo.m4)
-m4_include(getifaddrs.m4)
-m4_include(socketpair.m4)
+dnl The following test is roughl taken from the cvs sources.
+dnl
+dnl If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
+dnl The Irix 5 libc.so has connect and gethostbyname, but Irix 5 also has
+dnl libsocket.so which has a bad implementation of gethostbyname (it
+dnl only looks in /etc/hosts), so we only look for -lsocket if we need
+dnl it.
+AC_CHECK_FUNCS(connect)
+if test x"$ac_cv_func_connect" = x"no"; then
+	AC_CHECK_LIB_EXT(nsl_s, LIBREPLACE_NETWORK_LIBS, connect)
+	AC_CHECK_LIB_EXT(nsl, LIBREPLACE_NETWORK_LIBS, connect)
+	AC_CHECK_LIB_EXT(socket, LIBREPLACE_NETWORK_LIBS, connect)
+	AC_CHECK_LIB_EXT(inet, LIBREPLACE_NETWORK_LIBS, connect)
+	dnl We can't just call AC_CHECK_FUNCS(connect) here,
+	dnl because the value has been cached.
+	if test x"$ac_cv_lib_ext_nsl_s_connect" = x"yes" ||
+		test x"$ac_cv_lib_ext_nsl_connect" = x"yes" ||
+		test x"$ac_cv_lib_ext_socket_connect" = x"yes" ||
+		test x"$ac_cv_lib_ext_inet_connect" = x"yes"
+	then
+		AC_DEFINE(HAVE_CONNECT,1,[Whether the system has connect()])
+	fi
+fi
+
+AC_CHECK_FUNCS(gethostbyname)
+if test x"$ac_cv_func_gethostbyname" = x"no"; then
+	AC_CHECK_LIB_EXT(nsl_s, LIBREPLACE_NETWORK_LIBS, gethostbyname)
+	AC_CHECK_LIB_EXT(nsl, LIBREPLACE_NETWORK_LIBS, gethostbyname)
+	AC_CHECK_LIB_EXT(socket, LIBREPLACE_NETWORK_LIBS, gethostbyname)
+	dnl We can't just call AC_CHECK_FUNCS(gethostbyname) here,
+	dnl because the value has been cached.
+	if test x"$ac_cv_lib_ext_nsl_s_gethostbyname" = x"yes" ||
+		test x"$ac_cv_lib_ext_nsl_gethostbyname" = x"yes" ||
+		test x"$ac_cv_lib_ext_socket_gethostbyname" = x"yes"
+	then
+		AC_DEFINE(HAVE_GETHOSTBYNAME,1,
+			  [Whether the system has gethostbyname()])
+	fi
+fi
+
+dnl HP-UX has if_nametoindex in -lipv6
+AC_CHECK_FUNCS(if_nametoindex)
+if test x"$ac_cv_func_if_nametoindex" = x"no"; then
+	AC_CHECK_LIB_EXT(ipv6, LIBREPLACE_NETWORK_LIBS, if_nametoindex)
+	dnl We can't just call AC_CHECK_FUNCS(if_nametoindex) here,
+	dnl because the value has been cached.
+	if test x"$ac_cv_lib_ext_ipv6_if_nametoindex" = x"yes"
+	then
+		AC_DEFINE(HAVE_IF_NAMETOINDEX, 1,
+			  [Whether the system has if_nametoindex()])
+	fi
+fi
+
+# The following tests need LIBS="${LIBREPLACE_NETWORK_LIBS}"
+old_LIBS=$LIBS
+LIBS="${LIBREPLACE_NETWORK_LIBS}"
+SAVE_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS -I$libreplacedir"
+
+AC_CHECK_FUNCS(socketpair,[],[LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} socketpair.o"])
+
+AC_CACHE_CHECK([for broken inet_ntoa],libreplace_cv_REPLACE_INET_NTOA,[
+AC_TRY_RUN([
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+main() { struct in_addr ip; ip.s_addr = 0x12345678;
+if (strcmp(inet_ntoa(ip),"18.52.86.120") &&
+    strcmp(inet_ntoa(ip),"120.86.52.18")) { exit(0); }
+exit(1);}],
+           libreplace_cv_REPLACE_INET_NTOA=yes,libreplace_cv_REPLACE_INET_NTOA=no,libreplace_cv_REPLACE_INET_NTOA=cross)])
+
+AC_CHECK_FUNCS(inet_ntoa,[],[libreplace_cv_REPLACE_INET_NTOA=yes])
+if test x"$libreplace_cv_REPLACE_INET_NTOA" = x"yes"; then
+    AC_DEFINE(REPLACE_INET_NTOA,1,[Whether inet_ntoa should be replaced])
+    LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} inet_ntoa.o"
+fi
+
+AC_CHECK_FUNCS(inet_aton,[],[LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} inet_aton.o"])
+
+AC_CHECK_FUNCS(inet_ntop,[],[LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} inet_ntop.o"])
+
+AC_CHECK_FUNCS(inet_pton,[],[LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} inet_pton.o"])
+
+dnl test for getaddrinfo/getnameinfo
+AC_CACHE_CHECK([for getaddrinfo],libreplace_cv_HAVE_GETADDRINFO,[
+AC_TRY_LINK([
+#include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+#include <sys/socket.h>
+#include <netdb.h>],
+[
+struct sockaddr sa;
+struct addrinfo *ai = NULL;
+int ret = getaddrinfo(NULL, NULL, NULL, &ai);
+if (ret != 0) {
+	const char *es = gai_strerror(ret);
+}
+freeaddrinfo(ai);
+ret = getnameinfo(&sa, sizeof(sa),
+		NULL, 0,
+		NULL, 0, 0);
+
+],
+libreplace_cv_HAVE_GETADDRINFO=yes,libreplace_cv_HAVE_GETADDRINFO=no)])
+if test x"$libreplace_cv_HAVE_GETADDRINFO" = x"yes"; then
+	AC_DEFINE(HAVE_GETADDRINFO,1,[Whether the system has getaddrinfo])
+	AC_DEFINE(HAVE_GETNAMEINFO,1,[Whether the system has getnameinfo])
+	AC_DEFINE(HAVE_FREEADDRINFO,1,[Whether the system has freeaddrinfo])
+	AC_DEFINE(HAVE_GAI_STRERROR,1,[Whether the system has gai_strerror])
+else
+	LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} getaddrinfo.o"
+fi
+
+AC_CHECK_HEADERS([ifaddrs.h])
+
+dnl Used when getifaddrs is not available
+AC_CHECK_MEMBERS([struct sockaddr.sa_len], 
+	 [AC_DEFINE(HAVE_SOCKADDR_SA_LEN, 1, [Whether struct sockaddr has a sa_len member])],
+	 [],
+	 [#include <sys/socket.h>])
+
+dnl test for getifaddrs and freeifaddrs
+AC_CACHE_CHECK([for getifaddrs and freeifaddrs],libreplace_cv_HAVE_GETIFADDRS,[
+AC_TRY_COMPILE([
+#include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <netdb.h>],
+[
+struct ifaddrs *ifp = NULL;
+int ret = getifaddrs (&ifp);
+freeifaddrs(ifp);
+],
+libreplace_cv_HAVE_GETIFADDRS=yes,libreplace_cv_HAVE_GETIFADDRS=no)])
+if test x"$libreplace_cv_HAVE_GETIFADDRS" = x"yes"; then
+    AC_DEFINE(HAVE_GETIFADDRS,1,[Whether the system has getifaddrs])
+    AC_DEFINE(HAVE_FREEIFADDRS,1,[Whether the system has freeifaddrs])
+	AC_DEFINE(HAVE_STRUCT_IFADDRS,1,[Whether struct ifaddrs is available])
+fi
+
+##################
+# look for a method of finding the list of network interfaces
+iface=no;
+AC_CACHE_CHECK([for iface getifaddrs],libreplace_cv_HAVE_IFACE_GETIFADDRS,[
+AC_TRY_RUN([
+#define HAVE_IFACE_GETIFADDRS 1
+#define NO_CONFIG_H 1
+#define AUTOCONF_TEST 1
+#define SOCKET_WRAPPER_NOT_REPLACE
+#include "$libreplacedir/replace.c"
+#include "$libreplacedir/inet_ntop.c"
+#include "$libreplacedir/snprintf.c"
+#include "$libreplacedir/getifaddrs.c"
+#define getifaddrs_test main
+#include "$libreplacedir/test/getifaddrs.c"],
+           libreplace_cv_HAVE_IFACE_GETIFADDRS=yes,libreplace_cv_HAVE_IFACE_GETIFADDRS=no,libreplace_cv_HAVE_IFACE_GETIFADDRS=cross)])
+if test x"$libreplace_cv_HAVE_IFACE_GETIFADDRS" = x"yes"; then
+    iface=yes;AC_DEFINE(HAVE_IFACE_GETIFADDRS,1,[Whether iface getifaddrs is available])
+else
+	LIBREPLACE_NETWORK_OBJS="${LIBREPLACE_NETWORK_OBJS} getifaddrs.o"
+fi
+
+
+if test $iface = no; then
+AC_CACHE_CHECK([for iface AIX],libreplace_cv_HAVE_IFACE_AIX,[
+AC_TRY_RUN([
+#define HAVE_IFACE_AIX 1
+#define NO_CONFIG_H 1
+#define AUTOCONF_TEST 1
+#undef _XOPEN_SOURCE_EXTENDED
+#define SOCKET_WRAPPER_NOT_REPLACE
+#include "$libreplacedir/replace.c"
+#include "$libreplacedir/inet_ntop.c"
+#include "$libreplacedir/snprintf.c"
+#include "$libreplacedir/getifaddrs.c"
+#define getifaddrs_test main
+#include "$libreplacedir/test/getifaddrs.c"],
+           libreplace_cv_HAVE_IFACE_AIX=yes,libreplace_cv_HAVE_IFACE_AIX=no,libreplace_cv_HAVE_IFACE_AIX=cross)])
+if test x"$libreplace_cv_HAVE_IFACE_AIX" = x"yes"; then
+    iface=yes;AC_DEFINE(HAVE_IFACE_AIX,1,[Whether iface AIX is available])
+fi
+fi
+
+
+if test $iface = no; then
+AC_CACHE_CHECK([for iface ifconf],libreplace_cv_HAVE_IFACE_IFCONF,[
+AC_TRY_RUN([
+#define HAVE_IFACE_IFCONF 1
+#define NO_CONFIG_H 1
+#define AUTOCONF_TEST 1
+#define SOCKET_WRAPPER_NOT_REPLACE
+#include "$libreplacedir/replace.c"
+#include "$libreplacedir/inet_ntop.c"
+#include "$libreplacedir/snprintf.c"
+#include "$libreplacedir/getifaddrs.c"
+#define getifaddrs_test main
+#include "$libreplacedir/test/getifaddrs.c"],
+           libreplace_cv_HAVE_IFACE_IFCONF=yes,libreplace_cv_HAVE_IFACE_IFCONF=no,libreplace_cv_HAVE_IFACE_IFCONF=cross)])
+if test x"$libreplace_cv_HAVE_IFACE_IFCONF" = x"yes"; then
+    iface=yes;AC_DEFINE(HAVE_IFACE_IFCONF,1,[Whether iface ifconf is available])
+fi
+fi
+
+if test $iface = no; then
+AC_CACHE_CHECK([for iface ifreq],libreplace_cv_HAVE_IFACE_IFREQ,[
+AC_TRY_RUN([
+#define HAVE_IFACE_IFREQ 1
+#define NO_CONFIG_H 1
+#define AUTOCONF_TEST 1
+#define SOCKET_WRAPPER_NOT_REPLACE
+#include "$libreplacedir/replace.c"
+#include "$libreplacedir/inet_ntop.c"
+#include "$libreplacedir/snprintf.c"
+#include "$libreplacedir/getifaddrs.c"
+#define getifaddrs_test main
+#include "$libreplacedir/test/getifaddrs.c"],
+           libreplace_cv_HAVE_IFACE_IFREQ=yes,libreplace_cv_HAVE_IFACE_IFREQ=no,libreplace_cv_HAVE_IFACE_IFREQ=cross)])
+if test x"$libreplace_cv_HAVE_IFACE_IFREQ" = x"yes"; then
+    iface=yes;AC_DEFINE(HAVE_IFACE_IFREQ,1,[Whether iface ifreq is available])
+fi
+fi
+
+LIBS=$old_LIBS
+CPPFLAGS="$SAVE_CPPFLAGS"
+
+LIBREPLACEOBJ="${LIBREPLACEOBJ} ${LIBREPLACE_NETWORK_OBJS}"
 
 echo "LIBREPLACE_NETWORK_CHECKS: END"
 ]) dnl end AC_LIBREPLACE_NETWORK_CHECKS
