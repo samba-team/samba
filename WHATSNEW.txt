@@ -213,12 +213,14 @@ Changes since 3.2.0pre3:
 
 o   Michael Adam <obnox@samba.org>
     * Move the posix pending close functionality down into the VFS layer.
+    * Fix activation of registry globals in loadparm.
 
 
 o   Jeremy Allison <jra@samba.org>
     * BUG 5452: Fix smbclient put.
     * BUG 5095: Fix Manage Documents privilege.
     * BUG 5434: Ensure the loaded password doesn't contain the '\n' at the end.
+    * BUG 5456: Fix missing echo if we ^C at the prompt. 
     * Fix returning a directory value for a QPATHINFO on a msdfs link
       with a non-dfs path.
 
@@ -229,6 +231,7 @@ o   Alexander Bokovoy <ab@samba.org>
 
 o   Günther Deschner <gd@samba.org>
     * Fix wins null pointer crash in nss_wins module.
+    * Fix lm session key length in _netr_LogonSamLogon.
     * Add -f switch for DsGetDCName() example and be more verbose on output.
 
 
@@ -237,6 +240,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * BUG 5107: Fix handling of large DNS replies on AIX and Solaris.
     * BUG 5429: Clarify log msgs re: failure to create
       BUILTIN\{Administrators,Users}
+    * Fix the DNS Update option of "net ads join".
 
 
 o   Eric Cronin <ecronin@gizmolabs.org>
@@ -262,6 +266,7 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 5398: Fix compiler warning.
     * BUG 5399: Fix compiler warning.
     * BUG 5400: Fix compiler warning.
+    * BUG 5436: Fix signing problem in the client with transs requests.
     * Fix a valgrind bug in the new [ug]id2sid cache.
     * Fix Coverity IDs 565 and 222.
     * Fix dfs_Enum: In form_junctions, correctly check for malloc failure.
