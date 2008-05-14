@@ -166,7 +166,7 @@ int net_rap_file(struct net_context *c, int argc, const char **argv)
 
 int net_rap_share_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_share(c, argc, argv);
+	return net_share_usage(c, argc, argv);
 }
 
 static void long_share_fn(const char *share_name, uint32 type,

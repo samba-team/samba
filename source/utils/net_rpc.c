@@ -3059,7 +3059,7 @@ int net_rpc_group(struct net_context *c, int argc, const char **argv)
 
 static int rpc_share_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_share(c, argc, argv);
+	return net_share_usage(c, argc, argv);
 }
 
 /**
