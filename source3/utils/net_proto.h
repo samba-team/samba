@@ -117,7 +117,6 @@ int net_groupmap(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_help.c  */
 
-int net_help_status(struct net_context *c, int argc, const char **argv);
 int net_help(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_idmap.c  */
@@ -409,6 +408,7 @@ int net_share(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_status.c  */
 
+int net_status_usage(struct net_context *c, int argc, const char **argv);
 int net_status(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_time.c  */

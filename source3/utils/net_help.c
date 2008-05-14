@@ -33,15 +33,6 @@ static int help_usage(struct net_context *c, int argc, const char **argv)
 	return -1;
 }
 
-int net_help_status(struct net_context *c, int argc, const char **argv)
-{
-	d_printf("  net status sessions [parseable] "
-		 "Show list of open sessions\n");
-	d_printf("  net status shares [parseable]   "
-		 "Show list of open shares\n");
-	return -1;
-}
-
 static int net_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("  net time\t\tto view or set time information\n"\
