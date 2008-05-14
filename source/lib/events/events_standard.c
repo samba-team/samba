@@ -35,6 +35,7 @@
 #include "events_util.h"
 #endif
 #include "system/filesys.h"
+#include "system/network.h"
 #include "system/select.h" /* needed for HAVE_EVENTS_EPOLL */
 #include "events.h"
 #include "events_internal.h"
