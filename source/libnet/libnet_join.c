@@ -207,7 +207,7 @@ static ADS_STATUS libnet_join_precreate_machine_acct(TALLOC_CTX *mem_ctx,
 	const char *attrs[] = { "dn", NULL };
 	bool moved = false;
 
-	status = ads_check_ou_dn(mem_ctx, r->in.ads, r->in.account_ou);
+	status = ads_check_ou_dn(mem_ctx, r->in.ads, &r->in.account_ou);
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
@@ -1485,7 +1485,6 @@ static int libnet_destroy_UnjoinCtx(struct libnet_UnjoinCtx *r)
 	if (krb5_cc_env && StrCaseCmp(krb5_cc_env, "MEMORY:libnetjoin")) {
 		unsetenv(KRB5_ENV_CCNAME);
 	}
-
 
 	return 0;
 }
