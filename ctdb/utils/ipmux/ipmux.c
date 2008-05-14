@@ -38,6 +38,35 @@ struct ipmux_node {
 };
 struct ipmux_node *ipmux_nodes;
 
+/* 
+   This function is used to open a raw socket to send tickles from
+ */
+int ctdb_sys_open_sending_socket(void)
+{
+	int s, ret;
+	uint32_t one = 1;
+
+	s = socket(AF_INET, SOCK_RAW, htons(IPPROTO_RAW));
+	if (s == -1) {
+		DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket (%s)\n",
+			 strerror(errno)));
+		return -1;
+	}
+
+	ret = setsockopt(s, SOL_IP, IP_HDRINCL, &one, sizeof(one));
+	if (ret != 0) {
+		DEBUG(DEBUG_CRIT,(__location__ " failed to setup IP headers (%s)\n",
+			 strerror(errno)));
+		close(s);
+		return -1;
+	}
+
+	set_nonblocking(s);
+	set_close_on_exec(s);
+
+	return s;
+}
+
 
 /*
   main program
