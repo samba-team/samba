@@ -294,7 +294,7 @@ bool afs_login(connection_struct *conn)
 
 char *afs_createtoken_str(const char *username, const char *cell)
 {
-	return False;
+	return NULL;
 }
 
 #endif /* WITH_FAKE_KASERVER */
