@@ -211,48 +211,122 @@ static uint16_t tcp_checksum6(uint16_t *data, size_t n, struct ip6_hdr *ip6)
   This can also be used to send RST segments (if rst is true) and also
   if correct seq and ack numbers are provided.
  */
-int ctdb_sys_send_tcp(int s,
-		      const struct sockaddr_in *dest, 
-		      const struct sockaddr_in *src,
+int ctdb_sys_send_tcp(const ctdb_sock_addr *dest, 
+		      const ctdb_sock_addr *src,
 		      uint32_t seq, uint32_t ack, int rst)
 {
+	int s;
 	int ret;
+	uint32_t one = 1;
+	uint16_t tmpport;
+	ctdb_sock_addr *tmpdest;
 	struct {
 		struct iphdr ip;
 		struct tcphdr tcp;
-	} pkt;
+	} ip4pkt;
+	struct {
+		struct ip6_hdr ip6;
+		struct tcphdr tcp;
+	} ip6pkt;
 
-	/* for now, we only handle AF_INET addresses */
-	if (src->sin_family != AF_INET || dest->sin_family != AF_INET) {
-		DEBUG(DEBUG_CRIT,(__location__ " not an ipv4 address\n"));
-		return -1;
-	}
+	switch (src->ip.sin_family) {
+	case AF_INET:
+		ZERO_STRUCT(ip4pkt);
+		ip4pkt.ip.version  = 4;
+		ip4pkt.ip.ihl      = sizeof(ip4pkt.ip)/4;
+		ip4pkt.ip.tot_len  = htons(sizeof(ip4pkt));
+		ip4pkt.ip.ttl      = 255;
+		ip4pkt.ip.protocol = IPPROTO_TCP;
+		ip4pkt.ip.saddr    = src->ip.sin_addr.s_addr;
+		ip4pkt.ip.daddr    = dest->ip.sin_addr.s_addr;
+		ip4pkt.ip.check    = 0;
 
-	ZERO_STRUCT(pkt);
-	pkt.ip.version  = 4;
-	pkt.ip.ihl      = sizeof(pkt.ip)/4;
-	pkt.ip.tot_len  = htons(sizeof(pkt));
-	pkt.ip.ttl      = 255;
-	pkt.ip.protocol = IPPROTO_TCP;
-	pkt.ip.saddr    = src->sin_addr.s_addr;
-	pkt.ip.daddr    = dest->sin_addr.s_addr;
-	pkt.ip.check    = 0;
+		ip4pkt.tcp.source   = src->ip.sin_port;
+		ip4pkt.tcp.dest     = dest->ip.sin_port;
+		ip4pkt.tcp.seq      = seq;
+		ip4pkt.tcp.ack_seq  = ack;
+		ip4pkt.tcp.ack      = 1;
+		if (rst) {
+			ip4pkt.tcp.rst      = 1;
+		}
+		ip4pkt.tcp.doff     = sizeof(ip4pkt.tcp)/4;
+		/* this makes it easier to spot in a sniffer */
+		ip4pkt.tcp.window   = htons(1234);
+		ip4pkt.tcp.check    = tcp_checksum((uint16_t *)&ip4pkt.tcp, sizeof(ip4pkt.tcp), &ip4pkt.ip);
 
-	pkt.tcp.source   = src->sin_port;
-	pkt.tcp.dest     = dest->sin_port;
-	pkt.tcp.seq      = seq;
-	pkt.tcp.ack_seq  = ack;
-	pkt.tcp.ack      = 1;
-	if (rst) {
-		pkt.tcp.rst      = 1;
-	}
-	pkt.tcp.doff     = sizeof(pkt.tcp)/4;
-	pkt.tcp.window   = htons(1234); /* this makes it easier to spot in a sniffer */
-	pkt.tcp.check    = tcp_checksum((uint16_t *)&pkt.tcp, sizeof(pkt.tcp), &pkt.ip);
+		/* open a raw socket to send this segment from */
+		s = socket(AF_INET, SOCK_RAW, htons(IPPROTO_RAW));
+		if (s == -1) {
+			DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket (%s)\n",
+				 strerror(errno)));
+			return -1;
+		}
 
-	ret = sendto(s, &pkt, sizeof(pkt), 0, dest, sizeof(*dest));
-	if (ret != sizeof(pkt)) {
-		DEBUG(DEBUG_CRIT,(__location__ " failed sendto (%s)\n", strerror(errno)));
+		ret = setsockopt(s, SOL_IP, IP_HDRINCL, &one, sizeof(one));
+		if (ret != 0) {
+			DEBUG(DEBUG_CRIT,(__location__ " failed to setup IP headers (%s)\n",
+				 strerror(errno)));
+			close(s);
+			return -1;
+		}
+
+		set_nonblocking(s);
+		set_close_on_exec(s);
+
+		ret = sendto(s, &ip4pkt, sizeof(ip4pkt), 0, &dest->ip, sizeof(dest->ip));
+		close(s);
+		if (ret != sizeof(ip4pkt)) {
+			DEBUG(DEBUG_CRIT,(__location__ " failed sendto (%s)\n", strerror(errno)));
+			return -1;
+		}
+		break;
+	case AF_INET6:
+		ZERO_STRUCT(ip6pkt);
+		ip6pkt.ip6.ip6_vfc  = 0x60;
+		ip6pkt.ip6.ip6_plen = 20;
+		ip6pkt.ip6.ip6_nxt  = IPPROTO_TCP;
+		ip6pkt.ip6.ip6_hlim = 64;
+		ip6pkt.ip6.ip6_src  = src->ip6.sin6_addr;
+		ip6pkt.ip6.ip6_dst  = dest->ip6.sin6_addr;
+
+		ip6pkt.tcp.source   = src->ip6.sin6_port;
+		ip6pkt.tcp.dest     = dest->ip6.sin6_port;
+		ip6pkt.tcp.seq      = seq;
+		ip6pkt.tcp.ack_seq  = ack;
+		ip6pkt.tcp.ack      = 1;
+		if (rst) {
+			ip6pkt.tcp.rst      = 1;
+		}
+		ip6pkt.tcp.doff     = sizeof(ip6pkt.tcp)/4;
+		/* this makes it easier to spot in a sniffer */
+		ip6pkt.tcp.window   = htons(1234);
+		ip6pkt.tcp.check    = tcp_checksum6((uint16_t *)&ip6pkt.tcp, sizeof(ip6pkt.tcp), &ip6pkt.ip6);
+
+		s = socket(PF_INET6, SOCK_RAW, IPPROTO_RAW);
+		if (s == -1) {
+			DEBUG(DEBUG_CRIT, (__location__ " Failed to open sending socket\n"));
+			return -1;
+
+		}
+		/* sendto() dont like if the port is set and the socket is
+		   in raw mode.
+		*/
+		tmpdest = discard_const(dest);
+		tmpport = tmpdest->ip6.sin6_port;
+
+		tmpdest->ip6.sin6_port = 0;
+		ret = sendto(s, &ip6pkt, sizeof(ip6pkt), 0, &dest->ip6, sizeof(dest->ip6));
+		tmpdest->ip6.sin6_port = tmpport;
+		close(s);
+
+		if (ret != sizeof(ip6pkt)) {
+			DEBUG(DEBUG_CRIT,(__location__ " failed sendto (%s)\n", strerror(errno)));
+			return -1;
+		}
+		break;
+
+	default:
+		DEBUG(DEBUG_CRIT,(__location__ " not an ipv4/v6 address\n"));
 		return -1;
 	}
 
@@ -314,34 +388,6 @@ int ctdb_sys_close_capture_socket(void *private_data)
 	return 0;
 }
 
-/* 
-   This function is used to open a raw socket to send tickles from
- */
-int ctdb_sys_open_sending_socket(void)
-{
-	int s, ret;
-	uint32_t one = 1;
-
-	s = socket(AF_INET, SOCK_RAW, htons(IPPROTO_RAW));
-	if (s == -1) {
-		DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket (%s)\n",
-			 strerror(errno)));
-		return -1;
-	}
-
-	ret = setsockopt(s, SOL_IP, IP_HDRINCL, &one, sizeof(one));
-	if (ret != 0) {
-		DEBUG(DEBUG_CRIT,(__location__ " failed to setup IP headers (%s)\n",
-			 strerror(errno)));
-		close(s);
-		return -1;
-	}
-
-	set_nonblocking(s);
-	set_close_on_exec(s);
-
-	return s;
-}
 
 /*
   called when the raw socket becomes readable

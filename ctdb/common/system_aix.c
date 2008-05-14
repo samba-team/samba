@@ -31,6 +31,9 @@
 
 
 
+#if 0
+This function is no longer used and its code should be moved into
+send tcp packet   after that function has been enhanced to do ipv6 as well.
 
 /* This function is used to open a raw socket to send tickles from
  */
@@ -59,7 +62,7 @@ int ctdb_sys_open_sending_socket(void)
 
 	return s;
 }
-
+#endif
 
 /*
   uint16 checksum for n bytes

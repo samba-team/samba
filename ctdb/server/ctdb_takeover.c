@@ -69,19 +69,13 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 {
 	struct ctdb_takeover_arp *arp = talloc_get_type(private_data, 
 							struct ctdb_takeover_arp);
-	int i, s, ret;
+	int i, ret;
 	struct ctdb_tcp_array *tcparray;
 
 
 	ret = ctdb_sys_send_arp(&arp->sin, arp->vnn->iface);
 	if (ret != 0) {
 		DEBUG(DEBUG_CRIT,(__location__ " sending of arp failed (%s)\n", strerror(errno)));
-	}
-
-	s = ctdb_sys_open_sending_socket();
-	if (s == -1) {
-		DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket for sending tickles\n"));
-		return;
 	}
 
 	tcparray = arp->tcparray;
@@ -91,8 +85,10 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 				 (unsigned)ntohs(tcparray->connections[i].daddr.sin_port), 
 				 inet_ntoa(tcparray->connections[i].saddr.sin_addr),
 				 (unsigned)ntohs(tcparray->connections[i].saddr.sin_port)));
-			ret = ctdb_sys_send_tcp(s, &tcparray->connections[i].saddr, 
-						&tcparray->connections[i].daddr, 0, 0, 0);
+			ret = ctdb_sys_send_tcp(
+				(ctdb_sock_addr *)&tcparray->connections[i].saddr, 
+				(ctdb_sock_addr *)&tcparray->connections[i].daddr,
+				0, 0, 0);
 			if (ret != 0) {
 				DEBUG(DEBUG_CRIT,(__location__ " Failed to send tcp tickle ack for %s\n",
 					 inet_ntoa(tcparray->connections[i].saddr.sin_addr)));
@@ -100,7 +96,6 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 		}
 	}
 
-	close(s);
 	arp->count++;
 
 	if (arp->count == CTDB_ARP_REPEAT) {
@@ -1266,7 +1261,6 @@ struct ctdb_kill_tcp {
 	struct ctdb_vnn *vnn;
 	struct ctdb_context *ctdb;
 	int capture_fd;
-	int sending_fd;
 	struct fd_event *fde;
 	trbt_tree_t *connections;
 	void *private_data;
@@ -1338,8 +1332,10 @@ static void capture_tcp_handler(struct event_context *ev, struct fd_event *fde,
 	 */
 	DEBUG(DEBUG_INFO, ("sending a tcp reset to kill connection :%d -> %s:%d\n", ntohs(con->dst.sin_port), inet_ntoa(con->src.sin_addr), ntohs(con->src.sin_port)));
 
-	ctdb_sys_send_tcp(killtcp->sending_fd, &con->dst, 
-			  &con->src, ack_seq, seq, 1);
+	ctdb_sys_send_tcp(
+			(ctdb_sock_addr *)&con->dst, 
+			(ctdb_sock_addr *)&con->src,
+			ack_seq, seq, 1);
 	talloc_free(con);
 }
 
@@ -1352,7 +1348,6 @@ static void capture_tcp_handler(struct event_context *ev, struct fd_event *fde,
 static void tickle_connection_traverse(void *param, void *data)
 {
 	struct ctdb_killtcp_con *con = talloc_get_type(data, struct ctdb_killtcp_con);
-	struct ctdb_kill_tcp *killtcp = talloc_get_type(param, struct ctdb_kill_tcp);
 
 	/* have tried too many times, just give up */
 	if (con->count >= 5) {
@@ -1362,7 +1357,10 @@ static void tickle_connection_traverse(void *param, void *data)
 
 	/* othervise, try tickling it again */
 	con->count++;
-	ctdb_sys_send_tcp(killtcp->sending_fd, &con->dst, &con->src, 0, 0, 0);
+	ctdb_sys_send_tcp(
+		(ctdb_sock_addr *)&con->dst,
+		(ctdb_sock_addr *)&con->src,
+		0, 0, 0);
 }
 
 
@@ -1376,7 +1374,7 @@ static void ctdb_tickle_sentenced_connections(struct event_context *ev, struct t
 
 
 	/* loop over all connections sending tickle ACKs */
-	trbt_traversearray32(killtcp->connections, KILLTCP_KEYLEN, tickle_connection_traverse, killtcp);
+	trbt_traversearray32(killtcp->connections, KILLTCP_KEYLEN, tickle_connection_traverse, NULL);
 
 
 	/* If there are no more connections to kill we can remove the
@@ -1399,10 +1397,6 @@ static void ctdb_tickle_sentenced_connections(struct event_context *ev, struct t
  */
 static int ctdb_killtcp_destructor(struct ctdb_kill_tcp *killtcp)
 {
-	if (killtcp->sending_fd != -1) {
-		close(killtcp->sending_fd);
-		killtcp->sending_fd = -1;
-	}
 	killtcp->vnn->killtcp = NULL;
 	return 0;
 }
@@ -1459,7 +1453,6 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 		killtcp->vnn         = vnn;
 		killtcp->ctdb        = ctdb;
 		killtcp->capture_fd  = -1;
-		killtcp->sending_fd  = -1;
 		killtcp->connections = trbt_create(killtcp, 0);
 
 		vnn->killtcp         = killtcp;
@@ -1482,17 +1475,6 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	trbt_insertarray32_callback(killtcp->connections,
 			KILLTCP_KEYLEN, killtcp_key(&con->dst, &con->src),
 			add_killtcp_callback, con);
-
-	/* 
-	   If we dont have a socket to send from yet we must create it
-	 */
-	if (killtcp->sending_fd == -1) {
-		killtcp->sending_fd = ctdb_sys_open_sending_socket();
-		if (killtcp->sending_fd == -1) {
-			DEBUG(DEBUG_CRIT,(__location__ " Failed to open sending socket for killtcp\n"));
-			goto failed;
-		}
-	}
 
 	/* 
 	   If we dont have a socket to listen on yet we must create it
@@ -1519,7 +1501,10 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	}
 
 	/* tickle him once now */
-	ctdb_sys_send_tcp(killtcp->sending_fd, &con->dst, &con->src, 0, 0, 0);
+	ctdb_sys_send_tcp(
+		(ctdb_sock_addr *)&con->dst,
+		(ctdb_sock_addr *)&con->src,
+		0, 0, 0);
 
 	return 0;
 

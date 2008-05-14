@@ -1163,9 +1163,8 @@ int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 /* from takeover/system.c */
 int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface);
 bool ctdb_sys_have_ip(struct sockaddr_in ip);
-int ctdb_sys_send_tcp(int fd,
-		      const struct sockaddr_in *dest, 
-		      const struct sockaddr_in *src,
+int ctdb_sys_send_tcp(const ctdb_sock_addr *dest, 
+		      const ctdb_sock_addr *src,
 		      uint32_t seq, uint32_t ack, int rst);
 
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist);
@@ -1220,11 +1219,10 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 
 void ctdb_start_freeze(struct ctdb_context *ctdb);
 
-bool parse_ip_port(const char *s, struct sockaddr_in *ip);
+bool parse_ip_port(const char *s, ctdb_sock_addr *saddr);
 
 int ctdb_sys_open_capture_socket(const char *iface, void **private_data);
 int ctdb_sys_close_capture_socket(void *private_data);
-int ctdb_sys_open_sending_socket(void);
 int ctdb_sys_read_tcp_packet(int s, void *private_data, struct sockaddr_in *src, struct sockaddr_in *dst,
 			     uint32_t *ack_seq, uint32_t *seq);
 

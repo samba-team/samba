@@ -808,12 +808,12 @@ static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 		usage();
 	}
 
-	if (!parse_ip_port(argv[0], &killtcp.src)) {
+	if (!parse_ip_port(argv[0], (ctdb_sock_addr *)&killtcp.src)) {
 		DEBUG(DEBUG_ERR, ("Bad IP:port '%s'\n", argv[0]));
 		return -1;
 	}
 
-	if (!parse_ip_port(argv[1], &killtcp.dst)) {
+	if (!parse_ip_port(argv[1], (ctdb_sock_addr *)&killtcp.dst)) {
 		DEBUG(DEBUG_ERR, ("Bad IP:port '%s'\n", argv[1]));
 		return -1;
 	}
@@ -963,8 +963,8 @@ static int getsrvids(struct ctdb_context *ctdb, int argc, const char **argv)
  */
 static int tickle_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int s, ret;
-	struct sockaddr_in src, dst;
+	int ret;
+	ctdb_sock_addr	src, dst;
 
 	if (argc < 2) {
 		usage();
@@ -980,14 +980,7 @@ static int tickle_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}
 
-	s = ctdb_sys_open_sending_socket();
-	if (s == -1) {
-		DEBUG(DEBUG_ERR, ("Failed to open socket for sending tickle\n"));
-		return 0;
-	}
-
-	ret = ctdb_sys_send_tcp(s, &src, &dst, 0, 0, 0);
-	close(s);
+	ret = ctdb_sys_send_tcp(&src, &dst, 0, 0, 0);
 	if (ret==0) {
 		return 0;
 	}

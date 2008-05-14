@@ -296,18 +296,78 @@ static bool parse_ip_num(const char *s, struct in_addr *addr, unsigned *num, con
 }
 
 
+static bool parse_ipv4(const char *s, unsigned port, ctdb_sock_addr *saddr)
+{
+	saddr->ip.sin_family = AF_INET;
+	saddr->ip.sin_port   = htons(port);
+
+	if (inet_pton(AF_INET, s, &saddr->ip.sin_addr) != 1) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed to translate %s into sin_addr\n", s));
+		return false;
+	}
+
+	return true;
+}
+
+static bool parse_ipv6(const char *s, unsigned port, ctdb_sock_addr *saddr)
+{
+	saddr->ip6.sin6_family   = AF_INET6;
+	saddr->ip6.sin6_port     = htons(port);
+	saddr->ip6.sin6_flowinfo = 0;
+	saddr->ip6.sin6_scope_id = 0;
+
+	if (inet_pton(AF_INET6, s, &saddr->ip6.sin6_addr) != 1) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed to translate %s into sin6_addr\n", s));
+		return false;
+	}
+
+	return true;
+}
 /*
   parse a ip:port pair
  */
-bool parse_ip_port(const char *s, struct sockaddr_in *ip)
+bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr)
 {
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	char *s, *p;
 	unsigned port;
-	if (!parse_ip_num(s, &ip->sin_addr, &port, ':')) {
+	char *endp = NULL;
+	bool ret;
+
+	s = talloc_strdup(tmp_ctx, addr);
+	if (s == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed strdup()\n"));
+		talloc_free(tmp_ctx);
 		return false;
 	}
-	ip->sin_family = AF_INET;
-	ip->sin_port   = htons(port);
-	return true;
+
+	p = rindex(s, ':');
+	if (p == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " This addr: %s does not contain a port number\n", s));
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	port = strtoul(p+1, &endp, 10);
+	if (endp == NULL || *endp != 0) {
+		/* trailing garbage */
+		DEBUG(DEBUG_ERR, (__location__ " Trailing garbage after the port in %s\n", s));
+		talloc_free(tmp_ctx);
+		return false;
+	}
+	*p = 0;
+
+
+	/* now is this a ipv4 or ipv6 address ?*/
+	p = index(s, ':');
+	if (p == NULL) {
+		ret = parse_ipv4(s, port, saddr);
+	} else {
+		ret = parse_ipv6(s, port, saddr);
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
 }
 
 /*
