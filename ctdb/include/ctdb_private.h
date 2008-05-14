@@ -47,6 +47,16 @@ struct rd_memdump_reply {
 };
 
 /*
+  definitions for different socket structures
+ */
+typedef struct sockaddr_in ctdb_addr_in;
+typedef struct sockaddr_in6 ctdb_addr_in6;
+typedef union {
+	ctdb_addr_in	ip;
+	ctdb_addr_in6	ip6;
+} ctdb_sock_addr;
+
+/*
   a tcp connection description
  */
 struct ctdb_tcp_connection {
