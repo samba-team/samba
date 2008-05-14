@@ -19,6 +19,15 @@
 #include "includes.h"
 #include "utils/net.h"
 
+int net_status_usage(struct net_context *c, int argc, const char **argv)
+{
+	d_printf("  net status sessions [parseable] "
+		 "Show list of open sessions\n");
+	d_printf("  net status shares [parseable]   "
+		 "Show list of open shares\n");
+	return -1;
+}
+
 static int show_session(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 			void *state)
 {
@@ -59,7 +68,7 @@ static int net_status_sessions(struct net_context *c, int argc, const char **arg
 	} else if ((argc == 1) && strequal(argv[0], "parseable")) {
 		parseable = true;
 	} else {
-		return net_help_status(c, argc, argv);
+		return net_status_usage(c, argc, argv);
 	}
 
 	if (!parseable) {
@@ -209,7 +218,7 @@ static int net_status_shares(struct net_context *c, int argc, const char **argv)
 	}
 
 	if ((argc != 1) || !strequal(argv[0], "parseable")) {
-		return net_help_status(c, argc, argv);
+		return net_status_usage(c, argc, argv);
 	}
 
 	return net_status_shares_parseable(c, argc, argv);
@@ -220,7 +229,8 @@ int net_status(struct net_context *c, int argc, const char **argv)
 	struct functable func[] = {
 		{"sessions", net_status_sessions},
 		{"shares", net_status_shares},
+		{"help", net_status_usage},
 		{NULL, NULL}
 	};
-	return net_run_function(c, argc, argv, func, net_help_status);
+	return net_run_function(c, argc, argv, func, net_status_usage);
 }
