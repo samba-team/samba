@@ -982,9 +982,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 	ZERO_STRUCT(state);
 	state.pid = sys_getpid();
 
-	/* Stop zombies */
-	CatchChild();
-
 	child->pid = sys_fork();
 
 	if (child->pid == -1) {
@@ -1005,6 +1002,9 @@ static bool fork_domain_child(struct winbindd_child *child)
 	}
 
 	/* Child */
+
+	/* Stop zombies in children */
+	CatchChild();
 
 	state.sock = fdpair[0];
 	close(fdpair[1]);
