@@ -1223,6 +1223,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 	const char *dc_name = NULL;
 	fstring tmp_dc_name;
 	union nbt_cldap_netlogon *r = NULL;
+	bool store_cache = false;
 	uint32_t nt_version = NETLOGON_VERSION_1 |
 			      NETLOGON_VERSION_5 |
 			      NETLOGON_VERSION_5EX_WITH_IP;
@@ -1261,6 +1262,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 							   &nt_version,
 							   &dc_name,
 							   &r)) {
+					store_cache = true;
 					namecache_store(dc_name, NBT_NAME_SERVER, 1, &ip_list);
 					goto make_reply;
 				}
@@ -1302,7 +1304,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 
 	status = make_dc_info_from_cldap_reply(mem_ctx, flags, &dclist[i].ss,
 					       nt_version, r, info);
-	if (NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_OK(status) && store_cache) {
 		return store_cldap_reply(mem_ctx, flags, &dclist[i].ss,
 					 nt_version, r);
 	}
