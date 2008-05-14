@@ -90,12 +90,12 @@ connection_struct *conn_find(unsigned cnum)
 
 connection_struct *conn_find_byname(const char *service)
 {
-	int count=0;
 	connection_struct *conn;
 
-	for (conn=Connections;conn;conn=conn->next,count++) {
+	for (conn=Connections;conn;conn=conn->next) {
 		if (strequal(lp_servicename(SNUM(conn)),service)) {
-			if (count > 10) {
+			if (conn != Connections) {
+				/* Promote if not first. */
 				DLIST_PROMOTE(Connections, conn);
 			}
 			return conn;
