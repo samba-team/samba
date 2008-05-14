@@ -25,6 +25,7 @@
 #include "../include/ctdb_private.h"
 #include "lib/events/events.h"
 #include <netinet/if_ether.h>
+#include <netinet/ip6.h>
 #include <net/if_arp.h>
 
 
@@ -184,7 +185,6 @@ static uint16_t tcp_checksum6(uint16_t *data, size_t n, struct ip6_hdr *ip6)
 	uint32_t sum = uint16_checksum(data, n);
 	uint16_t sum2;
 
-	int i;
 	sum += uint16_checksum((uint16_t *)(void *)&ip6->ip6_src, 16);
 	sum += uint16_checksum((uint16_t *)(void *)&ip6->ip6_dst, 16);
 	sum += ip6->ip6_plen;
