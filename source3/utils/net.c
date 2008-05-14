@@ -43,6 +43,10 @@
 #include "includes.h"
 #include "utils/net.h"
 
+#ifdef WITH_FAKE_KASERVER
+#include "utils/net_afs.h"
+#endif
+
 /***********************************************************************/
 /* Beginning of internationalization section.  Translatable constants  */
 /* should be kept in this area and referenced in the rest of the code. */
@@ -304,89 +308,6 @@ static int net_getdomainsid(struct net_context *c, int argc, const char **argv)
 
 	return 0;
 }
-
-#ifdef WITH_FAKE_KASERVER
-
-int net_help_afs(struct net_context *c, int argc, const char **argv)
-{
-	d_printf("  net afs key filename\n"
-		 "\tImports a OpenAFS KeyFile into our secrets.tdb\n\n");
-	d_printf("  net afs impersonate <user> <cell>\n"
-		 "\tCreates a token for user@cell\n\n");
-	return -1;
-}
-
-static int net_afs_key(struct net_context *c, int argc, const char **argv)
-{
-	int fd;
-	struct afs_keyfile keyfile;
-
-	if (argc != 2) {
-		d_printf("usage: 'net afs key <keyfile> cell'\n");
-		return -1;
-	}
-
-	if (!secrets_init()) {
-		d_fprintf(stderr, "Could not open secrets.tdb\n");
-		return -1;
-	}
-
-	if ((fd = open(argv[0], O_RDONLY, 0)) < 0) {
-		d_fprintf(stderr, "Could not open %s\n", argv[0]);
-		return -1;
-	}
-
-	if (read(fd, &keyfile, sizeof(keyfile)) != sizeof(keyfile)) {
-		d_fprintf(stderr, "Could not read keyfile\n");
-		return -1;
-	}
-
-	if (!secrets_store_afs_keyfile(argv[1], &keyfile)) {
-		d_fprintf(stderr, "Could not write keyfile to secrets.tdb\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-static int net_afs_impersonate(struct net_context *c, int argc,
-			       const char **argv)
-{
-	char *token;
-
-	if (argc != 2) {
-		fprintf(stderr, "Usage: net afs impersonate <user> <cell>\n");
-	        exit(1);
-	}
-
-	token = afs_createtoken_str(argv[0], argv[1]);
-
-	if (token == NULL) {
-		fprintf(stderr, "Could not create token\n");
-	        exit(1);
-	}
-
-	if (!afs_settoken_str(token)) {
-		fprintf(stderr, "Could not set token into kernel\n");
-	        exit(1);
-	}
-
-	printf("Success: %s@%s\n", argv[0], argv[1]);
-	return 0;
-}
-
-static int net_afs(struct net_context *c, int argc, const char **argv)
-{
-	struct functable func[] = {
-		{"key", net_afs_key},
-		{"impersonate", net_afs_impersonate},
-		{"help", net_help_afs},
-		{NULL, NULL}
-	};
-	return net_run_function(c, argc, argv, func, net_help_afs);
-}
-
-#endif /* WITH_FAKE_KASERVER */
 
 static bool search_maxrid(struct pdb_search *search, const char *type,
 			  uint32 *max_rid)

@@ -2883,9 +2883,12 @@ if test x"$samba_cv_WITH_AFS" != x"no" ||
     fi
 fi
 
+FAKE_KASERVER_OBJ=""
 if test x"$samba_cv_WITH_FAKE_KASERVER" != x"no" && test x"$have_afs_headers" = x"yes"; then
     AC_DEFINE(WITH_FAKE_KASERVER,1,[Whether to include AFS fake-kaserver support])
+    FAKE_KASERVER_OBJ="utils/net_afs.o"
 fi
+AC_SUBST(FAKE_KASERVER_OBJ)
 
 #################################################
 # check whether to compile AFS/NT ACL mapping module
