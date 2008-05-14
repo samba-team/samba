@@ -21,7 +21,7 @@
 %import "../talloc/talloc.i";
 
 %{
-#include "lib/events/events.h"
+#include "events.h"
 typedef struct event_context event;
 %}
 
