@@ -3595,18 +3595,18 @@ const char *ads_get_extended_right_name_by_guid(ADS_STRUCT *ads,
 
 ADS_STATUS ads_check_ou_dn(TALLOC_CTX *mem_ctx,
 			   ADS_STRUCT *ads,
-			   const char *account_ou)
+			   const char **account_ou)
 {
 	struct ldb_dn *name_dn = NULL;
 	const char *name = NULL;
 	char *ou_string = NULL;
 
-	name_dn = ldb_dn_explode(mem_ctx, account_ou);
+	name_dn = ldb_dn_explode(mem_ctx, *account_ou);
 	if (name_dn) {
 		return ADS_SUCCESS;
 	}
 
-	ou_string = ads_ou_string(ads, account_ou);
+	ou_string = ads_ou_string(ads, *account_ou);
 	if (!ou_string) {
 		return ADS_ERROR_LDAP(LDAP_INVALID_DN_SYNTAX);
 	}
@@ -3623,8 +3623,8 @@ ADS_STATUS ads_check_ou_dn(TALLOC_CTX *mem_ctx,
 		return ADS_ERROR_LDAP(LDAP_INVALID_DN_SYNTAX);
 	}
 
-	account_ou = talloc_strdup(mem_ctx, name);
-	if (!account_ou) {
+	*account_ou = talloc_strdup(mem_ctx, name);
+	if (!*account_ou) {
 		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 	}
 
