@@ -73,8 +73,8 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 		if (i == ARRAY_SIZE(allowed_scripts)) {
 			DEBUG(0,("Refusing to run event scripts with option '%s' while in recovery\n",
 				 options));
+			return -1;
 		}
-		return -1;
 	}
 
 	if (setpgid(0,0) != 0) {
