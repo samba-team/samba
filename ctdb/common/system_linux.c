@@ -177,6 +177,30 @@ static uint16_t tcp_checksum(uint16_t *data, size_t n, struct iphdr *ip)
 }
 
 /*
+  calculate the tcp checksum for tcp over ipv6
+*/
+static uint16_t tcp_checksum6(uint16_t *data, size_t n, struct ip6_hdr *ip6)
+{
+	uint32_t sum = uint16_checksum(data, n);
+	uint16_t sum2;
+
+	int i;
+	sum += uint16_checksum((uint16_t *)(void *)&ip6->ip6_src, 16);
+	sum += uint16_checksum((uint16_t *)(void *)&ip6->ip6_dst, 16);
+	sum += ip6->ip6_plen;
+	sum += ip6->ip6_nxt;
+			
+	sum = (sum & 0xFFFF) + (sum >> 16);
+	sum = (sum & 0xFFFF) + (sum >> 16);
+	sum2 = htons(sum);
+	sum2 = ~sum2;
+	if (sum2 == 0) {
+		return 0xFFFF;
+	}
+	return sum2;
+}
+
+/*
   Send tcp segment from the specified IP/port to the specified
   destination IP/port. 
 
