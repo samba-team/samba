@@ -117,7 +117,6 @@ int net_groupmap(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_help.c  */
 
-int net_help_share(struct net_context *c, int argc, const char **argv);
 int net_help_printer(struct net_context *c, int argc, const char **argv);
 int net_help_status(struct net_context *c, int argc, const char **argv);
 int net_help(struct net_context *c, int argc, const char **argv);
@@ -403,6 +402,11 @@ int net_rpc_shell(struct net_context *c, int argc, const char **argv);
 /* The following definitions come from utils/net_sam.c  */
 
 int net_sam(struct net_context *c, int argc, const char **argv);
+
+/* The following definitions come from utils/net_share.c  */
+
+int net_share_usage(struct net_context *c, int argc, const char **argv);
+int net_share(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_status.c  */
 

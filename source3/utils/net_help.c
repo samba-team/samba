@@ -33,45 +33,6 @@ static int help_usage(struct net_context *c, int argc, const char **argv)
 	return -1;
 }
 
-int net_help_share(struct net_context *c, int argc, const char **argv)
-{
-	d_printf(
-	 "\nnet [<method>] share [misc. options] [targets] \n"
-	 "\tenumerates all exported resources (network shares) "
-	 "on target server\n\n"
-	 "net [<method>] share ADD <name=serverpath> [misc. options] [targets]"
-	"\n\tadds a share from a server (makes the export active)\n\n"
-	"net [<method>] share DELETE <sharename> [misc. options] [targets]"
-	"\n\tdeletes a share from a server (makes the export inactive)\n\n"
-	"net [<method>] share ALLOWEDUSERS [<filename>] "
-	"[misc. options] [targets]"
-	"\n\tshows a list of all shares together with all users allowed to"
-	"\n\taccess them. This needs the output of 'net usersidlist' on"
-	"\n\tstdin or in <filename>.\n\n"
-	 "net [<method>] share MIGRATE FILES <sharename> [misc. options] [targets]"
-	 "\n\tMigrates files from remote to local server\n\n"
-	 "net [<method>] share MIGRATE SHARES <sharename> [misc. options] [targets]"
-	 "\n\tMigrates shares from remote to local server\n\n"
-	 "net [<method>] share MIGRATE SECURITY <sharename> [misc. options] [targets]"
-	 "\n\tMigrates share-ACLs from remote to local server\n\n"
-	 "net [<method>] share MIGRATE ALL <sharename> [misc. options] [targets]"
-	 "\n\tMigrates shares (including directories, files) from remote\n"
-	 "\tto local server\n\n"
-	);
-	net_common_methods_usage(c, argc, argv);
-	net_common_flags_usage(c, argc, argv);
-	d_printf(
-	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n"
-	 "\t-M or --maxusers=<num>\t\tmax users allowed for share\n"
-	 "\t      --acls\t\t\tcopies ACLs as well\n"
-	 "\t      --attrs\t\t\tcopies DOS Attributes as well\n"
-	 "\t      --timestamps\t\tpreserve timestamps while copying files\n"
-	 "\t      --destination\t\tmigration target server (default: localhost)\n"
-	 "\t-e or --exclude\t\t\tlist of shares to be excluded from mirroring\n"
-	 "\t-v or --verbose\t\t\tgive verbose output\n");
-	return -1;
-}
-
 int net_help_printer(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("net rpc printer LIST [printer] [misc. options] [targets]\n"\
@@ -154,7 +115,7 @@ int net_help(struct net_context *c, int argc, const char **argv)
 		{"RPC", net_rpc_help},
 
 		{"FILE", net_file_usage},
-		{"SHARE", net_help_share},
+		{"SHARE", net_share_usage},
 		{"SESSION", net_rap_session_usage},
 		{"SERVER", net_rap_server_usage},
 		{"DOMAIN", net_rap_domain_usage},
