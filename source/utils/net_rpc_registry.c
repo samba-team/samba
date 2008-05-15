@@ -498,6 +498,7 @@ static NTSTATUS rpc_registry_getvalue_internal(struct net_context *c,
 					       struct cli_state *cli,
 					       struct rpc_pipe_client *pipe_hnd,
 					       TALLOC_CTX *mem_ctx,
+					       bool raw,
 					       int argc,
 					       const char **argv)
 {
@@ -579,6 +580,20 @@ done:
 	return status;
 }
 
+static NTSTATUS rpc_registry_getvalue_raw(struct net_context *c,
+					  const DOM_SID *domain_sid,
+					  const char *domain_name,
+					  struct cli_state *cli,
+					  struct rpc_pipe_client *pipe_hnd,
+					  TALLOC_CTX *mem_ctx,
+					  int argc,
+					  const char **argv)
+{
+	return rpc_registry_getvalue_internal(c, domain_sid, domain_name,
+					      cli, pipe_hnd, mem_ctx, false,
+					      argc, argv);
+}
+
 static int rpc_registry_getvalue(struct net_context *c, int argc,
 				 const char **argv)
 {
@@ -589,7 +604,7 @@ static int rpc_registry_getvalue(struct net_context *c, int argc,
 	}
 
 	return run_rpc_command(c, NULL, PI_WINREG, 0,
-		rpc_registry_getvalue_internal, argc, argv);
+		rpc_registry_getvalue_raw, argc, argv);
 }
 
 static NTSTATUS rpc_registry_createkey_internal(struct net_context *c,
