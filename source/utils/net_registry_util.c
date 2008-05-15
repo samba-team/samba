@@ -32,32 +32,55 @@ void print_registry_key(const char *keyname, NTTIME *modtime)
 	d_printf("\n");
 }
 
-void print_registry_value(const struct registry_value *valvalue)
+void print_registry_value(const struct registry_value *valvalue, bool raw)
 {
-	d_printf("Type       = %s\n",
-		 reg_type_lookup(valvalue->type));
+	if (!raw) {
+		d_printf("Type       = %s\n",
+			 reg_type_lookup(valvalue->type));
+	}
 	switch(valvalue->type) {
 	case REG_DWORD:
-		d_printf("Value      = %d\n", valvalue->v.dword);
+		if (!raw) {
+			d_printf("Value      = ");
+		}
+		d_printf("%d\n", valvalue->v.dword);
 		break;
 	case REG_SZ:
 	case REG_EXPAND_SZ:
-		d_printf("Value      = \"%s\"\n", valvalue->v.sz.str);
+		if (!raw) {
+			d_printf("Value      = \"");
+		}
+		d_printf("%s", valvalue->v.sz.str);
+		if (!raw) {
+			d_printf("\"");
+		}
+		d_printf("\n");
 		break;
 	case REG_MULTI_SZ: {
 		uint32 j;
 		for (j = 0; j < valvalue->v.multi_sz.num_strings; j++) {
-			d_printf("Value[%3.3d] = \"%s\"\n", j,
-				 valvalue->v.multi_sz.strings[j]);
+			if (!raw) {
+				d_printf("Value[%3.3d] = \"", j);
+			}
+			d_printf("%s", valvalue->v.multi_sz.strings[j]);
+			if (!raw) {
+				d_printf("\"");
+			}
+			d_printf("\n");
 		}
 		break;
 	}
 	case REG_BINARY:
-		d_printf("Value      = %d bytes\n",
-			 (int)valvalue->v.binary.length);
+		if (!raw) {
+			d_printf("Value      = ");
+		}
+		d_printf("%d bytes\n", (int)valvalue->v.binary.length);
 		break;
 	default:
-		d_printf("Value      = <unprintable>\n");
+		if (!raw) {
+			d_printf("Value      = ");
+		}
+		d_printf("<unprintable>\n");
 		break;
 	}
 }
@@ -66,7 +89,7 @@ void print_registry_value_with_name(const char *valname,
 				    const struct registry_value *valvalue)
 {
 	d_printf("Valuename  = %s\n", valname);
-	print_registry_value(valvalue);
+	print_registry_value(valvalue, false);
 	d_printf("\n");
 }
 

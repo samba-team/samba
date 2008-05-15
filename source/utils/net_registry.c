@@ -291,7 +291,7 @@ static int net_registry_getvalue(struct net_context *c, int argc,
 		goto done;
 	}
 
-	print_registry_value(value);
+	print_registry_value(value, false);
 
 	ret = 0;
 
