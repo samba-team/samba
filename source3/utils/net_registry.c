@@ -306,6 +306,12 @@ static int net_registry_getvalue(struct net_context *c, int argc,
 	return net_registry_getvalue_internal(c, argc, argv, false);
 }
 
+static int net_registry_getvalueraw(struct net_context *c, int argc,
+				    const char **argv)
+{
+	return net_registry_getvalue_internal(c, argc, argv, true);
+}
+
 static int net_registry_setvalue(struct net_context *c, int argc,
 				 const char **argv)
 {
@@ -467,6 +473,11 @@ int net_registry(struct net_context *c, int argc, const char **argv)
 			"getvalue",
 			net_registry_getvalue,
 			"Print a registry value",
+		},
+		{
+			"getvalueraw",
+			net_registry_getvalueraw,
+			"Print a registry value (raw format)",
 		},
 		{
 			"setvalue",
