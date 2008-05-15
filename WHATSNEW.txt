@@ -221,6 +221,8 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 5095: Fix Manage Documents privilege.
     * BUG 5434: Ensure the loaded password doesn't contain the '\n' at the end.
     * BUG 5456: Fix missing echo if we ^C at the prompt. 
+    * BUG 5460: Fix DFS referrals.
+    * BUG 5464: Fix timeout in winbindd. 
     * Fix returning a directory value for a QPATHINFO on a msdfs link
       with a non-dfs path.
 
@@ -230,6 +232,7 @@ o   Alexander Bokovoy <ab@samba.org>
 
 
 o   Günther Deschner <gd@samba.org>
+    * BUG 5465: Fix joining with createcomputer=ou1/ou2/ou3.
     * Fix wins null pointer crash in nss_wins module.
     * Fix lm session key length in _netr_LogonSamLogon.
     * Add -f switch for DsGetDCName() example and be more verbose on output.
