@@ -6568,6 +6568,43 @@ done:
 	return ret;
 }
 
+static bool process_registry_shares(void)
+{
+	WERROR werr;
+	uint32_t count;
+	struct smbconf_service **service = NULL;
+	uint32_t num_shares = 0;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	struct smbconf_ctx *conf_ctx = lp_smbconf_ctx();
+	bool ret = false;
+
+	if (conf_ctx == NULL) {
+		goto done;
+	}
+
+	werr = smbconf_get_config(conf_ctx, mem_ctx, &num_shares, &service);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	for (count = 0; count < num_shares; count++) {
+		if (strequal(service[count]->name, GLOBAL_NAME)) {
+			continue;
+		}
+		ret = process_registry_service(service[count]);
+		if (!ret) {
+			goto done;
+		}
+	}
+
+	/* store the csn */
+	smbconf_changed(conf_ctx, &conf_last_csn, NULL, NULL);
+
+done:
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
 static struct file_lists {
 	struct file_lists *next;
 	char *name;
