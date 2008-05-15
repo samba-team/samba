@@ -12,6 +12,8 @@
 #
 
 # set DOCS_DIR to the path to a release tarball docs dir in order to get docs
+
+# extra options passed to rpmbuild
 EXTRA_OPTIONS="$1"
 
 SPECDIR=`rpm --eval %_specdir`
