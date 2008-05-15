@@ -16,6 +16,20 @@ PRIVATE_DEPENDENCIES = \
 
 ntvfs_cifs_OBJ_FILES = ntvfs/cifs/vfs_cifs.o
 
+
+################################################
+# Start MODULE ntvfs_smb2
+[MODULE::ntvfs_smb2]
+INIT_FUNCTION = ntvfs_smb2_init
+SUBSYSTEM = ntvfs
+PRIVATE_DEPENDENCIES = \
+		LIBCLI_SMB LIBCLI_RAW
+# End MODULE ntvfs_smb2
+################################################
+
+ntvfs_smb2_OBJ_FILES = ntvfs/smb2/vfs_smb2.o
+
+
 ################################################
 # Start MODULE ntvfs_simple
 [MODULE::ntvfs_simple]
