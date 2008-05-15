@@ -445,6 +445,7 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code
 {
 	struct ncacn_packet pkt;
 	struct data_blob_list_item *rep;
+	uint8_t zeros[4];
 	NTSTATUS status;
 
 	/* setup a bind_ack */
@@ -457,6 +458,9 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code
 	pkt.u.fault.context_id = 0;
 	pkt.u.fault.cancel_count = 0;
 	pkt.u.fault.status = fault_code;
+
+	ZERO_STRUCT(zeros);
+	pkt.u.fault._pad = data_blob_const(zeros, sizeof(zeros));
 
 	rep = talloc(call, struct data_blob_list_item);
 	if (!rep) {
