@@ -21,8 +21,6 @@ SRCDIR=`rpm --eval %_sourcedir`
 
 # At this point the SPECDIR and SRCDIR variables must have a value!
 
-USERID=`id -u`
-GRPID=`id -g`
 VERSION='3.2.0'
 REVISION='ctdb'
 SPECFILE="samba.spec"
@@ -43,49 +41,35 @@ case $RPMVER in
        ;;
 esac
 
-pushd .
-cd ../../source
-if [ -f Makefile ]; then 
-	make distclean
-fi
-popd
-
-pushd .
-cd ../../
-SRCTREE=`basename $PWD`
-if [ "x${DOCS_TARBALL}" != "x" ] && [ -f ${DOCS_TARBALL} ]; then
-    cp ${DOCS_TARBALL} ${SRCDIR}/${DOCS}
-fi
-cd ../
-chown -R ${USERID}.${GRPID} $SRCTREE
-if [ ! -d samba-${VERSION} ]; then
-	ln -s $SRCTREE samba-${VERSION} || exit 1
-fi
+pushd ../..
 echo -n "Creating samba-${VERSION}.tar.bz2 ... "
-tar --exclude=.svn --exclude=.bzr --exclude=.bzrignore --exclude=docs-orig -chf - samba-${VERSION}/. | bzip2 > ${SRCDIR}/samba-${VERSION}.tar.bz2
+git archive --prefix=samba-${VERSION}/ HEAD | bzip2 > ${SRCDIR}/samba-${VERSION}.tar.bz2
+RC=$?
+popd
 echo "Done."
-if [ $? -ne 0 ]; then
-	popd
-	cd ../../
+if [ $RC -ne 0 ]; then
         echo "Build failed!"
         exit 1
 fi
-
-popd
 
 
 ##
 ## copy additional source files
 ##
+if [ "x${DOCS_TARBALL}" != "x" ] && [ -f ${DOCS_TARBALL} ]; then
+    cp ${DOCS_TARBALL} ${SRCDIR}/${DOCS}
+fi
+
 chmod 755 setup/filter-requires-samba.sh
 tar --exclude=.svn -jcvf - setup > ${SRCDIR}/setup.tar.bz2
+
 cp -p ${SPECFILE} ${SPECDIR}
 
 ##
 ## Build
 ##
 echo "$(basename $0): Getting Ready to build release package"
-cd ${SPECDIR}
+pushd ${SPECDIR}
 ${RPM} -ba $EXTRA_OPTIONS $SPECFILE
 [ `arch` = "x86_64" ] && {
     echo "Building 32 bit winbind libs"
@@ -95,10 +79,7 @@ ${RPM} -ba $EXTRA_OPTIONS $SPECFILE
     ${RPM} -ba --rebuild --target=i386 $SPECFILE
 }
 
-
-
-
-cd ../../
+popd
 
 echo "$(basename $0): Done."
 
