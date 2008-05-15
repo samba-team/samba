@@ -107,15 +107,6 @@ Group:          Applications/System
 Compatibility package for 32 bit apps on 64 bit architecures
 %endif
 
-%ifarch i386 i486 i586 i686 ppc s390
-%package winbind-32bit
-Summary:        Samba winbind compatibility package for 32bit apps on 64bit archs
-Group:          Applications/System
-
-%description winbind-32bit
-Compatibility package for 32 bit apps on 64 bit architecures
-%endif
-
 
 #######################################################################
 %package doc
@@ -552,13 +543,6 @@ fi
 %attr(755,root,root) /%{_libarch}/security/pam_winbind.so
 %endif
 
-
-%ifarch i386 i486 i586 i686 ppc s390
-%files winbind-32bit
-%attr(755,root,root) /%{_libarch}/libnss_winbind.so*
-%attr(755,root,root) /%{_libarch}/libnss_wins.so*
-%attr(755,root,root) /%{_libarch}/security/pam_winbind.so
-%endif
 
 
 %changelog
