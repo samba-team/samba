@@ -161,7 +161,7 @@ void ctdb_disable_monitoring(struct ctdb_context *ctdb)
 void ctdb_enable_monitoring(struct ctdb_context *ctdb)
 {
 	ctdb->monitor->monitoring_mode  = CTDB_MONITORING_ACTIVE;
-	ctdb->monitor->next_interval = 1;
+	ctdb->monitor->next_interval = 2;
 	DEBUG(DEBUG_INFO,("Monitoring has been enabled\n"));
 }
 

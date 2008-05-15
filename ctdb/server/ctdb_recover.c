@@ -815,8 +815,6 @@ static void ctdb_start_recovery_callback(struct ctdb_context *ctdb, int status, 
 {
 	struct recovery_callback_state *state = talloc_get_type(p, struct recovery_callback_state);
 
-	ctdb_enable_monitoring(ctdb);
-
 	if (status != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " startrecovery event script failed (status %d)\n", status));
 	}
@@ -851,8 +849,6 @@ int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb,
 					 state, "startrecovery");
 
 	if (ret != 0) {
-		ctdb_enable_monitoring(ctdb);
-
 		DEBUG(DEBUG_ERR,(__location__ " Failed to start recovery\n"));
 		talloc_free(state);
 		return -1;
