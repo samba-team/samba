@@ -6507,6 +6507,26 @@ static struct smbconf_ctx *lp_smbconf_ctx(void)
 	return conf_ctx;
 }
 
+static bool process_registry_service(struct smbconf_service *service)
+{
+	uint32_t count;
+	bool ret;
+
+	if (service == NULL) {
+		return false;
+	}
+
+	for (count = 0; count < service->num_params; count++) {
+		ret = do_parameter(service->param_names[count],
+				   service->param_values[count],
+				   NULL);
+		if (ret != true) {
+			return false;
+		}
+	}
+	return true;
+}
+
 /*
  * process_registry_globals
  */
@@ -6514,7 +6534,6 @@ static bool process_registry_globals(void)
 {
 	WERROR werr;
 	struct smbconf_service *service = NULL;
-	uint32_t count;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	struct smbconf_ctx *conf_ctx = lp_smbconf_ctx();
 	bool ret = false;
@@ -6535,13 +6554,9 @@ static bool process_registry_globals(void)
 		goto done;
 	}
 
-	for (count = 0; count < service->num_params; count++) {
-		ret = do_parameter(service->param_names[count],
-				   service->param_values[count],
-				   NULL);
-		if (ret != true) {
-			goto done;
-		}
+	ret = process_registry_service(service);
+	if (!ret) {
+		goto done;
 	}
 
 	ret = do_parameter("registry shares", "yes", NULL);
