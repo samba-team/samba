@@ -41,7 +41,9 @@ case $RPMVER in
        ;;
 esac
 
-pushd ../..
+DIRNAME=$(dirname $0)
+
+pushd ${DIRNAME}/../..
 echo -n "Creating samba-${VERSION}.tar.bz2 ... "
 git archive --prefix=samba-${VERSION}/ HEAD | bzip2 > ${SRCDIR}/samba-${VERSION}.tar.bz2
 RC=$?
@@ -60,10 +62,14 @@ if [ "x${DOCS_TARBALL}" != "x" ] && [ -f ${DOCS_TARBALL} ]; then
     cp ${DOCS_TARBALL} ${SRCDIR}/${DOCS}
 fi
 
+pushd ${DIRNAME}
+
 chmod 755 setup/filter-requires-samba.sh
 tar --exclude=.svn -jcvf - setup > ${SRCDIR}/setup.tar.bz2
 
 cp -p ${SPECFILE} ${SPECDIR}
+
+popd
 
 ##
 ## Build
