@@ -203,7 +203,7 @@ enum monitor_result { MONITOR_OK, MONITOR_RECOVERY_NEEDED, MONITOR_ELECTION_NEED
 /*
   run the "recovered" eventscript on all nodes
  */
-static int run_recovered_eventscript(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+static int run_recovered_eventscript(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, const char *caller)
 {
 	TALLOC_CTX *tmp_ctx;
 
@@ -213,7 +213,8 @@ static int run_recovered_eventscript(struct ctdb_context *ctdb, struct ctdb_node
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_END_RECOVERY,
 			list_of_active_nodes(ctdb, nodemap, tmp_ctx, true),
 			CONTROL_TIMEOUT(), false, tdb_null, NULL) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event. Recovery failed.\n"));
+		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event when called from %s\n", caller));
+
 		talloc_free(tmp_ctx);
 		return -1;
 	}
@@ -1473,9 +1474,9 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - takeip finished\n"));
 
 	/* execute the "recovered" event script on all nodes */
-	ret = run_recovered_eventscript(ctdb, nodemap);
+	ret = run_recovered_eventscript(ctdb, nodemap, "do_recovery");
 	if (ret!=0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event on cluster\n"));
+		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event on cluster. Recovery process failed.\n"));
 		return -1;
 	}
 
@@ -2749,9 +2750,9 @@ again:
 		}
 
 		/* execute the "recovered" event script on all nodes */
-		ret = run_recovered_eventscript(ctdb, nodemap);
+		ret = run_recovered_eventscript(ctdb, nodemap, "monitor_cluster");
 		if (ret!=0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event on cluster\n"));
+			DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event on cluster. Update of public ips failed.\n"));
 			do_recovery(rec, mem_ctx, pnn, nodemap, 
 				    vnnmap, ctdb->pnn);
 		}
