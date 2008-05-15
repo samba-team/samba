@@ -8868,6 +8868,21 @@ bool lp_load_initial_only(const char *pszFname)
 			  false);
 }
 
+bool lp_load_with_registry_shares(const char *pszFname,
+				  bool global_only,
+				  bool save_defaults,
+				  bool add_ipc,
+				  bool initialize_globals)
+{
+	return lp_load_ex(pszFname,
+			  global_only,
+			  save_defaults,
+			  add_ipc,
+			  initialize_globals,
+			  true,
+			  true);
+}
+
 /***************************************************************************
  Reset the max number of services.
 ***************************************************************************/
