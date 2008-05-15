@@ -11,7 +11,7 @@
 #   /usr/src/redhat directory
 #
 
-# set DOCS_DIR to the path to a release tarball docs dir in order to get docs
+# set DOCS_TARBALL to the path to a docs release tarball in .tar.bz2 format
 
 # extra options passed to rpmbuild
 EXTRA_OPTIONS="$1"
@@ -26,6 +26,7 @@ GRPID=`id -g`
 VERSION='3.2.0'
 REVISION='ctdb'
 SPECFILE="samba.spec"
+DOCS="docs.tar.bz2"
 RPMVER=`rpm --version | awk '{print $3}'`
 RPM="rpmbuild"
 
@@ -52,9 +53,8 @@ popd
 pushd .
 cd ../../
 SRCTREE=`basename $PWD`
-if [ $DOCS_DIR ] && [ -d $DOCS_DIR ]; then
-    mv docs docs-orig
-    ln -s $DOCS_DIR docs
+if [ "x${DOCS_TARBALL}" != "x" ] && [ -f ${DOCS_TARBALL} ]; then
+    cp ${DOCS_TARBALL} ${SRCDIR}/${DOCS}
 fi
 cd ../
 chown -R ${USERID}.${GRPID} $SRCTREE
@@ -67,11 +67,6 @@ echo "Done."
 if [ $? -ne 0 ]; then
 	popd
 	cd ../../
-	# restore original structure if docs were specified
-	if [ ${DOCS_DIR} ] && [ -d docs-orig ] && [ -L docs ]; then
-	    rm docs
-	    mv docs-orig docs
-	fi
         echo "Build failed!"
         exit 1
 fi
@@ -103,12 +98,7 @@ ${RPM} -ba $EXTRA_OPTIONS $SPECFILE
 
 
 
-# restore original structure if docs were specified
 cd ../../
-if [ ${DOCS_DIR} ] && [ -d docs-orig ] && [ -L docs ]; then
-    rm docs
-    mv -f docs-orig docs
-fi
 
 echo "$(basename $0): Done."
 
