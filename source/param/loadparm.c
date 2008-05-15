@@ -8719,7 +8719,8 @@ bool lp_load_ex(const char *pszFname,
 		bool save_defaults,
 		bool add_ipc,
 		bool initialize_globals,
-		bool allow_include_registry)
+		bool allow_include_registry,
+		bool allow_registry_shares)
 {
 	char *n2 = NULL;
 	bool bRetval;
@@ -8793,7 +8794,8 @@ bool lp_load_ex(const char *pszFname,
 			lp_kill_all_services();
 			return lp_load_ex(pszFname, global_only, save_defaults,
 					  add_ipc, initialize_globals,
-					  allow_include_registry);
+					  allow_include_registry,
+					  allow_registry_shares);
 		}
 	} else if (lp_config_backend_is_registry()) {
 		bRetval = process_registry_globals();
@@ -8801,6 +8803,10 @@ bool lp_load_ex(const char *pszFname,
 		DEBUG(0, ("Illegal config  backend given: %d\n",
 			  lp_config_backend()));
 		bRetval = false;
+	}
+
+	if (bRetval && lp_registry_shares() && allow_registry_shares) {
+		bRetval = process_registry_shares();
 	}
 
 	lp_add_auto_services(lp_auto_services());
@@ -8844,7 +8850,7 @@ bool lp_load(const char *pszFname,
 			  save_defaults,
 			  add_ipc,
 			  initialize_globals,
-			  true);
+			  true, false);
 }
 
 bool lp_load_initial_only(const char *pszFname)
@@ -8854,6 +8860,7 @@ bool lp_load_initial_only(const char *pszFname)
 			  false,
 			  false,
 			  true,
+			  false,
 			  false);
 }
 
