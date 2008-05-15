@@ -15,6 +15,7 @@ URL: http://www.samba.org/
 Source: samba-%{version}.tar.bz2
 
 # Don't depend on Net::LDAP
+Source997: docs.tar.bz2
 Source998: filter-requires-samba.sh
 Source999: setup.tar.bz2
 
@@ -136,6 +137,7 @@ utilized by SWAT as well as the HTML and PDF version of "Using Samba",
 
 # setup the vendor files (init scripts, etc...)
 %setup -T -D -a 999 -n samba-%{version} -q
+%setup -T -D -a 997 -n samba-%{version} -q
 
 %build
 
