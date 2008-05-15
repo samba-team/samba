@@ -6984,7 +6984,7 @@ int net_rpc_printer(struct net_context *c, int argc, const char **argv)
 
 
 /**
- * Basic usage function for 'net rpc'
+ * Basic help function for 'net rpc'
  *
  * @param c	A net_context structure
  * @param argc  Standard main() style argc
@@ -6992,7 +6992,7 @@ int net_rpc_printer(struct net_context *c, int argc, const char **argv)
  *              stripped
  **/
 
-int net_rpc_usage(struct net_context *c, int argc, const char **argv)
+int net_rpc_help(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("  net rpc info \t\t\tshow basic info about a domain \n");
 	d_printf("  net rpc join \t\t\tto join a domain \n");
@@ -7036,7 +7036,7 @@ int net_rpc_usage(struct net_context *c, int argc, const char **argv)
  *              stripped
  **/
 
-int net_rpc_help(struct net_context *c, int argc, const char **argv)
+int net_rpc_usage(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"join", rpc_join_usage},
@@ -7048,15 +7048,16 @@ int net_rpc_help(struct net_context *c, int argc, const char **argv)
 		/*{"abortshutdown", rpc_shutdown_abort_usage},*/
 		/*{"shutdown", rpc_shutdown_usage}, */
 		{"vampire", rpc_vampire_usage},
+		{"help", net_rpc_help},
 		{NULL, NULL}
 	};
 
 	if (argc == 0) {
-		net_rpc_usage(c, argc, argv);
+		net_rpc_help(c, argc, argv);
 		return -1;
 	}
 
-	return net_run_function(c, argc, argv, func, rpc_user_usage);
+	return net_run_function(c, argc, argv, func, net_rpc_help);
 }
 
 /**

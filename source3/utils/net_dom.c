@@ -20,22 +20,14 @@
 #include "includes.h"
 #include "utils/net.h"
 
-static int net_dom_usage(struct net_context *c, int argc, const char **argv)
+int net_dom_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("usage: net dom join "
-		 "<domain=DOMAIN> <ou=OU> <account=ACCOUNT> <password=PASSWORD> <reboot>\n");
+		 "<domain=DOMAIN> <ou=OU> <account=ACCOUNT> "\
+		 "<password=PASSWORD> <reboot>\n  Join a remote machine\n");
 	d_printf("usage: net dom unjoin "
-		 "<account=ACCOUNT> <password=PASSWORD> <reboot>\n");
-
-	return -1;
-}
-
-int net_help_dom(struct net_context *c, int argc, const char **argv)
-{
-	d_printf("net dom join"\
-		"\n  Join a remote machine\n");
-	d_printf("net dom unjoin"\
-		"\n  Unjoin a remote machine\n");
+		 "<account=ACCOUNT> <password=PASSWORD> <reboot>\n"\
+		 "  Unjoin a remote machine\n");
 
 	return -1;
 }
@@ -238,7 +230,7 @@ int net_dom(struct net_context *c, int argc, const char **argv)
 	struct functable func[] = {
 		{"JOIN", net_dom_join},
 		{"UNJOIN", net_dom_unjoin},
-		{"HELP", net_help_dom},
+		{"HELP", net_dom_usage},
 		{NULL, NULL}
 	};
 
