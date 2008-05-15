@@ -2354,10 +2354,11 @@ union smb_search_first {
 #define SMB2_FIND_ID_BOTH_DIRECTORY_INFO 0x25
 #define SMB2_FIND_ID_FULL_DIRECTORY_INFO 0x26
 
-/* flags for RAW_FILEINFO_SMB2_ALL_EAS */
+/* flags for SMB2 find */
 #define SMB2_CONTINUE_FLAG_RESTART    0x01
 #define SMB2_CONTINUE_FLAG_SINGLE     0x02
-#define SMB2_CONTINUE_FLAG_NEW        0x10
+#define SMB2_CONTINUE_FLAG_INDEX      0x04
+#define SMB2_CONTINUE_FLAG_REOPEN     0x10
 
 	/* SMB2 Find */
 	struct smb2_find {
@@ -2370,7 +2371,7 @@ union smb_search_first {
 			/* uint16_t buffer_code;  0x21 = 0x20 + 1 */
 			uint8_t level;
 			uint8_t continue_flags; /* SMB2_CONTINUE_FLAG_* */
-			uint32_t unknown; /* perhaps a continue token? */
+			uint32_t file_index; 
 			/* struct smb2_handle handle; */
 			/* uint16_t pattern_ofs; */
 			/* uint16_t pattern_size; */
