@@ -249,6 +249,7 @@ bool ads_try_connect(ADS_STRUCT *ads, const char *server )
 
 	/* Store our site name. */
 	sitename_store( cldap_reply.domain, cldap_reply.client_site);
+	sitename_store( cldap_reply.dns_domain, cldap_reply.client_site);
 
 	ret = true;
  out:
