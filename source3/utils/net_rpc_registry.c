@@ -568,7 +568,7 @@ static NTSTATUS rpc_registry_getvalue_internal(struct net_context *c,
 		goto done;
 	}
 
-	print_registry_value(value);
+	print_registry_value(value, false);
 
 done:
 	rpccli_winreg_CloseKey(pipe_hnd, tmp_ctx, &key_hnd, NULL);
