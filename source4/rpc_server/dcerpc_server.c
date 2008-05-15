@@ -688,6 +688,7 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_
 	struct dcesrv_connection_context *context;
 	const struct dcesrv_interface *iface;
 	struct GUID uuid, *transfer_syntax_uuid;
+	NTSTATUS status;
 
 	if_version = call->pkt.u.alter.ctx_list[0].abstract_syntax.if_version;
 	uuid = call->pkt.u.alter.ctx_list[0].abstract_syntax.uuid;
@@ -720,6 +721,13 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_
 	context->handles = NULL;
 	DLIST_ADD(call->conn->contexts, context);
 	call->context = context;
+
+	if (iface) {
+		status = iface->bind(call, iface);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
 
 	return NT_STATUS_OK;
 }
