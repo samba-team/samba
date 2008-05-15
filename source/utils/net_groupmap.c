@@ -758,7 +758,7 @@ static int net_groupmap_memberships(struct net_context *c, int argc, const char 
 	return 0;
 }
 
-int net_help_groupmap(struct net_context *c, int argc, const char **argv)
+int net_groupmap_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("net groupmap add"\
 		"\n  Create a new group mapping\n");
@@ -801,7 +801,7 @@ int net_groupmap(struct net_context *c, int argc, const char **argv)
  		{"listmem", net_groupmap_listmem},
  		{"memberships", net_groupmap_memberships},
 		{"list", net_groupmap_list},
-		{"help", net_help_groupmap},
+		{"help", net_groupmap_usage},
 		{NULL, NULL}
 	};
 
@@ -812,8 +812,8 @@ int net_groupmap(struct net_context *c, int argc, const char **argv)
 	}
 
 	if ( argc )
-		return net_run_function(c, argc, argv, func, net_help_groupmap);
+		return net_run_function(c,argc, argv, func, net_groupmap_usage);
 
-	return net_help_groupmap(c, argc, argv );
+	return net_groupmap_usage(c, argc, argv);
 }
 

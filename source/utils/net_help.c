@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "utils/net.h"
 
-static int help_usage(struct net_context *c, int argc, const char **argv)
+static int net_help_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf(
 "\n"\
@@ -69,9 +69,9 @@ static int net_usage(struct net_context *c, int argc, const char **argv)
 int net_help(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
-		{"ADS", net_ads_help},
-		{"RAP", net_rap_help},
-		{"RPC", net_rpc_help},
+		{"ADS", net_ads_usage},
+		{"RAP", net_rap_usage},
+		{"RPC", net_rpc_usage},
 
 		{"FILE", net_file_usage},
 		{"SHARE", net_share_usage},
@@ -81,9 +81,9 @@ int net_help(struct net_context *c, int argc, const char **argv)
 		{"PRINTQ", net_rap_printq_usage},
 		{"USER", net_user_usage},
 		{"GROUP", net_group_usage},
-		{"GROUPMAP", net_help_groupmap},
+		{"GROUPMAP", net_groupmap_usage},
 		{"JOIN", net_join_usage},
-		{"DOM", net_help_dom},
+		{"DOM", net_dom_usage},
 		{"VALIDATE", net_rap_validate_usage},
 		{"GROUPMEMBER", net_rap_groupmember_usage},
 		{"ADMIN", net_rap_admin_usage},
@@ -97,7 +97,7 @@ int net_help(struct net_context *c, int argc, const char **argv)
 		{"AFS", net_afs_usage},
 #endif
 
-		{"HELP", help_usage},
+		{"HELP", net_help_usage},
 		{NULL, NULL}};
 
 	return net_run_function(c, argc, argv, func, net_usage);

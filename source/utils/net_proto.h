@@ -52,7 +52,7 @@ int net_run_function2(struct net_context *c, int argc, const char **argv,
 
 /* The following definitions come from utils/net_ads.c  */
 
-int net_ads_usage(struct net_context *c, int argc, const char **argv);
+int net_ads_help(struct net_context *c, int argc, const char **argv);
 ADS_STATUS ads_startup(struct net_context *c, bool only_own_domain, ADS_STRUCT **ads);
 ADS_STATUS ads_startup_nobind(struct net_context *c, bool only_own_domain, ADS_STRUCT **ads);
 int net_ads_check_our_domain(struct net_context *c);
@@ -65,18 +65,7 @@ int net_ads_printer_usage(struct net_context *c, int argc, const char **argv);
 int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv);
 int net_ads_keytab(struct net_context *c, int argc, const char **argv);
 int net_ads_kerberos(struct net_context *c, int argc, const char **argv);
-int net_ads_help(struct net_context *c, int argc, const char **argv);
-int net_ads(struct net_context *c, int argc, const char **argv);
-int net_ads_keytab(struct net_context *c, int argc, const char **argv);
-int net_ads_kerberos(struct net_context *c, int argc, const char **argv);
 int net_ads_usage(struct net_context *c, int argc, const char **argv);
-int net_ads_help(struct net_context *c, int argc, const char **argv);
-int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv);
-int net_ads_join(struct net_context *c, int argc, const char **argv);
-int net_ads_user(struct net_context *c, int argc, const char **argv);
-int net_ads_group(struct net_context *c, int argc, const char **argv);
-int net_ads_check(struct net_context *c);
-int net_ads_check_our_domain(struct net_context *c);
 int net_ads(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_ads_gpo.c  */
@@ -97,7 +86,7 @@ int get_my_ip_address( struct sockaddr_storage **pp_ss );
 
 /* The following definitions come from utils/net_dom.c  */
 
-int net_help_dom(struct net_context *c, int argc, const char **argv);
+int net_dom_usage(struct net_context *c, int argc, const char **argv);
 int net_dom(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_file.c  */
@@ -112,7 +101,7 @@ int net_group(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_groupmap.c  */
 
-int net_help_groupmap(struct net_context *c, int argc, const char **argv);
+int net_groupmap_usage(struct net_context *c, int argc, const char **argv);
 int net_groupmap(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_help.c  */
@@ -164,8 +153,8 @@ int net_rap_password_usage(struct net_context *c, int argc, const char **argv);
 int net_rap_password(struct net_context *c, int argc, const char **argv);
 int net_rap_admin_usage(struct net_context *c, int argc, const char **argv);
 int net_rap_admin(struct net_context *c, int argc, const char **argv);
-int net_rap_usage(struct net_context *c, int argc, const char **argv);
 int net_rap_help(struct net_context *c, int argc, const char **argv);
+int net_rap_usage(struct net_context *c, int argc, const char **argv);
 int net_rap(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_registry.c  */
@@ -233,8 +222,8 @@ bool net_rpc_check(struct net_context *c, unsigned flags);
 int rpc_printer_migrate(struct net_context *c, int argc, const char **argv);
 int rpc_printer_usage(struct net_context *c, int argc, const char **argv);
 int net_rpc_printer(struct net_context *c, int argc, const char **argv);
-int net_rpc_usage(struct net_context *c, int argc, const char **argv);
 int net_rpc_help(struct net_context *c, int argc, const char **argv);
+int net_rpc_usage(struct net_context *c, int argc, const char **argv);
 int net_rpc(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_rpc_audit.c  */

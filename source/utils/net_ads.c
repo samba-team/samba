@@ -27,7 +27,7 @@
 
 #ifdef HAVE_ADS
 
-int net_ads_usage(struct net_context *c, int argc, const char **argv)
+int net_ads_help(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("join [createupn[=principal]] [createcomputer=<org_unit>]\n");
 	d_printf("    Join the local machine to a ADS realm\n");
@@ -2163,7 +2163,7 @@ int net_ads_kerberos(struct net_context *c, int argc, const char **argv)
 }
 
 
-int net_ads_help(struct net_context *c, int argc, const char **argv)
+int net_ads_usage(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"USER", net_ads_user_usage},
@@ -2180,7 +2180,7 @@ int net_ads_help(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL}
 	};
 
-	return net_run_function(c, argc, argv, func, net_ads_usage);
+	return net_run_function(c, argc, argv, func, net_ads_help);
 }
 
 int net_ads(struct net_context *c, int argc, const char **argv)
@@ -2209,7 +2209,7 @@ int net_ads(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL}
 	};
 
-	return net_run_function(c, argc, argv, func, net_ads_usage);
+	return net_run_function(c, argc, argv, func, net_ads_help);
 }
 
 #else
