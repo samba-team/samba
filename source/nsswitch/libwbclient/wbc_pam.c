@@ -490,7 +490,6 @@ wbcErr wbcLogoffUser(const char *username,
 	struct winbindd_request request;
 	struct winbindd_response response;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	struct passwd *pw = NULL;
 
 	/* validate input */
 
