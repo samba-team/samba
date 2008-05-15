@@ -1430,7 +1430,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
  		 	 uint32 num_groups, const DOM_GID *gids,
 			 uint32 user_flgs, uint32 acct_flags,
 			 uchar user_session_key[16],
-			 uchar lm_session_key[16],
+			 uchar lm_session_key[8],
  			 const char *logon_srv, const char *logon_dom,
 			 const DOM_SID *dom_sid)
 {

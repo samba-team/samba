@@ -973,7 +973,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		fstring user_sid_string;
 		fstring group_sid_string;
 		unsigned char user_session_key[16];
-		unsigned char lm_session_key[16];
+		unsigned char lm_session_key[8];
 		unsigned char pipe_session_key[16];
 
 		sampw = server_info->sam_account;
@@ -1054,7 +1054,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 				}
 				memcpy(pipe_session_key, p->auth.a_u.schannel_auth->sess_key, 16);
 			}
-			SamOEMhash(lm_session_key, pipe_session_key, 16);
+			SamOEMhash(lm_session_key, pipe_session_key, 8);
 			memset(pipe_session_key, '\0', 16);
 		}
 		
