@@ -214,15 +214,18 @@ check the space on a device
 ****************************************************************************/
 static int do_dskattr(struct smbclient_context *ctx)
 {
-	int total, bsize, avail;
+	uint32_t bsize;
+	uint64_t total, avail;
 
 	if (NT_STATUS_IS_ERR(smbcli_dskattr(ctx->cli->tree, &bsize, &total, &avail))) {
 		d_printf("Error in dskattr: %s\n",smbcli_errstr(ctx->cli->tree)); 
 		return 1;
 	}
 
-	d_printf("\n\t\t%d blocks of size %d. %d blocks available\n",
-		 total, bsize, avail);
+	d_printf("\n\t\t%llu blocks of size %u. %llu blocks available\n",
+		 (unsigned long long)total, 
+		 (unsigned)bsize, 
+		 (unsigned long long)avail);
 
 	return 0;
 }
