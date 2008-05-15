@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 37
+Release: 38
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,19 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Fri May 16 2008 : Version 1.0.38
+ - Add machine readable output support to "ctdb getmonmode"
+ - Lots of tweaks and enhancements if the event scripts are "slow"
+ - Merge from tridge: an attempt to break the chicken-and-egg deadlock that
+   net conf introduces if used from an eventscript.
+ - Enhance tickles so we can tickle an ipv6 connection.
+ - Start adding ipv6 support : create a new container to replace sockaddr_in.
+ - Add a checksum routine for ipv6/tcp
+ - When starting up ctdb, let the init script do a tdbdump on all
+   persistent databases and verify that they are good (i.e. not corrupted).
+ - Try to use "safe transactions" when writing to a persistent database
+   that was opened with the TDB_NOSYNC flag. If we can get the transaction
+   thats great, if we cant  we have to write anyway since we cant block here.
 * Mon May 12 2008 : Version 1.0.37
  - When we shutdown ctdb we close the transport down before we run the 
    "shutdown" eventscripts. If ctdb decides to send a packet to a remote node
