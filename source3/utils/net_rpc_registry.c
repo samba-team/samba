@@ -583,7 +583,7 @@ static int rpc_registry_getvalue(struct net_context *c, int argc,
 				 const char **argv)
 {
 	if (argc != 2) {
-		d_fprintf(stderr, "usage: net rpc registry deletevalue <key> "
+		d_fprintf(stderr, "usage: net rpc registry getvalue <key> "
 			  "<valuename>\n");
 		return -1;
 	}
