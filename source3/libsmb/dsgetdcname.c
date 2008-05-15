@@ -342,11 +342,17 @@ static NTSTATUS store_cldap_reply(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
+		if (logon29.client_site) {
+			sitename_store(logon29.domain, logon29.client_site);
+		}
 	}
 	if (logon29.dns_domain) {
 		status = dsgetdcname_cache_store(mem_ctx, logon29.dns_domain, &blob);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
+		}
+		if (logon29.client_site) {
+			sitename_store(logon29.dns_domain, logon29.client_site);
 		}
 	}
 
