@@ -352,7 +352,7 @@ ssize_t cli_write(struct cli_state *cli,
 	}
 
 	while (received < blocks) {
-		ssize_t size1;
+		ssize_t size1 = 0;
 
 		while ((issued - received < mpx) && (issued < blocks)) {
 			ssize_t bsent = issued * block;
