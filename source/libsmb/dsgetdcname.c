@@ -1390,6 +1390,7 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	struct netr_DsRGetDCNameInfo *myinfo = NULL;
+	char *query_site = NULL;
 
 	DEBUG(10,("dsgetdcname: domain_name: %s, "
 		  "domain_guid: %s, site_name: %s, flags: 0x%08x\n",
@@ -1404,29 +1405,38 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (!site_name) {
+		query_site = sitename_fetch(domain_name);
+	} else {
+		query_site = SMB_STRDUP(site_name);
+	}
+
 	if (flags & DS_FORCE_REDISCOVERY) {
 		goto rediscover;
 	}
 
 	status = dsgetdcname_cached(mem_ctx, msg_ctx, domain_name, domain_guid,
-				    flags, site_name, &myinfo);
+				    flags, query_site, &myinfo);
 	if (NT_STATUS_IS_OK(status)) {
 		*info = myinfo;
-		return status;
+		goto done;
 	}
 
 	if (flags & DS_BACKGROUND_ONLY) {
-		return status;
+		goto done;
 	}
 
  rediscover:
 	status = dsgetdcname_rediscover(mem_ctx, msg_ctx, domain_name,
-					domain_guid, flags, site_name,
+					domain_guid, flags, query_site,
 					&myinfo);
 
  	if (NT_STATUS_IS_OK(status)) {
 		*info = myinfo;
 	}
+
+ done:
+	SAFE_FREE(query_site);
 
 	return status;
 }
