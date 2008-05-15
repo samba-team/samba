@@ -2748,11 +2748,17 @@ again:
 
 		/* execute the "recovered" event script on all nodes */
 		ret = run_recovered_eventscript(ctdb, nodemap, "monitor_cluster");
+#if 0
+// we cant check whether the event completed successfully
+// since this script WILL fail if the node is in recovery mode
+// and if that race happens, the code here would just cause a second
+// cascading recovery.
 		if (ret!=0) {
 			DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event on cluster. Update of public ips failed.\n"));
 			do_recovery(rec, mem_ctx, pnn, nodemap, 
 				    vnnmap, ctdb->pnn);
 		}
+#endif
 	}
 
 	goto again;
