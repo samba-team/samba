@@ -112,7 +112,7 @@ static NTSTATUS smb2srv_find_backend(struct smb2srv_find_state *state)
 		return NT_STATUS_FOOBAR;
 	}
 
-	if (info->in.continue_flags & SMB2_CONTINUE_FLAG_NEW) {
+	if (info->in.continue_flags & SMB2_CONTINUE_FLAG_REOPEN) {
 		state->ff = talloc(state, union smb_search_first);
 		NT_STATUS_HAVE_NO_MEMORY(state->ff);
 
