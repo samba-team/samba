@@ -580,6 +580,33 @@ done:
 	return status;
 }
 
+static NTSTATUS rpc_registry_getvalue_full(struct net_context *c,
+					   const DOM_SID *domain_sid,
+					   const char *domain_name,
+					   struct cli_state *cli,
+					   struct rpc_pipe_client *pipe_hnd,
+					   TALLOC_CTX *mem_ctx,
+					   int argc,
+					   const char **argv)
+{
+	return rpc_registry_getvalue_internal(c, domain_sid, domain_name,
+					      cli, pipe_hnd, mem_ctx, false,
+					      argc, argv);
+}
+
+static int rpc_registry_getvalue(struct net_context *c, int argc,
+				 const char **argv)
+{
+	if (argc != 2) {
+		d_fprintf(stderr, "usage: net rpc registry getvalue <key> "
+			  "<valuename>\n");
+		return -1;
+	}
+
+	return run_rpc_command(c, NULL, PI_WINREG, 0,
+		rpc_registry_getvalue_full, argc, argv);
+}
+
 static NTSTATUS rpc_registry_getvalue_raw(struct net_context *c,
 					  const DOM_SID *domain_sid,
 					  const char *domain_name,
@@ -590,12 +617,12 @@ static NTSTATUS rpc_registry_getvalue_raw(struct net_context *c,
 					  const char **argv)
 {
 	return rpc_registry_getvalue_internal(c, domain_sid, domain_name,
-					      cli, pipe_hnd, mem_ctx, false,
+					      cli, pipe_hnd, mem_ctx, true,
 					      argc, argv);
 }
 
-static int rpc_registry_getvalue(struct net_context *c, int argc,
-				 const char **argv)
+static int rpc_registry_getvalueraw(struct net_context *c, int argc,
+				    const char **argv)
 {
 	if (argc != 2) {
 		d_fprintf(stderr, "usage: net rpc registry getvalue <key> "
@@ -1196,6 +1223,8 @@ int net_rpc_registry(struct net_context *c, int argc, const char **argv)
 		{ "deletekey",  rpc_registry_deletekey,
 		  "Delete a registry key" },
 		{ "getvalue", rpc_registry_getvalue,
+		  "Print a registry value" },
+		{ "getvalueraw", rpc_registry_getvalueraw,
 		  "Print a registry value" },
 		{ "setvalue",  rpc_registry_setvalue,
 		  "Set a new registry value" },
