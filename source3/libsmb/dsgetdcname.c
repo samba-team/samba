@@ -582,7 +582,8 @@ static NTSTATUS dsgetdcname_cached(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-static bool check_allowed_required_flags(uint32_t flags)
+static bool check_allowed_required_flags(uint32_t flags,
+					 const char *site_name)
 {
 	uint32_t return_type = flags & (DS_RETURN_FLAT_NAME|DS_RETURN_DNS_NAME);
 	uint32_t offered_type = flags & (DS_IS_FLAT_NAME|DS_IS_DNS_NAME);
@@ -592,6 +593,10 @@ static bool check_allowed_required_flags(uint32_t flags)
 	 * (DS_PDC_REQUIRED, DS_KDC_REQUIRED, DS_GC_SERVER_REQUIRED) */
 
 	debug_dsdcinfo_flags(10, flags);
+
+	if ((flags & DS_TRY_NEXTCLOSEST_SITE) && site_name) {
+		return false;
+	}
 
 	if (return_type == (DS_RETURN_FLAT_NAME|DS_RETURN_DNS_NAME)) {
 		return false;
@@ -1394,7 +1399,7 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 
 	*info = NULL;
 
-	if (!check_allowed_required_flags(flags)) {
+	if (!check_allowed_required_flags(flags, site_name)) {
 		DEBUG(0,("invalid flags specified\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
