@@ -6516,6 +6516,10 @@ static bool process_registry_service(struct smbconf_service *service)
 		return false;
 	}
 
+	ret = do_section(service->name, NULL);
+	if (ret != true) {
+		return false;
+	}
 	for (count = 0; count < service->num_params; count++) {
 		ret = do_parameter(service->param_names[count],
 				   service->param_values[count],
