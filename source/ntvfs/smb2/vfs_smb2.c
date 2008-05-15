@@ -37,6 +37,8 @@
 #include "lib/util/dlinklist.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
+#include "libcli/smb2/smb2.h"
+#include "libcli/smb2/smb2_calls.h"
 
 struct cvfs_file {
 	struct cvfs_file *prev, *next;
@@ -46,13 +48,17 @@ struct cvfs_file {
 
 /* this is stored in ntvfs_private */
 struct cvfs_private {
-	struct smbcli_tree *tree;
+	struct smb2_tree *tree;
 	struct smbcli_transport *transport;
 	struct ntvfs_module_context *ntvfs;
 	struct async_info *pending;
 	struct cvfs_file *files;
-	bool map_generic;
-	bool map_trans2;
+
+	/* a handle on the root of the share */
+	/* TODO: leaving this handle open could prevent other users
+	   from opening the share with exclusive access. We probably
+	   need to open it on demand */
+	struct smb2_handle roothandle;
 };
 
 
@@ -61,12 +67,10 @@ struct async_info {
 	struct async_info *next, *prev;
 	struct cvfs_private *cvfs;
 	struct ntvfs_request *req;
-	struct smbcli_request *c_req;
+	struct smb2_request *c_req;
 	struct cvfs_file *f;
 	void *parms;
 };
-
-#define SETUP_PID private->tree->session->pid = req->smbpid
 
 #define SETUP_FILE_HERE(f) do { \
 	f = ntvfs_handle_get_backend_data(io->generic.in.file.ntvfs, ntvfs); \
@@ -79,23 +83,14 @@ struct async_info {
 	SETUP_FILE_HERE(f); \
 } while (0)
 
-#define SETUP_PID_AND_FILE do { \
-	SETUP_PID; \
-	SETUP_FILE; \
-} while (0)
+#define SMB2_SERVER		"smb2:server"
+#define SMB2_USER		"smb2:user"
+#define SMB2_PASSWORD		"smb2:password"
+#define SMB2_DOMAIN		"smb2:domain"
+#define SMB2_SHARE		"smb2:share"
+#define SMB2_USE_MACHINE_ACCT	"smb2:use-machine-account"
 
-#define CIFS_SERVER		"cifs:server"
-#define CIFS_USER		"cifs:user"
-#define CIFS_PASSWORD		"cifs:password"
-#define CIFS_DOMAIN		"cifs:domain"
-#define CIFS_SHARE		"cifs:share"
-#define CIFS_USE_MACHINE_ACCT	"cifs:use-machine-account"
-#define CIFS_MAP_GENERIC	"cifs:map-generic"
-#define CIFS_MAP_TRANS2		"cifs:map-trans2"
-
-#define CIFS_USE_MACHINE_ACCT_DEFAULT	false
-#define CIFS_MAP_GENERIC_DEFAULT	false
-#define CIFS_MAP_TRANS2_DEFAULT		true
+#define SMB2_USE_MACHINE_ACCT_DEFAULT	false
 
 /*
   a handler for oplock break events from the server - these need to be passed
@@ -115,14 +110,42 @@ static bool oplock_handler(struct smbcli_transport *transport, uint16_t tid, uin
 	}
 
 	if (!h) {
-		DEBUG(5,("vfs_cifs: ignoring oplock break level %d for fnum %d\n", level, fnum));
+		DEBUG(5,("vfs_smb2: ignoring oplock break level %d for fnum %d\n", level, fnum));
 		return true;
 	}
 
-	DEBUG(5,("vfs_cifs: sending oplock break level %d for fnum %d\n", level, fnum));
+	DEBUG(5,("vfs_smb2: sending oplock break level %d for fnum %d\n", level, fnum));
 	status = ntvfs_send_oplock_break(private->ntvfs, h, level);
 	if (!NT_STATUS_IS_OK(status)) return false;
 	return true;
+}
+
+/*
+  return a handle to the root of the share
+*/
+static NTSTATUS smb2_get_roothandle(struct smb2_tree *tree, struct smb2_handle *handle)
+{
+	struct smb2_create io;
+	NTSTATUS status;
+
+	ZERO_STRUCT(io);
+	io.in.oplock_level = 0;
+	io.in.desired_access = SEC_STD_SYNCHRONIZE | SEC_DIR_READ_ATTRIBUTE | SEC_DIR_LIST;
+	io.in.file_attributes   = 0;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE|
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	io.in.create_options = 0;
+	io.in.fname = NULL;
+
+	status = smb2_create(tree, tree, &io);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	*handle = io.out.file.handle;
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -134,9 +157,9 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 	struct cvfs_private *private;
 	const char *host, *user, *pass, *domain, *remote_share;
-	struct smb_composite_connect io;
 	struct composite_context *creq;
 	struct share_config *scfg = ntvfs->ctx->config;
+	struct smb2_tree *tree;
 
 	struct cli_credentials *credentials;
 	bool machine_account;
@@ -145,16 +168,16 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	 * For now we use parametric options, type cifs.
 	 * Later we will use security=server and auth_server.c.
 	 */
-	host = share_string_option(scfg, CIFS_SERVER, NULL);
-	user = share_string_option(scfg, CIFS_USER, NULL);
-	pass = share_string_option(scfg, CIFS_PASSWORD, NULL);
-	domain = share_string_option(scfg, CIFS_DOMAIN, NULL);
-	remote_share = share_string_option(scfg, CIFS_SHARE, NULL);
+	host = share_string_option(scfg, SMB2_SERVER, NULL);
+	user = share_string_option(scfg, SMB2_USER, NULL);
+	pass = share_string_option(scfg, SMB2_PASSWORD, NULL);
+	domain = share_string_option(scfg, SMB2_DOMAIN, NULL);
+	remote_share = share_string_option(scfg, SMB2_SHARE, NULL);
 	if (!remote_share) {
 		remote_share = sharename;
 	}
 
-	machine_account = share_bool_option(scfg, CIFS_USE_MACHINE_ACCT, CIFS_USE_MACHINE_ACCT_DEFAULT);
+	machine_account = share_bool_option(scfg, SMB2_USE_MACHINE_ACCT, SMB2_USE_MACHINE_ACCT_DEFAULT);
 
 	private = talloc_zero(ntvfs, struct cvfs_private);
 	if (!private) {
@@ -199,31 +222,19 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* connect to the server, using the smbd event context */
-	io.in.dest_host = host;
-	io.in.dest_ports = lp_smb_ports(ntvfs->ctx->lp_ctx);
-	io.in.called_name = host;
-	io.in.credentials = credentials;
-	io.in.fallback_to_anonymous = false;
-	io.in.workgroup = lp_workgroup(ntvfs->ctx->lp_ctx);
-	io.in.service = remote_share;
-	io.in.service_type = "?????";
-	lp_smbcli_options(ntvfs->ctx->lp_ctx, &io.in.options);
+	creq = smb2_connect_send(private, host, remote_share, 
+				 lp_resolve_context(ntvfs->ctx->lp_ctx),
+				 credentials,
+				 ntvfs->ctx->event_ctx);
 
-	if (!(ntvfs->ctx->client_caps & NTVFS_CLIENT_CAP_LEVEL_II_OPLOCKS)) {
-		io.in.options.use_level2_oplocks = false;
-	}
-
-	creq = smb_composite_connect_send(&io, private, 
-					  lp_resolve_context(ntvfs->ctx->lp_ctx),
-					  ntvfs->ctx->event_ctx);
-	status = smb_composite_connect_recv(creq, private);
+	status = smb2_connect_recv(creq, private, &tree);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	private->tree = io.out.tree;
+	status = smb2_get_roothandle(tree, &private->roothandle);
+	NT_STATUS_NOT_OK_RETURN(status);
 
+	private->tree = tree;
 	private->transport = private->tree->session->transport;
-	SETUP_PID;
 	private->ntvfs = ntvfs;
 
 	ntvfs->ctx->fs_type = talloc_strdup(ntvfs->ctx, "NTFS");
@@ -232,12 +243,9 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->dev_type);
 
 	/* we need to receive oplock break requests from the server */
+	/* TODO: enable oplocks 
 	smbcli_oplock_handler(private->transport, oplock_handler, private);
-
-	private->map_generic = share_bool_option(scfg, CIFS_MAP_GENERIC, CIFS_MAP_GENERIC_DEFAULT);
-
-	private->map_trans2 = share_bool_option(scfg, CIFS_MAP_TRANS2, CIFS_MAP_TRANS2_DEFAULT);
-
+	*/
 	return NT_STATUS_OK;
 }
 
@@ -252,7 +260,7 @@ static NTSTATUS cvfs_disconnect(struct ntvfs_module_context *ntvfs)
 	/* first cleanup pending requests */
 	for (a=private->pending; a; a = an) {
 		an = a->next;
-		smbcli_request_destroy(a->c_req);
+		smb2_request_destroy(a->c_req);
 		talloc_free(a);
 	}
 
@@ -276,11 +284,13 @@ static int async_info_destructor(struct async_info *async)
   this handler can only be used for functions that don't return any
   parameters (those that just return a status code)
  */
-static void async_simple(struct smbcli_request *c_req)
+static void async_simple(struct smb2_request *c_req)
 {
 	struct async_info *async = c_req->async.private;
 	struct ntvfs_request *req = async->req;
-	req->async_states->status = smbcli_request_simple_recv(c_req);
+
+	smb2_request_receive(c_req);
+	req->async_states->status = smb2_request_destroy(c_req);
 	talloc_free(async);
 	req->async_states->send_fn(req);
 }
@@ -321,8 +331,7 @@ static NTSTATUS cvfs_unlink(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
-	SETUP_PID;
-
+	return NT_STATUS_NOT_IMPLEMENTED;
 	/* see if the front end will allow us to perform this
 	   function asynchronously.  */
 	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
@@ -355,7 +364,7 @@ static NTSTATUS cvfs_ioctl(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
-	SETUP_PID_AND_FILE;
+	SETUP_FILE;
 
 	/* see if the front end will allow us to perform this
 	   function asynchronously.  */
@@ -375,15 +384,31 @@ static NTSTATUS cvfs_chkpath(struct ntvfs_module_context *ntvfs,
 			     struct ntvfs_request *req, union smb_chkpath *cp)
 {
 	struct cvfs_private *private = ntvfs->private_data;
-	struct smbcli_request *c_req;
-
-	SETUP_PID;
-
+	struct smb2_request *c_req;
+	struct smb2_find f;
+	
+	/* SMB2 doesn't have a chkpath operation, and also doesn't
+	 have a query path info call, so the best seems to be to do a
+	 find call, using the roothandle we established at connect
+	 time */
+	ZERO_STRUCT(f);
+	f.in.file.handle	= private->roothandle;
+	f.in.level              = SMB2_FIND_DIRECTORY_INFO;
+	f.in.pattern		= cp->chkpath.in.path;
+	/* SMB2 find doesn't accept \ or the empty string - this is the best
+	   approximation */
+	if (strcmp(f.in.pattern, "\\") == 0 || 
+	    strcmp(f.in.pattern, "") == 0) {
+		f.in.pattern		= "?";
+	}
+	f.in.continue_flags	= SMB2_CONTINUE_FLAG_SINGLE | SMB2_CONTINUE_FLAG_RESTART;
+	f.in.max_response_size	= 0x1000;
+	
 	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
-		return smb_raw_chkpath(private->tree, cp);
+		return smb2_find(private->tree, req, &f);
 	}
 
-	c_req = smb_raw_chkpath_send(private->tree, cp);
+	c_req = smb2_find_send(private->tree, &f);
 
 	SIMPLE_ASYNC_TAIL;
 }
@@ -395,6 +420,7 @@ static void async_qpathinfo(struct smbcli_request *c_req)
 {
 	struct async_info *async = c_req->async.private;
 	struct ntvfs_request *req = async->req;
+	return NT_STATUS_NOT_IMPLEMENTED;
 	req->async_states->status = smb_raw_pathinfo_recv(c_req, req, async->parms);
 	talloc_free(async);
 	req->async_states->send_fn(req);
@@ -408,8 +434,6 @@ static NTSTATUS cvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
-
-	SETUP_PID;
 
 	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_pathinfo(private->tree, req, info);
@@ -427,6 +451,7 @@ static void async_qfileinfo(struct smbcli_request *c_req)
 {
 	struct async_info *async = c_req->async.private;
 	struct ntvfs_request *req = async->req;
+	return NT_STATUS_NOT_IMPLEMENTED;
 	req->async_states->status = smb_raw_fileinfo_recv(c_req, req, async->parms);
 	talloc_free(async);
 	req->async_states->send_fn(req);
@@ -441,7 +466,8 @@ static NTSTATUS cvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
-	SETUP_PID_AND_FILE;
+	return NT_STATUS_NOT_IMPLEMENTED;
+	SETUP_FILE;
 
 	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_fileinfo(private->tree, req, io);
@@ -462,8 +488,7 @@ static NTSTATUS cvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
-	SETUP_PID;
-
+	return NT_STATUS_NOT_IMPLEMENTED;
 	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_setpathinfo(private->tree, st);
 	}
@@ -511,10 +536,8 @@ static NTSTATUS cvfs_open(struct ntvfs_module_context *ntvfs,
 	struct cvfs_file *f;
 	NTSTATUS status;
 
-	SETUP_PID;
-
-	if (io->generic.level != RAW_OPEN_GENERIC &&
-	    private->map_generic) {
+	return NT_STATUS_NOT_IMPLEMENTED;
+	if (io->generic.level != RAW_OPEN_GENERIC) {
 		return ntvfs_map_open(ntvfs, req, io);
 	}
 
@@ -556,8 +579,7 @@ static NTSTATUS cvfs_mkdir(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
-	SETUP_PID;
-
+	return NT_STATUS_NOT_IMPLEMENTED;
 	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_mkdir(private->tree, md);
 	}
@@ -576,8 +598,7 @@ static NTSTATUS cvfs_rmdir(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
-	SETUP_PID;
-
+	return NT_STATUS_NOT_IMPLEMENTED;
 	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_rmdir(private->tree, rd);
 	}
@@ -595,7 +616,7 @@ static NTSTATUS cvfs_rename(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
-	SETUP_PID;
+	return NT_STATUS_NOT_IMPLEMENTED;
 
 	if (ren->nttrans.level == RAW_RENAME_NTTRANS) {
 		struct cvfs_file *f;
@@ -643,10 +664,8 @@ static NTSTATUS cvfs_read(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
-	SETUP_PID;
-
-	if (io->generic.level != RAW_READ_GENERIC &&
-	    private->map_generic) {
+	return NT_STATUS_NOT_IMPLEMENTED;
+	if (io->generic.level != RAW_READ_GENERIC) {
 		return ntvfs_map_read(ntvfs, req, io);
 	}
 
@@ -682,10 +701,8 @@ static NTSTATUS cvfs_write(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
-	SETUP_PID;
-
-	if (io->generic.level != RAW_WRITE_GENERIC &&
-	    private->map_generic) {
+	return NT_STATUS_NOT_IMPLEMENTED;
+	if (io->generic.level != RAW_WRITE_GENERIC) {
 		return ntvfs_map_write(ntvfs, req, io);
 	}
 	SETUP_FILE;
@@ -721,7 +738,8 @@ static NTSTATUS cvfs_seek(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
-	SETUP_PID_AND_FILE;
+	return NT_STATUS_NOT_IMPLEMENTED;
+	SETUP_FILE;
 
 	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_seek(private->tree, io);
@@ -742,7 +760,7 @@ static NTSTATUS cvfs_flush(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
-	SETUP_PID;
+	return NT_STATUS_NOT_IMPLEMENTED;
 	switch (io->generic.level) {
 	case RAW_FLUSH_FLUSH:
 		SETUP_FILE;
@@ -773,10 +791,8 @@ static NTSTATUS cvfs_close(struct ntvfs_module_context *ntvfs,
 	struct smbcli_request *c_req;
 	struct cvfs_file *f;
 
-	SETUP_PID;
-
-	if (io->generic.level != RAW_CLOSE_GENERIC &&
-	    private->map_generic) {
+	return NT_STATUS_NOT_IMPLEMENTED;
+	if (io->generic.level != RAW_CLOSE_GENERIC) {
 		return ntvfs_map_close(ntvfs, req, io);
 	}
 	SETUP_FILE_HERE(f);
@@ -804,8 +820,7 @@ static NTSTATUS cvfs_exit(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
-	SETUP_PID;
-
+	return NT_STATUS_NOT_IMPLEMENTED;
 	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_exit(private->tree->session);
 	}
@@ -844,6 +859,7 @@ static NTSTATUS cvfs_cancel(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct async_info *a;
 
+	return NT_STATUS_NOT_IMPLEMENTED;
 	/* find the matching request */
 	for (a=private->pending;a;a=a->next) {
 		if (a->req == req) {
@@ -867,10 +883,8 @@ static NTSTATUS cvfs_lock(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
-	SETUP_PID;
-
-	if (io->generic.level != RAW_LOCK_GENERIC &&
-	    private->map_generic) {
+	return NT_STATUS_NOT_IMPLEMENTED;
+	if (io->generic.level != RAW_LOCK_GENERIC) {
 		return ntvfs_map_lock(ntvfs, req, io);
 	}
 	SETUP_FILE;
@@ -893,7 +907,8 @@ static NTSTATUS cvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
-	SETUP_PID_AND_FILE;
+	return NT_STATUS_NOT_IMPLEMENTED;
+	SETUP_FILE;
 
 	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_setfileinfo(private->tree, io);
@@ -907,11 +922,11 @@ static NTSTATUS cvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 /*
   a handler for async fsinfo replies
  */
-static void async_fsinfo(struct smbcli_request *c_req)
+static void async_fsinfo(struct smb2_request *c_req)
 {
 	struct async_info *async = c_req->async.private;
 	struct ntvfs_request *req = async->req;
-	req->async_states->status = smb_raw_fsinfo_recv(c_req, req, async->parms);
+	req->async_states->status = smb2_getinfo_fs_recv(c_req, req, async->parms);
 	talloc_free(async);
 	req->async_states->send_fn(req);
 }
@@ -923,15 +938,49 @@ static NTSTATUS cvfs_fsinfo(struct ntvfs_module_context *ntvfs,
 			    struct ntvfs_request *req, union smb_fsinfo *fs)
 {
 	struct cvfs_private *private = ntvfs->private_data;
-	struct smbcli_request *c_req;
+	struct smb2_request *c_req;
+	enum smb_fsinfo_level level = fs->generic.level;
 
-	SETUP_PID;
+	switch (level) {
+		/* some levels go straight through */
+	case RAW_QFS_VOLUME_INFORMATION:
+	case RAW_QFS_SIZE_INFORMATION:
+	case RAW_QFS_DEVICE_INFORMATION:
+	case RAW_QFS_ATTRIBUTE_INFORMATION:
+	case RAW_QFS_QUOTA_INFORMATION:
+	case RAW_QFS_FULL_SIZE_INFORMATION:
+	case RAW_QFS_OBJECTID_INFORMATION:
+		break;
 
-	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
-		return smb_raw_fsinfo(private->tree, req, fs);
+		/* some get mapped */
+	case RAW_QFS_VOLUME_INFO:
+		level = RAW_QFS_VOLUME_INFORMATION;
+		break;
+	case RAW_QFS_SIZE_INFO:
+		level = RAW_QFS_SIZE_INFORMATION;
+		break;
+	case RAW_QFS_DEVICE_INFO:
+		level = RAW_QFS_DEVICE_INFORMATION;
+		break;
+	case RAW_QFS_ATTRIBUTE_INFO:
+		level = RAW_QFS_ATTRIBUTE_INFO;
+		break;
+
+	default:
+		/* the rest get refused for now */
+		DEBUG(0,("fsinfo level %u not possible on SMB2\n",
+			 (unsigned)fs->generic.level));
+		break;
 	}
 
-	c_req = smb_raw_fsinfo_send(private->tree, req, fs);
+	fs->generic.level = level;
+	fs->generic.handle = private->roothandle;
+
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
+		return smb2_getinfo_fs(private->tree, req, fs);
+	}
+
+	c_req = smb2_getinfo_fs_send(private->tree, fs);
 
 	ASYNC_RECV_TAIL(fs, async_fsinfo);
 }
@@ -954,10 +1003,72 @@ static NTSTATUS cvfs_search_first(struct ntvfs_module_context *ntvfs,
 				  bool (*callback)(void *, const union smb_search_data *))
 {
 	struct cvfs_private *private = ntvfs->private_data;
+	struct smb2_find f;
+	enum smb_search_data_level smb2_level;
+	uint32_t continue_flags = 0;
+	uint_t count, i;
+	union smb_search_data *data;
+	NTSTATUS status;
 
-	SETUP_PID;
+	if (io->generic.level != RAW_SEARCH_TRANS2) {
+		DEBUG(0,("We only support trans2 search in smb2 backend\n"));
+		return NT_STATUS_NOT_SUPPORTED;
+	}
 
-	return smb_raw_search_first(private->tree, req, io, search_private, callback);
+	switch (io->generic.data_level) {
+	case RAW_SEARCH_DATA_DIRECTORY_INFO:
+		smb2_level = SMB2_FIND_DIRECTORY_INFO;
+		break;
+	case RAW_SEARCH_DATA_FULL_DIRECTORY_INFO:
+		smb2_level = SMB2_FIND_FULL_DIRECTORY_INFO;
+		break;
+	case RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO:
+		smb2_level = SMB2_FIND_BOTH_DIRECTORY_INFO;
+		break;
+	case RAW_SEARCH_DATA_NAME_INFO:
+		smb2_level = SMB2_FIND_NAME_INFO;
+		break;
+	case RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO:
+		smb2_level = SMB2_FIND_ID_FULL_DIRECTORY_INFO;
+		break;
+	case RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO:
+		smb2_level = SMB2_FIND_ID_BOTH_DIRECTORY_INFO;
+		break;
+	default:
+		DEBUG(0,("Unsupported search level %u for smb2 backend\n",
+			 (unsigned)io->generic.data_level));
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	/* we do the search on the roothandle. This only works because
+	   search is synchronous, otherwise we'd have no way to
+	   distinguish multiple searches happening at once
+	*/
+	ZERO_STRUCT(f);
+	f.in.file.handle	= private->roothandle;
+	f.in.level              = smb2_level;
+	f.in.pattern		= io->t2ffirst.in.pattern;
+	while (f.in.pattern[0] == '\\') {
+		f.in.pattern++;
+	}
+	f.in.continue_flags	= 0;
+	f.in.max_response_size	= 0x10000;
+
+	status = smb2_find_level(private->tree, req, &f, &count, &data);
+	NT_STATUS_NOT_OK_RETURN(status);	
+
+	for (i=0;i<count;i++) {
+		if (!callback(search_private, &data[i])) break;
+	}
+
+	io->t2ffirst.out.handle = 0;
+	io->t2ffirst.out.count = i;
+	/* TODO: fix end_of_file */
+	io->t2ffirst.out.end_of_search = 1;
+
+	talloc_free(data);
+	
+	return NT_STATUS_OK;
 }
 
 /* continue a search */
@@ -968,7 +1079,7 @@ static NTSTATUS cvfs_search_next(struct ntvfs_module_context *ntvfs,
 {
 	struct cvfs_private *private = ntvfs->private_data;
 
-	SETUP_PID;
+	return NT_STATUS_NOT_IMPLEMENTED;
 
 	return smb_raw_search_next(private->tree, req, io, search_private, callback);
 }
@@ -979,46 +1090,10 @@ static NTSTATUS cvfs_search_close(struct ntvfs_module_context *ntvfs,
 {
 	struct cvfs_private *private = ntvfs->private_data;
 
-	SETUP_PID;
+	return NT_STATUS_NOT_IMPLEMENTED;
 
 	return smb_raw_search_close(private->tree, io);
 }
-
-/*
-  a handler for async trans2 replies
- */
-static void async_trans2(struct smbcli_request *c_req)
-{
-	struct async_info *async = c_req->async.private;
-	struct ntvfs_request *req = async->req;
-	req->async_states->status = smb_raw_trans2_recv(c_req, req, async->parms);
-	talloc_free(async);
-	req->async_states->send_fn(req);
-}
-
-/* raw trans2 */
-static NTSTATUS cvfs_trans2(struct ntvfs_module_context *ntvfs, 
-			    struct ntvfs_request *req,
-			    struct smb_trans2 *trans2)
-{
-	struct cvfs_private *private = ntvfs->private_data;
-	struct smbcli_request *c_req;
-
-	if (private->map_trans2) {
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
-
-	SETUP_PID;
-
-	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
-		return smb_raw_trans2(private->tree, req, trans2);
-	}
-
-	c_req = smb_raw_trans2_send(private->tree, trans2);
-
-	ASYNC_RECV_TAIL(trans2, async_trans2);
-}
-
 
 /* SMBtrans - not used on file shares */
 static NTSTATUS cvfs_trans(struct ntvfs_module_context *ntvfs, 
@@ -1050,11 +1125,10 @@ static NTSTATUS cvfs_notify(struct ntvfs_module_context *ntvfs,
 	int saved_timeout = private->transport->options.request_timeout;
 	struct cvfs_file *f;
 
+	return NT_STATUS_NOT_IMPLEMENTED;
 	if (io->nttrans.level != RAW_NOTIFY_NTTRANS) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-
-	SETUP_PID;
 
 	f = ntvfs_handle_get_backend_data(io->nttrans.in.file.ntvfs, ntvfs);
 	if (!f) return NT_STATUS_INVALID_HANDLE;
@@ -1123,7 +1197,6 @@ NTSTATUS ntvfs_smb2_init(void)
 	ops.async_setup = cvfs_async_setup;
 	ops.cancel = cvfs_cancel;
 	ops.notify = cvfs_notify;
-	ops.trans2 = cvfs_trans2;
 
 	/* register ourselves with the NTVFS subsystem. We register
 	   under the name 'smb2'. */
