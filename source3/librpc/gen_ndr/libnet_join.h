@@ -35,6 +35,7 @@ struct libnet_JoinCtx {
 		const char * account_name;
 		const char * netbios_domain_name;
 		const char * dns_domain_name;
+		const char * forest_name;
 		const char * dn;
 		struct dom_sid *domain_sid;/* [ref] */
 		uint8_t modified_config;
@@ -66,6 +67,7 @@ struct libnet_UnjoinCtx {
 	struct {
 		const char * netbios_domain_name;
 		const char * dns_domain_name;
+		const char * forest_name;
 		uint8_t modified_config;
 		const char * error_string;
 		uint8_t disabled_machine_account;
