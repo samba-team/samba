@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "librpc/gen_ndr/nbt.h"
+#include "libcli/netlogon.h"
 
 /*
   a datagram name request
@@ -121,6 +121,7 @@ NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
 NTSTATUS dgram_mailslot_netlogon_send(struct nbt_dgram_socket *dgmsock,
 				      struct nbt_name *dest_name,
 				      struct socket_address *dest,
+				      const char *mailslot_name,
 				      struct nbt_name *src_name,
 				      struct nbt_netlogon_packet *request);
 NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
@@ -131,23 +132,7 @@ NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
 NTSTATUS dgram_mailslot_netlogon_parse(struct dgram_mailslot_handler *dgmslot,
 				       TALLOC_CTX *mem_ctx,
 				       struct nbt_dgram_packet *dgram,
-				       struct nbt_netlogon_packet *netlogon);
-
-NTSTATUS dgram_mailslot_ntlogon_send(struct nbt_dgram_socket *dgmsock,
-				     enum dgram_msg_type msg_type,
-				     struct nbt_name *dest_name,
-				     struct socket_address *dest,
-				     struct nbt_name *src_name,
-				     struct nbt_ntlogon_packet *request);
-NTSTATUS dgram_mailslot_ntlogon_reply(struct nbt_dgram_socket *dgmsock,
-				       struct nbt_dgram_packet *request,
-				       const char *my_netbios_name,
-				       const char *mailslot_name,
-				       struct nbt_ntlogon_packet *reply);
-NTSTATUS dgram_mailslot_ntlogon_parse(struct dgram_mailslot_handler *dgmslot,
-				       TALLOC_CTX *mem_ctx,
-				       struct nbt_dgram_packet *dgram,
-				       struct nbt_ntlogon_packet *ntlogon);
+				       struct nbt_netlogon_response *netlogon);
 
 NTSTATUS dgram_mailslot_browse_send(struct nbt_dgram_socket *dgmsock,
 				    struct nbt_name *dest_name,

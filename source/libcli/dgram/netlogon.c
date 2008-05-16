@@ -32,6 +32,7 @@
 NTSTATUS dgram_mailslot_netlogon_send(struct nbt_dgram_socket *dgmsock,
 				      struct nbt_name *dest_name,
 				      struct socket_address *dest,
+				      const char *mailslot,
 				      struct nbt_name *src_name,
 				      struct nbt_netlogon_packet *request)
 {
@@ -51,7 +52,7 @@ NTSTATUS dgram_mailslot_netlogon_send(struct nbt_dgram_socket *dgmsock,
 
 
 	status = dgram_mailslot_send(dgmsock, DGRAM_DIRECT_UNIQUE, 
-				     NBT_MAILSLOT_NETLOGON,
+				     mailslot,
 				     dest_name, dest, 
 				     src_name, &blob);
 	talloc_free(tmp_ctx);
@@ -109,21 +110,16 @@ NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
 NTSTATUS dgram_mailslot_netlogon_parse(struct dgram_mailslot_handler *dgmslot,
 				       TALLOC_CTX *mem_ctx,
 				       struct nbt_dgram_packet *dgram,
-				       struct nbt_netlogon_packet *netlogon)
+				       struct nbt_netlogon_response *netlogon)
 {
+	NTSTATUS status;
 	DATA_BLOB data = dgram_mailslot_data(dgram);
-	enum ndr_err_code ndr_err;
-
-	ndr_err = ndr_pull_struct_blob(&data, mem_ctx, dgmslot->dgmsock->iconv_convenience, netlogon,
-				      (ndr_pull_flags_fn_t)ndr_pull_nbt_netlogon_packet);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-		DEBUG(0,("Failed to parse netlogon packet of length %d: %s\n",
-			 (int)data.length, nt_errstr(status)));
-		if (DEBUGLVL(10)) {
-			file_save("netlogon.dat", data.data, data.length);
-		}
+	
+	status = pull_nbt_netlogon_response(&data, mem_ctx, dgmslot->dgmsock->iconv_convenience, netlogon);
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+	
 	return NT_STATUS_OK;
 }
+

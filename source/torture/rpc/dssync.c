@@ -288,16 +288,17 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	search.in.dest_address = ctx->drsuapi_binding->host;
 	search.in.dest_port = lp_cldap_port(tctx->lp_ctx);
 	search.in.acct_control = -1;
-	search.in.version = 6;
+	search.in.version		= NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
+	search.in.map_response = true;
 	status = cldap_netlogon(cldap, ctx, &search);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		ctx->site_name = talloc_asprintf(ctx, "%s", "Default-First-Site-Name");
 		printf("cldap_netlogon() returned %s. Defaulting to Site-Name: %s\n", errstr, ctx->site_name);		
 	} else {
-		ctx->site_name = talloc_steal(ctx, search.out.netlogon.logon5.client_site);
+		ctx->site_name = talloc_steal(ctx, search.out.netlogon.nt5_ex.client_site);
 		printf("cldap_netlogon() returned Client Site-Name: %s.\n",ctx->site_name);
-		printf("cldap_netlogon() returned Server Site-Name: %s.\n",search.out.netlogon.logon5.server_site);
+		printf("cldap_netlogon() returned Server Site-Name: %s.\n",search.out.netlogon.nt5_ex.server_site);
 	}
 
 	return ret;
