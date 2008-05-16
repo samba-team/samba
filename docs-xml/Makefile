@@ -50,10 +50,10 @@ $(DOCBOOKDIR)/Samba3-Developers-Guide.xml: $(filter-out Samba3-Developers-Guide/
 $(DOCBOOKDIR)/Samba4-HOWTO.xml: $(filter-out Samba4-HOWTO/index.xml,$(wildcard Samba4-HOWTO/*.xml)) Samba4-HOWTO-attributions.xml
 
 # Pseudo targets 
-all: $(TARGETS)
-everything: manpages3 pdf html-single html htmlman3 txt ps fo htmlhelp pearson 
-release: manpages3 htmlman3 html pdf 
-clean:
+all:: $(TARGETS)
+everything:: manpages3 pdf html-single html htmlman3 txt ps fo htmlhelp pearson 
+release:: manpages3 htmlman3 html pdf 
+clean::
 	@echo "Cleaning up..." 
 	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
 	rm -f $(patsubst %.svg,%.png,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
@@ -67,25 +67,30 @@ clean:
 	rm -f $(addsuffix .*,$(MAIN_DOCS))
 
 # Output format targets
-pdf: $(patsubst %,$(PDFDIR)/%.pdf,$(MAIN_DOCS))
-dvi: $(patsubst %,$(DVIDIR)/%.dvi,$(MAIN_DOCS))
-ps: $(patsubst %,$(PSDIR)/%.ps,$(MAIN_DOCS))
-txt: $(patsubst %,$(TXTDIR)/%.txt,$(MAIN_DOCS))
-txt-chunks: $(addsuffix -txt-chunks,$(MAIN_DOCS))
-fo: $(patsubst %,$(FODIR)/%.fo,$(MAIN_DOCS))
-fo-pdf: $(patsubst %,$(FOPDFDIR)/%.pdf,$(MAIN_DOCS))
-tex: $(addsuffix .tex,$(MAIN_DOCS))
-texi: $(patsubst %,$(TEXINFODIR)/%.texi,$(MAIN_DOCS))
-texiinfo: $(patsubst %,$(TEXINFODIR)/%.info,$(MAIN_DOCS))
-manpages3: $(patsubst $(MANPAGEDIR3)/%.xml,$(OUTPUTDIR)/manpages-3/%,$(MANPAGES3))
-pearson: $(PEARSONDIR)/Samba3-HOWTO.xml
-pearson-verify: $(PEARSONDIR)/Samba3-HOWTO.report.html
-plucker: $(patsubst %,$(PLUCKERDIR)/%.pdb,$(MAIN_DOCS))
-htmlman3: $(patsubst $(MANPAGEDIR3)/%.xml,$(HTMLDIR)/manpages-3/%.html,$(MANPAGES3)) $(HTMLDIR)/manpages-3/index.html
-html-single: $(patsubst %,$(HTMLDIR)/%.html,$(MAIN_DOCS))
-html: $(patsubst %,$(HTMLDIR)/%/index.html,$(MAIN_DOCS)) $(HTMLDIR)/index.html
-htmlhelp: $(addprefix $(HTMLHELPDIR)/,$(MAIN_DOCS))
-validate: $(addsuffix -validate,$(MAIN_DOCS))
+pdf:: $(patsubst %,$(PDFDIR)/%.pdf,$(MAIN_DOCS))
+dvi:: $(patsubst %,$(DVIDIR)/%.dvi,$(MAIN_DOCS))
+ps:: $(patsubst %,$(PSDIR)/%.ps,$(MAIN_DOCS))
+txt:: $(patsubst %,$(TXTDIR)/%.txt,$(MAIN_DOCS))
+txt-chunks:: $(addsuffix -txt-chunks,$(MAIN_DOCS))
+fo:: $(patsubst %,$(FODIR)/%.fo,$(MAIN_DOCS))
+fo-pdf:: $(patsubst %,$(FOPDFDIR)/%.pdf,$(MAIN_DOCS))
+tex:: $(addsuffix .tex,$(MAIN_DOCS))
+texi:: $(patsubst %,$(TEXINFODIR)/%.texi,$(MAIN_DOCS))
+texiinfo:: $(patsubst %,$(TEXINFODIR)/%.info,$(MAIN_DOCS))
+manpages3:: $(patsubst $(MANPAGEDIR3)/%.xml,$(OUTPUTDIR)/manpages-3/%,$(MANPAGES3))
+pearson:: $(PEARSONDIR)/Samba3-HOWTO.xml
+pearson-verify:: $(PEARSONDIR)/Samba3-HOWTO.report.html
+plucker:: $(patsubst %,$(PLUCKERDIR)/%.pdb,$(MAIN_DOCS))
+htmlman3:: $(patsubst $(MANPAGEDIR3)/%.xml,$(HTMLDIR)/manpages-3/%.html,$(MANPAGES3)) $(HTMLDIR)/manpages-3/index.html
+html-single:: $(patsubst %,$(HTMLDIR)/%.html,$(MAIN_DOCS))
+html:: $(patsubst %,$(HTMLDIR)/%/index.html,$(MAIN_DOCS)) $(HTMLDIR)/index.html
+htmlhelp:: $(addprefix $(HTMLHELPDIR)/,$(MAIN_DOCS))
+validate:: $(addsuffix -validate,$(MAIN_DOCS))
+
+test:: validate
+check:: validate
+
+.PHONY: test check validate
 
 # Intermediate docbook docs
 #
@@ -105,7 +110,6 @@ $(DOCBOOKDIR)/manpages-3/index.xml: $(MANPAGES3) xslt/manpage-summary.xsl
 	@echo "</variablelist></article>" >> $@
 
 # HTML docs
-
 $(HTMLDIR)/index.html: htmldocs.html
 	@mkdir -p $(@D)
 	cp $< $@
@@ -141,7 +145,7 @@ $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
 	@mkdir -p $(@D)
 	@$(XSLTPROC) $(DB2LATEX_ARGS) --stringparam latex.imagebasedir "$*/" --xinclude --output $@ xslt/latex.xsl $<
 
-latexfigures: $(LATEX_FIGURES)
+latexfigures:: $(LATEX_FIGURES)
 
 $(PDFDIR)/%.pdf: %.pdf
 	@mkdir -p $(@D)
