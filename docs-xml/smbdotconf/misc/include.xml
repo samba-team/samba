@@ -15,11 +15,6 @@
 	</para>
 </description>
 
-	<para>
-		Note: This option can not be set inside registry
-		configurations.
-	</para>
-
 <value type="default"></value>
 <value type="example">/usr/local/samba/lib/admin_smb.conf</value>
 </samba:parameter>
