@@ -5652,6 +5652,145 @@ NTSTATUS _samr_SetDomainInfo(pipes_struct *p,
 }
 
 /****************************************************************
+ _samr_GetDisplayEnumerationIndex
+****************************************************************/
+
+NTSTATUS _samr_GetDisplayEnumerationIndex(pipes_struct *p,
+					  struct samr_GetDisplayEnumerationIndex *r)
+{
+	struct samr_info *info = NULL;
+	uint32_t max_entries = (uint32_t) -1;
+	uint32_t enum_context = 0;
+	int i;
+	uint32_t num_account = 0;
+	struct samr_displayentry *entries = NULL;
+
+	DEBUG(5,("_samr_GetDisplayEnumerationIndex: %d\n", __LINE__));
+
+	/* find the policy handle.  open a policy on it. */
+	if (!find_policy_by_hnd(p, r->in.domain_handle, (void **)(void *)&info)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if ((r->in.level < 1) || (r->in.level > 3)) {
+		DEBUG(0,("_samr_GetDisplayEnumerationIndex: "
+			"Unknown info level (%u)\n",
+			r->in.level));
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	become_root();
+
+	/* The following done as ROOT. Don't return without unbecome_root(). */
+
+	switch (r->in.level) {
+	case 1:
+		if (info->disp_info->users == NULL) {
+			info->disp_info->users = pdb_search_users(ACB_NORMAL);
+			if (info->disp_info->users == NULL) {
+				unbecome_root();
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			DEBUG(10,("_samr_GetDisplayEnumerationIndex: "
+				"starting user enumeration at index %u\n",
+				(unsigned int)enum_context));
+		} else {
+			DEBUG(10,("_samr_GetDisplayEnumerationIndex: "
+				"using cached user enumeration at index %u\n",
+				(unsigned int)enum_context));
+		}
+		num_account = pdb_search_entries(info->disp_info->users,
+						 enum_context, max_entries,
+						 &entries);
+		break;
+	case 2:
+		if (info->disp_info->machines == NULL) {
+			info->disp_info->machines =
+				pdb_search_users(ACB_WSTRUST|ACB_SVRTRUST);
+			if (info->disp_info->machines == NULL) {
+				unbecome_root();
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			DEBUG(10,("_samr_GetDisplayEnumerationIndex: "
+				"starting machine enumeration at index %u\n",
+				(unsigned int)enum_context));
+		} else {
+			DEBUG(10,("_samr_GetDisplayEnumerationIndex: "
+				"using cached machine enumeration at index %u\n",
+				(unsigned int)enum_context));
+		}
+		num_account = pdb_search_entries(info->disp_info->machines,
+						 enum_context, max_entries,
+						 &entries);
+		break;
+	case 3:
+		if (info->disp_info->groups == NULL) {
+			info->disp_info->groups = pdb_search_groups();
+			if (info->disp_info->groups == NULL) {
+				unbecome_root();
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			DEBUG(10,("_samr_GetDisplayEnumerationIndex: "
+				"starting group enumeration at index %u\n",
+				(unsigned int)enum_context));
+		} else {
+			DEBUG(10,("_samr_GetDisplayEnumerationIndex: "
+				"using cached group enumeration at index %u\n",
+				(unsigned int)enum_context));
+		}
+		num_account = pdb_search_entries(info->disp_info->groups,
+						 enum_context, max_entries,
+						 &entries);
+		break;
+	default:
+		unbecome_root();
+		smb_panic("info class changed");
+		break;
+	}
+
+	unbecome_root();
+
+	/* Ensure we cache this enumeration. */
+	set_disp_info_cache_timeout(info->disp_info, DISP_INFO_CACHE_TIMEOUT);
+
+	DEBUG(10,("_samr_GetDisplayEnumerationIndex: looking for :%s\n",
+		r->in.name->string));
+
+	for (i=0; i<num_account; i++) {
+		if (strequal(entries[i].account_name, r->in.name->string)) {
+			DEBUG(10,("_samr_GetDisplayEnumerationIndex: "
+				"found %s at idx %d\n",
+				r->in.name->string, i));
+			*r->out.idx = i;
+			return NT_STATUS_OK;
+		}
+	}
+
+	/* assuming account_name lives at the very end */
+	*r->out.idx = num_account;
+
+	return NT_STATUS_NO_MORE_ENTRIES;
+}
+
+/****************************************************************
+ _samr_GetDisplayEnumerationIndex2
+****************************************************************/
+
+NTSTATUS _samr_GetDisplayEnumerationIndex2(pipes_struct *p,
+					   struct samr_GetDisplayEnumerationIndex2 *r)
+{
+	struct samr_GetDisplayEnumerationIndex q;
+
+	q.in.domain_handle	= r->in.domain_handle;
+	q.in.level		= r->in.level;
+	q.in.name		= r->in.name;
+
+	q.out.idx		= r->out.idx;
+
+	return _samr_GetDisplayEnumerationIndex(p, &q);
+}
+
+/****************************************************************
 ****************************************************************/
 
 NTSTATUS _samr_Shutdown(pipes_struct *p,
@@ -5694,16 +5833,6 @@ NTSTATUS _samr_ChangePasswordUser(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS _samr_GetDisplayEnumerationIndex(pipes_struct *p,
-					  struct samr_GetDisplayEnumerationIndex *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
 NTSTATUS _samr_TestPrivateFunctionsDomain(pipes_struct *p,
 					  struct samr_TestPrivateFunctionsDomain *r)
 {
@@ -5726,16 +5855,6 @@ NTSTATUS _samr_TestPrivateFunctionsUser(pipes_struct *p,
 
 NTSTATUS _samr_QueryUserInfo2(pipes_struct *p,
 			      struct samr_QueryUserInfo2 *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_GetDisplayEnumerationIndex2(pipes_struct *p,
-					   struct samr_GetDisplayEnumerationIndex2 *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
