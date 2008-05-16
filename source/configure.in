@@ -806,24 +806,6 @@ if test x"$samba_cv_optimize_out_funcation_calls" = x"yes"; then
    AC_DEFINE(HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS,1,[Whether the compiler will optimize out function calls])
 fi
 
-############################################
-# check for unix domain sockets
-AC_CACHE_CHECK([for unix domain sockets],samba_cv_unixsocket, [
-    AC_TRY_COMPILE([
-#include <sys/types.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <sys/socket.h>
-#include <sys/un.h>],
-[
-  struct sockaddr_un sunaddr;
-  sunaddr.sun_family = AF_UNIX;
-],
-	samba_cv_unixsocket=yes,samba_cv_unixsocket=no)])
-if test x"$samba_cv_unixsocket" = x"yes"; then
-   AC_DEFINE(HAVE_UNIXSOCKET,1,[If we need to build with unixsocket support])
-fi
-
 #############################################
 # check for fd passing struct via msg_control
 AC_CACHE_CHECK([for fd passing via msg_control],samba_cv_msghdr_msg_control, [
@@ -2006,16 +1988,6 @@ main() { char c; c=250; exit((c > 0)?0:1); }],
 samba_cv_HAVE_UNSIGNED_CHAR=yes,samba_cv_HAVE_UNSIGNED_CHAR=no,samba_cv_HAVE_UNSIGNED_CHAR=cross)])
 if test x"$samba_cv_HAVE_UNSIGNED_CHAR" = x"yes"; then
     AC_DEFINE(HAVE_UNSIGNED_CHAR,1,[Whether the 'unsigned char' type is available])
-fi
-
-AC_CACHE_CHECK([for sin_len in sock],samba_cv_HAVE_SOCK_SIN_LEN,[
-AC_TRY_COMPILE([#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>],
-[struct sockaddr_in sock; sock.sin_len = sizeof(sock);],
-samba_cv_HAVE_SOCK_SIN_LEN=yes,samba_cv_HAVE_SOCK_SIN_LEN=no)])
-if test x"$samba_cv_HAVE_SOCK_SIN_LEN" = x"yes"; then
-    AC_DEFINE(HAVE_SOCK_SIN_LEN,1,[Whether the sockaddr_in struct has a sin_len property])
 fi
 
 AC_CACHE_CHECK([whether seekdir returns void],samba_cv_SEEKDIR_RETURNS_VOID,[
