@@ -238,6 +238,8 @@ sub write($$)
 
 	$self->_prepare_mk_files();
 
+	$self->output("ALL_OBJS = " . array2oneperline($self->{all_objs}) . "\n");
+
 	open(MAKEFILE,">$file") || die ("Can't open $file\n");
 	print MAKEFILE $self->{output};
 	close(MAKEFILE);
