@@ -156,7 +156,7 @@ void smb2srv_find_recv(struct smb2srv_request *req)
 	info->data_level		= RAW_SEARCH_DATA_GENERIC;/* will be overwritten later */
 	info->in.level			= CVAL(req->in.body, 0x02);
 	info->in.continue_flags		= CVAL(req->in.body, 0x03);
-	info->in.unknown		= IVAL(req->in.body, 0x04);
+	info->in.file_index		= IVAL(req->in.body, 0x04);
 	info->in.file.ntvfs		= smb2srv_pull_handle(req, req->in.body, 0x08);
 	SMB2SRV_CHECK(smb2_pull_o16s16_string(&req->in, info, req->in.body+0x18, &info->in.pattern));
 	info->in.max_response_size	= IVAL(req->in.body, 0x1C);
