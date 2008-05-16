@@ -91,7 +91,8 @@ start() {
 	[ -z "$CTDB_DBDIR" ] || {
 		PERSISTENT_DB_DIR="$CTDB_DBDIR/persistent"
 	}
-	for PDBASE in `ls $PERSISTENT_DB_DIR/*.tdb.[0-9]`; do
+	mkdir -p $PERSISTENT_DB_DIR 2>/dev/null
+	for PDBASE in `ls $PERSISTENT_DB_DIR/*.tdb.[0-9] 2>/dev/null`; do
 		/usr/bin/tdbdump $PDBASE >/dev/null 2>/dev/null || {
 			echo "Persistent database $PDBASE is corrupted! CTDB will not start."
 			return 1
