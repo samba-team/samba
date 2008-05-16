@@ -33,7 +33,8 @@ LIBCLI_SMB_COMPOSITE_OBJ_FILES = $(addprefix libcli/smb_composite/, \
 	sesssetup.o \
 	fetchfile.o \
 	appendacl.o \
-	fsinfo.o)
+	fsinfo.o \
+	smb2.o)
 
 
 [SUBSYSTEM::NDR_NBT_BUF]
