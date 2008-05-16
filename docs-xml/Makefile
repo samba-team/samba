@@ -92,7 +92,7 @@ validate: $(addsuffix -validate,$(MAIN_DOCS))
 $(DOCBOOKDIR)/%.xml: %/index.xml xslt/expand-sambadoc.xsl
 	@echo "Converting Samba-specific tags for $*..."
 	@mkdir -p $(@D)
-	$(XSLTPROC) --stringparam latex.imagebasedir "$*/"  --stringparam noreference 0  --xinclude --output $@ xslt/expand-sambadoc.xsl $<
+	@$(XSLTPROC) --stringparam latex.imagebasedir "$*/"  --stringparam noreference 0  --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
 $(DOCBOOKDIR)/manpages-3/%.xml: $(MANPAGEDIR3)/%.xml xslt/expand-sambadoc.xsl
 	@mkdir -p $(@D)
@@ -128,7 +128,7 @@ $(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/samba.css xslt/html.xsl
 %-attributions.xml: 
 	@echo "Generating attributions file $@ from $*/"
 	@cp -f templates/attributions.xml $@
-	$(XSLTPROC) --xinclude -o $@ xslt/generate-attributions.xsl $*/index.xml 
+	@$(XSLTPROC) --xinclude -o $@ xslt/generate-attributions.xsl $*/index.xml 
 
 # Text files
 $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
@@ -139,7 +139,7 @@ $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
 %.tex: %/index.xml xslt/latex.xsl
 	@echo "Generating $@..."
 	@mkdir -p $(@D)
-	$(XSLTPROC) $(DB2LATEX_ARGS) --stringparam latex.imagebasedir "$*/" --xinclude --output $@ xslt/latex.xsl $<
+	@$(XSLTPROC) $(DB2LATEX_ARGS) --stringparam latex.imagebasedir "$*/" --xinclude --output $@ xslt/latex.xsl $<
 
 latexfigures: $(LATEX_FIGURES)
 
@@ -156,8 +156,7 @@ $(PDFDIR)/%.pdf: %.pdf
 # Dependency files
 %.d: $(DOCBOOKDIR)/%.xml xslt/generate-dependencies.xsl
 	@echo "Generating dependency file for $*" 
-	$(XSLTPROC) \
-		--novalid \
+	@$(XSLTPROC) --novalid \
 		--stringparam txtbasedir "$(TXTDIR)/$*/" \
 		--stringparam target "$*" \
 		-o $@ xslt/generate-dependencies.xsl $<
