@@ -507,8 +507,10 @@ struct torture_schannel_bench {
 	int nprocs;
 	int nconns;
 	struct torture_schannel_bench_conn *conns;
-	struct test_join *join_ctx;
-	struct cli_credentials *wks_creds;
+	struct test_join *join_ctx1;
+	struct cli_credentials *wks_creds1;
+	struct test_join *join_ctx2;
+	struct cli_credentials *wks_creds2;
 	struct cli_credentials *user1_creds;
 	struct cli_credentials *user2_creds;
 	struct dcerpc_binding *b;
@@ -673,19 +675,27 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 		cli_credentials_parse_string(s->user1_creds, tmp, CRED_SPECIFIED);
 	}
 
-	s->join_ctx = torture_join_domain(s->tctx, talloc_asprintf(s, "%sb", TEST_MACHINE_NAME),
-					  ACB_WSTRUST, &s->wks_creds);
-	torture_assert(torture, s->join_ctx != NULL,
+	s->join_ctx1 = torture_join_domain(s->tctx, talloc_asprintf(s, "%sb", TEST_MACHINE_NAME),
+					   ACB_WSTRUST, &s->wks_creds1);
+	torture_assert(torture, s->join_ctx1 != NULL,
+		       "Failed to join domain with acct_flags=ACB_WSTRUST");
+	s->join_ctx2 = torture_join_domain(s->tctx, talloc_asprintf(s, "%sc", TEST_MACHINE_NAME),
+					   ACB_WSTRUST, &s->wks_creds2);
+	torture_assert(torture, s->join_ctx2 != NULL,
 		       "Failed to join domain with acct_flags=ACB_WSTRUST");
 
-	cli_credentials_set_kerberos_state(s->wks_creds, CRED_DONT_USE_KERBEROS);
+	cli_credentials_set_kerberos_state(s->wks_creds1, CRED_DONT_USE_KERBEROS);
+	cli_credentials_set_kerberos_state(s->wks_creds2, CRED_DONT_USE_KERBEROS);
 
 	for (i=0; i < s->nprocs; i++) {
 		s->conns[i].s = s;
 		s->conns[i].index = i;
-		s->conns[i].wks_creds = (struct cli_credentials *)talloc_memdup(s->conns,
-										s->wks_creds,
-										sizeof(*s->wks_creds));
+		s->conns[i].wks_creds = (struct cli_credentials *)talloc_memdup(
+			s->conns, s->wks_creds1,sizeof(*s->wks_creds1));
+		if ((i % 2) && (torture_setting_bool(torture, "multijoin", false))) {
+			memcpy(s->conns[i].wks_creds, s->wks_creds2,
+			       talloc_get_size(s->conns[i].wks_creds));
+		}
 		s->conns[i].wks_creds->netlogon_creds = NULL;
 	}
 
@@ -755,6 +765,7 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 			(unsigned long long)s->total,
 			(unsigned)s->total/s->timelimit);
 
-	torture_leave_domain(s->join_ctx);
+	torture_leave_domain(s->join_ctx1);
+	torture_leave_domain(s->join_ctx2);
 	return true;
 }
