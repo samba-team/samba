@@ -663,7 +663,7 @@ done
 AC_SUBST(LIBREPLACE_OBJS)
 
 # add -ldl to the global LIBS
-LIBS="${LIBS} ${LIBDL}"
+LIBS="${LIBS} ${LIBDL} ${LIBREPLACE_NETWORK_LIBS}"
 
 AC_CHECK_HEADERS(aio.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h rpc/nettype.h)
 AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h memory.h alloca.h)
@@ -996,40 +996,6 @@ AC_CHECK_LIB(readline, history_list,
 	     [AC_DEFINE(HAVE_HISTORY_LIST, 1, [Do we have history_list?])],
 	     [],
 	     [$TERMLIBS])
-
-# The following test taken from the cvs sources
-# If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
-# The Irix 5 libc.so has connect and gethostbyname, but Irix 5 also has
-# libsocket.so which has a bad implementation of gethostbyname (it
-# only looks in /etc/hosts), so we only look for -lsocket if we need
-# it.
-AC_CHECK_FUNCS(connect)
-if test x"$ac_cv_func_connect" = x"no"; then
-    case "$LIBS" in
-    *-lnsl*) ;;
-    *) AC_CHECK_LIB(nsl_s, connect) ;;
-    esac
-    case "$LIBS" in
-    *-lnsl*) ;;
-    *) AC_CHECK_LIB(nsl, connect) ;;
-    esac
-    case "$LIBS" in
-    *-lsocket*) ;;
-    *) AC_CHECK_LIB(socket, connect) ;;
-    esac
-    case "$LIBS" in
-    *-linet*) ;;
-    *) AC_CHECK_LIB(inet, connect) ;;
-    esac
-    dnl We can't just call AC_CHECK_FUNCS(connect) here, because the value
-    dnl has been cached.
-    if test x"$ac_cv_lib_socket_connect" = x"yes" ||
-       test x"$ac_cv_lib_inet_connect" = x"yes"; then
-        # ac_cv_func_connect=yes
-        # don't!  it would cause AC_CHECK_FUNC to succeed next time configure is run
-        AC_DEFINE(HAVE_CONNECT,1,[Whether the system has connect()])
-    fi
-fi
 
 ###############################################
 # test for where we get yp_get_default_domain() from
@@ -5709,8 +5675,8 @@ case "$host_os" in
 		NSSSONAMEVERSIONSUFFIX=".1"
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris.o \
 		    nsswitch/winbind_nss_linux.o"
-		WINBIND_NSS_EXTRA_LIBS="-lsocket"
-		PAM_WINBIND_EXTRA_LIBS="-lsocket"
+		WINBIND_NSS_EXTRA_LIBS="${LIBREPLACE_NETWORK_LIBS}"
+		PAM_WINBIND_EXTRA_LIBS="${LIBREPLACE_NETWORK_LIBS}"
 		;;
 	*hpux11*)
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris.o"
