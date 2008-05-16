@@ -689,6 +689,7 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 		r->out.domain_is_ad = true;
 		r->out.netbios_domain_name = info->dns.name.string;
 		r->out.dns_domain_name = info->dns.dns_domain.string;
+		r->out.forest_name = info->dns.dns_forest.string;
 		r->out.domain_sid = info->dns.sid;
 	}
 
