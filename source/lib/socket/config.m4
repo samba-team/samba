@@ -31,16 +31,6 @@ if test x"$samba_cv_unixsocket" = x"yes"; then
     AC_DEFINE(HAVE_UNIXSOCKET,1,[If we need to build with unixscoket support])
 fi
 
-AC_CACHE_CHECK([for AF_LOCAL socket support], samba_cv_HAVE_WORKING_AF_LOCAL, [
-AC_TRY_RUN([#include "${srcdir-.}/build/tests/unixsock.c"],
-	   samba_cv_HAVE_WORKING_AF_LOCAL=yes,
-	   samba_cv_HAVE_WORKING_AF_LOCAL=no,
-	   samba_cv_HAVE_WORKING_AF_LOCAL=cross)])
-if test x"$samba_cv_HAVE_WORKING_AF_LOCAL" != xno
-then
-    AC_DEFINE(HAVE_WORKING_AF_LOCAL, 1, [Define if you have working AF_LOCAL sockets])
-fi
-
 dnl test for ipv6 using the gethostbyname2() function. That should be sufficient
 dnl for now
 AC_CHECK_FUNCS(gethostbyname2, have_ipv6=true, have_ipv6=false)
