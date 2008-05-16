@@ -20,7 +20,7 @@
 */
 
 #include "lib/util/asn1.h"
-#include "librpc/gen_ndr/nbt.h"
+#include "libcli/netlogon.h"
 
 struct ldap_message;
 
@@ -161,9 +161,10 @@ struct cldap_netlogon {
 		const char *domain_sid;
 		int acct_control;
 		uint32_t version;
+		bool map_response;
 	} in;
 	struct {
-		union nbt_cldap_netlogon netlogon;
+		struct netlogon_samlogon_response netlogon;
 	} out;
 };
 
@@ -178,4 +179,4 @@ NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
 			      uint32_t message_id,
 			      struct socket_address *src,
 			      uint32_t version,
-			      union nbt_cldap_netlogon *netlogon);
+			      struct netlogon_samlogon_response *netlogon);

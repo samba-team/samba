@@ -193,7 +193,7 @@ struct libnet_UnbecomeDC_state {
 	struct {
 		struct cldap_socket *sock;
 		struct cldap_netlogon io;
-		struct nbt_cldap_netlogon_5 netlogon5;
+		struct NETLOGON_SAM_LOGON_RESPONSE_EX netlogon;
 	} cldap;
 
 	struct {
@@ -265,7 +265,8 @@ static void unbecomeDC_send_cldap(struct libnet_UnbecomeDC_state *s)
 	s->cldap.io.in.domain_guid	= NULL;
 	s->cldap.io.in.domain_sid	= NULL;
 	s->cldap.io.in.acct_control	= -1;
-	s->cldap.io.in.version		= 6;
+	s->cldap.io.in.version		= NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
+	s->cldap.io.in.map_response	= true;
 
 	s->cldap.sock = cldap_socket_init(s, s->libnet->event_ctx,
 					  lp_iconv_convenience(s->libnet->lp_ctx));
@@ -288,17 +289,17 @@ static void unbecomeDC_recv_cldap(struct cldap_request *req)
 	c->status = cldap_netlogon_recv(req, s, &s->cldap.io);
 	if (!composite_is_ok(c)) return;
 
-	s->cldap.netlogon5 = s->cldap.io.out.netlogon.logon5;
+	s->cldap.netlogon = s->cldap.io.out.netlogon.nt5_ex;
 
-	s->domain.dns_name		= s->cldap.netlogon5.dns_domain;
-	s->domain.netbios_name		= s->cldap.netlogon5.domain;
-	s->domain.guid			= s->cldap.netlogon5.domain_uuid;
+	s->domain.dns_name		= s->cldap.netlogon.dns_domain;
+	s->domain.netbios_name		= s->cldap.netlogon.domain;
+	s->domain.guid			= s->cldap.netlogon.domain_uuid;
 
-	s->source_dsa.dns_name		= s->cldap.netlogon5.pdc_dns_name;
-	s->source_dsa.netbios_name	= s->cldap.netlogon5.pdc_name;
-	s->source_dsa.site_name		= s->cldap.netlogon5.server_site;
+	s->source_dsa.dns_name		= s->cldap.netlogon.pdc_dns_name;
+	s->source_dsa.netbios_name	= s->cldap.netlogon.pdc_name;
+	s->source_dsa.site_name		= s->cldap.netlogon.server_site;
 
-	s->dest_dsa.site_name		= s->cldap.netlogon5.client_site;
+	s->dest_dsa.site_name		= s->cldap.netlogon.client_site;
 
 	unbecomeDC_connect_ldap(s);
 }
