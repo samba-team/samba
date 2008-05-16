@@ -62,6 +62,46 @@ AC_CHECK_MEMBER(struct sockaddr_storage.__ss_family,
 fi
 fi
 
+AC_CACHE_CHECK([for sin_len in sock],libreplace_cv_HAVE_SOCK_SIN_LEN,[
+	AC_TRY_COMPILE(
+		[
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+		],[
+struct sockaddr_in sock; sock.sin_len = sizeof(sock);
+		],[
+		libreplace_cv_HAVE_SOCK_SIN_LEN=yes
+		],[
+		libreplace_cv_HAVE_SOCK_SIN_LEN=no
+		])
+])
+if test x"$libreplace_cv_HAVE_SOCK_SIN_LEN" = x"yes"; then
+	AC_DEFINE(HAVE_SOCK_SIN_LEN,1,[Whether the sockaddr_in struct has a sin_len property])
+fi
+
+############################################
+# check for unix domain sockets
+AC_CACHE_CHECK([for unix domain sockets],libreplace_cv_HAVE_UNIXSOCKET,[
+	AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+		],[
+struct sockaddr_un sunaddr;
+sunaddr.sun_family = AF_UNIX;
+		],[
+		libreplace_cv_HAVE_UNIXSOCKET=yes
+		],[
+		libreplace_cv_HAVE_UNIXSOCKET=no
+		])
+])
+if test x"$libreplace_cv_HAVE_UNIXSOCKET" = x"yes"; then
+	AC_DEFINE(HAVE_UNIXSOCKET,1,[If we need to build with unixscoket support])
+fi
+
 dnl The following test is roughl taken from the cvs sources.
 dnl
 dnl If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
