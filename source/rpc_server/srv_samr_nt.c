@@ -1338,12 +1338,15 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	if (!NT_STATUS_IS_OK(disp_ret))
 		return disp_ret;
 
-	/* calculate the total size */
-	total_data_size=num_account*struct_size;
+	temp_size = num_account * struct_size;
 
 	if (num_account) {
 		r_u->status = STATUS_MORE_ENTRIES;
 	} else {
+		r_u->status = NT_STATUS_OK;
+	}
+
+	if (num_account < max_entries) {
 		r_u->status = NT_STATUS_OK;
 	}
 
@@ -5077,4 +5080,125 @@ NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R
 	DEBUG(5,("_samr_set_dom_info: %d\n", __LINE__));
 
 	return r_u->status;
+}
+
+/*******************************************************************
+ _samr_get_dispenum_index
+ ********************************************************************/
+
+NTSTATUS _samr_get_dispenum_index(pipes_struct *p, SAMR_Q_GET_DISPENUM_INDEX *q_u, SAMR_R_GET_DISPENUM_INDEX *r_u)
+{
+	struct samr_info *info = NULL;
+	uint32 max_entries = (uint32) -1;
+	uint32 enum_context = 0;
+	int i;
+	uint32 num_account = 0;
+	struct samr_displayentry *entries = NULL;
+	fstring account_name;
+
+	DEBUG(5, ("_samr_get_dispenum_index: %d\n", __LINE__));
+
+	r_u->status = NT_STATUS_UNSUCCESSFUL;
+
+	/* find the policy handle.  open a policy on it. */
+	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)(void *)&info))
+		return NT_STATUS_INVALID_HANDLE;
+
+	if ((q_u->switch_level < 1) || (q_u->switch_level > 3)) {
+		DEBUG(0,("_samr_get_dispenum_index: Unknown info level (%u)\n",
+			 (unsigned int)q_u->switch_level ));
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	if (!rpcstr_pull_unistr2_fstring(account_name, &q_u->name.unistring)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	become_root();
+
+	/* The following done as ROOT. Don't return without unbecome_root(). */
+
+	switch (q_u->switch_level) {
+	case 0x1:
+		if (info->disp_info->users == NULL) {
+			info->disp_info->users = pdb_search_users(ACB_NORMAL);
+			if (info->disp_info->users == NULL) {
+				unbecome_root();
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			DEBUG(10,("_samr_get_dispenum_index: starting user enumeration at index %u\n",
+				(unsigned  int)enum_context ));
+		} else {
+			DEBUG(10,("_samr_get_dispenum_index: using cached user enumeration at index %u\n",
+				(unsigned  int)enum_context ));
+		}
+
+		num_account = pdb_search_entries(info->disp_info->users,
+						 enum_context, max_entries,
+						 &entries);
+		break;
+	case 0x2:
+		if (info->disp_info->machines == NULL) {
+			info->disp_info->machines =
+				pdb_search_users(ACB_WSTRUST|ACB_SVRTRUST);
+			if (info->disp_info->machines == NULL) {
+				unbecome_root();
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			DEBUG(10,("_samr_get_dispenum_index: starting machine enumeration at index %u\n",
+				(unsigned  int)enum_context ));
+		} else {
+			DEBUG(10,("_samr_get_dispenum_index: using cached machine enumeration at index %u\n",
+				(unsigned  int)enum_context ));
+		}
+
+		num_account = pdb_search_entries(info->disp_info->machines,
+						 enum_context, max_entries,
+						 &entries);
+		break;
+	case 0x3:
+		if (info->disp_info->groups == NULL) {
+			info->disp_info->groups = pdb_search_groups();
+			if (info->disp_info->groups == NULL) {
+				unbecome_root();
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			DEBUG(10,("_samr_get_dispenum_index: starting group enumeration at index %u\n",
+				(unsigned  int)enum_context ));
+		} else {
+			DEBUG(10,("_samr_get_dispenum_index: using cached group enumeration at index %u\n",
+				(unsigned  int)enum_context ));
+		}
+
+		num_account = pdb_search_entries(info->disp_info->groups,
+						 enum_context, max_entries,
+						 &entries);
+		break;
+	default:
+		unbecome_root();
+		smb_panic("info class changed");
+		break;
+	}
+	unbecome_root();
+
+	/* Ensure we cache this enumeration. */
+	set_disp_info_cache_timeout(info->disp_info, DISP_INFO_CACHE_TIMEOUT);
+
+	DEBUG(10,("_samr_get_dispenum_index: looking for :%s\n", account_name));
+
+	for (i=0; i<num_account; i++) {
+		if (strequal(entries[i].account_name, account_name)) {
+			DEBUG(10,("_samr_get_dispenum_index: found %s at idx %d\n",
+				account_name, i));
+
+			init_samr_r_get_dispenum_index(r_u, i);
+
+			return NT_STATUS_OK;
+		}
+	}
+
+	/* assuming account_name lives at the very end */
+	init_samr_r_get_dispenum_index(r_u, num_account);
+
+	return NT_STATUS_OK;
 }

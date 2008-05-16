@@ -1496,6 +1496,37 @@ static BOOL api_samr_set_dom_info(pipes_struct *p)
 }
 
 /*******************************************************************
+ api_samr_get_dispenum_index
+ ********************************************************************/
+
+static BOOL api_samr_get_dispenum_index(pipes_struct *p)
+{
+	SAMR_Q_GET_DISPENUM_INDEX q_u;
+	SAMR_R_GET_DISPENUM_INDEX r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!samr_io_q_get_dispenum_index("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_get_dispenum_index: unable to unmarshall SAMR_Q_GET_DISPENUM_INDEX.\n"));
+		return False;
+	}
+
+	r_u.status = _samr_get_dispenum_index(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!samr_io_r_get_dispenum_index("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_get_dispenum_index: unable to marshall SAMR_R_GET_DISPENUM_INDEX.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+
+/*******************************************************************
  array of \PIPE\samr operations
  ********************************************************************/
 
@@ -1555,7 +1586,9 @@ static struct api_struct api_samr_cmds [] =
       {"SAMR_SET_DOMAIN_INFO"   , SAMR_SET_DOMAIN_INFO  , api_samr_set_dom_info     },
       {"SAMR_CONNECT4"          , SAMR_CONNECT4         , api_samr_connect4         },
       {"SAMR_CHGPASSWD_USER3"   , SAMR_CHGPASSWD_USER3  , api_samr_chgpasswd_user3  },
-      {"SAMR_CONNECT5"          , SAMR_CONNECT5         , api_samr_connect5         }
+      {"SAMR_CONNECT5"          , SAMR_CONNECT5         , api_samr_connect5         },
+      {"SAMR_GET_DISPENUM_INDEX", SAMR_GET_DISPENUM_INDEX, api_samr_get_dispenum_index },
+      {"SAMR_GET_DISPENUM_INDEX2",SAMR_GET_DISPENUM_INDEX2, api_samr_get_dispenum_index }
 };
 
 void samr_get_pipe_fns( struct api_struct **fns, int *n_fns )
