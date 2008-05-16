@@ -43,6 +43,18 @@ void smb2_setup_bufinfo(struct smb2_request *req)
 	}
 }
 
+
+/* destroy a request structure */
+static int smb2_request_destructor(struct smb2_request *req)
+{
+	if (req->transport) {
+		/* remove it from the list of pending requests (a null op if
+		   its not in the list) */
+		DLIST_REMOVE(req->transport->pending_recv, req);
+	}
+	return 0;
+}
+
 /*
   initialise a smb2 request
 */
@@ -122,6 +134,8 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 		SCVAL(req->out.dynamic, 0, 0);
 	}
 
+	talloc_set_destructor(req, smb2_request_destructor);
+
 	return req;
 }
 
@@ -154,18 +168,13 @@ NTSTATUS smb2_request_destroy(struct smb2_request *req)
 	   _send() call fails completely */
 	if (!req) return NT_STATUS_UNSUCCESSFUL;
 
-	if (req->transport) {
-		/* remove it from the list of pending requests (a null op if
-		   its not in the list) */
-		DLIST_REMOVE(req->transport->pending_recv, req);
-	}
-
 	if (req->state == SMB2_REQUEST_ERROR &&
 	    NT_STATUS_IS_OK(req->status)) {
-		req->status = NT_STATUS_INTERNAL_ERROR;
+		status = NT_STATUS_INTERNAL_ERROR;
+	} else {
+		status = req->status;
 	}
 
-	status = req->status;
 	talloc_free(req);
 	return status;
 }

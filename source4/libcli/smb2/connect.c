@@ -44,7 +44,7 @@ struct smb2_connect_state {
 */
 static void continue_tcon(struct smb2_request *req)
 {
-	struct composite_context *c = talloc_get_type(req->async.private, 
+	struct composite_context *c = talloc_get_type(req->async.private_data, 
 						      struct composite_context);
 	struct smb2_connect_state *state = talloc_get_type(c->private_data, 
 							   struct smb2_connect_state);
@@ -83,7 +83,7 @@ static void continue_session(struct composite_context *creq)
 	if (composite_nomem(req, c)) return;
 
 	req->async.fn = continue_tcon;
-	req->async.private = c;	
+	req->async.private_data = c;	
 }
 
 /*
@@ -91,7 +91,7 @@ static void continue_session(struct composite_context *creq)
 */
 static void continue_negprot(struct smb2_request *req)
 {
-	struct composite_context *c = talloc_get_type(req->async.private, 
+	struct composite_context *c = talloc_get_type(req->async.private_data, 
 						      struct composite_context);
 	struct smb2_connect_state *state = talloc_get_type(c->private_data, 
 							   struct smb2_connect_state);
@@ -142,7 +142,7 @@ static void continue_socket(struct composite_context *creq)
 	if (composite_nomem(req, c)) return;
 
 	req->async.fn = continue_negprot;
-	req->async.private = c;
+	req->async.private_data = c;
 }
 
 
