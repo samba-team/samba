@@ -520,7 +520,8 @@ struct torture_schannel_bench {
 
 static void torture_schannel_bench_connected(struct composite_context *c)
 {
-	struct torture_schannel_bench_conn *conn = c->async.private_data;
+	struct torture_schannel_bench_conn *conn =
+		(struct torture_schannel_bench_conn *)c->async.private_data;
 	struct torture_schannel_bench *s = talloc_get_type(conn->s,
 					   struct torture_schannel_bench);
 
@@ -613,7 +614,8 @@ static bool torture_schannel_bench_start(struct torture_schannel_bench_conn *con
 static void torture_schannel_bench_recv(struct rpc_request *req)
 {
 	bool ret;
-	struct torture_schannel_bench_conn *conn = req->async.private_data;
+	struct torture_schannel_bench_conn *conn =
+		(struct torture_schannel_bench_conn *)req->async.private_data;
 	struct torture_schannel_bench *s = talloc_get_type(conn->s,
 					   struct torture_schannel_bench);
 
