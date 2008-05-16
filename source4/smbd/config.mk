@@ -2,11 +2,12 @@
 
 [SUBSYSTEM::service]
 PRIVATE_DEPENDENCIES = \
-		MESSAGING samba-socket
+		MESSAGING samba-socket NDR_NAMED_PIPE_AUTH
 
 service_OBJ_FILES = $(addprefix $(smbdsrcdir)/, \
 		service.o \
 		service_stream.o \
+		service_named_pipe.o \
 		service_task.o)
 
 $(eval $(call proto_header_template,$(smbdsrcdir)/service_proto.h,$(service_OBJ_FILES:.o=.c)))
