@@ -42,7 +42,6 @@ int net_help_dom(struct net_context *c, int argc, const char **argv)
 
 static int net_dom_unjoin(struct net_context *c, int argc, const char **argv)
 {
-	struct libnetapi_ctx *ctx = NULL;
 	const char *server_name = NULL;
 	const char *account = NULL;
 	const char *password = NULL;
@@ -90,18 +89,10 @@ static int net_dom_unjoin(struct net_context *c, int argc, const char **argv)
 		}
 	}
 
-	status = libnetapi_init(&ctx);
-	if (status != 0) {
-		return -1;
-	}
-
-	libnetapi_set_username(ctx, c->opt_user_name);
-	libnetapi_set_password(ctx, c->opt_password);
-
 	status = NetUnjoinDomain(server_name, account, password, unjoin_flags);
 	if (status != 0) {
 		printf("Failed to unjoin domain: %s\n",
-			libnetapi_get_error_string(ctx, status));
+			libnetapi_get_error_string(c->netapi_ctx, status));
 		goto done;
 	}
 
@@ -136,7 +127,6 @@ static int net_dom_unjoin(struct net_context *c, int argc, const char **argv)
 
 static int net_dom_join(struct net_context *c, int argc, const char **argv)
 {
-	struct libnetapi_ctx *ctx = NULL;
 	const char *server_name = NULL;
 	const char *domain_name = NULL;
 	const char *account_ou = NULL;
@@ -204,19 +194,11 @@ static int net_dom_join(struct net_context *c, int argc, const char **argv)
 
 	/* check if domain is a domain or a workgroup */
 
-	status = libnetapi_init(&ctx);
-	if (status != 0) {
-		return -1;
-	}
-
-	libnetapi_set_username(ctx, c->opt_user_name);
-	libnetapi_set_password(ctx, c->opt_password);
-
 	status = NetJoinDomain(server_name, domain_name, account_ou,
 			       Account, password, join_flags);
 	if (status != 0) {
 		printf("Failed to join domain: %s\n",
-			libnetapi_get_error_string(ctx, status));
+			libnetapi_get_error_string(c->netapi_ctx, status));
 		goto done;
 	}
 
@@ -251,12 +233,22 @@ static int net_dom_join(struct net_context *c, int argc, const char **argv)
 
 int net_dom(struct net_context *c, int argc, const char **argv)
 {
+	NET_API_STATUS status;
+
 	struct functable func[] = {
 		{"JOIN", net_dom_join},
 		{"UNJOIN", net_dom_unjoin},
 		{"HELP", net_help_dom},
 		{NULL, NULL}
 	};
+
+	status = libnetapi_init(&c->netapi_ctx);
+	if (status != 0) {
+		return -1;
+	}
+
+	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
+	libnetapi_set_password(c->netapi_ctx, c->opt_password);
 
 	return net_run_function(c, argc, argv, func, net_dom_usage);
 }
