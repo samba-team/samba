@@ -201,6 +201,7 @@ smb.conf changes
     open files database hashsize	Removed
     read bmpx				Removed
     registry shares			New		No
+    smb encrypt				New		Auto
     winbind expand groups		New		1
     winbind rpc only			New		No
 
