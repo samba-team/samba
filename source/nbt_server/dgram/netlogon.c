@@ -30,6 +30,7 @@
 #include "param/param.h"
 #include "smbd/service_task.h"
 #include "cldap_server/cldap_server.h"
+#include "libcli/security/security.h"
 
 /*
   reply to a GETDC request
@@ -51,8 +52,8 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 	struct nbt_netlogon_response netlogon_response;
 	int ret;
 
-	/* only answer getdc requests on the PDC name */
-	if (name->type != NBT_NAME_PDC) {
+	/* only answer getdc requests on the PDC or LOGON names */
+	if (name->type != NBT_NAME_PDC && name->type != NBT_NAME_LOGON) {
 		return;
 	}
 
@@ -60,6 +61,11 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 	if (samctx == NULL) {
 		DEBUG(2,("Unable to open sam in getdc reply\n"));
 		return;
+	}
+
+	if (!samdb_is_pdc(samctx)) {
+		DEBUG(2, ("Not a PDC, so not processing LOGON_PRIMARY_QUERY\n"));
+		return;		
 	}
 
 	partitions_basedn = samdb_partitions_dn(samctx, packet);
@@ -130,6 +136,7 @@ static void nbtd_netlogon_samlogon(struct dgram_mailslot_handler *dgmslot,
 
 	if (netlogon->req.logon.sid_size) {
 		if (strcasecmp(mailslot_name, NBT_MAILSLOT_NTLOGON) == 0) {
+			DEBUG(2,("NBT netlogon query failed because SID specified in request to NTLOGON\n"));
 			/* SID not permitted on NTLOGON (for some reason...) */ 
 			return;
 		}
@@ -138,12 +145,16 @@ static void nbtd_netlogon_samlogon(struct dgram_mailslot_handler *dgmslot,
 		sid = NULL;
 	}
 
-	status = fill_netlogon_samlogon_response(samctx, packet, name->name, sid, NULL, 
+	status = fill_netlogon_samlogon_response(samctx, packet, NULL, name->name, sid, NULL, 
 						 netlogon->req.logon.user_name, src->addr, 
 						 netlogon->req.logon.nt_version, iface->nbtsrv->task->lp_ctx, &netlogon_response.samlogon);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2,("NBT netlogon query failed domain=%s sid=%s version=%d - %s\n",
+			 name->name, dom_sid_string(packet, sid), netlogon->req.logon.nt_version, nt_errstr(status)));
 		return;
 	}
+
+	netlogon_response.response_type = NETLOGON_SAMLOGON;
 
 	packet->data.msg.dest_name.type = 0;
 

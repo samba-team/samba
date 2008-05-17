@@ -42,6 +42,7 @@
 NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 					 TALLOC_CTX *mem_ctx,
 					 const char *domain,
+					 const char *netbios_domain,
 					 struct dom_sid *domain_sid,
 					 const char *domain_guid,
 					 const char *user,
@@ -88,6 +89,45 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		if (ret != LDB_SUCCESS) {
 			DEBUG(2,("Unable to find referece to '%s' in sam: %s\n",
 				 domain, 
+				 ldb_errstring(sam_ctx)));
+			return NT_STATUS_NO_SUCH_DOMAIN;
+		} else if (ref_res->count == 1) {
+			talloc_steal(mem_ctx, dom_res);
+			dom_dn = ldb_msg_find_attr_as_dn(sam_ctx, mem_ctx, ref_res->msgs[0], "ncName");
+			if (!dom_dn) {
+				return NT_STATUS_NO_SUCH_DOMAIN;
+			}
+			ret = ldb_search(sam_ctx, dom_dn,
+					 LDB_SCOPE_BASE, "objectClass=domain", 
+					 dom_attrs, &dom_res);
+			if (ret != LDB_SUCCESS) {
+				DEBUG(2,("Error finding domain '%s'/'%s' in sam: %s\n", domain, ldb_dn_get_linearized(dom_dn), ldb_errstring(sam_ctx)));
+				return NT_STATUS_NO_SUCH_DOMAIN;
+			}
+			talloc_steal(mem_ctx, dom_res);
+			if (dom_res->count != 1) {
+				DEBUG(2,("Error finding domain '%s'/'%s' in sam\n", domain, ldb_dn_get_linearized(dom_dn)));
+				return NT_STATUS_NO_SUCH_DOMAIN;
+			}
+		} else if (ref_res->count > 1) {
+			talloc_free(ref_res);
+			return NT_STATUS_NO_SUCH_DOMAIN;
+		}
+	}
+
+	if (netbios_domain) {
+		struct ldb_dn *dom_dn;
+		/* try and find the domain */
+
+		ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &ref_res, 
+					 partitions_basedn, LDB_SCOPE_ONELEVEL, 
+					 ref_attrs, 
+					 "(&(objectClass=crossRef)(ncName=*)(nETBIOSName=%s))",
+					 netbios_domain);
+	
+		if (ret != LDB_SUCCESS) {
+			DEBUG(2,("Unable to find referece to '%s' in sam: %s\n",
+				 netbios_domain, 
 				 ldb_errstring(sam_ctx)));
 			return NT_STATUS_NO_SUCH_DOMAIN;
 		} else if (ref_res->count == 1) {
@@ -211,11 +251,16 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	ZERO_STRUCTP(netlogon);
 
 	if (version & NETLOGON_NT_VERSION_5EX) {
-		uint32_t extra_flags;
+		uint32_t extra_flags = 0;
 		netlogon->ntver = NETLOGON_NT_VERSION_5EX;
 
 		/* could check if the user exists */
-		netlogon->nt5_ex.command      = LOGON_SAM_LOGON_RESPONSE_EX;
+		if (!user) {
+			user = "";
+			netlogon->nt5_ex.command      = LOGON_SAM_LOGON_RESPONSE_EX;
+		} else {
+			netlogon->nt5_ex.command      = LOGON_SAM_LOGON_USER_UNKNOWN_EX;
+		}
 		netlogon->nt5_ex.server_type  = server_type;
 		netlogon->nt5_ex.domain_uuid  = domain_uuid;
 		netlogon->nt5_ex.forest       = realm;
@@ -232,8 +277,9 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 			extra_flags = NETLOGON_NT_VERSION_5EX_WITH_IP;
 			netlogon->nt5_ex.sockaddr.sa_family    = 2;
 			netlogon->nt5_ex.sockaddr.pdc_ip       = pdc_ip;
+			netlogon->nt5_ex.sockaddr.remaining = data_blob(NULL, 4);
 		}
-		netlogon->nt5_ex.nt_version   = NETLOGON_NT_VERSION_1|NETLOGON_NT_VERSION_5|extra_flags;
+		netlogon->nt5_ex.nt_version   = NETLOGON_NT_VERSION_1|NETLOGON_NT_VERSION_5EX|extra_flags;
 		netlogon->nt5_ex.lmnt_token   = 0xFFFF;
 		netlogon->nt5_ex.lm20_token   = 0xFFFF;
 
@@ -241,7 +287,12 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		netlogon->ntver = NETLOGON_NT_VERSION_5;
 
 		/* could check if the user exists */
-		netlogon->nt5.command      = LOGON_SAM_LOGON_RESPONSE;
+		if (!user) {
+			user = "";
+			netlogon->nt5.command      = LOGON_SAM_LOGON_RESPONSE;
+		} else {
+			netlogon->nt5.command      = LOGON_SAM_LOGON_USER_UNKNOWN;
+		}
 		netlogon->nt5.pdc_name     = pdc_name;
 		netlogon->nt5.user_name    = user;
 		netlogon->nt5.domain_name  = flatname;
@@ -254,17 +305,22 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		netlogon->nt5.nt_version   = NETLOGON_NT_VERSION_1|NETLOGON_NT_VERSION_5;
 		netlogon->nt5.lmnt_token   = 0xFFFF;
 		netlogon->nt5.lm20_token   = 0xFFFF;
-	} else {
+
+	} else /* (version & NETLOGON_NT_VERSION_1) and all other cases */ {
 		netlogon->ntver = NETLOGON_NT_VERSION_1;
 		/* could check if the user exists */
-		netlogon->nt4.command     = LOGON_SAM_LOGON_RESPONSE;
+		if (!user) {
+			user = "";
+			netlogon->nt4.command      = LOGON_SAM_LOGON_RESPONSE;
+		} else {
+			netlogon->nt4.command      = LOGON_SAM_LOGON_USER_UNKNOWN;
+		}
 		netlogon->nt4.server      = pdc_name;
 		netlogon->nt4.user_name   = user;
 		netlogon->nt4.domain      = flatname;
 		netlogon->nt4.nt_version  = NETLOGON_NT_VERSION_1;
 		netlogon->nt4.lmnt_token  = 0xFFFF;
 		netlogon->nt4.lm20_token  = 0xFFFF;
-		
 	}
 
 	return NT_STATUS_OK;
@@ -349,7 +405,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 	DEBUG(5,("cldap netlogon query domain=%s host=%s user=%s version=%d guid=%s\n",
 		 domain, host, user, version, domain_guid));
 
-	status = fill_netlogon_samlogon_response(cldapd->samctx, tmp_ctx, domain, NULL, domain_guid,
+	status = fill_netlogon_samlogon_response(cldapd->samctx, tmp_ctx, domain, NULL, NULL, domain_guid,
 						 user, src->addr, 
 						 version, cldapd->task->lp_ctx, &netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
