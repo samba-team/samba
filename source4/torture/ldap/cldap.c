@@ -83,7 +83,8 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 		CHECK_STATUS(status, NT_STATUS_OK);
 	}
 
-	search.in.version = 0x20000006;
+	search.in.version = NETLOGON_NT_VERSION_5|NETLOGON_NT_VERSION_5EX|NETLOGON_NT_VERSION_IP;
+
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -104,7 +105,7 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, search.in.user);
 	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN_EX);
 
-	search.in.version = 6;
+	search.in.version = NETLOGON_NT_VERSION_5;
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -114,7 +115,7 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, "");
-	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
+	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE);
 
 	printf("Trying with User=Administrator\n");
 
@@ -123,7 +124,9 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, search.in.user);
-	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN_EX);
+	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN);
+
+	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 
 	printf("Trying with a GUID\n");
 	search.in.realm       = NULL;
@@ -168,6 +171,7 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, search.in.user);
 	CHECK_STRING(search.out.netlogon.nt5_ex.dns_domain, n1.nt5_ex.dns_domain);
+	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN_EX);
 
 	printf("Trying with just a bad domain\n");
 	search = empty_search;
