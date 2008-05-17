@@ -96,7 +96,6 @@ fi
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 AC_CHECK_HEADERS(sys/time.h time.h)
 AC_CHECK_HEADERS(stdarg.h vararg.h)
-AC_CHECK_HEADERS(sys/sockio.h sys/un.h)
 AC_CHECK_HEADERS(sys/mount.h mntent.h)
 AC_CHECK_HEADERS(stropts.h)
 
