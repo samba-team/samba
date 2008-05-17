@@ -39,6 +39,7 @@
 */
 static void netlogon_handler(struct dgram_mailslot_handler *dgmslot, 
 			     struct nbt_dgram_packet *packet, 
+			     const char *mailslot_name,
 			     struct socket_address *src)
 {
 	NTSTATUS status;
@@ -362,6 +363,30 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	logon.req.logon.nt_version    = 1;
 	logon.req.logon.lmnt_token    = 0xFFFF;
 	logon.req.logon.lm20_token    = 0xFFFF;
+
+	make_nbt_name_client(&myname, TEST_NAME);
+
+	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
+					   address, lp_dgram_port(tctx->lp_ctx));
+	torture_assert(tctx, dest != NULL, "Error getting address");
+	status = dgram_mailslot_netlogon_send(dgmsock, 
+					      &name, dest, 
+					      NBT_MAILSLOT_NTLOGON, 
+					      &myname, &logon);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to send ntlogon request");
+
+	while (timeval_elapsed(&tv) < 5 && replies == 0) {
+		event_loop_once(dgmsock->event_ctx);
+	}
+
+	ZERO_STRUCT(logon);
+	logon.command = LOGON_PRIMARY_QUERY;
+	logon.req.pdc.computer_name = TEST_NAME;
+	logon.req.pdc.mailslot_name = dgmslot->mailslot_name;
+	logon.req.pdc.unicode_name  = TEST_NAME;
+	logon.req.pdc.nt_version    = 1;
+	logon.req.pdc.lmnt_token    = 0xFFFF;
+	logon.req.pdc.lm20_token    = 0xFFFF;
 
 	make_nbt_name_client(&myname, TEST_NAME);
 
