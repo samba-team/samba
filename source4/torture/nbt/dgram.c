@@ -47,7 +47,7 @@ static void netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 
 	printf("netlogon reply from %s:%d\n", src->addr, src->port);
 
-	status = dgram_mailslot_netlogon_parse(dgmslot, dgmslot, packet, &netlogon);
+	status = dgram_mailslot_netlogon_parse_response(dgmslot, dgmslot, packet, &netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to parse netlogon packet from %s:%d\n",
 		       src->addr, src->port);
@@ -162,6 +162,9 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	struct nbt_name name;
 
 	struct interface *ifaces;
+	struct test_join *join_ctx;
+	struct cli_credentials *machine_credentials;
+	const struct dom_sid *dom_sid;
 	
 	name.name = lp_workgroup(tctx->lp_ctx);
 	name.type = NBT_NAME_LOGON;
@@ -223,6 +226,63 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 		event_loop_once(dgmsock->event_ctx);
 	}
 
+	ZERO_STRUCT(logon);
+	logon.command = LOGON_SAM_LOGON_REQUEST;
+	logon.req.logon.request_count = 0;
+	logon.req.logon.computer_name = TEST_NAME;
+	logon.req.logon.user_name     = TEST_NAME"$";
+	logon.req.logon.mailslot_name = dgmslot->mailslot_name;
+	logon.req.logon.nt_version    = 1;
+	logon.req.logon.lmnt_token    = 0xFFFF;
+	logon.req.logon.lm20_token    = 0xFFFF;
+
+	make_nbt_name_client(&myname, TEST_NAME);
+
+	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
+					   address, lp_dgram_port(tctx->lp_ctx));
+
+	torture_assert(tctx, dest != NULL, "Error getting address");
+	status = dgram_mailslot_netlogon_send(dgmsock, &name, dest,
+					      NBT_MAILSLOT_NETLOGON, 
+					      &myname, &logon);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
+
+	while (timeval_elapsed(&tv) < 5 && replies == 0) {
+		event_loop_once(dgmsock->event_ctx);
+	}
+
+	join_ctx = torture_join_domain(tctx, TEST_NAME, 
+				       ACB_WSTRUST, &machine_credentials);
+
+	dom_sid = torture_join_sid(join_ctx);
+
+	ZERO_STRUCT(logon);
+	logon.command = LOGON_SAM_LOGON_REQUEST;
+	logon.req.logon.request_count = 0;
+	logon.req.logon.computer_name = TEST_NAME;
+	logon.req.logon.user_name     = TEST_NAME"$";
+	logon.req.logon.mailslot_name = dgmslot->mailslot_name;
+	logon.req.logon.sid           = *dom_sid;
+	logon.req.logon.nt_version    = 1;
+	logon.req.logon.lmnt_token    = 0xFFFF;
+	logon.req.logon.lm20_token    = 0xFFFF;
+
+	make_nbt_name_client(&myname, TEST_NAME);
+
+	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
+					   address, lp_dgram_port(tctx->lp_ctx));
+
+	torture_assert(tctx, dest != NULL, "Error getting address");
+	status = dgram_mailslot_netlogon_send(dgmsock, &name, dest,
+					      NBT_MAILSLOT_NETLOGON, 
+					      &myname, &logon);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
+
+	while (timeval_elapsed(&tv) < 5 && replies == 0) {
+		event_loop_once(dgmsock->event_ctx);
+	}
+
+	torture_leave_domain(join_ctx);
 	return true;
 }
 
@@ -236,7 +296,6 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	struct socket_address *dest;
 	struct test_join *join_ctx;
 	struct cli_credentials *machine_credentials;
-	const struct dom_sid *dom_sid;
 
 	const char *myaddress;
 	struct nbt_netlogon_packet logon;
@@ -286,8 +345,6 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	torture_assert(tctx, join_ctx != NULL,
 		       talloc_asprintf(tctx, "Failed to join domain %s as %s\n",
 		       		       lp_workgroup(tctx->lp_ctx), TEST_NAME));
-
-	dom_sid = torture_join_sid(join_ctx);
 
 	/* setup a temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
