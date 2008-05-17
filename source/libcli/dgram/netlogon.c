@@ -67,22 +67,18 @@ NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
 				       struct nbt_dgram_packet *request,
 				       const char *my_netbios_name,
 				       const char *mailslot_name,
-				       struct nbt_netlogon_packet *reply)
+				       struct nbt_netlogon_response *reply)
 {
 	NTSTATUS status;
-	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	TALLOC_CTX *tmp_ctx = talloc_new(dgmsock);
 	struct nbt_name myname;
 	struct socket_address *dest;
 
-	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, 
-				       dgmsock->iconv_convenience,
-				       reply,
-				      (ndr_push_flags_fn_t)ndr_push_nbt_netlogon_packet);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		talloc_free(tmp_ctx);
-		return ndr_map_error2ntstatus(ndr_err);
+	status = push_nbt_netlogon_response(&blob, tmp_ctx, dgmsock->iconv_convenience,
+					    reply);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	make_nbt_name_client(&myname, my_netbios_name);
@@ -107,7 +103,32 @@ NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
 /*
   parse a netlogon response. The packet must be a valid mailslot packet
 */
-NTSTATUS dgram_mailslot_netlogon_parse(struct dgram_mailslot_handler *dgmslot,
+NTSTATUS dgram_mailslot_netlogon_parse_request(struct dgram_mailslot_handler *dgmslot,
+					       TALLOC_CTX *mem_ctx,
+					       struct nbt_dgram_packet *dgram,
+					       struct nbt_netlogon_packet *netlogon)
+{
+	DATA_BLOB data = dgram_mailslot_data(dgram);
+	enum ndr_err_code ndr_err;
+
+	ndr_err = ndr_pull_struct_blob(&data, mem_ctx, dgmslot->dgmsock->iconv_convenience, netlogon,
+				      (ndr_pull_flags_fn_t)ndr_pull_nbt_netlogon_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("Failed to parse netlogon packet of length %d: %s\n",
+			 (int)data.length, nt_errstr(status)));
+		if (DEBUGLVL(10)) {
+			file_save("netlogon.dat", data.data, data.length);
+		}
+		return status;
+	}
+	return NT_STATUS_OK;
+}
+
+/*
+  parse a netlogon response. The packet must be a valid mailslot packet
+*/
+NTSTATUS dgram_mailslot_netlogon_parse_response(struct dgram_mailslot_handler *dgmslot,
 				       TALLOC_CTX *mem_ctx,
 				       struct nbt_dgram_packet *dgram,
 				       struct nbt_netlogon_response *netlogon)
