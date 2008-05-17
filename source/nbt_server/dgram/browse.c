@@ -49,6 +49,7 @@ static const char *nbt_browse_opcode_string(enum nbt_browse_opcode r)
 */
 void nbtd_mailslot_browse_handler(struct dgram_mailslot_handler *dgmslot, 
 				  struct nbt_dgram_packet *packet, 
+				  const char *mailslot_name,
 				  struct socket_address *src)
 {
 	struct nbt_browse_packet *browse = talloc(dgmslot, struct nbt_browse_packet);

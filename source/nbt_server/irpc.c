@@ -60,8 +60,9 @@ struct getdc_state {
 };
 
 static void getdc_recv_netlogon_reply(struct dgram_mailslot_handler *dgmslot, 
-				     struct nbt_dgram_packet *packet, 
-				     struct socket_address *src)
+				      struct nbt_dgram_packet *packet, 
+				      const char *mailslot_name,
+				      struct socket_address *src)
 {
 	struct getdc_state *s =
 		talloc_get_type(dgmslot->private, struct getdc_state);
@@ -69,8 +70,8 @@ static void getdc_recv_netlogon_reply(struct dgram_mailslot_handler *dgmslot,
 	struct nbt_netlogon_response netlogon;
 	NTSTATUS status;
 
-	status = dgram_mailslot_netlogon_parse(dgmslot, packet, packet,
-					       &netlogon);
+	status = dgram_mailslot_netlogon_parse_response(dgmslot, packet, packet,
+							&netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("dgram_mailslot_ntlogon_parse failed: %s\n",
 			  nt_errstr(status)));
