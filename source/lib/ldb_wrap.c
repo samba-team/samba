@@ -44,7 +44,7 @@ static void ldb_wrap_debug(void *context, enum ldb_debug_level level,
 static void ldb_wrap_debug(void *context, enum ldb_debug_level level, 
 			   const char *fmt, va_list ap)
 {
-	int samba_level;
+	int samba_level = -1;
 	char *s = NULL;
 	switch (level) {
 	case LDB_DEBUG_FATAL:

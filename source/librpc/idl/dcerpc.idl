@@ -116,6 +116,7 @@ interface dcerpc
 		uint16 context_id;
 		uint8 cancel_count;
 		uint32 status;
+		[flag(NDR_REMAINING)] DATA_BLOB _pad;
 	} dcerpc_fault;
 
 	/* the auth types we know about */
