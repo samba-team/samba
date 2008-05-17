@@ -712,7 +712,7 @@ NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
 	status = push_netlogon_samlogon_response(&blob, tmp_ctx, cldap->iconv_convenience,
 						 netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
-
+		return status;
 	}
 	reply.messageid    = message_id;
 	reply.dest         = src;
