@@ -313,51 +313,51 @@ static int net_maxrid(struct net_context *c, int argc, const char **argv)
 }
 
 /* main function table */
-static struct functable net_func[] = {
-	{"RPC", net_rpc},
-	{"RAP", net_rap},
-	{"ADS", net_ads},
+static struct functable2 net_func[] = {
+	{"rpc", net_rpc, "Run functions using RPC transport"},
+	{"rap", net_rap, "Run functions using RAP transport"},
+	{"ads", net_ads, "Run functions using ADS transport"},
 
 	/* eventually these should auto-choose the transport ... */
-	{"FILE", net_file},
-	{"SHARE", net_share},
-	{"SESSION", net_rap_session},
-	{"SERVER", net_rap_server},
-	{"DOMAIN", net_rap_domain},
-	{"PRINTQ", net_rap_printq},
-	{"USER", net_user},
-	{"GROUP", net_group},
-	{"GROUPMAP", net_groupmap},
-	{"SAM", net_sam},
-	{"VALIDATE", net_rap_validate},
-	{"GROUPMEMBER", net_rap_groupmember},
-	{"ADMIN", net_rap_admin},
-	{"SERVICE", net_rap_service},
-	{"PASSWORD", net_rap_password},
-	{"CHANGETRUSTPW", net_changetrustpw},
-	{"CHANGESECRETPW", net_changesecretpw},
-	{"TIME", net_time},
-	{"LOOKUP", net_lookup},
-	{"JOIN", net_join},
-	{"DOM", net_dom},
-	{"CACHE", net_cache},
-	{"GETLOCALSID", net_getlocalsid},
-	{"SETLOCALSID", net_setlocalsid},
-	{"SETDOMAINSID", net_setdomainsid},
-	{"GETDOMAINSID", net_getdomainsid},
-	{"MAXRID", net_maxrid},
-	{"IDMAP", net_idmap},
-	{"STATUS", net_status},
-	{"USERSHARE", net_usershare},
-	{"USERSIDLIST", net_usersidlist},
-	{"CONF", net_conf},
-	{"REGISTRY", net_registry},
+	{"file", net_file, "Functions on remote opened files"},
+	{"share", net_share, "Functions on shares"},
+	{"session", net_rap_session, "FIXME"},
+	{"server", net_rap_server, "FIXME"},
+	{"domain", net_rap_domain, "FIXME"},
+	{"printq", net_rap_printq, "FIXME"},
+	{"user", net_user, "Manage users"},
+	{"group", net_group, "Manage groups"},
+	{"groupmap", net_groupmap, "Manage group mappings"},
+	{"sam", net_sam, "Functions on the SAM database"},
+	{"validate", net_rap_validate, "FIXME"},
+	{"groupmember", net_rap_groupmember, "FIXME"},
+	{"admin", net_rap_admin, "FIXME"},
+	{"service", net_rap_service, "FIXME"},
+	{"password", net_rap_password, "FIXME"},
+	{"changetrustpw", net_changetrustpw, "Change the trust password"},
+	{"changesecretpw", net_changesecretpw, "Change the secret password"},
+	{"time", net_time, "Show/set time"},
+	{"lookup", net_lookup, "Look up host names/IP addresses"},
+	{"join", net_join, "Join a domain/AD"},
+	{"dom", net_dom, "Join/unjoin (remote) machines to/from a domain/AD"},
+	{"cache", net_cache, "Operate on the cache tdb file"},
+	{"getlocalsid", net_getlocalsid, "Get the SID for the local domain"},
+	{"setlocalsid", net_setlocalsid, "Set the SID for the local domain"},
+	{"setdomainsid", net_setdomainsid, "Get domain SID on member servers"},
+	{"getdomainsid", net_getdomainsid, "Set domain SID on member servers"},
+	{"maxrid", net_maxrid, "Display the maximul RID currently used"},
+	{"idmap", net_idmap, "IDmap functions"},
+	{"status", net_status, "Display server status"},
+	{"usershare", net_usershare, "Manage user-modifiable shares"},
+	{"usersidlist", net_usersidlist, "Display list of all users with SID"},
+	{"conf", net_conf, "Manage Samba registry based configuration"},
+	{"registry", net_registry, "Manage the Samba registry"},
 #ifdef WITH_FAKE_KASERVER
-	{"AFS", net_afs},
+	{"afs", net_afs, "FIXME"},
 #endif
 
-	{"HELP", net_help},
-	{NULL, NULL}
+	{"help", net_help, "Print usage information"},
+	{NULL, NULL, NULL}
 };
 
 
@@ -517,7 +517,7 @@ static struct functable net_func[] = {
 		c->opt_password = getenv("PASSWD");
 	}
 
-	rc = net_run_function(c, argc_new-1, argv_new+1, net_func, net_help);
+	rc = net_run_function2(c, argc_new-1, argv_new+1, "net", net_func);
 
 	DEBUG(2,("return code = %d\n", rc));
 
