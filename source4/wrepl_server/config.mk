@@ -11,7 +11,7 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM WREPL_SRV
 #######################
 
-WREPL_SRV_OBJ_FILES = $(addprefix wrepl_server/, \
+WREPL_SRV_OBJ_FILES = $(addprefix $(wrepl_serversrcdir)/, \
 		wrepl_server.o \
 		wrepl_in_connection.o \
 		wrepl_in_call.o \

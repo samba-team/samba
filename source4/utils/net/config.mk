@@ -1,4 +1,4 @@
-# utils/net subsystem
+# $(utilssrcdir)/net subsystem
 
 #################################
 # Start BINARY net
@@ -15,7 +15,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY net
 #################################
 
-net_OBJ_FILES = $(addprefix utils/net/,  \
+net_OBJ_FILES = $(addprefix $(utilssrcdir)/net/,  \
 		net.o \
 		net_password.o \
 		net_time.o \
