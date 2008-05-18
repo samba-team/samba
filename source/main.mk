@@ -11,6 +11,7 @@ mkinclude libnet/config.mk
 mkinclude auth/config.mk
 mkinclude nsswitch/config.mk
 mkinclude lib/basic.mk
+paramsrcdir := param
 mkinclude param/config.mk
 mkinclude smb_server/config.mk
 mkinclude rpc_server/config.mk
