@@ -170,32 +170,7 @@ $SMB_INFO_SUBSYSTEMS
 $SMB_INFO_LIBRARIES
 CEOF
 
-AC_OUTPUT_COMMANDS(
-[
-test "x$ac_abs_srcdir" != "x$ac_abs_builddir" && (
-	cd $builddir;
-	# NOTE: We *must* use -R so we don't follow symlinks (at least on BSD
-	# systems).
-	test -d heimdal || cp -R $srcdir/heimdal $builddir/
-	test -d heimdal_build || cp -R $srcdir/heimdal_build $builddir/
-	test -d build || builddir="$builddir" \
-			srcdir="$srcdir" \
-			$PERL ${srcdir}/script/buildtree.pl
- )
-
-$PERL -I${builddir} -I${builddir}/build \
-    -I${srcdir} -I${srcdir}/build \
-    ${srcdir}/build/smb_build/main.pl || exit $?
-],
-[
-srcdir="$srcdir"
-builddir="$builddir"
-PERL="$PERL"
-
-export PERL
-export srcdir
-export builddir
-])
+SMB_BUILD_RUN(data.mk)
 AC_OUTPUT
 
 cmp include/config_tmp.h include/config.h >/dev/null 2>&1

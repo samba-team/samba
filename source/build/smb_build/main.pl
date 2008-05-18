@@ -13,6 +13,8 @@ use smb_build::summary;
 use smb_build::config;
 use strict;
 
+my $output_file = shift @ARGV;
+
 my $INPUT = {};
 my $mkfile = smb_build::config_mk::run_config_mk($INPUT, $config::config{srcdir}, $config::config{builddir}, "main.mk");
 
@@ -84,7 +86,7 @@ foreach my $key (values %$OUTPUT) {
 	$mkenv->InitFunctions($key) if defined($key->{INIT_FUNCTIONS});
 }
 
-$mkenv->write("data.mk");
+$mkenv->write($output_file);
 
 summary::show($OUTPUT, \%config::config);
 
