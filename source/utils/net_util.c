@@ -584,6 +584,9 @@ int net_run_function2(struct net_context *c, int argc, const char **argv,
 		}
 	}
 
+	d_fprintf(stderr, "Invalid command: %s %s\n", whoami,
+		  (argc > 0)?argv[0]:"");
+	d_printf("Usage:\n");
 	for (i=0; table[i].funcname != NULL; i++) {
 		d_printf("%s %-15s %s\n", whoami, table[i].funcname,
 			 table[i].helptext);
