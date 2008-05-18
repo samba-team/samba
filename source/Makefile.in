@@ -2301,14 +2301,14 @@ clean: delheaders
 # afterwards.
 proto_exists: include/build_env.h \
 	libnet/libnet_proto.h \
-	utils/net_proto.h utils/ntlm_auth_proto.h smbd/build_options.c
+	utils/net_proto.h smbd/build_options.c
 	@touch proto_exists
 
 delheaders:
 	@echo Removing prototype headers
 	@rm -f include/build_env.h \
 		utils/net_proto.h \
-		smbd/build_options.c utils/ntlm_auth_proto.h \
+		smbd/build_options.c \
 		utils/passwd_proto.h libnet/libnet_proto.h
 
 MKPROTO_SH = $(srcdir)/script/mkproto.sh
@@ -2328,11 +2328,6 @@ utils/passwd_proto.h:
 	  -h _PASSWD_PROTO_H_ $(builddir)/utils/passwd_proto.h \
 	  $(PASSWD_UTIL_OBJ)
 
-utils/ntlm_auth_proto.h:
-	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
-	  -h _NTLM_AUTH_PROTO_H_ $(builddir)/utils/ntlm_auth_proto.h \
-	  $(NTLM_AUTH_OBJ1)
-
 libnet/libnet_proto.h:
 	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
 	  -h _LIBNET_PROTO_H_ $(builddir)/libnet/libnet_proto.h \
@@ -2345,7 +2340,6 @@ headers:
 	$(MAKE) delheaders; \
 	$(MAKE) smbd/build_options.c; \
 	$(MAKE) include/build_env.h; \
-	$(MAKE) utils/ntlm_auth_proto.h; \
 	$(MAKE) utils/net_proto.h; \
 	$(MAKE) utils/passwd_proto.h; \
 	$(MAKE) libnet/libnet_proto.h;

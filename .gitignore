@@ -24,7 +24,6 @@ source/script/installbin.sh
 source/script/uninstallbin.sh
 source/smbd/build_options.c
 source/utils/net_proto.h
-source/utils/ntlm_auth_proto.h
 source/tags
 source/utils/passwd_proto.h
 source/include/includes.h.gch
