@@ -2300,7 +2300,7 @@ clean: delheaders
 # removed by "make clean" this will always be run when you do anything
 # afterwards.
 proto_exists: include/build_env.h \
-	winbindd/winbindd_proto.h web/swat_proto.h \
+	web/swat_proto.h \
 	libnet/libnet_proto.h \
 	client/client_proto.h utils/net_proto.h utils/ntlm_auth_proto.h smbd/build_options.c
 	@touch proto_exists
@@ -2308,7 +2308,7 @@ proto_exists: include/build_env.h \
 delheaders:
 	@echo Removing prototype headers
 	@rm -f include/build_env.h \
-		winbindd/winbindd_proto.h web/swat_proto.h \
+		web/swat_proto.h \
 		client/client_proto.h utils/net_proto.h \
 		smbd/build_options.c utils/ntlm_auth_proto.h \
 		utils/passwd_proto.h libnet/libnet_proto.h
@@ -2319,11 +2319,6 @@ include/build_env.h: script/build_env.sh
 	@echo Building include/build_env.h
 	@$(SHELL) $(srcdir)/script/build_env.sh $(srcdir) $(builddir) $(CC) \
 	  > $(builddir)/include/build_env.h
-
-winbindd/winbindd_proto.h:
-	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
-	  -h _WINBINDD_PROTO_H_ $(builddir)/winbindd/winbindd_proto.h \
-	  $(WINBINDD_OBJ1)
 
 web/swat_proto.h:
 	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
@@ -2362,7 +2357,6 @@ headers:
 	$(MAKE) delheaders; \
 	$(MAKE) smbd/build_options.c; \
 	$(MAKE) include/build_env.h; \
-	$(MAKE) winbindd/winbindd_proto.h; \
 	$(MAKE) web/swat_proto.h; \
 	$(MAKE) client/client_proto.h; \
 	$(MAKE) utils/ntlm_auth_proto.h; \
