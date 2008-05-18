@@ -10,7 +10,6 @@ source/libnet/libnet_proto.h
 source/include/build_env.h
 source/include/config.h
 source/include/config.h.in
-source/include/proto.h
 source/include/stamp-h
 source/include/version.h
 source/Makefile
