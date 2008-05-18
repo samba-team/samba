@@ -7,7 +7,7 @@ PUBLIC_DEPENDENCIES = \
 # End SUBSYSTEM SMB_PROTOCOL
 #######################
 
-SMB_PROTOCOL_OBJ_FILES = $(addprefix smb_server/smb/, \
+SMB_PROTOCOL_OBJ_FILES = $(addprefix $(smb_serversrcdir)/smb/, \
 		receive.o \
 		negprot.o \
 		nttrans.o \

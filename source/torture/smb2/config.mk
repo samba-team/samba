@@ -11,7 +11,7 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM TORTURE_SMB2
 #################################
 
-TORTURE_SMB2_OBJ_FILES = $(addprefix torture/smb2/, \
+TORTURE_SMB2_OBJ_FILES = $(addprefix $(torturesrcdir)/smb2/, \
 		connect.o \
 		scan.o \
 		util.o \

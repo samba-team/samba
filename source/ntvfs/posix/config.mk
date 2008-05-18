@@ -7,7 +7,7 @@ PRIVATE_DEPENDENCIES = NDR_XATTR ntvfs_posix
 # End MODULE pvfs_acl_xattr
 ################################################
 
-pvfs_acl_xattr_OBJ_FILES = ntvfs/posix/pvfs_acl_xattr.o
+pvfs_acl_xattr_OBJ_FILES = $(ntvfssrcdir)/posix/pvfs_acl_xattr.o
 
 ################################################
 # Start MODULE pvfs_acl_nfs4
@@ -18,7 +18,7 @@ PRIVATE_DEPENDENCIES = NDR_NFS4ACL SAMDB ntvfs_posix
 # End MODULE pvfs_acl_nfs4
 ################################################
 
-pvfs_acl_nfs4_OBJ_FILES = ntvfs/posix/pvfs_acl_nfs4.o
+pvfs_acl_nfs4_OBJ_FILES = $(ntvfssrcdir)/posix/pvfs_acl_nfs4.o
 
 ################################################
 [MODULE::pvfs_aio]
@@ -26,7 +26,7 @@ SUBSYSTEM = ntvfs
 PRIVATE_DEPENDENCIES = LIBAIO_LINUX
 ################################################
 
-pvfs_aio_OBJ_FILES = ntvfs/posix/pvfs_aio.o
+pvfs_aio_OBJ_FILES = $(ntvfssrcdir)/posix/pvfs_aio.o
 
 ################################################
 # Start MODULE ntvfs_posix
@@ -41,7 +41,7 @@ PRIVATE_DEPENDENCIES = NDR_XATTR WRAP_XATTR BLKID ntvfs_common MESSAGING pvfs_ai
 # End MODULE ntvfs_posix
 ################################################
 
-ntvfs_posix_OBJ_FILES = $(addprefix ntvfs/posix/, \
+ntvfs_posix_OBJ_FILES = $(addprefix $(ntvfssrcdir)/posix/, \
 		vfs_posix.o \
 		pvfs_util.o \
 		pvfs_search.o \

@@ -46,7 +46,7 @@ TORTURE_LOCAL_OBJ_FILES = \
 		param/tests/share.o \
 		param/tests/loadparm.o \
 		auth/credentials/tests/simple.o \
-		torture/local/local.o \
-		torture/local/dbspeed.o \
-		torture/local/torture.o
+		$(torturesrcdir)/local/local.o \
+		$(torturesrcdir)/local/dbspeed.o \
+		$(torturesrcdir)/local/torture.o
 

@@ -10,4 +10,4 @@ PRIVATE_DEPENDENCIES = ESP LIBTLS smbcalls process_model
 # End SUBSYSTEM WEB
 #######################
 
-WEB_OBJ_FILES = $(addprefix web_server/, web_server.o http.o)
+WEB_OBJ_FILES = $(addprefix $(web_serversrcdir)/, web_server.o http.o)
