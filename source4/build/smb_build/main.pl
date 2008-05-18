@@ -11,12 +11,22 @@ use smb_build::config_mk;
 use smb_build::output;
 use smb_build::summary;
 use smb_build::config;
+use Getopt::Long;
 use strict;
 
-my $output_file = shift @ARGV;
+my $output_file = "data.mk";
+
+my $result = GetOptions (
+	'output' => \$output_file);
+
+if (not $result) {
+	exit(1);
+}
+
+my $input_file = shift @ARGV;
 
 my $INPUT = {};
-my $mkfile = smb_build::config_mk::run_config_mk($INPUT, $config::config{srcdir}, $config::config{builddir}, "main.mk");
+my $mkfile = smb_build::config_mk::run_config_mk($INPUT, $config::config{srcdir}, $config::config{builddir}, $input_file);
 
 my $subsys_output_type = ["MERGED_OBJ"];
 
