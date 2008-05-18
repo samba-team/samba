@@ -6,11 +6,14 @@ dsdbsrcdir := dsdb
 mkinclude dsdb/config.mk
 smbdsrcdir := smbd
 mkinclude smbd/config.mk
+clustersrcdir := cluster
 mkinclude cluster/config.mk
 mkinclude smbd/process_model.mk
 libnetsrcdir := libnet
 mkinclude libnet/config.mk
+authsrcdir := auth
 mkinclude auth/config.mk
+nsswitchsrcdir = nsswitch
 mkinclude nsswitch/config.mk
 mkinclude lib/basic.mk
 paramsrcdir := param

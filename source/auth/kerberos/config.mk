@@ -7,7 +7,7 @@ PRIVATE_DEPENDENCIES = ASN1_UTIL auth_sam_reply LIBPACKET LIBNDR
 # End SUBSYSTEM KERBEROS
 #################################
 
-KERBEROS_OBJ_FILES = $(addprefix auth/kerberos/, \
+KERBEROS_OBJ_FILES = $(addprefix $(authsrcdir)/kerberos/, \
 	kerberos.o \
 	clikrb5.o \
 	kerberos_heimdal.o \
