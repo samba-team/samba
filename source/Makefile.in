@@ -2280,7 +2280,9 @@ uninstallpammodules:
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
-clean: delheaders 
+clean:
+	-rm -f include/build_env.h
+	-rm -f smbd/build_options.c
 	-rm -f $(PRECOMPILED_HEADER)
 	-rm -f core */*~ *~ \
 		*/*.o */*/*.o */*/*/*.o \
@@ -2302,11 +2304,6 @@ clean: delheaders
 proto_exists: include/build_env.h \
 	smbd/build_options.c
 	@touch proto_exists
-
-delheaders:
-	@echo Removing prototype headers
-	@rm -f include/build_env.h \
-		smbd/build_options.c
 
 include/build_env.h: script/build_env.sh
 	@echo Building include/build_env.h
