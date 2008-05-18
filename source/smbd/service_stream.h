@@ -50,6 +50,12 @@ struct stream_connection {
 	struct messaging_context *msg_ctx;
 	struct loadparm_context *lp_ctx;
 
+	/*
+	 * this transport layer session info, normally NULL
+	 * which means the same as an anonymous session info
+	 */
+	struct auth_session_info *session_info;
+
 	bool processing;
 	const char *terminate;
 };

@@ -137,8 +137,7 @@ struct composite_context *resolve_name_send(struct resolve_context *ctx,
 	struct resolve_state *state;
 
 	if (ctx == NULL || event_ctx == NULL) {
-		composite_error(c, NT_STATUS_INVALID_PARAMETER);
-		return c;
+		return NULL;
 	}
 
 	c = composite_create(ctx, event_ctx);
