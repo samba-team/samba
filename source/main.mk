@@ -13,26 +13,46 @@ libnetsrcdir := libnet
 mkinclude libnet/config.mk
 authsrcdir := auth
 mkinclude auth/config.mk
-nsswitchsrcdir = nsswitch
+nsswitchsrcdir := nsswitch
 mkinclude nsswitch/config.mk
 mkinclude lib/samba3/config.mk
+libsocketsrcdir := lib/socket
 mkinclude lib/socket/config.mk
+libcharsetsrcdir := lib/charset
 mkinclude lib/charset/config.mk
+ldb_sambasrcdir := lib/ldb-samba
 mkinclude lib/ldb-samba/config.mk
+libtlssrcdir := lib/tls
 mkinclude lib/tls/config.mk
+libregistrysrcdir := lib/registry
 mkinclude lib/registry/config.mk
+libmessagingsrcdir := lib/messaging
 mkinclude lib/messaging/config.mk
+libeventssrcdir := lib/events 
 mkinclude lib/events/config.mk
+libcmdlinesrcdir := lib/cmdline
 mkinclude lib/cmdline/config.mk
+socketwrappersrcdir := lib/socket_wrapper
 mkinclude lib/socket_wrapper/config.mk
+nsswrappersrcdir := lib/nss_wrapper
 mkinclude lib/nss_wrapper/config.mk
+appwebsrcdir := lib/appweb
 mkinclude lib/appweb/config.mk
+libstreamsrcdir := lib/stream
 mkinclude lib/stream/config.mk
+libutilsrcdir := lib/util
 mkinclude lib/util/config.mk
+libtdrsrcdir := lib/tdr
 mkinclude lib/tdr/config.mk
+libdbwrapsrcdir := lib/dbwrap
 mkinclude lib/dbwrap/config.mk
+libcryptosrcdir := lib/crypto
 mkinclude lib/crypto/config.mk
+libtorturesrcdir := lib/torture
 mkinclude lib/torture/config.mk
+libcompressionsrcdir := lib
+libgencachesrcdir := lib
+libsrcdir := lib
 mkinclude lib/basic.mk
 paramsrcdir := param
 mkinclude param/config.mk

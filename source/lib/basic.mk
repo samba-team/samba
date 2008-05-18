@@ -1,25 +1,25 @@
 [SUBSYSTEM::LIBCOMPRESSION]
 
-LIBCOMPRESSION_OBJ_FILES = lib/compression/mszip.o
+LIBCOMPRESSION_OBJ_FILES = $(libcompressionsrcdir)/mszip.o
 
 [SUBSYSTEM::GENCACHE]
 PRIVATE_DEPENDENCIES = TDB_WRAP
 
-GENCACHE_OBJ_FILES = gencache/gencache.o
+GENCACHE_OBJ_FILES = $(libgencachesrcdir)/gencache.o
 
-# PUBLIC_HEADERS += lib/gencache/gencache.h
+# PUBLIC_HEADERS += $(libgencachesrcdir)/gencache.h
 
 [SUBSYSTEM::LDB_WRAP]
 PUBLIC_DEPENDENCIES = LIBLDB
 PRIVATE_DEPENDENCIES = LDBSAMBA UTIL_LDB
 
-LDB_WRAP_OBJ_FILES = lib/ldb_wrap.o
-PUBLIC_HEADERS += lib/ldb_wrap.h
+LDB_WRAP_OBJ_FILES = $(libsrcdir)/ldb_wrap.o
+PUBLIC_HEADERS += $(libsrcdir)/ldb_wrap.h
 
 [SUBSYSTEM::TDB_WRAP]
 PUBLIC_DEPENDENCIES = LIBTDB
 
-TDB_WRAP_OBJ_FILES = lib/tdb_wrap.o
-PUBLIC_HEADERS += lib/tdb_wrap.h
+TDB_WRAP_OBJ_FILES = $(libsrcdir)/tdb_wrap.o
+PUBLIC_HEADERS += $(libsrcdir)/tdb_wrap.h
 
 SMBREADLINE_OBJ_LIST = $(SMBREADLINE_OBJ_FILES)

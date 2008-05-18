@@ -8,7 +8,7 @@ PUBLIC_DEPENDENCIES = \
 torture_VERSION = 0.0.1
 torture_SOVERSION = 0
 
-PC_FILES += lib/torture/torture.pc
-torture_OBJ_FILES = $(addprefix lib/torture/, torture.o)
+PC_FILES += $(libtorturesrcdir)/torture.pc
+torture_OBJ_FILES = $(addprefix $(libtorturesrcdir)/, torture.o)
 
-PUBLIC_HEADERS += lib/torture/torture.h
+PUBLIC_HEADERS += $(libtorturesrcdir)/torture.h
