@@ -17,7 +17,7 @@ use strict;
 my $output_file = "data.mk";
 
 my $result = GetOptions (
-	'output' => \$output_file);
+	'output=s' => \$output_file);
 
 if (not $result) {
 	exit(1);
