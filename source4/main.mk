@@ -2,7 +2,9 @@ mkinclude dynconfig.mk
 heimdalsrcdir := heimdal
 mkinclude heimdal_build/config.mk
 mkinclude config.mk
+dsdbsrcdir := dsdb
 mkinclude dsdb/config.mk
+smbdsrcdir := smbd
 mkinclude smbd/config.mk
 mkinclude cluster/config.mk
 mkinclude smbd/process_model.mk
@@ -32,4 +34,5 @@ mkinclude libcli/config.mk
 mkinclude scripting/ejs/config.mk
 pyscriptsrcdir := scripting/python
 mkinclude scripting/python/config.mk
+kdcsrcdir := kdc
 mkinclude kdc/config.mk
