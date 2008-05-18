@@ -2,7 +2,7 @@
 PRIVATE_PROTO_HEADER = libnet_proto.h
 PUBLIC_DEPENDENCIES = CREDENTIALS dcerpc dcerpc_samr RPC_NDR_LSA RPC_NDR_SRVSVC RPC_NDR_DRSUAPI LIBCLI_COMPOSITE LIBCLI_RESOLVE LIBCLI_FINDDCS LIBCLI_CLDAP LIBCLI_FINDDCS gensec_schannel LIBCLI_AUTH LIBNDR SMBPASSWD PROVISION
 
-LIBSAMBA-NET_OBJ_FILES = $(addprefix $(libnetdir)/, \
+LIBSAMBA-NET_OBJ_FILES = $(addprefix $(libnetsrcdir)/, \
 	libnet.o libnet_passwd.o libnet_time.o libnet_rpc.o \
 	libnet_join.o libnet_site.o libnet_become_dc.o libnet_unbecome_dc.o \
 	libnet_vampire.o libnet_samdump.o libnet_samdump_keytab.o \
@@ -13,4 +13,4 @@ LIBSAMBA-NET_OBJ_FILES = $(addprefix $(libnetdir)/, \
 [PYTHON::python_net]
 PRIVATE_DEPENDENCIES = LIBSAMBA-NET
 
-python_net_OBJ_FILES = $(libnetdir)/py_net.o
+python_net_OBJ_FILES = $(libnetsrcdir)/py_net.o
