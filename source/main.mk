@@ -1,11 +1,12 @@
 mkinclude dynconfig.mk
+heimdalsrcdir := heimdal
 mkinclude heimdal_build/config.mk
 mkinclude config.mk
 mkinclude dsdb/config.mk
 mkinclude smbd/config.mk
 mkinclude cluster/config.mk
 mkinclude smbd/process_model.mk
-libnetdir := libnet/
+libnetsrcdir := libnet
 mkinclude libnet/config.mk
 mkinclude auth/config.mk
 mkinclude nsswitch/config.mk
@@ -28,6 +29,6 @@ mkinclude librpc/config.mk
 mkinclude client/config.mk
 mkinclude libcli/config.mk
 mkinclude scripting/ejs/config.mk
-pyscriptdir := scripting/python
+pyscriptsrcdir := scripting/python
 mkinclude scripting/python/config.mk
 mkinclude kdc/config.mk
