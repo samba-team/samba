@@ -2301,13 +2301,12 @@ clean: delheaders
 # afterwards.
 proto_exists: include/build_env.h \
 	libnet/libnet_proto.h \
-	utils/net_proto.h smbd/build_options.c
+	smbd/build_options.c
 	@touch proto_exists
 
 delheaders:
 	@echo Removing prototype headers
 	@rm -f include/build_env.h \
-		utils/net_proto.h \
 		smbd/build_options.c \
 		utils/passwd_proto.h libnet/libnet_proto.h
 
@@ -2317,11 +2316,6 @@ include/build_env.h: script/build_env.sh
 	@echo Building include/build_env.h
 	@$(SHELL) $(srcdir)/script/build_env.sh $(srcdir) $(builddir) $(CC) \
 	  > $(builddir)/include/build_env.h
-
-utils/net_proto.h:
-	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
-	  -h _NET_PROTO_H_ $(builddir)/utils/net_proto.h \
-	  $(NET_OBJ1)
 
 utils/passwd_proto.h:
 	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
@@ -2340,7 +2334,6 @@ headers:
 	$(MAKE) delheaders; \
 	$(MAKE) smbd/build_options.c; \
 	$(MAKE) include/build_env.h; \
-	$(MAKE) utils/net_proto.h; \
 	$(MAKE) utils/passwd_proto.h; \
 	$(MAKE) libnet/libnet_proto.h;
 
