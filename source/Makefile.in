@@ -1162,18 +1162,18 @@ VLP_OBJ = $(VLP_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 ######################################################################
 # now the rules...
 ######################################################################
-all : SHOWFLAGS $(SHLIBS) $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
+all:: SHOWFLAGS $(SHLIBS) $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
 	$(MODULES) $(NSS_MODULES) $(PAM_MODULES) @EXTRA_ALL_TARGETS@
 
-nss_modules : $(NSS_MODULES)
+nss_modules:: $(NSS_MODULES)
 
-pam_modules : $(PAM_MODULES)
+pam_modules:: $(PAM_MODULES)
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
 pam_winbind : SHOWFLAGS bin/pam_winbind.@SHLIBEXT@
 
-torture : SHOWFLAGS $(TORTURE_PROGS)
+torture:: SHOWFLAGS $(TORTURE_PROGS)
 
 smbtorture : SHOWFLAGS bin/smbtorture@EXEEXT@
 
@@ -1211,7 +1211,7 @@ nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ @WINBIND_NSS@ \
 
 wins : SHOWFLAGS @WINBIND_WINS_NSS@
 
-modules: SHOWFLAGS $(MODULES)
+modules:: SHOWFLAGS $(MODULES)
 
 #####################################################################
 ## Perl IDL Compiler
@@ -1220,7 +1220,7 @@ IDL_FILES = lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
 	epmapper.idl messaging.idl xattr.idl misc.idl samr.idl security.idl \
 	dssetup.idl krb5pac.idl ntsvcs.idl libnetapi.idl
 
-idl:
+idl::
 	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh $(PIDL_ARGS)
 
@@ -1228,13 +1228,13 @@ idl:
 #####################################################################
 
 
-everything: all libtalloc libsmbclient libnetapi debug2html smbfilter talloctort replacetort smbconftort modules torture \
+everything:: all libtalloc libsmbclient libnetapi debug2html smbfilter talloctort replacetort smbconftort modules torture \
 	$(EVERYTHING_PROGS)
 
 .SUFFIXES:
 .SUFFIXES: .c .o .lo
 
-SHOWFLAGS:
+SHOWFLAGS::
 	@echo "Using FLAGS      = $(FLAGS)"
 	@echo "      PICFLAG    = $(PICFLAG)"
 	@echo "      LIBS       = $(LIBS)"
@@ -1279,7 +1279,7 @@ PRECOMPILED_HEADER = $(builddir)/include/includes.h.gch
 
 # this adds support for precompiled headers. To use it, install a snapshot
 # of gcc-3.4 and run 'make pch' before you do the main build.
-pch: proto_exists
+pch:: proto_exists
 	rm -f $(PRECOMPILED_HEADER)
 	$(MAKE) $(PRECOMPILED_HEADER)
 
@@ -2075,14 +2075,14 @@ bin/timelimit@EXEEXT@: script/tests/timelimit.o
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(DYNEXP) script/tests/timelimit.o
 
-install: installservers installbin @INSTALL_CIFSMOUNT@ @INSTALL_CIFSSPNEGO@ installman \
+install:: installservers installbin @INSTALL_CIFSMOUNT@ @INSTALL_CIFSSPNEGO@ installman \
 		installscripts installdat installmodules @SWAT_INSTALL_TARGETS@ \
 		installlibtalloc \
 		installlibtdb \
 		@INSTALL_LIBSMBCLIENT@ @INSTALL_PAM_MODULES@ \
 		@INSTALL_LIBSMBSHAREMODES@ @INSTALL_LIBWBCLIENT@ installlibnetapi
 
-install-everything: install installmodules
+install-everything:: install installmodules
 
 # DESTDIR is used here to prevent packagers wasting their time
 # duplicating the Makefile. Remove it and you will have the privelege
@@ -2092,26 +2092,26 @@ install-everything: install installmodules
 # the removal of DESTDIR. Do not remove it even though you think it
 # is not used
 
-installdirs:
+installdirs::
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(PRIVATEDIR) $(PIDDIR) $(LOCKDIR) $(MANDIR)
 
-installservers: all installdirs
+installservers:: all installdirs
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(SBINDIR) $(SBIN_PROGS)
 
-installbin: all installdirs
+installbin:: all installdirs
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $(BIN_PROGS)
 
-installcifsmount: @CIFSMOUNT_PROGS@
+installcifsmount:: @CIFSMOUNT_PROGS@
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(ROOTSBINDIR)
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
 
-installcifsspnego: @CIFSSPNEGO_PROGS@
+installcifsspnego:: @CIFSSPNEGO_PROGS@
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(ROOTSBINDIR)
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSSPNEGO_PROGS@
 
 # Some symlinks are required for the 'probing' of modules.
 # This mechanism should go at some point..
-installmodules: modules installdirs
+installmodules:: modules installdirs
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(VFSLIBDIR) $(VFS_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(PDBLIBDIR) $(PDB_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(RPCLIBDIR) $(RPC_MODULES)
@@ -2128,63 +2128,63 @@ installmodules: modules installdirs
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(AUTHLIBDIR) builtin.@SHLIBEXT@ guest.@SHLIBEXT@ fixed_challenge.@SHLIBEXT@ name_to_ntstatus.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(NSSINFOLIBDIR) ../idmap/ad.@SHLIBEXT@ rfc2307.@SHLIBEXT@ sfu.@SHLIBEXT@ sfu20.@SHLIBEXT@
 
-installscripts: installdirs
+installscripts:: installdirs
 	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS_BIN) $(DESTDIR)$(BINDIR) $(SCRIPTS)
 
-installdat: installdirs
+installdat:: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR) $(CODEPAGEDIR) $(srcdir)
 
-installmsg: installdirs
+installmsg:: installdirs
 	@$(SHELL) $(srcdir)/script/installmsg.sh $(DESTDIR) $(CODEPAGEDIR) $(srcdir)
 
-installswat: installdirs installmsg
+installswat:: installdirs installmsg
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR) $(SWATDIR) $(srcdir)
 
-installclientlib: installdirs libsmbclient
+installclientlib:: installdirs libsmbclient
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) bin/libsmbclient.a $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
 	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/include/libsmbclient.h $(DESTDIR)${prefix}/include
 
-installlibtalloc: installdirs libtalloc
+installlibtalloc:: installdirs libtalloc
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBTALLOC_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) $(LIBTALLOC_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
 	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(LIBTALLOC_HEADERS) $(DESTDIR)${prefix}/include
 
-installlibtdb: installdirs libtdb
+installlibtdb:: installdirs libtdb
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBTDB_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) $(LIBTDB_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
 	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(LIBTDB_HEADERS) $(DESTDIR)${prefix}/include
 
-installlibsmbsharemodes: installdirs libsmbsharemodes
+installlibsmbsharemodes:: installdirs libsmbsharemodes
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libsmbsharemodes.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) bin/libsmbsharemodes.a $(DESTDIR)$(LIBDIR)
 	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/include/smb_share_modes.h $(DESTDIR)${prefix}/include
 
-installlibaddns: installdirs libaddns
+installlibaddns:: installdirs libaddns
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libaddns.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) bin/libaddns.a $(DESTDIR)$(LIBDIR)
 
-installlibwbclient: installdirs libwbclient
+installlibwbclient:: installdirs libwbclient
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libwbclient.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
 	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/nsswitch/libwbclient/wbclient.h $(DESTDIR)${prefix}/include
 
-installlibnetapi: installdirs libnetapi
+installlibnetapi:: installdirs libnetapi
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBNETAPI_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) $(LIBNETAPI_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
 	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/lib/netapi/netapi.h $(DESTDIR)${prefix}/include
 
-installpammodules: $(PAM_MODULES)
+installpammodules:: $(PAM_MODULES)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(PAMMODULESDIR)
 	@for module in $(PAM_MODULES); do \
 		echo "Installing module $${module} as $(DESTDIR)/$(PAMMODULESDIR)/$${module}.@SHLIBEXT@ "; \
@@ -2193,16 +2193,16 @@ installpammodules: $(PAM_MODULES)
 	done
 
 # revert to the previously installed version
-revert:
+revert::
 	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SBIN_PROGS)
 	@$(SHELL) $(srcdir)/script/revert.sh $(BINDIR) $(BIN_PROGS) $(SCRIPTS)
 
-installman: installdirs
+installman:: installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(srcdir) C "@ROFF@"
 
 .PHONY: showlayout
 
-showlayout:
+showlayout::
 	@echo "Samba will be installed into:"
 	@echo "  prefix:      $(prefix)"
 	@echo "  bindir:      $(BINDIR)"
@@ -2217,24 +2217,24 @@ showlayout:
 	@echo "  swatdir:     $(SWATDIR)"
 
 
-uninstall: uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ @UNINSTALL_CIFSSPNEGO@ uninstallscripts uninstalldat uninstallswat uninstallmodules uninstalllibtalloc uninstalllibtdb @UNINSTALL_LIBSMBCLIENT@ @UNINSTALL_PAM_MODULES@ @UNINSTALL_LIBSMBSHAREMODES@ uninstalllibnetapi
+uninstall:: uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ @UNINSTALL_CIFSSPNEGO@ uninstallscripts uninstalldat uninstallswat uninstallmodules uninstalllibtalloc uninstalllibtdb @UNINSTALL_LIBSMBCLIENT@ @UNINSTALL_PAM_MODULES@ @UNINSTALL_LIBSMBSHAREMODES@ uninstalllibnetapi
 
-uninstallman:
+uninstallman::
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(srcdir) C
 
-uninstallservers:
+uninstallservers::
 	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(SBINDIR) $(SBIN_PROGS)
 
-uninstallbin:
+uninstallbin::
 	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $(BIN_PROGS)
 
-uninstallcifsmount:
+uninstallcifsmount::
 	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
 
-uninstallcifsspnego:
+uninstallcifsspnego::
 	@$(SHELL) script/uninstallbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(ROOTSBINDIR) @CIFSSPNEGO_PROGS@
 
-uninstallmodules:
+uninstallmodules::
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(VFSLIBDIR) $(VFS_MODULES)
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(PDBLIBDIR) $(PDB_MODULES)
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(RPCLIBDIR) $(RPC_MODULES)
@@ -2242,37 +2242,37 @@ uninstallmodules:
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(CHARSETLIBDIR) $(CHARSET_MODULES)
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(AUTHLIBDIR) $(AUTH_MODULES)
 
-uninstallscripts:
+uninstallscripts::
 	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS_BIN) $(DESTDIR)$(BINDIR) $(SCRIPTS)
 
-uninstalldat:
+uninstalldat::
 	@$(SHELL) $(srcdir)/script/uninstalldat.sh $(DESTDIR) $(LIBDIR) $(srcdir)
 
-uninstallmsg:
+uninstallmsg::
 	@$(SHELL) $(srcdir)/script/uninstallmsg.sh $(DESTDIR) $(LIBDIR) $(srcdir)
 
-uninstallswat: uninstallmsg
+uninstallswat:: uninstallmsg
 	@$(SHELL) $(srcdir)/script/uninstallswat.sh $(DESTDIR) $(SWATDIR) $(srcdir)
 
-uninstallclientlib:
+uninstallclientlib::
 	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libsmbclient.@SHLIBEXT@
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libsmbclient.a
 	-rm -f $(DESTDIR)${prefix}/include/libsmbclient.h
 
-uninstalllibsmbsharemodes:
+uninstalllibsmbsharemodes::
 	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libsmbsharemodes.@SHLIBEXT@
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libsmbsharemodes.a
 
-uninstalllibaddns:
+uninstalllibaddns::
 	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libaddns.@SHLIBEXT@
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libaddns.a
 
-uninstalllibnetapi:
+uninstalllibnetapi::
 	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libnetapi.@SHLIBEXT@
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libnetapi.a
 	-rm -f $(DESTDIR)${prefix}/include/netapi.h
 
-uninstallpammodules:
+uninstallpammodules::
 	@for module in $(PAM_MODULES); do \
 		echo "Removing $(DESTDIR)/$(PAMMODULESDIR)/$${module}.@SHLIBEXT@ "; \
 		rm -f "$(DESTDIR)/$(PAMMODULESDIR)/$${module}.@SHLIBEXT@"; \
@@ -2281,7 +2281,7 @@ uninstallpammodules:
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
-clean: delheaders 
+clean:: delheaders 
 	-rm -f $(PRECOMPILED_HEADER)
 	-rm -f core */*~ *~ \
 		*/*.o */*/*.o */*/*/*.o \
@@ -2300,13 +2300,13 @@ clean: delheaders
 # exist, not necessarily that they are up to date.  Since they're
 # removed by "make clean" this will always be run when you do anything
 # afterwards.
-proto_exists: include/proto.h include/build_env.h \
+proto_exists:: include/proto.h include/build_env.h \
 	winbindd/winbindd_proto.h web/swat_proto.h \
 	libnet/libnet_proto.h \
 	client/client_proto.h utils/net_proto.h utils/ntlm_auth_proto.h smbd/build_options.c
 	@touch proto_exists
 
-delheaders:
+delheaders::
 	@echo Removing prototype headers
 	@rm -f include/proto.h include/build_env.h \
 		winbindd/winbindd_proto.h web/swat_proto.h \
@@ -2365,7 +2365,7 @@ libnet/libnet_proto.h:
 # "make headers" or "make proto" calls a subshell because we need to
 # make sure these commands are executed in sequence even for a
 # parallel make.
-headers:
+headers::
 	$(MAKE) delheaders; \
 	$(MAKE) smbd/build_options.c; \
 	$(MAKE) include/proto.h; \
@@ -2378,7 +2378,7 @@ headers:
 	$(MAKE) utils/passwd_proto.h; \
 	$(MAKE) libnet/libnet_proto.h;
 
-proto: headers
+proto:: headers
 
 .PHONY: headers proto
 
@@ -2388,17 +2388,17 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]" | grep -v /.svn/`
 
-realclean: clean delheaders
+realclean:: clean delheaders
 	-rm -f config.log bin/.dummy script/findsmb script/gen-8bit-gap.sh
 	-rm -f script/installbin.sh script/uninstallbin.sh
 
-distclean: realclean
+distclean:: realclean
 	-rm -f smbadduser
 	-rm -f include/config.h Makefile
 	-rm -f config.status config.cache so_locations
 	-rm -rf .deps TAGS
 
-realdistclean: distclean
+realdistclean:: distclean
 	-rm -f include/config.h.in
 	-rm -f include/version.h
 	-rm -f configure
@@ -2406,7 +2406,7 @@ realdistclean: distclean
 # this target is really just for my use. It only works on a limited
 # range of machines and is used to produce a list of potentially
 # dead (ie. unused) functions in the code. (tridge)
-finddead:
+finddead::
 	nm */*.o |grep 'U ' | awk '{print $$2}' | sort -u > nmused.txt
 	nm */*.o |grep 'T ' | awk '{print $$3}' | sort -u > nmfns.txt
 	comm -13 nmused.txt nmfns.txt
@@ -2426,7 +2426,7 @@ Makefile: $(srcdir)/Makefile.in config.status
 # Samba Testing Framework
 
 # Check shared libs for unresolved symbols
-test_shlibs: $(SHLIBS)
+test_shlibs:: $(SHLIBS)
 	@echo "Testing $(SHLIBS) "
 	@export $(LIB_PATH_VAR)=./bin && \
 	for module in $(SHLIBS); do \
@@ -2435,7 +2435,7 @@ test_shlibs: $(SHLIBS)
 	done
 
 # Check for NSS module problems.
-test_nss_modules: nss_modules
+test_nss_modules:: nss_modules
 	@echo "Testing $(NSS_MODULES) "
 	@export $(LIB_PATH_VAR)=./bin && \
 	for module in $(NSS_MODULES); do \
@@ -2445,7 +2445,7 @@ test_nss_modules: nss_modules
 
 # Check for PAM module problems.  Specifically, check that every module we
 # built can actually be loaded by a minimal PAM-aware application.
-test_pam_modules: pam_modules
+test_pam_modules:: pam_modules
 	@echo "Testing $(PAM_MODULES) "
 	@export $(LIB_PATH_VAR)=./bin && \
 	for module in $(PAM_MODULES); do \
@@ -2457,11 +2457,11 @@ test_pam_modules: pam_modules
 ##
 ## Targets for 'make test'
 ##
-test: all torture timelimit
+test:: all torture timelimit
 	@echo Running Test suite
 	@LIB_PATH_VAR=$(LIB_PATH_VAR) PERL="$(PERL)" $(srcdir)/script/tests/selftest.sh ${selftest_prefix} all "${smbtorture4_path}"
 
-valgrindtest: all torture timelimit
+valgrindtest:: all torture timelimit
 	@echo Running Test suite with valgrind
 	@LIB_PATH_VAR=$(LIB_PATH_VAR) \
 	 NMBD_VALGRIND="xterm -n nmbd -e valgrind -q --db-attach=yes --num-callers=30" \
