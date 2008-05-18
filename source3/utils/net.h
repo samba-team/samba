@@ -62,6 +62,7 @@ struct net_context {
 	struct libnetapi_ctx *netapi_ctx;
 
 	bool display_usage;
+	void *private_data;
 	const char *share_type[];
 };
 
