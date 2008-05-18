@@ -82,7 +82,7 @@ SUBSYSTEM = service
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBSECURITY SAMDB CREDENTIALS 
 
 auth_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, auth.o auth_util.o auth_simple.o)
-$(eval $(call proto_header_template,$(authsrcdir)/auth_proto.h,$(auth_OBJ_FILES)))
+$(eval $(call proto_header_template,$(authsrcdir)/auth_proto.h,$(auth_OBJ_FILES:.o=.c)))
 
 # PUBLIC_HEADERS += auth/auth.h
 

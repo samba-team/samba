@@ -20,7 +20,7 @@ PUBLIC_DEPENDENCIES = CREDENTIALS
 PRIVATE_DEPENDENCIES = auth_session LIBSAMBA-UTIL LIBSECURITY 
 
 auth_system_session_OBJ_FILES = $(addprefix $(authsrcdir)/, system_session.o)
-$(eval $(call proto_header_template,$(authsrcdir)/system_session_proto.h,$(auth_system_session_OBJ_FILES)))
+$(eval $(call proto_header_template,$(authsrcdir)/system_session_proto.h,$(auth_system_session_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::auth_sam]
 PUBLIC_DEPENDENCIES = SAMDB UTIL_LDB LIBSECURITY
@@ -28,13 +28,13 @@ PRIVATE_DEPENDENCIES = LDAP_ENCODE
 
 auth_sam_OBJ_FILES = $(addprefix $(authsrcdir)/, sam.o)
 
-$(eval $(call proto_header_template,$(authsrcdir)/auth_sam.h,$(auth_sam_OBJ_FILES)))
+$(eval $(call proto_header_template,$(authsrcdir)/auth_sam.h,$(auth_sam_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::auth_sam_reply]
 
 auth_sam_reply_OBJ_FILES = $(addprefix $(authsrcdir)/, auth_sam_reply.o)
 
-$(eval $(call proto_header_template,$(authsrcdir)/auth_sam_reply.h,$(auth_sam_reply_OBJ_FILES)))
+$(eval $(call proto_header_template,$(authsrcdir)/auth_sam_reply.h,$(auth_sam_reply_OBJ_FILES:.o=.c)))
 
 [PYTHON::swig_auth]
 PUBLIC_DEPENDENCIES = auth_system_session
