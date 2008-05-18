@@ -1,4 +1,4 @@
 [SUBSYSTEM::LIBPACKET]
 PRIVATE_DEPENDENCIES = LIBTLS
 
-LIBPACKET_OBJ_FILES = lib/stream/packet.o
+LIBPACKET_OBJ_FILES = $(libstreamsrcdir)/packet.o

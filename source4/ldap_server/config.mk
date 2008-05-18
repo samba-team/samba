@@ -14,7 +14,7 @@ PRIVATE_DEPENDENCIES = CREDENTIALS \
 # End SUBSYSTEM SMB
 #######################
 
-LDAP_OBJ_FILES = $(addprefix ldap_server/, \
+LDAP_OBJ_FILES = $(addprefix $(ldap_serversrcdir)/, \
 		ldap_server.o \
 		ldap_backend.o \
 		ldap_bind.o \

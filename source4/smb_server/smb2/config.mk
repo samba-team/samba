@@ -7,7 +7,7 @@ PUBLIC_DEPENDENCIES = \
 # End SUBSYSTEM SMB2_PROTOCOL
 #######################
 
-SMB2_PROTOCOL_OBJ_FILES = $(addprefix smb_server/smb2/, \
+SMB2_PROTOCOL_OBJ_FILES = $(addprefix $(smb_serversrcdir)/smb2/, \
 		receive.o \
 		negprot.o \
 		sesssetup.o \

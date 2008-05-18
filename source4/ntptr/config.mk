@@ -10,7 +10,7 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE ntptr_simple_ldb
 ################################################
 
-ntptr_simple_ldb_OBJ_FILES = ntptr/simple_ldb/ntptr_simple_ldb.o
+ntptr_simple_ldb_OBJ_FILES = $(ntptrsrcdir)/simple_ldb/ntptr_simple_ldb.o
 
 ################################################
 # Start SUBSYSTEM ntptr
@@ -22,5 +22,5 @@ PUBLIC_DEPENDENCIES = DCERPC_COMMON
 ################################################
 
 ntptr_OBJ_FILES = \
-		ntptr/ntptr_base.o \
-		ntptr/ntptr_interface.o
+		$(ntptrsrcdir)/ntptr_base.o \
+		$(ntptrsrcdir)/ntptr_interface.o

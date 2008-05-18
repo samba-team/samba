@@ -7,5 +7,5 @@ PRIVATE_DEPENDENCIES = LIBSECURITY SAMDB_SCHEMA LIBNDR NDR_MISC
 # End SUBSYSTEM LDBSAMBA
 ################################################
 
-LDBSAMBA_OBJ_FILES = lib/ldb-samba/ldif_handlers.o
+LDBSAMBA_OBJ_FILES = $(ldb_sambasrcdir)/ldif_handlers.o
 

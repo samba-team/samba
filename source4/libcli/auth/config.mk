@@ -8,10 +8,10 @@ PUBLIC_DEPENDENCIES = \
 # End SUBSYSTEM LIBCLI_AUTH
 #################################
 
-LIBCLI_AUTH_OBJ_FILES = $(addprefix libcli/auth/, \
+LIBCLI_AUTH_OBJ_FILES = $(addprefix $(libclisrcdir)/auth/, \
 		credentials.o \
 		session.o \
 		smbencrypt.o \
 		smbdes.o)
 
-PUBLIC_HEADERS += libcli/auth/credentials.h
+PUBLIC_HEADERS += $(libclisrcdir)/auth/credentials.h

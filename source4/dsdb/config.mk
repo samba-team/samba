@@ -12,7 +12,7 @@ PRIVATE_DEPENDENCIES = LIBNDR NDR_MISC NDR_DRSUAPI NDR_DRSBLOBS NSS_WRAPPER \
 					   SAMDB_SCHEMA LDB_WRAP SAMDB_COMMON
 
 
-SAMDB_OBJ_FILES = $(addprefix dsdb/, \
+SAMDB_OBJ_FILES = $(addprefix $(dsdbsrcdir)/, \
 		samdb/samdb.o \
 		samdb/samdb_privilege.o \
 		samdb/cracknames.o \
@@ -24,7 +24,7 @@ SAMDB_OBJ_FILES = $(addprefix dsdb/, \
 PRIVATE_PROTO_HEADER = common/proto.h
 PRIVATE_DEPENDENCIES = LIBLDB
 
-SAMDB_COMMON_OBJ_FILES = $(addprefix dsdb/common/, \
+SAMDB_COMMON_OBJ_FILES = $(addprefix $(dsdbsrcdir)/common/, \
 		sidmap.o \
 		flag_mapping.o \
 		util.o)
@@ -33,7 +33,7 @@ SAMDB_COMMON_OBJ_FILES = $(addprefix dsdb/common/, \
 PRIVATE_PROTO_HEADER = schema/proto.h
 PRIVATE_DEPENDENCIES = SAMDB_COMMON NDR_DRSUAPI NDR_DRSBLOBS
 
-SAMDB_SCHEMA_OBJ_FILES = $(addprefix dsdb/schema/, \
+SAMDB_SCHEMA_OBJ_FILES = $(addprefix $(dsdbsrcdir)/schema/, \
 		schema_init.o \
 		schema_syntax.o \
 		schema_constructed.o)
@@ -52,7 +52,7 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM DREPL_SRV
 #######################
 
-DREPL_SRV_OBJ_FILES = $(addprefix dsdb/repl/, \
+DREPL_SRV_OBJ_FILES = $(addprefix $(dsdbsrcdir)/repl/, \
 		drepl_service.o \
 		drepl_periodic.o \
 		drepl_partitions.o \
