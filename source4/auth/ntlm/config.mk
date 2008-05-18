@@ -3,7 +3,7 @@
 [SUBSYSTEM::ntlm_check]
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
 
-ntlm_check_OBJ_FILES = $(addprefix auth/ntlm/, ntlm_check.o)
+ntlm_check_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, ntlm_check.o)
 
 #######################
 # Start MODULE auth_sam
@@ -16,7 +16,7 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE auth_sam
 #######################
 
-auth_sam_module_OBJ_FILES = $(addprefix auth/ntlm/, auth_sam.o)
+auth_sam_module_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, auth_sam.o)
 
 #######################
 # Start MODULE auth_anonymous
@@ -26,7 +26,7 @@ SUBSYSTEM = auth
 # End MODULE auth_anonymous
 #######################
 
-auth_anonymous_OBJ_FILES = $(addprefix auth/ntlm/, auth_anonymous.o)
+auth_anonymous_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, auth_anonymous.o)
 
 #######################
 # Start MODULE auth_anonymous
@@ -38,7 +38,7 @@ OUTPUT_TYPE = SHARED_LIBRARY
 # End MODULE auth_server
 #######################
 
-auth_server_OBJ_FILES = $(addprefix auth/ntlm/, auth_server.o)
+auth_server_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, auth_server.o)
 
 #######################
 # Start MODULE auth_winbind
@@ -49,7 +49,7 @@ PRIVATE_DEPENDENCIES = NDR_WINBIND MESSAGING LIBWINBIND-CLIENT
 # End MODULE auth_winbind
 #######################
 
-auth_winbind_OBJ_FILES = $(addprefix auth/ntlm/, auth_winbind.o)
+auth_winbind_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, auth_winbind.o)
 
 #######################
 # Start MODULE auth_developer
@@ -59,21 +59,21 @@ SUBSYSTEM = auth
 # End MODULE auth_developer
 #######################
 
-auth_developer_OBJ_FILES = $(addprefix auth/ntlm/, auth_developer.o)
+auth_developer_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, auth_developer.o)
 
 [MODULE::auth_unix]
 INIT_FUNCTION = auth_unix_init
 SUBSYSTEM = auth
 PRIVATE_DEPENDENCIES = CRYPT PAM PAM_ERRORS NSS_WRAPPER
 
-auth_unix_OBJ_FILES = $(addprefix auth/ntlm/, auth_unix.o)
+auth_unix_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, auth_unix.o)
 
 [SUBSYSTEM::PAM_ERRORS]
 PRIVATE_PROTO_HEADER = pam_errors.h
 
 #VERSION = 0.0.1
 #SO_VERSION = 0
-PAM_ERRORS_OBJ_FILES = $(addprefix auth/ntlm/, pam_errors.o)
+PAM_ERRORS_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, pam_errors.o)
 
 [MODULE::auth]
 INIT_FUNCTION = server_service_auth_init
@@ -81,7 +81,7 @@ SUBSYSTEM = service
 PRIVATE_PROTO_HEADER = auth_proto.h
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBSECURITY SAMDB CREDENTIALS 
 
-auth_OBJ_FILES = $(addprefix auth/ntlm/, auth.o auth_util.o auth_simple.o)
+auth_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, auth.o auth_util.o auth_simple.o)
 
 # PUBLIC_HEADERS += auth/auth.h
 
