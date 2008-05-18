@@ -14,7 +14,7 @@ gensec_OBJ_FILES = $(addprefix $(gensecsrcdir)/, gensec.o socket.o)
 
 PUBLIC_HEADERS += $(gensecsrcdir)/gensec.h
 
-$(call proto_header_template,$(gensecsrcdir)/gensec_proto.h,$(gensec_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(gensecsrcdir)/gensec_proto.h,$(gensec_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start MODULE gensec_krb5
@@ -60,7 +60,7 @@ PRIVATE_DEPENDENCIES = ASN1_UTIL CREDENTIALS
 
 gensec_spnego_OBJ_FILES = $(addprefix $(gensecsrcdir)/, spnego.o spnego_parse.o)
 
-$(call proto_header_template,$(gensecsrcdir)/spnego_proto.h,$(gensec_spnego_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(gensecsrcdir)/spnego_proto.h,$(gensec_spnego_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start MODULE gensec_schannel
@@ -73,7 +73,7 @@ OUTPUT_TYPE = MERGED_OBJ
 ################################################
 
 gensec_schannel_OBJ_FILES = $(addprefix $(gensecsrcdir)/, schannel.o schannel_sign.o)
-$(call proto_header_template,$(gensecsrcdir)/schannel_proto.h,$(gensec_schannel_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(gensecsrcdir)/schannel_proto.h,$(gensec_schannel_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start SUBSYSTEM SCHANNELDB
@@ -83,5 +83,5 @@ PRIVATE_DEPENDENCIES = LDB_WRAP SAMDB
 ################################################
 
 SCHANNELDB_OBJ_FILES = $(addprefix $(gensecsrcdir)/, schannel_state.o)
-$(call proto_header_template,$(gensecsrcdir)/schannel_state.h,$(SCHANNELDB_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(gensecsrcdir)/schannel_state.h,$(SCHANNELDB_OBJ_FILES:.o=.c)))
 

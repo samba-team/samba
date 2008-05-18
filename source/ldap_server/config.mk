@@ -19,4 +19,4 @@ LDAP_OBJ_FILES = $(addprefix $(ldap_serversrcdir)/, \
 		ldap_bind.o \
 		ldap_extended.o)
 
-$(call proto_header_template,$(ldap_serversrcdir)/proto.h,$(LDAP_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(ldap_serversrcdir)/proto.h,$(LDAP_OBJ_FILES:.o=.c)))

@@ -7,4 +7,4 @@ PRIVATE_DEPENDENCIES = CHARSET LIBSAMBA-UTIL
 
 SMBPASSWD_OBJ_FILES = $(libsrcdir)/samba3/smbpasswd.o
 
-$(call proto_header_template,$(libsrcdir)/samba3_smbpasswd_proto.h,$(SMBPASSWD_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libsrcdir)/samba3_smbpasswd_proto.h,$(SMBPASSWD_OBJ_FILES:.o=.c)))

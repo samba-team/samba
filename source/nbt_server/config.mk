@@ -10,7 +10,7 @@ PUBLIC_DEPENDENCIES = \
 
 WINSDB_OBJ_FILES = $(addprefix $(nbt_serversrcdir)/wins/, winsdb.o wins_hook.o)
 
-$(call proto_header_template,$(nbt_serversrcdir)/wins/winsdb_proto.h,$(WINSDB_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(nbt_serversrcdir)/wins/winsdb_proto.h,$(WINSDB_OBJ_FILES:.o=.c)))
 
 #######################
 # Start MODULE ldb_wins_ldb
@@ -36,7 +36,7 @@ PRIVATE_DEPENDENCIES = \
 
 NBTD_WINS_OBJ_FILES = $(addprefix $(nbt_serversrcdir)/wins/, winsserver.o winsclient.o winswack.o wins_dns_proxy.o)
 
-$(call proto_header_template,$(nbt_serversrcdir)/wins/winsserver_proto.h,$(NBTD_WINS_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(nbt_serversrcdir)/wins/winsserver_proto.h,$(NBTD_WINS_OBJ_FILES:.o=.c)))
 
 #######################
 # Start SUBSYSTEM NBTD_DGRAM
@@ -48,7 +48,7 @@ PRIVATE_DEPENDENCIES = \
 
 NBTD_DGRAM_OBJ_FILES = $(addprefix $(nbt_serversrcdir)/dgram/, request.o netlogon.o ntlogon.o browse.o)
 
-$(call proto_header_template,$(nbt_serversrcdir)/dgram/proto.h,$(NBTD_DGRAM_OBJ_FILES:.o=.c)),$(NBTD_DGRAM_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(nbt_serversrcdir)/dgram/proto.h,$(NBTD_DGRAM_OBJ_FILES:.o=.c)))
 
 #######################
 # Start SUBSYSTEM NBTD
@@ -67,7 +67,7 @@ NBT_SERVER_OBJ_FILES = $(addprefix $(nbt_serversrcdir)/, \
 		packet.o \
 		irpc.o)
 
-$(call proto_header_template,$(nbt_serversrcdir)/nbt_server_proto.h,$(NBT_SERVER_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(nbt_serversrcdir)/nbt_server_proto.h,$(NBT_SERVER_OBJ_FILES:.o=.c)))
 
 [MODULE::service_nbtd]
 INIT_FUNCTION = server_service_nbtd_init

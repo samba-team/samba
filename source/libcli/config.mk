@@ -15,13 +15,13 @@ PRIVATE_DEPENDENCIES = LIBSECURITY
 
 LIBCLI_LSA_OBJ_FILES = $(libclisrcdir)/util/clilsa.o
 
-$(call proto_header_template,$(libclisrcdir)/util/clilsa.h,$(LIBCLI_LSA_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libclisrcdir)/util/clilsa.h,$(LIBCLI_LSA_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::LIBCLI_COMPOSITE]
 PUBLIC_DEPENDENCIES = LIBEVENTS
 
 LIBCLI_COMPOSITE_OBJ_FILES = $(libclisrcdir)/composite/composite.o
-$(call proto_header_template,$(libclisrcdir)/composite/proto.h,$(LIBCLI_COMPOSITE_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libclisrcdir)/composite/proto.h,$(LIBCLI_COMPOSITE_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::LIBCLI_SMB_COMPOSITE]
 PUBLIC_DEPENDENCIES = LIBCLI_COMPOSITE CREDENTIALS gensec LIBCLI_RESOLVE
@@ -35,13 +35,13 @@ LIBCLI_SMB_COMPOSITE_OBJ_FILES = $(addprefix $(libclisrcdir)/smb_composite/, \
 	appendacl.o \
 	fsinfo.o)
 
-$(call proto_header_template,$(libclisrcdir)/smb_composite/proto.h,$(LIBCLI_SMB_COMPOSITE_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libclisrcdir)/smb_composite/proto.h,$(LIBCLI_SMB_COMPOSITE_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::NDR_NBT_BUF]
 
 NDR_NBT_BUF_OBJ_FILES = $(libclisrcdir)/nbt/nbtname.o
 
-$(call proto_header_template,$(libclisrcdir)/nbt/nbtname.h,$(NDR_NBT_BUF_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libclisrcdir)/nbt/nbtname.h,$(NDR_NBT_BUF_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::LIBCLI_NBT]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_NBT LIBCLI_COMPOSITE LIBEVENTS \
@@ -54,7 +54,7 @@ LIBCLI_NBT_OBJ_FILES = $(addprefix $(libclisrcdir)/nbt/, \
 	namerefresh.o \
 	namerelease.o)
 
-$(call proto_header_template,$(libclisrcdir)/nbt/nbt_proto.h,$(LIBCLI_NBT_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libclisrcdir)/nbt/nbt_proto.h,$(LIBCLI_NBT_OBJ_FILES:.o=.c)))
 
 [PYTHON::python_libcli_nbt]
 SWIG_FILE = swig/libcli_nbt.i
@@ -91,14 +91,14 @@ PUBLIC_DEPENDENCIES = NDR_WINSREPL samba-socket LIBCLI_RESOLVE LIBEVENTS \
 
 LIBCLI_WREPL_OBJ_FILES = $(libclisrcdir)/wrepl/winsrepl.o
 
-$(call proto_header_template,$(libclisrcdir)/wrepl/winsrepl_proto.h,$(LIBCLI_WREPL_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libclisrcdir)/wrepl/winsrepl_proto.h,$(LIBCLI_WREPL_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::LIBCLI_RESOLVE]
 PUBLIC_DEPENDENCIES = NDR_NBT
 
 LIBCLI_RESOLVE_OBJ_FILES = $(libclisrcdir)/resolve/resolve.o
 
-$(call proto_header_template,$(libclisrcdir)/resolve/proto.h,$(LIBCLI_RESOLVE_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libclisrcdir)/resolve/proto.h,$(LIBCLI_RESOLVE_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::LP_RESOLVE]
 PRIVATE_DEPENDENCIES = LIBCLI_NBT LIBSAMBA-HOSTCONFIG LIBNETIF 
@@ -107,14 +107,14 @@ LP_RESOLVE_OBJ_FILES = $(addprefix $(libclisrcdir)/resolve/, \
 					  bcast.o nbtlist.o wins.o \
 					  host.o resolve_lp.o)
 
-$(call proto_header_template,$(libclisrcdir)/resolve/lp_proto.h,$(LP_RESOLVE_OBJ_FILES))
+$(eval $(call proto_header_template,$(libclisrcdir)/resolve/lp_proto.h,$(LP_RESOLVE_OBJ_FILES)))
 
 [SUBSYSTEM::LIBCLI_FINDDCS]
 PUBLIC_DEPENDENCIES = LIBCLI_NBT MESSAGING
 
 LIBCLI_FINDDCS_OBJ_FILES = $(libclisrcdir)/finddcs.o
 
-$(call proto_header_template,$(libclisrcdir)/finddcs.h,$(LIBCLI_FINDDCS_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libclisrcdir)/finddcs.h,$(LIBCLI_FINDDCS_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::LIBCLI_SMB]
 PUBLIC_DEPENDENCIES = LIBCLI_RAW LIBSAMBA-ERRORS LIBCLI_AUTH \
@@ -130,7 +130,7 @@ LIBCLI_SMB_OBJ_FILES = $(addprefix $(libclisrcdir)/, \
 		climessage.o \
 		clideltree.o)
 
-$(call proto_header_template,$(libclisrcdir)/libcli_proto.h,$(LIBCLI_SMB_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libclisrcdir)/libcli_proto.h,$(LIBCLI_SMB_OBJ_FILES:.o=.c)))
 
 # PUBLIC_HEADERS += $(libclisrcdir)/libcli.h
 
@@ -146,6 +146,6 @@ LIBCLI_RAW_OBJ_FILES = $(addprefix $(libclisrcdir)/raw/, rawfile.o smb_signing.o
 					  rawioctl.o rawacl.o rawdate.o rawlpq.o rawshadow.o)
 
 
-$(call proto_header_template,$(libclisrcdir)/raw/raw_proto.h,$(LIBCLI_RAW_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libclisrcdir)/raw/raw_proto.h,$(LIBCLI_RAW_OBJ_FILES:.o=.c)))
 
 mkinclude smb2/config.mk

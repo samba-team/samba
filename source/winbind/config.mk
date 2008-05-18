@@ -49,7 +49,7 @@ WINBIND_OBJ_FILES = $(addprefix $(winbindsrcdir)/, \
 		wb_pam_auth.o \
 		wb_sam_logon.o)
 
-$(call proto_header_template,$(winbindsrcdir)/wb_proto.h,$(WINBIND_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(winbindsrcdir)/wb_proto.h,$(WINBIND_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start SUBYSTEM WB_HELPER
@@ -60,7 +60,7 @@ PUBLIC_DEPENDENCIES = RPC_NDR_LSA dcerpc_samr
 
 WB_HELPER_OBJ_FILES = $(addprefix $(winbindsrcdir)/, wb_async_helpers.o wb_utils.o)
 
-$(call proto_header_template,$(winbindsrcdir)/wb_helper.h,$(WB_HELPER_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(winbindsrcdir)/wb_helper.h,$(WB_HELPER_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start SUBYSTEM IDMAP
@@ -71,4 +71,4 @@ PUBLIC_DEPENDENCIES = SAMDB_COMMON
 
 IDMAP_OBJ_FILES = $(winbindsrcdir)/idmap.o
 
-$(call proto_header_template,$(winbindsrcdir)/idmap_proto.h,$(IDMAP_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(winbindsrcdir)/idmap_proto.h,$(IDMAP_OBJ_FILES:.o=.c)))

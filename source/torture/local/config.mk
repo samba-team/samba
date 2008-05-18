@@ -49,4 +49,4 @@ TORTURE_LOCAL_OBJ_FILES = \
 		$(torturesrcdir)/local/torture.o
 
 
-$(call proto_header_template,$(torturesrcdir)/local/proto.h,$(TORTURE_LOCAL_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(torturesrcdir)/local/proto.h,$(TORTURE_LOCAL_OBJ_FILES:.o=.c)))

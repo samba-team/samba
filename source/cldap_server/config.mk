@@ -15,4 +15,4 @@ CLDAPD_OBJ_FILES = $(addprefix $(cldap_serversrcdir)/, \
 		netlogon.o \
 		rootdse.o)
 
-$(call proto_header_template,$(cldap_serversrcdir)/proto.h,$(CLDAPD_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(cldap_serversrcdir)/proto.h,$(CLDAPD_OBJ_FILES:.o=.c)))

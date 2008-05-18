@@ -23,4 +23,4 @@ PRIVATE_DEPENDENCIES = \
 #######################
 
 HDB_LDB_OBJ_FILES = $(addprefix $(kdcsrcdir)/, hdb-ldb.o pac-glue.o)
-$(call proto_header_template,$(kdcsrcdir)/pac_glue.h,$(HDB_LDB_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(kdcsrcdir)/pac_glue.h,$(HDB_LDB_OBJ_FILES:.o=.c)))

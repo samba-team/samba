@@ -16,4 +16,4 @@ PRIVATE_DEPENDENCIES = LIBCRYPTO
 TORTURE_LIBCRYPTO_OBJ_FILES = $(addprefix $(libcryptosrcdir)/, \
 		md4test.o md5test.o hmacmd5test.o sha1test.o hmacsha1test.o)
 
-$(call proto_header_template,$(libcryptosrcdir)/test_proto.h,$(TORTURE_LIBCRYPTO_OBJ_FILES))
+$(eval $(call proto_header_template,$(libcryptosrcdir)/test_proto.h,$(TORTURE_LIBCRYPTO_OBJ_FILES)))

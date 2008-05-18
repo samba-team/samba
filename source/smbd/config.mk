@@ -9,13 +9,13 @@ service_OBJ_FILES = $(addprefix $(smbdsrcdir)/, \
 		service_stream.o \
 		service_task.o)
 
-$(call proto_header_template,$(smbdsrcdir)/service_proto.h,$(service_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(smbdsrcdir)/service_proto.h,$(service_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::PIDFILE]
 
 PIDFILE_OBJ_FILES = $(smbdsrcdir)/pidfile.o
 
-$(call proto_header_template,$(smbdsrcdir)/pidfile.h,$(PIDFILE_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(smbdsrcdir)/pidfile.h,$(PIDFILE_OBJ_FILES:.o=.c)))
 
 #################################
 # Start BINARY smbd

@@ -36,7 +36,7 @@ TORTURE_BASIC_OBJ_FILES = $(addprefix $(torturesrcdir)/basic/,  \
 		attr.o \
 		properties.o)
 
-$(call proto_header_template,$(torturesrcdir)/basic/proto.h,$(TORTURE_BASIC_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(torturesrcdir)/basic/proto.h,$(TORTURE_BASIC_OBJ_FILES:.o=.c)))
 
 #################################
 # Start SUBSYSTEM TORTURE_RAW
@@ -82,7 +82,7 @@ TORTURE_RAW_OBJ_FILES = $(addprefix $(torturesrcdir)/raw/, \
 		raw.o \
 		offline.o)
 
-$(call proto_header_template,$(torturesrcdir)/raw/proto.h,$(TORTURE_RAW_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(torturesrcdir)/raw/proto.h,$(TORTURE_RAW_OBJ_FILES:.o=.c)))
 
 mkinclude smb2/config.mk
 mkinclude winbind/config.mk
@@ -91,7 +91,7 @@ mkinclude winbind/config.mk
 
 TORTURE_NDR_OBJ_FILES = $(addprefix $(torturesrcdir)/ndr/, ndr.o winreg.o atsvc.o lsa.o epmap.o dfs.o netlogon.o drsuapi.o spoolss.o samr.o)
 
-$(call proto_header_template,$(torturesrcdir)/ndr/proto.h,$(TORTURE_NDR_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(torturesrcdir)/ndr/proto.h,$(TORTURE_NDR_OBJ_FILES:.o=.c)))
 
 [MODULE::torture_rpc]
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
@@ -117,7 +117,7 @@ torture_rpc_OBJ_FILES = $(addprefix $(torturesrcdir)/rpc/, \
 		samsync.o bind.o dssetup.o alter_context.o bench.o samba3rpc.o rpc.o async_bind.o \
 		handles.o frsapi.o)
 
-$(call proto_header_template,$(torturesrcdir)/rpc/proto.h,$(torture_rpc_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(torturesrcdir)/rpc/proto.h,$(torture_rpc_OBJ_FILES:.o=.c)))
 
 #################################
 # Start SUBSYSTEM TORTURE_RAP
@@ -130,7 +130,7 @@ PRIVATE_DEPENDENCIES = TORTURE_UTIL LIBCLI_SMB
 
 TORTURE_RAP_OBJ_FILES = $(torturesrcdir)/rap/rap.o
 
-$(call proto_header_template,$(torturesrcdir)/rap/proto.h,$(TORTURE_RAP_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(torturesrcdir)/rap/proto.h,$(TORTURE_RAP_OBJ_FILES:.o=.c)))
 
 #################################
 # Start SUBSYSTEM TORTURE_AUTH
@@ -144,7 +144,7 @@ PRIVATE_DEPENDENCIES = \
 
 TORTURE_AUTH_OBJ_FILES = $(addprefix $(torturesrcdir)/auth/, ntlmssp.o pac.o)
 
-$(call proto_header_template,$(torturesrcdir)/auth/proto.h,$(TORTURE_AUTH_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(torturesrcdir)/auth/proto.h,$(TORTURE_AUTH_OBJ_FILES:.o=.c)))
 
 mkinclude local/config.mk
 
@@ -159,7 +159,7 @@ PRIVATE_DEPENDENCIES = TORTURE_UTIL
 
 TORTURE_NBENCH_OBJ_FILES = $(addprefix $(torturesrcdir)/nbench/, nbio.o nbench.o)
 
-$(call proto_header_template,$(torturesrcdir)/nbench/proto.h,$(TORTURE_NBENCH_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(torturesrcdir)/nbench/proto.h,$(TORTURE_NBENCH_OBJ_FILES:.o=.c)))
 
 #################################
 # Start MODULE TORTURE_UNIX
@@ -172,7 +172,7 @@ PRIVATE_DEPENDENCIES = TORTURE_UTIL
 
 TORTURE_UNIX_OBJ_FILES = $(addprefix $(torturesrcdir)/unix/, unix.o whoami.o unix_info2.o)
 
-$(call proto_header_template,$(torturesrcdir)/unix/proto.h,$(TORTURE_UNIX_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(torturesrcdir)/unix/proto.h,$(TORTURE_UNIX_OBJ_FILES:.o=.c)))
 
 #################################
 # Start SUBSYSTEM TORTURE_LDAP
@@ -186,7 +186,7 @@ PRIVATE_DEPENDENCIES = \
 
 TORTURE_LDAP_OBJ_FILES = $(addprefix $(torturesrcdir)/ldap/, common.o basic.o schema.o uptodatevector.o cldap.o cldapbench.o)
 
-$(call proto_header_template,$(torturesrcdir)/ldap/proto.h,$(TORTURE_LDAP_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(torturesrcdir)/ldap/proto.h,$(TORTURE_LDAP_OBJ_FILES:.o=.c)))
 
 #################################
 # Start SUBSYSTEM TORTURE_NBT
@@ -201,7 +201,7 @@ PRIVATE_DEPENDENCIES = \
 TORTURE_NBT_OBJ_FILES = $(addprefix $(torturesrcdir)/nbt/, query.o register.o \
 	wins.o winsbench.o winsreplication.o dgram.o nbt.o)
 
-$(call proto_header_template,$(torturesrcdir)/nbt/proto.h,$(TORTURE_NBT_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(torturesrcdir)/nbt/proto.h,$(TORTURE_NBT_OBJ_FILES:.o=.c)))
 
 #################################
 # Start SUBSYSTEM TORTURE_NET
@@ -220,7 +220,7 @@ TORTURE_NET_OBJ_FILES = $(addprefix $(torturesrcdir)/libnet/, libnet.o \
 					   domain.o libnet_lookup.o libnet_user.o libnet_group.o \
 					   libnet_share.o libnet_rpc.o libnet_domain.o libnet_BecomeDC.o)
 
-$(call proto_header_template,$(torturesrcdir)/libnet/proto.h,$(TORTURE_NET_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(torturesrcdir)/libnet/proto.h,$(TORTURE_NET_OBJ_FILES:.o=.c)))
 
 #################################
 # Start BINARY smbtorture

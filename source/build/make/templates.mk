@@ -35,11 +35,16 @@ endef
 # Create a prototype header
 # Arguments: header file, c files
 define proto_header_template
+
+proto:: $(1) ;
+
+clean:: ;
+	rm -f $(1)
+
 $(1): $(2) ;
 	@echo "Creating $$@"
 	@$$(PERL) $$(srcdir)/script/mkproto.pl --srcdir=$$(srcdir) --builddir=$$(builddir) --public=/dev/null --private=$$@ $$^
 
-PROTO_HEADERS += $(1)
 endef
 
 # Shared module

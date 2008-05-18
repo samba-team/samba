@@ -99,7 +99,7 @@ smbcalls_OBJ_FILES = $(addprefix $(ejsscriptsrcdir)/, \
 		mprutil.o \
 		literal.o)
 
-$(call proto_header_template,$(ejsscriptsrcdir)/proto.h,$(smbcalls_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(ejsscriptsrcdir)/proto.h,$(smbcalls_OBJ_FILES:.o=.c)))
 
 #######################
 # Start BINARY SMBSCRIPT

@@ -23,4 +23,4 @@ net_OBJ_FILES = $(addprefix $(utilssrcdir)/net/,  \
 		net_user.o)
 
 
-$(call proto_header_template,$(utilssrcdir)/net/net_proto.h,$(net_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(utilssrcdir)/net/net_proto.h,$(net_OBJ_FILES:.o=.c)))

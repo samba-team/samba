@@ -25,7 +25,7 @@ $(srcdir)/version.h: $(srcdir)/VERSION
 .DEFAULT_GOAL := all
 
 ifneq ($(automatic_dependencies),yes)
-ALL_PREDEP = proto
+ALL_PREDEP = basics
 .NOTPARALLEL:
 endif
 
@@ -41,7 +41,7 @@ pch:: clean_pch include/includes.h.gch
 .DEFAULT_GOAL := all
 
 ifneq ($(automatic_dependencies),yes)
-ALL_PREDEP = proto
+ALL_PREDEP = basics
 .NOTPARALLEL:
 endif
 

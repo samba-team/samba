@@ -15,6 +15,7 @@ authsrcdir := auth
 mkinclude auth/config.mk
 nsswitchsrcdir := nsswitch
 mkinclude nsswitch/config.mk
+libsrcdir := lib
 mkinclude lib/samba3/config.mk
 libsocketsrcdir := lib/socket
 mkinclude lib/socket/config.mk
@@ -52,7 +53,6 @@ libtorturesrcdir := lib/torture
 mkinclude lib/torture/config.mk
 libcompressionsrcdir := lib/compression
 libgencachesrcdir := lib
-libsrcdir := lib
 mkinclude lib/basic.mk
 paramsrcdir := param
 mkinclude param/config.mk

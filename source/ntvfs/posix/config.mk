@@ -70,5 +70,5 @@ ntvfs_posix_OBJ_FILES = $(addprefix $(ntvfssrcdir)/posix/, \
 		xattr_system.o \
 		xattr_tdb.o)
 
-$(call proto_header_template,$(ntvfssrcdir)/posix/vfs_posix_proto.h,$(ntvfs_posix_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(ntvfssrcdir)/posix/vfs_posix_proto.h,$(ntvfs_posix_OBJ_FILES:.o=.c)))
 
