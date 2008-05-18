@@ -19,7 +19,6 @@
 #include "includes.h"
 #include "utils/net.h"
 
-
 /*
   return the time on a server. This does not require any authentication
 */
@@ -169,8 +168,13 @@ int net_time(struct net_context *c, int argc, const char **argv)
 		{"SYSTEM", net_time_system},
 		{"SET", net_time_set},
 		{"ZONE", net_time_zone},
+		{"HELP", net_time_usage},
 		{NULL, NULL}
 	};
+
+	if (argc != 0) {
+		return net_run_function(c, argc, argv, func, net_time_usage);
+	}
 
 	if (!c->opt_host && !c->opt_have_ip &&
 	    !find_master_ip(c->opt_target_workgroup, &c->opt_dest_ip)) {
@@ -178,10 +182,6 @@ int net_time(struct net_context *c, int argc, const char **argv)
 				 "specifying a target host.\n");
 		net_time_usage(c, argc,argv);
 		return -1;
-	}
-
-	if (argc != 0) {
-		return net_run_function(c, argc, argv, func, net_time_usage);
 	}
 
 	/* default - print the time */
