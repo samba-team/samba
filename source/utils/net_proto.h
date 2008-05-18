@@ -43,12 +43,6 @@ void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 /* The following definitions come from utils/net.c  */
 
 uint32 get_sec_channel_type(const char *param);
-int net_run_function(struct net_context *c, int argc, const char **argv,
-		     struct functable *table,
-		     int (*usage_fn)(struct net_context *c,
-				     int argc, const char **argv));
-int net_run_function2(struct net_context *c, int argc, const char **argv,
-		      const char *whoami, struct functable2 *table);
 
 /* The following definitions come from utils/net_ads.c  */
 
@@ -460,6 +454,12 @@ NTSTATUS net_make_ipc_connection_ex(struct net_context *c ,const char *domain,
 				    struct sockaddr_storage *pss,
 				    unsigned flags, struct cli_state **pcli);
 const char *net_prompt_pass(struct net_context *c, const char *user);
+int net_run_function(struct net_context *c, int argc, const char **argv,
+		     struct functable *table,
+		     int (*usage_fn)(struct net_context *c,
+				     int argc, const char **argv));
+int net_run_function2(struct net_context *c, int argc, const char **argv,
+		      const char *whoami, struct functable2 *table);
 
 /* The following definitions come from utils/netlookup.c  */
 

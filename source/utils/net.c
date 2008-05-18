@@ -85,52 +85,6 @@ uint32 get_sec_channel_type(const char *param)
 	}
 }
 
-/*
-  run a function from a function table. If not found then
-  call the specified usage function
-*/
-int net_run_function(struct net_context *c, int argc, const char **argv,
-		     struct functable *table,
-		     int (*usage_fn)(struct net_context *c,
-				     int argc, const char **argv))
-{
-	int i;
-
-	if (argc < 1) {
-		d_printf("\nUsage: \n");
-		return usage_fn(c, argc, argv);
-	}
-	for (i=0; table[i].funcname; i++) {
-		if (StrCaseCmp(argv[0], table[i].funcname) == 0)
-			return table[i].fn(c, argc-1, argv+1);
-	}
-	d_fprintf(stderr, "No command: %s\n", argv[0]);
-	return usage_fn(c, argc, argv);
-}
-
-/*
- * run a function from a function table.
- */
-int net_run_function2(struct net_context *c, int argc, const char **argv,
-		      const char *whoami, struct functable2 *table)
-{
-	int i;
-
-	if (argc != 0) {
-		for (i=0; table[i].funcname; i++) {
-			if (StrCaseCmp(argv[0], table[i].funcname) == 0)
-				return table[i].fn(c, argc-1, argv+1);
-		}
-	}
-
-	for (i=0; table[i].funcname != NULL; i++) {
-		d_printf("%s %-15s %s\n", whoami, table[i].funcname,
-			 table[i].helptext);
-	}
-
-	return -1;
-}
-
 static int net_changetrustpw(struct net_context *c, int argc, const char **argv)
 {
 	if (net_ads_check_our_domain(c) == 0)
