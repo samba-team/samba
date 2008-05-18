@@ -20,12 +20,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#if _SAMBA_BUILD_
 #include "includes.h"
+#include "lib/util/dlinklist.h"
+#else
+#include "replace.h"
+#include "events_util.h"
+#endif
 #include "system/filesys.h"
 #include "system/network.h"
-#include "lib/util/dlinklist.h"
-#include "lib/events/events.h"
-#include "lib/events/events_internal.h"
+#include "events.h"
+#include "events_internal.h"
 #include <sys/epoll.h>
 
 struct epoll_event_context {
@@ -56,9 +61,11 @@ struct epoll_event_context {
   called when a epoll call fails, and we should fallback
   to using select
 */
-_NORETURN_ static void epoll_panic(struct epoll_event_context *epoll_ev, const char *reason)
+static void epoll_panic(struct epoll_event_context *epoll_ev, const char *reason)
 {
+#if _SAMBA_BUILD_
 	DEBUG(0,("%s (%s) - calling abort()\n", reason, strerror(errno)));
+#endif
 	abort();
 }
 

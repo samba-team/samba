@@ -1,3 +1,13 @@
+################################################
+# Start SUBSYSTEM LIBEVENTS
+[LIBRARY::LIBEVENTS]
+PUBLIC_DEPENDENCIES = LIBTALLOC
+OUTPUT_TYPE = STATIC_LIBRARY
+CFLAGS = -Ilib/events
+#
+# End SUBSYSTEM LIBEVENTS
+################################################
+
 ##############################
 [MODULE::EVENTS_AIO]
 PRIVATE_DEPENDENCIES = LIBAIO_LINUX
@@ -34,7 +44,6 @@ EVENTS_STANDARD_OBJ_FILES = lib/events/events_standard.o
 ##############################
 # Start SUBSYSTEM LIBEVENTS
 [SUBSYSTEM::LIBEVENTS]
-PUBLIC_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL
 # End SUBSYSTEM LIBEVENTS
 ##############################
 

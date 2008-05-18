@@ -508,9 +508,11 @@ _PUBLIC_ void torture_leave_domain(struct test_join *join)
 	/* Delete machine account */	                                                                                                                                                                                                                                                                                                                
 	status = dcerpc_samr_DeleteUser(join->p, join, &d);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Delete of machine account failed\n");
+		printf("Delete of machine account %s failed\n",
+		       join->netbios_name);
 	} else {
-		printf("Delete of machine account was successful.\n");
+		printf("Delete of machine account %s was successful.\n",
+		       join->netbios_name);
 	}
 
 	if (join->libnet_r) {
