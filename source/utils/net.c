@@ -758,6 +758,7 @@ static struct functable3 net_func[] = {
 		c->opt_password = getenv("PASSWD");
 	}
 
+	c->private_data = net_func;
 	rc = net_run_function3(c, argc_new-1, argv_new+1, "net", net_func);
 
 	DEBUG(2,("return code = %d\n", rc));
