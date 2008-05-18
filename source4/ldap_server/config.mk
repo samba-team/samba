@@ -5,7 +5,6 @@
 [MODULE::LDAP]
 INIT_FUNCTION = server_service_ldap_init
 SUBSYSTEM = smbd
-PRIVATE_PROTO_HEADER = proto.h
 PRIVATE_DEPENDENCIES = CREDENTIALS \
 		LIBCLI_LDAP SAMDB \
 		process_model \
@@ -20,3 +19,4 @@ LDAP_OBJ_FILES = $(addprefix $(ldap_serversrcdir)/, \
 		ldap_bind.o \
 		ldap_extended.o)
 
+$(call proto_header_template,$(ldap_serversrcdir)/proto.h,$(LDAP_OBJ_FILES:.o=.c))

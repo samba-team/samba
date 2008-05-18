@@ -37,14 +37,16 @@ PUBLIC_HEADERS += $(addprefix $(libutilsrcdir)/, util.h \
 				 xfile.h)
 
 [SUBSYSTEM::ASN1_UTIL]
-PRIVATE_PROTO_HEADER = asn1_proto.h
 
 ASN1_UTIL_OBJ_FILES = $(libutilsrcdir)/asn1.o
 
+$(call proto_header_template,$(libutilsrcdir)/asn1_proto.h,$(ASN1_UTIL_OBJ_FILES:.o=.c))
+
 [SUBSYSTEM::UNIX_PRIVS]
-PRIVATE_PROTO_HEADER = unix_privs.h
 
 UNIX_PRIVS_OBJ_FILES = $(libutilsrcdir)/unix_privs.o
+
+$(call proto_header_template,$(libutilsrcdir)/unix_privs.h,$(UNIX_PRIVS_OBJ_FILES:.o=.c))
 
 ################################################
 # Start SUBSYSTEM WRAP_XATTR
@@ -57,10 +59,11 @@ PUBLIC_DEPENDENCIES = XATTR
 WRAP_XATTR_OBJ_FILES = $(libutilsrcdir)/wrap_xattr.o
 
 [SUBSYSTEM::UTIL_TDB]
-PRIVATE_PROTO_HEADER = util_tdb.h
 PUBLIC_DEPENDENCIES = LIBTDB
 
 UTIL_TDB_OBJ_FILES = $(libutilsrcdir)/util_tdb.o
+
+$(call proto_header_template,$(libutilsrcdir)/util_tdb.h,$(UTIL_TDB_OBJ_FILES))
 
 [SUBSYSTEM::UTIL_LDB]
 PUBLIC_DEPENDENCIES = LIBLDB

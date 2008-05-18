@@ -1,12 +1,13 @@
 ##############################
 # Start SUBSYSTEM LIBNETIF
 [SUBSYSTEM::LIBNETIF]
-PRIVATE_PROTO_HEADER = netif_proto.h
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBREPLACE_NETWORK
 # End SUBSYSTEM LIBNETIF
 ##############################
 
 LIBNETIF_OBJ_FILES = $(addprefix $(libsocketsrcdir)/, interface.o netif.o)
+
+$(call proto_header_template,$(libsocketsrcdir)/netif_proto.h,$(LIBNETIF_OBJ_FILES:.o=.c))
 
 ################################################
 # Start MODULE socket_ip

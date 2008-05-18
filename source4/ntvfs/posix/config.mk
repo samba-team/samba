@@ -34,7 +34,6 @@ pvfs_aio_OBJ_FILES = $(ntvfssrcdir)/posix/pvfs_aio.o
 SUBSYSTEM = ntvfs
 OUTPUT_TYPE = MERGED_OBJ
 INIT_FUNCTION = ntvfs_posix_init 
-PRIVATE_PROTO_HEADER = vfs_posix_proto.h
 #PRIVATE_DEPENDENCIES = pvfs_acl_xattr pvfs_acl_nfs4
 PRIVATE_DEPENDENCIES = NDR_XATTR WRAP_XATTR BLKID ntvfs_common MESSAGING pvfs_aio \
 					   LIBWBCLIENT
@@ -70,4 +69,6 @@ ntvfs_posix_OBJ_FILES = $(addprefix $(ntvfssrcdir)/posix/, \
 		pvfs_notify.o \
 		xattr_system.o \
 		xattr_tdb.o)
+
+$(call proto_header_template,$(ntvfssrcdir)/posix/vfs_posix_proto.h,$(ntvfs_posix_OBJ_FILES:.o=.c))
 

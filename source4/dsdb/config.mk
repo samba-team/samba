@@ -5,7 +5,6 @@ mkinclude samdb/ldb_modules/config.mk
 ################################################
 # Start SUBSYSTEM SAMDB
 [SUBSYSTEM::SAMDB]
-PRIVATE_PROTO_HEADER = samdb/samdb_proto.h
 PUBLIC_DEPENDENCIES = HEIMDAL_KRB5 
 PRIVATE_DEPENDENCIES = LIBNDR NDR_MISC NDR_DRSUAPI NDR_DRSBLOBS NSS_WRAPPER \
 					   auth_system_session LDAP_ENCODE LIBCLI_AUTH LIBNDR \
@@ -18,19 +17,19 @@ SAMDB_OBJ_FILES = $(addprefix $(dsdbsrcdir)/, \
 		samdb/cracknames.o \
 		repl/replicated_objects.o)
 
+$(call proto_header_template,$(dsdbsrcdir)/samdb/samdb_proto.h,$(SAMDB_OBJ_FILES:.o=.c))
 # PUBLIC_HEADERS += dsdb/samdb/samdb.h
 
 [SUBSYSTEM::SAMDB_COMMON]
-PRIVATE_PROTO_HEADER = common/proto.h
 PRIVATE_DEPENDENCIES = LIBLDB
 
 SAMDB_COMMON_OBJ_FILES = $(addprefix $(dsdbsrcdir)/common/, \
 		sidmap.o \
 		flag_mapping.o \
 		util.o)
+$(call proto_header_template,$(dsdbsrcdir)/common/proto.h,$(SAMDB_COMMON_OBJ_FILES:.o=.c))
 
 [SUBSYSTEM::SAMDB_SCHEMA]
-PRIVATE_PROTO_HEADER = schema/proto.h
 PRIVATE_DEPENDENCIES = SAMDB_COMMON NDR_DRSUAPI NDR_DRSBLOBS
 
 SAMDB_SCHEMA_OBJ_FILES = $(addprefix $(dsdbsrcdir)/schema/, \
@@ -38,6 +37,7 @@ SAMDB_SCHEMA_OBJ_FILES = $(addprefix $(dsdbsrcdir)/schema/, \
 		schema_syntax.o \
 		schema_constructed.o)
 
+$(call proto_header_template,$(dsdbsrcdir)/schema/proto.h,$(SAMDB_SCHEMA_OBJ_FILES:.o=.c))
 # PUBLIC_HEADERS += dsdb/schema/schema.h
 
 #######################
@@ -45,7 +45,6 @@ SAMDB_SCHEMA_OBJ_FILES = $(addprefix $(dsdbsrcdir)/schema/, \
 [MODULE::DREPL_SRV]
 INIT_FUNCTION = server_service_drepl_init
 SUBSYSTEM = smbd
-PRIVATE_PROTO_HEADER = repl/drepl_service_proto.h
 PRIVATE_DEPENDENCIES = \
 		SAMDB \
 		process_model 
@@ -59,3 +58,4 @@ DREPL_SRV_OBJ_FILES = $(addprefix $(dsdbsrcdir)/repl/, \
 		drepl_out_pull.o \
 		drepl_out_helpers.o)
 
+$(call proto_header_template,$(dsdbsrcdir)/repl/drepl_service_proto.h,$(DREPL_SRV_OBJ_FILES:.o=.c))

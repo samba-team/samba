@@ -15,7 +15,6 @@ ntptr_simple_ldb_OBJ_FILES = $(ntptrsrcdir)/simple_ldb/ntptr_simple_ldb.o
 ################################################
 # Start SUBSYSTEM ntptr
 [SUBSYSTEM::ntptr]
-PRIVATE_PROTO_HEADER = ntptr_proto.h
 PUBLIC_DEPENDENCIES = DCERPC_COMMON
 #
 # End SUBSYSTEM ntptr
@@ -24,3 +23,5 @@ PUBLIC_DEPENDENCIES = DCERPC_COMMON
 ntptr_OBJ_FILES = \
 		$(ntptrsrcdir)/ntptr_base.o \
 		$(ntptrsrcdir)/ntptr_interface.o
+
+$(call proto_header_template,$(ntptrsrcdir)/ntptr_proto.h,$(ntptr_OBJ_FILES:.o=.c))

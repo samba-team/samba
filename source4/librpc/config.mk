@@ -5,11 +5,12 @@ dcerpcsrcdir = $(librpcsrcdir)/rpc
 ################################################
 # Start SUBSYSTEM LIBNDR
 [LIBRARY::LIBNDR]
-PRIVATE_PROTO_HEADER = ndr/libndr_proto.h
 PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBTALLOC LIBSAMBA-UTIL CHARSET \
 					  LIBSAMBA-HOSTCONFIG
 
 LIBNDR_OBJ_FILES = $(addprefix $(ndrsrcdir)/, ndr.o ndr_basic.o ndr_string.o uuid.o)
+
+$(call proto_header_template,$(ndrsrcdir)/ndr/libndr_proto.h,$(LIBNDR_OBJ_FILES:.o=.c))
 
 PC_FILES += $(librpcsrcdir)/ndr.pc
 LIBNDR_VERSION = 0.0.1
@@ -42,12 +43,13 @@ MANPAGES += $(librpcsrcdir)/tools/ndrdump.1
 ################################################
 # Start SUBSYSTEM NDR_COMPRESSION
 [SUBSYSTEM::NDR_COMPRESSION]
-PRIVATE_PROTO_HEADER = ndr/ndr_compression.h
 PUBLIC_DEPENDENCIES = LIBCOMPRESSION LIBSAMBA-ERRORS LIBNDR
 # End SUBSYSTEM NDR_COMPRESSION
 ################################################
 
 NDR_COMPRESSION_OBJ_FILES = $(ndrsrcdir)/ndr_compression.o
+
+$(call proto_header_template,$(ndrsrcdir)/ndr/ndr_compression.h,$(NDR_COMPRESSION_OBJ_FILES:.o=.c))
 
 [SUBSYSTEM::NDR_SECURITY]
 PUBLIC_DEPENDENCIES = NDR_MISC LIBSECURITY
@@ -168,9 +170,10 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_SPOOLSS_BUF NDR_SECURITY
 NDR_SPOOLSS_OBJ_FILES = $(gen_ndrsrcdir)/ndr_spoolss.o
 
 [SUBSYSTEM::NDR_SPOOLSS_BUF]
-PRIVATE_PROTO_HEADER = ndr/ndr_spoolss_buf.h
 
 NDR_SPOOLSS_BUF_OBJ_FILES = $(ndrsrcdir)/ndr_spoolss_buf.o
+
+$(call proto_header_template,$(ndrsrcdir)/ndr/ndr_spoolss_buf.h,$(NDR_SPOOLSS_BUF_OBJ_FILES:.o=.c))
 
 [SUBSYSTEM::NDR_WKSSVC]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_SRVSVC NDR_MISC NDR_SECURITY
@@ -360,7 +363,6 @@ $(gen_ndrsrcdir)/tables.c: $(IDL_NDR_PARSE_H_FILES)
 	@mv $(gen_ndrsrcdir)/tables.x $@
 
 [SUBSYSTEM::NDR_TABLE]
-PRIVATE_PROTO_HEADER = ndr/ndr_table.h
 PUBLIC_DEPENDENCIES = \
 	NDR_AUDIOSRV NDR_ECHO NDR_DCERPC \
 	NDR_DSBACKUP NDR_EFS NDR_MISC NDR_LSA NDR_DFS NDR_DRSUAPI \
@@ -374,6 +376,8 @@ PUBLIC_DEPENDENCIES = \
 	NDR_SASL_HELPERS NDR_NOTIFY NDR_WINBIND NDR_FRSRPC NDR_FRSAPI NDR_NFS4ACL
 
 NDR_TABLE_OBJ_FILES = $(ndrsrcdir)/ndr_table.o $(gen_ndrsrcdir)/tables.o
+
+$(call proto_header_template,$(ndrsrcdir)/ndr/ndr_table.h,$(NDR_TABLE_OBJ_FILES:.o=.c))
 
 [SUBSYSTEM::RPC_NDR_ROT]
 PUBLIC_DEPENDENCIES = NDR_ROT dcerpc
@@ -577,7 +581,6 @@ PUBLIC_HEADERS += $(addprefix $(librpcsrcdir)/, gen_ndr/dcerpc.h gen_ndr/ndr_dce
 ################################################
 # Start SUBSYSTEM dcerpc
 [LIBRARY::dcerpc]
-PRIVATE_PROTO_HEADER = rpc/dcerpc_proto.h
 PRIVATE_DEPENDENCIES = \
 		samba-socket LIBCLI_RESOLVE LIBCLI_SMB LIBCLI_SMB2 \
 		LIBNDR NDR_DCERPC RPC_NDR_EPMAPPER \
@@ -595,6 +598,8 @@ dcerpc_SOVERSION = 0
 
 dcerpc_OBJ_FILES = $(addprefix $(dcerpcsrcdir)/, dcerpc.o dcerpc_auth.o dcerpc_schannel.o dcerpc_util.o binding.o \
 				  dcerpc_error.o dcerpc_smb.o dcerpc_smb2.o dcerpc_sock.o dcerpc_connect.o dcerpc_secondary.o)
+
+$(call proto_header_template,$(dcerpsrcdir)/rpc/dcerpc_proto.h,$(dcerpc_OBJ_FILES:.o=.c))
 
 
 PUBLIC_HEADERS += $(addprefix $(librpcsrcdir)/, rpc/dcerpc.h \

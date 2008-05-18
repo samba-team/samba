@@ -28,7 +28,7 @@ libregistrysrcdir := lib/registry
 mkinclude lib/registry/config.mk
 libmessagingsrcdir := lib/messaging
 mkinclude lib/messaging/config.mk
-libeventssrcdir := lib/events 
+libeventssrcdir := lib/events
 mkinclude lib/events/config.mk
 libcmdlinesrcdir := lib/cmdline
 mkinclude lib/cmdline/config.mk
@@ -50,7 +50,7 @@ libcryptosrcdir := lib/crypto
 mkinclude lib/crypto/config.mk
 libtorturesrcdir := lib/torture
 mkinclude lib/torture/config.mk
-libcompressionsrcdir := lib
+libcompressionsrcdir := lib/compression
 libgencachesrcdir := lib
 libsrcdir := lib
 mkinclude lib/basic.mk

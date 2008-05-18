@@ -3,15 +3,15 @@
 [MODULE::SERVICE_SMB]
 INIT_FUNCTION = server_service_smb_init
 SUBSYSTEM = smbd
-PRIVATE_PROTO_HEADER = service_smb_proto.h
 PRIVATE_DEPENDENCIES = SMB_SERVER
 
 SERVICE_SMB_OBJ_FILES = $(smb_serversrcdir)/smb_server.o
 
+$(call proto_header_template,$(smb_serversrcdir)/service_smb_proto.h,$(SERVICE_SMB_OBJ_FILES:.o=.c))
+
 #######################
 # Start SUBSYSTEM SMB
 [SUBSYSTEM::SMB_SERVER]
-PRIVATE_PROTO_HEADER = smb_server_proto.h
 PUBLIC_DEPENDENCIES = \
 		share \
 		LIBPACKET \
@@ -26,6 +26,8 @@ SMB_SERVER_OBJ_FILES = $(addprefix $(smb_serversrcdir)/, \
 		session.o \
 		blob.o \
 		management.o)
+
+$(call proto_header_template,$(smb_serversrcdir)/smb_server_proto.h,$(SMB_SERVER_OBJ_FILES:.o=.c))
 
 mkinclude smb/config.mk
 mkinclude smb2/config.mk
