@@ -5,6 +5,7 @@ mkinclude dsdb/config.mk
 mkinclude smbd/config.mk
 mkinclude cluster/config.mk
 mkinclude smbd/process_model.mk
+libnetdir := libnet/
 mkinclude libnet/config.mk
 mkinclude auth/config.mk
 mkinclude nsswitch/config.mk
@@ -27,5 +28,6 @@ mkinclude librpc/config.mk
 mkinclude client/config.mk
 mkinclude libcli/config.mk
 mkinclude scripting/ejs/config.mk
+pyscriptdir := scripting/python
 mkinclude scripting/python/config.mk
 mkinclude kdc/config.mk
