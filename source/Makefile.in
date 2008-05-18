@@ -2313,17 +2313,13 @@ include/build_env.h: script/build_env.sh
 	@$(SHELL) $(srcdir)/script/build_env.sh $(srcdir) $(builddir) $(CC) \
 	  > $(builddir)/include/build_env.h
 
-# "make headers" or "make proto" calls a subshell because we need to
-# make sure these commands are executed in sequence even for a
-# parallel make.
-headers:
-	$(MAKE) delheaders; \
-	$(MAKE) smbd/build_options.c; \
-	$(MAKE) include/build_env.h; \
+proto:
+	@echo
+	@echo "NOTE: 'proto' is no longer a valid make target as proto.h"
+	@echo "and other prototype headers are not generated anymore."
+	@echo
 
-proto: headers
-
-.PHONY: headers proto
+.PHONY: proto
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]" | grep -v /.svn/`
