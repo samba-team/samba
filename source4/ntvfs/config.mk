@@ -63,7 +63,7 @@ PRIVATE_DEPENDENCIES = dcerpc_server DCERPC_COMMON
 
 ntvfs_ipc_OBJ_FILES = $(addprefix $(ntvfssrcdir)/ipc/, vfs_ipc.o ipc_rap.o rap_server.o)
 
-$(eval $(call proto_header_template,$(ntvfssrcdir)/ipc/proto.h,$(ntvfs_ipc_OBJ_FILES)))
+$(eval $(call proto_header_template,$(ntvfssrcdir)/ipc/proto.h,$(ntvfs_ipc_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start MODULE ntvfs_nbench

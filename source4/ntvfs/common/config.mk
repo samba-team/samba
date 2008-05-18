@@ -8,5 +8,5 @@ PRIVATE_DEPENDENCIES = brlock_ctdb opendb_ctdb
 
 ntvfs_common_OBJ_FILES = $(addprefix $(ntvfssrcdir)/common/, init.o brlock.o brlock_tdb.o opendb.o opendb_tdb.o notify.o)
 
-$(eval $(call proto_header_template,$(ntvfssrcdir)/proto.h,$(ntvfs_common_OBJ_FILES:.o=.c)))
+$(eval $(call proto_header_template,$(ntvfssrcdir)/common/proto.h,$(ntvfs_common_OBJ_FILES:.o=.c)))
 
