@@ -5,7 +5,6 @@
 *.patch
 semantic.cache
 source/TAGS
-source/client/client_proto.h
 source/libnet/libnet_proto.h
 source/include/build_env.h
 source/include/config.h
