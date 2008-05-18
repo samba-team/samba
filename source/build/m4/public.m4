@@ -209,7 +209,7 @@ test "x$ac_abs_srcdir" != "x$ac_abs_builddir" && (
 
 $PERL -I${builddir} -I${builddir}/build \
     -I${srcdir} -I${srcdir}/build \
-    ${srcdir}/build/smb_build/main.pl $1 || exit $?
+    ${srcdir}/build/smb_build/main.pl --output=$1 main.mk || exit $?
 ],
 [
 srcdir="$srcdir"
