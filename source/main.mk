@@ -15,6 +15,24 @@ authsrcdir := auth
 mkinclude auth/config.mk
 nsswitchsrcdir = nsswitch
 mkinclude nsswitch/config.mk
+mkinclude lib/samba3/config.mk
+mkinclude lib/socket/config.mk
+mkinclude lib/charset/config.mk
+mkinclude lib/ldb-samba/config.mk
+mkinclude lib/tls/config.mk
+mkinclude lib/registry/config.mk
+mkinclude lib/messaging/config.mk
+mkinclude lib/events/config.mk
+mkinclude lib/cmdline/config.mk
+mkinclude lib/socket_wrapper/config.mk
+mkinclude lib/nss_wrapper/config.mk
+mkinclude lib/appweb/config.mk
+mkinclude lib/stream/config.mk
+mkinclude lib/util/config.mk
+mkinclude lib/tdr/config.mk
+mkinclude lib/dbwrap/config.mk
+mkinclude lib/crypto/config.mk
+mkinclude lib/torture/config.mk
 mkinclude lib/basic.mk
 paramsrcdir := param
 mkinclude param/config.mk
@@ -49,6 +67,7 @@ clientsrcdir := client
 mkinclude client/config.mk
 libclisrcdir := libcli
 mkinclude libcli/config.mk
+ejsscriptsrcdir := scripting/ejs
 mkinclude scripting/ejs/config.mk
 pyscriptsrcdir := scripting/python
 mkinclude scripting/python/config.mk
