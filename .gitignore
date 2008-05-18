@@ -24,7 +24,6 @@ source/script/installbin.sh
 source/script/uninstallbin.sh
 source/smbd/build_options.c
 source/tags
-source/utils/passwd_proto.h
 source/include/includes.h.gch
 source/config.cache
 source/library-versions
