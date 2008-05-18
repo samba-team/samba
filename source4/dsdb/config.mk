@@ -17,7 +17,7 @@ SAMDB_OBJ_FILES = $(addprefix $(dsdbsrcdir)/, \
 		samdb/cracknames.o \
 		repl/replicated_objects.o)
 
-$(call proto_header_template,$(dsdbsrcdir)/samdb/samdb_proto.h,$(SAMDB_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(dsdbsrcdir)/samdb/samdb_proto.h,$(SAMDB_OBJ_FILES:.o=.c)))
 # PUBLIC_HEADERS += dsdb/samdb/samdb.h
 
 [SUBSYSTEM::SAMDB_COMMON]
@@ -27,7 +27,7 @@ SAMDB_COMMON_OBJ_FILES = $(addprefix $(dsdbsrcdir)/common/, \
 		sidmap.o \
 		flag_mapping.o \
 		util.o)
-$(call proto_header_template,$(dsdbsrcdir)/common/proto.h,$(SAMDB_COMMON_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(dsdbsrcdir)/common/proto.h,$(SAMDB_COMMON_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::SAMDB_SCHEMA]
 PRIVATE_DEPENDENCIES = SAMDB_COMMON NDR_DRSUAPI NDR_DRSBLOBS
@@ -37,7 +37,7 @@ SAMDB_SCHEMA_OBJ_FILES = $(addprefix $(dsdbsrcdir)/schema/, \
 		schema_syntax.o \
 		schema_constructed.o)
 
-$(call proto_header_template,$(dsdbsrcdir)/schema/proto.h,$(SAMDB_SCHEMA_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(dsdbsrcdir)/schema/proto.h,$(SAMDB_SCHEMA_OBJ_FILES:.o=.c)))
 # PUBLIC_HEADERS += dsdb/schema/schema.h
 
 #######################
@@ -58,4 +58,4 @@ DREPL_SRV_OBJ_FILES = $(addprefix $(dsdbsrcdir)/repl/, \
 		drepl_out_pull.o \
 		drepl_out_helpers.o)
 
-$(call proto_header_template,$(dsdbsrcdir)/repl/drepl_service_proto.h,$(DREPL_SRV_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(dsdbsrcdir)/repl/drepl_service_proto.h,$(DREPL_SRV_OBJ_FILES:.o=.c)))

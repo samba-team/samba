@@ -14,4 +14,4 @@ LIBCLI_AUTH_OBJ_FILES = $(addprefix $(libclisrcdir)/auth/, \
 		smbdes.o)
 
 PUBLIC_HEADERS += $(libclisrcdir)/auth/credentials.h
-$(call proto_header_template,$(libclisrcdir)/auth/proto.h,$(LIBCLI_AUTH_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libclisrcdir)/auth/proto.h,$(LIBCLI_AUTH_OBJ_FILES:.o=.c)))

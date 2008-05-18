@@ -4,6 +4,6 @@ PUBLIC_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL
 
 TDR_OBJ_FILES = $(libtdrsrcdir)/tdr.o
 
-$(call proto_header_template,$(libtdrsrcdir)/tdr_proto.h,$(TDR_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libtdrsrcdir)/tdr_proto.h,$(TDR_OBJ_FILES:.o=.c)))
 
 PUBLIC_HEADERS += $(libtdrsrcdir)/tdr.h

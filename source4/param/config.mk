@@ -26,7 +26,7 @@ PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
 
 share_OBJ_FILES = $(paramsrcdir)/share.o
 
-$(call proto_header_template,$(paramsrcdir)/share_proto.h,$(share_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(paramsrcdir)/share_proto.h,$(share_OBJ_FILES:.o=.c)))
 
 PUBLIC_HEADERS += param/share.h
 

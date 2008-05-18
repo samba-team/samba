@@ -56,8 +56,6 @@ clean:: clean_pch
 	@echo Removing generated files
 	@-rm -f bin/*_init_module.c
 	@-rm -rf librpc/gen_* 
-	@echo Removing proto headers
-	@-rm -f $(PROTO_HEADERS)
 
 distclean:: clean
 	-rm -f include/config.h include/config_tmp.h include/build.h

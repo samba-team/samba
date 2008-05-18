@@ -24,4 +24,4 @@ ntptr_OBJ_FILES = \
 		$(ntptrsrcdir)/ntptr_base.o \
 		$(ntptrsrcdir)/ntptr_interface.o
 
-$(call proto_header_template,$(ntptrsrcdir)/ntptr_proto.h,$(ntptr_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(ntptrsrcdir)/ntptr_proto.h,$(ntptr_OBJ_FILES:.o=.c)))

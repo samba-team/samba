@@ -21,4 +21,4 @@ WREPL_SRV_OBJ_FILES = $(addprefix $(wrepl_serversrcdir)/, \
 		wrepl_out_push.o \
 		wrepl_out_helpers.o)
 
-$(call proto_header_template,$(wrepl_serversrcdir)/wrepl_server_proto.h,$(WREPL_SRV_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(wrepl_serversrcdir)/wrepl_server_proto.h,$(WREPL_SRV_OBJ_FILES:.o=.c)))

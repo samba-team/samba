@@ -19,4 +19,4 @@ SMB_PROTOCOL_OBJ_FILES = $(addprefix $(smb_serversrcdir)/smb/, \
 		trans2.o \
 		signing.o)
 
-$(call proto_header_template,$(smb_serversrcdir)/smb/smb_proto.h,$(SMB_PROTOCOL_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(smb_serversrcdir)/smb/smb_proto.h,$(SMB_PROTOCOL_OBJ_FILES:.o=.c)))

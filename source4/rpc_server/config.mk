@@ -9,7 +9,7 @@
 
 DCERPC_COMMON_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/common/, server_info.o share_info.o)
 
-$(call proto_header_template,$(rpc_serversrcdir)/common/proto.h,$(DCERPC_COMMON_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(rpc_serversrcdir)/common/proto.h,$(DCERPC_COMMON_OBJ_FILES:.o=.c)))
 
 PUBLIC_HEADERS += $(rpc_serversrcdir)/common/common.h
 
@@ -60,7 +60,7 @@ PRIVATE_DEPENDENCIES = \
 
 dcerpc_srvsvc_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/srvsvc/, dcesrv_srvsvc.o srvsvc_ntvfs.o)
 
-$(call proto_header_template,$(rpc_serversrcdir)/srvsvc/proto.h,$(dcerpc_srvsvc_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(rpc_serversrcdir)/srvsvc/proto.h,$(dcerpc_srvsvc_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start MODULE dcerpc_wkssvc
@@ -104,7 +104,7 @@ PRIVATE_DEPENDENCIES = \
 
 dcesrv_samr_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/samr/, dcesrv_samr.o samr_password.o)
 
-$(call proto_header_template,$(rpc_serversrcdir)/samr/proto.h,$(dcesrv_samr_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(rpc_serversrcdir)/samr/proto.h,$(dcesrv_samr_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start MODULE dcerpc_winreg
@@ -150,7 +150,7 @@ PRIVATE_DEPENDENCIES = \
 
 dcerpc_lsarpc_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/lsa/, dcesrv_lsa.o lsa_init.o lsa_lookup.o)
 
-$(call proto_header_template,$(rpc_serversrcdir)/lsa/proto.h,$(dcerpc_lsarpc_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(rpc_serversrcdir)/lsa/proto.h,$(dcerpc_lsarpc_OBJ_FILES:.o=.c)))
 
 
 ################################################
@@ -197,7 +197,7 @@ dcerpc_server_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/, \
 		dcesrv_mgmt.o \
 		handles.o)
 
-$(call proto_header_template,$(rpc_serversrcdir)/dcerpc_server_proto.h,$(dcerpc_server_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(rpc_serversrcdir)/dcerpc_server_proto.h,$(dcerpc_server_OBJ_FILES:.o=.c)))
 
 # End SUBSYSTEM DCERPC
 ################################################

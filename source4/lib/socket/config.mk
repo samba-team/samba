@@ -7,7 +7,7 @@ PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBREPLACE_NETWORK
 
 LIBNETIF_OBJ_FILES = $(addprefix $(libsocketsrcdir)/, interface.o netif.o)
 
-$(call proto_header_template,$(libsocketsrcdir)/netif_proto.h,$(LIBNETIF_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libsocketsrcdir)/netif_proto.h,$(LIBNETIF_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start MODULE socket_ip

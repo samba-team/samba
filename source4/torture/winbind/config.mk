@@ -11,5 +11,5 @@ PRIVATE_DEPENDENCIES = \
 
 TORTURE_WINBIND_OBJ_FILES = $(addprefix $(torturesrcdir)/winbind/, winbind.o struct_based.o)
 
-$(call proto_header_template,$(torturesrcdir)/proto.h,$(TORTURE_WINBIND_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(torturesrcdir)/proto.h,$(TORTURE_WINBIND_OBJ_FILES:.o=.c)))
 

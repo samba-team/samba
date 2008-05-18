@@ -70,7 +70,7 @@ auth_unix_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, auth_unix.o)
 
 [SUBSYSTEM::PAM_ERRORS]
 
-$(call proto_header_template,$(authsrcdir)/ntlm/pam_errors.h,$(auth_unix_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(authsrcdir)/ntlm/pam_errors.h,$(auth_unix_OBJ_FILES:.o=.c)))
 
 #VERSION = 0.0.1
 #SO_VERSION = 0
@@ -82,7 +82,7 @@ SUBSYSTEM = service
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBSECURITY SAMDB CREDENTIALS 
 
 auth_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, auth.o auth_util.o auth_simple.o)
-$(call proto_header_template,$(authsrcdir)/auth_proto.h,$(auth_OBJ_FILES))
+$(eval $(call proto_header_template,$(authsrcdir)/auth_proto.h,$(auth_OBJ_FILES)))
 
 # PUBLIC_HEADERS += auth/auth.h
 

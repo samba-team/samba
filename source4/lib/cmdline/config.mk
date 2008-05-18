@@ -3,7 +3,7 @@ PUBLIC_DEPENDENCIES = CREDENTIALS LIBPOPT
 
 LIBCMDLINE_CREDENTIALS_OBJ_FILES = $(libcmdlinesrcdir)/credentials.o
 
-$(call proto_header_template,$(libcmdlinesrcdir)/credentials.h,$(LIBCMDLINE_CREDENTIALS_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libcmdlinesrcdir)/credentials.h,$(LIBCMDLINE_CREDENTIALS_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::POPT_SAMBA]
 PUBLIC_DEPENDENCIES = LIBPOPT
@@ -18,4 +18,4 @@ PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
 
 POPT_CREDENTIALS_OBJ_FILES = $(libcmdlinesrcdir)/popt_credentials.o
 
-$(call proto_header_template,$(libcmdlinesrcdir)/popt_credentials.h,$(POPT_CREDENTIALS_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libcmdlinesrcdir)/popt_credentials.h,$(POPT_CREDENTIALS_OBJ_FILES:.o=.c)))

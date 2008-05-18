@@ -47,4 +47,4 @@ PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG
 
 process_model_OBJ_FILES = $(smbdsrcdir)/process_model.o
 
-$(call proto_header_template,$(smbdsrcdir)/process_model_proto.h,$(process_model_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(smbdsrcdir)/process_model_proto.h,$(process_model_OBJ_FILES:.o=.c)))

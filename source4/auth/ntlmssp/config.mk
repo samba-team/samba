@@ -2,7 +2,7 @@
 
 MSRPC_PARSE_OBJ_FILES = $(addprefix $(authsrcdir)/ntlmssp/, ntlmssp_parse.o)
 
-$(call proto_header_template,$(authsrcdir)/ntlmssp/msrpc_parse.h,$(MSRPC_PARSE_OBJ_FILES))
+$(eval $(call proto_header_template,$(authsrcdir)/ntlmssp/msrpc_parse.h,$(MSRPC_PARSE_OBJ_FILES)))
 
 ################################################
 # Start MODULE gensec_ntlmssp
@@ -16,4 +16,4 @@ OUTPUT_TYPE = MERGED_OBJ
 
 gensec_ntlmssp_OBJ_FILES = $(addprefix $(authsrcdir)/ntlmssp/, ntlmssp.o ntlmssp_sign.o ntlmssp_client.o ntlmssp_server.o) 
 
-$(call proto_header_template,$(authsrcdir)/ntlmssp/proto.h,$(gensec_ntlmssp_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(authsrcdir)/ntlmssp/proto.h,$(gensec_ntlmssp_OBJ_FILES:.o=.c)))

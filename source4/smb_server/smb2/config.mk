@@ -16,4 +16,4 @@ SMB2_PROTOCOL_OBJ_FILES = $(addprefix $(smb_serversrcdir)/smb2/, \
 		find.o \
 		keepalive.o)
 
-$(call proto_header_template,$(smb_serversrcdir)/smb2/smb2_proto.h,$(SMB2_PROTOCOL_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(smb_serversrcdir)/smb2/smb2_proto.h,$(SMB2_PROTOCOL_OBJ_FILES:.o=.c)))

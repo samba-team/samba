@@ -10,4 +10,4 @@ smbcalls_net_OBJ_FILES = $(addprefix $(ejsscriptsrcdir)/ejsnet/,  \
 		net_host.o \
 		mpr_host.o)
 
-$(call proto_header_template,$(ejsscriptsrcdir)/ejsnet/proto.h,$(smbcalls_net_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(ejsscriptsrcdir)/ejsnet/proto.h,$(smbcalls_net_OBJ_FILES:.o=.c)))

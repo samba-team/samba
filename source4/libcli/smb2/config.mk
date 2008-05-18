@@ -7,4 +7,4 @@ LIBCLI_SMB2_OBJ_FILES = $(addprefix $(libclisrcdir)/smb2/, \
 	setinfo.o find.o ioctl.o logoff.o tdis.o flush.o \
 	lock.o notify.o cancel.o keepalive.o break.o)
 
-$(call proto_header_template,$(libclisrcdir)/smb2_proto.h,$(LIBCLI_SMB2_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libclisrcdir)/smb2_proto.h,$(LIBCLI_SMB2_OBJ_FILES:.o=.c)))

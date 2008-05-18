@@ -40,7 +40,7 @@ PUBLIC_DEPENDENCIES = registry
 
 registry_common_OBJ_FILES = $(libregistrysrcdir)/tools/common.o
 
-$(call proto_header_template,$(libregistrysrcdir)/tools/common.h,$(registry_common_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libregistrysrcdir)/tools/common.h,$(registry_common_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start BINARY regdiff
@@ -102,7 +102,7 @@ PRIVATE_DEPENDENCIES = registry
 
 torture_registry_OBJ_FILES = $(addprefix $(libregistrysrcdir)/tests/, generic.o hive.o diff.o registry.o)
 
-$(call proto_header_template,$(libregistrysrcdir)/tests/proto.h,$(torture_registry_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(libregistrysrcdir)/tests/proto.h,$(torture_registry_OBJ_FILES:.o=.c)))
 
 [PYTHON::swig_registry]
 PUBLIC_DEPENDENCIES = registry

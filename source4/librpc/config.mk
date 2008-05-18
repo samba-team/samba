@@ -10,7 +10,7 @@ PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBTALLOC LIBSAMBA-UTIL CHARSET \
 
 LIBNDR_OBJ_FILES = $(addprefix $(ndrsrcdir)/, ndr.o ndr_basic.o ndr_string.o uuid.o)
 
-$(call proto_header_template,$(ndrsrcdir)/ndr/libndr_proto.h,$(LIBNDR_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(ndrsrcdir)/libndr_proto.h,$(LIBNDR_OBJ_FILES:.o=.c)))
 
 PC_FILES += $(librpcsrcdir)/ndr.pc
 LIBNDR_VERSION = 0.0.1
@@ -49,7 +49,7 @@ PUBLIC_DEPENDENCIES = LIBCOMPRESSION LIBSAMBA-ERRORS LIBNDR
 
 NDR_COMPRESSION_OBJ_FILES = $(ndrsrcdir)/ndr_compression.o
 
-$(call proto_header_template,$(ndrsrcdir)/ndr/ndr_compression.h,$(NDR_COMPRESSION_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(ndrsrcdir)/ndr/ndr_compression.h,$(NDR_COMPRESSION_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::NDR_SECURITY]
 PUBLIC_DEPENDENCIES = NDR_MISC LIBSECURITY
@@ -173,7 +173,7 @@ NDR_SPOOLSS_OBJ_FILES = $(gen_ndrsrcdir)/ndr_spoolss.o
 
 NDR_SPOOLSS_BUF_OBJ_FILES = $(ndrsrcdir)/ndr_spoolss_buf.o
 
-$(call proto_header_template,$(ndrsrcdir)/ndr/ndr_spoolss_buf.h,$(NDR_SPOOLSS_BUF_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(ndrsrcdir)/ndr/ndr_spoolss_buf.h,$(NDR_SPOOLSS_BUF_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::NDR_WKSSVC]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_SRVSVC NDR_MISC NDR_SECURITY
@@ -377,7 +377,7 @@ PUBLIC_DEPENDENCIES = \
 
 NDR_TABLE_OBJ_FILES = $(ndrsrcdir)/ndr_table.o $(gen_ndrsrcdir)/tables.o
 
-$(call proto_header_template,$(ndrsrcdir)/ndr/ndr_table.h,$(NDR_TABLE_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(ndrsrcdir)/ndr/ndr_table.h,$(NDR_TABLE_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::RPC_NDR_ROT]
 PUBLIC_DEPENDENCIES = NDR_ROT dcerpc
@@ -599,7 +599,7 @@ dcerpc_SOVERSION = 0
 dcerpc_OBJ_FILES = $(addprefix $(dcerpcsrcdir)/, dcerpc.o dcerpc_auth.o dcerpc_schannel.o dcerpc_util.o binding.o \
 				  dcerpc_error.o dcerpc_smb.o dcerpc_smb2.o dcerpc_sock.o dcerpc_connect.o dcerpc_secondary.o)
 
-$(call proto_header_template,$(dcerpsrcdir)/rpc/dcerpc_proto.h,$(dcerpc_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(dcerpcsrcdir)/rpc/dcerpc_proto.h,$(dcerpc_OBJ_FILES:.o=.c)))
 
 
 PUBLIC_HEADERS += $(addprefix $(librpcsrcdir)/, rpc/dcerpc.h \

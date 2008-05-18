@@ -7,7 +7,7 @@ PRIVATE_DEPENDENCIES = SMB_SERVER
 
 SERVICE_SMB_OBJ_FILES = $(smb_serversrcdir)/smb_server.o
 
-$(call proto_header_template,$(smb_serversrcdir)/service_smb_proto.h,$(SERVICE_SMB_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(smb_serversrcdir)/service_smb_proto.h,$(SERVICE_SMB_OBJ_FILES:.o=.c)))
 
 #######################
 # Start SUBSYSTEM SMB
@@ -27,7 +27,7 @@ SMB_SERVER_OBJ_FILES = $(addprefix $(smb_serversrcdir)/, \
 		blob.o \
 		management.o)
 
-$(call proto_header_template,$(smb_serversrcdir)/smb_server_proto.h,$(SMB_SERVER_OBJ_FILES:.o=.c))
+$(eval $(call proto_header_template,$(smb_serversrcdir)/smb_server_proto.h,$(SMB_SERVER_OBJ_FILES:.o=.c)))
 
 mkinclude smb/config.mk
 mkinclude smb2/config.mk
