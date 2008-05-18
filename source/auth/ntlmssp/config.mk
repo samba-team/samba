@@ -14,4 +14,4 @@ OUTPUT_TYPE = MERGED_OBJ
 # End MODULE gensec_ntlmssp
 ################################################
 
-gensec_ntlmssp_OBJ_FILES = $(addprefix $((authsrcdir)/ntlmssp/, ntlmssp.o ntlmssp_sign.o ntlmssp_client.o ntlmssp_server.o) 
+gensec_ntlmssp_OBJ_FILES = $(addprefix $(authsrcdir)/ntlmssp/, ntlmssp.o ntlmssp_sign.o ntlmssp_client.o ntlmssp_server.o) 

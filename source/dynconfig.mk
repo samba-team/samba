@@ -9,8 +9,11 @@ CONFIGFILE = $(sysconfdir)/smb.conf
 PKGCONFIGDIR = $(libdir)/pkgconfig
 LMHOSTSFILE = $(sysconfdir)/lmhosts
 
-PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\" \
-	 -DBINDIR=\"$(bindir)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" \
+dynconfig.o: dynconfig.c Makefile
+	@echo Compiling $<
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $(PICFLAG) -c $< -o $@ \
+	 -DCONFIGFILE=\"$(CONFIGFILE)\" \ -DBINDIR=\"$(bindir)\" \
+	 -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" \
 	 -DLOCKDIR=\"$(lockdir)\" -DPIDDIR=\"$(piddir)\" -DDATADIR=\"$(datadir)\" \
 	 -DLOGFILEBASE=\"$(logfilebase)\" \
 	 -DCONFIGDIR=\"$(sysconfdir)\" -DNCALRPCDIR=\"$(NCALRPCDIR)\" \
@@ -20,6 +23,4 @@ PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\" \
 	 -DTORTUREDIR=\"$(TORTUREDIR)\" \
 	 -DSETUPDIR=\"$(SETUPDIR)\" -DWINBINDD_SOCKET_DIR=\"$(winbindd_socket_dir)\"
 
-dynconfig.o: dynconfig.c Makefile
-	@echo Compiling $<
-	@$(CC) $(CFLAGS) $(CPPFLAGS) $(PICFLAG) $(PATH_FLAGS) -c $< -o $@
+

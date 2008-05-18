@@ -1,5 +1,7 @@
-# Temapltes file for Samba 4
+# Templates file for Samba 4
 # This relies on GNU make.
+#
+# © 2008 Jelmer Vernooij <jelmer@samba.org>
 #
 ###############################################################################
 # Templates
