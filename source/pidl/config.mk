@@ -1,11 +1,11 @@
-pidl/Makefile: pidl/Makefile.PL
-	cd pidl && $(PERL) Makefile.PL PREFIX=$(prefix)
+$(pidldir)/Makefile: $(pidldir)/Makefile.PL
+	cd $(pidldir) && $(PERL) Makefile.PL PREFIX=$(prefix)
 
-pidl-testcov: pidl/Makefile
-	cd pidl && cover -test
+pidl-testcov: $(pidldir)/Makefile
+	cd $(pidldir) && cover -test
 
-installpidl:: pidl/Makefile
-	$(MAKE) -C pidl install_vendor VENDORPREFIX=$(prefix) \
+installpidl:: $(pidldir)/Makefile
+	$(MAKE) -C $(pidldir) install_vendor VENDORPREFIX=$(prefix) \
 		                           INSTALLVENDORLIB=$(datarootdir)/perl5 \
 								   INSTALLVENDORBIN=$(bindir) \
 								   INSTALLVENDORSCRIPT=$(bindir) \
@@ -16,19 +16,19 @@ ifeq ($(HAVE_PERL_EXTUTILS_MAKEMAKER),1)
 install:: installpidl
 endif
 
-idl_full:: pidl/lib/Parse/Pidl/IDL.pm pidl/lib/Parse/Pidl/Expr.pm 
+idl_full:: $(pidldir)/lib/Parse/Pidl/IDL.pm $(pidldir)/lib/Parse/Pidl/Expr.pm 
 	@CPP="$(CPP)" PERL="$(PERL)" srcdir=$(srcdir) $(srcdir)/script/build_idl.sh FULL
 
-idl:: pidl/lib/Parse/Pidl/IDL.pm pidl/lib/Parse/Pidl/Expr.pm 
+idl:: $(pidldir)/lib/Parse/Pidl/IDL.pm $(pidldir)/lib/Parse/Pidl/Expr.pm 
 	@CPP="$(CPP)" PERL="$(PERL)" srcdir=$(srcdir) $(srcdir)/script/build_idl.sh PARTIAL 
 
-pidl/lib/Parse/Pidl/IDL.pm: pidl/idl.yp
-	-$(YAPP) -m 'Parse::Pidl::IDL' -o pidl/lib/Parse/Pidl/IDL.pm pidl/idl.yp ||\
-		touch pidl/lib/Parse/Pidl/IDL.pm 
+$(pidldir)/lib/Parse/Pidl/IDL.pm: $(pidldir)/idl.yp
+	-$(YAPP) -m 'Parse::Pidl::IDL' -o $(pidldir)/lib/Parse/Pidl/IDL.pm $(pidldir)/idl.yp ||\
+		touch $(pidldir)/lib/Parse/Pidl/IDL.pm 
 
-pidl/lib/Parse/Pidl/Expr.pm: pidl/idl.yp
-	-$(YAPP) -m 'Parse::Pidl::Expr' -o pidl/lib/Parse/Pidl/Expr.pm pidl/expr.yp ||\
-		touch pidl/lib/Parse/Pidl/Expr.pm 
+$(pidldir)/lib/Parse/Pidl/Expr.pm: $(pidldir)/idl.yp
+	-$(YAPP) -m 'Parse::Pidl::Expr' -o $(pidldir)/lib/Parse/Pidl/Expr.pm $(pidldir)/expr.yp ||\
+		touch $(pidldir)/lib/Parse/Pidl/Expr.pm 
 
 testcov-html:: pidl-testcov
 
