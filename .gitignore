@@ -23,7 +23,6 @@ source/script/gen-8bit-gap.sh
 source/script/installbin.sh
 source/script/uninstallbin.sh
 source/smbd/build_options.c
-source/utils/net_proto.h
 source/tags
 source/utils/passwd_proto.h
 source/include/includes.h.gch
