@@ -1272,14 +1272,14 @@ PRECOMPILED_HEADER = $(builddir)/include/includes.h.gch
 
 # this adds support for precompiled headers. To use it, install a snapshot
 # of gcc-3.4 and run 'make pch' before you do the main build.
-pch: proto_exists
+pch:
 	rm -f $(PRECOMPILED_HEADER)
 	$(MAKE) $(PRECOMPILED_HEADER)
 
 $(PRECOMPILED_HEADER): $(srcdir)/include/includes.h
 	$(COMPILE)
 
-BINARY_PREREQS = proto_exists bin/.dummy
+BINARY_PREREQS = bin/.dummy
 
 # These dependencies are only approximately correct: we want to make
 # sure Samba's paths are updated if ./configure is re-run.  Really it
@@ -2293,17 +2293,9 @@ clean:
 		$(LIBTALLOC) $(LIBSMBCLIENT) $(LIBADDNS) \
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBNETAPI) \
 		bin/libwbclient.so.0 bin/timelimit \
-		.headers.stamp */src/*.o proto_exists \
+		.headers.stamp */src/*.o \
 		$(LIBTDB_SYMS)
 	-rm -rf t_dir
-
-# Making this target will just make sure that the prototype files
-# exist, not necessarily that they are up to date.  Since they're
-# removed by "make clean" this will always be run when you do anything
-# afterwards.
-proto_exists: include/build_env.h \
-	smbd/build_options.c
-	@touch proto_exists
 
 include/build_env.h: script/build_env.sh
 	@echo Building include/build_env.h
