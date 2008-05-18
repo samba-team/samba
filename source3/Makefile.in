@@ -2308,8 +2308,6 @@ delheaders:
 	@rm -f include/build_env.h \
 		smbd/build_options.c
 
-MKPROTO_SH = $(srcdir)/script/mkproto.sh
-
 include/build_env.h: script/build_env.sh
 	@echo Building include/build_env.h
 	@$(SHELL) $(srcdir)/script/build_env.sh $(srcdir) $(builddir) $(CC) \
