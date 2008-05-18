@@ -190,3 +190,34 @@ $SMB_INFO_ENABLES
 1;
 CEOF
 ])
+
+dnl SMB_BUILD_RUN(OUTPUT_FILE)
+AC_DEFUN([SMB_BUILD_RUN],
+[
+AC_OUTPUT_COMMANDS(
+[
+test "x$ac_abs_srcdir" != "x$ac_abs_builddir" && (
+	cd $builddir;
+	# NOTE: We *must* use -R so we don't follow symlinks (at least on BSD
+	# systems).
+	test -d heimdal || cp -R $srcdir/heimdal $builddir/
+	test -d heimdal_build || cp -R $srcdir/heimdal_build $builddir/
+	test -d build || builddir="$builddir" \
+			srcdir="$srcdir" \
+			$PERL ${srcdir}/script/buildtree.pl
+ )
+
+$PERL -I${builddir} -I${builddir}/build \
+    -I${srcdir} -I${srcdir}/build \
+    ${srcdir}/build/smb_build/main.pl $1 || exit $?
+],
+[
+srcdir="$srcdir"
+builddir="$builddir"
+PERL="$PERL"
+
+export PERL
+export srcdir
+export builddir
+])
+])
