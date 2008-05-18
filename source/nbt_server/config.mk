@@ -9,7 +9,7 @@ PUBLIC_DEPENDENCIES = \
 # End SUBSYSTEM WINSDB
 #######################
 
-WINSDB_OBJ_FILES = $(addprefix nbt_server/wins/, winsdb.o wins_hook.o)
+WINSDB_OBJ_FILES = $(addprefix $(nbt_serversrcdir)/wins/, winsdb.o wins_hook.o)
 
 #######################
 # Start MODULE ldb_wins_ldb
@@ -22,7 +22,7 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE ldb_wins_ldb
 #######################
 
-ldb_wins_ldb_OBJ_FILES = nbt_server/wins/wins_ldb.o
+ldb_wins_ldb_OBJ_FILES = $(nbt_serversrcdir)/wins/wins_ldb.o
 
 #######################
 # Start SUBSYSTEM NBTD_WINS
@@ -33,7 +33,7 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM NBTD_WINS
 #######################
 
-NBTD_WINS_OBJ_FILES = $(addprefix nbt_server/wins/, winsserver.o winsclient.o winswack.o wins_dns_proxy.o)
+NBTD_WINS_OBJ_FILES = $(addprefix $(nbt_serversrcdir)/wins/, winsserver.o winsclient.o winswack.o wins_dns_proxy.o)
 
 #######################
 # Start SUBSYSTEM NBTD_DGRAM
@@ -44,7 +44,7 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM NBTD_DGRAM
 #######################
 
-NBTD_DGRAM_OBJ_FILES = $(addprefix nbt_server/dgram/, request.o netlogon.o ntlogon.o browse.o)
+NBTD_DGRAM_OBJ_FILES = $(addprefix $(nbt_serversrcdir)/dgram/, request.o netlogon.o ntlogon.o browse.o)
 
 #######################
 # Start SUBSYSTEM NBTD
@@ -55,7 +55,7 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM NBTD
 #######################
 
-NBT_SERVER_OBJ_FILES = $(addprefix nbt_server/, \
+NBT_SERVER_OBJ_FILES = $(addprefix $(nbt_serversrcdir)/, \
 		interfaces.o \
 		register.o \
 		query.o \
@@ -70,4 +70,4 @@ SUBSYSTEM = smbd
 PRIVATE_DEPENDENCIES = NBT_SERVER process_model
 
 service_nbtd_OBJ_FILES = \
-		nbt_server/nbt_server.o
+		$(nbt_serversrcdir)/nbt_server.o

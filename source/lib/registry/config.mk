@@ -1,19 +1,19 @@
 [SUBSYSTEM::TDR_REGF]
 PUBLIC_DEPENDENCIES = TDR 
 
-TDR_REGF_OBJ_FILES = lib/registry/tdr_regf.o
+TDR_REGF_OBJ_FILES = $(libregistrysrcdir)/tdr_regf.o
 
 # Special support for external builddirs
-lib/registry/regf.c: lib/registry/tdr_regf.c
-$(srcdir)/lib/registry/regf.c: lib/registry/tdr_regf.c
-lib/registry/tdr_regf.h: lib/registry/tdr_regf.c
-lib/registry/tdr_regf.c: $(srcdir)/lib/registry/regf.idl
+$(libregistrysrcdir)/regf.c: $(libregistrysrcdir)/tdr_regf.c
+$(srcdir)/$(libregistrysrcdir)/regf.c: $(libregistrysrcdir)/tdr_regf.c
+$(libregistrysrcdir)/tdr_regf.h: $(libregistrysrcdir)/tdr_regf.c
+$(libregistrysrcdir)/tdr_regf.c: $(srcdir)/$(libregistrysrcdir)/regf.idl
 	@CPP="$(CPP)" srcdir="$(srcdir)" $(PERL) $(srcdir)/pidl/pidl $(PIDL_ARGS) \
 		--header --outputdir=lib/registry \
-		--tdr-parser -- $(srcdir)/lib/registry/regf.idl
+		--tdr-parser -- $(srcdir)/$(libregistrysrcdir)/regf.idl
 
 clean::
-	@-rm -f lib/registry/regf.h lib/registry/tdr_regf*
+	@-rm -f $(libregistrysrcdir)/regf.h $(libregistrysrcdir)/tdr_regf*
 
 ################################################
 # Start SUBSYSTEM registry
@@ -24,22 +24,22 @@ PUBLIC_DEPENDENCIES = \
 # End MODULE registry_ldb
 ################################################
 
-PC_FILES += lib/registry/registry.pc
+PC_FILES += $(libregistrysrcdir)/registry.pc
 
 registry_VERSION = 0.0.1
 registry_SOVERSION = 0
 
-registry_OBJ_FILES = $(addprefix lib/registry/, interface.o util.o samba.o \
+registry_OBJ_FILES = $(addprefix $(libregistrysrcdir)/, interface.o util.o samba.o \
 					patchfile_dotreg.o patchfile_preg.o patchfile.o regf.o \
 					hive.o local.o ldb.o dir.o rpc.o)
 
-PUBLIC_HEADERS += lib/registry/registry.h
+PUBLIC_HEADERS += $(libregistrysrcdir)/registry.h
 
 [SUBSYSTEM::registry_common]
 PUBLIC_DEPENDENCIES = registry
 PRIVATE_PROTO_HEADER = tools/common.h
 
-registry_common_OBJ_FILES = lib/registry/tools/common.o
+registry_common_OBJ_FILES = $(libregistrysrcdir)/tools/common.o
 
 ################################################
 # Start BINARY regdiff
@@ -50,9 +50,9 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY regdiff
 ################################################
 
-regdiff_OBJ_FILES = lib/registry/tools/regdiff.o
+regdiff_OBJ_FILES = $(libregistrysrcdir)/tools/regdiff.o
 
-MANPAGES += lib/registry/man/regdiff.1
+MANPAGES += $(libregistrysrcdir)/man/regdiff.1
 
 ################################################
 # Start BINARY regpatch
@@ -64,9 +64,9 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY regpatch
 ################################################
 
-regpatch_OBJ_FILES = lib/registry/tools/regpatch.o
+regpatch_OBJ_FILES = $(libregistrysrcdir)/tools/regpatch.o
 
-MANPAGES += lib/registry/man/regpatch.1
+MANPAGES += $(libregistrysrcdir)/man/regpatch.1
 
 ################################################
 # Start BINARY regshell
@@ -78,9 +78,9 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY regshell
 ################################################
 
-regshell_OBJ_FILES = lib/registry/tools/regshell.o
+regshell_OBJ_FILES = $(libregistrysrcdir)/tools/regshell.o
 
-MANPAGES += lib/registry/man/regshell.1
+MANPAGES += $(libregistrysrcdir)/man/regshell.1
 
 ################################################
 # Start BINARY regtree
@@ -92,18 +92,18 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY regtree
 ################################################
 
-regtree_OBJ_FILES = lib/registry/tools/regtree.o
+regtree_OBJ_FILES = $(libregistrysrcdir)/tools/regtree.o
 
-MANPAGES += lib/registry/man/regtree.1
+MANPAGES += $(libregistrysrcdir)/man/regtree.1
 
 [SUBSYSTEM::torture_registry]
 PRIVATE_DEPENDENCIES = registry
 PRIVATE_PROTO_HEADER = tests/proto.h
 
-torture_registry_OBJ_FILES = $(addprefix lib/registry/tests/, generic.o hive.o diff.o registry.o)
+torture_registry_OBJ_FILES = $(addprefix $(libregistrysrcdir)/tests/, generic.o hive.o diff.o registry.o)
 
 [PYTHON::swig_registry]
 PUBLIC_DEPENDENCIES = registry
 SWIG_FILE = registry.i
 
-swig_registry_OBJ_FILES = lib/registry/registry_wrap.o
+swig_registry_OBJ_FILES = $(libregistrysrcdir)/registry_wrap.o

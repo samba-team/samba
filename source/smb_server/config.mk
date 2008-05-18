@@ -6,7 +6,7 @@ SUBSYSTEM = smbd
 PRIVATE_PROTO_HEADER = service_smb_proto.h
 PRIVATE_DEPENDENCIES = SMB_SERVER
 
-SERVICE_SMB_OBJ_FILES = smb_server/smb_server.o
+SERVICE_SMB_OBJ_FILES = $(smb_serversrcdir)/smb_server.o
 
 #######################
 # Start SUBSYSTEM SMB
@@ -20,7 +20,7 @@ PUBLIC_DEPENDENCIES = \
 # End SUBSYSTEM SMB
 #######################
 
-SMB_SERVER_OBJ_FILES = $(addprefix smb_server/, \
+SMB_SERVER_OBJ_FILES = $(addprefix $(smb_serversrcdir)/, \
 		handle.o \
 		tcon.o \
 		session.o \

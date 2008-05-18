@@ -11,5 +11,5 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM TORTURE_WINBIND
 #################################
 
-TORTURE_WINBIND_OBJ_FILES = $(addprefix torture/winbind/, winbind.o struct_based.o)
+TORTURE_WINBIND_OBJ_FILES = $(addprefix $(torturesrcdir)/winbind/, winbind.o struct_based.o)
 

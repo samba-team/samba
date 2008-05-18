@@ -19,9 +19,9 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ntlm_auth
 #################################
 
-ntlm_auth_OBJ_FILES = utils/ntlm_auth.o
+ntlm_auth_OBJ_FILES = $(utilssrcdir)/ntlm_auth.o
 
-MANPAGES += utils/man/ntlm_auth.1
+MANPAGES += $(utilssrcdir)/man/ntlm_auth.1
 
 #################################
 # Start BINARY getntacl
@@ -34,12 +34,12 @@ PRIVATE_DEPENDENCIES = \
 		WRAP_XATTR \
 		LIBSAMBA-ERRORS
 
-getntacl_OBJ_FILES = utils/getntacl.o
+getntacl_OBJ_FILES = $(utilssrcdir)/getntacl.o
 
 # End BINARY getntacl
 #################################
 
-MANPAGES += utils/man/getntacl.1
+MANPAGES += $(utilssrcdir)/man/getntacl.1
 
 #################################
 # Start BINARY setntacl
@@ -49,7 +49,7 @@ MANPAGES += utils/man/getntacl.1
 # End BINARY setntacl
 #################################
 
-setntacl_OBJ_FILES = utils/setntacl.o
+setntacl_OBJ_FILES = $(utilssrcdir)/setntacl.o
 
 #################################
 # Start BINARY setnttoken
@@ -59,7 +59,7 @@ PRIVATE_DEPENDENCIES =
 # End BINARY setnttoken
 #################################
 
-setnttoken_OBJ_FILES = utils/setnttoken.o
+setnttoken_OBJ_FILES = $(utilssrcdir)/setnttoken.o
 
 #################################
 # Start BINARY nmblookup
@@ -76,7 +76,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY nmblookup
 #################################
 
-nmblookup_OBJ_FILES = utils/nmblookup.o
+nmblookup_OBJ_FILES = $(utilssrcdir)/nmblookup.o
 
 #################################
 # Start BINARY testparm
@@ -93,4 +93,4 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY testparm
 #################################
 
-testparm_OBJ_FILES = utils/testparm.o
+testparm_OBJ_FILES = $(utilssrcdir)/testparm.o

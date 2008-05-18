@@ -18,7 +18,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY smbclient
 #################################
 
-smbclient_OBJ_FILES = client/client.o
+smbclient_OBJ_FILES = $(clientsrcdir)/client.o
 
 #################################
 # Start BINARY cifsdd
@@ -33,4 +33,4 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY sdd
 #################################
 
-cifsdd_OBJ_FILES = client/cifsdd.o client/cifsddio.o
+cifsdd_OBJ_FILES = $(addprefix $(clientsrcdir)/, cifsdd.o cifsddio.o)

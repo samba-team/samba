@@ -10,7 +10,7 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM KDC
 #######################
 
-KDC_OBJ_FILES = $(addprefix kdc/, kdc.o kpasswdd.o)
+KDC_OBJ_FILES = $(addprefix $(kdcsrcdir)/, kdc.o kpasswdd.o)
 
 #######################
 # Start SUBSYSTEM KDC
@@ -23,4 +23,4 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM KDC
 #######################
 
-HDB_LDB_OBJ_FILES = $(addprefix kdc/, hdb-ldb.o pac-glue.o)
+HDB_LDB_OBJ_FILES = $(addprefix $(kdcsrcdir)/, hdb-ldb.o pac-glue.o)
