@@ -36,6 +36,8 @@ define proto_header_template
 $(1): $(2) ;
 	@echo "Creating $$@"
 	@$$(PERL) $$(srcdir)/script/mkproto.pl --srcdir=$$(srcdir) --builddir=$$(builddir) --public=/dev/null --private=$$@ $$^
+
+PROTO_HEADERS += $(1)
 endef
 
 # Shared module
