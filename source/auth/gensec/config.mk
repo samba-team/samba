@@ -1,7 +1,6 @@
 #################################
 # Start SUBSYSTEM gensec
 [LIBRARY::gensec]
-PRIVATE_PROTO_HEADER = gensec_proto.h
 PUBLIC_DEPENDENCIES = \
 		CREDENTIALS LIBSAMBA-UTIL LIBCRYPTO ASN1_UTIL samba-socket LIBPACKET
 # End SUBSYSTEM gensec
@@ -14,6 +13,8 @@ gensec_SOVERSION = 0
 gensec_OBJ_FILES = $(addprefix $(gensecsrcdir)/, gensec.o socket.o)
 
 PUBLIC_HEADERS += $(gensecsrcdir)/gensec.h
+
+$(call proto_header_template,$(gensecsrcdir)/gensec_proto.h,$(gensec_OBJ_FILES:.o=.c))
 
 ################################################
 # Start MODULE gensec_krb5
@@ -53,12 +54,13 @@ cyrus_sasl_OBJ_FILES = $(addprefix $(gensecsrcdir)/, cyrus_sasl.o)
 [MODULE::gensec_spnego]
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_spnego_init
-PRIVATE_PROTO_HEADER = spnego_proto.h
 PRIVATE_DEPENDENCIES = ASN1_UTIL CREDENTIALS
 # End MODULE gensec_spnego
 ################################################
 
 gensec_spnego_OBJ_FILES = $(addprefix $(gensecsrcdir)/, spnego.o spnego_parse.o)
+
+$(call proto_header_template,$(gensecsrcdir)/spnego_proto.h,$(gensec_spnego_OBJ_FILES:.o=.c))
 
 ################################################
 # Start MODULE gensec_schannel
