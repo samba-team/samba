@@ -2308,7 +2308,7 @@ delheaders:
 	@echo Removing prototype headers
 	@rm -f include/build_env.h \
 		smbd/build_options.c \
-		utils/passwd_proto.h libnet/libnet_proto.h
+		libnet/libnet_proto.h
 
 MKPROTO_SH = $(srcdir)/script/mkproto.sh
 
@@ -2316,11 +2316,6 @@ include/build_env.h: script/build_env.sh
 	@echo Building include/build_env.h
 	@$(SHELL) $(srcdir)/script/build_env.sh $(srcdir) $(builddir) $(CC) \
 	  > $(builddir)/include/build_env.h
-
-utils/passwd_proto.h:
-	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
-	  -h _PASSWD_PROTO_H_ $(builddir)/utils/passwd_proto.h \
-	  $(PASSWD_UTIL_OBJ)
 
 libnet/libnet_proto.h:
 	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
@@ -2334,7 +2329,6 @@ headers:
 	$(MAKE) delheaders; \
 	$(MAKE) smbd/build_options.c; \
 	$(MAKE) include/build_env.h; \
-	$(MAKE) utils/passwd_proto.h; \
 	$(MAKE) libnet/libnet_proto.h;
 
 proto: headers
