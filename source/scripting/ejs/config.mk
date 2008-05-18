@@ -81,7 +81,6 @@ smbcalls_sys_OBJ_FILES = $(ejsscriptsrcdir)/smbcalls_sys.o
 mkinclude ejsnet/config.mk
 
 [SUBSYSTEM::smbcalls]
-PRIVATE_PROTO_HEADER = proto.h
 PRIVATE_DEPENDENCIES = \
 		EJS LIBSAMBA-UTIL \
 		EJSRPC MESSAGING \
@@ -99,6 +98,8 @@ smbcalls_OBJ_FILES = $(addprefix $(ejsscriptsrcdir)/, \
 		smbcalls_param.o \
 		mprutil.o \
 		literal.o)
+
+$(call proto_header_template,$(ejsscriptsrcdir)/proto.h,$(smbcalls_OBJ_FILES:.o=.c))
 
 #######################
 # Start BINARY SMBSCRIPT

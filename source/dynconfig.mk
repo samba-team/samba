@@ -12,7 +12,7 @@ LMHOSTSFILE = $(sysconfdir)/lmhosts
 dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $<
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $(PICFLAG) -c $< -o $@ \
-	 -DCONFIGFILE=\"$(CONFIGFILE)\" \ -DBINDIR=\"$(bindir)\" \
+	 -DCONFIGFILE=\"$(CONFIGFILE)\" -DBINDIR=\"$(bindir)\" \
 	 -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" \
 	 -DLOCKDIR=\"$(lockdir)\" -DPIDDIR=\"$(piddir)\" -DDATADIR=\"$(datadir)\" \
 	 -DLOGFILEBASE=\"$(logfilebase)\" \

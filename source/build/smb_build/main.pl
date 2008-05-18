@@ -92,7 +92,6 @@ foreach my $key (values %$OUTPUT) {
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}}));
 	$mkenv->PythonModule($key) if ($key->{TYPE} eq "PYTHON");
 	$mkenv->Binary($key) if grep(/BINARY/, @{$key->{OUTPUT_TYPE}});
-	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER});
 	$mkenv->InitFunctions($key) if defined($key->{INIT_FUNCTIONS});
 }
 

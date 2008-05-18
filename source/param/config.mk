@@ -20,12 +20,13 @@ PROVISION_OBJ_FILES = $(paramsrcdir)/provision.o
 #################################
 # Start SUBSYSTEM share
 [SUBSYSTEM::share]
-PRIVATE_PROTO_HEADER = share_proto.h
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
 # End SUBSYSTEM share
 #################################
 
 share_OBJ_FILES = $(paramsrcdir)/share.o
+
+$(call proto_header_template,$(paramsrcdir)/share_proto.h,$(share_OBJ_FILES:.o=.c))
 
 PUBLIC_HEADERS += param/share.h
 

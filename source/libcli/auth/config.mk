@@ -1,7 +1,6 @@
 #################################
 # Start SUBSYSTEM LIBCLI_AUTH
 [SUBSYSTEM::LIBCLI_AUTH]
-PRIVATE_PROTO_HEADER = proto.h
 PUBLIC_DEPENDENCIES = \
 		MSRPC_PARSE \
 		LIBSAMBA-HOSTCONFIG
@@ -15,3 +14,4 @@ LIBCLI_AUTH_OBJ_FILES = $(addprefix $(libclisrcdir)/auth/, \
 		smbdes.o)
 
 PUBLIC_HEADERS += $(libclisrcdir)/auth/credentials.h
+$(call proto_header_template,$(libclisrcdir)/auth/proto.h,$(LIBCLI_AUTH_OBJ_FILES:.o=.c))

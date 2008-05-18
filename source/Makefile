@@ -231,6 +231,7 @@ data.mk: config.status $(MK_FILES)
 
 testcov-html:: 
 
+pidldir := pidl
 include pidl/config.mk
 include selftest/config.mk
 

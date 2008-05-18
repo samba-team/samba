@@ -43,7 +43,8 @@ SUBSYSTEM = process_model
 process_model_prefork_OBJ_FILES = $(smbdsrcdir)/process_prefork.o
 
 [SUBSYSTEM::process_model]
-PRIVATE_PROTO_HEADER = process_model_proto.h
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG
 
 process_model_OBJ_FILES = $(smbdsrcdir)/process_model.o
+
+$(call proto_header_template,$(smbdsrcdir)/process_model_proto.h,$(process_model_OBJ_FILES:.o=.c))

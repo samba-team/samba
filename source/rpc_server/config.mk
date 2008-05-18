@@ -3,12 +3,13 @@
 ################################################
 # Start SUBSYSTEM DCERPC_COMMON
 [SUBSYSTEM::DCERPC_COMMON]
-PRIVATE_PROTO_HEADER = common/proto.h
 #
 # End SUBSYSTEM DCERPC_COMMON
 ################################################
 
 DCERPC_COMMON_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/common/, server_info.o share_info.o)
+
+$(call proto_header_template,$(rpc_serversrcdir)/common/proto.h,$(DCERPC_COMMON_OBJ_FILES:.o=.c))
 
 PUBLIC_HEADERS += $(rpc_serversrcdir)/common/common.h
 
@@ -50,14 +51,16 @@ dcerpc_remote_OBJ_FILES = $(rpc_serversrcdir)/remote/dcesrv_remote.o
 # Start MODULE dcerpc_srvsvc
 [MODULE::dcerpc_srvsvc]
 INIT_FUNCTION = dcerpc_server_srvsvc_init
-PRIVATE_PROTO_HEADER = srvsvc/proto.h
 SUBSYSTEM = DCESRV
 PRIVATE_DEPENDENCIES = \
 		DCERPC_COMMON NDR_SRVSVC share
 # End MODULE dcerpc_srvsvc
 ################################################
 
+
 dcerpc_srvsvc_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/srvsvc/, dcesrv_srvsvc.o srvsvc_ntvfs.o)
+
+$(call proto_header_template,$(rpc_serversrcdir)/srvsvc/proto.h,$(dcerpc_srvsvc_OBJ_FILES:.o=.c))
 
 ################################################
 # Start MODULE dcerpc_wkssvc
@@ -91,7 +94,6 @@ dcerpc_unixinfo_OBJ_FILES = $(rpc_serversrcdir)/unixinfo/dcesrv_unixinfo.o
 # Start MODULE dcesrv_samr
 [MODULE::dcesrv_samr]
 INIT_FUNCTION = dcerpc_server_samr_init
-PRIVATE_PROTO_HEADER = samr/proto.h
 SUBSYSTEM = DCESRV
 PRIVATE_DEPENDENCIES = \
 		SAMDB \
@@ -101,6 +103,8 @@ PRIVATE_DEPENDENCIES = \
 ################################################
 
 dcesrv_samr_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/samr/, dcesrv_samr.o samr_password.o)
+
+$(call proto_header_template,$(rpc_serversrcdir)/samr/proto.h,$(dcesrv_samr_OBJ_FILES:.o=.c))
 
 ################################################
 # Start MODULE dcerpc_winreg
@@ -135,7 +139,6 @@ dcerpc_netlogon_OBJ_FILES = $(rpc_serversrcdir)/netlogon/dcerpc_netlogon.o
 [MODULE::dcerpc_lsarpc]
 INIT_FUNCTION = dcerpc_server_lsa_init
 SUBSYSTEM = DCESRV
-PRIVATE_PROTO_HEADER= lsa/proto.h
 PRIVATE_DEPENDENCIES = \
 		SAMDB \
 		DCERPC_COMMON \
@@ -146,6 +149,8 @@ PRIVATE_DEPENDENCIES = \
 ################################################
 
 dcerpc_lsarpc_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/lsa/, dcesrv_lsa.o lsa_init.o lsa_lookup.o)
+
+$(call proto_header_template,$(rpc_serversrcdir)/lsa/proto.h,$(dcerpc_lsarpc_OBJ_FILES:.o=.c))
 
 
 ################################################
@@ -181,7 +186,6 @@ dcerpc_drsuapi_OBJ_FILES = $(rpc_serversrcdir)/drsuapi/dcesrv_drsuapi.o
 ################################################
 # Start SUBSYSTEM dcerpc_server
 [SUBSYSTEM::dcerpc_server]
-PRIVATE_PROTO_HEADER = dcerpc_server_proto.h
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_AUTH \
 		LIBNDR \
@@ -192,6 +196,8 @@ dcerpc_server_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/, \
 		dcesrv_auth.o \
 		dcesrv_mgmt.o \
 		handles.o)
+
+$(call proto_header_template,$(rpc_serversrcdir)/dcerpc_server_proto.h,$(dcerpc_server_OBJ_FILES:.o=.c))
 
 # End SUBSYSTEM DCERPC
 ################################################

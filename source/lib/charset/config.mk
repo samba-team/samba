@@ -10,4 +10,4 @@ CHARSET_OBJ_FILES = $(addprefix $(libcharsetsrcdir)/, iconv.o charcnv.o util_uni
 
 PUBLIC_HEADERS += $(libcharsetsrcdir)/charset.h
 
-PRIVATE_PROTO_HEADER = charset_proto.h
+$(call proto_header_template,$(libcharsetsrcdir)/charset_proto.h,$(CHARSET_OBJ_FILES:.o=.c))

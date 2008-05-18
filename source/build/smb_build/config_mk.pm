@@ -33,8 +33,6 @@ my $section_types = {
 
 		"ENABLE"		=> "bool",
 
-		"PRIVATE_PROTO_HEADER"	=> "string",
-
 		"CFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",
 		"STANDARD_VISIBILITY"	=> "string",
@@ -53,8 +51,6 @@ my $section_types = {
 
 		"OUTPUT_TYPE"		=> "list",
 
-		"PRIVATE_PROTO_HEADER"	=> "string",
-
 		"CFLAGS"		=> "list"
 		},
 	"BINARY" => {
@@ -64,8 +60,6 @@ my $section_types = {
 		"ENABLE"		=> "bool",
 
 		"INSTALLDIR"		=> "string",
-		"PRIVATE_PROTO_HEADER"	=> "string",
-
 		"CFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",
 		"STANDARD_VISIBILITY"	=> "string",
@@ -83,8 +77,6 @@ my $section_types = {
 		"PUBLIC_DEPENDENCIES"	=> "list",
 
 		"ENABLE"		=> "bool",
-
-		"PRIVATE_PROTO_HEADER"	=> "string",
 
 		"CFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",

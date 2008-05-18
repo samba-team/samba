@@ -3,8 +3,6 @@
 [MODULE::TORTURE_LOCAL]
 SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_local_init
-PRIVATE_PROTO_HEADER = \
-		proto.h
 PRIVATE_DEPENDENCIES = \
 		RPC_NDR_ECHO \
 		TDR \
@@ -50,3 +48,5 @@ TORTURE_LOCAL_OBJ_FILES = \
 		$(torturesrcdir)/local/dbspeed.o \
 		$(torturesrcdir)/local/torture.o
 
+
+$(call proto_header_template,$(torturesrcdir)/local/proto.h,$(TORTURE_LOCAL_OBJ_FILES:.o=.c))

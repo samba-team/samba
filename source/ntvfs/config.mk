@@ -21,11 +21,12 @@ ntvfs_cifs_OBJ_FILES = $(ntvfssrcdir)/cifs/vfs_cifs.o
 [MODULE::ntvfs_simple]
 INIT_FUNCTION = ntvfs_simple_init 
 SUBSYSTEM = ntvfs 
-PRIVATE_PROTO_HEADER = simple/proto.h
 # End MODULE ntvfs_simple
 ################################################
 
 ntvfs_simple_OBJ_FILES = $(addprefix $(ntvfssrcdir)/simple/, vfs_simple.o svfs_util.o)
+
+$(call proto_header_template,$(ntvfssrcdir)/simple/proto.h,$(ntvfs_simple_OBJ_FILES:.o=.c))
 
 ################################################
 # Start MODULE ntvfs_cifsposix
@@ -33,12 +34,13 @@ ntvfs_simple_OBJ_FILES = $(addprefix $(ntvfssrcdir)/simple/, vfs_simple.o svfs_u
 #ENABLE = NO
 INIT_FUNCTION = ntvfs_cifs_posix_init
 SUBSYSTEM = ntvfs
-PRIVATE_PROTO_HEADER = cifs_posix_cli/proto.h
 # End MODULE ntvfs_cifsposix
 ################################################
 
 ntvfs_cifsposix_OBJ_FILES = \
 	$(addprefix $(ntvfssrcdir)/cifs_posix_cli/, vfs_cifs_posix.o svfs_util.o)
+
+$(call proto_header_template,$(ntvfssrcdir)/cifs_posix_cli/proto.h,$(ntvfs_cifsposix_OBJ_FILES:.o=.c))
 
 ################################################
 # Start MODULE ntvfs_print
@@ -55,12 +57,13 @@ ntvfs_print_OBJ_FILES = $(ntvfssrcdir)/print/vfs_print.o
 [MODULE::ntvfs_ipc]
 SUBSYSTEM = ntvfs
 INIT_FUNCTION = ntvfs_ipc_init 
-PRIVATE_PROTO_HEADER = ipc/proto.h
 PRIVATE_DEPENDENCIES = dcerpc_server DCERPC_COMMON
 # End MODULE ntvfs_ipc
 ################################################
 
 ntvfs_ipc_OBJ_FILES = $(addprefix $(ntvfssrcdir)/ipc/, vfs_ipc.o ipc_rap.o rap_server.o)
+
+$(call proto_header_template,$(ntvssrcdir)/ipc/proto.h,$(ntvfs_ipc_OBJ_FILES))
 
 ################################################
 # Start MODULE ntvfs_nbench
@@ -75,9 +78,10 @@ ntvfs_nbench_OBJ_FILES = $(ntvfssrcdir)/nbench/vfs_nbench.o
 ################################################
 # Start SUBSYSTEM NTVFS
 [SUBSYSTEM::ntvfs]
-PRIVATE_PROTO_HEADER = ntvfs_proto.h
 
 ntvfs_OBJ_FILES = $(addprefix $(ntvfssrcdir)/, ntvfs_base.o ntvfs_generic.o ntvfs_interface.o ntvfs_util.o)
+
+$(call proto_header_template,$(ntvfssrcdir)/ntvfs_proto.h,$(ntvfs_OBJ_FILES:.o=.c))
 
 # PUBLIC_HEADERS += $(ntvfssrcdir)/ntvfs.h
 #

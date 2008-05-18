@@ -66,7 +66,6 @@ $(call proto_header_template,$(gensecsrcdir)/spnego_proto.h,$(gensec_spnego_OBJ_
 # Start MODULE gensec_schannel
 [MODULE::gensec_schannel]
 SUBSYSTEM = gensec
-PRIVATE_PROTO_HEADER = schannel_proto.h
 INIT_FUNCTION = gensec_schannel_init
 PRIVATE_DEPENDENCIES = SCHANNELDB NDR_SCHANNEL CREDENTIALS LIBNDR
 OUTPUT_TYPE = MERGED_OBJ
@@ -74,14 +73,15 @@ OUTPUT_TYPE = MERGED_OBJ
 ################################################
 
 gensec_schannel_OBJ_FILES = $(addprefix $(gensecsrcdir)/, schannel.o schannel_sign.o)
+$(call proto_header_template,$(gensecsrcdir)/schannel_proto.h,$(gensec_schannel_OBJ_FILES:.o=.c))
 
 ################################################
 # Start SUBSYSTEM SCHANNELDB
 [SUBSYSTEM::SCHANNELDB]
-PRIVATE_PROTO_HEADER = schannel_state.h
 PRIVATE_DEPENDENCIES = LDB_WRAP SAMDB
 # End SUBSYSTEM SCHANNELDB
 ################################################
 
 SCHANNELDB_OBJ_FILES = $(addprefix $(gensecsrcdir)/, schannel_state.o)
+$(call proto_header_template,$(gensecsrcdir)/schannel_state.h,$(SCHANNELDB_OBJ_FILES:.o=.c))
 

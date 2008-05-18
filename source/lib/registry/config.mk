@@ -37,9 +37,10 @@ PUBLIC_HEADERS += $(libregistrysrcdir)/registry.h
 
 [SUBSYSTEM::registry_common]
 PUBLIC_DEPENDENCIES = registry
-PRIVATE_PROTO_HEADER = tools/common.h
 
 registry_common_OBJ_FILES = $(libregistrysrcdir)/tools/common.o
+
+$(call proto_header_template,$(libregistrysrcdir)/tools/common.h,$(registry_common_OBJ_FILES:.o=.c))
 
 ################################################
 # Start BINARY regdiff
@@ -98,9 +99,10 @@ MANPAGES += $(libregistrysrcdir)/man/regtree.1
 
 [SUBSYSTEM::torture_registry]
 PRIVATE_DEPENDENCIES = registry
-PRIVATE_PROTO_HEADER = tests/proto.h
 
 torture_registry_OBJ_FILES = $(addprefix $(libregistrysrcdir)/tests/, generic.o hive.o diff.o registry.o)
+
+$(call proto_header_template,$(libregistrysrcdir)/tests/proto.h,$(torture_registry_OBJ_FILES:.o=.c))
 
 [PYTHON::swig_registry]
 PUBLIC_DEPENDENCIES = registry
