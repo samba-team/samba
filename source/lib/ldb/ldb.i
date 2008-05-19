@@ -781,6 +781,12 @@ typedef struct ldb_context {
             return PyObject_GetIter(list);
         }
 
+        char *__repr__(void)
+        {
+            char *ret;
+            asprintf(&ret, "<ldb connection at 0x%x>", ret); 
+            return ret;
+        }
 #endif
     }
     %pythoncode {
