@@ -84,7 +84,7 @@ static int net_usershare_add_usage(struct net_context *c, int argc, const char *
 static int net_usershare_delete_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf(
-		"net usershare delete <sharename>\n"\
+		"net usershare delete <sharename>\n"
 		"\tdeletes the specified share name for this user.\n");
 	return -1;
 }
@@ -92,7 +92,7 @@ static int net_usershare_delete_usage(struct net_context *c, int argc, const cha
 static int net_usershare_info_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf(
-		"net usershare info [-l|--long] [wildcard sharename]\n"\
+		"net usershare info [-l|--long] [wildcard sharename]\n"
 		"\tPrints out the path, comment and acl elements of shares that match the wildcard.\n"
 		"\tBy default only gives info on shares owned by the current user\n"
 		"\tAdd -l or --long to apply this to all shares\n"
@@ -103,7 +103,7 @@ static int net_usershare_info_usage(struct net_context *c, int argc, const char 
 static int net_usershare_list_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf(
-		"net usershare list [-l|--long] [wildcard sharename]\n"\
+		"net usershare list [-l|--long] [wildcard sharename]\n"
 		"\tLists the names of all shares that match the wildcard.\n"
 		"\tBy default only lists shares owned by the current user\n"
 		"\tAdd -l or --long to apply this to all shares\n"
@@ -118,7 +118,7 @@ int net_usershare_usage(struct net_context *c, int argc, const char **argv)
 		"net usershare delete <sharename> to delete a user defined share.\n"
 		"net usershare info [-l|--long] [wildcard sharename] to print info about a user defined share.\n"
 		"net usershare list [-l|--long] [wildcard sharename] to list user defined shares.\n"
-		"net usershare help\n"\
+		"net usershare help\n"
 		"\nType \"net usershare help <option>\" to get more information on that option\n\n");
 
 	net_common_flags_usage(c, argc, argv);
@@ -150,7 +150,7 @@ static int net_usershare_delete(struct net_context *c, int argc, const char **ar
 	char *us_path;
 	char *sharename;
 
-	if (argc != 1) {
+	if (argc != 1 || c->display_usage) {
 		return net_usershare_delete_usage(c, argc, argv);
 	}
 
@@ -486,6 +486,9 @@ static int net_usershare_info(struct net_context *c, int argc, const char **argv
 
 	fstrcpy(wcard, "*");
 
+	if (c->display_usage)
+		return net_usershare_info_usage(c, argc, argv);
+
 	if (c->opt_long_list_entries) {
 		only_ours = false;
 	}
@@ -611,6 +614,9 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 
 	us_comment = "";
 	arg_acl = "S-1-1-0:R";
+
+	if (c->display_usage)
+		return net_usershare_add_usage(c, argc, argv);
 
 	switch (argc) {
 		case 0:
@@ -965,6 +971,9 @@ static int net_usershare_list(struct net_context *c, int argc,
 
 	fstrcpy(wcard, "*");
 
+	if (c->display_usage)
+		return net_usershare_list_usage(c, argc, argv);
+
 	if (c->opt_long_list_entries) {
 		only_ours = false;
 	}
@@ -996,22 +1005,6 @@ static int net_usershare_list(struct net_context *c, int argc,
 }
 
 /***************************************************************************
- Handle "net usershare help *" subcommands.
-***************************************************************************/
-
-int net_usershare_help(struct net_context *c, int argc, const char **argv)
-{
-	struct functable func[] = {
-		{"ADD", net_usershare_add_usage},
-		{"DELETE", net_usershare_delete_usage},
-		{"INFO", net_usershare_info_usage},
-		{"LIST", net_usershare_list_usage},
-		{NULL, NULL}};
-
-	return net_run_function(c, argc, argv, func, net_usershare_usage);
-}
-
-/***************************************************************************
  Entry-point for all the USERSHARE functions.
 ***************************************************************************/
 
@@ -1019,13 +1012,40 @@ int net_usershare(struct net_context *c, int argc, const char **argv)
 {
 	SMB_STRUCT_DIR *dp;
 
-	struct functable func[] = {
-		{"ADD", net_usershare_add},
-		{"DELETE", net_usershare_delete},
-		{"INFO", net_usershare_info},
-		{"LIST", net_usershare_list},
-		{"HELP", net_usershare_help},
-		{NULL, NULL}
+	struct functable3 func[] = {
+		{
+			"add",
+			net_usershare_add,
+			NET_TRANSPORT_LOCAL,
+			"Add/modify user defined share",
+			"net usershare add\n"
+			"    Add/modify user defined share"
+		},
+		{
+			"delete",
+			net_usershare_delete,
+			NET_TRANSPORT_LOCAL,
+			"Delete user defined share",
+			"net usershare delete\n"
+			"    Delete user defined share"
+		},
+		{
+			"info",
+			net_usershare_info,
+			NET_TRANSPORT_LOCAL,
+			"Display information about a user defined share",
+			"net usershare info\n"
+			"    Display information about a user defined share"
+		},
+		{
+			"list",
+			net_usershare_list,
+			NET_TRANSPORT_LOCAL,
+			"List user defined shares",
+			"net usershare list\n"
+			"    List user defined shares"
+		},
+		{NULL, NULL, 0, NULL, NULL}
 	};
 
 	if (lp_usershare_max_shares() == 0) {
@@ -1049,5 +1069,5 @@ int net_usershare(struct net_context *c, int argc, const char **argv)
 	}
 	sys_closedir(dp);
 
-	return net_run_function(c, argc, argv, func, net_usershare_usage);
+	return net_run_function3(c, argc, argv, "net usershare", func);
 }
