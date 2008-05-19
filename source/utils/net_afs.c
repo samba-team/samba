@@ -90,12 +90,25 @@ int net_afs_impersonate(struct net_context *c, int argc,
 
 int net_afs(struct net_context *c, int argc, const char **argv)
 {
-	struct functable func[] = {
-		{"key", net_afs_key},
-		{"impersonate", net_afs_impersonate},
-		{"help", net_afs_usage},
-		{NULL, NULL}
+	struct functable3 func[] = {
+		{
+			"key",
+			net_afs_key,
+			NET_TRANSPORT_LOCAL,
+			"Import an OpenAFS keyfile",
+			"net afs key <filename>\n"
+			"    Import kefile from <filename>."
+		},
+		{
+			"impersonate",
+			net_afs_impersonate,
+			NET_TRANSPORT_LOCAL,
+			"Get a user token",
+			"net afs impersonate <user> <cell>\n"
+			"    Create token for user@cell"
+		},
+		{NULL, NULL, 0, NULL, NULL}
 	};
-	return net_run_function(c, argc, argv, func, net_afs_usage);
+	return net_run_function3(c, argc, argv, "net afs", func);
 }
 
