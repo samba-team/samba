@@ -2719,6 +2719,12 @@ SWIGINTERN char const *ldb_dn_canonical_str(ldb_dn *self){
 SWIGINTERN char const *ldb_dn_canonical_ex_str(ldb_dn *self){
             return ldb_dn_canonical_ex_string(self, self);
         }
+SWIGINTERN char *ldb_dn___repr__(ldb_dn *self){
+            char *dn = ldb_dn_get_linearized(self), *ret;
+            asprintf(&ret, "Dn('%s')", dn);
+            talloc_free(dn);
+            return ret;
+        }
 SWIGINTERN ldb_dn *ldb_dn___add__(ldb_dn *self,ldb_dn *other){
             ldb_dn *ret = ldb_dn_copy(NULL, self);
             ldb_dn_add_child(ret, other);
@@ -2970,10 +2976,16 @@ SWIGINTERN void delete_ldb_msg_element(ldb_msg_element *self){ talloc_free(self)
 
     PyObject *ldb_msg_list_elements(ldb_msg *msg)
     {
-        int i;
-        PyObject *obj = PyList_New(msg->num_elements);
-        for (i = 0; i < msg->num_elements; i++)
-            PyList_SetItem(obj, i, PyString_FromString(msg->elements[i].name));
+        int i, j = 0;
+        PyObject *obj = PyList_New(msg->num_elements+(msg->dn != NULL?1:0));
+        if (msg->dn != NULL) {
+            PyList_SetItem(obj, j, PyString_FromString("dn"));
+            j++;
+        }
+        for (i = 0; i < msg->num_elements; i++) {
+            PyList_SetItem(obj, j, PyString_FromString(msg->elements[i].name));
+            j++;
+        }
         return obj;
     }
 
@@ -3678,6 +3690,29 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_Dn___repr__(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  ldb_dn *arg1 = (ldb_dn *) 0 ;
+  char *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_dn, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Dn___repr__" "', argument " "1"" of type '" "ldb_dn *""'"); 
+  }
+  arg1 = (ldb_dn *)(argp1);
+  result = (char *)ldb_dn___repr__(arg1);
+  resultobj = SWIG_FromCharPtr((const char *)result);
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_Dn___add__(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb_dn *arg1 = (ldb_dn *) 0 ;
@@ -4074,7 +4109,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_Message___getitem__(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_Message_find_element(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb_msg *arg1 = (ldb_msg *) 0 ;
   char *arg2 = (char *) 0 ;
@@ -4090,15 +4125,15 @@ SWIGINTERN PyObject *_wrap_Message___getitem__(PyObject *SWIGUNUSEDPARM(self), P
     (char *) "self",(char *) "name", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:Message___getitem__",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:Message_find_element",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_message, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Message___getitem__" "', argument " "1"" of type '" "ldb_msg *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Message_find_element" "', argument " "1"" of type '" "ldb_msg *""'"); 
   }
   arg1 = (ldb_msg *)(argp1);
   res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Message___getitem__" "', argument " "2"" of type '" "char const *""'");
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Message_find_element" "', argument " "2"" of type '" "char const *""'");
   }
   arg2 = (char *)(buf2);
   if (arg1 == NULL)
@@ -5673,6 +5708,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"Dn_add_base", (PyCFunction) _wrap_Dn_add_base, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Dn_canonical_str", (PyCFunction)_wrap_Dn_canonical_str, METH_O, NULL},
 	 { (char *)"Dn_canonical_ex_str", (PyCFunction)_wrap_Dn_canonical_ex_str, METH_O, NULL},
+	 { (char *)"Dn___repr__", (PyCFunction)_wrap_Dn___repr__, METH_O, NULL},
 	 { (char *)"Dn___add__", (PyCFunction) _wrap_Dn___add__, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Dn_swigregister", Dn_swigregister, METH_VARARGS, NULL},
 	 { (char *)"Dn_swiginit", Dn_swiginit, METH_VARARGS, NULL},
@@ -5689,7 +5725,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"Message_dn_get", (PyCFunction)_wrap_Message_dn_get, METH_O, NULL},
 	 { (char *)"new_Message", (PyCFunction) _wrap_new_Message, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_Message", (PyCFunction)_wrap_delete_Message, METH_O, NULL},
-	 { (char *)"Message___getitem__", (PyCFunction) _wrap_Message___getitem__, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Message_find_element", (PyCFunction) _wrap_Message_find_element, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Message___setitem__", _wrap_Message___setitem__, METH_VARARGS, NULL},
 	 { (char *)"Message___len__", (PyCFunction)_wrap_Message___len__, METH_O, NULL},
 	 { (char *)"Message_keys", (PyCFunction)_wrap_Message_keys, METH_O, NULL},
