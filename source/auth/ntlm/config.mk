@@ -70,8 +70,6 @@ auth_unix_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, auth_unix.o)
 
 [SUBSYSTEM::PAM_ERRORS]
 
-$(eval $(call proto_header_template,$(authsrcdir)/ntlm/pam_errors.h,$(auth_unix_OBJ_FILES:.o=.c)))
-
 #VERSION = 0.0.1
 #SO_VERSION = 0
 PAM_ERRORS_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, pam_errors.o)
