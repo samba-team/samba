@@ -119,12 +119,17 @@
 	resolve user and group information from <filename>/etc/passwd
 	</filename> and <filename>/etc/group</filename> and then from the
 	Windows NT server.
+	</para>
+
 <programlisting>
 passwd:         files winbind
 group:          files winbind
-## only available on IRIX; Linux users should us libnss_wins.so
-hosts:          files dns winbind
-</programlisting></para>
+## only available on IRIX: use winbind to resolve hosts:
+# hosts:        files dns winbind
+## All other NSS enabled systems should use libnss_wins.so like this:
+hosts:          files dns wins
+
+</programlisting>
 
 	<para>The following simple configuration in the
 	<filename>/etc/nsswitch.conf</filename> file can be used to initially
