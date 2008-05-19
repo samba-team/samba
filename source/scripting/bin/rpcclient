@@ -1,6 +1,10 @@
 #!/usr/bin/python
 
 import sys, os, string
+
+# Find right directory when running from source tree
+sys.path.insert(0, "bin/python")
+
 from cmd import Cmd
 from optparse import OptionParser
 from pprint import pprint

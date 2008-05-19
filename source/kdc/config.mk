@@ -10,17 +10,17 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM KDC
 #######################
 
-KDC_OBJ_FILES = $(addprefix kdc/, kdc.o kpasswdd.o)
+KDC_OBJ_FILES = $(addprefix $(kdcsrcdir)/, kdc.o kpasswdd.o)
 
 #######################
 # Start SUBSYSTEM KDC
 [SUBSYSTEM::HDB_LDB]
 CFLAGS = -Iheimdal/kdc -Iheimdal/lib/hdb
-PRIVATE_PROTO_HEADER = pac_glue.h
 PRIVATE_DEPENDENCIES = \
 		LIBLDB auth_sam auth_sam_reply HEIMDAL CREDENTIALS \
 		HEIMDAL_HDB_ASN1
 # End SUBSYSTEM KDC
 #######################
 
-HDB_LDB_OBJ_FILES = $(addprefix kdc/, hdb-ldb.o pac-glue.o)
+HDB_LDB_OBJ_FILES = $(addprefix $(kdcsrcdir)/, hdb-ldb.o pac-glue.o)
+$(eval $(call proto_header_template,$(kdcsrcdir)/pac_glue.h,$(HDB_LDB_OBJ_FILES:.o=.c)))

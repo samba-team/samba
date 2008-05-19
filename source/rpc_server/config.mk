@@ -3,14 +3,15 @@
 ################################################
 # Start SUBSYSTEM DCERPC_COMMON
 [SUBSYSTEM::DCERPC_COMMON]
-PRIVATE_PROTO_HEADER = common/proto.h
 #
 # End SUBSYSTEM DCERPC_COMMON
 ################################################
 
-DCERPC_COMMON_OBJ_FILES = $(addprefix rpc_server/common/, server_info.o share_info.o)
+DCERPC_COMMON_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/common/, server_info.o share_info.o)
 
-PUBLIC_HEADERS += rpc_server/common/common.h
+$(eval $(call proto_header_template,$(rpc_serversrcdir)/common/proto.h,$(DCERPC_COMMON_OBJ_FILES:.o=.c)))
+
+PUBLIC_HEADERS += $(rpc_serversrcdir)/common/common.h
 
 ################################################
 # Start MODULE dcerpc_rpcecho
@@ -21,7 +22,7 @@ PRIVATE_DEPENDENCIES = NDR_ECHO
 # End MODULE dcerpc_rpcecho
 ################################################
 
-dcerpc_rpcecho_OBJ_FILES = rpc_server/echo/rpc_echo.o
+dcerpc_rpcecho_OBJ_FILES = $(rpc_serversrcdir)/echo/rpc_echo.o
 
 ################################################
 # Start MODULE dcerpc_epmapper
@@ -32,7 +33,7 @@ PRIVATE_DEPENDENCIES = NDR_EPMAPPER
 # End MODULE dcerpc_epmapper
 ################################################
 
-dcerpc_epmapper_OBJ_FILES = rpc_server/epmapper/rpc_epmapper.o
+dcerpc_epmapper_OBJ_FILES = $(rpc_serversrcdir)/epmapper/rpc_epmapper.o
 
 ################################################
 # Start MODULE dcerpc_remote
@@ -44,20 +45,22 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE dcerpc_remote
 ################################################
 
-dcerpc_remote_OBJ_FILES = rpc_server/remote/dcesrv_remote.o
+dcerpc_remote_OBJ_FILES = $(rpc_serversrcdir)/remote/dcesrv_remote.o
 
 ################################################
 # Start MODULE dcerpc_srvsvc
 [MODULE::dcerpc_srvsvc]
 INIT_FUNCTION = dcerpc_server_srvsvc_init
-PRIVATE_PROTO_HEADER = srvsvc/proto.h
 SUBSYSTEM = DCESRV
 PRIVATE_DEPENDENCIES = \
 		DCERPC_COMMON NDR_SRVSVC share
 # End MODULE dcerpc_srvsvc
 ################################################
 
-dcerpc_srvsvc_OBJ_FILES = $(addprefix rpc_server/srvsvc/, dcesrv_srvsvc.o srvsvc_ntvfs.o)
+
+dcerpc_srvsvc_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/srvsvc/, dcesrv_srvsvc.o srvsvc_ntvfs.o)
+
+$(eval $(call proto_header_template,$(rpc_serversrcdir)/srvsvc/proto.h,$(dcerpc_srvsvc_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start MODULE dcerpc_wkssvc
@@ -69,7 +72,7 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE dcerpc_wkssvc
 ################################################
 
-dcerpc_wkssvc_OBJ_FILES = rpc_server/wkssvc/dcesrv_wkssvc.o
+dcerpc_wkssvc_OBJ_FILES = $(rpc_serversrcdir)/wkssvc/dcesrv_wkssvc.o
 
 ################################################
 # Start MODULE dcerpc_unixinfo
@@ -85,13 +88,12 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE dcerpc_unixinfo
 ################################################
 
-dcerpc_unixinfo_OBJ_FILES = rpc_server/unixinfo/dcesrv_unixinfo.o
+dcerpc_unixinfo_OBJ_FILES = $(rpc_serversrcdir)/unixinfo/dcesrv_unixinfo.o
 
 ################################################
 # Start MODULE dcesrv_samr
 [MODULE::dcesrv_samr]
 INIT_FUNCTION = dcerpc_server_samr_init
-PRIVATE_PROTO_HEADER = samr/proto.h
 SUBSYSTEM = DCESRV
 PRIVATE_DEPENDENCIES = \
 		SAMDB \
@@ -100,7 +102,9 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE dcesrv_samr
 ################################################
 
-dcesrv_samr_OBJ_FILES = $(addprefix rpc_server/samr/, dcesrv_samr.o samr_password.o)
+dcesrv_samr_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/samr/, dcesrv_samr.o samr_password.o)
+
+$(eval $(call proto_header_template,$(rpc_serversrcdir)/samr/proto.h,$(dcesrv_samr_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start MODULE dcerpc_winreg
@@ -113,7 +117,7 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE dcerpc_winreg
 ################################################
 
-dcerpc_winreg_OBJ_FILES = rpc_server/winreg/rpc_winreg.o
+dcerpc_winreg_OBJ_FILES = $(rpc_serversrcdir)/winreg/rpc_winreg.o
 
 ################################################
 # Start MODULE dcerpc_netlogon
@@ -128,14 +132,13 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE dcerpc_netlogon
 ################################################
 
-dcerpc_netlogon_OBJ_FILES = rpc_server/netlogon/dcerpc_netlogon.o
+dcerpc_netlogon_OBJ_FILES = $(rpc_serversrcdir)/netlogon/dcerpc_netlogon.o
 
 ################################################
 # Start MODULE dcerpc_lsa
 [MODULE::dcerpc_lsarpc]
 INIT_FUNCTION = dcerpc_server_lsa_init
 SUBSYSTEM = DCESRV
-PRIVATE_PROTO_HEADER= lsa/proto.h
 PRIVATE_DEPENDENCIES = \
 		SAMDB \
 		DCERPC_COMMON \
@@ -145,7 +148,9 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE dcerpc_lsa
 ################################################
 
-dcerpc_lsarpc_OBJ_FILES = $(addprefix rpc_server/lsa/, dcesrv_lsa.o lsa_init.o lsa_lookup.o)
+dcerpc_lsarpc_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/lsa/, dcesrv_lsa.o lsa_init.o lsa_lookup.o)
+
+$(eval $(call proto_header_template,$(rpc_serversrcdir)/lsa/proto.h,$(dcerpc_lsarpc_OBJ_FILES:.o=.c)))
 
 
 ################################################
@@ -162,7 +167,7 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE dcerpc_spoolss
 ################################################
 
-dcerpc_spoolss_OBJ_FILES = rpc_server/spoolss/dcesrv_spoolss.o
+dcerpc_spoolss_OBJ_FILES = $(rpc_serversrcdir)/spoolss/dcesrv_spoolss.o
 
 ################################################
 # Start MODULE dcerpc_drsuapi
@@ -176,31 +181,32 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE dcerpc_drsuapi
 ################################################
 
-dcerpc_drsuapi_OBJ_FILES = rpc_server/drsuapi/dcesrv_drsuapi.o
+dcerpc_drsuapi_OBJ_FILES = $(rpc_serversrcdir)/drsuapi/dcesrv_drsuapi.o
 
 ################################################
 # Start SUBSYSTEM dcerpc_server
 [SUBSYSTEM::dcerpc_server]
-PRIVATE_PROTO_HEADER = dcerpc_server_proto.h
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_AUTH \
 		LIBNDR \
 		dcerpc
 
-dcerpc_server_OBJ_FILES = $(addprefix rpc_server/, \
+dcerpc_server_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/, \
 		dcerpc_server.o \
 		dcesrv_auth.o \
 		dcesrv_mgmt.o \
 		handles.o)
 
+$(eval $(call proto_header_template,$(rpc_serversrcdir)/dcerpc_server_proto.h,$(dcerpc_server_OBJ_FILES:.o=.c)))
+
 # End SUBSYSTEM DCERPC
 ################################################
 
-PUBLIC_HEADERS += rpc_server/dcerpc_server.h
+PUBLIC_HEADERS += $(rpc_serversrcdir)/dcerpc_server.h
 
 [MODULE::DCESRV]
 INIT_FUNCTION = server_service_rpc_init
 SUBSYSTEM = smbd
 PRIVATE_DEPENDENCIES = dcerpc_server
 
-DCESRV_OBJ_FILES = rpc_server/service_rpc.o
+DCESRV_OBJ_FILES = $(rpc_serversrcdir)/service_rpc.o

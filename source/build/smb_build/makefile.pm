@@ -223,15 +223,6 @@ sub PythonFiles($$)
 	}
 }
 
-sub ProtoHeader($$)
-{
-	my ($self,$ctx) = @_;
-
-	my $target = "\$(addprefix $ctx->{BASEDIR}/, $ctx->{PRIVATE_PROTO_HEADER})";
-	$self->output("PROTO_HEADERS += $target\n");
-	$self->output("\$(call proto_header_template, $target, \$($ctx->{NAME}_OBJ_FILES:.o=.c))\n");
-}
-
 sub write($$)
 {
 	my ($self, $file) = @_;

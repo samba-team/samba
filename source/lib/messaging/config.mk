@@ -13,5 +13,4 @@ PUBLIC_DEPENDENCIES = \
 # End SUBSYSTEM MESSAGING
 ################################################
 
-
-MESSAGING_OBJ_FILES = lib/messaging/messaging.o
+MESSAGING_OBJ_FILES = $(libmessagingsrcdir)/messaging.o
