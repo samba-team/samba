@@ -120,3 +120,75 @@ NTSTATUS smb2_composite_unlink(struct smb2_tree *tree, union smb_unlink *io)
 	return composite_wait_free(c);
 }
 
+
+
+
+/*
+  continue after the create in a composite mkdir
+ */
+static void continue_mkdir(struct smb2_request *req)
+{
+	struct composite_context *ctx = talloc_get_type(req->async.private_data, 
+							struct composite_context);
+	struct smb2_tree *tree = req->tree;
+	struct smb2_create create_parm;
+	struct smb2_close close_parm;
+	NTSTATUS status;
+
+	status = smb2_create_recv(req, ctx, &create_parm);
+	if (!NT_STATUS_IS_OK(status)) {
+		composite_error(ctx, status);
+		return;
+	}
+
+	ZERO_STRUCT(close_parm);
+	close_parm.in.file.handle = create_parm.out.file.handle;
+	
+	req = smb2_close_send(tree, &close_parm);
+	composite_continue_smb2(ctx, req, continue_close, ctx);
+}
+
+/*
+  composite SMB2 mkdir call
+*/
+struct composite_context *smb2_composite_mkdir_send(struct smb2_tree *tree, 
+						     union smb_mkdir *io)
+{
+	struct composite_context *ctx;
+	struct smb2_create create_parm;
+	struct smb2_request *req;
+
+	ctx = composite_create(tree, tree->session->transport->socket->event.ctx);
+	if (ctx == NULL) return NULL;
+
+	ZERO_STRUCT(create_parm);
+
+	create_parm.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED;
+	create_parm.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	create_parm.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	create_parm.in.file_attributes   = FILE_ATTRIBUTE_DIRECTORY;
+	create_parm.in.create_disposition = NTCREATEX_DISP_CREATE;
+	create_parm.in.fname = io->mkdir.in.path;
+	if (create_parm.in.fname[0] == '\\') {
+		create_parm.in.fname++;
+	}
+
+	req = smb2_create_send(tree, &create_parm);
+
+	composite_continue_smb2(ctx, req, continue_mkdir, ctx);
+
+	return ctx;
+}
+
+
+/*
+  composite mkdir call - sync interface
+*/
+NTSTATUS smb2_composite_mkdir(struct smb2_tree *tree, union smb_mkdir *io)
+{
+	struct composite_context *c = smb2_composite_mkdir_send(tree, io);
+	return composite_wait_free(c);
+}
+

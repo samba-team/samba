@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "libcli/smb_composite/smb_composite.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/events/events.h"
 #include "system/time.h"
@@ -51,27 +52,12 @@ NTSTATUS smb2_util_close(struct smb2_tree *tree, struct smb2_handle h)
 */
 NTSTATUS smb2_util_unlink(struct smb2_tree *tree, const char *fname)
 {
-	struct smb2_create io;
-	NTSTATUS status;
-
+	union smb_unlink io;
+	
 	ZERO_STRUCT(io);
-	io.in.desired_access = SEC_RIGHTS_FILE_ALL;
-	io.in.file_attributes   = FILE_ATTRIBUTE_NORMAL;
-	io.in.create_disposition = NTCREATEX_DISP_OPEN;
-	io.in.share_access = 
-		NTCREATEX_SHARE_ACCESS_DELETE|
-		NTCREATEX_SHARE_ACCESS_READ|
-		NTCREATEX_SHARE_ACCESS_WRITE;
-	io.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
-	io.in.fname = fname;
+	io.unlink.in.pattern = fname;
 
-	status = smb2_create(tree, tree, &io);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		return NT_STATUS_OK;
-	}
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	return smb2_util_close(tree, io.out.file.handle);
+	return smb2_composite_unlink(tree, &io);
 }
 
 /*

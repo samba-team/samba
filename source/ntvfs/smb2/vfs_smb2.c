@@ -450,7 +450,14 @@ static NTSTATUS cvfs_open(struct ntvfs_module_context *ntvfs,
 static NTSTATUS cvfs_mkdir(struct ntvfs_module_context *ntvfs, 
 			   struct ntvfs_request *req, union smb_mkdir *md)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct cvfs_private *private = ntvfs->private_data;
+	struct composite_context *c_req;
+
+	CHECK_ASYNC(req);
+
+	c_req = smb2_composite_mkdir_send(private->tree, md);
+
+	SIMPLE_COMPOSITE_TAIL;
 }
 
 /*
