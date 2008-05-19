@@ -1,95 +1,95 @@
 mkinclude dynconfig.mk
-heimdalsrcdir := heimdal
+heimdalsrcdir := $(srcdir)/../samba4/source/heimdal
 mkinclude heimdal_build/config.mk
 mkinclude config.mk
-dsdbsrcdir := dsdb
+dsdbsrcdir := $(srcdir)/../samba4/source/dsdb
 mkinclude dsdb/config.mk
-smbdsrcdir := smbd
+smbdsrcdir := $(srcdir)/../samba4/source/smbd
 mkinclude smbd/config.mk
-clustersrcdir := cluster
+clustersrcdir := $(srcdir)/../samba4/source/cluster
 mkinclude cluster/config.mk
 mkinclude smbd/process_model.mk
-libnetsrcdir := libnet
+libnetsrcdir := $(srcdir)/../samba4/source/libnet
 mkinclude libnet/config.mk
-authsrcdir := auth
+authsrcdir := $(srcdir)/../samba4/source/auth
 mkinclude auth/config.mk
-nsswitchsrcdir := nsswitch
+nsswitchsrcdir := $(srcdir)/../samba4/source/nsswitch
 mkinclude nsswitch/config.mk
-libsrcdir := lib
+libsrcdir := $(srcdir)/../samba4/source/lib
 mkinclude lib/samba3/config.mk
-libsocketsrcdir := lib/socket
+libsocketsrcdir := $(srcdir)/../samba4/source/lib/socket
 mkinclude lib/socket/config.mk
-libcharsetsrcdir := lib/charset
+libcharsetsrcdir := $(srcdir)/../samba4/source/lib/charset
 mkinclude lib/charset/config.mk
-ldb_sambasrcdir := lib/ldb-samba
+ldb_sambasrcdir := $(srcdir)/../samba4/source/lib/ldb-samba
 mkinclude lib/ldb-samba/config.mk
-libtlssrcdir := lib/tls
+libtlssrcdir := $(srcdir)/../samba4/source/lib/tls
 mkinclude lib/tls/config.mk
-libregistrysrcdir := lib/registry
+libregistrysrcdir := $(srcdir)/../samba4/source/lib/registry
 mkinclude lib/registry/config.mk
-libmessagingsrcdir := lib/messaging
+libmessagingsrcdir := $(srcdir)/../samba4/source/lib/messaging
 mkinclude lib/messaging/config.mk
-libeventssrcdir := lib/events
+libeventssrcdir := $(srcdir)/../samba4/source/lib/events
 mkinclude lib/events/config.mk
-libcmdlinesrcdir := lib/cmdline
+libcmdlinesrcdir := $(srcdir)/../samba4/source/lib/cmdline
 mkinclude lib/cmdline/config.mk
-socketwrappersrcdir := lib/socket_wrapper
+socketwrappersrcdir := $(srcdir)/../samba4/source/lib/socket_wrapper
 mkinclude lib/socket_wrapper/config.mk
-nsswrappersrcdir := lib/nss_wrapper
+nsswrappersrcdir := $(srcdir)/../samba4/source/lib/nss_wrapper
 mkinclude lib/nss_wrapper/config.mk
-appwebsrcdir := lib/appweb
+appwebsrcdir := $(srcdir)/../samba4/source/lib/appweb
 mkinclude lib/appweb/config.mk
-libstreamsrcdir := lib/stream
+libstreamsrcdir := $(srcdir)/../samba4/source/lib/stream
 mkinclude lib/stream/config.mk
-libutilsrcdir := lib/util
+libutilsrcdir := $(srcdir)/../samba4/source/lib/util
 mkinclude lib/util/config.mk
-libtdrsrcdir := lib/tdr
+libtdrsrcdir := $(srcdir)/../samba4/source/lib/tdr
 mkinclude lib/tdr/config.mk
-libdbwrapsrcdir := lib/dbwrap
+libdbwrapsrcdir := $(srcdir)/../samba4/source/lib/dbwrap
 mkinclude lib/dbwrap/config.mk
-libcryptosrcdir := lib/crypto
+libcryptosrcdir := $(srcdir)/../samba4/source/lib/crypto
 mkinclude lib/crypto/config.mk
-libtorturesrcdir := lib/torture
+libtorturesrcdir := $(srcdir)/../samba4/source/lib/torture
 mkinclude lib/torture/config.mk
-libcompressionsrcdir := lib/compression
-libgencachesrcdir := lib
+libcompressionsrcdir := $(srcdir)/../samba4/source/lib/compression
+libgencachesrcdir := $(srcdir)/../samba4/source/lib
 mkinclude lib/basic.mk
-paramsrcdir := param
+paramsrcdir := $(srcdir)/../samba4/source/param
 mkinclude param/config.mk
-smb_serversrcdir := smb_server
+smb_serversrcdir := $(srcdir)/../samba4/source/smb_server
 mkinclude smb_server/config.mk
-rpc_serversrcdir := rpc_server
+rpc_serversrcdir := $(srcdir)/../samba4/source/rpc_server
 mkinclude rpc_server/config.mk
-ldap_serversrcdir := ldap_server
+ldap_serversrcdir := $(srcdir)/../samba4/source/ldap_server
 mkinclude ldap_server/config.mk
-web_serversrcdir := web_server
+web_serversrcdir := $(srcdir)/../samba4/source/web_server
 mkinclude web_server/config.mk
-winbindsrcdir := winbind
+winbindsrcdir := $(srcdir)/../samba4/source/winbind
 mkinclude winbind/config.mk
-nbt_serversrcdir := nbt_server
+nbt_serversrcdir := $(srcdir)/../samba4/source/nbt_server
 mkinclude nbt_server/config.mk
-wrepl_serversrcdir := wrepl_server
+wrepl_serversrcdir := $(srcdir)/../samba4/source/wrepl_server
 mkinclude wrepl_server/config.mk
-cldap_serversrcdir := cldap_server
+cldap_serversrcdir := $(srcdir)/../samba4/source/cldap_server
 mkinclude cldap_server/config.mk
-utilssrcdir := utils
+utilssrcdir := $(srcdir)/../samba4/source/utils
 mkinclude utils/net/config.mk
 mkinclude utils/config.mk
-ntvfssrcdir := ntvfs
+ntvfssrcdir := $(srcdir)/../samba4/source/ntvfs
 mkinclude ntvfs/config.mk
-ntptrsrcdir := ntptr
+ntptrsrcdir := $(srcdir)/../samba4/source/ntptr
 mkinclude ntptr/config.mk
-torturesrcdir := torture
+torturesrcdir := $(srcdir)/../samba4/source/torture
 mkinclude torture/config.mk
-librpcsrcdir := librpc
+librpcsrcdir := $(srcdir)/../samba4/source/librpc
 mkinclude librpc/config.mk
-clientsrcdir := client
+clientsrcdir := $(srcdir)/../samba4/source/client
 mkinclude client/config.mk
-libclisrcdir := libcli
+libclisrcdir := $(srcdir)/../samba4/source/libcli
 mkinclude libcli/config.mk
-ejsscriptsrcdir := scripting/ejs
+ejsscriptsrcdir := $(srcdir)/../samba4/source/scripting/ejs
 mkinclude scripting/ejs/config.mk
-pyscriptsrcdir := scripting/python
+pyscriptsrcdir := $(srcdir)/../samba4/source/scripting/python
 mkinclude scripting/python/config.mk
-kdcsrcdir := kdc
+kdcsrcdir := $(srcdir)/../samba4/source/kdc
 mkinclude kdc/config.mk
