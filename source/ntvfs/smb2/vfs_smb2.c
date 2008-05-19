@@ -349,6 +349,10 @@ static void async_simple_composite(struct composite_context *c_req)
 /*
   delete a file - the dirtype specifies the file types to include in the search. 
   The name can contain CIFS wildcards, but rarely does (except with OS/2 clients)
+
+  BUGS:
+     - doesn't handle wildcards
+     - doesn't obey attrib restrictions
 */
 static NTSTATUS cvfs_unlink(struct ntvfs_module_context *ntvfs, 
 			    struct ntvfs_request *req, union smb_unlink *unl)
@@ -466,7 +470,14 @@ static NTSTATUS cvfs_mkdir(struct ntvfs_module_context *ntvfs,
 static NTSTATUS cvfs_rmdir(struct ntvfs_module_context *ntvfs, 
 			   struct ntvfs_request *req, struct smb_rmdir *rd)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct cvfs_private *private = ntvfs->private_data;
+	struct composite_context *c_req;
+
+	CHECK_ASYNC(req);
+
+	c_req = smb2_composite_rmdir_send(private->tree, rd);
+
+	SIMPLE_COMPOSITE_TAIL;
 }
 
 /*
