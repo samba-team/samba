@@ -36,13 +36,17 @@ extern uint32 global_client_caps;
  SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES bit and then
  send a local path, we have to cope with that too....
 
+ If conn != NULL then ensure the provided service is
+ the one pointed to by the connection.
+
  This version does everything using pointers within one copy of the
  pathname string, talloced on the struct dfs_path pointer (which
  must be talloced). This may be too clever to live....
  JRA.
 **********************************************************************/
 
-static NTSTATUS parse_dfs_path(const char *pathname,
+static NTSTATUS parse_dfs_path(connection_struct *conn,
+				const char *pathname,
 				bool allow_wcards,
 				struct dfs_path *pdp, /* MUST BE TALLOCED */
 				bool *ppath_contains_wcard)
@@ -136,7 +140,10 @@ static NTSTATUS parse_dfs_path(const char *pathname,
 	}
 
 	/* Is this really our servicename ? */
-	if (NULL == conn_find_byname(servicename)) {
+	if (conn && !( strequal(servicename, lp_servicename(SNUM(conn)))
+			|| (strequal(servicename, HOMES_NAME)
+			&& strequal(lp_servicename(SNUM(conn)),
+				get_current_username()) )) ) {
 		DEBUG(10,("parse_dfs_path: %s is not our servicename\n",
 			servicename));
 
@@ -621,7 +628,7 @@ static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = parse_dfs_path(path_in, search_wcard_flag, pdp,
+	status = parse_dfs_path(conn, path_in, search_wcard_flag, pdp,
 			ppath_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
@@ -660,17 +667,6 @@ static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 		return NT_STATUS_OK;
-	}
-
-	if (!( strequal(pdp->servicename, lp_servicename(SNUM(conn)))
-			|| (strequal(pdp->servicename, HOMES_NAME)
-			&& strequal(lp_servicename(SNUM(conn)),
-				get_current_username()) )) ) {
-
-		/* The given sharename doesn't match this connection. */
-		TALLOC_FREE(pdp);
-
-		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
 
 	status = dfs_path_lookup(ctx, conn, path_in, pdp,
@@ -758,7 +754,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	ZERO_STRUCT(conns);
 	*self_referralp = False;
 
-	status = parse_dfs_path(dfs_path, False, pdp, &dummy);
+	status = parse_dfs_path(NULL, dfs_path, False, pdp, &dummy);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1244,7 +1240,7 @@ bool create_junction(TALLOC_CTX *ctx,
 	if (!pdp) {
 		return False;
 	}
-	status = parse_dfs_path(dfs_path, False, pdp, &dummy);
+	status = parse_dfs_path(NULL, dfs_path, False, pdp, &dummy);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
