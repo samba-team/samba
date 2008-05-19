@@ -4,7 +4,7 @@
 # End SUBSYSTEM MPR
 #######################
 
-MPR_OBJ_FILES = $(addprefix lib/appweb/mpr/, miniMpr.o var.o)
+MPR_OBJ_FILES = $(addprefix $(appwebsrcdir)/mpr/, miniMpr.o var.o)
 
 #######################
 # Start SUBSYSTEM EJS
@@ -13,7 +13,7 @@ PUBLIC_DEPENDENCIES = MPR
 # End SUBSYSTEM EJS
 #######################
 
-EJS_OBJ_FILES = $(addprefix lib/appweb/ejs/, ejsLib.o ejsLex.o ejsParser.o ejsProcs.o)
+EJS_OBJ_FILES = $(addprefix $(appwebsrcdir)/ejs/, ejsLib.o ejsLex.o ejsParser.o ejsProcs.o)
 
 #######################
 # Start SUBSYSTEM ESP
@@ -22,4 +22,4 @@ PUBLIC_DEPENDENCIES = EJS
 # End SUBSYSTEM ESP
 #######################
 
-ESP_OBJ_FILES = $(addprefix lib/appweb/esp/, esp.o espProcs.o)
+ESP_OBJ_FILES = $(addprefix $(appwebsrcdir)/esp/, esp.o espProcs.o)

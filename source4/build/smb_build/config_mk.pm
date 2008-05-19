@@ -33,8 +33,6 @@ my $section_types = {
 
 		"ENABLE"		=> "bool",
 
-		"PRIVATE_PROTO_HEADER"	=> "string",
-
 		"CFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",
 		"STANDARD_VISIBILITY"	=> "string",
@@ -53,8 +51,6 @@ my $section_types = {
 
 		"OUTPUT_TYPE"		=> "list",
 
-		"PRIVATE_PROTO_HEADER"	=> "string",
-
 		"CFLAGS"		=> "list"
 		},
 	"BINARY" => {
@@ -64,8 +60,6 @@ my $section_types = {
 		"ENABLE"		=> "bool",
 
 		"INSTALLDIR"		=> "string",
-		"PRIVATE_PROTO_HEADER"	=> "string",
-
 		"CFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",
 		"STANDARD_VISIBILITY"	=> "string",
@@ -84,8 +78,6 @@ my $section_types = {
 
 		"ENABLE"		=> "bool",
 
-		"PRIVATE_PROTO_HEADER"	=> "string",
-
 		"CFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",
 		"STANDARD_VISIBILITY"	=> "string"
@@ -96,14 +88,11 @@ use vars qw(@parsed_files);
 
 @parsed_files = ();
 
-sub _read_config_file
+sub _read_config_file($$$)
 {
-	use File::Basename;
 	use Cwd;
 
-	my $srcdir = shift;
-	my $builddir = shift;
-	my $filename = shift;
+	my ($srcdir, $builddir, $filename) = @_;
 	my @dirlist;
 
 	# We need to change our working directory because config.mk files can

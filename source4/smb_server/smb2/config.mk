@@ -1,13 +1,12 @@
 #######################
 # Start SUBSYSTEM SMB2_PROTOCOL
 [SUBSYSTEM::SMB2_PROTOCOL]
-PRIVATE_PROTO_HEADER = smb2_proto.h
 PUBLIC_DEPENDENCIES = \
 		ntvfs LIBPACKET LIBCLI_SMB2
 # End SUBSYSTEM SMB2_PROTOCOL
 #######################
 
-SMB2_PROTOCOL_OBJ_FILES = $(addprefix smb_server/smb2/, \
+SMB2_PROTOCOL_OBJ_FILES = $(addprefix $(smb_serversrcdir)/smb2/, \
 		receive.o \
 		negprot.o \
 		sesssetup.o \
@@ -17,3 +16,4 @@ SMB2_PROTOCOL_OBJ_FILES = $(addprefix smb_server/smb2/, \
 		find.o \
 		keepalive.o)
 
+$(eval $(call proto_header_template,$(smb_serversrcdir)/smb2/smb2_proto.h,$(SMB2_PROTOCOL_OBJ_FILES:.o=.c)))

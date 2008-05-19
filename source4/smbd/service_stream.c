@@ -119,6 +119,7 @@ void stream_io_handler_callback(void *private, uint16_t flags)
   a server connection
 */
 NTSTATUS stream_new_connection_merge(struct event_context *ev,
+				     struct loadparm_context *lp_ctx,
 				     const struct model_ops *model_ops,
 				     struct socket_context *sock,
 				     const struct stream_server_ops *stream_ops,
@@ -140,6 +141,7 @@ NTSTATUS stream_new_connection_merge(struct event_context *ev,
 	srv_conn->ops           = stream_ops;
 	srv_conn->msg_ctx	= msg_ctx;
 	srv_conn->event.ctx	= ev;
+	srv_conn->lp_ctx	= lp_ctx;
 	srv_conn->event.fde	= event_add_fd(ev, srv_conn, socket_get_fd(sock),
 					       EVENT_FD_READ, 
 					       stream_io_handler_fde, srv_conn);

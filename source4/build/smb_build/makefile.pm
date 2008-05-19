@@ -223,20 +223,13 @@ sub PythonFiles($$)
 	}
 }
 
-sub ProtoHeader($$)
-{
-	my ($self,$ctx) = @_;
-
-	my $target = "\$(addprefix $ctx->{BASEDIR}/, $ctx->{PRIVATE_PROTO_HEADER})";
-	$self->output("PROTO_HEADERS += $target\n");
-	$self->output("\$(call proto_header_template, $target, \$($ctx->{NAME}_OBJ_FILES:.o=.c))\n");
-}
-
 sub write($$)
 {
 	my ($self, $file) = @_;
 
 	$self->_prepare_mk_files();
+
+	$self->output("ALL_OBJS = " . array2oneperline($self->{all_objs}) . "\n");
 
 	open(MAKEFILE,">$file") || die ("Can't open $file\n");
 	print MAKEFILE $self->{output};

@@ -14,7 +14,7 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE ntvfs_cifs
 ################################################
 
-ntvfs_cifs_OBJ_FILES = ntvfs/cifs/vfs_cifs.o
+ntvfs_cifs_OBJ_FILES = $(ntvfssrcdir)/cifs/vfs_cifs.o
 
 
 ################################################
@@ -35,11 +35,12 @@ ntvfs_smb2_OBJ_FILES = ntvfs/smb2/vfs_smb2.o
 [MODULE::ntvfs_simple]
 INIT_FUNCTION = ntvfs_simple_init 
 SUBSYSTEM = ntvfs 
-PRIVATE_PROTO_HEADER = simple/proto.h
 # End MODULE ntvfs_simple
 ################################################
 
-ntvfs_simple_OBJ_FILES = $(addprefix ntvfs/simple/, vfs_simple.o svfs_util.o)
+ntvfs_simple_OBJ_FILES = $(addprefix $(ntvfssrcdir)/simple/, vfs_simple.o svfs_util.o)
+
+$(eval $(call proto_header_template,$(ntvfssrcdir)/simple/proto.h,$(ntvfs_simple_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start MODULE ntvfs_cifsposix
@@ -47,12 +48,13 @@ ntvfs_simple_OBJ_FILES = $(addprefix ntvfs/simple/, vfs_simple.o svfs_util.o)
 #ENABLE = NO
 INIT_FUNCTION = ntvfs_cifs_posix_init
 SUBSYSTEM = ntvfs
-PRIVATE_PROTO_HEADER = cifs_posix_cli/proto.h
 # End MODULE ntvfs_cifsposix
 ################################################
 
 ntvfs_cifsposix_OBJ_FILES = \
-	$(addprefix ntvfs/cifs_posix_cli/, vfs_cifs_posix.o svfs_util.o)
+	$(addprefix $(ntvfssrcdir)/cifs_posix_cli/, vfs_cifs_posix.o svfs_util.o)
+
+$(eval $(call proto_header_template,$(ntvfssrcdir)/cifs_posix_cli/proto.h,$(ntvfs_cifsposix_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start MODULE ntvfs_print
@@ -62,19 +64,20 @@ SUBSYSTEM = ntvfs
 # End MODULE ntvfs_print
 ################################################
 
-ntvfs_print_OBJ_FILES = ntvfs/print/vfs_print.o
+ntvfs_print_OBJ_FILES = $(ntvfssrcdir)/print/vfs_print.o
 
 ################################################
 # Start MODULE ntvfs_ipc
 [MODULE::ntvfs_ipc]
 SUBSYSTEM = ntvfs
 INIT_FUNCTION = ntvfs_ipc_init 
-PRIVATE_PROTO_HEADER = ipc/proto.h
 PRIVATE_DEPENDENCIES = dcerpc_server DCERPC_COMMON
 # End MODULE ntvfs_ipc
 ################################################
 
-ntvfs_ipc_OBJ_FILES = $(addprefix ntvfs/ipc/, vfs_ipc.o ipc_rap.o rap_server.o)
+ntvfs_ipc_OBJ_FILES = $(addprefix $(ntvfssrcdir)/ipc/, vfs_ipc.o ipc_rap.o rap_server.o)
+
+$(eval $(call proto_header_template,$(ntvfssrcdir)/ipc/proto.h,$(ntvfs_ipc_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start MODULE ntvfs_nbench
@@ -84,16 +87,17 @@ INIT_FUNCTION = ntvfs_nbench_init
 # End MODULE ntvfs_nbench
 ################################################
 
-ntvfs_nbench_OBJ_FILES = ntvfs/nbench/vfs_nbench.o
+ntvfs_nbench_OBJ_FILES = $(ntvfssrcdir)/nbench/vfs_nbench.o
 
 ################################################
 # Start SUBSYSTEM NTVFS
 [SUBSYSTEM::ntvfs]
-PRIVATE_PROTO_HEADER = ntvfs_proto.h
 
-ntvfs_OBJ_FILES = $(addprefix ntvfs/, ntvfs_base.o ntvfs_generic.o ntvfs_interface.o ntvfs_util.o)
+ntvfs_OBJ_FILES = $(addprefix $(ntvfssrcdir)/, ntvfs_base.o ntvfs_generic.o ntvfs_interface.o ntvfs_util.o)
 
-# PUBLIC_HEADERS += ntvfs/ntvfs.h
+$(eval $(call proto_header_template,$(ntvfssrcdir)/ntvfs_proto.h,$(ntvfs_OBJ_FILES:.o=.c)))
+
+# PUBLIC_HEADERS += $(ntvfssrcdir)/ntvfs.h
 #
 # End SUBSYSTEM NTVFS
 ################################################
