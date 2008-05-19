@@ -68,7 +68,6 @@ CHANGETYPE_MODIFY = _ldb.CHANGETYPE_MODIFY
 ldb_val_to_py_object = _ldb.ldb_val_to_py_object
 class Dn(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
-    __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
         _ldb.Dn_swiginit(self,_ldb.new_Dn(*args, **kwargs))
     __swig_destroy__ = _ldb.delete_Dn
@@ -93,6 +92,7 @@ Dn.add_child = new_instancemethod(_ldb.Dn_add_child,None,Dn)
 Dn.add_base = new_instancemethod(_ldb.Dn_add_base,None,Dn)
 Dn.canonical_str = new_instancemethod(_ldb.Dn_canonical_str,None,Dn)
 Dn.canonical_ex_str = new_instancemethod(_ldb.Dn_canonical_ex_str,None,Dn)
+Dn.__repr__ = new_instancemethod(_ldb.Dn___repr__,None,Dn)
 Dn.__add__ = new_instancemethod(_ldb.Dn___add__,None,Dn)
 Dn_swigregister = _ldb.Dn_swigregister
 Dn_swigregister(Dn)
@@ -107,6 +107,9 @@ class ldb_msg_element(object):
         if ret is None:
             raise KeyError("no such value")
         return ret
+
+    def __repr__(self):
+        return "MessageElement([%s])" % (",".join(repr(x) for x in self.__set__()))
 
     def __eq__(self, other):
         if (len(self) == 1 and self.get(0) == other):
@@ -139,7 +142,28 @@ class Message(object):
     def __init__(self, *args, **kwargs): 
         _ldb.Message_swiginit(self,_ldb.new_Message(*args, **kwargs))
     __swig_destroy__ = _ldb.delete_Message
-Message.__getitem__ = new_instancemethod(_ldb.Message___getitem__,None,Message)
+    def get(self, key, default=None):
+        if key == "dn":
+            return self.dn
+        return self.find_element(key)
+
+    def __getitem__(self, key):
+        ret = self.get(key, None)
+        if ret is None:
+            raise KeyError("No such element")
+        return ret
+
+    def iteritems(self):
+        for k in self.keys():
+            yield k, self[k]
+
+    def items(self):
+        return list(self.iteritems())
+
+    def __repr__(self):
+        return "Message(%s)" % repr(dict(self.iteritems()))
+
+Message.find_element = new_instancemethod(_ldb.Message_find_element,None,Message)
 Message.__setitem__ = new_instancemethod(_ldb.Message___setitem__,None,Message)
 Message.__len__ = new_instancemethod(_ldb.Message___len__,None,Message)
 Message.keys = new_instancemethod(_ldb.Message_keys,None,Message)
@@ -191,7 +215,6 @@ LDB_ERR_AFFECTS_MULTIPLE_DSAS = _ldb.LDB_ERR_AFFECTS_MULTIPLE_DSAS
 LDB_ERR_OTHER = _ldb.LDB_ERR_OTHER
 class Ldb(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
-    __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
         _ldb.Ldb_swiginit(self,_ldb.new_Ldb(*args, **kwargs))
     __swig_destroy__ = _ldb.delete_Ldb
@@ -202,6 +225,8 @@ class Ldb(object):
 
     def search(self, base=None, scope=SCOPE_DEFAULT, expression=None, 
                attrs=None, controls=None):
+        if not (attrs is None or isinstance(attrs, list)):
+            raise TypeError("attributes not a list")
         parsed_controls = None
         if controls is not None:
             parsed_controls = self.parse_control_strings(controls)
@@ -234,6 +259,7 @@ Ldb.schema_attribute_add = new_instancemethod(_ldb.Ldb_schema_attribute_add,None
 Ldb.setup_wellknown_attributes = new_instancemethod(_ldb.Ldb_setup_wellknown_attributes,None,Ldb)
 Ldb.__contains__ = new_instancemethod(_ldb.Ldb___contains__,None,Ldb)
 Ldb.parse_ldif = new_instancemethod(_ldb.Ldb_parse_ldif,None,Ldb)
+Ldb.__repr__ = new_instancemethod(_ldb.Ldb___repr__,None,Ldb)
 Ldb_swigregister = _ldb.Ldb_swigregister
 Ldb_swigregister(Ldb)
 
