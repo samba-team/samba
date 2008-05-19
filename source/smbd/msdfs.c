@@ -33,6 +33,9 @@ extern uint32 global_client_caps;
  form /hostname/service/reqpath.
  We cope with either here.
 
+ If conn != NULL then ensure the provided service is
+ the one pointed to by the connection.
+
  Unfortunately, due to broken clients who might set the
  SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES bit and then
  send a local path, we have to cope with that too....
@@ -40,7 +43,8 @@ extern uint32 global_client_caps;
  JRA.
 **********************************************************************/
 
-static NTSTATUS parse_dfs_path(const char *pathname,
+static NTSTATUS parse_dfs_path(connection_struct *conn,
+				const char *pathname,
 				BOOL allow_wcards,
 				struct dfs_path *pdp,
 				BOOL *ppath_contains_wcard)
@@ -114,7 +118,11 @@ static NTSTATUS parse_dfs_path(const char *pathname,
 	}
 
 	/* Is this really our servicename ? */
-	if (NULL == conn_find_byname(servicename)) {
+        if (conn && !( strequal(servicename, lp_servicename(SNUM(conn)))
+			|| (strequal(servicename, HOMES_NAME)
+			&& strequal(lp_servicename(SNUM(conn)),
+				get_current_username()) )) ) {
+
 		DEBUG(10,("parse_dfs_path: %s is not our servicename\n",
 			servicename));
 
@@ -507,7 +515,7 @@ static NTSTATUS dfs_redirect( connection_struct *conn,
 	struct dfs_path dp;
 	pstring targetpath;
 	
-	status = parse_dfs_path(dfs_path, search_wcard_flag, &dp, ppath_contains_wcard);
+	status = parse_dfs_path(conn, dfs_path, search_wcard_flag, &dp, ppath_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -532,15 +540,6 @@ static NTSTATUS dfs_redirect( connection_struct *conn,
 	if (dp.hostname[0] == '\0' && dp.servicename[0] == '\0') { 
 		pstrcpy(dfs_path, dp.reqpath);
 		return NT_STATUS_OK;
-	}
-
-	if (!( strequal(dp.servicename, lp_servicename(SNUM(conn))) 
-			|| (strequal(dp.servicename, HOMES_NAME) 
-			&& strequal(lp_servicename(SNUM(conn)), get_current_username()) )) ) {
-
-		/* The given sharename doesn't match this connection. */
-
-		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
 
 	status = dfs_path_lookup(conn, dfs_path, &dp,
@@ -616,7 +615,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 
 	*self_referralp = False;
 
-	status = parse_dfs_path(dfs_path, False, &dp, &dummy);
+	status = parse_dfs_path(NULL, dfs_path, False, &dp, &dummy);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1012,7 +1011,7 @@ BOOL create_junction(const char *dfs_path, struct junction_map *jucn)
 	BOOL dummy;
 	struct dfs_path dp;
  
-	NTSTATUS status = parse_dfs_path(dfs_path, False, &dp, &dummy);
+	NTSTATUS status = parse_dfs_path(NULL, dfs_path, False, &dp, &dummy);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
