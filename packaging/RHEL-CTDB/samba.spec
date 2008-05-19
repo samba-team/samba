@@ -160,7 +160,7 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--with-privatedir=%{_sysconfdir}/samba \
         --with-sambabook=%{_datadir}/swat/using_samba \
         --with-swatdir=%{_datadir}/swat \
-	--enable-cups \
+	--disable-cups \
         --with-acl-support \
 	--with-ads \
         --with-automount \
