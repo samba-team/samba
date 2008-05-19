@@ -85,28 +85,6 @@ connection_struct *conn_find(unsigned cnum)
 }
 
 /****************************************************************************
- Find a conn given a service name.
-****************************************************************************/
-
-connection_struct *conn_find_byname(const char *service)
-{
-	connection_struct *conn;
-
-	for (conn=Connections;conn;conn=conn->next) {
-		if (strequal(lp_servicename(SNUM(conn)),service)) {
-			if (conn != Connections) {
-				/* Promote if not first. */
-				DLIST_PROMOTE(Connections, conn);
-			}
-			return conn;
-		}
-	}
-
-	return NULL;
-}
-
-
-/****************************************************************************
   find first available connection slot, starting from a random position.
 The randomisation stops problems with the server dieing and clients
 thinking the server is still available.
