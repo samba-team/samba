@@ -11,10 +11,22 @@ use smb_build::config_mk;
 use smb_build::output;
 use smb_build::summary;
 use smb_build::config;
+use Getopt::Long;
 use strict;
 
+my $output_file = "data.mk";
+
+my $result = GetOptions (
+	'output=s' => \$output_file);
+
+if (not $result) {
+	exit(1);
+}
+
+my $input_file = shift @ARGV;
+
 my $INPUT = {};
-my $mkfile = smb_build::config_mk::run_config_mk($INPUT, $config::config{srcdir}, $config::config{builddir}, "main.mk");
+my $mkfile = smb_build::config_mk::run_config_mk($INPUT, $config::config{srcdir}, $config::config{builddir}, $input_file);
 
 my $subsys_output_type = ["MERGED_OBJ"];
 
@@ -80,11 +92,10 @@ foreach my $key (values %$OUTPUT) {
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}}));
 	$mkenv->PythonModule($key) if ($key->{TYPE} eq "PYTHON");
 	$mkenv->Binary($key) if grep(/BINARY/, @{$key->{OUTPUT_TYPE}});
-	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER});
 	$mkenv->InitFunctions($key) if defined($key->{INIT_FUNCTIONS});
 }
 
-$mkenv->write("data.mk");
+$mkenv->write($output_file);
 
 summary::show($OUTPUT, \%config::config);
 
