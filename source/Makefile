@@ -4,6 +4,8 @@
 
 include mkconfig.mk
 
+pidldir := $(srcdir)/pidl
+
 VPATH = $(builddir):$(srcdir):heimdal_build:heimdal/lib/asn1:heimdal/lib/krb5:heimdal/lib/gssapi:heimdal/lib/hdb:heimdal/lib/roken:heimdal/lib/des
 
 BASEDIR = $(prefix)
@@ -231,7 +233,6 @@ data.mk: config.status $(MK_FILES)
 
 testcov-html:: 
 
-pidldir := pidl
 include pidl/config.mk
 include selftest/config.mk
 
