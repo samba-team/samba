@@ -23,10 +23,10 @@
 int net_dom_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("usage: net dom join "
-		 "<domain=DOMAIN> <ou=OU> <account=ACCOUNT> "\
+		 "<domain=DOMAIN> <ou=OU> <account=ACCOUNT> "
 		 "<password=PASSWORD> <reboot>\n  Join a remote machine\n");
 	d_printf("usage: net dom unjoin "
-		 "<account=ACCOUNT> <password=PASSWORD> <reboot>\n"\
+		 "<account=ACCOUNT> <password=PASSWORD> <reboot>\n"
 		 "  Unjoin a remote machine\n");
 
 	return -1;
@@ -46,7 +46,7 @@ static int net_dom_unjoin(struct net_context *c, int argc, const char **argv)
 	int ret = -1;
 	int i;
 
-	if (argc < 1) {
+	if (argc < 1 || c->display_usage) {
 		return net_dom_usage(c, argc, argv);
 	}
 
@@ -133,7 +133,7 @@ static int net_dom_join(struct net_context *c, int argc, const char **argv)
 	int ret = -1;
 	int i;
 
-	if (argc < 1) {
+	if (argc < 1 || c->display_usage) {
 		return net_dom_usage(c, argc, argv);
 	}
 
@@ -227,11 +227,26 @@ int net_dom(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
 
-	struct functable func[] = {
-		{"JOIN", net_dom_join},
-		{"UNJOIN", net_dom_unjoin},
-		{"HELP", net_dom_usage},
-		{NULL, NULL}
+	struct functable3 func[] = {
+		{
+			"join",
+			net_dom_join,
+			NET_TRANSPORT_LOCAL,
+			"Join a remote machine",
+			"net dom join <domain=DOMAIN> <ou=OU> "
+			"<account=ACCOUNT> <password=PASSWORD> <reboot>\n"
+			"  Join a remote machine"
+		},
+		{
+			"unjoin",
+			net_dom_unjoin,
+			NET_TRANSPORT_LOCAL,
+			"Unjoin a remote machine",
+			"net dom unjoin <account=ACCOUNT> <password=PASSWORD> "
+			"<reboot>\n"
+			"  Unjoin a remote machine"
+		},
+		{NULL, NULL, 0, NULL, NULL}
 	};
 
 	status = libnetapi_init(&c->netapi_ctx);
@@ -242,5 +257,5 @@ int net_dom(struct net_context *c, int argc, const char **argv)
 	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
 	libnetapi_set_password(c->netapi_ctx, c->opt_password);
 
-	return net_run_function(c, argc, argv, func, net_dom_usage);
+	return net_run_function3(c, argc, argv, "net dom", func);
 }
