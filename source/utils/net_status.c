@@ -63,6 +63,15 @@ static int net_status_sessions(struct net_context *c, int argc, const char **arg
 	TDB_CONTEXT *tdb;
 	bool parseable;
 
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net status sessions [parseable]\n"
+			 "    Display open user sessions.\n"
+			 "    If parseable is specified, output is machine-"
+			 "readable.\n");
+		return 0;
+	}
+
 	if (argc == 0) {
 		parseable = false;
 	} else if ((argc == 1) && strequal(argv[0], "parseable")) {
@@ -205,6 +214,15 @@ static int net_status_shares_parseable(struct net_context *c, int argc, const ch
 
 static int net_status_shares(struct net_context *c, int argc, const char **argv)
 {
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net status shares [parseable]\n"
+			 "    Display open user shares.\n"
+			 "    If parseable is specified, output is machine-"
+			 "readable.\n");
+		return 0;
+	}
+
 	if (argc == 0) {
 
 		d_printf("\nService      pid     machine       "
@@ -226,11 +244,26 @@ static int net_status_shares(struct net_context *c, int argc, const char **argv)
 
 int net_status(struct net_context *c, int argc, const char **argv)
 {
-	struct functable func[] = {
-		{"sessions", net_status_sessions},
-		{"shares", net_status_shares},
-		{"help", net_status_usage},
-		{NULL, NULL}
+	struct functable3 func[] = {
+		{
+			"sessions",
+			net_status_sessions,
+			NET_TRANSPORT_LOCAL,
+			"Show list of open sessions",
+			"net status sessions [parseable]\n"
+			"    If parseable is specified, output is presented "
+			"in a machine-parseable fashion."
+		},
+		{
+			"shares",
+			net_status_shares,
+			NET_TRANSPORT_LOCAL,
+			"Show list of open shares",
+			"net status shares [parseable]\n"
+			"    If parseable is specified, output is presented "
+			"in a machine-parseable fashion."
+		},
+		{NULL, NULL, 0, NULL, NULL}
 	};
-	return net_run_function(c, argc, argv, func, net_status_usage);
+	return net_run_function3(c, argc, argv, "net status", func);
 }
