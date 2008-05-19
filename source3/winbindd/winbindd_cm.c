@@ -292,6 +292,22 @@ static void check_domain_online_handler(struct event_context *ctx,
 static void calc_new_online_timeout_check(struct winbindd_domain *domain)
 {
 	int wbc = lp_winbind_cache_time();
+	int domain_online_check;
+
+	/*
+	 * If "winbind:online check timeout" is set explicitly,
+	 * override the default of "winbind cache timeout"
+	 *
+	 * Add this as a parametric option and don't document it. The
+	 * whole offline abuse for non-reachable DCs needs
+	 * fixing. Till then, use this hackish parameter.
+	 */
+
+	domain_online_check = lp_parm_int(-1, "winbind",
+					  "online check timeout", 0);
+	if (domain_online_check != 0) {
+		wbc = domain_online_check;
+	}
 
 	if (domain->startup) {
 		domain->check_online_timeout = 10;
