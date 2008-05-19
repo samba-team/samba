@@ -38,11 +38,12 @@ fi
 [ -w /etc/samba/smb.conf ] || exit 0
 
 # Check whether "netbios disabled" is true
-ISNETBIOSDISABLED=$(testparm -s 2>/dev/null | \
-	sed -n '/\[global\]/,/^$/p' | \
-	grep "disable netbios = Yes" | \
-	awk 'BEGIN{FS=" = "}{print $2}')
+#ISNETBIOSDISABLED=$(testparm -s 2>/dev/null | \
+#	sed -n '/\[global\]/,/^$/p' | \
+#	grep "disable netbios = Yes" | \
+#	awk 'BEGIN{FS=" = "}{print $2}')
 
+ISNETBIOSDISABLED=Yes
 
 RETVAL=0
 
