@@ -359,7 +359,7 @@ include $(librpcsrcdir)/idl-deps
 
 $(gen_ndrsrcdir)/tables.c: $(IDL_NDR_PARSE_H_FILES)
 	@echo Generating $@
-	@$(PERL) $(srcdir)/$(librpcsrcdir)/tables.pl --output=$@ $^ > $(gen_ndrsrcdir)/tables.x
+	@$(PERL) $(librpcsrcdir)/tables.pl --output=$@ $^ > $(gen_ndrsrcdir)/tables.x
 	@mv $(gen_ndrsrcdir)/tables.x $@
 
 [SUBSYSTEM::NDR_TABLE]
@@ -801,3 +801,17 @@ python_drsuapi_OBJ_FILES = $(gen_ndrsrcdir)/py_drsuapi.o
 PRIVATE_DEPENDENCIES = PYTALLOC
 
 python_dcerpc_security_OBJ_FILES = $(gen_ndrsrcdir)/py_security.o
+
+$(IDL_HEADER_FILES) $(IDL_NDR_PARSE_H_FILES) $(IDL_NDR_PARSE_C_FILES) \
+	$(IDL_NDR_CLIENT_C_FILES) $(IDL_NDR_CLIENT_H_FILES) \
+	$(IDL_NDR_SERVER_C_FILES) $(IDL_SWIG_FILES) \
+	$(IDL_NDR_EJS_C_FILES) $(IDL_NDR_EJS_H_FILES) \
+	$(IDL_NDR_PY_C_FILES) $(IDL_NDR_PY_H_FILES): idl
+
+idl_full:: $(pidldir)/lib/Parse/Pidl/IDL.pm $(pidldir)/lib/Parse/Pidl/Expr.pm 
+	@CPP="$(CPP)" PIDL="$(PIDL)" $(librpcsrcdir)/scripts/build_idl.sh FULL $(librpcsrcdir)/idl $(librpcsrcdir)/gen_ndr
+
+idl:: $(pidldir)/lib/Parse/Pidl/IDL.pm $(pidldir)/lib/Parse/Pidl/Expr.pm 
+	@CPP="$(CPP)" PIDL="$(PIDL)" $(librpcsrcdir)/scripts/build_idl.sh PARTIAL $(librpcsrcdir)/idl $(librpcsrcdir)/gen_ndr
+
+

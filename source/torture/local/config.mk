@@ -19,31 +19,31 @@ PRIVATE_DEPENDENCIES = \
 #################################
 
 TORTURE_LOCAL_OBJ_FILES = \
-		lib/charset/tests/iconv.o \
-		lib/talloc/testsuite.o \
-		lib/replace/test/getifaddrs.o \
-		lib/replace/test/os2_delete.o \
-		lib/replace/test/strptime.o \
-		lib/replace/test/testsuite.o \
-		lib/messaging/tests/messaging.o \
-		lib/messaging/tests/irpc.o \
-		librpc/tests/binding_string.o \
-		lib/util/tests/idtree.o \
-		lib/socket/testsuite.o \
-		lib/socket_wrapper/testsuite.o \
-		libcli/resolve/testsuite.o \
-		lib/util/tests/strlist.o \
-		lib/util/tests/str.o \
-		lib/util/tests/file.o \
-		lib/util/tests/genrand.o \
-		lib/compression/testsuite.o \
-		lib/charset/tests/charset.o \
-		libcli/security/tests/sddl.o \
-		lib/tdr/testsuite.o \
-		lib/events/testsuite.o \
-		param/tests/share.o \
-		param/tests/loadparm.o \
-		auth/credentials/tests/simple.o \
+		$(torturesrcdir)/../lib/charset/tests/iconv.o \
+		$(torturesrcdir)/../lib/talloc/testsuite.o \
+		$(torturesrcdir)/../lib/replace/test/getifaddrs.o \
+		$(torturesrcdir)/../lib/replace/test/os2_delete.o \
+		$(torturesrcdir)/../lib/replace/test/strptime.o \
+		$(torturesrcdir)/../lib/replace/test/testsuite.o \
+		$(torturesrcdir)/../lib/messaging/tests/messaging.o \
+		$(torturesrcdir)/../lib/messaging/tests/irpc.o \
+		$(torturesrcdir)/../librpc/tests/binding_string.o \
+		$(torturesrcdir)/../lib/util/tests/idtree.o \
+		$(torturesrcdir)/../lib/socket/testsuite.o \
+		$(torturesrcdir)/../lib/socket_wrapper/testsuite.o \
+		$(torturesrcdir)/../libcli/resolve/testsuite.o \
+		$(torturesrcdir)/../lib/util/tests/strlist.o \
+		$(torturesrcdir)/../lib/util/tests/str.o \
+		$(torturesrcdir)/../lib/util/tests/file.o \
+		$(torturesrcdir)/../lib/util/tests/genrand.o \
+		$(torturesrcdir)/../lib/compression/testsuite.o \
+		$(torturesrcdir)/../lib/charset/tests/charset.o \
+		$(torturesrcdir)/../libcli/security/tests/sddl.o \
+		$(torturesrcdir)/../lib/tdr/testsuite.o \
+		$(torturesrcdir)/../lib/events/testsuite.o \
+		$(torturesrcdir)/../param/tests/share.o \
+		$(torturesrcdir)/../param/tests/loadparm.o \
+		$(torturesrcdir)/../auth/credentials/tests/simple.o \
 		$(torturesrcdir)/local/local.o \
 		$(torturesrcdir)/local/dbspeed.o \
 		$(torturesrcdir)/local/torture.o
