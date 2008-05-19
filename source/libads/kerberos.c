@@ -731,6 +731,9 @@ static char *print_kdc_line(char *mem_ctx,
 /************************************************************************
  Create a string list of available kdc's, possibly searching by sitename.
  Does DNS queries.
+
+ If "sitename" is given, the DC's in that site are listed first.
+
 ************************************************************************/
 
 static char *get_kdc_ip_string(char *mem_ctx,
@@ -749,7 +752,10 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		return NULL;
 	}
 
-	/* Get the KDC's only in this site. */
+	/*
+	 * First get the KDC's only in this site, the rest will be
+	 * appended later
+	 */
 
 	if (sitename) {
 
