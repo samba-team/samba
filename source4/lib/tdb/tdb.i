@@ -182,8 +182,8 @@ typedef struct tdb_context {
     }
 
     %pythoncode {
-    def __str__(self):
-        return self.name()
+    def __repr__(self):
+        return "Tdb('%s')" % self.name()
 
     # Random access to keys, values
     def __getitem__(self, key):
