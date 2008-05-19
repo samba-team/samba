@@ -59,8 +59,13 @@ static int net_idmap_dump(struct net_context *c, int argc, const char **argv)
 {
 	TDB_CONTEXT *idmap_tdb;
 
-	if ( argc != 1 )
-		return net_help_idmap(c, argc, argv );
+	if ( argc != 1  || c->display_usage) {
+		d_printf("Usage:\n"
+			 "net idmap dump <inputfile>\n"
+			 "  Dump current ID mapping.\n"
+			 "    inputfile\tTDB file to read mappings from.\n");
+		return c->display_usage?0:-1;
+	}
 
 	idmap_tdb = tdb_open_log(argv[0], 0, TDB_DEFAULT, O_RDONLY, 0);
 
@@ -84,6 +89,15 @@ static int net_idmap_restore(struct net_context *c, int argc, const char **argv)
 {
 	TALLOC_CTX *ctx;
 	FILE *input;
+
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net idmap restore [inputfile]\n"
+			 "  Restore ID mappings from file\n"
+			 "    inputfile\tFile to load ID mappings from. If not "
+			 "given, load data from stdin.\n");
+		return 0;
+	}
 
 	if (! winbind_ping()) {
 		d_fprintf(stderr, "To use net idmap Winbindd must be running.\n");
@@ -217,8 +231,15 @@ static int net_idmap_secret(struct net_context *c, int argc, const char **argv)
 	char *opt = NULL;
 	bool ret;
 
-	if (argc != 2) {
-		return net_help_idmap(c, argc, argv);
+	if (argc != 2 || c->display_usage) {
+		d_printf("Usage:\n"
+			 "net idmap secret {<DOMAIN>|alloc} <secret>\n"
+			 "  Set the secret for the specified domain "
+			 "(or alloc module)\n"
+			 "    DOMAIN\tDomain to set secret for.\n"
+			 "    alloc\tSet secret for the alloc module\n"
+			 "    secret\tNew secret to set.\n");
+		return c->display_usage?0:-1;
 	}
 
 	secret = argv[1];
@@ -279,15 +300,15 @@ static int net_idmap_secret(struct net_context *c, int argc, const char **argv)
 
 int net_help_idmap(struct net_context *c, int argc, const char **argv)
 {
-	d_printf("net idmap dump <inputfile>\n"\
+	d_printf("net idmap dump <inputfile>\n"
 		 "    Dump current id mapping\n");
 
-	d_printf("net idmap restore\n"\
+	d_printf("net idmap restore\n"
 		 "    Restore entries from stdin\n");
 
 	/* Deliberately *not* document net idmap delete */
 
-	d_printf("net idmap secret <DOMAIN>|alloc <secret>\n"\
+	d_printf("net idmap secret <DOMAIN>|alloc <secret>\n"
 		 "    Set the secret for the specified DOMAIN (or the alloc module)\n");
 
 	return -1;
@@ -303,7 +324,7 @@ static int net_idmap_aclmapset(struct net_context *c, int argc, const char **arg
 	struct db_record *rec;
 	NTSTATUS status;
 
-	if (argc != 3) {
+	if (argc != 3 || c->display_usage) {
 		d_fprintf(stderr, "usage: net idmap aclmapset <tdb> "
 			  "<src-sid> <dst-sid>\n");
 		return -1;
@@ -362,18 +383,59 @@ fail:
  **********************************************************/
 int net_idmap(struct net_context *c, int argc, const char **argv)
 {
-	struct functable func[] = {
-		{"dump", net_idmap_dump},
-		{"restore", net_idmap_restore},
-		{"setmap", net_idmap_set },
-		{"delete", net_idmap_delete},
-		{"secret", net_idmap_secret},
-		{"aclmapset", net_idmap_aclmapset},
-		{"help", net_help_idmap},
-		{NULL, NULL}
+	struct functable3 func[] = {
+		{
+			"dump",
+			net_idmap_dump,
+			NET_TRANSPORT_LOCAL,
+			"Dump the current ID mappings",
+			"net idmap dump\n"
+			"  Dump the current ID mappings"
+		},
+		{
+			"restore",
+			net_idmap_restore,
+			NET_TRANSPORT_LOCAL,
+			"Restore entries from stdin",
+			"net idmap restore\n"
+			"  Restore entries from stdin"
+		},
+		{
+			"setmap",
+			net_idmap_set,
+			NET_TRANSPORT_LOCAL,
+			"Not implemented yet",
+			"net idmap setmap\n"
+			"  Not implemented yet"
+		},
+		{
+			"delete",
+			net_idmap_delete,
+			NET_TRANSPORT_LOCAL,
+			"Not implemented yet",
+			"net idmap delete\n"
+			"  Not implemented yet"
+		},
+		{
+			"secret",
+			net_idmap_secret,
+			NET_TRANSPORT_LOCAL,
+			"Set secret for specified domain",
+			"net idmap secret {<DOMAIN>|alloc} <secret>\n"
+			"  Set secret for specified domain or alloc module"
+		},
+		{
+			"aclmapset",
+			net_idmap_aclmapset,
+			NET_TRANSPORT_LOCAL,
+			"Set acl map",
+			"net idmap aclmapset\n"
+			"  Set acl map"
+		},
+		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	return net_run_function(c, argc, argv, func, net_help_idmap);
+	return net_run_function3(c, argc, argv, "net idmap", func);
 }
 
 
