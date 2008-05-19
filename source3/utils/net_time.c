@@ -93,10 +93,10 @@ static const char *systime(time_t t)
 int net_time_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf(
-"net time\n\tdisplays time on a server\n\n"\
-"net time system\n\tdisplays time on a server in a format ready for /bin/date\n\n"\
-"net time set\n\truns /bin/date with the time from the server\n\n"\
-"net time zone\n\tdisplays the timezone in hours from GMT on the remote computer\n\n"\
+"net time\n\tdisplays time on a server\n\n"
+"net time system\n\tdisplays time on a server in a format ready for /bin/date\n\n"
+"net time set\n\truns /bin/date with the time from the server\n\n"
+"net time zone\n\tdisplays the timezone in hours from GMT on the remote computer\n\n"
 "\n");
 	net_common_flags_usage(c, argc, argv);
 	return -1;
@@ -127,8 +127,17 @@ static int net_time_set(struct net_context *c, int argc, const char **argv)
 /* display the time on a remote box in a format ready for /bin/date */
 static int net_time_system(struct net_context *c, int argc, const char **argv)
 {
-	time_t t = nettime(c, NULL);
+	time_t t;
 
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net time system\n"
+			 "    Output remote time server time in a format ready "
+			 "for /bin/date\n");
+		return 0;
+	}
+
+	t = nettime(c, NULL);
 	if (t == 0) return -1;
 
 	printf("%s\n", systime(t));
@@ -143,6 +152,13 @@ static int net_time_zone(struct net_context *c, int argc, const char **argv)
 	int hours, mins;
 	char zsign;
 	time_t t;
+
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net time zone\n"
+			 "   Display the remote time server's offset to UTC\n");
+		return 0;
+	}
 
 	t = nettime(c, &zone);
 
@@ -164,21 +180,49 @@ static int net_time_zone(struct net_context *c, int argc, const char **argv)
 int net_time(struct net_context *c, int argc, const char **argv)
 {
 	time_t t;
-	struct functable func[] = {
-		{"SYSTEM", net_time_system},
-		{"SET", net_time_set},
-		{"ZONE", net_time_zone},
-		{"HELP", net_time_usage},
-		{NULL, NULL}
+	struct functable3 func[] = {
+		{
+			"system",
+			net_time_system,
+			NET_TRANSPORT_LOCAL,
+			"Display time ready for /bin/date",
+			"net time system\n"
+			"    Display time ready for /bin/date"
+		},
+		{
+			"set",
+			net_time_set,
+			NET_TRANSPORT_LOCAL,
+			"Set the system time from time server",
+			"net time set\n"
+			"    Set the system time from time server"
+		},
+		{
+			"zone",
+			net_time_zone,
+			NET_TRANSPORT_LOCAL,
+			"Display timezone offset from UTC",
+			"net time zone\n"
+			"    Display timezone offset from UTC"
+		},
+		{NULL, NULL, 0, NULL, NULL}
 	};
 
 	if (argc != 0) {
-		return net_run_function(c, argc, argv, func, net_time_usage);
+		return net_run_function3(c, argc, argv, "net time", func);
+	}
+
+	if (c->display_usage) {
+		d_printf("Usage:\n");
+		d_printf("net time\n"
+			 "    Display the remote time server's time\n");
+		net_display_usage_from_functable(func);
+		return 0;
 	}
 
 	if (!c->opt_host && !c->opt_have_ip &&
 	    !find_master_ip(c->opt_target_workgroup, &c->opt_dest_ip)) {
-		d_fprintf(stderr, "Could not locate a time server.  Try "\
+		d_fprintf(stderr, "Could not locate a time server.  Try "
 				 "specifying a target host.\n");
 		net_time_usage(c, argc,argv);
 		return -1;
