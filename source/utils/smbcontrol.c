@@ -865,13 +865,6 @@ static bool do_winbind_online(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	if (!lp_winbind_offline_logon()) {
-		fprintf(stderr, "The parameter \"winbind offline logon\" must "
-			"be set in the [global] section of smb.conf for this "
-			"command to be allowed.\n");
-		return False;
-	}
-
 	/* Remove the entry in the winbindd_cache tdb to tell a later
 	   starting winbindd that we're online. */
 
@@ -898,13 +891,6 @@ static bool do_winbind_offline(struct messaging_context *msg_ctx,
 
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol winbindd offline\n");
-		return False;
-	}
-
-	if (!lp_winbind_offline_logon()) {
-		fprintf(stderr, "The parameter \"winbind offline logon\" must "
-			"be set in the [global] section of smb.conf for this "
-			"command to be allowed.\n");
 		return False;
 	}
 
