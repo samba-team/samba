@@ -154,7 +154,7 @@ static int net_cache_add(struct net_context *c, int argc, const char **argv)
 	const char *keystr, *datastr, *timeout_str;
 	time_t timeout;
 
-	if (argc < 3) {
+	if (argc < 3 || c->display_usage) {
 		d_printf("\nUsage: net cache add <key string> <data string> <timeout>\n");
 		return -1;
 	}
@@ -192,7 +192,7 @@ static int net_cache_del(struct net_context *c, int argc, const char **argv)
 {
 	const char *keystr = argv[0];
 
-	if (argc < 1) {
+	if (argc < 1 || c->display_usage) {
 		d_printf("\nUsage: net cache del <key string>\n");
 		return -1;
 	}
@@ -220,7 +220,7 @@ static int net_cache_get(struct net_context *c, int argc, const char **argv)
 	char* valuestr;
 	time_t timeout;
 
-	if (argc < 1) {
+	if (argc < 1 || c->display_usage) {
 		d_printf("\nUsage: net cache get <key>\n");
 		return -1;
 	}
@@ -246,7 +246,7 @@ static int net_cache_search(struct net_context *c, int argc, const char **argv)
 {
 	const char* pattern;
 
-	if (argc < 1) {
+	if (argc < 1 || c->display_usage) {
 		d_printf("Usage: net cache search <pattern>\n");
 		return -1;
 	}
@@ -267,6 +267,13 @@ static int net_cache_search(struct net_context *c, int argc, const char **argv)
 static int net_cache_list(struct net_context *c, int argc, const char **argv)
 {
 	const char* pattern = "*";
+
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net cache list\n"
+			 "    List all cache entries.\n");
+		return 0;
+	}
 	gencache_iterate(print_cache_entry, NULL, pattern);
 	gencache_shutdown();
 	return 0;
@@ -283,30 +290,16 @@ static int net_cache_list(struct net_context *c, int argc, const char **argv)
 static int net_cache_flush(struct net_context *c, int argc, const char **argv)
 {
 	const char* pattern = "*";
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net cache flush\n"
+			 "    Delete all cache entries.\n");
+		return 0;
+	}
 	gencache_iterate(delete_cache_entry, NULL, pattern);
 	gencache_shutdown();
 	return 0;
 }
-
-
-/**
- * Short help
- *
- * @param c	A net_context structure
- * @param argv ignored in this functionality
- * @return always returns -1
- **/
-static int net_cache_usage(struct net_context *c, int argc, const char **argv)
-{
-	d_printf("  net cache add \t add add new cache entry\n");
-	d_printf("  net cache del \t delete existing cache entry by key\n");
-	d_printf("  net cache flush \t delete all entries existing in the cache\n");
-	d_printf("  net cache get \t get cache entry by key\n");
-	d_printf("  net cache search \t search for entries in the cache, by given pattern\n");
-	d_printf("  net cache list \t list all cache entries (just like search for \"*\")\n");
-	return -1;
-}
-
 
 /**
  * Entry point to 'net cache' subfunctionality
@@ -317,15 +310,64 @@ static int net_cache_usage(struct net_context *c, int argc, const char **argv)
  **/
 int net_cache(struct net_context *c, int argc, const char **argv)
 {
-	struct functable func[] = {
-		{"add", net_cache_add},
-		{"del", net_cache_del},
-		{"get", net_cache_get},
-		{"search", net_cache_search},
-		{"list", net_cache_list},
-		{"flush", net_cache_flush},
-		{NULL, NULL}
+	struct functable3 func[] = {
+		{
+			"add",
+			net_cache_add,
+			NET_TRANSPORT_LOCAL,
+			"Add new cache entry",
+			"net cache add <key string> <data string> <timeout>\n"
+			"  Add new cache entry.\n"
+			"    key string\tKey string to add cache data under.\n"
+			"    data string\tData to store under given key.\n"
+			"    timeout\tTimeout for cache data."
+		},
+		{
+			"del",
+			net_cache_del,
+			NET_TRANSPORT_LOCAL,
+			"Delete existing cache entry by key",
+			"net cache del <key string>\n"
+			"  Delete existing cache entry by key.\n"
+			"    key string\tKey string to delete."
+		},
+		{
+			"get",
+			net_cache_get,
+			NET_TRANSPORT_LOCAL,
+			"Get cache entry by key",
+			"net cache get <key string>\n"
+			"  Get cache entry by key.\n"
+			"    key string\tKey string to look up cache entry for."
+
+		},
+		{
+			"search",
+			net_cache_search,
+			NET_TRANSPORT_LOCAL,
+			"Search entry by pattern",
+			"net cache search <pattern>\n"
+			"  Search entry by pattern.\n"
+			"    pattern\tPattern to search for in cache."
+		},
+		{
+			"list",
+			net_cache_list,
+			NET_TRANSPORT_LOCAL,
+			"List all cache entries",
+			"net cache list\n"
+			"  List all cache entries"
+		},
+		{
+			"flush",
+			net_cache_flush,
+			NET_TRANSPORT_LOCAL,
+			"Delete all cache entries",
+			"net cache flush\n"
+			"  Delete all cache entries"
+		},
+		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	return net_run_function(c, argc, argv, func, net_cache_usage);
+	return net_run_function3(c, argc, argv, "net cache", func);
 }
