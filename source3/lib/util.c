@@ -3074,7 +3074,7 @@ struct server_id interpret_pid(const char *pid_string)
 		result.pid = pid;
 	}
 	else if (sscanf(pid_string, "%u", &pid) == 1) {
-		result.vnn = NONCLUSTER_VNN;
+		result.vnn = get_my_vnn();
 		result.pid = pid;
 	}
 	else {
