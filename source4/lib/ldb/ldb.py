@@ -215,7 +215,6 @@ LDB_ERR_AFFECTS_MULTIPLE_DSAS = _ldb.LDB_ERR_AFFECTS_MULTIPLE_DSAS
 LDB_ERR_OTHER = _ldb.LDB_ERR_OTHER
 class Ldb(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
-    __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
         _ldb.Ldb_swiginit(self,_ldb.new_Ldb(*args, **kwargs))
     __swig_destroy__ = _ldb.delete_Ldb
@@ -260,6 +259,7 @@ Ldb.schema_attribute_add = new_instancemethod(_ldb.Ldb_schema_attribute_add,None
 Ldb.setup_wellknown_attributes = new_instancemethod(_ldb.Ldb_setup_wellknown_attributes,None,Ldb)
 Ldb.__contains__ = new_instancemethod(_ldb.Ldb___contains__,None,Ldb)
 Ldb.parse_ldif = new_instancemethod(_ldb.Ldb_parse_ldif,None,Ldb)
+Ldb.__repr__ = new_instancemethod(_ldb.Ldb___repr__,None,Ldb)
 Ldb_swigregister = _ldb.Ldb_swigregister
 Ldb_swigregister(Ldb)
 

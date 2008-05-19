@@ -3200,6 +3200,11 @@ SWIGINTERN PyObject *ldb_parse_ldif(ldb *self,char const *s){
             }
             return PyObject_GetIter(list);
         }
+SWIGINTERN char *ldb___repr__(ldb *self){
+            char *ret;
+            asprintf(&ret, "<ldb connection at 0x%x>", ret); 
+            return ret;
+        }
 
 static char *timestring(time_t t)
 {
@@ -5573,6 +5578,32 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_Ldb___repr__(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  ldb *arg1 = (ldb *) 0 ;
+  char *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb___repr__" "', argument " "1"" of type '" "ldb *""'"); 
+  }
+  arg1 = (ldb *)(argp1);
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
+  result = (char *)ldb___repr__(arg1);
+  resultobj = SWIG_FromCharPtr((const char *)result);
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *Ldb_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
@@ -5762,6 +5793,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"Ldb_setup_wellknown_attributes", (PyCFunction)_wrap_Ldb_setup_wellknown_attributes, METH_O, NULL},
 	 { (char *)"Ldb___contains__", (PyCFunction) _wrap_Ldb___contains__, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Ldb_parse_ldif", (PyCFunction) _wrap_Ldb_parse_ldif, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb___repr__", (PyCFunction)_wrap_Ldb___repr__, METH_O, NULL},
 	 { (char *)"Ldb_swigregister", Ldb_swigregister, METH_VARARGS, NULL},
 	 { (char *)"Ldb_swiginit", Ldb_swiginit, METH_VARARGS, NULL},
 	 { (char *)"valid_attr_name", (PyCFunction) _wrap_valid_attr_name, METH_VARARGS | METH_KEYWORDS, NULL},

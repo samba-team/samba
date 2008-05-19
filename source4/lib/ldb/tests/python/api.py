@@ -36,6 +36,10 @@ class SimpleLdb(unittest.TestCase):
         x = ldb.Ldb()
         x.connect("foo.tdb")
 
+    def test_repr(self):
+        x = ldb.Ldb()
+        self.assertTrue(repr(x).startswith("<ldb connection"))
+
     def test_set_create_perms(self):
         x = ldb.Ldb()
         x.set_create_perms(0600)
