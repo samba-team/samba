@@ -4,4 +4,4 @@
 # End SUBSYSTEM NSS_WRAPPER
 ##############################
 
-NSS_WRAPPER_OBJ_FILES = lib/nss_wrapper/nss_wrapper.o
+NSS_WRAPPER_OBJ_FILES = $(nsswrappersrcdir)/nss_wrapper.o

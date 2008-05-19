@@ -1,19 +1,21 @@
 # server subsystem
 
 [SUBSYSTEM::service]
-PRIVATE_PROTO_HEADER = service_proto.h
 PRIVATE_DEPENDENCIES = \
 		MESSAGING samba-socket
 
-service_OBJ_FILES = $(addprefix smbd/, \
+service_OBJ_FILES = $(addprefix $(smbdsrcdir)/, \
 		service.o \
 		service_stream.o \
 		service_task.o)
 
-[SUBSYSTEM::PIDFILE]
-PRIVATE_PROTO_HEADER = pidfile.h
+$(eval $(call proto_header_template,$(smbdsrcdir)/service_proto.h,$(service_OBJ_FILES:.o=.c)))
 
-PIDFILE_OBJ_FILES = smbd/pidfile.o
+[SUBSYSTEM::PIDFILE]
+
+PIDFILE_OBJ_FILES = $(smbdsrcdir)/pidfile.o
+
+$(eval $(call proto_header_template,$(smbdsrcdir)/pidfile.h,$(PIDFILE_OBJ_FILES:.o=.c)))
 
 #################################
 # Start BINARY smbd
@@ -34,8 +36,8 @@ PRIVATE_DEPENDENCIES = \
 		share \
 		CLUSTER
 
-smbd_OBJ_FILES = smbd/server.o
+smbd_OBJ_FILES = $(smbdsrcdir)/server.o
 
-MANPAGES += smbd/smbd.8
+MANPAGES += $(smbdsrcdir)/smbd.8
 # End BINARY smbd
 #################################

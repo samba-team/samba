@@ -7,4 +7,4 @@ PRIVATE_DEPENDENCIES = SAMDB NSS_WRAPPER
 # End MODULE ntvfs_unixuid
 ################################################
 
-ntvfs_unixuid_OBJ_FILES = ntvfs/unixuid/vfs_unixuid.o
+ntvfs_unixuid_OBJ_FILES = $(ntvfssrcdir)/unixuid/vfs_unixuid.o
