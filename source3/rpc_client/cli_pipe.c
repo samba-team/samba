@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "librpc/gen_ndr/cli_epmapper.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
@@ -2509,13 +2510,13 @@ static int rpc_pipe_sock_destructor(struct rpc_pipe_client *p)
 	return 0;
 }
 
-/********************************************************************
- Create a rpc pipe client struct, connecting to a tcp port
- ********************************************************************/
-NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
-			   uint16_t port,
-			   const struct ndr_syntax_id *abstract_syntax,
-			   struct rpc_pipe_client **presult)
+/**
+ * Create an rpc pipe client struct, connecting to a tcp port.
+ */
+NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
+			        uint16_t port,
+			        const struct ndr_syntax_id *abstract_syntax,
+			        struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
 	struct sockaddr_storage addr;
@@ -2560,6 +2561,158 @@ NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
 
  fail:
 	TALLOC_FREE(result);
+	return status;
+}
+
+/**
+ * Determine the tcp port on which a dcerpc interface is listening
+ * for the ncacn_ip_tcp transport via the endpoint mapper of the
+ * target host.
+ */
+NTSTATUS rpc_pipe_get_tcp_port(const char *host,
+			       const struct ndr_syntax_id *abstract_syntax,
+			       uint16_t *pport)
+{
+	NTSTATUS status;
+	struct rpc_pipe_client *epm_pipe = NULL;
+	struct cli_pipe_auth_data *auth = NULL;
+	struct dcerpc_binding *map_binding = NULL;
+	struct dcerpc_binding *res_binding = NULL;
+	struct epm_twr_t *map_tower = NULL;
+	struct epm_twr_t *res_towers = NULL;
+	struct policy_handle *entry_handle = NULL;
+	uint32_t num_towers = 0;
+	uint32_t max_towers = 1;
+	struct epm_twr_p_t towers;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+
+	if (pport == NULL) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	/* open the connection to the endpoint mapper */
+	status = rpc_pipe_open_tcp_port(tmp_ctx, host, 135,
+					&ndr_table_epmapper.syntax_id,
+					&epm_pipe);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = rpccli_anon_bind_data(tmp_ctx, &auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = rpc_pipe_bind(epm_pipe, auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	/* create tower for asking the epmapper */
+
+	map_binding = TALLOC_ZERO_P(tmp_ctx, struct dcerpc_binding);
+	if (map_binding == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	map_binding->transport = NCACN_IP_TCP;
+	map_binding->object = *abstract_syntax;
+	map_binding->host = host; /* needed? */
+	map_binding->endpoint = "0"; /* correct? needed? */
+
+	map_tower = TALLOC_ZERO_P(tmp_ctx, struct epm_twr_t);
+	if (map_tower == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	status = dcerpc_binding_build_tower(tmp_ctx, map_binding,
+					    &(map_tower->tower));
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	/* allocate further parameters for the epm_Map call */
+
+	res_towers = TALLOC_ARRAY(tmp_ctx, struct epm_twr_t, max_towers);
+	if (res_towers == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	towers.twr = res_towers;
+
+	entry_handle = TALLOC_ZERO_P(tmp_ctx, struct policy_handle);
+	if (entry_handle == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	/* ask the endpoint mapper for the port */
+
+	status = rpccli_epm_Map(epm_pipe,
+				tmp_ctx,
+				&(abstract_syntax->uuid),
+				map_tower,
+				entry_handle,
+				max_towers,
+				&num_towers,
+				&towers);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	if (num_towers != 1) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* extract the port from the answer */
+
+	status = dcerpc_binding_from_tower(tmp_ctx,
+					   &(towers.twr->tower),
+					   &res_binding);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	/* are further checks here necessary? */
+	if (res_binding->transport != NCACN_IP_TCP) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	*pport = (uint16_t)atoi(res_binding->endpoint);
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return status;
+}
+
+/**
+ * Create a rpc pipe client struct, connecting to a host via tcp.
+ * The port is determined by asking the endpoint mapper on the given
+ * host.
+ */
+NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
+			   const struct ndr_syntax_id *abstract_syntax,
+			   struct rpc_pipe_client **presult)
+{
+	NTSTATUS status;
+	uint16_t port;
+
+	status = rpc_pipe_get_tcp_port(host, abstract_syntax, &port);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = rpc_pipe_open_tcp_port(mem_ctx, host, port,
+					abstract_syntax, presult);
+
+done:
 	return status;
 }
 

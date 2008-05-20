@@ -7061,8 +7061,14 @@ NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
 				   const char *username,
 				   const char *password,
 				   struct cli_pipe_auth_data **presult);
+NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
+			        uint16_t port,
+			        const struct ndr_syntax_id *abstract_syntax,
+			        struct rpc_pipe_client **presult);
+NTSTATUS rpc_pipe_get_tcp_port(const char *host,
+			       const struct ndr_syntax_id *abstract_syntax,
+			       uint16_t *pport);
 NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
-			   uint16_t port,
 			   const struct ndr_syntax_id *abstract_syntax,
 			   struct rpc_pipe_client **presult);
 NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
