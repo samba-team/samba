@@ -58,6 +58,11 @@ static ssize_t default_sys_recvfile(int fromfd,
 	size_t total_written = 0;
 	char *buffer = NULL;
 
+	DEBUG(10,("default_sys_recvfile: from = %d, to = %d, "
+		"offset=%.0f, count = %lu\n",
+		fromfd, tofd, (double)offset,
+		(unsigned long)count));
+
 	if (count == 0) {
 		return 0;
 	}
@@ -140,6 +145,11 @@ ssize_t sys_recvfile(int fromfd,
 			size_t count)
 {
 	size_t total_written = 0;
+
+	DEBUG(10,("sys_recvfile: from = %d, to = %d, "
+		"offset=%.0f, count = %lu\n",
+		fromfd, tofd, (double)offset,
+		(unsigned long)count));
 
 	if (count == 0) {
 		return 0;
