@@ -1555,7 +1555,7 @@ static void wipe_files(void)
 		}
 		status = smb2_util_mkdir(servers[i].tree[0], "gentest");
 		if (NT_STATUS_IS_ERR(status)) {
-			printf("Failed to create gentest - %s\n", nt_errstr(status));
+			printf("Failed to create gentest on server %d - %s\n", i, nt_errstr(status));
 			exit(1);
 		}
 		if (n > 0) {
