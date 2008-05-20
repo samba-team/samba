@@ -738,6 +738,70 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 	}
 	torture_assert_ntstatus_ok(torture, s->error, "Failed establish a connect");
 
+	/*
+	 * Change the workstation password after establishing the netlogon
+	 * schannel connections to prove that existing connections are not
+	 * affected by a wks pwchange.
+	 */
+
+	{
+		struct netr_ServerPasswordSet pwset;
+		char *password = generate_random_str(s->join_ctx1, 8);
+		struct creds_CredentialState *creds_state;
+		struct dcerpc_pipe *net_pipe;
+
+		status = dcerpc_pipe_connect_b(s, &net_pipe, s->b,
+					       &ndr_table_netlogon,
+					       s->wks_creds1,
+					       torture->ev, torture->lp_ctx);
+
+		torture_assert_ntstatus_ok(torture, status,
+					   "dcerpc_pipe_connect_b failed");
+
+		pwset.in.server_name = talloc_asprintf(
+			net_pipe, "\\\\%s", dcerpc_server_name(net_pipe));
+		pwset.in.computer_name =
+			cli_credentials_get_workstation(s->wks_creds1);
+		pwset.in.account_name = talloc_asprintf(
+			net_pipe, "%s$", pwset.in.computer_name);
+		pwset.in.secure_channel_type = SEC_CHAN_WKSTA;
+		E_md4hash(password, pwset.in.new_password.hash);
+
+		creds_state = cli_credentials_get_netlogon_creds(
+			s->wks_creds1);
+		creds_des_encrypt(creds_state, &pwset.in.new_password);
+		creds_client_authenticator(creds_state, &pwset.in.credential);
+
+		status = dcerpc_netr_ServerPasswordSet(net_pipe, torture, &pwset);
+		torture_assert_ntstatus_ok(torture, status,
+					   "ServerPasswordSet failed");
+
+		if (!creds_client_check(creds_state,
+					&pwset.out.return_authenticator.cred)) {
+			printf("Credential chaining failed\n");
+		}
+
+		cli_credentials_set_password(s->wks_creds1, password,
+					     CRED_SPECIFIED);
+
+		talloc_free(net_pipe);
+
+		/* Just as a test, connect with the new creds */
+
+		talloc_free(s->wks_creds1->netlogon_creds);
+		s->wks_creds1->netlogon_creds = NULL;
+
+		status = dcerpc_pipe_connect_b(s, &net_pipe, s->b,
+					       &ndr_table_netlogon,
+					       s->wks_creds1,
+					       torture->ev, torture->lp_ctx);
+
+		torture_assert_ntstatus_ok(torture, status,
+					   "dcerpc_pipe_connect_b failed");
+
+		talloc_free(net_pipe);
+	}
+
 	torture_comment(torture, "Start looping LogonSamLogonEx on %d connections for %d secs\n",
 			s->nprocs, s->timelimit);
 	for (i=0; i < s->nprocs; i++) {
