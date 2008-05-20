@@ -41,18 +41,18 @@
 
 /* global options */
 static struct gentest_options {
-	bool showall;
-	bool analyze;
-	bool analyze_always;
-	bool analyze_continuous;
+	int showall;
+	int analyze;
+	int analyze_always;
+	int analyze_continuous;
 	uint_t max_open_handles;
 	uint_t seed;
 	uint_t numops;
-	bool use_oplocks;
+	int use_oplocks;
 	char **ignore_patterns;
 	const char *seeds_file;
-	bool use_preset_seeds;
-	bool fast_reconnect;
+	int use_preset_seeds;
+	int fast_reconnect;
 } options;
 
 /* mapping between open handles on the server and local handles */
@@ -359,7 +359,7 @@ static uint16_t gen_fnum_close(int instance)
 /*
   generate an integer in a specified range
 */
-static int gen_int_range(uint_t min, uint_t max)
+static int gen_int_range(uint64_t min, uint64_t max)
 {
 	uint_t r = random();
 	return min + (r % (1+max-min));
@@ -381,6 +381,7 @@ static uint16_t gen_root_fid(int instance)
 static int gen_offset(void)
 {
 	if (gen_chance(20)) return 0;
+//	if (gen_chance(5)) return gen_int_range(0, 0xFFFFFFFF);
 	return gen_int_range(0, 1024*1024);
 }
 
@@ -390,6 +391,7 @@ static int gen_offset(void)
 static int gen_io_count(void)
 {
 	if (gen_chance(20)) return 0;
+//	if (gen_chance(5)) return gen_int_range(0, 0xFFFFFFFF);
 	return gen_int_range(0, 4096);
 }
 
@@ -1078,32 +1080,31 @@ static bool handler_close(int instance)
 	return true;
 }
 
-#if 0
 /*
   generate read operations
 */
 static bool handler_read(int instance)
 {
-	union smb_read parm[NSERVERS];
+	struct smb2_read parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
-	parm[0].readx.level = RAW_READ_READX;
-	parm[0].readx.in.file.fnum = gen_fnum(instance);
-	parm[0].readx.in.offset = gen_offset();
-	parm[0].readx.in.mincnt = gen_io_count();
-	parm[0].readx.in.maxcnt = gen_io_count();
-	parm[0].readx.in.remaining = gen_io_count();
-	parm[0].readx.in.read_for_execute = gen_bool();
-	parm[0].readx.out.data = talloc_array(current_op.mem_ctx, uint8_t,
-					     MAX(parm[0].readx.in.mincnt, parm[0].readx.in.maxcnt));
+	parm[0].in.file.handle.data[0] = gen_fnum(instance);
+	parm[0].in.reserved    = gen_bits_mask2(0x0, 0xFF);
+	parm[0].in.length      = gen_io_count();
+	parm[0].in.offset      = gen_offset();
+	parm[0].in.min_count   = gen_io_count();
+	parm[0].in.channel     = gen_bits_mask2(0x0, 0xFFFFFFFF);
+	parm[0].in.remaining   = gen_bits_mask2(0x0, 0xFFFFFFFF);
+	parm[0].in.channel_offset = gen_bits_mask2(0x0, 0xFFFF);
+	parm[0].in.channel_length = gen_bits_mask2(0x0, 0xFFFF);
 
 	GEN_COPY_PARM;
-	GEN_SET_FNUM(readx.in.file.fnum);
-	GEN_CALL(smb_raw_read(tree, &parm[i]));
+	GEN_SET_FNUM(in.file.handle);
+	GEN_CALL(smb2_read(tree, current_op.mem_ctx, &parm[i]));
 
-	CHECK_EQUAL(readx.out.remaining);
-	CHECK_EQUAL(readx.out.compaction_mode);
-	CHECK_EQUAL(readx.out.nread);
+	CHECK_EQUAL(out.remaining);
+	CHECK_EQUAL(out.reserved);
+	CHECK_EQUAL(out.data.length);
 
 	return true;
 }
@@ -1113,27 +1114,28 @@ static bool handler_read(int instance)
 */
 static bool handler_write(int instance)
 {
-	union smb_write parm[NSERVERS];
+	struct smb2_write parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
-	parm[0].writex.level = RAW_WRITE_WRITEX;
-	parm[0].writex.in.file.fnum = gen_fnum(instance);
-	parm[0].writex.in.offset = gen_offset();
-	parm[0].writex.in.wmode = gen_bits_mask(0xFFFF);
-	parm[0].writex.in.remaining = gen_io_count();
-	parm[0].writex.in.count = gen_io_count();
-	parm[0].writex.in.data = talloc_zero_array(current_op.mem_ctx, uint8_t, parm[0].writex.in.count);
+	parm[0].in.file.handle.data[0] = gen_fnum(instance);
+	parm[0].in.offset = gen_offset();
+	parm[0].in.unknown1 = gen_bits_mask2(0, 0xFFFFFFFF);
+	parm[0].in.unknown2 = gen_bits_mask2(0, 0xFFFFFFFF);
+	parm[0].in.data = data_blob_talloc(current_op.mem_ctx, NULL,
+					    gen_io_count());
 
 	GEN_COPY_PARM;
-	GEN_SET_FNUM(writex.in.file.fnum);
-	GEN_CALL(smb_raw_write(tree, &parm[i]));
+	GEN_SET_FNUM(in.file.handle);
+	GEN_CALL(smb2_write(tree, &parm[i]));
 
-	CHECK_EQUAL(writex.out.nwritten);
-	CHECK_EQUAL(writex.out.remaining);
+	CHECK_EQUAL(out._pad);
+	CHECK_EQUAL(out.nwritten);
+	CHECK_EQUAL(out.unknown1);
 
 	return true;
 }
 
+#if 0
 /*
   generate lockingx operations
 */
@@ -1380,24 +1382,6 @@ static bool cmp_fileinfo(int instance,
 }
 
 /*
-  generate qpathinfo operations
-*/
-static bool handler_qpathinfo(int instance)
-{
-	union smb_fileinfo parm[NSERVERS];
-	NTSTATUS status[NSERVERS];
-
-	parm[0].generic.in.file.path = gen_fname_open(instance);
-
-	gen_fileinfo(instance, &parm[0]);
-
-	GEN_COPY_PARM;
-	GEN_CALL(smb_raw_pathinfo(tree, current_op.mem_ctx, &parm[i]));
-
-	return cmp_fileinfo(instance, parm, status);
-}
-
-/*
   generate qfileinfo operations
 */
 static bool handler_qfileinfo(int instance)
@@ -1597,6 +1581,8 @@ static struct {
 } gen_ops[] = {
 	{"NTCREATEX",  handler_ntcreatex},
 	{"CLOSE",      handler_close},
+	{"READ",       handler_read},
+	{"WRITE",      handler_write},
 };
 
 
