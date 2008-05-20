@@ -61,7 +61,6 @@ struct getdc_state {
 
 static void getdc_recv_netlogon_reply(struct dgram_mailslot_handler *dgmslot, 
 				      struct nbt_dgram_packet *packet, 
-				      const char *mailslot_name,
 				      struct socket_address *src)
 {
 	struct getdc_state *s =
@@ -85,8 +84,6 @@ static void getdc_recv_netlogon_reply(struct dgram_mailslot_handler *dgmslot,
 		goto done;
 	}
 
-	status = NT_STATUS_NO_LOGON_SERVERS;
-
 	p = netlogon.samlogon.nt4.server;
 
 	DEBUG(10, ("NTLOGON_SAM_LOGON_REPLY: server: %s, user: %s, "
@@ -102,6 +99,8 @@ static void getdc_recv_netlogon_reply(struct dgram_mailslot_handler *dgmslot,
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
+
+	status = NT_STATUS_OK;
 
  done:
 	irpc_send_reply(s->msg, status);
