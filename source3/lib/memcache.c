@@ -120,11 +120,11 @@ static int memcache_compare(struct memcache_element *e, enum memcache_number n,
 {
 	DATA_BLOB this_key, this_value;
 
-	if ((int)e->n < (int)n) return -1;
-	if ((int)e->n > (int)n) return 1;
+	if ((int)e->n < (int)n) return 1;
+	if ((int)e->n > (int)n) return -1;
 
-	if (e->keylength < key.length) return -1;
-	if (e->keylength > key.length) return 1;
+	if (e->keylength < key.length) return 1;
+	if (e->keylength > key.length) return -1;
 
 	memcache_element_parse(e, &this_key, &this_value);
 	return memcmp(this_key.data, key.data, key.length);
@@ -357,9 +357,17 @@ void memcache_flush(struct memcache *cache, enum memcache_number n)
 		return;
 	}
 
+	/*
+	 * First, find *any* element of number n
+	 */
+
 	while (true) {
 		struct memcache_element *elem = memcache_node2elem(node);
 		struct rb_node *next;
+
+		if ((int)elem->n == (int)n) {
+			break;
+		}
 
 		if ((int)elem->n < (int)n) {
 			next = node->rb_right;
@@ -373,14 +381,35 @@ void memcache_flush(struct memcache *cache, enum memcache_number n)
 		node = next;
 	}
 
-	node = rb_next(node);
 	if (node == NULL) {
 		return;
+	}
+
+	/*
+	 * Then, find the leftmost element with number n
+	 */
+
+	while (true) {
+		struct rb_node *prev = rb_prev(node);
+		struct memcache_element *elem;
+
+		if (prev == NULL) {
+			break;
+		}
+		elem = memcache_node2elem(prev);
+		if ((int)elem->n != (int)n) {
+			break;
+		}
+		node = prev;
 	}
 
 	while (node != NULL) {
 		struct memcache_element *e = memcache_node2elem(node);
 		struct rb_node *next = rb_next(node);
+
+		if (e->n != n) {
+			break;
+		}
 
 		memcache_delete_element(cache, e);
 		node = next;
