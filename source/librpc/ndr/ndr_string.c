@@ -315,7 +315,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 */
 _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 {
-	ssize_t s_len, c_len, d_len;
+	ssize_t s_len, c_len;
+	size_t d_len;
 	int chset = CH_UTF16;
 	unsigned flags = ndr->flags;
 	unsigned byte_mul = 2;

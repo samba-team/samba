@@ -865,7 +865,7 @@ bool cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
 
 	while ((data_len > ofs) && (data_len - ofs >= 24)) {
 		uint32_t nlen, len;
-		ssize_t size;
+		size_t size;
 		void *vstr;
 		struct stream_struct *tmp;
 		uint8_t *tmp_buf;
