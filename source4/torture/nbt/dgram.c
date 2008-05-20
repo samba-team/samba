@@ -39,7 +39,6 @@
 */
 static void netlogon_handler(struct dgram_mailslot_handler *dgmslot, 
 			     struct nbt_dgram_packet *packet, 
-			     const char *mailslot_name,
 			     struct socket_address *src)
 {
 	NTSTATUS status;
@@ -54,7 +53,7 @@ static void netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 		       src->addr, src->port);
 		return;
 	}
-
+	
 	(*replies)++;
 }
 
