@@ -38,7 +38,6 @@
 static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot, 
 				struct nbtd_interface *iface,
 				struct nbt_dgram_packet *packet, 
-				const char *mailslot_name,
 				const struct socket_address *src,
 				struct nbt_netlogon_packet *netlogon)
 {
@@ -106,7 +105,6 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 static void nbtd_netlogon_samlogon(struct dgram_mailslot_handler *dgmslot,
 				   struct nbtd_interface *iface,
 				   struct nbt_dgram_packet *packet, 
-				   const char *mailslot_name,
 				   const struct socket_address *src,
 				   struct nbt_netlogon_packet *netlogon)
 {
@@ -135,7 +133,7 @@ static void nbtd_netlogon_samlogon(struct dgram_mailslot_handler *dgmslot,
 	}
 
 	if (netlogon->req.logon.sid_size) {
-		if (strcasecmp(mailslot_name, NBT_MAILSLOT_NTLOGON) == 0) {
+		if (strcasecmp(dgmslot->mailslot_name, NBT_MAILSLOT_NTLOGON) == 0) {
 			DEBUG(2,("NBT netlogon query failed because SID specified in request to NTLOGON\n"));
 			/* SID not permitted on NTLOGON (for some reason...) */ 
 			return;
@@ -171,7 +169,6 @@ static void nbtd_netlogon_samlogon(struct dgram_mailslot_handler *dgmslot,
 */
 void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot, 
 				    struct nbt_dgram_packet *packet, 
-				    const char *mailslot_name,
 				    struct socket_address *src)
 {
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
@@ -200,11 +197,11 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 
 	switch (netlogon->command) {
 	case LOGON_PRIMARY_QUERY:
-		nbtd_netlogon_getdc(dgmslot, iface, packet, mailslot_name, 
+		nbtd_netlogon_getdc(dgmslot, iface, packet, 
 				    src, netlogon);
 		break;
 	case LOGON_SAM_LOGON_REQUEST:
-		nbtd_netlogon_samlogon(dgmslot, iface, packet, mailslot_name, 
+		nbtd_netlogon_samlogon(dgmslot, iface, packet, 
 				       src, netlogon);
 		break;
 	default:

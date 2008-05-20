@@ -70,7 +70,6 @@ struct nbt_dgram_socket {
 
 typedef void (*dgram_mailslot_handler_t)(struct dgram_mailslot_handler *, 
 					 struct nbt_dgram_packet *, 
-					 const char *mailslot_name,
 					 struct socket_address *src);
 
 struct dgram_mailslot_handler {
