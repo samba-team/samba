@@ -35,6 +35,8 @@ struct smb2_options {
 */
 struct smb2_negotiate {
 	DATA_BLOB secblob;
+	NTTIME system_time;
+	NTTIME server_start_time;
 };
 
 /* this is the context for the smb2 transport layer */
