@@ -88,7 +88,7 @@ static void dgm_socket_recv(struct nbt_dgram_socket *dgmsock)
 		struct dgram_mailslot_handler *dgmslot;
 		dgmslot = dgram_mailslot_find(dgmsock, mailslot_name);
 		if (dgmslot) {
-			dgmslot->handler(dgmslot, packet, src);
+			dgmslot->handler(dgmslot, packet, mailslot_name, src);
 		} else {
 			DEBUG(2,("No mailslot handler for '%s'\n", mailslot_name));
 		}

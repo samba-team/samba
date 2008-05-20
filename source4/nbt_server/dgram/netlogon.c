@@ -4,7 +4,8 @@
    NBT datagram netlogon server
 
    Copyright (C) Andrew Tridgell	2005
-   
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008
+  
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -26,9 +27,10 @@
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "util/util_ldb.h"
-#include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
 #include "smbd/service_task.h"
+#include "cldap_server/cldap_server.h"
+#include "libcli/security/security.h"
 
 /*
   reply to a GETDC request
@@ -36,17 +38,18 @@
 static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot, 
 				struct nbtd_interface *iface,
 				struct nbt_dgram_packet *packet, 
+				const char *mailslot_name,
 				const struct socket_address *src,
 				struct nbt_netlogon_packet *netlogon)
 {
 	struct nbt_name *name = &packet->data.msg.dest_name;
 	struct nbtd_interface *reply_iface = nbtd_find_reply_iface(iface, src->addr, false);
-	struct nbt_netlogon_packet reply;
 	struct nbt_netlogon_response_from_pdc *pdc;
 	const char *ref_attrs[] = {"nETBIOSName", NULL};
 	struct ldb_message **ref_res;
 	struct ldb_context *samctx;
 	struct ldb_dn *partitions_basedn;
+	struct nbt_netlogon_response netlogon_response;
 	int ret;
 
 	/* only answer getdc requests on the PDC or LOGON names */
@@ -58,6 +61,11 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 	if (samctx == NULL) {
 		DEBUG(2,("Unable to open sam in getdc reply\n"));
 		return;
+	}
+
+	if (!samdb_is_pdc(samctx)) {
+		DEBUG(2, ("Not a PDC, so not processing LOGON_PRIMARY_QUERY\n"));
+		return;		
 	}
 
 	partitions_basedn = samdb_partitions_dn(samctx, packet);
@@ -72,10 +80,11 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 	}
 
 	/* setup a GETDC reply */
-	ZERO_STRUCT(reply);
-	reply.command = NETLOGON_RESPONSE_FROM_PDC;
-	pdc = &reply.req.response;
+	ZERO_STRUCT(netlogon_response);
+	netlogon_response.response_type = NETLOGON_GET_PDC;
+	pdc = &netlogon_response.get_pdc;
 
+	pdc->command = NETLOGON_RESPONSE_FROM_PDC;
 	pdc->pdc_name         = lp_netbios_name(iface->nbtsrv->task->lp_ctx);
 	pdc->unicode_pdc_name = pdc->pdc_name;
 	pdc->domain_name      = samdb_result_string(ref_res[0], "nETBIOSName", name->name);;
@@ -83,38 +92,32 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 	pdc->lmnt_token       = 0xFFFF;
 	pdc->lm20_token       = 0xFFFF;
 
-
-	packet->data.msg.dest_name.type = 0;
-
 	dgram_mailslot_netlogon_reply(reply_iface->dgmsock, 
 				      packet, 
 				      lp_netbios_name(iface->nbtsrv->task->lp_ctx),
 				      netlogon->req.pdc.mailslot_name,
-				      &reply);
+				      &netlogon_response);
 }
 
 
 /*
   reply to a ADS style GETDC request
  */
-static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
-				 struct nbtd_interface *iface,
-				 struct nbt_dgram_packet *packet, 
-				 const struct socket_address *src,
-				 struct nbt_netlogon_packet *netlogon)
+static void nbtd_netlogon_samlogon(struct dgram_mailslot_handler *dgmslot,
+				   struct nbtd_interface *iface,
+				   struct nbt_dgram_packet *packet, 
+				   const char *mailslot_name,
+				   const struct socket_address *src,
+				   struct nbt_netlogon_packet *netlogon)
 {
 	struct nbt_name *name = &packet->data.msg.dest_name;
 	struct nbtd_interface *reply_iface = nbtd_find_reply_iface(iface, src->addr, false);
-	struct nbt_netlogon_packet reply;
-	struct nbt_netlogon_response_from_pdc2 *pdc;
 	struct ldb_context *samctx;
-	const char *ref_attrs[] = {"nETBIOSName", "dnsRoot", "ncName", NULL};
-	const char *dom_attrs[] = {"objectGUID", NULL};
-	struct ldb_message **ref_res, **dom_res;
-	int ret;
-	const char **services = lp_server_services(iface->nbtsrv->task->lp_ctx);
 	const char *my_ip = reply_iface->ip_address; 
-	struct ldb_dn *partitions_basedn;
+	struct dom_sid *sid;
+	struct nbt_netlogon_response netlogon_response;
+	NTSTATUS status;
+
 	if (!my_ip) {
 		DEBUG(0, ("Could not obtain own IP address for datagram socket\n"));
 		return;
@@ -131,90 +134,35 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 		return;
 	}
 
-	partitions_basedn = samdb_partitions_dn(samctx, packet);
+	if (netlogon->req.logon.sid_size) {
+		if (strcasecmp(mailslot_name, NBT_MAILSLOT_NTLOGON) == 0) {
+			DEBUG(2,("NBT netlogon query failed because SID specified in request to NTLOGON\n"));
+			/* SID not permitted on NTLOGON (for some reason...) */ 
+			return;
+		}
+		sid = &netlogon->req.logon.sid;
+	} else {
+		sid = NULL;
+	}
 
-	ret = gendb_search(samctx, packet, partitions_basedn, &ref_res, ref_attrs,
-				  "(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
-				  name->name);
-	
-	if (ret != 1) {
-		DEBUG(2,("Unable to find domain reference '%s' in sam\n", name->name));
+	status = fill_netlogon_samlogon_response(samctx, packet, NULL, name->name, sid, NULL, 
+						 netlogon->req.logon.user_name, src->addr, 
+						 netlogon->req.logon.nt_version, iface->nbtsrv->task->lp_ctx, &netlogon_response.samlogon);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2,("NBT netlogon query failed domain=%s sid=%s version=%d - %s\n",
+			 name->name, dom_sid_string(packet, sid), netlogon->req.logon.nt_version, nt_errstr(status)));
 		return;
 	}
 
-	/* try and find the domain */
-	ret = gendb_search_dn(samctx, packet, 
-			      samdb_result_dn(samctx, samctx, ref_res[0], "ncName", NULL), 
-			      &dom_res, dom_attrs);
-	if (ret != 1) {
-		DEBUG(2,("Unable to find domain from reference '%s' in sam\n",
-			 ldb_dn_get_linearized(ref_res[0]->dn)));
-		return;
-	}
-
-	/* setup a GETDC reply */
-	ZERO_STRUCT(reply);
-	reply.command = NETLOGON_RESPONSE_FROM_PDC2;
-
-#if 0
-	/* newer testing shows that the reply command type is not
-	   changed based on whether a username is given in the
-	   reply. This was what was causing the w2k join to be so
-	   slow */
-	if (netlogon->req.pdc2.user_name[0]) {
-		reply.command = NETLOGON_RESPONSE_FROM_PDC_USER;
-	}
-#endif
-
-	pdc = &reply.req.response2;
-
-	/* TODO: accurately depict which services we are running */
-	pdc->server_type      = 
-		NBT_SERVER_PDC | NBT_SERVER_GC | 
-		NBT_SERVER_DS | NBT_SERVER_TIMESERV |
-		NBT_SERVER_CLOSEST | NBT_SERVER_WRITABLE | 
-		NBT_SERVER_GOOD_TIMESERV;
-
-	/* hmm, probably a better way to do this */
-	if (str_list_check(services, "ldap")) {
-		pdc->server_type |= NBT_SERVER_LDAP;
-	}
-
-	if (str_list_check(services, "kdc")) {
-		pdc->server_type |= NBT_SERVER_KDC;
-	}
-
-	pdc->domain_uuid      = samdb_result_guid(dom_res[0], "objectGUID");
-	pdc->forest           = samdb_result_string(ref_res[0], "dnsRoot", 
-						    lp_realm(iface->nbtsrv->task->lp_ctx));
-	pdc->dns_domain       = samdb_result_string(ref_res[0], "dnsRoot", 
-						    lp_realm(iface->nbtsrv->task->lp_ctx));
-
-	/* TODO: get our full DNS name from somewhere else */
-	pdc->pdc_dns_name     = talloc_asprintf(packet, "%s.%s", 
-						strlower_talloc(packet, 
-								lp_netbios_name(iface->nbtsrv->task->lp_ctx)), 
-						pdc->dns_domain);
-	pdc->domain           = samdb_result_string(ref_res[0], "nETBIOSName", name->name);;
-	pdc->pdc_name         = lp_netbios_name(iface->nbtsrv->task->lp_ctx);
-	pdc->user_name        = netlogon->req.pdc2.user_name;
-	/* TODO: we need to make sure these are in our DNS zone */
-	pdc->server_site      = "Default-First-Site-Name";
-	pdc->client_site      = "Default-First-Site-Name";
-	pdc->unknown          = 0x10; /* what is this? */
-	pdc->unknown2         = 2; /* and this ... */
-	pdc->pdc_ip           = my_ip;
-	pdc->nt_version       = 13;
-	pdc->lmnt_token       = 0xFFFF;
-	pdc->lm20_token       = 0xFFFF;
+	netlogon_response.response_type = NETLOGON_SAMLOGON;
 
 	packet->data.msg.dest_name.type = 0;
 
 	dgram_mailslot_netlogon_reply(reply_iface->dgmsock, 
 				      packet, 
 				      lp_netbios_name(iface->nbtsrv->task->lp_ctx),
-				      netlogon->req.pdc2.mailslot_name,
-				      &reply);
+				      netlogon->req.logon.mailslot_name,
+				      &netlogon_response);
 }
 
 
@@ -223,6 +171,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 */
 void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot, 
 				    struct nbt_dgram_packet *packet, 
+				    const char *mailslot_name,
 				    struct socket_address *src)
 {
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
@@ -246,15 +195,17 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 
 	DEBUG(2,("netlogon request to %s from %s:%d\n", 
 		 nbt_name_string(netlogon, name), src->addr, src->port));
-	status = dgram_mailslot_netlogon_parse(dgmslot, netlogon, packet, netlogon);
+	status = dgram_mailslot_netlogon_parse_request(dgmslot, netlogon, packet, netlogon);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	switch (netlogon->command) {
-	case NETLOGON_QUERY_FOR_PDC:
-		nbtd_netlogon_getdc(dgmslot, iface, packet, src, netlogon);
+	case LOGON_PRIMARY_QUERY:
+		nbtd_netlogon_getdc(dgmslot, iface, packet, mailslot_name, 
+				    src, netlogon);
 		break;
-	case NETLOGON_QUERY_FOR_PDC2:
-		nbtd_netlogon_getdc2(dgmslot, iface, packet, src, netlogon);
+	case LOGON_SAM_LOGON_REQUEST:
+		nbtd_netlogon_samlogon(dgmslot, iface, packet, mailslot_name, 
+				       src, netlogon);
 		break;
 	default:
 		DEBUG(2,("unknown netlogon op %d from %s:%d\n", 

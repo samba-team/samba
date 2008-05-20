@@ -49,7 +49,7 @@ static NTSTATUS nbtd_information(struct irpc_message *msg,
 
 
 /*
-  winbind needs to be able to do a getdc request, but some windows
+  winbind needs to be able to do a getdc request, but most (all?) windows
   servers always send the reply to port 138, regardless of the request
   port. To cope with this we use a irpc request to the NBT server
   which has port 138 open, and thus can receive the replies
@@ -59,55 +59,48 @@ struct getdc_state {
 	struct nbtd_getdcname *req;
 };
 
-static void getdc_recv_ntlogon_reply(struct dgram_mailslot_handler *dgmslot, 
-				     struct nbt_dgram_packet *packet, 
-				     struct socket_address *src)
+static void getdc_recv_netlogon_reply(struct dgram_mailslot_handler *dgmslot, 
+				      struct nbt_dgram_packet *packet, 
+				      const char *mailslot_name,
+				      struct socket_address *src)
 {
 	struct getdc_state *s =
 		talloc_get_type(dgmslot->private, struct getdc_state);
-
-	struct nbt_ntlogon_packet ntlogon;
+	const char *p;
+	struct nbt_netlogon_response netlogon;
 	NTSTATUS status;
 
-	status = dgram_mailslot_ntlogon_parse(dgmslot, packet, packet,
-					      &ntlogon);
+	status = dgram_mailslot_netlogon_parse_response(dgmslot, packet, packet,
+							&netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("dgram_mailslot_ntlogon_parse failed: %s\n",
 			  nt_errstr(status)));
 		goto done;
 	}
 
+	/* We asked for version 1 only */
+	if (netlogon.response_type == NETLOGON_SAMLOGON
+	    && netlogon.samlogon.ntver != NETLOGON_NT_VERSION_1) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
+
 	status = NT_STATUS_NO_LOGON_SERVERS;
 
-	DEBUG(10, ("reply: command=%d\n", ntlogon.command));
+	p = netlogon.samlogon.nt4.server;
 
-	switch (ntlogon.command) {
-	case NTLOGON_SAM_LOGON:
-		DEBUG(0, ("Huh -- got NTLOGON_SAM_LOGON as reply\n"));
-		break;
-	case NTLOGON_SAM_LOGON_REPLY:
-	case NTLOGON_SAM_LOGON_REPLY15: {
-		const char *p = ntlogon.req.reply.server;
+	DEBUG(10, ("NTLOGON_SAM_LOGON_REPLY: server: %s, user: %s, "
+		   "domain: %s\n", p, netlogon.samlogon.nt4.user_name,
+		   netlogon.samlogon.nt4.domain));
 
-		DEBUG(10, ("NTLOGON_SAM_LOGON_REPLY: server: %s, user: %s, "
-			   "domain: %s\n", p, ntlogon.req.reply.user_name,
-			   ntlogon.req.reply.domain));
-
-		if (*p == '\\') p += 1;
-		if (*p == '\\') p += 1;
-
-		s->req->out.dcname = talloc_strdup(s->req, p);
-		if (s->req->out.dcname == NULL) {
-			DEBUG(0, ("talloc failed\n"));
-			status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-		status = NT_STATUS_OK;
-		break;
-	}
-	default:
-		DEBUG(0, ("Got unknown packet: %d\n", ntlogon.command));
-		break;
+	if (*p == '\\') p += 1;
+	if (*p == '\\') p += 1;
+	
+	s->req->out.dcname = talloc_strdup(s->req, p);
+	if (s->req->out.dcname == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
  done:
@@ -121,8 +114,8 @@ static NTSTATUS nbtd_getdcname(struct irpc_message *msg,
 		talloc_get_type(msg->private, struct nbtd_server);
 	struct nbtd_interface *iface = nbtd_find_request_iface(server, req->in.ip_address, true);
 	struct getdc_state *s;
-	struct nbt_ntlogon_packet p;
-	struct nbt_ntlogon_sam_logon *r;
+	struct nbt_netlogon_packet p;
+	struct NETLOGON_SAM_LOGON_REQUEST *r;
 	struct nbt_name src, dst;
 	struct socket_address *dest;
 	struct dgram_mailslot_handler *handler;
@@ -137,11 +130,11 @@ static NTSTATUS nbtd_getdcname(struct irpc_message *msg,
 	s->req = req;
 	
 	handler = dgram_mailslot_temp(iface->dgmsock, NBT_MAILSLOT_GETDC,
-				      getdc_recv_ntlogon_reply, s);
+				      getdc_recv_netlogon_reply, s);
         NT_STATUS_HAVE_NO_MEMORY(handler);
 	
 	ZERO_STRUCT(p);
-	p.command = NTLOGON_SAM_LOGON;
+	p.command = LOGON_SAM_LOGON_REQUEST;
 	r = &p.req.logon;
 	r->request_count = 0;
 	r->computer_name = req->in.my_computername;
@@ -149,7 +142,7 @@ static NTSTATUS nbtd_getdcname(struct irpc_message *msg,
 	r->mailslot_name = handler->mailslot_name;
 	r->acct_control = req->in.account_control;
 	r->sid = *req->in.domain_sid;
-	r->nt_version = 1;
+	r->nt_version = NETLOGON_NT_VERSION_1;
 	r->lmnt_token = 0xffff;
 	r->lm20_token = 0xffff;
 
@@ -160,9 +153,10 @@ static NTSTATUS nbtd_getdcname(struct irpc_message *msg,
 					   req->in.ip_address, 138);
 	NT_STATUS_HAVE_NO_MEMORY(dest);
 
-	status = dgram_mailslot_ntlogon_send(iface->dgmsock, DGRAM_DIRECT_GROUP,
-					     &dst, dest,
-					     &src, &p);
+	status = dgram_mailslot_netlogon_send(iface->dgmsock, 
+					      &dst, dest,
+					      NBT_MAILSLOT_NETLOGON, 
+					      &src, &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("dgram_mailslot_ntlogon_send failed: %s\n",
 			  nt_errstr(status)));

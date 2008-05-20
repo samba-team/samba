@@ -1085,8 +1085,14 @@ void irpc_remove_name(struct messaging_context *msg_ctx, const char *name)
 		return;
 	}
 	rec = tdb_fetch_bystring(t->tdb, name);
+	if (rec.dptr == NULL) {
+		tdb_unlock_bystring(t->tdb, name);
+		talloc_free(t);
+		return;
+	}
 	count = rec.dsize / sizeof(struct server_id);
 	if (count == 0) {
+		free(rec.dptr);
 		tdb_unlock_bystring(t->tdb, name);
 		talloc_free(t);
 		return;
