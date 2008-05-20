@@ -234,6 +234,7 @@ o   Alexander Bokovoy <ab@samba.org>
 
 o   Günther Deschner <gd@samba.org>
     * BUG 5465: Fix joining with createcomputer=ou1/ou2/ou3.
+    * BUG 5461: Fix issue with Citrix on Samba DCs with more than 900 groups.
     * Fix wins null pointer crash in nss_wins module.
     * Fix lm session key length in _netr_LogonSamLogon.
     * Add -f switch for DsGetDCName() example and be more verbose on output.
