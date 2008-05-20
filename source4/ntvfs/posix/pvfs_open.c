@@ -1117,6 +1117,20 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
+	/* if the client specified that it must not be a directory then
+	   check that it isn't */
+	if (name->exists && (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) &&
+	    (io->generic.in.create_options & NTCREATEX_OPTIONS_NON_DIRECTORY_FILE)) {
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
+	}
+
+	/* if the client specified that it must be a directory then
+	   check that it is */
+	if (name->exists && !(name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) &&
+	    (io->generic.in.create_options & NTCREATEX_OPTIONS_DIRECTORY)) {
+		return NT_STATUS_NOT_A_DIRECTORY;
+	}
+
 	/* directory opens are handled separately */
 	if ((name->exists && (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)) ||
 	    (io->generic.in.create_options & NTCREATEX_OPTIONS_DIRECTORY)) {
