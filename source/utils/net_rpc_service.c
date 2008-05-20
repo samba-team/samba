@@ -19,6 +19,10 @@
 #include "includes.h"
 #include "utils/net.h"
 
+
+#define CLI_SERVER_NAME_SLASH(_ctx, _p, _cli) \
+	_p = talloc_asprintf(_ctx, "\\\\%s", _cli->cli->desthost);
+
 /********************************************************************
 ********************************************************************/
 
@@ -168,6 +172,7 @@ static NTSTATUS rpc_service_list_internal(const DOM_SID *domain_sid,
 	fstring servicename;
 	fstring displayname;
 	uint32 num_services = 0;
+	const char *server_name;
 	int i;
 
 	if (argc != 0 ) {
@@ -175,8 +180,11 @@ static NTSTATUS rpc_service_list_internal(const DOM_SID *domain_sid,
 		return NT_STATUS_OK;
 	}
 
+	CLI_SERVER_NAME_SLASH(mem_ctx, server_name, pipe_hnd);
+	NT_STATUS_HAVE_NO_MEMORY(server_name);
+
 	status = rpccli_svcctl_OpenSCManagerW(pipe_hnd, mem_ctx,
-					      pipe_hnd->cli->srv_name_slash,
+					      server_name,
 					      NULL,
 					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
 					      &hSCM,
@@ -227,6 +235,7 @@ static NTSTATUS rpc_service_status_internal(const DOM_SID *domain_sid,
 	SERVICE_STATUS service_status;
 	SERVICE_CONFIG config;
 	fstring ascii_string;
+	const char *server_name;
 
 	if (argc != 1 ) {
 		d_printf("Usage: net rpc service status <service>\n");
@@ -234,8 +243,11 @@ static NTSTATUS rpc_service_status_internal(const DOM_SID *domain_sid,
 	}
 
 	/* Open the Service Control Manager */
+	CLI_SERVER_NAME_SLASH(mem_ctx, server_name, pipe_hnd);
+	NT_STATUS_HAVE_NO_MEMORY(server_name);
+
 	status = rpccli_svcctl_OpenSCManagerW(pipe_hnd, mem_ctx,
-					      pipe_hnd->cli->srv_name_slash,
+					      server_name,
 					      NULL,
 					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
 					      &hSCM,
@@ -337,6 +349,7 @@ static NTSTATUS rpc_service_stop_internal(const DOM_SID *domain_sid,
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
 	fstring servicename;
+	const char *server_name;
 
 	if (argc != 1 ) {
 		d_printf("Usage: net rpc service status <service>\n");
@@ -346,8 +359,11 @@ static NTSTATUS rpc_service_stop_internal(const DOM_SID *domain_sid,
 	fstrcpy( servicename, argv[0] );
 
 	/* Open the Service Control Manager */
+	CLI_SERVER_NAME_SLASH(mem_ctx, server_name, pipe_hnd);
+	NT_STATUS_HAVE_NO_MEMORY(server_name);
+
 	status = rpccli_svcctl_OpenSCManagerW(pipe_hnd, mem_ctx,
-					      pipe_hnd->cli->srv_name_slash,
+					      server_name,
 					      NULL,
 					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
 					      &hSCM,
@@ -380,6 +396,7 @@ static NTSTATUS rpc_service_pause_internal(const DOM_SID *domain_sid,
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
 	fstring servicename;
+	const char *server_name;
 
 	if (argc != 1 ) {
 		d_printf("Usage: net rpc service status <service>\n");
@@ -389,8 +406,11 @@ static NTSTATUS rpc_service_pause_internal(const DOM_SID *domain_sid,
 	fstrcpy( servicename, argv[0] );
 
 	/* Open the Service Control Manager */
+	CLI_SERVER_NAME_SLASH(mem_ctx, server_name, pipe_hnd);
+	NT_STATUS_HAVE_NO_MEMORY(server_name);
+
 	status = rpccli_svcctl_OpenSCManagerW(pipe_hnd, mem_ctx,
-					      pipe_hnd->cli->srv_name_slash,
+					      server_name,
 					      NULL,
 					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
 					      &hSCM,
@@ -423,6 +443,7 @@ static NTSTATUS rpc_service_resume_internal(const DOM_SID *domain_sid,
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
 	fstring servicename;
+	const char *server_name;
 
 	if (argc != 1 ) {
 		d_printf("Usage: net rpc service status <service>\n");
@@ -432,8 +453,11 @@ static NTSTATUS rpc_service_resume_internal(const DOM_SID *domain_sid,
 	fstrcpy( servicename, argv[0] );
 
 	/* Open the Service Control Manager */
+	CLI_SERVER_NAME_SLASH(mem_ctx, server_name, pipe_hnd);
+	NT_STATUS_HAVE_NO_MEMORY(server_name);
+
 	status = rpccli_svcctl_OpenSCManagerW(pipe_hnd, mem_ctx,
-					      pipe_hnd->cli->srv_name_slash,
+					      server_name,
 					      NULL,
 					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
 					      &hSCM,
@@ -466,6 +490,7 @@ static NTSTATUS rpc_service_start_internal(const DOM_SID *domain_sid,
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
 	uint32 state = 0;
+	const char *server_name;
 
 	if (argc != 1 ) {
 		d_printf("Usage: net rpc service status <service>\n");
@@ -473,8 +498,11 @@ static NTSTATUS rpc_service_start_internal(const DOM_SID *domain_sid,
 	}
 
 	/* Open the Service Control Manager */
+	CLI_SERVER_NAME_SLASH(mem_ctx, server_name, pipe_hnd);
+	NT_STATUS_HAVE_NO_MEMORY(server_name);
+
 	status = rpccli_svcctl_OpenSCManagerW(pipe_hnd, mem_ctx,
-					      pipe_hnd->cli->srv_name_slash,
+					      server_name,
 					      NULL,
 					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
 					      &hSCM,
