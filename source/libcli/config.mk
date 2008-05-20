@@ -57,6 +57,15 @@ LIBCLI_NBT_OBJ_FILES = $(addprefix $(libclisrcdir)/nbt/, \
 
 $(eval $(call proto_header_template,$(libclisrcdir)/nbt/nbt_proto.h,$(LIBCLI_NBT_OBJ_FILES:.o=.c)))
 
+[SUBSYSTEM::LIBCLI_NETLOGON]
+PUBLIC_DEPENDENCIES = LIBNDR NDR_NBT  \
+	NDR_SECURITY LIBSAMBA-UTIL
+
+LIBCLI_NETLOGON_OBJ_FILES = $(addprefix libcli/, \
+	netlogon.o)
+
+$(eval $(call proto_header_template,$(libclisrcdir)/netlogon_proto.h,$(LIBCLI_NETLOGON_OBJ_FILES:.o=.c)))
+
 [PYTHON::python_libcli_nbt]
 SWIG_FILE = swig/libcli_nbt.i
 PUBLIC_DEPENDENCIES = LIBCLI_NBT DYNCONFIG LIBSAMBA-HOSTCONFIG
@@ -70,18 +79,17 @@ PUBLIC_DEPENDENCIES = LIBCLI_SMB DYNCONFIG LIBSAMBA-HOSTCONFIG
 python_libcli_smb_OBJ_FILES = $(libclisrcdir)/swig/libcli_smb_wrap.o
 
 [SUBSYSTEM::LIBCLI_DGRAM]
-PUBLIC_DEPENDENCIES = LIBCLI_NBT LIBNDR LIBCLI_RESOLVE
+PUBLIC_DEPENDENCIES = LIBCLI_NBT LIBNDR LIBCLI_RESOLVE LIBCLI_NETLOGON
 
 LIBCLI_DGRAM_OBJ_FILES = $(addprefix $(libclisrcdir)/dgram/, \
 	dgramsocket.o \
 	mailslot.o \
 	netlogon.o \
-	ntlogon.o \
 	browse.o)
 
 [SUBSYSTEM::LIBCLI_CLDAP]
 PUBLIC_DEPENDENCIES = LIBCLI_LDAP
-PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBLDB
+PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBLDB LIBCLI_NETLOGON
 
 LIBCLI_CLDAP_OBJ_FILES = $(libclisrcdir)/cldap/cldap.o
 # PUBLIC_HEADERS += $(libclisrcdir)/cldap/cldap.h

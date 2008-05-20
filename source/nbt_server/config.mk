@@ -46,7 +46,7 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM NBTD_DGRAM
 #######################
 
-NBTD_DGRAM_OBJ_FILES = $(addprefix $(nbt_serversrcdir)/dgram/, request.o netlogon.o ntlogon.o browse.o)
+NBTD_DGRAM_OBJ_FILES = $(addprefix $(nbt_serversrcdir)/dgram/, request.o netlogon.o browse.o)
 
 $(eval $(call proto_header_template,$(nbt_serversrcdir)/dgram/proto.h,$(NBTD_DGRAM_OBJ_FILES:.o=.c)))
 

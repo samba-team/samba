@@ -2,7 +2,7 @@
 
 MSRPC_PARSE_OBJ_FILES = $(addprefix $(authsrcdir)/ntlmssp/, ntlmssp_parse.o)
 
-$(eval $(call proto_header_template,$(authsrcdir)/ntlmssp/msrpc_parse.h,$(MSRPC_PARSE_OBJ_FILES)))
+$(eval $(call proto_header_template,$(authsrcdir)/ntlmssp/msrpc_parse.h,$(MSRPC_PARSE_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start MODULE gensec_ntlmssp

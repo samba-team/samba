@@ -229,6 +229,14 @@ fail:
             return ldb_dn_canonical_ex_string($self, $self);
         }
 #ifdef SWIGPYTHON
+        char *__repr__(void)
+        {
+            char *dn = ldb_dn_get_linearized($self), *ret;
+            asprintf(&ret, "Dn('%s')", dn);
+            talloc_free(dn);
+            return ret;
+        }
+
         ldb_dn *__add__(ldb_dn *other)
         {
             ldb_dn *ret = ldb_dn_copy(NULL, $self);
@@ -376,6 +384,9 @@ typedef struct ldb_message_element {
                 raise KeyError("no such value")
             return ret
 
+        def __repr__(self):
+            return "MessageElement([%s])" % (",".join(repr(x) for x in self.__set__()))
+
         def __eq__(self, other):
             if (len(self) == 1 and self.get(0) == other):
                 return True
@@ -400,17 +411,22 @@ typedef struct ldb_message_element {
     else
         $result = SWIG_NewPointerObj($1, SWIGTYPE_p_ldb_message_element, 0);
 }
-%rename(__getitem__) ldb_message::find_element;
 //%typemap(out) ldb_msg_element *;
 
 
 %inline {
     PyObject *ldb_msg_list_elements(ldb_msg *msg)
     {
-        int i;
-        PyObject *obj = PyList_New(msg->num_elements);
-        for (i = 0; i < msg->num_elements; i++)
-            PyList_SetItem(obj, i, PyString_FromString(msg->elements[i].name));
+        int i, j = 0;
+        PyObject *obj = PyList_New(msg->num_elements+(msg->dn != NULL?1:0));
+        if (msg->dn != NULL) {
+            PyList_SetItem(obj, j, PyString_FromString("dn"));
+            j++;
+        }
+        for (i = 0; i < msg->num_elements; i++) {
+            PyList_SetItem(obj, j, PyString_FromString(msg->elements[i].name));
+            j++;
+        }
         return obj;
     }
 }
@@ -466,6 +482,28 @@ typedef struct ldb_message {
         }
 #endif
         void remove_attr(const char *name);
+%pythoncode {
+    def get(self, key, default=None):
+        if key == "dn":
+            return self.dn
+        return self.find_element(key)
+
+    def __getitem__(self, key):
+        ret = self.get(key, None)
+        if ret is None:
+            raise KeyError("No such element")
+        return ret
+
+    def iteritems(self):
+        for k in self.keys():
+            yield k, self[k]
+    
+    def items(self):
+        return list(self.iteritems())
+
+    def __repr__(self):
+        return "Message(%s)" % repr(dict(self.iteritems()))
+}
     }
 } ldb_msg;
 
@@ -743,6 +781,12 @@ typedef struct ldb_context {
             return PyObject_GetIter(list);
         }
 
+        char *__repr__(void)
+        {
+            char *ret;
+            asprintf(&ret, "<ldb connection at 0x%x>", ret); 
+            return ret;
+        }
 #endif
     }
     %pythoncode {
@@ -753,6 +797,8 @@ typedef struct ldb_context {
 
         def search(self, base=None, scope=SCOPE_DEFAULT, expression=None, 
                    attrs=None, controls=None):
+            if not (attrs is None or isinstance(attrs, list)):
+                raise TypeError("attributes not a list")
             parsed_controls = None
             if controls is not None:
                 parsed_controls = self.parse_control_strings(controls)
