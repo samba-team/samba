@@ -61,7 +61,6 @@ struct getdc_state {
 
 static void getdc_recv_netlogon_reply(struct dgram_mailslot_handler *dgmslot, 
 				      struct nbt_dgram_packet *packet, 
-				      const char *mailslot_name,
 				      struct socket_address *src)
 {
 	struct getdc_state *s =
