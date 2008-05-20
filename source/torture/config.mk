@@ -70,6 +70,7 @@ TORTURE_RAW_OBJ_FILES = $(addprefix $(torturesrcdir)/raw/, \
 		pingpong.o \
 		lockbench.o \
 		lookuprate.o \
+		tconrate.o \
 		openbench.o \
 		rename.o \
 		eas.o \
