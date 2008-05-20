@@ -63,7 +63,7 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_NBT  \
 LIBCLI_NETLOGON_OBJ_FILES = $(addprefix libcli/, \
 	netlogon.o)
 
-$(eval $(call proto_header_template,$(libclisrcdir)/nbt/nbt_proto.h,$(LIBCLI_NETLOGON_OBJ_FILES:.o=.c)))
+$(eval $(call proto_header_template,$(libclisrcdir)/netlogon_proto.h,$(LIBCLI_NETLOGON_OBJ_FILES:.o=.c)))
 
 [PYTHON::python_libcli_nbt]
 SWIG_FILE = swig/libcli_nbt.i
