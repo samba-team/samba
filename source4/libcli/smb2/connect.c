@@ -101,6 +101,9 @@ static void continue_negprot(struct smb2_request *req)
 	c->status = smb2_negprot_recv(req, c, &state->negprot);
 	if (!composite_is_ok(c)) return;
 
+	transport->negotiate.system_time = state->negprot.out.system_time;
+	transport->negotiate.server_start_time = state->negprot.out.server_start_time;
+
 	state->session = smb2_session_init(transport, global_loadparm, state, true);
 	if (composite_nomem(state->session, c)) return;
 
