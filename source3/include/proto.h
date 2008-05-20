@@ -9456,7 +9456,6 @@ void conn_init(void);
 int conn_num_open(void);
 bool conn_snum_used(int snum);
 connection_struct *conn_find(unsigned cnum);
-connection_struct *conn_find_byname(const char *service);
 connection_struct *conn_new(void);
 void conn_close_all(void);
 bool conn_idle_all(time_t t);
