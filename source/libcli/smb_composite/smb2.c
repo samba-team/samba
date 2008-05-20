@@ -264,3 +264,108 @@ NTSTATUS smb2_composite_rmdir(struct smb2_tree *tree, struct smb_rmdir *io)
 	struct composite_context *c = smb2_composite_rmdir_send(tree, io);
 	return composite_wait_free(c);
 }
+
+
+/*
+  continue after the setfileinfo in a composite setpathinfo
+ */
+static void continue_setpathinfo_close(struct smb2_request *req)
+{
+	struct composite_context *ctx = talloc_get_type(req->async.private_data, 
+							struct composite_context);
+	struct smb2_tree *tree = req->tree;
+	struct smb2_close close_parm;
+	NTSTATUS status;
+	union smb_setfileinfo *io2 = talloc_get_type(ctx->private_data, 
+						     union smb_setfileinfo);
+
+	status = smb2_setinfo_recv(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		composite_error(ctx, status);
+		return;
+	}
+
+	ZERO_STRUCT(close_parm);
+	close_parm.in.file.handle = io2->generic.in.file.handle;
+	
+	req = smb2_close_send(tree, &close_parm);
+	composite_continue_smb2(ctx, req, continue_close, ctx);
+}
+
+
+/*
+  continue after the create in a composite setpathinfo
+ */
+static void continue_setpathinfo(struct smb2_request *req)
+{
+	struct composite_context *ctx = talloc_get_type(req->async.private_data, 
+							struct composite_context);
+	struct smb2_tree *tree = req->tree;
+	struct smb2_create create_parm;
+	NTSTATUS status;
+	union smb_setfileinfo *io2 = talloc_get_type(ctx->private_data, 
+						     union smb_setfileinfo);
+
+	status = smb2_create_recv(req, ctx, &create_parm);
+	if (!NT_STATUS_IS_OK(status)) {
+		composite_error(ctx, status);
+		return;
+	}
+
+	io2->generic.in.file.handle = create_parm.out.file.handle;
+
+	req = smb2_setinfo_file_send(tree, io2);
+	composite_continue_smb2(ctx, req, continue_setpathinfo_close, ctx);
+}
+
+
+/*
+  composite SMB2 setpathinfo call
+*/
+struct composite_context *smb2_composite_setpathinfo_send(struct smb2_tree *tree, 
+							  union smb_setfileinfo *io)
+{
+	struct composite_context *ctx;
+	struct smb2_create create_parm;
+	struct smb2_request *req;
+	union smb_setfileinfo *io2;
+
+	ctx = composite_create(tree, tree->session->transport->socket->event.ctx);
+	if (ctx == NULL) return NULL;
+
+	ZERO_STRUCT(create_parm);
+	create_parm.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
+	create_parm.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create_parm.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_DELETE|
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	create_parm.in.create_options = 0;
+	create_parm.in.fname = io->generic.in.file.path;
+	if (create_parm.in.fname[0] == '\\') {
+		create_parm.in.fname++;
+	}
+
+	req = smb2_create_send(tree, &create_parm);
+
+	io2 = talloc(ctx, union smb_setfileinfo);
+	if (composite_nomem(io2, ctx)) {
+		return ctx;
+	}
+	*io2 = *io;
+
+	ctx->private_data = io2;
+
+	composite_continue_smb2(ctx, req, continue_setpathinfo, ctx);
+	return ctx;
+}
+
+
+/*
+  composite setpathinfo call
+ */
+NTSTATUS smb2_composite_setpathinfo(struct smb2_tree *tree, union smb_setfileinfo *io)
+{
+	struct composite_context *c = smb2_composite_setpathinfo_send(tree, io);
+	return composite_wait_free(c);	
+}
