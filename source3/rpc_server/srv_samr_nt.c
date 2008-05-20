@@ -1816,7 +1816,7 @@ NTSTATUS _samr_LookupNames(pipes_struct *p,
 	NT_STATUS_HAVE_NO_MEMORY(rid);
 
 	type = talloc_array(p->mem_ctx, enum lsa_SidType, num_rids);
-	NT_STATUS_HAVE_NO_MEMORY(rid);
+	NT_STATUS_HAVE_NO_MEMORY(type);
 
 	DEBUG(5,("_samr_LookupNames: looking name on SID %s\n",
 		 sid_string_dbg(&pol_sid)));
