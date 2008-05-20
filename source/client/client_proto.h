@@ -123,7 +123,6 @@ NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
 				   const char *password,
 				   struct cli_pipe_auth_data **presult);
 NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
-			   uint16_t port,
 			   const struct ndr_syntax_id *abstract_syntax,
 			   struct rpc_pipe_client **presult);
 struct rpc_pipe_client *cli_rpc_pipe_open_noauth(struct cli_state *cli, int pipe_idx, NTSTATUS *perr);
