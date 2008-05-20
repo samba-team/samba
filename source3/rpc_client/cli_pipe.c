@@ -2503,6 +2503,12 @@ NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
 #endif
 }
 
+static int rpc_pipe_sock_destructor(struct rpc_pipe_client *p)
+{
+	close(p->trans.sock.fd);
+	return 0;
+}
+
 /********************************************************************
  Create a rpc pipe client struct, connecting to a tcp port
  ********************************************************************/
@@ -2546,6 +2552,8 @@ NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
 		status = map_nt_error_from_unix(errno);
 		goto fail;
 	}
+
+	talloc_set_destructor(result, rpc_pipe_sock_destructor);
 
 	*presult = result;
 	return NT_STATUS_OK;
@@ -2592,6 +2600,8 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 		status = map_nt_error_from_unix(errno);
 		goto fail;
 	}
+
+	talloc_set_destructor(result, rpc_pipe_sock_destructor);
 
 	result->dc = TALLOC_ZERO_P(result, struct dcinfo);
 	if (result->dc == NULL) {
