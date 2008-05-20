@@ -1786,8 +1786,8 @@ NTSTATUS _samr_LookupNames(pipes_struct *p,
 			   struct samr_LookupNames *r)
 {
 	NTSTATUS status;
-	uint32 rid[MAX_SAM_ENTRIES];
-	enum lsa_SidType type[MAX_SAM_ENTRIES];
+	uint32 *rid;
+	enum lsa_SidType *type;
 	int i;
 	int num_rids = r->in.num_names;
 	DOM_SID pol_sid;
@@ -1795,9 +1795,6 @@ NTSTATUS _samr_LookupNames(pipes_struct *p,
 	struct samr_Ids rids, types;
 
 	DEBUG(5,("_samr_LookupNames: %d\n", __LINE__));
-
-	ZERO_ARRAY(rid);
-	ZERO_ARRAY(type);
 
 	if (!get_lsa_policy_samr_sid(p, r->in.domain_handle, &pol_sid, &acc_granted, NULL)) {
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
@@ -1814,6 +1811,12 @@ NTSTATUS _samr_LookupNames(pipes_struct *p,
 		num_rids = MAX_SAM_ENTRIES;
 		DEBUG(5,("_samr_LookupNames: truncating entries to %d\n", num_rids));
 	}
+
+	rid = talloc_array(p->mem_ctx, uint32, num_rids);
+	NT_STATUS_HAVE_NO_MEMORY(rid);
+
+	type = talloc_array(p->mem_ctx, enum lsa_SidType, num_rids);
+	NT_STATUS_HAVE_NO_MEMORY(rid);
 
 	DEBUG(5,("_samr_LookupNames: looking name on SID %s\n",
 		 sid_string_dbg(&pol_sid)));
