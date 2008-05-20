@@ -82,6 +82,22 @@ NTSTATUS smb2_util_mkdir(struct smb2_tree *tree, const char *dname)
 }
 
 
+/*
+  set file attribute with SMB2
+*/
+NTSTATUS smb2_util_setatr(struct smb2_tree *tree, const char *name, uint32_t attrib)
+{
+	union smb_setfileinfo io;
+	
+	ZERO_STRUCT(io);
+	io.basic_info.level = RAW_SFILEINFO_BASIC_INFORMATION;
+	io.basic_info.in.file.path = name;
+	io.basic_info.in.attrib = attrib;
+
+	return smb2_composite_setpathinfo(tree, &io);
+}
+
+
 
 
 /* 
@@ -151,6 +167,12 @@ int smb2_deltree(struct smb2_tree *tree, const char *dname)
 		}
 		name = talloc_asprintf(tmp_ctx, "%s\\%s", dname, list[i].name_info.name.s);
 		status = smb2_util_unlink(tree, name);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_CANNOT_DELETE)) {
+			/* it could be read-only */
+			status = smb2_util_setatr(tree, name, FILE_ATTRIBUTE_NORMAL);
+			status = smb2_util_unlink(tree, name);
+		}
+
 		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
 			int ret;
 			ret = smb2_deltree(tree, name);
