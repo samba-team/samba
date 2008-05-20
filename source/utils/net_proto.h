@@ -46,7 +46,6 @@ uint32 get_sec_channel_type(const char *param);
 
 /* The following definitions come from utils/net_ads.c  */
 
-int net_ads_help(struct net_context *c, int argc, const char **argv);
 ADS_STATUS ads_startup(struct net_context *c, bool only_own_domain, ADS_STRUCT **ads);
 ADS_STATUS ads_startup_nobind(struct net_context *c, bool only_own_domain, ADS_STRUCT **ads);
 int net_ads_check_our_domain(struct net_context *c);
@@ -59,7 +58,6 @@ int net_ads_printer_usage(struct net_context *c, int argc, const char **argv);
 int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv);
 int net_ads_keytab(struct net_context *c, int argc, const char **argv);
 int net_ads_kerberos(struct net_context *c, int argc, const char **argv);
-int net_ads_usage(struct net_context *c, int argc, const char **argv);
 int net_ads(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_ads_gpo.c  */
