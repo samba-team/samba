@@ -35,32 +35,6 @@
 
 
 /*
-  close a handle with SMB2
-*/
-NTSTATUS smb2_util_close(struct smb2_tree *tree, struct smb2_handle h)
-{
-	struct smb2_close c;
-
-	ZERO_STRUCT(c);
-	c.in.file.handle = h;
-
-	return smb2_close(tree, &c);
-}
-
-/*
-  unlink a file with SMB2
-*/
-NTSTATUS smb2_util_unlink(struct smb2_tree *tree, const char *fname)
-{
-	union smb_unlink io;
-	
-	ZERO_STRUCT(io);
-	io.unlink.in.pattern = fname;
-
-	return smb2_composite_unlink(tree, &io);
-}
-
-/*
   write to a file on SMB2
 */
 NTSTATUS smb2_util_write(struct smb2_tree *tree,
