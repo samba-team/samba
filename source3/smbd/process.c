@@ -252,6 +252,8 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 			timeout, toread);
 
 		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("receive_smb_raw_talloc_partial_read: %s\n",
+				   nt_errstr(status)));
 			return status;
 		}
 	}
@@ -282,14 +284,8 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx, int fd,
 			smb_len_large(lenbuf) > min_recv_size && /* Could be a UNIX large writeX. */
 			!srv_is_signing_active()) {
 
-		status = receive_smb_raw_talloc_partial_read(
-			mem_ctx, lenbuf, fd, buffer, timeout, p_unread, &len);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("receive_smb_raw: %s\n",
-				   nt_errstr(status)));
-			return status;
-		}
+		return receive_smb_raw_talloc_partial_read(
+			mem_ctx, lenbuf, fd, buffer, timeout, p_unread, plen);
 	}
 
 	if (!valid_packet_size(len)) {
