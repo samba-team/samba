@@ -5671,7 +5671,7 @@ AC_ARG_WITH(winbind,
 # We need unix domain sockets for winbind
 
 if test x"$HAVE_WINBIND" = x"yes"; then
-	if test x"$samba_cv_unixsocket" = x"no"; then
+	if test x"$libreplace_cv_HAVE_UNIXSOCKET" = x"no"; then
 		winbind_no_reason=", no unix domain socket support on $host_os"
 		HAVE_WINBIND=no
 	fi
