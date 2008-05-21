@@ -24,6 +24,70 @@
 
 #include "lib/netapi/netapi.h"
 
+struct net_context {
+	const char *opt_requester_name;
+	const char *opt_host;
+	const char *opt_password;
+	const char *opt_user_name;
+	bool opt_user_specified;
+	const char *opt_workgroup;
+	int opt_long_list_entries;
+	int opt_reboot;
+	int opt_force;
+	int opt_stdin;
+	int opt_port;
+	int opt_verbose;
+	int opt_maxusers;
+	const char *opt_comment;
+	const char *opt_container;
+	int opt_flags;
+	int opt_timeout;
+	const char *opt_target_workgroup;
+	int opt_machine_pass;
+	int opt_localgroup;
+	int opt_domaingroup;
+	int do_talloc_report;
+	const char *opt_newntname;
+	int opt_rid;
+	int opt_acls;
+	int opt_attrs;
+	int opt_timestamps;
+	const char *opt_exclude;
+	const char *opt_destination;
+	int opt_testmode;
+
+	int opt_have_ip;
+	struct sockaddr_storage opt_dest_ip;
+	bool smb_encrypt;
+	struct libnetapi_ctx *netapi_ctx;
+
+	const char *share_type[];
+};
+
+#define NET_TRANSPORT_LOCAL 0x01
+#define NET_TRANSPORT_RAP   0x02
+#define NET_TRANSPORT_RPC   0x04
+#define NET_TRANSPROT_ADS   0x08
+
+struct functable {
+	const char *funcname;
+	int (*fn)(struct net_context *c, int argc, const char **argv);
+};
+
+struct functable2 {
+	const char *funcname;
+	int (*fn)(struct net_context *c, int argc, const char **argv);
+	const char *helptext;
+};
+
+struct functable3 {
+	const char *funcname;
+	int (*fn)(struct net_context *c, int argc, const char **argv);
+	int valid_transports;
+	const char *description;
+	const char *usage;
+};
+
 typedef NTSTATUS (*rpc_command_fn)(struct net_context *c,
 				const DOM_SID *,
 				const char *,
@@ -68,46 +132,6 @@ struct rpc_sh_cmd {
 };
 
 enum netdom_domain_t { ND_TYPE_NT4, ND_TYPE_AD };
-
-struct net_context {
-	const char *opt_requester_name;
-	const char *opt_host;
-	const char *opt_password;
-	const char *opt_user_name;
-	bool opt_user_specified;
-	const char *opt_workgroup;
-	int opt_long_list_entries;
-	int opt_reboot;
-	int opt_force;
-	int opt_stdin;
-	int opt_port;
-	int opt_verbose;
-	int opt_maxusers;
-	const char *opt_comment;
-	const char *opt_container;
-	int opt_flags;
-	int opt_timeout;
-	const char *opt_target_workgroup;
-	int opt_machine_pass;
-	int opt_localgroup;
-	int opt_domaingroup;
-	int do_talloc_report;
-	const char *opt_newntname;
-	int opt_rid;
-	int opt_acls;
-	int opt_attrs;
-	int opt_timestamps;
-	const char *opt_exclude;
-	const char *opt_destination;
-	int opt_testmode;
-
-	int opt_have_ip;
-	struct sockaddr_storage opt_dest_ip;
-	bool smb_encrypt;
-	struct libnetapi_ctx *netapi_ctx;
-
-	const char *share_type[];
-};
 
 /* INCLUDE FILES */
 
