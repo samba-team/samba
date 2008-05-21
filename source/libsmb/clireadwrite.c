@@ -704,7 +704,12 @@ ssize_t cli_write(struct cli_state *cli,
 		/* Only do massive writes if we can do them direct
 		 * with no signing or encrypting - not on a pipe. */
 		writesize = CLI_SAMBA_MAX_POSIX_LARGE_WRITEX_SIZE;
-	} else if (cli->capabilities & CAP_LARGE_WRITEX) {
+	} else if ((cli->capabilities & CAP_LARGE_WRITEX) &&
+			(strcmp(cli->dev, "LPT1:") != 0)) {
+
+		/* Printer devices are restricted to max_xmit
+		 * writesize in Vista and XPSP3. */
+
 		if (cli->is_samba) {
 			writesize = CLI_SAMBA_MAX_LARGE_WRITEX_SIZE;
 		} else if (!client_is_signing_on(cli)) {
