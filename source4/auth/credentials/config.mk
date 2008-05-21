@@ -17,7 +17,7 @@ PUBLIC_HEADERS += $(authsrcdir)/credentials/credentials.h
 PUBLIC_DEPENDENCIES = CREDENTIALS LIBCMDLINE_CREDENTIALS
 SWIG_FILE = credentials.i
 
-$(eval $(call python_py_module_template,credentials.py,$(authsrcdir)/credentials/credentials.py))
+$(eval $(call python_py_module_template,samba/credentials.py,$(authsrcdir)/credentials/credentials.py))
 
 swig_credentials_OBJ_FILES = $(authsrcdir)/credentials/credentials_wrap.o
 
