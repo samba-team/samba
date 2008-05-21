@@ -11,21 +11,7 @@ PREFIX="$1"
 CONFIGURATION="$2"
 shift 2
 
-testit() {
-	name="$1"
-	shift
-	cmdline="$*"
-	echo "test: $name"
-	$cmdline
-	status=$?
-	if [ x$status = x0 ]; then
-		echo "success: $name"
-	else
-		echo "failure: $name"
-		failed=`expr $failed + 1`
-	fi
-	return $status
-}
+. `dirname $0`/../../../testprogs/blackbox/subunit.sh
 
 testit "simple-default" $PYTHON ./setup/provision $CONFIGURATION --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-default
 testit "simple-dc" $PYTHON ./setup/provision $CONFIGURATION --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/simple-dc
@@ -33,9 +19,6 @@ testit "simple-member" $PYTHON ./setup/provision $CONFIGURATION --server-role="m
 testit "simple-standalone" $PYTHON ./setup/provision $CONFIGURATION --server-role="standalone" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-standalone
 testit "blank-dc" $PYTHON ./setup/provision $CONFIGURATION --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/blank-dc --blank
 testit "partitions-only-dc" $PYTHON ./setup/provision $CONFIGURATION --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/partitions-only-dc --partitions-only
-
-testit "newuser" $PYTHON ./setup/newuser --configfile=$PREFIX/simple-dc/etc/smb.conf testuser testpass
-testit "setpassword" $PYTHON ./setup/setpassword --configfile=$PREFIX/simple-dc/etc/smb.conf testuser --newpassword=testpass
 
 reprovision() {
 	$PYTHON ./setup/provision $CONFIGURATION --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/reprovision"
