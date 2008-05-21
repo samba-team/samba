@@ -92,7 +92,7 @@ PLUGINS += bin/modules/$(2)/$(3).$$(SHLIBEXT)
 uninstallplugins::
 	@-rm $$(DESTDIR)$$(modulesdir)/$(2)/$(3).$$(SHLIBEXT)
 installplugins::
-	@ln -fs $(1) $$(DESTDIR)$$(modulesdir)/$(2)/$(3).$$(SHLIBEXT)
+	@ln -fs $(basename $(1)) $$(DESTDIR)$$(modulesdir)/$(2)/$(3).$$(SHLIBEXT)
 
 endef
 
