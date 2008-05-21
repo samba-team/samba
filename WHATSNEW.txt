@@ -56,7 +56,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
 
 
 o   Glenn Curtis <gcurtis@likewisesoftware.com>
-    * Prevent cycle in Wibind's list of children when reaping dead processes.
+    * Prevent cycle in Winbind's list of children when reaping dead processes.
 
 
 o   Steven Danneman <steven.danneman@isilon.com>
@@ -104,7 +104,7 @@ o   Jim McDonough <jmcd@samba.org>
 
 
 o   Karolin Seeger <kseeger@samba.org>
-    * Documentation cleanup after r emerging docs from svn to git and 
+    * Documentation cleanup after merging docs from svn to git and 
       back-porting from the v3-2 branch.
 
 
