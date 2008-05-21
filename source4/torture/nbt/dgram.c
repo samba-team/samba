@@ -246,6 +246,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	map_netlogon_samlogon_response(&response->samlogon);
 
 	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX, "Got incorrect netlogon response command");
+	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.nt_version, NETLOGON_NT_VERSION_5EX_WITH_IP|NETLOGON_NT_VERSION_5EX|NETLOGON_NT_VERSION_5|NETLOGON_NT_VERSION_1, "Got incorrect netlogon response command");
 
 	/* setup (another) temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
