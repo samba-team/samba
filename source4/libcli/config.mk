@@ -82,6 +82,8 @@ python_libcli_nbt_OBJ_FILES = $(libclisrcdir)/swig/libcli_nbt_wrap.o
 
 $(eval $(call python_py_module_template,libcli_nbt.py,$(libclisrcdir)/swig/libcli_nbt.py))
 
+$(python_libcli_nbt_OBJ_FILES): CFLAGS+="$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)"
+
 [PYTHON::python_libcli_smb]
 SWIG_FILE = swig/libcli_smb.i
 PUBLIC_DEPENDENCIES = LIBCLI_SMB DYNCONFIG LIBSAMBA-HOSTCONFIG
@@ -89,6 +91,9 @@ PUBLIC_DEPENDENCIES = LIBCLI_SMB DYNCONFIG LIBSAMBA-HOSTCONFIG
 python_libcli_smb_OBJ_FILES = $(libclisrcdir)/swig/libcli_smb_wrap.o
 
 $(eval $(call python_py_module_template,libcli_smb.py,$(libclisrcdir)/swig/libcli_smb.py))
+
+$(python_libcli_smb_OBJ_FILES): CFLAGS+="$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)"
+
 
 [SUBSYSTEM::LIBCLI_DGRAM]
 PUBLIC_DEPENDENCIES = LIBCLI_NBT LIBNDR LIBCLI_RESOLVE LIBCLI_NETLOGON

@@ -111,3 +111,5 @@ SWIG_FILE = registry.i
 swig_registry_OBJ_FILES = $(libregistrysrcdir)/registry_wrap.o
 
 $(eval $(call python_py_module_template,registry.py,lib/registry/registry.py))
+
+$(swig_registry_OBJ_FILES): CFLAGS+="$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)"

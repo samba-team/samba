@@ -21,6 +21,8 @@ SWIG_FILE = misc.i
 
 python_misc_OBJ_FILES = $(pyscriptsrcdir)/misc_wrap.o
 
+$(python_misc_OBJ_FILES): CFLAGS+="$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)"
+
 _PY_FILES = $(shell find $(pyscriptsrcdir) -name "*.py")
 
 $(foreach pyfile, $(_PY_FILES),$(eval $(call python_py_module_template,$(patsubst $(pyscriptsrcdir)/%,%,$(pyfile)),$(pyfile))))
