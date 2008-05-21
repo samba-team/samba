@@ -6410,7 +6410,7 @@ static int rpc_trustdom(int argc, const char **argv)
 		return -1;
 	}
 
-	return (net_run_function(argc, argv, func, rpc_user_usage));
+	return (net_run_function(argc, argv, func, rpc_trustdom_usage));
 }
 
 /**
