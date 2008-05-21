@@ -17,7 +17,7 @@ import ldb
 from samba.auth import system_session
 from samba.samdb import SamDB
 
-parser = optparse.OptionParser("setpassword [username] [options]")
+parser = optparse.OptionParser("enableaccount [username] [options]")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
