@@ -236,6 +236,7 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.secrets = os.path.join(paths.private_dir, lp.get("secrets database") or "secrets.ldb")
     paths.templates = os.path.join(paths.private_dir, "templates.ldb")
     paths.dns = os.path.join(paths.private_dir, dnsdomain + ".zone")
+    paths.namedconf = os.path.join(paths.private_dir, "named.conf")
     paths.winsdb = os.path.join(paths.private_dir, "wins.ldb")
     paths.s4_ldapi_path = os.path.join(paths.private_dir, "ldapi")
     paths.phpldapadminconfig = os.path.join(paths.private_dir, 
@@ -1059,12 +1060,14 @@ def provision(setup_dir, message, session_info,
                                        scope=SCOPE_SUBTREE)
             assert isinstance(hostguid, str)
             
-            create_zone_file(paths.dns, setup_path, samdb, 
+            create_zone_file(paths.dns, paths.namedconf, setup_path, samdb, 
                              hostname=names.hostname, hostip=hostip,
                              hostip6=hostip6, dnsdomain=names.dnsdomain,
                              domaindn=names.domaindn, dnspass=dnspass, realm=names.realm, 
-                             domainguid=domainguid, hostguid=hostguid)
+                             domainguid=domainguid, hostguid=hostguid,
+                             private_dir=paths.private_dir, keytab_name=paths.dns_keytab)
             message("Please install the zone located in %s into your DNS server" % paths.dns)
+            message("See %s if you want to use secure GSS-TSIG updates" % paths.namedconf)
             
     create_phpldapadmin_config(paths.phpldapadminconfig, setup_path, 
                                ldapi_url)
@@ -1281,12 +1284,18 @@ def create_phpldapadmin_config(path, setup_path, ldapi_uri):
             {"S4_LDAPI_URI": ldapi_uri})
 
 
-def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn, 
-                  hostip, hostip6, hostname, dnspass, realm, domainguid, hostguid):
+def create_zone_file(path_zone, path_conf, setup_path, samdb, dnsdomain, domaindn, 
+                  hostip, hostip6, hostname, dnspass, realm, domainguid, hostguid,
+                  private_dir, keytab_name):
     """Write out a DNS zone file, from the info in the current database.
+
+    Also writes a file with stubs appropriate for a DNS configuration file
+    (including GSS-TSIG configuration), and details as to some of the other
+    configuration changes that may be necessary.
     
-    :param path: Path of the new file.
-    :param setup_path": Setup path function.
+    :param path_zone: Path of the new zone file.
+    :param path_conf: Path of the config stubs file.
+    :param setup_path: Setup path function.
     :param samdb: SamDB object
     :param dnsdomain: DNS Domain name
     :param domaindn: DN of the Domain
@@ -1307,7 +1316,7 @@ def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn,
         hostip6_base_line = "			IN AAAA	" + hostip6
         hostip6_host_line = hostname + "		IN AAAA	" + hostip6
 
-    setup_file(setup_path("provision.zone"), path, {
+    setup_file(setup_path("provision.zone"), path_zone, {
             "DNSPASS_B64": b64encode(dnspass),
             "HOSTNAME": hostname,
             "DNSDOMAIN": dnsdomain,
@@ -1319,6 +1328,15 @@ def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn,
             "HOSTGUID": hostguid,
             "HOSTIP6_BASE_LINE": hostip6_base_line,
             "HOSTIP6_HOST_LINE": hostip6_host_line,
+        })
+
+    setup_file(setup_path("named.conf"), path_conf, {
+            "DNSDOMAIN": dnsdomain,
+            "REALM": realm,
+            "REALM_WC": "*." + ".".join(realm.split(".")[1:]),
+            "HOSTNAME": hostname,
+            "DNS_KEYTAB": keytab_name,
+            "DNS_KEYTAB_ABS": os.path.join(private_dir, keytab_name),
         })
 
 def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename):
