@@ -99,7 +99,7 @@ static bool torture_oplock_handler(struct smb2_transport *transport,
 
 	req = smb2_break_send(tree, &break_info.br);
 	req->async.fn = torture_oplock_break_callback;
-	req->async.private = NULL;
+	req->async.private_data = NULL;
 
 	return true;
 }
