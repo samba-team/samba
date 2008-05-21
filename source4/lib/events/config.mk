@@ -56,3 +56,5 @@ SWIG_FILE = events.i
 PRIVATE_DEPENDENCIES = LIBEVENTS LIBSAMBA-HOSTCONFIG
 
 swig_events_OBJ_FILES = $(libeventssrcdir)/events_wrap.o
+
+$(eval $(call python_py_module_template,events.py,$(libeventssrcdir)/events.py))

@@ -214,15 +214,6 @@ $self->output("\$(call binary_link_template, $ctx->{RESULT_BINARY}, \$($ctx->{NA
 	}
 }
 
-sub PythonFiles($$)
-{
-	my ($self,$ctx) = @_;
-
-	foreach (@{$ctx->{PYTHON_FILES}}) {
-		$self->output("\$(eval \$(call python_py_module_template," . basename($_) . ",\$(addprefix $ctx->{BASEDIR}/, $_)))\n");
-	}
-}
-
 sub write($$)
 {
 	my ($self, $file) = @_;
