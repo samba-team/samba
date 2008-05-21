@@ -336,7 +336,7 @@ ldb_normalise_OBJ_FILES = dsdb/samdb/ldb_modules/normalise.o
 INIT_FUNCTION = LDB_MODULE(instancetype)
 CFLAGS = -Ilib/ldb/include
 OUTPUT_TYPE = SHARED_LIBRARY
-PRIVATE_DEPENDENCIES = LIBTALLOC
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL SAMDB
 SUBSYSTEM = LIBLDB
 # End MODULE ldb_instancetype
 ################################################
