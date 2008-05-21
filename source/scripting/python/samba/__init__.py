@@ -33,6 +33,8 @@ if _in_source_tree():
     srcdir = "%s/../../.." % os.path.dirname(__file__)
     sys.path.append("%s/bin/python" % srcdir)
     default_ldb_modules_dir = "%s/bin/modules/ldb" % srcdir
+else:
+    default_ldb_modules_dir = None
 
 
 import ldb
