@@ -11,10 +11,10 @@ import os, sys
 # Find right directory when running from source tree
 sys.path.insert(0, "bin/python")
 
-import param
 import samba
 import samba.getopt as options
-from auth import system_session
+from samba import param
+from samba.auth import system_session
 
 parser = optparse.OptionParser("upgrade [options] <libdir> <smbconf>")
 sambaopts = options.SambaOptions(parser)

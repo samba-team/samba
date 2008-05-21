@@ -26,7 +26,7 @@ from subunit import SubunitTestRunner
 from unittest import TestProgram
 import optparse
 import os
-import param
+from samba import param
 import samba.getopt as options
 import samba.tests
 

@@ -52,7 +52,7 @@ LIBEVENTS_OBJ_FILES = $(addprefix $(libeventssrcdir)/, events.o events_timed.o e
 PUBLIC_HEADERS += $(addprefix $(libeventssrcdir)/, events.h events_internal.h)
 
 [PYTHON::swig_events]
-SWIG_FILE = events.i
+LIBRARY_REALNAME = samba/_events.$(SHLIBEXT)
 PRIVATE_DEPENDENCIES = LIBEVENTS LIBSAMBA-HOSTCONFIG
 
 swig_events_OBJ_FILES = $(libeventssrcdir)/events_wrap.o
