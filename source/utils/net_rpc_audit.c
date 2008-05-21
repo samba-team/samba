@@ -366,6 +366,13 @@ static NTSTATUS rpc_audit_list_internal(struct net_context *c,
 
 static int rpc_audit_get(struct net_context *c, int argc, const char **argv)
 {
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc audit get\n"
+			 "    View configured audit setting\n");
+		return 0;
+	}
+
 	return run_rpc_command(c, NULL, PI_LSARPC, 0,
 		rpc_audit_get_internal, argc, argv);
 }
@@ -375,6 +382,13 @@ static int rpc_audit_get(struct net_context *c, int argc, const char **argv)
 
 static int rpc_audit_set(struct net_context *c, int argc, const char **argv)
 {
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc audit set\n"
+			 "    Set audit policies\n");
+		return 0;
+	}
+
 	return run_rpc_command(c, NULL, PI_LSARPC, 0,
 		rpc_audit_set_internal, argc, argv);
 }
@@ -384,6 +398,13 @@ static int rpc_audit_set(struct net_context *c, int argc, const char **argv)
 
 static int rpc_audit_enable(struct net_context *c, int argc, const char **argv)
 {
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc audit enable\n"
+			 "    Enable auditing\n");
+		return 0;
+	}
+
 	return run_rpc_command(c, NULL, PI_LSARPC, 0,
 		rpc_audit_enable_internal, argc, argv);
 }
@@ -393,6 +414,13 @@ static int rpc_audit_enable(struct net_context *c, int argc, const char **argv)
 
 static int rpc_audit_disable(struct net_context *c, int argc, const char **argv)
 {
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc audit disable\n"
+			 "    Disable auditing\n");
+		return 0;
+	}
+
 	return run_rpc_command(c, NULL, PI_LSARPC, 0,
 		rpc_audit_disable_internal, argc, argv);
 }
@@ -402,6 +430,13 @@ static int rpc_audit_disable(struct net_context *c, int argc, const char **argv)
 
 static int rpc_audit_list(struct net_context *c, int argc, const char **argv)
 {
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc audit list\n"
+			 "    List auditing settings\n");
+		return 0;
+	}
+
 	return run_rpc_command(c, NULL, PI_LSARPC, 0,
 		rpc_audit_list_internal, argc, argv);
 }
@@ -411,17 +446,49 @@ static int rpc_audit_list(struct net_context *c, int argc, const char **argv)
 
 int net_rpc_audit(struct net_context *c, int argc, const char **argv)
 {
-	struct functable func[] = {
-		{"get", rpc_audit_get},
-		{"set", rpc_audit_set},
-		{"enable", rpc_audit_enable},
-		{"disable", rpc_audit_disable},
-		{"list", rpc_audit_list},
-		{NULL, NULL}
+	struct functable3 func[] = {
+		{
+			"get",
+			rpc_audit_get,
+			NET_TRANSPORT_RPC,
+			"View configured auditing settings",
+			"net rpc audit get\n"
+			"    View configured auditing settings"
+		},
+		{
+			"set",
+			rpc_audit_set,
+			NET_TRANSPORT_RPC,
+			"Set auditing policies",
+			"net rpc audit set\n"
+			"    Set auditing policies"
+		},
+		{
+			"enable",
+			rpc_audit_enable,
+			NET_TRANSPORT_RPC,
+			"Enable auditing",
+			"net rpc audit enable\n"
+			"    Enable auditing"
+		},
+		{
+			"disable",
+			rpc_audit_disable,
+			NET_TRANSPORT_RPC,
+			"Disable auditing",
+			"net rpc audit disable\n"
+			"    Disable auditing"
+		},
+		{
+			"list",
+			rpc_audit_list,
+			NET_TRANSPORT_RPC,
+			"List configured auditing settings",
+			"net rpc audit list\n"
+			"    List configured auditing settings"
+		},
+		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	if (argc)
-		return net_run_function(c, argc, argv, func, net_help_audit);
-
-	return net_help_audit(c, argc, argv);
+	return net_run_function3(c, argc, argv, "net rpc audit", func);
 }
