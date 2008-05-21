@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import samr
+from dcerpc import samr
 from samba.tests import RpcInterfaceTestCase
 
 class SamrTests(RpcInterfaceTestCase):
