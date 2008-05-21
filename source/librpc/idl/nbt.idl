@@ -10,7 +10,7 @@
 
 import "misc.idl", "security.idl", "svcctl.idl", "samr.idl";
 [
-helper("libcli/nbt/libnbt.h")
+	helper("libcli/netlogon.h", "libcli/nbt/libnbt.h")
 ]
 interface nbt
 {
@@ -391,7 +391,9 @@ interface nbt
 
 	typedef bitmap samr_AcctFlags samr_AcctFlags;
 
-	typedef struct {
+	/* query to dc hand marshaled, as it has 'optional'
+	 * parts */
+	typedef [nopull,nopush] struct {
 		uint16               request_count;
 		nstring              computer_name;
 		nstring              user_name;
@@ -400,9 +402,12 @@ interface nbt
 		[value(ndr_size_dom_sid0(&sid, ndr->flags))] uint32 sid_size;
 		/* The manual alignment is required because this
 		 * structure is marked flag(NDR_NOALIGN) via the
-		 * nbt_netlogon_packet below */
-		[flag(NDR_ALIGN4)]   DATA_BLOB _pad;
-		[subcontext(0),subcontext_size(sid_size)] dom_sid0 sid;
+		 * nbt_netlogon_packet below.  
+		 *
+		 * However, both MUST only be present if sid_size > 0 
+		 */
+		 [flag(NDR_ALIGN4)]   DATA_BLOB _pad;
+		 [subcontext(0),subcontext_size(sid_size)] dom_sid0 sid;
 		netlogon_nt_version_flags               nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
