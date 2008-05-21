@@ -44,7 +44,7 @@ struct smb2_connect_state {
 */
 static void continue_tcon(struct smb2_request *req)
 {
-	struct composite_context *c = talloc_get_type(req->async.private, 
+	struct composite_context *c = talloc_get_type(req->async.private_data, 
 						      struct composite_context);
 	struct smb2_connect_state *state = talloc_get_type(c->private_data, 
 							   struct smb2_connect_state);
@@ -83,7 +83,7 @@ static void continue_session(struct composite_context *creq)
 	if (composite_nomem(req, c)) return;
 
 	req->async.fn = continue_tcon;
-	req->async.private = c;	
+	req->async.private_data = c;	
 }
 
 /*
@@ -91,7 +91,7 @@ static void continue_session(struct composite_context *creq)
 */
 static void continue_negprot(struct smb2_request *req)
 {
-	struct composite_context *c = talloc_get_type(req->async.private, 
+	struct composite_context *c = talloc_get_type(req->async.private_data, 
 						      struct composite_context);
 	struct smb2_connect_state *state = talloc_get_type(c->private_data, 
 							   struct smb2_connect_state);
@@ -100,6 +100,9 @@ static void continue_negprot(struct smb2_request *req)
 
 	c->status = smb2_negprot_recv(req, c, &state->negprot);
 	if (!composite_is_ok(c)) return;
+
+	transport->negotiate.system_time = state->negprot.out.system_time;
+	transport->negotiate.server_start_time = state->negprot.out.server_start_time;
 
 	state->session = smb2_session_init(transport, global_loadparm, state, true);
 	if (composite_nomem(state->session, c)) return;
@@ -142,7 +145,7 @@ static void continue_socket(struct composite_context *creq)
 	if (composite_nomem(req, c)) return;
 
 	req->async.fn = continue_negprot;
-	req->async.private = c;
+	req->async.private_data = c;
 }
 
 

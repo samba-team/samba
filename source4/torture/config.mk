@@ -70,6 +70,7 @@ TORTURE_RAW_OBJ_FILES = $(addprefix $(torturesrcdir)/raw/, \
 		pingpong.o \
 		lockbench.o \
 		lookuprate.o \
+		tconrate.o \
 		openbench.o \
 		rename.o \
 		eas.o \
@@ -260,6 +261,23 @@ PRIVATE_DEPENDENCIES = \
 gentest_OBJ_FILES = $(torturesrcdir)/gentest.o
 
 MANPAGES += $(torturesrcdir)/man/gentest.1
+
+#################################
+# Start BINARY gentest_smb2
+[BINARY::gentest_smb2]
+INSTALLDIR = BINDIR
+PRIVATE_DEPENDENCIES = \
+		LIBSAMBA-HOSTCONFIG \
+		LIBSAMBA-UTIL \
+		LIBPOPT \
+		POPT_SAMBA \
+		POPT_CREDENTIALS \
+		LIBCLI_SMB \
+		LIBCLI_RAW
+# End BINARY gentest_smb2
+#################################
+
+gentest_smb2_OBJ_FILES = $(torturesrcdir)/gentest_smb2.o
 
 #################################
 # Start BINARY masktest

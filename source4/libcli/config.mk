@@ -33,7 +33,8 @@ LIBCLI_SMB_COMPOSITE_OBJ_FILES = $(addprefix $(libclisrcdir)/smb_composite/, \
 	sesssetup.o \
 	fetchfile.o \
 	appendacl.o \
-	fsinfo.o)
+	fsinfo.o \
+	smb2.o)
 
 $(eval $(call proto_header_template,$(libclisrcdir)/smb_composite/proto.h,$(LIBCLI_SMB_COMPOSITE_OBJ_FILES:.o=.c)))
 

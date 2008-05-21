@@ -83,7 +83,7 @@ static void smb2_read_callback(struct smb2_request *req)
 	uint16_t frag_length;
 	NTSTATUS status;
 
-	state = talloc_get_type(req->async.private, struct smb2_read_state);
+	state = talloc_get_type(req->async.private_data, struct smb2_read_state);
 	smb = talloc_get_type(state->c->transport.private_data, struct smb2_private);
 
 	status = smb2_read_recv(req, state, &io);
@@ -136,7 +136,7 @@ static void smb2_read_callback(struct smb2_request *req)
 	}
 
 	req->async.fn = smb2_read_callback;
-	req->async.private = state;
+	req->async.private_data = state;
 }
 
 
@@ -180,7 +180,7 @@ static NTSTATUS send_read_request_continue(struct dcerpc_connection *c, DATA_BLO
 	}
 
 	req->async.fn = smb2_read_callback;
-	req->async.private = state;
+	req->async.private_data = state;
 
 	return NT_STATUS_OK;
 }
@@ -212,7 +212,7 @@ struct smb2_trans_state {
 */
 static void smb2_trans_callback(struct smb2_request *req)
 {
-	struct smb2_trans_state *state = talloc_get_type(req->async.private,
+	struct smb2_trans_state *state = talloc_get_type(req->async.private_data,
 							struct smb2_trans_state);
 	struct dcerpc_connection *c = state->c;
 	NTSTATUS status;
@@ -269,7 +269,7 @@ static NTSTATUS smb2_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *
 	}
 
 	req->async.fn = smb2_trans_callback;
-	req->async.private = state;
+	req->async.private_data = state;
 
 	talloc_steal(state, req);
 
@@ -281,7 +281,7 @@ static NTSTATUS smb2_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *
 */
 static void smb2_write_callback(struct smb2_request *req)
 {
-	struct dcerpc_connection *c = (struct dcerpc_connection *)req->async.private;
+	struct dcerpc_connection *c = (struct dcerpc_connection *)req->async.private_data;
 
 	if (!NT_STATUS_IS_OK(req->status)) {
 		DEBUG(0,("dcerpc_smb2: write callback error\n"));
@@ -319,7 +319,7 @@ static NTSTATUS smb2_send_request(struct dcerpc_connection *c, DATA_BLOB *blob,
 	}
 
 	req->async.fn = smb2_write_callback;
-	req->async.private = c;
+	req->async.private_data = c;
 
 	return NT_STATUS_OK;
 }
@@ -444,7 +444,7 @@ struct composite_context *dcerpc_pipe_open_smb2_send(struct dcerpc_pipe *p,
 static void pipe_open_recv(struct smb2_request *req)
 {
 	struct pipe_open_smb2_state *state =
-		talloc_get_type(req->async.private,
+		talloc_get_type(req->async.private_data,
 				struct pipe_open_smb2_state);
 	struct composite_context *ctx = state->ctx;
 	struct dcerpc_connection *c = state->c;
