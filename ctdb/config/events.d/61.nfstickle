@@ -4,6 +4,7 @@
 PATH=/bin:/usr/bin:$PATH
 
 . $CTDB_BASE/functions
+loadconfig ctdb
 loadconfig nfs
 
 cmd="$1"

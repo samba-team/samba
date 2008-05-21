@@ -2,6 +2,7 @@
 # script to manage nfs in a clustered environment
 
 . $CTDB_BASE/functions
+loadconfig ctdb
 loadconfig nfs
 
 [ "$CTDB_MANAGES_NFS" = "yes" ] || exit 0

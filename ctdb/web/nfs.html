@@ -39,7 +39,6 @@ which causes problems on some clients.<br>
 
 This file should look something like :
 <pre>
-  CTDB_MANAGES_NFS=yes
   NFS_TICKLE_SHARED_DIRECTORY=/gpfs0/nfs-tickles
   STATD_SHARED_DIRECTORY=/gpfs0/nfs-state
   NFS_HOSTNAME=ctdb
@@ -53,10 +52,6 @@ This file should look something like :
   RPCNFSDARGS="-N 4"
 
 </pre>
-
-The CTDB_MANAGES_NFS line tells the events scripts that CTDB is to manage startup and shutdown of the NFS and NFSLOCK services.<br>
-
-With this set to yes, CTDB will start/stop/restart these services as required.<br><br>
 
 You need to make sure that the lock manager runs on the same port on all nodes in the cluster since some clients will have "issues" and take very long to recover if the port suddenly changes.<br>
 599 above is only an example. You can run the lock manager on any available port as long as you use the same port on all nodes.<br><br>
@@ -82,6 +77,16 @@ NFS_HOSTNAME is the dns name for the ctdb cluster and which is used when clients
 Always use the same name here as you use for the samba hostname.
 
 RPCNFSDARGS is used to disable support for NFSv4 which is not yet supported by CTDB.
+
+<h2>/etc/sysconfig/ctdb</h2>
+Add the following line to /etc/sysconfig/ctdb :
+
+<pre>
+  CTDB_MANAGES_NFS=yes
+</pre>
+The CTDB_MANAGES_NFS line tells the events scripts that CTDB is to manage startup and shutdown of the NFS and NFSLOCK services.<br>
+
+With this set to yes, CTDB will start/stop/restart these services as required.<br><br>
 
 
 <h2>chkconfig</h2>
