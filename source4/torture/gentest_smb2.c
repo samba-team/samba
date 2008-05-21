@@ -349,8 +349,8 @@ static uint16_t gen_fnum(int instance)
 */
 static uint16_t gen_fnum_close(int instance)
 {
-	if (num_open_handles < 3) {
-		if (gen_chance(80)) return BAD_HANDLE;
+	if (num_open_handles < 5) {
+		if (gen_chance(90)) return BAD_HANDLE;
 	}
 
 	return gen_fnum(instance);
@@ -530,13 +530,16 @@ static uint16_t gen_rename_flags(void)
 
 
 /*
-  return a lockingx lock mode
+  return a set of lock flags
 */
-static uint16_t gen_lock_mode(void)
+static uint16_t gen_lock_flags(void)
 {
 	if (gen_chance(5))  return gen_bits_mask(0xFFFF);
 	if (gen_chance(20)) return gen_bits_mask(0x1F);
-	return gen_bits_mask(LOCKING_ANDX_SHARED_LOCK | LOCKING_ANDX_LARGE_FILES);
+	if (gen_chance(50)) return SMB2_LOCK_FLAG_UNLOCK;
+	return gen_bits_mask(SMB2_LOCK_FLAG_SHARED | 
+			     SMB2_LOCK_FLAG_EXCLUSIVE | 
+			     SMB2_LOCK_FLAG_FAIL_IMMEDIATELY);
 }
 
 /*
@@ -570,8 +573,8 @@ static uint32_t gen_ntcreatex_flags(void)
 */
 static uint32_t gen_access_mask(void)
 {
-	if (gen_chance(50)) return SEC_FLAG_MAXIMUM_ALLOWED;
-	if (gen_chance(20)) return SEC_FILE_ALL;
+	if (gen_chance(70)) return SEC_FLAG_MAXIMUM_ALLOWED;
+	if (gen_chance(70)) return SEC_FILE_ALL;
 	return gen_bits_mask(0xFFFFFFFF);
 }
 
@@ -590,6 +593,7 @@ static uint32_t gen_create_options(void)
 */
 static uint32_t gen_open_disp(void)
 {
+	if (gen_chance(50)) return NTCREATEX_DISP_OPEN_IF;
 	if (gen_chance(10)) return gen_bits_mask(0xFFFFFFFF);
 	return gen_int_range(0, 5);
 }
@@ -999,20 +1003,20 @@ again:
 /*
   generate ntcreatex operations
 */
-static bool handler_ntcreatex(int instance)
+static bool handler_create(int instance)
 {
 	struct smb2_create parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
 	ZERO_STRUCT(parm[0]);
-	parm[0].in.security_flags             = gen_bits_levels(3, 70, 0x0, 70, 0x3, 100, 0xFF);
-	parm[0].in.oplock_level               = gen_bits_levels(3, 70, 0x0, 70, 0x9, 100, 0xFF);
-	parm[0].in.impersonation_level        = gen_bits_levels(3, 70, 0x0, 70, 0x3, 100, 0xFFFFFFFF);
-	parm[0].in.create_flags               = gen_bits_levels(2, 80, 0x0, 100, 0xFFFFFFFF);
+	parm[0].in.security_flags             = gen_bits_levels(3, 90, 0x0, 70, 0x3, 100, 0xFF);
+	parm[0].in.oplock_level               = gen_bits_levels(3, 90, 0x0, 70, 0x9, 100, 0xFF);
+	parm[0].in.impersonation_level        = gen_bits_levels(3, 90, 0x0, 70, 0x3, 100, 0xFFFFFFFF);
+	parm[0].in.create_flags               = gen_bits_levels(2, 90, 0x0, 100, 0xFFFFFFFF);
 	if (gen_chance(2)) {
 		parm[0].in.create_flags       |= gen_bits_mask(0xFFFFFFFF);
 	}
-	parm[0].in.reserved                   = gen_bits_levels(2, 80, 0x0, 100, 0xFFFFFFFF);
+	parm[0].in.reserved                   = gen_bits_levels(2, 95, 0x0, 100, 0xFFFFFFFF);
 	if (gen_chance(2)) {
 		parm[0].in.reserved           |= gen_bits_mask(0xFFFFFFFF);
 	}
@@ -1135,45 +1139,62 @@ static bool handler_write(int instance)
 	return true;
 }
 
-#if 0
 /*
   generate lockingx operations
 */
 static bool handler_lock(int instance)
 {
-	union smb_lock parm[NSERVERS];
+	struct smb2_lock parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
-	int n, nlocks;
+	int n;
 
-	parm[0].lockx.level = RAW_LOCK_LOCKX;
-	parm[0].lockx.in.file.fnum = gen_fnum(instance);
-	parm[0].lockx.in.mode = gen_lock_mode();
-	parm[0].lockx.in.timeout = gen_timeout();
-	do {
-		/* make sure we don't accidentially generate an oplock
-		   break ack - otherwise the server can just block forever */
-		parm[0].lockx.in.ulock_cnt = gen_lock_count();
-		parm[0].lockx.in.lock_cnt = gen_lock_count();
-		nlocks = parm[0].lockx.in.ulock_cnt + parm[0].lockx.in.lock_cnt;
-	} while (nlocks == 0);
-
-	if (nlocks > 0) {
-		parm[0].lockx.in.locks = talloc_array(current_op.mem_ctx,
-							struct smb_lock_entry,
-							nlocks);
-		for (n=0;n<nlocks;n++) {
-			parm[0].lockx.in.locks[n].pid = gen_pid();
-			parm[0].lockx.in.locks[n].offset = gen_offset();
-			parm[0].lockx.in.locks[n].count = gen_io_count();
-		}
+	parm[0].level = RAW_LOCK_LOCKX;
+	parm[0].in.file.handle.data[0] = gen_fnum(instance);
+	parm[0].in.lock_count = gen_lock_count();
+	parm[0].in.reserved = gen_bits_mask2(0, 0xFFFFFFFF);
+	
+	parm[0].in.locks = talloc_array(current_op.mem_ctx,
+					struct smb2_lock_element,
+					parm[0].in.lock_count);
+	for (n=0;n<parm[0].in.lock_count;n++) {
+		parm[0].in.locks[n].offset = gen_offset();
+		parm[0].in.locks[n].length = gen_io_count();
+		/* don't yet cope with async replies */
+		parm[0].in.locks[n].flags  = gen_lock_flags() | 
+			SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+		parm[0].in.locks[n].reserved = gen_bits_mask2(0x0, 0xFFFFFFFF);
 	}
 
 	GEN_COPY_PARM;
-	GEN_SET_FNUM(lockx.in.file.fnum);
-	GEN_CALL(smb_raw_lock(tree, &parm[i]));
+	GEN_SET_FNUM(in.file.handle);
+	GEN_CALL(smb2_lock(tree, &parm[i]));
 
 	return true;
 }
+
+/*
+  generate flush operations
+*/
+static bool handler_flush(int instance)
+{
+	struct smb2_flush parm[NSERVERS];
+	NTSTATUS status[NSERVERS];
+
+	ZERO_STRUCT(parm[0]);
+	parm[0].in.file.handle.data[0] = gen_fnum(instance);
+	parm[0].in.reserved1  = gen_bits_mask2(0x0, 0xFFFF);
+	parm[0].in.reserved2  = gen_bits_mask2(0x0, 0xFFFFFFFF);
+
+	GEN_COPY_PARM;
+	GEN_SET_FNUM(in.file.handle);
+	GEN_CALL(smb2_flush(tree, &parm[i]));
+
+	CHECK_EQUAL(out.reserved);
+
+	return true;
+}
+
+#if 0
 
 /*
   generate a fileinfo query structure
@@ -1579,10 +1600,12 @@ static struct {
 	bool (*handler)(int instance);
 	int count, success_count;
 } gen_ops[] = {
-	{"NTCREATEX",  handler_ntcreatex},
+	{"CREATE",     handler_create},
 	{"CLOSE",      handler_close},
 	{"READ",       handler_read},
 	{"WRITE",      handler_write},
+	{"LOCK",       handler_lock},
+	{"FLUSH",      handler_flush},
 };
 
 
