@@ -319,7 +319,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 			extra_flags = NETLOGON_NT_VERSION_5EX_WITH_IP;
 			netlogon->nt5_ex.sockaddr.sa_family    = 2;
 			netlogon->nt5_ex.sockaddr.pdc_ip       = pdc_ip;
-			netlogon->nt5_ex.sockaddr.remaining = data_blob_talloc(mem_ctx, NULL, 4);
+			netlogon->nt5_ex.sockaddr.remaining = data_blob_talloc_zero(mem_ctx, 8);
 		}
 		netlogon->nt5_ex.nt_version   = NETLOGON_NT_VERSION_1|NETLOGON_NT_VERSION_5EX|extra_flags;
 		netlogon->nt5_ex.lmnt_token   = 0xFFFF;
