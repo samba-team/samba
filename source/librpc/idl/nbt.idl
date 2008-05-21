@@ -398,7 +398,10 @@ interface nbt
 		astring              mailslot_name;
 		samr_AcctFlags       acct_control;
 		[value(ndr_size_dom_sid0(&sid, ndr->flags))] uint32 sid_size;
-		/* Must not be present (ie, zero size, in request to \MAILSLOT\NET\NTLOGON */
+		/* The manual alignment is required because this
+		 * structure is marked flag(NDR_NOALIGN) via the
+		 * nbt_netlogon_packet below */
+		[flag(NDR_ALIGN4)]   DATA_BLOB _pad;
 		[subcontext(0),subcontext_size(sid_size)] dom_sid0 sid;
 		netlogon_nt_version_flags               nt_version;
 		uint16               lmnt_token;
