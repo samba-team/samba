@@ -14,7 +14,7 @@ import optparse
 import pwd
 import ldb
 
-from auth import system_session
+from samba.auth import system_session
 from samba.samdb import SamDB
 
 parser = optparse.OptionParser("setpassword [username] [options]")
