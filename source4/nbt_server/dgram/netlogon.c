@@ -133,18 +133,13 @@ static void nbtd_netlogon_samlogon(struct dgram_mailslot_handler *dgmslot,
 	}
 
 	if (netlogon->req.logon.sid_size) {
-		if (strcasecmp(dgmslot->mailslot_name, NBT_MAILSLOT_NTLOGON) == 0) {
-			DEBUG(2,("NBT netlogon query failed because SID specified in request to NTLOGON\n"));
-			/* SID not permitted on NTLOGON (for some reason...) */ 
-			return;
-		}
 		sid = &netlogon->req.logon.sid;
 	} else {
 		sid = NULL;
 	}
 
 	status = fill_netlogon_samlogon_response(samctx, packet, NULL, name->name, sid, NULL, 
-						 netlogon->req.logon.user_name, src->addr, 
+						 netlogon->req.logon.user_name, netlogon->req.logon.acct_control, src->addr, 
 						 netlogon->req.logon.nt_version, iface->nbtsrv->task->lp_ctx, &netlogon_response.samlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("NBT netlogon query failed domain=%s sid=%s version=%d - %s\n",

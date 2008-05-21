@@ -144,18 +144,38 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
 
 	printf("Trying with a AAC\n");
-	search.in.acct_control = 0x180;
+	search.in.acct_control = ACB_WSTRUST|ACB_SVRTRUST;
 	search.in.realm = n1.nt5_ex.dns_domain;
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
 	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, "");
 
+	printf("Trying with a zero AAC\n");
+	search.in.acct_control = 0x0;
+	search.in.realm = n1.nt5_ex.dns_domain;
+	status = cldap_netlogon(cldap, tctx, &search);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
+	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, "");
+
+	printf("Trying with a zero AAC and user=Administrator\n");
+	search.in.acct_control = 0x0;
+	search.in.user = "Administrator";
+	search.in.realm = n1.nt5_ex.dns_domain;
+	status = cldap_netlogon(cldap, tctx, &search);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN_EX);
+	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, "Administrator");
+
 	printf("Trying with a bad AAC\n");
+	search.in.user = NULL;
 	search.in.acct_control = 0xFF00FF00;
 	search.in.realm = n1.nt5_ex.dns_domain;
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(search.out.netlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX);
+	CHECK_STRING(search.out.netlogon.nt5_ex.user_name, "");
 
 	printf("Trying with a user only\n");
 	search = empty_search;

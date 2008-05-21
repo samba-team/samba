@@ -27,7 +27,7 @@ There are 2 methods of doing this:
 
   method 1:  "rsync -avz samba.org::ftp/unpacked/samba_4_0_test/ samba4"
 
-  method 2:  "git clone git://git.samba.org/samba.git samba4; cd samba4; git checkout v4-0-test; cd .."
+  method 2:  "git clone git://git.samba.org/samba.git samba4; cd samba4 && git checkout -b v4-0-test origin/v4-0-test; cd .."
 
 both methods will create a directory called "samba4" in the current
 directory. If you don't have rsync or git then install one of them. 
