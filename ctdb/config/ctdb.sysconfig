@@ -49,6 +49,9 @@
 # should ctdb manage starting/stopping the VSFTPD service
 # CTDB_MANAGES_VSFTPD=yes
 
+# should ctdb manage starting/stopping the ISCSI service
+# CTDB_MANAGES_ISCSI=yes
+
 
 # you may wish to raise the file descriptor limit for ctdb
 # use a ulimit command here. ctdb needs one file descriptor per

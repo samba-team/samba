@@ -41,17 +41,25 @@ onnode all chkconfig tgtd off
 Create this file and add the following three lines to it :
 
 <pre>
-   CTDB_MANAGES_ISCSI=yes
    CTDB_START_ISCSI_SCRIPTS=/gpfs/iscsi/
 </pre>
 
 <p>
-CTDB_MANAGES_ISCSI=yes just tells CTDB event script for iSCSI that CTDB should start and stop the iSCSI target service as required.
-</p>
-
-<p>
 CTDB_START_ISCSI_SCRIPTS=<directory on shared storage>
 This is a directory on shared storage where the scripts to start and configure the iscsi service are held. There is one script for each public address named <public address>.sh .
+</p>
+
+
+<h2>/etc/sysconfig/ctdb</h2>
+
+Add the following line to /etc/sysconfig/ctdb :
+
+<pre>
+   CTDB_MANAGES_ISCSI=yes
+</pre>
+
+<p>
+CTDB_MANAGES_ISCSI=yes just tells CTDB event script for iSCSI that CTDB should start and stop the iSCSI target service as required.
 </p>
 
 
