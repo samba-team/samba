@@ -43,9 +43,9 @@ endef
 # Swig extensions
 swig:: pythonmods
 
-.SUFFIXES: _wrap.c .i
+.SUFFIXES: _wrap.c .i .py
 
-.i_wrap.c:
+%_wrap.c %.py: %.i
 	[ "$(SWIG)" == "no" ] || $(SWIG) -O -Wall -I$(srcdir)/scripting/swig -python -keyword $<
 
 realdistclean::
