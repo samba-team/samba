@@ -419,7 +419,7 @@ int tdb_transaction_start(struct tdb_context *tdb)
 		/* the caller must not have any locks when starting a
 		   transaction as otherwise we'll be screwed by lack
 		   of nested locks in posix */
-		TDB_LOG((tdb, TDB_DEBUG_TRACE, "tdb_transaction_start: cannot start a transaction with locks held\n"));
+//		TDB_LOG((tdb, TDB_DEBUG_TRACE, "tdb_transaction_start: cannot start a transaction with locks held\n"));
 		tdb->ecode = TDB_ERR_LOCK;
 		return -1;
 	}
