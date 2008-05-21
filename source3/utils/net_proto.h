@@ -145,8 +145,6 @@ int net_rap_password_usage(struct net_context *c, int argc, const char **argv);
 int net_rap_password(struct net_context *c, int argc, const char **argv);
 int net_rap_admin_usage(struct net_context *c, int argc, const char **argv);
 int net_rap_admin(struct net_context *c, int argc, const char **argv);
-int net_rap_help(struct net_context *c, int argc, const char **argv);
-int net_rap_usage(struct net_context *c, int argc, const char **argv);
 int net_rap(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_registry.c  */
