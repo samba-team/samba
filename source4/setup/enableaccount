@@ -5,11 +5,13 @@
 #	Copyright Jelmer Vernooij 2008
 #	Released under the GNU GPL version 3 or later
 #
+import os, sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), "../bin/python"))
 
 import samba.getopt as options
 import optparse
 import pwd
-import sys
 import ldb
 
 from auth import system_session
