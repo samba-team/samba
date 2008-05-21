@@ -564,6 +564,14 @@ done:
 
 static int rpc_rights_list(struct net_context *c, int argc, const char **argv )
 {
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc rights list [{accounts|privileges} "
+			 "[name|SID]]\n"
+			 "    View available/assigned privileges\n");
+		return 0;
+	}
+
 	return run_rpc_command(c, NULL, PI_LSARPC, 0,
 		rpc_rights_list_internal, argc, argv );
 }
@@ -573,6 +581,18 @@ static int rpc_rights_list(struct net_context *c, int argc, const char **argv )
 
 static int rpc_rights_grant(struct net_context *c, int argc, const char **argv )
 {
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc rights grant <name|SID> <right>\n"
+			 "    Assign privilege[s]\n");
+		d_printf("For example:\n");
+		d_printf("    net rpc rights grant 'VALE\\biddle' "
+			 "SePrintOperatorPrivilege SeDiskOperatorPrivilege\n");
+		d_printf("    would grant the printer admin and disk manager "
+			 "rights to the user 'VALE\\biddle'\n");
+		return 0;
+	}
+
 	return run_rpc_command(c, NULL, PI_LSARPC, 0,
 		rpc_rights_grant_internal, argc, argv );
 }
@@ -582,6 +602,18 @@ static int rpc_rights_grant(struct net_context *c, int argc, const char **argv )
 
 static int rpc_rights_revoke(struct net_context *c, int argc, const char **argv)
 {
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc rights revoke <name|SID> <right>\n"
+			 "    Revoke privilege[s]\n");
+		d_printf("For example:\n");
+		d_printf("    net rpc rights revoke 'VALE\\biddle' "
+			 "SePrintOperatorPrivilege SeDiskOperatorPrivilege\n");
+		d_printf("    would revoke the printer admin and disk manager "
+			 "rights from the user 'VALE\\biddle'\n");
+		return 0;
+	}
+
 	return run_rpc_command(c, NULL, PI_LSARPC, 0,
 		rpc_rights_revoke_internal, argc, argv );
 }
@@ -589,36 +621,37 @@ static int rpc_rights_revoke(struct net_context *c, int argc, const char **argv)
 /********************************************************************
 ********************************************************************/
 
-static int net_help_rights(struct net_context *c, int argc, const char **argv )
-{
-	d_printf("net rpc rights list [{accounts|privileges} [name|SID]]   View available or assigned privileges\n");
-	d_printf("net rpc rights grant <name|SID> <right>                  Assign privilege[s]\n");
-	d_printf("net rpc rights revoke <name|SID> <right>                 Revoke privilege[s]\n");
-
-	d_printf("\nBoth 'grant' and 'revoke' require a SID and a list of privilege names.\n");
-	d_printf("For example\n");
-	d_printf("\n  net rpc rights grant 'VALE\\biddle' SePrintOperatorPrivilege SeDiskOperatorPrivilege\n");
-	d_printf("\nwould grant the printer admin and disk manager rights to the user 'VALE\\biddle'\n\n");
-
-	return -1;
-}
-
-/********************************************************************
-********************************************************************/
-
 int net_rpc_rights(struct net_context *c, int argc, const char **argv)
 {
-	struct functable func[] = {
-		{"list", rpc_rights_list},
-		{"grant", rpc_rights_grant},
-		{"revoke", rpc_rights_revoke},
-		{NULL, NULL}
+	struct functable3 func[] = {
+		{
+			"list",
+			rpc_rights_list,
+			NET_TRANSPORT_RPC,
+			"View available/assigned privileges",
+			"net rpc rights list\n"
+			"    View available/assigned privileges"
+		},
+		{
+			"grant",
+			rpc_rights_grant,
+			NET_TRANSPORT_RPC,
+			"Assign privilege[s]",
+			"net rpc rights grant\n"
+			"    Assign privilege[s]"
+		},
+		{
+			"revoke",
+			rpc_rights_revoke,
+			NET_TRANSPORT_RPC,
+			"Revoke privilege[s]",
+			"net rpc rights revoke\n"
+			"    Revoke privilege[s]"
+		},
+		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	if ( argc )
-		return net_run_function(c, argc, argv, func, net_help_rights );
-
-	return net_help_rights(c, argc, argv );
+	return net_run_function3(c, argc, argv, "net rpc rights", func);
 }
 
 static NTSTATUS rpc_sh_rights_list(struct net_context *c,
