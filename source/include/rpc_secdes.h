@@ -394,15 +394,12 @@ struct standard_mapping {
 
 /* Service Control Manager Bits */ 
 
-#if 0
 #define SC_RIGHT_MGR_CONNECT			0x0001
 #define SC_RIGHT_MGR_CREATE_SERVICE		0x0002
 #define SC_RIGHT_MGR_ENUMERATE_SERVICE		0x0004
 #define SC_RIGHT_MGR_LOCK			0x0008
 #define SC_RIGHT_MGR_QUERY_LOCK_STATUS		0x0010
 #define SC_RIGHT_MGR_MODIFY_BOOT_CONFIG		0x0020
-
-#endif
 
 #define SC_MANAGER_READ_ACCESS \
 	( STANDARD_RIGHTS_READ_ACCESS		| \
@@ -421,9 +418,8 @@ struct standard_mapping {
 
 #define SC_MANAGER_ALL_ACCESS SC_MANAGER_WRITE_ACCESS
 
-/* Service Object Bits */
+/* Service Object Bits */ 
 
-#if 0
 #define SC_RIGHT_SVC_QUERY_CONFIG		0x0001
 #define SC_RIGHT_SVC_CHANGE_CONFIG		0x0002
 #define SC_RIGHT_SVC_QUERY_STATUS		0x0004
@@ -433,8 +429,6 @@ struct standard_mapping {
 #define SC_RIGHT_SVC_PAUSE_CONTINUE		0x0040
 #define SC_RIGHT_SVC_INTERROGATE		0x0080
 #define SC_RIGHT_SVC_USER_DEFINED_CONTROL	0x0100
-
-#endif
 
 #define SERVICE_READ_ACCESS \
 	( STANDARD_RIGHTS_READ_ACCESS		| \
@@ -457,6 +451,8 @@ struct standard_mapping {
 	  SC_RIGHT_SVC_CHANGE_CONFIG )
 
 #define SERVICE_ALL_ACCESS SERVICE_WRITE_ACCESS
+
+	   
 
 /*
  * Access Bits for registry ACLS

@@ -1109,7 +1109,7 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 				}
 				memcpy(pipe_session_key, p->auth.a_u.schannel_auth->sess_key, 16);
 			}
-			SamOEMhash(lm_session_key.key, pipe_session_key, 16);
+			SamOEMhash(lm_session_key.key, pipe_session_key, 8);
 			memset(pipe_session_key, '\0', 16);
 		}
 

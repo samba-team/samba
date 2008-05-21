@@ -216,6 +216,22 @@ typedef struct {
 
 typedef struct {
 	POLICY_HND handle;
+	uint32 state;
+	uint32 buffer_size;
+} SVCCTL_Q_ENUM_DEPENDENT_SERVICES;
+
+typedef struct {
+	RPC_BUFFER buffer;
+	uint32 needed;
+	uint32 returned;
+	WERROR status;
+} SVCCTL_R_ENUM_DEPENDENT_SERVICES;
+
+
+/**************************/
+
+typedef struct {
+	POLICY_HND handle;
 	uint32 buffer_size;
 } SVCCTL_Q_QUERY_SERVICE_CONFIG;
 

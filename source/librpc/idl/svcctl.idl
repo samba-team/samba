@@ -205,10 +205,10 @@
 	WERROR svcctl_EnumDependentServicesW(
 		[in,ref] policy_handle *service,
 		[in] uint32 state,
-		[out,ref,size_is(buf_size)] uint8 *service_status,
-		[in,range(0,0x40000)] uint32 buf_size,
-		[out,ref,range(0,0x40000)] uint32 *bytes_needed,
-		[out,ref,range(0,0x40000)] uint32 *services_returned
+		[out,unique] ENUM_SERVICE_STATUS *service_status,
+		[in] uint32 buf_size,
+		[out,ref] uint32 *bytes_needed,
+		[out,ref] uint32 *services_returned
 	);
 
 	/*****************/
@@ -226,40 +226,19 @@
 
 	/*****************/
 	/* Function 0x0f */
-	typedef [bitmap32bit] bitmap {
-		SC_RIGHT_MGR_CONNECT		= 0x0001,
-		SC_RIGHT_MGR_CREATE_SERVICE	= 0x0002,
-		SC_RIGHT_MGR_ENUMERATE_SERVICE	= 0x0004,
-		SC_RIGHT_MGR_LOCK		= 0x0008,
-		SC_RIGHT_MGR_QUERY_LOCK_STATUS	= 0x0010,
-		SC_RIGHT_MGR_MODIFY_BOOT_CONFIG	= 0x0020
-	} svcctl_MgrAccessMask;
-
 	WERROR svcctl_OpenSCManagerW(
 		[in,unique] [string,charset(UTF16)] uint16 *MachineName,
 		[in,unique] [string,charset(UTF16)] uint16 *DatabaseName,
-		[in] svcctl_MgrAccessMask access_mask,
+		[in] uint32 access_mask,
 		[out,ref] policy_handle *handle
 	);
 
 	/*****************/
 	/* Function 0x10 */
-	typedef [bitmap32bit] bitmap {
-		SC_RIGHT_SVC_QUERY_CONFIG		= 0x0001,
-		SC_RIGHT_SVC_CHANGE_CONFIG		= 0x0002,
-		SC_RIGHT_SVC_QUERY_STATUS		= 0x0004,
-		SC_RIGHT_SVC_ENUMERATE_DEPENDENTS	= 0x0008,
-		SC_RIGHT_SVC_START			= 0x0010,
-		SC_RIGHT_SVC_STOP			= 0x0020,
-		SC_RIGHT_SVC_PAUSE_CONTINUE		= 0x0040,
-		SC_RIGHT_SVC_INTERROGATE		= 0x0080,
-		SC_RIGHT_SVC_USER_DEFINED_CONTROL	= 0x0100
-	} svcctl_ServiceAccessMask;
-
 	WERROR svcctl_OpenServiceW(
 		[in,ref] policy_handle *scmanager_handle,
 		[in] [string,charset(UTF16)] uint16 ServiceName[],
-		[in] svcctl_ServiceAccessMask access_mask,
+		[in] uint32 access_mask,
 		[out,ref] policy_handle *handle
 	);
 
