@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 38
+Release: 39
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,11 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Thu May 22 2008 : Version 1.0.39
+ - Moved a CTDB_MANAGES_NFS, CTDB_MANAGES_ISCSI and CTDB_MANAGES_CSFTPD
+   into /etc/sysconfig/ctdb
+ - Lowered some debug messages to not fill the logfile with entries
+   that normally occur in the default configuration.
 * Fri May 16 2008 : Version 1.0.38
  - Add machine readable output support to "ctdb getmonmode"
  - Lots of tweaks and enhancements if the event scripts are "slow"
