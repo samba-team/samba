@@ -46,6 +46,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 					 struct dom_sid *domain_sid,
 					 const char *domain_guid,
 					 const char *user,
+					 uint32_t acct_control,
 					 const char *src_address,
 					 uint32_t version,
 					 struct loadparm_context *lp_ctx,
@@ -53,7 +54,8 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 {
 	const char *ref_attrs[] = {"nETBIOSName", "dnsRoot", "ncName", NULL};
 	const char *dom_attrs[] = {"objectGUID", NULL};
-	struct ldb_result *ref_res = NULL, *dom_res = NULL;
+	const char *none_attrs[] = {NULL};
+	struct ldb_result *ref_res = NULL, *dom_res = NULL, *user_res = NULL;
 	int ret;
 	const char **services = lp_server_services(lp_ctx);
 	uint32_t server_type;
@@ -68,6 +70,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	const char *pdc_ip;
 	struct ldb_dn *partitions_basedn;
 	struct interface *ifaces;
+	bool user_known;
 
 	partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
 
@@ -201,6 +204,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		}
 	}
 
+
 	if ((ref_res == NULL || ref_res->count == 0)) {
 		DEBUG(2,("Unable to find domain reference with name %s or GUID {%s}\n", domain, domain_guid));
 		return NT_STATUS_NO_SUCH_DOMAIN;
@@ -211,6 +215,44 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
+	/* work around different inputs for not-specified users */
+	if (!user) {
+		user = "";
+	}
+
+	/* Enquire about any valid username with just a CLDAP packet -
+	 * if kerberos didn't also do this, the security folks would
+	 * scream... */
+	if (user[0]) {							\
+		/* Only allow some bits to be enquired:  [MS-ATDS] 7.3.3.2 */
+		if (acct_control == (uint32_t)-1) {
+			acct_control = 0;
+		}
+		acct_control = acct_control & (ACB_TEMPDUP | ACB_NORMAL | ACB_DOMTRUST | ACB_WSTRUST | ACB_SVRTRUST);
+
+		/* We must exclude disabled accounts, but otherwise do the bitwise match the client asked for */
+		ret = ldb_search_exp_fmt(sam_ctx, mem_ctx, &user_res,
+					 dom_res->msgs[0]->dn, LDB_SCOPE_SUBTREE, 
+					 none_attrs, 
+					 "(&(objectClass=user)(samAccountName=%s)"
+					 "(!(userAccountControl:" LDB_OID_COMPARATOR_AND ":=%u))"
+					 "(userAccountControl:" LDB_OID_COMPARATOR_OR ":=%u))", 
+					 user, UF_ACCOUNTDISABLE, samdb_acb2uf(acct_control));
+		if (ret != LDB_SUCCESS) {
+			DEBUG(2,("Unable to find referece to user '%s' with ACB 0x%8x under %s: %s\n",
+				 user, acct_control, ldb_dn_get_linearized(dom_res->msgs[0]->dn),
+				 ldb_errstring(sam_ctx)));
+			return NT_STATUS_NO_SUCH_USER;
+		} else if (user_res->count == 1) {
+			user_known = true;
+		} else {
+			user_known = false;
+		}
+
+	} else {
+		user_known = true;
+	}
+		
 	server_type      = 
 		NBT_SERVER_DS | NBT_SERVER_TIMESERV |
 		NBT_SERVER_CLOSEST | NBT_SERVER_WRITABLE | 
@@ -250,13 +292,13 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 
 	ZERO_STRUCTP(netlogon);
 
-	if (version & NETLOGON_NT_VERSION_5EX) {
+	/* check if either of these bits is present */
+	if (version & (NETLOGON_NT_VERSION_5EX|NETLOGON_NT_VERSION_5EX_WITH_IP)) {
 		uint32_t extra_flags = 0;
 		netlogon->ntver = NETLOGON_NT_VERSION_5EX;
 
 		/* could check if the user exists */
-		if (!user) {
-			user = "";
+		if (user_known) {
 			netlogon->nt5_ex.command      = LOGON_SAM_LOGON_RESPONSE_EX;
 		} else {
 			netlogon->nt5_ex.command      = LOGON_SAM_LOGON_USER_UNKNOWN_EX;
@@ -277,7 +319,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 			extra_flags = NETLOGON_NT_VERSION_5EX_WITH_IP;
 			netlogon->nt5_ex.sockaddr.sa_family    = 2;
 			netlogon->nt5_ex.sockaddr.pdc_ip       = pdc_ip;
-			netlogon->nt5_ex.sockaddr.remaining = data_blob(NULL, 4);
+			netlogon->nt5_ex.sockaddr.remaining = data_blob_talloc(mem_ctx, NULL, 4);
 		}
 		netlogon->nt5_ex.nt_version   = NETLOGON_NT_VERSION_1|NETLOGON_NT_VERSION_5EX|extra_flags;
 		netlogon->nt5_ex.lmnt_token   = 0xFFFF;
@@ -287,8 +329,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		netlogon->ntver = NETLOGON_NT_VERSION_5;
 
 		/* could check if the user exists */
-		if (!user) {
-			user = "";
+		if (user_known) {
 			netlogon->nt5.command      = LOGON_SAM_LOGON_RESPONSE;
 		} else {
 			netlogon->nt5.command      = LOGON_SAM_LOGON_USER_UNKNOWN;
@@ -309,8 +350,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	} else /* (version & NETLOGON_NT_VERSION_1) and all other cases */ {
 		netlogon->ntver = NETLOGON_NT_VERSION_1;
 		/* could check if the user exists */
-		if (!user) {
-			user = "";
+		if (user_known) {
 			netlogon->nt4.command      = LOGON_SAM_LOGON_RESPONSE;
 		} else {
 			netlogon->nt4.command      = LOGON_SAM_LOGON_USER_UNKNOWN;
@@ -406,7 +446,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 		 domain, host, user, version, domain_guid));
 
 	status = fill_netlogon_samlogon_response(cldapd->samctx, tmp_ctx, domain, NULL, NULL, domain_guid,
-						 user, src->addr, 
+						 user, acct_control, src->addr, 
 						 version, cldapd->task->lp_ctx, &netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
