@@ -321,12 +321,12 @@ xslt/generate-attributions.xsl:
 xslt/man.xsl:
 xslt/pearson.xsl:
 
-distclean clobber: clean
+distclean clobber:: clean
 	rm Makefile.settings config.status config.log configure
 	rm -rf autom4te.cache
 
 
 # Always keep intermediate files if we can
 .SECONDARY:
-.PHONY: clean clobber archive release everything all $(TARGETS) latexfigures
+.PHONY: clean clobber archive release everything all latexfigures
 
