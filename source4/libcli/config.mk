@@ -57,9 +57,17 @@ LIBCLI_NBT_OBJ_FILES = $(addprefix $(libclisrcdir)/nbt/, \
 
 $(eval $(call proto_header_template,$(libclisrcdir)/nbt/nbt_proto.h,$(LIBCLI_NBT_OBJ_FILES:.o=.c)))
 
+[SUBSYSTEM::LIBCLI_NDR_NETLOGON]
+PUBLIC_DEPENDENCIES = LIBNDR  \
+	NDR_SECURITY 	
+
+LIBCLI_NDR_NETLOGON_OBJ_FILES = $(addprefix libcli/, \
+	ndr_netlogon.o)
+
+$(eval $(call proto_header_template,$(libclisrcdir)/ndr_netlogon_proto.h,$(LIBCLI_NDR_NETLOGON_OBJ_FILES:.o=.c)))
+
 [SUBSYSTEM::LIBCLI_NETLOGON]
-PUBLIC_DEPENDENCIES = LIBNDR NDR_NBT  \
-	NDR_SECURITY LIBSAMBA-UTIL
+PUBLIC_DEPENDENCIES = LIBSAMBA-UTIL LIBCLI_NDR_NETLOGON
 
 LIBCLI_NETLOGON_OBJ_FILES = $(addprefix libcli/, \
 	netlogon.o)
