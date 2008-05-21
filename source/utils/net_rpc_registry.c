@@ -959,7 +959,7 @@ static bool dump_registry_tree( REGF_FILE *file, REGF_NK_REC *nk, const char *pa
 		SAFE_FREE(regpath);
 	}
 
-	return True;
+	return true;
 }
 
 /********************************************************************
@@ -977,13 +977,13 @@ static bool write_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 
 	if ( !( subkeys = TALLOC_ZERO_P( infile->mem_ctx, REGSUBKEY_CTR )) ) {
 		DEBUG(0,("write_registry_tree: talloc() failed!\n"));
-		return False;
+		return false;
 	}
 
 	if ( !(values = TALLOC_ZERO_P( subkeys, REGVAL_CTR )) ) {
 		DEBUG(0,("write_registry_tree: talloc() failed!\n"));
 		TALLOC_FREE(subkeys);
-		return False;
+		return false;
 	}
 
 	/* copy values into the REGVAL_CTR */
@@ -1021,7 +1021,7 @@ static bool write_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 	d_printf("[%s]\n", path );
 	TALLOC_FREE(subkeys);
 
-	return True;
+	return true;
 }
 
 /********************************************************************

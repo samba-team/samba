@@ -91,6 +91,6 @@ typedef struct _SMB_NTQUOTA_HANDLE {
 #define CHECK_NTQUOTA_HANDLE_OK(fsp,conn)	(FNUM_OK(fsp,conn) &&\
 	 (fsp)->fake_file_handle &&\
 	 ((fsp)->fake_file_handle->type == FAKE_FILE_TYPE_QUOTA) &&\
-	 (fsp)->fake_file_handle->pd)
+	 (fsp)->fake_file_handle->private_data)
 
 #endif /*_NTQUOTAS_H */

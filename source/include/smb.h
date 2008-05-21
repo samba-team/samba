@@ -515,7 +515,7 @@ typedef struct files_struct {
 	char *fsp_name;
 
 	struct vfs_fsp_data *vfs_extension;
- 	FAKE_FILE_HANDLE *fake_file_handle;
+	struct fake_file_handle *fake_file_handle;
 
 	struct notify_change_buf *notify;
 

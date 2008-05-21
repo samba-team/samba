@@ -1136,7 +1136,7 @@ static int net_sam_do_list(struct net_context *c, int argc, const char **argv,
 		return -1;
 	}
 
-	while (True) {
+	while (true) {
 		struct samr_displayentry entry;
 		if (!search->next_entry(search, &entry)) {
 			break;
@@ -1288,8 +1288,8 @@ static int net_sam_provision(struct net_context *c, int argc, const char **argv)
 		goto failed;
 	}
 	
-	if (!lp_parm_bool(-1, "ldapsam", "trusted", False) ||
-	    !lp_parm_bool(-1, "ldapsam", "editposix", False)) {
+	if (!lp_parm_bool(-1, "ldapsam", "trusted", false) ||
+	    !lp_parm_bool(-1, "ldapsam", "editposix", false)) {
 
 		d_fprintf(stderr, "Provisioning works only if ldapsam:trusted"
 				  " and ldapsam:editposix are enabled.\n");

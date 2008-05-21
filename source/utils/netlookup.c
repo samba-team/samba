@@ -112,7 +112,7 @@ static struct con_struct *create_cs(struct net_context *c,
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(2,("create_cs: Connect failed. Error was %s\n", nt_errstr(nt_status)));
-		cs->failed_connect = True;
+		cs->failed_connect = true;
 		cs->err = nt_status;
 		*perr = nt_status;
 		return NULL;
@@ -124,19 +124,19 @@ static struct con_struct *create_cs(struct net_context *c,
 
 	if (cs->lsapipe == NULL) {
 		DEBUG(2,("create_cs: open LSA pipe failed. Error was %s\n", nt_errstr(nt_status)));
-		cs->failed_connect = True;
+		cs->failed_connect = true;
 		cs->err = nt_status;
 		*perr = nt_status;
 		return NULL;
 	}
 
-	nt_status = rpccli_lsa_open_policy(cs->lsapipe, ctx, True,
+	nt_status = rpccli_lsa_open_policy(cs->lsapipe, ctx, true,
 				SEC_RIGHTS_MAXIMUM_ALLOWED,
 				&cs->pol);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(2,("create_cs: rpccli_lsa_open_policy failed. Error was %s\n", nt_errstr(nt_status)));
-		cs->failed_connect = True;
+		cs->failed_connect = true;
 		cs->err = nt_status;
 		*perr = nt_status;
 		return NULL;

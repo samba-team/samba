@@ -36,17 +36,17 @@ static bool get_sid_from_input(DOM_SID *sid, char *input)
 		/* Perhaps its the NT group name? */
 		if (!pdb_getgrnam(&map, input)) {
 			printf("NT Group %s doesn't exist in mapping DB\n", input);
-			return False;
+			return false;
 		} else {
 			*sid = map.sid;
 		}
 	} else {
 		if (!string_to_sid(sid, input)) {
 			printf("converting sid %s from a string failed!\n", input);
-			return False;
+			return false;
 		}
 	}
-	return True;
+	return true;
 }
 
 /*********************************************************
@@ -75,18 +75,18 @@ static void print_map_entry ( GROUP_MAP map, bool long_list )
 static int net_groupmap_list(struct net_context *c, int argc, const char **argv)
 {
 	size_t entries;
-	bool long_list = False;
+	bool long_list = false;
 	size_t i;
 	fstring ntgroup = "";
 	fstring sid_string = "";
 
 	if (c->opt_verbose || c->opt_long_list_entries)
-		long_list = True;
+		long_list = true;
 
 	/* get the options */
 	for ( i=0; i<argc; i++ ) {
 		if ( !StrCaseCmp(argv[i], "verbose")) {
-			long_list = True;
+			long_list = true;
 		}
 		else if ( !StrnCaseCmp(argv[i], "ntgroup", strlen("ntgroup")) ) {
 			fstrcpy( ntgroup, get_string_param( argv[i] ) );
@@ -494,7 +494,7 @@ static int net_groupmap_set(struct net_context *c, int argc, const char **argv)
 	const char *ntgroup = NULL;
 	struct group *grp = NULL;
 	GROUP_MAP map;
-	bool have_map = False;
+	bool have_map = false;
 
 	if ((argc < 1) || (argc > 2)) {
 		d_printf("Usage: net groupmap set \"NT Group\" "
@@ -712,7 +712,7 @@ static bool print_alias_memberships(TALLOC_CTX *mem_ctx,
 				     &alias_rids, &num_alias_rids))) {
 		d_fprintf(stderr, "Could not list memberships for sid %s\n",
 			 sid_string_tos(member));
-		return False;
+		return false;
 	}
 
 	for (i = 0; i < num_alias_rids; i++) {
@@ -722,7 +722,7 @@ static bool print_alias_memberships(TALLOC_CTX *mem_ctx,
 		printf("%s\n", sid_string_tos(&alias));
 	}
 
-	return True;
+	return true;
 }
 
 static int net_groupmap_memberships(struct net_context *c, int argc, const char **argv)
@@ -758,7 +758,7 @@ static int net_groupmap_memberships(struct net_context *c, int argc, const char 
 	return 0;
 }
 
-int net_help_groupmap(struct net_context *c, int argc, const char **argv)
+int net_groupmap_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("net groupmap add"\
 		"\n  Create a new group mapping\n");
@@ -801,7 +801,7 @@ int net_groupmap(struct net_context *c, int argc, const char **argv)
  		{"listmem", net_groupmap_listmem},
  		{"memberships", net_groupmap_memberships},
 		{"list", net_groupmap_list},
-		{"help", net_help_groupmap},
+		{"help", net_groupmap_usage},
 		{NULL, NULL}
 	};
 
@@ -812,8 +812,8 @@ int net_groupmap(struct net_context *c, int argc, const char **argv)
 	}
 
 	if ( argc )
-		return net_run_function(c, argc, argv, func, net_help_groupmap);
+		return net_run_function(c,argc, argv, func, net_groupmap_usage);
 
-	return net_help_groupmap(c, argc, argv );
+	return net_groupmap_usage(c, argc, argv);
 }
 

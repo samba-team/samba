@@ -154,6 +154,7 @@ int ms_fnmatch(const char *pattern, const char *string, bool translate_pattern,
 	struct max_n *max_n = NULL;
 	struct max_n *max_n_free = NULL;
 	struct max_n one_max_n;
+	size_t converted_size;
 
 	if (ISDOTDOT(string)) {
 		string = ".";
@@ -169,11 +170,11 @@ int ms_fnmatch(const char *pattern, const char *string, bool translate_pattern,
 		}
 	}
 
-	if (push_ucs2_allocate(&p, pattern) == (size_t)-1) {
+	if (!push_ucs2_allocate(&p, pattern, &converted_size)) {
 		return -1;
 	}
 
-	if (push_ucs2_allocate(&s, string) == (size_t)-1) {
+	if (!push_ucs2_allocate(&s, string, &converted_size)) {
 		SAFE_FREE(p);
 		return -1;
 	}

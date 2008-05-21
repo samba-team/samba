@@ -21,52 +21,52 @@
 
 extern struct current_user current_user;
 
-static FAKE_FILE fake_files[] = {
+struct fake_file_type {
+	const char *name;
+	enum FAKE_FILE_TYPE type;
+	void *(*init_pd)(TALLOC_CTX *mem_ctx);
+};
+
+static struct fake_file_type fake_files[] = {
 #ifdef WITH_QUOTAS
-	{FAKE_FILE_NAME_QUOTA_UNIX,	FAKE_FILE_TYPE_QUOTA,	init_quota_handle,	destroy_quota_handle},
+	{FAKE_FILE_NAME_QUOTA_UNIX, FAKE_FILE_TYPE_QUOTA, init_quota_handle},
 #endif /* WITH_QUOTAS */
-	{NULL,				FAKE_FILE_TYPE_NONE,	NULL,			NULL }
+	{NULL, FAKE_FILE_TYPE_NONE, NULL}
 };
 
 /****************************************************************************
  Create a fake file handle
 ****************************************************************************/
 
-static struct _FAKE_FILE_HANDLE *init_fake_file_handle(enum FAKE_FILE_TYPE type)
+static struct fake_file_handle *init_fake_file_handle(enum FAKE_FILE_TYPE type)
 {
-	TALLOC_CTX *mem_ctx = NULL;
-	FAKE_FILE_HANDLE *fh = NULL;
+	struct fake_file_handle *fh = NULL;
 	int i;
 
-	for (i=0;fake_files[i].name!=NULL;i++) {
+	for (i=0; fake_files[i].name!=NULL; i++) {
 		if (fake_files[i].type==type) {
-			DEBUG(5,("init_fake_file_handle: for [%s]\n",fake_files[i].name));
-
-			if ((mem_ctx=talloc_init("fake_file_handle"))==NULL) {
-				DEBUG(0,("talloc_init(fake_file_handle) failed.\n"));
-				return NULL;	
-			}
-
-			if ((fh =TALLOC_ZERO_P(mem_ctx, FAKE_FILE_HANDLE))==NULL) {
-				DEBUG(0,("TALLOC_ZERO() failed.\n"));
-				talloc_destroy(mem_ctx);
-				return NULL;
-			}
-
-			fh->type = type;
-			fh->mem_ctx = mem_ctx;
-
-			if (fake_files[i].init_pd) {
-				fh->pd = fake_files[i].init_pd(fh->mem_ctx);
-			}
-
-			fh->free_pd = fake_files[i].free_pd;
-
-			return fh;
+			break;
 		}
 	}
 
-	return NULL;	
+	if (fake_files[i].name == NULL) {
+		return NULL;
+	}
+
+	DEBUG(5,("init_fake_file_handle: for [%s]\n",fake_files[i].name));
+
+	fh = talloc(NULL, struct fake_file_handle);
+	if (fh == NULL) {
+		DEBUG(0,("TALLOC_ZERO() failed.\n"));
+		return NULL;
+	}
+
+	fh->type = type;
+
+	if (fake_files[i].init_pd) {
+		fh->private_data = fake_files[i].init_pd(fh);
+	}
+	return fh;
 }
 
 /****************************************************************************
@@ -147,18 +147,12 @@ NTSTATUS open_fake_file(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-void destroy_fake_file_handle(FAKE_FILE_HANDLE **fh)
+void destroy_fake_file_handle(struct fake_file_handle **fh)
 {
-	if (!fh||!(*fh)) {
+	if (!fh) {
 		return;
 	}
-
-	if ((*fh)->free_pd) {
-		(*fh)->free_pd(&(*fh)->pd);		
-	}
-
-	talloc_destroy((*fh)->mem_ctx);
-	(*fh) = NULL;
+	TALLOC_FREE(*fh);
 }
 
 NTSTATUS close_fake_file(files_struct *fsp)

@@ -207,7 +207,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 	}
 
 
-	CHECK_RPC_ERR(rpccli_lsa_open_policy(pipe_hnd, mem_ctx, True,
+	CHECK_RPC_ERR(rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
 					  &lsa_pol),
 		      "error opening lsa policy handle");

@@ -103,7 +103,7 @@ static bool net_sh_process(struct net_context *c,
 	NTSTATUS status;
 
 	if (argc == 0) {
-		return True;
+		return true;
 	}
 
 	if (ctx == this_ctx) {
@@ -114,12 +114,12 @@ static bool net_sh_process(struct net_context *c,
 			new_ctx = this_ctx->parent;
 			TALLOC_FREE(this_ctx);
 			this_ctx = new_ctx;
-			return True;
+			return true;
 		}
 	}
 
 	if (strequal(argv[0], "exit") || strequal(argv[0], "quit")) {
-		return False;
+		return false;
 	}
 
 	if (strequal(argv[0], "help") || strequal(argv[0], "?")) {
@@ -129,7 +129,7 @@ static bool net_sh_process(struct net_context *c,
 			}
 			d_printf("%-15s %s\n", cmd->name, cmd->help);
 		}
-		return True;
+		return true;
 	}
 
 	for (cmd = ctx->cmds; cmd->name != NULL; cmd++) {
@@ -141,13 +141,13 @@ static bool net_sh_process(struct net_context *c,
 	if (cmd->name == NULL) {
 		/* None found */
 		d_fprintf(stderr, "%s: unknown cmd\n", argv[0]);
-		return True;
+		return true;
 	}
 
 	new_ctx = TALLOC_P(ctx, struct rpc_sh_ctx);
 	if (new_ctx == NULL) {
 		d_fprintf(stderr, "talloc failed\n");
-		return False;
+		return false;
 	}
 	new_ctx->cli = ctx->cli;
 	new_ctx->whoami = talloc_asprintf(new_ctx, "%s %s",
@@ -170,7 +170,7 @@ static bool net_sh_process(struct net_context *c,
 	if (cmd->sub != NULL) {
 		if (argc == 0) {
 			this_ctx = new_ctx;
-			return True;
+			return true;
 		}
 		return net_sh_process(c, new_ctx, argc, argv);
 	}
@@ -182,7 +182,7 @@ static bool net_sh_process(struct net_context *c,
 			  nt_errstr(status));
 	}
 
-	return True;
+	return true;
 }
 
 static struct rpc_sh_cmd sh_cmds[6] = {
@@ -268,7 +268,7 @@ int net_rpc_shell(struct net_context *c, int argc, const char **argv)
 			d_fprintf(stderr, "cmdline invalid: %s\n",
 				  poptStrerror(ret));
 			SAFE_FREE(line);
-			return False;
+			return false;
 		}
 
 		if ((line[0] != '\n') &&

@@ -880,15 +880,15 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   utils/netlookup.o utils/net_sam.o utils/net_rpc_shell.o \
 	   utils/net_util.o utils/net_rpc_sh_acct.o utils/net_rpc_audit.o \
 	   $(PASSWD_UTIL_OBJ) utils/net_dns.o utils/net_ads_gpo.o \
-	   utils/net_conf.o \
-	   utils/net_registry.o \
-	   auth/token_util.o utils/net_dom.o
+	   utils/net_conf.o utils/net_join.o utils/net_user.o \
+	   utils/net_group.o utils/net_file.o utils/net_registry.o \
+	   auth/token_util.o utils/net_dom.o utils/net_share.o
 
 # these are not processed by make proto
-NET_OBJ2 = utils/net_registry_util.o
+NET_OBJ2 = utils/net_registry_util.o utils/net_help_common.o
 
 NET_OBJ = $(NET_OBJ1) \
-	  $(NET_OBJ2) \
+	  $(NET_OBJ2) @FAKE_KASERVER_OBJ@\
 	  $(PARAM_WITHOUT_REG_OBJ) $(LIBSMB_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	  $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(LIBADDNS_OBJ0) \
@@ -1270,14 +1270,14 @@ PRECOMPILED_HEADER = $(builddir)/include/includes.h.gch
 
 # this adds support for precompiled headers. To use it, install a snapshot
 # of gcc-3.4 and run 'make pch' before you do the main build.
-pch:: proto_exists
+pch::
 	rm -f $(PRECOMPILED_HEADER)
 	$(MAKE) $(PRECOMPILED_HEADER)
 
 $(PRECOMPILED_HEADER): $(srcdir)/include/includes.h
 	$(COMPILE)
 
-BINARY_PREREQS = proto_exists bin/.dummy
+BINARY_PREREQS = bin/.dummy
 
 # These dependencies are only approximately correct: we want to make
 # sure Samba's paths are updated if ./configure is re-run.  Really it
@@ -2278,7 +2278,9 @@ uninstallpammodules::
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
-clean:: delheaders 
+clean::
+	-rm -f include/build_env.h
+	-rm -f smbd/build_options.c
 	-rm -f $(PRECOMPILED_HEADER)
 	-rm -f core */*~ *~ \
 		*/*.o */*/*.o */*/*/*.o \
@@ -2289,95 +2291,22 @@ clean:: delheaders
 		$(LIBTALLOC) $(LIBSMBCLIENT) $(LIBADDNS) \
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBNETAPI) \
 		bin/libwbclient.so.0 bin/timelimit \
-		.headers.stamp */src/*.o proto_exists \
+		.headers.stamp */src/*.o \
 		$(LIBTDB_SYMS)
 	-rm -rf t_dir
-
-# Making this target will just make sure that the prototype files
-# exist, not necessarily that they are up to date.  Since they're
-# removed by "make clean" this will always be run when you do anything
-# afterwards.
-proto_exists:: include/proto.h include/build_env.h \
-	winbindd/winbindd_proto.h web/swat_proto.h \
-	libnet/libnet_proto.h \
-	client/client_proto.h utils/net_proto.h utils/ntlm_auth_proto.h smbd/build_options.c
-	@touch proto_exists
-
-delheaders::
-	@echo Removing prototype headers
-	@rm -f include/proto.h include/build_env.h \
-		winbindd/winbindd_proto.h web/swat_proto.h \
-		client/client_proto.h utils/net_proto.h \
-		smbd/build_options.c utils/ntlm_auth_proto.h \
-		utils/passwd_proto.h libnet/libnet_proto.h
-
-MKPROTO_SH = $(srcdir)/script/mkproto.sh
-
-include/proto.h: smbd/build_options.c
-	@echo Building include/proto.h
-	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
-	  -h _PROTO_H_ $(builddir)/include/proto.h \
-	  $(PROTO_OBJ)
 
 include/build_env.h: script/build_env.sh
 	@echo Building include/build_env.h
 	@$(SHELL) $(srcdir)/script/build_env.sh $(srcdir) $(builddir) $(CC) \
 	  > $(builddir)/include/build_env.h
 
-winbindd/winbindd_proto.h:
-	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
-	  -h _WINBINDD_PROTO_H_ $(builddir)/winbindd/winbindd_proto.h \
-	  $(WINBINDD_OBJ1)
+proto::
+	@echo
+	@echo "NOTE: 'proto' is no longer a valid make target as proto.h"
+	@echo "and other prototype headers are not generated anymore."
+	@echo
 
-web/swat_proto.h:
-	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
-	  -h _SWAT_PROTO_H_ $(builddir)/web/swat_proto.h \
-	  $(SWAT_OBJ1)
-
-client/client_proto.h:
-	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
-	  -h _CLIENT_PROTO_H_ $(builddir)/client/client_proto.h \
-	  $(CLIENT_OBJ1)
-
-utils/net_proto.h:
-	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
-	  -h _NET_PROTO_H_ $(builddir)/utils/net_proto.h \
-	  $(NET_OBJ1)
-
-utils/passwd_proto.h:
-	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
-	  -h _PASSWD_PROTO_H_ $(builddir)/utils/passwd_proto.h \
-	  $(PASSWD_UTIL_OBJ)
-
-utils/ntlm_auth_proto.h:
-	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
-	  -h _NTLM_AUTH_PROTO_H_ $(builddir)/utils/ntlm_auth_proto.h \
-	  $(NTLM_AUTH_OBJ1)
-
-libnet/libnet_proto.h:
-	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
-	  -h _LIBNET_PROTO_H_ $(builddir)/libnet/libnet_proto.h \
-	  $(LIBNET_OBJ)
-
-# "make headers" or "make proto" calls a subshell because we need to
-# make sure these commands are executed in sequence even for a
-# parallel make.
-headers::
-	$(MAKE) delheaders; \
-	$(MAKE) smbd/build_options.c; \
-	$(MAKE) include/proto.h; \
-	$(MAKE) include/build_env.h; \
-	$(MAKE) winbindd/winbindd_proto.h; \
-	$(MAKE) web/swat_proto.h; \
-	$(MAKE) client/client_proto.h; \
-	$(MAKE) utils/ntlm_auth_proto.h; \
-	$(MAKE) utils/net_proto.h; \
-	$(MAKE) utils/passwd_proto.h; \
-	$(MAKE) libnet/libnet_proto.h;
-
-proto:: headers
-
-.PHONY: headers proto
+.PHONY: proto
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]" | grep -v /.svn/`
