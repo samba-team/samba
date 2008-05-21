@@ -194,3 +194,5 @@ source/apidocs
 source/mkconfig.mk
 source/data.mk
 source/librpc/idl-deps
+source/libcli/netlogon_proto.h
+source/libcli/ndr_netlogon_proto.h
