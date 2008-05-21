@@ -1866,13 +1866,12 @@ enum smb_lock_level {
 	RAW_LOCK_SMB2_BREAK
 };
 
-/* the generic interface is defined to be equal to the lockingX interface */
-#define RAW_LOCK_GENERIC RAW_LOCK_LOCKX
+#define	RAW_LOCK_GENERIC RAW_LOCK_LOCKX
 
 /* union for lock() backend call 
 */
 union smb_lock {
-	/* SMBlockingX (and generic) interface */
+	/* SMBlockingX and generic interface */
 	struct {
 		enum smb_lock_level level;
 		struct {
@@ -1887,7 +1886,7 @@ union smb_lock {
 				uint64_t count;
 			} *locks; /* unlocks are first in the arrray */
 		} in;
-	} lockx, generic;
+	} generic, lockx;
 
 	/* SMBlock and SMBunlock interface */
 	struct {
@@ -1907,23 +1906,26 @@ union smb_lock {
 
 			/* static body buffer 48 (0x30) bytes */
 			/* uint16_t buffer_code;  0x30 */
-			uint16_t unknown1; /* must be 0x0001 */
-			uint32_t unknown2;
+			uint16_t lock_count;
+			uint32_t reserved;
 			/* struct smb2_handle handle; */
-			uint64_t offset;
-			uint64_t count;
-			uint32_t unknown5;
+			struct smb2_lock_element {
+				uint64_t offset;
+				uint64_t length;
+/* these flags are the same as the SMB2 lock flags */
 #define SMB2_LOCK_FLAG_NONE		0x00000000
 #define SMB2_LOCK_FLAG_SHARED		0x00000001
-#define SMB2_LOCK_FLAG_EXCLUSIV		0x00000002
+#define SMB2_LOCK_FLAG_EXCLUSIVE	0x00000002
 #define SMB2_LOCK_FLAG_UNLOCK		0x00000004
-#define SMB2_LOCK_FLAG_NO_PENDING	0x00000010
-			uint32_t flags;
+#define SMB2_LOCK_FLAG_FAIL_IMMEDIATELY	0x00000010
+				uint32_t flags;
+				uint32_t reserved;
+			} *locks;
 		} in;
 		struct {
 			/* static body buffer 4 (0x04) bytes */
 			/* uint16_t buffer_code;  0x04 */
-			uint16_t unknown1;
+			uint16_t reserved;
 		} out;
 	} smb2;
 
@@ -2154,8 +2156,12 @@ union smb_flush {
 		enum smb_flush_level level;
 		struct {
 			union smb_handle file;
-			uint32_t unknown;
+			uint16_t reserved1;
+			uint32_t reserved2;
 		} in;
+		struct {
+			uint16_t reserved;
+		} out;
 	} smb2;
 };
 

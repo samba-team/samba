@@ -51,6 +51,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	struct smb2_handle h;
 	uint8_t buf[200];
 	struct smb2_lock lck;
+	struct smb2_lock_element el[1];
 
 	ZERO_STRUCT(buf);
 
@@ -60,117 +61,119 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	status = smb2_util_write(tree, h, buf, 0, ARRAY_SIZE(buf));
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	lck.in.unknown1		= 0x0000;
-	lck.in.unknown2		= 0x00000000;
+	lck.in.locks		= el;
+
+	lck.in.lock_count	= 0x0000;
+	lck.in.reserved		= 0x00000000;
 	lck.in.file.handle	= h;
-	lck.in.offset		= 0x0000000000000000;
-	lck.in.count		= 0x0000000000000000;
-	lck.in.unknown5		= 0x0000000000000000;
-	lck.in.flags		= 0x00000000;
+	el[0].offset		= 0x0000000000000000;
+	el[0].length		= 0x0000000000000000;
+	el[0].reserved		= 0x0000000000000000;
+	el[0].flags		= 0x00000000;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 
-	lck.in.unknown1		= 0x0001;
-	lck.in.unknown2		= 0x00000000;
+	lck.in.lock_count	= 0x0001;
+	lck.in.reserved		= 0x00000000;
 	lck.in.file.handle	= h;
-	lck.in.offset		= 0;
-	lck.in.count		= 0;
-	lck.in.unknown5		= 0x00000000;
-	lck.in.flags		= SMB2_LOCK_FLAG_NONE;
+	el[0].offset		= 0;
+	el[0].length		= 0;
+	el[0].reserved		= 0x00000000;
+	el[0].flags		= SMB2_LOCK_FLAG_NONE;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(lck.out.unknown1, 0);
+	CHECK_VALUE(lck.out.reserved, 0);
 
 	lck.in.file.handle.data[0] +=1;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
 	lck.in.file.handle.data[0] -=1;
 
-	lck.in.unknown1		= 0x0001;
-	lck.in.unknown2		= 0xFFFFFFFF;
+	lck.in.lock_count	= 0x0001;
+	lck.in.reserved		= 0xFFFFFFFF;
 	lck.in.file.handle	= h;
-	lck.in.offset		= UINT64_MAX;
-	lck.in.count		= UINT64_MAX;
-	lck.in.unknown5		= 0x00000000;
-	lck.in.flags		= SMB2_LOCK_FLAG_EXCLUSIV|SMB2_LOCK_FLAG_NO_PENDING;
+	el[0].offset		= UINT64_MAX;
+	el[0].length		= UINT64_MAX;
+	el[0].reserved		= 0x00000000;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE|SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(lck.out.unknown1, 0);
+	CHECK_VALUE(lck.out.reserved, 0);
 
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(lck.out.unknown1, 0);
+	CHECK_VALUE(lck.out.reserved, 0);
 
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(lck.out.unknown1, 0);
+	CHECK_VALUE(lck.out.reserved, 0);
 
-	lck.in.unknown1		= 0x0001;
-	lck.in.unknown2		= 0x12345678;
+	lck.in.lock_count	= 0x0001;
+	lck.in.reserved		= 0x12345678;
 	lck.in.file.handle	= h;
-	lck.in.offset		= UINT32_MAX;
-	lck.in.count		= UINT32_MAX;
-	lck.in.unknown5		= 0x87654321;
-	lck.in.flags		= SMB2_LOCK_FLAG_EXCLUSIV|SMB2_LOCK_FLAG_NO_PENDING;
+	el[0].offset		= UINT32_MAX;
+	el[0].length		= UINT32_MAX;
+	el[0].reserved		= 0x87654321;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE|SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(lck.out.unknown1, 0);
+	CHECK_VALUE(lck.out.reserved, 0);
 
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(lck.out.unknown1, 0);
+	CHECK_VALUE(lck.out.reserved, 0);
 
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(lck.out.unknown1, 0);
+	CHECK_VALUE(lck.out.reserved, 0);
 
-	lck.in.flags		= 0x00000000;
+	el[0].flags		= 0x00000000;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(lck.out.unknown1, 0);
-
-	status = smb2_lock(tree, &lck);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(lck.out.unknown1, 0);
-
-	lck.in.flags		= 0x00000001;
-	status = smb2_lock(tree, &lck);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(lck.out.unknown1, 0);
+	CHECK_VALUE(lck.out.reserved, 0);
 
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(lck.out.unknown1, 0);
+	CHECK_VALUE(lck.out.reserved, 0);
 
-	lck.in.unknown1		= 0x0001;
-	lck.in.unknown2		= 0x87654321;
+	el[0].flags		= 0x00000001;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(lck.out.reserved, 0);
+
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(lck.out.reserved, 0);
+
+	lck.in.lock_count	= 0x0001;
+	lck.in.reserved		= 0x87654321;
 	lck.in.file.handle	= h;
-	lck.in.offset		= 0x00000000FFFFFFFF;
-	lck.in.count		= 0x00000000FFFFFFFF;
-	lck.in.unknown5		= 0x12345678;
-	lck.in.flags		= SMB2_LOCK_FLAG_UNLOCK;
+	el[0].offset		= 0x00000000FFFFFFFF;
+	el[0].length		= 0x00000000FFFFFFFF;
+	el[0].reserved		= 0x12345678;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
 
-	lck.in.unknown1		= 0x0001;
-	lck.in.unknown2		= 0x12345678;
+	lck.in.lock_count	= 0x0001;
+	lck.in.reserved		= 0x12345678;
 	lck.in.file.handle	= h;
-	lck.in.offset		= 0x00000000FFFFFFFF;
-	lck.in.count		= 0x00000000FFFFFFFF;
-	lck.in.unknown5		= 0x00000000;
-	lck.in.flags		= SMB2_LOCK_FLAG_UNLOCK;
+	el[0].offset		= 0x00000000FFFFFFFF;
+	el[0].length		= 0x00000000FFFFFFFF;
+	el[0].reserved		= 0x00000000;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
 
@@ -206,6 +209,9 @@ static bool test_lock_read_write(struct torture_context *torture,
 	struct smb2_create cr;
 	struct smb2_write wr;
 	struct smb2_read rd;
+	struct smb2_lock_element el[1];
+
+	lck.in.locks		= el;
 
 	ZERO_STRUCT(buf);
 
@@ -215,27 +221,27 @@ static bool test_lock_read_write(struct torture_context *torture,
 	status = smb2_util_write(tree, h1, buf, 0, ARRAY_SIZE(buf));
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	lck.in.unknown1		= 0x0001;
-	lck.in.unknown2		= 0x00000000;
+	lck.in.lock_count	= 0x0001;
+	lck.in.reserved		= 0x00000000;
 	lck.in.file.handle	= h1;
-	lck.in.offset		= 0;
-	lck.in.count		= ARRAY_SIZE(buf)/2;
-	lck.in.unknown5		= 0x00000000;
-	lck.in.flags		= s->lock_flags;
+	el[0].offset		= 0;
+	el[0].length		= ARRAY_SIZE(buf)/2;
+	el[0].reserved		= 0x00000000;
+	el[0].flags		= s->lock_flags;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(lck.out.unknown1, 0);
+	CHECK_VALUE(lck.out.reserved, 0);
 
-	lck.in.unknown1		= 0x0001;
-	lck.in.unknown2		= 0x00000000;
+	lck.in.lock_count	= 0x0001;
+	lck.in.reserved		= 0x00000000;
 	lck.in.file.handle	= h1;
-	lck.in.offset		= ARRAY_SIZE(buf)/2;
-	lck.in.count		= ARRAY_SIZE(buf)/2;
-	lck.in.unknown5		= 0x00000000;
-	lck.in.flags		= s->lock_flags;
+	el[0].offset		= ARRAY_SIZE(buf)/2;
+	el[0].length		= ARRAY_SIZE(buf)/2;
+	el[0].reserved		= 0x00000000;
+	el[0].flags		= s->lock_flags;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(lck.out.unknown1, 0);
+	CHECK_VALUE(lck.out.reserved, 0);
 
 	ZERO_STRUCT(cr);
 	cr.in.oplock_level = 0;
@@ -286,16 +292,16 @@ static bool test_lock_read_write(struct torture_context *torture,
 	status = smb2_read(tree, tree, &rd);
 	CHECK_STATUS(status, s->read_h2_status);
 
-	lck.in.unknown1		= 0x0001;
-	lck.in.unknown2		= 0x00000000;
+	lck.in.lock_count	= 0x0001;
+	lck.in.reserved		= 0x00000000;
 	lck.in.file.handle	= h1;
-	lck.in.offset		= ARRAY_SIZE(buf)/2;
-	lck.in.count		= ARRAY_SIZE(buf)/2;
-	lck.in.unknown5		= 0x00000000;
-	lck.in.flags		= SMB2_LOCK_FLAG_UNLOCK;
+	el[0].offset		= ARRAY_SIZE(buf)/2;
+	el[0].length		= ARRAY_SIZE(buf)/2;
+	el[0].reserved		= 0x00000000;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(lck.out.unknown1, 0);
+	CHECK_VALUE(lck.out.reserved, 0);
 
 	ZERO_STRUCT(wr);
 	wr.in.file.handle = h2;
@@ -349,7 +355,7 @@ static bool test_lock_rw_exclusiv(struct torture_context *torture, struct smb2_t
 {
 	struct test_lock_read_write_state s = {
 		.fname			= "lock_rw_exclusiv.dat",
-		.lock_flags		= SMB2_LOCK_FLAG_EXCLUSIV,
+		.lock_flags		= SMB2_LOCK_FLAG_EXCLUSIVE,
 		.write_h1_status	= NT_STATUS_OK,
 		.read_h1_status		= NT_STATUS_OK,
 		.write_h2_status	= NT_STATUS_FILE_LOCK_CONFLICT,
