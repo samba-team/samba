@@ -323,7 +323,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	/* update our vnn list */
 	vnn = find_public_ip_vnn(ctdb, pip->sin);
 	if (vnn == NULL) {
-		DEBUG(DEBUG_ERR,("releaseip called for an ip '%s' that is not a public address\n", 
+		DEBUG(DEBUG_INFO,("releaseip called for an ip '%s' that is not a public address\n", 
 			 inet_ntoa(pip->sin.sin_addr)));
 		return 0;
 	}
