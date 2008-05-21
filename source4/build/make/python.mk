@@ -29,7 +29,7 @@ $(call python_module_template,$(1))
 endef
 
 # Python C module
-# Arguments: Module path, object files
+# Arguments: File name, dependencies, link list
 define python_c_module_template
 
 $$(pythonbuilddir)/$(1): $(2) ; 
