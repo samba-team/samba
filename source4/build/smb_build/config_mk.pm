@@ -20,7 +20,7 @@ my $section_types = {
 		"LDFLAGS"		=> "list",
 		},
 	"PYTHON" => {
-		SWIG_FILE => "string",
+		"LIBRARY_REALNAME" => "string",
 		"PRIVATE_DEPENDENCIES"	=> "list",
 		"PUBLIC_DEPENDENCIES"	=> "list",
 		"ENABLE"		=> "bool",

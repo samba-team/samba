@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import unixinfo
+from dcerpc import unixinfo
 from samba.tests import RpcInterfaceTestCase
 
 class UnixinfoTests(RpcInterfaceTestCase):

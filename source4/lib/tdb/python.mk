@@ -1,5 +1,5 @@
 [PYTHON::swig_tdb]
-SWIG_FILE = tdb.i
+LIBRARY_REALNAME = _tdb.$(SHLIBEXT)
 PUBLIC_DEPENDENCIES = LIBTDB DYNCONFIG
 
 swig_tdb_OBJ_FILES = lib/tdb/tdb_wrap.o

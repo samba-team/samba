@@ -8,7 +8,7 @@ LIBSECURITY_OBJ_FILES = $(addprefix $(libclisrcdir)/security/, \
 $(eval $(call proto_header_template,$(libclisrcdir)/security/proto.h,$(LIBSECURITY_OBJ_FILES:.o=.c)))
 
 [PYTHON::swig_security]
-SWIG_FILE = security.i
+LIBRARY_REALNAME = samba/_security.$(SHLIBEXT)
 PRIVATE_DEPENDENCIES = LIBSECURITY
 
 swig_security_OBJ_FILES = $(libclisrcdir)/security/security_wrap.o

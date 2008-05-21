@@ -24,7 +24,7 @@ the functionality, that's already done in other tests.
 """
 
 import unittest
-import auth
+from samba import auth
 
 class AuthTests(unittest.TestCase):
     def test_system_session(self):

@@ -138,21 +138,12 @@ sub check_python($$$)
 
 	$python->{INSTALLDIR} = "PYTHONDIR";
 	unless (defined($python->{CFLAGS})) { $python->{CFLAGS} = []; }
-	if (defined($python->{SWIG_FILE})) {
-		my $dirname = dirname($python->{SWIG_FILE});
-		my $basename = basename($python->{SWIG_FILE}, ".i");
-
-		$dirname .= "/" unless $dirname =~ /\/$/;
-		$dirname = "" if $dirname eq "./";
-
-		$python->{LIBRARY_REALNAME} = "_$basename.\$(SHLIBEXT)";
-		$python->{INIT_FUNCTION} = "{ (char *)\"_$basename\", init_$basename }";
-	} else {
-		my $basename = $python->{NAME};
-		$basename =~ s/^python_//g;
+	my $basename = $python->{NAME};
+	$basename =~ s/^python_//g;
+	unless (defined($python->{LIBRARY_REALNAME})) {
 		$python->{LIBRARY_REALNAME} = "$basename.\$(SHLIBEXT)";
-		$python->{INIT_FUNCTION} = "{ (char *)\"$basename\", init$basename }";
 	}
+	$python->{INIT_FUNCTION} = "{ (char *)\"$basename\", init$basename }";
 	push (@{$python->{CFLAGS}}, "\$(EXT_LIB_PYTHON_CFLAGS)");
 
 	$python->{SUBSYSTEM} = "LIBPYTHON";
