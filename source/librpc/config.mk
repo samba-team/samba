@@ -729,6 +729,8 @@ swig_dcerpc_OBJ_FILES = $(dcerpcsrcdir)/dcerpc_wrap.o
 
 $(eval $(call python_py_module_template,dcerpc.py,$(dcerpcsrcdir)/dcerpc.py))
 
+$(swig_dcerpc_OBJ_FILES): CFLAGS+="$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)"
+
 [PYTHON::python_echo]
 PRIVATE_DEPENDENCIES = RPC_NDR_ECHO PYTALLOC param swig_credentials 
 

@@ -44,3 +44,5 @@ SWIG_FILE = auth.i
 $(eval $(call python_py_module_template,auth.py,$(authsrcdir)/auth.py))
 
 swig_auth_OBJ_FILES = $(authsrcdir)/auth_wrap.o
+
+$(swig_auth_OBJ_FILES): CFLAGS+="$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)"
