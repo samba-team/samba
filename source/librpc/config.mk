@@ -727,7 +727,7 @@ PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG dcer
 
 swig_dcerpc_OBJ_FILES = $(dcerpcsrcdir)/dcerpc_wrap.o
 
-$(eval $(call python_py_module_template,dcerpc.py,$(dcerpcsrcdir)/dcerpc.py))
+$(eval $(call python_py_module_template,dcerpc/__init__.py,$(dcerpcsrcdir)/dcerpc.py))
 
 $(swig_dcerpc_OBJ_FILES): CFLAGS+="$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)"
 

@@ -63,6 +63,6 @@ PRIVATE_DEPENDENCIES = LIBSAMBA-HOSTCONFIG
 
 param_OBJ_FILES = $(paramsrcdir)/param_wrap.o
 
-$(eval $(call python_py_module_template,param.py,$(paramsrcdir)/param.py))
+$(eval $(call python_py_module_template,samba/param.py,$(paramsrcdir)/param.py))
 
 $(param_OBJ_FILES): CFLAGS+="$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)"
