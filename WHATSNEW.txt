@@ -1,11 +1,141 @@
                    ===============================
+                   Release Notes for Samba 3.0.29
+                            May 20, 2008
+                   ===============================
+
+This is a bug fix release of the Samba 3.0 production series and is the
+version that servers should be run for for all current Samba 3.0 bug fixes.  
+
+Major bug fixes included in Samba 3.0.29 are:
+
+  o Problems following domain trusts on a Samba DC.
+  o SMB Signing errors.
+  o Interoperability issues with Windows 2008 domains.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.28a
+---------------------
+
+o   Michael Adam <obnox@samba.org>
+    * Fix build for pam_smbpass.
+    * Fix a crash in tdb_wrap_log().
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 5267: Fix for nmbd termination problems when no interfaces 
+      found.
+    * BUG 5326: OS/2 servers give strange "high word" replies for 
+      print jobs.
+    * Remove MS-DFS check that required the target host be ourself.
+    * BUG 5372: Fix high CPU usage of cupsd on large print servers
+      by using more efficient CUPS queries in smbd.
+    * Rewrite integer wrap checks to deal with gcc 4.x optimizations.
+    * BUG 5095: Fix the enforcement of the "Manage Documents" access right.
+    * Don't free memory from getpass() in mount.cifs.
+    * BUG 5460: Fix MS-DFS referral problem in server code.
+    * Fix bug in Winbind that caused the parent to ignore dead children.
+    * Fix compile warnings.
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * Fix build for pam_smbpass.
+    * Document build fixes.
+
+
+o   Kai Blin <kai@samba.org>
+    * BUG 4235: Improve compliance to the Squid helper protocol.
+      Original patch from Pawel Worach <pawel.worach@gmail.com>.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * BUG 5107: Fix handling of large DNS replies on AIX and Solaris.
+
+
+o   Glenn Curtis <gcurtis@likewisesoftware.com>
+    * Prevent cycle in Wibind's list of children when reaping dead processes.
+
+
+o   Steven Danneman <steven.danneman@isilon.com>
+    * BUG 5419: Fix memory leak in ads_do_search_all_args() (merge from v3-2).
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Fix winbind NETLOGON credential chain on a samba dc for w2k8 trusts.
+    * Fix client connections and negotiation with Windows 2008 DCs
+      in member server code.
+    * Add NT_STATUS_DOWNGRADE_DETECTED error code (merge from v3-2).
+    * BUG 5430: Fix pam_winbind.so on Solaris (requires -lsocket).
+    * Re-add samr getdispinfoindex parsing which got lost in the glue commit.
+    * BUG 5461: Implement a very basic _samr_GetDisplayEnumerationIndex().
+      Corrects interop problem between Citrix PM and a Samba DC.
+
+
+o   Bryan Kolodziej <bryan.kolodziej@allenlund.com>
+    * BUG 3840: Fix smbclient connecting to NetApp filers when using
+      whitespace in the user's password.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 4901: Fix behavior of "ldap passwd sync = only".
+    * BUG 5317: Fix debug output from domain_client_validate().
+    * BUG 5338: Fix format string bug in rpcclient.
+    * Ensure that "wbinfo -a trusted\\user%password" works correctly
+      on a Samba DC with trusts.
+    * BUG 5336: Fix SetUsetrInfo(level 25) to update the pwdLastSet 
+      attribute.
+    * BUG 5350: Fallback to anonymous sessions if not trust password
+      could be obtained on Samba DCs and member servers.
+    * BUG 5366: Fix password chat on Sun OpenSolaris (Nevada).
+    * Fix signing problem in the client with trans requests.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * Fix alignment bug hitting Solaris with "reset in zero vc" activated.
+
+
+o   Jim McDonough <jmcd@samba.org>
+    * Fix build with glibc 2.8.
+    * Enable winbind child processes to do something with signals, in 
+      particular closing and reopening logs on SIGHUP.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * Documentation cleanup after r emerging docs from svn to git and 
+      back-porting from the v3-2 branch.
+
+
+o   Rafal Szczesniak <mimir@samba.org>
+    * Add implementation of machine-authenticated connection to netlogon
+      pipe used when connecting to win2k and newer domain controllers.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Fix trusted users on a DC that uses the old idmap syntax.
+
+
+o   Bo Yang <boyang@novell.com>
+    * Only have Winbind cache domain password policies that were
+      successfully retrieved.
+
+
+o   Martin Zielinski <mz@seh.de>
+    * Fix alignment bug when marshalling printer data replies.
+    * Fix DeleteDriverDriverEx() checks to prevent removing in use files.
+
+
+
+Release notes for older releases follow:
+
+      --------------------------------------------------
+
+                   ===============================
                    Release Notes for Samba 3.0.28a
                             Mar 8, 2008
                    ===============================
-
-This is the second production release of the Samba 3.0.28 code 
-base and is the version that servers should be run for for all 
-current bug fixes.  
 
 Major bug fixes included in Samba 3.0.28a are:
 
