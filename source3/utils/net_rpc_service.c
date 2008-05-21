@@ -573,6 +573,13 @@ done:
 
 static int rpc_service_list(struct net_context *c, int argc, const char **argv )
 {
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc service list\n"
+			 "    View configured Win32 services\n");
+		return 0;
+	}
+
 	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
 		rpc_service_list_internal, argc, argv );
 }
@@ -582,6 +589,13 @@ static int rpc_service_list(struct net_context *c, int argc, const char **argv )
 
 static int rpc_service_start(struct net_context *c, int argc, const char **argv )
 {
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc service start <service>\n"
+			 "    Start a Win32 service\n");
+		return 0;
+	}
+
 	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
 		rpc_service_start_internal, argc, argv );
 }
@@ -591,6 +605,13 @@ static int rpc_service_start(struct net_context *c, int argc, const char **argv 
 
 static int rpc_service_stop(struct net_context *c, int argc, const char **argv )
 {
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc service stop <service>\n"
+			 "    Stop a Win32 service\n");
+		return 0;
+	}
+
 	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
 		rpc_service_stop_internal, argc, argv );
 }
@@ -600,6 +621,13 @@ static int rpc_service_stop(struct net_context *c, int argc, const char **argv )
 
 static int rpc_service_resume(struct net_context *c, int argc, const char **argv )
 {
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc service resume <service>\n"
+			 "    Resume a Win32 service\n");
+		return 0;
+	}
+
 	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
 		rpc_service_resume_internal, argc, argv );
 }
@@ -609,6 +637,13 @@ static int rpc_service_resume(struct net_context *c, int argc, const char **argv
 
 static int rpc_service_pause(struct net_context *c, int argc, const char **argv )
 {
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc service pause <service>\n"
+			 "    Pause a Win32 service\n");
+		return 0;
+	}
+
 	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
 		rpc_service_pause_internal, argc, argv );
 }
@@ -618,6 +653,13 @@ static int rpc_service_pause(struct net_context *c, int argc, const char **argv 
 
 static int rpc_service_status(struct net_context *c, int argc, const char **argv )
 {
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc service status <service>\n"
+			 "     Show the current status of a service\n");
+		return 0;
+	}
+
 	return run_rpc_command(c, NULL, PI_SVCCTL, 0,
 		rpc_service_status_internal, argc, argv );
 }
@@ -625,35 +667,59 @@ static int rpc_service_status(struct net_context *c, int argc, const char **argv
 /********************************************************************
 ********************************************************************/
 
-static int net_help_service(struct net_context *c, int argc, const char **argv )
-{
-	d_printf("net rpc service list               View configured Win32 services\n");
-	d_printf("net rpc service start <service>    Start a service\n");
-	d_printf("net rpc service stop <service>     Stop a service\n");
-	d_printf("net rpc service pause <service>    Pause a service\n");
-	d_printf("net rpc service resume <service>   Resume a paused service\n");
-	d_printf("net rpc service status <service>   View the current status of a service\n");
-
-	return -1;
-}
-
-/********************************************************************
-********************************************************************/
-
 int net_rpc_service(struct net_context *c, int argc, const char **argv)
 {
-	struct functable func[] = {
-		{"list", rpc_service_list},
-		{"start", rpc_service_start},
-		{"stop", rpc_service_stop},
-		{"pause", rpc_service_pause},
-		{"resume", rpc_service_resume},
-		{"status", rpc_service_status},
-		{NULL, NULL}
+	struct functable3 func[] = {
+		{
+			"list",
+			rpc_service_list,
+			NET_TRANSPORT_RPC,
+			"View configured Win32 services",
+			"net rpc service list\n"
+			"    View configured Win32 services"
+		},
+		{
+			"start",
+			rpc_service_start,
+			NET_TRANSPORT_RPC,
+			"Start a service",
+			"net rpc service start\n"
+			"    Start a service"
+		},
+		{
+			"stop",
+			rpc_service_stop,
+			NET_TRANSPORT_RPC,
+			"Stop a service",
+			"net rpc service stop\n"
+			"    Stop a service"
+		},
+		{
+			"pause",
+			rpc_service_pause,
+			NET_TRANSPORT_RPC,
+			"Pause a service",
+			"net rpc service pause\n"
+			"    Pause a service"
+		},
+		{
+			"resume",
+			rpc_service_resume,
+			NET_TRANSPORT_RPC,
+			"Resume a paused service",
+			"net rpc service resume\n"
+			"    Resume a service"
+		},
+		{
+			"status",
+			rpc_service_status,
+			NET_TRANSPORT_RPC,
+			"View current status of a service",
+			"net rpc service status\n"
+			"    View current status of a service"
+		},
+		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	if ( argc )
-		return net_run_function(c, argc, argv, func, net_help_service );
-
-	return net_help_service(c, argc, argv );
+	return net_run_function3(c, argc, argv, "net rpc service",func);
 }
