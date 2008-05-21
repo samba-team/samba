@@ -1545,7 +1545,7 @@ int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 
 	vnn = find_public_ip_vnn(ctdb, list->ip);
 	if (vnn == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Could not set tcp tickle list, '%s' is not a public address\n", 
+		DEBUG(DEBUG_INFO,(__location__ " Could not set tcp tickle list, '%s' is not a public address\n", 
 			 inet_ntoa(list->ip.sin_addr))); 
 		return 1;
 	}
