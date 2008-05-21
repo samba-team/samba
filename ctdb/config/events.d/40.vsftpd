@@ -2,6 +2,7 @@
 # event strict to manage vsftpd in a cluster environment
 
 . $CTDB_BASE/functions
+loadconfig ctdb
 loadconfig vsftpd
 
 [ "$CTDB_MANAGES_VSFTPD" = "yes" ] || exit 0

@@ -13,9 +13,9 @@ Setting up a vsftpd cluster is really easy.<br>
 Configure vsftpd on each node on the cluster.<br><br>
 Set up vsftpd to export directories from the shared cluster filesystem.
 
-<h2>/etc/sysconfig/vsftpd</h2>
+<h2>/etc/sysconfig/ctdb</h2>
 
-Create the file /etc/sysconfig/vsftpd with the content :
+Add the following line to the /etc/sysconfig/ctdb configuration file.
 <pre>
   CTDB_MANAGES_VSFTPD=yes
 </pre>
