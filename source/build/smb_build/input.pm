@@ -146,7 +146,6 @@ sub check_python($$$)
 		$dirname = "" if $dirname eq "./";
 
 		$python->{LIBRARY_REALNAME} = "_$basename.\$(SHLIBEXT)";
-		$python->{PYTHON_FILES} = ["$dirname$basename.py"];
 		push (@{$python->{CFLAGS}}, "\$(CFLAG_NO_UNUSED_MACROS)");
 		push (@{$python->{CFLAGS}}, "\$(CFLAG_NO_CAST_QUAL)");
 		$python->{INIT_FUNCTION} = "{ (char *)\"_$basename\", init_$basename }";

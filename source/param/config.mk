@@ -62,3 +62,5 @@ SWIG_FILE = param.i
 PRIVATE_DEPENDENCIES = LIBSAMBA-HOSTCONFIG
 
 param_OBJ_FILES = $(paramsrcdir)/param_wrap.o
+
+$(eval $(call python_py_module_template,param.py,$(paramsrcdir)/param.py))

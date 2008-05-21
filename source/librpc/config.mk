@@ -727,6 +727,8 @@ PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG dcer
 
 swig_dcerpc_OBJ_FILES = $(dcerpcsrcdir)/dcerpc_wrap.o
 
+$(eval $(call python_py_module_template,dcerpc.py,$(dcerpcsrcdir)/dcerpc.py))
+
 [PYTHON::python_echo]
 PRIVATE_DEPENDENCIES = RPC_NDR_ECHO PYTALLOC param swig_credentials 
 

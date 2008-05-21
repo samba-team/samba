@@ -12,3 +12,5 @@ SWIG_FILE = security.i
 PRIVATE_DEPENDENCIES = LIBSECURITY
 
 swig_security_OBJ_FILES = $(libclisrcdir)/security/security_wrap.o
+
+$(eval $(call python_py_module_template,security.py,$(libclisrcdir)/security/security.py))
