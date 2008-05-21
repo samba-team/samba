@@ -56,12 +56,12 @@ testit () {
 	shift
 	cmdline="$*"
 	subunit_start_test "$name"
-	$cmdline
+	output=`$cmdline 2>&1`
 	status=$?
 	if [ x$status = x0 ]; then
 		subunit_pass_test "$name"
 	else
-		subunit_fail_test "$name"
+		echo $output | subunit_fail_test "$name"
 	fi
 	return $status
 }
