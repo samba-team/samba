@@ -6,7 +6,7 @@ INIT_FUNCTION_SENTINEL = { NULL, NULL }
 LIBPYTHON_OBJ_FILES = $(addprefix $(pyscriptsrcdir)/, modules.o)
 
 [SUBSYSTEM::PYTALLOC]
-PUBLIC_DEPENDENCIES = EXT_LIB_PYTHON
+PUBLIC_DEPENDENCIES = EXT_LIB_PYTHON LIBTALLOC
 
 PYTALLOC_OBJ_FILES = $(addprefix $(pyscriptsrcdir)/, pytalloc.o)
 
@@ -30,6 +30,6 @@ $(foreach pyfile, $(_PY_FILES),$(eval $(call python_py_module_template,$(patsubs
 $(eval $(call python_py_module_template,samba/misc.py,$(pyscriptsrcdir)/misc.py))
 
 epydoc:: pythonmods
-	PYTHONPATH=$(pythonbuilddir) epydoc samba dcerpc
+	PYTHONPATH=$(pythonbuilddir) epydoc --no-private samba dcerpc tdb ldb subunit
 
 install:: installpython

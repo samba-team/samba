@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import winreg
+from dcerpc import winreg
 import unittest
 from samba.tests import RpcInterfaceTestCase
 
