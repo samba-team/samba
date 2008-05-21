@@ -33,8 +33,8 @@ struct smb2_request *smb2_flush_send(struct smb2_tree *tree, struct smb2_flush *
 	req = smb2_request_init_tree(tree, SMB2_OP_FLUSH, 0x18, false, 0);
 	if (req == NULL) return NULL;
 
-	SSVAL(req->out.body, 0x02, 0); /* pad? */
-	SIVAL(req->out.body, 0x04, io->in.unknown);
+	SSVAL(req->out.body, 0x02, io->in.reserved1);
+	SIVAL(req->out.body, 0x04, io->in.reserved2);
 	smb2_push_handle(req->out.body+0x08, &io->in.file.handle);
 
 	smb2_transport_send(req);
@@ -54,6 +54,8 @@ NTSTATUS smb2_flush_recv(struct smb2_request *req, struct smb2_flush *io)
 	}
 
 	SMB2_CHECK_PACKET_RECV(req, 0x04, false);
+
+	io->out.reserved = SVAL(req->in.body, 0x02);
 
 	return smb2_request_destroy(req);
 }

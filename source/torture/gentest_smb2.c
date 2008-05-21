@@ -349,8 +349,8 @@ static uint16_t gen_fnum(int instance)
 */
 static uint16_t gen_fnum_close(int instance)
 {
-	if (num_open_handles < 3) {
-		if (gen_chance(80)) return BAD_HANDLE;
+	if (num_open_handles < 5) {
+		if (gen_chance(90)) return BAD_HANDLE;
 	}
 
 	return gen_fnum(instance);
@@ -573,8 +573,8 @@ static uint32_t gen_ntcreatex_flags(void)
 */
 static uint32_t gen_access_mask(void)
 {
-	if (gen_chance(50)) return SEC_FLAG_MAXIMUM_ALLOWED;
-	if (gen_chance(20)) return SEC_FILE_ALL;
+	if (gen_chance(70)) return SEC_FLAG_MAXIMUM_ALLOWED;
+	if (gen_chance(70)) return SEC_FILE_ALL;
 	return gen_bits_mask(0xFFFFFFFF);
 }
 
@@ -593,6 +593,7 @@ static uint32_t gen_create_options(void)
 */
 static uint32_t gen_open_disp(void)
 {
+	if (gen_chance(50)) return NTCREATEX_DISP_OPEN_IF;
 	if (gen_chance(10)) return gen_bits_mask(0xFFFFFFFF);
 	return gen_int_range(0, 5);
 }
@@ -1002,20 +1003,20 @@ again:
 /*
   generate ntcreatex operations
 */
-static bool handler_ntcreatex(int instance)
+static bool handler_create(int instance)
 {
 	struct smb2_create parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
 	ZERO_STRUCT(parm[0]);
-	parm[0].in.security_flags             = gen_bits_levels(3, 70, 0x0, 70, 0x3, 100, 0xFF);
-	parm[0].in.oplock_level               = gen_bits_levels(3, 70, 0x0, 70, 0x9, 100, 0xFF);
-	parm[0].in.impersonation_level        = gen_bits_levels(3, 70, 0x0, 70, 0x3, 100, 0xFFFFFFFF);
-	parm[0].in.create_flags               = gen_bits_levels(2, 80, 0x0, 100, 0xFFFFFFFF);
+	parm[0].in.security_flags             = gen_bits_levels(3, 90, 0x0, 70, 0x3, 100, 0xFF);
+	parm[0].in.oplock_level               = gen_bits_levels(3, 90, 0x0, 70, 0x9, 100, 0xFF);
+	parm[0].in.impersonation_level        = gen_bits_levels(3, 90, 0x0, 70, 0x3, 100, 0xFFFFFFFF);
+	parm[0].in.create_flags               = gen_bits_levels(2, 90, 0x0, 100, 0xFFFFFFFF);
 	if (gen_chance(2)) {
 		parm[0].in.create_flags       |= gen_bits_mask(0xFFFFFFFF);
 	}
-	parm[0].in.reserved                   = gen_bits_levels(2, 80, 0x0, 100, 0xFFFFFFFF);
+	parm[0].in.reserved                   = gen_bits_levels(2, 95, 0x0, 100, 0xFFFFFFFF);
 	if (gen_chance(2)) {
 		parm[0].in.reserved           |= gen_bits_mask(0xFFFFFFFF);
 	}
@@ -1167,6 +1168,28 @@ static bool handler_lock(int instance)
 	GEN_COPY_PARM;
 	GEN_SET_FNUM(in.file.handle);
 	GEN_CALL(smb2_lock(tree, &parm[i]));
+
+	return true;
+}
+
+/*
+  generate flush operations
+*/
+static bool handler_flush(int instance)
+{
+	struct smb2_flush parm[NSERVERS];
+	NTSTATUS status[NSERVERS];
+
+	ZERO_STRUCT(parm[0]);
+	parm[0].in.file.handle.data[0] = gen_fnum(instance);
+	parm[0].in.reserved1  = gen_bits_mask2(0x0, 0xFFFF);
+	parm[0].in.reserved2  = gen_bits_mask2(0x0, 0xFFFFFFFF);
+
+	GEN_COPY_PARM;
+	GEN_SET_FNUM(in.file.handle);
+	GEN_CALL(smb2_flush(tree, &parm[i]));
+
+	CHECK_EQUAL(out.reserved);
 
 	return true;
 }
@@ -1577,11 +1600,12 @@ static struct {
 	bool (*handler)(int instance);
 	int count, success_count;
 } gen_ops[] = {
-	{"NTCREATEX",  handler_ntcreatex},
+	{"CREATE",     handler_create},
 	{"CLOSE",      handler_close},
 	{"READ",       handler_read},
 	{"WRITE",      handler_write},
 	{"LOCK",       handler_lock},
+	{"FLUSH",      handler_flush},
 };
 
 
