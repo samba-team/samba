@@ -726,20 +726,6 @@ typedef char fstring[FSTRING_LEN];
 
 #include "lib/smbconf/smbconf.h"
 
-/* used in net.c */
-struct net_context;
-
-struct functable {
-	const char *funcname;
-	int (*fn)(struct net_context *c, int argc, const char **argv);
-};
-
-struct functable2 {
-	const char *funcname;
-	int (*fn)(struct net_context *c, int argc, const char **argv);
-	const char *helptext;
-};
-
 /* Defines for wisXXX functions. */
 #define UNI_UPPER    0x1
 #define UNI_LOWER    0x2
