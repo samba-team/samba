@@ -2156,8 +2156,12 @@ union smb_flush {
 		enum smb_flush_level level;
 		struct {
 			union smb_handle file;
-			uint32_t unknown;
+			uint16_t reserved1;
+			uint32_t reserved2;
 		} in;
+		struct {
+			uint16_t reserved;
+		} out;
 	} smb2;
 };
 
