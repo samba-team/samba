@@ -212,8 +212,6 @@ bool net_rpc_check(struct net_context *c, unsigned flags);
 int rpc_printer_migrate(struct net_context *c, int argc, const char **argv);
 int rpc_printer_usage(struct net_context *c, int argc, const char **argv);
 int net_rpc_printer(struct net_context *c, int argc, const char **argv);
-int net_rpc_help(struct net_context *c, int argc, const char **argv);
-int net_rpc_usage(struct net_context *c, int argc, const char **argv);
 int net_rpc(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_rpc_audit.c  */

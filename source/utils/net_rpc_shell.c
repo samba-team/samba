@@ -210,8 +210,9 @@ int net_rpc_shell(struct net_context *c, int argc, const char **argv)
 	NTSTATUS status;
 	struct rpc_sh_ctx *ctx;
 
-	if (argc != 0) {
-		d_fprintf(stderr, "usage: net rpc shell\n");
+	if (argc != 0 || c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc shell\n");
 		return -1;
 	}
 

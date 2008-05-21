@@ -482,6 +482,13 @@ int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
 	char *domain = smb_xstrdup(c->opt_target_workgroup);
 	NTSTATUS nt_status;
 
+	if (c->display_usage) {
+		d_printf("Usage\n"
+			 "net rpc testjoin\n"
+			 "    Test if a join is OK\n");
+		return 0;
+	}
+
 	/* Display success or failure */
 	nt_status = net_rpc_join_ok(c, domain, NULL, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
