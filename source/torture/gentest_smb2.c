@@ -530,13 +530,16 @@ static uint16_t gen_rename_flags(void)
 
 
 /*
-  return a lockingx lock mode
+  return a set of lock flags
 */
-static uint16_t gen_lock_mode(void)
+static uint16_t gen_lock_flags(void)
 {
 	if (gen_chance(5))  return gen_bits_mask(0xFFFF);
 	if (gen_chance(20)) return gen_bits_mask(0x1F);
-	return gen_bits_mask(LOCKING_ANDX_SHARED_LOCK | LOCKING_ANDX_LARGE_FILES);
+	if (gen_chance(50)) return SMB2_LOCK_FLAG_UNLOCK;
+	return gen_bits_mask(SMB2_LOCK_FLAG_SHARED | 
+			     SMB2_LOCK_FLAG_EXCLUSIVE | 
+			     SMB2_LOCK_FLAG_FAIL_IMMEDIATELY);
 }
 
 /*
@@ -1135,45 +1138,40 @@ static bool handler_write(int instance)
 	return true;
 }
 
-#if 0
 /*
   generate lockingx operations
 */
 static bool handler_lock(int instance)
 {
-	union smb_lock parm[NSERVERS];
+	struct smb2_lock parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
-	int n, nlocks;
+	int n;
 
-	parm[0].lockx.level = RAW_LOCK_LOCKX;
-	parm[0].lockx.in.file.fnum = gen_fnum(instance);
-	parm[0].lockx.in.mode = gen_lock_mode();
-	parm[0].lockx.in.timeout = gen_timeout();
-	do {
-		/* make sure we don't accidentially generate an oplock
-		   break ack - otherwise the server can just block forever */
-		parm[0].lockx.in.ulock_cnt = gen_lock_count();
-		parm[0].lockx.in.lock_cnt = gen_lock_count();
-		nlocks = parm[0].lockx.in.ulock_cnt + parm[0].lockx.in.lock_cnt;
-	} while (nlocks == 0);
-
-	if (nlocks > 0) {
-		parm[0].lockx.in.locks = talloc_array(current_op.mem_ctx,
-							struct smb_lock_entry,
-							nlocks);
-		for (n=0;n<nlocks;n++) {
-			parm[0].lockx.in.locks[n].pid = gen_pid();
-			parm[0].lockx.in.locks[n].offset = gen_offset();
-			parm[0].lockx.in.locks[n].count = gen_io_count();
-		}
+	parm[0].level = RAW_LOCK_LOCKX;
+	parm[0].in.file.handle.data[0] = gen_fnum(instance);
+	parm[0].in.lock_count = gen_lock_count();
+	parm[0].in.reserved = gen_bits_mask2(0, 0xFFFFFFFF);
+	
+	parm[0].in.locks = talloc_array(current_op.mem_ctx,
+					struct smb2_lock_element,
+					parm[0].in.lock_count);
+	for (n=0;n<parm[0].in.lock_count;n++) {
+		parm[0].in.locks[n].offset = gen_offset();
+		parm[0].in.locks[n].length = gen_io_count();
+		/* don't yet cope with async replies */
+		parm[0].in.locks[n].flags  = gen_lock_flags() | 
+			SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+		parm[0].in.locks[n].reserved = gen_bits_mask2(0x0, 0xFFFFFFFF);
 	}
 
 	GEN_COPY_PARM;
-	GEN_SET_FNUM(lockx.in.file.fnum);
-	GEN_CALL(smb_raw_lock(tree, &parm[i]));
+	GEN_SET_FNUM(in.file.handle);
+	GEN_CALL(smb2_lock(tree, &parm[i]));
 
 	return true;
 }
+
+#if 0
 
 /*
   generate a fileinfo query structure
@@ -1583,6 +1581,7 @@ static struct {
 	{"CLOSE",      handler_close},
 	{"READ",       handler_read},
 	{"WRITE",      handler_write},
+	{"LOCK",       handler_lock},
 };
 
 

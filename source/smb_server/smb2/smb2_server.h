@@ -70,7 +70,7 @@ struct smbsrv_request;
 
 #include "smb_server/smb2/smb2_proto.h"
 
-/* useful way of catching wct errors with file and line number */
+/* useful way of catching field size errors with file and line number */
 #define SMB2SRV_CHECK_BODY_SIZE(req, size, dynamic) do { \
 	size_t is_size = req->in.body_size; \
 	uint16_t field_size = SVAL(req->in.body, 0); \

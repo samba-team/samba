@@ -29,17 +29,25 @@
 struct smb2_request *smb2_lock_send(struct smb2_tree *tree, struct smb2_lock *io)
 {
 	struct smb2_request *req;
+	int i;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_LOCK, 0x30, false, 0);
+	req = smb2_request_init_tree(tree, SMB2_OP_LOCK, 
+				     24 + io->in.lock_count*24, false, 0);
 	if (req == NULL) return NULL;
 
-	SSVAL(req->out.body, 0x02, io->in.unknown1);
-	SIVAL(req->out.body, 0x04, io->in.unknown2);
+	/* this is quite bizarre - the spec says we must lie about the length! */
+	SSVAL(req->out.body, 0, 0x30);
+
+	SSVAL(req->out.body, 0x02, io->in.lock_count);
+	SIVAL(req->out.body, 0x04, io->in.reserved);
 	smb2_push_handle(req->out.body+0x08, &io->in.file.handle);
-	SBVAL(req->out.body, 0x18, io->in.offset);
-	SBVAL(req->out.body, 0x20, io->in.count);
-	SIVAL(req->out.body, 0x24, io->in.unknown5);
-	SIVAL(req->out.body, 0x28, io->in.flags);
+
+	for (i=0;i<io->in.lock_count;i++) {
+		SBVAL(req->out.body, 0x18 + i*24, io->in.locks[i].offset);
+		SBVAL(req->out.body, 0x20 + i*24, io->in.locks[i].length);
+		SIVAL(req->out.body, 0x28 + i*24, io->in.locks[i].flags);
+		SIVAL(req->out.body, 0x2C + i*24, io->in.locks[i].reserved);
+	}
 
 	smb2_transport_send(req);
 
@@ -59,7 +67,7 @@ NTSTATUS smb2_lock_recv(struct smb2_request *req, struct smb2_lock *io)
 
 	SMB2_CHECK_PACKET_RECV(req, 0x04, false);
 
-	io->out.unknown1 = SVAL(req->in.body, 0x02);
+	io->out.reserved = SVAL(req->in.body, 0x02);
 
 	return smb2_request_destroy(req);
 }
