@@ -2065,7 +2065,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 	/* the NULL pointer checking for fsp->fake_file_handle->pd
 	 * is done by CHECK_NTQUOTA_HANDLE_OK()
 	 */
-	qt_handle = (SMB_NTQUOTA_HANDLE *)fsp->fake_file_handle->pd;
+	qt_handle = (SMB_NTQUOTA_HANDLE *)fsp->fake_file_handle->private_data;
 
 	level = SVAL(params,2);
 

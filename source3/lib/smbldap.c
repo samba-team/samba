@@ -298,6 +298,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 {
 	char **values;
 	char *result;
+	size_t converted_size;
 
 	if (attribute == NULL) {
 		return NULL;
@@ -317,7 +318,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		return NULL;
 	}
 
-	if (pull_utf8_talloc(mem_ctx, &result, values[0]) == (size_t)-1) {
+	if (!pull_utf8_talloc(mem_ctx, &result, values[0], &converted_size)) {
 		DEBUG(10, ("pull_utf8_talloc failed\n"));
 		ldap_value_free(values);
 		return NULL;
@@ -430,6 +431,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 
 	if (value != NULL) {
 		char *utf8_value = NULL;
+		size_t converted_size;
 
 		j = 0;
 		if (mods[i]->mod_values != NULL) {
@@ -442,7 +444,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 			/* notreached. */
 		}
 
-		if (push_utf8_allocate(&utf8_value, value) == (size_t)-1) {
+		if (!push_utf8_allocate(&utf8_value, value, &converted_size)) {
 			smb_panic("smbldap_set_mod: String conversion failure!");
 			/* notreached. */
 		}
@@ -1176,6 +1178,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 	char           *utf8_filter;
 	time_t		endtime = time(NULL)+lp_ldap_timeout();
 	struct		timeval timeout;
+	size_t		converted_size;
 
 	SMB_ASSERT(ldap_state);
 	
@@ -1206,7 +1209,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 		ZERO_STRUCT(ldap_state->last_rebind);
 	}
 
-	if (push_utf8_allocate(&utf8_filter, filter) == (size_t)-1) {
+	if (!push_utf8_allocate(&utf8_filter, filter, &converted_size)) {
 		return LDAP_NO_MEMORY;
 	}
 
@@ -1372,12 +1375,13 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 	int 		attempts = 0;
 	char           *utf8_dn;
 	time_t		endtime = time(NULL)+lp_ldap_timeout();
+	size_t		converted_size;
 
 	SMB_ASSERT(ldap_state);
 
 	DEBUG(5,("smbldap_modify: dn => [%s]\n", dn ));
 
-	if (push_utf8_allocate(&utf8_dn, dn) == (size_t)-1) {
+	if (!push_utf8_allocate(&utf8_dn, dn, &converted_size)) {
 		return LDAP_NO_MEMORY;
 	}
 
@@ -1415,12 +1419,13 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 	int 		attempts = 0;
 	char           *utf8_dn;
 	time_t		endtime = time(NULL)+lp_ldap_timeout();
+	size_t		converted_size;
 	
 	SMB_ASSERT(ldap_state);
 
 	DEBUG(5,("smbldap_add: dn => [%s]\n", dn ));
 
-	if (push_utf8_allocate(&utf8_dn, dn) == (size_t)-1) {
+	if (!push_utf8_allocate(&utf8_dn, dn, &converted_size)) {
 		return LDAP_NO_MEMORY;
 	}
 
@@ -1458,12 +1463,13 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 	int 		attempts = 0;
 	char           *utf8_dn;
 	time_t		endtime = time(NULL)+lp_ldap_timeout();
+	size_t		converted_size;
 	
 	SMB_ASSERT(ldap_state);
 
 	DEBUG(5,("smbldap_delete: dn => [%s]\n", dn ));
 
-	if (push_utf8_allocate(&utf8_dn, dn) == (size_t)-1) {
+	if (!push_utf8_allocate(&utf8_dn, dn, &converted_size)) {
 		return LDAP_NO_MEMORY;
 	}
 
@@ -1630,14 +1636,16 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct event_context *event_ctx,
 char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry)
 {
 	char *utf8_dn, *unix_dn;
+	size_t converted_size;
 
 	utf8_dn = ldap_get_dn(ld, entry);
 	if (!utf8_dn) {
 		DEBUG (5, ("smbldap_get_dn: ldap_get_dn failed\n"));
 		return NULL;
 	}
-	if (pull_utf8_allocate(&unix_dn, utf8_dn) == (size_t)-1) {
-		DEBUG (0, ("smbldap_get_dn: String conversion failure utf8 [%s]\n", utf8_dn));
+	if (!pull_utf8_allocate(&unix_dn, utf8_dn, &converted_size)) {
+		DEBUG (0, ("smbldap_get_dn: String conversion failure utf8 "
+			   "[%s]\n", utf8_dn));
 		return NULL;
 	}
 	ldap_memfree(utf8_dn);
@@ -1648,13 +1656,14 @@ char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry)
 			       LDAPMessage *entry)
 {
 	char *utf8_dn, *unix_dn;
+	size_t converted_size;
 
 	utf8_dn = ldap_get_dn(ld, entry);
 	if (!utf8_dn) {
 		DEBUG (5, ("smbldap_get_dn: ldap_get_dn failed\n"));
 		return NULL;
 	}
-	if (pull_utf8_talloc(mem_ctx, &unix_dn, utf8_dn) == (size_t)-1) {
+	if (!pull_utf8_talloc(mem_ctx, &unix_dn, utf8_dn, &converted_size)) {
 		DEBUG (0, ("smbldap_get_dn: String conversion failure utf8 "
 			   "[%s]\n", utf8_dn));
 		return NULL;

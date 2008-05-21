@@ -65,8 +65,8 @@ static void sig_usr1(void)
 
 static int messaging_tdb_destructor(struct messaging_backend *tdb_ctx)
 {
-	TDB_CONTEXT *tdb = (TDB_CONTEXT *)tdb_ctx->private_data;
-	tdb_close(tdb);
+	struct tdb_wrap *tdb = (struct tdb_wrap *)tdb_ctx->private_data;
+	TALLOC_FREE(tdb);
 	return 0;
 }
 
@@ -79,16 +79,16 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 			    struct messaging_backend **presult)
 {
 	struct messaging_backend *result;
-	TDB_CONTEXT *tdb;
+	struct tdb_wrap *tdb;
 
 	if (!(result = TALLOC_P(mem_ctx, struct messaging_backend))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	tdb = tdb_open_log(lock_path("messages.tdb"), 
-			   0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
-			   O_RDWR|O_CREAT,0600);
+	tdb = tdb_wrap_open(result, lock_path("messages.tdb"), 
+			    0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
+			    O_RDWR|O_CREAT,0600);
 
 	if (!tdb) {
 		NTSTATUS status = map_nt_error_from_unix(errno);
@@ -101,7 +101,7 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 	sec_init();
 
 	/* Activate the per-hashchain freelist */
-	tdb_set_max_dead(tdb, 5);
+	tdb_set_max_dead(tdb->tdb, 5);
 
 	CatchSignal(SIGUSR1, SIGNAL_CAST sig_usr1);
 
@@ -293,7 +293,7 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 	struct messaging_rec *rec;
 	NTSTATUS status;
 	TDB_DATA key;
-	TDB_CONTEXT *tdb = (TDB_CONTEXT *)backend->private_data;
+	struct tdb_wrap *tdb = (struct tdb_wrap *)backend->private_data;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	/* NULL pointer means implicit length zero. */
@@ -310,12 +310,12 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 
 	key = message_key_pid(frame, pid);
 
-	if (tdb_chainlock(tdb, key) == -1) {
+	if (tdb_chainlock(tdb->tdb, key) == -1) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_LOCK_NOT_GRANTED;
 	}
 
-	status = messaging_tdb_fetch(tdb, key, talloc_tos(), &msg_array);
+	status = messaging_tdb_fetch(tdb->tdb, key, talloc_tos(), &msg_array);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
@@ -345,7 +345,7 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 	msg_array->messages = rec;
 	msg_array->num_messages += 1;
 
-	status = messaging_tdb_store(tdb, key, msg_array);
+	status = messaging_tdb_store(tdb->tdb, key, msg_array);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
@@ -356,11 +356,11 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		DEBUG(2, ("pid %s doesn't exist - deleting messages record\n",
 			  procid_str_static(&pid)));
-		tdb_delete(tdb, message_key_pid(talloc_tos(), pid));
+		tdb_delete(tdb->tdb, message_key_pid(talloc_tos(), pid));
 	}
 
  done:
-	tdb_chainunlock(tdb, key);
+	tdb_chainunlock(tdb->tdb, key);
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -409,7 +409,8 @@ static NTSTATUS retrieve_all_messages(TDB_CONTEXT *msg_tdb,
 void message_dispatch(struct messaging_context *msg_ctx)
 {
 	struct messaging_array *msg_array = NULL;
-	TDB_CONTEXT *tdb = (TDB_CONTEXT *)(msg_ctx->local->private_data);
+	struct tdb_wrap *tdb = (struct tdb_wrap *)
+		(msg_ctx->local->private_data);
 	uint32 i;
 
 	if (!received_signal)
@@ -420,7 +421,8 @@ void message_dispatch(struct messaging_context *msg_ctx)
 
 	received_signal = 0;
 
-	if (!NT_STATUS_IS_OK(retrieve_all_messages(tdb, NULL, &msg_array))) {
+	if (!NT_STATUS_IS_OK(retrieve_all_messages(tdb->tdb, NULL,
+						   &msg_array))) {
 		return;
 	}
 

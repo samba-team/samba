@@ -49,7 +49,7 @@ static int errmsg_not_implemented(void)
 
 int net_rap_file_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_file(c, argc, argv);
+	return net_file_usage(c, argc, argv);
 }
 
 /***************************************************************************
@@ -166,7 +166,7 @@ int net_rap_file(struct net_context *c, int argc, const char **argv)
 
 int net_rap_share_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_share(c, argc, argv);
+	return net_share_usage(c, argc, argv);
 }
 
 static void long_share_fn(const char *share_name, uint32 type,
@@ -638,7 +638,7 @@ int net_rap_printq(struct net_context *c, int argc, const char **argv)
 
 static int net_rap_user_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_user(c, argc, argv);
+	return net_user_usage(c, argc, argv);
 }
 
 static void user_fn(const char *user_name, void *state)
@@ -762,7 +762,7 @@ int net_rap_user(struct net_context *c, int argc, const char **argv)
 
 int net_rap_group_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_group(c, argc, argv);
+	return net_group_usage(c, argc, argv);
 }
 
 static void long_group_fn(const char *group_name, const char *comment,
@@ -1039,7 +1039,7 @@ int net_rap_admin(struct net_context *c, int argc, const char **argv)
 
 /* The help subsystem for the RAP subcommand */
 
-int net_rap_usage(struct net_context *c, int argc, const char **argv)
+int net_rap_help(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("  net rap domain \tto list domains \n"\
 		 "  net rap file \t\tto list open files on a server \n"\
@@ -1062,7 +1062,7 @@ int net_rap_usage(struct net_context *c, int argc, const char **argv)
 /*
   handle "net rap help *" subcommands
 */
-int net_rap_help(struct net_context *c, int argc, const char **argv)
+int net_rap_usage(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"FILE", net_rap_file_usage},
@@ -1080,7 +1080,7 @@ int net_rap_help(struct net_context *c, int argc, const char **argv)
 		{"PASSWORD", net_rap_password_usage},
 		{NULL, NULL}};
 
-	return net_run_function(c, argc, argv, func, net_rap_usage);
+	return net_run_function(c, argc, argv, func, net_rap_help);
 }
 
 /* Entry-point for all the RAP functions. */
@@ -1101,10 +1101,10 @@ int net_rap(struct net_context *c, int argc, const char **argv)
 		{"ADMIN", net_rap_admin},
 		{"SERVICE", net_rap_service},
 		{"PASSWORD", net_rap_password},
-		{"HELP", net_rap_help},
+		{"HELP", net_rap_usage},
 		{NULL, NULL}
 	};
 
-	return net_run_function(c, argc, argv, func, net_rap_usage);
+	return net_run_function(c, argc, argv, func, net_rap_help);
 }
 

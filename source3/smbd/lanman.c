@@ -1896,6 +1896,7 @@ static bool api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 	unsigned int offset;
 	int snum;
 	int res = ERRunsup;
+	size_t converted_size;
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -1956,7 +1957,13 @@ static bool api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 		return False;
 	}
 
-	pull_ascii_talloc(talloc_tos(), &pathname, offset? (data+offset) : "");
+	if (!pull_ascii_talloc(talloc_tos(), &pathname,
+			       offset ? (data+offset) : "", &converted_size))
+	{
+		DEBUG(0,("api_RNetShareAdd: pull_ascii_talloc failed: %s",
+			 strerror(errno)));
+	}
+
 	if (!pathname) {
 		return false;
 	}

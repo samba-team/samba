@@ -328,7 +328,7 @@ static int info_fn(struct file_list *fl, void *priv)
 	int num_aces;
 	char sep_str[2];
 	enum usershare_err us_err;
-	bool guest_ok = False;
+	bool guest_ok = false;
 
 	sep_str[0] = *lp_winbind_separator();
 	sep_str[1] = '\0';
@@ -479,7 +479,7 @@ static int info_fn(struct file_list *fl, void *priv)
 static int net_usershare_info(struct net_context *c, int argc, const char **argv)
 {
 	fstring wcard;
-	bool only_ours = True;
+	bool only_ours = true;
 	int ret = -1;
 	struct us_priv_info pi;
 	TALLOC_CTX *ctx;
@@ -487,7 +487,7 @@ static int net_usershare_info(struct net_context *c, int argc, const char **argv
 	fstrcpy(wcard, "*");
 
 	if (c->opt_long_list_entries) {
-		only_ours = False;
+		only_ours = false;
 	}
 
 	switch (argc) {
@@ -606,7 +606,7 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 	const char *pacl;
 	size_t to_write;
 	uid_t myeuid = geteuid();
-	bool guest_ok = False;
+	bool guest_ok = false;
 	int num_usershares;
 
 	us_comment = "";
@@ -647,11 +647,11 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 			switch (argv[4][9]) {
 				case 'y':
 				case 'Y':
-					guest_ok = True;
+					guest_ok = true;
 					break;
 				case 'n':
 				case 'N':
-					guest_ok = False;
+					guest_ok = false;
 					break;
 				default:
 					TALLOC_FREE(ctx);
@@ -746,7 +746,7 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 	if ((myeuid != 0) && lp_usershare_owner_only() && (myeuid != sbuf.st_uid)) {
 		d_fprintf(stderr, "net usershare add: cannot share path %s as "
 			"we are restricted to only sharing directories we own.\n"
-			"\tAsk the administrator to add the line \"usershare owner only = False\" \n"
+			"\tAsk the administrator to add the line \"usershare owner only = false\" \n"
 			"\tto the [global] section of the smb.conf to allow this.\n",
 			us_path );
 		TALLOC_FREE(ctx);
@@ -958,7 +958,7 @@ static int net_usershare_list(struct net_context *c, int argc,
 			      const char **argv)
 {
 	fstring wcard;
-	bool only_ours = True;
+	bool only_ours = true;
 	int ret = -1;
 	struct us_priv_info pi;
 	TALLOC_CTX *ctx;
@@ -966,7 +966,7 @@ static int net_usershare_list(struct net_context *c, int argc,
 	fstrcpy(wcard, "*");
 
 	if (c->opt_long_list_entries) {
-		only_ours = False;
+		only_ours = false;
 	}
 
 	switch (argc) {

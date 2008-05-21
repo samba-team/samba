@@ -27,7 +27,7 @@
 
 #ifdef HAVE_ADS
 
-int net_ads_usage(struct net_context *c, int argc, const char **argv)
+int net_ads_help(struct net_context *c, int argc, const char **argv)
 {
 	d_printf("join [createupn[=principal]] [createcomputer=<org_unit>]\n");
 	d_printf("    Join the local machine to a ADS realm\n");
@@ -219,11 +219,11 @@ static ADS_STATUS ads_startup_int(struct net_context *c, bool only_own_domain,
 {
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
-	bool need_password = False;
-	bool second_time = False;
+	bool need_password = false;
+	bool second_time = false;
 	char *cp;
 	const char *realm = NULL;
-	bool tried_closest_dc = False;
+	bool tried_closest_dc = false;
 
 	/* lp_realm() should be handled by a command line param,
 	   However, the join requires that realm be set in smb.conf
@@ -246,7 +246,7 @@ retry_connect:
 	}
 
 	if (c->opt_user_specified) {
-		need_password = True;
+		need_password = true;
 	}
 
 retry:
@@ -292,8 +292,8 @@ retry:
 		}
 
 		if (!need_password && !second_time && !(auth_flags & ADS_AUTH_NO_BIND)) {
-			need_password = True;
-			second_time = True;
+			need_password = true;
+			second_time = true;
 			goto retry;
 		} else {
 			ads_destroy(&ads);
@@ -307,7 +307,7 @@ retry:
 
 	if ((only_own_domain || !c->opt_host) && !tried_closest_dc) {
 
-		tried_closest_dc = True; /* avoid loop */
+		tried_closest_dc = true; /* avoid loop */
 
 		if (!ads->config.tried_closest_dc) {
 
@@ -420,21 +420,21 @@ static bool usergrp_display(ADS_STRUCT *ads, char *field, void **values, void *d
 		}
 		SAFE_FREE(disp_fields[0]);
 		SAFE_FREE(disp_fields[1]);
-		return True;
+		return true;
 	}
 	if (!values) /* must be new field, indicate string field */
-		return True;
+		return true;
 	if (StrCaseCmp(field, "sAMAccountName") == 0) {
 		disp_fields[0] = SMB_STRDUP((char *) values[0]);
 	}
 	if (StrCaseCmp(field, "description") == 0)
 		disp_fields[1] = SMB_STRDUP((char *) values[0]);
-	return True;
+	return true;
 }
 
 static int net_ads_user_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_user(c, argc, argv);
+	return net_user_usage(c, argc, argv);
 }
 
 static int ads_user_add(struct net_context *c, int argc, const char **argv)
@@ -647,7 +647,7 @@ int net_ads_user(struct net_context *c, int argc, const char **argv)
 
 static int net_ads_group_usage(struct net_context *c, int argc, const char **argv)
 {
-	return net_help_group(c, argc, argv);
+	return net_group_usage(c, argc, argv);
 }
 
 static int ads_group_add(struct net_context *c, int argc, const char **argv)
@@ -1104,7 +1104,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	struct libnet_JoinCtx *r = NULL;
 	const char *domain = lp_realm();
 	WERROR werr = WERR_SETUP_NOT_JOINED;
-	bool createupn = False;
+	bool createupn = false;
 	const char *machineupn = NULL;
 	const char *create_in_ou = NULL;
 	int i;
@@ -1138,7 +1138,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 
 	for ( i=0; i<argc; i++ ) {
 		if ( !StrnCaseCmp(argv[i], "createupn", strlen("createupn")) ) {
-			createupn = True;
+			createupn = true;
 			machineupn = get_string_param(argv[i]);
 		}
 		else if ( !StrnCaseCmp(argv[i], "createcomputer", strlen("createcomputer")) ) {
@@ -1296,7 +1296,7 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 		return -1;
 	}
 
-	status = ads_startup(c, True, &ads);
+	status = ads_startup(c, true, &ads);
 	if ( !ADS_ERR_OK(status) ) {
 		DEBUG(1, ("error on ads_startup: %s\n", ads_errstr(status)));
 		TALLOC_FREE(ctx);
@@ -2163,7 +2163,7 @@ int net_ads_kerberos(struct net_context *c, int argc, const char **argv)
 }
 
 
-int net_ads_help(struct net_context *c, int argc, const char **argv)
+int net_ads_usage(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"USER", net_ads_user_usage},
@@ -2180,7 +2180,7 @@ int net_ads_help(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL}
 	};
 
-	return net_run_function(c, argc, argv, func, net_ads_usage);
+	return net_run_function(c, argc, argv, func, net_ads_help);
 }
 
 int net_ads(struct net_context *c, int argc, const char **argv)
@@ -2209,7 +2209,7 @@ int net_ads(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL}
 	};
 
-	return net_run_function(c, argc, argv, func, net_ads_usage);
+	return net_run_function(c, argc, argv, func, net_ads_help);
 }
 
 #else

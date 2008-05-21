@@ -52,8 +52,9 @@
 {
 	krb5_error_code ret;
 	char *utf8_name;
+	size_t converted_size;
 
-	if (push_utf8_allocate(&utf8_name, name) == (size_t)-1) {
+	if (!push_utf8_allocate(&utf8_name, name, &converted_size)) {
 		return ENOMEM;
 	}
 
@@ -73,9 +74,10 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 {
 	krb5_error_code ret;
 	char *utf8_name;
+	size_t converted_size;
 
 	*principal = NULL;
-	if (push_utf8_allocate(&utf8_name, name) == (size_t)-1) {
+	if (!push_utf8_allocate(&utf8_name, name, &converted_size)) {
 		return ENOMEM;
 	}
 
@@ -96,6 +98,7 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 {
 	krb5_error_code ret;
 	char *utf8_name;
+	size_t converted_size;
 
 	*unix_name = NULL;
 	ret = krb5_unparse_name(context, principal, &utf8_name);
@@ -103,7 +106,7 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 		return ret;
 	}
 
-	if (pull_utf8_allocate(unix_name, utf8_name)==-1) {
+	if (!pull_utf8_allocate(unix_name, utf8_name, &converted_size)) {
 		krb5_free_unparsed_name(context, utf8_name);
 		return ENOMEM;
 	}

@@ -103,17 +103,23 @@ static bool map_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 			    const REGISTRY_VALUE *value)
 {
 	char *str_value = NULL;
+	size_t converted_size;
 	ADS_STATUS status;
 
 	if (value->type != REG_SZ)
-		return False;
+		return false;
 
 	if (value->size && *((smb_ucs2_t *) value->data_p)) {
-		pull_ucs2_talloc(ctx, &str_value, (const smb_ucs2_t *) value->data_p);
+		if (!pull_ucs2_talloc(ctx, &str_value,
+				      (const smb_ucs2_t *) value->data_p,
+				      &converted_size))
+		{
+			return false;
+		}
 		status = ads_mod_str(ctx, mods, value->valuename, str_value);
 		return ADS_ERR_OK(status);
 	}
-	return True;
+	return true;
 		
 }
 
@@ -163,6 +169,7 @@ static bool map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 			 const REGISTRY_VALUE *value)
 {
 	char **str_values = NULL;
+	size_t converted_size;
 	smb_ucs2_t *cur_str = (smb_ucs2_t *) value->data_p;
         uint32 size = 0, num_vals = 0, i=0;
 	ADS_STATUS status;
@@ -185,9 +192,11 @@ static bool map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		       (num_vals + 1) * sizeof(char *));
 
 		cur_str = (smb_ucs2_t *) value->data_p;
-		for (i=0; i < num_vals; i++)
+		for (i=0; i < num_vals; i++) {
 			cur_str += pull_ucs2_talloc(ctx, &str_values[i],
-			                            cur_str);
+						    cur_str, &converted_size) ?
+			    converted_size : (size_t)-1;
+		}
 
 		status = ads_mod_strlist(ctx, mods, value->valuename, 
 					 (const char **) str_values);
