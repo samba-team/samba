@@ -1406,14 +1406,6 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 	info->generic.level = levels[i].level;
 
 	switch (info->generic.level) {
-	case RAW_SFILEINFO_EA_SET: {
-		static struct ea_struct ea;
-		info->ea_set.in.num_eas = 1;
-		info->ea_set.in.eas = &ea;
-		info->ea_set.in.eas[0] = gen_ea_struct();
-	}
-		break;
-	case RAW_SFILEINFO_BASIC_INFO:
 	case RAW_SFILEINFO_BASIC_INFORMATION:
 		info->basic_info.in.create_time = gen_nttime();
 		info->basic_info.in.access_time = gen_nttime();
@@ -1421,15 +1413,12 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 		info->basic_info.in.change_time = gen_nttime();
 		info->basic_info.in.attrib = gen_attrib();
 		break;
-	case RAW_SFILEINFO_DISPOSITION_INFO:
 	case RAW_SFILEINFO_DISPOSITION_INFORMATION:
 		info->disposition_info.in.delete_on_close = gen_bool();
 		break;
-	case RAW_SFILEINFO_ALLOCATION_INFO:
 	case RAW_SFILEINFO_ALLOCATION_INFORMATION:
 		info->allocation_info.in.alloc_size = gen_alloc_size();
 		break;
-	case RAW_SFILEINFO_END_OF_FILE_INFO:
 	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
 		info->end_of_file_info.in.size = gen_offset();
 		break;
@@ -1447,22 +1436,17 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 		break;
 	case RAW_SFILEINFO_GENERIC:
 	case RAW_SFILEINFO_SEC_DESC:
-	case RAW_SFILEINFO_UNIX_BASIC:
-	case RAW_SFILEINFO_UNIX_LINK:
-	case RAW_SFILEINFO_UNIX_HLINK:
 	case RAW_SFILEINFO_1023:
 	case RAW_SFILEINFO_1025:
 	case RAW_SFILEINFO_1029:
 	case RAW_SFILEINFO_1032:
 	case RAW_SFILEINFO_1039:
 	case RAW_SFILEINFO_1040:
-	case RAW_SFILEINFO_UNIX_INFO2:
 		/* Untested */
 		break;
 	}
 }
 
-#if 0
 /*
   generate setfileinfo operations
 */
@@ -1476,12 +1460,11 @@ static bool handler_sfileinfo(int instance)
 	gen_setfileinfo(instance, &parm[0]);
 
 	GEN_COPY_PARM;
-	GEN_SET_FNUM(generic.in.file.fnum);
+	GEN_SET_FNUM(generic.in.file.handle);
 	GEN_CALL(smb2_setinfo_file(tree, &parm[i]));
 
 	return true;
 }
-#endif
 
 /*
   wipe any relevant files
@@ -1546,7 +1529,8 @@ static struct {
 	{"LOCK",       handler_lock},
 	{"FLUSH",      handler_flush},
 	{"ECHO",       handler_echo},
-	{"FILEINFO",   handler_qfileinfo},
+	{"QFILEINFO",  handler_qfileinfo},
+	{"SFILEINFO",  handler_sfileinfo},
 };
 
 
