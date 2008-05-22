@@ -18,7 +18,7 @@
 #
 
 import unittest
-import security
+from samba import security
 
 class SecurityTokenTests(unittest.TestCase):
     def setUp(self):

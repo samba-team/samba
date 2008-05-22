@@ -15,7 +15,7 @@ import samba.getopt as options
 import optparse
 import pwd
 from getpass import getpass
-from auth import system_session
+from samba.auth import system_session
 from samba.samdb import SamDB
 
 parser = optparse.OptionParser("newuser [options] <username> [<password>]")

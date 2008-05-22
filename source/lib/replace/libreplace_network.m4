@@ -339,6 +339,35 @@ if test x"$libreplace_cv_HAVE_IFACE_IFREQ" = x"yes"; then
 fi
 fi
 
+dnl test for ipv6
+AC_CACHE_CHECK([for ipv6 support],libreplace_cv_HAVE_IPV6,[
+	AC_TRY_COMPILE([
+#include <stdlib.h> /* for NULL */
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netdb.h>
+		],
+		[
+struct sockaddr_storage sa_store;
+struct addrinfo *ai = NULL;
+struct in6_addr in6addr;
+int idx = if_nametoindex("iface1");
+int s = socket(AF_INET6, SOCK_STREAM, 0);
+int ret = getaddrinfo(NULL, NULL, NULL, &ai);
+if (ret != 0) {
+	const char *es = gai_strerror(ret);
+}
+freeaddrinfo(ai);
+		],[
+		libreplace_cv_HAVE_IPV6=yes
+		],[
+		libreplace_cv_HAVE_IPV6=no
+		])
+])
+if test x"$libreplace_cv_HAVE_IPV6" = x"yes"; then
+    AC_DEFINE(HAVE_IPV6,1,[Whether the system has IPv6 support])
+fi
+
 LIBS=$old_LIBS
 CPPFLAGS="$SAVE_CPPFLAGS"
 

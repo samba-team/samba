@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import echo
+from samba.dcerpc import echo
 import unittest
 from samba.tests import RpcInterfaceTestCase
 

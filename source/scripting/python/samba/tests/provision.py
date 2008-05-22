@@ -21,7 +21,7 @@ import os
 from samba.provision import setup_secretsdb, secretsdb_become_dc, findnss
 import samba.tests
 from ldb import Dn
-import param
+from samba import param
 import unittest
 
 lp = samba.tests.cmdline_loadparm
