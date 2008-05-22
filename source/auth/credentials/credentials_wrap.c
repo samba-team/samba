@@ -2881,7 +2881,7 @@ SWIGINTERN PyObject *_wrap_Credentials_set_username(PyObject *SWIGUNUSEDPARM(sel
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "value",(char *)"arg3", NULL 
+    (char *) "self",(char *) "value",(char *) "obtained", NULL 
   };
   
   arg1 = NULL;
@@ -2962,7 +2962,7 @@ SWIGINTERN PyObject *_wrap_Credentials_set_password(PyObject *SWIGUNUSEDPARM(sel
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "val",(char *)"arg3", NULL 
+    (char *) "self",(char *) "val",(char *) "obtained", NULL 
   };
   
   arg1 = NULL;
@@ -3043,7 +3043,7 @@ SWIGINTERN PyObject *_wrap_Credentials_set_domain(PyObject *SWIGUNUSEDPARM(self)
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "val",(char *)"arg3", NULL 
+    (char *) "self",(char *) "val",(char *) "obtained", NULL 
   };
   
   arg1 = NULL;
@@ -3124,7 +3124,7 @@ SWIGINTERN PyObject *_wrap_Credentials_set_realm(PyObject *SWIGUNUSEDPARM(self),
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "val",(char *)"arg3", NULL 
+    (char *) "self",(char *) "val",(char *) "obtained", NULL 
   };
   
   arg1 = NULL;
@@ -3214,7 +3214,7 @@ SWIGINTERN PyObject *_wrap_Credentials_parse_string(PyObject *SWIGUNUSEDPARM(sel
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "text",(char *)"arg3", NULL 
+    (char *) "self",(char *) "text",(char *) "obtained", NULL 
   };
   
   arg1 = NULL;
@@ -3690,19 +3690,52 @@ SWIGINTERN PyObject *Credentials_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObje
 
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"new_Credentials", (PyCFunction)_wrap_new_Credentials, METH_NOARGS, NULL},
-	 { (char *)"Credentials_get_username", (PyCFunction) _wrap_Credentials_get_username, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Credentials_set_username", (PyCFunction) _wrap_Credentials_set_username, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Credentials_get_password", (PyCFunction) _wrap_Credentials_get_password, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Credentials_set_password", (PyCFunction) _wrap_Credentials_set_password, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Credentials_get_username", (PyCFunction) _wrap_Credentials_get_username, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.get_username() -> username\n"
+		"Obtain username.\n"
+		""},
+	 { (char *)"Credentials_set_username", (PyCFunction) _wrap_Credentials_set_username, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.set_username(name, obtained=CRED_SPECIFIED) -> None\n"
+		"Change username.\n"
+		""},
+	 { (char *)"Credentials_get_password", (PyCFunction) _wrap_Credentials_get_password, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.get_password() -> password\n"
+		"Obtain password.\n"
+		""},
+	 { (char *)"Credentials_set_password", (PyCFunction) _wrap_Credentials_set_password, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.set_password(password, obtained=CRED_SPECIFIED) -> None\n"
+		"Change password.\n"
+		""},
 	 { (char *)"Credentials_get_domain", (PyCFunction) _wrap_Credentials_get_domain, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Credentials_set_domain", (PyCFunction) _wrap_Credentials_set_domain, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Credentials_get_realm", (PyCFunction) _wrap_Credentials_get_realm, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Credentials_set_realm", (PyCFunction) _wrap_Credentials_set_realm, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Credentials_set_domain", (PyCFunction) _wrap_Credentials_set_domain, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.set_domain(domain, obtained=CRED_SPECIFIED) -> None\n"
+		"Change domain name.\n"
+		""},
+	 { (char *)"Credentials_get_realm", (PyCFunction) _wrap_Credentials_get_realm, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.get_realm() -> realm\n"
+		"Obtain realm name.\n"
+		""},
+	 { (char *)"Credentials_set_realm", (PyCFunction) _wrap_Credentials_set_realm, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.set_realm(realm, obtained=CRED_SPECIFIED) -> None\n"
+		"Change realm name.\n"
+		""},
 	 { (char *)"Credentials_set_kerberos_state", (PyCFunction) _wrap_Credentials_set_kerberos_state, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Credentials_parse_string", (PyCFunction) _wrap_Credentials_parse_string, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Credentials_get_bind_dn", (PyCFunction) _wrap_Credentials_get_bind_dn, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Credentials_set_bind_dn", (PyCFunction) _wrap_Credentials_set_bind_dn, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Credentials_set_anonymous", (PyCFunction) _wrap_Credentials_set_anonymous, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Credentials_parse_string", (PyCFunction) _wrap_Credentials_parse_string, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.parse_string(text, obtained=CRED_SPECIFIED) -> None\n"
+		"Parse credentials string.\n"
+		""},
+	 { (char *)"Credentials_get_bind_dn", (PyCFunction) _wrap_Credentials_get_bind_dn, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.get_bind_dn() -> bind dn\n"
+		"Obtain bind DN.\n"
+		""},
+	 { (char *)"Credentials_set_bind_dn", (PyCFunction) _wrap_Credentials_set_bind_dn, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.set_bind_dn(bind_dn) -> None\n"
+		"Change bind DN.\n"
+		""},
+	 { (char *)"Credentials_set_anonymous", (PyCFunction) _wrap_Credentials_set_anonymous, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.set_anonymous() -> None\n"
+		"Use anonymous credentials.\n"
+		""},
 	 { (char *)"Credentials_get_workstation", (PyCFunction) _wrap_Credentials_get_workstation, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_set_workstation", (PyCFunction) _wrap_Credentials_set_workstation, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_set_machine_account", (PyCFunction) _wrap_Credentials_set_machine_account, METH_VARARGS | METH_KEYWORDS, NULL},
@@ -3710,8 +3743,14 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"Credentials_is_anonymous", (PyCFunction) _wrap_Credentials_is_anonymous, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_get_nt_hash", (PyCFunction) _wrap_Credentials_get_nt_hash, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_authentication_requested", (PyCFunction) _wrap_Credentials_authentication_requested, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Credentials_wrong_password", (PyCFunction) _wrap_Credentials_wrong_password, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Credentials_set_cmdline_callbacks", (PyCFunction) _wrap_Credentials_set_cmdline_callbacks, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Credentials_wrong_password", (PyCFunction) _wrap_Credentials_wrong_password, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.wrong_password() -> bool\n"
+		"Indicate the returned password was incorrect.\n"
+		""},
+	 { (char *)"Credentials_set_cmdline_callbacks", (PyCFunction) _wrap_Credentials_set_cmdline_callbacks, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.set_cmdline_callbacks() -> bool\n"
+		"Use command-line to obtain credentials not explicitly set.\n"
+		""},
 	 { (char *)"delete_Credentials", (PyCFunction) _wrap_delete_Credentials, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_swigregister", Credentials_swigregister, METH_VARARGS, NULL},
 	 { (char *)"Credentials_swiginit", Credentials_swiginit, METH_VARARGS, NULL},
