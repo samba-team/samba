@@ -685,6 +685,21 @@ static struct ea_struct gen_ea_struct(void)
 }
 
 /*
+  generate an ea_struct
+*/
+static struct smb_ea_list gen_ea_list(void)
+{
+	struct smb_ea_list eas;
+	int i;
+	eas.num_eas = gen_int_range(0, 3);
+	eas.eas = talloc_array(current_op.mem_ctx, struct ea_struct, eas.num_eas);
+	for (i=0;i<eas.num_eas;i++) {
+		eas.eas[i] = gen_ea_struct();
+	}
+	return eas;
+}
+
+/*
   the idle function tries to cope with getting an oplock break on a connection, and
   an operation on another connection blocking until that break is acked
   we check for operations on all transports in the idle function
@@ -1000,6 +1015,7 @@ static bool handler_create(int instance)
 	parm[0].in.create_disposition         = gen_open_disp();
 	parm[0].in.create_options             = gen_create_options();
 	parm[0].in.fname                      = gen_fname_open(instance);
+	parm[0].in.eas			      = gen_ea_list();
 
 	if (!options.use_oplocks) {
 		/* mask out oplocks */
@@ -1365,8 +1381,6 @@ static bool handler_qfileinfo(int instance)
 }
 
 
-#if 0
-
 /*
   generate a fileinfo query structure
 */
@@ -1379,12 +1393,7 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 		enum smb_setfileinfo_level level;
 		const char *name;
 	}  levels[] = {
-#if 0
-		/* disabled until win2003 can handle them ... */
-		LVL(EA_SET), LVL(BASIC_INFO), LVL(DISPOSITION_INFO), 
-		LVL(STANDARD), LVL(ALLOCATION_INFO), LVL(END_OF_FILE_INFO), 
-#endif
-		LVL(SETATTR), LVL(SETATTRE), LVL(BASIC_INFORMATION),
+		LVL(BASIC_INFORMATION),
 		LVL(RENAME_INFORMATION), LVL(DISPOSITION_INFORMATION), 
 		LVL(POSITION_INFORMATION), LVL(MODE_INFORMATION),
 		LVL(ALLOCATION_INFORMATION), LVL(END_OF_FILE_INFORMATION), 
@@ -1397,20 +1406,6 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 	info->generic.level = levels[i].level;
 
 	switch (info->generic.level) {
-	case RAW_SFILEINFO_SETATTR:
-		info->setattr.in.attrib = gen_attrib();
-		info->setattr.in.write_time = gen_timet();
-		break;
-	case RAW_SFILEINFO_SETATTRE:
-		info->setattre.in.create_time = gen_timet();
-		info->setattre.in.access_time = gen_timet();
-		info->setattre.in.write_time = gen_timet();
-		break;
-	case RAW_SFILEINFO_STANDARD:
-		info->standard.in.create_time = gen_timet();
-		info->standard.in.access_time = gen_timet();
-		info->standard.in.write_time = gen_timet();
-		break;
 	case RAW_SFILEINFO_EA_SET: {
 		static struct ea_struct ea;
 		info->ea_set.in.num_eas = 1;
@@ -1467,6 +1462,7 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 	}
 }
 
+#if 0
 /*
   generate setfileinfo operations
 */
@@ -1481,13 +1477,11 @@ static bool handler_sfileinfo(int instance)
 
 	GEN_COPY_PARM;
 	GEN_SET_FNUM(generic.in.file.fnum);
-	GEN_CALL(smb_raw_setfileinfo(tree, &parm[i]));
+	GEN_CALL(smb2_setinfo_file(tree, &parm[i]));
 
 	return true;
 }
-
 #endif
-
 
 /*
   wipe any relevant files
