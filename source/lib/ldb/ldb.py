@@ -67,8 +67,10 @@ CHANGETYPE_DELETE = _ldb.CHANGETYPE_DELETE
 CHANGETYPE_MODIFY = _ldb.CHANGETYPE_MODIFY
 ldb_val_to_py_object = _ldb.ldb_val_to_py_object
 class Dn(object):
+    """A LDB Distinguished name."""
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     def __init__(self, *args, **kwargs): 
+        """A LDB Distinguished name."""
         _ldb.Dn_swiginit(self,_ldb.new_Dn(*args, **kwargs))
     __swig_destroy__ = _ldb.delete_Dn
     def validate(*args, **kwargs):
@@ -148,9 +150,11 @@ Dn_swigregister(Dn)
 
 ldb_msg_element_compare = _ldb.ldb_msg_element_compare
 class MessageElement(object):
+    """A message element."""
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
+        """A message element."""
         _ldb.MessageElement_swiginit(self,_ldb.new_MessageElement(*args, **kwargs))
     __swig_destroy__ = _ldb.delete_MessageElement
     def __getitem__(self, i):
@@ -182,6 +186,7 @@ MessageElement_swigregister(MessageElement)
 
 ldb_msg_list_elements = _ldb.ldb_msg_list_elements
 class Message(object):
+    """A LDB message."""
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     dn = _swig_property(_ldb.Message_dn_get, _ldb.Message_dn_set)
@@ -260,6 +265,7 @@ LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED = _ldb.LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED
 LDB_ERR_AFFECTS_MULTIPLE_DSAS = _ldb.LDB_ERR_AFFECTS_MULTIPLE_DSAS
 LDB_ERR_OTHER = _ldb.LDB_ERR_OTHER
 class Ldb(object):
+    """A connection to a LDB database."""
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     def __init__(self, *args, **kwargs): 
         _ldb.Ldb_swiginit(self,_ldb.new_Ldb(*args, **kwargs))
@@ -343,6 +349,13 @@ class Ldb(object):
         """
         return _ldb.Ldb_transaction_commit(*args, **kwargs)
 
+    def transaction_cancel(*args, **kwargs):
+        """
+        S.transaction_cancel() -> None
+        Cancel currently active transaction.
+        """
+        return _ldb.Ldb_transaction_cancel(*args, **kwargs)
+
     def parse_ldif(*args, **kwargs):
         """
         S.parse_ldif(ldif) -> iter(messages)
@@ -415,7 +428,13 @@ def valid_attr_name(*args, **kwargs):
     Check whether the supplied name is a valid attribute name.
     """
   return _ldb.valid_attr_name(*args, **kwargs)
-timestring = _ldb.timestring
+
+def timestring(*args, **kwargs):
+  """
+    S.timestring(int) -> string
+    Generate a LDAP time string from a UNIX timestamp
+    """
+  return _ldb.timestring(*args, **kwargs)
 string_to_time = _ldb.string_to_time
 
 def register_module(*args, **kwargs):
