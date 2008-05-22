@@ -53,6 +53,7 @@ static struct gentest_options {
 	const char *seeds_file;
 	int use_preset_seeds;
 	int fast_reconnect;
+	int mask_indexing;
 } options;
 
 /* mapping between open handles on the server and local handles */
@@ -543,15 +544,6 @@ static uint16_t gen_lock_flags(void)
 }
 
 /*
-  generate a pid 
-*/
-static uint16_t gen_pid(void)
-{
-	if (gen_chance(10)) return gen_bits_mask(0xFFFF);
-	return getpid();
-}
-
-/*
   generate a lock count
 */
 static off_t gen_lock_count(void)
@@ -596,34 +588,6 @@ static uint32_t gen_open_disp(void)
 	if (gen_chance(50)) return NTCREATEX_DISP_OPEN_IF;
 	if (gen_chance(10)) return gen_bits_mask(0xFFFFFFFF);
 	return gen_int_range(0, 5);
-}
-
-/*
-  generate an openx open mode
-*/
-static uint16_t gen_openx_mode(void)
-{
-	if (gen_chance(20)) return gen_bits_mask(0xFFFF);
-	if (gen_chance(20)) return gen_bits_mask(0xFF);
-	return OPENX_MODE_DENY_NONE | gen_bits_mask(0x3);
-}
-
-/*
-  generate an openx flags field
-*/
-static uint16_t gen_openx_flags(void)
-{
-	if (gen_chance(20)) return gen_bits_mask(0xFFFF);
-	return gen_bits_mask(0x7);
-}
-
-/*
-  generate an openx open function
-*/
-static uint16_t gen_openx_func(void)
-{
-	if (gen_chance(20)) return gen_bits_mask(0xFFFF);
-	return gen_bits_mask(0x13);
 }
 
 /*
@@ -953,6 +917,16 @@ again:
 
 #define CHECK_EQUAL(field) do { \
 	if (parm[0].field != parm[1].field && !ignore_pattern(#field)) { \
+		printf("Mismatch in %s - 0x%llx 0x%llx\n", #field, \
+		       (unsigned long long)parm[0].field, (unsigned long long)parm[1].field); \
+		return false; \
+	} \
+} while(0)
+
+#define CHECK_ATTRIB(field) do { \
+		if (!options.mask_indexing) { \
+		CHECK_EQUAL(field); \
+	} else if ((~FILE_ATTRIBUTE_NONINDEXED & parm[0].field) != (~FILE_ATTRIBUTE_NONINDEXED & parm[1].field) && !ignore_pattern(#field)) { \
 		printf("Mismatch in %s - 0x%x 0x%x\n", #field, \
 		       (int)parm[0].field, (int)parm[1].field); \
 		return false; \
@@ -1044,7 +1018,7 @@ static bool handler_create(int instance)
 	CHECK_NTTIMES_EQUAL(out.change_time);
 	CHECK_EQUAL(out.alloc_size);
 	CHECK_EQUAL(out.size);
-	CHECK_EQUAL(out.file_attr);
+	CHECK_ATTRIB(out.file_attr);
 	CHECK_EQUAL(out.reserved2);
 
 	/* ntcreatex creates a new file handle */
@@ -1077,7 +1051,7 @@ static bool handler_close(int instance)
 	CHECK_NTTIMES_EQUAL(out.change_time);
 	CHECK_EQUAL(out.alloc_size);
 	CHECK_EQUAL(out.size);
-	CHECK_EQUAL(out.file_attr);
+	CHECK_ATTRIB(out.file_attr);
 
 	REMOVE_HANDLE(in.file.handle);
 
@@ -1206,7 +1180,7 @@ static bool handler_echo(int instance)
 	return true;
 }
 
-#if 0
+
 
 /*
   generate a fileinfo query structure
@@ -1219,16 +1193,13 @@ static void gen_fileinfo(int instance, union smb_fileinfo *info)
 		enum smb_fileinfo_level level;
 		const char *name;
 	}  levels[] = {
-		LVL(GETATTR), LVL(GETATTRE), LVL(STANDARD),
-		LVL(EA_SIZE), LVL(ALL_EAS), LVL(IS_NAME_VALID),
-		LVL(BASIC_INFO), LVL(STANDARD_INFO), LVL(EA_INFO),
-		LVL(NAME_INFO), LVL(ALL_INFO), LVL(ALT_NAME_INFO),
-		LVL(STREAM_INFO), LVL(COMPRESSION_INFO), LVL(BASIC_INFORMATION),
+		LVL(BASIC_INFORMATION),
 		LVL(STANDARD_INFORMATION), LVL(INTERNAL_INFORMATION), LVL(EA_INFORMATION),
 		LVL(ACCESS_INFORMATION), LVL(NAME_INFORMATION), LVL(POSITION_INFORMATION),
-		LVL(MODE_INFORMATION), LVL(ALIGNMENT_INFORMATION), LVL(ALL_INFORMATION),
+		LVL(MODE_INFORMATION), LVL(ALIGNMENT_INFORMATION), LVL(SMB2_ALL_INFORMATION),
 		LVL(ALT_NAME_INFORMATION), LVL(STREAM_INFORMATION), LVL(COMPRESSION_INFORMATION),
-		LVL(NETWORK_OPEN_INFORMATION), LVL(ATTRIBUTE_TAG_INFORMATION)
+		LVL(NETWORK_OPEN_INFORMATION), LVL(ATTRIBUTE_TAG_INFORMATION),
+		LVL(SMB2_ALL_EAS), LVL(SMB2_ALL_INFORMATION),
 	};
 	do {
 		i = gen_int_range(0, ARRAY_SIZE(levels)-1);
@@ -1250,62 +1221,14 @@ static bool cmp_fileinfo(int instance,
 	case RAW_FILEINFO_GENERIC:
 		return false;
 
-	case RAW_FILEINFO_GETATTR:
-		CHECK_EQUAL(getattr.out.attrib);
-		CHECK_EQUAL(getattr.out.size);
-		CHECK_TIMES_EQUAL(getattr.out.write_time);
-		break;
-
-	case RAW_FILEINFO_GETATTRE:
-		CHECK_TIMES_EQUAL(getattre.out.create_time);
-		CHECK_TIMES_EQUAL(getattre.out.access_time);
-		CHECK_TIMES_EQUAL(getattre.out.write_time);
-		CHECK_EQUAL(getattre.out.size);
-		CHECK_EQUAL(getattre.out.alloc_size);
-		CHECK_EQUAL(getattre.out.attrib);
-		break;
-
-	case RAW_FILEINFO_STANDARD:
-		CHECK_TIMES_EQUAL(standard.out.create_time);
-		CHECK_TIMES_EQUAL(standard.out.access_time);
-		CHECK_TIMES_EQUAL(standard.out.write_time);
-		CHECK_EQUAL(standard.out.size);
-		CHECK_EQUAL(standard.out.alloc_size);
-		CHECK_EQUAL(standard.out.attrib);
-		break;
-
-	case RAW_FILEINFO_EA_SIZE:
-		CHECK_TIMES_EQUAL(ea_size.out.create_time);
-		CHECK_TIMES_EQUAL(ea_size.out.access_time);
-		CHECK_TIMES_EQUAL(ea_size.out.write_time);
-		CHECK_EQUAL(ea_size.out.size);
-		CHECK_EQUAL(ea_size.out.alloc_size);
-		CHECK_EQUAL(ea_size.out.attrib);
-		CHECK_EQUAL(ea_size.out.ea_size);
-		break;
-
-	case RAW_FILEINFO_ALL_EAS:
-		CHECK_EQUAL(all_eas.out.num_eas);
-		for (i=0;i<parm[0].all_eas.out.num_eas;i++) {
-			CHECK_EQUAL(all_eas.out.eas[i].flags);
-			CHECK_WSTR_EQUAL(all_eas.out.eas[i].name);
-			CHECK_BLOB_EQUAL(all_eas.out.eas[i].value);
-		}
-		break;
-
-	case RAW_FILEINFO_IS_NAME_VALID:
-		break;
-		
-	case RAW_FILEINFO_BASIC_INFO:
 	case RAW_FILEINFO_BASIC_INFORMATION:
 		CHECK_NTTIMES_EQUAL(basic_info.out.create_time);
 		CHECK_NTTIMES_EQUAL(basic_info.out.access_time);
 		CHECK_NTTIMES_EQUAL(basic_info.out.write_time);
 		CHECK_NTTIMES_EQUAL(basic_info.out.change_time);
-		CHECK_EQUAL(basic_info.out.attrib);
+		CHECK_ATTRIB(basic_info.out.attrib);
 		break;
 
-	case RAW_FILEINFO_STANDARD_INFO:
 	case RAW_FILEINFO_STANDARD_INFORMATION:
 		CHECK_EQUAL(standard_info.out.alloc_size);
 		CHECK_EQUAL(standard_info.out.size);
@@ -1314,38 +1237,18 @@ static bool cmp_fileinfo(int instance,
 		CHECK_EQUAL(standard_info.out.directory);
 		break;
 
-	case RAW_FILEINFO_EA_INFO:
 	case RAW_FILEINFO_EA_INFORMATION:
 		CHECK_EQUAL(ea_info.out.ea_size);
 		break;
 
-	case RAW_FILEINFO_NAME_INFO:
 	case RAW_FILEINFO_NAME_INFORMATION:
 		CHECK_WSTR_EQUAL(name_info.out.fname);
 		break;
 
-	case RAW_FILEINFO_ALL_INFO:
-	case RAW_FILEINFO_ALL_INFORMATION:
-		CHECK_NTTIMES_EQUAL(all_info.out.create_time);
-		CHECK_NTTIMES_EQUAL(all_info.out.access_time);
-		CHECK_NTTIMES_EQUAL(all_info.out.write_time);
-		CHECK_NTTIMES_EQUAL(all_info.out.change_time);
-		CHECK_EQUAL(all_info.out.attrib);
-		CHECK_EQUAL(all_info.out.alloc_size);
-		CHECK_EQUAL(all_info.out.size);
-		CHECK_EQUAL(all_info.out.nlink);
-		CHECK_EQUAL(all_info.out.delete_pending);
-		CHECK_EQUAL(all_info.out.directory);
-		CHECK_EQUAL(all_info.out.ea_size);
-		CHECK_WSTR_EQUAL(all_info.out.fname);
-		break;
-
-	case RAW_FILEINFO_ALT_NAME_INFO:
 	case RAW_FILEINFO_ALT_NAME_INFORMATION:
 		CHECK_WSTR_EQUAL(alt_name_info.out.fname);
 		break;
 
-	case RAW_FILEINFO_STREAM_INFO:
 	case RAW_FILEINFO_STREAM_INFORMATION:
 		CHECK_EQUAL(stream_info.out.num_streams);
 		for (i=0;i<parm[0].stream_info.out.num_streams;i++) {
@@ -1355,7 +1258,6 @@ static bool cmp_fileinfo(int instance,
 		}
 		break;
 
-	case RAW_FILEINFO_COMPRESSION_INFO:
 	case RAW_FILEINFO_COMPRESSION_INFORMATION:
 		CHECK_EQUAL(compression_info.out.compressed_size);
 		CHECK_EQUAL(compression_info.out.format);
@@ -1391,12 +1293,43 @@ static bool cmp_fileinfo(int instance,
 		CHECK_NTTIMES_EQUAL(network_open_information.out.change_time);
 		CHECK_EQUAL(network_open_information.out.alloc_size);
 		CHECK_EQUAL(network_open_information.out.size);
-		CHECK_EQUAL(network_open_information.out.attrib);
+		CHECK_ATTRIB(network_open_information.out.attrib);
 		break;
 
 	case RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION:
-		CHECK_EQUAL(attribute_tag_information.out.attrib);
+		CHECK_ATTRIB(attribute_tag_information.out.attrib);
 		CHECK_EQUAL(attribute_tag_information.out.reparse_tag);
+		break;
+
+	case RAW_FILEINFO_ALL_INFORMATION:
+	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
+		CHECK_NTTIMES_EQUAL(all_info2.out.create_time);
+		CHECK_NTTIMES_EQUAL(all_info2.out.access_time);
+		CHECK_NTTIMES_EQUAL(all_info2.out.write_time);
+		CHECK_NTTIMES_EQUAL(all_info2.out.change_time);
+		CHECK_ATTRIB(all_info2.out.attrib);
+		CHECK_EQUAL(all_info2.out.unknown1);
+		CHECK_EQUAL(all_info2.out.alloc_size);
+		CHECK_EQUAL(all_info2.out.size);
+		CHECK_EQUAL(all_info2.out.nlink);
+		CHECK_EQUAL(all_info2.out.delete_pending);
+		CHECK_EQUAL(all_info2.out.directory);
+		CHECK_EQUAL(all_info2.out.file_id);
+		CHECK_EQUAL(all_info2.out.ea_size);
+		CHECK_EQUAL(all_info2.out.access_mask);
+		CHECK_EQUAL(all_info2.out.position);
+		CHECK_EQUAL(all_info2.out.mode);
+		CHECK_EQUAL(all_info2.out.alignment_requirement);
+		CHECK_WSTR_EQUAL(all_info2.out.fname);
+		break;
+
+	case RAW_FILEINFO_SMB2_ALL_EAS:
+		CHECK_EQUAL(all_eas.out.num_eas);
+		for (i=0;i<parm[0].all_eas.out.num_eas;i++) {
+			CHECK_EQUAL(all_eas.out.eas[i].flags);
+			CHECK_WSTR_EQUAL(all_eas.out.eas[i].name);
+			CHECK_BLOB_EQUAL(all_eas.out.eas[i].value);
+		}
 		break;
 
 		/* Unhandled levels */
@@ -1405,8 +1338,6 @@ static bool cmp_fileinfo(int instance,
 	case RAW_FILEINFO_EA_LIST:
 	case RAW_FILEINFO_UNIX_BASIC:
 	case RAW_FILEINFO_UNIX_LINK:
-	case RAW_FILEINFO_SMB2_ALL_EAS:
-	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
 	case RAW_FILEINFO_UNIX_INFO2:
 		break;
 	}
@@ -1422,17 +1353,19 @@ static bool handler_qfileinfo(int instance)
 	union smb_fileinfo parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
-	parm[0].generic.in.file.fnum = gen_fnum(instance);
+	parm[0].generic.in.file.handle.data[0] = gen_fnum(instance);
 
 	gen_fileinfo(instance, &parm[0]);
 
 	GEN_COPY_PARM;
-	GEN_SET_FNUM(generic.in.file.fnum);
-	GEN_CALL(smb_raw_fileinfo(tree, current_op.mem_ctx, &parm[i]));
+	GEN_SET_FNUM(generic.in.file.handle);
+	GEN_CALL(smb2_getinfo_file(tree, current_op.mem_ctx, &parm[i]));
 
 	return cmp_fileinfo(instance, parm, status);
 }
 
+
+#if 0
 
 /*
   generate a fileinfo query structure
@@ -1619,6 +1552,7 @@ static struct {
 	{"LOCK",       handler_lock},
 	{"FLUSH",      handler_flush},
 	{"ECHO",       handler_echo},
+	{"FILEINFO",   handler_qfileinfo},
 };
 
 
@@ -1883,6 +1817,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 		{"unclist",	  0, POPT_ARG_STRING,	NULL, 	OPT_UNCLIST,	"unclist", 	NULL},
 		{"seedsfile",	  0, POPT_ARG_STRING,  &options.seeds_file, 0,	"seed file", 	NULL},
 		{ "user", 'U',       POPT_ARG_STRING, NULL, 'U', "Set the network username", "[DOMAIN/]USERNAME[%PASSWORD]" },
+		{"maskindexing",  0, POPT_ARG_NONE,  &options.mask_indexing, 0,	"mask out the indexed file attrib", 	NULL},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
