@@ -25,7 +25,11 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
-%module ldb
+%define DOCSTRING
+"An interface to LDB, a LDAP-like API that can either to talk an embedded database (TDB-based) or a standards-compliant LDAP server."
+%enddef
+
+%module(docstring=DOCSTRING) ldb
 
 %{
 
@@ -197,6 +201,8 @@ PyObject *ldb_val_to_py_object(struct ldb_context *ldb_ctx,
 %feature("docstring") ldb_dn "A LDB distinguished name.";
 typedef struct ldb_dn {
     %extend {
+        %feature("docstring") ldb_dn "S.__init__(ldb, string)\n" \
+                 "Create a new DN.";
         ldb_dn(ldb *ldb_ctx, const char *str)
         {
             ldb_dn *ret = ldb_dn_new(ldb_ctx, ldb_ctx, str);
@@ -216,6 +222,8 @@ fail:
         bool validate();
         const char *get_casefold();
         const char *get_linearized();
+        %feature("docstring") parent "S.parent() -> dn\n" \
+                                     "Get the parent for this DN.";
         ldb_dn *parent() { return ldb_dn_get_parent(NULL, $self); }
         int compare(ldb_dn *other);
         bool is_valid();
@@ -898,7 +906,7 @@ static char *timestring(time_t t)
 %}
 
 %rename(string_to_time) ldb_string_to_time;
-%feature("docstring") string_to_time "S.string_to_time(string) -> int\n"
+%feature("docstring") ldb_string_to_time "S.string_to_time(string) -> int\n"
                                      "Parse a LDAP time string into a UNIX timestamp.";
 time_t ldb_string_to_time(const char *s);
 

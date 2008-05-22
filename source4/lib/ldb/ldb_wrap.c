@@ -5727,7 +5727,10 @@ fail:
 
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"ldb_val_to_py_object", (PyCFunction) _wrap_ldb_val_to_py_object, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"new_Dn", (PyCFunction) _wrap_new_Dn, METH_VARARGS | METH_KEYWORDS, (char *)"A LDB Distinguished name."},
+	 { (char *)"new_Dn", (PyCFunction) _wrap_new_Dn, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.__init__(ldb, string)\n"
+		"Create a new DN.\n"
+		""},
 	 { (char *)"delete_Dn", (PyCFunction)_wrap_delete_Dn, METH_O, NULL},
 	 { (char *)"Dn_validate", (PyCFunction)_wrap_Dn_validate, METH_O, (char *)"\n"
 		"S.validate() -> bool\n"
@@ -5735,7 +5738,10 @@ static PyMethodDef SwigMethods[] = {
 		""},
 	 { (char *)"Dn_get_casefold", (PyCFunction)_wrap_Dn_get_casefold, METH_O, NULL},
 	 { (char *)"Dn___str__", (PyCFunction)_wrap_Dn___str__, METH_O, NULL},
-	 { (char *)"Dn_parent", (PyCFunction)_wrap_Dn_parent, METH_O, NULL},
+	 { (char *)"Dn_parent", (PyCFunction)_wrap_Dn_parent, METH_O, (char *)"\n"
+		"S.parent() -> dn\n"
+		"Get the parent for this DN.\n"
+		""},
 	 { (char *)"Dn___cmp__", (PyCFunction) _wrap_Dn___cmp__, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Dn_is_valid", (PyCFunction)_wrap_Dn_is_valid, METH_O, NULL},
 	 { (char *)"Dn_is_special", (PyCFunction)_wrap_Dn_is_special, METH_O, (char *)"\n"
@@ -5771,7 +5777,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"ldb_msg_element_compare", (PyCFunction) _wrap_ldb_msg_element_compare, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"MessageElement___iter__", (PyCFunction)_wrap_MessageElement___iter__, METH_O, NULL},
 	 { (char *)"MessageElement___set__", (PyCFunction)_wrap_MessageElement___set__, METH_O, NULL},
-	 { (char *)"new_MessageElement", (PyCFunction) _wrap_new_MessageElement, METH_VARARGS | METH_KEYWORDS, (char *)"A message element."},
+	 { (char *)"new_MessageElement", (PyCFunction) _wrap_new_MessageElement, METH_VARARGS | METH_KEYWORDS, (char *)"Message element."},
 	 { (char *)"MessageElement___len__", (PyCFunction)_wrap_MessageElement___len__, METH_O, NULL},
 	 { (char *)"MessageElement_get", (PyCFunction) _wrap_MessageElement_get, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_MessageElement", (PyCFunction)_wrap_delete_MessageElement, METH_O, NULL},
@@ -5829,7 +5835,11 @@ static PyMethodDef SwigMethods[] = {
 		"S.set_modules_dir(path) -> None\n"
 		"Set path LDB should search for modules\n"
 		""},
-	 { (char *)"Ldb_set_debug", (PyCFunction) _wrap_Ldb_set_debug, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_set_debug", (PyCFunction) _wrap_Ldb_set_debug, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.set_debug(callback) -> None\n"
+		"Set callback for LDB debug messages.\n"
+		"The callback should accept a debug level and debug text.\n"
+		""},
 	 { (char *)"Ldb_set_opaque", (PyCFunction) _wrap_Ldb_set_opaque, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
 		"S.set_opaque(name, value) -> None\n"
 		"Set an opaque value on this LDB connection. \n"
@@ -5871,7 +5881,10 @@ static PyMethodDef SwigMethods[] = {
 		"S.timestring(int) -> string\n"
 		"Generate a LDAP time string from a UNIX timestamp\n"
 		""},
-	 { (char *)"string_to_time", (PyCFunction) _wrap_string_to_time, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"string_to_time", (PyCFunction) _wrap_string_to_time, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.string_to_time(string) -> int\n"
+		"Parse a LDAP time string into a UNIX timestamp.\n"
+		""},
 	 { (char *)"register_module", (PyCFunction) _wrap_register_module, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
 		"S.register_module(module) -> None\n"
 		"Register a LDB module.\n"
