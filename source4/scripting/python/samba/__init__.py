@@ -20,6 +20,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+__docformat__ = "restructuredText"
+
 import os
 
 def _in_source_tree():

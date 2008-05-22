@@ -19,6 +19,8 @@
 
 """Support for reading Samba 3 data files."""
 
+__docformat__ = "restructuredText"
+
 REGISTRY_VALUE_PREFIX = "SAMBA_REGVAL"
 REGISTRY_DB_VERSION = 1
 

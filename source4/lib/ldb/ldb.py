@@ -471,5 +471,7 @@ def register_module(*args, **kwargs):
     Register a LDB module.
     """
   return _ldb.register_module(*args, **kwargs)
+__docformat__ = "restructuredText"
+
 
 

@@ -20,6 +20,8 @@
 
 """Convenience functions for using the idmap database."""
 
+__docformat__ = "restructuredText"
+
 import samba
 import misc
 import ldb
