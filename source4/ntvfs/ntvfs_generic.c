@@ -1276,6 +1276,11 @@ static NTSTATUS ntvfs_map_read_finish(struct ntvfs_module_context *ntvfs,
 		rd->smb2.out.data.length= rd2->generic.out.nread;
 		rd->smb2.out.remaining	= 0;
 		rd->smb2.out.reserved	= 0;
+		if (NT_STATUS_IS_OK(status) &&
+		    rd->smb2.out.data.length == 0 &&
+		    rd->smb2.in.length != 0) {
+			status = NT_STATUS_END_OF_FILE;
+		}
 		break;
 	default:
 		return NT_STATUS_INVALID_LEVEL;
