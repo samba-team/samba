@@ -3,6 +3,10 @@
 #
 # Don't modify this file, modify the SWIG interface instead.
 
+"""
+An interface to LDB, a LDAP-like API that can either to talk an embedded database (TDB-based) or a standards-compliant LDAP server.
+"""
+
 import _ldb
 import new
 new_instancemethod = new.instancemethod
@@ -67,10 +71,13 @@ CHANGETYPE_DELETE = _ldb.CHANGETYPE_DELETE
 CHANGETYPE_MODIFY = _ldb.CHANGETYPE_MODIFY
 ldb_val_to_py_object = _ldb.ldb_val_to_py_object
 class Dn(object):
-    """A LDB Distinguished name."""
+    """A LDB distinguished name."""
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     def __init__(self, *args, **kwargs): 
-        """A LDB Distinguished name."""
+        """
+        S.__init__(ldb, string)
+        Create a new DN.
+        """
         _ldb.Dn_swiginit(self,_ldb.new_Dn(*args, **kwargs))
     __swig_destroy__ = _ldb.delete_Dn
     def validate(*args, **kwargs):
@@ -79,6 +86,13 @@ class Dn(object):
         Validate DN is correct.
         """
         return _ldb.Dn_validate(*args, **kwargs)
+
+    def parent(*args, **kwargs):
+        """
+        S.parent() -> dn
+        Get the parent for this DN.
+        """
+        return _ldb.Dn_parent(*args, **kwargs)
 
     def is_special(*args, **kwargs):
         """
@@ -150,11 +164,11 @@ Dn_swigregister(Dn)
 
 ldb_msg_element_compare = _ldb.ldb_msg_element_compare
 class MessageElement(object):
-    """A message element."""
+    """Message element."""
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
-        """A message element."""
+        """Message element."""
         _ldb.MessageElement_swiginit(self,_ldb.new_MessageElement(*args, **kwargs))
     __swig_destroy__ = _ldb.delete_MessageElement
     def __getitem__(self, i):
@@ -186,7 +200,7 @@ MessageElement_swigregister(MessageElement)
 
 ldb_msg_list_elements = _ldb.ldb_msg_list_elements
 class Message(object):
-    """A LDB message."""
+    """Message."""
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     dn = _swig_property(_ldb.Message_dn_get, _ldb.Message_dn_set)
@@ -265,7 +279,7 @@ LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED = _ldb.LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED
 LDB_ERR_AFFECTS_MULTIPLE_DSAS = _ldb.LDB_ERR_AFFECTS_MULTIPLE_DSAS
 LDB_ERR_OTHER = _ldb.LDB_ERR_OTHER
 class Ldb(object):
-    """A connection to a LDB database."""
+    """Connection to a LDB database."""
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     def __init__(self, *args, **kwargs): 
         _ldb.Ldb_swiginit(self,_ldb.new_Ldb(*args, **kwargs))
@@ -318,6 +332,14 @@ class Ldb(object):
         Set path LDB should search for modules
         """
         return _ldb.Ldb_set_modules_dir(*args, **kwargs)
+
+    def set_debug(*args, **kwargs):
+        """
+        S.set_debug(callback) -> None
+        Set callback for LDB debug messages.
+        The callback should accept a debug level and debug text.
+        """
+        return _ldb.Ldb_set_debug(*args, **kwargs)
 
     def set_opaque(*args, **kwargs):
         """
@@ -435,7 +457,13 @@ def timestring(*args, **kwargs):
     Generate a LDAP time string from a UNIX timestamp
     """
   return _ldb.timestring(*args, **kwargs)
-string_to_time = _ldb.string_to_time
+
+def string_to_time(*args, **kwargs):
+  """
+    S.string_to_time(string) -> int
+    Parse a LDAP time string into a UNIX timestamp.
+    """
+  return _ldb.string_to_time(*args, **kwargs)
 
 def register_module(*args, **kwargs):
   """
