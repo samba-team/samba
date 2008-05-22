@@ -118,6 +118,7 @@ struct fortuna_state
     unsigned		pool0_bytes;
     unsigned		rnd_pos;
     int			tricks_done;
+    pid_t		pid;
 };
 typedef struct fortuna_state FState;
 
@@ -175,6 +176,7 @@ init_state(FState * st)
     memset(st, 0, sizeof(*st));
     for (i = 0; i < NUM_POOLS; i++)
 	md_init(&st->pool[i]);
+    st->pid = getpid();
 }
 
 /*
@@ -275,6 +277,9 @@ reseed(FState * st)
 
     /* add old key into mix too */
     md_update(&key_md, st->key, BLOCK);
+
+    /* add pid to make output diverse after fork() */
+    md_update(&key_md, &st->pid, sizeof(st->pid));
 
     /* now we have new key */
     md_result(&key_md, st->key);
@@ -384,6 +389,7 @@ extract_data(FState * st, unsigned count, unsigned char *dst)
 {
     unsigned	n;
     unsigned	block_nr = 0;
+    pid_t	pid = getpid();
 
     /* Should we reseed? */
     if (st->pool0_bytes >= POOL0_FILL || st->reseed_count == 0)
@@ -393,6 +399,12 @@ extract_data(FState * st, unsigned count, unsigned char *dst)
     /* Do some randomization on first call */
     if (!st->tricks_done)
 	startup_tricks(st);
+
+    /* If we forked, force a reseed again */
+    if (pid != st->pid) {
+	st->pid = pid;
+	reseed();
+    }
 
     while (count > 0)
     {
