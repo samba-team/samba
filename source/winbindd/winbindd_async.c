@@ -453,6 +453,97 @@ enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
 	return WINBINDD_OK;
 }
 
+/* This is the first callback after enumerating groups from a domain */
+static void listgroups_recv(TALLOC_CTX *mem_ctx, bool success,
+	                    struct winbindd_response *response,
+			    void *c, void *private_data)
+{
+	void (*cont)(void *priv, bool succ, fstring dom_name, char *data) =
+		(void (*)(void *, bool, fstring, char*))c;
+
+	if (!success || response->result != WINBINDD_OK) {
+		DEBUG(5, ("list_groups() failed!\n"));
+		cont(private_data, False, response->data.name.dom_name, NULL);
+		return;
+	}
+
+	cont(private_data, True, response->data.name.dom_name,
+	     response->extra_data.data);
+
+	SAFE_FREE(response->extra_data.data);
+}
+
+/* Request the name of all groups in a single domain */
+void winbindd_listgroups_async(TALLOC_CTX *mem_ctx,
+	                       struct winbindd_domain *domain,
+	                       void (*cont)(void *private_data, bool success,
+				     fstring dom_name, char* extra_data),
+			       void *private_data)
+{
+	struct winbindd_request request;
+
+	ZERO_STRUCT(request);
+	request.cmd = WINBINDD_LIST_GROUPS;
+
+	do_async_domain(mem_ctx, domain, &request, listgroups_recv,
+		        (void *)cont, private_data);
+}
+
+enum winbindd_result winbindd_dual_list_groups(struct winbindd_domain *domain,
+                                               struct winbindd_cli_state *state)
+{
+	struct getent_state groups = {};
+	char *extra_data = NULL;
+	unsigned int extra_data_len = 0, i;
+
+	/* Must copy domain into response first for bookeeping in parent */
+	fstrcpy(state->response.data.name.dom_name, domain->name);
+	fstrcpy(groups.domain_name, domain->name);
+
+	/* Get list of sam groups */
+	if (!get_sam_group_entries(&groups)) {
+		/* this domain is empty or in an error state */
+		return WINBINDD_ERROR;
+	}
+
+	/* Allocate some memory for extra data.  Note that we limit
+	   account names to sizeof(fstring) = 256 characters.
+	   +1 for the ',' between group names */
+	extra_data = (char *)SMB_REALLOC(extra_data,
+		(sizeof(fstring) + 1) * groups.num_sam_entries);
+
+	if (!extra_data) {
+		DEBUG(0,("failed to enlarge buffer!\n"));
+		SAFE_FREE(groups.sam_entries);
+		return WINBINDD_ERROR;
+	}
+
+	/* Pack group list into extra data fields */
+	for (i = 0; i < groups.num_sam_entries; i++) {
+		char *group_name = ((struct acct_info *)
+				    groups.sam_entries)[i].acct_name;
+		fstring name;
+
+		fill_domain_username(name, domain->name, group_name, True);
+		/* Append to extra data */
+		memcpy(&extra_data[extra_data_len], name, strlen(name));
+		extra_data_len += strlen(name);
+		extra_data[extra_data_len++] = ',';
+	}
+
+	SAFE_FREE(groups.sam_entries);
+
+	/* Assign extra_data fields in response structure */
+	if (extra_data) {
+		/* remove trailing ',' */
+		extra_data[extra_data_len - 1] = '\0';
+		state->response.extra_data.data = extra_data;
+		state->response.length += extra_data_len;
+	}
+
+	return WINBINDD_OK;
+}
+
 bool print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 		   size_t num_sids, char **result, ssize_t *len)
 {

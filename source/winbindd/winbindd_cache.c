@@ -524,7 +524,7 @@ static void refresh_sequence_number(struct winbindd_domain *domain, bool force)
 	domain->last_status = status;
 	domain->last_seq_check = time(NULL);
 	
-	/* save the new sequence number ni the cache */
+	/* save the new sequence number in the cache */
 	store_cache_seqnum( domain );
 
 done:
