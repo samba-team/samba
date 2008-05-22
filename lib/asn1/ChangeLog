@@ -1,9 +1,3 @@
-2008-04-14  Love Hörnquist Åstrand  <lha@it.su.se>
-
-	* der_free.c: Add der_free_generic().
-
-	* Makefile.am: Add generade acode files.
-
 2008-04-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* pkinit.asn1: add id-pkinit-kdf
