@@ -5727,7 +5727,7 @@ fail:
 
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"ldb_val_to_py_object", (PyCFunction) _wrap_ldb_val_to_py_object, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"new_Dn", (PyCFunction) _wrap_new_Dn, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"new_Dn", (PyCFunction) _wrap_new_Dn, METH_VARARGS | METH_KEYWORDS, (char *)"A LDB Distinguished name."},
 	 { (char *)"delete_Dn", (PyCFunction)_wrap_delete_Dn, METH_O, NULL},
 	 { (char *)"Dn_validate", (PyCFunction)_wrap_Dn_validate, METH_O, (char *)"\n"
 		"S.validate() -> bool\n"
@@ -5771,7 +5771,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"ldb_msg_element_compare", (PyCFunction) _wrap_ldb_msg_element_compare, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"MessageElement___iter__", (PyCFunction)_wrap_MessageElement___iter__, METH_O, NULL},
 	 { (char *)"MessageElement___set__", (PyCFunction)_wrap_MessageElement___set__, METH_O, NULL},
-	 { (char *)"new_MessageElement", (PyCFunction) _wrap_new_MessageElement, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"new_MessageElement", (PyCFunction) _wrap_new_MessageElement, METH_VARARGS | METH_KEYWORDS, (char *)"A message element."},
 	 { (char *)"MessageElement___len__", (PyCFunction)_wrap_MessageElement___len__, METH_O, NULL},
 	 { (char *)"MessageElement_get", (PyCFunction) _wrap_MessageElement_get, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_MessageElement", (PyCFunction)_wrap_delete_MessageElement, METH_O, NULL},
@@ -5848,7 +5848,10 @@ static PyMethodDef SwigMethods[] = {
 		"S.transaction_commit() -> None\n"
 		"Commit currently active transaction.\n"
 		""},
-	 { (char *)"Ldb_transaction_cancel", (PyCFunction)_wrap_Ldb_transaction_cancel, METH_O, NULL},
+	 { (char *)"Ldb_transaction_cancel", (PyCFunction)_wrap_Ldb_transaction_cancel, METH_O, (char *)"\n"
+		"S.transaction_cancel() -> None\n"
+		"Cancel currently active transaction.\n"
+		""},
 	 { (char *)"Ldb_schema_attribute_remove", (PyCFunction) _wrap_Ldb_schema_attribute_remove, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Ldb_schema_attribute_add", (PyCFunction) _wrap_Ldb_schema_attribute_add, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Ldb_setup_wellknown_attributes", (PyCFunction)_wrap_Ldb_setup_wellknown_attributes, METH_O, NULL},
@@ -5864,7 +5867,10 @@ static PyMethodDef SwigMethods[] = {
 		"S.valid_attr_name(name) -> bool\n"
 		"Check whether the supplied name is a valid attribute name.\n"
 		""},
-	 { (char *)"timestring", (PyCFunction) _wrap_timestring, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"timestring", (PyCFunction) _wrap_timestring, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.timestring(int) -> string\n"
+		"Generate a LDAP time string from a UNIX timestamp\n"
+		""},
 	 { (char *)"string_to_time", (PyCFunction) _wrap_string_to_time, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"register_module", (PyCFunction) _wrap_register_module, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
 		"S.register_module(module) -> None\n"

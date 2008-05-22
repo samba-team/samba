@@ -194,6 +194,7 @@ PyObject *ldb_val_to_py_object(struct ldb_context *ldb_ctx,
 %rename(__cmp__) ldb_dn::compare;
 %rename(__len__) ldb_dn::get_comp_num;
 %rename(Dn) ldb_dn;
+%feature("docstring") ldb_dn "A LDB distinguished name.";
 typedef struct ldb_dn {
     %extend {
         ldb_dn(ldb *ldb_ctx, const char *str)
@@ -356,6 +357,7 @@ PyObject *ldb_msg_element_to_set(struct ldb_context *ldb_ctx,
 int ldb_msg_element_compare(ldb_message_element *, ldb_message_element *);
 /* ldb_message_element */
 %rename(MessageElement) ldb_message_element;
+%feature("docstring") ldb_message_element "Message element.";
 %rename(ldb_message_element_compare) ldb_msg_element_compare;
 typedef struct ldb_message_element {
     %extend {
@@ -417,6 +419,7 @@ typedef struct ldb_message_element {
 
 /* ldb_message */
 
+%feature("docstring") ldb_message "Message.";
 %rename(Message) ldb_message;
 #ifdef SWIGPYTHON
 %rename(__delitem__) ldb_message::remove_attr;
@@ -613,6 +616,7 @@ PyObject *PyExc_LdbError;
 }
 
 %rename(Ldb) ldb_context;
+%feature("docstring") ldb_context "Connection to a LDB database.";
 
 %typemap(in,noblock=1) struct ldb_dn * {
     if (ldb_dn_from_pyobject(NULL, $input, arg1, &$1) != 0) {
@@ -776,6 +780,9 @@ typedef struct ldb_context {
         %feature("docstring") set_modules_dir "S.set_modules_dir(path) -> None\n" \
                                               "Set path LDB should search for modules";
         void set_modules_dir(const char *path);
+        %feature("docstring") set_debug "S.set_debug(callback) -> None\n" \
+                                        "Set callback for LDB debug messages.\n" \
+                                        "The callback should accept a debug level and debug text.";
         ldb_error set_debug(void (*debug)(void *context, enum ldb_debug_level level, 
                                           const char *fmt, va_list ap),
                             void *context);
@@ -793,7 +800,7 @@ typedef struct ldb_context {
         %feature("docstring") transaction_commit "S.transaction_commit() -> None\n" \
                                                  "Commit currently active transaction.";
         ldb_error transaction_commit();
-        %feature("docstring") transaction_commit "S.transaction_cancel() -> None\n" \
+        %feature("docstring") transaction_cancel "S.transaction_cancel() -> None\n" \
                                                  "Cancel currently active transaction.";
         ldb_error transaction_cancel();
         void schema_attribute_remove(const char *name);
@@ -877,6 +884,9 @@ int ldb_valid_attr_name(const char *s);
 
 typedef unsigned long time_t;
 
+%feature("docstring") timestring "S.timestring(int) -> string\n"
+                                 "Generate a LDAP time string from a UNIX timestamp";
+
 %inline %{
 static char *timestring(time_t t)
 {
@@ -888,6 +898,8 @@ static char *timestring(time_t t)
 %}
 
 %rename(string_to_time) ldb_string_to_time;
+%feature("docstring") string_to_time "S.string_to_time(string) -> int\n"
+                                     "Parse a LDAP time string into a UNIX timestamp.";
 time_t ldb_string_to_time(const char *s);
 
 %typemap(in,noblock=1) const struct ldb_module_ops * {
