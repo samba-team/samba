@@ -1576,7 +1576,7 @@ $(LIBTALLOC_STATIC_TARGET): $(BINARY_PREREQS) $(LIBTALLOC_OBJ0)
 MKSYMS_SH = $(srcdir)/script/mksyms.sh
 
 $(LIBTDB_SYMS): $(LIBTDB_HEADERS)
-	@$(MKSYMS_SH) $(AWK) $@ $(LIBTDB_HEADERS)
+	@$(MKSYMS_SH) $(AWK) $(builddir)/library-versions $@ $(LIBTDB_HEADERS)
 
 $(LIBTDB_SHARED_TARGET): $(BINARY_PREREQS) $(LIBTDB_OBJ) $(LIBTDB_SYMS)
 	@echo Linking shared library $@
