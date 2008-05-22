@@ -548,6 +548,10 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	uint32_t oplock_level = OPLOCK_NONE, oplock_granted;
 	bool allow_level_II_oplock = false;
 
+	if (io->ntcreatex.in.file_attr & ~FILE_ATTRIBUTE_ALL_MASK) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	    
 	if ((io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_READONLY) &&
 	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
 		return NT_STATUS_CANNOT_DELETE;
