@@ -54,6 +54,7 @@ static struct gentest_options {
 	int use_preset_seeds;
 	int fast_reconnect;
 	int mask_indexing;
+	int no_eas;
 } options;
 
 /* mapping between open handles on the server and local handles */
@@ -691,6 +692,10 @@ static struct smb_ea_list gen_ea_list(void)
 {
 	struct smb_ea_list eas;
 	int i;
+	if (options.no_eas) {
+		ZERO_STRUCT(eas);
+		return eas;
+	}
 	eas.num_eas = gen_int_range(0, 3);
 	eas.eas = talloc_array(current_op.mem_ctx, struct ea_struct, eas.num_eas);
 	for (i=0;i<eas.num_eas;i++) {
@@ -1796,6 +1801,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 		{"seedsfile",	  0, POPT_ARG_STRING,  &options.seeds_file, 0,	"seed file", 	NULL},
 		{ "user", 'U',       POPT_ARG_STRING, NULL, 'U', "Set the network username", "[DOMAIN/]USERNAME[%PASSWORD]" },
 		{"maskindexing",  0, POPT_ARG_NONE,  &options.mask_indexing, 0,	"mask out the indexed file attrib", 	NULL},
+		{"noeas",  0, POPT_ARG_NONE,  &options.no_eas, 0,	"don't use extended attributes", 	NULL},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
