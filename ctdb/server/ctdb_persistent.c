@@ -294,7 +294,7 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	talloc_steal(state, c);
 
 	/* but we won't wait forever */
-	event_add_timed(ctdb->ev, state, timeval_current_ofs(3, 0),
+	event_add_timed(ctdb->ev, state, timeval_current_ofs(ctdb->tunable.control_timeout, 0),
 			ctdb_persistent_lock_timeout, state);
 
 	return 0;
