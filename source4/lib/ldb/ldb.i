@@ -40,7 +40,7 @@ typedef struct ldb_message ldb_msg;
 typedef struct ldb_context ldb;
 typedef struct ldb_dn ldb_dn;
 typedef struct ldb_ldif ldb_ldif;
-typedef struct ldb_message_element ldb_msg_element;
+typedef struct ldb_message_element ldb_message_element;
 typedef int ldb_error;
 typedef int ldb_int_error;
 
@@ -210,21 +210,35 @@ fail:
             return ret;
         }
         ~ldb_dn() { talloc_free($self); }
+        %feature("docstring") validate "S.validate() -> bool\n" \
+                                       "Validate DN is correct.";
         bool validate();
         const char *get_casefold();
         const char *get_linearized();
         ldb_dn *parent() { return ldb_dn_get_parent(NULL, $self); }
         int compare(ldb_dn *other);
         bool is_valid();
+        %feature("docstring") is_special "S.is_special() -> bool\n" \
+                                         "Check whether this is a special LDB DN.";
         bool is_special();
+        %feature("docstring") is_null "S.is_null() -> bool\n" \
+                                         "Check whether this is a null DN.";
         bool is_null();
         bool check_special(const char *name);
         int get_comp_num();
+        %feature("docstring") add_child "S.add_child(dn) -> None\n" \
+                                         "Add a child DN to this DN.";
         bool add_child(ldb_dn *child);
+        %feature("docstring") add_base "S.add_base(dn) -> None\n" \
+                                         "Add a base DN to this DN.";
         bool add_base(ldb_dn *base);
+        %feature("docstring") canonical_str "S.canonical_str() -> string\n" \
+                                         "Canonical version of this DN (like a posix path).";
         const char *canonical_str() {
             return ldb_dn_canonical_string($self, $self);
         }
+        %feature("docstring") canonical_ex_str "S.canonical_ex_str() -> string\n" \
+                                               "Canonical version of this DN (like a posix path, with terminating newline).";
         const char *canonical_ex_str() {
             return ldb_dn_canonical_ex_string($self, $self);
         }
@@ -289,7 +303,7 @@ int ldb_dn_from_pyobject(TALLOC_CTX *mem_ctx, PyObject *object,
     return ret;
 }
 
-ldb_msg_element *ldb_msg_element_from_pyobject(TALLOC_CTX *mem_ctx,
+ldb_message_element *ldb_msg_element_from_pyobject(TALLOC_CTX *mem_ctx,
                                                PyObject *set_obj, int flags,
                                                const char *attr_name)
 {
@@ -320,7 +334,7 @@ ldb_msg_element *ldb_msg_element_from_pyobject(TALLOC_CTX *mem_ctx,
 }
 
 PyObject *ldb_msg_element_to_set(struct ldb_context *ldb_ctx, 
-                                 ldb_msg_element *me)
+                                 ldb_message_element *me)
 {
     int i;
     PyObject *result;
@@ -339,9 +353,10 @@ PyObject *ldb_msg_element_to_set(struct ldb_context *ldb_ctx,
 %}
 #endif
 
+int ldb_msg_element_compare(ldb_message_element *, ldb_message_element *);
 /* ldb_message_element */
-%rename(__cmp__) ldb_message_element::compare;
-%rename(MessageElement) ldb_msg_element;
+%rename(MessageElement) ldb_message_element;
+%rename(ldb_message_element_compare) ldb_msg_element_compare;
 typedef struct ldb_message_element {
     %extend {
 #ifdef SWIGPYTHON
@@ -355,7 +370,7 @@ typedef struct ldb_message_element {
             return ldb_msg_element_to_set(NULL, $self);
         }
 
-        ldb_msg_element(PyObject *set_obj, int flags=0, const char *name = NULL)
+        ldb_message_element(PyObject *set_obj, int flags=0, const char *name = NULL)
         {
             return ldb_msg_element_from_pyobject(NULL, set_obj, flags, name);
         }
@@ -374,8 +389,8 @@ typedef struct ldb_message_element {
             return ldb_val_to_py_object(NULL, $self, &$self->values[i]);
         }
 
-        ~ldb_msg_element() { talloc_free($self); }
-        int compare(ldb_msg_element *);
+        ~ldb_message_element() { talloc_free($self); }
+        %rename(__cmp__) ldb_msg_element_compare;
     }
     %pythoncode {
         def __getitem__(self, i):
@@ -398,21 +413,19 @@ typedef struct ldb_message_element {
                     return False
             return True
     }
-} ldb_msg_element;
+} ldb_message_element;
 
 /* ldb_message */
 
 %rename(Message) ldb_message;
 #ifdef SWIGPYTHON
 %rename(__delitem__) ldb_message::remove_attr;
-%typemap(out) ldb_msg_element * {
+%typemap(out) ldb_message_element * {
 	if ($1 == NULL)
 		PyErr_SetString(PyExc_KeyError, "no such element");
     else
         $result = SWIG_NewPointerObj($1, SWIGTYPE_p_ldb_message_element, 0);
 }
-//%typemap(out) ldb_msg_element *;
-
 
 %inline {
     PyObject *ldb_msg_list_elements(ldb_msg *msg)
@@ -443,10 +456,10 @@ typedef struct ldb_message {
             return ret;
         }
         ~ldb_msg() { talloc_free($self); }
-        ldb_msg_element *find_element(const char *name);
+        ldb_message_element *find_element(const char *name);
         
 #ifdef SWIGPYTHON
-        void __setitem__(const char *attr_name, ldb_msg_element *val)
+        void __setitem__(const char *attr_name, ldb_message_element *val)
         {
             struct ldb_message_element *el;
             
@@ -613,7 +626,7 @@ PyObject *PyExc_LdbError;
 
 %typemap(in,numinputs=1) ldb_msg *add_msg {
     Py_ssize_t dict_pos, msg_pos;
-    ldb_msg_element *msgel;
+    ldb_message_element *msgel;
     PyObject *key, *value;
 
     if (PyDict_Check($input)) {
@@ -660,6 +673,8 @@ typedef struct ldb_context {
     %extend {
         ldb(void) { return ldb_init(NULL); }
 
+        %feature("docstring") connect "S.connect(url,flags=0,options=None) -> None\n" \
+                                      "Connect to a LDB URL.";
         ldb_error connect(const char *url, unsigned int flags = 0, 
             const char *options[] = NULL);
 
@@ -707,11 +722,19 @@ typedef struct ldb_context {
             return ret;
         }
 
+        %feature("docstring") delete "S.delete(dn) -> None\n" \
+                                     "Remove an entry.";
         ldb_error delete(ldb_dn *dn);
+        %feature("docstring") rename "S.rename(old_dn, new_dn) -> None\n" \
+                                     "Rename an entry.";
         ldb_error rename(ldb_dn *olddn, ldb_dn *newdn);
         struct ldb_control **parse_control_strings(TALLOC_CTX *mem_ctx, 
                                                    const char * const*control_strings);
+        %feature("docstring") add "S.add(message) -> None\n" \
+                                  "Add an entry.";
         ldb_error add(ldb_msg *add_msg);
+        %feature("docstring") modify "S.modify(message) -> None\n" \
+                                  "Modify an entry.";
         ldb_error modify(ldb_msg *message);
         ldb_dn *get_config_basedn();
         ldb_dn *get_root_basedn();
@@ -747,20 +770,36 @@ typedef struct ldb_context {
         }
 
         const char *errstring();
+        %feature("docstring") set_create_perms "S.set_create_perms(mode) -> None\n" \
+                                               "Set mode to use when creating new LDB files.";
         void set_create_perms(unsigned int perms);
+        %feature("docstring") set_modules_dir "S.set_modules_dir(path) -> None\n" \
+                                              "Set path LDB should search for modules";
         void set_modules_dir(const char *path);
         ldb_error set_debug(void (*debug)(void *context, enum ldb_debug_level level, 
                                           const char *fmt, va_list ap),
                             void *context);
+        %feature("docstring") set_opaque "S.set_opaque(name, value) -> None\n" \
+            "Set an opaque value on this LDB connection. \n"
+            ":note: Passing incorrect values may cause crashes.";
         ldb_error set_opaque(const char *name, void *value);
+        %feature("docstring") get_opaque "S.get_opaque(name) -> value\n" \
+            "Get an opaque value set on this LDB connection. \n"
+            ":note: The returned value may not be useful in Python.";
         void *get_opaque(const char *name);
+        %feature("docstring") transaction_start "S.transaction_start() -> None\n" \
+                                                "Start a new transaction.";
         ldb_error transaction_start();
+        %feature("docstring") transaction_commit "S.transaction_commit() -> None\n" \
+                                                 "Commit currently active transaction.";
         ldb_error transaction_commit();
+        %feature("docstring") transaction_commit "S.transaction_cancel() -> None\n" \
+                                                 "Cancel currently active transaction.";
         ldb_error transaction_cancel();
         void schema_attribute_remove(const char *name);
         ldb_error schema_attribute_add(const char *attribute, unsigned flags, const char *syntax);
-	ldb_error setup_wellknown_attributes(void);
-	
+        ldb_error setup_wellknown_attributes(void);
+ 
 #ifdef SWIGPYTHON
         %typemap(in,numinputs=0,noblock=1) struct ldb_result **result_as_bool (struct ldb_result *tmp) { $1 = &tmp; }
         %typemap(argout,noblock=1) struct ldb_result **result_as_bool { $result = ((*$1)->count > 0)?Py_True:Py_False; }
@@ -770,6 +809,9 @@ typedef struct ldb_context {
             return ldb_search($self, dn, LDB_SCOPE_BASE, NULL, NULL, 
                              result_as_bool);
         }
+
+        %feature("docstring") parse_ldif "S.parse_ldif(ldif) -> iter(messages)\n" \
+            "Parse a string formatted using LDIF.";
 
         PyObject *parse_ldif(const char *s)
         {
@@ -791,12 +833,25 @@ typedef struct ldb_context {
     }
     %pythoncode {
         def __init__(self, url=None, flags=0, options=None):
+            """Create a new LDB object.
+
+            Will also connect to the specified URL if one was given.
+            """
             _ldb.Ldb_swiginit(self,_ldb.new_Ldb())
             if url is not None:
                 self.connect(url, flags, options)
 
         def search(self, base=None, scope=SCOPE_DEFAULT, expression=None, 
                    attrs=None, controls=None):
+            """Search in a database.
+
+            :param base: Optional base DN to search
+            :param scope: Search scope (SCOPE_BASE, SCOPE_ONELEVEL or SCOPE_SUBTREE)
+            :param expression: Optional search expression
+            :param attrs: Attributes to return (defaults to all)
+            :param controls: Optional list of controls
+            :return: Iterator over Message objects
+            """
             if not (attrs is None or isinstance(attrs, list)):
                 raise TypeError("attributes not a list")
             parsed_controls = None
@@ -816,6 +871,8 @@ typedef struct ldb_context {
 %nodefault Dn;
 
 %rename(valid_attr_name) ldb_valid_attr_name;
+%feature("docstring") ldb_valid_attr_name "S.valid_attr_name(name) -> bool\n"
+                                          "Check whether the supplied name is a valid attribute name.";
 int ldb_valid_attr_name(const char *s);
 
 typedef unsigned long time_t;
@@ -839,5 +896,7 @@ time_t ldb_string_to_time(const char *s);
     $1->name = (char *)PyObject_GetAttrString($input, (char *)"name");
 }
 
+%feature("docstring") ldb_register_module "S.register_module(module) -> None\n"
+                                          "Register a LDB module.";
 %rename(register_module) ldb_register_module;
 ldb_int_error ldb_register_module(const struct ldb_module_ops *);
