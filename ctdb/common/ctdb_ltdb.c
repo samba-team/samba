@@ -189,7 +189,7 @@ int ctdb_ltdb_persistent_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 
 	/* if this is a persistent database without NOSYNC then we
 	   will do this via a transaction */
-	if (!(ctdb_db->client_tdb_flags & TDB_NOSYNC)) {
+	if (0 && !(ctdb_db->client_tdb_flags & TDB_NOSYNC)) {
 		ret = tdb_transaction_start(ctdb_db->ltdb->tdb);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Failed to start local transaction\n"));
