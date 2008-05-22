@@ -105,8 +105,8 @@ static int pipe_enum_fn( struct db_record *rec, void *p)
 				 (uint32_t)((procid_to_pid(&prec.pid)<<16) & prec.pnum),
 				 (FILE_READ_DATA|FILE_WRITE_DATA),
 				 0,
-				 fullpath,
-				 username);
+				 username,
+				 fullpath);
 
 	fenum->ctr3->count++;
 
@@ -200,7 +200,7 @@ static void enum_file_fn( const struct share_mode_entry *e,
 	string_replace( fullpath, '/', '\\' );
 
 	/* mask out create (what ever that is) */
-	permissions = e->share_access & (FILE_READ_DATA|FILE_WRITE_DATA);
+	permissions = e->access_mask & (FILE_READ_DATA|FILE_WRITE_DATA);
 
 	/* now fill in the srvsvc_NetFileInfo3 struct */
 	init_srvsvc_NetFileInfo3(&fenum->ctr3->array[i],
