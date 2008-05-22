@@ -62,6 +62,48 @@ class LoadParm(object):
     __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
         _param.LoadParm_swiginit(self,_param.new_LoadParm(*args, **kwargs))
+    def load(*args, **kwargs):
+        """
+        S.load(filename) -> None
+        Load specified file.
+        """
+        return _param.LoadParm_load(*args, **kwargs)
+
+    def load_default(*args, **kwargs):
+        """
+        S.load_default() -> None
+        Load default smb.conf file.
+        """
+        return _param.LoadParm_load_default(*args, **kwargs)
+
+    def configfile(*args, **kwargs):
+        """
+        S.configfile() -> string
+        Return name of last config file that was loaded.
+        """
+        return _param.LoadParm_configfile(*args, **kwargs)
+
+    def is_mydomain(*args, **kwargs):
+        """
+        S.is_mydomain(domain_name) -> bool
+        Check whether the specified name matches our domain name.
+        """
+        return _param.LoadParm_is_mydomain(*args, **kwargs)
+
+    def is_myname(*args, **kwargs):
+        """
+        S.is_myname(netbios_name) -> bool
+        Check whether the specified name matches one of our netbios names.
+        """
+        return _param.LoadParm_is_myname(*args, **kwargs)
+
+    def set(*args, **kwargs):
+        """
+        S.set(name, value) -> bool
+        Change a parameter.
+        """
+        return _param.LoadParm_set(*args, **kwargs)
+
     __swig_destroy__ = _param.delete_LoadParm
 LoadParm.default_service = new_instancemethod(_param.LoadParm_default_service,None,LoadParm)
 LoadParm.load = new_instancemethod(_param.LoadParm_load,None,LoadParm)
@@ -92,6 +134,34 @@ class ParamFile(object):
     __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
         _param.ParamFile_swiginit(self,_param.new_ParamFile(*args, **kwargs))
+    def add_section(*args, **kwargs):
+        """
+        S.add_section(name) -> section
+        Add a new section.
+        """
+        return _param.ParamFile_add_section(*args, **kwargs)
+
+    def first_section(*args, **kwargs):
+        """
+        S.first_section() -> section
+        Find first section
+        """
+        return _param.ParamFile_first_section(*args, **kwargs)
+
+    def next_section(*args, **kwargs):
+        """
+        S.next_section(prev) -> section
+        Find next section
+        """
+        return _param.ParamFile_next_section(*args, **kwargs)
+
+    def read(*args, **kwargs):
+        """
+        S.read(filename) -> bool
+        Read a filename.
+        """
+        return _param.ParamFile_read(*args, **kwargs)
+
     def __getitem__(self, name):
         ret = self.get_section(name)
         if ret is None:
