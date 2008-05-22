@@ -1,4 +1,4 @@
-{
+WBCLIENT_0_1 {
 	global: wbc*;
 	local: *;
 };
