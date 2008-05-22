@@ -65,7 +65,6 @@ smb4torture="$samba4bindir/smbtorture $TORTURE_OPTIONS"
 
 plantest "js.base" dc "$SCRIPTDIR/base.js" $CONFIGURATION
 plantest "samr.python" dc "$samba4bindir/../scripting/bin/samr.py" ncalrpc: 
-plantest "js.echo" dc "$SCRIPTDIR/echo.js" $CONFIGURATION ncalrpc: -U\$USERNAME%\$PASSWORD
 #plantest "ejsnet.js" dc "$SCRIPTDIR/ejsnet.js" $CONFIGURATION -U\$USERNAME%\$PASSWORD \$DOMAIN ejstestuser
 plantest "js.ldb" none "$SCRIPTDIR/ldb.js" `pwd` $CONFIGURATION -d 10
 plantest "js.winreg" dc $samba4srcdir/scripting/bin/winreg $CONFIGURATION ncalrpc: 'HKLM' -U\$USERNAME%\$PASSWORD
