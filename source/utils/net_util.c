@@ -592,3 +592,30 @@ int net_run_function2(struct net_context *c, int argc, const char **argv,
 	return -1;
 }
 
+int net_run_function3(struct net_context *c, int argc, const char **argv,
+		      const char *whoami, struct functable3 *table)
+{
+	int i;
+	if (argc != 0) {
+		for (i=0; table[i].funcname != NULL; i++) {
+			if (StrCaseCmp(argv[0], table[i].funcname) == 0)
+				return table[i].fn(c, argc-1, argv+1);
+		}
+	}
+
+	if (c->display_usage == false) {
+		d_fprintf(stderr, "Invalid command: %s %s\n", whoami,
+			  (argc > 0)?argv[0]:"");
+	}
+	d_printf("Usage:\n");
+	for (i=0; table[i].funcname != NULL; i++) {
+		if(c->display_usage == false)
+			d_printf("%s %-15s %s\n", whoami, table[i].funcname,
+				 table[i].description);
+		else
+			d_printf("%s\n", table[i].usage);
+	}
+
+	return c->display_usage?0:-1;
+}
+
