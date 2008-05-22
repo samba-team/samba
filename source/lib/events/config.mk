@@ -59,4 +59,4 @@ swig_events_OBJ_FILES = $(libeventssrcdir)/events_wrap.o
 
 $(eval $(call python_py_module_template,samba/events.py,$(libeventssrcdir)/events.py))
 
-$(swig_events_OBJ_FILES): CFLAGS+="$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)"
+$(swig_events_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)
