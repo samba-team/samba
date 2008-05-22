@@ -1194,6 +1194,18 @@ static bool handler_flush(int instance)
 	return true;
 }
 
+/*
+  generate echo operations
+*/
+static bool handler_echo(int instance)
+{
+	NTSTATUS status[NSERVERS];
+
+	GEN_CALL(smb2_keepalive(tree->session->transport));
+
+	return true;
+}
+
 #if 0
 
 /*
@@ -1606,6 +1618,7 @@ static struct {
 	{"WRITE",      handler_write},
 	{"LOCK",       handler_lock},
 	{"FLUSH",      handler_flush},
+	{"ECHO",       handler_echo},
 };
 
 
