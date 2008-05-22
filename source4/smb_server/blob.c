@@ -503,7 +503,8 @@ NTSTATUS smbsrv_push_passthru_fileinfo(TALLOC_CTX *mem_ctx,
 		SIVAL(blob->data,       0x48, st->all_info2.out.ea_size);
 		SIVAL(blob->data,	0x4C, st->all_info2.out.access_mask);
 		SBVAL(blob->data,	0x50, st->all_info2.out.position);
-		SBVAL(blob->data,	0x58, st->all_info2.out.mode);
+		SIVAL(blob->data,	0x58, st->all_info2.out.mode);
+		SIVAL(blob->data,	0x5C, st->all_info2.out.alignment_requirement);
 		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob,
 						     st->all_info2.out.fname.s,
 						     0x60, default_str_flags,

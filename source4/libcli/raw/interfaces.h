@@ -684,7 +684,8 @@ union smb_fileinfo {
 			uint32_t ea_size;
 			uint32_t access_mask;
 			uint64_t position;
-			uint64_t mode;
+			uint32_t mode;
+			uint32_t alignment_requirement;
 			struct smb_wire_string fname;
 		} out;
 	} all_info2;

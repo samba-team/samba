@@ -243,7 +243,8 @@ NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_
 		parms->all_info2.out.ea_size        = IVAL(blob->data, 0x48);
 		parms->all_info2.out.access_mask    = IVAL(blob->data, 0x4C);
 		parms->all_info2.out.position       = BVAL(blob->data, 0x50);
-		parms->all_info2.out.mode           = BVAL(blob->data, 0x58);
+		parms->all_info2.out.mode           = IVAL(blob->data, 0x58);
+		parms->all_info2.out.alignment_requirement = IVAL(blob->data, 0x5C);
 		smbcli_blob_pull_string(NULL, mem_ctx, blob,
 					&parms->all_info2.out.fname, 0x60, 0x64, STR_UNICODE);
 		return NT_STATUS_OK;
