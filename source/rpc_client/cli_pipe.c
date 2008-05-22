@@ -2513,10 +2513,10 @@ static int rpc_pipe_sock_destructor(struct rpc_pipe_client *p)
 /**
  * Create an rpc pipe client struct, connecting to a tcp port.
  */
-NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
-			        uint16_t port,
-			        const struct ndr_syntax_id *abstract_syntax,
-			        struct rpc_pipe_client **presult)
+static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
+				       uint16_t port,
+				       const struct ndr_syntax_id *abstract_syntax,
+				       struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
 	struct sockaddr_storage addr;
@@ -2569,9 +2569,9 @@ NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
  * for the ncacn_ip_tcp transport via the endpoint mapper of the
  * target host.
  */
-NTSTATUS rpc_pipe_get_tcp_port(const char *host,
-			       const struct ndr_syntax_id *abstract_syntax,
-			       uint16_t *pport)
+static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
+				      const struct ndr_syntax_id *abstract_syntax,
+				      uint16_t *pport)
 {
 	NTSTATUS status;
 	struct rpc_pipe_client *epm_pipe = NULL;
