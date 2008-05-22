@@ -105,8 +105,8 @@ static int pipe_enum_fn( struct db_record *rec, void *p)
 				 (uint32_t)((procid_to_pid(&prec.pid)<<16) & prec.pnum),
 				 (FILE_READ_DATA|FILE_WRITE_DATA),
 				 0,
-				 username,
-				 fullpath);
+				 fullpath,
+				 username);
 
 	fenum->ctr3->count++;
 
@@ -207,8 +207,8 @@ static void enum_file_fn( const struct share_mode_entry *e,
 				 e->share_file_id,
 				 permissions,
 				 num_locks,
-				 username,
-				 fullpath);
+				 fullpath,
+				 username);
 	fenum->ctr3->count++;
 }
 
