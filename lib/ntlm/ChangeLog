@@ -1,3 +1,7 @@
+2008-05-14  Love Hornquist Astrand  <lha@love-hornquist-astrands-macbook-pro.local>
+
+	* ntlm.c: replace hashes with keys.
+
 2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ntlm.c: Use DES_set_key_unchecked().
