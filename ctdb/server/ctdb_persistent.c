@@ -262,7 +262,7 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	state->data.dsize -= sizeof(struct ctdb_ltdb_header);
 
 #if 0
-	/* We can not take out a lock here pourself since if this persistent
+	/* We can not take out a lock here ourself since if this persistent
 	   database needs safe transaction writes we can not be holding
 	   a lock on the database.
 	   Therefore we always create a lock wait child to take out and hold
