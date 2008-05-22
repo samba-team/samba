@@ -466,7 +466,6 @@ asn1_compile_SOURCES = 				\
 	asn1_queue.h				\
 	der.h					\
 	gen.c					\
-	gen_code.c				\
 	gen_copy.c				\
 	gen_decode.c				\
 	gen_encode.c				\
@@ -485,7 +484,6 @@ asn1_compile_SOURCES = 				\
 	symbol.h
 
 dist_libasn1_la_SOURCES =			\
-	code.c					\
 	der-protos.h 				\
 	der_locl.h 				\
 	der.c					\
