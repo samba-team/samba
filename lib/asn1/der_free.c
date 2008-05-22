@@ -117,3 +117,9 @@ der_free_bit_string (heim_bit_string *k)
     k->data = NULL;
     k->length = 0;
 }
+
+void
+der_free_generic (void *data)
+{
+    free(data);
+}
