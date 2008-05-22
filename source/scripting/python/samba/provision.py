@@ -43,6 +43,8 @@ from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
 
 """Functions for setting up a Samba configuration."""
 
+__docformat__ = "restructuredText"
+
 DEFAULTSITE = "Default-First-Site-Name"
 
 class InvalidNetbiosName(Exception):
