@@ -147,7 +147,7 @@ struct ctdb_persistent_lock_state {
 
 
 /*
-  called with a lock held in the current process
+  called with a lock held by a lockwait child
  */
 static int ctdb_persistent_store(struct ctdb_persistent_lock_state *state)
 {
@@ -169,7 +169,7 @@ static int ctdb_persistent_store(struct ctdb_persistent_lock_state *state)
 		return -1;
 	}
 
-	ret = ctdb_ltdb_store(state->ctdb_db, state->key, state->header, state->data);
+	ret = ctdb_ltdb_persistent_store(state->ctdb_db, state->key, state->header, state->data);
 	if (ret != 0) {
 		DEBUG(DEBUG_CRIT,("Failed to store record for db_id 0x%08x in ctdb_persistent_store\n", 
 			 state->ctdb_db->db_id));
@@ -224,7 +224,6 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 				   bool *async_reply)
 {
 	struct ctdb_rec_data *rec = (struct ctdb_rec_data *)&recdata.dptr[0];
-	int ret;
 	struct ctdb_db_context *ctdb_db;
 	uint32_t db_id = rec->reqid;
 	struct lockwait_handle *handle;
@@ -262,13 +261,20 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	state->data.dptr  += sizeof(struct ctdb_ltdb_header);
 	state->data.dsize -= sizeof(struct ctdb_ltdb_header);
 
-	/* try and do it without a lockwait */
+#if 0
+	/* We can not take out a lock here pourself since if this persistent
+	   database needs safe transaction writes we can not be holding
+	   a lock on the database.
+	   Therefore we always create a lock wait child to take out and hold
+	   the lock for us.
+	*/
 	ret = tdb_chainlock_nonblock(state->tdb, state->key);
 	if (ret == 0) {
 		ret = ctdb_persistent_store(state);
 		tdb_chainunlock(state->tdb, state->key);
 		return ret;
 	}
+#endif
 
 	/* wait until we have a lock on this record */
 	handle = ctdb_lockwait(ctdb_db, state->key, ctdb_persistent_lock_callback, state);

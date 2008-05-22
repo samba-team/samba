@@ -121,11 +121,48 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 
 
 /*
-  fetch a record from the ltdb, separating out the header information
-  and returning the body of the record. A valid (initial) header is
-  returned if the record is not present
+  write a record to a normal database
 */
 int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key, 
+		    struct ctdb_ltdb_header *header, TDB_DATA data)
+{
+	struct ctdb_context *ctdb = ctdb_db->ctdb;
+	TDB_DATA rec;
+	int ret;
+
+	if (ctdb->flags & CTDB_FLAG_TORTURE) {
+		struct ctdb_ltdb_header *h2;
+		rec = tdb_fetch(ctdb_db->ltdb->tdb, key);
+		h2 = (struct ctdb_ltdb_header *)rec.dptr;
+		if (rec.dptr && rec.dsize >= sizeof(h2) && h2->rsn > header->rsn) {
+			DEBUG(DEBUG_CRIT,("RSN regression! %llu %llu\n",
+				 (unsigned long long)h2->rsn, (unsigned long long)header->rsn));
+		}
+		if (rec.dptr) free(rec.dptr);
+	}
+
+	rec.dsize = sizeof(*header) + data.dsize;
+	rec.dptr = talloc_size(ctdb, rec.dsize);
+	CTDB_NO_MEMORY(ctdb, rec.dptr);
+
+	memcpy(rec.dptr, header, sizeof(*header));
+	memcpy(rec.dptr + sizeof(*header), data.dptr, data.dsize);
+
+	ret = tdb_store(ctdb_db->ltdb->tdb, key, rec, TDB_REPLACE);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed to store dynamic data\n"));
+	}
+
+	talloc_free(rec.dptr);
+
+	return ret;
+}
+
+/*
+  write a record to a persistent database
+  at this stage the the record is locked by a lockwait child.
+*/
+int ctdb_ltdb_persistent_store(struct ctdb_db_context *ctdb_db, TDB_DATA key, 
 		    struct ctdb_ltdb_header *header, TDB_DATA data)
 {
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
@@ -153,22 +190,22 @@ int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 	/* if this is a persistent database without NOSYNC then we
 	   will do this via a transaction */
 	if (ctdb_db->persistent && !(ctdb_db->client_tdb_flags & TDB_NOSYNC)) {
-		bool transaction_started = true;
-
 		ret = tdb_transaction_start(ctdb_db->ltdb->tdb);
 		if (ret != 0) {
-			transaction_started = false;
-			DEBUG(DEBUG_NOTICE, ("Failed to start local transaction\n"));
+			DEBUG(DEBUG_ERR, (__location__ " Failed to start local transaction\n"));
+			goto failed;
 		}
 		ret = tdb_store(ctdb_db->ltdb->tdb, key, rec, TDB_REPLACE);
 		if (ret != 0) {
-			if (transaction_started) {
-				tdb_transaction_cancel(ctdb_db->ltdb->tdb);
-			}
+			DEBUG(DEBUG_ERR, (__location__ " Failed to store persistent data\n"));
+			tdb_transaction_cancel(ctdb_db->ltdb->tdb);
 			goto failed;
 		}
-		if (transaction_started) {
-			ret = tdb_transaction_commit(ctdb_db->ltdb->tdb);
+		ret = tdb_transaction_commit(ctdb_db->ltdb->tdb);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, (__location__ " Failed to commit persistent store transaction.\n"));
+			tdb_transaction_cancel(ctdb_db->ltdb->tdb);
+			goto failed;
 		}
 	} else {
 		ret = tdb_store(ctdb_db->ltdb->tdb, key, rec, TDB_REPLACE);
@@ -179,7 +216,6 @@ failed:
 
 	return ret;
 }
-
 
 /*
   lock a record in the ltdb, given a key
