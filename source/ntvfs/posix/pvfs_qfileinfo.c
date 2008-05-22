@@ -298,10 +298,6 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs,
 			(name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)? 1 : 0;
 		info->all_info2.out.file_id        = name->dos.file_id;
 		info->all_info2.out.ea_size        = name->dos.ea_size;
-		if (info->all_info2.out.ea_size == 4) {
-			/* SMB2 uses zero for a empty EA set */
-			info->all_info2.out.ea_size = 0;
-		}
 		info->all_info2.out.access_mask    = 0; /* only set by qfileinfo */
 		info->all_info2.out.position       = 0; /* only set by qfileinfo */
 		info->all_info2.out.mode           = 0; /* only set by qfileinfo */

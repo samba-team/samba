@@ -117,8 +117,8 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 
 	if (io->in.eas.num_eas != 0) {
 		DATA_BLOB b = data_blob_talloc(req, NULL, 
-					       ea_list_size_chained(io->in.eas.num_eas, io->in.eas.eas, 8));
-		ea_put_list_chained(b.data, io->in.eas.num_eas, io->in.eas.eas, 8);
+					       ea_list_size_chained(io->in.eas.num_eas, io->in.eas.eas, 4));
+		ea_put_list_chained(b.data, io->in.eas.num_eas, io->in.eas.eas, 4);
 		status = smb2_create_blob_add(req, &io->in.blobs,
 					      SMB2_CREATE_TAG_EXTA, b);
 		if (!NT_STATUS_IS_OK(status)) {

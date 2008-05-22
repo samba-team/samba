@@ -476,12 +476,12 @@ NTSTATUS smbsrv_push_passthru_fileinfo(TALLOC_CTX *mem_ctx,
 		}
 
 		list_size = ea_list_size_chained(st->all_eas.out.num_eas,
-						 st->all_eas.out.eas, 8);
+						 st->all_eas.out.eas, 4);
 		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, list_size));
 
 		ea_put_list_chained(blob->data,
 				    st->all_eas.out.num_eas,
-				    st->all_eas.out.eas, 8);
+				    st->all_eas.out.eas, 4);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
