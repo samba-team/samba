@@ -17,10 +17,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Support for parsing Samba-related command-line options."""
+
 import optparse
 from credentials import Credentials, AUTO_USE_KERBEROS, DONT_USE_KERBEROS, MUST_USE_KERBEROS
 
+__docformat__ = "restructuredText"
+
 class SambaOptions(optparse.OptionGroup):
+    """General Samba-related command line options."""
     def __init__(self, parser):
         optparse.OptionGroup.__init__(self, parser, "Samba Common Options")
         self.add_option("-s", "--configfile", action="callback",
@@ -29,12 +34,14 @@ class SambaOptions(optparse.OptionGroup):
         self._configfile = None
 
     def get_loadparm_path(self):
+        """Return the path to the smb.conf file specified on the command line.  """
         return self._configfile
 
     def _load_configfile(self, option, opt_str, arg, parser):
         self._configfile = arg
 
     def get_loadparm(self):
+        """Return a loadparm object with data specified on the command line.  """
         import os, param
         lp = param.LoadParm()
         if self._configfile is not None:
@@ -45,12 +52,15 @@ class SambaOptions(optparse.OptionGroup):
             lp.load_default()
         return lp
 
+
 class VersionOptions(optparse.OptionGroup):
+    """Command line option for printing Samba version."""
     def __init__(self, parser):
         optparse.OptionGroup.__init__(self, parser, "Version Options")
 
 
 class CredentialsOptions(optparse.OptionGroup):
+    """Command line options for specifying credentials."""
     def __init__(self, parser):
         self.no_pass = False
         optparse.OptionGroup.__init__(self, parser, "Credentials Options")
@@ -91,6 +101,11 @@ class CredentialsOptions(optparse.OptionGroup):
         self.creds.set_bind_dn(arg)
 
     def get_credentials(self, lp):
+        """Obtain the credentials set on the command-line.
+
+        :param lp: Loadparm object to use.
+        :return: Credentials object
+        """
         self.creds.guess(lp)
         if not self.no_pass:
             self.creds.set_cmdline_callbacks()
