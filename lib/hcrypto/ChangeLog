@@ -1,3 +1,8 @@
+2008-05-20  Love Hörnquist Åstrand  <lha@kth.se>
+
+	* rand-fortuna.c: If we forked, force a reseed again. Add the pid
+	as part of the reseed().
+
 2008-04-29  Björn Sandell <biorn@chalmers.se>
 
 	* des.h: Add DES_set_key_unchecked
