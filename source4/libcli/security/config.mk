@@ -15,4 +15,4 @@ swig_security_OBJ_FILES = $(libclisrcdir)/security/security_wrap.o
 
 $(eval $(call python_py_module_template,samba/security.py,$(libclisrcdir)/security/security.py))
 
-$(swig_security_OBJ_FILES): CFLAGS+="$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)"
+$(swig_security_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)
