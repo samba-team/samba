@@ -26,3 +26,5 @@ class SamrTests(RpcInterfaceTestCase):
 
     def test_connect5(self):
         (level, info, handle) = self.conn.Connect5(None, 0, 1, samr.ConnectInfo1())
+
+
