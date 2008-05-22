@@ -30,10 +30,10 @@ import os, sys
 sys.path.insert(0, "bin/python")
 
 import samba
-import param
 
-from auth import system_session
+from samba.auth import system_session
 import samba.getopt as options
+from samba import param
 from samba.provision import (provision, 
                              FILL_FULL, FILL_NT4SYNC,
                              FILL_DRS)

@@ -19,7 +19,7 @@
 
 import os
 import unittest
-import registry
+from samba import registry
 import samba.tests
 
 class HelperTests(unittest.TestCase):

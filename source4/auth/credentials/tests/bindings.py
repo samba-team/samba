@@ -24,7 +24,7 @@ the functionality, that's already done in other tests.
 """
 
 import unittest
-import credentials
+from samba import credentials
 
 class CredentialsTests(unittest.TestCase):
     def setUp(self):
