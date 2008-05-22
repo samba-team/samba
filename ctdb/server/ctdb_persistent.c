@@ -84,7 +84,7 @@ int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb,
 	struct ctdb_persistent_state *state;
 	int i;
 
-	state = talloc_zero(c, struct ctdb_persistent_state);
+	state = talloc_zero(ctdb, struct ctdb_persistent_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
 	state->ctdb = ctdb;
@@ -200,6 +200,8 @@ static void ctdb_persistent_lock_callback(void *private_data)
 	ret = ctdb_persistent_store(state);
 	ctdb_request_control_reply(state->ctdb_db->ctdb, state->c, NULL, ret, NULL);
 	tdb_chainlock_unmark(state->tdb, state->key);
+
+	talloc_free(state);
 }
 
 /*
@@ -214,7 +216,6 @@ static void ctdb_persistent_lock_timeout(struct event_context *ev, struct timed_
 	talloc_free(state);
 }
 
-
 /* 
    update a record on this node if the new record has a higher rsn than the
    current record
@@ -226,8 +227,8 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	struct ctdb_rec_data *rec = (struct ctdb_rec_data *)&recdata.dptr[0];
 	struct ctdb_db_context *ctdb_db;
 	uint32_t db_id = rec->reqid;
-	struct lockwait_handle *handle;
 	struct ctdb_persistent_lock_state *state;
+	struct lockwait_handle *handle;
 
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
 		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_update_record when recovery active\n"));
@@ -240,7 +241,7 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	state = talloc(c, struct ctdb_persistent_lock_state);
+	state = talloc(ctdb, struct ctdb_persistent_lock_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
 	state->ctdb_db = ctdb_db;
@@ -254,6 +255,7 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	if (state->data.dsize < sizeof(struct ctdb_ltdb_header)) {
 		DEBUG(DEBUG_CRIT,("Invalid data size %u in ctdb_control_update_record\n", 
 			 (unsigned)state->data.dsize));
+		talloc_free(state);
 		return -1;
 	}
 
@@ -272,6 +274,7 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	if (ret == 0) {
 		ret = ctdb_persistent_store(state);
 		tdb_chainunlock(state->tdb, state->key);
+		talloc_free(state);
 		return ret;
 	}
 #endif
@@ -280,12 +283,18 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	handle = ctdb_lockwait(ctdb_db, state->key, ctdb_persistent_lock_callback, state);
 	if (handle == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to setup lockwait handler in ctdb_control_update_record\n"));
+		talloc_free(state);
 		return -1;
 	}
 
+	/* we need to wait for the replies */
 	*async_reply = true;
 
-	event_add_timed(ctdb->ev, state, timeval_current_ofs(ctdb->tunable.control_timeout, 0),
+	/* need to keep the control structure around */
+	talloc_steal(state, c);
+
+	/* but we won't wait forever */
+	event_add_timed(ctdb->ev, state, timeval_current_ofs(3, 0),
 			ctdb_persistent_lock_timeout, state);
 
 	return 0;
