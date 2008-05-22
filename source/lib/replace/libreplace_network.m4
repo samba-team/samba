@@ -341,7 +341,7 @@ fi
 
 dnl test for ipv6
 AC_CACHE_CHECK([for ipv6 support],libreplace_cv_HAVE_IPV6,[
-	AC_TRY_COMPILE([
+	AC_TRY_LINK([
 #include <stdlib.h> /* for NULL */
 #include <sys/socket.h>
 #include <sys/types.h>
