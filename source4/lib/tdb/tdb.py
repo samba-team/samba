@@ -3,6 +3,10 @@
 #
 # Don't modify this file, modify the SWIG interface instead.
 
+"""
+TDB is a simple key-value database similar to GDBM that supports multiple writers.
+"""
+
 import _tdb
 import new
 new_instancemethod = new.instancemethod
@@ -78,11 +82,125 @@ TDB_ERR_LOCK_TIMEOUT = _tdb.TDB_ERR_LOCK_TIMEOUT
 TDB_ERR_NOEXIST = _tdb.TDB_ERR_NOEXIST
 TDB_ERR_EINVAL = _tdb.TDB_ERR_EINVAL
 TDB_ERR_RDONLY = _tdb.TDB_ERR_RDONLY
-class tdb(object):
+class Tdb(object):
+    """A TDB file."""
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
-    def __init__(self, *args, **kwargs): raise AttributeError, "No constructor defined"
     __repr__ = _swig_repr
-    __swig_destroy__ = _tdb.delete_tdb
+    def __init__(self, *args, **kwargs): 
+        """
+        S.__init__(name,hash_size=0,tdb_flags=TDB_DEFAULT,flags=O_RDWR,mode=0600)
+        Open a TDB file.
+        """
+        _tdb.Tdb_swiginit(self,_tdb.new_Tdb(*args, **kwargs))
+    __swig_destroy__ = _tdb.delete_Tdb
+    def close(*args, **kwargs):
+        """
+        S.close() -> None
+        Close the TDB file.
+        """
+        return _tdb.Tdb_close(*args, **kwargs)
+
+    def errorstr(*args, **kwargs):
+        """
+        S.errorstr() -> errorstring
+        Obtain last error message.
+        """
+        return _tdb.Tdb_errorstr(*args, **kwargs)
+
+    def get(*args, **kwargs):
+        """
+        S.fetch(key) -> value
+        Fetch a value.
+        """
+        return _tdb.Tdb_get(*args, **kwargs)
+
+    def delete(*args, **kwargs):
+        """
+        S.delete(key) -> None
+        Delete an entry.
+        """
+        return _tdb.Tdb_delete(*args, **kwargs)
+
+    def store(*args, **kwargs):
+        """
+        S.store(key, value, flag=TDB_REPLACE) -> None
+        Store an entry.
+        """
+        return _tdb.Tdb_store(*args, **kwargs)
+
+    def firstkey(*args, **kwargs):
+        """
+        S.firstkey() -> data
+        Return the first key in this database.
+        """
+        return _tdb.Tdb_firstkey(*args, **kwargs)
+
+    def nextkey(*args, **kwargs):
+        """
+        S.nextkey(prev) -> data
+        Return the next key in this database.
+        """
+        return _tdb.Tdb_nextkey(*args, **kwargs)
+
+    def lock_all(*args, **kwargs):
+        """S.lockall() -> bool"""
+        return _tdb.Tdb_lock_all(*args, **kwargs)
+
+    def unlock_all(*args, **kwargs):
+        """S.unlockall() -> bool"""
+        return _tdb.Tdb_unlock_all(*args, **kwargs)
+
+    def reopen(*args, **kwargs):
+        """
+        S.reopen() -> bool
+        Reopen this file.
+        """
+        return _tdb.Tdb_reopen(*args, **kwargs)
+
+    def transaction_start(*args, **kwargs):
+        """
+        S.transaction_start() -> None
+        Start a new transaction.
+        """
+        return _tdb.Tdb_transaction_start(*args, **kwargs)
+
+    def transaction_commit(*args, **kwargs):
+        """
+        S.transaction_commit() -> None
+        Commit the currently active transaction.
+        """
+        return _tdb.Tdb_transaction_commit(*args, **kwargs)
+
+    def transaction_cancel(*args, **kwargs):
+        """
+        S.transaction_cancel() -> None
+        Cancel the currently active transaction.
+        """
+        return _tdb.Tdb_transaction_cancel(*args, **kwargs)
+
+    def hash_size(*args, **kwargs):
+        """S.hash_size() -> int"""
+        return _tdb.Tdb_hash_size(*args, **kwargs)
+
+    def map_size(*args, **kwargs):
+        """S.map_size() -> int"""
+        return _tdb.Tdb_map_size(*args, **kwargs)
+
+    def get_flags(*args, **kwargs):
+        """S.get_flags() -> int"""
+        return _tdb.Tdb_get_flags(*args, **kwargs)
+
+    def set_max_dead(*args, **kwargs):
+        """S.set_max_dead(int) -> None"""
+        return _tdb.Tdb_set_max_dead(*args, **kwargs)
+
+    def name(*args, **kwargs):
+        """
+        S.name() -> path
+        Return filename of this TDB file.
+        """
+        return _tdb.Tdb_name(*args, **kwargs)
+
     def __repr__(self):
         return "Tdb('%s')" % self.name()
 
@@ -178,36 +296,32 @@ class tdb(object):
 
 
 
-tdb.error = new_instancemethod(_tdb.tdb_error,None,tdb)
-tdb.close = new_instancemethod(_tdb.tdb_close,None,tdb)
-tdb.append = new_instancemethod(_tdb.tdb_append,None,tdb)
-tdb.errorstr = new_instancemethod(_tdb.tdb_errorstr,None,tdb)
-tdb.get = new_instancemethod(_tdb.tdb_get,None,tdb)
-tdb.delete = new_instancemethod(_tdb.tdb_delete,None,tdb)
-tdb.store = new_instancemethod(_tdb.tdb_store,None,tdb)
-tdb.exists = new_instancemethod(_tdb.tdb_exists,None,tdb)
-tdb.firstkey = new_instancemethod(_tdb.tdb_firstkey,None,tdb)
-tdb.nextkey = new_instancemethod(_tdb.tdb_nextkey,None,tdb)
-tdb.lock_all = new_instancemethod(_tdb.tdb_lock_all,None,tdb)
-tdb.unlock_all = new_instancemethod(_tdb.tdb_unlock_all,None,tdb)
-tdb.read_lock_all = new_instancemethod(_tdb.tdb_read_lock_all,None,tdb)
-tdb.read_unlock_all = new_instancemethod(_tdb.tdb_read_unlock_all,None,tdb)
-tdb.reopen = new_instancemethod(_tdb.tdb_reopen,None,tdb)
-tdb.transaction_start = new_instancemethod(_tdb.tdb_transaction_start,None,tdb)
-tdb.transaction_commit = new_instancemethod(_tdb.tdb_transaction_commit,None,tdb)
-tdb.transaction_cancel = new_instancemethod(_tdb.tdb_transaction_cancel,None,tdb)
-tdb.transaction_recover = new_instancemethod(_tdb.tdb_transaction_recover,None,tdb)
-tdb.hash_size = new_instancemethod(_tdb.tdb_hash_size,None,tdb)
-tdb.map_size = new_instancemethod(_tdb.tdb_map_size,None,tdb)
-tdb.get_flags = new_instancemethod(_tdb.tdb_get_flags,None,tdb)
-tdb.set_max_dead = new_instancemethod(_tdb.tdb_set_max_dead,None,tdb)
-tdb.name = new_instancemethod(_tdb.tdb_name,None,tdb)
-tdb_swigregister = _tdb.tdb_swigregister
-tdb_swigregister(tdb)
-
-def Tdb(*args, **kwargs):
-    val = _tdb.new_Tdb(*args, **kwargs)
-    return val
+Tdb.error = new_instancemethod(_tdb.Tdb_error,None,Tdb)
+Tdb.close = new_instancemethod(_tdb.Tdb_close,None,Tdb)
+Tdb.append = new_instancemethod(_tdb.Tdb_append,None,Tdb)
+Tdb.errorstr = new_instancemethod(_tdb.Tdb_errorstr,None,Tdb)
+Tdb.get = new_instancemethod(_tdb.Tdb_get,None,Tdb)
+Tdb.delete = new_instancemethod(_tdb.Tdb_delete,None,Tdb)
+Tdb.store = new_instancemethod(_tdb.Tdb_store,None,Tdb)
+Tdb.exists = new_instancemethod(_tdb.Tdb_exists,None,Tdb)
+Tdb.firstkey = new_instancemethod(_tdb.Tdb_firstkey,None,Tdb)
+Tdb.nextkey = new_instancemethod(_tdb.Tdb_nextkey,None,Tdb)
+Tdb.lock_all = new_instancemethod(_tdb.Tdb_lock_all,None,Tdb)
+Tdb.unlock_all = new_instancemethod(_tdb.Tdb_unlock_all,None,Tdb)
+Tdb.read_lock_all = new_instancemethod(_tdb.Tdb_read_lock_all,None,Tdb)
+Tdb.read_unlock_all = new_instancemethod(_tdb.Tdb_read_unlock_all,None,Tdb)
+Tdb.reopen = new_instancemethod(_tdb.Tdb_reopen,None,Tdb)
+Tdb.transaction_start = new_instancemethod(_tdb.Tdb_transaction_start,None,Tdb)
+Tdb.transaction_commit = new_instancemethod(_tdb.Tdb_transaction_commit,None,Tdb)
+Tdb.transaction_cancel = new_instancemethod(_tdb.Tdb_transaction_cancel,None,Tdb)
+Tdb.transaction_recover = new_instancemethod(_tdb.Tdb_transaction_recover,None,Tdb)
+Tdb.hash_size = new_instancemethod(_tdb.Tdb_hash_size,None,Tdb)
+Tdb.map_size = new_instancemethod(_tdb.Tdb_map_size,None,Tdb)
+Tdb.get_flags = new_instancemethod(_tdb.Tdb_get_flags,None,Tdb)
+Tdb.set_max_dead = new_instancemethod(_tdb.Tdb_set_max_dead,None,Tdb)
+Tdb.name = new_instancemethod(_tdb.Tdb_name,None,Tdb)
+Tdb_swigregister = _tdb.Tdb_swigregister
+Tdb_swigregister(Tdb)
 
 
 
