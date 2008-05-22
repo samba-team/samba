@@ -3798,10 +3798,22 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"reg_get_predef_name", (PyCFunction) _wrap_reg_get_predef_name, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"str_regtype", (PyCFunction) _wrap_str_regtype, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Registry", (PyCFunction)_wrap_Registry, METH_NOARGS, NULL},
-	 { (char *)"reg_get_predefined_key_by_name", (PyCFunction) _wrap_reg_get_predefined_key_by_name, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"reg_key_del_abs", (PyCFunction) _wrap_reg_key_del_abs, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"reg_get_predefined_key", (PyCFunction) _wrap_reg_get_predefined_key, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"reg_diff_apply", (PyCFunction) _wrap_reg_diff_apply, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"reg_get_predefined_key_by_name", (PyCFunction) _wrap_reg_get_predefined_key_by_name, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.get_predefined_key_by_name(name) -> key\n"
+		"Find a predefined key by name\n"
+		""},
+	 { (char *)"reg_key_del_abs", (PyCFunction) _wrap_reg_key_del_abs, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.key_del_abs(name) -> None\n"
+		"Delete a key by absolute path.\n"
+		""},
+	 { (char *)"reg_get_predefined_key", (PyCFunction) _wrap_reg_get_predefined_key, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.get_predefined_key(hkey_id) -> key\n"
+		"Find a predefined key by id\n"
+		""},
+	 { (char *)"reg_diff_apply", (PyCFunction) _wrap_reg_diff_apply, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.diff_apply(filename) -> None\n"
+		"Apply the diff from the specified file\n"
+		""},
 	 { (char *)"reg_generate_diff", (PyCFunction) _wrap_reg_generate_diff, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"reg_import_hive_key", (PyCFunction) _wrap_reg_import_hive_key, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"reg_mount_hive", _wrap_reg_mount_hive, METH_VARARGS, NULL},
@@ -3809,11 +3821,11 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"delete_reg", (PyCFunction)_wrap_delete_reg, METH_O, NULL},
 	 { (char *)"reg_swigregister", reg_swigregister, METH_VARARGS, NULL},
 	 { (char *)"reg_swiginit", reg_swiginit, METH_VARARGS, NULL},
-	 { (char *)"hive_key", (PyCFunction) _wrap_hive_key, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"open_ldb", (PyCFunction) _wrap_open_ldb, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"create_dir", (PyCFunction) _wrap_create_dir, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"open_dir", (PyCFunction) _wrap_open_dir, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"open_samba", (PyCFunction) _wrap_open_samba, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"hive_key", (PyCFunction) _wrap_hive_key, METH_VARARGS | METH_KEYWORDS, (char *)"S.__init__(location, session_info=None, credentials=None, loadparm_context=None)"},
+	 { (char *)"open_ldb", (PyCFunction) _wrap_open_ldb, METH_VARARGS | METH_KEYWORDS, (char *)"open_ldb(location, session_info=None, credentials=None, loadparm_context=None) -> key"},
+	 { (char *)"create_dir", (PyCFunction) _wrap_create_dir, METH_VARARGS | METH_KEYWORDS, (char *)"create_dir(location) -> key"},
+	 { (char *)"open_dir", (PyCFunction) _wrap_open_dir, METH_VARARGS | METH_KEYWORDS, (char *)"open_dir(location) -> key"},
+	 { (char *)"open_samba", (PyCFunction) _wrap_open_samba, METH_VARARGS | METH_KEYWORDS, (char *)"open_samba() -> reg"},
 	 { NULL, NULL, 0, NULL }
 };
 
