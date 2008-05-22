@@ -68,7 +68,7 @@ RCSID("$Id$");
  * Heimdal to implement and GSS-API mechanism. There is also support
  * in the KDC to do remote digest authenticiation, this to allow
  * services to authenticate users w/o direct access to the users ntlm
- * hashes (same as Kerberos arcfour enctype hashes).
+ * hashes (same as Kerberos arcfour enctype keys).
  *
  * More information about the NTLM protocol can found here
  * http://davenport.sourceforge.net/ntlm.html .
