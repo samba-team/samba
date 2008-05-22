@@ -1,7 +1,8 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Unix SMB/CIFS implementation.
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008
+# Copyright © Jelmer Vernooij <jelmer@samba.org> 2008
 #   
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,8 +18,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from samba.dcerpc import samr
+from samba.dcerpc import samr, security
 from samba.tests import RpcInterfaceTestCase
+
+# FIXME: Pidl should be doing this for us
+def toArray((handle, array, num_entries)):
+    ret = []
+    for x in range(num_entries):
+        ret.append((array.entries[x].idx, array.entries[x].name))
+    return ret
+
 
 class SamrTests(RpcInterfaceTestCase):
     def setUp(self):
@@ -27,4 +36,11 @@ class SamrTests(RpcInterfaceTestCase):
     def test_connect5(self):
         (level, info, handle) = self.conn.Connect5(None, 0, 1, samr.ConnectInfo1())
 
+    def test_connect2(self):
+        (level, info, handle) = self.conn.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
+
+    def test_EnumDomains(self):
+        handle = self.conn.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
+        domains = toArray(self.conn.EnumDomains(handle, 0, -1))
+        self.conn.Close(handle)
 
