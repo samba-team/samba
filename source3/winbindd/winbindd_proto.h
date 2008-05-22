@@ -133,6 +133,16 @@ void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 				   uint32 group_rid),
 		      void *private_data);
 
+void winbindd_listgroups_async(TALLOC_CTX *mem_ctx,
+	                       struct winbindd_domain *domain,
+	                       void (*cont)(void *private_data, bool success,
+				     fstring dom_name, char* extra_data),
+			       void *private_data);
+
+enum winbindd_result winbindd_dual_list_groups(struct winbindd_domain *domain,
+                                               struct winbindd_cli_state *state);
+
+
 /* The following definitions come from winbindd/winbindd_cache.c  */
 
 void winbindd_check_cache_size(time_t t);
@@ -330,6 +340,8 @@ void winbindd_getusersids(struct winbindd_cli_state *state);
 void winbindd_getuserdomgroups(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_domain *domain,
 						    struct winbindd_cli_state *state);
+bool get_sam_group_entries(struct getent_state *ent);
+
 
 /* The following definitions come from winbindd/winbindd_idmap.c  */
 
