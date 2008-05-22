@@ -61,6 +61,7 @@ struct net_context {
 	bool smb_encrypt;
 	struct libnetapi_ctx *netapi_ctx;
 
+	bool display_usage;
 	const char *share_type[];
 };
 
