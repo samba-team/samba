@@ -114,7 +114,7 @@ NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 				  struct cli_pipe_auth_data **presult);
 NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
 				   enum pipe_auth_level auth_level,
-				   const struct dcinfo *pdc,
+				   const uint8_t sess_key[16],
 				   struct cli_pipe_auth_data **presult);
 NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
 				   enum pipe_auth_level auth_level,
