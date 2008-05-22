@@ -203,7 +203,7 @@ sub PythonStruct($$$$$$)
 			$self->pidl("return 0;");
 			$self->deindent;
 			$self->pidl("}");
-		$self->pidl("");
+			$self->pidl("");
 		}
 
 		$getsetters = "py_$name\_getsetters";
@@ -253,6 +253,20 @@ sub PythonStruct($$$$$$)
 	return "&$typeobject";
 }
 
+sub get_metadata_var($)
+{
+	my ($e) = @_;
+	sub get_var($) { my $x = shift; $x =~ s/\*//g; return $x; }
+
+	 if (has_property($e, "length_is")) {
+		return get_var($e->{PROPERTIES}->{length_is});
+	 } elsif (has_property($e, "size_is")) {
+		return get_var($e->{PROPERTIES}->{size_is});
+	 }
+
+	 return undef;
+}
+
 sub PythonFunctionBody($$$)
 {
 	my ($self, $fn, $iface, $prettyname) = @_;
@@ -274,17 +288,10 @@ sub PythonFunctionBody($$$)
 
 	my $metadata_args = { in => {}, out => {} };
 
-	sub get_var($) { my $x = shift; $x =~ s/\*//g; return $x; }
-
 	# Determine arguments that are metadata for other arguments (size_is/length_is)
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		foreach my $dir (@{$e->{DIRECTION}}) {
-			 my $main = undef;
-			 if (has_property($e, "length_is")) {
-			 	$main = get_var($e->{PROPERTIES}->{length_is});
-			 } elsif (has_property($e, "size_is")) {
-			 	$main = get_var($e->{PROPERTIES}->{size_is});
-			 }
+			 my $main = get_metadata_var($e);
 			 if ($main) { 
 				 $metadata_args->{$dir}->{$main} = $e->{NAME}; 
 			 }
