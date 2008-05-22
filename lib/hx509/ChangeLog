@@ -22,6 +22,10 @@
 
 	* sel-lex.l: rename yyerror to sel_yyerror in the whole library,
 	not just the lexer
+	
+2008-04-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* sel-lex.l: Rename yyerror to sel_yyerror and make it static.
 
 2008-04-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
