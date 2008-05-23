@@ -827,14 +827,15 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 			(*cli)->use_kerberos = True;
 			DEBUG(5, ("connecting to %s from %s with kerberos principal "
-				  "[%s]\n", controller, global_myname(),
-				  machine_krb5_principal));
+				  "[%s] and realm [%s]\n", controller, global_myname(),
+				  machine_krb5_principal, domain->alt_name));
 
 			winbindd_set_locator_kdc_envs(domain);
 
 			ads_status = cli_session_setup_spnego(*cli,
 							      machine_krb5_principal, 
-							      machine_password, 
+							      machine_password,
+							      lp_workgroup(),
 							      domain->name);
 
 			if (!ADS_ERR_OK(ads_status)) {
@@ -855,12 +856,13 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 		DEBUG(5, ("connecting to %s from %s with username "
 			  "[%s]\\[%s]\n",  controller, global_myname(),
-			  domain->name, machine_account));
+			  lp_workgroup(), machine_account));
 
 		ads_status = cli_session_setup_spnego(*cli,
 						      machine_account, 
 						      machine_password, 
-						      domain->name);
+						      lp_workgroup(),
+						      NULL);
 		if (!ADS_ERR_OK(ads_status)) {
 			DEBUG(4, ("authenticated session setup failed with %s\n",
 				ads_errstr(ads_status)));
