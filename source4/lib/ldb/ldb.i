@@ -362,14 +362,17 @@ PyObject *ldb_msg_element_to_set(struct ldb_context *ldb_ctx,
 %}
 #endif
 
-int ldb_msg_element_compare(ldb_message_element *, ldb_message_element *);
 /* ldb_message_element */
 %rename(MessageElement) ldb_message_element;
 %feature("docstring") ldb_message_element "Message element.";
-%rename(ldb_message_element_compare) ldb_msg_element_compare;
 typedef struct ldb_message_element {
     %extend {
 #ifdef SWIGPYTHON
+        int __cmp__(ldb_message_element *other)
+        {
+            return ldb_msg_element_compare($self, other);
+        }
+
         PyObject *__iter__(void)
         {
             return PyObject_GetIter(ldb_msg_element_to_set(NULL, $self));
@@ -400,7 +403,6 @@ typedef struct ldb_message_element {
         }
 
         ~ldb_message_element() { talloc_free($self); }
-        %rename(__cmp__) ldb_msg_element_compare;
     }
     %pythoncode {
         def __getitem__(self, i):
