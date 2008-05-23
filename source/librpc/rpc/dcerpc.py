@@ -57,8 +57,6 @@ def _swig_setattr_nondynamic_method(set):
     return set_attr
 
 
-import credentials
-import param
 pipe_connect = _dcerpc.pipe_connect
 dcerpc_server_name = _dcerpc.dcerpc_server_name
 
