@@ -340,7 +340,6 @@ fi
 %preun
 if [ $1 = 0 ] ; then
     /sbin/chkconfig --del smb
-    /sbin/chkconfig --del winbind
     # rm -rf /var/log/samba/* /var/lib/samba/*
     /sbin/service smb stop >/dev/null 2>&1
 fi
@@ -360,6 +359,13 @@ fi
 
 %post common
 /sbin/ldconfig
+
+%preun common
+if [ $1 = 0 ] ; then
+    /sbin/service winbind stop >/dev/null 2>&1
+    /sbin/chkconfig --del winbind
+fi
+exit 0
 
 %postun common 
 /sbin/ldconfig
