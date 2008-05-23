@@ -58,6 +58,8 @@ NTSTATUS pvfs_fill_dos_info(struct pvfs_state *pvfs, struct pvfs_filename *name,
 	if (S_ISDIR(name->st.st_mode)) {
 		name->st.st_size = 0;
 		name->st.st_nlink = 1;
+	} else if (name->stream_id == 0) {
+		name->stream_name = NULL;
 	}
 
 	/* for now just use the simple samba mapping */
