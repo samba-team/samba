@@ -36,6 +36,13 @@ NTSTATUS pvfs_stream_information(struct pvfs_state *pvfs,
 	int i;
 	NTSTATUS status;
 
+	/* directories don't have streams */
+	if (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+		info->num_streams = 0;
+		info->streams = NULL;
+		return NT_STATUS_OK;
+	}
+
 	streams = talloc(mem_ctx, struct xattr_DosStreams);
 	if (streams == NULL) {
 		return NT_STATUS_NO_MEMORY;
