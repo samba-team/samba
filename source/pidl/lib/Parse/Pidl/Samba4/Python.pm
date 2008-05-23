@@ -658,7 +658,7 @@ sub Interface($$$)
 		$self->pidl("");
 
 		my $signature = 
-"\"$interface->{NAME}(binding, lp_ctx=None, credentials=None) -> Connection to DCE/RPC interface.\\n\"
+"\"$interface->{NAME}(binding, lp_ctx=None, credentials=None) -> connection\\n\"
 \"\\n\"
 \"binding should be a DCE/RPC binding string (for example: ncacn_ip_tcp:127.0.0.1)\\n\"
 \"lp_ctx should be a path to a smb.conf file or a param.LoadParm object\\n\"
