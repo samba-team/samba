@@ -2796,7 +2796,7 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
  * 
  ****************************************************************************/
 
-static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe_idx, NTSTATUS *perr)
+static struct rpc_pipe_client *rpc_pipe_open_np(struct cli_state *cli, int pipe_idx, NTSTATUS *perr)
 {
 	struct rpc_pipe_client *result;
 	int fnum;
@@ -2849,7 +2849,7 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 	fnum = cli_nt_create(cli, result->trans.np.pipe_name,
 			     DESIRED_ACCESS_PIPE);
 	if (fnum == -1) {
-		DEBUG(1,("cli_rpc_pipe_open: cli_nt_create failed on pipe %s "
+		DEBUG(1,("rpc_pipe_open_np: cli_nt_create failed on pipe %s "
 			 "to machine %s.  Error was %s\n",
 			 result->trans.np.pipe_name, cli->desthost,
 			 cli_errstr(cli)));
@@ -2862,6 +2862,40 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 
 	DLIST_ADD(cli->pipe_list, result);
 	talloc_set_destructor(result, rpc_pipe_destructor);
+
+	*perr = NT_STATUS_OK;
+
+	return result;
+}
+
+/****************************************************************************
+ Open a pipe to a remote server.
+ ****************************************************************************/
+
+static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli,
+						 int pipe_idx,
+						 NTSTATUS *perr)
+{
+	struct rpc_pipe_client *result;
+
+	*perr = NT_STATUS_PIPE_NOT_AVAILABLE;
+
+	switch (pipe_idx) {
+		case PI_DRSUAPI:
+			*perr = rpc_pipe_open_tcp(NULL, cli->desthost,
+						  &ndr_table_drsuapi.syntax_id,
+						  &result);
+			if (!NT_STATUS_IS_OK(*perr)) {
+				return NULL;
+			}
+			break;
+		default:
+			result = rpc_pipe_open_np(cli, pipe_idx, perr);
+			if (result == NULL) {
+				return NULL;
+			}
+			break;
+	}
 
 	*perr = NT_STATUS_OK;
 
