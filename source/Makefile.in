@@ -1018,26 +1018,6 @@ SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
                  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
 		 librpc/gen_ndr/ndr_samr.o librpc/gen_ndr/ndr_lsa.o
 
-PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(LIBNDR_GEN_OBJ) \
-	    $(SMBD_OBJ_SRV) $(NMBD_OBJ1) $(LIBSMB_OBJ) \
-	    $(SMBTORTURE_OBJ1) $(RPCCLIENT_OBJ1) \
-	    $(LIBMSRPC_OBJ) \
-	    $(LIB_WITH_PROTO_OBJ) \
-	    $(RPC_PIPE_OBJ) $(RPC_PARSE_OBJ) $(KRBCLIENT_OBJ) \
-	    $(AUTH_OBJ) $(PARAM_WITHOUT_REG_OBJ) $(LOCKING_OBJ) \
-	    $(PRINTING_OBJ) $(PRINTBACKEND_OBJ) $(OPLOCK_OBJ) $(NOTIFY_OBJ) \
-	    $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-	    $(READLINE_OBJ) $(PROFILE_OBJ) $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) \
-	    $(AUTH_SAM_OBJ) $(REG_FULL_OBJ) $(POPT_LIB_OBJ) \
-	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) $(RPC_DSSETUP_OBJ) \
-	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
-	    $(RPC_ECHO_OBJ) $(RPC_SVCCTL_OBJ) $(RPC_EVENTLOG_OBJ) $(SMBLDAP_OBJ) \
-            $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ) \
-	    $(RPC_NTSVCS_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
-	    utils/passwd_util.o $(LIBGPO_OBJ) $(NSS_INFO_OBJ) \
-	    $(RPCCLIENT_NDR_OBJ) \
-	    $(PRIVILEGES_BASIC_OBJ)
-
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ) \
 	librpc/gen_ndr/ndr_samr.o librpc/gen_ndr/ndr_lsa.o
