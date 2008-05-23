@@ -48,6 +48,7 @@ __docformat__ = "restructuredText"
 DEFAULTSITE = "Default-First-Site-Name"
 
 class InvalidNetbiosName(Exception):
+    """A specified name was not a valid NetBIOS name."""
     def __init__(self, name):
         super(InvalidNetbiosName, self).__init__("The name '%r' is not a valid NetBIOS name" % name)
 
@@ -1233,7 +1234,7 @@ def provision_backend(setup_dir=None, message=None,
                                         scope=SCOPE_SUBTREE)
             if target is not None:
                 refint_attributes = refint_attributes + " " + target + " " + res[i]["lDAPDisplayName"][0]
-                memberof_config = memberof_config + """overlay memberof
+                memberof_config += """overlay memberof
 memberof-dangling error
 memberof-refint TRUE
 memberof-group-oc top
@@ -1243,7 +1244,7 @@ memberof-dangling-error 32
 
 """
 
-    memberof_config = memberof_config + """
+    memberof_config += """
 overlay refint
 refint_attributes""" + refint_attributes + "\n"
     
@@ -1259,18 +1260,18 @@ refint_attributes""" + refint_attributes + "\n"
     setup_file(setup_path("modules.conf"), paths.modulesconf,
                    {"REALM": names.realm})
         
-        setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "user")))
-        setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "config")))
-        setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "schema")))
-        mapping = "schema-map-openldap-2.3"
-        backend_schema = "backend-schema.schema"
+    setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "user")))
+    setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "config")))
+    setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "schema")))
+    mapping = "schema-map-openldap-2.3"
+    backend_schema = "backend-schema.schema"
 
-        ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
-        if ldap_backend_port is not None:
-            server_port_string = " -h ldap://0.0.0.0:%d" % ldap_backend_port
-        else:
-            server_port_string = ""
-        slapdcommand="Start slapd with:    slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri + server_port_string
+    ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
+    if ldap_backend_port is not None:
+        server_port_string = " -h ldap://0.0.0.0:%d" % ldap_backend_port
+    else:
+        server_port_string = ""
+    slapdcommand="Start slapd with:    slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri + server_port_string
 
     schema_command = "bin/ad2oLschema --option=convert:target=" + ldap_backend_type + " -I " + setup_path(mapping) + " -H tdb://" + schemadb_path + " -O " + os.path.join(paths.ldapdir, backend_schema)
 
