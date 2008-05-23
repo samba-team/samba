@@ -337,6 +337,10 @@ if [ "$1" -eq "2" ]; then
         fi
 fi
 
+if [ "$1" -ge "1" ]; then
+	%{initdir}/smb restart >/dev/null 2>&1
+fi
+
 %preun
 if [ $1 = 0 ] ; then
     /sbin/chkconfig --del smb
@@ -345,11 +349,7 @@ if [ $1 = 0 ] ; then
 fi
 exit 0
 
-%postun
-if [ "$1" -ge "1" ]; then
-	%{initdir}/smb restart >/dev/null 2>&1
-fi	
-
+#%postun
 
 %post swat
 # Add swat entry to /etc/services if not already there.
