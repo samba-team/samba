@@ -5,6 +5,8 @@
 
 import optparse
 
+import os, sys
+
 # Find right directory when running from source tree
 sys.path.insert(0, "bin/python")
 
