@@ -123,7 +123,9 @@ sub end_test($$$$$)
 		return;
 	}
 
-	$append = "UNEXPECTED($result): $testname\n";
+	my $fullname = join(".", @$parents).".$testname";
+
+	$append = "UNEXPECTED($result): $testname ($fullname)\n";
 
 	$self->{test_output}->{$self->{NAME}} .= $append;
 
