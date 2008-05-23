@@ -1111,7 +1111,7 @@ def provision_become_dc(setup_dir=None,
     return provision(setup_dir, message, system_session(), None,
               smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS, realm=realm, 
               rootdn=rootdn, domaindn=domaindn, schemadn=schemadn, configdn=configdn, serverdn=serverdn,
-              domain=domain, hostname=hostname, hostip="127.0.0.1", domainsid=domainsid, machinepass=machinepass, serverrole="domain controller", sitename=sitename);
+              domain=domain, hostname=hostname, hostip="127.0.0.1", domainsid=domainsid, machinepass=machinepass, serverrole="domain controller", sitename=sitename)
     
 
 def setup_db_config(setup_path, dbdir):
@@ -1120,9 +1120,9 @@ def setup_db_config(setup_path, dbdir):
     :param setup_path: Setup path function.
     :param dbdir: Database directory."""
     if not os.path.isdir(os.path.join(dbdir, "bdb-logs")):
-        os.makedirs(os.path.join(dbdir, "bdb-logs"), 0700);
+        os.makedirs(os.path.join(dbdir, "bdb-logs"), 0700)
     if not os.path.isdir(os.path.join(dbdir, "tmp")):
-        os.makedirs(os.path.join(dbdir, "tmp"), 0700);
+        os.makedirs(os.path.join(dbdir, "tmp"), 0700)
     
     setup_file(setup_path("DB_CONFIG"), os.path.join(dbdir, "DB_CONFIG"),
                {"LDAPDBDIR": dbdir})
@@ -1145,8 +1145,9 @@ def provision_backend(setup_dir=None, message=None,
         root = findnss(pwd.getpwnam, ["root"])[0]
 
     if smbconf is None:
-        os.makedirs(os.path.join(targetdir, "etc"))
-        smbconf = os.path.join(targetdir, "etc", "smb.conf")
+        etcdir = os.path.join(targetdir, "etc")
+        os.makedirs(etcdir)
+        smbconf = os.path.join(etcdir, "smb.conf")
 
     # only install a new smb.conf if there isn't one there already
     if not os.path.exists(smbconf):
@@ -1220,20 +1221,18 @@ def provision_backend(setup_dir=None, message=None,
        
     elif ldap_backend_type == "openldap":
         attrs = ["linkID", "lDAPDisplayName"]
-    res = schemadb.search(expression="(&(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1)))(objectclass=attributeSchema))", base=names.schemadn, scope=SCOPE_SUBTREE, attrs=attrs);
+    res = schemadb.search(expression="(&(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1)))(objectclass=attributeSchema))", base=names.schemadn, scope=SCOPE_SUBTREE, attrs=attrs)
 
-    memberof_config = "# Generated from schema in " + schemadb_path + "\n";
-    refint_attributes = "";
+    memberof_config = "# Generated from schema in %s\n" % schemadb_path
+    refint_attributes = ""
     for i in range (0, len(res)):
-            linkid = res[i]["linkID"][0]
-            linkid = str(int(linkid) + 1)
-            expression = "(&(objectclass=attributeSchema)(linkID=" + (linkid) + "))"
+            expression = "(&(objectclass=attributeSchema)(linkID=%d))" % (int(res[i]["linkID"][0])+1)
             target = schemadb.searchone(basedn=names.schemadn, 
                                         expression=expression, 
                                         attribute="lDAPDisplayName", 
-                                        scope=SCOPE_SUBTREE);
+                                        scope=SCOPE_SUBTREE)
             if target is not None:
-                refint_attributes = refint_attributes + " " + target + " " + res[i]["lDAPDisplayName"][0];
+                refint_attributes = refint_attributes + " " + target + " " + res[i]["lDAPDisplayName"][0]
                 memberof_config = memberof_config + """overlay memberof
 memberof-dangling error
 memberof-refint TRUE
@@ -1242,11 +1241,11 @@ memberof-member-ad """ + res[i]["lDAPDisplayName"][0] + """
 memberof-memberof-ad """ + target + """
 memberof-dangling-error 32
 
-""";
+"""
 
     memberof_config = memberof_config + """
 overlay refint
-refint_attributes""" + refint_attributes + "\n";
+refint_attributes""" + refint_attributes + "\n"
     
     setup_file(setup_path("slapd.conf"), paths.slapdconf,
                    {"DNSDOMAIN": names.dnsdomain,
@@ -1273,12 +1272,12 @@ refint_attributes""" + refint_attributes + "\n";
             server_port_string = ""
         slapdcommand="Start slapd with:    slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri + server_port_string
 
-    schema_command = "bin/ad2oLschema --option=convert:target=" + ldap_backend_type + " -I " + setup_path(mapping) + " -H tdb://" + schemadb_path + " -O " + os.path.join(paths.ldapdir, backend_schema);
+    schema_command = "bin/ad2oLschema --option=convert:target=" + ldap_backend_type + " -I " + setup_path(mapping) + " -H tdb://" + schemadb_path + " -O " + os.path.join(paths.ldapdir, backend_schema)
 
     os.system(schema_command)
 
 
-    message("Your %s Backend for Samba4 is now configured, and is ready to be started" % ( ldap_backend_type) )
+    message("Your %s Backend for Samba4 is now configured, and is ready to be started" % ldap_backend_type)
     message("Server Role:         %s" % serverrole)
     message("Hostname:            %s" % names.hostname)
     message("DNS Domain:          %s" % names.dnsdomain)
@@ -1337,6 +1336,7 @@ def create_zone_file(path, setup_path, dnsdomain, domaindn,
             "HOSTIP6_HOST_LINE": hostip6_host_line,
         })
 
+
 def create_named_conf(path, setup_path, realm, dnsdomain,
                       private_dir, keytab_name):
     """Write out a file containing zone statements suitable for inclusion in a
@@ -1374,6 +1374,7 @@ def create_krb5_conf(path, setup_path, dnsdomain, hostname, realm):
             "HOSTNAME": hostname,
             "REALM": realm,
         })
+
 
 def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename):
     """Load schema for the SamDB.
