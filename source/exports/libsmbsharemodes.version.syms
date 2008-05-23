@@ -1,0 +1,7 @@
+#
+# we use no version symbols for libsmbsharemodes
+# to be compatible with 3.0.x
+#
+{
+	global: *;
+};
