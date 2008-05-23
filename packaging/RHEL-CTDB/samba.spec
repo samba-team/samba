@@ -338,12 +338,12 @@ if [ "$1" -eq "2" ]; then
 fi
 
 if [ "$1" -ge "1" ]; then
-	%{initdir}/smb condrestart >/dev/null 2>&1
+	%{initdir}/smb condrestart >/dev/null 2>&1 || :
 fi
 
 %preun
 if [ $1 = 0 ] ; then
-    /sbin/service smb stop >/dev/null 2>&1
+    /sbin/service smb stop >/dev/null 2>&1 || :
     /sbin/chkconfig --del smb
     # rm -rf /var/log/samba/* /var/lib/samba/*
 fi
@@ -362,7 +362,7 @@ fi
 
 %preun common
 if [ $1 = 0 ] ; then
-    /sbin/service winbind stop >/dev/null 2>&1
+    /sbin/service winbind stop >/dev/null 2>&1 || :
     /sbin/chkconfig --del winbind
 fi
 exit 0
