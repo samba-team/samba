@@ -414,6 +414,7 @@ if (defined($ENV{PKG_CONFIG_PATH})) {
 }
 # Required for smbscript:
 $ENV{PATH} = "$old_pwd/bin:$old_pwd:$ENV{PATH}";
+$ENV{PYTHONPATH} = "$builddir/bin/python:$ENV{PYTHONPATH}";
 
 if ($opt_socket_wrapper_keep_pcap) {
 	# Socket wrapper keep pcap implies socket wrapper pcap
