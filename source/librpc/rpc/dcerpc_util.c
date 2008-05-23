@@ -209,32 +209,20 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	struct epm_map_binding_state *s;
 	struct composite_context *pipe_connect_req;
 	struct cli_credentials *anon_creds;
-	struct event_context *new_ev = NULL;
 
 	NTSTATUS status;
 	struct dcerpc_binding *epmapper_binding;
 	int i;
 
-	/* Try to find event context in memory context in case passed
-	 * event_context (argument) was NULL. If there's none, just
-	 * create a new one.
-	 */
 	if (ev == NULL) {
-		ev = event_context_find(mem_ctx);
-		if (ev == NULL) {
-			new_ev = event_context_init(mem_ctx);
-			if (new_ev == NULL) return NULL;
-			ev = new_ev;
-		}
+		return NULL;
 	}
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, ev);
 	if (c == NULL) {
-		talloc_free(new_ev);
 		return NULL;
 	}
-	talloc_steal(c, new_ev);
 
 	s = talloc_zero(c, struct epm_map_binding_state);
 	if (composite_nomem(s, c)) return c;
@@ -245,7 +233,6 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 
 	/* anonymous credentials for rpc connection used to get endpoint mapping */
 	anon_creds = cli_credentials_init(mem_ctx);
-	cli_credentials_set_event_context(anon_creds, ev);
 	cli_credentials_set_anonymous(anon_creds);
 
 	/*

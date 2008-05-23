@@ -18,10 +18,10 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
-#include "torture/raw/proto.h"
 #include "torture/util.h"
+#include "torture/smbtorture.h"
+#include "torture/raw/proto.h"
 
 NTSTATUS torture_raw_init(void)
 {
@@ -33,6 +33,10 @@ NTSTATUS torture_raw_init(void)
 	torture_suite_add_simple_test(suite, "PING-PONG", torture_ping_pong);
 	torture_suite_add_simple_test(suite, "BENCH-LOCK", torture_bench_lock);
 	torture_suite_add_simple_test(suite, "BENCH-OPEN", torture_bench_open);
+	torture_suite_add_simple_test(suite, "BENCH-LOOKUP",
+		torture_bench_lookup);
+	torture_suite_add_simple_test(suite, "BENCH-TCON",
+		torture_bench_treeconnect);
 	torture_suite_add_simple_test(suite, "OFFLINE", torture_test_offline);
 	torture_suite_add_1smb_test(suite, "QFSINFO", torture_raw_qfsinfo);
 	torture_suite_add_1smb_test(suite, "QFILEINFO", torture_raw_qfileinfo);

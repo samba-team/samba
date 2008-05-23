@@ -46,7 +46,7 @@ static PyObject *uuid_random(PyObject *self, PyObject *args)
 }
 
 static PyMethodDef methods[] = {
-	{ "random", (PyCFunction)uuid_random, METH_VARARGS, NULL},
+	{ "uuid4", (PyCFunction)uuid_random, METH_VARARGS, NULL},
 	{ NULL, NULL }
 };
 

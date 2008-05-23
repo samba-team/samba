@@ -64,7 +64,7 @@ extern const char *panic_action;
   makes the return type safe.
 */
 #ifndef discard_const
-#define discard_const(ptr) ((void *)((intptr_t)(ptr)))
+#define discard_const(ptr) ((void *)((uintptr_t)(ptr)))
 #endif
 
 /** Type-safe version of discard_const */

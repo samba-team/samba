@@ -59,36 +59,53 @@ typedef struct cli_credentials {
             return cli_credentials_init(NULL);
         }
         /* username */
+        %feature("docstring") get_username "S.get_username() -> username\nObtain username.";
         const char *get_username(void);
+        %feature("docstring") set_username "S.set_username(name, obtained=CRED_SPECIFIED) -> None\nChange username.";
         bool set_username(const char *value, 
-                          enum credentials_obtained=CRED_SPECIFIED);
+                          enum credentials_obtained obtained=CRED_SPECIFIED);
 
         /* password */
+        %feature("docstring") get_password "S.get_password() -> password\n" \
+                                           "Obtain password.";
         const char *get_password(void);
+        %feature("docstring") set_password "S.set_password(password, obtained=CRED_SPECIFIED) -> None\n" \
+                                           "Change password.";
         bool set_password(const char *val, 
-                          enum credentials_obtained=CRED_SPECIFIED);
+                          enum credentials_obtained obtained=CRED_SPECIFIED);
 
         /* domain */
+        %feature("docstring") get_password "S.get_domain() -> domain\nObtain domain name.";
         const char *get_domain(void);
+        %feature("docstring") set_domain "S.set_domain(domain, obtained=CRED_SPECIFIED) -> None\n" \
+                                         "Change domain name.";
         bool set_domain(const char *val, 
-                        enum credentials_obtained=CRED_SPECIFIED);
+                        enum credentials_obtained obtained=CRED_SPECIFIED);
 
         /* realm */
+        %feature("docstring") get_realm "S.get_realm() -> realm\nObtain realm name.";
         const char *get_realm(void);
+        %feature("docstring") set_realm "S.set_realm(realm, obtained=CRED_SPECIFIED) -> None\n" \
+                                        "Change realm name.";
         bool set_realm(const char *val, 
-                       enum credentials_obtained=CRED_SPECIFIED);
+                       enum credentials_obtained obtained=CRED_SPECIFIED);
 
-	/* Kerberos */
+        /* Kerberos */
         void set_kerberos_state(enum credentials_use_kerberos use_kerberos);
 
+        %feature("docstring") parse_string "S.parse_string(text, obtained=CRED_SPECIFIED) -> None\n" \
+                                           "Parse credentials string.";
         void parse_string(const char *text,
- 	                  enum credentials_obtained=CRED_SPECIFIED);
+                          enum credentials_obtained obtained=CRED_SPECIFIED);
 
         /* bind dn */
+        %feature("docstring") get_bind_dn "S.get_bind_dn() -> bind dn\nObtain bind DN.";
         const char *get_bind_dn(void);
+        %feature("docstring") set_bind_dn "S.set_bind_dn(bind_dn) -> None\nChange bind DN.";
         bool set_bind_dn(const char *bind_dn);
 
-   	void set_anonymous();
+        %feature("docstring") set_anonymous "S.set_anonymous() -> None\nUse anonymous credentials.";
+        void set_anonymous();
 
         /* workstation name */
         const char *get_workstation(void);
@@ -104,8 +121,10 @@ typedef struct cli_credentials {
 
         bool authentication_requested(void);
 
+        %feature("docstring") wrong_password "S.wrong_password() -> bool\nIndicate the returned password was incorrect.";
         bool wrong_password(void);
 
+        %feature("docstring") set_cmdline_callbacks "S.set_cmdline_callbacks() -> bool\nUse command-line to obtain credentials not explicitly set.";
         bool set_cmdline_callbacks();
     }
 } cli_credentials;

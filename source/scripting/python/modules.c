@@ -19,7 +19,6 @@
 
 #include "includes.h"
 #include <Python.h>
-#include "build.h"
 
 extern void init_ldb(void);
 extern void init_security(void);
@@ -40,12 +39,10 @@ extern void initdrsuapi(void);
 extern void initwinreg(void);
 extern void initepmapper(void);
 extern void initinitshutdown(void);
-static void initdcerpc_misc(void) {} 
 extern void initmgmt(void);
 extern void initnet(void);
 extern void initatsvc(void);
 extern void initsamr(void);
-static void initdcerpc_security(void) {}
 extern void initlsa(void);
 extern void initsvcctl(void);
 extern void initwkssvc(void);

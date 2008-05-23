@@ -250,11 +250,7 @@ struct cldap_socket *cldap_socket_init(TALLOC_CTX *mem_ctx,
 	cldap = talloc(mem_ctx, struct cldap_socket);
 	if (cldap == NULL) goto failed;
 
-	if (event_ctx == NULL) {
-		cldap->event_ctx = event_context_init(cldap);
-	} else {
-		cldap->event_ctx = talloc_reference(cldap, event_ctx);
-	}
+	cldap->event_ctx = talloc_reference(cldap, event_ctx);
 	if (cldap->event_ctx == NULL) goto failed;
 
 	cldap->idr = idr_init(cldap);
@@ -599,7 +595,6 @@ NTSTATUS cldap_netlogon_recv(struct cldap_request *req,
 			     struct cldap_netlogon *io)
 {
 	NTSTATUS status;
-	enum ndr_err_code ndr_err;
 	struct cldap_search search;
 	struct cldap_socket *cldap;
 	DATA_BLOB *data;
@@ -622,18 +617,15 @@ NTSTATUS cldap_netlogon_recv(struct cldap_request *req,
 	}
 	data = search.out.response->attributes[0].values;
 
-	ndr_err = ndr_pull_union_blob_all(data, mem_ctx, 
-					  cldap->iconv_convenience,
-					  &io->out.netlogon,
-					  io->in.version & 0xF,
-					  (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(2,("cldap failed to parse netlogon response of type 0x%02x\n",
-			 SVAL(data->data, 0)));
-		dump_data(10, data->data, data->length);
-		return ndr_map_error2ntstatus(ndr_err);
+	status = pull_netlogon_samlogon_response(data, mem_ctx, req->cldap->iconv_convenience,
+						 &io->out.netlogon);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
+	
+	if (io->in.map_response) {
+		map_netlogon_samlogon_response(&io->out.netlogon);
+	}
 	return NT_STATUS_OK;
 }
 
@@ -708,25 +700,20 @@ NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
 			      uint32_t message_id,
 			      struct socket_address *src,
 			      uint32_t version,
-			      union nbt_cldap_netlogon *netlogon)
+			      struct netlogon_samlogon_response *netlogon)
 {
 	NTSTATUS status;
-	enum ndr_err_code ndr_err;
 	struct cldap_reply reply;
 	struct ldap_SearchResEntry response;
 	struct ldap_Result result;
 	TALLOC_CTX *tmp_ctx = talloc_new(cldap);
 	DATA_BLOB blob;
 
-	ndr_err = ndr_push_union_blob(&blob, tmp_ctx, 
-				      cldap->iconv_convenience,
-				      netlogon, version & 0xF,
-				     (ndr_push_flags_fn_t)ndr_push_nbt_cldap_netlogon);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		talloc_free(tmp_ctx);
-		return ndr_map_error2ntstatus(ndr_err);
+	status = push_netlogon_samlogon_response(&blob, tmp_ctx, cldap->iconv_convenience,
+						 netlogon);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
 	reply.messageid    = message_id;
 	reply.dest         = src;
 	reply.response     = &response;

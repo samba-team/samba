@@ -35,7 +35,6 @@
 
 #if (_SAMBA_BUILD_ >= 4)
 #include "includes.h"
-#include "build.h"
 #endif
 
 #define LDB_MODULE_PREFIX	"modules:"

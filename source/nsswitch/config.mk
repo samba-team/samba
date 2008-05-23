@@ -1,7 +1,7 @@
 [SUBSYSTEM::LIBWINBIND-CLIENT]
 PRIVATE_DEPENDENCIES = SOCKET_WRAPPER
 
-LIBWINBIND-CLIENT_OBJ_FILES = nsswitch/wb_common.o
+LIBWINBIND-CLIENT_OBJ_FILES = $(nsswitchsrcdir)/wb_common.o
 
 #################################
 # Start BINARY nsstest
@@ -14,7 +14,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY nsstest
 #################################
 
-nsstest_OBJ_FILES = nsswitch/nsstest.o
+nsstest_OBJ_FILES = $(nsswitchsrcdir)/nsstest.o
 
 #################################
 # Start BINARY wbinfo
@@ -31,4 +31,4 @@ PRIVATE_DEPENDENCIES = \
 #################################
 
 wbinfo_OBJ_FILES = \
-		nsswitch/wbinfo.o
+		$(nsswitchsrcdir)/wbinfo.o

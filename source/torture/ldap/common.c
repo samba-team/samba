@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "libcli/ldap/ldap_client.h"
-#include "torture/torture.h"
+#include "torture/smbtorture.h"
 #include "torture/ldap/proto.h"
 
 NTSTATUS torture_ldap_bind(struct ldap_connection *conn, const char *userdn, const char *password)
@@ -65,7 +65,7 @@ NTSTATUS torture_ldap_connection(struct torture_context *tctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	*conn = ldap4_new_connection(tctx, tctx->lp_ctx, NULL);
+	*conn = ldap4_new_connection(tctx, tctx->lp_ctx, tctx->ev);
 
 	status = ldap_connect(*conn, url);
 	if (!NT_STATUS_IS_OK(status)) {

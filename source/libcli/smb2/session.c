@@ -145,7 +145,7 @@ struct smb2_session_state {
 */
 static void session_request_handler(struct smb2_request *req)
 {
-	struct composite_context *c = talloc_get_type(req->async.private, 
+	struct composite_context *c = talloc_get_type(req->async.private_data, 
 						      struct composite_context);
 	struct smb2_session_state *state = talloc_get_type(c->private_data, 
 							   struct smb2_session_state);
@@ -178,7 +178,7 @@ static void session_request_handler(struct smb2_request *req)
 		}
 
 		state->req->async.fn = session_request_handler;
-		state->req->async.private = c;
+		state->req->async.private_data = c;
 		return;
 	}
 

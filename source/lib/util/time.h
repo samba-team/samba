@@ -127,7 +127,7 @@ _PUBLIC_ NTTIME nttime_from_string(const char *s);
 /**
   return (tv1 - tv2) in microseconds
 */
-_PUBLIC_ int64_t usec_time_diff(struct timeval *tv1, struct timeval *tv2);
+_PUBLIC_ int64_t usec_time_diff(const struct timeval *tv1, const struct timeval *tv2);
 
 /**
   return a zero timeval

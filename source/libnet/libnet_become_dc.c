@@ -30,6 +30,7 @@
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
@@ -687,7 +688,7 @@ struct libnet_BecomeDC_state {
 	struct {
 		struct cldap_socket *sock;
 		struct cldap_netlogon io;
-		struct nbt_cldap_netlogon_5 netlogon5;
+		struct NETLOGON_SAM_LOGON_RESPONSE_EX netlogon;
 	} cldap;
 
 	struct becomeDC_ldap {
@@ -745,7 +746,8 @@ static void becomeDC_send_cldap(struct libnet_BecomeDC_state *s)
 	s->cldap.io.in.domain_guid	= NULL;
 	s->cldap.io.in.domain_sid	= NULL;
 	s->cldap.io.in.acct_control	= -1;
-	s->cldap.io.in.version		= 6;
+	s->cldap.io.in.version		= NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
+	s->cldap.io.in.map_response	= true;
 
 	s->cldap.sock = cldap_socket_init(s, s->libnet->event_ctx, 
 					  lp_iconv_convenience(s->libnet->lp_ctx));
@@ -768,19 +770,19 @@ static void becomeDC_recv_cldap(struct cldap_request *req)
 	c->status = cldap_netlogon_recv(req, s, &s->cldap.io);
 	if (!composite_is_ok(c)) return;
 
-	s->cldap.netlogon5 = s->cldap.io.out.netlogon.logon5;
+	s->cldap.netlogon = s->cldap.io.out.netlogon.nt5_ex;
 
-	s->domain.dns_name		= s->cldap.netlogon5.dns_domain;
-	s->domain.netbios_name		= s->cldap.netlogon5.domain;
-	s->domain.guid			= s->cldap.netlogon5.domain_uuid;
+	s->domain.dns_name		= s->cldap.netlogon.dns_domain;
+	s->domain.netbios_name		= s->cldap.netlogon.domain;
+	s->domain.guid			= s->cldap.netlogon.domain_uuid;
 
-	s->forest.dns_name		= s->cldap.netlogon5.forest;
+	s->forest.dns_name		= s->cldap.netlogon.forest;
 
-	s->source_dsa.dns_name		= s->cldap.netlogon5.pdc_dns_name;
-	s->source_dsa.netbios_name	= s->cldap.netlogon5.pdc_name;
-	s->source_dsa.site_name		= s->cldap.netlogon5.server_site;
+	s->source_dsa.dns_name		= s->cldap.netlogon.pdc_dns_name;
+	s->source_dsa.netbios_name	= s->cldap.netlogon.pdc_name;
+	s->source_dsa.site_name		= s->cldap.netlogon.server_site;
 
-	s->dest_dsa.site_name		= s->cldap.netlogon5.client_site;
+	s->dest_dsa.site_name		= s->cldap.netlogon.client_site;
 
 	becomeDC_connect_ldap1(s);
 }
@@ -793,7 +795,7 @@ static NTSTATUS becomeDC_ldap_connect(struct libnet_BecomeDC_state *s,
 	url = talloc_asprintf(s, "ldap://%s/", s->source_dsa.dns_name);
 	NT_STATUS_HAVE_NO_MEMORY(url);
 
-	ldap->ldb = ldb_wrap_connect(s, s->libnet->lp_ctx, url,
+	ldap->ldb = ldb_wrap_connect(s, s->libnet->event_ctx, s->libnet->lp_ctx, url,
 				     NULL,
 				     s->libnet->cred,
 				     0, NULL);

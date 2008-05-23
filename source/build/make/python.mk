@@ -1,14 +1,18 @@
 pythonbuilddir = $(builddir)/bin/python
 
+installpython::
+	mkdir -p $(DESTDIR)$(pythondir)
+
 # Install Python
 # Arguments: Module path
 define python_module_template
 
 installpython:: $$(pythonbuilddir)/$(1) ;
-	cp $$< $$(DESTDIR)$$(PYTHONDIR)/$(1)
+	mkdir -p $$(DESTDIR)$$(pythondir)/$$(dir $(1))
+	cp $$< $$(DESTDIR)$$(pythondir)/$(1)
 
 uninstallpython:: 
-	rm -f $$(DESTDIR)$$(PYTHONDIR)/$(1) ;
+	rm -f $$(DESTDIR)$$(pythondir)/$(1) ;
 
 pythonmods:: $$(pythonbuilddir)/$(1) ;
 
@@ -25,7 +29,7 @@ $(call python_module_template,$(1))
 endef
 
 # Python C module
-# Arguments: Module path, object files
+# Arguments: File name, dependencies, link list
 define python_c_module_template
 
 $$(pythonbuilddir)/$(1): $(2) ; 
@@ -39,9 +43,9 @@ endef
 # Swig extensions
 swig:: pythonmods
 
-.SUFFIXES: _wrap.c .i
+.SUFFIXES: _wrap.c .i .py
 
-.i_wrap.c:
+%_wrap.c %.py: %.i
 	[ "$(SWIG)" == "no" ] || $(SWIG) -O -Wall -I$(srcdir)/scripting/swig -python -keyword $<
 
 realdistclean::

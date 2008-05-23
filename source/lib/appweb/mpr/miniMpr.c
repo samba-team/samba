@@ -31,6 +31,7 @@
 
 #include	"miniMpr.h"
 #include "param/param.h"
+#include "lib/events/events.h"
 
 /************************************ Code ************************************/
 #if !BLD_APPWEB
@@ -48,6 +49,11 @@ void mprSetCtx(TALLOC_CTX *ctx)
 void *mprMemCtx(void)
 {
 	return mpr_ctx;
+}
+
+struct event_context *mprEventCtx(void)
+{
+	return event_context_find(mprMemCtx());
 }
 
 /* return the loadparm context being used for all ejs variables */

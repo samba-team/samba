@@ -54,13 +54,13 @@ static uint_t ea_name_list_size(uint_t num_names, struct ea_name *eas)
   This assumes the names are strict ascii, which should be a
   reasonable assumption
 */
-size_t ea_list_size_chained(uint_t num_eas, struct ea_struct *eas)
+size_t ea_list_size_chained(uint_t num_eas, struct ea_struct *eas, unsigned alignment)
 {
 	uint_t total = 0;
 	int i;
 	for (i=0;i<num_eas;i++) {
 		uint_t len = 8 + strlen(eas[i].name.s)+1 + eas[i].value.length;
-		len = (len + 3) & ~3;
+		len = (len + (alignment-1)) & ~(alignment-1);
 		total += len;
 	}
 	return total;
@@ -96,14 +96,15 @@ void ea_put_list(uint8_t *data, uint_t num_eas, struct ea_struct *eas)
   put a chained ea_list into a pre-allocated buffer - buffer must be
   at least of size ea_list_size()
 */
-void ea_put_list_chained(uint8_t *data, uint_t num_eas, struct ea_struct *eas)
+void ea_put_list_chained(uint8_t *data, uint_t num_eas, struct ea_struct *eas,
+			 unsigned alignment)
 {
 	int i;
 
 	for (i=0;i<num_eas;i++) {
 		uint_t nlen = strlen(eas[i].name.s);
 		uint32_t len = 8+nlen+1+eas[i].value.length;
-		uint_t pad = ((len + 3) & ~3) - len;
+		uint_t pad = ((len + (alignment-1)) & ~(alignment-1)) - len;
 		if (i == num_eas-1) {
 			SIVAL(data, 0, 0);
 		} else {

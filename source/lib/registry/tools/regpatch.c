@@ -24,6 +24,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "lib/registry/tools/common.h"
 #include "param/param.h"
+#include "events/events.h"
 
 int main(int argc, char **argv)
 {
@@ -33,6 +34,7 @@ int main(int argc, char **argv)
 	struct registry_context *h;
 	const char *file = NULL;
 	const char *remote = NULL;
+	struct event_context *ev;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"remote", 'R', POPT_ARG_STRING, &remote, 0, "connect to specified remote server", NULL},
@@ -47,10 +49,12 @@ int main(int argc, char **argv)
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
+	ev = event_context_init(NULL);
+
 	if (remote) {
 		h = reg_common_open_remote (remote, cmdline_lp_ctx, cmdline_credentials);
 	} else {
-		h = reg_common_open_local (cmdline_credentials, cmdline_lp_ctx);
+		h = reg_common_open_local (cmdline_credentials, ev, cmdline_lp_ctx);
 	}
 
 	if (h == NULL)

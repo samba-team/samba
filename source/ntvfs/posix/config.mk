@@ -7,7 +7,7 @@ PRIVATE_DEPENDENCIES = NDR_XATTR ntvfs_posix
 # End MODULE pvfs_acl_xattr
 ################################################
 
-pvfs_acl_xattr_OBJ_FILES = ntvfs/posix/pvfs_acl_xattr.o
+pvfs_acl_xattr_OBJ_FILES = $(ntvfssrcdir)/posix/pvfs_acl_xattr.o
 
 ################################################
 # Start MODULE pvfs_acl_nfs4
@@ -18,7 +18,7 @@ PRIVATE_DEPENDENCIES = NDR_NFS4ACL SAMDB ntvfs_posix
 # End MODULE pvfs_acl_nfs4
 ################################################
 
-pvfs_acl_nfs4_OBJ_FILES = ntvfs/posix/pvfs_acl_nfs4.o
+pvfs_acl_nfs4_OBJ_FILES = $(ntvfssrcdir)/posix/pvfs_acl_nfs4.o
 
 ################################################
 [MODULE::pvfs_aio]
@@ -26,7 +26,7 @@ SUBSYSTEM = ntvfs
 PRIVATE_DEPENDENCIES = LIBAIO_LINUX
 ################################################
 
-pvfs_aio_OBJ_FILES = ntvfs/posix/pvfs_aio.o
+pvfs_aio_OBJ_FILES = $(ntvfssrcdir)/posix/pvfs_aio.o
 
 ################################################
 # Start MODULE ntvfs_posix
@@ -34,14 +34,13 @@ pvfs_aio_OBJ_FILES = ntvfs/posix/pvfs_aio.o
 SUBSYSTEM = ntvfs
 OUTPUT_TYPE = MERGED_OBJ
 INIT_FUNCTION = ntvfs_posix_init 
-PRIVATE_PROTO_HEADER = vfs_posix_proto.h
 #PRIVATE_DEPENDENCIES = pvfs_acl_xattr pvfs_acl_nfs4
 PRIVATE_DEPENDENCIES = NDR_XATTR WRAP_XATTR BLKID ntvfs_common MESSAGING pvfs_aio \
 					   LIBWBCLIENT
 # End MODULE ntvfs_posix
 ################################################
 
-ntvfs_posix_OBJ_FILES = $(addprefix ntvfs/posix/, \
+ntvfs_posix_OBJ_FILES = $(addprefix $(ntvfssrcdir)/posix/, \
 		vfs_posix.o \
 		pvfs_util.o \
 		pvfs_search.o \
@@ -70,4 +69,6 @@ ntvfs_posix_OBJ_FILES = $(addprefix ntvfs/posix/, \
 		pvfs_notify.o \
 		xattr_system.o \
 		xattr_tdb.o)
+
+$(eval $(call proto_header_template,$(ntvfssrcdir)/posix/vfs_posix_proto.h,$(ntvfs_posix_OBJ_FILES:.o=.c)))
 

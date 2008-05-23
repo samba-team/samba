@@ -101,6 +101,16 @@ void *rep_memmove(void *dest,const void *src,int size);
 /* prototype is in "system/time.h" */
 #endif
 
+#ifndef HAVE_UTIME
+#define utime rep_utime
+/* prototype is in "system/time.h" */
+#endif
+
+#ifndef HAVE_UTIMES
+#define utimes rep_utimes
+/* prototype is in "system/time.h" */
+#endif
+
 #ifndef HAVE_STRLCPY
 #define strlcpy rep_strlcpy
 size_t rep_strlcpy(char *d, const char *s, size_t bufsize);
@@ -499,7 +509,7 @@ typedef int bool;
   Also, please call this via the discard_const_p() macro interface, as that
   makes the return type safe.
 */
-#define discard_const(ptr) ((void *)((intptr_t)(ptr)))
+#define discard_const(ptr) ((void *)((uintptr_t)(ptr)))
 
 /** Type-safe version of discard_const */
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))

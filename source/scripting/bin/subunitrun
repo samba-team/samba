@@ -17,12 +17,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from subunit import SubunitTestRunner
 import sys
+
+# Find right directory when running from source tree
+sys.path.insert(0, "bin/python")
+
+from subunit import SubunitTestRunner
 from unittest import TestProgram
 import optparse
 import os
-import param
+from samba import param
 import samba.getopt as options
 import samba.tests
 

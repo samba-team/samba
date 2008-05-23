@@ -545,7 +545,7 @@ static int ltdb_index_dn_one(struct ldb_module *module,
 
 	/* the attribute is indexed. Pull the list of DNs that match the 
 	   search criterion */
-	val.data = (uint8_t *)((intptr_t)ldb_dn_get_casefold(parent_dn));
+	val.data = (uint8_t *)((uintptr_t)ldb_dn_get_casefold(parent_dn));
 	val.length = strlen((char *)val.data);
 	key = ltdb_index_key(ldb, LTDB_IDXONE, &val);
 	if (!key) {
@@ -1140,7 +1140,7 @@ int ltdb_index_one(struct ldb_module *module, const struct ldb_message *msg, int
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	val.data = (uint8_t *)((intptr_t)ldb_dn_get_casefold(pdn));
+	val.data = (uint8_t *)((uintptr_t)ldb_dn_get_casefold(pdn));
 	if (val.data == NULL) {
 		talloc_free(pdn);
 		return LDB_ERR_OPERATIONS_ERROR;

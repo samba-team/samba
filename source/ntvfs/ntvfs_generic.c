@@ -208,7 +208,21 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 
 	case RAW_OPEN_SMB2:
 		io->smb2.out.file.ntvfs		= io2->generic.out.file.ntvfs;
-		io->smb2.out.oplock_level	= 0;
+		switch (io2->generic.out.oplock_level) {
+		case BATCH_OPLOCK_RETURN:
+			io->smb2.out.oplock_level = SMB2_OPLOCK_LEVEL_BATCH;
+			break;
+		case EXCLUSIVE_OPLOCK_RETURN:
+			io->smb2.out.oplock_level = SMB2_OPLOCK_LEVEL_EXCLUSIVE;
+			break;
+		case LEVEL_II_OPLOCK_RETURN:
+			io->smb2.out.oplock_level = SMB2_OPLOCK_LEVEL_II;
+			break;
+		default:
+			io->smb2.out.oplock_level = SMB2_OPLOCK_LEVEL_NONE;
+			break;
+		}
+		io->smb2.out.reserved		= 0;
 		io->smb2.out.create_action	= io2->generic.out.create_action;
 		io->smb2.out.create_time	= io2->generic.out.create_time;
 		io->smb2.out.access_time	= io2->generic.out.access_time;
@@ -484,7 +498,18 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 		status = ntvfs->ops->open(ntvfs, req, io2);
 		break;
 	case RAW_OPEN_SMB2:
-		io2->generic.in.flags		= 0;
+		switch (io->smb2.in.oplock_level) {
+		case SMB2_OPLOCK_LEVEL_BATCH:
+			io2->generic.in.flags = NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK |
+						NTCREATEX_FLAGS_REQUEST_OPLOCK;
+			break;
+		case SMB2_OPLOCK_LEVEL_EXCLUSIVE:
+			io2->generic.in.flags = NTCREATEX_FLAGS_REQUEST_OPLOCK;
+			break;
+		default:
+			io2->generic.in.flags = 0;
+			break;
+		}
 		io2->generic.in.root_fid	= 0;
 		io2->generic.in.access_mask	= io->smb2.in.desired_access;
 		io2->generic.in.alloc_size	= 0;
@@ -986,37 +1011,72 @@ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 		locks->count = lck->unlock.in.count;
 		break;
 
-	case RAW_LOCK_SMB2:
-		if (lck->smb2.in.unknown1 != 1) {
+	case RAW_LOCK_SMB2: {
+		/* this is only approximate! We need to change the
+		   generic structure to fix this properly */
+		int i;
+		if (lck->smb2.in.lock_count < 1) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		lck2->generic.level = RAW_LOCK_GENERIC;
 		lck2->generic.in.file.ntvfs= lck->smb2.in.file.ntvfs;
-		if (lck->smb2.in.flags & SMB2_LOCK_FLAG_EXCLUSIV) {
-			lck2->generic.in.mode = 0;
-		} else {
-			lck2->generic.in.mode = LOCKING_ANDX_SHARED_LOCK;
+		lck2->generic.in.timeout = UINT32_MAX;
+		lck2->generic.in.mode = 0;
+		lck2->generic.in.lock_cnt = 0;
+		lck2->generic.in.ulock_cnt = 0;
+		lck2->generic.in.locks = talloc_zero_array(lck2, struct smb_lock_entry, 
+							   lck->smb2.in.lock_count);
+		if (lck2->generic.in.locks == NULL) {
+			return NT_STATUS_NO_MEMORY;
 		}
-		if (lck->smb2.in.flags & SMB2_LOCK_FLAG_NO_PENDING) {
-			lck2->generic.in.timeout = 0;
-		} else {
-			lck2->generic.in.timeout = UINT32_MAX;
+		for (i=0;i<lck->smb2.in.lock_count;i++) {
+			if (lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_UNLOCK) {
+				int j = lck2->generic.in.ulock_cnt;
+				lck2->generic.in.ulock_cnt++;
+				lck2->generic.in.locks[j].pid = 0;
+				lck2->generic.in.locks[j].offset = lck->smb2.in.locks[i].offset;
+				lck2->generic.in.locks[j].count = lck->smb2.in.locks[i].length;
+				lck2->generic.in.locks[j].pid = 0;
+			}
 		}
-		if (lck->smb2.in.flags & SMB2_LOCK_FLAG_UNLOCK) {
-			lck2->generic.in.ulock_cnt = 1;
-			lck2->generic.in.lock_cnt = 0;
-		} else {
-			lck2->generic.in.ulock_cnt = 0;
-			lck2->generic.in.lock_cnt = 1;
+		for (i=0;i<lck->smb2.in.lock_count;i++) {
+			if (!(lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_UNLOCK)) {
+				int j = lck2->generic.in.ulock_cnt + 
+					lck2->generic.in.lock_cnt;
+				lck2->generic.in.lock_cnt++;
+				lck2->generic.in.locks[j].pid = 0;
+				lck2->generic.in.locks[j].offset = lck->smb2.in.locks[i].offset;
+				lck2->generic.in.locks[j].count = lck->smb2.in.locks[i].length;
+				lck2->generic.in.locks[j].pid = 0;
+				if (!(lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_EXCLUSIVE)) {
+					lck2->generic.in.mode = LOCKING_ANDX_SHARED_LOCK;
+				}
+				if (lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_FAIL_IMMEDIATELY) {
+					lck2->generic.in.timeout = 0;
+				}
+			}
 		}
-		lck2->generic.in.locks = locks;
-		locks->pid = 0;
-		locks->offset = lck->smb2.in.offset;
-		locks->count = lck->smb2.in.count;
+		/* initialize output value */
+		lck->smb2.out.reserved = 0;
+		break;
+	}
+
+	case RAW_LOCK_SMB2_BREAK:
+		lck2->generic.level		= RAW_LOCK_GENERIC;
+		lck2->generic.in.file.ntvfs	= lck->smb2_break.in.file.ntvfs;
+		lck2->generic.in.mode		= LOCKING_ANDX_OPLOCK_RELEASE |
+						  ((lck->smb2_break.in.oplock_level << 8) & 0xFF00);
+		lck2->generic.in.timeout	= 0;
+		lck2->generic.in.ulock_cnt	= 0;
+		lck2->generic.in.lock_cnt	= 0;
+		lck2->generic.in.locks		= NULL;
 
 		/* initialize output value */
-		lck->smb2.out.unknown1 = 0;
+		lck->smb2_break.out.oplock_level= lck->smb2_break.in.oplock_level;
+		lck->smb2_break.out.reserved	= lck->smb2_break.in.reserved;
+		lck->smb2_break.out.reserved2	= lck->smb2_break.in.reserved2;
+		lck->smb2_break.out.file	= lck->smb2_break.in.file;
 		break;
 	}
 
@@ -1216,6 +1276,11 @@ static NTSTATUS ntvfs_map_read_finish(struct ntvfs_module_context *ntvfs,
 		rd->smb2.out.data.length= rd2->generic.out.nread;
 		rd->smb2.out.remaining	= 0;
 		rd->smb2.out.reserved	= 0;
+		if (NT_STATUS_IS_OK(status) &&
+		    rd->smb2.out.data.length == 0 &&
+		    rd->smb2.in.length != 0) {
+			status = NT_STATUS_END_OF_FILE;
+		}
 		break;
 	default:
 		return NT_STATUS_INVALID_LEVEL;

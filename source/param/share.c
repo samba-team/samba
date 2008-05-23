@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "param/share.h"
-#include "build.h"
 #include "param/param.h"
 
 const char *share_string_option(struct share_config *scfg, const char *opt_name, const char *defval)
@@ -127,6 +126,7 @@ NTSTATUS share_register(const struct share_ops *ops)
 }
 
 NTSTATUS share_get_context_by_name(TALLOC_CTX *mem_ctx, const char *backend_name,
+				   struct event_context *event_ctx, 
 				   struct loadparm_context *lp_ctx,
 				   struct share_context **ctx)
 {
@@ -138,7 +138,7 @@ NTSTATUS share_get_context_by_name(TALLOC_CTX *mem_ctx, const char *backend_name
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	return ops->init(mem_ctx, ops, lp_ctx, ctx);
+	return ops->init(mem_ctx, ops, event_ctx, lp_ctx, ctx);
 }
 
 /*

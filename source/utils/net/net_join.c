@@ -58,7 +58,7 @@ int net_join(struct net_context *ctx, int argc, const char **argv)
 
 	domain_name = tmp;
 
-	libnetctx = libnet_context_init(event_context_find(ctx), ctx->lp_ctx);
+	libnetctx = libnet_context_init(ctx->event_ctx, ctx->lp_ctx);
 	if (!libnetctx) {
 		return -1;	
 	}

@@ -1,13 +1,12 @@
 #######################
 # Start SUBSYSTEM SMB_PROTOCOL
 [SUBSYSTEM::SMB_PROTOCOL]
-PRIVATE_PROTO_HEADER = smb_proto.h
 PUBLIC_DEPENDENCIES = \
 		ntvfs LIBPACKET CREDENTIALS
 # End SUBSYSTEM SMB_PROTOCOL
 #######################
 
-SMB_PROTOCOL_OBJ_FILES = $(addprefix smb_server/smb/, \
+SMB_PROTOCOL_OBJ_FILES = $(addprefix $(smb_serversrcdir)/smb/, \
 		receive.o \
 		negprot.o \
 		nttrans.o \
@@ -20,3 +19,4 @@ SMB_PROTOCOL_OBJ_FILES = $(addprefix smb_server/smb/, \
 		trans2.o \
 		signing.o)
 
+$(eval $(call proto_header_template,$(smb_serversrcdir)/smb/smb_proto.h,$(SMB_PROTOCOL_OBJ_FILES:.o=.c)))

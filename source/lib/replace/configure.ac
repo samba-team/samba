@@ -6,6 +6,7 @@ AC_CONFIG_HEADER(config.h)
 CFLAGS="$CFLAGS -I$srcdir"
 
 AC_LIBREPLACE_ALL_CHECKS
+AC_LIBREPLACE_NETWORK_CHECKS
 
 if test "$ac_cv_prog_gcc" = yes; then
    CFLAGS="$CFLAGS -Wall"

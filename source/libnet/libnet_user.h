@@ -99,11 +99,19 @@ struct libnet_ModifyUser {
 		}					\
 	}
 
+enum libnet_UserInfo_level {
+	USER_INFO_BY_NAME=0,
+	USER_INFO_BY_SID
+};
 
 struct libnet_UserInfo {
 	struct {
-		const char *user_name;
 		const char *domain_name;
+		enum libnet_UserInfo_level level;
+		union {
+			const char *user_name;
+			const struct dom_sid *user_sid;
+		} data;
 	} in;
 	struct {
 		struct dom_sid *user_sid;
@@ -123,7 +131,6 @@ struct libnet_UserInfo {
 		struct timeval *last_logoff;
 		struct timeval *last_password_change;
 		uint32_t acct_flags;
-		
 		const char *error_string;
 	} out;
 };

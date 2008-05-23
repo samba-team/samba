@@ -2554,7 +2554,7 @@ typedef struct ldb_message ldb_msg;
 typedef struct ldb_context ldb;
 typedef struct ldb_dn ldb_dn;
 typedef struct ldb_ldif ldb_ldif;
-typedef struct ldb_message_element ldb_msg_element;
+typedef struct ldb_message_element ldb_message_element;
 typedef int ldb_error;
 typedef int ldb_int_error;
 
@@ -2719,6 +2719,12 @@ SWIGINTERN char const *ldb_dn_canonical_str(ldb_dn *self){
 SWIGINTERN char const *ldb_dn_canonical_ex_str(ldb_dn *self){
             return ldb_dn_canonical_ex_string(self, self);
         }
+SWIGINTERN char *ldb_dn___repr__(ldb_dn *self){
+            char *dn = ldb_dn_get_linearized(self), *ret;
+            asprintf(&ret, "Dn('%s')", dn);
+            talloc_free(dn);
+            return ret;
+        }
 SWIGINTERN ldb_dn *ldb_dn___add__(ldb_dn *self,ldb_dn *other){
             ldb_dn *ret = ldb_dn_copy(NULL, self);
             ldb_dn_add_child(ret, other);
@@ -2755,7 +2761,7 @@ int ldb_dn_from_pyobject(TALLOC_CTX *mem_ctx, PyObject *object,
     return ret;
 }
 
-ldb_msg_element *ldb_msg_element_from_pyobject(TALLOC_CTX *mem_ctx,
+ldb_message_element *ldb_msg_element_from_pyobject(TALLOC_CTX *mem_ctx,
                                                PyObject *set_obj, int flags,
                                                const char *attr_name)
 {
@@ -2786,7 +2792,7 @@ ldb_msg_element *ldb_msg_element_from_pyobject(TALLOC_CTX *mem_ctx,
 }
 
 PyObject *ldb_msg_element_to_set(struct ldb_context *ldb_ctx, 
-                                 ldb_msg_element *me)
+                                 ldb_message_element *me)
 {
     int i;
     PyObject *result;
@@ -2803,10 +2809,13 @@ PyObject *ldb_msg_element_to_set(struct ldb_context *ldb_ctx,
 }
 
 
-SWIGINTERN PyObject *ldb_msg_element___iter__(ldb_msg_element *self){
+SWIGINTERN int ldb_message_element___cmp__(ldb_message_element *self,ldb_message_element *other){
+            return ldb_msg_element_compare(self, other);
+        }
+SWIGINTERN PyObject *ldb_message_element___iter__(ldb_message_element *self){
             return PyObject_GetIter(ldb_msg_element_to_set(NULL, self));
         }
-SWIGINTERN PyObject *ldb_msg_element___set__(ldb_msg_element *self){
+SWIGINTERN PyObject *ldb_message_element___set__(ldb_message_element *self){
             return ldb_msg_element_to_set(NULL, self);
         }
 
@@ -2954,26 +2963,32 @@ SWIG_AsVal_int (PyObject * obj, int *val)
   return res;
 }
 
-SWIGINTERN ldb_msg_element *new_ldb_msg_element(PyObject *set_obj,int flags,char const *name){
+SWIGINTERN ldb_message_element *new_ldb_message_element(PyObject *set_obj,int flags,char const *name){
             return ldb_msg_element_from_pyobject(NULL, set_obj, flags, name);
         }
-SWIGINTERN int ldb_msg_element___len__(ldb_msg_element *self){
+SWIGINTERN int ldb_message_element___len__(ldb_message_element *self){
             return self->num_values;
         }
-SWIGINTERN PyObject *ldb_msg_element_get(ldb_msg_element *self,int i){
+SWIGINTERN PyObject *ldb_message_element_get(ldb_message_element *self,int i){
             if (i < 0 || i >= self->num_values)
                 return Py_None;
 
             return ldb_val_to_py_object(NULL, self, &self->values[i]);
         }
-SWIGINTERN void delete_ldb_msg_element(ldb_msg_element *self){ talloc_free(self); }
+SWIGINTERN void delete_ldb_message_element(ldb_message_element *self){ talloc_free(self); }
 
     PyObject *ldb_msg_list_elements(ldb_msg *msg)
     {
-        int i;
-        PyObject *obj = PyList_New(msg->num_elements);
-        for (i = 0; i < msg->num_elements; i++)
-            PyList_SetItem(obj, i, PyString_FromString(msg->elements[i].name));
+        int i, j = 0;
+        PyObject *obj = PyList_New(msg->num_elements+(msg->dn != NULL?1:0));
+        if (msg->dn != NULL) {
+            PyList_SetItem(obj, j, PyString_FromString("dn"));
+            j++;
+        }
+        for (i = 0; i < msg->num_elements; i++) {
+            PyList_SetItem(obj, j, PyString_FromString(msg->elements[i].name));
+            j++;
+        }
         return obj;
     }
 
@@ -2983,7 +2998,7 @@ SWIGINTERN ldb_msg *new_ldb_msg(ldb_dn *dn){
             return ret;
         }
 SWIGINTERN void delete_ldb_msg(ldb_msg *self){ talloc_free(self); }
-SWIGINTERN void ldb_msg___setitem____SWIG_0(ldb_msg *self,char const *attr_name,ldb_msg_element *val){
+SWIGINTERN void ldb_msg___setitem____SWIG_0(ldb_msg *self,char const *attr_name,ldb_message_element *val){
             struct ldb_message_element *el;
             
             ldb_msg_remove_attr(self, attr_name);
@@ -3187,6 +3202,11 @@ SWIGINTERN PyObject *ldb_parse_ldif(ldb *self,char const *s){
                 PyList_Append(list, ldb_ldif_to_pyobject(ldif));
             }
             return PyObject_GetIter(list);
+        }
+SWIGINTERN char *ldb___repr__(ldb *self){
+            char *ret;
+            asprintf(&ret, "<ldb connection at 0x%x>", ret); 
+            return ret;
         }
 
 static char *timestring(time_t t)
@@ -3678,6 +3698,29 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_Dn___repr__(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  ldb_dn *arg1 = (ldb_dn *) 0 ;
+  char *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_dn, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Dn___repr__" "', argument " "1"" of type '" "ldb_dn *""'"); 
+  }
+  arg1 = (ldb_dn *)(argp1);
+  result = (char *)ldb_dn___repr__(arg1);
+  resultobj = SWIG_FromCharPtr((const char *)result);
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_Dn___add__(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb_dn *arg1 = (ldb_dn *) 0 ;
@@ -3723,9 +3766,43 @@ SWIGINTERN PyObject *Dn_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args)
   return SWIG_Python_InitShadowInstance(args);
 }
 
-SWIGINTERN PyObject *_wrap_ldb_msg_element___iter__(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_MessageElement___cmp__(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
-  ldb_msg_element *arg1 = (ldb_msg_element *) 0 ;
+  ldb_message_element *arg1 = (ldb_message_element *) 0 ;
+  ldb_message_element *arg2 = (ldb_message_element *) 0 ;
+  int result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "other", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:MessageElement___cmp__",kwnames,&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_message_element, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "MessageElement___cmp__" "', argument " "1"" of type '" "ldb_message_element *""'"); 
+  }
+  arg1 = (ldb_message_element *)(argp1);
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_message_element, 0 |  0 );
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "MessageElement___cmp__" "', argument " "2"" of type '" "ldb_message_element *""'"); 
+  }
+  arg2 = (ldb_message_element *)(argp2);
+  result = (int)ldb_message_element___cmp__(arg1,arg2);
+  resultobj = SWIG_From_int((int)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_MessageElement___iter__(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  ldb_message_element *arg1 = (ldb_message_element *) 0 ;
   PyObject *result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -3735,10 +3812,10 @@ SWIGINTERN PyObject *_wrap_ldb_msg_element___iter__(PyObject *SWIGUNUSEDPARM(sel
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_message_element, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_msg_element___iter__" "', argument " "1"" of type '" "ldb_msg_element *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "MessageElement___iter__" "', argument " "1"" of type '" "ldb_message_element *""'"); 
   }
-  arg1 = (ldb_msg_element *)(argp1);
-  result = (PyObject *)ldb_msg_element___iter__(arg1);
+  arg1 = (ldb_message_element *)(argp1);
+  result = (PyObject *)ldb_message_element___iter__(arg1);
   resultobj = result;
   return resultobj;
 fail:
@@ -3746,9 +3823,9 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_msg_element___set__(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_MessageElement___set__(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
-  ldb_msg_element *arg1 = (ldb_msg_element *) 0 ;
+  ldb_message_element *arg1 = (ldb_message_element *) 0 ;
   PyObject *result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -3758,10 +3835,10 @@ SWIGINTERN PyObject *_wrap_ldb_msg_element___set__(PyObject *SWIGUNUSEDPARM(self
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_message_element, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_msg_element___set__" "', argument " "1"" of type '" "ldb_msg_element *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "MessageElement___set__" "', argument " "1"" of type '" "ldb_message_element *""'"); 
   }
-  arg1 = (ldb_msg_element *)(argp1);
-  result = (PyObject *)ldb_msg_element___set__(arg1);
+  arg1 = (ldb_message_element *)(argp1);
+  result = (PyObject *)ldb_message_element___set__(arg1);
   resultobj = result;
   return resultobj;
 fail:
@@ -3774,7 +3851,7 @@ SWIGINTERN PyObject *_wrap_new_MessageElement(PyObject *SWIGUNUSEDPARM(self), Py
   PyObject *arg1 = (PyObject *) 0 ;
   int arg2 = (int) 0 ;
   char *arg3 = (char *) NULL ;
-  ldb_msg_element *result = 0 ;
+  ldb_message_element *result = 0 ;
   int val2 ;
   int ecode2 = 0 ;
   int res3 ;
@@ -3803,8 +3880,8 @@ SWIGINTERN PyObject *_wrap_new_MessageElement(PyObject *SWIGUNUSEDPARM(self), Py
     }
     arg3 = (char *)(buf3);
   }
-  result = (ldb_msg_element *)new_ldb_msg_element(arg1,arg2,(char const *)arg3);
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_ldb_message_element, SWIG_POINTER_OWN |  0 );
+  result = (ldb_message_element *)new_ldb_message_element(arg1,arg2,(char const *)arg3);
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_ldb_message_element, SWIG_POINTER_NEW |  0 );
   if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
   return resultobj;
 fail:
@@ -3813,9 +3890,9 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_msg_element___len__(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_MessageElement___len__(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
-  ldb_msg_element *arg1 = (ldb_msg_element *) 0 ;
+  ldb_message_element *arg1 = (ldb_message_element *) 0 ;
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -3825,10 +3902,10 @@ SWIGINTERN PyObject *_wrap_ldb_msg_element___len__(PyObject *SWIGUNUSEDPARM(self
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_message_element, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_msg_element___len__" "', argument " "1"" of type '" "ldb_msg_element *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "MessageElement___len__" "', argument " "1"" of type '" "ldb_message_element *""'"); 
   }
-  arg1 = (ldb_msg_element *)(argp1);
-  result = (int)ldb_msg_element___len__(arg1);
+  arg1 = (ldb_message_element *)(argp1);
+  result = (int)ldb_message_element___len__(arg1);
   resultobj = SWIG_From_int((int)(result));
   return resultobj;
 fail:
@@ -3836,9 +3913,9 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_msg_element_get(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_MessageElement_get(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
-  ldb_msg_element *arg1 = (ldb_msg_element *) 0 ;
+  ldb_message_element *arg1 = (ldb_message_element *) 0 ;
   int arg2 ;
   PyObject *result = 0 ;
   void *argp1 = 0 ;
@@ -3851,18 +3928,18 @@ SWIGINTERN PyObject *_wrap_ldb_msg_element_get(PyObject *SWIGUNUSEDPARM(self), P
     (char *) "self",(char *) "i", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ldb_msg_element_get",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:MessageElement_get",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_message_element, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_msg_element_get" "', argument " "1"" of type '" "ldb_msg_element *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "MessageElement_get" "', argument " "1"" of type '" "ldb_message_element *""'"); 
   }
-  arg1 = (ldb_msg_element *)(argp1);
+  arg1 = (ldb_message_element *)(argp1);
   ecode2 = SWIG_AsVal_int(obj1, &val2);
   if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "ldb_msg_element_get" "', argument " "2"" of type '" "int""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "MessageElement_get" "', argument " "2"" of type '" "int""'");
   } 
   arg2 = (int)(val2);
-  result = (PyObject *)ldb_msg_element_get(arg1,arg2);
+  result = (PyObject *)ldb_message_element_get(arg1,arg2);
   resultobj = result;
   return resultobj;
 fail:
@@ -3870,9 +3947,9 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_delete_ldb_msg_element(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_delete_MessageElement(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
-  ldb_msg_element *arg1 = (ldb_msg_element *) 0 ;
+  ldb_message_element *arg1 = (ldb_message_element *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   PyObject *swig_obj[1] ;
@@ -3881,10 +3958,10 @@ SWIGINTERN PyObject *_wrap_delete_ldb_msg_element(PyObject *SWIGUNUSEDPARM(self)
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_message_element, SWIG_POINTER_DISOWN |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_ldb_msg_element" "', argument " "1"" of type '" "ldb_msg_element *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_MessageElement" "', argument " "1"" of type '" "ldb_message_element *""'"); 
   }
-  arg1 = (ldb_msg_element *)(argp1);
-  delete_ldb_msg_element(arg1);
+  arg1 = (ldb_message_element *)(argp1);
+  delete_ldb_message_element(arg1);
   
   resultobj = SWIG_Py_Void();
   return resultobj;
@@ -3893,45 +3970,15 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_msg_element___cmp__(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
-  ldb_msg_element *arg1 = (ldb_msg_element *) 0 ;
-  ldb_msg_element *arg2 = (ldb_msg_element *) 0 ;
-  int result;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  char *  kwnames[] = {
-    (char *) "self",(char *)"arg2", NULL 
-  };
-  
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ldb_msg_element___cmp__",kwnames,&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_message_element, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_msg_element___cmp__" "', argument " "1"" of type '" "ldb_msg_element *""'"); 
-  }
-  arg1 = (ldb_msg_element *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_message_element, 0 |  0 );
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_msg_element___cmp__" "', argument " "2"" of type '" "ldb_msg_element *""'"); 
-  }
-  arg2 = (ldb_msg_element *)(argp2);
-  result = (int)ldb_msg_element_compare(arg1,arg2);
-  resultobj = SWIG_From_int((int)(result));
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *ldb_msg_element_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *MessageElement_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
   SWIG_TypeNewClientData(SWIGTYPE_p_ldb_message_element, SWIG_NewClientData(obj));
   return SWIG_Py_Void();
+}
+
+SWIGINTERN PyObject *MessageElement_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  return SWIG_Python_InitShadowInstance(args);
 }
 
 SWIGINTERN PyObject *_wrap_ldb_msg_list_elements(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
@@ -4074,11 +4121,11 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_Message___getitem__(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_Message_find_element(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb_msg *arg1 = (ldb_msg *) 0 ;
   char *arg2 = (char *) 0 ;
-  ldb_msg_element *result = 0 ;
+  ldb_message_element *result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   int res2 ;
@@ -4090,21 +4137,21 @@ SWIGINTERN PyObject *_wrap_Message___getitem__(PyObject *SWIGUNUSEDPARM(self), P
     (char *) "self",(char *) "name", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:Message___getitem__",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:Message_find_element",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_message, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Message___getitem__" "', argument " "1"" of type '" "ldb_msg *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Message_find_element" "', argument " "1"" of type '" "ldb_msg *""'"); 
   }
   arg1 = (ldb_msg *)(argp1);
   res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Message___getitem__" "', argument " "2"" of type '" "char const *""'");
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Message_find_element" "', argument " "2"" of type '" "char const *""'");
   }
   arg2 = (char *)(buf2);
   if (arg1 == NULL)
   SWIG_exception(SWIG_ValueError, 
     "Message can not be None");
-  result = (ldb_msg_element *)ldb_msg_find_element(arg1,(char const *)arg2);
+  result = (ldb_message_element *)ldb_msg_find_element(arg1,(char const *)arg2);
   {
     if (result == NULL)
     PyErr_SetString(PyExc_KeyError, "no such element");
@@ -4123,7 +4170,7 @@ SWIGINTERN PyObject *_wrap_Message___setitem____SWIG_0(PyObject *SWIGUNUSEDPARM(
   PyObject *resultobj = 0;
   ldb_msg *arg1 = (ldb_msg *) 0 ;
   char *arg2 = (char *) 0 ;
-  ldb_msg_element *arg3 = (ldb_msg_element *) 0 ;
+  ldb_message_element *arg3 = (ldb_message_element *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   int res2 ;
@@ -4145,9 +4192,9 @@ SWIGINTERN PyObject *_wrap_Message___setitem____SWIG_0(PyObject *SWIGUNUSEDPARM(
   arg2 = (char *)(buf2);
   res3 = SWIG_ConvertPtr(swig_obj[2], &argp3,SWIGTYPE_p_ldb_message_element, 0 |  0 );
   if (!SWIG_IsOK(res3)) {
-    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "Message___setitem__" "', argument " "3"" of type '" "ldb_msg_element *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "Message___setitem__" "', argument " "3"" of type '" "ldb_message_element *""'"); 
   }
-  arg3 = (ldb_msg_element *)(argp3);
+  arg3 = (ldb_message_element *)(argp3);
   if (arg1 == NULL)
   SWIG_exception(SWIG_ValueError, 
     "Message can not be None");
@@ -4222,7 +4269,7 @@ check_1:
 fail:
   SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number of arguments for overloaded function 'Message___setitem__'.\n"
     "  Possible C/C++ prototypes are:\n"
-    "    __setitem__(ldb_msg *,char const *,ldb_msg_element *)\n"
+    "    __setitem__(ldb_msg *,char const *,ldb_message_element *)\n"
     "    __setitem__(ldb_msg *,char const *,PyObject *)\n");
   return NULL;
 }
@@ -4747,7 +4794,7 @@ SWIGINTERN PyObject *_wrap_Ldb_add(PyObject *SWIGUNUSEDPARM(self), PyObject *arg
   arg1 = (ldb *)(argp1);
   {
     Py_ssize_t dict_pos, msg_pos;
-    ldb_msg_element *msgel;
+    ldb_message_element *msgel;
     PyObject *key, *value;
     
     if (PyDict_Check(obj1)) {
@@ -5538,6 +5585,32 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_Ldb___repr__(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  ldb *arg1 = (ldb *) 0 ;
+  char *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb___repr__" "', argument " "1"" of type '" "ldb *""'"); 
+  }
+  arg1 = (ldb *)(argp1);
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
+  result = (char *)ldb___repr__(arg1);
+  resultobj = SWIG_FromCharPtr((const char *)result);
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *Ldb_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
@@ -5657,39 +5730,68 @@ fail:
 
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"ldb_val_to_py_object", (PyCFunction) _wrap_ldb_val_to_py_object, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"new_Dn", (PyCFunction) _wrap_new_Dn, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"new_Dn", (PyCFunction) _wrap_new_Dn, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.__init__(ldb, string)\n"
+		"Create a new DN.\n"
+		""},
 	 { (char *)"delete_Dn", (PyCFunction)_wrap_delete_Dn, METH_O, NULL},
-	 { (char *)"Dn_validate", (PyCFunction)_wrap_Dn_validate, METH_O, NULL},
+	 { (char *)"Dn_validate", (PyCFunction)_wrap_Dn_validate, METH_O, (char *)"\n"
+		"S.validate() -> bool\n"
+		"Validate DN is correct.\n"
+		""},
 	 { (char *)"Dn_get_casefold", (PyCFunction)_wrap_Dn_get_casefold, METH_O, NULL},
 	 { (char *)"Dn___str__", (PyCFunction)_wrap_Dn___str__, METH_O, NULL},
-	 { (char *)"Dn_parent", (PyCFunction)_wrap_Dn_parent, METH_O, NULL},
+	 { (char *)"Dn_parent", (PyCFunction)_wrap_Dn_parent, METH_O, (char *)"\n"
+		"S.parent() -> dn\n"
+		"Get the parent for this DN.\n"
+		""},
 	 { (char *)"Dn___cmp__", (PyCFunction) _wrap_Dn___cmp__, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Dn_is_valid", (PyCFunction)_wrap_Dn_is_valid, METH_O, NULL},
-	 { (char *)"Dn_is_special", (PyCFunction)_wrap_Dn_is_special, METH_O, NULL},
-	 { (char *)"Dn_is_null", (PyCFunction)_wrap_Dn_is_null, METH_O, NULL},
+	 { (char *)"Dn_is_special", (PyCFunction)_wrap_Dn_is_special, METH_O, (char *)"\n"
+		"S.is_special() -> bool\n"
+		"Check whether this is a special LDB DN.\n"
+		""},
+	 { (char *)"Dn_is_null", (PyCFunction)_wrap_Dn_is_null, METH_O, (char *)"\n"
+		"S.is_null() -> bool\n"
+		"Check whether this is a null DN.\n"
+		""},
 	 { (char *)"Dn_check_special", (PyCFunction) _wrap_Dn_check_special, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Dn___len__", (PyCFunction)_wrap_Dn___len__, METH_O, NULL},
-	 { (char *)"Dn_add_child", (PyCFunction) _wrap_Dn_add_child, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Dn_add_base", (PyCFunction) _wrap_Dn_add_base, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Dn_canonical_str", (PyCFunction)_wrap_Dn_canonical_str, METH_O, NULL},
-	 { (char *)"Dn_canonical_ex_str", (PyCFunction)_wrap_Dn_canonical_ex_str, METH_O, NULL},
+	 { (char *)"Dn_add_child", (PyCFunction) _wrap_Dn_add_child, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.add_child(dn) -> None\n"
+		"Add a child DN to this DN.\n"
+		""},
+	 { (char *)"Dn_add_base", (PyCFunction) _wrap_Dn_add_base, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.add_base(dn) -> None\n"
+		"Add a base DN to this DN.\n"
+		""},
+	 { (char *)"Dn_canonical_str", (PyCFunction)_wrap_Dn_canonical_str, METH_O, (char *)"\n"
+		"S.canonical_str() -> string\n"
+		"Canonical version of this DN (like a posix path).\n"
+		""},
+	 { (char *)"Dn_canonical_ex_str", (PyCFunction)_wrap_Dn_canonical_ex_str, METH_O, (char *)"\n"
+		"S.canonical_ex_str() -> string\n"
+		"Canonical version of this DN (like a posix path, with terminating newline).\n"
+		""},
+	 { (char *)"Dn___repr__", (PyCFunction)_wrap_Dn___repr__, METH_O, NULL},
 	 { (char *)"Dn___add__", (PyCFunction) _wrap_Dn___add__, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Dn_swigregister", Dn_swigregister, METH_VARARGS, NULL},
 	 { (char *)"Dn_swiginit", Dn_swiginit, METH_VARARGS, NULL},
-	 { (char *)"ldb_msg_element___iter__", (PyCFunction)_wrap_ldb_msg_element___iter__, METH_O, NULL},
-	 { (char *)"ldb_msg_element___set__", (PyCFunction)_wrap_ldb_msg_element___set__, METH_O, NULL},
-	 { (char *)"new_MessageElement", (PyCFunction) _wrap_new_MessageElement, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ldb_msg_element___len__", (PyCFunction)_wrap_ldb_msg_element___len__, METH_O, NULL},
-	 { (char *)"ldb_msg_element_get", (PyCFunction) _wrap_ldb_msg_element_get, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"delete_ldb_msg_element", (PyCFunction)_wrap_delete_ldb_msg_element, METH_O, NULL},
-	 { (char *)"ldb_msg_element___cmp__", (PyCFunction) _wrap_ldb_msg_element___cmp__, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ldb_msg_element_swigregister", ldb_msg_element_swigregister, METH_VARARGS, NULL},
+	 { (char *)"MessageElement___cmp__", (PyCFunction) _wrap_MessageElement___cmp__, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"MessageElement___iter__", (PyCFunction)_wrap_MessageElement___iter__, METH_O, NULL},
+	 { (char *)"MessageElement___set__", (PyCFunction)_wrap_MessageElement___set__, METH_O, NULL},
+	 { (char *)"new_MessageElement", (PyCFunction) _wrap_new_MessageElement, METH_VARARGS | METH_KEYWORDS, (char *)"Message element."},
+	 { (char *)"MessageElement___len__", (PyCFunction)_wrap_MessageElement___len__, METH_O, NULL},
+	 { (char *)"MessageElement_get", (PyCFunction) _wrap_MessageElement_get, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"delete_MessageElement", (PyCFunction)_wrap_delete_MessageElement, METH_O, NULL},
+	 { (char *)"MessageElement_swigregister", MessageElement_swigregister, METH_VARARGS, NULL},
+	 { (char *)"MessageElement_swiginit", MessageElement_swiginit, METH_VARARGS, NULL},
 	 { (char *)"ldb_msg_list_elements", (PyCFunction) _wrap_ldb_msg_list_elements, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Message_dn_set", _wrap_Message_dn_set, METH_VARARGS, NULL},
 	 { (char *)"Message_dn_get", (PyCFunction)_wrap_Message_dn_get, METH_O, NULL},
 	 { (char *)"new_Message", (PyCFunction) _wrap_new_Message, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_Message", (PyCFunction)_wrap_delete_Message, METH_O, NULL},
-	 { (char *)"Message___getitem__", (PyCFunction) _wrap_Message___getitem__, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Message_find_element", (PyCFunction) _wrap_Message_find_element, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Message___setitem__", _wrap_Message___setitem__, METH_VARARGS, NULL},
 	 { (char *)"Message___len__", (PyCFunction)_wrap_Message___len__, METH_O, NULL},
 	 { (char *)"Message_keys", (PyCFunction)_wrap_Message_keys, METH_O, NULL},
@@ -5699,39 +5801,97 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"Message_swiginit", Message_swiginit, METH_VARARGS, NULL},
 	 { (char *)"ldb_ldif_to_pyobject", (PyCFunction) _wrap_ldb_ldif_to_pyobject, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"new_Ldb", (PyCFunction)_wrap_new_Ldb, METH_NOARGS, NULL},
-	 { (char *)"Ldb_connect", (PyCFunction) _wrap_Ldb_connect, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_connect", (PyCFunction) _wrap_Ldb_connect, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.connect(url,flags=0,options=None) -> None\n"
+		"Connect to a LDB URL.\n"
+		""},
 	 { (char *)"delete_Ldb", (PyCFunction)_wrap_delete_Ldb, METH_O, NULL},
 	 { (char *)"Ldb_search_ex", (PyCFunction) _wrap_Ldb_search_ex, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Ldb_delete", (PyCFunction) _wrap_Ldb_delete, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Ldb_rename", (PyCFunction) _wrap_Ldb_rename, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_delete", (PyCFunction) _wrap_Ldb_delete, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.delete(dn) -> None\n"
+		"Remove an entry.\n"
+		""},
+	 { (char *)"Ldb_rename", (PyCFunction) _wrap_Ldb_rename, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.rename(old_dn, new_dn) -> None\n"
+		"Rename an entry.\n"
+		""},
 	 { (char *)"Ldb_parse_control_strings", (PyCFunction) _wrap_Ldb_parse_control_strings, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Ldb_add", (PyCFunction) _wrap_Ldb_add, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Ldb_modify", (PyCFunction) _wrap_Ldb_modify, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_add", (PyCFunction) _wrap_Ldb_add, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.add(message) -> None\n"
+		"Add an entry.\n"
+		""},
+	 { (char *)"Ldb_modify", (PyCFunction) _wrap_Ldb_modify, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.modify(message) -> None\n"
+		"Modify an entry.\n"
+		""},
 	 { (char *)"Ldb_get_config_basedn", (PyCFunction)_wrap_Ldb_get_config_basedn, METH_O, NULL},
 	 { (char *)"Ldb_get_root_basedn", (PyCFunction)_wrap_Ldb_get_root_basedn, METH_O, NULL},
 	 { (char *)"Ldb_get_schema_basedn", (PyCFunction)_wrap_Ldb_get_schema_basedn, METH_O, NULL},
 	 { (char *)"Ldb_get_default_basedn", (PyCFunction)_wrap_Ldb_get_default_basedn, METH_O, NULL},
 	 { (char *)"Ldb_schema_format_value", (PyCFunction) _wrap_Ldb_schema_format_value, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Ldb_errstring", (PyCFunction)_wrap_Ldb_errstring, METH_O, NULL},
-	 { (char *)"Ldb_set_create_perms", (PyCFunction) _wrap_Ldb_set_create_perms, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Ldb_set_modules_dir", (PyCFunction) _wrap_Ldb_set_modules_dir, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Ldb_set_debug", (PyCFunction) _wrap_Ldb_set_debug, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Ldb_set_opaque", (PyCFunction) _wrap_Ldb_set_opaque, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Ldb_get_opaque", (PyCFunction) _wrap_Ldb_get_opaque, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Ldb_transaction_start", (PyCFunction)_wrap_Ldb_transaction_start, METH_O, NULL},
-	 { (char *)"Ldb_transaction_commit", (PyCFunction)_wrap_Ldb_transaction_commit, METH_O, NULL},
-	 { (char *)"Ldb_transaction_cancel", (PyCFunction)_wrap_Ldb_transaction_cancel, METH_O, NULL},
+	 { (char *)"Ldb_set_create_perms", (PyCFunction) _wrap_Ldb_set_create_perms, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.set_create_perms(mode) -> None\n"
+		"Set mode to use when creating new LDB files.\n"
+		""},
+	 { (char *)"Ldb_set_modules_dir", (PyCFunction) _wrap_Ldb_set_modules_dir, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.set_modules_dir(path) -> None\n"
+		"Set path LDB should search for modules\n"
+		""},
+	 { (char *)"Ldb_set_debug", (PyCFunction) _wrap_Ldb_set_debug, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.set_debug(callback) -> None\n"
+		"Set callback for LDB debug messages.\n"
+		"The callback should accept a debug level and debug text.\n"
+		""},
+	 { (char *)"Ldb_set_opaque", (PyCFunction) _wrap_Ldb_set_opaque, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.set_opaque(name, value) -> None\n"
+		"Set an opaque value on this LDB connection. \n"
+		":note: Passing incorrect values may cause crashes.\n"
+		""},
+	 { (char *)"Ldb_get_opaque", (PyCFunction) _wrap_Ldb_get_opaque, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.get_opaque(name) -> value\n"
+		"Get an opaque value set on this LDB connection. \n"
+		":note: The returned value may not be useful in Python.\n"
+		""},
+	 { (char *)"Ldb_transaction_start", (PyCFunction)_wrap_Ldb_transaction_start, METH_O, (char *)"\n"
+		"S.transaction_start() -> None\n"
+		"Start a new transaction.\n"
+		""},
+	 { (char *)"Ldb_transaction_commit", (PyCFunction)_wrap_Ldb_transaction_commit, METH_O, (char *)"\n"
+		"S.transaction_commit() -> None\n"
+		"Commit currently active transaction.\n"
+		""},
+	 { (char *)"Ldb_transaction_cancel", (PyCFunction)_wrap_Ldb_transaction_cancel, METH_O, (char *)"\n"
+		"S.transaction_cancel() -> None\n"
+		"Cancel currently active transaction.\n"
+		""},
 	 { (char *)"Ldb_schema_attribute_remove", (PyCFunction) _wrap_Ldb_schema_attribute_remove, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Ldb_schema_attribute_add", (PyCFunction) _wrap_Ldb_schema_attribute_add, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Ldb_setup_wellknown_attributes", (PyCFunction)_wrap_Ldb_setup_wellknown_attributes, METH_O, NULL},
 	 { (char *)"Ldb___contains__", (PyCFunction) _wrap_Ldb___contains__, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"Ldb_parse_ldif", (PyCFunction) _wrap_Ldb_parse_ldif, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_parse_ldif", (PyCFunction) _wrap_Ldb_parse_ldif, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.parse_ldif(ldif) -> iter(messages)\n"
+		"Parse a string formatted using LDIF.\n"
+		""},
+	 { (char *)"Ldb___repr__", (PyCFunction)_wrap_Ldb___repr__, METH_O, NULL},
 	 { (char *)"Ldb_swigregister", Ldb_swigregister, METH_VARARGS, NULL},
 	 { (char *)"Ldb_swiginit", Ldb_swiginit, METH_VARARGS, NULL},
-	 { (char *)"valid_attr_name", (PyCFunction) _wrap_valid_attr_name, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"timestring", (PyCFunction) _wrap_timestring, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"string_to_time", (PyCFunction) _wrap_string_to_time, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"register_module", (PyCFunction) _wrap_register_module, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"valid_attr_name", (PyCFunction) _wrap_valid_attr_name, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.valid_attr_name(name) -> bool\n"
+		"Check whether the supplied name is a valid attribute name.\n"
+		""},
+	 { (char *)"timestring", (PyCFunction) _wrap_timestring, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.timestring(int) -> string\n"
+		"Generate a LDAP time string from a UNIX timestamp\n"
+		""},
+	 { (char *)"string_to_time", (PyCFunction) _wrap_string_to_time, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.string_to_time(string) -> int\n"
+		"Parse a LDAP time string into a UNIX timestamp.\n"
+		""},
+	 { (char *)"register_module", (PyCFunction) _wrap_register_module, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.register_module(module) -> None\n"
+		"Register a LDB module.\n"
+		""},
 	 { NULL, NULL, 0, NULL }
 };
 
@@ -5746,7 +5906,7 @@ static swig_type_info _swigt__p_ldb_context = {"_p_ldb_context", "struct ldb_con
 static swig_type_info _swigt__p_ldb_dn = {"_p_ldb_dn", "struct ldb_dn *|ldb_dn *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_ldb_ldif = {"_p_ldb_ldif", "struct ldb_ldif *|ldb_ldif *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_ldb_message = {"_p_ldb_message", "ldb_msg *|struct ldb_message *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_ldb_message_element = {"_p_ldb_message_element", "struct ldb_message_element *|ldb_msg_element *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_ldb_message_element = {"_p_ldb_message_element", "struct ldb_message_element *|ldb_message_element *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_ldb_module_ops = {"_p_ldb_module_ops", "struct ldb_module_ops *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_ldb_result = {"_p_ldb_result", "struct ldb_result *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_ldb_val = {"_p_ldb_val", "struct ldb_val *", 0, 0, (void*)0, 0};

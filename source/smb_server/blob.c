@@ -476,12 +476,12 @@ NTSTATUS smbsrv_push_passthru_fileinfo(TALLOC_CTX *mem_ctx,
 		}
 
 		list_size = ea_list_size_chained(st->all_eas.out.num_eas,
-						 st->all_eas.out.eas);
+						 st->all_eas.out.eas, 4);
 		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, list_size));
 
 		ea_put_list_chained(blob->data,
 				    st->all_eas.out.num_eas,
-				    st->all_eas.out.eas);
+				    st->all_eas.out.eas, 4);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
@@ -503,7 +503,8 @@ NTSTATUS smbsrv_push_passthru_fileinfo(TALLOC_CTX *mem_ctx,
 		SIVAL(blob->data,       0x48, st->all_info2.out.ea_size);
 		SIVAL(blob->data,	0x4C, st->all_info2.out.access_mask);
 		SBVAL(blob->data,	0x50, st->all_info2.out.position);
-		SBVAL(blob->data,	0x58, st->all_info2.out.mode);
+		SIVAL(blob->data,	0x58, st->all_info2.out.mode);
+		SIVAL(blob->data,	0x5C, st->all_info2.out.alignment_requirement);
 		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob,
 						     st->all_info2.out.fname.s,
 						     0x60, default_str_flags,

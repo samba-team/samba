@@ -6,7 +6,7 @@ INIT_FUNCTION = sys_notify_inotify_init
 # End MODULE sys_notify_inotify
 ################################################
 
-sys_notify_inotify_OBJ_FILES = ntvfs/sysdep/inotify.o
+sys_notify_inotify_OBJ_FILES = $(ntvfssrcdir)/sysdep/inotify.o
 
 ################################################
 # Start SUBSYSTEM sys_notify
@@ -14,13 +14,12 @@ sys_notify_inotify_OBJ_FILES = ntvfs/sysdep/inotify.o
 # End SUBSYSTEM sys_notify
 ################################################
 
-sys_notify_OBJ_FILES = ntvfs/sysdep/sys_notify.o
+sys_notify_OBJ_FILES = $(ntvfssrcdir)/sysdep/sys_notify.o
 
-[MODULE::sys_lease_linux]
-SUBSYSTEM = sys_lease
+[SUBSYSTEM::sys_lease_linux]
 
-sys_lease_linux_OBJ_FILES = ntvfs/sysdep/sys_lease_linux.o
+sys_lease_linux_OBJ_FILES = $(ntvfssrcdir)/sysdep/sys_lease_linux.o
 
 [SUBSYSTEM::sys_lease]
 
-sys_lease_OBJ_FILES = ntvfs/sysdep/sys_lease.o
+sys_lease_OBJ_FILES = $(ntvfssrcdir)/sysdep/sys_lease.o

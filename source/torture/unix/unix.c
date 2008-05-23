@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
+#include "torture/smbtorture.h"
 #include "torture/unix/proto.h"
 
 NTSTATUS torture_unix_init(void)

@@ -30,8 +30,7 @@
 #include "lib/events/events.h"
 #include "dynconfig.h"
 
-#include "torture/torture.h"
-#include "build.h"
+#include "torture/smbtorture.h"
 #include "lib/util/dlinklist.h"
 #include "librpc/rpc/dcerpc.h"
 #include "param/param.h"
@@ -675,7 +674,7 @@ int main(int argc,char *argv[])
 		exit(1);
 	}
 
-	torture = torture_context_init(cli_credentials_get_event_context(cmdline_credentials), ui_ops);
+	torture = torture_context_init(event_context_init(NULL), ui_ops);
 	if (basedir != NULL) {
 		if (basedir[0] != '/') {
 			fprintf(stderr, "Please specify an absolute path to --basedir\n");

@@ -37,7 +37,6 @@
 #include "lib/messaging/irpc.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
-#include "build.h"
 #include "param/param.h"
 
 struct dcesrv_socket_context {
@@ -107,7 +106,7 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 	struct dcesrv_connection *dcesrv_conn = NULL;
 	struct auth_session_info *session_info = NULL;
 
-	status = auth_anonymous_session_info(srv_conn, dcesrv_sock->dcesrv_ctx->lp_ctx, &session_info);
+	status = auth_anonymous_session_info(srv_conn, srv_conn->event.ctx, dcesrv_sock->dcesrv_ctx->lp_ctx, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("dcesrv_sock_accept: auth_anonymous_session_info failed: %s\n", 
 			nt_errstr(status)));
@@ -471,7 +470,7 @@ NTSTATUS server_service_rpc_init(void)
 	extern NTSTATUS dcerpc_server_samr_init(void);
 	extern NTSTATUS dcerpc_server_remote_init(void);
 	extern NTSTATUS dcerpc_server_lsa_init(void);
-	init_module_fn static_init[] = { STATIC_dcerpc_server_MODULES };
+	init_module_fn static_init[] = { STATIC_DCESRV_MODULES };
 	init_module_fn *shared_init = load_samba_modules(NULL, global_loadparm, "dcerpc_server");
 
 	run_init_functions(static_init);

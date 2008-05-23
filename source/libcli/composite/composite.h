@@ -101,6 +101,7 @@ bool composite_is_ok(struct composite_context *ctx);
 void composite_done(struct composite_context *ctx);
 void composite_error(struct composite_context *ctx, NTSTATUS status);
 NTSTATUS composite_wait(struct composite_context *c);
+NTSTATUS composite_wait_free(struct composite_context *c);
 
 
 #endif /* __COMPOSITE_H__ */

@@ -31,8 +31,14 @@ interface xattr
 		NTTIME change_time;
 	} xattr_DosInfo1;
 
-	const int XATTR_ATTRIB_FLAG_STICKY_WRITE_TIME = 0x1;
+/*
+	We use xattrDosInfo1 again when we store values.
+	Because the sticky write time is now stored in the opendb
+	and xattr_DosInfo2Old is only present to parse existing
+	values from disk.
 
+	const int XATTR_ATTRIB_FLAG_STICKY_WRITE_TIME = 0x1;
+*/
 	typedef struct {
 		uint32     flags;
 		uint32     attrib;
@@ -43,11 +49,11 @@ interface xattr
 		NTTIME     change_time;
 		NTTIME     write_time; /* only used when sticky write time is set */
 		utf8string name;
-	} xattr_DosInfo2;
+	} xattr_DosInfo2Old;
 
 	typedef [switch_type(uint16)] union {
 		[case(1)] xattr_DosInfo1 info1;
-		[case(2)] xattr_DosInfo2 info2;
+		[case(2)] xattr_DosInfo2Old oldinfo2;
 	} xattr_DosInfo;
 
 	typedef [public] struct {

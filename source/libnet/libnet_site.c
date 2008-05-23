@@ -30,7 +30,7 @@
  * 1. Setup a CLDAP socket.
  * 2. Lookup the default Site-Name.
  */
-NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_JoinSite *r)
+NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct libnet_JoinSite *r)
 {
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
@@ -53,11 +53,12 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_JoinSite *r)
 	search.in.dest_address = r->in.dest_address;
 	search.in.dest_port = r->in.cldap_port;
 	search.in.acct_control = -1;
-	search.in.version = 6;
+	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
+	search.in.map_response = true;
 
-	cldap = cldap_socket_init(tmp_ctx, NULL, lp_iconv_convenience(global_loadparm));
+	cldap = cldap_socket_init(tmp_ctx, lctx->event_ctx, lp_iconv_convenience(global_loadparm));
 	status = cldap_netlogon(cldap, tmp_ctx, &search);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status) || !search.out.netlogon.nt5_ex.client_site) {
 		/*
 		  If cldap_netlogon() returns in error,
 		  default to using Default-First-Site-Name.
@@ -71,7 +72,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_JoinSite *r)
 		}
 	} else {
 		site_name_str = talloc_asprintf(tmp_ctx, "%s",
-					search.out.netlogon.logon5.client_site);
+					search.out.netlogon.nt5_ex.client_site);
 		if (!site_name_str) {
 			r->out.error_string = NULL;
 			talloc_free(tmp_ctx);
@@ -148,7 +149,7 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 	}
 
 	make_nbt_name_client(&name, libnet_r->out.samr_binding->host);
-	status = resolve_name(lp_resolve_context(ctx->lp_ctx), &name, r, &dest_addr, NULL);
+	status = resolve_name(lp_resolve_context(ctx->lp_ctx), &name, r, &dest_addr, ctx->event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
@@ -161,7 +162,7 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 	r->in.domain_dn_str = libnet_r->out.domain_dn_str;
 	r->in.cldap_port = lp_cldap_port(ctx->lp_ctx);
 
-	status = libnet_FindSite(tmp_ctx, r);
+	status = libnet_FindSite(tmp_ctx, ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_r->out.error_string =
 			talloc_steal(libnet_r, r->out.error_string);

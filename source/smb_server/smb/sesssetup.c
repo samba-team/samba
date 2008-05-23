@@ -70,7 +70,7 @@ static void sesssetup_old_send(struct auth_check_password_request *areq,
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* This references server_info into session_info */
-	status = auth_generate_session_info(req, req->smb_conn->lp_ctx, 
+	status = auth_generate_session_info(req, req->smb_conn->connection->event.ctx, req->smb_conn->lp_ctx, 
 					    server_info, &session_info);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
@@ -166,7 +166,8 @@ static void sesssetup_nt1_send(struct auth_check_password_request *areq,
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* This references server_info into session_info */
-	status = auth_generate_session_info(req, req->smb_conn->lp_ctx, 
+	status = auth_generate_session_info(req, req->smb_conn->connection->event.ctx, 
+					    req->smb_conn->lp_ctx, 
 					    server_info, &session_info);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 

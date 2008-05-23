@@ -35,8 +35,10 @@ static const struct {
 	const char *mailslot_name;
 	dgram_mailslot_handler_t handler;
 } mailslot_handlers[] = {
+	/* Handle both NTLOGON and NETLOGON in the same function, as
+	 * they are very similar */
 	{ NBT_MAILSLOT_NETLOGON, nbtd_mailslot_netlogon_handler },
-	{ NBT_MAILSLOT_NTLOGON,  nbtd_mailslot_ntlogon_handler },
+	{ NBT_MAILSLOT_NTLOGON,  nbtd_mailslot_netlogon_handler },
 	{ NBT_MAILSLOT_BROWSE,   nbtd_mailslot_browse_handler }
 };
 

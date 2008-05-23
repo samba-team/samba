@@ -530,7 +530,8 @@ bool torture_modifyuser(struct torture_context *torture)
 
 		ZERO_STRUCT(user_req);
 		user_req.in.domain_name = lp_workgroup(torture->lp_ctx);
-		user_req.in.user_name = name;
+		user_req.in.data.user_name = name;
+		user_req.in.level = USER_INFO_BY_NAME;
 
 		status = libnet_UserInfo(ctx, torture, &user_req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -642,7 +643,8 @@ bool torture_userinfo_api(struct torture_context *torture)
 	ZERO_STRUCT(req);
 	
 	req.in.domain_name = domain_name.string;
-	req.in.user_name   = name;
+	req.in.data.user_name   = name;
+	req.in.level = USER_INFO_BY_NAME;
 
 	status = libnet_UserInfo(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {

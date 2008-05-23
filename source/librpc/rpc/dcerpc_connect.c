@@ -717,12 +717,6 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent
 	struct pipe_connect_state *s;
 	struct event_context *new_ev = NULL;
 
-	if (ev == NULL) {
-		new_ev = event_context_init(parent_ctx);
-		if (new_ev == NULL) return NULL;
-		ev = new_ev;
-	}
-
 	/* composite context allocation and setup */
 	c = composite_create(parent_ctx, ev);
 	if (c == NULL) {
@@ -844,21 +838,12 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_c
 	struct pipe_conn_state *s;
 	struct dcerpc_binding *b;
 	struct composite_context *pipe_conn_req;
-	struct event_context *new_ev = NULL;
-
-	if (ev == NULL) {
-		new_ev = event_context_init(parent_ctx);
-		if (new_ev == NULL) return NULL;
-		ev = new_ev;
-	}
 
 	/* composite context allocation and setup */
 	c = composite_create(parent_ctx, ev);
 	if (c == NULL) {
-		talloc_free(new_ev);
 		return NULL;
 	}
-	talloc_steal(c, new_ev);
 
 	s = talloc_zero(c, struct pipe_conn_state);
 	if (composite_nomem(s, c)) return c;

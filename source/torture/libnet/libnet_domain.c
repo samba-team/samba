@@ -201,7 +201,7 @@ bool torture_domain_close_lsa(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_domain_close_lsa");
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, binding, &ndr_table_lsarpc,
-				     cmdline_credentials, NULL, torture->lp_ctx);
+				     cmdline_credentials, torture->ev, torture->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to connect to server: %s\n", nt_errstr(status));
 		ret = false;
@@ -330,7 +330,7 @@ bool torture_domain_close_samr(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_domain_close_samr");
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, binding, &ndr_table_samr,
-				     ctx->cred, NULL, torture->lp_ctx);
+				     ctx->cred, torture->ev, torture->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed to connect to server: %s\n", nt_errstr(status));
 		ret = false;

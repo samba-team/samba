@@ -31,11 +31,12 @@
 #include "auth/session_proto.h"
 
 _PUBLIC_ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx, 
+					    struct event_context *event_ctx, 
 					    struct loadparm_context *lp_ctx) 
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info = NULL;
-	nt_status = auth_anonymous_session_info(mem_ctx, lp_ctx, &session_info);
+	nt_status = auth_anonymous_session_info(mem_ctx, event_ctx, lp_ctx, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return NULL;
 	}
@@ -43,6 +44,7 @@ _PUBLIC_ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx,
 }
 
 _PUBLIC_ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx, 
+				     struct event_context *event_ctx, 
 				     struct loadparm_context *lp_ctx,
 				     struct auth_session_info **_session_info) 
 {
@@ -60,7 +62,7 @@ _PUBLIC_ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = auth_generate_session_info(parent_ctx, lp_ctx, server_info, &session_info);
+	nt_status = auth_generate_session_info(parent_ctx, event_ctx, lp_ctx, server_info, &session_info);
 	talloc_free(mem_ctx);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -151,6 +153,7 @@ _PUBLIC_ NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx,
 }
 
 _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx, 
+				    struct event_context *event_ctx, 
 				    struct loadparm_context *lp_ctx,
 				    struct auth_serversupplied_info *server_info, 
 				    struct auth_session_info **_session_info) 
@@ -168,6 +171,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	session_info->session_key = server_info->user_session_key;
 
 	nt_status = security_token_create(session_info,
+					  event_ctx,
 					  lp_ctx,
 					  server_info->account_sid,
 					  server_info->primary_group_sid,

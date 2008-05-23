@@ -43,6 +43,18 @@ void smb2_setup_bufinfo(struct smb2_request *req)
 	}
 }
 
+
+/* destroy a request structure */
+static int smb2_request_destructor(struct smb2_request *req)
+{
+	if (req->transport) {
+		/* remove it from the list of pending requests (a null op if
+		   its not in the list) */
+		DLIST_REMOVE(req->transport->pending_recv, req);
+	}
+	return 0;
+}
+
 /*
   initialise a smb2 request
 */
@@ -122,6 +134,8 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 		SCVAL(req->out.dynamic, 0, 0);
 	}
 
+	talloc_set_destructor(req, smb2_request_destructor);
+
 	return req;
 }
 
@@ -154,18 +168,13 @@ NTSTATUS smb2_request_destroy(struct smb2_request *req)
 	   _send() call fails completely */
 	if (!req) return NT_STATUS_UNSUCCESSFUL;
 
-	if (req->transport) {
-		/* remove it from the list of pending requests (a null op if
-		   its not in the list) */
-		DLIST_REMOVE(req->transport->pending_recv, req);
-	}
-
 	if (req->state == SMB2_REQUEST_ERROR &&
 	    NT_STATUS_IS_OK(req->status)) {
-		req->status = NT_STATUS_INTERNAL_ERROR;
+		status = NT_STATUS_INTERNAL_ERROR;
+	} else {
+		status = req->status;
 	}
 
-	status = req->status;
 	talloc_free(req);
 	return status;
 }
@@ -211,10 +220,10 @@ bool smb2_oob(struct smb2_request_buffer *buf, const uint8_t *ptr, size_t size)
 		return false;
 	}
 	/* be careful with wraparound! */
-	if (ptr < buf->body ||
-	    ptr >= buf->body + buf->body_size ||
+	if ((uintptr_t)ptr < (uintptr_t)buf->body ||
+	    (uintptr_t)ptr >= (uintptr_t)buf->body + buf->body_size ||
 	    size > buf->body_size ||
-	    ptr + size > buf->body + buf->body_size) {
+	    (uintptr_t)ptr + size > (uintptr_t)buf->body + buf->body_size) {
 		return true;
 	}
 	return false;
@@ -669,7 +678,7 @@ NTSTATUS smb2_push_o16s16_string(struct smb2_request_buffer *buf,
 	}
 
 	if (*str == 0) {
-		blob.data = str;
+		blob.data = discard_const(str);
 		blob.length = 0;
 		return smb2_push_o16s16_blob(buf, ofs, blob);
 	}

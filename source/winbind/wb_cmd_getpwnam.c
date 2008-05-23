@@ -92,7 +92,8 @@ static void cmd_getpwnam_recv_domain(struct composite_context *ctx)
 		return;
 	}
 
-	user_info->in.user_name = user_name;
+	user_info->in.level = USER_INFO_BY_NAME;
+	user_info->in.data.user_name = user_name;
 	user_info->in.domain_name = domain->libnet_ctx->samr.name;
 	state->workgroup_name = talloc_strdup(state,
 			domain->libnet_ctx->samr.name);
