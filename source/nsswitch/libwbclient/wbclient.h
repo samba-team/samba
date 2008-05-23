@@ -52,6 +52,19 @@ typedef enum _wbcErrType wbcErr;
 const char *wbcErrorString(wbcErr error);
 
 /**
+ *  @brief Some useful details about the wbclient library
+ *
+ **/
+#define WBCLIENT_MAJOR_VERSION 0
+#define WBCLIENT_MINOR_VERSION 1
+#define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
+struct wbcLibraryDetails {
+	uint16_t major_version;
+	uint16_t minor_version;
+	const char *vendor_version;
+};
+
+/**
  *  @brief Some useful details about the running winbindd
  *
  **/
@@ -307,6 +320,8 @@ wbcErr wbcStringToSid(const char *sid_string,
 		      struct wbcDomainSid *sid);
 
 wbcErr wbcPing(void);
+
+wbcErr wbcLibraryDetails(struct wbcLibraryDetails **details);
 
 wbcErr wbcInterfaceDetails(struct wbcInterfaceDetails **details);
 
