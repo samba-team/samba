@@ -343,9 +343,9 @@ fi
 
 %preun
 if [ $1 = 0 ] ; then
+    /sbin/service smb stop >/dev/null 2>&1
     /sbin/chkconfig --del smb
     # rm -rf /var/log/samba/* /var/lib/samba/*
-    /sbin/service smb stop >/dev/null 2>&1
 fi
 exit 0
 
