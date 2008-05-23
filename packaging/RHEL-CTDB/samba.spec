@@ -360,6 +360,10 @@ fi
 %post common
 /sbin/ldconfig
 
+if [ "$1" -ge "1" ]; then
+	/sbin/service winbind condrestart >/dev/null 2>&1 || :
+fi
+
 %preun common
 if [ $1 = 0 ] ; then
     /sbin/service winbind stop >/dev/null 2>&1 || :
