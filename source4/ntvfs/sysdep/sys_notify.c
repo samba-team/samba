@@ -28,7 +28,6 @@
 #include "lib/events/events.h"
 #include "lib/util/dlinklist.h"
 #include "param/param.h"
-#include "build.h"
 
 /* list of registered backends */
 static struct sys_notify_backend *backends;
@@ -52,7 +51,7 @@ _PUBLIC_ struct sys_notify_context *sys_notify_context_create(struct share_confi
 	}
 
 	if (ev == NULL) {
-		ev = event_context_find(mem_ctx);
+		return NULL;
 	}
 
 	ctx = talloc_zero(mem_ctx, struct sys_notify_context);

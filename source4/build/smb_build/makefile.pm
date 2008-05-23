@@ -72,17 +72,7 @@ sub _prepare_mk_files($)
 		push (@tmp, $_);
 	}
 
-	$self->output("
-ifneq (\$(MAKECMDGOALS),clean)
-ifneq (\$(MAKECMDGOALS),distclean)
-ifneq (\$(MAKECMDGOALS),realdistclean)
-");
 	$self->output("MK_FILES = " . array2oneperline(\@tmp) . "\n");
-	$self->output("
-endif
-endif
-endif
-");
 }
 
 sub array2oneperline($)
@@ -112,94 +102,41 @@ sub _prepare_list($$$)
 	$self->output("$ctx->{NAME}_$var =$tmplist\n");
 }
 
-sub SharedModulePrimitives($$)
+sub PythonModule($$)
 {
 	my ($self,$ctx) = @_;
-	
-	#FIXME
+
+	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
+	$self->_prepare_list($ctx, "DEPEND_LIST");
+	$self->_prepare_list($ctx, "LINK_FLAGS");
+
+	$self->output("\$(eval \$(call python_c_module_template,$ctx->{LIBRARY_REALNAME},\$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST), \$($ctx->{NAME}\_FULL_OBJ_LIST) \$($ctx->{NAME}_LINK_FLAGS)))\n");
 }
 
 sub SharedModule($$)
 {
 	my ($self,$ctx) = @_;
 
-	my $init_obj = "";
-
 	my $sane_subsystem = lc($ctx->{SUBSYSTEM});
 	$sane_subsystem =~ s/^lib//;
 	
-	if ($ctx->{TYPE} eq "PYTHON") {
-		$self->output("PYTHON_DSOS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
-	} else {
-		$self->output("PLUGINS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
-		$self->output("installplugins:: $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
-		$self->output("\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
-		$self->output("\t\@mkdir -p \$(DESTDIR)\$(modulesdir)/$sane_subsystem/\n");
-		$self->output("\t\@cp $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
-		if (defined($ctx->{ALIASES})) {
-			foreach (@{$ctx->{ALIASES}}) {
-				$self->output("\t\@rm -f \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n");
-				$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n");
-			}
-		}
+	$self->output("PLUGINS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
+	$self->output("\$(eval \$(call shared_module_install_template,$sane_subsystem,$ctx->{LIBRARY_REALNAME}))\n");
 
-		$self->output("uninstallplugins::\n");
-		$self->output("\t\@echo Uninstalling \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
-		$self->output("\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
-
-		if (defined($ctx->{ALIASES})) {
-			foreach (@{$ctx->{ALIASES}}) {
-				$self->output("\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n");
-			}
-		}
-	}
-
-	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
-	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{TYPE} ne "PYTHON" and 
-		$ctx->{INIT_FUNCTION_TYPE} =~ /\(\*\)/) {
-		my $init_fn = $ctx->{INIT_FUNCTION_TYPE};
-		$init_fn =~ s/\(\*\)/init_module/;
-		my $proto_fn = $ctx->{INIT_FUNCTION_TYPE};
-		$proto_fn =~ s/\(\*\)/$ctx->{INIT_FUNCTION}/;
-
-		$self->output(<< "__EOD__"
-bin/$ctx->{NAME}_init_module.c:
-	\@echo Creating \$\@
-	\@echo \"#include \\\"includes.h\\\"\" > \$\@
-	\@echo \"$proto_fn;\" >> \$\@
-	\@echo \"_PUBLIC_ $init_fn\" >> \$\@
-	\@echo \"{\" >> \$\@
-	\@echo \"	return $ctx->{INIT_FUNCTION}();\" >> \$\@
-	\@echo \"}\" >> \$\@
-	\@echo \"\" >> \$\@
-__EOD__
-);
-		$init_obj = "bin/$ctx->{NAME}_init_module.o";
+	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{INIT_FUNCTION_TYPE} =~ /\(\*\)/ and not ($ctx->{INIT_FUNCTION} =~ /\(/)) {
+		$self->output("\$($ctx->{NAME}_OBJ_FILES): CFLAGS+=-D$ctx->{INIT_FUNCTION}=init_module\n");
 	}
 
-	$self->output(<< "__EOD__"
-#
+	$self->output("\$(eval \$(call shared_module_template,$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}, \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST), \$($ctx->{NAME}\_FULL_OBJ_LIST) \$($ctx->{NAME}_LINK_FLAGS)))\n");
 
-$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST) $init_obj
-	\@echo Linking \$\@
-	\@mkdir -p $ctx->{SHAREDDIR}
-	\@\$(MDLD) \$(LDFLAGS) \$(MDLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$($ctx->{NAME}\_FULL_OBJ_LIST) $init_obj \\
-		\$($ctx->{NAME}_LINK_FLAGS)
-__EOD__
-);
 
 	if (defined($ctx->{ALIASES})) {
-		foreach (@{$ctx->{ALIASES}}) {
-			$self->output("\t\@rm -f $ctx->{SHAREDDIR}/$_.\$(SHLIBEXT)\n");
-			$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$_.\$(SHLIBEXT)\n");
-		}
+		$self->output("\$(eval \$(foreach alias,". join(' ', @{$ctx->{ALIASES}}) . ",\$(call shared_module_alias_template,$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME},$sane_subsystem,\$(alias))))\n");
 	}
-	$self->output("\n");
 }
 
 sub StaticLibraryPrimitives($$)
@@ -224,59 +161,33 @@ sub SharedLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
-	if (!defined($ctx->{LIBRARY_SONAME})) {
-		$ctx->{LIBRARY_SONAME} = "";
-	}
-
-	$self->output("SHARED_LIBS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
+	$self->output("SHARED_LIBS += $ctx->{RESULT_SHARED_LIBRARY}\n");
 
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
-	$self->output(<< "__EOD__"
-$ctx->{RESULT_SHARED_LIBRARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
-	\@echo Linking \$\@
-	\@mkdir -p \$(\@D)
-	\@\$(SHLD) \$(LDFLAGS) \$(SHLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$($ctx->{NAME}\_FULL_OBJ_LIST) \\
-		\$($ctx->{NAME}_LINK_FLAGS) \\
-		\$(if \$(SONAMEFLAG), \$(SONAMEFLAG)$ctx->{LIBRARY_SONAME})
-__EOD__
-);
-	if ($ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
-		$self->output("ifneq (\$($ctx->{NAME}_VERSION),\$($ctx->{NAME}_SOVERSION))\n");
-		$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}\n");
-		$self->output("endif\n");
-	}
-	$self->output("ifdef $ctx->{NAME}_SOVERSION\n");
-	$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}\n");
-	$self->output("endif\n");
+	$self->output("\$(eval \$(call shared_library_template,$ctx->{RESULT_SHARED_LIBRARY}, \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST), \$($ctx->{NAME}\_FULL_OBJ_LIST) \$($ctx->{NAME}_LINK_FLAGS),$ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME},$ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}))\n");
 }
 
 sub MergedObj($$)
 {
 	my ($self, $ctx) = @_;
 
-	return unless defined($ctx->{OUTPUT});
+	$self->output("\$(call partial_link_template, $ctx->{OUTPUT}, \$($ctx->{NAME}_OBJ_FILES))\n");
+}
 
-	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-	$self->output(<< "__EOD__"
-#
-$ctx->{RESULT_MERGED_OBJ}: \$($ctx->{NAME}_OBJ_FILES)
-	\@echo Partially linking \$@
-	\@mkdir -p \$(\@D)
-	\$(PARTLINK) -o \$@ \$($ctx->{NAME}_OBJ_FILES)
-
-__EOD__
-);
+sub InitFunctions($$)
+{
+	my ($self, $ctx) = @_;
+	$self->output("\$($ctx->{NAME}_OBJ_FILES): CFLAGS+=-DSTATIC_$ctx->{NAME}_MODULES=\"\$($ctx->{NAME}_INIT_FUNCTIONS)$ctx->{INIT_FUNCTION_SENTINEL}\"\n");
 }
 
 sub StaticLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
-	$self->output("STATIC_LIBS += $ctx->{TARGET_STATIC_LIBRARY}\n") if ($ctx->{TYPE} eq "LIBRARY");
-
+	$self->output("STATIC_LIBS += $ctx->{RESULT_STATIC_LIBRARY}\n") if ($ctx->{TYPE} eq "LIBRARY");
+	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->output("$ctx->{RESULT_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)\n");
 }
 
@@ -285,74 +196,31 @@ sub Binary($$)
 	my ($self,$ctx) = @_;
 
 	unless (defined($ctx->{INSTALLDIR})) {
+		$self->output("BINARIES += $ctx->{TARGET_BINARY}\n");
 	} elsif ($ctx->{INSTALLDIR} eq "SBINDIR") {
-		$self->output("SBIN_PROGS += bin/$ctx->{BINARY}\n");
+		$self->output("SBIN_PROGS += $ctx->{RESULT_BINARY}\n");
 	} elsif ($ctx->{INSTALLDIR} eq "BINDIR") {
-		$self->output("BIN_PROGS += bin/$ctx->{BINARY}\n");
+		$self->output("BIN_PROGS += $ctx->{RESULT_BINARY}\n");
 	}
-
-	$self->output("binaries:: $ctx->{TARGET_BINARY}\n");
 
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
-$self->output(<< "__EOD__"
-$ctx->{RESULT_BINARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
-	\@echo Linking \$\@
-__EOD__
-	);
-
 	if (defined($ctx->{USE_HOSTCC}) && $ctx->{USE_HOSTCC} eq "YES") {
-		$self->output(<< "__EOD__"
-	\@\$(HOSTLD) \$(HOSTLD_FLAGS) -L\${builddir}/bin/static -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$\($ctx->{NAME}_LINK_FLAGS)
-__EOD__
-		);
+$self->output("\$(call host_binary_link_template, $ctx->{RESULT_BINARY}, \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST), \$($ctx->{NAME}_LINK_FLAGS))\n");
 	} else {
-		$self->output(<< "__EOD__"
-	\@\$(BNLD) \$(BNLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$\($ctx->{NAME}_LINK_FLAGS) 
-
-__EOD__
-		);
+$self->output("\$(call binary_link_template, $ctx->{RESULT_BINARY}, \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST), \$($ctx->{NAME}_LINK_FLAGS))\n");
 	}
-}
-
-sub PythonFiles($$)
-{
-	my ($self,$ctx) = @_;
-
-	foreach (@{$ctx->{PYTHON_FILES}}) {
-		my $target = "bin/python/".basename($_);
-		my $source = "\$(addprefix $ctx->{BASEDIR}/, $_)";
-		$self->output("$target: $source\n\n");
-		$self->output("PYTHON_PYS += $target\n");
-	}
-}
-
-sub ProtoHeader($$)
-{
-	my ($self,$ctx) = @_;
-
-	my $priv = "$ctx->{BASEDIR}/$ctx->{PRIVATE_PROTO_HEADER}";
-	$self->output("PROTO_HEADERS += $priv\n");
-
-	$self->output("$priv: $ctx->{MK_FILE} \$($ctx->{NAME}_OBJ_FILES:.o=.c) \$(srcdir)/script/mkproto.pl\n");
-	$self->output("\t\@echo \"Creating \$@\"\n");
-	$self->output("\t\@mkdir -p \$(\@D)\n");
-	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --srcdir=\$(srcdir) --builddir=\$(builddir) --public=/dev/null --private=\$@ \$($ctx->{NAME}_OBJ_FILES)\n\n");
 }
 
 sub write($$)
 {
 	my ($self, $file) = @_;
 
-	$self->output("ALL_OBJS = " . array2oneperline($self->{all_objs}) . "\n");
-
 	$self->_prepare_mk_files();
 
-	$self->output($self->{mkfile});
+	$self->output("ALL_OBJS = " . array2oneperline($self->{all_objs}) . "\n");
 
 	open(MAKEFILE,">$file") || die ("Can't open $file\n");
 	print MAKEFILE $self->{output};

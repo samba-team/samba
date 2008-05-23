@@ -4,6 +4,8 @@
 
 include mkconfig.mk
 
+pidldir := $(srcdir)/pidl
+
 VPATH = $(builddir):$(srcdir):heimdal_build:heimdal/lib/asn1:heimdal/lib/krb5:heimdal/lib/gssapi:heimdal/lib/hdb:heimdal/lib/roken:heimdal/lib/des
 
 BASEDIR = $(prefix)
@@ -25,7 +27,7 @@ $(srcdir)/version.h: $(srcdir)/VERSION
 .DEFAULT_GOAL := all
 
 ifneq ($(automatic_dependencies),yes)
-ALL_PREDEP = proto
+ALL_PREDEP = basics
 .NOTPARALLEL:
 endif
 
@@ -41,7 +43,7 @@ pch:: clean_pch include/includes.h.gch
 .DEFAULT_GOAL := all
 
 ifneq ($(automatic_dependencies),yes)
-ALL_PREDEP = proto
+ALL_PREDEP = basics
 .NOTPARALLEL:
 endif
 

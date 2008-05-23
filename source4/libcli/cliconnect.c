@@ -33,13 +33,14 @@
 */
 bool smbcli_socket_connect(struct smbcli_state *cli, const char *server, 
 			   const char **ports, 
+			   struct event_context *ev_ctx,
 			   struct resolve_context *resolve_ctx,
 			   struct smbcli_options *options)
 {
 	struct smbcli_socket *sock;
 
-	sock = smbcli_sock_connect_byname(server, ports, NULL, resolve_ctx, 
-					  NULL);
+	sock = smbcli_sock_connect_byname(server, ports, NULL,
+					  resolve_ctx, ev_ctx);
 
 	if (sock == NULL) return false;
 	

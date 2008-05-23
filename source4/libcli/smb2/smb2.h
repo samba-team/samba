@@ -19,7 +19,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef __LIBCLI_SMB2_SMB2_H__
+#define __LIBCLI_SMB2_SMB2_H__
+
 #include "libcli/raw/request.h"
+
+struct smb2_handle;
 
 struct smb2_options {
 	uint32_t timeout;
@@ -30,6 +35,8 @@ struct smb2_options {
 */
 struct smb2_negotiate {
 	DATA_BLOB secblob;
+	NTTIME system_time;
+	NTTIME server_start_time;
 };
 
 /* this is the context for the smb2 transport layer */
@@ -58,6 +65,15 @@ struct smb2_transport {
 		void *private;
 		uint_t period;
 	} idle;
+
+	struct {
+		/* a oplock break request handler */
+		bool (*handler)(struct smb2_transport *transport,
+				const struct smb2_handle *handle,
+				uint8_t level, void *private_data);
+		/* private data passed to the oplock handler */
+		void *private_data;
+	} oplock;
 };
 
 
@@ -154,7 +170,7 @@ struct smb2_request {
 	*/
 	struct {
 		void (*fn)(struct smb2_request *);
-		void *private;
+		void *private_data;
 	} async;
 };
 
@@ -271,3 +287,5 @@ struct smb2_request {
 		return NT_STATUS_INVALID_PARAMETER; \
 	} \
 } while (0)
+
+#endif

@@ -56,8 +56,6 @@ clean:: clean_pch
 	@echo Removing generated files
 	@-rm -f bin/*_init_module.c
 	@-rm -rf librpc/gen_* 
-	@echo Removing proto headers
-	@-rm -f $(PROTO_HEADERS)
 
 distclean:: clean
 	-rm -f include/config.h include/config_tmp.h include/build.h
@@ -88,102 +86,7 @@ unused_macros:
 	@mkdir -p $(@D)
 	@$(STLD) $(STLD_FLAGS) $@ $^
 
-###############################################################################
-# Templates
-###############################################################################
-
-# Partially link
-# Arguments: target object file, source object files
-define partial_link_template 
-$(1): $(2) ;
-	@echo Partially linking $$@
-	@mkdir -p $$(@D)
-	$$(PARTLINK) -o $$@ $$^
-endef
-
-# Link a binary
-# Arguments: target file, depends, flags
-define binary_link_template
-$(1): $(2) ;
-	@echo Linking $$@
-	@$$(BNLD) $$(BNLD_FLAGS) $$(INTERN_LDFLAGS) -o $$@ $$(INSTALL_LINK_FLAGS) $(3)
-endef
-
-# Link a host-machine binary
-# Arguments: target file, depends, flags
-define host_binary_link_template
-$(1): $(2) ;
-	@echo Linking $$@
-	@$$(HOSTLD) $$(HOSTLD_FLAGS) -L$${builddir}/bin/static -o $$@ $$(INSTALL_LINK_FLAGS) $(3)
-endef
-
-# Create a prototype header
-# Arguments: header file, c files
-define proto_header_template
-$(1): $(2) ;
-	@echo "Creating $$@"
-	@$$(PERL) $$(srcdir)/script/mkproto.pl --srcdir=$$(srcdir) --builddir=$$(builddir) --public=/dev/null --private=$$@ $$^
-endef
-
-# Shared module
-# Arguments: Target, dependencies, objects
-define shared_module_template
-
-$(1): $(2) ;
-	@echo Linking $$@
-	@mkdir -p $$(@D)
-	@$$(MDLD) $$(LDFLAGS) $$(MDLD_FLAGS) $$(INTERN_LDFLAGS) -o $$@ $$(INSTALL_LINK_FLAGS) $(3)
-
-endef
-
-# Shared library
-# Arguments: Target, dependencies, link flags, soname
-define shared_library_template
-$(1): $(2)
-	@echo Linking $$@
-	@mkdir -p $$(@D)
-	@$$(SHLD) $$(LDFLAGS) $$(SHLD_FLAGS) $$(INTERN_LDFLAGS) -o $$@ $$(INSTALL_LINK_FLAGS) \
-		$(3) \
-		$$(if $$(SONAMEFLAG), $$(SONAMEFLAG)$(notdir $(4)))
-
-ifneq ($(notdir $(1)),$(notdir $(4)))
-$(4): $(1)
-	@echo "Creating symbolic link for $$@"
-	@ln -fs $$(<F) $$@
-endif
-
-ifneq ($(notdir $(1)),$(notdir $(5)))
-$(5): $(1)
-	@echo "Creating symbolic link for $$@"
-	@ln -fs $$(<F) $$@
-endif
-endef
-
-# Shared alias
-# Arguments: Target, subsystem name, alias name
-define shared_module_alias_template
-bin/modules/$(2)/$(3).$$(SHLIBEXT): $(1)
-	@ln -fs $$(<F) $$@
-
-PLUGINS += bin/modules/$(2)/$(3).$$(SHLIBEXT)
-
-uninstallplugins::
-	@-rm $$(DESTDIR)$$(modulesdir)/$(2)/$(3).$$(SHLIBEXT)
-installplugins::
-	@ln -fs $(1) $$(DESTDIR)$$(modulesdir)/$(2)/$(3).$$(SHLIBEXT)
-
-endef
-
-define shared_module_install_template
-installplugins:: bin/modules/$(1)/$(2)
-	@echo Installing$(2) as $$(DESTDIR)$$(modulesdir)/$(1)/$(2)
-	@mkdir -p $$(DESTDIR)$$(modulesdir)/$(1)/
-	@cp bin/modules/$(1)/$(2) $$(DESTDIR)$$(modulesdir)/$(1)/$(2)
-uninstallplugins::
-	@echo Uninstalling $$(DESTDIR)$$(modulesdir)/$(1)/$(2)
-	@-rm $$(DESTDIR)$$(modulesdir)/$(1)/$(2)
-
-endef
+include build/make/templates.mk
 
 ###############################################################################
 # File types
@@ -211,8 +114,8 @@ include/includes.d: include/includes.h
 	@echo "Compiling $<"
 	@-mkdir -p `dirname $@`
 	@$(COMPILE) && exit 0 ; \
-	$(COMPILE) 
-
+		echo "The following command failed:" 1>&2;\
+		echo "$(subst ",\",$(COMPILE))" 1>&2 && exit 1
 
 
 .c.ho:
@@ -220,7 +123,7 @@ include/includes.d: include/includes.h
 	@-mkdir -p `dirname $@`
 	@$(HCOMPILE) && exit 0;\
 		echo "The following command failed:" 1>&2;\
-		echo "$(HCOMPILE)" 1>&2;\
+		echo "$(subst ",\",$(HCOMPILE))" 1>&2;\
 		$(HCOMPILE) >/dev/null 2>&1
 
 .h.h.gch:
@@ -233,7 +136,7 @@ include/includes.d: include/includes.h
 
 .l.c:
 	@echo "Building $< with $(LEX)"
-	@-$(make_utility_dir)/script/lex_compile.sh "$(LEX)" "$<" "$@"
+	@-$(make_utility_dir)/lex_compile.sh "$(LEX)" "$<" "$@"
 
 %.a:
 	@echo Linking $@

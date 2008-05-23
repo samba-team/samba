@@ -67,22 +67,15 @@ static struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (ev == NULL) {
-		ev = event_context_init(c);
-		if (ev == NULL) {
-			talloc_free(c);
-			return NULL;
-		}
-	}
-
 	c->iconv_convenience = talloc_reference(c, ic);
 
-	c->event_ctx = ev;
-	
-	if (!talloc_reference(c, ev)) {
+	c->event_ctx = talloc_reference(c, ev);
+
+	if (c->event_ctx == NULL) {
 		talloc_free(c);
 		return NULL;
 	}
+
 	c->call_id = 1;
 	c->security_state.auth_info = NULL;
 	c->security_state.session_key = dcerpc_generic_session_key;

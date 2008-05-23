@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "smbd/process_model.h"
-#include "build.h"
 #include "param/param.h"
 
 /*

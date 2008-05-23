@@ -24,7 +24,6 @@
 
 #include "includes.h"
 #include "lib/util/dlinklist.h"
-#include "build.h"
 #include "ntvfs/ntvfs.h"
 #include "param/param.h"
 
@@ -206,6 +205,7 @@ NTSTATUS ntvfs_init(struct loadparm_context *lp_ctx)
 	static bool initialized = false;
 	extern NTSTATUS ntvfs_posix_init(void);
 	extern NTSTATUS ntvfs_cifs_init(void);
+	extern NTSTATUS ntvfs_smb2_init(void);
 	extern NTSTATUS ntvfs_nbench_init(void);
 	extern NTSTATUS ntvfs_unixuid_init(void);
 	extern NTSTATUS ntvfs_ipc_init(void);

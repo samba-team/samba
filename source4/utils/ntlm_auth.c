@@ -30,6 +30,7 @@
 #include "auth/auth.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "auth/auth_sam.h"
+#include "auth/ntlm/ntlm_check.h"
 #include "pstring.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"
@@ -461,6 +462,10 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		return;
 	}
 
+	ev = event_context_init(state);
+	if (!ev) {
+		exit(1);
+	}
 	/* setup gensec */
 	if (!(state->gensec_state)) {
 		switch (stdio_helper_mode) {
@@ -468,7 +473,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		case NTLMSSP_CLIENT_1:
 			/* setup the client side */
 
-			nt_status = gensec_client_start(NULL, &state->gensec_state, NULL, lp_ctx);
+			nt_status = gensec_client_start(NULL, &state->gensec_state, ev, lp_ctx);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				exit(1);
 			}
@@ -476,10 +481,6 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			break;
 		case GSS_SPNEGO_SERVER:
 		case SQUID_2_5_NTLMSSP:
-			ev = event_context_init(state);
-			if (!ev) {
-				exit(1);
-			}
 			msg = messaging_client_init(state, lp_messaging_path(state, lp_ctx), 
 						    lp_iconv_convenience(lp_ctx), ev);
 			if (!msg) {

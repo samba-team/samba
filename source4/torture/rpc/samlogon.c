@@ -1602,7 +1602,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, b, 
 				       &ndr_table_netlogon,
-				       machine_credentials, NULL, torture->lp_ctx);
+				       machine_credentials, torture->ev, torture->lp_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("RPC pipe connect as domain member failed: %s\n", nt_errstr(status));

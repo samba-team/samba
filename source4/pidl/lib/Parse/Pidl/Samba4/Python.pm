@@ -203,7 +203,7 @@ sub PythonStruct($$$$$$)
 			$self->pidl("return 0;");
 			$self->deindent;
 			$self->pidl("}");
-		$self->pidl("");
+			$self->pidl("");
 		}
 
 		$getsetters = "py_$name\_getsetters";
@@ -253,6 +253,20 @@ sub PythonStruct($$$$$$)
 	return "&$typeobject";
 }
 
+sub get_metadata_var($)
+{
+	my ($e) = @_;
+	sub get_var($) { my $x = shift; $x =~ s/\*//g; return $x; }
+
+	 if (has_property($e, "length_is")) {
+		return get_var($e->{PROPERTIES}->{length_is});
+	 } elsif (has_property($e, "size_is")) {
+		return get_var($e->{PROPERTIES}->{size_is});
+	 }
+
+	 return undef;
+}
+
 sub PythonFunctionBody($$$)
 {
 	my ($self, $fn, $iface, $prettyname) = @_;
@@ -274,17 +288,10 @@ sub PythonFunctionBody($$$)
 
 	my $metadata_args = { in => {}, out => {} };
 
-	sub get_var($) { my $x = shift; $x =~ s/\*//g; return $x; }
-
 	# Determine arguments that are metadata for other arguments (size_is/length_is)
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		foreach my $dir (@{$e->{DIRECTION}}) {
-			 my $main = undef;
-			 if (has_property($e, "length_is")) {
-			 	$main = get_var($e->{PROPERTIES}->{length_is});
-			 } elsif (has_property($e, "size_is")) {
-			 	$main = get_var($e->{PROPERTIES}->{size_is});
-			 }
+			 my $main = get_metadata_var($e);
 			 if ($main) { 
 				 $metadata_args->{$dir}->{$main} = $e->{NAME}; 
 			 }
@@ -597,8 +604,9 @@ sub Interface($$$)
 		$self->pidl("const char *binding_string;");
 		$self->pidl("struct cli_credentials *credentials;");
 		$self->pidl("struct loadparm_context *lp_ctx = NULL;");
-		$self->pidl("PyObject *py_lp_ctx = NULL, *py_credentials = Py_None;");
+		$self->pidl("PyObject *py_lp_ctx = Py_None, *py_credentials = Py_None;");
 		$self->pidl("TALLOC_CTX *mem_ctx = NULL;");
+		$self->pidl("struct event_context *event_ctx;");
 		$self->pidl("NTSTATUS status;");
 		$self->pidl("");
 		$self->pidl("const char *kwnames[] = {");
@@ -609,21 +617,17 @@ sub Interface($$$)
 		$self->pidl("extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);");
 		$self->pidl("extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);");
 		$self->pidl("");
-		$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"sO|O:$interface->{NAME}\", discard_const_p(char *, kwnames), &binding_string, &py_lp_ctx, &py_credentials)) {");
+		$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"s|OO:$interface->{NAME}\", discard_const_p(char *, kwnames), &binding_string, &py_lp_ctx, &py_credentials)) {");
 		$self->indent;
 		$self->pidl("return NULL;");
 		$self->deindent;
 		$self->pidl("}");
 		$self->pidl("");
-		$self->pidl("if (py_lp_ctx != NULL) {");
-		$self->indent;
 		$self->pidl("lp_ctx = lp_from_py_object(py_lp_ctx);");
 		$self->pidl("if (lp_ctx == NULL) {");
 		$self->indent;
 		$self->pidl("PyErr_SetString(PyExc_TypeError, \"Expected loadparm context\");");
 		$self->pidl("return NULL;");
-		$self->deindent;
-		$self->pidl("}");
 		$self->deindent;
 		$self->pidl("}");
 		$self->pidl("");
@@ -638,9 +642,11 @@ sub Interface($$$)
 
 		$self->pidl("ret = PyObject_New($interface->{NAME}_InterfaceObject, &$interface->{NAME}_InterfaceType);");
 		$self->pidl("");
+		$self->pidl("event_ctx = event_context_init(mem_ctx);");
+		$self->pidl("");
 
 		$self->pidl("status = dcerpc_pipe_connect(NULL, &ret->pipe, binding_string, ");
-		$self->pidl("             &ndr_table_$interface->{NAME}, credentials, NULL, lp_ctx);");
+		$self->pidl("             &ndr_table_$interface->{NAME}, credentials, event_ctx, lp_ctx);");
 		$self->handle_ntstatus("status", "NULL", "mem_ctx");
 
 		$self->pidl("ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;");
@@ -652,7 +658,7 @@ sub Interface($$$)
 		$self->pidl("");
 
 		my $signature = 
-"\"$interface->{NAME}(binding, lp_ctx=None, credentials=None) -> Connection to DCE/RPC interface.\\n\"
+"\"$interface->{NAME}(binding, lp_ctx=None, credentials=None) -> connection\\n\"
 \"\\n\"
 \"binding should be a DCE/RPC binding string (for example: ncacn_ip_tcp:127.0.0.1)\\n\"
 \"lp_ctx should be a path to a smb.conf file or a param.LoadParm object\\n\"
@@ -1024,6 +1030,7 @@ sub Parse($$$$$)
 #include \"librpc/rpc/dcerpc.h\"
 #include \"scripting/python/pytalloc.h\"
 #include \"scripting/python/pyrpc.h\"
+#include \"lib/events/events.h\"
 #include \"$hdr\"
 #include \"$ndr_hdr\"
 #include \"$py_hdr\"

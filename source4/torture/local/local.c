@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
+#include "torture/smbtorture.h"
 #include "torture/local/proto.h"
 #include "torture/ndr/ndr.h"
 #include "torture/ndr/proto.h"

@@ -38,7 +38,9 @@ enum connect_stage {CONNECT_RESOLVE,
 		    CONNECT_NEGPROT,
 		    CONNECT_SESSION_SETUP,
 		    CONNECT_SESSION_SETUP_ANON,
-		    CONNECT_TCON};
+		    CONNECT_TCON,
+		    CONNECT_DONE
+};
 
 struct connect_state {
 	enum connect_stage stage;
@@ -55,25 +57,6 @@ struct connect_state {
 
 static void request_handler(struct smbcli_request *);
 static void composite_handler(struct composite_context *);
-
-/*
-  setup a negprot send 
-*/
-static NTSTATUS connect_send_negprot(struct composite_context *c, 
-				     struct smb_composite_connect *io)
-{
-	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
-
-	state->req = smb_raw_negotiate_send(state->transport, io->in.options.unicode, io->in.options.max_protocol);
-	NT_STATUS_HAVE_NO_MEMORY(state->req);
-
-	state->req->async.fn = request_handler;
-	state->req->async.private = c;
-	state->stage = CONNECT_NEGPROT;
-	
-	return NT_STATUS_OK;
-}
-
 
 /*
   a tree connect request has completed
@@ -97,8 +80,7 @@ static NTSTATUS connect_tcon(struct composite_context *c,
 						      state->io_tcon->tconx.out.fs_type);
 	}
 
-	/* all done! */
-	c->state = COMPOSITE_STATE_DONE;
+	state->stage = CONNECT_DONE;
 
 	return NT_STATUS_OK;
 }
@@ -121,9 +103,6 @@ static NTSTATUS connect_session_setup_anon(struct composite_context *c,
 	state->session->vuid = state->io_setup->out.vuid;
 	
 	/* setup for a tconx */
-	io->out.tree = smbcli_tree_init(state->session, state, true);
-	NT_STATUS_HAVE_NO_MEMORY(io->out.tree);
-
 	state->io_tcon = talloc(c, union smb_tcon);
 	NT_STATUS_HAVE_NO_MEMORY(state->io_tcon);
 
@@ -203,9 +182,12 @@ static NTSTATUS connect_session_setup(struct composite_context *c,
 	
 	state->session->vuid = state->io_setup->out.vuid;
 	
-	/* setup for a tconx */
-	io->out.tree = smbcli_tree_init(state->session, state, true);
-	NT_STATUS_HAVE_NO_MEMORY(io->out.tree);
+	/* If we don't have a remote share name then this indicates that
+	 * we don't want to do a tree connect */
+	if (!io->in.service) {
+		state->stage = CONNECT_DONE;
+		return NT_STATUS_OK;
+	}
 
 	state->io_tcon = talloc(c, union smb_tcon);
 	NT_STATUS_HAVE_NO_MEMORY(state->io_tcon);
@@ -254,6 +236,18 @@ static NTSTATUS connect_negprot(struct composite_context *c,
 	/* next step is a session setup */
 	state->session = smbcli_session_init(state->transport, state, true);
 	NT_STATUS_HAVE_NO_MEMORY(state->session);
+	
+	/* setup for a tconx (or at least have the structure ready to
+	 * return, if we won't go that far) */
+	io->out.tree = smbcli_tree_init(state->session, state, true);
+	NT_STATUS_HAVE_NO_MEMORY(io->out.tree);
+
+	/* If we don't have any credentials then this indicates that
+	 * we don't want to do a session setup */
+	if (!io->in.credentials) {
+		state->stage = CONNECT_DONE;
+		return NT_STATUS_OK;
+	}
 
 	state->io_setup = talloc(c, struct smb_composite_sesssetup);
 	NT_STATUS_HAVE_NO_MEMORY(state->io_setup);
@@ -272,7 +266,26 @@ static NTSTATUS connect_negprot(struct composite_context *c,
 
 	state->creq->async.fn = composite_handler;
 	state->creq->async.private_data = c;
+
 	state->stage = CONNECT_SESSION_SETUP;
+	
+	return NT_STATUS_OK;
+}
+
+/*
+  setup a negprot send 
+*/
+static NTSTATUS connect_send_negprot(struct composite_context *c, 
+				     struct smb_composite_connect *io)
+{
+	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
+
+	state->req = smb_raw_negotiate_send(state->transport, io->in.options.unicode, io->in.options.max_protocol);
+	NT_STATUS_HAVE_NO_MEMORY(state->req);
+
+	state->req->async.fn = request_handler;
+	state->req->async.private = c;
+	state->stage = CONNECT_NEGPROT;
 	
 	return NT_STATUS_OK;
 }
@@ -405,13 +418,11 @@ static void state_handler(struct composite_context *c)
 		break;
 	}
 
-	if (!NT_STATUS_IS_OK(c->status)) {
-		c->state = COMPOSITE_STATE_ERROR;
-	}
-
-	if (c->state >= COMPOSITE_STATE_DONE &&
-	    c->async.fn) {
-		c->async.fn(c);
+	if (state->stage == CONNECT_DONE) {
+		/* all done! */
+		composite_done(c);
+	} else {
+		composite_is_ok(c);
 	}
 }
 
@@ -451,17 +462,15 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) goto failed;
 
+	c->event_ctx = talloc_reference(c, event_ctx);
+	if (c->event_ctx == NULL) goto failed;
+
 	state = talloc_zero(c, struct connect_state);
 	if (state == NULL) goto failed;
-
-	if (event_ctx == NULL) {
-		event_ctx = event_context_init(mem_ctx);
-	}
 
 	state->io = io;
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
-	c->event_ctx = talloc_reference(c, event_ctx);
 	c->private_data = state;
 
 	state->stage = CONNECT_RESOLVE;

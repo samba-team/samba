@@ -21,7 +21,7 @@
 #include "libcli/nbt/libnbt.h"
 #include "torture/torture.h"
 #include "torture/nbt/proto.h"
-#include "torture/ui.h"
+#include "torture/smbtorture.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
 
@@ -34,7 +34,7 @@ bool torture_nbt_get_name(struct torture_context *tctx,
 
 	/* do an initial name resolution to find its IP */
 	torture_assert_ntstatus_ok(tctx, 
-				   resolve_name(lp_resolve_context(tctx->lp_ctx), name, tctx, address, NULL), 
+				   resolve_name(lp_resolve_context(tctx->lp_ctx), name, tctx, address, tctx->ev), 
 				   talloc_asprintf(tctx, 
 						   "Failed to resolve %s", name->name));
 	

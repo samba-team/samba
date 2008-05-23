@@ -27,13 +27,18 @@
     at runtime we fallback to select()
 */
 
+#if _SAMBA_BUILD_
 #include "includes.h"
+#include "lib/util/dlinklist.h"
+#else
+#include "replace.h"
+#include "events_util.h"
+#endif
 #include "system/filesys.h"
 #include "system/network.h"
 #include "system/select.h" /* needed for HAVE_EVENTS_EPOLL */
-#include "lib/util/dlinklist.h"
-#include "lib/events/events.h"
-#include "lib/events/events_internal.h"
+#include "events.h"
+#include "events_internal.h"
 
 struct std_event_context {
 	/* a pointer back to the generic event_context */

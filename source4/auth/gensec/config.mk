@@ -1,30 +1,31 @@
 #################################
 # Start SUBSYSTEM gensec
 [LIBRARY::gensec]
-PRIVATE_PROTO_HEADER = gensec_proto.h
 PUBLIC_DEPENDENCIES = \
 		CREDENTIALS LIBSAMBA-UTIL LIBCRYPTO ASN1_UTIL samba-socket LIBPACKET
 # End SUBSYSTEM gensec
 #################################
 
-PC_FILES += auth/gensec/gensec.pc
+PC_FILES += $(gensecsrcdir)/gensec.pc
 
 gensec_VERSION = 0.0.1
 gensec_SOVERSION = 0
-gensec_OBJ_FILES = $(addprefix auth/gensec/, gensec.o socket.o)
+gensec_OBJ_FILES = $(addprefix $(gensecsrcdir)/, gensec.o socket.o)
 
-PUBLIC_HEADERS += auth/gensec/gensec.h
+PUBLIC_HEADERS += $(gensecsrcdir)/gensec.h
+
+$(eval $(call proto_header_template,$(gensecsrcdir)/gensec_proto.h,$(gensec_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start MODULE gensec_krb5
 [MODULE::gensec_krb5]
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_krb5_init
-PRIVATE_DEPENDENCIES = CREDENTIALS KERBEROS auth auth_sam
+PRIVATE_DEPENDENCIES = CREDENTIALS KERBEROS auth_session auth_sam
 # End MODULE gensec_krb5
 ################################################
 
-gensec_krb5_OBJ_FILES = $(addprefix auth/gensec/, gensec_krb5.o)
+gensec_krb5_OBJ_FILES = $(addprefix $(gensecsrcdir)/, gensec_krb5.o)
 
 ################################################
 # Start MODULE gensec_gssapi
@@ -35,7 +36,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_GSSAPI CREDENTIALS KERBEROS
 # End MODULE gensec_gssapi
 ################################################
 
-gensec_gssapi_OBJ_FILES = $(addprefix auth/gensec/, gensec_gssapi.o)
+gensec_gssapi_OBJ_FILES = $(addprefix $(gensecsrcdir)/, gensec_gssapi.o)
 
 ################################################
 # Start MODULE cyrus_sasl
@@ -46,40 +47,41 @@ PRIVATE_DEPENDENCIES = CREDENTIALS SASL
 # End MODULE cyrus_sasl
 ################################################
 
-cyrus_sasl_OBJ_FILES = $(addprefix auth/gensec/, cyrus_sasl.o)
+cyrus_sasl_OBJ_FILES = $(addprefix $(gensecsrcdir)/, cyrus_sasl.o)
 
 ################################################
 # Start MODULE gensec_spnego
 [MODULE::gensec_spnego]
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_spnego_init
-PRIVATE_PROTO_HEADER = spnego_proto.h
 PRIVATE_DEPENDENCIES = ASN1_UTIL CREDENTIALS
 # End MODULE gensec_spnego
 ################################################
 
-gensec_spnego_OBJ_FILES = $(addprefix auth/gensec/, spnego.o spnego_parse.o)
+gensec_spnego_OBJ_FILES = $(addprefix $(gensecsrcdir)/, spnego.o spnego_parse.o)
+
+$(eval $(call proto_header_template,$(gensecsrcdir)/spnego_proto.h,$(gensec_spnego_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start MODULE gensec_schannel
 [MODULE::gensec_schannel]
 SUBSYSTEM = gensec
-PRIVATE_PROTO_HEADER = schannel_proto.h
 INIT_FUNCTION = gensec_schannel_init
 PRIVATE_DEPENDENCIES = SCHANNELDB NDR_SCHANNEL CREDENTIALS LIBNDR
 OUTPUT_TYPE = MERGED_OBJ
 # End MODULE gensec_schannel
 ################################################
 
-gensec_schannel_OBJ_FILES = $(addprefix auth/gensec/, schannel.o schannel_sign.o)
+gensec_schannel_OBJ_FILES = $(addprefix $(gensecsrcdir)/, schannel.o schannel_sign.o)
+$(eval $(call proto_header_template,$(gensecsrcdir)/schannel_proto.h,$(gensec_schannel_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start SUBSYSTEM SCHANNELDB
 [SUBSYSTEM::SCHANNELDB]
-PRIVATE_PROTO_HEADER = schannel_state.h
 PRIVATE_DEPENDENCIES = LDB_WRAP SAMDB
 # End SUBSYSTEM SCHANNELDB
 ################################################
 
-SCHANNELDB_OBJ_FILES = $(addprefix auth/gensec/, schannel_state.o)
+SCHANNELDB_OBJ_FILES = $(addprefix $(gensecsrcdir)/, schannel_state.o)
+$(eval $(call proto_header_template,$(gensecsrcdir)/schannel_state.h,$(SCHANNELDB_OBJ_FILES:.o=.c)))
 

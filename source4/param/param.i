@@ -50,22 +50,36 @@ typedef struct loadparm_context {
     %extend {
         loadparm_context(TALLOC_CTX *mem_ctx) { return loadparm_init(mem_ctx); }
         struct loadparm_service *default_service() { return lp_default_service($self); }
+        %feature("docstring") load "S.load(filename) -> None\n" \
+                                   "Load specified file.";
         bool load(const char *filename) { return lp_load($self, filename); }
+        %feature("docstring") load_default "S.load_default() -> None\n" \
+                                   "Load default smb.conf file.";
         bool load_default() { return lp_load_default($self); }
 #ifdef SWIGPYTHON
         int __len__() { return lp_numservices($self); }
         struct loadparm_service *__getitem__(const char *name) { return lp_service($self, name); }
 #endif
+        %feature("docstring") configfile "S.configfile() -> string\n" \
+                                   "Return name of last config file that was loaded.";
         const char *configfile() { return lp_configfile($self); }
+        %feature("docstring") is_mydomain "S.is_mydomain(domain_name) -> bool\n" \
+                                   "Check whether the specified name matches our domain name.";
         bool is_mydomain(const char *domain) { return lp_is_mydomain($self, domain); }
+        %feature("docstring") is_myname "S.is_myname(netbios_name) -> bool\n" \
+                                   "Check whether the specified name matches one of our netbios names.";
         bool is_myname(const char *name) { return lp_is_myname($self, name); }
         int use(struct param_context *param_ctx) { return param_use($self, param_ctx); }
+        %feature("docstring") set "S.set(name, value) -> bool\n" \
+                                   "Change a parameter.";
         bool set(const char *parm_name, const char *parm_value) {
             if (parm_value == NULL)
                 return false;
             return lp_set_cmdline($self, parm_name, parm_value);
         }
 
+        %feature("docstring") set "S.get(name, service_name) -> value\n" \
+                                   "Find specified parameter.";
         PyObject *get(const char *param_name, const char *service_name)
         {
             struct parm_struct *parm = NULL;
@@ -180,7 +194,11 @@ typedef struct loadparm_service {
 typedef struct param_context {
     %extend { 
         param(TALLOC_CTX *mem_ctx) { return param_init(mem_ctx); }
+        %feature("docstring") add_section "S.get_section(name) -> section\n"
+                                          "Get an existing section.";
         struct param_section *get_section(const char *name);
+        %feature("docstring") add_section "S.add_section(name) -> section\n"
+                                          "Add a new section.";
         struct param_section *add_section(const char *name);
         struct param_opt *get(const char *name, const char *section_name="global");
         const char *get_string(const char *name, const char *section_name="global");
@@ -198,10 +216,18 @@ typedef struct param_context {
         
 #endif
 
+        %feature("docstring") first_section "S.first_section() -> section\n"
+                                          "Find first section";
         struct param_section *first_section() { return $self->sections; }
+        %feature("docstring") next_section "S.next_section(prev) -> section\n"
+                                          "Find next section";
         struct param_section *next_section(struct param_section *s) { return s->next; }
 
+        %feature("docstring") read "S.read(filename) -> bool\n"
+                                          "Read a filename.";
         int read(const char *fn);
+        %feature("docstring") read "S.write(filename) -> bool\n"
+                                          "Write this object to a file.";
         int write(const char *fn);
     }
     %pythoncode {
@@ -301,6 +327,15 @@ struct loadparm_context *lp_from_py_object(PyObject *py_obj)
     if (PyString_Check(py_obj)) {
         lp_ctx = loadparm_init(NULL);
         if (!lp_load(lp_ctx, PyString_AsString(py_obj))) {
+            talloc_free(lp_ctx);
+            return NULL;
+        }
+        return lp_ctx;
+    }
+
+    if (py_obj == Py_None) {
+        lp_ctx = loadparm_init(NULL);
+        if (!lp_load_default(lp_ctx)) {
             talloc_free(lp_ctx);
             return NULL;
         }

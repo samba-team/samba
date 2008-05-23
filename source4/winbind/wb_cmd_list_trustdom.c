@@ -143,7 +143,8 @@ static void cmd_list_trustdoms_recv_doms(struct rpc_request *req)
 	state->domains = talloc_realloc(state, state->domains,
 					struct wb_dom_info *,
 					state->num_domains);
-	if (composite_nomem(state->domains, state->ctx)) return;
+	if (state->num_domains && 
+	    composite_nomem(state->domains, state->ctx)) return;
 
 	for (i=0; i<state->r.out.domains->count; i++) {
 		int j = i+old_num_domains;

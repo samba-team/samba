@@ -219,7 +219,7 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 					   pvfs->ntvfs->ctx->server_id,  
 					   pvfs->ntvfs->ctx->msg_ctx, 
 					   pvfs->ntvfs->ctx->lp_ctx, 
-					   event_context_find(pvfs),
+					   pvfs->ntvfs->ctx->event_ctx,
 					   pvfs->ntvfs->ctx->config);
 
 	pvfs->wbc_ctx = wbc_init(pvfs,

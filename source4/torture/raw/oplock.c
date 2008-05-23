@@ -2841,13 +2841,12 @@ bool torture_bench_oplock(struct torture_context *torture)
 	int timelimit = torture_setting_int(torture, "timelimit", 10);
 	union smb_open io;
 	struct timeval tv;
-	struct event_context *ev = event_context_find(mem_ctx);
 
 	cli = talloc_array(mem_ctx, struct smbcli_state *, torture_nprocs);
 
 	torture_comment(torture, "Opening %d connections\n", torture_nprocs);
 	for (i=0;i<torture_nprocs;i++) {
-		if (!torture_open_connection_ev(&cli[i], i, torture, ev)) {
+		if (!torture_open_connection_ev(&cli[i], i, torture, torture->ev)) {
 			return false;
 		}
 		talloc_steal(mem_ctx, cli[i]);

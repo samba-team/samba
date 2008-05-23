@@ -20,7 +20,7 @@ my $section_types = {
 		"LDFLAGS"		=> "list",
 		},
 	"PYTHON" => {
-		SWIG_FILE => "string",
+		"LIBRARY_REALNAME" => "string",
 		"PRIVATE_DEPENDENCIES"	=> "list",
 		"PUBLIC_DEPENDENCIES"	=> "list",
 		"ENABLE"		=> "bool",
@@ -32,8 +32,6 @@ my $section_types = {
 		"PUBLIC_DEPENDENCIES"	=> "list",
 
 		"ENABLE"		=> "bool",
-
-		"PRIVATE_PROTO_HEADER"	=> "string",
 
 		"CFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",
@@ -53,8 +51,6 @@ my $section_types = {
 
 		"OUTPUT_TYPE"		=> "list",
 
-		"PRIVATE_PROTO_HEADER"	=> "string",
-
 		"CFLAGS"		=> "list"
 		},
 	"BINARY" => {
@@ -64,8 +60,6 @@ my $section_types = {
 		"ENABLE"		=> "bool",
 
 		"INSTALLDIR"		=> "string",
-		"PRIVATE_PROTO_HEADER"	=> "string",
-
 		"CFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",
 		"STANDARD_VISIBILITY"	=> "string",
@@ -84,8 +78,6 @@ my $section_types = {
 
 		"ENABLE"		=> "bool",
 
-		"PRIVATE_PROTO_HEADER"	=> "string",
-
 		"CFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",
 		"STANDARD_VISIBILITY"	=> "string"
@@ -96,14 +88,11 @@ use vars qw(@parsed_files);
 
 @parsed_files = ();
 
-sub _read_config_file
+sub _read_config_file($$$)
 {
-	use File::Basename;
 	use Cwd;
 
-	my $srcdir = shift;
-	my $builddir = shift;
-	my $filename = shift;
+	my ($srcdir, $builddir, $filename) = @_;
 	my @dirlist;
 
 	# We need to change our working directory because config.mk files can
@@ -208,7 +197,7 @@ sub run_config_mk($$$$)
 			$prev = "";
 		}
 
-		if ($line =~ /^\[([-a-zA-Z0-9_:]+)\][\t ]*$/) 
+		if ($line =~ /^\[([-a-zA-Z0-9_.:]+)\][\t ]*$/) 
 		{
 			$section = $1;
 			$infragment = 0;
@@ -244,7 +233,6 @@ sub run_config_mk($$$$)
 			$infragment = 1;
 			next;
 		}
-
 		
 		# Assignment
 		if ($line =~ /^([a-zA-Z0-9_]+)[\t ]*=(.*)$/) {
@@ -254,7 +242,7 @@ sub run_config_mk($$$$)
 			next;
 		}
 
-		die("$parsing_file:$linenum: Bad line while parsing $parsing_file");
+		die("$parsing_file:$linenum: Bad line");
 	}
 
 	$makefile .= "# }END $parsing_file\n";

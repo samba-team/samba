@@ -34,7 +34,6 @@
 #include "smbd/service.h"
 #include "system/filesys.h"
 #include "libcli/security/security.h"
-#include "build.h"
 #include "param/param.h"
 
 extern const struct dcesrv_interface dcesrv_mgmt_interface;
@@ -446,6 +445,7 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code
 {
 	struct ncacn_packet pkt;
 	struct data_blob_list_item *rep;
+	uint8_t zeros[4];
 	NTSTATUS status;
 
 	/* setup a bind_ack */
@@ -458,6 +458,9 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code
 	pkt.u.fault.context_id = 0;
 	pkt.u.fault.cancel_count = 0;
 	pkt.u.fault.status = fault_code;
+
+	ZERO_STRUCT(zeros);
+	pkt.u.fault._pad = data_blob_const(zeros, sizeof(zeros));
 
 	rep = talloc(call, struct data_blob_list_item);
 	if (!rep) {
@@ -685,6 +688,7 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_
 	struct dcesrv_connection_context *context;
 	const struct dcesrv_interface *iface;
 	struct GUID uuid, *transfer_syntax_uuid;
+	NTSTATUS status;
 
 	if_version = call->pkt.u.alter.ctx_list[0].abstract_syntax.if_version;
 	uuid = call->pkt.u.alter.ctx_list[0].abstract_syntax.uuid;
@@ -717,6 +721,13 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_
 	context->handles = NULL;
 	DLIST_ADD(call->conn->contexts, context);
 	call->context = context;
+
+	if (iface) {
+		status = iface->bind(call, iface);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
 
 	return NT_STATUS_OK;
 }

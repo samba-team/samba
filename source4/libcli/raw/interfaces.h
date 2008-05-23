@@ -684,7 +684,8 @@ union smb_fileinfo {
 			uint32_t ea_size;
 			uint32_t access_mask;
 			uint64_t position;
-			uint64_t mode;
+			uint32_t mode;
+			uint32_t alignment_requirement;
 			struct smb_wire_string fname;
 		} out;
 	} all_info2;
@@ -1587,6 +1588,14 @@ union smb_open {
 
 			/* optional list of extended attributes */
 			struct smb_ea_list eas;
+
+			struct smb2_create_blobs {
+				uint32_t num_blobs;
+				struct smb2_create_blob {
+					const char *tag;
+					DATA_BLOB data;
+				} *blobs;
+			} blobs;
 		} in;
 		struct {
 			union smb_handle file;
@@ -1854,16 +1863,16 @@ enum smb_lock_level {
 	RAW_LOCK_LOCK,
 	RAW_LOCK_UNLOCK,
 	RAW_LOCK_LOCKX,
-	RAW_LOCK_SMB2
+	RAW_LOCK_SMB2,
+	RAW_LOCK_SMB2_BREAK
 };
 
-/* the generic interface is defined to be equal to the lockingX interface */
-#define RAW_LOCK_GENERIC RAW_LOCK_LOCKX
+#define	RAW_LOCK_GENERIC RAW_LOCK_LOCKX
 
 /* union for lock() backend call 
 */
 union smb_lock {
-	/* SMBlockingX (and generic) interface */
+	/* SMBlockingX and generic interface */
 	struct {
 		enum smb_lock_level level;
 		struct {
@@ -1878,7 +1887,7 @@ union smb_lock {
 				uint64_t count;
 			} *locks; /* unlocks are first in the arrray */
 		} in;
-	} lockx, generic;
+	} generic, lockx;
 
 	/* SMBlock and SMBunlock interface */
 	struct {
@@ -1898,25 +1907,42 @@ union smb_lock {
 
 			/* static body buffer 48 (0x30) bytes */
 			/* uint16_t buffer_code;  0x30 */
-			uint16_t unknown1; /* must be 0x0001 */
-			uint32_t unknown2;
+			uint16_t lock_count;
+			uint32_t reserved;
 			/* struct smb2_handle handle; */
-			uint64_t offset;
-			uint64_t count;
-			uint32_t unknown5;
+			struct smb2_lock_element {
+				uint64_t offset;
+				uint64_t length;
+/* these flags are the same as the SMB2 lock flags */
 #define SMB2_LOCK_FLAG_NONE		0x00000000
 #define SMB2_LOCK_FLAG_SHARED		0x00000001
-#define SMB2_LOCK_FLAG_EXCLUSIV		0x00000002
+#define SMB2_LOCK_FLAG_EXCLUSIVE	0x00000002
 #define SMB2_LOCK_FLAG_UNLOCK		0x00000004
-#define SMB2_LOCK_FLAG_NO_PENDING	0x00000010
-			uint32_t flags;
+#define SMB2_LOCK_FLAG_FAIL_IMMEDIATELY	0x00000010
+				uint32_t flags;
+				uint32_t reserved;
+			} *locks;
 		} in;
 		struct {
 			/* static body buffer 4 (0x04) bytes */
 			/* uint16_t buffer_code;  0x04 */
-			uint16_t unknown1;
+			uint16_t reserved;
 		} out;
 	} smb2;
+
+	/* SMB2 Break */
+	struct smb2_break {
+		enum smb_lock_level level;
+		struct {
+			union smb_handle file;
+
+			/* static body buffer 24 (0x18) bytes */
+			uint8_t oplock_level;
+			uint8_t reserved;
+			uint32_t reserved2;
+			/* struct smb2_handle handle; */
+		} in, out;
+	} smb2_break;
 };
 
 
@@ -2131,8 +2157,12 @@ union smb_flush {
 		enum smb_flush_level level;
 		struct {
 			union smb_handle file;
-			uint32_t unknown;
+			uint16_t reserved1;
+			uint32_t reserved2;
 		} in;
+		struct {
+			uint16_t reserved;
+		} out;
 	} smb2;
 };
 
@@ -2331,10 +2361,11 @@ union smb_search_first {
 #define SMB2_FIND_ID_BOTH_DIRECTORY_INFO 0x25
 #define SMB2_FIND_ID_FULL_DIRECTORY_INFO 0x26
 
-/* flags for RAW_FILEINFO_SMB2_ALL_EAS */
+/* flags for SMB2 find */
 #define SMB2_CONTINUE_FLAG_RESTART    0x01
 #define SMB2_CONTINUE_FLAG_SINGLE     0x02
-#define SMB2_CONTINUE_FLAG_NEW        0x10
+#define SMB2_CONTINUE_FLAG_INDEX      0x04
+#define SMB2_CONTINUE_FLAG_REOPEN     0x10
 
 	/* SMB2 Find */
 	struct smb2_find {
@@ -2347,7 +2378,7 @@ union smb_search_first {
 			/* uint16_t buffer_code;  0x21 = 0x20 + 1 */
 			uint8_t level;
 			uint8_t continue_flags; /* SMB2_CONTINUE_FLAG_* */
-			uint32_t unknown; /* perhaps a continue token? */
+			uint32_t file_index; 
 			/* struct smb2_handle handle; */
 			/* uint16_t pattern_ofs; */
 			/* uint16_t pattern_size; */

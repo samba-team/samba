@@ -322,7 +322,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 
 	sam_ldb_path = talloc_asprintf(s, "%s/%s", s->targetdir, "private/sam.ldb");
 	DEBUG(0,("Reopen the SAM LDB with system credentials and a already stored schema: %s\n", sam_ldb_path));
-	s->ldb = ldb_wrap_connect(s, s->tctx->lp_ctx, sam_ldb_path,
+	s->ldb = ldb_wrap_connect(s, s->tctx->ev, s->tctx->lp_ctx, sam_ldb_path,
 				  system_session(s, s->tctx->lp_ctx),
 				  NULL, 0, NULL);
 	if (!s->ldb) {
@@ -654,7 +654,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 
 	sam_ldb_path = talloc_asprintf(s, "%s/%s", s->targetdir, "private/sam.ldb");
 	DEBUG(0,("Reopen the SAM LDB with system credentials and all replicated data: %s\n", sam_ldb_path));
-	s->ldb = ldb_wrap_connect(s, s->lp_ctx, sam_ldb_path,
+	s->ldb = ldb_wrap_connect(s, s->tctx->ev, s->lp_ctx, sam_ldb_path,
 				  system_session(s, s->lp_ctx),
 				  NULL, 0, NULL);
 	if (!s->ldb) {

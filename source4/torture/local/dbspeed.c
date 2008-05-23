@@ -26,7 +26,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb_wrap.h"
 #include "lib/tdb_wrap.h"
-#include "torture/torture.h"
+#include "torture/smbtorture.h"
 #include "param/param.h"
 
 float tdb_speed;
@@ -176,7 +176,7 @@ static bool test_ldb_speed(struct torture_context *torture, const void *_data)
 
 	torture_comment(torture, "Testing ldb speed for sidmap\n");
 
-	ldb = ldb_wrap_connect(tmp_ctx, torture->lp_ctx, "tdb://test.ldb", 
+	ldb = ldb_wrap_connect(tmp_ctx, torture->ev, torture->lp_ctx, "tdb://test.ldb", 
 				NULL, NULL, LDB_FLG_NOSYNC, NULL);
 	if (!ldb) {
 		unlink("./test.ldb");

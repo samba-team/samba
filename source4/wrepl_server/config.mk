@@ -4,14 +4,13 @@
 # Start SUBSYSTEM WREPL_SRV
 [MODULE::WREPL_SRV]
 INIT_FUNCTION = server_service_wrepl_init
-SUBSYSTEM = service
-PRIVATE_PROTO_HEADER = wrepl_server_proto.h
+SUBSYSTEM = smbd
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_WREPL WINSDB process_model 
 # End SUBSYSTEM WREPL_SRV
 #######################
 
-WREPL_SRV_OBJ_FILES = $(addprefix wrepl_server/, \
+WREPL_SRV_OBJ_FILES = $(addprefix $(wrepl_serversrcdir)/, \
 		wrepl_server.o \
 		wrepl_in_connection.o \
 		wrepl_in_call.o \
@@ -22,3 +21,4 @@ WREPL_SRV_OBJ_FILES = $(addprefix wrepl_server/, \
 		wrepl_out_push.o \
 		wrepl_out_helpers.o)
 
+$(eval $(call proto_header_template,$(wrepl_serversrcdir)/wrepl_server_proto.h,$(WREPL_SRV_OBJ_FILES:.o=.c)))

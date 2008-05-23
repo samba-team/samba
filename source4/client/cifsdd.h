@@ -89,8 +89,10 @@ struct dd_iohandle
 #define DD_OPLOCK		0x00000008
 
 struct smbcli_options;
+struct event_context;
 
 struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx, 
+				  struct event_context *ev,
 				  const char * path,
 				  const char **ports,
 				uint64_t io_size, int options, 

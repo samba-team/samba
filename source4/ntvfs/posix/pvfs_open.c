@@ -182,12 +182,19 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	bool del_on_close;
 	uint32_t create_options;
 	uint32_t share_access;
+	bool forced;
 
 	create_options = io->generic.in.create_options;
 	share_access   = io->generic.in.share_access;
 
+	forced = (io->generic.in.create_options & NTCREATEX_OPTIONS_DIRECTORY)?true:false;
+
 	if (name->stream_name) {
-		return NT_STATUS_NOT_A_DIRECTORY;
+		if (forced) {
+			return NT_STATUS_NOT_A_DIRECTORY;
+		} else {
+			return NT_STATUS_FILE_IS_A_DIRECTORY;
+		}
 	}
 
 	/* if the client says it must be a directory, and it isn't,
@@ -262,7 +269,6 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
 	f->handle->oplock            = NULL;
-	f->handle->sticky_write_time = false;
 	f->handle->open_completed    = false;
 
 	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
@@ -416,16 +422,6 @@ cleanup_delete:
 */
 static int pvfs_handle_destructor(struct pvfs_file_handle *h)
 {
-	/* the write time is no longer sticky */
-	if (h->sticky_write_time) {
-		NTSTATUS status;
-		status = pvfs_dosattrib_load(h->pvfs, h->name, h->fd);
-		if (NT_STATUS_IS_OK(status)) {
-			h->name->dos.flags &= ~XATTR_ATTRIB_FLAG_STICKY_WRITE_TIME;
-			pvfs_dosattrib_save(h->pvfs, h->name, h->fd);
-		}
-	}
-	
 	if ((h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
 	    h->name->stream_name) {
 		NTSTATUS status;
@@ -559,6 +555,10 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	uint32_t oplock_level = OPLOCK_NONE, oplock_granted;
 	bool allow_level_II_oplock = false;
 
+	if (io->ntcreatex.in.file_attr & ~FILE_ATTRIBUTE_ALL_MASK) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	    
 	if ((io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_READONLY) &&
 	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
 		return NT_STATUS_CANNOT_DELETE;
@@ -707,7 +707,6 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	f->handle->mode              = 0;
 	f->handle->oplock            = NULL;
 	f->handle->have_opendb_entry = true;
-	f->handle->sticky_write_time = false;
 	f->handle->open_completed    = false;
 
 	status = odb_open_file(lck, f->handle, name->full_name,
@@ -1129,6 +1128,20 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
+	/* if the client specified that it must not be a directory then
+	   check that it isn't */
+	if (name->exists && (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) &&
+	    (io->generic.in.create_options & NTCREATEX_OPTIONS_NON_DIRECTORY_FILE)) {
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
+	}
+
+	/* if the client specified that it must be a directory then
+	   check that it is */
+	if (name->exists && !(name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) &&
+	    (io->generic.in.create_options & NTCREATEX_OPTIONS_DIRECTORY)) {
+		return NT_STATUS_NOT_A_DIRECTORY;
+	}
+
 	/* directory opens are handled separately */
 	if ((name->exists && (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)) ||
 	    (io->generic.in.create_options & NTCREATEX_OPTIONS_DIRECTORY)) {
@@ -1257,7 +1270,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	f->handle->mode              = 0;
 	f->handle->oplock            = NULL;
 	f->handle->have_opendb_entry = false;
-	f->handle->sticky_write_time = false;
 	f->handle->open_completed    = false;
 
 	/* form the lock context used for byte range locking and
@@ -1478,10 +1490,6 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 	if (!null_time(io->close.in.write_time)) {
 		unix_times.actime = 0;
 		unix_times.modtime = io->close.in.write_time;
-		utime(f->handle->name->full_name, &unix_times);
-	} else if (f->handle->sticky_write_time) {
-		unix_times.actime = 0;
-		unix_times.modtime = nt_time_to_unix(f->handle->name->dos.write_time);
 		utime(f->handle->name->full_name, &unix_times);
 	}
 

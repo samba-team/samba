@@ -178,12 +178,11 @@ static bool _test_DsBind(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct event_context *event = NULL;
 
 	status = dcerpc_pipe_connect_b(ctx,
 				       &b->pipe, ctx->drsuapi_binding, 
 				       &ndr_table_drsuapi,
-				       credentials, event, tctx->lp_ctx);
+				       credentials, tctx->ev, tctx->lp_ctx);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to server as a BDC: %s\n", nt_errstr(status));
@@ -254,10 +253,11 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	struct drsuapi_DsCrackNames r;
 	struct drsuapi_DsNameString names[1];
 	bool ret = true;
-
-	struct cldap_socket *cldap = cldap_socket_init(ctx, NULL, lp_iconv_convenience(tctx->lp_ctx));
+	struct cldap_socket *cldap;
 	struct cldap_netlogon search;
-	
+
+	cldap = cldap_socket_init(ctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
+
 	r.in.bind_handle		= &ctx->admin.drsuapi.bind_handle;
 	r.in.level			= 1;
 	r.in.req.req1.codepage		= 1252; /* western european */
@@ -288,16 +288,17 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	search.in.dest_address = ctx->drsuapi_binding->host;
 	search.in.dest_port = lp_cldap_port(tctx->lp_ctx);
 	search.in.acct_control = -1;
-	search.in.version = 6;
+	search.in.version		= NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
+	search.in.map_response = true;
 	status = cldap_netlogon(cldap, ctx, &search);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		ctx->site_name = talloc_asprintf(ctx, "%s", "Default-First-Site-Name");
 		printf("cldap_netlogon() returned %s. Defaulting to Site-Name: %s\n", errstr, ctx->site_name);		
 	} else {
-		ctx->site_name = talloc_steal(ctx, search.out.netlogon.logon5.client_site);
+		ctx->site_name = talloc_steal(ctx, search.out.netlogon.nt5_ex.client_site);
 		printf("cldap_netlogon() returned Client Site-Name: %s.\n",ctx->site_name);
-		printf("cldap_netlogon() returned Server Site-Name: %s.\n",search.out.netlogon.logon5.server_site);
+		printf("cldap_netlogon() returned Server Site-Name: %s.\n",search.out.netlogon.nt5_ex.server_site);
 	}
 
 	return ret;

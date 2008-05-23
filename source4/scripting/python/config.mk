@@ -1,29 +1,37 @@
-[BINARY::smbpython]
-PRIVATE_DEPENDENCIES = LIBPYTHON
-
-smbpython_OBJ_FILES = scripting/python/smbpython.o
-
 [SUBSYSTEM::LIBPYTHON]
 PUBLIC_DEPENDENCIES = EXT_LIB_PYTHON
+PRIVATE_DEPENDENCIES = PYTALLOC
 INIT_FUNCTION_SENTINEL = { NULL, NULL }
 
-LIBPYTHON_OBJ_FILES = $(addprefix scripting/python/, modules.o pytalloc.o)
+LIBPYTHON_OBJ_FILES = $(addprefix $(pyscriptsrcdir)/, modules.o)
+
+[SUBSYSTEM::PYTALLOC]
+PUBLIC_DEPENDENCIES = EXT_LIB_PYTHON LIBTALLOC
+
+PYTALLOC_OBJ_FILES = $(addprefix $(pyscriptsrcdir)/, pytalloc.o)
 
 [PYTHON::python_uuid]
 PRIVATE_DEPENDENCIES = LIBNDR 
 
-python_uuid_OBJ_FILES = scripting/python/uuidmodule.o
+python_uuid_OBJ_FILES = $(pyscriptsrcdir)/uuidmodule.o
 
 [PYTHON::python_misc]
+LIBRARY_REALNAME = samba/_misc.$(SHLIBEXT)
 PRIVATE_DEPENDENCIES = LIBNDR LIBLDB SAMDB CREDENTIALS
-SWIG_FILE = misc.i
 
-python_misc_OBJ_FILES = scripting/python/misc_wrap.o
+python_misc_OBJ_FILES = $(pyscriptsrcdir)/misc_wrap.o
 
-PYDOCTOR_MODULES=bin/python/ldb.py bin/python/auth.py bin/python/credentials.py bin/python/registry.py bin/python/tdb.py bin/python/security.py bin/python/events.py bin/python/net.py
+$(python_misc_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)
 
-installpython:: pythonmods
-	@$(SHELL) $(srcdir)/script/installpython.sh \
-		$(INSTALLPERMS) \
-		$(DESTDIR)$(PYTHONDIR) \
-		scripting/python bin/python
+_PY_FILES = $(shell find $(pyscriptsrcdir)/samba $(pyscriptsrcdir)/subunit -name "*.py")
+
+$(foreach pyfile, $(_PY_FILES),$(eval $(call python_py_module_template,$(patsubst $(pyscriptsrcdir)/%,%,$(pyfile)),$(pyfile))))
+
+$(eval $(call python_py_module_template,samba/misc.py,$(pyscriptsrcdir)/misc.py))
+
+EPYDOC_OPTIONS = --no-private --url http://www.samba.org/ --no-sourcecode
+
+epydoc:: pythonmods
+	PYTHONPATH=$(pythonbuilddir) epydoc $(EPYDOC_OPTIONS) samba tdb ldb subunit
+
+install:: installpython

@@ -29,6 +29,7 @@
 
 #include "libcli/raw/signing.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/smb2/smb2.h"
 
 
 /*
@@ -83,8 +84,8 @@ struct smb_composite_savefile {
     - socket establishment
     - session request
     - negprot
-    - session setup
-    - tree connect
+    - session setup (if credentials are not NULL)
+    - tree connect (if service is not NULL)
 */
 struct smb_composite_connect {
 	struct {

@@ -29,7 +29,7 @@
 #include "version.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "libcli/security/security.h"
-#include "auth/pam_errors.h"
+#include "auth/ntlm/pam_errors.h"
 #include "auth/credentials/credentials.h"
 #include "smbd/service_task.h"
 
@@ -43,13 +43,14 @@ static void wbsrv_samba3_async_auth_epilogue(NTSTATUS status,
 	struct winbindd_response *resp = &s3call->response;
 	if (!NT_STATUS_IS_OK(status)) {
 		resp->result = WINBINDD_ERROR;
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
-					nt_errstr(status));
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
-					get_friendly_nt_error_msg(status));
 	} else {
 		resp->result = WINBINDD_OK;
 	}
+	
+	WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
+				nt_errstr(status));
+	WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
+				get_friendly_nt_error_msg(status));
 
 	resp->data.auth.pam_error = nt_status_to_pam(status);
 	resp->data.auth.nt_status = NT_STATUS_V(status);
@@ -149,8 +150,6 @@ NTSTATUS wbsrv_samba3_check_machacc(struct wbsrv_samba3_call *s3call)
 	if (creds == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	cli_credentials_set_event_context(creds, service->task->event_ctx);
 
 	cli_credentials_set_conf(creds, service->task->lp_ctx);
 
@@ -721,6 +720,9 @@ static void list_users_recv(struct composite_context *ctx)
 	if (NT_STATUS_IS_OK(status)) {
 		s3call->response.extra_data.data = extra_data;
 		s3call->response.length += extra_data_len;
+		if (extra_data) {
+			s3call->response.length += 1;
+		}
 	}
 
 	wbsrv_samba3_async_epilogue(status, s3call);

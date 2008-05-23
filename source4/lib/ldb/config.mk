@@ -3,7 +3,7 @@
 [MODULE::ldb_asq]
 PRIVATE_DEPENDENCIES = LIBTALLOC
 CFLAGS = -Ilib/ldb/include
-INIT_FUNCTION = &ldb_asq_module_ops
+INIT_FUNCTION = LDB_MODULE(asq)
 SUBSYSTEM = LIBLDB
 
 ldb_asq_OBJ_FILES = lib/ldb/modules/asq.o
@@ -15,7 +15,7 @@ ldb_asq_OBJ_FILES = lib/ldb/modules/asq.o
 [MODULE::ldb_server_sort]
 PRIVATE_DEPENDENCIES = LIBTALLOC
 CFLAGS = -Ilib/ldb/include
-INIT_FUNCTION = &ldb_server_sort_module_ops
+INIT_FUNCTION = LDB_MODULE(server_sort)
 SUBSYSTEM = LIBLDB
 
 # End MODULE ldb_sort
@@ -25,7 +25,7 @@ ldb_server_sort_OBJ_FILES = lib/ldb/modules/sort.o
 ################################################
 # Start MODULE ldb_paged_results
 [MODULE::ldb_paged_results]
-INIT_FUNCTION = &ldb_paged_results_module_ops
+INIT_FUNCTION = LDB_MODULE(paged_results)
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 SUBSYSTEM = LIBLDB
@@ -37,7 +37,7 @@ ldb_paged_results_OBJ_FILES = lib/ldb/modules/paged_results.o
 ################################################
 # Start MODULE ldb_paged_results
 [MODULE::ldb_paged_searches]
-INIT_FUNCTION = &ldb_paged_searches_module_ops
+INIT_FUNCTION = LDB_MODULE(paged_searches)
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 SUBSYSTEM = LIBLDB
@@ -52,7 +52,7 @@ ldb_paged_searches_OBJ_FILES = lib/ldb/modules/paged_searches.o
 SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
-INIT_FUNCTION = &ldb_operational_module_ops
+INIT_FUNCTION = LDB_MODULE(operational)
 # End MODULE ldb_operational
 ################################################
 
@@ -64,21 +64,15 @@ ldb_operational_OBJ_FILES = lib/ldb/modules/operational.o
 SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
-INIT_FUNCTION = &ldb_rdn_name_module_ops
+INIT_FUNCTION = LDB_MODULE(rdn_name)
 # End MODULE ldb_rdn_name
 ################################################
 
 ldb_rdn_name_OBJ_FILES = lib/ldb/modules/rdn_name.o
 
-################################################
-# Start MODULE ldb_map
-[SUBSYSTEM::ldb_map]
-PRIVATE_DEPENDENCIES = LIBTALLOC
-CFLAGS = -Ilib/ldb/include -Ilib/ldb/ldb_map
-# End MODULE ldb_map
-################################################
-
 ldb_map_OBJ_FILES = $(addprefix lib/ldb/ldb_map/, ldb_map_inbound.o ldb_map_outbound.o ldb_map.o)
+
+$(ldb_map_OBJ_FILES): CFLAGS+=-Ilib/ldb/ldb_map
 
 ################################################
 # Start MODULE ldb_skel
@@ -86,7 +80,7 @@ ldb_map_OBJ_FILES = $(addprefix lib/ldb/ldb_map/, ldb_map_inbound.o ldb_map_outb
 SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
-INIT_FUNCTION = &ldb_skel_module_ops
+INIT_FUNCTION = LDB_MODULE(skel)
 # End MODULE ldb_skel
 ################################################
 
@@ -134,7 +128,7 @@ PC_FILES += $(ldbdir)/ldb.pc
 LIBLDB_VERSION = 0.0.1
 LIBLDB_SOVERSION = 0
 
-LIBLDB_OBJ_FILES = $(addprefix lib/ldb/common/, ldb.o ldb_ldif.o ldb_parse.o ldb_msg.o ldb_utf8.o ldb_debug.o ldb_modules.o ldb_match.o ldb_attributes.o attrib_handlers.o ldb_dn.o ldb_controls.o qsort.o)
+LIBLDB_OBJ_FILES = $(addprefix lib/ldb/common/, ldb.o ldb_ldif.o ldb_parse.o ldb_msg.o ldb_utf8.o ldb_debug.o ldb_modules.o ldb_match.o ldb_attributes.o attrib_handlers.o ldb_dn.o ldb_controls.o qsort.o) $(ldb_map_OBJ_FILES)
 
 PUBLIC_HEADERS += $(ldbdir)/include/ldb.h $(ldbdir)/include/ldb_errors.h
 

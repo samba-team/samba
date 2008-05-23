@@ -70,6 +70,7 @@ struct vampire_state {
 	const char *targetdir;
 
 	struct loadparm_context *lp_ctx;
+	struct event_context *event_ctx;
 };
 
 static NTSTATUS vampire_prepare_db(void *private_data,
@@ -335,7 +336,7 @@ static NTSTATUS vampire_apply_schema(struct vampire_state *s,
 	s->schema = NULL;
 
 	DEBUG(0,("Reopen the SAM LDB with system credentials and a already stored schema\n"));
-	s->ldb = samdb_connect(s, s->lp_ctx, 
+	s->ldb = samdb_connect(s, s->event_ctx, s->lp_ctx, 
 			       system_session(s, s->lp_ctx));
 	if (!s->ldb) {
 		DEBUG(0,("Failed to reopen sam.ldb\n"));
@@ -569,7 +570,6 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	struct libnet_JoinDomain *join;
 	struct libnet_set_join_secrets *set_secrets;
 	struct libnet_BecomeDC b;
-	struct libnet_UnbecomeDC u;
 	struct vampire_state *s;
 	struct ldb_message *msg;
 	int ldb_ret;
@@ -581,12 +581,13 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	
 	r->out.error_string = NULL;
 
-	s = talloc_zero(mem_ctx , struct vampire_state);
+	s = talloc_zero(mem_ctx, struct vampire_state);
 	if (!s) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	s->lp_ctx = ctx->lp_ctx;
+	s->event_ctx = ctx->event_ctx;
 
 	join = talloc_zero(s, struct libnet_JoinDomain);
 	if (!join) {
