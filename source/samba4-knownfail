@@ -4,7 +4,8 @@ base.delaywrite.finfo update on close
 base.delete.*.deltest20a
 base.delete.*.deltest20b
 rpc.winreg.*security
-local.registry.*.security # Not implemented yet
+samba4.local.registry.(dir|ldb).check hive security
+samba4.local.registry.local.security
 rpc.wkssvc
 rpc.handles.*.lsarpc-shared
 rpc.handles.*.mixed-shared
