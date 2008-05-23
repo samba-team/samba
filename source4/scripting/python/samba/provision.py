@@ -969,7 +969,7 @@ def provision(setup_dir, message, session_info,
     if ldap_backend is not None:
         if ldap_backend == "ldapi":
             # provision-backend will set this path suggested slapd command line / fedorads.inf
-            ldap_backend = "ldapi://" % urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
+            ldap_backend = "ldapi://%s" % urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
              
     # only install a new shares config db if there is none
     if not os.path.exists(paths.shareconf):
