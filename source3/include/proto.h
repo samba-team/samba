@@ -4221,7 +4221,9 @@ NTSTATUS cli_add_event_ctx(struct cli_state *cli,
 /* The following definitions come from libsmb/cliconnect.c  */
 
 ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user, 
-			      const char *pass, const char *domain);
+			      const char *pass, const char *user_domain,
+				    const char * dest_realm);
+
 NTSTATUS cli_session_setup(struct cli_state *cli,
 			   const char *user,
 			   const char *pass, int passlen,
