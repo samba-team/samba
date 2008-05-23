@@ -165,10 +165,10 @@ static bool diff_setup_tcase(struct torture_context *tctx, void **data)
 	td = talloc(tctx, struct diff_tcase_data);
 
 	/* Create two registry contexts */
-	error = reg_open_local(tctx, &r1_ctx, NULL, NULL);
+	error = reg_open_local(tctx, &r1_ctx);
 	torture_assert_werr_ok(tctx, error, "Opening registry 1 for patch tests failed");
 	
-	error = reg_open_local(tctx, &r2_ctx, NULL, NULL);
+	error = reg_open_local(tctx, &r2_ctx);
 	torture_assert_werr_ok(tctx, error, "Opening registry 2 for patch tests failed");
 
 	/* Create temp directory */
@@ -177,14 +177,14 @@ static bool diff_setup_tcase(struct torture_context *tctx, void **data)
 
 	/* Create and mount HKLM and HKCU hives for registry 1 */
 	filename = talloc_asprintf(tctx, "%s/r1_local_machine.ldb", td->tempdir);
-	error = reg_open_ldb_file(tctx, filename, NULL, NULL, tctx->lp_ctx, &r1_hklm);
+	error = reg_open_ldb_file(tctx, filename, NULL, NULL, tctx->ev, tctx->lp_ctx, &r1_hklm);
 	torture_assert_werr_ok(tctx, error, "Opening local machine file failed");
 
 	error = reg_mount_hive(r1_ctx, r1_hklm, HKEY_LOCAL_MACHINE, NULL);
 	torture_assert_werr_ok(tctx, error, "Mounting hive failed");
 	
 	filename = talloc_asprintf(tctx, "%s/r1_current_user.ldb", td->tempdir);
-	error = reg_open_ldb_file(tctx, filename, NULL, NULL, tctx->lp_ctx, &r1_hkcu);
+	error = reg_open_ldb_file(tctx, filename, NULL, NULL, tctx->ev, tctx->lp_ctx, &r1_hkcu);
 	torture_assert_werr_ok(tctx, error, "Opening current user file failed");
 
 	error = reg_mount_hive(r1_ctx, r1_hkcu, HKEY_CURRENT_USER, NULL);
@@ -192,14 +192,14 @@ static bool diff_setup_tcase(struct torture_context *tctx, void **data)
 	
 	/* Create and mount HKLM and HKCU hives for registry 2 */
 	filename = talloc_asprintf(tctx, "%s/r2_local_machine.ldb", td->tempdir);
-	error = reg_open_ldb_file(tctx, filename, NULL, NULL, tctx->lp_ctx, &r2_hklm);
+	error = reg_open_ldb_file(tctx, filename, NULL, NULL, tctx->ev, tctx->lp_ctx, &r2_hklm);
 	torture_assert_werr_ok(tctx, error, "Opening local machine file failed");
 
 	error = reg_mount_hive(r2_ctx, r2_hklm, HKEY_LOCAL_MACHINE, NULL);
 	torture_assert_werr_ok(tctx, error, "Mounting hive failed");
 	
 	filename = talloc_asprintf(tctx, "%s/r2_current_user.ldb", td->tempdir);
-	error = reg_open_ldb_file(tctx, filename, NULL, NULL, tctx->lp_ctx, &r2_hkcu);
+	error = reg_open_ldb_file(tctx, filename, NULL, NULL, tctx->ev, tctx->lp_ctx, &r2_hkcu);
 	torture_assert_werr_ok(tctx, error, "Opening current user file failed");
 	
 	error = reg_mount_hive(r2_ctx, r2_hkcu, HKEY_CURRENT_USER, NULL);
