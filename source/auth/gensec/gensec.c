@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "lib/events/events.h"
-#include "build.h"
 #include "librpc/rpc/dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
@@ -482,6 +481,11 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 			     struct messaging_context *msg,
 			     struct gensec_security **gensec_security)
 {
+	if (ev == NULL) {
+		DEBUG(0, ("No event context available!\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	(*gensec_security) = talloc(mem_ctx, struct gensec_security);
 	NT_STATUS_HAVE_NO_MEMORY(*gensec_security);
 
@@ -493,14 +497,6 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 
 	(*gensec_security)->subcontext = false;
 	(*gensec_security)->want_features = 0;
-	
-	if (ev == NULL) {
-		ev = event_context_init(*gensec_security);
-		if (ev == NULL) {
-			talloc_free(*gensec_security);
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
 
 	(*gensec_security)->event_ctx = ev;
 	(*gensec_security)->msg_ctx = msg;
@@ -548,20 +544,11 @@ _PUBLIC_ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx,
 			     struct loadparm_context *lp_ctx)
 {
 	NTSTATUS status;
-	struct event_context *new_ev = NULL;
-
-	if (ev == NULL) {
-		new_ev = event_context_init(mem_ctx);
-		NT_STATUS_HAVE_NO_MEMORY(new_ev);
-		ev = new_ev;
-	}
 
 	status = gensec_start(mem_ctx, ev, lp_ctx, NULL, gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(new_ev);
 		return status;
 	}
-	talloc_steal((*gensec_security), new_ev);
 	(*gensec_security)->gensec_role = GENSEC_CLIENT;
 
 	return status;
@@ -1268,6 +1255,12 @@ static int sort_gensec(struct gensec_security_ops **gs1, struct gensec_security_
 _PUBLIC_ NTSTATUS gensec_init(struct loadparm_context *lp_ctx)
 {
 	static bool initialized = false;
+	extern NTSTATUS gensec_sasl_init(void);
+	extern NTSTATUS gensec_krb5_init(void);
+	extern NTSTATUS gensec_schannel_init(void);
+	extern NTSTATUS gensec_spnego_init(void);
+	extern NTSTATUS gensec_gssapi_init(void);
+	extern NTSTATUS gensec_ntlmssp_init(void);
 
 	init_module_fn static_init[] = { STATIC_gensec_MODULES };
 	init_module_fn *shared_init;

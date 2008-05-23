@@ -2,8 +2,6 @@
 ################################################
 # Start SUBSYSTEM MESSAGING
 [SUBSYSTEM::MESSAGING]
-OBJ_FILES = \
-		messaging.o
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-UTIL \
 		TDB_WRAP \
@@ -14,3 +12,5 @@ PUBLIC_DEPENDENCIES = \
 		LIBNDR
 # End SUBSYSTEM MESSAGING
 ################################################
+
+MESSAGING_OBJ_FILES = $(libmessagingsrcdir)/messaging.o

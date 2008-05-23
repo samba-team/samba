@@ -2,11 +2,14 @@
 #################################
 # Start SUBSYSTEM TORTURE_SMB2
 [MODULE::TORTURE_SMB2]
-SUBSYSTEM = torture
+SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_smb2_init
-PRIVATE_PROTO_HEADER = \
-		proto.h
-OBJ_FILES = \
+PRIVATE_DEPENDENCIES = \
+		LIBCLI_SMB2 POPT_CREDENTIALS
+# End SUBSYSTEM TORTURE_SMB2
+#################################
+
+TORTURE_SMB2_OBJ_FILES = $(addprefix $(torturesrcdir)/smb2/, \
 		connect.o \
 		scan.o \
 		util.o \
@@ -15,8 +18,9 @@ OBJ_FILES = \
 		find.o \
 		lock.o \
 		notify.o \
-		smb2.o
-PRIVATE_DEPENDENCIES = \
-		LIBCLI_SMB2 POPT_CREDENTIALS
-# End SUBSYSTEM TORTURE_SMB2
-#################################
+		smb2.o \
+		persistent_handles.o \
+		oplocks.o)
+
+
+$(eval $(call proto_header_template,$(torturesrcdir)/smb2/proto.h,$(TORTURE_SMB2_OBJ_FILES:.o=.c)))

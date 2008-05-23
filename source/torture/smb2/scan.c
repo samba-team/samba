@@ -207,7 +207,7 @@ bool torture_smb2_scan(struct torture_context *torture)
 	status = smb2_connect(mem_ctx, host, share, 
 			      lp_resolve_context(torture->lp_ctx), 
 			      credentials, &tree, 
-			      event_context_find(mem_ctx));
+			      torture->ev);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connection failed - %s\n", nt_errstr(status));
 		return false;
@@ -224,7 +224,7 @@ bool torture_smb2_scan(struct torture_context *torture)
 			status = smb2_connect(mem_ctx, host, share, 
 					      lp_resolve_context(torture->lp_ctx), 
 					      credentials, &tree, 
-					      event_context_find(mem_ctx));
+					      torture->ev);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Connection failed - %s\n", nt_errstr(status));
 				return false;

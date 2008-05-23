@@ -158,6 +158,7 @@ static struct dom_sid *idmap_msg_get_dom_sid(TALLOC_CTX *mem_ctx,
  * \return allocated idmap_context on success, NULL on error
  */
 struct idmap_context *idmap_init(TALLOC_CTX *mem_ctx,
+				 struct event_context *ev_ctx,
 		struct loadparm_context *lp_ctx)
 {
 	struct idmap_context *idmap_ctx;
@@ -169,7 +170,7 @@ struct idmap_context *idmap_init(TALLOC_CTX *mem_ctx,
 
 	idmap_ctx->lp_ctx = lp_ctx;
 
-	idmap_ctx->ldb_ctx = ldb_wrap_connect(mem_ctx, lp_ctx,
+	idmap_ctx->ldb_ctx = ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx,
 					      lp_idmap_url(lp_ctx),
 					      system_session(mem_ctx, lp_ctx),
 					      NULL, 0, NULL);
@@ -654,7 +655,7 @@ NTSTATUS idmap_xids_to_sids(struct idmap_context *idmap_ctx,
 							&id[i].sid);
 		}
 		if (!NT_STATUS_IS_OK(id[i].status)) {
-			DEBUG(1, ("idmapping failed for id[%d]\n", i));
+			DEBUG(1, ("idmapping xid_to_sid failed for id[%d]\n", i));
 			error_count++;
 		}
 	}
@@ -699,7 +700,7 @@ NTSTATUS idmap_sids_to_xids(struct idmap_context *idmap_ctx,
 							&id[i].unixid);
 		}
 		if (!NT_STATUS_IS_OK(id[i].status)) {
-			DEBUG(1, ("idmapping failed for id[%d]\n", i));
+			DEBUG(1, ("idmapping sid_to_xid failed for id[%d]\n", i));
 			error_count++;
 		}
 	}

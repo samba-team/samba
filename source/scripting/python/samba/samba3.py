@@ -19,6 +19,8 @@
 
 """Support for reading Samba 3 data files."""
 
+__docformat__ = "restructuredText"
+
 REGISTRY_VALUE_PREFIX = "SAMBA_REGVAL"
 REGISTRY_DB_VERSION = 1
 
@@ -307,6 +309,7 @@ class ShareInfoDatabase(TdbDatabase):
 
 
 class Shares:
+    """Container for share objects."""
     def __init__(self, lp, shareinfo):
         self.lp = lp
         self.shareinfo = shareinfo
@@ -492,6 +495,7 @@ class TdbSam(TdbDatabase):
         assert self.version in (0, 1, 2)
 
     def usernames(self):
+        """Iterate over the usernames in this Tdb database."""
         for k in self.tdb.keys():
             if k.startswith(TDBSAM_USER_PREFIX):
                 yield k[len(TDBSAM_USER_PREFIX):].rstrip("\0")
@@ -633,6 +637,7 @@ class WinsDatabase:
         return iter(self.entries)
 
     def items(self):
+        """Return the entries in this WINS database."""
         return self.entries.items()
 
     def close(self): # for consistency

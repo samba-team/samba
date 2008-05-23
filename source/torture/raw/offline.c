@@ -389,7 +389,6 @@ bool torture_test_offline(struct torture_context *torture)
 	int i;
 	int timelimit = torture_setting_int(torture, "timelimit", 10);
 	struct timeval tv;
-	struct event_context *ev = event_context_find(mem_ctx);
 	struct offline_state *state;
 	struct smbcli_state *cli;
 	bool progress;
@@ -404,8 +403,8 @@ bool torture_test_offline(struct torture_context *torture)
 	for (i=0;i<nconnections;i++) {
 		state[i].tctx = torture;
 		state[i].mem_ctx = talloc_new(state);
-		state[i].ev = ev;
-		if (!torture_open_connection_ev(&cli, i, torture, ev)) {
+		state[i].ev = torture->ev;
+		if (!torture_open_connection_ev(&cli, i, torture, torture->ev)) {
 			return false;
 		}
 		state[i].tree = cli->tree;
@@ -418,7 +417,7 @@ bool torture_test_offline(struct torture_context *torture)
 	for (i=nconnections;i<numstates;i++) {
 		state[i].tctx = torture;
 		state[i].mem_ctx = talloc_new(state);
-		state[i].ev = ev;
+		state[i].ev = torture->ev;
 		state[i].tree = state[i % nconnections].tree;
 		state[i].client = i;
 	}
@@ -468,12 +467,12 @@ bool torture_test_offline(struct torture_context *torture)
 	tv = timeval_current();	
 
 	if (progress) {
-		event_add_timed(ev, state, timeval_current_ofs(1, 0), report_rate, state);
+		event_add_timed(torture->ev, state, timeval_current_ofs(1, 0), report_rate, state);
 	}
 
 	printf("Running for %d seconds\n", timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
-		event_loop_once(ev);
+		event_loop_once(torture->ev);
 
 		if (test_failed) {
 			DEBUG(0,("test failed\n"));
@@ -487,7 +486,7 @@ bool torture_test_offline(struct torture_context *torture)
 		while (state[i].loadfile || 
 		       state[i].savefile ||
 		       state[i].req) {
-			event_loop_once(ev);
+			event_loop_once(torture->ev);
 		}
 	}	
 

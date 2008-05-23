@@ -6,16 +6,18 @@ import getopt
 import optparse
 import sys
 
+sys.path.append("bin/python")
+
 import samba.getopt as options
 
-from auth import system_session
+from samba.auth import system_session
 from ldb import (SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError,
                  LDB_ERR_NO_SUCH_OBJECT, LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS,
                  LDB_ERR_ENTRY_ALREADY_EXISTS, LDB_ERR_UNWILLING_TO_PERFORM,
                  LDB_ERR_NOT_ALLOWED_ON_NON_LEAF, LDB_ERR_OTHER)
 from samba import Ldb
 from subunit import SubunitTestRunner
-import param
+from samba import param
 import unittest
 
 parser = optparse.OptionParser("ldap [options] <host>")

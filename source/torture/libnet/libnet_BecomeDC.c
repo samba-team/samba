@@ -38,6 +38,7 @@
 #include "auth/auth.h"
 #include "param/param.h"
 #include "torture/util.h"
+#include "param/provision.h"
 
 struct test_become_dc_state {
 	struct libnet_context *ctx;
@@ -66,16 +67,9 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 {
 	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
 	struct provision_settings settings;
+	struct provision_result result;
 	NTSTATUS status;
-	bool ok;
-	struct loadparm_context *lp_ctx = loadparm_init(s);
-	char *smbconf;
 
-	if (!lp_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	settings.dns_name = p->dest_dsa->dns_name;
 	settings.site_name = p->dest_dsa->site_name;
 	settings.root_dn_str = p->forest->root_dn_str;
 	settings.domain_dn_str = p->domain->dn_str;
@@ -84,40 +78,14 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 	settings.netbios_name = p->dest_dsa->netbios_name;
 	settings.realm = torture_join_dom_dns_name(s->tj);
 	settings.domain = torture_join_dom_netbios_name(s->tj);
+	settings.server_dn_str = torture_join_server_dn_str(s->tj);
 	settings.machine_password = cli_credentials_get_password(s->machine_account);
 	settings.targetdir = s->targetdir;
 
-	status = provision_bare(s, s->lp_ctx, &settings);
+	status = provision_bare(s, s->lp_ctx, &settings, &result);
 	
-	smbconf = talloc_asprintf(lp_ctx, "%s/%s", s->targetdir, "/etc/smb.conf");
-
-	ok = lp_load(lp_ctx, smbconf);
-	if (!ok) {
-		DEBUG(0,("Failed load freshly generated smb.conf '%s'\n", smbconf));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	s->ldb = ldb_wrap_connect(s, lp_ctx, lp_sam_url(lp_ctx),
-				  system_session(s, lp_ctx),
-				  NULL, 0, NULL);
-	if (!s->ldb) {
-		DEBUG(0,("Failed to open '%s'\n", lp_sam_url(lp_ctx)));
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-	
-	ok = samdb_set_ntds_invocation_id(s->ldb, &p->dest_dsa->invocation_id);
-	if (!ok) {
-		DEBUG(0,("Failed to set cached ntds invocationId\n"));
-		return NT_STATUS_FOOBAR;
-	}
-	ok = samdb_set_ntds_objectGUID(s->ldb, &p->dest_dsa->ntds_guid);
-	if (!ok) {
-		DEBUG(0,("Failed to set cached ntds objectGUID\n"));
-		return NT_STATUS_FOOBAR;
-	}
-	
-	s->lp_ctx = lp_ctx;
-
+	s->ldb = result.samdb;
+	s->lp_ctx = result.lp_ctx;
         return NT_STATUS_OK;
 
 
@@ -354,7 +322,7 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 
 	sam_ldb_path = talloc_asprintf(s, "%s/%s", s->targetdir, "private/sam.ldb");
 	DEBUG(0,("Reopen the SAM LDB with system credentials and a already stored schema: %s\n", sam_ldb_path));
-	s->ldb = ldb_wrap_connect(s, s->tctx->lp_ctx, sam_ldb_path,
+	s->ldb = ldb_wrap_connect(s, s->tctx->ev, s->tctx->lp_ctx, sam_ldb_path,
 				  system_session(s, s->tctx->lp_ctx),
 				  NULL, 0, NULL);
 	if (!s->ldb) {
@@ -686,7 +654,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 
 	sam_ldb_path = talloc_asprintf(s, "%s/%s", s->targetdir, "private/sam.ldb");
 	DEBUG(0,("Reopen the SAM LDB with system credentials and all replicated data: %s\n", sam_ldb_path));
-	s->ldb = ldb_wrap_connect(s, s->lp_ctx, sam_ldb_path,
+	s->ldb = ldb_wrap_connect(s, s->tctx->ev, s->lp_ctx, sam_ldb_path,
 				  system_session(s, s->lp_ctx),
 				  NULL, 0, NULL);
 	if (!s->ldb) {

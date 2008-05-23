@@ -311,7 +311,7 @@ _PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
 	
-	tj = talloc(NULL, struct test_join);
+	tj = talloc(tctx, struct test_join);
 	if (!tj) return NULL;
 
 	libnet_r = talloc(tj, struct libnet_JoinDomain);
@@ -320,7 +320,7 @@ _PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
 		return NULL;
 	}
 	
-	libnet_ctx = libnet_context_init(NULL, tctx->lp_ctx);	
+	libnet_ctx = libnet_context_init(tctx->ev, tctx->lp_ctx);	
 	if (!libnet_ctx) {
 		talloc_free(tj);
 		return NULL;
@@ -508,9 +508,11 @@ _PUBLIC_ void torture_leave_domain(struct test_join *join)
 	/* Delete machine account */	                                                                                                                                                                                                                                                                                                                
 	status = dcerpc_samr_DeleteUser(join->p, join, &d);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Delete of machine account failed\n");
+		printf("Delete of machine account %s failed\n",
+		       join->netbios_name);
 	} else {
-		printf("Delete of machine account was successful.\n");
+		printf("Delete of machine account %s was successful.\n",
+		       join->netbios_name);
 	}
 
 	if (join->libnet_r) {
@@ -551,6 +553,14 @@ const char *torture_join_dom_netbios_name(struct test_join *join)
 const char *torture_join_dom_dns_name(struct test_join *join)
 {
 	return join->dom_dns_name;
+}
+
+const char *torture_join_server_dn_str(struct test_join *join)
+{
+	if (join->libnet_r) {
+		return join->libnet_r->out.server_dn_str;
+	}
+	return NULL;
 }
 
 

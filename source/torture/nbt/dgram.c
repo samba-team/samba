@@ -42,21 +42,24 @@ static void netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 			     struct socket_address *src)
 {
 	NTSTATUS status;
-	struct nbt_netlogon_packet netlogon;
-	int *replies = (int *)dgmslot->private;
+	struct nbt_netlogon_response *netlogon = dgmslot->private;
 
+	dgmslot->private = netlogon = talloc(dgmslot, struct nbt_netlogon_response);
+
+	if (!dgmslot->private) {
+		return;
+	}
+       
 	printf("netlogon reply from %s:%d\n", src->addr, src->port);
 
-	status = dgram_mailslot_netlogon_parse(dgmslot, dgmslot, packet, &netlogon);
+	/* Fills in the netlogon pointer */
+	status = dgram_mailslot_netlogon_parse_response(dgmslot, netlogon, packet, netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to parse netlogon packet from %s:%d\n",
 		       src->addr, src->port);
 		return;
 	}
 
-	NDR_PRINT_DEBUG(nbt_netlogon_packet, &netlogon);
-
-	(*replies)++;
 }
 
 
@@ -64,15 +67,15 @@ static void netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 static bool nbt_test_netlogon(struct torture_context *tctx)
 {
 	struct dgram_mailslot_handler *dgmslot;
-	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(tctx, NULL, 
+	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(tctx, tctx->ev, 
 								 lp_iconv_convenience(tctx->lp_ctx));
 	struct socket_address *dest;
 	const char *myaddress;
 	struct nbt_netlogon_packet logon;
+	struct nbt_netlogon_response *response;
 	struct nbt_name myname;
 	NTSTATUS status;
 	struct timeval tv = timeval_current();
-	int replies = 0;
 
 	struct socket_address *socket_address;
 
@@ -80,14 +83,14 @@ static bool nbt_test_netlogon(struct torture_context *tctx)
 	struct nbt_name name;
 
 	struct interface *ifaces;
-	
+
 	name.name = lp_workgroup(tctx->lp_ctx);
 	name.type = NBT_NAME_LOGON;
 	name.scope = NULL;
 
 	/* do an initial name resolution to find its IP */
 	torture_assert_ntstatus_ok(tctx, 
-				   resolve_name(lp_resolve_context(tctx->lp_ctx), &name, tctx, &address, event_context_find(tctx)),
+				   resolve_name(lp_resolve_context(tctx->lp_ctx), &name, tctx, &address, tctx->ev),
 				   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
 
 	load_interfaces(tctx, lp_interfaces(tctx->lp_ctx), &ifaces);
@@ -101,7 +104,7 @@ static bool nbt_test_netlogon(struct torture_context *tctx)
 	/* try receiving replies on port 138 first, which will only
 	   work if we are root and smbd/nmbd are not running - fall
 	   back to listening on any port, which means replies from
-	   some windows versions won't be seen */
+	   most windows versions won't be seen */
 	status = socket_listen(dgmsock->sock, socket_address, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(socket_address);
@@ -114,10 +117,10 @@ static bool nbt_test_netlogon(struct torture_context *tctx)
 
 	/* setup a temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
-				      netlogon_handler, &replies);
+				      netlogon_handler, NULL);
 
 	ZERO_STRUCT(logon);
-	logon.command = NETLOGON_QUERY_FOR_PDC;
+	logon.command = LOGON_PRIMARY_QUERY;
 	logon.req.pdc.computer_name = TEST_NAME;
 	logon.req.pdc.mailslot_name = dgmslot->mailslot_name;
 	logon.req.pdc.unicode_name  = TEST_NAME;
@@ -132,12 +135,20 @@ static bool nbt_test_netlogon(struct torture_context *tctx)
 	torture_assert(tctx, dest != NULL, "Error getting address");
 
 	status = dgram_mailslot_netlogon_send(dgmsock, &name, dest,
+					      NBT_MAILSLOT_NETLOGON, 
 					      &myname, &logon);
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
 
-	while (timeval_elapsed(&tv) < 5 && replies == 0) {
+	while (timeval_elapsed(&tv) < 5 && !dgmslot->private) {
 		event_loop_once(dgmsock->event_ctx);
 	}
+
+	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+
+	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
+
+	torture_assert(tctx, response->response_type == NETLOGON_GET_PDC, "Got incorrect type of netlogon response");
+	torture_assert(tctx, response->get_pdc.command == NETLOGON_RESPONSE_FROM_PDC, "Got incorrect netlogon response command");
 
 	return true;
 }
@@ -147,15 +158,15 @@ static bool nbt_test_netlogon(struct torture_context *tctx)
 static bool nbt_test_netlogon2(struct torture_context *tctx)
 {
 	struct dgram_mailslot_handler *dgmslot;
-	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(tctx, NULL,
+	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(tctx, tctx->ev,
 								 lp_iconv_convenience(tctx->lp_ctx));
 	struct socket_address *dest;
 	const char *myaddress;
 	struct nbt_netlogon_packet logon;
+	struct nbt_netlogon_response *response;
 	struct nbt_name myname;
 	NTSTATUS status;
 	struct timeval tv = timeval_current();
-	int replies = 0;
 
 	struct socket_address *socket_address;
 
@@ -163,6 +174,9 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	struct nbt_name name;
 
 	struct interface *ifaces;
+	struct test_join *join_ctx;
+	struct cli_credentials *machine_credentials;
+	const struct dom_sid *dom_sid;
 	
 	name.name = lp_workgroup(tctx->lp_ctx);
 	name.type = NBT_NAME_LOGON;
@@ -170,7 +184,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 
 	/* do an initial name resolution to find its IP */
 	torture_assert_ntstatus_ok(tctx, 
-				   resolve_name(lp_resolve_context(tctx->lp_ctx), &name, tctx, &address, event_context_find(tctx)),
+				   resolve_name(lp_resolve_context(tctx->lp_ctx), &name, tctx, &address, tctx->ev),
 				   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
 
 	load_interfaces(tctx, lp_interfaces(tctx->lp_ctx), &ifaces);
@@ -196,18 +210,18 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 
 	/* setup a temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
-				      netlogon_handler, &replies);
+				      netlogon_handler, NULL);
 	
 
 	ZERO_STRUCT(logon);
-	logon.command = NETLOGON_QUERY_FOR_PDC2;
-	logon.req.pdc2.request_count = 0;
-	logon.req.pdc2.computer_name = TEST_NAME;
-	logon.req.pdc2.user_name     = "";
-	logon.req.pdc2.mailslot_name = dgmslot->mailslot_name;
-	logon.req.pdc2.nt_version    = 11;
-	logon.req.pdc2.lmnt_token    = 0xFFFF;
-	logon.req.pdc2.lm20_token    = 0xFFFF;
+	logon.command = LOGON_SAM_LOGON_REQUEST;
+	logon.req.logon.request_count = 0;
+	logon.req.logon.computer_name = TEST_NAME;
+	logon.req.logon.user_name     = "";
+	logon.req.logon.mailslot_name = dgmslot->mailslot_name;
+	logon.req.logon.nt_version    = NETLOGON_NT_VERSION_5EX_WITH_IP|NETLOGON_NT_VERSION_5|NETLOGON_NT_VERSION_1;
+	logon.req.logon.lmnt_token    = 0xFFFF;
+	logon.req.logon.lm20_token    = 0xFFFF;
 
 	make_nbt_name_client(&myname, TEST_NAME);
 
@@ -216,40 +230,191 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 
 	torture_assert(tctx, dest != NULL, "Error getting address");
 	status = dgram_mailslot_netlogon_send(dgmsock, &name, dest,
+					      NBT_MAILSLOT_NETLOGON, 
 					      &myname, &logon);
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
 
-	while (timeval_elapsed(&tv) < 5 && replies == 0) {
+	while (timeval_elapsed(&tv) < 5 && dgmslot->private == NULL) {
 		event_loop_once(dgmsock->event_ctx);
 	}
 
-	return true;
-}
+	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
 
+	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
-/*
-  reply handler for ntlogon request
-*/
-static void ntlogon_handler(struct dgram_mailslot_handler *dgmslot, 
-			     struct nbt_dgram_packet *packet, 
-			     struct socket_address *src)
-{
-	NTSTATUS status;
-	struct nbt_ntlogon_packet ntlogon;
-	int *replies = (int *)dgmslot->private;
+	torture_assert_int_equal(tctx, response->response_type, NETLOGON_SAMLOGON, "Got incorrect type of netlogon response");
+	map_netlogon_samlogon_response(&response->samlogon);
 
-	printf("ntlogon reply from %s:%d\n", src->addr, src->port);
+	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX, "Got incorrect netlogon response command");
+	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.nt_version, NETLOGON_NT_VERSION_5EX_WITH_IP|NETLOGON_NT_VERSION_5EX|NETLOGON_NT_VERSION_1, "Got incorrect netlogon response command");
 
-	status = dgram_mailslot_ntlogon_parse(dgmslot, dgmslot, packet, &ntlogon);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to parse ntlogon packet from %s:%d\n",
-		       src->addr, src->port);
-		return;
+	/* setup (another) temporary mailslot listener for replies */
+	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
+				      netlogon_handler, NULL);
+	
+	ZERO_STRUCT(logon);
+	logon.command = LOGON_SAM_LOGON_REQUEST;
+	logon.req.logon.request_count = 0;
+	logon.req.logon.computer_name = TEST_NAME;
+	logon.req.logon.user_name     = TEST_NAME"$";
+	logon.req.logon.mailslot_name = dgmslot->mailslot_name;
+	logon.req.logon.nt_version    = 1;
+	logon.req.logon.lmnt_token    = 0xFFFF;
+	logon.req.logon.lm20_token    = 0xFFFF;
+
+	make_nbt_name_client(&myname, TEST_NAME);
+
+	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
+					   address, lp_dgram_port(tctx->lp_ctx));
+
+	torture_assert(tctx, dest != NULL, "Error getting address");
+	status = dgram_mailslot_netlogon_send(dgmsock, &name, dest,
+					      NBT_MAILSLOT_NETLOGON, 
+					      &myname, &logon);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
+
+	while (timeval_elapsed(&tv) < 5 && dgmslot->private == NULL) {
+		event_loop_once(dgmsock->event_ctx);
 	}
 
-	NDR_PRINT_DEBUG(nbt_ntlogon_packet, &ntlogon);
+	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
 
-	(*replies)++;
+	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
+
+	torture_assert_int_equal(tctx, response->response_type, NETLOGON_SAMLOGON, "Got incorrect type of netlogon response");
+	map_netlogon_samlogon_response(&response->samlogon);
+
+	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN, "Got incorrect netlogon response command");
+
+	torture_assert_str_equal(tctx, response->samlogon.nt5_ex.user_name, TEST_NAME"$", "Got incorrect user in netlogon response");
+
+	join_ctx = torture_join_domain(tctx, TEST_NAME, 
+				       ACB_WSTRUST, &machine_credentials);
+
+	dom_sid = torture_join_sid(join_ctx);
+
+	/* setup (another) temporary mailslot listener for replies */
+	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
+				      netlogon_handler, NULL);
+	
+	ZERO_STRUCT(logon);
+	logon.command = LOGON_SAM_LOGON_REQUEST;
+	logon.req.logon.request_count = 0;
+	logon.req.logon.computer_name = TEST_NAME;
+	logon.req.logon.user_name     = TEST_NAME"$";
+	logon.req.logon.mailslot_name = dgmslot->mailslot_name;
+	logon.req.logon.sid           = *dom_sid;
+	logon.req.logon.nt_version    = 1;
+	logon.req.logon.lmnt_token    = 0xFFFF;
+	logon.req.logon.lm20_token    = 0xFFFF;
+
+	make_nbt_name_client(&myname, TEST_NAME);
+
+	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
+					   address, lp_dgram_port(tctx->lp_ctx));
+
+	torture_assert(tctx, dest != NULL, "Error getting address");
+	status = dgram_mailslot_netlogon_send(dgmsock, &name, dest,
+					      NBT_MAILSLOT_NETLOGON, 
+					      &myname, &logon);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
+
+
+	while (timeval_elapsed(&tv) < 5 && dgmslot->private == NULL) {
+		event_loop_once(dgmsock->event_ctx);
+	}
+
+	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+
+	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
+
+	torture_assert_int_equal(tctx, response->response_type, NETLOGON_SAMLOGON, "Got incorrect type of netlogon response");
+	map_netlogon_samlogon_response(&response->samlogon);
+
+	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN, "Got incorrect netlogon response command");
+
+	/* setup (another) temporary mailslot listener for replies */
+	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
+				      netlogon_handler, NULL);
+	
+	ZERO_STRUCT(logon);
+	logon.command = LOGON_SAM_LOGON_REQUEST;
+	logon.req.logon.request_count = 0;
+	logon.req.logon.computer_name = TEST_NAME;
+	logon.req.logon.user_name     = TEST_NAME"$";
+	logon.req.logon.mailslot_name = dgmslot->mailslot_name;
+	logon.req.logon.sid           = *dom_sid;
+	logon.req.logon.acct_control  = ACB_WSTRUST;
+	logon.req.logon.nt_version    = 1;
+	logon.req.logon.lmnt_token    = 0xFFFF;
+	logon.req.logon.lm20_token    = 0xFFFF;
+
+	make_nbt_name_client(&myname, TEST_NAME);
+
+	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
+					   address, lp_dgram_port(tctx->lp_ctx));
+
+	torture_assert(tctx, dest != NULL, "Error getting address");
+	status = dgram_mailslot_netlogon_send(dgmsock, &name, dest,
+					      NBT_MAILSLOT_NETLOGON, 
+					      &myname, &logon);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
+
+
+	while (timeval_elapsed(&tv) < 5 && dgmslot->private == NULL) {
+		event_loop_once(dgmsock->event_ctx);
+	}
+
+	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+
+	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
+
+	torture_assert_int_equal(tctx, response->response_type, NETLOGON_SAMLOGON, "Got incorrect type of netlogon response");
+	map_netlogon_samlogon_response(&response->samlogon);
+
+	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE, "Got incorrect netlogon response command");
+
+	dgmslot->private = NULL;
+
+	ZERO_STRUCT(logon);
+	logon.command = LOGON_SAM_LOGON_REQUEST;
+	logon.req.logon.request_count = 0;
+	logon.req.logon.computer_name = TEST_NAME;
+	logon.req.logon.user_name     = TEST_NAME"$";
+	logon.req.logon.mailslot_name = dgmslot->mailslot_name;
+	logon.req.logon.sid           = *dom_sid;
+	logon.req.logon.acct_control  = ACB_NORMAL;
+	logon.req.logon.nt_version    = 1;
+	logon.req.logon.lmnt_token    = 0xFFFF;
+	logon.req.logon.lm20_token    = 0xFFFF;
+
+	make_nbt_name_client(&myname, TEST_NAME);
+
+	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
+					   address, lp_dgram_port(tctx->lp_ctx));
+
+	torture_assert(tctx, dest != NULL, "Error getting address");
+	status = dgram_mailslot_netlogon_send(dgmsock, &name, dest,
+					      NBT_MAILSLOT_NETLOGON, 
+					      &myname, &logon);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
+
+
+	while (timeval_elapsed(&tv) < 5 && dgmslot->private == NULL) {
+		event_loop_once(dgmsock->event_ctx);
+	}
+
+	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+
+	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
+
+	torture_assert_int_equal(tctx, response->response_type, NETLOGON_SAMLOGON, "Got incorrect type of netlogon response");
+	map_netlogon_samlogon_response(&response->samlogon);
+
+	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN, "Got incorrect netlogon response command");
+
+	torture_leave_domain(join_ctx);
+	return true;
 }
 
 
@@ -257,19 +422,19 @@ static void ntlogon_handler(struct dgram_mailslot_handler *dgmslot,
 static bool nbt_test_ntlogon(struct torture_context *tctx)
 {
 	struct dgram_mailslot_handler *dgmslot;
-	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(tctx, NULL,
+	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(tctx, tctx->ev,
 								 lp_iconv_convenience(tctx->lp_ctx));
 	struct socket_address *dest;
 	struct test_join *join_ctx;
-	struct cli_credentials *machine_credentials;
 	const struct dom_sid *dom_sid;
+	struct cli_credentials *machine_credentials;
 
 	const char *myaddress;
-	struct nbt_ntlogon_packet logon;
+	struct nbt_netlogon_packet logon;
+	struct nbt_netlogon_response *response;
 	struct nbt_name myname;
 	NTSTATUS status;
 	struct timeval tv = timeval_current();
-	int replies = 0;
 
 	struct socket_address *socket_address;
 	const char *address;
@@ -283,7 +448,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 
 	/* do an initial name resolution to find its IP */
 	torture_assert_ntstatus_ok(tctx, 
-				   resolve_name(lp_resolve_context(tctx->lp_ctx), &name, tctx, &address, event_context_find(tctx)), 
+				   resolve_name(lp_resolve_context(tctx->lp_ctx), &name, tctx, &address, tctx->ev),
 				   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
 
 	load_interfaces(tctx, lp_interfaces(tctx->lp_ctx), &ifaces);
@@ -296,7 +461,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	/* try receiving replies on port 138 first, which will only
 	   work if we are root and smbd/nmbd are not running - fall
 	   back to listening on any port, which means replies from
-	   some windows versions won't be seen */
+	   most windows versions won't be seen */
 	status = socket_listen(dgmsock->sock, socket_address, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(socket_address);
@@ -309,24 +474,25 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 
 	join_ctx = torture_join_domain(tctx, TEST_NAME, 
 				       ACB_WSTRUST, &machine_credentials);
+	dom_sid = torture_join_sid(join_ctx);
+
 	torture_assert(tctx, join_ctx != NULL,
 		       talloc_asprintf(tctx, "Failed to join domain %s as %s\n",
 		       		       lp_workgroup(tctx->lp_ctx), TEST_NAME));
 
-	dom_sid = torture_join_sid(join_ctx);
-
 	/* setup a temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
-				      ntlogon_handler, &replies);
+				      netlogon_handler, NULL);
 	
 
 	ZERO_STRUCT(logon);
-	logon.command = NTLOGON_SAM_LOGON;
+	logon.command = LOGON_SAM_LOGON_REQUEST;
 	logon.req.logon.request_count = 0;
 	logon.req.logon.computer_name = TEST_NAME;
 	logon.req.logon.user_name     = TEST_NAME"$";
 	logon.req.logon.mailslot_name = dgmslot->mailslot_name;
 	logon.req.logon.acct_control  = ACB_WSTRUST;
+	/* Try with a SID this time */
 	logon.req.logon.sid           = *dom_sid;
 	logon.req.logon.nt_version    = 1;
 	logon.req.logon.lmnt_token    = 0xFFFF;
@@ -337,15 +503,145 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
 					   address, lp_dgram_port(tctx->lp_ctx));
 	torture_assert(tctx, dest != NULL, "Error getting address");
-	status = dgram_mailslot_ntlogon_send(dgmsock, DGRAM_DIRECT_UNIQUE,
-					     &name, dest, &myname, &logon);
+	status = dgram_mailslot_netlogon_send(dgmsock, 
+					      &name, dest, 
+					      NBT_MAILSLOT_NTLOGON, 
+					      &myname, &logon);
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send ntlogon request");
 
-	while (timeval_elapsed(&tv) < 5 && replies == 0) {
+	while (timeval_elapsed(&tv) < 5 && dgmslot->private == NULL) {
 		event_loop_once(dgmsock->event_ctx);
 	}
 
+	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+
+	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
+
+	torture_assert_int_equal(tctx, response->response_type, NETLOGON_SAMLOGON, "Got incorrect type of netlogon response");
+	map_netlogon_samlogon_response(&response->samlogon);
+
+	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE, "Got incorrect netlogon response command");
+
+	torture_assert_str_equal(tctx, response->samlogon.nt5_ex.user_name, TEST_NAME"$", "Got incorrect user in netlogon response");
+
+
+	/* setup a temporary mailslot listener for replies */
+	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
+				      netlogon_handler, NULL);
+	
+
+	ZERO_STRUCT(logon);
+	logon.command = LOGON_SAM_LOGON_REQUEST;
+	logon.req.logon.request_count = 0;
+	logon.req.logon.computer_name = TEST_NAME;
+	logon.req.logon.user_name     = TEST_NAME"$";
+	logon.req.logon.mailslot_name = dgmslot->mailslot_name;
+	logon.req.logon.acct_control  = ACB_WSTRUST;
+	/* Leave sid as all zero */
+	logon.req.logon.nt_version    = 1;
+	logon.req.logon.lmnt_token    = 0xFFFF;
+	logon.req.logon.lm20_token    = 0xFFFF;
+
+	make_nbt_name_client(&myname, TEST_NAME);
+
+	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
+					   address, lp_dgram_port(tctx->lp_ctx));
+	torture_assert(tctx, dest != NULL, "Error getting address");
+	status = dgram_mailslot_netlogon_send(dgmsock, 
+					      &name, dest, 
+					      NBT_MAILSLOT_NTLOGON, 
+					      &myname, &logon);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to send ntlogon request");
+
+	while (timeval_elapsed(&tv) < 5 && dgmslot->private == NULL) {
+		event_loop_once(dgmsock->event_ctx);
+	}
+
+	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+
+	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
+
+	torture_assert_int_equal(tctx, response->response_type, NETLOGON_SAMLOGON, "Got incorrect type of netlogon response");
+	map_netlogon_samlogon_response(&response->samlogon);
+
+	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE, "Got incorrect netlogon response command");
+
+	torture_assert_str_equal(tctx, response->samlogon.nt5_ex.user_name, TEST_NAME"$", "Got incorrect user in netlogon response");
+
+
+	/* setup (another) temporary mailslot listener for replies */
+	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
+				      netlogon_handler, NULL);
+	
+	ZERO_STRUCT(logon);
+	logon.command = LOGON_PRIMARY_QUERY;
+	logon.req.pdc.computer_name = TEST_NAME;
+	logon.req.pdc.mailslot_name = dgmslot->mailslot_name;
+	logon.req.pdc.unicode_name  = TEST_NAME;
+	logon.req.pdc.nt_version    = 1;
+	logon.req.pdc.lmnt_token    = 0xFFFF;
+	logon.req.pdc.lm20_token    = 0xFFFF;
+
+	make_nbt_name_client(&myname, TEST_NAME);
+
+	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
+					   address, lp_dgram_port(tctx->lp_ctx));
+	torture_assert(tctx, dest != NULL, "Error getting address");
+	status = dgram_mailslot_netlogon_send(dgmsock, 
+					      &name, dest, 
+					      NBT_MAILSLOT_NTLOGON, 
+					      &myname, &logon);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to send ntlogon request");
+
+	while (timeval_elapsed(&tv) < 5 && !dgmslot->private) {
+		event_loop_once(dgmsock->event_ctx);
+	}
+
+	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+
+	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
+
+	torture_assert_int_equal(tctx, response->response_type, NETLOGON_GET_PDC, "Got incorrect type of ntlogon response");
+	torture_assert_int_equal(tctx, response->get_pdc.command, NETLOGON_RESPONSE_FROM_PDC, "Got incorrect ntlogon response command");
+
 	torture_leave_domain(join_ctx);
+
+	/* setup (another) temporary mailslot listener for replies */
+	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
+				      netlogon_handler, NULL);
+	
+	ZERO_STRUCT(logon);
+	logon.command = LOGON_PRIMARY_QUERY;
+	logon.req.pdc.computer_name = TEST_NAME;
+	logon.req.pdc.mailslot_name = dgmslot->mailslot_name;
+	logon.req.pdc.unicode_name  = TEST_NAME;
+	logon.req.pdc.nt_version    = 1;
+	logon.req.pdc.lmnt_token    = 0xFFFF;
+	logon.req.pdc.lm20_token    = 0xFFFF;
+
+	make_nbt_name_client(&myname, TEST_NAME);
+
+	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
+					   address, lp_dgram_port(tctx->lp_ctx));
+	torture_assert(tctx, dest != NULL, "Error getting address");
+	status = dgram_mailslot_netlogon_send(dgmsock, 
+					      &name, dest, 
+					      NBT_MAILSLOT_NTLOGON, 
+					      &myname, &logon);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to send ntlogon request");
+
+	while (timeval_elapsed(&tv) < 5 && !dgmslot->private) {
+		event_loop_once(dgmsock->event_ctx);
+	}
+
+	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+
+	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
+
+	torture_assert_int_equal(tctx, response->response_type, NETLOGON_GET_PDC, "Got incorrect type of ntlogon response");
+	torture_assert_int_equal(tctx, response->get_pdc.command, NETLOGON_RESPONSE_FROM_PDC, "Got incorrect ntlogon response command");
+
+
 	return true;
 }
 

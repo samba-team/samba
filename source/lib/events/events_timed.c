@@ -20,12 +20,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#if _SAMBA_BUILD_
 #include "includes.h"
+#include "lib/util/dlinklist.h"
+#else
+#include "replace.h"
+#include "events_util.h"
+#endif
 #include "system/filesys.h"
 #include "system/select.h"
-#include "lib/util/dlinklist.h"
-#include "lib/events/events.h"
-#include "lib/events/events_internal.h"
+#include "events.h"
+#include "events_internal.h"
 
 /*
   destroy a timed event

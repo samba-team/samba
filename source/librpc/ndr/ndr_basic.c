@@ -196,7 +196,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_hyper(struct ndr_pull *ndr, int ndr_flags, u
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_pointer(struct ndr_pull *ndr, int ndr_flags, void* *v)
 {
-	intptr_t h;
+	uintptr_t h;
 	NDR_PULL_ALIGN(ndr, sizeof(h));
 	NDR_PULL_NEED_BYTES(ndr, sizeof(h));
 	memcpy(&h, ndr->data+ndr->offset, sizeof(h));
@@ -393,7 +393,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_hyper(struct ndr_push *ndr, int ndr_flags, u
 */
 _PUBLIC_ enum ndr_err_code ndr_push_pointer(struct ndr_push *ndr, int ndr_flags, void* v)
 {
-	intptr_t h = (intptr_t)v;
+	uintptr_t h = (intptr_t)v;
 	NDR_PUSH_ALIGN(ndr, sizeof(h));
 	NDR_PUSH_NEED_BYTES(ndr, sizeof(h));
 	memcpy(ndr->data+ndr->offset, &h, sizeof(h));

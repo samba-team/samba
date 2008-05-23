@@ -650,7 +650,8 @@ NTSTATUS smbcli_chkpath(struct smbcli_tree *tree, const char *path)
 /****************************************************************************
  Query disk space.
 ****************************************************************************/
-NTSTATUS smbcli_dskattr(struct smbcli_tree *tree, int *bsize, int *total, int *avail)
+NTSTATUS smbcli_dskattr(struct smbcli_tree *tree, uint32_t *bsize, 
+			uint64_t *total, uint64_t *avail)
 {
 	union smb_fsinfo fsinfo_parms;
 	TALLOC_CTX *mem_ctx;
@@ -658,12 +659,12 @@ NTSTATUS smbcli_dskattr(struct smbcli_tree *tree, int *bsize, int *total, int *a
 
 	mem_ctx = talloc_init("smbcli_dskattr");
 
-	fsinfo_parms.dskattr.level = RAW_QFS_DSKATTR;
+	fsinfo_parms.dskattr.level = RAW_QFS_SIZE_INFO;
 	status = smb_raw_fsinfo(tree, mem_ctx, &fsinfo_parms);
 	if (NT_STATUS_IS_OK(status)) {
-		*bsize = fsinfo_parms.dskattr.out.block_size;
-		*total = fsinfo_parms.dskattr.out.units_total;
-		*avail = fsinfo_parms.dskattr.out.units_free;
+		*bsize = fsinfo_parms.size_info.out.bytes_per_sector * fsinfo_parms.size_info.out.sectors_per_unit;
+		*total = fsinfo_parms.size_info.out.total_alloc_units;
+		*avail = fsinfo_parms.size_info.out.avail_alloc_units;
 	}
 
 	talloc_free(mem_ctx);

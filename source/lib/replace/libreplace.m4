@@ -96,64 +96,8 @@ fi
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 AC_CHECK_HEADERS(sys/time.h time.h)
 AC_CHECK_HEADERS(stdarg.h vararg.h)
-AC_CHECK_HEADERS(sys/socket.h netinet/in.h netdb.h arpa/inet.h)
-AC_CHECK_HEADERS(netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
-AC_CHECK_HEADERS(sys/sockio.h sys/un.h)
 AC_CHECK_HEADERS(sys/mount.h mntent.h)
 AC_CHECK_HEADERS(stropts.h)
-
-dnl we need to check that net/if.h really can be used, to cope with hpux
-dnl where including it always fails
-AC_CACHE_CHECK([for usable net/if.h],libreplace_cv_USABLE_NET_IF_H,[
-	AC_COMPILE_IFELSE([AC_LANG_SOURCE([
-		AC_INCLUDES_DEFAULT
-		#if HAVE_SYS_SOCKET_H
-		# include <sys/socket.h>
-		#endif
-		#include <net/if.h>
-		int main(void) {return 0;}])],
-		[libreplace_cv_USABLE_NET_IF_H=yes],
-		[libreplace_cv_USABLE_NET_IF_H=no]
-	)
-])
-if test x"$libreplace_cv_USABLE_NET_IF_H" = x"yes";then
-	AC_DEFINE(HAVE_NET_IF_H, 1, usability of net/if.h)
-fi
-
-AC_HAVE_TYPE([socklen_t],[#include <sys/socket.h>])
-AC_HAVE_TYPE([sa_family_t],[#include <sys/socket.h>])
-AC_HAVE_TYPE([struct addrinfo], [#include <netdb.h>])
-AC_HAVE_TYPE([struct sockaddr], [#include <sys/socket.h>])
-AC_HAVE_TYPE([struct sockaddr_storage], [
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-])
-AC_HAVE_TYPE([struct sockaddr_in6], [
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-])
-
-if test x"$ac_cv_type_struct_sockaddr_storage" = x"yes"; then
-AC_CHECK_MEMBER(struct sockaddr_storage.ss_family,
-                AC_DEFINE(HAVE_SS_FAMILY, 1, [Defined if struct sockaddr_storage has ss_family field]),,
-                [
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-		])
-
-if test x"$ac_cv_member_struct_sockaddr_storage_ss_family" != x"yes"; then
-AC_CHECK_MEMBER(struct sockaddr_storage.__ss_family,
-                AC_DEFINE(HAVE___SS_FAMILY, 1, [Defined if struct sockaddr_storage has __ss_family field]),,
-                [
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-		])
-fi
-fi
 
 AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
@@ -326,15 +270,7 @@ m4_include(getpass.m4)
 m4_include(strptime.m4)
 m4_include(win32.m4)
 m4_include(timegm.m4)
-m4_include(socket.m4)
-m4_include(inet_ntop.m4)
-m4_include(inet_pton.m4)
-m4_include(inet_aton.m4)
-m4_include(inet_ntoa.m4)
-m4_include(getaddrinfo.m4)
 m4_include(repdir.m4)
-m4_include(getifaddrs.m4)
-m4_include(socketpair.m4)
 
 AC_CHECK_FUNCS([syslog printf memset memcpy],,[AC_MSG_ERROR([Required function not found])])
 
@@ -361,5 +297,6 @@ CFLAGS="$CFLAGS -I$libreplacedir"
 
 m4_include(libreplace_cc.m4)
 m4_include(libreplace_ld.m4)
+m4_include(libreplace_network.m4)
 m4_include(libreplace_macros.m4)
 m4_include(autoconf-2.60.m4)

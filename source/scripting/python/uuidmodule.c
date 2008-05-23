@@ -27,7 +27,7 @@ static PyObject *uuid_random(PyObject *self, PyObject *args)
 	PyObject *pyobj;
 	char *str;
 
-	if (!PyArg_ParseTuple(args, (char *)""))
+	if (!PyArg_ParseTuple(args, ""))
 	        return NULL;
 
 	guid = GUID_random();
@@ -46,13 +46,13 @@ static PyObject *uuid_random(PyObject *self, PyObject *args)
 }
 
 static PyMethodDef methods[] = {
-	{ "random", (PyCFunction)uuid_random, METH_VARARGS, NULL},
+	{ "uuid4", (PyCFunction)uuid_random, METH_VARARGS, NULL},
 	{ NULL, NULL }
 };
 
 void inituuid(void)
 {
-	PyObject *mod = Py_InitModule3((char *)"uuid", methods, "UUID helper routines");
+	PyObject *mod = Py_InitModule3("uuid", methods, "UUID helper routines");
 	if (mod == NULL)
 		return;
 }

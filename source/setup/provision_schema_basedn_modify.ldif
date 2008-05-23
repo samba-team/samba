@@ -4,7 +4,7 @@
 dn: ${SCHEMADN}
 changetype: modify
 replace: fSMORoleOwner
-fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
+fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
 -
 replace: objectVersion
 objectVersion: 30

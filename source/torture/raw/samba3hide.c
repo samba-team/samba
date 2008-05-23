@@ -136,7 +136,7 @@ bool torture_samba3_hide(struct torture_context *torture)
 
 	if (!torture_open_connection_share(
 		    torture, &cli, torture, torture_setting_string(torture, "host", NULL),
-		    torture_setting_string(torture, "share", NULL), NULL)) {
+		    torture_setting_string(torture, "share", NULL), torture->ev)) {
 		d_printf("torture_open_connection_share failed\n");
 		return false;
 	}

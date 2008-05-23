@@ -6,12 +6,16 @@
 #	Released under the GNU GPL version 3 or later
 #
 
+import sys
+
+# Find right directory when running from source tree
+sys.path.insert(0, "bin/python")
+
 import samba.getopt as options
 import optparse
 import pwd
-import sys
 from getpass import getpass
-from auth import system_session
+from samba.auth import system_session
 from samba.samdb import SamDB
 
 parser = optparse.OptionParser("newuser [options] <username> [<password>]")
@@ -45,15 +49,9 @@ else:
 if opts.unixname is None:
 	opts.unixname = username
 
-try:
-	pwd.getpwnam(opts.unixname)
-except KeyError:
-	print "ERROR: Unix user '%s' does not exist" % opts.unixname
-	sys.exit(1)
-
-creds = credopts.get_credentials()
-
 lp = sambaopts.get_loadparm()
+creds = credopts.get_credentials(lp)
+
 samdb = SamDB(url=lp.get("sam database"), session_info=system_session(), 
               credentials=creds, lp=lp)
 samdb.newuser(username, opts.unixname, password)

@@ -5,7 +5,7 @@ AC_ARG_VAR([PYTHON_VERSION],[The installed Python
 	will be appended to the Python interpreter
 	canonical name.])
 
-AC_PROG_SWIG(1.3.31)
+AC_PROG_SWIG(1.3.35)
 
 AC_PATH_PROG([PYTHON],[python[$PYTHON_VERSION]])
 if test -z "$PYTHON"; then
@@ -64,10 +64,14 @@ SMB_EXT_LIB(EXT_LIB_PYTHON, [$PYTHON_LDFLAGS], [$PYTHON_CFLAGS])
 AC_MSG_CHECKING(working python module support)
 if test $working_python = yes; then
 	SMB_ENABLE(EXT_LIB_PYTHON,YES)
-	SMB_ENABLE(smbpython,YES)
 	SMB_ENABLE(LIBPYTHON,YES)
 	AC_MSG_RESULT([yes])
 else
 	AC_MSG_ERROR([Python not found. Please install Python 2.x and its development headers/libraries.])
 fi
 
+AC_MSG_CHECKING(python library directory)
+pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 0, '\\${prefix}')"`
+AC_MSG_RESULT($pythondir)
+
+AC_SUBST(pythondir)

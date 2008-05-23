@@ -700,10 +700,10 @@ DATA_BLOB smbcli_req_pull_blob(struct request_bufinfo *bufinfo, TALLOC_CTX *mem_
 static bool smbcli_req_data_oob(struct request_bufinfo *bufinfo, const uint8_t *ptr, uint32_t count)
 {
 	/* be careful with wraparound! */
-	if (ptr < bufinfo->data ||
-	    ptr >= bufinfo->data + bufinfo->data_size ||
+	if ((uintptr_t)ptr < (uintptr_t)bufinfo->data ||
+	    (uintptr_t)ptr >= (uintptr_t)bufinfo->data + bufinfo->data_size ||
 	    count > bufinfo->data_size ||
-	    ptr + count > bufinfo->data + bufinfo->data_size) {
+	    (uintptr_t)ptr + count > (uintptr_t)bufinfo->data + bufinfo->data_size) {
 		return true;
 	}
 	return false;

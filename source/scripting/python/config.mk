@@ -1,49 +1,37 @@
-[BINARY::smbpython]
-PRIVATE_DEPENDENCIES = LIBPYTHON
-OBJ_FILES = smbpython.o
-
 [SUBSYSTEM::LIBPYTHON]
 PUBLIC_DEPENDENCIES = EXT_LIB_PYTHON
+PRIVATE_DEPENDENCIES = PYTALLOC
 INIT_FUNCTION_SENTINEL = { NULL, NULL }
-OBJ_FILES = modules.o pytalloc.o
+
+LIBPYTHON_OBJ_FILES = $(addprefix $(pyscriptsrcdir)/, modules.o)
+
+[SUBSYSTEM::PYTALLOC]
+PUBLIC_DEPENDENCIES = EXT_LIB_PYTHON LIBTALLOC
+
+PYTALLOC_OBJ_FILES = $(addprefix $(pyscriptsrcdir)/, pytalloc.o)
 
 [PYTHON::python_uuid]
 PRIVATE_DEPENDENCIES = LIBNDR 
-OBJ_FILES = uuidmodule.o
+
+python_uuid_OBJ_FILES = $(pyscriptsrcdir)/uuidmodule.o
 
 [PYTHON::python_misc]
+LIBRARY_REALNAME = samba/_misc.$(SHLIBEXT)
 PRIVATE_DEPENDENCIES = LIBNDR LIBLDB SAMDB CREDENTIALS
-SWIG_FILE = misc.i
 
-# Swig extensions
-swig:: pythonmods
+python_misc_OBJ_FILES = $(pyscriptsrcdir)/misc_wrap.o
 
-.SUFFIXES: _wrap.c .i
+$(python_misc_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)
 
-.i_wrap.c:
-	[ "$(SWIG)" = "no" ] || $(SWIG) -O -Wall -I$(srcdir)/scripting/swig -python -keyword $<
+_PY_FILES = $(shell find $(pyscriptsrcdir)/samba $(pyscriptsrcdir)/subunit -name "*.py")
 
-realdistclean::
-	@echo "Removing SWIG output files"
-	# FIXME: Remove _wrap.c files
+$(foreach pyfile, $(_PY_FILES),$(eval $(call python_py_module_template,$(patsubst $(pyscriptsrcdir)/%,%,$(pyfile)),$(pyfile))))
 
-pythonmods:: $(PYTHON_DSOS) $(PYTHON_PYS)
+$(eval $(call python_py_module_template,samba/misc.py,$(pyscriptsrcdir)/misc.py))
 
-PYDOCTOR_MODULES=bin/python/ldb.py bin/python/auth.py bin/python/credentials.py bin/python/registry.py bin/python/tdb.py bin/python/security.py bin/python/events.py bin/python/net.py
+EPYDOC_OPTIONS = --no-private --url http://www.samba.org/ --no-sourcecode
 
-pydoctor:: pythonmods
-	LD_LIBRARY_PATH=bin/shared PYTHONPATH=bin/python pydoctor --project-name=Samba --make-html --docformat=restructuredtext --add-package scripting/python/samba/ $(addprefix --add-module , $(PYDOCTOR_MODULES))
+epydoc:: pythonmods
+	PYTHONPATH=$(pythonbuilddir) epydoc $(EPYDOC_OPTIONS) samba tdb ldb subunit
 
-bin/python/%.py: 
-	mkdir -p $(@D)
-	cp $< $@
-
-installpython:: pythonmods
-	@$(SHELL) $(srcdir)/script/installpython.sh \
-		$(INSTALLPERMS) \
-		$(DESTDIR)$(PYTHONDIR) \
-		scripting/python bin/python
-
-clean::
-	@echo "Removing python modules"
-	@rm -rf bin/python/*
+install:: installpython

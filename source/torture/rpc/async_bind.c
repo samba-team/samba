@@ -39,7 +39,6 @@ bool torture_async_bind(struct torture_context *torture)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
-	struct event_context *evt_ctx;
 	int i;
 	const char *binding_string;
 	struct cli_credentials *creds;
@@ -70,15 +69,11 @@ bool torture_async_bind(struct torture_context *torture)
 	/* credentials */
 	creds = cmdline_credentials;
 
-	/* event context */
-	evt_ctx = cli_credentials_get_event_context(creds);
-	if (evt_ctx == NULL) return false;
-
 	/* send bind requests */
 	for (i = 0; i < torture_numasync; i++) {
 		table[i] = &ndr_table_lsarpc;
 		bind_req[i] = dcerpc_pipe_connect_send(mem_ctx, binding_string,
-						       table[i], creds, evt_ctx, torture->lp_ctx);
+						       table[i], creds, torture->ev, torture->lp_ctx);
 	}
 
 	/* recv bind requests */

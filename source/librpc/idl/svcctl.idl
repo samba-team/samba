@@ -115,12 +115,12 @@ import "misc.idl";
 
 	/*****************/
 	/* Function 0x04 */
-	WERROR svcctl_QueryServiceObjectSecurity(
+	[todo] WERROR svcctl_QueryServiceObjectSecurity(
 	);
 
 	/*****************/
 	/* Function 0x05 */
-	WERROR svcctl_SetServiceObjectSecurity(
+	[todo] WERROR svcctl_SetServiceObjectSecurity(
 	);
 
 	/*****************/
@@ -132,7 +132,7 @@ import "misc.idl";
 
 	/*****************/
 	/* Function 0x07 */
-	WERROR svcctl_SetServiceStatus(
+	[todo] WERROR svcctl_SetServiceStatus(
 	);
 
 	/*****************/
@@ -143,7 +143,7 @@ import "misc.idl";
 
 	/*****************/
 	/* Function 0x09 */
-	WERROR svcctl_NotifyBootConfigStatus(
+	[todo] WERROR svcctl_NotifyBootConfigStatus(
 	);
 
 	/*****************/
@@ -408,12 +408,12 @@ import "misc.idl";
 
 	/*****************/
 	/* Function 0x22 */
-	WERROR svcctl_GetCurrentGroupeStateW(
+	[todo] WERROR svcctl_GetCurrentGroupeStateW(
 	);
 
 	/*****************/
 	/* Function 0x23 */
-	WERROR svcctl_EnumServiceGroupW(
+	[todo] WERROR svcctl_EnumServiceGroupW(
 	);
 
 	/*****************/
@@ -494,6 +494,6 @@ import "misc.idl";
 
 	/*****************/
 	/* Function 0x2b */
-	WERROR svcctl_SCSendTSMessage(
+	[todo] WERROR svcctl_SCSendTSMessage(
 	);
 }

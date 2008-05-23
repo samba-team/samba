@@ -17,6 +17,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _PYRPC_H_
+#define _PYRPC_H_
+
 #define PY_CHECK_TYPE(type, var, fail) \
 	if (!type ## _Check(var)) {\
 		PyErr_Format(PyExc_TypeError, "Expected type %s", type ## _Type.tp_name); \
@@ -26,9 +29,11 @@
 #define dom_sid2_Type dom_sid_Type
 #define dom_sid28_Type dom_sid_Type
 #define dom_sid2_Check dom_sid_Check
-#define dom_sid28_Check dom_sid28_Check
+#define dom_sid28_Check dom_sid_Check
 
 /* This macro is only provided by Python >= 2.3 */
 #ifndef PyAPI_DATA
 #   define PyAPI_DATA(RTYPE) extern RTYPE
 #endif
+
+#endif /* _PYRPC_H_ */

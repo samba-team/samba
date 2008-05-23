@@ -17,20 +17,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import echo
+from samba.dcerpc import echo
 import unittest
-from samba.tests import get_loadparm
+from samba.tests import RpcInterfaceTestCase
 
-class RpcEchoTests(unittest.TestCase):
+class RpcEchoTests(RpcInterfaceTestCase):
     def setUp(self):
-        lp_ctx = get_loadparm()
-        self.conn = echo.rpcecho("ncalrpc:", lp_ctx)
+        self.conn = echo.rpcecho("ncalrpc:", self.get_loadparm())
 
     def test_addone(self):
         self.assertEquals(2, self.conn.AddOne(1))
 
     def test_echodata(self):
-        self.assertEquals([1,2,3], self.conn.EchoData(3, [1, 2, 3]))
+        self.assertEquals([1,2,3], self.conn.EchoData([1, 2, 3]))
 
     def test_call(self):
         self.assertEquals(u"foobar", self.conn.TestCall(u"foobar"))

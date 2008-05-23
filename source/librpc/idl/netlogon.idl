@@ -983,11 +983,11 @@ interface netlogon
 
 	/*****************/
 	/* Function 0x15 */
-	WERROR netr_NETRLOGONDUMMYROUTINE1();
+	[todo] WERROR netr_NETRLOGONDUMMYROUTINE1();
 
 	/****************/
 	/* Function 0x16 */
-	WERROR netr_NETRLOGONSETSERVICEBITS();
+	[todo] WERROR netr_NETRLOGONSETSERVICEBITS();
 
 	/****************/
 	/* Function 0x17 */
@@ -999,11 +999,11 @@ interface netlogon
 
 	/****************/
 	/* Function 0x18 */
-	WERROR netr_NETRLOGONCOMPUTESERVERDIGEST();
+	[todo] WERROR netr_NETRLOGONCOMPUTESERVERDIGEST();
 
 	/****************/
 	/* Function 0x19 */
-	WERROR netr_NETRLOGONCOMPUTECLIENTDIGEST();
+	[todo] WERROR netr_NETRLOGONCOMPUTECLIENTDIGEST();
 
 	/****************/
 	/* Function 0x1a */
@@ -1128,7 +1128,7 @@ interface netlogon
 
 	/****************/
 	/* Function 0x20 */
-	WERROR netr_NETRLOGONSENDTOSAM();
+	[todo] WERROR netr_NETRLOGONSENDTOSAM();
 
 	/****************/
 	/* Function 0x21 */
@@ -1164,7 +1164,7 @@ interface netlogon
 
 	/****************/
 	/* Function 0x23 */
-	WERROR netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN();
+	[todo] WERROR netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN();
 
 	/****************/
 	/* Function 0x24 */
@@ -1332,5 +1332,5 @@ interface netlogon
 
 	/****************/
 	/* Function 0x2e */
-	WERROR netr_NETRSERVERGETTRUSTINFO();
+	[todo] WERROR netr_NETRSERVERGETTRUSTINFO();
 }

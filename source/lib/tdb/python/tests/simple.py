@@ -3,8 +3,8 @@
 # Note that this tests the interface of the Python bindings
 # It does not test tdb itself.
 #
-# Copyright (C) 2007 Jelmer Vernooij <jelmer@samba.org>
-# Published under the GNU LGPL
+# Copyright (C) 2007-2008 Jelmer Vernooij <jelmer@samba.org>
+# Published under the GNU LGPLv3 or later
 
 import tdb
 from unittest import TestCase
@@ -24,6 +24,9 @@ class SimpleTdbTests(TestCase):
 
     def tearDown(self):
         del self.tdb
+
+    def test_repr(self):
+        self.assertTrue(repr(self.tdb).startswith("Tdb('"))
 
     def test_lockall(self):
         self.tdb.lock_all()

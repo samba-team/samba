@@ -33,6 +33,8 @@
 #include "param/param.h"
 #include "librpc/rpc/dcerpc_proto.h"
 #include "auth/gensec/gensec.h"
+#include "libcli/composite/composite.h"
+#include "lib/events/events.h"
 
 #define TEST_MACHINE_NAME "schannel"
 
@@ -258,7 +260,7 @@ static bool test_schannel(struct torture_context *tctx,
 	b->flags |= dcerpc_flags;
 
 	status = dcerpc_pipe_connect_b(tctx, &p, b, &ndr_table_samr,
-				       credentials, NULL, tctx->lp_ctx);
+				       credentials, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, 
 		"Failed to connect with schannel");
 
@@ -270,7 +272,7 @@ static bool test_schannel(struct torture_context *tctx,
 	 * the second */
 
 	/* Swap the binding details from SAMR to NETLOGON */
-	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_netlogon, NULL, tctx->lp_ctx);
+	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_netlogon, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "epm map");
 
 	status = dcerpc_secondary_connection(p, &p_netlogon, 
@@ -296,7 +298,7 @@ static bool test_schannel(struct torture_context *tctx,
 		"Failed to process schannel secured NETLOGON EX ops");
 
 	/* Swap the binding details from SAMR to LSARPC */
-	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_lsarpc, NULL, tctx->lp_ctx);
+	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_lsarpc, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "epm map");
 
 	status = dcerpc_secondary_connection(p, &p_lsa, 
@@ -328,7 +330,7 @@ static bool test_schannel(struct torture_context *tctx,
 	b->flags |= dcerpc_flags;
 
 	status = dcerpc_pipe_connect_b(tctx, &p_samr2, b, &ndr_table_samr,
-				       credentials, NULL, tctx->lp_ctx);
+				       credentials, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, 
 		"Failed to connect with schannel");
 
@@ -337,7 +339,7 @@ static bool test_schannel(struct torture_context *tctx,
 			"Failed to process schannel secured SAMR ops (on fresh connection)");
 
 	/* Swap the binding details from SAMR to NETLOGON */
-	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_netlogon, NULL, tctx->lp_ctx);
+	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_netlogon, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "epm");
 
 	status = dcerpc_secondary_connection(p_samr2, &p_netlogon2, 
@@ -370,7 +372,7 @@ static bool test_schannel(struct torture_context *tctx,
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 
 	status = dcerpc_pipe_connect_b(tctx, &p_netlogon3, b, &ndr_table_netlogon,
-				       credentials, NULL, tctx->lp_ctx);
+				       credentials, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "Failed to connect without schannel");
 
 	torture_assert(tctx, !test_netlogon_ex_ops(p_netlogon3, tctx, credentials, creds),
@@ -453,12 +455,12 @@ bool torture_rpc_schannel2(struct torture_context *torture)
 
 	printf("Opening first connection\n");
 	status = dcerpc_pipe_connect_b(torture, &p1, b, &ndr_table_netlogon,
-				       credentials1, NULL, torture->lp_ctx);
+				       credentials1, torture->ev, torture->lp_ctx);
 	torture_assert_ntstatus_ok(torture, status, "Failed to connect with schannel");
 
 	torture_comment(torture, "Opening second connection\n");
 	status = dcerpc_pipe_connect_b(torture, &p2, b, &ndr_table_netlogon,
-				       credentials2, NULL, torture->lp_ctx);
+				       credentials2, torture->ev, torture->lp_ctx);
 	torture_assert_ntstatus_ok(torture, status, "Failed to connect with schannel");
 
 	credentials1->netlogon_creds = NULL;
@@ -484,3 +486,350 @@ bool torture_rpc_schannel2(struct torture_context *torture)
 	return true;
 }
 
+struct torture_schannel_bench;
+
+struct torture_schannel_bench_conn {
+	struct torture_schannel_bench *s;
+	int index;
+	struct cli_credentials *wks_creds;
+	struct dcerpc_pipe *pipe;
+	struct netr_LogonSamLogonEx r;
+	struct netr_NetworkInfo ninfo;
+	TALLOC_CTX *tmp;
+	uint64_t total;
+	uint32_t count;
+};
+
+struct torture_schannel_bench {
+	struct torture_context *tctx;
+	bool progress;
+	int timelimit;
+	int nprocs;
+	int nconns;
+	struct torture_schannel_bench_conn *conns;
+	struct test_join *join_ctx1;
+	struct cli_credentials *wks_creds1;
+	struct test_join *join_ctx2;
+	struct cli_credentials *wks_creds2;
+	struct cli_credentials *user1_creds;
+	struct cli_credentials *user2_creds;
+	struct dcerpc_binding *b;
+	NTSTATUS error;
+	uint64_t total;
+	uint32_t count;
+	bool stopped;
+};
+
+static void torture_schannel_bench_connected(struct composite_context *c)
+{
+	struct torture_schannel_bench_conn *conn =
+		(struct torture_schannel_bench_conn *)c->async.private_data;
+	struct torture_schannel_bench *s = talloc_get_type(conn->s,
+					   struct torture_schannel_bench);
+
+	s->error = dcerpc_pipe_connect_b_recv(c, s->conns, &conn->pipe);
+	torture_comment(s->tctx, "conn[%u]: %s\n", conn->index, nt_errstr(s->error));
+	if (NT_STATUS_IS_OK(s->error)) {
+		s->nconns++;
+	}
+}
+
+static void torture_schannel_bench_recv(struct rpc_request *req);
+
+static bool torture_schannel_bench_start(struct torture_schannel_bench_conn *conn)
+{
+	struct torture_schannel_bench *s = conn->s;
+	NTSTATUS status;
+	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
+	int flags = CLI_CRED_NTLM_AUTH;
+	struct rpc_request *req;
+	struct cli_credentials *user_creds;
+
+	if (conn->total % 2) {
+		user_creds = s->user1_creds;
+	} else {
+		user_creds = s->user2_creds;
+	}
+
+	if (lp_client_lanman_auth(s->tctx->lp_ctx)) {
+		flags |= CLI_CRED_LANMAN_AUTH;
+	}
+
+	if (lp_client_ntlmv2_auth(s->tctx->lp_ctx)) {
+		flags |= CLI_CRED_NTLMv2_AUTH;
+	}
+
+	talloc_free(conn->tmp);
+	conn->tmp = talloc_new(s);
+	ZERO_STRUCT(conn->ninfo);
+	ZERO_STRUCT(conn->r);
+
+	cli_credentials_get_ntlm_username_domain(user_creds, conn->tmp,
+						 &conn->ninfo.identity_info.account_name.string,
+						 &conn->ninfo.identity_info.domain_name.string);
+
+	generate_random_buffer(conn->ninfo.challenge,
+			       sizeof(conn->ninfo.challenge));
+	chal = data_blob_const(conn->ninfo.challenge,
+			       sizeof(conn->ninfo.challenge));
+
+	names_blob = NTLMv2_generate_names_blob(conn->tmp, lp_iconv_convenience(s->tctx->lp_ctx),
+						cli_credentials_get_workstation(conn->wks_creds),
+						cli_credentials_get_domain(conn->wks_creds));
+
+	status = cli_credentials_get_ntlm_response(user_creds, conn->tmp,
+						   &flags,
+						   chal,
+						   names_blob,
+						   &lm_resp, &nt_resp,
+						   NULL, NULL);
+	torture_assert_ntstatus_ok(s->tctx, status,
+				   "cli_credentials_get_ntlm_response failed");
+
+	conn->ninfo.lm.data = lm_resp.data;
+	conn->ninfo.lm.length = lm_resp.length;
+
+	conn->ninfo.nt.data = nt_resp.data;
+	conn->ninfo.nt.length = nt_resp.length;
+
+	conn->ninfo.identity_info.parameter_control = 0;
+	conn->ninfo.identity_info.logon_id_low = 0;
+	conn->ninfo.identity_info.logon_id_high = 0;
+	conn->ninfo.identity_info.workstation.string = cli_credentials_get_workstation(conn->wks_creds);
+
+	conn->r.in.server_name = talloc_asprintf(conn->tmp, "\\\\%s", dcerpc_server_name(conn->pipe));
+	conn->r.in.computer_name = cli_credentials_get_workstation(conn->wks_creds);
+	conn->r.in.logon_level = 2;
+	conn->r.in.logon.network = &conn->ninfo;
+	conn->r.in.flags = 0;
+	conn->r.in.validation_level = 2;
+
+	req = dcerpc_netr_LogonSamLogonEx_send(conn->pipe, conn->tmp, &conn->r);
+	torture_assert(s->tctx, req, "Failed to setup LogonSamLogonEx request");
+
+	req->async.callback = torture_schannel_bench_recv;
+	req->async.private_data = conn;
+
+	return true;
+}
+
+static void torture_schannel_bench_recv(struct rpc_request *req)
+{
+	bool ret;
+	struct torture_schannel_bench_conn *conn =
+		(struct torture_schannel_bench_conn *)req->async.private_data;
+	struct torture_schannel_bench *s = talloc_get_type(conn->s,
+					   struct torture_schannel_bench);
+
+	s->error = dcerpc_ndr_request_recv(req);
+	if (!NT_STATUS_IS_OK(s->error)) {
+		return;
+	}
+
+	conn->total++;
+	conn->count++;
+
+	if (s->stopped) {
+		return;
+	}
+
+	ret = torture_schannel_bench_start(conn);
+	if (!ret) {
+		s->error = NT_STATUS_INTERNAL_ERROR;
+	}
+}
+
+/*
+  test multiple schannel connection in parallel
+ */
+bool torture_rpc_schannel_bench1(struct torture_context *torture)
+{
+	bool ret = true;
+	NTSTATUS status;
+	const char *binding = torture_setting_string(torture, "binding", NULL);
+	struct torture_schannel_bench *s;
+	struct timeval start;
+	struct timeval end;
+	int i;
+	const char *tmp;
+
+	s = talloc_zero(torture, struct torture_schannel_bench);
+	s->tctx = torture;
+	s->progress = torture_setting_bool(torture, "progress", true);
+	s->timelimit = torture_setting_int(torture, "timelimit", 10);
+	s->nprocs = torture_setting_int(torture, "nprocs", 4);
+	s->conns = talloc_zero_array(s, struct torture_schannel_bench_conn, s->nprocs);
+
+	s->user1_creds = (struct cli_credentials *)talloc_memdup(s,
+								 cmdline_credentials,
+								 sizeof(*s->user1_creds));
+	tmp = torture_setting_string(s->tctx, "extra_user1", NULL);
+	if (tmp) {
+		cli_credentials_parse_string(s->user1_creds, tmp, CRED_SPECIFIED);
+	}
+	s->user2_creds = (struct cli_credentials *)talloc_memdup(s,
+								 cmdline_credentials,
+								 sizeof(*s->user1_creds));
+	tmp = torture_setting_string(s->tctx, "extra_user2", NULL);
+	if (tmp) {
+		cli_credentials_parse_string(s->user1_creds, tmp, CRED_SPECIFIED);
+	}
+
+	s->join_ctx1 = torture_join_domain(s->tctx, talloc_asprintf(s, "%sb", TEST_MACHINE_NAME),
+					   ACB_WSTRUST, &s->wks_creds1);
+	torture_assert(torture, s->join_ctx1 != NULL,
+		       "Failed to join domain with acct_flags=ACB_WSTRUST");
+	s->join_ctx2 = torture_join_domain(s->tctx, talloc_asprintf(s, "%sc", TEST_MACHINE_NAME),
+					   ACB_WSTRUST, &s->wks_creds2);
+	torture_assert(torture, s->join_ctx2 != NULL,
+		       "Failed to join domain with acct_flags=ACB_WSTRUST");
+
+	cli_credentials_set_kerberos_state(s->wks_creds1, CRED_DONT_USE_KERBEROS);
+	cli_credentials_set_kerberos_state(s->wks_creds2, CRED_DONT_USE_KERBEROS);
+
+	for (i=0; i < s->nprocs; i++) {
+		s->conns[i].s = s;
+		s->conns[i].index = i;
+		s->conns[i].wks_creds = (struct cli_credentials *)talloc_memdup(
+			s->conns, s->wks_creds1,sizeof(*s->wks_creds1));
+		if ((i % 2) && (torture_setting_bool(torture, "multijoin", false))) {
+			memcpy(s->conns[i].wks_creds, s->wks_creds2,
+			       talloc_get_size(s->conns[i].wks_creds));
+		}
+		s->conns[i].wks_creds->netlogon_creds = NULL;
+	}
+
+	status = dcerpc_parse_binding(s, binding, &s->b);
+	torture_assert_ntstatus_ok(torture, status, "Bad binding string");
+	s->b->flags &= ~DCERPC_AUTH_OPTIONS;
+	s->b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN;
+
+	torture_comment(torture, "Opening %d connections in parallel\n", s->nprocs);
+	for (i=0; i < s->nprocs; i++) {
+#if 1
+		s->error = dcerpc_pipe_connect_b(s->conns, &s->conns[i].pipe, s->b,
+						 &ndr_table_netlogon,
+						 s->conns[i].wks_creds,
+						 torture->ev, torture->lp_ctx);
+		torture_assert_ntstatus_ok(torture, s->error, "Failed to connect with schannel");
+#else
+		/*
+		 * This path doesn't work against windows,
+		 * because of windows drops the connections
+		 * which haven't reached a session setup yet
+		 *
+		 * The same as the reset on zero vc stuff.
+		 */
+		struct composite_context *c;
+		c = dcerpc_pipe_connect_b_send(s->conns, s->b,
+					       &ndr_table_netlogon,
+					       s->conns[i].wks_creds,
+					       torture->ev,
+					       torture->lp_ctx);
+		torture_assert(torture, c != NULL, "Failed to setup connect");
+		c->async.fn = torture_schannel_bench_connected;
+		c->async.private_data = &s->conns[i];
+	}
+
+	while (NT_STATUS_IS_OK(s->error) && s->nprocs != s->nconns) {
+		int ev_ret = event_loop_once(torture->ev);
+		torture_assert(torture, ev_ret == 0, "event_loop_once failed");
+#endif
+	}
+	torture_assert_ntstatus_ok(torture, s->error, "Failed establish a connect");
+
+	/*
+	 * Change the workstation password after establishing the netlogon
+	 * schannel connections to prove that existing connections are not
+	 * affected by a wks pwchange.
+	 */
+
+	{
+		struct netr_ServerPasswordSet pwset;
+		char *password = generate_random_str(s->join_ctx1, 8);
+		struct creds_CredentialState *creds_state;
+		struct dcerpc_pipe *net_pipe;
+
+		status = dcerpc_pipe_connect_b(s, &net_pipe, s->b,
+					       &ndr_table_netlogon,
+					       s->wks_creds1,
+					       torture->ev, torture->lp_ctx);
+
+		torture_assert_ntstatus_ok(torture, status,
+					   "dcerpc_pipe_connect_b failed");
+
+		pwset.in.server_name = talloc_asprintf(
+			net_pipe, "\\\\%s", dcerpc_server_name(net_pipe));
+		pwset.in.computer_name =
+			cli_credentials_get_workstation(s->wks_creds1);
+		pwset.in.account_name = talloc_asprintf(
+			net_pipe, "%s$", pwset.in.computer_name);
+		pwset.in.secure_channel_type = SEC_CHAN_WKSTA;
+		E_md4hash(password, pwset.in.new_password.hash);
+
+		creds_state = cli_credentials_get_netlogon_creds(
+			s->wks_creds1);
+		creds_des_encrypt(creds_state, &pwset.in.new_password);
+		creds_client_authenticator(creds_state, &pwset.in.credential);
+
+		status = dcerpc_netr_ServerPasswordSet(net_pipe, torture, &pwset);
+		torture_assert_ntstatus_ok(torture, status,
+					   "ServerPasswordSet failed");
+
+		if (!creds_client_check(creds_state,
+					&pwset.out.return_authenticator.cred)) {
+			printf("Credential chaining failed\n");
+		}
+
+		cli_credentials_set_password(s->wks_creds1, password,
+					     CRED_SPECIFIED);
+
+		talloc_free(net_pipe);
+
+		/* Just as a test, connect with the new creds */
+
+		talloc_free(s->wks_creds1->netlogon_creds);
+		s->wks_creds1->netlogon_creds = NULL;
+
+		status = dcerpc_pipe_connect_b(s, &net_pipe, s->b,
+					       &ndr_table_netlogon,
+					       s->wks_creds1,
+					       torture->ev, torture->lp_ctx);
+
+		torture_assert_ntstatus_ok(torture, status,
+					   "dcerpc_pipe_connect_b failed");
+
+		talloc_free(net_pipe);
+	}
+
+	torture_comment(torture, "Start looping LogonSamLogonEx on %d connections for %d secs\n",
+			s->nprocs, s->timelimit);
+	for (i=0; i < s->nprocs; i++) {
+		ret = torture_schannel_bench_start(&s->conns[i]);
+		torture_assert(torture, ret, "Failed to setup LogonSamLogonEx");
+	}
+
+	start = timeval_current();
+	end = timeval_add(&start, s->timelimit, 0);
+
+	while (NT_STATUS_IS_OK(s->error) && !timeval_expired(&end)) {
+		int ev_ret = event_loop_once(torture->ev);
+		torture_assert(torture, ev_ret == 0, "event_loop_once failed");
+	}
+	torture_assert_ntstatus_ok(torture, s->error, "Failed some request");
+	s->stopped = true;
+	talloc_free(s->conns);
+
+	for (i=0; i < s->nprocs; i++) {
+		s->total += s->conns[i].total;
+	}
+
+	torture_comment(torture,
+			"Total ops[%llu] (%u ops/s)\n",
+			(unsigned long long)s->total,
+			(unsigned)s->total/s->timelimit);
+
+	torture_leave_domain(s->join_ctx1);
+	torture_leave_domain(s->join_ctx2);
+	return true;
+}

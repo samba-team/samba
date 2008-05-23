@@ -19,9 +19,8 @@
 
 #include "includes.h"
 #include "libcli/libcli.h"
-#include "torture/ui.h"
 #include "torture/util.h"
-#include "torture/torture.h"
+#include "torture/smbtorture.h"
 #include "system/filesys.h"
 #include "system/locale.h"
 #include "pstring.h"

@@ -200,7 +200,7 @@ static struct ldap_message *new_ldap_sasl_bind_msg(struct ldap_connection *conn,
 /*
   perform a sasl bind using the given credentials
 */
-_PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, 
+_PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 			struct cli_credentials *creds,
 			struct loadparm_context *lp_ctx)
 {
@@ -223,7 +223,8 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 
 	gensec_init(lp_ctx);
 
-	status = gensec_client_start(conn, &conn->gensec, NULL, lp_ctx);
+	status = gensec_client_start(conn, &conn->gensec,
+				     conn->event.event_ctx, lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to start GENSEC engine (%s)\n", nt_errstr(status)));
 		goto failed;

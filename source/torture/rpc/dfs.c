@@ -56,7 +56,7 @@ static bool test_NetShareAdd(TALLOC_CTX *mem_ctx,
 
 	printf("Creating share %s\n", sharename);
 
-	if (!(libnetctx = libnet_context_init(NULL, tctx->lp_ctx))) {
+	if (!(libnetctx = libnet_context_init(tctx->ev, tctx->lp_ctx))) {
 		return false;
 	}
 
@@ -96,7 +96,7 @@ static bool test_NetShareDel(TALLOC_CTX *mem_ctx,
 
 	printf("Deleting share %s\n", sharename);
 
-	if (!(libnetctx = libnet_context_init(NULL, tctx->lp_ctx))) {
+	if (!(libnetctx = libnet_context_init(tctx->ev, tctx->lp_ctx))) {
 		return false;
 	}
 
@@ -124,7 +124,7 @@ static bool test_CreateDir(TALLOC_CTX *mem_ctx,
 {
 	printf("Creating directory %s\n", dir);
 
-	if (!torture_open_connection_share(mem_ctx, cli, tctx, host, share, NULL)) {
+	if (!torture_open_connection_share(mem_ctx, cli, tctx, host, share, tctx->ev)) {
 		return false;
 	}
 
@@ -494,7 +494,7 @@ static void test_cleanup_stdroot(struct dcerpc_pipe *p,
 
 	test_RemoveStdRoot(p, mem_ctx, host, sharename);
 	test_NetShareDel(mem_ctx, tctx, host, sharename);
-	torture_open_connection_share(mem_ctx, &cli, tctx, host, "C$", NULL);
+	torture_open_connection_share(mem_ctx, &cli, tctx, host, "C$", tctx->ev);
 	test_DeleteDir(cli, dir);
 	torture_close_connection(cli);
 }

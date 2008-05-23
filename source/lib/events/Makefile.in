@@ -1,0 +1,66 @@
+#!gmake
+#
+# Makefile for tdb directory
+#
+
+CC = @CC@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+includedir = @includedir@
+libdir = @libdir@
+VPATH = @srcdir@:@tallocdir@:@libreplacedir@
+srcdir = @srcdir@
+builddir = @builddir@
+CPPFLAGS = @CPPFLAGS@ -I$(srcdir)/include -Iinclude -I.
+LDFLAGS = @LDFLAGS@
+EXEEXT = @EXEEXT@
+SHLD = @SHLD@
+SHLD_FLAGS = @SHLD_FLAGS@
+PACKAGE_VERSION = @PACKAGE_VERSION@
+PICFLAG = @PICFLAG@
+SHLIBEXT = @SHLIBEXT@
+SWIG = swig
+PYTHON = @PYTHON@
+PYTHON_CONFIG = @PYTHON_CONFIG@
+PYTHON_BUILD_TARGET = @PYTHON_BUILD_TARGET@
+PYTHON_INSTALL_TARGET = @PYTHON_INSTALL_TARGET@
+PYTHON_CHECK_TARGET = @PYTHON_CHECK_TARGET@
+LIB_PATH_VAR = @LIB_PATH_VAR@
+eventsdir = @eventsdir@
+tallocdir = @tallocdir@
+
+TALLOC_LIBS = @TALLOC_LIBS@
+TALLOC_CFLAGS = @TALLOC_CFLAGS@
+TALLOC_OBJ = @TALLOC_OBJ@
+
+CFLAGS = $(CPPFLAGS) $(TALLOC_CFLAGS) @CFLAGS@
+
+EVENTS_OBJ = @EVENTS_OBJ@ $(TALLOC_OBJ) @LIBREPLACEOBJ@
+
+default: all
+
+include $(eventsdir)/events.mk
+include $(eventsdir)/rules.mk
+
+all:: showflags dirs $(PROGS) $(LIBEVENTS_SOLIB) libevents.a $(PYTHON_BUILD_TARGET)
+
+install:: all
+$(LIBEVENTS_SOLIB): $(EVENTS_OBJ)
+	$(SHLD) $(SHLD_FLAGS) -o $@ $(EVENTS_OBJ) $(TALLOC_LIBS) @SONAMEFLAG@$(LIBEVENTS_SONAME)
+
+check: test
+
+test:: $(PYTHON_CHECK_TARGET)
+installcheck:: test install
+
+clean::
+	rm -f *.o *.a */*.o
+	rm -f $(TALLOC_OBJ)
+
+distclean:: clean
+	rm -f config.log config.status include/config.h config.cache
+	rm -f Makefile
+
+realdistclean:: distclean
+	rm -f configure include/config.h.in

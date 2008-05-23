@@ -65,7 +65,7 @@ replace: objectCategory
 objectCategory: CN=Domain-DNS,${SCHEMADN}
 -
 replace: fSMORoleOwner
-fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
+fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
 -
 replace: isCriticalSystemObject
 isCriticalSystemObject: TRUE
@@ -75,6 +75,6 @@ subRefs: ${CONFIGDN}
 subRefs: ${SCHEMADN}
 -
 replace: gPLink
-gPLink: [LDAP://CN={${POLICYGUID}},CN=Policies,CN=System,${DOMAINDN};2]
+gPLink: [LDAP://CN={${POLICYGUID}},CN=Policies,CN=System,${DOMAINDN};0]
 -
 ${DOMAINGUID_MOD}

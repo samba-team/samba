@@ -737,6 +737,7 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 	struct ildb_private *ildb;
 	NTSTATUS status;
 	struct cli_credentials *creds;
+	struct event_context *event_ctx;
 
 	module = talloc(ldb, struct ldb_module);
 	if (!module) {
@@ -756,8 +757,19 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 	}
 	module->private_data	= ildb;
 	ildb->module		= module;
-	ildb->ldap = ldap4_new_connection(ildb, ldb_get_opaque(ldb, "loadparm"), 
-					  ldb_get_opaque(ldb, "EventContext"));
+
+	event_ctx = ldb_get_opaque(ldb, "EventContext");
+
+	/* FIXME: We must make the event context an explicit parameter, but we
+	 * need to build the events library separately first. Hack a new event
+	 * context so that CMD line utilities work until we have libevents for
+	 * standalone builds ready */
+	if (event_ctx == NULL) {
+		event_ctx = event_context_init(NULL);
+	}
+
+	ildb->ldap = ldap4_new_connection(ildb, ldb_get_opaque(ldb, "loadparm"),
+					  event_ctx);
 	if (!ildb->ldap) {
 		ldb_oom(ldb);
 		goto failed;

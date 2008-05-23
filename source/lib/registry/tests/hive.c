@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/winreg.h"
 #include "system/filesys.h"
 #include "param/param.h"
+#include "libcli/security/security.h"
 
 static bool test_del_nonexistant_key(struct torture_context *tctx,
 				     const void *test_data)
@@ -68,14 +69,15 @@ static bool test_keyinfo_nums(struct torture_context *tctx, void *test_data)
 	struct hive_key *root = (struct hive_key *)test_data;
 	WERROR error;
 	struct hive_key *subkey;
-	uint32_t data = 42;
+	char data[4];
+	SIVAL(data, 0, 42);
 
 	error = hive_key_add_name(tctx, root, "Nested Keyll", NULL,
 				  NULL, &subkey);
 	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
 
 	error = hive_key_set_value(root, "Answer", REG_DWORD,
-			       data_blob_talloc(tctx, &data, sizeof(data)));
+			       data_blob_talloc(tctx, data, sizeof(data)));
 	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	/* This is a new backend. There should be no subkeys and no
@@ -119,7 +121,8 @@ static bool test_del_recursive(struct torture_context *tctx,
 	struct hive_key *subkey2;
 	const struct hive_key *root = (const struct hive_key *)test_data;
 	TALLOC_CTX *mem_ctx = tctx;
-	uint32_t data = 42;
+	char data[4];
+	SIVAL(data, 0, 42);
 
 	/* Create a new key under the root */
 	error = hive_key_add_name(mem_ctx, root, "Parent Key", NULL,
@@ -133,7 +136,7 @@ static bool test_del_recursive(struct torture_context *tctx,
 
 	/* Create a new value under "Child Key" */
 	error = hive_key_set_value(subkey2, "Answer Recursive", REG_DWORD,
-			       data_blob_talloc(mem_ctx, &data, sizeof(data)));
+			       data_blob_talloc(mem_ctx, data, sizeof(data)));
 	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	/* Deleting "Parent Key" will also delete "Child Key" and the value. */
@@ -179,14 +182,15 @@ static bool test_set_value(struct torture_context *tctx,
 	struct hive_key *subkey;
 	const struct hive_key *root = (const struct hive_key *)test_data;
 	TALLOC_CTX *mem_ctx = tctx;
-	uint32_t data = 42;
+	char data[4];
+	SIVAL(data, 0, 42);
 
 	error = hive_key_add_name(mem_ctx, root, "YA Nested Key", NULL,
 				  NULL, &subkey);
 	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
 
 	error = hive_key_set_value(subkey, "Answer", REG_DWORD,
-			       data_blob_talloc(mem_ctx, &data, sizeof(data)));
+			       data_blob_talloc(mem_ctx, data, sizeof(data)));
 	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	return true;
@@ -198,9 +202,11 @@ static bool test_get_value(struct torture_context *tctx, const void *test_data)
 	struct hive_key *subkey;
 	const struct hive_key *root = (const struct hive_key *)test_data;
 	TALLOC_CTX *mem_ctx = tctx;
-	uint32_t data = 42;
+	char data[4];
 	uint32_t type;
 	DATA_BLOB value;
+
+	SIVAL(data, 0, 42);
 
 	error = hive_key_add_name(mem_ctx, root, "EYA Nested Key", NULL,
 				  NULL, &subkey);
@@ -211,7 +217,7 @@ static bool test_get_value(struct torture_context *tctx, const void *test_data)
 				  "getting missing value");
 
 	error = hive_key_set_value(subkey, "Answer", REG_DWORD,
-			       data_blob_talloc(mem_ctx, &data, sizeof(data)));
+			       data_blob_talloc(mem_ctx, data, sizeof(data)));
 	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	error = hive_get_value(mem_ctx, subkey, "Answer", &type, &value);
@@ -220,7 +226,7 @@ static bool test_get_value(struct torture_context *tctx, const void *test_data)
 	torture_assert_int_equal(tctx, value.length, 4, "value length");
 	torture_assert_int_equal(tctx, type, REG_DWORD, "value type");
 
-	torture_assert_int_equal(tctx, data, IVAL(value.data, 0),
+	torture_assert_mem_equal(tctx, &data, value.data, sizeof(uint32_t),
 				 "value data");
 
 	return true;
@@ -232,16 +238,18 @@ static bool test_del_value(struct torture_context *tctx, const void *test_data)
 	struct hive_key *subkey;
 	const struct hive_key *root = (const struct hive_key *)test_data;
 	TALLOC_CTX *mem_ctx = tctx;
-	uint32_t data = 42;
+	char data[4];
 	uint32_t type;
 	DATA_BLOB value;
+
+	SIVAL(data, 0, 42);
 
 	error = hive_key_add_name(mem_ctx, root, "EEYA Nested Key", NULL,
 							 NULL, &subkey);
 	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
 
 	error = hive_key_set_value(subkey, "Answer", REG_DWORD,
-			       data_blob_talloc(mem_ctx, &data, sizeof(data)));
+			       data_blob_talloc(mem_ctx, data, sizeof(data)));
 	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	error = hive_key_del_value(subkey, "Answer");
@@ -264,17 +272,19 @@ static bool test_list_values(struct torture_context *tctx,
 	struct hive_key *subkey;
 	const struct hive_key *root = (const struct hive_key *)test_data;
 	TALLOC_CTX *mem_ctx = tctx;
-	uint32_t data = 42;
+	char data[4];
 	uint32_t type;
 	DATA_BLOB value;
 	const char *name;
+	int data_val = 42;
+	SIVAL(data, 0, data_val);
 
 	error = hive_key_add_name(mem_ctx, root, "AYAYA Nested Key", NULL,
 				  NULL, &subkey);
 	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
 
 	error = hive_key_set_value(subkey, "Answer", REG_DWORD,
-			       data_blob_talloc(mem_ctx, &data, sizeof(data)));
+			       data_blob_talloc(mem_ctx, data, sizeof(data)));
 	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	error = hive_get_value_by_index(mem_ctx, subkey, 0, &name,
@@ -287,12 +297,62 @@ static bool test_list_values(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, type, REG_DWORD, "value type");
 	
 	
-	torture_assert_int_equal(tctx, data, IVAL(value.data, 0), "value data");
+	torture_assert_int_equal(tctx, data_val, IVAL(value.data, 0), "value data");
 
 	error = hive_get_value_by_index(mem_ctx, subkey, 1, &name,
 					&type, &value);
 	torture_assert_werr_equal(tctx, error, WERR_NO_MORE_ITEMS,
 				  "getting missing value");
+
+	return true;
+}
+
+static bool test_hive_security(struct torture_context *tctx, const void *_data)
+{
+	struct hive_key *subkey = NULL;
+        const struct hive_key *root = _data;
+	WERROR error;
+	struct security_descriptor *osd, *nsd;
+	
+	osd = security_descriptor_dacl_create(tctx,
+					 0,
+					 NULL, NULL,
+					 SID_NT_AUTHENTICATED_USERS,
+					 SEC_ACE_TYPE_ACCESS_ALLOWED,
+					 SEC_GENERIC_ALL,
+					 SEC_ACE_FLAG_OBJECT_INHERIT,
+					 NULL);
+
+
+	error = hive_key_add_name(tctx, root, "SecurityKey", NULL,
+				  osd, &subkey);
+	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
+
+	error = hive_get_sec_desc(tctx, subkey, &nsd);
+	torture_assert_werr_ok (tctx, error, "getting security descriptor");
+
+	torture_assert(tctx, security_descriptor_equal(osd, nsd),
+		       "security descriptor changed!");
+
+	/* Create a fresh security descriptor */	
+	talloc_free(osd);
+	osd = security_descriptor_dacl_create(tctx,
+					 0,
+					 NULL, NULL,
+					 SID_NT_AUTHENTICATED_USERS,
+					 SEC_ACE_TYPE_ACCESS_ALLOWED,
+					 SEC_GENERIC_ALL,
+					 SEC_ACE_FLAG_OBJECT_INHERIT,
+					 NULL);
+
+	error = hive_set_sec_desc(subkey, osd);
+	torture_assert_werr_ok(tctx, error, "setting security descriptor");
+	
+	error = hive_get_sec_desc(tctx, subkey, &nsd);
+	torture_assert_werr_ok (tctx, error, "getting security descriptor");
+	
+	torture_assert(tctx, security_descriptor_equal(osd, nsd),
+		       "security descriptor changed!");
 
 	return true;
 }
@@ -324,6 +384,8 @@ static void tcase_add_tests(struct torture_tcase *tcase)
 						test_del_key);
 	torture_tcase_add_simple_test_const(tcase, "del_value",
 						test_del_value);
+	torture_tcase_add_simple_test_const(tcase, "check hive security",
+						test_hive_security);
 }
 
 static bool hive_setup_dir(struct torture_context *tctx, void **data)
@@ -363,7 +425,7 @@ static bool hive_setup_ldb(struct torture_context *tctx, void **data)
 
 	rmdir(dirname);
 
-	error = reg_open_ldb_file(tctx, dirname, NULL, NULL, tctx->lp_ctx, &key);
+	error = reg_open_ldb_file(tctx, dirname, NULL, NULL, tctx->ev, tctx->lp_ctx, &key);
 	if (!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to initialize ldb hive\n");
 		return false;
@@ -381,7 +443,7 @@ static bool hive_setup_regf(struct torture_context *tctx, void **data)
 	char *dirname;
 	NTSTATUS status;
 
-	status = torture_temp_dir(tctx, "hive-dir", &dirname);
+	status = torture_temp_dir(tctx, "hive-regf", &dirname);
 	if (!NT_STATUS_IS_OK(status))
 		return false;
 
