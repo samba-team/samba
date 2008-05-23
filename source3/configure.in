@@ -1500,6 +1500,10 @@ EOF
 	fi
 fi
 
+# Set defaults
+SYMSEXT="syms"
+AC_SUBST(SYMSEXT)
+
 # Assume non-shared by default and override below
 BLDSHARED="false"
 
