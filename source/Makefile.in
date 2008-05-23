@@ -1743,6 +1743,8 @@ libaddns: $(LIBADDNS)
 libwbclient: $(LIBWBCLIENT)
 libnetapi: $(LIBNETAPI)
 
+shlibs: $(SHLIBS)
+
 # Linker command to link a RPC, VFS, AUTH, CHARSET or PASSDB module.
 SHLD_MODULE = $(SHLD) $(LDSHFLAGS) $(MODULE_EXPORTS) \
 	      -o $@ @SONAMEFLAG@`basename $@`
