@@ -1574,8 +1574,8 @@ bin/ldbdel: $(BINARY_PREREQS) $(LDBDEL_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIB
 
 MKSYMS_SH = $(srcdir)/script/mksyms.sh
 
-$(LIBTALLOC_SYMS): $(LIBTALLOC_HEADERS)
-	@$(MKSYMS_SH) $(AWK) $@ $(LIBTALLOC_HEADERS)
+$(LIBTALLOC_SYMS): $(LIBTALLOC_HEADERS) $(builddir)/library-versions
+	@$(MKSYMS_SH) $(AWK) $(builddir)/library-versions $@ $(LIBTALLOC_HEADERS)
 
 $(LIBTALLOC_SHARED_TARGET): $(BINARY_PREREQS) $(LIBTALLOC_OBJ) $(LIBTALLOC_SYMS)
 	@echo Linking shared library $@
@@ -1587,8 +1587,8 @@ $(LIBTALLOC_STATIC_TARGET): $(BINARY_PREREQS) $(LIBTALLOC_OBJ0)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBTALLOC_OBJ0)
 
-$(LIBTDB_SYMS): $(LIBTDB_HEADERS)
-	@$(MKSYMS_SH) $(AWK) $@ $(LIBTDB_HEADERS)
+$(LIBTDB_SYMS): $(LIBTDB_HEADERS) $(builddir)/library-versions
+	@$(MKSYMS_SH) $(AWK) $(builddir)/library-versions $@ $(LIBTDB_HEADERS)
 
 $(LIBTDB_SHARED_TARGET): $(BINARY_PREREQS) $(LIBTDB_OBJ) $(LIBTDB_SYMS)
 	@echo Linking shared library $@
@@ -1600,8 +1600,8 @@ $(LIBTDB_STATIC_TARGET): $(BINARY_PREREQS) $(LIBTDB_OBJ0)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBTDB_OBJ0)
 
-$(LIBWBCLIENT_SYMS): $(LIBWBCLIENT_HEADERS)
-	@$(MKSYMS_SH) $(AWK) $@ $(LIBWBCLIENT_HEADERS)
+$(LIBWBCLIENT_SYMS): $(LIBWBCLIENT_HEADERS) $(builddir)/library-versions
+	@$(MKSYMS_SH) $(AWK) $(builddir)/library-versions $@ $(LIBWBCLIENT_HEADERS)
 
 $(LIBWBCLIENT_SHARED_TARGET): $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ) $(LIBWBCLIENT_SYMS) @LIBTALLOC_SHARED@
 	@echo Linking shared library $@
@@ -1623,8 +1623,8 @@ bin/libaddns.a: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBADDNS_OBJ)
 
-$(LIBNETAPI_SYMS): $(LIBNETAPI_HEADERS)
-	@$(MKSYMS_SH) $(AWK) $@ $(LIBNETAPI_HEADERS)
+$(LIBNETAPI_SYMS): $(LIBNETAPI_HEADERS) $(builddir)/library-versions
+	@$(MKSYMS_SH) $(AWK) $(builddir)/library-versions $@ $(LIBNETAPI_HEADERS)
 
 $(LIBNETAPI_SHARED_TARGET): $(BINARY_PREREQS) $(LIBNETAPI_OBJ) $(LIBNETAPI_SYMS) @LIBTALLOC_SHARED@ @LIBTDB_SHARED@ @LIBWBCLIENT_SHARED@
 	@echo Linking shared library $@
