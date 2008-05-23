@@ -182,12 +182,19 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	bool del_on_close;
 	uint32_t create_options;
 	uint32_t share_access;
+	bool forced;
 
 	create_options = io->generic.in.create_options;
 	share_access   = io->generic.in.share_access;
 
+	forced = (io->generic.in.create_options & NTCREATEX_OPTIONS_DIRECTORY)?true:false;
+
 	if (name->stream_name) {
-		return NT_STATUS_NOT_A_DIRECTORY;
+		if (forced) {
+			return NT_STATUS_NOT_A_DIRECTORY;
+		} else {
+			return NT_STATUS_FILE_IS_A_DIRECTORY;
+		}
 	}
 
 	/* if the client says it must be a directory, and it isn't,
