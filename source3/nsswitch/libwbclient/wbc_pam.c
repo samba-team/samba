@@ -117,7 +117,7 @@ static wbcErr wbc_create_auth_info(TALLOC_CTX *mem_ctx,
 
 #define _SID_COMPOSE(s, d, r, a) { \
 	(s).sid = d; \
-	if ((s).sid.num_auths < MAXSUBAUTHS) { \
+	if ((s).sid.num_auths < WBC_MAXSUBAUTHS) { \
 		(s).sid.sub_auths[(s).sid.num_auths++] = r; \
 	} else { \
 		wbc_status = WBC_ERR_INVALID_SID; \
