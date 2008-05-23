@@ -1,4 +1,4 @@
-TALLOC_1_2 {
+{
 	global:
 		talloc_*;
 		_talloc_*;
