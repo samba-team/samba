@@ -190,6 +190,7 @@ typedef uint32 codepoint_t;
 #define PIPE_SVCCTL   "\\PIPE\\svcctl"
 #define PIPE_EVENTLOG "\\PIPE\\eventlog"
 #define PIPE_EPMAPPER "\\PIPE\\epmapper"
+#define PIPE_DRSUAPI  "\\PIPE\\drsuapi"
 
 #define PIPE_NETLOGON_PLAIN "\\NETLOGON"
 
@@ -208,7 +209,8 @@ typedef uint32 codepoint_t;
 #define PI_EVENTLOG 		12
 #define PI_NTSVCS		13
 #define PI_EPMAPPER		14
-#define PI_MAX_PIPES		15
+#define PI_DRSUAPI		15
+#define PI_MAX_PIPES		16
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef uint64_t NTTIME;
@@ -314,6 +316,7 @@ extern const DATA_BLOB data_blob_null;
 #include "librpc/gen_ndr/krb5pac.h"
 #include "librpc/gen_ndr/ntsvcs.h"
 #include "librpc/gen_ndr/nbt.h"
+#include "librpc/gen_ndr/drsuapi.h"
 
 struct lsa_dom_info {
 	bool valid;

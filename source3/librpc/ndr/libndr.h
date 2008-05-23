@@ -348,4 +348,7 @@ enum ndr_err_code ndr_pull_ ## name(struct ndr_pull *ndr, int ndr_flags, type *v
 void ndr_print_ ## name(struct ndr_print *ndr, const char *var_name, const type *v);
 
 
+void ndr_print_dom_sid28(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
+size_t ndr_size_dom_sid28(const struct dom_sid *sid, int flags);
+
 #endif /* __LIBNDR_H__ */
