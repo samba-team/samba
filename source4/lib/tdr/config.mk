@@ -1,7 +1,9 @@
 [SUBSYSTEM::TDR]
 CFLAGS = -Ilib/tdr
-PRIVATE_PROTO_HEADER = tdr_proto.h
 PUBLIC_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL
-OBJ_FILES = tdr.o
 
-PUBLIC_HEADERS += lib/tdr/tdr.h
+TDR_OBJ_FILES = $(libtdrsrcdir)/tdr.o
+
+$(eval $(call proto_header_template,$(libtdrsrcdir)/tdr_proto.h,$(TDR_OBJ_FILES:.o=.c)))
+
+PUBLIC_HEADERS += $(libtdrsrcdir)/tdr.h

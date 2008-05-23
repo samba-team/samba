@@ -84,14 +84,18 @@ sub check_module($$$)
 
 	return if ($mod->{ENABLE} ne "YES");
 
+
 	if (exists($INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTION_TYPE})) {
 		$mod->{INIT_FUNCTION_TYPE} = $INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTION_TYPE};
 	} else {
 		$mod->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)";
 	}
 
+	unless (defined($mod->{INIT_FUNCTION_SENTINEL})) { $mod->{INIT_FUNCTION_SENTINEL} = "NULL"; }
+
 	if (not defined($mod->{OUTPUT_TYPE})) {
-		if ($INPUT->{$mod->{SUBSYSTEM}}->{TYPE} eq "EXT_LIB") {
+		if ((not defined($INPUT->{$mod->{SUBSYSTEM}}->{TYPE})) or 
+			$INPUT->{$mod->{SUBSYSTEM}}->{TYPE} eq "EXT_LIB") {
 			$mod->{OUTPUT_TYPE} = undef;
 		} else {
 			$mod->{OUTPUT_TYPE} = $default_ot;
@@ -107,7 +111,7 @@ sub check_module($$$)
 	} 
 	if (grep(/MERGED_OBJ/, @{$mod->{OUTPUT_TYPE}})) {
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS}}, $mod->{INIT_FUNCTION}) if defined($mod->{INIT_FUNCTION});
-		unshift (@{$INPUT->{$mod->{SUBSYSTEM}}{PRIVATE_DEPENDENCIES}}, $mod->{NAME});
+		push (@{$INPUT->{$mod->{SUBSYSTEM}}{PRIVATE_DEPENDENCIES}}, $mod->{NAME});
 	}
 }
 
@@ -118,16 +122,6 @@ sub check_library($$$)
 	return if ($lib->{ENABLE} ne "YES");
 
 	unless (defined($lib->{OUTPUT_TYPE})) { $lib->{OUTPUT_TYPE} = $default_ot; }
-
-	if (defined($lib->{VERSION}) and not defined($lib->{SO_VERSION})) {
-		print "$lib->{NAME}: Please specify SO_VERSION when specifying VERSION\n";
-		return;
-	}
-
-	if (defined($lib->{SO_VERSION}) and not defined($lib->{VERSION})) {
-		print "$lib->{NAME}: Please specify VERSION when specifying SO_VERSION\n";
-		return;
-	}
 
 	unless (defined($lib->{INIT_FUNCTION_TYPE})) { $lib->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)"; }
 	unless (defined($lib->{INIT_FUNCTION_SENTINEL})) { $lib->{INIT_FUNCTION_SENTINEL} = "NULL"; }
@@ -144,25 +138,12 @@ sub check_python($$$)
 
 	$python->{INSTALLDIR} = "PYTHONDIR";
 	unless (defined($python->{CFLAGS})) { $python->{CFLAGS} = []; }
-	if (defined($python->{SWIG_FILE})) {
-		my $dirname = dirname($python->{SWIG_FILE});
-		my $basename = basename($python->{SWIG_FILE}, ".i");
-
-		$dirname .= "/" unless $dirname =~ /\/$/;
-		$dirname = "" if $dirname eq "./";
-
-		$python->{OBJ_FILES} = ["$dirname$basename\_wrap.o"];
-		$python->{LIBRARY_REALNAME} = "_$basename.\$(SHLIBEXT)";
-		$python->{PYTHON_FILES} = ["$dirname$basename.py"];
-		push (@{$python->{CFLAGS}}, "\$(CFLAG_NO_UNUSED_MACROS)");
-		push (@{$python->{CFLAGS}}, "\$(CFLAG_NO_CAST_QUAL)");
-		$python->{INIT_FUNCTION} = "{ (char *)\"_$basename\", init_$basename }";
-	} else {
-		my $basename = $python->{NAME};
-		$basename =~ s/^python_//g;
+	my $basename = $python->{NAME};
+	$basename =~ s/^python_//g;
+	unless (defined($python->{LIBRARY_REALNAME})) {
 		$python->{LIBRARY_REALNAME} = "$basename.\$(SHLIBEXT)";
-		$python->{INIT_FUNCTION} = "{ (char *)\"$basename\", init$basename }";
 	}
+	$python->{INIT_FUNCTION} = "{ (char *)\"$basename\", init$basename }";
 	push (@{$python->{CFLAGS}}, "\$(EXT_LIB_PYTHON_CFLAGS)");
 
 	$python->{SUBSYSTEM} = "LIBPYTHON";
@@ -177,6 +158,8 @@ sub check_binary($$)
 	return if ($bin->{ENABLE} ne "YES");
 
 	($bin->{BINARY} = (lc $bin->{NAME})) if not defined($bin->{BINARY});
+	unless (defined($bin->{INIT_FUNCTION_SENTINEL})) { $bin->{INIT_FUNCTION_SENTINEL} = "NULL"; }
+	unless (defined($bin->{INIT_FUNCTION_TYPE})) { $bin->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)"; }
 
 	$bin->{OUTPUT_TYPE} = ["BINARY"];
 	add_libreplace($bin);
@@ -186,16 +169,13 @@ sub add_implicit($$)
 {
 	my ($INPUT, $n) = @_;
 
-	$INPUT->{$n} = {
-		TYPE => "MAKE_RULE",
-		NAME => $n,
-		TARGET => "",
-		OUTPUT_TYPE => undef,
-		LIBS => ["\$(".uc($n)."_LIBS)"],
-		LDFLAGS => ["\$(".uc($n)."_LDFLAGS)"],
-		CFLAGS => ["\$(".uc($n)."_CFLAGS)"],
-		CPPFLAGS => ["\$(".uc($n)."_CPPFLAGS)"]
-	};
+	$INPUT->{$n}->{TYPE} = "MAKE_RULE";
+	$INPUT->{$n}->{NAME} = $n;
+	$INPUT->{$n}->{OUTPUT_TYPE} = undef;
+	$INPUT->{$n}->{LIBS} = ["\$(".uc($n)."_LIBS)"];
+	$INPUT->{$n}->{LDFLAGS} = ["\$(".uc($n)."_LDFLAGS)"];
+	$INPUT->{$n}->{CFLAGS} = ["\$(".uc($n)."_CFLAGS)"];
+	$INPUT->{$n}->{CPPFLAGS} = ["\$(".uc($n)."_CPPFLAGS)"];
 }
 
 sub calc_unique_deps($$$$$$$$)
@@ -204,7 +184,7 @@ sub calc_unique_deps($$$$$$$$)
 	my ($name, $INPUT, $deps, $udeps, $withlibs, $forward, $pubonly, $busy) = @_;
 
 	foreach my $n (@$deps) {
-		add_implicit($INPUT, $n) unless (defined($INPUT->{$n}));
+		add_implicit($INPUT, $n) unless (defined($INPUT->{$n}) and defined($INPUT->{$n}->{TYPE}));
 		my $dep = $INPUT->{$n};
 		if (grep (/^$n$/, @$busy)) {
 			next if (@{$dep->{OUTPUT_TYPE}}[0] eq "MERGED_OBJ");
@@ -212,19 +192,19 @@ sub calc_unique_deps($$$$$$$$)
 		}
 		next if (grep /^$n$/, @$udeps);
 
-		push (@{$udeps}, $dep->{NAME}) if $forward;
+		push (@{$udeps}, $n) if $forward;
 
  		if (defined ($dep->{OUTPUT_TYPE}) && 
 			($withlibs or 
 			(@{$dep->{OUTPUT_TYPE}}[0] eq "MERGED_OBJ") or 
 			(@{$dep->{OUTPUT_TYPE}}[0] eq "STATIC_LIBRARY"))) {
-				push (@$busy, $dep->{NAME});
-			        calc_unique_deps($dep->{NAME}, $INPUT, $dep->{PUBLIC_DEPENDENCIES}, $udeps, $withlibs, $forward, $pubonly, $busy);
-			        calc_unique_deps($dep->{NAME}, $INPUT, $dep->{PRIVATE_DEPENDENCIES}, $udeps, $withlibs, $forward, $pubonly, $busy) unless $pubonly;
+				push (@$busy, $n);
+			        calc_unique_deps($n, $INPUT, $dep->{PUBLIC_DEPENDENCIES}, $udeps, $withlibs, $forward, $pubonly, $busy);
+			        calc_unique_deps($n, $INPUT, $dep->{PRIVATE_DEPENDENCIES}, $udeps, $withlibs, $forward, $pubonly, $busy) unless $pubonly;
 				pop (@$busy);
 	        }
 
-		unshift (@{$udeps}, $dep->{NAME}) unless $forward;
+		unshift (@{$udeps}, $n) unless $forward;
 	}
 }
 
@@ -249,7 +229,7 @@ sub check($$$$$)
 
 	foreach my $part (values %$INPUT) {
 		$part->{LINK_FLAGS} = [];
-		$part->{FULL_OBJ_LIST} = ["\$($part->{NAME}_OBJ_LIST)"];
+		$part->{FULL_OBJ_LIST} = ["\$($part->{NAME}_OBJ_FILES)"];
 
 		if ($part->{TYPE} eq "SUBSYSTEM") { 
 			check_subsystem($INPUT, $part, $subsys_ot);

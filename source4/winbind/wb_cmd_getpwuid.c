@@ -34,6 +34,7 @@ struct cmd_getpwuid_state {
 	struct composite_context *ctx;
 	struct wbsrv_service *service;
 	uid_t uid;
+	struct dom_sid *sid;
 	char *workgroup;
 	struct wbsrv_domain *domain;
 
@@ -81,14 +82,13 @@ static void cmd_getpwuid_recv_sid(struct composite_context *ctx)
 	struct cmd_getpwuid_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct cmd_getpwuid_state);
-	struct dom_sid *sid;
 
 	DEBUG(5, ("cmd_getpwuid_recv_sid called %p\n", ctx->private_data));
 
-	state->ctx->status = wb_uid2sid_recv(ctx, state, &sid);
+	state->ctx->status = wb_uid2sid_recv(ctx, state, &state->sid);
 	if (!composite_is_ok(state->ctx)) return;
 
-	ctx = wb_sid2domain_send(state, state->service, sid);
+	ctx = wb_sid2domain_send(state, state->service, state->sid);
 
 	composite_continue(state->ctx, ctx, cmd_getpwuid_recv_domain, state);
 }
@@ -110,7 +110,8 @@ static void cmd_getpwuid_recv_domain(struct composite_context *ctx)
 	user_info = talloc(state, struct libnet_UserInfo);
 	if (composite_nomem(user_info, state->ctx)) return;
 
-	user_info->in.user_name = state->domain->libnet_ctx->cred->username;
+	user_info->in.level = USER_INFO_BY_SID;
+	user_info->in.data.user_sid = state->sid;
 	user_info->in.domain_name = state->domain->libnet_ctx->samr.name;
 
 	/* We need the workgroup later, so copy it  */

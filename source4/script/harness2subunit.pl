@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 my $firstline = 1;
-
+my $error = 0;
 while(<STDIN>) {
 	if ($firstline) {
 		$firstline = 0;
@@ -10,6 +10,7 @@ while(<STDIN>) {
 	if (/^not ok (\d+) - (.*)$/) {
 		print "test: $2\n";
 		print "failure: $2\n";
+		$error = 1;
 	} elsif (/^ok (\d+) - (.*)$/) {
 		print "test: $2\n";
 		print "success: $2\n";
@@ -22,7 +23,10 @@ while(<STDIN>) {
 	} elsif (/^not ok (\d+)$/) {
 		print "test: $1\n";
 		print "failure: $1\n";
+		$error = 1;
 	} else {
 		print;
 	}
 }
+exit $error;
+

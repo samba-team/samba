@@ -36,6 +36,10 @@ class SimpleLdb(unittest.TestCase):
         x = ldb.Ldb()
         x.connect("foo.tdb")
 
+    def test_repr(self):
+        x = ldb.Ldb()
+        self.assertTrue(repr(x).startswith("<ldb connection"))
+
     def test_set_create_perms(self):
         x = ldb.Ldb()
         x.set_create_perms(0600)
@@ -59,6 +63,10 @@ class SimpleLdb(unittest.TestCase):
     def test_search_string_dn(self):
         l = ldb.Ldb("foo.tdb")
         self.assertEquals(len(l.search("", ldb.SCOPE_SUBTREE, "(dc=*)", ["dc"])), 0)
+
+    def test_search_attr_string(self):
+        l = ldb.Ldb("foo.tdb")
+        self.assertRaises(TypeError, l.search, attrs="dc")
 
     def test_opaque(self):
         l = ldb.Ldb("foo.tdb")
@@ -257,6 +265,10 @@ class DnTests(unittest.TestCase):
         x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
         self.assertEquals(x.__str__(), "dc=foo,bar=bloe")
 
+    def test_repr(self):
+        x = ldb.Dn(self.ldb, "dc=foo,bla=blie")
+        self.assertEquals(x.__repr__(), "Dn('dc=foo,bla=blie')")
+
     def test_get_casefold(self):
         x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
         self.assertEquals(x.get_casefold(), "DC=FOO,BAR=bloe")
@@ -347,6 +359,16 @@ class LdbMsgTests(unittest.TestCase):
         self.msg = ldb.Message(ldb.Dn(ldb.Ldb(), "dc=foo"))
         self.assertEquals("dc=foo", str(self.msg.dn))
 
+    def test_iter_items(self):
+        self.assertEquals(0, len(self.msg.items()))
+        self.msg.dn = ldb.Dn(ldb.Ldb("foo.tdb"), "dc=foo")
+        self.assertEquals(1, len(self.msg.items()))
+
+    def test_repr(self):
+        self.msg.dn = ldb.Dn(ldb.Ldb("foo.tdb"), "dc=foo")
+        self.msg["dc"] = "foo"
+        self.assertEquals("Message({'dn': Dn('dc=foo'), 'dc': MessageElement(['foo'])})", repr(self.msg))
+
     def test_len(self):
         self.assertEquals(0, len(self.msg))
 
@@ -374,13 +396,25 @@ class LdbMsgTests(unittest.TestCase):
         self.assertEquals(["bar"], list(self.msg["foo"]))
 
     def test_keys(self):
+        self.msg.dn = ldb.Dn(ldb.Ldb("foo.tdb"), "@BASEINFO")
         self.msg["foo"] = ["bla"]
         self.msg["bar"] = ["bla"]
-        self.assertEquals(["foo", "bar"], self.msg.keys())
+        self.assertEquals(["dn", "foo", "bar"], self.msg.keys())
 
     def test_dn(self):
         self.msg.dn = ldb.Dn(ldb.Ldb("foo.tdb"), "@BASEINFO")
         self.assertEquals("@BASEINFO", self.msg.dn.__str__())
+
+    def test_get_dn(self):
+        self.msg.dn = ldb.Dn(ldb.Ldb("foo.tdb"), "@BASEINFO")
+        self.assertEquals("@BASEINFO", self.msg.get("dn").__str__())
+
+    def test_get_other(self):
+        self.msg["foo"] = ["bar"]
+        self.assertEquals("bar", self.msg.get("foo")[0])
+
+    def test_get_unknown(self):
+        self.assertRaises(KeyError, self.msg.get, "lalalala")
 
 
 class MessageElementTests(unittest.TestCase):
@@ -394,6 +428,12 @@ class MessageElementTests(unittest.TestCase):
     def test_create_iterable(self):
         x = ldb.MessageElement(["foo"])
         self.assertEquals(["foo"], list(x))
+
+    def test_repr(self):
+        x = ldb.MessageElement(["foo"])
+        self.assertEquals("MessageElement(['foo'])", repr(x))
+        x = ldb.MessageElement(["foo", "bla"])
+        self.assertEquals("MessageElement(['foo','bla'])", repr(x))
 
     def test_get_item(self):
         x = ldb.MessageElement(["foo", "bar"])

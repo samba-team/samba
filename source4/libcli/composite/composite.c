@@ -42,7 +42,11 @@ _PUBLIC_ struct composite_context *composite_create(TALLOC_CTX *mem_ctx,
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (!c) return NULL;
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
-	c->event_ctx = ev;
+	c->event_ctx = talloc_reference(c, ev);
+	if (!c->event_ctx) {
+		talloc_free(c);
+		return NULL;
+	}
 
 	return c;
 }
@@ -63,6 +67,17 @@ _PUBLIC_ NTSTATUS composite_wait(struct composite_context *c)
 	}
 
 	return c->status;
+}
+
+/*
+  block until a composite function has completed, then return the status. 
+  Free the composite context before returning
+*/
+_PUBLIC_ NTSTATUS composite_wait_free(struct composite_context *c)
+{
+	NTSTATUS status = composite_wait(c);
+	talloc_free(c);
+	return status;
 }
 
 /* 
@@ -90,6 +105,12 @@ static void composite_trigger(struct event_context *ev, struct timed_event *te,
 
 _PUBLIC_ void composite_error(struct composite_context *ctx, NTSTATUS status)
 {
+	/* you are allowed to pass NT_STATUS_OK to composite_error(), in which
+	   case it is equivalent to composite_done() */
+	if (NT_STATUS_IS_OK(status)) {
+		composite_done(ctx);
+		return;
+	}
 	if (!ctx->used_wait && !ctx->async.fn) {
 		event_add_timed(ctx->event_ctx, ctx, timeval_zero(), composite_trigger, ctx);
 	}
@@ -183,7 +204,7 @@ _PUBLIC_ void composite_continue_smb2(struct composite_context *ctx,
 {
 	if (composite_nomem(new_req, ctx)) return;
 	new_req->async.fn = continuation;
-	new_req->async.private = private_data;
+	new_req->async.private_data = private_data;
 }
 
 _PUBLIC_ void composite_continue_nbt(struct composite_context *ctx,

@@ -498,6 +498,7 @@ int main(int argc, char **argv)
 	poptContext pc;
 	const char *remote = NULL;
 	struct regshell_context *ctx;
+	struct event_context *ev_ctx;
 	bool ret = true;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -516,17 +517,19 @@ int main(int argc, char **argv)
 
 	ctx = talloc_zero(NULL, struct regshell_context);
 
+	ev_ctx = event_context_init(ctx);
+
 	if (remote != NULL) {
 		ctx->registry = reg_common_open_remote(remote, cmdline_lp_ctx, 
 						       cmdline_credentials);
 	} else if (file != NULL) {
-		ctx->current = reg_common_open_file(file, cmdline_lp_ctx, cmdline_credentials);
+		ctx->current = reg_common_open_file(file, ev_ctx, cmdline_lp_ctx, cmdline_credentials);
 		if (ctx->current == NULL)
 			return 1;
 		ctx->registry = ctx->current->context;
 		ctx->path = talloc_strdup(ctx, "");
 	} else {
-		ctx->registry = reg_common_open_local(cmdline_credentials, cmdline_lp_ctx);
+		ctx->registry = reg_common_open_local(cmdline_credentials, ev_ctx, cmdline_lp_ctx);
 	}
 
 	if (ctx->registry == NULL)

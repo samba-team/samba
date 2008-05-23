@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
+#include "torture/smbtorture.h"
 #include "torture/winbind/proto.h"
 
 NTSTATUS torture_winbind_init(void)

@@ -1,25 +1,32 @@
 [LIBRARY::LIBSAMBA-HOSTCONFIG]
-VERSION = 0.0.1
-SO_VERSION = 1
-OBJ_FILES = loadparm.o \
-			generic.o \
-			util.o \
-			../lib/version.o
-PC_FILE = samba-hostconfig.pc
 PUBLIC_DEPENDENCIES = LIBSAMBA-UTIL 
 PRIVATE_DEPENDENCIES = DYNCONFIG LIBREPLACE_EXT CHARSET
-PRIVATE_PROTO_HEADER = proto.h
+
+LIBSAMBA-HOSTCONFIG_VERSION = 0.0.1
+LIBSAMBA-HOSTCONFIG_SOVERSION = 0
+
+LIBSAMBA-HOSTCONFIG_OBJ_FILES = $(addprefix $(paramsrcdir)/,  \
+			loadparm.o generic.o util.o) lib/version.o
 
 PUBLIC_HEADERS += param/param.h
+
+PC_FILES += $(paramsrcdir)/samba-hostconfig.pc
+
+[SUBSYSTEM::PROVISION]
+PRIVATE_DEPENDENCIES = LIBPYTHON
+
+PROVISION_OBJ_FILES = $(paramsrcdir)/provision.o
 
 #################################
 # Start SUBSYSTEM share
 [SUBSYSTEM::share]
-PRIVATE_PROTO_HEADER = share_proto.h
-OBJ_FILES = share.o
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
 # End SUBSYSTEM share
 #################################
+
+share_OBJ_FILES = $(paramsrcdir)/share.o
+
+$(eval $(call proto_header_template,$(paramsrcdir)/share_proto.h,$(share_OBJ_FILES:.o=.c)))
 
 PUBLIC_HEADERS += param/share.h
 
@@ -28,25 +35,34 @@ PUBLIC_HEADERS += param/share.h
 [MODULE::share_classic]
 SUBSYSTEM = share
 INIT_FUNCTION = share_classic_init
-OBJ_FILES = share_classic.o 
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
 # End MODULE share_classic
 ################################################
+
+share_classic_OBJ_FILES = $(paramsrcdir)/share_classic.o 
 
 ################################################
 # Start MODULE share_ldb
 [MODULE::share_ldb]
 SUBSYSTEM = share
 INIT_FUNCTION = share_ldb_init
-OBJ_FILES = share_ldb.o 
 PRIVATE_DEPENDENCIES = LIBLDB LDB_WRAP
 # End MODULE share_ldb
 ################################################
 
+share_ldb_OBJ_FILES = $(paramsrcdir)/share_ldb.o 
+
 [SUBSYSTEM::SECRETS]
-OBJ_FILES = secrets.o
 PRIVATE_DEPENDENCIES = LIBLDB TDB_WRAP UTIL_TDB NDR_SECURITY
 
+SECRETS_OBJ_FILES = $(paramsrcdir)/secrets.o
+
 [PYTHON::param]
-SWIG_FILE = param.i
+LIBRARY_REALNAME = samba/_param.$(SHLIBEXT)
 PRIVATE_DEPENDENCIES = LIBSAMBA-HOSTCONFIG
+
+param_OBJ_FILES = $(paramsrcdir)/param_wrap.o
+
+$(eval $(call python_py_module_template,samba/param.py,$(paramsrcdir)/param.py))
+
+$(param_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)

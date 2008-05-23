@@ -11,7 +11,6 @@ lib/charset/charset.h: lib/charset/charset_proto.h
 include/includes.h: \
 		include/config.h \
 		lib/charset/charset.h \
-		param/proto.h \
 		librpc/gen_ndr/misc.h
 
 heimdal_basics: \
@@ -39,8 +38,5 @@ heimdal_basics: \
        heimdal/lib/hx509/hx509_err.h \
        heimdal/lib/wind/wind_err.h
 
-proto: basics
-basics: include/includes.h \
-	idl \
-	$(PROTO_HEADERS) \
-	heimdal_basics
+proto::
+basics:: include/includes.h idl proto heimdal_basics

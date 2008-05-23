@@ -81,6 +81,9 @@ sub end_testsuite($$$$$)
 	my $out = "";
 
 	if ($unexpected) {
+		if ($result eq "success" and not defined($reason)) {
+			$reason = "Expected negative exit code, got positive exit code";
+		} 
 		$self->output_msg("ERROR: $reason\n");
 		push (@{$self->{suitesfailed}}, $name);
 	} else {
@@ -120,7 +123,9 @@ sub end_test($$$$$)
 		return;
 	}
 
-	$append = "UNEXPECTED($result): $testname\n";
+	my $fullname = join(".", @$parents).".$testname";
+
+	$append = "UNEXPECTED($result): $testname ($fullname)\n";
 
 	$self->{test_output}->{$self->{NAME}} .= $append;
 

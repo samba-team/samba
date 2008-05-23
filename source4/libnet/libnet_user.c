@@ -597,7 +597,9 @@ NTSTATUS libnet_ModifyUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 struct user_info_state {
 	struct libnet_context *ctx;
 	const char *domain_name;
+	enum libnet_UserInfo_level level;
 	const char *user_name;
+	const char *sid_string;
 	struct libnet_LookupName lookup;
 	struct libnet_DomainOpen domopen;
 	struct libnet_rpc_userinfo userinfo;
@@ -628,7 +630,7 @@ struct composite_context* libnet_UserInfo_send(struct libnet_context *ctx,
 {
 	struct composite_context *c;
 	struct user_info_state *s;
-	struct composite_context *lookup_req;
+	struct composite_context *lookup_req, *info_req;
 	bool prereq_met = false;
 
 	/* composite context allocation and setup */
@@ -644,23 +646,54 @@ struct composite_context* libnet_UserInfo_send(struct libnet_context *ctx,
 	s->monitor_fn = monitor;
 	s->ctx = ctx;
 	s->domain_name = talloc_strdup(c, r->in.domain_name);
-	s->user_name = talloc_strdup(c, r->in.user_name);
+	s->level = r->in.level;
+	switch (s->level) {
+	case USER_INFO_BY_NAME:
+		s->user_name = talloc_strdup(c, r->in.data.user_name);
+		s->sid_string = NULL;
+		break;
+	case USER_INFO_BY_SID:
+		s->user_name = NULL;
+		s->sid_string = dom_sid_string(c, r->in.data.user_sid);
+		break;
+	}
 
 	/* prerequisite: make sure the domain is opened */
 	prereq_met = samr_domain_opened(ctx, s->domain_name, &c, &s->domopen,
 					continue_domain_open_info, monitor);
 	if (!prereq_met) return c;
 
-	/* prepare arguments for LookupName call */
-	s->lookup.in.domain_name = s->domain_name;
-	s->lookup.in.name        = s->user_name;
+	switch (s->level) {
+	case USER_INFO_BY_NAME:
+		/* prepare arguments for LookupName call */
+		s->lookup.in.domain_name = s->domain_name;
+		s->lookup.in.name        = s->user_name;
 
-	/* send the request */
-	lookup_req = libnet_LookupName_send(ctx, c, &s->lookup, s->monitor_fn);
-	if (composite_nomem(lookup_req, c)) return c;
+		/* send the request */
+		lookup_req = libnet_LookupName_send(ctx, c, &s->lookup,
+						    s->monitor_fn);
+		if (composite_nomem(lookup_req, c)) return c;
 
-	/* set the next stage */
-	composite_continue(c, lookup_req, continue_name_found, c);
+		/* set the next stage */
+		composite_continue(c, lookup_req, continue_name_found, c);
+		break;
+	case USER_INFO_BY_SID:
+		/* prepare arguments for UserInfo call */
+		s->userinfo.in.domain_handle = s->ctx->samr.handle;
+		s->userinfo.in.sid = s->sid_string;
+		s->userinfo.in.level = 21;
+
+		/* send the request */
+		info_req = libnet_rpc_userinfo_send(s->ctx->samr.pipe,
+						    &s->userinfo,
+						    s->monitor_fn);
+		if (composite_nomem(info_req, c)) return c;
+
+		/* set the next stage */
+		composite_continue(c, info_req, continue_info_received, c);
+		break;
+	}
+
 	return c;
 }
 
@@ -673,7 +706,7 @@ static void continue_domain_open_info(struct composite_context *ctx)
 {
 	struct composite_context *c;
 	struct user_info_state *s;
-	struct composite_context *lookup_req;
+	struct composite_context *lookup_req, *info_req;
 	struct monitor_msg msg;
 
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
@@ -686,16 +719,36 @@ static void continue_domain_open_info(struct composite_context *ctx)
 	/* send monitor message */
 	if (s->monitor_fn) s->monitor_fn(&msg);
 
-	/* prepare arguments for LookupName call */
-	s->lookup.in.domain_name = s->domain_name;
-	s->lookup.in.name        = s->user_name;
-	
-	/* send the request */
-	lookup_req = libnet_LookupName_send(s->ctx, c, &s->lookup, s->monitor_fn);
-	if (composite_nomem(lookup_req, c)) return;
+	switch (s->level) {
+	case USER_INFO_BY_NAME:
+		/* prepare arguments for LookupName call */
+		s->lookup.in.domain_name = s->domain_name;
+		s->lookup.in.name        = s->user_name;
 
-	/* set the next stage */
-	composite_continue(c, lookup_req, continue_name_found, c);
+		/* send the request */
+		lookup_req = libnet_LookupName_send(s->ctx, c, &s->lookup, s->monitor_fn);
+		if (composite_nomem(lookup_req, c)) return;
+
+		/* set the next stage */
+		composite_continue(c, lookup_req, continue_name_found, c);
+		break;
+
+	case USER_INFO_BY_SID:
+		/* prepare arguments for UserInfo call */
+		s->userinfo.in.domain_handle = s->ctx->samr.handle;
+		s->userinfo.in.sid = s->sid_string;
+		s->userinfo.in.level = 21;
+
+		/* send the request */
+		info_req = libnet_rpc_userinfo_send(s->ctx->samr.pipe,
+						    &s->userinfo,
+						    s->monitor_fn);
+		if (composite_nomem(info_req, c)) return;
+
+		/* set the next stage */
+		composite_continue(c, info_req, continue_info_received, c);
+		break;
+	}
 }
 
 

@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    SMB torture tester
    Copyright (C) Andrew Tridgell 1997-2003
-   Copyright (C) Jelmer Vernooij 2006
+   Copyright (C) Jelmer Vernooij 2006-2008
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,11 +30,12 @@
 #include "lib/events/events.h"
 #include "dynconfig.h"
 
-#include "torture/torture.h"
-#include "build.h"
+#include "torture/smbtorture.h"
 #include "lib/util/dlinklist.h"
 #include "librpc/rpc/dcerpc.h"
 #include "param/param.h"
+
+#include "auth/credentials/credentials.h"
 
 static bool run_matching(struct torture_context *torture,
 						 const char *prefix, 
@@ -374,11 +375,24 @@ static void subunit_suite_start(struct torture_context *ctx,
 {
 }
 
+static void subunit_print_testname(struct torture_context *ctx, 
+				   struct torture_tcase *tcase,
+				   struct torture_test *test)
+{
+	if (!strcmp(tcase->name, test->name)) {
+		printf("%s", test->name);
+	} else {
+		printf("%s.%s", tcase->name, test->name);
+	}
+}
+
 static void subunit_test_start(struct torture_context *ctx, 
 			       struct torture_tcase *tcase,
 			       struct torture_test *test)
 {
-	printf("test: %s\n", test->name);
+	printf("test: ");
+	subunit_print_testname(ctx, tcase, test);	
+	printf("\n");
 }
 
 static void subunit_test_result(struct torture_context *context, 
@@ -386,18 +400,20 @@ static void subunit_test_result(struct torture_context *context,
 {
 	switch (res) {
 	case TORTURE_OK:
-		printf("success: %s", context->active_test->name);
+		printf("success: ");
 		break;
 	case TORTURE_FAIL:
-		printf("failure: %s", context->active_test->name);
+		printf("failure: ");
 		break;
 	case TORTURE_ERROR:
-		printf("error: %s", context->active_test->name);
+		printf("error: ");
 		break;
 	case TORTURE_SKIP:
-		printf("skip: %s", context->active_test->name);
+		printf("skip: ");
 		break;
 	}
+	subunit_print_testname(context, context->active_tcase, context->active_test);	
+
 	if (reason)
 		printf(" [\n%s\n]", reason);
 	printf("\n");
@@ -673,7 +689,7 @@ int main(int argc,char *argv[])
 		exit(1);
 	}
 
-	torture = torture_context_init(talloc_autofree_context(), ui_ops);
+	torture = torture_context_init(event_context_init(NULL), ui_ops);
 	if (basedir != NULL) {
 		if (basedir[0] != '/') {
 			fprintf(stderr, "Please specify an absolute path to --basedir\n");

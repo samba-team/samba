@@ -238,7 +238,13 @@ sub run_testsuite($$$$$$)
 
 	$msg_ops->start_test([], $name);
 
-	open(RESULT, "$cmd 2>&1|");
+	unless (open(RESULT, "$cmd 2>&1|")) {
+		$statistics->{TESTS_ERROR}++;
+		$msg_ops->end_test([], $name, "error", 1, "Unable to run $cmd: $!");
+		$statistics->{SUITES_FAIL}++;
+		return 0;
+	}
+
 	my $expected_ret = parse_results(
 		$msg_ops, $statistics, *RESULT, \&expecting_failure, [$name]);
 
@@ -250,17 +256,17 @@ sub run_testsuite($$$$$$)
 	my $ret = close(RESULT);
 	$ret = 0 unless $ret == 1;
 
+	my $exitcode = $? >> 8;
+
 	if ($ret == 1) {
-		$msg_ops->end_test([], $name, "success", $expected_ret != $ret, undef);
+		$msg_ops->end_test([], $name, "success", $expected_ret != $ret, undef); 
 	} else {
-		$msg_ops->end_test([], $name, "failure", $expected_ret != $ret, 
-					       "Returned $ret");
+		$msg_ops->end_test([], $name, "failure", $expected_ret != $ret, "Exit code was $exitcode");
 	}
 
 	cleanup_pcap($pcap_file, $expected_ret, $ret);
 
-	if (not $opt_socket_wrapper_keep_pcap and 
-		defined($pcap_file)) {
+	if (not $opt_socket_wrapper_keep_pcap and defined($pcap_file)) {
 		$msg_ops->output_msg("PCAP FILE: $pcap_file\n");
 	}
 
@@ -401,13 +407,19 @@ my $tls_enabled = not $opt_quick;
 $ENV{TLS_ENABLED} = ($tls_enabled?"yes":"no");
 $ENV{LDB_MODULES_PATH} = "$old_pwd/bin/modules/ldb";
 $ENV{LD_SAMBA_MODULE_PATH} = "$old_pwd/bin/modules";
-if (defined($ENV{PKG_CONFIG_PATH})) {
-	$ENV{PKG_CONFIG_PATH} = "$old_pwd/bin/pkgconfig:$ENV{PKG_CONFIG_PATH}";
-} else { 
-	$ENV{PKG_CONFIG_PATH} = "$old_pwd/bin/pkgconfig";
+sub prefix_pathvar($$)
+{
+	my ($name, $newpath) = @_;
+	if (defined($ENV{$name})) {
+		$ENV{$name} = "$newpath:$ENV{$name}";
+	} else {
+		$ENV{$name} = $newpath;
+	}
 }
+prefix_pathvar("PKG_CONFIG_PATH", "$old_pwd/bin/pkgconfig");
 # Required for smbscript:
-$ENV{PATH} = "$old_pwd/bin:$old_pwd:$ENV{PATH}";
+prefix_pathvar("PATH", "$old_pwd/bin");
+prefix_pathvar("PYTHONPATH", "$old_pwd/bin/python");
 
 if ($opt_socket_wrapper_keep_pcap) {
 	# Socket wrapper keep pcap implies socket wrapper pcap

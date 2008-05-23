@@ -7,6 +7,8 @@
 
 """Support code for upgrading from Samba 3 to Samba 4."""
 
+__docformat__ = "restructuredText"
+
 from provision import findnss, provision, FILL_DRS
 import grp
 import ldb

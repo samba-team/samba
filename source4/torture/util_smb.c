@@ -28,7 +28,6 @@
 #include "system/shmem.h"
 #include "system/wait.h"
 #include "system/time.h"
-#include "torture/ui.h"
 #include "torture/torture.h"
 #include "util/dlinklist.h"
 #include "auth/credentials/credentials.h"
@@ -553,8 +552,7 @@ _PUBLIC_ bool torture_open_connection_ev(struct smbcli_state **c,
 
 _PUBLIC_ bool torture_open_connection(struct smbcli_state **c, struct torture_context *tctx, int conn_index)
 {
-	return torture_open_connection_ev(c, conn_index, tctx,
-					  cli_credentials_get_event_context(cmdline_credentials));
+	return torture_open_connection_ev(c, conn_index, tctx, tctx->ev);
 }
 
 

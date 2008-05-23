@@ -230,7 +230,7 @@ NTSTATUS wreplsrv_in_connection_merge(struct wreplsrv_partner *partner,
 	wrepl_in->service	= service;
 	wrepl_in->partner	= partner;
 
-	status = stream_new_connection_merge(service->task->event_ctx, model_ops,
+	status = stream_new_connection_merge(service->task->event_ctx, service->task->lp_ctx, model_ops,
 					     sock, &wreplsrv_stream_ops, service->task->msg_ctx,
 					     wrepl_in, &conn);
 	NT_STATUS_NOT_OK_RETURN(status);

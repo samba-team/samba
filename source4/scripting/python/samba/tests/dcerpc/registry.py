@@ -17,15 +17,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import winreg
-from param import LoadParm
+from samba.dcerpc import winreg
 import unittest
-from samba.tests import get_loadparm
+from samba.tests import RpcInterfaceTestCase
 
-class WinregTests(unittest.TestCase):
+class WinregTests(RpcInterfaceTestCase):
     def setUp(self):
-        lp_ctx = get_loadparm()
-        self.conn = winreg.winreg("ncalrpc:", lp_ctx)
+        self.conn = winreg.winreg("ncalrpc:", self.get_loadparm(), 
+                                  self.get_credentials())
 
     def get_hklm(self):
         return self.conn.OpenHKLM(None, 

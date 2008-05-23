@@ -40,6 +40,15 @@
 %rename(random_password) generate_random_str;
 char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len);
 
+%feature("docstring") ldb_set_credentials "S.set_credentials(credentials)\n"
+                                          "Set credentials to use when connecting.";
+
+%feature("docstring") ldb_set_session_info "S.set_session_info(session_info)\n"
+                                          "Set session info to use when connecting.";
+
+%feature("docstring") ldb_set_loadparm "S.set_loadparm(session_info)\n"
+                                          "Set loadparm context to use when connecting.";
+
 %inline %{
 void ldb_set_credentials(struct ldb_context *ldb, struct cli_credentials *creds)
 {
@@ -58,14 +67,20 @@ void ldb_set_loadparm(struct ldb_context *ldb, struct loadparm_context *lp_ctx)
 
 %}
 
+%feature("docstring") samdb_set_domain_sid "S.set_domain_sid(sid)\n"
+                                          "Set SID of domain to use.";
 bool samdb_set_domain_sid(struct ldb_context *ldb, 
                           const struct dom_sid *dom_sid_in);
 
 WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf, const char *df);
 
+%feature("docstring") samba_version_string "version()\n"
+                                          "Obtain the Samba version.";
 %rename(version) samba_version_string;
 const char *samba_version_string(void);
 int dsdb_set_global_schema(struct ldb_context *ldb);
+%feature("docstring") ldb_register_samba_handlers "register_samba_handlers()\n"
+                                          "Register Samba-specific LDB modules and schemas.";
 int ldb_register_samba_handlers(struct ldb_context *ldb);
 
 %inline %{
@@ -78,3 +93,8 @@ bool dsdb_set_ntds_invocation_id(struct ldb_context *ldb, const char *guid)
     return samdb_set_ntds_invocation_id(ldb, &invocation_id_in);
 }
 %}
+
+char *private_path(TALLOC_CTX* mem_ctx, 
+     		   struct loadparm_context *lp_ctx,
+	           const char *name);
+

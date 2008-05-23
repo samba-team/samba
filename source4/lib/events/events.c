@@ -52,15 +52,16 @@
   forever.
 
 */
-
+#if _SAMBA_BUILD_
 #include "includes.h"
-#include "lib/events/events.h"
-#include "lib/events/events_internal.h"
 #include "lib/util/dlinklist.h"
 #include "param/param.h"
-#if _SAMBA_BUILD_
-#include "build.h"
+#else
+#include "replace.h"
+#include "events_util.h"
 #endif
+#include "events.h"
+#include "events_internal.h"
 
 struct event_ops_list {
 	struct event_ops_list *next, *prev;
@@ -102,6 +103,10 @@ void event_set_default_backend(const char *backend)
 static void event_backend_init(void)
 {
 #if _SAMBA_BUILD_
+	NTSTATUS s4_events_standard_init(void);
+	NTSTATUS s4_events_select_init(void);
+	NTSTATUS s4_events_epoll_init(void);
+	NTSTATUS s4_events_aio_init(void);
 	init_module_fn static_init[] = { STATIC_LIBEVENTS_MODULES };
 	if (event_backends) return;
 	run_init_functions(static_init);
@@ -203,6 +208,8 @@ struct event_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char 
 */
 struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 {
+	DEBUG(0, ("New event context requested. Parent: [%s:%p]\n",
+		  mem_ctx?talloc_get_name(mem_ctx):"NULL", mem_ctx));
 	return event_context_init_byname(mem_ctx, NULL);
 }
 
@@ -282,7 +289,7 @@ struct signal_event *event_add_signal(struct event_context *ev, TALLOC_CTX *mem_
 /*
   do a single event loop using the events defined in ev 
 */
-_PUBLIC_ int event_loop_once(struct event_context *ev)
+int event_loop_once(struct event_context *ev)
 {
 	return ev->ops->loop_once(ev);
 }

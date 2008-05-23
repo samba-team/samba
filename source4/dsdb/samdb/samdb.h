@@ -27,6 +27,7 @@ struct dsdb_control_current_partition;
 struct dsdb_extended_replicated_object;
 struct dsdb_extended_replicated_objects;
 struct loadparm_context;
+struct event_context;
 
 #include "librpc/gen_ndr/security.h"
 #include "lib/ldb/include/ldb.h"
@@ -36,6 +37,7 @@ struct loadparm_context;
 #include "dsdb/schema/schema.h"
 #include "dsdb/samdb/samdb_proto.h"
 #include "dsdb/common/proto.h"
+#include "dsdb/common/flags.h"
 
 #define DSDB_CONTROL_CURRENT_PARTITION_OID "1.3.6.1.4.1.7165.4.3.2"
 struct dsdb_control_current_partition {

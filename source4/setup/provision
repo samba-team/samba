@@ -26,14 +26,19 @@ import getopt
 import optparse
 import os, sys
 
-import samba
-import param
+# Find right directory when running from source tree
+sys.path.insert(0, "bin/python")
 
-from auth import system_session
+import samba
+
+from samba.auth import system_session
 import samba.getopt as options
+from samba import param
 from samba.provision import (provision, 
                              FILL_FULL, FILL_NT4SYNC,
                              FILL_DRS)
+
+# how do we make this case insensitive??
 
 parser = optparse.OptionParser("provision [options]")
 sambaopts = options.SambaOptions(parser)

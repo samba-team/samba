@@ -1,7 +1,11 @@
 [SUBSYSTEM::LIBSAMBA-UTIL]
-#VERSION = 0.0.1
-#SO_VERSION = 0
-OBJ_FILES = xfile.o \
+PUBLIC_DEPENDENCIES = \
+		LIBTALLOC LIBCRYPTO \
+		SOCKET_WRAPPER LIBREPLACE_NETWORK \
+		CHARSET EXECINFO
+
+LIBSAMBA-UTIL_OBJ_FILES = $(addprefix $(libutilsrcdir)/, \
+	xfile.o \
 		debug.o \
 		fault.o \
 		signal.o \
@@ -19,13 +23,9 @@ OBJ_FILES = xfile.o \
 		mutex.o \
 		idtree.o \
 		become_daemon.o \
-		params.o
-PUBLIC_DEPENDENCIES = \
-		LIBTALLOC LIBCRYPTO \
-		SOCKET_WRAPPER LIBREPLACE_NETWORK \
-		CHARSET EXECINFO
+		params.o)
 
-PUBLIC_HEADERS += $(addprefix lib/util/, util.h \
+PUBLIC_HEADERS += $(addprefix $(libutilsrcdir)/, util.h \
 				 attr.h \
 				 byteorder.h \
 				 data_blob.h \
@@ -37,32 +37,35 @@ PUBLIC_HEADERS += $(addprefix lib/util/, util.h \
 				 xfile.h)
 
 [SUBSYSTEM::ASN1_UTIL]
-PRIVATE_PROTO_HEADER = asn1_proto.h
-OBJ_FILES = asn1.o
 
-# PUBLIC_HEADERS += lib/util/asn1.h
+ASN1_UTIL_OBJ_FILES = $(libutilsrcdir)/asn1.o
+
+$(eval $(call proto_header_template,$(libutilsrcdir)/asn1_proto.h,$(ASN1_UTIL_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::UNIX_PRIVS]
-PRIVATE_PROTO_HEADER = unix_privs.h
-OBJ_FILES = unix_privs.o
+
+UNIX_PRIVS_OBJ_FILES = $(libutilsrcdir)/unix_privs.o
+
+$(eval $(call proto_header_template,$(libutilsrcdir)/unix_privs.h,$(UNIX_PRIVS_OBJ_FILES:.o=.c)))
 
 ################################################
 # Start SUBSYSTEM WRAP_XATTR
 [SUBSYSTEM::WRAP_XATTR]
-OBJ_FILES = \
-		wrap_xattr.o
 PUBLIC_DEPENDENCIES = XATTR
 #
 # End SUBSYSTEM WRAP_XATTR
 ################################################
 
+WRAP_XATTR_OBJ_FILES = $(libutilsrcdir)/wrap_xattr.o
+
 [SUBSYSTEM::UTIL_TDB]
-PRIVATE_PROTO_HEADER = util_tdb.h
-OBJ_FILES = \
-		util_tdb.o
 PUBLIC_DEPENDENCIES = LIBTDB
 
+UTIL_TDB_OBJ_FILES = $(libutilsrcdir)/util_tdb.o
+
+$(eval $(call proto_header_template,$(libutilsrcdir)/util_tdb.h,$(UTIL_TDB_OBJ_FILES:.o=.c)))
+
 [SUBSYSTEM::UTIL_LDB]
-OBJ_FILES = \
-			util_ldb.o
 PUBLIC_DEPENDENCIES = LIBLDB
+
+UTIL_LDB_OBJ_FILES = $(libutilsrcdir)/util_ldb.o

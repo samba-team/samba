@@ -70,7 +70,7 @@ struct smbsrv_request;
 
 #include "smb_server/smb2/smb2_proto.h"
 
-/* useful way of catching wct errors with file and line number */
+/* useful way of catching field size errors with file and line number */
 #define SMB2SRV_CHECK_BODY_SIZE(req, size, dynamic) do { \
 	size_t is_size = req->in.body_size; \
 	uint16_t field_size = SVAL(req->in.body, 0); \
@@ -78,13 +78,13 @@ struct smbsrv_request;
 	if (is_size < (size)) { \
 		DEBUG(0,("%s: buffer too small 0x%x. Expected 0x%x\n", \
 			 __location__, (unsigned)is_size, (unsigned)want_size)); \
-		smb2srv_send_error(req,  NT_STATUS_FOOBAR); \
+		smb2srv_send_error(req,  NT_STATUS_INVALID_PARAMETER); \
 		return; \
 	}\
 	if (field_size != want_size) { \
 		DEBUG(0,("%s: unexpected fixed body size 0x%x. Expected 0x%x\n", \
 			 __location__, (unsigned)field_size, (unsigned)want_size)); \
-		smb2srv_send_error(req,  NT_STATUS_FOOBAR); \
+		smb2srv_send_error(req,  NT_STATUS_INVALID_PARAMETER); \
 		return; \
 	} \
 } while (0)

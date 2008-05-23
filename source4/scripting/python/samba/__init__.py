@@ -20,6 +20,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+__docformat__ = "restructuredText"
+
 import os
 
 def _in_source_tree():
@@ -33,6 +35,8 @@ if _in_source_tree():
     srcdir = "%s/../../.." % os.path.dirname(__file__)
     sys.path.append("%s/bin/python" % srcdir)
     default_ldb_modules_dir = "%s/bin/modules/ldb" % srcdir
+else:
+    default_ldb_modules_dir = None
 
 
 import ldb
@@ -69,15 +73,15 @@ class Ldb(ldb.Ldb):
             self.set_modules_dir(default_ldb_modules_dir)
 
         if credentials is not None:
-            self.set_credentials(self, credentials)
+            self.set_credentials(credentials)
 
         if session_info is not None:
-            self.set_session_info(self, session_info)
+            self.set_session_info(session_info)
 
         assert misc.ldb_register_samba_handlers(self) == 0
 
         if lp is not None:
-            self.set_loadparm(self, lp)
+            self.set_loadparm(lp)
 
         def msg(l,text):
             print text

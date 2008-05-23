@@ -204,18 +204,23 @@ int tdb_traverse_read(struct tdb_context *tdb,
 {
 	struct tdb_traverse_lock tl = { NULL, 0, 0, F_RDLCK };
 	int ret;
+	bool in_transaction = (tdb->transaction != NULL);
 
 	/* we need to get a read lock on the transaction lock here to
 	   cope with the lock ordering semantics of solaris10 */
-	if (tdb_transaction_lock(tdb, F_RDLCK)) {
-		return -1;
+	if (!in_transaction) {
+		if (tdb_transaction_lock(tdb, F_RDLCK)) {
+			return -1;
+		}
 	}
 
 	tdb->traverse_read++;
 	ret = tdb_traverse_internal(tdb, fn, private_data, &tl);
 	tdb->traverse_read--;
 
-	tdb_transaction_unlock(tdb);
+	if (!in_transaction) {
+		tdb_transaction_unlock(tdb);
+	}
 
 	return ret;
 }
@@ -232,20 +237,25 @@ int tdb_traverse(struct tdb_context *tdb,
 {
 	struct tdb_traverse_lock tl = { NULL, 0, 0, F_WRLCK };
 	int ret;
+	bool in_transaction = (tdb->transaction != NULL);
 
 	if (tdb->read_only || tdb->traverse_read) {
 		return tdb_traverse_read(tdb, fn, private_data);
 	}
 	
-	if (tdb_transaction_lock(tdb, F_WRLCK)) {
-		return -1;
+	if (!in_transaction) {
+		if (tdb_transaction_lock(tdb, F_WRLCK)) {
+			return -1;
+		}
 	}
 
 	tdb->traverse_write++;
 	ret = tdb_traverse_internal(tdb, fn, private_data, &tl);
 	tdb->traverse_write--;
 
-	tdb_transaction_unlock(tdb);
+	if (!in_transaction) {
+		tdb_transaction_unlock(tdb);
+	}
 
 	return ret;
 }

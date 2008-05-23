@@ -1,11 +1,13 @@
 [MODULE::smbcalls_net]
-OBJ_FILES = \
+SUBSYSTEM = smbcalls
+INIT_FUNCTION = smb_setup_ejs_net
+PRIVATE_DEPENDENCIES = LIBSAMBA-NET LIBCLI_SMB CREDENTIALS
+
+smbcalls_net_OBJ_FILES = $(addprefix $(ejsscriptsrcdir)/ejsnet/,  \
 		net_ctx.o \
 		net_user.o \
 		mpr_user.o \
 		net_host.o \
-		mpr_host.o
-SUBSYSTEM = smbcalls
-INIT_FUNCTION = smb_setup_ejs_net
-PRIVATE_PROTO_HEADER = proto.h
-PRIVATE_DEPENDENCIES = LIBSAMBA-NET LIBCLI_SMB CREDENTIALS
+		mpr_host.o)
+
+$(eval $(call proto_header_template,$(ejsscriptsrcdir)/ejsnet/proto.h,$(smbcalls_net_OBJ_FILES:.o=.c)))

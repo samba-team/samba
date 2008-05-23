@@ -28,6 +28,7 @@
 _PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
 			      struct auth_session_info *session_info,
 			      struct cli_credentials *credentials,
+			      struct event_context *ev_ctx,
 			      struct loadparm_context *lp_ctx,
 			      struct hive_key **root)
 {
@@ -57,7 +58,7 @@ _PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
 	} else if (!strncmp(peek, "TDB file", 8)) {
 		close(fd);
 		return reg_open_ldb_file(parent_ctx, location, session_info,
-					 credentials, lp_ctx, root);
+					 credentials, ev_ctx, lp_ctx, root);
 	}
 
 	return WERR_BADFILE;
@@ -143,6 +144,24 @@ WERROR hive_get_value_by_index(TALLOC_CTX *mem_ctx,
 	return key->ops->enum_value(mem_ctx, key, idx, name, type, data);
 }
 
+WERROR hive_get_sec_desc(TALLOC_CTX *mem_ctx,
+			 struct hive_key *key, 
+			 struct security_descriptor **security)
+{
+	if (key->ops->get_sec_desc == NULL)
+		return WERR_NOT_SUPPORTED;
+
+	return key->ops->get_sec_desc(mem_ctx, key, security);
+}
+
+WERROR hive_set_sec_desc(struct hive_key *key, 
+			 const struct security_descriptor *security)
+{
+	if (key->ops->set_sec_desc == NULL)
+		return WERR_NOT_SUPPORTED;
+
+	return key->ops->set_sec_desc(key, security);
+}
 
 WERROR hive_key_del_value(struct hive_key *key, const char *name)
 {

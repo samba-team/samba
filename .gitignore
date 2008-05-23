@@ -22,7 +22,6 @@ source/heimdal/lib/des/hcrypto
 source/build/smb_build/config.pm
 source/auth/auth_proto.h
 source/auth/auth_sam.h
-source/auth/pam_errors.h
 source/auth/credentials/credentials_proto.h
 source/auth/gensec/gensec_proto.h
 source/auth/gensec/schannel_proto.h
@@ -195,3 +194,9 @@ source/apidocs
 source/mkconfig.mk
 source/data.mk
 source/librpc/idl-deps
+source/libcli/netlogon_proto.h
+source/libcli/ndr_netlogon_proto.h
+source/foo.tdb
+source/gentest_seeds.dat
+source/templates.ldb
+source/torture.tdb

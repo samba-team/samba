@@ -193,6 +193,11 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 	io.in.service_type = service_type;
 	io.in.credentials = credentials;
 	io.in.fallback_to_anonymous = false;
+
+	/* This workgroup gets sent out by the SPNEGO session setup.
+	 * I don't know of any servers that look at it, so we might
+	 * hardcode it to "" some day, when the war on global_loadparm
+	 * is complete -- abartlet 2008-04-28 */
 	io.in.workgroup = lp_workgroup(global_loadparm);
 	io.in.options = *options;
 	

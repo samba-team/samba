@@ -135,7 +135,6 @@ struct composite_context *resolve_name_host_send(TALLOC_CTX *mem_ctx,
 	c = composite_create(mem_ctx, event_ctx);
 	if (c == NULL) return NULL;
 
-	c->event_ctx = talloc_reference(c, event_ctx);
 	if (composite_nomem(c->event_ctx, c)) return c;
 
 	state = talloc(c, struct host_state);

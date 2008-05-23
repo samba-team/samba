@@ -79,6 +79,7 @@ void smb2srv_create_recv(struct smb2srv_request *req)
 	SMB2SRV_CHECK(smb2_pull_o32s32_blob(&req->in, io, req->in.body+0x30, &blob));
 	/* TODO: parse the blob */
 	ZERO_STRUCT(io->smb2.in.eas);
+	ZERO_STRUCT(io->smb2.in.blobs);
 
 	/* the VFS backend does not yet handle NULL filenames */
 	if (io->smb2.in.fname == NULL) {
@@ -134,7 +135,7 @@ static void smb2srv_flush_send(struct ntvfs_request *ntvfs)
 	SMB2SRV_CHECK_ASYNC_STATUS(io, union smb_flush);
 	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x04, false, 0));
 
-	SSVAL(req->out.body,	0x02,	0);
+	SSVAL(req->out.body,	0x02,	io->smb2.out.reserved);
 
 	smb2srv_send_reply(req);
 }
@@ -142,15 +143,14 @@ static void smb2srv_flush_send(struct ntvfs_request *ntvfs)
 void smb2srv_flush_recv(struct smb2srv_request *req)
 {
 	union smb_flush *io;
-	uint16_t _pad;
 
 	SMB2SRV_CHECK_BODY_SIZE(req, 0x18, false);
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_flush);
 	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_flush_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->smb2.level			= RAW_FLUSH_SMB2;
-	_pad				= SVAL(req->in.body, 0x02);
-	io->smb2.in.unknown		= IVAL(req->in.body, 0x04);
+	io->smb2.in.reserved1		= SVAL(req->in.body, 0x02);
+	io->smb2.in.reserved2		= IVAL(req->in.body, 0x04);
 	io->smb2.in.file.ntvfs		= smb2srv_pull_handle(req, req->in.body, 0x08);
 
 	SMB2SRV_CHECK_FILE_HANDLE(io->smb2.in.file.ntvfs);
@@ -167,7 +167,8 @@ static void smb2srv_read_send(struct ntvfs_request *ntvfs)
 
 	/* TODO: avoid the memcpy */
 	SMB2SRV_CHECK(smb2_push_o16s32_blob(&req->out, 0x02, io->smb2.out.data));
-	SBVAL(req->out.body,	0x08,	io->smb2.out.unknown1);
+	SIVAL(req->out.body,	0x08,	io->smb2.out.remaining);
+	SIVAL(req->out.body,	0x0C,	io->smb2.out.reserved);
 
 	smb2srv_send_reply(req);
 }
@@ -185,8 +186,11 @@ void smb2srv_read_recv(struct smb2srv_request *req)
 	io->smb2.in.length		= IVAL(req->in.body, 0x04);
 	io->smb2.in.offset		= BVAL(req->in.body, 0x08);
 	io->smb2.in.file.ntvfs		= smb2srv_pull_handle(req, req->in.body, 0x10);
-	io->smb2.in.unknown1		= BVAL(req->in.body, 0x20);
-	io->smb2.in.unknown2		= BVAL(req->in.body, 0x28);
+	io->smb2.in.min_count		= IVAL(req->in.body, 0x20);
+	io->smb2.in.channel		= IVAL(req->in.body, 0x24);
+	io->smb2.in.remaining		= IVAL(req->in.body, 0x28);
+	io->smb2.in.channel_offset      = SVAL(req->in.body, 0x2C);
+	io->smb2.in.channel_length      = SVAL(req->in.body, 0x2E);
 
 	SMB2SRV_CHECK_FILE_HANDLE(io->smb2.in.file.ntvfs);
 
@@ -242,7 +246,7 @@ static void smb2srv_lock_send(struct ntvfs_request *ntvfs)
 	SMB2SRV_CHECK_ASYNC_STATUS_ERR(io, union smb_lock);
 	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x04, false, 0));
 
-	SSVAL(req->out.body,	0x02,	io->smb2.out.unknown1);
+	SSVAL(req->out.body,	0x02,	io->smb2.out.reserved);
 
 	smb2srv_send_reply(req);
 }
@@ -250,20 +254,34 @@ static void smb2srv_lock_send(struct ntvfs_request *ntvfs)
 void smb2srv_lock_recv(struct smb2srv_request *req)
 {
 	union smb_lock *io;
+	int i;
 
 	SMB2SRV_CHECK_BODY_SIZE(req, 0x30, false);
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_lock);
 	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_lock_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->smb2.level			= RAW_LOCK_SMB2;
-
-	io->smb2.in.unknown1		= SVAL(req->in.body, 0x02);
-	io->smb2.in.unknown2		= IVAL(req->in.body, 0x04);
+	io->smb2.in.lock_count		= SVAL(req->in.body, 0x02);
+	io->smb2.in.reserved		= IVAL(req->in.body, 0x04);
 	io->smb2.in.file.ntvfs		= smb2srv_pull_handle(req, req->in.body, 0x08);
-	io->smb2.in.offset		= BVAL(req->in.body, 0x18);
-	io->smb2.in.count		= BVAL(req->in.body, 0x20);
-	io->smb2.in.unknown5		= IVAL(req->in.body, 0x24);
-	io->smb2.in.flags		= IVAL(req->in.body, 0x28);
+	if (req->in.body_size < 24 + 24*(uint64_t)io->smb2.in.lock_count) {
+		DEBUG(0,("%s: lock buffer too small\n", __location__));
+		smb2srv_send_error(req,  NT_STATUS_FOOBAR);
+		return;
+	}
+	io->smb2.in.locks = talloc_array(io, struct smb2_lock_element, 
+					 io->smb2.in.lock_count);
+	if (io->smb2.in.locks == NULL) {
+		smb2srv_send_error(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
+	for (i=0;i<io->smb2.in.lock_count;i++) {
+		io->smb2.in.locks[i].offset	= BVAL(req->in.body, 24 + i*24);
+		io->smb2.in.locks[i].length	= BVAL(req->in.body, 32 + i*24);
+		io->smb2.in.locks[i].flags	= IVAL(req->in.body, 40 + i*24);
+		io->smb2.in.locks[i].reserved	= IVAL(req->in.body, 44 + i*24);
+	}
 
 	SMB2SRV_CHECK_FILE_HANDLE(io->smb2.in.file.ntvfs);
 	SMB2SRV_CALL_NTVFS_BACKEND(ntvfs_lock(req->ntvfs, io));
@@ -405,7 +423,36 @@ void smb2srv_notify_recv(struct smb2srv_request *req)
 	SMB2SRV_CALL_NTVFS_BACKEND(ntvfs_notify(req->ntvfs, io));
 }
 
+static void smb2srv_break_send(struct ntvfs_request *ntvfs)
+{
+	struct smb2srv_request *req;
+	union smb_lock *io;
+
+	SMB2SRV_CHECK_ASYNC_STATUS_ERR(io, union smb_lock);
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x18, false, 0));
+
+	SCVAL(req->out.body,	0x02,	io->smb2_break.out.oplock_level);
+	SCVAL(req->out.body,	0x03,	io->smb2_break.out.reserved);
+	SIVAL(req->out.body,	0x04,	io->smb2_break.out.reserved2);
+	smb2srv_push_handle(req->out.body, 0x08,io->smb2_break.out.file.ntvfs);
+
+	smb2srv_send_reply(req);
+}
+
 void smb2srv_break_recv(struct smb2srv_request *req)
 {
-	smb2srv_send_error(req, NT_STATUS_NOT_IMPLEMENTED);
+	union smb_lock *io;
+
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x18, false);
+	SMB2SRV_TALLOC_IO_PTR(io, union smb_lock);
+	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_break_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
+
+	io->smb2_break.level		= RAW_LOCK_SMB2_BREAK;
+	io->smb2_break.in.oplock_level	= CVAL(req->in.body, 0x02);
+	io->smb2_break.in.reserved	= CVAL(req->in.body, 0x03);
+	io->smb2_break.in.reserved2	= IVAL(req->in.body, 0x04);
+	io->smb2_break.in.file.ntvfs	= smb2srv_pull_handle(req, req->in.body, 0x08);
+
+	SMB2SRV_CHECK_FILE_HANDLE(io->smb2_break.in.file.ntvfs);
+	SMB2SRV_CALL_NTVFS_BACKEND(ntvfs_lock(req->ntvfs, io));
 }

@@ -458,7 +458,7 @@ char *rep_strcasestr(const char *haystack, const char *needle)
 	for (s=haystack;*s;s++) {
 		if (toupper(*needle) == toupper(*s) &&
 		    strncasecmp(s, needle, nlen) == 0) {
-			return (char *)((intptr_t)s);
+			return (char *)((uintptr_t)s);
 		}
 	}
 	return NULL;
@@ -582,5 +582,32 @@ int rep_unsetenv(const char *name)
 	}
 
 	return 0;
+}
+#endif
+
+#ifndef HAVE_UTIME
+int rep_utime(const char *filename, const struct utimbuf *buf)
+{
+	errno = ENOSYS;
+	return -1;
+}
+#endif
+
+#ifndef HAVE_UTIMES
+int rep_utimes(const char *filename, const struct timeval tv[2])
+{
+	struct utimbuf u;
+
+	u.actime = tv[0].tv_sec;
+	if (tv[0].tv_usec > 500000) {
+		u.actime += 1;
+	}
+
+	u.modtime = tv[1].tv_sec;
+	if (tv[1].tv_usec > 500000) {
+		u.modtime += 1;
+	}
+
+	return utime(filename, &u);
 }
 #endif

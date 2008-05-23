@@ -27,6 +27,10 @@
 
 */
 
+#ifndef LIBREPLACE_NETWORK_CHECKS
+#error "AC_LIBREPLACE_NETWORK_CHECKS missing in configure"
+#endif
+
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif

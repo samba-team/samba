@@ -1,43 +1,62 @@
+################################################
+# Start SUBSYSTEM LIBEVENTS
+[LIBRARY::LIBEVENTS]
+PUBLIC_DEPENDENCIES = LIBTALLOC
+OUTPUT_TYPE = STATIC_LIBRARY
+CFLAGS = -Ilib/events
+#
+# End SUBSYSTEM LIBEVENTS
+################################################
+
 ##############################
 [MODULE::EVENTS_AIO]
-OBJ_FILES = events_aio.o
 PRIVATE_DEPENDENCIES = LIBAIO_LINUX
 SUBSYSTEM = LIBEVENTS
 INIT_FUNCTION = s4_events_aio_init
 ##############################
 
+EVENTS_AIO_OBJ_FILES = $(libeventssrcdir)/events_aio.o
+
 ##############################
 [MODULE::EVENTS_EPOLL]
-OBJ_FILES = events_epoll.o
 SUBSYSTEM = LIBEVENTS
 INIT_FUNCTION = s4_events_epoll_init
 ##############################
 
+EVENTS_EPOLL_OBJ_FILES = $(libeventssrcdir)/events_epoll.o
+
 ##############################
 [MODULE::EVENTS_SELECT]
-OBJ_FILES = events_select.o
 SUBSYSTEM = LIBEVENTS
 INIT_FUNCTION = s4_events_select_init
 ##############################
 
+EVENTS_SELECT_OBJ_FILES = $(libeventssrcdir)/events_select.o
+
 ##############################
 [MODULE::EVENTS_STANDARD]
-OBJ_FILES = events_standard.o
 SUBSYSTEM = LIBEVENTS
 INIT_FUNCTION = s4_events_standard_init
 ##############################
 
+EVENTS_STANDARD_OBJ_FILES = $(libeventssrcdir)/events_standard.o
 
 ##############################
 # Start SUBSYSTEM LIBEVENTS
 [SUBSYSTEM::LIBEVENTS]
-OBJ_FILES = events.o events_timed.o events_signal.o
-PUBLIC_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL
 # End SUBSYSTEM LIBEVENTS
 ##############################
 
-PUBLIC_HEADERS += $(addprefix lib/events/, events.h events_internal.h)
+LIBEVENTS_OBJ_FILES = $(addprefix $(libeventssrcdir)/, events.o events_timed.o events_signal.o)
+
+PUBLIC_HEADERS += $(addprefix $(libeventssrcdir)/, events.h events_internal.h)
 
 [PYTHON::swig_events]
-SWIG_FILE = events.i
-PRIVATE_DEPENDENCIES = LIBEVENTS
+LIBRARY_REALNAME = samba/_events.$(SHLIBEXT)
+PRIVATE_DEPENDENCIES = LIBEVENTS LIBSAMBA-HOSTCONFIG
+
+swig_events_OBJ_FILES = $(libeventssrcdir)/events_wrap.o
+
+$(eval $(call python_py_module_template,samba/events.py,$(libeventssrcdir)/events.py))
+
+$(swig_events_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)

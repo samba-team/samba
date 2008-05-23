@@ -202,7 +202,13 @@ static NTSTATUS parse_stream_name(struct pvfs_filename *name, const char *s)
 	}
 	*p = 0;
 	if (strcmp(name->stream_name, "") == 0) {
-		name->stream_name = NULL;
+		/*
+		 * we don't set stream_name to NULL, here
+		 * as this would be wrong for directories
+		 *
+		 * pvfs_fill_dos_info() will set it to NULL
+		 * if it's not a directory.
+		 */
 		name->stream_id = 0;
 	} else {
 		name->stream_id = pvfs_name_hash(name->stream_name, 

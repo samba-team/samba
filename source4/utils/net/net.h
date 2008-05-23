@@ -22,9 +22,9 @@
 #define _UTIL_NET_H
 
 struct net_context {
-	TALLOC_CTX *mem_ctx;
 	struct cli_credentials *credentials;
 	struct loadparm_context *lp_ctx;
+	struct event_context *event_ctx;
 };
 
 struct net_functable {

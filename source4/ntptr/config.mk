@@ -5,21 +5,23 @@
 [MODULE::ntptr_simple_ldb]
 INIT_FUNCTION = ntptr_simple_ldb_init
 SUBSYSTEM = ntptr
-OBJ_FILES = \
-		simple_ldb/ntptr_simple_ldb.o
 PRIVATE_DEPENDENCIES = \
 		LIBLDB NDR_SPOOLSS DCERPC_COMMON
 # End MODULE ntptr_simple_ldb
 ################################################
 
+ntptr_simple_ldb_OBJ_FILES = $(ntptrsrcdir)/simple_ldb/ntptr_simple_ldb.o
+
 ################################################
 # Start SUBSYSTEM ntptr
 [SUBSYSTEM::ntptr]
-PRIVATE_PROTO_HEADER = ntptr_proto.h
-OBJ_FILES = \
-		ntptr_base.o \
-		ntptr_interface.o
 PUBLIC_DEPENDENCIES = DCERPC_COMMON
 #
 # End SUBSYSTEM ntptr
 ################################################
+
+ntptr_OBJ_FILES = \
+		$(ntptrsrcdir)/ntptr_base.o \
+		$(ntptrsrcdir)/ntptr_interface.o
+
+$(eval $(call proto_header_template,$(ntptrsrcdir)/ntptr_proto.h,$(ntptr_OBJ_FILES:.o=.c)))

@@ -7,7 +7,7 @@ objectClass: crossRefContainer
 cn: Partitions
 systemFlags: 2147483648
 msDS-Behavior-Version: 0
-fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
+fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
 
 dn: CN=Enterprise Configuration,CN=Partitions,${CONFIGDN}
 objectClass: top

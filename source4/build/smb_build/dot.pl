@@ -26,10 +26,10 @@ sub generate($$$)
 	foreach my $part (values %{$depend}) {
 		next if (defined($only) and not contains($only,$part->{NAME}));
 		foreach my $elem (@{$part->{PUBLIC_DEPENDENCIES}}) {
-			$res .= "\t\"$part->{NAME}\" -> \"$elem\"; /* public */\n";
+			$res .= "\t\"$part->{NAME}\" -> \"$elem\" [style=filled]; /* public */\n";
 		}
 		foreach my $elem (@{$part->{PRIVATE_DEPENDENCIES}}) {
-			$res .= "\t\"$part->{NAME}\" -> \"$elem\"; /* private */\n";
+			$res .= "\t\"$part->{NAME}\" -> \"$elem\" [style=dotted]; /* private */\n";
 		}
 	}
 

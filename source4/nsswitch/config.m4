@@ -4,8 +4,7 @@ case "$host_os" in
 	*linux*)
 		SMB_LIBRARY(nss_winbind,
 			    [nsswitch/winbind_nss_linux.o],
-			    [LIBWINBIND-CLIENT],
-			    [2],[2])
+			    [LIBWINBIND-CLIENT])
 	;;
 	*)
 	;;

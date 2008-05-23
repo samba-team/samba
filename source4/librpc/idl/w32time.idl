@@ -14,8 +14,8 @@ interface w32time
 
 	/*****************/
 	/* Function 0x00 */
-	WERROR w32time_SyncTime();
+	[todo] WERROR w32time_SyncTime();
 
-	WERROR w32time_GetNetLogonServiceBits();
-	WERROR w32time_QueryProviderStatus();
+	[todo] WERROR w32time_GetNetLogonServiceBits();
+	[todo] WERROR w32time_QueryProviderStatus();
 }

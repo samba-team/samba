@@ -2,11 +2,10 @@
 # Start SUBSYSTEM LDBSAMBA
 [SUBSYSTEM::LDBSAMBA]
 PUBLIC_DEPENDENCIES = LIBLDB
-PRIVATE_PROTO_HEADER = ldif_handlers.h
 PRIVATE_DEPENDENCIES = LIBSECURITY SAMDB_SCHEMA LIBNDR NDR_MISC
-OBJ_FILES = \
-		ldif_handlers.o
 # End SUBSYSTEM LDBSAMBA
 ################################################
 
+LDBSAMBA_OBJ_FILES = $(ldb_sambasrcdir)/ldif_handlers.o
+$(eval $(call proto_header_template,$(ldb_sambasrcdir)/ldif_handlers.h,$(LDBSAMBA_OBJ_FILES:.o=.c)))
 

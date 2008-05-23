@@ -3,76 +3,76 @@
 #######################
 # Start SUBSYSTEM WINSDB
 [SUBSYSTEM::WINSDB]
-OBJ_FILES = \
-		wins/winsdb.o \
-		wins/wins_hook.o
-PRIVATE_PROTO_HEADER = wins/winsdb_proto.h
 PUBLIC_DEPENDENCIES = \
 		LIBLDB
 # End SUBSYSTEM WINSDB
 #######################
+
+WINSDB_OBJ_FILES = $(addprefix $(nbt_serversrcdir)/wins/, winsdb.o wins_hook.o)
+
+$(eval $(call proto_header_template,$(nbt_serversrcdir)/wins/winsdb_proto.h,$(WINSDB_OBJ_FILES:.o=.c)))
 
 #######################
 # Start MODULE ldb_wins_ldb
 [MODULE::ldb_wins_ldb]
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
-INIT_FUNCTION = &ldb_wins_ldb_module_ops
-OBJ_FILES = \
-		wins/wins_ldb.o
+INIT_FUNCTION = LDB_MODULE(wins_ldb)
 PRIVATE_DEPENDENCIES = \
 		LIBNETIF LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL
 # End MODULE ldb_wins_ldb
 #######################
 
+ldb_wins_ldb_OBJ_FILES = $(nbt_serversrcdir)/wins/wins_ldb.o
+
 #######################
 # Start SUBSYSTEM NBTD_WINS
 [SUBSYSTEM::NBTD_WINS]
-OBJ_FILES = \
-		wins/winsserver.o \
-		wins/winsclient.o \
-		wins/winswack.o \
-		wins/wins_dns_proxy.o
-PRIVATE_PROTO_HEADER = wins/winsserver_proto.h
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_NBT WINSDB
 # End SUBSYSTEM NBTD_WINS
 #######################
 
+
+NBTD_WINS_OBJ_FILES = $(addprefix $(nbt_serversrcdir)/wins/, winsserver.o winsclient.o winswack.o wins_dns_proxy.o)
+
+$(eval $(call proto_header_template,$(nbt_serversrcdir)/wins/winsserver_proto.h,$(NBTD_WINS_OBJ_FILES:.o=.c)))
+
 #######################
 # Start SUBSYSTEM NBTD_DGRAM
 [SUBSYSTEM::NBTD_DGRAM]
-PRIVATE_PROTO_HEADER = dgram/proto.h
-OBJ_FILES = \
-		dgram/request.o \
-		dgram/netlogon.o \
-		dgram/ntlogon.o \
-		dgram/browse.o
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_DGRAM
 # End SUBSYSTEM NBTD_DGRAM
 #######################
 
+NBTD_DGRAM_OBJ_FILES = $(addprefix $(nbt_serversrcdir)/dgram/, request.o netlogon.o browse.o)
+
+$(eval $(call proto_header_template,$(nbt_serversrcdir)/dgram/proto.h,$(NBTD_DGRAM_OBJ_FILES:.o=.c)))
+
 #######################
 # Start SUBSYSTEM NBTD
 [SUBSYSTEM::NBT_SERVER]
-OBJ_FILES = \
+PRIVATE_DEPENDENCIES = \
+		LIBCLI_NBT NBTD_WINS NBTD_DGRAM 
+# End SUBSYSTEM NBTD
+#######################
+
+NBT_SERVER_OBJ_FILES = $(addprefix $(nbt_serversrcdir)/, \
 		interfaces.o \
 		register.o \
 		query.o \
 		nodestatus.o \
 		defense.o \
 		packet.o \
-		irpc.o
-PRIVATE_PROTO_HEADER = nbt_server_proto.h
-PRIVATE_DEPENDENCIES = \
-		LIBCLI_NBT NBTD_WINS NBTD_DGRAM 
-# End SUBSYSTEM NBTD
-#######################
+		irpc.o)
+
+$(eval $(call proto_header_template,$(nbt_serversrcdir)/nbt_server_proto.h,$(NBT_SERVER_OBJ_FILES:.o=.c)))
 
 [MODULE::service_nbtd]
 INIT_FUNCTION = server_service_nbtd_init
-SUBSYSTEM = service
-OBJ_FILES = \
-		nbt_server.o
+SUBSYSTEM = smbd
 PRIVATE_DEPENDENCIES = NBT_SERVER process_model
+
+service_nbtd_OBJ_FILES = \
+		$(nbt_serversrcdir)/nbt_server.o

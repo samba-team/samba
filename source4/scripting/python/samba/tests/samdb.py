@@ -21,7 +21,7 @@ from credentials import Credentials
 import os
 from samba.provision import setup_samdb
 from samba.samdb import SamDB
-from samba.tests import get_loadparm, TestCaseInTempDir
+from samba.tests import cmdline_loadparm, TestCaseInTempDir
 import security
 from unittest import TestCase
 import uuid
@@ -29,21 +29,21 @@ import uuid
 class SamDBTestCase(TestCaseInTempDir):
     def setUp(self):
         super(SamDBTestCase, self).setUp()
-        invocationid = uuid.random()
+        invocationid = str(uuid.uuid4())
         domaindn = "DC=COM,DC=EXAMPLE"
         self.domaindn = domaindn
         configdn = "CN=Configuration," + domaindn
         schemadn = "CN=Schema," + configdn
-        domainguid = uuid.random()
-        policyguid = uuid.random()
+        domainguid = str(uuid.uuid4())
+        policyguid = str(uuid.uuid4())
         setup_path = lambda x: os.path.join("setup", x)
         creds = Credentials()
         creds.set_anonymous()
         domainsid = security.random_sid()
-        hostguid = uuid.random()
+        hostguid = str(uuid.uuid4())
         path = os.path.join(self.tempdir, "samdb.ldb")
         self.samdb = setup_samdb(path, setup_path, system_session(), creds, 
-                                 get_loadparm(), schemadn, configdn, 
+                                 cmdline_loadparm, schemadn, configdn, 
                                  self.domaindn, "example.com", "EXAMPLE.COM", 
                                  "FOO", lambda x: None, "foo", domaindn, 
                                  False, domainsid, "# no aci", domainguid, 

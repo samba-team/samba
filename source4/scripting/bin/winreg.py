@@ -7,6 +7,10 @@
 #
 
 import sys
+
+# Find right directory when running from source tree
+sys.path.insert(0, "bin/python")
+
 import winreg
 import optparse
 import samba.getopt as options

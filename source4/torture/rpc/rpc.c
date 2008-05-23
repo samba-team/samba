@@ -23,7 +23,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "librpc/rpc/dcerpc.h"
 #include "torture/rpc/rpc.h"
-#include "torture/torture.h"
+#include "torture/smbtorture.h"
 #include "librpc/ndr/ndr_table.h"
 #include "lib/util/dlinklist.h"
 
@@ -83,7 +83,7 @@ _PUBLIC_ NTSTATUS torture_rpc_connection(struct torture_context *tctx,
 
 	status = dcerpc_pipe_connect_b(tctx, 
 				     p, binding, table,
-				     cmdline_credentials, NULL, tctx->lp_ctx);
+				     cmdline_credentials, tctx->ev, tctx->lp_ctx);
  
 	if (NT_STATUS_IS_ERR(status)) {
 		printf("Failed to connect to remote server: %s %s\n", 
@@ -113,7 +113,7 @@ NTSTATUS torture_rpc_connection_transport(struct torture_context *tctx,
 	binding->assoc_group_id = assoc_group_id;
 
 	status = dcerpc_pipe_connect_b(tctx, p, binding, table,
-				       cmdline_credentials, NULL, tctx->lp_ctx);
+				       cmdline_credentials, tctx->ev, tctx->lp_ctx);
 					   
 	if (NT_STATUS_IS_ERR(status)) {
 		*p = NULL;
@@ -147,7 +147,7 @@ static bool torture_rpc_setup_machine(struct torture_context *tctx,
 				&(tcase_data->pipe),
 				binding,
 				tcase->table,
-				tcase_data->credentials, NULL, tctx->lp_ctx);
+				tcase_data->credentials, tctx->ev, tctx->lp_ctx);
 
 	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
 
@@ -205,7 +205,7 @@ static bool torture_rpc_setup_anonymous(struct torture_context *tctx,
 				&(tcase_data->pipe),
 				binding,
 				tcase->table,
-				tcase_data->credentials, NULL, tctx->lp_ctx);
+				tcase_data->credentials, tctx->ev, tctx->lp_ctx);
 
 	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
 
@@ -399,6 +399,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "SAMSYNC", torture_rpc_samsync);
 	torture_suite_add_simple_test(suite, "SCHANNEL", torture_rpc_schannel);
 	torture_suite_add_simple_test(suite, "SCHANNEL2", torture_rpc_schannel2);
+	torture_suite_add_simple_test(suite, "BENCH-SCHANNEL1", torture_rpc_schannel_bench1);
 	torture_suite_add_suite(suite, torture_rpc_srvsvc(suite));
 	torture_suite_add_suite(suite, torture_rpc_svcctl(suite));
 	torture_suite_add_suite(suite, torture_rpc_samr_accessmask(suite));

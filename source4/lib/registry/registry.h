@@ -149,10 +149,12 @@ struct hive_operations {
 
 struct cli_credentials;
 struct auth_session_info;
+struct event_context;
 
 WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
 		     struct auth_session_info *session_info,
 		     struct cli_credentials *credentials,
+		     struct event_context *ev_ctx,
 		     struct loadparm_context *lp_ctx,
 		     struct hive_key **root);
 WERROR hive_key_get_info(TALLOC_CTX *mem_ctx, const struct hive_key *key,
@@ -184,6 +186,12 @@ WERROR hive_get_value_by_index(TALLOC_CTX *mem_ctx,
 			       struct hive_key *key, uint32_t idx,
 			       const char **name,
 			       uint32_t *type, DATA_BLOB *data);
+WERROR hive_get_sec_desc(TALLOC_CTX *mem_ctx,
+			 struct hive_key *key,
+			 struct security_descriptor **security);
+
+WERROR hive_set_sec_desc(struct hive_key *key, 
+			 const struct security_descriptor *security);
 
 WERROR hive_key_del_value(struct hive_key *key, const char *name);
 
@@ -199,6 +207,7 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx,
 WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
 			 struct auth_session_info *session_info,
 			 struct cli_credentials *credentials,
+			 struct event_context *ev_ctx,
 			 struct loadparm_context *lp_ctx,
 			 struct hive_key **k);
 
@@ -311,11 +320,11 @@ struct registry_operations {
 			      uint32_t *type,
 			      DATA_BLOB *data);
 
-	WERROR (*get_security) (TALLOC_CTX *mem_ctx,
+	WERROR (*get_sec_desc) (TALLOC_CTX *mem_ctx,
 				const struct registry_key *key,
 				struct security_descriptor **security);
 
-	WERROR (*set_security) (struct registry_key *key,
+	WERROR (*set_sec_desc) (struct registry_key *key,
 				const struct security_descriptor *security);
 
 	WERROR (*load_key) (struct registry_key *key,
@@ -355,12 +364,11 @@ struct loadparm_context;
  * Open the locally defined registry.
  */
 WERROR reg_open_local(TALLOC_CTX *mem_ctx,
-		      struct registry_context **ctx,
-		      struct auth_session_info *session_info,
-		      struct cli_credentials *credentials);
+		      struct registry_context **ctx);
 
 WERROR reg_open_samba(TALLOC_CTX *mem_ctx,
 		      struct registry_context **ctx,
+		      struct event_context *ev_ctx,
 		      struct loadparm_context *lp_ctx,
 		      struct auth_session_info *session_info,
 		      struct cli_credentials *credentials);
@@ -461,12 +469,8 @@ struct registry_key *reg_import_hive_key(struct registry_context *ctx,
 					 struct hive_key *hive,
 					 uint32_t predef_key,
 					 const char **elements);
-WERROR reg_get_security(TALLOC_CTX *mem_ctx,
-			const struct registry_key *key,
-			struct security_descriptor **security);
-
-WERROR reg_set_security(struct registry_key *key,
-			struct security_descriptor *security);
+WERROR reg_set_sec_desc(struct registry_key *key,
+			const struct security_descriptor *security);
 
 struct reg_diff_callbacks {
 	WERROR (*add_key) (void *callback_data, const char *key_name);
@@ -490,11 +494,19 @@ WERROR reg_dotreg_diff_save(TALLOC_CTX *ctx, const char *filename,
 			    struct smb_iconv_convenience *iconv_convenience,
 			    struct reg_diff_callbacks **callbacks,
 			    void **callback_data);
+WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename,
+			  struct smb_iconv_convenience *ic,
+			  struct reg_diff_callbacks **callbacks,
+			  void **callback_data);
 WERROR reg_generate_diff_key(struct registry_key *oldkey,
 			     struct registry_key *newkey,
 			     const char *path,
 			     const struct reg_diff_callbacks *callbacks,
 			     void *callback_data);
+WERROR reg_diff_load(const char *filename,
+	             struct smb_iconv_convenience *iconv_convenience,
+		     const struct reg_diff_callbacks *callbacks,
+		     void *callback_data);
 
 
 
