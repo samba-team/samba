@@ -45,6 +45,8 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <err.h>
+#include <limits.h>
+
 #include <getarg.h>
 #include <base64.h>
 #include <hex.h>
