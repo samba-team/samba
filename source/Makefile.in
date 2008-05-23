@@ -338,14 +338,13 @@ LIBSAMBAUTIL_OBJ = @LIBTALLOC_STATIC@ \
 		$(SOCKET_WRAPPER_OBJ) \
 		$(NSS_WRAPPER_OBJ)
 
-LIB_WITHOUT_PROTO_OBJ = $(LIBSAMBAUTIL_OBJ) \
-	lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o \
-	lib/messages_ctdbd.o lib/packet.o lib/ctdbd_conn.o lib/talloc_stack.o \
-	lib/interfaces.o lib/rbtree.o lib/memcache.o \
-	lib/util_transfer_file.o lib/async_req.o \
-	$(TDB_OBJ)
-
-LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
+LIB_OBJ = $(LIBSAMBAUTIL_OBJ) \
+	  lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o \
+	  lib/messages_ctdbd.o lib/packet.o lib/ctdbd_conn.o lib/talloc_stack.o \
+	  lib/interfaces.o lib/rbtree.o lib/memcache.o \
+	  lib/util_transfer_file.o lib/async_req.o \
+	  $(TDB_OBJ) \
+	  $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/interface.o lib/md4.o \
 	  lib/pidfile.o \
 	  lib/signal.o lib/system.o lib/sendfile.o lib/recvfile.o lib/time.o \
@@ -366,8 +365,6 @@ LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/secdesc.o lib/util_seaccess.o lib/secace.o lib/secacl.o \
 	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o $(LIBNDR_OBJ) \
 	  lib/file_id.o
-
-LIB_OBJ = $(LIB_WITHOUT_PROTO_OBJ) $(LIB_WITH_PROTO_OBJ)
 
 LIB_DUMMY_OBJ = lib/dummysmbd.o lib/dummyroot.o
 LIB_NONSMBD_OBJ = $(LIB_OBJ) $(LIB_DUMMY_OBJ)
