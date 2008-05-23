@@ -41,13 +41,6 @@ BuildRequires: pam-devel, readline-devel, fileutils, libacl-devel, openldap-deve
 %define _libarch %_lib
 %endif
 
-# rpm screws up the arch lib dir when using --target on RHEL5
-%ifarch i386 i486 i586 i686 ppc s390
-%define _libarch lib
-%else
-%define _libarch %_lib
-%endif
-
 
 %description
 Samba is the protocol by which a lot of PC-related machines share
