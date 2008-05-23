@@ -1,3 +1,7 @@
+2008-05-23  Love Hörnquist Åstrand  <lha@kth.se>
+
+	* hx_locl.h: Include <limits.h> for TYPE_MAX defines.
+
 2008-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* sel-lex.l: Use _hx509_sel_yyerror() instead of error_message().
