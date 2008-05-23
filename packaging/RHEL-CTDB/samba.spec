@@ -338,7 +338,7 @@ if [ "$1" -eq "2" ]; then
 fi
 
 if [ "$1" -ge "1" ]; then
-	%{initdir}/smb condrestart >/dev/null 2>&1 || :
+	/sbin/service smb condrestart >/dev/null 2>&1 || :
 fi
 
 %preun
