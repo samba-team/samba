@@ -162,7 +162,6 @@ Dn.__add__ = new_instancemethod(_ldb.Dn___add__,None,Dn)
 Dn_swigregister = _ldb.Dn_swigregister
 Dn_swigregister(Dn)
 
-ldb_msg_element_compare = _ldb.ldb_msg_element_compare
 class MessageElement(object):
     """Message element."""
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
@@ -191,6 +190,7 @@ class MessageElement(object):
                 return False
         return True
 
+MessageElement.__cmp__ = new_instancemethod(_ldb.MessageElement___cmp__,None,MessageElement)
 MessageElement.__iter__ = new_instancemethod(_ldb.MessageElement___iter__,None,MessageElement)
 MessageElement.__set__ = new_instancemethod(_ldb.MessageElement___set__,None,MessageElement)
 MessageElement.__len__ = new_instancemethod(_ldb.MessageElement___len__,None,MessageElement)

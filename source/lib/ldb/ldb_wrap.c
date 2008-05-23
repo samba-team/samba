@@ -2809,6 +2809,9 @@ PyObject *ldb_msg_element_to_set(struct ldb_context *ldb_ctx,
 }
 
 
+SWIGINTERN int ldb_message_element___cmp__(ldb_message_element *self,ldb_message_element *other){
+            return ldb_msg_element_compare(self, other);
+        }
 SWIGINTERN PyObject *ldb_message_element___iter__(ldb_message_element *self){
             return PyObject_GetIter(ldb_msg_element_to_set(NULL, self));
         }
@@ -3763,7 +3766,7 @@ SWIGINTERN PyObject *Dn_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args)
   return SWIG_Python_InitShadowInstance(args);
 }
 
-SWIGINTERN PyObject *_wrap_ldb_msg_element_compare(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_MessageElement___cmp__(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb_message_element *arg1 = (ldb_message_element *) 0 ;
   ldb_message_element *arg2 = (ldb_message_element *) 0 ;
@@ -3775,21 +3778,21 @@ SWIGINTERN PyObject *_wrap_ldb_msg_element_compare(PyObject *SWIGUNUSEDPARM(self
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   char *  kwnames[] = {
-    (char *)"arg1",(char *)"arg2", NULL 
+    (char *) "self",(char *) "other", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ldb_msg_element_compare",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:MessageElement___cmp__",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_message_element, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_msg_element_compare" "', argument " "1"" of type '" "ldb_message_element *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "MessageElement___cmp__" "', argument " "1"" of type '" "ldb_message_element *""'"); 
   }
   arg1 = (ldb_message_element *)(argp1);
   res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_message_element, 0 |  0 );
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_msg_element_compare" "', argument " "2"" of type '" "ldb_message_element *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "MessageElement___cmp__" "', argument " "2"" of type '" "ldb_message_element *""'"); 
   }
   arg2 = (ldb_message_element *)(argp2);
-  result = (int)ldb_msg_element_compare(arg1,arg2);
+  result = (int)ldb_message_element___cmp__(arg1,arg2);
   resultobj = SWIG_From_int((int)(result));
   return resultobj;
 fail:
@@ -5774,7 +5777,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"Dn___add__", (PyCFunction) _wrap_Dn___add__, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Dn_swigregister", Dn_swigregister, METH_VARARGS, NULL},
 	 { (char *)"Dn_swiginit", Dn_swiginit, METH_VARARGS, NULL},
-	 { (char *)"ldb_msg_element_compare", (PyCFunction) _wrap_ldb_msg_element_compare, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"MessageElement___cmp__", (PyCFunction) _wrap_MessageElement___cmp__, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"MessageElement___iter__", (PyCFunction)_wrap_MessageElement___iter__, METH_O, NULL},
 	 { (char *)"MessageElement___set__", (PyCFunction)_wrap_MessageElement___set__, METH_O, NULL},
 	 { (char *)"new_MessageElement", (PyCFunction) _wrap_new_MessageElement, METH_VARARGS | METH_KEYWORDS, (char *)"Message element."},
