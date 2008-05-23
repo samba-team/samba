@@ -52,6 +52,19 @@ typedef enum _wbcErrType wbcErr;
 const char *wbcErrorString(wbcErr error);
 
 /**
+ *  @brief Some useful details about the wbclient library
+ *
+ **/
+#define WBCLIENT_MAJOR_VERSION 0
+#define WBCLIENT_MINOR_VERSION 1
+#define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
+struct wbcLibraryDetails {
+	uint16_t major_version;
+	uint16_t minor_version;
+	const char *vendor_version;
+};
+
+/**
  *  @brief Some useful details about the running winbindd
  *
  **/
@@ -68,8 +81,8 @@ struct wbcInterfaceDetails {
  * Data types used by the Winbind Client API
  */
 
-#ifndef MAXSUBAUTHS
-#define MAXSUBAUTHS 15 /* max sub authorities in a SID */
+#ifndef WBC_MAXSUBAUTHS
+#define WBC_MAXSUBAUTHS 15 /* max sub authorities in a SID */
 #endif
 
 /**
@@ -81,7 +94,7 @@ struct wbcDomainSid {
 	uint8_t   sid_rev_num;
 	uint8_t   num_auths;
 	uint8_t   id_auth[6];
-	uint32_t  sub_auths[MAXSUBAUTHS];
+	uint32_t  sub_auths[WBC_MAXSUBAUTHS];
 };
 
 /**
@@ -307,6 +320,8 @@ wbcErr wbcStringToSid(const char *sid_string,
 		      struct wbcDomainSid *sid);
 
 wbcErr wbcPing(void);
+
+wbcErr wbcLibraryDetails(struct wbcLibraryDetails **details);
 
 wbcErr wbcInterfaceDetails(struct wbcInterfaceDetails **details);
 

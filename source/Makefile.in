@@ -25,7 +25,7 @@ SHLD=@SHLD@
 LIB_PATH_VAR=@LIB_PATH_VAR@
 
 ## Dynamic shared libraries build settings
-DSO_EXPORTS_CMD=-Wl,--version-script,$(srcdir)/exports/`basename $@ | sed 's/@SHLIBEXT@$$/syms/'`
+DSO_EXPORTS_CMD=-Wl,--version-script,$(srcdir)/exports/`basename $@ | sed 's/@SHLIBEXT@$$/@SYMSEXT@/'`
 DSO_EXPORTS=@DSO_EXPORTS@
 SONAME_VER=`grep \^$@ $(builddir)/library-versions | cut -d: -f2`
 SHLD_DSO = $(SHLD) $(LDSHFLAGS) $(DSO_EXPORTS) -o $@
@@ -145,21 +145,30 @@ PIDDIR = @piddir@
 LIBTALLOC_SHARED_TARGET=@LIBTALLOC_SHARED_TARGET@
 LIBTALLOC_STATIC_TARGET=@LIBTALLOC_STATIC_TARGET@
 LIBTALLOC=$(LIBTALLOC_STATIC_TARGET) @LIBTALLOC_SHARED@
+LIBTALLOC_SYMS=$(srcdir)/exports/libtalloc.@SYMSEXT@
+LIBTALLOC_HEADERS=$(srcdir)/@tallocdir@/talloc.h
 
 LIBTDB_SHARED_TARGET=@LIBTDB_SHARED_TARGET@
 LIBTDB_STATIC_TARGET=@LIBTDB_STATIC_TARGET@
 LIBTDB=$(LIBTDB_STATIC_TARGET) @LIBTDB_SHARED@
-LIBTDB_SYMS=$(srcdir)/exports/libtdb.syms
+LIBTDB_SYMS=$(srcdir)/exports/libtdb.@SYMSEXT@
 LIBTDB_HEADERS=$(srcdir)/@tdbdir@/include/tdb.h
 
 LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 LIBADDNS=bin/libaddns.a @LIBADDNS_SHARED@
-LIBWBCLIENT=@LIBWBCLIENT_SHARED@
+
+LIBWBCLIENT_SHARED_TARGET=@LIBWBCLIENT_SHARED_TARGET@
+LIBWBCLIENT_STATIC_TARGET=@LIBWBCLIENT_STATIC_TARGET@
+LIBWBCLIENT=@LIBWBCLIENT_STATIC@ @LIBWBCLIENT_SHARED@
+LIBWBCLIENT_SYMS=$(srcdir)/exports/libwbclient.@SYMSEXT@
+LIBWBCLIENT_HEADERS=$(srcdir)/nsswitch/libwbclient/wbclient.h
 
 LIBNETAPI_SHARED_TARGET=@LIBNETAPI_SHARED_TARGET@
 LIBNETAPI_STATIC_TARGET=@LIBNETAPI_STATIC_TARGET@
 LIBNETAPI=$(LIBNETAPI_STATIC_TARGET) @LIBNETAPI_SHARED@
+LIBNETAPI_SYMS=$(srcdir)/exports/libnetapi.@SYMSEXT@
+LIBNETAPI_HEADERS=$(srcdir)/lib/netapi/netapi.h
 
 FLAGS1 = $(CFLAGS) @FLAGS1@ @SAMBA_CPPFLAGS@ $(CPPFLAGS)
 FLAGS2 =
@@ -1563,7 +1572,12 @@ bin/ldbdel: $(BINARY_PREREQS) $(LDBDEL_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIB
 		$(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS) \
 		@LIBTALLOC_LIBS@ @LIBTDB_LIBS@ @WINBIND_LIBS@
 
-$(LIBTALLOC_SHARED_TARGET): $(BINARY_PREREQS) $(LIBTALLOC_OBJ)
+MKSYMS_SH = $(srcdir)/script/mksyms.sh
+
+$(LIBTALLOC_SYMS): $(LIBTALLOC_HEADERS) $(builddir)/library-versions
+	@$(MKSYMS_SH) $(AWK) $(builddir)/library-versions $@ $(LIBTALLOC_HEADERS)
+
+$(LIBTALLOC_SHARED_TARGET): $(BINARY_PREREQS) $(LIBTALLOC_OBJ) $(LIBTALLOC_SYMS)
 	@echo Linking shared library $@
 	@$(SHLD_DSO) $(LIBTALLOC_OBJ) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
@@ -1573,10 +1587,8 @@ $(LIBTALLOC_STATIC_TARGET): $(BINARY_PREREQS) $(LIBTALLOC_OBJ0)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBTALLOC_OBJ0)
 
-MKSYMS_SH = $(srcdir)/script/mksyms.sh
-
-$(LIBTDB_SYMS): $(LIBTDB_HEADERS)
-	@$(MKSYMS_SH) $(AWK) $@ $(LIBTDB_HEADERS)
+$(LIBTDB_SYMS): $(LIBTDB_HEADERS) $(builddir)/library-versions
+	@$(MKSYMS_SH) $(AWK) $(builddir)/library-versions $@ $(LIBTDB_HEADERS)
 
 $(LIBTDB_SHARED_TARGET): $(BINARY_PREREQS) $(LIBTDB_OBJ) $(LIBTDB_SYMS)
 	@echo Linking shared library $@
@@ -1588,13 +1600,16 @@ $(LIBTDB_STATIC_TARGET): $(BINARY_PREREQS) $(LIBTDB_OBJ0)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBTDB_OBJ0)
 
-bin/libwbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ) @LIBTALLOC_SHARED@
+$(LIBWBCLIENT_SYMS): $(LIBWBCLIENT_HEADERS) $(builddir)/library-versions
+	@$(MKSYMS_SH) $(AWK) $(builddir)/library-versions $@ $(LIBWBCLIENT_HEADERS)
+
+$(LIBWBCLIENT_SHARED_TARGET): $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ) $(LIBWBCLIENT_SYMS) @LIBTALLOC_SHARED@
 	@echo Linking shared library $@
 	@$(SHLD_DSO) @LIBTALLOC_LIBS@ $(LIBWBCLIENT_OBJ) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 	@ln -s -f `basename $@` $@.$(SONAME_VER)
 
-bin/libwbclient.a: $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ0) $(WBCOMMON_OBJ)
+$(LIBWBCLIENT_STATIC_TARGET): $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ0) $(WBCOMMON_OBJ)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBWBCLIENT_OBJ0) $(WBCOMMON_OBJ)
 
@@ -1608,7 +1623,10 @@ bin/libaddns.a: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBADDNS_OBJ)
 
-$(LIBNETAPI_SHARED_TARGET): $(BINARY_PREREQS) $(LIBNETAPI_OBJ) @LIBTALLOC_SHARED@ @LIBTDB_SHARED@ @LIBWBCLIENT_SHARED@
+$(LIBNETAPI_SYMS): $(LIBNETAPI_HEADERS) $(builddir)/library-versions
+	@$(MKSYMS_SH) $(AWK) $(builddir)/library-versions $@ $(LIBNETAPI_HEADERS)
+
+$(LIBNETAPI_SHARED_TARGET): $(BINARY_PREREQS) $(LIBNETAPI_OBJ) $(LIBNETAPI_SYMS) @LIBTALLOC_SHARED@ @LIBTDB_SHARED@ @LIBWBCLIENT_SHARED@
 	@echo Linking shared library $@
 	@$(SHLD_DSO) $(LIBNETAPI_OBJ) \
 		@LIBTALLOC_LIBS@ @LIBTDB_LIBS@ @LIBWBCLIENT_SHARED@ $(LIBS) \
@@ -2117,7 +2135,7 @@ installlibtalloc: installdirs libtalloc
 	-$(INSTALLLIBCMD_SH) $(LIBTALLOC_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) $(LIBTALLOC_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/@tallocdir@/talloc.h $(DESTDIR)${prefix}/include
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(LIBTALLOC_HEADERS) $(DESTDIR)${prefix}/include
 
 installlibtdb: installdirs libtdb
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
@@ -2258,7 +2276,7 @@ clean: delheaders
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBNETAPI) \
 		bin/libwbclient.so.0 bin/timelimit \
 		.headers.stamp */src/*.o proto_exists \
-		$(LIBTDB_SYMS)
+		$(LIBTALLOC_SYMS) $(LIBWBCLIENT_SYMS) $(LIBTDB_SYMS) $(LIBNETAPI_SYMS)
 	-rm -rf t_dir
 
 # Making this target will just make sure that the prototype files

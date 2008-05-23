@@ -233,6 +233,7 @@ o   Alexander Bokovoy <ab@samba.org>
 
 
 o   Günther Deschner <gd@samba.org>
+    * BUG 5453: Fix winbindd and smbd crash when dsgetdcname is used.
     * BUG 5465: Fix joining with createcomputer=ou1/ou2/ou3.
     * BUG 5461: Fix issue with Citrix on Samba DCs with more than 900 groups.
     * Fix wins null pointer crash in nss_wins module.
@@ -275,6 +276,13 @@ o   Volker Lendecke <vl@samba.org>
     * Fix a valgrind bug in the new [ug]id2sid cache.
     * Fix Coverity IDs 565 and 222.
     * Fix dfs_Enum: In form_junctions, correctly check for malloc failure.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 5443: Fix build on HP-UX.
+    * Add support for symbol versioning in shared libraries (can be
+      disabled with --disable-sysmbol-verioning).
+    * Add new function wbcLibraryDetails() to libwbclient.
 
 
 o   Tim Prouty <tim.prouty@isilon.com>

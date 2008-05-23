@@ -32,19 +32,6 @@ extern const struct generic_mapping file_generic_mapping;
 
 #define MAX_SERVER_DISK_ENTRIES 15
 
-/***************************/
-
-/* oops - this is going to take up a *massive* amount of stack. */
-/* the UNISTR2s already have 1024 uint16 chars in them... */
-
-#define MAX_SESS_ENTRIES 32
-
-/***************************/
-
-/* oops - this is going to take up a *massive* amount of stack. */
-/* the UNISTR2s already have 1024 uint16 chars in them... */
-#define MAX_CONN_ENTRIES 32
-
 /* Use for enumerating connections, pipes, & files */
 
 struct file_enum_count {
@@ -102,7 +89,7 @@ static int pipe_enum_fn( struct db_record *rec, void *p)
 	fenum->ctr3->array = f;
 
 	init_srvsvc_NetFileInfo3(&fenum->ctr3->array[i],
-				 (uint32_t)((procid_to_pid(&prec.pid)<<16) & prec.pnum),
+				 (((uint32_t)(procid_to_pid(&prec.pid))<<16) | prec.pnum),
 				 (FILE_READ_DATA|FILE_WRITE_DATA),
 				 0,
 				 fullpath,
@@ -200,15 +187,15 @@ static void enum_file_fn( const struct share_mode_entry *e,
 	string_replace( fullpath, '/', '\\' );
 
 	/* mask out create (what ever that is) */
-	permissions = e->share_access & (FILE_READ_DATA|FILE_WRITE_DATA);
+	permissions = e->access_mask & (FILE_READ_DATA|FILE_WRITE_DATA);
 
 	/* now fill in the srvsvc_NetFileInfo3 struct */
 	init_srvsvc_NetFileInfo3(&fenum->ctr3->array[i],
-				 e->share_file_id,
+				 (((uint32_t)(procid_to_pid(&e->pid))<<16) | e->share_file_id),
 				 permissions,
 				 num_locks,
-				 username,
-				 fullpath);
+				 fullpath,
+				 username);
 	fenum->ctr3->count++;
 }
 
@@ -748,7 +735,7 @@ static WERROR init_srv_sess_info_0(pipes_struct *p,
 		return WERR_OK;
 	}
 
-	for (; resume_handle < *total_entries && num_entries < MAX_SESS_ENTRIES; resume_handle++) {
+	for (; resume_handle < *total_entries; resume_handle++) {
 
 		ctr0->array = TALLOC_REALLOC_ARRAY(p->mem_ctx,
 						   ctr0->array,
@@ -831,7 +818,7 @@ static WERROR init_srv_sess_info_1(pipes_struct *p,
 
 	*total_entries = list_sessions(p->mem_ctx, &session_list);
 
-	for (; resume_handle < *total_entries && num_entries < MAX_SESS_ENTRIES; resume_handle++) {
+	for (; resume_handle < *total_entries; resume_handle++) {
 		uint32 num_files;
 		uint32 connect_time;
 		struct passwd *pw = sys_getpwnam(session_list[resume_handle].username);
@@ -900,7 +887,7 @@ static WERROR init_srv_conn_info_0(struct srvsvc_NetConnCtr0 *ctr0,
 
 	ZERO_STRUCTP(ctr0);
 
-	for (; resume_handle < *total_entries && num_entries < MAX_CONN_ENTRIES; resume_handle++) {
+	for (; resume_handle < *total_entries; resume_handle++) {
 
 		ctr0->array = TALLOC_REALLOC_ARRAY(talloc_tos(),
 						   ctr0->array,
@@ -955,7 +942,7 @@ static WERROR init_srv_conn_info_1(struct srvsvc_NetConnCtr1 *ctr1,
 
 	ZERO_STRUCTP(ctr1);
 
-	for (; (resume_handle < *total_entries) && num_entries < MAX_CONN_ENTRIES; resume_handle++) {
+	for (; resume_handle < *total_entries; resume_handle++) {
 
 		ctr1->array = TALLOC_REALLOC_ARRAY(talloc_tos(),
 						   ctr1->array,

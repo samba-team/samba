@@ -86,7 +86,9 @@ AC_SUBST(LIBADDNS)
 
 AC_SUBST(INSTALL_LIBWBCLIENT)
 AC_SUBST(UNINSTALL_LIBWBCLIENT)
+AC_SUBST(LIBWBCLIENT_SHARED_TARGET)
 AC_SUBST(LIBWBCLIENT_SHARED)
+AC_SUBST(LIBWBCLIENT_STATIC_TARGET)
 AC_SUBST(LIBWBCLIENT_STATIC)
 AC_SUBST(LIBWBCLIENT)
 AC_SUBST(WINBIND_LIBS)
@@ -1499,6 +1501,27 @@ EOF
 	fi
 fi
 
+# Set defaults
+SYMSEXT="syms"
+AC_SUBST(SYMSEXT)
+use_symbol_versioning=no
+if test x"$ac_cv_gnu_ld_version_script" = x"yes"; then
+	use_symbol_versioning=yes
+fi
+AC_ARG_ENABLE(symbol-versioning,[
+	AS_HELP_STRING([--enable-symbol-versioning],
+		[Turn on symbol versioning support if available (default=auto)])
+])
+if test x"$enable_symbol_versioning" = x"no"; then
+	use_symbol_versioning=no
+fi
+
+AC_MSG_CHECKING([symbol versioning])
+if test "x$use_symbol_versioning" = x"yes"; then
+	SYMSEXT="version.syms"
+fi
+AC_MSG_RESULT($use_symbol_versioning)
+
 # Assume non-shared by default and override below
 BLDSHARED="false"
 
@@ -2607,29 +2630,6 @@ SMB_CHECK_SYSCONF(_SC_NPROC_ONLN)
 SMB_CHECK_SYSCONF(_SC_NPROCESSORS_ONLN)
 SMB_CHECK_SYSCONF(_SC_PAGESIZE)
 AC_CHECK_FUNCS(getpagesize)
-
-dnl test for ipv6
-AC_CACHE_CHECK([for ipv6 support],samba_cv_HAVE_IPV6,[
-AC_TRY_COMPILE([
-#include <stdlib.h> /* for NULL */
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netdb.h>],
-[
-struct sockaddr_storage sa_store;
-struct addrinfo *ai = NULL;
-struct in6_addr in6addr;
-int s = socket(AF_INET6, SOCK_STREAM, 0);
-int ret = getaddrinfo(NULL, NULL, NULL, &ai);
-if (ret != 0) {
-	const char *es = gai_strerror(ret);
-}
-freeaddrinfo(ai);
-],
-samba_cv_HAVE_IPV6=yes,samba_cv_HAVE_IPV6=no)])
-if test x"$samba_cv_HAVE_IPV6" = x"yes"; then
-    AC_DEFINE(HAVE_IPV6,1,[Whether the system has IPv6 support])
-fi
 
 ################################################
 # look for a method of setting the effective uid
@@ -5718,7 +5718,7 @@ AC_ARG_WITH(winbind,
 # We need unix domain sockets for winbind
 
 if test x"$HAVE_WINBIND" = x"yes"; then
-	if test x"$samba_cv_unixsocket" = x"no"; then
+	if test x"$libreplace_cv_HAVE_UNIXSOCKET" = x"no"; then
 		winbind_no_reason=", no unix domain socket support on $host_os"
 		HAVE_WINBIND=no
 	fi
@@ -5741,12 +5741,14 @@ if test $BLDSHARED = true -a x"$HAVE_WINBIND" = x"yes" -a x"$BUILD_LIBWBCLIENT_S
 	NSS_MODULES="${WINBIND_NSS} ${WINBIND_WINS_NSS}"
 	## Only worry about libwbclient if we have shared library support
 	## and winbindd
+        LIBWBCLIENT_SHARED_TARGET=bin/libwbclient.$SHLIBEXT
         LIBWBCLIENT_SHARED=bin/libwbclient.$SHLIBEXT
         LIBWBCLIENT=libwbclient
 	INSTALL_LIBWBCLIENT=installlibwbclient
 	UNINSTALL_LIBWBCLIENT=uninstalllibwbclient
 	WINBIND_LIBS="-lwbclient"
 else
+	LIBWBCLIENT_STATIC_TARGET=bin/libwbclient.a
 	LIBWBCLIENT_STATIC=bin/libwbclient.a
 fi
 
