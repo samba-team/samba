@@ -89,7 +89,7 @@ libclisrcdir := libcli
 mkinclude libcli/config.mk
 ejsscriptsrcdir := scripting/ejs
 mkinclude scripting/ejs/config.mk
-pyscriptsrcdir := scripting/python
+pyscriptsrcdir := $(srcdir)/scripting/python
 mkinclude scripting/python/config.mk
 kdcsrcdir := kdc
 mkinclude kdc/config.mk
