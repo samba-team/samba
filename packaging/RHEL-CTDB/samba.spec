@@ -273,11 +273,29 @@ ln -s /%{_libdir}/libsmbsharemodes.so $RPM_BUILD_ROOT%{_libdir}/libsmbsharemodes
 # Install pam_smbpass.so
 install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_libarch}/security/pam_smbpass.so
 
+# Put the shared libraries to their SONAME under /usr/lib{,64}
+# and create the proper .so symlinks
 #
-ln -s %{_libdir}/samba/libwbclient.so $RPM_BUILD_ROOT/%{_libdir}/libwbclient.so.0
-ln -s %{_libdir}/samba/libtalloc.so $RPM_BUILD_ROOT/%{_libdir}/libtalloc.so.1
-ln -s %{_libdir}/samba/libtdb.so $RPM_BUILD_ROOT/%{_libdir}/libtdb.so.0
-ln -s %{_libdir}/samba/libnetapi.so $RPM_BUILD_ROOT/%{_libdir}/libnetapi.so.0
+# libwbclient
+rm -f $RPM_BUILD_ROOT%{_libdir}/samba/libwbclient.so*
+install -m 755 source/bin/libwbclient.so \
+	$RPM_BUILD_ROOT%{_libdir}/libwbclient.so.0
+ln -s libwbclient.so.0 $RPM_BUILD_ROOT%{_libdir}/libwbclient.so
+# libtalloc
+rm -f $RPM_BUILD_ROOT%{_libdir}/samba/libtalloc.so*
+install -m 755 source/bin/libtalloc.so \
+	$RPM_BUILD_ROOT%{_libdir}/libtalloc.so.1
+ln -s libtalloc.so.1 $RPM_BUILD_ROOT%{_libdir}/libtalloc.so
+# libtdb
+rm -f $RPM_BUILD_ROOT%{_libdir}/samba/libtdb.so*
+install -m 755 source/bin/libtdb.so \
+	$RPM_BUILD_ROOT%{_libdir}/libtdb.so.1
+ln -s libtdb.so.1 $RPM_BUILD_ROOT%{_libdir}/libtdb.so
+# libnetapi
+rm -f $RPM_BUILD_ROOT%{_libdir}/samba/libnetapi.so*
+install -m 755 source/bin/libnetapi.so \
+	$RPM_BUILD_ROOT%{_libdir}/libnetapi.so.0
+ln -s libnetapi.so.0 $RPM_BUILD_ROOT%{_libdir}/libnetapi.so
 
 ## cleanup
 /bin/rm -rf $RPM_BUILD_ROOT/usr/lib*/samba/security
@@ -507,13 +525,9 @@ exit 0
 %{_includedir}/wbclient.h
 %{_includedir}/talloc.h
 %{_includedir}/tdb.h
-%{_libdir}/samba/libnetapi.so*
 %{_libdir}/libnetapi.so*
-%{_libdir}/samba/libtalloc.so*
 %{_libdir}/libtalloc.so*
-%{_libdir}/samba/libtdb.so*
 %{_libdir}/libtdb.so*
-%{_libdir}/samba/libwbclient.so*
 %{_libdir}/libwbclient.so*
 
 %{_sbindir}/winbind
