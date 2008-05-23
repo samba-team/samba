@@ -280,8 +280,8 @@ static void websrv_task_init(struct task_server *task)
 
 	/* startup the esp processor - unfortunately we can't do this
 	   per connection as that wouldn't allow for session variables */
-	status = http_setup_esp(task);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	task->private = http_setup_esp(task, task->lp_ctx);
+	if (task->private == NULL) goto failed;
 
 	return;
 

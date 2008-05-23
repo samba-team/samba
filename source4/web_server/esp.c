@@ -1014,17 +1014,17 @@ NTSTATUS http_parse_header(struct websrv_context *web, const char *line)
 /*
   setup the esp processor - called at task initialisation
 */
-NTSTATUS http_setup_esp(struct task_server *task)
+struct esp_data *http_setup_esp(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	struct esp_data *edata;
 
-	edata = talloc_zero(task, struct esp_data);
-	NT_STATUS_HAVE_NO_MEMORY(edata);
+	edata = talloc_zero(mem_ctx, struct esp_data);
+	if (edata == NULL)
+		return NULL;
 
-	task->private = edata;
+	edata->tls_params = tls_initialise(edata, lp_ctx);
+	if (edata->tls_params == NULL)
+		return NULL;
 
-	edata->tls_params = tls_initialise(edata, task->lp_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(edata->tls_params);
-
-	return NT_STATUS_OK;
+	return edata;
 }
