@@ -41,6 +41,8 @@ BuildRequires: pam-devel, readline-devel, fileutils, libacl-devel, openldap-deve
 %define _libarch %_lib
 %endif
 
+%define _libarchdir /usr/%{_libarch}
+
 
 %description
 Samba is the protocol by which a lot of PC-related machines share
@@ -145,7 +147,7 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--prefix=%{_prefix} \
 	--localstatedir=/var \
         --with-configdir=%{_sysconfdir}/samba \
-        --with-libdir=%{_libdir}/samba \
+        --with-libdir=%{_libarchdir}/samba \
         --with-lockdir=/var/lib/samba \
         --with-logfilebase=/var/log/samba \
         --with-mandir=%{_mandir} \
@@ -209,8 +211,8 @@ rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/swat/{help,include,using_samba/{figs,gifsa}}
 mkdir -p $RPM_BUILD_ROOT%{_includedir}
 mkdir -p $RPM_BUILD_ROOT%{_initrddir}
-mkdir -p $RPM_BUILD_ROOT{%{_libdir},%{_includedir}}
-mkdir -p $RPM_BUILD_ROOT%{_libdir}/samba/{auth,charset,idmap,vfs,pdb}
+mkdir -p $RPM_BUILD_ROOT{%{_libarchdir},%{_includedir}}
+mkdir -p $RPM_BUILD_ROOT%{_libarchdir}/samba/{auth,charset,idmap,vfs,pdb}
 mkdir -p $RPM_BUILD_ROOT/%{_libarch}/security
 mkdir -p $RPM_BUILD_ROOT%{_mandir}
 mkdir -p $RPM_BUILD_ROOT%{_prefix}/{bin,sbin}
@@ -242,26 +244,26 @@ install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_libarch}/libnss
 
 # make install puts libsmbclient.so in the wrong place on x86_64
 rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libsmbclient.so $RPM_BUILD_ROOT/usr/lib*/samba/libsmbclient.a || true
-install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{_libdir}/libsmbclient.so
-install -m 755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{_libdir}/libsmbclient.a
+install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{_libarchdir}/libsmbclient.so
+install -m 755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{_libarchdir}/libsmbclient.a
 install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{_includedir}
-ln -s %{_libdir}/libsmbclient.so $RPM_BUILD_ROOT%{_libdir}/libsmbclient.so.0
+ln -s %{_libarchdir}/libsmbclient.so $RPM_BUILD_ROOT%{_libarchdir}/libsmbclient.so.0
 
 # make install puts libmsrpc.so in the wrong place on x86_64
 #rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libmsrpc.so $RPM_BUILD_ROOT/usr/lib*/samba/libmsrpc.a || true
-#install -m 755 source/bin/libmsrpc.so $RPM_BUILD_ROOT%{_libdir}/libmsrpc.so
-#install -m 755 source/bin/libmsrpc.a $RPM_BUILD_ROOT%{_libdir}/libmsrpc.a
+#install -m 755 source/bin/libmsrpc.so $RPM_BUILD_ROOT%{_libarchdir}/libmsrpc.so
+#install -m 755 source/bin/libmsrpc.a $RPM_BUILD_ROOT%{_libarchdir}/libmsrpc.a
 #install -m 644 source/include/libmsrpc.h $RPM_BUILD_ROOT%{_includedir}
-#rm -f $RPM_BUILD_ROOT%{_libdir}/samba/libmsrpc.*
-#ln -s /%{_libdir}/libmsrpc.so $RPM_BUILD_ROOT%{_libdir}/libmsrpc.so.0
+#rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libmsrpc.*
+#ln -s /%{_libarchdir}/libmsrpc.so $RPM_BUILD_ROOT%{_libarchdir}/libmsrpc.so.0
 
 # make install puts libsmbsharemodes.so in the wrong place on x86_64
 rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libsmbsharemodes.so $RPM_BUILD_ROOT/usr/lib*/samba/libsmbsharemodes.a || true
-install -m 755 source/bin/libsmbsharemodes.so $RPM_BUILD_ROOT%{_libdir}/libsmbsharemodes.so
-install -m 755 source/bin/libsmbsharemodes.a $RPM_BUILD_ROOT%{_libdir}/libsmbsharemodes.a
+install -m 755 source/bin/libsmbsharemodes.so $RPM_BUILD_ROOT%{_libarchdir}/libsmbsharemodes.so
+install -m 755 source/bin/libsmbsharemodes.a $RPM_BUILD_ROOT%{_libarchdir}/libsmbsharemodes.a
 install -m 644 source/include/smb_share_modes.h $RPM_BUILD_ROOT%{_includedir}
-rm -f $RPM_BUILD_ROOT%{_libdir}/samba/libsmbsharemodes.*
-ln -s /%{_libdir}/libsmbsharemodes.so $RPM_BUILD_ROOT%{_libdir}/libsmbsharemodes.so.0
+rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libsmbsharemodes.*
+ln -s /%{_libarchdir}/libsmbsharemodes.so $RPM_BUILD_ROOT%{_libarchdir}/libsmbsharemodes.so.0
 
 # Install pam_smbpass.so
 install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_libarch}/security/pam_smbpass.so
@@ -270,25 +272,25 @@ install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_libarch}/security/pam
 # and create the proper .so symlinks
 #
 # libwbclient
-rm -f $RPM_BUILD_ROOT%{_libdir}/samba/libwbclient.so*
+rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libwbclient.so*
 install -m 755 source/bin/libwbclient.so \
-	$RPM_BUILD_ROOT%{_libdir}/libwbclient.so.0
-ln -s libwbclient.so.0 $RPM_BUILD_ROOT%{_libdir}/libwbclient.so
+	$RPM_BUILD_ROOT%{_libarchdir}/libwbclient.so.0
+ln -s libwbclient.so.0 $RPM_BUILD_ROOT%{_libarchdir}/libwbclient.so
 # libtalloc
-rm -f $RPM_BUILD_ROOT%{_libdir}/samba/libtalloc.so*
+rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libtalloc.so*
 install -m 755 source/bin/libtalloc.so \
-	$RPM_BUILD_ROOT%{_libdir}/libtalloc.so.1
-ln -s libtalloc.so.1 $RPM_BUILD_ROOT%{_libdir}/libtalloc.so
+	$RPM_BUILD_ROOT%{_libarchdir}/libtalloc.so.1
+ln -s libtalloc.so.1 $RPM_BUILD_ROOT%{_libarchdir}/libtalloc.so
 # libtdb
-rm -f $RPM_BUILD_ROOT%{_libdir}/samba/libtdb.so*
+rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libtdb.so*
 install -m 755 source/bin/libtdb.so \
-	$RPM_BUILD_ROOT%{_libdir}/libtdb.so.1
-ln -s libtdb.so.1 $RPM_BUILD_ROOT%{_libdir}/libtdb.so
+	$RPM_BUILD_ROOT%{_libarchdir}/libtdb.so.1
+ln -s libtdb.so.1 $RPM_BUILD_ROOT%{_libarchdir}/libtdb.so
 # libnetapi
-rm -f $RPM_BUILD_ROOT%{_libdir}/samba/libnetapi.so*
+rm -f $RPM_BUILD_ROOT%{_libarchdir}/samba/libnetapi.so*
 install -m 755 source/bin/libnetapi.so \
-	$RPM_BUILD_ROOT%{_libdir}/libnetapi.so.0
-ln -s libnetapi.so.0 $RPM_BUILD_ROOT%{_libdir}/libnetapi.so
+	$RPM_BUILD_ROOT%{_libarchdir}/libnetapi.so.0
+ln -s libnetapi.so.0 $RPM_BUILD_ROOT%{_libarchdir}/libnetapi.so
 
 ## cleanup
 /bin/rm -rf $RPM_BUILD_ROOT/usr/lib*/samba/security
@@ -415,10 +417,10 @@ exit 0
 %{_bindir}/tdbdump
 %{_bindir}/eventlogadm
 
-%{_libdir}/samba/idmap/*.so
-%{_libdir}/samba/nss_info/*.so
-%{_libdir}/samba/vfs/*.so
-%{_libdir}/samba/auth/*.so
+%{_libarchdir}/samba/idmap/*.so
+%{_libarchdir}/samba/nss_info/*.so
+%{_libarchdir}/samba/vfs/*.so
+%{_libarchdir}/samba/auth/*.so
 
 %{_mandir}/man1/smbcontrol.1*
 %{_mandir}/man1/smbstatus.1*
@@ -455,7 +457,7 @@ exit 0
 %{_datadir}/swat/*
 %{_sbindir}/swat
 %{_mandir}/man8/swat.8*
-%attr(755,root,root) %{_libdir}/samba/*.msg
+%attr(755,root,root) %{_libarchdir}/samba/*.msg
 
 ##########
 
@@ -493,8 +495,8 @@ exit 0
 %files common
 %defattr(-,root,root)
 %dir %{_sysconfdir}/samba
-%dir %{_libdir}/samba
-%dir %{_libdir}/samba/charset
+%dir %{_libarchdir}/samba
+%dir %{_libarchdir}/samba/charset
 %config(noreplace) %{_sysconfdir}/samba/smb.conf
 %config(noreplace) %{_sysconfdir}/samba/lmhosts
 %attr(755,root,root) %config %{initdir}/winbind
@@ -505,23 +507,23 @@ exit 0
 %attr(755,root,root) /%{_libarch}/security/pam_smbpass.so
 
 %{_includedir}/libsmbclient.h
-%{_libdir}/libsmbclient.*
+%{_libarchdir}/libsmbclient.*
 #%{_includedir}/libmsrpc.h
-#%{_libdir}/libmsrpc.*
+#%{_libarchdir}/libmsrpc.*
 %{_includedir}/smb_share_modes.h
-%{_libdir}/libsmbsharemodes.*
+%{_libarchdir}/libsmbsharemodes.*
 
-%{_libdir}/samba/*.dat
-%{_libdir}/samba/charset/*.so
+%{_libarchdir}/samba/*.dat
+%{_libarchdir}/samba/charset/*.so
 
 %{_includedir}/netapi.h
 %{_includedir}/wbclient.h
 %{_includedir}/talloc.h
 %{_includedir}/tdb.h
-%{_libdir}/libnetapi.so*
-%{_libdir}/libtalloc.so*
-%{_libdir}/libtdb.so*
-%{_libdir}/libwbclient.so*
+%{_libarchdir}/libnetapi.so*
+%{_libarchdir}/libtalloc.so*
+%{_libarchdir}/libtdb.so*
+%{_libarchdir}/libwbclient.so*
 
 %{_sbindir}/winbind
 
