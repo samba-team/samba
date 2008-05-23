@@ -21,9 +21,7 @@
 #include "includes.h"
 
 #include "librpc/gen_ndr/ndr_dfs.h"
-#if 0
 #include "librpc/gen_ndr/ndr_drsuapi.h"
-#endif
 #include "librpc/gen_ndr/ndr_dssetup.h"
 #include "librpc/gen_ndr/ndr_echo.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
@@ -39,9 +37,7 @@
 #include "librpc/gen_ndr/ndr_wkssvc.h"
 
 extern const struct ndr_interface_table ndr_table_netdfs;
-#if 0
 extern const struct ndr_interface_table ndr_table_drsuapi;
-#endif
 extern const struct ndr_interface_table ndr_table_dssetup;
 extern const struct ndr_interface_table ndr_table_rpcecho;
 extern const struct ndr_interface_table ndr_table_epmapper;
@@ -58,9 +54,7 @@ extern const struct ndr_interface_table ndr_table_wkssvc;
 
 const struct ndr_interface_table *tables[] = {
 	&ndr_table_netdfs,
-#if 0
 	&ndr_table_drsuapi,
-#endif
 	&ndr_table_dssetup,
 	&ndr_table_rpcecho,
 	&ndr_table_epmapper,
