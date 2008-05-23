@@ -6,7 +6,7 @@ include mkconfig.mk
 
 pidldir := $(srcdir)/pidl
 
-VPATH = $(builddir):$(srcdir):heimdal_build:heimdal/lib/asn1:heimdal/lib/krb5:heimdal/lib/gssapi:heimdal/lib/hdb:heimdal/lib/roken:heimdal/lib/des
+VPATH = $(builddir):$(srcdir):$(srcdir)/heimdal_build:$(heimdalsrcdir)/lib/asn1:$(heimdalsrcdir)/lib/krb5:$(heimdalsrcdir)/lib/gssapi:$(heimdalsrcdir)/lib/hdb:$(heimdalsrcdir)/lib/roken:$(heimdalsrcdir)/lib/des
 
 BASEDIR = $(prefix)
 TORTUREDIR = $(libdir)/torture
@@ -47,8 +47,8 @@ ALL_PREDEP = basics
 .NOTPARALLEL:
 endif
 
-include build/make/rules.mk
-include build/make/python.mk
+include $(srcdir)/build/make/rules.mk
+include $(srcdir)/build/make/python.mk
 include data.mk
 
 BINARIES += $(BIN_PROGS) $(SBIN_PROGS)
@@ -233,8 +233,8 @@ data.mk: config.status $(MK_FILES)
 
 testcov-html:: 
 
-include pidl/config.mk
-include selftest/config.mk
+include $(pidldir)/config.mk
+include $(srcdir)/selftest/config.mk
 
 showflags::
 	@echo '  pwd        = '`/bin/pwd`
