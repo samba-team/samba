@@ -24,7 +24,7 @@ import sys
 
 sys.path.insert(0, "bin/python")
 
-from samba.dcerpc import samr, security
+from samba.dcerpc import samr, security, lsa
 
 def FillUserInfo(samr, dom_handle, users, level):
     """fill a user array with user information from samrQueryUserInfo"""
@@ -69,10 +69,10 @@ def test_EnumDomainUsers(samr, dom_handle):
 def test_EnumDomainGroups(samr, dom_handle):
     """test the samr_EnumDomainGroups interface"""
     print "Testing samr_EnumDomainGroups"
-    groups = toArray(samr.EnumDomainGroups(dom_handle, 0, 0, -1))
+    groups = toArray(samr.EnumDomainGroups(dom_handle, 0, 0))
     print "Found %d groups" % len(groups)
     for idx, group in groups:
-        print "\t" + group + "\t(" + idx + ")"
+        print "\t%s\t(%d)" % (group, idx)
 
 def test_domain_ops(samr, dom_handle):
     """test domain specific ops"""
