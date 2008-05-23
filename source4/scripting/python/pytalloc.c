@@ -41,5 +41,5 @@ PyObject *py_talloc_default_repr(PyObject *py_obj)
 	py_talloc_Object *obj = (py_talloc_Object *)py_obj;
 	PyTypeObject *type = (PyTypeObject*)PyObject_Type((PyObject *)obj);
 
-	return PyString_FromFormat("<%s>", type->tp_name);
+	return PyString_FromFormat("<%s talloc object at 0x%x>", type->tp_name, (intptr_t)py_obj);
 }
