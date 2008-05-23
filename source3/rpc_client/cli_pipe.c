@@ -2702,7 +2702,7 @@ NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
 			   struct rpc_pipe_client **presult)
 {
 	NTSTATUS status;
-	uint16_t port;
+	uint16_t port = 0;
 
 	status = rpc_pipe_get_tcp_port(host, abstract_syntax, &port);
 	if (!NT_STATUS_IS_OK(status)) {
