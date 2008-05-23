@@ -374,7 +374,6 @@ fi
 %config(noreplace) %{_sysconfdir}/sysconfig/samba
 %config(noreplace) %{_sysconfdir}/samba/smbusers
 %attr(755,root,root) %config %{initdir}/smb
-%attr(755,root,root) %config %{initdir}/winbind
 %config(noreplace) %{_sysconfdir}/logrotate.d/samba
 %config(noreplace) %{_sysconfdir}/pam.d/samba
 
@@ -383,7 +382,6 @@ fi
 %attr(1777,root,root) %dir /var/spool/samba
 
 %{_sbindir}/samba
-%{_sbindir}/winbind
 
 %{_sbindir}/smbd
 %{_sbindir}/nmbd
@@ -478,7 +476,7 @@ fi
 %dir %{_libdir}/samba/charset
 %config(noreplace) %{_sysconfdir}/samba/smb.conf
 %config(noreplace) %{_sysconfdir}/samba/lmhosts
-%{_initrddir}/winbind
+%attr(755,root,root) %config %{initdir}/winbind
 
 %attr(755,root,root) /%{_libarch}/libnss_wins.so*
 %attr(755,root,root) /%{_libarch}/libnss_winbind.so*
@@ -507,6 +505,8 @@ fi
 %{_libdir}/libtdb.so*
 %{_libdir}/samba/libwbclient.so*
 %{_libdir}/libwbclient.so*
+
+%{_sbindir}/winbind
 
 %{_sbindir}/winbindd
 %{_bindir}/testparm
