@@ -516,3 +516,87 @@ bool asn1_write_enumerated(ASN1_DATA *data, uint8 v)
 	asn1_pop_tag(data);
 	return !data->has_error;
 }
+
+bool ber_write_OID_String(DATA_BLOB *blob, const char *OID)
+{
+	uint_t v, v2;
+	const char *p = (const char *)OID;
+	char *newp;
+	int i;
+
+	v = strtoul(p, &newp, 10);
+	if (newp[0] != '.') return false;
+	p = newp + 1;
+
+	v2 = strtoul(p, &newp, 10);
+	if (newp[0] != '.') return false;
+	p = newp + 1;
+
+	/*the ber representation can't use more space then the string one */
+	*blob = data_blob(NULL, strlen(OID));
+	if (!blob->data) return false;
+
+	blob->data[0] = 40*v + v2;
+
+	i = 1;
+	while (*p) {
+		v = strtoul(p, &newp, 10);
+		if (newp[0] == '.') {
+			p = newp + 1;
+		} else if (newp[0] == '\0') {
+			p = newp;
+		} else {
+			data_blob_free(blob);
+			return false;
+		}
+		if (v >= (1<<28)) blob->data[i++] = (0x80 | ((v>>28)&0x7f));
+		if (v >= (1<<21)) blob->data[i++] = (0x80 | ((v>>21)&0x7f));
+		if (v >= (1<<14)) blob->data[i++] = (0x80 | ((v>>14)&0x7f));
+		if (v >= (1<<7)) blob->data[i++] = (0x80 | ((v>>7)&0x7f));
+		blob->data[i++] = (v&0x7f);
+	}
+
+	blob->length = i;
+
+	return true;
+}
+
+/* read an object ID from a data blob */
+bool ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **OID)
+{
+	int i;
+	uint8_t *b;
+	uint_t v;
+	char *tmp_oid = NULL;
+
+	if (blob.length < 2) return false;
+
+	b = blob.data;
+
+	tmp_oid = talloc_asprintf(mem_ctx, "%u",  b[0]/40);
+	if (!tmp_oid) goto nomem;
+	tmp_oid = talloc_asprintf_append_buffer(tmp_oid, ".%u",  b[0]%40);
+	if (!tmp_oid) goto nomem;
+
+	for(i = 1, v = 0; i < blob.length; i++) {
+		v = (v<<7) | (b[i]&0x7f);
+		if ( ! (b[i] & 0x80)) {
+			tmp_oid = talloc_asprintf_append_buffer(tmp_oid, ".%u",  v);
+			v = 0;
+		}
+		if (!tmp_oid) goto nomem;
+	}
+
+	if (v != 0) {
+		talloc_free(tmp_oid);
+		return false;
+	}
+
+	*OID = tmp_oid;
+	return true;
+
+nomem:
+	return false;
+}
+
+

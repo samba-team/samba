@@ -274,6 +274,13 @@ SERVER_MUTEX_OBJ = lib/server_mutex.o
 
 PASSCHANGE_OBJ = libsmb/passchange.o
 
+LIBNDR_DRSUAPI_OBJ = librpc/ndr/ndr_drsuapi.o \
+		     librpc/ndr/ndr_compression.o
+
+COMPRESSION_OBJ = lib/compression/mszip.o
+
+DRSUAPI_OBJ = $(LIBNDR_DRSUAPI_OBJ) \
+	      $(COMPRESSION_OBJ)
 
 LIBNDR_OBJ = librpc/ndr/ndr_basic.o \
 	     librpc/ndr/ndr.o \
@@ -283,7 +290,8 @@ LIBNDR_OBJ = librpc/ndr/ndr_basic.o \
 	     librpc/ndr/ndr_sec_helper.o \
 	     librpc/ndr/ndr_string.o \
 	     librpc/ndr/sid.o \
-	     librpc/ndr/uuid.o
+	     librpc/ndr/uuid.o \
+	     $(DRSUAPI_OBJ)
 
 RPCCLIENT_NDR_OBJ = rpc_client/ndr.o
 
@@ -301,7 +309,8 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 librpc/gen_ndr/ndr_notify.o \
 		 librpc/gen_ndr/ndr_xattr.o \
 		 librpc/gen_ndr/ndr_epmapper.o \
-		 librpc/gen_ndr/ndr_ntsvcs.o
+		 librpc/gen_ndr/ndr_ntsvcs.o \
+		 librpc/gen_ndr/ndr_drsuapi.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -478,6 +487,7 @@ LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_dssetup.o \
 		   librpc/gen_ndr/cli_ntsvcs.o \
 		   librpc/gen_ndr/cli_epmapper.o \
+		   librpc/gen_ndr/cli_drsuapi.o \
 		   $(LIBNDR_GEN_OBJ) \
 		   $(RPCCLIENT_NDR_OBJ)
 

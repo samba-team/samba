@@ -36,6 +36,7 @@
 #include "librpc/gen_ndr/cli_dssetup.h"
 #include "librpc/gen_ndr/cli_ntsvcs.h"
 #include "librpc/gen_ndr/cli_epmapper.h"
+#include "librpc/gen_ndr/cli_drsuapi.h"
 
 #define prs_init_empty( _ps_, _ctx_, _io_ ) (void) prs_init((_ps_), 0, (_ctx_), (_io_))
 

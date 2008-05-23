@@ -60,6 +60,7 @@ const struct pipe_id_info pipe_names [] =
 	{ PIPE_EVENTLOG, &ndr_table_eventlog.syntax_id, PIPE_EVENTLOG , &ndr_transfer_syntax },
 	{ PIPE_NTSVCS  , &ndr_table_ntsvcs.syntax_id, PIPE_NTSVCS   , &ndr_transfer_syntax },
 	{ PIPE_EPMAPPER  , &ndr_table_epmapper.syntax_id, PIPE_EPMAPPER   , &ndr_transfer_syntax },
+	{ PIPE_DRSUAPI , &ndr_table_drsuapi.syntax_id, PIPE_DRSUAPI   , &ndr_transfer_syntax },
 	{ NULL         , NULL                  , NULL          , NULL }
 };
 
