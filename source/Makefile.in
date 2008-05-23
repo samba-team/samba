@@ -145,6 +145,8 @@ PIDDIR = @piddir@
 LIBTALLOC_SHARED_TARGET=@LIBTALLOC_SHARED_TARGET@
 LIBTALLOC_STATIC_TARGET=@LIBTALLOC_STATIC_TARGET@
 LIBTALLOC=$(LIBTALLOC_STATIC_TARGET) @LIBTALLOC_SHARED@
+LIBTALLOC_SYMS=$(srcdir)/exports/libtalloc.@SYMSEXT@
+LIBTALLOC_HEADERS=$(srcdir)/@tallocdir@/talloc.h
 
 LIBTDB_SHARED_TARGET=@LIBTDB_SHARED_TARGET@
 LIBTDB_STATIC_TARGET=@LIBTDB_STATIC_TARGET@
@@ -1565,7 +1567,12 @@ bin/ldbdel: $(BINARY_PREREQS) $(LDBDEL_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIB
 		$(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS) \
 		@LIBTALLOC_LIBS@ @LIBTDB_LIBS@ @WINBIND_LIBS@
 
-$(LIBTALLOC_SHARED_TARGET): $(BINARY_PREREQS) $(LIBTALLOC_OBJ)
+MKSYMS_SH = $(srcdir)/script/mksyms.sh
+
+$(LIBTALLOC_SYMS): $(LIBTALLOC_HEADERS)
+	@$(MKSYMS_SH) $(AWK) $@ $(LIBTALLOC_HEADERS)
+
+$(LIBTALLOC_SHARED_TARGET): $(BINARY_PREREQS) $(LIBTALLOC_OBJ) $(LIBTALLOC_SYMS)
 	@echo Linking shared library $@
 	@$(SHLD_DSO) $(LIBTALLOC_OBJ) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
@@ -1574,8 +1581,6 @@ $(LIBTALLOC_SHARED_TARGET): $(BINARY_PREREQS) $(LIBTALLOC_OBJ)
 $(LIBTALLOC_STATIC_TARGET): $(BINARY_PREREQS) $(LIBTALLOC_OBJ0)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBTALLOC_OBJ0)
-
-MKSYMS_SH = $(srcdir)/script/mksyms.sh
 
 $(LIBTDB_SYMS): $(LIBTDB_HEADERS)
 	@$(MKSYMS_SH) $(AWK) $@ $(LIBTDB_HEADERS)
@@ -2122,7 +2127,7 @@ installlibtalloc: installdirs libtalloc
 	-$(INSTALLLIBCMD_SH) $(LIBTALLOC_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) $(LIBTALLOC_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/@tallocdir@/talloc.h $(DESTDIR)${prefix}/include
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(LIBTALLOC_HEADERS) $(DESTDIR)${prefix}/include
 
 installlibtdb: installdirs libtdb
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
@@ -2263,7 +2268,7 @@ clean: delheaders
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBNETAPI) \
 		bin/libwbclient.so.0 bin/timelimit \
 		.headers.stamp */src/*.o proto_exists \
-		$(LIBTDB_SYMS)
+		$(LIBTALLOC_SYMS) $(LIBTDB_SYMS) $(LIBNETAPI_SYMS)
 	-rm -rf t_dir
 
 # Making this target will just make sure that the prototype files
