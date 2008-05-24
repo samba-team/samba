@@ -30,12 +30,10 @@ static WERROR cmd_drsuapi_cracknames(struct rpc_pipe_client *cli,
 	int i;
 
 	struct GUID bind_guid;
-	struct drsuapi_DsBindInfoCtr bind_info;
 	struct policy_handle bind_handle;
 
 	int32_t level = 1;
 	union drsuapi_DsNameRequest req;
-	struct drsuapi_DsNameRequest1 req1;
 	int32_t level_out;
 	union drsuapi_DsNameCtr ctr;
 	struct drsuapi_DsNameString names[1];
@@ -44,8 +42,6 @@ static WERROR cmd_drsuapi_cracknames(struct rpc_pipe_client *cli,
 		printf("usage: %s name\n", argv[0]);
 		return WERR_OK;
 	}
-
-	ZERO_STRUCT(bind_info);
 
 	GUID_from_string(DRSUAPI_DS_BIND_GUID, &bind_guid);
 
@@ -59,19 +55,15 @@ static WERROR cmd_drsuapi_cracknames(struct rpc_pipe_client *cli,
 		return ntstatus_to_werror(status);
 	}
 
-	ZERO_STRUCT(req1);
-
 	names[0].str = argv[1];
 
-	req1.codepage		= 1252; /* german */
-	req1.language		= 0x00000407; /* german */
-	req1.count		= 1;
-	req1.names		= names;
-	req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;
-	req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_UKNOWN;
-	req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
-
-	req.req1 = req1;
+	req.req1.codepage	= 1252; /* german */
+	req.req1.language	= 0x00000407; /* german */
+	req.req1.count		= 1;
+	req.req1.names		= names;
+	req.req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;
+	req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_UKNOWN;
+	req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 
 	status = rpccli_drsuapi_DsCrackNames(cli, mem_ctx,
 					     &bind_handle,
