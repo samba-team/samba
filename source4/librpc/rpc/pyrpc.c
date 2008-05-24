@@ -25,9 +25,14 @@
 
 static PyObject *py_iface_server_name(PyObject *obj, void *closure)
 {
+	const char *server_name;
 	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)obj;
+	
+	server_name = dcerpc_server_name(iface->pipe);
+	if (server_name == NULL)
+		return Py_None;
 
-	return PyString_FromString(dcerpc_server_name(iface->pipe));
+	return PyString_FromString(server_name);
 }
 
 static PyGetSetDef dcerpc_interface_getsetters[] = {
@@ -41,24 +46,35 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 	int opnum;
 	DATA_BLOB data_in, data_out;
 	NTSTATUS status;
+	char *in_data;
+	int in_length;
+	PyObject *ret;
 	char *object;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	const char *kwnames[] = { "opnum", "data", "object", NULL };
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "is#|s:request", 
-		discard_const_p(char *, kwnames), &opnum, &data_in.data, &data_in.length, &object)) {
+		discard_const_p(char *, kwnames), &opnum, &in_data, &in_length, &object)) {
 		return NULL;
 	}
 
-	status = dcerpc_request(iface->pipe, NULL /* FIXME: object GUID */, opnum, false, NULL, &data_in, 
-				&data_out);
+	data_in.data = talloc_strndup(mem_ctx, in_data, in_length);
+	data_in.length = in_length;
+
+	status = dcerpc_request(iface->pipe, NULL /* FIXME: object GUID */, 
+				opnum, false, mem_ctx, &data_in, &data_out);
 
 	if (NT_STATUS_IS_ERR(status)) {
 		/* FIXME: Set more appropriate error */
 		PyErr_SetString(PyExc_RuntimeError, "Unable to connect");
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
-	return PyString_FromStringAndSize((char *)data_out.data, data_out.length);
+	ret = PyString_FromStringAndSize((char *)data_out.data, data_out.length);
+
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 static PyMethodDef dcerpc_interface_methods[] = {
