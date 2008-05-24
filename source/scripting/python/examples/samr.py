@@ -100,7 +100,7 @@ if len(sys.argv) != 2:
 
 binding = sys.argv[1]
 
-print "Connecting to " + binding
+print "Connecting to %s" % binding
 try:
     samr = samr.samr(binding)
 except Exception, e:
