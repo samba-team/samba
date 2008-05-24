@@ -832,6 +832,29 @@ struct drsuapi_DsGetDCInfoCtr2 {
 	struct drsuapi_DsGetDCInfo2 *array;/* [unique,size_is(count)] */
 };
 
+struct drsuapi_DsGetDCInfo3 {
+	const char *netbios_name;/* [unique,charset(UTF16)] */
+	const char *dns_name;/* [unique,charset(UTF16)] */
+	const char *site_name;/* [unique,charset(UTF16)] */
+	const char *site_dn;/* [unique,charset(UTF16)] */
+	const char *computer_dn;/* [unique,charset(UTF16)] */
+	const char *server_dn;/* [unique,charset(UTF16)] */
+	const char *ntds_dn;/* [unique,charset(UTF16)] */
+	uint32_t is_pdc;
+	uint32_t is_enabled;
+	uint32_t is_gc;
+	uint32_t is_rodc;
+	struct GUID site_guid;
+	struct GUID computer_guid;
+	struct GUID server_guid;
+	struct GUID ntds_guid;
+};
+
+struct drsuapi_DsGetDCInfoCtr3 {
+	uint32_t count;/* [range(0,10000)] */
+	struct drsuapi_DsGetDCInfo3 *array;/* [unique,size_is(count)] */
+};
+
 struct drsuapi_DsGetDCConnection01 {
 	const char * client_ip_address;/* [flag(LIBNDR_FLAG_BIGENDIAN)] */
 	uint32_t unknown2;
@@ -852,12 +875,14 @@ enum drsuapi_DsGetDCInfoCtrLevels
  {
 	DRSUAPI_DC_INFO_CTR_1=1,
 	DRSUAPI_DC_INFO_CTR_2=2,
+	DRSUAPI_DC_INFO_CTR_3=3,
 	DRSUAPI_DC_CONNECTION_CTR_01=-1
 }
 #else
  { __donnot_use_enum_drsuapi_DsGetDCInfoCtrLevels=0x7FFFFFFF}
 #define DRSUAPI_DC_INFO_CTR_1 ( 1 )
 #define DRSUAPI_DC_INFO_CTR_2 ( 2 )
+#define DRSUAPI_DC_INFO_CTR_3 ( 3 )
 #define DRSUAPI_DC_CONNECTION_CTR_01 ( -1 )
 #endif
 ;
@@ -865,6 +890,7 @@ enum drsuapi_DsGetDCInfoCtrLevels
 union drsuapi_DsGetDCInfoCtr {
 	struct drsuapi_DsGetDCInfoCtr1 ctr1;/* [case(DRSUAPI_DC_INFO_CTR_1)] */
 	struct drsuapi_DsGetDCInfoCtr2 ctr2;/* [case(DRSUAPI_DC_INFO_CTR_2)] */
+	struct drsuapi_DsGetDCInfoCtr3 ctr3;/* [case(DRSUAPI_DC_INFO_CTR_3)] */
 	struct drsuapi_DsGetDCConnectionCtr01 ctr01;/* [case(DRSUAPI_DC_CONNECTION_CTR_01)] */
 }/* [switch_type(int32)] */;
 
