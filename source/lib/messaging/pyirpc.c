@@ -197,5 +197,6 @@ done:
 
 static void initirpc(void)
 {
-
+	PyObject *mod;
+	mod = Py_InitModule("irpc", irpc_methods);
 }
