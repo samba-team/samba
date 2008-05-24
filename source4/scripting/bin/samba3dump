@@ -14,7 +14,7 @@ sys.path.insert(0, "bin/python")
 import samba
 import samba.samba3
 
-parser = optparse.OptionParser("provision <libdir> [<smb.conf>]")
+parser = optparse.OptionParser("samba3dump <libdir> [<smb.conf>]")
 parser.add_option("--format", type="choice", metavar="FORMAT",
                   choices=["full", "summary"])
 
@@ -96,7 +96,7 @@ def print_samba3_secrets(secrets):
 
 def print_samba3_regdb(regdb):
     print_header("Registry")
-    from registry import str_regtype
+    from samba.registry import str_regtype
 
     for k in regdb.keys():
         print "[%s]" % k
