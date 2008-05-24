@@ -257,7 +257,7 @@ sub PythonStruct($$$$$$)
 		$self->pidl("$cname *object = py_talloc_get_ptr(py_obj);");
 		$self->pidl("DATA_BLOB blob;");
 		$self->pidl("enum ndr_err_code err;");
-		$self->pidl("if (!PyArg_ParseTuple(args, \"(s#):__ndr_unpack__\", &blob.data, &blob.length))");
+		$self->pidl("if (!PyArg_ParseTuple(args, \"s#:__ndr_unpack__\", &blob.data, &blob.length))");
 		$self->pidl("\treturn NULL;");
 		$self->pidl("");
 		$self->pidl("err = ndr_pull_struct_blob_all(&blob, py_talloc_get_mem_ctx(py_obj), NULL, object, (ndr_pull_flags_fn_t)ndr_pull_$name);");
@@ -501,7 +501,7 @@ sub handle_werror($$$$)
 
 	$self->pidl("if (!W_ERROR_IS_OK($var)) {");
 	$self->indent;
-	$self->pidl("PyErr_SetString(PyExc_RuntimeError, win_errstr($var));");
+	$self->pidl("PyErr_SetWERROR($var);");
 	$self->pidl("talloc_free($mem_ctx);") if ($mem_ctx);
 	$self->pidl("return $retval;");
 	$self->deindent;
@@ -515,7 +515,7 @@ sub handle_ntstatus($$$$)
 
 	$self->pidl("if (NT_STATUS_IS_ERR($var)) {");
 	$self->indent;
-	$self->pidl("PyErr_SetString(PyExc_RuntimeError, nt_errstr($var));");
+	$self->pidl("PyErr_SetNTSTATUS($var);");
 	$self->pidl("talloc_free($mem_ctx);") if ($mem_ctx);
 	$self->pidl("return $retval;");
 	$self->deindent;
@@ -926,11 +926,11 @@ sub ConvertScalarToPython($$$)
 	}
 
 	if ($ctypename eq "NTSTATUS") {
-		return "PyInt_FromLong(NT_STATUS_V($cvar))";
+		return "PyErr_FromNTSTATUS($cvar)";
 	}
 
 	if ($ctypename eq "WERROR") {
-		return "PyInt_FromLong(W_ERROR_V($cvar))";
+		return "PyErr_FromWERROR($cvar)";
 	}
 
 	if (($ctypename eq "string" or $ctypename eq "nbt_string" or $ctypename eq "nbt_name" or $ctypename eq "wrepl_nbt_name")) {

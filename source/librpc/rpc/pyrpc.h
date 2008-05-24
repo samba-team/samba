@@ -20,6 +20,8 @@
 #ifndef _PYRPC_H_
 #define _PYRPC_H_
 
+#include "libcli/util/pyerrors.h"
+
 #define PY_CHECK_TYPE(type, var, fail) \
 	if (!type ## _Check(var)) {\
 		PyErr_Format(PyExc_TypeError, "Expected type %s", type ## _Type.tp_name); \
