@@ -41,26 +41,113 @@ static PyObject *start_response(PyObject *args, PyObject *kwargs)
 	return NULL;
 }
 
-/*
- * read(size) 	input 	1
- * readline() 	input 	1,2
- * readlines(hint) 	input 	1,3
- * __iter__() 	input 	 
- * flush() 	errors 	4
- * write(str) 	errors 	 
- * writelines(seq) 	errors 	 
- */
+typedef struct {
+	PyObject_HEAD
+} error_Stream_Object;
+
+static PyObject *py_error_flush(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	/* Nothing to do here */
+	return Py_None;
+}
+
+static PyObject *py_error_write(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	const char *kwnames[] = { "str", NULL };
+	char *str = NULL;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *)"s:write", (char **)kwnames, &str)) {
+		return NULL;
+	}
+
+	DEBUG(0, ("WSGI App: %s", str));
+
+	return Py_None;
+}
+
+static PyObject *py_error_writelines(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	const char *kwnames[] = { "seq", NULL };
+	PyObject *seq = NULL, *item;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *)"O:writelines", (char **)kwnames, &seq)) {
+		return NULL;
+	}
+	
+	while ((item = PyIter_Next(seq))) {
+		char *str = PyString_AsString(item);
+
+		DEBUG(0, ("WSGI App: %s", str));
+	}
+
+	return Py_None;
+}
+
+static PyMethodDef error_Stream_methods[] = {
+	{ "flush", (PyCFunction)py_error_flush, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "write", (PyCFunction)py_error_write, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "writelines", (PyCFunction)py_error_writelines, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ NULL, NULL, 0, NULL }
+};
+
+PyTypeObject error_Stream_Type = {
+	PyObject_HEAD_INIT(NULL) 0,
+	.tp_name = "wsgi.ErrorStream",
+	.tp_basicsize = sizeof(error_Stream_Object),
+	.tp_methods = error_Stream_methods,
+	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+};
+
+typedef struct {
+	PyObject_HEAD
+} input_Stream_Object;
+
+static PyObject *py_input_read(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	return NULL;
+}
+
+static PyObject *py_input_readline(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	return NULL;
+}
+
+static PyObject *py_input_readlines(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	return NULL;
+}
+
+static PyObject *py_input___iter__(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	return NULL;
+}
+
+static PyMethodDef input_Stream_methods[] = {
+	{ "read", (PyCFunction)py_input_read, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "readline", (PyCFunction)py_input_readline, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "readlines", (PyCFunction)py_input_readlines, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "__iter__", (PyCFunction)py_input___iter__, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ NULL, NULL, 0, NULL }
+};
+
+PyTypeObject input_Stream_Type = {
+	PyObject_HEAD_INIT(NULL) 0,
+	.tp_name = "wsgi.InputStream",
+	.tp_basicsize = sizeof(input_Stream_Object),
+	.tp_methods = input_Stream_methods,
+	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+};
 
 static PyObject *Py_InputHttpStream(void *foo)
 {
-	/* FIXME */
-	return NULL;
+	PyObject *ret = PyObject_New(input_Stream_Object, &input_Stream_Type);
+	return ret;
 }
 
 static PyObject *Py_ErrorHttpStream(void)
 {
-	/* FIXME */
-	return NULL;
+	PyObject *ret = PyObject_New(error_Stream_Object, &error_Stream_Type);
+	return ret;
 }
 
 static PyObject *create_environ(void)
