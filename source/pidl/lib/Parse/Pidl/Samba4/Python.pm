@@ -225,7 +225,33 @@ sub PythonStruct($$$$$$)
 	$self->pidl("return py_talloc_import(&$name\_Type, ret);");
 	$self->deindent;
 	$self->pidl("}");
+	$self->pidl("");
 
+	$self->pidl("static PyObject *py_$name\_ndr_pack(PyObject *py_obj)");
+	$self->pidl("{");
+	$self->indent;
+	$self->pidl("$cname *object = py_talloc_get_ptr(py_obj);");
+	$self->pidl("DATA_BLOB blob;");
+	$self->pidl("enum ndr_err_code err;");
+	$self->pidl("err = ndr_push_struct_blob(&blob, py_talloc_get_mem_ctx(py_obj), NULL, object, ndr_push_$name);");
+	$self->pidl("if (err != NDR_ERR_SUCCESS) {");
+	$self->indent;
+	$self->pidl("PyErr_SetString(PyExc_RuntimeError, \"Unable to ndr pack\");");
+	$self->pidl("return NULL;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
+	$self->pidl("return PyString_FromStringAndSize((char *)blob.data, blob.length);");
+	$self->deindent;
+	$self->pidl("}");
+
+	$self->pidl("");
+	$self->pidl("static PyMethodDef py_$name\_methods[] = {");
+	$self->indent;
+	$self->pidl("{ \"__ndr_pack__\", (PyCFunction)py_$name\_ndr_pack, METH_O|METH_NOARGS, \"NDR pack\" },");
+	$self->pidl("{ NULL, NULL, 0, NULL }");
+	$self->deindent;
+	$self->pidl("};");
 	$self->pidl("");
 
 	$self->pidl_hdr("PyAPI_DATA(PyTypeObject) $name\_Type;\n");
@@ -243,6 +269,7 @@ sub PythonStruct($$$$$$)
 	$self->pidl(".tp_getset = $getsetters,");
 	$self->pidl(".tp_repr = py_talloc_default_repr,");
 	$self->pidl(".tp_doc = $docstring,");
+	$self->pidl(".tp_methods = py_$name\_methods,");
 	$self->pidl(".tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,");
 	$self->pidl(".tp_new = py_$name\_new,");
 	$self->deindent;
