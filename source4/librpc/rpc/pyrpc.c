@@ -1,0 +1,156 @@
+/* 
+   Unix SMB/CIFS implementation.
+   Samba utility functions
+   Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "includes.h"
+#include <Python.h>
+#include "librpc/rpc/pyrpc.h"
+#include "librpc/rpc/dcerpc.h"
+#include "lib/events/events.h"
+
+static PyObject *py_iface_server_name(PyObject *obj, void *closure)
+{
+	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)obj;
+
+	return PyString_FromString(dcerpc_server_name(iface->pipe));
+}
+
+static PyGetSetDef dcerpc_interface_getsetters[] = {
+	{ discard_const_p(char, "server_name"), py_iface_server_name, NULL },
+	{ NULL }
+};
+
+static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;
+	int opnum;
+	DATA_BLOB data_in, data_out;
+	NTSTATUS status;
+	char *object;
+	const char *kwnames[] = { "opnum", "data", "object", NULL };
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "is#|s:request", 
+		discard_const_p(char *, kwnames), &opnum, &data_in.data, &data_in.length, &object)) {
+		return NULL;
+	}
+
+	status = dcerpc_request(iface->pipe, NULL /* FIXME: object GUID */, opnum, false, NULL, &data_in, 
+				&data_out);
+
+	if (NT_STATUS_IS_ERR(status)) {
+		/* FIXME: Set more appropriate error */
+		PyErr_SetString(PyExc_RuntimeError, "Unable to connect");
+		return NULL;
+	}
+
+	return PyString_FromStringAndSize((char *)data_out.data, data_out.length);
+}
+
+static PyMethodDef dcerpc_interface_methods[] = {
+	{ "request", (PyCFunction)py_iface_request, METH_VARARGS|METH_KEYWORDS, "S.request(opnum, data) -> data\nMake a raw request" },
+	{ NULL, NULL, 0, NULL },
+};
+
+
+static void dcerpc_interface_dealloc(PyObject* self)
+{
+	dcerpc_InterfaceObject *interface = (dcerpc_InterfaceObject *)self;
+	talloc_free(interface->pipe);
+	PyObject_Del(self);
+}
+
+static PyObject *dcerpc_interface_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)
+{
+	dcerpc_InterfaceObject *ret;
+	const char *binding_string;
+	struct cli_credentials *credentials;
+	struct loadparm_context *lp_ctx = NULL;
+	PyObject *py_lp_ctx = Py_None, *py_credentials = Py_None;
+	TALLOC_CTX *mem_ctx = NULL;
+	struct event_context *event_ctx;
+	NTSTATUS status;
+
+	PyObject *syntax;
+	const char *kwnames[] = {
+		"binding", "syntax", "lp_ctx", "credentials", NULL
+	};
+	extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);
+	extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO|OO:connect", discard_const_p(char *, kwnames), &binding_string, &syntax, &py_lp_ctx, &py_credentials)) {
+		return NULL;
+	}
+
+	lp_ctx = lp_from_py_object(py_lp_ctx);
+	if (lp_ctx == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
+		return NULL;
+	}
+
+	credentials = cli_credentials_from_py_object(py_credentials);
+	if (credentials == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Expected credentials");
+		return NULL;
+	}
+	ret = PyObject_New(dcerpc_InterfaceObject, &dcerpc_InterfaceType);
+
+	event_ctx = event_context_init(mem_ctx);
+
+	status = dcerpc_pipe_connect(NULL, &ret->pipe, binding_string, 
+	             NULL, credentials, event_ctx, lp_ctx);
+	if (NT_STATUS_IS_ERR(status)) {
+		PyErr_SetString(PyExc_RuntimeError, nt_errstr(status));
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
+	return (PyObject *)ret;
+}
+
+PyTypeObject dcerpc_InterfaceType = {
+	PyObject_HEAD_INIT(NULL) 0,
+	.tp_name = "dcerpc.ClientConnection",
+	.tp_basicsize = sizeof(dcerpc_InterfaceObject),
+	.tp_dealloc = dcerpc_interface_dealloc,
+	.tp_getset = dcerpc_interface_getsetters,
+	.tp_methods = dcerpc_interface_methods,
+	.tp_doc = "ClientConnection(binding, syntax, lp_ctx=None, credentials=None) -> connection\n"
+"\n"
+"binding should be a DCE/RPC binding string (for example: ncacn_ip_tcp:127.0.0.1)\n"
+"syntax should be a tuple with a GUID and version number of an interface\n"
+"lp_ctx should be a path to a smb.conf file or a param.LoadParm object\n"
+"credentials should be a credentials.Credentials object.\n\n",
+	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_new = dcerpc_interface_new,
+};
+
+void initbase(void)
+{
+	PyObject *m;
+
+	if (PyType_Ready(&dcerpc_InterfaceType) < 0)
+		return;
+
+	m = Py_InitModule3("base", NULL, "DCE/RPC protocol implementation");
+	if (m == NULL)
+		return;
+
+	Py_INCREF((PyObject *)&dcerpc_InterfaceType);
+	PyModule_AddObject(m, "ClientConnection", (PyObject *)&dcerpc_InterfaceType);
+}

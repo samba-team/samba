@@ -636,16 +636,6 @@ sub Interface($$$)
 		$self->pidl("};");
 		$self->pidl("");
 
-		$self->pidl("static void interface_$interface->{NAME}_dealloc(PyObject* self)");
-		$self->pidl("{");
-		$self->indent;
-		$self->pidl("dcerpc_InterfaceObject *interface = (dcerpc_InterfaceObject *)self;");
-		$self->pidl("talloc_free(interface->pipe);");
-		$self->pidl("PyObject_Del(self);");
-		$self->deindent;
-		$self->pidl("}");
-		$self->pidl("");
-
 		$self->pidl("static PyObject *interface_$interface->{NAME}_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)");
 		$self->pidl("{");
 		$self->indent;
@@ -726,7 +716,7 @@ sub Interface($$$)
 		$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
 		$self->pidl(".tp_name = \"$basename.$interface->{NAME}\",");
 		$self->pidl(".tp_basicsize = sizeof(dcerpc_InterfaceObject),");
-		$self->pidl(".tp_dealloc = interface_$interface->{NAME}_dealloc,");
+		$self->pidl(".tp_base = &dcerpc_InterfaceType,");
 		$self->pidl(".tp_methods = interface_$interface->{NAME}_methods,");
 		$self->pidl(".tp_doc = $docstring,");
 		$self->pidl(".tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,");
