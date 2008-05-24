@@ -41,9 +41,32 @@ static PyObject *start_response(PyObject *args, PyObject *kwargs)
 	return NULL;
 }
 
+/*
+ * read(size) 	input 	1
+ * readline() 	input 	1,2
+ * readlines(hint) 	input 	1,3
+ * __iter__() 	input 	 
+ * flush() 	errors 	4
+ * write(str) 	errors 	 
+ * writelines(seq) 	errors 	 
+ */
+
+static PyObject *Py_InputHttpStream(void *foo)
+{
+	/* FIXME */
+	return NULL;
+}
+
+static PyObject *Py_ErrorHttpStream(void)
+{
+	/* FIXME */
+	return NULL;
+}
+
 static PyObject *create_environ(void)
 {
 	PyObject *env, *osmodule, *osenviron;
+	PyObject *inputstream, *errorstream;
 
 	osmodule = PyImport_ImportModule("os");	
 	if (osmodule == NULL)
@@ -53,8 +76,23 @@ static PyObject *create_environ(void)
 
 	env = PyDict_Copy(osenviron);
 
-	PyDict_SetItemString(env, "wsgi.input", NULL); /* FIXME */
-	PyDict_SetItemString(env, "wsgi.errors", NULL); /* FIXME */
+	Py_DECREF(env);
+
+	inputstream = Py_InputHttpStream(NULL); /* FIXME */
+	if (inputstream == NULL) {
+		Py_DECREF(env);
+		return NULL;
+	}
+
+	errorstream = Py_ErrorHttpStream();
+	if (errorstream == NULL) {
+		Py_DECREF(env);
+		Py_DECREF(inputstream);
+		return NULL;
+	}
+
+	PyDict_SetItemString(env, "wsgi.input", inputstream);
+	PyDict_SetItemString(env, "wsgi.errors", errorstream);
 	PyDict_SetItemString(env, "wsgi.version", Py_BuildValue("(i,i)", 1, 0));
 	PyDict_SetItemString(env, "wsgi.multithread", Py_False);
 	PyDict_SetItemString(env, "wsgi.multiprocess", Py_True);
