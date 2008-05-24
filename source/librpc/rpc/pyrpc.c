@@ -70,7 +70,7 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 		return NULL;
 	}
 
-	data_in.data = (uint8_t *)talloc_strndup(mem_ctx, in_data, in_length);
+	data_in.data = (uint8_t *)talloc_memdup(mem_ctx, in_data, in_length);
 	data_in.length = in_length;
 
 	ZERO_STRUCT(data_out);
