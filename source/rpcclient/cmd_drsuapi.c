@@ -74,11 +74,12 @@ static WERROR cmd_drsuapi_cracknames(struct rpc_pipe_client *cli,
 					     &werr);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		return ntstatus_to_werror(status);
+		werr = ntstatus_to_werror(status);
+		goto out;
 	}
 
 	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+		goto out;
 	}
 
 	for (i=0; i < ctr.ctr1->count; i++) {
@@ -88,6 +89,11 @@ static WERROR cmd_drsuapi_cracknames(struct rpc_pipe_client *cli,
 			ctr.ctr1->array[i].dns_domain_name);
 		printf("result_name: %s\n",
 			ctr.ctr1->array[i].result_name);
+	}
+
+ out:
+	if (is_valid_policy_hnd(&bind_handle)) {
+		rpccli_drsuapi_DsUnbind(cli, mem_ctx, &bind_handle, &werr);
 	}
 
 	return werr;
