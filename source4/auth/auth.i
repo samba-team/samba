@@ -16,7 +16,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-%module(package="samba.auth") auth
+%define DOCSTRING
+"Authentication and authorization support."
+%enddef
+
+%module(docstring=DOCSTRING,package="samba.auth") auth
 
 %{
 

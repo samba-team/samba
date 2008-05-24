@@ -3,6 +3,10 @@
 #
 # Don't modify this file, modify the SWIG interface instead.
 
+"""
+Parsing and writing Samba configuration files.
+"""
+
 import _param
 import new
 new_instancemethod = new.instancemethod

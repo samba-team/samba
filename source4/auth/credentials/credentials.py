@@ -3,6 +3,10 @@
 #
 # Don't modify this file, modify the SWIG interface instead.
 
+"""
+Credentials management.
+"""
+
 import _credentials
 import new
 new_instancemethod = new.instancemethod

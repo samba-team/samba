@@ -16,7 +16,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-%module(package="samba.events") events;
+%module(docstring="Event management.",package="samba.events") events;
 
 %import "../talloc/talloc.i";
 

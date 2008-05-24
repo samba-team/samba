@@ -3,6 +3,10 @@
 #
 # Don't modify this file, modify the SWIG interface instead.
 
+"""
+Authentication and authorization support.
+"""
+
 import _auth
 import new
 new_instancemethod = new.instancemethod

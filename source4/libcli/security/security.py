@@ -3,6 +3,10 @@
 #
 # Don't modify this file, modify the SWIG interface instead.
 
+"""
+Security-related classes.
+"""
+
 import _security
 import new
 new_instancemethod = new.instancemethod
@@ -86,6 +90,27 @@ class SecurityToken(object):
     __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
         _security.SecurityToken_swiginit(self,_security.new_SecurityToken(*args, **kwargs))
+    def is_sid(*args, **kwargs):
+        """
+        S.is_sid(sid) -> bool
+        Check whether this token is of the specified SID.
+        """
+        return _security.SecurityToken_is_sid(*args, **kwargs)
+
+    def is_system(*args, **kwargs):
+        """
+        S.is_system() -> bool
+        Check whether this is a system token.
+        """
+        return _security.SecurityToken_is_system(*args, **kwargs)
+
+    def is_anonymous(*args, **kwargs):
+        """
+        S.is_anonymus() -> bool
+        Check whether this is an anonymous token.
+        """
+        return _security.SecurityToken_is_anonymous(*args, **kwargs)
+
     __swig_destroy__ = _security.delete_SecurityToken
 SecurityToken.is_sid = new_instancemethod(_security.SecurityToken_is_sid,None,SecurityToken)
 SecurityToken.is_system = new_instancemethod(_security.SecurityToken_is_system,None,SecurityToken)
@@ -103,6 +128,13 @@ class security_descriptor(object):
     __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
         _security.security_descriptor_swiginit(self,_security.new_security_descriptor(*args, **kwargs))
+    def sacl_add(*args, **kwargs):
+        """
+        S.sacl_add(ace) -> None
+        Add a security ace to this security descriptor
+        """
+        return _security.security_descriptor_sacl_add(*args, **kwargs)
+
     __swig_destroy__ = _security.delete_security_descriptor
 security_descriptor.sacl_add = new_instancemethod(_security.security_descriptor_sacl_add,None,security_descriptor)
 security_descriptor.dacl_add = new_instancemethod(_security.security_descriptor_dacl_add,None,security_descriptor)
@@ -123,7 +155,13 @@ Sid.__eq__ = new_instancemethod(_security.Sid___eq__,None,Sid)
 Sid_swigregister = _security.Sid_swigregister
 Sid_swigregister(Sid)
 
-random_sid = _security.random_sid
+
+def random_sid(*args):
+  """
+    random_sid() -> sid
+    Generate a random SID
+    """
+  return _security.random_sid(*args)
 privilege_name = _security.privilege_name
 privilege_id = _security.privilege_id
 

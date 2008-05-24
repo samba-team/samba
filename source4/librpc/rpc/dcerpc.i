@@ -22,7 +22,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-%module dcerpc
+%define DOCSTRING
+"DCE/RPC protocol implementation"
+%enddef
+
+%module(docstring=DOCSTRING) dcerpc
 
 %{
 

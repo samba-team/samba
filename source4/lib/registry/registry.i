@@ -16,7 +16,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-%module registry
+%define DOCSTRING
+"Access to various registry formats and the Samba registry."
+%enddef
+
+%module(docstring=DOCSTRING) registry
 
 %{
 /* Include headers */

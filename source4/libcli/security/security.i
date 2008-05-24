@@ -16,7 +16,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-%module(package="samba.security") security
+%module(docstring="Security-related classes.",package="samba.security") security
 
 %{
 #include "includes.h"
@@ -65,8 +65,14 @@ enum sec_privilege {
 typedef struct security_token { 
     %extend {
         security_token(TALLOC_CTX *mem_ctx) { return security_token_initialise(mem_ctx); }
+        %feature("docstring") is_sid "S.is_sid(sid) -> bool\n" \
+            "Check whether this token is of the specified SID.";
         bool is_sid(const struct dom_sid *sid);
+        %feature("docstring") is_system "S.is_system() -> bool\n" \
+                          "Check whether this is a system token.";
         bool is_system();
+        %feature("docstring") is_anonymous "S.is_anonymus() -> bool\n" \
+                          "Check whether this is an anonymous token.";
         bool is_anonymous();
         bool has_sid(const struct dom_sid *sid);
         bool has_builtin_administrators();
@@ -81,6 +87,8 @@ typedef struct security_token {
 typedef struct security_descriptor {
     %extend {
         security_descriptor(TALLOC_CTX *mem_ctx) { return security_descriptor_initialise(mem_ctx); }
+        %feature("docstring") sacl_add "S.sacl_add(ace) -> None\n" \
+                              "Add a security ace to this security descriptor";
         NTSTATUS sacl_add(const struct security_ace *ace);
         NTSTATUS dacl_add(const struct security_ace *ace);
         NTSTATUS dacl_del(const struct dom_sid *trustee);
@@ -110,6 +118,9 @@ typedef struct dom_sid {
         bool equal(const struct dom_sid *other);
     }
 } dom_sid;
+
+%feature("docstring") random_sid "random_sid() -> sid\n" \
+         "Generate a random SID";
 
 %inline %{
 static struct dom_sid *random_sid(TALLOC_CTX *mem_ctx)
