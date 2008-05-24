@@ -241,7 +241,7 @@ sub PythonStruct($$$$$$)
 		$self->pidl("err = ndr_push_struct_blob(&blob, py_talloc_get_mem_ctx(py_obj), NULL, object, (ndr_push_flags_fn_t)ndr_push_$name);");
 		$self->pidl("if (err != NDR_ERR_SUCCESS) {");
 		$self->indent;
-		$self->pidl("PyErr_SetString(PyExc_RuntimeError, \"Unable to ndr pack\");");
+		$self->pidl("PyErr_SetNdrError(err);");
 		$self->pidl("return NULL;");
 		$self->deindent;
 		$self->pidl("}");
@@ -263,7 +263,7 @@ sub PythonStruct($$$$$$)
 		$self->pidl("err = ndr_pull_struct_blob_all(&blob, py_talloc_get_mem_ctx(py_obj), NULL, object, (ndr_pull_flags_fn_t)ndr_pull_$name);");
 		$self->pidl("if (err != NDR_ERR_SUCCESS) {");
 		$self->indent;
-		$self->pidl("PyErr_SetString(PyExc_RuntimeError, \"Unable to ndr unpack\");");
+		$self->pidl("PyErr_SetNdrError(err);");
 		$self->pidl("return NULL;");
 		$self->deindent;
 		$self->pidl("}");
