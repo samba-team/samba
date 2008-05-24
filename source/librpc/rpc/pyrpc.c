@@ -22,6 +22,7 @@
 #include "librpc/rpc/pyrpc.h"
 #include "librpc/rpc/dcerpc.h"
 #include "lib/events/events.h"
+#include "libcli/util/pyerrors.h"
 
 static PyObject *py_iface_server_name(PyObject *obj, void *closure)
 {
@@ -58,15 +59,14 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 		return NULL;
 	}
 
-	data_in.data = talloc_strndup(mem_ctx, in_data, in_length);
+	data_in.data = (uint8_t *)talloc_strndup(mem_ctx, in_data, in_length);
 	data_in.length = in_length;
 
 	status = dcerpc_request(iface->pipe, NULL /* FIXME: object GUID */, 
 				opnum, false, mem_ctx, &data_in, &data_out);
 
 	if (NT_STATUS_IS_ERR(status)) {
-		/* FIXME: Set more appropriate error */
-		PyErr_SetString(PyExc_RuntimeError, "Unable to connect");
+		PyErr_SetNTSTATUS(status);
 		talloc_free(mem_ctx);
 		return NULL;
 	}
