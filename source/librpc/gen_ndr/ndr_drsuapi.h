@@ -191,6 +191,8 @@ void ndr_print_drsuapi_DsGetDCInfo1(struct ndr_print *ndr, const char *name, con
 void ndr_print_drsuapi_DsGetDCInfoCtr1(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetDCInfoCtr1 *r);
 void ndr_print_drsuapi_DsGetDCInfo2(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetDCInfo2 *r);
 void ndr_print_drsuapi_DsGetDCInfoCtr2(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetDCInfoCtr2 *r);
+void ndr_print_drsuapi_DsGetDCInfo3(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetDCInfo3 *r);
+void ndr_print_drsuapi_DsGetDCInfoCtr3(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetDCInfoCtr3 *r);
 void ndr_print_drsuapi_DsGetDCConnection01(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetDCConnection01 *r);
 void ndr_print_drsuapi_DsGetDCConnectionCtr01(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetDCConnectionCtr01 *r);
 void ndr_print_drsuapi_DsGetDCInfoCtr(struct ndr_print *ndr, const char *name, const union drsuapi_DsGetDCInfoCtr *r);
