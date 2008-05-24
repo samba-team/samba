@@ -18,6 +18,7 @@
 #
 
 from samba.dcerpc import echo
+from samba.ndr import ndr_pack, ndr_unpack
 import unittest
 from samba.tests import RpcInterfaceTestCase
 
@@ -40,3 +41,14 @@ class RpcEchoTests(RpcInterfaceTestCase):
         surrounding_struct.surrounding = [1,2,3,4]
         y = self.conn.TestSurrounding(surrounding_struct)
         self.assertEquals(8 * [0], y.surrounding)
+
+
+class NdrEchoTests(unittest.TestCase):
+    def test_info1_push(self):
+        x = echo.info1()
+        x.v = 42
+        self.assertEquals("\x2a", ndr_pack(x))
+
+    def test_info1_pull(self):
+        x = ndr_unpack(echo.info1, "\x42")
+        self.assertEquals(x.v, 66)
