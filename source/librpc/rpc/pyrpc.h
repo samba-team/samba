@@ -41,4 +41,6 @@ typedef struct {
 	struct dcerpc_pipe *pipe;
 } dcerpc_InterfaceObject;
 
+PyAPI_DATA(PyTypeObject) dcerpc_InterfaceType;
+
 #endif /* _PYRPC_H_ */
