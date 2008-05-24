@@ -1,7 +1,3 @@
-[SUBSYSTEM::EJSRPC]
-
-EJSRPC_OBJ_FILES = $(ejsscriptsrcdir)/ejsrpc.o
-
 [MODULE::smbcalls_config]
 OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = smbcalls
@@ -83,16 +79,14 @@ mkinclude ejsnet/config.mk
 [SUBSYSTEM::smbcalls]
 PRIVATE_DEPENDENCIES = \
 		EJS LIBSAMBA-UTIL \
-		EJSRPC MESSAGING \
+		MESSAGING \
 		LIBSAMBA-NET LIBCLI_SMB LIBPOPT \
 		CREDENTIALS POPT_CREDENTIALS POPT_SAMBA \
-		dcerpc \
 		NDR_TABLE
 
 smbcalls_OBJ_FILES = $(addprefix $(ejsscriptsrcdir)/, \
 		smbcalls.o \
 		smbcalls_cli.o \
-		smbcalls_rpc.o \
 		smbcalls_options.o \
 		smbcalls_creds.o \
 		smbcalls_param.o \
