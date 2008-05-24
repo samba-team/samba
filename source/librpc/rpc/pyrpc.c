@@ -47,9 +47,22 @@ static PyObject *py_iface_server_name(PyObject *obj, void *closure)
 }
 
 static PyGetSetDef dcerpc_interface_getsetters[] = {
-	{ discard_const_p(char, "server_name"), py_iface_server_name, NULL },
+	{ discard_const_p(char, "server_name"), py_iface_server_name,  
+	  "name of the server, if connected over SMB"},
 	{ NULL }
 };
+
+void PyErr_SetDCERPCStatus(struct dcerpc_pipe *p, NTSTATUS status)
+{
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+		const char *errstr = dcerpc_errstr(NULL, p->last_fault_code);
+		PyErr_SetObject(PyExc_RuntimeError, 
+			Py_BuildValue("(i,s)", p->last_fault_code,
+				      errstr));
+	} else {
+		PyErr_SetNTSTATUS(status);
+	}
+}
 
 static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwargs)
 {
@@ -83,7 +96,7 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 				opnum, false, mem_ctx, &data_in, &data_out);
 
 	if (NT_STATUS_IS_ERR(status)) {
-		PyErr_SetNTSTATUS(status);
+		PyErr_SetDCERPCStatus(iface->pipe, status);
 		talloc_free(mem_ctx);
 		return NULL;
 	}
