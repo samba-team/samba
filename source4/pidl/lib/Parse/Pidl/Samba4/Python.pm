@@ -409,7 +409,14 @@ sub PythonFunctionBody($$$)
 		}
 	}
 	$self->pidl("status = dcerpc_$fn->{NAME}(iface->pipe, mem_ctx, r);");
-	$self->handle_ntstatus("status", "NULL", "mem_ctx");
+	$self->pidl("if (NT_STATUS_IS_ERR(status)) {");
+	$self->indent;
+	$self->pidl("PyErr_SetDCERPCStatus(iface->pipe, status);");
+	$self->pidl("talloc_free(mem_ctx);");
+	$self->pidl("return NULL;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
 
 	$env = GenerateFunctionOutEnv($fn, "r->");
 	my $i = 0;

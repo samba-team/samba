@@ -50,5 +50,6 @@ PyAPI_DATA(PyTypeObject) dcerpc_InterfaceType;
 #define PyErr_SetNdrError(err) \
 		PyErr_SetObject(PyExc_RuntimeError, PyErr_FromNdrError(err))
 
+void PyErr_SetDCERPCStatus(struct dcerpc_pipe *pipe, NTSTATUS status);
 
 #endif /* _PYRPC_H_ */
