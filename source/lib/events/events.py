@@ -3,6 +3,10 @@
 #
 # Don't modify this file, modify the SWIG interface instead.
 
+"""
+Event management.
+"""
+
 import _events
 import new
 new_instancemethod = new.instancemethod

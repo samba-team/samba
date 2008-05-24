@@ -3,6 +3,10 @@
 #
 # Don't modify this file, modify the SWIG interface instead.
 
+"""
+Access to various registry formats and the Samba registry.
+"""
+
 import _registry
 import new
 new_instancemethod = new.instancemethod

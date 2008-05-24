@@ -16,7 +16,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-%module(package="samba.param") param
+%module(docstring="Parsing and writing Samba configuration files.",package="samba.param") param
 
 %{
 #include <stdint.h>

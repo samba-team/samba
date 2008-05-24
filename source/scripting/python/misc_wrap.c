@@ -3216,7 +3216,10 @@ fail:
 
 
 static PyMethodDef SwigMethods[] = {
-	 { (char *)"random_password", (PyCFunction) _wrap_random_password, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"random_password", (PyCFunction) _wrap_random_password, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.random_password(len) -> string\n"
+		"Generate random password with specified length.\n"
+		""},
 	 { (char *)"ldb_set_credentials", (PyCFunction) _wrap_ldb_set_credentials, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
 		"S.set_credentials(credentials)\n"
 		"Set credentials to use when connecting.\n"

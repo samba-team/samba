@@ -20,6 +20,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Samba 4."""
+
 __docformat__ = "restructuredText"
 
 import os

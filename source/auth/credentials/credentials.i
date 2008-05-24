@@ -16,7 +16,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-%module(package="samba.credentials") credentials
+%module(docstring="Credentials management.",package="samba.credentials") credentials
 
 %{
 

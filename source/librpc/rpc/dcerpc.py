@@ -3,6 +3,10 @@
 #
 # Don't modify this file, modify the SWIG interface instead.
 
+"""
+DCE/RPC protocol implementation
+"""
+
 import _dcerpc
 import new
 new_instancemethod = new.instancemethod

@@ -16,7 +16,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-%module(package="samba.misc") misc
+%module(docstring="Python bindings for miscellaneous Samba functions.",package="samba.misc") misc
 
 %{
 #include "includes.h"
@@ -36,6 +36,9 @@
 %import "../../param/param.i"
 %import "../../libcli/security/security.i"
 %import "../../libcli/util/errors.i"
+
+%feature("docstring") generate_random_str "S.random_password(len) -> string\n" \
+                                          "Generate random password with specified length.";
 
 %rename(random_password) generate_random_str;
 char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len);

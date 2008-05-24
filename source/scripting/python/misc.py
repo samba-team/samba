@@ -3,6 +3,10 @@
 #
 # Don't modify this file, modify the SWIG interface instead.
 
+"""
+Python bindings for miscellaneous Samba functions.
+"""
+
 import _misc
 import new
 new_instancemethod = new.instancemethod
@@ -61,7 +65,13 @@ import ldb
 import credentials
 import param
 import security
-random_password = _misc.random_password
+
+def random_password(*args, **kwargs):
+  """
+    S.random_password(len) -> string
+    Generate random password with specified length.
+    """
+  return _misc.random_password(*args, **kwargs)
 
 def ldb_set_credentials(*args, **kwargs):
   """

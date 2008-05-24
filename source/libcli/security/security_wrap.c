@@ -3527,9 +3527,18 @@ fail:
 
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"new_SecurityToken", (PyCFunction)_wrap_new_SecurityToken, METH_NOARGS, NULL},
-	 { (char *)"SecurityToken_is_sid", (PyCFunction) _wrap_SecurityToken_is_sid, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"SecurityToken_is_system", (PyCFunction)_wrap_SecurityToken_is_system, METH_O, NULL},
-	 { (char *)"SecurityToken_is_anonymous", (PyCFunction)_wrap_SecurityToken_is_anonymous, METH_O, NULL},
+	 { (char *)"SecurityToken_is_sid", (PyCFunction) _wrap_SecurityToken_is_sid, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.is_sid(sid) -> bool\n"
+		"Check whether this token is of the specified SID.\n"
+		""},
+	 { (char *)"SecurityToken_is_system", (PyCFunction)_wrap_SecurityToken_is_system, METH_O, (char *)"\n"
+		"S.is_system() -> bool\n"
+		"Check whether this is a system token.\n"
+		""},
+	 { (char *)"SecurityToken_is_anonymous", (PyCFunction)_wrap_SecurityToken_is_anonymous, METH_O, (char *)"\n"
+		"S.is_anonymus() -> bool\n"
+		"Check whether this is an anonymous token.\n"
+		""},
 	 { (char *)"SecurityToken_has_sid", (PyCFunction) _wrap_SecurityToken_has_sid, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"SecurityToken_has_builtin_administrators", (PyCFunction)_wrap_SecurityToken_has_builtin_administrators, METH_O, NULL},
 	 { (char *)"SecurityToken_has_nt_authenticated_users", (PyCFunction)_wrap_SecurityToken_has_nt_authenticated_users, METH_O, NULL},
@@ -3539,7 +3548,10 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"SecurityToken_swigregister", SecurityToken_swigregister, METH_VARARGS, NULL},
 	 { (char *)"SecurityToken_swiginit", SecurityToken_swiginit, METH_VARARGS, NULL},
 	 { (char *)"new_security_descriptor", (PyCFunction)_wrap_new_security_descriptor, METH_NOARGS, NULL},
-	 { (char *)"security_descriptor_sacl_add", (PyCFunction) _wrap_security_descriptor_sacl_add, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"security_descriptor_sacl_add", (PyCFunction) _wrap_security_descriptor_sacl_add, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.sacl_add(ace) -> None\n"
+		"Add a security ace to this security descriptor\n"
+		""},
 	 { (char *)"security_descriptor_dacl_add", (PyCFunction) _wrap_security_descriptor_dacl_add, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"security_descriptor_dacl_del", (PyCFunction) _wrap_security_descriptor_dacl_del, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"security_descriptor_sacl_del", (PyCFunction) _wrap_security_descriptor_sacl_del, METH_VARARGS | METH_KEYWORDS, NULL},
@@ -3553,7 +3565,10 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"delete_Sid", (PyCFunction)_wrap_delete_Sid, METH_O, NULL},
 	 { (char *)"Sid_swigregister", Sid_swigregister, METH_VARARGS, NULL},
 	 { (char *)"Sid_swiginit", Sid_swiginit, METH_VARARGS, NULL},
-	 { (char *)"random_sid", (PyCFunction)_wrap_random_sid, METH_NOARGS, NULL},
+	 { (char *)"random_sid", (PyCFunction)_wrap_random_sid, METH_NOARGS, (char *)"\n"
+		"random_sid() -> sid\n"
+		"Generate a random SID\n"
+		""},
 	 { (char *)"privilege_name", (PyCFunction) _wrap_privilege_name, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"privilege_id", (PyCFunction) _wrap_privilege_id, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { NULL, NULL, 0, NULL }
