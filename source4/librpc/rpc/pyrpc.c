@@ -61,6 +61,8 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 	data_in.data = (uint8_t *)talloc_strndup(mem_ctx, in_data, in_length);
 	data_in.length = in_length;
 
+	ZERO_STRUCT(data_out);
+
 	status = dcerpc_request(iface->pipe, NULL /* FIXME: object GUID */, 
 				opnum, false, mem_ctx, &data_in, &data_out);
 
@@ -89,6 +91,50 @@ static void dcerpc_interface_dealloc(PyObject* self)
 	PyObject_Del(self);
 }
 
+static bool PyString_AsGUID(PyObject *object, struct GUID *uuid)
+{
+	NTSTATUS status;
+	status = GUID_from_string(PyString_AsString(object), uuid);
+	if (NT_STATUS_IS_ERR(status)) {
+		PyErr_SetNTSTATUS(status);
+		return false;
+	}
+	return true;
+}
+
+static bool ndr_syntax_from_py_object(PyObject *object, struct ndr_syntax_id *syntax_id)
+{
+	ZERO_STRUCTP(syntax_id);
+
+	if (PyString_Check(object)) {
+		return PyString_AsGUID(object, &syntax_id->uuid);
+	} else if (PyTuple_Check(object)) {
+		if (PyTuple_Size(object) < 1 || PyTuple_Size(object) > 2) {
+			PyErr_SetString(PyExc_ValueError, "Syntax ID tuple has invalid size");
+			return false;
+		}
+
+		if (!PyString_Check(PyTuple_GetItem(object, 0))) {
+			PyErr_SetString(PyExc_ValueError, "Expected GUID as first element in tuple");
+			return false;
+		}
+
+		if (!PyString_AsGUID(PyTuple_GetItem(object, 0), &syntax_id->uuid)) 
+			return false;
+
+		if (!PyInt_Check(PyTuple_GetItem(object, 1))) {
+			PyErr_SetString(PyExc_ValueError, "Expected version as second element in tuple");
+			return false;
+		}
+
+		syntax_id->if_version = PyInt_AsLong(PyTuple_GetItem(object, 1));
+		return true;
+	}
+
+	PyErr_SetString(PyExc_TypeError, "Expected UUID or syntax id tuple");
+	return false;
+}	
+
 static PyObject *dcerpc_interface_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
 	dcerpc_InterfaceObject *ret;
@@ -106,6 +152,7 @@ static PyObject *dcerpc_interface_new(PyTypeObject *self, PyObject *args, PyObje
 	};
 	extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);
 	extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);
+	struct ndr_interface_table *table;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO|OO:connect", discard_const_p(char *, kwnames), &binding_string, &syntax, &py_lp_ctx, &py_credentials)) {
 		return NULL;
@@ -126,8 +173,23 @@ static PyObject *dcerpc_interface_new(PyTypeObject *self, PyObject *args, PyObje
 
 	event_ctx = event_context_init(mem_ctx);
 
+	/* Create a dummy interface table struct. TODO: In the future, we should rather just allow 
+	 * connecting without requiring an interface table.
+	 */
+
+	table = talloc_zero(mem_ctx, struct ndr_interface_table);
+
+	if (table == NULL) {
+		PyErr_SetString(PyExc_MemoryError, "Allocating interface table");
+		return NULL;
+	}
+
+	if (!ndr_syntax_from_py_object(syntax, &table->syntax_id)) {
+		return NULL;
+	}
+
 	status = dcerpc_pipe_connect(NULL, &ret->pipe, binding_string, 
-	             NULL, credentials, event_ctx, lp_ctx);
+	             table, credentials, event_ctx, lp_ctx);
 	if (NT_STATUS_IS_ERR(status)) {
 		PyErr_SetString(PyExc_RuntimeError, nt_errstr(status));
 		talloc_free(mem_ctx);
