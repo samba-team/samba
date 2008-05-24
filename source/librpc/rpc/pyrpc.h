@@ -36,4 +36,9 @@
 #   define PyAPI_DATA(RTYPE) extern RTYPE
 #endif
 
+typedef struct {
+	PyObject_HEAD
+	struct dcerpc_pipe *pipe;
+} dcerpc_InterfaceObject;
+
 #endif /* _PYRPC_H_ */
