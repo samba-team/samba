@@ -19,12 +19,18 @@
 
 #include "smbd/process_model.h"
 
+struct web_server_data {
+	struct tls_params *tls_params;
+	void *private;	
+};
+
 /*
   context of one open web connection
 */
 struct websrv_context {
 	struct task_server *task;
 	struct stream_connection *conn;
+	void (*http_process_input)(struct websrv_context *web);
 	struct {
 		bool tls_detect;
 		bool tls_first_char;
@@ -56,23 +62,6 @@ struct websrv_context {
 	struct session_data *session;
 };
 
-
-/*
-  context for long term storage in the web server, to support session[]
-  and application[] data. Stored in task->private.
-*/
-struct esp_data {
-	struct session_data {
-		struct session_data *next, *prev;
-		struct esp_data *edata;
-		const char *id;
-		struct MprVar *data;
-		struct timed_event *te;
-		int lifetime;
-	} *sessions;
-	struct MprVar *application_data;
-	struct tls_params *tls_params;
-};
 
 #include "web_server/proto.h"
 

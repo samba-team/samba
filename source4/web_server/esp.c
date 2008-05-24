@@ -37,6 +37,24 @@
 #define SAMBA_SESSION_KEY "SambaSessionId"
 #define HTTP_PREAUTH_URI  "/scripting/preauth.esp"
 
+/*
+  context for long term storage in the web server, to support session[]
+  and application[] data. Stored in task->private.
+*/
+struct esp_data {
+	struct session_data {
+		struct session_data *next, *prev;
+		struct esp_data *edata;
+		const char *id;
+		struct MprVar *data;
+		struct timed_event *te;
+		int lifetime;
+	} *sessions;
+	struct MprVar *application_data;
+};
+
+
+
 /* state of the esp subsystem for a specific request */
 struct esp_state {
 	struct websrv_context *web;
@@ -413,10 +431,9 @@ invalid:
 /*
   setup the standard ESP arrays
 */
-static void http_setup_arrays(struct esp_state *esp)
+static void http_setup_arrays(struct web_server_data *wdata, struct esp_state *esp)
 {
 	struct websrv_context *web = esp->web;
-	struct esp_data *edata = talloc_get_type(web->task->private, struct esp_data);
 	struct EspRequest *req = esp->req;
 	struct socket_address *socket_address = socket_get_my_addr(web->conn->socket, esp);
 	struct socket_address *peer_address = socket_get_peer_addr(web->conn->socket, esp);
@@ -474,7 +491,7 @@ static void http_setup_arrays(struct esp_state *esp)
 	SETVAR(ESP_SERVER_OBJ, "SERVER_PROTOCOL", tls_enabled(web->conn->socket)?"https":"http");
 	SETVAR(ESP_SERVER_OBJ, "SERVER_SOFTWARE", "SAMBA");
 	SETVAR(ESP_SERVER_OBJ, "GATEWAY_INTERFACE", "CGI/1.1");
-	SETVAR(ESP_SERVER_OBJ, "TLS_SUPPORT", tls_support(edata->tls_params)?"true":"false");
+	SETVAR(ESP_SERVER_OBJ, "TLS_SUPPORT", tls_support(wdata->tls_params)?"true":"false");
 }
 
 #if HAVE_SETJMP_H
@@ -696,13 +713,12 @@ static int session_destructor(struct session_data *s)
 /*
   setup the session for this request
 */
-static void http_setup_session(struct esp_state *esp)
+static void http_setup_session(struct esp_data *edata, struct esp_state *esp)
 {
 	const char *session_key = SAMBA_SESSION_KEY;
 	char *p;
 	const char *cookie = esp->web->input.cookie;
 	const char *key = NULL;
-	struct esp_data *edata = talloc_get_type(esp->web->task->private, struct esp_data);
 	struct session_data *s;
 	bool generated_key = false;
 
@@ -771,11 +787,11 @@ static const struct Esp esp_control = {
 /*
   process a complete http request
 */
-void http_process_input(struct websrv_context *web)
+void esp_process_http_input(struct web_server_data *wdata, struct websrv_context *web)
 {
 	NTSTATUS status;
 	struct esp_state *esp = NULL;
-	struct esp_data *edata = talloc_get_type(web->task->private, struct esp_data);
+	struct esp_data *edata = talloc_get_type(wdata->private, struct esp_data);
 	struct smbcalls_context *smbcalls_ctx;
 	char *p;
 	void *save_mpr_ctx = mprMemCtx();
@@ -865,7 +881,7 @@ void http_process_input(struct websrv_context *web)
 		}
 	}
 
-	http_setup_session(esp);
+	http_setup_session(edata, esp);
 
 	esp->req = espCreateRequest(web, web->input.url, esp->variables);
 	if (esp->req == NULL) goto internal_error;
@@ -894,7 +910,7 @@ void http_process_input(struct websrv_context *web)
 	http_setHeader(web, "Connection: close", 0);
 	http_setHeader(web, talloc_asprintf(esp, "Content-Type: %s", file_type), 0);
 
-	http_setup_arrays(esp);
+	http_setup_arrays(wdata, esp);
 
 	/*
          * Do pre-authentication.  If pre-authentication succeeds, do
@@ -1020,10 +1036,6 @@ struct esp_data *http_setup_esp(TALLOC_CTX *mem_ctx, struct loadparm_context *lp
 
 	edata = talloc_zero(mem_ctx, struct esp_data);
 	if (edata == NULL)
-		return NULL;
-
-	edata->tls_params = tls_initialise(edata, lp_ctx);
-	if (edata->tls_params == NULL)
 		return NULL;
 
 	return edata;

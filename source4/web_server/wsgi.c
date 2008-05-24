@@ -21,9 +21,10 @@
 */
 
 #include "includes.h"
+#include "web_server/web_server.h"
 #include <Python.h>
 
-static PyObject *start_response(PyObject *args, PyObject *kwargs)
+static PyObject *start_response(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	PyObject *response_header, *exc_info;
 	char *status;
@@ -84,9 +85,9 @@ static PyObject *py_error_writelines(PyObject *self, PyObject *args, PyObject *k
 }
 
 static PyMethodDef error_Stream_methods[] = {
-	{ "flush", (PyCFunction)py_error_flush, METH_VARARGS|METH_KEYWORDS, NULL },
-	{ "write", (PyCFunction)py_error_write, METH_VARARGS|METH_KEYWORDS, NULL },
-	{ "writelines", (PyCFunction)py_error_writelines, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "flush", (PyCFunction)py_error_flush, METH_O|METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "write", (PyCFunction)py_error_write, METH_O|METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "writelines", (PyCFunction)py_error_writelines, METH_O|METH_VARARGS|METH_KEYWORDS, NULL },
 	{ NULL, NULL, 0, NULL }
 };
 
@@ -123,10 +124,10 @@ static PyObject *py_input___iter__(PyObject *self, PyObject *args, PyObject *kwa
 }
 
 static PyMethodDef input_Stream_methods[] = {
-	{ "read", (PyCFunction)py_input_read, METH_VARARGS|METH_KEYWORDS, NULL },
-	{ "readline", (PyCFunction)py_input_readline, METH_VARARGS|METH_KEYWORDS, NULL },
-	{ "readlines", (PyCFunction)py_input_readlines, METH_VARARGS|METH_KEYWORDS, NULL },
-	{ "__iter__", (PyCFunction)py_input___iter__, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "read", (PyCFunction)py_input_read, METH_O|METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "readline", (PyCFunction)py_input_readline, METH_O|METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "readlines", (PyCFunction)py_input_readlines, METH_O|METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "__iter__", (PyCFunction)py_input___iter__, METH_O|METH_VARARGS|METH_KEYWORDS, NULL },
 	{ NULL, NULL, 0, NULL }
 };
 
@@ -165,7 +166,7 @@ static PyObject *create_environ(void)
 
 	Py_DECREF(env);
 
-	inputstream = Py_InputHttpStream(NULL); /* FIXME */
+	inputstream = Py_InputHttpStream(NULL);
 	if (inputstream == NULL) {
 		Py_DECREF(env);
 		return NULL;
@@ -191,4 +192,9 @@ static PyObject *create_environ(void)
 	*/
 
 	return env;
+}
+
+void wsgi_process_http_input(struct websrv_context *web)
+{
+
 }

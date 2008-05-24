@@ -123,7 +123,7 @@ static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 		 destroy the stack variables being used by that
 		 rendering process when we handle the timeout. */
 		if (!talloc_reference(web->task, web)) goto failed;
-		http_process_input(web);
+		web->http_process_input(web);
 		talloc_unlink(web->task, web);
 	}
 	return;
@@ -192,13 +192,14 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 static void websrv_accept(struct stream_connection *conn)
 {
 	struct task_server *task = talloc_get_type(conn->private, struct task_server);
-	struct esp_data *edata = talloc_get_type(task->private, struct esp_data);
+	struct web_server_data *wdata = talloc_get_type(task->private, struct web_server_data);
 	struct websrv_context *web;
 	struct socket_context *tls_socket;
 
 	web = talloc_zero(conn, struct websrv_context);
 	if (web == NULL) goto failed;
 
+	web->http_process_input = esp_process_http_input;
 	web->task = task;
 	web->conn = conn;
 	conn->private = web;
@@ -210,7 +211,7 @@ static void websrv_accept(struct stream_connection *conn)
 			websrv_timeout, web);
 
 	/* Overwrite the socket with a (possibly) TLS socket */
-	tls_socket = tls_init_server(edata->tls_params, conn->socket, 
+	tls_socket = tls_init_server(wdata->tls_params, conn->socket, 
 				     conn->event.fde, "GPHO");
 	/* We might not have TLS, or it might not have initilised */
 	if (tls_socket) {
@@ -243,6 +244,7 @@ static void websrv_task_init(struct task_server *task)
 	NTSTATUS status;
 	uint16_t port = lp_web_port(task->lp_ctx);
 	const struct model_ops *model_ops;
+	struct web_server_data *wdata;
 
 	task_server_set_title(task, "task[websrv]");
 
@@ -280,8 +282,16 @@ static void websrv_task_init(struct task_server *task)
 
 	/* startup the esp processor - unfortunately we can't do this
 	   per connection as that wouldn't allow for session variables */
-	task->private = http_setup_esp(task, task->lp_ctx);
-	if (task->private == NULL) goto failed;
+	wdata = talloc_zero(task, struct web_server_data);
+	if (wdata == NULL)goto failed;
+
+	task->private = wdata;
+	
+	wdata->tls_params = tls_initialise(wdata, task->lp_ctx);
+	if (wdata->tls_params == NULL) goto failed;
+
+	wdata->private = http_setup_esp(task, task->lp_ctx);
+	if (wdata->private == NULL) goto failed;
 
 	return;
 
