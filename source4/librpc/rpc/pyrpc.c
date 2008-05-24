@@ -54,7 +54,7 @@ static PyGetSetDef dcerpc_interface_getsetters[] = {
 
 void PyErr_SetDCERPCStatus(struct dcerpc_pipe *p, NTSTATUS status)
 {
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+	if (p != NULL && NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 		const char *errstr = dcerpc_errstr(NULL, p->last_fault_code);
 		PyErr_SetObject(PyExc_RuntimeError, 
 			Py_BuildValue("(i,s)", p->last_fault_code,
@@ -206,10 +206,12 @@ static PyObject *dcerpc_interface_new(PyTypeObject *self, PyObject *args, PyObje
 		return NULL;
 	}
 
+	ret->pipe = NULL;
+
 	status = dcerpc_pipe_connect(NULL, &ret->pipe, binding_string, 
 	             table, credentials, event_ctx, lp_ctx);
 	if (NT_STATUS_IS_ERR(status)) {
-		PyErr_SetString(PyExc_RuntimeError, nt_errstr(status));
+		PyErr_SetDCERPCStatus(ret->pipe, status);
 		talloc_free(mem_ctx);
 		return NULL;
 	}
