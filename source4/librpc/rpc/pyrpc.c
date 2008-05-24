@@ -22,7 +22,6 @@
 #include "librpc/rpc/pyrpc.h"
 #include "librpc/rpc/dcerpc.h"
 #include "lib/events/events.h"
-#include "libcli/util/pyerrors.h"
 
 static PyObject *py_iface_server_name(PyObject *obj, void *closure)
 {
