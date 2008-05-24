@@ -327,7 +327,7 @@ sub PythonFunctionBody($$$)
 {
 	my ($self, $fn, $iface, $prettyname) = @_;
 
-	$self->pidl("$iface\_InterfaceObject *iface = ($iface\_InterfaceObject *)self;");
+	$self->pidl("dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;");
 	$self->pidl("NTSTATUS status;");
 	$self->pidl("TALLOC_CTX *mem_ctx = talloc_new(NULL);");
 	$self->pidl("struct $fn->{NAME} *r = talloc_zero(mem_ctx, struct $fn->{NAME});");
@@ -607,13 +607,6 @@ sub Interface($$$)
 
 	if (defined $interface->{PROPERTIES}->{uuid}) {
 		$self->pidl_hdr("PyAPI_DATA(PyTypeObject) $interface->{NAME}_InterfaceType;\n");
-		$self->pidl("typedef struct {");
-		$self->indent;
-		$self->pidl("PyObject_HEAD");
-		$self->pidl("struct dcerpc_pipe *pipe;");
-		$self->deindent;
-		$self->pidl("} $interface->{NAME}_InterfaceObject;");
-
 		$self->pidl("");
 
 		my @fns = ();
@@ -646,7 +639,7 @@ sub Interface($$$)
 		$self->pidl("static void interface_$interface->{NAME}_dealloc(PyObject* self)");
 		$self->pidl("{");
 		$self->indent;
-		$self->pidl("$interface->{NAME}_InterfaceObject *interface = ($interface->{NAME}_InterfaceObject *)self;");
+		$self->pidl("dcerpc_InterfaceObject *interface = (dcerpc_InterfaceObject *)self;");
 		$self->pidl("talloc_free(interface->pipe);");
 		$self->pidl("PyObject_Del(self);");
 		$self->deindent;
@@ -656,7 +649,7 @@ sub Interface($$$)
 		$self->pidl("static PyObject *interface_$interface->{NAME}_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)");
 		$self->pidl("{");
 		$self->indent;
-		$self->pidl("$interface->{NAME}_InterfaceObject *ret;");
+		$self->pidl("dcerpc_InterfaceObject *ret;");
 		$self->pidl("const char *binding_string;");
 		$self->pidl("struct cli_credentials *credentials;");
 		$self->pidl("struct loadparm_context *lp_ctx = NULL;");
@@ -696,7 +689,7 @@ sub Interface($$$)
 		$self->deindent;
 		$self->pidl("}");
 
-		$self->pidl("ret = PyObject_New($interface->{NAME}_InterfaceObject, &$interface->{NAME}_InterfaceType);");
+		$self->pidl("ret = PyObject_New(dcerpc_InterfaceObject, &$interface->{NAME}_InterfaceType);");
 		$self->pidl("");
 		$self->pidl("event_ctx = event_context_init(mem_ctx);");
 		$self->pidl("");
@@ -732,7 +725,7 @@ sub Interface($$$)
 		$self->indent;
 		$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
 		$self->pidl(".tp_name = \"$basename.$interface->{NAME}\",");
-		$self->pidl(".tp_basicsize = sizeof($interface->{NAME}_InterfaceObject),");
+		$self->pidl(".tp_basicsize = sizeof(dcerpc_InterfaceObject),");
 		$self->pidl(".tp_dealloc = interface_$interface->{NAME}_dealloc,");
 		$self->pidl(".tp_methods = interface_$interface->{NAME}_methods,");
 		$self->pidl(".tp_doc = $docstring,");
@@ -1085,7 +1078,7 @@ sub Parse($$$$$)
 #include <Python.h>
 #include \"librpc/rpc/dcerpc.h\"
 #include \"scripting/python/pytalloc.h\"
-#include \"scripting/python/pyrpc.h\"
+#include \"librpc/rpc/pyrpc.h\"
 #include \"lib/events/events.h\"
 #include \"$hdr\"
 #include \"$ndr_hdr\"
