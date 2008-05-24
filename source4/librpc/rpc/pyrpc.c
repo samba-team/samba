@@ -23,6 +23,17 @@
 #include "librpc/rpc/dcerpc.h"
 #include "lib/events/events.h"
 
+static bool PyString_AsGUID(PyObject *object, struct GUID *uuid)
+{
+	NTSTATUS status;
+	status = GUID_from_string(PyString_AsString(object), uuid);
+	if (NT_STATUS_IS_ERR(status)) {
+		PyErr_SetNTSTATUS(status);
+		return false;
+	}
+	return true;
+}
+
 static PyObject *py_iface_server_name(PyObject *obj, void *closure)
 {
 	const char *server_name;
@@ -49,11 +60,12 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 	char *in_data;
 	int in_length;
 	PyObject *ret;
-	char *object;
+	PyObject *object = NULL;
+	struct GUID object_guid;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	const char *kwnames[] = { "opnum", "data", "object", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "is#|s:request", 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "is#|O:request", 
 		discard_const_p(char *, kwnames), &opnum, &in_data, &in_length, &object)) {
 		return NULL;
 	}
@@ -63,7 +75,11 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 
 	ZERO_STRUCT(data_out);
 
-	status = dcerpc_request(iface->pipe, NULL /* FIXME: object GUID */, 
+	if (object != NULL && !PyString_AsGUID(object, &object_guid)) {
+		return NULL;
+	}
+
+	status = dcerpc_request(iface->pipe, object?&object_guid:NULL,
 				opnum, false, mem_ctx, &data_in, &data_out);
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -79,7 +95,7 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 }
 
 static PyMethodDef dcerpc_interface_methods[] = {
-	{ "request", (PyCFunction)py_iface_request, METH_VARARGS|METH_KEYWORDS, "S.request(opnum, data) -> data\nMake a raw request" },
+	{ "request", (PyCFunction)py_iface_request, METH_VARARGS|METH_KEYWORDS, "S.request(opnum, data, object=None) -> data\nMake a raw request" },
 	{ NULL, NULL, 0, NULL },
 };
 
@@ -89,17 +105,6 @@ static void dcerpc_interface_dealloc(PyObject* self)
 	dcerpc_InterfaceObject *interface = (dcerpc_InterfaceObject *)self;
 	talloc_free(interface->pipe);
 	PyObject_Del(self);
-}
-
-static bool PyString_AsGUID(PyObject *object, struct GUID *uuid)
-{
-	NTSTATUS status;
-	status = GUID_from_string(PyString_AsString(object), uuid);
-	if (NT_STATUS_IS_ERR(status)) {
-		PyErr_SetNTSTATUS(status);
-		return false;
-	}
-	return true;
 }
 
 static bool ndr_syntax_from_py_object(PyObject *object, struct ndr_syntax_id *syntax_id)
