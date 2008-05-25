@@ -21,21 +21,182 @@
 
 #include "includes.h"
 #include <Python.h>
+#include "libcli/util/pyerrors.h"
 #include "lib/messaging/irpc.h"
+#include "lib/events/events.h"
+#include "cluster/cluster.h"
+#include "param/param.h"
 
+PyAPI_DATA(PyTypeObject) messaging_Type;
+PyAPI_DATA(PyTypeObject) irpc_InterfaceType;
 /*
   messaging clients need server IDs as well ...
  */
-#define EJS_ID_BASE 0x30000000
+#define PY_ID_BASE 0x30000000
+
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX *mem_ctx;
+	struct messaging_context *msg_ctx;
+} messaging_Object;
+
+PyObject *py_messaging_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
+{
+	int i;
+	struct event_context *ev;
+	const char *kwnames[] = { "messaging_path", NULL };
+	const char *messaging_path = NULL;
+	messaging_Object *ret;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s:connect", 
+		discard_const_p(char *, kwnames), &messaging_path)) {
+		return NULL;
+	}
+
+	ret = PyObject_New(messaging_Object, &messaging_Type);
+	if (ret == NULL)
+		return NULL;
+
+	ret->mem_ctx = talloc_new(NULL);
+
+	ev = event_context_init(ret->mem_ctx);
+
+	if (messaging_path == NULL) {
+		messaging_path = lp_messaging_path(ret, global_loadparm);
+	} else {
+		messaging_path = talloc_strdup(ret->mem_ctx, messaging_path);
+	}
+
+	/* create a messaging context, looping as we have no way to
+	   allocate temporary server ids automatically */
+	for (i=0;i<10000;i++) {
+		ret->msg_ctx = messaging_init(ret->mem_ctx, 
+					    messaging_path,
+					    cluster_id(PY_ID_BASE, i), 
+				            lp_iconv_convenience(global_loadparm),
+					    ev);
+		if (ret->msg_ctx) break;
+	}
+
+	if (ret->msg_ctx == NULL) {
+		PyErr_SetString(PyExc_RuntimeError, "messaging_connect unable to create a messaging context");
+		talloc_free(ret->mem_ctx);
+		return NULL;
+	}
+
+	return (PyObject *)ret;
+}
+
+static void py_messaging_dealloc(PyObject *self)
+{
+	messaging_Object *iface = (messaging_Object *)self;
+	talloc_free(iface->msg_ctx);
+	PyObject_Del(self);
+}
+
+static bool server_id_from_py(PyObject *object, struct server_id *server_id)
+{
+	if (!PyTuple_Check(object)) {
+		PyErr_SetString(PyExc_ValueError, "Expected tuple");
+		return false;
+	}
+
+	return PyArg_ParseTuple(object, "iii", &server_id->id, &server_id->id2, &server_id->node);
+}
+
+static PyObject *py_messaging_send(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	messaging_Object *iface = (messaging_Object *)self;
+	int msg_type;
+	DATA_BLOB data;
+	PyObject *target;
+	NTSTATUS status;
+	struct server_id server;
+	const char *kwnames[] = { "target", "msg_type", "data", NULL };
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Ois#|:send", 
+		discard_const_p(char *, kwnames), &target, &msg_type, &data.data, &data.length)) {
+		return NULL;
+	}
+
+	if (!server_id_from_py(target, &server)) 
+		return NULL;
+
+	status = messaging_send(iface->msg_ctx, server, msg_type, &data);
+	if (NT_STATUS_IS_ERR(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	return Py_None;
+}
+
+static void py_msg_callback_wrapper(struct messaging_context *msg, void *private, 
+			       uint32_t msg_type, 
+			       struct server_id server_id, DATA_BLOB *data)
+{
+	PyObject *callback = (PyObject *)private;
+
+	PyObject_CallFunction(callback, discard_const_p(char, "i(iii)s#"), msg_type, 
+			      server_id.id, server_id.id2, server_id.node, 
+			      data->data, data->length);
+}
+
+static PyObject *py_messaging_register(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	messaging_Object *iface = (messaging_Object *)self;
+	int msg_type;
+	PyObject *callback;
+	NTSTATUS status;
+	const char *kwnames[] = { "msg_type", "callback", NULL };
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iO|:send", 
+		discard_const_p(char *, kwnames), &msg_type, &callback)) {
+		return NULL;
+	}
+
+	Py_INCREF(callback);
+
+	status = messaging_register(iface->msg_ctx, callback,
+			    msg_type, py_msg_callback_wrapper);
+	if (NT_STATUS_IS_ERR(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	return Py_None;
+}
+
+
+static PyMethodDef py_messaging_methods[] = {
+	{ "send", (PyCFunction)py_messaging_send, METH_VARARGS|METH_KEYWORDS, 
+		"S.send(target, msg_type, data) -> None\nSend a message" },
+	{ "register", (PyCFunction)py_messaging_register, METH_VARARGS|METH_KEYWORDS,
+		"S.register(msg_type, callback) -> None\nRegister a message handler" },
+	{ NULL, NULL, 0, NULL }
+};
+
+PyTypeObject messaging_Type = {
+	PyObject_HEAD_INIT(NULL) 0,
+	.tp_name = "irpc.Messaging",
+	.tp_basicsize = sizeof(messaging_Object),
+	.tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
+	.tp_new = py_messaging_connect,
+	.tp_dealloc = py_messaging_dealloc,
+	.tp_methods = py_messaging_methods,
+};
+
 
 /*
   state of a irpc 'connection'
 */
-struct ejs_irpc_connection {
+typedef struct {
+	PyObject_HEAD
 	const char *server_name;
 	struct server_id *dest_ids;
 	struct messaging_context *msg_ctx;
-};
+	TALLOC_CTX *mem_ctx;
+} irpc_InterfaceObject;
 
 /*
   setup a context for talking to a irpc server
@@ -43,58 +204,77 @@ struct ejs_irpc_connection {
         status = irpc.connect("smb_server");
 */
 
-PyObject *py_irpc_connect(PyObject *args, PyObjet *kwargs)
+PyObject *py_irpc_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
-	NTSTATUS status;
 	int i;
 	struct event_context *ev;
-	struct ejs_irpc_connection *p;
-	struct MprVar *this = mprGetProperty(ejsGetLocalObject(eid), "this", 0);
+	const char *kwnames[] = { "server", "messaging_path", NULL };
+	char *server;
+	const char *messaging_path = NULL;
+	irpc_InterfaceObject *ret;
 
-	/* validate arguments */
-	if (argc != 1) {
-		ejsSetErrorMsg(eid, "rpc_connect invalid arguments");
-		return -1;
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|s:connect", 
+		discard_const_p(char *, kwnames), &server, &messaging_path)) {
+		return NULL;
 	}
 
-	p = talloc(this, struct ejs_irpc_connection);
-	if (p == NULL) {
-		return -1;
+	ret = PyObject_New(irpc_InterfaceObject, &irpc_InterfaceType);
+	if (ret == NULL)
+		return NULL;
+
+	ret->mem_ctx = talloc_new(NULL);
+
+	ret->server_name = server;
+
+	ev = event_context_init(ret->mem_ctx);
+
+	if (messaging_path == NULL) {
+		messaging_path = lp_messaging_path(ret, global_loadparm);
 	}
-
-	p->server_name = argv[0];
-
-	ev = mprEventCtx();
 
 	/* create a messaging context, looping as we have no way to
 	   allocate temporary server ids automatically */
 	for (i=0;i<10000;i++) {
-		p->msg_ctx = messaging_init(p, 
-					    lp_messaging_path(p, mprLpCtx()),
-					    cluster_id(EJS_ID_BASE, i), 
-				            lp_iconv_convenience(mprLpCtx()),
+		ret->msg_ctx = messaging_init(ret->mem_ctx, 
+					    messaging_path,
+					    cluster_id(PY_ID_BASE, i), 
+				            lp_iconv_convenience(global_loadparm),
 					    ev);
-		if (p->msg_ctx) break;
+		if (ret->msg_ctx) break;
 	}
-	if (p->msg_ctx == NULL) {
-		ejsSetErrorMsg(eid, "irpc_connect unable to create a messaging context");
-		talloc_free(p);
-		return -1;
+	if (ret->msg_ctx == NULL) {
+		PyErr_SetString(PyExc_RuntimeError, "irpc_connect unable to create a messaging context");
+		talloc_free(ret->mem_ctx);
+		return NULL;
 	}
 
-	p->dest_ids = irpc_servers_byname(p->msg_ctx, p, p->server_name);
-	if (p->dest_ids == NULL || p->dest_ids[0].id == 0) {
-		talloc_free(p);
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	ret->dest_ids = irpc_servers_byname(ret->msg_ctx, ret->mem_ctx, ret->server_name);
+	if (ret->dest_ids == NULL || ret->dest_ids[0].id == 0) {
+		talloc_free(ret->mem_ctx);
+		PyErr_SetNTSTATUS(NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		return NULL;
 	} else {
-		mprSetPtrChild(this, "irpc", p);
-		status = NT_STATUS_OK;
+		return (PyObject *)ret;
 	}
-
-	mpr_Return(eid, mprNTSTATUS(status));
-	return 0;
 }
 
+static void py_irpc_dealloc(PyObject *self)
+{
+	irpc_InterfaceObject *iface = (irpc_InterfaceObject *)self;
+	talloc_free(iface->mem_ctx);
+	PyObject_Del(self);
+}
+
+PyTypeObject irpc_InterfaceType = {
+	PyObject_HEAD_INIT(NULL) 0,
+	.tp_name = "irpc.ClientConnection",
+	.tp_basicsize = sizeof(irpc_InterfaceObject),
+	.tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
+	.tp_new = py_irpc_connect,
+	.tp_dealloc = py_irpc_dealloc,
+};
+
+#if 0
 /*
   make an irpc call - called via the same interface as rpc
 */
@@ -192,11 +372,25 @@ done:
 	}
 	return 0;
 }
+#endif
 
-
-
-static void initirpc(void)
+void initirpc(void)
 {
 	PyObject *mod;
-	mod = Py_InitModule("irpc", irpc_methods);
+
+	if (PyType_Ready(&irpc_InterfaceType) < 0)
+		return;
+
+	if (PyType_Ready(&messaging_Type) < 0)
+		return;
+
+	mod = Py_InitModule3("irpc", NULL, "Internal RPC");
+	if (mod == NULL)
+		return;
+
+	Py_INCREF((PyObject *)&irpc_InterfaceType);
+	PyModule_AddObject(mod, "ClientConnection", (PyObject *)&irpc_InterfaceType);
+
+	Py_INCREF((PyObject *)&messaging_Type);
+	PyModule_AddObject(mod, "Messaging", (PyObject *)&messaging_Type);
 }
