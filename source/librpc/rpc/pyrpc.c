@@ -34,6 +34,41 @@ static bool PyString_AsGUID(PyObject *object, struct GUID *uuid)
 	return true;
 }
 
+static bool ndr_syntax_from_py_object(PyObject *object, struct ndr_syntax_id *syntax_id)
+{
+	ZERO_STRUCTP(syntax_id);
+
+	if (PyString_Check(object)) {
+		return PyString_AsGUID(object, &syntax_id->uuid);
+	} else if (PyTuple_Check(object)) {
+		if (PyTuple_Size(object) < 1 || PyTuple_Size(object) > 2) {
+			PyErr_SetString(PyExc_ValueError, "Syntax ID tuple has invalid size");
+			return false;
+		}
+
+		if (!PyString_Check(PyTuple_GetItem(object, 0))) {
+			PyErr_SetString(PyExc_ValueError, "Expected GUID as first element in tuple");
+			return false;
+		}
+
+		if (!PyString_AsGUID(PyTuple_GetItem(object, 0), &syntax_id->uuid)) 
+			return false;
+
+		if (!PyInt_Check(PyTuple_GetItem(object, 1))) {
+			PyErr_SetString(PyExc_ValueError, "Expected version as second element in tuple");
+			return false;
+		}
+
+		syntax_id->if_version = PyInt_AsLong(PyTuple_GetItem(object, 1));
+		return true;
+	}
+
+	PyErr_SetString(PyExc_TypeError, "Expected UUID or syntax id tuple");
+	return false;
+}	
+
+
+
 static PyObject *py_iface_server_name(PyObject *obj, void *closure)
 {
 	const char *server_name;
@@ -47,8 +82,8 @@ static PyObject *py_iface_server_name(PyObject *obj, void *closure)
 }
 
 static PyGetSetDef dcerpc_interface_getsetters[] = {
-	{ discard_const_p(char, "server_name"), py_iface_server_name,  
-	  "name of the server, if connected over SMB"},
+	{ discard_const_p(char, "server_name"), py_iface_server_name,  NULL,
+	  discard_const_p(char, "name of the server, if connected over SMB") },
 	{ NULL }
 };
 
@@ -107,8 +142,45 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 	return ret;
 }
 
+static PyObject *py_iface_later_context(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;
+	NTSTATUS status;
+	const char *kwnames[] = { "abstract_syntax", "transfer_syntax", NULL };
+	PyObject *py_abstract_syntax = Py_None, *py_transfer_syntax = Py_None;
+	struct ndr_syntax_id abstract_syntax, transfer_syntax;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O:alter_context", 
+		discard_const_p(char *, kwnames), &py_abstract_syntax,
+		&py_transfer_syntax)) {
+		return NULL;
+	}
+
+	if (!ndr_syntax_from_py_object(py_abstract_syntax, &abstract_syntax))
+		return NULL;
+
+	if (py_transfer_syntax == Py_None) {
+		transfer_syntax = ndr_transfer_syntax;
+	} else {
+		if (!ndr_syntax_from_py_object(py_transfer_syntax, 
+					       &transfer_syntax))
+			return NULL;
+	}
+
+	status = dcerpc_alter_context(iface->pipe, iface->pipe, &abstract_syntax, 
+				      &transfer_syntax);
+
+	if (NT_STATUS_IS_ERR(status)) {
+		PyErr_SetDCERPCStatus(iface->pipe, status);
+		return NULL;
+	}
+
+	return Py_None;
+}
+
 static PyMethodDef dcerpc_interface_methods[] = {
 	{ "request", (PyCFunction)py_iface_request, METH_VARARGS|METH_KEYWORDS, "S.request(opnum, data, object=None) -> data\nMake a raw request" },
+	{ "alter_context", (PyCFunction)py_iface_later_context, METH_VARARGS|METH_KEYWORDS, "S.alter_context(syntax)\nChange to a different interface" },
 	{ NULL, NULL, 0, NULL },
 };
 
@@ -119,39 +191,6 @@ static void dcerpc_interface_dealloc(PyObject* self)
 	talloc_free(interface->pipe);
 	PyObject_Del(self);
 }
-
-static bool ndr_syntax_from_py_object(PyObject *object, struct ndr_syntax_id *syntax_id)
-{
-	ZERO_STRUCTP(syntax_id);
-
-	if (PyString_Check(object)) {
-		return PyString_AsGUID(object, &syntax_id->uuid);
-	} else if (PyTuple_Check(object)) {
-		if (PyTuple_Size(object) < 1 || PyTuple_Size(object) > 2) {
-			PyErr_SetString(PyExc_ValueError, "Syntax ID tuple has invalid size");
-			return false;
-		}
-
-		if (!PyString_Check(PyTuple_GetItem(object, 0))) {
-			PyErr_SetString(PyExc_ValueError, "Expected GUID as first element in tuple");
-			return false;
-		}
-
-		if (!PyString_AsGUID(PyTuple_GetItem(object, 0), &syntax_id->uuid)) 
-			return false;
-
-		if (!PyInt_Check(PyTuple_GetItem(object, 1))) {
-			PyErr_SetString(PyExc_ValueError, "Expected version as second element in tuple");
-			return false;
-		}
-
-		syntax_id->if_version = PyInt_AsLong(PyTuple_GetItem(object, 1));
-		return true;
-	}
-
-	PyErr_SetString(PyExc_TypeError, "Expected UUID or syntax id tuple");
-	return false;
-}	
 
 static PyObject *dcerpc_interface_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
@@ -164,15 +203,15 @@ static PyObject *dcerpc_interface_new(PyTypeObject *self, PyObject *args, PyObje
 	struct event_context *event_ctx;
 	NTSTATUS status;
 
-	PyObject *syntax;
+	PyObject *syntax, *py_basis = Py_None;
 	const char *kwnames[] = {
-		"binding", "syntax", "lp_ctx", "credentials", NULL
+		"binding", "syntax", "lp_ctx", "credentials", "basis_connection", NULL
 	};
 	extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);
 	extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);
 	struct ndr_interface_table *table;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO|OO:connect", discard_const_p(char *, kwnames), &binding_string, &syntax, &py_lp_ctx, &py_credentials)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO|OOO:connect", discard_const_p(char *, kwnames), &binding_string, &syntax, &py_lp_ctx, &py_credentials, &py_basis)) {
 		return NULL;
 	}
 
@@ -208,8 +247,25 @@ static PyObject *dcerpc_interface_new(PyTypeObject *self, PyObject *args, PyObje
 
 	ret->pipe = NULL;
 
-	status = dcerpc_pipe_connect(NULL, &ret->pipe, binding_string, 
-	             table, credentials, event_ctx, lp_ctx);
+	if (py_basis != Py_None) {
+		struct dcerpc_pipe *base_pipe;
+
+		if (!PyObject_TypeCheck(py_basis, &dcerpc_InterfaceType)) {
+			PyErr_SetString(PyExc_ValueError, "basis_connection must be a DCE/RPC connection");
+			talloc_free(mem_ctx);
+			return NULL;
+		}
+
+		base_pipe = ((dcerpc_InterfaceObject *)py_basis)->pipe;
+
+		status = dcerpc_secondary_context(base_pipe, &ret->pipe, 
+				     table);
+		ret->pipe = talloc_steal(NULL, ret->pipe);
+	} else {
+		status = dcerpc_pipe_connect(NULL, &ret->pipe, binding_string, 
+			     table, credentials, event_ctx, lp_ctx);
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		PyErr_SetDCERPCStatus(ret->pipe, status);
 		talloc_free(mem_ctx);
