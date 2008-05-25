@@ -35,7 +35,7 @@
 %import "../../auth/credentials/credentials.i"
 %import "../../param/param.i"
 %import "../../libcli/security/security.i"
-%import "../../libcli/util/errors.i"
+%include "../../libcli/util/errors.i"
 
 %feature("docstring") generate_random_str "S.random_password(len) -> string\n" \
                                           "Generate random password with specified length.";
@@ -97,7 +97,6 @@ bool dsdb_set_ntds_invocation_id(struct ldb_context *ldb, const char *guid)
 }
 %}
 
-char *private_path(TALLOC_CTX* mem_ctx, 
-     		   struct loadparm_context *lp_ctx,
-	           const char *name);
+char *private_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
+               const char *name);
 

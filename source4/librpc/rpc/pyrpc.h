@@ -20,6 +20,8 @@
 #ifndef _PYRPC_H_
 #define _PYRPC_H_
 
+#include "libcli/util/pyerrors.h"
+
 #define PY_CHECK_TYPE(type, var, fail) \
 	if (!type ## _Check(var)) {\
 		PyErr_Format(PyExc_TypeError, "Expected type %s", type ## _Type.tp_name); \
@@ -35,5 +37,19 @@
 #ifndef PyAPI_DATA
 #   define PyAPI_DATA(RTYPE) extern RTYPE
 #endif
+
+typedef struct {
+	PyObject_HEAD
+	struct dcerpc_pipe *pipe;
+} dcerpc_InterfaceObject;
+
+PyAPI_DATA(PyTypeObject) dcerpc_InterfaceType;
+
+#define PyErr_FromNdrError(err) PyErr_FromNTSTATUS(ndr_map_error2ntstatus(err))
+
+#define PyErr_SetNdrError(err) \
+		PyErr_SetObject(PyExc_RuntimeError, PyErr_FromNdrError(err))
+
+void PyErr_SetDCERPCStatus(struct dcerpc_pipe *pipe, NTSTATUS status);
 
 #endif /* _PYRPC_H_ */

@@ -607,103 +607,102 @@ PUBLIC_HEADERS += $(addprefix $(librpcsrcdir)/, rpc/dcerpc.h \
 			gen_ndr/epmapper.h gen_ndr/ndr_epmapper.h gen_ndr/ndr_epmapper_c.h)
 
 
-[PYTHON::swig_dcerpc]
-LIBRARY_REALNAME = samba/dcerpc/_dcerpc.$(SHLIBEXT)
-PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG dcerpc_samr RPC_NDR_LSA DYNCONFIG
+[PYTHON::python_dcerpc]
+LIBRARY_REALNAME = samba/dcerpc/base.$(SHLIBEXT)
+PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG dcerpc_samr RPC_NDR_LSA DYNCONFIG swig_credentials param
 
-swig_dcerpc_OBJ_FILES = $(dcerpcsrcdir)/dcerpc_wrap.o
+python_dcerpc_OBJ_FILES = $(dcerpcsrcdir)/pyrpc.o
 
 $(eval $(call python_py_module_template,samba/dcerpc/__init__.py,$(dcerpcsrcdir)/dcerpc.py))
 
-$(swig_dcerpc_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)
 
 [PYTHON::python_echo]
 LIBRARY_REALNAME = samba/dcerpc/echo.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_ECHO PYTALLOC param swig_credentials 
+PRIVATE_DEPENDENCIES = RPC_NDR_ECHO PYTALLOC param swig_credentials python_dcerpc
 
 python_echo_OBJ_FILES = $(gen_ndrsrcdir)/py_echo.o
 
 [PYTHON::python_winreg]
 LIBRARY_REALNAME = samba/dcerpc/winreg.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_WINREG python_misc PYTALLOC param swig_credentials python_dcerpc_misc python_lsa
+PRIVATE_DEPENDENCIES = RPC_NDR_WINREG python_misc PYTALLOC param swig_credentials python_dcerpc_misc python_lsa python_dcerpc
 
 python_winreg_OBJ_FILES = $(gen_ndrsrcdir)/py_winreg.o
 
 [PYTHON::python_dcerpc_misc]
 LIBRARY_REALNAME = samba/dcerpc/misc.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = PYTALLOC
+PRIVATE_DEPENDENCIES = PYTALLOC python_dcerpc
 
 python_dcerpc_misc_OBJ_FILES = $(gen_ndrsrcdir)/py_misc.o
 
 [PYTHON::python_initshutdown]
 LIBRARY_REALNAME = samba/dcerpc/initshutdown.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_INITSHUTDOWN PYTALLOC param swig_credentials python_lsa python_dcerpc_security
+PRIVATE_DEPENDENCIES = RPC_NDR_INITSHUTDOWN PYTALLOC param swig_credentials python_lsa python_dcerpc_security python_dcerpc
 
 python_initshutdown_OBJ_FILES = $(gen_ndrsrcdir)/py_initshutdown.o
 
 [PYTHON::python_epmapper]
 LIBRARY_REALNAME = samba/dcerpc/epmapper.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES =  dcerpc PYTALLOC param swig_credentials python_dcerpc_misc
+PRIVATE_DEPENDENCIES =  dcerpc PYTALLOC param swig_credentials python_dcerpc_misc python_dcerpc
 
 python_epmapper_OBJ_FILES = $(gen_ndrsrcdir)/py_epmapper.o
 
 [PYTHON::python_mgmt]
 LIBRARY_REALNAME = samba/dcerpc/mgmt.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = PYTALLOC param swig_credentials dcerpc python_dcerpc_misc
+PRIVATE_DEPENDENCIES = PYTALLOC param swig_credentials dcerpc python_dcerpc_misc python_dcerpc
 
 python_mgmt_OBJ_FILES = $(gen_ndrsrcdir)/py_mgmt.o
 
 [PYTHON::python_atsvc]
 LIBRARY_REALNAME = samba/dcerpc/atsvc.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = dcerpc_atsvc PYTALLOC param swig_credentials 
+PRIVATE_DEPENDENCIES = dcerpc_atsvc PYTALLOC param swig_credentials  python_dcerpc
 
 python_atsvc_OBJ_FILES = $(gen_ndrsrcdir)/py_atsvc.o
 
 [PYTHON::python_samr]
 LIBRARY_REALNAME = samba/dcerpc/samr.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = dcerpc_samr PYTALLOC python_dcerpc_security python_lsa python_dcerpc_misc swig_credentials param
+PRIVATE_DEPENDENCIES = dcerpc_samr PYTALLOC python_dcerpc_security python_lsa python_dcerpc_misc swig_credentials param python_dcerpc
 
 python_samr_OBJ_FILES = $(gen_ndrsrcdir)/py_samr.o
 
 [PYTHON::python_svcctl]
 LIBRARY_REALNAME = samba/dcerpc/svcctl.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_SVCCTL PYTALLOC param swig_credentials python_dcerpc_misc
+PRIVATE_DEPENDENCIES = RPC_NDR_SVCCTL PYTALLOC param swig_credentials python_dcerpc_misc python_dcerpc
 
 python_svcctl_OBJ_FILES = $(gen_ndrsrcdir)/py_svcctl.o
 
 [PYTHON::python_lsa]
 LIBRARY_REALNAME = samba/dcerpc/lsa.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_LSA PYTALLOC param swig_credentials python_dcerpc_security
+PRIVATE_DEPENDENCIES = RPC_NDR_LSA PYTALLOC param swig_credentials python_dcerpc_security python_dcerpc
 
 python_lsa_OBJ_FILES = $(gen_ndrsrcdir)/py_lsa.o
 
 [PYTHON::python_wkssvc]
 LIBRARY_REALNAME = samba/dcerpc/wkssvc.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_WKSSVC PYTALLOC param swig_credentials python_lsa python_dcerpc_security
+PRIVATE_DEPENDENCIES = RPC_NDR_WKSSVC PYTALLOC param swig_credentials python_lsa python_dcerpc_security python_dcerpc
 
 python_wkssvc_OBJ_FILES = $(gen_ndrsrcdir)/py_wkssvc.o
 
 [PYTHON::python_dfs]
 LIBRARY_REALNAME = samba/dcerpc/dfs.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_DFS PYTALLOC param swig_credentials python_dcerpc_misc
+PRIVATE_DEPENDENCIES = RPC_NDR_DFS PYTALLOC param swig_credentials python_dcerpc_misc python_dcerpc
 
 python_dfs_OBJ_FILES = $(gen_ndrsrcdir)/py_dfs.o
 
 [PYTHON::python_unixinfo]
 LIBRARY_REALNAME = samba/dcerpc/unixinfo.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_UNIXINFO PYTALLOC param swig_credentials python_dcerpc_security python_dcerpc_misc
+PRIVATE_DEPENDENCIES = RPC_NDR_UNIXINFO PYTALLOC param swig_credentials python_dcerpc_security python_dcerpc_misc python_dcerpc
 
 python_unixinfo_OBJ_FILES = $(gen_ndrsrcdir)/py_unixinfo.o
 
 [PYTHON::python_drsuapi]
 LIBRARY_REALNAME = samba/dcerpc/drsuapi.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_DRSUAPI PYTALLOC param swig_credentials python_dcerpc_misc python_dcerpc_security
+PRIVATE_DEPENDENCIES = RPC_NDR_DRSUAPI PYTALLOC param swig_credentials python_dcerpc_misc python_dcerpc_security python_dcerpc
 
 python_drsuapi_OBJ_FILES = $(gen_ndrsrcdir)/py_drsuapi.o
 
 [PYTHON::python_dcerpc_security]
 LIBRARY_REALNAME = samba/dcerpc/security.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = PYTALLOC python_dcerpc_misc
+PRIVATE_DEPENDENCIES = PYTALLOC python_dcerpc_misc python_dcerpc
 
 python_dcerpc_security_OBJ_FILES = $(gen_ndrsrcdir)/py_security.o
 

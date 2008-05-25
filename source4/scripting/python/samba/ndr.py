@@ -1,7 +1,8 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Unix SMB/CIFS implementation.
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008
+# Copyright © Jelmer Vernooij <jelmer@samba.org> 2008
 #   
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,4 +18,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from base import *
+def ndr_pack(object):
+    return object.__ndr_pack__()
+
+
+def ndr_unpack(cls, data):
+    object = cls()
+    object.__ndr_unpack__(data)
+    return object

@@ -225,8 +225,63 @@ sub PythonStruct($$$$$$)
 	$self->pidl("return py_talloc_import(&$name\_Type, ret);");
 	$self->deindent;
 	$self->pidl("}");
-
 	$self->pidl("");
+
+	my $py_methods = "NULL";
+
+	# If the struct is not public there ndr_pull/ndr_push functions will 
+	# be static so not callable from here
+	if (has_property($d, "public")) {
+		$self->pidl("static PyObject *py_$name\_ndr_pack(PyObject *py_obj)");
+		$self->pidl("{");
+		$self->indent;
+		$self->pidl("$cname *object = py_talloc_get_ptr(py_obj);");
+		$self->pidl("DATA_BLOB blob;");
+		$self->pidl("enum ndr_err_code err;");
+		$self->pidl("err = ndr_push_struct_blob(&blob, py_talloc_get_mem_ctx(py_obj), NULL, object, (ndr_push_flags_fn_t)ndr_push_$name);");
+		$self->pidl("if (err != NDR_ERR_SUCCESS) {");
+		$self->indent;
+		$self->pidl("PyErr_SetNdrError(err);");
+		$self->pidl("return NULL;");
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("");
+		$self->pidl("return PyString_FromStringAndSize((char *)blob.data, blob.length);");
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("");
+
+		$self->pidl("static PyObject *py_$name\_ndr_unpack(PyObject *py_obj, PyObject *args)");
+		$self->pidl("{");
+		$self->indent;
+		$self->pidl("$cname *object = py_talloc_get_ptr(py_obj);");
+		$self->pidl("DATA_BLOB blob;");
+		$self->pidl("enum ndr_err_code err;");
+		$self->pidl("if (!PyArg_ParseTuple(args, \"s#:__ndr_unpack__\", &blob.data, &blob.length))");
+		$self->pidl("\treturn NULL;");
+		$self->pidl("");
+		$self->pidl("err = ndr_pull_struct_blob_all(&blob, py_talloc_get_mem_ctx(py_obj), NULL, object, (ndr_pull_flags_fn_t)ndr_pull_$name);");
+		$self->pidl("if (err != NDR_ERR_SUCCESS) {");
+		$self->indent;
+		$self->pidl("PyErr_SetNdrError(err);");
+		$self->pidl("return NULL;");
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("");
+		$self->pidl("return Py_None;");
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("");
+		$py_methods = "py_$name\_methods";
+		$self->pidl("static PyMethodDef $py_methods\[] = {");
+		$self->indent;
+		$self->pidl("{ \"__ndr_pack__\", (PyCFunction)py_$name\_ndr_pack, METH_NOARGS, \"S.pack() -> blob\\nNDR pack\" },");
+		$self->pidl("{ \"__ndr_unpack__\", (PyCFunction)py_$name\_ndr_unpack, METH_VARARGS, \"S.unpack(blob) -> None\\nNDR unpack\" },");
+		$self->pidl("{ NULL, NULL, 0, NULL }");
+		$self->deindent;
+		$self->pidl("};");
+		$self->pidl("");
+	}
 
 	$self->pidl_hdr("PyAPI_DATA(PyTypeObject) $name\_Type;\n");
 	$self->pidl_hdr("#define $name\_Check(op) PyObject_TypeCheck(op, &$name\_Type)\n");
@@ -243,6 +298,7 @@ sub PythonStruct($$$$$$)
 	$self->pidl(".tp_getset = $getsetters,");
 	$self->pidl(".tp_repr = py_talloc_default_repr,");
 	$self->pidl(".tp_doc = $docstring,");
+	$self->pidl(".tp_methods = $py_methods,");
 	$self->pidl(".tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,");
 	$self->pidl(".tp_new = py_$name\_new,");
 	$self->deindent;
@@ -271,7 +327,7 @@ sub PythonFunctionBody($$$)
 {
 	my ($self, $fn, $iface, $prettyname) = @_;
 
-	$self->pidl("$iface\_InterfaceObject *iface = ($iface\_InterfaceObject *)self;");
+	$self->pidl("dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;");
 	$self->pidl("NTSTATUS status;");
 	$self->pidl("TALLOC_CTX *mem_ctx = talloc_new(NULL);");
 	$self->pidl("struct $fn->{NAME} *r = talloc_zero(mem_ctx, struct $fn->{NAME});");
@@ -353,7 +409,14 @@ sub PythonFunctionBody($$$)
 		}
 	}
 	$self->pidl("status = dcerpc_$fn->{NAME}(iface->pipe, mem_ctx, r);");
-	$self->handle_ntstatus("status", "NULL", "mem_ctx");
+	$self->pidl("if (NT_STATUS_IS_ERR(status)) {");
+	$self->indent;
+	$self->pidl("PyErr_SetDCERPCStatus(iface->pipe, status);");
+	$self->pidl("talloc_free(mem_ctx);");
+	$self->pidl("return NULL;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
 
 	$env = GenerateFunctionOutEnv($fn, "r->");
 	my $i = 0;
@@ -445,7 +508,7 @@ sub handle_werror($$$$)
 
 	$self->pidl("if (!W_ERROR_IS_OK($var)) {");
 	$self->indent;
-	$self->pidl("PyErr_SetString(PyExc_RuntimeError, win_errstr($var));");
+	$self->pidl("PyErr_SetWERROR($var);");
 	$self->pidl("talloc_free($mem_ctx);") if ($mem_ctx);
 	$self->pidl("return $retval;");
 	$self->deindent;
@@ -459,7 +522,7 @@ sub handle_ntstatus($$$$)
 
 	$self->pidl("if (NT_STATUS_IS_ERR($var)) {");
 	$self->indent;
-	$self->pidl("PyErr_SetString(PyExc_RuntimeError, nt_errstr($var));");
+	$self->pidl("PyErr_SetNTSTATUS($var);");
 	$self->pidl("talloc_free($mem_ctx);") if ($mem_ctx);
 	$self->pidl("return $retval;");
 	$self->deindent;
@@ -551,13 +614,6 @@ sub Interface($$$)
 
 	if (defined $interface->{PROPERTIES}->{uuid}) {
 		$self->pidl_hdr("PyAPI_DATA(PyTypeObject) $interface->{NAME}_InterfaceType;\n");
-		$self->pidl("typedef struct {");
-		$self->indent;
-		$self->pidl("PyObject_HEAD");
-		$self->pidl("struct dcerpc_pipe *pipe;");
-		$self->deindent;
-		$self->pidl("} $interface->{NAME}_InterfaceObject;");
-
 		$self->pidl("");
 
 		my @fns = ();
@@ -587,37 +643,27 @@ sub Interface($$$)
 		$self->pidl("};");
 		$self->pidl("");
 
-		$self->pidl("static void interface_$interface->{NAME}_dealloc(PyObject* self)");
-		$self->pidl("{");
-		$self->indent;
-		$self->pidl("$interface->{NAME}_InterfaceObject *interface = ($interface->{NAME}_InterfaceObject *)self;");
-		$self->pidl("talloc_free(interface->pipe);");
-		$self->pidl("PyObject_Del(self);");
-		$self->deindent;
-		$self->pidl("}");
-		$self->pidl("");
-
 		$self->pidl("static PyObject *interface_$interface->{NAME}_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)");
 		$self->pidl("{");
 		$self->indent;
-		$self->pidl("$interface->{NAME}_InterfaceObject *ret;");
+		$self->pidl("dcerpc_InterfaceObject *ret;");
 		$self->pidl("const char *binding_string;");
 		$self->pidl("struct cli_credentials *credentials;");
 		$self->pidl("struct loadparm_context *lp_ctx = NULL;");
-		$self->pidl("PyObject *py_lp_ctx = Py_None, *py_credentials = Py_None;");
+		$self->pidl("PyObject *py_lp_ctx = Py_None, *py_credentials = Py_None, *py_basis = Py_None;");
 		$self->pidl("TALLOC_CTX *mem_ctx = NULL;");
 		$self->pidl("struct event_context *event_ctx;");
 		$self->pidl("NTSTATUS status;");
 		$self->pidl("");
 		$self->pidl("const char *kwnames[] = {");
 		$self->indent;
-		$self->pidl("\"binding\", \"lp_ctx\", \"credentials\", NULL");
+		$self->pidl("\"binding\", \"lp_ctx\", \"credentials\", \"basis_connection\", NULL");
 		$self->deindent;
 		$self->pidl("};");
 		$self->pidl("extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);");
 		$self->pidl("extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);");
 		$self->pidl("");
-		$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"s|OO:$interface->{NAME}\", discard_const_p(char *, kwnames), &binding_string, &py_lp_ctx, &py_credentials)) {");
+		$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"s|OOO:$interface->{NAME}\", discard_const_p(char *, kwnames), &binding_string, &py_lp_ctx, &py_credentials, &py_basis)) {");
 		$self->indent;
 		$self->pidl("return NULL;");
 		$self->deindent;
@@ -640,13 +686,33 @@ sub Interface($$$)
 		$self->deindent;
 		$self->pidl("}");
 
-		$self->pidl("ret = PyObject_New($interface->{NAME}_InterfaceObject, &$interface->{NAME}_InterfaceType);");
+		$self->pidl("ret = PyObject_New(dcerpc_InterfaceObject, &$interface->{NAME}_InterfaceType);");
 		$self->pidl("");
 		$self->pidl("event_ctx = event_context_init(mem_ctx);");
 		$self->pidl("");
 
+		$self->pidl("if (py_basis != Py_None) {");
+		$self->indent;
+		$self->pidl("struct dcerpc_pipe *base_pipe;");
+		$self->pidl("");
+		$self->pidl("if (!PyObject_TypeCheck(py_basis, &dcerpc_InterfaceType)) {");
+		$self->indent;
+		$self->pidl("PyErr_SetString(PyExc_ValueError, \"basis_connection must be a DCE/RPC connection\");");
+		$self->pidl("talloc_free(mem_ctx);");
+		$self->pidl("return NULL;");
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("");
+		$self->pidl("base_pipe = ((dcerpc_InterfaceObject *)py_basis)->pipe;");
+		$self->pidl("");
+		$self->pidl("status = dcerpc_secondary_context(base_pipe, &ret->pipe, &ndr_table_$interface->{NAME});");
+		$self->deindent;
+		$self->pidl("} else {");
+		$self->indent;
 		$self->pidl("status = dcerpc_pipe_connect(NULL, &ret->pipe, binding_string, ");
 		$self->pidl("             &ndr_table_$interface->{NAME}, credentials, event_ctx, lp_ctx);");
+		$self->deindent;
+		$self->pidl("}");
 		$self->handle_ntstatus("status", "NULL", "mem_ctx");
 
 		$self->pidl("ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;");
@@ -676,8 +742,8 @@ sub Interface($$$)
 		$self->indent;
 		$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
 		$self->pidl(".tp_name = \"$basename.$interface->{NAME}\",");
-		$self->pidl(".tp_basicsize = sizeof($interface->{NAME}_InterfaceObject),");
-		$self->pidl(".tp_dealloc = interface_$interface->{NAME}_dealloc,");
+		$self->pidl(".tp_basicsize = sizeof(dcerpc_InterfaceObject),");
+		$self->pidl(".tp_base = &dcerpc_InterfaceType,");
 		$self->pidl(".tp_methods = interface_$interface->{NAME}_methods,");
 		$self->pidl(".tp_doc = $docstring,");
 		$self->pidl(".tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,");
@@ -887,11 +953,11 @@ sub ConvertScalarToPython($$$)
 	}
 
 	if ($ctypename eq "NTSTATUS") {
-		return "PyInt_FromLong(NT_STATUS_V($cvar))";
+		return "PyErr_FromNTSTATUS($cvar)";
 	}
 
 	if ($ctypename eq "WERROR") {
-		return "PyInt_FromLong(W_ERROR_V($cvar))";
+		return "PyErr_FromWERROR($cvar)";
 	}
 
 	if (($ctypename eq "string" or $ctypename eq "nbt_string" or $ctypename eq "nbt_name" or $ctypename eq "wrepl_nbt_name")) {
@@ -1029,7 +1095,7 @@ sub Parse($$$$$)
 #include <Python.h>
 #include \"librpc/rpc/dcerpc.h\"
 #include \"scripting/python/pytalloc.h\"
-#include \"scripting/python/pyrpc.h\"
+#include \"librpc/rpc/pyrpc.h\"
 #include \"lib/events/events.h\"
 #include \"$hdr\"
 #include \"$ndr_hdr\"
