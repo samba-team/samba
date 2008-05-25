@@ -68,7 +68,7 @@ struct net_context {
 #define NET_TRANSPORT_LOCAL 0x01
 #define NET_TRANSPORT_RAP   0x02
 #define NET_TRANSPORT_RPC   0x04
-#define NET_TRANSPROT_ADS   0x08
+#define NET_TRANSPORT_ADS   0x08
 
 struct functable {
 	const char *funcname;
