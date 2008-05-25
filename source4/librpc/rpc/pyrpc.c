@@ -68,8 +68,6 @@ static bool ndr_syntax_from_py_object(PyObject *object, struct ndr_syntax_id *sy
 	return false;
 }	
 
-
-
 static PyObject *py_iface_server_name(PyObject *obj, void *closure)
 {
 	const char *server_name;
@@ -82,9 +80,43 @@ static PyObject *py_iface_server_name(PyObject *obj, void *closure)
 	return PyString_FromString(server_name);
 }
 
+static PyObject *py_ndr_syntax_id(struct ndr_syntax_id *syntax_id)
+{
+	PyObject *ret;
+	char *uuid_str;
+
+	uuid_str = GUID_string(NULL, &syntax_id->uuid);
+	if (uuid_str == NULL)
+		return NULL;
+
+	ret = Py_BuildValue("(s,i)", uuid_str, syntax_id->if_version);
+
+	talloc_free(uuid_str);
+
+	return ret;
+}
+
+static PyObject *py_iface_abstract_syntax(PyObject *obj, void *closure)
+{
+	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)obj;
+
+	return py_ndr_syntax_id(&iface->pipe->syntax);
+}
+
+static PyObject *py_iface_transfer_syntax(PyObject *obj, void *closure)
+{
+	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)obj;
+
+	return py_ndr_syntax_id(&iface->pipe->transfer_syntax);
+}
+
 static PyGetSetDef dcerpc_interface_getsetters[] = {
 	{ discard_const_p(char, "server_name"), py_iface_server_name, NULL,
 	  discard_const_p(char, "name of the server, if connected over SMB") },
+	{ discard_const_p(char, "abstract_syntax"), py_iface_abstract_syntax, NULL, 
+ 	  discard_const_p(char, "syntax id of the abstract syntax") },
+	{ discard_const_p(char, "transfer_syntax"), py_iface_transfer_syntax, NULL, 
+ 	  discard_const_p(char, "syntax id of the transfersyntax") },
 	{ NULL }
 };
 
