@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include <Python.h>
+#include <structmember.h>
 #include "librpc/rpc/pyrpc.h"
 #include "librpc/rpc/dcerpc.h"
 #include "lib/events/events.h"
@@ -82,8 +83,15 @@ static PyObject *py_iface_server_name(PyObject *obj, void *closure)
 }
 
 static PyGetSetDef dcerpc_interface_getsetters[] = {
-	{ discard_const_p(char, "server_name"), py_iface_server_name,  NULL,
+	{ discard_const_p(char, "server_name"), py_iface_server_name, NULL,
 	  discard_const_p(char, "name of the server, if connected over SMB") },
+	{ NULL }
+};
+
+static PyMemberDef dcerpc_interface_members[] = {
+	{ discard_const_p(char, "request_timeout"), T_INT, 
+	  offsetof(struct dcerpc_pipe, request_timeout), 0,
+	  discard_const_p(char, "request timeout, in seconds") },
 	{ NULL }
 };
 
@@ -282,6 +290,7 @@ PyTypeObject dcerpc_InterfaceType = {
 	.tp_basicsize = sizeof(dcerpc_InterfaceObject),
 	.tp_dealloc = dcerpc_interface_dealloc,
 	.tp_getset = dcerpc_interface_getsetters,
+	.tp_members = dcerpc_interface_members,
 	.tp_methods = dcerpc_interface_methods,
 	.tp_doc = "ClientConnection(binding, syntax, lp_ctx=None, credentials=None) -> connection\n"
 "\n"
