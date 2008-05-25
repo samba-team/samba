@@ -1,6 +1,3 @@
-
-################################################
-# Start SUBSYSTEM MESSAGING
 [SUBSYSTEM::MESSAGING]
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-UTIL \
@@ -9,8 +6,13 @@ PUBLIC_DEPENDENCIES = \
 		UNIX_PRIVS \
 		UTIL_TDB \
 		CLUSTER \
-		LIBNDR
-# End SUBSYSTEM MESSAGING
-################################################
+		LIBNDR \
+		samba-socket
 
 MESSAGING_OBJ_FILES = $(libmessagingsrcdir)/messaging.o
+
+[PYTHON::python_irpc]
+LIBRARY_REALNAME = samba/irpc.$(SHLIBEXT)
+PRIVATE_DEPENDENCIES = MESSAGING LIBEVENTS
+
+python_irpc_OBJ_FILES = $(libmessagingsrcdir)/pyirpc.o
