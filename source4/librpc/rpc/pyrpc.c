@@ -101,13 +101,18 @@ PyObject *py_dcerpc_call_wrapper(PyObject *self, PyObject *args, void *wrapped, 
 PyObject *PyDescr_NewNdrRpcMethod(PyTypeObject *ifacetype, struct PyNdrRpcMethodDef *md)
 {
 	struct wrapperbase *wb = calloc(sizeof(struct wrapperbase), 1);
+	PyObject *ret;
 
 	wb->name = md->name;
 	wb->flags = PyWrapperFlag_KEYWORDS;
 	wb->wrapper = py_dcerpc_call_wrapper;
 	wb->doc = md->doc;
 	
-	return PyDescr_NewWrapper(ifacetype, wb, md);
+	ret = PyDescr_NewWrapper(ifacetype, wb, md);
+
+	PyObject_SetAttrString(ret, "foo", PyString_FromString("bla"));
+
+	return ret;
 }
 
 bool PyInterface_AddNdrRpcMethods(PyTypeObject *ifacetype, struct PyNdrRpcMethodDef *mds)
