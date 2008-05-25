@@ -468,7 +468,7 @@ static void listgroups_recv(TALLOC_CTX *mem_ctx, bool success,
 	}
 
 	cont(private_data, True, response->data.name.dom_name,
-	     response->extra_data.data);
+	     (char *)response->extra_data.data);
 
 	SAFE_FREE(response->extra_data.data);
 }

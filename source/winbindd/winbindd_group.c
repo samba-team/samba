@@ -1412,7 +1412,8 @@ static void listgroups_recv(void *private_data, bool success, fstring dom_name,
 {
 	/* extra_data comes to us as a '\0' terminated string of comma
 	   separated groups */
-	struct listgroups_state *state = private_data;
+	struct listgroups_state *state = talloc_get_type_abort(
+		private_data, struct listgroups_state);
 
 	/* Append groups from one domain onto the whole list */
 	if (extra_data) {
