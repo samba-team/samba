@@ -499,7 +499,7 @@ sub PythonFunctionPackIn($$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	my $env = GenerateFunctionOutEnv($fn, "r->");
+	my $env = GenerateFunctionInEnv($fn, "r->");
 
 	my $fail = "return false;";
 	foreach my $e (@{$fn->{ELEMENTS}}) {
