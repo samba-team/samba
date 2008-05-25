@@ -24,43 +24,8 @@
 #include "librpc/rpc/dcerpc.h"
 #include "lib/events/events.h"
 
-typedef struct dcerpc_FunctionObject {
-	PyObject_HEAD
-	struct PyNdrRpcMethodDef *method_def;
-} dcerpc_FunctionObject;
-
-static PyMemberDef dcerpc_function_members[] = {
-	{ discard_const_p(char, "__opnum__"), T_LONG, 
-	  offsetof(struct dcerpc_FunctionObject, method_def), 0,
-	  discard_const_p(char, "opnum") },
-	{ NULL }
-};
-
-
-static PyObject * dcerpc_function_ndr_pack_in(PyObject *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_dcerpc_run_function(dcerpc_InterfaceObject *iface, struct PyNdrRpcMethodDef *md, PyObject *args, PyObject *kwargs)
 {
-	/* FIXME */
-	return Py_None;
-}
-
-static PyMethodDef dcerpc_function_methods[] = {
-	{ "__ndr_pack_in__", (PyCFunction)dcerpc_function_ndr_pack_in, METH_VARARGS|METH_KEYWORDS, NULL },
-	{ NULL, NULL, 0, NULL },
-};
-
-PyTypeObject dcerpc_FunctionType = {
-	PyObject_HEAD_INIT(NULL) 0,
-	.tp_name = "dcerpc.Function",
-	.tp_basicsize = sizeof(dcerpc_FunctionObject),
-	.tp_members = dcerpc_function_members,
-	.tp_methods = dcerpc_function_methods,
-	.tp_flags = Py_TPFLAGS_DEFAULT,
-};
-
-PyObject *py_dcerpc_call_wrapper(PyObject *self, PyObject *args, void *wrapped, PyObject *kwargs)
-{	
-	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;
-	struct PyNdrRpcMethodDef *md = wrapped;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 	void *r;
@@ -97,30 +62,31 @@ PyObject *py_dcerpc_call_wrapper(PyObject *self, PyObject *args, void *wrapped, 
 	return result;
 }
 
+static PyObject *py_dcerpc_call_wrapper(PyObject *self, PyObject *args, void *wrapped, PyObject *kwargs)
+{	
+	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;
+	struct PyNdrRpcMethodDef *md = wrapped;
 
-PyObject *PyDescr_NewNdrRpcMethod(PyTypeObject *ifacetype, struct PyNdrRpcMethodDef *md)
-{
-	struct wrapperbase *wb = calloc(sizeof(struct wrapperbase), 1);
-	PyObject *ret;
-
-	wb->name = md->name;
-	wb->flags = PyWrapperFlag_KEYWORDS;
-	wb->wrapper = py_dcerpc_call_wrapper;
-	wb->doc = md->doc;
-	
-	ret = PyDescr_NewWrapper(ifacetype, wb, md);
-
-	PyObject_SetAttrString(ret, "foo", PyString_FromString("bla"));
-
-	return ret;
+	return py_dcerpc_run_function(iface, md, args, kwargs);
 }
+
 
 bool PyInterface_AddNdrRpcMethods(PyTypeObject *ifacetype, struct PyNdrRpcMethodDef *mds)
 {
 	int i;
 	for (i = 0; mds[i].name; i++) {
+		PyObject *ret;
+		struct wrapperbase *wb = calloc(sizeof(struct wrapperbase), 1);
+
+		wb->name = discard_const_p(char, mds[i].name);
+		wb->flags = PyWrapperFlag_KEYWORDS;
+		wb->wrapper = (wrapperfunc)py_dcerpc_call_wrapper;
+		wb->doc = discard_const_p(char, mds[i].doc);
+		
+		ret = PyDescr_NewWrapper(ifacetype, wb, &mds[i]);
+
 		PyDict_SetItemString(ifacetype->tp_dict, mds[i].name, 
-				     PyDescr_NewNdrRpcMethod(ifacetype, &mds[i]));
+				     (PyObject *)ret);
 	}
 
 	return true;
@@ -440,9 +406,6 @@ void initbase(void)
 	PyObject *m;
 
 	if (PyType_Ready(&dcerpc_InterfaceType) < 0)
-		return;
-
-	if (PyType_Ready(&dcerpc_FunctionType) < 0)
 		return;
 
 	m = Py_InitModule3("base", NULL, "DCE/RPC protocol implementation");
