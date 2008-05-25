@@ -323,25 +323,9 @@ sub get_metadata_var($)
 	 return undef;
 }
 
-sub PythonFunctionBody($$$)
+sub find_metadata_args($)
 {
-	my ($self, $fn, $iface, $prettyname) = @_;
-
-	$self->pidl("dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;");
-	$self->pidl("NTSTATUS status;");
-	$self->pidl("TALLOC_CTX *mem_ctx = talloc_new(NULL);");
-	$self->pidl("struct $fn->{NAME} *r = talloc_zero(mem_ctx, struct $fn->{NAME});");
-	$self->pidl("PyObject *result = Py_None;");
-	
-	my $env = GenerateFunctionInEnv($fn, "r->");
-	my $result_size = 0;
-
-	my $args_format = "";
-	my $args_string = "";
-	my $args_names = "";
-
-	my $signature = "S.$prettyname(";
-
+	my ($fn) = @_;
 	my $metadata_args = { in => {}, out => {} };
 
 	# Determine arguments that are metadata for other arguments (size_is/length_is)
@@ -354,34 +338,37 @@ sub PythonFunctionBody($$$)
 		 }
 	}
 
+	return $metadata_args;
+}
+
+sub PythonFunctionBody($$$$$)
+{
+	my ($self, $fn, $iface, $prettyname, $infn, $insignature) = @_;
+
+	$self->pidl("dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;");
+	$self->pidl("NTSTATUS status;");
+	$self->pidl("TALLOC_CTX *mem_ctx = talloc_new(NULL);");
+	$self->pidl("struct $fn->{NAME} *r = talloc_zero(mem_ctx, struct $fn->{NAME});");
+	$self->pidl("PyObject *result = Py_None;");
+	
+	my $env = GenerateFunctionInEnv($fn, "r->");
+	my $result_size = 0;
+
+	my $signature = "S.$prettyname($insignature) -> ";
+
+	my $metadata_args = find_metadata_args($fn);
+
 	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next unless (grep(/out/,@{$e->{DIRECTION}}));
 		next if (($metadata_args->{in}->{$e->{NAME}} and grep(/in/, @{$e->{DIRECTION}})) or 
 		         ($metadata_args->{out}->{$e->{NAME}}) and grep(/out/, @{$e->{DIRECTION}}));
 		$self->pidl("PyObject *py_$e->{NAME};");
-		if (grep(/out/,@{$e->{DIRECTION}})) {
-			$result_size++;
-		}
-		if (grep(/in/,@{$e->{DIRECTION}})) {
-			$args_format .= "O";
-			$args_string .= ", &py_$e->{NAME}";
-			$args_names .= "\"$e->{NAME}\", ";
-			$signature .= "$e->{NAME}, ";
-		}
+		$result_size++;
 	}
-	if (substr($signature, -2) eq ", ") {
-		$signature = substr($signature, 0, -2);
-	}
-	$signature.= ") -> ";
 
-	$self->pidl("const char *kwnames[] = {");
+	$self->pidl("if (!$infn(args, kwargs, r)) {");
 	$self->indent;
-	$self->pidl($args_names . "NULL");
-	$self->deindent;
-	$self->pidl("};");
-
-	$self->pidl("");
-	$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"$args_format:$fn->{NAME}\", discard_const_p(char *, kwnames)$args_string)) {");
-	$self->indent;
+	$self->pidl("talloc_free(mem_ctx);");
 	$self->pidl("return NULL;");
 	$self->deindent;
 	$self->pidl("}");
@@ -391,23 +378,6 @@ sub PythonFunctionBody($$$)
 		$result_size++ unless ($fn->{RETURN_TYPE} eq "WERROR" or $fn->{RETURN_TYPE} eq "NTSTATUS");
 	}
 
-	my $fail = "talloc_free(mem_ctx); return NULL;";
-	foreach my $e (@{$fn->{ELEMENTS}}) {
-		next unless (grep(/in/,@{$e->{DIRECTION}}));
-		if ($metadata_args->{in}->{$e->{NAME}}) {
-			my $py_var = "py_".$metadata_args->{in}->{$e->{NAME}};
-			$self->pidl("PY_CHECK_TYPE(PyList, $py_var, $fail);");
-			my $val = "PyList_Size($py_var)";
-			if ($e->{LEVELS}[0]->{TYPE} eq "POINTER") {
-				$self->pidl("r->in.$e->{NAME} = talloc_ptrtype(mem_ctx, r->in.$e->{NAME});");
-				$self->pidl("*r->in.$e->{NAME} = $val;");
-			} else {
-				$self->pidl("r->in.$e->{NAME} = $val;");
-			}
-		} else {
-			$self->ConvertObjectFromPython($env, "mem_ctx", $e, "py_$e->{NAME}", "r->in.$e->{NAME}", $fail);
-		}
-	}
 	$self->pidl("status = dcerpc_$fn->{NAME}(iface->pipe, mem_ctx, r);");
 	$self->pidl("if (NT_STATUS_IS_ERR(status)) {");
 	$self->indent;
@@ -471,12 +441,87 @@ sub PythonFunctionBody($$$)
 	return $signature;
 }
 
+sub PythonFunctionParseIn($$$)
+{
+	my ($self, $fn, $fnname) = @_;
+	my $metadata_args = find_metadata_args($fn);
+
+	my $infnname = "$fnname\_in";
+
+	$self->pidl("static bool $infnname(PyObject *args, PyObject *kwargs, struct $fn->{NAME} *r)");
+	$self->pidl("{");
+	$self->indent;
+	my $args_format = "";
+	my $args_string = "";
+	my $args_names = "";
+	my $signature = "";
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next unless (grep(/in/,@{$e->{DIRECTION}}));
+		next if (($metadata_args->{in}->{$e->{NAME}} and grep(/in/, @{$e->{DIRECTION}})) or 
+				 ($metadata_args->{out}->{$e->{NAME}}) and grep(/out/, @{$e->{DIRECTION}}));
+		$self->pidl("PyObject *py_$e->{NAME};");
+		$args_format .= "O";
+		$args_string .= ", &py_$e->{NAME}";
+		$args_names .= "\"$e->{NAME}\", ";
+		$signature .= "$e->{NAME}, ";
+	}
+	if (substr($signature, -2) eq ", ") {
+		$signature = substr($signature, 0, -2);
+	}
+	$self->pidl("const char *kwnames[] = {");
+	$self->indent;
+	$self->pidl($args_names . "NULL");
+	$self->deindent;
+	$self->pidl("};");
+
+	$self->pidl("");
+	$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"$args_format:$fn->{NAME}\", discard_const_p(char *, kwnames)$args_string)) {");
+	$self->indent;
+	$self->pidl("return false;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
+
+	my $env = GenerateFunctionOutEnv($fn, "r->");
+
+	my $fail = "return false;";
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next unless (grep(/in/,@{$e->{DIRECTION}}));
+		if ($metadata_args->{in}->{$e->{NAME}}) {
+			my $py_var = "py_".$metadata_args->{in}->{$e->{NAME}};
+			$self->pidl("PY_CHECK_TYPE(PyList, $py_var, $fail);");
+			my $val = "PyList_Size($py_var)";
+			if ($e->{LEVELS}[0]->{TYPE} eq "POINTER") {
+				$self->pidl("r->in.$e->{NAME} = talloc_ptrtype(r, r->in.$e->{NAME});");
+				$self->pidl("*r->in.$e->{NAME} = $val;");
+			} else {
+				$self->pidl("r->in.$e->{NAME} = $val;");
+			}
+		} else {
+			$self->ConvertObjectFromPython($env, "r", $e, "py_$e->{NAME}", "r->in.$e->{NAME}", $fail);
+		}
+	}
+	$self->pidl("return true;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
+	return ($infnname, $signature);
+}
+
 sub PythonFunction($$$)
 {
 	my ($self, $fn, $iface, $prettyname) = @_;
 
 	my $fnname = "py_$fn->{NAME}";
 	my $docstring = $self->DocString($fn, $fn->{NAME});
+
+	my $insignature;
+	my $infn;
+
+	if (not has_property($fn, "todo")) {
+		($infn, $insignature) = $self->PythonFunctionParseIn($fn, $fnname);
+	}
 
 	$self->pidl("static PyObject *$fnname(PyObject *self, PyObject *args, PyObject *kwargs)");
 	$self->pidl("{");
@@ -486,7 +531,7 @@ sub PythonFunction($$$)
 		$self->pidl("return NULL;");
 		unless ($docstring) { $docstring = "NULL"; }
 	} else {
-		my $signature = $self->PythonFunctionBody($fn, $iface, $prettyname);
+		my $signature = $self->PythonFunctionBody($fn, $iface, $prettyname, $infn, $insignature);
 
 		if ($docstring) {
 			$docstring = "\"$signature\\n\\n\"$docstring";
