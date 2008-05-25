@@ -1113,3 +1113,8 @@ void irpc_remove_name(struct messaging_context *msg_ctx, const char *name)
 	tdb_unlock_bystring(t->tdb, name);
 	talloc_free(t);
 }
+
+struct server_id messaging_get_server_id(struct messaging_context *msg_ctx)
+{
+	return msg_ctx->server_id;
+}

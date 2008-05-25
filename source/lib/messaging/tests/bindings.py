@@ -22,4 +22,36 @@ from samba.irpc import Messaging
 from unittest import TestCase
 
 class MessagingTests(TestCase):
-    pass
+    def get_context(self, *args, **kwargs):
+        kwargs["messaging_path"] = "."
+        return Messaging(*args, **kwargs)
+    
+    def test_register(self):
+        x = self.get_context()
+        def callback():
+            pass
+        msg_type = x.register(callback)
+        x.deregister(callback, msg_type)
+
+    def test_assign_server_id(self):
+        x = self.get_context()
+        self.assertTrue(isinstance(x.server_id, tuple))
+        self.assertEquals(3, len(x.server_id))
+
+    def test_ping_speed(self):
+        server_ctx = self.get_context((0, 1))
+        def ping_callback(src, data):
+                server_ctx.send(src, data)
+        def exit_callback():
+                print "received exit"
+        msg_ping = server_ctx.register(ping_callback)
+        msg_exit = server_ctx.register(exit_callback)
+
+        def pong_callback():
+                print "received pong"
+        client_ctx = self.get_context((0, 2))
+        msg_pong = client_ctx.register(pong_callback)
+
+        client_ctx.send((0,1), msg_ping, "testing")
+        client_ctx.send((0,1), msg_ping, "")
+
