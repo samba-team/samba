@@ -370,5 +370,6 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 			DATA_BLOB *stub_data_in,
 			DATA_BLOB *stub_data_out);
 
+typedef NTSTATUS (*dcerpc_call_fn) (struct dcerpc_pipe *, TALLOC_CTX *, void *);
 
 #endif /* __DCERPC_H__ */

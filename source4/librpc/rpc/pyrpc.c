@@ -24,6 +24,103 @@
 #include "librpc/rpc/dcerpc.h"
 #include "lib/events/events.h"
 
+typedef struct dcerpc_FunctionObject {
+	PyObject_HEAD
+	struct PyNdrRpcMethodDef *method_def;
+} dcerpc_FunctionObject;
+
+static PyMemberDef dcerpc_function_members[] = {
+	{ discard_const_p(char, "__opnum__"), T_LONG, 
+	  offsetof(struct dcerpc_FunctionObject, method_def), 0,
+	  discard_const_p(char, "opnum") },
+	{ NULL }
+};
+
+
+static PyObject * dcerpc_function_ndr_pack_in(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	/* FIXME */
+	return Py_None;
+}
+
+static PyMethodDef dcerpc_function_methods[] = {
+	{ "__ndr_pack_in__", (PyCFunction)dcerpc_function_ndr_pack_in, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ NULL, NULL, 0, NULL },
+};
+
+PyTypeObject dcerpc_FunctionType = {
+	PyObject_HEAD_INIT(NULL) 0,
+	.tp_name = "dcerpc.Function",
+	.tp_basicsize = sizeof(dcerpc_FunctionObject),
+	.tp_members = dcerpc_function_members,
+	.tp_methods = dcerpc_function_methods,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
+};
+
+PyObject *py_dcerpc_call_wrapper(PyObject *self, PyObject *args, void *wrapped, PyObject *kwargs)
+{	
+	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;
+	struct PyNdrRpcMethodDef *md = wrapped;
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	void *r;
+	PyObject *result = Py_None;
+
+	if (md->pack_in_data == NULL || md->unpack_out_data == NULL) {
+		PyErr_SetString(PyExc_NotImplementedError, "No marshalling code available yet");
+		return NULL;
+	}
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL)
+		return NULL;
+
+	r = talloc_zero_size(mem_ctx, md->table->calls[md->opnum].struct_size);
+	if (r == NULL)
+		return NULL;
+
+	if (!md->pack_in_data(args, kwargs, r)) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	status = md->call(iface->pipe, mem_ctx, r);
+	if (NT_STATUS_IS_ERR(status)) {
+		PyErr_SetDCERPCStatus(iface->pipe, status);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	result = md->unpack_out_data(r);
+
+	talloc_free(mem_ctx);
+	return result;
+}
+
+
+PyObject *PyDescr_NewNdrRpcMethod(PyTypeObject *ifacetype, struct PyNdrRpcMethodDef *md)
+{
+	struct wrapperbase *wb = calloc(sizeof(struct wrapperbase), 1);
+
+	wb->name = md->name;
+	wb->flags = PyWrapperFlag_KEYWORDS;
+	wb->wrapper = py_dcerpc_call_wrapper;
+	wb->doc = md->doc;
+	
+	return PyDescr_NewWrapper(ifacetype, wb, md);
+}
+
+bool PyInterface_AddNdrRpcMethods(PyTypeObject *ifacetype, struct PyNdrRpcMethodDef *mds)
+{
+	int i;
+	for (i = 0; mds[i].name; i++) {
+		PyDict_SetItemString(ifacetype->tp_dict, mds[i].name, 
+				     PyDescr_NewNdrRpcMethod(ifacetype, &mds[i]));
+	}
+
+	return true;
+}
+
 static bool PyString_AsGUID(PyObject *object, struct GUID *uuid)
 {
 	NTSTATUS status;
@@ -311,7 +408,6 @@ static PyObject *dcerpc_interface_new(PyTypeObject *self, PyObject *args, PyObje
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-
 	ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
 	return (PyObject *)ret;
 }
@@ -339,6 +435,9 @@ void initbase(void)
 	PyObject *m;
 
 	if (PyType_Ready(&dcerpc_InterfaceType) < 0)
+		return;
+
+	if (PyType_Ready(&dcerpc_FunctionType) < 0)
 		return;
 
 	m = Py_InitModule3("base", NULL, "DCE/RPC protocol implementation");
