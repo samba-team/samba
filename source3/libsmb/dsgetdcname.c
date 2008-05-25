@@ -920,7 +920,8 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 					      union nbt_cldap_netlogon *r,
 					      struct netr_DsRGetDCNameInfo **info)
 {
-	const char *dc_hostname, *dc_domain_name;
+	const char *dc_hostname = NULL;
+	const char *dc_domain_name = NULL;
 	const char *dc_address = NULL;
 	const char *dc_forest = NULL;
 	uint32_t dc_address_type = 0;
