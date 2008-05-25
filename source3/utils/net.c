@@ -313,51 +313,293 @@ static int net_maxrid(struct net_context *c, int argc, const char **argv)
 }
 
 /* main function table */
-static struct functable2 net_func[] = {
-	{"rpc", net_rpc, "Run functions using RPC transport"},
-	{"rap", net_rap, "Run functions using RAP transport"},
-	{"ads", net_ads, "Run functions using ADS transport"},
+static struct functable3 net_func[] = {
+	{
+		"rpc",
+		net_rpc,
+		NET_TRANSPORT_RPC,
+		"Run functions using RPC transport",
+		"  Use 'net help rpc' to get more extensive information about "
+		"'net rpc' commands."
+	},
+	{
+		"rap",
+		net_rap,
+		NET_TRANSPORT_RAP,
+		"Run functions using RAP transport",
+		"  Use 'net help rap' to get more extensive information about "
+		"'net rap' commands."
+	},
+	{
+		"ads",
+		net_ads,
+		NET_TRANSPORT_ADS,
+		"Run functions using ADS transport",
+		"  Use 'net help ads' to get more extensive information about "
+		"'net ads' commands."
+	},
 
 	/* eventually these should auto-choose the transport ... */
-	{"file", net_file, "Functions on remote opened files"},
-	{"share", net_share, "Functions on shares"},
-	{"session", net_rap_session, "FIXME"},
-	{"server", net_rap_server, "FIXME"},
-	{"domain", net_rap_domain, "FIXME"},
-	{"printq", net_rap_printq, "FIXME"},
-	{"user", net_user, "Manage users"},
-	{"group", net_group, "Manage groups"},
-	{"groupmap", net_groupmap, "Manage group mappings"},
-	{"sam", net_sam, "Functions on the SAM database"},
-	{"validate", net_rap_validate, "FIXME"},
-	{"groupmember", net_rap_groupmember, "FIXME"},
-	{"admin", net_rap_admin, "FIXME"},
-	{"service", net_rap_service, "FIXME"},
-	{"password", net_rap_password, "FIXME"},
-	{"changetrustpw", net_changetrustpw, "Change the trust password"},
-	{"changesecretpw", net_changesecretpw, "Change the secret password"},
-	{"time", net_time, "Show/set time"},
-	{"lookup", net_lookup, "Look up host names/IP addresses"},
-	{"join", net_join, "Join a domain/AD"},
-	{"dom", net_dom, "Join/unjoin (remote) machines to/from a domain/AD"},
-	{"cache", net_cache, "Operate on the cache tdb file"},
-	{"getlocalsid", net_getlocalsid, "Get the SID for the local domain"},
-	{"setlocalsid", net_setlocalsid, "Set the SID for the local domain"},
-	{"setdomainsid", net_setdomainsid, "Get domain SID on member servers"},
-	{"getdomainsid", net_getdomainsid, "Set domain SID on member servers"},
-	{"maxrid", net_maxrid, "Display the maximul RID currently used"},
-	{"idmap", net_idmap, "IDmap functions"},
-	{"status", net_status, "Display server status"},
-	{"usershare", net_usershare, "Manage user-modifiable shares"},
-	{"usersidlist", net_usersidlist, "Display list of all users with SID"},
-	{"conf", net_conf, "Manage Samba registry based configuration"},
-	{"registry", net_registry, "Manage the Samba registry"},
+	{
+		"file",
+		net_file,
+		NET_TRANSPORT_RPC | NET_TRANSPORT_RAP,
+		"Functions on remote opened files",
+		"  Use 'net help file' to get more information about 'net "
+		"file' commands."
+	},
+	{
+		"share",
+		net_share,
+		NET_TRANSPORT_RPC | NET_TRANSPORT_RAP,
+		"Functions on shares",
+		"  Use 'net help share' to get more information about 'net "
+		"share' commands."
+	},
+	{
+		"session",
+		net_rap_session,
+		NET_TRANSPORT_RAP,
+		"Manage sessions",
+		"  Use 'net help session' to get more information about 'net "
+		"session' commands."
+	},
+	{
+		"server",
+		net_rap_server,
+		NET_TRANSPORT_RAP,
+		"List servers in workgroup",
+		"  Use 'net help server' to get more information about 'net "
+		"server' commands."
+	},
+	{
+		"domain",
+		net_rap_domain,
+		NET_TRANSPORT_RAP,
+		"List domains/workgroups on network",
+		"  Use 'net help domain' to get more information about 'net "
+		"domain' commands."
+	},
+	{
+		"printq",
+		net_rap_printq,
+		NET_TRANSPORT_RAP,
+		"Modify printer queue",
+		"  Use 'net help printq' to get more information about 'net "
+		"printq' commands."
+	},
+	{
+		"user",
+		net_user,
+		NET_TRANSPORT_ADS | NET_TRANSPORT_RPC | NET_TRANSPORT_RAP,
+		"Manage users",
+		"  Use 'net help user' to get more information about 'net "
+		"user' commands."
+	},
+	{
+		"group",
+		net_group,
+		NET_TRANSPORT_ADS | NET_TRANSPORT_RPC | NET_TRANSPORT_RAP,
+		"Manage groups",
+		"  Use 'net help group' to get more information about 'net "
+		"group' commands."
+	},
+	{
+		"groupmap",
+		net_groupmap,
+		NET_TRANSPORT_LOCAL,
+		"Manage group mappings",
+		"  Use 'net help groupmap' to get more information about 'net "
+		"groupmap' commands."
+	},
+	{
+		"sam",
+		net_sam,
+		NET_TRANSPORT_LOCAL,
+		"Functions on the SAM database",
+		"  Use 'net help sam' to get more information about 'net sam' "
+		"commands."
+	},
+	{
+		"validate",
+		net_rap_validate,
+		NET_TRANSPORT_RAP,
+		"Validate username and password",
+		"  Use 'net help validate' to get more information about 'net "
+		"validate' commands."
+	},
+	{
+		"groupmember",
+		net_rap_groupmember,
+		NET_TRANSPORT_RAP,
+		"Modify group memberships",
+		"  Use 'net help groupmember' to get more information about "
+		"'net groupmember' commands."
+	},
+	{	"admin",
+		net_rap_admin,
+		NET_TRANSPORT_RAP,
+		"Execute remote command on a remote OS/2 server",
+		"  Use 'net help admin' to get more information about 'net "
+		"admin' commands."
+	},
+	{	"service",
+		net_rap_service,
+		NET_TRANSPORT_RAP,
+		"List/modify running services",
+		"  Use 'net help service' to get more information about 'net "
+		"service' commands."
+	},
+	{
+		"password",
+		net_rap_password,
+		NET_TRANSPORT_RAP,
+		"Change user password on target server",
+		"  Use 'net help password' to get more information about 'net "
+		"password' commands."
+	},
+	{	"changetrustpw",
+		net_changetrustpw,
+		NET_TRANSPORT_ADS | NET_TRANSPORT_RPC,
+		"Change the trust password",
+		"  Use 'net help changetrustpw' to get more information about "
+		"'net changetrustpw'."
+	},
+	{	"changesecretpw",
+		net_changesecretpw,
+		NET_TRANSPORT_LOCAL,
+		"Change the secret password",
+		"  net [options] changesecretpw\n"
+		"    Change the ADS domain member machine account password in "
+		"secrets.tdb.\n"
+		"    Do NOT use this function unless you know what it does.\n"
+		"    Requires the -f flag to work."
+	},
+	{	"time",
+		net_time,
+		NET_TRANSPORT_LOCAL,
+		"Show/set time",
+		"  Use 'net help time' to get more information about 'net "
+		"time' commands."
+	},
+	{	"lookup",
+		net_lookup,
+		NET_TRANSPORT_LOCAL,
+		"Look up host names/IP addresses",
+		"  Use 'net help lookup' to get more information about 'net "
+		"lookup' commands."
+	},
+	{	"join",
+		net_join,
+		NET_TRANSPORT_ADS | NET_TRANSPORT_RPC,
+		"Join a domain/AD",
+		"  Use 'net help join' to get more information about 'net "
+		"join'."
+	},
+	{	"dom",
+		net_dom,
+		NET_TRANSPORT_LOCAL,
+		"Join/unjoin (remote) machines to/from a domain/AD",
+		"  Use 'net help dom' to get more information about 'net dom' "
+		"commands."
+	},
+	{	"cache",
+		net_cache,
+		NET_TRANSPORT_LOCAL,
+		"Operate on the cache tdb file",
+		"  Use 'net help cache' to get more information about 'net "
+		"cache' commands."
+	},
+	{	"getlocalsid",
+		net_getlocalsid,
+		NET_TRANSPORT_LOCAL,
+		"Get the SID for the local domain",
+		"  net getlocalsid"
+	},
+	{	"setlocalsid",
+		net_setlocalsid,
+		NET_TRANSPORT_LOCAL,
+		"Set the SID for the local domain",
+		"  net setlocalsid S-1-5-21-x-y-z"
+	},
+	{	"setdomainsid",
+		net_setdomainsid,
+		NET_TRANSPORT_LOCAL,
+		"Set domain SID on member servers",
+		"  net setdomainsid S-1-5-21-x-y-z"
+	},
+	{	"getdomainsid",
+		net_getdomainsid,
+		NET_TRANSPORT_LOCAL,
+		"Get domain SID on member servers",
+		"  net getdomainsid"
+	},
+	{	"maxrid",
+		net_maxrid,
+		NET_TRANSPORT_LOCAL,
+		"Display the maximul RID currently used",
+		"  net maxrid"
+	},
+	{	"idmap",
+		net_idmap,
+		NET_TRANSPORT_LOCAL,
+		"IDmap functions",
+		"  Use 'net help idmap to get more information about 'net "
+		"idmap' commands."
+	},
+	{	"status",
+		net_status,
+		NET_TRANSPORT_LOCAL,
+		"Display server status",
+		"  Use 'net help status' to get more information about 'net "
+		"status' commands."
+	},
+	{	"usershare",
+		net_usershare,
+		NET_TRANSPORT_LOCAL,
+		"Manage user-modifiable shares",
+		"  Use 'net help usershare to get more information about 'net "
+		"usershare' commands."
+	},
+	{	"usersidlist",
+		net_usersidlist,
+		NET_TRANSPORT_RPC,
+		"Display list of all users with SID",
+		"  Use 'net help usersidlist' to get more information about "
+		"'net usersidlist'."
+	},
+	{	"conf",
+		net_conf,
+		NET_TRANSPORT_LOCAL,
+		"Manage Samba registry based configuration",
+		"  Use 'net help conf' to get more information about 'net "
+		"conf' commands."
+	},
+	{	"registry",
+		net_registry,
+		NET_TRANSPORT_LOCAL,
+		"Manage the Samba registry",
+		"  Use 'net help registry' to get more information about 'net "
+		"registry' commands."
+	},
 #ifdef WITH_FAKE_KASERVER
-	{"afs", net_afs, "FIXME"},
+	{	"afs",
+		net_afs,
+		NET_TRANSPORT_LOCAL,
+		"Manage AFS tokens",
+		"  Use 'net help afs' to get more information about 'net afs' "
+		"commands."
+	},
 #endif
 
-	{"help", net_help, "Print usage information"},
-	{NULL, NULL, NULL}
+	{	"help",
+		net_help,
+		NET_TRANSPORT_LOCAL,
+		"Print usage information",
+		"  Use 'net help help' to list usage information for 'net' "
+		"commands."
+	},
+	{NULL, NULL, 0, NULL, NULL}
 };
 
 
@@ -429,8 +671,7 @@ static struct functable2 net_func[] = {
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case 'h':
-			net_help(c, argc, argv);
-			exit(0);
+			c->display_usage = true;
 			break;
 		case 'e':
 			c->smb_encrypt = true;
@@ -517,7 +758,7 @@ static struct functable2 net_func[] = {
 		c->opt_password = getenv("PASSWD");
 	}
 
-	rc = net_run_function2(c, argc_new-1, argv_new+1, "net", net_func);
+	rc = net_run_function3(c, argc_new-1, argv_new+1, "net", net_func);
 
 	DEBUG(2,("return code = %d\n", rc));
 
