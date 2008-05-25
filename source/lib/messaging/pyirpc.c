@@ -167,12 +167,51 @@ static PyObject *py_messaging_register(PyObject *self, PyObject *args, PyObject 
 	return Py_None;
 }
 
+static PyObject *py_messaging_add_name(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	messaging_Object *iface = (messaging_Object *)self;
+	NTSTATUS status;
+	char *name;
+	const char *kwnames[] = { "name", NULL };
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|:send", 
+		discard_const_p(char *, kwnames), &name)) {
+		return NULL;
+	}
+
+	status = irpc_add_name(iface->msg_ctx, name);
+	if (NT_STATUS_IS_ERR(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	return Py_None;
+}
+
+
+static PyObject *py_messaging_remove_name(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	messaging_Object *iface = (messaging_Object *)self;
+	char *name;
+	const char *kwnames[] = { "name", NULL };
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|:send", 
+		discard_const_p(char *, kwnames), &name)) {
+		return NULL;
+	}
+
+	irpc_remove_name(iface->msg_ctx, name);
+
+	return Py_None;
+}
 
 static PyMethodDef py_messaging_methods[] = {
 	{ "send", (PyCFunction)py_messaging_send, METH_VARARGS|METH_KEYWORDS, 
 		"S.send(target, msg_type, data) -> None\nSend a message" },
 	{ "register", (PyCFunction)py_messaging_register, METH_VARARGS|METH_KEYWORDS,
 		"S.register(msg_type, callback) -> None\nRegister a message handler" },
+	{ "add_name", (PyCFunction)py_messaging_add_name, METH_VARARGS|METH_KEYWORDS, "S.add_name(name) -> None\nListen on another name" },
+	{ "remove_name", (PyCFunction)py_messaging_remove_name, METH_VARARGS|METH_KEYWORDS, "S.remove_name(name) -> None\nStop listening on a name" },
 	{ NULL, NULL, 0, NULL }
 };
 
