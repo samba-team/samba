@@ -23,6 +23,7 @@
 #include <Python.h>
 #include "libcli/util/pyerrors.h"
 #include "lib/messaging/irpc.h"
+#include "lib/messaging/messaging.h"
 #include "lib/events/events.h"
 #include "cluster/cluster.h"
 #include "param/param.h"
@@ -37,10 +38,16 @@ static bool server_id_from_py(PyObject *object, struct server_id *server_id)
 		return false;
 	}
 
-	return PyArg_ParseTuple(object, "iii", &server_id->id, &server_id->id2, &server_id->node);
+	if (PyTuple_Size(object) == 3) {
+		return PyArg_ParseTuple(object, "iii", &server_id->id, &server_id->id2, &server_id->node);
+	} else {
+		int id, id2;
+		if (!PyArg_ParseTuple(object, "ii", &id, &id2))
+			return false;
+		*server_id = cluster_id(id, id2);
+		return true;
+	}
 }
-
-
 
 typedef struct {
 	PyObject_HEAD
@@ -238,13 +245,29 @@ static PyMethodDef py_messaging_methods[] = {
 	{ "send", (PyCFunction)py_messaging_send, METH_VARARGS|METH_KEYWORDS, 
 		"S.send(target, msg_type, data) -> None\nSend a message" },
 	{ "register", (PyCFunction)py_messaging_register, METH_VARARGS|METH_KEYWORDS,
-		"S.register(msg_type, callback) -> None\nRegister a message handler" },
+		"S.register(callback, msg_type=None) -> msg_type\nRegister a message handler" },
 	{ "deregister", (PyCFunction)py_messaging_deregister, METH_VARARGS|METH_KEYWORDS,
-		"S.deregister(msg_type, callback) -> None\nDeregister a message handler" },
+		"S.deregister(callback, msg_type) -> None\nDeregister a message handler" },
 	{ "add_name", (PyCFunction)py_messaging_add_name, METH_VARARGS|METH_KEYWORDS, "S.add_name(name) -> None\nListen on another name" },
 	{ "remove_name", (PyCFunction)py_messaging_remove_name, METH_VARARGS|METH_KEYWORDS, "S.remove_name(name) -> None\nStop listening on a name" },
 	{ NULL, NULL, 0, NULL }
 };
+
+static PyObject *py_messaging_server_id(PyObject *obj, void *closure)
+{
+	messaging_Object *iface = (messaging_Object *)obj;
+	struct server_id server_id = messaging_get_server_id(iface->msg_ctx);
+
+	return Py_BuildValue("(iii)", server_id.id, server_id.id2, 
+			     server_id.node);
+}
+
+static PyGetSetDef py_messaging_getset[] = {
+	{ discard_const_p(char, "server_id"), py_messaging_server_id, NULL, 
+	  discard_const_p(char, "local server id") },
+	{ NULL },
+};
+
 
 PyTypeObject messaging_Type = {
 	PyObject_HEAD_INIT(NULL) 0,
@@ -254,6 +277,7 @@ PyTypeObject messaging_Type = {
 	.tp_new = py_messaging_connect,
 	.tp_dealloc = py_messaging_dealloc,
 	.tp_methods = py_messaging_methods,
+	.tp_getset = py_messaging_getset,
 };
 
 
