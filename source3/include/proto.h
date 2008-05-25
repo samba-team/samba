@@ -4202,6 +4202,8 @@ bool asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob);
 bool asn1_read_Integer(ASN1_DATA *data, int *i);
 bool asn1_check_enumerated(ASN1_DATA *data, int v);
 bool asn1_write_enumerated(ASN1_DATA *data, uint8 v);
+bool ber_write_OID_String(DATA_BLOB *blob, const char *OID);
+bool ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **OID);
 
 /* The following definitions come from libsmb/async_smb.c  */
 

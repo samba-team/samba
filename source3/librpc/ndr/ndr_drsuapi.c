@@ -24,9 +24,6 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 
-bool ber_write_OID_String(DATA_BLOB *blob, const char *OID);
-bool ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **OID);
-
 void ndr_print_drsuapi_DsReplicaObjectListItem(struct ndr_print *ndr, const char *name,
 					       const struct drsuapi_DsReplicaObjectListItem *r)
 {
