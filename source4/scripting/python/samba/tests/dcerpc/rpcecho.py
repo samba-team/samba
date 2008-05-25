@@ -26,6 +26,10 @@ class RpcEchoTests(RpcInterfaceTestCase):
     def setUp(self):
         self.conn = echo.rpcecho("ncalrpc:", self.get_loadparm())
 
+    def test_two_contexts(self):
+        self.conn2 = echo.rpcecho("ncalrpc", basis_connection=self.conn)
+        self.assertEquals(3, self.conn2.AddOne(2))
+
     def test_addone(self):
         self.assertEquals(2, self.conn.AddOne(1))
 
