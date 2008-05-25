@@ -67,6 +67,5 @@ struct PyNdrRpcMethodDef {
 };
 
 bool PyInterface_AddNdrRpcMethods(PyTypeObject *object, struct PyNdrRpcMethodDef *mds);
-PyObject *PyDescr_NewNdrRpcMethod(PyTypeObject *type, struct PyNdrRpcMethodDef *md);
 
 #endif /* _PYRPC_H_ */
