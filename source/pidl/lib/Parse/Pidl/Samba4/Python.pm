@@ -21,7 +21,8 @@ $VERSION = '0.01';
 sub new($) {
 	my ($class) = @_;
 	my $self = { res => "", res_hdr => "", tabs => "", constants => {},
-	             module_methods => [], module_objects => [], module_types => []};
+	             module_methods => [], module_objects => [], module_types => [],
+			 	 readycode => [] };
 	bless($self, $class);
 }
 
@@ -341,41 +342,6 @@ sub find_metadata_args($)
 	return $metadata_args;
 }
 
-sub PythonFunctionBody($$$$$)
-{
-	my ($self, $fn, $iface, $prettyname, $infn, $outfn) = @_;
-
-	$self->pidl("dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;");
-	$self->pidl("NTSTATUS status;");
-	$self->pidl("TALLOC_CTX *mem_ctx = talloc_new(NULL);");
-	$self->pidl("struct $fn->{NAME} *r = talloc_zero(mem_ctx, struct $fn->{NAME});");
-	$self->pidl("PyObject *result = Py_None;");
-	
-	$self->pidl("if (!$infn(args, kwargs, r)) {");
-	$self->indent;
-	$self->pidl("talloc_free(mem_ctx);");
-	$self->pidl("return NULL;");
-	$self->deindent;
-	$self->pidl("}");
-	$self->pidl("");
-
-	$self->pidl("status = dcerpc_$fn->{NAME}(iface->pipe, mem_ctx, r);");
-	$self->pidl("if (NT_STATUS_IS_ERR(status)) {");
-	$self->indent;
-	$self->pidl("PyErr_SetDCERPCStatus(iface->pipe, status);");
-	$self->pidl("talloc_free(mem_ctx);");
-	$self->pidl("return NULL;");
-	$self->deindent;
-	$self->pidl("}");
-	$self->pidl("");
-
-	$self->pidl("result = $outfn(r);");
-	$self->pidl("");
-	$self->pidl("talloc_free(mem_ctx);");
-	$self->pidl("return result;");
-
-}
-
 sub PythonFunctionUnpackOut($$$)
 {
 	my ($self, $fn, $fnname) = @_;
@@ -453,6 +419,7 @@ sub PythonFunctionUnpackOut($$$)
 	$self->pidl("return result;");
 	$self->deindent;
 	$self->pidl("}");
+	$self->pidl("");
 
 	return ($outfnname, $signature);
 }
@@ -535,20 +502,13 @@ sub PythonFunction($$$)
 	my ($insignature, $outsignature);
 	my ($infn, $outfn);
 
-	if (not has_property($fn, "todo")) {
+	if (has_property($fn, "todo")) {
+		unless ($docstring) { $docstring = "NULL"; }
+		$infn = "NULL";
+		$outfn = "NULL";
+	} else {
 		($infn, $insignature) = $self->PythonFunctionPackIn($fn, $fnname);
 		($outfn, $outsignature) = $self->PythonFunctionUnpackOut($fn, $fnname);
-	}
-
-	$self->pidl("static PyObject *$fnname(PyObject *self, PyObject *args, PyObject *kwargs)");
-	$self->pidl("{");
-	$self->indent;
-	if (has_property($fn, "todo")) {
-		$self->pidl("PyErr_SetString(PyExc_NotImplementedError, \"No marshalling code available yet for $prettyname\");");
-		$self->pidl("return NULL;");
-		unless ($docstring) { $docstring = "NULL"; }
-	} else {
-		$self->PythonFunctionBody($fn, $iface, $prettyname, $infn, $outfn);
 		my $signature = "S.$prettyname($insignature) -> $outsignature";
 		if ($docstring) {
 			$docstring = "\"$signature\\n\\n\"$docstring";
@@ -557,11 +517,7 @@ sub PythonFunction($$$)
 		}
 	}
 
-	$self->deindent;
-	$self->pidl("}");
-	$self->pidl("");
-
-	return ($fnname, $docstring);
+	return ($infn, $outfn, $docstring);
 }
 
 sub handle_werror($$$$)
@@ -689,18 +645,18 @@ sub Interface($$$)
 			$prettyname =~ s/^$interface->{NAME}_//;
 			$prettyname =~ s/^$basename\_//;
 
-			my ($fnname, $fndocstring) = $self->PythonFunction($d, $interface->{NAME}, $prettyname);
+			my ($infn, $outfn, $fndocstring) = $self->PythonFunction($d, $interface->{NAME}, $prettyname);
 
-			push (@fns, [$fnname, $prettyname, $fndocstring]);
+			push (@fns, [$infn, $outfn, "dcerpc_$d->{NAME}", $prettyname, $fndocstring, $d->{OPNUM}]);
 		}
 
-		$self->pidl("static PyMethodDef interface_$interface->{NAME}\_methods[] = {");
+		$self->pidl("static struct PyNdrRpcMethodDef interface_$interface->{NAME}\_methods[] = {");
 		$self->indent;
 		foreach my $d (@fns) {
-			my ($c_fn, $prettyname, $docstring) = @$d;
-			$self->pidl("{ \"$prettyname\", (PyCFunction)$c_fn, METH_VARARGS|METH_KEYWORDS, $docstring },");
+			my ($infn, $outfn, $callfn, $prettyname, $docstring, $opnum) = @$d;
+			$self->pidl("{ \"$prettyname\", $docstring, (dcerpc_call_fn)$callfn, (py_data_pack_fn)$infn, (py_data_unpack_fn)$outfn, $opnum, &ndr_table_$interface->{NAME} },");
 		}
-		$self->pidl("{ NULL, NULL, 0, NULL }");
+		$self->pidl("{ NULL }");
 		$self->deindent;
 		$self->pidl("};");
 		$self->pidl("");
@@ -806,7 +762,6 @@ sub Interface($$$)
 		$self->pidl(".tp_name = \"$basename.$interface->{NAME}\",");
 		$self->pidl(".tp_basicsize = sizeof(dcerpc_InterfaceObject),");
 		$self->pidl(".tp_base = &dcerpc_InterfaceType,");
-		$self->pidl(".tp_methods = interface_$interface->{NAME}_methods,");
 		$self->pidl(".tp_doc = $docstring,");
 		$self->pidl(".tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,");
 		$self->pidl(".tp_new = interface_$interface->{NAME}_new,");
@@ -816,6 +771,7 @@ sub Interface($$$)
 		$self->pidl("");
 
 		$self->register_module_typeobject($interface->{NAME}, "&$interface->{NAME}_InterfaceType");
+		$self->register_module_readycode(["if (!PyInterface_AddNdrRpcMethods(&$interface->{NAME}_InterfaceType, interface_$interface->{NAME}_methods))", "\treturn;", ""]);
 	}
 
 	$self->pidl_hdr("\n");
@@ -836,6 +792,13 @@ sub register_module_typeobject($$$)
 	$self->register_module_object($name, "(PyObject *)$py_name");
 
 	push (@{$self->{module_types}}, [$name, $py_name])
+}
+
+sub register_module_readycode($$)
+{
+	my ($self, $code) = @_;
+
+	push (@{$self->{readycode}}, @$code);
 }
 
 sub register_module_object($$$)
@@ -1194,6 +1157,8 @@ sub Parse($$$$$)
 		$self->pidl("if (PyType_Ready($c_name) < 0)");
 		$self->pidl("\treturn;");
 	}
+
+	$self->pidl($_) foreach (@{$self->{readycode}});
 
 	$self->pidl("");
 

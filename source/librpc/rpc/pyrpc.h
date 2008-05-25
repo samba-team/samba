@@ -52,4 +52,20 @@ PyAPI_DATA(PyTypeObject) dcerpc_InterfaceType;
 
 void PyErr_SetDCERPCStatus(struct dcerpc_pipe *pipe, NTSTATUS status);
 
+typedef bool (*py_data_pack_fn) (PyObject *args, PyObject *kwargs, void *r);
+typedef PyObject *(*py_data_unpack_fn) (void *r);
+
+struct PyNdrRpcMethodDef {
+	const char *name;
+	const char *doc;
+	dcerpc_call_fn call;
+	py_data_pack_fn pack_in_data;
+	py_data_unpack_fn unpack_out_data;
+	uint32_t opnum;
+	const struct ndr_interface_table *table;
+};
+
+bool PyInterface_AddNdrRpcMethods(PyTypeObject *object, struct PyNdrRpcMethodDef *mds);
+PyObject *PyDescr_NewNdrRpcMethod(PyTypeObject *type, struct PyNdrRpcMethodDef *md);
+
 #endif /* _PYRPC_H_ */
