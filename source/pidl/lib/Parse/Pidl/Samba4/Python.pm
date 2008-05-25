@@ -343,7 +343,7 @@ sub find_metadata_args($)
 
 sub PythonFunctionBody($$$$$)
 {
-	my ($self, $fn, $iface, $prettyname, $infn, $insignature) = @_;
+	my ($self, $fn, $iface, $prettyname, $infn, $outfn) = @_;
 
 	$self->pidl("dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;");
 	$self->pidl("NTSTATUS status;");
@@ -351,21 +351,6 @@ sub PythonFunctionBody($$$$$)
 	$self->pidl("struct $fn->{NAME} *r = talloc_zero(mem_ctx, struct $fn->{NAME});");
 	$self->pidl("PyObject *result = Py_None;");
 	
-	my $env = GenerateFunctionInEnv($fn, "r->");
-	my $result_size = 0;
-
-	my $signature = "S.$prettyname($insignature) -> ";
-
-	my $metadata_args = find_metadata_args($fn);
-
-	foreach my $e (@{$fn->{ELEMENTS}}) {
-		next unless (grep(/out/,@{$e->{DIRECTION}}));
-		next if (($metadata_args->{in}->{$e->{NAME}} and grep(/in/, @{$e->{DIRECTION}})) or 
-		         ($metadata_args->{out}->{$e->{NAME}}) and grep(/out/, @{$e->{DIRECTION}}));
-		$self->pidl("PyObject *py_$e->{NAME};");
-		$result_size++;
-	}
-
 	$self->pidl("if (!$infn(args, kwargs, r)) {");
 	$self->indent;
 	$self->pidl("talloc_free(mem_ctx);");
@@ -373,10 +358,6 @@ sub PythonFunctionBody($$$$$)
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
-
-	if ($fn->{RETURN_TYPE}) {
-		$result_size++ unless ($fn->{RETURN_TYPE} eq "WERROR" or $fn->{RETURN_TYPE} eq "NTSTATUS");
-	}
 
 	$self->pidl("status = dcerpc_$fn->{NAME}(iface->pipe, mem_ctx, r);");
 	$self->pidl("if (NT_STATUS_IS_ERR(status)) {");
@@ -388,7 +369,41 @@ sub PythonFunctionBody($$$$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$env = GenerateFunctionOutEnv($fn, "r->");
+	$self->pidl("result = $outfn(r);");
+	$self->pidl("");
+	$self->pidl("talloc_free(mem_ctx);");
+	$self->pidl("return result;");
+
+}
+
+sub PythonFunctionUnpackOut($$$)
+{
+	my ($self, $fn, $fnname) = @_;
+
+	my $outfnname = "unpack_$fnname\_args_out";
+	my $signature = "";
+
+	my $metadata_args = find_metadata_args($fn);
+
+	my $env = GenerateFunctionOutEnv($fn, "r->");
+	my $result_size = 0;
+
+	$self->pidl("static PyObject *$outfnname(struct $fn->{NAME} *r)");
+	$self->pidl("{");
+	$self->indent;
+	$self->pidl("PyObject *result = Py_None;");
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next unless (grep(/out/,@{$e->{DIRECTION}}));
+		next if (($metadata_args->{in}->{$e->{NAME}} and grep(/in/, @{$e->{DIRECTION}})) or 
+		         ($metadata_args->{out}->{$e->{NAME}}) and grep(/out/, @{$e->{DIRECTION}}));
+		$self->pidl("PyObject *py_$e->{NAME};");
+		$result_size++;
+	}
+
+	if ($fn->{RETURN_TYPE}) {
+		$result_size++ unless ($fn->{RETURN_TYPE} eq "WERROR" or $fn->{RETURN_TYPE} eq "NTSTATUS");
+	}
+
 	my $i = 0;
 
 	if ($result_size > 1) {
@@ -415,9 +430,9 @@ sub PythonFunctionBody($$$$$)
 	}
 
 	if (defined($fn->{RETURN_TYPE}) and $fn->{RETURN_TYPE} eq "NTSTATUS") {
-		$self->handle_ntstatus("r->out.result", "NULL", "mem_ctx");
+		$self->handle_ntstatus("r->out.result", "NULL", undef);
 	} elsif (defined($fn->{RETURN_TYPE}) and $fn->{RETURN_TYPE} eq "WERROR") {
-		$self->handle_werror("r->out.result", "NULL", "mem_ctx");
+		$self->handle_werror("r->out.result", "NULL", undef);
 	} elsif (defined($fn->{RETURN_TYPE})) {
 		my $conv = $self->ConvertObjectToPythonData("r", $fn->{RETURN_TYPE}, "r->out.result");
 		if ($result_size > 1) {
@@ -435,18 +450,19 @@ sub PythonFunctionBody($$$$$)
 		$signature .= ")";
 	}
 
-	$self->pidl("talloc_free(mem_ctx);");
 	$self->pidl("return result;");
+	$self->deindent;
+	$self->pidl("}");
 
-	return $signature;
+	return ($outfnname, $signature);
 }
 
-sub PythonFunctionParseIn($$$)
+sub PythonFunctionPackIn($$$)
 {
 	my ($self, $fn, $fnname) = @_;
 	my $metadata_args = find_metadata_args($fn);
 
-	my $infnname = "$fnname\_in";
+	my $infnname = "pack_$fnname\_args_in";
 
 	$self->pidl("static bool $infnname(PyObject *args, PyObject *kwargs, struct $fn->{NAME} *r)");
 	$self->pidl("{");
@@ -516,11 +532,12 @@ sub PythonFunction($$$)
 	my $fnname = "py_$fn->{NAME}";
 	my $docstring = $self->DocString($fn, $fn->{NAME});
 
-	my $insignature;
-	my $infn;
+	my ($insignature, $outsignature);
+	my ($infn, $outfn);
 
 	if (not has_property($fn, "todo")) {
-		($infn, $insignature) = $self->PythonFunctionParseIn($fn, $fnname);
+		($infn, $insignature) = $self->PythonFunctionPackIn($fn, $fnname);
+		($outfn, $outsignature) = $self->PythonFunctionUnpackOut($fn, $fnname);
 	}
 
 	$self->pidl("static PyObject *$fnname(PyObject *self, PyObject *args, PyObject *kwargs)");
@@ -531,8 +548,8 @@ sub PythonFunction($$$)
 		$self->pidl("return NULL;");
 		unless ($docstring) { $docstring = "NULL"; }
 	} else {
-		my $signature = $self->PythonFunctionBody($fn, $iface, $prettyname, $infn, $insignature);
-
+		$self->PythonFunctionBody($fn, $iface, $prettyname, $infn, $outfn);
+		my $signature = "S.$prettyname($insignature) -> $outsignature";
 		if ($docstring) {
 			$docstring = "\"$signature\\n\\n\"$docstring";
 		} else {
