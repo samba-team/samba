@@ -344,6 +344,7 @@ plantest "dcerpc.bare.python" dc $SUBUNITRUN samba.tests.dcerpc.bare
 plantest "samdb.python" dc $SUBUNITRUN samba.tests.samdb
 plantest "unixinfo.python" dc $SUBUNITRUN samba.tests.dcerpc.unix
 plantest "events.python" none PYTHONPATH="$PYTHONPATH:lib/events" $SUBUNITRUN tests
+plantest "messaging.python" none PYTHONPATH="$PYTHONPATH:lib/messaging/tests" $SUBUNITRUN bindings
 plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
 plantest "rpcecho.python" dc $SUBUNITRUN samba.tests.dcerpc.rpcecho
 plantest "winreg.python" dc $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.dcerpc.registry
