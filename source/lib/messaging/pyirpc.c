@@ -177,6 +177,25 @@ static PyObject *py_messaging_register(PyObject *self, PyObject *args, PyObject 
 	return PyLong_FromLong(msg_type);
 }
 
+static PyObject *py_messaging_deregister(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	messaging_Object *iface = (messaging_Object *)self;
+	uint32_t msg_type = -1;
+	PyObject *callback;
+	const char *kwnames[] = { "callback", "msg_type", NULL };
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|i:send", 
+		discard_const_p(char *, kwnames), &callback, &msg_type)) {
+		return NULL;
+	}
+
+	messaging_deregister(iface->msg_ctx, msg_type, callback);
+
+	Py_DECREF(callback);
+
+	return Py_None;
+}
+
 static PyObject *py_messaging_add_name(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	messaging_Object *iface = (messaging_Object *)self;
@@ -220,6 +239,8 @@ static PyMethodDef py_messaging_methods[] = {
 		"S.send(target, msg_type, data) -> None\nSend a message" },
 	{ "register", (PyCFunction)py_messaging_register, METH_VARARGS|METH_KEYWORDS,
 		"S.register(msg_type, callback) -> None\nRegister a message handler" },
+	{ "deregister", (PyCFunction)py_messaging_deregister, METH_VARARGS|METH_KEYWORDS,
+		"S.deregister(msg_type, callback) -> None\nDeregister a message handler" },
 	{ "add_name", (PyCFunction)py_messaging_add_name, METH_VARARGS|METH_KEYWORDS, "S.add_name(name) -> None\nListen on another name" },
 	{ "remove_name", (PyCFunction)py_messaging_remove_name, METH_VARARGS|METH_KEYWORDS, "S.remove_name(name) -> None\nStop listening on a name" },
 	{ NULL, NULL, 0, NULL }
