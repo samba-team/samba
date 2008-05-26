@@ -27,8 +27,6 @@
 #include "libsmb_internal.h"
 
 
-extern bool in_client;
-
 /*
  * Is the logging working / configfile read ? 
  */
