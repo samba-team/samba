@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 39
+Release: 40
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,9 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Tue May 27 2008 : Version 1.0.40
+ - Read the samba sysconfig file from the 50.samba eventscript
+ - Fix some emmory hierarchical bugs in the persistent write handling
 * Thu May 22 2008 : Version 1.0.39
  - Moved a CTDB_MANAGES_NFS, CTDB_MANAGES_ISCSI and CTDB_MANAGES_CSFTPD
    into /etc/sysconfig/ctdb
