@@ -2211,11 +2211,7 @@ for i in $ICONV_LOOK_DIRS ; do
     # in both libiconv and in libc. In this case the jm_ICONV test will always
     # succeed when the header is found. To counter this, make sure the
     # library directory is there and check the ABI directory first (which
-    # should be harmless on other systems, but causes tons of linker warnings on
-    # 64bit Ubuntu systems).
-    # As the build farm doesn't seem to have any IRIX machines with iconv.h
-    # installed, I've decided to fix the linker warnings.
-    # -- Kai
+    # should be harmless on other systems.
     # For IA64 HPUX systems, the libs are located in lib/hpux32 instead of lib.
     for l in "lib" "lib32" "lib/hpux32"; do
         if test -d "$i/$l" ; then
