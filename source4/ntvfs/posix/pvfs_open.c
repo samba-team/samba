@@ -203,6 +203,13 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
+	/* found with gentest */
+	if (io->ntcreatex.in.access_mask == SEC_FLAG_MAXIMUM_ALLOWED &&
+	    (io->ntcreatex.in.create_options & NTCREATEX_OPTIONS_DIRECTORY) &&
+	    (io->ntcreatex.in.create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
 	switch (io->generic.in.open_disposition) {
 	case NTCREATEX_DISP_OPEN_IF:
 		break;
@@ -563,7 +570,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
 		return NT_STATUS_CANNOT_DELETE;
 	}
-	
+
 	status = pvfs_access_check_create(pvfs, req, name, &access_mask);
 	NT_STATUS_NOT_OK_RETURN(status);
 
@@ -1121,6 +1128,25 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_open(ntvfs, req, io);
 	}
 
+	create_options = io->generic.in.create_options;
+	share_access   = io->generic.in.share_access;
+	access_mask    = io->generic.in.access_mask;
+
+	if (share_access & ~NTCREATEX_SHARE_ACCESS_MASK) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* some create options are not supported */
+	if (create_options & NTCREATEX_OPTIONS_NOT_SUPPORTED_MASK) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	/* other create options are not allowed */
+	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
+	    !(access_mask & SEC_STD_DELETE)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, io->ntcreatex.in.fname, 
 				   PVFS_RESOLVE_STREAMS, &name);
@@ -1151,16 +1177,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	/* FILE_ATTRIBUTE_DIRECTORY is ignored if the above test for directory
 	   open doesn't match */
 	io->generic.in.file_attr &= ~FILE_ATTRIBUTE_DIRECTORY;
-
-	create_options = io->generic.in.create_options;
-	share_access   = io->generic.in.share_access;
-	access_mask    = io->generic.in.access_mask;
-
-	/* certain create options are not allowed */
-	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
-	    !(access_mask & SEC_STD_DELETE)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 
 	flags = 0;
 

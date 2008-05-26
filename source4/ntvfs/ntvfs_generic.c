@@ -522,6 +522,12 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 		io2->generic.in.fname		= io->smb2.in.fname;
 		io2->generic.in.sec_desc	= NULL;
 		io2->generic.in.ea_list		= NULL;
+
+		/* we use a couple of bits of the create options internally */
+		if (io2->generic.in.create_options & NTCREATEX_OPTIONS_PRIVATE_MASK) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
 		status = ntvfs->ops->open(ntvfs, req, io2);		
 		break;
 
@@ -1031,6 +1037,9 @@ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 			return NT_STATUS_NO_MEMORY;
 		}
 		for (i=0;i<lck->smb2.in.lock_count;i++) {
+			if (lck->smb2.in.locks[i].flags & ~SMB2_LOCK_FLAG_ALL_MASK) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
 			if (lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_UNLOCK) {
 				int j = lck2->generic.in.ulock_cnt;
 				lck2->generic.in.ulock_cnt++;
@@ -1277,9 +1286,14 @@ static NTSTATUS ntvfs_map_read_finish(struct ntvfs_module_context *ntvfs,
 		rd->smb2.out.remaining	= 0;
 		rd->smb2.out.reserved	= 0;
 		if (NT_STATUS_IS_OK(status) &&
-		    rd->smb2.out.data.length == 0 &&
-		    rd->smb2.in.length != 0) {
+		    rd->smb2.out.data.length == 0) {
 			status = NT_STATUS_END_OF_FILE;
+		}
+		/* SMB2 does honor the min_count field, SMB does not */
+		if (NT_STATUS_IS_OK(status) && 
+		    rd->smb2.in.min_count > rd->smb2.out.data.length) {
+			rd->smb2.out.data.length = 0;
+			status = NT_STATUS_END_OF_FILE;			
 		}
 		break;
 	default:
