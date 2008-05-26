@@ -2213,7 +2213,7 @@ for i in $ICONV_LOOK_DIRS ; do
     # library directory is there and check the ABI directory first (which
     # should be harmless on other systems.
     # For IA64 HPUX systems, the libs are located in lib/hpux32 instead of lib.
-    for l in "lib" "lib32" "lib/hpux32"; do
+    for l in "lib32" "lib" "lib/hpux32"; do
         if test -d "$i/$l" ; then
                 LDFLAGS="$save_LDFLAGS -L$i/$l"
 		LIBS=
