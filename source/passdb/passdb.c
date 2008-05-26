@@ -1522,12 +1522,6 @@ bool is_dc_trusted_domain_situation(const char *domain_name)
 	return IS_DC && !strequal(domain_name, lp_workgroup());
 }
 
-bool is_trusted_domain_situation(const char *domain_name)
-{
-	return is_dc_trusted_domain_situation(domain_name) &&
-		lp_allow_trusted_domains();
-}
-
 /*******************************************************************
  Wrapper around retrieving the clear text trust account password.
  appropriate account name is stored in account_name.

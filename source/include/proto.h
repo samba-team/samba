@@ -6272,7 +6272,6 @@ bool pdb_update_bad_password_count(struct samu *sampass, bool *updated);
 bool pdb_update_autolock_flag(struct samu *sampass, bool *updated);
 bool pdb_increment_bad_password_count(struct samu *sampass);
 bool is_dc_trusted_domain_situation(const char *domain_name);
-bool is_trusted_domain_situation(const char *domain_name);
 bool get_trust_pw_clear(const char *domain, char **ret_pwd,
 			const char **account_name, uint32 *channel);
 bool get_trust_pw_hash(const char *domain, uint8 ret_pwd[16],
