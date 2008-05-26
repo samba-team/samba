@@ -15,11 +15,12 @@ sys.path.insert(0, "bin/python")
 
 import optparse
 import samba.getopt as options
-import samba.irpc
+from samba import messaging, irpc
 
-def show_sessions():
+def show_sessions(conn):
 	"""show open sessions"""
-	sessions = smbsrv_sessions()
+	conn = open_connection("smb_server")
+	sessions = conn.smbsrv_information(irpc.SMBSRV_INFO_SESSIONS).next()
 	print "User                                  Client      Connected at"
 	print "-------------------------------------------------------------------------------"
 	for session in sessions:
@@ -27,37 +28,43 @@ def show_sessions():
 		print "%-30s %16s   %s" % (fulluser, session.client_ip, sys.httptime(session.connect_time))
 	print ""
 
-def show_tcons():
+def show_tcons(open_connection):
 	"""show open tree connects"""
-	tcons = smbsrv_tcons()
+	conn = open_connection("smb_server")
+	tcons = conn.smbsrv_information(irpc.SMBSRV_INFO_TCONS).next()
 	print "Share                                 Client      Connected at"
 	print "-------------------------------------------------------------------------------"
 	for tcon in tcons:
 		print "%-30s %16s   %s\n" % (tcon.share_name, tcon.client_ip, sys.httptime(tcon.connect_time))
 
 
-def show_nbt():
+def show_nbt(open_connection):
 	"""show nbtd information"""
-	stats = nbtd_statistics()
-	print "NBT server statistics:",
+	conn = open_connection("nbt_server")
+	stats = conn.nbtd_information(irpc.NBTD_INFO_STATISTICS).next()
+	print "NBT server statistics:"
 	for r in stats:
-		print "\t" + r + ":\t" + stats[r] + "\n"
+		print "\t" + r + ":\t" + getattr(stats, r) + "\n"
 	print ""
 
 parser = optparse.OptionParser("%s [options]" % sys.argv[0])
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
-parser.add_option("--nbt", type="string", metavar="NBT", 
-        help="show NetBIOS status")
+parser.add_option("--messaging-path", type="string", metavar="PATH",
+		          help="messaging path")
+parser.add_option("--nbt", help="show NetBIOS status", action="store_true")
+
+opts, args = parser.parse_args()
 
 lp = sambaopts.get_loadparm()
 
 print "%s\n\n" % lp.get("server string")
 
-if opts.nbt:
-	show_nbt()
-else:
-	show_sessions()
-	show_tcons()
+def open_connection(name):
+	return messaging.ClientConnection(name, messaging_path=opts.messaging_path)
 
-return 0
+if opts.nbt:
+	show_nbt(open_connection)
+else:
+	show_sessions(open_connection)
+	show_tcons(open_connection)
