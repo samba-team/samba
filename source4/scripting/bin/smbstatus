@@ -9,13 +9,13 @@
 #  Released under the GNU GPL version 3 or later
 #
 
-import sys
+import os, sys
 
 sys.path.insert(0, "bin/python")
 
 import optparse
 import samba.getopt as options
-from samba import messaging, irpc
+from samba import irpc, messaging
 
 def show_sessions(conn):
 	"""show open sessions"""
@@ -35,7 +35,7 @@ def show_tcons(open_connection):
 	print "Share                                 Client      Connected at"
 	print "-------------------------------------------------------------------------------"
 	for tcon in tcons:
-		print "%-30s %16s   %s\n" % (tcon.share_name, tcon.client_ip, sys.httptime(tcon.connect_time))
+		print "%-30s %16s   %s" % (tcon.share_name, tcon.client_ip, sys.httptime(tcon.connect_time))
 
 
 def show_nbt(open_connection):
@@ -43,9 +43,14 @@ def show_nbt(open_connection):
 	conn = open_connection("nbt_server")
 	stats = conn.nbtd_information(irpc.NBTD_INFO_STATISTICS).next()
 	print "NBT server statistics:"
-	for r in stats:
-		print "\t" + r + ":\t" + getattr(stats, r) + "\n"
-	print ""
+	fields = [("total_received", "Total received"),
+			  ("total_sent", "Total sent"),
+			  ("query_count", "Query count"),
+			  ("register_count", "Register count"),
+			  ("release_count", "Release count")]
+	for (field, description) in fields:
+		print "\t%s:\t%s" % (description, getattr(stats, field))
+	print
 
 parser = optparse.OptionParser("%s [options]" % sys.argv[0])
 sambaopts = options.SambaOptions(parser)
@@ -58,10 +63,12 @@ opts, args = parser.parse_args()
 
 lp = sambaopts.get_loadparm()
 
-print "%s\n\n" % lp.get("server string")
+print "%s" % lp.get("server string")
+
+messaging_path = (opts.messaging_path or os.path.join(lp.get("private dir"), "smbd.tmp", "messaging"))
 
 def open_connection(name):
-	return messaging.ClientConnection(name, messaging_path=opts.messaging_path)
+	return messaging.ClientConnection(name, messaging_path=messaging_path)
 
 if opts.nbt:
 	show_nbt(open_connection)
