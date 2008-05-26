@@ -651,7 +651,7 @@ sub Interface($$$)
 		}
 
 		$self->pidl("const struct PyNdrRpcMethodDef py_ndr_$interface->{NAME}\_methods[] = {");
-		$self->pidl_hdr("const struct PyNdrRpcMethodDef py_ndr_$interface->{NAME}\_methods[];");
+		$self->pidl_hdr("extern const struct PyNdrRpcMethodDef py_ndr_$interface->{NAME}\_methods[];");
 		$self->indent;
 		foreach my $d (@fns) {
 			my ($infn, $outfn, $callfn, $prettyname, $docstring, $opnum) = @$d;

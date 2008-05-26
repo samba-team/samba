@@ -11,8 +11,8 @@ PUBLIC_DEPENDENCIES = \
 
 MESSAGING_OBJ_FILES = $(libmessagingsrcdir)/messaging.o
 
-[PYTHON::python_irpc]
-LIBRARY_REALNAME = samba/irpc.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = MESSAGING LIBEVENTS
+[PYTHON::python_messaging]
+LIBRARY_REALNAME = samba/messaging.$(SHLIBEXT)
+PRIVATE_DEPENDENCIES = MESSAGING LIBEVENTS python_irpc
 
-python_irpc_OBJ_FILES = $(libmessagingsrcdir)/pyirpc.o
+python_messaging_OBJ_FILES = $(libmessagingsrcdir)/pymessaging.o

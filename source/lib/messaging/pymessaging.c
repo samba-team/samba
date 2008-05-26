@@ -31,7 +31,7 @@
 #include "librpc/gen_ndr/py_irpc.h"
 
 PyAPI_DATA(PyTypeObject) messaging_Type;
-PyAPI_DATA(PyTypeObject) irpc_InterfaceType;
+PyAPI_DATA(PyTypeObject) irpc_ClientConnectionType;
 
 static bool server_id_from_py(PyObject *object, struct server_id *server_id)
 {
@@ -65,7 +65,7 @@ PyObject *py_messaging_connect(PyTypeObject *self, PyObject *args, PyObject *kwa
 	const char *messaging_path = NULL;
 	messaging_Object *ret;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Os:connect", 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Oz:connect", 
 		discard_const_p(char *, kwnames), &own_id, &messaging_path)) {
 		return NULL;
 	}
@@ -280,6 +280,9 @@ PyTypeObject messaging_Type = {
 	.tp_dealloc = py_messaging_dealloc,
 	.tp_methods = py_messaging_methods,
 	.tp_getset = py_messaging_getset,
+	.tp_doc = "Messaging(own_id=None, messaging_path=None)\n" \
+		  "Create a new object that can be used to communicate with the peers in the specified messaging path.\n" \
+		  "If no path is specified, the default path from smb.conf will be used."
 };
 
 
@@ -292,7 +295,7 @@ typedef struct {
 	struct server_id *dest_ids;
 	struct messaging_context *msg_ctx;
 	TALLOC_CTX *mem_ctx;
-} irpc_InterfaceObject;
+} irpc_ClientConnectionObject;
 
 /*
   setup a context for talking to a irpc server
@@ -307,14 +310,14 @@ PyObject *py_irpc_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 	char *server;
 	const char *messaging_path = NULL;
 	PyObject *own_id = Py_None;
-	irpc_InterfaceObject *ret;
+	irpc_ClientConnectionObject *ret;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|Os:connect", 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|Oz:connect", 
 		discard_const_p(char *, kwnames), &server, &own_id, &messaging_path)) {
 		return NULL;
 	}
 
-	ret = PyObject_New(irpc_InterfaceObject, &irpc_InterfaceType);
+	ret = PyObject_New(irpc_ClientConnectionObject, &irpc_ClientConnectionType);
 	if (ret == NULL)
 		return NULL;
 
@@ -326,6 +329,8 @@ PyObject *py_irpc_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 
 	if (messaging_path == NULL) {
 		messaging_path = lp_messaging_path(ret, global_loadparm);
+	} else {
+		messaging_path = talloc_strdup(ret->mem_ctx, messaging_path);
 	}
 
 	if (own_id != Py_None) {
@@ -413,12 +418,13 @@ PyTypeObject irpc_ResultIteratorType = {
 	.tp_name = "irpc.ResultIterator",
 	.tp_basicsize = sizeof(irpc_ResultObject),
 	.tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
-	.tp_iter = (iternextfunc)irpc_result_next,
+	.tp_iternext = (iternextfunc)irpc_result_next,
+	.tp_iter = PyObject_SelfIter,
 	.tp_methods = irpc_result_methods,
 	.tp_dealloc = irpc_result_dealloc,
 };
 
-static PyObject *py_irpc_call(irpc_InterfaceObject *p, struct PyNdrRpcMethodDef *method_def, PyObject *args, PyObject *kwargs)
+static PyObject *py_irpc_call(irpc_ClientConnectionObject *p, struct PyNdrRpcMethodDef *method_def, PyObject *args, PyObject *kwargs)
 {
 	void *ptr;
 	struct irpc_request **reqs;
@@ -476,7 +482,7 @@ done:
 
 static PyObject *py_irpc_call_wrapper(PyObject *self, PyObject *args, void *wrapped, PyObject *kwargs)
 {	
-	irpc_InterfaceObject *iface = (irpc_InterfaceObject *)self;
+	irpc_ClientConnectionObject *iface = (irpc_ClientConnectionObject *)self;
 	struct PyNdrRpcMethodDef *md = wrapped;
 
 	return py_irpc_call(iface, md, args, kwargs);
@@ -484,21 +490,24 @@ static PyObject *py_irpc_call_wrapper(PyObject *self, PyObject *args, void *wrap
 
 static void py_irpc_dealloc(PyObject *self)
 {
-	irpc_InterfaceObject *iface = (irpc_InterfaceObject *)self;
+	irpc_ClientConnectionObject *iface = (irpc_ClientConnectionObject *)self;
 	talloc_free(iface->mem_ctx);
 	PyObject_Del(self);
 }
 
-PyTypeObject irpc_InterfaceType = {
+PyTypeObject irpc_ClientConnectionType = {
 	PyObject_HEAD_INIT(NULL) 0,
 	.tp_name = "irpc.ClientConnection",
-	.tp_basicsize = sizeof(irpc_InterfaceObject),
+	.tp_basicsize = sizeof(irpc_ClientConnectionObject),
 	.tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
 	.tp_new = py_irpc_connect,
 	.tp_dealloc = py_irpc_dealloc,
+	.tp_doc = "ClientConnection(server, own_id=None, messaging_path=None)\n" \
+		  "Create a new IRPC client connection to communicate with the servers in the specified path.\n" \
+		  "If no path is specified, the default path from smb.conf will be used."
 };
 
-static bool irpc_AddNdrRpcMethods(PyTypeObject *ifacetype, struct PyNdrRpcMethodDef *mds)
+static bool irpc_AddNdrRpcMethods(PyTypeObject *ifacetype, const struct PyNdrRpcMethodDef *mds)
 {
 	int i;
 	for (i = 0; mds[i].name; i++) {
@@ -510,7 +519,7 @@ static bool irpc_AddNdrRpcMethods(PyTypeObject *ifacetype, struct PyNdrRpcMethod
 		wb->wrapper = (wrapperfunc)py_irpc_call_wrapper;
 		wb->doc = discard_const_p(char, mds[i].doc);
 		
-		ret = PyDescr_NewWrapper(ifacetype, wb, &mds[i]);
+		ret = PyDescr_NewWrapper(ifacetype, wb, discard_const_p(void, &mds[i]));
 
 		PyDict_SetItemString(ifacetype->tp_dict, mds[i].name, 
 				     (PyObject *)ret);
@@ -519,11 +528,11 @@ static bool irpc_AddNdrRpcMethods(PyTypeObject *ifacetype, struct PyNdrRpcMethod
 	return true;
 }
 
-void initirpc(void)
+void initmessaging(void)
 {
 	PyObject *mod;
 
-	if (PyType_Ready(&irpc_InterfaceType) < 0)
+	if (PyType_Ready(&irpc_ClientConnectionType) < 0)
 		return;
 
 	if (PyType_Ready(&messaging_Type) < 0)
@@ -532,15 +541,15 @@ void initirpc(void)
 	if (PyType_Ready(&irpc_ResultIteratorType) < 0) 
 		return;
 
-	if (!irpc_AddNdrRpcMethods(&irpc_InterfaceType, py_ndr_irpc_methods))
+	if (!irpc_AddNdrRpcMethods(&irpc_ClientConnectionType, py_ndr_irpc_methods))
 		return;
 
-	mod = Py_InitModule3("irpc", NULL, "Internal RPC");
+	mod = Py_InitModule3("messaging", NULL, "Internal RPC");
 	if (mod == NULL)
 		return;
 
-	Py_INCREF((PyObject *)&irpc_InterfaceType);
-	PyModule_AddObject(mod, "ClientConnection", (PyObject *)&irpc_InterfaceType);
+	Py_INCREF((PyObject *)&irpc_ClientConnectionType);
+	PyModule_AddObject(mod, "ClientConnection", (PyObject *)&irpc_ClientConnectionType);
 
 	Py_INCREF((PyObject *)&messaging_Type);
 	PyModule_AddObject(mod, "Messaging", (PyObject *)&messaging_Type);
