@@ -71,7 +71,6 @@ PRIVATE_DEPENDENCIES = \
 smbcalls_OBJ_FILES = $(addprefix $(ejsscriptsrcdir)/, \
 		smbcalls.o \
 		smbcalls_options.o \
-		smbcalls_creds.o \
 		smbcalls_param.o \
 		mprutil.o \
 		literal.o)
