@@ -27,14 +27,6 @@ INIT_FUNCTION = smb_setup_ejs_random
 
 smbcalls_rand_OBJ_FILES = $(ejsscriptsrcdir)/smbcalls_rand.o
 
-[MODULE::smbcalls_nss]
-SUBSYSTEM = smbcalls
-OUTPUT_TYPE = MERGED_OBJ
-INIT_FUNCTION = smb_setup_ejs_nss
-PRIVATE_DEPENDENCIES = NSS_WRAPPER
-
-smbcalls_nss_OBJ_FILES = $(ejsscriptsrcdir)/smbcalls_nss.o
-
 [MODULE::smbcalls_data]
 SUBSYSTEM = smbcalls
 OUTPUT_TYPE = MERGED_OBJ
