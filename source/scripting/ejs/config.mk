@@ -49,8 +49,7 @@ smbcalls_OBJ_FILES = $(addprefix $(ejsscriptsrcdir)/, \
 		smbcalls.o \
 		smbcalls_options.o \
 		smbcalls_creds.o \
-		mprutil.o \
-		literal.o)
+		mprutil.o)
 
 $(eval $(call proto_header_template,$(ejsscriptsrcdir)/proto.h,$(smbcalls_OBJ_FILES:.o=.c)))
 
