@@ -1026,7 +1026,7 @@ static bool handler_create(int instance)
 		/* mask out oplocks */
 		parm[0].in.oplock_level = 0;
 	}
-	
+
 	GEN_COPY_PARM;
 	GEN_CALL(smb2_create(tree, current_op.mem_ctx, &parm[i]));
 
