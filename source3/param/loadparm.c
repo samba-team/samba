@@ -8746,6 +8746,9 @@ bool lp_load_ex(const char *pszFname,
 		lp_save_defaults();
 	}
 
+	/* We get sections first, so have to start 'behind' to make up */
+	iServiceIndex = -1;
+
 	if (Globals.param_opt != NULL) {
 		data = Globals.param_opt;
 		while (data) {
@@ -8769,8 +8772,6 @@ bool lp_load_ex(const char *pszFname,
 
 		add_to_file_list(pszFname, n2);
 
-		/* We get sections first, so have to start 'behind' to make up */
-		iServiceIndex = -1;
 		bRetval = pm_process(n2, do_section, do_parameter, NULL);
 		SAFE_FREE(n2);
 
