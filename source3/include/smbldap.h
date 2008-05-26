@@ -220,7 +220,8 @@ const char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
 
 #endif 	/* HAVE_LDAP */
 
-#define LDAP_CONNECT_DEFAULT_TIMEOUT   15
+#define LDAP_DEFAULT_TIMEOUT   15
+#define LDAP_CONNECTION_DEFAULT_TIMEOUT 2
 #define LDAP_PAGE_SIZE 1024
 
 #endif	/* _SMBLDAP_H */
