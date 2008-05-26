@@ -1543,7 +1543,11 @@ bool get_trust_pw_clear(const char *domain, char **ret_pwd,
 	/* if we are a DC and this is not our domain, then lookup an account
 	 * for the domain trust */
 
-	if (is_trusted_domain_situation(domain)) {
+	if (is_dc_trusted_domain_situation(domain)) {
+		if (!lp_allow_trusted_domains()) {
+			return false;
+		}
+
 		if (!pdb_get_trusteddom_pw(domain, ret_pwd, NULL,
 					   &last_set_time))
 		{
