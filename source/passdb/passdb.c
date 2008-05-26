@@ -1568,8 +1568,22 @@ bool get_trust_pw_clear(const char *domain, char **ret_pwd,
 		return true;
 	}
 
-	/* Here we are a domain member server.  We can only be a member
-	   of one domain so ignore the request domain and assume our own */
+	/*
+	 * Since we can only be member of one single domain, we are now
+	 * in a member situation:
+	 *
+	 *  -  Either we are a DC (selfjoined) and the domain is our
+	 *     own domain.
+	 *  -  Or we are on a member and the domain is our own or some
+	 *     other (potentially trusted) domain.
+	 *
+	 * In both cases, we can only get the machine account password
+	 * for our own domain to connect to our own dc. (For a member,
+	 * request to trusted domains are performed through our dc.)
+	 *
+	 * So we simply use our own domain name to retrieve the
+	 * machine account passowrd and ignore the request domain here.
+	 */
 
 	pwd = secrets_fetch_machine_password(lp_workgroup(), &last_set_time, channel);
 
