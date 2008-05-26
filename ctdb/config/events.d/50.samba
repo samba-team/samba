@@ -5,6 +5,7 @@ PATH=/bin:/usr/bin:$PATH
 
 . $CTDB_BASE/functions
 loadconfig ctdb
+loadconfig samba
 
 cmd="$1"
 shift
