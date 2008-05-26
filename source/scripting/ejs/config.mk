@@ -44,8 +44,6 @@ INIT_FUNCTION = smb_setup_ejs_system
 
 smbcalls_sys_OBJ_FILES = $(ejsscriptsrcdir)/smbcalls_sys.o
 
-mkinclude ejsnet/config.mk
-
 [SUBSYSTEM::smbcalls]
 PRIVATE_DEPENDENCIES = \
 		EJS LIBSAMBA-UTIL \
