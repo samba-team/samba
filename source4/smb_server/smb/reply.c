@@ -2193,6 +2193,11 @@ void smbsrv_reply_ntcreate_and_X(struct smbsrv_request *req)
 	io->ntcreatex.in.ea_list          = NULL;
 	io->ntcreatex.in.sec_desc         = NULL;
 
+	/* we use a couple of bits of the create options internally */
+	if (io->ntcreatex.in.create_options & NTCREATEX_OPTIONS_PRIVATE_MASK) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	/* we need a neater way to handle this alignment */
 	if ((req->flags2 & FLAGS2_UNICODE_STRINGS) && 
 	    ucs2_align(req->in.buffer, req->in.data, STR_TERMINATE|STR_UNICODE)) {
