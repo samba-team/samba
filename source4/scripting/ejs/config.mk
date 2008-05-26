@@ -13,14 +13,6 @@ PRIVATE_DEPENDENCIES = LIBLDB SAMDB LIBNDR
 
 smbcalls_ldb_OBJ_FILES = $(ejsscriptsrcdir)/smbcalls_ldb.o
 
-[MODULE::smbcalls_reg]
-SUBSYSTEM = smbcalls
-OUTPUT_TYPE = MERGED_OBJ
-INIT_FUNCTION = smb_setup_ejs_reg
-PRIVATE_DEPENDENCIES = registry SAMDB LIBNDR
-
-smbcalls_reg_OBJ_FILES = $(ejsscriptsrcdir)/smbcalls_reg.o
-
 [MODULE::smbcalls_nbt]
 SUBSYSTEM = smbcalls
 OUTPUT_TYPE = MERGED_OBJ
