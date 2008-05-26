@@ -191,7 +191,6 @@ void smb_setup_ejs_functions(void (*exception_handler)(const char *))
 	extern NTSTATUS smb_setup_ejs_system(void);
 	extern NTSTATUS smb_setup_ejs_ldb(void);
 	extern NTSTATUS ejs_init_svcctl(void);
-	extern NTSTATUS smb_setup_ejs_nbt(void);
 	extern NTSTATUS smb_setup_ejs_net(void);
 	extern NTSTATUS ejs_init_srvsvc(void);
 	extern NTSTATUS ejs_init_netlogon(void);
