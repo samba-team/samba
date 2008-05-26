@@ -86,7 +86,8 @@ interface xattr
 	/* stream data is stored in attributes with the given prefix */
 	const char *XATTR_DOSSTREAM_PREFIX = "user.DosStream.";
 
-	const int XATTR_MAX_STREAM_SIZE = 0x4000;
+	const int XATTR_MAX_STREAM_SIZE     = 0x4000;
+	const int XATTR_MAX_STREAM_SIZE_TDB = 0x100000;
 
 	typedef struct {
 		uint32     flags;
