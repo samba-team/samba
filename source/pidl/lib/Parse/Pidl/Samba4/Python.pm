@@ -650,7 +650,8 @@ sub Interface($$$)
 			push (@fns, [$infn, $outfn, "dcerpc_$d->{NAME}", $prettyname, $fndocstring, $d->{OPNUM}]);
 		}
 
-		$self->pidl("static struct PyNdrRpcMethodDef interface_$interface->{NAME}\_methods[] = {");
+		$self->pidl("const struct PyNdrRpcMethodDef py_ndr_$interface->{NAME}\_methods[] = {");
+		$self->pidl_hdr("const struct PyNdrRpcMethodDef py_ndr_$interface->{NAME}\_methods[];");
 		$self->indent;
 		foreach my $d (@fns) {
 			my ($infn, $outfn, $callfn, $prettyname, $docstring, $opnum) = @$d;
@@ -771,7 +772,7 @@ sub Interface($$$)
 		$self->pidl("");
 
 		$self->register_module_typeobject($interface->{NAME}, "&$interface->{NAME}_InterfaceType");
-		$self->register_module_readycode(["if (!PyInterface_AddNdrRpcMethods(&$interface->{NAME}_InterfaceType, interface_$interface->{NAME}_methods))", "\treturn;", ""]);
+		$self->register_module_readycode(["if (!PyInterface_AddNdrRpcMethods(&$interface->{NAME}_InterfaceType, py_ndr_$interface->{NAME}\_methods))", "\treturn;", ""]);
 	}
 
 	$self->pidl_hdr("\n");
