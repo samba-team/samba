@@ -1919,6 +1919,7 @@ union smb_lock {
 #define SMB2_LOCK_FLAG_EXCLUSIVE	0x00000002
 #define SMB2_LOCK_FLAG_UNLOCK		0x00000004
 #define SMB2_LOCK_FLAG_FAIL_IMMEDIATELY	0x00000010
+#define SMB2_LOCK_FLAG_ALL_MASK		0x00000017
 				uint32_t flags;
 				uint32_t reserved;
 			} *locks;
