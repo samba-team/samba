@@ -1517,11 +1517,15 @@ bool pdb_increment_bad_password_count(struct samu *sampass)
 	return True;
 }
 
+bool is_dc_trusted_domain_situation(const char *domain_name)
+{
+	return IS_DC && !strequal(domain_name, lp_workgroup());
+}
+
 bool is_trusted_domain_situation(const char *domain_name)
 {
-	return IS_DC &&
-		lp_allow_trusted_domains() &&
-		!strequal(domain_name, lp_workgroup());
+	return is_dc_trusted_domain_situation(domain_name) &&
+		lp_allow_trusted_domains();
 }
 
 /*******************************************************************
