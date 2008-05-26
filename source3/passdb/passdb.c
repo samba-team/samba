@@ -1616,7 +1616,7 @@ bool get_trust_pw_hash(const char *domain, uint8 ret_pwd[16],
 		E_md4hash(pwd, ret_pwd);
 		SAFE_FREE(pwd);
 		return true;
-	} else if (is_trusted_domain_situation(domain)) {
+	} else if (is_dc_trusted_domain_situation(domain)) {
 		return false;
 	}
 
