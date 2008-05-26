@@ -54,6 +54,7 @@ NTSTATUS pvfs_flush(struct ntvfs_module_context *ntvfs,
 			return NT_STATUS_INVALID_HANDLE;
 		}
 		pvfs_flush_file(pvfs, f);
+		io->smb2.out.reserved = 0;
 		return NT_STATUS_OK;
 
 	case RAW_FLUSH_ALL:
