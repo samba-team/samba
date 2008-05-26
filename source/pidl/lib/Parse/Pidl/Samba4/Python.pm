@@ -21,7 +21,7 @@ $VERSION = '0.01';
 sub new($) {
 	my ($class) = @_;
 	my $self = { res => "", res_hdr => "", tabs => "", constants => {},
-	             module_methods => [], module_objects => [], module_types => [],
+	             module_methods => [], module_objects => [], ready_types => [],
 			 	 readycode => [] };
 	bless($self, $class);
 }
@@ -108,7 +108,7 @@ sub FromUnionToPythonFunction($$$$)
 		$self->indent;
 
 		if ($e->{NAME}) {
-			$self->ConvertObjectToPython($mem_ctx, {}, $e, "$name->$e->{NAME}", "ret");
+			$self->ConvertObjectToPython($mem_ctx, {}, $e, "$name->$e->{NAME}", "ret", "return NULL;");
 		} else {
 			$self->pidl("ret = Py_None;");
 		}
@@ -182,7 +182,7 @@ sub PythonStruct($$$$$$)
 			$self->indent;
 			$self->pidl("$cname *object = py_talloc_get_ptr(obj);");
 			$self->pidl("PyObject *py_$e->{NAME};");
-			$self->ConvertObjectToPython("py_talloc_get_mem_ctx(obj)", $env, $e, $varname, "py_$e->{NAME}");
+			$self->ConvertObjectToPython("py_talloc_get_mem_ctx(obj)", $env, $e, $varname, "py_$e->{NAME}", "return NULL;");
 			$self->pidl("return py_$e->{NAME};");
 			$self->deindent;
 			$self->pidl("}");
@@ -383,7 +383,7 @@ sub PythonFunctionUnpackOut($$$)
 		next if ($metadata_args->{out}->{$e->{NAME}});
 		my $py_name = "py_$e->{NAME}";
 		if (grep(/out/,@{$e->{DIRECTION}})) {
-			$self->ConvertObjectToPython("r", $env, $e, "r->out.$e->{NAME}", $py_name);
+			$self->ConvertObjectToPython("r", $env, $e, "r->out.$e->{NAME}", $py_name, "return NULL;");
 			if ($result_size > 1) {
 				$self->pidl("PyTuple_SetItem(result, $i, $py_name);");
 				$i++;
@@ -792,7 +792,13 @@ sub register_module_typeobject($$$)
 
 	$self->register_module_object($name, "(PyObject *)$py_name");
 
-	push (@{$self->{module_types}}, [$name, $py_name])
+	$self->check_ready_type($py_name);
+}
+
+sub check_ready_type($$)
+{
+	my ($self, $py_name) = @_;
+	push (@{$self->{ready_types}}, $py_name) unless (grep(/^$py_name$/,@{$self->{ready_types}}));
 }
 
 sub register_module_readycode($$)
@@ -1026,14 +1032,24 @@ sub ConvertObjectToPythonData($$$$$)
 	die("unknown type ".mapTypeName($ctype) . ": $cvar");
 }
 
-sub ConvertObjectToPythonLevel($$$$$)
+sub fail_on_null($$$)
 {
-	my ($self, $mem_ctx, $env, $e, $l, $var_name, $py_var) = @_;
+	my ($self, $var, $fail) = @_;
+	$self->pidl("if ($var == NULL) {");
+	$self->indent;
+	$self->pidl($fail);
+	$self->deindent;
+	$self->pidl("}");
+}
+
+sub ConvertObjectToPythonLevel($$$$$$)
+{
+	my ($self, $mem_ctx, $env, $e, $l, $var_name, $py_var, $fail) = @_;
 	my $nl = GetNextLevel($e, $l);
 
 	if ($l->{TYPE} eq "POINTER") {
 		if ($nl->{TYPE} eq "DATA" and Parse::Pidl::Typelist::scalar_is_reference($nl->{DATA_TYPE})) {
-			$self->ConvertObjectToPythonLevel($var_name, $env, $e, $nl, $var_name, $py_var);
+			$self->ConvertObjectToPythonLevel($var_name, $env, $e, $nl, $var_name, $py_var, $fail);
 			return;
 		}
 		if ($l->{POINTER_TYPE} ne "ref") {
@@ -1044,7 +1060,7 @@ sub ConvertObjectToPythonLevel($$$$$)
 			$self->pidl("} else {");
 			$self->indent;
 		}
-		$self->ConvertObjectToPythonLevel($var_name, $env, $e, $nl, get_value_of($var_name), $py_var);
+		$self->ConvertObjectToPythonLevel($var_name, $env, $e, $nl, get_value_of($var_name), $py_var, $fail);
 		if ($l->{POINTER_TYPE} ne "ref") {
 			$self->deindent;
 			$self->pidl("}");
@@ -1067,6 +1083,7 @@ sub ConvertObjectToPythonLevel($$$$$)
 
 			$length = ParseExpr($length, $env, $e);
 			$self->pidl("$py_var = PyList_New($length);");
+			$self->fail_on_null($py_var, $fail);
 			$self->pidl("{");
 			$self->indent;
 			my $counter = "$e->{NAME}_cntr_$l->{LEVEL_INDEX}";
@@ -1075,7 +1092,7 @@ sub ConvertObjectToPythonLevel($$$$$)
 			$self->indent;
 			my $member_var = "py_$e->{NAME}_$l->{LEVEL_INDEX}";
 			$self->pidl("PyObject *$member_var;");
-			$self->ConvertObjectToPythonLevel($var_name, $env, $e, GetNextLevel($e, $l), $var_name."[$counter]", $member_var);
+			$self->ConvertObjectToPythonLevel($var_name, $env, $e, GetNextLevel($e, $l), $var_name."[$counter]", $member_var, $fail);
 			$self->pidl("PyList_SetItem($py_var, $counter, $member_var);");
 			$self->deindent;
 			$self->pidl("}");
@@ -1086,6 +1103,8 @@ sub ConvertObjectToPythonLevel($$$$$)
 		$var_name = get_pointer_to($var_name);
 		my $switch = ParseExpr($l->{SWITCH_IS}, $env, $e);
 		$self->pidl("$py_var = py_import_" . GetNextLevel($e, $l)->{DATA_TYPE} . "($mem_ctx, $switch, $var_name);");
+		$self->fail_on_null($py_var, $fail);
+
 	} elsif ($l->{TYPE} eq "DATA") {
 		if (not Parse::Pidl::Typelist::is_scalar($l->{DATA_TYPE})) {
 			$var_name = get_pointer_to($var_name);
@@ -1093,7 +1112,7 @@ sub ConvertObjectToPythonLevel($$$$$)
 		my $conv = $self->ConvertObjectToPythonData($mem_ctx, $l->{DATA_TYPE}, $var_name);
 		$self->pidl("$py_var = $conv;");
 	} elsif ($l->{TYPE} eq "SUBCONTEXT") {
-		$self->ConvertObjectToPythonLevel($mem_ctx, $env, $e, GetNextLevel($e, $l), $var_name, $py_var);
+		$self->ConvertObjectToPythonLevel($mem_ctx, $env, $e, GetNextLevel($e, $l), $var_name, $py_var, $fail);
 	} else {
 		die("Unknown level type $l->{TYPE} $var_name");
 	}
@@ -1101,9 +1120,9 @@ sub ConvertObjectToPythonLevel($$$$$)
 
 sub ConvertObjectToPython($$$$$$)
 {
-	my ($self, $mem_ctx, $env, $ctype, $cvar, $py_var) = @_;
+	my ($self, $mem_ctx, $env, $ctype, $cvar, $py_var, $fail) = @_;
 
-	$self->ConvertObjectToPythonLevel($mem_ctx, $env, $ctype, $ctype->{LEVELS}[0], $cvar, $py_var);
+	$self->ConvertObjectToPythonLevel($mem_ctx, $env, $ctype, $ctype->{LEVELS}[0], $cvar, $py_var, $fail);
 }
 
 sub Parse($$$$$)
@@ -1153,9 +1172,8 @@ sub Parse($$$$$)
 	$self->pidl("PyObject *m;");
 	$self->pidl("");
 
-	foreach (@{$self->{module_types}}) {
-		my ($object_name, $c_name) = @$_;
-		$self->pidl("if (PyType_Ready($c_name) < 0)");
+	foreach (@{$self->{ready_types}}) {
+		$self->pidl("if (PyType_Ready($_) < 0)");
 		$self->pidl("\treturn;");
 	}
 
