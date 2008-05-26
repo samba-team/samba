@@ -150,11 +150,11 @@ static void smbsrv_accept(struct stream_connection *conn)
 	smb_conn->connection = conn;
 	conn->private = smb_conn;
 
-	irpc_add_name(conn->msg_ctx, "smb_server");
-
 	smb_conn->statistics.connect_time = timeval_current();
 
 	smbsrv_management_init(smb_conn);
+
+	irpc_add_name(conn->msg_ctx, "smb_server");
 
 	if (!NT_STATUS_IS_OK(share_get_context_by_name(smb_conn, lp_share_backend(smb_conn->lp_ctx), 
 						       smb_conn->connection->event.ctx,

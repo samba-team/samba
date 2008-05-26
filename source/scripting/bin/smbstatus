@@ -19,7 +19,7 @@ from samba import irpc, messaging
 
 def show_sessions(conn):
 	"""show open sessions"""
-	conn = open_connection("smb_server")
+
 	sessions = conn.smbsrv_information(irpc.SMBSRV_INFO_SESSIONS).next()
 	print "User                                  Client      Connected at"
 	print "-------------------------------------------------------------------------------"
@@ -73,5 +73,11 @@ def open_connection(name):
 if opts.nbt:
 	show_nbt(open_connection)
 else:
-	show_sessions(open_connection)
-	show_tcons(open_connection)
+	try:
+		conn = open_connection("smb_server")
+	except RuntimeError, (num, msg):
+		if msg ==  'NT_STATUS_OBJECT_NAME_NOT_FOUND':
+			print "No active connections"
+	else:
+		show_sessions(conn)
+		show_tcons(conn)
