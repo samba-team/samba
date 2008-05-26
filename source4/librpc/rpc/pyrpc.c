@@ -71,7 +71,7 @@ static PyObject *py_dcerpc_call_wrapper(PyObject *self, PyObject *args, void *wr
 }
 
 
-bool PyInterface_AddNdrRpcMethods(PyTypeObject *ifacetype, struct PyNdrRpcMethodDef *mds)
+bool PyInterface_AddNdrRpcMethods(PyTypeObject *ifacetype, const struct PyNdrRpcMethodDef *mds)
 {
 	int i;
 	for (i = 0; mds[i].name; i++) {
@@ -83,7 +83,7 @@ bool PyInterface_AddNdrRpcMethods(PyTypeObject *ifacetype, struct PyNdrRpcMethod
 		wb->wrapper = (wrapperfunc)py_dcerpc_call_wrapper;
 		wb->doc = discard_const_p(char, mds[i].doc);
 		
-		ret = PyDescr_NewWrapper(ifacetype, wb, &mds[i]);
+		ret = PyDescr_NewWrapper(ifacetype, wb, discard_const_p(void, &mds[i]));
 
 		PyDict_SetItemString(ifacetype->tp_dict, mds[i].name, 
 				     (PyObject *)ret);
