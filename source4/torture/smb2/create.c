@@ -149,7 +149,7 @@ bool torture_smb2_create_gentest(struct torture_context *torture, struct smb2_tr
 		}
 	}
 
-	CHECK_EQUAL(file_attributes, 0xffff87c8);
+	CHECK_EQUAL(file_attributes, 0xffffbd48);
 	CHECK_EQUAL(denied_mask, 0x4000);
 
 	smb2_deltree(tree, FNAME);
