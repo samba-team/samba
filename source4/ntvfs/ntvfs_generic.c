@@ -1044,11 +1044,12 @@ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 			return NT_STATUS_NO_MEMORY;
 		}
 		for (i=0;i<lck->smb2.in.lock_count;i++) {
-			if (lck->smb2.in.locks[i].flags & ~SMB2_LOCK_FLAG_ALL_MASK) {
-				return NT_STATUS_INVALID_PARAMETER;
-			}
 			if (lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_UNLOCK) {
 				int j = lck2->generic.in.ulock_cnt;
+				if (lck->smb2.in.locks[i].flags & 
+				    (SMB2_LOCK_FLAG_SHARED|SMB2_LOCK_FLAG_EXCLUSIVE)) {
+					return NT_STATUS_INVALID_PARAMETER;
+				}
 				lck2->generic.in.ulock_cnt++;
 				lck2->generic.in.locks[j].pid = 0;
 				lck2->generic.in.locks[j].offset = lck->smb2.in.locks[i].offset;
