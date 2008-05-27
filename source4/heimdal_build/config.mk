@@ -408,24 +408,24 @@ HEIMDAL_WIND_OBJ_FILES = \
 #######################
 
 [SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME]
-CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -Ilib/socket_wrapper
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 
 HEIMDAL_ROKEN_GETPROGNAME_OBJ_FILES = $(heimdalsrcdir)/lib/roken/getprogname.o
 
 [SUBSYSTEM::HEIMDAL_ROKEN_CLOSEFROM] 
-CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -Ilib/socket_wrapper
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 
 HEIMDAL_ROKEN_CLOSEFROM_OBJ_FILES = $(heimdalsrcdir)/lib/roken/closefrom.o
 
 [SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME_H] 
-CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -Ilib/socket_wrapper
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 
 HEIMDAL_ROKEN_GETPROGNAME_H_OBJ_FILES = $(heimdalsrcdir)/lib/roken/getprogname.ho
 
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN
 [SUBSYSTEM::HEIMDAL_ROKEN]
-CFLAGS =  -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken -Ilib/socket_wrapper
+CFLAGS =  -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken -I$(socketwrappersrcdir)
 PUBLIC_DEPENDENCIES = \
 			HEIMDAL_ROKEN_GETPROGNAME \
 			HEIMDAL_ROKEN_CLOSEFROM \
@@ -490,7 +490,7 @@ HEIMDAL_COM_ERR_OBJ_FILES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
 [SUBSYSTEM::HEIMDAL_ASN1_COMPILE_LEX]
-CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/roken  -Ilib/socket_wrapper
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 # End SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
 #######################
 
@@ -533,7 +533,7 @@ asn1_compile_OBJ_FILES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
 [SUBSYSTEM::HEIMDAL_COM_ERR_COMPILE_LEX]
-CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/com_err -I$(heimdalsrcdir)/lib/roken  -Ilib/socket_wrapper
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/com_err -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 # End SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
 #######################
 
