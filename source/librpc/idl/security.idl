@@ -106,6 +106,9 @@ interface security
 	const int SEC_ADS_LIST_OBJECT      = 0x00000080;
 	const int SEC_ADS_CONTROL_ACCESS   = 0x00000100;
 
+	/* invalid bits */
+	const int SEC_MASK_INVALID         = 0x0ce0fe00;
+
 	/* generic->specific mappings for files */
 	const int SEC_RIGHTS_FILE_READ    = SEC_STD_READ_CONTROL | 
 	                                    SEC_STD_SYNCHRONIZE | 
