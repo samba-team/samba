@@ -127,6 +127,16 @@ int smb2_deltree(struct smb2_tree *tree, const char *dname)
 		return 0;
 	}
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_CANNOT_DELETE)) {
+		/* it could be read-only */
+		status = smb2_util_setatr(tree, dname, FILE_ATTRIBUTE_NORMAL);
+		status = smb2_util_unlink(tree, dname);
+	}
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return 1;
+	}
+
 	ZERO_STRUCT(create_parm);
 	create_parm.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED;
 	create_parm.in.share_access = 
