@@ -469,7 +469,7 @@ struct nbt_netlogon_response_from_pdc {
 #define NBT_SERVER_FULL_SECRET_DOMAIN_6 ( 0x00001000 )
 
 struct nbt_dc_sock_addr {
-	uint32_t sa_family;
+	uint32_t family;
 	const char * pdc_ip;/* [flag(LIBNDR_FLAG_BIGENDIAN)] */
 	DATA_BLOB remaining;/* [flag(LIBNDR_FLAG_REMAINING)] */
 };
