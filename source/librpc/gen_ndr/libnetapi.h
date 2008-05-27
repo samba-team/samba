@@ -3,6 +3,9 @@
 #include <stdint.h>
 
 #define LIBNETAPI_LOCAL_SERVER(x) (!x || is_myname_or_ipaddr(x))
+#ifndef MAXSUBAUTHS
+#define MAXSUBAUTHS 15 /* max sub authorities in a SID */
+#endif
 #ifndef _HEADER_libnetapi
 #define _HEADER_libnetapi
 
@@ -17,6 +20,13 @@ enum NET_API_STATUS
 #define NERR_Success ( 0 )
 #endif
 ;
+
+struct domsid {
+	uint8_t sid_rev_num;
+	uint8_t num_auths;
+	uint8_t id_auth[6];
+	uint32_t *sub_auths;
+};
 
 struct SERVER_INFO_1005 {
 	const char * sv1005_comment;
@@ -72,6 +82,29 @@ struct NET_DISPLAY_GROUP {
 	uint32_t grpi3_group_id;
 	uint32_t grpi3_attributes;
 	uint32_t grpi3_next_index;
+};
+
+struct GROUP_INFO_0 {
+	const char * grpi0_name;
+};
+
+struct GROUP_INFO_1 {
+	const char * grpi1_name;
+	const char * grpi1_comment;
+};
+
+struct GROUP_INFO_2 {
+	const char * grpi2_name;
+	const char * grpi2_comment;
+	uint32_t grpi2_group_id;
+	uint32_t grpi2_attributes;
+};
+
+struct GROUP_INFO_3 {
+	const char * grpi3_name;
+	const char * grpi3_comment;
+	struct domsid grpi3_group_sid;
+	uint32_t grpi3_attributes;
 };
 
 
@@ -272,6 +305,21 @@ struct NetQueryDisplayInformation {
 	struct {
 		uint32_t *entries_read;/* [ref] */
 		void **buffer;/* [noprint,ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetGroupAdd {
+	struct {
+		const char * server_name;
+		uint32_t level;
+		uint8_t *buf;/* [ref] */
+	} in;
+
+	struct {
+		uint32_t *parm_err;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 
