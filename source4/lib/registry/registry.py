@@ -3,6 +3,10 @@
 #
 # Don't modify this file, modify the SWIG interface instead.
 
+"""
+Access to various registry formats and the Samba registry.
+"""
+
 import _registry
 import new
 new_instancemethod = new.instancemethod
@@ -66,6 +70,41 @@ Registry = _registry.Registry
 class reg(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
+    def get_predefined_key_by_name(*args, **kwargs):
+        """
+        S.get_predefined_key_by_name(name) -> key
+        Find a predefined key by name
+        """
+        return _registry.reg_get_predefined_key_by_name(*args, **kwargs)
+
+    def key_del_abs(*args, **kwargs):
+        """
+        S.key_del_abs(name) -> None
+        Delete a key by absolute path.
+        """
+        return _registry.reg_key_del_abs(*args, **kwargs)
+
+    def get_predefined_key(*args, **kwargs):
+        """
+        S.get_predefined_key(hkey_id) -> key
+        Find a predefined key by id
+        """
+        return _registry.reg_get_predefined_key(*args, **kwargs)
+
+    def diff_apply(*args, **kwargs):
+        """
+        S.diff_apply(filename) -> None
+        Apply the diff from the specified file
+        """
+        return _registry.reg_diff_apply(*args, **kwargs)
+
+    def mount_hive(*args):
+        """
+        S.mount_hive(key, predef_name) -> None
+        Mount the specified key at the specified path.
+        """
+        return _registry.reg_mount_hive(*args)
+
     def __init__(self, *args, **kwargs): 
         _registry.reg_swiginit(self,_registry.new_reg(*args, **kwargs))
     __swig_destroy__ = _registry.delete_reg
@@ -79,11 +118,26 @@ reg.mount_hive = new_instancemethod(_registry.reg_mount_hive,None,reg)
 reg_swigregister = _registry.reg_swigregister
 reg_swigregister(reg)
 
-hive_key = _registry.hive_key
-open_ldb = _registry.open_ldb
-create_dir = _registry.create_dir
-open_dir = _registry.open_dir
-open_samba = _registry.open_samba
+
+def hive_key(*args, **kwargs):
+  """S.__init__(location, session_info=None, credentials=None, loadparm_context=None)"""
+  return _registry.hive_key(*args, **kwargs)
+
+def open_ldb(*args, **kwargs):
+  """open_ldb(location, session_info=None, credentials=None, loadparm_context=None) -> key"""
+  return _registry.open_ldb(*args, **kwargs)
+
+def create_dir(*args, **kwargs):
+  """create_dir(location) -> key"""
+  return _registry.create_dir(*args, **kwargs)
+
+def open_dir(*args, **kwargs):
+  """open_dir(location) -> key"""
+  return _registry.open_dir(*args, **kwargs)
+
+def open_samba(*args, **kwargs):
+  """open_samba() -> reg"""
+  return _registry.open_samba(*args, **kwargs)
 HKEY_CLASSES_ROOT = _registry.HKEY_CLASSES_ROOT
 HKEY_CURRENT_USER = _registry.HKEY_CURRENT_USER
 HKEY_LOCAL_MACHINE = _registry.HKEY_LOCAL_MACHINE

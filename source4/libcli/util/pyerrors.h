@@ -17,23 +17,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _PYRPC_H_
-#define _PYRPC_H_
+#ifndef __PYERRORS_H__
+#define __PYERRORS_H__
 
-#define PY_CHECK_TYPE(type, var, fail) \
-	if (!type ## _Check(var)) {\
-		PyErr_Format(PyExc_TypeError, "Expected type %s", type ## _Type.tp_name); \
-		fail; \
-	}
+#define PyErr_FromWERROR(err) Py_BuildValue("(i,s)", W_ERROR_V(err), discard_const_p(char, win_errstr(err)))
 
-#define dom_sid2_Type dom_sid_Type
-#define dom_sid28_Type dom_sid_Type
-#define dom_sid2_Check dom_sid_Check
-#define dom_sid28_Check dom_sid_Check
+#define PyErr_FromNTSTATUS(status) Py_BuildValue("(i,s)", NT_STATUS_V(status), discard_const_p(char, nt_errstr(status)))
 
-/* This macro is only provided by Python >= 2.3 */
-#ifndef PyAPI_DATA
-#   define PyAPI_DATA(RTYPE) extern RTYPE
-#endif
+#define PyErr_SetWERROR(err) \
+	PyErr_SetObject(PyExc_RuntimeError, PyErr_FromWERROR(err))
 
-#endif /* _PYRPC_H_ */
+#define PyErr_SetNTSTATUS(status) \
+        PyErr_SetObject(PyExc_RuntimeError, PyErr_FromNTSTATUS(status))
+
+#endif /* __PYERRORS_H__ */

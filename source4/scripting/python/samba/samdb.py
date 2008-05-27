@@ -28,6 +28,8 @@ import ldb
 from samba.idmap import IDmapDB
 import pwd
 
+__docformat__ = "restructuredText"
+
 class SamDB(samba.Ldb):
     """The SAM database."""
 

@@ -16,7 +16,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-%module(package="samba.events") events;
+%module(docstring="Event management.",package="samba.events") events;
 
 %import "../talloc/talloc.i";
 
@@ -27,8 +27,11 @@ typedef struct event_context event;
 
 typedef struct event_context {
     %extend {
+        %feature("docstring") event "S.__init__()";
         event(TALLOC_CTX *mem_ctx) { return event_context_init(mem_ctx); }
+        %feature("docstring") loop_once "S.loop_once() -> int";
         int loop_once(void);
+        %feature("docstring") loop_wait "S.loop_wait() -> int";
         int loop_wait(void);
     }
 } event;
@@ -44,6 +47,8 @@ typedef struct event_context {
 
 struct event_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char *name);
 
+%feature("docstring") event_backend_list "event_backend_list() -> list";
 const char **event_backend_list(TALLOC_CTX *mem_ctx);
+%feature("docstring") event_set_default_backend "event_set_default_backend(name) -> None";
 %rename(set_default_backend) event_set_default_backend;
 void event_set_default_backend(const char *backend);

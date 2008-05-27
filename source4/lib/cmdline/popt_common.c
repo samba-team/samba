@@ -23,7 +23,7 @@
 #include "version.h"
 #include "lib/cmdline/popt_common.h"
 #include "param/param.h"
-#include "dynconfig.h"
+#include "dynconfig/dynconfig.h"
 
 /* Handle command line options:
  *		-d,--debuglevel 

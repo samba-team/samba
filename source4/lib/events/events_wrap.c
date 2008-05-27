@@ -2773,15 +2773,15 @@ fail:
 
 
 static PyMethodDef SwigMethods[] = {
-	 { (char *)"new_event", (PyCFunction)_wrap_new_event, METH_NOARGS, NULL},
-	 { (char *)"event_loop_once", (PyCFunction)_wrap_event_loop_once, METH_O, NULL},
-	 { (char *)"event_loop_wait", (PyCFunction)_wrap_event_loop_wait, METH_O, NULL},
+	 { (char *)"new_event", (PyCFunction)_wrap_new_event, METH_NOARGS, (char *)"S.__init__()"},
+	 { (char *)"event_loop_once", (PyCFunction)_wrap_event_loop_once, METH_O, (char *)"S.loop_once() -> int"},
+	 { (char *)"event_loop_wait", (PyCFunction)_wrap_event_loop_wait, METH_O, (char *)"S.loop_wait() -> int"},
 	 { (char *)"delete_event", (PyCFunction)_wrap_delete_event, METH_O, NULL},
 	 { (char *)"event_swigregister", event_swigregister, METH_VARARGS, NULL},
 	 { (char *)"event_swiginit", event_swiginit, METH_VARARGS, NULL},
 	 { (char *)"event_context_init_byname", (PyCFunction) _wrap_event_context_init_byname, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"event_backend_list", (PyCFunction)_wrap_event_backend_list, METH_NOARGS, NULL},
-	 { (char *)"set_default_backend", (PyCFunction) _wrap_set_default_backend, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"event_backend_list", (PyCFunction)_wrap_event_backend_list, METH_NOARGS, (char *)"event_backend_list() -> list"},
+	 { (char *)"set_default_backend", (PyCFunction) _wrap_set_default_backend, METH_VARARGS | METH_KEYWORDS, (char *)"event_set_default_backend(name) -> None"},
 	 { NULL, NULL, 0, NULL }
 };
 

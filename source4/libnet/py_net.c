@@ -71,8 +71,11 @@ static PyObject *py_net_join(PyObject *cls, PyObject *args, PyObject *kwargs)
 	return result;
 }
 
+static char py_net_join_doc[] = "join(domain_name, netbios_name, join_type, level) -> (join_password, domain_sid, domain_name)\n\n" \
+"Join the domain with the specified name.";
+
 static struct PyMethodDef net_methods[] = {
-	{"Join", (PyCFunction)py_net_join, METH_VARARGS|METH_KEYWORDS},
+	{"Join", (PyCFunction)py_net_join, METH_VARARGS|METH_KEYWORDS, py_net_join_doc},
 	{NULL }
 };
 

@@ -36,6 +36,13 @@ NTSTATUS pvfs_stream_information(struct pvfs_state *pvfs,
 	int i;
 	NTSTATUS status;
 
+	/* directories don't have streams */
+	if (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+		info->num_streams = 0;
+		info->streams = NULL;
+		return NT_STATUS_OK;
+	}
+
 	streams = talloc(mem_ctx, struct xattr_DosStreams);
 	if (streams == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -269,9 +276,12 @@ ssize_t pvfs_stream_write(struct pvfs_state *pvfs,
 	if (count == 0) {
 		return 0;
 	}
-	if (offset > XATTR_MAX_STREAM_SIZE) {
-		errno = ENOSPC;
-		return -1;
+
+	if (count+offset > XATTR_MAX_STREAM_SIZE) {
+		if (!pvfs->ea_db || count+offset > XATTR_MAX_STREAM_SIZE_TDB) {
+			errno = ENOSPC;
+			return -1;
+		}
 	}
 
 	/* we have to load the existing stream, then modify, then save */
@@ -325,7 +335,9 @@ NTSTATUS pvfs_stream_truncate(struct pvfs_state *pvfs,
 	DATA_BLOB blob;
 
 	if (length > XATTR_MAX_STREAM_SIZE) {
-		return NT_STATUS_DISK_FULL;
+		if (!pvfs->ea_db || length > XATTR_MAX_STREAM_SIZE_TDB) {
+			return NT_STATUS_DISK_FULL;
+		}
 	}
 
 	/* we have to load the existing stream, then modify, then save */

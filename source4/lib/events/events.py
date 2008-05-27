@@ -3,6 +3,10 @@
 #
 # Don't modify this file, modify the SWIG interface instead.
 
+"""
+Event management.
+"""
+
 import _events
 import new
 new_instancemethod = new.instancemethod
@@ -61,7 +65,16 @@ class event(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     def __init__(self, *args, **kwargs): 
+        """S.__init__()"""
         _events.event_swiginit(self,_events.new_event(*args, **kwargs))
+    def loop_once(*args, **kwargs):
+        """S.loop_once() -> int"""
+        return _events.event_loop_once(*args, **kwargs)
+
+    def loop_wait(*args, **kwargs):
+        """S.loop_wait() -> int"""
+        return _events.event_loop_wait(*args, **kwargs)
+
     __swig_destroy__ = _events.delete_event
 event.loop_once = new_instancemethod(_events.event_loop_once,None,event)
 event.loop_wait = new_instancemethod(_events.event_loop_wait,None,event)
@@ -69,7 +82,13 @@ event_swigregister = _events.event_swigregister
 event_swigregister(event)
 
 event_context_init_byname = _events.event_context_init_byname
-event_backend_list = _events.event_backend_list
-set_default_backend = _events.set_default_backend
+
+def event_backend_list(*args):
+  """event_backend_list() -> list"""
+  return _events.event_backend_list(*args)
+
+def set_default_backend(*args, **kwargs):
+  """event_set_default_backend(name) -> None"""
+  return _events.set_default_backend(*args, **kwargs)
 
 

@@ -4168,15 +4168,33 @@ SWIGINTERN PyObject *Swig_var_default_config_get(void) {
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"new_LoadParm", (PyCFunction)_wrap_new_LoadParm, METH_NOARGS, NULL},
 	 { (char *)"LoadParm_default_service", (PyCFunction) _wrap_LoadParm_default_service, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"LoadParm_load", (PyCFunction) _wrap_LoadParm_load, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"LoadParm_load_default", (PyCFunction) _wrap_LoadParm_load_default, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"LoadParm_load", (PyCFunction) _wrap_LoadParm_load, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.load(filename) -> None\n"
+		"Load specified file.\n"
+		""},
+	 { (char *)"LoadParm_load_default", (PyCFunction) _wrap_LoadParm_load_default, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.load_default() -> None\n"
+		"Load default smb.conf file.\n"
+		""},
 	 { (char *)"LoadParm___len__", (PyCFunction) _wrap_LoadParm___len__, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm___getitem__", (PyCFunction) _wrap_LoadParm___getitem__, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"LoadParm_configfile", (PyCFunction) _wrap_LoadParm_configfile, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"LoadParm_is_mydomain", (PyCFunction) _wrap_LoadParm_is_mydomain, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"LoadParm_is_myname", (PyCFunction) _wrap_LoadParm_is_myname, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"LoadParm_configfile", (PyCFunction) _wrap_LoadParm_configfile, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.configfile() -> string\n"
+		"Return name of last config file that was loaded.\n"
+		""},
+	 { (char *)"LoadParm_is_mydomain", (PyCFunction) _wrap_LoadParm_is_mydomain, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.is_mydomain(domain_name) -> bool\n"
+		"Check whether the specified name matches our domain name.\n"
+		""},
+	 { (char *)"LoadParm_is_myname", (PyCFunction) _wrap_LoadParm_is_myname, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.is_myname(netbios_name) -> bool\n"
+		"Check whether the specified name matches one of our netbios names.\n"
+		""},
 	 { (char *)"LoadParm_use", (PyCFunction) _wrap_LoadParm_use, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"LoadParm_set", (PyCFunction) _wrap_LoadParm_set, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"LoadParm_set", (PyCFunction) _wrap_LoadParm_set, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.set(name, value) -> bool\n"
+		"Change a parameter.\n"
+		""},
 	 { (char *)"LoadParm_get", (PyCFunction) _wrap_LoadParm_get, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_LoadParm", (PyCFunction) _wrap_delete_LoadParm, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_swigregister", LoadParm_swigregister, METH_VARARGS, NULL},
@@ -4187,14 +4205,26 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"loadparm_service_swigregister", loadparm_service_swigregister, METH_VARARGS, NULL},
 	 { (char *)"new_ParamFile", (PyCFunction)_wrap_new_ParamFile, METH_NOARGS, NULL},
 	 { (char *)"ParamFile_get_section", (PyCFunction) _wrap_ParamFile_get_section, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ParamFile_add_section", (PyCFunction) _wrap_ParamFile_add_section, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"ParamFile_add_section", (PyCFunction) _wrap_ParamFile_add_section, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.add_section(name) -> section\n"
+		"Add a new section.\n"
+		""},
 	 { (char *)"ParamFile_get", (PyCFunction) _wrap_ParamFile_get, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ParamFile_get_string", (PyCFunction) _wrap_ParamFile_get_string, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ParamFile_set_string", (PyCFunction) _wrap_ParamFile_set_string, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ParamFile_set", (PyCFunction) _wrap_ParamFile_set, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ParamFile_first_section", (PyCFunction)_wrap_ParamFile_first_section, METH_O, NULL},
-	 { (char *)"ParamFile_next_section", (PyCFunction) _wrap_ParamFile_next_section, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ParamFile_read", (PyCFunction) _wrap_ParamFile_read, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"ParamFile_first_section", (PyCFunction)_wrap_ParamFile_first_section, METH_O, (char *)"\n"
+		"S.first_section() -> section\n"
+		"Find first section\n"
+		""},
+	 { (char *)"ParamFile_next_section", (PyCFunction) _wrap_ParamFile_next_section, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.next_section(prev) -> section\n"
+		"Find next section\n"
+		""},
+	 { (char *)"ParamFile_read", (PyCFunction) _wrap_ParamFile_read, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.read(filename) -> bool\n"
+		"Read a filename.\n"
+		""},
 	 { (char *)"ParamFile_write", (PyCFunction) _wrap_ParamFile_write, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_ParamFile", (PyCFunction)_wrap_delete_ParamFile, METH_O, NULL},
 	 { (char *)"ParamFile_swigregister", ParamFile_swigregister, METH_VARARGS, NULL},

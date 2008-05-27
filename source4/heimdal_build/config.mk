@@ -1,7 +1,9 @@
+heimdalbuildsrcdir = $(heimdalsrcdir)/../heimdal_build
+
 #######################
 # Start SUBSYSTEM HEIMDAL_KDC
 [SUBSYSTEM::HEIMDAL_KDC]
-CFLAGS = -Iheimdal_build -Iheimdal/kdc
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/kdc
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_KRB5 HEIMDAL_HDB HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1
 PUBLIC_DEPENDENCIES = HEIMDAL_NTLM HEIMDAL_HCRYPTO
 # End SUBSYSTEM HEIMDAL_KDC
@@ -24,14 +26,14 @@ HEIMDAL_KDC_OBJ_FILES = \
 	$(heimdalsrcdir)/kdc/kx509.o
 
 [SUBSYSTEM::HEIMDAL_NTLM]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/ntlm
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/ntlm
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_KRB5
 
 HEIMDAL_NTLM_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/ntlm/ntlm.o
 
 [SUBSYSTEM::HEIMDAL_HDB_KEYS]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/hdb
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/hdb
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_KRB5 \
 					   HEIMDAL_HDB_ASN1
 
@@ -40,7 +42,7 @@ HEIMDAL_HDB_KEYS_OBJ_FILES = $(heimdalsrcdir)/lib/hdb/keys.o
 #######################
 # Start SUBSYSTEM HEIMDAL_HDB
 [SUBSYSTEM::HEIMDAL_HDB]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/hdb
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/hdb
 PRIVATE_DEPENDENCIES = HDB_LDB HEIMDAL_KRB5 HEIMDAL_HDB_KEYS HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_COM_ERR HEIMDAL_HDB_ASN1
 # End SUBSYSTEM HEIMDAL_HDB
 #######################
@@ -58,7 +60,7 @@ HEIMDAL_HDB_OBJ_FILES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_GSSAPI
 [SUBSYSTEM::HEIMDAL_GSSAPI]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/gssapi -Iheimdal/lib/gssapi/gssapi -Iheimdal/lib/gssapi/spnego -Iheimdal/lib/gssapi/krb5 -Iheimdal/lib/gssapi/mech
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/gssapi -I$(heimdalsrcdir)/lib/gssapi/gssapi -I$(heimdalsrcdir)/lib/gssapi/spnego -I$(heimdalsrcdir)/lib/gssapi/krb5 -I$(heimdalsrcdir)/lib/gssapi/mech
 PRIVATE_DEPENDENCIES = HEIMDAL_HCRYPTO HEIMDAL_HEIM_ASN1 HEIMDAL_SPNEGO_ASN1
 PUBLIC_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_KRB5
 # End SUBSYSTEM HEIMDAL_GSSAPI
@@ -176,7 +178,7 @@ HEIMDAL_GSSAPI_OBJ_FILES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_KRB5
 [SUBSYSTEM::HEIMDAL_KRB5]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 -Iheimdal/lib/asn1 -Iheimdal/lib/com_err 
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/krb5 -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/com_err 
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_PKINIT_ASN1 HEIMDAL_WIND
 PUBLIC_DEPENDENCIES = HEIMDAL_KRB5_ASN1 HEIMDAL_GLUE HEIMDAL_HX509 HEIMDAL_HCRYPTO
 # End SUBSYSTEM HEIMDAL_KRB5
@@ -273,7 +275,7 @@ HEIMDAL_KRB5_OBJ_FILES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_HEIM_ASN1
 [SUBSYSTEM::HEIMDAL_HEIM_ASN1]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/asn1
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/asn1
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_COM_ERR
 # End SUBSYSTEM HEIMDAL_KRB5
 #######################
@@ -293,7 +295,7 @@ HEIMDAL_HEIM_ASN1_OBJ_FILES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_HCRYPTO_IMATH
 [SUBSYSTEM::HEIMDAL_HCRYPTO_IMATH]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/hcrypto/imath 
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/hcrypto/imath 
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN 
 # End SUBSYSTEM HEIMDAL_HCRYPTO_IMATH
 #######################
@@ -303,7 +305,7 @@ HEIMDAL_HCRYPTO_IMATH_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/hcrypto/imath/iprime.o
 
 [SUBSYSTEM::HEIMDAL_HCRYPTO]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/hcrypto -Iheimdal/lib
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/hcrypto -I$(heimdalsrcdir)/lib
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO_IMATH HEIMDAL_RFC2459_ASN1
 # End SUBSYSTEM HEIMDAL_HCRYPTO
 #######################
@@ -343,7 +345,7 @@ HEIMDAL_HCRYPTO_OBJ_FILES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_HX509
 [SUBSYSTEM::HEIMDAL_HX509]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/hx509 
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/hx509 
 PRIVATE_DEPENDENCIES = \
 	HEIMDAL_ROKEN HEIMDAL_COM_ERR \
 	HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO \
@@ -383,7 +385,7 @@ HEIMDAL_HX509_OBJ_FILES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_WIND
 [SUBSYSTEM::HEIMDAL_WIND]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/wind 
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/wind 
 PRIVATE_DEPENDENCIES = \
 	HEIMDAL_ROKEN HEIMDAL_COM_ERR
 
@@ -406,24 +408,24 @@ HEIMDAL_WIND_OBJ_FILES = \
 #######################
 
 [SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/roken  -Ilib/socket_wrapper
 
 HEIMDAL_ROKEN_GETPROGNAME_OBJ_FILES = $(heimdalsrcdir)/lib/roken/getprogname.o
+$(HEIMDAL_ROKEN_GETPROGNAME_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 
 [SUBSYSTEM::HEIMDAL_ROKEN_CLOSEFROM] 
-CFLAGS = -Iheimdal_build -Iheimdal/lib/roken  -Ilib/socket_wrapper
 
 HEIMDAL_ROKEN_CLOSEFROM_OBJ_FILES = $(heimdalsrcdir)/lib/roken/closefrom.o
+$(HEIMDAL_ROKEN_CLOSEFROM_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 
 [SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME_H] 
-CFLAGS = -Iheimdal_build -Iheimdal/lib/roken  -Ilib/socket_wrapper
 
 HEIMDAL_ROKEN_GETPROGNAME_H_OBJ_FILES = $(heimdalsrcdir)/lib/roken/getprogname.ho
+$(HEIMDAL_ROKEN_GETPROGNAME_H_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN
 [SUBSYSTEM::HEIMDAL_ROKEN]
-CFLAGS =  -Iheimdal_build -Iheimdal/lib/roken -Ilib/socket_wrapper
+CFLAGS =  -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken -I$(socketwrappersrcdir)
 PUBLIC_DEPENDENCIES = \
 			HEIMDAL_ROKEN_GETPROGNAME \
 			HEIMDAL_ROKEN_CLOSEFROM \
@@ -461,22 +463,22 @@ HEIMDAL_ROKEN_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/roken/simple_exec.o \
 	$(heimdalsrcdir)/lib/roken/strcollect.o \
 	$(heimdalsrcdir)/lib/roken/rtbl.o \
-	./heimdal_build/replace.o
+	$(heimdalbuildsrcdir)/replace.o
 
 #######################
 # Start SUBSYSTEM HEIMDAL_GLUE
 [SUBSYSTEM::HEIMDAL_GLUE]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 -Iheimdal/lib/asn1 -Iheimdal/lib/com_err 
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/krb5 -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/com_err 
 PUBLIC_DEPENDENCIES = LIBNETIF LIBSAMBA-HOSTCONFIG
 # End SUBSYSTEM HEIMDAL_GLUE
 #######################
 
-HEIMDAL_GLUE_OBJ_FILES = heimdal_build/glue.o
+HEIMDAL_GLUE_OBJ_FILES = $(heimdalbuildsrcdir)/glue.o
 
 #######################
 # Start SUBSYSTEM HEIMDAL_COM_ERR
 [SUBSYSTEM::HEIMDAL_COM_ERR]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/com_err
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/com_err
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN
 # End SUBSYSTEM HEIMDAL_COM_ERR
 #######################
@@ -488,18 +490,19 @@ HEIMDAL_COM_ERR_OBJ_FILES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
 [SUBSYSTEM::HEIMDAL_ASN1_COMPILE_LEX]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/asn1 -Iheimdal/lib/roken  -Ilib/socket_wrapper
 # End SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
 #######################
 
 HEIMDAL_ASN1_COMPILE_LEX_OBJ_FILES = $(heimdalsrcdir)/lib/asn1/lex.ho 
+$(HEIMDAL_ASN1_COMPILE_LEX_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/roken -I$(socketwrappersrcdir)
 
 #######################
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
 USE_HOSTCC = YES
 PRIVATE_DEPENDENCIES = HEIMDAL_ASN1_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
+
+ASN1C = $(builddir)/bin/asn1_compile
 
 asn1_compile_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/asn1/main.ho \
@@ -522,8 +525,10 @@ asn1_compile_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/roken/ecalloc.ho \
 	$(heimdalsrcdir)/lib/asn1/symbol.ho \
 	$(heimdalsrcdir)/lib/vers/print_version.ho \
-	./lib/socket_wrapper/socket_wrapper.ho \
-	./heimdal_build/replace.ho
+	$(socketwrappersrcdir)/socket_wrapper.ho \
+	$(heimdalbuildsrcdir)/replace.ho
+
+$(asn1_compile_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken -I$(heimdalsrcdir)/lib/asn1
 
 # End BINARY asn1_compile
 #######################
@@ -531,7 +536,7 @@ asn1_compile_OBJ_FILES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
 [SUBSYSTEM::HEIMDAL_COM_ERR_COMPILE_LEX]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/com_err -Iheimdal/lib/roken  -Ilib/socket_wrapper
+CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/com_err -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 # End SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
 #######################
 
@@ -540,11 +545,12 @@ HEIMDAL_COM_ERR_COMPILE_LEX_OBJ_FILES = $(heimdalsrcdir)/lib/com_err/lex.ho
 #######################
 # Start BINARY compile_et
 [BINARY::compile_et]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
 USE_HOSTCC = YES
 PRIVATE_DEPENDENCIES = HEIMDAL_COM_ERR_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
 # End BINARY compile_et
 #######################
+
+ET_COMPILER = $(builddir)/bin/compile_et
 
 compile_et_OBJ_FILES = $(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(heimdalsrcdir)/lib/com_err/parse.ho \
@@ -553,37 +559,38 @@ compile_et_OBJ_FILES = $(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(heimdalsrcdir)/lib/roken/get_window_size.ho \
 	$(heimdalsrcdir)/lib/roken/strupr.ho \
 	$(heimdalsrcdir)/lib/roken/setprogname.ho \
-	./lib/socket_wrapper/socket_wrapper.ho \
-	./heimdal_build/replace.ho
+	$(socketwrappersrcdir)/socket_wrapper.ho \
+	$(heimdalbuildsrcdir)/replace.ho
 
+$(compile_et_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken
 
-mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/hdb/hdb.asn1 hdb_asn1 heimdal/lib/hdb |
-mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/gssapi/spnego/spnego.asn1 spnego_asn1 heimdal/lib/gssapi --sequence=MechTypeList |
-mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/gssapi/mech/gssapi.asn1 gssapi_asn1 heimdal/lib/gssapi|
-mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/k5.asn1 krb5_asn1 heimdal/lib/asn1 --encode-rfc1510-bit-string --sequence=KRB5SignedPathPrincipals --sequence=AuthorizationData --sequence=METHOD-DATA|
-mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/digest.asn1 digest_asn1 heimdal/lib/asn1|
-mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/pkcs8.asn1 pkcs8_asn1 heimdal/lib/asn1|
-mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/pkcs9.asn1 pkcs9_asn1 heimdal/lib/asn1|
-mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/pkcs12.asn1 pkcs12_asn1 heimdal/lib/asn1|
-mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/rfc2459.asn1 rfc2459_asn1 heimdal/lib/asn1 --preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions --sequence=CRLDistributionPoints|
-mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/pkinit.asn1 pkinit_asn1 heimdal/lib/asn1|
-mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/CMS.asn1 cms_asn1 heimdal/lib/asn1|
-mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/hx509/ocsp.asn1 ocsp_asn1 heimdal/lib/hx509 --preserve-binary=OCSPTBSRequest --preserve-binary=OCSPResponseData|
-mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/kx509.asn1 kx509_asn1 heimdal/lib/asn1|
-mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/hx509/pkcs10.asn1 pkcs10_asn1 heimdal/lib/hx509 --preserve-binary=CertificationRequestInfo|
+mkinclude perl_path_wrapper.sh asn1_deps.pl lib/hdb/hdb.asn1 hdb_asn1 \$\(heimdalsrcdir\)/lib/hdb |
+mkinclude perl_path_wrapper.sh asn1_deps.pl lib/gssapi/spnego/spnego.asn1 spnego_asn1 \$\(heimdalsrcdir\)/lib/gssapi --sequence=MechTypeList |
+mkinclude perl_path_wrapper.sh asn1_deps.pl lib/gssapi/mech/gssapi.asn1 gssapi_asn1 \$\(heimdalsrcdir\)/lib/gssapi|
+mkinclude perl_path_wrapper.sh asn1_deps.pl lib/asn1/k5.asn1 krb5_asn1 \$\(heimdalsrcdir\)/lib/asn1 --encode-rfc1510-bit-string --sequence=KRB5SignedPathPrincipals --sequence=AuthorizationData --sequence=METHOD-DATA|
+mkinclude perl_path_wrapper.sh asn1_deps.pl lib/asn1/digest.asn1 digest_asn1 \$\(heimdalsrcdir\)/lib/asn1|
+mkinclude perl_path_wrapper.sh asn1_deps.pl lib/asn1/pkcs8.asn1 pkcs8_asn1 \$\(heimdalsrcdir\)/lib/asn1|
+mkinclude perl_path_wrapper.sh asn1_deps.pl lib/asn1/pkcs9.asn1 pkcs9_asn1 \$\(heimdalsrcdir\)/lib/asn1|
+mkinclude perl_path_wrapper.sh asn1_deps.pl lib/asn1/pkcs12.asn1 pkcs12_asn1 \$\(heimdalsrcdir\)/lib/asn1|
+mkinclude perl_path_wrapper.sh asn1_deps.pl lib/asn1/rfc2459.asn1 rfc2459_asn1 \$\(heimdalsrcdir\)/lib/asn1 --preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions --sequence=CRLDistributionPoints|
+mkinclude perl_path_wrapper.sh asn1_deps.pl lib/asn1/pkinit.asn1 pkinit_asn1 \$\(heimdalsrcdir\)/lib/asn1|
+mkinclude perl_path_wrapper.sh asn1_deps.pl lib/asn1/CMS.asn1 cms_asn1 \$\(heimdalsrcdir\)/lib/asn1|
+mkinclude perl_path_wrapper.sh asn1_deps.pl lib/hx509/ocsp.asn1 ocsp_asn1 \$\(heimdalsrcdir\)/lib/hx509 --preserve-binary=OCSPTBSRequest --preserve-binary=OCSPResponseData|
+mkinclude perl_path_wrapper.sh asn1_deps.pl lib/asn1/kx509.asn1 kx509_asn1 \$\(heimdalsrcdir\)/lib/asn1|
+mkinclude perl_path_wrapper.sh asn1_deps.pl lib/hx509/pkcs10.asn1 pkcs10_asn1 \$\(heimdalsrcdir\)/lib/hx509 --preserve-binary=CertificationRequestInfo|
 
 #
 # Ensure to update ./static_deps.mk when you add a new entry here!
 #
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/asn1/asn1_err.et heimdal/lib/asn1|
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/hdb/hdb_err.et heimdal/lib/hdb|
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/heim_err.et heimdal/lib/krb5|
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/k524_err.et heimdal/lib/krb5|
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb_err.et heimdal/lib/krb5|
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb5_err.et heimdal/lib/krb5|
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/gssapi/krb5/gkrb5_err.et heimdal/lib/gssapi|
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/hx509/hx509_err.et heimdal/lib/hx509|
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/wind/wind_err.et heimdal/lib/wind|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/asn1/asn1_err.et \$\(heimdalsrcdir\)/lib/asn1|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/hdb/hdb_err.et \$\(heimdalsrcdir\)/lib/hdb|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/krb5/heim_err.et \$\(heimdalsrcdir\)/lib/krb5|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/krb5/k524_err.et \$\(heimdalsrcdir\)/lib/krb5|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/krb5/krb_err.et \$\(heimdalsrcdir\)/lib/krb5|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/krb5/krb5_err.et \$\(heimdalsrcdir\)/lib/krb5|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/gssapi/krb5/gkrb5_err.et \$\(heimdalsrcdir\)/lib/gssapi|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/hx509/hx509_err.et \$\(heimdalsrcdir\)/lib/hx509|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/wind/wind_err.et \$\(heimdalsrcdir\)/lib/wind|
 
 clean::	
 	@-rm -f bin/compile_et bin/asn1_compile
@@ -591,7 +598,7 @@ clean::
 #######################
 # Start SUBSYSTEM HEIMDAL
 [SUBSYSTEM::HEIMDAL]
-CFLAGS = -Iheimdal_build
+CFLAGS = -I$(heimdalbuildsrcdir)
 PUBLIC_DEPENDENCIES = \
 		HEIMDAL_GSSAPI HEIMDAL_KRB5
 # End SUBSYSTEM HEIMDAL
@@ -602,7 +609,6 @@ HEIMDAL_OBJ_FILES = $(heimdalsrcdir)/lib/vers/print_version.o
 #######################
 # Start BINARY compile_et
 [BINARY::samba4kinit]
-CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
 PRIVATE_DEPENDENCIES = HEIMDAL_KRB5 HEIMDAL_NTLM
 # End BINARY compile_et
 #######################
@@ -611,6 +617,8 @@ samba4kinit_OBJ_FILES = $(heimdalsrcdir)/kuser/kinit.o \
 	$(heimdalsrcdir)/lib/vers/print_version.o \
 	$(heimdalsrcdir)/lib/roken/setprogname.o \
 	$(heimdalsrcdir)/lib/roken/getarg.o 
+
+$(samba4kinit_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken
 
 dist:: $(heimdalsrcdir)/lib/asn1/lex.c $(heimdalsrcdir)/lib/com_err/lex.c \
 	$(heimdalsrcdir)/lib/asn1/parse.c $(heimdalsrcdir)/lib/com_err/parse.c

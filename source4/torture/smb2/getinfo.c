@@ -51,9 +51,9 @@ static struct {
  { LEVEL(RAW_FILEINFO_COMPRESSION_INFORMATION) },
  { LEVEL(RAW_FILEINFO_NETWORK_OPEN_INFORMATION) },
  { LEVEL(RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION) },
-/*  
-disabled until we know how the alignment now works
-{ LEVEL(RAW_FILEINFO_SMB2_ALL_EAS) }, */
+/*
+ { LEVEL(RAW_FILEINFO_SMB2_ALL_EAS) },
+*/
  { LEVEL(RAW_FILEINFO_SMB2_ALL_INFORMATION) },
  { LEVEL(RAW_FILEINFO_SEC_DESC) }
 };
@@ -107,9 +107,6 @@ static bool torture_smb2_fileinfo(struct torture_context *tctx, struct smb2_tree
 			file_levels[i].dinfo.query_secdesc.in.secinfo_flags = 0x7;
 		}
 		if (file_levels[i].level == RAW_FILEINFO_SMB2_ALL_EAS) {
-			if (torture_setting_bool(tctx, "samba4", false)) {
-				continue;
-			}
 			file_levels[i].finfo.all_eas.in.continue_flags = 
 				SMB2_CONTINUE_FLAG_RESTART;
 			file_levels[i].dinfo.all_eas.in.continue_flags = 
@@ -182,6 +179,9 @@ bool torture_smb2_getinfo(struct torture_context *torture)
 	if (!torture_smb2_connection(torture, &tree)) {
 		return false;
 	}
+
+	smb2_deltree(tree, FNAME);
+	smb2_deltree(tree, DNAME);
 
 	status = torture_setup_complex_file(tree, FNAME);
 	if (!NT_STATUS_IS_OK(status)) {

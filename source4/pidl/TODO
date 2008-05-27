@@ -1,6 +1,3 @@
-- EJS output backend shouldn't use the NDR levels stuff but instead 
-  as the "C levels" and NDR levels don't necessarily match.
-
 - true multiple dimension array / strings in arrays support
 
 - compatibility mode for generating MIDL-readable data:
@@ -31,3 +28,15 @@
  - remove NDR_AUTO_REF_ALLOC flag
 
 - automatic test generator based on IDL pointer types
+
+- support converting structs to tuples in Python rather than objects
+- convert structs with a single mattering member to that member directly, e.g.:
+  struct bar {
+    int size;
+	[size_is(size)] uint32 *array;
+  };
+
+  should be converted to an array of uint32's
+
+- python: fill in size members automatically in some places if the struct isn't being returned
+  (so we don't have to cope with the array growing)

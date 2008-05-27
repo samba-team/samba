@@ -24,7 +24,11 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
-%module tdb
+%define DOCSTRING
+"TDB is a simple key-value database similar to GDBM that supports multiple writers."
+%enddef
+
+%module(docstring=DOCSTRING) tdb
 
 %{
 
@@ -138,7 +142,8 @@ enum TDB_ERROR {
     $1 = TDB_REPLACE;
 }
 
-%rename(Tdb) tdb;
+%rename(Tdb) tdb_context;
+%feature("docstring") tdb_context "A TDB file.";
 %typemap(out,noblock=1) tdb * {
     /* Throw an IOError exception from errno if tdb_open() returns NULL */
     if ($1 == NULL) {
@@ -150,34 +155,68 @@ enum TDB_ERROR {
 
 typedef struct tdb_context {
     %extend {
+        %feature("docstring") tdb "S.__init__(name,hash_size=0,tdb_flags=TDB_DEFAULT,flags=O_RDWR,mode=0600)\n"
+                                  "Open a TDB file.";
         tdb(const char *name, int hash_size, int tdb_flags, int flags, mode_t mode) {
             return tdb_open(name, hash_size, tdb_flags, flags, mode);
         }
         enum TDB_ERROR error();
         ~tdb() { tdb_close($self); }
+        %feature("docstring") close "S.close() -> None\n"
+                                    "Close the TDB file.";
         int close();
         int append(TDB_DATA key, TDB_DATA new_dbuf);
+        %feature("docstring") errorstr "S.errorstr() -> errorstring\n"
+                                        "Obtain last error message.";
         const char *errorstr();
         %rename(get) fetch;
+        %feature("docstring") fetch "S.fetch(key) -> value\n"
+                                        "Fetch a value.";
         TDB_DATA fetch(TDB_DATA key);
+        %feature("docstring") delete "S.delete(key) -> None\n"
+                                        "Delete an entry.";
         int delete(TDB_DATA key);
+        %feature("docstring") store "S.store(key, value, flag=TDB_REPLACE) -> None\n"
+                                        "Store an entry.";
         int store(TDB_DATA key, TDB_DATA dbuf, int flag);
         int exists(TDB_DATA key);
+        %feature("docstring") firstkey "S.firstkey() -> data\n"
+                                        "Return the first key in this database.";
         TDB_DATA firstkey();
+        %feature("docstring") nextkey "S.nextkey(prev) -> data\n"
+                                        "Return the next key in this database.";
         TDB_DATA nextkey(TDB_DATA key);
+        %feature("docstring") lockall "S.lockall() -> bool";
         int lockall();
+        %feature("docstring") unlockall "S.unlockall() -> bool";
         int unlockall();
+        %feature("docstring") unlockall "S.lockall_read() -> bool";
         int lockall_read();
+        %feature("docstring") unlockall "S.unlockall_read() -> bool";
         int unlockall_read();
+        %feature("docstring") reopen "S.reopen() -> bool\n"
+                                        "Reopen this file.";
         int reopen();
+        %feature("docstring") transaction_start "S.transaction_start() -> None\n"
+                                        "Start a new transaction.";
         int transaction_start();
+        %feature("docstring") transaction_commit "S.transaction_commit() -> None\n"
+                                        "Commit the currently active transaction.";
         int transaction_commit();
+        %feature("docstring") transaction_cancel "S.transaction_cancel() -> None\n"
+                                        "Cancel the currently active transaction.";
         int transaction_cancel();
         int transaction_recover();
+        %feature("docstring") hash_size "S.hash_size() -> int";
         int hash_size();
+        %feature("docstring") map_size "S.map_size() -> int";
         size_t map_size();
+        %feature("docstring") get_flags "S.get_flags() -> int";
         int get_flags();
+        %feature("docstring") set_max_dead "S.set_max_dead(int) -> None";
         void set_max_dead(int max_dead);
+        %feature("docstring") name "S.name() -> path\n" \
+                                   "Return filename of this TDB file.";
         const char *name();
     }
 

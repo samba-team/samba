@@ -16,7 +16,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-%module registry
+%define DOCSTRING
+"Access to various registry formats and the Samba registry."
+%enddef
+
+%module(docstring=DOCSTRING) registry
 
 %{
 /* Include headers */
@@ -93,11 +97,20 @@ WERROR reg_open_local(TALLOC_CTX *parent_ctx, struct registry_context **ctx);
 typedef struct registry_context {
     %extend {
 
+    %feature("docstring") get_predefined_key_by_name "S.get_predefined_key_by_name(name) -> key\n"
+                                                     "Find a predefined key by name";
     WERROR get_predefined_key_by_name(const char *name, 
                                       struct registry_key **key);
 
+    %feature("docstring") key_del_abs "S.key_del_abs(name) -> None\n"
+                                      "Delete a key by absolute path.";
     WERROR key_del_abs(const char *path);
+    %feature("docstring") get_predefined_key "S.get_predefined_key(hkey_id) -> key\n"
+                                      "Find a predefined key by id";
     WERROR get_predefined_key(uint32_t hkey_id, struct registry_key **key);
+    %feature("docstring") diff_apply "S.diff_apply(filename) -> None\n"
+                                      "Apply the diff from the specified file";
+
     WERROR diff_apply(const char *filename);
     WERROR generate_diff(struct registry_context *ctx2, const struct reg_diff_callbacks *callbacks,
                          void *callback_data);
@@ -106,6 +119,8 @@ typedef struct registry_context {
                       const char **elements=NULL);
 
     struct registry_key *import_hive_key(struct hive_key *hive, uint32_t predef_key, const char **elements);
+    %feature("docstring") mount_hive "S.mount_hive(key, predef_name) -> None\n"
+                                      "Mount the specified key at the specified path.";
     WERROR mount_hive(struct hive_key *key, const char *predef_name)
     {
         int i;
@@ -130,6 +145,7 @@ typedef struct registry_context {
     $result = SWIG_NewPointerObj(*$1, SWIGTYPE_p_hive_key, 0);
 }
 
+%feature("docstring") reg_open_hive "S.__init__(location, session_info=None, credentials=None, loadparm_context=None)";
 %rename(hive_key) reg_open_hive;
 WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
                      struct auth_session_info *session_info,
@@ -138,6 +154,7 @@ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
                      struct loadparm_context *lp_ctx,
                      struct hive_key **root);
 
+%feature("docstring") reg_open_ldb_file "open_ldb(location, session_info=None, credentials=None, loadparm_context=None) -> key";
 %rename(open_ldb) reg_open_ldb_file;
 WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
              struct auth_session_info *session_info,
@@ -146,10 +163,12 @@ WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
              struct loadparm_context *lp_ctx,
              struct hive_key **k);
 
+%feature("docstring") reg_create_directory "create_dir(location) -> key";
 %rename(create_dir) reg_create_directory;
 WERROR reg_create_directory(TALLOC_CTX *parent_ctx,
                 const char *location, struct hive_key **key);
 
+%feature("docstring") reg_open_directory "open_dir(location) -> key";
 %rename(open_dir) reg_open_directory;
 WERROR reg_open_directory(TALLOC_CTX *parent_ctx,
              const char *location, struct hive_key **key);
@@ -158,15 +177,24 @@ WERROR reg_open_directory(TALLOC_CTX *parent_ctx,
 
 typedef struct hive_key {
     %extend {
+        %feature("docstring") del "S.del(name) -> None\n"
+                                  "Delete a subkey";
         WERROR del(const char *name);
+        %feature("docstring") flush "S.flush() -> None\n"
+                                  "Flush this key to disk";
         WERROR flush(void);
+        %feature("docstring") del_value "S.del_value(name) -> None\n"
+                                  "Delete a value";
         WERROR del_value(const char *name);
+        %feature("docstring") set_value "S.set_value(name, type, data) -> None\n"
+                                  "Set a value";
         WERROR set_value(const char *name, uint32_t type, const DATA_BLOB data);
     }
 } hive_key;
 
 %rename(open_samba) reg_open_samba;
 
+%feature("docstring") reg_open_samba "open_samba() -> reg";
 WERROR reg_open_samba(TALLOC_CTX *mem_ctx,
                       struct registry_context **ctx,
                       struct event_context *ev_ctx,

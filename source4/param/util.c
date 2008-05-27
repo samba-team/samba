@@ -23,7 +23,7 @@
 */
 
 #include "includes.h"
-#include "dynconfig.h"
+#include "dynconfig/dynconfig.h"
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/dir.h"

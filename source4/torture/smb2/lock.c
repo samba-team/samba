@@ -51,7 +51,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	struct smb2_handle h;
 	uint8_t buf[200];
 	struct smb2_lock lck;
-	struct smb2_lock_element el[1];
+	struct smb2_lock_element el[2];
 
 	ZERO_STRUCT(buf);
 
@@ -90,7 +90,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	lck.in.file.handle.data[0] -=1;
 
 	lck.in.lock_count	= 0x0001;
-	lck.in.reserved		= 0xFFFFFFFF;
+	lck.in.reserved		= 0x123ab1;
 	lck.in.file.handle	= h;
 	el[0].offset		= UINT64_MAX;
 	el[0].length		= UINT64_MAX;
@@ -100,16 +100,20 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(lck.out.reserved, 0);
 
+	lck.in.reserved		= 0x123ab2;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
+	lck.in.reserved		= 0x123ab3;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(lck.out.reserved, 0);
 
+	lck.in.reserved		= 0x123ab4;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
+	lck.in.reserved		= 0x123ab5;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(lck.out.reserved, 0);
@@ -162,27 +166,123 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	lck.in.file.handle	= h;
 	el[0].offset		= 0x00000000FFFFFFFF;
 	el[0].length		= 0x00000000FFFFFFFF;
-	el[0].reserved		= 0x12345678;
+	el[0].reserved		= 0x1234567;
 	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
 	status = smb2_lock(tree, &lck);
-	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
 	lck.in.lock_count	= 0x0001;
-	lck.in.reserved		= 0x12345678;
+	lck.in.reserved		= 0x1234567;
 	lck.in.file.handle	= h;
 	el[0].offset		= 0x00000000FFFFFFFF;
 	el[0].length		= 0x00000000FFFFFFFF;
 	el[0].reserved		= 0x00000000;
 	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
 	status = smb2_lock(tree, &lck);
-	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_lock(tree, &lck);
-	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	lck.in.lock_count	= 0x0001;
+	lck.in.reserved		= 0;
+	lck.in.file.handle	= h;
+	el[0].offset		= 1;
+	el[0].length		= 1;
+	el[0].reserved		= 0x00000000;
+	el[0].flags		= ~SMB2_LOCK_FLAG_ALL_MASK;
+
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK | SMB2_LOCK_FLAG_EXCLUSIVE;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK | SMB2_LOCK_FLAG_SHARED;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK | SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	lck.in.lock_count	= 2;
+	lck.in.reserved		= 0;
+	lck.in.file.handle	= h;
+	el[0].offset		= 9999;
+	el[0].length		= 1;
+	el[0].reserved		= 0x00000000;
+	el[1].offset		= 9999;
+	el[1].length		= 1;
+	el[1].reserved		= 0x00000000;
+
+	lck.in.lock_count	= 2;
+	el[0].flags		= 0;
+	el[1].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	lck.in.lock_count	= 2;
+	el[0].flags		= 0;
+	el[1].flags		= 0;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	lck.in.lock_count	= 2;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	el[1].flags		= 0;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	lck.in.lock_count	= 1;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	lck.in.lock_count	= 1;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	lck.in.lock_count	= 1;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	lck.in.lock_count	= 1;
+	el[0].flags		= 0;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	lck.in.lock_count	= 2;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	el[1].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	lck.in.lock_count	= 1;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+	
 
 done:
 	return ret;

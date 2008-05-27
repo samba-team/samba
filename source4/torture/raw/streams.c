@@ -135,6 +135,11 @@ static bool check_stream_list(struct smbcli_state *cli, const char *fname,
 		goto fail;
 	}
 
+	if (num_exp == 0) {
+		ret = true;
+		goto fail;
+	}
+
 	exp_sort = talloc_memdup(tmp_ctx, exp, num_exp * sizeof(*exp));
 
 	if (exp_sort == NULL) {
@@ -170,7 +175,81 @@ static bool check_stream_list(struct smbcli_state *cli, const char *fname,
 }
 
 /*
-  test basic io on streams
+  test bahavior of streams on directories
+*/
+static bool test_stream_dir(struct torture_context *tctx,
+			   struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	union smb_open io;
+	const char *fname = BASEDIR "\\stream.txt";
+	const char *sname1;
+	bool ret = true;
+	const char *basedir_data;
+
+	basedir_data = talloc_asprintf(mem_ctx, "%s::$DATA", BASEDIR);
+	sname1 = talloc_asprintf(mem_ctx, "%s:%s", fname, "Stream One");
+
+	printf("(%s) opening non-existant directory stream\n", __location__);
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = sname1;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_NOT_A_DIRECTORY);
+
+	printf("(%s) opening basedir  stream\n", __location__);
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
+	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = basedir_data;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_NOT_A_DIRECTORY);
+
+	printf("(%s) opening basedir ::$DATA stream\n", __location__);
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0x10;
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = 0;
+	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = basedir_data;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_FILE_IS_A_DIRECTORY);
+	}
+
+	printf("(%s) list the streams on the basedir\n", __location__);
+	ret &= check_stream_list(cli, BASEDIR, 0, NULL);
+done:
+	return ret;
+}
+
+/*
+  test basic behavior of streams on directories
 */
 static bool test_stream_io(struct torture_context *tctx,
 			   struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
@@ -191,24 +270,18 @@ static bool test_stream_io(struct torture_context *tctx,
 	sname1 = talloc_asprintf(mem_ctx, "%s:%s", fname, "Stream One");
 	sname2 = talloc_asprintf(mem_ctx, "%s:%s:$DaTa", fname, "Second Stream");
 
-	printf("(%s) opening non-existant directory stream\n", __location__);
+	printf("(%s) creating a stream on a non-existant file\n", __location__);
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
-	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = 0;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.security_flags = 0;
-	io.ntcreatex.in.fname = sname1;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_NOT_A_DIRECTORY);
-
-	printf("(%s) creating a stream on a non-existant file\n", __location__);
-	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.fname = sname1;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -423,7 +496,7 @@ static bool test_stream_delete(struct torture_context *tctx,
 
 	sname1 = talloc_asprintf(mem_ctx, "%s:%s", fname, "Stream One");
 
-	printf("(%s) opening non-existant directory stream\n", __location__);
+	printf("(%s) opening non-existant file stream\n", __location__);
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
 	io.ntcreatex.in.flags = 0;
@@ -559,6 +632,8 @@ bool torture_raw_streams(struct torture_context *torture,
 		return false;
 	}
 
+	ret &= test_stream_dir(torture, cli, torture);
+	smb_raw_exit(cli->session);
 	ret &= test_stream_io(torture, cli, torture);
 	smb_raw_exit(cli->session);
 	ret &= test_stream_sharemodes(torture, cli, torture);

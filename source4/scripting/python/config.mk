@@ -29,7 +29,9 @@ $(foreach pyfile, $(_PY_FILES),$(eval $(call python_py_module_template,$(patsubs
 
 $(eval $(call python_py_module_template,samba/misc.py,$(pyscriptsrcdir)/misc.py))
 
+EPYDOC_OPTIONS = --no-private --url http://www.samba.org/ --no-sourcecode
+
 epydoc:: pythonmods
-	PYTHONPATH=$(pythonbuilddir) epydoc --no-private samba dcerpc tdb ldb subunit
+	PYTHONPATH=$(pythonbuilddir) epydoc $(EPYDOC_OPTIONS) samba tdb ldb subunit
 
 install:: installpython

@@ -301,7 +301,14 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs,
 		info->all_info2.out.access_mask    = 0; /* only set by qfileinfo */
 		info->all_info2.out.position       = 0; /* only set by qfileinfo */
 		info->all_info2.out.mode           = 0; /* only set by qfileinfo */
-		info->all_info2.out.fname.s        = name->original_name;
+		/* windows wants the full path on disk for this
+		   result, but I really don't want to expose that on
+		   the wire, so I'll give the path with a share
+		   prefix, which is a good approximation */
+		info->all_info2.out.fname.s = talloc_asprintf(req, "\\%s\\%s",
+							      pvfs->share_name, 
+							      name->original_name);
+		NT_STATUS_HAVE_NO_MEMORY(info->all_info2.out.fname.s);
 		return NT_STATUS_OK;
 	}
 
