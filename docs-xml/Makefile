@@ -61,7 +61,7 @@ clean::
 			$(patsubst %.svg,%.eps,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-svg)))
 	rm -f *-attributions.xml *.d *.tpt *.tex *.loc *.toc *.lof *.glo *.idx *.aux
 	rm -f *-images-html*
-	rm -f *-images-latex-* latexfigures
+	rm -f *-images-latex-* $(LATEX_FIGURES)
 	rm -f xslt/figures/*pdf
 	rm -f $(SMBDOTCONFDOC)/parameters.*.xml
 	rm -f $(addsuffix .*,$(MAIN_DOCS))
@@ -145,13 +145,11 @@ $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
 	@mkdir -p $(@D)
 	@$(XSLTPROC) $(DB2LATEX_ARGS) --stringparam latex.imagebasedir "$*/" --xinclude --output $@ xslt/latex.xsl $<
 
-latexfigures:: $(LATEX_FIGURES)
-
 $(PDFDIR)/%.pdf: %.pdf
 	@mkdir -p $(@D)
 	cp $< $@
 
-%.idx: %.tex latexfigures
+%.idx: %.tex $(LATEX_FIGURES)
 	-$(PDFLATEX) $<
 
 %.ind: %.idx
@@ -193,7 +191,7 @@ endif
 endif
 
 # Adobe PDF files
-%.pdf: %.tex %.ind latexfigures %-images-latex-png %-images-latex-pdf
+%.pdf: %.tex %.ind $(LATEX_FIGURES) %-images-latex-png %-images-latex-pdf
 	-$(PDFLATEX) $<
 	-$(PDFLATEX) $<
 	-$(PDFLATEX) $<
@@ -328,5 +326,5 @@ distclean clobber:: clean
 
 # Always keep intermediate files if we can
 .SECONDARY:
-.PHONY: clean clobber archive release everything all latexfigures
+.PHONY: clean clobber archive release everything all 
 
