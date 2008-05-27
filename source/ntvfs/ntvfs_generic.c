@@ -1410,11 +1410,42 @@ done:
 /* 
    NTVFS close generic to any mapper
 */
+static NTSTATUS ntvfs_map_close_finish(struct ntvfs_module_context *ntvfs,
+					struct ntvfs_request *req,
+					union smb_close *cl, 
+					union smb_close *cl2, 
+					NTSTATUS status)
+{
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	switch (cl->generic.level) {
+	case RAW_CLOSE_SMB2:
+		cl->smb2.out.flags        = cl2->generic.out.flags;
+		cl->smb2.out._pad         = 0;
+		cl->smb2.out.create_time  = cl2->generic.out.create_time;
+		cl->smb2.out.access_time  = cl2->generic.out.access_time;
+		cl->smb2.out.write_time   = cl2->generic.out.write_time;
+		cl->smb2.out.change_time  = cl2->generic.out.change_time;
+		cl->smb2.out.alloc_size   = cl2->generic.out.alloc_size;
+		cl->smb2.out.size         = cl2->generic.out.size;
+		cl->smb2.out.file_attr    = cl2->generic.out.file_attr;
+		break;
+	default:
+		break;
+	}
+
+	return status;
+}
+
+/* 
+   NTVFS close generic to any mapper
+*/
 NTSTATUS ntvfs_map_close(struct ntvfs_module_context *ntvfs,
 				  struct ntvfs_request *req,
 				  union smb_close *cl)
 {
 	union smb_close *cl2;
+	NTSTATUS status;
 
 	cl2 = talloc(req, union smb_close);
 	if (cl2 == NULL) {
@@ -1422,30 +1453,38 @@ NTSTATUS ntvfs_map_close(struct ntvfs_module_context *ntvfs,
 	}
 
 	switch (cl->generic.level) {
-	case RAW_CLOSE_CLOSE:
+	case RAW_CLOSE_GENERIC:
 		return NT_STATUS_INVALID_LEVEL;
 
+	case RAW_CLOSE_CLOSE:
+		cl2->generic.level		= RAW_CLOSE_GENERIC;
+		cl2->generic.in.file		= cl->close.in.file;
+		cl2->generic.in.write_time	= cl->close.in.write_time;
+		cl2->generic.in.flags		= 0;
+		break;
+
 	case RAW_CLOSE_SPLCLOSE:
-		cl2->generic.level		= RAW_CLOSE_CLOSE;
-		cl2->generic.in.file.ntvfs	= cl->splclose.in.file.ntvfs;
+		cl2->generic.level		= RAW_CLOSE_GENERIC;
+		cl2->generic.in.file		= cl->splclose.in.file;
 		cl2->generic.in.write_time	= 0;
+		cl2->generic.in.flags		= 0;
 		break;
 
 	case RAW_CLOSE_SMB2:
-		cl2->generic.level		= RAW_CLOSE_CLOSE;
-		cl2->generic.in.file.ntvfs	= cl->smb2.in.file.ntvfs;
+		cl2->generic.level		= RAW_CLOSE_GENERIC;
+		cl2->generic.in.file		= cl->smb2.in.file;
 		cl2->generic.in.write_time	= 0;
-		/* SMB2 Close has output parameter, but we just zero them */
-		ZERO_STRUCT(cl->smb2.out);
+		cl2->generic.in.flags		= cl->smb2.in.flags;
 		break;
 	}
 
-	/* 
-	 * we don't need to call ntvfs_map_async_setup() here,
-	 * as close() doesn't have any output fields
-	 */
+	status = ntvfs_map_async_setup(ntvfs, req, cl, cl2, 
+				       (second_stage_t)ntvfs_map_close_finish);
+	NT_STATUS_NOT_OK_RETURN(status);
 
-	return ntvfs->ops->close(ntvfs, req, cl2);
+	status = ntvfs->ops->close(ntvfs, req, cl2);
+
+	return ntvfs_map_async_finish(req, status);
 }
 
 /* 
