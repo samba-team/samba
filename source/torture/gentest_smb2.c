@@ -55,6 +55,7 @@ static struct gentest_options {
 	int fast_reconnect;
 	int mask_indexing;
 	int no_eas;
+	int skip_cleanup;
 } options;
 
 /* mapping between open handles on the server and local handles */
@@ -112,7 +113,8 @@ static struct smb2_handle bad_smb2_handle;
 
 #define BAD_HANDLE 0xFFFE
 
-static bool oplock_handler(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private);
+static bool oplock_handler(struct smb2_transport *transport, const struct smb2_handle *handle,
+			   uint8_t level, void *private_data);
 static void idle_func(struct smb2_transport *transport, void *private);
 
 /*
@@ -208,7 +210,8 @@ static bool connect_servers(struct event_context *ev,
 				return false;
 			}
 
-//			smb2_oplock_handler(servers[i].cli[j]->transport, oplock_handler, NULL);
+			servers[i].tree[j]->session->transport->oplock.handler = oplock_handler;
+			servers[i].tree[j]->session->transport->oplock.private_data = (void *)(uintptr_t)((i<<8)|j);
 			smb2_transport_idle_handler(servers[i].tree[j]->session->transport, idle_func, 50000, NULL);
 		}
 	}
@@ -512,24 +515,37 @@ static uint32_t gen_bits_mask2(uint32_t mask1, uint32_t mask2)
 }
 
 /*
+  generate reserved values
+ */
+static uint64_t gen_reserved8(void)
+{
+	return gen_bits_mask(0xFF);
+}
+
+static uint64_t gen_reserved16(void)
+{
+	return gen_bits_mask(0xFFFF);
+}
+
+static uint64_t gen_reserved32(void)
+{
+	return gen_bits_mask(0xFFFFFFFF);
+}
+
+static uint64_t gen_reserved64(void)
+{
+	return gen_bits_mask(0xFFFFFFFF) | (((uint64_t)gen_bits_mask(0xFFFFFFFF))<<32);
+}
+
+
+
+/*
   generate a boolean
 */
 static bool gen_bool(void)
 {
 	return gen_bits_mask2(0x1, 0xFF);
 }
-
-/*
-  generate ntrename flags
-*/
-static uint16_t gen_rename_flags(void)
-{
-	if (gen_chance(30)) return RENAME_FLAG_RENAME;
-	if (gen_chance(30)) return RENAME_FLAG_HARD_LINK;
-	if (gen_chance(30)) return RENAME_FLAG_COPY;
-	return gen_bits_mask(0xFFFF);
-}
-
 
 /*
   return a set of lock flags
@@ -550,15 +566,6 @@ static uint16_t gen_lock_flags(void)
 static off_t gen_lock_count(void)
 {
 	return gen_int_range(0, 3);
-}
-
-/*
-  generate a ntcreatex flags field
-*/
-static uint32_t gen_ntcreatex_flags(void)
-{
-	if (gen_chance(70)) return NTCREATEX_FLAGS_EXTENDED;
-	return gen_bits_mask2(0x1F, 0xFFFFFFFF);
 }
 
 /*
@@ -617,15 +624,6 @@ static NTTIME gen_nttime(void)
 	NTTIME ret;
 	unix_to_nt_time(&ret, gen_timet());
 	return ret;
-}
-
-/*
-  generate a milliseconds protocol timeout
-*/
-static uint32_t gen_timeout(void)
-{
-	if (gen_chance(98)) return 0;
-	return random() % 50;
 }
 
 /*
@@ -704,6 +702,107 @@ static struct smb_ea_list gen_ea_list(void)
 	return eas;
 }
 
+static void oplock_handler_close_recv(struct smb2_request *req)
+{
+	NTSTATUS status;
+	struct smb2_close io;
+	status = smb2_close_recv(req, &io);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed in oplock_handler\n");
+		smb_panic("close failed in oplock_handler");
+	}
+}
+
+static void oplock_handler_ack_callback(struct smb2_request *req)
+{
+	NTSTATUS status;
+	struct smb2_break br;
+
+	status = smb2_break_recv(req, &br);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("oplock break ack failed in oplock_handler\n");
+		smb_panic("oplock break ack failed in oplock_handler");
+	}
+}
+
+static bool send_oplock_ack(struct smb2_tree *tree, struct smb2_handle handle, 
+			    uint8_t level)
+{
+	struct smb2_break br;
+	struct smb2_request *req;
+
+	ZERO_STRUCT(br);
+	br.in.file.handle	= handle;
+	br.in.oplock_level	= level;
+	br.in.reserved	        = gen_reserved8();
+	br.in.reserved2	        = gen_reserved32();
+
+	req = smb2_break_send(tree, &br);
+	if (req == NULL) return false;
+	req->async.fn = oplock_handler_ack_callback;
+	req->async.private_data = NULL;
+	return true;
+}
+
+/*
+  the oplock handler will either ack the break or close the file
+*/
+static bool oplock_handler(struct smb2_transport *transport, const struct smb2_handle *handle, 
+			   uint8_t level, void *private_data)
+{
+	struct smb2_close io;
+	unsigned i, j;
+	bool do_close;
+	struct smb2_tree *tree = NULL;
+	struct smb2_request *req;
+
+	srandom(current_op.seed);
+	do_close = gen_chance(50);
+
+	i = ((uintptr_t)private_data) >> 8;
+	j = ((uintptr_t)private_data) & 0xFF;
+
+	if (i >= NSERVERS || j >= NINSTANCES) {
+		printf("Bad private_data in oplock_handler\n");
+		return false;
+	}
+
+	oplocks[i][j].got_break = true;
+	oplocks[i][j].server_handle = *handle;
+	oplocks[i][j].handle = fnum_to_handle(i, j, *handle);
+	oplocks[i][j].level = level;
+	oplocks[i][j].do_close = do_close;
+	tree = talloc_get_type(servers[i].tree[j], struct smb2_tree);
+
+	if (!tree) {
+		printf("Oplock break not for one of our trees!?\n");
+		return false;
+	}
+
+	if (!do_close) {
+		printf("oplock ack handle=%d\n", oplocks[i][j].handle);
+		return send_oplock_ack(tree, *handle, level);
+	}
+
+	printf("oplock close fnum=%d\n", oplocks[i][j].handle);
+
+	ZERO_STRUCT(io);
+	io.in.file.handle = *handle;
+	io.in.flags = 0;
+	req = smb2_close_send(tree, &io);
+
+	if (req == NULL) {
+		printf("WARNING: close failed in oplock_handler_close\n");
+		return false;
+	}
+
+	req->async.fn = oplock_handler_close_recv;
+	req->async.private_data = NULL;
+
+	return true;
+}
+
+
 /*
   the idle function tries to cope with getting an oplock break on a connection, and
   an operation on another connection blocking until that break is acked
@@ -742,7 +841,7 @@ static bool compare_status(NTSTATUS status1, NTSTATUS status2)
 	return false;
 }
 
-
+#if 0
 /*
   check for pending packets on all connections
 */
@@ -758,6 +857,7 @@ static void check_pending(void)
 		}
 	}	
 }
+#endif
 
 /*
   check that the same oplock breaks have been received by all instances
@@ -974,15 +1074,6 @@ again:
 	CHECK_EQUAL(field.length); \
 } while(0)
 
-#define CHECK_TIMES_EQUAL(field) do { \
-	if (labs(parm[0].field - parm[1].field) > time_skew() && \
-	    !ignore_pattern(#field)) { \
-		printf("Mismatch in %s - 0x%x 0x%x\n", #field, \
-		       (int)parm[0].field, (int)parm[1].field); \
-		return false; \
-	} \
-} while(0)
-
 #define CHECK_NTTIMES_EQUAL(field) do { \
 	if (labs(nt_time_to_unix(parm[0].field) - \
 		nt_time_to_unix(parm[1].field)) > time_skew() && \
@@ -1010,10 +1101,7 @@ static bool handler_create(int instance)
 	if (gen_chance(2)) {
 		parm[0].in.create_flags       |= gen_bits_mask(0xFFFFFFFF);
 	}
-	parm[0].in.reserved                   = gen_bits_levels(2, 95, 0x0, 100, 0xFFFFFFFF);
-	if (gen_chance(2)) {
-		parm[0].in.reserved           |= gen_bits_mask(0xFFFFFFFF);
-	}
+	parm[0].in.reserved                   = gen_reserved64();
 	parm[0].in.desired_access             = gen_access_mask();
 	parm[0].in.file_attributes            = gen_attrib();
 	parm[0].in.share_access               = gen_bits_mask2(0x7, 0xFFFFFFFF);
@@ -1088,7 +1176,7 @@ static bool handler_read(int instance)
 	NTSTATUS status[NSERVERS];
 
 	parm[0].in.file.handle.data[0] = gen_fnum(instance);
-	parm[0].in.reserved    = gen_bits_mask2(0x0, 0xFF);
+	parm[0].in.reserved    = gen_reserved8();
 	parm[0].in.length      = gen_io_count();
 	parm[0].in.offset      = gen_offset();
 	parm[0].in.min_count   = gen_io_count();
@@ -1146,7 +1234,7 @@ static bool handler_lock(int instance)
 	parm[0].level = RAW_LOCK_LOCKX;
 	parm[0].in.file.handle.data[0] = gen_fnum(instance);
 	parm[0].in.lock_count = gen_lock_count();
-	parm[0].in.reserved = gen_bits_mask2(0, 0xFFFFFFFF);
+	parm[0].in.reserved = gen_reserved32();
 	
 	parm[0].in.locks = talloc_array(current_op.mem_ctx,
 					struct smb2_lock_element,
@@ -1177,8 +1265,8 @@ static bool handler_flush(int instance)
 
 	ZERO_STRUCT(parm[0]);
 	parm[0].in.file.handle.data[0] = gen_fnum(instance);
-	parm[0].in.reserved1  = gen_bits_mask2(0x0, 0xFFFF);
-	parm[0].in.reserved2  = gen_bits_mask2(0x0, 0xFFFFFFFF);
+	parm[0].in.reserved1  = gen_reserved16();
+	parm[0].in.reserved2  = gen_reserved32();
 
 	GEN_COPY_PARM;
 	GEN_SET_FNUM(in.file.handle);
@@ -1240,6 +1328,23 @@ static bool cmp_fileinfo(int instance,
 
 	switch (parm[0].generic.level) {
 	case RAW_FILEINFO_GENERIC:
+		return false;
+
+		/* SMB1 specific values */
+	case RAW_FILEINFO_GETATTR:
+	case RAW_FILEINFO_GETATTRE:
+	case RAW_FILEINFO_STANDARD:
+	case RAW_FILEINFO_EA_SIZE:
+	case RAW_FILEINFO_ALL_EAS:
+	case RAW_FILEINFO_IS_NAME_VALID:
+	case RAW_FILEINFO_BASIC_INFO:
+	case RAW_FILEINFO_STANDARD_INFO:
+	case RAW_FILEINFO_EA_INFO:
+	case RAW_FILEINFO_NAME_INFO:
+	case RAW_FILEINFO_ALL_INFO:
+	case RAW_FILEINFO_ALT_NAME_INFO:
+	case RAW_FILEINFO_STREAM_INFO:
+	case RAW_FILEINFO_COMPRESSION_INFO:
 		return false;
 
 	case RAW_FILEINFO_BASIC_INFORMATION:
@@ -1411,6 +1516,16 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 	info->generic.level = levels[i].level;
 
 	switch (info->generic.level) {
+	case RAW_SFILEINFO_SETATTR:
+	case RAW_SFILEINFO_SETATTRE:
+	case RAW_SFILEINFO_STANDARD:
+	case RAW_SFILEINFO_EA_SET:
+	case RAW_SFILEINFO_BASIC_INFO:
+	case RAW_SFILEINFO_DISPOSITION_INFO:
+	case RAW_SFILEINFO_END_OF_FILE_INFO:
+	case RAW_SFILEINFO_ALLOCATION_INFO:
+		break;
+
 	case RAW_SFILEINFO_BASIC_INFORMATION:
 		info->basic_info.in.create_time = gen_nttime();
 		info->basic_info.in.access_time = gen_nttime();
@@ -1447,6 +1562,10 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 	case RAW_SFILEINFO_1032:
 	case RAW_SFILEINFO_1039:
 	case RAW_SFILEINFO_1040:
+	case RAW_SFILEINFO_UNIX_BASIC:
+	case RAW_SFILEINFO_UNIX_INFO2:
+	case RAW_SFILEINFO_UNIX_LINK:
+	case RAW_SFILEINFO_UNIX_HLINK:
 		/* Untested */
 		break;
 	}
@@ -1478,6 +1597,10 @@ static void wipe_files(void)
 {
 	int i;
 	NTSTATUS status;
+
+	if (options.skip_cleanup) {
+		return;
+	}
 
 	for (i=0;i<NSERVERS;i++) {
 		int n = smb2_deltree(servers[i].tree[0], "gentest");
@@ -1802,6 +1925,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 		{ "user", 'U',       POPT_ARG_STRING, NULL, 'U', "Set the network username", "[DOMAIN/]USERNAME[%PASSWORD]" },
 		{"maskindexing",  0, POPT_ARG_NONE,  &options.mask_indexing, 0,	"mask out the indexed file attrib", 	NULL},
 		{"noeas",  0, POPT_ARG_NONE,  &options.no_eas, 0,	"don't use extended attributes", 	NULL},
+		{"skip-cleanup",  0, POPT_ARG_NONE,  &options.skip_cleanup, 0,	"don't delete files at start", 	NULL},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
