@@ -1647,7 +1647,7 @@ union smb_read {
 		struct {
 			union smb_handle file;
 			uint64_t offset;
-			uint16_t mincnt;
+			uint32_t mincnt; /* enforced on SMB2, 16 bit on SMB */
 			uint32_t maxcnt;
 			uint16_t remaining;
 			bool read_for_execute;
