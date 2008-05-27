@@ -472,9 +472,9 @@ struct torture_suite *torture_smb2_lock_init(void)
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "LOCK");
 
 	torture_suite_add_1smb2_test(suite, "VALID-REQUEST", test_valid_request);
-//	torture_suite_add_1smb2_test(suite, "RW-NONE", test_lock_rw_none);
-//	torture_suite_add_1smb2_test(suite, "RW-SHARED", test_lock_rw_shared);
-//	torture_suite_add_1smb2_test(suite, "RW-EXCLUSIV", test_lock_rw_exclusiv);
+	torture_suite_add_1smb2_test(suite, "RW-NONE", test_lock_rw_none);
+	torture_suite_add_1smb2_test(suite, "RW-SHARED", test_lock_rw_shared);
+	torture_suite_add_1smb2_test(suite, "RW-EXCLUSIV", test_lock_rw_exclusiv);
 
 	suite->description = talloc_strdup(suite, "SMB2-LOCK tests");
 
