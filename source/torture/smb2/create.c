@@ -36,6 +36,13 @@
 		return false; \
 	}} while (0)
 
+#define CHECK_EQUAL(v, correct) do { \
+	if (v != correct) { \
+		printf("(%s) Incorrect value for %s 0x%08x - should be 0x%08x\n", \
+		       __location__, #v, v, correct); \
+		return false; \
+	}} while (0)
+
 /*
   test some interesting combinations found by gentest
  */
@@ -44,6 +51,7 @@ bool torture_smb2_create_gentest(struct torture_context *torture, struct smb2_tr
 	struct smb2_create io;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	uint32_t access_mask, file_attributes;
 
 	ZERO_STRUCT(io);
 	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -73,6 +81,72 @@ bool torture_smb2_create_gentest(struct torture_context *torture, struct smb2_tr
 	io.in.create_options = 0xF0100000;
 	status = smb2_create(tree, tmp_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_NOT_SUPPORTED);
+
+	io.in.create_options = 0;
+
+	io.in.file_attributes = FILE_ATTRIBUTE_DEVICE;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	io.in.file_attributes = FILE_ATTRIBUTE_VOLUME;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	io.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.in.file_attributes = FILE_ATTRIBUTE_VOLUME;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+	
+	io.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.in.desired_access = 0x08000000;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	io.in.desired_access = 0x04000000;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.in.file_attributes = 0;
+	access_mask = 0;
+	{
+		int i;
+		for (i=0;i<32;i++) {
+			io.in.desired_access = 1<<i;
+			status = smb2_create(tree, tmp_ctx, &io);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+				access_mask |= io.in.desired_access;
+			} else {
+				CHECK_STATUS(status, NT_STATUS_OK);
+				status = smb2_util_close(tree, io.out.file.handle);
+				CHECK_STATUS(status, NT_STATUS_OK);
+			}
+		}
+	}
+
+	CHECK_EQUAL(access_mask, 0x0df0fe00);
+
+	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.in.file_attributes = 0;
+	access_mask = 0;
+	{
+		int i;
+		for (i=0;i<32;i++) {
+			io.in.file_attributes = 1<<i;
+			smb2_deltree(tree, FNAME);
+			status = smb2_create(tree, tmp_ctx, &io);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+				file_attributes |= io.in.file_attributes;
+			} else {
+				CHECK_STATUS(status, NT_STATUS_OK);
+				status = smb2_util_close(tree, io.out.file.handle);
+				CHECK_STATUS(status, NT_STATUS_OK);
+			}
+		}
+	}
+
+	CHECK_EQUAL(file_attributes, 0x0df0fe00);
 
 	talloc_free(tmp_ctx);
 	

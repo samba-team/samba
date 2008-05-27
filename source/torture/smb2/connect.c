@@ -139,7 +139,7 @@ static NTSTATUS torture_smb2_write(struct torture_context *tctx, struct smb2_tre
 /*
   send a create
 */
-static struct smb2_handle torture_smb2_create(struct smb2_tree *tree, 
+static struct smb2_handle torture_smb2_createfile(struct smb2_tree *tree, 
 					      const char *fname)
 {
 	struct smb2_create io;
@@ -200,8 +200,8 @@ bool torture_smb2_connect(struct torture_context *torture)
 		return false;
 	}
 
-	h1 = torture_smb2_create(tree, "test9.dat");
-	h2 = torture_smb2_create(tree, "test9.dat");
+	h1 = torture_smb2_createfile(tree, "test9.dat");
+	h2 = torture_smb2_createfile(tree, "test9.dat");
 	status = torture_smb2_write(torture, tree, h1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Write failed - %s\n", nt_errstr(status));
