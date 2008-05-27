@@ -129,7 +129,7 @@ bool torture_smb2_create_gentest(struct torture_context *torture, struct smb2_tr
 	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
 	io.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.in.file_attributes = 0;
-	access_mask = 0;
+	file_attributes = 0;
 	denied_mask = 0;
 	{
 		int i;
@@ -149,7 +149,7 @@ bool torture_smb2_create_gentest(struct torture_context *torture, struct smb2_tr
 		}
 	}
 
-	CHECK_EQUAL(file_attributes, 0xffffbd48);
+	CHECK_EQUAL(file_attributes, 0xffff8048);
 	CHECK_EQUAL(denied_mask, 0x4000);
 
 	smb2_deltree(tree, FNAME);
