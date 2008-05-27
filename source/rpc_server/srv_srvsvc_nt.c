@@ -2363,14 +2363,67 @@ WERROR _srvsvc_NetNameValidate(pipes_struct *p,
 	return WERR_OK;
 }
 
+/*******************************************************************
+********************************************************************/
+
+static void enum_file_close_fn( const struct share_mode_entry *e,
+                          const char *sharepath, const char *fname,
+			  void *private_data )
+{
+	char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
+	struct srvsvc_NetFileClose *r =
+ 		(struct srvsvc_NetFileClose *)private_data;
+	uint32_t fid = (((uint32_t)(procid_to_pid(&e->pid))<<16) | e->share_file_id);
+
+	if (fid != r->in.fid) {
+		return; /* Not this file. */
+	}
+
+	if (!process_exists(e->pid) ) {
+		return;
+	}
+
+	/* Ok - send the close message. */
+	DEBUG(10,("enum_file_close_fn: request to close file %s, %s\n",
+		sharepath,
+		share_mode_str(talloc_tos(), 0, e) ));
+
+	share_mode_entry_to_message(msg, e);
+
+	r->out.result = ntstatus_to_werror(
+			messaging_send_buf(smbd_messaging_context(),
+				e->pid, MSG_SMB_CLOSE_FILE,
+				(uint8 *)msg,
+				MSG_SMB_SHARE_MODE_ENTRY_SIZE));
+}
+
 /********************************************************************
+ Close a file given a 32-bit file id.
 ********************************************************************/
 
 WERROR _srvsvc_NetFileClose(pipes_struct *p, struct srvsvc_NetFileClose *r)
 {
-	return WERR_ACCESS_DENIED;
-}
+	struct current_user user;
+	SE_PRIV se_diskop = SE_DISK_OPERATOR;
+	bool is_disk_op;
 
+	DEBUG(5,("_srvsvc_NetFileClose: %d\n", __LINE__));
+
+	get_current_user(&user,p);
+
+	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
+
+	if (user.ut.uid != sec_initial_uid() && !is_disk_op) {
+		return WERR_ACCESS_DENIED;
+	}
+
+	/* enum_file_close_fn sends the close message to
+	 * the relevent smbd process. */
+
+	r->out.result = WERR_BADFILE;
+	share_mode_forall( enum_file_close_fn, (void *)r);
+	return r->out.result;
+}
 
 /********************************************************************
 ********************************************************************/
