@@ -502,7 +502,7 @@ HEIMDAL_ASN1_COMPILE_LEX_OBJ_FILES = $(heimdalsrcdir)/lib/asn1/lex.ho
 USE_HOSTCC = YES
 PRIVATE_DEPENDENCIES = HEIMDAL_ASN1_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
 
-ASN1C = bin/asn1_compile
+ASN1C = $(builddir)/bin/asn1_compile
 
 asn1_compile_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/asn1/main.ho \
@@ -551,6 +551,8 @@ PRIVATE_DEPENDENCIES = HEIMDAL_COM_ERR_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H L
 # End BINARY compile_et
 #######################
 
+ET_COMPILER = $(builddir)/bin/compile_et
+
 compile_et_OBJ_FILES = $(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(heimdalsrcdir)/lib/com_err/parse.ho \
 	$(heimdalsrcdir)/lib/com_err/compile_et.ho \
@@ -580,15 +582,15 @@ mkinclude perl_path_wrapper.sh asn1_deps.pl lib/hx509/pkcs10.asn1 pkcs10_asn1 \$
 #
 # Ensure to update ./static_deps.mk when you add a new entry here!
 #
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/asn1/asn1_err.et heimdal/lib/asn1|
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/hdb/hdb_err.et heimdal/lib/hdb|
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/heim_err.et heimdal/lib/krb5|
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/k524_err.et heimdal/lib/krb5|
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb_err.et heimdal/lib/krb5|
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb5_err.et heimdal/lib/krb5|
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/gssapi/krb5/gkrb5_err.et heimdal/lib/gssapi|
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/hx509/hx509_err.et heimdal/lib/hx509|
-mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/wind/wind_err.et heimdal/lib/wind|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/asn1/asn1_err.et \$\(heimdalsrcdir\)/lib/asn1|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/hdb/hdb_err.et \$\(heimdalsrcdir\)/lib/hdb|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/krb5/heim_err.et \$\(heimdalsrcdir\)/lib/krb5|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/krb5/k524_err.et \$\(heimdalsrcdir\)/lib/krb5|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/krb5/krb_err.et \$\(heimdalsrcdir\)/lib/krb5|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/krb5/krb5_err.et \$\(heimdalsrcdir\)/lib/krb5|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/gssapi/krb5/gkrb5_err.et \$\(heimdalsrcdir\)/lib/gssapi|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/hx509/hx509_err.et \$\(heimdalsrcdir\)/lib/hx509|
+mkinclude perl_path_wrapper.sh et_deps.pl lib/wind/wind_err.et \$\(heimdalsrcdir\)/lib/wind|
 
 clean::	
 	@-rm -f bin/compile_et bin/asn1_compile
