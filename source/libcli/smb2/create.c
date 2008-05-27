@@ -94,6 +94,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 	NTSTATUS status;
 	DATA_BLOB blob = data_blob(NULL, 0);
 	uint32_t i;
+	struct smb2_create_blobs blobs = io->in.blobs;
 
 	req = smb2_request_init_tree(tree, SMB2_OP_CREATE, 0x38, true, 0);
 	if (req == NULL) return NULL;
@@ -119,7 +120,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 		DATA_BLOB b = data_blob_talloc(req, NULL, 
 					       ea_list_size_chained(io->in.eas.num_eas, io->in.eas.eas, 4));
 		ea_put_list_chained(b.data, io->in.eas.num_eas, io->in.eas.eas, 4);
-		status = smb2_create_blob_add(req, &io->in.blobs,
+		status = smb2_create_blob_add(req, &blobs,
 					      SMB2_CREATE_TAG_EXTA, b);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(req);
@@ -130,22 +131,22 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 
 	/* an empty MxAc tag seems to be used to ask the server to
 	   return the maximum access mask allowed on the file */
-	status = smb2_create_blob_add(req, &io->in.blobs,
+	status = smb2_create_blob_add(req, &blobs,
 				      SMB2_CREATE_TAG_MXAC, data_blob(NULL, 0));
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
 		return NULL;
 	}
 
-	for (i=0; i < io->in.blobs.num_blobs; i++) {
+	for (i=0; i < blobs.num_blobs; i++) {
 		bool last = false;
 		const struct smb2_create_blob *c;
 
-		if ((i + 1) == io->in.blobs.num_blobs) {
+		if ((i + 1) == blobs.num_blobs) {
 			last = true;
 		}
 
-		c = &io->in.blobs.blobs[i];
+		c = &blobs.blobs[i];
 		status = smb2_create_blob_push_one(req, &blob,
 						   c, last);
 		if (!NT_STATUS_IS_OK(status)) {
