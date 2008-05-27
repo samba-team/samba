@@ -412,7 +412,7 @@ interface nbt
 	} nbt_server_type;
 
 	typedef struct {
-		uint32			sa_family;
+		uint32			family;
 		[flag(NDR_BIG_ENDIAN)]	ipv4address pdc_ip;
 		[flag(NDR_REMAINING)]	DATA_BLOB remaining;
 	} nbt_dc_sock_addr;
