@@ -1,4 +1,5 @@
-mkinclude dynconfig.mk
+dynconfigsrcdir := dynconfig
+mkinclude dynconfig/config.mk
 heimdalsrcdir := heimdal
 mkinclude heimdal_build/config.mk
 mkinclude config.mk
