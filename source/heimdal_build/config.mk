@@ -490,11 +490,11 @@ HEIMDAL_COM_ERR_OBJ_FILES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
 [SUBSYSTEM::HEIMDAL_ASN1_COMPILE_LEX]
-CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 # End SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
 #######################
 
 HEIMDAL_ASN1_COMPILE_LEX_OBJ_FILES = $(heimdalsrcdir)/lib/asn1/lex.ho 
+$(HEIMDAL_ASN1_COMPILE_LEX_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/roken -I$(socketwrappersrcdir)
 
 #######################
 # Start BINARY asn1_compile
@@ -528,7 +528,7 @@ asn1_compile_OBJ_FILES = \
 	$(socketwrappersrcdir)/socket_wrapper.ho \
 	$(heimdalbuildsrcdir)/replace.ho
 
-$(asn1_compile_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken
+$(asn1_compile_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken -I$(heimdalsrcdir)/lib/asn1
 
 # End BINARY asn1_compile
 #######################
@@ -545,7 +545,6 @@ HEIMDAL_COM_ERR_COMPILE_LEX_OBJ_FILES = $(heimdalsrcdir)/lib/com_err/lex.ho
 #######################
 # Start BINARY compile_et
 [BINARY::compile_et]
-CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken
 USE_HOSTCC = YES
 PRIVATE_DEPENDENCIES = HEIMDAL_COM_ERR_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
 # End BINARY compile_et
@@ -563,6 +562,7 @@ compile_et_OBJ_FILES = $(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(socketwrappersrcdir)/socket_wrapper.ho \
 	$(heimdalbuildsrcdir)/replace.ho
 
+$(compile_et_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken
 
 mkinclude perl_path_wrapper.sh asn1_deps.pl lib/hdb/hdb.asn1 hdb_asn1 \$\(heimdalsrcdir\)/lib/hdb |
 mkinclude perl_path_wrapper.sh asn1_deps.pl lib/gssapi/spnego/spnego.asn1 spnego_asn1 \$\(heimdalsrcdir\)/lib/gssapi --sequence=MechTypeList |
@@ -609,7 +609,6 @@ HEIMDAL_OBJ_FILES = $(heimdalsrcdir)/lib/vers/print_version.o
 #######################
 # Start BINARY compile_et
 [BINARY::samba4kinit]
-CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken
 PRIVATE_DEPENDENCIES = HEIMDAL_KRB5 HEIMDAL_NTLM
 # End BINARY compile_et
 #######################
@@ -618,6 +617,8 @@ samba4kinit_OBJ_FILES = $(heimdalsrcdir)/kuser/kinit.o \
 	$(heimdalsrcdir)/lib/vers/print_version.o \
 	$(heimdalsrcdir)/lib/roken/setprogname.o \
 	$(heimdalsrcdir)/lib/roken/getarg.o 
+
+$(samba4kinit_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken
 
 dist:: $(heimdalsrcdir)/lib/asn1/lex.c $(heimdalsrcdir)/lib/com_err/lex.c \
 	$(heimdalsrcdir)/lib/asn1/parse.c $(heimdalsrcdir)/lib/com_err/parse.c
