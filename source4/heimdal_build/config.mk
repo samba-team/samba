@@ -499,7 +499,6 @@ HEIMDAL_ASN1_COMPILE_LEX_OBJ_FILES = $(heimdalsrcdir)/lib/asn1/lex.ho
 #######################
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
-CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken
 USE_HOSTCC = YES
 PRIVATE_DEPENDENCIES = HEIMDAL_ASN1_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
 
@@ -528,6 +527,8 @@ asn1_compile_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(socketwrappersrcdir)/socket_wrapper.ho \
 	$(heimdalbuildsrcdir)/replace.ho
+
+$(asn1_compile_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken
 
 # End BINARY asn1_compile
 #######################
@@ -558,7 +559,7 @@ compile_et_OBJ_FILES = $(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(heimdalsrcdir)/lib/roken/strupr.ho \
 	$(heimdalsrcdir)/lib/roken/setprogname.ho \
 	$(socketwrappersrcdir)/socket_wrapper.ho \
-	$(heimdalsrcdir)/replace.ho
+	$(heimdalbuildsrcdir)/replace.ho
 
 
 mkinclude perl_path_wrapper.sh asn1_deps.pl lib/hdb/hdb.asn1 hdb_asn1 \$\(heimdalsrcdir\)/lib/hdb |
