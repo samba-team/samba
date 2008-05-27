@@ -523,9 +523,16 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 		io2->generic.in.sec_desc	= NULL;
 		io2->generic.in.ea_list		= NULL;
 
+		/* we need to check these bits before we check the private mask */
+		if (io2->generic.in.create_options & NTCREATEX_OPTIONS_NOT_SUPPORTED_MASK) {
+			status = NT_STATUS_NOT_SUPPORTED;
+			break;
+		}
+
 		/* we use a couple of bits of the create options internally */
 		if (io2->generic.in.create_options & NTCREATEX_OPTIONS_PRIVATE_MASK) {
-			return NT_STATUS_INVALID_PARAMETER;
+			status = NT_STATUS_INVALID_PARAMETER;
+			break;
 		}
 
 		status = ntvfs->ops->open(ntvfs, req, io2);		
