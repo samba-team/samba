@@ -49,6 +49,54 @@ endif
 
 include $(srcdir)/build/make/rules.mk
 include $(srcdir)/build/make/python.mk
+dynconfigsrcdir := dynconfig
+heimdalsrcdir := heimdal
+dsdbsrcdir := dsdb
+smbdsrcdir := smbd
+clustersrcdir := cluster
+libnetsrcdir := libnet
+authsrcdir := auth
+nsswitchsrcdir := nsswitch
+libsrcdir := lib
+libsocketsrcdir := lib/socket
+libcharsetsrcdir := lib/charset
+ldb_sambasrcdir := lib/ldb-samba
+libtlssrcdir := lib/tls
+libregistrysrcdir := lib/registry
+libmessagingsrcdir := lib/messaging
+libeventssrcdir := lib/events
+libcmdlinesrcdir := lib/cmdline
+socketwrappersrcdir := lib/socket_wrapper
+nsswrappersrcdir := lib/nss_wrapper
+appwebsrcdir := lib/appweb
+libstreamsrcdir := lib/stream
+libutilsrcdir := lib/util
+libtdrsrcdir := lib/tdr
+libdbwrapsrcdir := lib/dbwrap
+libcryptosrcdir := lib/crypto
+libtorturesrcdir := lib/torture
+smb_serversrcdir := smb_server
+libcompressionsrcdir := lib/compression
+libgencachesrcdir := lib
+paramsrcdir := param
+rpc_serversrcdir := rpc_server
+ldap_serversrcdir := ldap_server
+web_serversrcdir := web_server
+winbindsrcdir := winbind
+nbt_serversrcdir := nbt_server
+wrepl_serversrcdir := wrepl_server
+cldap_serversrcdir := cldap_server
+utilssrcdir := utils
+clientsrcdir := client
+torturesrcdir := torture
+ntvfssrcdir := ntvfs
+ntptrsrcdir := ntptr
+librpcsrcdir := librpc
+libclisrcdir := libcli
+ejsscriptsrcdir := scripting/ejs
+pyscriptsrcdir := $(srcdir)/scripting/python
+kdcsrcdir := kdc
+
 include data.mk
 
 BINARIES += $(BIN_PROGS) $(SBIN_PROGS)
