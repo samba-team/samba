@@ -702,10 +702,11 @@ BOOL get_trust_pw_clear(const char *domain, char **ret_pwd,
 		return True;
 	}
 
-	/* Just get the account for the requested domain. In the future this
-	 * might also cover to be member of more than one domain. */
+	/* Here we are a domain member server.  We can only be a member
+	   of one domain so ignore the request domain and assume our own */
 
-	pwd = secrets_fetch_machine_password(domain, &last_set_time, channel);
+	pwd = secrets_fetch_machine_password(lp_workgroup(), &last_set_time, 
+					     channel);
 
 	if (pwd != NULL) {
 		*ret_pwd = pwd;
