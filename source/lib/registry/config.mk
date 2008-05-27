@@ -5,12 +5,11 @@ TDR_REGF_OBJ_FILES = $(libregistrysrcdir)/tdr_regf.o
 
 # Special support for external builddirs
 $(libregistrysrcdir)/regf.c: $(libregistrysrcdir)/tdr_regf.c
-$(srcdir)/$(libregistrysrcdir)/regf.c: $(libregistrysrcdir)/tdr_regf.c
 $(libregistrysrcdir)/tdr_regf.h: $(libregistrysrcdir)/tdr_regf.c
-$(libregistrysrcdir)/tdr_regf.c: $(srcdir)/$(libregistrysrcdir)/regf.idl
-	@CPP="$(CPP)" srcdir="$(srcdir)" $(PERL) $(srcdir)/pidl/pidl $(PIDL_ARGS) \
-		--header --outputdir=lib/registry \
-		--tdr-parser -- $(srcdir)/$(libregistrysrcdir)/regf.idl
+$(libregistrysrcdir)/tdr_regf.c: $(libregistrysrcdir)/regf.idl
+	@CPP="$(CPP)" $(PERL) $(pidldir)/pidl $(PIDL_ARGS) \
+		--header --outputdir=$(libregistrysrcdir) \
+		--tdr-parser -- $(libregistrysrcdir)/regf.idl
 
 clean::
 	@-rm -f $(libregistrysrcdir)/regf.h $(libregistrysrcdir)/tdr_regf*
