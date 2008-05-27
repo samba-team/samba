@@ -565,6 +565,10 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	if (io->ntcreatex.in.file_attr & ~FILE_ATTRIBUTE_ALL_MASK) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	if (io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_ENCRYPTED) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 	    
 	if ((io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_READONLY) &&
 	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
@@ -1147,7 +1151,12 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (access_mask & (SEC_MASK_INVALID | SEC_STD_SYNCHRONIZE)) {
+	if (access_mask & SEC_MASK_INVALID) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (req->ctx->protocol == PROTOCOL_SMB2 &&
+	    (access_mask & SEC_STD_SYNCHRONIZE)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

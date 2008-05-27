@@ -51,7 +51,7 @@ bool torture_smb2_create_gentest(struct torture_context *torture, struct smb2_tr
 	struct smb2_create io;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
-	uint32_t access_mask, file_attributes;
+	uint32_t access_mask, file_attributes, denied_mask;
 
 	ZERO_STRUCT(io);
 	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -130,6 +130,7 @@ bool torture_smb2_create_gentest(struct torture_context *torture, struct smb2_tr
 	io.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.in.file_attributes = 0;
 	access_mask = 0;
+	denied_mask = 0;
 	{
 		int i;
 		for (i=0;i<32;i++) {
@@ -138,6 +139,8 @@ bool torture_smb2_create_gentest(struct torture_context *torture, struct smb2_tr
 			status = smb2_create(tree, tmp_ctx, &io);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
 				file_attributes |= io.in.file_attributes;
+			} else if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+				denied_mask |= io.in.file_attributes;
 			} else {
 				CHECK_STATUS(status, NT_STATUS_OK);
 				status = smb2_util_close(tree, io.out.file.handle);
@@ -146,7 +149,8 @@ bool torture_smb2_create_gentest(struct torture_context *torture, struct smb2_tr
 		}
 	}
 
-	CHECK_EQUAL(file_attributes, 0x0df0fe00);
+	CHECK_EQUAL(file_attributes, 0xffff87c8);
+	CHECK_EQUAL(denied_mask, 0x4000);
 
 	talloc_free(tmp_ctx);
 	
