@@ -72,6 +72,8 @@ wrepl_serversrcdir := wrepl_server
 mkinclude wrepl_server/config.mk
 cldap_serversrcdir := cldap_server
 mkinclude cldap_server/config.mk
+ntp_signd_srcdir := ntp_signd
+mkinclude ntp_signd/config.mk
 utilssrcdir := utils
 mkinclude utils/net/config.mk
 mkinclude utils/config.mk
