@@ -1027,7 +1027,7 @@ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 	case RAW_LOCK_SMB2: {
 		/* this is only approximate! We need to change the
 		   generic structure to fix this properly */
-		int i;
+		int i, j;
 		if (lck->smb2.in.lock_count < 1) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -1044,34 +1044,36 @@ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 			return NT_STATUS_NO_MEMORY;
 		}
 		for (i=0;i<lck->smb2.in.lock_count;i++) {
-			if (lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_UNLOCK) {
-				int j = lck2->generic.in.ulock_cnt;
-				if (lck->smb2.in.locks[i].flags & 
-				    (SMB2_LOCK_FLAG_SHARED|SMB2_LOCK_FLAG_EXCLUSIVE)) {
-					return NT_STATUS_INVALID_PARAMETER;
-				}
-				lck2->generic.in.ulock_cnt++;
-				lck2->generic.in.locks[j].pid = 0;
-				lck2->generic.in.locks[j].offset = lck->smb2.in.locks[i].offset;
-				lck2->generic.in.locks[j].count = lck->smb2.in.locks[i].length;
-				lck2->generic.in.locks[j].pid = 0;
-			}
-		}
-		for (i=0;i<lck->smb2.in.lock_count;i++) {
 			if (!(lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_UNLOCK)) {
-				int j = lck2->generic.in.ulock_cnt + 
-					lck2->generic.in.lock_cnt;
-				lck2->generic.in.lock_cnt++;
-				lck2->generic.in.locks[j].pid = 0;
-				lck2->generic.in.locks[j].offset = lck->smb2.in.locks[i].offset;
-				lck2->generic.in.locks[j].count = lck->smb2.in.locks[i].length;
-				lck2->generic.in.locks[j].pid = 0;
-				if (!(lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_EXCLUSIVE)) {
-					lck2->generic.in.mode = LOCKING_ANDX_SHARED_LOCK;
-				}
-				if (lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_FAIL_IMMEDIATELY) {
-					lck2->generic.in.timeout = 0;
-				}
+				break;
+			}
+			j = lck2->generic.in.ulock_cnt;
+			if (lck->smb2.in.locks[i].flags & 
+			    (SMB2_LOCK_FLAG_SHARED|SMB2_LOCK_FLAG_EXCLUSIVE)) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			lck2->generic.in.ulock_cnt++;
+			lck2->generic.in.locks[j].pid = 0;
+			lck2->generic.in.locks[j].offset = lck->smb2.in.locks[i].offset;
+			lck2->generic.in.locks[j].count = lck->smb2.in.locks[i].length;
+			lck2->generic.in.locks[j].pid = 0;
+		}
+		for (;i<lck->smb2.in.lock_count;i++) {
+			if (lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_UNLOCK) {
+				/* w2008 requires unlocks to come first */
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			j = lck2->generic.in.ulock_cnt + lck2->generic.in.lock_cnt;
+			lck2->generic.in.lock_cnt++;
+			lck2->generic.in.locks[j].pid = 0;
+			lck2->generic.in.locks[j].offset = lck->smb2.in.locks[i].offset;
+			lck2->generic.in.locks[j].count = lck->smb2.in.locks[i].length;
+			lck2->generic.in.locks[j].pid = 0;
+			if (!(lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_EXCLUSIVE)) {
+				lck2->generic.in.mode = LOCKING_ANDX_SHARED_LOCK;
+			}
+			if (lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_FAIL_IMMEDIATELY) {
+				lck2->generic.in.timeout = 0;
 			}
 		}
 		/* initialize output value */
