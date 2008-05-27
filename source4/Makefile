@@ -63,6 +63,7 @@ libcharsetsrcdir := lib/charset
 ldb_sambasrcdir := lib/ldb-samba
 libtlssrcdir := lib/tls
 libregistrysrcdir := lib/registry
+smbreadlinesrcdir := lib/smbreadline
 libmessagingsrcdir := lib/messaging
 libeventssrcdir := lib/events
 libcmdlinesrcdir := lib/cmdline
