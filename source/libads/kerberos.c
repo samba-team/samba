@@ -649,6 +649,10 @@ bool kerberos_secrets_store_salting_principal(const char *service,
 	SAFE_FREE(princ_s);
 	SAFE_FREE(unparsed_name);
 
+	if (princ) {
+		krb5_free_principal(context, princ);
+	}
+
 	if (context) {
 		krb5_free_context(context);
 	}
