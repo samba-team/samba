@@ -46,6 +46,17 @@ struct GUID {
 
 #ifndef _HEADER_libnetapi
 
+#ifndef MAXSUBAUTHS
+#define MAXSUBAUTHS 15 /* max sub authorities in a SID */
+#endif
+
+struct domsid {
+	uint8_t   sid_rev_num;
+	uint8_t   num_auths;
+	uint8_t   id_auth[6];
+	uint32_t  sub_auths[MAXSUBAUTHS];
+};
+
 struct DOMAIN_CONTROLLER_INFO {
 	const char * domain_controller_name;
 	const char * domain_controller_address;
@@ -100,6 +111,29 @@ struct NET_DISPLAY_GROUP {
 	uint32_t grpi3_group_id;
 	uint32_t grpi3_attributes;
 	uint32_t grpi3_next_index;
+};
+
+struct GROUP_INFO_0 {
+	const char * grpi0_name;
+};
+
+struct GROUP_INFO_1 {
+	const char * grpi1_name;
+	const char * grpi1_comment;
+};
+
+struct GROUP_INFO_2 {
+	const char * grpi2_name;
+	const char * grpi2_comment;
+	uint32_t grpi2_group_id;
+	uint32_t grpi2_attributes;
+};
+
+struct GROUP_INFO_3 {
+	const char * grpi3_name;
+	const char * grpi3_comment;
+	struct domsid grpi3_group_sid;
+	uint32_t grpi3_attributes;
 };
 
 #endif /* _HEADER_libnetapi */
@@ -458,5 +492,42 @@ NET_API_STATUS NetQueryDisplayInformation(const char * server_name /* [in] [uniq
 					  uint32_t prefmaxlen /* [in] */,
 					  uint32_t *entries_read /* [out] [ref] */,
 					  void **buffer /* [out] [noprint,ref] */);
+
+/************************************************************//**
+ *
+ * NetGroupAdd
+ *
+ * @brief Create Domain Group
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] level The level used for the new group creation
+ * @param[in] buf The buffer containing the group structure
+ * @param[out] parm_err The returned parameter error number if any
+ * @return NET_API_STATUS
+ *
+ * example group/group_add.c
+ ***************************************************************/
+
+NET_API_STATUS NetGroupAdd(const char * server_name /* [in] */,
+			   uint32_t level /* [in] */,
+			   uint8_t *buf /* [in] [ref] */,
+			   uint32_t *parm_err /* [out] [ref] */);
+
+/************************************************************//**
+ *
+ * NetGroupDel
+ *
+ * @brief Delete Domain Group
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] group_name The name of the group that is going to be deleted
+ * @return NET_API_STATUS
+ *
+ * example group/group_del.c
+ ***************************************************************/
+
+
+NET_API_STATUS NetGroupDel(const char * server_name /* [in] */,
+			   const char * group_name /* [in] */);
 
 #endif
