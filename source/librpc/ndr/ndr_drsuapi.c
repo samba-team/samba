@@ -144,7 +144,7 @@ enum ndr_err_code ndr_pull_drsuapi_DsReplicaOID(struct ndr_pull *ndr, int ndr_fl
 			} else {
 				_OID_PULL_CHECK(ber_read_OID_String(ndr, _oid_array, &_oid));
 			}
-			data_blob_free(&_oid_array);
+			TALLOC_FREE(_oid_array.data);
 			talloc_steal(r->oid, _oid);
 			r->oid = _oid;
 		}
