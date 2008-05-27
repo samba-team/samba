@@ -1155,14 +1155,11 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-#if 0
 	/* what does this bit really mean?? */
 	if (req->ctx->protocol == PROTOCOL_SMB2 &&
-	    (access_mask & SEC_STD_SYNCHRONIZE) &&
-	    !(access_mask & SEC_STD_READ_CONTROL)) {
+	    access_mask == SEC_STD_SYNCHRONIZE) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
-#endif
 
 	if (io->ntcreatex.in.file_attr & (FILE_ATTRIBUTE_DEVICE|
 					  FILE_ATTRIBUTE_VOLUME| 
