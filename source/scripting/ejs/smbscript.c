@@ -26,7 +26,7 @@
 #include "scripting/ejs/smbcalls.h"
 #include "auth/gensec/gensec.h"
 #include "ldb/include/ldb.h"
-#include "dynconfig.h"
+#include "dynconfig/dynconfig.h"
 
 static EjsId eid;
 

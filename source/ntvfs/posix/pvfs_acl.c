@@ -457,7 +457,7 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 	}
 
 	if (uid != 0 && (*access_mask & SEC_FLAG_SYSTEM_SECURITY)) {
-		return NT_STATUS_PRIVILEGE_NOT_HELD;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (*access_mask & ~max_bits) {

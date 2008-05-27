@@ -125,6 +125,7 @@ NTSTATUS irpc_add_name(struct messaging_context *msg_ctx, const char *name);
 struct server_id *irpc_servers_byname(struct messaging_context *msg_ctx, TALLOC_CTX *mem_ctx, const char *name);
 void irpc_remove_name(struct messaging_context *msg_ctx, const char *name);
 NTSTATUS irpc_send_reply(struct irpc_message *m, NTSTATUS status);
+struct server_id messaging_get_server_id(struct messaging_context *msg_ctx);
 
 #endif
 

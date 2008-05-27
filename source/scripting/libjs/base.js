@@ -21,48 +21,6 @@ function printf()
 }
 
 /*
-  helper function to setup a rpc io object, ready for input
-*/
-function irpcObj()
-{
-	var o = new Object();
-	o.input = new Object();
-	return o;
-}
-
-/*
-  check that a status result is OK
-*/
-function check_status_ok(status)
-{
-	if (status.is_ok != true) {
-		printVars(status);
-	}
-	assert(status.is_ok == true);
-}
-
-/*
-  check that two arrays are equal
-*/
-function check_array_equal(a1, a2)
-{
-	assert(a1.length == a2.length);
-	for (i=0; i<a1.length; i++) {
-		assert(a1[i] == a2[i]);
-	}
-}
-
-/*
-  check that an array is all zeros
-*/
-function check_array_zero(a)
-{
-	for (i=0; i<a.length; i++) {
-		assert(a[i] == 0);
-	}
-}
-
-/*
   substitute strings of the form ${NAME} in str, replacing
   with substitutions from subobj
 */
@@ -89,15 +47,4 @@ function substitute_var(str, subobj)
 		list[i] = join("", list2);
 	}
 	return join("", list);
-}
-
-/*
-  return "s" if a number should be shown as plural
-*/
-function plural(n)
-{
-	if (n == 1) {
-		return "";
-	}
-	return "s";
 }

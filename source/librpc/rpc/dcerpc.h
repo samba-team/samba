@@ -362,5 +362,14 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 				   struct epm_tower *tower, 
 				   struct dcerpc_binding **b_out);
 
+NTSTATUS dcerpc_request(struct dcerpc_pipe *p, 
+			struct GUID *object,
+			uint16_t opnum,
+			bool async,
+			TALLOC_CTX *mem_ctx,
+			DATA_BLOB *stub_data_in,
+			DATA_BLOB *stub_data_out);
+
+typedef NTSTATUS (*dcerpc_call_fn) (struct dcerpc_pipe *, TALLOC_CTX *, void *);
 
 #endif /* __DCERPC_H__ */

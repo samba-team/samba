@@ -357,7 +357,7 @@ NDR_WINBIND_OBJ_FILES = $(gen_ndrsrcdir)/ndr_winbind.o
 #PUBLIC_HEADERS += $(gen_ndrsrcdir)/winbind.h
 
 $(librpcsrcdir)/idl-deps:
-	./$(librpcsrcdir)/idl-deps.pl $(librpcsrcdir)/idl/*.idl >$@
+	$(PERL) $(librpcsrcdir)/idl-deps.pl $(librpcsrcdir)/idl/*.idl >$@
 
 clean:: 
 	rm -f $(librpcsrcdir)/idl-deps
@@ -440,6 +440,11 @@ RPC_NDR_POLICYAGENT_OBJ_FILES = $(gen_ndrsrcdir)/ndr_policyagent_c.o
 PUBLIC_DEPENDENCIES = dcerpc NDR_UNIXINFO
 
 RPC_NDR_UNIXINFO_OBJ_FILES = $(gen_ndrsrcdir)/ndr_unixinfo_c.o
+
+[SUBSYSTEM::RPC_NDR_IRPC]
+PUBLIC_DEPENDENCIES = dcerpc NDR_IRPC
+
+RPC_NDR_IRPC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_irpc_c.o
 
 [LIBRARY::dcerpc_samr]
 PUBLIC_DEPENDENCIES = dcerpc NDR_SAMR 
@@ -614,217 +619,114 @@ PUBLIC_HEADERS += $(addprefix $(librpcsrcdir)/, rpc/dcerpc.h \
 			gen_ndr/epmapper.h gen_ndr/ndr_epmapper.h gen_ndr/ndr_epmapper_c.h)
 
 
-[MODULE::RPC_EJS_ECHO]
-INIT_FUNCTION = ejs_init_rpcecho
-SUBSYSTEM = smbcalls
-PRIVATE_DEPENDENCIES = dcerpc NDR_ECHO EJSRPC
+[PYTHON::python_dcerpc]
+LIBRARY_REALNAME = samba/dcerpc/base.$(SHLIBEXT)
+PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG dcerpc_samr RPC_NDR_LSA DYNCONFIG swig_credentials param
 
-RPC_EJS_ECHO_OBJ_FILES = $(gen_ndrsrcdir)/ndr_echo_ejs.o
-
-[MODULE::RPC_EJS_MISC]
-INIT_FUNCTION = ejs_init_misc
-SUBSYSTEM = smbcalls
-PRIVATE_DEPENDENCIES = dcerpc NDR_MISC EJSRPC
-
-RPC_EJS_MISC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_misc_ejs.o
-
-[MODULE::RPC_EJS_SAMR]
-INIT_FUNCTION = ejs_init_samr
-SUBSYSTEM = smbcalls
-PRIVATE_DEPENDENCIES = dcerpc NDR_SAMR EJSRPC RPC_EJS_LSA RPC_EJS_SECURITY RPC_EJS_MISC
-
-RPC_EJS_SAMR_OBJ_FILES = $(gen_ndrsrcdir)/ndr_samr_ejs.o
-
-[MODULE::RPC_EJS_SECURITY]
-INIT_FUNCTION = ejs_init_security
-SUBSYSTEM = smbcalls
-PRIVATE_DEPENDENCIES = dcerpc NDR_SECURITY EJSRPC
-
-RPC_EJS_SECURITY_OBJ_FILES = $(gen_ndrsrcdir)/ndr_security_ejs.o
-
-[MODULE::RPC_EJS_LSA]
-INIT_FUNCTION = ejs_init_lsarpc
-SUBSYSTEM = smbcalls
-PRIVATE_DEPENDENCIES = dcerpc NDR_LSA EJSRPC RPC_EJS_SECURITY RPC_EJS_MISC
-
-RPC_EJS_LSA_OBJ_FILES = $(gen_ndrsrcdir)/ndr_lsa_ejs.o
-
-[MODULE::RPC_EJS_DFS]
-INIT_FUNCTION = ejs_init_netdfs
-SUBSYSTEM = smbcalls
-PRIVATE_DEPENDENCIES = dcerpc NDR_DFS EJSRPC
-
-RPC_EJS_DFS_OBJ_FILES = $(gen_ndrsrcdir)/ndr_dfs_ejs.o
-
-[MODULE::RPC_EJS_DRSUAPI]
-INIT_FUNCTION = ejs_init_drsuapi
-SUBSYSTEM = smbcalls
-PRIVATE_DEPENDENCIES = dcerpc NDR_DRSUAPI EJSRPC RPC_EJS_MISC RPC_EJS_SAMR
-
-RPC_EJS_DRSUAPI_OBJ_FILES = $(gen_ndrsrcdir)/ndr_drsuapi_ejs.o
-
-[MODULE::RPC_EJS_SPOOLSS]
-INIT_FUNCTION = ejs_init_spoolss
-SUBSYSTEM = smbcalls
-ENABLE = NO
-PRIVATE_DEPENDENCIES = dcerpc NDR_SPOOLSS EJSRPC
-
-RPC_EJS_SPOOLSS_OBJ_FILES = $(gen_ndrsrcdir)/ndr_spoolss_ejs.o
-
-[MODULE::RPC_EJS_WKSSVC]
-INIT_FUNCTION = ejs_init_wkssvc
-SUBSYSTEM = smbcalls
-PRIVATE_DEPENDENCIES = dcerpc NDR_WKSSVC EJSRPC RPC_EJS_SRVSVC RPC_EJS_MISC
-
-RPC_EJS_WKSSVC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_wkssvc_ejs.o
-
-[MODULE::RPC_EJS_SRVSVC]
-INIT_FUNCTION = ejs_init_srvsvc
-SUBSYSTEM = smbcalls
-PRIVATE_DEPENDENCIES = dcerpc NDR_SRVSVC EJSRPC RPC_EJS_MISC RPC_EJS_SVCCTL RPC_EJS_SECURITY
-
-RPC_EJS_SRVSVC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_srvsvc_ejs.o
-
-[MODULE::RPC_EJS_EVENTLOG]
-INIT_FUNCTION = ejs_init_eventlog
-SUBSYSTEM = smbcalls
-PRIVATE_DEPENDENCIES = dcerpc NDR_EVENTLOG EJSRPC RPC_EJS_MISC
-
-RPC_EJS_EVENTLOG_OBJ_FILES = $(gen_ndrsrcdir)/ndr_eventlog_ejs.o
-
-[MODULE::RPC_EJS_WINREG]
-INIT_FUNCTION = ejs_init_winreg
-SUBSYSTEM = smbcalls
-PRIVATE_DEPENDENCIES = dcerpc NDR_WINREG EJSRPC RPC_EJS_INITSHUTDOWN \
-					  RPC_EJS_MISC RPC_EJS_SECURITY
-
-RPC_EJS_WINREG_OBJ_FILES = $(gen_ndrsrcdir)/ndr_winreg_ejs.o
-
-[MODULE::RPC_EJS_INITSHUTDOWN]
-INIT_FUNCTION = ejs_init_initshutdown
-SUBSYSTEM = smbcalls
-PRIVATE_DEPENDENCIES = dcerpc NDR_INITSHUTDOWN EJSRPC
-
-RPC_EJS_INITSHUTDOWN_OBJ_FILES = $(gen_ndrsrcdir)/ndr_initshutdown_ejs.o
-
-[MODULE::RPC_EJS_NETLOGON]
-INIT_FUNCTION = ejs_init_netlogon
-SUBSYSTEM = smbcalls
-PRIVATE_DEPENDENCIES = dcerpc NDR_NETLOGON EJSRPC RPC_EJS_SAMR RPC_EJS_SECURITY RPC_EJS_MISC
-
-RPC_EJS_NETLOGON_OBJ_FILES = $(gen_ndrsrcdir)/ndr_netlogon_ejs.o
-
-[MODULE::RPC_EJS_SVCCTL]
-INIT_FUNCTION = ejs_init_svcctl
-SUBSYSTEM = smbcalls
-PRIVATE_DEPENDENCIES = dcerpc NDR_SVCCTL EJSRPC RPC_EJS_MISC
-
-RPC_EJS_SVCCTL_OBJ_FILES = $(gen_ndrsrcdir)/ndr_svcctl_ejs.o
-
-[MODULE::RPC_EJS_IRPC]
-INIT_FUNCTION = ejs_init_irpc
-SUBSYSTEM = smbcalls
-PRIVATE_DEPENDENCIES = dcerpc NDR_IRPC EJSRPC
-
-RPC_EJS_IRPC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_irpc_ejs.o
-
-[PYTHON::swig_dcerpc]
-LIBRARY_REALNAME = samba/dcerpc/_dcerpc.$(SHLIBEXT)
-PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG dcerpc_samr RPC_NDR_LSA DYNCONFIG
-
-swig_dcerpc_OBJ_FILES = $(dcerpcsrcdir)/dcerpc_wrap.o
+python_dcerpc_OBJ_FILES = $(dcerpcsrcdir)/pyrpc.o
 
 $(eval $(call python_py_module_template,samba/dcerpc/__init__.py,$(dcerpcsrcdir)/dcerpc.py))
 
-$(swig_dcerpc_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)
 
 [PYTHON::python_echo]
 LIBRARY_REALNAME = samba/dcerpc/echo.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_ECHO PYTALLOC param swig_credentials 
+PRIVATE_DEPENDENCIES = RPC_NDR_ECHO PYTALLOC param swig_credentials python_dcerpc
 
 python_echo_OBJ_FILES = $(gen_ndrsrcdir)/py_echo.o
 
 [PYTHON::python_winreg]
 LIBRARY_REALNAME = samba/dcerpc/winreg.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_WINREG python_misc PYTALLOC param swig_credentials python_dcerpc_misc python_lsa
+PRIVATE_DEPENDENCIES = RPC_NDR_WINREG python_misc PYTALLOC param swig_credentials python_dcerpc_misc python_lsa python_dcerpc
 
 python_winreg_OBJ_FILES = $(gen_ndrsrcdir)/py_winreg.o
 
 [PYTHON::python_dcerpc_misc]
 LIBRARY_REALNAME = samba/dcerpc/misc.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = PYTALLOC
+PRIVATE_DEPENDENCIES = PYTALLOC python_dcerpc
 
 python_dcerpc_misc_OBJ_FILES = $(gen_ndrsrcdir)/py_misc.o
 
 [PYTHON::python_initshutdown]
 LIBRARY_REALNAME = samba/dcerpc/initshutdown.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_INITSHUTDOWN PYTALLOC param swig_credentials python_lsa python_dcerpc_security
+PRIVATE_DEPENDENCIES = RPC_NDR_INITSHUTDOWN PYTALLOC param swig_credentials python_lsa python_dcerpc_security python_dcerpc
 
 python_initshutdown_OBJ_FILES = $(gen_ndrsrcdir)/py_initshutdown.o
 
 [PYTHON::python_epmapper]
 LIBRARY_REALNAME = samba/dcerpc/epmapper.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES =  dcerpc PYTALLOC param swig_credentials python_dcerpc_misc
+PRIVATE_DEPENDENCIES =  dcerpc PYTALLOC param swig_credentials python_dcerpc_misc python_dcerpc
 
 python_epmapper_OBJ_FILES = $(gen_ndrsrcdir)/py_epmapper.o
 
 [PYTHON::python_mgmt]
 LIBRARY_REALNAME = samba/dcerpc/mgmt.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = PYTALLOC param swig_credentials dcerpc python_dcerpc_misc
+PRIVATE_DEPENDENCIES = PYTALLOC param swig_credentials dcerpc python_dcerpc_misc python_dcerpc
 
 python_mgmt_OBJ_FILES = $(gen_ndrsrcdir)/py_mgmt.o
 
 [PYTHON::python_atsvc]
 LIBRARY_REALNAME = samba/dcerpc/atsvc.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = dcerpc_atsvc PYTALLOC param swig_credentials 
+PRIVATE_DEPENDENCIES = dcerpc_atsvc PYTALLOC param swig_credentials  python_dcerpc
 
 python_atsvc_OBJ_FILES = $(gen_ndrsrcdir)/py_atsvc.o
 
+[PYTHON::python_nbt]
+LIBRARY_REALNAME = samba/nbt.$(SHLIBEXT)
+PRIVATE_DEPENDENCIES = NDR_NBT PYTALLOC param swig_credentials python_dcerpc
+
+python_nbt_OBJ_FILES = $(gen_ndrsrcdir)/py_nbt.o
+
 [PYTHON::python_samr]
 LIBRARY_REALNAME = samba/dcerpc/samr.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = dcerpc_samr PYTALLOC python_dcerpc_security python_lsa python_dcerpc_misc swig_credentials param
+PRIVATE_DEPENDENCIES = dcerpc_samr PYTALLOC python_dcerpc_security python_lsa python_dcerpc_misc swig_credentials param python_dcerpc
 
 python_samr_OBJ_FILES = $(gen_ndrsrcdir)/py_samr.o
 
 [PYTHON::python_svcctl]
 LIBRARY_REALNAME = samba/dcerpc/svcctl.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_SVCCTL PYTALLOC param swig_credentials python_dcerpc_misc
+PRIVATE_DEPENDENCIES = RPC_NDR_SVCCTL PYTALLOC param swig_credentials python_dcerpc_misc python_dcerpc
 
 python_svcctl_OBJ_FILES = $(gen_ndrsrcdir)/py_svcctl.o
 
 [PYTHON::python_lsa]
 LIBRARY_REALNAME = samba/dcerpc/lsa.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_LSA PYTALLOC param swig_credentials python_dcerpc_security
+PRIVATE_DEPENDENCIES = RPC_NDR_LSA PYTALLOC param swig_credentials python_dcerpc_security python_dcerpc
 
 python_lsa_OBJ_FILES = $(gen_ndrsrcdir)/py_lsa.o
 
 [PYTHON::python_wkssvc]
 LIBRARY_REALNAME = samba/dcerpc/wkssvc.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_WKSSVC PYTALLOC param swig_credentials python_lsa python_dcerpc_security
+PRIVATE_DEPENDENCIES = RPC_NDR_WKSSVC PYTALLOC param swig_credentials python_lsa python_dcerpc_security python_dcerpc
 
 python_wkssvc_OBJ_FILES = $(gen_ndrsrcdir)/py_wkssvc.o
 
 [PYTHON::python_dfs]
 LIBRARY_REALNAME = samba/dcerpc/dfs.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_DFS PYTALLOC param swig_credentials python_dcerpc_misc
+PRIVATE_DEPENDENCIES = RPC_NDR_DFS PYTALLOC param swig_credentials python_dcerpc_misc python_dcerpc
 
 python_dfs_OBJ_FILES = $(gen_ndrsrcdir)/py_dfs.o
 
 [PYTHON::python_unixinfo]
 LIBRARY_REALNAME = samba/dcerpc/unixinfo.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_UNIXINFO PYTALLOC param swig_credentials python_dcerpc_security python_dcerpc_misc
+PRIVATE_DEPENDENCIES = RPC_NDR_UNIXINFO PYTALLOC param swig_credentials python_dcerpc_security python_dcerpc_misc python_dcerpc
 
 python_unixinfo_OBJ_FILES = $(gen_ndrsrcdir)/py_unixinfo.o
 
+[PYTHON::python_irpc]
+LIBRARY_REALNAME = samba/irpc.$(SHLIBEXT)
+PRIVATE_DEPENDENCIES = RPC_NDR_IRPC PYTALLOC param swig_credentials python_dcerpc_security python_dcerpc_misc python_dcerpc python_nbt
+
+python_irpc_OBJ_FILES = $(gen_ndrsrcdir)/py_irpc.o
+
 [PYTHON::python_drsuapi]
 LIBRARY_REALNAME = samba/dcerpc/drsuapi.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_DRSUAPI PYTALLOC param swig_credentials python_dcerpc_misc python_dcerpc_security
+PRIVATE_DEPENDENCIES = RPC_NDR_DRSUAPI PYTALLOC param swig_credentials python_dcerpc_misc python_dcerpc_security python_dcerpc
 
 python_drsuapi_OBJ_FILES = $(gen_ndrsrcdir)/py_drsuapi.o
 
 [PYTHON::python_dcerpc_security]
 LIBRARY_REALNAME = samba/dcerpc/security.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = PYTALLOC python_dcerpc_misc
+PRIVATE_DEPENDENCIES = PYTALLOC python_dcerpc_misc python_dcerpc
 
 python_dcerpc_security_OBJ_FILES = $(gen_ndrsrcdir)/py_security.o
 

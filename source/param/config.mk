@@ -6,7 +6,7 @@ LIBSAMBA-HOSTCONFIG_VERSION = 0.0.1
 LIBSAMBA-HOSTCONFIG_SOVERSION = 0
 
 LIBSAMBA-HOSTCONFIG_OBJ_FILES = $(addprefix $(paramsrcdir)/,  \
-			loadparm.o generic.o util.o) lib/version.o
+			loadparm.o generic.o util.o) 
 
 PUBLIC_HEADERS += param/param.h
 

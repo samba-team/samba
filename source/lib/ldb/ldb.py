@@ -3,6 +3,10 @@
 #
 # Don't modify this file, modify the SWIG interface instead.
 
+"""
+An interface to LDB, a LDAP-like API that can either to talk an embedded database (TDB-based) or a standards-compliant LDAP server.
+"""
+
 import _ldb
 import new
 new_instancemethod = new.instancemethod
@@ -67,10 +71,71 @@ CHANGETYPE_DELETE = _ldb.CHANGETYPE_DELETE
 CHANGETYPE_MODIFY = _ldb.CHANGETYPE_MODIFY
 ldb_val_to_py_object = _ldb.ldb_val_to_py_object
 class Dn(object):
+    """A LDB distinguished name."""
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     def __init__(self, *args, **kwargs): 
+        """
+        S.__init__(ldb, string)
+        Create a new DN.
+        """
         _ldb.Dn_swiginit(self,_ldb.new_Dn(*args, **kwargs))
     __swig_destroy__ = _ldb.delete_Dn
+    def validate(*args, **kwargs):
+        """
+        S.validate() -> bool
+        Validate DN is correct.
+        """
+        return _ldb.Dn_validate(*args, **kwargs)
+
+    def parent(*args, **kwargs):
+        """
+        S.parent() -> dn
+        Get the parent for this DN.
+        """
+        return _ldb.Dn_parent(*args, **kwargs)
+
+    def is_special(*args, **kwargs):
+        """
+        S.is_special() -> bool
+        Check whether this is a special LDB DN.
+        """
+        return _ldb.Dn_is_special(*args, **kwargs)
+
+    def is_null(*args, **kwargs):
+        """
+        S.is_null() -> bool
+        Check whether this is a null DN.
+        """
+        return _ldb.Dn_is_null(*args, **kwargs)
+
+    def add_child(*args, **kwargs):
+        """
+        S.add_child(dn) -> None
+        Add a child DN to this DN.
+        """
+        return _ldb.Dn_add_child(*args, **kwargs)
+
+    def add_base(*args, **kwargs):
+        """
+        S.add_base(dn) -> None
+        Add a base DN to this DN.
+        """
+        return _ldb.Dn_add_base(*args, **kwargs)
+
+    def canonical_str(*args, **kwargs):
+        """
+        S.canonical_str() -> string
+        Canonical version of this DN (like a posix path).
+        """
+        return _ldb.Dn_canonical_str(*args, **kwargs)
+
+    def canonical_ex_str(*args, **kwargs):
+        """
+        S.canonical_ex_str() -> string
+        Canonical version of this DN (like a posix path, with terminating newline).
+        """
+        return _ldb.Dn_canonical_ex_str(*args, **kwargs)
+
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self.__cmp__(other) == 0
@@ -97,11 +162,14 @@ Dn.__add__ = new_instancemethod(_ldb.Dn___add__,None,Dn)
 Dn_swigregister = _ldb.Dn_swigregister
 Dn_swigregister(Dn)
 
-class ldb_msg_element(object):
+class MessageElement(object):
+    """Message element."""
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
-    def __init__(self, *args, **kwargs): raise AttributeError, "No constructor defined"
     __repr__ = _swig_repr
-    __swig_destroy__ = _ldb.delete_ldb_msg_element
+    def __init__(self, *args, **kwargs): 
+        """Message element."""
+        _ldb.MessageElement_swiginit(self,_ldb.new_MessageElement(*args, **kwargs))
+    __swig_destroy__ = _ldb.delete_MessageElement
     def __getitem__(self, i):
         ret = self.get(i)
         if ret is None:
@@ -122,20 +190,17 @@ class ldb_msg_element(object):
                 return False
         return True
 
-ldb_msg_element.__iter__ = new_instancemethod(_ldb.ldb_msg_element___iter__,None,ldb_msg_element)
-ldb_msg_element.__set__ = new_instancemethod(_ldb.ldb_msg_element___set__,None,ldb_msg_element)
-ldb_msg_element.__len__ = new_instancemethod(_ldb.ldb_msg_element___len__,None,ldb_msg_element)
-ldb_msg_element.get = new_instancemethod(_ldb.ldb_msg_element_get,None,ldb_msg_element)
-ldb_msg_element.__cmp__ = new_instancemethod(_ldb.ldb_msg_element___cmp__,None,ldb_msg_element)
-ldb_msg_element_swigregister = _ldb.ldb_msg_element_swigregister
-ldb_msg_element_swigregister(ldb_msg_element)
-
-def MessageElement(*args, **kwargs):
-    val = _ldb.new_MessageElement(*args, **kwargs)
-    return val
+MessageElement.__cmp__ = new_instancemethod(_ldb.MessageElement___cmp__,None,MessageElement)
+MessageElement.__iter__ = new_instancemethod(_ldb.MessageElement___iter__,None,MessageElement)
+MessageElement.__set__ = new_instancemethod(_ldb.MessageElement___set__,None,MessageElement)
+MessageElement.__len__ = new_instancemethod(_ldb.MessageElement___len__,None,MessageElement)
+MessageElement.get = new_instancemethod(_ldb.MessageElement_get,None,MessageElement)
+MessageElement_swigregister = _ldb.MessageElement_swigregister
+MessageElement_swigregister(MessageElement)
 
 ldb_msg_list_elements = _ldb.ldb_msg_list_elements
 class Message(object):
+    """Message."""
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     dn = _swig_property(_ldb.Message_dn_get, _ldb.Message_dn_set)
@@ -214,17 +279,132 @@ LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED = _ldb.LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED
 LDB_ERR_AFFECTS_MULTIPLE_DSAS = _ldb.LDB_ERR_AFFECTS_MULTIPLE_DSAS
 LDB_ERR_OTHER = _ldb.LDB_ERR_OTHER
 class Ldb(object):
+    """Connection to a LDB database."""
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     def __init__(self, *args, **kwargs): 
         _ldb.Ldb_swiginit(self,_ldb.new_Ldb(*args, **kwargs))
+    def connect(*args, **kwargs):
+        """
+        S.connect(url,flags=0,options=None) -> None
+        Connect to a LDB URL.
+        """
+        return _ldb.Ldb_connect(*args, **kwargs)
+
     __swig_destroy__ = _ldb.delete_Ldb
+    def delete(*args, **kwargs):
+        """
+        S.delete(dn) -> None
+        Remove an entry.
+        """
+        return _ldb.Ldb_delete(*args, **kwargs)
+
+    def rename(*args, **kwargs):
+        """
+        S.rename(old_dn, new_dn) -> None
+        Rename an entry.
+        """
+        return _ldb.Ldb_rename(*args, **kwargs)
+
+    def add(*args, **kwargs):
+        """
+        S.add(message) -> None
+        Add an entry.
+        """
+        return _ldb.Ldb_add(*args, **kwargs)
+
+    def modify(*args, **kwargs):
+        """
+        S.modify(message) -> None
+        Modify an entry.
+        """
+        return _ldb.Ldb_modify(*args, **kwargs)
+
+    def set_create_perms(*args, **kwargs):
+        """
+        S.set_create_perms(mode) -> None
+        Set mode to use when creating new LDB files.
+        """
+        return _ldb.Ldb_set_create_perms(*args, **kwargs)
+
+    def set_modules_dir(*args, **kwargs):
+        """
+        S.set_modules_dir(path) -> None
+        Set path LDB should search for modules
+        """
+        return _ldb.Ldb_set_modules_dir(*args, **kwargs)
+
+    def set_debug(*args, **kwargs):
+        """
+        S.set_debug(callback) -> None
+        Set callback for LDB debug messages.
+        The callback should accept a debug level and debug text.
+        """
+        return _ldb.Ldb_set_debug(*args, **kwargs)
+
+    def set_opaque(*args, **kwargs):
+        """
+        S.set_opaque(name, value) -> None
+        Set an opaque value on this LDB connection. 
+        :note: Passing incorrect values may cause crashes.
+        """
+        return _ldb.Ldb_set_opaque(*args, **kwargs)
+
+    def get_opaque(*args, **kwargs):
+        """
+        S.get_opaque(name) -> value
+        Get an opaque value set on this LDB connection. 
+        :note: The returned value may not be useful in Python.
+        """
+        return _ldb.Ldb_get_opaque(*args, **kwargs)
+
+    def transaction_start(*args, **kwargs):
+        """
+        S.transaction_start() -> None
+        Start a new transaction.
+        """
+        return _ldb.Ldb_transaction_start(*args, **kwargs)
+
+    def transaction_commit(*args, **kwargs):
+        """
+        S.transaction_commit() -> None
+        Commit currently active transaction.
+        """
+        return _ldb.Ldb_transaction_commit(*args, **kwargs)
+
+    def transaction_cancel(*args, **kwargs):
+        """
+        S.transaction_cancel() -> None
+        Cancel currently active transaction.
+        """
+        return _ldb.Ldb_transaction_cancel(*args, **kwargs)
+
+    def parse_ldif(*args, **kwargs):
+        """
+        S.parse_ldif(ldif) -> iter(messages)
+        Parse a string formatted using LDIF.
+        """
+        return _ldb.Ldb_parse_ldif(*args, **kwargs)
+
     def __init__(self, url=None, flags=0, options=None):
+        """Create a new LDB object.
+
+        Will also connect to the specified URL if one was given.
+        """
         _ldb.Ldb_swiginit(self,_ldb.new_Ldb())
         if url is not None:
             self.connect(url, flags, options)
 
     def search(self, base=None, scope=SCOPE_DEFAULT, expression=None, 
                attrs=None, controls=None):
+        """Search in a database.
+
+        :param base: Optional base DN to search
+        :param scope: Search scope (SCOPE_BASE, SCOPE_ONELEVEL or SCOPE_SUBTREE)
+        :param expression: Optional search expression
+        :param attrs: Attributes to return (defaults to all)
+        :param controls: Optional list of controls
+        :return: Iterator over Message objects
+        """
         if not (attrs is None or isinstance(attrs, list)):
             raise TypeError("attributes not a list")
         parsed_controls = None
@@ -263,9 +443,35 @@ Ldb.__repr__ = new_instancemethod(_ldb.Ldb___repr__,None,Ldb)
 Ldb_swigregister = _ldb.Ldb_swigregister
 Ldb_swigregister(Ldb)
 
-valid_attr_name = _ldb.valid_attr_name
-timestring = _ldb.timestring
-string_to_time = _ldb.string_to_time
-register_module = _ldb.register_module
+
+def valid_attr_name(*args, **kwargs):
+  """
+    S.valid_attr_name(name) -> bool
+    Check whether the supplied name is a valid attribute name.
+    """
+  return _ldb.valid_attr_name(*args, **kwargs)
+
+def timestring(*args, **kwargs):
+  """
+    S.timestring(int) -> string
+    Generate a LDAP time string from a UNIX timestamp
+    """
+  return _ldb.timestring(*args, **kwargs)
+
+def string_to_time(*args, **kwargs):
+  """
+    S.string_to_time(string) -> int
+    Parse a LDAP time string into a UNIX timestamp.
+    """
+  return _ldb.string_to_time(*args, **kwargs)
+
+def register_module(*args, **kwargs):
+  """
+    S.register_module(module) -> None
+    Register a LDB module.
+    """
+  return _ldb.register_module(*args, **kwargs)
+__docformat__ = "restructuredText"
+
 
 

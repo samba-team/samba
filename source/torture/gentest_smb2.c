@@ -34,7 +34,7 @@
 #include "libcli/resolve/resolve.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
-#include "dynconfig.h"
+#include "dynconfig/dynconfig.h"
 
 #define NSERVERS 2
 #define NINSTANCES 2
@@ -53,6 +53,9 @@ static struct gentest_options {
 	const char *seeds_file;
 	int use_preset_seeds;
 	int fast_reconnect;
+	int mask_indexing;
+	int no_eas;
+	int skip_cleanup;
 } options;
 
 /* mapping between open handles on the server and local handles */
@@ -110,7 +113,8 @@ static struct smb2_handle bad_smb2_handle;
 
 #define BAD_HANDLE 0xFFFE
 
-static bool oplock_handler(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private);
+static bool oplock_handler(struct smb2_transport *transport, const struct smb2_handle *handle,
+			   uint8_t level, void *private_data);
 static void idle_func(struct smb2_transport *transport, void *private);
 
 /*
@@ -206,7 +210,8 @@ static bool connect_servers(struct event_context *ev,
 				return false;
 			}
 
-//			smb2_oplock_handler(servers[i].cli[j]->transport, oplock_handler, NULL);
+			servers[i].tree[j]->session->transport->oplock.handler = oplock_handler;
+			servers[i].tree[j]->session->transport->oplock.private_data = (void *)(uintptr_t)((i<<8)|j);
 			smb2_transport_idle_handler(servers[i].tree[j]->session->transport, idle_func, 50000, NULL);
 		}
 	}
@@ -510,24 +515,37 @@ static uint32_t gen_bits_mask2(uint32_t mask1, uint32_t mask2)
 }
 
 /*
+  generate reserved values
+ */
+static uint64_t gen_reserved8(void)
+{
+	return gen_bits_mask(0xFF);
+}
+
+static uint64_t gen_reserved16(void)
+{
+	return gen_bits_mask(0xFFFF);
+}
+
+static uint64_t gen_reserved32(void)
+{
+	return gen_bits_mask(0xFFFFFFFF);
+}
+
+static uint64_t gen_reserved64(void)
+{
+	return gen_bits_mask(0xFFFFFFFF) | (((uint64_t)gen_bits_mask(0xFFFFFFFF))<<32);
+}
+
+
+
+/*
   generate a boolean
 */
 static bool gen_bool(void)
 {
 	return gen_bits_mask2(0x1, 0xFF);
 }
-
-/*
-  generate ntrename flags
-*/
-static uint16_t gen_rename_flags(void)
-{
-	if (gen_chance(30)) return RENAME_FLAG_RENAME;
-	if (gen_chance(30)) return RENAME_FLAG_HARD_LINK;
-	if (gen_chance(30)) return RENAME_FLAG_COPY;
-	return gen_bits_mask(0xFFFF);
-}
-
 
 /*
   return a set of lock flags
@@ -543,29 +561,11 @@ static uint16_t gen_lock_flags(void)
 }
 
 /*
-  generate a pid 
-*/
-static uint16_t gen_pid(void)
-{
-	if (gen_chance(10)) return gen_bits_mask(0xFFFF);
-	return getpid();
-}
-
-/*
   generate a lock count
 */
 static off_t gen_lock_count(void)
 {
 	return gen_int_range(0, 3);
-}
-
-/*
-  generate a ntcreatex flags field
-*/
-static uint32_t gen_ntcreatex_flags(void)
-{
-	if (gen_chance(70)) return NTCREATEX_FLAGS_EXTENDED;
-	return gen_bits_mask2(0x1F, 0xFFFFFFFF);
 }
 
 /*
@@ -599,34 +599,6 @@ static uint32_t gen_open_disp(void)
 }
 
 /*
-  generate an openx open mode
-*/
-static uint16_t gen_openx_mode(void)
-{
-	if (gen_chance(20)) return gen_bits_mask(0xFFFF);
-	if (gen_chance(20)) return gen_bits_mask(0xFF);
-	return OPENX_MODE_DENY_NONE | gen_bits_mask(0x3);
-}
-
-/*
-  generate an openx flags field
-*/
-static uint16_t gen_openx_flags(void)
-{
-	if (gen_chance(20)) return gen_bits_mask(0xFFFF);
-	return gen_bits_mask(0x7);
-}
-
-/*
-  generate an openx open function
-*/
-static uint16_t gen_openx_func(void)
-{
-	if (gen_chance(20)) return gen_bits_mask(0xFFFF);
-	return gen_bits_mask(0x13);
-}
-
-/*
   generate a file attrib combination
 */
 static uint32_t gen_attrib(void)
@@ -652,15 +624,6 @@ static NTTIME gen_nttime(void)
 	NTTIME ret;
 	unix_to_nt_time(&ret, gen_timet());
 	return ret;
-}
-
-/*
-  generate a milliseconds protocol timeout
-*/
-static uint32_t gen_timeout(void)
-{
-	if (gen_chance(98)) return 0;
-	return random() % 50;
 }
 
 /*
@@ -721,6 +684,126 @@ static struct ea_struct gen_ea_struct(void)
 }
 
 /*
+  generate an ea_struct
+*/
+static struct smb_ea_list gen_ea_list(void)
+{
+	struct smb_ea_list eas;
+	int i;
+	if (options.no_eas) {
+		ZERO_STRUCT(eas);
+		return eas;
+	}
+	eas.num_eas = gen_int_range(0, 3);
+	eas.eas = talloc_array(current_op.mem_ctx, struct ea_struct, eas.num_eas);
+	for (i=0;i<eas.num_eas;i++) {
+		eas.eas[i] = gen_ea_struct();
+	}
+	return eas;
+}
+
+static void oplock_handler_close_recv(struct smb2_request *req)
+{
+	NTSTATUS status;
+	struct smb2_close io;
+	status = smb2_close_recv(req, &io);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed in oplock_handler\n");
+		smb_panic("close failed in oplock_handler");
+	}
+}
+
+static void oplock_handler_ack_callback(struct smb2_request *req)
+{
+	NTSTATUS status;
+	struct smb2_break br;
+
+	status = smb2_break_recv(req, &br);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("oplock break ack failed in oplock_handler\n");
+		smb_panic("oplock break ack failed in oplock_handler");
+	}
+}
+
+static bool send_oplock_ack(struct smb2_tree *tree, struct smb2_handle handle, 
+			    uint8_t level)
+{
+	struct smb2_break br;
+	struct smb2_request *req;
+
+	ZERO_STRUCT(br);
+	br.in.file.handle	= handle;
+	br.in.oplock_level	= level;
+	br.in.reserved	        = gen_reserved8();
+	br.in.reserved2	        = gen_reserved32();
+
+	req = smb2_break_send(tree, &br);
+	if (req == NULL) return false;
+	req->async.fn = oplock_handler_ack_callback;
+	req->async.private_data = NULL;
+	return true;
+}
+
+/*
+  the oplock handler will either ack the break or close the file
+*/
+static bool oplock_handler(struct smb2_transport *transport, const struct smb2_handle *handle, 
+			   uint8_t level, void *private_data)
+{
+	struct smb2_close io;
+	unsigned i, j;
+	bool do_close;
+	struct smb2_tree *tree = NULL;
+	struct smb2_request *req;
+
+	srandom(current_op.seed);
+	do_close = gen_chance(50);
+
+	i = ((uintptr_t)private_data) >> 8;
+	j = ((uintptr_t)private_data) & 0xFF;
+
+	if (i >= NSERVERS || j >= NINSTANCES) {
+		printf("Bad private_data in oplock_handler\n");
+		return false;
+	}
+
+	oplocks[i][j].got_break = true;
+	oplocks[i][j].server_handle = *handle;
+	oplocks[i][j].handle = fnum_to_handle(i, j, *handle);
+	oplocks[i][j].level = level;
+	oplocks[i][j].do_close = do_close;
+	tree = talloc_get_type(servers[i].tree[j], struct smb2_tree);
+
+	if (!tree) {
+		printf("Oplock break not for one of our trees!?\n");
+		return false;
+	}
+
+	if (!do_close) {
+		printf("oplock ack handle=%d\n", oplocks[i][j].handle);
+		return send_oplock_ack(tree, *handle, level);
+	}
+
+	printf("oplock close fnum=%d\n", oplocks[i][j].handle);
+
+	ZERO_STRUCT(io);
+	io.in.file.handle = *handle;
+	io.in.flags = 0;
+	req = smb2_close_send(tree, &io);
+
+	if (req == NULL) {
+		printf("WARNING: close failed in oplock_handler_close\n");
+		return false;
+	}
+
+	req->async.fn = oplock_handler_close_recv;
+	req->async.private_data = NULL;
+
+	return true;
+}
+
+
+/*
   the idle function tries to cope with getting an oplock break on a connection, and
   an operation on another connection blocking until that break is acked
   we check for operations on all transports in the idle function
@@ -758,7 +841,7 @@ static bool compare_status(NTSTATUS status1, NTSTATUS status2)
 	return false;
 }
 
-
+#if 0
 /*
   check for pending packets on all connections
 */
@@ -774,6 +857,7 @@ static void check_pending(void)
 		}
 	}	
 }
+#endif
 
 /*
   check that the same oplock breaks have been received by all instances
@@ -953,6 +1037,16 @@ again:
 
 #define CHECK_EQUAL(field) do { \
 	if (parm[0].field != parm[1].field && !ignore_pattern(#field)) { \
+		printf("Mismatch in %s - 0x%llx 0x%llx\n", #field, \
+		       (unsigned long long)parm[0].field, (unsigned long long)parm[1].field); \
+		return false; \
+	} \
+} while(0)
+
+#define CHECK_ATTRIB(field) do { \
+		if (!options.mask_indexing) { \
+		CHECK_EQUAL(field); \
+	} else if ((~FILE_ATTRIBUTE_NONINDEXED & parm[0].field) != (~FILE_ATTRIBUTE_NONINDEXED & parm[1].field) && !ignore_pattern(#field)) { \
 		printf("Mismatch in %s - 0x%x 0x%x\n", #field, \
 		       (int)parm[0].field, (int)parm[1].field); \
 		return false; \
@@ -978,15 +1072,6 @@ again:
 		return false; \
 	} \
 	CHECK_EQUAL(field.length); \
-} while(0)
-
-#define CHECK_TIMES_EQUAL(field) do { \
-	if (labs(parm[0].field - parm[1].field) > time_skew() && \
-	    !ignore_pattern(#field)) { \
-		printf("Mismatch in %s - 0x%x 0x%x\n", #field, \
-		       (int)parm[0].field, (int)parm[1].field); \
-		return false; \
-	} \
 } while(0)
 
 #define CHECK_NTTIMES_EQUAL(field) do { \
@@ -1016,22 +1101,20 @@ static bool handler_create(int instance)
 	if (gen_chance(2)) {
 		parm[0].in.create_flags       |= gen_bits_mask(0xFFFFFFFF);
 	}
-	parm[0].in.reserved                   = gen_bits_levels(2, 95, 0x0, 100, 0xFFFFFFFF);
-	if (gen_chance(2)) {
-		parm[0].in.reserved           |= gen_bits_mask(0xFFFFFFFF);
-	}
+	parm[0].in.reserved                   = gen_reserved64();
 	parm[0].in.desired_access             = gen_access_mask();
 	parm[0].in.file_attributes            = gen_attrib();
 	parm[0].in.share_access               = gen_bits_mask2(0x7, 0xFFFFFFFF);
 	parm[0].in.create_disposition         = gen_open_disp();
 	parm[0].in.create_options             = gen_create_options();
 	parm[0].in.fname                      = gen_fname_open(instance);
+	parm[0].in.eas			      = gen_ea_list();
 
 	if (!options.use_oplocks) {
 		/* mask out oplocks */
 		parm[0].in.oplock_level = 0;
 	}
-	
+
 	GEN_COPY_PARM;
 	GEN_CALL(smb2_create(tree, current_op.mem_ctx, &parm[i]));
 
@@ -1044,7 +1127,7 @@ static bool handler_create(int instance)
 	CHECK_NTTIMES_EQUAL(out.change_time);
 	CHECK_EQUAL(out.alloc_size);
 	CHECK_EQUAL(out.size);
-	CHECK_EQUAL(out.file_attr);
+	CHECK_ATTRIB(out.file_attr);
 	CHECK_EQUAL(out.reserved2);
 
 	/* ntcreatex creates a new file handle */
@@ -1077,7 +1160,7 @@ static bool handler_close(int instance)
 	CHECK_NTTIMES_EQUAL(out.change_time);
 	CHECK_EQUAL(out.alloc_size);
 	CHECK_EQUAL(out.size);
-	CHECK_EQUAL(out.file_attr);
+	CHECK_ATTRIB(out.file_attr);
 
 	REMOVE_HANDLE(in.file.handle);
 
@@ -1093,7 +1176,7 @@ static bool handler_read(int instance)
 	NTSTATUS status[NSERVERS];
 
 	parm[0].in.file.handle.data[0] = gen_fnum(instance);
-	parm[0].in.reserved    = gen_bits_mask2(0x0, 0xFF);
+	parm[0].in.reserved    = gen_reserved8();
 	parm[0].in.length      = gen_io_count();
 	parm[0].in.offset      = gen_offset();
 	parm[0].in.min_count   = gen_io_count();
@@ -1151,7 +1234,7 @@ static bool handler_lock(int instance)
 	parm[0].level = RAW_LOCK_LOCKX;
 	parm[0].in.file.handle.data[0] = gen_fnum(instance);
 	parm[0].in.lock_count = gen_lock_count();
-	parm[0].in.reserved = gen_bits_mask2(0, 0xFFFFFFFF);
+	parm[0].in.reserved = gen_reserved32();
 	
 	parm[0].in.locks = talloc_array(current_op.mem_ctx,
 					struct smb2_lock_element,
@@ -1182,8 +1265,8 @@ static bool handler_flush(int instance)
 
 	ZERO_STRUCT(parm[0]);
 	parm[0].in.file.handle.data[0] = gen_fnum(instance);
-	parm[0].in.reserved1  = gen_bits_mask2(0x0, 0xFFFF);
-	parm[0].in.reserved2  = gen_bits_mask2(0x0, 0xFFFFFFFF);
+	parm[0].in.reserved1  = gen_reserved16();
+	parm[0].in.reserved2  = gen_reserved32();
 
 	GEN_COPY_PARM;
 	GEN_SET_FNUM(in.file.handle);
@@ -1194,7 +1277,19 @@ static bool handler_flush(int instance)
 	return true;
 }
 
-#if 0
+/*
+  generate echo operations
+*/
+static bool handler_echo(int instance)
+{
+	NTSTATUS status[NSERVERS];
+
+	GEN_CALL(smb2_keepalive(tree->session->transport));
+
+	return true;
+}
+
+
 
 /*
   generate a fileinfo query structure
@@ -1207,16 +1302,13 @@ static void gen_fileinfo(int instance, union smb_fileinfo *info)
 		enum smb_fileinfo_level level;
 		const char *name;
 	}  levels[] = {
-		LVL(GETATTR), LVL(GETATTRE), LVL(STANDARD),
-		LVL(EA_SIZE), LVL(ALL_EAS), LVL(IS_NAME_VALID),
-		LVL(BASIC_INFO), LVL(STANDARD_INFO), LVL(EA_INFO),
-		LVL(NAME_INFO), LVL(ALL_INFO), LVL(ALT_NAME_INFO),
-		LVL(STREAM_INFO), LVL(COMPRESSION_INFO), LVL(BASIC_INFORMATION),
+		LVL(BASIC_INFORMATION),
 		LVL(STANDARD_INFORMATION), LVL(INTERNAL_INFORMATION), LVL(EA_INFORMATION),
 		LVL(ACCESS_INFORMATION), LVL(NAME_INFORMATION), LVL(POSITION_INFORMATION),
-		LVL(MODE_INFORMATION), LVL(ALIGNMENT_INFORMATION), LVL(ALL_INFORMATION),
+		LVL(MODE_INFORMATION), LVL(ALIGNMENT_INFORMATION), LVL(SMB2_ALL_INFORMATION),
 		LVL(ALT_NAME_INFORMATION), LVL(STREAM_INFORMATION), LVL(COMPRESSION_INFORMATION),
-		LVL(NETWORK_OPEN_INFORMATION), LVL(ATTRIBUTE_TAG_INFORMATION)
+		LVL(NETWORK_OPEN_INFORMATION), LVL(ATTRIBUTE_TAG_INFORMATION),
+		LVL(SMB2_ALL_EAS), LVL(SMB2_ALL_INFORMATION),
 	};
 	do {
 		i = gen_int_range(0, ARRAY_SIZE(levels)-1);
@@ -1238,62 +1330,31 @@ static bool cmp_fileinfo(int instance,
 	case RAW_FILEINFO_GENERIC:
 		return false;
 
+		/* SMB1 specific values */
 	case RAW_FILEINFO_GETATTR:
-		CHECK_EQUAL(getattr.out.attrib);
-		CHECK_EQUAL(getattr.out.size);
-		CHECK_TIMES_EQUAL(getattr.out.write_time);
-		break;
-
 	case RAW_FILEINFO_GETATTRE:
-		CHECK_TIMES_EQUAL(getattre.out.create_time);
-		CHECK_TIMES_EQUAL(getattre.out.access_time);
-		CHECK_TIMES_EQUAL(getattre.out.write_time);
-		CHECK_EQUAL(getattre.out.size);
-		CHECK_EQUAL(getattre.out.alloc_size);
-		CHECK_EQUAL(getattre.out.attrib);
-		break;
-
 	case RAW_FILEINFO_STANDARD:
-		CHECK_TIMES_EQUAL(standard.out.create_time);
-		CHECK_TIMES_EQUAL(standard.out.access_time);
-		CHECK_TIMES_EQUAL(standard.out.write_time);
-		CHECK_EQUAL(standard.out.size);
-		CHECK_EQUAL(standard.out.alloc_size);
-		CHECK_EQUAL(standard.out.attrib);
-		break;
-
 	case RAW_FILEINFO_EA_SIZE:
-		CHECK_TIMES_EQUAL(ea_size.out.create_time);
-		CHECK_TIMES_EQUAL(ea_size.out.access_time);
-		CHECK_TIMES_EQUAL(ea_size.out.write_time);
-		CHECK_EQUAL(ea_size.out.size);
-		CHECK_EQUAL(ea_size.out.alloc_size);
-		CHECK_EQUAL(ea_size.out.attrib);
-		CHECK_EQUAL(ea_size.out.ea_size);
-		break;
-
 	case RAW_FILEINFO_ALL_EAS:
-		CHECK_EQUAL(all_eas.out.num_eas);
-		for (i=0;i<parm[0].all_eas.out.num_eas;i++) {
-			CHECK_EQUAL(all_eas.out.eas[i].flags);
-			CHECK_WSTR_EQUAL(all_eas.out.eas[i].name);
-			CHECK_BLOB_EQUAL(all_eas.out.eas[i].value);
-		}
-		break;
-
 	case RAW_FILEINFO_IS_NAME_VALID:
-		break;
-		
 	case RAW_FILEINFO_BASIC_INFO:
+	case RAW_FILEINFO_STANDARD_INFO:
+	case RAW_FILEINFO_EA_INFO:
+	case RAW_FILEINFO_NAME_INFO:
+	case RAW_FILEINFO_ALL_INFO:
+	case RAW_FILEINFO_ALT_NAME_INFO:
+	case RAW_FILEINFO_STREAM_INFO:
+	case RAW_FILEINFO_COMPRESSION_INFO:
+		return false;
+
 	case RAW_FILEINFO_BASIC_INFORMATION:
 		CHECK_NTTIMES_EQUAL(basic_info.out.create_time);
 		CHECK_NTTIMES_EQUAL(basic_info.out.access_time);
 		CHECK_NTTIMES_EQUAL(basic_info.out.write_time);
 		CHECK_NTTIMES_EQUAL(basic_info.out.change_time);
-		CHECK_EQUAL(basic_info.out.attrib);
+		CHECK_ATTRIB(basic_info.out.attrib);
 		break;
 
-	case RAW_FILEINFO_STANDARD_INFO:
 	case RAW_FILEINFO_STANDARD_INFORMATION:
 		CHECK_EQUAL(standard_info.out.alloc_size);
 		CHECK_EQUAL(standard_info.out.size);
@@ -1302,38 +1363,18 @@ static bool cmp_fileinfo(int instance,
 		CHECK_EQUAL(standard_info.out.directory);
 		break;
 
-	case RAW_FILEINFO_EA_INFO:
 	case RAW_FILEINFO_EA_INFORMATION:
 		CHECK_EQUAL(ea_info.out.ea_size);
 		break;
 
-	case RAW_FILEINFO_NAME_INFO:
 	case RAW_FILEINFO_NAME_INFORMATION:
 		CHECK_WSTR_EQUAL(name_info.out.fname);
 		break;
 
-	case RAW_FILEINFO_ALL_INFO:
-	case RAW_FILEINFO_ALL_INFORMATION:
-		CHECK_NTTIMES_EQUAL(all_info.out.create_time);
-		CHECK_NTTIMES_EQUAL(all_info.out.access_time);
-		CHECK_NTTIMES_EQUAL(all_info.out.write_time);
-		CHECK_NTTIMES_EQUAL(all_info.out.change_time);
-		CHECK_EQUAL(all_info.out.attrib);
-		CHECK_EQUAL(all_info.out.alloc_size);
-		CHECK_EQUAL(all_info.out.size);
-		CHECK_EQUAL(all_info.out.nlink);
-		CHECK_EQUAL(all_info.out.delete_pending);
-		CHECK_EQUAL(all_info.out.directory);
-		CHECK_EQUAL(all_info.out.ea_size);
-		CHECK_WSTR_EQUAL(all_info.out.fname);
-		break;
-
-	case RAW_FILEINFO_ALT_NAME_INFO:
 	case RAW_FILEINFO_ALT_NAME_INFORMATION:
 		CHECK_WSTR_EQUAL(alt_name_info.out.fname);
 		break;
 
-	case RAW_FILEINFO_STREAM_INFO:
 	case RAW_FILEINFO_STREAM_INFORMATION:
 		CHECK_EQUAL(stream_info.out.num_streams);
 		for (i=0;i<parm[0].stream_info.out.num_streams;i++) {
@@ -1343,7 +1384,6 @@ static bool cmp_fileinfo(int instance,
 		}
 		break;
 
-	case RAW_FILEINFO_COMPRESSION_INFO:
 	case RAW_FILEINFO_COMPRESSION_INFORMATION:
 		CHECK_EQUAL(compression_info.out.compressed_size);
 		CHECK_EQUAL(compression_info.out.format);
@@ -1379,12 +1419,43 @@ static bool cmp_fileinfo(int instance,
 		CHECK_NTTIMES_EQUAL(network_open_information.out.change_time);
 		CHECK_EQUAL(network_open_information.out.alloc_size);
 		CHECK_EQUAL(network_open_information.out.size);
-		CHECK_EQUAL(network_open_information.out.attrib);
+		CHECK_ATTRIB(network_open_information.out.attrib);
 		break;
 
 	case RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION:
-		CHECK_EQUAL(attribute_tag_information.out.attrib);
+		CHECK_ATTRIB(attribute_tag_information.out.attrib);
 		CHECK_EQUAL(attribute_tag_information.out.reparse_tag);
+		break;
+
+	case RAW_FILEINFO_ALL_INFORMATION:
+	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
+		CHECK_NTTIMES_EQUAL(all_info2.out.create_time);
+		CHECK_NTTIMES_EQUAL(all_info2.out.access_time);
+		CHECK_NTTIMES_EQUAL(all_info2.out.write_time);
+		CHECK_NTTIMES_EQUAL(all_info2.out.change_time);
+		CHECK_ATTRIB(all_info2.out.attrib);
+		CHECK_EQUAL(all_info2.out.unknown1);
+		CHECK_EQUAL(all_info2.out.alloc_size);
+		CHECK_EQUAL(all_info2.out.size);
+		CHECK_EQUAL(all_info2.out.nlink);
+		CHECK_EQUAL(all_info2.out.delete_pending);
+		CHECK_EQUAL(all_info2.out.directory);
+		CHECK_EQUAL(all_info2.out.file_id);
+		CHECK_EQUAL(all_info2.out.ea_size);
+		CHECK_EQUAL(all_info2.out.access_mask);
+		CHECK_EQUAL(all_info2.out.position);
+		CHECK_EQUAL(all_info2.out.mode);
+		CHECK_EQUAL(all_info2.out.alignment_requirement);
+		CHECK_WSTR_EQUAL(all_info2.out.fname);
+		break;
+
+	case RAW_FILEINFO_SMB2_ALL_EAS:
+		CHECK_EQUAL(all_eas.out.num_eas);
+		for (i=0;i<parm[0].all_eas.out.num_eas;i++) {
+			CHECK_EQUAL(all_eas.out.eas[i].flags);
+			CHECK_WSTR_EQUAL(all_eas.out.eas[i].name);
+			CHECK_BLOB_EQUAL(all_eas.out.eas[i].value);
+		}
 		break;
 
 		/* Unhandled levels */
@@ -1393,8 +1464,6 @@ static bool cmp_fileinfo(int instance,
 	case RAW_FILEINFO_EA_LIST:
 	case RAW_FILEINFO_UNIX_BASIC:
 	case RAW_FILEINFO_UNIX_LINK:
-	case RAW_FILEINFO_SMB2_ALL_EAS:
-	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
 	case RAW_FILEINFO_UNIX_INFO2:
 		break;
 	}
@@ -1410,13 +1479,13 @@ static bool handler_qfileinfo(int instance)
 	union smb_fileinfo parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
-	parm[0].generic.in.file.fnum = gen_fnum(instance);
+	parm[0].generic.in.file.handle.data[0] = gen_fnum(instance);
 
 	gen_fileinfo(instance, &parm[0]);
 
 	GEN_COPY_PARM;
-	GEN_SET_FNUM(generic.in.file.fnum);
-	GEN_CALL(smb_raw_fileinfo(tree, current_op.mem_ctx, &parm[i]));
+	GEN_SET_FNUM(generic.in.file.handle);
+	GEN_CALL(smb2_getinfo_file(tree, current_op.mem_ctx, &parm[i]));
 
 	return cmp_fileinfo(instance, parm, status);
 }
@@ -1434,12 +1503,7 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 		enum smb_setfileinfo_level level;
 		const char *name;
 	}  levels[] = {
-#if 0
-		/* disabled until win2003 can handle them ... */
-		LVL(EA_SET), LVL(BASIC_INFO), LVL(DISPOSITION_INFO), 
-		LVL(STANDARD), LVL(ALLOCATION_INFO), LVL(END_OF_FILE_INFO), 
-#endif
-		LVL(SETATTR), LVL(SETATTRE), LVL(BASIC_INFORMATION),
+		LVL(BASIC_INFORMATION),
 		LVL(RENAME_INFORMATION), LVL(DISPOSITION_INFORMATION), 
 		LVL(POSITION_INFORMATION), LVL(MODE_INFORMATION),
 		LVL(ALLOCATION_INFORMATION), LVL(END_OF_FILE_INFORMATION), 
@@ -1453,27 +1517,15 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 
 	switch (info->generic.level) {
 	case RAW_SFILEINFO_SETATTR:
-		info->setattr.in.attrib = gen_attrib();
-		info->setattr.in.write_time = gen_timet();
-		break;
 	case RAW_SFILEINFO_SETATTRE:
-		info->setattre.in.create_time = gen_timet();
-		info->setattre.in.access_time = gen_timet();
-		info->setattre.in.write_time = gen_timet();
-		break;
 	case RAW_SFILEINFO_STANDARD:
-		info->standard.in.create_time = gen_timet();
-		info->standard.in.access_time = gen_timet();
-		info->standard.in.write_time = gen_timet();
-		break;
-	case RAW_SFILEINFO_EA_SET: {
-		static struct ea_struct ea;
-		info->ea_set.in.num_eas = 1;
-		info->ea_set.in.eas = &ea;
-		info->ea_set.in.eas[0] = gen_ea_struct();
-	}
-		break;
+	case RAW_SFILEINFO_EA_SET:
 	case RAW_SFILEINFO_BASIC_INFO:
+	case RAW_SFILEINFO_DISPOSITION_INFO:
+	case RAW_SFILEINFO_END_OF_FILE_INFO:
+	case RAW_SFILEINFO_ALLOCATION_INFO:
+		break;
+
 	case RAW_SFILEINFO_BASIC_INFORMATION:
 		info->basic_info.in.create_time = gen_nttime();
 		info->basic_info.in.access_time = gen_nttime();
@@ -1481,15 +1533,12 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 		info->basic_info.in.change_time = gen_nttime();
 		info->basic_info.in.attrib = gen_attrib();
 		break;
-	case RAW_SFILEINFO_DISPOSITION_INFO:
 	case RAW_SFILEINFO_DISPOSITION_INFORMATION:
 		info->disposition_info.in.delete_on_close = gen_bool();
 		break;
-	case RAW_SFILEINFO_ALLOCATION_INFO:
 	case RAW_SFILEINFO_ALLOCATION_INFORMATION:
 		info->allocation_info.in.alloc_size = gen_alloc_size();
 		break;
-	case RAW_SFILEINFO_END_OF_FILE_INFO:
 	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
 		info->end_of_file_info.in.size = gen_offset();
 		break;
@@ -1507,16 +1556,16 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 		break;
 	case RAW_SFILEINFO_GENERIC:
 	case RAW_SFILEINFO_SEC_DESC:
-	case RAW_SFILEINFO_UNIX_BASIC:
-	case RAW_SFILEINFO_UNIX_LINK:
-	case RAW_SFILEINFO_UNIX_HLINK:
 	case RAW_SFILEINFO_1023:
 	case RAW_SFILEINFO_1025:
 	case RAW_SFILEINFO_1029:
 	case RAW_SFILEINFO_1032:
 	case RAW_SFILEINFO_1039:
 	case RAW_SFILEINFO_1040:
+	case RAW_SFILEINFO_UNIX_BASIC:
 	case RAW_SFILEINFO_UNIX_INFO2:
+	case RAW_SFILEINFO_UNIX_LINK:
+	case RAW_SFILEINFO_UNIX_HLINK:
 		/* Untested */
 		break;
 	}
@@ -1535,14 +1584,11 @@ static bool handler_sfileinfo(int instance)
 	gen_setfileinfo(instance, &parm[0]);
 
 	GEN_COPY_PARM;
-	GEN_SET_FNUM(generic.in.file.fnum);
-	GEN_CALL(smb_raw_setfileinfo(tree, &parm[i]));
+	GEN_SET_FNUM(generic.in.file.handle);
+	GEN_CALL(smb2_setinfo_file(tree, &parm[i]));
 
 	return true;
 }
-
-#endif
-
 
 /*
   wipe any relevant files
@@ -1551,6 +1597,10 @@ static void wipe_files(void)
 {
 	int i;
 	NTSTATUS status;
+
+	if (options.skip_cleanup) {
+		return;
+	}
 
 	for (i=0;i<NSERVERS;i++) {
 		int n = smb2_deltree(servers[i].tree[0], "gentest");
@@ -1606,6 +1656,9 @@ static struct {
 	{"WRITE",      handler_write},
 	{"LOCK",       handler_lock},
 	{"FLUSH",      handler_flush},
+	{"ECHO",       handler_echo},
+	{"QFILEINFO",  handler_qfileinfo},
+	{"SFILEINFO",  handler_sfileinfo},
 };
 
 
@@ -1870,6 +1923,9 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 		{"unclist",	  0, POPT_ARG_STRING,	NULL, 	OPT_UNCLIST,	"unclist", 	NULL},
 		{"seedsfile",	  0, POPT_ARG_STRING,  &options.seeds_file, 0,	"seed file", 	NULL},
 		{ "user", 'U',       POPT_ARG_STRING, NULL, 'U', "Set the network username", "[DOMAIN/]USERNAME[%PASSWORD]" },
+		{"maskindexing",  0, POPT_ARG_NONE,  &options.mask_indexing, 0,	"mask out the indexed file attrib", 	NULL},
+		{"noeas",  0, POPT_ARG_NONE,  &options.no_eas, 0,	"don't use extended attributes", 	NULL},
+		{"skip-cleanup",  0, POPT_ARG_NONE,  &options.skip_cleanup, 0,	"don't delete files at start", 	NULL},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS

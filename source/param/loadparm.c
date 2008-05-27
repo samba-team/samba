@@ -54,7 +54,7 @@
 
 #include "includes.h"
 #include "version.h"
-#include "dynconfig.h"
+#include "dynconfig/dynconfig.h"
 #include "system/time.h"
 #include "system/locale.h"
 #include "system/network.h" /* needed for TCP_NODELAY */

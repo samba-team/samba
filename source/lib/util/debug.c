@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "system/time.h"
-#include "dynconfig.h"
+#include "dynconfig/dynconfig.h"
 
 /**
  * @file

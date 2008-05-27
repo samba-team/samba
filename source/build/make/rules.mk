@@ -86,7 +86,7 @@ unused_macros:
 	@mkdir -p $(@D)
 	@$(STLD) $(STLD_FLAGS) $@ $^
 
-include build/make/templates.mk
+include $(make_utility_dir)/templates.mk
 
 ###############################################################################
 # File types

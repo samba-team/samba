@@ -684,7 +684,8 @@ union smb_fileinfo {
 			uint32_t ea_size;
 			uint32_t access_mask;
 			uint64_t position;
-			uint64_t mode;
+			uint32_t mode;
+			uint32_t alignment_requirement;
 			struct smb_wire_string fname;
 		} out;
 	} all_info2;
@@ -1646,7 +1647,7 @@ union smb_read {
 		struct {
 			union smb_handle file;
 			uint64_t offset;
-			uint16_t mincnt;
+			uint32_t mincnt; /* enforced on SMB2, 16 bit on SMB */
 			uint32_t maxcnt;
 			uint16_t remaining;
 			bool read_for_execute;
@@ -1918,6 +1919,7 @@ union smb_lock {
 #define SMB2_LOCK_FLAG_EXCLUSIVE	0x00000002
 #define SMB2_LOCK_FLAG_UNLOCK		0x00000004
 #define SMB2_LOCK_FLAG_FAIL_IMMEDIATELY	0x00000010
+#define SMB2_LOCK_FLAG_ALL_MASK		0x00000017
 				uint32_t flags;
 				uint32_t reserved;
 			} *locks;
@@ -1948,23 +1950,43 @@ union smb_lock {
 enum smb_close_level {
 	RAW_CLOSE_CLOSE,
 	RAW_CLOSE_SPLCLOSE,
-	RAW_CLOSE_SMB2
+	RAW_CLOSE_SMB2,
+	RAW_CLOSE_GENERIC,
 };
-
-#define RAW_CLOSE_GENERIC RAW_CLOSE_CLOSE
 
 /*
   union for close() backend call
 */
 union smb_close {
-	/* SMBclose (and generic) interface */
+	/* generic interface */
+	struct {
+		enum smb_close_level level;
+		struct {
+			union smb_handle file;
+			time_t write_time;
+#define SMB2_CLOSE_FLAGS_FULL_INFORMATION (1<<0)
+			uint16_t flags; /* SMB2_CLOSE_FLAGS_* */
+		} in;
+		struct {
+			uint16_t flags;
+			NTTIME   create_time;
+			NTTIME   access_time;
+			NTTIME   write_time;
+			NTTIME   change_time;
+			uint64_t alloc_size;
+			uint64_t size;
+			uint32_t file_attr;
+		} out;
+	} generic;
+
+	/* SMBclose interface */
 	struct {
 		enum smb_close_level level;
 		struct {
 			union smb_handle file;
 			time_t write_time;
 		} in;
-	} close, generic;
+	} close;
 
 	/* SMBsplclose interface - empty! */
 	struct {
@@ -1982,7 +2004,6 @@ union smb_close {
 
 			/* static body buffer 24 (0x18) bytes */
 			/* uint16_t buffer_code;  0x18 */
-#define SMB2_CLOSE_FLAGS_FULL_INFORMATION (1<<0)
 			uint16_t flags; /* SMB2_CLOSE_FLAGS_* */
 			uint32_t _pad;
 		} in;

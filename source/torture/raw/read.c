@@ -460,6 +460,23 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 		CHECK_VALUE(io.readx.out.compaction_mode, 0);
 	}
 
+	printf("Trying mincnt past EOF\n");
+	memset(buf, 0, maxsize);
+	io.readx.in.offset = 0;
+	io.readx.in.mincnt = 100;
+	io.readx.in.maxcnt = 110;
+	status = smb_raw_read(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(io.readx.out.remaining, 0xFFFF);
+	CHECK_VALUE(io.readx.out.compaction_mode, 0);
+	CHECK_VALUE(io.readx.out.nread, strlen(test_data));
+	if (memcmp(buf, test_data, strlen(test_data)) != 0) {
+		ret = false;
+		printf("incorrect data at %d!? (%s:%s)\n", __LINE__, test_data, buf);
+		goto done;
+	}
+
+
 	setup_buffer(buf, seed, maxsize);
 	smbcli_write(cli->tree, fnum, 0, buf, 0, maxsize);
 	memset(buf, 0, maxsize);

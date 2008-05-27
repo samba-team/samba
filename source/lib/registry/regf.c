@@ -25,6 +25,8 @@
 #include "librpc/gen_ndr/winreg.h"
 #include "param/param.h"
 #include "lib/registry/registry.h"
+#include "libcli/security/security.h"
+
 
 static struct hive_operations reg_backend_regf;
 
@@ -1915,9 +1917,12 @@ WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx,
 {
 	struct regf_data *regf;
 	struct regf_hdr *regf_hdr;
-	int i;
 	struct nk_block nk;
+	struct sk_block sk;
 	WERROR error;
+	DATA_BLOB data;
+	struct security_descriptor *sd;
+	uint32_t sk_offset;
 
 	regf = (struct regf_data *)talloc_zero(NULL, struct regf_data);
 
@@ -1945,19 +1950,16 @@ WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx,
 	regf_hdr->version.minor = minor_version;
 	regf_hdr->last_block = 0x1000; /* Block size */
 	regf_hdr->description = talloc_strdup(regf_hdr,
-					      "registry created by Samba 4");
+					      "Registry created by Samba 4");
 	W_ERROR_HAVE_NO_MEMORY(regf_hdr->description);
 	regf_hdr->chksum = 0;
 
 	regf->header = regf_hdr;
 
-	i = 0;
 	/* Create all hbin blocks */
 	regf->hbins = talloc_array(regf, struct hbin_block *, 1);
 	W_ERROR_HAVE_NO_MEMORY(regf->hbins);
 	regf->hbins[0] = NULL;
-
-	regf_hdr->data_offset = -1; /* FIXME */
 
 	nk.header = "nk";
 	nk.type = REG_SUB_KEY;
@@ -1971,27 +1973,67 @@ WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx,
 	nk.num_values = 0;
 	nk.values_offset = -1;
 	memset(nk.unk3, 0, 5);
-	nk.clsname_offset = -1; /* FIXME: fill in */
+	nk.clsname_offset = -1;
 	nk.clsname_length = 0;
-	nk.key_name = "";
+	nk.sk_offset = 0x80;
+	nk.key_name = "SambaRootKey";
 
-	nk.sk_offset = -1; /* FIXME: fill in */
+	/*
+	 * It should be noted that changing the key_name to something shorter
+	 * creates a shorter nk block, which makes the position of the sk block
+	 * change. All Windows registries I've seen have the sk at 0x80. 
+	 * I therefore recommend that our regf files share that offset -- Wilco
+	 */
+
+	/* Create a security descriptor. */
+	sd = security_descriptor_dacl_create(regf,
+					 0,
+					 NULL, NULL,
+					 SID_NT_AUTHENTICATED_USERS,
+					 SEC_ACE_TYPE_ACCESS_ALLOWED,
+					 SEC_GENERIC_ALL,
+					 SEC_ACE_FLAG_OBJECT_INHERIT,
+					 NULL);
+	
+	/* Push the security descriptor to a blob */
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_push_struct_blob(&data, regf, NULL, 
+				     sd, (ndr_push_flags_fn_t)ndr_push_security_descriptor))) {
+		DEBUG(0, ("Unable to push security descriptor\n"));
+		return WERR_GENERAL_FAILURE;
+	}
+
+	ZERO_STRUCT(sk);
+	sk.header = "sk";
+	sk.prev_offset = 0x80;
+	sk.next_offset = 0x80;
+	sk.ref_cnt = 1;
+	sk.rec_size = data.length;
+	sk.sec_desc = data.data;
 
 	/* Store the new nk key */
 	regf->header->data_offset = hbin_store_tdr(regf,
 						   (tdr_push_fn_t)tdr_push_nk_block,
 						   &nk);
+	/* Store the sk block */
+	sk_offset = hbin_store_tdr(regf,
+				   (tdr_push_fn_t) tdr_push_sk_block,
+				   &sk);
+	if (sk_offset != 0x80) {
+		DEBUG(0, ("Error storing sk block, should be at 0x80, stored at 0x%x\n", nk.sk_offset));
+		return WERR_GENERAL_FAILURE;
+	}
+
 
 	*key = (struct hive_key *)regf_get_key(parent_ctx, regf,
 					       regf->header->data_offset);
-
-	/* We can drop our own reference now that *key will have created one */
-	talloc_free(regf);
 
 	error = regf_save_hbin(regf);
 	if (!W_ERROR_IS_OK(error)) {
 		return error;
 	}
+	
+	/* We can drop our own reference now that *key will have created one */
+	talloc_free(regf);
 
 	return WERR_OK;
 }

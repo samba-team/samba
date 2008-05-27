@@ -182,12 +182,19 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	bool del_on_close;
 	uint32_t create_options;
 	uint32_t share_access;
+	bool forced;
 
 	create_options = io->generic.in.create_options;
 	share_access   = io->generic.in.share_access;
 
+	forced = (io->generic.in.create_options & NTCREATEX_OPTIONS_DIRECTORY)?true:false;
+
 	if (name->stream_name) {
-		return NT_STATUS_NOT_A_DIRECTORY;
+		if (forced) {
+			return NT_STATUS_NOT_A_DIRECTORY;
+		} else {
+			return NT_STATUS_FILE_IS_A_DIRECTORY;
+		}
 	}
 
 	/* if the client says it must be a directory, and it isn't,
@@ -196,6 +203,13 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
+	/* found with gentest */
+	if (io->ntcreatex.in.access_mask == SEC_FLAG_MAXIMUM_ALLOWED &&
+	    (io->ntcreatex.in.create_options & NTCREATEX_OPTIONS_DIRECTORY) &&
+	    (io->ntcreatex.in.create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
 	switch (io->generic.in.open_disposition) {
 	case NTCREATEX_DISP_OPEN_IF:
 		break;
@@ -548,11 +562,19 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	uint32_t oplock_level = OPLOCK_NONE, oplock_granted;
 	bool allow_level_II_oplock = false;
 
+	if (io->ntcreatex.in.file_attr & ~FILE_ATTRIBUTE_ALL_MASK) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_ENCRYPTED) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	    
 	if ((io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_READONLY) &&
 	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
 		return NT_STATUS_CANNOT_DELETE;
 	}
-	
+
 	status = pvfs_access_check_create(pvfs, req, name, &access_mask);
 	NT_STATUS_NOT_OK_RETURN(status);
 
@@ -1110,6 +1132,41 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_open(ntvfs, req, io);
 	}
 
+	create_options = io->generic.in.create_options;
+	share_access   = io->generic.in.share_access;
+	access_mask    = io->generic.in.access_mask;
+
+	if (share_access & ~NTCREATEX_SHARE_ACCESS_MASK) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* some create options are not supported */
+	if (create_options & NTCREATEX_OPTIONS_NOT_SUPPORTED_MASK) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	/* other create options are not allowed */
+	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
+	    !(access_mask & SEC_STD_DELETE)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (access_mask & SEC_MASK_INVALID) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* what does this bit really mean?? */
+	if (req->ctx->protocol == PROTOCOL_SMB2 &&
+	    access_mask == SEC_STD_SYNCHRONIZE) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (io->ntcreatex.in.file_attr & (FILE_ATTRIBUTE_DEVICE|
+					  FILE_ATTRIBUTE_VOLUME| 
+					  (~FILE_ATTRIBUTE_ALL_MASK))) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, io->ntcreatex.in.fname, 
 				   PVFS_RESOLVE_STREAMS, &name);
@@ -1140,16 +1197,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	/* FILE_ATTRIBUTE_DIRECTORY is ignored if the above test for directory
 	   open doesn't match */
 	io->generic.in.file_attr &= ~FILE_ATTRIBUTE_DIRECTORY;
-
-	create_options = io->generic.in.create_options;
-	share_access   = io->generic.in.share_access;
-	access_mask    = io->generic.in.access_mask;
-
-	/* certain create options are not allowed */
-	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
-	    !(access_mask & SEC_STD_DELETE)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 
 	flags = 0;
 
@@ -1467,19 +1514,42 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_DOS(ERRSRV, ERRerror);
 	}
 
-	if (io->generic.level != RAW_CLOSE_CLOSE) {
+	if (io->generic.level != RAW_CLOSE_GENERIC) {
 		return ntvfs_map_close(ntvfs, req, io);
 	}
 
-	f = pvfs_find_fd(pvfs, req, io->close.in.file.ntvfs);
+	f = pvfs_find_fd(pvfs, req, io->generic.in.file.ntvfs);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (!null_time(io->close.in.write_time)) {
+	if (!null_time(io->generic.in.write_time)) {
 		unix_times.actime = 0;
 		unix_times.modtime = io->close.in.write_time;
 		utime(f->handle->name->full_name, &unix_times);
+	}
+
+	if (io->generic.in.flags & SMB2_CLOSE_FLAGS_FULL_INFORMATION) {
+		struct pvfs_filename *name;
+		NTSTATUS status;
+		struct pvfs_file_handle *h = f->handle;
+
+		status = pvfs_resolve_name_handle(pvfs, h);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		name = h->name;
+
+		io->generic.out.flags = SMB2_CLOSE_FLAGS_FULL_INFORMATION;
+		io->generic.out.create_time = name->dos.create_time;
+		io->generic.out.access_time = name->dos.access_time;
+		io->generic.out.write_time  = name->dos.write_time;
+		io->generic.out.change_time = name->dos.change_time;
+		io->generic.out.alloc_size  = name->dos.alloc_size;
+		io->generic.out.size        = name->st.st_size;
+		io->generic.out.file_attr   = name->dos.attrib;		
+	} else {
+		ZERO_STRUCT(io->generic.out);
 	}
 
 	talloc_free(f);

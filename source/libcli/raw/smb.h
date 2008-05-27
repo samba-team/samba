@@ -133,6 +133,7 @@
 #define NTCREATEX_SHARE_ACCESS_READ   1
 #define NTCREATEX_SHARE_ACCESS_WRITE  2
 #define NTCREATEX_SHARE_ACCESS_DELETE 4
+#define NTCREATEX_SHARE_ACCESS_MASK   7
 
 /* ntcreatex open_disposition field */
 #define NTCREATEX_DISP_SUPERSEDE 0     /* supersede existing file (if it exists) */
@@ -154,13 +155,17 @@
 #define NTCREATEX_OPTIONS_RANDOM_ACCESS            0x0800
 #define NTCREATEX_OPTIONS_DELETE_ON_CLOSE          0x1000
 #define NTCREATEX_OPTIONS_OPEN_BY_FILE_ID          0x2000
-#define NTCREATEX_OPTIONS_UNKNOWN_400000           0x400000
-
+#define NTCREATEX_OPTIONS_BACKUP_INTENT            0x4000
+#define NTCREATEX_OPTIONS_REPARSE_POINT          0x200000
+#define NTCREATEX_OPTIONS_UNKNOWN_400000         0x400000
 /* create options these bits are for private use by backends, they are
    not valid on the wire */
 #define NTCREATEX_OPTIONS_PRIVATE_MASK         0xFF000000
 #define NTCREATEX_OPTIONS_PRIVATE_DENY_DOS     0x01000000
 #define NTCREATEX_OPTIONS_PRIVATE_DENY_FCB     0x02000000
+
+#define NTCREATEX_OPTIONS_NOT_SUPPORTED_MASK   0x00DFA188 
+
 
 
 /* ntcreatex impersonation field */
@@ -370,6 +375,7 @@
 #define FILE_ATTRIBUTE_OFFLINE		0x1000
 #define FILE_ATTRIBUTE_NONINDEXED	0x2000
 #define FILE_ATTRIBUTE_ENCRYPTED	0x4000
+#define FILE_ATTRIBUTE_ALL_MASK 	0x7FFF
 
 /* Flags - combined with attributes. */
 #define FILE_FLAG_WRITE_THROUGH    0x80000000L

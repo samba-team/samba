@@ -522,6 +522,19 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 		io2->generic.in.fname		= io->smb2.in.fname;
 		io2->generic.in.sec_desc	= NULL;
 		io2->generic.in.ea_list		= NULL;
+
+		/* we need to check these bits before we check the private mask */
+		if (io2->generic.in.create_options & NTCREATEX_OPTIONS_NOT_SUPPORTED_MASK) {
+			status = NT_STATUS_NOT_SUPPORTED;
+			break;
+		}
+
+		/* we use a couple of bits of the create options internally */
+		if (io2->generic.in.create_options & NTCREATEX_OPTIONS_PRIVATE_MASK) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			break;
+		}
+
 		status = ntvfs->ops->open(ntvfs, req, io2);		
 		break;
 
@@ -1014,7 +1027,7 @@ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 	case RAW_LOCK_SMB2: {
 		/* this is only approximate! We need to change the
 		   generic structure to fix this properly */
-		int i;
+		int i, j;
 		if (lck->smb2.in.lock_count < 1) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -1031,30 +1044,36 @@ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 			return NT_STATUS_NO_MEMORY;
 		}
 		for (i=0;i<lck->smb2.in.lock_count;i++) {
-			if (lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_UNLOCK) {
-				int j = lck2->generic.in.ulock_cnt;
-				lck2->generic.in.ulock_cnt++;
-				lck2->generic.in.locks[j].pid = 0;
-				lck2->generic.in.locks[j].offset = lck->smb2.in.locks[i].offset;
-				lck2->generic.in.locks[j].count = lck->smb2.in.locks[i].length;
-				lck2->generic.in.locks[j].pid = 0;
-			}
-		}
-		for (i=0;i<lck->smb2.in.lock_count;i++) {
 			if (!(lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_UNLOCK)) {
-				int j = lck2->generic.in.ulock_cnt + 
-					lck2->generic.in.lock_cnt;
-				lck2->generic.in.lock_cnt++;
-				lck2->generic.in.locks[j].pid = 0;
-				lck2->generic.in.locks[j].offset = lck->smb2.in.locks[i].offset;
-				lck2->generic.in.locks[j].count = lck->smb2.in.locks[i].length;
-				lck2->generic.in.locks[j].pid = 0;
-				if (!(lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_EXCLUSIVE)) {
-					lck2->generic.in.mode = LOCKING_ANDX_SHARED_LOCK;
-				}
-				if (lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_FAIL_IMMEDIATELY) {
-					lck2->generic.in.timeout = 0;
-				}
+				break;
+			}
+			j = lck2->generic.in.ulock_cnt;
+			if (lck->smb2.in.locks[i].flags & 
+			    (SMB2_LOCK_FLAG_SHARED|SMB2_LOCK_FLAG_EXCLUSIVE)) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			lck2->generic.in.ulock_cnt++;
+			lck2->generic.in.locks[j].pid = 0;
+			lck2->generic.in.locks[j].offset = lck->smb2.in.locks[i].offset;
+			lck2->generic.in.locks[j].count = lck->smb2.in.locks[i].length;
+			lck2->generic.in.locks[j].pid = 0;
+		}
+		for (;i<lck->smb2.in.lock_count;i++) {
+			if (lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_UNLOCK) {
+				/* w2008 requires unlocks to come first */
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			j = lck2->generic.in.ulock_cnt + lck2->generic.in.lock_cnt;
+			lck2->generic.in.lock_cnt++;
+			lck2->generic.in.locks[j].pid = 0;
+			lck2->generic.in.locks[j].offset = lck->smb2.in.locks[i].offset;
+			lck2->generic.in.locks[j].count = lck->smb2.in.locks[i].length;
+			lck2->generic.in.locks[j].pid = 0;
+			if (!(lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_EXCLUSIVE)) {
+				lck2->generic.in.mode = LOCKING_ANDX_SHARED_LOCK;
+			}
+			if (lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_FAIL_IMMEDIATELY) {
+				lck2->generic.in.timeout = 0;
 			}
 		}
 		/* initialize output value */
@@ -1367,7 +1386,7 @@ NTSTATUS ntvfs_map_read(struct ntvfs_module_context *ntvfs,
 	case RAW_READ_SMB2:
 		rd2->readx.in.file.ntvfs= rd->smb2.in.file.ntvfs;
 		rd2->readx.in.offset    = rd->smb2.in.offset;
-		rd2->readx.in.mincnt    = rd->smb2.in.length;
+		rd2->readx.in.mincnt    = rd->smb2.in.min_count;
 		rd2->readx.in.maxcnt    = rd->smb2.in.length;
 		rd2->readx.in.remaining = 0;
 		rd2->readx.out.data     = rd->smb2.out.data.data;
@@ -1383,11 +1402,42 @@ done:
 /* 
    NTVFS close generic to any mapper
 */
+static NTSTATUS ntvfs_map_close_finish(struct ntvfs_module_context *ntvfs,
+					struct ntvfs_request *req,
+					union smb_close *cl, 
+					union smb_close *cl2, 
+					NTSTATUS status)
+{
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	switch (cl->generic.level) {
+	case RAW_CLOSE_SMB2:
+		cl->smb2.out.flags        = cl2->generic.out.flags;
+		cl->smb2.out._pad         = 0;
+		cl->smb2.out.create_time  = cl2->generic.out.create_time;
+		cl->smb2.out.access_time  = cl2->generic.out.access_time;
+		cl->smb2.out.write_time   = cl2->generic.out.write_time;
+		cl->smb2.out.change_time  = cl2->generic.out.change_time;
+		cl->smb2.out.alloc_size   = cl2->generic.out.alloc_size;
+		cl->smb2.out.size         = cl2->generic.out.size;
+		cl->smb2.out.file_attr    = cl2->generic.out.file_attr;
+		break;
+	default:
+		break;
+	}
+
+	return status;
+}
+
+/* 
+   NTVFS close generic to any mapper
+*/
 NTSTATUS ntvfs_map_close(struct ntvfs_module_context *ntvfs,
 				  struct ntvfs_request *req,
 				  union smb_close *cl)
 {
 	union smb_close *cl2;
+	NTSTATUS status;
 
 	cl2 = talloc(req, union smb_close);
 	if (cl2 == NULL) {
@@ -1395,30 +1445,38 @@ NTSTATUS ntvfs_map_close(struct ntvfs_module_context *ntvfs,
 	}
 
 	switch (cl->generic.level) {
-	case RAW_CLOSE_CLOSE:
+	case RAW_CLOSE_GENERIC:
 		return NT_STATUS_INVALID_LEVEL;
 
+	case RAW_CLOSE_CLOSE:
+		cl2->generic.level		= RAW_CLOSE_GENERIC;
+		cl2->generic.in.file		= cl->close.in.file;
+		cl2->generic.in.write_time	= cl->close.in.write_time;
+		cl2->generic.in.flags		= 0;
+		break;
+
 	case RAW_CLOSE_SPLCLOSE:
-		cl2->generic.level		= RAW_CLOSE_CLOSE;
-		cl2->generic.in.file.ntvfs	= cl->splclose.in.file.ntvfs;
+		cl2->generic.level		= RAW_CLOSE_GENERIC;
+		cl2->generic.in.file		= cl->splclose.in.file;
 		cl2->generic.in.write_time	= 0;
+		cl2->generic.in.flags		= 0;
 		break;
 
 	case RAW_CLOSE_SMB2:
-		cl2->generic.level		= RAW_CLOSE_CLOSE;
-		cl2->generic.in.file.ntvfs	= cl->smb2.in.file.ntvfs;
+		cl2->generic.level		= RAW_CLOSE_GENERIC;
+		cl2->generic.in.file		= cl->smb2.in.file;
 		cl2->generic.in.write_time	= 0;
-		/* SMB2 Close has output parameter, but we just zero them */
-		ZERO_STRUCT(cl->smb2.out);
+		cl2->generic.in.flags		= cl->smb2.in.flags;
 		break;
 	}
 
-	/* 
-	 * we don't need to call ntvfs_map_async_setup() here,
-	 * as close() doesn't have any output fields
-	 */
+	status = ntvfs_map_async_setup(ntvfs, req, cl, cl2, 
+				       (second_stage_t)ntvfs_map_close_finish);
+	NT_STATUS_NOT_OK_RETURN(status);
 
-	return ntvfs->ops->close(ntvfs, req, cl2);
+	status = ntvfs->ops->close(ntvfs, req, cl2);
+
+	return ntvfs_map_async_finish(req, status);
 }
 
 /* 

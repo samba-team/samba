@@ -45,7 +45,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 			     void *callback_data)
 {
 	int i;
-	struct registry_key *t1, *t2;
+	struct registry_key *t1 = NULL, *t2 = NULL;
 	char *tmppath;
 	const char *keyname1;
 	WERROR error, error1, error2;
@@ -295,7 +295,7 @@ _PUBLIC_ WERROR reg_diff_load(const char *filename,
 
 	/* Reset position in file */
 	lseek(fd, 0, SEEK_SET);
-#if 0
+#if 0 /* These backends are not supported yet. */
 	if (strncmp(hdr, "CREG", 4) == 0) {
 		/* Must be a W9x CREG Config.pol file */
 		return reg_creg_diff_load(diff, fd);
@@ -320,12 +320,33 @@ static WERROR reg_diff_apply_add_key(void *_ctx, const char *key_name)
 {
 	struct registry_context *ctx = (struct registry_context *)_ctx;
 	struct registry_key *tmp;
+	char *buf, *buf_ptr;
 	WERROR error;
 
+	/* Recursively create the path */
+	buf = talloc_strdup(ctx, key_name);
+	buf_ptr = buf;
+
+	while (*buf_ptr++ != '\0' ) {
+		if (*buf_ptr == '\\') {
+			*buf_ptr = '\0';
+			error = reg_key_add_abs(ctx, ctx, buf, 0, NULL, &tmp);
+
+			if (!W_ERROR_EQUAL(error, WERR_ALREADY_EXISTS) &&
+				    !W_ERROR_IS_OK(error)) {
+				DEBUG(0, ("Error adding new key '%s': %s\n",
+					key_name, win_errstr(error)));
+				return error;
+			}
+			*buf_ptr++ = '\\';
+		}
+	}
+
+	/* Add the key */
 	error = reg_key_add_abs(ctx, ctx, key_name, 0, NULL, &tmp);
 
 	if (!W_ERROR_EQUAL(error, WERR_ALREADY_EXISTS) &&
-	    !W_ERROR_IS_OK(error)) {
+		    !W_ERROR_IS_OK(error)) {
 		DEBUG(0, ("Error adding new key '%s': %s\n",
 			key_name, win_errstr(error)));
 		return error;
