@@ -1392,6 +1392,8 @@ extern void build_options(bool screen);
 			   MSG_SMB_FORCE_TDIS, msg_force_tdis);
 	messaging_register(smbd_messaging_context(), NULL,
 			   MSG_SMB_RELEASE_IP, msg_release_ip);
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_SMB_CLOSE_FILE, msg_close_file);
 
 	if ((lp_keepalive() != 0)
 	    && !(event_add_idle(smbd_event_context(), NULL,
