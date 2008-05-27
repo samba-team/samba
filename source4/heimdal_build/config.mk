@@ -463,7 +463,7 @@ HEIMDAL_ROKEN_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/roken/simple_exec.o \
 	$(heimdalsrcdir)/lib/roken/strcollect.o \
 	$(heimdalsrcdir)/lib/roken/rtbl.o \
-	./heimdal_build/replace.o
+	$(heimdalbuildsrcdir)/replace.o
 
 #######################
 # Start SUBSYSTEM HEIMDAL_GLUE
@@ -524,8 +524,8 @@ asn1_compile_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/roken/ecalloc.ho \
 	$(heimdalsrcdir)/lib/asn1/symbol.ho \
 	$(heimdalsrcdir)/lib/vers/print_version.ho \
-	./lib/socket_wrapper/socket_wrapper.ho \
-	./heimdal_build/replace.ho
+	$(socketwrappersrcdir)/socket_wrapper.ho \
+	$(heimdalbuildsrcdir)/replace.ho
 
 # End BINARY asn1_compile
 #######################
@@ -555,8 +555,8 @@ compile_et_OBJ_FILES = $(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(heimdalsrcdir)/lib/roken/get_window_size.ho \
 	$(heimdalsrcdir)/lib/roken/strupr.ho \
 	$(heimdalsrcdir)/lib/roken/setprogname.ho \
-	./lib/socket_wrapper/socket_wrapper.ho \
-	./heimdal_build/replace.ho
+	$(socketwrappersrcdir)/socket_wrapper.ho \
+	$(heimdalsrcdir)/replace.ho
 
 
 mkinclude perl_path_wrapper.sh asn1_deps.pl lib/hdb/hdb.asn1 hdb_asn1 \$\(heimdalsrcdir\)/lib/hdb |
