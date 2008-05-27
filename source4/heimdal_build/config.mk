@@ -473,7 +473,7 @@ PUBLIC_DEPENDENCIES = LIBNETIF LIBSAMBA-HOSTCONFIG
 # End SUBSYSTEM HEIMDAL_GLUE
 #######################
 
-HEIMDAL_GLUE_OBJ_FILES = heimdal_build/glue.o
+HEIMDAL_GLUE_OBJ_FILES = $(heimdalbuildsrcdir)/glue.o
 
 #######################
 # Start SUBSYSTEM HEIMDAL_COM_ERR
