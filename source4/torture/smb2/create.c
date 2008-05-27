@@ -152,6 +152,27 @@ bool torture_smb2_create_gentest(struct torture_context *torture, struct smb2_tr
 	CHECK_EQUAL(file_attributes, 0xffff87c8);
 	CHECK_EQUAL(denied_mask, 0x4000);
 
+	smb2_deltree(tree, FNAME);
+
+	ZERO_STRUCT(io);
+	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.in.file_attributes    = 0;
+	io.in.create_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	io.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.in.create_options = 0;
+	io.in.fname = FNAME ":stream1";
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	io.in.fname = FNAME;
+	io.in.file_attributes = 0x8040;
+	io.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_READ;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
 	talloc_free(tmp_ctx);
 	
 	return true;
