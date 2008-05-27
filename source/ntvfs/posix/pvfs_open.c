@@ -1147,6 +1147,15 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (access_mask & (SEC_MASK_INVALID | SEC_STD_SYNCHRONIZE)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (io->ntcreatex.in.file_attr & (FILE_ATTRIBUTE_DEVICE|
+					  FILE_ATTRIBUTE_VOLUME)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, io->ntcreatex.in.fname, 
 				   PVFS_RESOLVE_STREAMS, &name);
