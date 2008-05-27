@@ -28,7 +28,7 @@
 #include "libcli/libcli.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/events/events.h"
-#include "dynconfig.h"
+#include "dynconfig/dynconfig.h"
 
 #include "torture/smbtorture.h"
 #include "lib/util/dlinklist.h"

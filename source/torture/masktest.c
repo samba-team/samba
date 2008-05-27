@@ -28,7 +28,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
-#include "dynconfig.h"
+#include "dynconfig/dynconfig.h"
 #include "libcli/resolve/resolve.h"
 #include "lib/events/events.h"
 

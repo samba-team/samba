@@ -130,6 +130,8 @@ LIBLDB_SOVERSION = 0
 
 LIBLDB_OBJ_FILES = $(addprefix $(ldbdir)/common/, ldb.o ldb_ldif.o ldb_parse.o ldb_msg.o ldb_utf8.o ldb_debug.o ldb_modules.o ldb_match.o ldb_attributes.o attrib_handlers.o ldb_dn.o ldb_controls.o qsort.o) $(ldb_map_OBJ_FILES)
 
+$(LIBLDB_OBJ_FILES): CFLAGS+=-I$(ldbdir)/include
+
 PUBLIC_HEADERS += $(ldbdir)/include/ldb.h $(ldbdir)/include/ldb_errors.h
 
 MANPAGES += $(ldbdir)/man/ldb.3
