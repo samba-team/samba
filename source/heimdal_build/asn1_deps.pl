@@ -31,7 +31,7 @@ my $header = "$dirname/$prefix.h";
 
 print "$header: \$(heimdalsrcdir)/$file \$(ASN1C)\n";
 print "\t\@echo \"Compiling ASN1 file \$(heimdalsrcdir)/$file\"\n";
-print "\t\@\$(heimdalbuildsrcdir)/asn1_compile_wrapper.sh \$(srcdir) \$(builddir) $dirname \$(ASN1C) \$(heimdalsrcdir)/$file $prefix $options\n\n";
+print "\t\@\$(heimdalbuildsrcdir)/asn1_compile_wrapper.sh \$(builddir) $dirname \$(ASN1C) \$(abspath \$(heimdalsrcdir)/$file) $prefix $options\n\n";
 
 open(IN,"heimdal/$file") or die("Can't open heimdal/$file: $!");
 my @lines = <IN>;
