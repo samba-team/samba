@@ -9937,7 +9937,7 @@ bool downgrade_oplock(files_struct *fsp);
 int oplock_notify_fd(void);
 void reply_to_oplock_break_requests(files_struct *fsp);
 void release_level_2_oplocks_on_change(files_struct *fsp);
-void share_mode_entry_to_message(char *msg, struct share_mode_entry *e);
+void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e);
 void message_to_share_mode_entry(struct share_mode_entry *e, char *msg);
 bool init_oplocks(struct messaging_context *msg_ctx);
 
