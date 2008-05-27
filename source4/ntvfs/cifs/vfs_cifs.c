@@ -769,6 +769,7 @@ static NTSTATUS cvfs_close(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 	struct cvfs_file *f;
+	union smb_close io2;
 
 	SETUP_PID;
 
@@ -776,6 +777,15 @@ static NTSTATUS cvfs_close(struct ntvfs_module_context *ntvfs,
 	    private->map_generic) {
 		return ntvfs_map_close(ntvfs, req, io);
 	}
+
+	if (io->generic.level == RAW_CLOSE_GENERIC) {
+		ZERO_STRUCT(io2);
+		io2.close.level = RAW_CLOSE_CLOSE;
+		io2.close.in.file = io->generic.in.file;
+		io2.close.in.write_time = io->generic.in.write_time;
+		io = &io2;
+	}
+
 	SETUP_FILE_HERE(f);
 	/* Note, we aren't free-ing f, or it's h here. Should we?
 	   even if file-close fails, we'll remove it from the list,

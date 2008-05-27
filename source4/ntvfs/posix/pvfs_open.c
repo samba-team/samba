@@ -1514,19 +1514,42 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_DOS(ERRSRV, ERRerror);
 	}
 
-	if (io->generic.level != RAW_CLOSE_CLOSE) {
+	if (io->generic.level != RAW_CLOSE_GENERIC) {
 		return ntvfs_map_close(ntvfs, req, io);
 	}
 
-	f = pvfs_find_fd(pvfs, req, io->close.in.file.ntvfs);
+	f = pvfs_find_fd(pvfs, req, io->generic.in.file.ntvfs);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (!null_time(io->close.in.write_time)) {
+	if (!null_time(io->generic.in.write_time)) {
 		unix_times.actime = 0;
 		unix_times.modtime = io->close.in.write_time;
 		utime(f->handle->name->full_name, &unix_times);
+	}
+
+	if (io->generic.in.flags & SMB2_CLOSE_FLAGS_FULL_INFORMATION) {
+		struct pvfs_filename *name;
+		NTSTATUS status;
+		struct pvfs_file_handle *h = f->handle;
+
+		status = pvfs_resolve_name_handle(pvfs, h);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		name = h->name;
+
+		io->generic.out.flags = SMB2_CLOSE_FLAGS_FULL_INFORMATION;
+		io->generic.out.create_time = name->dos.create_time;
+		io->generic.out.access_time = name->dos.access_time;
+		io->generic.out.write_time  = name->dos.write_time;
+		io->generic.out.change_time = name->dos.change_time;
+		io->generic.out.alloc_size  = name->dos.alloc_size;
+		io->generic.out.size        = name->st.st_size;
+		io->generic.out.file_attr   = name->dos.attrib;		
+	} else {
+		ZERO_STRUCT(io->generic.out);
 	}
 
 	talloc_free(f);
