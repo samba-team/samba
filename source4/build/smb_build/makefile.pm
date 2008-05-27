@@ -262,7 +262,10 @@ sub CFlags($$)
 		if($src_ne_build) {
 			if($flag =~ m#^-I([^/].*$)#) {
 				my $dir = $1;
-				next if ($dir =~ /^\$\(/);
+				if ($dir =~ /^\$\(/) {
+					push (@cflags, $flag);
+					next;
+				}
 				$dir =~ s#^\$\((?:src|build)dir\)/?##;
 				push(@cflags, "-I$builddir/$dir", "-I$srcdir/$dir");
 				next;
