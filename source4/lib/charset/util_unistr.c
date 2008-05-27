@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "system/locale.h"
-#include "dynconfig.h"
+#include "dynconfig/dynconfig.h"
 #include "param/param.h"
 
 /**
