@@ -10,7 +10,7 @@ my $header = "$dirname/$basename"; $header =~ s/\.et$/.h/;
 my $source = "$dirname/$basename"; $source =~ s/\.et$/.c/;
 print "$header $source: \$(heimdalsrcdir)/$file \$(ET_COMPILER)\n";
 print "\t\@echo \"Compiling error table $file\"\n";
-print "\t\@\$(heimdalbuildsrcdir)/et_compile_wrapper.sh \$(srcdir) \$(builddir) $dirname \$(ET_COMPILER) \$(heimdalsrcdir)/$file $source\n\n";
+print "\t\@\$(heimdalbuildsrcdir)/et_compile_wrapper.sh \$(builddir) $dirname \$(ET_COMPILER) \$(abspath \$(heimdalsrcdir)/$file) $source\n\n";
 
 print "clean:: \n";
 print "\t\@rm -f $header $source\n\n";
