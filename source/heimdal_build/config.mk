@@ -408,19 +408,19 @@ HEIMDAL_WIND_OBJ_FILES = \
 #######################
 
 [SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME]
-CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 
 HEIMDAL_ROKEN_GETPROGNAME_OBJ_FILES = $(heimdalsrcdir)/lib/roken/getprogname.o
+$(HEIMDAL_ROKEN_GETPROGNAME_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 
 [SUBSYSTEM::HEIMDAL_ROKEN_CLOSEFROM] 
-CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 
 HEIMDAL_ROKEN_CLOSEFROM_OBJ_FILES = $(heimdalsrcdir)/lib/roken/closefrom.o
+$(HEIMDAL_ROKEN_CLOSEFROM): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 
 [SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME_H] 
-CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 
 HEIMDAL_ROKEN_GETPROGNAME_H_OBJ_FILES = $(heimdalsrcdir)/lib/roken/getprogname.ho
+$(HEIMDAL_ROKEN_GETPROGNAME_H_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN
