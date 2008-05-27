@@ -205,7 +205,7 @@ static NTSTATUS map_logon29_from_cldap_reply(TALLOC_CTX *mem_ctx,
 
 	/* FIXME */
 	p->dc_sock_addr_size = 0x10; /* the w32 winsock addr size */
-	p->dc_sock_addr.sa_family = 2; /* AF_INET */
+	p->dc_sock_addr.family = 2; /* AF_INET */
 	p->dc_sock_addr.pdc_ip = talloc_strdup(mem_ctx, addr);
 
 	switch (nt_version & 0x0000001f) {
