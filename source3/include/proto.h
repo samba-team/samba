@@ -9462,6 +9462,11 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 
 void set_close_write_time(struct files_struct *fsp, struct timespec ts);
 NTSTATUS close_file(files_struct *fsp, enum file_close_type close_type);
+void msg_close_file(struct messaging_context *msg_ctx,
+		    void *private_data,
+		    uint32_t msg_type,
+		    struct server_id server_id,
+		    DATA_BLOB *data);
 
 /* The following definitions come from smbd/conn.c  */
 
