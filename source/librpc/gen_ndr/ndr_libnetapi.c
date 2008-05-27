@@ -970,3 +970,26 @@ _PUBLIC_ void ndr_print_NetGroupAdd(struct ndr_print *ndr, const char *name, int
 	ndr->depth--;
 }
 
+_PUBLIC_ void ndr_print_NetGroupDel(struct ndr_print *ndr, const char *name, int flags, const struct NetGroupDel *r)
+{
+	ndr_print_struct(ndr, name, "NetGroupDel");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "NetGroupDel");
+		ndr->depth++;
+		ndr_print_string(ndr, "server_name", r->in.server_name);
+		ndr_print_string(ndr, "group_name", r->in.group_name);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "NetGroupDel");
+		ndr->depth++;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
