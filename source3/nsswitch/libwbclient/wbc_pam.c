@@ -309,7 +309,7 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 		}
 		strncpy(request.data.auth.pass,
 			params->password.plaintext,
-			sizeof(request.data.auth.user)-1);
+			sizeof(request.data.auth.pass)-1);
 		break;
 
 	case WBC_AUTH_USER_LEVEL_HASH:
