@@ -325,4 +325,17 @@ struct NetGroupAdd {
 
 };
 
+
+struct NetGroupDel {
+	struct {
+		const char * server_name;
+		const char * group_name;
+	} in;
+
+	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_libnetapi */
