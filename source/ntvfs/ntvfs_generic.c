@@ -1295,16 +1295,6 @@ static NTSTATUS ntvfs_map_read_finish(struct ntvfs_module_context *ntvfs,
 		rd->smb2.out.data.length= rd2->generic.out.nread;
 		rd->smb2.out.remaining	= 0;
 		rd->smb2.out.reserved	= 0;
-		if (NT_STATUS_IS_OK(status) &&
-		    rd->smb2.out.data.length == 0) {
-			status = NT_STATUS_END_OF_FILE;
-		}
-		/* SMB2 does honor the min_count field, SMB does not */
-		if (NT_STATUS_IS_OK(status) && 
-		    rd->smb2.in.min_count > rd->smb2.out.data.length) {
-			rd->smb2.out.data.length = 0;
-			status = NT_STATUS_END_OF_FILE;			
-		}
 		break;
 	default:
 		return NT_STATUS_INVALID_LEVEL;
@@ -1396,7 +1386,7 @@ NTSTATUS ntvfs_map_read(struct ntvfs_module_context *ntvfs,
 	case RAW_READ_SMB2:
 		rd2->readx.in.file.ntvfs= rd->smb2.in.file.ntvfs;
 		rd2->readx.in.offset    = rd->smb2.in.offset;
-		rd2->readx.in.mincnt    = rd->smb2.in.length;
+		rd2->readx.in.mincnt    = rd->smb2.in.min_count;
 		rd2->readx.in.maxcnt    = rd->smb2.in.length;
 		rd2->readx.in.remaining = 0;
 		rd2->readx.out.data     = rd->smb2.out.data.data;
