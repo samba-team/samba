@@ -1,13 +1,13 @@
 ################################################
 # Start SUBSYSTEM LIBLDB_CMDLINE
 [SUBSYSTEM::LIBLDB_CMDLINE]
-CFLAGS = -Ilib/ldb -Ilib/ldb/include
+CFLAGS = -I$(ldbdir) -I$(ldbdir)/include
 PUBLIC_DEPENDENCIES = LIBLDB LIBPOPT
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL POPT_SAMBA POPT_CREDENTIALS gensec
 # End SUBSYSTEM LIBLDB_CMDLINE
 ################################################
 
-LIBLDB_CMDLINE_OBJ_FILES = lib/ldb/tools/cmdline.o
+LIBLDB_CMDLINE_OBJ_FILES = $(ldbdir)/tools/cmdline.o
 
 ################################################
 # Start BINARY ldbadd
@@ -19,7 +19,7 @@ PRIVATE_DEPENDENCIES = \
 ################################################
 
 
-ldbadd_OBJ_FILES = lib/ldb/tools/ldbadd.o
+ldbadd_OBJ_FILES = $(ldbdir)/tools/ldbadd.o
 
 MANPAGES += $(ldbdir)/man/ldbadd.1
 
@@ -32,7 +32,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ldbdel
 ################################################
 
-ldbdel_OBJ_FILES = lib/ldb/tools/ldbdel.o
+ldbdel_OBJ_FILES = $(ldbdir)/tools/ldbdel.o
 
 MANPAGES += $(ldbdir)/man/ldbdel.1
 
@@ -45,7 +45,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ldbmodify
 ################################################
 
-ldbmodify_OBJ_FILES = lib/ldb/tools/ldbmodify.o
+ldbmodify_OBJ_FILES = $(ldbdir)/tools/ldbmodify.o
 MANPAGES += $(ldbdir)/man/ldbmodify.1
 
 ################################################
@@ -57,7 +57,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ldbsearch
 ################################################
 
-ldbsearch_OBJ_FILES = lib/ldb/tools/ldbsearch.o
+ldbsearch_OBJ_FILES = $(ldbdir)/tools/ldbsearch.o
 
 MANPAGES += $(ldbdir)/man/ldbsearch.1
 
@@ -70,7 +70,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ldbedit
 ################################################
 
-ldbedit_OBJ_FILES = lib/ldb/tools/ldbedit.o
+ldbedit_OBJ_FILES = $(ldbdir)/tools/ldbedit.o
 
 MANPAGES += $(ldbdir)/man/ldbedit.1
 
@@ -83,7 +83,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ldbrename
 ################################################
 
-ldbrename_OBJ_FILES = lib/ldb/tools/ldbrename.o
+ldbrename_OBJ_FILES = $(ldbdir)/tools/ldbrename.o
 
 MANPAGES += $(ldbdir)/man/ldbrename.1
 
