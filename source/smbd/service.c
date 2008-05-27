@@ -1117,6 +1117,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		set_namearray( &conn->veto_list, lp_veto_files(snum));
 		set_namearray( &conn->hide_list, lp_hide_files(snum));
 		set_namearray( &conn->veto_oplock_list, lp_veto_oplocks(snum));
+		set_namearray( &conn->aio_write_behind_list,
+				lp_aio_write_behind(snum));
 	}
 	
 	/* Invoke VFS make connection hook - do this before the VFS_STAT call
