@@ -187,6 +187,36 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	CHECK_STATUS(status, NT_STATUS_OK);
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	lck.in.lock_count	= 0x0001;
+	lck.in.reserved		= 0;
+	lck.in.file.handle	= h;
+	el[0].offset		= 1;
+	el[0].length		= 1;
+	el[0].reserved		= 0x00000000;
+	el[0].flags		= ~SMB2_LOCK_FLAG_ALL_MASK;
+
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK | SMB2_LOCK_FLAG_EXCLUSIVE;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK | SMB2_LOCK_FLAG_SHARED;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+	
 
 done:
 	return ret;
