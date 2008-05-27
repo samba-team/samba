@@ -3,6 +3,9 @@
 */
 
 cpp_quote("#define LIBNETAPI_LOCAL_SERVER(x) (!x || is_myname_or_ipaddr(x))")
+cpp_quote("#ifndef MAXSUBAUTHS")
+cpp_quote("#define MAXSUBAUTHS 15 /* max sub authorities in a SID */")
+cpp_quote("#endif")
 
 [
 	pointer_default(unique)
@@ -14,6 +17,13 @@ interface libnetapi
 	[public] typedef [v1_enum] enum {
 		NERR_Success=0
 	} NET_API_STATUS;
+
+	[public] typedef struct {
+		uint8 sid_rev_num;
+		uint8 num_auths;
+		uint8 id_auth[6];
+		uint32 sub_auths[MAXSUBAUTHS];
+	} domsid;
 
 	[nopush,nopull] NET_API_STATUS NetJoinDomain(
 		[in,unique] string *server,
@@ -167,5 +177,35 @@ interface libnetapi
 		[in] uint32 prefmaxlen,
 		[out,ref] uint32 *entries_read,
 		[out,ref,noprint] void **buffer
+		);
+
+	typedef struct {
+		string grpi0_name;
+	} GROUP_INFO_0;
+
+	typedef struct {
+		string grpi1_name;
+		string grpi1_comment;
+	} GROUP_INFO_1;
+
+	typedef struct {
+		string grpi2_name;
+		string grpi2_comment;
+		uint32 grpi2_group_id;
+		uint32 grpi2_attributes;
+	} GROUP_INFO_2;
+
+	typedef struct {
+		string grpi3_name;
+		string grpi3_comment;
+		domsid grpi3_group_sid;
+		uint32 grpi3_attributes;
+	} GROUP_INFO_3;
+
+	[nopush,nopull] NET_API_STATUS NetGroupAdd(
+		[in] string server_name,
+		[in] uint32 level,
+		[in] uint8 *buf,
+		[out] uint32 *parm_err
 		);
 }
