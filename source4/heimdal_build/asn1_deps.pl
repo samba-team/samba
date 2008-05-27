@@ -29,9 +29,9 @@ if (not defined $options) {
 
 my $header = "$dirname/$prefix.h";
 
-print "$header: \$(heimdalsrcdir)/$file bin/asn1_compile\n";
+print "$header: \$(heimdalsrcdir)/$file \$(ASN1C)\n";
 print "\t\@echo \"Compiling ASN1 file \$(heimdalsrcdir)/$file\"\n";
-print "\t\@\$(builddir)/heimdal_build/asn1_compile_wrapper.sh \$(srcdir) \$(builddir) $dirname bin/asn1_compile \$(heimdalsrcdir)/$file $prefix $options\n\n";
+print "\t\@\$(builddir)/heimdal_build/asn1_compile_wrapper.sh \$(srcdir) \$(builddir) $dirname \$(ASN1C) \$(heimdalsrcdir)/$file $prefix $options\n\n";
 
 open(IN,"heimdal/$file") or die("Can't open heimdal/$file: $!");
 my @lines = <IN>;

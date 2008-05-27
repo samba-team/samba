@@ -503,6 +503,8 @@ CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken
 USE_HOSTCC = YES
 PRIVATE_DEPENDENCIES = HEIMDAL_ASN1_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H LIBREPLACE_NETWORK
 
+ASN1C = bin/asn1_compile
+
 asn1_compile_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/asn1/main.ho \
 	$(heimdalsrcdir)/lib/asn1/gen.ho \
