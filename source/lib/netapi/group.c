@@ -27,12 +27,247 @@
 /****************************************************************
 ****************************************************************/
 
-
 WERROR NetGroupAdd_r(struct libnetapi_ctx *ctx,
 		     struct NetGroupAdd *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	NTSTATUS status;
+	WERROR werr;
+	uint32_t resume_handle = 0;
+	uint32_t num_entries = 0;
+	POLICY_HND connect_handle, domain_handle, group_handle;
+	struct samr_SamArray *sam = NULL;
+	const char *domain_name = NULL;
+	struct lsa_String lsa_domain_name, lsa_group_name;
+	struct dom_sid2 *domain_sid = NULL;
+	uint32_t rid = 0;
+	bool domain_found = true;
+	int i;
+	struct GROUP_INFO_0 *info0;
+	struct GROUP_INFO_1 *info1;
+	struct GROUP_INFO_2 *info2;
+	struct GROUP_INFO_3 *info3;
+	union samr_GroupInfo info;
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(domain_handle);
+	ZERO_STRUCT(group_handle);
+
+	if (!r->in.buf) {
+		return WERR_INVALID_PARAM;
+	}
+
+	switch (r->in.level) {
+		case 0:
+			info0 = (struct GROUP_INFO_0 *)r->in.buf;
+			break;
+		case 1:
+			info1 = (struct GROUP_INFO_1 *)r->in.buf;
+			break;
+		case 2:
+			info2 = (struct GROUP_INFO_2 *)r->in.buf;
+			break;
+		case 3:
+			info3 = (struct GROUP_INFO_3 *)r->in.buf;
+			break;
+		default:
+			werr = WERR_UNKNOWN_LEVEL;
+			goto done;
+	}
+
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	status = rpccli_try_samr_connects(pipe_cli, ctx,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  &connect_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_EnumDomains(pipe_cli, ctx,
+					 &connect_handle,
+					 &resume_handle,
+					 &sam,
+					 0xffffffff,
+					 &num_entries);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	for (i=0; i<num_entries; i++) {
+
+		domain_name = sam->entries[i].name.string;
+
+		if (strequal(domain_name, builtin_domain_name())) {
+			continue;
+		}
+
+		domain_found = true;
+		break;
+	}
+
+	if (!domain_found) {
+		werr = WERR_NO_SUCH_DOMAIN;
+		goto done;
+	}
+
+	init_lsa_String(&lsa_domain_name, domain_name);
+
+	status = rpccli_samr_LookupDomain(pipe_cli, ctx,
+					  &connect_handle,
+					  &lsa_domain_name,
+					  &domain_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
+					&connect_handle,
+					SAMR_DOMAIN_ACCESS_CREATE_GROUP |
+					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					domain_sid,
+					&domain_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	switch (r->in.level) {
+		case 0:
+			init_lsa_String(&lsa_group_name, info0->grpi0_name);
+			break;
+		case 1:
+			init_lsa_String(&lsa_group_name, info1->grpi1_name);
+			break;
+		case 2:
+			init_lsa_String(&lsa_group_name, info2->grpi2_name);
+			break;
+		case 3:
+			init_lsa_String(&lsa_group_name, info3->grpi3_name);
+			break;
+	}
+
+	status = rpccli_samr_CreateDomainGroup(pipe_cli, ctx,
+					       &domain_handle,
+					       &lsa_group_name,
+					       SEC_STD_DELETE |
+					       SAMR_GROUP_ACCESS_SET_INFO,
+					       &group_handle,
+					       &rid);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	switch (r->in.level) {
+		case 1:
+			if (info1->grpi1_comment) {
+				init_lsa_String(&info.description,
+						info1->grpi1_comment);
+
+				status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
+								  &group_handle,
+								  GROUPINFODESCRIPTION,
+								  &info);
+			}
+			break;
+		case 2:
+			if (info2->grpi2_comment) {
+				init_lsa_String(&info.description,
+						info2->grpi2_comment);
+
+				status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
+								  &group_handle,
+								  GROUPINFODESCRIPTION,
+								  &info);
+				if (!NT_STATUS_IS_OK(status)) {
+					werr = ntstatus_to_werror(status);
+					goto failed;
+				}
+			}
+
+			if (info2->grpi2_attributes != 0) {
+				info.attributes.attributes = info2->grpi2_attributes;
+				status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
+								  &group_handle,
+								  GROUPINFOATTRIBUTES,
+								  &info);
+
+			}
+			break;
+		case 3:
+			if (info3->grpi3_comment) {
+				init_lsa_String(&info.description,
+						info3->grpi3_comment);
+
+				status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
+								  &group_handle,
+								  GROUPINFODESCRIPTION,
+								  &info);
+				if (!NT_STATUS_IS_OK(status)) {
+					werr = ntstatus_to_werror(status);
+					goto failed;
+				}
+			}
+
+			if (info3->grpi3_attributes != 0) {
+				info.attributes.attributes = info3->grpi3_attributes;
+				status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
+								  &group_handle,
+								  GROUPINFOATTRIBUTES,
+								  &info);
+			}
+			break;
+		default:
+			break;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto failed;
+	}
+
+	werr = WERR_OK;
+	goto done;
+
+ failed:
+	rpccli_samr_DeleteDomainGroup(pipe_cli, ctx,
+				      &group_handle);
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	if (is_valid_policy_hnd(&group_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
+	}
+	if (is_valid_policy_hnd(&domain_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
+	}
+	if (is_valid_policy_hnd(&connect_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+	}
+
+	return werr;
 }
+
+/****************************************************************
+****************************************************************/
 
 WERROR NetGroupAdd_l(struct libnetapi_ctx *ctx,
 		     struct NetGroupAdd *r)
