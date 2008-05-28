@@ -630,12 +630,22 @@ static time_t gen_timet(void)
 }
 
 /*
-  generate a unix timestamp
+  generate a timestamp
 */
 static NTTIME gen_nttime(void)
 {
 	NTTIME ret;
 	unix_to_nt_time(&ret, gen_timet());
+	return ret;
+}
+
+/*
+  generate a timewarp value
+*/
+static NTTIME gen_timewarp(void)
+{
+	NTTIME ret = gen_nttime();
+	if (gen_chance(98)) ret = 0;
 	return ret;
 }
 
@@ -1119,6 +1129,11 @@ static bool handler_create(int instance)
 	parm[0].in.create_options             = gen_create_options();
 	parm[0].in.fname                      = gen_fname_open(instance);
 	parm[0].in.eas			      = gen_ea_list();
+	parm[0].in.alloc_size		      = gen_alloc_size();
+	parm[0].in.durable_open		      = gen_bool();
+	parm[0].in.query_maximal_access	      = gen_bool();
+	parm[0].in.timewarp		      = gen_timewarp();
+	parm[0].in.query_on_disk_id	      = gen_bool();
 
 	if (!options.use_oplocks) {
 		/* mask out oplocks */
@@ -1145,6 +1160,7 @@ static bool handler_create(int instance)
 	CHECK_EQUAL(out.size);
 	CHECK_ATTRIB(out.file_attr);
 	CHECK_EQUAL(out.reserved2);
+	CHECK_EQUAL(out.maximal_access);
 
 	/* ntcreatex creates a new file handle */
 	ADD_HANDLE(parm[0].in.fname, out.file.handle);
