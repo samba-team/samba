@@ -1151,16 +1151,15 @@ NTSTATUS read_smb_length(int fd, char *inbuf, unsigned int timeout,
 }
 
 /****************************************************************************
- Read an smb from a fd. Note that the buffer *MUST* be of size
- BUFFER_SIZE+SAFETY_MARGIN.
+ Read an smb from a fd.
  The timeout is in milliseconds.
  This function will return on receipt of a session keepalive packet.
  maxlen is the max number of bytes to return, not including the 4 byte
- length. If zero it means BUFFER_SIZE+SAFETY_MARGIN limit.
+ length. If zero it means buflen limit.
  Doesn't check the MAC on signed packets.
 ****************************************************************************/
 
-NTSTATUS receive_smb_raw(int fd, char *buffer, unsigned int timeout,
+NTSTATUS receive_smb_raw(int fd, char *buffer, size_t buflen, unsigned int timeout,
 			 size_t maxlen, size_t *p_len)
 {
 	size_t len;
@@ -1173,17 +1172,10 @@ NTSTATUS receive_smb_raw(int fd, char *buffer, unsigned int timeout,
 		return status;
 	}
 
-	/*
-	 * A WRITEX with CAP_LARGE_WRITEX can be 64k worth of data plus 65 bytes
-	 * of header. Don't print the error if this fits.... JRA.
-	 */
-
-	if (len > (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE)) {
+	if (len > buflen) {
 		DEBUG(0,("Invalid packet length! (%lu bytes).\n",
 					(unsigned long)len));
-		if (len > BUFFER_SIZE + (SAFETY_MARGIN/2)) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if(len > 0) {
