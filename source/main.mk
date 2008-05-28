@@ -36,6 +36,7 @@ mkinclude winbind/config.mk
 mkinclude nbt_server/config.mk
 mkinclude wrepl_server/config.mk
 mkinclude cldap_server/config.mk
+mkinclude ntp_signd/config.mk
 mkinclude utils/net/config.mk
 mkinclude utils/config.mk
 mkinclude ntvfs/config.mk
