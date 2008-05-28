@@ -268,6 +268,25 @@ bool torture_smb2_create_blob(struct torture_context *torture, struct smb2_tree 
 	status = smb2_util_close(tree, io.out.file.handle);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+	printf("testing unknown tag\n");
+	status = smb2_create_blob_add(tmp_ctx, &io.in.blobs,
+				      "FooO", data_blob(NULL, 0));
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_close(tree, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("testing bad tag length\n");
+	status = smb2_create_blob_add(tmp_ctx, &io.in.blobs,
+				      "xxx", data_blob(NULL, 0));
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
 	talloc_free(tmp_ctx);
 
 	smb2_deltree(tree, FNAME);
