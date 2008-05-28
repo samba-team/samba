@@ -172,7 +172,8 @@ done:
 	return ret;
 }
 
-/* basic testing of SMB2 read
+/* 
+   basic testing of SMB2 read
 */
 struct torture_suite *torture_smb2_read_init(void)
 {
