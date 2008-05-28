@@ -1806,75 +1806,37 @@ static int rpc_group_delete(struct net_context *c, int argc, const char **argv)
                                argc,argv);
 }
 
-static NTSTATUS rpc_group_add_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
-					const char *domain_name,
-					struct cli_state *cli,
-					struct rpc_pipe_client *pipe_hnd,
-					TALLOC_CTX *mem_ctx,
-					int argc,
-					const char **argv)
+static int rpc_group_add_internals(struct net_context *c, int argc, const char **argv)
 {
-	POLICY_HND connect_pol, domain_pol, group_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	union samr_GroupInfo group_info;
-	struct lsa_String grp_name;
-	uint32_t rid = 0;
+	NET_API_STATUS status;
+	struct GROUP_INFO_1 info1;
+	uint32_t parm_error = 0;
 
 	if (argc != 1) {
 		d_printf("Group name must be specified\n");
 		rpc_group_usage(c, argc, argv);
-		return NT_STATUS_OK;
+		return 0;
 	}
 
-	init_lsa_String(&grp_name, argv[0]);
+	ZERO_STRUCT(info1);
 
-	/* Get sam policy handle */
+	info1.grpi1_name = argv[0];
+	if (c->opt_comment && strlen(c->opt_comment) > 0) {
+		info1.grpi1_comment = c->opt_comment;
+	}
 
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
+	status = NetGroupAdd(c->opt_host, 1, (uint8_t *)&info1, &parm_error);
 
-	/* Get domain policy handle */
+	if (status != 0) {
+		d_fprintf(stderr, "Failed to add group '%s' with: %s.\n",
+			argv[0], libnetapi_get_error_string(c->netapi_ctx,
+							    status));
+		return -1;
+	} else {
+		d_printf("Added group '%s'.\n", argv[0]);
+	}
 
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
-					&connect_pol,
-					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
-					&domain_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
-
-	/* Create the group */
-
-	result = rpccli_samr_CreateDomainGroup(pipe_hnd, mem_ctx,
-					       &domain_pol,
-					       &grp_name,
-					       MAXIMUM_ALLOWED_ACCESS,
-					       &group_pol,
-					       &rid);
-	if (!NT_STATUS_IS_OK(result)) goto done;
-
-	if (strlen(c->opt_comment) == 0) goto done;
-
-	/* We've got a comment to set */
-
-	init_lsa_String(&group_info.description, c->opt_comment);
-
-	result = rpccli_samr_SetGroupInfo(pipe_hnd, mem_ctx,
-					  &group_pol,
-					  4,
-					  &group_info);
-	if (!NT_STATUS_IS_OK(result)) goto done;
-
- done:
-	if (NT_STATUS_IS_OK(result))
-		DEBUG(5, ("add group succeeded\n"));
-	else
-		d_fprintf(stderr, "add group failed: %s\n", nt_errstr(result));
-
-	return result;
+	return 0;
 }
 
 static NTSTATUS rpc_alias_add_internals(struct net_context *c,
@@ -1956,9 +1918,7 @@ static int rpc_group_add(struct net_context *c, int argc, const char **argv)
 				       rpc_alias_add_internals,
 				       argc, argv);
 
-	return run_rpc_command(c, NULL, PI_SAMR, 0,
-			       rpc_group_add_internals,
-			       argc, argv);
+	return rpc_group_add_internals(c, argc, argv);
 }
 
 static NTSTATUS get_sid_from_name(struct cli_state *cli,
@@ -3035,6 +2995,8 @@ static int rpc_group_rename(struct net_context *c, int argc, const char **argv)
 
 int net_rpc_group(struct net_context *c, int argc, const char **argv)
 {
+	NET_API_STATUS status;
+
 	struct functable func[] = {
 		{"add", rpc_group_add},
 		{"delete", rpc_group_delete},
@@ -3045,6 +3007,13 @@ int net_rpc_group(struct net_context *c, int argc, const char **argv)
 		{"rename", rpc_group_rename},
 		{NULL, NULL}
 	};
+
+	status = libnetapi_init(&c->netapi_ctx);
+	if (status != 0) {
+		return -1;
+	}
+	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
+	libnetapi_set_password(c->netapi_ctx, c->opt_password);
 
 	if (argc == 0) {
 		return run_rpc_command(c, NULL, PI_SAMR, 0,
