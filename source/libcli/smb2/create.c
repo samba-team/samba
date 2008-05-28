@@ -59,6 +59,7 @@ NTSTATUS smb2_create_blob_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB buffer,
 		    next > remaining ||
 		    name_offset < 16 ||
 		    name_offset > remaining ||
+		    name_length != 4 || /* windows enforces this */
 		    name_offset + name_length > remaining ||
 		    data_offset < name_offset + name_length ||
 		    data_offset > remaining ||
@@ -190,7 +191,10 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 	struct smb2_request *req;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct smb2_create_blobs blobs = io->in.blobs;
+	struct smb2_create_blobs blobs;
+	int i;
+
+	ZERO_STRUCT(blobs);
 
 	req = smb2_request_init_tree(tree, SMB2_OP_CREATE, 0x38, true, 0);
 	if (req == NULL) return NULL;
@@ -309,6 +313,17 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 	}
 
 	/* and any custom blobs */
+	for (i=0;i<io->in.blobs.num_blobs;i++) {
+		status = smb2_create_blob_add(req, &blobs,
+					      io->in.blobs.blobs[i].tag, 
+					      io->in.blobs.blobs[i].data);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(req);
+			return NULL;
+		}
+	}
+
+
 	status = smb2_create_blob_push(req, &blob, blobs);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
