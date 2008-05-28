@@ -30,11 +30,13 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "librpc/gen_ndr/security.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "auth/credentials/credentials.h"
 #include "libcli/resolve/resolve.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
 #include "dynconfig/dynconfig.h"
+#include "libcli/security/security.h"
 
 #define NSERVERS 2
 #define NINSTANCES 2
@@ -725,6 +727,26 @@ static struct smb_ea_list gen_ea_list(void)
 	return eas;
 }
 
+/* generate a security descriptor */
+static struct security_descriptor *gen_sec_desc(void)
+{
+	struct security_descriptor *sd;
+	if (gen_chance(90)) return NULL;
+
+	sd = security_descriptor_dacl_create(current_op.mem_ctx,
+					     0, NULL, NULL,
+					     NULL,
+					     SEC_ACE_TYPE_ACCESS_ALLOWED,
+					     SEC_FILE_WRITE_DATA | SEC_STD_WRITE_DAC,
+					     SEC_ACE_FLAG_OBJECT_INHERIT,
+					     SID_WORLD,
+					     SEC_ACE_TYPE_ACCESS_ALLOWED,
+					     SEC_FILE_ALL | SEC_STD_ALL,
+					     0,
+					     NULL);
+	return sd;
+}
+
 static void oplock_handler_close_recv(struct smb2_request *req)
 {
 	NTSTATUS status;
@@ -1066,6 +1088,13 @@ again:
 	} \
 } while(0)
 
+#define CHECK_SECDESC(field) do { \
+	if (!security_acl_equal(parm[0].field->dacl, parm[1].field->dacl) && !ignore_pattern(#field)) { \
+		printf("Mismatch in %s\n", #field); \
+		return false;			    \
+	} \
+} while(0)
+
 #define CHECK_ATTRIB(field) do { \
 		if (!options.mask_indexing) { \
 		CHECK_EQUAL(field); \
@@ -1134,6 +1163,7 @@ static bool handler_create(int instance)
 	parm[0].in.query_maximal_access	      = gen_bool();
 	parm[0].in.timewarp		      = gen_timewarp();
 	parm[0].in.query_on_disk_id	      = gen_bool();
+	parm[0].in.sec_desc		      = gen_sec_desc();
 
 	if (!options.use_oplocks) {
 		/* mask out oplocks */
@@ -1340,7 +1370,7 @@ static void gen_fileinfo(int instance, union smb_fileinfo *info)
 		LVL(MODE_INFORMATION), LVL(ALIGNMENT_INFORMATION), LVL(SMB2_ALL_INFORMATION),
 		LVL(ALT_NAME_INFORMATION), LVL(STREAM_INFORMATION), LVL(COMPRESSION_INFORMATION),
 		LVL(NETWORK_OPEN_INFORMATION), LVL(ATTRIBUTE_TAG_INFORMATION),
-		LVL(SMB2_ALL_EAS), LVL(SMB2_ALL_INFORMATION),
+		LVL(SMB2_ALL_EAS), LVL(SMB2_ALL_INFORMATION), LVL(SEC_DESC),
 	};
 	do {
 		i = gen_int_range(0, ARRAY_SIZE(levels)-1);
@@ -1490,9 +1520,11 @@ static bool cmp_fileinfo(int instance,
 		}
 		break;
 
-		/* Unhandled levels */
-
 	case RAW_FILEINFO_SEC_DESC:
+		CHECK_SECDESC(query_secdesc.out.sd);
+		break;
+
+		/* Unhandled levels */
 	case RAW_FILEINFO_EA_LIST:
 	case RAW_FILEINFO_UNIX_BASIC:
 	case RAW_FILEINFO_UNIX_LINK:
