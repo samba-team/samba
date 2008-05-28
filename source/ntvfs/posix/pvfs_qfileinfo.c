@@ -178,6 +178,15 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs,
 	case RAW_FILEINFO_ALL_EAS:
 		return pvfs_query_all_eas(pvfs, req, name, fd, &info->all_eas.out);
 
+	case RAW_FILEINFO_SMB2_ALL_EAS: {
+		NTSTATUS status = pvfs_query_all_eas(pvfs, req, name, fd, &info->all_eas.out);
+		if (NT_STATUS_IS_OK(status) &&
+		    info->all_eas.out.num_eas == 0) {
+			return NT_STATUS_NO_EAS_ON_FILE;
+		}
+		return status;
+	}
+
 	case RAW_FILEINFO_IS_NAME_VALID:
 		return NT_STATUS_OK;
 
