@@ -97,6 +97,7 @@ libclisrcdir := libcli
 ejsscriptsrcdir := scripting/ejs
 pyscriptsrcdir := $(srcdir)/scripting/python
 kdcsrcdir := kdc
+ntp_signdsrcdir := ntp_signd
 
 include data.mk
 
