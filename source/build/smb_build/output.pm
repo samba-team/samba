@@ -52,7 +52,7 @@ sub generate_shared_library($)
 	
 	$lib->{RESULT_SHARED_LIBRARY} = "$lib->{SHAREDDIR}/$lib->{LIBRARY_REALNAME}";
 	$lib->{OUTPUT_SHARED_LIBRARY} = "-l$link_name";
-	$lib->{TARGET_SHARED_LIBRARY} = $lib->{RESULT_SHARED_LIBRARY};
+	$lib->{TARGET_SHARED_LIBRARY} = "$lib->{SHAREDDIR}/$lib->{LIBRARY_DEBUGNAME}";
 }
 
 sub generate_merged_obj($)
