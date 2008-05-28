@@ -321,6 +321,7 @@ static NTSTATUS ipc_open_smb2(struct ntvfs_module_context *ntvfs,
 	status = ipc_open_generic(ntvfs, req, oi->smb2.in.fname, &p);
 	NT_STATUS_NOT_OK_RETURN(status);
 
+	ZERO_STRUCT(oi->smb2.out);
 	oi->smb2.out.file.ntvfs		= p->handle;
 	oi->smb2.out.oplock_level	= oi->smb2.in.oplock_level;
 	oi->smb2.out.create_action	= NTCREATEX_ACTION_EXISTED;
@@ -332,7 +333,6 @@ static NTSTATUS ipc_open_smb2(struct ntvfs_module_context *ntvfs,
 	oi->smb2.out.size		= 0;
 	oi->smb2.out.file_attr		= FILE_ATTRIBUTE_NORMAL;
 	oi->smb2.out.reserved2		= 0;
-	oi->smb2.out.blob		= data_blob(NULL, 0);
 
 	return status;
 }
