@@ -8,7 +8,7 @@ INIT_FUNCTION = LDB_MODULE(objectguid)
 # End MODULE ldb_objectguid
 ################################################
 
-ldb_objectguid_OBJ_FILES = dsdb/samdb/ldb_modules/objectguid.o
+ldb_objectguid_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/objectguid.o
 
 ################################################
 # Start MODULE ldb_repl_meta_data
@@ -22,7 +22,7 @@ INIT_FUNCTION = LDB_MODULE(repl_meta_data)
 ################################################
 
 ldb_repl_meta_data_OBJ_FILES = \
-		dsdb/samdb/ldb_modules/repl_meta_data.o
+		$(dsdbsrcdir)/samdb/ldb_modules/repl_meta_data.o
 
 ################################################
 # Start MODULE ldb_dsdb_cache
@@ -35,7 +35,7 @@ INIT_FUNCTION = LDB_MODULE(dsdb_cache)
 ################################################
 
 ldb_dsdb_cache_OBJ_FILES = \
-		dsdb/samdb/ldb_modules/dsdb_cache.o
+		$(dsdbsrcdir)/samdb/ldb_modules/dsdb_cache.o
 
 ################################################
 # Start MODULE ldb_schema_fsmo
@@ -48,7 +48,7 @@ INIT_FUNCTION = LDB_MODULE(schema_fsmo)
 ################################################
 
 ldb_schema_fsmo_OBJ_FILES = \
-		dsdb/samdb/ldb_modules/schema_fsmo.o
+		$(dsdbsrcdir)/samdb/ldb_modules/schema_fsmo.o
 
 ################################################
 # Start MODULE ldb_naming_fsmo
@@ -61,7 +61,7 @@ INIT_FUNCTION = LDB_MODULE(naming_fsmo)
 ################################################
 
 ldb_naming_fsmo_OBJ_FILES = \
-		dsdb/samdb/ldb_modules/naming_fsmo.o
+		$(dsdbsrcdir)/samdb/ldb_modules/naming_fsmo.o
 
 ################################################
 # Start MODULE ldb_pdc_fsmo
@@ -74,7 +74,7 @@ INIT_FUNCTION = LDB_MODULE(pdc_fsmo)
 ################################################
 
 ldb_pdc_fsmo_OBJ_FILES = \
-		dsdb/samdb/ldb_modules/pdc_fsmo.o
+		$(dsdbsrcdir)/samdb/ldb_modules/pdc_fsmo.o
 
 ################################################
 # Start MODULE ldb_samldb
@@ -88,7 +88,7 @@ INIT_FUNCTION = LDB_MODULE(samldb)
 ################################################
 
 ldb_samldb_OBJ_FILES = \
-		dsdb/samdb/ldb_modules/samldb.o
+		$(dsdbsrcdir)/samdb/ldb_modules/samldb.o
 
 ################################################
 # Start MODULE ldb_samba3sam
@@ -102,7 +102,7 @@ PRIVATE_DEPENDENCIES = LIBTALLOC SMBPASSWD NSS_WRAPPER LIBSECURITY \
 ################################################
 
 ldb_samba3sam_OBJ_FILES = \
-		dsdb/samdb/ldb_modules/samba3sam.o
+		$(dsdbsrcdir)/samdb/ldb_modules/samba3sam.o
 
 ################################################
 # Start MODULE ldb_simple_ldap_map
@@ -117,7 +117,7 @@ ALIASES = entryuuid nsuniqueid
 ################################################
 
 ldb_simple_ldap_map_OBJ_FILES = \
-		dsdb/samdb/ldb_modules/simple_ldap_map.o
+		$(dsdbsrcdir)/samdb/ldb_modules/simple_ldap_map.o
 
 # ################################################
 # # Start MODULE ldb_proxy
@@ -141,7 +141,7 @@ INIT_FUNCTION = LDB_MODULE(rootdse)
 # End MODULE ldb_rootdse
 ################################################
 
-ldb_rootdse_OBJ_FILES = dsdb/samdb/ldb_modules/rootdse.o
+ldb_rootdse_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/rootdse.o
 
 ################################################
 # Start MODULE ldb_password_hash
@@ -154,7 +154,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_HDB_KEYS LIBTALLOC HEIMDAL_KRB5 LDAP_ENCODE \
 # End MODULE ldb_password_hash
 ################################################
 
-ldb_password_hash_OBJ_FILES = dsdb/samdb/ldb_modules/password_hash.o
+ldb_password_hash_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/password_hash.o
 
 ################################################
 # Start MODULE ldb_local_password
@@ -166,7 +166,7 @@ INIT_FUNCTION = LDB_MODULE(local_password)
 # End MODULE ldb_local_password
 ################################################
 
-ldb_local_password_OBJ_FILES = dsdb/samdb/ldb_modules/local_password.o
+ldb_local_password_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/local_password.o
 
 ################################################
 # Start MODULE ldb_kludge_acl
@@ -179,7 +179,7 @@ INIT_FUNCTION = LDB_MODULE(kludge_acl)
 # End MODULE ldb_kludge_acl
 ################################################
 
-ldb_kludge_acl_OBJ_FILES = dsdb/samdb/ldb_modules/kludge_acl.o
+ldb_kludge_acl_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/kludge_acl.o
 
 ################################################
 # Start MODULE ldb_extended_dn
@@ -191,7 +191,7 @@ INIT_FUNCTION = LDB_MODULE(extended_dn)
 # End MODULE ldb_extended_dn
 ################################################
 
-ldb_extended_dn_OBJ_FILES = dsdb/samdb/ldb_modules/extended_dn.o
+ldb_extended_dn_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/extended_dn.o
 
 ################################################
 # Start MODULE ldb_show_deleted
@@ -203,7 +203,7 @@ INIT_FUNCTION = LDB_MODULE(show_deleted)
 # End MODULE ldb_show_deleted
 ################################################
 
-ldb_show_deleted_OBJ_FILES = dsdb/samdb/ldb_modules/show_deleted.o
+ldb_show_deleted_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/show_deleted.o
 
 ################################################
 # Start MODULE ldb_partition
@@ -215,7 +215,7 @@ INIT_FUNCTION = LDB_MODULE(partition)
 # End MODULE ldb_partition
 ################################################
 
-ldb_partition_OBJ_FILES = dsdb/samdb/ldb_modules/partition.o
+ldb_partition_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/partition.o
 
 ################################################
 # Start MODULE ldb_schema
@@ -227,7 +227,7 @@ INIT_FUNCTION = LDB_MODULE(schema)
 # End MODULE ldb_schema
 ################################################
 
-ldb_schema_OBJ_FILES = $(addprefix dsdb/samdb/ldb_modules/, schema.o schema_syntax.o)
+ldb_schema_OBJ_FILES = $(addprefix $(dsdbsrcdir)/samdb/ldb_modules/, schema.o schema_syntax.o)
 
 ################################################
 # Start MODULE ldb_update_kt
@@ -240,7 +240,7 @@ INIT_FUNCTION = LDB_MODULE(update_kt)
 # End MODULE ldb_update_kt
 ################################################
 
-ldb_update_keytab_OBJ_FILES = dsdb/samdb/ldb_modules/update_keytab.o 
+ldb_update_keytab_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/update_keytab.o 
 
 ################################################
 # Start MODULE ldb_objectclass
@@ -253,7 +253,7 @@ SUBSYSTEM = LIBLDB
 # End MODULE ldb_objectclass
 ################################################
 
-ldb_objectclass_OBJ_FILES = dsdb/samdb/ldb_modules/objectclass.o
+ldb_objectclass_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/objectclass.o
 
 ################################################
 # Start MODULE ldb_subtree_rename
@@ -265,7 +265,7 @@ SUBSYSTEM = LIBLDB
 # End MODULE ldb_subtree_rename
 ################################################
 
-ldb_subtree_rename_OBJ_FILES = dsdb/samdb/ldb_modules/subtree_rename.o
+ldb_subtree_rename_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/subtree_rename.o
 
 ################################################
 # Start MODULE ldb_subtree_rename
@@ -277,7 +277,7 @@ SUBSYSTEM = LIBLDB
 # End MODULE ldb_subtree_rename
 ################################################
 
-ldb_subtree_delete_OBJ_FILES = dsdb/samdb/ldb_modules/subtree_delete.o
+ldb_subtree_delete_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/subtree_delete.o
 
 ################################################
 # Start MODULE ldb_linked_attributes
@@ -290,7 +290,7 @@ SUBSYSTEM = LIBLDB
 # End MODULE ldb_linked_attributes
 ################################################
 
-ldb_linked_attributes_OBJ_FILES = dsdb/samdb/ldb_modules/linked_attributes.o
+ldb_linked_attributes_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/linked_attributes.o
 
 ################################################
 # Start MODULE ldb_ranged_results
@@ -302,7 +302,7 @@ SUBSYSTEM = LIBLDB
 # End MODULE ldb_ranged_results
 ################################################
 
-ldb_ranged_results_OBJ_FILES = dsdb/samdb/ldb_modules/ranged_results.o
+ldb_ranged_results_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/ranged_results.o
 
 ################################################
 # Start MODULE ldb_anr
@@ -315,7 +315,7 @@ SUBSYSTEM = LIBLDB
 # End MODULE ldb_anr
 ################################################
 
-ldb_anr_OBJ_FILES = dsdb/samdb/ldb_modules/anr.o
+ldb_anr_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/anr.o
 
 ################################################
 # Start MODULE ldb_normalise
@@ -328,7 +328,7 @@ SUBSYSTEM = LIBLDB
 # End MODULE ldb_normalise
 ################################################
 
-ldb_normalise_OBJ_FILES = dsdb/samdb/ldb_modules/normalise.o
+ldb_normalise_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/normalise.o
 
 ################################################
 # Start MODULE ldb_instancetype
@@ -341,5 +341,5 @@ SUBSYSTEM = LIBLDB
 # End MODULE ldb_instancetype
 ################################################
 
-ldb_instancetype_OBJ_FILES = dsdb/samdb/ldb_modules/instancetype.o
+ldb_instancetype_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/instancetype.o
 

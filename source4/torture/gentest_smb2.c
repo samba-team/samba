@@ -56,6 +56,7 @@ static struct gentest_options {
 	int mask_indexing;
 	int no_eas;
 	int skip_cleanup;
+	int valid;
 } options;
 
 /* mapping between open handles on the server and local handles */
@@ -510,7 +511,7 @@ static uint32_t gen_bits_mask(uint_t mask)
 */
 static uint32_t gen_bits_mask2(uint32_t mask1, uint32_t mask2)
 {
-	if (gen_chance(10)) return gen_bits_mask(mask2);
+	if (!options.valid && gen_chance(10)) return gen_bits_mask(mask2);
 	return gen_bits_mask(mask1);
 }
 
@@ -519,21 +520,25 @@ static uint32_t gen_bits_mask2(uint32_t mask1, uint32_t mask2)
  */
 static uint64_t gen_reserved8(void)
 {
+	if (options.valid) return 0;
 	return gen_bits_mask(0xFF);
 }
 
 static uint64_t gen_reserved16(void)
 {
+	if (options.valid) return 0;
 	return gen_bits_mask(0xFFFF);
 }
 
 static uint64_t gen_reserved32(void)
 {
+	if (options.valid) return 0;
 	return gen_bits_mask(0xFFFFFFFF);
 }
 
 static uint64_t gen_reserved64(void)
 {
+	if (options.valid) return 0;
 	return gen_bits_mask(0xFFFFFFFF) | (((uint64_t)gen_bits_mask(0xFFFFFFFF))<<32);
 }
 
@@ -552,7 +557,7 @@ static bool gen_bool(void)
 */
 static uint16_t gen_lock_flags(void)
 {
-	if (gen_chance(5))  return gen_bits_mask(0xFFFF);
+	if (!options.valid && gen_chance(5))  return gen_bits_mask(0xFFFF);
 	if (gen_chance(20)) return gen_bits_mask(0x1F);
 	if (gen_chance(50)) return SMB2_LOCK_FLAG_UNLOCK;
 	return gen_bits_mask(SMB2_LOCK_FLAG_SHARED | 
@@ -573,9 +578,12 @@ static off_t gen_lock_count(void)
 */
 static uint32_t gen_access_mask(void)
 {
+	uint32_t ret;
 	if (gen_chance(70)) return SEC_FLAG_MAXIMUM_ALLOWED;
 	if (gen_chance(70)) return SEC_FILE_ALL;
-	return gen_bits_mask(0xFFFFFFFF);
+	ret = gen_bits_mask(0xFFFFFFFF);
+	if (options.valid) ret &= ~SEC_MASK_INVALID;
+	return ret;
 }
 
 /*
@@ -583,7 +591,7 @@ static uint32_t gen_access_mask(void)
 */
 static uint32_t gen_create_options(void)
 {
-	if (gen_chance(20)) return gen_bits_mask(0xFFFFFFFF);
+	if (!options.valid && gen_chance(20)) return gen_bits_mask(0xFFFFFFFF);
 	if (gen_chance(50)) return 0;
 	return gen_bits_mask(NTCREATEX_OPTIONS_DELETE_ON_CLOSE | NTCREATEX_OPTIONS_DIRECTORY);
 }
@@ -594,7 +602,7 @@ static uint32_t gen_create_options(void)
 static uint32_t gen_open_disp(void)
 {
 	if (gen_chance(50)) return NTCREATEX_DISP_OPEN_IF;
-	if (gen_chance(10)) return gen_bits_mask(0xFFFFFFFF);
+	if (!options.valid && gen_chance(10)) return gen_bits_mask(0xFFFFFFFF);
 	return gen_int_range(0, 5);
 }
 
@@ -603,7 +611,12 @@ static uint32_t gen_open_disp(void)
 */
 static uint32_t gen_attrib(void)
 {
-	if (gen_chance(20)) return gen_bits_mask(0xFFFFFFFF);
+	uint32_t ret;
+	if (gen_chance(20)) {
+		ret = gen_bits_mask(0xFFFFFFFF);
+		if (options.valid) ret &= FILE_ATTRIBUTE_ALL_MASK;
+		return ret;
+	}
 	return gen_bits_mask(FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_DIRECTORY);
 }
 
@@ -1097,10 +1110,7 @@ static bool handler_create(int instance)
 	parm[0].in.security_flags             = gen_bits_levels(3, 90, 0x0, 70, 0x3, 100, 0xFF);
 	parm[0].in.oplock_level               = gen_bits_levels(3, 90, 0x0, 70, 0x9, 100, 0xFF);
 	parm[0].in.impersonation_level        = gen_bits_levels(3, 90, 0x0, 70, 0x3, 100, 0xFFFFFFFF);
-	parm[0].in.create_flags               = gen_bits_levels(2, 90, 0x0, 100, 0xFFFFFFFF);
-	if (gen_chance(2)) {
-		parm[0].in.create_flags       |= gen_bits_mask(0xFFFFFFFF);
-	}
+	parm[0].in.create_flags               = gen_reserved64();
 	parm[0].in.reserved                   = gen_reserved64();
 	parm[0].in.desired_access             = gen_access_mask();
 	parm[0].in.file_attributes            = gen_attrib();
@@ -1113,6 +1123,12 @@ static bool handler_create(int instance)
 	if (!options.use_oplocks) {
 		/* mask out oplocks */
 		parm[0].in.oplock_level = 0;
+	}
+
+	if (options.valid) {
+		parm[0].in.security_flags   &= 3;
+		parm[0].in.oplock_level     &= 9;
+		parm[0].in.impersonation_level &= 3;
 	}
 
 	GEN_COPY_PARM;
@@ -1926,6 +1942,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 		{"maskindexing",  0, POPT_ARG_NONE,  &options.mask_indexing, 0,	"mask out the indexed file attrib", 	NULL},
 		{"noeas",  0, POPT_ARG_NONE,  &options.no_eas, 0,	"don't use extended attributes", 	NULL},
 		{"skip-cleanup",  0, POPT_ARG_NONE,  &options.skip_cleanup, 0,	"don't delete files at start", 	NULL},
+		{"valid",  0, POPT_ARG_NONE,  &options.valid, 0,	"generate only valid fields", 	NULL},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS

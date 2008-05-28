@@ -13,7 +13,7 @@ PUBLIC_HEADERS += param/param.h
 PC_FILES += $(paramsrcdir)/samba-hostconfig.pc
 
 [SUBSYSTEM::PROVISION]
-PRIVATE_DEPENDENCIES = LIBPYTHON
+PRIVATE_DEPENDENCIES = LIBPYTHON swig_ldb
 
 PROVISION_OBJ_FILES = $(paramsrcdir)/provision.o
 

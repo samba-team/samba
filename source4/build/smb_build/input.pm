@@ -84,7 +84,6 @@ sub check_module($$$)
 
 	return if ($mod->{ENABLE} ne "YES");
 
-
 	if (exists($INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTION_TYPE})) {
 		$mod->{INIT_FUNCTION_TYPE} = $INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTION_TYPE};
 	} else {

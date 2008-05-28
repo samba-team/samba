@@ -2195,7 +2195,8 @@ void smbsrv_reply_ntcreate_and_X(struct smbsrv_request *req)
 
 	/* we use a couple of bits of the create options internally */
 	if (io->ntcreatex.in.create_options & NTCREATEX_OPTIONS_PRIVATE_MASK) {
-		return NT_STATUS_INVALID_PARAMETER;
+		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
 
 	/* we need a neater way to handle this alignment */
