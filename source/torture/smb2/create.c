@@ -26,6 +26,7 @@
 #include "torture/smb2/proto.h"
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "libcli/security/security.h"
 
 #define FNAME "test_create.dat"
 
@@ -38,15 +39,15 @@
 
 #define CHECK_EQUAL(v, correct) do { \
 	if (v != correct) { \
-		printf("(%s) Incorrect value for %s 0x%08x - should be 0x%08x\n", \
-		       __location__, #v, v, correct); \
+		printf("(%s) Incorrect value for %s 0x%08llx - should be 0x%08llx\n", \
+		       __location__, #v, (unsigned long long)v, (unsigned long long)correct); \
 		return false; \
 	}} while (0)
 
 /*
   test some interesting combinations found by gentest
  */
-bool torture_smb2_create_gentest(struct torture_context *torture, struct smb2_tree *tree)
+static bool test_create_gentest(struct torture_context *torture, struct smb2_tree *tree)
 {
 	struct smb2_create io;
 	NTSTATUS status;
@@ -166,6 +167,9 @@ bool torture_smb2_create_gentest(struct torture_context *torture, struct smb2_tr
 	status = smb2_create(tree, tmp_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+	status = smb2_util_close(tree, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
 	io.in.fname = FNAME;
 	io.in.file_attributes = 0x8040;
 	io.in.share_access = 
@@ -174,28 +178,204 @@ bool torture_smb2_create_gentest(struct torture_context *torture, struct smb2_tr
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 
 	talloc_free(tmp_ctx);
+
+	smb2_deltree(tree, FNAME);
+	
+	return true;
+}
+
+
+/*
+  try the various request blobs
+ */
+static bool test_create_blob(struct torture_context *torture, struct smb2_tree *tree)
+{
+	struct smb2_create io;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+
+	smb2_deltree(tree, FNAME);
+
+	ZERO_STRUCT(io);
+	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.in.file_attributes    = FILE_ATTRIBUTE_NORMAL;
+	io.in.create_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	io.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_DELETE|
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
+					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
+					  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
+					  0x00200000;
+	io.in.fname = FNAME;
+
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_close(tree, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("testing alloc size\n");
+	io.in.alloc_size = 4096;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_EQUAL(io.out.alloc_size, io.in.alloc_size);
+
+	status = smb2_util_close(tree, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("testing durable open\n");
+	io.in.durable_open = true;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_close(tree, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("testing query maximal access\n");
+	io.in.query_maximal_access = true;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_close(tree, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("testing timewarp\n");
+	io.in.timewarp = 10000;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	io.in.timewarp = 0;
+
+	printf("testing query_on_disk\n");
+	io.in.query_on_disk_id = true;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_close(tree, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("testing unknown tag\n");
+	status = smb2_create_blob_add(tmp_ctx, &io.in.blobs,
+				      "FooO", data_blob(NULL, 0));
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_close(tree, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("testing bad tag length\n");
+	status = smb2_create_blob_add(tmp_ctx, &io.in.blobs,
+				      "xxx", data_blob(NULL, 0));
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	talloc_free(tmp_ctx);
+
+	smb2_deltree(tree, FNAME);
+	
+	return true;
+}
+
+/*
+  try creating with acls
+ */
+static bool test_create_acl(struct torture_context *torture, struct smb2_tree *tree)
+{
+	struct smb2_create io;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	struct security_ace ace;
+	struct security_descriptor *sd, *sd2;
+	struct dom_sid *test_sid;
+	union smb_fileinfo q;
+
+	smb2_deltree(tree, FNAME);
+
+	ZERO_STRUCT(io);
+	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.in.file_attributes    = FILE_ATTRIBUTE_NORMAL;
+	io.in.create_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	io.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_DELETE|
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
+					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
+					  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
+					  0x00200000;
+	io.in.fname = FNAME;
+
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.file.handle = io.out.file.handle;
+	q.query_secdesc.in.secinfo_flags = 
+		SECINFO_OWNER |
+		SECINFO_GROUP |
+		SECINFO_DACL;
+	status = smb2_getinfo_file(tree, tmp_ctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	sd = q.query_secdesc.out.sd;
+
+	status = smb2_util_close(tree, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smb2_util_unlink(tree, FNAME);
+
+	printf("adding a new ACE\n");
+	test_sid = dom_sid_parse_talloc(tmp_ctx, "S-1-5-32-1234-54321");
+
+	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+	ace.flags = 0;
+	ace.access_mask = SEC_STD_ALL;
+	ace.trustee = *test_sid;
+
+	status = security_descriptor_dacl_add(sd, &ace);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	
+	printf("creating a file with an initial ACL\n");
+
+	io.in.sec_desc = sd;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	q.query_secdesc.in.file.handle = io.out.file.handle;
+	status = smb2_getinfo_file(tree, tmp_ctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	sd2 = q.query_secdesc.out.sd;
+
+	if (!security_acl_equal(sd->dacl, sd2->dacl)) {
+		printf("%s: security descriptors don't match!\n", __location__);
+		printf("got:\n");
+		NDR_PRINT_DEBUG(security_descriptor, sd2);
+		printf("expected:\n");
+		NDR_PRINT_DEBUG(security_descriptor, sd);
+		return false;
+	}
+
+	talloc_free(tmp_ctx);
 	
 	return true;
 }
 
 /* 
-   basic testing of SMB2 create calls
+   basic testing of SMB2 read
 */
-bool torture_smb2_create(struct torture_context *torture)
+struct torture_suite *torture_smb2_create_init(void)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	struct smb2_tree *tree;
-	bool ret = true;
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "CREATE");
 
-	if (!torture_smb2_connection(torture, &tree)) {
-		return false;
-	}
+	torture_suite_add_1smb2_test(suite, "GENTEST", test_create_gentest);
+	torture_suite_add_1smb2_test(suite, "BLOB", test_create_blob);
+	torture_suite_add_1smb2_test(suite, "ACL", test_create_acl);
 
-	ret &= torture_smb2_create_gentest(torture, tree);
+	suite->description = talloc_strdup(suite, "SMB2-CREATE tests");
 
-	smb2_deltree(tree, FNAME);
-
-	talloc_free(mem_ctx);
-
-	return ret;
+	return suite;
 }
