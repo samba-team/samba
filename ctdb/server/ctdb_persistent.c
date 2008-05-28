@@ -216,7 +216,6 @@ struct childwrite_handle {
 	void *private_data;
 	void (*callback)(int, void *);
 	TDB_DATA key;
-	TDB_DATA data;
 	struct timeval start_time;
 };
 
@@ -259,7 +258,6 @@ static void childwrite_handler(struct event_context *ev, struct fd_event *fde,
 		c = 1;
 	}
 
-	/* XXX we need to pass state back here.? */
 	callback(c, p);
 
 	kill(child, SIGKILL);
@@ -311,7 +309,6 @@ struct childwrite_handle *ctdb_childwrite(struct ctdb_db_context *ctdb_db,
 	result->ctdb = ctdb_db->ctdb;
 	result->ctdb_db = ctdb_db;
 	result->key = key;
-	result->data = data;
 
 	if (result->child == 0) {
 		char c = 0;
