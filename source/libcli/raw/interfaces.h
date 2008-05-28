@@ -1586,9 +1586,17 @@ union smb_open {
 			/* dynamic body */
 			const char *fname;
 
-			/* optional list of extended attributes */
+			/* now some optional parameters - encoded as tagged blobs */
 			struct smb_ea_list eas;
-
+			uint64_t alloc_size;
+			struct security_descriptor *sec_desc;
+			bool   durable_open;
+			struct smb2_handle *durable_handle;
+			bool   query_maximal_access;
+			NTTIME timewarp;
+			bool   query_on_disk_id;
+			
+			/* and any additional blobs the caller wants */
 			struct smb2_create_blobs {
 				uint32_t num_blobs;
 				struct smb2_create_blob {
@@ -1617,8 +1625,12 @@ union smb_open {
 			/* uint32_t blob_ofs; */
 			/* uint32_t blob_size; */
 
-			/* dynamic body */
-			DATA_BLOB blob;
+			/* optional return values matching tagged values in the call */
+			uint32_t maximal_access;
+			uint8_t on_disk_id[32];
+
+			/* tagged blobs in the reply */
+			struct smb2_create_blobs blobs;
 		} out;
 	} smb2;
 };

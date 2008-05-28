@@ -24,6 +24,74 @@
 #include "libcli/raw/raw_proto.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "librpc/gen_ndr/ndr_security.h"
+
+
+/*
+  parse a set of SMB2 create blobs
+*/
+NTSTATUS smb2_create_blob_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB buffer,
+				struct smb2_create_blobs *blobs)
+{
+	const uint8_t *data = buffer.data;
+	uint32_t remaining = buffer.length;
+
+	while (remaining > 0) {
+		uint32_t next;
+		uint32_t name_offset, name_length;
+		uint32_t reserved, data_offset;
+		uint32_t data_length;
+		char *tag;
+		DATA_BLOB b;
+		NTSTATUS status;
+
+		if (remaining < 16) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		next        = IVAL(data, 0);
+		name_offset = SVAL(data, 4);
+		name_length = SVAL(data, 6);
+		reserved    = SVAL(data, 8);
+		data_offset = SVAL(data, 10);
+		data_length = IVAL(data, 12);
+
+		if ((next & 0x7) != 0 ||
+		    next > remaining ||
+		    name_offset < 16 ||
+		    name_offset > remaining ||
+		    name_offset + name_length > remaining ||
+		    data_offset < name_offset + name_length ||
+		    data_offset > remaining ||
+		    data_offset + (uint64_t)data_length > remaining) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		tag = talloc_strndup(mem_ctx, (const char *)data + name_offset, name_length);
+		if (tag == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		b = data_blob_const(data+data_offset, data_length);
+		status = smb2_create_blob_add(mem_ctx, blobs, tag, b);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		talloc_free(tag);
+
+		if (next == 0) break;
+
+		remaining -= next;
+		data += next;
+
+		if (remaining < 16) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
 
 /*
   add a blob to a smb2_create attribute blob
@@ -116,6 +184,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 		return NULL;
 	}
 
+	/* now add all the optional blobs */
 	if (io->in.eas.num_eas != 0) {
 		DATA_BLOB b = data_blob_talloc(req, NULL, 
 					       ea_list_size_chained(io->in.eas.num_eas, io->in.eas.eas, 4));
@@ -131,13 +200,87 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 
 	/* an empty MxAc tag seems to be used to ask the server to
 	   return the maximum access mask allowed on the file */
-	status = smb2_create_blob_add(req, &blobs,
-				      SMB2_CREATE_TAG_MXAC, data_blob(NULL, 0));
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(req);
-		return NULL;
+	if (io->in.query_maximal_access) {
+		/* TODO: MS-SMB2 2.2.13.2.5 says this can contain a timestamp? What to do
+		   with that if it doesn't match? */
+		status = smb2_create_blob_add(req, &blobs,
+					      SMB2_CREATE_TAG_MXAC, data_blob(NULL, 0));
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(req);
+			return NULL;
+		}
 	}
 
+	if (io->in.alloc_size != 0) {
+		uint8_t data[8];
+		SBVAL(data, 0, io->in.alloc_size);
+		status = smb2_create_blob_add(req, &blobs,
+					      SMB2_CREATE_TAG_ALSI, data_blob_const(data, 8));
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(req);
+			return NULL;
+		}
+	}
+
+	if (io->in.durable_open) {
+		status = smb2_create_blob_add(req, &blobs,
+					      SMB2_CREATE_TAG_DHNQ, data_blob_talloc_zero(req, 16));
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(req);
+			return NULL;
+		}
+	}
+
+	if (io->in.durable_handle) {
+		uint8_t data[16];
+		smb2_push_handle(data, io->in.durable_handle);
+		status = smb2_create_blob_add(req, &blobs,
+					      SMB2_CREATE_TAG_DHNC, data_blob_const(data, 16));
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(req);
+			return NULL;
+		}
+	}
+
+	if (io->in.timewarp) {
+		uint8_t data[8];
+		SBVAL(data, 0, io->in.timewarp);		
+		status = smb2_create_blob_add(req, &blobs,
+					      SMB2_CREATE_TAG_TWRP, data_blob_const(data, 8));
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(req);
+			return NULL;
+		}
+	}
+
+	if (io->in.sec_desc) {
+		enum ndr_err_code ndr_err;
+		DATA_BLOB sd_blob;
+		ndr_err = ndr_push_struct_blob(&sd_blob, req, NULL,
+					       io->in.sec_desc,
+					       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			talloc_free(req);
+			return NULL;
+		}
+		status = smb2_create_blob_add(req, &blobs,
+					      SMB2_CREATE_TAG_SECD, sd_blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(req);
+			return NULL;
+		}
+	}
+
+	if (io->in.query_on_disk_id) {
+		status = smb2_create_blob_add(req, &blobs,
+					      SMB2_CREATE_TAG_QFID, data_blob(NULL, 0));
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(req);
+			return NULL;
+		}
+	}
+
+	/* and any custom blobs */
 	for (i=0; i < blobs.num_blobs; i++) {
 		bool last = false;
 		const struct smb2_create_blob *c;
@@ -173,6 +316,8 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 NTSTATUS smb2_create_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, struct smb2_create *io)
 {
 	NTSTATUS status;
+	DATA_BLOB blob;
+	int i;
 
 	if (!smb2_request_receive(req) || 
 	    !smb2_request_is_ok(req)) {
@@ -180,7 +325,7 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, struct 
 	}
 
 	SMB2_CHECK_PACKET_RECV(req, 0x58, true);
-
+	ZERO_STRUCT(io->out);
 	io->out.oplock_level   = CVAL(req->in.body, 0x02);
 	io->out.reserved       = CVAL(req->in.body, 0x03);
 	io->out.create_action  = IVAL(req->in.body, 0x04);
@@ -193,11 +338,38 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, struct 
 	io->out.file_attr      = IVAL(req->in.body, 0x38);
 	io->out.reserved2      = IVAL(req->in.body, 0x3C);
 	smb2_pull_handle(req->in.body+0x40, &io->out.file.handle);
-	status = smb2_pull_o32s32_blob(&req->in, mem_ctx, req->in.body+0x50, &io->out.blob);
+	status = smb2_pull_o32s32_blob(&req->in, mem_ctx, req->in.body+0x50, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		smb2_request_destroy(req);
 		return status;
 	}
+
+	status = smb2_create_blob_parse(mem_ctx, blob, &io->out.blobs);
+	if (!NT_STATUS_IS_OK(status)) {
+		smb2_request_destroy(req);
+		return status;
+	}
+
+	/* pull out the parsed blobs */
+	for (i=0;i<io->out.blobs.num_blobs;i++) {
+		if (strcmp(io->out.blobs.blobs[i].tag, SMB2_CREATE_TAG_MXAC) == 0) {
+			/* why 8 bytes not 4?? */
+			if (io->out.blobs.blobs[i].data.length != 8) {
+				smb2_request_destroy(req);
+				return NT_STATUS_INVALID_NETWORK_RESPONSE;
+			}
+			io->out.maximal_access = IVAL(io->out.blobs.blobs[i].data.data, 0);
+		}
+		if (strcmp(io->out.blobs.blobs[i].tag, SMB2_CREATE_TAG_QFID) == 0) {
+			if (io->out.blobs.blobs[i].data.length != 32) {
+				smb2_request_destroy(req);
+				return NT_STATUS_INVALID_NETWORK_RESPONSE;
+			}
+			memcpy(io->out.on_disk_id, io->out.blobs.blobs[i].data.data, 32);
+		}
+	}
+
+	data_blob_free(&blob);
 
 	return smb2_request_destroy(req);
 }
