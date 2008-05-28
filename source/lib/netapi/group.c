@@ -272,7 +272,7 @@ WERROR NetGroupAdd_r(struct libnetapi_ctx *ctx,
 WERROR NetGroupAdd_l(struct libnetapi_ctx *ctx,
 		     struct NetGroupAdd *r)
 {
-	return WERR_NOT_SUPPORTED;
+	return NetGroupAdd_r(ctx, r);
 }
 
 /****************************************************************
@@ -492,5 +492,5 @@ WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 WERROR NetGroupDel_l(struct libnetapi_ctx *ctx,
 		     struct NetGroupDel *r)
 {
-	return WERR_NOT_SUPPORTED;
+	return NetGroupDel_r(ctx, r);
 }
