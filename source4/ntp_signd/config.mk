@@ -10,5 +10,5 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM NTP_SIGND
 #######################
 
-NTP_SIGND_OBJ_FILES = $(addprefix $(ntp_signd_srcdir)/, ntp_signd.o)
+NTP_SIGND_OBJ_FILES = $(addprefix $(ntp_signdsrcdir)/, ntp_signd.o)
 

@@ -27,10 +27,13 @@
 #include "smbd/service_stream.h"
 #include "smbd/process_model.h"
 #include "lib/stream/packet.h"
-#include "librpc/gen_ndr/ntp_signd.h"
+#include "librpc/gen_ndr/ndr_ntp_signd.h"
 #include "param/param.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
+#include "libcli/security/security.h"
+#include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 
 /*
   top level context structure for the ntp_signd server
@@ -74,13 +77,14 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB blob)
 	enum ndr_err_code ndr_err;
 	struct ldb_result *res;
 	const char *attrs[] = { "unicodePwd", NULL };
+	int ret;
 
 	talloc_steal(tmp_ctx, blob.data);
 
 	input = data_blob_const(blob.data + 4, blob.length - 4); 
 
-	ndr_err = ndr_pull_struct_blob_all(input, tmp_ctx, 
-					   iconv_convenience,
+	ndr_err = ndr_pull_struct_blob_all(&input, tmp_ctx, 
+					   lp_iconv_convenience(ntp_signdconn->ntp_signd->task->lp_ctx),
 					   &sign_request,
 					   (ndr_pull_flags_fn_t)ndr_pull_sign_request);
 
@@ -101,9 +105,10 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB blob)
 	}
 
 	/* Sign packet */
-	ret = ldb_search_exp_format(ntp_signdconn->ntp_signd->samdb, tmp_ctx,
-				    &res, samdb_base_dn(ntp_signdconn->ntp_signd->samdb),
-				    LDB_SCOPE_SUBTREE, attrs, "(&(objectSid=%s)(objectClass=computer))");
+	ret = ldb_search_exp_fmt(ntp_signdconn->ntp_signd->samdb, tmp_ctx,
+				 &res, samdb_base_dn(ntp_signdconn->ntp_signd->samdb),
+				 LDB_SCOPE_SUBTREE, attrs, "(&(objectSid=%s)(objectClass=computer))",
+				 dom_sid_string(tmp_ctx, sid));
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -221,19 +226,6 @@ static void ntp_signd_task_init(struct task_server *task)
 		return;
 	}
 
-	status = stream_setup_socket(ntp_signd->task->event_ctx, 
-				     ntp_signd->task->lp_ctx,
-				     model_ops, 
-				     &ntp_signd_stream_ops, 
-				     "unix", address, NULL,
-				     lp_socket_options(ntp_signd->task->lp_ctx), 
-				     ntp_signd);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to bind to %s - %s\n",
-			 address, nt_errstr(status)));
-		return;
-	}
-
 	task_server_set_title(task, "task[ntp_signd]");
 
 	ntp_signd = talloc(task, struct ntp_signd_server);
@@ -247,6 +239,19 @@ static void ntp_signd_task_init(struct task_server *task)
 	ntp_signd->samdb = samdb_connect(ntp_signd, task->event_ctx, task->lp_ctx, anonymous_session(ntp_signd, task->event_ctx, task->lp_ctx));
 	if (ntp_signd->samdb == NULL) {
 		task_server_terminate(task, "ntp_signd failed to open samdb");
+		return;
+	}
+
+	status = stream_setup_socket(ntp_signd->task->event_ctx, 
+				     ntp_signd->task->lp_ctx,
+				     model_ops, 
+				     &ntp_signd_stream_ops, 
+				     "unix", address, NULL,
+				     lp_socket_options(ntp_signd->task->lp_ctx), 
+				     ntp_signd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to bind to %s - %s\n",
+			 address, nt_errstr(status)));
 		return;
 	}
 
