@@ -117,6 +117,8 @@ static void show_statistics(struct ctdb_statistics *s)
 		STATISTICS_FIELD(pending_calls),
 		STATISTICS_FIELD(lockwait_calls),
 		STATISTICS_FIELD(pending_lockwait_calls),
+		STATISTICS_FIELD(childwrite_calls),
+		STATISTICS_FIELD(pending_childwrite_calls),
 		STATISTICS_FIELD(memory_used),
 		STATISTICS_FIELD(max_hop_count),
 	};
@@ -139,6 +141,7 @@ static void show_statistics(struct ctdb_statistics *s)
 	}
 	printf(" %-30s     %.6f sec\n", "max_call_latency", s->max_call_latency);
 	printf(" %-30s     %.6f sec\n", "max_lockwait_latency", s->max_lockwait_latency);
+	printf(" %-30s     %.6f sec\n", "max_childwrite_latency", s->max_childwrite_latency);
 	talloc_free(tmp_ctx);
 }
 

@@ -160,7 +160,7 @@ int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 
 /*
   write a record to a persistent database
-  at this stage the the record is locked by a lockwait child.
+  this is done by a child process
 */
 int ctdb_ltdb_persistent_store(struct ctdb_db_context *ctdb_db, TDB_DATA key, 
 		    struct ctdb_ltdb_header *header, TDB_DATA data)
@@ -189,7 +189,7 @@ int ctdb_ltdb_persistent_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 
 	/* if this is a persistent database without NOSYNC then we
 	   will do this via a transaction */
-	if (0 && !(ctdb_db->client_tdb_flags & TDB_NOSYNC)) {
+	if (!(ctdb_db->client_tdb_flags & TDB_NOSYNC)) {
 		ret = tdb_transaction_start(ctdb_db->ltdb->tdb);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Failed to start local transaction\n"));

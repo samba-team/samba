@@ -136,7 +136,7 @@ int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb,
 }
 
 
-struct ctdb_persistent_lock_state {
+struct ctdb_persistent_write_state {
 	struct ctdb_db_context *ctdb_db;
 	TDB_DATA key;
 	TDB_DATA data;
@@ -147,9 +147,9 @@ struct ctdb_persistent_lock_state {
 
 
 /*
-  called with a lock held by a lockwait child
+  called from a child process to write the data
  */
-static int ctdb_persistent_store(struct ctdb_persistent_lock_state *state)
+static int ctdb_persistent_store(struct ctdb_persistent_write_state *state)
 {
 	struct ctdb_ltdb_header oldheader;
 	int ret;
@@ -181,25 +181,16 @@ static int ctdb_persistent_store(struct ctdb_persistent_lock_state *state)
 
 
 /*
-  called when we get the lock on the given record
-  at this point the lockwait child holds a lock on our behalf
+  called when we the child has completed the persistent write
+  on our behalf
  */
-static void ctdb_persistent_lock_callback(void *private_data)
+static void ctdb_persistent_write_callback(int status, void *private_data)
 {
-	struct ctdb_persistent_lock_state *state = talloc_get_type(private_data, 
-								   struct ctdb_persistent_lock_state);
-	int ret;
+	struct ctdb_persistent_write_state *state = talloc_get_type(private_data, 
+								   struct ctdb_persistent_write_state);
 
-	ret = tdb_chainlock_mark(state->tdb, state->key);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed to mark lock in ctdb_persistent_lock_callback\n"));
-		ctdb_request_control_reply(state->ctdb_db->ctdb, state->c, NULL, ret, NULL);
-		return;
-	}
 
-	ret = ctdb_persistent_store(state);
-	ctdb_request_control_reply(state->ctdb_db->ctdb, state->c, NULL, ret, NULL);
-	tdb_chainlock_unmark(state->tdb, state->key);
+	ctdb_request_control_reply(state->ctdb_db->ctdb, state->c, NULL, status, NULL);
 
 	talloc_free(state);
 }
@@ -210,10 +201,153 @@ static void ctdb_persistent_lock_callback(void *private_data)
 static void ctdb_persistent_lock_timeout(struct event_context *ev, struct timed_event *te, 
 					 struct timeval t, void *private_data)
 {
-	struct ctdb_persistent_lock_state *state = talloc_get_type(private_data, 
-								   struct ctdb_persistent_lock_state);
+	struct ctdb_persistent_write_state *state = talloc_get_type(private_data, 
+								   struct ctdb_persistent_write_state);
 	ctdb_request_control_reply(state->ctdb_db->ctdb, state->c, NULL, -1, "timeout in ctdb_persistent_lock");
 	talloc_free(state);
+}
+
+struct childwrite_handle {
+	struct ctdb_context *ctdb;
+	struct ctdb_db_context *ctdb_db;
+	struct fd_event *fde;
+	int fd[2];
+	pid_t child;
+	void *private_data;
+	void (*callback)(int, void *);
+	TDB_DATA key;
+	TDB_DATA data;
+	struct timeval start_time;
+};
+
+static int childwrite_destructor(struct childwrite_handle *h)
+{
+	h->ctdb->statistics.pending_childwrite_calls--;
+	kill(h->child, SIGKILL);
+	waitpid(h->child, NULL, 0);
+	return 0;
+}
+
+/* called when the child process has finished writing the record to the
+   database
+*/
+static void childwrite_handler(struct event_context *ev, struct fd_event *fde, 
+			     uint16_t flags, void *private_data)
+{
+	struct childwrite_handle *h = talloc_get_type(private_data, 
+						     struct childwrite_handle);
+	void *p = h->private_data;
+	void (*callback)(int, void *) = h->callback;
+	pid_t child = h->child;
+	TALLOC_CTX *tmp_ctx = talloc_new(ev);
+	int ret;
+	char c;
+
+	ctdb_latency(&h->ctdb->statistics.max_childwrite_latency, h->start_time);
+	h->ctdb->statistics.pending_childwrite_calls--;
+
+	/* the handle needs to go away when the context is gone - when
+	   the handle goes away this implicitly closes the pipe, which
+	   kills the child */
+	talloc_steal(tmp_ctx, h);
+
+	talloc_set_destructor(h, NULL);
+
+	ret = read(h->fd[0], &c, 1);
+	if (ret < 1) {
+		DEBUG(DEBUG_ERR, (__location__ " Read returned %d. Childwrite failed\n", ret));
+		c = 1;
+	}
+
+	/* XXX we need to pass state back here.? */
+	callback(c, p);
+
+	kill(child, SIGKILL);
+	waitpid(child, NULL, 0);
+	talloc_free(tmp_ctx);
+}
+
+/* this creates a child process which will take out a tdb transaction
+   and write the record to the database.
+*/
+struct childwrite_handle *ctdb_childwrite(struct ctdb_db_context *ctdb_db,
+				TDB_DATA key,
+				TDB_DATA data,
+				void (*callback)(int, void *private_data),
+				void *private_data)
+{
+	struct childwrite_handle *result;
+	int ret;
+	pid_t parent = getpid();
+
+	ctdb_db->ctdb->statistics.childwrite_calls++;
+	ctdb_db->ctdb->statistics.pending_childwrite_calls++;
+
+	if (!(result = talloc_zero(private_data, struct childwrite_handle))) {
+		ctdb_db->ctdb->statistics.pending_childwrite_calls--;
+		return NULL;
+	}
+
+	ret = pipe(result->fd);
+
+	if (ret != 0) {
+		talloc_free(result);
+		ctdb_db->ctdb->statistics.pending_childwrite_calls--;
+		return NULL;
+	}
+
+	result->child = fork();
+
+	if (result->child == (pid_t)-1) {
+		close(result->fd[0]);
+		close(result->fd[1]);
+		talloc_free(result);
+		ctdb_db->ctdb->statistics.pending_childwrite_calls--;
+		return NULL;
+	}
+
+	result->callback = callback;
+	result->private_data = private_data;
+	result->ctdb = ctdb_db->ctdb;
+	result->ctdb_db = ctdb_db;
+	result->key = key;
+	result->data = data;
+
+	if (result->child == 0) {
+		char c = 0;
+		struct ctdb_persistent_write_state *state = talloc_get_type(private_data, struct ctdb_persistent_write_state);
+
+		close(result->fd[0]);
+		ret = ctdb_persistent_store(state);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, (__location__ " Failed to write persistent data\n"));
+			c = 1;
+		}
+
+		write(result->fd[1], &c, 1);
+
+		/* make sure we die when our parent dies */
+		while (kill(parent, 0) == 0 || errno != ESRCH) {
+			sleep(5);
+		}
+		_exit(0);
+	}
+
+	close(result->fd[1]);
+	talloc_set_destructor(result, childwrite_destructor);
+
+	result->fde = event_add_fd(ctdb_db->ctdb->ev, result, result->fd[0],
+				   EVENT_FD_READ|EVENT_FD_AUTOCLOSE, childwrite_handler,
+				   (void *)result);
+	if (result->fde == NULL) {
+		talloc_free(result);
+		ctdb_db->ctdb->statistics.pending_childwrite_calls--;
+		return NULL;
+	}
+
+	result->start_time = timeval_current();
+
+	return result;
 }
 
 /* 
@@ -227,8 +361,8 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	struct ctdb_rec_data *rec = (struct ctdb_rec_data *)&recdata.dptr[0];
 	struct ctdb_db_context *ctdb_db;
 	uint32_t db_id = rec->reqid;
-	struct ctdb_persistent_lock_state *state;
-	struct lockwait_handle *handle;
+	struct ctdb_persistent_write_state *state;
+	struct childwrite_handle *handle;
 
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
 		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_update_record when recovery active\n"));
@@ -241,7 +375,7 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	state = talloc(ctdb, struct ctdb_persistent_lock_state);
+	state = talloc(ctdb, struct ctdb_persistent_write_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
 	state->ctdb_db = ctdb_db;
@@ -263,26 +397,13 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	state->data.dptr  += sizeof(struct ctdb_ltdb_header);
 	state->data.dsize -= sizeof(struct ctdb_ltdb_header);
 
-#if 0
-	/* We can not take out a lock here ourself since if this persistent
-	   database needs safe transaction writes we can not be holding
-	   a lock on the database.
-	   Therefore we always create a lock wait child to take out and hold
-	   the lock for us.
-	*/
-	ret = tdb_chainlock_nonblock(state->tdb, state->key);
-	if (ret == 0) {
-		ret = ctdb_persistent_store(state);
-		tdb_chainunlock(state->tdb, state->key);
-		talloc_free(state);
-		return ret;
-	}
-#endif
 
-	/* wait until we have a lock on this record */
-	handle = ctdb_lockwait(ctdb_db, state->key, ctdb_persistent_lock_callback, state);
+	/* create a child process to take out a transaction and 
+	   write the data.
+	*/
+	handle = ctdb_childwrite(ctdb_db, state->key, state->data, ctdb_persistent_write_callback, state);
 	if (handle == NULL) {
-		DEBUG(DEBUG_ERR,("Failed to setup lockwait handler in ctdb_control_update_record\n"));
+		DEBUG(DEBUG_ERR,("Failed to setup childwrite handler in ctdb_control_update_record\n"));
 		talloc_free(state);
 		return -1;
 	}

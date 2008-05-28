@@ -306,11 +306,14 @@ struct ctdb_statistics {
 	uint32_t pending_calls;
 	uint32_t lockwait_calls;
 	uint32_t pending_lockwait_calls;
+	uint32_t childwrite_calls;
+	uint32_t pending_childwrite_calls;
 	uint32_t memory_used;
 	uint32_t __last_counter; /* hack for control_statistics_all */
 	uint32_t max_hop_count;
 	double max_call_latency;
 	double max_lockwait_latency;
+	double max_childwrite_latency;
 };
 
 
