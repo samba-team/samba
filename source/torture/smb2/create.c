@@ -38,8 +38,8 @@
 
 #define CHECK_EQUAL(v, correct) do { \
 	if (v != correct) { \
-		printf("(%s) Incorrect value for %s 0x%08x - should be 0x%08x\n", \
-		       __location__, #v, v, correct); \
+		printf("(%s) Incorrect value for %s 0x%08llx - should be 0x%08llx\n", \
+		       __location__, #v, (unsigned long long)v, (unsigned long long)correct); \
 		return false; \
 	}} while (0)
 
@@ -166,6 +166,9 @@ bool torture_smb2_create_gentest(struct torture_context *torture, struct smb2_tr
 	status = smb2_create(tree, tmp_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+	status = smb2_util_close(tree, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
 	io.in.fname = FNAME;
 	io.in.file_attributes = 0x8040;
 	io.in.share_access = 
@@ -174,6 +177,100 @@ bool torture_smb2_create_gentest(struct torture_context *torture, struct smb2_tr
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 
 	talloc_free(tmp_ctx);
+
+	smb2_deltree(tree, FNAME);
+	
+	return true;
+}
+
+
+/*
+  try the various request blobs
+ */
+bool torture_smb2_create_blob(struct torture_context *torture, struct smb2_tree *tree)
+{
+	struct smb2_create io;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+
+	smb2_deltree(tree, FNAME);
+
+	ZERO_STRUCT(io);
+	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.in.file_attributes    = FILE_ATTRIBUTE_NORMAL;
+	io.in.create_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	io.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_DELETE|
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
+					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
+					  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
+					  0x00200000;
+	io.in.security_flags		= 0x00;
+	io.in.impersonation_level	= NTCREATEX_IMPERSONATION_IMPERSONATION;
+	io.in.create_flags		= 0x00000000;
+	io.in.reserved			= 0x00000000;
+	io.in.desired_access		= SEC_RIGHTS_FILE_ALL;
+	io.in.file_attributes		= FILE_ATTRIBUTE_NORMAL;
+	io.in.share_access		= NTCREATEX_SHARE_ACCESS_READ |
+					  NTCREATEX_SHARE_ACCESS_WRITE |
+					  NTCREATEX_SHARE_ACCESS_DELETE;
+	io.in.create_disposition	= NTCREATEX_DISP_OVERWRITE_IF;
+	io.in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
+					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
+					  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
+					  0x00200000;
+	io.in.fname = FNAME;
+
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_close(tree, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("testing alloc size\n");
+	io.in.alloc_size = 4096;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_EQUAL(io.out.alloc_size, io.in.alloc_size);
+
+	status = smb2_util_close(tree, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("testing durable open\n");
+	io.in.durable_open = true;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_close(tree, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("testing query maximal access\n");
+	io.in.query_maximal_access = true;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_close(tree, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("testing timewarp\n");
+	io.in.timewarp = 10000;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	io.in.timewarp = 0;
+
+	printf("testing query_on_disk\n");
+	io.in.query_on_disk_id = true;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_close(tree, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	talloc_free(tmp_ctx);
+
+	smb2_deltree(tree, FNAME);
 	
 	return true;
 }
@@ -192,6 +289,7 @@ bool torture_smb2_create(struct torture_context *torture)
 	}
 
 	ret &= torture_smb2_create_gentest(torture, tree);
+	ret &= torture_smb2_create_blob(torture, tree);
 
 	smb2_deltree(tree, FNAME);
 
