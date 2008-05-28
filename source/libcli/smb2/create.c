@@ -125,6 +125,35 @@ static NTSTATUS smb2_create_blob_push_one(TALLOC_CTX *mem_ctx, DATA_BLOB *buffer
 	return NT_STATUS_OK;
 }
 
+
+/*
+  create a buffer of a set of create blobs
+*/
+NTSTATUS smb2_create_blob_push(TALLOC_CTX *mem_ctx, DATA_BLOB *buffer,
+			       const struct smb2_create_blobs blobs)
+{
+	int i;
+	NTSTATUS status;
+
+	*buffer = data_blob(NULL, 0);
+	for (i=0; i < blobs.num_blobs; i++) {
+		bool last = false;
+		const struct smb2_create_blob *c;
+
+		if ((i + 1) == blobs.num_blobs) {
+			last = true;
+		}
+
+		c = &blobs.blobs[i];
+		status = smb2_create_blob_push_one(mem_ctx, buffer, c, last);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+	return NT_STATUS_OK;
+}
+
+
 NTSTATUS smb2_create_blob_add(TALLOC_CTX *mem_ctx, struct smb2_create_blobs *b,
 			      const char *tag, DATA_BLOB data)
 {
@@ -160,8 +189,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 {
 	struct smb2_request *req;
 	NTSTATUS status;
-	DATA_BLOB blob = data_blob(NULL, 0);
-	uint32_t i;
+	DATA_BLOB blob;
 	struct smb2_create_blobs blobs = io->in.blobs;
 
 	req = smb2_request_init_tree(tree, SMB2_OP_CREATE, 0x38, true, 0);
@@ -281,21 +309,10 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 	}
 
 	/* and any custom blobs */
-	for (i=0; i < blobs.num_blobs; i++) {
-		bool last = false;
-		const struct smb2_create_blob *c;
-
-		if ((i + 1) == blobs.num_blobs) {
-			last = true;
-		}
-
-		c = &blobs.blobs[i];
-		status = smb2_create_blob_push_one(req, &blob,
-						   c, last);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(req);
-			return NULL;
-		}
+	status = smb2_create_blob_push(req, &blob, blobs);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(req);
+		return NULL;
 	}
 
 	status = smb2_push_o32s32_blob(&req->out, 0x30, blob);
@@ -303,6 +320,8 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 		talloc_free(req);
 		return NULL;
 	}
+
+	data_blob_free(&blob);
 
 	smb2_transport_send(req);
 
