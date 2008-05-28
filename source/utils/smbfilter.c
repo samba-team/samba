@@ -140,7 +140,7 @@ static void filter_child(int c, struct in_addr dest_ip)
 		if (num <= 0) continue;
 		
 		if (c != -1 && FD_ISSET(c, &fds)) {
-			if (!receive_smb(c, packet, 0)) {
+			if (!receive_smb(c, packet, BUFFER_SIZE, 0)) {
 				d_printf("client closed connection\n");
 				exit(0);
 			}
@@ -151,7 +151,7 @@ static void filter_child(int c, struct in_addr dest_ip)
 			}			
 		}
 		if (s != -1 && FD_ISSET(s, &fds)) {
-			if (!receive_smb(s, packet, 0)) {
+			if (!receive_smb(s, packet, BUFFER_SIZE, 0)) {
 				d_printf("server closed connection\n");
 				exit(0);
 			}
