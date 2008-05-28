@@ -47,6 +47,7 @@ libcli/ldap/ldap.h: ldap.h
 lib/torture/torture.h: torture.h
 libcli/libcli.h: client.h
 librpc/gen_ndr/nbt.h: gen_ndr/nbt.h
+librpc/gen_ndr/ntp_signd.h: gen_ndr/ntp_signd.h
 librpc/gen_ndr/svcctl.h: gen_ndr/svcctl.h
 librpc/gen_ndr/ndr_svcctl.h: gen_ndr/ndr_svcctl.h
 librpc/gen_ndr/ndr_svcctl_c.h: gen_ndr/ndr_svcctl_c.h
