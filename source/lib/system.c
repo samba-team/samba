@@ -733,6 +733,11 @@ static bool set_process_capability(enum smbd_capability capability,
 			cap_vals[num_cap_vals++] = CAP_MKNOD;
 #endif
 			break;
+		case LEASE_CAPABILITY:
+#ifdef CAP_LEASE
+			cap_vals[num_cap_vals++] = CAP_LEASE;
+#endif
+			break;
 	}
 
 	SMB_ASSERT(num_cap_vals <= ARRAY_SIZE(cap_vals));
