@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 40
+Release: 41
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,10 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Wed May 28 2008 : Version 1.0.41
+ - Reactivate the safe writes to persistent databases and solve the
+   locking issues. Locking issues are solved the only possible way,
+   by using a child process to do the writes.  Expensive and slow but... . 
 * Tue May 27 2008 : Version 1.0.40
  - Read the samba sysconfig file from the 50.samba eventscript
  - Fix some emmory hierarchical bugs in the persistent write handling
