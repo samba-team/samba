@@ -1122,6 +1122,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	uint32_t create_options;
 	uint32_t share_access;
 	uint32_t access_mask;
+	uint32_t create_action = NTCREATEX_ACTION_EXISTED;
 	bool del_on_close;
 	bool stream_existed, stream_truncate=false;
 	uint32_t oplock_level = OPLOCK_NONE, oplock_granted;
@@ -1169,6 +1170,13 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	/* we ignore some file_attr bits */
+	io->ntcreatex.in.file_attr &= ~(FILE_ATTRIBUTE_NONINDEXED | 
+					FILE_ATTRIBUTE_COMPRESSED |
+					FILE_ATTRIBUTE_REPARSE_POINT |
+					FILE_ATTRIBUTE_SPARSE |
+					FILE_ATTRIBUTE_NORMAL);
+
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, io->ntcreatex.in.fname, 
 				   PVFS_RESOLVE_STREAMS, &name);
@@ -1210,6 +1218,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		} else {
 			stream_truncate = true;
 		}
+		create_action = NTCREATEX_ACTION_TRUNCATED;
 		break;
 
 	case NTCREATEX_DISP_OPEN:
@@ -1228,6 +1237,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		} else {
 			stream_truncate = true;
 		}
+		create_action = NTCREATEX_ACTION_TRUNCATED;
 		break;
 
 	case NTCREATEX_DISP_CREATE:
@@ -1487,7 +1497,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	io->generic.out.oplock_level  = oplock_granted;
 	io->generic.out.file.ntvfs    = h;
 	io->generic.out.create_action = stream_existed?
-		NTCREATEX_ACTION_EXISTED:NTCREATEX_ACTION_CREATED;
+		create_action:NTCREATEX_ACTION_CREATED;
+	
 	io->generic.out.create_time   = name->dos.create_time;
 	io->generic.out.access_time   = name->dos.access_time;
 	io->generic.out.write_time    = name->dos.write_time;
