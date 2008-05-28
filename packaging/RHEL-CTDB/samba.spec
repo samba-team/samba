@@ -237,10 +237,10 @@ cp source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_libarch}/security/pam_smbpass.so
 # NSS & PAM winbind support
 install -m 755 source/bin/pam_winbind.so $RPM_BUILD_ROOT/%{_libarch}/security/pam_winbind.so
 install -m 755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_libarch}/libnss_winbind.so
-install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_libarch}/libnss_wins.so
+#install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_libarch}/libnss_wins.so
 ( cd $RPM_BUILD_ROOT/%{_libarch};
-  ln -sf libnss_winbind.so  libnss_winbind.so.2;
-  ln -sf libnss_wins.so  libnss_wins.so.2 )
+  ln -sf libnss_winbind.so  libnss_winbind.so.2 )
+# ( cd $RPM_BUILD_ROOT/%{_libarch}; ln -sf libnss_wins.so  libnss_wins.so.2 )
 
 # make install puts libsmbclient.so in the wrong place on x86_64
 rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libsmbclient.so $RPM_BUILD_ROOT/usr/lib*/samba/libsmbclient.a || true
@@ -501,7 +501,7 @@ exit 0
 %config(noreplace) %{_sysconfdir}/samba/lmhosts
 %attr(755,root,root) %config %{initdir}/winbind
 
-%attr(755,root,root) /%{_libarch}/libnss_wins.so*
+#%attr(755,root,root) /%{_libarch}/libnss_wins.so*
 %attr(755,root,root) /%{_libarch}/libnss_winbind.so*
 %attr(755,root,root) /%{_libarch}/security/pam_winbind.so
 %attr(755,root,root) /%{_libarch}/security/pam_smbpass.so
@@ -558,7 +558,7 @@ exit 0
 %ifarch i386 i486 i586 i686 ppc s390
 %files winbind-32bit
 %attr(755,root,root) /%{_libarch}/libnss_winbind.so*
-%attr(755,root,root) /%{_libarch}/libnss_wins.so*
+#%attr(755,root,root) /%{_libarch}/libnss_wins.so*
 %attr(755,root,root) /%{_libarchdir}/libtalloc.so*
 %attr(755,root,root) /%{_libarchdir}/libtdb.so*
 %attr(755,root,root) /%{_libarch}/security/pam_winbind.so
