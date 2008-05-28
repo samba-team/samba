@@ -215,7 +215,6 @@ struct childwrite_handle {
 	pid_t child;
 	void *private_data;
 	void (*callback)(int, void *);
-	TDB_DATA key;
 	struct timeval start_time;
 };
 
@@ -308,7 +307,6 @@ struct childwrite_handle *ctdb_childwrite(struct ctdb_db_context *ctdb_db,
 	result->private_data = private_data;
 	result->ctdb = ctdb_db->ctdb;
 	result->ctdb_db = ctdb_db;
-	result->key = key;
 
 	if (result->child == 0) {
 		char c = 0;
