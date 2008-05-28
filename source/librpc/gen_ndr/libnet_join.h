@@ -28,6 +28,7 @@ struct libnet_JoinCtx {
 		struct ads_struct *ads;/* [ref] */
 		uint8_t debug;
 		enum netr_SchannelType secure_channel_type;
+		struct messaging_context *msg_ctx;/* [noprint,ref] */
 	} in;
 
 	struct {
@@ -59,6 +60,7 @@ struct libnet_UnjoinCtx {
 		struct dom_sid *domain_sid;/* [ref] */
 		struct ads_struct *ads;/* [ref] */
 		uint8_t debug;
+		struct messaging_context *msg_ctx;/* [noprint,ref] */
 	} in;
 
 	struct {

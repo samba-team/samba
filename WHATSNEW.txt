@@ -281,7 +281,7 @@ o   Volker Lendecke <vl@samba.org>
 o   Stefan Metzmacher <metze@samba.org>
     * BUG 5443: Fix build on HP-UX.
     * Add support for symbol versioning in shared libraries (can be
-      disabled with --disable-sysmbol-verioning).
+      disabled with --disable-sysmbol-versioning).
     * Add new function wbcLibraryDetails() to libwbclient.
 
 

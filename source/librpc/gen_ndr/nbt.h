@@ -5,6 +5,7 @@
 #include "librpc/gen_ndr/misc.h"
 #include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/svcctl.h"
+#include "librpc/gen_ndr/samr.h"
 #ifndef _HEADER_nbt
 #define _HEADER_nbt
 
@@ -410,6 +411,18 @@ enum nbt_netlogon_command
 #endif
 ;
 
+/* bitmap nbt_netlogon_version */
+#define NETLOGON_VERSION_1 ( 0x00000001 )
+#define NETLOGON_VERSION_5 ( 0x00000002 )
+#define NETLOGON_VERSION_5EX ( 0x00000004 )
+#define NETLOGON_VERSION_5EX_WITH_IP ( 0x00000008 )
+#define NETLOGON_VERSION_WITH_CLOSEST_SITE ( 0x00000010 )
+#define NETLOGON_VERSION_AVOID_NT4_EMUL ( 0x01000000 )
+#define NETLOGON_VERSION_PDC ( 0x10000000 )
+#define NETLOGON_VERSION_IP ( 0x20000000 )
+#define NETLOGON_VERSION_LOCAL ( 0x40000000 )
+#define NETLOGON_VERSION_GC ( 0x80000000 )
+
 struct nbt_netlogon_query_for_pdc {
 	const char * computer_name;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * mailslot_name;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
@@ -451,6 +464,15 @@ struct nbt_netlogon_response_from_pdc {
 #define NBT_SERVER_CLOSEST ( 0x00000080 )
 #define NBT_SERVER_WRITABLE ( 0x00000100 )
 #define NBT_SERVER_GOOD_TIMESERV ( 0x00000200 )
+#define NBT_SERVER_NDNC ( 0x00000400 )
+#define NBT_SERVER_SELECT_SECRET_DOMAIN_6 ( 0x00000800 )
+#define NBT_SERVER_FULL_SECRET_DOMAIN_6 ( 0x00001000 )
+
+struct nbt_dc_sock_addr {
+	uint32_t family;
+	const char * pdc_ip;/* [flag(LIBNDR_FLAG_BIGENDIAN)] */
+	DATA_BLOB remaining;/* [flag(LIBNDR_FLAG_REMAINING)] */
+};
 
 struct nbt_netlogon_response_from_pdc2 {
 	DATA_BLOB _pad;/* [flag(LIBNDR_FLAG_ALIGN4)] */
@@ -464,10 +486,8 @@ struct nbt_netlogon_response_from_pdc2 {
 	const char * user_name;
 	const char * server_site;
 	const char * client_site;
-	uint8_t unknown;
-	uint32_t unknown2;
-	const char * pdc_ip;/* [flag(LIBNDR_FLAG_BIGENDIAN)] */
-	uint32_t unknown3[2];
+	uint8_t dc_sock_addr_size;
+	struct nbt_dc_sock_addr dc_sock_addr;/* [subcontext_size(dc_sock_addr_size),subcontext(0)] */
 	uint32_t nt_version;
 	uint16_t lmnt_token;
 	uint16_t lm20_token;
@@ -514,7 +534,7 @@ struct nbt_netlogon_packet {
 }/* [public,flag(LIBNDR_FLAG_NOALIGN)] */;
 
 struct nbt_cldap_netlogon_1 {
-	uint16_t type;
+	enum nbt_netlogon_command type;
 	const char * pdc_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * domain_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
@@ -524,7 +544,7 @@ struct nbt_cldap_netlogon_1 {
 };
 
 struct nbt_cldap_netlogon_3 {
-	uint16_t type;
+	enum nbt_netlogon_command type;
 	const char * pdc_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * domain_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
@@ -541,7 +561,8 @@ struct nbt_cldap_netlogon_3 {
 };
 
 struct nbt_cldap_netlogon_5 {
-	uint32_t type;
+	enum nbt_netlogon_command type;
+	uint16_t sbz;
 	uint32_t server_type;
 	struct GUID domain_uuid;
 	const char * forest;
@@ -558,7 +579,8 @@ struct nbt_cldap_netlogon_5 {
 }/* [public] */;
 
 struct nbt_cldap_netlogon_13 {
-	uint32_t type;
+	enum nbt_netlogon_command type;
+	uint16_t sbz;
 	uint32_t server_type;
 	struct GUID domain_uuid;
 	const char * forest;
@@ -569,20 +591,60 @@ struct nbt_cldap_netlogon_13 {
 	const char * user_name;
 	const char * server_site;
 	const char * client_site;
-	uint8_t unknown;
-	uint32_t unknown2;
-	const char * pdc_ip;/* [flag(LIBNDR_FLAG_BIGENDIAN)] */
-	uint32_t unknown3[2];
+	uint8_t dc_sock_addr_size;
+	struct nbt_dc_sock_addr dc_sock_addr;/* [subcontext_size(dc_sock_addr_size),subcontext(0)] */
 	uint32_t nt_version;/* [value(13)] */
 	uint16_t lmnt_token;
 	uint16_t lm20_token;
 };
 
+struct nbt_cldap_netlogon_15 {
+	enum nbt_netlogon_command type;
+	uint16_t sbz;
+	uint32_t server_type;
+	struct GUID domain_uuid;
+	const char * forest;
+	const char * dns_domain;
+	const char * pdc_dns_name;
+	const char * domain;
+	const char * pdc_name;
+	const char * user_name;
+	const char * server_site;
+	const char * client_site;
+	const char * next_closest_site;
+	uint32_t nt_version;/* [value(15)] */
+	uint16_t lmnt_token;
+	uint16_t lm20_token;
+}/* [public] */;
+
+struct nbt_cldap_netlogon_29 {
+	enum nbt_netlogon_command type;
+	uint16_t sbz;
+	uint32_t server_type;
+	struct GUID domain_uuid;
+	const char * forest;
+	const char * dns_domain;
+	const char * pdc_dns_name;
+	const char * domain;
+	const char * pdc_name;
+	const char * user_name;
+	const char * server_site;
+	const char * client_site;
+	uint8_t dc_sock_addr_size;
+	struct nbt_dc_sock_addr dc_sock_addr;/* [subcontext_size(dc_sock_addr_size),subcontext(0)] */
+	const char * next_closest_site;
+	uint32_t nt_version;/* [value(29)] */
+	uint16_t lmnt_token;
+	uint16_t lm20_token;
+}/* [public] */;
+
 union nbt_cldap_netlogon {
 	struct nbt_cldap_netlogon_1 logon1;/* [case(0)] */
 	struct nbt_cldap_netlogon_3 logon3;/* [case(2)] */
 	struct nbt_cldap_netlogon_5 logon5;/* [case(4)] */
-	struct nbt_cldap_netlogon_13 logon13;/* [default] */
+	struct nbt_cldap_netlogon_13 logon13;/* [case(8)] */
+	struct nbt_cldap_netlogon_15 logon15;/* [case(20)] */
+	struct nbt_cldap_netlogon_29 logon29;/* [case(29)] */
 }/* [public,nodiscriminant,flag(LIBNDR_FLAG_NOALIGN)] */;
 
 enum nbt_ntlogon_command

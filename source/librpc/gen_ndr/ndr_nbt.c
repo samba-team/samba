@@ -6,6 +6,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_svcctl.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 static enum ndr_err_code ndr_push_nbt_operation(struct ndr_push *ndr, int ndr_flags, uint16_t r)
 {
 	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
@@ -1576,6 +1577,52 @@ _PUBLIC_ void ndr_print_nbt_netlogon_command(struct ndr_print *ndr, const char *
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
+static enum ndr_err_code ndr_push_nbt_netlogon_version(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	{
+		uint32_t _flags_save_BITMAP = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_LITTLE_ENDIAN);
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+		ndr->flags = _flags_save_BITMAP;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_nbt_netlogon_version(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	{
+		uint32_t _flags_save_BITMAP = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_LITTLE_ENDIAN);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+		*r = v;
+		ndr->flags = _flags_save_BITMAP;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_nbt_netlogon_version(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	{
+		uint32_t _flags_save_BITMAP = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_LITTLE_ENDIAN);
+		ndr_print_uint32(ndr, name, r);
+		ndr->depth++;
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_1", NETLOGON_VERSION_1, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_5", NETLOGON_VERSION_5, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_5EX", NETLOGON_VERSION_5EX, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_5EX_WITH_IP", NETLOGON_VERSION_5EX_WITH_IP, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_WITH_CLOSEST_SITE", NETLOGON_VERSION_WITH_CLOSEST_SITE, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_AVOID_NT4_EMUL", NETLOGON_VERSION_AVOID_NT4_EMUL, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_PDC", NETLOGON_VERSION_PDC, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_IP", NETLOGON_VERSION_IP, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_LOCAL", NETLOGON_VERSION_LOCAL, r);
+		ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_VERSION_GC", NETLOGON_VERSION_GC, r);
+		ndr->depth--;
+		ndr->flags = _flags_save_BITMAP;
+	}
+}
+
 static enum ndr_err_code ndr_push_nbt_netlogon_query_for_pdc(struct ndr_push *ndr, int ndr_flags, const struct nbt_netlogon_query_for_pdc *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -1604,7 +1651,7 @@ static enum ndr_err_code ndr_push_nbt_netlogon_query_for_pdc(struct ndr_push *nd
 			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->unicode_name));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->nt_version));
+		NDR_CHECK(ndr_push_nbt_netlogon_version(ndr, NDR_SCALARS, r->nt_version));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lmnt_token));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm20_token));
 	}
@@ -1641,7 +1688,7 @@ static enum ndr_err_code ndr_pull_nbt_netlogon_query_for_pdc(struct ndr_pull *nd
 			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->unicode_name));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->nt_version));
+		NDR_CHECK(ndr_pull_nbt_netlogon_version(ndr, NDR_SCALARS, &r->nt_version));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lmnt_token));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lm20_token));
 	}
@@ -1658,7 +1705,7 @@ _PUBLIC_ void ndr_print_nbt_netlogon_query_for_pdc(struct ndr_print *ndr, const 
 	ndr_print_string(ndr, "mailslot_name", r->mailslot_name);
 	ndr_print_DATA_BLOB(ndr, "_pad", r->_pad);
 	ndr_print_string(ndr, "unicode_name", r->unicode_name);
-	ndr_print_uint32(ndr, "nt_version", r->nt_version);
+	ndr_print_nbt_netlogon_version(ndr, "nt_version", r->nt_version);
 	ndr_print_uint16(ndr, "lmnt_token", r->lmnt_token);
 	ndr_print_uint16(ndr, "lm20_token", r->lm20_token);
 	ndr->depth--;
@@ -1691,7 +1738,7 @@ static enum ndr_err_code ndr_push_nbt_netlogon_query_for_pdc2(struct ndr_push *n
 		for (cntr_unknown_0 = 0; cntr_unknown_0 < 2; cntr_unknown_0++) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown[cntr_unknown_0]));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->nt_version));
+		NDR_CHECK(ndr_push_nbt_netlogon_version(ndr, NDR_SCALARS, r->nt_version));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lmnt_token));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm20_token));
 	}
@@ -1727,7 +1774,7 @@ static enum ndr_err_code ndr_pull_nbt_netlogon_query_for_pdc2(struct ndr_pull *n
 		for (cntr_unknown_0 = 0; cntr_unknown_0 < 2; cntr_unknown_0++) {
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown[cntr_unknown_0]));
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->nt_version));
+		NDR_CHECK(ndr_pull_nbt_netlogon_version(ndr, NDR_SCALARS, &r->nt_version));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lmnt_token));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lm20_token));
 	}
@@ -1755,7 +1802,7 @@ _PUBLIC_ void ndr_print_nbt_netlogon_query_for_pdc2(struct ndr_print *ndr, const
 		}
 	}
 	ndr->depth--;
-	ndr_print_uint32(ndr, "nt_version", r->nt_version);
+	ndr_print_nbt_netlogon_version(ndr, "nt_version", r->nt_version);
 	ndr_print_uint16(ndr, "lmnt_token", r->lmnt_token);
 	ndr_print_uint16(ndr, "lm20_token", r->lm20_token);
 	ndr->depth--;
@@ -1789,7 +1836,7 @@ static enum ndr_err_code ndr_push_nbt_netlogon_response_from_pdc(struct ndr_push
 			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->domain_name));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->nt_version));
+		NDR_CHECK(ndr_push_nbt_netlogon_version(ndr, NDR_SCALARS, r->nt_version));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lmnt_token));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm20_token));
 	}
@@ -1826,7 +1873,7 @@ static enum ndr_err_code ndr_pull_nbt_netlogon_response_from_pdc(struct ndr_pull
 			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->domain_name));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->nt_version));
+		NDR_CHECK(ndr_pull_nbt_netlogon_version(ndr, NDR_SCALARS, &r->nt_version));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lmnt_token));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lm20_token));
 	}
@@ -1843,7 +1890,7 @@ _PUBLIC_ void ndr_print_nbt_netlogon_response_from_pdc(struct ndr_print *ndr, co
 	ndr_print_DATA_BLOB(ndr, "_pad", r->_pad);
 	ndr_print_string(ndr, "unicode_pdc_name", r->unicode_pdc_name);
 	ndr_print_string(ndr, "domain_name", r->domain_name);
-	ndr_print_uint32(ndr, "nt_version", r->nt_version);
+	ndr_print_nbt_netlogon_version(ndr, "nt_version", r->nt_version);
 	ndr_print_uint16(ndr, "lmnt_token", r->lmnt_token);
 	ndr_print_uint16(ndr, "lm20_token", r->lm20_token);
 	ndr->depth--;
@@ -1876,12 +1923,70 @@ _PUBLIC_ void ndr_print_nbt_server_type(struct ndr_print *ndr, const char *name,
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NBT_SERVER_CLOSEST", NBT_SERVER_CLOSEST, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NBT_SERVER_WRITABLE", NBT_SERVER_WRITABLE, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NBT_SERVER_GOOD_TIMESERV", NBT_SERVER_GOOD_TIMESERV, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NBT_SERVER_NDNC", NBT_SERVER_NDNC, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NBT_SERVER_SELECT_SECRET_DOMAIN_6", NBT_SERVER_SELECT_SECRET_DOMAIN_6, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NBT_SERVER_FULL_SECRET_DOMAIN_6", NBT_SERVER_FULL_SECRET_DOMAIN_6, r);
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_nbt_dc_sock_addr(struct ndr_push *ndr, int ndr_flags, const struct nbt_dc_sock_addr *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->family));
+		{
+			uint32_t _flags_save_ipv4address = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);
+			NDR_CHECK(ndr_push_ipv4address(ndr, NDR_SCALARS, r->pdc_ip));
+			ndr->flags = _flags_save_ipv4address;
+		}
+		{
+			uint32_t _flags_save_DATA_BLOB = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->remaining));
+			ndr->flags = _flags_save_DATA_BLOB;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_nbt_dc_sock_addr(struct ndr_pull *ndr, int ndr_flags, struct nbt_dc_sock_addr *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->family));
+		{
+			uint32_t _flags_save_ipv4address = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);
+			NDR_CHECK(ndr_pull_ipv4address(ndr, NDR_SCALARS, &r->pdc_ip));
+			ndr->flags = _flags_save_ipv4address;
+		}
+		{
+			uint32_t _flags_save_DATA_BLOB = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->remaining));
+			ndr->flags = _flags_save_DATA_BLOB;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_nbt_dc_sock_addr(struct ndr_print *ndr, const char *name, const struct nbt_dc_sock_addr *r)
+{
+	ndr_print_struct(ndr, name, "nbt_dc_sock_addr");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "family", r->family);
+	ndr_print_ipv4address(ndr, "pdc_ip", r->pdc_ip);
+	ndr_print_DATA_BLOB(ndr, "remaining", r->remaining);
 	ndr->depth--;
 }
 
 static enum ndr_err_code ndr_push_nbt_netlogon_response_from_pdc2(struct ndr_push *ndr, int ndr_flags, const struct nbt_netlogon_response_from_pdc2 *r)
 {
-	uint32_t cntr_unknown3_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		{
@@ -1900,18 +2005,14 @@ static enum ndr_err_code ndr_push_nbt_netlogon_response_from_pdc2(struct ndr_pus
 		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->user_name));
 		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->server_site));
 		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->client_site));
-		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->unknown));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown2));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->dc_sock_addr_size));
 		{
-			uint32_t _flags_save_ipv4address = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);
-			NDR_CHECK(ndr_push_ipv4address(ndr, NDR_SCALARS, r->pdc_ip));
-			ndr->flags = _flags_save_ipv4address;
+			struct ndr_push *_ndr_dc_sock_addr;
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_dc_sock_addr, 0, r->dc_sock_addr_size));
+			NDR_CHECK(ndr_push_nbt_dc_sock_addr(_ndr_dc_sock_addr, NDR_SCALARS, &r->dc_sock_addr));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_dc_sock_addr, 0, r->dc_sock_addr_size));
 		}
-		for (cntr_unknown3_0 = 0; cntr_unknown3_0 < 2; cntr_unknown3_0++) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown3[cntr_unknown3_0]));
-		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->nt_version));
+		NDR_CHECK(ndr_push_nbt_netlogon_version(ndr, NDR_SCALARS, r->nt_version));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lmnt_token));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm20_token));
 	}
@@ -1922,7 +2023,6 @@ static enum ndr_err_code ndr_push_nbt_netlogon_response_from_pdc2(struct ndr_pus
 
 static enum ndr_err_code ndr_pull_nbt_netlogon_response_from_pdc2(struct ndr_pull *ndr, int ndr_flags, struct nbt_netlogon_response_from_pdc2 *r)
 {
-	uint32_t cntr_unknown3_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		{
@@ -1941,18 +2041,14 @@ static enum ndr_err_code ndr_pull_nbt_netlogon_response_from_pdc2(struct ndr_pul
 		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->user_name));
 		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->server_site));
 		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->client_site));
-		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->unknown));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown2));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->dc_sock_addr_size));
 		{
-			uint32_t _flags_save_ipv4address = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);
-			NDR_CHECK(ndr_pull_ipv4address(ndr, NDR_SCALARS, &r->pdc_ip));
-			ndr->flags = _flags_save_ipv4address;
+			struct ndr_pull *_ndr_dc_sock_addr;
+			NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_dc_sock_addr, 0, r->dc_sock_addr_size));
+			NDR_CHECK(ndr_pull_nbt_dc_sock_addr(_ndr_dc_sock_addr, NDR_SCALARS, &r->dc_sock_addr));
+			NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_dc_sock_addr, 0, r->dc_sock_addr_size));
 		}
-		for (cntr_unknown3_0 = 0; cntr_unknown3_0 < 2; cntr_unknown3_0++) {
-			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown3[cntr_unknown3_0]));
-		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->nt_version));
+		NDR_CHECK(ndr_pull_nbt_netlogon_version(ndr, NDR_SCALARS, &r->nt_version));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lmnt_token));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lm20_token));
 	}
@@ -1963,7 +2059,6 @@ static enum ndr_err_code ndr_pull_nbt_netlogon_response_from_pdc2(struct ndr_pul
 
 _PUBLIC_ void ndr_print_nbt_netlogon_response_from_pdc2(struct ndr_print *ndr, const char *name, const struct nbt_netlogon_response_from_pdc2 *r)
 {
-	uint32_t cntr_unknown3_0;
 	ndr_print_struct(ndr, name, "nbt_netlogon_response_from_pdc2");
 	ndr->depth++;
 	ndr_print_DATA_BLOB(ndr, "_pad", r->_pad);
@@ -1977,20 +2072,9 @@ _PUBLIC_ void ndr_print_nbt_netlogon_response_from_pdc2(struct ndr_print *ndr, c
 	ndr_print_nbt_string(ndr, "user_name", r->user_name);
 	ndr_print_nbt_string(ndr, "server_site", r->server_site);
 	ndr_print_nbt_string(ndr, "client_site", r->client_site);
-	ndr_print_uint8(ndr, "unknown", r->unknown);
-	ndr_print_uint32(ndr, "unknown2", r->unknown2);
-	ndr_print_ipv4address(ndr, "pdc_ip", r->pdc_ip);
-	ndr->print(ndr, "%s: ARRAY(%d)", "unknown3", 2);
-	ndr->depth++;
-	for (cntr_unknown3_0=0;cntr_unknown3_0<2;cntr_unknown3_0++) {
-		char *idx_0=NULL;
-		if (asprintf(&idx_0, "[%d]", cntr_unknown3_0) != -1) {
-			ndr_print_uint32(ndr, "unknown3", r->unknown3[cntr_unknown3_0]);
-			free(idx_0);
-		}
-	}
-	ndr->depth--;
-	ndr_print_uint32(ndr, "nt_version", r->nt_version);
+	ndr_print_uint8(ndr, "dc_sock_addr_size", r->dc_sock_addr_size);
+	ndr_print_nbt_dc_sock_addr(ndr, "dc_sock_addr", &r->dc_sock_addr);
+	ndr_print_nbt_netlogon_version(ndr, "nt_version", r->nt_version);
 	ndr_print_uint16(ndr, "lmnt_token", r->lmnt_token);
 	ndr_print_uint16(ndr, "lm20_token", r->lm20_token);
 	ndr->depth--;
@@ -2082,7 +2166,7 @@ static enum ndr_err_code ndr_push_nbt_netlogon_announce_uas(struct ndr_push *ndr
 			NDR_CHECK(ndr_push_dom_sid0(_ndr_sid, NDR_SCALARS|NDR_BUFFERS, &r->sid));
 			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_sid, 0, ndr_size_dom_sid0(&r->sid, ndr->flags)));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->nt_version));
+		NDR_CHECK(ndr_push_nbt_netlogon_version(ndr, NDR_SCALARS, r->nt_version));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lmnt_token));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm20_token));
 	}
@@ -2146,7 +2230,7 @@ static enum ndr_err_code ndr_pull_nbt_netlogon_announce_uas(struct ndr_pull *ndr
 			NDR_CHECK(ndr_pull_dom_sid0(_ndr_sid, NDR_SCALARS|NDR_BUFFERS, &r->sid));
 			NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_sid, 0, r->sid_size));
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->nt_version));
+		NDR_CHECK(ndr_pull_nbt_netlogon_version(ndr, NDR_SCALARS, &r->nt_version));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lmnt_token));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lm20_token));
 	}
@@ -2182,7 +2266,7 @@ _PUBLIC_ void ndr_print_nbt_netlogon_announce_uas(struct ndr_print *ndr, const c
 	ndr->depth--;
 	ndr_print_uint32(ndr, "sid_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_dom_sid0(&r->sid, ndr->flags):r->sid_size);
 	ndr_print_dom_sid0(ndr, "sid", &r->sid);
-	ndr_print_uint32(ndr, "nt_version", r->nt_version);
+	ndr_print_nbt_netlogon_version(ndr, "nt_version", r->nt_version);
 	ndr_print_uint16(ndr, "lmnt_token", r->lmnt_token);
 	ndr_print_uint16(ndr, "lm20_token", r->lm20_token);
 	ndr->depth--;
@@ -2404,7 +2488,7 @@ static enum ndr_err_code ndr_push_nbt_cldap_netlogon_1(struct ndr_push *ndr, int
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->type));
+		NDR_CHECK(ndr_push_nbt_netlogon_command(ndr, NDR_SCALARS, r->type));
 		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
@@ -2423,7 +2507,7 @@ static enum ndr_err_code ndr_push_nbt_cldap_netlogon_1(struct ndr_push *ndr, int
 			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->domain_name));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 1));
+		NDR_CHECK(ndr_push_nbt_netlogon_version(ndr, NDR_SCALARS, 1));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lmnt_token));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm20_token));
 	}
@@ -2436,7 +2520,7 @@ static enum ndr_err_code ndr_pull_nbt_cldap_netlogon_1(struct ndr_pull *ndr, int
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->type));
+		NDR_CHECK(ndr_pull_nbt_netlogon_command(ndr, NDR_SCALARS, &r->type));
 		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
@@ -2455,7 +2539,7 @@ static enum ndr_err_code ndr_pull_nbt_cldap_netlogon_1(struct ndr_pull *ndr, int
 			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->domain_name));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->nt_version));
+		NDR_CHECK(ndr_pull_nbt_netlogon_version(ndr, NDR_SCALARS, &r->nt_version));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lmnt_token));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lm20_token));
 	}
@@ -2468,11 +2552,11 @@ _PUBLIC_ void ndr_print_nbt_cldap_netlogon_1(struct ndr_print *ndr, const char *
 {
 	ndr_print_struct(ndr, name, "nbt_cldap_netlogon_1");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "type", r->type);
+	ndr_print_nbt_netlogon_command(ndr, "type", r->type);
 	ndr_print_string(ndr, "pdc_name", r->pdc_name);
 	ndr_print_string(ndr, "user_name", r->user_name);
 	ndr_print_string(ndr, "domain_name", r->domain_name);
-	ndr_print_uint32(ndr, "nt_version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?1:r->nt_version);
+	ndr_print_nbt_netlogon_version(ndr, "nt_version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?1:r->nt_version);
 	ndr_print_uint16(ndr, "lmnt_token", r->lmnt_token);
 	ndr_print_uint16(ndr, "lm20_token", r->lm20_token);
 	ndr->depth--;
@@ -2482,7 +2566,7 @@ static enum ndr_err_code ndr_push_nbt_cldap_netlogon_3(struct ndr_push *ndr, int
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->type));
+		NDR_CHECK(ndr_push_nbt_netlogon_command(ndr, NDR_SCALARS, r->type));
 		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
@@ -2508,7 +2592,7 @@ static enum ndr_err_code ndr_push_nbt_cldap_netlogon_3(struct ndr_push *ndr, int
 		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->pdc_dns_name));
 		NDR_CHECK(ndr_push_ipv4address(ndr, NDR_SCALARS, r->pdc_ip));
 		NDR_CHECK(ndr_push_nbt_server_type(ndr, NDR_SCALARS, r->server_type));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 3));
+		NDR_CHECK(ndr_push_nbt_netlogon_version(ndr, NDR_SCALARS, 3));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lmnt_token));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm20_token));
 	}
@@ -2521,7 +2605,7 @@ static enum ndr_err_code ndr_pull_nbt_cldap_netlogon_3(struct ndr_pull *ndr, int
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->type));
+		NDR_CHECK(ndr_pull_nbt_netlogon_command(ndr, NDR_SCALARS, &r->type));
 		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
@@ -2547,7 +2631,7 @@ static enum ndr_err_code ndr_pull_nbt_cldap_netlogon_3(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->pdc_dns_name));
 		NDR_CHECK(ndr_pull_ipv4address(ndr, NDR_SCALARS, &r->pdc_ip));
 		NDR_CHECK(ndr_pull_nbt_server_type(ndr, NDR_SCALARS, &r->server_type));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->nt_version));
+		NDR_CHECK(ndr_pull_nbt_netlogon_version(ndr, NDR_SCALARS, &r->nt_version));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lmnt_token));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lm20_token));
 	}
@@ -2560,7 +2644,7 @@ _PUBLIC_ void ndr_print_nbt_cldap_netlogon_3(struct ndr_print *ndr, const char *
 {
 	ndr_print_struct(ndr, name, "nbt_cldap_netlogon_3");
 	ndr->depth++;
-	ndr_print_uint16(ndr, "type", r->type);
+	ndr_print_nbt_netlogon_command(ndr, "type", r->type);
 	ndr_print_string(ndr, "pdc_name", r->pdc_name);
 	ndr_print_string(ndr, "user_name", r->user_name);
 	ndr_print_string(ndr, "domain_name", r->domain_name);
@@ -2571,7 +2655,7 @@ _PUBLIC_ void ndr_print_nbt_cldap_netlogon_3(struct ndr_print *ndr, const char *
 	ndr_print_nbt_string(ndr, "pdc_dns_name", r->pdc_dns_name);
 	ndr_print_ipv4address(ndr, "pdc_ip", r->pdc_ip);
 	ndr_print_nbt_server_type(ndr, "server_type", r->server_type);
-	ndr_print_uint32(ndr, "nt_version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?3:r->nt_version);
+	ndr_print_nbt_netlogon_version(ndr, "nt_version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?3:r->nt_version);
 	ndr_print_uint16(ndr, "lmnt_token", r->lmnt_token);
 	ndr_print_uint16(ndr, "lm20_token", r->lm20_token);
 	ndr->depth--;
@@ -2581,7 +2665,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_nbt_cldap_netlogon_5(struct ndr_push *ndr, i
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->type));
+		NDR_CHECK(ndr_push_nbt_netlogon_command(ndr, NDR_SCALARS, r->type));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->sbz));
 		NDR_CHECK(ndr_push_nbt_server_type(ndr, NDR_SCALARS, r->server_type));
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->domain_uuid));
 		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->forest));
@@ -2592,7 +2677,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_nbt_cldap_netlogon_5(struct ndr_push *ndr, i
 		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->user_name));
 		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->server_site));
 		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->client_site));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 5));
+		NDR_CHECK(ndr_push_nbt_netlogon_version(ndr, NDR_SCALARS, 5));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lmnt_token));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm20_token));
 	}
@@ -2605,7 +2690,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_nbt_cldap_netlogon_5(struct ndr_pull *ndr, i
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->type));
+		NDR_CHECK(ndr_pull_nbt_netlogon_command(ndr, NDR_SCALARS, &r->type));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->sbz));
 		NDR_CHECK(ndr_pull_nbt_server_type(ndr, NDR_SCALARS, &r->server_type));
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->domain_uuid));
 		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->forest));
@@ -2616,7 +2702,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_nbt_cldap_netlogon_5(struct ndr_pull *ndr, i
 		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->user_name));
 		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->server_site));
 		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->client_site));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->nt_version));
+		NDR_CHECK(ndr_pull_nbt_netlogon_version(ndr, NDR_SCALARS, &r->nt_version));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lmnt_token));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lm20_token));
 	}
@@ -2629,7 +2715,8 @@ _PUBLIC_ void ndr_print_nbt_cldap_netlogon_5(struct ndr_print *ndr, const char *
 {
 	ndr_print_struct(ndr, name, "nbt_cldap_netlogon_5");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "type", r->type);
+	ndr_print_nbt_netlogon_command(ndr, "type", r->type);
+	ndr_print_uint16(ndr, "sbz", r->sbz);
 	ndr_print_nbt_server_type(ndr, "server_type", r->server_type);
 	ndr_print_GUID(ndr, "domain_uuid", &r->domain_uuid);
 	ndr_print_nbt_string(ndr, "forest", r->forest);
@@ -2640,7 +2727,7 @@ _PUBLIC_ void ndr_print_nbt_cldap_netlogon_5(struct ndr_print *ndr, const char *
 	ndr_print_nbt_string(ndr, "user_name", r->user_name);
 	ndr_print_nbt_string(ndr, "server_site", r->server_site);
 	ndr_print_nbt_string(ndr, "client_site", r->client_site);
-	ndr_print_uint32(ndr, "nt_version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?5:r->nt_version);
+	ndr_print_nbt_netlogon_version(ndr, "nt_version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?5:r->nt_version);
 	ndr_print_uint16(ndr, "lmnt_token", r->lmnt_token);
 	ndr_print_uint16(ndr, "lm20_token", r->lm20_token);
 	ndr->depth--;
@@ -2648,10 +2735,10 @@ _PUBLIC_ void ndr_print_nbt_cldap_netlogon_5(struct ndr_print *ndr, const char *
 
 static enum ndr_err_code ndr_push_nbt_cldap_netlogon_13(struct ndr_push *ndr, int ndr_flags, const struct nbt_cldap_netlogon_13 *r)
 {
-	uint32_t cntr_unknown3_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->type));
+		NDR_CHECK(ndr_push_nbt_netlogon_command(ndr, NDR_SCALARS, r->type));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->sbz));
 		NDR_CHECK(ndr_push_nbt_server_type(ndr, NDR_SCALARS, r->server_type));
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->domain_uuid));
 		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->forest));
@@ -2662,18 +2749,14 @@ static enum ndr_err_code ndr_push_nbt_cldap_netlogon_13(struct ndr_push *ndr, in
 		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->user_name));
 		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->server_site));
 		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->client_site));
-		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->unknown));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown2));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->dc_sock_addr_size));
 		{
-			uint32_t _flags_save_ipv4address = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);
-			NDR_CHECK(ndr_push_ipv4address(ndr, NDR_SCALARS, r->pdc_ip));
-			ndr->flags = _flags_save_ipv4address;
+			struct ndr_push *_ndr_dc_sock_addr;
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_dc_sock_addr, 0, r->dc_sock_addr_size));
+			NDR_CHECK(ndr_push_nbt_dc_sock_addr(_ndr_dc_sock_addr, NDR_SCALARS, &r->dc_sock_addr));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_dc_sock_addr, 0, r->dc_sock_addr_size));
 		}
-		for (cntr_unknown3_0 = 0; cntr_unknown3_0 < 2; cntr_unknown3_0++) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown3[cntr_unknown3_0]));
-		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 13));
+		NDR_CHECK(ndr_push_nbt_netlogon_version(ndr, NDR_SCALARS, 13));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lmnt_token));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm20_token));
 	}
@@ -2684,10 +2767,10 @@ static enum ndr_err_code ndr_push_nbt_cldap_netlogon_13(struct ndr_push *ndr, in
 
 static enum ndr_err_code ndr_pull_nbt_cldap_netlogon_13(struct ndr_pull *ndr, int ndr_flags, struct nbt_cldap_netlogon_13 *r)
 {
-	uint32_t cntr_unknown3_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->type));
+		NDR_CHECK(ndr_pull_nbt_netlogon_command(ndr, NDR_SCALARS, &r->type));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->sbz));
 		NDR_CHECK(ndr_pull_nbt_server_type(ndr, NDR_SCALARS, &r->server_type));
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->domain_uuid));
 		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->forest));
@@ -2698,18 +2781,14 @@ static enum ndr_err_code ndr_pull_nbt_cldap_netlogon_13(struct ndr_pull *ndr, in
 		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->user_name));
 		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->server_site));
 		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->client_site));
-		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->unknown));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown2));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->dc_sock_addr_size));
 		{
-			uint32_t _flags_save_ipv4address = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);
-			NDR_CHECK(ndr_pull_ipv4address(ndr, NDR_SCALARS, &r->pdc_ip));
-			ndr->flags = _flags_save_ipv4address;
+			struct ndr_pull *_ndr_dc_sock_addr;
+			NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_dc_sock_addr, 0, r->dc_sock_addr_size));
+			NDR_CHECK(ndr_pull_nbt_dc_sock_addr(_ndr_dc_sock_addr, NDR_SCALARS, &r->dc_sock_addr));
+			NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_dc_sock_addr, 0, r->dc_sock_addr_size));
 		}
-		for (cntr_unknown3_0 = 0; cntr_unknown3_0 < 2; cntr_unknown3_0++) {
-			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown3[cntr_unknown3_0]));
-		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->nt_version));
+		NDR_CHECK(ndr_pull_nbt_netlogon_version(ndr, NDR_SCALARS, &r->nt_version));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lmnt_token));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lm20_token));
 	}
@@ -2720,10 +2799,10 @@ static enum ndr_err_code ndr_pull_nbt_cldap_netlogon_13(struct ndr_pull *ndr, in
 
 _PUBLIC_ void ndr_print_nbt_cldap_netlogon_13(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_13 *r)
 {
-	uint32_t cntr_unknown3_0;
 	ndr_print_struct(ndr, name, "nbt_cldap_netlogon_13");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "type", r->type);
+	ndr_print_nbt_netlogon_command(ndr, "type", r->type);
+	ndr_print_uint16(ndr, "sbz", r->sbz);
 	ndr_print_nbt_server_type(ndr, "server_type", r->server_type);
 	ndr_print_GUID(ndr, "domain_uuid", &r->domain_uuid);
 	ndr_print_nbt_string(ndr, "forest", r->forest);
@@ -2734,20 +2813,175 @@ _PUBLIC_ void ndr_print_nbt_cldap_netlogon_13(struct ndr_print *ndr, const char 
 	ndr_print_nbt_string(ndr, "user_name", r->user_name);
 	ndr_print_nbt_string(ndr, "server_site", r->server_site);
 	ndr_print_nbt_string(ndr, "client_site", r->client_site);
-	ndr_print_uint8(ndr, "unknown", r->unknown);
-	ndr_print_uint32(ndr, "unknown2", r->unknown2);
-	ndr_print_ipv4address(ndr, "pdc_ip", r->pdc_ip);
-	ndr->print(ndr, "%s: ARRAY(%d)", "unknown3", 2);
-	ndr->depth++;
-	for (cntr_unknown3_0=0;cntr_unknown3_0<2;cntr_unknown3_0++) {
-		char *idx_0=NULL;
-		if (asprintf(&idx_0, "[%d]", cntr_unknown3_0) != -1) {
-			ndr_print_uint32(ndr, "unknown3", r->unknown3[cntr_unknown3_0]);
-			free(idx_0);
-		}
-	}
+	ndr_print_uint8(ndr, "dc_sock_addr_size", r->dc_sock_addr_size);
+	ndr_print_nbt_dc_sock_addr(ndr, "dc_sock_addr", &r->dc_sock_addr);
+	ndr_print_nbt_netlogon_version(ndr, "nt_version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?13:r->nt_version);
+	ndr_print_uint16(ndr, "lmnt_token", r->lmnt_token);
+	ndr_print_uint16(ndr, "lm20_token", r->lm20_token);
 	ndr->depth--;
-	ndr_print_uint32(ndr, "nt_version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?13:r->nt_version);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_nbt_cldap_netlogon_15(struct ndr_push *ndr, int ndr_flags, const struct nbt_cldap_netlogon_15 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_nbt_netlogon_command(ndr, NDR_SCALARS, r->type));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->sbz));
+		NDR_CHECK(ndr_push_nbt_server_type(ndr, NDR_SCALARS, r->server_type));
+		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->domain_uuid));
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->forest));
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->dns_domain));
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->pdc_dns_name));
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->domain));
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->pdc_name));
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->user_name));
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->server_site));
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->client_site));
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->next_closest_site));
+		NDR_CHECK(ndr_push_nbt_netlogon_version(ndr, NDR_SCALARS, 15));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lmnt_token));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm20_token));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_nbt_cldap_netlogon_15(struct ndr_pull *ndr, int ndr_flags, struct nbt_cldap_netlogon_15 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_nbt_netlogon_command(ndr, NDR_SCALARS, &r->type));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->sbz));
+		NDR_CHECK(ndr_pull_nbt_server_type(ndr, NDR_SCALARS, &r->server_type));
+		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->domain_uuid));
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->forest));
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->dns_domain));
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->pdc_dns_name));
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->domain));
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->pdc_name));
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->user_name));
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->server_site));
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->client_site));
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->next_closest_site));
+		NDR_CHECK(ndr_pull_nbt_netlogon_version(ndr, NDR_SCALARS, &r->nt_version));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lmnt_token));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lm20_token));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_nbt_cldap_netlogon_15(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_15 *r)
+{
+	ndr_print_struct(ndr, name, "nbt_cldap_netlogon_15");
+	ndr->depth++;
+	ndr_print_nbt_netlogon_command(ndr, "type", r->type);
+	ndr_print_uint16(ndr, "sbz", r->sbz);
+	ndr_print_nbt_server_type(ndr, "server_type", r->server_type);
+	ndr_print_GUID(ndr, "domain_uuid", &r->domain_uuid);
+	ndr_print_nbt_string(ndr, "forest", r->forest);
+	ndr_print_nbt_string(ndr, "dns_domain", r->dns_domain);
+	ndr_print_nbt_string(ndr, "pdc_dns_name", r->pdc_dns_name);
+	ndr_print_nbt_string(ndr, "domain", r->domain);
+	ndr_print_nbt_string(ndr, "pdc_name", r->pdc_name);
+	ndr_print_nbt_string(ndr, "user_name", r->user_name);
+	ndr_print_nbt_string(ndr, "server_site", r->server_site);
+	ndr_print_nbt_string(ndr, "client_site", r->client_site);
+	ndr_print_nbt_string(ndr, "next_closest_site", r->next_closest_site);
+	ndr_print_nbt_netlogon_version(ndr, "nt_version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?15:r->nt_version);
+	ndr_print_uint16(ndr, "lmnt_token", r->lmnt_token);
+	ndr_print_uint16(ndr, "lm20_token", r->lm20_token);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_nbt_cldap_netlogon_29(struct ndr_push *ndr, int ndr_flags, const struct nbt_cldap_netlogon_29 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_nbt_netlogon_command(ndr, NDR_SCALARS, r->type));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->sbz));
+		NDR_CHECK(ndr_push_nbt_server_type(ndr, NDR_SCALARS, r->server_type));
+		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->domain_uuid));
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->forest));
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->dns_domain));
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->pdc_dns_name));
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->domain));
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->pdc_name));
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->user_name));
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->server_site));
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->client_site));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->dc_sock_addr_size));
+		{
+			struct ndr_push *_ndr_dc_sock_addr;
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_dc_sock_addr, 0, r->dc_sock_addr_size));
+			NDR_CHECK(ndr_push_nbt_dc_sock_addr(_ndr_dc_sock_addr, NDR_SCALARS, &r->dc_sock_addr));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_dc_sock_addr, 0, r->dc_sock_addr_size));
+		}
+		NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->next_closest_site));
+		NDR_CHECK(ndr_push_nbt_netlogon_version(ndr, NDR_SCALARS, 29));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lmnt_token));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm20_token));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_nbt_cldap_netlogon_29(struct ndr_pull *ndr, int ndr_flags, struct nbt_cldap_netlogon_29 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_nbt_netlogon_command(ndr, NDR_SCALARS, &r->type));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->sbz));
+		NDR_CHECK(ndr_pull_nbt_server_type(ndr, NDR_SCALARS, &r->server_type));
+		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->domain_uuid));
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->forest));
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->dns_domain));
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->pdc_dns_name));
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->domain));
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->pdc_name));
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->user_name));
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->server_site));
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->client_site));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->dc_sock_addr_size));
+		{
+			struct ndr_pull *_ndr_dc_sock_addr;
+			NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_dc_sock_addr, 0, r->dc_sock_addr_size));
+			NDR_CHECK(ndr_pull_nbt_dc_sock_addr(_ndr_dc_sock_addr, NDR_SCALARS, &r->dc_sock_addr));
+			NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_dc_sock_addr, 0, r->dc_sock_addr_size));
+		}
+		NDR_CHECK(ndr_pull_nbt_string(ndr, NDR_SCALARS, &r->next_closest_site));
+		NDR_CHECK(ndr_pull_nbt_netlogon_version(ndr, NDR_SCALARS, &r->nt_version));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lmnt_token));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lm20_token));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_nbt_cldap_netlogon_29(struct ndr_print *ndr, const char *name, const struct nbt_cldap_netlogon_29 *r)
+{
+	ndr_print_struct(ndr, name, "nbt_cldap_netlogon_29");
+	ndr->depth++;
+	ndr_print_nbt_netlogon_command(ndr, "type", r->type);
+	ndr_print_uint16(ndr, "sbz", r->sbz);
+	ndr_print_nbt_server_type(ndr, "server_type", r->server_type);
+	ndr_print_GUID(ndr, "domain_uuid", &r->domain_uuid);
+	ndr_print_nbt_string(ndr, "forest", r->forest);
+	ndr_print_nbt_string(ndr, "dns_domain", r->dns_domain);
+	ndr_print_nbt_string(ndr, "pdc_dns_name", r->pdc_dns_name);
+	ndr_print_nbt_string(ndr, "domain", r->domain);
+	ndr_print_nbt_string(ndr, "pdc_name", r->pdc_name);
+	ndr_print_nbt_string(ndr, "user_name", r->user_name);
+	ndr_print_nbt_string(ndr, "server_site", r->server_site);
+	ndr_print_nbt_string(ndr, "client_site", r->client_site);
+	ndr_print_uint8(ndr, "dc_sock_addr_size", r->dc_sock_addr_size);
+	ndr_print_nbt_dc_sock_addr(ndr, "dc_sock_addr", &r->dc_sock_addr);
+	ndr_print_nbt_string(ndr, "next_closest_site", r->next_closest_site);
+	ndr_print_nbt_netlogon_version(ndr, "nt_version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?29:r->nt_version);
 	ndr_print_uint16(ndr, "lmnt_token", r->lmnt_token);
 	ndr_print_uint16(ndr, "lm20_token", r->lm20_token);
 	ndr->depth--;
@@ -2793,10 +3027,104 @@ _PUBLIC_ enum ndr_err_code ndr_push_nbt_cldap_netlogon(struct ndr_push *ndr, int
 					NDR_CHECK(ndr_push_nbt_cldap_netlogon_5(ndr, NDR_SCALARS, &r->logon5));
 				break; }
 
-				default: {
+				case 8: {
 					NDR_CHECK(ndr_push_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
 				break; }
 
+				case 9: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
+				case 10: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
+				case 11: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
+				case 12: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
+				case 13: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
+				case 14: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
+				case 15: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
+				case 16: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_1(ndr, NDR_SCALARS, &r->logon1));
+				break; }
+
+				case 17: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_1(ndr, NDR_SCALARS, &r->logon1));
+				break; }
+
+				case 18: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_3(ndr, NDR_SCALARS, &r->logon3));
+				break; }
+
+				case 19: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_3(ndr, NDR_SCALARS, &r->logon3));
+				break; }
+
+				case 20: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 21: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 22: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 23: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 24: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 25: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 26: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 27: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 28: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 29: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_29(ndr, NDR_SCALARS, &r->logon29));
+				break; }
+
+				case 30: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_29(ndr, NDR_SCALARS, &r->logon29));
+				break; }
+
+				case 31: {
+					NDR_CHECK(ndr_push_nbt_cldap_netlogon_29(ndr, NDR_SCALARS, &r->logon29));
+				break; }
+
+				default:
+					return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 			}
 		}
 		if (ndr_flags & NDR_BUFFERS) {
@@ -2826,9 +3154,80 @@ _PUBLIC_ enum ndr_err_code ndr_push_nbt_cldap_netlogon(struct ndr_push *ndr, int
 				case 7:
 				break;
 
-				default:
+				case 8:
 				break;
 
+				case 9:
+				break;
+
+				case 10:
+				break;
+
+				case 11:
+				break;
+
+				case 12:
+				break;
+
+				case 13:
+				break;
+
+				case 14:
+				break;
+
+				case 15:
+				break;
+
+				case 16:
+				break;
+
+				case 17:
+				break;
+
+				case 18:
+				break;
+
+				case 19:
+				break;
+
+				case 20:
+				break;
+
+				case 21:
+				break;
+
+				case 22:
+				break;
+
+				case 23:
+				break;
+
+				case 24:
+				break;
+
+				case 25:
+				break;
+
+				case 26:
+				break;
+
+				case 27:
+				break;
+
+				case 28:
+				break;
+
+				case 29:
+				break;
+
+				case 30:
+				break;
+
+				case 31:
+				break;
+
+				default:
+					return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 			}
 		}
 		ndr->flags = _flags_save_UNION;
@@ -2877,10 +3276,104 @@ _PUBLIC_ enum ndr_err_code ndr_pull_nbt_cldap_netlogon(struct ndr_pull *ndr, int
 					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_5(ndr, NDR_SCALARS, &r->logon5));
 				break; }
 
-				default: {
+				case 8: {
 					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
 				break; }
 
+				case 9: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
+				case 10: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
+				case 11: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
+				case 12: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
+				case 13: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
+				case 14: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
+				case 15: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_13(ndr, NDR_SCALARS, &r->logon13));
+				break; }
+
+				case 16: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_1(ndr, NDR_SCALARS, &r->logon1));
+				break; }
+
+				case 17: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_1(ndr, NDR_SCALARS, &r->logon1));
+				break; }
+
+				case 18: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_3(ndr, NDR_SCALARS, &r->logon3));
+				break; }
+
+				case 19: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_3(ndr, NDR_SCALARS, &r->logon3));
+				break; }
+
+				case 20: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 21: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 22: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 23: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 24: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 25: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 26: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 27: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 28: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_15(ndr, NDR_SCALARS, &r->logon15));
+				break; }
+
+				case 29: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_29(ndr, NDR_SCALARS, &r->logon29));
+				break; }
+
+				case 30: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_29(ndr, NDR_SCALARS, &r->logon29));
+				break; }
+
+				case 31: {
+					NDR_CHECK(ndr_pull_nbt_cldap_netlogon_29(ndr, NDR_SCALARS, &r->logon29));
+				break; }
+
+				default:
+					return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 			}
 		}
 		if (ndr_flags & NDR_BUFFERS) {
@@ -2909,9 +3402,80 @@ _PUBLIC_ enum ndr_err_code ndr_pull_nbt_cldap_netlogon(struct ndr_pull *ndr, int
 				case 7:
 				break;
 
-				default:
+				case 8:
 				break;
 
+				case 9:
+				break;
+
+				case 10:
+				break;
+
+				case 11:
+				break;
+
+				case 12:
+				break;
+
+				case 13:
+				break;
+
+				case 14:
+				break;
+
+				case 15:
+				break;
+
+				case 16:
+				break;
+
+				case 17:
+				break;
+
+				case 18:
+				break;
+
+				case 19:
+				break;
+
+				case 20:
+				break;
+
+				case 21:
+				break;
+
+				case 22:
+				break;
+
+				case 23:
+				break;
+
+				case 24:
+				break;
+
+				case 25:
+				break;
+
+				case 26:
+				break;
+
+				case 27:
+				break;
+
+				case 28:
+				break;
+
+				case 29:
+				break;
+
+				case 30:
+				break;
+
+				case 31:
+				break;
+
+				default:
+					return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 			}
 		}
 		ndr->flags = _flags_save_UNION;
@@ -2960,10 +3524,104 @@ _PUBLIC_ void ndr_print_nbt_cldap_netlogon(struct ndr_print *ndr, const char *na
 				ndr_print_nbt_cldap_netlogon_5(ndr, "logon5", &r->logon5);
 			break;
 
-			default:
+			case 8:
 				ndr_print_nbt_cldap_netlogon_13(ndr, "logon13", &r->logon13);
 			break;
 
+			case 9:
+				ndr_print_nbt_cldap_netlogon_13(ndr, "logon13", &r->logon13);
+			break;
+
+			case 10:
+				ndr_print_nbt_cldap_netlogon_13(ndr, "logon13", &r->logon13);
+			break;
+
+			case 11:
+				ndr_print_nbt_cldap_netlogon_13(ndr, "logon13", &r->logon13);
+			break;
+
+			case 12:
+				ndr_print_nbt_cldap_netlogon_13(ndr, "logon13", &r->logon13);
+			break;
+
+			case 13:
+				ndr_print_nbt_cldap_netlogon_13(ndr, "logon13", &r->logon13);
+			break;
+
+			case 14:
+				ndr_print_nbt_cldap_netlogon_13(ndr, "logon13", &r->logon13);
+			break;
+
+			case 15:
+				ndr_print_nbt_cldap_netlogon_13(ndr, "logon13", &r->logon13);
+			break;
+
+			case 16:
+				ndr_print_nbt_cldap_netlogon_1(ndr, "logon1", &r->logon1);
+			break;
+
+			case 17:
+				ndr_print_nbt_cldap_netlogon_1(ndr, "logon1", &r->logon1);
+			break;
+
+			case 18:
+				ndr_print_nbt_cldap_netlogon_3(ndr, "logon3", &r->logon3);
+			break;
+
+			case 19:
+				ndr_print_nbt_cldap_netlogon_3(ndr, "logon3", &r->logon3);
+			break;
+
+			case 20:
+				ndr_print_nbt_cldap_netlogon_15(ndr, "logon15", &r->logon15);
+			break;
+
+			case 21:
+				ndr_print_nbt_cldap_netlogon_15(ndr, "logon15", &r->logon15);
+			break;
+
+			case 22:
+				ndr_print_nbt_cldap_netlogon_15(ndr, "logon15", &r->logon15);
+			break;
+
+			case 23:
+				ndr_print_nbt_cldap_netlogon_15(ndr, "logon15", &r->logon15);
+			break;
+
+			case 24:
+				ndr_print_nbt_cldap_netlogon_15(ndr, "logon15", &r->logon15);
+			break;
+
+			case 25:
+				ndr_print_nbt_cldap_netlogon_15(ndr, "logon15", &r->logon15);
+			break;
+
+			case 26:
+				ndr_print_nbt_cldap_netlogon_15(ndr, "logon15", &r->logon15);
+			break;
+
+			case 27:
+				ndr_print_nbt_cldap_netlogon_15(ndr, "logon15", &r->logon15);
+			break;
+
+			case 28:
+				ndr_print_nbt_cldap_netlogon_15(ndr, "logon15", &r->logon15);
+			break;
+
+			case 29:
+				ndr_print_nbt_cldap_netlogon_29(ndr, "logon29", &r->logon29);
+			break;
+
+			case 30:
+				ndr_print_nbt_cldap_netlogon_29(ndr, "logon29", &r->logon29);
+			break;
+
+			case 31:
+				ndr_print_nbt_cldap_netlogon_29(ndr, "logon29", &r->logon29);
+			break;
+
+			default:
+				ndr_print_bad_level(ndr, name, level);
 		}
 		ndr->flags = _flags_save_UNION;
 	}
@@ -3019,7 +3677,7 @@ static enum ndr_err_code ndr_push_nbt_ntlogon_sam_logon(struct ndr_push *ndr, in
 			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->mailslot_name));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->acct_control));
+		NDR_CHECK(ndr_push_samr_AcctFlags(ndr, NDR_SCALARS, r->acct_control));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_dom_sid0(&r->sid, ndr->flags)));
 		{
 			struct ndr_push *_ndr_sid;
@@ -3027,7 +3685,7 @@ static enum ndr_err_code ndr_push_nbt_ntlogon_sam_logon(struct ndr_push *ndr, in
 			NDR_CHECK(ndr_push_dom_sid0(_ndr_sid, NDR_SCALARS|NDR_BUFFERS, &r->sid));
 			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_sid, 0, ndr_size_dom_sid0(&r->sid, ndr->flags)));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->nt_version));
+		NDR_CHECK(ndr_push_nbt_netlogon_version(ndr, NDR_SCALARS, r->nt_version));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lmnt_token));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm20_token));
 	}
@@ -3059,7 +3717,7 @@ static enum ndr_err_code ndr_pull_nbt_ntlogon_sam_logon(struct ndr_pull *ndr, in
 			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->mailslot_name));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->acct_control));
+		NDR_CHECK(ndr_pull_samr_AcctFlags(ndr, NDR_SCALARS, &r->acct_control));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sid_size));
 		{
 			struct ndr_pull *_ndr_sid;
@@ -3067,7 +3725,7 @@ static enum ndr_err_code ndr_pull_nbt_ntlogon_sam_logon(struct ndr_pull *ndr, in
 			NDR_CHECK(ndr_pull_dom_sid0(_ndr_sid, NDR_SCALARS|NDR_BUFFERS, &r->sid));
 			NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_sid, 0, r->sid_size));
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->nt_version));
+		NDR_CHECK(ndr_pull_nbt_netlogon_version(ndr, NDR_SCALARS, &r->nt_version));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lmnt_token));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lm20_token));
 	}
@@ -3084,10 +3742,10 @@ _PUBLIC_ void ndr_print_nbt_ntlogon_sam_logon(struct ndr_print *ndr, const char 
 	ndr_print_string(ndr, "computer_name", r->computer_name);
 	ndr_print_string(ndr, "user_name", r->user_name);
 	ndr_print_string(ndr, "mailslot_name", r->mailslot_name);
-	ndr_print_uint32(ndr, "acct_control", r->acct_control);
+	ndr_print_samr_AcctFlags(ndr, "acct_control", r->acct_control);
 	ndr_print_uint32(ndr, "sid_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_dom_sid0(&r->sid, ndr->flags):r->sid_size);
 	ndr_print_dom_sid0(ndr, "sid", &r->sid);
-	ndr_print_uint32(ndr, "nt_version", r->nt_version);
+	ndr_print_nbt_netlogon_version(ndr, "nt_version", r->nt_version);
 	ndr_print_uint16(ndr, "lmnt_token", r->lmnt_token);
 	ndr_print_uint16(ndr, "lm20_token", r->lm20_token);
 	ndr->depth--;
@@ -3115,7 +3773,7 @@ static enum ndr_err_code ndr_push_nbt_ntlogon_sam_logon_reply(struct ndr_push *n
 			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->domain));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->nt_version));
+		NDR_CHECK(ndr_push_nbt_netlogon_version(ndr, NDR_SCALARS, r->nt_version));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lmnt_token));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm20_token));
 	}
@@ -3146,7 +3804,7 @@ static enum ndr_err_code ndr_pull_nbt_ntlogon_sam_logon_reply(struct ndr_pull *n
 			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->domain));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->nt_version));
+		NDR_CHECK(ndr_pull_nbt_netlogon_version(ndr, NDR_SCALARS, &r->nt_version));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lmnt_token));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lm20_token));
 	}
@@ -3162,7 +3820,7 @@ _PUBLIC_ void ndr_print_nbt_ntlogon_sam_logon_reply(struct ndr_print *ndr, const
 	ndr_print_string(ndr, "server", r->server);
 	ndr_print_string(ndr, "user_name", r->user_name);
 	ndr_print_string(ndr, "domain", r->domain);
-	ndr_print_uint32(ndr, "nt_version", r->nt_version);
+	ndr_print_nbt_netlogon_version(ndr, "nt_version", r->nt_version);
 	ndr_print_uint16(ndr, "lmnt_token", r->lmnt_token);
 	ndr_print_uint16(ndr, "lm20_token", r->lm20_token);
 	ndr->depth--;

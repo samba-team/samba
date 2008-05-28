@@ -87,6 +87,10 @@
  */
 #define MSG_SMB_BRL_VALIDATE		0x0311
 #define MSG_SMB_RELEASE_IP		0x0312
+/*
+ * Close a specific file given a share entry.
+ */
+#define MSG_SMB_CLOSE_FILE		0x0313
 
 /* winbind messages */
 #define MSG_WINBIND_FINISHED		0x0401

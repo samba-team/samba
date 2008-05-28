@@ -785,12 +785,16 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 
 /****************************************************************************
  Do a spnego encrypted session setup.
+
+ user_domain: The shortname of the domain the user/machine is a member of.
+ dest_realm: The realm we're connecting to, if NULL we use our default realm.
 ****************************************************************************/
 
 ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user, 
-			      const char *pass, const char *domain)
+			      const char *pass, const char *user_domain,
+			      const char * dest_realm)
 {
-	char *principal;
+	char *principal = NULL;
 	char *OIDs[ASN1_MAX_OIDS];
 	int i;
 	bool got_kerberos_mechanism = False;
@@ -813,8 +817,10 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	/* there is 16 bytes of GUID before the real spnego packet starts */
 	blob = data_blob(cli->secblob.data+16, cli->secblob.length-16);
 
-	/* the server sent us the first part of the SPNEGO exchange in the negprot 
-	   reply */
+	/* The server sent us the first part of the SPNEGO exchange in the
+	 * negprot reply. It is WRONG to depend on the principal sent in the
+	 * negprot reply, but right now we do it. If we don't receive one,
+	 * we try to best guess, then fall back to NTLM.  */
 	if (!spnego_parse_negTokenInit(blob, OIDs, &principal)) {
 		data_blob_free(&blob);
 		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
@@ -832,18 +838,6 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	}
 
 	DEBUG(3,("got principal=%s\n", principal ? principal : "<null>"));
-
-	if (got_kerberos_mechanism && (principal == NULL)) {
-		/*
-		 * It is WRONG to depend on the principal sent in the negprot
-		 * reply, but right now we do it. So for safety (don't
-		 * segfault later) disable Kerberos when no principal was
-		 * sent. -- VL
-		 */
-		DEBUG(1, ("Kerberos mech was offered, but no principal was "
-			  "sent, disabling Kerberos\n"));
-		cli->use_kerberos = False;
-	}
 
 	fstrcpy(cli->user_name, user);
 
@@ -897,7 +891,12 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 				return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 			}
 
-			realm = kerberos_get_default_realm_from_ccache();
+			if (dest_realm) {
+				realm = SMB_STRDUP(dest_realm);
+				strupper_m(realm);
+			} else {
+				realm = kerberos_get_default_realm_from_ccache();
+			}
 			if (realm && *realm) {
 				if (asprintf(&principal, "%s$@%s",
 						machine, realm) < 0) {
@@ -914,7 +913,8 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 		}
 
 		if (principal) {
-			rc = cli_session_setup_kerberos(cli, principal, domain);
+			rc = cli_session_setup_kerberos(cli, principal,
+				dest_realm);
 			if (ADS_ERR_OK(rc) || !cli->fallback_after_kerberos) {
 				SAFE_FREE(principal);
 				return rc;
@@ -939,7 +939,7 @@ ntlmssp:
 		account[PTR_DIFF(p,user)] = '\0';
 	}
 
-	return ADS_ERROR_NT(cli_session_setup_ntlmssp(cli, account, pass, domain));
+	return ADS_ERROR_NT(cli_session_setup_ntlmssp(cli, account, pass, user_domain));
 }
 
 /****************************************************************************
@@ -1031,7 +1031,8 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 	/* if the server supports extended security then use SPNEGO */
 
 	if (cli->capabilities & CAP_EXTENDED_SECURITY) {
-		ADS_STATUS status = cli_session_setup_spnego(cli, user, pass, workgroup);
+		ADS_STATUS status = cli_session_setup_spnego(cli, user, pass,
+							     workgroup, NULL);
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(3, ("SPNEGO login failed: %s\n", ads_errstr(status)));
 			return ads_ntstatus(status);

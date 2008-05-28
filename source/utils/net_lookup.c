@@ -364,7 +364,7 @@ static int net_lookup_dsgetdcname(int argc, const char **argv)
 {
 	NTSTATUS status;
 	const char *domain_name = NULL;
-	char *site_name = NULL;
+	const char *site_name = NULL;
 	uint32_t flags = 0;
 	struct netr_DsRGetDCNameInfo *info = NULL;
 	TALLOC_CTX *mem_ctx;
@@ -391,22 +391,13 @@ static int net_lookup_dsgetdcname(int argc, const char **argv)
 	}
 
 	if (argc == 3) {
-		site_name = SMB_STRDUP(argv[2]);
-		if (!site_name) {
-			TALLOC_FREE(mem_ctx);
-			return -1;
-		}
+		site_name = argv[2];
 	}
 
-	if (!site_name) {
-		site_name = sitename_fetch(domain_name);
-	}
-
-	status = dsgetdcname(mem_ctx, domain_name, NULL, site_name,
+	status = dsgetdcname(mem_ctx, NULL, domain_name, NULL, site_name,
 			     flags, &info);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed with: %s\n", nt_errstr(status));
-		SAFE_FREE(site_name);
 		TALLOC_FREE(mem_ctx);
 		return -1;
 	}
@@ -415,7 +406,6 @@ static int net_lookup_dsgetdcname(int argc, const char **argv)
 	printf("%s\n", s);
 	TALLOC_FREE(s);
 
-	SAFE_FREE(site_name);
 	TALLOC_FREE(mem_ctx);
 	return 0;
 }

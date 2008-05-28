@@ -47,18 +47,20 @@ WERROR NetJoinDomain_l(struct libnetapi_ctx *mem_ctx,
 	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 		NTSTATUS status;
 		struct netr_DsRGetDCNameInfo *info = NULL;
+		const char *dc = NULL;
 		uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 				 DS_WRITABLE_REQUIRED |
 				 DS_RETURN_DNS_NAME;
-		status = dsgetdcname(mem_ctx, r->in.domain,
+		status = dsgetdcname(mem_ctx, NULL, r->in.domain,
 				     NULL, NULL, flags, &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			libnetapi_set_error_string(mem_ctx,
 				"%s", get_friendly_nt_error_msg(status));
 			return ntstatus_to_werror(status);
 		}
-		j->in.dc_name = talloc_strdup(mem_ctx,
-					      info->dc_unc);
+
+		dc = strip_hostname(info->dc_unc);
+		j->in.dc_name = talloc_strdup(mem_ctx, dc);
 		W_ERROR_HAVE_NO_MEMORY(j->in.dc_name);
 	}
 
@@ -174,10 +176,11 @@ WERROR NetUnjoinDomain_l(struct libnetapi_ctx *mem_ctx,
 	} else {
 		NTSTATUS status;
 		struct netr_DsRGetDCNameInfo *info = NULL;
+		const char *dc = NULL;
 		uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 				 DS_WRITABLE_REQUIRED |
 				 DS_RETURN_DNS_NAME;
-		status = dsgetdcname(mem_ctx, domain,
+		status = dsgetdcname(mem_ctx, NULL, domain,
 				     NULL, NULL, flags, &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			libnetapi_set_error_string(mem_ctx,
@@ -186,8 +189,9 @@ WERROR NetUnjoinDomain_l(struct libnetapi_ctx *mem_ctx,
 				get_friendly_nt_error_msg(status));
 			return ntstatus_to_werror(status);
 		}
-		u->in.dc_name = talloc_strdup(mem_ctx,
-					      info->dc_unc);
+
+		dc = strip_hostname(info->dc_unc);
+		u->in.dc_name = talloc_strdup(mem_ctx, dc);
 		W_ERROR_HAVE_NO_MEMORY(u->in.dc_name);
 
 		u->in.domain_name = domain;
@@ -352,10 +356,11 @@ WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 	ADS_STATUS ads_status;
 	ADS_STRUCT *ads = NULL;
 	struct netr_DsRGetDCNameInfo *info = NULL;
+	const char *dc = NULL;
 	uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 			 DS_RETURN_DNS_NAME;
 
-	status = dsgetdcname(ctx, r->in.domain,
+	status = dsgetdcname(ctx, NULL, r->in.domain,
 			     NULL, NULL, flags, &info);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnetapi_set_error_string(ctx, "%s",
@@ -363,7 +368,9 @@ WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 		return ntstatus_to_werror(status);
 	}
 
-	ads = ads_init(r->in.domain, r->in.domain, info->dc_unc);
+	dc = strip_hostname(info->dc_unc);
+
+	ads = ads_init(r->in.domain, r->in.domain, dc);
 	if (!ads) {
 		return WERR_GENERAL_FAILURE;
 	}

@@ -752,3 +752,37 @@ NTSTATUS close_file(files_struct *fsp, enum file_close_type close_type)
 
 	return status;
 }
+
+/****************************************************************************
+ Deal with an (authorized) message to close a file given the share mode
+ entry.
+****************************************************************************/
+
+void msg_close_file(struct messaging_context *msg_ctx,
+			void *private_data,
+			uint32_t msg_type,
+			struct server_id server_id,
+			DATA_BLOB *data)
+{
+	files_struct *fsp = NULL;
+	struct share_mode_entry e;
+
+	message_to_share_mode_entry(&e, (char *)data->data);
+
+	if(DEBUGLVL(10)) {
+		char *sm_str = share_mode_str(NULL, 0, &e);
+		if (!sm_str) {
+			smb_panic("talloc failed");
+		}
+		DEBUG(10,("msg_close_file: got request to close share mode "
+			"entry %s\n", sm_str));
+		TALLOC_FREE(sm_str);
+	}
+
+	fsp = file_find_dif(e.id, e.share_file_id);
+	if (!fsp) {
+		DEBUG(10,("msg_close_file: failed to find file.\n"));
+		return;
+	}
+	close_file(fsp, NORMAL_CLOSE);
+}
