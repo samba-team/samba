@@ -207,6 +207,7 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case RAW_OPEN_SMB2:
+		ZERO_STRUCT(io->smb2.out);
 		io->smb2.out.file.ntvfs		= io2->generic.out.file.ntvfs;
 		switch (io2->generic.out.oplock_level) {
 		case BATCH_OPLOCK_RETURN:
@@ -232,7 +233,6 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 		io->smb2.out.size		= io2->generic.out.size;
 		io->smb2.out.file_attr		= io2->generic.out.attrib;
 		io->smb2.out.reserved2		= 0;
-		io->smb2.out.blob		= data_blob(NULL, 0);
 		break;
 
 	default:
@@ -512,7 +512,7 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 		}
 		io2->generic.in.root_fid	= 0;
 		io2->generic.in.access_mask	= io->smb2.in.desired_access;
-		io2->generic.in.alloc_size	= 0;
+		io2->generic.in.alloc_size	= io->smb2.in.alloc_size;
 		io2->generic.in.file_attr	= io->smb2.in.file_attributes;
 		io2->generic.in.share_access	= io->smb2.in.share_access;
 		io2->generic.in.open_disposition= io->smb2.in.create_disposition;
@@ -520,8 +520,14 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 		io2->generic.in.impersonation	= io->smb2.in.impersonation_level;
 		io2->generic.in.security_flags	= 0;
 		io2->generic.in.fname		= io->smb2.in.fname;
-		io2->generic.in.sec_desc	= NULL;
-		io2->generic.in.ea_list		= NULL;
+		io2->generic.in.sec_desc	= io->smb2.in.sec_desc;
+		io2->generic.in.ea_list		= &io->smb2.in.eas;
+
+		/* we don't support timewarp yet */
+		if (io->smb2.in.timewarp != 0) {
+			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			break;
+		}
 
 		/* we need to check these bits before we check the private mask */
 		if (io2->generic.in.create_options & NTCREATEX_OPTIONS_NOT_SUPPORTED_MASK) {

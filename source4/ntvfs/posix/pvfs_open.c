@@ -634,6 +634,8 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return status;
 	}
 
+	/* support initial alloc sizes */
+	name->dos.alloc_size = io->ntcreatex.in.alloc_size;
 	name->dos.attrib = attrib;
 	status = pvfs_dosattrib_save(pvfs, name, fd);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1464,6 +1466,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 			talloc_free(lck);
 			return pvfs_map_errno(pvfs, errno);
 		}
+		name->dos.alloc_size = io->ntcreatex.in.alloc_size;
 		name->dos.attrib = attrib;
 		status = pvfs_dosattrib_save(pvfs, name, fd);
 		if (!NT_STATUS_IS_OK(status)) {

@@ -25,14 +25,19 @@
 #include "smb_server/smb2/smb2_server.h"
 #include "ntvfs/ntvfs.h"
 #include "param/param.h"
+#include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 static void smb2srv_create_send(struct ntvfs_request *ntvfs)
 {
 	struct smb2srv_request *req;
 	union smb_open *io;
+	DATA_BLOB blob;
 
 	SMB2SRV_CHECK_ASYNC_STATUS(io, union smb_open);
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x58, true, io->smb2.out.blob.length));
+	SMB2SRV_CHECK(smb2_create_blob_push(req, &blob, io->smb2.out.blobs));
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x58, true, blob.length));
 
 	SCVAL(req->out.body,	0x02,	io->smb2.out.oplock_level);
 	SCVAL(req->out.body,	0x03,	io->smb2.out.reserved);
@@ -46,7 +51,7 @@ static void smb2srv_create_send(struct ntvfs_request *ntvfs)
 	SIVAL(req->out.body,	0x38,	io->smb2.out.file_attr);
 	SIVAL(req->out.body,	0x3C,	io->smb2.out.reserved2);
 	smb2srv_push_handle(req->out.body, 0x40, io->smb2.out.file.ntvfs);
-	SMB2SRV_CHECK(smb2_push_o32s32_blob(&req->out, 0x50, io->smb2.out.blob));
+	SMB2SRV_CHECK(smb2_push_o32s32_blob(&req->out, 0x50, blob));
 
 	/* also setup the chained file handle */
 	req->chained_file_handle = req->_chained_file_handle;
@@ -59,11 +64,13 @@ void smb2srv_create_recv(struct smb2srv_request *req)
 {
 	union smb_open *io;
 	DATA_BLOB blob;
+	int i;
 
 	SMB2SRV_CHECK_BODY_SIZE(req, 0x38, true);
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_open);
 	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_create_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
+	ZERO_STRUCT(io->smb2.in);
 	io->smb2.level			= RAW_OPEN_SMB2;
 	io->smb2.in.security_flags	= CVAL(req->in.body, 0x02);
 	io->smb2.in.oplock_level	= CVAL(req->in.body, 0x03);
@@ -77,10 +84,67 @@ void smb2srv_create_recv(struct smb2srv_request *req)
 	io->smb2.in.create_options	= IVAL(req->in.body, 0x28);
 	SMB2SRV_CHECK(smb2_pull_o16s16_string(&req->in, io, req->in.body+0x2C, &io->smb2.in.fname));
 	SMB2SRV_CHECK(smb2_pull_o32s32_blob(&req->in, io, req->in.body+0x30, &blob));
-	/* TODO: parse the blob */
-	ZERO_STRUCT(io->smb2.in.eas);
-	ZERO_STRUCT(io->smb2.in.blobs);
+	SMB2SRV_CHECK(smb2_create_blob_parse(io, blob, &io->smb2.in.blobs));
 
+	/* interpret the parsed tags that a server needs to respond to */
+	for (i=0;i<io->smb2.in.blobs.num_blobs;i++) {
+		if (strcmp(io->smb2.in.blobs.blobs[i].tag, SMB2_CREATE_TAG_EXTA) == 0) {
+			SMB2SRV_CHECK(ea_pull_list_chained(&io->smb2.in.blobs.blobs[i].data, io, 
+							   &io->smb2.in.eas.num_eas,
+							   &io->smb2.in.eas.eas));
+		}
+		if (strcmp(io->smb2.in.blobs.blobs[i].tag, SMB2_CREATE_TAG_SECD) == 0) {
+			enum ndr_err_code ndr_err;
+			io->smb2.in.sec_desc = talloc(io, struct security_descriptor);
+			if (io->smb2.in.sec_desc == NULL) {
+				smb2srv_send_error(req,  NT_STATUS_NO_MEMORY);
+				return;
+			}
+			ndr_err = ndr_pull_struct_blob(&io->smb2.in.blobs.blobs[i].data, io, NULL,
+						       io->smb2.in.sec_desc,
+						       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				smb2srv_send_error(req,  ndr_map_error2ntstatus(ndr_err));
+				return;
+			}
+		}
+		if (strcmp(io->smb2.in.blobs.blobs[i].tag, SMB2_CREATE_TAG_DHNQ) == 0) {
+			io->smb2.in.durable_open = true;
+		}
+		if (strcmp(io->smb2.in.blobs.blobs[i].tag, SMB2_CREATE_TAG_DHNC) == 0) {
+			if (io->smb2.in.blobs.blobs[i].data.length != 16) {
+				smb2srv_send_error(req,  NT_STATUS_INVALID_PARAMETER);
+				return;				
+			}
+			io->smb2.in.durable_handle = talloc(io, struct smb2_handle);
+			if (io->smb2.in.durable_handle == NULL) {
+				smb2srv_send_error(req,  NT_STATUS_NO_MEMORY);
+				return;
+			}
+			smb2_pull_handle(io->smb2.in.blobs.blobs[i].data.data, io->smb2.in.durable_handle);
+		}
+		if (strcmp(io->smb2.in.blobs.blobs[i].tag, SMB2_CREATE_TAG_ALSI) == 0) {
+			if (io->smb2.in.blobs.blobs[i].data.length != 8) {
+				smb2srv_send_error(req,  NT_STATUS_INVALID_PARAMETER);
+				return;				
+			}
+			io->smb2.in.alloc_size = BVAL(io->smb2.in.blobs.blobs[i].data.data, 0);
+		}
+		if (strcmp(io->smb2.in.blobs.blobs[i].tag, SMB2_CREATE_TAG_MXAC) == 0) {
+			io->smb2.in.query_maximal_access = true;
+		}
+		if (strcmp(io->smb2.in.blobs.blobs[i].tag, SMB2_CREATE_TAG_TWRP) == 0) {
+			if (io->smb2.in.blobs.blobs[i].data.length != 8) {
+				smb2srv_send_error(req,  NT_STATUS_INVALID_PARAMETER);
+				return;				
+			}
+			io->smb2.in.timewarp = BVAL(io->smb2.in.blobs.blobs[i].data.data, 0);			
+		}
+		if (strcmp(io->smb2.in.blobs.blobs[i].tag, SMB2_CREATE_TAG_QFID) == 0) {
+			io->smb2.in.query_on_disk_id = true;
+		}
+	}
+		
 	/* the VFS backend does not yet handle NULL filenames */
 	if (io->smb2.in.fname == NULL) {
 		io->smb2.in.fname = "";
