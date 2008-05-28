@@ -878,7 +878,10 @@ static bool compare_status(NTSTATUS status1, NTSTATUS status2)
 	if (NT_STATUS_EQUAL(status1, status2)) return true;
 
 	/* one code being an error and the other OK is always an error */
-	if (NT_STATUS_IS_OK(status1) || NT_STATUS_IS_OK(status2)) return false;
+	if (NT_STATUS_IS_OK(status1) || NT_STATUS_IS_OK(status2)) {
+		current_op.mismatch = nt_errstr(status1);
+		return false;
+	}
 
 	/* if we are ignoring one of the status codes then consider this a match */
 	if (ignore_pattern(nt_errstr(status1)) ||
@@ -932,6 +935,7 @@ again:
 				       oplocks[i][j].got_break, 
 				       oplocks[i][j].handle, 
 				       oplocks[i][j].level);
+				current_op.mismatch = "oplock break";
 				return false;
 			}
 		}
@@ -976,6 +980,7 @@ again:
 				printf("Notify count inconsistent %d %d\n",
 				       notifies[0][j].notify_count,
 				       notifies[i][j].notify_count);
+				current_op.mismatch = "notify count";
 				return false;
 			}
 
@@ -1003,6 +1008,7 @@ again:
 					printf("Notify action %d inconsistent %d %d\n", n,
 					       not1.nttrans.out.changes[n].action,
 					       not2.nttrans.out.changes[n].action);
+					current_op.mismatch = "notify action";
 					return false;
 				}
 				if (strcmp(not1.nttrans.out.changes[n].name.s,
@@ -1010,6 +1016,7 @@ again:
 					printf("Notify name %d inconsistent %s %s\n", n,
 					       not1.nttrans.out.changes[n].name.s,
 					       not2.nttrans.out.changes[n].name.s);
+					current_op.mismatch = "notify name";
 					return false;
 				}
 				if (not1.nttrans.out.changes[n].name.private_length !=
@@ -1017,6 +1024,7 @@ again:
 					printf("Notify name length %d inconsistent %d %d\n", n,
 					       not1.nttrans.out.changes[n].name.private_length,
 					       not2.nttrans.out.changes[n].name.private_length);
+					current_op.mismatch = "notify name length";
 					return false;
 				}
 			}
@@ -1049,6 +1057,7 @@ again:
 		if (!compare_status(status[i], status[0])) { \
 			printf("status different in %s - %s %s\n", #call, \
 			       nt_errstr(status[0]), nt_errstr(status[i])); \
+			current_op.mismatch = nt_errstr(status[0]); \
 			return false; \
 		} \
 	} \
@@ -1114,6 +1123,7 @@ again:
 
 #define CHECK_WSTR_EQUAL(field) do { \
 	if ((!parm[0].field.s && parm[1].field.s) || (parm[0].field.s && !parm[1].field.s)) { \
+		current_op.mismatch = #field; \
 		printf("%s is NULL!\n", #field); \
 		return false; \
 	} \
@@ -1852,7 +1862,8 @@ static void backtrack_analyze(struct event_context *ev,
 			if (ret == options.numops) {
 				/* this chunk is needed */
 				base += chunk;
-			} else if (strcmp(mismatch, current_op.mismatch)) {
+			} else if (mismatch != current_op.mismatch &&
+				   strcmp(mismatch, current_op.mismatch)) {
 				base += chunk;
 				printf("Different error in backtracking\n");
 			} else if (ret < base) {
