@@ -1582,8 +1582,12 @@ NTSTATUS read_smb_length_return_keepalive(int fd, char *inbuf,
 					  size_t *len);
 NTSTATUS read_smb_length(int fd, char *inbuf, unsigned int timeout,
 			 size_t *len);
-NTSTATUS receive_smb_raw(int fd, char *buffer, unsigned int timeout,
-			 size_t maxlen, size_t *p_len);
+NTSTATUS receive_smb_raw(int fd,
+			char *buffer,
+			size_t buflen,
+			unsigned int timeout,
+			size_t maxlen,
+			size_t *p_len);
 int open_socket_in(int type,
 		uint16_t port,
 		int dlevel,
