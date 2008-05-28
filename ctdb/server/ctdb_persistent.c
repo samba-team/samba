@@ -268,10 +268,8 @@ static void childwrite_handler(struct event_context *ev, struct fd_event *fde,
    and write the record to the database.
 */
 struct childwrite_handle *ctdb_childwrite(struct ctdb_db_context *ctdb_db,
-				TDB_DATA key,
-				TDB_DATA data,
 				void (*callback)(int, void *private_data),
-				void *private_data)
+				struct ctdb_persistent_write_state *state)
 {
 	struct childwrite_handle *result;
 	int ret;
@@ -280,7 +278,7 @@ struct childwrite_handle *ctdb_childwrite(struct ctdb_db_context *ctdb_db,
 	ctdb_db->ctdb->statistics.childwrite_calls++;
 	ctdb_db->ctdb->statistics.pending_childwrite_calls++;
 
-	if (!(result = talloc_zero(private_data, struct childwrite_handle))) {
+	if (!(result = talloc_zero(state, struct childwrite_handle))) {
 		ctdb_db->ctdb->statistics.pending_childwrite_calls--;
 		return NULL;
 	}
@@ -304,13 +302,12 @@ struct childwrite_handle *ctdb_childwrite(struct ctdb_db_context *ctdb_db,
 	}
 
 	result->callback = callback;
-	result->private_data = private_data;
+	result->private_data = state;
 	result->ctdb = ctdb_db->ctdb;
 	result->ctdb_db = ctdb_db;
 
 	if (result->child == 0) {
 		char c = 0;
-		struct ctdb_persistent_write_state *state = talloc_get_type(private_data, struct ctdb_persistent_write_state);
 
 		close(result->fd[0]);
 		ret = ctdb_persistent_store(state);
@@ -396,7 +393,7 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	/* create a child process to take out a transaction and 
 	   write the data.
 	*/
-	handle = ctdb_childwrite(ctdb_db, state->key, state->data, ctdb_persistent_write_callback, state);
+	handle = ctdb_childwrite(ctdb_db, ctdb_persistent_write_callback, state);
 	if (handle == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to setup childwrite handler in ctdb_control_update_record\n"));
 		talloc_free(state);
