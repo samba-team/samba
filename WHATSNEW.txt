@@ -1,10 +1,45 @@
                    ===============================
+                   Release Notes for Samba 3.0.30
+                            May 28, 2008
+                   ===============================
+
+This is a security release in order to address CVE-2008-1105 ("Boundary 
+failure when parsing SMB responses can result in a buffer overrun").
+
+  o CVE-2008-1105
+    Specifically crafted SMB responses can result in a heap overflow 
+    in the Samba client code.  Because the server process, smbd, can 
+    itself act as a client during operations such as printer notification
+    and domain authentication,  this issue affects both Samba client 
+    and server installations.
+    
+The original security announcement for this and past advisories can 
+be found http://www.samba.org/samba/security/
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.29
+--------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * Fix for CVE-2008-1105.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * Remove man pages for ldb tools not included in Samba 3.0.
+
+
+Release notes for older releases follow:
+
+      --------------------------------------------------
+
+                   ===============================
                    Release Notes for Samba 3.0.29
                             May 20, 2008
                    ===============================
-
-This is a bug fix release of the Samba 3.0 production series and is the
-version that servers should be run for for all current Samba 3.0 bug fixes.  
 
 Major bug fixes included in Samba 3.0.29 are:
 
@@ -127,8 +162,6 @@ o   Martin Zielinski <mz@seh.de>
     * Fix DeleteDriverDriverEx() checks to prevent removing in use files.
 
 
-
-Release notes for older releases follow:
 
       --------------------------------------------------
 
