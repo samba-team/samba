@@ -44,8 +44,7 @@ int cli_set_port(struct cli_state *cli, int port)
 }
 
 /****************************************************************************
- Read an smb from a fd ignoring all keepalive packets. Note that the buffer 
- *MUST* be of size BUFFER_SIZE+SAFETY_MARGIN.
+ Read an smb from a fd ignoring all keepalive packets.
  The timeout is in milliseconds
 
  This is exactly the same as receive_smb except that it never returns
@@ -54,12 +53,12 @@ int cli_set_port(struct cli_state *cli, int port)
  should never go into a blocking read.
 ****************************************************************************/
 
-static BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
+static BOOL client_receive_smb(int fd,char *buffer, size_t bufsize, unsigned int timeout)
 {
 	BOOL ret;
 
 	for(;;) {
-		ret = receive_smb_raw(fd, buffer, timeout);
+		ret = receive_smb_raw(fd, buffer, bufsize, timeout);
 
 		if (!ret) {
 			DEBUG(10,("client_receive_smb failed\n"));
@@ -88,7 +87,7 @@ BOOL cli_receive_smb(struct cli_state *cli)
 		return False; 
 
  again:
-	ret = client_receive_smb(cli->fd,cli->inbuf,cli->timeout);
+	ret = client_receive_smb(cli->fd,cli->inbuf, cli->bufsize, cli->timeout);
 	
 	if (ret) {
 		/* it might be an oplock break request */

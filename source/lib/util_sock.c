@@ -654,14 +654,13 @@ ssize_t read_smb_length(int fd, char *inbuf, unsigned int timeout)
 }
 
 /****************************************************************************
- Read an smb from a fd. Note that the buffer *MUST* be of size
- BUFFER_SIZE+SAFETY_MARGIN.
+ Read an smb from a fd. 
  The timeout is in milliseconds. 
  This function will return on receipt of a session keepalive packet.
  Doesn't check the MAC on signed packets.
 ****************************************************************************/
 
-BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
+BOOL receive_smb_raw(int fd, char *buffer, size_t buflen, unsigned int timeout)
 {
 	ssize_t len,ret;
 
@@ -682,25 +681,18 @@ BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
 		return False;
 	}
 
-	/*
-	 * A WRITEX with CAP_LARGE_WRITEX can be 64k worth of data plus 65 bytes
-	 * of header. Don't print the error if this fits.... JRA.
-	 */
-
-	if (len > (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE)) {
+	if (len > buflen) {
 		DEBUG(0,("Invalid packet length! (%lu bytes).\n",(unsigned long)len));
-		if (len > BUFFER_SIZE + (SAFETY_MARGIN/2)) {
 
-			/*
-			 * Correct fix. smb_read_error may have already been
-			 * set. Only set it here if not already set. Global
-			 * variables still suck :-). JRA.
-			 */
+		/*
+		 * smb_read_error may have already been
+		 * set. Only set it here if not already set. Global
+		 * variables still suck :-). JRA.
+		 */
 
-			if (smb_read_error == 0)
-				smb_read_error = READ_ERROR;
-			return False;
-		}
+		if (smb_read_error == 0)
+			smb_read_error = READ_ERROR;
+		return False;
 	}
 
 	if(len > 0) {
@@ -730,9 +722,9 @@ BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
  Checks the MAC on signed packets.
 ****************************************************************************/
 
-BOOL receive_smb(int fd, char *buffer, unsigned int timeout)
+BOOL receive_smb(int fd, char *buffer, size_t buflen, unsigned int timeout)
 {
-	if (!receive_smb_raw(fd, buffer, timeout)) {
+	if (!receive_smb_raw(fd, buffer, buflen, timeout)) {
 		return False;
 	}
 

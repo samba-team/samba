@@ -521,7 +521,8 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		goto again;
 	}
 
-	return receive_smb(smbd_server_fd(), buffer, 0);
+	return receive_smb(smbd_server_fd(), buffer,
+			BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE, 0);
 }
 
 /*
