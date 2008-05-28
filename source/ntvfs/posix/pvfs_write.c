@@ -45,7 +45,7 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (f->handle->fd == -1) {
-		return NT_STATUS_FILE_IS_A_DIRECTORY;
+		return NT_STATUS_INVALID_DEVICE_REQUEST;
 	}
 
 	if (!(f->access_mask & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA))) {
