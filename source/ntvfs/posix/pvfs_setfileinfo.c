@@ -457,7 +457,12 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	/* possibly change the attribute */
 	if (newstats.dos.attrib != h->name->dos.attrib) {
-		mode_t mode = pvfs_fileperms(pvfs, newstats.dos.attrib);
+		mode_t mode;
+		if ((newstats.dos.attrib & FILE_ATTRIBUTE_DIRECTORY) &&
+		    !(h->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		mode = pvfs_fileperms(pvfs, newstats.dos.attrib);
 		if (!(h->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)) {
 			if (fchmod(h->fd, mode) == -1) {
 				return pvfs_map_errno(pvfs, errno);
