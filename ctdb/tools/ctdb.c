@@ -1558,7 +1558,7 @@ static int control_getdebug(struct ctdb_context *ctdb, int argc, const char **ar
 			printf(":Name:Level:\n");
 			printf(":%s:%d:\n",get_debug_by_level(level),level);
 		} else {
-			printf("Node %u is at debug level %s (%u)\n", options.pnn, get_debug_by_level(level), level);
+			printf("Node %u is at debug level %s (%d)\n", options.pnn, get_debug_by_level(level), level);
 		}
 	}
 	return 0;
