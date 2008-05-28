@@ -193,6 +193,8 @@ The chapters in this part each cover specific Samba features.
 	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Bugs.xml"/>
 	<?latex \cleardoublepage ?>
+	<xi:include href="TOSHARG-TDBFiles.xml"/>
+	<?latex \cleardoublepage ?>
 
 </part>
 
