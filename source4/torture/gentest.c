@@ -49,6 +49,7 @@ static struct gentest_options {
 	const char *seeds_file;
 	int use_preset_seeds;
 	int fast_reconnect;
+	int skip_cleanup;
 } options;
 
 /* mapping between open handles on the server and local handles */
@@ -1865,6 +1866,11 @@ static bool handler_notify(int instance)
 static void wipe_files(void)
 {
 	int i;
+
+	if (options.skip_cleanup) {
+		return;
+	}
+
 	for (i=0;i<NSERVERS;i++) {
 		int n = smbcli_deltree(servers[i].cli[0]->tree, "\\gentest");
 		if (n == -1) {
@@ -2196,6 +2202,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 		{"unclist",	  0, POPT_ARG_STRING,	NULL, 	OPT_UNCLIST,	"unclist", 	NULL},
 		{"seedsfile",	  0, POPT_ARG_STRING,  &options.seeds_file, 0,	"seed file", 	NULL},
 		{ "user", 'U',       POPT_ARG_STRING, NULL, 'U', "Set the network username", "[DOMAIN/]USERNAME[%PASSWORD]" },
+		{"skip-cleanup",  0, POPT_ARG_NONE,  &options.skip_cleanup, 0,	"don't delete files at start", 	NULL},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
