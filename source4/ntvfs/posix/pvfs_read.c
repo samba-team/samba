@@ -46,7 +46,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (f->handle->fd == -1) {
-		return NT_STATUS_FILE_IS_A_DIRECTORY;
+		return NT_STATUS_INVALID_DEVICE_REQUEST;
 	}
 
 	mask = SEC_FILE_READ_DATA;
