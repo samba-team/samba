@@ -216,6 +216,10 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs,
 
 	case RAW_FILEINFO_NAME_INFO:
 	case RAW_FILEINFO_NAME_INFORMATION:
+		if (req->ctx->protocol == PROTOCOL_SMB2) {
+			/* strange that SMB2 doesn't have this */
+			return NT_STATUS_NOT_SUPPORTED;
+		}
 		info->name_info.out.fname.s = name->original_name;
 		return NT_STATUS_OK;
 
