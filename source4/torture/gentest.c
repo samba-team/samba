@@ -30,7 +30,7 @@
 #include "libcli/resolve/resolve.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
-#include "dynconfig.h"
+#include "dynconfig/dynconfig.h"
 
 #define NSERVERS 2
 #define NINSTANCES 2

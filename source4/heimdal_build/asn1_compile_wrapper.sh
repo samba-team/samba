@@ -4,20 +4,14 @@
 SELF=$0
 SELFDIR=`dirname ${SELF}`
 
-SRCDIR=$1
-BUILDDIR=$2
-DESTDIR=$3
+BUILDDIR=$1
+DESTDIR=$2
 
-CMD=$4
-FILE=$5
-NAME=$6
-shift 6
+CMD=$3
+FILE=$4
+NAME=$5
+shift 5
 OPTIONS="$@"
-
-test -z "${SRCDIR}" && {
-	echo "${SELF}:SRCDIR: '${SRCDIR}'" >&2;
-	exit 1;
-}
 
 test -z "${BUILDDIR}" && {
 	echo "${SELF}:BUILDDIR: '${BUILDDIR}'" >&2;
@@ -46,14 +40,6 @@ test -z "${NAME}" && {
 
 CURDIR=`pwd`
 
-cd ${SRCDIR} && {
-	ABS_SRCDIR=`pwd`
-	cd ${CURDIR}
-} || {
-	echo "${SELF}:cannot cd into '${SRCDIR}'" >&2;
-	exit 1;
-}
-
 cd ${BUILDDIR} && {
 	ABS_BUILDDIR=`pwd`
 	cd ${CURDIR}
@@ -63,7 +49,7 @@ cd ${BUILDDIR} && {
 }
 
 cd ${DESTDIR} && {
-	${ABS_BUILDDIR}/${CMD} ${OPTIONS} ${ABS_SRCDIR}/${FILE} ${NAME} >&2 || exit 1;
+	${ABS_BUILDDIR}/${CMD} ${OPTIONS} ${FILE} ${NAME} >&2 || exit 1;
 	cd ${CURDIR}
 } || {
 	echo "${SELF}:cannot cd into '${BUILDDIR}'" >&2;

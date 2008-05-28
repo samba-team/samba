@@ -25,7 +25,6 @@ my $section_types = {
 		"PUBLIC_DEPENDENCIES"	=> "list",
 		"ENABLE"		=> "bool",
 		"LDFLAGS"		=> "list",
-		"CFLAGS"		=> "list",
 	},
 	"SUBSYSTEM" => {
 		"PRIVATE_DEPENDENCIES"	=> "list",
@@ -60,7 +59,6 @@ my $section_types = {
 		"ENABLE"		=> "bool",
 
 		"INSTALLDIR"		=> "string",
-		"CFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",
 		"STANDARD_VISIBILITY"	=> "string",
 

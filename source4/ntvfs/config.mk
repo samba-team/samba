@@ -27,7 +27,7 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE ntvfs_smb2
 ################################################
 
-ntvfs_smb2_OBJ_FILES = ntvfs/smb2/vfs_smb2.o
+ntvfs_smb2_OBJ_FILES = $(ntvfssrcdir)/smb2/vfs_smb2.o
 
 
 ################################################
