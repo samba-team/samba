@@ -57,6 +57,7 @@ static struct gentest_options {
 	int fast_reconnect;
 	int mask_indexing;
 	int no_eas;
+	int no_acls;
 	int skip_cleanup;
 	int valid;
 } options;
@@ -109,6 +110,7 @@ static struct {
 	NTSTATUS status;
 	uint_t opnum;
 	TALLOC_CTX *mem_ctx;
+	const char *mismatch;
 } current_op;
 
 static struct smb2_handle bad_smb2_handle;
@@ -731,7 +733,7 @@ static struct smb_ea_list gen_ea_list(void)
 static struct security_descriptor *gen_sec_desc(void)
 {
 	struct security_descriptor *sd;
-	if (gen_chance(90)) return NULL;
+	if (options.no_acls || gen_chance(90)) return NULL;
 
 	sd = security_descriptor_dacl_create(current_op.mem_ctx,
 					     0, NULL, NULL,
@@ -883,6 +885,7 @@ static bool compare_status(NTSTATUS status1, NTSTATUS status2)
 	    ignore_pattern(nt_errstr(status2))) {
 		return true;
 	}
+	current_op.mismatch = nt_errstr(status1);
 	return false;
 }
 
@@ -983,6 +986,7 @@ again:
 				printf("Notify status mismatch - %s - %s\n",
 				       nt_errstr(notifies[0][j].status),
 				       nt_errstr(notifies[i][j].status));
+				current_op.mismatch = "Notify status";
 				return false;
 			}
 
@@ -1082,6 +1086,7 @@ again:
 
 #define CHECK_EQUAL(field) do { \
 	if (parm[0].field != parm[1].field && !ignore_pattern(#field)) { \
+		current_op.mismatch = #field; \
 		printf("Mismatch in %s - 0x%llx 0x%llx\n", #field, \
 		       (unsigned long long)parm[0].field, (unsigned long long)parm[1].field); \
 		return false; \
@@ -1090,6 +1095,7 @@ again:
 
 #define CHECK_SECDESC(field) do { \
 	if (!security_acl_equal(parm[0].field->dacl, parm[1].field->dacl) && !ignore_pattern(#field)) { \
+		current_op.mismatch = #field; \
 		printf("Mismatch in %s\n", #field); \
 		return false;			    \
 	} \
@@ -1099,6 +1105,7 @@ again:
 		if (!options.mask_indexing) { \
 		CHECK_EQUAL(field); \
 	} else if ((~FILE_ATTRIBUTE_NONINDEXED & parm[0].field) != (~FILE_ATTRIBUTE_NONINDEXED & parm[1].field) && !ignore_pattern(#field)) { \
+		current_op.mismatch = #field; \
 		printf("Mismatch in %s - 0x%x 0x%x\n", #field, \
 		       (int)parm[0].field, (int)parm[1].field); \
 		return false; \
@@ -1111,6 +1118,7 @@ again:
 		return false; \
 	} \
 	if (parm[0].field.s && strcmp(parm[0].field.s, parm[1].field.s) != 0 && !ignore_pattern(#field)) { \
+		current_op.mismatch = #field; \
 		printf("Mismatch in %s - %s %s\n", #field, \
 		       parm[0].field.s, parm[1].field.s); \
 		return false; \
@@ -1120,6 +1128,7 @@ again:
 
 #define CHECK_BLOB_EQUAL(field) do { \
 	if (memcmp(parm[0].field.data, parm[1].field.data, parm[0].field.length) != 0 && !ignore_pattern(#field)) { \
+		current_op.mismatch = #field; \
 		printf("Mismatch in %s\n", #field); \
 		return false; \
 	} \
@@ -1130,6 +1139,7 @@ again:
 	if (labs(nt_time_to_unix(parm[0].field) - \
 		nt_time_to_unix(parm[1].field)) > time_skew() && \
 	    !ignore_pattern(#field)) { \
+		current_op.mismatch = #field; \
 		printf("Mismatch in %s - 0x%x 0x%x\n", #field, \
 		       (int)nt_time_to_unix(parm[0].field), \
 		       (int)nt_time_to_unix(parm[1].field)); \
@@ -1815,6 +1825,7 @@ static void backtrack_analyze(struct event_context *ev,
 			      struct loadparm_context *lp_ctx)
 {
 	int chunk, ret;
+	const char *mismatch = current_op.mismatch;
 
 	chunk = options.numops / 2;
 
@@ -1841,6 +1852,9 @@ static void backtrack_analyze(struct event_context *ev,
 			if (ret == options.numops) {
 				/* this chunk is needed */
 				base += chunk;
+			} else if (strcmp(mismatch, current_op.mismatch)) {
+				base += chunk;
+				printf("Different error in backtracking\n");
 			} else if (ret < base) {
 				printf("damn - inconsistent errors! found early error\n");
 				options.numops = ret+1;
@@ -1989,6 +2003,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 		{ "user", 'U',       POPT_ARG_STRING, NULL, 'U', "Set the network username", "[DOMAIN/]USERNAME[%PASSWORD]" },
 		{"maskindexing",  0, POPT_ARG_NONE,  &options.mask_indexing, 0,	"mask out the indexed file attrib", 	NULL},
 		{"noeas",  0, POPT_ARG_NONE,  &options.no_eas, 0,	"don't use extended attributes", 	NULL},
+		{"noacls",  0, POPT_ARG_NONE,  &options.no_acls, 0,	"don't use ACLs", 	NULL},
 		{"skip-cleanup",  0, POPT_ARG_NONE,  &options.skip_cleanup, 0,	"don't delete files at start", 	NULL},
 		{"valid",  0, POPT_ARG_NONE,  &options.valid, 0,	"generate only valid fields", 	NULL},
 		POPT_COMMON_SAMBA
