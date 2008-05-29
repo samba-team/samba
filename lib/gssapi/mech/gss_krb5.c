@@ -209,6 +209,13 @@ gsskrb5_register_acceptor_identity(const char *identity)
 }
 
 OM_uint32 GSSAPI_LIB_FUNCTION
+krb5_gss_register_acceptor_identity(const char *identity)
+{
+    return gsskrb5_register_acceptor_identity(identity);
+}
+
+
+OM_uint32 GSSAPI_LIB_FUNCTION
 gsskrb5_set_dns_canonicalize(int flag)
 {
         struct _gss_mech_switch	*m;
