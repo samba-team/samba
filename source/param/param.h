@@ -186,6 +186,8 @@ int lp_dir_mask(struct loadparm_service *, struct loadparm_service *);
 int lp_force_dir_mode(struct loadparm_service *, struct loadparm_service *);
 int lp_server_signing(struct loadparm_context *);
 int lp_client_signing(struct loadparm_context *);
+const char *lp_ntp_signd_socket_directory(struct loadparm_context *);
+
 const char *lp_get_parametric(struct loadparm_context *lp_ctx,
 			      struct loadparm_service *service,
 			      const char *type, const char *option);
