@@ -134,7 +134,8 @@ RCSID("$Id$");
  * storage. While memory caches (MEMORY) are local caches to the local
  * process.
  * 
- * Caches are opened with krb5_cc_resolve() or created with krb5_cc_gen_unique().
+ * Caches are opened with krb5_cc_resolve() or created with
+ * krb5_cc_new_unique().
  * 
  * If the cache needs to be opened again (using krb5_cc_resolve())
  * krb5_cc_close() will close the handle, but not the remove the
