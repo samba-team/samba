@@ -47,7 +47,7 @@ _warnerr(krb5_context context, int do_errtext,
     char xfmt[7] = "";
     const char *args[2], **arg;
     char *msg = NULL;
-    char *err_str = NULL;
+    const char *err_str = NULL;
     
     args[0] = args[1] = NULL;
     arg = args;
@@ -82,7 +82,7 @@ _warnerr(krb5_context context, int do_errtext,
     else
 	warnx(xfmt, args[0], args[1]);
     free(msg);
-    free(err_str);
+    krb5_free_error_message(err_str);
     return 0;
 }
 
