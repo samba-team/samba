@@ -1,5 +1,7 @@
 2008-05-27  Love Hörnquist Åstrand  <lha@kth.se>
 
+	* lib/krb5/error_string.c (krb5_free_error_message): constify
+	
 	* lib/krb5/error_string.c: Add krb5_get_error_message().
 
 	* lib/krb5/doxygen.c: krb5_cc_new_unique() is name of the creation
