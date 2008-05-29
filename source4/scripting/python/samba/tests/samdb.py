@@ -16,13 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from auth import system_session
-from credentials import Credentials
+from samba.auth import system_session
+from samba.credentials import Credentials
 import os
-from samba.provision import setup_samdb
+from samba.provision import setup_samdb, guess_names, setup_templatesdb
 from samba.samdb import SamDB
 from samba.tests import cmdline_loadparm, TestCaseInTempDir
-import security
+from samba import security
 from unittest import TestCase
 import uuid
 
@@ -42,14 +42,27 @@ class SamDBTestCase(TestCaseInTempDir):
         domainsid = security.random_sid()
         hostguid = str(uuid.uuid4())
         path = os.path.join(self.tempdir, "samdb.ldb")
-        self.samdb = setup_samdb(path, setup_path, system_session(), creds, 
-                                 cmdline_loadparm, schemadn, configdn, 
-                                 self.domaindn, "example.com", "EXAMPLE.COM", 
-                                 "FOO", lambda x: None, "foo", domaindn, 
-                                 False, domainsid, "# no aci", domainguid, 
-                                 policyguid, "EXAMPLE", True, "secret", 
-                                 "secret", "secret", hostguid, invocationid, 
+        session_info = system_session()
+        names = guess_names(lp=cmdline_loadparm, hostname="foo", 
+                            domain="EXAMPLE.COM", dnsdomain="example.com", 
+                            serverrole="domain controller", 
+                            domaindn=self.domaindn, configdn=configdn, 
+                            schemadn=schemadn)
+        setup_templatesdb(os.path.join(self.tempdir, "templates.ldb"), 
+                          setup_path, session_info=session_info, 
+                          credentials=creds, lp=cmdline_loadparm)
+        self.samdb = setup_samdb(path, setup_path, session_info, creds, 
+                                 cmdline_loadparm, names, 
+                                 lambda x: None, domainsid, 
+                                 "# no aci", domainguid, 
+                                 policyguid, False, "secret", 
+                                 "secret", "secret", invocationid, 
                                  "secret", "domain controller")
+    def tearDown(self):
+        for f in ['templates.ldb', 'schema.ldb', 'configuration.ldb', 
+                  'users.ldb', 'samdb.ldb']:
+            os.remove(os.path.join(self.tempdir, f))
+        super(SamDBTestCase, self).tearDown()
 
     def test_add_foreign(self):
         self.samdb.add_foreign(self.domaindn, "S-1-5-7", "Somedescription")
