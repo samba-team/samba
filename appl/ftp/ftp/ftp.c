@@ -595,11 +595,12 @@ copy_stream (FILE * from, FILE * to)
 	    return 0;
 	off = 0;
 	while (off != st.st_size) {
-	    size_t len = BLOCKSIZE;
+	    size_t len;
 	    ssize_t res;
 
-	    if (off + len > st.st_size)
-		len = st.st_size - off;
+	    len = st.st_size - off;
+	    if (len > BLOCKSIZE)
+		len = BLOCKSIZE;
 
 	    chunk = mmap (0, len, PROT_READ, MAP_SHARED, fileno (from), off);
 	    if (chunk == (void *) MAP_FAILED) {
