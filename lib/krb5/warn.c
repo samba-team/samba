@@ -82,7 +82,7 @@ _warnerr(krb5_context context, int do_errtext,
     else
 	warnx(xfmt, args[0], args[1]);
     free(msg);
-    krb5_free_error_message(err_str);
+    krb5_free_error_message(context, err_str);
     return 0;
 }
 
