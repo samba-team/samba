@@ -233,6 +233,7 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 		io->smb2.out.size		= io2->generic.out.size;
 		io->smb2.out.file_attr		= io2->generic.out.attrib;
 		io->smb2.out.reserved2		= 0;
+		io->smb2.out.maximal_access     = io2->generic.out.maximal_access;
 		break;
 
 	default:
@@ -522,6 +523,7 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 		io2->generic.in.fname		= io->smb2.in.fname;
 		io2->generic.in.sec_desc	= io->smb2.in.sec_desc;
 		io2->generic.in.ea_list		= &io->smb2.in.eas;
+		io2->generic.in.query_maximal_access = io->smb2.in.query_maximal_access; 
 
 		/* we don't support timewarp yet */
 		if (io->smb2.in.timewarp != 0) {

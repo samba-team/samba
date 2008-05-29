@@ -106,7 +106,11 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 
 	lck.in.reserved		= 0x123ab3;
 	status = smb2_lock(tree, &lck);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	if (torture_setting_bool(torture, "windows", false)) {
+		CHECK_STATUS(status, NT_STATUS_OK);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+	}
 	CHECK_VALUE(lck.out.reserved, 0);
 
 	lck.in.reserved		= 0x123ab4;
@@ -115,7 +119,11 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 
 	lck.in.reserved		= 0x123ab5;
 	status = smb2_lock(tree, &lck);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	if (torture_setting_bool(torture, "windows", false)) {
+		CHECK_STATUS(status, NT_STATUS_OK);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+	}
 	CHECK_VALUE(lck.out.reserved, 0);
 
 	lck.in.lock_count	= 0x0001;
@@ -133,14 +141,22 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
 	status = smb2_lock(tree, &lck);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	if (torture_setting_bool(torture, "windows", false)) {
+		CHECK_STATUS(status, NT_STATUS_OK);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+	}
 	CHECK_VALUE(lck.out.reserved, 0);
 
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
 	status = smb2_lock(tree, &lck);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	if (torture_setting_bool(torture, "windows", false)) {
+		CHECK_STATUS(status, NT_STATUS_OK);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+	}
 	CHECK_VALUE(lck.out.reserved, 0);
 
 	el[0].flags		= 0x00000000;
@@ -473,6 +489,51 @@ static bool test_lock_rw_exclusiv(struct torture_context *torture, struct smb2_t
 	return test_lock_read_write(torture, tree, &s);
 }
 
+
+static bool test_lock_auto_unlock(struct torture_context *torture, struct smb2_tree *tree)
+{
+	bool ret = true;
+	NTSTATUS status;
+	struct smb2_handle h;
+	uint8_t buf[200];
+	struct smb2_lock lck;
+	struct smb2_lock_element el[2];
+
+	ZERO_STRUCT(buf);
+
+	status = torture_smb2_testfile(tree, "autounlock.txt", &h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_write(tree, h, buf, 0, ARRAY_SIZE(buf));
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ZERO_STRUCT(lck);
+	lck.in.locks		= el;
+	lck.in.lock_count	= 0x0001;
+	lck.in.file.handle	= h;
+	el[0].offset		= 0;
+	el[0].length		= 1;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE | SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+
+	status = smb2_lock(tree, &lck);
+	if (torture_setting_bool(torture, "windows", false)) {
+		CHECK_STATUS(status, NT_STATUS_OK);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+	}
+
+	
+
+done:
+	return ret;
+}
+
+
 /* basic testing of SMB2 locking
 */
 struct torture_suite *torture_smb2_lock_init(void)
@@ -483,6 +544,7 @@ struct torture_suite *torture_smb2_lock_init(void)
 	torture_suite_add_1smb2_test(suite, "RW-NONE", test_lock_rw_none);
 	torture_suite_add_1smb2_test(suite, "RW-SHARED", test_lock_rw_shared);
 	torture_suite_add_1smb2_test(suite, "RW-EXCLUSIV", test_lock_rw_exclusiv);
+	torture_suite_add_1smb2_test(suite, "AUTO-UNLOCK", test_lock_auto_unlock);
 
 	suite->description = talloc_strdup(suite, "SMB2-LOCK tests");
 

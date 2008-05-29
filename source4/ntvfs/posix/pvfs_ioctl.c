@@ -73,7 +73,8 @@ NTSTATUS pvfs_ioctl(struct ntvfs_module_context *ntvfs,
 
 	case RAW_IOCTL_SMB2:
 	case RAW_IOCTL_SMB2_NO_HANDLE:
-		return NT_STATUS_FS_DRIVER_REQUIRED;
+		/* see WSPP SMB2 test 46 */
+		return NT_STATUS_INVALID_DEVICE_REQUEST;
 	}
 
 	return NT_STATUS_INVALID_LEVEL;
