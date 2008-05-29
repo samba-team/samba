@@ -497,7 +497,7 @@ static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 		if (i > 0) {
 			string = talloc_asprintf_append(string, ";"); 
 		}
-		string = talloc_asprintf_append(string, "%u: %s", 
+		string = talloc_asprintf_append(string, "%u:%s", 
 						   blob->ctr.dsdb.mappings[i].id_prefix,
 						   blob->ctr.dsdb.mappings[i].oid.oid);
 		if (string == NULL) {
