@@ -393,7 +393,7 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, struct 
 				smb2_request_destroy(req);
 				return NT_STATUS_INVALID_NETWORK_RESPONSE;
 			}
-			io->out.maximal_access = IVAL(io->out.blobs.blobs[i].data.data, 0);
+			io->out.maximal_access = IVAL(io->out.blobs.blobs[i].data.data, 4);
 		}
 		if (strcmp(io->out.blobs.blobs[i].tag, SMB2_CREATE_TAG_QFID) == 0) {
 			if (io->out.blobs.blobs[i].data.length != 32) {
