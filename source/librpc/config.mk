@@ -343,8 +343,6 @@ PUBLIC_DEPENDENCIES = LIBNDR
 
 NDR_NTP_SIGND_OBJ_FILES = $(gen_ndrsrcdir)/ndr_ntp_signd.o
 
-PUBLIC_HEADERS += $(gen_ndrsrcdir)/ndr_ntp_signd.h
-
 [SUBSYSTEM::NDR_WINSREPL]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_NBT
 
