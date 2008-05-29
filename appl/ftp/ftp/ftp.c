@@ -579,6 +579,9 @@ copy_stream (FILE * from, FILE * to)
 
 #if defined(HAVE_MMAP) && !defined(NO_MMAP)
     void *chunk;
+    size_t off;
+
+#define BLOCKSIZE (1024 * 1024 * 10)
 
 #ifndef MAP_FAILED
 #define MAP_FAILED (-1)
@@ -590,17 +593,32 @@ copy_stream (FILE * from, FILE * to)
 	 */
 	if (st.st_size == 0)
 	    return 0;
-	chunk = mmap (0, st.st_size, PROT_READ, MAP_SHARED, fileno (from), 0);
-	if (chunk != (void *) MAP_FAILED) {
-	    int res;
+	off = 0;
+	while (off != st.st_size) {
+	    size_t len = BLOCKSIZE;
+	    ssize_t res;
 
-	    res = sec_write (fileno (to), chunk, st.st_size);
+	    if (off + len > st.st_size)
+		len = st.st_size - off;
+
+	    chunk = mmap (0, len, PROT_READ, MAP_SHARED, fileno (from), off);
+	    if (chunk == (void *) MAP_FAILED) {
+		if (off == 0) /* try read if mmap doesn't work */
+		    goto try_read;
+		break;
+	    }
+		
+	    res = sec_write (fileno (to), chunk, len);
 	    if (munmap (chunk, st.st_size) < 0)
 		warn ("munmap");
 	    sec_fflush (to);
-	    return res;
+	    if (res != len)
+		return off;
+	    off += len;
 	}
+	return off;
     }
+try_read:
 #endif
 
     buf = alloc_buffer (buf, &bufsize,
