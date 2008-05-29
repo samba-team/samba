@@ -1,18 +1,29 @@
+# This file contains a list of regular expressions matching testsuites that 
+# should be skipped during "make test".
+#
+# Possible reasons for adding a testsuite here:
+# * Tests functionality not implemented on the server side
+# * Testsuite crashes during run
+# * Testsuite crashes server
+#
+# If a testsuite is partially succeeding, please list the failing bits 
+# in the samba4-knownfail file rather than disabling the testsuite completely.
+#
+# If a testsuite is very slow, please add it to samba4-slow instead.
+#
+# Please add a comment for each testsuite you disable explaining why 
+# it is being skipped.
 base.delaywrite
 raw.composite
 base.iometer
 base.casetable
 base.nttrans
-.*base.bench.holdcon.*				# Very slow
-raw.bench.lookup	# Very slow
 base.scan.maxfid
 raw.hold.oplock		# Not a test, but a way to block other clients for a test
 raw.ping.pong		# Needs second server to test
 rpc.samr_accessmask
 raw.scan.eamax
 samba4.ntvfs.cifs.raw.qfileinfo.ipc
-base.utable
-base.smb
 smb2.notify
 smb2.scan
 ntvfs.cifs.base.charset
@@ -31,7 +42,6 @@ ntvfs.cifs.raw.qfileinfo.ipc
 rpc.dssync
 rpc.samsync
 ldap.uptodatevector					# Segfaults
-rpc.scanner							# Very slow
 rpc.remact							# Not provided by Samba 4
 rpc.oxidresolve						# Not provided by Samba 4
 rpc.eventlog						# Not provided by Samba 4

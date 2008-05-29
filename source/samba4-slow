@@ -1,4 +1,7 @@
-.*base.bench.holdcon.*				# Very slow
-raw.bench.lookup	# Very slow
-base.utable						# Slow
-base.smb						# Slow
+# This file contains regexes matching tests that are very slow and 
+# should be skipped during a normal test run.
+.*base.bench.holdcon.*
+raw.bench.lookup
+base.utable
+base.smb
+rpc.scanner
