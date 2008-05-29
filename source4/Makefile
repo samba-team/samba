@@ -167,6 +167,7 @@ showlayout::
 	@echo '  torturedir:  $(TORTUREDIR)'
 	@echo '  datadir:     $(datadir)'
 	@echo '  winbindd_socket_dir:  $(winbindd_socket_dir)'
+	@echo '  ntp_signd_socket_dir:  $(ntp_signd_socket_dir)'
 
 showflags::
 	@echo '  srcdir     = $(srcdir)'
