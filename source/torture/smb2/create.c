@@ -41,7 +41,7 @@
 	if (v != correct) { \
 		printf("(%s) Incorrect value for %s 0x%08llx - should be 0x%08llx\n", \
 		       __location__, #v, (unsigned long long)v, (unsigned long long)correct); \
-		return false; \
+		return false;					\
 	}} while (0)
 
 /*
@@ -53,6 +53,7 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 	uint32_t access_mask, file_attributes, file_attributes_set, denied_mask;
+	union smb_fileinfo q;
 
 	ZERO_STRUCT(io);
 	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -181,6 +182,20 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 	status = smb2_create(tree, tmp_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 
+	io.in.fname = FNAME;
+	io.in.file_attributes = 0;
+	io.in.desired_access  = SEC_FILE_READ_DATA | SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA;
+	io.in.query_maximal_access = true;
+	status = smb2_create(tree, tmp_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_EQUAL(io.out.maximal_access, 0x001f01ff);
+
+	q.access_information.level = RAW_FILEINFO_ACCESS_INFORMATION;
+	q.access_information.in.file.handle = io.out.file.handle;
+	status = smb2_getinfo_file(tree, tmp_ctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_EQUAL(q.access_information.out.access_flags, io.in.desired_access);
+	
 	talloc_free(tmp_ctx);
 
 	smb2_deltree(tree, FNAME);
