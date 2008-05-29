@@ -15,8 +15,9 @@ interface ntp_signd
 	typedef [v1_enum] enum {
 		SIGN_TO_CLIENT = 0,
 		ASK_SERVER_TO_SIGN = 1,
-		SIGNING_SUCCESS = 2,
-		SIGNING_FAILURE = 3
+		CHECK_SERVER_SIGNATURE = 2,
+		SIGNING_SUCCESS = 3,
+		SIGNING_FAILURE = 4
 	} ntp_signd_op;
 
 	typedef [flag(NDR_BIG_ENDIAN),public] struct {
