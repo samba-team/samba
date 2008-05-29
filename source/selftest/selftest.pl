@@ -499,6 +499,7 @@ sub read_test_regexes($)
 	open(LF, "<$name") or die("unable to read $name: $!");
 	while (<LF>) { 
 		chomp; 
+		next if (/^#/);
 		if (/^(.*?)([ \t]+)\#([\t ]*)(.*?)$/) {
 			push (@ret, [$1, $4]);
 		} else {

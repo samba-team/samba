@@ -1,0 +1,4 @@
+.*base.bench.holdcon.*				# Very slow
+raw.bench.lookup	# Very slow
+base.utable						# Slow
+base.smb						# Slow
