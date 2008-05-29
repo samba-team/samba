@@ -252,8 +252,12 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	} else {
 		status = pvfs_access_check_create(pvfs, req, name, &access_mask);
 	}
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (io->generic.in.query_maximal_access) {
+		status = pvfs_access_maximal_allowed(pvfs, req, name, 
+						     &io->generic.out.maximal_access);
+		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
 	f->ntvfs         = h;
@@ -577,6 +581,12 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 
 	status = pvfs_access_check_create(pvfs, req, name, &access_mask);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (io->generic.in.query_maximal_access) {
+		status = pvfs_access_maximal_allowed(pvfs, req, name, 
+						     &io->generic.out.maximal_access);
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
 
 	/* check that the parent isn't opened with delete on close set */
 	status = pvfs_resolve_parent(pvfs, req, name, &parent);
@@ -1135,6 +1145,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_open(ntvfs, req, io);
 	}
 
+	ZERO_STRUCT(io->generic.out);
+
 	create_options = io->generic.in.create_options;
 	share_access   = io->generic.in.share_access;
 	access_mask    = io->generic.in.access_mask;
@@ -1282,8 +1294,12 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	/* check the security descriptor */
 	status = pvfs_access_check(pvfs, req, name, &access_mask);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (io->generic.in.query_maximal_access) {
+		status = pvfs_access_maximal_allowed(pvfs, req, name, 
+						     &io->generic.out.maximal_access);
+		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
 	status = ntvfs_handle_new(pvfs->ntvfs, req, &h);

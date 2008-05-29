@@ -807,3 +807,15 @@ NTSTATUS pvfs_acl_inherit(struct pvfs_state *pvfs,
 	
 	return status;
 }
+
+/*
+  return the maximum allowed access mask
+*/
+NTSTATUS pvfs_access_maximal_allowed(struct pvfs_state *pvfs, 
+				     struct ntvfs_request *req,
+				     struct pvfs_filename *name,
+				     uint32_t *maximal_access)
+{
+	*maximal_access = SEC_FLAG_MAXIMUM_ALLOWED;
+	return pvfs_access_check(pvfs, req, name, maximal_access);
+}
