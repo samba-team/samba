@@ -1,5 +1,9 @@
-2008-05-05  Love Hörnquist Åstrand  <lha@kth.se>
+2008-05-27  Love Hörnquist Åstrand  <lha@kth.se>
 
+	* ntlm/init_sec_context.c: use krb5_get_error_message
+
+2008-05-05  Love Hörnquist Åstrand  <lha@kth.se>
+	
 	* spnego/spnego_locl.h: Add back "mech/utils.h", its needed for
 	oid/buffer functions.
 
