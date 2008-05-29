@@ -179,6 +179,7 @@ struct loadparm_global
 	int bUnixExtensions;
 	int bDisableNetbios;
 	int bRpcBigEndian;
+	char *szNTPSignDSocketDirectory;
 	struct param_opt *param_opt;
 };
 
@@ -489,6 +490,8 @@ static struct parm_struct parm_table[] = {
 	{"template homedir", P_STRING, P_GLOBAL, GLOBAL_VAR(szTemplateHomedir), NULL, NULL },
 	{"idmap trusted only", P_BOOL, P_GLOBAL, GLOBAL_VAR(bIdmapTrustedOnly), NULL, NULL},
 
+	{"ntp signd socket directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szNTPSignDSocketDirectory), NULL, NULL },
+
 	{NULL, P_BOOL, P_NONE, 0, NULL, NULL}
 };
 
@@ -729,6 +732,8 @@ _PUBLIC_ FN_LOCAL_INTEGER(lp_dir_mask, iDir_mask)
 _PUBLIC_ FN_LOCAL_INTEGER(lp_force_dir_mode, iDir_force_mode)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_server_signing, server_signing)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_client_signing, client_signing)
+
+_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_ntp_signd_socket_directory, szNTPSignDSocketDirectory)
 
 /* local prototypes */
 static int map_parameter(const char *pszParmName);
@@ -2409,6 +2414,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 				   dyn_SETUPDIR);
 
 	lp_do_global_parameter(lp_ctx, "prefork children:smb", "4");
+
+	lp_do_global_parameter(lp_ctx, "ntp signd socket directory", dyn_NTP_SIGND_SOCKET_DIR);
 
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {

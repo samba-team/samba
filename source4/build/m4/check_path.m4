@@ -20,6 +20,7 @@ piddir="${localstatedir}/run"
 privatedir="\${prefix}/private"
 modulesdir="\${prefix}/modules"
 winbindd_socket_dir="${localstatedir}/run/winbind_pipe"
+ntp_signd_socket_dir="${localstatedir}/run/ntp_signd"
 
 AC_ARG_WITH(fhs, 
 [  --with-fhs              Use FHS-compliant paths (default=no)],
@@ -31,6 +32,7 @@ AC_ARG_WITH(fhs,
     modulesdir="${libdir}/samba"
     datadir="${datadir}/samba"
     includedir="${includedir}/samba-4.0"
+    ntp_signd_socket_dir="${localstatedir}/run/samba/ntp_signd"
     winbindd_socket_dir="${localstatedir}/run/samba/winbind_pipe"
 )
 
@@ -63,6 +65,22 @@ AC_ARG_WITH(winbindd-socket-dir,
   ;;
   * )
     winbindd_socket_dir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set where the NTP signing deamon socket should be put
+AC_ARG_WITH(ntp-signd-socket-dir,
+[  --with-ntp-signd-socket-dir=DIR   Where to put the NTP signing deamon socket ($ac_default_prefix/run/ntp_signd)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-ntp-signd-socketdir called without argument - will use default])
+  ;;
+  * )
+    ntp_signd_socket_dir="$withval"
     ;;
   esac])
 
@@ -122,6 +140,7 @@ AC_SUBST(privatedir)
 AC_SUBST(bindir)
 AC_SUBST(sbindir)
 AC_SUBST(winbindd_socket_dir)
+AC_SUBST(ntp_signd_socket_dir)
 AC_SUBST(modulesdir)
 
 #################################################
