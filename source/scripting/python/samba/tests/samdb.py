@@ -19,7 +19,7 @@
 from samba.auth import system_session
 from samba.credentials import Credentials
 import os
-from samba.provision import setup_samdb, guess_names
+from samba.provision import setup_samdb, guess_names, setup_templatesdb
 from samba.samdb import SamDB
 from samba.tests import cmdline_loadparm, TestCaseInTempDir
 from samba import security
@@ -42,12 +42,16 @@ class SamDBTestCase(TestCaseInTempDir):
         domainsid = security.random_sid()
         hostguid = str(uuid.uuid4())
         path = os.path.join(self.tempdir, "samdb.ldb")
+        session_info = system_session()
         names = guess_names(lp=cmdline_loadparm, hostname="foo", 
                             domain="EXAMPLE.COM", dnsdomain="example.com", 
                             serverrole="domain controller", 
                             domaindn=self.domaindn, configdn=configdn, 
                             schemadn=schemadn)
-        self.samdb = setup_samdb(path, setup_path, system_session(), creds, 
+        setup_templatesdb(os.path.join(self.tempdir, "templates.ldb"), 
+                          setup_path, session_info=session_info, 
+                          credentials=creds, lp=cmdline_loadparm)
+        self.samdb = setup_samdb(path, setup_path, session_info, creds, 
                                  cmdline_loadparm, names, 
                                  lambda x: None, domainsid, 
                                  "# no aci", domainguid, 
