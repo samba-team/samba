@@ -35,6 +35,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/crypto/md5.h"
+#include "system/passwd.h"
 
 /*
   top level context structure for the ntp_signd server
@@ -144,6 +145,8 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB wrapped_input)
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
+	/* We need to implement 'check signature' and 'request server
+	 * to sign' operations at some point */
 	if (sign_request.op != SIGN_TO_CLIENT) {
 		talloc_free(tmp_ctx);
 		return signing_failure(ntp_signdconn, sign_request.packet_id);
@@ -155,13 +158,13 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB wrapped_input)
 		return signing_failure(ntp_signdconn, sign_request.packet_id);
 	}
 	
+	/* The top bit is a 'key selector' */
 	sid = dom_sid_add_rid(tmp_ctx, domain_sid, sign_request.key_id & 0x7FFFFFFF);
 	if (!sid) {
 		talloc_free(tmp_ctx);
 		return signing_failure(ntp_signdconn, sign_request.packet_id);
 	}
 
-	/* Sign packet */
 	ret = ldb_search_exp_fmt(ntp_signdconn->ntp_signd->samdb, tmp_ctx,
 				 &res, samdb_base_dn(ntp_signdconn->ntp_signd->samdb),
 				 LDB_SCOPE_SUBTREE, attrs, "(&(objectSid=%s)(objectClass=computer))",
@@ -188,6 +191,7 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB wrapped_input)
 		return signing_failure(ntp_signdconn, sign_request.packet_id);
 	}
 
+	/* Generate the reply packet */
 	signed_reply.version = 1;
 	signed_reply.packet_id = sign_request.packet_id;
 	signed_reply.op = SIGNING_SUCCESS;
@@ -201,7 +205,6 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB wrapped_input)
 	}
 
 	memcpy(signed_reply.signed_packet.data, sign_request.packet_to_sign.data, sign_request.packet_to_sign.length);
-	
 	SIVAL(signed_reply.signed_packet.data, sign_request.packet_to_sign.length, sign_request.key_id);
 
 	/* Sign the NTP response with the unicodePwd */
@@ -210,8 +213,8 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB wrapped_input)
 	MD5Update(&ctx, sign_request.packet_to_sign.data, sign_request.packet_to_sign.length);
 	MD5Final(signed_reply.signed_packet.data + sign_request.packet_to_sign.length + 4, &ctx);
 
-	/* Place it into the packet for the wire */
 
+	/* Place it into the packet for the wire */
 	ndr_err = ndr_push_struct_blob(&output, tmp_ctx, 
 				       lp_iconv_convenience(ntp_signdconn->ntp_signd->task->lp_ctx),
 				       &signed_reply,
@@ -229,6 +232,7 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB wrapped_input)
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/* The 'wire' transport for this is wrapped with a 4 byte network byte order length */
 	RSIVAL(wrapped_output.data, 0, output.length);
 	memcpy(wrapped_output.data + 4, output.data, output.length);	
 
@@ -317,7 +321,15 @@ static void ntp_signd_task_init(struct task_server *task)
 
 	const struct model_ops *model_ops;
 
-	const char *address = "/tmp/ux_demo";
+	const char *address;
+
+	if (!directory_create_or_exist(lp_ntp_signd_socket_directory(task->lp_ctx), geteuid(), 0755)) {
+		char *error = talloc_asprintf(task, "Cannot create NTP signd pipe directory: %s", 
+					      lp_ntp_signd_socket_directory(task->lp_ctx));
+		task_server_terminate(task,
+				      error);
+		return;
+	}
 
 	/* within the ntp_signd task we want to be a single process, so
 	   ask for the single process model ops and pass these to the
@@ -344,6 +356,8 @@ static void ntp_signd_task_init(struct task_server *task)
 		task_server_terminate(task, "ntp_signd failed to open samdb");
 		return;
 	}
+
+	address = talloc_asprintf(ntp_signd, "%s/socket", lp_ntp_signd_socket_directory(task->lp_ctx));
 
 	status = stream_setup_socket(ntp_signd->task->event_ctx, 
 				     ntp_signd->task->lp_ctx,
