@@ -10,7 +10,6 @@ raw.hold.oplock		# Not a test, but a way to block other clients for a test
 raw.ping.pong		# Needs second server to test
 rpc.samr_accessmask
 raw.scan.eamax
-samba4.ntvfs.cifs.raw.qfileinfo.ipc
 base.utable
 base.smb
 smb2.notify
