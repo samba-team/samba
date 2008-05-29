@@ -26,7 +26,9 @@
 #include "dsdb/samdb/samdb.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "libcli/security/security.h"
+#include "param/param.h"
 
 /*
   convert a ldif formatted objectSid to a NDR formatted blob
@@ -371,10 +373,178 @@ static int ldif_comparison_objectCategory(struct ldb_context *ldb, void *mem_ctx
 	return ret;
 }
 
+/*
+  convert a ldif formatted prefixMap to a NDR formatted blob
+*/
+static int ldif_read_prefixMap(struct ldb_context *ldb, void *mem_ctx,
+			       const struct ldb_val *in, struct ldb_val *out)
+{
+	struct prefixMapBlob *blob;
+	enum ndr_err_code ndr_err;
+	char *string, *line, *p, *oid;
+
+	blob = talloc_zero(mem_ctx, struct prefixMapBlob);
+	if (blob == NULL) {
+		return -1;
+	}
+	
+	string = (const char *)in->data;
+
+	line = string;
+	while (line && line[0]) {
+		p=strchr(line, ';');
+		if (p) {
+			p[0] = '\0';
+		} else {
+			p=strchr(string, '\n');
+			if (p) {
+				p[0] = '\0';
+			}
+		}
+		
+		blob->ctr.dsdb.mappings = talloc_realloc(blob, 
+							 blob->ctr.dsdb.mappings, 
+							 struct drsuapi_DsReplicaOIDMapping,
+							 blob->ctr.dsdb.num_mappings+1);
+		if (!blob->ctr.dsdb.mappings) {
+			return -1;
+		}
+
+		blob->ctr.dsdb.mappings[blob->ctr.dsdb.num_mappings].id_prefix = strtoul(p, &oid, 10);
+
+		if (oid[0] != ':') {
+			return -1;
+		}
+
+		/* we know there must be at least ":" */
+		oid++;
+
+		blob->ctr.dsdb.mappings[blob->ctr.dsdb.num_mappings].oid.oid
+			= talloc_strdup(blob->ctr.dsdb.mappings, oid);
+
+		blob->ctr.dsdb.num_mappings++;
+
+		if (p) {
+			line = p++;
+		} else {
+			line = NULL;
+		}
+	}
+
+	ndr_err = ndr_push_struct_blob(out, mem_ctx, 
+				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
+				       blob,
+				       (ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
+	talloc_free(blob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return -1;
+	}
+	return 0;
+}
+
+/*
+  convert a NDR formatted blob to a ldif formatted prefixMap
+*/
+static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
+				const struct ldb_val *in, struct ldb_val *out)
+{
+	struct prefixMapBlob *blob;
+	enum ndr_err_code ndr_err;
+	uint32_t i;
+
+	blob = talloc(mem_ctx, struct prefixMapBlob);
+	if (blob == NULL) {
+		return -1;
+	}
+	ndr_err = ndr_pull_struct_blob(in, blob, 
+				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
+				       blob,
+				       (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(blob);
+		return -1;
+	}
+	if (blob->version != PREFIX_MAP_VERSION_DSDB) {
+		return -1;
+	}
+	out->data = talloc_strdup(mem_ctx, "");
+	if (out->data == NULL) {
+		return -1;
+	}
+
+	for (i=0; i < blob->ctr.dsdb.num_mappings; i++) {
+		if (i > 0) {
+			out->data = talloc_asprintf_append(out->data, ";"); 
+		}
+		out->data = talloc_asprintf_append(out->data, "%u: %s", 
+						   blob->ctr.dsdb.mappings[i].id_prefix,
+						   blob->ctr.dsdb.mappings[i].oid.oid);
+		if (out->data == NULL) {
+			return -1;
+		}
+	}
+
+	talloc_free(blob);
+	out->length = strlen((const char *)out->data);
+	return 0;
+}
+
+static bool ldif_comparision_prefixMap_isString(const struct ldb_val *v)
+{
+	if (v->length < 4) {
+		return true;
+	}
+
+	if (IVAL(v->data, 0) == PREFIX_MAP_VERSION_DSDB) {
+		return false;
+	}
+	
+	return true;
+}
+
+/*
+  canonicalise a prefixMap
+*/
+static int ldif_canonicalise_prefixMap(struct ldb_context *ldb, void *mem_ctx,
+				       const struct ldb_val *in, struct ldb_val *out)
+{
+	if (ldif_comparision_prefixMap_isString(in)) {
+		return ldif_read_prefixMap(ldb, mem_ctx, in, out);
+	}
+	return ldb_handler_copy(ldb, mem_ctx, in, out);
+}
+
+static int ldif_comparison_prefixMap(struct ldb_context *ldb, void *mem_ctx,
+				     const struct ldb_val *v1,
+				     const struct ldb_val *v2)
+{
+
+	int ret, ret1, ret2;
+	struct ldb_val v1_canon, v2_canon;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+
+	/* I could try and bail if tmp_ctx was NULL, but what return
+	 * value would I use?
+	 *
+	 * It seems easier to continue on the NULL context 
+	 */
+	ret1 = ldif_canonicalise_prefixMap(ldb, tmp_ctx, v1, &v1_canon);
+	ret2 = ldif_canonicalise_prefixMap(ldb, tmp_ctx, v2, &v2_canon);
+
+	if (ret1 == LDB_SUCCESS && ret2 == LDB_SUCCESS) {
+		ret = data_blob_cmp(&v1_canon, &v2_canon);
+	} else {
+		ret = data_blob_cmp(v1, v2);
+	}
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
 #define LDB_SYNTAX_SAMBA_SID			"LDB_SYNTAX_SAMBA_SID"
 #define LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR	"LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR"
 #define LDB_SYNTAX_SAMBA_GUID			"LDB_SYNTAX_SAMBA_GUID"
 #define LDB_SYNTAX_SAMBA_OBJECT_CATEGORY	"LDB_SYNTAX_SAMBA_OBJECT_CATEGORY"
+#define LDB_SYNTAX_SAMBA_PREFIX_MAP	"LDB_SYNTAX_SAMBA_PREFIX_MAP"
 
 static const struct ldb_schema_syntax samba_syntaxes[] = {
 	{
@@ -401,6 +571,12 @@ static const struct ldb_schema_syntax samba_syntaxes[] = {
 		.ldif_write_fn	= ldb_handler_copy,
 		.canonicalise_fn= ldif_canonicalise_objectCategory,
 		.comparison_fn	= ldif_comparison_objectCategory
+	},{
+		.name		= LDB_SYNTAX_SAMBA_PREFIX_MAP,
+		.ldif_read_fn	= ldif_read_prefixMap,
+		.ldif_write_fn	= ldif_write_prefixMap,
+		.canonicalise_fn= ldif_canonicalise_prefixMap,
+		.comparison_fn	= ldif_comparison_prefixMap
 	}
 };
 
@@ -435,6 +611,7 @@ static const struct {
 	{ "masteredBy",			LDB_SYNTAX_DN },
 	{ "msDs-masteredBy",		LDB_SYNTAX_DN },
 	{ "fSMORoleOwner",		LDB_SYNTAX_DN },
+	{ "prefixMap",                  LDB_SYNTAX_SAMBA_PREFIX_MAP }
 };
 
 /*
