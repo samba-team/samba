@@ -166,5 +166,5 @@ krb5_get_error_message(krb5_context context, krb5_error_code code)
 void KRB5_LIB_FUNCTION
 krb5_free_error_message(krb5_context context, const char *msg)
 {
-    free(msg);
+    free(rk_UNCONST(msg));
 }
