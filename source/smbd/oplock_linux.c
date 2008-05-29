@@ -23,22 +23,6 @@
 
 #if HAVE_KERNEL_OPLOCKS_LINUX
 
-/* these can be removed when they are in glibc headers */
-struct  cap_user_header {
-	uint32 version;
-	int pid;
-} header;
-struct cap_user_data {
-	uint32 effective;
-	uint32 permitted;
-	uint32 inheritable;
-} data;
-
-extern int capget(struct cap_user_header * hdrp,
-		  struct cap_user_data * datap);
-extern int capset(struct cap_user_header * hdrp,
-		  const struct cap_user_data * datap);
-
 static SIG_ATOMIC_T signals_received;
 #define FD_PENDING_SIZE 100
 static SIG_ATOMIC_T fd_pending_array[FD_PENDING_SIZE];
@@ -76,32 +60,6 @@ static void signal_handler(int sig, siginfo_t *info, void *unused)
 	sys_select_signal(RT_SIGNAL_LEASE);
 }
 
-/****************************************************************************
- Try to gain a linux capability.
-****************************************************************************/
-
-static void set_capability(unsigned capability)
-{
-#ifndef _LINUX_CAPABILITY_VERSION
-#define _LINUX_CAPABILITY_VERSION 0x19980330
-#endif
-	header.version = _LINUX_CAPABILITY_VERSION;
-	header.pid = 0;
-
-	if (capget(&header, &data) == -1) {
-		DEBUG(3,("Unable to get kernel capabilities (%s)\n",
-			 strerror(errno)));
-		return;
-	}
-
-	data.effective |= (1<<capability);
-
-	if (capset(&header, &data) == -1) {
-		DEBUG(3,("Unable to set %d capability (%s)\n", 
-			 capability, strerror(errno)));
-	}
-}
-
 /*
  Call to set the kernel lease signal handler
 */
@@ -127,7 +85,7 @@ int linux_setlease(int fd, int leasetype)
 
 	ret = fcntl(fd, F_SETLEASE, leasetype);
 	if (ret == -1 && errno == EACCES) {
-		set_capability(CAP_LEASE);
+		set_effective_capability(LEASE_CAPABILITY);
 		ret = fcntl(fd, F_SETLEASE, leasetype);
 	}
 

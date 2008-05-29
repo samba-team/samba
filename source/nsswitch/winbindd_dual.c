@@ -35,7 +35,6 @@
 #define DBGC_CLASS DBGC_WINBIND
 
 extern BOOL override_logfile;
-extern struct winbindd_methods cache_methods;
 
 /* Read some data from a client connection */
 
@@ -991,15 +990,6 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 			"account_lockout_policy_handler",
 			account_lockout_policy_handler,
 			child);
-	}
-
-	/* Special case for Winbindd on a Samba DC,
-	 * We want to make sure the child can connect to smbd
-	 * but not the main daemon */
-
-	if (child->domain && child->domain->internal && IS_DC) {
-		child->domain->methods = &cache_methods;
-		child->domain->online = False;
 	}
 
 	while (1) {

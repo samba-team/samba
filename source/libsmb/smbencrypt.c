@@ -182,6 +182,7 @@ BOOL ntv2_owf_gen(const uchar owf[16],
 	domain_byte_len = push_ucs2_allocate(&domain, domain_in);
 	if (domain_byte_len == (size_t)-1) {
 		DEBUG(0, ("push_uss2_allocate() for domain returned -1 (probably malloc() failure)\n"));
+		SAFE_FREE(user);
 		return False;
 	}
 
