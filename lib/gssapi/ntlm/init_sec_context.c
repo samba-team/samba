@@ -140,8 +140,8 @@ get_user_ccache(const ntlm_name name, char **username, struct ntlm_buf *key)
     ret = krb5_cc_retrieve_cred(context, id, KRB5_TC_MATCH_KEYTYPE, 
 				&mcreds, &creds);
     if (ret) {
-	char *s = krb5_get_error_message(context, ret);
-	krb5_free_error_string(context, s);
+	const char *s = krb5_get_error_message(context, ret);
+	krb5_free_error_message(context, s);
 	goto out;
     }
 
