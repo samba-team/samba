@@ -279,7 +279,7 @@ reseed(FState * st)
     md_update(&key_md, st->key, BLOCK);
 
     /* add pid to make output diverse after fork() */
-    md_update(&key_md, &st->pid, sizeof(st->pid));
+    md_update(&key_md, (const unsigned char *)&st->pid, sizeof(st->pid));
 
     /* now we have new key */
     md_result(&key_md, st->key);
@@ -403,7 +403,7 @@ extract_data(FState * st, unsigned count, unsigned char *dst)
     /* If we forked, force a reseed again */
     if (pid != st->pid) {
 	st->pid = pid;
-	reseed();
+	reseed(st);
     }
 
     while (count > 0)
