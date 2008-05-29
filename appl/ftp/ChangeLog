@@ -1,5 +1,10 @@
-2008-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
+2008-05-28  Love Hörnquist Åstrand  <lha@kth.se>
 
+	* ftp/ftp.c: Try sliding mmap window over memory file (10MB
+	window), works better with larger files (ie doesn't fail).
+	
+2008-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* ftpd/logwtmp.c: Use asl for logging ftpd wtmp messages.
 
 2007-07-12  Love Hörnquist Åstrand  <lha@it.su.se>
