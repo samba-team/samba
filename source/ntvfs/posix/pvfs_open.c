@@ -252,8 +252,12 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	} else {
 		status = pvfs_access_check_create(pvfs, req, name, &access_mask);
 	}
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (io->generic.in.query_maximal_access) {
+		status = pvfs_access_maximal_allowed(pvfs, req, name, 
+						     &io->generic.out.maximal_access);
+		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
 	f->ntvfs         = h;
@@ -577,6 +581,12 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 
 	status = pvfs_access_check_create(pvfs, req, name, &access_mask);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (io->generic.in.query_maximal_access) {
+		status = pvfs_access_maximal_allowed(pvfs, req, name, 
+						     &io->generic.out.maximal_access);
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
 
 	/* check that the parent isn't opened with delete on close set */
 	status = pvfs_resolve_parent(pvfs, req, name, &parent);
@@ -1122,6 +1132,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	uint32_t create_options;
 	uint32_t share_access;
 	uint32_t access_mask;
+	uint32_t create_action = NTCREATEX_ACTION_EXISTED;
 	bool del_on_close;
 	bool stream_existed, stream_truncate=false;
 	uint32_t oplock_level = OPLOCK_NONE, oplock_granted;
@@ -1133,6 +1144,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	    io->generic.level != RAW_OPEN_NTTRANS_CREATE) {
 		return ntvfs_map_open(ntvfs, req, io);
 	}
+
+	ZERO_STRUCT(io->generic.out);
 
 	create_options = io->generic.in.create_options;
 	share_access   = io->generic.in.share_access;
@@ -1168,6 +1181,13 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 					  (~FILE_ATTRIBUTE_ALL_MASK))) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	/* we ignore some file_attr bits */
+	io->ntcreatex.in.file_attr &= ~(FILE_ATTRIBUTE_NONINDEXED | 
+					FILE_ATTRIBUTE_COMPRESSED |
+					FILE_ATTRIBUTE_REPARSE_POINT |
+					FILE_ATTRIBUTE_SPARSE |
+					FILE_ATTRIBUTE_NORMAL);
 
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, io->ntcreatex.in.fname, 
@@ -1210,6 +1230,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		} else {
 			stream_truncate = true;
 		}
+		create_action = NTCREATEX_ACTION_TRUNCATED;
 		break;
 
 	case NTCREATEX_DISP_OPEN:
@@ -1228,6 +1249,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		} else {
 			stream_truncate = true;
 		}
+		create_action = NTCREATEX_ACTION_TRUNCATED;
 		break;
 
 	case NTCREATEX_DISP_CREATE:
@@ -1272,8 +1294,12 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	/* check the security descriptor */
 	status = pvfs_access_check(pvfs, req, name, &access_mask);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (io->generic.in.query_maximal_access) {
+		status = pvfs_access_maximal_allowed(pvfs, req, name, 
+						     &io->generic.out.maximal_access);
+		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
 	status = ntvfs_handle_new(pvfs->ntvfs, req, &h);
@@ -1487,7 +1513,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	io->generic.out.oplock_level  = oplock_granted;
 	io->generic.out.file.ntvfs    = h;
 	io->generic.out.create_action = stream_existed?
-		NTCREATEX_ACTION_EXISTED:NTCREATEX_ACTION_CREATED;
+		create_action:NTCREATEX_ACTION_CREATED;
+	
 	io->generic.out.create_time   = name->dos.create_time;
 	io->generic.out.access_time   = name->dos.access_time;
 	io->generic.out.write_time    = name->dos.write_time;
