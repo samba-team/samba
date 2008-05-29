@@ -36,6 +36,18 @@ static void smb2srv_create_send(struct ntvfs_request *ntvfs)
 	DATA_BLOB blob;
 
 	SMB2SRV_CHECK_ASYNC_STATUS(io, union smb_open);
+
+	/* setup the blobs we should give in the reply */
+	if (io->smb2.out.maximal_access != 0) {
+		uint32_t data[2];
+		SIVAL(data, 0, 0);
+		SIVAL(data, 4, io->smb2.out.maximal_access);
+		SMB2SRV_CHECK(smb2_create_blob_add(req, &io->smb2.out.blobs,
+						   SMB2_CREATE_TAG_MXAC, 
+						   data_blob_const(data, 8)));
+	}
+	
+
 	SMB2SRV_CHECK(smb2_create_blob_push(req, &blob, io->smb2.out.blobs));
 	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x58, true, blob.length));
 
