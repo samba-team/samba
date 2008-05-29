@@ -383,12 +383,25 @@ static int ldif_read_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 	enum ndr_err_code ndr_err;
 	char *string, *line, *p, *oid;
 
-	blob = talloc_zero(mem_ctx, struct prefixMapBlob);
-	if (blob == NULL) {
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+
+	if (tmp_ctx == NULL) {
 		return -1;
 	}
+
+	blob = talloc_zero(tmp_ctx, struct prefixMapBlob);
+	if (blob == NULL) {
+		talloc_free(blob);
+		return -1;
+	}
+
+	blob->version = PREFIX_MAP_VERSION_DSDB;
 	
-	string = (const char *)in->data;
+	string = talloc_strndup(mem_ctx, (const char *)in->data, in->length);
+	if (string == NULL) {
+		talloc_free(blob);
+		return -1;
+	}
 
 	line = string;
 	while (line && line[0]) {
@@ -396,10 +409,14 @@ static int ldif_read_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 		if (p) {
 			p[0] = '\0';
 		} else {
-			p=strchr(string, '\n');
+			p=strchr(line, '\n');
 			if (p) {
 				p[0] = '\0';
 			}
+		}
+		/* allow a traling seperator */
+		if (line == p) {
+			break;
 		}
 		
 		blob->ctr.dsdb.mappings = talloc_realloc(blob, 
@@ -407,12 +424,14 @@ static int ldif_read_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 							 struct drsuapi_DsReplicaOIDMapping,
 							 blob->ctr.dsdb.num_mappings+1);
 		if (!blob->ctr.dsdb.mappings) {
+			talloc_free(tmp_ctx);
 			return -1;
 		}
 
-		blob->ctr.dsdb.mappings[blob->ctr.dsdb.num_mappings].id_prefix = strtoul(p, &oid, 10);
+		blob->ctr.dsdb.mappings[blob->ctr.dsdb.num_mappings].id_prefix = strtoul(line, &oid, 10);
 
 		if (oid[0] != ':') {
+			talloc_free(tmp_ctx);
 			return -1;
 		}
 
@@ -424,8 +443,9 @@ static int ldif_read_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 
 		blob->ctr.dsdb.num_mappings++;
 
+		/* Now look past the terminator we added above */
 		if (p) {
-			line = p++;
+			line = p + 1;
 		} else {
 			line = NULL;
 		}
@@ -435,7 +455,7 @@ static int ldif_read_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
 				       blob,
 				       (ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
-	talloc_free(blob);
+	talloc_free(tmp_ctx);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;
 	}
@@ -450,6 +470,7 @@ static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 {
 	struct prefixMapBlob *blob;
 	enum ndr_err_code ndr_err;
+	char *string;
 	uint32_t i;
 
 	blob = talloc(mem_ctx, struct prefixMapBlob);
@@ -467,25 +488,25 @@ static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 	if (blob->version != PREFIX_MAP_VERSION_DSDB) {
 		return -1;
 	}
-	out->data = talloc_strdup(mem_ctx, "");
-	if (out->data == NULL) {
+	string = talloc_strdup(mem_ctx, "");
+	if (string == NULL) {
 		return -1;
 	}
 
 	for (i=0; i < blob->ctr.dsdb.num_mappings; i++) {
 		if (i > 0) {
-			out->data = talloc_asprintf_append(out->data, ";"); 
+			string = talloc_asprintf_append(string, ";"); 
 		}
-		out->data = talloc_asprintf_append(out->data, "%u: %s", 
+		string = talloc_asprintf_append(string, "%u: %s", 
 						   blob->ctr.dsdb.mappings[i].id_prefix,
 						   blob->ctr.dsdb.mappings[i].oid.oid);
-		if (out->data == NULL) {
+		if (string == NULL) {
 			return -1;
 		}
 	}
 
 	talloc_free(blob);
-	out->length = strlen((const char *)out->data);
+	*out = data_blob_string_const(string);
 	return 0;
 }
 
