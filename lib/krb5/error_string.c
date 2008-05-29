@@ -128,20 +128,20 @@ krb5_have_error_string(krb5_context context)
  * @param code Error code related to the error
  *
  * @return an error string, needs to be freed with
- * krb5_free_error_string(). The functions return NULL on error.
+ * krb5_free_error_message(). The functions return NULL on error.
  *
  * @ingroup krb5_error
  */
 
-char * KRB5_LIB_FUNCTION
+const char * KRB5_LIB_FUNCTION
 krb5_get_error_message(krb5_context context, krb5_error_code code)
 {
     const char *cstr;
     char *str;
 
-    str = krb5_get_error_string(context);
-    if (str)
-	return str;
+    cstr = krb5_get_error_string(context);
+    if (cstr)
+	return cstr;
 
     cstr = krb5_get_err_text(context, code);
     if (cstr)
@@ -153,3 +153,18 @@ krb5_get_error_message(krb5_context context, krb5_error_code code)
     return str;
 }
 
+
+/**
+ * Free the error message returned by krb5_get_error_message().
+ *
+ * @param context Kerberos context
+ * @param msg error message to free
+ *
+ * @ingroup krb5_error
+ */
+
+void KRB5_LIB_FUNCTION
+krb5_free_error_message(krb5_context context, char *msg)
+{
+    free(msg);
+}
