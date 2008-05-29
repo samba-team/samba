@@ -45,18 +45,6 @@ libwind_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
 endif
 
 BUILT_SOURCES =					\
-	bidi_table.c				\
-	bidi_table.h				\
-	combining_table.c			\
-	combining_table.h			\
-	errorlist_table.c			\
-	errorlist_table.h			\
-	map_table.c				\
-	map_table.h				\
-	normalize_table.c			\
-	normalize_table.h			\
-	punycode_examples.c			\
-	punycode_examples.h			\
 	wind_err.c				\
 	wind_err.h
 
@@ -132,18 +120,6 @@ EXTRA_DIST = \
 	wind_err.et
 
 CLEANFILES = \
-	bidi_table.c \
-	bidi_table.h \
-	combining_table.c \
-	combining_table.h \
-	errorlist_table.c \
-	errorlist_table.h \
-	map_table.c \
-	map_table.h \
-	normalize_table.c \
-	normalize_table.h \
-	punycode_examples.c \
-	punycode_examples.h \
 	wind_err.c  \
 	wind_err.h
 
