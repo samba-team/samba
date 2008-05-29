@@ -610,7 +610,9 @@ copy_stream (FILE * from, FILE * to)
 	    }
 		
 	    res = sec_write (fileno (to), chunk, len);
-	    if (munmap (chunk, st.st_size) < 0)
+	    if (msync (chunk, len, MS_ASYNC))
+		warn ("msync");
+	    if (munmap (chunk, len) < 0)
 		warn ("munmap");
 	    sec_fflush (to);
 	    if (res != len)
