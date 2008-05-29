@@ -1,3 +1,8 @@
+2008-05-27  Love Hörnquist Åstrand  <lha@kth.se>
+
+	* lib/krb5/doxygen.c: krb5_cc_new_unique() is name of the creation
+	function.
+	
 2008-04-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/hdb-ldap.c: Use the _ext api for OpenLDAP, from Honza
