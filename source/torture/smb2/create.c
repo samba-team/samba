@@ -256,6 +256,7 @@ static bool test_create_blob(struct torture_context *torture, struct smb2_tree *
 	io.in.query_maximal_access = true;
 	status = smb2_create(tree, tmp_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_EQUAL(io.out.maximal_access, 0x001f01ff);
 
 	status = smb2_util_close(tree, io.out.file.handle);
 	CHECK_STATUS(status, NT_STATUS_OK);
