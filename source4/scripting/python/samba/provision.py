@@ -797,13 +797,17 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb"
             })
         message("Modifying schema container")
+
+        prefixmap = open(setup_path("prefixMap.txt"), 'r').read()
+
         setup_modify_ldif(samdb, 
             setup_path("provision_schema_basedn_modify.ldif"), {
             "SCHEMADN": names.schemadn,
             "NETBIOSNAME": names.netbiosname,
             "DEFAULTSITE": names.sitename,
             "CONFIGDN": names.configdn,
-            "SERVERDN": names.serverdn
+            "SERVERDN": names.serverdn,
+            "PREFIXMAP_B64": b64encode(prefixmap)
             })
 
         message("Setting up sam.ldb Samba4 schema")
@@ -969,7 +973,7 @@ def provision(setup_dir, message, session_info,
     if ldap_backend is not None:
         if ldap_backend == "ldapi":
             # provision-backend will set this path suggested slapd command line / fedorads.inf
-            ldap_backend = "ldapi://" % urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
+            ldap_backend = "ldapi://%s" % urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
              
     # only install a new shares config db if there is none
     if not os.path.exists(paths.shareconf):
@@ -1389,12 +1393,16 @@ def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename):
     schema_data = open(setup_path("schema.ldif"), 'r').read()
     schema_data += open(setup_path("schema_samba4.ldif"), 'r').read()
     schema_data = substitute_var(schema_data, {"SCHEMADN": schemadn})
+    prefixmap = open(setup_path("prefixMap.txt"), 'r').read()
+    prefixmap = b64encode(prefixmap)
+
     head_data = open(setup_path("provision_schema_basedn_modify.ldif"), 'r').read()
     head_data = substitute_var(head_data, {
                     "SCHEMADN": schemadn,
                     "NETBIOSNAME": netbiosname,
                     "CONFIGDN": configdn,
-                    "DEFAULTSITE":sitename 
+                    "DEFAULTSITE":sitename,
+                    "PREFIXMAP_B64":prefixmap
     })
     samdb.attach_schema_from_ldif(head_data, schema_data)
 
