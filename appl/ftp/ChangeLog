@@ -1,5 +1,8 @@
 2008-05-28  Love Hörnquist Åstrand  <lha@kth.se>
 
+	* ftp/ftp.c: Rewrite sliding window code so it doesn't have a
+	integer overrun.
+
 	* ftp/ftp.c: Try sliding mmap window over memory file (10MB
 	window), works better with larger files (ie doesn't fail).
 	
