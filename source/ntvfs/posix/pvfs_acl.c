@@ -464,7 +464,11 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	*access_mask |= SEC_FILE_READ_ATTRIBUTE;
+	if (pvfs->ntvfs->ctx->protocol != PROTOCOL_SMB2) {
+		/* on SMB, this bit is always granted, even if not
+		   asked for */
+		*access_mask |= SEC_FILE_READ_ATTRIBUTE;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -518,8 +522,11 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 	/* check the acl against the required access mask */
 	status = sec_access_check(sd, token, *access_mask, access_mask);
 
-	/* this bit is always granted, even if not asked for */
-	*access_mask |= SEC_FILE_READ_ATTRIBUTE;
+	if (pvfs->ntvfs->ctx->protocol != PROTOCOL_SMB2) {
+		/* on SMB, this bit is always granted, even if not
+		   asked for */
+		*access_mask |= SEC_FILE_READ_ATTRIBUTE;
+	}
 
 	talloc_free(acl);
 	
