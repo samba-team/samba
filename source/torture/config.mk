@@ -263,23 +263,6 @@ gentest_OBJ_FILES = $(torturesrcdir)/gentest.o
 MANPAGES += $(torturesrcdir)/man/gentest.1
 
 #################################
-# Start BINARY gentest_smb2
-[BINARY::gentest_smb2]
-INSTALLDIR = BINDIR
-PRIVATE_DEPENDENCIES = \
-		LIBSAMBA-HOSTCONFIG \
-		LIBSAMBA-UTIL \
-		LIBPOPT \
-		POPT_SAMBA \
-		POPT_CREDENTIALS \
-		LIBCLI_SMB \
-		LIBCLI_RAW
-# End BINARY gentest_smb2
-#################################
-
-gentest_smb2_OBJ_FILES = $(torturesrcdir)/gentest_smb2.o
-
-#################################
 # Start BINARY masktest
 [BINARY::masktest]
 INSTALLDIR = BINDIR
