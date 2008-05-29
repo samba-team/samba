@@ -47,6 +47,7 @@ class TestCaseInTempDir(unittest.TestCase):
 
     def tearDown(self):
         super(TestCaseInTempDir, self).tearDown()
+        self.assertEquals([], os.listdir(self.tempdir))
         os.rmdir(self.tempdir)
 
 
