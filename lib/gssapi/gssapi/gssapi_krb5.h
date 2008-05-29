@@ -99,7 +99,7 @@ OM_uint32 GSSAPI_LIB_FUNCTION gsskrb5_register_acceptor_identity
         (const char */*identity*/);
 
 OM_uint32 GSSAPI_LIB_FUNCTION krb5_gss_register_acceptor_identity
-	(const char */*identity*/)
+	(const char */*identity*/);
 
 OM_uint32 GSSAPI_LIB_FUNCTION gss_krb5_copy_ccache
 	(OM_uint32 */*minor*/,
