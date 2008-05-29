@@ -34,6 +34,7 @@
 #include "libcli/security/security.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
+#include "lib/crypto/md5.h"
 
 /*
   top level context structure for the ntp_signd server
@@ -61,27 +62,76 @@ static void ntp_signd_terminate_connection(struct ntp_signd_connection *ntp_sign
 	stream_terminate_connection(ntp_signdconn->conn, reason);
 }
 
+static NTSTATUS signing_failure(struct ntp_signd_connection *ntp_signdconn,
+				uint32_t packet_id) 
+{
+	NTSTATUS status;
+	struct signed_reply signed_reply;
+	TALLOC_CTX *tmp_ctx = talloc_new(ntp_signdconn);
+	DATA_BLOB reply, blob;
+	enum ndr_err_code ndr_err;
+
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	signed_reply.version = 1;
+	signed_reply.op = SIGNING_FAILURE;
+	signed_reply.packet_id = packet_id;
+	signed_reply.signed_packet = data_blob(NULL, 0);
+	
+	ndr_err = ndr_push_struct_blob(&reply, tmp_ctx, 
+				       lp_iconv_convenience(ntp_signdconn->ntp_signd->task->lp_ctx),
+				       &signed_reply,
+				       (ndr_push_flags_fn_t)ndr_push_signed_reply);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(1,("failed to push ntp error reply\n"));
+		talloc_free(tmp_ctx);
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	blob = data_blob_talloc(ntp_signdconn, NULL, reply.length + 4);
+	if (!blob.data) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	RSIVAL(blob.data, 0, reply.length);
+	memcpy(blob.data + 4, reply.data, reply.length);	
+
+	status = packet_send(ntp_signdconn->packet, blob);
+
+	/* the call isn't needed any more */
+	talloc_free(tmp_ctx);
+	
+	return status;
+}
+
 /*
   receive a full packet on a NTP_SIGND connection
 */
-static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB blob)
+static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB wrapped_input)
 {
 	struct ntp_signd_connection *ntp_signdconn = talloc_get_type(private, 
 							     struct ntp_signd_connection);
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	TALLOC_CTX *tmp_ctx = talloc_new(ntp_signdconn);
-	DATA_BLOB input, reply;
+	DATA_BLOB input, output, wrapped_output;
 	const struct dom_sid *domain_sid;
 	struct dom_sid *sid;
 	struct sign_request sign_request;
+	struct signed_reply signed_reply;
 	enum ndr_err_code ndr_err;
 	struct ldb_result *res;
 	const char *attrs[] = { "unicodePwd", NULL };
+	struct MD5Context ctx;
+	struct samr_Password *nt_hash;
 	int ret;
 
-	talloc_steal(tmp_ctx, blob.data);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	input = data_blob_const(blob.data + 4, blob.length - 4); 
+	talloc_steal(tmp_ctx, wrapped_input.data);
+
+	input = data_blob_const(wrapped_input.data + 4, wrapped_input.length - 4); 
 
 	ndr_err = ndr_pull_struct_blob_all(&input, tmp_ctx, 
 					   lp_iconv_convenience(ntp_signdconn->ntp_signd->task->lp_ctx),
@@ -94,14 +144,21 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB blob)
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
+	if (sign_request.op != SIGN_TO_CLIENT) {
+		talloc_free(tmp_ctx);
+		return signing_failure(ntp_signdconn, sign_request.packet_id);
+	}
+
 	domain_sid = samdb_domain_sid(ntp_signdconn->ntp_signd->samdb);
 	if (!domain_sid) {
-		return NT_STATUS_INVALID_PARAMETER;
+		talloc_free(tmp_ctx);
+		return signing_failure(ntp_signdconn, sign_request.packet_id);
 	}
 	
 	sid = dom_sid_add_rid(tmp_ctx, domain_sid, sign_request.key_id & 0x7FFFFFFF);
 	if (!sid) {
-		return NT_STATUS_NO_MEMORY;
+		talloc_free(tmp_ctx);
+		return signing_failure(ntp_signdconn, sign_request.packet_id);
 	}
 
 	/* Sign packet */
@@ -110,27 +167,72 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB blob)
 				 LDB_SCOPE_SUBTREE, attrs, "(&(objectSid=%s)(objectClass=computer))",
 				 dom_sid_string(tmp_ctx, sid));
 	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_UNSUCCESSFUL;
+		DEBUG(2, ("Failed to search for SID %s in SAM for NTP signing: %s\n", dom_sid_string(tmp_ctx, sid),
+			  ldb_errstring(ntp_signdconn->ntp_signd->samdb)));
+		talloc_free(tmp_ctx);
+		return signing_failure(ntp_signdconn, sign_request.packet_id);
 	}
 
-	if (res->count != 1) {
-		return NT_STATUS_NO_SUCH_USER;
+	if (res->count == 0) {
+		DEBUG(5, ("Failed to find SID %s in SAM for NTP signing\n", dom_sid_string(tmp_ctx, sid)));
+	} else if (res->count != 1) {
+		DEBUG(1, ("Found SID %s %u times in SAM for NTP signing\n", dom_sid_string(tmp_ctx, sid), res->count));
+		talloc_free(tmp_ctx);
+		return signing_failure(ntp_signdconn, sign_request.packet_id);
 	}
+
+	nt_hash = samdb_result_hash(tmp_ctx, res->msgs[0], "unicodePwd");
+	if (!nt_hash) {
+		DEBUG(1, ("No unicodePwd found on record of SID %s for NTP signing\n", dom_sid_string(tmp_ctx, sid)));
+		talloc_free(tmp_ctx);
+		return signing_failure(ntp_signdconn, sign_request.packet_id);
+	}
+
+	signed_reply.version = 1;
+	signed_reply.packet_id = sign_request.packet_id;
+	signed_reply.op = SIGNING_SUCCESS;
+	signed_reply.signed_packet = data_blob_talloc(tmp_ctx, 
+						      NULL,
+						      sign_request.packet_to_sign.length + 20);
+
+	if (!signed_reply.signed_packet.data) {
+		talloc_free(tmp_ctx);
+		return signing_failure(ntp_signdconn, sign_request.packet_id);
+	}
+
+	memcpy(signed_reply.signed_packet.data, sign_request.packet_to_sign.data, sign_request.packet_to_sign.length);
+	
+	SIVAL(signed_reply.signed_packet.data, sign_request.packet_to_sign.length, sign_request.key_id);
 
 	/* Sign the NTP response with the unicodePwd */
+	MD5Init(&ctx);
+	MD5Update(&ctx, nt_hash->hash, sizeof(nt_hash->hash));
+	MD5Update(&ctx, sign_request.packet_to_sign.data, sign_request.packet_to_sign.length);
+	MD5Final(signed_reply.signed_packet.data + sign_request.packet_to_sign.length + 4, &ctx);
 
 	/* Place it into the packet for the wire */
 
-	blob = data_blob_talloc(ntp_signdconn, NULL, reply.length + 4);
-	if (!blob.data) {
+	ndr_err = ndr_push_struct_blob(&output, tmp_ctx, 
+				       lp_iconv_convenience(ntp_signdconn->ntp_signd->task->lp_ctx),
+				       &signed_reply,
+				       (ndr_push_flags_fn_t)ndr_push_signed_reply);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(1,("failed to push ntp error reply\n"));
+		talloc_free(tmp_ctx);
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	wrapped_output = data_blob_talloc(ntp_signdconn, NULL, output.length + 4);
+	if (!wrapped_output.data) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	RSIVAL(blob.data, 0, reply.length);
-	memcpy(blob.data + 4, reply.data, reply.length);	
+	RSIVAL(wrapped_output.data, 0, output.length);
+	memcpy(wrapped_output.data + 4, output.data, output.length);	
 
-	status = packet_send(ntp_signdconn->packet, blob);
+	status = packet_send(ntp_signdconn->packet, wrapped_output);
 
 	/* the call isn't needed any more */
 	talloc_free(tmp_ctx);
@@ -236,7 +338,8 @@ static void ntp_signd_task_init(struct task_server *task)
 
 	ntp_signd->task = task;
 
-	ntp_signd->samdb = samdb_connect(ntp_signd, task->event_ctx, task->lp_ctx, anonymous_session(ntp_signd, task->event_ctx, task->lp_ctx));
+	/* Must be system to get at the password hashes */
+	ntp_signd->samdb = samdb_connect(ntp_signd, task->event_ctx, task->lp_ctx, system_session(ntp_signd, task->lp_ctx));
 	if (ntp_signd->samdb == NULL) {
 		task_server_terminate(task, "ntp_signd failed to open samdb");
 		return;
