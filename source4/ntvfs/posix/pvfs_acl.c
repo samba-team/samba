@@ -500,7 +500,9 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 
 	/* expand the generic access bits to file specific bits */
 	*access_mask = pvfs_translate_mask(*access_mask);
-	*access_mask &= ~SEC_FILE_READ_ATTRIBUTE;
+	if (pvfs->ntvfs->ctx->protocol != PROTOCOL_SMB2) {
+		*access_mask &= ~SEC_FILE_READ_ATTRIBUTE;
+	}
 
 	status = pvfs_acl_load(pvfs, name, -1, acl);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
