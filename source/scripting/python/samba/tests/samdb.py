@@ -25,7 +25,7 @@ from samba.tests import cmdline_loadparm, TestCaseInTempDir
 from samba import security
 from unittest import TestCase
 import uuid
-import param
+from samba import param
 
 class SamDBTestCase(TestCaseInTempDir):
     def setUp(self):
@@ -59,7 +59,7 @@ class SamDBTestCase(TestCaseInTempDir):
 
         names = guess_names(lp=lp, hostname=hostname, 
                             domain=domain, dnsdomain=dnsdomain, 
-                            serverrole=severrole, 
+                            serverrole=serverrole, 
                             domaindn=self.domaindn, configdn=configdn, 
                             schemadn=schemadn)
         setup_templatesdb(os.path.join(self.tempdir, "templates.ldb"), 
