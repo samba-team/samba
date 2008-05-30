@@ -521,6 +521,7 @@ sub provision($$$$$$)
 	my $ncalrpcdir = "$prefix_abs/ncalrpc";
 	my $lockdir = "$prefix_abs/lockdir";
 	my $winbindd_socket_dir = "$prefix_abs/winbind_socket";
+	my $ntp_signd_socket_dir = "$prefix_abs/ntp_signd_socket";
 	my $winbindd_priv_pipe_dir = "$privatedir/smbd.tmp/winbind_pipe";
 	my $nsswrap_passwd = "$etcdir/passwd";
 	my $nsswrap_group = "$etcdir/group";
@@ -556,6 +557,7 @@ sub provision($$$$$$)
 	modules dir = $self->{bindir}/modules
 	js include = $srcdir/scripting/libjs
 	winbindd socket directory = $winbindd_socket_dir
+	ntp signd socket directory = $ntp_signd_socket_dir
         winbind separator = /
 	name resolve order = bcast
 	interfaces = $interfaces

@@ -464,7 +464,11 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	*access_mask |= SEC_FILE_READ_ATTRIBUTE;
+	if (pvfs->ntvfs->ctx->protocol != PROTOCOL_SMB2) {
+		/* on SMB, this bit is always granted, even if not
+		   asked for */
+		*access_mask |= SEC_FILE_READ_ATTRIBUTE;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -496,7 +500,9 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 
 	/* expand the generic access bits to file specific bits */
 	*access_mask = pvfs_translate_mask(*access_mask);
-	*access_mask &= ~SEC_FILE_READ_ATTRIBUTE;
+	if (pvfs->ntvfs->ctx->protocol != PROTOCOL_SMB2) {
+		*access_mask &= ~SEC_FILE_READ_ATTRIBUTE;
+	}
 
 	status = pvfs_acl_load(pvfs, name, -1, acl);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
@@ -518,8 +524,11 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 	/* check the acl against the required access mask */
 	status = sec_access_check(sd, token, *access_mask, access_mask);
 
-	/* this bit is always granted, even if not asked for */
-	*access_mask |= SEC_FILE_READ_ATTRIBUTE;
+	if (pvfs->ntvfs->ctx->protocol != PROTOCOL_SMB2) {
+		/* on SMB, this bit is always granted, even if not
+		   asked for */
+		*access_mask |= SEC_FILE_READ_ATTRIBUTE;
+	}
 
 	talloc_free(acl);
 	
@@ -799,4 +808,16 @@ NTSTATUS pvfs_acl_inherit(struct pvfs_state *pvfs,
 	status = pvfs_acl_save(pvfs, name, fd, acl);
 	
 	return status;
+}
+
+/*
+  return the maximum allowed access mask
+*/
+NTSTATUS pvfs_access_maximal_allowed(struct pvfs_state *pvfs, 
+				     struct ntvfs_request *req,
+				     struct pvfs_filename *name,
+				     uint32_t *maximal_access)
+{
+	*maximal_access = SEC_FLAG_MAXIMUM_ALLOWED;
+	return pvfs_access_check(pvfs, req, name, maximal_access);
 }

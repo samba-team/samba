@@ -44,6 +44,9 @@
 		goto done; \
 	}} while (0)
 
+#define FNAME "smb2_readtest.dat"
+#define DNAME "smb2_readtest.dir"
+
 static bool test_read_eof(struct torture_context *torture, struct smb2_tree *tree)
 {
 	bool ret = true;
@@ -55,7 +58,7 @@ static bool test_read_eof(struct torture_context *torture, struct smb2_tree *tre
 
 	ZERO_STRUCT(buf);
 
-	status = torture_smb2_testfile(tree, "lock1.txt", &h);
+	status = torture_smb2_testfile(tree, FNAME, &h);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_util_write(tree, h, buf, 0, ARRAY_SIZE(buf));
@@ -139,7 +142,7 @@ static bool test_read_position(struct torture_context *torture, struct smb2_tree
 
 	ZERO_STRUCT(buf);
 
-	status = torture_smb2_testfile(tree, "lock1.txt", &h);
+	status = torture_smb2_testfile(tree, FNAME, &h);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_util_write(tree, h, buf, 0, ARRAY_SIZE(buf));
@@ -172,6 +175,58 @@ done:
 	return ret;
 }
 
+static bool test_read_dir(struct torture_context *torture, struct smb2_tree *tree)
+{
+	bool ret = true;
+	NTSTATUS status;
+	struct smb2_handle h;
+	struct smb2_read rd;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+
+	status = torture_smb2_testdir(tree, DNAME, &h);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf(__location__ " Unable to create test directory '%s' - %s\n", DNAME, nt_errstr(status));
+		return false;
+	}
+
+	ZERO_STRUCT(rd);
+	rd.in.file.handle = h;
+	rd.in.length = 10;
+	rd.in.offset = 0;
+	rd.in.min_count = 1;
+
+	status = smb2_read(tree, tmp_ctx, &rd);
+	CHECK_STATUS(status, NT_STATUS_INVALID_DEVICE_REQUEST);
+	
+	rd.in.min_count = 11;
+	status = smb2_read(tree, tmp_ctx, &rd);
+	CHECK_STATUS(status, NT_STATUS_INVALID_DEVICE_REQUEST);
+
+	rd.in.length = 0;
+	rd.in.min_count = 2592;
+	status = smb2_read(tree, tmp_ctx, &rd);
+	if (torture_setting_bool(torture, "windows", false)) {
+		CHECK_STATUS(status, NT_STATUS_END_OF_FILE);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_INVALID_DEVICE_REQUEST);
+	}
+
+	rd.in.length = 0;
+	rd.in.min_count = 0;
+	rd.in.channel = 0;
+	status = smb2_read(tree, tmp_ctx, &rd);
+	if (torture_setting_bool(torture, "windows", false)) {
+		CHECK_STATUS(status, NT_STATUS_OK);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_INVALID_DEVICE_REQUEST);
+	}
+	
+done:
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+
 /* 
    basic testing of SMB2 read
 */
@@ -181,6 +236,7 @@ struct torture_suite *torture_smb2_read_init(void)
 
 	torture_suite_add_1smb2_test(suite, "EOF", test_read_eof);
 	torture_suite_add_1smb2_test(suite, "POSITION", test_read_position);
+	torture_suite_add_1smb2_test(suite, "DIR", test_read_dir);
 
 	suite->description = talloc_strdup(suite, "SMB2-READ tests");
 

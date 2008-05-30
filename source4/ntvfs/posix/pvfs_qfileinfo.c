@@ -41,6 +41,10 @@ static uint32_t pvfs_fileinfo_access(union smb_fileinfo *info)
 		needed = 0;
 		break;
 
+	case RAW_FILEINFO_ACCESS_INFORMATION:
+		needed = 0;
+		break;
+
 	case RAW_FILEINFO_SEC_DESC:
 		needed = 0;
 		if (info->query_secdesc.in.secinfo_flags & (SECINFO_OWNER|SECINFO_GROUP)) {
@@ -216,6 +220,10 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs,
 
 	case RAW_FILEINFO_NAME_INFO:
 	case RAW_FILEINFO_NAME_INFORMATION:
+		if (req->ctx->protocol == PROTOCOL_SMB2) {
+			/* strange that SMB2 doesn't have this */
+			return NT_STATUS_NOT_SUPPORTED;
+		}
 		info->name_info.out.fname.s = name->original_name;
 		return NT_STATUS_OK;
 

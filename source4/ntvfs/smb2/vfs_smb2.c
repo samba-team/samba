@@ -162,9 +162,9 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	struct composite_context *creq;
 	struct share_config *scfg = ntvfs->ctx->config;
 	struct smb2_tree *tree;
-
 	struct cli_credentials *credentials;
 	bool machine_account;
+	struct smbcli_options options;
 
 	/* Here we need to determine which server to connect to.
 	 * For now we use parametric options, type cifs.
@@ -224,10 +224,12 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	lp_smbcli_options(ntvfs->ctx->lp_ctx, &options);
+
 	creq = smb2_connect_send(private, host, remote_share, 
 				 lp_resolve_context(ntvfs->ctx->lp_ctx),
 				 credentials,
-				 ntvfs->ctx->event_ctx);
+				 ntvfs->ctx->event_ctx, &options);
 
 	status = smb2_connect_recv(creq, private, &tree);
 	NT_STATUS_NOT_OK_RETURN(status);

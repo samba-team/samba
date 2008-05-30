@@ -1354,7 +1354,7 @@ union smb_open {
 		break; \
 	} \
 } while (0)
-	/* SMBNTCreateX interface */
+	/* SMBNTCreateX, nttrans and generic interface */
 	struct {
 		enum smb_open_level level;
 		struct {
@@ -1377,6 +1377,9 @@ union smb_open {
 			   NTTRANS varient of the call */
 			struct security_descriptor *sec_desc;
 			struct smb_ea_list *ea_list;
+			
+			/* some optional parameters from the SMB2 varient */
+			bool query_maximal_access;
 		} in;
 		struct {
 			union smb_handle file;
@@ -1392,6 +1395,10 @@ union smb_open {
 			uint16_t file_type;
 			uint16_t ipc_state;
 			uint8_t  is_directory;
+
+			/* optional return values matching SMB2 tagged
+			   values in the call */
+			uint32_t maximal_access;
 		} out;
 	} ntcreatex, nttrans, generic;
 
