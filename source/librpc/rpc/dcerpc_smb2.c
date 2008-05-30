@@ -376,7 +376,7 @@ static NTSTATUS smb2_session_key(struct dcerpc_connection *c, DATA_BLOB *session
 {
 	struct smb2_private *smb = talloc_get_type(c->transport.private_data,
 						   struct smb2_private);
-	*session_key = smb->tree->session->session_key;
+	*session_key = smb->tree->session->transport->signing.session_key;
 	if (session_key->data == NULL) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}

@@ -175,6 +175,10 @@ bool torture_smb2_setinfo(struct torture_context *torture)
 	CHECK_CALL(BASIC_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(SMB2_ALL_INFORMATION, all_info2, attrib, FILE_ATTRIBUTE_HIDDEN);
 
+	printf("can't change a file to a directory\n");
+	sfinfo.basic_info.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
+	CHECK_CALL(BASIC_INFORMATION, NT_STATUS_INVALID_PARAMETER);
+
 	printf("restore attribute\n");
 	sfinfo.basic_info.in.attrib = FILE_ATTRIBUTE_NORMAL;
 	CHECK_CALL(BASIC_INFORMATION, NT_STATUS_OK);
