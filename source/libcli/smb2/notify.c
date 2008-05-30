@@ -44,10 +44,10 @@ struct smb2_request *smb2_notify_send(struct smb2_tree *tree, struct smb2_notify
 	SIVAL(req->out.body, 0x18, io->in.completion_filter);
 	SIVAL(req->out.body, 0x1C, io->in.unknown);
 
-	old_timeout = req->transport->options.timeout;
-	req->transport->options.timeout = 0;
+	old_timeout = req->transport->options.request_timeout;
+	req->transport->options.request_timeout = 0;
 	smb2_transport_send(req);
-	req->transport->options.timeout = old_timeout;
+	req->transport->options.request_timeout = old_timeout;
 
 	return req;
 }

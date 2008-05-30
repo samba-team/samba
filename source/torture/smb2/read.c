@@ -180,7 +180,6 @@ static bool test_read_dir(struct torture_context *torture, struct smb2_tree *tre
 	bool ret = true;
 	NTSTATUS status;
 	struct smb2_handle h;
-	uint8_t buf[100];
 	struct smb2_read rd;
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 

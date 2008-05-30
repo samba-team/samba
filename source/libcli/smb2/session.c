@@ -164,8 +164,8 @@ static void session_request_handler(struct smb2_request *req)
 
 		session_key_err = gensec_session_key(session->gensec, &session_key);
 		if (NT_STATUS_IS_OK(session_key_err)) {
-			session->session_key = session_key;
-		}
+			session->transport->signing.session_key = session_key;
+		}		
 	}
 
 	session->uid = state->io.out.uid;
@@ -185,6 +185,14 @@ static void session_request_handler(struct smb2_request *req)
 	if (!NT_STATUS_IS_OK(c->status)) {
 		composite_error(c, c->status);
 		return;
+	}
+
+	if (session->transport->signing.doing_signing) {
+		c->status = smb2_start_signing(session->transport);
+		if (!NT_STATUS_IS_OK(c->status)) {
+			composite_error(c, c->status);
+			return;
+		}
 	}
 
 	composite_done(c);
@@ -208,7 +216,10 @@ struct composite_context *smb2_session_setup_spnego_send(struct smb2_session *se
 
 	ZERO_STRUCT(state->io);
 	state->io.in.vc_number          = 0;
-	state->io.in.security_mode      = 0;
+	if (session->transport->signing.doing_signing) {
+		state->io.in.security_mode = 
+			SMB2_NEGOTIATE_SIGNING_ENABLED | SMB2_NEGOTIATE_SIGNING_REQUIRED;
+	}
 	state->io.in.capabilities       = 0;
 	state->io.in.channel            = 0;
 	state->io.in.previous_sessionid = 0;

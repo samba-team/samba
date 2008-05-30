@@ -218,6 +218,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 	struct composite_context *c;
 	struct pipe_np_smb2_state *s;
 	struct composite_context *conn_req;
+	struct smbcli_options options;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, io->pipe->conn->event_ctx);
@@ -240,11 +241,14 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 		cli_credentials_guess(s->io.creds, lp_ctx);
 	}
 
+	lp_smbcli_options(lp_ctx, &options);
+
 	/* send smb2 connect request */
 	conn_req = smb2_connect_send(mem_ctx, s->io.binding->host, "IPC$", 
 				     s->io.resolve_ctx,
 				     s->io.creds,
-				     c->event_ctx);
+				     c->event_ctx,
+				     &options);
 	composite_continue(c, conn_req, continue_smb2_connect, c);
 	return c;
 }
