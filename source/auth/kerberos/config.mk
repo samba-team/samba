@@ -14,7 +14,5 @@ KERBEROS_OBJ_FILES = $(addprefix $(authsrcdir)/kerberos/, \
 	gssapi_parse.o \
 	krb5_init_context.o)
 
-$(KERBEROS_OBJ_FILES): CFLAGS+=$(KRB5_CFLAGS) -I$(heimdalsrcdir)/lib/roken -I$(heimdalsrcdir)/lib -I$(heimdalsrcdir)/lib/hx509
-
 $(eval $(call proto_header_template,$(authsrcdir)/kerberos/proto.h,$(KERBEROS_OBJ_FILES:.o=.c)))
 

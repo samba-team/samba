@@ -32,6 +32,8 @@ my $section_types = {
 
 		"ENABLE"		=> "bool",
 
+		"CFLAGS"		=> "list",
+		"LDFLAGS"		=> "list",
 		"STANDARD_VISIBILITY"	=> "string",
 		"INIT_FUNCTION_SENTINEL" => "string"
 		},
@@ -47,6 +49,8 @@ my $section_types = {
 		"ENABLE"		=> "bool",
 
 		"OUTPUT_TYPE"		=> "list",
+
+		"CFLAGS"		=> "list"
 		},
 	"BINARY" => {
 

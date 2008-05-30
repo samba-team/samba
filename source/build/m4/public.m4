@@ -34,6 +34,7 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 # Start Subsystem $1
 @<:@SUBSYSTEM::$1@:>@
 PRIVATE_DEPENDENCIES = $3
+CFLAGS = \$($1_CFLAGS)
 ENABLE = YES
 # End Subsystem $1
 ###################################

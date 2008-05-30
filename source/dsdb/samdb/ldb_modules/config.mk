@@ -155,7 +155,6 @@ PRIVATE_DEPENDENCIES = HEIMDAL_HDB_KEYS LIBTALLOC HEIMDAL_KRB5 LDAP_ENCODE \
 ################################################
 
 ldb_password_hash_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/password_hash.o
-$(ldb_password_hash_OBJ_FILES): CFLAGS+=$(KRB5_CFLAGS)
 
 ################################################
 # Start MODULE ldb_local_password
@@ -242,49 +241,49 @@ INIT_FUNCTION = LDB_MODULE(update_kt)
 ################################################
 
 ldb_update_keytab_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/update_keytab.o 
-$(ldb_update_keytab_OBJ_FILES): CFLAGS+=$(KRB5_CFLAGS) $(GSSAPI_CFLAGS)
 
 ################################################
 # Start MODULE ldb_objectclass
 [MODULE::ldb_objectclass]
 INIT_FUNCTION = LDB_MODULE(objectclass)
 OUTPUT_TYPE = SHARED_LIBRARY
+CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBSECURITY NDR_SECURITY SAMDB
 SUBSYSTEM = LIBLDB
 # End MODULE ldb_objectclass
 ################################################
 
 ldb_objectclass_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/objectclass.o
-$(ldb_objectclass_OBJ_FILES): CFLAGS+=-Ilib/ldb/include
 
 ################################################
 # Start MODULE ldb_subtree_rename
 [MODULE::ldb_subtree_rename]
 INIT_FUNCTION = LDB_MODULE(subtree_rename)
+CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 SUBSYSTEM = LIBLDB
 # End MODULE ldb_subtree_rename
 ################################################
 
 ldb_subtree_rename_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/subtree_rename.o
-$(ldb_subtree_rename_OBJ_FILES): CFLAGS+=-Ilib/ldb/include
 
 ################################################
 # Start MODULE ldb_subtree_rename
 [MODULE::ldb_subtree_delete]
 INIT_FUNCTION = LDB_MODULE(subtree_delete)
+CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 SUBSYSTEM = LIBLDB
 # End MODULE ldb_subtree_rename
 ################################################
 
 ldb_subtree_delete_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/subtree_delete.o
-$(ldb_subtree_delete_OBJ_FILES): CFLAGS+=-Ilib/ldb/include
 
 ################################################
 # Start MODULE ldb_linked_attributes
 [MODULE::ldb_linked_attributes]
 INIT_FUNCTION = LDB_MODULE(linked_attributes)
+CFLAGS = -Ilib/ldb/include
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC SAMDB
 SUBSYSTEM = LIBLDB
@@ -292,24 +291,24 @@ SUBSYSTEM = LIBLDB
 ################################################
 
 ldb_linked_attributes_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/linked_attributes.o
-$(ldb_linked_attributes_OBJ_FILES): CFLAGS+=-Ilib/ldb/include
 
 ################################################
 # Start MODULE ldb_ranged_results
 [MODULE::ldb_ranged_results]
 INIT_FUNCTION = LDB_MODULE(ranged_results)
+CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 SUBSYSTEM = LIBLDB
 # End MODULE ldb_ranged_results
 ################################################
 
 ldb_ranged_results_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/ranged_results.o
-$(ldb_ranged_results_OBJ_FILES): CFLAGS+=-Ilib/ldb/include
 
 ################################################
 # Start MODULE ldb_anr
 [MODULE::ldb_anr]
 INIT_FUNCTION = LDB_MODULE(anr)
+CFLAGS = -Ilib/ldb/include
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL SAMDB
 SUBSYSTEM = LIBLDB
@@ -317,12 +316,12 @@ SUBSYSTEM = LIBLDB
 ################################################
 
 ldb_anr_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/anr.o
-$(ldb_anr_OBJ_FILES): CFLAGS+=-Ilib/ldb/include
 
 ################################################
 # Start MODULE ldb_normalise
 [MODULE::ldb_normalise]
 INIT_FUNCTION = LDB_MODULE(normalise)
+CFLAGS = -Ilib/ldb/include
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL SAMDB
 SUBSYSTEM = LIBLDB
@@ -330,12 +329,12 @@ SUBSYSTEM = LIBLDB
 ################################################
 
 ldb_normalise_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/normalise.o
-$(ldb_normalise_OBJ_FILES): CFLAGS+=-Ilib/ldb/include
 
 ################################################
 # Start MODULE ldb_instancetype
 [MODULE::ldb_instancetype]
 INIT_FUNCTION = LDB_MODULE(instancetype)
+CFLAGS = -Ilib/ldb/include
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL SAMDB
 SUBSYSTEM = LIBLDB
@@ -343,5 +342,4 @@ SUBSYSTEM = LIBLDB
 ################################################
 
 ldb_instancetype_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/instancetype.o
-$(ldb_instancetype_OBJ_FILES): CFLAGS+=-Ilib/ldb/include
 

@@ -11,11 +11,11 @@ PRIVATE_DEPENDENCIES = \
 #######################
 
 KDC_OBJ_FILES = $(addprefix $(kdcsrcdir)/, kdc.o kpasswdd.o)
-$(KDC_OBJ_FILES): CFLAGS+=$(KRB5_CFLAGS) $(GSSAPI_CFLAGS) -I$(heimdalsrcdir)/lib/roken -I$(heimdalsrcdir)/lib -I$(heimdalsrcdir)/lib/wind -I$(heimdalsrcdir)/kdc -I$(heimdalsrcdir)/lib/ntlm -I$(heimdalsrcdir)/lib/hdb
 
 #######################
 # Start SUBSYSTEM KDC
 [SUBSYSTEM::HDB_LDB]
+CFLAGS = -Iheimdal/kdc -Iheimdal/lib/hdb
 PRIVATE_DEPENDENCIES = \
 		LIBLDB auth_sam auth_sam_reply HEIMDAL CREDENTIALS \
 		HEIMDAL_HDB_ASN1
@@ -23,5 +23,4 @@ PRIVATE_DEPENDENCIES = \
 #######################
 
 HDB_LDB_OBJ_FILES = $(addprefix $(kdcsrcdir)/, hdb-ldb.o pac-glue.o)
-$(HDB_LDB_OBJ_FILES): CFLAGS+=-I$(heimdalsrcdir)/kdc -I$(heimdalsrcdir)/lib/hdb -I$(heimdalsrcdir)/lib/com_err -I$(heimdalsrcdir)/lib/krb5 $(KRB5_CFLAGS) -I$(heimdalsrcdir)/lib -I$(heimdalsrcdir)/lib/roken
 $(eval $(call proto_header_template,$(kdcsrcdir)/pac_glue.h,$(HDB_LDB_OBJ_FILES:.o=.c)))

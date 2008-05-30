@@ -26,7 +26,6 @@ PRIVATE_DEPENDENCIES = CREDENTIALS KERBEROS auth_session auth_sam
 ################################################
 
 gensec_krb5_OBJ_FILES = $(addprefix $(gensecsrcdir)/, gensec_krb5.o)
-$(gensec_krb5_OBJ_FILES): CFLAGS+=$(KRB5_CFLAGS) $(GSSAPI_CFLAGS)
 
 ################################################
 # Start MODULE gensec_gssapi
@@ -38,7 +37,6 @@ PRIVATE_DEPENDENCIES = HEIMDAL_GSSAPI CREDENTIALS KERBEROS
 ################################################
 
 gensec_gssapi_OBJ_FILES = $(addprefix $(gensecsrcdir)/, gensec_gssapi.o)
-$(gensec_gssapi_OBJ_FILES): CFLAGS+=$(KRB5_CFLAGS) $(GSSAPI_CFLAGS)
 
 ################################################
 # Start MODULE cyrus_sasl
