@@ -688,7 +688,12 @@ sub ParseInterface($)
 	$version = "0.0";
 
 	if(defined $idl->{PROPERTIES}->{version}) { 
-		$version = $idl->{PROPERTIES}->{version}; 
+		my @if_version = split(/\./, $idl->{PROPERTIES}->{version});
+		if ($if_version[0] == $idl->{PROPERTIES}->{version}) {
+				$version = $idl->{PROPERTIES}->{version};
+		} else {
+				$version = $if_version[1] << 16 | $if_version[0];
+		}
 	}
 
 	# If no endpoint is set, default to the interface name as a named pipe
