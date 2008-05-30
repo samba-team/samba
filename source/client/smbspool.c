@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    SMB backend for the Common UNIX Printing System ("CUPS")
-   Copyright 1999 by Easy Software Products
+   Copyright (C) Michael R Sweet 1999
    Copyright Andrew Tridgell 1994-1998
    Copyright Andrew Bartlett 2002
    Copyright Rodrigo Fernandez-Vizarra 2005 
