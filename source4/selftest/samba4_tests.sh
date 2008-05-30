@@ -65,7 +65,6 @@ smb4torture="$samba4bindir/smbtorture $TORTURE_OPTIONS"
 
 plantest "js.base" dc "$SCRIPTDIR/base.js" $CONFIGURATION
 plantest "js.ldb" none "$SCRIPTDIR/ldb.js" `pwd` $CONFIGURATION -d 10
-plantest "js.winreg" dc $samba4srcdir/scripting/bin/winreg $CONFIGURATION ncalrpc: 'HKLM' -U\$USERNAME%\$PASSWORD
 
 # Simple tests for LDAP and CLDAP
 
