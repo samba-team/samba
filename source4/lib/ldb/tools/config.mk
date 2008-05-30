@@ -1,14 +1,13 @@
 ################################################
 # Start SUBSYSTEM LIBLDB_CMDLINE
 [SUBSYSTEM::LIBLDB_CMDLINE]
+CFLAGS = -I$(ldbdir) -I$(ldbdir)/include
 PUBLIC_DEPENDENCIES = LIBLDB LIBPOPT
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL POPT_SAMBA POPT_CREDENTIALS gensec
 # End SUBSYSTEM LIBLDB_CMDLINE
 ################################################
 
 LIBLDB_CMDLINE_OBJ_FILES = $(ldbdir)/tools/cmdline.o
-
-$(LIBLDB_CMDLINE_OBJ_FILES): CFLAGS+=-I$(ldbdir)  $(LDB_CFLAGS)
 
 ################################################
 # Start BINARY ldbadd
@@ -19,8 +18,8 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ldbadd
 ################################################
 
+
 ldbadd_OBJ_FILES = $(ldbdir)/tools/ldbadd.o
-$(ldbadd_OBJ_FILES): CFLAGS+=-I$(ldbdir) $(LDB_CFLAGS)
 
 MANPAGES += $(ldbdir)/man/ldbadd.1
 
@@ -34,7 +33,6 @@ PRIVATE_DEPENDENCIES = \
 ################################################
 
 ldbdel_OBJ_FILES = $(ldbdir)/tools/ldbdel.o
-$(ldbdel_OBJ_FILES): CFLAGS+=-I$(ldbdir) $(LDB_CFLAGS)
 
 MANPAGES += $(ldbdir)/man/ldbdel.1
 
@@ -48,7 +46,6 @@ PRIVATE_DEPENDENCIES = \
 ################################################
 
 ldbmodify_OBJ_FILES = $(ldbdir)/tools/ldbmodify.o
-$(ldbmodify_OBJ_FILES): CFLAGS+=-I$(ldbdir) $(LDB_CFLAGS)
 MANPAGES += $(ldbdir)/man/ldbmodify.1
 
 ################################################
@@ -61,7 +58,6 @@ PRIVATE_DEPENDENCIES = \
 ################################################
 
 ldbsearch_OBJ_FILES = $(ldbdir)/tools/ldbsearch.o
-$(ldbsearch_OBJ_FILES): CFLAGS+=-I$(ldbdir) $(LDB_CFLAGS)
 
 MANPAGES += $(ldbdir)/man/ldbsearch.1
 
@@ -75,7 +71,6 @@ PRIVATE_DEPENDENCIES = \
 ################################################
 
 ldbedit_OBJ_FILES = $(ldbdir)/tools/ldbedit.o
-$(ldbedit_OBJ_FILES): CFLAGS+=-I$(ldbdir) $(LDB_CFLAGS)
 
 MANPAGES += $(ldbdir)/man/ldbedit.1
 
@@ -89,7 +84,6 @@ PRIVATE_DEPENDENCIES = \
 ################################################
 
 ldbrename_OBJ_FILES = $(ldbdir)/tools/ldbrename.o
-$(ldbrename_OBJ_FILES): CFLAGS+=-I$(ldbdir) $(LDB_CFLAGS)
 
 MANPAGES += $(ldbdir)/man/ldbrename.1
 

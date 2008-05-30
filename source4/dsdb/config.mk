@@ -16,7 +16,6 @@ SAMDB_OBJ_FILES = $(addprefix $(dsdbsrcdir)/, \
 		samdb/samdb_privilege.o \
 		samdb/cracknames.o \
 		repl/replicated_objects.o)
-$(SAMDB_OBJ_FILES): CFLAGS+=$(KRB5_CFLAGS)
 
 $(eval $(call proto_header_template,$(dsdbsrcdir)/samdb/samdb_proto.h,$(SAMDB_OBJ_FILES:.o=.c)))
 # PUBLIC_HEADERS += dsdb/samdb/samdb.h
@@ -29,8 +28,6 @@ SAMDB_COMMON_OBJ_FILES = $(addprefix $(dsdbsrcdir)/common/, \
 		flag_mapping.o \
 		util.o)
 $(eval $(call proto_header_template,$(dsdbsrcdir)/common/proto.h,$(SAMDB_COMMON_OBJ_FILES:.o=.c)))
-
-$(SAMDB_COMMON_OBJ_FILES): CFLAGS+=$(LDB_CFLAGS)
 
 [SUBSYSTEM::SAMDB_SCHEMA]
 PRIVATE_DEPENDENCIES = SAMDB_COMMON NDR_DRSUAPI NDR_DRSBLOBS
