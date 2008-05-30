@@ -162,11 +162,11 @@ static void py_msg_callback_wrapper(struct messaging_context *msg, void *private
 static PyObject *py_messaging_register(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	messaging_Object *iface = (messaging_Object *)self;
-	uint32_t msg_type = -1;
+	int msg_type = -1;
 	PyObject *callback;
 	NTSTATUS status;
 	const char *kwnames[] = { "callback", "msg_type", NULL };
-
+	
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|i:send", 
 		discard_const_p(char *, kwnames), &callback, &msg_type)) {
 		return NULL;
@@ -175,8 +175,10 @@ static PyObject *py_messaging_register(PyObject *self, PyObject *args, PyObject 
 	Py_INCREF(callback);
 
 	if (msg_type == -1) {
+		uint32_t msg_type32 = msg_type;
 		status = messaging_register_tmp(iface->msg_ctx, callback,
-						py_msg_callback_wrapper, &msg_type);
+						py_msg_callback_wrapper, &msg_type32);
+		msg_type = msg_type32;
 	} else {
 		status = messaging_register(iface->msg_ctx, callback,
 				    msg_type, py_msg_callback_wrapper);
@@ -192,7 +194,7 @@ static PyObject *py_messaging_register(PyObject *self, PyObject *args, PyObject 
 static PyObject *py_messaging_deregister(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	messaging_Object *iface = (messaging_Object *)self;
-	uint32_t msg_type = -1;
+	int msg_type = -1;
 	PyObject *callback;
 	const char *kwnames[] = { "callback", "msg_type", NULL };
 
