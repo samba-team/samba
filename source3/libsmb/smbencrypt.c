@@ -181,6 +181,7 @@ bool ntv2_owf_gen(const uchar owf[16],
 	if (!push_ucs2_allocate(&domain, domain_in, &domain_byte_len)) {
 		DEBUG(0, ("push_uss2_allocate() for domain failed: %s\n",
 			  strerror(errno)));
+		SAFE_FREE(user);
 		return False;
 	}
 

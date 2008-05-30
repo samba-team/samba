@@ -443,7 +443,7 @@ static TDB_DATA locking_key(const struct file_id *id, struct file_id *tmp)
  Print out a share mode.
 ********************************************************************/
 
-char *share_mode_str(TALLOC_CTX *ctx, int num, struct share_mode_entry *e)
+char *share_mode_str(TALLOC_CTX *ctx, int num, const struct share_mode_entry *e)
 {
 	return talloc_asprintf(ctx, "share_mode_entry[%d]: %s "
 		 "pid = %s, share_access = 0x%x, private_options = 0x%x, "

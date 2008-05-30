@@ -1,4 +1,4 @@
-LIBS = -lwbclient -lsmbclient -ldl
+LIBS = -lwbclient -lsmbclient -ltalloc -ltdb -ldl
 DEFS = -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
 
 CFLAGS = -I$(SAMBA_INCL) $(EXTLIB_INCL)

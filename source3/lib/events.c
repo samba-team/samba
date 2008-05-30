@@ -356,7 +356,7 @@ int event_loop_once(struct event_context *ev)
 
 struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 {
-	return TALLOC_ZERO_P(NULL, struct event_context);
+	return TALLOC_ZERO_P(mem_ctx, struct event_context);
 }
 
 int set_event_dispatch_time(struct event_context *event_ctx,

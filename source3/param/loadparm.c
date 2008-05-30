@@ -6591,6 +6591,8 @@ static bool process_registry_shares(void)
 		goto done;
 	}
 
+	ret = true;
+
 	for (count = 0; count < num_shares; count++) {
 		if (strequal(service[count]->name, GLOBAL_NAME)) {
 			continue;
