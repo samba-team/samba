@@ -127,11 +127,14 @@ static PyObject *py_messaging_send(PyObject *self, PyObject *args, PyObject *kwa
 	NTSTATUS status;
 	struct server_id server;
 	const char *kwnames[] = { "target", "msg_type", "data", NULL };
+	int length;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Ois#|:send", 
-		discard_const_p(char *, kwnames), &target, &msg_type, &data.data, &data.length)) {
+		discard_const_p(char *, kwnames), &target, &msg_type, &data.data, &length)) {
 		return NULL;
 	}
+
+	data.length = length;
 
 	if (!server_id_from_py(target, &server)) 
 		return NULL;
