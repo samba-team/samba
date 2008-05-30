@@ -824,7 +824,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
  Linearize a share mode entry struct to an internal oplock break message.
 ****************************************************************************/
 
-void share_mode_entry_to_message(char *msg, struct share_mode_entry *e)
+void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e)
 {
 	SIVAL(msg,0,(uint32)e->pid.pid);
 	SSVAL(msg,4,e->op_mid);

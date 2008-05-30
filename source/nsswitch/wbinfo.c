@@ -958,7 +958,14 @@ static bool wbinfo_auth(char *username)
 		p++;
 		password = p;
 	} else {
-		password = "";
+		char *prompt;
+		asprintf(&prompt, "Enter %s's password:", username);
+		if (!prompt) {
+			return false;
+		}
+
+		password = getpass(prompt);
+		SAFE_FREE(prompt);
 	}
 
 	name = s;
@@ -1001,6 +1008,16 @@ static bool wbinfo_auth_crap(char *username)
 	if (p) {
 		*p = 0;
 		fstrcpy(pass, p + 1);
+	} else {
+		char *prompt;
+		asprintf(&prompt, "Enter %s's password:", username);
+		if (!prompt) {
+			return false;
+		}
+
+		fstrcpy(pass, getpass(prompt));
+		SAFE_FREE(prompt);
+
 	}
 		
 	parse_wbinfo_domain_user(username, name_domain, name_user);

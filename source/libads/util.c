@@ -64,6 +64,8 @@ ADS_STATUS ads_guess_service_principal(ADS_STRUCT *ads,
 		server_realm = SMB_STRDUP(ads->server.realm);
 
 		if (!server || !server_realm) {
+			SAFE_FREE(server);
+			SAFE_FREE(server_realm);
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		}
 

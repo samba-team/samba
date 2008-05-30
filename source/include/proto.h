@@ -1582,8 +1582,12 @@ NTSTATUS read_smb_length_return_keepalive(int fd, char *inbuf,
 					  size_t *len);
 NTSTATUS read_smb_length(int fd, char *inbuf, unsigned int timeout,
 			 size_t *len);
-NTSTATUS receive_smb_raw(int fd, char *buffer, unsigned int timeout,
-			 size_t maxlen, size_t *p_len);
+NTSTATUS receive_smb_raw(int fd,
+			char *buffer,
+			size_t buflen,
+			unsigned int timeout,
+			size_t maxlen,
+			size_t *p_len);
 int open_socket_in(int type,
 		uint16_t port,
 		int dlevel,
@@ -5270,7 +5274,7 @@ void locking_close_file(struct messaging_context *msg_ctx,
 bool locking_init(void);
 bool locking_init_readonly(void);
 bool locking_end(void);
-char *share_mode_str(TALLOC_CTX *ctx, int num, struct share_mode_entry *e);
+char *share_mode_str(TALLOC_CTX *ctx, int num, const struct share_mode_entry *e);
 struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 					    const struct file_id id,
 					    const char *servicepath,
@@ -9462,6 +9466,11 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 
 void set_close_write_time(struct files_struct *fsp, struct timespec ts);
 NTSTATUS close_file(files_struct *fsp, enum file_close_type close_type);
+void msg_close_file(struct messaging_context *msg_ctx,
+		    void *private_data,
+		    uint32_t msg_type,
+		    struct server_id server_id,
+		    DATA_BLOB *data);
 
 /* The following definitions come from smbd/conn.c  */
 
@@ -9937,7 +9946,7 @@ bool downgrade_oplock(files_struct *fsp);
 int oplock_notify_fd(void);
 void reply_to_oplock_break_requests(files_struct *fsp);
 void release_level_2_oplocks_on_change(files_struct *fsp);
-void share_mode_entry_to_message(char *msg, struct share_mode_entry *e);
+void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e);
 void message_to_share_mode_entry(struct share_mode_entry *e, char *msg);
 bool init_oplocks(struct messaging_context *msg_ctx);
 
