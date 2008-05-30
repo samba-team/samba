@@ -23,20 +23,24 @@
 #define __LIBCLI_SMB2_SMB2_H__
 
 #include "libcli/raw/request.h"
+#include "libcli/raw/libcliraw.h"
 
 struct smb2_handle;
 
-struct smb2_options {
-	uint32_t timeout;
+struct smb2_signing_context {
+	bool doing_signing;
+	bool signing_started;
+	DATA_BLOB session_key;
 };
 
 /*
-  information returned from the negotiate response
+  information returned from the negotiate process
 */
 struct smb2_negotiate {
 	DATA_BLOB secblob;
 	NTTIME system_time;
 	NTTIME server_start_time;
+	uint16_t security_mode;
 };
 
 /* this is the context for the smb2 transport layer */
@@ -44,7 +48,6 @@ struct smb2_transport {
 	/* socket level info */
 	struct smbcli_socket *socket;
 
-	struct smb2_options options;
 	struct smb2_negotiate negotiate;
 
 	/* next seqnum to allocate */
@@ -74,6 +77,9 @@ struct smb2_transport {
 		/* private data passed to the oplock handler */
 		void *private_data;
 	} oplock;
+
+	struct smbcli_options options;
+	struct smb2_signing_context signing;
 };
 
 
@@ -92,7 +98,6 @@ struct smb2_session {
 	struct smb2_transport *transport;
 	struct gensec_security *gensec;
 	uint64_t uid;
-	DATA_BLOB session_key;
 };
 
 
@@ -192,6 +197,13 @@ struct smb2_request {
 #define SMB2_HDR_SESSION_ID	0x28
 #define SMB2_HDR_SIGNATURE	0x30 /* 16 bytes */
 #define SMB2_HDR_BODY		0x40
+
+/* header flags */
+#define SMB2_HDR_FLAG_REDIRECT  0x01
+#define SMB2_HDR_FLAG_ASYNC     0x02
+#define SMB2_HDR_FLAG_CHAINED   0x04
+#define SMB2_HDR_FLAG_SIGNED    0x08
+#define SMB2_HDR_FLAG_DFS       0x10000000
 
 /* SMB2 opcodes */
 #define SMB2_OP_NEGPROT   0x00

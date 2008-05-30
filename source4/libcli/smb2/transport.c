@@ -74,7 +74,8 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob);
   create a transport structure based on an established socket
 */
 struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
-					   TALLOC_CTX *parent_ctx)
+					   TALLOC_CTX *parent_ctx,
+					   struct smbcli_options *options)
 {
 	struct smb2_transport *transport;
 
@@ -82,6 +83,7 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 	if (!transport) return NULL;
 
 	transport->socket = talloc_steal(transport, sock);
+	transport->options = *options;
 
 	/* setup the stream -> packet parser */
 	transport->packet = packet_init(transport);
@@ -112,8 +114,6 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 
 	talloc_set_destructor(transport, transport_destructor);
 
-	transport->options.timeout = 30;
-
 	return transport;
 }
 
@@ -140,27 +140,24 @@ void smb2_transport_dead(struct smb2_transport *transport, NTSTATUS status)
 	}
 }
 
-static bool smb2_handle_oplock_break(struct smb2_transport *transport,
-				     const DATA_BLOB *blob)
+static NTSTATUS smb2_handle_oplock_break(struct smb2_transport *transport,
+					 const DATA_BLOB *blob)
 {
 	uint8_t *hdr;
 	uint16_t opcode;
-	uint64_t seqnum;
 
 	hdr = blob->data+NBT_HDR_SIZE;
 
 	if (blob->length < (SMB2_MIN_SIZE+0x18)) {
 		DEBUG(1,("Discarding smb2 oplock reply of size %u\n",
-			 blob->length));
-		return false;
+			 (unsigned)blob->length));
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
 	opcode	= SVAL(hdr, SMB2_HDR_OPCODE);
-	seqnum	= BVAL(hdr, SMB2_HDR_MESSAGE_ID);
 
-	if ((opcode != SMB2_OP_BREAK) ||
-	    (seqnum != UINT64_MAX)) {
-		return false;
+	if (opcode != SMB2_OP_BREAK) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
 	if (transport->oplock.handler) {
@@ -173,9 +170,11 @@ static bool smb2_handle_oplock_break(struct smb2_transport *transport,
 
 		transport->oplock.handler(transport, &h, level,
 					  transport->oplock.private_data);
+	} else {
+		DEBUG(5,("Got SMB2 oplock break with no handler\n"));
 	}
 
-	return true;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -194,6 +193,7 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 	uint16_t buffer_code;
 	uint32_t dynamic_size;
 	uint32_t i;
+	NTSTATUS status;
 
 	buffer = blob.data;
 	len = blob.length;
@@ -205,13 +205,19 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 		goto error;
 	}
 
-	if (smb2_handle_oplock_break(transport, &blob)) {
+	status = smb2_check_signature(transport, buffer, len);
+	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(buffer);
-		return NT_STATUS_OK;
+		return status;
 	}
-
+	
 	flags	= IVAL(hdr, SMB2_HDR_FLAGS);
 	seqnum	= BVAL(hdr, SMB2_HDR_MESSAGE_ID);
+
+	/* see MS-SMB2 3.2.5.19 */
+	if (seqnum == UINT64_MAX) {
+		return smb2_handle_oplock_break(transport, &blob);
+	}
 
 	/* match the incoming request against the list of pending requests */
 	for (req=transport->pending_recv; req; req=req->next) {
@@ -340,6 +346,13 @@ void smb2_transport_send(struct smb2_request *req)
 		return;
 	}
 
+	status = smb2_sign_message(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		req->state = SMB2_REQUEST_ERROR;
+		req->status = status;
+		return;
+	}
+	
 	blob = data_blob_const(req->out.buffer, req->out.size);
 	status = packet_send(req->transport->packet, blob);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -352,9 +365,9 @@ void smb2_transport_send(struct smb2_request *req)
 	DLIST_ADD(req->transport->pending_recv, req);
 
 	/* add a timeout */
-	if (req->transport->options.timeout) {
+	if (req->transport->options.request_timeout) {
 		event_add_timed(req->transport->socket->event.ctx, req, 
-				timeval_current_ofs(req->transport->options.timeout, 0), 
+				timeval_current_ofs(req->transport->options.request_timeout, 0), 
 				smb2_timeout_handler, req);
 	}
 

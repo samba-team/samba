@@ -213,6 +213,9 @@ static bool connect_servers(struct event_context *ev,
 	for (i=0;i<NSERVERS;i++) {
 		for (j=0;j<NINSTANCES;j++) {
 			NTSTATUS status;
+			struct smbcli_options smb_options;
+			lp_smbcli_options(lp_ctx, &smb_options);
+
 			printf("Connecting to \\\\%s\\%s as %s - instance %d\n",
 			       servers[i].server_name, servers[i].share_name, 
 			       servers[i].credentials->username, j);
@@ -226,10 +229,8 @@ static bool connect_servers(struct event_context *ev,
 						      lp_resolve_context(lp_ctx),
 						      servers[i].credentials,
 						      &servers[i].smb2_tree[j],
-						      ev);
+						      ev, &smb_options);
 			} else {
-				struct smbcli_options smb_options;
-				lp_smbcli_options(lp_ctx, &smb_options);
 				status = smbcli_tree_full_connection(NULL,
 								     &servers[i].smb_tree[j], 
 								     servers[i].server_name, 
