@@ -11,6 +11,8 @@ LIBSAMBA-NET_OBJ_FILES = $(addprefix $(libnetsrcdir)/, \
 
 $(eval $(call proto_header_template,$(libnetsrcdir)/libnet_proto.h,$(LIBSAMBA-NET_OBJ_FILES:.o=.c)))
 
+$(LIBSAMBA-NET_OBJ_FILES): CFLAGS+=$(KRB5_CFLAGS) $(GSSAPI_CFLAGS)
+
 [PYTHON::python_net]
 LIBRARY_REALNAME = samba/net.$(SHLIBEXT)
 PRIVATE_DEPENDENCIES = LIBSAMBA-NET

@@ -145,6 +145,8 @@ PRIVATE_DEPENDENCIES = \
 
 TORTURE_AUTH_OBJ_FILES = $(addprefix $(torturesrcdir)/auth/, ntlmssp.o pac.o)
 
+$(TORTURE_AUTH_OBJ_FILES): CFLAGS+=$(KRB5_CFLAGS)
+
 $(eval $(call proto_header_template,$(torturesrcdir)/auth/proto.h,$(TORTURE_AUTH_OBJ_FILES:.o=.c)))
 
 mkinclude local/config.mk

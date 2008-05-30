@@ -2,7 +2,6 @@
 # Start MODULE ldb_ildap
 [MODULE::ldb_ildap]
 SUBSYSTEM = LIBLDB
-CFLAGS = -I$(ldbdir)/include
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBCLI_LDAP CREDENTIALS
 ALIASES = ldapi ldaps ldap
@@ -10,4 +9,4 @@ ALIASES = ldapi ldaps ldap
 ################################################
 
 ldb_ildap_OBJ_FILES = $(ldbdir)/ldb_ildap/ldb_ildap.o
-
+$(ldb_ildap_OBJ_FILES): CFLAGS+=-I$(ldbdir)/include

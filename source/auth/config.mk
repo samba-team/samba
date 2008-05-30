@@ -27,6 +27,7 @@ PUBLIC_DEPENDENCIES = SAMDB UTIL_LDB LIBSECURITY
 PRIVATE_DEPENDENCIES = LDAP_ENCODE
 
 auth_sam_OBJ_FILES = $(addprefix $(authsrcdir)/, sam.o)
+$(auth_sam_OBJ_FILES): CFLAGS+=$(LDB_CFLAGS)
 
 $(eval $(call proto_header_template,$(authsrcdir)/auth_sam.h,$(auth_sam_OBJ_FILES:.o=.c)))
 

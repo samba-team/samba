@@ -21,7 +21,7 @@ PRIVATE_DEPENDENCIES = LIBNDR LIBLDB SAMDB CREDENTIALS
 
 python_misc_OBJ_FILES = $(pyscriptsrcdir)/misc_wrap.o
 
-$(python_misc_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)
+$(python_misc_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL) $(LDB_CFLAGS)
 
 _PY_FILES = $(shell find $(pyscriptsrcdir)/samba $(pyscriptsrcdir)/subunit -name "*.py")
 

@@ -86,7 +86,6 @@ unshift @deps, "HEIMDAL_HEIM_ASN1" unless grep /HEIMDAL_HEIM_ASN1/, @deps;
 my $depstr = join(' ', @deps);
 
 print '[SUBSYSTEM::HEIMDAL_'.uc($prefix).']'."\n";
-print "CFLAGS = -Iheimdal_build -Iheimdal/lib/roken -I$dirname\n";
 print "PUBLIC_DEPENDENCIES = $depstr\n\n";
 
 print "HEIMDAL_".uc($prefix)."_OBJ_FILES = ";
@@ -95,6 +94,8 @@ foreach $o_file (@o_files) {
 }
 
 print "\n\n";
+
+print "\$(HEIMDAL_".uc($prefix)."_OBJ_FILES): CFLAGS+=-I\$(heimdalbuildsrcdir) -I\$(heimdalsrcdir)/lib/roken -I$dirname -I\$(heimdalsrcdir)/lib/asn1\n\n";
 
 print "clean:: \n";
 print "\t\@echo \"Deleting ASN1 output files generated from $file\"\n";
