@@ -930,8 +930,9 @@ def provision(setup_dir, message, session_info,
     if aci is None:
         aci = "# no aci for local ldb"
 
-    if smbconf is None:
-        os.makedirs(os.path.join(targetdir, "etc"))
+    if targetdir is not None:
+        if (not os.path.exists(os.path.join(targetdir, "etc"))):
+            os.makedirs(os.path.join(targetdir, "etc"))
         smbconf = os.path.join(targetdir, "etc", "smb.conf")
 
     # only install a new smb.conf if there isn't one there already

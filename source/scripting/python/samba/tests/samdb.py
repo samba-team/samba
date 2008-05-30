@@ -19,12 +19,13 @@
 from samba.auth import system_session
 from samba.credentials import Credentials
 import os
-from samba.provision import setup_samdb, guess_names, setup_templatesdb
+from samba.provision import setup_samdb, guess_names, setup_templatesdb, make_smbconf
 from samba.samdb import SamDB
 from samba.tests import cmdline_loadparm, TestCaseInTempDir
 from samba import security
 from unittest import TestCase
 import uuid
+import param
 
 class SamDBTestCase(TestCaseInTempDir):
     def setUp(self):
@@ -43,9 +44,22 @@ class SamDBTestCase(TestCaseInTempDir):
         hostguid = str(uuid.uuid4())
         path = os.path.join(self.tempdir, "samdb.ldb")
         session_info = system_session()
-        names = guess_names(lp=cmdline_loadparm, hostname="foo", 
-                            domain="EXAMPLE.COM", dnsdomain="example.com", 
-                            serverrole="domain controller", 
+        
+        hostname="foo"
+        domain="EXAMPLE"
+        dnsdomain="example.com" 
+        serverrole="domain controller"
+
+        smbconf = os.path.join(self.tempdir, "smb.conf")
+        make_smbconf(smbconf, setup_path, hostname, domain, dnsdomain, serverrole, 
+                     self.tempdir)
+
+        lp = param.LoadParm()
+        lp.load(smbconf)
+
+        names = guess_names(lp=lp, hostname=hostname, 
+                            domain=domain, dnsdomain=dnsdomain, 
+                            serverrole=severrole, 
                             domaindn=self.domaindn, configdn=configdn, 
                             schemadn=schemadn)
         setup_templatesdb(os.path.join(self.tempdir, "templates.ldb"), 
@@ -58,9 +72,10 @@ class SamDBTestCase(TestCaseInTempDir):
                                  policyguid, False, "secret", 
                                  "secret", "secret", invocationid, 
                                  "secret", "domain controller")
+
     def tearDown(self):
         for f in ['templates.ldb', 'schema.ldb', 'configuration.ldb', 
-                  'users.ldb', 'samdb.ldb']:
+                  'users.ldb', 'samdb.ldb', 'smb.conf']:
             os.remove(os.path.join(self.tempdir, f))
         super(SamDBTestCase, self).tearDown()
 
