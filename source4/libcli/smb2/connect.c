@@ -33,6 +33,7 @@ struct smb2_connect_state {
 	struct resolve_context *resolve_ctx;
 	const char *host;
 	const char *share;
+	struct smbcli_options options;
 	struct smb2_negprot negprot;
 	struct smb2_tree_connect tcon;
 	struct smb2_session *session;
@@ -103,6 +104,34 @@ static void continue_negprot(struct smb2_request *req)
 
 	transport->negotiate.system_time = state->negprot.out.system_time;
 	transport->negotiate.server_start_time = state->negprot.out.server_start_time;
+	transport->negotiate.security_mode = state->negprot.out.security_mode;
+
+	switch (transport->options.signing) {
+	case SMB_SIGNING_OFF:
+		if (transport->negotiate.security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) {
+			composite_error(c, NT_STATUS_ACCESS_DENIED);
+			return;
+		}
+		transport->signing.doing_signing = false;
+		break;
+	case SMB_SIGNING_SUPPORTED:
+	case SMB_SIGNING_AUTO:
+		if (transport->negotiate.security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) {
+			transport->signing.doing_signing = true;
+		} else {
+			transport->signing.doing_signing = false;
+		}
+		break;
+	case SMB_SIGNING_REQUIRED:
+		if (transport->negotiate.security_mode & SMB2_NEGOTIATE_SIGNING_ENABLED) {
+			transport->signing.doing_signing = true;
+		} else {
+			composite_error(c, NT_STATUS_ACCESS_DENIED);
+			return;
+		}
+		break;
+	}
+	
 
 	state->session = smb2_session_init(transport, global_loadparm, state, true);
 	if (composite_nomem(state->session, c)) return;
@@ -129,12 +158,24 @@ static void continue_socket(struct composite_context *creq)
 	c->status = smbcli_sock_connect_recv(creq, state, &sock);
 	if (!composite_is_ok(c)) return;
 
-	transport = smb2_transport_init(sock, state);
+	transport = smb2_transport_init(sock, state, &state->options);
 	if (composite_nomem(transport, c)) return;
 
 	ZERO_STRUCT(state->negprot);
 	state->negprot.in.dialect_count = 2;
-	state->negprot.in.security_mode = 0;
+	switch (transport->options.signing) {
+	case SMB_SIGNING_OFF:
+		state->negprot.in.security_mode = 0;
+		break;
+	case SMB_SIGNING_SUPPORTED:
+	case SMB_SIGNING_AUTO:
+		state->negprot.in.security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED;
+		break;
+	case SMB_SIGNING_REQUIRED:
+		state->negprot.in.security_mode = 
+			SMB2_NEGOTIATE_SIGNING_ENABLED | SMB2_NEGOTIATE_SIGNING_REQUIRED;
+		break;
+	}
 	state->negprot.in.capabilities  = 0;
 	unix_to_nt_time(&state->negprot.in.start_time, time(NULL));
 	dialects[0] = 0;
@@ -178,7 +219,8 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 					    const char *share,
 					    struct resolve_context *resolve_ctx,
 					    struct cli_credentials *credentials,
-					    struct event_context *ev)
+					    struct event_context *ev,
+					    struct smbcli_options *options)
 {
 	struct composite_context *c;
 	struct smb2_connect_state *state;
@@ -193,6 +235,7 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	c->private_data = state;
 
 	state->credentials = credentials;
+	state->options = *options;
 	state->host = talloc_strdup(c, host);
 	if (composite_nomem(state->host, c)) return c;
 	state->share = talloc_strdup(c, share);
@@ -232,10 +275,11 @@ NTSTATUS smb2_connect(TALLOC_CTX *mem_ctx,
 		      struct resolve_context *resolve_ctx,
 		      struct cli_credentials *credentials,
 		      struct smb2_tree **tree,
-		      struct event_context *ev)
+		      struct event_context *ev,
+		      struct smbcli_options *options)
 {
 	struct composite_context *c = smb2_connect_send(mem_ctx, host, share, 
 							resolve_ctx,
-							credentials, ev);
+							credentials, ev, options);
 	return smb2_connect_recv(c, mem_ctx, tree);
 }

@@ -203,17 +203,20 @@ bool torture_smb2_scan(struct torture_context *torture)
 	NTSTATUS status;
 	int opcode;
 	struct smb2_request *req;
+	struct smbcli_options options;
+
+	lp_smbcli_options(torture->lp_ctx, &options);
 
 	status = smb2_connect(mem_ctx, host, share, 
 			      lp_resolve_context(torture->lp_ctx), 
 			      credentials, &tree, 
-			      torture->ev);
+			      torture->ev, &options);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connection failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
-	tree->session->transport->options.timeout = 3;
+	tree->session->transport->options.request_timeout = 3;
 
 	for (opcode=0;opcode<1000;opcode++) {
 		req = smb2_request_init_tree(tree, opcode, 2, false, 0);
@@ -224,12 +227,12 @@ bool torture_smb2_scan(struct torture_context *torture)
 			status = smb2_connect(mem_ctx, host, share, 
 					      lp_resolve_context(torture->lp_ctx), 
 					      credentials, &tree, 
-					      torture->ev);
+					      torture->ev, &options);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Connection failed - %s\n", nt_errstr(status));
 				return false;
 			}
-			tree->session->transport->options.timeout = 3;
+			tree->session->transport->options.request_timeout = 3;
 		} else {
 			status = smb2_request_destroy(req);
 			printf("active opcode %4d gave status %s\n", opcode, nt_errstr(status));

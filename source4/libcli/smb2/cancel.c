@@ -61,10 +61,10 @@ NTSTATUS smb2_cancel(struct smb2_request *r)
 
 	SSVAL(c->out.body, 0x02, 0);
 
-	old_timeout = c->transport->options.timeout;
-	c->transport->options.timeout = 0;
+	old_timeout = c->transport->options.request_timeout;
+	c->transport->options.request_timeout = 0;
 	smb2_transport_send(c);
-	c->transport->options.timeout = old_timeout;
+	c->transport->options.request_timeout = old_timeout;
 
 	if (c->state == SMB2_REQUEST_ERROR) {
 		status = c->status;
