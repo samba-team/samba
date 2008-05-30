@@ -1321,12 +1321,12 @@ def create_zone_file(path, setup_path, dnsdomain, domaindn,
     """
     assert isinstance(domainguid, str)
 
-    hostip6_base_line = ""
-    hostip6_host_line = ""
-
     if hostip6 is not None:
         hostip6_base_line = "            IN AAAA    " + hostip6
         hostip6_host_line = hostname + "        IN AAAA    " + hostip6
+    else:
+        hostip6_base_line = ""
+        hostip6_host_line = ""
 
     setup_file(setup_path("provision.zone"), path, {
             "DNSPASS_B64": b64encode(dnspass),

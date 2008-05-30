@@ -2,9 +2,10 @@
 # should be skipped during "make test".
 #
 # Possible reasons for adding a testsuite here:
-# * Tests functionality not implemented on the server side
+# * Testsuite functionality not implemented on the server side
 # * Testsuite crashes during run
 # * Testsuite crashes server
+# * Testsuite contains "flapping" tests (sometimes success, sometimes failure)
 #
 # If a testsuite is partially succeeding, please list the failing bits 
 # in the samba4-knownfail file rather than disabling the testsuite completely.
@@ -61,4 +62,4 @@ nss.test						# Fails
 samba4.samba3sam.python		# Conversion from EJS not yet finished
 raw.offline 			# Samba 4 doesn't have much offline support yet
 winreg*  #Does not authenticate against the target server
-^samba4.samdb.python  #Not working yet
+#^samba4.samdb.python  #Not working yet
