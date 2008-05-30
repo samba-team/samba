@@ -208,9 +208,9 @@ sub Binary($$)
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 	if (defined($ctx->{USE_HOSTCC}) && $ctx->{USE_HOSTCC} eq "YES") {
-$self->output("\$(call host_binary_link_template, $ctx->{RESULT_BINARY}, \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST), \$($ctx->{NAME}_LINK_FLAGS))\n");
+$self->output("\$(call host_binary_link_template, $ctx->{RESULT_BINARY}, \$($ctx->{NAME}_FULL_OBJ_LIST) \$($ctx->{NAME}_DEPEND_LIST), \$($ctx->{NAME}_LINK_FLAGS))\n");
 	} else {
-$self->output("\$(call binary_link_template, $ctx->{RESULT_BINARY}, \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST), \$($ctx->{NAME}_LINK_FLAGS))\n");
+$self->output("\$(call binary_link_template, $ctx->{RESULT_BINARY}, \$($ctx->{NAME}_FULL_OBJ_LIST) \$($ctx->{NAME}_DEPEND_LIST), \$($ctx->{NAME}_LINK_FLAGS))\n");
 	}
 }
 
