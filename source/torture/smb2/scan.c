@@ -77,22 +77,20 @@ bool torture_smb2_getinfo_scan(struct torture_context *torture)
 
 			io.in.file.handle = fhandle;
 			status = smb2_getinfo(tree, torture, &io);
-			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
-			    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
-			    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
-				printf("file level 0x%02x:%02x is %ld bytes - %s\n", 
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
+				printf("file level 0x%02x:%02x %u is %ld bytes - %s\n", 
 				       io.in.info_type, io.in.info_class, 
+				       (unsigned)io.in.info_class, 
 				       (long)io.out.blob.length, nt_errstr(status));
 				dump_data(1, io.out.blob.data, io.out.blob.length);
 			}
 
 			io.in.file.handle = dhandle;
 			status = smb2_getinfo(tree, torture, &io);
-			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
-			    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
-			    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
-				printf("dir  level 0x%02x:%02x is %ld bytes - %s\n", 
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
+				printf("dir  level 0x%02x:%02x %u is %ld bytes - %s\n", 
 				       io.in.info_type, io.in.info_class,
+				       (unsigned)io.in.info_class, 
 				       (long)io.out.blob.length, nt_errstr(status));
 				dump_data(1, io.out.blob.data, io.out.blob.length);
 			}
@@ -134,8 +132,7 @@ bool torture_smb2_setinfo_scan(struct torture_context *torture)
 			io.in.level = (i<<8) | c;
 			io.in.file.handle = handle;
 			status = smb2_setinfo(tree, &io);
-			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
-			    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
 				printf("file level 0x%04x - %s\n", 
 				       io.in.level, nt_errstr(status));
 			}
