@@ -3680,6 +3680,10 @@ static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
 	char *dst = NULL;
 
 	dst = SMB_STRDUP(opt_destination?opt_destination:"127.0.0.1");
+	if (dst == NULL) {
+		nt_status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	result = get_share_info(pipe_hnd, mem_ctx, level, argc, argv, &ctr_src);
 
@@ -3763,6 +3767,7 @@ done:
 	if (got_dst_share)
 		cli_shutdown(cp_clistate.cli_share_dst);
 
+	SAFE_FREE(dst);
 	return nt_status;
 
 }

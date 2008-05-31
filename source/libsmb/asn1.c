@@ -425,6 +425,7 @@ bool asn1_check_OID(ASN1_DATA *data, const char *OID)
 
 	if (strcmp(id, OID) != 0) {
 		data->has_error = true;
+		free(id);
 		return false;
 	}
 	free(id);

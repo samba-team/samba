@@ -221,6 +221,7 @@ static int rap_share_add(int argc, const char **argv)
 	p = strchr(sharename, '=');
 	if (p == NULL) {
 		d_printf("Server path not specified\n");
+		SAFE_FREE(sharename);
 		return net_rap_share_usage(argc, argv);
 	}
 	*p = 0;
@@ -237,6 +238,7 @@ static int rap_share_add(int argc, const char **argv)
 	
 	ret = cli_NetShareAdd(cli, &sinfo);
 	cli_shutdown(cli);
+	SAFE_FREE(sharename);
 	return ret;
 }
 

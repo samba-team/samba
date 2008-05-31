@@ -1087,15 +1087,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 			child);
 	}
 
-	/* Special case for Winbindd on a Samba DC,
-	 * We want to make sure the child can connect to smbd
-	 * but not the main daemon */
-
-	if (child->domain && child->domain->internal && IS_DC) {
-		child->domain->methods = &cache_methods;
-		child->domain->online = False;
-	}
-
 	while (1) {
 
 		int ret;
@@ -1106,7 +1097,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 		TALLOC_CTX *frame = talloc_stackframe();
 
 		/* check for signals */
-		winbind_check_sigterm();
+		winbind_check_sigterm(false);
 		winbind_check_sighup();
 
 		run_events(winbind_event_context(), 0, NULL, NULL);

@@ -171,7 +171,8 @@ static void filter_child(int c, struct sockaddr_storage *dest_ss)
 		if (c != -1 && FD_ISSET(c, &fds)) {
 			size_t len;
 			if (!NT_STATUS_IS_OK(receive_smb_raw(
-						     c, packet, 0, 0, &len))) {
+							c, packet, sizeof(packet),
+							0, 0, &len))) {
 				d_printf("client closed connection\n");
 				exit(0);
 			}
@@ -184,7 +185,8 @@ static void filter_child(int c, struct sockaddr_storage *dest_ss)
 		if (s != -1 && FD_ISSET(s, &fds)) {
 			size_t len;
 			if (!NT_STATUS_IS_OK(receive_smb_raw(
-						     s, packet, 0, 0, &len))) {
+							s, packet, sizeof(packet),
+							0, 0, &len))) {
 				d_printf("server closed connection\n");
 				exit(0);
 			}
