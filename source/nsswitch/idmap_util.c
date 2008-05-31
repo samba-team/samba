@@ -158,11 +158,10 @@ NTSTATUS idmap_sid_to_gid(DOM_SID *sid, gid_t *gid)
 	}
 
 	if ((map.status != ID_MAPPED) || (map.xid.type != ID_TYPE_GID)) {
-		DEBUG(10, ("sid [%s] not mapped to an gid [%u,%u,%u]\n", 
+		DEBUG(10, ("sid [%s] not mapped to an gid [%u,%u]\n", 
 			   sid_string_static(sid), 
 			   map.status, 
-			   map.xid.type, 
-			   map.xid.id));
+			   map.xid.type));
 		return NT_STATUS_NONE_MAPPED;
 	}
 
