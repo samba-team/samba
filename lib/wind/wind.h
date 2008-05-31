@@ -37,7 +37,7 @@
 #define _WIND_H_
 
 #include <stddef.h>
-#include <stdint.h>
+#include <krb5-types.h>
 
 #include <wind_err.h>
 
