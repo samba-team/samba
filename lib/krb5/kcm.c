@@ -57,6 +57,7 @@ typedef struct krb5_kcmcache {
 
 static krb5_error_code
 try_door(krb5_context context,
+	 krb5_kcmcache *k,
 	 krb5_data *request_data,
 	 krb5_data *response_data)
 {
@@ -140,7 +141,7 @@ kcm_send_request(krb5_context context,
     ret = KRB5_CC_NOSUPP;
 
     for (i = 0; i < context->max_retries; i++) {
-	ret = try_door(context, &request_data, response_data);
+	ret = try_door(context, k, &request_data, response_data);
 	if (ret == 0 && response_data->length != 0)
 	    break;
 	ret = try_unix_socket(context, k, &request_data, response_data);
