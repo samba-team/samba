@@ -8,7 +8,7 @@
    Copyright (C) Volker Lendecke 2005
    Copyright (C) Guenther Deschner 2005
    Copyright (C) Michael Adam    2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -37,7 +37,7 @@ extern bool opt_nocache;
 #ifdef HAVE_ADS
 extern struct winbindd_methods ads_methods;
 #endif
-extern struct winbindd_methods passdb_methods;
+extern struct winbindd_methods builtin_passdb_methods;
 
 /*
  * JRA. KEEP THIS LIST UP TO DATE IF YOU ADD CACHE ENTRIES.
@@ -137,7 +137,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	/* We have to know what type of domain we are dealing with first. */
 
 	if (domain->internal) {
-		domain->backend = &passdb_methods;
+		domain->backend = &builtin_passdb_methods;
 		domain->initialized = True;
 	}
 	if ( !domain->initialized ) {
