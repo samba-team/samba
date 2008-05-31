@@ -53,6 +53,11 @@ static void smb2srv_getinfo_send(struct ntvfs_request *ntvfs)
 		SMB2SRV_CHECK(op->send_fn(op));
 	}
 
+	if (op->info->in.output_buffer_length < op->info->out.blob.length) {
+		smb2srv_send_error(req,  NT_STATUS_INFO_LENGTH_MISMATCH);
+		return;
+	}
+
 	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x08, true, op->info->out.blob.length));
 
 	SMB2SRV_CHECK(smb2_push_o16s32_blob(&req->out, 0x02, op->info->out.blob));
