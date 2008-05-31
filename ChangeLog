@@ -1,3 +1,7 @@
+2008-05-30  Love Hörnquist Åstrand  <lha@kth.se>
+
+	* lib/krb5/kcm.c: Add back krb5_kcmcache argument to try_door().
+
 2008-05-27  Love Hörnquist Åstrand  <lha@kth.se>
 
 	* lib/krb5/error_string.c (krb5_free_error_message): constify
