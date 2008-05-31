@@ -213,7 +213,9 @@ Changes since 3.2.0rc1:
 
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 5504: Fix behaviour of winbindd children receiving a SIGTERM.
     * Security fix for CVE-2008-1105.
+    * Fix valgrind bug in debug statement.
 
 
 o   Günther Deschner <gd@samba.org>
@@ -226,6 +228,10 @@ o   Volker Lendecke <vl@samba.org>
 
 o   Marc VanHeyningen <marc.vanheyningen@isilon.com>
     * Fix memory leak.
+
+
+o   Chere Zhou <chere.zhou@isilon.com>
+    * Fix memory leaks. 
 
 
 Changes since 3.2.0pre3:
