@@ -1,5 +1,7 @@
 2008-05-30  Love Hörnquist Åstrand  <lha@kth.se>
 
+	* idn-lookup.c: Drop <stdint.h>
+
 	* wind.h: Use <krb5-types.h>
 
 2008-05-23  Love Hörnquist Åstrand  <lha@kth.se>
