@@ -1,3 +1,7 @@
+2008-05-29  Love Hörnquist Åstrand  <lha@kth.se>
+
+	* ftp/ftp.c: use the correct length to munmap and use msync.
+
 2008-05-28  Love Hörnquist Åstrand  <lha@kth.se>
 
 	* ftp/ftp.c: Rewrite sliding window code so it doesn't have a
