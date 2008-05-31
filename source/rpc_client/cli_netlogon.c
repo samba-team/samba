@@ -185,9 +185,10 @@ static NTSTATUS rpccli_net_auth2(struct rpc_pipe_client *cli,
 
         result = r.status;
 
+	*neg_flags_inout = r.srv_flgs.neg_flags;
+
         if (NT_STATUS_IS_OK(result)) {
 		*srv_chal_out = r.srv_chal;
-		*neg_flags_inout = r.srv_flgs.neg_flags;
         }
 
         return result;

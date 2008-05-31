@@ -1005,7 +1005,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		main_loop_TALLOC_FREE();
 
 		/* check for signals */
-		winbind_check_sigterm();
+		winbind_check_sigterm(false);
 		winbind_check_sighup();
 
 		run_events(winbind_event_context(), 0, NULL, NULL);

@@ -117,14 +117,21 @@ static void flush_caches(void)
 
 /* Handle the signal by unlinking socket and exiting */
 
-static void terminate(void)
+static void terminate(bool in_parent)
 {
-	pstring path;
+	if (in_parent) {
+		/* When parent goes away we should
+		 * remove the socket file. Not so
+		 * when children terminate.
+		 */ 
 
-	/* Remove socket file */
-	pstr_sprintf(path, "%s/%s", 
-		 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
-	unlink(path);
+		pstring path;
+
+		/* Remove socket file */
+		pstr_sprintf(path, "%s/%s", 
+			WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
+		unlink(path);
+	}
 
 	idmap_close();
 	
@@ -731,10 +738,10 @@ void winbind_check_sighup(void)
 }
 
 /* check if TERM has been received */
-void winbind_check_sigterm(void)
+void winbind_check_sigterm(bool in_parent)
 {
 	if (do_sigterm)
-		terminate();
+		terminate(in_parent);
 }
 
 /* Process incoming clients on listen_sock.  We use a tricky non-blocking,
@@ -901,7 +908,7 @@ static void process_loop(void)
 
 	/* Check signal handling things */
 
-	winbind_check_sigterm();
+	winbind_check_sigterm(true);
 	winbind_check_sighup();
 
 	if (do_sigusr2) {
