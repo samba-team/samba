@@ -1,3 +1,7 @@
+2008-05-30  Love Hörnquist Åstrand  <lha@kth.se>
+
+	* wind.h: Use <krb5-types.h>
+
 2008-05-23  Love Hörnquist Åstrand  <lha@kth.se>
 
 	* windlocl.h: Include <krb5-types.h> to get fixed int types.
