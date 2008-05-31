@@ -396,6 +396,7 @@ BOOL asn1_check_OID(ASN1_DATA *data, const char *OID)
 
 	if (strcmp(id, OID) != 0) {
 		data->has_error = True;
+		free(id);
 		return False;
 	}
 	free(id);
