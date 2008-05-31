@@ -74,7 +74,8 @@ void ndr_print_winbindd_cm_conn(struct ndr_print *ndr,
 extern struct winbindd_methods ads_methods;
 #endif
 extern struct winbindd_methods msrpc_methods;
-extern struct winbindd_methods passdb_methods;
+extern struct winbindd_methods builtin_passdb_methods;
+extern struct winbindd_methods sam_passdb_methods;
 extern struct winbindd_methods reconnect_methods;
 extern struct winbindd_methods cache_methods;
 
@@ -97,8 +98,10 @@ void ndr_print_winbindd_methods(struct ndr_print *ndr,
 	} else if (r == &ads_methods) {
 		ndr_print_string(ndr, name, "ads_methods");
 #endif
-	} else if (r == &passdb_methods) {
-		ndr_print_string(ndr, name, "passdb_methods");
+	} else if (r == &builtin_passdb_methods) {
+		ndr_print_string(ndr, name, "builtin_passdb_methods");
+	} else if (r == &sam_passdb_methods) {
+		ndr_print_string(ndr, name, "sam_passdb_methods");
 	} else if (r == &reconnect_methods) {
 		ndr_print_string(ndr, name, "reconnect_methods");
 	} else if (r == &cache_methods) {
