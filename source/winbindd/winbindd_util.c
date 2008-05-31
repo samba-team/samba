@@ -27,7 +27,9 @@
 #define DBGC_CLASS DBGC_WINBIND
 
 extern struct winbindd_methods cache_methods;
-extern struct winbindd_methods passdb_methods;
+extern struct winbindd_methods builtin_passdb_methods;
+extern struct winbindd_methods sam_passdb_methods;
+
 
 /**
  * @file winbindd_util.c
@@ -695,7 +697,7 @@ bool init_domain_list(void)
 
 	/* BUILTIN domain */
 
-	domain = add_trusted_domain("BUILTIN", NULL, &passdb_methods,
+	domain = add_trusted_domain("BUILTIN", NULL, &builtin_passdb_methods,
 				    &global_sid_Builtin);
 	if (domain) {
 		setup_domain_child(domain,
@@ -705,7 +707,7 @@ bool init_domain_list(void)
 	/* Local SAM */
 
 	domain = add_trusted_domain(get_global_sam_name(), NULL,
-				    &passdb_methods, get_global_sam_sid());
+				    &sam_passdb_methods, get_global_sam_sid());
 	if (domain) {
 		if ( role != ROLE_DOMAIN_MEMBER ) {
 			domain->primary = True;
