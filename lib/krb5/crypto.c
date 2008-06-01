@@ -561,25 +561,39 @@ ARCFOUR_string_to_key(krb5_context context,
 		  krb5_data opaque,
 		  krb5_keyblock *key)
 {
-    char *s, *p;
-    size_t len;
-    int i;
-    MD4_CTX m;
     krb5_error_code ret;
+    uint16_t *s;
+    size_t len, i;
+    MD4_CTX m;
 
-    len = 2 * password.length;
-    s = malloc (len);
+    ret = wind_utf8ucs2_length(password.data, &len);
+    if (ret) {
+	krb5_set_error_string(context, "Password not an UCS2 string");
+	return ret;
+    }
+	
+    s = malloc (len * sizeof(s[0]));
     if (len != 0 && s == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
-	ret = ENOMEM;
+	return ENOMEM;
+    }
+
+    ret = wind_utf8ucs2(password.data, s, &len);
+    if (ret) {
+	krb5_set_error_string(context, "Password not an UCS2 string");
 	goto out;
     }
-    for (p = s, i = 0; i < password.length; ++i) {
-	*p++ = ((char *)password.data)[i];
-	*p++ = 0;
-    }
+
+    /* LE encoding */
     MD4_Init (&m);
-    MD4_Update (&m, s, len);
+    for (i = 0; i < len; i++) {
+	unsigned char p;
+	p = (s[0] & 0xff);
+	MD4_Update (&m, &p, 1);
+	p = (s[0] >> 8) & 0xff;
+	MD4_Update (&m, &p, 1);
+    }
+
     key->keytype = enctype;
     ret = krb5_data_alloc (&key->keyvalue, 16);
     if (ret) {
@@ -587,9 +601,9 @@ ARCFOUR_string_to_key(krb5_context context,
 	goto out;
     }
     MD4_Final (key->keyvalue.data, &m);
-    memset (s, 0, len);
     ret = 0;
 out:
+    memset (s, 0, len);
     free (s);
     return ret;
 }
