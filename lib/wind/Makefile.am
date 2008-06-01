@@ -4,29 +4,35 @@ include $(top_srcdir)/Makefile.am.common
 
 lib_LTLIBRARIES = libwind.la
 
-dist_libwind_la_SOURCES =			\
-	bidi.c					\
+built = \
 	bidi_table.c				\
 	bidi_table.h				\
-	combining.c				\
 	combining_table.c			\
 	combining_table.h			\
-	doxygen.c				\
-	errorlist.c				\
 	errorlist_table.c			\
 	errorlist_table.h			\
-	map.c					\
 	map_table.c				\
 	map_table.h				\
+	normalize_table.c			\
+	normalize_table.h
+
+code = \
+	bidi.c					\
+	combining.c				\
+	doxygen.c				\
+	errorlist.c				\
+	map.c					\
 	ldap.c					\
 	normalize.c				\
-	normalize_table.c			\
-	normalize_table.h			\
 	punycode.c				\
 	stringprep.c				\
 	wind.h					\
 	windlocl.h				\
 	utf8.c
+
+$(code): $(built)
+
+dist_libwind_la_SOURCES = $(code) $(built)
 
 dist_include_HEADERS = wind.h
 
@@ -75,22 +81,22 @@ LDADD = libwind.la $(LIB_roken)
 PYTHON = python
 
 map_table.h map_table.c: rfc3454.txt gen-map.py stringprep.py
-	$(PYTHON) $(srcdir)/gen-map.py $(srcdir)/rfc3454.txt
+	$(PYTHON) $(srcdir)/gen-map.py $(srcdir)/rfc3454.txt $(srcdir)
 
 errorlist_table.h errorlist_table.c: rfc3454.txt gen-errorlist.py stringprep.py
-	$(PYTHON) $(srcdir)/gen-errorlist.py $(srcdir)/rfc3454.txt
+	$(PYTHON) $(srcdir)/gen-errorlist.py $(srcdir)/rfc3454.txt $(srcdir)
 
 normalize_table.h normalize_table.c: UnicodeData.txt CompositionExclusions-3.2.0.txt gen-normalize.py
-	$(PYTHON) $(srcdir)/gen-normalize.py $(srcdir)/UnicodeData.txt $(srcdir)/CompositionExclusions-3.2.0.txt
+	$(PYTHON) $(srcdir)/gen-normalize.py $(srcdir)/UnicodeData.txt $(srcdir)/CompositionExclusions-3.2.0.txt $(srcdir)
 
 combining_table.h combining_table.c: UnicodeData.txt gen-combining.py
-	$(PYTHON) $(srcdir)/gen-combining.py $(srcdir)/UnicodeData.txt
+	$(PYTHON) $(srcdir)/gen-combining.py $(srcdir)/UnicodeData.txt $(srcdir)
 
 bidi_table.h bidi_table.c: rfc3454.txt gen-bidi.py
-	$(PYTHON) $(srcdir)/gen-bidi.py $(srcdir)/rfc3454.txt
+	$(PYTHON) $(srcdir)/gen-bidi.py $(srcdir)/rfc3454.txt $(srcdir)
 
 punycode_examples.h punycode_examples.c: gen-punycode-examples.py rfc3492.txt
-	$(PYTHON) $(srcdir)/gen-punycode-examples.py $(srcdir)/rfc3492.txt
+	$(PYTHON) $(srcdir)/gen-punycode-examples.py $(srcdir)/rfc3492.txt $(srcdir)
 
 EXTRA_DIST = \
 	CompositionExclusions-3.2.0.txt \
