@@ -72,6 +72,9 @@ int wind_utf8ucs4_length(const char *, size_t *);
 int wind_ucs4utf8(const uint32_t *, size_t, char *, size_t *);
 int wind_ucs4utf8_length(const uint32_t *, size_t, size_t *);
 
+int wind_utf8ucs2(const char *, uint16_t *, size_t *);
+int wind_utf8ucs2_length(const char *, size_t *);
+
 int wind_ucs2utf8(const uint16_t *, size_t, char *, size_t *);
 int wind_ucs2utf8_length(const uint16_t *, size_t, size_t *);
 
