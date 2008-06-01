@@ -1,5 +1,9 @@
 2008-05-31  Love Hörnquist Åstrand  <lha@kth.se>
 
+	* generate files into the source tree
+
+2008-05-31  Love Hörnquist Åstrand  <lha@kth.se>
+
 	* Support utf8 to utf16 conversion.
 
 2008-05-30  Love Hörnquist Åstrand  <lha@kth.se>
