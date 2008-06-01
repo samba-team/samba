@@ -131,6 +131,8 @@ struct sockaddr_dl;
 #include <parse_time.h>
 #include <base64.h>
 
+#include <wind.h>
+
 #include "crypto-headers.h"
 
 
