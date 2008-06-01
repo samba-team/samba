@@ -588,9 +588,9 @@ ARCFOUR_string_to_key(krb5_context context,
     MD4_Init (&m);
     for (i = 0; i < len; i++) {
 	unsigned char p;
-	p = (s[0] & 0xff);
+	p = (s[i] & 0xff);
 	MD4_Update (&m, &p, 1);
-	p = (s[0] >> 8) & 0xff;
+	p = (s[i] >> 8) & 0xff;
 	MD4_Update (&m, &p, 1);
     }
 
