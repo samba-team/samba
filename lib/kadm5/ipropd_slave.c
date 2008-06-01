@@ -534,8 +534,10 @@ main(int argc, char **argv)
     server_context = (kadm5_server_context *)kadm_handle;
 
     ret = kadm5_log_init (server_context);
-    if (ret)
+    if (ret) {
+	krb5_clear_error_string(context);
 	krb5_err (context, 1, ret, "kadm5_log_init");
+    }
 
     get_creds(context, keytab_str, &ccache, master);
 
