@@ -36,12 +36,13 @@
 
 import datetime
 import string
+import os
 
 class GeneratedFile :
     "Represents a generated file"
     def __init__(self, name) :
         "Create a new GeneratedFile with name"
-        self.name  = name
+        self.name  = os.path.basename(name)
         self.file  = open(name, 'w')
         self.file.write('/* ' + name + ' */\n')
         self.file.write('/* Automatically generated at ' +

@@ -41,8 +41,8 @@ import sys
 import generate
 import UnicodeData
 
-if len(sys.argv) != 2:
-    print "usage: %s UnicodeData.txt" % sys.argv[0]
+if len(sys.argv) != 3:
+    print "usage: %s UnicodeData.txt out-dir" % sys.argv[0]
     sys.exit(1)
 
 ud = UnicodeData.read(sys.argv[1])
@@ -54,8 +54,8 @@ for k,v in ud.items():
 
 # trans = [(x[0], int(x[3]), x[1]) for x in UnicodeData.read() if int(x[3]) != 0]
 
-combining_h = generate.Header('combining_table.h')
-combining_c = generate.Implementation('combining_table.c')
+combining_h = generate.Header('%s/combining_table.h' % sys.argv[2])
+combining_c = generate.Implementation('%s/combining_table.c' % sys.argv[2])
 
 combining_h.file.write(
 '''

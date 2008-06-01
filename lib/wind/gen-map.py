@@ -44,8 +44,8 @@ import rfc4518
 import stringprep
 import util
 
-if len(sys.argv) != 2:
-    print "usage: %s rfc3454.txt" % sys.argv[0]
+if len(sys.argv) != 3:
+    print "usage: %s rfc3454.txt out-dir" % sys.argv[0]
     sys.exit(1)
 
 tables = rfc3454.read(sys.argv[1])
@@ -56,9 +56,9 @@ for x in t2.iterkeys():
 
 map_list = stringprep.get_maplist()
 
-map_h = generate.Header('map_table.h')
+map_h = generate.Header('%s/map_table.h' % sys.argv[2])
 
-map_c = generate.Implementation('map_table.c')
+map_c = generate.Implementation('%s/map_table.c' % sys.argv[2])
 
 map_h.file.write(
 '''

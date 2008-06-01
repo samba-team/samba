@@ -40,14 +40,14 @@ import sys
 
 import generate
 
-if len(sys.argv) != 2:
+if len(sys.argv) != 3:
     print "usage: %s rfc3492.txt" % sys.argv[0]
     sys.exit(1)
 
 f = open(sys.argv[1], 'r')
 
-examples_h = generate.Header('punycode_examples.h')
-examples_c = generate.Header('punycode_examples.c')
+examples_h = generate.Header('%s/punycode_examples.h' % sys.argv[2])
+examples_c = generate.Header('%s/punycode_examples.c' % sys.argv[2])
 
 start = False
 

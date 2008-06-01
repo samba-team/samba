@@ -43,8 +43,8 @@ import rfc3454
 import rfc4518
 import stringprep
 
-if len(sys.argv) != 2:
-    print "usage: %s rfc3454.txt" % sys.argv[0]
+if len(sys.argv) != 3:
+    print "usage: %s rfc3454.txt out-dir" % sys.argv[0]
     sys.exit(1)
 
 tables = rfc3454.read(sys.argv[1])
@@ -55,9 +55,9 @@ for x in t2.iterkeys():
 
 error_list = stringprep.get_errorlist()
 
-errorlist_h = generate.Header('errorlist_table.h')
+errorlist_h = generate.Header('%s/errorlist_table.h' % sys.argv[2])
 
-errorlist_c = generate.Implementation('errorlist_table.c')
+errorlist_c = generate.Implementation('%s/errorlist_table.c' % sys.argv[2])
 
 errorlist_h.file.write(
 '''

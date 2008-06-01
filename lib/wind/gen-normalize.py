@@ -42,9 +42,9 @@ import generate
 import UnicodeData
 import util
 
-if len(sys.argv) != 3:
+if len(sys.argv) != 4:
     print "usage: %s UnicodeData.txt"
-    " CompositionExclusions-3.2.0.txt" % sys.argv[0]
+    " CompositionExclusions-3.2.0.txt out-dir" % sys.argv[0]
     sys.exit(1)
 
 ud = UnicodeData.read(sys.argv[1])
@@ -62,8 +62,8 @@ maxLength = 0
 for v in trans.values():
     maxLength = max(maxLength, len(v[0].split()))
 
-normalize_h = generate.Header('normalize_table.h')
-normalize_c = generate.Implementation('normalize_table.c')
+normalize_h = generate.Header('%s/normalize_table.h' % sys.argv[3])
+normalize_c = generate.Implementation('%s/normalize_table.c' % sys.argv[3])
 
 normalize_h.file.write(
 '''
