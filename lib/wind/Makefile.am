@@ -16,6 +16,8 @@ built = \
 	normalize_table.c			\
 	normalize_table.h
 
+MAINTAINERCLEANFILES = $(built)
+
 code = \
 	bidi.c					\
 	combining.c				\
