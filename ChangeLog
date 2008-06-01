@@ -1,3 +1,9 @@
+2008-05-31  Love Hörnquist Åstrand  <lha@kth.se>
+
+	* lib/krb5/krb5_locl.h: Add <wind.h>
+
+	* lib/krb5/crypto.c: Use wind_utf8ucs2_length to convert the password to utf16.
+
 2008-05-30  Love Hörnquist Åstrand  <lha@kth.se>
 
 	* lib/krb5/kcm.c: Add back krb5_kcmcache argument to try_door().
