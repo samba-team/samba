@@ -21,6 +21,7 @@
 	}
 
 [domain_realm]
+	.test.h5l.se = TEST.H5L.SE
 	.sub.test.h5l.se = SUB.TEST.H5L.SE
 	.example.com = TEST2.H5L.SE
 	localhost = TEST.H5L.SE

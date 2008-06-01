@@ -83,8 +83,8 @@ ${kadmin} -l add -p foo --use-defaults user@${R} || exit 1
 
 ${kadmin} -l add --random-key --use-defaults iprop/localhost@${R} || exit 1
 ${kadmin} -l ext -k ${keytab} iprop/localhost@${R} || exit 1
-${kadmin} -l add --random-key --use-defaults iprop/slave@${R} || exit 1
-${kadmin} -l ext -k ${keytab} iprop/slave@${R} || exit 1
+${kadmin} -l add --random-key --use-defaults iprop/slave.test.h5l.se@${R} || exit 1
+${kadmin} -l ext -k ${keytab} iprop/slave.test.h5l.se@${R} || exit 1
 
 echo foo > ${objdir}/foopassword
 
@@ -110,12 +110,12 @@ sh ${srcdir}/wait-kdc.sh ipropd-master || exit 1
 
 echo "starting slave"
 KRB5_CONFIG="${objdir}/krb5-slave.conf" \
-${ipropdslave} --hostname=slave -k ${keytab} localhost &
+${ipropdslave} --hostname=slave.test.h5l.se -k ${keytab} localhost &
 ipds=$!
 sh ${srcdir}/wait-kdc.sh ipropd-slave || exit 1
 
 echo "checking slave is up"
-${EGREP} 'iprop/slave@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
+${EGREP} 'iprop/slave.test.h5l.se@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
 
 # ----------------- checking: pushing lives changes
 
@@ -144,7 +144,7 @@ echo "kill slave"
 kill ${ipds}
 sleep 2
 
-${EGREP} 'iprop/slave@TEST.H5L.SE.*Down' iprop-stats >/dev/null || exit 1
+${EGREP} 'iprop/slave.test.h5l.se@TEST.H5L.SE.*Down' iprop-stats >/dev/null || exit 1
 
 # ----------------- checking: slave is missing changes while down
 
@@ -161,12 +161,12 @@ echo "starting slave again"
 > iprop-stats
 > messages.log
 KRB5_CONFIG="${objdir}/krb5-slave.conf" \
-${ipropdslave} --hostname=slave -k ${keytab} localhost &
+${ipropdslave} --hostname=slave.test.h5l.se -k ${keytab} localhost &
 ipds=$!
 sh ${srcdir}/wait-kdc.sh ipropd-slave || exit 1
 
 echo "checking slave is up again"
-${EGREP} 'iprop/slave@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
+${EGREP} 'iprop/slave.test.h5l.se@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
 echo "checking for replay problems"
 ${EGREP} 'Entry already exists in database' messages.log && exit 1
 
@@ -178,12 +178,12 @@ rm current.slave.log current-db.slave* || exit 1
 > iprop-stats
 > messages.log
 KRB5_CONFIG="${objdir}/krb5-slave.conf" \
-${ipropdslave} --hostname=slave -k ${keytab} localhost &
+${ipropdslave} --hostname=slave.test.h5l.se -k ${keytab} localhost &
 ipds=$!
 sh ${srcdir}/wait-kdc.sh ipropd-slave || exit 1
 
 echo "checking slave is up again"
-${EGREP} 'iprop/slave@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
+${EGREP} 'iprop/slave.test.h5l.se@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
 echo "checking for replay problems"
 ${EGREP} 'Entry already exists in database' messages.log && exit 1
 
@@ -223,12 +223,12 @@ sh ${srcdir}/wait-kdc.sh ipropd-master || exit 1
 
 echo "starting slave"
 KRB5_CONFIG="${objdir}/krb5-slave.conf" \
-${ipropdslave} --hostname=slave -k ${keytab} localhost &
+${ipropdslave} --hostname=slave.test.h5l.se -k ${keytab} localhost &
 ipds=$!
 sh ${srcdir}/wait-kdc.sh ipropd-slave || exit 1
 
 echo "checking slave is up again"
-${EGREP} 'iprop/slave@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
+${EGREP} 'iprop/slave.test.h5l.se@TEST.H5L.SE.*Up' iprop-stats >/dev/null || exit 1
 echo "checking for replay problems"
 ${EGREP} 'Entry already exists in database' messages.log && exit 1
 
