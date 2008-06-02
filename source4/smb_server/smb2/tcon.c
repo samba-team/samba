@@ -327,7 +327,7 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 
 	req->ntvfs = ntvfs_request_create(req->tcon->ntvfs, req,
 					  req->session->session_info,
-					  0, /* TODO: fill in PID */
+					  SVAL(req->in.hdr, SMB2_HDR_PID),
 					  req->request_time,
 					  req, NULL, 0);
 	if (!req->ntvfs) {
