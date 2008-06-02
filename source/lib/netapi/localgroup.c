@@ -82,7 +82,6 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 	WERROR werr;
 	struct lsa_String lsa_account_name;
 	struct policy_handle connect_handle, domain_handle, builtin_handle, alias_handle;
-	struct samr_Ids user_rids, name_types;
 	struct dom_sid2 *domain_sid = NULL;
 	uint32_t rid;
 
@@ -136,25 +135,18 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 
 	init_lsa_String(&lsa_account_name, alias_name);
 
-	status = rpccli_samr_LookupNames(pipe_cli, ctx,
-					 &builtin_handle,
-					 1,
-					 &lsa_account_name,
-					 &user_rids,
-					 &name_types);
-	if (NT_STATUS_IS_OK(status)) {
-		status = rpccli_samr_OpenAlias(pipe_cli, ctx,
-					       &builtin_handle,
-					       SAMR_ALIAS_ACCESS_LOOKUP_INFO,
-					       user_rids.ids[0],
-					       &alias_handle);
-		if (NT_STATUS_IS_OK(status)) {
-			werr = WERR_ALIAS_EXISTS;
-			goto done;
-		}
-	}
+	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						    &builtin_handle,
+						    &lsa_account_name,
+						    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
+						    &alias_handle);
 
 	rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
+
+	if (W_ERROR_IS_OK(werr)) {
+		werr = WERR_ALIAS_EXISTS;
+		goto done;
+	}
 
 	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
 					  SAMR_ACCESS_ENUM_DOMAINS |
@@ -241,7 +233,6 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 	WERROR werr;
 	struct lsa_String lsa_account_name;
 	struct policy_handle connect_handle, domain_handle, builtin_handle, alias_handle;
-	struct samr_Ids user_rids, name_types;
 	struct dom_sid2 *domain_sid = NULL;
 
 	if (!r->in.group_name) {
@@ -275,25 +266,17 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 
 	init_lsa_String(&lsa_account_name, r->in.group_name);
 
-	status = rpccli_samr_LookupNames(pipe_cli, ctx,
-					 &builtin_handle,
-					 1,
-					 &lsa_account_name,
-					 &user_rids,
-					 &name_types);
-	if (NT_STATUS_IS_OK(status)) {
-		status = rpccli_samr_OpenAlias(pipe_cli, ctx,
-					       &builtin_handle,
-					       SEC_STD_DELETE,
-					       user_rids.ids[0],
-					       &alias_handle);
-		if (NT_STATUS_IS_OK(status)) {
-			rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
-			goto delete_alias;
-		}
-	}
+	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						    &builtin_handle,
+						    &lsa_account_name,
+						    SEC_STD_DELETE,
+						    &alias_handle);
 
 	rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
+
+	if (W_ERROR_IS_OK(werr)) {
+		goto delete_alias;
+	}
 
 	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
 					  SAMR_ACCESS_ENUM_DOMAINS |
@@ -307,28 +290,18 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_LookupNames(pipe_cli, ctx,
-					 &domain_handle,
-					 1,
-					 &lsa_account_name,
-					 &user_rids,
-					 &name_types);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_OpenAlias(pipe_cli, ctx,
-				       &domain_handle,
-				       SEC_STD_DELETE,
-				       user_rids.ids[0],
-				       &alias_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
+	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						    &domain_handle,
+						    &lsa_account_name,
+						    SEC_STD_DELETE,
+						    &alias_handle);
 
 	rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
+
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
 
  delete_alias:
 	status = rpccli_samr_DeleteDomAlias(pipe_cli, ctx,
@@ -425,7 +398,6 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 	WERROR werr;
 	struct lsa_String lsa_account_name;
 	struct policy_handle connect_handle, domain_handle, builtin_handle, alias_handle;
-	struct samr_Ids user_rids, name_types;
 	struct dom_sid2 *domain_sid = NULL;
 	union samr_AliasInfo *alias_info = NULL;
 
@@ -469,25 +441,17 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 
 	init_lsa_String(&lsa_account_name, r->in.group_name);
 
-	status = rpccli_samr_LookupNames(pipe_cli, ctx,
-					 &builtin_handle,
-					 1,
-					 &lsa_account_name,
-					 &user_rids,
-					 &name_types);
-	if (NT_STATUS_IS_OK(status)) {
-		status = rpccli_samr_OpenAlias(pipe_cli, ctx,
-					       &builtin_handle,
-					       SAMR_ALIAS_ACCESS_LOOKUP_INFO,
-					       user_rids.ids[0],
-					       &alias_handle);
-		if (NT_STATUS_IS_OK(status)) {
-			rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
-			goto query_alias;
-		}
-	}
+	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						    &builtin_handle,
+						    &lsa_account_name,
+						    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
+						    &alias_handle);
 
 	rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
+
+	if (W_ERROR_IS_OK(werr)) {
+		goto query_alias;
+	}
 
 	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
 					  SAMR_ACCESS_ENUM_DOMAINS |
@@ -501,28 +465,17 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_LookupNames(pipe_cli, ctx,
-					 &domain_handle,
-					 1,
-					 &lsa_account_name,
-					 &user_rids,
-					 &name_types);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_OpenAlias(pipe_cli, ctx,
-				       &domain_handle,
-				       SAMR_ALIAS_ACCESS_LOOKUP_INFO,
-				       user_rids.ids[0],
-				       &alias_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
+	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						    &domain_handle,
+						    &lsa_account_name,
+						    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
+						    &alias_handle);
 
 	rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
+
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
 
  query_alias:
 	status = rpccli_samr_QueryAliasInfo(pipe_cli, ctx,
@@ -620,7 +573,6 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 	WERROR werr;
 	struct lsa_String lsa_account_name;
 	struct policy_handle connect_handle, domain_handle, builtin_handle, alias_handle;
-	struct samr_Ids user_rids, name_types;
 	struct dom_sid2 *domain_sid = NULL;
 	enum samr_AliasInfoEnum alias_level;
 	union samr_AliasInfo *alias_info = NULL;
@@ -665,25 +617,17 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 
 	init_lsa_String(&lsa_account_name, r->in.group_name);
 
-	status = rpccli_samr_LookupNames(pipe_cli, ctx,
-					 &builtin_handle,
-					 1,
-					 &lsa_account_name,
-					 &user_rids,
-					 &name_types);
-	if (NT_STATUS_IS_OK(status)) {
-		status = rpccli_samr_OpenAlias(pipe_cli, ctx,
-					       &builtin_handle,
-					       SAMR_ALIAS_ACCESS_SET_INFO,
-					       user_rids.ids[0],
-					       &alias_handle);
-		if (NT_STATUS_IS_OK(status)) {
-			rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
-			goto set_alias;
-		}
-	}
+	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						    &builtin_handle,
+						    &lsa_account_name,
+						    SAMR_ALIAS_ACCESS_SET_INFO,
+						    &alias_handle);
 
 	rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
+
+	if (W_ERROR_IS_OK(werr)) {
+		goto set_alias;
+	}
 
 	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
 					  SAMR_ACCESS_ENUM_DOMAINS |
@@ -696,24 +640,12 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_LookupNames(pipe_cli, ctx,
-					 &domain_handle,
-					 1,
-					 &lsa_account_name,
-					 &user_rids,
-					 &name_types);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_OpenAlias(pipe_cli, ctx,
-				       &domain_handle,
-				       SAMR_ALIAS_ACCESS_SET_INFO,
-				       user_rids.ids[0],
-				       &alias_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_lookup_and_open_alias(ctx, pipe_cli,
+						    &domain_handle,
+						    &lsa_account_name,
+						    SAMR_ALIAS_ACCESS_SET_INFO,
+						    &alias_handle);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
