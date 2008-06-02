@@ -57,7 +57,7 @@ tree.  The latest version will continue to be included
 in Samba releases.
 
 The smbldap-tools package can be downloaded individually from 
-http://samba.idealx.org/dist/
+https://gna.org/projects/smbldap-tools/
 
 !==
 !== end of README
