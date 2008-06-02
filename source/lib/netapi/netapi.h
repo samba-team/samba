@@ -597,4 +597,24 @@ NET_API_STATUS NetGroupGetInfo(const char * server_name /* [in] */,
 NET_API_STATUS NetGroupAddUser(const char * server_name /* [in] */,
 			       const char * group_name /* [in] */,
 			       const char * user_name /* [in] */);
+
+/************************************************************//**
+ *
+ * NetGroupDelUser
+ *
+ * @brief Remove User from Domain Group
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] group_name The name of the group that is going to be modified
+ * @param[in] user_name The name of the user that is going to be removed from
+ * the group
+ * @return NET_API_STATUS
+ *
+ * example group/group_deluser.c
+ ***************************************************************/
+
+NET_API_STATUS NetGroupDelUser(const char * server_name /* [in] */,
+			       const char * group_name /* [in] */,
+			       const char * user_name /* [in] */);
+
 #endif
