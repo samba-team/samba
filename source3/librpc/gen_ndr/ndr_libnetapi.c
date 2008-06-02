@@ -1160,3 +1160,36 @@ _PUBLIC_ void ndr_print_NetLocalGroupDel(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
+_PUBLIC_ void ndr_print_NetLocalGroupGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct NetLocalGroupGetInfo *r)
+{
+	ndr_print_struct(ndr, name, "NetLocalGroupGetInfo");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "NetLocalGroupGetInfo");
+		ndr->depth++;
+		ndr_print_string(ndr, "server_name", r->in.server_name);
+		ndr_print_string(ndr, "group_name", r->in.group_name);
+		ndr_print_uint32(ndr, "level", r->in.level);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "NetLocalGroupGetInfo");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "buf", r->out.buf);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "buf", *r->out.buf);
+		ndr->depth++;
+		if (*r->out.buf) {
+			ndr_print_uint8(ndr, "buf", **r->out.buf);
+		}
+		ndr->depth--;
+		ndr->depth--;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+

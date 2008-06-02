@@ -48,7 +48,9 @@
 
 #define NDR_NETLOCALGROUPDEL (0x14)
 
-#define NDR_LIBNETAPI_CALL_COUNT (21)
+#define NDR_NETLOCALGROUPGETINFO (0x15)
+
+#define NDR_LIBNETAPI_CALL_COUNT (22)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -139,4 +141,7 @@ void ndr_print_NetLocalGroupAdd(struct ndr_print *ndr, const char *name, int fla
 enum ndr_err_code ndr_push_NetLocalGroupDel(struct ndr_push *ndr, int flags, const struct NetLocalGroupDel *r);
 enum ndr_err_code ndr_pull_NetLocalGroupDel(struct ndr_pull *ndr, int flags, struct NetLocalGroupDel *r);
 void ndr_print_NetLocalGroupDel(struct ndr_print *ndr, const char *name, int flags, const struct NetLocalGroupDel *r);
+enum ndr_err_code ndr_push_NetLocalGroupGetInfo(struct ndr_push *ndr, int flags, const struct NetLocalGroupGetInfo *r);
+enum ndr_err_code ndr_pull_NetLocalGroupGetInfo(struct ndr_pull *ndr, int flags, struct NetLocalGroupGetInfo *r);
+void ndr_print_NetLocalGroupGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct NetLocalGroupGetInfo *r);
 #endif /* _HEADER_NDR_libnetapi */
