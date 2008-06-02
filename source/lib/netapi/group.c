@@ -501,7 +501,230 @@ WERROR NetGroupDel_l(struct libnetapi_ctx *ctx,
 WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 			 struct NetGroupSetInfo *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	NTSTATUS status;
+	WERROR werr;
+	uint32_t resume_handle = 0;
+	uint32_t num_entries = 0;
+	POLICY_HND connect_handle, domain_handle, group_handle;
+	struct samr_SamArray *sam = NULL;
+	const char *domain_name = NULL;
+	struct lsa_String lsa_domain_name, lsa_group_name;
+	struct dom_sid2 *domain_sid = NULL;
+	bool domain_found = true;
+	int i;
+
+	struct samr_Ids rids;
+	struct samr_Ids types;
+	union samr_GroupInfo info;
+	struct GROUP_INFO_0 *g0;
+	struct GROUP_INFO_1 *g1;
+	struct GROUP_INFO_2 *g2;
+	struct GROUP_INFO_3 *g3;
+	struct GROUP_INFO_1002 *g1002;
+	struct GROUP_INFO_1005 *g1005;
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(domain_handle);
+	ZERO_STRUCT(group_handle);
+
+	if (!r->in.group_name) {
+		return WERR_INVALID_PARAM;
+	}
+
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	status = rpccli_try_samr_connects(pipe_cli, ctx,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  &connect_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_EnumDomains(pipe_cli, ctx,
+					 &connect_handle,
+					 &resume_handle,
+					 &sam,
+					 0xffffffff,
+					 &num_entries);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	for (i=0; i<num_entries; i++) {
+
+		domain_name = sam->entries[i].name.string;
+
+		if (strequal(domain_name, builtin_domain_name())) {
+			continue;
+		}
+
+		domain_found = true;
+		break;
+	}
+
+	if (!domain_found) {
+		werr = WERR_NO_SUCH_DOMAIN;
+		goto done;
+	}
+
+	init_lsa_String(&lsa_domain_name, domain_name);
+
+	status = rpccli_samr_LookupDomain(pipe_cli, ctx,
+					  &connect_handle,
+					  &lsa_domain_name,
+					  &domain_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
+					&connect_handle,
+					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					domain_sid,
+					&domain_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	init_lsa_String(&lsa_group_name, r->in.group_name);
+
+	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+					 &domain_handle,
+					 1,
+					 &lsa_group_name,
+					 &rids,
+					 &types);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	if (types.ids[0] != SID_NAME_DOM_GRP) {
+		werr = WERR_INVALID_DATATYPE;
+		goto done;
+	}
+
+	status = rpccli_samr_OpenGroup(pipe_cli, ctx,
+				       &domain_handle,
+				       SAMR_GROUP_ACCESS_SET_INFO |
+				       SAMR_GROUP_ACCESS_LOOKUP_INFO,
+				       rids.ids[0],
+				       &group_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	switch (r->in.level) {
+		case 0:
+			g0 = (struct GROUP_INFO_0 *)r->in.buf;
+			init_lsa_String(&info.name, g0->grpi0_name);
+			status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
+							  &group_handle,
+							  GROUPINFONAME,
+							  &info);
+			break;
+		case 1:
+			g1 = (struct GROUP_INFO_1 *)r->in.buf;
+			init_lsa_String(&info.description, g1->grpi1_comment);
+			status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
+							  &group_handle,
+							  GROUPINFODESCRIPTION,
+							  &info);
+			break;
+		case 2:
+			g2 = (struct GROUP_INFO_2 *)r->in.buf;
+			init_lsa_String(&info.description, g2->grpi2_comment);
+			status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
+							  &group_handle,
+							  GROUPINFODESCRIPTION,
+							  &info);
+			if (!NT_STATUS_IS_OK(status)) {
+				werr = ntstatus_to_werror(status);
+				goto done;
+			}
+			info.attributes.attributes = g2->grpi2_attributes;
+			status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
+							  &group_handle,
+							  GROUPINFOATTRIBUTES,
+							  &info);
+			break;
+		case 3:
+			g3 = (struct GROUP_INFO_3 *)r->in.buf;
+			init_lsa_String(&info.description, g3->grpi3_comment);
+			status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
+							  &group_handle,
+							  GROUPINFODESCRIPTION,
+							  &info);
+			if (!NT_STATUS_IS_OK(status)) {
+				werr = ntstatus_to_werror(status);
+				goto done;
+			}
+			info.attributes.attributes = g3->grpi3_attributes;
+			status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
+							  &group_handle,
+							  GROUPINFOATTRIBUTES,
+							  &info);
+			break;
+		case 1002:
+			g1002 = (struct GROUP_INFO_1002 *)r->in.buf;
+			init_lsa_String(&info.description, g1002->grpi1002_comment);
+			status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
+							  &group_handle,
+							  GROUPINFODESCRIPTION,
+							  &info);
+			break;
+		case 1005:
+			g1005 = (struct GROUP_INFO_1005 *)r->in.buf;
+			info.attributes.attributes = g1005->grpi1005_attributes;
+			status = rpccli_samr_SetGroupInfo(pipe_cli, ctx,
+							  &group_handle,
+							  GROUPINFOATTRIBUTES,
+							  &info);
+			break;
+		default:
+			status = NT_STATUS_INVALID_LEVEL;
+			break;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	werr = WERR_OK;
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	if (is_valid_policy_hnd(&group_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
+	}
+	if (is_valid_policy_hnd(&domain_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
+	}
+	if (is_valid_policy_hnd(&connect_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+	}
+
+	return werr;
 }
 
 /****************************************************************
@@ -510,5 +733,5 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 WERROR NetGroupSetInfo_l(struct libnetapi_ctx *ctx,
 			 struct NetGroupSetInfo *r)
 {
-	return WERR_NOT_SUPPORTED;
+	return NetGroupSetInfo_r(ctx, r);
 }
