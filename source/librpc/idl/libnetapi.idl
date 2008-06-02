@@ -202,6 +202,14 @@ interface libnetapi
 		uint32 grpi3_attributes;
 	} GROUP_INFO_3;
 
+	typedef struct {
+		string grpi1002_comment;
+	} GROUP_INFO_1002;
+
+	typedef struct {
+		uint32 grpi1005_attributes;
+	} GROUP_INFO_1005;
+
 	[nopush,nopull] NET_API_STATUS NetGroupAdd(
 		[in] string server_name,
 		[in] uint32 level,
@@ -212,5 +220,13 @@ interface libnetapi
 	[nopush,nopull] NET_API_STATUS NetGroupDel(
 		[in] string server_name,
 		[in] string group_name
+		);
+
+	[nopush,nopull] NET_API_STATUS NetGroupSetInfo(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[in] uint8 *buf,
+		[out] uint32 *parm_err
 		);
 }
