@@ -31,7 +31,8 @@ PROGS = bin/getdc@EXEEXT@ \
 	bin/group_setinfo@EXEEXT@ \
 	bin/group_getinfo@EXEEXT@ \
 	bin/group_adduser@EXEEXT@ \
-	bin/group_deluser@EXEEXT@
+	bin/group_deluser@EXEEXT@ \
+	bin/localgroup_add@EXEEXT@
 
 all: $(PROGS)
 
@@ -75,6 +76,7 @@ GROUPSETINFO_OBJ = group/group_setinfo.o $(CMDLINE_OBJ)
 GROUPGETINFO_OBJ = group/group_getinfo.o $(CMDLINE_OBJ)
 GROUPADDUSER_OBJ = group/group_adduser.o $(CMDLINE_OBJ)
 GROUPDELUSER_OBJ = group/group_deluser.o $(CMDLINE_OBJ)
+LOCALGROUPADD_OBJ = localgroup/localgroup_add.o $(CMDLINE_OBJ)
 
 bin/getdc@EXEEXT@: $(BINARY_PREREQS) $(GETDC_OBJ)
 	@echo Linking $@
@@ -135,6 +137,10 @@ bin/group_adduser@EXEEXT@: $(BINARY_PREREQS) $(GROUPADDUSER_OBJ)
 bin/group_deluser@EXEEXT@: $(BINARY_PREREQS) $(GROUPDELUSER_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(GROUPDELUSER_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
+
+bin/localgroup_add@EXEEXT@: $(BINARY_PREREQS) $(LOCALGROUPADD_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(LOCALGROUPADD_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 clean:
 	-rm -f $(PROGS)
