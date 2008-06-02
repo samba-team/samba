@@ -993,3 +993,35 @@ _PUBLIC_ void ndr_print_NetGroupDel(struct ndr_print *ndr, const char *name, int
 	ndr->depth--;
 }
 
+_PUBLIC_ void ndr_print_NetGroupSetInfo(struct ndr_print *ndr, const char *name, int flags, const struct NetGroupSetInfo *r)
+{
+	ndr_print_struct(ndr, name, "NetGroupSetInfo");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "NetGroupSetInfo");
+		ndr->depth++;
+		ndr_print_string(ndr, "server_name", r->in.server_name);
+		ndr_print_string(ndr, "group_name", r->in.group_name);
+		ndr_print_uint32(ndr, "level", r->in.level);
+		ndr_print_ptr(ndr, "buf", r->in.buf);
+		ndr->depth++;
+		ndr_print_uint8(ndr, "buf", *r->in.buf);
+		ndr->depth--;
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "NetGroupSetInfo");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "parm_err", r->out.parm_err);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "parm_err", *r->out.parm_err);
+		ndr->depth--;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+

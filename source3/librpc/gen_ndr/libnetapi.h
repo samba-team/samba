@@ -107,6 +107,14 @@ struct GROUP_INFO_3 {
 	uint32_t grpi3_attributes;
 };
 
+struct GROUP_INFO_1002 {
+	const char * grpi1002_comment;
+};
+
+struct GROUP_INFO_1005 {
+	uint32_t grpi1005_attributes;
+};
+
 
 struct NetJoinDomain {
 	struct {
@@ -333,6 +341,22 @@ struct NetGroupDel {
 	} in;
 
 	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetGroupSetInfo {
+	struct {
+		const char * server_name;
+		const char * group_name;
+		uint32_t level;
+		uint8_t *buf;/* [ref] */
+	} in;
+
+	struct {
+		uint32_t *parm_err;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 
