@@ -34,16 +34,11 @@ WERROR NetGroupAdd_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	uint32_t resume_handle = 0;
-	uint32_t num_entries = 0;
 	POLICY_HND connect_handle, domain_handle, group_handle;
-	struct samr_SamArray *sam = NULL;
-	const char *domain_name = NULL;
-	struct lsa_String lsa_domain_name, lsa_group_name;
+	struct lsa_String lsa_group_name;
 	struct dom_sid2 *domain_sid = NULL;
 	uint32_t rid = 0;
-	bool domain_found = true;
-	int i;
+
 	struct GROUP_INFO_0 *info0;
 	struct GROUP_INFO_1 *info1;
 	struct GROUP_INFO_2 *info2;
@@ -86,60 +81,14 @@ WERROR NetGroupAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_try_samr_connects(pipe_cli, ctx,
-					  SAMR_ACCESS_ENUM_DOMAINS |
-					  SAMR_ACCESS_OPEN_DOMAIN,
-					  &connect_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_EnumDomains(pipe_cli, ctx,
-					 &connect_handle,
-					 &resume_handle,
-					 &sam,
-					 0xffffffff,
-					 &num_entries);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	for (i=0; i<num_entries; i++) {
-
-		domain_name = sam->entries[i].name.string;
-
-		if (strequal(domain_name, builtin_domain_name())) {
-			continue;
-		}
-
-		domain_found = true;
-		break;
-	}
-
-	if (!domain_found) {
-		werr = WERR_NO_SUCH_DOMAIN;
-		goto done;
-	}
-
-	init_lsa_String(&lsa_domain_name, domain_name);
-
-	status = rpccli_samr_LookupDomain(pipe_cli, ctx,
-					  &connect_handle,
-					  &lsa_domain_name,
-					  &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
-					&connect_handle,
-					SAMR_DOMAIN_ACCESS_CREATE_GROUP |
-					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					domain_sid,
-					&domain_handle);
+	status = libnetapi_samr_open_domain(ctx, pipe_cli,
+					    SAMR_ACCESS_ENUM_DOMAINS |
+					    SAMR_ACCESS_OPEN_DOMAIN,
+					    SAMR_DOMAIN_ACCESS_CREATE_GROUP |
+					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					    &connect_handle,
+					    &domain_handle,
+					    &domain_sid);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
@@ -285,15 +234,10 @@ WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	uint32_t resume_handle = 0;
-	uint32_t num_entries = 0;
 	POLICY_HND connect_handle, domain_handle, group_handle;
-	struct samr_SamArray *sam = NULL;
-	const char *domain_name = NULL;
-	struct lsa_String lsa_domain_name, lsa_group_name;
+	struct lsa_String lsa_group_name;
 	struct dom_sid2 *domain_sid = NULL;
-	bool domain_found = true;
-	int i;
+	int i = 0;
 
 	struct samr_Ids rids;
 	struct samr_Ids types;
@@ -318,59 +262,13 @@ WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_try_samr_connects(pipe_cli, ctx,
-					  SAMR_ACCESS_ENUM_DOMAINS |
-					  SAMR_ACCESS_OPEN_DOMAIN,
-					  &connect_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_EnumDomains(pipe_cli, ctx,
-					 &connect_handle,
-					 &resume_handle,
-					 &sam,
-					 0xffffffff,
-					 &num_entries);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	for (i=0; i<num_entries; i++) {
-
-		domain_name = sam->entries[i].name.string;
-
-		if (strequal(domain_name, builtin_domain_name())) {
-			continue;
-		}
-
-		domain_found = true;
-		break;
-	}
-
-	if (!domain_found) {
-		werr = WERR_NO_SUCH_DOMAIN;
-		goto done;
-	}
-
-	init_lsa_String(&lsa_domain_name, domain_name);
-
-	status = rpccli_samr_LookupDomain(pipe_cli, ctx,
-					  &connect_handle,
-					  &lsa_domain_name,
-					  &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
-					&connect_handle,
-					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					domain_sid,
-					&domain_handle);
+	status = libnetapi_samr_open_domain(ctx, pipe_cli,
+					    SAMR_ACCESS_ENUM_DOMAINS |
+					    SAMR_ACCESS_OPEN_DOMAIN,
+					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					    &connect_handle,
+					    &domain_handle,
+					    &domain_sid);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
@@ -505,15 +403,9 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	uint32_t resume_handle = 0;
-	uint32_t num_entries = 0;
 	POLICY_HND connect_handle, domain_handle, group_handle;
-	struct samr_SamArray *sam = NULL;
-	const char *domain_name = NULL;
-	struct lsa_String lsa_domain_name, lsa_group_name;
+	struct lsa_String lsa_group_name;
 	struct dom_sid2 *domain_sid = NULL;
-	bool domain_found = true;
-	int i;
 
 	struct samr_Ids rids;
 	struct samr_Ids types;
@@ -543,59 +435,13 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_try_samr_connects(pipe_cli, ctx,
-					  SAMR_ACCESS_ENUM_DOMAINS |
-					  SAMR_ACCESS_OPEN_DOMAIN,
-					  &connect_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_EnumDomains(pipe_cli, ctx,
-					 &connect_handle,
-					 &resume_handle,
-					 &sam,
-					 0xffffffff,
-					 &num_entries);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	for (i=0; i<num_entries; i++) {
-
-		domain_name = sam->entries[i].name.string;
-
-		if (strequal(domain_name, builtin_domain_name())) {
-			continue;
-		}
-
-		domain_found = true;
-		break;
-	}
-
-	if (!domain_found) {
-		werr = WERR_NO_SUCH_DOMAIN;
-		goto done;
-	}
-
-	init_lsa_String(&lsa_domain_name, domain_name);
-
-	status = rpccli_samr_LookupDomain(pipe_cli, ctx,
-					  &connect_handle,
-					  &lsa_domain_name,
-					  &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
-					&connect_handle,
-					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					domain_sid,
-					&domain_handle);
+	status = libnetapi_samr_open_domain(ctx, pipe_cli,
+					    SAMR_ACCESS_ENUM_DOMAINS |
+					    SAMR_ACCESS_OPEN_DOMAIN,
+					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					    &connect_handle,
+					    &domain_handle,
+					    &domain_sid);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
@@ -805,15 +651,9 @@ WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	uint32_t resume_handle = 0;
-	uint32_t num_entries = 0;
 	POLICY_HND connect_handle, domain_handle, group_handle;
-	struct samr_SamArray *sam = NULL;
-	const char *domain_name = NULL;
-	struct lsa_String lsa_domain_name, lsa_group_name;
+	struct lsa_String lsa_group_name;
 	struct dom_sid2 *domain_sid = NULL;
-	bool domain_found = true;
-	int i;
 
 	struct samr_Ids rids;
 	struct samr_Ids types;
@@ -837,59 +677,13 @@ WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_try_samr_connects(pipe_cli, ctx,
-					  SAMR_ACCESS_ENUM_DOMAINS |
-					  SAMR_ACCESS_OPEN_DOMAIN,
-					  &connect_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_EnumDomains(pipe_cli, ctx,
-					 &connect_handle,
-					 &resume_handle,
-					 &sam,
-					 0xffffffff,
-					 &num_entries);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	for (i=0; i<num_entries; i++) {
-
-		domain_name = sam->entries[i].name.string;
-
-		if (strequal(domain_name, builtin_domain_name())) {
-			continue;
-		}
-
-		domain_found = true;
-		break;
-	}
-
-	if (!domain_found) {
-		werr = WERR_NO_SUCH_DOMAIN;
-		goto done;
-	}
-
-	init_lsa_String(&lsa_domain_name, domain_name);
-
-	status = rpccli_samr_LookupDomain(pipe_cli, ctx,
-					  &connect_handle,
-					  &lsa_domain_name,
-					  &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
-					&connect_handle,
-					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					domain_sid,
-					&domain_handle);
+	status = libnetapi_samr_open_domain(ctx, pipe_cli,
+					    SAMR_ACCESS_ENUM_DOMAINS |
+					    SAMR_ACCESS_OPEN_DOMAIN,
+					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					    &connect_handle,
+					    &domain_handle,
+					    &domain_sid);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
@@ -975,15 +769,9 @@ WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	uint32_t resume_handle = 0;
-	uint32_t num_entries = 0;
 	POLICY_HND connect_handle, domain_handle, group_handle;
-	struct samr_SamArray *sam = NULL;
-	const char *domain_name = NULL;
-	struct lsa_String lsa_domain_name, lsa_group_name, lsa_user_name;
+	struct lsa_String lsa_group_name, lsa_user_name;
 	struct dom_sid2 *domain_sid = NULL;
-	bool domain_found = true;
-	int i;
 
 	struct samr_Ids rids;
 	struct samr_Ids types;
@@ -1006,59 +794,13 @@ WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_try_samr_connects(pipe_cli, ctx,
-					  SAMR_ACCESS_ENUM_DOMAINS |
-					  SAMR_ACCESS_OPEN_DOMAIN,
-					  &connect_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_EnumDomains(pipe_cli, ctx,
-					 &connect_handle,
-					 &resume_handle,
-					 &sam,
-					 0xffffffff,
-					 &num_entries);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	for (i=0; i<num_entries; i++) {
-
-		domain_name = sam->entries[i].name.string;
-
-		if (strequal(domain_name, builtin_domain_name())) {
-			continue;
-		}
-
-		domain_found = true;
-		break;
-	}
-
-	if (!domain_found) {
-		werr = WERR_NO_SUCH_DOMAIN;
-		goto done;
-	}
-
-	init_lsa_String(&lsa_domain_name, domain_name);
-
-	status = rpccli_samr_LookupDomain(pipe_cli, ctx,
-					  &connect_handle,
-					  &lsa_domain_name,
-					  &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
-					&connect_handle,
-					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					domain_sid,
-					&domain_handle);
+	status = libnetapi_samr_open_domain(ctx, pipe_cli,
+					    SAMR_ACCESS_ENUM_DOMAINS |
+					    SAMR_ACCESS_OPEN_DOMAIN,
+					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					    &connect_handle,
+					    &domain_handle,
+					    &domain_sid);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
@@ -1158,15 +900,9 @@ WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	uint32_t resume_handle = 0;
-	uint32_t num_entries = 0;
 	POLICY_HND connect_handle, domain_handle, group_handle;
-	struct samr_SamArray *sam = NULL;
-	const char *domain_name = NULL;
-	struct lsa_String lsa_domain_name, lsa_group_name, lsa_user_name;
+	struct lsa_String lsa_group_name, lsa_user_name;
 	struct dom_sid2 *domain_sid = NULL;
-	bool domain_found = true;
-	int i;
 
 	struct samr_Ids rids;
 	struct samr_Ids types;
@@ -1189,59 +925,13 @@ WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_try_samr_connects(pipe_cli, ctx,
-					  SAMR_ACCESS_ENUM_DOMAINS |
-					  SAMR_ACCESS_OPEN_DOMAIN,
-					  &connect_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_EnumDomains(pipe_cli, ctx,
-					 &connect_handle,
-					 &resume_handle,
-					 &sam,
-					 0xffffffff,
-					 &num_entries);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	for (i=0; i<num_entries; i++) {
-
-		domain_name = sam->entries[i].name.string;
-
-		if (strequal(domain_name, builtin_domain_name())) {
-			continue;
-		}
-
-		domain_found = true;
-		break;
-	}
-
-	if (!domain_found) {
-		werr = WERR_NO_SUCH_DOMAIN;
-		goto done;
-	}
-
-	init_lsa_String(&lsa_domain_name, domain_name);
-
-	status = rpccli_samr_LookupDomain(pipe_cli, ctx,
-					  &connect_handle,
-					  &lsa_domain_name,
-					  &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
-					&connect_handle,
-					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					domain_sid,
-					&domain_handle);
+	status = libnetapi_samr_open_domain(ctx, pipe_cli,
+					    SAMR_ACCESS_ENUM_DOMAINS |
+					    SAMR_ACCESS_OPEN_DOMAIN,
+					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					    &connect_handle,
+					    &domain_handle,
+					    &domain_sid);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
