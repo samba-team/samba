@@ -144,6 +144,19 @@ struct GROUP_INFO_1005 {
 	uint32_t grpi1005_attributes;
 };
 
+struct LOCALGROUP_INFO_0 {
+	const char * lgrpi0_name;
+};
+
+struct LOCALGROUP_INFO_1 {
+	const char * lgrpi1_name;
+	const char * lgrpi1_comment;
+};
+
+struct LOCALGROUP_INFO_1002 {
+	const char * lgrpi1002_comment;
+};
+
 #endif /* _HEADER_libnetapi */
 
 /****************************************************************
@@ -616,5 +629,25 @@ NET_API_STATUS NetGroupAddUser(const char * server_name /* [in] */,
 NET_API_STATUS NetGroupDelUser(const char * server_name /* [in] */,
 			       const char * group_name /* [in] */,
 			       const char * user_name /* [in] */);
+
+/************************************************************//**
+ *
+ * NetLocalGroupAdd
+ *
+ * @brief Create Local Group
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] level The level used for the new group creation
+ * @param[in] buf The buffer containing the group structure
+ * @param[out] parm_err The returned parameter error number if any
+ * @return NET_API_STATUS
+ *
+ * example localgroup/localgroup_add.c
+ ***************************************************************/
+
+NET_API_STATUS NetLocalGroupAdd(const char * server_name /* [in] */,
+				uint32_t level /* [in] */,
+				uint8_t *buf /* [in] [ref] */,
+				uint32_t *parm_err /* [out] [ref] */);
 
 #endif
