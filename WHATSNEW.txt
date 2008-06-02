@@ -1,4 +1,4 @@
-What's new in Samba 4 alpha3
+What's new in Samba 4 alpha4
 ============================
 
 Samba 4 is the ambitious next version of the Samba suite that is being
@@ -10,14 +10,13 @@ Samba 4 is currently not yet in a state where it is usable in
 production environments. Note the WARNINGS below, and the STATUS file,
 which aims to document what should and should not work.
 
-Samba4 alpha3 follows on from our second alpha release (made in
-December), the first alpha release (made in September), and the
-Technology Preview series we have offered for some time now. 
+Samba4 alpha4 follows on from our third alpha release since September
+last year. 
 
 WARNINGS
 ========
 
-Samba4 alpha3 is not a final Samba release.  That is more a reference
+Samba4 alpha4 is not a final Samba release.  That is more a reference
 to Samba4's lack of the features we expect you will need than a
 statement of code quality, but clearly it hasn't seen a broad
 deployment yet.  If you were to upgrade Samba3 (or indeed Windows) to
@@ -64,43 +63,48 @@ working on modules to map between AD-like behaviours and this backend.
 We are aiming for Samba 4 to be powerful frontend to large
 directories.
 
-CHANGES SINCE Alpha2
+CHANGES SINCE Alpha3
 =====================
 
 In the time since Samba4 Alpha2 was released in December 2007, Samba has
 continued to evolve, but you may particularly notice these areas:
 
-  Python Bindings: Bindings for Python are now in place, and used for
-  Samba's provision script, slowly displacing EJS as the embedded
-  scripting language.  With its increased use, Python is no longer
-  optional, and configure will generate an error if it cannot locate
-  an appropriate Python installation.
+  Python Bindings: Bindings for Python are now used for all internal
+  scripting, and the system python installation is used to run all
+  Samba python scripts (in place of smbpython found in the previous
+  alpha).
 
-  SWAT Disabled: Due to a lack of developer time and without a
-  long-term web developer to maintain it, the SWAT web UI has been
-  disabled.
+  As such Python is no longer optional, and configure will generate an
+  error if it cannot locate an appropriate Python installation.
 
-  Oplock support: Samba4's file server now supports oplocks
+  SWAT Remains Disabled: Due to a lack of developer time and without a
+  long-term web developer to maintain it, the SWAT web UI remains been
+  disabled (and would need to be rewritten in python in any case).
 
   GNU Make: To try and simplfy our build system, we rely on GNU Make
   to avoid autogenerating a massive single makefile. 
 
-  Account Expiry: Samba4 now better handles installations over 30 days
-  old (thanks to our long-suffering testers for keeping installations
-  around that long!)
+  Registry: Samba4's registry library has continued to improve.
 
-  Registry: Samba4 registry interoperability has been improved in
-  both the client utilities and in the registry service exposed by
-  the Samba4 server itself.
+  ID mapping: Samba4 uses the internal ID mapping in winbind for all
+  but a few core users.  Samba users should not appear in /etc/passwd,
+  as Samba will generate new user and group IDs regradless. 
 
-  Administrative Tools: Many enhancements have been made that allow
-  better integration with Windows administrative tools, especially
-  Active Directory Users and Computers.
+  NTP: Samba4 can act as a signing server for the ntp.org NTP deamon,
+  allowing NTPd to reply using Microsoft's non-standard signing
+  scheme.  A patch to make NTPd talk to Samba for this purpose has
+  been submitted to the ntp.org project.
 
-  ID mapping: Samba4 now handles ID mapping via winbind. The mappings
-  are stored in a central ldb that could be shared across multiple
-  machines using LDAP. Internal callers access this interface via a new
-  wbclient library.
+  CLDAP: Users should experience less arbitary delays and more success with
+  group policy, domain joins and logons due to an improved
+  implementation of CLDAP and the 'netlogon' mailslot datagrams.
+
+  DCOM: In preperation for merging the Samba4-based 'python-wmi'
+  implementation of a WMI client, Samba's previously abandoned DCOM
+  client has been revived. 
+
+  SMB2: The Samba4 SMB2 server and testsuite have been greatly
+  improved, but the SMB2 server remains off by default.
 
 These are just some of the highlights of the work done in the past few
 months.  More details can be found in our GIT history.
@@ -120,11 +124,13 @@ KNOWN ISSUES
 
 - There is no printing support in the current release.
 
+- There is no netbios browsing support in the current release
+
 - The Samba4 port of the CTDB clustering support is not yet complete
 
 - Clock Synchronisation is critical.  Many 'wrong password' errors are
   actually due to Kerberos objecting to a clock skew between client
-  and server.  
+  and server.  (The NTP work is partly to assist with this problem).
 
 
 RUNNING Samba4
