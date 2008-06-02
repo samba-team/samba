@@ -377,4 +377,32 @@ struct NetGroupGetInfo {
 
 };
 
+
+struct NetGroupAddUser {
+	struct {
+		const char * server_name;
+		const char * group_name;
+		const char * user_name;
+	} in;
+
+	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetGroupDelUser {
+	struct {
+		const char * server_name;
+		const char * group_name;
+		const char * user_name;
+	} in;
+
+	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_libnetapi */
