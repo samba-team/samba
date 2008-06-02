@@ -85,8 +85,8 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 	struct dom_sid2 *domain_sid = NULL;
 	uint32_t rid;
 
-	struct LOCALGROUP_INFO_0 *info0;
-	struct LOCALGROUP_INFO_1 *info1;
+	struct LOCALGROUP_INFO_0 *info0 = NULL;
+	struct LOCALGROUP_INFO_1 *info1 = NULL;
 
 	const char *alias_name = NULL;
 
@@ -574,7 +574,7 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 	struct lsa_String lsa_account_name;
 	struct policy_handle connect_handle, domain_handle, builtin_handle, alias_handle;
 	struct dom_sid2 *domain_sid = NULL;
-	enum samr_AliasInfoEnum alias_level;
+	enum samr_AliasInfoEnum alias_level = 0;
 	union samr_AliasInfo *alias_info = NULL;
 
 	if (!r->in.group_name) {
