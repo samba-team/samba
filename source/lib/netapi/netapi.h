@@ -686,4 +686,28 @@ NET_API_STATUS NetLocalGroupGetInfo(const char * server_name /* [in] */,
 				    const char * group_name /* [in] */,
 				    uint32_t level /* [in] */,
 				    uint8_t **buf /* [out] [ref] */);
+
+/************************************************************//**
+ *
+ * NetLocalGroupSetInfo
+ *
+ * @brief Set Local Group Information
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] group_name The name of the group that is going to be modified
+ * @param[in] level The level defining the requested LOCALGROUP_INFO_X structure
+ * @param[in] buf The buffer containing a LOCALGROUP_INFO_X structure
+ * @param[out] parm_err The returned parameter error number if any
+ * @return NET_API_STATUS
+ *
+ * example localgroup/localgroup_setinfo.c
+ ***************************************************************/
+
+
+NET_API_STATUS NetLocalGroupSetInfo(const char * server_name /* [in] */,
+				    const char * group_name /* [in] */,
+				    uint32_t level /* [in] */,
+				    uint8_t *buf /* [in] [ref] */,
+				    uint32_t *parm_err /* [out] [ref] */);
+
 #endif
