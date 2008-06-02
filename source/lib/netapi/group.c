@@ -39,10 +39,10 @@ WERROR NetGroupAdd_r(struct libnetapi_ctx *ctx,
 	struct dom_sid2 *domain_sid = NULL;
 	uint32_t rid = 0;
 
-	struct GROUP_INFO_0 *info0;
-	struct GROUP_INFO_1 *info1;
-	struct GROUP_INFO_2 *info2;
-	struct GROUP_INFO_3 *info3;
+	struct GROUP_INFO_0 *info0 = NULL;
+	struct GROUP_INFO_1 *info1 = NULL;
+	struct GROUP_INFO_2 *info2 = NULL;
+	struct GROUP_INFO_3 *info3 = NULL;
 	union samr_GroupInfo info;
 
 	ZERO_STRUCT(connect_handle);
