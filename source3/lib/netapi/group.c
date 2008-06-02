@@ -964,3 +964,39 @@ WERROR NetGroupGetInfo_l(struct libnetapi_ctx *ctx,
 {
 	return NetGroupGetInfo_r(ctx, r);
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
+			 struct NetGroupAddUser *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetGroupAddUser_l(struct libnetapi_ctx *ctx,
+			 struct NetGroupAddUser *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
+			 struct NetGroupDelUser *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetGroupDelUser_l(struct libnetapi_ctx *ctx,
+			 struct NetGroupDelUser *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
