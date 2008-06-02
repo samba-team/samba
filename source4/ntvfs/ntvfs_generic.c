@@ -1067,9 +1067,13 @@ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 			     (SMB2_LOCK_FLAG_SHARED|SMB2_LOCK_FLAG_EXCLUSIVE))) {
 				return NT_STATUS_INVALID_PARAMETER;
 			}
-			lck2->generic.in.locks[i].pid = req->smbpid;
+			if (!isunlock && 
+			    (lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_UNLOCK)) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			lck2->generic.in.locks[i].pid    = req->smbpid;
 			lck2->generic.in.locks[i].offset = lck->smb2.in.locks[i].offset;
-			lck2->generic.in.locks[i].count = lck->smb2.in.locks[i].length;
+			lck2->generic.in.locks[i].count  = lck->smb2.in.locks[i].length;
 			if (!(lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_EXCLUSIVE)) {
 				lck2->generic.in.mode = LOCKING_ANDX_SHARED_LOCK;
 			}
