@@ -971,7 +971,172 @@ WERROR NetGroupGetInfo_l(struct libnetapi_ctx *ctx,
 WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 			 struct NetGroupAddUser *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	NTSTATUS status;
+	WERROR werr;
+	uint32_t resume_handle = 0;
+	uint32_t num_entries = 0;
+	POLICY_HND connect_handle, domain_handle, group_handle;
+	struct samr_SamArray *sam = NULL;
+	const char *domain_name = NULL;
+	struct lsa_String lsa_domain_name, lsa_group_name, lsa_user_name;
+	struct dom_sid2 *domain_sid = NULL;
+	bool domain_found = true;
+	int i;
+
+	struct samr_Ids rids;
+	struct samr_Ids types;
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(domain_handle);
+	ZERO_STRUCT(group_handle);
+
+	if (!r->in.group_name) {
+		return WERR_INVALID_PARAM;
+	}
+
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	status = rpccli_try_samr_connects(pipe_cli, ctx,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  &connect_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_EnumDomains(pipe_cli, ctx,
+					 &connect_handle,
+					 &resume_handle,
+					 &sam,
+					 0xffffffff,
+					 &num_entries);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	for (i=0; i<num_entries; i++) {
+
+		domain_name = sam->entries[i].name.string;
+
+		if (strequal(domain_name, builtin_domain_name())) {
+			continue;
+		}
+
+		domain_found = true;
+		break;
+	}
+
+	if (!domain_found) {
+		werr = WERR_NO_SUCH_DOMAIN;
+		goto done;
+	}
+
+	init_lsa_String(&lsa_domain_name, domain_name);
+
+	status = rpccli_samr_LookupDomain(pipe_cli, ctx,
+					  &connect_handle,
+					  &lsa_domain_name,
+					  &domain_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
+					&connect_handle,
+					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					domain_sid,
+					&domain_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	init_lsa_String(&lsa_group_name, r->in.group_name);
+
+	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+					 &domain_handle,
+					 1,
+					 &lsa_group_name,
+					 &rids,
+					 &types);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = WERR_GROUP_NOT_FOUND;
+		goto done;
+	}
+
+	if (types.ids[0] != SID_NAME_DOM_GRP) {
+		werr = WERR_GROUP_NOT_FOUND;
+		goto done;
+	}
+
+	status = rpccli_samr_OpenGroup(pipe_cli, ctx,
+				       &domain_handle,
+				       SAMR_GROUP_ACCESS_ADD_MEMBER,
+				       rids.ids[0],
+				       &group_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	init_lsa_String(&lsa_user_name, r->in.user_name);
+
+	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+					 &domain_handle,
+					 1,
+					 &lsa_user_name,
+					 &rids,
+					 &types);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = WERR_USER_NOT_FOUND;
+		goto done;
+	}
+
+	if (types.ids[0] != SID_NAME_USER) {
+		werr = WERR_USER_NOT_FOUND;
+		goto done;
+	}
+
+	status = rpccli_samr_AddGroupMember(pipe_cli, ctx,
+					    &group_handle,
+					    rids.ids[0],
+					    7); /* why ? */
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	werr = WERR_OK;
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	if (is_valid_policy_hnd(&group_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
+	}
+	if (is_valid_policy_hnd(&domain_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
+	}
+	if (is_valid_policy_hnd(&connect_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+	}
+
+	return werr;
 }
 
 /****************************************************************
@@ -980,7 +1145,7 @@ WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 WERROR NetGroupAddUser_l(struct libnetapi_ctx *ctx,
 			 struct NetGroupAddUser *r)
 {
-	return WERR_NOT_SUPPORTED;
+	return NetGroupAddUser_r(ctx, r);
 }
 
 /****************************************************************
