@@ -24,6 +24,52 @@
 #include "lib/netapi/netapi_private.h"
 #include "lib/netapi/libnetapi.h"
 
+static WERROR libnetapi_samr_lookup_and_open_alias(TALLOC_CTX *mem_ctx,
+						   struct rpc_pipe_client *pipe_cli,
+						   struct policy_handle *domain_handle,
+						   struct lsa_String *lsa_account_name,
+						   uint32_t access_rights,
+						   struct policy_handle *alias_handle)
+{
+	NTSTATUS status;
+	WERROR werr;
+	struct samr_Ids user_rids, name_types;
+
+	status = rpccli_samr_LookupNames(pipe_cli, mem_ctx,
+					 domain_handle,
+					 1,
+					 lsa_account_name,
+					 &user_rids,
+					 &name_types);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	switch (name_types.ids[0]) {
+		case SID_NAME_ALIAS:
+		case SID_NAME_WKN_GRP:
+			break;
+		default:
+			return WERR_INVALID_DATATYPE;
+	}
+
+	status = rpccli_samr_OpenAlias(pipe_cli, mem_ctx,
+				       domain_handle,
+				       access_rights,
+				       user_rids.ids[0],
+				       alias_handle);
+	if (NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	werr = WERR_OK;
+
+ done:
+	return werr;
+}
+
 /****************************************************************
 ****************************************************************/
 
