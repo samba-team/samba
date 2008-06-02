@@ -170,4 +170,12 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 			  struct NetLocalGroupDel *r);
 WERROR NetLocalGroupDel_l(struct libnetapi_ctx *ctx,
 			  struct NetLocalGroupDel *r);
+NET_API_STATUS NetLocalGroupGetInfo(const char * server_name /* [in] */,
+				    const char * group_name /* [in] */,
+				    uint32_t level /* [in] */,
+				    uint8_t **buf /* [out] [ref] */);
+WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
+			      struct NetLocalGroupGetInfo *r);
+WERROR NetLocalGroupGetInfo_l(struct libnetapi_ctx *ctx,
+			      struct NetLocalGroupGetInfo *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */
