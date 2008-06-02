@@ -81,16 +81,15 @@ WERROR NetGroupAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = libnetapi_samr_open_domain(ctx, pipe_cli,
-					    SAMR_ACCESS_ENUM_DOMAINS |
-					    SAMR_ACCESS_OPEN_DOMAIN,
-					    SAMR_DOMAIN_ACCESS_CREATE_GROUP |
-					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					    &connect_handle,
-					    &domain_handle,
-					    &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_CREATE_GROUP |
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -262,15 +261,14 @@ WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = libnetapi_samr_open_domain(ctx, pipe_cli,
-					    SAMR_ACCESS_ENUM_DOMAINS |
-					    SAMR_ACCESS_OPEN_DOMAIN,
-					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					    &connect_handle,
-					    &domain_handle,
-					    &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -435,15 +433,14 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = libnetapi_samr_open_domain(ctx, pipe_cli,
-					    SAMR_ACCESS_ENUM_DOMAINS |
-					    SAMR_ACCESS_OPEN_DOMAIN,
-					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					    &connect_handle,
-					    &domain_handle,
-					    &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -677,15 +674,14 @@ WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = libnetapi_samr_open_domain(ctx, pipe_cli,
-					    SAMR_ACCESS_ENUM_DOMAINS |
-					    SAMR_ACCESS_OPEN_DOMAIN,
-					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					    &connect_handle,
-					    &domain_handle,
-					    &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -794,15 +790,14 @@ WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = libnetapi_samr_open_domain(ctx, pipe_cli,
-					    SAMR_ACCESS_ENUM_DOMAINS |
-					    SAMR_ACCESS_OPEN_DOMAIN,
-					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					    &connect_handle,
-					    &domain_handle,
-					    &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -925,15 +920,14 @@ WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = libnetapi_samr_open_domain(ctx, pipe_cli,
-					    SAMR_ACCESS_ENUM_DOMAINS |
-					    SAMR_ACCESS_OPEN_DOMAIN,
-					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					    &connect_handle,
-					    &domain_handle,
-					    &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 

@@ -115,21 +115,19 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 			werr = WERR_ALIAS_EXISTS;
 			goto done;
 		}
-
 	}
 
 	rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
 
-	status = libnetapi_samr_open_domain(ctx, pipe_cli,
-					    SAMR_ACCESS_ENUM_DOMAINS |
-					    SAMR_ACCESS_OPEN_DOMAIN,
-					    SAMR_DOMAIN_ACCESS_CREATE_ALIAS |
-					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					    &connect_handle,
-					    &domain_handle,
-					    &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_CREATE_ALIAS |
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -269,16 +267,15 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 
 	rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
 
-	status = libnetapi_samr_open_domain(ctx, pipe_cli,
-					    SAMR_ACCESS_ENUM_DOMAINS |
-					    SAMR_ACCESS_OPEN_DOMAIN,
-					    SAMR_DOMAIN_ACCESS_CREATE_ALIAS |
-					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					    &connect_handle,
-					    &domain_handle,
-					    &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_CREATE_ALIAS |
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -473,16 +470,15 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 
 	rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
 
-	status = libnetapi_samr_open_domain(ctx, pipe_cli,
-					    SAMR_ACCESS_ENUM_DOMAINS |
-					    SAMR_ACCESS_OPEN_DOMAIN,
-					    SAMR_DOMAIN_ACCESS_CREATE_ALIAS |
-					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					    &connect_handle,
-					    &domain_handle,
-					    &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_CREATE_ALIAS |
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -679,15 +675,14 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 
 	rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
 
-	status = libnetapi_samr_open_domain(ctx, pipe_cli,
-					    SAMR_ACCESS_ENUM_DOMAINS |
-					    SAMR_ACCESS_OPEN_DOMAIN,
-					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					    &connect_handle,
-					    &domain_handle,
-					    &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
