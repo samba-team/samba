@@ -650,4 +650,21 @@ NET_API_STATUS NetLocalGroupAdd(const char * server_name /* [in] */,
 				uint8_t *buf /* [in] [ref] */,
 				uint32_t *parm_err /* [out] [ref] */);
 
+/************************************************************//**
+ *
+ * NetLocalGroupDel
+ *
+ * @brief Delete Local Group
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] group_name The name of the group that is going to be deleted
+ * @return NET_API_STATUS
+ *
+ * example localgroup/localgroup_del.c
+ ***************************************************************/
+
+
+NET_API_STATUS NetLocalGroupDel(const char * server_name /* [in] */,
+				const char * group_name /* [in] */);
+
 #endif
