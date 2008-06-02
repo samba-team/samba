@@ -156,4 +156,12 @@ WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 			 struct NetGroupDelUser *r);
 WERROR NetGroupDelUser_l(struct libnetapi_ctx *ctx,
 			 struct NetGroupDelUser *r);
+NET_API_STATUS NetLocalGroupAdd(const char * server_name /* [in] */,
+				uint32_t level /* [in] */,
+				uint8_t *buf /* [in] [ref] */,
+				uint32_t *parm_err /* [out] [ref] */);
+WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
+			  struct NetLocalGroupAdd *r);
+WERROR NetLocalGroupAdd_l(struct libnetapi_ctx *ctx,
+			  struct NetLocalGroupAdd *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */
