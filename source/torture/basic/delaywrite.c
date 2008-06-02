@@ -673,22 +673,10 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 } while (0)
 #define COMPARE_ACCESS_TIME_EQUAL(given,correct) \
 	COMPARE_ACCESS_TIME_CMP(given,correct,!=)
-#define COMPARE_ACCESS_TIME_GREATER(given,correct) \
-	COMPARE_ACCESS_TIME_CMP(given,correct,<=)
-#define COMPARE_ACCESS_TIME_LESS(given,correct) \
-	COMPARE_ACCESS_TIME_CMP(given,correct,>=)
 
 #define COMPARE_BOTH_TIMES_EQUAL(given,correct) do { \
 	COMPARE_ACCESS_TIME_EQUAL(given,correct); \
 	COMPARE_WRITE_TIME_EQUAL(given,correct); \
-} while (0)
-#define COMPARE_BOTH_TIMES_GEATER(given,correct) do { \
-	COMPARE_ACCESS_TIME_GREATER(given,correct); \
-	COMPARE_WRITE_TIME_GREATER(given,correct); \
-} while (0)
-#define COMPARE_BOTH_TIMES_LESS(given,correct) do { \
-	COMPARE_ACCESS_TIME_LESS(given,correct); \
-	COMPARE_WRITE_TIME_LESS(given,correct); \
 } while (0)
 
 #define GET_INFO_FILE(finfo) do { \
