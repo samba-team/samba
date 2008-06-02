@@ -78,22 +78,13 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_try_samr_connects(pipe_cli, ctx,
-					  SAMR_ACCESS_OPEN_DOMAIN |
-					  SAMR_ACCESS_ENUM_DOMAINS,
-					  &connect_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
-					&connect_handle,
-					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					CONST_DISCARD(DOM_SID *, &global_sid_Builtin),
-					&builtin_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_builtin_domain(ctx, pipe_cli,
+						  SAMR_ACCESS_OPEN_DOMAIN |
+						  SAMR_ACCESS_ENUM_DOMAINS,
+						  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+						  &connect_handle,
+						  &builtin_handle);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -226,22 +217,13 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_try_samr_connects(pipe_cli, ctx,
-					  SAMR_ACCESS_OPEN_DOMAIN |
-					  SAMR_ACCESS_ENUM_DOMAINS,
-					  &connect_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
-					&connect_handle,
-					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					CONST_DISCARD(DOM_SID *, &global_sid_Builtin),
-					&builtin_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_builtin_domain(ctx, pipe_cli,
+						  SAMR_ACCESS_OPEN_DOMAIN |
+						  SAMR_ACCESS_ENUM_DOMAINS,
+						  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+						  &connect_handle,
+						  &builtin_handle);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -429,22 +411,13 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_try_samr_connects(pipe_cli, ctx,
-					  SAMR_ACCESS_OPEN_DOMAIN |
-					  SAMR_ACCESS_ENUM_DOMAINS,
-					  &connect_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
-					&connect_handle,
-					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					CONST_DISCARD(DOM_SID *, &global_sid_Builtin),
-					&builtin_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_builtin_domain(ctx, pipe_cli,
+						  SAMR_ACCESS_OPEN_DOMAIN |
+						  SAMR_ACCESS_ENUM_DOMAINS,
+						  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+						  &connect_handle,
+						  &builtin_handle);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -634,22 +607,13 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_try_samr_connects(pipe_cli, ctx,
-					  SAMR_ACCESS_OPEN_DOMAIN |
-					  SAMR_ACCESS_ENUM_DOMAINS,
-					  &connect_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
-					&connect_handle,
-					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					CONST_DISCARD(DOM_SID *, &global_sid_Builtin),
-					&builtin_handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_builtin_domain(ctx, pipe_cli,
+						  SAMR_ACCESS_OPEN_DOMAIN |
+						  SAMR_ACCESS_ENUM_DOMAINS,
+						  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+						  &connect_handle,
+						  &builtin_handle);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
