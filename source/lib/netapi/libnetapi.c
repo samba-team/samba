@@ -953,3 +953,45 @@ NET_API_STATUS NetLocalGroupAdd(const char * server_name /* [in] */,
 	return r.out.result;
 }
 
+/****************************************************************
+ NetLocalGroupDel
+****************************************************************/
+
+NET_API_STATUS NetLocalGroupDel(const char * server_name /* [in] */,
+				const char * group_name /* [in] */)
+{
+	struct NetLocalGroupDel r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.group_name = group_name;
+
+	/* Out parameters */
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetLocalGroupDel, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetLocalGroupDel_l(ctx, &r);
+	} else {
+		werr = NetLocalGroupDel_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetLocalGroupDel, &r);
+	}
+
+	return r.out.result;
+}
+
