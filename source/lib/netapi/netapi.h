@@ -579,4 +579,22 @@ NET_API_STATUS NetGroupGetInfo(const char * server_name /* [in] */,
 			       uint32_t level /* [in] */,
 			       uint8_t **buf /* [out] [ref] */);
 
+/************************************************************//**
+ *
+ * NetGroupAddUser
+ *
+ * @brief Add existing User to existing Domain Group
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] group_name The name of the group that is going to be modified
+ * @param[in] user_name The name of the user that is going to be added to the
+ * group
+ * @return NET_API_STATUS
+ *
+ * example group/group_adduser.c
+ ***************************************************************/
+
+NET_API_STATUS NetGroupAddUser(const char * server_name /* [in] */,
+			       const char * group_name /* [in] */,
+			       const char * user_name /* [in] */);
 #endif
