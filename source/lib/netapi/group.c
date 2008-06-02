@@ -494,3 +494,21 @@ WERROR NetGroupDel_l(struct libnetapi_ctx *ctx,
 {
 	return NetGroupDel_r(ctx, r);
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
+			 struct NetGroupSetInfo *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetGroupSetInfo_l(struct libnetapi_ctx *ctx,
+			 struct NetGroupSetInfo *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
