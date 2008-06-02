@@ -57,7 +57,7 @@ struct brl_context {
 */
 struct lock_context {
 	struct server_id server;
-	uint16_t smbpid;
+	uint32_t smbpid;
 	struct brl_context *ctx;
 };
 
@@ -286,7 +286,7 @@ static NTSTATUS brl_tdb_lock_failed(struct brl_handle *brlh, struct lock_struct 
 */
 static NTSTATUS brl_tdb_lock(struct brl_context *brl,
 			 struct brl_handle *brlh,
-			 uint16_t smbpid,
+			 uint32_t smbpid,
 			 uint64_t start, uint64_t size, 
 			 enum brl_type lock_type,
 			 void *notify_ptr)
@@ -436,7 +436,7 @@ static void brl_tdb_notify_all(struct brl_context *brl,
 */
 static NTSTATUS brl_tdb_unlock(struct brl_context *brl,
 			   struct brl_handle *brlh, 
-			   uint16_t smbpid,
+			   uint32_t smbpid,
 			   uint64_t start, uint64_t size)
 {
 	TDB_DATA kbuf, dbuf;
@@ -581,7 +581,7 @@ static NTSTATUS brl_tdb_remove_pending(struct brl_context *brl,
 */
 static NTSTATUS brl_tdb_locktest(struct brl_context *brl,
 			     struct brl_handle *brlh,
-			     uint16_t smbpid, 
+			     uint32_t smbpid, 
 			     uint64_t start, uint64_t size, 
 			     enum brl_type lock_type)
 {
