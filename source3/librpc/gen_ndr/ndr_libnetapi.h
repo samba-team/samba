@@ -40,7 +40,11 @@
 
 #define NDR_NETGROUPGETINFO (0x10)
 
-#define NDR_LIBNETAPI_CALL_COUNT (17)
+#define NDR_NETGROUPADDUSER (0x11)
+
+#define NDR_NETGROUPDELUSER (0x12)
+
+#define NDR_LIBNETAPI_CALL_COUNT (19)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -119,4 +123,10 @@ void ndr_print_NetGroupSetInfo(struct ndr_print *ndr, const char *name, int flag
 enum ndr_err_code ndr_push_NetGroupGetInfo(struct ndr_push *ndr, int flags, const struct NetGroupGetInfo *r);
 enum ndr_err_code ndr_pull_NetGroupGetInfo(struct ndr_pull *ndr, int flags, struct NetGroupGetInfo *r);
 void ndr_print_NetGroupGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct NetGroupGetInfo *r);
+enum ndr_err_code ndr_push_NetGroupAddUser(struct ndr_push *ndr, int flags, const struct NetGroupAddUser *r);
+enum ndr_err_code ndr_pull_NetGroupAddUser(struct ndr_pull *ndr, int flags, struct NetGroupAddUser *r);
+void ndr_print_NetGroupAddUser(struct ndr_print *ndr, const char *name, int flags, const struct NetGroupAddUser *r);
+enum ndr_err_code ndr_push_NetGroupDelUser(struct ndr_push *ndr, int flags, const struct NetGroupDelUser *r);
+enum ndr_err_code ndr_pull_NetGroupDelUser(struct ndr_pull *ndr, int flags, struct NetGroupDelUser *r);
+void ndr_print_NetGroupDelUser(struct ndr_print *ndr, const char *name, int flags, const struct NetGroupDelUser *r);
 #endif /* _HEADER_NDR_libnetapi */
