@@ -178,4 +178,13 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 			      struct NetLocalGroupGetInfo *r);
 WERROR NetLocalGroupGetInfo_l(struct libnetapi_ctx *ctx,
 			      struct NetLocalGroupGetInfo *r);
+NET_API_STATUS NetLocalGroupSetInfo(const char * server_name /* [in] */,
+				    const char * group_name /* [in] */,
+				    uint32_t level /* [in] */,
+				    uint8_t *buf /* [in] [ref] */,
+				    uint32_t *parm_err /* [out] [ref] */);
+WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
+			      struct NetLocalGroupSetInfo *r);
+WERROR NetLocalGroupSetInfo_l(struct libnetapi_ctx *ctx,
+			      struct NetLocalGroupSetInfo *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */
