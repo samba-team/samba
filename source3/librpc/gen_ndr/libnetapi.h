@@ -461,4 +461,20 @@ struct NetLocalGroupGetInfo {
 
 };
 
+
+struct NetLocalGroupSetInfo {
+	struct {
+		const char * server_name;
+		const char * group_name;
+		uint32_t level;
+		uint8_t *buf;/* [ref] */
+	} in;
+
+	struct {
+		uint32_t *parm_err;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_libnetapi */
