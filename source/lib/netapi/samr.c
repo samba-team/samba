@@ -109,3 +109,42 @@ WERROR libnetapi_samr_open_domain(TALLOC_CTX *mem_ctx,
  done:
 	return werr;
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR libnetapi_samr_open_builtin_domain(TALLOC_CTX *mem_ctx,
+					  struct rpc_pipe_client *pipe_cli,
+					  uint32_t connect_mask,
+					  uint32_t builtin_mask,
+					  struct policy_handle *connect_handle,
+					  struct policy_handle *builtin_handle)
+{
+	NTSTATUS status;
+	WERROR werr;
+
+	if (!is_valid_policy_hnd(connect_handle)) {
+		status = rpccli_try_samr_connects(pipe_cli, mem_ctx,
+						  connect_mask,
+						  connect_handle);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+	}
+
+	status = rpccli_samr_OpenDomain(pipe_cli, mem_ctx,
+					connect_handle,
+					builtin_mask,
+					CONST_DISCARD(DOM_SID *, &global_sid_Builtin),
+					builtin_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	werr = WERR_OK;
+
+ done:
+	return werr;
+}
