@@ -865,7 +865,8 @@ LIBNETAPI_OBJ1 = lib/netapi/netapi.o \
 		 lib/netapi/serverinfo.o \
 		 lib/netapi/getdc.o \
 		 lib/netapi/user.o \
-		 lib/netapi/group.o
+		 lib/netapi/group.o \
+		 lib/netapi/samr.o
 
 LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ1) $(LIBNET_OBJ) \
 		 $(LIBSMBCONF_OBJ) \

@@ -33,4 +33,11 @@ WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
 			   struct cli_state *cli,
 			   int pipe_idx,
 			   struct rpc_pipe_client **pipe_cli);
+NTSTATUS libnetapi_samr_open_domain(TALLOC_CTX *mem_ctx,
+				    struct rpc_pipe_client *pipe_cli,
+				    uint32_t connect_mask,
+				    uint32_t domain_mask,
+				    struct policy_handle *connect_handle,
+				    struct policy_handle *domain_handle,
+				    struct dom_sid2 **domain_sid);
 #endif
