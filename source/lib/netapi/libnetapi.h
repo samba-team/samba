@@ -142,4 +142,18 @@ WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 			 struct NetGroupGetInfo *r);
 WERROR NetGroupGetInfo_l(struct libnetapi_ctx *ctx,
 			 struct NetGroupGetInfo *r);
+NET_API_STATUS NetGroupAddUser(const char * server_name /* [in] */,
+			       const char * group_name /* [in] */,
+			       const char * user_name /* [in] */);
+WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
+			 struct NetGroupAddUser *r);
+WERROR NetGroupAddUser_l(struct libnetapi_ctx *ctx,
+			 struct NetGroupAddUser *r);
+NET_API_STATUS NetGroupDelUser(const char * server_name /* [in] */,
+			       const char * group_name /* [in] */,
+			       const char * user_name /* [in] */);
+WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
+			 struct NetGroupDelUser *r);
+WERROR NetGroupDelUser_l(struct libnetapi_ctx *ctx,
+			 struct NetGroupDelUser *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */

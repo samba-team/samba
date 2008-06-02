@@ -819,3 +819,91 @@ NET_API_STATUS NetGroupGetInfo(const char * server_name /* [in] */,
 	return r.out.result;
 }
 
+/****************************************************************
+ NetGroupAddUser
+****************************************************************/
+
+NET_API_STATUS NetGroupAddUser(const char * server_name /* [in] */,
+			       const char * group_name /* [in] */,
+			       const char * user_name /* [in] */)
+{
+	struct NetGroupAddUser r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.group_name = group_name;
+	r.in.user_name = user_name;
+
+	/* Out parameters */
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetGroupAddUser, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetGroupAddUser_l(ctx, &r);
+	} else {
+		werr = NetGroupAddUser_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetGroupAddUser, &r);
+	}
+
+	return r.out.result;
+}
+
+/****************************************************************
+ NetGroupDelUser
+****************************************************************/
+
+NET_API_STATUS NetGroupDelUser(const char * server_name /* [in] */,
+			       const char * group_name /* [in] */,
+			       const char * user_name /* [in] */)
+{
+	struct NetGroupDelUser r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.group_name = group_name;
+	r.in.user_name = user_name;
+
+	/* Out parameters */
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetGroupDelUser, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetGroupDelUser_l(ctx, &r);
+	} else {
+		werr = NetGroupDelUser_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetGroupDelUser, &r);
+	}
+
+	return r.out.result;
+}
+
