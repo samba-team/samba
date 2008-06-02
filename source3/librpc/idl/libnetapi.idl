@@ -236,4 +236,16 @@ interface libnetapi
 		[in] uint32 level,
 		[out] uint8 **buf
 		);
+
+	[nopush,nopull] NET_API_STATUS NetGroupAddUser(
+		[in] string server_name,
+		[in] string group_name,
+		[in] string user_name
+		);
+
+	[nopush,nopull] NET_API_STATUS NetGroupDelUser(
+		[in] string server_name,
+		[in] string group_name,
+		[in] string user_name
+		);
 }
