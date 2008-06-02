@@ -27,15 +27,16 @@
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS libnetapi_samr_open_domain(TALLOC_CTX *mem_ctx,
-				    struct rpc_pipe_client *pipe_cli,
-				    uint32_t connect_mask,
-				    uint32_t domain_mask,
-				    struct policy_handle *connect_handle,
-				    struct policy_handle *domain_handle,
-				    struct dom_sid2 **domain_sid)
+WERROR libnetapi_samr_open_domain(TALLOC_CTX *mem_ctx,
+				  struct rpc_pipe_client *pipe_cli,
+				  uint32_t connect_mask,
+				  uint32_t domain_mask,
+				  struct policy_handle *connect_handle,
+				  struct policy_handle *domain_handle,
+				  struct dom_sid2 **domain_sid)
 {
 	NTSTATUS status;
+	WERROR werr;
 	uint32_t resume_handle = 0;
 	uint32_t num_entries = 0;
 	struct samr_SamArray *sam = NULL;
@@ -49,6 +50,7 @@ NTSTATUS libnetapi_samr_open_domain(TALLOC_CTX *mem_ctx,
 						  connect_mask,
 						  connect_handle);
 		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
 			goto done;
 		}
 	}
@@ -60,6 +62,7 @@ NTSTATUS libnetapi_samr_open_domain(TALLOC_CTX *mem_ctx,
 					 0xffffffff,
 					 &num_entries);
 	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
@@ -76,7 +79,7 @@ NTSTATUS libnetapi_samr_open_domain(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!domain_found) {
-		status = NT_STATUS_NO_SUCH_DOMAIN;
+		werr = WERR_NO_SUCH_DOMAIN;
 		goto done;
 	}
 
@@ -87,6 +90,7 @@ NTSTATUS libnetapi_samr_open_domain(TALLOC_CTX *mem_ctx,
 					  &lsa_domain_name,
 					  domain_sid);
 	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
@@ -96,9 +100,12 @@ NTSTATUS libnetapi_samr_open_domain(TALLOC_CTX *mem_ctx,
 					*domain_sid,
 					domain_handle);
 	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
+	werr = WERR_OK;
+
  done:
-	return status;
+	return werr;
 }

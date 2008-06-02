@@ -175,17 +175,16 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = libnetapi_samr_open_domain(ctx, pipe_cli,
-					    SAMR_ACCESS_ENUM_DOMAINS |
-					    SAMR_ACCESS_OPEN_DOMAIN,
-					    SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1 |
-					    SAMR_DOMAIN_ACCESS_CREATE_USER |
-					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					    &connect_handle,
-					    &domain_handle,
-					    &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1 |
+					  SAMR_DOMAIN_ACCESS_CREATE_USER |
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -325,15 +324,14 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = libnetapi_samr_open_domain(ctx, pipe_cli,
-					    SAMR_ACCESS_ENUM_DOMAINS |
-					    SAMR_ACCESS_OPEN_DOMAIN,
-					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					    &connect_handle,
-					    &domain_handle,
-					    &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -501,17 +499,16 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = libnetapi_samr_open_domain(ctx, pipe_cli,
-					    SAMR_ACCESS_ENUM_DOMAINS |
-					    SAMR_ACCESS_OPEN_DOMAIN,
-					    SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2 |
-					    SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS |
-					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					    &connect_handle,
-					    &domain_handle,
-					    &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2 |
+					  SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS |
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -758,17 +755,16 @@ WERROR NetQueryDisplayInformation_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = libnetapi_samr_open_domain(ctx, pipe_cli,
-					    SAMR_ACCESS_ENUM_DOMAINS |
-					    SAMR_ACCESS_OPEN_DOMAIN,
-					    SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2 |
-					    SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS |
-					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					    &connect_handle,
-					    &domain_handle,
-					    &domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2 |
+					  SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS |
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
