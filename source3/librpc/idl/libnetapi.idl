@@ -248,4 +248,24 @@ interface libnetapi
 		[in] string group_name,
 		[in] string user_name
 		);
+
+	typedef struct {
+		string lgrpi0_name;
+	} LOCALGROUP_INFO_0;
+
+	typedef struct {
+		string lgrpi1_name;
+		string lgrpi1_comment;
+	} LOCALGROUP_INFO_1;
+
+	typedef struct {
+		string lgrpi1002_comment;
+	} LOCALGROUP_INFO_1002;
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupAdd(
+		[in] string server_name,
+		[in] uint32 level,
+		[in] uint8 *buf,
+		[out,ref] uint32 *parm_err
+		);
 }
