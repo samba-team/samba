@@ -739,10 +739,221 @@ WERROR NetGroupSetInfo_l(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
+static WERROR map_group_info_to_buffer(TALLOC_CTX *mem_ctx,
+				       uint32_t level,
+				       struct samr_GroupInfoAll *info,
+				       struct dom_sid2 *domain_sid,
+				       uint32_t rid,
+				       uint8_t **buffer)
+{
+	struct GROUP_INFO_0 info0;
+	struct GROUP_INFO_1 info1;
+	struct GROUP_INFO_2 info2;
+	struct GROUP_INFO_3 info3;
+
+	switch (level) {
+		case 0:
+			info0.grpi0_name	= info->name.string;
+
+			*buffer = (uint8_t *)talloc_memdup(mem_ctx, &info0, sizeof(info0));
+
+			break;
+		case 1:
+			info1.grpi1_name	= info->name.string;
+			info1.grpi1_comment	= info->description.string;
+
+			*buffer = (uint8_t *)talloc_memdup(mem_ctx, &info1, sizeof(info1));
+
+			break;
+		case 2:
+			info2.grpi2_name	= info->name.string;
+			info2.grpi2_comment	= info->description.string;
+			info2.grpi2_group_id	= rid;
+			info2.grpi2_attributes	= info->attributes;
+
+			*buffer = (uint8_t *)talloc_memdup(mem_ctx, &info2, sizeof(info2));
+
+			break;
+		case 3:
+			info3.grpi3_name	= info->name.string;
+			info3.grpi3_comment	= info->description.string;
+			info3.grpi3_attributes	= info->attributes;
+
+			if (!sid_compose((struct dom_sid *)&info3.grpi3_group_sid, domain_sid, rid)) {
+				return WERR_NOMEM;
+			}
+
+			*buffer = (uint8_t *)talloc_memdup(mem_ctx, &info3, sizeof(info3));
+
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+	W_ERROR_HAVE_NO_MEMORY(*buffer);
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 			 struct NetGroupGetInfo *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	NTSTATUS status;
+	WERROR werr;
+	uint32_t resume_handle = 0;
+	uint32_t num_entries = 0;
+	POLICY_HND connect_handle, domain_handle, group_handle;
+	struct samr_SamArray *sam = NULL;
+	const char *domain_name = NULL;
+	struct lsa_String lsa_domain_name, lsa_group_name;
+	struct dom_sid2 *domain_sid = NULL;
+	bool domain_found = true;
+	int i;
+
+	struct samr_Ids rids;
+	struct samr_Ids types;
+	union samr_GroupInfo *info = NULL;
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(domain_handle);
+	ZERO_STRUCT(group_handle);
+
+	if (!r->in.group_name) {
+		return WERR_INVALID_PARAM;
+	}
+
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	status = rpccli_try_samr_connects(pipe_cli, ctx,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  &connect_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_EnumDomains(pipe_cli, ctx,
+					 &connect_handle,
+					 &resume_handle,
+					 &sam,
+					 0xffffffff,
+					 &num_entries);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	for (i=0; i<num_entries; i++) {
+
+		domain_name = sam->entries[i].name.string;
+
+		if (strequal(domain_name, builtin_domain_name())) {
+			continue;
+		}
+
+		domain_found = true;
+		break;
+	}
+
+	if (!domain_found) {
+		werr = WERR_NO_SUCH_DOMAIN;
+		goto done;
+	}
+
+	init_lsa_String(&lsa_domain_name, domain_name);
+
+	status = rpccli_samr_LookupDomain(pipe_cli, ctx,
+					  &connect_handle,
+					  &lsa_domain_name,
+					  &domain_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
+					&connect_handle,
+					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					domain_sid,
+					&domain_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	init_lsa_String(&lsa_group_name, r->in.group_name);
+
+	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+					 &domain_handle,
+					 1,
+					 &lsa_group_name,
+					 &rids,
+					 &types);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	if (types.ids[0] != SID_NAME_DOM_GRP) {
+		werr = WERR_INVALID_DATATYPE;
+		goto done;
+	}
+
+	status = rpccli_samr_OpenGroup(pipe_cli, ctx,
+				       &domain_handle,
+				       SAMR_GROUP_ACCESS_LOOKUP_INFO,
+				       rids.ids[0],
+				       &group_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = rpccli_samr_QueryGroupInfo(pipe_cli, ctx,
+					    &group_handle,
+					    GROUPINFOALL2,
+					    &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	werr = map_group_info_to_buffer(ctx, r->in.level,
+					&info->all2, domain_sid, rids.ids[0],
+					r->out.buf);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	if (is_valid_policy_hnd(&group_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
+	}
+	if (is_valid_policy_hnd(&domain_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
+	}
+	if (is_valid_policy_hnd(&connect_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+	}
+
+	return werr;
 }
 
 /****************************************************************
@@ -751,5 +962,5 @@ WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 WERROR NetGroupGetInfo_l(struct libnetapi_ctx *ctx,
 			 struct NetGroupGetInfo *r)
 {
-	return WERR_NOT_SUPPORTED;
+	return NetGroupGetInfo_r(ctx, r);
 }
