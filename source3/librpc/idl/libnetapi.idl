@@ -273,4 +273,11 @@ interface libnetapi
 		[in] string server_name,
 		[in] string group_name
 		);
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupGetInfo(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[out,ref] uint8 **buf
+		);
 }
