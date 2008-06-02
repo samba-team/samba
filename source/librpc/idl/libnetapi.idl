@@ -280,4 +280,13 @@ interface libnetapi
 		[in] uint32 level,
 		[out,ref] uint8 **buf
 		);
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupSetInfo(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[in,ref] uint8 *buf,
+		[out,ref] uint32 *parm_err
+		);
+
 }
