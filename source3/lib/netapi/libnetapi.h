@@ -134,4 +134,12 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 			 struct NetGroupSetInfo *r);
 WERROR NetGroupSetInfo_l(struct libnetapi_ctx *ctx,
 			 struct NetGroupSetInfo *r);
+NET_API_STATUS NetGroupGetInfo(const char * server_name /* [in] */,
+			       const char * group_name /* [in] */,
+			       uint32_t level /* [in] */,
+			       uint8_t **buf /* [out] [ref] */);
+WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
+			 struct NetGroupGetInfo *r);
+WERROR NetGroupGetInfo_l(struct libnetapi_ctx *ctx,
+			 struct NetGroupGetInfo *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */

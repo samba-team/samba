@@ -773,3 +773,49 @@ NET_API_STATUS NetGroupSetInfo(const char * server_name /* [in] */,
 	return r.out.result;
 }
 
+/****************************************************************
+ NetGroupGetInfo
+****************************************************************/
+
+NET_API_STATUS NetGroupGetInfo(const char * server_name /* [in] */,
+			       const char * group_name /* [in] */,
+			       uint32_t level /* [in] */,
+			       uint8_t **buf /* [out] [ref] */)
+{
+	struct NetGroupGetInfo r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.group_name = group_name;
+	r.in.level = level;
+
+	/* Out parameters */
+	r.out.buf = buf;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetGroupGetInfo, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetGroupGetInfo_l(ctx, &r);
+	} else {
+		werr = NetGroupGetInfo_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetGroupGetInfo, &r);
+	}
+
+	return r.out.result;
+}
+

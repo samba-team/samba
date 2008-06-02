@@ -735,3 +735,21 @@ WERROR NetGroupSetInfo_l(struct libnetapi_ctx *ctx,
 {
 	return NetGroupSetInfo_r(ctx, r);
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
+			 struct NetGroupGetInfo *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetGroupGetInfo_l(struct libnetapi_ctx *ctx,
+			 struct NetGroupGetInfo *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
