@@ -446,4 +446,19 @@ struct NetLocalGroupDel {
 
 };
 
+
+struct NetLocalGroupGetInfo {
+	struct {
+		const char * server_name;
+		const char * group_name;
+		uint32_t level;
+	} in;
+
+	struct {
+		uint8_t **buf;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
 #endif /* _HEADER_libnetapi */
