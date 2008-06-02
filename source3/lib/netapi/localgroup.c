@@ -551,3 +551,23 @@ WERROR NetLocalGroupGetInfo_l(struct libnetapi_ctx *ctx,
 {
 	return NetLocalGroupGetInfo_r(ctx, r);
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
+			      struct NetLocalGroupSetInfo *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetLocalGroupSetInfo_l(struct libnetapi_ctx *ctx,
+			      struct NetLocalGroupSetInfo *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+
