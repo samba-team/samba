@@ -115,6 +115,19 @@ struct GROUP_INFO_1005 {
 	uint32_t grpi1005_attributes;
 };
 
+struct LOCALGROUP_INFO_0 {
+	const char * lgrpi0_name;
+};
+
+struct LOCALGROUP_INFO_1 {
+	const char * lgrpi1_name;
+	const char * lgrpi1_comment;
+};
+
+struct LOCALGROUP_INFO_1002 {
+	const char * lgrpi1002_comment;
+};
+
 
 struct NetJoinDomain {
 	struct {
@@ -400,6 +413,21 @@ struct NetGroupDelUser {
 	} in;
 
 	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetLocalGroupAdd {
+	struct {
+		const char * server_name;
+		uint32_t level;
+		uint8_t *buf;/* [ref] */
+	} in;
+
+	struct {
+		uint32_t *parm_err;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 
