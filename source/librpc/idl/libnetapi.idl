@@ -229,4 +229,11 @@ interface libnetapi
 		[in] uint8 *buf,
 		[out] uint32 *parm_err
 		);
+
+	[nopush,nopull] NET_API_STATUS NetGroupGetInfo(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[out] uint8 **buf
+		);
 }
