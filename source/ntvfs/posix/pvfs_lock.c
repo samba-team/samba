@@ -31,7 +31,7 @@
 */
 NTSTATUS pvfs_check_lock(struct pvfs_state *pvfs,
 			 struct pvfs_file *f,
-			 uint16_t smbpid,
+			 uint32_t smbpid,
 			 uint64_t offset, uint64_t count,
 			 enum brl_type rw)
 {
