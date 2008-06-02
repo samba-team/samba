@@ -125,4 +125,13 @@ WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 		     struct NetGroupDel *r);
 WERROR NetGroupDel_l(struct libnetapi_ctx *ctx,
 		     struct NetGroupDel *r);
+NET_API_STATUS NetGroupSetInfo(const char * server_name /* [in] */,
+			       const char * group_name /* [in] */,
+			       uint32_t level /* [in] */,
+			       uint8_t *buf /* [in] [ref] */,
+			       uint32_t *parm_err /* [out] [ref] */);
+WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
+			 struct NetGroupSetInfo *r);
+WERROR NetGroupSetInfo_l(struct libnetapi_ctx *ctx,
+			 struct NetGroupSetInfo *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */

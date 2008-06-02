@@ -136,6 +136,14 @@ struct GROUP_INFO_3 {
 	uint32_t grpi3_attributes;
 };
 
+struct GROUP_INFO_1002 {
+	const char * grpi1002_comment;
+};
+
+struct GROUP_INFO_1005 {
+	uint32_t grpi1005_attributes;
+};
+
 #endif /* _HEADER_libnetapi */
 
 /****************************************************************
@@ -526,8 +534,28 @@ NET_API_STATUS NetGroupAdd(const char * server_name /* [in] */,
  * example group/group_del.c
  ***************************************************************/
 
-
 NET_API_STATUS NetGroupDel(const char * server_name /* [in] */,
 			   const char * group_name /* [in] */);
 
+/************************************************************//**
+ *
+ * NetGroupSetInfo
+ *
+ * @brief Set Domain Group Information
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] group_name The name of the group that is going to be modified
+ * @param[in] level The level defining the structure type in buf
+ * @param[in] buf The buffer containing a GROUP_INFO_X structure
+ * @param[out] parm_err The returned parameter error number if any
+ * @return NET_API_STATUS
+ *
+ * example group/group_setinfo.c
+ ***************************************************************/
+
+NET_API_STATUS NetGroupSetInfo(const char * server_name /* [in] */,
+			       const char * group_name /* [in] */,
+			       uint32_t level /* [in] */,
+			       uint8_t *buf /* [in] [ref] */,
+			       uint32_t *parm_err /* [out] [ref] */);
 #endif
