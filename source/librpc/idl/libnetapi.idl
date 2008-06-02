@@ -268,4 +268,9 @@ interface libnetapi
 		[in] uint8 *buf,
 		[out,ref] uint32 *parm_err
 		);
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupDel(
+		[in] string server_name,
+		[in] string group_name
+		);
 }
