@@ -192,3 +192,23 @@ WERROR NetLocalGroupAdd_l(struct libnetapi_ctx *ctx,
 {
 	return NetLocalGroupAdd_r(ctx, r);
 }
+
+/****************************************************************
+****************************************************************/
+
+
+WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
+			  struct NetLocalGroupDel *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+
+WERROR NetLocalGroupDel_l(struct libnetapi_ctx *ctx,
+			  struct NetLocalGroupDel *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
