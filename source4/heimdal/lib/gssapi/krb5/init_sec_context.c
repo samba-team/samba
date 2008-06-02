@@ -540,12 +540,18 @@ init_auth
 	goto failure;
     }
 
-    ret = _gsskrb5_encapsulate (minor_status, &outbuf, output_token,
-				   (u_char *)"\x01\x00", GSS_KRB5_MECHANISM);
-    if (ret)
-	goto failure;
+    if (flags & GSS_C_DCE_STYLE) {
+	output_token->value = outbuf.data;
+	output_token->length = outbuf.length;
+    } else {
+        ret = _gsskrb5_encapsulate (minor_status, &outbuf, output_token,
+				    (u_char *)"\x01\x00", GSS_KRB5_MECHANISM);
+	if (ret)
+	    goto failure;
 
-    krb5_data_free (&outbuf);
+	krb5_data_free (&outbuf);
+    }
+
     krb5_free_creds(context, kcred);
     free_Checksum(&cksum);
     if (cred == NULL)
