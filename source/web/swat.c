@@ -86,13 +86,14 @@ static const char *fix_quotes(TALLOC_CTX *ctx, const char *str)
 
 	/* Count the number of quotes. */
 	newstring_len = 1;
-	while (*str) {
-		if ( *str == '\"') {
+	p = (char *) str;
+	while (*p) {
+		if ( *p == '\"') {
 			newstring_len += quote_len;
 		} else {
 			newstring_len++;
 		}
-		++str;
+		++p;
 	}
 	newstring = TALLOC_ARRAY(ctx, char, newstring_len);
 	if (!newstring) {
@@ -105,7 +106,6 @@ static const char *fix_quotes(TALLOC_CTX *ctx, const char *str)
 		} else {
 			*p++ = *str;
 		}
-		++str;
 	}
 	*p = '\0';
 	return newstring;
