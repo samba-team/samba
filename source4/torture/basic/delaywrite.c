@@ -641,7 +641,7 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	bool err = false; \
 	if (strict && (g cmp c)) { \
 		err = true; \
-	} else if (gr cmp cr) { \
+	} else if ((g cmp c) && (gr cmp cr)) { \
 		/* handle filesystem without high resolution timestamps */ \
 		err = true; \
 	} \
