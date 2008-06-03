@@ -216,6 +216,9 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 5504: Fix behaviour of winbindd children receiving a SIGTERM.
     * Security fix for CVE-2008-1105.
     * Fix valgrind bug in debug statement.
+    * Make sure we take account of the large read/write SMB headers as
+      well as the buffer space when allocating cli buffers for large
+      read/write.
 
 
 o   Günther Deschner <gd@samba.org>
@@ -228,6 +231,11 @@ o   Volker Lendecke <vl@samba.org>
 
 o   Marc VanHeyningen <marc.vanheyningen@isilon.com>
     * Fix memory leak.
+
+
+o   Bo Yang <boyang@novell.com>
+    * Fix winbindd trusted domain child not keeping primary domain
+      online status up to date.
 
 
 o   Chere Zhou <chere.zhou@isilon.com>
