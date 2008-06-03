@@ -436,6 +436,9 @@ cleanup_delete:
 */
 static int pvfs_handle_destructor(struct pvfs_file_handle *h)
 {
+	talloc_free(h->write_time.update_event);
+	h->write_time.update_event = NULL;
+
 	if ((h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
 	    h->name->stream_name) {
 		NTSTATUS status;
@@ -454,6 +457,14 @@ static int pvfs_handle_destructor(struct pvfs_file_handle *h)
 		h->fd = -1;
 	}
 
+	if (!h->write_time.update_forced &&
+	    h->write_time.update_on_close &&
+	    h->write_time.close_time == 0) {
+		struct timeval tv;
+		tv = timeval_current();
+		h->write_time.close_time = timeval_to_nttime(&tv);
+	}
+
 	if (h->have_opendb_entry) {
 		struct odb_lock *lck;
 		NTSTATUS status;
@@ -463,6 +474,26 @@ static int pvfs_handle_destructor(struct pvfs_file_handle *h)
 		if (lck == NULL) {
 			DEBUG(0,("Unable to lock opendb for close\n"));
 			return 0;
+		}
+
+		if (h->write_time.update_forced) {
+			status = odb_get_file_infos(h->pvfs->odb_context,
+						    &h->odb_locking_key,
+						    NULL,
+						    &h->write_time.close_time);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0,("Unable get write time for '%s' - %s\n",
+					 h->name->full_name, nt_errstr(status)));
+			}
+
+			h->write_time.update_forced = false;
+			h->write_time.update_on_close = true;
+		} else if (h->write_time.update_on_close) {
+			status = odb_set_write_time(lck, h->write_time.close_time, true);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0,("Unable set write time for '%s' - %s\n",
+					 h->name->full_name, nt_errstr(status)));
+			}
 		}
 
 		status = odb_close_file(lck, h, &delete_path);
@@ -487,9 +518,24 @@ static int pvfs_handle_destructor(struct pvfs_file_handle *h)
 					       FILE_NOTIFY_CHANGE_FILE_NAME,
 					       delete_path);
 			}
+			h->write_time.update_on_close = false;
 		}
 
 		talloc_free(lck);
+	}
+
+	if (h->write_time.update_on_close) {
+		struct utimbuf unix_times;
+
+		unix_times.actime  = nt_time_to_unix(h->name->dos.access_time);
+		unix_times.modtime = nt_time_to_unix(h->write_time.close_time);
+
+		if (unix_times.actime != 0 || unix_times.modtime != 0) {
+			if (utime(h->name->full_name, &unix_times) == -1) {
+				DEBUG(0,("pvfs_close: utime() failed '%s' - %s\n",
+					 h->name->full_name, strerror(errno)));
+			}
+		}
 	}
 
 	return 0;
