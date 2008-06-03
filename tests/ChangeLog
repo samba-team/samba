@@ -1,3 +1,7 @@
+2008-06-01  Love Hörnquist Åstrand  <lha@kth.se>
+
+	* kdc/check-kadmin.in: Test globbing acl's
+
 2008-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/Makefile.am: test SDB cache.
