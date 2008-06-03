@@ -1247,6 +1247,8 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 
 		werr = smbconf_set_global_parameter(ctx, "workgroup",
 						    r->in.domain_name);
+
+		smbconf_delete_global_parameter(ctx, "realm");
 		goto done;
 	}
 
