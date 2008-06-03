@@ -131,6 +131,14 @@ KNOWN ISSUES
   actually due to Kerberos objecting to a clock skew between client
   and server.  (The NTP work is partly to assist with this problem).
 
+- Samba4 alpha4 is currently only portable to recent Linux
+  distributions.  Work to return support for other Unix varients is
+  expected during the next alpha cycle
+
+- Samba4 alpha4 is incompatible with GnuTLS 2.0, found in Fedora 9 and
+  recent Ubuntu releases.  Please remove the
+  gnutls-devel/libgnutls-dev package before compiling (otherwise 'make
+  test' and LDAPS operations will hang).
 
 RUNNING Samba4
 ==============
