@@ -113,7 +113,9 @@ static void callback_do_close(GtkWidget *widget,
 {
 	debug("callback_do_close called\n");
 
-	gtk_widget_destroy(data);
+	if (data) {
+		gtk_widget_destroy(GTK_WIDGET(data));
+	}
 }
 
 static void callback_do_freeauth(GtkWidget *widget,
@@ -127,7 +129,8 @@ static void callback_do_freeauth(GtkWidget *widget,
 	SAFE_FREE(state->password);
 
 	if (state->window_creds_prompt) {
-		gtk_widget_destroy(state->window_creds_prompt);
+		gtk_widget_destroy(GTK_WIDGET(state->window_creds_prompt));
+		state->window_creds_prompt = NULL;
 	}
 }
 
@@ -141,8 +144,13 @@ static void callback_do_freeauth_and_close(GtkWidget *widget,
 	SAFE_FREE(state->account);
 	SAFE_FREE(state->password);
 
-	gtk_widget_destroy(state->window_creds_prompt);
-	gtk_widget_destroy(state->window_do_change);
+	if (state->window_creds_prompt) {
+		gtk_widget_destroy(GTK_WIDGET(state->window_creds_prompt));
+		state->window_creds_prompt = NULL;
+	}
+	if (state->window_do_change) {
+		gtk_widget_destroy(GTK_WIDGET(state->window_do_change));
+	}
 }
 
 static void free_join_state(struct join_state *s)
@@ -225,8 +233,12 @@ static void callback_do_exit(GtkWidget *widget,
 		default:
 			break;
 	}
-	gtk_widget_destroy(dialog);
-	gtk_widget_destroy(state->window_main);
+	if (dialog) {
+		gtk_widget_destroy(GTK_WIDGET(dialog));
+	}
+	if (state->window_main) {
+		gtk_widget_destroy(GTK_WIDGET(state->window_main));
+	}
 	do_cleanup(state);
 	exit(0);
 }
@@ -257,7 +269,7 @@ static void callback_do_reboot(GtkWidget *widget,
 	gtk_widget_show(dialog);
 #else
 	gtk_dialog_run(GTK_DIALOG(dialog));
-	gtk_widget_destroy(dialog);
+	gtk_widget_destroy(GTK_WIDGET(dialog));
 #endif
 
 	gtk_label_set_text(GTK_LABEL(state->label_reboot),
@@ -388,10 +400,12 @@ static void callback_do_storeauth(GtkWidget *widget,
 	SAFE_FREE(state->account);
 	SAFE_FREE(state->password);
 
-	callback_return_username(state->entry_account, state);
-	callback_return_password(state->entry_password, state);
+	callback_return_username(state->entry_account, (gpointer)state);
+	callback_return_password(state->entry_password, (gpointer)state);
 
-	gtk_widget_destroy(state->window_creds_prompt);
+	if (state->window_creds_prompt) {
+		gtk_widget_destroy(GTK_WIDGET(state->window_creds_prompt));
+	}
 }
 
 static void callback_continue(GtkWidget *widget,
@@ -1537,7 +1551,7 @@ static int init_join_state(struct join_state **state)
 {
 	struct join_state *s;
 
-	s = malloc(sizeof(struct join_state));
+	s = (struct join_state *)malloc(sizeof(struct join_state));
 	if (!s) {
 		return -1;
 	}
