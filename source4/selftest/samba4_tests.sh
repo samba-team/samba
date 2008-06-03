@@ -213,7 +213,11 @@ done
 plantest "rpc.echo on ncacn_np over smb2" dc $smb4torture ncacn_np:"\$SERVER[smb2]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
 
 # Tests against the NTVFS POSIX backend
-NTVFSARGS="--option=torture:sharedelay=100000 --option=torture:oplocktimeout=3"
+NTVFSARGS=""
+NTVFSARGS="${NTVFSARGS} --option=torture:sharedelay=100000"
+NTVFSARGS="${NTVFSARGS} --option=torture:oplocktimeout=3"
+NTVFSARGS="${NTVFSARGS} --option=torture:writetimeupdatedelay=500000"
+
 smb2=`$smb4torture --list | grep "^SMB2-" | xargs`
 #The QFILEINFO-IPC test needs to be on ipc$
 raw=`$smb4torture --list | grep "^RAW-" | grep -v "RAW-QFILEINFO-IPC"| xargs`

@@ -52,8 +52,13 @@ static uint32_t dos_mode_from_stat(struct pvfs_state *pvfs, struct stat *st)
 /*
   fill in the dos file attributes for a file
 */
-NTSTATUS pvfs_fill_dos_info(struct pvfs_state *pvfs, struct pvfs_filename *name, int fd)
+NTSTATUS pvfs_fill_dos_info(struct pvfs_state *pvfs, struct pvfs_filename *name,
+			    uint_t flags, int fd)
 {
+	NTSTATUS status;
+	DATA_BLOB lkey;
+	NTTIME write_time;
+
 	/* make directories appear as size 0 with 1 link */
 	if (S_ISDIR(name->st.st_mode)) {
 		name->st.st_size = 0;
@@ -85,7 +90,29 @@ NTSTATUS pvfs_fill_dos_info(struct pvfs_state *pvfs, struct pvfs_filename *name,
 	name->dos.file_id = (((uint64_t)name->st.st_dev)<<32) | name->st.st_ino;
 	name->dos.flags = 0;
 
-	return pvfs_dosattrib_load(pvfs, name, fd);
+	status = pvfs_dosattrib_load(pvfs, name, fd);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (flags & PVFS_RESOLVE_NO_OPENDB) {
+		return NT_STATUS_OK;
+	}
+
+	status = pvfs_locking_key(name, name, &lkey);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	status = odb_get_file_infos(pvfs->odb_context, &lkey,
+				    NULL, &write_time);
+	data_blob_free(&lkey);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1,("WARNING: odb_get_file_infos: %s\n", nt_errstr(status)));
+		return status;
+	}
+
+	if (!null_time(write_time)) {
+		name->dos.write_time = write_time;
+	}
+
+	return NT_STATUS_OK;
 }
 
 

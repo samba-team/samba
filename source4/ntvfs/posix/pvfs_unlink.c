@@ -201,7 +201,10 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, unl->unlink.in.pattern, 
-				   PVFS_RESOLVE_WILDCARD | PVFS_RESOLVE_STREAMS, &name);
+				   PVFS_RESOLVE_WILDCARD |
+				   PVFS_RESOLVE_STREAMS |
+				   PVFS_RESOLVE_NO_OPENDB,
+				   &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -246,7 +249,9 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 		/* get a pvfs_filename object */
 		status = pvfs_resolve_partial(pvfs, req,
 					      pvfs_list_unix_path(dir),
-					      fname, &name);
+					      fname,
+					      PVFS_RESOLVE_NO_OPENDB,
+					      &name);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
