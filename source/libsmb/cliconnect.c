@@ -1352,9 +1352,9 @@ bool cli_negprot(struct cli_state *cli)
 		if (cli->capabilities & (CAP_LARGE_READX|CAP_LARGE_WRITEX)) {
 			SAFE_FREE(cli->outbuf);
 			SAFE_FREE(cli->inbuf);
-			cli->outbuf = (char *)SMB_MALLOC(CLI_SAMBA_MAX_LARGE_READX_SIZE+SAFETY_MARGIN);
-			cli->inbuf = (char *)SMB_MALLOC(CLI_SAMBA_MAX_LARGE_READX_SIZE+SAFETY_MARGIN);
-			cli->bufsize = CLI_SAMBA_MAX_LARGE_READX_SIZE;
+			cli->outbuf = (char *)SMB_MALLOC(CLI_SAMBA_MAX_LARGE_READX_SIZE+LARGE_WRITEX_HDR_SIZE+SAFETY_MARGIN);
+			cli->inbuf = (char *)SMB_MALLOC(CLI_SAMBA_MAX_LARGE_READX_SIZE+LARGE_WRITEX_HDR_SIZE+SAFETY_MARGIN);
+			cli->bufsize = CLI_SAMBA_MAX_LARGE_READX_SIZE + LARGE_WRITEX_HDR_SIZE;
 		}
 
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
