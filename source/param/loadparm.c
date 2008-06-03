@@ -6558,6 +6558,11 @@ static bool process_registry_globals(void)
 		goto done;
 	}
 
+	ret = do_parameter("registry shares", "yes", NULL);
+	if (!ret) {
+		goto done;
+	}
+
 	if (!smbconf_share_exists(conf_ctx, GLOBAL_NAME)) {
 		/* nothing to read from the registry yet but make sure lp_load
 		 * doesn't return false */
@@ -6575,7 +6580,6 @@ static bool process_registry_globals(void)
 		goto done;
 	}
 
-	ret = do_parameter("registry shares", "yes", NULL);
 	/* store the csn */
 	smbconf_changed(conf_ctx, &conf_last_csn, NULL, NULL);
 
