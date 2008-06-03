@@ -81,6 +81,7 @@ ${kadmin} -l add -p foo --use-defaults foo/admin@${R} || exit 1
 ${kadmin} -l add -p foo --use-defaults bar@${R} || exit 1
 ${kadmin} -l add -p foo --use-defaults baz@${R} || exit 1
 ${kadmin} -l add -p foo --use-defaults bez@${R} || exit 1
+${kadmin} -l add -p foo --use-defaults fez@${R} || exit 1
 
 echo foo > ${objdir}/foopassword
 
@@ -163,6 +164,32 @@ ${kinit} --password-file=${objdir}/foopassword \
 echo "kadmin globacl, negative"
 env KRB5CCNAME=${cache} \
 ${kadmin} -p bez@${R} passwd -p foo bar@${R} > /dev/null 2>/dev/null && 
+	{ echo "kadmin succesded $?"; cat messages.log ; exit 1; }
+
+#----------------------------------
+${kadmind} -d &
+kadmpid=$!
+sleep 1
+
+echo "kinit (no admin)"
+${kinit} --password-file=${objdir}/foopassword \
+    -S kadmin/admin@${R} fez@${R} || exit 1
+echo "kadmin globacl"
+env KRB5CCNAME=${cache} \
+${kadmin} -p fez@${R} get bar@${R} > /dev/null || 
+	{ echo "kadmin failed $?"; cat messages.log ; exit 1; }
+
+#----------------------------------
+${kadmind} -d &
+kadmpid=$!
+sleep 1
+
+echo "kinit (no admin)"
+${kinit} --password-file=${objdir}/foopassword \
+    -S kadmin/admin@${R} fez@${R} || exit 1
+echo "kadmin globacl, negative"
+env KRB5CCNAME=${cache} \
+${kadmin} -p fez@${R} passwd -p foo bar@${R} > /dev/null 2>/dev/null && 
 	{ echo "kadmin succesded $?"; cat messages.log ; exit 1; }
 
 #----------------------------------
