@@ -2615,6 +2615,23 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...)
 	return ret;
 }
 
+char *talloc_asprintf_strlower_m(TALLOC_CTX *t, const char *fmt, ...)
+{
+	va_list ap;
+	char *ret;
+
+	va_start(ap, fmt);
+	ret = talloc_vasprintf(t, fmt, ap);
+	va_end(ap);
+
+	if (ret == NULL) {
+		return NULL;
+	}
+	strlower_m(ret);
+	return ret;
+}
+
+
 /*
    Returns the substring from src between the first occurrence of
    the char "front" and the first occurence of the char "back".
