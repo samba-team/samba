@@ -59,6 +59,9 @@ struct pvfs_state {
 	/* the oplock break timeout (secs) */
 	uint_t oplock_break_timeout;
 
+	/* the write time update delay (nsecs) */
+	uint_t writetime_delay;
+
 	/* filesystem attributes (see FS_ATTR_*) */
 	uint32_t fs_attribs;
 
@@ -258,6 +261,7 @@ struct pvfs_odb_retry;
 #define PVFS_FAKE_OPLOCKS		"posix:fakeoplocks"
 #define PVFS_SHARE_DELAY		"posix:sharedelay"
 #define PVFS_OPLOCK_TIMEOUT		"posix:oplocktimeout"
+#define PVFS_WRITETIME_DELAY		"posix:writetimeupdatedelay"
 #define PVFS_ALLOCATION_ROUNDING	"posix:allocationrounding"
 #define PVFS_SEARCH_INACTIVITY		"posix:searchinactivity"
 #define PVFS_ACL			"posix:acl"
@@ -267,6 +271,7 @@ struct pvfs_odb_retry;
 #define PVFS_FAKE_OPLOCKS_DEFAULT		false
 #define PVFS_SHARE_DELAY_DEFAULT		1000000 /* nsecs */
 #define PVFS_OPLOCK_TIMEOUT_DEFAULT		30 /* secs */
+#define PVFS_WRITETIME_DELAY_DEFAULT		2000000 /* nsecs */
 #define PVFS_ALLOCATION_ROUNDING_DEFAULT	512
 #define PVFS_SEARCH_INACTIVITY_DEFAULT		300
 
