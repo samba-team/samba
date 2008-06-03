@@ -23,7 +23,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
-#include "heimdal/lib/hcrypto/sha.h"
+#include "lib/crypto/crypto.h"
 
 /*
   NOTE: this code does not yet interoperate with the windows SMB2
@@ -54,7 +54,7 @@ NTSTATUS smb2_sign_message(struct smb2_request *req)
 {
 	struct smb2_request_buffer *buf = &req->out;
 	uint64_t session_id;
-	SHA256_CTX m;
+	struct HMACSHA256Context m;
 	uint8_t res[32];
 
 	if (!req->transport->signing.doing_signing ||
@@ -85,11 +85,9 @@ NTSTATUS smb2_sign_message(struct smb2_request *req)
 	SIVAL(buf->hdr, SMB2_HDR_FLAGS, IVAL(buf->hdr, SMB2_HDR_FLAGS) | SMB2_HDR_FLAG_SIGNED);
 
 	ZERO_STRUCT(m);
-	SHA256_Init(&m);
-	SHA256_Update(&m, req->transport->signing.session_key.data, 
-		      req->transport->signing.session_key.length);
-	SHA256_Update(&m, buf->buffer+NBT_HDR_SIZE, buf->size-NBT_HDR_SIZE);
-	SHA256_Final(res, &m);
+	hmac_sha256_init(req->transport->signing.session_key.data, 16, &m);
+	hmac_sha256_update(buf->buffer+NBT_HDR_SIZE, buf->size-NBT_HDR_SIZE, &m);
+	hmac_sha256_final(res, &m);
 
 	DEBUG(5,("signed SMB2 message of size %u\n", (unsigned)buf->size - NBT_HDR_SIZE));
 
@@ -110,7 +108,7 @@ NTSTATUS smb2_check_signature(struct smb2_transport *transport,
 			      uint8_t *buffer, uint_t length)
 {
 	uint64_t session_id;
-	SHA256_CTX m;
+	struct HMACSHA256Context m;
 	uint8_t res[SHA256_DIGEST_LENGTH];
 	uint8_t sig[16];
 
@@ -147,10 +145,9 @@ NTSTATUS smb2_check_signature(struct smb2_transport *transport,
 	memset(buffer + NBT_HDR_SIZE + SMB2_HDR_SIGNATURE, 0, 16);
 
 	ZERO_STRUCT(m);
-	SHA256_Init(&m);
-	SHA256_Update(&m, transport->signing.session_key.data,    16);
-	SHA256_Update(&m, buffer+NBT_HDR_SIZE, length-NBT_HDR_SIZE);
-	SHA256_Final(res, &m);
+	hmac_sha256_init(transport->signing.session_key.data, 16, &m);
+	hmac_sha256_update(buffer+NBT_HDR_SIZE, length-NBT_HDR_SIZE, &m);
+	hmac_sha256_final(res, &m);
 
 	memcpy(buffer+NBT_HDR_SIZE+SMB2_HDR_SIGNATURE, sig, 16);
 

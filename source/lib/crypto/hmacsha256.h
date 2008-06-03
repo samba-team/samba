@@ -1,7 +1,13 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   Copyright (C) Andrew Tridgell 2004
+   Interface header:    HMAC SHA256 code
+
+   Copyright (C) Andrew Tridgell 2008
+
+   based on hmacsha1.h which is:
+
+    Copyright (C) Stefan Metzmacher 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,23 +23,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "lib/crypto/crc32.h"
-#include "lib/crypto/md4.h"
-#include "lib/crypto/md5.h"
-#include "lib/crypto/hmacmd5.h"
-#include "lib/crypto/sha1.h"
-#include "lib/crypto/hmacsha1.h"
-#include "heimdal/lib/hcrypto/sha.h"
-#include "lib/crypto/hmacsha256.h"
+#ifndef _HMAC_SHA256_H
 
-struct arcfour_state {
-	uint8_t sbox[256];
-	uint8_t index_i;
-	uint8_t index_j;
+struct HMACSHA256Context {
+        SHA256_CTX ctx;
+        uint8_t k_ipad[65];    
+        uint8_t k_opad[65];
 };
 
-void arcfour_init(struct arcfour_state *state, const DATA_BLOB *key);
-void arcfour_crypt_sbox(struct arcfour_state *state, uint8_t *data, int len);
-void arcfour_crypt_blob(uint8_t *data, int len, const DATA_BLOB *key);
-void arcfour_crypt(uint8_t *data, const uint8_t keystr[16], int len);
+void hmac_sha256_init(const uint8_t *key, size_t key_len, struct HMACSHA256Context *ctx);
+void hmac_sha256_update(const uint8_t *data, size_t data_len, struct HMACSHA256Context *ctx);
+void hmac_sha256_final(uint8_t digest[20], struct HMACSHA256Context *ctx);
 
+#endif /* _HMAC_SHA256_H */
