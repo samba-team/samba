@@ -5829,6 +5829,7 @@ int lp_ldap_passwd_sync(void);
 bool lp_ldap_delete_dn(void);
 int lp_ldap_replication_sleep(void);
 int lp_ldap_timeout(void);
+int lp_ldap_connection_timeout(void);
 int lp_ldap_page_size(void);
 int lp_ldap_debug_level(void);
 int lp_ldap_debug_threshold(void);
