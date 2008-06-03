@@ -79,6 +79,8 @@ ${kadmin} -l \
 
 ${kadmin} -l add -p foo --use-defaults foo/admin@${R} || exit 1
 ${kadmin} -l add -p foo --use-defaults bar@${R} || exit 1
+${kadmin} -l add -p foo --use-defaults baz@${R} || exit 1
+${kadmin} -l add -p foo --use-defaults bez@${R} || exit 1
 
 echo foo > ${objdir}/foopassword
 
@@ -110,6 +112,58 @@ ${kadmin} -p bar@${R} add -p foo --use-defaults kaka2@${R} ||
 
 ${kadmin} -l get kaka2@${R} > /dev/null ||
 	{ echo "kadmin failed $?"; cat messages.log ; exit 1; }
+
+#----------------------------------
+${kadmind} -d &
+kadmpid=$!
+sleep 1
+
+echo "kinit (no admin)"
+${kinit} --password-file=${objdir}/foopassword \
+    -S kadmin/admin@${R} baz@${R} || exit 1
+echo "kadmin globacl"
+env KRB5CCNAME=${cache} \
+${kadmin} -p baz@${R} get bar@${R} > /dev/null || 
+	{ echo "kadmin failed $?"; cat messages.log ; exit 1; }
+
+#----------------------------------
+${kadmind} -d &
+kadmpid=$!
+sleep 1
+
+echo "kinit (no admin)"
+${kinit} --password-file=${objdir}/foopassword \
+    -S kadmin/admin@${R} baz@${R} || exit 1
+echo "kadmin globacl, negative"
+env KRB5CCNAME=${cache} \
+${kadmin} -p baz@${R} passwd -p foo bar@${R} > /dev/null 2>/dev/null && 
+	{ echo "kadmin succesded $?"; cat messages.log ; exit 1; }
+
+#----------------------------------
+${kadmind} -d &
+kadmpid=$!
+sleep 1
+
+echo "kinit (no admin)"
+${kinit} --password-file=${objdir}/foopassword \
+    -S kadmin/admin@${R} baz@${R} || exit 1
+echo "kadmin globacl"
+env KRB5CCNAME=${cache} \
+${kadmin} -p baz@${R} get bar@${R} > /dev/null || 
+	{ echo "kadmin failed $?"; cat messages.log ; exit 1; }
+
+#----------------------------------
+${kadmind} -d &
+kadmpid=$!
+sleep 1
+
+echo "kinit (no admin)"
+${kinit} --password-file=${objdir}/foopassword \
+    -S kadmin/admin@${R} bez@${R} || exit 1
+echo "kadmin globacl, negative"
+env KRB5CCNAME=${cache} \
+${kadmin} -p bez@${R} passwd -p foo bar@${R} > /dev/null 2>/dev/null && 
+	{ echo "kadmin succesded $?"; cat messages.log ; exit 1; }
 
 #----------------------------------
 ${kadmind} -d &
