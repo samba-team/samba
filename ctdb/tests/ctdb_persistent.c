@@ -27,21 +27,88 @@
 #include <sys/time.h>
 #include <time.h>
 
+static struct timeval tp1,tp2;
+
+static void start_timer(void)
+{
+	gettimeofday(&tp1,NULL);
+}
+
+static double end_timer(void)
+{
+	gettimeofday(&tp2,NULL);
+	return (tp2.tv_sec + (tp2.tv_usec*1.0e-6)) - 
+		(tp1.tv_sec + (tp1.tv_usec*1.0e-6));
+}
+
+static int timelimit = 10;
+
+static unsigned int pnn;
+
+static TDB_DATA old_data;
+
+static int success = true;
+
+static void each_second(struct event_context *ev, struct timed_event *te, 
+					 struct timeval t, void *private_data)
+{
+	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+	int i;
+	uint32_t *old_counters;
+
+
+	printf("Counters: ");
+	old_counters = (uint32_t *)old_data.dptr;
+	for (i=0;i<old_data.dsize/sizeof(uint32_t); i++) {
+		printf("%6u ", old_counters[i]);
+	}
+	printf("\n"); 
+
+	event_add_timed(ev, ctdb, timeval_current_ofs(1, 0), each_second, ctdb);
+}
+
+static void check_counters(struct ctdb_context *ctdb, TDB_DATA data)
+{
+	int i;
+	uint32_t *counters, *old_counters;
+
+	counters     = (uint32_t *)data.dptr;
+	old_counters = (uint32_t *)old_data.dptr;
+
+	/* check that all the counters are monotonic increasing */
+	for (i=0; i<old_data.dsize/sizeof(uint32_t); i++) {
+		if (counters[i]<old_counters[i]) {
+			printf("ERROR: counters has decreased for node %u  From %u to %u\n", i, old_counters[i], counters[i]);
+			success = false;
+		}
+	}
+
+	if (old_data.dsize != data.dsize) {
+		old_data.dsize = data.dsize;
+		old_data.dptr = talloc_realloc_size(ctdb, old_data.dptr, old_data.dsize);
+	}
+
+	memcpy(old_data.dptr, data.dptr, data.dsize);
+}
+
+
+
 static void test_store_records(struct ctdb_context *ctdb, struct event_context *ev)
 {
 	TDB_DATA key, data;
 	struct ctdb_db_context *ctdb_db;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	int ret, i;
+	int ret;
 	struct ctdb_record_handle *h;
-	unsigned node=0, count=0;
-	
+	uint32_t *counters;
+	int first_time = true;	
 	ctdb_db = ctdb_db_handle(ctdb, "persistent.tdb");
 
 	key.dptr = discard_const("testkey");
 	key.dsize = strlen((const char *)key.dptr)+1;
 
-	for (i=0;i<10;i++) {
+	start_timer();
+	while (end_timer() < timelimit) {
 		h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
 		if (h == NULL) {
 			printf("Failed to fetch record '%s' on node %d\n", 
@@ -49,27 +116,44 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 			talloc_free(tmp_ctx);
 			return;
 		}
-		
-		printf("Current value: %*.*s\n", (int)data.dsize, (int)data.dsize, data.dptr);
-		
-		if (data.dsize != 0) {
-			if (sscanf((char *)data.dptr, "Node %u Count %u", &node, &count) != 2) {
-				printf("Badly formatted node data!\n");
-				exit(1);
-			}
+
+		if (data.dsize < sizeof(uint32_t) * (pnn+1)) {
+			unsigned char *ptr = data.dptr;
+
+			data.dptr = talloc_zero_size(tmp_ctx, sizeof(uint32_t) * (pnn+1));
+			memcpy(data.dptr, ptr, data.dsize);
+			talloc_free(ptr);
+
+			data.dsize = sizeof(uint32_t) * (pnn+1);
 		}
-		
-		node = ctdb_get_pnn(ctdb);
-		count++;
-		
-		data.dptr = (uint8_t *)talloc_asprintf(h, "Node %u Count %u", node, count);
-		data.dsize = strlen((char *)data.dptr)+1;
-		
+
+		if (data.dptr == NULL) {
+			printf("Failed to realloc array\n");
+			talloc_free(tmp_ctx);
+			return;
+		}
+
+		counters = (uint32_t *)data.dptr;
+
+		if (first_time) {
+			counters[pnn] = 0;
+			first_time = false;
+		}
+
+		/* bump our counter */
+		counters[pnn]++;
+
 		ret = ctdb_record_store(h, data);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,("Failed to store record\n"));
 			exit(1);
 		}
+
+		/* store the counters and verify that they are sane */
+		if (pnn == 0) {
+			check_counters(ctdb, data);
+		}
+
 		talloc_free(h);
 	}
 
@@ -87,6 +171,7 @@ int main(int argc, const char *argv[])
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
 		POPT_CTDB_CMDLINE
+		{ "timelimit", 't', POPT_ARG_INT, &timelimit, 0, "timelimit", "integer" },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -132,8 +217,22 @@ int main(int argc, const char *argv[])
 		event_loop_once(ev);
 	}
 
-	printf("Starting test\n");
+	pnn = ctdb_get_pnn(ctdb);
+	printf("Starting test on node %u. running for %u seconds\n", pnn, timelimit);
+
+	if (pnn == 0) {
+		event_add_timed(ev, ctdb, timeval_current_ofs(1, 0), each_second, ctdb);
+	}
+
 	test_store_records(ctdb, ev);
 
+	if (pnn == 0) {
+		if (success != true) {
+			printf("The test FAILED\n");
+			return 1;
+		} else {
+			printf("SUCCESS!\n");
+		}
+	}
 	return 0;
 }
