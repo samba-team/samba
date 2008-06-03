@@ -233,6 +233,11 @@ o   Marc VanHeyningen <marc.vanheyningen@isilon.com>
     * Fix memory leak.
 
 
+o   Andreas Schneider <anschneider@suse.de>
+    * BUG 5515: Fix empty input fields in SWAT.
+    * BUG 5516: Fix saving of the config file in SWAT.
+
+
 o   Bo Yang <boyang@novell.com>
     * Fix winbindd trusted domain child not keeping primary domain
       online status up to date.
