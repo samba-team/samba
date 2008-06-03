@@ -22,7 +22,60 @@
 #include "includes.h"
 #include "vfs_posix.h"
 #include "librpc/gen_ndr/security.h"
+#include "lib/events/events.h"
 
+static void pvfs_write_time_update_handler(struct event_context *ev,
+					   struct timed_event *te,
+					   struct timeval tv,
+					   void *private_data)
+{
+	struct pvfs_file_handle *h = talloc_get_type(private_data,
+				     struct pvfs_file_handle);
+	struct odb_lock *lck;
+	NTSTATUS status;
+	NTTIME write_time;
+
+	lck = odb_lock(h, h->pvfs->odb_context, &h->odb_locking_key);
+	if (lck == NULL) {
+		DEBUG(0,("Unable to lock opendb for write time update\n"));
+		return;
+	}
+
+	write_time = timeval_to_nttime(&tv);
+
+	status = odb_set_write_time(lck, write_time, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Unable to update write time: %s\n",
+			nt_errstr(status)));
+		return;
+	}
+
+	talloc_free(lck);
+
+	h->write_time.update_event = NULL;
+}
+
+static void pvfs_trigger_write_time_update(struct pvfs_file_handle *h)
+{
+	struct pvfs_state *pvfs = h->pvfs;
+	struct timeval tv;
+
+	if (h->write_time.update_triggered) {
+		return;
+	}
+
+	tv = timeval_current_ofs(0, pvfs->writetime_delay);
+
+	h->write_time.update_triggered = true;
+	h->write_time.update_on_close = true;
+	h->write_time.update_event = event_add_timed(pvfs->ntvfs->ctx->event_ctx,
+						     h, tv,
+						     pvfs_write_time_update_handler,
+						     h);
+	if (!h->write_time.update_event) {
+		DEBUG(0,("Failed event_add_timed\n"));
+	}
+}
 
 /*
   write to a file
@@ -60,6 +113,8 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 
 	status = pvfs_break_level2_oplocks(f);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	pvfs_trigger_write_time_update(f->handle);
 
 	if (f->handle->name->stream_name) {
 		ret = pvfs_stream_write(pvfs,

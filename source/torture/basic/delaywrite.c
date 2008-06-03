@@ -641,7 +641,7 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	bool err = false; \
 	if (strict && (g cmp c)) { \
 		err = true; \
-	} else if (gr cmp cr) { \
+	} else if ((g cmp c) && (gr cmp cr)) { \
 		/* handle filesystem without high resolution timestamps */ \
 		err = true; \
 	} \
@@ -816,6 +816,7 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 	}
 
 	GET_INFO_BOTH(finfo1,pinfo1);
+	COMPARE_WRITE_TIME_GREATER(pinfo1, pinfo0);
 
 	/* sure any further write doesn't update the write time */
 	start = timeval_current();
@@ -970,6 +971,7 @@ static bool test_delayed_write_update4(struct torture_context *tctx,
 	}
 
 	GET_INFO_BOTH(finfo1,pinfo1);
+	COMPARE_WRITE_TIME_GREATER(pinfo1, pinfo0);
 
 	/* sure any further write doesn't update the write time */
 	start = timeval_current();

@@ -581,6 +581,7 @@ sub provision($$$$$$)
 	posix:sharedelay = 100000
 	posix:eadb = $lockdir/eadb.tdb
 	posix:oplocktimeout = 3
+	posix:writetimeupdatedelay = 500000
 
 [test1]
 	path = $tmpdir/test1
@@ -589,6 +590,7 @@ sub provision($$$$$$)
 	posix:sharedelay = 100000
 	posix:eadb = $lockdir/eadb.tdb
 	posix:oplocktimeout = 3
+	posix:writetimeupdatedelay = 500000
 
 [test2]
 	path = $tmpdir/test2
@@ -597,6 +599,7 @@ sub provision($$$$$$)
 	posix:sharedelay = 100000
 	posix:eadb = $lockdir/eadb.tdb
 	posix:oplocktimeout = 3
+	posix:writetimeupdatedelay = 500000
 
 [cifs]
 	read only = no
