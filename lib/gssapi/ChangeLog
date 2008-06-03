@@ -1,4 +1,4 @@
-2008-06-02  Love Hornquist Astrand  <lha@nutcracker-a10a93.local>
+2008-06-02  Love Hörnquist Åstrand  <lha@kth.se>
 
 	* krb5/init_sec_context.c: Don't add asn1 wrapping to token when
 	using DCE_STYLE.  Patch from Stefan Metzmacher.
