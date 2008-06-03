@@ -135,6 +135,11 @@ KNOWN ISSUES
   distributions.  Work to return support for other Unix varients is
   expected during the next alpha cycle
 
+- Samba4 alpha4 is incompatible with GnuTLS 2.0, found in Fedora 9 and
+  recent Ubuntu releases.  Please remove the
+  gnutls-devel/libgnutls-dev package before compiling (otherwise 'make
+  test' and LDAPS operations will hang).
+
 RUNNING Samba4
 ==============
 
