@@ -454,6 +454,30 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 			return pvfs_map_errno(pvfs, errno);
 		}
 	}
+	if (change_mask & FILE_NOTIFY_CHANGE_LAST_WRITE) {
+		struct odb_lock *lck;
+
+		lck = odb_lock(req, h->pvfs->odb_context, &h->odb_locking_key);
+		if (lck == NULL) {
+			DEBUG(0,("Unable to lock opendb for write time update\n"));
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		status = odb_set_write_time(lck, newstats.dos.write_time, true);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Unable to update write time: %s\n",
+				nt_errstr(status)));
+			talloc_free(lck);
+			return status;
+		}
+
+		talloc_free(lck);
+
+		h->write_time.update_forced = true;
+		h->write_time.update_on_close = false;
+		talloc_free(h->write_time.update_event);
+		h->write_time.update_event = NULL;
+	}
 
 	/* possibly change the attribute */
 	if (newstats.dos.attrib != h->name->dos.attrib) {
@@ -751,6 +775,29 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	if (unix_times.actime != 0 || unix_times.modtime != 0) {
 		if (utime(name->full_name, &unix_times) == -1) {
 			return pvfs_map_errno(pvfs, errno);
+		}
+	}
+	if (change_mask & FILE_NOTIFY_CHANGE_LAST_WRITE) {
+		if (lck == NULL) {
+			DATA_BLOB lkey;
+			status = pvfs_locking_key(name, name, &lkey);
+			NT_STATUS_NOT_OK_RETURN(status);
+
+			lck = odb_lock(req, pvfs->odb_context, &lkey);
+			data_blob_free(&lkey);
+			if (lck == NULL) {
+				DEBUG(0,("Unable to lock opendb for write time update\n"));
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+		}
+
+		status = odb_set_write_time(lck, newstats.dos.write_time, true);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			/* it could be that nobody has opened the file */
+		} else if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Unable to update write time: %s\n",
+				nt_errstr(status)));
+			return status;
 		}
 	}
 
