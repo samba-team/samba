@@ -6,7 +6,7 @@
 
 LIBCRYPTO_OBJ_FILES = $(addprefix $(libcryptosrcdir)/, \
 					 crc32.o md5.o hmacmd5.o md4.o \
-					 arcfour.o sha1.o hmacsha1.o)
+					 arcfour.o sha1.o hmacsha1.o hmacsha256.o)
 
 
 [MODULE::TORTURE_LIBCRYPTO]
