@@ -692,7 +692,7 @@ int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri)
 		rc = ldap_set_option(*ldap_struct, LDAP_OPT_NETWORK_TIMEOUT, &ct);
 		if (rc != LDAP_SUCCESS) {
 			DEBUG(0,("Failed to setup an ldap connection timeout %d: %s\n",
-				ct.tv_sec, ldap_err2string(rc)));
+				(int)ct.tv_sec, ldap_err2string(rc)));
 		}
 	}
 #endif
