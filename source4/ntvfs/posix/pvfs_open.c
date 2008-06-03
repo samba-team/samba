@@ -525,14 +525,14 @@ static int pvfs_handle_destructor(struct pvfs_file_handle *h)
 	}
 
 	if (h->write_time.update_on_close) {
-		struct utimbuf unix_times;
+		struct timeval tv[2];
 
-		unix_times.actime  = nt_time_to_unix(h->name->dos.access_time);
-		unix_times.modtime = nt_time_to_unix(h->write_time.close_time);
+		nttime_to_timeval(&tv[0], h->name->dos.access_time);
+		nttime_to_timeval(&tv[1], h->write_time.close_time);
 
-		if (unix_times.actime != 0 || unix_times.modtime != 0) {
-			if (utime(h->name->full_name, &unix_times) == -1) {
-				DEBUG(0,("pvfs_close: utime() failed '%s' - %s\n",
+		if (!timeval_is_zero(&tv[0]) || !timeval_is_zero(&tv[1])) {
+			if (utimes(h->name->full_name, tv) == -1) {
+				DEBUG(0,("pvfs_handle_destructor: utimes() failed '%s' - %s\n",
 					 h->name->full_name, strerror(errno)));
 			}
 		}
