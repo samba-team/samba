@@ -710,8 +710,14 @@ static NTSTATUS get_trust_creds(const struct winbindd_domain *domain,
 
 	if (machine_krb5_principal != NULL)
 	{
+		struct winbindd_domain *our_domain = find_our_domain();
+
+		if (!our_domain) {
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;			
+		}
+		
 		if (asprintf(machine_krb5_principal, "%s$@%s",
-			     account_name, lp_realm()) == -1)
+			     account_name, our_domain->alt_name) == -1)
 		{
 			return NT_STATUS_NO_MEMORY;
 		}
