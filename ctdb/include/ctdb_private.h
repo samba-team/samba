@@ -52,6 +52,7 @@ struct rd_memdump_reply {
 typedef struct sockaddr_in ctdb_addr_in;
 typedef struct sockaddr_in6 ctdb_addr_in6;
 typedef union {
+	struct sockaddr sa;
 	ctdb_addr_in	ip;
 	ctdb_addr_in6	ip6;
 } ctdb_sock_addr;
@@ -786,7 +787,8 @@ bool parse_ip_mask(const char *s, struct sockaddr_in *ip, unsigned *mask);
 int ctdb_parse_address(struct ctdb_context *ctdb,
 		       TALLOC_CTX *mem_ctx, const char *str,
 		       struct ctdb_address *address);
-bool ctdb_same_ip(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2);
+bool ctdb_same_ipv4(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2);
+bool ctdb_same_ip(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2);
 bool ctdb_same_sockaddr(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2);
 uint32_t ctdb_hash(const TDB_DATA *key);
 uint32_t ctdb_hash_string(const char *str);

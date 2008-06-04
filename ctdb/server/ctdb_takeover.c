@@ -110,7 +110,7 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 
 struct takeover_callback_state {
 	struct ctdb_req_control *c;
-	struct sockaddr_in *sin;
+	ctdb_sock_addr *addr;
 	struct ctdb_vnn *vnn;
 };
 
@@ -128,20 +128,8 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 	if (status != 0) {
 		char ip[128] = "";
 
-		switch(state->sin->sin_family){
-		case AF_INET:
-			if (inet_ntop(AF_INET, &state->sin->sin_addr, ip, sizeof(ip)) == NULL) {
-				DEBUG(DEBUG_ERR, (__location__ " inet_ntop() failed\n"));
-			}
-			break;
-		case AF_INET6:
-			if (inet_ntop(AF_INET6, &state->sin->sin_addr, ip, sizeof(ip)) == NULL) {
-				DEBUG(DEBUG_ERR, (__location__ " inet_ntop() failed\n"));
-			}
-			break;
-		default:
-			DEBUG(DEBUG_ERR, (__location__ " cant convert this address family to a string\n"));
-			break;
+		if (inet_ntop(state->addr->sa.sa_family, &state->addr->sa.sa_data[0], ip, sizeof(ip)) == NULL) {
+			DEBUG(DEBUG_ERR, (__location__ " inet_ntop() failed\n"));
 		}
 	
 		DEBUG(DEBUG_ERR,(__location__ " Failed to takeover IP %s on interface %s\n",
@@ -162,9 +150,8 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 	if (!arp) goto failed;
 	
 	arp->ctdb = ctdb;
-/* qqq convert state->sin from sockaddr_in to ctdb_sock_addr no need to cast then*/
-	arp->addr.ip = *((ctdb_addr_in *)state->sin);
-	arp->vnn = state->vnn;
+	arp->addr = *state->addr;
+	arp->vnn  = state->vnn;
 
 	tcparray = state->vnn->tcp_array;
 	if (tcparray) {
@@ -199,7 +186,7 @@ static struct ctdb_vnn *find_public_ip_vnn(struct ctdb_context *ctdb, struct soc
 	struct ctdb_vnn *vnn;
 
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
-		if (ctdb_same_ip(&vnn->public_address, &ip)) {
+		if (ctdb_same_ipv4(&vnn->public_address, &ip)) {
 			return vnn;
 		}
 	}
@@ -239,10 +226,10 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	CTDB_NO_MEMORY(ctdb, state);
 
 	state->c = talloc_steal(ctdb, c);
-	state->sin = talloc(ctdb, struct sockaddr_in);       
-	CTDB_NO_MEMORY(ctdb, state->sin);
-	*state->sin = pip->sin;
+	state->addr = talloc(ctdb, ctdb_sock_addr);
+	CTDB_NO_MEMORY(ctdb, state->addr);
 
+	state->addr->ip = pip->sin; //qqq pip must be converted
 	state->vnn = vnn;
 
 	DEBUG(DEBUG_NOTICE,("Takeover of IP %s/%u on interface %s\n", 
@@ -273,16 +260,20 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 /*
   kill any clients that are registered with a IP that is being released
  */
-static void release_kill_clients(struct ctdb_context *ctdb, struct sockaddr_in in)
+static void release_kill_clients(struct ctdb_context *ctdb, ctdb_sock_addr *addr)
 {
 	struct ctdb_client_ip *ip;
+	char cip[128] = "";
 
-	DEBUG(DEBUG_INFO,("release_kill_clients for ip %s\n", inet_ntoa(in.sin_addr)));
+	DEBUG(DEBUG_INFO,("release_kill_clients for ip %s\n", inet_ntop(addr->sa.sa_family, &addr->sa.sa_data[0], cip, sizeof(cip))));
 
 	for (ip=ctdb->client_ip_list; ip; ip=ip->next) {
+		ctdb_sock_addr tmp_addr;
+
+		tmp_addr.ip = ip->ip; //qqq until ip->ip is no longer a sockaddr_in
 		DEBUG(DEBUG_INFO,("checking for client %u with IP %s\n", 
 			 ip->client_id, inet_ntoa(ip->ip.sin_addr)));
-		if (ctdb_same_ip(&ip->ip, &in)) {
+		if (ctdb_same_ip(&tmp_addr, addr)) {
 			struct ctdb_client *client = ctdb_reqid_find(ctdb, 
 								     ip->client_id, 
 								     struct ctdb_client);
@@ -290,7 +281,8 @@ static void release_kill_clients(struct ctdb_context *ctdb, struct sockaddr_in i
 				 ip->client_id, inet_ntoa(ip->ip.sin_addr), client->pid));
 			if (client->pid != 0) {
 				DEBUG(DEBUG_INFO,(__location__ " Killing client pid %u for IP %s on client_id %u\n",
-					 (unsigned)client->pid, inet_ntoa(in.sin_addr),
+					 (unsigned)client->pid,
+					 inet_ntop(addr->sa.sa_family, &addr->sa.sa_data[0], cip, sizeof(cip)),
 					 ip->client_id));
 				kill(client->pid, SIGKILL);
 			}
@@ -306,19 +298,23 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 {
 	struct takeover_callback_state *state = 
 		talloc_get_type(private_data, struct takeover_callback_state);
-	char *ip = inet_ntoa(state->sin->sin_addr);
+	char ip[128] = "";
 	TDB_DATA data;
 
 	/* send a message to all clients of this node telling them
 	   that the cluster has been reconfigured and they should
 	   release any sockets on this IP */
+	if (inet_ntop(state->addr->sa.sa_family, &state->addr->sa.sa_data[0], ip, sizeof(ip)) == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " inet_ntop() failed\n"));
+	}
+	
 	data.dptr = (uint8_t *)ip;
 	data.dsize = strlen(ip)+1;
 
 	ctdb_daemon_send_message(ctdb, ctdb->pnn, CTDB_SRVID_RELEASE_IP, data);
 
 	/* kill clients that have registered with this IP */
-	release_kill_clients(ctdb, *state->sin);
+	release_kill_clients(ctdb, state->addr);
 	
 	/* the control succeeded */
 	ctdb_request_control_reply(ctdb, state->c, NULL, 0, NULL);
@@ -366,9 +362,9 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	CTDB_NO_MEMORY(ctdb, state);
 
 	state->c = talloc_steal(state, c);
-	state->sin = talloc(state, struct sockaddr_in);       
-	CTDB_NO_MEMORY(ctdb, state->sin);
-	*state->sin = pip->sin;
+	state->addr = talloc(state, ctdb_sock_addr);       
+	CTDB_NO_MEMORY(ctdb, state->addr);
+	state->addr->ip = pip->sin; //qqq pip must be converted
 
 	state->vnn = vnn;
 
@@ -1218,7 +1214,8 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 				  vnn->iface, 
 				  inet_ntoa(vnn->public_address.sin_addr),
 				  vnn->public_netmask_bits);
-		release_kill_clients(ctdb, vnn->public_address);
+// convert when vnn->public_address is no longer a sockaddr_in 
+		release_kill_clients(ctdb, (ctdb_sock_addr *)&vnn->public_address);
 	}
 }
 
@@ -1438,7 +1435,7 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	if (vnn == NULL) {
 		/* if it is not a public ip   it could be our 'single ip' */
 		if (ctdb->single_ip_vnn) {
-			if (ctdb_same_ip(&ctdb->single_ip_vnn->public_address, dst)) {
+			if (ctdb_same_ipv4(&ctdb->single_ip_vnn->public_address, dst)) {
 				vnn = ctdb->single_ip_vnn;
 			}
 		}
@@ -1865,7 +1862,7 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 
 	/* walk over all public addresses until we find a match */
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
-		if (ctdb_same_ip(&vnn->public_address, &pub->sin)) {
+		if (ctdb_same_ipv4(&vnn->public_address, &pub->sin)) {
 			TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 
 			DLIST_REMOVE(ctdb->vnn, vnn);

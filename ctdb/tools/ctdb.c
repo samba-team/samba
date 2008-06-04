@@ -509,7 +509,7 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	for (i=0;i<ips->num;i++) {
-		if (ctdb_same_ip(&ip, &ips->ips[i].sin)) {
+		if (ctdb_same_ipv4(&ip, &ips->ips[i].sin)) {
 			break;
 		}
 	}
@@ -647,7 +647,7 @@ find_other_host_for_public_ip(struct ctdb_context *ctdb, struct sockaddr_in *add
 		}
 
 		for (j=0;j<ips->num;j++) {
-			if (ctdb_same_ip(addr, &ips->ips[j].sin)) {
+			if (ctdb_same_ipv4(addr, &ips->ips[j].sin)) {
 				talloc_free(tmp_ctx);
 				return nodemap->nodes[i].pnn;
 			}
@@ -712,7 +712,7 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 	 * we will claim it
 	 */
 	for (i=0;i<ips->num;i++) {
-		if (ctdb_same_ip(&addr, &ips->ips[i].sin)) {
+		if (ctdb_same_ipv4(&addr, &ips->ips[i].sin)) {
 			break;
 		}
 	}
@@ -766,7 +766,7 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 	
 	for (i=0;i<ips->num;i++) {
-		if (ctdb_same_ip(&addr, &ips->ips[i].sin)) {
+		if (ctdb_same_ipv4(&addr, &ips->ips[i].sin)) {
 			break;
 		}
 	}

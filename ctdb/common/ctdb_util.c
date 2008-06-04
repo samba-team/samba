@@ -408,10 +408,31 @@ bool parse_ip_mask(const char *s, struct sockaddr_in *ip, unsigned *mask)
 /*
   compare two sockaddr_in structures - matching only on IP
  */
-bool ctdb_same_ip(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2)
+bool ctdb_same_ipv4(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2)
 {
 	return ip1->sin_family == ip2->sin_family &&
 		ip1->sin_addr.s_addr == ip2->sin_addr.s_addr;
+}
+
+bool ctdb_same_ip(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2)
+{
+	if (ip1->sa.sa_family != ip2->sa.sa_family) {
+		return false;
+	}
+
+	switch (ip1->sa.sa_family) {
+	case AF_INET:
+		return ip1->ip.sin_addr.s_addr == ip2->ip.sin_addr.s_addr;
+	case AF_INET6:
+		return !memcmp(&ip1->ip6.sin6_addr.s6_addr[0],
+				&ip2->ip6.sin6_addr.s6_addr[0],
+				16);
+	default:
+		DEBUG(DEBUG_ERR, (__location__ " CRITICAL Can not compare sockaddr structures of type %u\n", ip1->sa.sa_family));
+		return false;
+	}
+
+	return true;
 }
 
 /*
@@ -419,7 +440,7 @@ bool ctdb_same_ip(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2)
  */
 bool ctdb_same_sockaddr(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2)
 {
-	return ctdb_same_ip(ip1, ip2) && ip1->sin_port == ip2->sin_port;
+	return ctdb_same_ipv4(ip1, ip2) && ip1->sin_port == ip2->sin_port;
 }
 
 
