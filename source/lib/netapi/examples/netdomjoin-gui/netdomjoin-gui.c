@@ -209,8 +209,10 @@ static void callback_apply_description_change(GtkWidget *widget,
 static void callback_do_exit(GtkWidget *widget,
 			     gpointer data)
 {
+#if 0
 	GtkWidget *dialog;
 	gint result;
+#endif
 	struct join_state *state = (struct join_state *)data;
 
 	if (!state->settings_changed) {
@@ -218,6 +220,7 @@ static void callback_do_exit(GtkWidget *widget,
 		return;
 	}
 
+#if 0
 	dialog = gtk_message_dialog_new(GTK_WINDOW(state->window_main),
 					GTK_DIALOG_DESTROY_WITH_PARENT,
 					GTK_MESSAGE_QUESTION,
@@ -236,6 +239,7 @@ static void callback_do_exit(GtkWidget *widget,
 	if (dialog) {
 		gtk_widget_destroy(GTK_WIDGET(dialog));
 	}
+#endif
 	if (state->window_main) {
 		gtk_widget_destroy(GTK_WIDGET(state->window_main));
 	}
