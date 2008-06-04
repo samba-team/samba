@@ -1114,6 +1114,10 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	struct samr_Ids name_types;
 	union samr_UserInfo *info = NULL;
 
+	ZERO_STRUCT(sam_pol);
+	ZERO_STRUCT(domain_pol);
+	ZERO_STRUCT(user_pol);
+
 	status = cli_full_connection(&cli, NULL,
 				     r->in.dc_name,
 				     NULL, 0,
@@ -1215,8 +1219,12 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 
 done:
 	if (pipe_hnd) {
-		rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
-		rpccli_samr_Close(pipe_hnd, mem_ctx, &sam_pol);
+		if (is_valid_policy_hnd(&domain_pol)) {
+			rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
+		}
+		if (is_valid_policy_hnd(&sam_pol)) {
+			rpccli_samr_Close(pipe_hnd, mem_ctx, &sam_pol);
+		}
 		cli_rpc_pipe_close(pipe_hnd);
 	}
 
