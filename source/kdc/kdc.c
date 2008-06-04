@@ -28,17 +28,14 @@
 #include "smbd/process_model.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
-#include "kdc/kdc.h"
 #include "system/network.h"
 #include "lib/util/dlinklist.h"
 #include "lib/messaging/irpc.h"
 #include "lib/stream/packet.h"
 #include "librpc/gen_ndr/samr.h"
 #include "lib/socket/netif.h"
-#include "heimdal/kdc/windc_plugin.h"
-#include "heimdal/lib/krb5/krb5_locl.h"
-#include "heimdal/kdc/kdc_locl.h"
 #include "param/param.h"
+#include "kdc/kdc.h"
 
 
 /* Disgusting hack to get a mem_ctx and lp_ctx into the hdb plugin, when 
