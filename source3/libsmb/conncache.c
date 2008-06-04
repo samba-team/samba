@@ -6,6 +6,7 @@
    Copyright (C) Tim Potter 		2001
    Copyright (C) Andrew Bartlett 	2002
    Copyright (C) Gerald (Jerry) Carter 	2003
+   Copyright (C) Marc VanHeyningen      2008
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,168 +25,227 @@
 
 #include "includes.h"
 
-#define CONNCACHE_ADDR		1
-#define CONNCACHE_NAME		2
+/**
+ * @file
+ * Negative connection cache implemented in terms of gencache API
+ *
+ * The negative connection cache stores names of servers which have
+ * been unresponsive so that we don't waste time repeatedly trying
+ * to contact them.  It used to use an in-memory linked list, but
+ * this limited its utility to a single process
+ */
 
-/* cache entry contains either a server name **or** and IP address as 
-   the key.  This means that a server could have two entries (one for each key) */
-   
-struct failed_connection_cache {
-	fstring 	domain_name;
-	fstring 	controller;
-	time_t 		lookup_time;
-	NTSTATUS 	nt_status;
-	struct failed_connection_cache *prev, *next;
-};
 
-static struct failed_connection_cache *failed_connection_cache;
+/**
+ * prefix used for all entries put into the general cache
+ */
+static const char NEGATIVE_CONN_CACHE_PREFIX[] = "NEG_CONN_CACHE";
 
-/**********************************************************************
- Check for a previously failed connection.
- failed_cache_timeout is an a absolute number of seconds after which
- we should time this out. If failed_cache_timeout == 0 then time out
- immediately. If failed_cache_timeout == -1 then never time out.
-**********************************************************************/
-
-NTSTATUS check_negative_conn_cache_timeout( const char *domain, const char *server, unsigned int failed_cache_timeout )
+/**
+ * Marshalls the domain and server name into the key for the gencache
+ * record
+ *
+ * @param[in] domain required
+ * @param[in] server may be a FQDN or an IP address
+ * @return the resulting string, which the caller is responsible for
+ *   SAFE_FREE()ing
+ * @retval NULL returned on error
+ */
+static char *negative_conn_cache_keystr(const char *domain, const char *server)
 {
-	struct failed_connection_cache *fcc;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	const char NEGATIVE_CONN_CACHE_KEY_FMT[] = "%s/%s,%s";
+	char *keystr = NULL;
+
+	SMB_ASSERT(domain != NULL);
+	if (server == NULL)
+		server = "";
 	
-	/* can't check if we don't have strings */
-	
-	if ( !domain || !server )
-		return NT_STATUS_OK;
+	if (asprintf(&keystr, NEGATIVE_CONN_CACHE_KEY_FMT,
+		     NEGATIVE_CONN_CACHE_PREFIX, domain, server) == -1)
+		DEBUG(0, ("negative_conn_cache_keystr: malloc error\n"));
 
-	for (fcc = failed_connection_cache; fcc; fcc = fcc->next) {
-	
-		if (!(strequal(domain, fcc->domain_name) && strequal(server, fcc->controller))) {
-			continue; /* no match; check the next entry */
-		}
-		
-		/* we have a match so see if it is still current */
-		if (failed_cache_timeout != (unsigned int)-1) {
-			if (failed_cache_timeout == 0 ||
-					(time(NULL) - fcc->lookup_time) > (time_t)failed_cache_timeout) {
-				/* Cache entry has expired, delete it */
-
-				DEBUG(10, ("check_negative_conn_cache: cache entry expired for %s, %s\n", 
-					domain, server ));
-
-				DLIST_REMOVE(failed_connection_cache, fcc);
-				SAFE_FREE(fcc);
-
-				return NT_STATUS_OK;
-			}
-		}
-
-		/* The timeout hasn't expired yet so return false */
-
-		DEBUG(10, ("check_negative_conn_cache: returning negative entry for %s, %s\n", 
-			domain, server ));
-
-		result = fcc->nt_status;
-		return result;
-	}
-
-	/* end of function means no cache entry */	
-	return NT_STATUS_OK;
+	return keystr;
 }
 
+/**
+ * Marshalls the NT status into a printable value field for the gencache
+ * record
+ *
+ * @param[in] status
+ * @return the resulting string, which the caller is responsible for
+ *   SAFE_FREE()ing
+ * @retval NULL returned on error
+ */
+static char *negative_conn_cache_valuestr(NTSTATUS status)
+{
+	char *valuestr = NULL;
+
+	if (asprintf(&valuestr, "%x", NT_STATUS_V(status)) == -1)
+		DEBUG(0, ("negative_conn_cache_valuestr: malloc error\n"));
+
+	return valuestr;
+}
+
+/**
+ * Un-marshalls the NT status from a printable field for the gencache
+ * record
+ *
+ * @param[in] value  The value field from the record
+ * @return the decoded NT status
+ * @retval NT_STATUS_OK returned on error
+ */
+static NTSTATUS negative_conn_cache_valuedecode(const char *value)
+{
+	NTSTATUS result = NT_STATUS_OK;
+
+	SMB_ASSERT(value != NULL);
+	if (sscanf(value, "%x", &(NT_STATUS_V(result))) != 1)
+		DEBUG(0, ("negative_conn_cache_valuestr: unable to parse "
+			  "value field '%s'\n", value));
+	return result;
+}
+
+/**
+ * Function passed to gencache_iterate to remove any matching items
+ * from the list
+ *
+ * @param[in] key Key to the record found and to be deleted
+ * @param[in] value Value to the record (ignored)
+ * @param[in] timeout Timeout remaining for the record (ignored)
+ * @param[in] dptr Handle for passing additional data (ignored)
+ */
+static void delete_matches(const char *key, const char *value,
+    time_t timeout, void *dptr)
+{
+	gencache_del(key);
+}
+
+
+/**
+ * Checks for a given domain/server record in the negative cache
+ *
+ * @param[in] domain
+ * @param[in] server may be either a FQDN or an IP address
+ * @return The cached failure status
+ * @retval NT_STATUS_OK returned if no record is found or an error occurs
+ */
 NTSTATUS check_negative_conn_cache( const char *domain, const char *server)
 {
-	return check_negative_conn_cache_timeout(domain, server, FAILED_CONNECTION_CACHE_TIMEOUT);
+	NTSTATUS result = NT_STATUS_OK;
+	char *key = NULL;
+	char *value = NULL;
+
+	key = negative_conn_cache_keystr(domain, server);
+	if (key == NULL)
+		goto done;
+
+	if (gencache_get(key, &value, (time_t *) NULL))
+		result = negative_conn_cache_valuedecode(value);
+ done:
+	DEBUG(9,("check_negative_conn_cache returning result %d for domain %s "
+		  "server %s\n", NT_STATUS_V(result), domain, server));
+	SAFE_FREE(key);
+	SAFE_FREE(value);
+	return result;
 }
 
-/**********************************************************************
- Add an entry to the failed conneciton cache (aither a name of dotted 
- decimal IP
-**********************************************************************/
-
-void add_failed_connection_entry(const char *domain, const char *server, NTSTATUS result) 
+/**
+ * Delete any negative cache entry for the given domain/server
+ *
+ * @param[in] domain
+ * @param[in] server may be either a FQDN or an IP address
+ */
+void delete_negative_conn_cache(const char *domain, const char *server)
 {
-	struct failed_connection_cache *fcc;
+	char *key = NULL;
+
+	key = negative_conn_cache_keystr(domain, server);
+	if (key == NULL)
+		goto done;
+
+	gencache_del(key);
+	DEBUG(9,("delete_negative_conn_cache removing domain %s server %s\n",
+		  domain, server));
+ done:
+	SAFE_FREE(key);
+	return;
+}
+
+
+/**
+ * Add an entry to the failed conneciton cache
+ *
+ * @param[in] domain
+ * @param[in] server may be a FQDN or an IP addr in printable form
+ * @param[in] result error to cache; must not be NT_STATUS_OK
+ */
+void add_failed_connection_entry(const char *domain, const char *server,
+    NTSTATUS result)
+{
+	char *key = NULL;
+	char *value = NULL;
 
 	SMB_ASSERT(!NT_STATUS_IS_OK(result));
 
-	/* Check we already aren't in the cache.  We always have to have 
-	   a domain, but maybe not a specific DC name. */
-
-	for (fcc = failed_connection_cache; fcc; fcc = fcc->next) {			
-		if ( strequal(fcc->domain_name, domain) && strequal(fcc->controller, server) ) {
-			DEBUG(10, ("add_failed_connection_entry: domain %s (%s) already tried and failed\n",
-				   domain, server ));
-			/* Update the failed time. */
-			fcc->lookup_time = time(NULL);
-			return;
-		}
-	}
-
-	/* Create negative lookup cache entry for this domain and controller */
-
-	if ( !(fcc = SMB_MALLOC_P(struct failed_connection_cache)) ) {
-		DEBUG(0, ("malloc failed in add_failed_connection_entry!\n"));
-		return;
+	key = negative_conn_cache_keystr(domain, server);
+	if (key == NULL) {
+		DEBUG(0, ("add_failed_connection_entry: key creation error\n"));
+		goto done;
 	}
 	
-	ZERO_STRUCTP(fcc);
+	value = negative_conn_cache_valuestr(result);
+	if (value == NULL) {
+		DEBUG(0, ("add_failed_connection_entry: value creation error\n"));
+		goto done;
+	}
 	
-	fstrcpy( fcc->domain_name, domain );
-	fstrcpy( fcc->controller, server );
-	fcc->lookup_time = time(NULL);
-	fcc->nt_status = result;
+	if (gencache_set(key, value,
+		time((time_t *) NULL + FAILED_CONNECTION_CACHE_TIMEOUT)))
+		DEBUG(9,("add_failed_connection_entry: added domain %s (%s) "
+			  "to failed conn cache\n", domain, server ));
+	else
+		DEBUG(1,("add_failed_connection_entry: failed to add "
+			  "domain %s (%s) to failed conn cache\n",
+			  domain, server));
 	
-	DEBUG(10,("add_failed_connection_entry: added domain %s (%s) to failed conn cache\n",
-		domain, server ));
-	
-	DLIST_ADD(failed_connection_cache, fcc);
+ done:
+	SAFE_FREE(key);
+	SAFE_FREE(value);
+	return;
 }
 
-/****************************************************************************
-****************************************************************************/
- 
+/**
+ * Deletes all records from the negative connection cache in all domains
+ */
 void flush_negative_conn_cache( void )
 {
-	struct failed_connection_cache *fcc;
-	
-	fcc = failed_connection_cache;
-
-	while (fcc) {
-		struct failed_connection_cache *fcc_next;
-
-		fcc_next = fcc->next;
-		DLIST_REMOVE(failed_connection_cache, fcc);
-		free(fcc);
-
-		fcc = fcc_next;
-	}
-
+	flush_negative_conn_cache_for_domain("*");
 }
 
-/****************************************************************************
- Remove all negative entries for a domain. Used when going to online state in
- winbindd.
-****************************************************************************/
- 
+
+/**
+ * Deletes all records for a specified domain from the negative connection
+ * cache
+ *
+ * @param[in] domain String to match against domain portion of keys, or "*"
+ *  to match all domains
+ */
 void flush_negative_conn_cache_for_domain(const char *domain)
 {
-	struct failed_connection_cache *fcc;
-	
-	fcc = failed_connection_cache;
+	char *key_pattern = NULL;
 
-	while (fcc) {
-		struct failed_connection_cache *fcc_next;
-
-		fcc_next = fcc->next;
-
-		if (strequal(fcc->domain_name, domain)) {
-			DEBUG(10,("flush_negative_conn_cache_for_domain: removed server %s "
-				" from failed cache for domain %s\n",
-				fcc->controller, domain));
-			DLIST_REMOVE(failed_connection_cache, fcc);
-			free(fcc);
-		}
-
-		fcc = fcc_next;
+	key_pattern = negative_conn_cache_keystr(domain,"*");
+	if (key_pattern == NULL) {
+		DEBUG(0, ("flush_negative_conn_cache_for_domain: "
+			  "key creation error\n"));
+		goto done;
 	}
+
+	gencache_iterate(delete_matches, (void *) NULL, key_pattern);
+	DEBUG(8, ("flush_negative_conn_cache_for_domain: flushed domain %s\n",
+		  domain));
+	
+ done:
+	SAFE_FREE(key_pattern);
+	return;
 }
