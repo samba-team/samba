@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "kdc/kdc.h"
 #include "dsdb/common/flags.h"
 #include "lib/ldb/include/ldb.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
@@ -30,6 +29,7 @@
 #include "auth/auth_sam.h"
 #include "auth/auth_sam_reply.h"
 #include "param/param.h"
+#include "kdc/kdc.h"
 
 struct krb5_dh_moduli;
 struct _krb5_krb_auth_data;
