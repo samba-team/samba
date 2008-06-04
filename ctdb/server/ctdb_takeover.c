@@ -162,8 +162,7 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 	if (!arp) goto failed;
 	
 	arp->ctdb = ctdb;
-/* qqq convert state->sin from sockaddr_in to ctdb_sock_addr 
-no need to cast then*/
+/* qqq convert state->sin from sockaddr_in to ctdb_sock_addr no need to cast then*/
 	arp->addr.ip = *((ctdb_addr_in *)state->sin);
 	arp->vnn = state->vnn;
 
