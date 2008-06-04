@@ -24,7 +24,6 @@
 #include "smbd/service_task.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
-#include "kdc/kdc.h"
 #include "system/network.h"
 #include "lib/util/dlinklist.h"
 #include "lib/ldb/include/ldb.h"
@@ -39,6 +38,7 @@
 #include "rpc_server/samr/proto.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
+#include "kdc/kdc.h"
 
 /* hold information about one kdc socket */
 struct kpasswd_socket {
