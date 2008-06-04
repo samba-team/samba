@@ -567,6 +567,8 @@ static struct functable net_func[] = {
 
 	libnetapi_free(c->netapi_ctx);
 
+	poptFreeContext(pc);
+
 	TALLOC_FREE(frame);
 	return rc;
 }
