@@ -837,19 +837,18 @@ static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 static int control_gratious_arp(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	struct sockaddr_in sin;
+	ctdb_sock_addr addr;
 
 	if (argc < 2) {
 		usage();
 	}
 
-	sin.sin_family = AF_INET;
-	if (inet_aton(argv[0], &sin.sin_addr) == 0) {
-		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
+	if (!parse_ip(argv[0], &addr)) {
+		DEBUG(DEBUG_ERR, ("Bad IP '%s'\n", argv[0]));
 		return -1;
 	}
 
-	ret = ctdb_ctrl_gratious_arp(ctdb, TIMELIMIT(), options.pnn, &sin, argv[1]);
+	ret = ctdb_ctrl_gratious_arp(ctdb, TIMELIMIT(), options.pnn, &addr, argv[1]);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to send gratious_arp from node %u\n", options.pnn));
 		return ret;

@@ -36,7 +36,7 @@
 struct ctdb_takeover_arp {
 	struct ctdb_context *ctdb;
 	uint32_t count;
-	struct sockaddr_in sin;
+	ctdb_sock_addr addr;
 	struct ctdb_tcp_array *tcparray;
 	struct ctdb_vnn *vnn;
 };
@@ -73,7 +73,7 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 	struct ctdb_tcp_array *tcparray;
 
 
-	ret = ctdb_sys_send_arp(&arp->sin, arp->vnn->iface);
+	ret = ctdb_sys_send_arp(&arp->addr, arp->vnn->iface);
 	if (ret != 0) {
 		DEBUG(DEBUG_CRIT,(__location__ " sending of arp failed (%s)\n", strerror(errno)));
 	}
@@ -123,10 +123,27 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 	struct takeover_callback_state *state = 
 		talloc_get_type(private_data, struct takeover_callback_state);
 	struct ctdb_takeover_arp *arp;
-	char *ip = inet_ntoa(state->sin->sin_addr);
 	struct ctdb_tcp_array *tcparray;
 
 	if (status != 0) {
+		char ip[128] = "";
+
+		switch(state->sin->sin_family){
+		case AF_INET:
+			if (inet_ntop(AF_INET, &state->sin->sin_addr, ip, sizeof(ip)) == NULL) {
+				DEBUG(DEBUG_ERR, (__location__ " inet_ntop() failed\n"));
+			}
+			break;
+		case AF_INET6:
+			if (inet_ntop(AF_INET6, &state->sin->sin_addr, ip, sizeof(ip)) == NULL) {
+				DEBUG(DEBUG_ERR, (__location__ " inet_ntop() failed\n"));
+			}
+			break;
+		default:
+			DEBUG(DEBUG_ERR, (__location__ " cant convert this address family to a string\n"));
+			break;
+		}
+	
 		DEBUG(DEBUG_ERR,(__location__ " Failed to takeover IP %s on interface %s\n",
 			 ip, state->vnn->iface));
 		ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
@@ -145,7 +162,9 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 	if (!arp) goto failed;
 	
 	arp->ctdb = ctdb;
-	arp->sin = *state->sin;
+/* qqq convert state->sin from sockaddr_in to ctdb_sock_addr 
+no need to cast then*/
+	arp->addr.ip = *((ctdb_addr_in *)state->sin);
 	arp->vnn = state->vnn;
 
 	tcparray = state->vnn->tcp_array;
@@ -1717,7 +1736,7 @@ void ctdb_start_tcp_tickle_update(struct ctdb_context *ctdb)
 
 struct control_gratious_arp {
 	struct ctdb_context *ctdb;
-	struct sockaddr_in sin;
+	ctdb_sock_addr addr;
 	const char *iface;
 	int count;
 };
@@ -1732,7 +1751,7 @@ static void send_gratious_arp(struct event_context *ev, struct timed_event *te,
 	struct control_gratious_arp *arp = talloc_get_type(private_data, 
 							struct control_gratious_arp);
 
-	ret = ctdb_sys_send_arp(&arp->sin, arp->iface);
+	ret = ctdb_sys_send_arp(&arp->addr, arp->iface);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " sending of gratious arp failed (%s)\n", strerror(errno)));
 	}
@@ -1755,23 +1774,22 @@ static void send_gratious_arp(struct event_context *ev, struct timed_event *te,
  */
 int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_control_ip_iface *gratious_arp = (struct ctdb_control_ip_iface *)indata.dptr;
+	struct ctdb_control_gratious_arp *gratious_arp = (struct ctdb_control_gratious_arp *)indata.dptr;
 	struct control_gratious_arp *arp;
 
-
 	/* verify the size of indata */
-	if (indata.dsize < offsetof(struct ctdb_control_ip_iface, iface)) {
-		DEBUG(DEBUG_ERR,(__location__ " Too small indata to hold a ctdb_control_ip_iface structure\n"));
+	if (indata.dsize < offsetof(struct ctdb_control_gratious_arp, iface)) {
+		DEBUG(DEBUG_ERR,(__location__ " Too small indata to hold a ctdb_control_gratious_arp structure. Got %u require %u bytes\n", indata.dsize, offsetof(struct ctdb_control_gratious_arp, iface)));
 		return -1;
 	}
 	if (indata.dsize != 
-		( offsetof(struct ctdb_control_ip_iface, iface)
+		( offsetof(struct ctdb_control_gratious_arp, iface)
 		+ gratious_arp->len ) ){
 
 		DEBUG(DEBUG_ERR,(__location__ " Wrong size of indata. Was %u bytes "
 			"but should be %u bytes\n", 
 			 (unsigned)indata.dsize, 
-			 (unsigned)(offsetof(struct ctdb_control_ip_iface, iface)+gratious_arp->len)));
+			 (unsigned)(offsetof(struct ctdb_control_gratious_arp, iface)+gratious_arp->len)));
 		return -1;
 	}
 
@@ -1780,7 +1798,7 @@ int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb, TDB_DATA indat
 	CTDB_NO_MEMORY(ctdb, arp);
 
 	arp->ctdb  = ctdb;
-	arp->sin   = gratious_arp->sin;
+	arp->addr   = gratious_arp->addr;
 	arp->iface = talloc_strdup(arp, gratious_arp->iface);
 	CTDB_NO_MEMORY(ctdb, arp->iface);
 	arp->count = 0;

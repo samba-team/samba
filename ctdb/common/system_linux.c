@@ -36,7 +36,7 @@
   saddr is the address we are trying to claim
   iface is the interface name we will be using to claim the address
  */
-int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface)
+int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 {
 	int s, ret;
 	struct sockaddr sa;
@@ -48,92 +48,94 @@ int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface)
 
 	ZERO_STRUCT(sa);
 
-	/* for now, we only handle AF_INET addresses */
-	if (saddr->sin_family != AF_INET) {
-		DEBUG(DEBUG_CRIT,(__location__ " not an ipv4 address (family is %u)\n", saddr->sin_family));
-		return -1;
-	}
+	switch (addr->ip.sin_family) {
+	case AF_INET:
+		s = socket(AF_INET, SOCK_PACKET, htons(ETHERTYPE_ARP));
+		if (s == -1){
+			DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
+			return -1;
+		}
 
-	s = socket(AF_INET, SOCK_PACKET, htons(ETHERTYPE_ARP));
-	if (s == -1){
-		DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
-		return -1;
-	}
+		/* get the mac address */
+		strcpy(if_hwaddr.ifr_name, iface);
+		ret = ioctl(s, SIOCGIFHWADDR, &if_hwaddr);
+		if ( ret < 0 ) {
+			close(s);
+			DEBUG(DEBUG_CRIT,(__location__ " ioctl failed\n"));
+			return -1;
+		}
+		if (ARPHRD_LOOPBACK == if_hwaddr.ifr_hwaddr.sa_family) {
+			DEBUG(DEBUG_DEBUG,("Ignoring loopback arp request\n"));
+			close(s);
+			return 0;
+		}
+		if (if_hwaddr.ifr_hwaddr.sa_family != AF_LOCAL) {
+			close(s);
+			errno = EINVAL;
+			DEBUG(DEBUG_CRIT,(__location__ " not an ethernet address family (0x%x)\n",
+				 if_hwaddr.ifr_hwaddr.sa_family));
+			return -1;
+		}
 
-	/* get the mac address */
-	strcpy(if_hwaddr.ifr_name, iface);
-	ret = ioctl(s, SIOCGIFHWADDR, &if_hwaddr);
-	if ( ret < 0 ) {
+
+		memset(buffer, 0 , 64);
+		eh = (struct ether_header *)buffer;
+		memset(eh->ether_dhost, 0xff, ETH_ALEN);
+		memcpy(eh->ether_shost, if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
+		eh->ether_type = htons(ETHERTYPE_ARP);
+	
+		ah = (struct arphdr *)&buffer[sizeof(struct ether_header)];
+		ah->ar_hrd = htons(ARPHRD_ETHER);
+		ah->ar_pro = htons(ETH_P_IP);
+		ah->ar_hln = ETH_ALEN;
+		ah->ar_pln = 4;
+
+		/* send a gratious arp */
+		ah->ar_op  = htons(ARPOP_REQUEST);
+		ptr = (char *)&ah[1];
+		memcpy(ptr, if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
+		ptr+=ETH_ALEN;
+		memcpy(ptr, &addr->ip.sin_addr, 4);	  
+		ptr+=4;
+		memset(ptr, 0, ETH_ALEN); 
+		ptr+=ETH_ALEN;
+		memcpy(ptr, &addr->ip.sin_addr, 4);	  
+		ptr+=4;
+	
+		strncpy(sa.sa_data, iface, sizeof(sa.sa_data));
+		ret = sendto(s, buffer, 64, 0, &sa, sizeof(sa));
+		if (ret < 0 ){
+			close(s);
+			DEBUG(DEBUG_CRIT,(__location__ " failed sendto\n"));
+			return -1;
+		}	
+
+		/* send unsolicited arp reply broadcast */
+		ah->ar_op  = htons(ARPOP_REPLY);
+		ptr = (char *)&ah[1];
+		memcpy(ptr, if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
+		ptr+=ETH_ALEN;
+		memcpy(ptr, &addr->ip.sin_addr, 4);	  
+		ptr+=4;
+		memcpy(ptr, if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
+		ptr+=ETH_ALEN;
+		memcpy(ptr, &addr->ip.sin_addr, 4);	  
+		ptr+=4;
+
+		strncpy(sa.sa_data, iface, sizeof(sa.sa_data));
+		ret = sendto(s, buffer, 64, 0, &sa, sizeof(sa));
+		if (ret < 0 ){
+			DEBUG(DEBUG_CRIT,(__location__ " failed sendto\n"));
+			return -1;
+		}
+
 		close(s);
-		DEBUG(DEBUG_CRIT,(__location__ " ioctl failed\n"));
-		return -1;
-	}
-	if (ARPHRD_LOOPBACK == if_hwaddr.ifr_hwaddr.sa_family) {
-		DEBUG(DEBUG_DEBUG,("Ignoring loopback arp request\n"));
-		close(s);
-		return 0;
-	}
-	if (if_hwaddr.ifr_hwaddr.sa_family != AF_LOCAL) {
-		close(s);
-		errno = EINVAL;
-		DEBUG(DEBUG_CRIT,(__location__ " not an ethernet address family (0x%x)\n",
-			 if_hwaddr.ifr_hwaddr.sa_family));
+		break;
+	default:
+		DEBUG(DEBUG_CRIT,(__location__ " not an ipv4 address (family is %u)\n", addr->ip.sin_family));
 		return -1;
 	}
 
-
-	memset(buffer, 0 , 64);
-	eh = (struct ether_header *)buffer;
-	memset(eh->ether_dhost, 0xff, ETH_ALEN);
-	memcpy(eh->ether_shost, if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
-	eh->ether_type = htons(ETHERTYPE_ARP);
-
-	ah = (struct arphdr *)&buffer[sizeof(struct ether_header)];
-	ah->ar_hrd = htons(ARPHRD_ETHER);
-	ah->ar_pro = htons(ETH_P_IP);
-	ah->ar_hln = ETH_ALEN;
-	ah->ar_pln = 4;
-
-	/* send a gratious arp */
-	ah->ar_op  = htons(ARPOP_REQUEST);
-	ptr = (char *)&ah[1];
-	memcpy(ptr, if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
-	ptr+=ETH_ALEN;
-	memcpy(ptr, &saddr->sin_addr, 4);	  
-	ptr+=4;
-	memset(ptr, 0, ETH_ALEN); 
-	ptr+=ETH_ALEN;
-	memcpy(ptr, &saddr->sin_addr, 4);	  
-	ptr+=4;
-
-	strncpy(sa.sa_data, iface, sizeof(sa.sa_data));
-	ret = sendto(s, buffer, 64, 0, &sa, sizeof(sa));
-	if (ret < 0 ){
-		close(s);
-		DEBUG(DEBUG_CRIT,(__location__ " failed sendto\n"));
-		return -1;
-	}
-
-	/* send unsolicited arp reply broadcast */
-	ah->ar_op  = htons(ARPOP_REPLY);
-	ptr = (char *)&ah[1];
-	memcpy(ptr, if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
-	ptr+=ETH_ALEN;
-	memcpy(ptr, &saddr->sin_addr, 4);	  
-	ptr+=4;
-	memcpy(ptr, if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
-	ptr+=ETH_ALEN;
-	memcpy(ptr, &saddr->sin_addr, 4);	  
-	ptr+=4;
-
-	strncpy(sa.sa_data, iface, sizeof(sa.sa_data));
-	ret = sendto(s, buffer, 64, 0, &sa, sizeof(sa));
-	if (ret < 0 ){
-		DEBUG(DEBUG_CRIT,(__location__ " failed sendto\n"));
-		return -1;
-	}
-
-	close(s);
 	return 0;
 }
 

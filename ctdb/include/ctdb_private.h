@@ -567,11 +567,21 @@ struct ctdb_control_killtcp {
 
 /*
   struct holding a sockaddr_in and an interface name,
-  used for send_gratious_arp and also add/remove public addresses
+  used to add/remove public addresses
  */
-//struct ctdb_control_gratious_arp {
 struct ctdb_control_ip_iface {
 	struct sockaddr_in sin;
+	uint32_t mask;
+	uint32_t len;
+	char iface[1];
+};
+
+/*
+  struct holding a ctdb_sock_addr and an interface name,
+  used for send_gratious_arp
+ */
+struct ctdb_control_gratious_arp {
+	ctdb_sock_addr addr;
 	uint32_t mask;
 	uint32_t len;
 	char iface[1];
@@ -1166,7 +1176,7 @@ int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 
 
 /* from takeover/system.c */
-int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface);
+int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface);
 bool ctdb_sys_have_ip(struct sockaddr_in ip);
 int ctdb_sys_send_tcp(const ctdb_sock_addr *dest, 
 		      const ctdb_sock_addr *src,
@@ -1225,6 +1235,7 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 void ctdb_start_freeze(struct ctdb_context *ctdb);
 
 bool parse_ip_port(const char *s, ctdb_sock_addr *saddr);
+bool parse_ip(const char *s, ctdb_sock_addr *saddr);
 
 int ctdb_sys_open_capture_socket(const char *iface, void **private_data);
 int ctdb_sys_close_capture_socket(void *private_data);
@@ -1249,7 +1260,7 @@ int ctdb_ctrl_del_public_ip(struct ctdb_context *ctdb,
 int ctdb_ctrl_gratious_arp(struct ctdb_context *ctdb, 
 		      struct timeval timeout, 
 		      uint32_t destnode,
-		      struct sockaddr_in *sin,
+		      ctdb_sock_addr *addr,
 		      const char *ifname);
 
 int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb, 

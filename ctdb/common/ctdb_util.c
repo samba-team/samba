@@ -371,6 +371,25 @@ bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr)
 }
 
 /*
+  parse an ip
+ */
+bool parse_ip(const char *addr, ctdb_sock_addr *saddr)
+{
+	char *p;
+	bool ret;
+
+	/* now is this a ipv4 or ipv6 address ?*/
+	p = index(addr, ':');
+	if (p == NULL) {
+		ret = parse_ipv4(addr, 0, saddr);
+	} else {
+		ret = parse_ipv6(addr, 0, saddr);
+	}
+
+	return ret;
+}
+
+/*
   parse a ip/mask pair
  */
 bool parse_ip_mask(const char *s, struct sockaddr_in *ip, unsigned *mask)

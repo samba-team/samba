@@ -220,7 +220,7 @@ int ctdb_sys_close_capture_socket(void *private_data)
   saddr is the address we are trying to claim
   iface is the interface name we will be using to claim the address
  */
-int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface)
+int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 {
 	/* We dont do grat arp on aix yet */
 	return 0;
