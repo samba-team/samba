@@ -690,7 +690,8 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 		r->out.netbios_domain_name = info->dns.name.string;
 		r->out.dns_domain_name = info->dns.dns_domain.string;
 		r->out.forest_name = info->dns.dns_forest.string;
-		r->out.domain_sid = info->dns.sid;
+		r->out.domain_sid = sid_dup_talloc(mem_ctx, info->dns.sid);
+		NT_STATUS_HAVE_NO_MEMORY(r->out.domain_sid);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -703,7 +704,8 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 		}
 
 		r->out.netbios_domain_name = info->account_domain.name.string;
-		r->out.domain_sid = info->account_domain.sid;
+		r->out.domain_sid = sid_dup_talloc(mem_ctx, info->account_domain.sid);
+		NT_STATUS_HAVE_NO_MEMORY(r->out.domain_sid);
 	}
 
 	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
