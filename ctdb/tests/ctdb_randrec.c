@@ -143,7 +143,7 @@ int main(int argc, const char *argv[])
 	ctdb = ctdb_cmdline_client(ev);
 
 	/* attach to a specific database */
-	ctdb_db = ctdb_attach(ctdb, "test.tdb", false);
+	ctdb_db = ctdb_attach(ctdb, "test.tdb", false, 0);
 	if (!ctdb_db) {
 		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);

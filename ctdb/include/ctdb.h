@@ -185,7 +185,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork);
 /*
   attach to a ctdb database
 */
-struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name, bool persistent);
+struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name, bool persistent, uint32_t tdb_flags);
 
 /*
   find an attached ctdb_db handle given a name

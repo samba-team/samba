@@ -167,11 +167,12 @@ int main(int argc, const char *argv[])
 {
 	struct ctdb_context *ctdb;
 	struct ctdb_db_context *ctdb_db;
-
+	int unsafe_writes = 0;
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
 		POPT_CTDB_CMDLINE
 		{ "timelimit", 't', POPT_ARG_INT, &timelimit, 0, "timelimit", "integer" },
+		{ "unsafe-writes", 'u', POPT_ARG_NONE, &unsafe_writes, 0, "do not use tdb transactions when writing", NULL },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -201,9 +202,18 @@ int main(int argc, const char *argv[])
 	ev = event_context_init(NULL);
 
 	ctdb = ctdb_cmdline_client(ev);
+	if (ctdb == NULL) {
+		printf("Could not attach to daemon\n");
+		return 1;
+	}
 
 	/* attach to a specific database */
-	ctdb_db = ctdb_attach(ctdb, "persistent.tdb", true);
+	if (unsafe_writes == 1) {
+		ctdb_db = ctdb_attach(ctdb, "persistent.tdb", true, TDB_NOSYNC);
+	} else {
+		ctdb_db = ctdb_attach(ctdb, "persistent.tdb", true, 0);
+	}
+
 	if (!ctdb_db) {
 		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);

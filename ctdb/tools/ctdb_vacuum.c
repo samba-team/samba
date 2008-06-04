@@ -260,7 +260,7 @@ static int ctdb_vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, name, persistent);
+	ctdb_db = ctdb_attach(ctdb, name, persistent, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to attach to database '%s'\n", name));
 		talloc_free(vdata);
@@ -579,7 +579,7 @@ static int ctdb_repack_db(struct ctdb_context *ctdb, uint32_t db_id,
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, name, persistent);
+	ctdb_db = ctdb_attach(ctdb, name, persistent, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to attach to database '%s'\n", name));
 		return -1;

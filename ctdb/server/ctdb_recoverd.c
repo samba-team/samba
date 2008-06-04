@@ -866,7 +866,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 
 	/* attach to it */
-	ctdb_db = ctdb_attach(ctdb, name, persistent);
+	ctdb_db = ctdb_attach(ctdb, name, persistent, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to attach to database '%s'\n", name));
 		talloc_free(tmp_ctx);

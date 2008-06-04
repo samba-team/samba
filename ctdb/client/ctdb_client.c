@@ -1640,7 +1640,7 @@ static int ctdb_fetch_func(struct ctdb_call_info *call)
 /*
   attach to a specific database - client call
 */
-struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name, bool persistent)
+struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name, bool persistent, uint32_t tdb_flags)
 {
 	struct ctdb_db_context *ctdb_db;
 	TDB_DATA data;
@@ -1663,7 +1663,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
 	data.dsize = strlen(name)+1;
 
 	/* tell ctdb daemon to attach */
-	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, 
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, tdb_flags, 
 			   persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:CTDB_CONTROL_DB_ATTACH,
 			   0, data, ctdb_db, &data, &res, NULL, NULL);
 	if (ret != 0 || res != 0 || data.dsize != sizeof(uint32_t)) {

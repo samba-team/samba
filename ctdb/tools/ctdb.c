@@ -1278,7 +1278,7 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	db_name = argv[0];
-	ctdb_db = ctdb_attach(ctdb, db_name, false);
+	ctdb_db = ctdb_attach(ctdb, db_name, false, 0);
 
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
@@ -1633,7 +1633,7 @@ static int control_attach(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 	db_name = argv[0];
 
-	ctdb_db = ctdb_attach(ctdb, db_name, false);
+	ctdb_db = ctdb_attach(ctdb, db_name, false, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
 		return -1;
