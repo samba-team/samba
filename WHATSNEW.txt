@@ -194,6 +194,7 @@ smb.conf changes
     ctdbd socket			New		""
     debug class				New		No
     lanman auth				Changed Default	No
+    ldap connection timeout		New		2
     ldap debug level			New		0
     ldap debug threshold		New		10
     mangled map				Removed
@@ -223,6 +224,11 @@ o   Jeremy Allison <jra@samba.org>
 
 o   Günther Deschner <gd@samba.org>
     * BUG 5285: Fix libcap header mismatch.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 4544: Add new parameter 'ldap connection timeout' to prevent
+      waiting for TCP connection timeouts if no LDAP server is available.
 
 
 o   Volker Lendecke <vl@samba.org>
