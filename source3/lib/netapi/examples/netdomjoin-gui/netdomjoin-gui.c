@@ -297,12 +297,12 @@ static void callback_do_reboot(GtkWidget *widget,
 		}
 
 		debug("got new status: %s\n", buffer);
-#if 0
+
 		SAFE_FREE(state->name_buffer_new);
 		state->name_buffer_new = strdup(buffer);
-		SAFE_FREE(buffer);
 		state->name_type_new = type;
-#endif
+		state->name_buffer_initial = strdup(buffer);
+		state->name_type_initial = type;
 		NetApiBufferFree((void *)buffer);
 
 		gtk_label_set_text(GTK_LABEL(state->label_current_name_buffer),
