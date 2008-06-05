@@ -1835,6 +1835,9 @@ static NTSTATUS get_dc_list(const char *domain,
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_init("get_dc_list");
 
+	*ip_list = NULL;
+	*count = 0;
+
 	if (!ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1914,7 +1917,7 @@ static NTSTATUS get_dc_list(const char *domain,
 
 	p = pserver;
 	while (next_token_talloc(ctx, &p, &name, LIST_SEP)) {
-		if (strequal(name, "*")) {
+		if (!done_auto_lookup && strequal(name, "*")) {
 			status = internal_resolve_name(domain, 0x1C, sitename,
 						       &auto_ip_list,
 						       &auto_count,
@@ -2055,6 +2058,12 @@ static NTSTATUS get_dc_list(const char *domain,
 
   out:
 
+	if (!NT_STATUS_IS_OK(status)) {
+		SAFE_FREE(return_iplist);
+		*ip_list = NULL;
+		*count = 0;
+	}
+
 	SAFE_FREE(auto_ip_list);
 	TALLOC_FREE(ctx);
 	return status;
@@ -2074,6 +2083,9 @@ NTSTATUS get_sorted_dc_list( const char *domain,
 	NTSTATUS status;
 	enum dc_lookup_type lookup_type = DC_NORMAL_LOOKUP;
 
+	*ip_list = NULL;
+	*count = 0;
+
 	DEBUG(8,("get_sorted_dc_list: attempting lookup "
 		"for name %s (sitename %s) using [%s]\n",
 		domain,
@@ -2087,6 +2099,8 @@ NTSTATUS get_sorted_dc_list( const char *domain,
 	status = get_dc_list(domain, sitename, ip_list,
 			count, lookup_type, &ordered);
 	if (!NT_STATUS_IS_OK(status)) {
+		SAFE_FREE(*ip_list);
+		*count = 0;
 		return status;
 	}
 
@@ -2117,6 +2131,8 @@ NTSTATUS get_kdc_list( const char *realm,
 			count, DC_KDC_ONLY, &ordered);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		SAFE_FREE(*ip_list);
+		*count = 0;
 		return status;
 	}
 
