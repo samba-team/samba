@@ -185,11 +185,10 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	<smbconfoption name="comment">All Printers</smbconfoption>
 	<smbconfoption name="path">/var/spool/samba</smbconfoption>
 	<smbconfoption name="browseable">no</smbconfoption>
-	<smbconfoption name="public">yes</smbconfoption>
 	<smbconfoption name="guest ok">yes</smbconfoption>
 	<smbconfoption name="writable">no</smbconfoption>
 	<smbconfoption name="printable">yes</smbconfoption>
-	<smbconfoption name="printer admin">root, @ntadmins</smbconfoption>
+	<smbconfoption name="printer admin">root, @ntadmins, @smbprintadm</smbconfoption>
 	</smbconfblock>
 	</example>
 
@@ -230,11 +229,10 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	<smbconfsection name="[printers]"/>
 	<smbconfoption name="comment">All Printers</smbconfoption>
 	<smbconfoption name="path">/var/spool/samba</smbconfoption>
-	<smbconfoption name="public">yes</smbconfoption>
 	<smbconfoption name="guest ok">yes</smbconfoption>
 	<smbconfoption name="writable">no</smbconfoption>
 	<smbconfoption name="printable">yes</smbconfoption>
-	<smbconfoption name="printer admin">root, @ntadmins</smbconfoption>
+	<smbconfoption name="printer admin">root, @ntadmins, @smbprintadm</smbconfoption>
 
 	<smbconfsection name="[special_printer]"/>
 	<smbconfoption name="comment">A special printer with his own settings</smbconfoption>
@@ -242,7 +240,6 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	<smbconfoption name="printing">sysv</smbconfoption>
 	<smbconfoption name="printcap">lpstat</smbconfoption>
 	<smbconfoption name="print command">echo "NEW: `date`: printfile %f" >> /tmp/smbprn.log ; echo "     `date`: p-%p s-%s f-%f" >> /tmp/smbprn.log ; echo "     `date`: j-%j J-%J z-%z c-%c" >> /tmp/smbprn.log ; rm %f </smbconfoption>
-	<smbconfoption name="public">no</smbconfoption>
 	<smbconfoption name="guest ok">no</smbconfoption>
 	<smbconfoption name="writable">no</smbconfoption>
 	<smbconfoption name="printable">yes</smbconfoption>
@@ -402,7 +399,9 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	</itemizedlist>
 
 	<para>
-	The second method is recommended for use over the first.
+	The second method is recommended for use over the first as it reduces the
+	administrative efforts and prevents that different versions of the drivers
+	are used accidentally.
 	</para>
 	</sect2>
 
@@ -765,7 +764,7 @@ application/octet-stream   application/vnd.cups-raw   0   -
 	deficiencies.  <indexterm><primary>Ghostscript</primary><secondary>ESP</secondary><see>ESP
 	GhostScript</see></indexterm> Therefore, ESP Ghostscript was developed as an enhancement over GNU Ghostscript,
 	with lots of bug-fixes, additional devices, and improvements. It is jointly maintained by developers from
-	CUPS, Gimp-Print, MandrakeSoft, SuSE, Red Hat, and Debian. It includes the <quote>cups</quote> device
+	CUPS, Gutenprint, MandrakeSoft, SuSE, Red Hat, and Debian. It includes the <quote>cups</quote> device
 	(essential to print to non-PS printers from CUPS).
 	</para></tip>
 
@@ -992,7 +991,7 @@ application/postscript  ai eps ps string(0,%!) string(0,&lt;04&gt;%!)
 	<parameter>application/postscript</parameter>, the other is
 	<parameter>application/vnd.cups-postscript</parameter>. While <parameter>application/postscript</parameter> is
 	meant to be device-independent, job options for the file are still outside the PS file content, embedded in
-	command-line or environment variables by CUPS, <parameter>application/vnd.cups-postscript</parameter> may have
+	command line or environment variables by CUPS, <parameter>application/vnd.cups-postscript</parameter> may have
 	the job options inserted into the PostScript data itself (where applicable). The transformation of the generic
 	PostScript (<parameter>application/postscript</parameter>) to the device-specific version
 	(<parameter>application/vnd.cups-postscript</parameter>) is the responsibility of the CUPS
@@ -1136,7 +1135,7 @@ text/plain              application/postscript   33    texttops
 
 		<varlistentry><term>filename</term>
 			<listitem><para>
-			(optionally) The print request file (if missing, filters expected data
+			(optionally) The print request file (if missing, filters expect data
 			fed through <filename>stdin</filename>). In most cases, it is easy to
 			write a simple wrapper script around existing filters to make them work with CUPS.
 			</para></listitem>
@@ -1328,7 +1327,7 @@ text/plain              application/postscript   33    texttops
 <indexterm><primary>rastertohp</primary></indexterm>
 <indexterm><primary>rastertoprinter</primary></indexterm>
 <indexterm><primary>rastertoprinter</primary></indexterm>
-<indexterm><primary>Gimp-Print</primary></indexterm>
+<indexterm><primary>Gutenprint</primary></indexterm>
 	CUPS ships with quite a variety of raster drivers for processing CUPS raster. On my system, I find in
 	/usr/lib/cups/filter/ the following: <parameter>rastertoalps</parameter>, <parameter>rastertobj</parameter>,
 	<parameter>rastertoepson</parameter>, <parameter>rastertoescp</parameter>, <parameter>rastertopcl</parameter>,
@@ -1336,7 +1335,7 @@ text/plain              application/postscript   33    texttops
 	<parameter>rastertodymo</parameter>, <parameter>rastertoescp</parameter>, <parameter>rastertohp</parameter>,
 	and <parameter>rastertoprinter</parameter>. Don't worry if you have fewer drivers than this; some of these are
 	installed by commercial add-ons to CUPS (like <parameter>rastertoturboprint</parameter>), and others (like
-	<parameter>rastertoprinter</parameter>) by third-party driver development projects (such as Gimp-Print)
+	<parameter>rastertoprinter</parameter>) by third-party driver development projects (such as Gutenprint)
 	wanting to cooperate as closely as possible with CUPS. See <link linkend="small9">the Raster to
 	Printer-Specific Formats illustration</link>.
 	</para>
@@ -1512,8 +1511,8 @@ text/plain              application/postscript   33    texttops
 	file. If you have such a PPD installed, the printer shows up in the
 	CUPS Web interface with a <parameter>foomatic</parameter> namepart for
 	the driver description. <parameter>cupsomatic</parameter> is a Perl script that runs
-	Ghostscript with all the complicated command-line options
-	autoconstructed from the selected PPD and command line options give to
+	Ghostscript with all the complicated command line options
+	autoconstructed from the selected PPD and command line options given to
 	the print job.
 	</para>
 
@@ -1533,7 +1532,7 @@ text/plain              application/postscript   33    texttops
 	generation of them, still in heavy use out there) are not meeting the
 	Adobe specifications. You might also suffer difficulties when you try
 	to download them with <quote>Point'n'Print</quote> to Windows clients. A better
-	and more powerful successor is now in a stable beta-version: it is called <parameter>foomatic-rip</parameter>. To use
+	and more powerful successor is now available: it is called <parameter>foomatic-rip</parameter>. To use
 	<parameter>foomatic-rip</parameter> as a filter with CUPS, you need the new type of PPDs, which
 	have a similar but different line:
 <programlisting>
@@ -1735,7 +1734,7 @@ application/octet-stream   application/vnd.cups-raw   0   -
 	file. Therefore, CUPS should autoconstruct a filtering chain, which
 	delivers as its last output the specified MIME type. This is then
 	taken as input to the specified <parameter>rastertoprinter</parameter> filter. After
-	the last filter has done its work (<parameter>rastertoprinter</parameter> is a Gimp-Print
+	the last filter has done its work (<parameter>rastertoprinter</parameter> is a Gutenprint
 	filter), the file should go to the backend, which sends it to the
 	output device.
 	</para>
@@ -1898,7 +1897,7 @@ application/octet-stream   application/vnd.cups-raw   0   -
 	would still show all pages of the original PDF).</para></listitem>
 
 	<listitem><para>The file then passes the <parameter>pstops</parameter>
-	filter that applies the command-line options: it selects pages
+	filter that applies the command line options: it selects pages
 	2-5, 7, and 11-13, creates the imposed layout <quote>two pages on one sheet</quote>, and
 	inserts the correct <quote>duplex</quote> command (as defined in the printer's
 	PPD) into the new PostScript file; the file is now of PostScript MIME
@@ -1951,7 +1950,7 @@ application/octet-stream   application/vnd.cups-raw   0   -
 <indexterm><primary>pstops</primary></indexterm>
 <indexterm><primary>duplex printing</primary></indexterm>
 		The file then passes the <quote>pstops</quote> filter that applies
-		the command-line options: it selects the pages 2-5, 7, and 11-13,
+		the command line options: it selects the pages 2-5, 7, and 11-13,
 		creates the imposed layout <quote>two pages on one sheet,</quote> and inserts the
 		correct <quote>duplex</quote> command (oops &smbmdash; this printer and PPD
 		do not support duplex printing at all, so this option will
@@ -2011,9 +2010,9 @@ application/octet-stream   application/vnd.cups-raw   0   -
 		</para></listitem>
 
 		<listitem><para>
-		The <ulink url="http://gimp-print.sourceforge.net/">Gimp-Print Project</ulink>
+		The <ulink url="http://gimp-print.sourceforge.net/">Gutenprint Project</ulink>
 		(GPL, free software) provides around 140 PPDs (supporting nearly 400 printers, many driven
-		to photo quality output), to be used alongside the Gimp-Print CUPS filters.
+		to photo quality output), to be used alongside the Gutenprint CUPS filters.
 		</para></listitem>
 
 		<listitem><para>
@@ -2037,7 +2036,7 @@ application/octet-stream   application/vnd.cups-raw   0   -
 		<listitem><para>
 		<ulink url="http://www.linuxprinting.org/">Foomatic/cupsomatic </ulink>
 		(LPGL, free) from Linuxprinting.org provide PPDs for practically every Ghostscript
-		filter known to the world (including Omni, Gimp-Print, and HPIJS).
+		filter known to the world (including Omni, Gutenprint, and HPIJS).
 		</para></listitem>
 	</itemizedlist>
 
@@ -2271,7 +2270,7 @@ PostScript, PCL, or PJL commands for the target printer. Printer driver GUI dial
 CUPS can load, without any conversions, the PPD file from any Windows (NT is recommended) PostScript driver
 and handle the options. There is a Web browser interface to the print options (select <ulink noescape="1"
 url="http://localhost:631/printers/">http://localhost:631/printers/</ulink> and click on one
-<guibutton>Configure Printer</guibutton> button to see it) or a command-line interface (see <command>man
+<guibutton>Configure Printer</guibutton> button to see it) or a command line interface (see <command>man
 lpoptions</command> or see if you have <command>lphelp</command> on your system). There are also some
 different GUI front-ends on Linux/UNIX, which can present PPD options to users. PPD options are normally meant
 to be evaluated by the PostScript RIP on the real PostScript printer.
@@ -2481,7 +2480,6 @@ Prior to running <command>cupsaddsmb</command>, you need the settings in
 <smbconfoption name="comment">All Printers</smbconfoption>
 <smbconfoption name="path">/var/spool/samba</smbconfoption>
 <smbconfoption name="browseable">no</smbconfoption>
-<smbconfoption name="public">yes</smbconfoption>
 <smbconfcomment>setting depends on your requirements</smbconfcomment>
 <smbconfoption name="guest ok">yes</smbconfoption>
 <smbconfoption name="writable">no</smbconfoption>
@@ -2493,7 +2491,7 @@ Prior to running <command>cupsaddsmb</command>, you need the settings in
 <smbconfoption name="browseable">yes</smbconfoption>
 <smbconfoption name="guest ok">no</smbconfoption>
 <smbconfoption name="read only">yes</smbconfoption>
-<smbconfoption name="write list">root</smbconfoption>
+<smbconfoption name="write list">root, @smbprintadm</smbconfoption>
 </smbconfblock>
 </example>
 </sect2>
@@ -3061,7 +3059,8 @@ CUPS/Samba server:
 After a few seconds, there should be a new printer in your client's <emphasis>local</emphasis>
 <guilabel>Printers</guilabel> folder. On Windows XP it will follow a naming convention of
 <emphasis>PrinterName on SambaServer</emphasis>. (In my current case it is infotec_2105 on kde-bitshop). If
-you want to test it and send your first job from an application like Winword, the new printer appears in a
+you want to test it and send your first job from an application like Microsoft Word,
+the new printer appears in a
 <filename>\\SambaServer\PrinterName</filename> entry in the drop-down list of available printers.
 </para>
 
@@ -3557,7 +3556,7 @@ driver in step 6. This command must succeed before you can proceed.
 </step>
 
 <step>
-<para><title>Tell Samba which printer should use these driver files (<command>setdriver</command>).</title></para>
+<title>Tell Samba which printer should use these driver files (<command>setdriver</command>).</title>
 
 <para>
 <indexterm><primary>rpcclient</primary><secondary>setdriver</secondary></indexterm>
@@ -4119,8 +4118,8 @@ Speaking of the different driver development groups, most of the work is current
 	models.</para></listitem>
 
 	<listitem><para>
-<indexterm><primary>Gimp-Print</primary></indexterm>
-	<ulink url="http://gimp-print.sf.net/">Gimp-Print</ulink> &smbmdash; a free software
+<indexterm><primary>Gutenprint</primary></indexterm>
+	<ulink url="http://gimp-print.sourceforge.net/">Gutenprint</ulink> &smbmdash; a free software
 	effort, started by Michael Sweet (also lead developer for CUPS), now
 	directed by Robert Krawitz, which has achieved an amazing level of
 	photo print quality (many Epson users swear that its quality is
@@ -5050,9 +5049,9 @@ service first (renamed to <command>File &amp; Print Sharing for MS Networks</com
 </sect2>
 
 <sect2>
-<title>Win XP-SP1</title>
+<title>Windows XP SP1</title>
 
-<para>Win XP-SP1 introduced a Point and Print Restriction Policy (this restriction does not apply to
+<para>Windows XP SP1 introduced a Point and Print Restriction Policy (this restriction does not apply to
 <quote>Administrator</quote> or <quote>Power User</quote> groups of users). In Group Policy Object Editor, go
 to <guimenu>User Configuration -> Administrative Templates -> Control Panel -> Printers</guimenu>. The policy
 is automatically set to <constant>Enabled</constant> and the <constant>Users can only Point and Print to
@@ -5068,7 +5067,7 @@ possible.
 <para>How are you doing it? I bet the wrong way (it is not easy to find out, though). There are three
 different ways to bring you to a dialog that <emphasis>seems</emphasis> to set everything. All three dialogs
 <emphasis>look</emphasis> the same, yet only one of them does what you intend. You need to be Administrator or
-Print Administrator to do this for all users. Here is how I do in on XP:
+Print Administrator to do this for all users. Here is how I do it on XP:
 </para>
 
 <orderedlist numeration="upperalpha">
