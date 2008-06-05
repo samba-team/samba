@@ -25,6 +25,11 @@
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
 
+struct nbt_name_socket *torture_init_nbt_socket(struct torture_context *tctx)
+{
+	return nbt_name_socket_init(tctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
+}
+
 bool torture_nbt_get_name(struct torture_context *tctx, 
 			  struct nbt_name *name, 
 			  const char **address)
