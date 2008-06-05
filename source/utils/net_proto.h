@@ -462,6 +462,7 @@ int net_run_function2(struct net_context *c, int argc, const char **argv,
 		      const char *whoami, struct functable2 *table);
 int net_run_function3(struct net_context *c, int argc, const char **argv,
 		      const char *whoami, struct functable3 *table);
+void net_display_usage_from_functable(struct functable3 *table);
 
 /* The following definitions come from utils/netlookup.c  */
 
