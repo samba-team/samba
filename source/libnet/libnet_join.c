@@ -1333,6 +1333,8 @@ static WERROR do_JoinConfig(struct libnet_JoinCtx *r)
 		return werr;
 	}
 
+	lp_load(get_dyn_CONFIGFILE(),true,false,false,true);
+
 	r->out.modified_config = true;
 	r->out.result = werr;
 
@@ -1358,6 +1360,8 @@ static WERROR libnet_unjoin_config(struct libnet_UnjoinCtx *r)
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
+
+	lp_load(get_dyn_CONFIGFILE(),true,false,false,true);
 
 	r->out.modified_config = true;
 	r->out.result = werr;
@@ -1748,17 +1752,20 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
-
-		werr = libnet_join_post_verify(mem_ctx, r);
-		if (!W_ERROR_IS_OK(werr)) {
-			goto done;
-		}
 	}
 
 	werr = libnet_join_post_processing(mem_ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
+
+	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
+		werr = libnet_join_post_verify(mem_ctx, r);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+	}
+
  done:
 	r->out.result = werr;
 
