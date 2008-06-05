@@ -304,6 +304,7 @@ bool pull_mailslot_cldap_reply(TALLOC_CTX *mem_ctx,
 		case 0x13: /* 19 */
 		case 0x15: /* 21 */
 		case 0x17: /* 23 */
+		case 0x19: /* 25 */
 			 break;
 		default:
 			DEBUG(1,("got unexpected command: %d (0x%08x)\n",
