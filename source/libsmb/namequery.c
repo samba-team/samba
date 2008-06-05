@@ -1428,6 +1428,10 @@ static NTSTATUS get_dc_list(const char *domain, const char *sitename, struct ip_
 	struct ip_service *auto_ip_list = NULL;
 	BOOL done_auto_lookup = False;
 	int auto_count = 0;
+	NTSTATUS status;
+
+	*ip_list = NULL;
+	*count = 0;
 
 	*ordered = False;
 
@@ -1480,9 +1484,11 @@ static NTSTATUS get_dc_list(const char *domain, const char *sitename, struct ip_
 		 * NTSTATUS */
 		if (internal_resolve_name(domain, 0x1C, sitename, ip_list, count,
 					  resolve_order)) {
-			return NT_STATUS_OK;
+			status = NT_STATUS_OK;
+			goto out;
 		} else {
-			return NT_STATUS_NO_LOGON_SERVERS;
+			status = NT_STATUS_NO_LOGON_SERVERS;
+			goto out;
 		}
 	}
 
@@ -1497,7 +1503,7 @@ static NTSTATUS get_dc_list(const char *domain, const char *sitename, struct ip_
 
 	p = pserver;
 	while (next_token(&p,name,LIST_SEP,sizeof(name))) {
-		if (strequal(name, "*")) {
+		if (!done_auto_lookup && strequal(name, "*")) {
 			if (internal_resolve_name(domain, 0x1C, sitename, &auto_ip_list,
 						  &auto_count, resolve_order))
 				num_addresses += auto_count;
@@ -1514,21 +1520,23 @@ static NTSTATUS get_dc_list(const char *domain, const char *sitename, struct ip_
 	if ( (num_addresses == 0) ) {
 		if ( done_auto_lookup ) {
 			DEBUG(4,("get_dc_list: no servers found\n")); 
-			SAFE_FREE(auto_ip_list);
-			return NT_STATUS_NO_LOGON_SERVERS;
+			status = NT_STATUS_NO_LOGON_SERVERS;
+			goto out;
 		}
 		if (internal_resolve_name(domain, 0x1C, sitename, ip_list, count,
 					  resolve_order)) {
-			return NT_STATUS_OK;
+			status = NT_STATUS_OK;
+			goto out;
 		} else {
-			return NT_STATUS_NO_LOGON_SERVERS;
+			status = NT_STATUS_NO_LOGON_SERVERS;
+			goto out;
 		}
 	}
 
 	if ( (return_iplist = SMB_MALLOC_ARRAY(struct ip_service, num_addresses)) == NULL ) {
 		DEBUG(3,("get_dc_list: malloc fail !\n"));
-		SAFE_FREE(auto_ip_list);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	p = pserver;
@@ -1585,8 +1593,6 @@ static NTSTATUS get_dc_list(const char *domain, const char *sitename, struct ip_
 		}
 	}
 				
-	SAFE_FREE(auto_ip_list);
-
 	/* need to remove duplicates in the list if we have any 
 	   explicit password servers */
 	   
@@ -1606,7 +1612,19 @@ static NTSTATUS get_dc_list(const char *domain, const char *sitename, struct ip_
 	*ip_list = return_iplist;
 	*count = local_count;
 
-	return ( *count != 0 ? NT_STATUS_OK : NT_STATUS_NO_LOGON_SERVERS );
+	status = ( *count != 0 ? NT_STATUS_OK : NT_STATUS_NO_LOGON_SERVERS );
+
+  out:
+
+	if (!NT_STATUS_IS_OK(status)) {
+		SAFE_FREE(return_iplist);
+		*ip_list = NULL;
+		*count = 0;
+	}
+
+	SAFE_FREE(auto_ip_list);
+
+	return status;
 }
 
 /*********************************************************************
