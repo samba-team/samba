@@ -213,6 +213,7 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	uint32 fields_present;
 	uchar pwbuf[532];
 	SAM_USERINFO_CTR ctr;
+	SAM_USER_INFO_24 p24;
 	SAM_USER_INFO_25 p25;
 	const int infolevel = 25;
 	struct MD5Context md5ctx;
@@ -336,6 +337,27 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 
 	status = rpccli_samr_set_userinfo2(pipe_hnd, mem_ctx, &user_pol,
 					   infolevel, &cli->user_session_key, &ctr);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS(DCERPC_FAULT_INVALID_TAG))) {
+
+		uchar pwbuf2[516];
+
+		ZERO_STRUCT(p24);
+
+		encode_pw_buffer(pwbuf2, clear_pw, STR_UNICODE);
+
+		/* retry with level 24 */
+		init_sam_user_info24(&p24, (char *)pwbuf2, 24);
+
+		ctr.switch_value = 24;
+		ctr.info.id24    = &p24;
+
+		status = rpccli_samr_set_userinfo(pipe_hnd, mem_ctx,
+						  &user_pol,
+						  24,
+						  &cli->user_session_key,
+						  &ctr);
+	}
 
 	if ( !NT_STATUS_IS_OK(status) ) {
 		d_fprintf( stderr, "Failed to set password for machine account (%s)\n", 
