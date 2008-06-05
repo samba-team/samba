@@ -486,11 +486,11 @@ sn: ldap user2
 		assert(res.msgs.length == 2);
 	}
 
-	var res = ldb.search("(&(anr=testy ldap)(objectClass=user))");
-	if (res.error != 0 || res.msgs.length != 2) {
-		println("Found only " + res.msgs.length + " for (&(anr=\"testy ldap\")(objectClass=user))");
+	var res = ldb.search("(&(anr=\"testy ldap\")(objectClass=user))");
+	if (res.error != 0 || res.msgs.length != 0) {
+		println("Found " + res.msgs.length + " for (&(anr=\"testy ldap\")(objectClass=user))");
 		assert(res.error == 0);
-		assert(res.msgs.length == 2);
+		assert(res.msgs.length == 0);
 	}
 
 // Testing ldb.search for (&(anr=ldap)(objectClass=user))

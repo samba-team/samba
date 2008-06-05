@@ -217,17 +217,22 @@ Found 13 valid levels
 #define SMB_SFILEINFO_UNIX_INFO2                       0x20b
 #define SMB_SFILEINFO_BASIC_INFORMATION			1004
 #define SMB_SFILEINFO_RENAME_INFORMATION		1010
+#define SMB_SFILEINFO_LINK_INFORMATION			1011
 #define SMB_SFILEINFO_DISPOSITION_INFORMATION		1013
 #define SMB_SFILEINFO_POSITION_INFORMATION		1014
+#define SMB_SFILEINFO_FULL_EA_INFORMATION		1015
 #define SMB_SFILEINFO_MODE_INFORMATION			1016
 #define SMB_SFILEINFO_ALLOCATION_INFORMATION		1019
 #define SMB_SFILEINFO_END_OF_FILE_INFORMATION		1020
-
-/* filemon shows FilePipeInformation */
-#define SMB_SFILEINFO_1023				1023
+#define SMB_SFILEINFO_PIPE_INFORMATION			1023
+#define SMB_SFILEINFO_VALID_DATA_INFORMATION		1039
+#define SMB_SFILEINFO_SHORT_NAME_INFORMATION		1040
 
 /* filemon shows FilePipeRemoteInformation */
 #define SMB_SFILEINFO_1025				1025
+
+/* vista scan responds */
+#define SMB_SFILEINFO_1027				1027
 
 /* filemon shows CopyOnWriteInformation */
 #define SMB_SFILEINFO_1029				1029
@@ -235,14 +240,14 @@ Found 13 valid levels
 /* filemon shows OleClassIdInformation */
 #define SMB_SFILEINFO_1032				1032
 
-/* seems to be the file size - perhaps valid data size? 
-   filemon shows 'InheritContentIndexInfo'
-*/
-#define SMB_SFILEINFO_1039				1039
-
-/* OLE_INFORMATION? */
-#define SMB_SFILEINFO_1040				1040
-
+/* vista scan responds to these */
+#define SMB_SFILEINFO_1030				1030
+#define SMB_SFILEINFO_1031				1031
+#define SMB_SFILEINFO_1036				1036
+#define SMB_SFILEINFO_1041				1041
+#define SMB_SFILEINFO_1042				1042
+#define SMB_SFILEINFO_1043				1043
+#define SMB_SFILEINFO_1044				1044
 
 /* trans2 findfirst levels */
 /*

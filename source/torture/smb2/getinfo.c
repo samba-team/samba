@@ -167,6 +167,40 @@ static bool torture_smb2_fsinfo(struct smb2_tree *tree)
 }
 
 
+/*
+  test for buffer size handling
+*/
+static bool torture_smb2_buffercheck(struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	struct smb2_handle handle;
+	struct smb2_getinfo b;
+
+	printf("Testing buffer size handling\n");
+	status = smb2_util_roothandle(tree, &handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf(__location__ " Unable to create root handle - %s\n", nt_errstr(status));
+		return false;
+	}
+
+	ZERO_STRUCT(b);
+	b.in.info_type            = SMB2_GETINFO_FS;
+	b.in.info_class           = 1;
+	b.in.output_buffer_length = 0x1;
+	b.in.input_buffer_length  = 0;
+	b.in.file.handle          = handle;
+
+	status = smb2_getinfo(tree, tree, &b);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INFO_LENGTH_MISMATCH)) {
+		printf(__location__ " Wrong error code for small buffer %s\n",
+		       nt_errstr(status));
+		return false;
+	}
+
+	return true;
+}
+
+
 /* basic testing of all SMB2 getinfo levels
 */
 bool torture_smb2_getinfo(struct torture_context *torture)
@@ -196,6 +230,7 @@ bool torture_smb2_getinfo(struct torture_context *torture)
 
 	ret &= torture_smb2_fileinfo(torture, tree);
 	ret &= torture_smb2_fsinfo(tree);
+	ret &= torture_smb2_buffercheck(tree);
 
 	talloc_free(mem_ctx);
 

@@ -110,12 +110,20 @@ bool smb_raw_setfileinfo_passthru(TALLOC_CTX *mem_ctx,
 	}
 
 		/* Unhandled levels */
-	case RAW_SFILEINFO_1023:
+	case RAW_SFILEINFO_PIPE_INFORMATION:
+	case RAW_SFILEINFO_VALID_DATA_INFORMATION:
+	case RAW_SFILEINFO_SHORT_NAME_INFORMATION:
 	case RAW_SFILEINFO_1025:
+	case RAW_SFILEINFO_1027:
 	case RAW_SFILEINFO_1029:
+	case RAW_SFILEINFO_1030:
+	case RAW_SFILEINFO_1031:
 	case RAW_SFILEINFO_1032:
-	case RAW_SFILEINFO_1039:
-	case RAW_SFILEINFO_1040:
+	case RAW_SFILEINFO_1036:
+	case RAW_SFILEINFO_1041:
+	case RAW_SFILEINFO_1042:
+	case RAW_SFILEINFO_1043:
+	case RAW_SFILEINFO_1044:
 		break;
 
 	default:
@@ -227,12 +235,21 @@ static bool smb_raw_setinfo_backend(struct smbcli_tree *tree,
 						    parms, blob);
 		
 		/* Unhandled passthru levels */
-	case RAW_SFILEINFO_1023:
+	case RAW_SFILEINFO_PIPE_INFORMATION:
+	case RAW_SFILEINFO_VALID_DATA_INFORMATION:
+	case RAW_SFILEINFO_SHORT_NAME_INFORMATION:
+	case RAW_SFILEINFO_FULL_EA_INFORMATION:
 	case RAW_SFILEINFO_1025:
+	case RAW_SFILEINFO_1027:
 	case RAW_SFILEINFO_1029:
+	case RAW_SFILEINFO_1030:
+	case RAW_SFILEINFO_1031:
 	case RAW_SFILEINFO_1032:
-	case RAW_SFILEINFO_1039:
-	case RAW_SFILEINFO_1040:
+	case RAW_SFILEINFO_1036:
+	case RAW_SFILEINFO_1041:
+	case RAW_SFILEINFO_1042:
+	case RAW_SFILEINFO_1043:
+	case RAW_SFILEINFO_1044:
 		return smb_raw_setfileinfo_passthru(mem_ctx, parms->generic.level,
 						    parms, blob);
 

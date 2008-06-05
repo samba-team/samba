@@ -273,7 +273,6 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 			  union smb_setfileinfo *info)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
-	struct utimbuf unix_times;
 	struct pvfs_file *f;
 	struct pvfs_file_handle *h;
 	struct pvfs_filename newstats;
@@ -437,22 +436,53 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* possibly change the file timestamps */
-	ZERO_STRUCT(unix_times);
 	if (newstats.dos.create_time != h->name->dos.create_time) {
 		change_mask |= FILE_NOTIFY_CHANGE_CREATION;
 	}
 	if (newstats.dos.access_time != h->name->dos.access_time) {
-		unix_times.actime = nt_time_to_unix(newstats.dos.access_time);
 		change_mask |= FILE_NOTIFY_CHANGE_LAST_ACCESS;
 	}
 	if (newstats.dos.write_time != h->name->dos.write_time) {
-		unix_times.modtime = nt_time_to_unix(newstats.dos.write_time);
 		change_mask |= FILE_NOTIFY_CHANGE_LAST_WRITE;
 	}
-	if (unix_times.actime != 0 || unix_times.modtime != 0) {
-		if (utime(h->name->full_name, &unix_times) == -1) {
-			return pvfs_map_errno(pvfs, errno);
+	if ((change_mask & FILE_NOTIFY_CHANGE_LAST_ACCESS) ||
+	    (change_mask & FILE_NOTIFY_CHANGE_LAST_WRITE)) {
+		struct timeval tv[2];
+
+		nttime_to_timeval(&tv[0], newstats.dos.access_time);
+		nttime_to_timeval(&tv[1], newstats.dos.write_time);
+
+		if (!timeval_is_zero(&tv[0]) || !timeval_is_zero(&tv[1])) {
+			if (utimes(h->name->full_name, tv) == -1) {
+				DEBUG(0,("pvfs_setfileinfo: utimes() failed '%s' - %s\n",
+					 h->name->full_name, strerror(errno)));
+				return pvfs_map_errno(pvfs, errno);
+			}
 		}
+	}
+	if (change_mask & FILE_NOTIFY_CHANGE_LAST_WRITE) {
+		struct odb_lock *lck;
+
+		lck = odb_lock(req, h->pvfs->odb_context, &h->odb_locking_key);
+		if (lck == NULL) {
+			DEBUG(0,("Unable to lock opendb for write time update\n"));
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		status = odb_set_write_time(lck, newstats.dos.write_time, true);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Unable to update write time: %s\n",
+				nt_errstr(status)));
+			talloc_free(lck);
+			return status;
+		}
+
+		talloc_free(lck);
+
+		h->write_time.update_forced = true;
+		h->write_time.update_on_close = false;
+		talloc_free(h->write_time.update_event);
+		h->write_time.update_event = NULL;
 	}
 
 	/* possibly change the attribute */
@@ -570,7 +600,6 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	struct pvfs_filename *name;
 	struct pvfs_filename newstats;
 	NTSTATUS status;
-	struct utimbuf unix_times;
 	uint32_t access_needed;
 	uint32_t change_mask = 0;
 	struct odb_lock *lck = NULL;
@@ -736,21 +765,51 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* possibly change the file timestamps */
-	ZERO_STRUCT(unix_times);
 	if (newstats.dos.create_time != name->dos.create_time) {
 		change_mask |= FILE_NOTIFY_CHANGE_CREATION;
 	}
 	if (newstats.dos.access_time != name->dos.access_time) {
-		unix_times.actime = nt_time_to_unix(newstats.dos.access_time);
 		change_mask |= FILE_NOTIFY_CHANGE_LAST_ACCESS;
 	}
 	if (newstats.dos.write_time != name->dos.write_time) {
-		unix_times.modtime = nt_time_to_unix(newstats.dos.write_time);
 		change_mask |= FILE_NOTIFY_CHANGE_LAST_WRITE;
 	}
-	if (unix_times.actime != 0 || unix_times.modtime != 0) {
-		if (utime(name->full_name, &unix_times) == -1) {
-			return pvfs_map_errno(pvfs, errno);
+	if ((change_mask & FILE_NOTIFY_CHANGE_LAST_ACCESS) ||
+	    (change_mask & FILE_NOTIFY_CHANGE_LAST_WRITE)) {
+		struct timeval tv[2];
+
+		nttime_to_timeval(&tv[0], newstats.dos.access_time);
+		nttime_to_timeval(&tv[1], newstats.dos.write_time);
+
+		if (!timeval_is_zero(&tv[0]) || !timeval_is_zero(&tv[1])) {
+			if (utimes(name->full_name, tv) == -1) {
+				DEBUG(0,("pvfs_setpathinfo: utimes() failed '%s' - %s\n",
+					 name->full_name, strerror(errno)));
+				return pvfs_map_errno(pvfs, errno);
+			}
+		}
+	}
+	if (change_mask & FILE_NOTIFY_CHANGE_LAST_WRITE) {
+		if (lck == NULL) {
+			DATA_BLOB lkey;
+			status = pvfs_locking_key(name, name, &lkey);
+			NT_STATUS_NOT_OK_RETURN(status);
+
+			lck = odb_lock(req, pvfs->odb_context, &lkey);
+			data_blob_free(&lkey);
+			if (lck == NULL) {
+				DEBUG(0,("Unable to lock opendb for write time update\n"));
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+		}
+
+		status = odb_set_write_time(lck, newstats.dos.write_time, true);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			/* it could be that nobody has opened the file */
+		} else if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Unable to update write time: %s\n",
+				nt_errstr(status)));
+			return status;
 		}
 	}
 

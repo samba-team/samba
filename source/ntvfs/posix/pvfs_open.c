@@ -280,6 +280,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
 	f->handle->oplock            = NULL;
+	ZERO_STRUCT(f->handle->write_time);
 	f->handle->open_completed    = false;
 
 	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
@@ -317,7 +318,8 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 
 		/* now really mark the file as open */
 		status = odb_open_file(lck, f->handle, name->full_name,
-				       NULL, false, OPLOCK_NONE, NULL);
+				       NULL, name->dos.write_time,
+				       false, OPLOCK_NONE, NULL);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(lck);
@@ -377,7 +379,8 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		}
 
 		status = odb_open_file(lck, f->handle, name->full_name,
-				       NULL, false, OPLOCK_NONE, NULL);
+				       NULL, name->dos.write_time,
+				       false, OPLOCK_NONE, NULL);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			goto cleanup_delete;
@@ -433,6 +436,9 @@ cleanup_delete:
 */
 static int pvfs_handle_destructor(struct pvfs_file_handle *h)
 {
+	talloc_free(h->write_time.update_event);
+	h->write_time.update_event = NULL;
+
 	if ((h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
 	    h->name->stream_name) {
 		NTSTATUS status;
@@ -451,6 +457,14 @@ static int pvfs_handle_destructor(struct pvfs_file_handle *h)
 		h->fd = -1;
 	}
 
+	if (!h->write_time.update_forced &&
+	    h->write_time.update_on_close &&
+	    h->write_time.close_time == 0) {
+		struct timeval tv;
+		tv = timeval_current();
+		h->write_time.close_time = timeval_to_nttime(&tv);
+	}
+
 	if (h->have_opendb_entry) {
 		struct odb_lock *lck;
 		NTSTATUS status;
@@ -460,6 +474,26 @@ static int pvfs_handle_destructor(struct pvfs_file_handle *h)
 		if (lck == NULL) {
 			DEBUG(0,("Unable to lock opendb for close\n"));
 			return 0;
+		}
+
+		if (h->write_time.update_forced) {
+			status = odb_get_file_infos(h->pvfs->odb_context,
+						    &h->odb_locking_key,
+						    NULL,
+						    &h->write_time.close_time);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0,("Unable get write time for '%s' - %s\n",
+					 h->name->full_name, nt_errstr(status)));
+			}
+
+			h->write_time.update_forced = false;
+			h->write_time.update_on_close = true;
+		} else if (h->write_time.update_on_close) {
+			status = odb_set_write_time(lck, h->write_time.close_time, true);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0,("Unable set write time for '%s' - %s\n",
+					 h->name->full_name, nt_errstr(status)));
+			}
 		}
 
 		status = odb_close_file(lck, h, &delete_path);
@@ -484,9 +518,24 @@ static int pvfs_handle_destructor(struct pvfs_file_handle *h)
 					       FILE_NOTIFY_CHANGE_FILE_NAME,
 					       delete_path);
 			}
+			h->write_time.update_on_close = false;
 		}
 
 		talloc_free(lck);
+	}
+
+	if (h->write_time.update_on_close) {
+		struct timeval tv[2];
+
+		nttime_to_timeval(&tv[0], h->name->dos.access_time);
+		nttime_to_timeval(&tv[1], h->write_time.close_time);
+
+		if (!timeval_is_zero(&tv[0]) || !timeval_is_zero(&tv[1])) {
+			if (utimes(h->name->full_name, tv) == -1) {
+				DEBUG(0,("pvfs_handle_destructor: utimes() failed '%s' - %s\n",
+					 h->name->full_name, strerror(errno)));
+			}
+		}
 	}
 
 	return 0;
@@ -594,8 +643,8 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		DATA_BLOB locking_key;
 		status = pvfs_locking_key(parent, req, &locking_key);
 		NT_STATUS_NOT_OK_RETURN(status);
-		status = odb_get_delete_on_close(pvfs->odb_context, &locking_key, 
-						 &del_on_close);
+		status = odb_get_file_infos(pvfs->odb_context, &locking_key,
+					    &del_on_close, NULL);
 		NT_STATUS_NOT_OK_RETURN(status);
 		if (del_on_close) {
 			return NT_STATUS_DELETE_PENDING;
@@ -638,7 +687,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	}
 
 	/* re-resolve the open fd */
-	status = pvfs_resolve_name_fd(pvfs, fd, name);
+	status = pvfs_resolve_name_fd(pvfs, fd, name, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		close(fd);
 		return status;
@@ -730,10 +779,12 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	f->handle->mode              = 0;
 	f->handle->oplock            = NULL;
 	f->handle->have_opendb_entry = true;
+	ZERO_STRUCT(f->handle->write_time);
 	f->handle->open_completed    = false;
 
 	status = odb_open_file(lck, f->handle, name->full_name,
-			       &f->handle->fd, allow_level_II_oplock,
+			       &f->handle->fd, name->dos.write_time,
+			       allow_level_II_oplock,
 			       oplock_level, &oplock_granted);
 	talloc_free(lck);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1334,6 +1385,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	f->handle->mode              = 0;
 	f->handle->oplock            = NULL;
 	f->handle->have_opendb_entry = false;
+	ZERO_STRUCT(f->handle->write_time);
 	f->handle->open_completed    = false;
 
 	/* form the lock context used for byte range locking and
@@ -1437,7 +1489,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	/* now really mark the file as open */
 	status = odb_open_file(lck, f->handle, name->full_name,
-			       &f->handle->fd, allow_level_II_oplock,
+			       &f->handle->fd, name->dos.write_time,
+			       allow_level_II_oplock,
 			       oplock_level, &oplock_granted);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1476,7 +1529,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* re-resolve the open fd */
-	status = pvfs_resolve_name_fd(f->pvfs, fd, f->handle->name);
+	status = pvfs_resolve_name_fd(f->pvfs, fd, f->handle->name, PVFS_RESOLVE_NO_OPENDB);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);
 		return status;
@@ -1538,7 +1591,6 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
-	struct utimbuf unix_times;
 
 	if (io->generic.level == RAW_CLOSE_SPLCLOSE) {
 		return NT_STATUS_DOS(ERRSRV, ERRerror);
@@ -1554,9 +1606,9 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (!null_time(io->generic.in.write_time)) {
-		unix_times.actime = 0;
-		unix_times.modtime = io->close.in.write_time;
-		utime(f->handle->name->full_name, &unix_times);
+		f->handle->write_time.update_forced = false;
+		f->handle->write_time.update_on_close = true;
+		unix_to_nt_time(&f->handle->write_time.close_time, io->generic.in.write_time);
 	}
 
 	if (io->generic.in.flags & SMB2_CLOSE_FLAGS_FULL_INFORMATION) {
@@ -1915,8 +1967,8 @@ bool pvfs_delete_on_close_set(struct pvfs_state *pvfs, struct pvfs_file_handle *
 	NTSTATUS status;
 	bool del_on_close;
 
-	status = odb_get_delete_on_close(pvfs->odb_context, &h->odb_locking_key, 
-					 &del_on_close);
+	status = odb_get_file_infos(pvfs->odb_context, &h->odb_locking_key, 
+				    &del_on_close, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("WARNING: unable to determine delete on close status for open file\n"));
 		return false;

@@ -986,8 +986,8 @@ NTSTATUS ntvfs_map_qpathinfo(struct ntvfs_module_context *ntvfs,
    NTVFS lock generic to any mapper
 */
 NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
-				 struct ntvfs_request *req,
-				 union smb_lock *lck)
+			struct ntvfs_request *req,
+			union smb_lock *lck)
 {
 	union smb_lock *lck2;
 	struct smb_lock_entry *locks;
@@ -1035,7 +1035,8 @@ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 	case RAW_LOCK_SMB2: {
 		/* this is only approximate! We need to change the
 		   generic structure to fix this properly */
-		int i, j;
+		int i;
+		bool isunlock;
 		if (lck->smb2.in.lock_count < 1) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -1051,32 +1052,28 @@ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 		if (lck2->generic.in.locks == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		for (i=0;i<lck->smb2.in.lock_count;i++) {
-			if (!(lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_UNLOCK)) {
-				break;
-			}
-			j = lck2->generic.in.ulock_cnt;
-			if (lck->smb2.in.locks[i].flags & 
-			    (SMB2_LOCK_FLAG_SHARED|SMB2_LOCK_FLAG_EXCLUSIVE)) {
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-			lck2->generic.in.ulock_cnt++;
-			lck2->generic.in.locks[j].pid = 0;
-			lck2->generic.in.locks[j].offset = lck->smb2.in.locks[i].offset;
-			lck2->generic.in.locks[j].count = lck->smb2.in.locks[i].length;
-			lck2->generic.in.locks[j].pid = 0;
+		/* only the first lock gives the UNLOCK bit - see
+		   MS-SMB2 3.3.5.14 */
+		if (lck->smb2.in.locks[0].flags & SMB2_LOCK_FLAG_UNLOCK) {
+			lck2->generic.in.ulock_cnt = lck->smb2.in.lock_count;
+			isunlock = true;
+		} else {
+			lck2->generic.in.lock_cnt = lck->smb2.in.lock_count;
+			isunlock = false;
 		}
-		for (;i<lck->smb2.in.lock_count;i++) {
-			if (lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_UNLOCK) {
-				/* w2008 requires unlocks to come first */
+		for (i=0;i<lck->smb2.in.lock_count;i++) {
+			if (isunlock && 
+			    (lck->smb2.in.locks[i].flags & 
+			     (SMB2_LOCK_FLAG_SHARED|SMB2_LOCK_FLAG_EXCLUSIVE))) {
 				return NT_STATUS_INVALID_PARAMETER;
 			}
-			j = lck2->generic.in.ulock_cnt + lck2->generic.in.lock_cnt;
-			lck2->generic.in.lock_cnt++;
-			lck2->generic.in.locks[j].pid = 0;
-			lck2->generic.in.locks[j].offset = lck->smb2.in.locks[i].offset;
-			lck2->generic.in.locks[j].count = lck->smb2.in.locks[i].length;
-			lck2->generic.in.locks[j].pid = 0;
+			if (!isunlock && 
+			    (lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_UNLOCK)) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			lck2->generic.in.locks[i].pid    = req->smbpid;
+			lck2->generic.in.locks[i].offset = lck->smb2.in.locks[i].offset;
+			lck2->generic.in.locks[i].count  = lck->smb2.in.locks[i].length;
 			if (!(lck->smb2.in.locks[i].flags & SMB2_LOCK_FLAG_EXCLUSIVE)) {
 				lck2->generic.in.mode = LOCKING_ANDX_SHARED_LOCK;
 			}

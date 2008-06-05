@@ -95,6 +95,10 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 						      PVFS_OPLOCK_TIMEOUT,
 						      PVFS_OPLOCK_TIMEOUT_DEFAULT);
 
+	pvfs->writetime_delay = share_int_option(scfg,
+						 PVFS_WRITETIME_DELAY,
+						 PVFS_WRITETIME_DELAY_DEFAULT);
+
 	pvfs->share_name = talloc_strdup(pvfs, scfg->name);
 
 	pvfs->fs_attribs = 

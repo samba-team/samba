@@ -14,7 +14,6 @@
 #
 # Please add a comment for each testsuite you disable explaining why 
 # it is being skipped.
-base.delaywrite
 raw.composite
 base.iometer
 base.casetable
@@ -28,7 +27,6 @@ samba4.ntvfs.cifs.raw.qfileinfo.ipc
 smb2.notify
 smb2.scan
 ntvfs.cifs.base.charset
-ntvfs.cifs.base.delaywrite
 ntvfs.cifs.base.iometer
 ntvfs.cifs.base.casetable
 ntvfs.cifs.base.nttrans
