@@ -145,7 +145,7 @@ static int net_time_system(struct net_context *c, int argc, const char **argv)
 	return 0;
 }
 
-/* display the time on a remote box in a format ready for /bin/date */
+/* display the remote time server's offset to UTC */
 static int net_time_zone(struct net_context *c, int argc, const char **argv)
 {
 	int zone = 0;
