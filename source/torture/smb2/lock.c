@@ -273,11 +273,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	lck.in.lock_count	= 1;
 	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
 	status = smb2_lock(tree, &lck);
-	if (torture_setting_bool(torture, "windows", false)) {
-		CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
-	} else {
-		CHECK_STATUS(status, NT_STATUS_OK);
-	}
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
 
 	lck.in.lock_count	= 1;
 	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
