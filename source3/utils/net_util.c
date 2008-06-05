@@ -622,3 +622,10 @@ int net_run_function3(struct net_context *c, int argc, const char **argv,
 	return c->display_usage?0:-1;
 }
 
+void net_display_usage_from_functable(struct functable3 *table)
+{
+	int i;
+	for (i=0; table[i].funcname != NULL; i++) {
+		d_printf("%s\n", table[i].usage);
+	}
+}
