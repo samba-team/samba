@@ -43,6 +43,8 @@
 #include "includes.h"
 #include "utils/net.h"
 
+extern bool AllowDebugChange;
+
 #ifdef WITH_FAKE_KASERVER
 #include "utils/net_afs.h"
 #endif
@@ -508,7 +510,7 @@ static struct functable net_func[] = {
 	 * Don't load debug level from smb.conf. It should be
 	 * set by cmdline arg or remain default (0)
 	 */
-	c->AllowDebugChange = false;
+	AllowDebugChange = false;
 	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
 
  	argv_new = (const char **)poptGetArgs(pc);
