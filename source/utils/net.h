@@ -106,7 +106,6 @@ struct net_context {
 	bool smb_encrypt;
 	struct libnetapi_ctx *netapi_ctx;
 
-	bool AllowDebugChange;
 	const char *share_type[];
 };
 
