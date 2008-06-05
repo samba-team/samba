@@ -4747,6 +4747,7 @@ bool cli_receive_nt_trans(struct cli_state *cli,
 NTSTATUS check_negative_conn_cache_timeout( const char *domain, const char *server, unsigned int failed_cache_timeout );
 NTSTATUS check_negative_conn_cache( const char *domain, const char *server);
 void add_failed_connection_entry(const char *domain, const char *server, NTSTATUS result) ;
+void delete_negative_conn_cache(const char *domain, const char *server);
 void flush_negative_conn_cache( void );
 void flush_negative_conn_cache_for_domain(const char *domain);
 
