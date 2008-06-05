@@ -689,7 +689,8 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 		r->out.domain_is_ad = true;
 		r->out.netbios_domain_name = info->dns.name.string;
 		r->out.dns_domain_name = info->dns.dns_domain.string;
-		r->out.domain_sid = info->dns.sid;
+		r->out.domain_sid = sid_dup_talloc(mem_ctx, info->dns.sid);
+		NT_STATUS_HAVE_NO_MEMORY(r->out.domain_sid);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -702,7 +703,8 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 		}
 
 		r->out.netbios_domain_name = info->account_domain.name.string;
-		r->out.domain_sid = info->account_domain.sid;
+		r->out.domain_sid = sid_dup_talloc(mem_ctx, info->account_domain.sid);
+		NT_STATUS_HAVE_NO_MEMORY(r->out.domain_sid);
 	}
 
 	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
@@ -1114,6 +1116,10 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	struct samr_Ids name_types;
 	union samr_UserInfo *info = NULL;
 
+	ZERO_STRUCT(sam_pol);
+	ZERO_STRUCT(domain_pol);
+	ZERO_STRUCT(user_pol);
+
 	status = cli_full_connection(&cli, NULL,
 				     r->in.dc_name,
 				     NULL, 0,
@@ -1215,8 +1221,12 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 
 done:
 	if (pipe_hnd) {
-		rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
-		rpccli_samr_Close(pipe_hnd, mem_ctx, &sam_pol);
+		if (is_valid_policy_hnd(&domain_pol)) {
+			rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
+		}
+		if (is_valid_policy_hnd(&sam_pol)) {
+			rpccli_samr_Close(pipe_hnd, mem_ctx, &sam_pol);
+		}
 		cli_rpc_pipe_close(pipe_hnd);
 	}
 
@@ -1247,6 +1257,8 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 
 		werr = smbconf_set_global_parameter(ctx, "workgroup",
 						    r->in.domain_name);
+
+		smbconf_delete_global_parameter(ctx, "realm");
 		goto done;
 	}
 

@@ -670,9 +670,33 @@ int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri)
 			return LDAP_OPERATIONS_ERROR;
 #endif /* LDAP_OPT_X_TLS */
 		}
-
 	}
 #endif /* HAVE_LDAP_INITIALIZE */
+
+
+	/* now set connection timeout */
+#ifdef LDAP_X_OPT_CONNECT_TIMEOUT /* Netscape */
+	{
+		int ct = lp_ldap_connection_timeout()*1000;
+		rc = ldap_set_option(*ldap_struct, LDAP_X_OPT_CONNECT_TIMEOUT, &ct);
+		if (rc != LDAP_SUCCESS) {
+			DEBUG(0,("Failed to setup an ldap connection timeout %d: %s\n",
+				ct, ldap_err2string(rc)));
+		}
+	}
+#elif defined (LDAP_OPT_NETWORK_TIMEOUT) /* OpenLDAP */
+	{
+		struct timeval ct;
+		ct.tv_usec = 0;
+		ct.tv_sec = lp_ldap_connection_timeout();
+		rc = ldap_set_option(*ldap_struct, LDAP_OPT_NETWORK_TIMEOUT, &ct);
+		if (rc != LDAP_SUCCESS) {
+			DEBUG(0,("Failed to setup an ldap connection timeout %d: %s\n",
+				(int)ct.tv_sec, ldap_err2string(rc)));
+		}
+	}
+#endif
+
 	return LDAP_SUCCESS;
 }
 
