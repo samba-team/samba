@@ -52,7 +52,7 @@ NTSTATUS pvfs_seek(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case SEEK_MODE_END:
-		status = pvfs_resolve_name_fd(pvfs, h->fd, h->name);
+		status = pvfs_resolve_name_fd(pvfs, h->fd, h->name, PVFS_RESOLVE_NO_OPENDB);
 		h->seek_offset = h->name->st.st_size + io->lseek.in.offset;
 		break;
 	}

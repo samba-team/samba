@@ -287,7 +287,9 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 
 	/* get a pvfs_filename source object */
 	status = pvfs_resolve_partial(pvfs, mem_ctx, 
-				      dir_path, fname1, &name1);
+				      dir_path, fname1,
+				      PVFS_RESOLVE_NO_OPENDB,
+				      &name1);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
@@ -306,7 +308,9 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 
 	/* get a pvfs_filename dest object */
 	status = pvfs_resolve_partial(pvfs, mem_ctx, 
-				      dir_path, fname2, &name2);
+				      dir_path, fname2,
+				      PVFS_RESOLVE_NO_OPENDB,
+				      &name2);
 	if (NT_STATUS_IS_OK(status)) {
 		status = pvfs_can_delete(pvfs, req, name2, NULL);
 		if (!NT_STATUS_IS_OK(status)) {

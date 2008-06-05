@@ -68,16 +68,13 @@ NTSTATUS torture_local_init(void)
 	torture_suite_add_simple_test(suite, "TALLOC", torture_local_talloc);
 	torture_suite_add_simple_test(suite, "REPLACE", torture_local_replace);
 	
-	torture_suite_add_simple_test(suite, "CRYPTO-SHA1", 
-				      torture_local_crypto_sha1);
 	torture_suite_add_simple_test(suite, 
 				      "CRYPTO-MD4", torture_local_crypto_md4);
 	torture_suite_add_simple_test(suite, "CRYPTO-MD5", 
 				      torture_local_crypto_md5);
 	torture_suite_add_simple_test(suite, "CRYPTO-HMACMD5", 
 				      torture_local_crypto_hmacmd5);
-	torture_suite_add_simple_test(suite, "CRYPTO-HMACSHA1", 
-				      torture_local_crypto_hmacsha1);
+
 	for (i = 0; suite_generators[i]; i++)
 		torture_suite_add_suite(suite,
 					suite_generators[i](talloc_autofree_context()));

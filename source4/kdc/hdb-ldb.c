@@ -34,10 +34,7 @@
 
 #include "includes.h"
 #include "system/time.h"
-#include "kdc.h"
 #include "dsdb/common/flags.h"
-#include "hdb.h"
-#include "krb5_locl.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "librpc/gen_ndr/netlogon.h"
@@ -51,6 +48,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "param/param.h"
 #include "events/events.h"
+#include "kdc/kdc.h"
 
 enum hdb_ldb_ent_type 
 { HDB_LDB_ENT_TYPE_CLIENT, HDB_LDB_ENT_TYPE_SERVER, 

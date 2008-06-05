@@ -641,7 +641,7 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	bool err = false; \
 	if (strict && (g cmp c)) { \
 		err = true; \
-	} else if (gr cmp cr) { \
+	} else if ((g cmp c) && (gr cmp cr)) { \
 		/* handle filesystem without high resolution timestamps */ \
 		err = true; \
 	} \
@@ -673,22 +673,10 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 } while (0)
 #define COMPARE_ACCESS_TIME_EQUAL(given,correct) \
 	COMPARE_ACCESS_TIME_CMP(given,correct,!=)
-#define COMPARE_ACCESS_TIME_GREATER(given,correct) \
-	COMPARE_ACCESS_TIME_CMP(given,correct,<=)
-#define COMPARE_ACCESS_TIME_LESS(given,correct) \
-	COMPARE_ACCESS_TIME_CMP(given,correct,>=)
 
 #define COMPARE_BOTH_TIMES_EQUAL(given,correct) do { \
 	COMPARE_ACCESS_TIME_EQUAL(given,correct); \
 	COMPARE_WRITE_TIME_EQUAL(given,correct); \
-} while (0)
-#define COMPARE_BOTH_TIMES_GEATER(given,correct) do { \
-	COMPARE_ACCESS_TIME_GREATER(given,correct); \
-	COMPARE_WRITE_TIME_GREATER(given,correct); \
-} while (0)
-#define COMPARE_BOTH_TIMES_LESS(given,correct) do { \
-	COMPARE_ACCESS_TIME_LESS(given,correct); \
-	COMPARE_WRITE_TIME_LESS(given,correct); \
 } while (0)
 
 #define GET_INFO_FILE(finfo) do { \
@@ -828,6 +816,7 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 	}
 
 	GET_INFO_BOTH(finfo1,pinfo1);
+	COMPARE_WRITE_TIME_GREATER(pinfo1, pinfo0);
 
 	/* sure any further write doesn't update the write time */
 	start = timeval_current();
@@ -982,6 +971,7 @@ static bool test_delayed_write_update4(struct torture_context *tctx,
 	}
 
 	GET_INFO_BOTH(finfo1,pinfo1);
+	COMPARE_WRITE_TIME_GREATER(pinfo1, pinfo0);
 
 	/* sure any further write doesn't update the write time */
 	start = timeval_current();

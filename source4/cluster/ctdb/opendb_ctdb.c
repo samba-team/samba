@@ -283,7 +283,8 @@ static NTSTATUS odb_oplock_break_send(struct odb_context *odb, struct opendb_ent
 */
 static NTSTATUS odb_ctdb_open_file(struct odb_lock *lck,
 				   void *file_handle, const char *path,
-				   int *fd, bool allow_level_II_oplock,
+				   int *fd, NTTIME open_write_time,
+				   bool allow_level_II_oplock,
 				   uint32_t oplock_level, uint32_t *oplock_granted)
 
 {
@@ -492,37 +493,30 @@ static NTSTATUS odb_ctdb_set_delete_on_close(struct odb_lock *lck, bool del_on_c
 	return odb_push_record(lck, &file);
 }
 
+static NTSTATUS odb_ctdb_set_write_time(struct odb_lock *lck,
+					NTTIME write_time, bool force)
+{
+	/*
+	 * as this file will went away and isn't used yet,
+	 * copy the implementation from the tdb backend
+	 * --metze
+	 */
+	return NT_STATUS_FOOBAR;
+}
+
 /*
   return the current value of the delete_on_close bit, and how many
   people still have the file open
 */
-static NTSTATUS odb_ctdb_get_delete_on_close(struct odb_context *odb, 
-					    DATA_BLOB *key, bool *del_on_close)
+static NTSTATUS odb_ctdb_get_file_infos(struct odb_context *odb, DATA_BLOB *key,
+					bool *del_on_close, NTTIME *write_time)
 {
-	NTSTATUS status;
-	struct opendb_file file;
-	struct odb_lock *lck;
-
-	(*del_on_close) = false;
-
-	lck = odb_lock(odb, odb, key);
-	NT_STATUS_HAVE_NO_MEMORY(lck);
-
-	status = odb_pull_record(lck, &file);
-	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
-		talloc_free(lck);
-		return NT_STATUS_OK;
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(lck);
-		return status;
-	}
-
-	(*del_on_close) = file.delete_on_close;
-
-	talloc_free(lck);
-
-	return NT_STATUS_OK;
+	/*
+	 * as this file will went away and isn't used yet,
+	 * copy the implementation from the tdb backend
+	 * --metze
+	 */
+	return NT_STATUS_FOOBAR;
 }
 
 
@@ -589,7 +583,8 @@ static const struct opendb_ops opendb_ctdb_ops = {
 	.odb_rename              = odb_ctdb_rename,
 	.odb_get_path            = odb_ctdb_get_path,
 	.odb_set_delete_on_close = odb_ctdb_set_delete_on_close,
-	.odb_get_delete_on_close = odb_ctdb_get_delete_on_close,
+	.odb_set_write_time      = odb_ctdb_set_write_time,
+	.odb_get_file_infos      = odb_ctdb_get_file_infos,
 	.odb_can_open            = odb_ctdb_can_open,
 	.odb_update_oplock       = odb_ctdb_update_oplock,
 	.odb_break_oplocks       = odb_ctdb_break_oplocks

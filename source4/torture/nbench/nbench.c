@@ -23,7 +23,6 @@
 #include "torture/smbtorture.h"
 #include "system/filesys.h"
 #include "system/locale.h"
-#include "pstring.h"
 
 #include "torture/nbench/proto.h"
 
@@ -59,7 +58,7 @@ static bool run_netbench(struct torture_context *tctx, struct smbcli_state *cli,
 {
 	int torture_nprocs = torture_setting_int(tctx, "nprocs", 4);
 	int i;
-	pstring line;
+	char line[1024];
 	char *cname;
 	FILE *f;
 	bool correct = true;

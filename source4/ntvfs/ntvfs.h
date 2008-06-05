@@ -263,7 +263,7 @@ struct ntvfs_request {
 	struct auth_session_info *session_info;
 
 	/* the smb pid is needed for locking contexts */
-	uint16_t smbpid;
+	uint32_t smbpid;
 
 	/*
 	 * client capabilities

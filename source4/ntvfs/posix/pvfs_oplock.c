@@ -177,7 +177,7 @@ static void pvfs_oplock_break_dispatch(struct messaging_context *msg,
 		opb = *p;
 	} else {
 		DEBUG(0,("%s: ignore oplock break with length[%u]\n",
-			__location__, data->length));
+			 __location__, (unsigned)data->length));
 		return;
 	}
 	if (opb.file_handle != opl->handle) {
