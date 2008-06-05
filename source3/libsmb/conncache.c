@@ -204,7 +204,8 @@ void add_failed_connection_entry(const char *domain, const char *server,
 	}
 
 	if (gencache_set(key, value,
-		time((time_t *) NULL + FAILED_CONNECTION_CACHE_TIMEOUT)))
+			 time((time_t *) NULL)
+			 + FAILED_CONNECTION_CACHE_TIMEOUT))
 		DEBUG(9,("add_failed_connection_entry: added domain %s (%s) "
 			  "to failed conn cache\n", domain, server ));
 	else
