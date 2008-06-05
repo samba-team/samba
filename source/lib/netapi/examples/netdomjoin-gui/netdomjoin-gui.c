@@ -115,6 +115,7 @@ static void callback_do_close(GtkWidget *widget,
 
 	if (data) {
 		gtk_widget_destroy(GTK_WIDGET(data));
+		data = NULL;
 	}
 }
 
@@ -150,6 +151,7 @@ static void callback_do_freeauth_and_close(GtkWidget *widget,
 	}
 	if (state->window_do_change) {
 		gtk_widget_destroy(GTK_WIDGET(state->window_do_change));
+		state->window_do_change = NULL;
 	}
 }
 
@@ -242,6 +244,7 @@ static void callback_do_exit(GtkWidget *widget,
 #endif
 	if (state->window_main) {
 		gtk_widget_destroy(GTK_WIDGET(state->window_main));
+		state->window_main = NULL;
 	}
 	do_cleanup(state);
 	exit(0);
@@ -409,6 +412,7 @@ static void callback_do_storeauth(GtkWidget *widget,
 
 	if (state->window_creds_prompt) {
 		gtk_widget_destroy(GTK_WIDGET(state->window_creds_prompt));
+		state->window_creds_prompt = NULL;
 	}
 }
 
