@@ -59,10 +59,12 @@ static char *negative_conn_cache_keystr(const char *domain, const char *server)
 	SMB_ASSERT(domain != NULL);
 	if (server == NULL)
 		server = "";
-	
-	if (asprintf(&keystr, NEGATIVE_CONN_CACHE_KEY_FMT,
-		     NEGATIVE_CONN_CACHE_PREFIX, domain, server) == -1)
+
+	keystr = talloc_asprintf(talloc_tos(),NEGATIVE_CONN_CACHE_KEY_FMT,
+				 NEGATIVE_CONN_CACHE_PREFIX, domain, server);
+	if (keystr == NULL) {
 		DEBUG(0, ("negative_conn_cache_keystr: malloc error\n"));
+	}
 
 	return keystr;
 }
@@ -80,8 +82,10 @@ static char *negative_conn_cache_valuestr(NTSTATUS status)
 {
 	char *valuestr = NULL;
 
-	if (asprintf(&valuestr, "%x", NT_STATUS_V(status)) == -1)
+	valuestr = talloc_asprintf(talloc_tos(), "%x", NT_STATUS_V(status));
+	if (valuestr == NULL) {
 		DEBUG(0, ("negative_conn_cache_valuestr: malloc error\n"));
+	}
 
 	return valuestr;
 }
@@ -144,7 +148,7 @@ NTSTATUS check_negative_conn_cache( const char *domain, const char *server)
  done:
 	DEBUG(9,("check_negative_conn_cache returning result %d for domain %s "
 		  "server %s\n", NT_STATUS_V(result), domain, server));
-	SAFE_FREE(key);
+	TALLOC_FREE(key);
 	SAFE_FREE(value);
 	return result;
 }
@@ -167,7 +171,7 @@ void delete_negative_conn_cache(const char *domain, const char *server)
 	DEBUG(9,("delete_negative_conn_cache removing domain %s server %s\n",
 		  domain, server));
  done:
-	SAFE_FREE(key);
+	TALLOC_FREE(key);
 	return;
 }
 
@@ -192,13 +196,13 @@ void add_failed_connection_entry(const char *domain, const char *server,
 		DEBUG(0, ("add_failed_connection_entry: key creation error\n"));
 		goto done;
 	}
-	
+
 	value = negative_conn_cache_valuestr(result);
 	if (value == NULL) {
 		DEBUG(0, ("add_failed_connection_entry: value creation error\n"));
 		goto done;
 	}
-	
+
 	if (gencache_set(key, value,
 		time((time_t *) NULL + FAILED_CONNECTION_CACHE_TIMEOUT)))
 		DEBUG(9,("add_failed_connection_entry: added domain %s (%s) "
@@ -209,8 +213,8 @@ void add_failed_connection_entry(const char *domain, const char *server,
 			  domain, server));
 	
  done:
-	SAFE_FREE(key);
-	SAFE_FREE(value);
+	TALLOC_FREE(key);
+	TALLOC_FREE(value);
 	return;
 }
 
@@ -246,6 +250,6 @@ void flush_negative_conn_cache_for_domain(const char *domain)
 		  domain));
 	
  done:
-	SAFE_FREE(key_pattern);
+	TALLOC_FREE(key_pattern);
 	return;
 }
