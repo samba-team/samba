@@ -559,6 +559,8 @@ exit 0
 %files winbind-32bit
 %attr(755,root,root) /%{_libarch}/libnss_winbind.so*
 %attr(755,root,root) /%{_libarch}/libnss_wins.so*
+%attr(755,root,root) /%{_libarchdir}/libtalloc.so*
+%attr(755,root,root) /%{_libarchdir}/libtdb.so*
 %attr(755,root,root) /%{_libarch}/security/pam_winbind.so
 %endif
 
