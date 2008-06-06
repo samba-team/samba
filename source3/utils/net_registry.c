@@ -128,7 +128,7 @@ static int net_registry_enumerate(struct net_context *c, int argc,
 	struct registry_value *valvalue = NULL;
 	int ret = -1;
 
-	if (argc != 1) {
+	if (argc != 1 || c->display_usage) {
 		d_printf("Usage:    net registry enumerate <path>\n");
 		d_printf("Example:  net registry enumerate "
 			 "'HKLM\\Software\\Samba'\n");
@@ -180,7 +180,7 @@ static int net_registry_createkey(struct net_context *c, int argc,
 	TALLOC_CTX *ctx = talloc_stackframe();
 	int ret = -1;
 
-	if (argc != 1) {
+	if (argc != 1 || c->display_usage) {
 		d_printf("Usage:    net registry createkey <path>\n");
 		d_printf("Example:  net registry createkey "
 			 "'HKLM\\Software\\Samba\\smbconf.127.0.0.1'\n");
@@ -232,7 +232,7 @@ static int net_registry_deletekey(struct net_context *c, int argc,
 	TALLOC_CTX *ctx = talloc_stackframe();
 	int ret = -1;
 
-	if (argc != 1) {
+	if (argc != 1 || c->display_usage) {
 		d_printf("Usage:    net registry deletekey <path>\n");
 		d_printf("Example:  net registry deletekey "
 			 "'HKLM\\Software\\Samba\\smbconf.127.0.0.1'\n");
@@ -272,7 +272,7 @@ static int net_registry_getvalue_internal(struct net_context *c, int argc,
 	struct registry_value *value = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 
-	if (argc != 2) {
+	if (argc != 2 || c->display_usage) {
 		d_fprintf(stderr, "usage: net rpc registry getvalue <key> "
 				  "<valuename>\n");
 		goto done;
@@ -321,7 +321,7 @@ static int net_registry_setvalue(struct net_context *c, int argc,
 	int ret = -1;
 	TALLOC_CTX *ctx = talloc_stackframe();
 
-	if (argc < 4) {
+	if (argc < 4 || c->display_usage) {
 		d_fprintf(stderr, "usage: net rpc registry setvalue <key> "
 			  "<valuename> <type> [<val>]+\n");
 		goto done;
@@ -372,7 +372,7 @@ static int net_registry_deletevalue(struct net_context *c, int argc,
 	TALLOC_CTX *ctx = talloc_stackframe();
 	int ret = -1;
 
-	if (argc != 2) {
+	if (argc != 2 || c->display_usage) {
 		d_fprintf(stderr, "usage: net rpc registry deletevalue <key> "
 			  "<valuename>\n");
 		goto done;
@@ -416,7 +416,7 @@ static int net_registry_getsd(struct net_context *c, int argc,
 	 */
 	access_mask = REG_KEY_READ;
 
-	if (argc != 1) {
+	if (argc != 1 || c->display_usage) {
 		d_printf("Usage:    net registry getsd <path>\n");
 		d_printf("Example:  net registry getsd "
 			 "'HKLM\\Software\\Samba'\n");
@@ -453,55 +453,79 @@ int net_registry(struct net_context *c, int argc, const char **argv)
 {
 	int ret = -1;
 
-	struct functable2 func[] = {
+	struct functable3 func[] = {
 		{
 			"enumerate",
 			net_registry_enumerate,
-			"Enumerate registry keys and values"
+			NET_TRANSPORT_LOCAL,
+			"Enumerate registry keys and values",
+			"net registry enumerate\n"
+			"    Enumerate registry keys and values"
 		},
 		{
 			"createkey",
 			net_registry_createkey,
-			"Create a new registry key"
+			NET_TRANSPORT_LOCAL,
+			"Create a new registry key",
+			"net registry createkey\n"
+			"    Create a new registry key"
 		},
 		{
 			"deletekey",
 			net_registry_deletekey,
-			"Delete a registry key"
+			NET_TRANSPORT_LOCAL,
+			"Delete a registry key",
+			"net registry deletekey\n"
+			"    Delete a registry key"
 		},
 		{
 			"getvalue",
 			net_registry_getvalue,
+			NET_TRANSPORT_LOCAL,
 			"Print a registry value",
+			"net registry getvalue\n"
+			"    Print a registry value"
 		},
 		{
 			"getvalueraw",
 			net_registry_getvalueraw,
+			NET_TRANSPORT_LOCAL,
 			"Print a registry value (raw format)",
+			"net registry getvalueraw\n"
+			"    Print a registry value (raw format)"
 		},
 		{
 			"setvalue",
 			net_registry_setvalue,
-			"Set a new registry value"
+			NET_TRANSPORT_LOCAL,
+			"Set a new registry value",
+			"net registry setvalue\n"
+			"    Set a new registry value"
 		},
 		{
 			"deletevalue",
 			net_registry_deletevalue,
-			"Delete a registry value"
+			NET_TRANSPORT_LOCAL,
+			"Delete a registry value",
+			"net registry deletevalue\n"
+			"    Delete a registry value"
 		},
 		{
 			"getsd",
 			net_registry_getsd,
-			"Get security descriptor"
+			NET_TRANSPORT_LOCAL,
+			"Get security descriptor",
+			"net registry getsd\n"
+			"    Get security descriptor"
 		},
-	{ NULL, NULL, NULL }
+	{ NULL, NULL, 0, NULL, NULL }
 	};
 
 	if (!W_ERROR_IS_OK(registry_init_basic())) {
 		return -1;
 	}
 
-	ret = net_run_function2(c, argc, argv, "net registry", func);
+	ret = net_run_function3(c, argc, argv, "net registry", func);
 
 	return ret;
 }
