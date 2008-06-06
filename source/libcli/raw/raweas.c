@@ -131,6 +131,8 @@ uint_t ea_pull_struct(const DATA_BLOB *blob,
 	uint8_t nlen;
 	uint16_t vlen;
 
+	ZERO_STRUCTP(ea);
+
 	if (blob->length < 6) {
 		return 0;
 	}
