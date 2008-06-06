@@ -203,3 +203,22 @@ WERROR NetServerSetInfo_r(struct libnetapi_ctx *ctx,
  done:
 	return werr;
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
+		      struct NetRemoteTOD *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetRemoteTOD_l(struct libnetapi_ctx *ctx,
+		      struct NetRemoteTOD *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+

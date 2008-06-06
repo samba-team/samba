@@ -1089,3 +1089,45 @@ NET_API_STATUS NetLocalGroupSetInfo(const char * server_name /* [in] */,
 	return r.out.result;
 }
 
+/****************************************************************
+ NetRemoteTOD
+****************************************************************/
+
+NET_API_STATUS NetRemoteTOD(const char * server_name /* [in] */,
+			    uint8_t **buf /* [out] [ref] */)
+{
+	struct NetRemoteTOD r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+
+	/* Out parameters */
+	r.out.buf = buf;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetRemoteTOD, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetRemoteTOD_l(ctx, &r);
+	} else {
+		werr = NetRemoteTOD_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetRemoteTOD, &r);
+	}
+
+	return r.out.result;
+}
+
