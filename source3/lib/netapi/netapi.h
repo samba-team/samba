@@ -157,6 +157,21 @@ struct LOCALGROUP_INFO_1002 {
 	const char * lgrpi1002_comment;
 };
 
+struct TIME_OF_DAY_INFO {
+	uint32_t tod_elapsedt;
+	uint32_t tod_msecs;
+	uint32_t tod_hours;
+	uint32_t tod_mins;
+	uint32_t tod_secs;
+	uint32_t tod_hunds;
+	int32_t tod_timezone;
+	uint32_t tod_tinterval;
+	uint32_t tod_day;
+	uint32_t tod_month;
+	uint32_t tod_year;
+	uint32_t tod_weekday;
+};
+
 #endif /* _HEADER_libnetapi */
 
 /****************************************************************
@@ -709,5 +724,21 @@ NET_API_STATUS NetLocalGroupSetInfo(const char * server_name /* [in] */,
 				    uint32_t level /* [in] */,
 				    uint8_t *buf /* [in] [ref] */,
 				    uint32_t *parm_err /* [out] [ref] */);
+
+/************************************************************//**
+ *
+ * NetRemoteTOD
+ *
+ * @brief Query remote Time of Day
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[out] buf The buffer containing a TIME_OF_DAY_INFO structure
+ * @return NET_API_STATUS
+ *
+ * example server/remote_tod.c
+ ***************************************************************/
+
+NET_API_STATUS NetRemoteTOD(const char * server_name /* [in] */,
+			    uint8_t **buf /* [out] [ref] */);
 
 #endif
