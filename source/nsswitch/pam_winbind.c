@@ -1946,6 +1946,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	unsigned int lctrl;
 	int ret;
 	unsigned int ctrl;
+	bool cached_login = False;
 
 	/* <DO NOT free() THESE> */
 	const char *user;
@@ -1969,7 +1970,9 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 
 	_PAM_LOG_FUNCTION_ENTER("pam_sm_chauthtok", pamh, ctrl, flags);
 
-	/* clearing offline bit for the auth in the password change */
+	cached_login = (ctrl & WINBIND_CACHED_LOGIN);
+
+	/* clearing offline bit for auth */
 	ctrl &= ~WINBIND_CACHED_LOGIN;
 
 	/*
@@ -2117,6 +2120,15 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		_pam_get_data( pamh, PAM_WINBIND_PWD_LAST_SET,
 			       &pwdlastset_update);
 
+		/*
+		 * if cached creds were enabled, make sure to set the
+		 * WINBIND_CACHED_LOGIN bit here in order to have winbindd
+		 * update the cached creds storage - gd
+		 */
+		if (cached_login) {
+			ctrl |= WINBIND_CACHED_LOGIN;
+		}
+
 		ret = winbind_chauthtok_request(pamh, ctrl, user, pass_old, pass_new, pwdlastset_update);
 		if (ret) {
 			_pam_overwrite(pass_new);
@@ -2129,6 +2141,9 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 
 			const char *member = get_member_from_config(pamh, argc, argv, ctrl, d);
 			const char *cctype = get_krb5_cc_type_from_config(pamh, argc, argv, ctrl, d);
+
+			/* clearing offline bit for auth */
+			ctrl &= ~WINBIND_CACHED_LOGIN;
 
 			ret = winbind_auth_request(pamh, ctrl, user, pass_new,
 							member, cctype, &response, NULL, &username_ret);
