@@ -181,27 +181,30 @@ NTSTATUS connect_to_service(struct cli_state **c, struct in_addr *server_ip,
 					opt_user_name, opt_workgroup,
 					opt_password, 0, Undefined, NULL);
 
-	if (NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	} else {
-		d_fprintf(stderr, "Could not connect to server %s\n", server_name);
-
-		/* Display a nicer message depending on the result */
-
-		if (NT_STATUS_V(nt_status) == 
-		    NT_STATUS_V(NT_STATUS_LOGON_FAILURE))
-			d_fprintf(stderr, "The username or password was not correct.\n");
-
-		if (NT_STATUS_V(nt_status) == 
-		    NT_STATUS_V(NT_STATUS_ACCOUNT_LOCKED_OUT))
-			d_fprintf(stderr, "The account was locked out.\n");
-
-		if (NT_STATUS_V(nt_status) == 
-		    NT_STATUS_V(NT_STATUS_ACCOUNT_DISABLED))
-			d_fprintf(stderr, "The account was disabled.\n");
-
+	if (NT_STATUS_IS_OK(nt_status) ||
+	    NT_STATUS_EQUAL(nt_status, NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT) ||
+	    NT_STATUS_EQUAL(nt_status, NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT) ||
+	    NT_STATUS_EQUAL(nt_status, NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT)) {
 		return nt_status;
 	}
+
+	d_fprintf(stderr, "Could not connect to server %s\n", server_name);
+
+	/* Display a nicer message depending on the result */
+
+	if (NT_STATUS_V(nt_status) ==
+	    NT_STATUS_V(NT_STATUS_LOGON_FAILURE))
+		d_fprintf(stderr, "The username or password was not correct.\n");
+
+	if (NT_STATUS_V(nt_status) ==
+	    NT_STATUS_V(NT_STATUS_ACCOUNT_LOCKED_OUT))
+		d_fprintf(stderr, "The account was locked out.\n");
+
+	if (NT_STATUS_V(nt_status) ==
+	    NT_STATUS_V(NT_STATUS_ACCOUNT_DISABLED))
+		d_fprintf(stderr, "The account was disabled.\n");
+
+	return nt_status;
 }
 
 
@@ -481,7 +484,7 @@ struct cli_state *net_make_ipc_connection_ex( const char *domain, const char *se
 	char *server_name = NULL;
 	struct in_addr server_ip;
 	struct cli_state *cli = NULL;
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
 	if ( !server || !ip ) {
 		if (!net_find_server(domain, flags, &server_ip, &server_name)) {
@@ -493,25 +496,31 @@ struct cli_state *net_make_ipc_connection_ex( const char *domain, const char *se
 		server_ip = *ip;
 	}
 
+	if (opt_user_name && opt_password) {
+		nt_status = connect_to_ipc(&cli, &server_ip, server_name);
+		if (NT_STATUS_IS_OK(nt_status)) {
+			goto connected;
+		}
+	}
 	if (flags & NET_FLAGS_ANONYMOUS) {
 		nt_status = connect_to_ipc_anonymous(&cli, &server_ip, server_name);
-	} else {
-		nt_status = connect_to_ipc(&cli, &server_ip, server_name);
+		if (NT_STATUS_IS_OK(nt_status)) {
+			goto connected;
+		}
 	}
 
+	SAFE_FREE(server_name);
+	d_fprintf(stderr, "Connection failed: %s\n",
+		  nt_errstr(nt_status));
+	return NULL;
+
+ connected:
 	/* store the server in the affinity cache if it was a PDC */
 
 	if ( (flags & NET_FLAGS_PDC) && NT_STATUS_IS_OK(nt_status) )
 		saf_store( cli->server_domain, cli->desthost );
 
-	SAFE_FREE(server_name);
-	if (NT_STATUS_IS_OK(nt_status)) {
-		return cli;
-	} else {
-		d_fprintf(stderr, "Connection failed: %s\n",
-			  nt_errstr(nt_status));
-		return NULL;
-	}
+	return cli;
 }
 
 static int net_user(int argc, const char **argv)
