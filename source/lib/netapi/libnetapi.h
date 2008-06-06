@@ -187,4 +187,10 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 			      struct NetLocalGroupSetInfo *r);
 WERROR NetLocalGroupSetInfo_l(struct libnetapi_ctx *ctx,
 			      struct NetLocalGroupSetInfo *r);
+NET_API_STATUS NetRemoteTOD(const char * server_name /* [in] */,
+			    uint8_t **buf /* [out] [ref] */);
+WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
+		      struct NetRemoteTOD *r);
+WERROR NetRemoteTOD_l(struct libnetapi_ctx *ctx,
+		      struct NetRemoteTOD *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */
