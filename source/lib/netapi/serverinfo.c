@@ -210,7 +210,37 @@ WERROR NetServerSetInfo_r(struct libnetapi_ctx *ctx,
 WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
 		      struct NetRemoteTOD *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	NTSTATUS status;
+	WERROR werr;
+	struct srvsvc_NetRemoteTODInfo *info = NULL;
+
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_open_pipe(ctx, cli, PI_SRVSVC, &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	status = rpccli_srvsvc_NetRemoteTOD(pipe_cli, ctx,
+					    r->in.server_name,
+					    &info,
+					    &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	*r->out.buf = (uint8_t *)talloc_memdup(ctx, info,
+			sizeof(struct srvsvc_NetRemoteTODInfo));
+	W_ERROR_HAVE_NO_MEMORY(*r->out.buf);
+
+ done:
+	return werr;
 }
 
 /****************************************************************
@@ -219,6 +249,6 @@ WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
 WERROR NetRemoteTOD_l(struct libnetapi_ctx *ctx,
 		      struct NetRemoteTOD *r)
 {
-	return WERR_NOT_SUPPORTED;
+	return NetRemoteTOD_r(ctx, r);
 }
 
