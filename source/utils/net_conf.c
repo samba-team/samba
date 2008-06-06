@@ -241,7 +241,7 @@ static int net_conf_list(struct net_context *c, struct smbconf_ctx *conf_ctx,
 
 	mem_ctx = talloc_stackframe();
 
-	if (argc != 0) {
+	if (argc != 0 || c->display_usage) {
 		net_conf_list_usage(c, argc, argv);
 		goto done;
 	}
@@ -288,6 +288,9 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 	TALLOC_CTX *mem_ctx;
 	struct smbconf_ctx *txt_ctx;
 	WERROR werr;
+
+	if (c->display_usage)
+		return net_conf_import_usage(c, argc, argv);
 
 	mem_ctx = talloc_stackframe();
 
@@ -385,7 +388,7 @@ static int net_conf_listshares(struct net_context *c,
 
 	mem_ctx = talloc_stackframe();
 
-	if (argc != 0) {
+	if (argc != 0 || c->display_usage) {
 		net_conf_listshares_usage(c, argc, argv);
 		goto done;
 	}
@@ -414,7 +417,7 @@ static int net_conf_drop(struct net_context *c, struct smbconf_ctx *conf_ctx,
 	int ret = -1;
 	WERROR werr;
 
-	if (argc != 0) {
+	if (argc != 0 || c->display_usage) {
 		net_conf_drop_usage(c, argc, argv);
 		goto done;
 	}
@@ -445,7 +448,7 @@ static int net_conf_showshare(struct net_context *c,
 
 	mem_ctx = talloc_stackframe();
 
-	if (argc != 1) {
+	if (argc != 1 || c->display_usage) {
 		net_conf_showshare_usage(c, argc, argv);
 		goto done;
 	}
@@ -496,6 +499,12 @@ static int net_conf_addshare(struct net_context *c,
 	const char *writeable = "no";
 	SMB_STRUCT_STAT sbuf;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
+
+	if (c->display_usage) {
+		net_conf_addshare_usage(c, argc, argv);
+		ret = 0;
+		goto done;
+	}
 
 	switch (argc) {
 		case 0:
@@ -673,7 +682,7 @@ static int net_conf_delshare(struct net_context *c,
 	WERROR werr = WERR_OK;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	if (argc != 1) {
+	if (argc != 1 || c->display_usage) {
 		net_conf_delshare_usage(c, argc, argv);
 		goto done;
 	}
@@ -706,7 +715,7 @@ static int net_conf_setparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 	const char *value_str = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	if (argc != 3) {
+	if (argc != 3 || c->display_usage) {
 		net_conf_setparm_usage(c, argc, argv);
 		goto done;
 	}
@@ -758,7 +767,7 @@ static int net_conf_getparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 
 	mem_ctx = talloc_stackframe();
 
-	if (argc != 2) {
+	if (argc != 2 || c->display_usage) {
 		net_conf_getparm_usage(c, argc, argv);
 		goto done;
 	}
@@ -808,7 +817,7 @@ static int net_conf_delparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 	char *param = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	if (argc != 2) {
+	if (argc != 2 || c->display_usage) {
 		net_conf_delparm_usage(c, argc, argv);
 		goto done;
 	}
@@ -860,7 +869,7 @@ static int net_conf_getincludes(struct net_context *c,
 	int ret = -1;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	if (argc != 1) {
+	if (argc != 1 || c->display_usage) {
 		net_conf_getincludes_usage(c, argc, argv);
 		goto done;
 	}
@@ -900,7 +909,7 @@ static int net_conf_setincludes(struct net_context *c,
 	int ret = -1;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	if (argc < 1) {
+	if (argc < 1 || c->display_usage) {
 		net_conf_setincludes_usage(c, argc, argv);
 		goto done;
 	}
@@ -940,7 +949,7 @@ static int net_conf_delincludes(struct net_context *c,
 	int ret = -1;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	if (argc != 1) {
+	if (argc != 1 || c->display_usage) {
 		net_conf_delincludes_usage(c, argc, argv);
 		goto done;
 	}
@@ -1009,11 +1018,13 @@ struct conf_functable {
 	const char *funcname;
 	int (*fn)(struct net_context *c, struct smbconf_ctx *ctx, int argc,
 		  const char **argv);
-	const char *helptext;
+	int valid_transports;
+	const char *description;
+	const char *usage;
 };
 
 /**
- * This imitates net_run_function2 but calls the main functions
+ * This imitates net_run_function3 but calls the main functions
  * through the wrapper net_conf_wrap_function().
  */
 static int net_conf_run_function(struct net_context *c, int argc,
@@ -1031,12 +1042,16 @@ static int net_conf_run_function(struct net_context *c, int argc,
 		}
 	}
 
+	d_printf("Usage:\n");
 	for (i=0; table[i].funcname; i++) {
-		d_printf("%s %-15s %s\n", whoami, table[i].funcname,
-			 table[i].helptext);
+		if (c->display_usage == false)
+			d_printf("%s %-15s %s\n", whoami, table[i].funcname,
+				 table[i].description);
+		else
+			d_printf("%s\n", table[i].usage);
 	}
 
-	return -1;
+	return c->display_usage?0:-1;
 }
 
 /*
@@ -1047,33 +1062,114 @@ int net_conf(struct net_context *c, int argc, const char **argv)
 {
 	int ret = -1;
 	struct conf_functable func_table[] = {
-		{"list", net_conf_list,
-		 "Dump the complete configuration in smb.conf like format."},
-		{"import", net_conf_import,
-		 "Import configuration from file in smb.conf format."},
-		{"listshares", net_conf_listshares,
-		 "List the share names."},
-		{"drop", net_conf_drop,
-		 "Delete the complete configuration."},
-		{"showshare", net_conf_showshare,
-		 "Show the definition of a share."},
-		{"addshare", net_conf_addshare,
-		 "Create a new share."},
-		{"delshare", net_conf_delshare,
-		 "Delete a share."},
-		{"setparm", net_conf_setparm,
-		 "Store a parameter."},
-		{"getparm", net_conf_getparm,
-		 "Retrieve the value of a parameter."},
-		{"delparm", net_conf_delparm,
-		 "Delete a parameter."},
-		{"getincludes", net_conf_getincludes,
-		 "Show the includes of a share definition."},
-		{"setincludes", net_conf_setincludes,
-		 "Set includes for a share."},
-		{"delincludes", net_conf_delincludes,
-		 "Delete includes from a share definition."},
-		{NULL, NULL, NULL}
+		{
+			"list",
+			net_conf_list,
+			NET_TRANSPORT_LOCAL,
+			"Dump the complete configuration in smb.conf like "
+			"format.",
+			"net conf list\n"
+			"    Dump the complete configuration in smb.conf like "
+			"format."
+
+		},
+		{
+			"import",
+			net_conf_import,
+			NET_TRANSPORT_LOCAL,
+			"Import configuration from file in smb.conf format.",
+			"net conf import\n"
+			"    Import configuration from file in smb.conf format."
+		},
+		{
+			"listshares",
+			net_conf_listshares,
+			NET_TRANSPORT_LOCAL,
+			"List the share names.",
+			"net conf listshares\n"
+			"    List the share names."
+		},
+		{
+			"drop",
+			net_conf_drop,
+			NET_TRANSPORT_LOCAL,
+			"Delete the complete configuration.",
+			"net conf drop\n"
+			"    Delete the complete configuration."
+		},
+		{
+			"showshare",
+			net_conf_showshare,
+			NET_TRANSPORT_LOCAL,
+			"Show the definition of a share.",
+			"net conf showshare\n"
+			"    Show the definition of a share."
+		},
+		{
+			"addshare",
+			net_conf_addshare,
+			NET_TRANSPORT_LOCAL,
+			"Create a new share.",
+			"net conf addshare\n"
+			"    Create a new share."
+		},
+		{
+			"delshare",
+			net_conf_delshare,
+			NET_TRANSPORT_LOCAL,
+			"Delete a share.",
+			"net conf delshare\n"
+			"    Delete a share."
+		},
+		{
+			"setparm",
+			net_conf_setparm,
+			NET_TRANSPORT_LOCAL,
+			"Store a parameter.",
+			"net conf setparm\n"
+			"    Store a parameter."
+		},
+		{
+			"getparm",
+			net_conf_getparm,
+			NET_TRANSPORT_LOCAL,
+			"Retrieve the value of a parameter.",
+			"net conf getparm\n"
+			"    Retrieve the value of a parameter."
+		},
+		{
+			"delparm",
+			net_conf_delparm,
+			NET_TRANSPORT_LOCAL,
+			"Delete a parameter.",
+			"net conf delparm\n"
+			"    Delete a parameter."
+		},
+		{
+			"getincludes",
+			net_conf_getincludes,
+			NET_TRANSPORT_LOCAL,
+			"Show the includes of a share definition.",
+			"net conf getincludes\n"
+			"    Show the includes of a share definition."
+		},
+		{
+			"setincludes",
+			net_conf_setincludes,
+			NET_TRANSPORT_LOCAL,
+			"Set includes for a share.",
+			"net conf setincludes\n"
+			"    Set includes for a share."
+		},
+		{
+			"delincludes",
+			net_conf_delincludes,
+			NET_TRANSPORT_LOCAL,
+			"Delete includes from a share definition.",
+			"net conf setincludes\n"
+			"    Delete includes from a share definition."
+		},
+		{NULL, NULL, 0, NULL, NULL}
 	};
 
 	ret = net_conf_run_function(c, argc, argv, "net conf", func_table);
