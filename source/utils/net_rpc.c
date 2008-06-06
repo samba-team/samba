@@ -2893,86 +2893,33 @@ static int rpc_group_members(struct net_context *c, int argc, const char **argv)
 			       argc, argv);
 }
 
-static NTSTATUS rpc_group_rename_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
-					const char *domain_name,
-					struct cli_state *cli,
-					struct rpc_pipe_client *pipe_hnd,
-					TALLOC_CTX *mem_ctx,
-					int argc,
-					const char **argv)
+static int rpc_group_rename_internals(struct net_context *c, int argc, const char **argv)
 {
-	NTSTATUS result;
-	POLICY_HND connect_pol, domain_pol, group_pol;
-	union samr_GroupInfo group_info;
-	struct samr_Ids rids, rid_types;
-	struct lsa_String lsa_acct_name;
+	NET_API_STATUS status;
+	struct GROUP_INFO_0 g0;
+	uint32_t parm_err;
 
 	if (argc != 2) {
 		d_printf("Usage: 'net rpc group rename group newname'\n");
-		return NT_STATUS_UNSUCCESSFUL;
+		return -1;
 	}
 
-	/* Get sam policy handle */
+	g0.grpi0_name = argv[1];
 
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-				      pipe_hnd->desthost,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
+	status = NetGroupSetInfo(c->opt_host,
+				 argv[0],
+				 0,
+				 (uint8_t *)&g0,
+				 &parm_err);
 
-	if (!NT_STATUS_IS_OK(result))
-		return result;
-
-	/* Get domain policy handle */
-
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
-					&connect_pol,
-					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
-					&domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		return result;
-
-	init_lsa_String(&lsa_acct_name, argv[0]);
-
-	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
-					 &domain_pol,
-					 1,
-					 &lsa_acct_name,
-					 &rids,
-					 &rid_types);
-
-	if (rids.count != 1) {
-		d_fprintf(stderr, "Couldn't find group %s\n", argv[0]);
-		return result;
+	if (status != 0) {
+		d_fprintf(stderr, "Renaming group %s failed with: %s\n",
+			argv[0], libnetapi_get_error_string(c->netapi_ctx,
+			status));
+		return -1;
 	}
 
-	if (rid_types.ids[0] != SID_NAME_DOM_GRP) {
-		d_fprintf(stderr, "Can only rename domain groups\n");
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	result = rpccli_samr_OpenGroup(pipe_hnd, mem_ctx,
-				       &domain_pol,
-				       MAXIMUM_ALLOWED_ACCESS,
-				       rids.ids[0],
-				       &group_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		return result;
-
-	init_lsa_String(&group_info.name, argv[1]);
-
-	result = rpccli_samr_SetGroupInfo(pipe_hnd, mem_ctx,
-					  &group_pol,
-					  2,
-					  &group_info);
-
-	if (!NT_STATUS_IS_OK(result))
-		return result;
-
-	return NT_STATUS_NO_SUCH_GROUP;
+	return 0;
 }
 
 static int rpc_group_rename(struct net_context *c, int argc, const char **argv)
@@ -2981,9 +2928,7 @@ static int rpc_group_rename(struct net_context *c, int argc, const char **argv)
 		return rpc_group_usage(c, argc, argv);
 	}
 
-	return run_rpc_command(c, NULL, PI_SAMR, 0,
-			       rpc_group_rename_internals,
-			       argc, argv);
+	return rpc_group_rename_internals(c, argc, argv);
 }
 
 /**
