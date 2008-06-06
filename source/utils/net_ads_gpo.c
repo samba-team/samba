@@ -53,13 +53,13 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 
 	status = ads_startup(c, false, &ads);
 	if (!ADS_ERR_OK(status)) {
-		printf("failed to connect AD server: %s\n", ads_errstr(status));
+		d_printf("failed to connect AD server: %s\n", ads_errstr(status));
 		goto out;
 	}
 
 	status = ads_find_samaccount(ads, mem_ctx, argv[0], &uac, &dn);
 	if (!ADS_ERR_OK(status)) {
-		printf("failed to find samaccount for %s\n", argv[0]);
+		d_printf("failed to find samaccount for %s\n", argv[0]);
 		goto out;
 	}
 
@@ -67,11 +67,11 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 		flags |= GPO_LIST_FLAG_MACHINE;
 	}
 
-	printf("\n%s: '%s' has dn: '%s'\n\n",
+	d_printf("\n%s: '%s' has dn: '%s'\n\n",
 		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? "machine" : "user",
 		argv[0], dn);
 
-	printf("* fetching token ");
+	d_printf("* fetching token ");
 	if (uac & UF_WORKSTATION_TRUST_ACCOUNT) {
 		status = gp_get_machine_token(ads, mem_ctx, dn, &token);
 	} else {
@@ -79,44 +79,44 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 	}
 
 	if (!ADS_ERR_OK(status)) {
-		printf("failed: %s\n", ads_errstr(status));
+		d_printf("failed: %s\n", ads_errstr(status));
 		goto out;
 	}
-	printf("finished\n");
+	d_printf("finished\n");
 
-	printf("* fetching GPO List ");
+	d_printf("* fetching GPO List ");
 	status = ads_get_gpo_list(ads, mem_ctx, dn, flags, token, &gpo_list);
 	if (!ADS_ERR_OK(status)) {
-		printf("failed: %s\n", ads_errstr(status));
+		d_printf("failed: %s\n", ads_errstr(status));
 		goto out;
 	}
-	printf("finished\n");
+	d_printf("finished\n");
 
-	printf("* refreshing Group Policy Data ");
+	d_printf("* refreshing Group Policy Data ");
 	if (!NT_STATUS_IS_OK(result = check_refresh_gpo_list(ads, mem_ctx,
 							     flags,
 							     gpo_list))) {
-		printf("failed: %s\n", nt_errstr(result));
+		d_printf("failed: %s\n", nt_errstr(result));
 		goto out;
 	}
-	printf("finished\n");
+	d_printf("finished\n");
 
-	printf("* storing GPO list to registry ");
+	d_printf("* storing GPO list to registry ");
 
 	{
 		WERROR werr = gp_reg_state_store(mem_ctx, flags, dn,
 						 token, gpo_list);
 		if (!W_ERROR_IS_OK(werr)) {
-			printf("failed: %s\n", dos_errstr(werr));
+			d_printf("failed: %s\n", dos_errstr(werr));
 			goto out;
 		}
 	}
 
-	printf("finished\n");
+	d_printf("finished\n");
 
 	if (c->opt_verbose) {
 
-		printf("* dumping GPO list\n");
+		d_printf("* dumping GPO list\n");
 
 		for (gpo = gpo_list; gpo; gpo = gpo->next) {
 
@@ -124,9 +124,9 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 #if 0
 		char *server, *share, *nt_path, *unix_path;
 
-		printf("--------------------------------------\n");
-		printf("Name:\t\t\t%s\n", gpo->display_name);
-		printf("LDAP GPO version:\t%d (user: %d, machine: %d)\n",
+		d_printf("--------------------------------------\n");
+		d_printf("Name:\t\t\t%s\n", gpo->display_name);
+		d_printf("LDAP GPO version:\t%d (user: %d, machine: %d)\n",
 			gpo->version,
 			GPO_VERSION_USER(gpo->version),
 			GPO_VERSION_MACHINE(gpo->version));
@@ -135,33 +135,33 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 						 &server, &share, &nt_path,
 						 &unix_path);
 		if (!NT_STATUS_IS_OK(result)) {
-			printf("got: %s\n", nt_errstr(result));
+			d_printf("got: %s\n", nt_errstr(result));
 		}
 
-		printf("GPO stored on server: %s, share: %s\n", server, share);
-		printf("\tremote path:\t%s\n", nt_path);
-		printf("\tlocal path:\t%s\n", unix_path);
+		d_printf("GPO stored on server: %s, share: %s\n", server, share);
+		d_printf("\tremote path:\t%s\n", nt_path);
+		d_printf("\tlocal path:\t%s\n", unix_path);
 #endif
 		}
 	}
 
-	printf("* re-reading GPO list from registry ");
+	d_printf("* re-reading GPO list from registry ");
 
 	{
 		WERROR werr = gp_reg_state_read(mem_ctx, flags,
 						&token->user_sids[0],
 						&read_list);
 		if (!W_ERROR_IS_OK(werr)) {
-			printf("failed: %s\n", dos_errstr(werr));
+			d_printf("failed: %s\n", dos_errstr(werr));
 			goto out;
 		}
 	}
 
-	printf("finished\n");
+	d_printf("finished\n");
 
 	if (c->opt_verbose) {
 
-		printf("* dumping GPO list from registry\n");
+		d_printf("* dumping GPO list from registry\n");
 
 		for (gpo = read_list; gpo; gpo = gpo->next) {
 
@@ -170,9 +170,9 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 #if 0
 		char *server, *share, *nt_path, *unix_path;
 
-		printf("--------------------------------------\n");
-		printf("Name:\t\t\t%s\n", gpo->display_name);
-		printf("LDAP GPO version:\t%d (user: %d, machine: %d)\n",
+		d_printf("--------------------------------------\n");
+		d_printf("Name:\t\t\t%s\n", gpo->display_name);
+		d_printf("LDAP GPO version:\t%d (user: %d, machine: %d)\n",
 			gpo->version,
 			GPO_VERSION_USER(gpo->version),
 			GPO_VERSION_MACHINE(gpo->version));
@@ -181,12 +181,12 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 						 &server, &share, &nt_path,
 						 &unix_path);
 		if (!NT_STATUS_IS_OK(result)) {
-			printf("got: %s\n", nt_errstr(result));
+			d_printf("got: %s\n", nt_errstr(result));
 		}
 
-		printf("GPO stored on server: %s, share: %s\n", server, share);
-		printf("\tremote path:\t%s\n", nt_path);
-		printf("\tlocal path:\t%s\n", unix_path);
+		d_printf("GPO stored on server: %s, share: %s\n", server, share);
+		d_printf("\tremote path:\t%s\n", nt_path);
+		d_printf("\tlocal path:\t%s\n", unix_path);
 #endif
 		}
 	}
@@ -323,7 +323,7 @@ static int net_ads_gpo_list(struct net_context *c, int argc, const char **argv)
 		flags |= GPO_LIST_FLAG_MACHINE;
 	}
 
-	printf("%s: '%s' has dn: '%s'\n",
+	d_printf("%s: '%s' has dn: '%s'\n",
 		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? "machine" : "user",
 		argv[0], dn);
 
@@ -386,13 +386,13 @@ static int net_ads_gpo_apply(struct net_context *c, int argc, const char **argv)
 
 	status = ads_startup(c, false, &ads);
 	if (!ADS_ERR_OK(status)) {
-		printf("got: %s\n", ads_errstr(status));
+		d_printf("got: %s\n", ads_errstr(status));
 		goto out;
 	}
 
 	status = ads_find_samaccount(ads, mem_ctx, argv[0], &uac, &dn);
 	if (!ADS_ERR_OK(status)) {
-		printf("failed to find samaccount for %s: %s\n",
+		d_printf("failed to find samaccount for %s: %s\n",
 			argv[0], ads_errstr(status));
 		goto out;
 	}
@@ -405,7 +405,7 @@ static int net_ads_gpo_apply(struct net_context *c, int argc, const char **argv)
 		flags |= GPO_INFO_FLAG_VERBOSE;
 	}
 
-	printf("%s: '%s' has dn: '%s'\n",
+	d_printf("%s: '%s' has dn: '%s'\n",
 		(uac & UF_WORKSTATION_TRUST_ACCOUNT) ? "machine" : "user",
 		argv[0], dn);
 
