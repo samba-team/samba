@@ -289,4 +289,23 @@ interface libnetapi
 		[out,ref] uint32 *parm_err
 		);
 
+	typedef struct {
+		uint32 tod_elapsedt;
+		uint32 tod_msecs;
+		uint32 tod_hours;
+		uint32 tod_mins;
+		uint32 tod_secs;
+		uint32 tod_hunds;
+		int32 tod_timezone;
+		uint32 tod_tinterval;
+		uint32 tod_day;
+		uint32 tod_month;
+		uint32 tod_year;
+		uint32 tod_weekday;
+	} TIME_OF_DAY_INFO;
+
+	[nopush,nopull] NET_API_STATUS NetRemoteTOD(
+		[in] string server_name,
+		[out,ref] uint8 **buf
+		);
 }
