@@ -399,6 +399,7 @@ bool secrets_fetch_trust_account_password_legacy(const char *domain,
 
 	if (size != sizeof(*pass)) {
 		DEBUG(0, ("secrets were of incorrect size!\n"));
+		SAFE_FREE(pass);
 		return False;
 	}
 
@@ -883,10 +884,11 @@ bool fetch_ldap_pw(char **dn, char** pw)
 			if (*p == ',') *p = '/';
 
 		data=(char *)secrets_fetch(old_style_key, &size);
-		if (!size && size < sizeof(old_style_pw)) {
+		if ((data == NULL) || (size < sizeof(old_style_pw))) {
 			DEBUG(0,("fetch_ldap_pw: neither ldap secret retrieved!\n"));
 			SAFE_FREE(old_style_key);
 			SAFE_FREE(*dn);
+			SAFE_FREE(data);
 			return False;
 		}
 
@@ -1059,6 +1061,8 @@ bool secrets_fetch_afs_key(const char *cell, struct afs_key *result)
 	*result = keyfile->entry[i-1];
 
 	result->kvno = ntohl(result->kvno);
+
+	SAFE_FREE(keyfile);
 
 	return True;
 }
