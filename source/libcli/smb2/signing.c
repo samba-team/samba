@@ -26,41 +26,13 @@
 #include "lib/crypto/crypto.h"
 
 /*
-  NOTE: this code does not yet interoperate with the windows SMB2
-  implementation. We are waiting on feedback on the docs to find out
-  why
- */
-
-
-/*
-  setup signing on a transport
- */
-NTSTATUS smb2_start_signing(struct smb2_transport *transport)
-{
-	if (transport->signing.session_key.length != 16) {
-		DEBUG(2,("Wrong session key length %u for SMB2 signing\n",
-			 (unsigned)transport->signing.session_key.length));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	transport->signing.signing_started = true;
-	return NT_STATUS_OK;
-}
-
-/*
   sign an outgoing message
  */
-NTSTATUS smb2_sign_message(struct smb2_request *req)
+NTSTATUS smb2_sign_message(struct smb2_request_buffer *buf, DATA_BLOB session_key)
 {
-	struct smb2_request_buffer *buf = &req->out;
-	uint64_t session_id;
 	struct HMACSHA256Context m;
 	uint8_t res[32];
-
-	if (!req->transport->signing.doing_signing ||
-	    !req->transport->signing.signing_started) {
-		return NT_STATUS_OK;
-	}
+	uint64_t session_id;
 
 	if (buf->size < NBT_HDR_SIZE + SMB2_HDR_SIGNATURE + 16) {
 		/* can't sign non-SMB2 messages */
@@ -74,9 +46,9 @@ NTSTATUS smb2_sign_message(struct smb2_request *req)
 		return NT_STATUS_OK;		
 	}
 
-	if (req->transport->signing.session_key.length != 16) {
+	if (session_key.length != 16) {
 		DEBUG(2,("Wrong session key length %u for SMB2 signing\n",
-			 (unsigned)req->transport->signing.session_key.length));
+			 (unsigned)session_key.length));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -85,7 +57,7 @@ NTSTATUS smb2_sign_message(struct smb2_request *req)
 	SIVAL(buf->hdr, SMB2_HDR_FLAGS, IVAL(buf->hdr, SMB2_HDR_FLAGS) | SMB2_HDR_FLAG_SIGNED);
 
 	ZERO_STRUCT(m);
-	hmac_sha256_init(req->transport->signing.session_key.data, 16, &m);
+	hmac_sha256_init(session_key.data, 16, &m);
 	hmac_sha256_update(buf->buffer+NBT_HDR_SIZE, buf->size-NBT_HDR_SIZE, &m);
 	hmac_sha256_final(res, &m);
 
@@ -93,66 +65,56 @@ NTSTATUS smb2_sign_message(struct smb2_request *req)
 
 	memcpy(buf->hdr + SMB2_HDR_SIGNATURE, res, 16);
 
-	if (DEBUGLVL(5)) {
-		/* check our own signature */
-		smb2_check_signature(req->transport, buf->buffer, buf->size);
-	}
-
 	return NT_STATUS_OK;	
 }
 
 /*
   check an incoming signature
  */
-NTSTATUS smb2_check_signature(struct smb2_transport *transport,
-			      uint8_t *buffer, uint_t length)
+NTSTATUS smb2_check_signature(struct smb2_request_buffer *buf, DATA_BLOB session_key)
 {
 	uint64_t session_id;
 	struct HMACSHA256Context m;
 	uint8_t res[SHA256_DIGEST_LENGTH];
 	uint8_t sig[16];
 
-	if (!transport->signing.signing_started ||
-	    !transport->signing.doing_signing) {
-		return NT_STATUS_OK;
-	}
-
-	if (length < NBT_HDR_SIZE + SMB2_HDR_SIGNATURE + 16) {
+	if (buf->size < NBT_HDR_SIZE + SMB2_HDR_SIGNATURE + 16) {
 		/* can't check non-SMB2 messages */
 		return NT_STATUS_OK;
 	}
 
-	session_id = BVAL(buffer+NBT_HDR_SIZE, SMB2_HDR_SESSION_ID);
+	session_id = BVAL(buf->hdr, SMB2_HDR_SESSION_ID);
 	if (session_id == 0) {
 		/* don't sign messages with a zero session_id. See
 		   MS-SMB2 3.2.4.1.1 */
 		return NT_STATUS_OK;		
 	}
 
-	if (transport->signing.session_key.length == 0) {
+	if (session_key.length == 0) {
 		/* we don't have the session key yet */
 		return NT_STATUS_OK;
 	}
 
-	if (transport->signing.session_key.length != 16) {
+	if (session_key.length != 16) {
 		DEBUG(2,("Wrong session key length %u for SMB2 signing\n",
-			 (unsigned)transport->signing.session_key.length));
+			 (unsigned)session_key.length));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	memcpy(sig, buffer+NBT_HDR_SIZE+SMB2_HDR_SIGNATURE, 16);
+	memcpy(sig, buf->hdr+SMB2_HDR_SIGNATURE, 16);
 
-	memset(buffer + NBT_HDR_SIZE + SMB2_HDR_SIGNATURE, 0, 16);
+	memset(buf->hdr + SMB2_HDR_SIGNATURE, 0, 16);
 
 	ZERO_STRUCT(m);
-	hmac_sha256_init(transport->signing.session_key.data, 16, &m);
-	hmac_sha256_update(buffer+NBT_HDR_SIZE, length-NBT_HDR_SIZE, &m);
+	hmac_sha256_init(session_key.data, 16, &m);
+	hmac_sha256_update(buf->hdr, buf->size-NBT_HDR_SIZE, &m);
 	hmac_sha256_final(res, &m);
 
-	memcpy(buffer+NBT_HDR_SIZE+SMB2_HDR_SIGNATURE, sig, 16);
+	memcpy(buf->hdr+SMB2_HDR_SIGNATURE, sig, 16);
 
 	if (memcmp(res, sig, 16) != 0) {
-		DEBUG(0,("Bad SMB2 signature for message of size %u\n", length));
+		DEBUG(0,("Bad SMB2 signature for message of size %u\n", 
+			 (unsigned)buf->size-NBT_HDR_SIZE));
 		dump_data(0, sig, 16);
 		dump_data(0, res, 16);
 		return NT_STATUS_ACCESS_DENIED;

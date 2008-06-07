@@ -29,6 +29,8 @@
 #include "lib/stream/packet.h"
 #include "ntvfs/ntvfs.h"
 #include "param/param.h"
+#include "auth/gensec/gensec.h"
+#include "auth/auth.h"
 
 
 /* fill in the bufinfo */
@@ -233,6 +235,20 @@ void smb2srv_send_reply(struct smb2srv_request *req)
 		_smb2_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 	}
 
+	/* if the request was signed or doing_signing is true, then we
+	   must sign the reply */
+	if (req->session &&
+	    (req->smb_conn->doing_signing ||
+	     (IVAL(req->in.hdr, SMB2_HDR_FLAGS) & SMB2_HDR_FLAG_SIGNED))) {
+		status = smb2_sign_message(&req->out, 
+					   req->session->session_info->session_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
+			return;
+		}		
+	}
+
+
 	blob = data_blob_const(req->out.buffer, req->out.size);
 	status = packet_send(req->smb_conn->packet, blob);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -275,17 +291,37 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 	uint16_t opcode;
 	uint32_t tid;
 	uint64_t uid;
+	uint32_t flags;
 
 	opcode			= SVAL(req->in.hdr, SMB2_HDR_OPCODE);
 	req->chain_offset	= IVAL(req->in.hdr, SMB2_HDR_NEXT_COMMAND);
 	req->seqnum		= BVAL(req->in.hdr, SMB2_HDR_MESSAGE_ID);
 	tid			= IVAL(req->in.hdr, SMB2_HDR_TID);
 	uid			= BVAL(req->in.hdr, SMB2_HDR_SESSION_ID);
+	flags			= IVAL(req->in.hdr, SMB2_HDR_FLAGS);
 
 	req->session	= smbsrv_session_find(req->smb_conn, uid, req->request_time);
 	req->tcon	= smbsrv_smb2_tcon_find(req->session, tid, req->request_time);
 
 	errno = 0;
+
+	/* supporting signing is mandatory in SMB2, and is per-packet. So we 
+	   should check the signature on any incoming packet that is signed, and 
+	   should give a signed reply to any signed request */
+	if (flags & SMB2_HDR_FLAG_SIGNED) {
+		NTSTATUS status;
+		if (req->session == NULL) {
+			/* we can't check signing with no session */
+			smb2srv_send_error(req, NT_STATUS_ACCESS_DENIED);
+			return NT_STATUS_OK;			
+		}
+		status = smb2_check_signature(&req->in, 
+					      req->session->session_info->session_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			smb2srv_send_error(req, status);
+			return NT_STATUS_OK;			
+		}
+	}
 
 	/* TODO: check the seqnum */
 
