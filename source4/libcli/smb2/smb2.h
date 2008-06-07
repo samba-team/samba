@@ -30,7 +30,6 @@ struct smb2_handle;
 struct smb2_signing_context {
 	bool doing_signing;
 	bool signing_started;
-	DATA_BLOB session_key;
 };
 
 /*
@@ -98,6 +97,7 @@ struct smb2_session {
 	struct smb2_transport *transport;
 	struct gensec_security *gensec;
 	uint64_t uid;
+	DATA_BLOB session_key;
 };
 
 

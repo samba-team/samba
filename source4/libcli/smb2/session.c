@@ -164,7 +164,7 @@ static void session_request_handler(struct smb2_request *req)
 
 		session_key_err = gensec_session_key(session->gensec, &session_key);
 		if (NT_STATUS_IS_OK(session_key_err)) {
-			session->transport->signing.session_key = session_key;
+			session->session_key = session_key;
 		}		
 	}
 
@@ -188,9 +188,9 @@ static void session_request_handler(struct smb2_request *req)
 	}
 
 	if (session->transport->signing.doing_signing) {
-		if (session->transport->signing.session_key.length != 16) {
+		if (session->session_key.length != 16) {
 			DEBUG(2,("Wrong session key length %u for SMB2 signing\n",
-				 (unsigned)session->transport->signing.session_key.length));
+				 (unsigned)session->session_key.length));
 			composite_error(c, NT_STATUS_ACCESS_DENIED);
 			return;
 		}

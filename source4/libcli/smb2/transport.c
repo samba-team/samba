@@ -235,10 +235,9 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 	req->in.body_size = req->in.size - (SMB2_HDR_BODY+NBT_HDR_SIZE);
 	req->status       = NT_STATUS(IVAL(hdr, SMB2_HDR_STATUS));
 
-	if (transport->signing.signing_started &&
-	    transport->signing.doing_signing) {
+	if (req->session && transport->signing.doing_signing) {
 		status = smb2_check_signature(&req->in, 
-					      transport->signing.session_key);
+					      req->session->session_key);
 		if (!NT_STATUS_IS_OK(status)) {
 			/* the spec says to ignore packets with a bad signature */
 			talloc_free(buffer);
@@ -353,9 +352,10 @@ void smb2_transport_send(struct smb2_request *req)
 	}
 
 	/* possibly sign the message */
-	if (req->transport->signing.doing_signing &&
-	    req->transport->signing.signing_started) {
-		status = smb2_sign_message(&req->out, req->transport->signing.session_key);
+	if (req->transport->signing.doing_signing && 
+	    req->transport->signing.signing_started &&
+	    req->session) {
+		status = smb2_sign_message(&req->out, req->session->session_key);
 		if (!NT_STATUS_IS_OK(status)) {
 			req->state = SMB2_REQUEST_ERROR;
 			req->status = status;
