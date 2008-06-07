@@ -453,7 +453,7 @@ int net_registry(struct net_context *c, int argc, const char **argv)
 {
 	int ret = -1;
 
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"enumerate",
 			net_registry_enumerate,
@@ -525,7 +525,7 @@ int net_registry(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	ret = net_run_function3(c, argc, argv, "net registry", func);
+	ret = net_run_function(c, argc, argv, "net registry", func);
 
 	return ret;
 }

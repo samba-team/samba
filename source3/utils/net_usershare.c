@@ -1012,7 +1012,7 @@ int net_usershare(struct net_context *c, int argc, const char **argv)
 {
 	SMB_STRUCT_DIR *dp;
 
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"add",
 			net_usershare_add,
@@ -1069,5 +1069,5 @@ int net_usershare(struct net_context *c, int argc, const char **argv)
 	}
 	sys_closedir(dp);
 
-	return net_run_function3(c, argc, argv, "net usershare", func);
+	return net_run_function(c, argc, argv, "net usershare", func);
 }

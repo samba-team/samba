@@ -74,17 +74,6 @@ struct net_context {
 struct functable {
 	const char *funcname;
 	int (*fn)(struct net_context *c, int argc, const char **argv);
-};
-
-struct functable2 {
-	const char *funcname;
-	int (*fn)(struct net_context *c, int argc, const char **argv);
-	const char *helptext;
-};
-
-struct functable3 {
-	const char *funcname;
-	int (*fn)(struct net_context *c, int argc, const char **argv);
 	int valid_transports;
 	const char *description;
 	const char *usage;

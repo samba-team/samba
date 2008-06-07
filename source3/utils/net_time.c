@@ -180,7 +180,7 @@ static int net_time_zone(struct net_context *c, int argc, const char **argv)
 int net_time(struct net_context *c, int argc, const char **argv)
 {
 	time_t t;
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"system",
 			net_time_system,
@@ -209,7 +209,7 @@ int net_time(struct net_context *c, int argc, const char **argv)
 	};
 
 	if (argc != 0) {
-		return net_run_function3(c, argc, argv, "net time", func);
+		return net_run_function(c, argc, argv, "net time", func);
 	}
 
 	if (c->display_usage) {

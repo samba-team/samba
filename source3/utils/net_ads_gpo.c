@@ -615,7 +615,7 @@ out:
 
 int net_ads_gpo(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 #if 0
 		{
 			"apply",
@@ -689,7 +689,7 @@ int net_ads_gpo(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	return net_run_function3(c, argc, argv, "net ads gpo", func);
+	return net_run_function(c, argc, argv, "net ads gpo", func);
 }
 
 #endif /* HAVE_ADS */

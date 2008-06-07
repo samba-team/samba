@@ -1024,7 +1024,7 @@ struct conf_functable {
 };
 
 /**
- * This imitates net_run_function3 but calls the main functions
+ * This imitates net_run_function but calls the main functions
  * through the wrapper net_conf_wrap_function().
  */
 static int net_conf_run_function(struct net_context *c, int argc,
