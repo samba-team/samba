@@ -36,7 +36,7 @@ static int net_sam_userset(struct net_context *c, int argc, const char **argv,
 	const char *dom, *name;
 	NTSTATUS status;
 
-	if (argc != 2) {
+	if (argc != 2 || c->display_usage) {
 		d_fprintf(stderr, "usage: net sam set %s <user> <value>\n",
 			  field);
 		return -1;
@@ -139,8 +139,9 @@ static int net_sam_set_userflag(struct net_context *c, int argc,
 	NTSTATUS status;
 	uint16 acct_flags;
 
-	if ((argc != 2) || (!strequal(argv[1], "yes") &&
-			    !strequal(argv[1], "no"))) {
+	if ((argc != 2) || c->display_usage ||
+	    (!strequal(argv[1], "yes") &&
+	     !strequal(argv[1], "no"))) {
 		d_fprintf(stderr, "usage: net sam set %s <user> [yes|no]\n",
 			  field);
 		return -1;
@@ -229,8 +230,9 @@ static int net_sam_set_pwdmustchangenow(struct net_context *c, int argc,
 	const char *dom, *name;
 	NTSTATUS status;
 
-	if ((argc != 2) || (!strequal(argv[1], "yes") &&
-			    !strequal(argv[1], "no"))) {
+	if ((argc != 2) || c->display_usage ||
+	    (!strequal(argv[1], "yes") &&
+	     !strequal(argv[1], "no"))) {
 		d_fprintf(stderr, "usage: net sam set pwdmustchangenow <user> [yes|no]\n");
 		return -1;
 	}
@@ -291,7 +293,7 @@ static int net_sam_set_comment(struct net_context *c, int argc,
 	const char *dom, *name;
 	NTSTATUS status;
 
-	if (argc != 2) {
+	if (argc != 2 || c->display_usage) {
 		d_fprintf(stderr, "usage: net sam set comment <name> "
 			  "<comment>\n");
 		return -1;
@@ -338,35 +340,107 @@ static int net_sam_set_comment(struct net_context *c, int argc,
 
 static int net_sam_set(struct net_context *c, int argc, const char **argv)
 {
-	struct functable2 func[] = {
-		{ "homedir", net_sam_set_homedir,
-		  "Change a user's home directory" },
-		{ "profilepath", net_sam_set_profilepath,
-		  "Change a user's profile path" },
-		{ "comment", net_sam_set_comment,
-		  "Change a users or groups description" },
-		{ "fullname", net_sam_set_fullname,
-		  "Change a user's full name" },
-		{ "logonscript", net_sam_set_logonscript,
-		  "Change a user's logon script" },
-		{ "homedrive", net_sam_set_homedrive,
-		  "Change a user's home drive" },
-		{ "workstations", net_sam_set_workstations,
-		  "Change a user's allowed workstations" },
-		{ "disabled", net_sam_set_disabled,
-		  "Disable/Enable a user" },
-		{ "pwnotreq", net_sam_set_pwnotreq,
-		  "Disable/Enable the password not required flag" },
-		{ "autolock", net_sam_set_autolock,
-		  "Disable/Enable a user's lockout flag" },
-		{ "pwnoexp", net_sam_set_pwnoexp,
-		  "Disable/Enable whether a user's pw does not expire" },
-		{ "pwdmustchangenow", net_sam_set_pwdmustchangenow,
-		  "Force users password must change at next logon" },
-		{NULL, NULL}
+	struct functable3 func[] = {
+		{
+			"homedir",
+			net_sam_set_homedir,
+			NET_TRANSPORT_LOCAL,
+			"Change a user's home directory",
+			"net sam set homedir\n"
+			"    Change a user's home directory"
+		},
+		{
+			"profilepath",
+			net_sam_set_profilepath,
+			NET_TRANSPORT_LOCAL,
+			"Change a user's profile path",
+			"net sam set profilepath\n"
+			"    Change a user's profile path"
+		},
+		{
+			"comment",
+			net_sam_set_comment,
+			NET_TRANSPORT_LOCAL,
+			"Change a users or groups description",
+			"net sam set comment\n"
+			"    Change a users or groups description"
+		},
+		{
+			"fullname",
+			net_sam_set_fullname,
+			NET_TRANSPORT_LOCAL,
+			"Change a user's full name",
+			"net sam set fullname\n"
+			"    Change a user's full name"
+		},
+		{
+			"logonscript",
+			net_sam_set_logonscript,
+			NET_TRANSPORT_LOCAL,
+			"Change a user's logon script",
+			"net sam set logonscript\n"
+			"    Change a user's logon script"
+		},
+		{
+			"homedrive",
+			net_sam_set_homedrive,
+			NET_TRANSPORT_LOCAL,
+			"Change a user's home drive",
+			"net sam set homedrive\n"
+			"    Change a user's home drive"
+		},
+		{
+			"workstations",
+			net_sam_set_workstations,
+			NET_TRANSPORT_LOCAL,
+			"Change a user's allowed workstations",
+			"net sam set workstations\n"
+			"    Change a user's allowed workstations"
+		},
+		{
+			"disabled",
+			net_sam_set_disabled,
+			NET_TRANSPORT_LOCAL,
+			"Disable/Enable a user",
+			"net sam set disable\n"
+			"    Disable/Enable a user"
+		},
+		{
+			"pwnotreq",
+			net_sam_set_pwnotreq,
+			NET_TRANSPORT_LOCAL,
+			"Disable/Enable the password not required flag",
+			"net sam set pwnotreq\n"
+			"    Disable/Enable the password not required flag"
+		},
+		{
+			"autolock",
+			net_sam_set_autolock,
+			NET_TRANSPORT_LOCAL,
+			"Disable/Enable a user's lockout flag",
+			"net sam set autolock\n"
+			"    Disable/Enable a user's lockout flag"
+		},
+		{
+			"pwnoexp",
+			net_sam_set_pwnoexp,
+			NET_TRANSPORT_LOCAL,
+			"Disable/Enable whether a user's pw does not expire",
+			"net sam set pwnoexp\n"
+			"    Disable/Enable whether a user's pw does not expire"
+		},
+		{
+			"pwdmustchangenow",
+			net_sam_set_pwdmustchangenow,
+			NET_TRANSPORT_LOCAL,
+			"Force users password must change at next logon",
+			"net sam set pwdmustchangenow\n"
+			"    Force users password must change at next logon"
+		},
+		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	return net_run_function2(c, argc, argv, "net sam set", func);
+	return net_run_function3(c, argc, argv, "net sam set", func);
 }
 
 /*
@@ -381,7 +455,7 @@ static int net_sam_policy_set(struct net_context *c, int argc, const char **argv
 	int field;
 	char *endptr;
 
-        if (argc != 2) {
+        if (argc != 2 || c->display_usage) {
                 d_fprintf(stderr, "usage: net sam policy set " 
 			  "\"<account policy>\" <value> \n");
                 return -1;
@@ -447,7 +521,7 @@ static int net_sam_policy_show(struct net_context *c, int argc, const char **arg
         uint32 old_value;
         int field;
 
-        if (argc != 1) {
+        if (argc != 1 || c->display_usage) {
                 d_fprintf(stderr, "usage: net sam policy show"
 			  " \"<account policy>\" \n");
                 return -1;
@@ -491,6 +565,14 @@ static int net_sam_policy_list(struct net_context *c, int argc, const char **arg
 	const char **names;
 	int count;
 	int i;
+
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net sam policy list\n"
+			 "    List account policies\n");
+		return 0;
+	}
+
 	account_policy_names_list(&names, &count);
         if (count != 0) {
         	d_fprintf(stderr, "Valid account policies "
@@ -505,17 +587,35 @@ static int net_sam_policy_list(struct net_context *c, int argc, const char **arg
 
 static int net_sam_policy(struct net_context *c, int argc, const char **argv)
 {
-        struct functable2 func[] = {
-		{ "list", net_sam_policy_list,
-                  "List account policies" },
-                { "show", net_sam_policy_show,
-                  "Show account policies" },
-		{ "set", net_sam_policy_set,
-                  "Change account policies" },
-                {NULL, NULL}
+        struct functable3 func[] = {
+		{
+			"list",
+			net_sam_policy_list,
+			NET_TRANSPORT_LOCAL,
+			"List account policies",
+			"net sam policy list\n"
+			"    List account policies"
+		},
+                {
+			"show",
+			net_sam_policy_show,
+			NET_TRANSPORT_LOCAL,
+			"Show account policies",
+			"net sam policy show\n"
+			"    Show account policies"
+		},
+		{
+			"set",
+			net_sam_policy_set,
+			NET_TRANSPORT_LOCAL,
+			"Change account policies",
+			"net sam policy set\n"
+			"    Change account policies"
+		},
+                {NULL, NULL, 0, NULL, NULL}
         };
 
-        return net_run_function2(c, argc, argv, "net sam policy", func);
+        return net_run_function3(c, argc, argv, "net sam policy", func);
 }
 
 extern PRIVS privs[];
@@ -525,7 +625,7 @@ static int net_sam_rights_list(struct net_context *c, int argc,
 {
 	SE_PRIV mask;
 
-	if (argc > 1) {
+	if (argc > 1 || c->display_usage) {
 		d_fprintf(stderr, "usage: net sam rights list [privilege name]\n");
 		return -1;
 	}
@@ -579,7 +679,7 @@ static int net_sam_rights_grant(struct net_context *c, int argc,
 	const char *dom, *name;
 	SE_PRIV mask;
 
-	if (argc != 2) {
+	if (argc != 2 || c->display_usage) {
 		d_fprintf(stderr, "usage: net sam rights grant <name> "
 			  "<right>\n");
 		return -1;
@@ -612,7 +712,7 @@ static int net_sam_rights_revoke(struct net_context *c, int argc, const char **a
 	const char *dom, *name;
 	SE_PRIV mask;
 
-	if (argc != 2) {
+	if (argc != 2 || c->display_usage) {
 		d_fprintf(stderr, "usage: net sam rights revoke <name> "
 			  "<right>\n");
 		return -1;
@@ -640,16 +740,34 @@ static int net_sam_rights_revoke(struct net_context *c, int argc, const char **a
 
 static int net_sam_rights(struct net_context *c, int argc, const char **argv)
 {
-	struct functable2 func[] = {
-		{ "list", net_sam_rights_list,
-		  "List possible user rights" },
-		{ "grant", net_sam_rights_grant,
-		  "Grant a right" },
-		{ "revoke", net_sam_rights_revoke,
-		  "Revoke a right" },
-		{ NULL }
+	struct functable3 func[] = {
+		{
+			"list",
+			net_sam_rights_list,
+			NET_TRANSPORT_LOCAL,
+			"List possible user rights",
+			"net sam rights list\n"
+			"    List possible user rights"
+		},
+		{
+			"grant",
+			net_sam_rights_grant,
+			NET_TRANSPORT_LOCAL,
+			"Grant a right",
+			"net sam rights grant\n"
+			"    Grant a right"
+		},
+		{
+			"revoke",
+			net_sam_rights_revoke,
+			NET_TRANSPORT_LOCAL,
+			"Revoke a right",
+			"net sam rights revoke\n"
+			"    Revoke a right"
+		},
+		{NULL, NULL, 0, NULL, NULL}
 	};
-        return net_run_function2(c, argc, argv, "net sam rights", func);
+        return net_run_function3(c, argc, argv, "net sam rights", func);
 }
 
 /*
@@ -717,7 +835,7 @@ static int net_sam_mapunixgroup(struct net_context *c, int argc, const char **ar
 	GROUP_MAP map;
 	struct group *grp;
 
-	if (argc != 1) {
+	if (argc != 1 || c->display_usage) {
 		d_fprintf(stderr, "usage: net sam mapunixgroup <name>\n");
 		return -1;
 	}
@@ -779,7 +897,7 @@ static int net_sam_unmapunixgroup(struct net_context *c, int argc, const char **
 	GROUP_MAP map;
 	struct group *grp;
 
-	if (argc != 1) {
+	if (argc != 1 || c->display_usage) {
 		d_fprintf(stderr, "usage: net sam unmapunixgroup <name>\n");
 		return -1;
 	}
@@ -812,7 +930,7 @@ static int net_sam_createlocalgroup(struct net_context *c, int argc, const char 
 	NTSTATUS status;
 	uint32 rid;
 
-	if (argc != 1) {
+	if (argc != 1 || c->display_usage) {
 		d_fprintf(stderr, "usage: net sam createlocalgroup <name>\n");
 		return -1;
 	}
@@ -847,7 +965,7 @@ static int net_sam_deletelocalgroup(struct net_context *c, int argc, const char 
         const char *dom, *name;
 	NTSTATUS status;
 
-	if (argc != 1) {
+	if (argc != 1 || c->display_usage) {
 		d_fprintf(stderr, "usage: net sam deletelocalgroup <name>\n");
 		return -1;
 	}
@@ -889,7 +1007,7 @@ static int net_sam_createbuiltingroup(struct net_context *c, int argc, const cha
 	fstring groupname;
 	DOM_SID sid;
 
-	if (argc != 1) {
+	if (argc != 1 || c->display_usage) {
 		d_fprintf(stderr, "usage: net sam createbuiltingroup <name>\n");
 		return -1;
 	}
@@ -940,7 +1058,7 @@ static int net_sam_addmem(struct net_context *c, int argc, const char **argv)
 	enum lsa_SidType grouptype, membertype;
 	NTSTATUS status;
 
-	if (argc != 2) {
+	if (argc != 2 || c->display_usage) {
 		d_fprintf(stderr, "usage: net sam addmem <group> <member>\n");
 		return -1;
 	}
@@ -1013,7 +1131,7 @@ static int net_sam_delmem(struct net_context *c, int argc, const char **argv)
 	enum lsa_SidType grouptype;
 	NTSTATUS status;
 
-	if (argc != 2) {
+	if (argc != 2 || c->display_usage) {
 		d_fprintf(stderr, "usage: net sam delmem <group> <member>\n");
 		return -1;
 	}
@@ -1071,7 +1189,7 @@ static int net_sam_listmem(struct net_context *c, int argc, const char **argv)
 	enum lsa_SidType grouptype;
 	NTSTATUS status;
 
-	if (argc != 1) {
+	if (argc != 1 || c->display_usage) {
 		d_fprintf(stderr, "usage: net sam listmem <group>\n");
 		return -1;
 	}
@@ -1125,7 +1243,7 @@ static int net_sam_do_list(struct net_context *c, int argc, const char **argv,
 {
 	bool verbose = (argc == 1);
 
-	if ((argc > 1) ||
+	if ((argc > 1) || c->display_usage ||
 	    ((argc == 1) && !strequal(argv[0], "verbose"))) {
 		d_fprintf(stderr, "usage: net sam list %s [verbose]\n", what);
 		return -1;
@@ -1198,21 +1316,51 @@ static int net_sam_list_workstations(struct net_context *c, int argc,
 
 static int net_sam_list(struct net_context *c, int argc, const char **argv)
 {
-	struct functable2 func[] = {
-		{ "users", net_sam_list_users,
-		  "List SAM users" },
-		{ "groups", net_sam_list_groups,
-		  "List SAM groups" },
-		{ "localgroups", net_sam_list_localgroups,
-		  "List SAM local groups" },
-		{ "builtin", net_sam_list_builtin,
-		  "List builtin groups" },
-		{ "workstations", net_sam_list_workstations,
-		  "List domain member workstations" },
-		{NULL, NULL}
+	struct functable3 func[] = {
+		{
+			"users",
+			net_sam_list_users,
+			NET_TRANSPORT_LOCAL,
+			"List SAM users",
+			"net sam list users\n"
+			"    List SAM users"
+		},
+		{
+			"groups",
+			net_sam_list_groups,
+			NET_TRANSPORT_LOCAL,
+			"List SAM groups",
+			"net sam list groups\n"
+			"    List SAM groups"
+		},
+		{
+			"localgroups",
+			net_sam_list_localgroups,
+			NET_TRANSPORT_LOCAL,
+			"List SAM local groups",
+			"net sam list localgroups\n"
+			"    List SAM local groups"
+		},
+		{
+			"builtin",
+			net_sam_list_builtin,
+			NET_TRANSPORT_LOCAL,
+			"List builtin groups",
+			"net sam list builtin\n"
+			"    List builtin groups"
+		},
+		{
+			"workstations",
+			net_sam_list_workstations,
+			NET_TRANSPORT_LOCAL,
+			"List domain member workstations",
+			"net sam list workstations\n"
+			"    List domain member workstations"
+		},
+		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	return net_run_function2(c, argc, argv, "net sam list", func);
+	return net_run_function3(c, argc, argv, "net sam list", func);
 }
 
 /*
@@ -1225,7 +1373,7 @@ static int net_sam_show(struct net_context *c, int argc, const char **argv)
 	enum lsa_SidType type;
 	const char *dom, *name;
 
-	if (argc != 1) {
+	if (argc != 1 || c->display_usage) {
 		d_fprintf(stderr, "usage: net sam show <name>\n");
 		return -1;
 	}
@@ -1262,6 +1410,13 @@ static int net_sam_provision(struct net_context *c, int argc, const char **argv)
 	gid_t domadmins_gid = -1;
 	struct samu *samuser;
 	struct passwd *pwd;
+
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net sam provision\n"
+			 "    Init an LDAP tree with default users/groups\n");
+		return 0;
+	}
 
 	tc = talloc_new(NULL);
 	if (!tc) {
@@ -1653,38 +1808,124 @@ failed:
  **********************************************************/
 int net_sam(struct net_context *c, int argc, const char **argv)
 {
-	struct functable2 func[] = {
-		{ "createbuiltingroup", net_sam_createbuiltingroup,
-		  "Create a new BUILTIN group" },
-		{ "createlocalgroup", net_sam_createlocalgroup,
-		  "Create a new local group" },
-		{ "deletelocalgroup", net_sam_deletelocalgroup,
-		  "Delete an existing local group" },
-		{ "mapunixgroup", net_sam_mapunixgroup,
-		  "Map a unix group to a domain group" },
-		{ "unmapunixgroup", net_sam_unmapunixgroup,
-		  "Remove a group mapping of an unix group to a domain group" },
-		{ "addmem", net_sam_addmem,
-		  "Add a member to a group" },
-		{ "delmem", net_sam_delmem,
-		  "Delete a member from a group" },
-		{ "listmem", net_sam_listmem,
-		  "List group members" },
-		{ "list", net_sam_list,
-		  "List users, groups and local groups" },
-		{ "show", net_sam_show,
-		  "Show details of a SAM entry" },
-		{ "set", net_sam_set,
-		  "Set details of a SAM account" },
-		{ "policy", net_sam_policy,
-		  "Set account policies" },
-		{ "rights", net_sam_rights,
-		  "Manipulate user privileges" },
+	struct functable3 func[] = {
+		{
+			"createbuiltingroup",
+			net_sam_createbuiltingroup,
+			NET_TRANSPORT_LOCAL,
+			"Create a new BUILTIN group",
+			"net sam createbuiltingroup\n"
+			"    Create a new BUILTIN group"
+		},
+		{
+			"createlocalgroup",
+			net_sam_createlocalgroup,
+			NET_TRANSPORT_LOCAL,
+			"Create a new local group",
+			"net sam createlocalgroup\n"
+			"    Create a new local group"
+		},
+		{
+			"deletelocalgroup",
+			net_sam_deletelocalgroup,
+			NET_TRANSPORT_LOCAL,
+			"Delete an existing local group",
+			"net sam deletelocalgroup\n"
+			"    Delete an existing local group"
+		},
+		{
+			"mapunixgroup",
+			net_sam_mapunixgroup,
+			NET_TRANSPORT_LOCAL,
+			"Map a unix group to a domain group",
+			"net sam mapunixgroup\n"
+			"    Map a unix group to a domain group"
+		},
+		{
+			"unmapunixgroup",
+			net_sam_unmapunixgroup,
+			NET_TRANSPORT_LOCAL,
+			"Remove a group mapping of an unix group to a domain "
+			"group",
+			"net sam unmapunixgroup\n"
+			"    Remove a group mapping of an unix group to a "
+			"domain group"
+		},
+		{
+			"addmem",
+			net_sam_addmem,
+			NET_TRANSPORT_LOCAL,
+			"Add a member to a group",
+			"net sam addmem\n"
+			"    Add a member to a group"
+		},
+		{
+			"delmem",
+			net_sam_delmem,
+			NET_TRANSPORT_LOCAL,
+			"Delete a member from a group",
+			"net sam delmem\n"
+			"    Delete a member from a group"
+		},
+		{
+			"listmem",
+			net_sam_listmem,
+			NET_TRANSPORT_LOCAL,
+			"List group members",
+			"net sam listmem\n"
+			"    List group members"
+		},
+		{
+			"list",
+			net_sam_list,
+			NET_TRANSPORT_LOCAL,
+			"List users, groups and local groups",
+			"net sam list\n"
+			"    List users, groups and local groups"
+		},
+		{
+			"show",
+			net_sam_show,
+			NET_TRANSPORT_LOCAL,
+			"Show details of a SAM entry",
+			"net sam show\n"
+			"    Show details of a SAM entry"
+		},
+		{
+			"set",
+			net_sam_set,
+			NET_TRANSPORT_LOCAL,
+			"Set details of a SAM account",
+			"net sam set\n"
+			"    Set details of a SAM account"
+		},
+		{
+			"policy",
+			net_sam_policy,
+			NET_TRANSPORT_LOCAL,
+			"Set account policies",
+			"net sam policy\n"
+			"    Set account policies"
+		},
+		{
+			"rights",
+			net_sam_rights,
+			NET_TRANSPORT_LOCAL,
+			"Manipulate user privileges",
+			"net sam rights\n"
+			"    Manipulate user privileges"
+		},
 #ifdef HAVE_LDAP
-		{ "provision", net_sam_provision,
-		  "Provision a clean User Database" },
+		{
+			"provision",
+			net_sam_provision,
+			NET_TRANSPORT_LOCAL,
+			"Provision a clean user database",
+			"net sam privison\n"
+			"    Provision a clear user database"
+		},
 #endif
-		{ NULL, NULL, NULL }
+		{NULL, NULL, 0, NULL, NULL}
 	};
 
 	if (getuid() != 0) {
@@ -1692,6 +1933,6 @@ int net_sam(struct net_context *c, int argc, const char **argv)
 			  "work\n");
 	}
 
-	return net_run_function2(c, argc, argv, "net sam", func);
+	return net_run_function3(c, argc, argv, "net sam", func);
 }
 
