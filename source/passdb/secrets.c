@@ -1060,6 +1060,8 @@ bool secrets_fetch_afs_key(const char *cell, struct afs_key *result)
 
 	result->kvno = ntohl(result->kvno);
 
+	SAFE_FREE(keyfile);
+
 	return True;
 }
 
