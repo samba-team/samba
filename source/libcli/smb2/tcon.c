@@ -57,6 +57,7 @@ struct smb2_request *smb2_tree_connect_send(struct smb2_tree *tree,
 	if (req == NULL) return NULL;
 
 	SBVAL(req->out.hdr,  SMB2_HDR_SESSION_ID, tree->session->uid);
+	req->session = tree->session;
 
 	SSVAL(req->out.body, 0x02, io->in.reserved);
 	status = smb2_push_o16s16_string(&req->out, 0x04, io->in.path);
