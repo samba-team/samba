@@ -111,7 +111,18 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	boot_time = timeval_current(); /* TODO: fix me */
 
 	ZERO_STRUCT(io->out);
-	io->out.security_mode      = 0; /* no signing yet */
+	switch (lp_server_signing(req->smb_conn->lp_ctx)) {
+	case SMB_SIGNING_OFF:
+		io->out.security_mode = 0;
+		break;
+	case SMB_SIGNING_SUPPORTED:
+	case SMB_SIGNING_AUTO:
+		io->out.security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED;
+		break;
+	case SMB_SIGNING_REQUIRED:
+		io->out.security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED | SMB2_NEGOTIATE_SIGNING_REQUIRED;
+		break;
+	}
 	io->out.dialect_revision   = SMB2_DIALECT_REVISION;
 	io->out.capabilities       = 0;
 	io->out.max_transact_size  = lp_parm_ulong(req->smb_conn->lp_ctx, NULL, 

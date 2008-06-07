@@ -376,6 +376,8 @@ struct smbsrv_connection {
 	struct share_context *share_context;
 
 	struct loadparm_context *lp_ctx;
+
+	bool doing_signing;
 };
 
 struct model_ops;
