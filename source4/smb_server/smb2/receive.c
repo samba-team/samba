@@ -321,6 +321,10 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 			smb2srv_send_error(req, status);
 			return NT_STATUS_OK;			
 		}
+	} else if (req->smb_conn->doing_signing && req->session != NULL) {
+		/* we require signing and this request was not signed */
+		smb2srv_send_error(req, NT_STATUS_ACCESS_DENIED);
+		return NT_STATUS_OK;					
 	}
 
 	/* TODO: check the seqnum */

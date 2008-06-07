@@ -181,8 +181,7 @@ static void smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_ses
 	/* note that we ignore SMB2_NEGOTIATE_SIGNING_ENABLED from the client.
 	   This is deliberate as windows does not set it even when it does 
 	   set SMB2_NEGOTIATE_SIGNING_REQUIRED */
-	if ((io->smb2.in.security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) ||
-	    lp_server_signing(req->smb_conn->lp_ctx) == SMB_SIGNING_REQUIRED) {
+	if (io->smb2.in.security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) {
 		req->smb_conn->doing_signing = true;
 	}
 
