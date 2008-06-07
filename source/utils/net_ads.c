@@ -603,7 +603,7 @@ static int ads_user_delete(struct net_context *c, int argc, const char **argv)
 
 int net_ads_user(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"add",
 			ads_user_add,
@@ -663,7 +663,7 @@ int net_ads_user(struct net_context *c, int argc, const char **argv)
 		return ADS_ERR_OK(rc) ? 0 : -1;
 	}
 
-	return net_run_function3(c, argc, argv, "net ads user", func);
+	return net_run_function(c, argc, argv, "net ads user", func);
 }
 
 static int net_ads_group_usage(struct net_context *c, int argc, const char **argv)
@@ -762,7 +762,7 @@ static int ads_group_delete(struct net_context *c, int argc, const char **argv)
 
 int net_ads_group(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"add",
 			ads_group_add,
@@ -813,7 +813,7 @@ int net_ads_group(struct net_context *c, int argc, const char **argv)
 		ads_destroy(&ads);
 		return ADS_ERR_OK(rc) ? 0 : -1;
 	}
-	return net_run_function3(c, argc, argv, "net ads group", func);
+	return net_run_function(c, argc, argv, "net ads group", func);
 }
 
 static int net_ads_status(struct net_context *c, int argc, const char **argv)
@@ -1405,7 +1405,7 @@ static int net_ads_dns_gethostbyname(struct net_context *c, int argc, const char
 
 static int net_ads_dns(struct net_context *c, int argc, const char *argv[])
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"register",
 			net_ads_dns_register,
@@ -1425,7 +1425,7 @@ static int net_ads_dns(struct net_context *c, int argc, const char *argv[])
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	return net_run_function3(c, argc, argv, "net ads dns", func);
+	return net_run_function(c, argc, argv, "net ads dns", func);
 }
 
 /*******************************************************************
@@ -1730,7 +1730,7 @@ static int net_ads_printer_remove(struct net_context *c, int argc, const char **
 
 static int net_ads_printer(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"search",
 			net_ads_printer_search,
@@ -1766,7 +1766,7 @@ static int net_ads_printer(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	return net_run_function3(c, argc, argv, "net ads printer", func);
+	return net_run_function(c, argc, argv, "net ads printer", func);
 }
 
 
@@ -2178,7 +2178,7 @@ static int net_ads_keytab_list(struct net_context *c, int argc, const char **arg
 
 int net_ads_keytab(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"add",
 			net_ads_keytab_add,
@@ -2219,7 +2219,7 @@ int net_ads_keytab(struct net_context *c, int argc, const char **argv)
 use keytab functions.\n");
 	}
 
-	return net_run_function3(c, argc, argv, "net ads keytab", func);
+	return net_run_function(c, argc, argv, "net ads keytab", func);
 }
 
 static int net_ads_kerberos_renew(struct net_context *c, int argc, const char **argv)
@@ -2333,7 +2333,7 @@ static int net_ads_kerberos_kinit(struct net_context *c, int argc, const char **
 
 int net_ads_kerberos(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"kinit",
 			net_ads_kerberos_kinit,
@@ -2361,12 +2361,12 @@ int net_ads_kerberos(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	return net_run_function3(c, argc, argv, "net ads kerberos", func);
+	return net_run_function(c, argc, argv, "net ads kerberos", func);
 }
 
 int net_ads(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"info",
 			net_ads_info,
@@ -2522,7 +2522,7 @@ int net_ads(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	return net_run_function3(c, argc, argv, "net ads", func);
+	return net_run_function(c, argc, argv, "net ads", func);
 }
 
 #else

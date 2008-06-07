@@ -227,7 +227,7 @@ int net_dom(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
 
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"join",
 			net_dom_join,
@@ -257,5 +257,5 @@ int net_dom(struct net_context *c, int argc, const char **argv)
 	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
 	libnetapi_set_password(c->netapi_ctx, c->opt_password);
 
-	return net_run_function3(c, argc, argv, "net dom", func);
+	return net_run_function(c, argc, argv, "net dom", func);
 }

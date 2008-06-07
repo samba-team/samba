@@ -313,7 +313,7 @@ static int net_maxrid(struct net_context *c, int argc, const char **argv)
 }
 
 /* main function table */
-static struct functable3 net_func[] = {
+static struct functable net_func[] = {
 	{
 		"rpc",
 		net_rpc,
@@ -759,7 +759,7 @@ static struct functable3 net_func[] = {
 	}
 
 	c->private_data = net_func;
-	rc = net_run_function3(c, argc_new-1, argv_new+1, "net", net_func);
+	rc = net_run_function(c, argc_new-1, argv_new+1, "net", net_func);
 
 	DEBUG(2,("return code = %d\n", rc));
 

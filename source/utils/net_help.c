@@ -30,7 +30,7 @@ static int net_help_usage(struct net_context *c, int argc, const char **argv)
 
 static int net_usage(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 *table = (struct functable3*) c->private_data;
+	struct functable *table = (struct functable*) c->private_data;
 	int i;
 
 	d_printf("Usage:\n");
@@ -54,7 +54,7 @@ static int net_usage(struct net_context *c, int argc, const char **argv)
 */
 int net_help(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 *func = (struct functable3 *)c->private_data;
+	struct functable *func = (struct functable *)c->private_data;
 
 	if (argc == 0) {
 		return net_usage(c, argc, argv);
@@ -65,5 +65,5 @@ int net_help(struct net_context *c, int argc, const char **argv)
 	}
 
 	c->display_usage = true;
-	return net_run_function3(c, argc, argv, "net help", func);
+	return net_run_function(c, argc, argv, "net help", func);
 }

@@ -90,7 +90,7 @@ int net_afs_impersonate(struct net_context *c, int argc,
 
 int net_afs(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"key",
 			net_afs_key,
@@ -109,6 +109,6 @@ int net_afs(struct net_context *c, int argc, const char **argv)
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
-	return net_run_function3(c, argc, argv, "net afs", func);
+	return net_run_function(c, argc, argv, "net afs", func);
 }
 

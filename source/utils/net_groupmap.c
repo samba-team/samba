@@ -811,7 +811,7 @@ static int net_groupmap_memberships(struct net_context *c, int argc, const char 
  **********************************************************/
 int net_groupmap(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"add",
 			net_groupmap_add,
@@ -901,6 +901,6 @@ int net_groupmap(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	return net_run_function3(c,argc, argv, "net groupmap", func);
+	return net_run_function(c,argc, argv, "net groupmap", func);
 }
 

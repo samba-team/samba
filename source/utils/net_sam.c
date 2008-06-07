@@ -340,7 +340,7 @@ static int net_sam_set_comment(struct net_context *c, int argc,
 
 static int net_sam_set(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"homedir",
 			net_sam_set_homedir,
@@ -440,7 +440,7 @@ static int net_sam_set(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	return net_run_function3(c, argc, argv, "net sam set", func);
+	return net_run_function(c, argc, argv, "net sam set", func);
 }
 
 /*
@@ -587,7 +587,7 @@ static int net_sam_policy_list(struct net_context *c, int argc, const char **arg
 
 static int net_sam_policy(struct net_context *c, int argc, const char **argv)
 {
-        struct functable3 func[] = {
+        struct functable func[] = {
 		{
 			"list",
 			net_sam_policy_list,
@@ -615,7 +615,7 @@ static int net_sam_policy(struct net_context *c, int argc, const char **argv)
                 {NULL, NULL, 0, NULL, NULL}
         };
 
-        return net_run_function3(c, argc, argv, "net sam policy", func);
+        return net_run_function(c, argc, argv, "net sam policy", func);
 }
 
 extern PRIVS privs[];
@@ -740,7 +740,7 @@ static int net_sam_rights_revoke(struct net_context *c, int argc, const char **a
 
 static int net_sam_rights(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"list",
 			net_sam_rights_list,
@@ -767,7 +767,7 @@ static int net_sam_rights(struct net_context *c, int argc, const char **argv)
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
-        return net_run_function3(c, argc, argv, "net sam rights", func);
+        return net_run_function(c, argc, argv, "net sam rights", func);
 }
 
 /*
@@ -1316,7 +1316,7 @@ static int net_sam_list_workstations(struct net_context *c, int argc,
 
 static int net_sam_list(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"users",
 			net_sam_list_users,
@@ -1360,7 +1360,7 @@ static int net_sam_list(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	return net_run_function3(c, argc, argv, "net sam list", func);
+	return net_run_function(c, argc, argv, "net sam list", func);
 }
 
 /*
@@ -1808,7 +1808,7 @@ failed:
  **********************************************************/
 int net_sam(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"createbuiltingroup",
 			net_sam_createbuiltingroup,
@@ -1933,6 +1933,6 @@ int net_sam(struct net_context *c, int argc, const char **argv)
 			  "work\n");
 	}
 
-	return net_run_function3(c, argc, argv, "net sam", func);
+	return net_run_function(c, argc, argv, "net sam", func);
 }
 

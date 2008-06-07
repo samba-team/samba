@@ -446,7 +446,7 @@ static int rpc_audit_list(struct net_context *c, int argc, const char **argv)
 
 int net_rpc_audit(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"get",
 			rpc_audit_get,
@@ -490,5 +490,5 @@ int net_rpc_audit(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	return net_run_function3(c, argc, argv, "net rpc audit", func);
+	return net_run_function(c, argc, argv, "net rpc audit", func);
 }

@@ -244,7 +244,7 @@ static int net_status_shares(struct net_context *c, int argc, const char **argv)
 
 int net_status(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"sessions",
 			net_status_sessions,
@@ -265,5 +265,5 @@ int net_status(struct net_context *c, int argc, const char **argv)
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
-	return net_run_function3(c, argc, argv, "net status", func);
+	return net_run_function(c, argc, argv, "net status", func);
 }

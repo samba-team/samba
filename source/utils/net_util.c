@@ -546,57 +546,8 @@ const char *net_prompt_pass(struct net_context *c, const char *user)
 	return pass;
 }
 
-/*
-  run a function from a function table. If not found then
-  call the specified usage function
-*/
 int net_run_function(struct net_context *c, int argc, const char **argv,
-		     struct functable *table,
-		     int (*usage_fn)(struct net_context *c,
-				     int argc, const char **argv))
-{
-	int i;
-
-	if (argc < 1) {
-		d_printf("\nUsage: \n");
-		return usage_fn(c, argc, argv);
-	}
-	for (i=0; table[i].funcname; i++) {
-		if (StrCaseCmp(argv[0], table[i].funcname) == 0)
-			return table[i].fn(c, argc-1, argv+1);
-	}
-	d_fprintf(stderr, "No command: %s\n", argv[0]);
-	return usage_fn(c, argc, argv);
-}
-
-/*
- * run a function from a function table.
- */
-int net_run_function2(struct net_context *c, int argc, const char **argv,
-		      const char *whoami, struct functable2 *table)
-{
-	int i;
-
-	if (argc != 0) {
-		for (i=0; table[i].funcname; i++) {
-			if (StrCaseCmp(argv[0], table[i].funcname) == 0)
-				return table[i].fn(c, argc-1, argv+1);
-		}
-	}
-
-	d_fprintf(stderr, "Invalid command: %s %s\n", whoami,
-		  (argc > 0)?argv[0]:"");
-	d_printf("Usage:\n");
-	for (i=0; table[i].funcname != NULL; i++) {
-		d_printf("%s %-15s %s\n", whoami, table[i].funcname,
-			 table[i].helptext);
-	}
-
-	return -1;
-}
-
-int net_run_function3(struct net_context *c, int argc, const char **argv,
-		      const char *whoami, struct functable3 *table)
+		      const char *whoami, struct functable *table)
 {
 	int i;
 	if (argc != 0) {
@@ -622,7 +573,7 @@ int net_run_function3(struct net_context *c, int argc, const char **argv,
 	return c->display_usage?0:-1;
 }
 
-void net_display_usage_from_functable(struct functable3 *table)
+void net_display_usage_from_functable(struct functable *table)
 {
 	int i;
 	for (i=0; table[i].funcname != NULL; i++) {

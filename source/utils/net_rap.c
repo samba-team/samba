@@ -132,7 +132,7 @@ static int rap_file_user(struct net_context *c, int argc, const char **argv)
 
 int net_rap_file(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"close",
 			rap_file_close,
@@ -189,7 +189,7 @@ int net_rap_file(struct net_context *c, int argc, const char **argv)
 		return ret;
 	}
 
-	return net_run_function3(c, argc, argv, "net rap file", func);
+	return net_run_function(c, argc, argv, "net rap file", func);
 }
 
 int net_rap_share_usage(struct net_context *c, int argc, const char **argv)
@@ -271,7 +271,7 @@ static int rap_share_add(struct net_context *c, int argc, const char **argv)
 
 int net_rap_share(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"delete",
 			rap_share_delete,
@@ -328,7 +328,7 @@ int net_rap_share(struct net_context *c, int argc, const char **argv)
 		return ret;
 	}
 
-	return net_run_function3(c, argc, argv, "net rap share", func);
+	return net_run_function(c, argc, argv, "net rap share", func);
 }
 
 int net_rap_session_usage(struct net_context *c, int argc, const char **argv)
@@ -436,7 +436,7 @@ static int rap_session_delete(struct net_context *c, int argc, const char **argv
 
 int net_rap_session(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"info",
 			rap_session_info,
@@ -490,7 +490,7 @@ int net_rap_session(struct net_context *c, int argc, const char **argv)
 		return ret;
 	}
 
-	return net_run_function3(c, argc, argv, "net rap session", func);
+	return net_run_function(c, argc, argv, "net rap session", func);
 }
 
 /****************************************************************************
@@ -558,7 +558,7 @@ static int net_rap_server_domain(struct net_context *c, int argc,
 
 int net_rap_server(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"name",
 			net_rap_server_name,
@@ -580,7 +580,7 @@ int net_rap_server(struct net_context *c, int argc, const char **argv)
 
 	/* smb4k uses 'net [rap|rpc] server domain' to query servers in a domain */
 	/* Fall through for 'domain', any other forms will cause to show usage message */
-	return net_run_function3(c, argc, argv, "net rap server", func);
+	return net_run_function(c, argc, argv, "net rap server", func);
 
 }
 
@@ -728,7 +728,7 @@ int net_rap_printq(struct net_context *c, int argc, const char **argv)
 	struct cli_state *cli;
 	int ret;
 
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"info",
 			rap_printq_info,
@@ -766,7 +766,7 @@ int net_rap_printq(struct net_context *c, int argc, const char **argv)
 		return ret;
 	}
 
-	return net_run_function3(c, argc, argv, "net rap printq", func);
+	return net_run_function(c, argc, argv, "net rap printq", func);
 }
 
 static int net_rap_user_usage(struct net_context *c, int argc, const char **argv)
@@ -858,7 +858,7 @@ static int rap_user_info(struct net_context *c, int argc, const char **argv)
 int net_rap_user(struct net_context *c, int argc, const char **argv)
 {
 	int ret = -1;
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"add",
 			rap_user_add,
@@ -911,7 +911,7 @@ int net_rap_user(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	ret = net_run_function3(c, argc, argv, "net rap user", func);
+	ret = net_run_function(c, argc, argv, "net rap user", func);
  done:
 	if (ret != 0) {
 		DEBUG(1, ("Net user returned: %d\n", ret));
@@ -977,7 +977,7 @@ static int rap_group_add(struct net_context *c, int argc, const char **argv)
 
 int net_rap_group(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"add",
 			rap_group_add,
@@ -1022,7 +1022,7 @@ int net_rap_group(struct net_context *c, int argc, const char **argv)
 		return ret;
 	}
 
-	return net_run_function3(c, argc, argv, "net rap group", func);
+	return net_run_function(c, argc, argv, "net rap group", func);
 }
 
 int net_rap_groupmember_usage(struct net_context *c, int argc, const char **argv)
@@ -1090,7 +1090,7 @@ static int rap_groupmember_list(struct net_context *c, int argc, const char **ar
 
 int net_rap_groupmember(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"add",
 			rap_groupmember_add,
@@ -1118,7 +1118,7 @@ int net_rap_groupmember(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	return net_run_function3(c, argc, argv, "net rap groupmember", func);
+	return net_run_function(c, argc, argv, "net rap groupmember", func);
 }
 
 int net_rap_validate_usage(struct net_context *c, int argc, const char **argv)
@@ -1168,7 +1168,7 @@ static void service_fn(const char *service_name, const char *dummy,
 
 int net_rap_service(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"start",
 			rap_service_start,
@@ -1212,7 +1212,7 @@ int net_rap_service(struct net_context *c, int argc, const char **argv)
 		return ret;
 	}
 
-	return net_run_function3(c, argc, argv, "net rap service", func);
+	return net_run_function(c, argc, argv, "net rap service", func);
 }
 
 int net_rap_password_usage(struct net_context *c, int argc, const char **argv)
@@ -1261,7 +1261,7 @@ int net_rap_admin(struct net_context *c, int argc, const char **argv)
 
 int net_rap(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"file",
 			net_rap_file,
@@ -1369,6 +1369,6 @@ int net_rap(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	return net_run_function3(c, argc, argv, "net rap", func);
+	return net_run_function(c, argc, argv, "net rap", func);
 }
 

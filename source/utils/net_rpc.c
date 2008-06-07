@@ -1178,7 +1178,7 @@ int net_rpc_user(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
 
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"add",
 			rpc_user_add,
@@ -1243,7 +1243,7 @@ int net_rpc_user(struct net_context *c, int argc, const char **argv)
 				       argc, argv);
 	}
 
-	return net_run_function3(c, argc, argv, "net rpc user", func);
+	return net_run_function(c, argc, argv, "net rpc user", func);
 }
 
 static NTSTATUS rpc_sh_user_list(struct net_context *c,
@@ -3020,7 +3020,7 @@ int net_rpc_group(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
 
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"add",
 			rpc_group_add,
@@ -3102,7 +3102,7 @@ int net_rpc_group(struct net_context *c, int argc, const char **argv)
 				       argc, argv);
 	}
 
-	return net_run_function3(c, argc, argv, "net rpc group", func);
+	return net_run_function(c, argc, argv, "net rpc group", func);
 }
 
 /****************************************************************************/
@@ -4084,7 +4084,7 @@ static int rpc_share_migrate_all(struct net_context *c, int argc,
 static int rpc_share_migrate(struct net_context *c, int argc, const char **argv)
 {
 
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"all",
 			rpc_share_migrate_all,
@@ -4122,7 +4122,7 @@ static int rpc_share_migrate(struct net_context *c, int argc, const char **argv)
 
 	net_mode_share = NET_MODE_SHARE_MIGRATE;
 
-	return net_run_function3(c, argc, argv, "net rpc share migrate", func);
+	return net_run_function(c, argc, argv, "net rpc share migrate", func);
 }
 
 struct full_alias {
@@ -4926,7 +4926,7 @@ int net_usersidlist_usage(struct net_context *c, int argc, const char **argv)
 
 int net_rpc_share(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"add",
 			rpc_share_add,
@@ -4986,7 +4986,7 @@ int net_rpc_share(struct net_context *c, int argc, const char **argv)
 				       argc, argv);
 	}
 
-	return net_run_function3(c, argc, argv, "net rpc share", func);
+	return net_run_function(c, argc, argv, "net rpc share", func);
 }
 
 static NTSTATUS rpc_sh_share_list(struct net_context *c,
@@ -5288,7 +5288,7 @@ static int rpc_file_user(struct net_context *c, int argc, const char **argv)
 
 int net_rpc_file(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"close",
 			rpc_file_close,
@@ -5332,7 +5332,7 @@ int net_rpc_file(struct net_context *c, int argc, const char **argv)
 				       argc, argv);
 	}
 
-	return net_run_function3(c, argc, argv, "net rpc file", func);
+	return net_run_function(c, argc, argv, "net rpc file", func);
 }
 
 /**
@@ -6699,7 +6699,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 
 static int rpc_trustdom(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"add",
 			rpc_trustdom_add,
@@ -6751,7 +6751,7 @@ static int rpc_trustdom(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	return net_run_function3(c, argc, argv, "net rpc trustdom", func);
+	return net_run_function(c, argc, argv, "net rpc trustdom", func);
 }
 
 /**
@@ -7046,7 +7046,7 @@ int rpc_printer_migrate(struct net_context *c, int argc, const char **argv)
 	   rpc_printer_migrate_drivers_internals, the printer-queue already
 	   *has* to exist */
 
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"all",
 			rpc_printer_migrate_all,
@@ -7098,7 +7098,7 @@ int rpc_printer_migrate(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	return net_run_function3(c, argc, argv, "net rpc printer migrate",func);
+	return net_run_function(c, argc, argv, "net rpc printer migrate",func);
 }
 
 
@@ -7265,7 +7265,7 @@ static int rpc_printer_publish(struct net_context *c, int argc,
 			       const char **argv)
 {
 
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"publish",
 			rpc_printer_publish_publish,
@@ -7315,7 +7315,7 @@ static int rpc_printer_publish(struct net_context *c, int argc,
 			       argc, argv);
 	}
 
-	return net_run_function3(c, argc, argv, "net rpc printer publish",func);
+	return net_run_function(c, argc, argv, "net rpc printer publish",func);
 
 }
 
@@ -7369,7 +7369,7 @@ int rpc_printer_usage(struct net_context *c, int argc, const char **argv)
  **/
 int net_rpc_printer(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"list",
 			rpc_printer_list,
@@ -7418,7 +7418,7 @@ int net_rpc_printer(struct net_context *c, int argc, const char **argv)
 			       argc, argv);
 	}
 
-	return net_run_function3(c, argc, argv, "net rpc printer", func);
+	return net_run_function(c, argc, argv, "net rpc printer", func);
 }
 
 /**
@@ -7432,7 +7432,7 @@ int net_rpc_printer(struct net_context *c, int argc, const char **argv)
 
 int net_rpc(struct net_context *c, int argc, const char **argv)
 {
-	struct functable3 func[] = {
+	struct functable func[] = {
 		{
 			"audit",
 			net_rpc_audit,
@@ -7612,5 +7612,5 @@ int net_rpc(struct net_context *c, int argc, const char **argv)
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
-	return net_run_function3(c, argc, argv, "net rpc", func);
+	return net_run_function(c, argc, argv, "net rpc", func);
 }
