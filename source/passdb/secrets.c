@@ -399,6 +399,7 @@ bool secrets_fetch_trust_account_password_legacy(const char *domain,
 
 	if (size != sizeof(*pass)) {
 		DEBUG(0, ("secrets were of incorrect size!\n"));
+		SAFE_FREE(pass);
 		return False;
 	}
 
