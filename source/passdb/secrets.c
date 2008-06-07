@@ -883,10 +883,11 @@ bool fetch_ldap_pw(char **dn, char** pw)
 			if (*p == ',') *p = '/';
 
 		data=(char *)secrets_fetch(old_style_key, &size);
-		if (!size && size < sizeof(old_style_pw)) {
+		if ((data == NULL) || (size < sizeof(old_style_pw))) {
 			DEBUG(0,("fetch_ldap_pw: neither ldap secret retrieved!\n"));
 			SAFE_FREE(old_style_key);
 			SAFE_FREE(*dn);
+			SAFE_FREE(data);
 			return False;
 		}
 
