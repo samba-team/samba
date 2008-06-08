@@ -160,6 +160,8 @@ typedef struct tdb_context {
         tdb(const char *name, int hash_size, int tdb_flags, int flags, mode_t mode) {
             return tdb_open(name, hash_size, tdb_flags, flags, mode);
         }
+        %feature("docstring") error "S.error() -> int\n"
+                                    "Find last error number returned by operation on this TDB.";
         enum TDB_ERROR error();
         ~tdb() { tdb_close($self); }
         %feature("docstring") close "S.close() -> None\n"
@@ -179,6 +181,8 @@ typedef struct tdb_context {
         %feature("docstring") store "S.store(key, value, flag=TDB_REPLACE) -> None\n"
                                         "Store an entry.";
         int store(TDB_DATA key, TDB_DATA dbuf, int flag);
+        %feature("docstring") exists "S.exists(key) -> bool\n"
+                                        "Check whether key exists in this database.";
         int exists(TDB_DATA key);
         %feature("docstring") firstkey "S.firstkey() -> data\n"
                                         "Return the first key in this database.";
