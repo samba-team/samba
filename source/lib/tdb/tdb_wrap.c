@@ -3628,7 +3628,10 @@ static PyMethodDef SwigMethods[] = {
 		"S.__init__(name,hash_size=0,tdb_flags=TDB_DEFAULT,flags=O_RDWR,mode=0600)\n"
 		"Open a TDB file.\n"
 		""},
-	 { (char *)"Tdb_error", (PyCFunction)_wrap_Tdb_error, METH_O, NULL},
+	 { (char *)"Tdb_error", (PyCFunction)_wrap_Tdb_error, METH_O, (char *)"\n"
+		"S.error() -> int\n"
+		"Find last error number returned by operation on this TDB.\n"
+		""},
 	 { (char *)"delete_Tdb", (PyCFunction)_wrap_delete_Tdb, METH_O, NULL},
 	 { (char *)"Tdb_close", (PyCFunction)_wrap_Tdb_close, METH_O, (char *)"\n"
 		"S.close() -> None\n"
@@ -3651,7 +3654,10 @@ static PyMethodDef SwigMethods[] = {
 		"S.store(key, value, flag=TDB_REPLACE) -> None\n"
 		"Store an entry.\n"
 		""},
-	 { (char *)"Tdb_exists", (PyCFunction) _wrap_Tdb_exists, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Tdb_exists", (PyCFunction) _wrap_Tdb_exists, METH_VARARGS | METH_KEYWORDS, (char *)"\n"
+		"S.exists(key) -> bool\n"
+		"Check whether key exists in this database.\n"
+		""},
 	 { (char *)"Tdb_firstkey", (PyCFunction)_wrap_Tdb_firstkey, METH_O, (char *)"\n"
 		"S.firstkey() -> data\n"
 		"Return the first key in this database.\n"

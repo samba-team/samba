@@ -92,6 +92,13 @@ class Tdb(object):
         Open a TDB file.
         """
         _tdb.Tdb_swiginit(self,_tdb.new_Tdb(*args, **kwargs))
+    def error(*args, **kwargs):
+        """
+        S.error() -> int
+        Find last error number returned by operation on this TDB.
+        """
+        return _tdb.Tdb_error(*args, **kwargs)
+
     __swig_destroy__ = _tdb.delete_Tdb
     def close(*args, **kwargs):
         """
@@ -127,6 +134,13 @@ class Tdb(object):
         Store an entry.
         """
         return _tdb.Tdb_store(*args, **kwargs)
+
+    def exists(*args, **kwargs):
+        """
+        S.exists(key) -> bool
+        Check whether key exists in this database.
+        """
+        return _tdb.Tdb_exists(*args, **kwargs)
 
     def firstkey(*args, **kwargs):
         """
