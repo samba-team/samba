@@ -136,12 +136,15 @@
 					</xsl:element>
 				</xsl:element>
 				<xsl:element name="title">
+				<xsl:text>&#10;</xsl:text>
+				<xsl:text>&#10;</xsl:text>
 					<xsl:element name="anchor">
 						<xsl:attribute name="id">
 							<xsl:value-of select="translate(translate(string(.),' ',''), 'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
 						</xsl:attribute>
 					</xsl:element>
 					<xsl:value-of select="."/>
+					<xsl:text>&#10;</xsl:text>
 				</xsl:element>
 				<xsl:element name="variablelist">
 					<xsl:element name="varlistentry">
