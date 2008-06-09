@@ -1,8 +1,7 @@
 dnl -*- mode: m4-mode -*-
 dnl Process this file with autoconf to produce a configure script.
 
-dnl disabled 2.53 requirement - we do work with 2.52 on suse 7.3 for example
-dnl AC_PREREQ(2.53)
+AC_PREREQ(2.54)
 
 AC_INIT([samba],[4],[samba-technical@samba.org])
 
