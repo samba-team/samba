@@ -1269,7 +1269,7 @@ fi
 # "struct timespec" or "timespec_t". Linux doesn't have timespec_t, so we
 # prefer struct timespec.
 
-AC_CACHE_CHECK([whether struct stat has sub-second timestamps], samba_stat_hires,
+AC_CACHE_CHECK([whether struct stat has sub-second timestamps], samba_cv_stat_hires,
     [
 	AC_TRY_COMPILE(
 	    [
@@ -1297,10 +1297,10 @@ AC_CACHE_CHECK([whether struct stat has sub-second timestamps], samba_stat_hires
 		t.tv_sec = s.st_atim.tv_sec;
 		t.tv_nsec = s.st_atim.tv_nsec;
 	    ],
-	    samba_stat_hires=yes, samba_stat_hires=no)
+	    samba_cv_stat_hires=yes, samba_cv_stat_hires=no)
     ])
 
-if test x"$samba_stat_hires" = x"yes" ; then
+if test x"$samba_cv_stat_hires" = x"yes" ; then
     AC_DEFINE(HAVE_STAT_ST_MTIM, 1, [whether struct stat contains st_mtim])
     AC_DEFINE(HAVE_STAT_ST_ATIM, 1, [whether struct stat contains st_atim])
     AC_DEFINE(HAVE_STAT_ST_CTIM, 1, [whether struct stat contains st_ctim])
@@ -1308,7 +1308,7 @@ if test x"$samba_stat_hires" = x"yes" ; then
 	    [whether struct stat has sub-second timestamps])
 fi
 
-AC_CACHE_CHECK([whether struct stat has sub-second timestamps without struct timespec], samba_stat_hires_notimespec,
+AC_CACHE_CHECK([whether struct stat has sub-second timestamps without struct timespec], samba_cv_stat_hires_notimespec,
     [
 	AC_TRY_COMPILE(
 	    [
@@ -1336,10 +1336,10 @@ AC_CACHE_CHECK([whether struct stat has sub-second timestamps without struct tim
 		t.tv_sec = s.st_atime;
 		t.tv_nsec = s.st_atimensec;
 	    ],
-	    samba_stat_hires=yes, samba_stat_hires=no)
+	    samba_cv_stat_hires=yes, samba_cv_stat_hires=no)
     ])
 
-if test x"$samba_stat_hires_notimespec" = x"yes" ; then
+if test x"$samba_cv_stat_hires_notimespec" = x"yes" ; then
     AC_DEFINE(HAVE_STAT_ST_MTIMENSEC, 1, [whether struct stat contains st_mtimensec])
     AC_DEFINE(HAVE_STAT_ST_ATIMENSEC, 1, [whether struct stat contains st_atimensec])
     AC_DEFINE(HAVE_STAT_ST_CTIMENSEC, 1, [whether struct stat contains st_ctimensec])
