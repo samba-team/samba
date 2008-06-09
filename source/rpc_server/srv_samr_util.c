@@ -278,7 +278,15 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 		if (from->passmustchange == PASS_MUST_CHANGE_AT_NEXT_LOGON) {
 			pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);		
 		} else {
-			pdb_set_pass_last_set_time(to, time(NULL),PDB_CHANGED);
+			/* A subtlety here: some windows commands will
+			   clear the expired flag even though it's not
+			   set, and we don't want to reset the time
+			   in these caess.  "net user /dom <user> /active:y"
+			   for example, to clear an autolocked acct.
+			   We must check to see if it's expired first. jmcd */
+			stored_time = pdb_get_pass_last_set_time(to);
+			if (stored_time == 0)
+				pdb_set_pass_last_set_time(to, time(NULL),PDB_CHANGED);
 		}
 	}
 
@@ -492,7 +500,15 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 		if (from->passmustchange == PASS_MUST_CHANGE_AT_NEXT_LOGON) {
 			pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);		
 		} else {
-			pdb_set_pass_last_set_time(to, time(NULL),PDB_CHANGED);
+			/* A subtlety here: some windows commands will
+			   clear the expired flag even though it's not
+			   set, and we don't want to reset the time
+			   in these caess.  "net user /dom <user> /active:y"
+			   for example, to clear an autolocked acct.
+			   We must check to see if it's expired first. jmcd */
+			stored_time = pdb_get_pass_last_set_time(to);
+			if (stored_time == 0)
+				pdb_set_pass_last_set_time(to, time(NULL),PDB_CHANGED);
 		}
 	}
 
@@ -710,7 +726,15 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 		if (from->passmustchange == PASS_MUST_CHANGE_AT_NEXT_LOGON) {
 			pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);		
 		} else {
-			pdb_set_pass_last_set_time(to, time(NULL),PDB_CHANGED);
+			/* A subtlety here: some windows commands will
+			   clear the expired flag even though it's not
+			   set, and we don't want to reset the time
+			   in these caess.  "net user /dom <user> /active:y"
+			   for example, to clear an autolocked acct.
+			   We must check to see if it's expired first. jmcd */
+			stored_time = pdb_get_pass_last_set_time(to);
+			if (stored_time == 0)
+				pdb_set_pass_last_set_time(to, time(NULL),PDB_CHANGED);
 		}
 	}
 }
