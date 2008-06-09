@@ -234,6 +234,7 @@ o   Björn Jacke <bj@sernet.de>
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 5502: Fix security=server.
+    * Fix coverity IDs 552, 553, 570, 571, 572.
 
 
 o   Stefan Metzmacher <metze@samba.org>
