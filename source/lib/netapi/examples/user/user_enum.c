@@ -71,7 +71,7 @@ int main(int argc, const char **argv)
 	do {
 		status = NetUserEnum(hostname,
 				     0,
-				     0,
+				     FILTER_NORMAL_ACCOUNT,
 				     &buffer,
 				     (uint32_t)-1,
 				     &entries_read,
