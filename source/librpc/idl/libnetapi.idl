@@ -181,6 +181,12 @@ interface libnetapi
 	/* NetUserEnum                             */
 	/*******************************************/
 
+	const int FILTER_TEMP_DUPLICATE_ACCOUNT = 0x0001;
+	const int FILTER_NORMAL_ACCOUNT = 0x0002;
+	const int FILTER_INTERDOMAIN_TRUST_ACCOUNT = 0x0008;
+	const int FILTER_WORKSTATION_TRUST_ACCOUNT = 0x0010;
+	const int FILTER_SERVER_TRUST_ACCOUNT = 0x0020;
+
 	[nopush,nopull] NET_API_STATUS NetUserEnum(
 		[in,unique] string *server_name,
 		[in] uint32 level,
