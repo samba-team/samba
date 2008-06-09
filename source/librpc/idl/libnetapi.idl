@@ -25,6 +25,10 @@ interface libnetapi
 		uint32 sub_auths[MAXSUBAUTHS];
 	} domsid;
 
+	/*******************************************/
+	/* NetJoinDomain                           */
+	/*******************************************/
+
 	[nopush,nopull] NET_API_STATUS NetJoinDomain(
 		[in,unique] string *server,
 		[in,ref] string *domain,
@@ -34,6 +38,10 @@ interface libnetapi
 		[in] uint32 join_flags
 		);
 
+	/*******************************************/
+	/* NetUnjoinDomain                         */
+	/*******************************************/
+
 	[nopush,nopull] NET_API_STATUS NetUnjoinDomain(
 		[in,unique] string *server_name,
 		[in,unique] string *account,
@@ -41,11 +49,19 @@ interface libnetapi
 		[in] uint32 unjoin_flags
 		);
 
+	/*******************************************/
+	/* NetGetJoinInformation                   */
+	/*******************************************/
+
 	[nopush,nopull] NET_API_STATUS NetGetJoinInformation(
 		[in,unique] string *server_name,
 		[out] string **name_buffer,
 		[out] uint16 *name_type
 		);
+
+	/*******************************************/
+	/* NetGetJoinableOUs                       */
+	/*******************************************/
 
 	[nopush,nopull] NET_API_STATUS NetGetJoinableOUs(
 		[in,unique] string *server_name,
@@ -55,6 +71,10 @@ interface libnetapi
 		[out] uint32 *ou_count,
 		[out] string ***ous
 		);
+
+	/*******************************************/
+	/* NetServerGetInfo                        */
+	/*******************************************/
 
 	[public] typedef struct {
 		string sv1005_comment;
@@ -66,6 +86,10 @@ interface libnetapi
 		[out] uint8 **buffer
 		);
 
+	/*******************************************/
+	/* NetServerSetInfo                        */
+	/*******************************************/
+
 	[nopush,nopull] NET_API_STATUS NetServerSetInfo(
 		[in,unique] string *server_name,
 		[in] uint32 level,
@@ -73,17 +97,29 @@ interface libnetapi
 		[out] uint32 *parm_error
 		);
 
+	/*******************************************/
+	/* NetGetDCName                            */
+	/*******************************************/
+
 	[nopush,nopull] NET_API_STATUS NetGetDCName(
 		[in,unique] string *server_name,
 		[in,unique] string *domain_name,
 		[out] uint8 **buffer
 		);
 
+	/*******************************************/
+	/* NetGetAnyDCName                         */
+	/*******************************************/
+
 	[nopush,nopull] NET_API_STATUS NetGetAnyDCName(
 		[in,unique] string *server_name,
 		[in,unique] string *domain_name,
 		[out] uint8 **buffer
 		);
+
+	/*******************************************/
+	/* DsGetDcName                             */
+	/*******************************************/
 
 	[public] typedef struct {
 		string domain_controller_name;
@@ -105,6 +141,10 @@ interface libnetapi
 		[in] uint32 flags,
 		[out,ref] DOMAIN_CONTROLLER_INFO **dc_info
 		);
+
+	/*******************************************/
+	/* NetUserAdd                              */
+	/*******************************************/
 
 	[public] typedef struct {
 		string usri0_name;
@@ -128,10 +168,18 @@ interface libnetapi
 		[out,ref] uint32 *parm_error
 		);
 
+	/*******************************************/
+	/* NetUserDel                              */
+	/*******************************************/
+
 	[nopush,nopull] NET_API_STATUS NetUserDel(
 		[in,unique] string *server_name,
 		[in,ref] string *user_name
 		);
+
+	/*******************************************/
+	/* NetUserEnum                             */
+	/*******************************************/
 
 	[nopush,nopull] NET_API_STATUS NetUserEnum(
 		[in,unique] string *server_name,
@@ -143,6 +191,10 @@ interface libnetapi
 		[out,ref] uint32 *total_entries,
 		[in,out,ref] uint32 *resume_handle
 		);
+
+	/*******************************************/
+	/* NetQueryDisplayInformation              */
+	/*******************************************/
 
 	[public] typedef struct {
 		string usri1_name;
@@ -178,6 +230,10 @@ interface libnetapi
 		[out,ref] uint32 *entries_read,
 		[out,ref,noprint] void **buffer
 		);
+
+	/*******************************************/
+	/* NetGroupAdd                             */
+	/*******************************************/
 
 	typedef struct {
 		string grpi0_name;
@@ -217,10 +273,18 @@ interface libnetapi
 		[out] uint32 *parm_err
 		);
 
+	/*******************************************/
+	/* NetGroupDel                             */
+	/*******************************************/
+
 	[nopush,nopull] NET_API_STATUS NetGroupDel(
 		[in] string server_name,
 		[in] string group_name
 		);
+
+	/*******************************************/
+	/* NetGroupSetInfo                         */
+	/*******************************************/
 
 	[nopush,nopull] NET_API_STATUS NetGroupSetInfo(
 		[in] string server_name,
@@ -230,6 +294,10 @@ interface libnetapi
 		[out] uint32 *parm_err
 		);
 
+	/*******************************************/
+	/* NetGroupGetInfo                         */
+	/*******************************************/
+
 	[nopush,nopull] NET_API_STATUS NetGroupGetInfo(
 		[in] string server_name,
 		[in] string group_name,
@@ -237,17 +305,29 @@ interface libnetapi
 		[out] uint8 **buf
 		);
 
+	/*******************************************/
+	/* NetGroupAddUser                         */
+	/*******************************************/
+
 	[nopush,nopull] NET_API_STATUS NetGroupAddUser(
 		[in] string server_name,
 		[in] string group_name,
 		[in] string user_name
 		);
 
+	/*******************************************/
+	/* NetGroupDelUser                         */
+	/*******************************************/
+
 	[nopush,nopull] NET_API_STATUS NetGroupDelUser(
 		[in] string server_name,
 		[in] string group_name,
 		[in] string user_name
 		);
+
+	/*******************************************/
+	/* NetLocalGroupAdd                        */
+	/*******************************************/
 
 	typedef struct {
 		string lgrpi0_name;
@@ -269,10 +349,18 @@ interface libnetapi
 		[out,ref] uint32 *parm_err
 		);
 
+	/*******************************************/
+	/* NetLocalGroupDel                        */
+	/*******************************************/
+
 	[nopush,nopull] NET_API_STATUS NetLocalGroupDel(
 		[in] string server_name,
 		[in] string group_name
 		);
+
+	/*******************************************/
+	/* NetLocalGroupGetInfo                    */
+	/*******************************************/
 
 	[nopush,nopull] NET_API_STATUS NetLocalGroupGetInfo(
 		[in] string server_name,
@@ -281,6 +369,10 @@ interface libnetapi
 		[out,ref] uint8 **buf
 		);
 
+	/*******************************************/
+	/* NetLocalGroupSetInfo                    */
+	/*******************************************/
+
 	[nopush,nopull] NET_API_STATUS NetLocalGroupSetInfo(
 		[in] string server_name,
 		[in] string group_name,
@@ -288,6 +380,10 @@ interface libnetapi
 		[in,ref] uint8 *buf,
 		[out,ref] uint32 *parm_err
 		);
+
+	/*******************************************/
+	/* NetRemoteTOD                            */
+	/*******************************************/
 
 	typedef struct {
 		uint32 tod_elapsedt;
