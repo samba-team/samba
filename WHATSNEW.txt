@@ -251,6 +251,7 @@ o   Stefan Metzmacher <metze@samba.org>
       For more information, please have a look at the disussion on
       samba-technical starting with
       http://lists.samba.org/archive/samba-technical/2008-June/059511.html.
+    * Fix autogen for autoconf 2.62.
 
 
 o   Marc VanHeyningen <marc.vanheyningen@isilon.com>
