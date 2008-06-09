@@ -224,11 +224,25 @@ void smb2srv_sesssetup_recv(struct smb2srv_request *req)
 	smb2srv_sesssetup_backend(req, io);
 }
 
-static NTSTATUS smb2srv_logoff_backend(struct smb2srv_request *req)
+static int smb2srv_cleanup_session_destructor(struct smbsrv_session **session)
 {
 	/* TODO: call ntvfs backends to close file of this session */
-	talloc_free(req->session);
-	req->session = NULL;
+	DEBUG(0,("free session[%p]\n", *session));
+	talloc_free(*session);
+	return 0;
+}
+
+static NTSTATUS smb2srv_logoff_backend(struct smb2srv_request *req)
+{
+	struct smbsrv_session **session_ptr;
+
+	/* we need to destroy the session after sending the reply */
+	session_ptr = talloc(req, struct smbsrv_session *);
+	NT_STATUS_HAVE_NO_MEMORY(session_ptr);
+
+	*session_ptr = req->session;
+	talloc_set_destructor(session_ptr, smb2srv_cleanup_session_destructor);
+
 	return NT_STATUS_OK;
 }
 
