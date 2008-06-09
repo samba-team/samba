@@ -221,10 +221,19 @@ o   Jeremy Allison <jra@samba.org>
     * Make sure we take account of the large read/write SMB headers as
       well as the buffer space when allocating cli buffers for large
       read/write.
+    * Fix tag as a goto target we were not reinitializing the array counts.
+
+
+o   Steven Danneman <sdanneman@isilon.com>
+    * BUG 5451: Fix for using the correct machine domain when looking up trust
+      credentials in our tdb.
+    * Fix spnego SPN when contacting trusted domains.
 
 
 o   Günther Deschner <gd@samba.org>
     * BUG 5285: Fix libcap header mismatch.
+    * Fix pam_sm_chauthtok for storing modified cached creds.
+    * Fix joining issue in setups with "config backend = registry".
 
 
 o   Björn Jacke <bj@sernet.de>
