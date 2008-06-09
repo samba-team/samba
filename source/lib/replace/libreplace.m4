@@ -299,4 +299,5 @@ m4_include(libreplace_cc.m4)
 m4_include(libreplace_ld.m4)
 m4_include(libreplace_network.m4)
 m4_include(libreplace_macros.m4)
-m4_include(autoconf-2.60.m4)
+
+m4_ifndef([AC_USE_SYSTEM_EXTENSIONS],[m4_include(autoconf-2.60.m4)])
