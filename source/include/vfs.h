@@ -303,7 +303,7 @@ struct vfs_ops {
 
 		int (*open)(struct vfs_handle_struct *handle, const char *fname, files_struct *fsp, int flags, mode_t mode);
 		int (*close_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp);
-		ssize_t (*read)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n);
+		ssize_t (*vfs_read)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n);
 		ssize_t (*pread)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n, SMB_OFF_T offset);
 		ssize_t (*write)(struct vfs_handle_struct *handle, struct files_struct *fsp, const void *data, size_t n);
 		ssize_t (*pwrite)(struct vfs_handle_struct *handle, struct files_struct *fsp, const void *data, size_t n, SMB_OFF_T offset);
@@ -330,7 +330,7 @@ struct vfs_ops {
 		int (*linux_setlease)(struct vfs_handle_struct *handle, struct files_struct *fsp, int leasetype);
 		bool (*getlock)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
 		int (*symlink)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
-		int (*readlink)(struct vfs_handle_struct *handle, const char *path, char *buf, size_t bufsiz);
+		int (*vfs_readlink)(struct vfs_handle_struct *handle, const char *path, char *buf, size_t bufsiz);
 		int (*link)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
 		int (*mknod)(struct vfs_handle_struct *handle, const char *path, mode_t mode, SMB_DEV_T dev);
 		char *(*realpath)(struct vfs_handle_struct *handle, const char *path, char *resolved_path);
@@ -455,7 +455,7 @@ struct vfs_ops {
 
 		struct vfs_handle_struct *open;
 		struct vfs_handle_struct *close_hnd;
-		struct vfs_handle_struct *read;
+		struct vfs_handle_struct *vfs_read;
 		struct vfs_handle_struct *pread;
 		struct vfs_handle_struct *write;
 		struct vfs_handle_struct *pwrite;
@@ -482,7 +482,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *linux_setlease;
 		struct vfs_handle_struct *getlock;
 		struct vfs_handle_struct *symlink;
-		struct vfs_handle_struct *readlink;
+		struct vfs_handle_struct *vfs_readlink;
 		struct vfs_handle_struct *link;
 		struct vfs_handle_struct *mknod;
 		struct vfs_handle_struct *realpath;
