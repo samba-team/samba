@@ -1,8 +1,0 @@
-#
-# we use no version symbols for libsmbclient
-# to be compatible with 3.0.x
-#
-{
-	global: smbc_*;
-	local: *;
-};
