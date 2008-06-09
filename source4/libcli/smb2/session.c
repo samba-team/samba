@@ -187,14 +187,14 @@ static void session_request_handler(struct smb2_request *req)
 		return;
 	}
 
-	if (session->transport->signing.doing_signing) {
+	if (session->transport->signing_required) {
 		if (session->session_key.length != 16) {
 			DEBUG(2,("Wrong session key length %u for SMB2 signing\n",
 				 (unsigned)session->session_key.length));
 			composite_error(c, NT_STATUS_ACCESS_DENIED);
 			return;
 		}
-		session->transport->signing.signing_started = true;
+		session->signing_active = true;
 	}
 
 	composite_done(c);
@@ -218,7 +218,7 @@ struct composite_context *smb2_session_setup_spnego_send(struct smb2_session *se
 
 	ZERO_STRUCT(state->io);
 	state->io.in.vc_number          = 0;
-	if (session->transport->signing.doing_signing) {
+	if (session->transport->signing_required) {
 		state->io.in.security_mode = 
 			SMB2_NEGOTIATE_SIGNING_ENABLED | SMB2_NEGOTIATE_SIGNING_REQUIRED;
 	}
