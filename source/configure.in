@@ -3361,7 +3361,7 @@ if test x"$with_ads_support" != x"no"; then
   LIBS="$KRB5_LIBS $LIBS"
 
   AC_CACHE_CHECK(whether krb5_ticket contains kvno and enctype,
-	smb_krb5_ticket_has_keyinfo,
+	smb_krb5_cv_ticket_has_keyinfo,
 	[
 	    AC_TRY_COMPILE(
 	    [
@@ -3375,17 +3375,17 @@ if test x"$with_ads_support" != x"no"; then
 		enctype = ticket.enc_part.enctype;
 		kvno = ticket.enc_part.kvno;
 	    ],
-	    [ smb_krb5_ticket_has_keyinfo=yes ],
-	    [ smb_krb5_ticket_has_keyinfo=no ])
+	    [ smb_krb5_cv_ticket_has_keyinfo=yes ],
+	    [ smb_krb5_cv_ticket_has_keyinfo=no ])
 	])
 
-  if test x"$smb_krb5_ticket_has_keyinfo" = x"yes" ; then
+  if test x"$smb_krb5_cv_ticket_has_keyinfo" = x"yes" ; then
 	AC_DEFINE(KRB5_TICKET_HAS_KEYINFO, 1,
 	    [Whether the krb5_ticket structure contains the kvno and enctype])
   fi
 
   AC_CACHE_CHECK(whether krb5_get_init_creds_opt_free takes a context argument,
-	  smb_krb5_creds_opt_free_context,
+	  smb_krb5_cv_creds_opt_free_context,
 	  [
 		AC_TRY_COMPILE([
 		    #include <krb5.h>],
@@ -3394,25 +3394,25 @@ if test x"$with_ads_support" != x"no"; then
 			krb5_get_init_creds_opt *opt = NULL;
 			krb5_get_init_creds_opt_free(ctx, opt);
 		    ],
-		    [smb_krb5_creds_opt_free_context=yes],
-		    [smb_krb5_creds_opt_free_context=no]
+		    [smb_krb5_cv_creds_opt_free_context=yes],
+		    [smb_krb5_cv_creds_opt_free_context=no]
 		)
 	  ])
 
-  if test x"$smb_krb5_creds_opt_free_context" = x"yes" ; then
+  if test x"$smb_krb5_cv_creds_opt_free_context" = x"yes" ; then
 	AC_DEFINE(KRB5_CREDS_OPT_FREE_REQUIRES_CONTEXT, 1,
 	    [Whether krb5_get_init_creds_opt_free takes a context argument])
   fi
 
-  AC_CACHE_CHECK(whether krb5_verify_checksum takes 7 arguments, smb_krb5_verify_checksum, [
+  AC_CACHE_CHECK(whether krb5_verify_checksum takes 7 arguments, smb_krb5_cv_verify_checksum, [
     AC_TRY_COMPILE([
 	#include <krb5.h>],
 	[krb5_verify_checksum(0, 0, 0, 0, 0, 0, 0);],
-	[smb_krb5_verify_checksum=7],
-	[smb_krb5_verify_checksum=6],
+	[smb_krb5_cv_verify_checksum=7],
+	[smb_krb5_cv_verify_checksum=6],
     )
   ])
-  AC_DEFINE_UNQUOTED(KRB5_VERIFY_CHECKSUM_ARGS, $smb_krb5_verify_checksum, [Number of arguments to krb5_verify_checksum])
+  AC_DEFINE_UNQUOTED(KRB5_VERIFY_CHECKSUM_ARGS, $smb_krb5_cv_verify_checksum, [Number of arguments to krb5_verify_checksum])
 
   AC_CACHE_CHECK([for checksum in krb5_checksum],
                 samba_cv_HAVE_CHECKSUM_IN_KRB5_CHECKSUM,[
@@ -3735,7 +3735,7 @@ if test x"$with_ads_support" != x"no"; then
 
   if test x"$ac_cv_func_ext_krb5_enctype_to_string" = x"yes"; then
     AC_CACHE_CHECK([for krb5_error_code krb5_enctype_to_string(krb5_context context, krb5_enctype enctype, char **str)],
-        smb_krb5_enctype_to_string_takes_krb5_context_arg,[
+        smb_krb5_cv_enctype_to_string_takes_krb5_context_arg,[
 	AC_TRY_RUN_STRICT([
 		#include <krb5.h>
 		int main(void) {
@@ -3746,16 +3746,16 @@ if test x"$with_ads_support" != x"no"; then
 			return 0;
 		}
 		],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
-		smb_krb5_enctype_to_string_takes_krb5_context_arg=yes,
-		smb_krb5_enctype_to_string_takes_krb5_context_arg=no)])
+		smb_krb5_cv_enctype_to_string_takes_krb5_context_arg=yes,
+		smb_krb5_cv_enctype_to_string_takes_krb5_context_arg=no)])
 
-    if test x"$smb_krb5_enctype_to_string_takes_krb5_context_arg" = x"yes"; then
+    if test x"$smb_krb5_cv_enctype_to_string_takes_krb5_context_arg" = x"yes"; then
       AC_DEFINE(HAVE_KRB5_ENCTYPE_TO_STRING_WITH_KRB5_CONTEXT_ARG,1,
                 [whether krb5_enctype_to_string takes krb5_context argument])
     fi
 
     AC_CACHE_CHECK([for krb5_error_code krb5_enctype_to_string(krb5_enctype enctype, char *str, size_t len)],
-        smb_krb5_enctype_to_string_takes_size_t_arg,[
+        smb_krb5_cv_enctype_to_string_takes_size_t_arg,[
 	AC_TRY_RUN_STRICT([
 		#include <krb5.h>
 		int main(void) {
@@ -3764,10 +3764,10 @@ if test x"$with_ads_support" != x"no"; then
 			return 0;
 		}
 		],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
-		smb_krb5_enctype_to_string_takes_size_t_arg=yes,
-		smb_krb5_enctype_to_string_takes_size_t_arg=no)])
+		smb_krb5_cv_enctype_to_string_takes_size_t_arg=yes,
+		smb_krb5_cv_enctype_to_string_takes_size_t_arg=no)])
 
-    if test x"$smb_krb5_enctype_to_string_takes_size_t_arg" = x"yes"; then
+    if test x"$smb_krb5_cv_enctype_to_string_takes_size_t_arg" = x"yes"; then
       AC_DEFINE(HAVE_KRB5_ENCTYPE_TO_STRING_WITH_SIZE_T_ARG,1,
                 [whether krb5_enctype_to_string takes size_t argument])
     fi
@@ -3837,7 +3837,7 @@ if test x"$with_ads_support" != x"no"; then
     use_ads=no
   fi
 
-  if test x"$smb_krb5_ticket_has_keyinfo" != x"yes" ; then
+  if test x"$smb_krb5_cv_ticket_has_keyinfo" != x"yes" ; then
 
       # We only need the following functions if we can't get the enctype
       # and kvno out of the ticket directly (ie. on Heimdal).
