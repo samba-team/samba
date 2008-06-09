@@ -468,6 +468,7 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 	struct dom_sid2 *domain_sid = NULL;
 	struct policy_handle domain_handle;
 	struct samr_SamArray *sam = NULL;
+	uint32_t filter = ACB_NORMAL;
 
 	NTSTATUS status;
 	WERROR werr;
@@ -512,11 +513,31 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
+	switch (r->in.filter) {
+		case FILTER_NORMAL_ACCOUNT:
+			filter = ACB_NORMAL;
+			break;
+		case FILTER_TEMP_DUPLICATE_ACCOUNT:
+			filter = ACB_TEMPDUP;
+			break;
+		case FILTER_INTERDOMAIN_TRUST_ACCOUNT:
+			filter = ACB_DOMTRUST;
+			break;
+		case FILTER_WORKSTATION_TRUST_ACCOUNT:
+			filter = ACB_WSTRUST;
+			break;
+		case FILTER_SERVER_TRUST_ACCOUNT:
+			filter = ACB_SVRTRUST;
+			break;
+		default:
+			break;
+	}
+
 	status = rpccli_samr_EnumDomainUsers(pipe_cli,
 					     ctx,
 					     &domain_handle,
 					     r->in.resume_handle,
-					     r->in.filter,
+					     filter,
 					     &sam,
 					     r->in.prefmaxlen,
 					     r->out.entries_read);
