@@ -944,7 +944,7 @@ static NTSTATUS fetch_group_mem_info(uint32_t rid,
 
 static NTSTATUS fetch_alias_info(uint32_t rid,
 				 struct netr_DELTA_ALIAS *r,
-				 DOM_SID dom_sid)
+				 const DOM_SID *dom_sid)
 {
 	fstring name;
 	fstring comment;
@@ -958,7 +958,7 @@ static NTSTATUS fetch_alias_info(uint32_t rid,
 	fstrcpy(comment, r->description.string);
 
 	/* Find out whether the group is already mapped */
-	sid_copy(&alias_sid, &dom_sid);
+	sid_copy(&alias_sid, dom_sid);
 	sid_append_rid(&alias_sid, rid);
 	sid_to_fstring(sid_string, &alias_sid);
 
@@ -984,7 +984,7 @@ static NTSTATUS fetch_alias_info(uint32_t rid,
 	map.gid = grp->gr_gid;
 	map.sid = alias_sid;
 
-	if (sid_equal(&dom_sid, &global_sid_Builtin))
+	if (sid_equal(dom_sid, &global_sid_Builtin))
 		map.sid_name_use = SID_NAME_WKN_GRP;
 	else
 		map.sid_name_use = SID_NAME_ALIAS;
@@ -1002,7 +1002,7 @@ static NTSTATUS fetch_alias_info(uint32_t rid,
 
 static NTSTATUS fetch_alias_mem(uint32_t rid,
 				struct netr_DELTA_ALIAS_MEMBER *r,
-				DOM_SID dom_sid)
+				const DOM_SID *dom_sid)
 {
 	return NT_STATUS_OK;
 }
@@ -1084,7 +1084,7 @@ static NTSTATUS fetch_domain_info(uint32_t rid,
 	return NT_STATUS_OK;
 }
 
-static void fetch_sam_entry(struct netr_DELTA_ENUM *r, DOM_SID dom_sid)
+static void fetch_sam_entry(struct netr_DELTA_ENUM *r, const DOM_SID *dom_sid)
 {
 	switch(r->delta_type) {
 	case NETR_DELTA_USER:
@@ -1168,7 +1168,7 @@ static void fetch_sam_entry(struct netr_DELTA_ENUM *r, DOM_SID dom_sid)
 	}
 }
 
-static NTSTATUS fetch_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type, DOM_SID dom_sid)
+static NTSTATUS fetch_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type, const DOM_SID *dom_sid)
 {
         NTSTATUS result;
 	int i;
@@ -1988,7 +1988,7 @@ static NTSTATUS fetch_groupmem_info_to_ldif(struct netr_DELTA_GROUP_MEMBER *r,
 
 static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 				       uint32 db_type,
-				       DOM_SID dom_sid,
+				       const DOM_SID *dom_sid,
 				       const char *user_file)
 {
 	char *suffix;
@@ -2057,7 +2057,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	}
 
 	/* Get the sid */
-	sid_to_fstring(sid, &dom_sid);
+	sid_to_fstring(sid, dom_sid);
 
 	/* Get the ldap suffix */
 	suffix = lp_ldap_suffix();
@@ -2362,10 +2362,10 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 
         if (argc >= 1 && (strcmp(argv[0], "ldif") == 0)) {
 		result = fetch_database_to_ldif(pipe_hnd, SAM_DATABASE_DOMAIN,
-						*domain_sid, argv[1]);
+						domain_sid, argv[1]);
         } else {
 		result = fetch_database(pipe_hnd, SAM_DATABASE_DOMAIN,
-					*domain_sid);
+					domain_sid);
         }
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2379,10 +2379,10 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 
         if (argc >= 1 && (strcmp(argv[0], "ldif") == 0)) {
 		result = fetch_database_to_ldif(pipe_hnd, SAM_DATABASE_BUILTIN,
-						global_sid_Builtin, argv[1]);
+						&global_sid_Builtin, argv[1]);
         } else {
 		result = fetch_database(pipe_hnd, SAM_DATABASE_BUILTIN,
-					global_sid_Builtin);
+					&global_sid_Builtin);
         }
 
 	if (!NT_STATUS_IS_OK(result)) {
