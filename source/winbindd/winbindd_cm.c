@@ -1251,6 +1251,8 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 
 	int i, fd_index;
 
+	*fd = -1;
+
  again:
 	if (!get_dcs(mem_ctx, domain, &dcs, &num_dcs) || (num_dcs == 0))
 		return False;
@@ -1312,6 +1314,19 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 	/* We can not continue without the DC's name */
 	winbind_add_failed_connection_entry(domain, dcs[fd_index].name,
 				    NT_STATUS_UNSUCCESSFUL);
+
+	/* Throw away all arrays as we're doing this again. */
+	TALLOC_FREE(dcs);
+	num_dcs = 0;
+
+	TALLOC_FREE(dcnames);
+	num_dcnames = 0;
+	
+	TALLOC_FREE(addrs);
+	num_addrs = 0;
+
+	*fd = -1;
+
 	goto again;
 }
 

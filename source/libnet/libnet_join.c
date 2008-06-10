@@ -1332,6 +1332,8 @@ static WERROR do_JoinConfig(struct libnet_JoinCtx *r)
 		return werr;
 	}
 
+	lp_load(get_dyn_CONFIGFILE(),true,false,false,true);
+
 	r->out.modified_config = true;
 	r->out.result = werr;
 
@@ -1357,6 +1359,8 @@ static WERROR libnet_unjoin_config(struct libnet_UnjoinCtx *r)
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
+
+	lp_load(get_dyn_CONFIGFILE(),true,false,false,true);
 
 	r->out.modified_config = true;
 	r->out.result = werr;
@@ -1728,6 +1732,35 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+WERROR libnet_join_rollback(TALLOC_CTX *mem_ctx,
+			    struct libnet_JoinCtx *r)
+{
+	WERROR werr;
+	struct libnet_UnjoinCtx *u = NULL;
+
+	werr = libnet_init_UnjoinCtx(mem_ctx, &u);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	u->in.debug		= r->in.debug;
+	u->in.dc_name		= r->in.dc_name;
+	u->in.domain_name	= r->in.domain_name;
+	u->in.admin_account	= r->in.admin_account;
+	u->in.admin_password	= r->in.admin_password;
+	u->in.modify_config	= r->in.modify_config;
+	u->in.unjoin_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
+				  WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE;
+
+	werr = libnet_Unjoin(mem_ctx, u);
+	TALLOC_FREE(u);
+
+	return werr;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 		   struct libnet_JoinCtx *r)
 {
@@ -1747,17 +1780,20 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
-
-		werr = libnet_join_post_verify(mem_ctx, r);
-		if (!W_ERROR_IS_OK(werr)) {
-			goto done;
-		}
 	}
 
 	werr = libnet_join_post_processing(mem_ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
+
+	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
+		werr = libnet_join_post_verify(mem_ctx, r);
+		if (!W_ERROR_IS_OK(werr)) {
+			libnet_join_rollback(mem_ctx, r);
+		}
+	}
+
  done:
 	r->out.result = werr;
 

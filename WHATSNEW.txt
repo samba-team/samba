@@ -221,10 +221,19 @@ o   Jeremy Allison <jra@samba.org>
     * Make sure we take account of the large read/write SMB headers as
       well as the buffer space when allocating cli buffers for large
       read/write.
+    * Fix tag as a goto target we were not reinitializing the array counts.
+
+
+o   Steven Danneman <sdanneman@isilon.com>
+    * BUG 5451: Fix for using the correct machine domain when looking up trust
+      credentials in our tdb.
+    * Fix spnego SPN when contacting trusted domains.
 
 
 o   Günther Deschner <gd@samba.org>
     * BUG 5285: Fix libcap header mismatch.
+    * Fix pam_sm_chauthtok for storing modified cached creds.
+    * Fix joining issue in setups with "config backend = registry".
 
 
 o   Björn Jacke <bj@sernet.de>
@@ -234,6 +243,17 @@ o   Björn Jacke <bj@sernet.de>
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 5502: Fix security=server.
+    * Fix coverity IDs 552, 553, 570, 571, 572.
+    * Fix the compile on NetBSD.
+    * Shrink ldbtools.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Remove support for symbol versioning in shared libraries.
+      For more information, please have a look at the disussion on
+      samba-technical starting with
+      http://lists.samba.org/archive/samba-technical/2008-June/059511.html.
+    * Fix autogen for autoconf 2.62.
 
 
 o   Marc VanHeyningen <marc.vanheyningen@isilon.com>

@@ -3,7 +3,6 @@
                  advanced="1"
 				 type="string"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
-<synonym>default</synonym>
 <description>
 	<para>If you set <value type="example">clustering=yes</value>,
 	you need to tell Samba where ctdbd listens on its unix domain
