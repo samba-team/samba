@@ -20,10 +20,3 @@ fi
 AC_SUBST(DEFAULT_TEST_OPTIONS)
 AC_SUBST(HAVE_SOCKET_WRAPPER)
 AC_SUBST(SOCKET_WRAPPER_OBJS)
-
-# Look for the vdeplug library
-AC_CHECK_HEADERS(libvdeplug.h)
-if test x"$ac_cv_header_libvdeplug_h" = xyes; then
-	AC_DEFINE(HAVE_VDEPLUG, 1, [Whether the VDE plug library is available])
-	SMB_EXT_LIB(VDEPLUG,[-lvdeplug],[],[],[])
-fi
