@@ -13,7 +13,6 @@ sys.path.insert(0, "bin/python")
 
 import samba.getopt as options
 import optparse
-import pwd
 from getpass import getpass
 from samba.auth import system_session
 from samba.samdb import SamDB
@@ -28,13 +27,6 @@ parser.add_option("--quiet", help="Be quiet", action="store_true")
 parser.add_option("--unixname", help="Unix Username", type=str)
 
 opts, args = parser.parse_args()
-
-#
-#  print a message if quiet is not set
-#
-def message(text):
-	if not opts.quiet:
-		print text
 
 if len(args) == 0:
 	parser.print_usage()
