@@ -73,13 +73,11 @@ LIBCLI_NETLOGON_OBJ_FILES = $(addprefix $(libclisrcdir)/, \
 
 $(eval $(call proto_header_template,$(libclisrcdir)/netlogon_proto.h,$(LIBCLI_NETLOGON_OBJ_FILES:.o=.c)))
 
-[PYTHON::python_libcli_nbt]
-LIBRARY_REALNAME = samba/_libcli_nbt.$(SHLIBEXT)
+[PYTHON::python_netbios]
+LIBRARY_REALNAME = samba/netbios.$(SHLIBEXT)
 PUBLIC_DEPENDENCIES = LIBCLI_NBT DYNCONFIG LIBSAMBA-HOSTCONFIG
 
-python_libcli_nbt_OBJ_FILES = $(libclisrcdir)/swig/libcli_nbt_wrap.o
-
-$(eval $(call python_py_module_template,samba/nbt.py,$(libclisrcdir)/swig/libcli_nbt.py))
+python_netbios_OBJ_FILES = $(libclisrcdir)/nbt/pynbt.o
 
 $(python_libcli_nbt_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)
 
