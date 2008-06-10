@@ -324,12 +324,12 @@ static void display_sam_entry(struct netr_DELTA_ENUM *r)
 	}
 }
 
-static void dump_database(struct rpc_pipe_client *pipe_hnd,
-			  enum netr_SamDatabaseID database_id)
+static NTSTATUS dump_database(struct rpc_pipe_client *pipe_hnd,
+			      enum netr_SamDatabaseID database_id)
 {
-        NTSTATUS result;
+	NTSTATUS result;
 	int i;
-        TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx;
 	const char *logon_server = pipe_hnd->desthost;
 	const char *computername = global_myname();
 	struct netr_Authenticator credential;
@@ -341,7 +341,7 @@ static void dump_database(struct rpc_pipe_client *pipe_hnd,
 	ZERO_STRUCT(return_authenticator);
 
 	if (!(mem_ctx = talloc_init("dump_database"))) {
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	switch(database_id) {
@@ -380,7 +380,7 @@ static void dump_database(struct rpc_pipe_client *pipe_hnd,
 		if (!netlogon_creds_client_check(pipe_hnd->dc,
 						 &return_authenticator.cred)) {
 			DEBUG(0,("credentials chain check failed\n"));
-			return;
+			return NT_STATUS_ACCESS_DENIED;
 		}
 
 		if (NT_STATUS_IS_ERR(result)) {
@@ -405,6 +405,8 @@ static void dump_database(struct rpc_pipe_client *pipe_hnd,
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
 	talloc_destroy(mem_ctx);
+
+	return result;
 }
 
 /* dump sam database via samsync rpc calls */
