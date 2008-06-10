@@ -1643,6 +1643,8 @@ _PUBLIC_ ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct 
 		return real_recvfrom(s, buf, len, flags, from, fromlen);
 	}
 
+	len = MIN(len, 1500);
+
 	/* irix 6.4 forgets to null terminate the sun_path string :-( */
 	memset(&un_addr, 0, sizeof(un_addr));
 	ret = real_recvfrom(s, buf, len, flags, (struct sockaddr *)&un_addr, &un_addrlen);
@@ -1670,6 +1672,8 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 	if (!si) {
 		return real_sendto(s, buf, len, flags, to, tolen);
 	}
+
+	len = MIN(len, 1500);
 
 	switch (si->type) {
 	case SOCK_STREAM:
@@ -1764,6 +1768,8 @@ _PUBLIC_ ssize_t swrap_recv(int s, void *buf, size_t len, int flags)
 		return real_recv(s, buf, len, flags);
 	}
 
+	len = MIN(len, 1500);
+
 	ret = real_recv(s, buf, len, flags);
 	if (ret == -1 && errno != EAGAIN && errno != ENOBUFS) {
 		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
@@ -1785,6 +1791,8 @@ _PUBLIC_ ssize_t swrap_send(int s, const void *buf, size_t len, int flags)
 	if (!si) {
 		return real_send(s, buf, len, flags);
 	}
+
+	len = MIN(len, 1500);
 
 	ret = real_send(s, buf, len, flags);
 
