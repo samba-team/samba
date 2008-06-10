@@ -1459,7 +1459,9 @@ again:
 } while(0)
 
 #define CHECK_BLOB_EQUAL(field) do { \
-	if (memcmp(parm[0].field.data, parm[1].field.data, parm[0].field.length) != 0 && !ignore_pattern(#field)) { \
+	if (((parm[0].field.data == NULL && parm[1].field.data != NULL) || \
+	    (parm[1].field.data == NULL && parm[0].field.data != NULL) || \
+	    (memcmp(parm[0].field.data, parm[1].field.data, parm[0].field.length) != 0)) && !ignore_pattern(#field)) { \
 		current_op.mismatch = #field; \
 		printf("Mismatch in %s\n", #field); \
 		return false; \

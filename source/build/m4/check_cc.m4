@@ -30,7 +30,7 @@ fi
 # check if the compiler can handle negative enum values
 # and don't truncate the values to INT_MAX
 # a runtime test is needed here
-AC_CACHE_CHECK([that the C compiler understands negative enum values],SMB_BUILD_CC_NEGATIVE_ENUM_VALUES, [
+AC_CACHE_CHECK([that the C compiler understands negative enum values],samba_cv_CC_NEGATIVE_ENUM_VALUES, [
     AC_TRY_RUN(
 [
 	#include <stdio.h>
@@ -45,8 +45,8 @@ AC_CACHE_CHECK([that the C compiler understands negative enum values],SMB_BUILD_
 		return 0;
 	}
 ],
-	SMB_BUILD_CC_NEGATIVE_ENUM_VALUES=yes,SMB_BUILD_CC_NEGATIVE_ENUM_VALUES=no)])
-if test x"$SMB_BUILD_CC_NEGATIVE_ENUM_VALUES" != x"yes"; then
+	samba_cv_CC_NEGATIVE_ENUM_VALUES=yes,samba_cv_CC_NEGATIVE_ENUM_VALUES=no)])
+if test x"$samba_cv_CC_NEGATIVE_ENUM_VALUES" != x"yes"; then
 	AC_DEFINE(USE_UINT_ENUMS, 1, [Whether the compiler has uint enum support])
 fi
 
