@@ -1,5 +1,5 @@
 mkinclude dynconfig/config.mk
-mkinclude heimdal_build/config.mk
+mkinclude heimdal_build/internal.mk
 mkinclude config.mk
 mkinclude dsdb/config.mk
 mkinclude smbd/config.mk
