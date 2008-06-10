@@ -349,6 +349,8 @@ static NTSTATUS cmd_set_ss_level(void)
 static NTSTATUS cmd_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                          int argc, const char **argv)
 {
+	const char *type = "NTLMSSP";
+
 	pipe_default_auth_level = PIPE_AUTH_LEVEL_INTEGRITY;
 	pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
 
@@ -358,25 +360,29 @@ static NTSTATUS cmd_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	if (argc == 2) {
-		if (strequal(argv[1], "NTLMSSP")) {
+		type = argv[1];
+		if (strequal(type, "NTLMSSP")) {
 			pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
-		} else if (strequal(argv[1], "NTLMSSP_SPNEGO")) {
+		} else if (strequal(type, "NTLMSSP_SPNEGO")) {
 			pipe_default_auth_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
-		} else if (strequal(argv[1], "SCHANNEL")) {
+		} else if (strequal(type, "SCHANNEL")) {
 			pipe_default_auth_type = PIPE_AUTH_TYPE_SCHANNEL;
 		} else {
-			printf("unknown type %s\n", argv[1]);
+			printf("unknown type %s\n", type);
 			return NT_STATUS_INVALID_LEVEL;
 		}
 	}
 
-	printf("debuglevel is %d\n", DEBUGLEVEL);
+	d_printf("Setting %s - sign\n", type);
+
 	return cmd_set_ss_level();
 }
 
 static NTSTATUS cmd_seal(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                          int argc, const char **argv)
 {
+	const char *type = "NTLMSSP";
+
 	pipe_default_auth_level = PIPE_AUTH_LEVEL_PRIVACY;
 	pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
 
@@ -386,17 +392,21 @@ static NTSTATUS cmd_seal(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	if (argc == 2) {
-		if (strequal(argv[1], "NTLMSSP")) {
+		type = argv[1];
+		if (strequal(type, "NTLMSSP")) {
 			pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
-		} else if (strequal(argv[1], "NTLMSSP_SPNEGO")) {
+		} else if (strequal(type, "NTLMSSP_SPNEGO")) {
 			pipe_default_auth_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
-		} else if (strequal(argv[1], "SCHANNEL")) {
+		} else if (strequal(type, "SCHANNEL")) {
 			pipe_default_auth_type = PIPE_AUTH_TYPE_SCHANNEL;
 		} else {
-			printf("unknown type %s\n", argv[1]);
+			printf("unknown type %s\n", type);
 			return NT_STATUS_INVALID_LEVEL;
 		}
 	}
+
+	d_printf("Setting %s - sign and seal\n", type);
+
 	return cmd_set_ss_level();
 }
 
