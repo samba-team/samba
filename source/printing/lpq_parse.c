@@ -858,51 +858,52 @@ static bool parse_lpq_nt(char *line,print_queue_struct *buf,bool first)
 		char terminator;
 	} nt_lpq_line;
 
-	nt_lpq_line parse_line;
+	char parse_line_char[sizeof(nt_lpq_line)];
+	nt_lpq_line *parse_line = (nt_lpq_line *)parse_line_char;
 #define LPRNT_PRINTING "Printing"
 #define LPRNT_WAITING "Waiting"
 #define LPRNT_PAUSED "Paused"
 
-	memset(&parse_line, '\0', sizeof(parse_line));
-	strncpy((char *) &parse_line, line, sizeof(parse_line) -1);
+	memset(parse_line_char, '\0', sizeof(parse_line_char));
+	strncpy(parse_line_char, line, sizeof(parse_line_char) -1);
 
-	if (strlen((char *) &parse_line) != sizeof(parse_line) - 1) {
+	if (strlen(parse_line_char) != sizeof(parse_line_char) - 1) {
 		return False;
 	}
 
 	/* Just want the first word in the owner field - the username */
-	if (strchr_m(parse_line.owner, ' ')) {
-		*(strchr_m(parse_line.owner, ' ')) = '\0';
+	if (strchr_m(parse_line->owner, ' ')) {
+		*(strchr_m(parse_line->owner, ' ')) = '\0';
 	} else {
-		parse_line.space1 = '\0';
+		parse_line->space1 = '\0';
 	}
 
 	/* Make sure we have an owner */
-	if (!strlen(parse_line.owner)) {
+	if (!strlen(parse_line->owner)) {
 		return False;
 	}
 
 	/* Make sure the status is valid */
-	parse_line.space2 = '\0';
-	trim_char(parse_line.status, '\0', ' ');
-	if (!strequal(parse_line.status, LPRNT_PRINTING) &&
-			!strequal(parse_line.status, LPRNT_PAUSED) &&
-			!strequal(parse_line.status, LPRNT_WAITING)) {
+	parse_line->space2 = '\0';
+	trim_char(parse_line->status, '\0', ' ');
+	if (!strequal(parse_line->status, LPRNT_PRINTING) &&
+			!strequal(parse_line->status, LPRNT_PAUSED) &&
+			!strequal(parse_line->status, LPRNT_WAITING)) {
 		return False;
 	}
   
-	parse_line.space3 = '\0';
-	trim_char(parse_line.jobname, '\0', ' ');
+	parse_line->space3 = '\0';
+	trim_char(parse_line->jobname, '\0', ' ');
 
-	buf->job = atoi(parse_line.jobid);
+	buf->job = atoi(parse_line->jobid);
 	buf->priority = 0;
-	buf->size = atoi(parse_line.size);
+	buf->size = atoi(parse_line->size);
 	buf->time = time(NULL);
-	fstrcpy(buf->fs_user, parse_line.owner);
-	fstrcpy(buf->fs_file, parse_line.jobname);
-	if (strequal(parse_line.status, LPRNT_PRINTING)) {
+	fstrcpy(buf->fs_user, parse_line->owner);
+	fstrcpy(buf->fs_file, parse_line->jobname);
+	if (strequal(parse_line->status, LPRNT_PRINTING)) {
 		buf->status = LPQ_PRINTING;
-	} else if (strequal(parse_line.status, LPRNT_PAUSED)) {
+	} else if (strequal(parse_line->status, LPRNT_PAUSED)) {
 		buf->status = LPQ_PAUSED;
 	} else {
 		buf->status = LPQ_QUEUED;
@@ -941,48 +942,49 @@ static bool parse_lpq_os2(char *line,print_queue_struct *buf,bool first)
 		char terminator;
 	} os2_lpq_line;
 
-	os2_lpq_line parse_line;
+	char parse_line_char[sizeof(os2_lpq_line)];
+	os2_lpq_line *parse_line = (os2_lpq_line *)parse_line_char;
 #define LPROS2_PRINTING "Printing"
 #define LPROS2_WAITING "Queued"
 #define LPROS2_PAUSED "Paused"
 
-	memset(&parse_line, '\0', sizeof(parse_line));
-	strncpy((char *) &parse_line, line, sizeof(parse_line) -1);
+	memset(parse_line_char, '\0', sizeof(parse_line_char));
+	strncpy(parse_line_char, line, sizeof(parse_line_char) -1);
 
-	if (strlen((char *) &parse_line) != sizeof(parse_line) - 1) {
+	if (strlen(parse_line_char) != sizeof(parse_line_char) - 1) {
 		return False;
 	}
 
 	/* Get the jobid */
-	buf->job = atoi(parse_line.jobid);
+	buf->job = atoi(parse_line->jobid);
 
 	/* Get the job name */
-	parse_line.space2[0] = '\0';
-	trim_char(parse_line.jobname, '\0', ' ');
-	fstrcpy(buf->fs_file, parse_line.jobname);
+	parse_line->space2[0] = '\0';
+	trim_char(parse_line->jobname, '\0', ' ');
+	fstrcpy(buf->fs_file, parse_line->jobname);
 
 	buf->priority = 0;
-	buf->size = atoi(parse_line.size);
+	buf->size = atoi(parse_line->size);
 	buf->time = time(NULL);
 
 	/* Make sure we have an owner */
-	if (!strlen(parse_line.owner)) {
+	if (!strlen(parse_line->owner)) {
 		return False;
 	}
 
 	/* Make sure we have a valid status */
-	parse_line.space4[0] = '\0';
-	trim_char(parse_line.status, '\0', ' ');
-	if (!strequal(parse_line.status, LPROS2_PRINTING) &&
-			!strequal(parse_line.status, LPROS2_PAUSED) &&
-			!strequal(parse_line.status, LPROS2_WAITING)) {
+	parse_line->space4[0] = '\0';
+	trim_char(parse_line->status, '\0', ' ');
+	if (!strequal(parse_line->status, LPROS2_PRINTING) &&
+			!strequal(parse_line->status, LPROS2_PAUSED) &&
+			!strequal(parse_line->status, LPROS2_WAITING)) {
 		return False;
 	}
 
-	fstrcpy(buf->fs_user, parse_line.owner);
-	if (strequal(parse_line.status, LPROS2_PRINTING)) {
+	fstrcpy(buf->fs_user, parse_line->owner);
+	if (strequal(parse_line->status, LPROS2_PRINTING)) {
 		buf->status = LPQ_PRINTING;
-	} else if (strequal(parse_line.status, LPROS2_PAUSED)) {
+	} else if (strequal(parse_line->status, LPROS2_PAUSED)) {
 		buf->status = LPQ_PAUSED;
 	} else {
 		buf->status = LPQ_QUEUED;
