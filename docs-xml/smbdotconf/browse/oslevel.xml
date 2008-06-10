@@ -16,7 +16,8 @@
 	systems except a Windows NT 4.0/2000 Domain Controller. This means that a misconfigured Samba host can
 	effectively isolate a subnet for browsing purposes. This parameter is largely auto-configured in the Samba-3
 	release series and it is seldom necessary to manually override the default setting. Please refer to
-	chapter 9 of the Samba-3 HOWTO document for further information regarding the use of this parameter.
+	the chapter on Network Browsing in the Samba-3 HOWTO document for further information regarding the use
+	of this parameter.
 	<emphasis>Note:</emphasis> The maximum value for this parameter is 255. If you use higher values, counting
 	will start at 0!
 	</para>
