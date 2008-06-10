@@ -109,7 +109,7 @@ AC_DEFUN([AC_PROG_SWIG],[
                         if test $available_major -ne $required_major \
                                 -o $available_minor -ne $required_minor \
                                 -o $available_patch -lt $required_patch ; then
-                                AC_MSG_WARN([SWIG version >= $1 is required.  You have $swig_version.  You should look at http://www.swig.org])
+                                AC_MSG_WARN([SWIG version >= $1 is required if you would like to work on the SWIG bindings.  You have $swig_version. ])
                                 SWIG='no'
                         else
                                 AC_MSG_NOTICE([SWIG executable is '$SWIG'])
