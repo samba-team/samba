@@ -1289,7 +1289,7 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 		return -1;
 	}
 
-	my_addr = malloc(my_addrlen);
+	my_addr = (struct sockaddr *)malloc(my_addrlen);
 	if (my_addr == NULL) {
 		return -1;
 	}
