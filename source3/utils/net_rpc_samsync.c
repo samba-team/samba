@@ -32,6 +32,11 @@ static uint32 ldif_uid = 999;
 /* Keep track of ldap initialization */
 static int init_ldap = 1;
 
+enum net_samsync_mode {
+	NET_SAMSYNC_MODE_FETCH_PASSDB = 0,
+	NET_SAMSYNC_MODE_DUMP = 1
+};
+
 static void display_group_mem_info(uint32_t rid,
 				   struct netr_DELTA_GROUP_MEMBER *r)
 {
@@ -172,7 +177,8 @@ static void display_group_info(uint32_t rid, struct netr_DELTA_GROUP *r)
 	d_printf("desc='%s', rid=%u\n", r->description.string, rid);
 }
 
-static void display_sam_entry(struct netr_DELTA_ENUM *r)
+static NTSTATUS display_sam_entry(struct netr_DELTA_ENUM *r,
+			      const DOM_SID *domain_sid)
 {
 	union netr_DELTA_UNION u = r->delta_union;
 	union netr_DELTA_ID_UNION id = r->delta_id_union;
@@ -322,10 +328,14 @@ static void display_sam_entry(struct netr_DELTA_ENUM *r)
 			r->delta_type);
 		break;
 	}
+
+	return NT_STATUS_OK;
 }
 
-static NTSTATUS dump_database(struct rpc_pipe_client *pipe_hnd,
-			      enum netr_SamDatabaseID database_id)
+static NTSTATUS process_database(struct rpc_pipe_client *pipe_hnd,
+				 enum netr_SamDatabaseID database_id,
+				 enum net_samsync_mode mode,
+				 NTSTATUS (*callback_fn)(struct netr_DELTA_ENUM *, const DOM_SID *), const DOM_SID *domain_sid)
 {
 	NTSTATUS result;
 	int i;
@@ -337,26 +347,39 @@ static NTSTATUS dump_database(struct rpc_pipe_client *pipe_hnd,
 	uint16_t restart_state = 0;
 	uint32_t sync_context = 0;
 	DATA_BLOB session_key;
+	const char *action = NULL;
 
 	ZERO_STRUCT(return_authenticator);
 
-	if (!(mem_ctx = talloc_init("dump_database"))) {
+	if (!(mem_ctx = talloc_init("process_database"))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	switch(database_id) {
+	switch (mode) {
+		case NET_SAMSYNC_MODE_DUMP:
+			action = "Dumping";
+			break;
+		case NET_SAMSYNC_MODE_FETCH_PASSDB:
+			action = "Fetching";
+			break;
+		default:
+			action = "Unknown";
+			break;
+	}
+
+	switch (database_id) {
 	case SAM_DATABASE_DOMAIN:
-		d_printf("Dumping DOMAIN database\n");
+		d_printf("%s DOMAIN database\n", action);
 		break;
 	case SAM_DATABASE_BUILTIN:
-		d_printf("Dumping BUILTIN database\n");
+		d_printf("%s BUILTIN database\n", action);
 		break;
 	case SAM_DATABASE_PRIVS:
-		d_printf("Dumping PRIVS databases\n");
+		d_printf("%s PRIVS databases\n", action);
 		break;
 	default:
-		d_printf("Dumping unknown database type %u\n",
-			database_id);
+		d_printf("%s unknown database type %u\n",
+			action, database_id);
 		break;
 	}
 
@@ -397,7 +420,8 @@ static NTSTATUS dump_database(struct rpc_pipe_client *pipe_hnd,
 
 		/* Display results */
 		for (i = 0; i < delta_enum_array->num_deltas; i++) {
-			display_sam_entry(&delta_enum_array->delta_enum[i]);
+			callback_fn(&delta_enum_array->delta_enum[i],
+				    domain_sid);
                 }
 
 		TALLOC_FREE(delta_enum_array);
@@ -419,9 +443,17 @@ NTSTATUS rpc_samdump_internals(struct net_context *c,
 				int argc,
 				const char **argv)
 {
-	dump_database(pipe_hnd, SAM_DATABASE_DOMAIN);
-	dump_database(pipe_hnd, SAM_DATABASE_BUILTIN);
-	dump_database(pipe_hnd, SAM_DATABASE_PRIVS);
+	process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
+			 NET_SAMSYNC_MODE_DUMP,
+			 display_sam_entry, domain_sid);
+
+	process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
+			 NET_SAMSYNC_MODE_DUMP,
+			 display_sam_entry, domain_sid);
+
+	process_database(pipe_hnd, SAM_DATABASE_PRIVS,
+			 NET_SAMSYNC_MODE_DUMP,
+			 display_sam_entry, domain_sid);
 
 	return NT_STATUS_OK;
 }
@@ -1084,7 +1116,7 @@ static NTSTATUS fetch_domain_info(uint32_t rid,
 	return NT_STATUS_OK;
 }
 
-static void fetch_sam_entry(struct netr_DELTA_ENUM *r, const DOM_SID *dom_sid)
+static NTSTATUS fetch_sam_entry(struct netr_DELTA_ENUM *r, const DOM_SID *dom_sid)
 {
 	switch(r->delta_type) {
 	case NETR_DELTA_USER:
@@ -1166,84 +1198,8 @@ static void fetch_sam_entry(struct netr_DELTA_ENUM *r, const DOM_SID *dom_sid)
 		d_printf("Unknown delta record type %d\n", r->delta_type);
 		break;
 	}
-}
 
-static NTSTATUS fetch_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type, const DOM_SID *dom_sid)
-{
-        NTSTATUS result;
-	int i;
-        TALLOC_CTX *mem_ctx;
-	const char *logon_server = pipe_hnd->desthost;
-	const char *computername = global_myname();
-	struct netr_Authenticator credential;
-	struct netr_Authenticator return_authenticator;
-	enum netr_SamDatabaseID database_id = db_type;
-	uint16_t restart_state = 0;
-	uint32_t sync_context = 0;
-	DATA_BLOB session_key;
-
-	if (!(mem_ctx = talloc_init("fetch_database")))
-		return NT_STATUS_NO_MEMORY;
-
-	switch( db_type ) {
-	case SAM_DATABASE_DOMAIN:
-		d_printf("Fetching DOMAIN database\n");
-		break;
-	case SAM_DATABASE_BUILTIN:
-		d_printf("Fetching BUILTIN database\n");
-		break;
-	case SAM_DATABASE_PRIVS:
-		d_printf("Fetching PRIVS databases\n");
-		break;
-	default:
-		d_printf("Fetching unknown database type %u\n", db_type );
-		break;
-	}
-
-	do {
-		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
-
-		netlogon_creds_client_step(pipe_hnd->dc, &credential);
-
-		result = rpccli_netr_DatabaseSync2(pipe_hnd, mem_ctx,
-						   logon_server,
-						   computername,
-						   &credential,
-						   &return_authenticator,
-						   database_id,
-						   restart_state,
-						   &sync_context,
-						   &delta_enum_array,
-						   0xffff);
-
-		/* Check returned credentials. */
-		if (!netlogon_creds_client_check(pipe_hnd->dc,
-						 &return_authenticator.cred)) {
-			DEBUG(0,("credentials chain check failed\n"));
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
-		if (NT_STATUS_IS_ERR(result)) {
-			break;
-		}
-
-		session_key = data_blob_const(pipe_hnd->dc->sess_key, 16);
-
-		samsync_fix_delta_array(mem_ctx,
-					&session_key,
-					true,
-					database_id,
-					delta_enum_array);
-
-		for (i = 0; i < delta_enum_array->num_deltas; i++) {
-			fetch_sam_entry(&delta_enum_array->delta_enum[i], dom_sid);
-		}
-
-	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
-
-	talloc_destroy(mem_ctx);
-
-	return result;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const char
@@ -2364,8 +2320,9 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 		result = fetch_database_to_ldif(pipe_hnd, SAM_DATABASE_DOMAIN,
 						domain_sid, argv[1]);
         } else {
-		result = fetch_database(pipe_hnd, SAM_DATABASE_DOMAIN,
-					domain_sid);
+		result = process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
+					  NET_SAMSYNC_MODE_FETCH_PASSDB,
+					  fetch_sam_entry, domain_sid);
         }
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2381,8 +2338,9 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 		result = fetch_database_to_ldif(pipe_hnd, SAM_DATABASE_BUILTIN,
 						&global_sid_Builtin, argv[1]);
         } else {
-		result = fetch_database(pipe_hnd, SAM_DATABASE_BUILTIN,
-					&global_sid_Builtin);
+		result = process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
+					  NET_SAMSYNC_MODE_FETCH_PASSDB,
+					  fetch_sam_entry, &global_sid_Builtin);
         }
 
 	if (!NT_STATUS_IS_OK(result)) {
