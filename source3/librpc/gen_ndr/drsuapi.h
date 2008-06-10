@@ -1375,13 +1375,13 @@ struct drsuapi_DsReplicaSync {
 struct drsuapi_DsGetNCChanges {
 	struct {
 		struct policy_handle *bind_handle;/* [ref] */
-		union drsuapi_DsGetNCChangesRequest *req;/* [ref,switch_is(*level)] */
-		int32_t *level;/* [ref] */
+		int32_t level;
+		union drsuapi_DsGetNCChangesRequest *req;/* [ref,switch_is(level)] */
 	} in;
 
 	struct {
-		union drsuapi_DsGetNCChangesCtr *ctr;/* [ref,switch_is(*level)] */
-		int32_t *level;/* [ref] */
+		int32_t *level_out;/* [ref] */
+		union drsuapi_DsGetNCChangesCtr *ctr;/* [ref,switch_is(*level_out)] */
 		WERROR result;
 	} out;
 
