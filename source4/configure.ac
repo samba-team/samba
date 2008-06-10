@@ -184,8 +184,8 @@ SMB_WRITE_MAKEVARS(mkconfig.mk)
 if test $USESHARED = true
 then
 	echo "To run binaries without installing, set the following environment variable:"
-	echo "$ac_cv_LIB_PATH_VAR=$builddir/bin/shared"
+	echo "$LIB_PATH_VAR=$builddir/bin/shared"
 fi
 
 echo
-echo "To build Samba, run $ac_cv_path_MAKE"
+echo "To build Samba, run $MAKE"
