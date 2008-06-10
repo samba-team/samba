@@ -248,6 +248,11 @@ o   Volker Lendecke <vl@samba.org>
     * Shrink ldbtools.
 
 
+o   Jim McDonough <jmcd@samba.org>
+    * Fix reset of password last set time just because the expired flag
+      is set to 0.
+
+
 o   Stefan Metzmacher <metze@samba.org>
     * Remove support for symbol versioning in shared libraries.
       For more information, please have a look at the disussion on
