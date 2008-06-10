@@ -8,8 +8,9 @@
 	whenever there is no operating system API available from the OS that 
 	samba can use.</para>
 
-	<para>This option is only available with <command>./configure --with-sys-quotas</command>.
-	Or on linux when <command>./configure --with-quotas</command> was used and a working quota api 
+	<para>This option is only available you have compiled Samba with the
+	<command moreinfo="none">--with-sys-quotas</command> option or on Linux with
+	<command moreinfo="none">--with-quotas</command> and a working quota api
 	was found in the system.</para>
 
 	<para>This parameter should specify the path to a script that 
