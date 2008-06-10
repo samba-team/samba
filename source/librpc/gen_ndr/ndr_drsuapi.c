@@ -12226,25 +12226,22 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChanges(struct ndr_push *ndr, i
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
-		if (r->in.level == NULL) {
-			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
-		}
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, *r->in.level));
+		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.req == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.req, *r->in.level));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.req, r->in.level));
 		NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesRequest(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.req));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.level == NULL) {
+		if (r->out.level_out == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, *r->out.level));
+		NDR_CHECK(ndr_push_int32(ndr, NDR_SCALARS, *r->out.level_out));
 		if (r->out.ctr == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_set_switch_value(ndr, r->out.ctr, *r->out.level));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->out.ctr, *r->out.level_out));
 		NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.ctr));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -12254,8 +12251,8 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChanges(struct ndr_push *ndr, i
 static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChanges(struct ndr_pull *ndr, int flags, struct drsuapi_DsGetNCChanges *r)
 {
 	TALLOC_CTX *_mem_save_bind_handle_0;
-	TALLOC_CTX *_mem_save_level_0;
 	TALLOC_CTX *_mem_save_req_0;
+	TALLOC_CTX *_mem_save_level_out_0;
 	TALLOC_CTX *_mem_save_ctr_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
@@ -12267,40 +12264,34 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChanges(struct ndr_pull *ndr, i
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.bind_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.bind_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bind_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->in.level);
-		}
-		_mem_save_level_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->in.level, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, r->in.level));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_level_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.req);
 		}
 		_mem_save_req_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.req, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.req, *r->in.level));
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.req, r->in.level));
 		NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesRequest(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.req));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_req_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_PULL_ALLOC(ndr, r->out.level);
-		*r->out.level = *r->in.level;
+		NDR_PULL_ALLOC(ndr, r->out.level_out);
+		ZERO_STRUCTP(r->out.level_out);
 		NDR_PULL_ALLOC(ndr, r->out.ctr);
 		ZERO_STRUCTP(r->out.ctr);
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.level);
+			NDR_PULL_ALLOC(ndr, r->out.level_out);
 		}
-		_mem_save_level_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.level, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, r->out.level));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_level_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_level_out_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.level_out, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_int32(ndr, NDR_SCALARS, r->out.level_out));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_level_out_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.ctr);
 		}
 		_mem_save_ctr_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.ctr, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->out.ctr, *r->out.level));
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->out.ctr, *r->out.level_out));
 		NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.ctr));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctr_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -12322,13 +12313,10 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChanges(struct ndr_print *ndr, const char
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "bind_handle", r->in.bind_handle);
 		ndr->depth--;
-		ndr_print_ptr(ndr, "level", r->in.level);
-		ndr->depth++;
-		ndr_print_int32(ndr, "level", *r->in.level);
-		ndr->depth--;
+		ndr_print_int32(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "req", r->in.req);
 		ndr->depth++;
-		ndr_print_set_switch_value(ndr, r->in.req, *r->in.level);
+		ndr_print_set_switch_value(ndr, r->in.req, r->in.level);
 		ndr_print_drsuapi_DsGetNCChangesRequest(ndr, "req", r->in.req);
 		ndr->depth--;
 		ndr->depth--;
@@ -12336,13 +12324,13 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChanges(struct ndr_print *ndr, const char
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "drsuapi_DsGetNCChanges");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "level", r->out.level);
+		ndr_print_ptr(ndr, "level_out", r->out.level_out);
 		ndr->depth++;
-		ndr_print_int32(ndr, "level", *r->out.level);
+		ndr_print_int32(ndr, "level_out", *r->out.level_out);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ctr", r->out.ctr);
 		ndr->depth++;
-		ndr_print_set_switch_value(ndr, r->out.ctr, *r->out.level);
+		ndr_print_set_switch_value(ndr, r->out.ctr, *r->out.level_out);
 		ndr_print_drsuapi_DsGetNCChangesCtr(ndr, "ctr", r->out.ctr);
 		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);

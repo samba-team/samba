@@ -153,9 +153,10 @@ NTSTATUS rpccli_drsuapi_DsReplicaSync(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_drsuapi_DsGetNCChanges(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct policy_handle *bind_handle /* [in] [ref] */,
-				       int32_t *level /* [in,out] [ref] */,
-				       union drsuapi_DsGetNCChangesRequest *req /* [in] [ref,switch_is(*level)] */,
-				       union drsuapi_DsGetNCChangesCtr *ctr /* [out] [ref,switch_is(*level)] */,
+				       int32_t level /* [in]  */,
+				       union drsuapi_DsGetNCChangesRequest *req /* [in] [ref,switch_is(level)] */,
+				       int32_t *level_out /* [out] [ref] */,
+				       union drsuapi_DsGetNCChangesCtr *ctr /* [out] [ref,switch_is(*level_out)] */,
 				       WERROR *werror)
 {
 	struct drsuapi_DsGetNCChanges r;
@@ -190,7 +191,7 @@ NTSTATUS rpccli_drsuapi_DsGetNCChanges(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	*level = *r.out.level;
+	*level_out = *r.out.level_out;
 	*ctr = *r.out.ctr;
 
 	/* Return result */
