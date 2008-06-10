@@ -408,35 +408,6 @@ NTSTATUS rpc_samdump_internals(struct net_context *c,
 				int argc,
 				const char **argv)
 {
-#if 0
-	/* net_rpc.c now always tries to create an schannel pipe.. */
-
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	uchar trust_password[16];
-	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
-	uint32 sec_channel_type = 0;
-
-	if (!secrets_fetch_trust_account_password(domain_name,
-						  trust_password,
-						  NULL, &sec_channel_type)) {
-		DEBUG(0,("Could not fetch trust account password\n"));
-		goto fail;
-	}
-
-	nt_status = rpccli_netlogon_setup_creds(pipe_hnd,
-						cli->desthost,
-						domain_name,
-                                                global_myname(),
-                                                trust_password,
-                                                sec_channel_type,
-                                                &neg_flags);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
-		goto fail;
-	}
-#endif
-
 	dump_database(pipe_hnd, SAM_DATABASE_DOMAIN);
 	dump_database(pipe_hnd, SAM_DATABASE_BUILTIN);
 	dump_database(pipe_hnd, SAM_DATABASE_PRIVS);
