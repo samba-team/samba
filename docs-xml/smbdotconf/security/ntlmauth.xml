@@ -13,7 +13,7 @@
     <para>If this option, and <command moreinfo="none">lanman
     auth</command> are both disabled, then only NTLMv2 logins will be
     permited.  Not all clients support NTLMv2, and most will require
-	special configuration to us it.</para>
+	special configuration to use it.</para>
 </description>
 
 <value type="default">yes</value>
