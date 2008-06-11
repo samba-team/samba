@@ -2522,7 +2522,7 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 	struct sockaddr_storage addr;
 	NTSTATUS status;
 
-	result = talloc(mem_ctx, struct rpc_pipe_client);
+	result = TALLOC_ZERO_P(mem_ctx, struct rpc_pipe_client);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2705,6 +2705,8 @@ NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
 	NTSTATUS status;
 	uint16_t port = 0;
 
+	*presult = NULL;
+
 	status = rpc_pipe_get_tcp_port(host, abstract_syntax, &port);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
@@ -2877,7 +2879,7 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli,
 						 int pipe_idx,
 						 NTSTATUS *perr)
 {
-	struct rpc_pipe_client *result;
+	struct rpc_pipe_client *result = NULL;
 
 	*perr = NT_STATUS_PIPE_NOT_AVAILABLE;
 
