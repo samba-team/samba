@@ -62,6 +62,7 @@ libsocketsrcdir := lib/socket
 libcharsetsrcdir := lib/charset
 ldb_sambasrcdir := lib/ldb-samba
 tdbsrcdir := lib/tdb
+ldbsrcdir := lib/ldb
 libtlssrcdir := lib/tls
 libregistrysrcdir := lib/registry
 smbreadlinesrcdir := lib/smbreadline
