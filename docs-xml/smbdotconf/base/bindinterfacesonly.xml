@@ -29,14 +29,14 @@
 	For file service it causes <citerefentry><refentrytitle>smbd</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry> to bind only to the interface list given in the <smbconfoption
 	name="interfaces"/> parameter. This restricts the networks that <command moreinfo="none">smbd</command> will
-	serve to packets coming in those interfaces.  Note that you should not use this parameter for machines that
+	serve, to packets coming in on those interfaces.  Note that you should not use this parameter for machines that
 	are serving PPP or other intermittent or non-broadcast network interfaces as it will not cope with
 	non-permanent interfaces.
 	</para>
 
 	<para>
-	If <smbconfoption name="bind interfaces only"/> is set then unless the network address
-	 <emphasis>127.0.0.1</emphasis> is added to the <smbconfoption name="interfaces"/> parameter list
+	If <smbconfoption name="bind interfaces only"/> is set and the network address
+	 <emphasis>127.0.0.1</emphasis> is not added to the <smbconfoption name="interfaces"/> parameter list
 	 <citerefentry><refentrytitle>smbpasswd</refentrytitle> <manvolnum>8</manvolnum></citerefentry> and
 	 <citerefentry><refentrytitle>swat</refentrytitle> <manvolnum>8</manvolnum></citerefentry> may not work as
 	expected due to the reasons covered below.

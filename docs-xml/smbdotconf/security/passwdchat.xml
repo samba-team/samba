@@ -17,7 +17,7 @@
     on what local methods are used for password control (such as NIS 
     etc).</para>
 
-    <para>Note that this parameter only is only used if the <smbconfoption
+    <para>Note that this parameter only is used if the <smbconfoption
     name="unix password sync"/> parameter is set  to <constant>yes</constant>. This sequence is 
     then called <emphasis>AS ROOT</emphasis> when the SMB password  in the 
     smbpasswd file is being changed, without access to the old password

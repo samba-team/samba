@@ -48,8 +48,7 @@
 	idmap gid = 5000-50000
 	</programlisting>
 
-	This configuration assume the ldap server have been loaded with a base tree like described
-	in the following ldif:
+	This configuration assumes a directory layout like described in the following ldif:
 
 	<programlisting>
 	dn: dc=samba,dc=org
