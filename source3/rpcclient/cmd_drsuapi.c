@@ -21,6 +21,56 @@
 #include "includes.h"
 #include "rpcclient.h"
 
+static WERROR cracknames(struct rpc_pipe_client *cli,
+			 TALLOC_CTX *mem_ctx,
+			 struct policy_handle *bind_handle,
+			 enum drsuapi_DsNameFormat format_offered,
+			 enum drsuapi_DsNameFormat format_desired,
+			 int argc,
+			 const char **argv,
+			 union drsuapi_DsNameCtr *ctr)
+{
+	NTSTATUS status;
+	WERROR werr;
+	int i;
+	int32_t level = 1;
+	union drsuapi_DsNameRequest req;
+	int32_t level_out;
+	struct drsuapi_DsNameString *names;
+
+	names = TALLOC_ZERO_ARRAY(mem_ctx, struct drsuapi_DsNameString, argc);
+	W_ERROR_HAVE_NO_MEMORY(names);
+
+	for (i=0; i<argc; i++) {
+		names[i].str = argv[i];
+	}
+
+	req.req1.codepage	= 1252; /* german */
+	req.req1.language	= 0x00000407; /* german */
+	req.req1.count		= argc;
+	req.req1.names		= names;
+	req.req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;
+	req.req1.format_offered	= format_offered;
+	req.req1.format_desired	= format_desired;
+
+	status = rpccli_drsuapi_DsCrackNames(cli, mem_ctx,
+					     bind_handle,
+					     level,
+					     &req,
+					     &level_out,
+					     ctr,
+					     &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	return WERR_OK;
+}
+
 static WERROR cmd_drsuapi_cracknames(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx, int argc,
 				     const char **argv)
@@ -32,11 +82,7 @@ static WERROR cmd_drsuapi_cracknames(struct rpc_pipe_client *cli,
 	struct GUID bind_guid;
 	struct policy_handle bind_handle;
 
-	int32_t level = 1;
-	union drsuapi_DsNameRequest req;
-	int32_t level_out;
 	union drsuapi_DsNameCtr ctr;
-	struct drsuapi_DsNameString names[1];
 
 	if (argc < 2) {
 		printf("usage: %s name\n", argv[0]);
@@ -55,28 +101,13 @@ static WERROR cmd_drsuapi_cracknames(struct rpc_pipe_client *cli,
 		return ntstatus_to_werror(status);
 	}
 
-	names[0].str = argv[1];
-
-	req.req1.codepage	= 1252; /* german */
-	req.req1.language	= 0x00000407; /* german */
-	req.req1.count		= 1;
-	req.req1.names		= names;
-	req.req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;
-	req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_UKNOWN;
-	req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
-
-	status = rpccli_drsuapi_DsCrackNames(cli, mem_ctx,
-					     &bind_handle,
-					     level,
-					     &req,
-					     &level_out,
-					     &ctr,
-					     &werr);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
-		goto out;
-	}
+	werr = cracknames(cli, mem_ctx,
+			  &bind_handle,
+			  DRSUAPI_DS_NAME_FORMAT_UKNOWN,
+			  DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+			  1,
+			  argv+1,
+			  &ctr);
 
 	if (!W_ERROR_IS_OK(werr)) {
 		goto out;
