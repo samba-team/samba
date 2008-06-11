@@ -1863,9 +1863,12 @@ the DMB (N1_C) with the WINS server as soon as it was started.
 <indexterm><primary>NetServerEnum2</primary></indexterm>
 <indexterm><primary>synchronization</primary></indexterm>
 <indexterm><primary>browse lists</primary></indexterm>
-Once N2_B knows the address of the DMB, it tells it that is the LMB for subnet 2 by sending a
-<emphasis>MasterAnnouncement</emphasis> packet as a UDP port 138 packet.  It then synchronizes with it by
-doing a <emphasis>NetServerEnum2</emphasis> call. This tells the DMB to send it all the server names it knows
+Once N2_B knows the address of the DMB, it tells the DMB that it is the LMB
+for subnet 2 by sending the DMB a
+<emphasis>MasterAnnouncement</emphasis> packet to UDP port 138.  It then
+synchronizes with the DMB by
+doing a <emphasis>NetServerEnum2</emphasis> call. This tells the DMB to
+send the sender all the server names it knows
 about. Once the DMB receives the <emphasis>MasterAnnouncement</emphasis> packet, it schedules a
 synchronization request to the sender of that packet. After both synchronizations are complete, the browse
 lists look like those in <link linkend="brsbex">Browse Subnet Example 2</link>

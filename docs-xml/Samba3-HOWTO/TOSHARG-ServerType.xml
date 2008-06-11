@@ -245,7 +245,7 @@ authentication contexts in this way (WinDD is an example of an application that 
 Windows networking user account names are case-insensitive, meaning that upper-case and lower-case characters
 in the account name are considered equivalent. They are said to be case-preserving, but not case significant.
 Windows and LanManager systems previous to Windows NT version 3.10 have case-insensitive passwords that were
-not necessarilty case-preserving. All Windows NT family systems treat passwords as case-preserving and
+not necessarily case-preserving. All Windows NT family systems treat passwords as case-preserving and
 case-sensitive.
 </para>
 
@@ -276,8 +276,8 @@ This is the default setting since Samba-2.2.x.
 In share-level security, the client authenticates itself separately for each share. It sends a password along
 with each tree connection request (share mount), but it does not explicitly send a username with this
 operation. The client expects a password to be associated with each share, independent of the user. This means
-that Samba has to work out what username the client probably wants to use, the SMB server is not explicitly
-sent the username.  Some commercial SMB servers such as NT actually associate passwords directly with shares
+that Samba has to work out what username the client probably wants to use,
+because the username is not explicitly sent to the SMB server. Some commercial SMB servers such as NT actually associate passwords directly with shares
 in share-level security, but Samba always uses the UNIX authentication scheme where it is a username/password
 pair that is authenticated, not a share/password pair.
 </para>
