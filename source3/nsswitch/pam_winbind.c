@@ -1445,6 +1445,10 @@ static int winbind_chauthtok_request(struct pwb_context *ctx,
 				WBFLAG_PAM_CONTACT_TRUSTDOM;
 	}
 
+	if (ctx->ctrl & WINBIND_CACHED_LOGIN) {
+		request.flags |= WBFLAG_PAM_CACHED_LOGIN;
+	}
+
 	ret = pam_winbind_request_log(ctx, WINBINDD_PAM_CHAUTHTOK,
 				      &request, &response, user);
 
