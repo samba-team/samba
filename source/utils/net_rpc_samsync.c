@@ -1459,100 +1459,114 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS map_populate_groups(GROUPMAP *groupmap, ACCOUNTMAP *accountmap, fstring sid,
-		    const char *suffix, const char *builtin_sid)
+static NTSTATUS map_populate_groups(TALLOC_CTX *mem_ctx,
+				    GROUPMAP *groupmap,
+				    ACCOUNTMAP *accountmap,
+				    fstring sid,
+				    const char *suffix,
+				    const char *builtin_sid)
 {
 	char *group_attr = sstring_sub(lp_ldap_group_suffix(), '=', ',');
 
 	/* Map the groups created by populate_ldap_for_ldif */
-	groupmap[0].rid = 512;
-	groupmap[0].gidNumber = 512;
-	snprintf(groupmap[0].sambaSID, sizeof(groupmap[0].sambaSID),
-			"%s-512", sid);
-	snprintf(groupmap[0].group_dn, sizeof(groupmap[0].group_dn),
-			"cn=Domain Admins,ou=%s,%s",
-			group_attr, suffix);
-	accountmap[0].rid = 512;
-	snprintf(accountmap[0].cn, sizeof(accountmap[0].cn),
-			"%s", "Domain Admins");
+	groupmap[0].rid		= 512;
+	groupmap[0].gidNumber	= 512;
+	groupmap[0].sambaSID	= talloc_asprintf(mem_ctx, "%s-512", sid);
+	groupmap[0].group_dn	= talloc_asprintf(mem_ctx,
+		"cn=Domain Admins,ou=%s,%s", group_attr, suffix);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap[0].sambaSID);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap[0].group_dn);
 
-	groupmap[1].rid = 513;
-	groupmap[1].gidNumber = 513;
-	snprintf(groupmap[1].sambaSID, sizeof(groupmap[1].sambaSID),
-			"%s-513", sid);
-	snprintf(groupmap[1].group_dn, sizeof(groupmap[1].group_dn),
-			"cn=Domain Users,ou=%s,%s",
-			group_attr, suffix);
-	accountmap[1].rid = 513;
-	snprintf(accountmap[1].cn, sizeof(accountmap[1].cn),
-			"%s", "Domain Users");
+	accountmap[0].rid	= 512;
+	accountmap[0].cn	= talloc_strdup(mem_ctx, "Domain Admins");
+	NT_STATUS_HAVE_NO_MEMORY(accountmap[0].cn);
 
-	groupmap[2].rid = 514;
-	groupmap[2].gidNumber = 514;
-	snprintf(groupmap[2].sambaSID, sizeof(groupmap[2].sambaSID),
-			"%s-514", sid);
-	snprintf(groupmap[2].group_dn, sizeof(groupmap[2].group_dn),
-			"cn=Domain Guests,ou=%s,%s",
-			group_attr, suffix);
-	accountmap[2].rid = 514;
-	snprintf(accountmap[2].cn, sizeof(accountmap[2].cn),
-			"%s", "Domain Guests");
+	groupmap[1].rid		= 513;
+	groupmap[1].gidNumber	= 513;
+	groupmap[1].sambaSID	= talloc_asprintf(mem_ctx, "%s-513", sid);
+	groupmap[1].group_dn	= talloc_asprintf(mem_ctx,
+		"cn=Domain Users,ou=%s,%s", group_attr, suffix);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap[1].sambaSID);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap[1].group_dn);
 
-	groupmap[3].rid = 515;
-	groupmap[3].gidNumber = 515;
-	snprintf(groupmap[3].sambaSID, sizeof(groupmap[3].sambaSID),
-			"%s-515", sid);
-	snprintf(groupmap[3].group_dn, sizeof(groupmap[3].group_dn),
-			"cn=Domain Computers,ou=%s,%s",
-			group_attr, suffix);
-	accountmap[3].rid = 515;
-	snprintf(accountmap[3].cn, sizeof(accountmap[3].cn),
-			"%s", "Domain Computers");
+	accountmap[1].rid	= 513;
+	accountmap[1].cn	= talloc_strdup(mem_ctx, "Domain Users");
+	NT_STATUS_HAVE_NO_MEMORY(accountmap[1].cn);
 
-	groupmap[4].rid = 544;
-	groupmap[4].gidNumber = 544;
-	snprintf(groupmap[4].sambaSID, sizeof(groupmap[4].sambaSID),
-			"%s-544", builtin_sid);
-	snprintf(groupmap[4].group_dn, sizeof(groupmap[4].group_dn),
-			"cn=Administrators,ou=%s,%s",
-			group_attr, suffix);
-	accountmap[4].rid = 515;
-	snprintf(accountmap[4].cn, sizeof(accountmap[4].cn),
-			"%s", "Administrators");
+	groupmap[2].rid		= 514;
+	groupmap[2].gidNumber	= 514;
+	groupmap[2].sambaSID	= talloc_asprintf(mem_ctx, "%s-514", sid);
+	groupmap[2].group_dn	= talloc_asprintf(mem_ctx,
+		"cn=Domain Guests,ou=%s,%s", group_attr, suffix);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap[2].sambaSID);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap[2].group_dn);
 
-	groupmap[5].rid = 550;
-	groupmap[5].gidNumber = 550;
-	snprintf(groupmap[5].sambaSID, sizeof(groupmap[5].sambaSID),
-			"%s-550", builtin_sid);
-	snprintf(groupmap[5].group_dn, sizeof(groupmap[5].group_dn),
-			"cn=Print Operators,ou=%s,%s",
-			group_attr, suffix);
-	accountmap[5].rid = 550;
-	snprintf(accountmap[5].cn, sizeof(accountmap[5].cn),
-			"%s", "Print Operators");
+	accountmap[2].rid	= 514;
+	accountmap[2].cn	= talloc_strdup(mem_ctx, "Domain Guests");
+	NT_STATUS_HAVE_NO_MEMORY(accountmap[2].cn);
 
-	groupmap[6].rid = 551;
-	groupmap[6].gidNumber = 551;
-	snprintf(groupmap[6].sambaSID, sizeof(groupmap[6].sambaSID),
-			"%s-551", builtin_sid);
-	snprintf(groupmap[6].group_dn, sizeof(groupmap[6].group_dn),
-			"cn=Backup Operators,ou=%s,%s",
-			group_attr, suffix);
-	accountmap[6].rid = 551;
-	snprintf(accountmap[6].cn, sizeof(accountmap[6].cn),
-			"%s", "Backup Operators");
+	groupmap[3].rid		= 515;
+	groupmap[3].gidNumber	= 515;
+	groupmap[3].sambaSID	= talloc_asprintf(mem_ctx, "%s-515", sid);
+	groupmap[3].group_dn	= talloc_asprintf(mem_ctx,
+		"cn=Domain Computers,ou=%s,%s", group_attr, suffix);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap[3].sambaSID);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap[3].group_dn);
 
-	groupmap[7].rid = 552;
-	groupmap[7].gidNumber = 552;
-	snprintf(groupmap[7].sambaSID, sizeof(groupmap[7].sambaSID),
-			"%s-552", builtin_sid);
-	snprintf(groupmap[7].group_dn, sizeof(groupmap[7].group_dn),
-			"cn=Replicators,ou=%s,%s",
-			group_attr, suffix);
-	accountmap[7].rid = 551;
-	snprintf(accountmap[7].cn, sizeof(accountmap[7].cn),
-			"%s", "Replicators");
+	accountmap[3].rid	= 515;
+	accountmap[3].cn	= talloc_strdup(mem_ctx, "Domain Computers");
+	NT_STATUS_HAVE_NO_MEMORY(accountmap[3].cn);
+
+	groupmap[4].rid		= 544;
+	groupmap[4].gidNumber	= 544;
+	groupmap[4].sambaSID	= talloc_asprintf(mem_ctx, "%s-544", builtin_sid);
+	groupmap[4].group_dn	= talloc_asprintf(mem_ctx,
+		"cn=Administrators,ou=%s,%s", group_attr, suffix);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap[4].sambaSID);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap[4].group_dn);
+
+	accountmap[4].rid	= 515;
+	accountmap[4].cn	= talloc_strdup(mem_ctx, "Administrators");
+	NT_STATUS_HAVE_NO_MEMORY(accountmap[4].cn);
+
+	groupmap[5].rid		= 550;
+	groupmap[5].gidNumber	= 550;
+	groupmap[5].sambaSID	= talloc_asprintf(mem_ctx, "%s-550", builtin_sid);
+	groupmap[5].group_dn	= talloc_asprintf(mem_ctx,
+		"cn=Print Operators,ou=%s,%s", group_attr, suffix);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap[5].sambaSID);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap[5].group_dn);
+
+	accountmap[5].rid	= 550;
+	accountmap[5].cn	= talloc_strdup(mem_ctx, "Print Operators");
+	NT_STATUS_HAVE_NO_MEMORY(accountmap[5].cn);
+
+	groupmap[6].rid		= 551;
+	groupmap[6].gidNumber	= 551;
+	groupmap[6].sambaSID	= talloc_asprintf(mem_ctx, "%s-551", builtin_sid);
+	groupmap[6].group_dn	= talloc_asprintf(mem_ctx,
+		"cn=Backup Operators,ou=%s,%s", group_attr, suffix);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap[6].sambaSID);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap[6].group_dn);
+
+	accountmap[6].rid	= 551;
+	accountmap[6].cn	= talloc_strdup(mem_ctx, "Backup Operators");
+	NT_STATUS_HAVE_NO_MEMORY(accountmap[6].cn);
+
+	groupmap[7].rid		= 552;
+	groupmap[7].gidNumber	= 552;
+	groupmap[7].sambaSID	= talloc_asprintf(mem_ctx, "%s-552", builtin_sid);
+	groupmap[7].group_dn	= talloc_asprintf(mem_ctx,
+		"cn=Replicators,ou=%s,%s", group_attr, suffix);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap[7].sambaSID);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap[7].group_dn);
+
+	accountmap[7].rid	= 551;
+	accountmap[7].cn	= talloc_strdup(mem_ctx, "Replicators");
+	NT_STATUS_HAVE_NO_MEMORY(accountmap[7].cn);
+
 	SAFE_FREE(group_attr);
+
 	return NT_STATUS_OK;
 }
 
@@ -1617,8 +1631,12 @@ static int fprintf_attr(FILE *add_fd, const char *attr_name,
 	return res;
 }
 
-static NTSTATUS fetch_group_info_to_ldif(struct netr_DELTA_GROUP *r, GROUPMAP *groupmap,
-			 FILE *add_fd, fstring sid, char *suffix)
+static NTSTATUS fetch_group_info_to_ldif(TALLOC_CTX *mem_ctx,
+					 struct netr_DELTA_GROUP *r,
+					 GROUPMAP *groupmap,
+					 FILE *add_fd,
+					 fstring sid,
+					 char *suffix)
 {
 	fstring groupname;
 	uint32 grouptype = 0, g_rid = 0;
@@ -1650,10 +1668,11 @@ static NTSTATUS fetch_group_info_to_ldif(struct netr_DELTA_GROUP *r, GROUPMAP *g
 	g_rid = r->rid;
 	groupmap->rid = g_rid;
 	groupmap->gidNumber = ldif_gid;
-	snprintf(groupmap->sambaSID, sizeof(groupmap->sambaSID),
-			"%s-%d", sid, g_rid);
-	snprintf(groupmap->group_dn, sizeof(groupmap->group_dn),
-		     "cn=%s,ou=%s,%s", groupname, group_attr, suffix);
+	groupmap->sambaSID	= talloc_asprintf(mem_ctx, "%s-%d", sid, g_rid);
+	groupmap->group_dn	= talloc_asprintf(mem_ctx,
+	     "cn=%s,ou=%s,%s", groupname, group_attr, suffix);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap->sambaSID);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap->group_dn);
 
 	/* Write the data to the temporary add ldif file */
 	fprintf(add_fd, "# %s, %s, %s\n", groupname, group_attr,
@@ -1675,7 +1694,8 @@ static NTSTATUS fetch_group_info_to_ldif(struct netr_DELTA_GROUP *r, GROUPMAP *g
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_account_info_to_ldif(struct netr_DELTA_USER *r,
+static NTSTATUS fetch_account_info_to_ldif(TALLOC_CTX *mem_ctx,
+					   struct netr_DELTA_USER *r,
 					   GROUPMAP *groupmap,
 					   ACCOUNTMAP *accountmap,
 					   FILE *add_fd,
@@ -1702,7 +1722,8 @@ static NTSTATUS fetch_account_info_to_ldif(struct netr_DELTA_USER *r,
 
 	/* Map the rid and username for group member info later */
 	accountmap->rid = rid;
-	snprintf(accountmap->cn, sizeof(accountmap->cn), "%s", username);
+	accountmap->cn = talloc_strdup(mem_ctx, username);
+	NT_STATUS_HAVE_NO_MEMORY(accountmap->cn);
 
 	/* Get the home directory */
 	if (r->acct_flags & ACB_NORMAL) {
@@ -1820,7 +1841,8 @@ static NTSTATUS fetch_account_info_to_ldif(struct netr_DELTA_USER *r,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_alias_info_to_ldif(struct netr_DELTA_ALIAS *r,
+static NTSTATUS fetch_alias_info_to_ldif(TALLOC_CTX *mem_ctx,
+					 struct netr_DELTA_ALIAS *r,
 					 GROUPMAP *groupmap,
 					 FILE *add_fd, fstring sid,
 					 char *suffix,
@@ -1872,8 +1894,8 @@ static NTSTATUS fetch_alias_info_to_ldif(struct netr_DELTA_ALIAS *r,
 	/* Map the group rid and gid */
 	g_rid = r->rid;
 	groupmap->gidNumber = ldif_gid;
-	snprintf(groupmap->sambaSID, sizeof(groupmap->sambaSID),
-			"%s-%d", sid, g_rid);
+	groupmap->sambaSID = talloc_asprintf(mem_ctx, "%s-%d", sid, g_rid);
+	NT_STATUS_HAVE_NO_MEMORY(groupmap->sambaSID);
 
 	/* Write the data to the temporary add ldif file */
 	fprintf(add_fd, "# %s, %s, %s\n", aliasname, group_attr,
@@ -2030,25 +2052,27 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 
 	/* Allocate initial memory for groupmap and accountmap arrays */
 	if (init_ldap == 1) {
-		groupmap = SMB_MALLOC_ARRAY(GROUPMAP, 8);
-		accountmap = SMB_MALLOC_ARRAY(ACCOUNTMAP, 8);
+		groupmap = TALLOC_ZERO_ARRAY(mem_ctx, GROUPMAP, 8);
+		accountmap = TALLOC_ZERO_ARRAY(mem_ctx, ACCOUNTMAP, 8);
 		if (groupmap == NULL || accountmap == NULL) {
 			DEBUG(1,("GROUPMAP malloc failed\n"));
 			ret = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
 
-		/* Initialize the arrays */
-		memset(groupmap, 0, sizeof(GROUPMAP)*8);
-		memset(accountmap, 0, sizeof(ACCOUNTMAP)*8);
-
 		/* Remember how many we malloced */
 		num_alloced = 8;
 
 		/* Initial database population */
-		populate_ldap_for_ldif(sid, suffix, builtin_sid, add_file);
-		map_populate_groups(groupmap, accountmap, sid, suffix,
+		ret = populate_ldap_for_ldif(sid, suffix, builtin_sid, add_file);
+		if (!NT_STATUS_IS_OK(ret)) {
+			goto done;
+		}
+		ret = map_populate_groups(mem_ctx, groupmap, accountmap, sid, suffix,
 				    builtin_sid);
+		if (!NT_STATUS_IS_OK(ret)) {
+			goto done;
+		}
 
 		/* Don't do this again */
 		init_ldap = 0;
@@ -2110,12 +2134,12 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 		num_deltas = delta_enum_array->num_deltas;
 
 		/* Re-allocate memory for groupmap and accountmap arrays */
-		groupmap = SMB_REALLOC_ARRAY(groupmap, GROUPMAP,
+		groupmap = TALLOC_REALLOC_ARRAY(mem_ctx, groupmap, GROUPMAP,
 					     num_deltas+num_alloced);
-		accountmap = SMB_REALLOC_ARRAY(accountmap, ACCOUNTMAP,
+		accountmap = TALLOC_REALLOC_ARRAY(mem_ctx, accountmap, ACCOUNTMAP,
 					       num_deltas+num_alloced);
 		if (groupmap == NULL || accountmap == NULL) {
-			DEBUG(1,("GROUPMAP malloc failed\n"));
+			DEBUG(1,("GROUPMAP talloc failed\n"));
 			ret = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
@@ -2145,7 +2169,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 				break;
 
 			case NETR_DELTA_GROUP:
-				fetch_group_info_to_ldif(
+				fetch_group_info_to_ldif(mem_ctx,
 					u.group,
 					&groupmap[g_index],
 					add_file, sid, suffix);
@@ -2153,7 +2177,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 				break;
 
 			case NETR_DELTA_USER:
-				fetch_account_info_to_ldif(
+				fetch_account_info_to_ldif(mem_ctx,
 					u.user, groupmap,
 					&accountmap[a_index], add_file,
 					sid, suffix, num_alloced);
@@ -2161,7 +2185,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 				break;
 
 			case NETR_DELTA_ALIAS:
-				fetch_alias_info_to_ldif(
+				fetch_alias_info_to_ldif(mem_ctx,
 					u.alias, &groupmap[g_index],
 					add_file, sid, suffix, db_type);
 				g_index++;
@@ -2254,10 +2278,6 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	if (ldif_file && (ldif_file != stdout)) {
 		fclose(ldif_file);
 	}
-
-	/* Deallocate memory for the mapping arrays */
-	SAFE_FREE(groupmap);
-	SAFE_FREE(accountmap);
 
 	/* Return */
 	talloc_destroy(mem_ctx);

@@ -148,13 +148,13 @@ enum netdom_domain_t { ND_TYPE_NT4, ND_TYPE_AD };
 /* Structure for mapping accounts to groups */
 /* Array element is the group rid */
 typedef struct _groupmap {
-	uint32 rid;
-	uint32 gidNumber;
-	fstring sambaSID;
-	fstring group_dn;
+	uint32_t rid;
+	uint32_t gidNumber;
+	const char *sambaSID;
+	const char *group_dn;
 } GROUPMAP;
 
 typedef struct _accountmap {
-	uint32 rid;
-	fstring cn;
+	uint32_t rid;
+	const char *cn;
 } ACCOUNTMAP;
