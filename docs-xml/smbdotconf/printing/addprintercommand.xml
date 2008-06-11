@@ -1,4 +1,4 @@
-<samba:parameter name="add printer command"
+<samba:parameter name="addprinter command"
                  context="G"
 				 type="string"
 		 advanced="1" developer="1"
@@ -12,8 +12,9 @@
     NT/2000 print server.</para>
 		
     <para>For a Samba host this means that the printer must be 
-    physically added to the underlying printing system.  The <parameter moreinfo="none">add 
-    printer command</parameter> defines a script to be run which 
+    physically added to the underlying printing system.
+    The <parameter moreinfo="none">addprinter command</parameter>
+    defines a script to be run which
     will perform the necessary operations for adding the printer
     to the print system and to add the appropriate service definition 
     to the  <filename moreinfo="none">smb.conf</filename> file in order that it can be 
@@ -46,7 +47,8 @@
     </command> will return an ACCESS_DENIED error to the client.</para>
 
     <para>
-    The &quot;add printer command&quot; program can output a single line of text,
+    The <parameter moreinfo="none">addprinter command</parameter> program
+    can output a single line of text,
     which Samba will set as the port the new printer is connected to. 
     If this line isn't output, Samba won't reload its printer shares.
     </para>
