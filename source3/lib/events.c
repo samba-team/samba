@@ -344,7 +344,7 @@ int event_loop_once(struct event_context *ev)
 		return 0;
 	}
 
-	ret = sys_select(maxfd, &r_fds, &w_fds, NULL, &to);
+	ret = sys_select(maxfd+1, &r_fds, &w_fds, NULL, &to);
 
 	if (ret == -1 && errno != EINTR) {
 		return -1;
