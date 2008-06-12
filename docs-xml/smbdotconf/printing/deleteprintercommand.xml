@@ -6,7 +6,7 @@
 <description>
     <para>With the introduction of MS-RPC based printer
     support for Windows NT/2000 clients in Samba 2.2, it is now 
-    possible to a delete printer at run time by issuing the
+    possible to delete a printer at run time by issuing the
     DeletePrinter() RPC call.</para>
 		
     <para>For a Samba host this means that the printer must be 
