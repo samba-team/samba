@@ -2576,7 +2576,7 @@ int net_ads_check_our_domain(struct net_context *c)
 
 int net_ads(struct net_context *c, int argc, const char **argv)
 {
-	return net_ads_usage(c, argc, argv);
+	return net_ads_noads();
 }
 
 #endif	/* WITH_ADS */
