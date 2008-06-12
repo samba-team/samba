@@ -1308,13 +1308,15 @@ int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb);
 int ctdb_set_child_logging(struct ctdb_context *ctdb);
 
 
-typedef void (*client_async_callback)(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata);
+typedef void (*client_async_callback)(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data);
 
 struct client_async_data {
 	bool dont_log_errors;
 	uint32_t count;
 	uint32_t fail_count;
 	client_async_callback callback;
+	client_async_callback fail_callback;
+	void *callback_data;
 };
 void ctdb_client_async_add(struct client_async_data *data, struct ctdb_client_control_state *state);
 int ctdb_client_async_wait(struct ctdb_context *ctdb, struct client_async_data *data);
@@ -1324,7 +1326,9 @@ int ctdb_client_async_control(struct ctdb_context *ctdb,
 				struct timeval timeout,
 				bool dont_log_errors,
 				TDB_DATA data,
-			        client_async_callback client_callback);
+			      	client_async_callback client_callback,
+			        client_async_callback fail_callback,
+				void *callback_data);
 
 void ctdb_load_nodes_file(struct ctdb_context *ctdb);
 

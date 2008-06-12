@@ -206,13 +206,17 @@ enum monitor_result { MONITOR_OK, MONITOR_RECOVERY_NEEDED, MONITOR_ELECTION_NEED
 static int run_recovered_eventscript(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, const char *caller)
 {
 	TALLOC_CTX *tmp_ctx;
+	uint32_t *nodes;
 
 	tmp_ctx = talloc_new(ctdb);
 	CTDB_NO_MEMORY(ctdb, tmp_ctx);
 
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_END_RECOVERY,
-			list_of_active_nodes(ctdb, nodemap, tmp_ctx, true),
-			CONTROL_TIMEOUT(), false, tdb_null, NULL) != 0) {
+					nodes,
+					CONTROL_TIMEOUT(), false, tdb_null,
+					NULL, NULL,
+					NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event when called from %s\n", caller));
 
 		talloc_free(tmp_ctx);
@@ -224,18 +228,55 @@ static int run_recovered_eventscript(struct ctdb_context *ctdb, struct ctdb_node
 }
 
 /*
+  remember the trouble maker
+ */
+static void ctdb_set_culprit(struct ctdb_recoverd *rec, uint32_t culprit)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+
+	if (rec->last_culprit != culprit ||
+	    timeval_elapsed(&rec->first_recover_time) > ctdb->tunable.recovery_grace_period) {
+		DEBUG(DEBUG_NOTICE,("New recovery culprit %u\n", culprit));
+		/* either a new node is the culprit, or we've decided to forgive them */
+		rec->last_culprit = culprit;
+		rec->first_recover_time = timeval_current();
+		rec->culprit_counter = 0;
+	}
+	rec->culprit_counter++;
+}
+
+
+/* this callback is called for every node that failed to execute the
+   start recovery event
+*/
+static void startrecovery_fail_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(callback_data, struct ctdb_recoverd);
+
+	DEBUG(DEBUG_ERR, (__location__ " Node %u failed the startrecovery event. Setting it as recovery fail culprit\n", node_pnn));
+
+	ctdb_set_culprit(rec, node_pnn);
+}
+
+/*
   run the "startrecovery" eventscript on all nodes
  */
-static int run_startrecovery_eventscript(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+static int run_startrecovery_eventscript(struct ctdb_recoverd *rec, struct ctdb_node_map *nodemap)
 {
 	TALLOC_CTX *tmp_ctx;
+	uint32_t *nodes;
+	struct ctdb_context *ctdb = rec->ctdb;
 
 	tmp_ctx = talloc_new(ctdb);
 	CTDB_NO_MEMORY(ctdb, tmp_ctx);
 
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_START_RECOVERY,
-			list_of_active_nodes(ctdb, nodemap, tmp_ctx, true),
-			CONTROL_TIMEOUT(), false, tdb_null, NULL) != 0) {
+					nodes,
+					CONTROL_TIMEOUT(), false, tdb_null,
+					NULL,
+					startrecovery_fail_callback,
+					rec) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'startrecovery' event. Recovery failed.\n"));
 		talloc_free(tmp_ctx);
 		return -1;
@@ -245,11 +286,10 @@ static int run_startrecovery_eventscript(struct ctdb_context *ctdb, struct ctdb_
 	return 0;
 }
 
-static void async_getcap_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata)
+static void async_getcap_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data)
 {
 	if ( (outdata.dsize != sizeof(uint32_t)) || (outdata.dptr == NULL) ) {
-		DEBUG(DEBUG_ERR, (__location__ " Invalid lenght/pointer for getcap callback : %u %p\n", 
-				  (unsigned)outdata.dsize, outdata.dptr));
+		DEBUG(DEBUG_ERR, (__location__ " Invalid lenght/pointer for getcap callback : %u %p\n",  (unsigned)outdata.dsize, outdata.dptr));
 		return;
 	}
 	ctdb->nodes[node_pnn]->capabilities = *((uint32_t *)outdata.dptr);
@@ -267,10 +307,11 @@ static int update_capabilities(struct ctdb_context *ctdb, struct ctdb_node_map *
 	CTDB_NO_MEMORY(ctdb, tmp_ctx);
 
 	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
-
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_CAPABILITIES,
 					nodes, CONTROL_TIMEOUT(),
-					false, tdb_null, async_getcap_callback) != 0) {
+					false, tdb_null,
+					async_getcap_callback, NULL,
+					NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to read node capabilities.\n"));
 		talloc_free(tmp_ctx);
 		return -1;
@@ -292,13 +333,14 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 	tmp_ctx = talloc_new(ctdb);
 	CTDB_NO_MEMORY(ctdb, tmp_ctx);
 
-	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
-
 	/* freeze all nodes */
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
 	if (rec_mode == CTDB_RECOVERY_ACTIVE) {
 		if (ctdb_client_async_control(ctdb, CTDB_CONTROL_FREEZE,
 						nodes, CONTROL_TIMEOUT(),
-						false, tdb_null, NULL) != 0) {
+						false, tdb_null,
+						NULL, NULL,
+						NULL) != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Unable to freeze nodes. Recovery failed.\n"));
 			talloc_free(tmp_ctx);
 			return -1;
@@ -311,7 +353,9 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_SET_RECMODE,
 					nodes, CONTROL_TIMEOUT(),
-					false, data, NULL) != 0) {
+					false, data,
+					NULL, NULL,
+					NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode. Recovery failed.\n"));
 		talloc_free(tmp_ctx);
 		return -1;
@@ -320,7 +364,9 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 	if (rec_mode == CTDB_RECOVERY_NORMAL) {
 		if (ctdb_client_async_control(ctdb, CTDB_CONTROL_THAW,
 						nodes, CONTROL_TIMEOUT(),
-						false, tdb_null, NULL) != 0) {
+						false, tdb_null,
+						NULL, NULL,
+						NULL) != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Unable to thaw nodes. Recovery failed.\n"));
 			talloc_free(tmp_ctx);
 			return -1;
@@ -338,6 +384,7 @@ static int set_recovery_master(struct ctdb_context *ctdb, struct ctdb_node_map *
 {
 	TDB_DATA data;
 	TALLOC_CTX *tmp_ctx;
+	uint32_t *nodes;
 
 	tmp_ctx = talloc_new(ctdb);
 	CTDB_NO_MEMORY(ctdb, tmp_ctx);
@@ -345,9 +392,12 @@ static int set_recovery_master(struct ctdb_context *ctdb, struct ctdb_node_map *
 	data.dsize = sizeof(uint32_t);
 	data.dptr = (unsigned char *)&pnn;
 
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_SET_RECMASTER,
-			list_of_active_nodes(ctdb, nodemap, tmp_ctx, true),
-			CONTROL_TIMEOUT(), false, data, NULL) != 0) {
+					nodes,
+					CONTROL_TIMEOUT(), false, data,
+					NULL, NULL,
+					NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recmaster. Recovery failed.\n"));
 		talloc_free(tmp_ctx);
 		return -1;
@@ -944,24 +994,6 @@ static void ctdb_wait_election(struct ctdb_recoverd *rec)
 }
 
 /*
-  remember the trouble maker
- */
-static void ctdb_set_culprit(struct ctdb_recoverd *rec, uint32_t culprit)
-{
-	struct ctdb_context *ctdb = rec->ctdb;
-
-	if (rec->last_culprit != culprit ||
-	    timeval_elapsed(&rec->first_recover_time) > ctdb->tunable.recovery_grace_period) {
-		DEBUG(DEBUG_NOTICE,("New recovery culprit %u\n", culprit));
-		/* either a new node is the culprit, or we've decided to forgive them */
-		rec->last_culprit = culprit;
-		rec->first_recover_time = timeval_current();
-		rec->culprit_counter = 0;
-	}
-	rec->culprit_counter++;
-}
-
-/*
   Update our local flags from all remote connected nodes. 
   This is only run when we are or we belive we are the recovery master
  */
@@ -1143,6 +1175,7 @@ static int push_recdb_database(struct ctdb_context *ctdb, uint32_t dbid,
 	struct ctdb_control_pulldb_reply *recdata;
 	TDB_DATA outdata;
 	TALLOC_CTX *tmp_ctx;
+	uint32_t *nodes;
 
 	tmp_ctx = talloc_new(ctdb);
 	CTDB_NO_MEMORY(ctdb, tmp_ctx);
@@ -1176,9 +1209,12 @@ static int push_recdb_database(struct ctdb_context *ctdb, uint32_t dbid,
 	outdata.dptr = (void *)recdata;
 	outdata.dsize = params.len;
 
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_PUSH_DB,
-			list_of_active_nodes(ctdb, nodemap, tmp_ctx, true),
-			CONTROL_TIMEOUT(), false, outdata, NULL) != 0) {
+					nodes,
+					CONTROL_TIMEOUT(), false, outdata,
+					NULL, NULL,
+					NULL) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to push recdb records to nodes for db 0x%x\n", dbid));
 		talloc_free(recdata);
 		talloc_free(tmp_ctx);
@@ -1210,6 +1246,7 @@ static int recover_database(struct ctdb_recoverd *rec,
 	struct ctdb_context *ctdb = rec->ctdb;
 	TDB_DATA data;
 	struct ctdb_control_wipe_database w;
+	uint32_t *nodes;
 
 	recdb = create_recdb(ctdb, mem_ctx);
 	if (recdb == NULL) {
@@ -1232,9 +1269,12 @@ static int recover_database(struct ctdb_recoverd *rec,
 	data.dptr = (void *)&w;
 	data.dsize = sizeof(w);
 
+	nodes = list_of_active_nodes(ctdb, nodemap, recdb, true);
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_WIPE_DATABASE,
-			list_of_active_nodes(ctdb, nodemap, recdb, true),
-			CONTROL_TIMEOUT(), false, data, NULL) != 0) {
+					nodes,
+					CONTROL_TIMEOUT(), false, data,
+					NULL, NULL,
+					NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to wipe database. Recovery failed.\n"));
 		talloc_free(recdb);
 		return -1;
@@ -1268,6 +1308,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	uint32_t generation;
 	struct ctdb_dbid_map *dbmap;
 	TDB_DATA data;
+	uint32_t *nodes;
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Starting do_recovery\n"));
 
@@ -1326,7 +1367,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	}
 
 	/* execute the "startrecovery" event script on all nodes */
-	ret = run_startrecovery_eventscript(ctdb, nodemap);
+	ret = run_startrecovery_eventscript(rec, nodemap);
 	if (ret!=0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'startrecovery' event on cluster\n"));
 		return -1;
@@ -1355,9 +1396,12 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	data.dptr = (void *)&generation;
 	data.dsize = sizeof(uint32_t);
 
+	nodes = list_of_active_nodes(ctdb, nodemap, mem_ctx, true);
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_START,
-			list_of_active_nodes(ctdb, nodemap, mem_ctx, true),
-			CONTROL_TIMEOUT(), false, data, NULL) != 0) {
+					nodes,
+					CONTROL_TIMEOUT(), false, data,
+					NULL, NULL,
+					NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to start transactions. Recovery failed.\n"));
 		return -1;
 	}
@@ -1375,8 +1419,10 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	/* commit all the changes */
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_COMMIT,
-			list_of_active_nodes(ctdb, nodemap, mem_ctx, true),
-			CONTROL_TIMEOUT(), false, data, NULL) != 0) {
+					nodes,
+					CONTROL_TIMEOUT(), false, data,
+					NULL, NULL,
+					NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to commit recovery changes. Recovery failed.\n"));
 		return -1;
 	}
@@ -2732,7 +2778,7 @@ again:
 		rec->need_takeover_run = false;
 
 		/* execute the "startrecovery" event script on all nodes */
-		ret = run_startrecovery_eventscript(ctdb, nodemap);
+		ret = run_startrecovery_eventscript(rec, nodemap);
 		if (ret!=0) {
 			DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'startrecovery' event on cluster\n"));
 			do_recovery(rec, mem_ctx, pnn, nodemap, 
