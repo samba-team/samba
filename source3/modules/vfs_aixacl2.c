@@ -27,7 +27,7 @@
 
 extern struct current_user current_user;
 extern int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid);
-extern bool unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp,
+extern NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp,
 	uint32 security_info_sent, SEC_DESC *psd);
 
 extern SMB_ACL_T aixacl_to_smbacl( struct acl *file_acl);
@@ -192,7 +192,7 @@ static NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
 	if (retryPosix)
 	{
 		DEBUG(10, ("retrying with posix acl...\n"));
-		return posix_get_nt_acl(handle->conn, name security_info,
+		return posix_get_nt_acl(handle->conn, name, security_info,
 					ppdesc);
 	}
 	if (result==False)
