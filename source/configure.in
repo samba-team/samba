@@ -1600,7 +1600,9 @@ DSO_EXPORTS=""
 			;;
 		*aix*) AC_DEFINE(AIX,1,[Whether the host os is aix])
 			BLDSHARED="true"
-			LDSHFLAGS="-Wl,-G,-bexpfull,-bbigtoc"
+			# use expfull to export underscored symbols
+			# add rtl to remove /lib/crt0.o warning
+			LDSHFLAGS="-Wl,-G,-bexpfull,-bbigtoc,-brtl"
 			DYNEXP="-Wl,-brtl,-bexpfull,-bbigtoc"
 			PICFLAG="-O2"
 			# as AIX code is always position independent...
