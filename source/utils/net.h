@@ -158,3 +158,33 @@ typedef struct _accountmap {
 	uint32_t rid;
 	const char *cn;
 } ACCOUNTMAP;
+
+enum net_samsync_mode {
+	NET_SAMSYNC_MODE_FETCH_PASSDB = 0,
+	NET_SAMSYNC_MODE_FETCH_LDIF = 1,
+	NET_SAMSYNC_MODE_DUMP = 2
+};
+
+struct samsync_ldif_context {
+	GROUPMAP *groupmap;
+	ACCOUNTMAP *accountmap;
+	bool initialized;
+	const char *add_template;
+	const char *mod_template;
+	char *add_name;
+	char *mod_name;
+	FILE *add_file;
+	FILE *mod_file;
+	FILE *ldif_file;
+	const char *suffix;
+	int num_alloced;
+};
+
+struct samsync_context {
+	enum net_samsync_mode mode;
+	const struct dom_sid *domain_sid;
+	const char *domain_sid_str;
+	const char *ldif_filename;
+
+	struct samsync_ldif_context *ldif;
+};

@@ -29,13 +29,6 @@
 /* uid's and gid's for writing deltas to ldif */
 static uint32 ldif_gid = 999;
 static uint32 ldif_uid = 999;
-/* Keep track of ldap initialization */
-static int init_ldap = 1;
-
-enum net_samsync_mode {
-	NET_SAMSYNC_MODE_FETCH_PASSDB = 0,
-	NET_SAMSYNC_MODE_DUMP = 1
-};
 
 static void display_group_mem_info(uint32_t rid,
 				   struct netr_DELTA_GROUP_MEMBER *r)
@@ -177,8 +170,11 @@ static void display_group_info(uint32_t rid, struct netr_DELTA_GROUP *r)
 	d_printf("desc='%s', rid=%u\n", r->description.string, rid);
 }
 
-static NTSTATUS display_sam_entry(struct netr_DELTA_ENUM *r,
-			      const DOM_SID *domain_sid)
+static NTSTATUS display_sam_entry(TALLOC_CTX *mem_ctx,
+				  enum netr_SamDatabaseID database_id,
+				  struct netr_DELTA_ENUM *r,
+				  NTSTATUS status,
+				  struct samsync_context *ctx)
 {
 	union netr_DELTA_UNION u = r->delta_union;
 	union netr_DELTA_ID_UNION id = r->delta_id_union;
@@ -332,13 +328,33 @@ static NTSTATUS display_sam_entry(struct netr_DELTA_ENUM *r,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS display_sam_entries(TALLOC_CTX *mem_ctx,
+				    enum netr_SamDatabaseID database_id,
+				    struct netr_DELTA_ENUM_ARRAY *r,
+				    NTSTATUS status,
+				    struct samsync_context *ctx)
+{
+	int i;
+
+	for (i = 0; i < r->num_deltas; i++) {
+		display_sam_entry(mem_ctx, database_id, &r->delta_enum[i], status, ctx);
+	}
+
+	return NT_STATUS_OK;
+}
+
+typedef NTSTATUS (*samsync_fn_t)(TALLOC_CTX *,
+				 enum netr_SamDatabaseID,
+				 struct netr_DELTA_ENUM_ARRAY *,
+				 NTSTATUS,
+				 struct samsync_context *);
+
 static NTSTATUS process_database(struct rpc_pipe_client *pipe_hnd,
 				 enum netr_SamDatabaseID database_id,
-				 enum net_samsync_mode mode,
-				 NTSTATUS (*callback_fn)(struct netr_DELTA_ENUM *, const DOM_SID *), const DOM_SID *domain_sid)
+				 samsync_fn_t callback_fn,
+				 struct samsync_context *ctx)
 {
 	NTSTATUS result;
-	int i;
 	TALLOC_CTX *mem_ctx;
 	const char *logon_server = pipe_hnd->desthost;
 	const char *computername = global_myname();
@@ -355,12 +371,15 @@ static NTSTATUS process_database(struct rpc_pipe_client *pipe_hnd,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	switch (mode) {
+	switch (ctx->mode) {
 		case NET_SAMSYNC_MODE_DUMP:
-			action = "Dumping";
+			action = "Dumping (to stdout)";
 			break;
 		case NET_SAMSYNC_MODE_FETCH_PASSDB:
-			action = "Fetching";
+			action = "Fetching (to passdb)";
+			break;
+		case NET_SAMSYNC_MODE_FETCH_LDIF:
+			action = "Fetching (to ldif)";
 			break;
 		default:
 			action = "Unknown";
@@ -369,16 +388,16 @@ static NTSTATUS process_database(struct rpc_pipe_client *pipe_hnd,
 
 	switch (database_id) {
 	case SAM_DATABASE_DOMAIN:
-		d_printf("%s DOMAIN database\n", action);
+		d_fprintf(stderr, "%s DOMAIN database\n", action);
 		break;
 	case SAM_DATABASE_BUILTIN:
-		d_printf("%s BUILTIN database\n", action);
+		d_fprintf(stderr, "%s BUILTIN database\n", action);
 		break;
 	case SAM_DATABASE_PRIVS:
-		d_printf("%s PRIVS databases\n", action);
+		d_fprintf(stderr, "%s PRIVS databases\n", action);
 		break;
 	default:
-		d_printf("%s unknown database type %u\n",
+		d_fprintf(stderr, "%s unknown database type %u\n",
 			action, database_id);
 		break;
 	}
@@ -398,6 +417,9 @@ static NTSTATUS process_database(struct rpc_pipe_client *pipe_hnd,
 						   &sync_context,
 						   &delta_enum_array,
 						   0xffff);
+		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED)) {
+			return result;
+		}
 
 		/* Check returned credentials. */
 		if (!netlogon_creds_client_check(pipe_hnd->dc,
@@ -418,13 +440,13 @@ static NTSTATUS process_database(struct rpc_pipe_client *pipe_hnd,
 					database_id,
 					delta_enum_array);
 
-		/* Display results */
-		for (i = 0; i < delta_enum_array->num_deltas; i++) {
-			callback_fn(&delta_enum_array->delta_enum[i],
-				    domain_sid);
-                }
+		/* Process results */
+		callback_fn(mem_ctx, database_id, delta_enum_array, result, ctx);
 
 		TALLOC_FREE(delta_enum_array);
+
+		/* Increment sync_context */
+		sync_context += 1;
 
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
@@ -443,17 +465,22 @@ NTSTATUS rpc_samdump_internals(struct net_context *c,
 				int argc,
 				const char **argv)
 {
+	struct samsync_context *ctx;
+
+	ctx = TALLOC_ZERO_P(mem_ctx, struct samsync_context);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	ctx->mode = NET_SAMSYNC_MODE_DUMP;
+	ctx->domain_sid = domain_sid;
+
 	process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
-			 NET_SAMSYNC_MODE_DUMP,
-			 display_sam_entry, domain_sid);
+			 display_sam_entries, ctx);
 
 	process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
-			 NET_SAMSYNC_MODE_DUMP,
-			 display_sam_entry, domain_sid);
+			 display_sam_entries, ctx);
 
 	process_database(pipe_hnd, SAM_DATABASE_PRIVS,
-			 NET_SAMSYNC_MODE_DUMP,
-			 display_sam_entry, domain_sid);
+			 display_sam_entries, ctx);
 
 	return NT_STATUS_OK;
 }
@@ -1116,7 +1143,10 @@ static NTSTATUS fetch_domain_info(uint32_t rid,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_sam_entry(struct netr_DELTA_ENUM *r, const DOM_SID *dom_sid)
+static NTSTATUS fetch_sam_entry(TALLOC_CTX *mem_ctx,
+				enum netr_SamDatabaseID database_id,
+				struct netr_DELTA_ENUM *r,
+				struct samsync_context *ctx)
 {
 	switch(r->delta_type) {
 	case NETR_DELTA_USER:
@@ -1134,12 +1164,12 @@ static NTSTATUS fetch_sam_entry(struct netr_DELTA_ENUM *r, const DOM_SID *dom_si
 	case NETR_DELTA_ALIAS:
 		fetch_alias_info(r->delta_id_union.rid,
 				 r->delta_union.alias,
-				 dom_sid);
+				 ctx->domain_sid);
 		break;
 	case NETR_DELTA_ALIAS_MEMBER:
 		fetch_alias_mem(r->delta_id_union.rid,
 				r->delta_union.alias_member,
-				dom_sid);
+				ctx->domain_sid);
 		break;
 	case NETR_DELTA_DOMAIN:
 		fetch_domain_info(r->delta_id_union.rid,
@@ -1202,8 +1232,28 @@ static NTSTATUS fetch_sam_entry(struct netr_DELTA_ENUM *r, const DOM_SID *dom_si
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const char
-		       *builtin_sid, FILE *add_fd)
+static NTSTATUS fetch_sam_entries(TALLOC_CTX *mem_ctx,
+				  enum netr_SamDatabaseID database_id,
+				  struct netr_DELTA_ENUM_ARRAY *r,
+				  NTSTATUS status,
+				  struct samsync_context *ctx)
+{
+	int i;
+
+	for (i = 0; i < r->num_deltas; i++) {
+		fetch_sam_entry(mem_ctx, database_id, &r->delta_enum[i], ctx);
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS populate_ldap_for_ldif(const char *sid,
+				       const char *suffix,
+				       const char *builtin_sid,
+				       FILE *add_fd)
 {
 	const char *user_suffix, *group_suffix, *machine_suffix, *idmap_suffix;
 	char *user_attr=NULL, *group_attr=NULL;
@@ -1459,10 +1509,13 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 	return NT_STATUS_OK;
 }
 
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS map_populate_groups(TALLOC_CTX *mem_ctx,
 				    GROUPMAP *groupmap,
 				    ACCOUNTMAP *accountmap,
-				    fstring sid,
+				    const char *sid,
 				    const char *suffix,
 				    const char *builtin_sid)
 {
@@ -1631,19 +1684,19 @@ static int fprintf_attr(FILE *add_fd, const char *attr_name,
 	return res;
 }
 
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS fetch_group_info_to_ldif(TALLOC_CTX *mem_ctx,
 					 struct netr_DELTA_GROUP *r,
 					 GROUPMAP *groupmap,
 					 FILE *add_fd,
-					 fstring sid,
-					 char *suffix)
+					 const char *sid,
+					 const char *suffix)
 {
-	fstring groupname;
+	const char *groupname = r->group_name.string;
 	uint32 grouptype = 0, g_rid = 0;
 	char *group_attr = sstring_sub(lp_ldap_group_suffix(), '=', ',');
-
-	/* Get the group name */
-	fstrcpy(groupname, r->group_name.string);
 
 	/* Set up the group type (always 2 for group info) */
 	grouptype = 2;
@@ -1694,12 +1747,16 @@ static NTSTATUS fetch_group_info_to_ldif(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS fetch_account_info_to_ldif(TALLOC_CTX *mem_ctx,
 					   struct netr_DELTA_USER *r,
 					   GROUPMAP *groupmap,
 					   ACCOUNTMAP *accountmap,
 					   FILE *add_fd,
-					   fstring sid, char *suffix,
+					   const char *sid,
+					   const char *suffix,
 					   int alloced)
 {
 	fstring username, logonscript, homedrive, homepath = "", homedir = "";
@@ -1841,12 +1898,16 @@ static NTSTATUS fetch_account_info_to_ldif(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS fetch_alias_info_to_ldif(TALLOC_CTX *mem_ctx,
 					 struct netr_DELTA_ALIAS *r,
 					 GROUPMAP *groupmap,
-					 FILE *add_fd, fstring sid,
-					 char *suffix,
-					 unsigned db_type)
+					 FILE *add_fd,
+					 const char *sid,
+					 const char *suffix,
+					 enum netr_SamDatabaseID database_id)
 {
 	fstring aliasname, description;
 	uint32 grouptype = 0, g_rid = 0;
@@ -1859,7 +1920,7 @@ static NTSTATUS fetch_alias_info_to_ldif(TALLOC_CTX *mem_ctx,
 	fstrcpy(description, r->description.string);
 
 	/* Set up the group type */
-	switch (db_type) {
+	switch (database_id) {
 	case SAM_DATABASE_DOMAIN:
 		grouptype = 4;
 		break;
@@ -1919,6 +1980,9 @@ static NTSTATUS fetch_alias_info_to_ldif(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS fetch_groupmem_info_to_ldif(struct netr_DELTA_GROUP_MEMBER *r,
 					    uint32_t id_rid,
 					    GROUPMAP *groupmap,
@@ -1964,85 +2028,25 @@ static NTSTATUS fetch_groupmem_info_to_ldif(struct netr_DELTA_GROUP_MEMBER *r,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
-				       uint32 db_type,
-				       const DOM_SID *dom_sid,
-				       const char *user_file)
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS ldif_init_context(TALLOC_CTX *mem_ctx,
+				  struct samsync_context *ctx,
+				  enum netr_SamDatabaseID database_id)
 {
-	char *suffix;
-	const char *builtin_sid = "S-1-5-32";
-	char *add_name = NULL, *mod_name = NULL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	struct samsync_ldif_context *r;
 	const char *add_template = "/tmp/add.ldif.XXXXXX";
 	const char *mod_template = "/tmp/mod.ldif.XXXXXX";
-	fstring sid, domainname;
-	NTSTATUS ret = NT_STATUS_OK, result;
-	int k;
-	TALLOC_CTX *mem_ctx;
-	uint32 num_deltas;
-	FILE *add_file = NULL, *mod_file = NULL, *ldif_file = NULL;
-	int num_alloced = 0, g_index = 0, a_index = 0;
-	const char *logon_server = pipe_hnd->desthost;
-	const char *computername = global_myname();
-	struct netr_Authenticator credential;
-	struct netr_Authenticator return_authenticator;
-	enum netr_SamDatabaseID database_id = db_type;
-	uint16_t restart_state = 0;
-	uint32_t sync_context = 0;
-	DATA_BLOB session_key;
+	const char *builtin_sid = "S-1-5-32";
 
-	/* Set up array for mapping accounts to groups */
-	/* Array element is the group rid */
-	GROUPMAP *groupmap = NULL;
-
-	/* Set up array for mapping account rid's to cn's */
-	/* Array element is the account rid */
-	ACCOUNTMAP *accountmap = NULL;
-
-	if (!(mem_ctx = talloc_init("fetch_database"))) {
-		return NT_STATUS_NO_MEMORY;
+	if (ctx->ldif && ctx->ldif->initialized) {
+		return NT_STATUS_OK;
 	}
 
-	/* Ensure we have an output file */
-	if (user_file)
-		ldif_file = fopen(user_file, "a");
-	else
-		ldif_file = stdout;
-
-	if (!ldif_file) {
-		fprintf(stderr, "Could not open %s\n", user_file);
-		DEBUG(1, ("Could not open %s\n", user_file));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	add_name = talloc_strdup(mem_ctx, add_template);
-	mod_name = talloc_strdup(mem_ctx, mod_template);
- 	if (!add_name || !mod_name) {
-		ret = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	/* Open the add and mod ldif files */
-	if (!(add_file = fdopen(smb_mkstemp(add_name),"w"))) {
-		DEBUG(1, ("Could not open %s\n", add_name));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-	if (!(mod_file = fdopen(smb_mkstemp(mod_name),"w"))) {
-		DEBUG(1, ("Could not open %s\n", mod_name));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	/* Get the sid */
-	sid_to_fstring(sid, dom_sid);
-
-	/* Get the ldap suffix */
-	suffix = lp_ldap_suffix();
-	if (suffix == NULL || strcmp(suffix, "") == 0) {
-		DEBUG(0,("ldap suffix missing from smb.conf--exiting\n"));
-		exit(1);
-	}
+	r = TALLOC_ZERO_P(mem_ctx, struct samsync_ldif_context);
+	NT_STATUS_HAVE_NO_MEMORY(r);
 
 	/* Get other smb.conf data */
 	if (!(lp_workgroup()) || !*(lp_workgroup())) {
@@ -2050,238 +2054,344 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 		exit(1);
 	}
 
+	/* Get the ldap suffix */
+	r->suffix = lp_ldap_suffix();
+	if (r->suffix == NULL || strcmp(r->suffix, "") == 0) {
+		DEBUG(0,("ldap suffix missing from smb.conf--exiting\n"));
+		exit(1);
+	}
+
+	/* Get the sid */
+	ctx->domain_sid_str = sid_string_talloc(mem_ctx, ctx->domain_sid);
+	NT_STATUS_HAVE_NO_MEMORY(ctx->domain_sid_str);
+
+	/* Ensure we have an output file */
+	if (ctx->ldif_filename) {
+		r->ldif_file = fopen(ctx->ldif_filename, "a");
+	} else {
+		r->ldif_file = stdout;
+	}
+
+	if (!r->ldif_file) {
+		fprintf(stderr, "Could not open %s\n", ctx->ldif_filename);
+		DEBUG(1, ("Could not open %s\n", ctx->ldif_filename));
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	r->add_template = talloc_strdup(mem_ctx, add_template);
+	r->mod_template = talloc_strdup(mem_ctx, mod_template);
+	if (!r->add_template || !r->mod_template) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	r->add_name = talloc_strdup(mem_ctx, add_template);
+	r->mod_name = talloc_strdup(mem_ctx, mod_template);
+	if (!r->add_name || !r->mod_name) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	/* Open the add and mod ldif files */
+	if (!(r->add_file = fdopen(smb_mkstemp(r->add_name),"w"))) {
+		DEBUG(1, ("Could not open %s\n", r->add_name));
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+	if (!(r->mod_file = fdopen(smb_mkstemp(r->mod_name),"w"))) {
+		DEBUG(1, ("Could not open %s\n", r->mod_name));
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
 	/* Allocate initial memory for groupmap and accountmap arrays */
-	if (init_ldap == 1) {
-		groupmap = TALLOC_ZERO_ARRAY(mem_ctx, GROUPMAP, 8);
-		accountmap = TALLOC_ZERO_ARRAY(mem_ctx, ACCOUNTMAP, 8);
-		if (groupmap == NULL || accountmap == NULL) {
-			DEBUG(1,("GROUPMAP malloc failed\n"));
-			ret = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-
-		/* Remember how many we malloced */
-		num_alloced = 8;
-
-		/* Initial database population */
-		ret = populate_ldap_for_ldif(sid, suffix, builtin_sid, add_file);
-		if (!NT_STATUS_IS_OK(ret)) {
-			goto done;
-		}
-		ret = map_populate_groups(mem_ctx, groupmap, accountmap, sid, suffix,
-				    builtin_sid);
-		if (!NT_STATUS_IS_OK(ret)) {
-			goto done;
-		}
-
-		/* Don't do this again */
-		init_ldap = 0;
+	r->groupmap = TALLOC_ZERO_ARRAY(mem_ctx, GROUPMAP, 8);
+	r->accountmap = TALLOC_ZERO_ARRAY(mem_ctx, ACCOUNTMAP, 8);
+	if (r->groupmap == NULL || r->accountmap == NULL) {
+		DEBUG(1,("GROUPMAP talloc failed\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
-	/* Announce what we are doing */
-	switch( db_type ) {
-	case SAM_DATABASE_DOMAIN:
-		d_fprintf(stderr, "Fetching DOMAIN database\n");
-		break;
-	case SAM_DATABASE_BUILTIN:
-		d_fprintf(stderr, "Fetching BUILTIN database\n");
-		break;
-	case SAM_DATABASE_PRIVS:
-		d_fprintf(stderr, "Fetching PRIVS databases\n");
-		break;
-	default:
-		d_fprintf(stderr,
-			  "Fetching unknown database type %u\n",
-			  db_type );
-		break;
-	}
+	/* Remember how many we malloced */
+	r->num_alloced = 8;
 
-	do {
-		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
+	/* Initial database population */
+	if (database_id == SAM_DATABASE_DOMAIN) {
 
-		netlogon_creds_client_step(pipe_hnd->dc, &credential);
-
-		result = rpccli_netr_DatabaseSync2(pipe_hnd, mem_ctx,
-						   logon_server,
-						   computername,
-						   &credential,
-						   &return_authenticator,
-						   database_id,
-						   restart_state,
-						   &sync_context,
-						   &delta_enum_array,
-						   0xffff);
-
-		/* Check returned credentials. */
-		if (!netlogon_creds_client_check(pipe_hnd->dc,
-						 &return_authenticator.cred)) {
-			DEBUG(0,("credentials chain check failed\n"));
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
-		if (NT_STATUS_IS_ERR(result)) {
-			break;
-		}
-
-		session_key = data_blob_const(pipe_hnd->dc->sess_key, 16);
-
-		samsync_fix_delta_array(mem_ctx,
-					&session_key,
-					true,
-					database_id,
-					delta_enum_array);
-
-		num_deltas = delta_enum_array->num_deltas;
-
-		/* Re-allocate memory for groupmap and accountmap arrays */
-		groupmap = TALLOC_REALLOC_ARRAY(mem_ctx, groupmap, GROUPMAP,
-					     num_deltas+num_alloced);
-		accountmap = TALLOC_REALLOC_ARRAY(mem_ctx, accountmap, ACCOUNTMAP,
-					       num_deltas+num_alloced);
-		if (groupmap == NULL || accountmap == NULL) {
-			DEBUG(1,("GROUPMAP talloc failed\n"));
-			ret = NT_STATUS_NO_MEMORY;
+		status = populate_ldap_for_ldif(ctx->domain_sid_str,
+						r->suffix,
+						builtin_sid,
+						r->add_file);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
 
-		/* Initialize the new records */
-		memset(&groupmap[num_alloced], 0,
-		       sizeof(GROUPMAP)*num_deltas);
-		memset(&accountmap[num_alloced], 0,
-		       sizeof(ACCOUNTMAP)*num_deltas);
+		status = map_populate_groups(mem_ctx,
+					     r->groupmap,
+					     r->accountmap,
+					     ctx->domain_sid_str,
+					     r->suffix,
+					     builtin_sid);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+	}
 
-		/* Remember how many we alloced this time */
-		num_alloced += num_deltas;
+	r->initialized = true;
 
-		/* Loop through the deltas */
-		for (k=0; k<num_deltas; k++) {
+	ctx->ldif = r;
 
-			union netr_DELTA_UNION u =
-				delta_enum_array->delta_enum[k].delta_union;
-			union netr_DELTA_ID_UNION id =
-				delta_enum_array->delta_enum[k].delta_id_union;
+	return NT_STATUS_OK;
+ done:
+	TALLOC_FREE(r);
+	return status;
+}
 
-			switch(delta_enum_array->delta_enum[k].delta_type) {
-			case NETR_DELTA_DOMAIN:
-				/* Is this case needed? */
-				fstrcpy(domainname,
-					u.domain->domain_name.string);
-				break;
+/****************************************************************
+****************************************************************/
 
-			case NETR_DELTA_GROUP:
-				fetch_group_info_to_ldif(mem_ctx,
-					u.group,
-					&groupmap[g_index],
-					add_file, sid, suffix);
-				g_index++;
-				break;
+static void ldif_free_context(struct samsync_ldif_context *r)
+{
+	if (!r) {
+		return;
+	}
 
-			case NETR_DELTA_USER:
-				fetch_account_info_to_ldif(mem_ctx,
-					u.user, groupmap,
-					&accountmap[a_index], add_file,
-					sid, suffix, num_alloced);
-				a_index++;
-				break;
+	/* Close and delete the ldif files */
+	if (r->add_file) {
+		fclose(r->add_file);
+	}
 
-			case NETR_DELTA_ALIAS:
-				fetch_alias_info_to_ldif(mem_ctx,
-					u.alias, &groupmap[g_index],
-					add_file, sid, suffix, db_type);
-				g_index++;
-				break;
+	if ((r->add_name != NULL) &&
+	    strcmp(r->add_name, r->add_template) && (unlink(r->add_name))) {
+		DEBUG(1,("unlink(%s) failed, error was (%s)\n",
+			 r->add_name, strerror(errno)));
+	}
 
-			case NETR_DELTA_GROUP_MEMBER:
-				fetch_groupmem_info_to_ldif(
-					u.group_member, id.rid,
-					groupmap, accountmap,
-					mod_file, num_alloced);
-				break;
+	if (r->mod_file) {
+		fclose(r->mod_file);
+	}
 
-			case NETR_DELTA_ALIAS_MEMBER:
-			case NETR_DELTA_POLICY:
-			case NETR_DELTA_ACCOUNT:
-			case NETR_DELTA_TRUSTED_DOMAIN:
-			case NETR_DELTA_SECRET:
-			case NETR_DELTA_RENAME_GROUP:
-			case NETR_DELTA_RENAME_USER:
-			case NETR_DELTA_RENAME_ALIAS:
-			case NETR_DELTA_DELETE_GROUP:
-			case NETR_DELTA_DELETE_USER:
-			case NETR_DELTA_MODIFY_COUNT:
-			default:
-				break;
-			} /* end of switch */
-		} /* end of for loop */
+	if ((r->mod_name != NULL) &&
+	    strcmp(r->mod_name, r->mod_template) && (unlink(r->mod_name))) {
+		DEBUG(1,("unlink(%s) failed, error was (%s)\n",
+			 r->mod_name, strerror(errno)));
+	}
 
-		/* Increment sync_context */
-		sync_context += 1;
+	if (r->ldif_file && (r->ldif_file != stdout)) {
+		fclose(r->ldif_file);
+	}
 
-	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
+	TALLOC_FREE(r);
+}
+
+/****************************************************************
+****************************************************************/
+
+static void ldif_write_output(enum netr_SamDatabaseID database_id,
+			      struct samsync_context *ctx)
+{
+	struct samsync_ldif_context *l = ctx->ldif;
 
 	/* Write ldif data to the user's file */
-	if (db_type == SAM_DATABASE_DOMAIN) {
-		fprintf(ldif_file,
+	if (database_id == SAM_DATABASE_DOMAIN) {
+		fprintf(l->ldif_file,
 			"# SAM_DATABASE_DOMAIN: ADD ENTITIES\n");
-		fprintf(ldif_file,
+		fprintf(l->ldif_file,
 			"# =================================\n\n");
-		fflush(ldif_file);
-	} else if (db_type == SAM_DATABASE_BUILTIN) {
-		fprintf(ldif_file,
+		fflush(l->ldif_file);
+	} else if (database_id == SAM_DATABASE_BUILTIN) {
+		fprintf(l->ldif_file,
 			"# SAM_DATABASE_BUILTIN: ADD ENTITIES\n");
-		fprintf(ldif_file,
+		fprintf(l->ldif_file,
 			"# ==================================\n\n");
-		fflush(ldif_file);
+		fflush(l->ldif_file);
 	}
-	fseek(add_file, 0, SEEK_SET);
-	transfer_file(fileno(add_file), fileno(ldif_file), (size_t) -1);
+	fseek(l->add_file, 0, SEEK_SET);
+	transfer_file(fileno(l->add_file), fileno(l->ldif_file), (size_t) -1);
 
-	if (db_type == SAM_DATABASE_DOMAIN) {
-		fprintf(ldif_file,
+	if (database_id == SAM_DATABASE_DOMAIN) {
+		fprintf(l->ldif_file,
 			"# SAM_DATABASE_DOMAIN: MODIFY ENTITIES\n");
-		fprintf(ldif_file,
+		fprintf(l->ldif_file,
 			"# ====================================\n\n");
-		fflush(ldif_file);
-	} else if (db_type == SAM_DATABASE_BUILTIN) {
-		fprintf(ldif_file,
+		fflush(l->ldif_file);
+	} else if (database_id == SAM_DATABASE_BUILTIN) {
+		fprintf(l->ldif_file,
 			"# SAM_DATABASE_BUILTIN: MODIFY ENTITIES\n");
-		fprintf(ldif_file,
+		fprintf(l->ldif_file,
 			"# =====================================\n\n");
-		fflush(ldif_file);
+		fflush(l->ldif_file);
 	}
-	fseek(mod_file, 0, SEEK_SET);
-	transfer_file(fileno(mod_file), fileno(ldif_file), (size_t) -1);
+	fseek(l->mod_file, 0, SEEK_SET);
+	transfer_file(fileno(l->mod_file), fileno(l->ldif_file), (size_t) -1);
+}
 
+/****************************************************************
+****************************************************************/
 
- done:
-	/* Close and delete the ldif files */
-	if (add_file) {
-		fclose(add_file);
+static NTSTATUS fetch_sam_entry_ldif(TALLOC_CTX *mem_ctx,
+				     enum netr_SamDatabaseID database_id,
+				     struct netr_DELTA_ENUM *r,
+				     struct samsync_context *ctx,
+				     uint32_t *a_index,
+				     uint32_t *g_index)
+{
+	union netr_DELTA_UNION u = r->delta_union;
+	union netr_DELTA_ID_UNION id = r->delta_id_union;
+	struct samsync_ldif_context *l = ctx->ldif;
+
+	switch (r->delta_type) {
+		case NETR_DELTA_DOMAIN:
+			break;
+
+		case NETR_DELTA_GROUP:
+			fetch_group_info_to_ldif(mem_ctx,
+						 u.group,
+						 &l->groupmap[*g_index],
+						 l->add_file,
+						 ctx->domain_sid_str,
+						 l->suffix);
+			(*g_index)++;
+			break;
+
+		case NETR_DELTA_USER:
+			fetch_account_info_to_ldif(mem_ctx,
+						   u.user,
+						   l->groupmap,
+						   &l->accountmap[*a_index],
+						   l->add_file,
+						   ctx->domain_sid_str,
+						   l->suffix,
+						   l->num_alloced);
+			(*a_index)++;
+			break;
+
+		case NETR_DELTA_ALIAS:
+			fetch_alias_info_to_ldif(mem_ctx,
+						 u.alias,
+						 &l->groupmap[*g_index],
+						 l->add_file,
+						 ctx->domain_sid_str,
+						 l->suffix,
+						 database_id);
+			(*g_index)++;
+			break;
+
+		case NETR_DELTA_GROUP_MEMBER:
+			fetch_groupmem_info_to_ldif(u.group_member,
+						    id.rid,
+						    l->groupmap,
+						    l->accountmap,
+						    l->mod_file,
+						    l->num_alloced);
+			break;
+
+		case NETR_DELTA_ALIAS_MEMBER:
+		case NETR_DELTA_POLICY:
+		case NETR_DELTA_ACCOUNT:
+		case NETR_DELTA_TRUSTED_DOMAIN:
+		case NETR_DELTA_SECRET:
+		case NETR_DELTA_RENAME_GROUP:
+		case NETR_DELTA_RENAME_USER:
+		case NETR_DELTA_RENAME_ALIAS:
+		case NETR_DELTA_DELETE_GROUP:
+		case NETR_DELTA_DELETE_USER:
+		case NETR_DELTA_MODIFY_COUNT:
+		default:
+			break;
+	} /* end of switch */
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS ldif_realloc_maps(TALLOC_CTX *mem_ctx,
+				  struct samsync_context *ctx,
+				  uint32_t num_entries)
+{
+	struct samsync_ldif_context *l = ctx->ldif;
+
+	if (!l) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if ((add_name != NULL) &&
-	    strcmp(add_name, add_template) && (unlink(add_name))) {
-		DEBUG(1,("unlink(%s) failed, error was (%s)\n",
-			 add_name, strerror(errno)));
+	/* Re-allocate memory for groupmap and accountmap arrays */
+	l->groupmap = TALLOC_REALLOC_ARRAY(mem_ctx,
+					   l->groupmap,
+					   GROUPMAP,
+					   num_entries + l->num_alloced);
+
+	l->accountmap = TALLOC_REALLOC_ARRAY(mem_ctx,
+					     l->accountmap,
+					     ACCOUNTMAP,
+					     num_entries + l->num_alloced);
+
+	if (l->groupmap == NULL || l->accountmap == NULL) {
+		DEBUG(1,("GROUPMAP talloc failed\n"));
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (mod_file) {
-		fclose(mod_file);
+	/* Initialize the new records */
+	memset(&(l->groupmap[l->num_alloced]), 0,
+	       sizeof(GROUPMAP) * num_entries);
+	memset(&(l->accountmap[l->num_alloced]), 0,
+	       sizeof(ACCOUNTMAP) * num_entries);
+
+	/* Remember how many we alloced this time */
+	l->num_alloced += num_entries;
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
+				       enum netr_SamDatabaseID database_id,
+				       struct netr_DELTA_ENUM_ARRAY *r,
+				       NTSTATUS result,
+				       struct samsync_context *ctx)
+{
+	NTSTATUS status;
+	int i;
+	uint32_t g_index = 0, a_index = 0;
+
+	status = ldif_init_context(mem_ctx, ctx, database_id);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
 	}
 
-	if ((mod_name != NULL) &&
-	    strcmp(mod_name, mod_template) && (unlink(mod_name))) {
-		DEBUG(1,("unlink(%s) failed, error was (%s)\n",
-			 mod_name, strerror(errno)));
+	status = ldif_realloc_maps(mem_ctx, ctx, r->num_deltas);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
 	}
 
-	if (ldif_file && (ldif_file != stdout)) {
-		fclose(ldif_file);
+	for (i = 0; i < r->num_deltas; i++) {
+		status = fetch_sam_entry_ldif(mem_ctx, database_id,
+					      &r->delta_enum[i], ctx,
+					      &g_index, &a_index);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto failed;
+		}
 	}
 
-	/* Return */
-	talloc_destroy(mem_ctx);
-	return ret;
+	/* This was the last query */
+	if (NT_STATUS_IS_OK(result)) {
+		ldif_write_output(database_id, ctx);
+		ldif_free_context(ctx->ldif);
+		ctx->ldif = NULL;
+	}
+
+	return NT_STATUS_OK;
+
+ failed:
+	ldif_free_context(ctx->ldif);
+
+	return status;
 }
 
 /**
@@ -2319,6 +2429,11 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
         NTSTATUS result;
 	fstring my_dom_sid_str;
 	fstring rem_dom_sid_str;
+	struct samsync_context *ctx;
+	samsync_fn_t *fn;
+
+	ctx = TALLOC_ZERO_P(mem_ctx, struct samsync_context);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	if (!sid_equal(domain_sid, get_global_sam_sid())) {
 		d_printf("Cannot import users from %s at this time, "
@@ -2337,14 +2452,18 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 	}
 
         if (argc >= 1 && (strcmp(argv[0], "ldif") == 0)) {
-		result = fetch_database_to_ldif(pipe_hnd, SAM_DATABASE_DOMAIN,
-						domain_sid, argv[1]);
-        } else {
-		result = process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
-					  NET_SAMSYNC_MODE_FETCH_PASSDB,
-					  fetch_sam_entry, domain_sid);
-        }
+		ctx->mode = NET_SAMSYNC_MODE_FETCH_LDIF;
+		ctx->ldif_filename = argv[1];
+		fn = (samsync_fn_t *)fetch_sam_entries_ldif;
+	} else {
+		ctx->mode = NET_SAMSYNC_MODE_FETCH_PASSDB;
+		fn = (samsync_fn_t *)fetch_sam_entries;
+	}
 
+	/* fetch domain */
+	ctx->domain_sid = domain_sid;
+	result = process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
+				  (samsync_fn_t)fn, ctx);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Failed to fetch domain database: %s\n",
 			  nt_errstr(result));
@@ -2354,15 +2473,10 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 		goto fail;
 	}
 
-        if (argc >= 1 && (strcmp(argv[0], "ldif") == 0)) {
-		result = fetch_database_to_ldif(pipe_hnd, SAM_DATABASE_BUILTIN,
-						&global_sid_Builtin, argv[1]);
-        } else {
-		result = process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
-					  NET_SAMSYNC_MODE_FETCH_PASSDB,
-					  fetch_sam_entry, &global_sid_Builtin);
-        }
-
+	/* fetch builtin */
+	ctx->domain_sid = &global_sid_Builtin;
+	result = process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
+				  (samsync_fn_t)fn, ctx);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Failed to fetch builtin database: %s\n",
 			  nt_errstr(result));
