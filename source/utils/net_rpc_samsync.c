@@ -424,10 +424,10 @@ typedef NTSTATUS (*samsync_fn_t)(TALLOC_CTX *,
 				 NTSTATUS,
 				 struct samsync_context *);
 
-static NTSTATUS process_database(struct rpc_pipe_client *pipe_hnd,
-				 enum netr_SamDatabaseID database_id,
-				 samsync_fn_t callback_fn,
-				 struct samsync_context *ctx)
+static NTSTATUS samsync_process_database(struct rpc_pipe_client *pipe_hnd,
+					 enum netr_SamDatabaseID database_id,
+					 samsync_fn_t callback_fn,
+					 struct samsync_context *ctx)
 {
 	NTSTATUS result;
 	TALLOC_CTX *mem_ctx;
@@ -442,7 +442,7 @@ static NTSTATUS process_database(struct rpc_pipe_client *pipe_hnd,
 
 	ZERO_STRUCT(return_authenticator);
 
-	if (!(mem_ctx = talloc_init("process_database"))) {
+	if (!(mem_ctx = talloc_init("samsync_process_database"))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -525,14 +525,14 @@ NTSTATUS rpc_samdump_internals(struct net_context *c,
 		return status;
 	}
 
-	process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
-			 display_sam_entries, ctx);
+	samsync_process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
+				 display_sam_entries, ctx);
 
-	process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
-			 display_sam_entries, ctx);
+	samsync_process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
+				 display_sam_entries, ctx);
 
-	process_database(pipe_hnd, SAM_DATABASE_PRIVS,
-			 display_sam_entries, ctx);
+	samsync_process_database(pipe_hnd, SAM_DATABASE_PRIVS,
+				 display_sam_entries, ctx);
 
 	TALLOC_FREE(ctx);
 
@@ -2509,8 +2509,8 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 	}
 
 	/* fetch domain */
-	result = process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
-				  fetch_sam_entries, ctx);
+	result = samsync_process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
+					  fetch_sam_entries, ctx);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Failed to fetch domain database: %s\n",
 			  nt_errstr(result));
@@ -2523,8 +2523,8 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 	/* fetch builtin */
 	ctx->domain_sid = sid_dup_talloc(mem_ctx, &global_sid_Builtin);
 	ctx->domain_sid_str = sid_string_talloc(mem_ctx, ctx->domain_sid);
-	result = process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
-				  fetch_sam_entries, ctx);
+	result = samsync_process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
+					  fetch_sam_entries, ctx);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Failed to fetch builtin database: %s\n",
 			  nt_errstr(result));
@@ -2562,8 +2562,8 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 	}
 
 	/* fetch domain */
-	status = process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
-				  fetch_sam_entries_ldif, ctx);
+	status = samsync_process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
+					  fetch_sam_entries_ldif, ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "Failed to fetch domain database: %s\n",
 			  nt_errstr(status));
@@ -2576,8 +2576,8 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 	/* fetch builtin */
 	ctx->domain_sid = sid_dup_talloc(mem_ctx, &global_sid_Builtin);
 	ctx->domain_sid_str = sid_string_talloc(mem_ctx, ctx->domain_sid);
-	status = process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
-				  fetch_sam_entries_ldif, ctx);
+	status = samsync_process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
+					  fetch_sam_entries_ldif, ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "Failed to fetch builtin database: %s\n",
 			  nt_errstr(status));
