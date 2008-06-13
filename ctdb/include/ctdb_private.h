@@ -102,6 +102,7 @@ struct ctdb_tunable {
 	uint32_t monitor_interval;
 	uint32_t tickle_update_interval;
 	uint32_t script_timeout;
+	uint32_t script_ban_count; /* ban after this many consec timeouts*/
 	uint32_t recovery_grace_period;
 	uint32_t recovery_ban_period;
 	uint32_t database_hash_size;
@@ -410,6 +411,7 @@ struct ctdb_context {
 	struct ctdb_monitor_state *monitor;
 	struct ctdb_log_state *log;
 	int start_as_disabled;
+	uint32_t event_script_timeouts; /* counting how many consecutive times an eventscript has timedout */
 	TALLOC_CTX *eventscripts_ctx; /* a context to hold data for the RUN_EVENTSCRIPTS control */
 };
 

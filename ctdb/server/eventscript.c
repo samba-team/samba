@@ -222,6 +222,27 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	talloc_set_destructor(state, NULL);
 	talloc_free(state);
 	callback(ctdb, status, private_data);
+
+	ctdb->event_script_timeouts = 0;
+}
+
+static void ctdb_ban_self(struct ctdb_context *ctdb, uint32_t ban_period)
+{
+	int ret;
+	struct ctdb_ban_info b;
+	TDB_DATA data;
+
+	b.pnn      = ctdb->pnn;
+	b.ban_time = ban_period;
+
+	data.dptr = (uint8_t *)&b;
+	data.dsize = sizeof(b);
+
+	ret = ctdb_daemon_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
+		CTDB_SRVID_BAN_NODE, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to send ban message\n"));
+	}
 }
 
 
@@ -234,9 +255,17 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 	void *private_data = state->private_data;
 	struct ctdb_context *ctdb = state->ctdb;
 
-	DEBUG(DEBUG_ERR,("event script timed out : %s\n", state->options));
+	DEBUG(DEBUG_ERR,("Event script timed out : %s count : %u\n", state->options, ctdb->event_script_timeouts));
+
 	talloc_free(state);
 	callback(ctdb, -1, private_data);
+
+	ctdb->event_script_timeouts++;
+	if (ctdb->event_script_timeouts > ctdb->tunable.script_ban_count) {
+		ctdb->event_script_timeouts = 0;
+		DEBUG(DEBUG_ERR, ("Maximum timeout count reached for eventscript. Banning self for %d seconds\n", ctdb->tunable.recovery_ban_period));
+		ctdb_ban_self(ctdb, ctdb->tunable.recovery_ban_period);
+	}
 }
 
 /*
@@ -308,7 +337,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	if (!timeval_is_zero(&timeout)) {
 		event_add_timed(ctdb->ev, state, timeout, ctdb_event_script_timeout, state);
 	} else {
-		DEBUG(DEBUG_ERR, (__location__ " eventscript %s called with no timeout\n", fmt));
+		DEBUG(DEBUG_ERR, (__location__ " eventscript %s called with no timeout\n", state->options));
 	}
 
 	return 0;
