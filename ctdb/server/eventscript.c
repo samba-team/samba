@@ -43,14 +43,23 @@ static void sigterm(int sig)
 	exit(1);
 }
 
+struct ctdb_event_script_state {
+	struct ctdb_context *ctdb;
+	pid_t child;
+	void (*callback)(struct ctdb_context *, int, void *);
+	int fd[2];
+	void *private_data;
+	const char *options;
+};
+
 /*
   run the event script - varargs version
   this function is called and run in the context of a forked child
   which allows it to do blocking calls such as system()
  */
-static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_list ap)
+static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
 {
-	char *options, *cmdstr;
+	char *cmdstr;
 	int ret;
 	struct stat st;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
@@ -58,9 +67,6 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 	DIR *dir;
 	struct dirent *de;
 	char *script;
-
-	options  = talloc_vasprintf(tmp_ctx, fmt, ap);
-	CTDB_NO_MEMORY(ctdb, options);
 
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
 		/* we guarantee that only some specifically allowed event scripts are run
@@ -198,14 +204,6 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 	return 0;
 }
 
-struct ctdb_event_script_state {
-	struct ctdb_context *ctdb;
-	pid_t child;
-	void (*callback)(struct ctdb_context *, int, void *);
-	int fd[2];
-	void *private_data;
-};
-
 /* called when child is finished */
 static void ctdb_event_script_handler(struct event_context *ev, struct fd_event *fde, 
 				      uint16_t flags, void *p)
@@ -236,7 +234,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 	void *private_data = state->private_data;
 	struct ctdb_context *ctdb = state->ctdb;
 
-	DEBUG(DEBUG_ERR,("event script timed out\n"));
+	DEBUG(DEBUG_ERR,("event script timed out : %s\n", state->options));
 	talloc_free(state);
 	callback(ctdb, -1, private_data);
 }
@@ -272,6 +270,8 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	state->ctdb = ctdb;
 	state->callback = callback;
 	state->private_data = private_data;
+	state->options = talloc_vasprintf(state, fmt, ap);
+	CTDB_NO_MEMORY(ctdb, state->options);
 	
 	ret = pipe(state->fd);
 	if (ret != 0) {
@@ -294,7 +294,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 			ctdb_restore_scheduler(ctdb);
 		}
 		set_close_on_exec(state->fd[1]);
-		ret = ctdb_event_script_v(ctdb, fmt, ap);
+		ret = ctdb_event_script_v(ctdb, state->options);
 		_exit(ret);
 	}
 
@@ -307,6 +307,8 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 
 	if (!timeval_is_zero(&timeout)) {
 		event_add_timed(ctdb->ev, state, timeout, ctdb_event_script_timeout, state);
+	} else {
+		DEBUG(DEBUG_ERR, (__location__ " eventscript %s called with no timeout\n", fmt));
 	}
 
 	return 0;
