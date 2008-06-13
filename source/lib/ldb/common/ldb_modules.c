@@ -206,6 +206,7 @@ int ldb_try_load_dso(struct ldb_context *ldb, const char *name)
 	void *handle;
 	int (*init_fn) (void);
 	char *modulesdir;
+	int ret;
 
 #ifdef HAVE_DLOPEN
 	if (getenv("LD_LDB_MODULE_PATH") != NULL) {
@@ -234,12 +235,17 @@ int ldb_try_load_dso(struct ldb_context *ldb, const char *name)
 
 	if (init_fn == NULL) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "no symbol `init_module' found in %s: %s\n", path, dlerror());
+		dlclose(handle);
 		return -1;
 	}
 
 	talloc_free(path);
 
-	return init_fn();
+	ret = init_fn();
+	if (ret == -1) {
+		dlclose(handle);
+	}
+	return ret;
 #else
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "no dlopen() - not trying to load %s module\n", name);
 	return -1;

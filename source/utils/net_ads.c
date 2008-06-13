@@ -23,8 +23,6 @@
 #include "includes.h"
 #include "utils/net.h"
 
-#include "libnet/libnet.h"
-
 #ifdef HAVE_ADS
 
 int net_ads_usage(int argc, const char **argv)

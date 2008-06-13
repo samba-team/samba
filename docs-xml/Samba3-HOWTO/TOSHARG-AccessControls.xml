@@ -762,7 +762,7 @@ mystic:/home/hannibal > rm filename
 	<title>Miscellaneous Controls</title>
 
 	<para>
-	The parameter documented in <link linkend="mcoc">Other Controls</link> are often used by administrators 
+	The parameters documented in <link linkend="mcoc">Other Controls</link> are often used by administrators
 	in ways that create inadvertent barriers to file access. Such are the consequences of not understanding the 
 	full implications of &smb.conf; file settings.
 	</para>
@@ -935,10 +935,10 @@ mystic:/home/hannibal > rm filename
 <indexterm><primary>ACLs on share</primary></indexterm>
 <indexterm><primary>Sharing</primary></indexterm>
 <indexterm><primary>Permissions</primary></indexterm>
-			On <application>MS Windows NT4/200x/XP</application> system, ACLs on the share itself are set using native
-			tools, usually from File Manager. For example, in Windows 200x, right-click on the shared folder,
+			On <application>MS Windows NT4/200x/XP</application> systems, ACLs on the share itself are set using
+			tools like the MS Explorer. For example, in Windows 200x, right-click on the shared folder,
 			then select <guimenuitem>Sharing</guimenuitem>, then click on <guilabel>Permissions</guilabel>. The default 
-			Windows NT4/200x permission allows "Everyone" full control on the share.
+			Windows NT4/200x permissions allow the group "Everyone" full control on the share.
 			</para>
 
 			<para>
@@ -946,7 +946,7 @@ mystic:/home/hannibal > rm filename
 <indexterm><primary>MMC</primary></indexterm>
 <indexterm><primary>tool</primary></indexterm>
 			MS Windows 200x and later versions come with a tool called the <application>Computer Management</application>
-			snap-in for the MMC. This tool is located by clicking on <guimenu>Control Panel ->
+			snap-in for the MMC. This tool can be accessed via <guimenu>Control Panel ->
 			Administrative Tools -> Computer Management</guimenu>.
 			</para>
 
