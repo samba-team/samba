@@ -869,6 +869,7 @@ SMBCONFTORT_OBJ = $(SMBCONFTORT_OBJ0) \
 		  $(POPT_LIB_OBJ)
 
 LIBNET_OBJ = libnet/libnet_join.o \
+	     libnet/libnet_samsync.o \
 	     librpc/gen_ndr/ndr_libnet_join.o
 
 NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
