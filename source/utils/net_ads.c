@@ -23,8 +23,6 @@
 #include "includes.h"
 #include "utils/net.h"
 
-#include "libnet/libnet.h"
-
 #ifdef HAVE_ADS
 
 /* when we do not have sufficient input parameters to contact a remote domain

@@ -23,6 +23,7 @@
  */
 
 #include "lib/netapi/netapi.h"
+#include "libnet/libnet.h"
 
 struct net_context {
 	const char *opt_requester_name;
