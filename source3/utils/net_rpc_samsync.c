@@ -356,7 +356,14 @@ static NTSTATUS samsync_init_context(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->mode = mode;
-	ctx->domain_sid = domain_sid;
+
+	if (domain_sid) {
+		ctx->domain_sid = sid_dup_talloc(mem_ctx, domain_sid);
+		NT_STATUS_HAVE_NO_MEMORY(ctx->domain_sid);
+
+		ctx->domain_sid_str = sid_string_talloc(mem_ctx, ctx->domain_sid);
+		NT_STATUS_HAVE_NO_MEMORY(ctx->domain_sid_str);
+	}
 
 	*ctx_p = ctx;
 
@@ -2079,21 +2086,16 @@ static NTSTATUS fetch_groupmem_info_to_ldif(struct netr_DELTA_GROUP_MEMBER *r,
 ****************************************************************/
 
 static NTSTATUS ldif_init_context(TALLOC_CTX *mem_ctx,
-				  struct samsync_context *ctx,
-				  enum netr_SamDatabaseID database_id)
+				  enum netr_SamDatabaseID database_id,
+				  const char *ldif_filename,
+				  const char *domain_sid_str,
+				  struct samsync_ldif_context **ctx)
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct samsync_ldif_context *r;
 	const char *add_template = "/tmp/add.ldif.XXXXXX";
 	const char *mod_template = "/tmp/mod.ldif.XXXXXX";
 	const char *builtin_sid = "S-1-5-32";
-
-	if (ctx->ldif && ctx->ldif->initialized) {
-		return NT_STATUS_OK;
-	}
-
-	r = TALLOC_ZERO_P(mem_ctx, struct samsync_ldif_context);
-	NT_STATUS_HAVE_NO_MEMORY(r);
 
 	/* Get other smb.conf data */
 	if (!(lp_workgroup()) || !*(lp_workgroup())) {
@@ -2102,26 +2104,31 @@ static NTSTATUS ldif_init_context(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Get the ldap suffix */
-	r->suffix = lp_ldap_suffix();
-	if (r->suffix == NULL || strcmp(r->suffix, "") == 0) {
+	if (!(lp_ldap_suffix()) || !*(lp_ldap_suffix())) {
 		DEBUG(0,("ldap suffix missing from smb.conf--exiting\n"));
 		exit(1);
 	}
 
-	/* Get the sid */
-	ctx->domain_sid_str = sid_string_talloc(mem_ctx, ctx->domain_sid);
-	NT_STATUS_HAVE_NO_MEMORY(ctx->domain_sid_str);
+	if (*ctx && (*ctx)->initialized) {
+		return NT_STATUS_OK;
+	}
+
+	r = TALLOC_ZERO_P(mem_ctx, struct samsync_ldif_context);
+	NT_STATUS_HAVE_NO_MEMORY(r);
+
+	/* Get the ldap suffix */
+	r->suffix = lp_ldap_suffix();
 
 	/* Ensure we have an output file */
-	if (ctx->ldif_filename) {
-		r->ldif_file = fopen(ctx->ldif_filename, "a");
+	if (ldif_filename) {
+		r->ldif_file = fopen(ldif_filename, "a");
 	} else {
 		r->ldif_file = stdout;
 	}
 
 	if (!r->ldif_file) {
-		fprintf(stderr, "Could not open %s\n", ctx->ldif_filename);
-		DEBUG(1, ("Could not open %s\n", ctx->ldif_filename));
+		fprintf(stderr, "Could not open %s\n", ldif_filename);
+		DEBUG(1, ("Could not open %s\n", ldif_filename));
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -2167,7 +2174,7 @@ static NTSTATUS ldif_init_context(TALLOC_CTX *mem_ctx,
 	/* Initial database population */
 	if (database_id == SAM_DATABASE_DOMAIN) {
 
-		status = populate_ldap_for_ldif(ctx->domain_sid_str,
+		status = populate_ldap_for_ldif(domain_sid_str,
 						r->suffix,
 						builtin_sid,
 						r->add_file);
@@ -2178,7 +2185,7 @@ static NTSTATUS ldif_init_context(TALLOC_CTX *mem_ctx,
 		status = map_populate_groups(mem_ctx,
 					     r->groupmap,
 					     r->accountmap,
-					     ctx->domain_sid_str,
+					     domain_sid_str,
 					     r->suffix,
 					     builtin_sid);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2188,7 +2195,7 @@ static NTSTATUS ldif_init_context(TALLOC_CTX *mem_ctx,
 
 	r->initialized = true;
 
-	ctx->ldif = r;
+	*ctx = r;
 
 	return NT_STATUS_OK;
  done:
@@ -2237,10 +2244,8 @@ static void ldif_free_context(struct samsync_ldif_context *r)
 ****************************************************************/
 
 static void ldif_write_output(enum netr_SamDatabaseID database_id,
-			      struct samsync_context *ctx)
+			      struct samsync_ldif_context *l)
 {
-	struct samsync_ldif_context *l = ctx->ldif;
-
 	/* Write ldif data to the user's file */
 	if (database_id == SAM_DATABASE_DOMAIN) {
 		fprintf(l->ldif_file,
@@ -2407,7 +2412,11 @@ static NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 	int i;
 	uint32_t g_index = 0, a_index = 0;
 
-	status = ldif_init_context(mem_ctx, ctx, database_id);
+	status = ldif_init_context(mem_ctx,
+				   database_id,
+				   ctx->ldif_filename,
+				   ctx->domain_sid_str,
+				   &ctx->ldif);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
@@ -2428,7 +2437,7 @@ static NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 
 	/* This was the last query */
 	if (NT_STATUS_IS_OK(result)) {
-		ldif_write_output(database_id, ctx);
+		ldif_write_output(database_id, ctx->ldif);
 		ldif_free_context(ctx->ldif);
 		ctx->ldif = NULL;
 	}
@@ -2500,7 +2509,6 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 	}
 
 	/* fetch domain */
-	ctx->domain_sid = domain_sid;
 	result = process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
 				  fetch_sam_entries, ctx);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2513,7 +2521,8 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 	}
 
 	/* fetch builtin */
-	ctx->domain_sid = &global_sid_Builtin;
+	ctx->domain_sid = sid_dup_talloc(mem_ctx, &global_sid_Builtin);
+	ctx->domain_sid_str = sid_string_talloc(mem_ctx, ctx->domain_sid);
 	result = process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
 				  fetch_sam_entries, ctx);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2553,7 +2562,6 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 	}
 
 	/* fetch domain */
-	ctx->domain_sid = domain_sid;
 	status = process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
 				  fetch_sam_entries_ldif, ctx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2566,7 +2574,8 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 	}
 
 	/* fetch builtin */
-	ctx->domain_sid = &global_sid_Builtin;
+	ctx->domain_sid = sid_dup_talloc(mem_ctx, &global_sid_Builtin);
+	ctx->domain_sid_str = sid_string_talloc(mem_ctx, ctx->domain_sid);
 	status = process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
 				  fetch_sam_entries_ldif, ctx);
 	if (!NT_STATUS_IS_OK(status)) {
