@@ -6807,16 +6807,34 @@ static int rpc_samdump(struct net_context *c, int argc, const char **argv) {
 }
 
 /* syncronise sam database via samsync rpc calls */
-static int rpc_vampire(struct net_context *c, int argc, const char **argv) {
-	if (c->display_usage) {
-		d_printf("Usage:\n"
-			 "net rpc vampire\n"
-			 "    Vampire remote SAM database\n");
-		return 0;
+static int rpc_vampire(struct net_context *c, int argc, const char **argv)
+{
+	struct functable func[] = {
+		{
+			"ldif",
+			rpc_vampire_ldif,
+			NET_TRANSPORT_RPC,
+			"Dump remote SAM database to ldif",
+			"net rpc vampire ldif\n"
+			"    Dump remote SAM database to LDIF file or stdout"
+		},
+		{NULL, NULL, 0, NULL, NULL}
+	};
+
+	if (argc == 0) {
+		if (c->display_usage) {
+			d_printf("Usage:\n"
+				 "net rpc vampire\n"
+				 "    Vampire remote SAM database\n");
+			return 0;
+		}
+
+		return run_rpc_command(c, NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS,
+				       rpc_vampire_internals,
+				       argc, argv);
 	}
 
-	return run_rpc_command(c, NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS,
-			       rpc_vampire_internals,  argc, argv);
+	return net_run_function(c, argc, argv, "net rpc vampire", func);
 }
 
 /**
