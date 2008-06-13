@@ -120,7 +120,7 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
-* Fri Jun 13 2003 : Version 1.0.42
+* Fri Jun 13 2008 : Version 1.0.42
  - When event scripts have hung/timedout more than EventScriptBanCount times
    in a row the node will ban itself.
  - Many updates to persistent write tests and the test scripts.
