@@ -188,6 +188,11 @@ void dump_core_setup(const char *progname)
 		become_root();
 	}
 
+	if (corepath == NULL) {
+		DEBUG(0, ("Can not dump core: corepath not set up\n"));
+		exit(1);
+	}
+
 	if (*corepath != '\0') {
 		/* The chdir might fail if we dump core before we finish
 		 * processing the config file.
