@@ -375,6 +375,12 @@ static int traverse_sessionid(struct db_record *db, void *state)
 	msg_ctx = messaging_init(NULL, procid_self(),
 				 event_context_init(NULL));
 
+	if (msg_ctx == NULL) {
+		fprintf(stderr, "messaging_init failed\n");
+		ret = -1;
+		goto done;
+	}
+
 	db_tdb2_setup_messaging(msg_ctx, true);
 
 	if (!lp_load(get_dyn_CONFIGFILE(),False,False,False,True)) {
