@@ -1767,8 +1767,10 @@ SHLIBEXT="so"
 			;;
 		*aix*) AC_DEFINE(AIX,1,[Whether the host os is aix])
 			BLDSHARED="true"
-			LDSHFLAGS="-Wl,-G,-bexpall,-bbigtoc"
-			DYNEXP="-Wl,-brtl,-bexpall,-bbigtoc"
+			# use expfull to export underscored symbols
+			# add rtl to LDSHFLAGS to fix /lib/crt0.o warning
+			LDSHFLAGS="-Wl,-G,-bexpfull,-bbigtoc,-brtl"
+			DYNEXP="-Wl,-brtl,-bexpfull,-bbigtoc"
 			PICFLAG="-O2"
 			# as AIX code is always position independent...
 			# .po will just create compile warnings, use po.o:

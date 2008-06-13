@@ -783,6 +783,7 @@ enum flush_reason_enum {
     NUM_FLUSH_REASONS};
 
 #include "nss_info.h"
+#include "modules/nfs4_acls.h"
 
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
