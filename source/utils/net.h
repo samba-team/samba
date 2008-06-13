@@ -23,6 +23,7 @@
  */
 
 #include "lib/netapi/netapi.h"
+#include "libnet/libnet.h"
 
 typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *,
 				const char *, 

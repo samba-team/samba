@@ -336,6 +336,7 @@ static void dump_database(struct rpc_pipe_client *pipe_hnd,
 	struct netr_Authenticator return_authenticator;
 	uint16_t restart_state = 0;
 	uint32_t sync_context = 0;
+	DATA_BLOB session_key;
 
 	ZERO_STRUCT(return_authenticator);
 
@@ -385,6 +386,14 @@ static void dump_database(struct rpc_pipe_client *pipe_hnd,
 		if (NT_STATUS_IS_ERR(result)) {
 			break;
 		}
+
+		session_key = data_blob_const(pipe_hnd->dc->sess_key, 16);
+
+		samsync_fix_delta_array(mem_ctx,
+					&session_key,
+					true,
+					database_id,
+					delta_enum_array);
 
 		/* Display results */
 		for (i = 0; i < delta_enum_array->num_deltas; i++) {
@@ -1197,6 +1206,7 @@ static NTSTATUS fetch_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type,
 	enum netr_SamDatabaseID database_id = db_type;
 	uint16_t restart_state = 0;
 	uint32_t sync_context = 0;
+	DATA_BLOB session_key;
 
 	if (!(mem_ctx = talloc_init("fetch_database")))
 		return NT_STATUS_NO_MEMORY;
@@ -1242,6 +1252,14 @@ static NTSTATUS fetch_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type,
 		if (NT_STATUS_IS_ERR(result)) {
 			break;
 		}
+
+		session_key = data_blob_const(pipe_hnd->dc->sess_key, 16);
+
+		samsync_fix_delta_array(mem_ctx,
+					&session_key,
+					true,
+					database_id,
+					delta_enum_array);
 
 		for (i = 0; i < delta_enum_array->num_deltas; i++) {
 			fetch_sam_entry(&delta_enum_array->delta_enum[i], dom_sid);
@@ -2018,6 +2036,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	enum netr_SamDatabaseID database_id = db_type;
 	uint16_t restart_state = 0;
 	uint32_t sync_context = 0;
+	DATA_BLOB session_key;
 
 	/* Set up array for mapping accounts to groups */
 	/* Array element is the group rid */
@@ -2149,6 +2168,14 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 		if (NT_STATUS_IS_ERR(result)) {
 			break;
 		}
+
+		session_key = data_blob_const(pipe_hnd->dc->sess_key, 16);
+
+		samsync_fix_delta_array(mem_ctx,
+					&session_key,
+					true,
+					database_id,
+					delta_enum_array);
 
 		num_deltas = delta_enum_array->num_deltas;
 
