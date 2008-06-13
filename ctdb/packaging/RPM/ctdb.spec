@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 41
+Release: 42
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,10 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Fri Jun 13 2003 : Version 1.0.42
+ - When event scripts have hung/timedout more than EventScriptBanCount times
+   in a row the node will ban itself.
+ - Many updates to persistent write tests and the test scripts.
 * Wed May 28 2008 : Version 1.0.41
  - Reactivate the safe writes to persistent databases and solve the
    locking issues. Locking issues are solved the only possible way,
