@@ -343,6 +343,54 @@ static NTSTATUS display_sam_entries(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+const char *samsync_debug_str(TALLOC_CTX *mem_ctx,
+			      enum net_samsync_mode mode,
+			      enum netr_SamDatabaseID database_id)
+{
+	const char *action = NULL;
+	const char *str = NULL;
+
+	switch (mode) {
+		case NET_SAMSYNC_MODE_DUMP:
+			action = "Dumping (to stdout)";
+			break;
+		case NET_SAMSYNC_MODE_FETCH_PASSDB:
+			action = "Fetching (to passdb)";
+			break;
+		case NET_SAMSYNC_MODE_FETCH_LDIF:
+			action = "Fetching (to ldif)";
+			break;
+		default:
+			action = "Unknown";
+			break;
+	}
+
+	switch (database_id) {
+		case SAM_DATABASE_DOMAIN:
+			str = talloc_asprintf(mem_ctx, "%s DOMAIN database",
+				action);
+			break;
+		case SAM_DATABASE_BUILTIN:
+			str = talloc_asprintf(mem_ctx, "%s BUILTIN database",
+				action);
+			break;
+		case SAM_DATABASE_PRIVS:
+			str = talloc_asprintf(mem_ctx, "%s PRIVS database",
+				action);
+			break;
+		default:
+			str = talloc_asprintf(mem_ctx, "%s unknown database type %u",
+				action, database_id);
+			break;
+	}
+
+	if (!str) {
+		return NULL;
+	}
+
+	return str;
+}
+
 typedef NTSTATUS (*samsync_fn_t)(TALLOC_CTX *,
 				 enum netr_SamDatabaseID,
 				 struct netr_DELTA_ENUM_ARRAY *,
@@ -362,8 +410,8 @@ static NTSTATUS process_database(struct rpc_pipe_client *pipe_hnd,
 	struct netr_Authenticator return_authenticator;
 	uint16_t restart_state = 0;
 	uint32_t sync_context = 0;
+	const char *debug_str;
 	DATA_BLOB session_key;
-	const char *action = NULL;
 
 	ZERO_STRUCT(return_authenticator);
 
@@ -371,35 +419,9 @@ static NTSTATUS process_database(struct rpc_pipe_client *pipe_hnd,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	switch (ctx->mode) {
-		case NET_SAMSYNC_MODE_DUMP:
-			action = "Dumping (to stdout)";
-			break;
-		case NET_SAMSYNC_MODE_FETCH_PASSDB:
-			action = "Fetching (to passdb)";
-			break;
-		case NET_SAMSYNC_MODE_FETCH_LDIF:
-			action = "Fetching (to ldif)";
-			break;
-		default:
-			action = "Unknown";
-			break;
-	}
-
-	switch (database_id) {
-	case SAM_DATABASE_DOMAIN:
-		d_fprintf(stderr, "%s DOMAIN database\n", action);
-		break;
-	case SAM_DATABASE_BUILTIN:
-		d_fprintf(stderr, "%s BUILTIN database\n", action);
-		break;
-	case SAM_DATABASE_PRIVS:
-		d_fprintf(stderr, "%s PRIVS databases\n", action);
-		break;
-	default:
-		d_fprintf(stderr, "%s unknown database type %u\n",
-			action, database_id);
-		break;
+	debug_str = samsync_debug_str(mem_ctx, ctx->mode, database_id);
+	if (debug_str) {
+		d_fprintf(stderr, "%s\n", debug_str);
 	}
 
 	do {
