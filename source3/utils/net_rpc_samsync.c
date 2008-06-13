@@ -343,6 +343,26 @@ static NTSTATUS display_sam_entries(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS samsync_init_context(TALLOC_CTX *mem_ctx,
+				     const struct dom_sid *domain_sid,
+				     enum net_samsync_mode mode,
+				     struct samsync_context **ctx_p)
+{
+	struct samsync_context *ctx;
+
+	*ctx_p = NULL;
+
+	ctx = TALLOC_ZERO_P(mem_ctx, struct samsync_context);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	ctx->mode = mode;
+	ctx->domain_sid = domain_sid;
+
+	*ctx_p = ctx;
+
+	return NT_STATUS_OK;
+}
+
 const char *samsync_debug_str(TALLOC_CTX *mem_ctx,
 			      enum net_samsync_mode mode,
 			      enum netr_SamDatabaseID database_id)
@@ -487,13 +507,16 @@ NTSTATUS rpc_samdump_internals(struct net_context *c,
 				int argc,
 				const char **argv)
 {
-	struct samsync_context *ctx;
+	struct samsync_context *ctx = NULL;
+	NTSTATUS status;
 
-	ctx = TALLOC_ZERO_P(mem_ctx, struct samsync_context);
-	NT_STATUS_HAVE_NO_MEMORY(ctx);
-
-	ctx->mode = NET_SAMSYNC_MODE_DUMP;
-	ctx->domain_sid = domain_sid;
+	status = samsync_init_context(mem_ctx,
+				      domain_sid,
+				      NET_SAMSYNC_MODE_DUMP,
+				      &ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
 			 display_sam_entries, ctx);
@@ -503,6 +526,8 @@ NTSTATUS rpc_samdump_internals(struct net_context *c,
 
 	process_database(pipe_hnd, SAM_DATABASE_PRIVS,
 			 display_sam_entries, ctx);
+
+	TALLOC_FREE(ctx);
 
 	return NT_STATUS_OK;
 }
@@ -2451,11 +2476,16 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
         NTSTATUS result;
 	fstring my_dom_sid_str;
 	fstring rem_dom_sid_str;
-	struct samsync_context *ctx;
+	struct samsync_context *ctx = NULL;
 	samsync_fn_t *fn;
 
-	ctx = TALLOC_ZERO_P(mem_ctx, struct samsync_context);
-	NT_STATUS_HAVE_NO_MEMORY(ctx);
+	result = samsync_init_context(mem_ctx,
+				      domain_sid,
+				      0,
+				      &ctx);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
 
 	if (!sid_equal(domain_sid, get_global_sam_sid())) {
 		d_printf("Cannot import users from %s at this time, "
@@ -2507,6 +2537,8 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 
 	/* Currently we crash on PRIVS somewhere in unmarshalling */
 	/* Dump_database(cli, SAM_DATABASE_PRIVS, &ret_creds); */
+
+	TALLOC_FREE(ctx);
 
  fail:
 	return result;
