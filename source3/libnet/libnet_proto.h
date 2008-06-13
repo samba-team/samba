@@ -43,4 +43,12 @@ WERROR libnet_Unjoin(TALLOC_CTX *mem_ctx,
 _PUBLIC_ void ndr_print_libnet_JoinCtx(struct ndr_print *ndr, const char *name, int flags, const struct libnet_JoinCtx *r);
 _PUBLIC_ void ndr_print_libnet_UnjoinCtx(struct ndr_print *ndr, const char *name, int flags, const struct libnet_UnjoinCtx *r);
 
+/* The following definitions come from libnet/libnet_samsync.c  */
+
+NTSTATUS samsync_fix_delta_array(TALLOC_CTX *mem_ctx,
+				 DATA_BLOB *session_key,
+				 bool rid_crypt,
+				 enum netr_SamDatabaseID database_id,
+				 struct netr_DELTA_ENUM_ARRAY *r);
+
 #endif /*  _LIBNET_PROTO_H_  */
