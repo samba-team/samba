@@ -2473,15 +2473,12 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 				int argc,
 				const char **argv)
 {
-        NTSTATUS result;
-	fstring my_dom_sid_str;
-	fstring rem_dom_sid_str;
+	NTSTATUS result;
 	struct samsync_context *ctx = NULL;
-	samsync_fn_t *fn;
 
 	result = samsync_init_context(mem_ctx,
 				      domain_sid,
-				      0,
+				      NET_SAMSYNC_MODE_FETCH_PASSDB,
 				      &ctx);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
@@ -2495,27 +2492,17 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 			 "workgroup=%s\n\n in your smb.conf?\n",
 			 domain_name,
 			 get_global_sam_name(),
-			 sid_to_fstring(my_dom_sid_str,
-					get_global_sam_sid()),
-			 domain_name, sid_to_fstring(rem_dom_sid_str,
-						     domain_sid),
+			 sid_string_dbg(get_global_sam_sid()),
+			 domain_name,
+			 sid_string_dbg(domain_sid),
 			 domain_name);
 		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-        if (argc >= 1 && (strcmp(argv[0], "ldif") == 0)) {
-		ctx->mode = NET_SAMSYNC_MODE_FETCH_LDIF;
-		ctx->ldif_filename = argv[1];
-		fn = (samsync_fn_t *)fetch_sam_entries_ldif;
-	} else {
-		ctx->mode = NET_SAMSYNC_MODE_FETCH_PASSDB;
-		fn = (samsync_fn_t *)fetch_sam_entries;
 	}
 
 	/* fetch domain */
 	ctx->domain_sid = domain_sid;
 	result = process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
-				  (samsync_fn_t)fn, ctx);
+				  fetch_sam_entries, ctx);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Failed to fetch domain database: %s\n",
 			  nt_errstr(result));
@@ -2528,18 +2515,81 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 	/* fetch builtin */
 	ctx->domain_sid = &global_sid_Builtin;
 	result = process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
-				  (samsync_fn_t)fn, ctx);
+				  fetch_sam_entries, ctx);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Failed to fetch builtin database: %s\n",
 			  nt_errstr(result));
 		goto fail;
 	}
 
-	/* Currently we crash on PRIVS somewhere in unmarshalling */
-	/* Dump_database(cli, SAM_DATABASE_PRIVS, &ret_creds); */
-
 	TALLOC_FREE(ctx);
 
  fail:
 	return result;
+}
+
+NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
+				    const DOM_SID *domain_sid,
+				    const char *domain_name,
+				    struct cli_state *cli,
+				    struct rpc_pipe_client *pipe_hnd,
+				    TALLOC_CTX *mem_ctx,
+				    int argc,
+				    const char **argv)
+{
+	NTSTATUS status;
+	struct samsync_context *ctx = NULL;
+
+	status = samsync_init_context(mem_ctx,
+				      domain_sid,
+				      NET_SAMSYNC_MODE_FETCH_LDIF,
+				      &ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (argc >= 1) {
+		ctx->ldif_filename = argv[1];
+	}
+
+	/* fetch domain */
+	ctx->domain_sid = domain_sid;
+	status = process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
+				  fetch_sam_entries_ldif, ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "Failed to fetch domain database: %s\n",
+			  nt_errstr(status));
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED))
+			d_fprintf(stderr, "Perhaps %s is a Windows 2000 "
+				  "native mode domain?\n", domain_name);
+		goto fail;
+	}
+
+	/* fetch builtin */
+	ctx->domain_sid = &global_sid_Builtin;
+	status = process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
+				  fetch_sam_entries_ldif, ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "Failed to fetch builtin database: %s\n",
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	TALLOC_FREE(ctx);
+
+ fail:
+	return status;
+}
+
+int rpc_vampire_ldif(struct net_context *c, int argc, const char **argv)
+{
+	if (c->display_usage) {
+		d_printf("Usage\n"
+			 "net rpc vampire ldif\n"
+			 "    Dump remote SAM database to LDIF file or stdout\n");
+		return 0;
+	}
+
+	return run_rpc_command(c, NULL, PI_NETLOGON, 0, rpc_vampire_ldif_internals,
+			       argc, argv);
 }
