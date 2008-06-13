@@ -1301,7 +1301,7 @@ static int recover_database(struct ctdb_recoverd *rec,
 static int do_recovery(struct ctdb_recoverd *rec, 
 		       TALLOC_CTX *mem_ctx, uint32_t pnn,
 		       struct ctdb_node_map *nodemap, struct ctdb_vnn_map *vnnmap,
-		       uint32_t culprit)
+		       int32_t culprit)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 	int i, j, ret;
@@ -1315,7 +1315,9 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	/* if recovery fails, force it again */
 	rec->need_recovery = true;
 
-	ctdb_set_culprit(rec, culprit);
+	if (culprit != -1) {
+		ctdb_set_culprit(rec, culprit);
+	}
 
 	if (rec->culprit_counter > 2*nodemap->num) {
 		DEBUG(DEBUG_NOTICE,("Node %u has caused %u recoveries in %.0f seconds - banning it for %u seconds\n",
@@ -2601,7 +2603,7 @@ again:
 
 	if (rec->need_recovery) {
 		/* a previous recovery didn't finish */
-		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, ctdb->pnn);
+		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, -1);
 		goto again;		
 	}
 
