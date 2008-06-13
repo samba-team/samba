@@ -99,10 +99,10 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  * @param pipe_name the pipe to connect to (usually a PIPE_ constant)
  * @param conn_flag a NET_FLAG_ combination.  Passed to 
  *                   net_make_ipc_connection.
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
- * @return A shell status integer (0 for success)
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
+ * @return A shell status integer (0 for success).
  */
 
 int run_rpc_command(struct cli_state *cli_arg,
@@ -202,14 +202,14 @@ int run_rpc_command(struct cli_state *cli_arg,
  * Force a change of the trust acccount password.
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid aquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on compleation of the function.
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -229,11 +229,11 @@ static NTSTATUS rpc_changetrustpw_internals(const DOM_SID *domain_sid,
 /** 
  * Force a change of the trust acccount password.
  *
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 
 int net_rpc_changetrustpw(int argc, const char **argv) 
@@ -251,14 +251,14 @@ int net_rpc_changetrustpw(int argc, const char **argv)
  * The password should be created with 'server manager' or equiv first.
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid aquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on compleation of the function.
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -327,9 +327,9 @@ static NTSTATUS rpc_oldjoin_internals(const DOM_SID *domain_sid,
 /** 
  * Join a domain, the old way.
  *
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return A shell status integer (0 for success)
  **/
@@ -345,11 +345,11 @@ static int net_rpc_perform_oldjoin(int argc, const char **argv)
 /** 
  * Join a domain, the old way.  This function exists to allow
  * the message to be displayed when oldjoin was explicitly 
- * requested, but not when it was implied by "net rpc join"
+ * requested, but not when it was implied by "net rpc join".
  *
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return A shell status integer (0 for success)
  **/
@@ -366,10 +366,10 @@ static int net_rpc_oldjoin(int argc, const char **argv)
 }
 
 /** 
- * Basic usage function for 'net rpc join'
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
+ * Basic usage function for 'net rpc join'.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  **/
 
 static int rpc_join_usage(int argc, const char **argv) 
@@ -388,12 +388,12 @@ static int rpc_join_usage(int argc, const char **argv)
 
 /** 
  * 'net rpc join' entrypoint.
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * Main 'net_rpc_join()' (where the admin username/password is used) is 
- * in net_rpc_join.c
+ * in net_rpc_join.c.
  * Try to just change the password, but if that doesn't work, use/prompt
  * for a username/password.
  **/
@@ -424,12 +424,12 @@ int net_rpc_join(int argc, const char **argv)
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid acquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -491,8 +491,8 @@ NTSTATUS rpc_info_internals(const DOM_SID *domain_sid,
 /** 
  * 'net rpc info' entrypoint.
  * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  **/
 
 int net_rpc_info(int argc, const char **argv) 
@@ -506,14 +506,14 @@ int net_rpc_info(int argc, const char **argv)
  * Fetch domain SID into the local secrets.tdb
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid acquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -542,9 +542,9 @@ static NTSTATUS rpc_getsid_internals(const DOM_SID *domain_sid,
 
 /** 
  * 'net rpc getsid' entrypoint.
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  **/
 
 int net_rpc_getsid(int argc, const char **argv) 
@@ -557,9 +557,9 @@ int net_rpc_getsid(int argc, const char **argv)
 /****************************************************************************/
 
 /**
- * Basic usage function for 'net rpc user'
+ * Basic usage function for 'net rpc user'.
  * @param argc	Standard main() style argc.
- * @param argv	Standard main() style argv.  Initial components are already
+ * @param argv	Standard main() style argv. Initial components are already
  *		stripped.
  **/
 
@@ -569,11 +569,11 @@ static int rpc_user_usage(int argc, const char **argv)
 }
 
 /** 
- * Add a new user to a remote RPC server
+ * Add a new user to a remote RPC server.
  *
- * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argc.
  * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ *              stripped.
  *
  * @return A shell status integer (0 for success)
  **/
@@ -611,17 +611,17 @@ static int rpc_user_add(int argc, const char **argv)
 }
 
 /** 
- * Rename a user on a remote RPC server
+ * Rename a user on a remote RPC server.
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid acquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -729,13 +729,13 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 }
 
 /** 
- * Rename a user on a remote RPC server
+ * Rename a user on a remote RPC server.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 
 static int rpc_user_rename(int argc, const char **argv) 
@@ -745,13 +745,13 @@ static int rpc_user_rename(int argc, const char **argv)
 }
 
 /** 
- * Delete a user from a remote RPC server
+ * Delete a user from a remote RPC server.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 
 static int rpc_user_delete(int argc, const char **argv) 
@@ -779,17 +779,17 @@ static int rpc_user_delete(int argc, const char **argv)
 }
 
 /** 
- * Set a password for a user on a remote RPC server
+ * Set a password for a user on a remote RPC server.
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid acquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -902,13 +902,13 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
 }	
 
 /** 
- * Set a user's password on a remote RPC server
+ * Set a user's password on a remote RPC server.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 
 static int rpc_user_password(int argc, const char **argv) 
@@ -918,17 +918,17 @@ static int rpc_user_password(int argc, const char **argv)
 }
 
 /** 
- * List user's groups on a remote RPC server
+ * List user's groups on a remote RPC server.
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid acquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
  * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -1032,13 +1032,13 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 }
 
 /** 
- * List a user's groups from a remote RPC server
+ * List a user's groups from a remote RPC server.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 
 static int rpc_user_info(int argc, const char **argv) 
@@ -1048,17 +1048,17 @@ static int rpc_user_info(int argc, const char **argv)
 }
 
 /** 
- * List users on a remote RPC server
+ * List users on a remote RPC server.
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid acquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -1140,9 +1140,9 @@ static NTSTATUS rpc_user_list_internals(const DOM_SID *domain_sid,
 
 /** 
  * 'net rpc user' entrypoint.
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  **/
 
 int net_rpc_user(int argc, const char **argv) 
@@ -1555,9 +1555,9 @@ struct rpc_sh_cmd *net_rpc_user_cmds(TALLOC_CTX *mem_ctx,
 /****************************************************************************/
 
 /**
- * Basic usage function for 'net rpc group'
+ * Basic usage function for 'net rpc group'.
  * @param argc	Standard main() style argc.
- * @param argv	Standard main() style argv.  Initial components are already
+ * @param argv	Standard main() style argv. Initial components are already
  *		stripped.
  **/
 
@@ -1567,17 +1567,17 @@ static int rpc_group_usage(int argc, const char **argv)
 }
 
 /**
- * Delete group on a remote RPC server
+ * Delete group on a remote RPC server.
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through.
+ * argc, argv which are passed through.
  *
- * @param domain_sid The domain sid acquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -2387,17 +2387,17 @@ static int rpc_group_delmem(int argc, const char **argv)
 }
 
 /** 
- * List groups on a remote RPC server
+ * List groups on a remote RPC server.
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid acquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -2994,9 +2994,9 @@ static int rpc_group_rename(int argc, const char **argv)
 
 /** 
  * 'net rpc group' entrypoint.
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  **/
 
 int net_rpc_group(int argc, const char **argv) 
@@ -3029,17 +3029,17 @@ static int rpc_share_usage(int argc, const char **argv)
 }
 
 /** 
- * Add a share on a remote RPC server
+ * Add a share on a remote RPC server.
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid acquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -3103,17 +3103,17 @@ static int rpc_share_add(int argc, const char **argv)
 }
 
 /** 
- * Delete a share on a remote RPC server
+ * Delete a share on a remote RPC server.
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid acquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -3135,14 +3135,14 @@ static NTSTATUS rpc_share_del_internals(const DOM_SID *domain_sid,
 }
 
 /** 
- * Delete a share on a remote RPC server
+ * Delete a share on a remote RPC server.
  *
- * @param domain_sid The domain sid acquired from the remote server
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param domain_sid The domain sid acquired from the remote server.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 static int rpc_share_delete(int argc, const char **argv)
 {
@@ -3263,17 +3263,17 @@ done:
 }
 
 /** 
- * List shares on a remote RPC server
+ * List shares on a remote RPC server.
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid acquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -3318,8 +3318,8 @@ static NTSTATUS rpc_share_list_internals(const DOM_SID *domain_sid,
 /*** 
  * 'net rpc share list' entrypoint.
  * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  **/
 static int rpc_share_list(int argc, const char **argv)
 {
@@ -3362,17 +3362,17 @@ static bool check_share_sanity(struct cli_state *cli, const char *netname, uint3
 }
 
 /** 
- * Migrate shares from a remote RPC server to the local RPC server
+ * Migrate shares from a remote RPC server to the local RPC server.
  *
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid acquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destroyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -3455,13 +3455,13 @@ done:
 }
 
 /** 
- * Migrate shares from a rpc-server to another
+ * Migrate shares from a rpc-server to another.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 static int rpc_share_migrate_shares(int argc, const char **argv)
 {
@@ -3645,17 +3645,17 @@ bool copy_top_level_perms(struct copy_clistate *cp_clistate,
 }
 
 /** 
- * Sync all files inside a remote share to another share (over smb)
+ * Sync all files inside a remote share to another share (over smb).
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid acquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -3786,17 +3786,17 @@ static int rpc_share_migrate_files(int argc, const char **argv)
 }
 
 /** 
- * Migrate share-ACLs from a remote RPC server to the local RPC srever
+ * Migrate share-ACLs from a remote RPC server to the local RPC server.
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid acquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -3877,11 +3877,11 @@ done:
 }
 
 /** 
- * Migrate share-acls from a rpc-server to another
+ * Migrate share-acls from a rpc-server to another.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return A shell status integer (0 for success)
  **/
@@ -3902,9 +3902,9 @@ static int rpc_share_migrate_security(int argc, const char **argv)
  * Migrate shares (including share-definitions, share-acls and files with acls/attrs)
  * from one server to another
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return A shell status integer (0 for success)
  *
@@ -3935,9 +3935,9 @@ static int rpc_share_migrate_all(int argc, const char **argv)
 
 /** 
  * 'net rpc share migrate' entrypoint.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  **/
 static int rpc_share_migrate(int argc, const char **argv)
 {
@@ -4592,17 +4592,17 @@ static void rpc_share_userlist_usage(void)
 }
 	
 /** 
- * List shares on a remote RPC server, including the security descriptors
+ * List shares on a remote RPC server, including the security descriptors.
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid acquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -4748,9 +4748,9 @@ int net_usersidlist_usage(int argc, const char **argv)
 
 /** 
  * 'net rpc share' entrypoint.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  **/
 
 int net_rpc_share(int argc, const char **argv) 
@@ -4906,17 +4906,17 @@ static int rpc_file_usage(int argc, const char **argv)
 }
 
 /** 
- * Close a file on a remote RPC server
+ * Close a file on a remote RPC server.
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid acquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -4934,13 +4934,13 @@ static NTSTATUS rpc_file_close_internals(const DOM_SID *domain_sid,
 }
 
 /** 
- * Close a file on a remote RPC server
+ * Close a file on a remote RPC server.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 static int rpc_file_close(int argc, const char **argv)
 {
@@ -4967,17 +4967,17 @@ static void display_file_info_3(struct srvsvc_NetFileInfo3 *r)
 }
 
 /** 
- * List open files on a remote RPC server
+ * List open files on a remote RPC server.
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid acquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -5035,13 +5035,13 @@ static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
 }
 
 /** 
- * List files for a user on a remote RPC server
+ * List files for a user on a remote RPC server.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 
 static int rpc_file_user(int argc, const char **argv)
@@ -5058,9 +5058,9 @@ static int rpc_file_user(int argc, const char **argv)
 
 /** 
  * 'net rpc file' entrypoint.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  **/
 
 int net_rpc_file(int argc, const char **argv) 
@@ -5083,17 +5083,17 @@ int net_rpc_file(int argc, const char **argv)
 }
 
 /** 
- * ABORT the shutdown of a remote RPC Server over, initshutdown pipe
+ * ABORT the shutdown of a remote RPC Server, over initshutdown pipe.
  *
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid aquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on compleation of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -5120,17 +5120,17 @@ static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid,
 }
 
 /** 
- * ABORT the shutdown of a remote RPC Server,  over winreg pipe
+ * ABORT the shutdown of a remote RPC Server, over winreg pipe.
  *
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid aquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on compleation of the function.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -5157,13 +5157,13 @@ static NTSTATUS rpc_reg_shutdown_abort_internals(const DOM_SID *domain_sid,
 }
 
 /** 
- * ABORT the Shut down of a remote RPC server
+ * ABORT the Shut down of a remote RPC server.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 
 static int rpc_shutdown_abort(int argc, const char **argv) 
@@ -5183,17 +5183,17 @@ static int rpc_shutdown_abort(int argc, const char **argv)
 }
 
 /** 
- * Shut down a remote RPC Server via initshutdown pipe
+ * Shut down a remote RPC Server via initshutdown pipe.
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid aquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on compleation of the function.
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -5236,17 +5236,17 @@ NTSTATUS rpc_init_shutdown_internals(const DOM_SID *domain_sid,
 }
 
 /** 
- * Shut down a remote RPC Server via winreg pipe
+ * Shut down a remote RPC Server via winreg pipe.
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
- * @param domain_sid The domain sid aquired from the remote server
+ * @param domain_sid The domain sid acquired from the remote server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on compleation of the function.
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
  * @return Normal NTSTATUS return.
  **/
@@ -5294,13 +5294,13 @@ NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
 }
 
 /** 
- * Shut down a remote RPC server
+ * Shut down a remote RPC server.
  *
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 
 static int rpc_shutdown(int argc, const char **argv) 
@@ -5328,14 +5328,14 @@ static int rpc_shutdown(int argc, const char **argv)
  * All parameters (except for argc and argv) are passed by run_rpc_command
  * function.
  *
- * @param domain_sid The domain sid acquired from the server
+ * @param domain_sid The domain sid acquired from the server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return normal NTSTATUS return code
+ * @return normal NTSTATUS return code.
  */
 
 static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, 
@@ -5466,8 +5466,8 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 /**
  * Create interdomain trust account for a remote domain.
  *
- * @param argc standard argc
- * @param argv standard argv without initial components
+ * @param argc Standard argc.
+ * @param argv Standard argv without initial components.
  *
  * @return Integer status (0 means success)
  **/
@@ -5489,14 +5489,14 @@ static int rpc_trustdom_add(int argc, const char **argv)
  * All parameters (except for argc and argv) are passed by run_rpc_command
  * function.
  *
- * @param domain_sid The domain sid acquired from the server
+ * @param domain_sid The domain sid acquired from the server.
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
- * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return normal NTSTATUS return code
+ * @return normal NTSTATUS return code.
  */
 
 static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid, 
@@ -5608,10 +5608,10 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 /**
  * Delete interdomain trust account for a remote domain.
  *
- * @param argc standard argc
- * @param argv standard argv without initial components
+ * @param argc Standard argc.
+ * @param argv Standard argv without initial components.
  *
- * @return Integer status (0 means success)
+ * @return Integer status (0 means success).
  **/
 
 static int rpc_trustdom_del(int argc, const char **argv)
@@ -5672,10 +5672,10 @@ static NTSTATUS rpc_trustdom_get_pdc(struct cli_state *cli,
  * Establish trust relationship to a trusting domain.
  * Interdomain account must already be created on remote PDC.
  *
- * @param argc standard argc
- * @param argv standard argv without initial components
+ * @param argc Standard argc.
+ * @param argv Standard argv without initial components.
  *
- * @return Integer status (0 means success)
+ * @return Integer status (0 means success).
  **/
 
 static int rpc_trustdom_establish(int argc, const char **argv)
@@ -5841,12 +5841,12 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 }
 
 /**
- * Revoke trust relationship to the remote domain
+ * Revoke trust relationship to the remote domain.
  *
- * @param argc standard argc
- * @param argv standard argv without initial components
+ * @param argc Standard argc.
+ * @param argv Standard argv without initial components.
  *
- * @return Integer status (0 means success)
+ * @return Integer status (0 means success).
  **/
 
 static int rpc_trustdom_revoke(int argc, const char **argv)
@@ -6389,12 +6389,12 @@ static int rpc_trustdom_list(int argc, const char **argv)
 }
 
 /**
- * Entrypoint for 'net rpc trustdom' code
+ * Entrypoint for 'net rpc trustdom' code.
  *
- * @param argc standard argc
- * @param argv standard argv without initial components
+ * @param argc Standard argc.
+ * @param argv Standard argv without initial components.
  *
- * @return Integer status (0 means success)
+ * @return Integer status (0 means success).
  */
 
 static int rpc_trustdom(int argc, const char **argv)
@@ -6470,17 +6470,17 @@ static int rpc_vampire(int argc, const char **argv) {
 }
 
 /** 
- * Migrate everything from a print-server
+ * Migrate everything from a print-server.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  *
  * The order is important !
  * To successfully add drivers the print-queues have to exist !
- * Applying ACLs should be the last step, because you're easily locked out
+ * Applying ACLs should be the last step, because you're easily locked out.
  *
  **/
 static int rpc_printer_migrate_all(int argc, const char **argv)
@@ -6513,13 +6513,13 @@ static int rpc_printer_migrate_all(int argc, const char **argv)
 }
 
 /** 
- * Migrate print-drivers from a print-server
+ * Migrate print-drivers from a print-server.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 static int rpc_printer_migrate_drivers(int argc, const char **argv)
 {
@@ -6534,13 +6534,13 @@ static int rpc_printer_migrate_drivers(int argc, const char **argv)
 }
 
 /** 
- * Migrate print-forms from a print-server
+ * Migrate print-forms from a print-server.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 static int rpc_printer_migrate_forms(int argc, const char **argv)
 {
@@ -6555,13 +6555,13 @@ static int rpc_printer_migrate_forms(int argc, const char **argv)
 }
 
 /** 
- * Migrate printers from a print-server
+ * Migrate printers from a print-server.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 static int rpc_printer_migrate_printers(int argc, const char **argv)
 {
@@ -6576,13 +6576,13 @@ static int rpc_printer_migrate_printers(int argc, const char **argv)
 }
 
 /** 
- * Migrate printer-ACLs from a print-server
+ * Migrate printer-ACLs from a print-server.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 static int rpc_printer_migrate_security(int argc, const char **argv)
 {
@@ -6597,13 +6597,13 @@ static int rpc_printer_migrate_security(int argc, const char **argv)
 }
 
 /** 
- * Migrate printer-settings from a print-server
+ * Migrate printer-settings from a print-server.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 static int rpc_printer_migrate_settings(int argc, const char **argv)
 {
@@ -6619,9 +6619,9 @@ static int rpc_printer_migrate_settings(int argc, const char **argv)
 
 /** 
  * 'net rpc printer' entrypoint.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  **/
 
 int rpc_printer_migrate(int argc, const char **argv) 
@@ -6647,13 +6647,13 @@ int rpc_printer_migrate(int argc, const char **argv)
 
 
 /** 
- * List printers on a remote RPC server
+ * List printers on a remote RPC server.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 static int rpc_printer_list(int argc, const char **argv)
 {
@@ -6664,13 +6664,13 @@ static int rpc_printer_list(int argc, const char **argv)
 }
 
 /** 
- * List printer-drivers on a remote RPC server
+ * List printer-drivers on a remote RPC server.
  *
- * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argc.
  * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 static int rpc_printer_driver_list(int argc, const char **argv)
 {
@@ -6681,13 +6681,13 @@ static int rpc_printer_driver_list(int argc, const char **argv)
 }
 
 /** 
- * Publish printer in ADS via MSRPC
+ * Publish printer in ADS via MSRPC.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 static int rpc_printer_publish_publish(int argc, const char **argv)
 {
@@ -6698,13 +6698,13 @@ static int rpc_printer_publish_publish(int argc, const char **argv)
 }
 
 /** 
- * Update printer in ADS via MSRPC
+ * Update printer in ADS via MSRPC.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 static int rpc_printer_publish_update(int argc, const char **argv)
 {
@@ -6717,11 +6717,11 @@ static int rpc_printer_publish_update(int argc, const char **argv)
 /** 
  * UnPublish printer in ADS via MSRPC
  *
- * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argc.
  * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 static int rpc_printer_publish_unpublish(int argc, const char **argv)
 {
@@ -6732,13 +6732,13 @@ static int rpc_printer_publish_unpublish(int argc, const char **argv)
 }
 
 /** 
- * List published printers via MSRPC
+ * List published printers via MSRPC.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 static int rpc_printer_publish_list(int argc, const char **argv)
 {
@@ -6750,13 +6750,13 @@ static int rpc_printer_publish_list(int argc, const char **argv)
 
 
 /** 
- * Publish printer in ADS
+ * Publish printer in ADS.
  *
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  *
- * @return A shell status integer (0 for success)
+ * @return A shell status integer (0 for success).
  **/
 static int rpc_printer_publish(int argc, const char **argv)
 {
@@ -6782,9 +6782,9 @@ static int rpc_printer_publish(int argc, const char **argv)
 
 /** 
  * Display rpc printer help page.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  **/
 int rpc_printer_usage(int argc, const char **argv)
 {
@@ -6793,9 +6793,9 @@ int rpc_printer_usage(int argc, const char **argv)
 
 /** 
  * 'net rpc printer' entrypoint.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  **/
 int net_rpc_printer(int argc, const char **argv) 
 {
@@ -6819,10 +6819,10 @@ int net_rpc_printer(int argc, const char **argv)
 
 
 /** 
- * Basic usage function for 'net rpc'
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * Basic usage function for 'net rpc'.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  **/
 
 int net_rpc_usage(int argc, const char **argv) 
@@ -6861,10 +6861,10 @@ int net_rpc_usage(int argc, const char **argv)
 
 /**
  * Help function for 'net rpc'.  Calls command specific help if requested
- * or displays usage of net rpc
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * or displays usage of net rpc.
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  **/
 
 int net_rpc_help(int argc, const char **argv)
@@ -6892,9 +6892,9 @@ int net_rpc_help(int argc, const char **argv)
 
 /** 
  * 'net rpc' entrypoint.
- * @param argc  Standard main() style argc
- * @param argv  Standard main() style argv.  Initial components are already
- *              stripped
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
  **/
 
 int net_rpc(int argc, const char **argv)
