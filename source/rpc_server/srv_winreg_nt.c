@@ -230,6 +230,10 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
 	if ( !regkey )
 		return WERR_BADFID;
 
+	if ((r->out.value_length == NULL) || (r->out.type == NULL)) {
+		return WERR_INVALID_PARAM;
+	}
+
 	*r->out.value_length = *r->out.type = REG_NONE;
 	
 	DEBUG(7,("_reg_info: policy key name = [%s]\n", regkey->key->name));
