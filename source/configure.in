@@ -756,10 +756,24 @@ if test x$enable_cups != xno; then
 	AC_PATH_PROG(CUPS_CONFIG, cups-config)
 
         if test "x$CUPS_CONFIG" != x; then
-                AC_DEFINE(HAVE_CUPS,1,[Whether we have CUPS])
+
+		ac_save_CFLAGS=$CFLAGS
+		ac_save_LDFLAGS=$LDFLAGS
+		ac_save_PRINT_LIBS=$PRINT_LIBS
 		CFLAGS="$CFLAGS `$CUPS_CONFIG --cflags`"
 		LDFLAGS="$LDFLAGS `$CUPS_CONFIG --ldflags`"
 		PRINT_LIBS="$PRINT_LIBS `$CUPS_CONFIG --libs`"
+		AC_CHECK_HEADERS(cups/cups.h cups/language.h)
+		if test x"$ac_cv_header_cups_cups_h" = xyes -a \
+		        x"$ac_cv_header_cups_language_h" = xyes; then
+			AC_DEFINE(HAVE_CUPS,1,[Whether we have CUPS])
+		else
+			AC_MSG_WARN([cups-config around but cups-devel not installed])
+			CFLAGS=$ac_save_CFLAGS
+			LDFLAGS=$ac_save_LDFLAGS
+			PRINT_LIBS=$ac_save_PRINT_LIBS
+		fi
+
 	elif test x"$enable_cups" = x"yes"; then
 		AC_MSG_ERROR(Cups support required but cups-config not located.  Make sure cups-devel related files are installed.)
         fi
