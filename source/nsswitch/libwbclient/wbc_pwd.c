@@ -392,15 +392,15 @@ wbcErr wbcGetGroups(const char *account,
 	uint32_t i;
 	gid_t *groups = NULL;
 
-	if (!account) {
-		wbc_status = WBC_ERR_INVALID_PARAM;
-		BAIL_ON_WBC_ERROR(wbc_status);
-	}
-
 	/* Initialize request */
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
+
+	if (!account) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
 
 	/* Send request */
 
