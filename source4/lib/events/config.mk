@@ -1,13 +1,3 @@
-################################################
-# Start SUBSYSTEM LIBEVENTS
-[LIBRARY::LIBEVENTS]
-PUBLIC_DEPENDENCIES = LIBTALLOC
-OUTPUT_TYPE = STATIC_LIBRARY
-CFLAGS = -Ilib/events
-#
-# End SUBSYSTEM LIBEVENTS
-################################################
-
 ##############################
 [MODULE::EVENTS_AIO]
 PRIVATE_DEPENDENCIES = LIBAIO_LINUX
@@ -41,19 +31,23 @@ INIT_FUNCTION = s4_events_standard_init
 
 EVENTS_STANDARD_OBJ_FILES = $(libeventssrcdir)/events_standard.o
 
-##############################
+################################################
 # Start SUBSYSTEM LIBEVENTS
-[SUBSYSTEM::LIBEVENTS]
+[LIBRARY::LIBEVENTS]
+PUBLIC_DEPENDENCIES = LIBTALLOC
+OUTPUT_TYPE = STATIC_LIBRARY
+CFLAGS = -Ilib/events
+#
 # End SUBSYSTEM LIBEVENTS
-##############################
+################################################
 
-LIBEVENTS_OBJ_FILES = $(addprefix $(libeventssrcdir)/, events.o events_timed.o events_signal.o)
+LIBEVENTS_OBJ_FILES = $(addprefix $(libeventssrcdir)/, events.o events_timed.o events_signal.o events_debug.o events_util.o events_s4.o)
 
 PUBLIC_HEADERS += $(addprefix $(libeventssrcdir)/, events.h events_internal.h)
 
 [PYTHON::swig_events]
 LIBRARY_REALNAME = samba/_events.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = LIBEVENTS LIBSAMBA-HOSTCONFIG
+PRIVATE_DEPENDENCIES = LIBEVENTS LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL
 
 swig_events_OBJ_FILES = $(libeventssrcdir)/events_wrap.o
 

@@ -1,0 +1,4 @@
+m4_include(pkg.m4)
+EVENTS_OBJ=""
+AC_SUBST(EVENTS_OBJ)
+PKG_CHECK_MODULES(EVENTS, events)

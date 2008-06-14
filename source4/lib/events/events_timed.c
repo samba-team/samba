@@ -20,17 +20,90 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#if _SAMBA_BUILD_
-#include "includes.h"
-#include "lib/util/dlinklist.h"
-#else
+#include <sys/time.h>
+#include <time.h>
 #include "replace.h"
-#include "events_util.h"
-#endif
 #include "system/filesys.h"
 #include "system/select.h"
 #include "events.h"
 #include "events_internal.h"
+
+/**
+  compare two timeval structures. 
+  Return -1 if tv1 < tv2
+  Return 0 if tv1 == tv2
+  Return 1 if tv1 > tv2
+*/
+static int ev_timeval_compare(const struct timeval *tv1, const struct timeval *tv2)
+{
+	if (tv1->tv_sec  > tv2->tv_sec)  return 1;
+	if (tv1->tv_sec  < tv2->tv_sec)  return -1;
+	if (tv1->tv_usec > tv2->tv_usec) return 1;
+	if (tv1->tv_usec < tv2->tv_usec) return -1;
+	return 0;
+}
+
+/**
+  return a zero timeval
+*/
+static struct timeval ev_timeval_zero(void)
+{
+	struct timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+	return tv;
+}
+
+/**
+  return a timeval for the current time
+*/
+static struct timeval ev_timeval_current(void)
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return tv;
+}
+
+/**
+  return a timeval struct with the given elements
+*/
+static struct timeval ev_timeval_set(uint32_t secs, uint32_t usecs)
+{
+	struct timeval tv;
+	tv.tv_sec = secs;
+	tv.tv_usec = usecs;
+	return tv;
+}
+
+/**
+  return the difference between two timevals as a timeval
+  if tv1 comes after tv2, then return a zero timeval
+  (this is *tv2 - *tv1)
+*/
+static struct timeval ev_timeval_until(const struct timeval *tv1,
+					const struct timeval *tv2)
+{
+	struct timeval t;
+	if (ev_timeval_compare(tv1, tv2) >= 0) {
+		return ev_timeval_zero();
+	}
+	t.tv_sec = tv2->tv_sec - tv1->tv_sec;
+	if (tv1->tv_usec > tv2->tv_usec) {
+		t.tv_sec--;
+		t.tv_usec = 1000000 - (tv1->tv_usec - tv2->tv_usec);
+	} else {
+		t.tv_usec = tv2->tv_usec - tv1->tv_usec;
+	}
+	return t;
+}
+
+/**
+  return true if a timeval is zero
+*/
+bool ev_timeval_is_zero(const struct timeval *tv)
+{
+	return tv->tv_sec == 0 && tv->tv_usec == 0;
+}
 
 /*
   destroy a timed event
@@ -72,7 +145,7 @@ struct timed_event *common_event_add_timed(struct event_context *ev, TALLOC_CTX 
 	last_te = NULL;
 	for (cur_te = ev->timed_events; cur_te; cur_te = cur_te->next) {
 		/* if the new event comes before the current one break */
-		if (timeval_compare(&te->next_event, &cur_te->next_event) < 0) {
+		if (ev_timeval_compare(&te->next_event, &cur_te->next_event) < 0) {
 			break;
 		}
 
@@ -94,14 +167,14 @@ struct timed_event *common_event_add_timed(struct event_context *ev, TALLOC_CTX 
 */
 struct timeval common_event_loop_timer_delay(struct event_context *ev)
 {
-	struct timeval current_time = timeval_zero();
+	struct timeval current_time = ev_timeval_zero();
 	struct timed_event *te = ev->timed_events;
 
 	if (!te) {
 		/* have a default tick time of 30 seconds. This guarantees
 		   that code that uses its own timeout checking will be
 		   able to proceeed eventually */
-		return timeval_set(30, 0);
+		return ev_timeval_set(30, 0);
 	}
 
 	/*
@@ -113,13 +186,13 @@ struct timeval common_event_loop_timer_delay(struct event_context *ev)
 	 * if there's a delay till the next timed event, we're done
 	 * with just returning the delay
 	 */
-	if (!timeval_is_zero(&te->next_event)) {
+	if (!ev_timeval_is_zero(&te->next_event)) {
 		struct timeval delay;
 
-		current_time = timeval_current();
+		current_time = ev_timeval_current();
 
-		delay = timeval_until(&current_time, &te->next_event);
-		if (!timeval_is_zero(&delay)) {
+		delay = ev_timeval_until(&current_time, &te->next_event);
+		if (!ev_timeval_is_zero(&delay)) {
 			return delay;
 		}
 	}
@@ -151,6 +224,6 @@ struct timeval common_event_loop_timer_delay(struct event_context *ev)
 
 	talloc_free(te);
 
-	return timeval_zero();
+	return ev_timeval_zero();
 }
 

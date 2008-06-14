@@ -113,11 +113,5 @@ do { \
 
 #endif /* _DLINKLIST_H */
 
-const char **str_list_add(const char **list, const char *s);
-struct timeval timeval_zero(void);
-bool timeval_is_zero(const struct timeval *tv);
-struct timeval timeval_current(void);
-struct timeval timeval_set(uint32_t secs, uint32_t usecs);
-struct timeval timeval_until(const struct timeval *tv1,
-			     const struct timeval *tv2);
-
+const char **ev_str_list_add(const char **list, const char *s);
+int ev_set_blocking(int fd, bool set);

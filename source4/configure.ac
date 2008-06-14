@@ -89,7 +89,7 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb >= 0.9.1,
 SMB_INCLUDE_MK(lib/ldb/python.mk) 
 
 m4_include(lib/tls/config.m4)
-m4_include(lib/events/config.m4)
+m4_include(lib/events/libevents.m4)
 
 dnl m4_include(auth/kerberos/config.m4)
 m4_include(scripting/python/config.m4)

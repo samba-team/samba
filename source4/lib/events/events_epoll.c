@@ -20,13 +20,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#if _SAMBA_BUILD_
-#include "includes.h"
-#include "lib/util/dlinklist.h"
-#else
 #include "replace.h"
-#include "events_util.h"
-#endif
 #include "system/filesys.h"
 #include "system/network.h"
 #include "events.h"
@@ -63,9 +57,8 @@ struct epoll_event_context {
 */
 static void epoll_panic(struct epoll_event_context *epoll_ev, const char *reason)
 {
-#if _SAMBA_BUILD_
-	DEBUG(0,("%s (%s) - calling abort()\n", reason, strerror(errno)));
-#endif
+	ev_debug(epoll_ev->ev, EV_DEBUG_FATAL,
+		 "%s (%s) - calling abort()\n", reason, strerror(errno));
 	abort();
 }
 
@@ -122,7 +115,8 @@ static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
 	close(epoll_ev->epoll_fd);
 	epoll_ev->epoll_fd = epoll_create(64);
 	if (epoll_ev->epoll_fd == -1) {
-		DEBUG(0,("Failed to recreate epoll handle after fork\n"));
+		ev_debug(epoll_ev->ev, EV_DEBUG_FATAL,
+			 "Failed to recreate epoll handle after fork\n");
 		return;
 	}
 	epoll_ev->pid = getpid();
@@ -181,7 +175,9 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct fd_even
 	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
 	if (epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_DEL, fde->fd, &event) != 0) {
-		DEBUG(0,("epoll_del_event failed! probable early close bug (%s)\n", strerror(errno)));
+		ev_debug(epoll_ev->ev, EV_DEBUG_FATAL,
+			 "epoll_del_event failed! probable early close bug (%s)\n",
+			 strerror(errno));
 	}
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 }
@@ -443,7 +439,7 @@ static int epoll_event_loop_once(struct event_context *ev)
 	struct timeval tval;
 
 	tval = common_event_loop_timer_delay(ev);
-	if (timeval_is_zero(&tval)) {
+	if (ev_timeval_is_zero(&tval)) {
 		return 0;
 	}
 
@@ -483,13 +479,3 @@ bool events_epoll_init(void)
 {
 	return event_register_backend("epoll", &epoll_event_ops);
 }
-
-#if _SAMBA_BUILD_
-NTSTATUS s4_events_epoll_init(void)
-{
-	if (!events_epoll_init()) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	return NT_STATUS_OK;
-}
-#endif

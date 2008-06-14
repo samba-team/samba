@@ -91,10 +91,27 @@ struct signal_event {
 	int sa_flags;
 };
 
+/* DEBUG */
+enum ev_debug_level {EV_DEBUG_FATAL, EV_DEBUG_ERROR,
+		      EV_DEBUG_WARNING, EV_DEBUG_TRACE};
+
+struct ev_debug_ops {
+	void (*debug)(void *context, enum ev_debug_level level,
+		      const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0);
+	void *context;
+};
+
+int ev_set_debug(struct event_context *ev,
+		 void (*debug)(void *context, enum ev_debug_level level,
+				const char *fmt, va_list ap),
+		 void *context);
+int ev_set_debug_stderr(struct event_context *ev);
+void ev_debug(struct event_context *ev, enum ev_debug_level level, const char *fmt, ...);
+
 /* aio event is private to the aio backend */
 struct aio_event;
 
-struct event_context {	
+struct event_context {
 	/* the specific events implementation */
 	const struct event_ops *ops;
 
@@ -109,11 +126,15 @@ struct event_context {
 
 	/* pipe hack used with signal handlers */
 	struct fd_event *pipe_fde;
+
+	/* debugging operations */
+	struct ev_debug_ops debug_ops;
 };
 
 
 bool event_register_backend(const char *name, const struct event_ops *ops);
 
+bool ev_timeval_is_zero(const struct timeval *tv);
 struct timed_event *common_event_add_timed(struct event_context *, TALLOC_CTX *,
 					   struct timeval, event_timed_handler_t, void *);
 struct timeval common_event_loop_timer_delay(struct event_context *);
@@ -126,3 +147,14 @@ struct signal_event *common_event_add_signal(struct event_context *ev,
 					     void *private_data);
 int common_event_check_signal(struct event_context *ev);
 
+
+bool events_standard_init(void);
+bool events_select_init(void);
+#if HAVE_EVENTS_EPOLL
+bool events_epoll_init(void);
+#endif
+#if HAVE_LINUX_AIO
+bool events_aio_init(void);
+#endif
+
+#include "events_util.h"

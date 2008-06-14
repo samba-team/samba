@@ -19,14 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#if _SAMBA_BUILD_
-#include "includes.h"
-#include "lib/util/dlinklist.h"
-#else
 #include <signal.h>
 #include "replace.h"
-#include "events_util.h"
-#endif
 #include "system/filesys.h"
 #include "system/select.h"
 #include "events.h"
@@ -222,8 +216,8 @@ struct signal_event *common_event_add_signal(struct event_context *ev,
 		if (sig_state->pipe_hack[0] == 0 && 
 		    sig_state->pipe_hack[1] == 0) {
 			pipe(sig_state->pipe_hack);
-			set_blocking(sig_state->pipe_hack[0], false);
-			set_blocking(sig_state->pipe_hack[1], false);
+			ev_set_blocking(sig_state->pipe_hack[0], false);
+			ev_set_blocking(sig_state->pipe_hack[1], false);
 		}
 		ev->pipe_fde = event_add_fd(ev, ev, sig_state->pipe_hack[0],
 					    EVENT_FD_READ, signal_pipe_handler, NULL);

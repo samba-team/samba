@@ -23,13 +23,7 @@
 
 */
 
-#if _SAMBA_BUILD_
-#include "includes.h"
-#include "lib/util/dlinklist.h"
-#else
 #include "replace.h"
-#include "events_util.h"
-#endif
 #include "system/filesys.h"
 #include "system/select.h"
 #include "events.h"
@@ -221,9 +215,8 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 		   made readable and that should have removed
 		   the event, so this must be a bug. This is a
 		   fatal error. */
-#if _SAMBA_BUILD_
-		DEBUG(0,("ERROR: EBADF on select_event_loop_once\n"));
-#endif
+		ev_debug(select_ev->ev, EV_DEBUG_FATAL,
+			 "ERROR: EBADF on select_event_loop_once\n");
 		select_ev->exit_code = EBADF;
 		return -1;
 	}
@@ -265,7 +258,7 @@ static int select_event_loop_once(struct event_context *ev)
 	struct timeval tval;
 
 	tval = common_event_loop_timer_delay(ev);
-	if (timeval_is_zero(&tval)) {
+	if (ev_timeval_is_zero(&tval)) {
 		return 0;
 	}
 
@@ -306,12 +299,3 @@ bool events_select_init(void)
 	return event_register_backend("select", &select_event_ops);
 }
 
-#if _SAMBA_BUILD_
-_PUBLIC_ NTSTATUS s4_events_select_init(void)
-{
-	if (!events_select_init()) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	return NT_STATUS_OK;
-}
-#endif
