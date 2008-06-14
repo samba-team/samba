@@ -66,6 +66,7 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 	unsigned int i;
 	struct vuid_cache_entry *ent = NULL;
 	bool readonly_share;
+	bool admin_user;
 
 	for (i=0; i<VUID_CACHE_SIZE; i++) {
 		ent = &conn->vuid_cache.array[i];
@@ -105,6 +106,12 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 		return False;
 	}
 
+	admin_user = token_contains_name_in_list(
+		vuser->server_info->unix_name,
+		pdb_get_domain(vuser->server_info->sam_account),
+		NULL, vuser->server_info->ptok,
+		lp_admin_users(snum));
+
 	ent = &conn->vuid_cache.array[conn->vuid_cache.next_entry];
 
 	conn->vuid_cache.next_entry =
@@ -128,12 +135,7 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 
 	ent->vuid = vuser->vuid;
 	ent->read_only = readonly_share;
-
-	ent->admin_user = token_contains_name_in_list(
-		vuser->server_info->unix_name,
-		pdb_get_domain(vuser->server_info->sam_account),
-		NULL, vuser->server_info->ptok,
-		lp_admin_users(snum));
+	ent->admin_user = admin_user;
 
 	conn->read_only = ent->read_only;
 	conn->admin_user = ent->admin_user;
