@@ -87,7 +87,7 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 		vuser->server_info->unix_name,
 		pdb_get_domain(vuser->server_info->sam_account),
 		vuser->server_info->ptok,
-		SNUM(conn));
+		snum);
 
 	if (!readonly_share &&
 	    !share_access_check(vuser->server_info->ptok, lp_servicename(snum),
@@ -133,7 +133,7 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 		vuser->server_info->unix_name,
 		pdb_get_domain(vuser->server_info->sam_account),
 		NULL, vuser->server_info->ptok,
-		lp_admin_users(SNUM(conn)));
+		lp_admin_users(snum));
 
 	conn->read_only = ent->read_only;
 	conn->admin_user = ent->admin_user;
