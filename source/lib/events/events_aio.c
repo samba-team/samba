@@ -30,12 +30,10 @@
   this is _very_ experimental code
 */
 
-#include "includes.h"
 #include "system/filesys.h"
 #include "system/network.h"
-#include "lib/util/dlinklist.h"
-#include "lib/events/events.h"
-#include "lib/events/events_internal.h"
+#include "events.h"
+#include "events_internal.h"
 #include <sys/epoll.h>
 #include <libaio.h>
 
@@ -114,7 +112,7 @@ static void epoll_check_reopen(struct aio_event_context *aio_ev)
 	close(aio_ev->epoll_fd);
 	aio_ev->epoll_fd = epoll_create(MAX_AIO_QUEUE_DEPTH);
 	if (aio_ev->epoll_fd == -1) {
-		DEBUG(0,("Failed to recreate epoll handle after fork\n"));
+		ev_debug(aio_ev->ev, EV_DEBUG_FATAL, "Failed to recreate epoll handle after fork\n");
 		return;
 	}
 	aio_ev->pid = getpid();
@@ -566,12 +564,3 @@ bool events_aio_init(void)
 	return event_register_backend("aio", &aio_event_ops);
 }
 
-#if _SAMBA_BUILD_
-NTSTATUS s4_events_aio_init(void)
-{
-	if (!events_aio_init()) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	return NT_STATUS_OK;
-}
-#endif

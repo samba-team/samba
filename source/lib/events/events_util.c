@@ -20,6 +20,9 @@
 
 #include "replace.h"
 #include "talloc.h"
+#include "events.h"
+#include "events_internal.h"
+#include <fcntl.h>
 
 /**
   return the number of elements in a string list
@@ -34,7 +37,7 @@ static size_t str_list_length(const char **list)
 /**
   add an entry to a string list
 */
-const char **str_list_add(const char **list, const char *s)
+const char **ev_str_list_add(const char **list, const char *s)
 {
 	size_t len = str_list_length(list);
 	const char **ret;
@@ -50,80 +53,33 @@ const char **str_list_add(const char **list, const char *s)
 	return ret;
 }
 
-/**
-  compare two timeval structures. 
-  Return -1 if tv1 < tv2
-  Return 0 if tv1 == tv2
-  Return 1 if tv1 > tv2
-*/
-static int timeval_compare(const struct timeval *tv1, const struct timeval *tv2)
-{
-	if (tv1->tv_sec  > tv2->tv_sec)  return 1;
-	if (tv1->tv_sec  < tv2->tv_sec)  return -1;
-	if (tv1->tv_usec > tv2->tv_usec) return 1;
-	if (tv1->tv_usec < tv2->tv_usec) return -1;
-	return 0;
-}
 
 /**
-  return a zero timeval
-*/
-struct timeval timeval_zero(void)
-{
-	struct timeval tv;
-	tv.tv_sec = 0;
-	tv.tv_usec = 0;
-	return tv;
-}
+ Set a fd into blocking/nonblocking mode. Uses POSIX O_NONBLOCK if available,
+ else
+  if SYSV use O_NDELAY
+  if BSD use FNDELAY
+**/
 
-/**
-  return true if a timeval is zero
-*/
-bool timeval_is_zero(const struct timeval *tv)
+int ev_set_blocking(int fd, bool set)
 {
-	return tv->tv_sec == 0 && tv->tv_usec == 0;
-}
+	int val;
+#ifdef O_NONBLOCK
+#define FLAG_TO_SET O_NONBLOCK
+#else
+#ifdef SYSV
+#define FLAG_TO_SET O_NDELAY
+#else /* BSD */
+#define FLAG_TO_SET FNDELAY
+#endif
+#endif
 
-/**
-  return a timeval for the current time
-*/
-struct timeval timeval_current(void)
-{
-	struct timeval tv;
-	GetTimeOfDay(&tv);
-	return tv;
+	if((val = fcntl(fd, F_GETFL, 0)) == -1)
+		return -1;
+	if(set) /* Turn blocking on - ie. clear nonblock flag */
+		val &= ~FLAG_TO_SET;
+	else
+		val |= FLAG_TO_SET;
+	return fcntl( fd, F_SETFL, val);
+#undef FLAG_TO_SET
 }
-
-/**
-  return a timeval struct with the given elements
-*/
-struct timeval timeval_set(uint32_t secs, uint32_t usecs)
-{
-	struct timeval tv;
-	tv.tv_sec = secs;
-	tv.tv_usec = usecs;
-	return tv;
-}
-
-/**
-  return the difference between two timevals as a timeval
-  if tv1 comes after tv2, then return a zero timeval
-  (this is *tv2 - *tv1)
-*/
-struct timeval timeval_until(const struct timeval *tv1,
-			     const struct timeval *tv2)
-{
-	struct timeval t;
-	if (timeval_compare(tv1, tv2) >= 0) {
-		return timeval_zero();
-	}
-	t.tv_sec = tv2->tv_sec - tv1->tv_sec;
-	if (tv1->tv_usec > tv2->tv_usec) {
-		t.tv_sec--;
-		t.tv_usec = 1000000 - (tv1->tv_usec - tv2->tv_usec);
-	} else {
-		t.tv_usec = tv2->tv_usec - tv1->tv_usec;
-	}
-	return t;
-}
-

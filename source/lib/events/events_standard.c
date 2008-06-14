@@ -27,13 +27,7 @@
     at runtime we fallback to select()
 */
 
-#if _SAMBA_BUILD_
-#include "includes.h"
-#include "lib/util/dlinklist.h"
-#else
 #include "replace.h"
-#include "events_util.h"
-#endif
 #include "system/filesys.h"
 #include "system/network.h"
 #include "system/select.h" /* needed for HAVE_EVENTS_EPOLL */
@@ -76,7 +70,9 @@ struct std_event_context {
 */
 static void epoll_fallback_to_select(struct std_event_context *std_ev, const char *reason)
 {
-	DEBUG(0,("%s (%s) - falling back to select()\n", reason, strerror(errno)));
+	ev_debug(std_ev->ev, EV_DEBUG_FATAL,
+		 "%s (%s) - falling back to select()\n",
+		 reason, strerror(errno));
 	close(std_ev->epoll_fd);
 	std_ev->epoll_fd = -1;
 	talloc_set_destructor(std_ev, NULL);
@@ -133,7 +129,8 @@ static void epoll_check_reopen(struct std_event_context *std_ev)
 	close(std_ev->epoll_fd);
 	std_ev->epoll_fd = epoll_create(64);
 	if (std_ev->epoll_fd == -1) {
-		DEBUG(0,("Failed to recreate epoll handle after fork\n"));
+		ev_debug(std_ev->ev, EV_DEBUG_FATAL,
+			 "Failed to recreate epoll handle after fork\n");
 		return;
 	}
 	std_ev->pid = getpid();
@@ -516,7 +513,8 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 		   made readable and that should have removed
 		   the event, so this must be a bug. This is a
 		   fatal error. */
-		DEBUG(0,("ERROR: EBADF on std_event_loop_once\n"));
+		ev_debug(std_ev->ev, EV_DEBUG_FATAL,
+			 "ERROR: EBADF on std_event_loop_once\n");
 		std_ev->exit_code = EBADF;
 		return -1;
 	}
@@ -558,7 +556,7 @@ static int std_event_loop_once(struct event_context *ev)
 	struct timeval tval;
 
 	tval = common_event_loop_timer_delay(ev);
-	if (timeval_is_zero(&tval)) {
+	if (ev_timeval_is_zero(&tval)) {
 		return 0;
 	}
 
@@ -606,12 +604,3 @@ bool events_standard_init(void)
 	return event_register_backend("standard", &std_event_ops);
 }
 
-#if _SAMBA_BUILD_
-_PUBLIC_ NTSTATUS s4_events_standard_init(void)
-{
-	if (!events_standard_init()) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	return NT_STATUS_OK;
-}
-#endif

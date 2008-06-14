@@ -52,14 +52,7 @@
   forever.
 
 */
-#if _SAMBA_BUILD_
-#include "includes.h"
-#include "lib/util/dlinklist.h"
-#include "param/param.h"
-#else
 #include "replace.h"
-#include "events_util.h"
-#endif
 #include "events.h"
 #include "events_internal.h"
 
@@ -70,8 +63,7 @@ struct event_ops_list {
 };
 
 /* list of registered event backends */
-static struct event_ops_list *event_backends;
-
+static struct event_ops_list *event_backends = NULL;
 static char *event_default_backend = NULL;
 
 /*
@@ -80,11 +72,21 @@ static char *event_default_backend = NULL;
 bool event_register_backend(const char *name, const struct event_ops *ops)
 {
 	struct event_ops_list *e;
+
+	for (e = event_backends; e != NULL; e = e->next) {
+		if (0 == strcmp(e->name, name)) {
+			/* already registered, skip it */
+			return true;
+		}
+	}
+
 	e = talloc(talloc_autofree_context(), struct event_ops_list);
 	if (e == NULL) return false;
+
 	e->name = name;
 	e->ops = ops;
 	DLIST_ADD(event_backends, e);
+
 	return true;
 }
 
@@ -102,25 +104,13 @@ void event_set_default_backend(const char *backend)
 */
 static void event_backend_init(void)
 {
-#if _SAMBA_BUILD_
-	NTSTATUS s4_events_standard_init(void);
-	NTSTATUS s4_events_select_init(void);
-	NTSTATUS s4_events_epoll_init(void);
-	NTSTATUS s4_events_aio_init(void);
-	init_module_fn static_init[] = { STATIC_LIBEVENTS_MODULES };
-	if (event_backends) return;
-	run_init_functions(static_init);
-#else
-	bool events_standard_init(void);
-	bool events_select_init(void);
 	events_select_init();
 	events_standard_init();
 #if HAVE_EVENTS_EPOLL
-	{
-		bool events_epoll_init(void);
-		events_epoll_init();
-	}
+	events_epoll_init();
 #endif
+#if HAVE_LINUX_AIO
+	events_aio_init();
 #endif
 }
 
@@ -135,7 +125,7 @@ const char **event_backend_list(TALLOC_CTX *mem_ctx)
 	event_backend_init();
 
 	for (e=event_backends;e;e=e->next) {
-		list = str_list_add(list, e->name);
+		list = ev_str_list_add(list, e->name);
 	}
 
 	talloc_steal(mem_ctx, list);
@@ -208,8 +198,6 @@ struct event_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char 
 */
 struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 {
-	DEBUG(0, ("New event context requested. Parent: [%s:%p]\n",
-		  mem_ctx?talloc_get_name(mem_ctx):"NULL", mem_ctx));
 	return event_context_init_byname(mem_ctx, NULL);
 }
 

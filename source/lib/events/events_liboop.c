@@ -19,9 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "lib/events/events.h"
-#include "lib/events/events_internal.h"
+#include "events.h"
+#include "events_internal.h"
 
 #include <oop.h>
 
