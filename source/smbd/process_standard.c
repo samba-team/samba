@@ -92,7 +92,7 @@ static void standard_accept_connection(struct event_context *ev,
 	pid = getpid();
 
 	/* This is now the child code. We need a completely new event_context to work with */
-	ev2 = event_context_init(NULL);
+	ev2 = s4_event_context_init(NULL);
 
 	/* the service has given us a private pointer that
 	   encapsulates the context it needs for this new connection -
@@ -161,7 +161,7 @@ static void standard_new_task(struct event_context *ev,
 	pid = getpid();
 
 	/* This is now the child code. We need a completely new event_context to work with */
-	ev2 = event_context_init(NULL);
+	ev2 = s4_event_context_init(NULL);
 
 	/* the service has given us a private pointer that
 	   encapsulates the context it needs for this new connection -

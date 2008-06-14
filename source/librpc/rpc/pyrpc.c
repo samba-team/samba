@@ -336,7 +336,7 @@ static PyObject *dcerpc_interface_new(PyTypeObject *self, PyObject *args, PyObje
 	}
 	ret = PyObject_New(dcerpc_InterfaceObject, &dcerpc_InterfaceType);
 
-	event_ctx = event_context_init(mem_ctx);
+	event_ctx = s4_event_context_init(mem_ctx);
 
 	/* Create a dummy interface table struct. TODO: In the future, we should rather just allow 
 	 * connecting without requiring an interface table.

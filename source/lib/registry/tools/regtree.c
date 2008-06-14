@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
-	ev_ctx = event_context_init(NULL);
+	ev_ctx = s4_event_context_init(NULL);
 
 	if (remote != NULL) {
 		h = reg_common_open_remote(remote, cmdline_lp_ctx, cmdline_credentials);

@@ -47,7 +47,7 @@ static PyObject *py_nbt_node_init(PyObject *self, PyObject *args, PyObject *kwar
 	if (ret->mem_ctx == NULL)
 		return NULL;
 
-	ev = event_context_init(ret->mem_ctx);
+	ev = s4_event_context_init(ret->mem_ctx);
 	ret->socket = nbt_name_socket_init(ret->mem_ctx, ev, lp_iconv_convenience(global_loadparm)); 
 	return (PyObject *)ret;
 }

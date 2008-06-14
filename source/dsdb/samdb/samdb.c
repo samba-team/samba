@@ -121,7 +121,7 @@ int samdb_copy_template(struct ldb_context *ldb,
 		/* FIXME: need to remove this wehn we finally pass the event
 		 * context around in ldb */
 		if (event_ctx == NULL) {
-			event_ctx = event_context_init(templates_ldb);
+			event_ctx = s4_event_context_init(templates_ldb);
 		}
 
 		templates_ldb = ldb_wrap_connect(ldb, event_ctx, lp_ctx, 

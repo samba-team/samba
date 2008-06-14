@@ -517,7 +517,7 @@ int main(int argc, char **argv)
 
 	ctx = talloc_zero(NULL, struct regshell_context);
 
-	ev_ctx = event_context_init(ctx);
+	ev_ctx = s4_event_context_init(ctx);
 
 	if (remote != NULL) {
 		ctx->registry = reg_common_open_remote(remote, cmdline_lp_ctx, 

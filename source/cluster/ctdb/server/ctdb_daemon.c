@@ -650,7 +650,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	domain_socket_name = talloc_strdup(talloc_autofree_context(), ctdb->daemon.name);
 	talloc_set_destructor(domain_socket_name, unlink_destructor);	
 
-	ctdb->ev = event_context_init(NULL);
+	ctdb->ev = s4_event_context_init(NULL);
 
 	/* start frozen, then let the first election sort things out */
 	if (!ctdb_blocking_freeze(ctdb)) {

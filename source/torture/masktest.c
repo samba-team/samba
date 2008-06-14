@@ -355,7 +355,7 @@ static void usage(poptContext pc)
 
 	lp_ctx = cmdline_lp_ctx;
 
-	ev = event_context_init(talloc_autofree_context());
+	ev = s4_event_context_init(talloc_autofree_context());
 
 	gensec_init(lp_ctx);
 

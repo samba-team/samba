@@ -3486,7 +3486,7 @@ SWIGINTERN PyObject *_wrap_hive_key(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
   
   arg3 = NULL;
   arg4 = NULL;
-  arg5 = event_context_init(NULL);
+  arg5 = s4_event_context_init(NULL);
   arg6 = loadparm_init(NULL);
   arg1 = NULL;
   arg7 = &tmp7;
@@ -3574,7 +3574,7 @@ SWIGINTERN PyObject *_wrap_open_ldb(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
   
   arg3 = NULL;
   arg4 = NULL;
-  arg5 = event_context_init(NULL);
+  arg5 = s4_event_context_init(NULL);
   arg6 = loadparm_init(NULL);
   arg1 = NULL;
   arg7 = &tmp7;
@@ -3735,7 +3735,7 @@ SWIGINTERN PyObject *_wrap_open_samba(PyObject *SWIGUNUSEDPARM(self), PyObject *
     (char *) "ev_ctx",(char *) "lp_ctx",(char *) "session_info",(char *) "credentials", NULL 
   };
   
-  arg3 = event_context_init(NULL);
+  arg3 = s4_event_context_init(NULL);
   arg4 = loadparm_init(NULL);
   arg5 = NULL;
   arg6 = NULL;

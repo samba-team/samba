@@ -76,7 +76,7 @@ PyObject *py_messaging_connect(PyTypeObject *self, PyObject *args, PyObject *kwa
 
 	ret->mem_ctx = talloc_new(NULL);
 
-	ev = event_context_init(ret->mem_ctx);
+	ev = s4_event_context_init(ret->mem_ctx);
 
 	if (messaging_path == NULL) {
 		messaging_path = lp_messaging_path(ret, global_loadparm);
@@ -330,7 +330,7 @@ PyObject *py_irpc_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 
 	ret->server_name = server;
 
-	ev = event_context_init(ret->mem_ctx);
+	ev = s4_event_context_init(ret->mem_ctx);
 
 	if (messaging_path == NULL) {
 		messaging_path = lp_messaging_path(ret, global_loadparm);

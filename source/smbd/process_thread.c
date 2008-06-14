@@ -77,7 +77,7 @@ static void thread_accept_connection(struct event_context *ev,
 	struct new_conn_state *state;
 	struct event_context *ev2;
 
-	ev2 = event_context_init(ev);
+	ev2 = s4_event_context_init(ev);
 	if (ev2 == NULL) return;
 
 	state = talloc(ev2, struct new_conn_state);
@@ -160,7 +160,7 @@ static void thread_new_task(struct event_context *ev,
 	struct new_task_state *state;
 	struct event_context *ev2;
 
-	ev2 = event_context_init(ev);
+	ev2 = s4_event_context_init(ev);
 	if (ev2 == NULL) return;
 
 	state = talloc(ev2, struct new_task_state);

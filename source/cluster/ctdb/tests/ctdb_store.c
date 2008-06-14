@@ -131,7 +131,7 @@ int main(int argc, const char *argv[])
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
 
-	ev = event_context_init(NULL);
+	ev = s4_event_context_init(NULL);
 
 	ctdb = ctdb_cmdline_client(ev);
 
