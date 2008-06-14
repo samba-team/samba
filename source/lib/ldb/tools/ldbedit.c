@@ -279,7 +279,7 @@ int main(int argc, const char **argv)
 	const char *expression = "(|(objectClass=*)(distinguishedName=*))";
 	const char * const * attrs = NULL;
 
-	ldb = ldb_init(NULL);
+	ldb = ldb_init(NULL, NULL);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 

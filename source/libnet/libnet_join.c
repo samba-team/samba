@@ -865,7 +865,7 @@ NTSTATUS libnet_set_join_secrets(struct libnet_context *ctx,
 	}
 
 	/* Open the secrets database */
-	ldb = secrets_db_connect(tmp_mem, ctx->lp_ctx);
+	ldb = secrets_db_connect(tmp_mem, ctx->event_ctx, ctx->lp_ctx);
 	if (!ldb) {
 		r->out.error_string
 			= talloc_asprintf(mem_ctx, 

@@ -413,7 +413,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 
 	torture_assert_int_equal(tctx, response->samlogon.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN, "Got incorrect netlogon response command");
 
-	torture_leave_domain(join_ctx);
+	torture_leave_domain(tctx, join_ctx);
 	return true;
 }
 
@@ -604,7 +604,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	torture_assert_int_equal(tctx, response->response_type, NETLOGON_GET_PDC, "Got incorrect type of ntlogon response");
 	torture_assert_int_equal(tctx, response->get_pdc.command, NETLOGON_RESPONSE_FROM_PDC, "Got incorrect ntlogon response command");
 
-	torture_leave_domain(join_ctx);
+	torture_leave_domain(tctx, join_ctx);
 
 	/* setup (another) temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,

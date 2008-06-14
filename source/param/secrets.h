@@ -43,9 +43,10 @@ struct machine_acct_pass {
  * @note Not called by systems with a working /dev/urandom.
  */
 struct loadparm_context;
+struct event_context;
 struct tdb_wrap *secrets_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
-struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
-struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *domain);
+struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx, struct event_context *ev_ctx, struct loadparm_context *lp_ctx);
+struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx, struct event_context *ev_ctx, struct loadparm_context *lp_ctx, const char *domain);
 
 
 #endif /* _SECRETS_H */

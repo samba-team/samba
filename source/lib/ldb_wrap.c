@@ -107,22 +107,31 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	char *real_url = NULL;
 	size_t *startup_blocks;
 
-	ldb = ldb_init(mem_ctx);
-	if (ldb == NULL) {
-		return NULL;
-	}
-
-	ldb_set_modules_dir(ldb, 
-			    talloc_asprintf(ldb, "%s/ldb", lp_modulesdir(lp_ctx)));
-
+	/* we want to use the existing event context if possible. This
+	   relies on the fact that in smbd, everything is a child of
+	   the main event_context */
 	if (ev == NULL) {
 		return NULL;
 	}
 
-	if (ldb_set_opaque(ldb, "EventContext", ev)) {
+	ldb = ldb_init(mem_ctx, ev);
+	if (ldb == NULL) {
+		return NULL;
+	}
+
+	ldb_set_modules_dir(ldb,
+			    talloc_asprintf(ldb,
+					    "%s/ldb",
+					    lp_modulesdir(lp_ctx)));
+
+#if 0
+	if (ev) {
+		ldb_event_sys_op_init(ldb, ev);
+	} else {
 		talloc_free(ldb);
 		return NULL;
 	}
+#endif
 
 	if (ldb_set_opaque(ldb, "sessionInfo", session_info)) {
 		talloc_free(ldb);

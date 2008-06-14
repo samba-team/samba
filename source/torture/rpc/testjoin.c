@@ -246,7 +246,7 @@ again:
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));
-		torture_leave_domain(join);
+		torture_leave_domain(torture, join);
 		goto failed;
 	}
 
@@ -294,7 +294,7 @@ again:
 	return join;
 
 failed:
-	torture_leave_domain(join);
+	torture_leave_domain(torture, join);
 	return NULL;
 }
 
@@ -425,7 +425,9 @@ struct policy_handle *torture_join_samr_user_policy(struct test_join *join)
 	return &join->user_handle;
 }
 
-static NTSTATUS torture_leave_ads_domain(TALLOC_CTX *mem_ctx, struct libnet_JoinDomain *libnet_r)
+static NTSTATUS torture_leave_ads_domain(struct torture_context *torture,
+					 TALLOC_CTX *mem_ctx,
+					 struct libnet_JoinDomain *libnet_r)
 {
 	int rtn;
 	TALLOC_CTX *tmp_ctx;
@@ -446,7 +448,7 @@ static NTSTATUS torture_leave_ads_domain(TALLOC_CTX *mem_ctx, struct libnet_Join
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ldb_ctx = ldb_init(tmp_ctx);
+	ldb_ctx = ldb_init(tmp_ctx, torture->ev);
 	if (!ldb_ctx) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
@@ -494,7 +496,7 @@ static NTSTATUS torture_leave_ads_domain(TALLOC_CTX *mem_ctx, struct libnet_Join
   leave the domain, deleting the machine acct
 */
 
-_PUBLIC_ void torture_leave_domain(struct test_join *join)
+_PUBLIC_ void torture_leave_domain(struct torture_context *torture, struct test_join *join)
 {
 	struct samr_DeleteUser d;
 	NTSTATUS status;
@@ -504,8 +506,8 @@ _PUBLIC_ void torture_leave_domain(struct test_join *join)
 	}
 	d.in.user_handle = &join->user_handle;
 	d.out.user_handle = &join->user_handle;
-					
-	/* Delete machine account */	                                                                                                                                                                                                                                                                                                                
+
+	/* Delete machine account */
 	status = dcerpc_samr_DeleteUser(join->p, join, &d);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Delete of machine account %s failed\n",
@@ -516,7 +518,7 @@ _PUBLIC_ void torture_leave_domain(struct test_join *join)
 	}
 
 	if (join->libnet_r) {
-		status = torture_leave_ads_domain(join, join->libnet_r);
+		status = torture_leave_ads_domain(torture, join, join->libnet_r);
 	}
 	
 	talloc_free(join);

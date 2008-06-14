@@ -561,7 +561,7 @@ static void usage(void)
 	FILE *in = stdin;
 	FILE *out = stdout;
 	ctx = talloc_new(NULL);
-	ldb_ctx = ldb_init(ctx);
+	ldb_ctx = ldb_init(ctx, NULL);
 
 	setenv("LDB_URL", "NONE", 1);
 	options = ldb_cmdline_process(ldb_ctx, argc, argv, usage);

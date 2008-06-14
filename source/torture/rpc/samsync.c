@@ -1629,9 +1629,9 @@ bool torture_rpc_samsync(struct torture_context *torture)
 	}
 failed:
 
-	torture_leave_domain(join_ctx);
-	torture_leave_domain(join_ctx2);
-	torture_leave_domain(user_ctx);
+	torture_leave_domain(torture, join_ctx);
+	torture_leave_domain(torture, join_ctx2);
+	torture_leave_domain(torture, user_ctx);
 
 	talloc_free(mem_ctx);
 

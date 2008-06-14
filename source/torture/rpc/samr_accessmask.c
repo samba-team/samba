@@ -639,7 +639,7 @@ static bool test_samr_connect(struct torture_context *tctx,
 
 
 	/* remove the test user */
-	torture_leave_domain(testuser);
+	torture_leave_domain(tctx, testuser);
 
 	return ret;
 }

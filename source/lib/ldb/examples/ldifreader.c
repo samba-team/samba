@@ -71,7 +71,7 @@ int main(int argc, const char **argv)
 	  Note that you can use the context structure as a parent
 	  for talloc allocations as well
 	*/
-	ldb = ldb_init(NULL);
+	ldb = ldb_init(NULL, NULL);
 
 	fileStream = fopen(argv[1], "r");
 	if (0 == fileStream) {

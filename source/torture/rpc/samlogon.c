@@ -1847,9 +1847,9 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 failed:
 	talloc_free(mem_ctx);
 
-	torture_leave_domain(join_ctx);
-	torture_leave_domain(user_ctx);
-	torture_leave_domain(user_ctx_wrong_wks);
-	torture_leave_domain(user_ctx_wrong_time);
+	torture_leave_domain(torture, join_ctx);
+	torture_leave_domain(torture, user_ctx);
+	torture_leave_domain(torture, user_ctx_wrong_wks);
+	torture_leave_domain(torture, user_ctx_wrong_time);
 	return ret;
 }

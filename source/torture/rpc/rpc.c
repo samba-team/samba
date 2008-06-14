@@ -33,7 +33,7 @@ static bool torture_rpc_teardown (struct torture_context *tcase,
 	struct torture_rpc_tcase_data *tcase_data = 
 		(struct torture_rpc_tcase_data *)data;
 	if (tcase_data->join_ctx != NULL)
-	    torture_leave_domain(tcase_data->join_ctx);
+	    torture_leave_domain(tcase, tcase_data->join_ctx);
 	talloc_free(tcase_data);
 	return true;
 }

@@ -385,7 +385,7 @@ static bool test_schannel(struct torture_context *tctx,
 	torture_assert(tctx, test_netlogon_ops(p_netlogon3, tctx, credentials, creds),
 			"Failed to processed NOT schannel secured NETLOGON ops without new ServerAuth");
 
-	torture_leave_domain(join_ctx);
+	torture_leave_domain(tctx, join_ctx);
 	return true;
 }
 
@@ -482,7 +482,7 @@ bool torture_rpc_schannel2(struct torture_context *torture)
 	if (!test_netlogon_ex_ops(p2, torture, credentials2, NULL))
 		return false;
 
-	torture_leave_domain(join_ctx);
+	torture_leave_domain(torture, join_ctx);
 	return true;
 }
 
@@ -829,7 +829,7 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 			(unsigned long long)s->total,
 			(unsigned)s->total/s->timelimit);
 
-	torture_leave_domain(s->join_ctx1);
-	torture_leave_domain(s->join_ctx2);
+	torture_leave_domain(torture, s->join_ctx1);
+	torture_leave_domain(torture, s->join_ctx2);
 	return true;
 }

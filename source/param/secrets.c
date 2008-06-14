@@ -85,7 +85,9 @@ struct tdb_wrap *secrets_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_c
 /**
   connect to the secrets ldb
 */
-struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx,
+					struct event_context *ev_ctx,
+					struct loadparm_context *lp_ctx)
 {
 	char *path;
 	const char *url;
@@ -103,7 +105,7 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx, struct loadparm_cont
 
 	/* Secrets.ldb *must* always be local.  If we call for a
 	 * system_session() we will recurse */
-	ldb = ldb_init(mem_ctx);
+	ldb = ldb_init(mem_ctx, ev_ctx);
 	if (!ldb) {
 		talloc_free(path);
 		return NULL;
@@ -127,6 +129,7 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx, struct loadparm_cont
  * @return pointer to a SID object if the SID could be obtained, NULL otherwise
  */
 struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
+				       struct event_context *ev_ctx,
 				       struct loadparm_context *lp_ctx,
 				       const char *domain)
 {
@@ -138,7 +141,7 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 	const struct ldb_val *v;
 	enum ndr_err_code ndr_err;
 
-	ldb = secrets_db_connect(mem_ctx, lp_ctx);
+	ldb = secrets_db_connect(mem_ctx, ev_ctx, lp_ctx);
 	if (ldb == NULL) {
 		DEBUG(5, ("secrets_db_connect failed\n"));
 		return NULL;

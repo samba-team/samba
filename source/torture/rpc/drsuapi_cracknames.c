@@ -325,7 +325,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 		return ret;
 	}
 
-	ldb = ldb_init(mem_ctx);
+	ldb = ldb_init(mem_ctx, tctx->ev);
 	
 	realm_dn_str = r.out.ctr.ctr1->array[0].result_name;
 	realm_dn =  ldb_dn_new(mem_ctx, ldb, realm_dn_str);
