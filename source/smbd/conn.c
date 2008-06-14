@@ -225,28 +225,15 @@ bool conn_idle_all(time_t t)
  Clear a vuid out of the validity cache, and as the 'owner' of a connection.
 ****************************************************************************/
 
-void conn_clear_vuid_cache(uint16 vuid)
+void conn_clear_vuid_caches(uint16_t vuid)
 {
 	connection_struct *conn;
-	unsigned int i;
 
 	for (conn=Connections;conn;conn=conn->next) {
 		if (conn->vuid == vuid) {
 			conn->vuid = UID_FIELD_INVALID;
 		}
-
-		for (i=0; i<VUID_CACHE_SIZE; i++) {
-			struct vuid_cache_entry *ent;
-
-			ent = &conn->vuid_cache.array[i];
-
-			if (ent->vuid == vuid) {
-				ent->vuid = UID_FIELD_INVALID;
-				TALLOC_FREE(ent->server_info);
-				ent->read_only = False;
-				ent->admin_user = False;
-			}
-		}
+		conn_clear_vuid_cache(conn, vuid);
 	}
 }
 

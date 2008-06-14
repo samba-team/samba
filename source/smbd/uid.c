@@ -143,6 +143,28 @@ static bool check_user_ok(connection_struct *conn, uint16_t vuid,
 }
 
 /****************************************************************************
+ Clear a vuid out of the connection's vuid cache
+****************************************************************************/
+
+void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid)
+{
+	int i;
+
+	for (i=0; i<VUID_CACHE_SIZE; i++) {
+		struct vuid_cache_entry *ent;
+
+		ent = &conn->vuid_cache.array[i];
+
+		if (ent->vuid == vuid) {
+			ent->vuid = UID_FIELD_INVALID;
+			TALLOC_FREE(ent->server_info);
+			ent->read_only = False;
+			ent->admin_user = False;
+		}
+	}
+}
+
+/****************************************************************************
  Become the user of a connection number without changing the security context
  stack, but modify the current_user entries.
 ****************************************************************************/

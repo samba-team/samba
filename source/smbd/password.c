@@ -127,7 +127,7 @@ void invalidate_vuid(uint16 vuid)
 
 	/* clear the vuid from the 'cache' on each connection, and
 	   from the vuid 'owner' of connections */
-	conn_clear_vuid_cache(vuid);
+	conn_clear_vuid_caches(vuid);
 
 	TALLOC_FREE(vuser);
 	num_validated_vuids--;
