@@ -175,7 +175,7 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 			 "user\n"));
 		return(True);
 	} else if ((current_user.conn == conn) && 
-		   (vuser != 0) && (current_user.vuid == vuid) && 
+		   (vuser != NULL) && (current_user.vuid == vuid) &&
 		   (current_user.ut.uid == vuser->server_info->uid)) {
 		DEBUG(4,("change_to_user: Skipping user change - already "
 			 "user\n"));
