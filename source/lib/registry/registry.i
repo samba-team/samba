@@ -35,6 +35,7 @@
 typedef struct registry_context reg;
 typedef struct hive_key hive_key;
 %}
+%include "../../libcli/util/errors.i"
 
 /* FIXME: This should be in another file */
 %typemap(default,noblock=1) struct auth_session_info * {
@@ -44,7 +45,6 @@ typedef struct hive_key hive_key;
 %import "stdint.i"
 %import "../../lib/talloc/talloc.i"
 %import "../../auth/credentials/credentials.i"
-%import "../../libcli/util/errors.i"
 %import "../../param/param.i"
 %import "../events/events.i"
 
