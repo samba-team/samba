@@ -279,6 +279,7 @@ plantest "blackbox.masktest" dc $bbdir/test_masktest.sh "\$SERVER" "\$USERNAME" 
 plantest "blackbox.gentest" dc $bbdir/test_gentest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
 plantest "blackbox.wbinfo" dc $bbdir/test_wbinfo.sh "\$DOMAIN" "\$USERNAME" "\$PASSWORD" "dc"
 plantest "blackbox.wbinfo" member $bbdir/test_wbinfo.sh "\$DOMAIN" "\$DC_USERNAME" "\$DC_PASSWORD" "member"
+plantest "blackbox.wintest" none $bbdir/test_wintest.sh "$TORTURE_OPTIONS"
 
 # Tests using the "Simple" NTVFS backend
 
