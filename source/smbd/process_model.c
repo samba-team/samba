@@ -81,6 +81,7 @@ _PUBLIC_ NTSTATUS register_process_model(const void *_ops)
 
 _PUBLIC_ NTSTATUS process_model_init(struct loadparm_context *lp_ctx)
 {
+	extern NTSTATUS process_model_thread_init(void);
 	extern NTSTATUS process_model_standard_init(void);
 	extern NTSTATUS process_model_prefork_init(void);
 	extern NTSTATUS process_model_single_init(void);
