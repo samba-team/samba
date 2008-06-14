@@ -141,6 +141,7 @@ static void winbind_task_init(struct task_server *task)
 	service->task	= task;
 
 	service->primary_sid = secrets_get_domain_sid(service,
+						      task->event_ctx,
 						      task->lp_ctx,
 						      lp_workgroup(task->lp_ctx));
 	if (service->primary_sid == NULL) {

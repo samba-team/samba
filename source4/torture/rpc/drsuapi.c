@@ -709,7 +709,7 @@ bool torture_rpc_drsuapi(struct torture_context *torture)
 					&p, 
 					&ndr_table_drsuapi);
 	if (!NT_STATUS_IS_OK(status)) {
-		torture_leave_domain(priv.join);
+		torture_leave_domain(torture, priv.join);
 		torture_fail(torture, "Unable to connect to DRSUAPI pipe");
 	}
 
@@ -733,7 +733,7 @@ bool torture_rpc_drsuapi(struct torture_context *torture)
 
 	ret &= test_DsUnbind(p, torture, &priv);
 
-	torture_leave_domain(priv.join);
+	torture_leave_domain(torture, priv.join);
 
 	return ret;
 }
@@ -761,7 +761,7 @@ bool torture_rpc_drsuapi_cracknames(struct torture_context *torture)
 					&p, 
 					&ndr_table_drsuapi);
 	if (!NT_STATUS_IS_OK(status)) {
-		torture_leave_domain(priv.join);
+		torture_leave_domain(torture, priv.join);
 		torture_fail(torture, "Unable to connect to DRSUAPI pipe");
 	}
 
@@ -776,7 +776,7 @@ bool torture_rpc_drsuapi_cracknames(struct torture_context *torture)
 		ret &= test_DsUnbind(p, torture, &priv);
 	}
 
-	torture_leave_domain(priv.join);
+	torture_leave_domain(torture, priv.join);
 
 	return ret;
 }

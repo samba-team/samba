@@ -133,6 +133,8 @@ struct ldb_context {
 	unsigned int create_perms;
 
 	char *modules_dir;
+
+	struct event_context *ev_ctx;
 };
 
 #ifndef ARRAY_SIZE

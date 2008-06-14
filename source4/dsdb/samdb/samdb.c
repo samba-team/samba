@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "lib/events/events.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "libcli/security/security.h"
@@ -114,7 +115,7 @@ int samdb_copy_template(struct ldb_context *ldb,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		
-		event_ctx = (struct event_context *)ldb_get_opaque(ldb, "EventContext");
+		event_ctx = ldb_get_event_context(ldb);
 		lp_ctx = (struct loadparm_context *)ldb_get_opaque(ldb, "loadparm");
 
 		/* FIXME: need to remove this wehn we finally pass the event

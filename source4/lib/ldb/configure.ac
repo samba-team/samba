@@ -46,6 +46,7 @@ EXTRA_OBJ=""
 m4_include(libpopt.m4)
 m4_include(libtalloc.m4)
 m4_include(libtdb.m4)
+m4_include(libevents.m4)
 
 m4_include(ldap.m4)
 if test x"$with_ldap_support" = x"yes"; then

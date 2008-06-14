@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "lib/events/events.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/util/util_ldb.h"

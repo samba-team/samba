@@ -344,7 +344,7 @@ static void start_test_index(struct ldb_context **ldb)
 		exit(1);
 	}
 
-	(*ldb) = ldb_init(options);
+	(*ldb) = ldb_init(options, NULL);
 
 	ret = ldb_connect(*ldb, options->url, flags, NULL);
 	if (ret != 0) {
@@ -393,7 +393,7 @@ int main(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct ldb_context *ldb;
 
-	ldb = ldb_init(mem_ctx);
+	ldb = ldb_init(mem_ctx, NULL);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 

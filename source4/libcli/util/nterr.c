@@ -20,6 +20,7 @@
 /* NT error codes.  please read nterr.h */
 
 #include "includes.h"
+#include "lib/events/events.h"
 #include "libcli/ldap/ldap.h"
 
 typedef struct

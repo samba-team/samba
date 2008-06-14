@@ -256,7 +256,7 @@ static void cldap_dump_results(struct cldap_search *search)
 	}
 
 	/* we need a ldb context to use ldb_ldif_write_file() */
-	ldb = ldb_init(NULL);
+	ldb = ldb_init(NULL, NULL);
 
 	ZERO_STRUCT(ldif);
 	ldif.msg = ldap_msg_to_ldb(ldb, ldb, search->out.response);

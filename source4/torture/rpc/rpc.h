@@ -51,7 +51,7 @@ struct test_join *torture_join_domain(struct torture_context *tctx,
 				      uint32_t acct_flags,
 				      struct cli_credentials **machine_credentials);
 const struct dom_sid *torture_join_sid(struct test_join *join);
-void torture_leave_domain(struct test_join *join);
+void torture_leave_domain(struct torture_context *tctx, struct test_join *join);
 struct torture_rpc_tcase *torture_suite_add_rpc_iface_tcase(struct torture_suite *suite, 
 								const char *name,
 								const struct ndr_interface_table *table);

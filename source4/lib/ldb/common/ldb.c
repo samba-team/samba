@@ -1,13 +1,13 @@
-/* 
+/*
    ldb database library
 
    Copyright (C) Andrew Tridgell  2004
-   Copyright (C) Simo Sorce  2005-2006
+   Copyright (C) Simo Sorce  2005-2008
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -34,14 +34,20 @@
 
 #include "ldb_includes.h"
 
-/* 
+/*
    initialise a ldb context
-   The mem_ctx is optional
+   The mem_ctx is required
+   The event_ctx is required
 */
-struct ldb_context *ldb_init(void *mem_ctx)
+struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct event_context *ev_ctx)
 {
-	struct ldb_context *ldb = talloc_zero(mem_ctx, struct ldb_context);
+	struct ldb_context *ldb;
 	int ret;
+
+	ldb = talloc_zero(mem_ctx, struct ldb_context);
+	if (ev_ctx == NULL) {
+		ev_ctx = event_context_init(ldb);
+	}
 
 	ret = ldb_setup_wellknown_attributes(ldb);
 	if (ret != 0) {
@@ -52,6 +58,10 @@ struct ldb_context *ldb_init(void *mem_ctx)
 	ldb_set_utf8_default(ldb);
 	ldb_set_create_perms(ldb, 0666);
 	ldb_set_modules_dir(ldb, LDB_MODULESDIR);
+	ldb_set_event_context(ldb, ev_ctx);
+
+	/* TODO: get timeout from options if available there */
+	ldb->default_timeout = 300; /* set default to 5 minutes */
 
 	return ldb;
 }
@@ -566,6 +576,16 @@ int ldb_set_timeout_from_prev_req(struct ldb_context *ldb, struct ldb_request *o
 void ldb_set_create_perms(struct ldb_context *ldb, unsigned int perms)
 {
 	ldb->create_perms = perms;
+}
+
+void ldb_set_event_context(struct ldb_context *ldb, struct event_context *ev)
+{
+	ldb->ev_ctx = ev;
+}
+
+struct event_context * ldb_get_event_context(struct ldb_context *ldb)
+{
+	return ldb->ev_ctx;
 }
 
 /*

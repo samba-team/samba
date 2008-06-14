@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "lib/events/events.h"
 #include "lib/ldb/include/ldb.h"
 #include "librpc/gen_ndr/samr.h" /* for struct samrPassword */
 #include "param/secrets.h"
@@ -215,7 +216,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 
 	if (!ldb) {
 		/* Local secrets are stored in secrets.ldb */
-		ldb = secrets_db_connect(mem_ctx, lp_ctx);
+		ldb = secrets_db_connect(mem_ctx, event_ctx, lp_ctx);
 		if (!ldb) {
 			/* set anonymous as the fallback, if the machine account won't work */
 			cli_credentials_set_anonymous(cred);

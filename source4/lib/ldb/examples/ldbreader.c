@@ -67,7 +67,7 @@ int main(int argc, const char **argv)
 	  Note that you can use the context structure as a parent
 	  for talloc allocations as well
 	*/
-	ldb = ldb_init(NULL);
+	ldb = ldb_init(NULL, NULL);
 
 	/*
 	  We now open the database. In this example we just hard code the connection path.

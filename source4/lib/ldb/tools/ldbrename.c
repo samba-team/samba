@@ -56,7 +56,7 @@ int main(int argc, const char **argv)
 	struct ldb_cmdline *options;
 	struct ldb_dn *dn1, *dn2;
 
-	ldb = ldb_init(NULL);
+	ldb = ldb_init(NULL, NULL);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 

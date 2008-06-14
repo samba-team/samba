@@ -8,7 +8,7 @@ Name: ldb
 Description: An LDAP-like embedded database
 Version: @PACKAGE_VERSION@
 Requires.private: tdb
-Requires: talloc
+Requires: talloc events
 Libs: -L${libdir} -lldb
 Libs.private: @LDAP_LIBS@
 Cflags: -I${includedir} 

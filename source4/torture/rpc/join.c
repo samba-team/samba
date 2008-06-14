@@ -48,7 +48,7 @@ bool torture_rpc_join(struct torture_context *torture)
 	smbcli_tdis(cli);
         
 	/* Leave domain. */                          
-	torture_leave_domain(tj);
+	torture_leave_domain(torture, tj);
         
 	/* Join domain as a domain controller. */
 	tj = torture_join_domain(torture, TORTURE_NETBIOS_NAME,
@@ -75,7 +75,7 @@ bool torture_rpc_join(struct torture_context *torture)
 	smbcli_tdis(cli);
 
 	/* Leave domain. */
-	torture_leave_domain(tj);
+	torture_leave_domain(torture, tj);
 
 	return true;
 }

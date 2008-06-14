@@ -9,6 +9,9 @@ make clean
 cd ../tdb
 make clean
 
+cd ../events
+make clean
+
 cd ../ldb
 make clean
 

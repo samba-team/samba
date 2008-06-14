@@ -593,7 +593,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 	s->ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	s->ctx->cred = cmdline_credentials;
 
-	s->ldb = ldb_init(s);
+	s->ldb = ldb_init(s, torture->ev);
 
 	ZERO_STRUCT(b);
 	b.in.domain_dns_name		= torture_join_dom_dns_name(s->tj);
@@ -691,7 +691,7 @@ cleanup:
 	}
 
 	/* Leave domain. */                          
-	torture_leave_domain(s->tj);
+	torture_leave_domain(torture, s->tj);
 
 	talloc_free(s);
 	return ret;

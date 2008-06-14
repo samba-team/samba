@@ -2280,7 +2280,7 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 			ret = false;
 		}
 		
-		torture_leave_domain(join);
+		torture_leave_domain(tctx, join);
 
 	} else {
 		if (!test_many_LookupSids(p, tctx, handle)) {
