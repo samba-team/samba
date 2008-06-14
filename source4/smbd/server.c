@@ -313,7 +313,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	
 	/* the event context is the top level structure in smbd. Everything else
 	   should hang off that */
-	event_ctx = event_context_init(talloc_autofree_context());
+	event_ctx = s4_event_context_init(talloc_autofree_context());
 
 	if (event_ctx == NULL) {
 		DEBUG(0,("Initializing event context failed\n"));

@@ -550,7 +550,7 @@ static void usage(void)
 	DEBUG(0,("seed=%u\n", seed));
 	srandom(seed);
 
-	ev = event_context_init(talloc_autofree_context());
+	ev = s4_event_context_init(talloc_autofree_context());
 
 	locking_init(1);
 	lp_smbcli_options(lp_ctx, &options);

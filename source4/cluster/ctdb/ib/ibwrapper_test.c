@@ -604,7 +604,7 @@ int main(int argc, char *argv[])
 		goto cleanup;
 	}
 
-	ev = event_context_init(NULL);
+	ev = s4_event_context_init(NULL);
 	assert(ev);
 
 	tcx->ibwctx = ibw_init(tcx->attrs, tcx->nattrs,

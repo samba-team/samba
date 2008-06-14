@@ -2621,7 +2621,7 @@ SWIGINTERN PyObject *_wrap_smbcli_sock_connect_byname(PyObject *SWIGUNUSEDPARM(s
     (char *) "host",(char *) "ports",(char *) "resolve_ctx",(char *) "event_ctx", NULL 
   };
   
-  arg5 = event_context_init(NULL);
+  arg5 = s4_event_context_init(NULL);
   arg3 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO|O:smbcli_sock_connect_byname",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
   res1 = SWIG_AsCharPtrAndSize(obj0, &buf1, NULL, &alloc1);

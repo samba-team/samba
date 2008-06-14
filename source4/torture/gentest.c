@@ -3219,7 +3219,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 
 	printf("seed=%u\n", options.seed);
 
-	ev = event_context_init(talloc_autofree_context());
+	ev = s4_event_context_init(talloc_autofree_context());
 
 	gensec_init(lp_ctx);
 

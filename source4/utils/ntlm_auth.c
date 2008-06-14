@@ -462,7 +462,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		return;
 	}
 
-	ev = event_context_init(state);
+	ev = s4_event_context_init(state);
 	if (!ev) {
 		exit(1);
 	}

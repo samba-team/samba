@@ -977,7 +977,7 @@ int main(int argc, const char *argv[])
 
 	control = extra_argv[0];
 
-	ev = event_context_init(NULL);
+	ev = s4_event_context_init(NULL);
 
 	/* initialise ctdb */
 	ctdb = ctdb_cmdline_client(ev);

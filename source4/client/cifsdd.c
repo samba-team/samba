@@ -581,7 +581,7 @@ int main(int argc, const char ** argv)
 		}
 	}
 
-	ev = event_context_init(talloc_autofree_context());
+	ev = s4_event_context_init(talloc_autofree_context());
 
 	gensec_init(cmdline_lp_ctx);
 	dump_args();

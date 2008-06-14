@@ -47,7 +47,7 @@ static PyObject *py_net_join(PyObject *cls, PyObject *args, PyObject *kwargs)
 
 	/* FIXME: we really need to get a context from the caller or we may end
 	 * up with 2 event contexts */
-	ev = event_context_init(NULL);
+	ev = s4_event_context_init(NULL);
 	mem_ctx = talloc_new(ev);
 
 	libnet_ctx = py_net_ctx(cls, ev);

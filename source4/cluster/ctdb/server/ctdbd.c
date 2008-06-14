@@ -141,7 +141,7 @@ int main(int argc, const char *argv[])
 
 	block_signal(SIGPIPE);
 
-	ev = event_context_init(NULL);
+	ev = s4_event_context_init(NULL);
 
 	ctdb = ctdb_cmdline_init(ev);
 

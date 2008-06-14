@@ -55,3 +55,54 @@ NTSTATUS s4_events_aio_init(void)
        return NT_STATUS_OK;
 }
 #endif
+
+/*
+  this is used to catch debug messages from events
+*/
+static void ev_wrap_debug(void *context, enum ev_debug_level level,
+			  const char *fmt, va_list ap)  PRINTF_ATTRIBUTE(3,0);
+
+static void ev_wrap_debug(void *context, enum ev_debug_level level,
+			  const char *fmt, va_list ap)
+{
+	int samba_level = -1;
+	char *s = NULL;
+	switch (level) {
+	case EV_DEBUG_FATAL:
+		samba_level = 0;
+		break;
+	case EV_DEBUG_ERROR:
+		samba_level = 1;
+		break;
+	case EV_DEBUG_WARNING:
+		samba_level = 2;
+		break;
+	case EV_DEBUG_TRACE:
+		samba_level = 5;
+		break;
+
+	};
+	vasprintf(&s, fmt, ap);
+	if (!s) return;
+	DEBUG(samba_level, ("events: %s\n", s));
+	free(s);
+}
+
+/*
+  create a event_context structure. This must be the first events
+  call, and all subsequent calls pass this event_context as the first
+  element. Event handlers also receive this as their first argument.
+
+  This samba4 specific call sets the samba4 debug handler.
+*/
+struct event_context *s4_event_context_init(TALLOC_CTX *mem_ctx)
+{
+	struct event_context *ev;
+
+	ev = event_context_init_byname(mem_ctx, NULL);
+	if (ev) {
+		ev_set_debug(ev, ev_wrap_debug, NULL);
+	}
+	return ev;
+}
+

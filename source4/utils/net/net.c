@@ -185,7 +185,7 @@ static int binary_net(int argc, const char **argv)
 
 	dcerpc_init();
 
-	ev = event_context_init(NULL);
+	ev = s4_event_context_init(NULL);
 	if (!ev) {
 		d_printf("Failed to create an event context\n");
 		exit(1);

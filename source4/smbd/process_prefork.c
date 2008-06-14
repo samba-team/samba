@@ -115,7 +115,7 @@ static void prefork_new_task(struct event_context *ev,
 	pid = getpid();
 
 	/* This is now the child code. We need a completely new event_context to work with */
-	ev2 = event_context_init(NULL);
+	ev2 = s4_event_context_init(NULL);
 
 	/* the service has given us a private pointer that
 	   encapsulates the context it needs for this new connection -
@@ -173,7 +173,7 @@ static void prefork_new_task(struct event_context *ev,
 	talloc_free(ev2);
 	
 	/* But we need a events system to handle reaping children */
-	ev_parent = event_context_init(NULL);
+	ev_parent = s4_event_context_init(NULL);
 	
 	/* TODO: Handle some events... */
 	

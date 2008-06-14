@@ -43,9 +43,9 @@ int ev_set_debug(struct event_context *ev,
 /*
   debug function for ev_set_debug_stderr
 */
-static void ev_debug_stderr(void *context, enum ev_debug_level level,
+void ev_debug_stderr(void *context, enum ev_debug_level level,
 			    const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0);
-static void ev_debug_stderr(void *context, enum ev_debug_level level,
+void ev_debug_stderr(void *context, enum ev_debug_level level,
 			    const char *fmt, va_list ap)
 {
 	if (level <= EV_DEBUG_WARNING) {
@@ -63,13 +63,18 @@ int ev_set_debug_stderr(struct event_context *ev)
 }
 
 /*
-  log a message
+ * log a message
+ *
+ * The default debug action is to ignore debugging messages.
+ * This is the most appropriate action for a library.
+ * Applications using the library must decide where to
+ * redirect debugging messages
 */
 void ev_debug(struct event_context *ev, enum ev_debug_level level, const char *fmt, ...)
 {
 	va_list ap;
 	if (ev->debug_ops.debug == NULL) {
-		ev_set_debug_stderr(ev);
+		return;
 	}
 	va_start(ap, fmt);
 	ev->debug_ops.debug(ev->debug_ops.context, level, fmt, ap);

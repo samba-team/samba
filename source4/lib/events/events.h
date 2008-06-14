@@ -43,7 +43,6 @@ typedef void (*event_aio_handler_t)(struct event_context *, struct aio_event *,
 				    int, void *);
 
 #ifdef _SAMBA_BUILD_
-struct event_context *s4_event_context_init_byname(TALLOC_CTX *mem_ctx, const char *name);
 struct event_context *s4_event_context_init(TALLOC_CTX *mem_ctx);
 #endif
 
