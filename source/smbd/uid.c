@@ -61,7 +61,9 @@ bool change_to_guest(void)
  later code can then mess with.
 ********************************************************************/
 
-static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
+static bool check_user_ok(connection_struct *conn, uint16_t vuid,
+			  struct auth_serversupplied_info *server_info,
+			  int snum)
 {
 	unsigned int i;
 	struct vuid_cache_entry *ent = NULL;
@@ -70,7 +72,7 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 
 	for (i=0; i<VUID_CACHE_SIZE; i++) {
 		ent = &conn->vuid_cache.array[i];
-		if (ent->vuid == vuser->vuid) {
+		if (ent->vuid == vuid) {
 			conn->server_info = ent->server_info;
 			conn->read_only = ent->read_only;
 			conn->admin_user = ent->admin_user;
@@ -78,20 +80,18 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 		}
 	}
 
-	if (!user_ok_token(vuser->server_info->unix_name,
-			   pdb_get_domain(vuser->server_info->sam_account),
-			   vuser->server_info->ptok,
-			   snum))
+	if (!user_ok_token(server_info->unix_name,
+			   pdb_get_domain(server_info->sam_account),
+			   server_info->ptok, snum))
 		return(False);
 
 	readonly_share = is_share_read_only_for_token(
-		vuser->server_info->unix_name,
-		pdb_get_domain(vuser->server_info->sam_account),
-		vuser->server_info->ptok,
-		snum);
+		server_info->unix_name,
+		pdb_get_domain(server_info->sam_account),
+		server_info->ptok, snum);
 
 	if (!readonly_share &&
-	    !share_access_check(vuser->server_info->ptok, lp_servicename(snum),
+	    !share_access_check(server_info->ptok, lp_servicename(snum),
 				FILE_WRITE_DATA)) {
 		/* smb.conf allows r/w, but the security descriptor denies
 		 * write. Fall back to looking at readonly. */
@@ -100,17 +100,16 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 			 "security descriptor\n"));
 	}
 
-	if (!share_access_check(vuser->server_info->ptok, lp_servicename(snum),
+	if (!share_access_check(server_info->ptok, lp_servicename(snum),
 				readonly_share ?
 				FILE_READ_DATA : FILE_WRITE_DATA)) {
 		return False;
 	}
 
 	admin_user = token_contains_name_in_list(
-		vuser->server_info->unix_name,
-		pdb_get_domain(vuser->server_info->sam_account),
-		NULL, vuser->server_info->ptok,
-		lp_admin_users(snum));
+		server_info->unix_name,
+		pdb_get_domain(server_info->sam_account),
+		NULL, server_info->ptok, lp_admin_users(snum));
 
 	ent = &conn->vuid_cache.array[conn->vuid_cache.next_entry];
 
@@ -125,15 +124,14 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 	 */
 
 	ent->server_info = copy_serverinfo(
-		conn,
-		conn->force_user ? conn->server_info : vuser->server_info);
+		conn, conn->force_user ? conn->server_info : server_info);
 
 	if (ent->server_info == NULL) {
 		ent->vuid = UID_FIELD_INVALID;
 		return false;
 	}
 
-	ent->vuid = vuser->vuid;
+	ent->vuid = vuid;
 	ent->read_only = readonly_share;
 	ent->admin_user = admin_user;
 
@@ -186,7 +184,7 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 
 	snum = SNUM(conn);
 
-	if ((vuser) && !check_user_ok(conn, vuser, snum)) {
+	if ((vuser) && !check_user_ok(conn, vuid, vuser->server_info, snum)) {
 		DEBUG(2,("change_to_user: SMB user %s (unix user %s, vuid %d) "
 			 "not permitted access to share %s.\n",
 			 vuser->server_info->sanitized_username,
