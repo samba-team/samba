@@ -71,7 +71,7 @@ static struct backends_list_entry {
 	struct backends_list_entry *prev, *next;
 } *ldb_backends = NULL;
 
-#ifndef STATIC_LIBLDB_BACKENDS 
+#ifndef STATIC_LIBLDB_BACKENDS
 
 #ifdef HAVE_LDB_LDAP
 #define LDAP_INIT &ldb_ldap_backend_ops, \
@@ -104,12 +104,14 @@ static ldb_connect_fn ldb_find_backend(const char *url)
 	int i;
 
 	for (i = 0; builtin_backends[i]; i++) {
-		if (strncmp(builtin_backends[i]->name, url, strlen(builtin_backends[i]->name)) == 0)
+		if (strncmp(builtin_backends[i]->name, url,
+			    strlen(builtin_backends[i]->name)) == 0)
 			return builtin_backends[i]->connect_fn;
 	}
 
 	for (backend = ldb_backends; backend; backend = backend->next) {
-		if (strncmp(backend->ops->name, url, strlen(backend->ops->name)) == 0) {
+		if (strncmp(backend->ops->name, url,
+			    strlen(backend->ops->name)) == 0) {
 			return backend->ops->connect_fn;
 		}
 	}
@@ -122,8 +124,17 @@ static ldb_connect_fn ldb_find_backend(const char *url)
 */
 int ldb_register_backend(const char *url_prefix, ldb_connect_fn connectfn)
 {
-	struct ldb_backend_ops *backend = talloc(talloc_autofree_context(), struct ldb_backend_ops);
-	struct backends_list_entry *entry = talloc(talloc_autofree_context(), struct backends_list_entry);
+	struct ldb_backend_ops *backend;
+	struct backends_list_entry *entry;
+
+	backend = talloc(talloc_autofree_context(), struct ldb_backend_ops);
+	if (!backend) return LDB_OPERATIONS_ERROR;
+
+	entry = talloc(talloc_autofree_context(), struct backends_list_entry);
+	if (!entry) {
+		talloc_free(backend);
+		return LDB_OPERATIONS_ERROR;
+	}
 
 	if (ldb_find_backend(url_prefix)) {
 		return LDB_SUCCESS;
@@ -139,8 +150,9 @@ int ldb_register_backend(const char *url_prefix, ldb_connect_fn connectfn)
 	return LDB_SUCCESS;
 }
 
-/* 
-   Return the ldb module form of a database. The URL can either be one of the following forms
+/*
+   Return the ldb module form of a database.
+   The URL can either be one of the following forms
    ldb://path
    ldapi://path
 
@@ -149,10 +161,12 @@ int ldb_register_backend(const char *url_prefix, ldb_connect_fn connectfn)
    the options are passed uninterpreted to the backend, and are
    backend specific.
 
-  This allows modules to get at only the backend module, for example where a module 
-  may wish to direct certain requests at a particular backend.
+   This allows modules to get at only the backend module, for example where a
+   module may wish to direct certain requests at a particular backend.
 */
-int ldb_connect_backend(struct ldb_context *ldb, const char *url, const char *options[],
+int ldb_connect_backend(struct ldb_context *ldb,
+			const char *url,
+			const char *options[],
 			struct ldb_module **backend_module)
 {
 	int ret;
@@ -194,14 +208,16 @@ int ldb_connect_backend(struct ldb_context *ldb, const char *url, const char *op
 	talloc_free(backend);
 
 	if (fn == NULL) {
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "Unable to find backend for '%s'\n", url);
+		ldb_debug(ldb, LDB_DEBUG_FATAL,
+			  "Unable to find backend for '%s'\n", url);
 		return LDB_ERR_OTHER;
 	}
 
 	ret = fn(ldb, url, ldb->flags, options, backend_module);
 
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to connect to '%s'\n", url);
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Failed to connect to '%s'\n", url);
 		return ret;
 	}
 	return ret;
@@ -227,58 +243,72 @@ void ldb_set_default_dns(struct ldb_context *ldb)
 	};
 
 	tmp_ctx = talloc_new(ldb);
-	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx, ldb, NULL), LDB_SCOPE_BASE, 
+	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx, ldb, NULL), LDB_SCOPE_BASE,
 			 "(objectClass=*)", attrs, &res);
-	if (ret == LDB_SUCCESS) {
-		if (res->count == 1) {
-			if (!ldb_get_opaque(ldb, "rootDomainNamingContext")) {
-				tmp_dn = ldb_msg_find_attr_as_dn(ldb, ldb, res->msgs[0], "rootDomainNamingContext");
-				ldb_set_opaque(ldb, "rootDomainNamingContext", tmp_dn);
-			}
-
-			if (!ldb_get_opaque(ldb, "configurationNamingContext")) {
-				tmp_dn = ldb_msg_find_attr_as_dn(ldb, ldb, res->msgs[0], "configurationNamingContext");
-				ldb_set_opaque(ldb, "configurationNamingContext", tmp_dn);
-			}
-
-			if (!ldb_get_opaque(ldb, "schemaNamingContext")) {
-				tmp_dn = ldb_msg_find_attr_as_dn(ldb, ldb, res->msgs[0], "schemaNamingContext");
-				ldb_set_opaque(ldb, "schemaNamingContext", tmp_dn);
-			}
-
-			if (!ldb_get_opaque(ldb, "defaultNamingContext")) {
-				tmp_dn = ldb_msg_find_attr_as_dn(ldb, ldb, res->msgs[0], "defaultNamingContext");
-				ldb_set_opaque(ldb, "defaultNamingContext", tmp_dn);
-			}
-		}
-		talloc_free(res);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return;
 	}
 
+	if (res->count != 1) {
+		talloc_free(res);
+		return;
+	}
+
+	if (!ldb_get_opaque(ldb, "rootDomainNamingContext")) {
+		tmp_dn = ldb_msg_find_attr_as_dn(ldb, ldb, res->msgs[0],
+						 "rootDomainNamingContext");
+		ldb_set_opaque(ldb, "rootDomainNamingContext", tmp_dn);
+	}
+
+	if (!ldb_get_opaque(ldb, "configurationNamingContext")) {
+		tmp_dn = ldb_msg_find_attr_as_dn(ldb, ldb, res->msgs[0],
+						 "configurationNamingContext");
+		ldb_set_opaque(ldb, "configurationNamingContext", tmp_dn);
+	}
+
+	if (!ldb_get_opaque(ldb, "schemaNamingContext")) {
+		tmp_dn = ldb_msg_find_attr_as_dn(ldb, ldb, res->msgs[0],
+						 "schemaNamingContext");
+		ldb_set_opaque(ldb, "schemaNamingContext", tmp_dn);
+	}
+
+	if (!ldb_get_opaque(ldb, "defaultNamingContext")) {
+		tmp_dn = ldb_msg_find_attr_as_dn(ldb, ldb, res->msgs[0],
+						 "defaultNamingContext");
+		ldb_set_opaque(ldb, "defaultNamingContext", tmp_dn);
+	}
+
+	talloc_free(res);
 	talloc_free(tmp_ctx);
 }
 
 struct ldb_dn *ldb_get_root_basedn(struct ldb_context *ldb)
 {
-	return talloc_get_type(ldb_get_opaque(ldb, "rootDomainNamingContext"), struct ldb_dn);
+	void *opaque = ldb_get_opaque(ldb, "rootDomainNamingContext");
+	return talloc_get_type(opaque, struct ldb_dn);
 }
 
 struct ldb_dn *ldb_get_config_basedn(struct ldb_context *ldb)
 {
-	return talloc_get_type(ldb_get_opaque(ldb, "configurationNamingContext"), struct ldb_dn);
+	void *opaque = ldb_get_opaque(ldb, "configurationNamingContext");
+	return talloc_get_type(opaque, struct ldb_dn);
 }
 
 struct ldb_dn *ldb_get_schema_basedn(struct ldb_context *ldb)
 {
-	return talloc_get_type(ldb_get_opaque(ldb, "schemaNamingContext"), struct ldb_dn);
+	void *opaque = ldb_get_opaque(ldb, "schemaNamingContext");
+	return talloc_get_type(opaque, struct ldb_dn);
 }
 
 struct ldb_dn *ldb_get_default_basedn(struct ldb_context *ldb)
 {
-	return talloc_get_type(ldb_get_opaque(ldb, "defaultNamingContext"), struct ldb_dn);
+	void *opaque = ldb_get_opaque(ldb, "defaultNamingContext");
+	return talloc_get_type(opaque, struct ldb_dn);
 }
 
-/* 
- connect to a database. The URL can either be one of the following forms
+/*
+   connect to a database. The URL can either be one of the following forms
    ldb://path
    ldapi://path
 
@@ -287,11 +317,13 @@ struct ldb_dn *ldb_get_default_basedn(struct ldb_context *ldb)
    the options are passed uninterpreted to the backend, and are
    backend specific
 */
-int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[])
+int ldb_connect(struct ldb_context *ldb, const char *url,
+		unsigned int flags, const char *options[])
 {
 	int ret;
 	const char *url2;
-	/* We seem to need to do this here, or else some utilities don't get ldb backends */
+	/* We seem to need to do this here, or else some utilities don't
+	 * get ldb backends */
 
 	ldb->flags = flags;
 
@@ -311,7 +343,8 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 	}
 
 	if (ldb_load_modules(ldb, options) != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "Unable to load modules for %s: %s\n",
+		ldb_debug(ldb, LDB_DEBUG_FATAL,
+			  "Unable to load modules for %s: %s\n",
 			  url, ldb_errstring(ldb));
 		return LDB_ERR_OTHER;
 	}
@@ -381,9 +414,9 @@ static int ldb_transaction_start_internal(struct ldb_context *ldb)
 		if (ldb->err_string == NULL) {
 			/* no error string was setup by the backend */
 			ldb_asprintf_errstring(ldb,
-						"ldb transaction start: %s (%d)", 
-						ldb_strerror(status), 
-						status);
+				"ldb transaction start: %s (%d)",
+				ldb_strerror(status),
+				status);
 		}
 	}
 	return status;
@@ -404,10 +437,10 @@ static int ldb_transaction_commit_internal(struct ldb_context *ldb)
 	if (status != LDB_SUCCESS) {
 		if (ldb->err_string == NULL) {
 			/* no error string was setup by the backend */
-			ldb_asprintf_errstring(ldb, 
-						"ldb transaction commit: %s (%d)", 
-						ldb_strerror(status), 
-						status);
+			ldb_asprintf_errstring(ldb,
+				"ldb transaction commit: %s (%d)",
+				ldb_strerror(status),
+				status);
 		}
 	}
 	return status;
@@ -426,10 +459,10 @@ static int ldb_transaction_cancel_internal(struct ldb_context *ldb)
 	if (status != LDB_SUCCESS) {
 		if (ldb->err_string == NULL) {
 			/* no error string was setup by the backend */
-			ldb_asprintf_errstring(ldb, 
-						"ldb transaction cancel: %s (%d)", 
-						ldb_strerror(status), 
-						status);
+			ldb_asprintf_errstring(ldb,
+				"ldb transaction cancel: %s (%d)",
+				ldb_strerror(status),
+				status);
 		}
 	}
 	return status;
@@ -489,7 +522,8 @@ static int ldb_autotransaction_cancel(struct ldb_context *ldb)
 }
 
 /* autostarts a transacion if none active */
-static int ldb_autotransaction_request(struct ldb_context *ldb, struct ldb_request *req)
+static int ldb_autotransaction_request(struct ldb_context *ldb,
+				       struct ldb_request *req)
 {
 	int ret;
 
@@ -526,17 +560,22 @@ int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 	ret = handle->module->ops->wait(handle, type);
 	if (!ldb_errstring(handle->module->ldb)) {
 		/* Set a default error string, to place the blame somewhere */
-		ldb_asprintf_errstring(handle->module->ldb, "error waiting on module %s: %s (%d)", handle->module->ops->name, ldb_strerror(ret), ret);
+		ldb_asprintf_errstring(handle->module->ldb,
+					"error waiting on module %s: %s (%d)",
+					handle->module->ops->name,
+					ldb_strerror(ret), ret);
 	}
 	return ret;
 }
 
 /* set the specified timeout or, if timeout is 0 set the default timeout */
 /* timeout == -1 means no timeout */
-int ldb_set_timeout(struct ldb_context *ldb, struct ldb_request *req, int timeout)
+int ldb_set_timeout(struct ldb_context *ldb,
+		    struct ldb_request *req,
+		    int timeout)
 {
 	if (req == NULL) return LDB_ERR_OPERATIONS_ERROR;
-	
+
 	if (timeout != 0) {
 		req->timeout = timeout;
 	} else {
@@ -548,7 +587,9 @@ int ldb_set_timeout(struct ldb_context *ldb, struct ldb_request *req, int timeou
 }
 
 /* calculates the new timeout based on the previous starttime and timeout */
-int ldb_set_timeout_from_prev_req(struct ldb_context *ldb, struct ldb_request *oldreq, struct ldb_request *newreq)
+int ldb_set_timeout_from_prev_req(struct ldb_context *ldb,
+				  struct ldb_request *oldreq,
+				  struct ldb_request *newreq)
 {
 	time_t now;
 
@@ -569,7 +610,7 @@ int ldb_set_timeout_from_prev_req(struct ldb_context *ldb, struct ldb_request *o
 }
 
 
-/* 
+/*
    set the permissions for new files to be passed to open() in
    backends that use local files
  */
@@ -647,15 +688,17 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
   Use talloc_free to free the ldb_message returned in 'res', if successful
 
 */
-int ldb_search_default_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
+int ldb_search_default_callback(struct ldb_context *ldb,
+				void *context,
+				struct ldb_reply *ares)
 {
 	struct ldb_result *res;
 	int n;
-	
+
  	if (!context) {
 		ldb_set_errstring(ldb, "NULL Context in callback");
 		return LDB_ERR_OPERATIONS_ERROR;
-	}	
+	}
 
 	res = talloc_get_type(context, struct ldb_result);
 
@@ -666,7 +709,9 @@ int ldb_search_default_callback(struct ldb_context *ldb, void *context, struct l
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
-		res->msgs = talloc_realloc(res, res->msgs, struct ldb_message *, res->count + 2);
+		res->msgs = talloc_realloc(res, res->msgs,
+					   struct ldb_message *,
+					   res->count + 2);
 		if (! res->msgs) {
 			goto error;
 		}
@@ -693,9 +738,10 @@ int ldb_search_default_callback(struct ldb_context *ldb, void *context, struct l
 		break;
 	case LDB_REPLY_EXTENDED:
 	case LDB_REPLY_DONE:
-		/* TODO: we should really support controls on entries and referrals too! */
+		/* TODO: we should really support controls on entries
+		 * and referrals too! */
 		res->controls = talloc_move(res, &ares->controls);
-		break;		
+		break;
 	}
 	talloc_free(ares);
 	return LDB_SUCCESS;
@@ -868,10 +914,12 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
 	return LDB_SUCCESS;
 }
 
-int ldb_extended_default_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
+int ldb_extended_default_callback(struct ldb_context *ldb,
+				  void *context,
+				  struct ldb_reply *ares)
 {
 	struct ldb_result *res;
-	
+
  	if (!context) {
 		ldb_set_errstring(ldb, "NULL Context in callback");
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -890,10 +938,11 @@ int ldb_extended_default_callback(struct ldb_context *ldb, void *context, struct
 		ldb_set_errstring(ldb, "invalid ares type in callback");
 		goto error;
 	case LDB_REPLY_EXTENDED:
-		/* TODO: we should really support controls on entries and referrals too! */
+		/* TODO: we should really support controls on entries and
+		 * referrals too! */
 		res->extended = talloc_move(res, &ares->response);
 		res->controls = talloc_move(res, &ares->controls);
-		break;		
+		break;
 	}
 	talloc_free(ares);
 	return LDB_SUCCESS;
@@ -934,7 +983,7 @@ int ldb_build_extended_req(struct ldb_request **ret_req,
 	return LDB_SUCCESS;
 }
 
-int ldb_extended(struct ldb_context *ldb, 
+int ldb_extended(struct ldb_context *ldb,
 		 const char *oid,
 		 void *data,
 		 struct ldb_result **_res)
@@ -958,7 +1007,7 @@ int ldb_extended(struct ldb_context *ldb,
 	ldb_set_timeout(ldb, req, 0); /* use default timeout */
 
 	ret = ldb_request(ldb, req);
-	
+
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
@@ -975,14 +1024,14 @@ done:
 }
 
 /*
-  note that ldb_search() will automatically replace a NULL 'base' value with the 
-  defaultNamingContext from the rootDSE if available.
+  note that ldb_search() will automatically replace a NULL 'base' value
+  with the defaultNamingContext from the rootDSE if available.
 */
-int ldb_search(struct ldb_context *ldb, 
+int ldb_search(struct ldb_context *ldb,
 	       struct ldb_dn *base,
 	       enum ldb_scope scope,
 	       const char *expression,
-	       const char * const *attrs, 
+	       const char * const *attrs,
 	       struct ldb_result **_res)
 {
 	struct ldb_request *req;
@@ -1010,7 +1059,7 @@ int ldb_search(struct ldb_context *ldb,
 	ldb_set_timeout(ldb, req, 0); /* use default timeout */
 
 	ret = ldb_request(ldb, req);
-	
+
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
@@ -1031,8 +1080,9 @@ done:
  takes a memory context where results are allocated
 */
 
-int ldb_search_exp_fmt(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_result **result,
-                        struct ldb_dn *base, enum ldb_scope scope, const char * const *attrs,
+int ldb_search_exp_fmt(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+			struct ldb_result **result, struct ldb_dn *base,
+			enum ldb_scope scope, const char * const *attrs,
                         const char *exp_fmt, ...)
 {
 	struct ldb_result *res;
@@ -1064,10 +1114,10 @@ int ldb_search_exp_fmt(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_
 }
 
 /*
-  add a record to the database. Will fail if a record with the given class and key
-  already exists
+  add a record to the database. Will fail if a record with the
+  given class and key already exists
 */
-int ldb_add(struct ldb_context *ldb, 
+int ldb_add(struct ldb_context *ldb,
 	    const struct ldb_message *message)
 {
 	struct ldb_request *req;
@@ -1098,7 +1148,7 @@ int ldb_add(struct ldb_context *ldb,
 /*
   modify the specified attributes of a record
 */
-int ldb_modify(struct ldb_context *ldb, 
+int ldb_modify(struct ldb_context *ldb,
 	       const struct ldb_message *message)
 {
 	struct ldb_request *req;
@@ -1155,7 +1205,8 @@ int ldb_delete(struct ldb_context *ldb, struct ldb_dn *dn)
 /*
   rename a record in the database
 */
-int ldb_rename(struct ldb_context *ldb, struct ldb_dn *olddn, struct ldb_dn *newdn)
+int ldb_rename(struct ldb_context *ldb,
+		struct ldb_dn *olddn, struct ldb_dn *newdn)
 {
 	struct ldb_request *req;
 	int ret;
@@ -1182,7 +1233,9 @@ int ldb_rename(struct ldb_context *ldb, struct ldb_dn *olddn, struct ldb_dn *new
 /*
   return the global sequence number
 */
-int ldb_sequence_number(struct ldb_context *ldb, enum ldb_sequence_type type, uint64_t *seq_num)
+int ldb_sequence_number(struct ldb_context *ldb,
+			enum ldb_sequence_type type,
+			uint64_t *seq_num)
 {
 	struct ldb_request *req;
 	int ret;
@@ -1202,7 +1255,7 @@ int ldb_sequence_number(struct ldb_context *ldb, enum ldb_sequence_type type, ui
 	req->op.seq_num.type = type;
 	/* do request and autostart a transaction */
 	ret = ldb_request(ldb, req);
-	
+
 	if (ret == LDB_SUCCESS) {
 		*seq_num = req->op.seq_num.seq_num;
 	}
@@ -1214,7 +1267,7 @@ int ldb_sequence_number(struct ldb_context *ldb, enum ldb_sequence_type type, ui
 
 
 /*
-  return extended error information 
+  return extended error information
 */
 const char *ldb_errstring(struct ldb_context *ldb)
 {
