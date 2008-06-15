@@ -31,7 +31,7 @@
 */
 
 #include "system/filesys.h"
-#include "system/network.h"
+#include "replace.h"
 #include "events.h"
 #include "events_internal.h"
 #include <sys/epoll.h>
@@ -138,7 +138,7 @@ static void epoll_add_event(struct aio_event_context *aio_ev, struct fd_event *f
 	/* if we don't want events yet, don't add an aio_event */
 	if (fde->flags == 0) return;
 
-	ZERO_STRUCT(event);
+	memset(&event, 0, sizeof(event));
 	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
 	epoll_ctl(aio_ev->epoll_fd, EPOLL_CTL_ADD, fde->fd, &event);
@@ -479,7 +479,7 @@ static int aio_event_loop_once(struct event_context *ev)
 	struct timeval tval;
 
 	tval = common_event_loop_timer_delay(ev);
-	if (timeval_is_zero(&tval)) {
+	if (ev_timeval_is_zero(&tval)) {
 		return 0;
 	}
 
