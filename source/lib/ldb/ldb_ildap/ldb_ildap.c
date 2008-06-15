@@ -1,13 +1,13 @@
-/* 
+/*
    ldb database library - ildap backend
 
    Copyright (C) Andrew Tridgell  2005
-   Copyright (C) Simo Sorce       2006
+   Copyright (C) Simo Sorce       2008
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -69,7 +69,8 @@ struct ildb_context {
   ready for ildap_add() or ildap_modify()
 */
 static struct ldap_mod **ildb_msg_to_mods(void *mem_ctx, int *num_mods,
-					  const struct ldb_message *msg, int use_flags)
+					  const struct ldb_message *msg,
+					  int use_flags)
 {
 	struct ldap_mod **mods;
 	unsigned int i;
@@ -131,7 +132,8 @@ static int ildb_map_error(struct ildb_private *ildb, NTSTATUS status)
 		ldb_oom(ildb->module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ldb_set_errstring(ildb->module->ldb, ldap_errstr(ildb->ldap, mem_ctx, status));
+	ldb_set_errstring(ildb->module->ldb,
+			  ldap_errstr(ildb->ldap, mem_ctx, status));
 	talloc_free(mem_ctx);
 	if (NT_STATUS_IS_LDAP(status)) {
 		return NT_STATUS_LDAP_CODE(status);
@@ -139,11 +141,14 @@ static int ildb_map_error(struct ildb_private *ildb, NTSTATUS status)
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-static void ildb_request_timeout(struct event_context *ev, struct timed_event *te,
+static void ildb_request_timeout(struct event_context *ev,
+				 struct timed_event *te,
 				 struct timeval t, void *private_data)
 {
-	struct ildb_context *ac = talloc_get_type(private_data, struct ildb_context);
+	struct ildb_context *ac;
 	struct ldb_handle *handle = ac->handle;
+
+	ac = talloc_get_type(private_data, struct ildb_context);
 
 	if (ac->req->state == LDAP_REQUEST_PENDING) {
 		DLIST_REMOVE(ac->req->conn->pending, ac->req);
@@ -156,12 +161,13 @@ static void ildb_request_timeout(struct event_context *ev, struct timed_event *t
 
 static void ildb_callback(struct ldap_request *req)
 {
-	struct ildb_context *ac = talloc_get_type(req->async.private_data, struct ildb_context);
+	struct ildb_context *ac;
 	struct ldb_handle *handle = ac->handle;
 	struct ildb_private *ildb = ac->ildb;
 	NTSTATUS status;
 	int i;
 
+	ac =talloc_get_type(req->async.private_data, struct ildb_context);
 	handle->status = LDB_SUCCESS;
 
 	if (!NT_STATUS_IS_OK(req->status)) {
@@ -172,8 +178,8 @@ static void ildb_callback(struct ldap_request *req)
 	if (req->num_replies < 1) {
 		handle->status = LDB_ERR_OPERATIONS_ERROR;
 		return;
-	} 
-		
+	}
+
 	switch (req->type) {
 
 	case LDAP_TAG_ModifyRequest:
@@ -256,7 +262,7 @@ static void ildb_callback(struct ldap_request *req)
 					handle->status = ildb_map_error(ildb, status);
 					return;
 				}
-				
+
 				ares->controls = talloc_move(ares, &msg->controls);
 				if (msg->r.SearchResultDone.resultcode) {
 					if (msg->r.SearchResultDone.errormessage) {
@@ -279,7 +285,7 @@ static void ildb_callback(struct ldap_request *req)
 				}
 
 				search = &(msg->r.SearchResultEntry);
-		
+
 				ares->message->dn = ldb_dn_new(ares->message, ac->ildb->module->ldb, search->dn);
 				if ( ! ldb_dn_validate(ares->message->dn)) {
 					handle->status = LDB_ERR_OPERATIONS_ERROR;
@@ -297,7 +303,7 @@ static void ildb_callback(struct ldap_request *req)
 			case LDAP_TAG_SearchResultReference:
 
 				ares->referral = talloc_strdup(ares, msg->r.SearchResultReference.referral);
-				
+
 				handle->status = LDB_SUCCESS;
 				handle->state = LDB_ASYNC_PENDING;
 				ares->type = LDB_REPLY_REFERRAL;
@@ -320,7 +326,7 @@ static void ildb_callback(struct ldap_request *req)
 		req->num_replies = 0;
 
 		break;
-		
+
 	default:
 		handle->status = LDB_ERR_PROTOCOL_ERROR;
 		return;
@@ -368,7 +374,7 @@ static int ildb_request_send(struct ildb_private *ildb, struct ldap_message *msg
 	struct ldap_request *req;
 
 	if (!ildb_ac) {
-		return LDB_ERR_OPERATIONS_ERROR;		
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	req = ldap_request_send(ildb->ldap, msg);
@@ -403,7 +409,7 @@ static int ildb_request_noop(struct ildb_private *ildb, struct ldb_request *req)
 	int ret = LDB_SUCCESS;
 
 	if (!ildb_ac) {
-		return LDB_ERR_OPERATIONS_ERROR;		
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (ildb_ac->callback) {
@@ -428,7 +434,7 @@ static int ildb_search(struct ldb_module *module, struct ldb_request *req)
 		ldb_set_errstring(module->ldb, "Async interface called with NULL callback function or NULL context");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	
+
 	if (req->op.search.tree == NULL) {
 		ldb_set_errstring(module->ldb, "Invalid expression parse tree");
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -458,13 +464,13 @@ static int ildb_search(struct ldb_module *module, struct ldb_request *req)
 	} else {
 		msg->r.SearchRequest.scope = req->op.search.scope;
 	}
-	
+
 	msg->r.SearchRequest.deref  = LDAP_DEREFERENCE_NEVER;
 	msg->r.SearchRequest.timelimit = 0;
 	msg->r.SearchRequest.sizelimit = 0;
 	msg->r.SearchRequest.attributesonly = 0;
 	msg->r.SearchRequest.tree = discard_const(req->op.search.tree);
-	
+
 	for (n = 0; req->op.search.attrs && req->op.search.attrs[n]; n++) /* noop */ ;
 	msg->r.SearchRequest.num_attributes = n;
 	msg->r.SearchRequest.attributes = discard_const(req->op.search.attrs);
@@ -594,7 +600,7 @@ static int ildb_delete(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	msg->type = LDAP_TAG_DelRequest;
-	
+
 	msg->r.DelRequest.dn = ldb_dn_alloc_linearized(msg, req->op.del.dn);
 	if (msg->r.DelRequest.dn == NULL) {
 		talloc_free(msg);
@@ -631,7 +637,7 @@ static int ildb_rename(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
-	msg->r.ModifyDNRequest.newrdn = 
+	msg->r.ModifyDNRequest.newrdn =
 		talloc_asprintf(msg, "%s=%s",
 				ldb_dn_get_rdn_name(req->op.rename.newdn),
 				ldb_dn_escape_value(msg, *ldb_dn_get_rdn_val(req->op.rename.newdn)));
@@ -708,7 +714,7 @@ static int ildb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 	default:
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	
+
 	return handle->status;
 }
 
@@ -729,7 +735,7 @@ static const struct ldb_module_ops ildb_ops = {
 /*
   connect to the database
 */
-static int ildb_connect(struct ldb_context *ldb, const char *url, 
+static int ildb_connect(struct ldb_context *ldb, const char *url,
 			unsigned int flags, const char *options[],
 			struct ldb_module **_module)
 {
