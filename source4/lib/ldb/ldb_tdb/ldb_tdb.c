@@ -1,15 +1,15 @@
-/* 
+/*
    ldb database library
 
    Copyright (C) Andrew Tridgell  2004
    Copyright (C) Stefan Metzmacher  2004
    Copyright (C) Simo Sorce       2006
-   
+
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -76,7 +76,8 @@ static int ltdb_err_map(enum TDB_ERROR tdb_code)
 }
 
 
-struct ldb_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module *module,
+struct ldb_handle *init_ltdb_handle(struct ltdb_private *ltdb,
+				    struct ldb_module *module,
 				    struct ldb_request *req)
 {
 	struct ltdb_context *ac;
@@ -113,7 +114,7 @@ struct ldb_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module
   form a TDB_DATA for a record key
   caller frees
 
-  note that the key for a record can depend on whether the 
+  note that the key for a record can depend on whether the
   dn refers to a case sensitive index record or not
 */
 struct TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn)
@@ -131,8 +132,8 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn)
 
 	  1) if the dn doesn't start with @ then uppercase the attribute
              names and the attributes values of case insensitive attributes
-	  2) if the dn starts with @ then leave it alone - the indexing code handles
-	     the rest
+	  2) if the dn starts with @ then leave it alone -
+	     the indexing code handles the rest
 	*/
 
 	dn_folded = ldb_dn_get_casefold(dn);
@@ -166,10 +167,11 @@ failed:
   check special dn's have valid attributes
   currently only @ATTRIBUTES is checked
 */
-int ltdb_check_special_dn(struct ldb_module *module, const struct ldb_message *msg)
+int ltdb_check_special_dn(struct ldb_module *module,
+			  const struct ldb_message *msg)
 {
 	int i, j;
- 
+
 	if (! ldb_dn_is_special(msg->dn) ||
 	    ! ldb_dn_check_special(msg->dn, LTDB_ATTRIBUTES)) {
 		return 0;
@@ -191,7 +193,7 @@ int ltdb_check_special_dn(struct ldb_module *module, const struct ldb_message *m
 
 
 /*
-  we've made a modification to a dn - possibly reindex and 
+  we've made a modification to a dn - possibly reindex and
   update sequence number
 */
 static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
@@ -239,7 +241,7 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 		ret = ltdb_err_map(tdb_error(ltdb->tdb));
 		goto done;
 	}
-	
+
 	ret = ltdb_index_add(module, msg);
 	if (ret != LDB_SUCCESS) {
 		tdb_delete(ltdb->tdb, tdb_key);
@@ -253,15 +255,16 @@ done:
 }
 
 
-static int ltdb_add_internal(struct ldb_module *module, const struct ldb_message *msg)
+static int ltdb_add_internal(struct ldb_module *module,
+			     const struct ldb_message *msg)
 {
 	int ret;
-	
+
 	ret = ltdb_check_special_dn(module, msg);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	
+
 	if (ltdb_cache_load(module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -269,10 +272,12 @@ static int ltdb_add_internal(struct ldb_module *module, const struct ldb_message
 	ret = ltdb_store(module, msg, TDB_INSERT);
 
 	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
-		ldb_asprintf_errstring(module->ldb, "Entry %s already exists", ldb_dn_get_linearized(msg->dn));
+		ldb_asprintf_errstring(module->ldb,
+					"Entry %s already exists",
+					ldb_dn_get_linearized(msg->dn));
 		return ret;
 	}
-	
+
 	if (ret == LDB_SUCCESS) {
 		ret = ltdb_index_one(module, msg, 1);
 		if (ret != LDB_SUCCESS) {
@@ -293,14 +298,16 @@ static int ltdb_add_internal(struct ldb_module *module, const struct ldb_message
 */
 static int ltdb_add(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
+	struct ltdb_private *ltdb;
 	struct ltdb_context *ltdb_ac;
 	int tret, ret = LDB_SUCCESS;
+
+	ltdb = talloc_get_type(module->private_data, struct ltdb_private);
 
 	if (check_critical_controls(req->controls)) {
 		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
 	}
-	
+
 	req->handle = init_ltdb_handle(ltdb, module, req);
 	if (req->handle == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -312,7 +319,7 @@ static int ltdb_add(struct ldb_module *module, struct ldb_request *req)
 		req->handle->status = tret;
 		goto done;
 	}
-	
+
 	if (ltdb_ac->callback) {
 		ret = ltdb_ac->callback(module->ldb, ltdb_ac->context, NULL);
 	}
@@ -397,14 +404,16 @@ done:
 */
 static int ltdb_delete(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
+	struct ltdb_private *ltdb;
 	struct ltdb_context *ltdb_ac;
 	int tret, ret = LDB_SUCCESS;
+
+	ltdb = talloc_get_type(module->private_data, struct ltdb_private);
 
 	if (check_critical_controls(req->controls)) {
 		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
 	}
-	
+
 	req->handle = NULL;
 
 	if (ltdb_cache_load(module) != 0) {
@@ -419,7 +428,7 @@ static int ltdb_delete(struct ldb_module *module, struct ldb_request *req)
 
 	tret = ltdb_delete_internal(module, req->op.del.dn);
 	if (tret != LDB_SUCCESS) {
-		req->handle->status = tret; 
+		req->handle->status = tret;
 		goto done;
 	}
 
@@ -432,9 +441,9 @@ done:
 }
 
 /*
-  find an element by attribute name. At the moment this does a linear search, it should
-  be re-coded to use a binary search once all places that modify records guarantee
-  sorted order
+  find an element by attribute name. At the moment this does a linear search,
+  it should be re-coded to use a binary search once all places that modify
+  records guarantee sorted order
 
   return the index of the first matching element if found, otherwise -1
 */
@@ -452,18 +461,19 @@ static int find_element(const struct ldb_message *msg, const char *name)
 
 /*
   add an element to an existing record. Assumes a elements array that we
-  can call re-alloc on, and assumed that we can re-use the data pointers from the 
-  passed in additional values. Use with care!
+  can call re-alloc on, and assumed that we can re-use the data pointers from
+  the passed in additional values. Use with care!
 
   returns 0 on success, -1 on failure (and sets errno)
 */
 static int msg_add_element(struct ldb_context *ldb,
-			   struct ldb_message *msg, struct ldb_message_element *el)
+			   struct ldb_message *msg,
+			   struct ldb_message_element *el)
 {
 	struct ldb_message_element *e2;
 	unsigned int i;
 
-	e2 = talloc_realloc(msg, msg->elements, struct ldb_message_element, 
+	e2 = talloc_realloc(msg, msg->elements, struct ldb_message_element,
 			      msg->num_elements+1);
 	if (!e2) {
 		errno = ENOMEM;
@@ -478,7 +488,8 @@ static int msg_add_element(struct ldb_context *ldb,
 	e2->flags = el->flags;
 	e2->values = NULL;
 	if (el->num_values != 0) {
-		e2->values = talloc_array(msg->elements, struct ldb_val, el->num_values);
+		e2->values = talloc_array(msg->elements,
+					  struct ldb_val, el->num_values);
 		if (!e2->values) {
 			errno = ENOMEM;
 			return -1;
@@ -512,20 +523,21 @@ static int msg_delete_attribute(struct ldb_module *module,
 	for (i=0;i<msg->num_elements;i++) {
 		if (ldb_attr_cmp(msg->elements[i].name, name) == 0) {
 			for (j=0;j<msg->elements[i].num_values;j++) {
-				ltdb_index_del_value(module, dn, &msg->elements[i], j);
+				ltdb_index_del_value(module, dn,
+						     &msg->elements[i], j);
 			}
 			talloc_free(msg->elements[i].values);
 			if (msg->num_elements > (i+1)) {
-				memmove(&msg->elements[i], 
-					&msg->elements[i+1], 
+				memmove(&msg->elements[i],
+					&msg->elements[i+1],
 					sizeof(struct ldb_message_element)*
 					(msg->num_elements - (i+1)));
 			}
 			msg->num_elements--;
 			i--;
-			msg->elements = talloc_realloc(msg, msg->elements, 
-							 struct ldb_message_element, 
-							 msg->num_elements);
+			msg->elements = talloc_realloc(msg, msg->elements,
+							struct ldb_message_element,
+							msg->num_elements);
 		}
 	}
 
@@ -533,12 +545,12 @@ static int msg_delete_attribute(struct ldb_module *module,
 }
 
 /*
-  delete all elements matching an attribute name/value 
+  delete all elements matching an attribute name/value
 
   return 0 on success, -1 on failure
 */
 static int msg_delete_element(struct ldb_module *module,
-			      struct ldb_message *msg, 
+			      struct ldb_message *msg,
 			      const char *name,
 			      const struct ldb_val *val)
 {
@@ -558,14 +570,17 @@ static int msg_delete_element(struct ldb_module *module,
 	a = ldb_schema_attribute_by_name(ldb, el->name);
 
 	for (i=0;i<el->num_values;i++) {
-		if (a->syntax->comparison_fn(ldb, ldb, &el->values[i], val) == 0) {
+		if (a->syntax->comparison_fn(ldb, ldb,
+						&el->values[i], val) == 0) {
 			if (i<el->num_values-1) {
 				memmove(&el->values[i], &el->values[i+1],
-					sizeof(el->values[i])*(el->num_values-(i+1)));
+					sizeof(el->values[i])*
+						(el->num_values-(i+1)));
 			}
 			el->num_values--;
 			if (el->num_values == 0) {
-				return msg_delete_attribute(module, ldb, msg, name);
+				return msg_delete_attribute(module, ldb,
+							    msg, name);
 			}
 			return 0;
 		}
@@ -579,10 +594,11 @@ static int msg_delete_element(struct ldb_module *module,
   modify a record - internal interface
 
   yuck - this is O(n^2). Luckily n is usually small so we probably
-  get away with it, but if we ever have really large attribute lists 
+  get away with it, but if we ever have really large attribute lists
   then we'll need to look at this again
 */
-int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg)
+int ltdb_modify_internal(struct ldb_module *module,
+			 const struct ldb_message *msg)
 {
 	struct ldb_context *ldb = module->ldb;
 	struct ltdb_private *ltdb =
@@ -734,15 +750,17 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 			}
 			break;
 		default:
-			ldb_asprintf_errstring(module->ldb, "Invalid ldb_modify flags on %s: 0x%x", 
-							     msg->elements[i].name, 
-							     msg->elements[i].flags & LDB_FLAG_MOD_MASK);
+			ldb_asprintf_errstring(module->ldb,
+				"Invalid ldb_modify flags on %s: 0x%x",
+				msg->elements[i].name,
+				msg->elements[i].flags & LDB_FLAG_MOD_MASK);
 			ret = LDB_ERR_PROTOCOL_ERROR;
 			goto failed;
 		}
 	}
 
-	/* we've made all the mods - save the modified record back into the database */
+	/* we've made all the mods
+	 * save the modified record back into the database */
 	ret = ltdb_store(module, msg2, TDB_MODIFY);
 	if (ret != LDB_SUCCESS) {
 		goto failed;
@@ -768,14 +786,16 @@ failed:
 */
 static int ltdb_modify(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
+	struct ltdb_private *ltdb;
 	struct ltdb_context *ltdb_ac;
 	int tret, ret = LDB_SUCCESS;
+
+	ltdb = talloc_get_type(module->private_data, struct ltdb_private);
 
 	if (check_critical_controls(req->controls)) {
 		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
 	}
-	
+
 	req->handle = NULL;
 
 	req->handle = init_ltdb_handle(ltdb, module, req);
@@ -789,7 +809,7 @@ static int ltdb_modify(struct ldb_module *module, struct ldb_request *req)
 		req->handle->status = tret;
 		goto done;
 	}
-	
+
 	if (ltdb_cache_load(module) != 0) {
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		goto done;
@@ -814,15 +834,17 @@ done:
 */
 static int ltdb_rename(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
+	struct ltdb_private *ltdb;
 	struct ltdb_context *ltdb_ac;
 	struct ldb_message *msg;
 	int tret, ret = LDB_SUCCESS;
 
+	ltdb = talloc_get_type(module->private_data, struct ltdb_private);
+
 	if (check_critical_controls(req->controls)) {
 		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
 	}
-	
+
 	req->handle = NULL;
 
 	if (ltdb_cache_load(module) != 0) {
@@ -947,19 +969,22 @@ static int ltdb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 
 static int ltdb_request(struct ldb_module *module, struct ldb_request *req)
 {
-	/* check for oustanding critical controls and return an error if found */
+	/* check for oustanding critical controls
+	 * and return an error if found */
 	if (check_critical_controls(req->controls)) {
 		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
 	}
-	
-	/* search, add, modify, delete, rename are handled by their own, no other op supported */
+
+	/* search, add, modify, delete, rename are handled by their own,
+	 * no other op supported */
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 /*
   return sequenceNumber from @BASEINFO
 */
-static int ltdb_sequence_number(struct ldb_module *module, struct ldb_request *req)
+static int ltdb_sequence_number(struct ldb_module *module,
+				struct ldb_request *req)
 {
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_message *msg = NULL;
@@ -1031,7 +1056,7 @@ static const struct ldb_module_ops ltdb_ops = {
 /*
   connect to the database
 */
-static int ltdb_connect(struct ldb_context *ldb, const char *url, 
+static int ltdb_connect(struct ldb_context *ldb, const char *url,
 			unsigned int flags, const char *options[],
 			struct ldb_module **module)
 {
@@ -1042,7 +1067,8 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	/* parse the url */
 	if (strchr(url, ':')) {
 		if (strncmp(url, "tdb://", 6) != 0) {
-			ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid tdb URL '%s'", url);
+			ldb_debug(ldb, LDB_DEBUG_ERROR,
+				  "Invalid tdb URL '%s'", url);
 			return -1;
 		}
 		path = url+6;
@@ -1075,11 +1101,12 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	}
 
 	/* note that we use quite a large default hash size */
-	ltdb->tdb = ltdb_wrap_open(ltdb, path, 10000, 
-				   tdb_flags, open_flags, 
+	ltdb->tdb = ltdb_wrap_open(ltdb, path, 10000,
+				   tdb_flags, open_flags,
 				   ldb->create_perms, ldb);
 	if (!ltdb->tdb) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "Unable to open tdb '%s'\n", path);
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Unable to open tdb '%s'\n", path);
 		talloc_free(ltdb);
 		return -1;
 	}
