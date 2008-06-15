@@ -48,7 +48,7 @@ struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct event_context *ev_ctx)
 	/* FIXME: Hack a new event context so that CMD line utilities work
 	 * until we have them all converted */
 	if (ev_ctx == NULL) {
-		ev_ctx = event_context_init(ldb);
+		ev_ctx = event_context_init(talloc_autofree_context());
 	}
 
 	ret = ldb_setup_wellknown_attributes(ldb);
