@@ -128,12 +128,12 @@ int ldb_register_backend(const char *url_prefix, ldb_connect_fn connectfn)
 	struct backends_list_entry *entry;
 
 	backend = talloc(talloc_autofree_context(), struct ldb_backend_ops);
-	if (!backend) return LDB_OPERATIONS_ERROR;
+	if (!backend) return LDB_ERR_OPERATIONS_ERROR;
 
 	entry = talloc(talloc_autofree_context(), struct backends_list_entry);
 	if (!entry) {
 		talloc_free(backend);
-		return LDB_OPERATIONS_ERROR;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (ldb_find_backend(url_prefix)) {
