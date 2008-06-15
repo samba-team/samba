@@ -146,7 +146,10 @@ static void ildb_request_timeout(struct event_context *ev,
 				 struct timeval t, void *private_data)
 {
 	struct ildb_context *ac;
-	struct ldb_handle *handle = ac->handle;
+	struct ldb_handle *handle;
+
+	ac = talloc_get_type(private_data, struct ildb_context);
+	handle = ac->handle;
 
 	ac = talloc_get_type(private_data, struct ildb_context);
 
@@ -162,12 +165,14 @@ static void ildb_request_timeout(struct event_context *ev,
 static void ildb_callback(struct ldap_request *req)
 {
 	struct ildb_context *ac;
-	struct ldb_handle *handle = ac->handle;
-	struct ildb_private *ildb = ac->ildb;
+	struct ldb_handle *handle;
+	struct ildb_private *ildb;
 	NTSTATUS status;
 	int i;
 
-	ac =talloc_get_type(req->async.private_data, struct ildb_context);
+	ac = talloc_get_type(req->async.private_data, struct ildb_context);
+	ildb = ac->ildb;
+	handle = ac->handle;
 	handle->status = LDB_SUCCESS;
 
 	if (!NT_STATUS_IS_OK(req->status)) {
