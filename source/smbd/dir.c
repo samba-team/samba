@@ -24,8 +24,6 @@
    This module implements directory related functions for Samba.
 */
 
-extern struct current_user current_user;
-
 /* "Special" directory offsets. */
 #define END_OF_DIRECTORY_OFFSET ((long)-1)
 #define START_OF_DIRECTORY_OFFSET ((long)0)
