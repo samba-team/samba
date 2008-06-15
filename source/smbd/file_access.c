@@ -20,8 +20,6 @@
 
 #include "includes.h"
 
-extern struct current_user current_user;
-
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_ACLS
 
@@ -44,7 +42,7 @@ bool can_access_file_acl(struct connection_struct *conn,
 		return false;
 	}
 
-	result = se_access_check(secdesc, current_user.nt_user_token,
+	result = se_access_check(secdesc, conn->server_info->ptok,
 				 access_mask, &access_granted, &status);
 	TALLOC_FREE(secdesc);
 	return result;
@@ -81,13 +79,13 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	if (!S_ISDIR(sbuf.st_mode)) {
 		return False;
 	}
-	if (current_user.ut.uid == 0 || conn->admin_user) {
+	if (conn->server_info->uid == 0 || conn->admin_user) {
 		/* I'm sorry sir, I didn't know you were root... */
 		return True;
 	}
 
 	/* Check primary owner write access. */
-	if (current_user.ut.uid == sbuf.st_uid) {
+	if (conn->server_info->uid == sbuf.st_uid) {
 		return (sbuf.st_mode & S_IWUSR) ? True : False;
 	}
 
@@ -108,7 +106,7 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 		 * for bug #3348. Don't assume owning sticky bit
 		 * directory means write access allowed.
 		 */
-		if (current_user.ut.uid != sbuf_file.st_uid) {
+		if (conn->server_info->uid != sbuf_file.st_uid) {
 			return False;
 		}
 	}
@@ -137,7 +135,7 @@ bool can_access_file_data(connection_struct *conn, const char *fname, SMB_STRUCT
 	DEBUG(10,("can_access_file_data: requesting 0x%x on file %s\n",
 		(unsigned int)access_mask, fname ));
 
-	if (current_user.ut.uid == 0 || conn->admin_user) {
+	if (conn->server_info->uid == 0 || conn->admin_user) {
 		/* I'm sorry sir, I didn't know you were root... */
 		return True;
 	}
@@ -150,7 +148,7 @@ bool can_access_file_data(connection_struct *conn, const char *fname, SMB_STRUCT
 	}
 
 	/* Check primary owner access. */
-	if (current_user.ut.uid == psbuf->st_uid) {
+	if (conn->server_info->uid == psbuf->st_uid) {
 		switch (access_mask) {
 			case FILE_READ_DATA:
 				return (psbuf->st_mode & S_IRUSR) ? True : False;
