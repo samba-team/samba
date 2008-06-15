@@ -9484,7 +9484,7 @@ connection_struct *conn_find(unsigned cnum);
 connection_struct *conn_new(void);
 void conn_close_all(void);
 bool conn_idle_all(time_t t);
-void conn_clear_vuid_cache(uint16 vuid);
+void conn_clear_vuid_caches(uint16 vuid);
 void conn_free_internal(connection_struct *conn);
 void conn_free(connection_struct *conn);
 void msg_force_tdis(struct messaging_context *msg,
@@ -10326,6 +10326,7 @@ void reply_transs2(struct smb_request *req);
 /* The following definitions come from smbd/uid.c  */
 
 bool change_to_guest(void);
+void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid);
 bool change_to_user(connection_struct *conn, uint16 vuid);
 bool change_to_root_user(void);
 bool become_authenticated_pipe_user(pipes_struct *p);
