@@ -2546,7 +2546,6 @@ static swig_module_info swig_module = {swig_types, 24, 0, 0, 0, 0};
 #include <stdint.h>
 #include <stdbool.h>
 #include "talloc.h"
-#include "events.h"
 #include "ldb.h"
 #include "ldb_errors.h"
 #include "ldb_private.h"
@@ -3067,7 +3066,9 @@ static void py_ldb_debug(void *context, enum ldb_debug_level level, const char *
 
 PyObject *PyExc_LdbError;
 
-SWIGINTERN ldb *new_ldb(){ return ldb_init(NULL, NULL); }
+SWIGINTERN ldb *new_ldb(){ 
+            return ldb_init(NULL, event_context_init(NULL)); 
+        }
 
 SWIGINTERN int
 SWIG_AsVal_unsigned_SS_long (PyObject *obj, unsigned long *val) 

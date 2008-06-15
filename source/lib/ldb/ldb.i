@@ -685,7 +685,9 @@ PyObject *PyExc_LdbError;
 /* Top-level ldb operations */
 typedef struct ldb_context {
     %extend {
-        ldb(void) { return ldb_init(NULL); }
+        ldb(void) { 
+            return ldb_init(NULL, event_context_init(NULL)); 
+        }
 
         %feature("docstring") connect "S.connect(url,flags=0,options=None) -> None\n" \
                                       "Connect to a LDB URL.";
