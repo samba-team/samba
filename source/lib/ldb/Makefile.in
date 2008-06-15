@@ -11,7 +11,7 @@ includedir = @includedir@
 libdir = @libdir@
 bindir = @bindir@
 mandir = @mandir@
-VPATH = @srcdir@:@tdbdir@:@tallocdir@:@libreplacedir@:@poptdir@
+VPATH = @srcdir@:@tdbdir@:@tallocdir@:@libreplacedir@:@poptdir@:@eventsdir@
 srcdir = @srcdir@
 builddir = @builddir@
 SLAPD = @SLAPD@
@@ -33,6 +33,9 @@ TDB_LIBS = @TDB_LIBS@
 TDB_CFLAGS = @TDB_CFLAGS@
 TDB_OBJ = @TDB_OBJ@
 
+EVENTS_CFLAGS = @EVENTS_CFLAGS@
+EVENTS_OBJ = @EVENTS_OBJ@
+
 POPT_LIBS = @POPT_LIBS@
 POPT_CFLAGS = @POPT_CFLAGS@
 POPT_OBJ = @POPT_OBJ@
@@ -52,13 +55,13 @@ LIBS = @LIBS@
 
 PICFLAG = @PICFLAG@
 CFLAGS=-g -I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
-       $(POPT_CFLAGS) $(TALLOC_CFLAGS) $(TDB_CFLAGS) \
+       $(POPT_CFLAGS) $(TALLOC_CFLAGS) $(TDB_CFLAGS) $(EVENTS_CFLAGS) \
 	-DLIBDIR=\"$(libdir)\" -DSHLIBEXT=\"$(SHLIBEXT)\" -DUSE_MMAP=1 @CFLAGS@
 
 MDLD = @MDLD@
 MDLD_FLAGS = @MDLD_FLAGS@
 
-OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(POPT_OBJ) $(LDB_MAP_OBJ) @LIBREPLACEOBJ@ $(EXTRA_OBJ) 
+OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(EVENTS_OBJ) $(TALLOC_OBJ) $(POPT_OBJ) $(LDB_MAP_OBJ) @LIBREPLACEOBJ@ $(EXTRA_OBJ) 
 
 headers = $(srcdir)/include/ldb.h $(srcdir)/include/ldb_errors.h $(srcdir)/include/ldb_handlers.h
 

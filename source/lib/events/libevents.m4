@@ -14,6 +14,7 @@ if test x"$eventsdir" = "x"; then
 fi
 
 EVENTS_OBJ="events.o events_select.o events_signal.o events_timed.o events_standard.o events_debug.o events_util.o"
+AC_LIBREPLACE_NETWORK_CHECKS
 
 SMB_ENABLE(EVENTS_EPOLL, NO)
 SMB_ENABLE(EVENTS_AIO, NO)
