@@ -2990,7 +2990,8 @@ NTSTATUS create_file(connection_struct *conn,
 			 * also tries a QUERY_FILE_INFO on the file and then
 			 * close it
 			 */
-			status = open_fake_file(conn, fake_file_type, fname,
+			status = open_fake_file(conn, req->vuid,
+						fake_file_type, fname,
 						access_mask, &fsp);
 			if (!NT_STATUS_IS_OK(status)) {
 				goto fail;

@@ -9629,6 +9629,7 @@ void reply_unix_error(struct smb_request *req, uint8 defclass, uint32 defcode,
 
 enum FAKE_FILE_TYPE is_fake_file(const char *fname);
 NTSTATUS open_fake_file(connection_struct *conn,
+				uint16_t current_vuid,
 				enum FAKE_FILE_TYPE fake_file_type,
 				const char *fname,
 				uint32 access_mask,
