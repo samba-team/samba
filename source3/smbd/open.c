@@ -22,8 +22,6 @@
 #include "includes.h"
 
 extern const struct generic_mapping file_generic_mapping;
-extern struct current_user current_user;
-extern userdom_struct current_user_info;
 extern bool global_client_failed_oplock_break;
 
 struct deferred_open_record {
@@ -400,8 +398,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	fsp->wcp = NULL; /* Write cache pointer. */
 
 	DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
-		 *current_user_info.smb_name
-		 ? current_user_info.smb_name : conn->server_info->unix_name,
+		 conn->server_info->unix_name,
 		 fsp->fsp_name,
 		 BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
 		 conn->num_files_open + 1));
@@ -1850,7 +1847,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		new_file_created = True;
 	}
 
-	set_share_mode(lck, fsp, current_user.ut.uid, 0, fsp->oplock_type, new_file_created);
+	set_share_mode(lck, fsp, conn->server_info->uid, 0, fsp->oplock_type,
+		       new_file_created);
 
 	/* Handle strange delete on close create semantics. */
 	if ((create_options & FILE_DELETE_ON_CLOSE)
@@ -2249,7 +2247,7 @@ NTSTATUS open_directory(connection_struct *conn,
 		return status;
 	}
 
-	set_share_mode(lck, fsp, current_user.ut.uid, 0, NO_OPLOCK, True);
+	set_share_mode(lck, fsp, conn->server_info->uid, 0, NO_OPLOCK, True);
 
 	/* For directories the delete on close bit at open time seems
 	   always to be honored on close... See test 19 in Samba4 BASE-DELETE. */
