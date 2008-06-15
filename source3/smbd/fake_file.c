@@ -19,8 +19,6 @@
 
 #include "includes.h"
 
-extern struct current_user current_user;
-
 struct fake_file_type {
 	const char *name;
 	enum FAKE_FILE_TYPE type;
@@ -101,6 +99,7 @@ enum FAKE_FILE_TYPE is_fake_file(const char *fname)
 ****************************************************************************/
 
 NTSTATUS open_fake_file(connection_struct *conn,
+				uint16_t current_vuid,
 				enum FAKE_FILE_TYPE fake_file_type,
 				const char *fname,
 				uint32 access_mask,
@@ -110,7 +109,7 @@ NTSTATUS open_fake_file(connection_struct *conn,
 	NTSTATUS status;
 
 	/* access check */
-	if (current_user.ut.uid != 0) {
+	if (conn->server_info->uid != 0) {
 		DEBUG(3, ("open_fake_file_shared: access_denied to "
 			  "service[%s] file[%s] user[%s]\n",
 			  lp_servicename(SNUM(conn)), fname,
@@ -129,7 +128,7 @@ NTSTATUS open_fake_file(connection_struct *conn,
 
 	fsp->conn = conn;
 	fsp->fh->fd = -1;
-	fsp->vuid = current_user.vuid;
+	fsp->vuid = current_vuid;
 	fsp->fh->pos = -1;
 	fsp->can_lock = False; /* Should this be true ? - No, JRA */
 	fsp->access_mask = access_mask;
