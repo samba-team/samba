@@ -7,7 +7,6 @@ AC_INIT(events, 1.0.0)
 AC_CONFIG_SRCDIR([events.c])
 AC_CONFIG_HEADER(config.h)
 AC_LIBREPLACE_ALL_CHECKS
-AC_LIBREPLACE_NETWORK_CHECKS
 
 m4_include(libtalloc.m4)
 
