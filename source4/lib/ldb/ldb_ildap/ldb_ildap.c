@@ -760,14 +760,6 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 
 	event_ctx = ldb_get_event_context(ldb);
 
-	/* FIXME: We must make the event context an explicit parameter, but we
-	 * need to build the events library separately first. Hack a new event
-	 * context so that CMD line utilities work until we have them all
-	 * converted */
-	if (event_ctx == NULL) {
-		event_ctx = event_context_init(NULL);
-	}
-
 	ildb->ldap = ldap4_new_connection(ildb, ldb_get_opaque(ldb, "loadparm"),
 					  event_ctx);
 	if (!ildb->ldap) {
