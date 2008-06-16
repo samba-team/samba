@@ -1451,13 +1451,13 @@ do_query:
 	if (domain->online &&
 	    (NT_STATUS_IS_OK(status) || NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED))) {
 		wcache_save_name_to_sid(domain, status, domain_name, name, sid, *type);
+	
+	/* Don't add SN cache entries for sid-to-name queries during this operation.
+	 * It leads to inconsistent answers during sid-to-name queries as the
+	 * client can ask for different combinations of lower case and upper case
+	 * names in these name-to-sid queries.
+	 */
 
-		/* Only save the reverse mapping if this was not a UPN */
-		if (!strchr(name, '@')) {
-			strupper_m(CONST_DISCARD(char *,domain_name));
-			strlower_m(CONST_DISCARD(char *,name));
-			wcache_save_sid_to_name(domain, status, sid, domain_name, name, *type);
-		}
 	}
 	
 	return status;
