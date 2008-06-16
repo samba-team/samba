@@ -2546,6 +2546,7 @@ static swig_module_info swig_module = {swig_types, 24, 0, 0, 0, 0};
 #include <stdint.h>
 #include <stdbool.h>
 #include "talloc.h"
+#include "events.h"
 #include "ldb.h"
 #include "ldb_errors.h"
 #include "ldb_private.h"
