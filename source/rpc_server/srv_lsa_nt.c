@@ -491,7 +491,9 @@ NTSTATUS _lsa_EnumTrustDom(pipes_struct *p,
 	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
+	become_root();
 	nt_status = pdb_enum_trusteddoms(p->mem_ctx, &num_domains, &domains);
+	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
