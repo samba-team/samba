@@ -42,7 +42,6 @@ typedef struct _SMB_ACL4_INT_T
 	SMB_ACE4_INT_T	*last;
 } SMB_ACL4_INT_T;
 
-extern struct current_user current_user;
 extern int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid);
 extern NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp,
 	uint32 security_info_sent, SEC_DESC *psd);
@@ -732,7 +731,7 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 			need_chown = True;
 		}
 		if (need_chown) {
-			if ((newUID == (uid_t)-1 || newUID == current_user.ut.uid)) {
+			if ((newUID == (uid_t)-1 || newUID == fsp->conn->server_info->uid)) {
 				if(try_chown(fsp->conn, fsp->fsp_name, newUID, newGID)) {
 					DEBUG(3,("chown %s, %u, %u failed. Error = %s.\n",
 						 fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID, 
