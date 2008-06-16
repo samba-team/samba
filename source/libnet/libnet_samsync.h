@@ -24,41 +24,12 @@ enum net_samsync_mode {
 	NET_SAMSYNC_MODE_DUMP = 2
 };
 
-/* Structure for mapping accounts to groups */
-/* Array element is the group rid */
-typedef struct _groupmap {
-	uint32_t rid;
-	uint32_t gidNumber;
-	const char *sambaSID;
-	const char *group_dn;
-} GROUPMAP;
-
-typedef struct _accountmap {
-	uint32_t rid;
-	const char *cn;
-} ACCOUNTMAP;
-
-struct samsync_ldif_context {
-	GROUPMAP *groupmap;
-	ACCOUNTMAP *accountmap;
-	bool initialized;
-	const char *add_template;
-	const char *mod_template;
-	char *add_name;
-	char *mod_name;
-	FILE *add_file;
-	FILE *mod_file;
-	FILE *ldif_file;
-	const char *suffix;
-	int num_alloced;
-};
-
 struct samsync_context {
 	enum net_samsync_mode mode;
 	const struct dom_sid *domain_sid;
 	const char *domain_sid_str;
 	const char *ldif_filename;
-	struct samsync_ldif_context *ldif;
+	void *private_data;
 };
 
 typedef NTSTATUS (*samsync_fn_t)(TALLOC_CTX *,
@@ -66,3 +37,9 @@ typedef NTSTATUS (*samsync_fn_t)(TALLOC_CTX *,
 				 struct netr_DELTA_ENUM_ARRAY *,
 				 NTSTATUS,
 				 struct samsync_context *);
+
+NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
+				enum netr_SamDatabaseID database_id,
+				struct netr_DELTA_ENUM_ARRAY *r,
+				NTSTATUS result,
+				struct samsync_context *ctx);
