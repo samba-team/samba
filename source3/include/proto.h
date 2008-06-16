@@ -1234,6 +1234,7 @@ bool nt_time_equals(const NTTIME *nt1, const NTTIME *nt2);
 void TimeInit(void);
 void get_process_uptime(struct timeval *ret_time);
 time_t nt_time_to_unix_abs(const NTTIME *nt);
+time_t uint64s_nt_time_to_unix_abs(const uint64_t *src);
 void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts);
 void unix_to_nt_time_abs(NTTIME *nt, time_t t);
 bool null_mtime(time_t mtime);

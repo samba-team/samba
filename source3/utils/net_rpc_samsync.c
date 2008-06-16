@@ -84,13 +84,6 @@ static void display_account_info(uint32_t rid,
 		pdb_encode_acct_ctrl(r->acct_flags, NEW_PW_FORMAT_SPACE_PADDED_LEN));
 }
 
-static time_t uint64s_nt_time_to_unix_abs(const uint64 *src)
-{
-	NTTIME nttime;
-	nttime = *src;
-	return nt_time_to_unix_abs(&nttime);
-}
-
 static NTSTATUS pull_netr_AcctLockStr(TALLOC_CTX *mem_ctx,
 				      struct lsa_BinaryString *r,
 				      struct netr_AcctLockStr **str_p)
