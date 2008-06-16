@@ -22,6 +22,7 @@
 
 
 #include "includes.h"
+#include "libnet/libnet_samsync.h"
 
 /**
  * Decrypt and extract the user's passwords.
@@ -185,4 +186,167 @@ NTSTATUS samsync_fix_delta_array(TALLOC_CTX *mem_ctx,
 	}
 
 	return NT_STATUS_OK;
+}
+
+/**
+ * samsync_init_context
+ */
+
+NTSTATUS samsync_init_context(TALLOC_CTX *mem_ctx,
+			      const struct dom_sid *domain_sid,
+			      enum net_samsync_mode mode,
+			      struct samsync_context **ctx_p)
+{
+	struct samsync_context *ctx;
+
+	*ctx_p = NULL;
+
+	ctx = TALLOC_ZERO_P(mem_ctx, struct samsync_context);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	ctx->mode = mode;
+
+	if (domain_sid) {
+		ctx->domain_sid = sid_dup_talloc(mem_ctx, domain_sid);
+		NT_STATUS_HAVE_NO_MEMORY(ctx->domain_sid);
+
+		ctx->domain_sid_str = sid_string_talloc(mem_ctx, ctx->domain_sid);
+		NT_STATUS_HAVE_NO_MEMORY(ctx->domain_sid_str);
+	}
+
+	*ctx_p = ctx;
+
+	return NT_STATUS_OK;
+}
+
+/**
+ * samsync_debug_str
+ */
+
+static const char *samsync_debug_str(TALLOC_CTX *mem_ctx,
+				     enum net_samsync_mode mode,
+				     enum netr_SamDatabaseID database_id)
+{
+	const char *action = NULL;
+	const char *str = NULL;
+
+	switch (mode) {
+		case NET_SAMSYNC_MODE_DUMP:
+			action = "Dumping (to stdout)";
+			break;
+		case NET_SAMSYNC_MODE_FETCH_PASSDB:
+			action = "Fetching (to passdb)";
+			break;
+		case NET_SAMSYNC_MODE_FETCH_LDIF:
+			action = "Fetching (to ldif)";
+			break;
+		default:
+			action = "Unknown";
+			break;
+	}
+
+	switch (database_id) {
+		case SAM_DATABASE_DOMAIN:
+			str = talloc_asprintf(mem_ctx, "%s DOMAIN database",
+				action);
+			break;
+		case SAM_DATABASE_BUILTIN:
+			str = talloc_asprintf(mem_ctx, "%s BUILTIN database",
+				action);
+			break;
+		case SAM_DATABASE_PRIVS:
+			str = talloc_asprintf(mem_ctx, "%s PRIVS database",
+				action);
+			break;
+		default:
+			str = talloc_asprintf(mem_ctx, "%s unknown database type %u",
+				action, database_id);
+			break;
+	}
+
+	return str;
+}
+
+/**
+ * samsync_process_database
+ */
+
+NTSTATUS samsync_process_database(struct rpc_pipe_client *pipe_hnd,
+				  enum netr_SamDatabaseID database_id,
+				  samsync_fn_t callback_fn,
+				  struct samsync_context *ctx)
+{
+	NTSTATUS result;
+	TALLOC_CTX *mem_ctx;
+	const char *logon_server = pipe_hnd->desthost;
+	const char *computername = global_myname();
+	struct netr_Authenticator credential;
+	struct netr_Authenticator return_authenticator;
+	uint16_t restart_state = 0;
+	uint32_t sync_context = 0;
+	const char *debug_str;
+	DATA_BLOB session_key;
+
+	ZERO_STRUCT(return_authenticator);
+
+	if (!(mem_ctx = talloc_init("samsync_process_database"))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	debug_str = samsync_debug_str(mem_ctx, ctx->mode, database_id);
+	if (debug_str) {
+		d_fprintf(stderr, "%s\n", debug_str);
+	}
+
+	do {
+		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
+
+		netlogon_creds_client_step(pipe_hnd->dc, &credential);
+
+		result = rpccli_netr_DatabaseSync2(pipe_hnd, mem_ctx,
+						   logon_server,
+						   computername,
+						   &credential,
+						   &return_authenticator,
+						   database_id,
+						   restart_state,
+						   &sync_context,
+						   &delta_enum_array,
+						   0xffff);
+		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED)) {
+			return result;
+		}
+
+		/* Check returned credentials. */
+		if (!netlogon_creds_client_check(pipe_hnd->dc,
+						 &return_authenticator.cred)) {
+			DEBUG(0,("credentials chain check failed\n"));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		if (NT_STATUS_IS_ERR(result)) {
+			break;
+		}
+
+		session_key = data_blob_const(pipe_hnd->dc->sess_key, 16);
+
+		samsync_fix_delta_array(mem_ctx,
+					&session_key,
+					true,
+					database_id,
+					delta_enum_array);
+
+		/* Process results */
+		callback_fn(mem_ctx, database_id, delta_enum_array, result, ctx);
+
+		TALLOC_FREE(delta_enum_array);
+
+		/* Increment sync_context */
+		sync_context += 1;
+
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
+
+	talloc_destroy(mem_ctx);
+
+	return result;
 }

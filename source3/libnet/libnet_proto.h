@@ -50,5 +50,12 @@ NTSTATUS samsync_fix_delta_array(TALLOC_CTX *mem_ctx,
 				 bool rid_crypt,
 				 enum netr_SamDatabaseID database_id,
 				 struct netr_DELTA_ENUM_ARRAY *r);
-
+NTSTATUS samsync_init_context(TALLOC_CTX *mem_ctx,
+			      const struct dom_sid *domain_sid,
+			      enum net_samsync_mode mode,
+			      struct samsync_context **ctx_p);
+NTSTATUS samsync_process_database(struct rpc_pipe_client *pipe_hnd,
+				  enum netr_SamDatabaseID database_id,
+				  samsync_fn_t callback_fn,
+				  struct samsync_context *ctx);
 #endif /*  _LIBNET_PROTO_H_  */
