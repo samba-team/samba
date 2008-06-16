@@ -39,6 +39,7 @@
 #include "ldb.h"
 #include "ldb_errors.h"
 #include "ldb_private.h"
+#include "events.h"
 
 typedef struct ldb_message ldb_msg;
 typedef struct ldb_context ldb;
