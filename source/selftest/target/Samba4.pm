@@ -706,13 +706,7 @@ nogroup:x:65534:nobody
 	if (defined($ENV{VALGRIND_PROVISION})) {
 		push (@provision_options, "valgrind");
 	}
-	if (defined($ENV{PROVISION_EJS})) {
-		push (@provision_options, "$self->{bindir}/smbscript");
-		push (@provision_options, "$self->{setupdir}/provision.js");
-	} else {
-#		push (@provision_options, "$self->{bindir}/smbpython");
-		push (@provision_options, "$self->{setupdir}/provision");
-	}
+	push (@provision_options, "$self->{setupdir}/provision");
 	push (@provision_options, split(' ', $configuration));
 	push (@provision_options, "--host-name=$netbiosname");
 	push (@provision_options, "--host-ip=$ifaceipv4");
