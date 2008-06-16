@@ -1169,7 +1169,7 @@ NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 
 	status = ldif_init_context(mem_ctx,
 				   database_id,
-				   ctx->ldif_filename,
+				   ctx->output_filename,
 				   ctx->domain_sid_str,
 				   &ldif_ctx);
 	if (!NT_STATUS_IS_OK(status)) {

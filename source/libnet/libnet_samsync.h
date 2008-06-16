@@ -28,7 +28,7 @@ struct samsync_context {
 	enum net_samsync_mode mode;
 	const struct dom_sid *domain_sid;
 	const char *domain_sid_str;
-	const char *ldif_filename;
+	const char *output_filename;
 	void *private_data;
 };
 

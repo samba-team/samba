@@ -1244,7 +1244,7 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 	}
 
 	if (argc >= 1) {
-		ctx->ldif_filename = argv[1];
+		ctx->output_filename = argv[0];
 	}
 
 	/* fetch domain */
