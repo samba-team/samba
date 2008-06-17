@@ -1161,20 +1161,9 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 
 		sitename = sitename_fetch(domain->alt_name);
 		if (sitename) {
-			NTSTATUS status;
 
 			/* Do the site-specific AD dns lookup first. */
-			status = get_sorted_dc_list(domain->alt_name,
-						    sitename, &ip_list,
-						    &iplist_size, True);
-			if (!NT_STATUS_IS_OK(status)) {
-				/*
-				 * Work around a crappy about-to-be-replaced
-				 * get_sorted_dc_list error handling :-)
-				 */
-				SAFE_FREE(ip_list);
-				iplist_size = 0;
-			}
+			get_sorted_dc_list(domain->alt_name, sitename, &ip_list, &iplist_size, True);
 
 			for ( i=0; i<iplist_size; i++ ) {
 				char addr[INET6_ADDRSTRLEN];
@@ -1207,8 +1196,6 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 					dcs,
 					num_dcs);
 		}
-		SAFE_FREE(ip_list);
-		iplist_size = 0;
         }
 
 	/* try standard netbios queries if no ADS */
