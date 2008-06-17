@@ -921,7 +921,7 @@ bool get_dir_entry(TALLOC_CTX *ctx,
  use it for anything security sensitive.
 ********************************************************************/
 
-static bool user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
+static bool user_can_read_file(connection_struct *conn, char *name)
 {
 	/*
 	 * If user is a member of the Admin group
@@ -931,8 +931,6 @@ static bool user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 	if (conn->admin_user) {
 		return True;
 	}
-
-	SMB_ASSERT(VALID_STAT(*pst));
 
 	return can_access_file_acl(conn, name, FILE_READ_DATA);
 }
@@ -1037,7 +1035,7 @@ bool is_visible_file(connection_struct *conn, const char *dir_path, const char *
 		}
 
 		/* Honour _hide unreadable_ option */
-		if (hide_unreadable && !user_can_read_file(conn, entry, pst)) {
+		if (hide_unreadable && !user_can_read_file(conn, entry)) {
 			DEBUG(10,("is_visible_file: file %s is unreadable.\n", entry ));
 			SAFE_FREE(entry);
 			return False;
