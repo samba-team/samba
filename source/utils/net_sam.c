@@ -1013,7 +1013,7 @@ static int net_sam_createbuiltingroup(struct net_context *c, int argc, const cha
 	}
 
 	if (!winbind_ping()) {
-		d_fprintf(stderr, "winbind seems not to run. createlocalgroup "
+		d_fprintf(stderr, "winbind seems not to run. createbuiltingroup "
 			  "only works when winbind runs.\n");
 		return -1;
 	}
