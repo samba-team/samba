@@ -24,7 +24,7 @@
 */
 
 #include "includes.h"
-#include "utils/net.h"
+#include "libnet/libnet_samsync.h"
 
 /* uid's and gid's for writing deltas to ldif */
 static uint32 ldif_gid = 999;
