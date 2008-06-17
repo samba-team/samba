@@ -40,7 +40,7 @@ static char *desthost;
 static char *calling_name;
 static bool grepable = false;
 static char *cmdstr = NULL;
-static const char *cmd_ptr = NULL;
+const char *cmd_ptr = NULL;
 
 static int io_bufsize = 524288;
 
