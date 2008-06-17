@@ -25,6 +25,7 @@
 #include "system/network.h"
 #include "events.h"
 #include "events_internal.h"
+#include "events_util.h"
 #include <sys/epoll.h>
 
 struct epoll_event_context {

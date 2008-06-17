@@ -27,6 +27,7 @@
 #include "system/select.h"
 #include "events.h"
 #include "events_internal.h"
+#include "events_util.h"
 
 /**
   compare two timeval structures. 
