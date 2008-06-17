@@ -100,7 +100,7 @@ char tar_type='\0';
 static char **cliplist=NULL;
 static int clipn=0;
 static bool must_free_cliplist = False;
-static const char *cmd_ptr = NULL;
+extern const char *cmd_ptr;
 
 extern bool lowercase;
 extern uint16 cnum;
