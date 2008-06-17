@@ -996,7 +996,7 @@ static int net_sam_deletelocalgroup(struct net_context *c, int argc, const char 
 }
 
 /*
- * Create a local group
+ * Create a builtin group
  */
 
 static int net_sam_createbuiltingroup(struct net_context *c, int argc, const char **argv)
