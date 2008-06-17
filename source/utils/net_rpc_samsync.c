@@ -125,6 +125,42 @@ static void display_group_info(uint32_t rid, struct netr_DELTA_GROUP *r)
 	d_printf("desc='%s', rid=%u\n", r->description.string, rid);
 }
 
+static void display_delete_group(uint32_t rid)
+{
+	d_printf("Delete Group '%d' ", rid);
+}
+
+static void display_rename_group(uint32_t rid, struct netr_DELTA_RENAME *r)
+{
+	d_printf("Rename Group '%d' ", rid);
+	d_printf("Rename Group: %s -> %s\n",
+		r->OldName.string, r->NewName.string);
+}
+
+static void display_delete_user(uint32_t rid)
+{
+	d_printf("Delete User '%d' ", rid);
+}
+
+static void display_rename_user(uint32_t rid, struct netr_DELTA_RENAME *r)
+{
+	d_printf("Rename User '%d' ", rid);
+	d_printf("Rename User: %s -> %s\n",
+		r->OldName.string, r->NewName.string);
+}
+
+static void display_delete_alias(uint32_t rid)
+{
+	d_printf("Delete Alias '%d' ", rid);
+}
+
+static void display_rename_alias(uint32_t rid, struct netr_DELTA_RENAME *r)
+{
+	d_printf("Rename Alias '%d' ", rid);
+	d_printf("Rename Alias: %s -> %s\n",
+		r->OldName.string, r->NewName.string);
+}
+
 static NTSTATUS display_sam_entry(TALLOC_CTX *mem_ctx,
 				  enum netr_SamDatabaseID database_id,
 				  struct netr_DELTA_ENUM *r,
@@ -141,52 +177,36 @@ static NTSTATUS display_sam_entry(TALLOC_CTX *mem_ctx,
 	case NETR_DELTA_GROUP:
 		display_group_info(id.rid, u.group);
 		break;
-#if 0
 	case NETR_DELTA_DELETE_GROUP:
-		printf("Delete Group: %d\n",
-			u.delete_account.unknown);
+		display_delete_group(id.rid);
 		break;
 	case NETR_DELTA_RENAME_GROUP:
-		printf("Rename Group: %s -> %s\n",
-			u.rename_group->OldName.string,
-			u.rename_group->NewName.string);
+		display_rename_group(id.rid, u.rename_group);
 		break;
-#endif
 	case NETR_DELTA_USER:
 		display_account_info(id.rid, u.user);
 		break;
-#if 0
 	case NETR_DELTA_DELETE_USER:
-		printf("Delete User: %d\n",
-			id.rid);
+		display_delete_user(id.rid);
 		break;
 	case NETR_DELTA_RENAME_USER:
-		printf("Rename user: %s -> %s\n",
-			u.rename_user->OldName.string,
-			u.rename_user->NewName.string);
+		display_rename_user(id.rid, u.rename_user);
 		break;
-#endif
 	case NETR_DELTA_GROUP_MEMBER:
 		display_group_mem_info(id.rid, u.group_member);
 		break;
 	case NETR_DELTA_ALIAS:
 		display_alias_info(id.rid, u.alias);
 		break;
-#if 0
 	case NETR_DELTA_DELETE_ALIAS:
-		printf("Delete Alias: %d\n",
-			id.rid);
+		display_delete_alias(id.rid);
 		break;
 	case NETR_DELTA_RENAME_ALIAS:
-		printf("Rename alias: %s -> %s\n",
-			u.rename_alias->OldName.string,
-			u.rename_alias->NewName.string);
+		display_rename_alias(id.rid, u.rename_alias);
 		break;
-#endif
 	case NETR_DELTA_ALIAS_MEMBER:
 		display_alias_mem(id.rid, u.alias_member);
 		break;
-#if 0
 	case NETR_DELTA_POLICY:
 		printf("Policy\n");
 		break;
@@ -224,17 +244,8 @@ static NTSTATUS display_sam_entry(TALLOC_CTX *mem_ctx,
 		printf("sam sequence update: 0x%016llx\n",
 			(unsigned long long) *u.modified_count);
 		break;
-#endif
+#if 0
 	/* The following types are recognised but not handled */
-	case NETR_DELTA_RENAME_GROUP:
-		d_printf("NETR_DELTA_RENAME_GROUP not handled\n");
-		break;
-	case NETR_DELTA_RENAME_USER:
-		d_printf("NETR_DELTA_RENAME_USER not handled\n");
-		break;
-	case NETR_DELTA_RENAME_ALIAS:
-		d_printf("NETR_DELTA_RENAME_ALIAS not handled\n");
-		break;
 	case NETR_DELTA_POLICY:
 		d_printf("NETR_DELTA_POLICY not handled\n");
 		break;
@@ -247,17 +258,8 @@ static NTSTATUS display_sam_entry(TALLOC_CTX *mem_ctx,
 	case NETR_DELTA_SECRET:
 		d_printf("NETR_DELTA_SECRET not handled\n");
 		break;
-	case NETR_DELTA_DELETE_GROUP:
-		d_printf("NETR_DELTA_DELETE_GROUP not handled\n");
-		break;
-	case NETR_DELTA_DELETE_USER:
-		d_printf("NETR_DELTA_DELETE_USER not handled\n");
-		break;
 	case NETR_DELTA_MODIFY_COUNT:
 		d_printf("NETR_DELTA_MODIFY_COUNT not handled\n");
-		break;
-	case NETR_DELTA_DELETE_ALIAS:
-		d_printf("NETR_DELTA_DELETE_ALIAS not handled\n");
 		break;
 	case NETR_DELTA_DELETE_TRUST:
 		d_printf("NETR_DELTA_DELETE_TRUST not handled\n");
@@ -274,6 +276,7 @@ static NTSTATUS display_sam_entry(TALLOC_CTX *mem_ctx,
 	case NETR_DELTA_DELETE_USER2:
 		d_printf("NETR_DELTA_DELETE_USER2 not handled\n");
 		break;
+#endif
 	default:
 		printf("unknown delta type 0x%02x\n",
 			r->delta_type);
