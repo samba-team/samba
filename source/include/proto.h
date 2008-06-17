@@ -2081,7 +2081,8 @@ char *ads_ou_string(ADS_STRUCT *ads, const char *org_unit);
 char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid);
 ADS_STATUS ads_add_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 				const char *name, const char **vals);
-uint32 ads_get_kvno(ADS_STRUCT *ads, const char *machine_name);
+uint32 ads_get_kvno(ADS_STRUCT *ads, const char *account_name);
+uint32_t ads_get_machine_kvno(ADS_STRUCT *ads, const char *machine_name);
 ADS_STATUS ads_clear_service_principal_names(ADS_STRUCT *ads, const char *machine_name);
 ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_name, 
                                           const char *my_fqdn, const char *spn);
