@@ -41,7 +41,6 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 	struct netr_DELTA_USER *user = delta->delta_union.user;
 	struct samr_Password lm_hash;
 	struct samr_Password nt_hash;
-	const char *username = user->account_name.string;
 
 	if (rid_crypt) {
 		if (user->lm_password_present) {
