@@ -904,7 +904,7 @@ static SEC_ACCESS map_canon_ace_perms(int snum,
 		if (directory_ace) {
 			nt_mask = UNIX_DIRECTORY_ACCESS_RWX;
 		} else {
-			nt_mask = UNIX_ACCESS_RWX;
+			nt_mask = (UNIX_ACCESS_RWX & ~DELETE_ACCESS);
 		}
 	} else if ((perms & ALL_ACE_PERMS) == (mode_t)0) {
 		/*
