@@ -391,7 +391,7 @@ static void dump_database(struct rpc_pipe_client *pipe_hnd,
 
 		samsync_fix_delta_array(mem_ctx,
 					&session_key,
-					true,
+					false,
 					database_id,
 					delta_enum_array);
 
