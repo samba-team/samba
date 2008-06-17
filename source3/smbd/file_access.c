@@ -23,6 +23,9 @@
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_ACLS
 
+/**
+ * Security descriptor / NT Token level access check function.
+ */
 bool can_access_file_acl(struct connection_struct *conn,
 				const char * fname,
 				uint32_t access_mask)
