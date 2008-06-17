@@ -55,6 +55,7 @@
 #include "replace.h"
 #include "events.h"
 #include "events_internal.h"
+#include "events_util.h"
 
 struct event_ops_list {
 	struct event_ops_list *next, *prev;

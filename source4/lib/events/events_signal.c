@@ -25,6 +25,7 @@
 #include "system/select.h"
 #include "events.h"
 #include "events_internal.h"
+#include "events_util.h"
 
 #define NUM_SIGNALS 64
 

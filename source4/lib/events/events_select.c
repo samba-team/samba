@@ -27,6 +27,7 @@
 #include "system/filesys.h"
 #include "system/select.h"
 #include "events.h"
+#include "events_util.h"
 #include "events_internal.h"
 
 struct select_event_context {

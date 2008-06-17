@@ -156,5 +156,3 @@ bool events_epoll_init(void);
 #if HAVE_LINUX_AIO
 bool events_aio_init(void);
 #endif
-
-#include "events_util.h"
