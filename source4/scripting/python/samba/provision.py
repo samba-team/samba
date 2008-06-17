@@ -1180,6 +1180,8 @@ def provision_backend(setup_dir=None, message=None,
 
     schemadb = Ldb(schemadb_path, lp=lp)
  
+    prefixmap = open(setup_path("prefixMap.txt"), 'r').read()
+
     setup_add_ldif(schemadb, setup_path("provision_schema_basedn.ldif"), 
                    {"SCHEMADN": names.schemadn,
                     "ACI": "#",
@@ -1191,7 +1193,8 @@ def provision_backend(setup_dir=None, message=None,
                            "NETBIOSNAME": names.netbiosname,
                            "DEFAULTSITE": DEFAULTSITE,
                            "CONFIGDN": names.configdn,
-                           "SERVERDN": names.serverdn
+                           "SERVERDN": names.serverdn,
+                           "PREFIXMAP_B64": b64encode(prefixmap)
                            })
     
     setup_add_ldif(schemadb, setup_path("schema_samba4.ldif"), 

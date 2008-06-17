@@ -751,7 +751,7 @@ nogroup:x:65534:nobody
 	if (defined($self->{ldap})) {
 
                 push (@provision_options, "--ldap-backend=$ldap_uri");
-	        system("$self->{bindir}/smbpython $self->{setupdir}/provision-backend $configuration --ldap-manager-pass=$password --root=$unix_name --realm=$realm --domain=$domain --host-name=$netbiosname --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
+	        system("$self->{setupdir}/provision-backend $configuration --ldap-manager-pass=$password --root=$unix_name --realm=$realm --domain=$domain --host-name=$netbiosname --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
 
 	        if ($self->{ldap} eq "openldap") {
 		       ($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ldapdir, $configuration) or die("Unable to create openldap directories");
