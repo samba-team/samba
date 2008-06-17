@@ -22,7 +22,7 @@
 
 #define PyErr_FromWERROR(err) Py_BuildValue("(i,s)", W_ERROR_V(err), discard_const_p(char, win_errstr(err)))
 
-#define PyErr_FromNTSTATUS(status) Py_BuildValue("(i,s)", NT_STATUS_V(status), discard_const_p(char, nt_errstr(status)))
+#define PyErr_FromNTSTATUS(status) Py_BuildValue("(i,s)", NT_STATUS_V(status), discard_const_p(char, get_friendly_nt_error_msg(status)))
 
 #define PyErr_SetWERROR(err) \
 	PyErr_SetObject(PyExc_RuntimeError, PyErr_FromWERROR(err))
