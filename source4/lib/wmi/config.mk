@@ -1,5 +1,4 @@
 [SUBSYSTEM::WMI]
-PRIVATE_PROTO_HEADER = proto.h
 PUBLIC_DEPENDENCIES = RPC_NDR_OXIDRESOLVER \
 		NDR_DCOM \
 		RPC_NDR_REMACT \
@@ -7,7 +6,9 @@ PUBLIC_DEPENDENCIES = RPC_NDR_OXIDRESOLVER \
 		DCOM_PROXY_DCOM \
 		DCOM
 
-WMI_OBJ_FILES = $(addprefix lib/wmi/, wmicore.o wbemdata.o ../../librpc/gen_ndr/dcom_p.o)
+WMI_OBJ_FILES = $(addprefix $(wmisrcdir)/, wmicore.o wbemdata.o ../../librpc/gen_ndr/dcom_p.o)
+
+$(eval $(call proto_header_template,$(wmisrcdir)/proto.h,$(WMI_OBJ_FILES:.o=.c)))
 
 #################################
 # Start BINARY wmic
@@ -19,7 +20,7 @@ PRIVATE_DEPENDENCIES = \
                 LIBPOPT \
 				WMI
 
-wmic_OBJ_FILES = lib/wmi/tools/wmic.o
+wmic_OBJ_FILES = $(wmisrcdir)/tools/wmic.o
 # End BINARY wmic
 #################################
 
@@ -34,7 +35,7 @@ PRIVATE_DEPENDENCIES = \
 				WMI
 
 wmis_OBJ_FILES = \
-                lib/wmi/tools/wmis.o
+                $(wmisrcdir)/tools/wmis.o
 
 # End BINARY wmis
 #################################
@@ -45,7 +46,8 @@ librpc/gen_ndr/dcom_p.c: idl
 # Start LIBRARY swig_dcerpc
 [PYTHON::pywmi]
 PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-CONFIG WMI
-SWIG_FILE = pywmi.i
+
+pywmi_OBJ_FILES = $(wmisrcdir)/pywmi_wrap.o
 
 # End LIBRARY swig_dcerpc
 #######################

@@ -102,6 +102,7 @@ ejsscriptsrcdir := scripting/ejs
 pyscriptsrcdir := $(srcdir)/scripting/python
 kdcsrcdir := kdc
 ntp_signdsrcdir := ntp_signd
+wmisrcdir := lib/wmi
 
 include data.mk
 

@@ -47,3 +47,4 @@ mkinclude libcli/config.mk
 mkinclude scripting/ejs/config.mk
 mkinclude scripting/python/config.mk
 mkinclude kdc/config.mk
+mkinclude lib/wmi/config.mk
