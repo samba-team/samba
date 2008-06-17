@@ -319,7 +319,6 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 
 	status = get_sorted_dc_list(realm, sitename, &ip_list, &count, got_realm);
 	if (!NT_STATUS_IS_OK(status)) {
-		SAFE_FREE(ip_list);
 		/* fall back to netbios if we can */
 		if ( got_realm && !lp_disable_netbios() ) {
 			got_realm = False;
