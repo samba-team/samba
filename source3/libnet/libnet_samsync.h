@@ -48,3 +48,8 @@ NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 				struct netr_DELTA_ENUM_ARRAY *r,
 				NTSTATUS result,
 				struct samsync_context *ctx);
+NTSTATUS fetch_sam_entries(TALLOC_CTX *mem_ctx,
+			   enum netr_SamDatabaseID database_id,
+			   struct netr_DELTA_ENUM_ARRAY *r,
+			   NTSTATUS status,
+			   struct samsync_context *ctx);
