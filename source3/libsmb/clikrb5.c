@@ -210,11 +210,11 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 #endif
 
 #if defined(HAVE_KRB5_PRINCIPAL2SALT) && defined(HAVE_KRB5_USE_ENCTYPE) && defined(HAVE_KRB5_STRING_TO_KEY) && defined(HAVE_KRB5_ENCRYPT_BLOCK)
- int create_kerberos_key_from_string_direct(krb5_context context,
-					krb5_principal host_princ,
-					krb5_data *password,
-					krb5_keyblock *key,
-					krb5_enctype enctype)
+static int create_kerberos_key_from_string_direct(krb5_context context,
+						  krb5_principal host_princ,
+						  krb5_data *password,
+						  krb5_keyblock *key,
+						  krb5_enctype enctype)
 {
 	int ret;
 	krb5_data salt;
@@ -231,11 +231,11 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 	return ret;
 }
 #elif defined(HAVE_KRB5_GET_PW_SALT) && defined(HAVE_KRB5_STRING_TO_KEY_SALT)
- int create_kerberos_key_from_string_direct(krb5_context context,
-					krb5_principal host_princ,
-					krb5_data *password,
-					krb5_keyblock *key,
-					krb5_enctype enctype)
+static int create_kerberos_key_from_string_direct(krb5_context context,
+						  krb5_principal host_princ,
+						  krb5_data *password,
+						  krb5_keyblock *key,
+						  krb5_enctype enctype)
 {
 	int ret;
 	krb5_salt salt;
