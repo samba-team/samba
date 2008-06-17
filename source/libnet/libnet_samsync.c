@@ -375,3 +375,41 @@ NTSTATUS samsync_process_database(struct rpc_pipe_client *pipe_hnd,
 
 	return result;
 }
+
+/**
+ * pull_netr_AcctLockStr
+ */
+
+NTSTATUS pull_netr_AcctLockStr(TALLOC_CTX *mem_ctx,
+			       struct lsa_BinaryString *r,
+			       struct netr_AcctLockStr **str_p)
+{
+	struct netr_AcctLockStr *str;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+
+	if (!mem_ctx || !r || !str_p) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	*str_p = NULL;
+
+	str = TALLOC_ZERO_P(mem_ctx, struct netr_AcctLockStr);
+	if (!str) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	blob = data_blob_const(r->array, r->length);
+
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, str,
+		       (ndr_pull_flags_fn_t)ndr_pull_netr_AcctLockStr);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	*str_p = str;
+
+	return NT_STATUS_OK;
+}
+

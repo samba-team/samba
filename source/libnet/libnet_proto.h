@@ -59,4 +59,7 @@ NTSTATUS samsync_process_database(struct rpc_pipe_client *pipe_hnd,
 				  enum netr_SamDatabaseID database_id,
 				  samsync_fn_t callback_fn,
 				  struct samsync_context *ctx);
+NTSTATUS pull_netr_AcctLockStr(TALLOC_CTX *mem_ctx,
+			       struct lsa_BinaryString *r,
+			       struct netr_AcctLockStr **str_p);
 #endif /*  _LIBNET_PROTO_H_  */
