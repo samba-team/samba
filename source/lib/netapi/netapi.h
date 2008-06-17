@@ -69,6 +69,12 @@ struct DOMAIN_CONTROLLER_INFO {
 	const char * client_site_name;
 };
 
+#define FILTER_TEMP_DUPLICATE_ACCOUNT	( 0x0001 )
+#define FILTER_NORMAL_ACCOUNT	( 0x0002 )
+#define FILTER_INTERDOMAIN_TRUST_ACCOUNT	( 0x0008 )
+#define FILTER_WORKSTATION_TRUST_ACCOUNT	( 0x0010 )
+#define FILTER_SERVER_TRUST_ACCOUNT	( 0x0020 )
+
 struct SERVER_INFO_1005 {
 	const char * sv1005_comment;
 };
