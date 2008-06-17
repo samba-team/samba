@@ -1199,13 +1199,14 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 	/* fetch domain */
 	result = samsync_process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
 					  fetch_sam_entries, ctx);
-	if (!NT_STATUS_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to fetch domain database: %s\n",
-			  nt_errstr(result));
-		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED))
-			d_fprintf(stderr, "Perhaps %s is a Windows 2000 "
-				  "native mode domain?\n", domain_name);
+
+	if (!NT_STATUS_IS_OK(result) && ctx->error_message) {
+		d_fprintf(stderr, "%s\n", ctx->error_message);
 		goto fail;
+	}
+
+	if (ctx->result_message) {
+		d_fprintf(stdout, "%s\n", ctx->result_message);
 	}
 
 	/* fetch builtin */
@@ -1213,15 +1214,18 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 	ctx->domain_sid_str = sid_string_talloc(mem_ctx, ctx->domain_sid);
 	result = samsync_process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
 					  fetch_sam_entries, ctx);
-	if (!NT_STATUS_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to fetch builtin database: %s\n",
-			  nt_errstr(result));
+
+	if (!NT_STATUS_IS_OK(result) && ctx->error_message) {
+		d_fprintf(stderr, "%s\n", ctx->error_message);
 		goto fail;
 	}
 
-	TALLOC_FREE(ctx);
+	if (ctx->result_message) {
+		d_fprintf(stdout, "%s\n", ctx->result_message);
+	}
 
  fail:
+	TALLOC_FREE(ctx);
 	return result;
 }
 
@@ -1253,13 +1257,14 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 	/* fetch domain */
 	status = samsync_process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
 					  fetch_sam_entries_ldif, ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "Failed to fetch domain database: %s\n",
-			  nt_errstr(status));
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED))
-			d_fprintf(stderr, "Perhaps %s is a Windows 2000 "
-				  "native mode domain?\n", domain_name);
+
+	if (!NT_STATUS_IS_OK(status) && ctx->error_message) {
+		d_fprintf(stderr, "%s\n", ctx->error_message);
 		goto fail;
+	}
+
+	if (ctx->result_message) {
+		d_fprintf(stdout, "%s\n", ctx->result_message);
 	}
 
 	/* fetch builtin */
@@ -1267,15 +1272,18 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 	ctx->domain_sid_str = sid_string_talloc(mem_ctx, ctx->domain_sid);
 	status = samsync_process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
 					  fetch_sam_entries_ldif, ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "Failed to fetch builtin database: %s\n",
-			  nt_errstr(status));
+
+	if (!NT_STATUS_IS_OK(status) && ctx->error_message) {
+		d_fprintf(stderr, "%s\n", ctx->error_message);
 		goto fail;
 	}
 
-	TALLOC_FREE(ctx);
+	if (ctx->result_message) {
+		d_fprintf(stdout, "%s\n", ctx->result_message);
+	}
 
  fail:
+	TALLOC_FREE(ctx);
 	return status;
 }
 

@@ -1186,7 +1186,7 @@ NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < r->num_deltas; i++) {
 		status = fetch_sam_entry_ldif(mem_ctx, database_id,
 					      &r->delta_enum[i], ctx,
-					      &g_index, &a_index);
+					      &a_index, &g_index);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto failed;
 		}
@@ -1195,6 +1195,11 @@ NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 	/* This was the last query */
 	if (NT_STATUS_IS_OK(result)) {
 		ldif_write_output(database_id, ldif_ctx);
+		if (ldif_ctx->ldif_file != stdout) {
+			ctx->result_message = talloc_asprintf(mem_ctx,
+				"Vampired %d accounts and %d groups to %s",
+				a_index, g_index, ctx->output_filename);
+		}
 		ldif_free_context(ldif_ctx);
 		ctx->private_data = NULL;
 	}
