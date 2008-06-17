@@ -28,6 +28,7 @@ m4_include(nsswitch/nsstest.m4)
 m4_include(pidl/config.m4)
 
 AC_CONFIG_FILES(lib/registry/registry.pc)
+AC_CONFIG_FILES(lib/events/events.pc)
 AC_CONFIG_FILES(librpc/dcerpc.pc)
 AC_CONFIG_FILES(librpc/ndr.pc)
 AC_CONFIG_FILES(lib/torture/torture.pc)
