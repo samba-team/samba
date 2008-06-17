@@ -24,7 +24,7 @@
 #define DBGC_CLASS DBGC_ACLS
 
 bool can_access_file_acl(struct connection_struct *conn,
-				const char * fname, SMB_STRUCT_STAT *psbuf,
+				const char * fname,
 				uint32_t access_mask)
 {
 	bool result;
@@ -114,7 +114,7 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 
 	/* now for ACL checks */
 
-	return can_access_file_acl(conn, dname, &sbuf, FILE_WRITE_DATA);
+	return can_access_file_acl(conn, dname, FILE_WRITE_DATA);
 }
 
 /****************************************************************************
@@ -168,7 +168,7 @@ bool can_access_file_data(connection_struct *conn, const char *fname, SMB_STRUCT
 
 	/* now for ACL checks */
 
-	return can_access_file_acl(conn, fname, psbuf, access_mask);
+	return can_access_file_acl(conn, fname, access_mask);
 }
 
 /****************************************************************************
