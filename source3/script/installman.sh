@@ -14,7 +14,7 @@ if [ $# -ge 4 ] ; then
 fi
 
 if test ! -d $SRCDIR../docs/manpages; then
-	echo "No manpages present.  SVN development version maybe?"
+	echo "No manpages present.  Development version maybe?"
 	exit 0
 fi
 
