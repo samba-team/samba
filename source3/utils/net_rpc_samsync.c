@@ -354,6 +354,7 @@ NTSTATUS rpc_samdump_internals(struct net_context *c,
 
 	status = samsync_init_context(mem_ctx,
 				      domain_sid,
+				      domain_name,
 				      NET_SAMSYNC_MODE_DUMP,
 				      &ctx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1173,6 +1174,7 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 
 	result = samsync_init_context(mem_ctx,
 				      domain_sid,
+				      domain_name,
 				      NET_SAMSYNC_MODE_FETCH_PASSDB,
 				      &ctx);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1237,6 +1239,7 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 
 	status = samsync_init_context(mem_ctx,
 				      domain_sid,
+				      domain_name,
 				      NET_SAMSYNC_MODE_FETCH_LDIF,
 				      &ctx);
 	if (!NT_STATUS_IS_OK(status)) {

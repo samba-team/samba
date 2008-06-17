@@ -52,6 +52,7 @@ NTSTATUS samsync_fix_delta_array(TALLOC_CTX *mem_ctx,
 				 struct netr_DELTA_ENUM_ARRAY *r);
 NTSTATUS samsync_init_context(TALLOC_CTX *mem_ctx,
 			      const struct dom_sid *domain_sid,
+			      const char *domain_name,
 			      enum net_samsync_mode mode,
 			      struct samsync_context **ctx_p);
 NTSTATUS samsync_process_database(struct rpc_pipe_client *pipe_hnd,
