@@ -119,7 +119,7 @@ void debug_dsdcinfo_flags(int lvl, uint32_t flags)
 
 static char *dsgetdcname_cache_key(TALLOC_CTX *mem_ctx, const char *domain)
 {
-	if (!mem_ctx || !domain) {
+	if (!domain) {
 		return NULL;
 	}
 
