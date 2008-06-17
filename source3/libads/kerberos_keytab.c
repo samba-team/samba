@@ -312,9 +312,9 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		}
 	}
 
-	kvno = (krb5_kvno) ads_get_kvno(ads, global_myname());
+	kvno = (krb5_kvno) ads_get_machine_kvno(ads, global_myname());
 	if (kvno == -1) {       /* -1 indicates failure, everything else is OK */
-		DEBUG(1,("ads_keytab_add_entry: ads_get_kvno failed to determine the system's kvno.\n"));
+		DEBUG(1,("ads_keytab_add_entry: ads_get_machine_kvno failed to determine the system's kvno.\n"));
 		ret = -1;
 		goto out;
 	}
@@ -380,7 +380,7 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 		goto out;
 	}
 
-	kvno = (krb5_kvno) ads_get_kvno(ads, global_myname());
+	kvno = (krb5_kvno) ads_get_machine_kvno(ads, global_myname());
 	if (kvno == -1) {       /* -1 indicates a failure */
 		DEBUG(1,("ads_keytab_flush: Error determining the system's kvno.\n"));
 		goto out;
@@ -527,9 +527,9 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 
 	/* Now loop through the keytab and update any other existing entries... */
 	
-	kvno = (krb5_kvno) ads_get_kvno(ads, machine_name);
+	kvno = (krb5_kvno) ads_get_machine_kvno(ads, machine_name);
 	if (kvno == -1) {
-		DEBUG(1,("ads_keytab_create_default: ads_get_kvno failed to determine the system's kvno.\n"));
+		DEBUG(1,("ads_keytab_create_default: ads_get_machine_kvno failed to determine the system's kvno.\n"));
 		return -1;
 	}
 	

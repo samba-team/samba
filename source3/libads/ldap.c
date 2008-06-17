@@ -1516,13 +1516,13 @@ ADS_STATUS ads_add_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 }
 
 /**
- * Determines the computer account's current KVNO via an LDAP lookup
+ * Determines the an account's current KVNO via an LDAP lookup
  * @param ads An initialized ADS_STRUCT
- * @param machine_name the NetBIOS name of the computer, which is used to identify the computer account.
- * @return the kvno for the computer account, or -1 in case of a failure.
+ * @param account_name the NT samaccountname.
+ * @return the kvno for the account, or -1 in case of a failure.
  **/
 
-uint32 ads_get_kvno(ADS_STRUCT *ads, const char *machine_name)
+uint32 ads_get_kvno(ADS_STRUCT *ads, const char *account_name)
 {
 	LDAPMessage *res = NULL;
 	uint32 kvno = (uint32)-1;      /* -1 indicates a failure */
@@ -1531,14 +1531,14 @@ uint32 ads_get_kvno(ADS_STRUCT *ads, const char *machine_name)
 	char *dn_string = NULL;
 	ADS_STATUS ret = ADS_ERROR(LDAP_SUCCESS);
 
-	DEBUG(5,("ads_get_kvno: Searching for host %s\n", machine_name));
-	if (asprintf(&filter, "(samAccountName=%s$)", machine_name) == -1) {
+	DEBUG(5,("ads_get_kvno: Searching for account %s\n", account_name));
+	if (asprintf(&filter, "(samAccountName=%s)", account_name) == -1) {
 		return kvno;
 	}
 	ret = ads_search(ads, &res, filter, attrs);
 	SAFE_FREE(filter);
 	if (!ADS_ERR_OK(ret) || (ads_count_replies(ads, res) != 1)) {
-		DEBUG(1,("ads_get_kvno: Computer Account For %s not found.\n", machine_name));
+		DEBUG(1,("ads_get_kvno: Account for %s not found.\n", account_name));
 		ads_msgfree(ads, res);
 		return kvno;
 	}
@@ -1570,6 +1570,28 @@ uint32 ads_get_kvno(ADS_STRUCT *ads, const char *machine_name)
 	/* Success */
 	DEBUG(5,("ads_get_kvno: Looked Up KVNO of: %d\n", kvno));
 	ads_msgfree(ads, res);
+	return kvno;
+}
+
+/**
+ * Determines the computer account's current KVNO via an LDAP lookup
+ * @param ads An initialized ADS_STRUCT
+ * @param machine_name the NetBIOS name of the computer, which is used to identify the computer account.
+ * @return the kvno for the computer account, or -1 in case of a failure.
+ **/
+
+uint32_t ads_get_machine_kvno(ADS_STRUCT *ads, const char *machine_name)
+{
+	char *computer_account = NULL;
+	uint32_t kvno = -1;
+
+	if (asprintf(&computer_account, "%s$", machine_name) < 0) {
+		return kvno;
+	}
+
+	kvno = ads_get_kvno(ads, computer_account);
+	free(computer_account);
+
 	return kvno;
 }
 
