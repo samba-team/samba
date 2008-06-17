@@ -309,8 +309,8 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 		     int num_rids,
 		     uint32_t *rids,
 		     const char **pp_domain_name,
-		     const char ***names,
-		     enum wbcSidType **types)
+		     const char ***pnames,
+		     enum wbcSidType **ptypes)
 {
 	size_t i, len, ridbuf_size;
 	char *ridlist;
@@ -319,6 +319,8 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 	struct winbindd_response response;
 	char *sid_string = NULL;
 	char *domain_name = NULL;
+	const char **names = NULL;
+	enum wbcSidType *types = NULL;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 
 	/* Initialise request */
@@ -370,11 +372,11 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 	domain_name = talloc_strdup(NULL, response.data.domain_name);
 	BAIL_ON_PTR_ERROR(domain_name, wbc_status);
 
-	*names = talloc_array(NULL, const char*, num_rids);
-	BAIL_ON_PTR_ERROR((*names), wbc_status);
+	names = talloc_array(NULL, const char*, num_rids);
+	BAIL_ON_PTR_ERROR(names, wbc_status);
 
-	*types = talloc_array(NULL, enum wbcSidType, num_rids);
-	BAIL_ON_PTR_ERROR((*types), wbc_status);
+	types = talloc_array(NULL, enum wbcSidType, num_rids);
+	BAIL_ON_PTR_ERROR(types, wbc_status);
 
 	p = (char *)response.extra_data.data;
 
@@ -386,7 +388,7 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
 
-		(*types)[i] = (enum wbcSidType)strtoul(p, &q, 10);
+		types[i] = (enum wbcSidType)strtoul(p, &q, 10);
 
 		if (*q != ' ') {
 			wbc_status = WBC_ERR_INVALID_RESPONSE;
@@ -402,8 +404,8 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 
 		*q = '\0';
 
-		(*names)[i] = talloc_strdup((*names), p);
-		BAIL_ON_PTR_ERROR(((*names)[i]), wbc_status);
+		names[i] = talloc_strdup(names, p);
+		BAIL_ON_PTR_ERROR(names[i], wbc_status);
 
 		p = q+1;
 	}
@@ -420,15 +422,18 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 		free(response.extra_data.data);
 	}
 
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
+	if (WBC_ERROR_IS_OK(wbc_status)) {
+		*pp_domain_name = domain_name;
+		*pnames = names;
+		*ptypes = types;
+	}
+	else {
 		if (domain_name)
 			talloc_free(domain_name);
-		if (*names)
-			talloc_free(*names);
-		if (*types)
-			talloc_free(*types);
-	} else {
-		*pp_domain_name = domain_name;
+		if (names)
+			talloc_free(names);
+		if (types)
+			talloc_free(types);
 	}
 
 	return wbc_status;
