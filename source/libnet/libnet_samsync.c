@@ -193,6 +193,7 @@ NTSTATUS samsync_fix_delta_array(TALLOC_CTX *mem_ctx,
 
 NTSTATUS samsync_init_context(TALLOC_CTX *mem_ctx,
 			      const struct dom_sid *domain_sid,
+			      const char *domain_name,
 			      enum net_samsync_mode mode,
 			      struct samsync_context **ctx_p)
 {
@@ -204,6 +205,9 @@ NTSTATUS samsync_init_context(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->mode = mode;
+
+	ctx->domain_name = talloc_strdup(mem_ctx, domain_name);
+	NT_STATUS_HAVE_NO_MEMORY(ctx->domain_name);
 
 	if (domain_sid) {
 		ctx->domain_sid = sid_dup_talloc(mem_ctx, domain_sid);
