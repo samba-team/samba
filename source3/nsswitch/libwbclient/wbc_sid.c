@@ -228,14 +228,17 @@ wbcErr wbcLookupName(const char *domain,
  **/
 
 wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
-		    char **domain,
-		    char **name,
-		    enum wbcSidType *name_type)
+		    char **pdomain,
+		    char **pname,
+		    enum wbcSidType *pname_type)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	char *sid_string = NULL;
+	char *domain = NULL;
+	char *name = NULL;
+	enum wbcSidType name_type;
 
 	if (!sid) {
 		wbc_status = WBC_ERR_INVALID_PARAM;
@@ -264,28 +267,35 @@ wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
 
 	/* Copy out result */
 
-	if (domain != NULL) {
-		*domain = talloc_strdup(NULL, response.data.name.dom_name);
-		BAIL_ON_PTR_ERROR((*domain), wbc_status);
-	}
+	domain = talloc_strdup(NULL, response.data.name.dom_name);
+	BAIL_ON_PTR_ERROR(domain, wbc_status);
 
-	if (name != NULL) {
-		*name = talloc_strdup(NULL, response.data.name.name);
-		BAIL_ON_PTR_ERROR((*name), wbc_status);
-	}
+	name = talloc_strdup(NULL, response.data.name.name);
+	BAIL_ON_PTR_ERROR(name, wbc_status);
 
-	if (name_type) {
-		*name_type = (enum wbcSidType)response.data.name.type;
-	}
+	name_type = (enum wbcSidType)response.data.name.type;
 
 	wbc_status = WBC_ERR_SUCCESS;
 
  done:
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		if (*domain)
-			talloc_free(*domain);
-		if (*name)
-			talloc_free(*name);
+	if (WBC_ERROR_IS_OK(wbc_status)) {
+		if (pdomain != NULL) {
+			*pdomain = domain;
+		}
+		if (pname != NULL) {
+			*pname = name;
+		}
+		if (pname_type != NULL) {
+			*pname_type = name_type;
+		}
+	}
+	else {
+		if (name != NULL) {
+			talloc_free(name);
+		}
+		if (domain != NULL) {
+			talloc_free(domain);
+		}
 	}
 
 	return wbc_status;
