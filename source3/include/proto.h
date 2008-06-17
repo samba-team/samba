@@ -9641,7 +9641,7 @@ NTSTATUS close_fake_file(files_struct *fsp);
 /* The following definitions come from smbd/file_access.c  */
 
 bool can_access_file_acl(struct connection_struct *conn,
-				const char * fname, SMB_STRUCT_STAT *psbuf,
+				const char * fname,
 				uint32_t access_mask);
 bool can_delete_file_in_directory(connection_struct *conn, const char *fname);
 bool can_access_file_data(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf, uint32 access_mask);

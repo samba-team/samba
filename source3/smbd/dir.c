@@ -934,7 +934,7 @@ static bool user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 
 	SMB_ASSERT(VALID_STAT(*pst));
 
-	return can_access_file_acl(conn, name, pst, FILE_READ_DATA);
+	return can_access_file_acl(conn, name, FILE_READ_DATA);
 }
 
 /*******************************************************************
