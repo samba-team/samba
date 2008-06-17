@@ -59,7 +59,7 @@ wbcErr wbcSidToString(const struct wbcDomainSid *sid,
 	BAIL_ON_PTR_ERROR(tmp, wbc_status);
 
 	for (i=0; i<sid->num_auths; i++) {
-		char *tmp2 =
+		char *tmp2;
 		tmp2 = talloc_asprintf_append(tmp, "-%u", sid->sub_auths[i]);
 		BAIL_ON_PTR_ERROR(tmp2, wbc_status);
 
