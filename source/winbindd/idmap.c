@@ -798,7 +798,7 @@ NTSTATUS idmap_init(void)
 		}
 	}
 
-	/* cleanpu temporary strings */
+	/* cleanup temporary strings */
 	TALLOC_FREE( compat_backend );
 
 	idmap_init_status = NT_STATUS_OK;
@@ -1359,7 +1359,7 @@ NTSTATUS idmap_unixids_to_sids(struct id_map **ids)
 		}
 	}
 
-	/* let's see if there is any id mapping to be retieved
+	/* let's see if there is any id mapping to be retrieved
 	 * from the backends */
 	if (bi) {
 		/* Only do query if we are online */
@@ -1477,7 +1477,7 @@ NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
 		}
 	}
 
-	/* let's see if there is any id mapping to be retieved
+	/* let's see if there is any id mapping to be retrieved
 	 * from the backends */
 	if (bids) {
 		/* Only do query if we are online */
