@@ -35,7 +35,8 @@ PROGS = bin/getdc@EXEEXT@ \
 	bin/localgroup_add@EXEEXT@ \
 	bin/localgroup_del@EXEEXT@ \
 	bin/localgroup_getinfo@EXEEXT@ \
-	bin/localgroup_setinfo@EXEEXT@
+	bin/localgroup_setinfo@EXEEXT@ \
+	bin/remote_tod@EXEEXT@
 
 all: $(PROGS)
 
@@ -83,6 +84,7 @@ LOCALGROUPADD_OBJ = localgroup/localgroup_add.o $(CMDLINE_OBJ)
 LOCALGROUPDEL_OBJ = localgroup/localgroup_del.o $(CMDLINE_OBJ)
 LOCALGROUPGETINFO_OBJ = localgroup/localgroup_getinfo.o $(CMDLINE_OBJ)
 LOCALGROUPSETINFO_OBJ = localgroup/localgroup_setinfo.o $(CMDLINE_OBJ)
+REMOTETOD_OBJ = server/remote_tod.o $(CMDLINE_OBJ)
 
 bin/getdc@EXEEXT@: $(BINARY_PREREQS) $(GETDC_OBJ)
 	@echo Linking $@
@@ -159,6 +161,10 @@ bin/localgroup_getinfo@EXEEXT@: $(BINARY_PREREQS) $(LOCALGROUPGETINFO_OBJ)
 bin/localgroup_setinfo@EXEEXT@: $(BINARY_PREREQS) $(LOCALGROUPSETINFO_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOCALGROUPSETINFO_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
+
+bin/remote_tod@EXEEXT@: $(BINARY_PREREQS) $(REMOTETOD_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(REMOTETOD_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 clean:
 	-rm -f $(PROGS)
