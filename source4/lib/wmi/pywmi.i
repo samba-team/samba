@@ -1,8 +1,27 @@
+/*
+   WMI Implementation
+   Copyright (C) 2006 Andrzej Hajda <andrzej.hajda@wp.pl>
+   Copyright (C) 2008 Jelmer Vernooij <jelmer@samba.org>
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
 %module pywmi
 
 %include "typemaps.i"
-%include "scripting/swig/samba.i"
-//%include "librpc/gen_ndr/winreg.i"
+%import "stdint.i"
 
 %runtime %{
 void push_object(PyObject **stack, PyObject *o)
@@ -30,8 +49,6 @@ void push_object(PyObject **stack, PyObject *o)
 #include "includes.h"
 #include "librpc/gen_ndr/misc.h"
 #include "librpc/rpc/dcerpc.h"
-#include "librpc/rpc/dcerpc_table.h"
-#include "libcli/util/nt_status.h"
 #include "lib/com/dcom/dcom.h"
 #include "librpc/gen_ndr/com_dcom.h"
 #include "wmi/proto.h"
@@ -52,22 +69,7 @@ static PyObject *mod_win32_client;
 static PyObject *mod_pywintypes;
 %}
 
-%apply uint32_t { int32_t };
-
-extern int DEBUGLEVEL;
-
 %wrapper %{
-static PyObject *PyErr_SetFromWERROR(WERROR w)
-{
-	PyObject *v;
-
-	v = Py_BuildValue("(is)", W_ERROR_V(w), wmi_errstr(w));
-	if (v != NULL) {
-		PyErr_SetObject(ComError, v);
-		Py_DECREF(v);
-	}
-	return NULL;
-}
 
 #define RETURN_CVAR_ARRAY(fmt, arr) {\
 	PyObject *l, *o;\
@@ -344,7 +346,6 @@ WERROR IEnumWbemClassObject_SmartNext(struct IEnumWbemClassObject *d, TALLOC_CTX
 	mod_pywintypes = PyImport_ImportModule("pywintypes");
 	ComError = PyObject_GetAttrString(mod_pywintypes, "com_error");
 
-	DEBUGLEVEL = 0;
 //	talloc_enable_leak_report_full();
 
 	lp_load();
