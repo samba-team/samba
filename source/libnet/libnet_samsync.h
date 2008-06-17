@@ -30,6 +30,10 @@ struct samsync_context {
 	const char *domain_sid_str;
 	const char *domain_name;
 	const char *output_filename;
+
+	char *result_message;
+	char *error_message;
+
 	void *private_data;
 };
 

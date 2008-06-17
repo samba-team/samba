@@ -223,6 +223,25 @@ NTSTATUS samsync_init_context(TALLOC_CTX *mem_ctx,
 }
 
 /**
+ * samsync_database_str
+ */
+
+static const char *samsync_database_str(enum netr_SamDatabaseID database_id)
+{
+
+	switch (database_id) {
+		case SAM_DATABASE_DOMAIN:
+			return "DOMAIN";
+		case SAM_DATABASE_BUILTIN:
+			return "BUILTIN";
+		case SAM_DATABASE_PRIVS:
+			return "PRIVS";
+		default:
+			return "unknown";
+	}
+}
+
+/**
  * samsync_debug_str
  */
 
@@ -231,7 +250,6 @@ static const char *samsync_debug_str(TALLOC_CTX *mem_ctx,
 				     enum netr_SamDatabaseID database_id)
 {
 	const char *action = NULL;
-	const char *str = NULL;
 
 	switch (mode) {
 		case NET_SAMSYNC_MODE_DUMP:
@@ -248,26 +266,8 @@ static const char *samsync_debug_str(TALLOC_CTX *mem_ctx,
 			break;
 	}
 
-	switch (database_id) {
-		case SAM_DATABASE_DOMAIN:
-			str = talloc_asprintf(mem_ctx, "%s DOMAIN database",
-				action);
-			break;
-		case SAM_DATABASE_BUILTIN:
-			str = talloc_asprintf(mem_ctx, "%s BUILTIN database",
-				action);
-			break;
-		case SAM_DATABASE_PRIVS:
-			str = talloc_asprintf(mem_ctx, "%s PRIVS database",
-				action);
-			break;
-		default:
-			str = talloc_asprintf(mem_ctx, "%s unknown database type %u",
-				action, database_id);
-			break;
-	}
-
-	return str;
+	return talloc_asprintf(mem_ctx, "%s %s database",
+				action, samsync_database_str(database_id));
 }
 
 /**
@@ -303,6 +303,7 @@ NTSTATUS samsync_process_database(struct rpc_pipe_client *pipe_hnd,
 
 	do {
 		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
+		NTSTATUS callback_status;
 
 		netlogon_creds_client_step(pipe_hnd->dc, &credential);
 
@@ -340,7 +341,11 @@ NTSTATUS samsync_process_database(struct rpc_pipe_client *pipe_hnd,
 					delta_enum_array);
 
 		/* Process results */
-		callback_fn(mem_ctx, database_id, delta_enum_array, result, ctx);
+		callback_status = callback_fn(mem_ctx, database_id, delta_enum_array, result, ctx);
+		if (!NT_STATUS_IS_OK(callback_status)) {
+			result = callback_status;
+			goto out;
+		}
 
 		TALLOC_FREE(delta_enum_array);
 
@@ -348,6 +353,23 @@ NTSTATUS samsync_process_database(struct rpc_pipe_client *pipe_hnd,
 		sync_context += 1;
 
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
+
+ out:
+	if (NT_STATUS_IS_ERR(result) && !ctx->error_message) {
+
+		ctx->error_message = talloc_asprintf(ctx,
+			"Failed to fetch %s database: %s",
+			samsync_database_str(database_id),
+			nt_errstr(result));
+
+		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED)) {
+
+			ctx->error_message =
+				talloc_asprintf_append(ctx->error_message,
+					"\nPerhaps %s is a Windows native mode domain?",
+					ctx->domain_name);
+		}
+	}
 
 	talloc_destroy(mem_ctx);
 
