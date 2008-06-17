@@ -447,15 +447,22 @@ void svcctl_init_keys( void )
 	REGSUBKEY_CTR *subkeys;
 	REGISTRY_KEY *key = NULL;
 	WERROR wresult;
+	struct nt_user_token *token = get_root_nt_token();
+
+	if (token == NULL) {
+		DEBUG(0, ("svcctl_init_keys: get_root_nt_token failed\n"));
+		return;
+	}
 
 	/* bad mojo here if the lookup failed.  Should not happen */
 
 	wresult = regkey_open_internal( NULL, &key, KEY_SERVICES,
-					get_root_nt_token(), REG_KEY_ALL );
+					token, REG_KEY_ALL );
 
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_init_keys: key lookup failed! (%s)\n",
 			dos_errstr(wresult)));
+		TALLOC_FREE(token);
 		return;
 	}
 
@@ -464,6 +471,7 @@ void svcctl_init_keys( void )
 	if ( !(subkeys = TALLOC_ZERO_P( key, REGSUBKEY_CTR )) ) {
 		DEBUG(0,("svcctl_init_keys: talloc() failed!\n"));
 		TALLOC_FREE( key );
+		TALLOC_FREE(token);
 		return;
 	}
 
@@ -486,6 +494,7 @@ void svcctl_init_keys( void )
 	}
 
 	TALLOC_FREE( key );
+	TALLOC_FREE(token);
 
 	/* initialize the control hooks */
 
