@@ -1537,7 +1537,7 @@ uint32 ads_get_kvno(ADS_STRUCT *ads, const char *machine_name)
 	}
 	ret = ads_search(ads, &res, filter, attrs);
 	SAFE_FREE(filter);
-	if (!ADS_ERR_OK(ret) && ads_count_replies(ads, res)) {
+	if (!ADS_ERR_OK(ret) || (ads_count_replies(ads, res) != 1)) {
 		DEBUG(1,("ads_get_kvno: Computer Account For %s not found.\n", machine_name));
 		ads_msgfree(ads, res);
 		return kvno;
