@@ -224,16 +224,6 @@ int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, str
 		
 		ops = ldb_find_module_ops(module_list[i]);
 		if (ops == NULL) {
-			int (*init_fn) (void);
-
-			init_fn = ldb_dso_load_symbol(ldb, module_list[i], 
-						      "init_module");
-			if (init_fn != NULL && init_fn() == 0) {
-				ops = ldb_find_module_ops(module_list[i]);
-			}
-		}
-
-		if (ops == NULL) {
 			char *symbol_name = talloc_asprintf(ldb, "ldb_%s_module_ops", 
 												module_list[i]);
 			if (symbol_name == NULL) {

@@ -185,16 +185,6 @@ int ldb_connect_backend(struct ldb_context *ldb,
 	fn = ldb_find_backend(backend);
 
 	if (fn == NULL) {
-		int (*init_fn) (void);
-
-		init_fn = ldb_dso_load_symbol(ldb, backend,
-					      "init_module");
-		if (init_fn != NULL && init_fn() == 0) {
-			fn = ldb_find_backend(backend);
-		}
-	}
-
-	if (fn == NULL) {
 		struct ldb_backend_ops *ops;
 		char *symbol_name = talloc_asprintf(ldb, "ldb_%s_backend_ops", backend);
 		if (symbol_name == NULL) {

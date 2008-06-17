@@ -182,7 +182,7 @@ init_module_fn load_module(TALLOC_CTX *mem_ctx, const char *path)
 		return NULL;
 	}
 
-	init_fn = dlsym(handle, "init_module");
+	init_fn = dlsym(handle, SAMBA_INIT_MODULE);
 
 	if (init_fn == NULL) {
 		DEBUG(0, ("Unable to find init_module() in %s: %s\n", path, dlerror()));
