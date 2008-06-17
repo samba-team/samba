@@ -3747,6 +3747,7 @@ if test x"$with_ads_support" != x"no"; then
     AC_CACHE_CHECK([for krb5_error_code krb5_enctype_to_string(krb5_context context, krb5_enctype enctype, char **str)],
         smb_krb5_cv_enctype_to_string_takes_krb5_context_arg,[
 	AC_TRY_RUN_STRICT([
+		#include <stdlib.h>
 		#include <krb5.h>
 		int main(void) {
 			krb5_context context = NULL;
