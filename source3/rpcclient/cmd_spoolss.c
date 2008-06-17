@@ -1310,7 +1310,7 @@ static WERROR cmd_spoolss_addprinterdriver(struct rpc_pipe_client *cli,
 	fstring			driver_name;
 	char 			*driver_args;
 
-	/* parse the command arguements */
+	/* parse the command arguments */
 	if (argc != 3 && argc != 4)
 	{
 		printf ("Usage: %s <Environment> \\\n", argv[0]);
@@ -1375,7 +1375,7 @@ static WERROR cmd_spoolss_addprinterex(struct rpc_pipe_client *cli,
 	PRINTER_INFO_2		info2;
 	fstring			servername;
 	
-	/* parse the command arguements */
+	/* parse the command arguments */
 	if (argc != 5)
 	{
 		printf ("Usage: %s <name> <shared name> <driver> <port>\n", argv[0]);
@@ -1437,7 +1437,7 @@ static WERROR cmd_spoolss_setdriver(struct rpc_pipe_client *cli,
 				printername,
 				user;
 	
-	/* parse the command arguements */
+	/* parse the command arguments */
 	if (argc != 3)
 	{
 		printf ("Usage: %s <printer> <driver>\n", argv[0]);
@@ -1509,7 +1509,7 @@ static WERROR cmd_spoolss_deletedriverex(struct rpc_pipe_client *cli,
  
 	const char *arch = NULL;
  
-	/* parse the command arguements */
+	/* parse the command arguments */
 	if (argc < 2 || argc > 4) {
 		printf ("Usage: %s <driver> [arch] [version]\n", argv[0]);
 		return WERR_OK;
@@ -1564,7 +1564,7 @@ static WERROR cmd_spoolss_deletedriver(struct rpc_pipe_client *cli,
 	fstring			servername;
 	int			i;
 	
-	/* parse the command arguements */
+	/* parse the command arguments */
 	if (argc != 2) {
 		printf ("Usage: %s <driver>\n", argv[0]);
 		return WERR_OK;
@@ -1605,7 +1605,7 @@ static WERROR cmd_spoolss_getprintprocdir(struct rpc_pipe_client *cli,
 	char *servername = NULL, *environment = NULL;
 	fstring procdir;
 	
-	/* parse the command arguements */
+	/* parse the command arguments */
 	if (argc > 2) {
 		printf ("Usage: %s [environment]\n", argv[0]);
 		return WERR_OK;
@@ -1645,7 +1645,7 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	FORM form;
 	bool got_handle = False;
 	
-	/* Parse the command arguements */
+	/* Parse the command arguments */
 
 	if (argc != 3) {
 		printf ("Usage: %s <printer> <formname>\n", argv[0]);
@@ -1706,7 +1706,7 @@ static WERROR cmd_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	FORM form;
 	bool got_handle = False;
 	
-	/* Parse the command arguements */
+	/* Parse the command arguments */
 
 	if (argc != 3) {
 		printf ("Usage: %s <printer> <formname>\n", argv[0]);
@@ -1803,7 +1803,7 @@ static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	FORM_1 form;
 	bool got_handle = False;
 	
-	/* Parse the command arguements */
+	/* Parse the command arguments */
 
 	if (argc != 3) {
 		printf ("Usage: %s <printer> <formname>\n", argv[0]);
@@ -1856,7 +1856,7 @@ static WERROR cmd_spoolss_deleteform(struct rpc_pipe_client *cli,
 	char *servername = NULL, *printername = NULL;
 	bool got_handle = False;
 	
-	/* Parse the command arguements */
+	/* Parse the command arguments */
 
 	if (argc != 3) {
 		printf ("Usage: %s <printer> <formname>\n", argv[0]);
@@ -1906,7 +1906,7 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 	uint32 num_forms, level = 1, i;
 	FORM_1 *forms;
 	
-	/* Parse the command arguements */
+	/* Parse the command arguments */
 
 	if (argc != 2) {
 		printf ("Usage: %s <printer>\n", argv[0]);
@@ -1969,7 +1969,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 	REGISTRY_VALUE value;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
-	/* parse the command arguements */
+	/* parse the command arguments */
 	if (argc < 5) {
 		printf ("Usage: %s <printer> <string|binary|dword|multistring>"
 			" <value> <data>\n",

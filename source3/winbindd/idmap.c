@@ -345,7 +345,7 @@ NTSTATUS idmap_init(void)
 				goto done;
 			}
 
-			/* separate the backend and module arguements */
+			/* separate the backend and module arguments */
 			if ((p = strchr(compat_backend, ':')) != NULL) {
 				*p = '\0';
 				compat_params = p + 1;
