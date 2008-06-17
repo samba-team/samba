@@ -416,6 +416,8 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 	}
 
 done:
+	if (response.extra_data.data)
+		free(response.extra_data.data);
 
 	return wbc_status;
 }
