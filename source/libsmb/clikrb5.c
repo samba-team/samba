@@ -1727,6 +1727,28 @@ done:
  	return ret;
 }
 
+krb5_error_code smb_krb5_keytab_name(TALLOC_CTX *mem_ctx,
+				     krb5_context context,
+				     krb5_keytab keytab,
+				     const char **keytab_name)
+{
+	char keytab_string[MAX_KEYTAB_NAME_LEN];
+	krb5_error_code ret = 0;
+
+	ret = krb5_kt_get_name(context, keytab,
+			       keytab_string, MAX_KEYTAB_NAME_LEN - 2);
+	if (ret) {
+		return ret;
+	}
+
+	*keytab_name = talloc_strdup(mem_ctx, keytab_string);
+	if (!*keytab_name) {
+		return ENOMEM;
+	}
+
+	return ret;
+}
+
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
  int cli_krb5_get_ticket(const char *principal, time_t time_offset, 

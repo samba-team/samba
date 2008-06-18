@@ -1221,6 +1221,10 @@ krb5_error_code smb_krb5_open_keytab(krb5_context context,
  				      const char *keytab_name, 
 				      bool write_access, 
 				      krb5_keytab *keytab);
+krb5_error_code smb_krb5_keytab_name(TALLOC_CTX *mem_ctx,
+				     krb5_context context,
+				     krb5_keytab keytab,
+				     const char **keytab_name);
 int smb_krb5_kt_add_entry(krb5_context context,
 			  krb5_keytab keytab,
 			  krb5_kvno kvno,
