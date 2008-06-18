@@ -2341,7 +2341,7 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]" | grep -v /.svn/`
 
-realclean:: clean delheaders
+realclean:: clean
 	-rm -f config.log bin/.dummy script/findsmb script/gen-8bit-gap.sh
 	-rm -f script/installbin.sh script/uninstallbin.sh
 
