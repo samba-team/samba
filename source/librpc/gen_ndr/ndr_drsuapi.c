@@ -1082,6 +1082,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsAttributeId(struct ndr_print *ndr, const char 
 			case DRSUAPI_ATTRIBUTE_searchFlags: val = "DRSUAPI_ATTRIBUTE_searchFlags"; break;
 			case DRSUAPI_ATTRIBUTE_lDAPDisplayName: val = "DRSUAPI_ATTRIBUTE_lDAPDisplayName"; break;
 			case DRSUAPI_ATTRIBUTE_name: val = "DRSUAPI_ATTRIBUTE_name"; break;
+			case DRSUAPI_ATTRIBUTE_userAccountControl: val = "DRSUAPI_ATTRIBUTE_userAccountControl"; break;
 			case DRSUAPI_ATTRIBUTE_currentValue: val = "DRSUAPI_ATTRIBUTE_currentValue"; break;
 			case DRSUAPI_ATTRIBUTE_objectSid: val = "DRSUAPI_ATTRIBUTE_objectSid"; break;
 			case DRSUAPI_ATTRIBUTE_schemaIDGUID: val = "DRSUAPI_ATTRIBUTE_schemaIDGUID"; break;
@@ -1094,6 +1095,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsAttributeId(struct ndr_print *ndr, const char 
 			case DRSUAPI_ATTRIBUTE_trustAuthOutgoing: val = "DRSUAPI_ATTRIBUTE_trustAuthOutgoing"; break;
 			case DRSUAPI_ATTRIBUTE_lmPwdHistory: val = "DRSUAPI_ATTRIBUTE_lmPwdHistory"; break;
 			case DRSUAPI_ATTRIBUTE_sAMAccountName: val = "DRSUAPI_ATTRIBUTE_sAMAccountName"; break;
+			case DRSUAPI_ATTRIBUTE_sAMAccountType: val = "DRSUAPI_ATTRIBUTE_sAMAccountType"; break;
 			case DRSUAPI_ATTRIBUTE_fSMORoleOwner: val = "DRSUAPI_ATTRIBUTE_fSMORoleOwner"; break;
 			case DRSUAPI_ATTRIBUTE_systemFlags: val = "DRSUAPI_ATTRIBUTE_systemFlags"; break;
 			case DRSUAPI_ATTRIBUTE_serverReference: val = "DRSUAPI_ATTRIBUTE_serverReference"; break;
@@ -1102,6 +1104,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsAttributeId(struct ndr_print *ndr, const char 
 			case DRSUAPI_ATTRIBUTE_initialAuthOutgoing: val = "DRSUAPI_ATTRIBUTE_initialAuthOutgoing"; break;
 			case DRSUAPI_ATTRIBUTE_wellKnownObjects: val = "DRSUAPI_ATTRIBUTE_wellKnownObjects"; break;
 			case DRSUAPI_ATTRIBUTE_isMemberOfPartialAttributeSet: val = "DRSUAPI_ATTRIBUTE_isMemberOfPartialAttributeSet"; break;
+			case DRSUAPI_ATTRIBUTE_groupType: val = "DRSUAPI_ATTRIBUTE_groupType"; break;
 			case DRSUAPI_ATTRIBUTE_objectCategory: val = "DRSUAPI_ATTRIBUTE_objectCategory"; break;
 			case DRSUAPI_ATTRIBUTE_gPLink: val = "DRSUAPI_ATTRIBUTE_gPLink"; break;
 			case DRSUAPI_ATTRIBUTE_msDS_Behavior_Version: val = "DRSUAPI_ATTRIBUTE_msDS_Behavior_Version"; break;

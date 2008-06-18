@@ -228,6 +228,7 @@ enum drsuapi_DsAttributeId
 	DRSUAPI_ATTRIBUTE_searchFlags=0x0002014e,
 	DRSUAPI_ATTRIBUTE_lDAPDisplayName=0x000201cc,
 	DRSUAPI_ATTRIBUTE_name=0x00090001,
+	DRSUAPI_ATTRIBUTE_userAccountControl=0x00090008,
 	DRSUAPI_ATTRIBUTE_currentValue=0x0009001b,
 	DRSUAPI_ATTRIBUTE_objectSid=0x00090092,
 	DRSUAPI_ATTRIBUTE_schemaIDGUID=0x00090094,
@@ -240,6 +241,7 @@ enum drsuapi_DsAttributeId
 	DRSUAPI_ATTRIBUTE_trustAuthOutgoing=0x00090087,
 	DRSUAPI_ATTRIBUTE_lmPwdHistory=0x000900a0,
 	DRSUAPI_ATTRIBUTE_sAMAccountName=0x000900dd,
+	DRSUAPI_ATTRIBUTE_sAMAccountType=0x0009012e,
 	DRSUAPI_ATTRIBUTE_fSMORoleOwner=0x00090171,
 	DRSUAPI_ATTRIBUTE_systemFlags=0x00090177,
 	DRSUAPI_ATTRIBUTE_serverReference=0x00090203,
@@ -248,6 +250,7 @@ enum drsuapi_DsAttributeId
 	DRSUAPI_ATTRIBUTE_initialAuthOutgoing=0x0009021c,
 	DRSUAPI_ATTRIBUTE_wellKnownObjects=0x0009026a,
 	DRSUAPI_ATTRIBUTE_isMemberOfPartialAttributeSet=0x0009027f,
+	DRSUAPI_ATTRIBUTE_groupType=0x000902ee,
 	DRSUAPI_ATTRIBUTE_objectCategory=0x0009030e,
 	DRSUAPI_ATTRIBUTE_gPLink=0x0009037b,
 	DRSUAPI_ATTRIBUTE_msDS_Behavior_Version=0x000905b3,
@@ -280,6 +283,7 @@ enum drsuapi_DsAttributeId
 #define DRSUAPI_ATTRIBUTE_searchFlags ( 0x0002014e )
 #define DRSUAPI_ATTRIBUTE_lDAPDisplayName ( 0x000201cc )
 #define DRSUAPI_ATTRIBUTE_name ( 0x00090001 )
+#define DRSUAPI_ATTRIBUTE_userAccountControl ( 0x00090008 )
 #define DRSUAPI_ATTRIBUTE_currentValue ( 0x0009001b )
 #define DRSUAPI_ATTRIBUTE_objectSid ( 0x00090092 )
 #define DRSUAPI_ATTRIBUTE_schemaIDGUID ( 0x00090094 )
@@ -292,6 +296,7 @@ enum drsuapi_DsAttributeId
 #define DRSUAPI_ATTRIBUTE_trustAuthOutgoing ( 0x00090087 )
 #define DRSUAPI_ATTRIBUTE_lmPwdHistory ( 0x000900a0 )
 #define DRSUAPI_ATTRIBUTE_sAMAccountName ( 0x000900dd )
+#define DRSUAPI_ATTRIBUTE_sAMAccountType ( 0x0009012e )
 #define DRSUAPI_ATTRIBUTE_fSMORoleOwner ( 0x00090171 )
 #define DRSUAPI_ATTRIBUTE_systemFlags ( 0x00090177 )
 #define DRSUAPI_ATTRIBUTE_serverReference ( 0x00090203 )
@@ -300,6 +305,7 @@ enum drsuapi_DsAttributeId
 #define DRSUAPI_ATTRIBUTE_initialAuthOutgoing ( 0x0009021c )
 #define DRSUAPI_ATTRIBUTE_wellKnownObjects ( 0x0009026a )
 #define DRSUAPI_ATTRIBUTE_isMemberOfPartialAttributeSet ( 0x0009027f )
+#define DRSUAPI_ATTRIBUTE_groupType ( 0x000902ee )
 #define DRSUAPI_ATTRIBUTE_objectCategory ( 0x0009030e )
 #define DRSUAPI_ATTRIBUTE_gPLink ( 0x0009037b )
 #define DRSUAPI_ATTRIBUTE_msDS_Behavior_Version ( 0x000905b3 )
