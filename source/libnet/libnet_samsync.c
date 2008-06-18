@@ -254,6 +254,9 @@ static const char *samsync_debug_str(TALLOC_CTX *mem_ctx,
 		case NET_SAMSYNC_MODE_FETCH_LDIF:
 			action = "Fetching (to ldif)";
 			break;
+		case NET_SAMSYNC_MODE_FETCH_KEYTAB:
+			action = "Fetching (to keytab)";
+			break;
 		default:
 			action = "Unknown";
 			break;

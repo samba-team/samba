@@ -896,6 +896,7 @@ LIBNET_OBJ = libnet/libnet_join.o \
 	     libnet/libnet_samsync_ldif.o \
 	     libnet/libnet_samsync_passdb.o \
 	     libnet/libnet_samsync_display.o \
+	     libnet/libnet_samsync_keytab.o \
 	     librpc/gen_ndr/ndr_libnet_join.o
 
 NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
