@@ -73,11 +73,13 @@ NTSTATUS rpc_samdump_internals(struct net_context *c,
 
 int rpc_vampire_usage(struct net_context *c, int argc, const char **argv)
 {
-	d_printf("net rpc vampire [ldif [<ldif-filename>] [options]\n"
+	d_printf("net rpc vampire ([ldif [<ldif-filename>] | [keytab] [<keytab-filename]) [options]\n"
 		 "\t to pull accounts from a remote PDC where we are a BDC\n"
 		 "\t\t no args puts accounts in local passdb from smb.conf\n"
 		 "\t\t ldif - put accounts in ldif format (file defaults to "
-		 "/tmp/tmp.ldif\n");
+		 "/tmp/tmp.ldif)\n"
+		 "\t\t keytab - put account passwords in krb5 keytab (defaults "
+		 "to system keytab)\n");
 
 	net_common_flags_usage(c, argc, argv);
 	return -1;
@@ -224,5 +226,76 @@ int rpc_vampire_ldif(struct net_context *c, int argc, const char **argv)
 	}
 
 	return run_rpc_command(c, NULL, PI_NETLOGON, 0, rpc_vampire_ldif_internals,
+			       argc, argv);
+}
+
+
+NTSTATUS rpc_vampire_keytab_internals(struct net_context *c,
+				      const DOM_SID *domain_sid,
+				      const char *domain_name,
+				      struct cli_state *cli,
+				      struct rpc_pipe_client *pipe_hnd,
+				      TALLOC_CTX *mem_ctx,
+				      int argc,
+				      const char **argv)
+{
+	NTSTATUS status;
+	struct samsync_context *ctx = NULL;
+
+	status = libnet_samsync_init_context(mem_ctx,
+					     domain_sid,
+					     &ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (argc >= 1) {
+		ctx->output_filename = argv[0];
+	}
+
+	ctx->mode		= NET_SAMSYNC_MODE_FETCH_KEYTAB;
+	ctx->cli		= pipe_hnd;
+	ctx->delta_fn		= fetch_sam_entries_keytab;
+	ctx->domain_name	= domain_name;
+	ctx->username		= c->opt_user_name;
+	ctx->password		= c->opt_password;
+
+	/* fetch domain */
+	status = libnet_samsync(SAM_DATABASE_DOMAIN, ctx);
+
+	if (!NT_STATUS_IS_OK(status) && ctx->error_message) {
+		d_fprintf(stderr, "%s\n", ctx->error_message);
+		goto out;
+	}
+
+	if (ctx->result_message) {
+		d_fprintf(stdout, "%s\n", ctx->result_message);
+	}
+
+ out:
+	TALLOC_FREE(ctx);
+
+	return status;
+}
+
+/**
+ * Basic function for 'net rpc vampire keytab'
+ *
+ * @param c	A net_context structure
+ * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argv.  Initial components are already
+ *              stripped
+ **/
+
+int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv)
+{
+	if (c->display_usage) {
+		d_printf("Usage\n"
+			 "net rpc vampire keytab\n"
+			 "    Dump remote SAM database to Kerberos keytab file\n");
+		return 0;
+	}
+
+	return run_rpc_command(c, NULL, PI_NETLOGON, 0, rpc_vampire_keytab_internals,
 			       argc, argv);
 }

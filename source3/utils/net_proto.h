@@ -368,6 +368,15 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 				    TALLOC_CTX *mem_ctx,
 				    int argc,
 				    const char **argv);
+NTSTATUS rpc_vampire_keytab_internals(struct net_context *c,
+				      const DOM_SID *domain_sid,
+				      const char *domain_name,
+				      struct cli_state *cli,
+				      struct rpc_pipe_client *pipe_hnd,
+				      TALLOC_CTX *mem_ctx,
+				      int argc,
+				      const char **argv);
+int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_rpc_service.c  */
 

@@ -6818,6 +6818,15 @@ static int rpc_vampire(struct net_context *c, int argc, const char **argv)
 			"net rpc vampire ldif\n"
 			"    Dump remote SAM database to LDIF file or stdout"
 		},
+		{
+			"keytab",
+			rpc_vampire_keytab,
+			NET_TRANSPORT_RPC,
+			"Dump remote SAM database to Kerberos Keytab",
+			"net rpc vampire keytab\n"
+			"    Dump remote SAM database to Kerberos keytab file"
+		},
+
 		{NULL, NULL, 0, NULL, NULL}
 	};
 

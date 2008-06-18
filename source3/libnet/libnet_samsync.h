@@ -21,7 +21,8 @@
 enum net_samsync_mode {
 	NET_SAMSYNC_MODE_FETCH_PASSDB = 0,
 	NET_SAMSYNC_MODE_FETCH_LDIF = 1,
-	NET_SAMSYNC_MODE_DUMP = 2
+	NET_SAMSYNC_MODE_FETCH_KEYTAB = 2,
+	NET_SAMSYNC_MODE_DUMP = 3
 };
 
 struct samsync_context;
@@ -65,3 +66,8 @@ NTSTATUS display_sam_entries(TALLOC_CTX *mem_ctx,
 			     struct netr_DELTA_ENUM_ARRAY *r,
 			     NTSTATUS status,
 			     struct samsync_context *ctx);
+NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
+				  enum netr_SamDatabaseID database_id,
+				  struct netr_DELTA_ENUM_ARRAY *r,
+				  NTSTATUS status,
+				  struct samsync_context *ctx);
