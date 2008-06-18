@@ -123,9 +123,10 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB wrapped_input)
 	struct signed_reply signed_reply;
 	enum ndr_err_code ndr_err;
 	struct ldb_result *res;
-	const char *attrs[] = { "unicodePwd", NULL };
+	const char *attrs[] = { "unicodePwd", "userAccountControl", NULL };
 	struct MD5Context ctx;
 	struct samr_Password *nt_hash;
+	uint32_t user_account_control;
 	int ret;
 
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
@@ -182,6 +183,14 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB wrapped_input)
 		DEBUG(1, ("Found SID %s %u times in SAM for NTP signing\n", dom_sid_string(tmp_ctx, sid), res->count));
 		talloc_free(tmp_ctx);
 		return signing_failure(ntp_signdconn, sign_request.packet_id);
+	}
+
+	user_account_control = ldb_msg_find_attr_as_uint(res->msgs[0], "userAccountControl", 0);
+
+	if (user_account_control & UF_ACCOUNTDISABLE) {
+		DEBUG(1, ("Account for SID [%s] is disabled\n", dom_sid_string(tmp_ctx, sid)));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	nt_hash = samdb_result_hash(tmp_ctx, res->msgs[0], "unicodePwd");
