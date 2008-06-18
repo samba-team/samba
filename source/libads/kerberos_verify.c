@@ -259,7 +259,7 @@ static krb5_error_code ads_secrets_verify_ticket(krb5_context context,
 			goto out;
 		}
 	
-		if (create_kerberos_key_from_string(context, host_princ, &password, key, enctypes[i])) {
+		if (create_kerberos_key_from_string(context, host_princ, &password, key, enctypes[i], false)) {
 			SAFE_FREE(key);
 			continue;
 		}
