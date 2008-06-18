@@ -648,7 +648,10 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			a_string = realloc_string_sub(a_string, "%h", myhostname());
 			break;
 		case 'm' :
-			a_string = realloc_string_sub(a_string, "%m", remote_machine);
+			a_string = realloc_string_sub(a_string, "%m",
+						      remote_machine
+						      ? remote_machine
+						      : "");
 			break;
 		case 'v' :
 			a_string = realloc_string_sub(a_string, "%v", SAMBA_VERSION_STRING);
