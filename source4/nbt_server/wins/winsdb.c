@@ -1006,7 +1006,7 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx,
 	bool ret;
 	int ldb_err;
 
-	h = talloc(mem_ctx, struct winsdb_handle);
+	h = talloc_zero(mem_ctx, struct winsdb_handle);
 	if (!h) return NULL;
 
 	if (lp_parm_bool(lp_ctx, NULL,"winsdb", "nosync", false)) {

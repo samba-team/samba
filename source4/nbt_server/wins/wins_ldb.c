@@ -98,7 +98,7 @@ static int wins_ldb_init(struct ldb_module *ctx)
 		}
 	}
 
-	h = talloc(ctx, struct winsdb_handle);
+	h = talloc_zero(ctx, struct winsdb_handle);
 	if (!h) goto failed;
 	h->ldb		= ctx->ldb;
 	h->caller	= WINSDB_HANDLE_CALLER_ADMIN;
