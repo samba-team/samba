@@ -746,8 +746,9 @@ failed:
 /*
   form a ldb_message from a winsdb_record
 */
-struct ldb_message *winsdb_message(struct ldb_context *ldb, 
-				   struct winsdb_record *rec, TALLOC_CTX *mem_ctx)
+static struct ldb_message *winsdb_message(struct ldb_context *ldb,
+					  struct winsdb_record *rec,
+					  TALLOC_CTX *mem_ctx)
 {
 	int i, ret=0;
 	size_t addr_count;
