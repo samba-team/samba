@@ -1590,32 +1590,6 @@ int smbc_fstat(int fd, struct stat *st);
 int smbc_ftruncate(int fd, off_t size);
 
 
-/**@ingroup attribue
- * Change the ownership of a file or directory.
- *
- * @param url       The smb url of the file or directory to change 
- *                  ownership of.
- *
- * @param owner     I have no idea?
- *
- * @param group     I have not idea?
- *
- * @return          0 on success, < 0 on error with errno set:
- *                  - EPERM  The effective UID does not match the owner
- *                  of the file, and is not zero; or the owner or group
- *                  were specified incorrectly.
- *                  - ENOENT The file does not exist.
- *                  - ENOMEM Insufficient was available.
- *                  - ENOENT file or directory does not exist
- *
- * @todo Are we actually going to be able to implement this function
- *
- * @todo How do we abstract owner and group uid and gid?
- *
- */
-int smbc_chown(const char *url, uid_t owner, gid_t group);
-
-
 /**@ingroup attribute
  * Change the permissions of a file.
  *
