@@ -1143,7 +1143,7 @@ void krb5_free_unparsed_name(krb5_context ctx, char *val);
 
 /* Samba wrapper function for krb5 functionality. */
 bool setup_kaddr( krb5_address *pkaddr, struct sockaddr_storage *paddr);
-int create_kerberos_key_from_string(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
+int create_kerberos_key_from_string(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype, bool no_salt);
 bool get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_ticket *tkt);
 krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
 krb5_error_code smb_krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters);
@@ -1221,6 +1221,13 @@ krb5_error_code smb_krb5_open_keytab(krb5_context context,
  				      const char *keytab_name, 
 				      bool write_access, 
 				      krb5_keytab *keytab);
+int smb_krb5_kt_add_entry(krb5_context context,
+			  krb5_keytab keytab,
+			  krb5_kvno kvno,
+			  const char *princ_s,
+			  krb5_enctype *enctypes,
+			  krb5_data password,
+			  bool no_salt);
 #endif /* HAVE_KRB5 */
 
 

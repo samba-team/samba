@@ -32,9 +32,13 @@
 /**********************************************************************
 **********************************************************************/
 
-static int smb_krb5_kt_add_entry( krb5_context context, krb5_keytab keytab,
-                                  krb5_kvno kvno, const char *princ_s, 
-				  krb5_enctype *enctypes, krb5_data password )
+int smb_krb5_kt_add_entry(krb5_context context,
+			  krb5_keytab keytab,
+			  krb5_kvno kvno,
+			  const char *princ_s,
+			  krb5_enctype *enctypes,
+			  krb5_data password,
+			  bool no_salt)
 {
 	krb5_error_code ret = 0;
 	krb5_kt_cursor cursor;
@@ -166,7 +170,7 @@ static int smb_krb5_kt_add_entry( krb5_context context, krb5_keytab keytab,
 #ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK          /* Heimdal */
 		keyp = &kt_entry.keyblock;
 #endif
-		if (create_kerberos_key_from_string(context, princ, &password, keyp, enctypes[i])) {
+		if (create_kerberos_key_from_string(context, princ, &password, keyp, enctypes[i], no_salt)) {
 			continue;
 		}
 
@@ -321,7 +325,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	
 	/* add the fqdn principal to the keytab */
 	
-	ret = smb_krb5_kt_add_entry( context, keytab, kvno, princ_s, enctypes, password );
+	ret = smb_krb5_kt_add_entry( context, keytab, kvno, princ_s, enctypes, password, false );
 	if ( ret ) {
 		DEBUG(1,("ads_keytab_add_entry: Failed to add entry to keytab file\n"));
 		goto out;
@@ -330,7 +334,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	/* add the short principal name if we have one */
 	
 	if ( short_princ_s ) {
-		ret = smb_krb5_kt_add_entry( context, keytab, kvno, short_princ_s, enctypes, password );
+		ret = smb_krb5_kt_add_entry( context, keytab, kvno, short_princ_s, enctypes, password, false );
 		if ( ret ) {
 			DEBUG(1,("ads_keytab_add_entry: Failed to add short entry to keytab file\n"));
 			goto out;
