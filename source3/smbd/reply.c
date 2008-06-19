@@ -368,10 +368,10 @@ bool check_fsp(connection_struct *conn, struct smb_request *req,
 ****************************************************************************/
 
 bool fsp_belongs_conn(connection_struct *conn, struct smb_request *req,
-		      files_struct *fsp, struct current_user *user)
+		      files_struct *fsp)
 {
 	if ((fsp) && (conn) && ((conn)==(fsp)->conn)
-	    && (current_user.vuid==(fsp)->vuid)) {
+	    && (req->vuid == (fsp)->vuid)) {
 		return True;
 	}
 

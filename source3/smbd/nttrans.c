@@ -1773,7 +1773,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 
 		DEBUG(10,("FSCTL_CREATE_OR_GET_OBJECT_ID: called on FID[0x%04X]\n",fidnum));
 
-		if (!fsp_belongs_conn(conn, req, fsp, &current_user)) {
+		if (!fsp_belongs_conn(conn, req, fsp)) {
 			return;
 		}
 
@@ -1828,7 +1828,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		uint32 i;
 		char *cur_pdata;
 
-		if (!fsp_belongs_conn(conn, req, fsp, &current_user)) {
+		if (!fsp_belongs_conn(conn, req, fsp)) {
 			return;
 		}
 
@@ -1951,7 +1951,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 
 		DEBUG(10,("FSCTL_FIND_FILES_BY_SID: called on FID[0x%04X]\n",fidnum));
 
-		if (!fsp_belongs_conn(conn, req, fsp, &current_user)) {
+		if (!fsp_belongs_conn(conn, req, fsp)) {
 			return;
 		}
 
