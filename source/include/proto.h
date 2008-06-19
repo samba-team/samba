@@ -10089,9 +10089,9 @@ size_t srvstr_get_path(TALLOC_CTX *ctx,
 			int flags,
 			NTSTATUS *err);
 bool check_fsp_open(connection_struct *conn, struct smb_request *req,
-	       files_struct *fsp, struct current_user *user);
+		    files_struct *fsp);
 bool check_fsp(connection_struct *conn, struct smb_request *req,
-	       files_struct *fsp, struct current_user *user);
+	       files_struct *fsp);
 bool fsp_belongs_conn(connection_struct *conn, struct smb_request *req,
 		      files_struct *fsp, struct current_user *user);
 void reply_special(char *inbuf);
