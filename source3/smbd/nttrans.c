@@ -1520,7 +1520,7 @@ static void call_nt_transact_rename(connection_struct *conn,
 	}
 
 	fsp = file_fsp(SVAL(params, 0));
-	if (!check_fsp(conn, req, fsp, &current_user)) {
+	if (!check_fsp(conn, req, fsp)) {
 		return;
 	}
 	srvstr_get_path_wcard(ctx, params, req->flags2, &new_name, params+4,

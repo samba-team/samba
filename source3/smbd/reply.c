@@ -327,13 +327,13 @@ size_t srvstr_get_path(TALLOC_CTX *ctx,
 ****************************************************************************/
 
 bool check_fsp_open(connection_struct *conn, struct smb_request *req,
-	       files_struct *fsp, struct current_user *user)
+		    files_struct *fsp)
 {
 	if (!(fsp) || !(conn)) {
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return False;
 	}
-	if (((conn) != (fsp)->conn) || user->vuid != (fsp)->vuid) {
+	if (((conn) != (fsp)->conn) || req->vuid != (fsp)->vuid) {
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return False;
 	}
@@ -346,9 +346,9 @@ bool check_fsp_open(connection_struct *conn, struct smb_request *req,
 ****************************************************************************/
 
 bool check_fsp(connection_struct *conn, struct smb_request *req,
-	       files_struct *fsp, struct current_user *user)
+	       files_struct *fsp)
 {
-	if (!check_fsp_open(conn, req, fsp, user)) {
+	if (!check_fsp_open(conn, req, fsp)) {
 		return False;
 	}
 	if ((fsp)->is_directory) {
@@ -2924,7 +2924,7 @@ void reply_lockread(struct smb_request *req)
 
 	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
 
-	if (!check_fsp(conn, req, fsp, &current_user)) {
+	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBlockread);
 		return;
 	}
@@ -3032,7 +3032,7 @@ void reply_read(struct smb_request *req)
 
 	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
 
-	if (!check_fsp(conn, req, fsp, &current_user)) {
+	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBread);
 		return;
 	}
@@ -3287,7 +3287,7 @@ void reply_read_and_X(struct smb_request *req)
 		return;
 	}
 
-	if (!check_fsp(conn, req, fsp, &current_user)) {
+	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBreadX);
 		return;
 	}
@@ -3425,7 +3425,7 @@ void reply_writebraw(struct smb_request *req)
 	}
 
 	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
-	if (!check_fsp(conn, req, fsp, &current_user)) {
+	if (!check_fsp(conn, req, fsp)) {
 		error_to_writebrawerr(req);
 		END_PROFILE(SMBwritebraw);
 		return;
@@ -3631,7 +3631,7 @@ void reply_writeunlock(struct smb_request *req)
 	
 	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
 
-	if (!check_fsp(conn, req, fsp, &current_user)) {
+	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBwriteunlock);
 		return;
 	}
@@ -3738,7 +3738,7 @@ void reply_write(struct smb_request *req)
 
 	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
 
-	if (!check_fsp(conn, req, fsp, &current_user)) {
+	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBwrite);
 		return;
 	}
@@ -3968,7 +3968,7 @@ void reply_write_and_X(struct smb_request *req)
 	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv3);
 	write_through = BITSETW(req->inbuf+smb_vwv7,0);
 
-	if (!check_fsp(conn, req, fsp, &current_user)) {
+	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBwriteX);
 		return;
 	}
@@ -4087,7 +4087,7 @@ void reply_lseek(struct smb_request *req)
 
 	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
 
-	if (!check_fsp(conn, req, fsp, &current_user)) {
+	if (!check_fsp(conn, req, fsp)) {
 		return;
 	}
 
@@ -4173,7 +4173,7 @@ void reply_flush(struct smb_request *req)
 	fnum = SVAL(req->inbuf,smb_vwv0);
 	fsp = file_fsp(fnum);
 
-	if ((fnum != 0xFFFF) && !check_fsp(conn, req, fsp, &current_user)) {
+	if ((fnum != 0xFFFF) && !check_fsp(conn, req, fsp)) {
 		return;
 	}
 	
@@ -4320,7 +4320,7 @@ void reply_writeclose(struct smb_request *req)
 
 	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
 
-	if (!check_fsp(conn, req, fsp, &current_user)) {
+	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBwriteclose);
 		return;
 	}
@@ -4407,7 +4407,7 @@ void reply_lock(struct smb_request *req)
 
 	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
 
-	if (!check_fsp(conn, req, fsp, &current_user)) {
+	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBlock);
 		return;
 	}
@@ -4466,7 +4466,7 @@ void reply_unlock(struct smb_request *req)
 
 	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
 
-	if (!check_fsp(conn, req, fsp, &current_user)) {
+	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBunlock);
 		return;
 	}
@@ -4650,7 +4650,7 @@ void reply_printclose(struct smb_request *req)
 
 	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
 
-	if (!check_fsp(conn, req, fsp, &current_user)) {
+	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBsplclose);
                 return;
         }
@@ -4790,7 +4790,7 @@ void reply_printwrite(struct smb_request *req)
   
 	fsp = file_fsp(SVAL(req->inbuf,smb_vwv0));
 
-	if (!check_fsp(conn, req, fsp, &current_user)) {
+	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBsplwr);
                 return;
         }
@@ -6624,7 +6624,7 @@ void reply_lockingX(struct smb_request *req)
 	lock_timeout = IVAL(req->inbuf,smb_vwv4);
 	large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
 
-	if (!check_fsp(conn, req, fsp, &current_user)) {
+	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBlockingX);
 		return;
 	}

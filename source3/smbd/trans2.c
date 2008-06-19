@@ -3871,7 +3871,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 		}
 
 		/* Initial check for valid fsp ptr. */
-		if (!check_fsp_open(conn, req, fsp, &current_user)) {
+		if (!check_fsp_open(conn, req, fsp)) {
 			return;
 		}
 
@@ -3914,7 +3914,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			/*
 			 * Original code - this is an open file.
 			 */
-			if (!check_fsp(conn, req, fsp, &current_user)) {
+			if (!check_fsp(conn, req, fsp)) {
 				return;
 			}
 
@@ -6568,7 +6568,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 
 		fsp = file_fsp(SVAL(params,0));
 		/* Basic check for non-null fsp. */
-	        if (!check_fsp_open(conn, req, fsp, &current_user)) {
+	        if (!check_fsp_open(conn, req, fsp)) {
 			return;
 		}
 		info_level = SVAL(params,2);
@@ -6621,7 +6621,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			/*
 			 * Original code - this is an open file.
 			 */
-		        if (!check_fsp(conn, req, fsp, &current_user)) {
+		        if (!check_fsp(conn, req, fsp)) {
 				return;
 			}
 
