@@ -48,6 +48,12 @@ net_s3() {
 	|| failed=`expr $failed + $?`
 }
 
+testparm_s3() {
+	echo "RUNNING TESTS testparm_s3"
+	$SCRIPTDIR/test_testparm_s3.sh \
+	|| failed=`expr $failed +$?`
+}
+
 posix_s3() {
 	echo "RUNNING TESTS posix_s3"
 	eval "$LIB_PATH_VAR="\$SAMBA4SHAREDDIR:\$$LIB_PATH_VAR"; export $LIB_PATH_VAR"
@@ -76,6 +82,7 @@ if test "x$TESTS" = "x" ; then
 	wbinfo_s3
 	ntlm_auth_s3
 	net_s3
+	testparm_s3
 	posix_s3
 else
 	for THIS_TEST in $TESTS; do
