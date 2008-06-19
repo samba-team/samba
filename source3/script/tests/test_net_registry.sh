@@ -1,6 +1,7 @@
 #!/bin/sh
 
-# tests for the "net registry" command - local access to the registry db
+# Tests for the "net registry" and "net rpc registry" commands.
+# rpc tests are chose by specifying "rpc" as commandline parameter.
 
 RPC="$1"
 
