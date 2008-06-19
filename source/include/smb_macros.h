@@ -75,8 +75,6 @@
 				return ERROR_NT(NT_STATUS_INVALID_HANDLE); \
 			} while(0)
 
-#define FNUM_OK(fsp,c) ((fsp) && !(fsp)->is_directory && (c)==(fsp)->conn && current_user.vuid==(fsp)->vuid)
-
 /* you must add the following extern declaration to files using this macro
  * (do not add it to the macro as that causes nested extern declaration warnings)
  * extern struct current_user current_user;

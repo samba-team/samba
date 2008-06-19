@@ -10092,6 +10092,8 @@ bool check_fsp_open(connection_struct *conn, struct smb_request *req,
 		    files_struct *fsp);
 bool check_fsp(connection_struct *conn, struct smb_request *req,
 	       files_struct *fsp);
+bool check_fsp_ntquota_handle(connection_struct *conn, struct smb_request *req,
+			      files_struct *fsp);
 bool fsp_belongs_conn(connection_struct *conn, struct smb_request *req,
 		      files_struct *fsp);
 void reply_special(char *inbuf);
