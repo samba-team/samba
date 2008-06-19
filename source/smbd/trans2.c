@@ -2833,7 +2833,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			fsp.fnum = -1;
 			
 			/* access check */
-			if (current_user.ut.uid != 0) {
+			if (conn->server_info->utok.uid != 0) {
 				DEBUG(0,("set_user_quota: access_denied "
 					 "service [%s] user [%s]\n",
 					 lp_servicename(SNUM(conn)),
@@ -2997,7 +2997,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			 * in our list of SIDs.
 			 */
 			if (nt_token_check_sid(&global_sid_Builtin_Guests,
-				    current_user.nt_user_token)) {
+					       conn->server_info->ptok)) {
 				flags |= SMB_WHOAMI_GUEST;
 			}
 
@@ -3005,7 +3005,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			 * is in our list of SIDs.
 			 */
 			if (nt_token_check_sid(&global_sid_Authenticated_Users,
-				    current_user.nt_user_token)) {
+					       conn->server_info->ptok)) {
 				flags &= ~SMB_WHOAMI_GUEST;
 			}
 
@@ -3021,16 +3021,18 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			    + 4 /* num_sids */
 			    + 4 /* SID bytes */
 			    + 4 /* pad/reserved */
-			    + (current_user.ut.ngroups * 8)
+			    + (conn->server_info->utok.ngroups * 8)
 				/* groups list */
-			    + (current_user.nt_user_token->num_sids *
+			    + (conn->server_info->ptok->num_sids *
 				    SID_MAX_SIZE)
 				/* SID list */;
 
 			SIVAL(pdata, 0, flags);
 			SIVAL(pdata, 4, SMB_WHOAMI_MASK);
-			SBIG_UINT(pdata, 8, (SMB_BIG_UINT)current_user.ut.uid);
-			SBIG_UINT(pdata, 16, (SMB_BIG_UINT)current_user.ut.gid);
+			SBIG_UINT(pdata, 8,
+				  (SMB_BIG_UINT)conn->server_info->utok.uid);
+			SBIG_UINT(pdata, 16,
+				  (SMB_BIG_UINT)conn->server_info->utok.gid);
 
 
 			if (data_len >= max_data_bytes) {
@@ -3045,18 +3047,18 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				break;
 			}
 
-			SIVAL(pdata, 24, current_user.ut.ngroups);
-			SIVAL(pdata, 28,
-				current_user.nt_user_token->num_sids);
+			SIVAL(pdata, 24, conn->server_info->utok.ngroups);
+			SIVAL(pdata, 28, conn->server_info->num_sids);
 
 			/* We walk the SID list twice, but this call is fairly
 			 * infrequent, and I don't expect that it's performance
 			 * sensitive -- jpeach
 			 */
 			for (i = 0, sid_bytes = 0;
-			    i < current_user.nt_user_token->num_sids; ++i) {
+			     i < conn->server_info->ptok->num_sids; ++i) {
 				sid_bytes += ndr_size_dom_sid(
-					&current_user.nt_user_token->user_sids[i], 0);
+					&conn->server_info->ptok->user_sids[i],
+					0);
 			}
 
 			/* SID list byte count */
@@ -3067,20 +3069,21 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			data_len = 40;
 
 			/* GID list */
-			for (i = 0; i < current_user.ut.ngroups; ++i) {
+			for (i = 0; i < conn->server_info->utok.ngroups; ++i) {
 				SBIG_UINT(pdata, data_len,
-					(SMB_BIG_UINT)current_user.ut.groups[i]);
+					  (SMB_BIG_UINT)conn->server_info->utok.groups[i]);
 				data_len += 8;
 			}
 
 			/* SID list */
 			for (i = 0;
-			    i < current_user.nt_user_token->num_sids; ++i) {
+			    i < conn->server_info->ptok->num_sids; ++i) {
 				int sid_len = ndr_size_dom_sid(
-					&current_user.nt_user_token->user_sids[i], 0);
+					&conn->server_info->ptok->user_sids[i],
+					0);
 
 				sid_linearize(pdata + data_len, sid_len,
-				    &current_user.nt_user_token->user_sids[i]);
+				    &conn->server_info->ptok->user_sids[i]);
 				data_len += sid_len;
 			}
 
@@ -3275,7 +3278,8 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				ZERO_STRUCT(quotas);
 
 				/* access check */
-				if ((current_user.ut.uid != 0)||!CAN_WRITE(conn)) {
+				if ((conn->server_info->utok.uid != 0)
+				    ||!CAN_WRITE(conn)) {
 					DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
 						 lp_servicename(SNUM(conn)),
 						 conn->server_info->unix_name));
@@ -3288,6 +3292,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				 * --metze 
 				 */
 				fsp = file_fsp(SVAL(params,0));
+
 				if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
 					DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
 					reply_nterror(
@@ -5092,7 +5097,8 @@ static NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
 	}
 
 	/* The set is across all open files on this dev/inode pair. */
-	if (!set_delete_on_close(fsp, delete_on_close, &current_user.ut)) {
+	if (!set_delete_on_close(fsp, delete_on_close,
+				 &conn->server_info->utok)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	return NT_STATUS_OK;
