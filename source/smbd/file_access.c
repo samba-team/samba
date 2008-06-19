@@ -87,11 +87,6 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 		return True;
 	}
 
-	/* Check primary owner write access. */
-	if (conn->server_info->uid == sbuf.st_uid) {
-		return (sbuf.st_mode & S_IWUSR) ? True : False;
-	}
-
 #ifdef S_ISVTX
 	/* sticky bit means delete only by owner or root. */
 	if (sbuf.st_mode & S_ISVTX) {
@@ -117,7 +112,21 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 
 	/* now for ACL checks */
 
-	return can_access_file_acl(conn, dname, FILE_WRITE_DATA);
+	/*
+	 * There's two ways to get the permission to delete a file: First by
+	 * having the DELETE bit on the file itself and second if that does
+	 * not help, by the DELETE_CHILD bit on the containing directory.
+	 *
+	 * Here we check the other way round because with just posix
+	 * permissions looking at the file itself will never grant DELETE, so
+	 * by looking at the directory first we save one get_acl call.
+	 */
+
+	if (can_access_file_acl(conn, dname, FILE_DELETE_CHILD)) {
+		return true;
+	}
+
+	return can_access_file_acl(conn, fname, DELETE_ACCESS);
 }
 
 /****************************************************************************
