@@ -97,11 +97,13 @@ static struct group *copy_group_entry(struct winbindd_gr *g,
 		grp->gr_mem[i] = talloc_strdup(grp, mem_p);
 		BAIL_ON_PTR_ERROR(grp->gr_mem[i], wbc_status);
 
-		*mem_q = ',';
-		mem_p++;
-		mem_p = mem_q;
+		if (mem_q == NULL) {
+			i += 1;
+			break;
+		}
+		mem_p = mem_q + 1;
 	}
-	grp->gr_mem[g->num_gr_mem] = NULL;
+	grp->gr_mem[i] = NULL;
 
 	wbc_status = WBC_ERR_SUCCESS;
 
@@ -392,15 +394,15 @@ wbcErr wbcGetGroups(const char *account,
 	uint32_t i;
 	gid_t *groups = NULL;
 
-	if (!account) {
-		wbc_status = WBC_ERR_INVALID_PARAM;
-		BAIL_ON_WBC_ERROR(wbc_status);
-	}
-
 	/* Initialize request */
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
+
+	if (!account) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
 
 	/* Send request */
 

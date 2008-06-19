@@ -1,9 +1,9 @@
                    =================================
-                   Release Notes for Samba 3.2.0rc2
-                             June 10, 2008
+                   Release Notes for Samba 3.2.0rc3
+                             July 1, 2008
                    =================================
 
-This is the second release candidate of Samba 3.2.0.  This is *not*
+This is the third release candidate of Samba 3.2.0.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -207,6 +207,36 @@ smb.conf changes
     winbind rpc only			New		No
 
     New special meaning of "include = registry".
+
+
+Changes since 3.2.0rc2:
+-----------------------
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 5500: Add missing become_root to enable access to LDAP DB.
+    * Fix coverity IDs 464, 474.
+    * Fix an uninitialized variable found by the IBM checker.
+    * Fix group parsing in libwbclient's copy_group_entry().
+    * Fix max_fd calculation in event_loop_once.
+    * Fix warnings on Fedory Core 9.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 5542: Fix empty passwords of samsync.
+
+
+o   William Jojo <jojowil@hvcc.edu>
+    * Fix several AIX build issues.
+    * Add -brtl to the AIX linker flags.
+
+
+o   Bo Yang <boyang@novell.com>
+    * Fix update of cached credentials during password change in pam_winbind.
+
+
+o   Christoph Zauner <christoph.zauner@sernet.de>
+    * Fix several typos in the man pages and the Samba3 HowTo Collection.
 
 
 Changes since 3.2.0rc1:
