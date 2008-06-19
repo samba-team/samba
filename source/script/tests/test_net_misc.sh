@@ -34,7 +34,7 @@ testit "get the system time" \
 	test_time system || \
 	failed=`expr $failed + 1`
 
-testit "get the tize zone" \
+testit "get the time zone" \
 	test_time zone || \
 	failed=`expr $failed + 1`
 
