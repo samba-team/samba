@@ -550,6 +550,14 @@ int net_run_function(struct net_context *c, int argc, const char **argv,
 		      const char *whoami, struct functable *table)
 {
 	int i;
+
+	if (!table) {
+		d_fprintf(stderr, "Invalid command. Run \"%s\" for more details.\n",
+			  whoami);
+		return 1;
+	}
+
+
 	if (argc != 0) {
 		for (i=0; table[i].funcname != NULL; i++) {
 			if (StrCaseCmp(argv[0], table[i].funcname) == 0)
