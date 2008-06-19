@@ -660,8 +660,8 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
 	 */
 
-	p->pipe_user.ut.uid = a->server_info->uid;
-	p->pipe_user.ut.gid = a->server_info->gid;
+	p->pipe_user.ut.uid = a->server_info->utok.uid;
+	p->pipe_user.ut.gid = a->server_info->utok.gid;
 	
 	/*
 	 * We're an authenticated bind over smbd, so the session key needs to
@@ -675,10 +675,11 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 		return False;
 	}
 
-	p->pipe_user.ut.ngroups = a->server_info->n_groups;
+	p->pipe_user.ut.ngroups = a->server_info->utok.ngroups;
 	if (p->pipe_user.ut.ngroups) {
-		if (!(p->pipe_user.ut.groups = (gid_t *)memdup(a->server_info->groups,
-						sizeof(gid_t) * p->pipe_user.ut.ngroups))) {
+		if (!(p->pipe_user.ut.groups = (gid_t *)memdup(
+			      a->server_info->utok.groups,
+			      sizeof(gid_t) * p->pipe_user.ut.ngroups))) {
 			DEBUG(0,("failed to memdup group list to p->pipe_user.groups\n"));
 			return False;
 		}

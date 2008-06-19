@@ -378,10 +378,10 @@ typedef struct nt_user_token {
 	SE_PRIV privileges;
 } NT_USER_TOKEN;
 
-typedef struct _unix_token {
+typedef struct unix_user_token {
 	uid_t uid;
 	gid_t gid;
-	int ngroups;
+	size_t ngroups;
 	gid_t *groups;
 } UNIX_USER_TOKEN;
 

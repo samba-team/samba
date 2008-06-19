@@ -37,8 +37,8 @@ static int fake_perms_stat(vfs_handle_struct *handle, const char *fname, SMB_STR
 		} else {
 			sbuf->st_mode = S_IRWXU;
 		}
-		sbuf->st_uid = handle->conn->server_info->uid;
-		sbuf->st_gid = handle->conn->server_info->gid;
+		sbuf->st_uid = handle->conn->server_info->utok.uid;
+		sbuf->st_gid = handle->conn->server_info->utok.gid;
 	}
 
 	return ret;
@@ -55,8 +55,8 @@ static int fake_perms_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_ST
 		} else {
 			sbuf->st_mode = S_IRWXU;
 		}
-		sbuf->st_uid = handle->conn->server_info->uid;
-		sbuf->st_gid = handle->conn->server_info->gid;
+		sbuf->st_uid = handle->conn->server_info->utok.uid;
+		sbuf->st_gid = handle->conn->server_info->utok.gid;
 	}
 	return ret;
 }

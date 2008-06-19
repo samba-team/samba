@@ -823,7 +823,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		status = find_forced_group(
 			conn->force_user, snum, conn->server_info->unix_name,
 			&conn->server_info->ptok->user_sids[1],
-			&conn->server_info->gid);
+			&conn->server_info->utok.gid);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			conn_free(conn);
@@ -839,7 +839,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					lp_servicename(SNUM(conn)),
 					conn->server_info->unix_name,
 					conn->connectpath,
-					conn->server_info->gid,
+					conn->server_info->utok.gid,
 					conn->server_info->sanitized_username,
 					pdb_get_domain(conn->server_info->sam_account),
 					lp_pathname(snum));
@@ -961,7 +961,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					lp_servicename(SNUM(conn)),
 					conn->server_info->unix_name,
 					conn->connectpath,
-					conn->server_info->gid,
+					conn->server_info->utok.gid,
 					conn->server_info->sanitized_username,
 					pdb_get_domain(conn->server_info->sam_account),
 					lp_rootpreexec(snum));
@@ -1000,7 +1000,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					lp_servicename(SNUM(conn)),
 					conn->server_info->unix_name,
 					conn->connectpath,
-					conn->server_info->gid,
+					conn->server_info->utok.gid,
 					conn->server_info->sanitized_username,
 					pdb_get_domain(conn->server_info->sam_account),
 					lp_preexec(snum));
@@ -1325,7 +1325,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 					lp_servicename(SNUM(conn)),
 					conn->server_info->unix_name,
 					conn->connectpath,
-					conn->server_info->gid,
+					conn->server_info->utok.gid,
 					conn->server_info->sanitized_username,
 					pdb_get_domain(conn->server_info->sam_account),
 					lp_postexec(SNUM(conn)));
@@ -1341,7 +1341,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 					lp_servicename(SNUM(conn)),
 					conn->server_info->unix_name,
 					conn->connectpath,
-					conn->server_info->gid,
+					conn->server_info->utok.gid,
 					conn->server_info->sanitized_username,
 					pdb_get_domain(conn->server_info->sam_account),
 					lp_rootpostexec(SNUM(conn)));

@@ -703,7 +703,7 @@ static char *audit_prefix(TALLOC_CTX *ctx, connection_struct *conn)
 			lp_servicename(SNUM(conn)),
 			conn->server_info->unix_name,
 			conn->connectpath,
-			conn->server_info->gid,
+			conn->server_info->utok.gid,
 			conn->server_info->sanitized_username,
 			pdb_get_domain(conn->server_info->sam_account),
 			prefix);

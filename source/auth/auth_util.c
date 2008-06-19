@@ -480,8 +480,8 @@ static auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx)
 	   which may save us from giving away root access if there
 	   is a bug in allocating these fields. */
 
-	result->uid = -1;
-	result->gid = -1;
+	result->utok.uid = -1;
+	result->utok.gid = -1;
 	return result;
 }
 
@@ -526,8 +526,8 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	result->unix_name = pwd->pw_name;
 	/* Ensure that we keep pwd->pw_name, because we will free pwd below */
 	talloc_steal(result, pwd->pw_name);
-	result->gid = pwd->pw_gid;
-	result->uid = pwd->pw_uid;
+	result->utok.gid = pwd->pw_gid;
+	result->utok.uid = pwd->pw_uid;
 	
 	TALLOC_FREE(pwd);
 
@@ -653,8 +653,8 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 		status = create_token_from_username(server_info,
 						    server_info->unix_name,
 						    server_info->guest,
-						    &server_info->uid,
-						    &server_info->gid,
+						    &server_info->utok.uid,
+						    &server_info->utok.gid,
 						    &server_info->unix_name,
 						    &server_info->ptok);
 		
@@ -675,8 +675,8 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 	
 	/* Convert the SIDs to gids. */
 
-	server_info->n_groups = 0;
-	server_info->groups = NULL;
+	server_info->utok.ngroups = 0;
+	server_info->utok.groups = NULL;
 
 	/* Start at index 1, where the groups start. */
 
@@ -689,8 +689,9 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 				   "ignoring it\n", sid_string_dbg(sid)));
 			continue;
 		}
-		add_gid_to_array_unique(server_info, gid, &server_info->groups,
-					&server_info->n_groups);
+		add_gid_to_array_unique(server_info, gid,
+					&server_info->utok.groups,
+					&server_info->utok.ngroups);
 	}
 	
 	debug_nt_user_token(DBGC_AUTH, 10, server_info->ptok);
@@ -1043,8 +1044,8 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result->uid = pwd->pw_uid;
-	result->gid = pwd->pw_gid;
+	result->utok.uid = pwd->pw_uid;
+	result->utok.gid = pwd->pw_gid;
 
 	status = pdb_enum_group_memberships(result, sampass,
 					    &result->sids, &gids,
@@ -1228,14 +1229,15 @@ struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
 	}
 
 	dst->guest = src->guest;
-	dst->uid = src->uid;
-	dst->gid = src->gid;
-	dst->n_groups = src->n_groups;
-	if (src->n_groups != 0) {
-		dst->groups = (gid_t *)TALLOC_MEMDUP(
-			dst, src->groups, sizeof(gid_t)*dst->n_groups);
+	dst->utok.uid = src->utok.uid;
+	dst->utok.gid = src->utok.gid;
+	dst->utok.ngroups = src->utok.ngroups;
+	if (src->utok.ngroups != 0) {
+		dst->utok.groups = (gid_t *)TALLOC_MEMDUP(
+			dst, src->utok.groups,
+			sizeof(gid_t)*dst->utok.ngroups);
 	} else {
-		dst->groups = NULL;
+		dst->utok.groups = NULL;
 	}
 
 	if (src->ptok) {
@@ -1660,8 +1662,8 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	/* Fill in the unix info we found on the way */
 
-	result->uid = uid;
-	result->gid = gid;
+	result->utok.uid = uid;
+	result->utok.gid = gid;
 
 	/* Create a 'combined' list of all SIDs we might want in the SD */
 
@@ -1906,8 +1908,8 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 
 	/* Fill in the unix info we found on the way */
 
-	result->uid = uid;
-	result->gid = gid;
+	result->utok.uid = uid;
+	result->utok.gid = gid;
 
 	/* Create a 'combined' list of all SIDs we might want in the SD */
 

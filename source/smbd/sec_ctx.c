@@ -145,7 +145,7 @@ static void gain_root(void)
  Get the list of current groups.
 ****************************************************************************/
 
-static int get_current_groups(gid_t gid, int *p_ngroups, gid_t **p_groups)
+static int get_current_groups(gid_t gid, size_t *p_ngroups, gid_t **p_groups)
 {
 	int i;
 	gid_t grp;
