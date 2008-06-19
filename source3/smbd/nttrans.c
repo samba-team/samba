@@ -2056,7 +2056,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 
 	/* maybe we can check the quota_fnum */
 	fsp = file_fsp(SVAL(params,0));
-	if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
+	if (!check_fsp_ntquota_handle(conn, req, fsp)) {
 		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;
@@ -2323,7 +2323,7 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 
 	/* maybe we can check the quota_fnum */
 	fsp = file_fsp(SVAL(params,0));
-	if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
+	if (!check_fsp_ntquota_handle(conn, req, fsp)) {
 		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;

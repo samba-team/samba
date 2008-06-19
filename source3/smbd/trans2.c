@@ -28,7 +28,6 @@
 extern int max_send;
 extern enum protocol_types Protocol;
 extern uint32 global_client_caps;
-extern struct current_user current_user;
 
 #define get_file_size(sbuf) ((sbuf).st_size)
 #define DIR_ENTRY_SAFETY_MARGIN 4096
@@ -3293,7 +3292,8 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				 */
 				fsp = file_fsp(SVAL(params,0));
 
-				if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
+				if (!check_fsp_ntquota_handle(conn, req,
+							      fsp)) {
 					DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
 					reply_nterror(
 						req, NT_STATUS_INVALID_HANDLE);
