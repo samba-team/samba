@@ -32,7 +32,6 @@ extern int max_recv;
 unsigned int smb_echo_count = 0;
 extern uint32 global_client_caps;
 
-extern struct current_user current_user;
 extern bool global_encrypted_passwords_negotiated;
 
 /****************************************************************************
@@ -2334,7 +2333,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	}
 
 	/* The set is across all open files on this dev/inode pair. */
-	if (!set_delete_on_close(fsp, True, &current_user.ut)) {
+	if (!set_delete_on_close(fsp, True, &conn->server_info->utok)) {
 		close_file(fsp, NORMAL_CLOSE);
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -2789,7 +2788,7 @@ void reply_readbraw(struct smb_request *req)
 	 */
 
 	if (!fsp || !conn || conn != fsp->conn ||
-			current_user.vuid != fsp->vuid ||
+			req->vuid != fsp->vuid ||
 			fsp->is_directory || fsp->fh->fd == -1) {
 		/*
 		 * fsp could be NULL here so use the value from the packet. JRA.
@@ -4246,7 +4245,7 @@ void reply_close(struct smb_request *req)
 	 * We can only use CHECK_FSP if we know it's not a directory.
 	 */
 
-	if(!fsp || (fsp->conn != conn) || (fsp->vuid != current_user.vuid)) {
+	if(!fsp || (fsp->conn != conn) || (fsp->vuid != req->vuid)) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
 		END_PROFILE(SMBclose);
 		return;
