@@ -6,6 +6,7 @@
 # GPL
 
 use File::Basename;
+use Cwd 'getcwd';
 
 my $file = shift;
 my $prefix = shift;
@@ -31,7 +32,7 @@ my $header = "$dirname/$prefix.h";
 
 print "$header: \$(heimdalsrcdir)/$file \$(ASN1C)\n";
 print "\t\@echo \"Compiling ASN1 file \$(heimdalsrcdir)/$file\"\n";
-print "\t\@\$(heimdalbuildsrcdir)/asn1_compile_wrapper.sh \$(builddir) $dirname \$(ASN1C) \$(abspath \$(heimdalsrcdir)/$file) $prefix $options\n\n";
+print "\t\@\$(heimdalbuildsrcdir)/asn1_compile_wrapper.sh \$(builddir) $dirname \$(ASN1C) " . getcwd() . "/\$(heimdalsrcdir)/$file $prefix $options\n\n";
 
 open(IN,"heimdal/$file") or die("Can't open heimdal/$file: $!");
 my @lines = <IN>;
