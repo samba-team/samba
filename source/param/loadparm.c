@@ -7208,8 +7208,8 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 	/* if it is a special case then go ahead */
 	if (parm_table[parmnum].special) {
-		parm_table[parmnum].special(snum, pszParmValue, (char **)parm_ptr);
-		return (True);
+		return parm_table[parmnum].special(snum, pszParmValue,
+						   (char **)parm_ptr);
 	}
 
 	/* now switch on the type of variable it is */
