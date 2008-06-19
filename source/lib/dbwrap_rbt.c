@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "rbtree.h"
 
-#define ALIGN(_size_) (((_size_)+15)&~15)
+#define DBWRAP_RBT_ALIGN(_size_) (((_size_)+15)&~15)
 
 struct db_rbt_ctx {
 	struct rb_root tree;
@@ -42,7 +42,7 @@ struct db_rbt_node {
 	 * target for offsetof()
 	 */
 
-	char data[];
+	char data[1];
 };
 
 /*
@@ -243,7 +243,8 @@ static struct db_record *db_rbt_fetch_locked(struct db_context *db_ctx,
 	 * off.
 	 */
 
-	size = ALIGN(sizeof(struct db_record)) + sizeof(struct db_rbt_rec);
+	size = DBWRAP_RBT_ALIGN(sizeof(struct db_record))
+		+ sizeof(struct db_rbt_rec);
 
 	if (!found) {
 		/*
@@ -258,7 +259,7 @@ static struct db_record *db_rbt_fetch_locked(struct db_context *db_ctx,
 	}
 
 	rec_priv = (struct db_rbt_rec *)
-		((char *)result + ALIGN(sizeof(struct db_record)));
+		((char *)result + DBWRAP_RBT_ALIGN(sizeof(struct db_record)));
 	rec_priv->db_ctx = ctx;
 
 	result->store = db_rbt_store;
