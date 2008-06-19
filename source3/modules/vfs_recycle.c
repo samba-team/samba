@@ -412,8 +412,6 @@ static void recycle_do_touch(vfs_handle_struct *handle, const char *fname,
 	}
 }
 
-extern userdom_struct current_user_info;
-
 /**
  * Check if file should be recycled
  **/
@@ -436,7 +434,7 @@ static int recycle_unlink(vfs_handle_struct *handle, const char *file_name)
 					conn->connectpath,
 					conn->server_info->gid,
 					conn->server_info->sanitized_username,
-					current_user_info.domain,
+					pdb_get_domain(conn->server_info->sam_account),
 					recycle_repository(handle));
 	ALLOC_CHECK(repository, done);
 	/* shouldn't we allow absolute path names here? --metze */
