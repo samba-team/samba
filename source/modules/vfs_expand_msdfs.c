@@ -22,8 +22,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
-extern userdom_struct current_user_info;
-
 /**********************************************************
   Under mapfile we expect a table of the following format:
 
@@ -149,7 +147,7 @@ static char *expand_msdfs_target(TALLOC_CTX *ctx,
 				conn->connectpath,
 				conn->server_info->gid,
 				conn->server_info->sanitized_username,
-				current_user_info.domain,
+				pdb_get_domain(conn->server_info->sam_account),
 				targethost);
 
 	DEBUG(10, ("Expanded targethost to %s\n", targethost));
