@@ -10093,7 +10093,7 @@ bool check_fsp_open(connection_struct *conn, struct smb_request *req,
 bool check_fsp(connection_struct *conn, struct smb_request *req,
 	       files_struct *fsp);
 bool fsp_belongs_conn(connection_struct *conn, struct smb_request *req,
-		      files_struct *fsp, struct current_user *user);
+		      files_struct *fsp);
 void reply_special(char *inbuf);
 void reply_tcon(struct smb_request *req);
 void reply_tcon_and_X(struct smb_request *req);
