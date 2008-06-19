@@ -47,13 +47,8 @@ typedef struct auth_serversupplied_info {
 			   check_ntlm_password and the token creation. */
 	size_t num_sids;
 
-	uid_t uid;
-	gid_t gid;
-	
-	/* This groups info is needed for when we become_user() for this uid */
-	size_t n_groups;
-	gid_t *groups;
-	
+	struct unix_user_token utok;
+
 	/* NT group information taken from the info3 structure */
 	
 	NT_USER_TOKEN *ptok;

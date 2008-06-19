@@ -271,8 +271,8 @@ int register_existing_vuid(uint16 vuid,
 		vuser->server_info, tmp);
 
 	DEBUG(10,("register_existing_vuid: (%u,%u) %s %s %s guest=%d\n",
-		  (unsigned int)vuser->server_info->uid,
-		  (unsigned int)vuser->server_info->gid,
+		  (unsigned int)vuser->server_info->utok.uid,
+		  (unsigned int)vuser->server_info->utok.gid,
 		  vuser->server_info->unix_name,
 		  vuser->server_info->sanitized_username,
 		  pdb_get_domain(vuser->server_info->sam_account),
@@ -289,7 +289,7 @@ int register_existing_vuid(uint16 vuid,
 	}
 
 	DEBUG(3,("register_existing_vuid: UNIX uid %d is UNIX user %s, "
-		"and will be vuid %u\n", (int)vuser->server_info->uid,
+		"and will be vuid %u\n", (int)vuser->server_info->utok.uid,
 		 vuser->server_info->unix_name, vuser->vuid));
 
 	next_vuid++;

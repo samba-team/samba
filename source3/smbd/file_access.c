@@ -82,7 +82,7 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	if (!S_ISDIR(sbuf.st_mode)) {
 		return False;
 	}
-	if (conn->server_info->uid == 0 || conn->admin_user) {
+	if (conn->server_info->utok.uid == 0 || conn->admin_user) {
 		/* I'm sorry sir, I didn't know you were root... */
 		return True;
 	}
@@ -104,7 +104,7 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 		 * for bug #3348. Don't assume owning sticky bit
 		 * directory means write access allowed.
 		 */
-		if (conn->server_info->uid != sbuf_file.st_uid) {
+		if (conn->server_info->utok.uid != sbuf_file.st_uid) {
 			return False;
 		}
 	}
@@ -147,7 +147,7 @@ bool can_access_file_data(connection_struct *conn, const char *fname, SMB_STRUCT
 	DEBUG(10,("can_access_file_data: requesting 0x%x on file %s\n",
 		(unsigned int)access_mask, fname ));
 
-	if (conn->server_info->uid == 0 || conn->admin_user) {
+	if (conn->server_info->utok.uid == 0 || conn->admin_user) {
 		/* I'm sorry sir, I didn't know you were root... */
 		return True;
 	}
@@ -160,7 +160,7 @@ bool can_access_file_data(connection_struct *conn, const char *fname, SMB_STRUCT
 	}
 
 	/* Check primary owner access. */
-	if (conn->server_info->uid == psbuf->st_uid) {
+	if (conn->server_info->utok.uid == psbuf->st_uid) {
 		switch (access_mask) {
 			case FILE_READ_DATA:
 				return (psbuf->st_mode & S_IRUSR) ? True : False;

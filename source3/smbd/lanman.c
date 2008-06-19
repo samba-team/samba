@@ -102,7 +102,7 @@ static int CopyExpanded(connection_struct *conn,
 				lp_servicename(SNUM(conn)),
 				conn->server_info->unix_name,
 				conn->connectpath,
-				conn->server_info->gid,
+				conn->server_info->utok.gid,
 				conn->server_info->sanitized_username,
 				pdb_get_domain(conn->server_info->sam_account),
 				buf);
@@ -153,7 +153,7 @@ static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 				lp_servicename(SNUM(conn)),
 				conn->server_info->unix_name,
 				conn->connectpath,
-				conn->server_info->gid,
+				conn->server_info->utok.gid,
 				conn->server_info->sanitized_username,
 				pdb_get_domain(conn->server_info->sam_account),
 				buf);
@@ -183,7 +183,7 @@ static char *Expand(connection_struct *conn, int snum, char *s)
 				lp_servicename(SNUM(conn)),
 				conn->server_info->unix_name,
 				conn->connectpath,
-				conn->server_info->gid,
+				conn->server_info->utok.gid,
 				conn->server_info->sanitized_username,
 				pdb_get_domain(conn->server_info->sam_account),
 				buf);
@@ -3009,7 +3009,7 @@ static bool api_RNetServerGetInfo(connection_struct *conn,uint16 vuid,
 				lp_servicename(SNUM(conn)),
 				conn->server_info->unix_name,
 				conn->connectpath,
-				conn->server_info->gid,
+				conn->server_info->utok.gid,
 				conn->server_info->sanitized_username,
 				pdb_get_domain(conn->server_info->sam_account),
 				comment);
@@ -3346,7 +3346,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 	user_struct *vuser = get_valid_user_struct(vuid);
 	if(vuser != NULL) {
 		DEBUG(3,("  Username of UID %d is %s\n",
-			 (int)vuser->server_info->uid,
+			 (int)vuser->server_info->utok.uid,
 			 vuser->server_info->unix_name));
 	}
 
@@ -3602,7 +3602,7 @@ static bool api_WWkstaUserLogon(connection_struct *conn,uint16 vuid,
 
 	if(vuser != NULL) {
 		DEBUG(3,("  Username of UID %d is %s\n",
-			 (int)vuser->server_info->uid,
+			 (int)vuser->server_info->utok.uid,
 			 vuser->server_info->unix_name));
 	}
 

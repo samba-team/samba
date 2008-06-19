@@ -192,13 +192,13 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 	 */
 
 	if((lp_security() == SEC_SHARE) && (current_user.conn == conn) &&
-	   (current_user.ut.uid == conn->server_info->uid)) {
+	   (current_user.ut.uid == conn->server_info->utok.uid)) {
 		DEBUG(4,("change_to_user: Skipping user change - already "
 			 "user\n"));
 		return(True);
 	} else if ((current_user.conn == conn) && 
 		   (vuser != NULL) && (current_user.vuid == vuid) &&
-		   (current_user.ut.uid == vuser->server_info->uid)) {
+		   (current_user.ut.uid == vuser->server_info->utok.uid)) {
 		DEBUG(4,("change_to_user: Skipping user change - already "
 			 "user\n"));
 		return(True);
@@ -221,15 +221,15 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 	 */
 
 	if (conn->force_user) /* security = share sets this too */ {
-		uid = conn->server_info->uid;
-		gid = conn->server_info->gid;
-	        group_list = conn->server_info->groups;
-		num_groups = conn->server_info->n_groups;
+		uid = conn->server_info->utok.uid;
+		gid = conn->server_info->utok.gid;
+	        group_list = conn->server_info->utok.groups;
+		num_groups = conn->server_info->utok.ngroups;
 	} else if (vuser) {
-		uid = conn->admin_user ? 0 : vuser->server_info->uid;
-		gid = conn->server_info->gid;
-		num_groups = conn->server_info->n_groups;
-		group_list  = conn->server_info->groups;
+		uid = conn->admin_user ? 0 : vuser->server_info->utok.uid;
+		gid = conn->server_info->utok.gid;
+		num_groups = conn->server_info->utok.ngroups;
+		group_list  = conn->server_info->utok.groups;
 	} else {
 		DEBUG(2,("change_to_user: Invalid vuid used %d in accessing "
 			 "share %s.\n",vuid, lp_servicename(snum) ));
@@ -255,15 +255,16 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 
 			int i;
 			for (i = 0; i < num_groups; i++) {
-				if (group_list[i] == conn->server_info->gid) {
-					gid = conn->server_info->gid;
+				if (group_list[i]
+				    == conn->server_info->utok.gid) {
+					gid = conn->server_info->utok.gid;
 					gid_to_sid(&conn->server_info->ptok
 						   ->user_sids[1], gid);
 					break;
 				}
 			}
 		} else {
-			gid = conn->server_info->gid;
+			gid = conn->server_info->utok.gid;
 			gid_to_sid(&conn->server_info->ptok->user_sids[1],
 				   gid);
 		}

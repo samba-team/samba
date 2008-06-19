@@ -910,7 +910,7 @@ char *standard_sub_conn(TALLOC_CTX *ctx, connection_struct *conn, const char *st
 				lp_servicename(SNUM(conn)),
 				conn->server_info->unix_name,
 				conn->connectpath,
-				conn->server_info->gid,
+				conn->server_info->utok.gid,
 				get_smb_user_name(),
 				"",
 				str);
