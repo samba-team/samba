@@ -25,7 +25,6 @@
 
 #define AIXACL2_MODULE_NAME "aixacl2"
 
-extern struct current_user current_user;
 extern int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid);
 extern NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp,
 	uint32 security_info_sent, SEC_DESC *psd);
