@@ -6843,7 +6843,7 @@ static bool handle_include(int snum, const char *pszParmValue, char **ptr)
 
 	DEBUG(2, ("Can't find include file %s\n", fname));
 	SAFE_FREE(fname);
-	return false;
+	return true;
 }
 
 /***************************************************************************
