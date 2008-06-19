@@ -224,6 +224,10 @@ typedef int ber_int_t;
 #include <sys/attributes.h>
 #endif
 
+#ifndef ENODATA
+#define ENODATA EAGAIN
+#endif
+
 #ifndef ENOATTR
 #define ENOATTR ENODATA
 #endif
