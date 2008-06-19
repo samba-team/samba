@@ -1150,15 +1150,18 @@ def provision_backend(setup_dir=None, message=None,
     if root is None:
         root = findnss(pwd.getpwnam, ["root"])[0]
 
-    if smbconf is None:
-        etcdir = os.path.join(targetdir, "etc")
-        os.makedirs(etcdir)
-        smbconf = os.path.join(etcdir, "smb.conf")
+    if adminpass is None:
+        adminpass = misc.random_password(12)
+
+    if targetdir is not None:
+        if (not os.path.exists(os.path.join(targetdir, "etc"))):
+            os.makedirs(os.path.join(targetdir, "etc"))
+        smbconf = os.path.join(targetdir, "etc", "smb.conf")
 
     # only install a new smb.conf if there isn't one there already
     if not os.path.exists(smbconf):
-        make_smbconf(smbconf, setup_path, hostname, domain, realm, 
-                              serverrole, targetdir)
+        make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, 
+                     targetdir)
 
     lp = param.LoadParm()
     lp.load(smbconf)
@@ -1230,11 +1233,11 @@ def provision_backend(setup_dir=None, message=None,
        
     elif ldap_backend_type == "openldap":
         attrs = ["linkID", "lDAPDisplayName"]
-    res = schemadb.search(expression="(&(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1)))(objectclass=attributeSchema))", base=names.schemadn, scope=SCOPE_SUBTREE, attrs=attrs)
+        res = schemadb.search(expression="(&(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1)))(objectclass=attributeSchema))", base=names.schemadn, scope=SCOPE_SUBTREE, attrs=attrs)
 
-    memberof_config = "# Generated from schema in %s\n" % schemadb_path
-    refint_attributes = ""
-    for i in range (0, len(res)):
+        memberof_config = "# Generated from schema in %s\n" % schemadb_path
+        refint_attributes = ""
+        for i in range (0, len(res)):
             expression = "(&(objectclass=attributeSchema)(linkID=%d))" % (int(res[i]["linkID"][0])+1)
             target = schemadb.searchone(basedn=names.schemadn, 
                                         expression=expression, 
@@ -1252,11 +1255,11 @@ memberof-dangling-error 32
 
 """
 
-    memberof_config += """
+                memberof_config += """
 overlay refint
 refint_attributes""" + refint_attributes + "\n"
     
-    setup_file(setup_path("slapd.conf"), paths.slapdconf,
+        setup_file(setup_path("slapd.conf"), paths.slapdconf,
                    {"DNSDOMAIN": names.dnsdomain,
                     "LDAPDIR": paths.ldapdir,
                     "DOMAINDN": names.domaindn,
@@ -1265,26 +1268,26 @@ refint_attributes""" + refint_attributes + "\n"
                     "LDAPMANAGERDN": names.ldapmanagerdn,
                     "LDAPMANAGERPASS": adminpass,
                     "MEMBEROF_CONFIG": memberof_config})
-    setup_file(setup_path("modules.conf"), paths.modulesconf,
+        setup_file(setup_path("modules.conf"), paths.modulesconf,
                    {"REALM": names.realm})
         
-    setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "user")))
-    setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "config")))
-    setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "schema")))
-    mapping = "schema-map-openldap-2.3"
-    backend_schema = "backend-schema.schema"
+        setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "user")))
+        setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "config")))
+        setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "schema")))
+        mapping = "schema-map-openldap-2.3"
+        backend_schema = "backend-schema.schema"
 
-    ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
-    if ldap_backend_port is not None:
-        server_port_string = " -h ldap://0.0.0.0:%d" % ldap_backend_port
-    else:
-        server_port_string = ""
-    slapdcommand="Start slapd with:    slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri + server_port_string
+        ldapi_uri = "ldapi://" + urllib.quote(os.path.join(paths.private_dir, "ldap", "ldapi"), safe="")
+        if ldap_backend_port is not None:
+            server_port_string = " -h ldap://0.0.0.0:%d" % ldap_backend_port
+        else:
+            server_port_string = ""
+            slapdcommand="Start slapd with:    slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri + server_port_string
 
+            
     schema_command = "bin/ad2oLschema --option=convert:target=" + ldap_backend_type + " -I " + setup_path(mapping) + " -H tdb://" + schemadb_path + " -O " + os.path.join(paths.ldapdir, backend_schema)
-
+            
     os.system(schema_command)
-
 
     message("Your %s Backend for Samba4 is now configured, and is ready to be started" % ldap_backend_type)
     message("Server Role:         %s" % serverrole)
