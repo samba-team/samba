@@ -279,33 +279,23 @@ static void *make_internal_rpc_pipe_p(const char *pipe_name,
 		return NULL;
 	}
 
-	p = SMB_MALLOC_P(pipes_struct);
+	p = TALLOC_ZERO_P(NULL, pipes_struct);
 
 	if (!p) {
 		DEBUG(0,("ERROR! no memory for pipes_struct!\n"));
 		return NULL;
 	}
 
-	ZERO_STRUCTP(p);
-
 	if ((p->mem_ctx = talloc_init("pipe %s %p", pipe_name, p)) == NULL) {
 		DEBUG(0,("open_rpc_pipe_p: talloc_init failed.\n"));
-		SAFE_FREE(p);
-		return NULL;
-	}
-
-	if ((p->pipe_state_mem_ctx = talloc_init("pipe_state %s %p", pipe_name, p)) == NULL) {
-		DEBUG(0,("open_rpc_pipe_p: talloc_init failed.\n"));
-		talloc_destroy(p->mem_ctx);
-		SAFE_FREE(p);
+		TALLOC_FREE(p);
 		return NULL;
 	}
 
 	if (!init_pipe_handle_list(p, pipe_name)) {
 		DEBUG(0,("open_rpc_pipe_p: init_pipe_handles failed.\n"));
 		talloc_destroy(p->mem_ctx);
-		talloc_destroy(p->pipe_state_mem_ctx);
-		SAFE_FREE(p);
+		TALLOC_FREE(p);
 		return NULL;
 	}
 
@@ -319,9 +309,8 @@ static void *make_internal_rpc_pipe_p(const char *pipe_name,
 	if(!prs_init(&p->in_data.data, RPC_MAX_PDU_FRAG_LEN, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("open_rpc_pipe_p: malloc fail for in_data struct.\n"));
 		talloc_destroy(p->mem_ctx);
-		talloc_destroy(p->pipe_state_mem_ctx);
 		close_policy_by_pipe(p);
-		SAFE_FREE(p);
+		TALLOC_FREE(p);
 		return NULL;
 	}
 
@@ -1214,10 +1203,6 @@ static bool close_internal_rpc_pipe_hnd(void *np_conn)
 		talloc_destroy(p->mem_ctx);
 	}
 
-	if (p->pipe_state_mem_ctx) {
-		talloc_destroy(p->pipe_state_mem_ctx);
-	}
-
 	free_pipe_rpc_context( p->contexts );
 
 	/* Free the handles database. */
@@ -1231,7 +1216,7 @@ static bool close_internal_rpc_pipe_hnd(void *np_conn)
 
 	ZERO_STRUCTP(p);
 
-	SAFE_FREE(p);
+	TALLOC_FREE(p);
 	
 	return True;
 }
