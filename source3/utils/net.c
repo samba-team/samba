@@ -664,6 +664,7 @@ static struct functable net_func[] = {
 	/* set default debug level to 0 regardless of what smb.conf sets */
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
 	dbf = x_stderr;
+	c->private_data = net_func;
 
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
@@ -758,7 +759,6 @@ static struct functable net_func[] = {
 		c->opt_password = getenv("PASSWD");
 	}
 
-	c->private_data = net_func;
 	rc = net_run_function(c, argc_new-1, argv_new+1, "net", net_func);
 
 	DEBUG(2,("return code = %d\n", rc));
