@@ -225,9 +225,6 @@ typedef struct pipes_struct {
 	RPC_HDR hdr; /* Incoming RPC header. */
 	RPC_HDR_REQ hdr_req; /* Incoming request header. */
 
-	/* This context is used for pipe state storage and is freed when the pipe is closed. */
-	TALLOC_CTX *pipe_state_mem_ctx;
-
 	struct pipe_auth_data auth;
 
 	struct dcinfo *dc; /* Keeps the creds data from netlogon. */

@@ -1343,7 +1343,7 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 		return False;
 	}
 
-	p->auth.a_u.schannel_auth = TALLOC_P(p->pipe_state_mem_ctx, struct schannel_auth_struct);
+	p->auth.a_u.schannel_auth = talloc(p, struct schannel_auth_struct);
 	if (!p->auth.a_u.schannel_auth) {
 		TALLOC_FREE(pdcinfo);
 		return False;

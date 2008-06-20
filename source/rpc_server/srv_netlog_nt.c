@@ -377,7 +377,7 @@ NTSTATUS _netr_ServerReqChallenge(pipes_struct *p,
 				  struct netr_ServerReqChallenge *r)
 {
 	if (!p->dc) {
-		p->dc = TALLOC_ZERO_P(p->pipe_state_mem_ctx, struct dcinfo);
+		p->dc = TALLOC_ZERO_P(p, struct dcinfo);
 		if (!p->dc) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -582,9 +582,8 @@ NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
 	if (!p->dc) {
 		/* Restore the saved state of the netlogon creds. */
 		become_root();
-		ret = secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,
-							remote_machine,
-							&p->dc);
+		ret = secrets_restore_schannel_session_info(p, remote_machine,
+							    &p->dc);
 		unbecome_root();
 		if (!ret) {
 			return NT_STATUS_INVALID_HANDLE;
@@ -613,9 +612,7 @@ NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
 	}
 
 	become_root();
-	secrets_store_schannel_session_info(p->pipe_state_mem_ctx,
-						remote_machine,
-						p->dc);
+	secrets_store_schannel_session_info(p, remote_machine, p->dc);
 	ret = pdb_getsampwnam(sampass, p->dc->mach_acct);
 	unbecome_root();
 
@@ -716,9 +713,8 @@ NTSTATUS _netr_LogonSamLogoff(pipes_struct *p,
 		bool ret;
 
 		become_root();
-		ret = secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,
-							    r->in.computer_name,
-							    &p->dc);
+		ret = secrets_restore_schannel_session_info(
+			p, r->in.computer_name, &p->dc);
 		unbecome_root();
 		if (!ret) {
 			return NT_STATUS_INVALID_HANDLE;
@@ -739,9 +735,7 @@ NTSTATUS _netr_LogonSamLogoff(pipes_struct *p,
 
 	/* We must store the creds state after an update. */
 	become_root();
-	secrets_store_schannel_session_info(p->pipe_state_mem_ctx,
-					    r->in.computer_name,
-					    p->dc);
+	secrets_store_schannel_session_info(p, r->in.computer_name, p->dc);
 	unbecome_root();
 
 	return NT_STATUS_OK;
@@ -814,9 +808,8 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 			bool ret;
 
 			become_root();
-			ret = secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,
-					remote_machine,
-					&p->dc);
+			ret = secrets_restore_schannel_session_info(
+				p, remote_machine, &p->dc);
 			unbecome_root();
 			if (!ret) {
 				return NT_STATUS_INVALID_HANDLE;
@@ -837,9 +830,7 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 
 		/* We must store the creds state after an update. */
 		become_root();
-		secrets_store_schannel_session_info(p->pipe_state_mem_ctx,
-					remote_machine,
-					p->dc);
+		secrets_store_schannel_session_info(p, remote_machine, p->dc);
 		unbecome_root();
 	}
 
