@@ -221,7 +221,7 @@ smb_np_struct *open_rpc_pipe_p(const char *pipe_name,
 
 	if (p->np_state == NULL) {
 		DEBUG(0,("open_rpc_pipe_p: make_internal_rpc_pipe_p failed.\n"));
-		SAFE_FREE(p);
+		TALLOC_FREE(p);
 		return NULL;
 	}
 
