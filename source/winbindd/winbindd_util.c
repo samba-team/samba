@@ -165,15 +165,9 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
         
 	ZERO_STRUCTP(domain);
 
-	/* prioritise the short name */
-	if (strchr_m(domain_name, '.') && alternative_name && *alternative_name) {
-		fstrcpy(domain->name, alternative_name);
-		fstrcpy(domain->alt_name, domain_name);
-	} else {
-		fstrcpy(domain->name, domain_name);
-		if (alternative_name) {
-			fstrcpy(domain->alt_name, alternative_name);
-		}
+	fstrcpy(domain->name, domain_name);
+	if (alternative_name) {
+		fstrcpy(domain->alt_name, alternative_name);
 	}
 
 	domain->methods = methods;
