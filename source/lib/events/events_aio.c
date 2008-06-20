@@ -34,6 +34,7 @@
 #include "replace.h"
 #include "events.h"
 #include "events_internal.h"
+#include "events_util.h"
 #include <sys/epoll.h>
 #include <libaio.h>
 

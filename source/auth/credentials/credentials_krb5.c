@@ -379,19 +379,34 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	maj_stat = gss_krb5_import_cred(&min_stat, ccache->ccache, NULL, NULL, 
 					&gcc->creds);
 	if (maj_stat) {
+		talloc_free(gcc);
 		if (min_stat) {
 			ret = min_stat;
 		} else {
 			ret = EINVAL;
 		}
+		return ret;
 	}
-	if (ret == 0) {
-		cred->client_gss_creds_obtained = cred->ccache_obtained;
-		talloc_set_destructor(gcc, free_gssapi_creds);
-		cred->client_gss_creds = gcc;
-		*_gcc = gcc;
+
+	/* don't force GSS_C_CONF_FLAG and GSS_C_INTEG_FLAG */
+	maj_stat = gss_set_cred_option(&min_stat, gcc->creds,
+				       GSS_KRB5_CRED_NO_CI_FLAGS_X,
+				       GSS_C_NO_BUFFER);
+	if (maj_stat) {
+		talloc_free(gcc);
+		if (min_stat) {
+			ret = min_stat;
+		} else {
+			ret = EINVAL;
+		}
+		return ret;
 	}
-	return ret;
+
+	cred->client_gss_creds_obtained = cred->ccache_obtained;
+	talloc_set_destructor(gcc, free_gssapi_creds);
+	cred->client_gss_creds = gcc;
+	*_gcc = gcc;
+	return 0;
 }
 
 /**
