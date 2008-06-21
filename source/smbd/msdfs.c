@@ -1541,7 +1541,6 @@ static int form_junctions(TALLOC_CTX *ctx,
 	while ((dname = vfs_readdirname(conn, dirp)) != NULL) {
 		char *link_target = NULL;
 		if (cnt >= jn_remain) {
-			SMB_VFS_CLOSEDIR(conn,dirp);
 			DEBUG(2, ("form_junctions: ran out of MSDFS "
 				"junction slots"));
 			goto out;
