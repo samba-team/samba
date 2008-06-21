@@ -61,9 +61,6 @@ RCSID("$Id$");
 #define	ENCRYPT_NAMES
 #include <arpa/telnet.h>
 
-#include "encrypt.h"
-#include "misc.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -71,6 +68,9 @@ RCSID("$Id$");
 #ifdef SOCKS
 #include <socks.h>
 #endif
+
+#include "encrypt.h"
+#include "misc.h"
 
 
 /*
