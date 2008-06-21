@@ -1,3 +1,7 @@
+2008-06-18  Love Hörnquist Åstrand  <lha@kth.se>
+
+	* lib/krb5/time.c (krb5_set_real_time): handle negative usec
+
 2008-05-31  Love Hörnquist Åstrand  <lha@kth.se>
 
 	* lib/krb5/krb5_locl.h: Add <wind.h>
