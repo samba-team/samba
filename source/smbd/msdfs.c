@@ -367,8 +367,9 @@ static bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 		reflist[i].ttl = REFERRAL_TTL;
 		DEBUG(10, ("parse_msdfs_symlink: Created alt path: %s\n",
 					reflist[i].alternate_path));
-		*refcount += 1;
 	}
+
+	*refcount = count;
 
 	TALLOC_FREE(alt_path);
 	return True;
