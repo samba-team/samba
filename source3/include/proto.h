@@ -9774,8 +9774,7 @@ int setup_dfs_referral(connection_struct *orig_conn,
 bool create_junction(TALLOC_CTX *ctx,
 		const char *dfs_path,
 		struct junction_map *jucn);
-bool create_msdfs_link(const struct junction_map *jucn,
-		bool exists);
+bool create_msdfs_link(const struct junction_map *jucn);
 bool remove_msdfs_link(const struct junction_map *jucn);
 struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx, size_t *p_num_jn);
 NTSTATUS resolve_dfspath(TALLOC_CTX *ctx,
