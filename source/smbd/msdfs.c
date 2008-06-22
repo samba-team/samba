@@ -1502,6 +1502,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 	if (!jucn[cnt].service_name || !jucn[cnt].volume_name) {
 		goto out;
 	}
+	jucn[cnt].comment = "";
 	jucn[cnt].referral_count = 1;
 
 	ref = jucn[cnt].referral_list = TALLOC_ZERO_P(ctx, struct referral);
@@ -1561,6 +1562,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 						!jucn[cnt].volume_name) {
 					goto out;
 				}
+				jucn[cnt].comment = "";
 				cnt++;
 			}
 		}
