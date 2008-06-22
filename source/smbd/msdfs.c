@@ -1308,7 +1308,7 @@ static bool junction_to_local_path(const struct junction_map *jucn,
 		return False;
 	}
 
-	*pp_path_out = talloc_asprintf(conn_out,
+	*pp_path_out = talloc_asprintf(*conn_out,
 			"%s/%s",
 			lp_pathname(snum),
 			jucn->volume_name);
