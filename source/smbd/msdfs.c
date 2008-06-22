@@ -1565,6 +1565,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 				jucn[cnt].comment = "";
 				cnt++;
 			}
+			TALLOC_FREE(link_target);
 		}
 	}
 
