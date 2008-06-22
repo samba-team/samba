@@ -1181,6 +1181,10 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 		request.flags = WBFLAG_PAM_KRB5 | WBFLAG_PAM_CONTACT_TRUSTDOM;
 	}
 
+	if (ctrl & WINBIND_CACHED_LOGIN) {
+		request.flags |= WBFLAG_PAM_CACHED_LOGIN;
+	}
+
 	ret = pam_winbind_request_log(pamh, ctrl, WINBINDD_PAM_CHAUTHTOK, &request, &response, user);
 
 	if (ret == PAM_SUCCESS) {

@@ -224,6 +224,10 @@ typedef int ber_int_t;
 #include <sys/attributes.h>
 #endif
 
+#ifndef ENODATA
+#define ENODATA EAGAIN
+#endif
+
 #ifndef ENOATTR
 #define ENOATTR ENODATA
 #endif
@@ -783,6 +787,7 @@ enum flush_reason_enum {
     NUM_FLUSH_REASONS};
 
 #include "nss_info.h"
+#include "modules/nfs4_acls.h"
 
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H

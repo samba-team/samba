@@ -1212,8 +1212,12 @@ struct timespec nt_time_to_unix_timespec(NTTIME *nt)
 	d = (int64)*nt;
 	/* d is now in 100ns units, since jan 1st 1601".
 	   Save off the ns fraction. */
-	
-	ret.tv_nsec = (long) ((d % 100) * 100);
+
+	/*
+	 * Take the last seven decimal digits and multiply by 100.
+	 * to convert from 100ns units to 1ns units.
+	 */
+        ret.tv_nsec = (long) ((d % (1000 * 1000 * 10)) * 100);
 
 	/* Convert to seconds */
 	d /= 1000*1000*10;

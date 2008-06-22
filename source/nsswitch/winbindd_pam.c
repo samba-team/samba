@@ -1379,7 +1379,11 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 		    NT_STATUS_EQUAL(result, NT_STATUS_IO_TIMEOUT) ||
 		    NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
 			DEBUG(10,("winbindd_dual_pam_auth_kerberos setting domain to offline\n"));
-			domain->online = False;
+			/* Use set_domain_offline() instead of
+			 * just set status offline, otherwise,
+			 * domain will never goes online again
+			 * --- BoYang */
+			set_domain_offline(domain);
 		}
 
 		/* there are quite some NT_STATUS errors where there is no
