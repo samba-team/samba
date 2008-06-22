@@ -78,8 +78,6 @@ WERROR _dfs_Add(pipes_struct *p, struct dfs_Add *r)
 	jn->referral_count += 1;
 	old_referral_list = jn->referral_list;
 
-	vfs_ChDir(p->conn,p->conn->connectpath);
-
 	if (jn->referral_count < 1) {
 		return WERR_NOMEM;
 	}
@@ -100,10 +98,8 @@ WERROR _dfs_Add(pipes_struct *p, struct dfs_Add *r)
 	jn->referral_list[jn->referral_count-1].alternate_path = altpath;
 
 	if(!create_msdfs_link(jn)) {
-		vfs_ChDir(p->conn,p->conn->connectpath);
 		return WERR_DFS_CANT_CREATE_JUNCT;
 	}
-	vfs_ChDir(p->conn,p->conn->connectpath);
 
 	return WERR_OK;
 }
@@ -147,10 +143,8 @@ WERROR _dfs_Remove(pipes_struct *p, struct dfs_Remove *r)
 	/* if no server-share pair given, remove the msdfs link completely */
 	if(!r->in.servername && !r->in.sharename) {
 		if(!remove_msdfs_link(jn)) {
-			vfs_ChDir(p->conn,p->conn->connectpath);
 			return WERR_DFS_NO_SUCH_VOL;
 		}
-		vfs_ChDir(p->conn,p->conn->connectpath);
 	} else {
 		int i=0;
 		/* compare each referral in the list with the one to remove */
@@ -178,16 +172,13 @@ WERROR _dfs_Remove(pipes_struct *p, struct dfs_Remove *r)
 		/* Only one referral, remove it */
 		if(jn->referral_count == 1) {
 			if(!remove_msdfs_link(jn)) {
-				vfs_ChDir(p->conn,p->conn->connectpath);
 				return WERR_DFS_NO_SUCH_VOL;
 			}
 		} else {
 			if(!create_msdfs_link(jn)) {
-				vfs_ChDir(p->conn,p->conn->connectpath);
 				return WERR_DFS_CANT_CREATE_JUNCT;
 			}
 		}
-		vfs_ChDir(p->conn,p->conn->connectpath);
 	}
 
 	return WERR_OK;
@@ -287,7 +278,6 @@ WERROR _dfs_Enum(pipes_struct *p, struct dfs_Enum *r)
 		num_jn = 0;
 		jn = NULL;
 	}
-	vfs_ChDir(p->conn,p->conn->connectpath);
 
 	DEBUG(5,("_dfs_Enum: %u junctions found in Dfs, doing level %d\n",
 				(unsigned int)num_jn, r->in.level));
@@ -370,11 +360,8 @@ WERROR _dfs_GetInfo(pipes_struct *p, struct dfs_GetInfo *r)
 	if(!NT_STATUS_IS_OK(get_referred_path(ctx, r->in.dfs_entry_path,
 					jn, &consumedcnt, &self_ref)) ||
 			consumedcnt < strlen(r->in.dfs_entry_path)) {
-		vfs_ChDir(p->conn,p->conn->connectpath);
 		return WERR_DFS_NO_SUCH_VOL;
 	}
-
-	vfs_ChDir(p->conn,p->conn->connectpath);
 
 	switch (r->in.level) {
 		case 1:
