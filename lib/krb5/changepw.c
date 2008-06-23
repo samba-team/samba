@@ -35,6 +35,10 @@
 
 RCSID("$Id$");
 
+#undef __attribute__
+#define __attribute__(X)
+
+
 static void
 str2data (krb5_data *d,
 	  const char *fmt,
@@ -293,7 +297,7 @@ process_reply (krb5_context context,
 				       host, strerror(save_errno));
 		return save_errno;
 	    } else if (ret == 0) {
-		krb5_set_error_string(context, 1, "recvfrom timeout %s", host);
+		krb5_set_error_message(context, 1,"recvfrom timeout %s", host);
 		return 1;
 	    }
 	    len += ret;
@@ -664,11 +668,21 @@ change_password_loop (krb5_context	context,
     return ret;
 }
 
+#ifndef HEIMDAL_SMALLER
 
-/*
- * change the password using the credentials in `creds' (for the
- * principal indicated in them) to `newpw', storing the result of
- * the operation in `result_*' and an error code or 0.
+/**
+ * krb5_change_password() is deprecated, use krb5_set_password().
+ *
+ * @param context a Keberos context
+ * @param creds
+ * @param newpw
+ * @param result_code
+ * @param result_code_string
+ * @param result_string
+ *
+ * @return On sucess password is changed.
+
+ * @ingroup @krb5_deprecated
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -678,6 +692,7 @@ krb5_change_password (krb5_context	context,
 		      int		*result_code,
 		      krb5_data		*result_code_string,
 		      krb5_data		*result_string)
+    __attribute__((deprecated))
 {
     struct kpwd_proc *p = find_chpw_proto("change password");
 
@@ -692,9 +707,24 @@ krb5_change_password (krb5_context	context,
 				result_code, result_code_string, 
 				result_string, p);
 }
+#endif /* HEIMDAL_SMALLER */
 
-/*
+/**
+ * Change passwrod using creds.
  *
+ * @param context a Keberos context
+ * @param creds The initial kadmin/passwd for the principal or an admin principal
+ * @param newpw The new password to set
+ * @param targprinc if unset, the default principal is used.
+ * @param result_code Result code, KRB5_KPASSWD_SUCCESS is when password is changed.
+ * @param result_code_string binary message from the server, contains
+ * at least the result_code.
+ * @param result_string A message from the kpasswd service or the
+ * library in human printable form. The string is NUL terminated.
+ *
+ * @return On sucess and *result_code is KRB5_KPASSWD_SUCCESS, the password is changed.
+
+ * @ingroup @krb5
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -711,8 +741,8 @@ krb5_set_password(krb5_context context,
     int i;
 
     *result_code = KRB5_KPASSWD_MALFORMED;
-    result_code_string->data = result_string->data = NULL;
-    result_code_string->length = result_string->length = 0;
+    krb5_data_zero(result_code_string);
+    krb5_data_zero(result_string);
 
     if (targprinc == NULL) {
 	ret = krb5_get_default_principal(context, &principal);
@@ -735,6 +765,8 @@ krb5_set_password(krb5_context context,
 	krb5_free_principal(context, principal);
     return ret;
 }
+
+#ifndef HEIMDAL_SMALLER
 
 /*
  *
@@ -800,6 +832,8 @@ krb5_set_password_using_ccache(krb5_context context,
 	krb5_free_principal(context, principal);
     return ret;
 }
+
+#endif /* !HEIMDAL_SMALLER */
 
 /*
  *
