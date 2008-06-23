@@ -171,7 +171,7 @@ kcm_storage_request(krb5_context context,
 
     sp = krb5_storage_emem();
     if (sp == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
 	return KRB5_CC_NOMEM;
     }
 
@@ -204,7 +204,7 @@ kcm_alloc(krb5_context context, const char *name, krb5_ccache *id)
 
     k = malloc(sizeof(*k));
     if (k == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
 	return KRB5_CC_NOMEM;
     }
 
@@ -212,7 +212,7 @@ kcm_alloc(krb5_context context, const char *name, krb5_ccache *id)
 	k->name = strdup(name);
 	if (k->name == NULL) {
 	    free(k);
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, KRB5_CC_NOMEM, "malloc: out of memory");
 	    return KRB5_CC_NOMEM;
 	}
     } else
