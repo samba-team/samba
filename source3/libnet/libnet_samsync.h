@@ -24,6 +24,14 @@ enum net_samsync_mode {
 	NET_SAMSYNC_MODE_DUMP = 2
 };
 
+struct samsync_context;
+
+typedef NTSTATUS (*samsync_delta_fn_t)(TALLOC_CTX *,
+				       enum netr_SamDatabaseID,
+				       struct netr_DELTA_ENUM_ARRAY *,
+				       NTSTATUS,
+				       struct samsync_context *);
+
 struct samsync_context {
 	enum net_samsync_mode mode;
 	const struct dom_sid *domain_sid;
@@ -34,14 +42,10 @@ struct samsync_context {
 	char *result_message;
 	char *error_message;
 
+	struct rpc_pipe_client *cli;
+	samsync_delta_fn_t delta_fn;
 	void *private_data;
 };
-
-typedef NTSTATUS (*samsync_fn_t)(TALLOC_CTX *,
-				 enum netr_SamDatabaseID,
-				 struct netr_DELTA_ENUM_ARRAY *,
-				 NTSTATUS,
-				 struct samsync_context *);
 
 NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 				enum netr_SamDatabaseID database_id,

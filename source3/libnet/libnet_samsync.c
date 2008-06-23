@@ -193,8 +193,6 @@ static NTSTATUS samsync_fix_delta_array(TALLOC_CTX *mem_ctx,
 
 NTSTATUS libnet_samsync_init_context(TALLOC_CTX *mem_ctx,
 				     const struct dom_sid *domain_sid,
-				     const char *domain_name,
-				     enum net_samsync_mode mode,
 				     struct samsync_context **ctx_p)
 {
 	struct samsync_context *ctx;
@@ -203,11 +201,6 @@ NTSTATUS libnet_samsync_init_context(TALLOC_CTX *mem_ctx,
 
 	ctx = TALLOC_ZERO_P(mem_ctx, struct samsync_context);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
-
-	ctx->mode = mode;
-
-	ctx->domain_name = talloc_strdup(mem_ctx, domain_name);
-	NT_STATUS_HAVE_NO_MEMORY(ctx->domain_name);
 
 	if (domain_sid) {
 		ctx->domain_sid = sid_dup_talloc(mem_ctx, domain_sid);
@@ -274,14 +267,12 @@ static const char *samsync_debug_str(TALLOC_CTX *mem_ctx,
  * libnet_samsync
  */
 
-NTSTATUS libnet_samsync(struct rpc_pipe_client *pipe_hnd,
-			enum netr_SamDatabaseID database_id,
-			samsync_fn_t callback_fn,
+NTSTATUS libnet_samsync(enum netr_SamDatabaseID database_id,
 			struct samsync_context *ctx)
 {
 	NTSTATUS result;
 	TALLOC_CTX *mem_ctx;
-	const char *logon_server = pipe_hnd->desthost;
+	const char *logon_server = ctx->cli->desthost;
 	const char *computername = global_myname();
 	struct netr_Authenticator credential;
 	struct netr_Authenticator return_authenticator;
@@ -305,9 +296,9 @@ NTSTATUS libnet_samsync(struct rpc_pipe_client *pipe_hnd,
 		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 		NTSTATUS callback_status;
 
-		netlogon_creds_client_step(pipe_hnd->dc, &credential);
+		netlogon_creds_client_step(ctx->cli->dc, &credential);
 
-		result = rpccli_netr_DatabaseSync2(pipe_hnd, mem_ctx,
+		result = rpccli_netr_DatabaseSync2(ctx->cli, mem_ctx,
 						   logon_server,
 						   computername,
 						   &credential,
@@ -322,7 +313,7 @@ NTSTATUS libnet_samsync(struct rpc_pipe_client *pipe_hnd,
 		}
 
 		/* Check returned credentials. */
-		if (!netlogon_creds_client_check(pipe_hnd->dc,
+		if (!netlogon_creds_client_check(ctx->cli->dc,
 						 &return_authenticator.cred)) {
 			DEBUG(0,("credentials chain check failed\n"));
 			return NT_STATUS_ACCESS_DENIED;
@@ -332,7 +323,7 @@ NTSTATUS libnet_samsync(struct rpc_pipe_client *pipe_hnd,
 			break;
 		}
 
-		session_key = data_blob_const(pipe_hnd->dc->sess_key, 16);
+		session_key = data_blob_const(ctx->cli->dc->sess_key, 16);
 
 		samsync_fix_delta_array(mem_ctx,
 					&session_key,
@@ -341,7 +332,8 @@ NTSTATUS libnet_samsync(struct rpc_pipe_client *pipe_hnd,
 					delta_enum_array);
 
 		/* Process results */
-		callback_status = callback_fn(mem_ctx, database_id, delta_enum_array, result, ctx);
+		callback_status = ctx->delta_fn(mem_ctx, database_id,
+						delta_enum_array, result, ctx);
 		if (!NT_STATUS_IS_OK(callback_status)) {
 			result = callback_status;
 			goto out;
