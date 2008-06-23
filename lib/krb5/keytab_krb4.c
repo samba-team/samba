@@ -46,13 +46,13 @@ krb4_kt_resolve(krb5_context context, const char *name, krb5_keytab id)
 
     d = malloc (sizeof(*d));
     if (d == NULL) {
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     d->filename = strdup (name);
     if (d->filename == NULL) {
 	free(d);
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     id->data = d;
@@ -124,7 +124,7 @@ krb4_kt_start_seq_get_int (krb5_context context,
 
     ed = malloc (sizeof(*ed));
     if (ed == NULL) {
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     ed->entry.principal = NULL;
@@ -142,7 +142,7 @@ krb4_kt_start_seq_get_int (krb5_context context,
     if(c->sp == NULL) {
 	close(c->fd);
 	free(ed);
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     krb5_storage_set_eof_code(c->sp, KRB5_KT_END);
@@ -334,7 +334,7 @@ krb4_kt_remove_entry(krb5_context context,
     
     sp = krb5_storage_emem();
     if (sp == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     ret = krb5_kt_start_seq_get(context, id, &cursor);
