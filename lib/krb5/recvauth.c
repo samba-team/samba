@@ -136,7 +136,7 @@ krb5_recvauth_match_version(krb5_context context,
     if (her_appl_version == NULL) {
 	repl = 2;
 	krb5_net_write (context, p_fd, &repl, 1);
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     if (krb5_net_read (context, p_fd, her_appl_version, len) != len
