@@ -55,7 +55,7 @@ krb5_kdc_set_dbinfo(krb5_context context, struct krb5_kdc_configuration *c)
 	ptr = realloc(c->db, (c->num_db + 1) * sizeof(*c->db));
 	if (ptr == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out;
 	}
 	c->db = ptr;

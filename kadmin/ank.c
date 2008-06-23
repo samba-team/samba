@@ -133,8 +133,8 @@ add_one_principal (const char *name,
 	ret = UI_UTIL_read_pw_string (pwbuf, sizeof(pwbuf), prompt, 1);
 	free (prompt);
 	if (ret) {
-	    krb5_set_error_string(context, "failed to verify password");
 	    ret = KRB5_LIBOS_BADPWDMATCH;
+	    krb5_set_error_message(context, ret, "failed to verify password");
 	    goto out;
 	}
 	password = pwbuf;

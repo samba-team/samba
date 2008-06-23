@@ -61,18 +61,18 @@ krb5_mk_rep(krb5_context context,
 						    auth_context,
 						    auth_context->keyblock);
 	    if(ret) {
-		krb5_set_error_string (context,
-				       "krb5_mk_rep: generating subkey");
 		free_EncAPRepPart(&body);
+		krb5_set_error_message(context, ret,
+				       "krb5_mk_rep: generating subkey");
 		return ret;
 	    }
 	}
 	ret = krb5_copy_keyblock(context, auth_context->local_subkey,
 				 &body.subkey);
 	if (ret) {
-	    krb5_set_error_string (context,
-				   "krb5_copy_keyblock: out of memory");
 	    free_EncAPRepPart(&body);
+	    krb5_set_error_message(context, ENOMEM,
+				   "krb5_copy_keyblock: out of memory");
 	    return ENOMEM;
 	}
     } else

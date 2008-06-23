@@ -49,7 +49,8 @@ compare_addrs(krb5_context context,
 
     krb5_print_address (a, a_str, sizeof(a_str), &len);
     krb5_print_address (b, b_str, sizeof(b_str), &len);
-    krb5_set_error_string(context, "%s: %s != %s", message, b_str, a_str);
+    krb5_set_error_message(context, KRB5KRB_AP_ERR_BADADDR,
+			   "%s: %s != %s", message, b_str, a_str);
     return KRB5KRB_AP_ERR_BADADDR;
 }
 

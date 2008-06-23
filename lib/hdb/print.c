@@ -69,7 +69,7 @@ append_string(krb5_context context, krb5_storage *sp, const char *fmt, ...)
     vasprintf(&s, fmt, ap);
     va_end(ap);
     if(s == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     ret = krb5_storage_write(sp, s, strlen(s));
@@ -223,7 +223,7 @@ entry2string_int (krb5_context context, krb5_storage *sp, hdb_entry *ent)
 
 	    if (hex_encode(d, size, &p) < 0) {
 		free(d);
-		krb5_set_error_string(context, "malloc: out of memory");
+		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 		return ENOMEM;
 	    }
 
@@ -248,7 +248,7 @@ hdb_entry2string (krb5_context context, hdb_entry *ent, char **str)
 
     sp = krb5_storage_emem();
     if(sp == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     
@@ -278,7 +278,7 @@ hdb_print_entry(krb5_context context, HDB *db, hdb_entry_ex *entry, void *data)
     fflush(f);
     sp = krb5_storage_from_fd(fileno(f));
     if(sp == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     

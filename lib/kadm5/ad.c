@@ -278,14 +278,14 @@ _kadm5_ad_connect(void *server_handle)
 
 	asprintf(&domain, "_ldap._tcp.%s", context->realm);
 	if (domain == NULL) {
-	    krb5_set_error_string(context->context, "malloc");
+	    krb5_set_error_message(context->context, KADM5_NO_SRV, "malloc");
 	    return KADM5_NO_SRV;
 	}
 
 	r = dns_lookup(domain, "SRV");
 	free(domain);
 	if (r == NULL) {
-	    krb5_set_error_string(context->context, "Didn't find ldap dns");
+	    krb5_set_error_message(context->context, KADM5_NO_SRV, "Didn't find ldap dns");
 	    return KADM5_NO_SRV;
 	}	
 
@@ -294,7 +294,7 @@ _kadm5_ad_connect(void *server_handle)
 		continue;
 	    s = realloc(servers, sizeof(*servers) * (num_servers + 1));
 	    if (s == NULL) {
-		krb5_set_error_string(context->context, "malloc");
+		krb5_set_error_message(context->context, KADM5_RPC_ERROR, "malloc");
 		dns_free_data(r);
 		goto fail;
 	    }
@@ -307,7 +307,7 @@ _kadm5_ad_connect(void *server_handle)
     }
 
     if (num_servers == 0) {
-	krb5_set_error_string(context->context, "No AD server found in DNS");
+	krb5_set_error_message(context->context, KADM5_NO_SRV, "No AD server found in DNS");
 	return KADM5_NO_SRV;
     }
 
@@ -338,9 +338,9 @@ _kadm5_ad_connect(void *server_handle)
 					    sasl_interact, NULL);
 #endif
 	if (lret != LDAP_SUCCESS) {
-	    krb5_set_error_string(context->context, 
-				  "Couldn't contact any AD servers: %s",
-				  ldap_err2string(lret));
+	    krb5_set_error_message(context->context, 0,
+				   "Couldn't contact any AD servers: %s",
+				   ldap_err2string(lret));
 	    ldap_unbind(lp);
 	    continue;
 	}
@@ -370,16 +370,16 @@ _kadm5_ad_connect(void *server_handle)
 	if (ldap_count_entries(CTX2LP(context), m) > 0) {
 	    m0 = ldap_first_entry(CTX2LP(context), m);
 	    if (m0 == NULL) {
-		krb5_set_error_string(context->context,
-				      "Error in AD ldap responce");
+		krb5_set_error_message(context->context, KADM5_RPC_ERROR,
+				       "Error in AD ldap responce");
 		ldap_msgfree(m);
 		goto fail;
 	    }
 	    vals = ldap_get_values(CTX2LP(context), 
 				   m0, "defaultNamingContext");
 	    if (vals == NULL) {
-		krb5_set_error_string(context->context,
-				      "No naming context found");
+		krb5_set_error_message(context->context, KADM5_RPC_ERROR,
+				       "No naming context found");
 		goto fail;
 	    }
 	    context->base_dn = strdup(vals[0]);
@@ -788,7 +788,7 @@ kadm5_ad_create_principal(void *server_handle,
 
     return 0;
 #else
-    krb5_set_error_string(context->context, "Function not implemented");
+    krb5_set_error_message(context->context, KADM5_RPC_ERROR, "Function not implemented");
     return KADM5_RPC_ERROR;
 #endif
 }
@@ -830,7 +830,7 @@ kadm5_ad_delete_principal(void *server_handle, krb5_principal principal)
 	return KADM5_RPC_ERROR;
     return 0;
 #else
-    krb5_set_error_string(context->context, "Function not implemented");
+    krb5_set_error_message(context->context, KADM5_RPC_ERROR, "Function not implemented");
     return KADM5_RPC_ERROR;
 #endif
 }
@@ -864,13 +864,8 @@ static kadm5_ret_t
 kadm5_ad_flush(void *server_handle)
 {
     kadm5_ad_context *context = server_handle;
-#ifdef OPENLDAP
-    krb5_set_error_string(context->context, "Function not implemented");
+    krb5_set_error_message(context->context, KADM5_RPC_ERROR, "Function not implemented");
     return KADM5_RPC_ERROR;
-#else
-    krb5_set_error_string(context->context, "Function not implemented");
-    return KADM5_RPC_ERROR;
-#endif
 }
 
 static kadm5_ret_t
@@ -1014,7 +1009,7 @@ kadm5_ad_get_principal(void *server_handle,
  fail:
     return KADM5_RPC_ERROR;
 #else
-    krb5_set_error_string(context->context, "Function not implemented");
+    krb5_set_error_message(context->context, KADM5_RPC_ERROR, "Function not implemented");
     return KADM5_RPC_ERROR;
 #endif
 }
@@ -1042,10 +1037,10 @@ kadm5_ad_get_principals(void *server_handle,
     if (ret)
 	return ret;
 
-    krb5_set_error_string(context->context, "Function not implemented");
+    krb5_set_error_message(context->context, KADM5_RPC_ERROR, "Function not implemented");
     return KADM5_RPC_ERROR;
 #else
-    krb5_set_error_string(context->context, "Function not implemented");
+    krb5_set_error_message(context->context, KADM5_RPC_ERROR, "Function not implemented");
     return KADM5_RPC_ERROR;
 #endif
 }
@@ -1054,7 +1049,7 @@ static kadm5_ret_t
 kadm5_ad_get_privs(void *server_handle, uint32_t*privs)
 {
     kadm5_ad_context *context = server_handle;
-    krb5_set_error_string(context->context, "Function not implemented");
+    krb5_set_error_message(context->context, KADM5_RPC_ERROR, "Function not implemented");
     return KADM5_RPC_ERROR;
 }
 
@@ -1224,7 +1219,7 @@ kadm5_ad_modify_principal(void *server_handle,
 	free(tv[0]);
     return ret;
 #else
-    krb5_set_error_string(context->context, "Function not implemented");
+    krb5_set_error_message(context->context, KADM5_RPC_ERROR, "Function not implemented");
     return KADM5_RPC_ERROR;
 #endif
 }
@@ -1308,7 +1303,7 @@ kadm5_ad_randkey_principal(void *server_handle,
     *keys = NULL;
     *n_keys = 0;
 
-    krb5_set_error_string(context->context, "Function not implemented");
+    krb5_set_error_message(context->context, KADM5_RPC_ERROR, "Function not implemented");
     return KADM5_RPC_ERROR;
 #endif
 }
@@ -1319,7 +1314,7 @@ kadm5_ad_rename_principal(void *server_handle,
 			  krb5_principal to)
 {
     kadm5_ad_context *context = server_handle;
-    krb5_set_error_string(context->context, "Function not implemented");
+    krb5_set_error_message(context->context, KADM5_RPC_ERROR, "Function not implemented");
     return KADM5_RPC_ERROR;
 }
 
@@ -1330,7 +1325,7 @@ kadm5_ad_chpass_principal_with_key(void *server_handle,
 				   krb5_key_data *key_data)
 {
     kadm5_ad_context *context = server_handle;
-    krb5_set_error_string(context->context, "Function not implemented");
+    krb5_set_error_message(context->context, KADM5_RPC_ERROR, "Function not implemented");
     return KADM5_RPC_ERROR;
 }
 

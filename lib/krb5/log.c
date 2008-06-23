@@ -277,7 +277,8 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
     if(n){
 	p = strchr(p, '/');
 	if(p == NULL) {
-	    krb5_set_error_string (context, "failed to parse \"%s\"", orig);
+	    krb5_set_error_message(context, HEIM_ERR_LOG_PARSE,
+				   "failed to parse \"%s\"", orig);
 	    return HEIM_ERR_LOG_PARSE;
 	}
 	p++;
@@ -300,7 +301,7 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 			 O_TRUNC | O_APPEND, 0666);
 	    if(i < 0) {
 		ret = errno;
-		krb5_set_error_string (context, "open(%s): %s", fn,
+		krb5_set_error_message(context, ret, "open(%s): %s", fn,
 				       strerror(ret));
 		free(fn);
 		return ret;
@@ -309,7 +310,7 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 	    if(file == NULL){
 		ret = errno;
 		close(i);
-		krb5_set_error_string (context, "fdopen(%s): %s", fn,
+		krb5_set_error_message(context, ret, "fdopen(%s): %s", fn,
 				       strerror(ret));
 		free(fn);
 		return ret;
@@ -333,8 +334,8 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 	    strlcpy(facility, "AUTH", sizeof(facility));
 	ret = open_syslog(context, f, min, max, severity, facility);
     }else{
-	krb5_set_error_string (context, "unknown log type: %s", p);
 	ret = HEIM_ERR_LOG_PARSE; /* XXX */
+	krb5_set_error_message (context, ret, "unknown log type: %s", p);
     }
     return ret;
 }

@@ -1807,7 +1807,7 @@ _kdc_tkt_add_if_relevant_ad(krb5_context context,
     if (tkt->authorization_data == NULL) {
 	tkt->authorization_data = calloc(1, sizeof(*tkt->authorization_data));
 	if (tkt->authorization_data == NULL) {
-	    krb5_set_error_string(context, "out of memory");
+	    krb5_set_error_message(context, ENOMEM, "out of memory");
 	    return ENOMEM;
 	}
     }
@@ -1822,7 +1822,7 @@ _kdc_tkt_add_if_relevant_ad(krb5_context context,
 
 	ret = add_AuthorizationData(&ad, &ade);
 	if (ret) {
-	    krb5_set_error_string(context, "add AuthorizationData failed");
+	    krb5_set_error_message(context, ret, "add AuthorizationData failed");
 	    return ret;
 	}
 
@@ -1833,8 +1833,8 @@ _kdc_tkt_add_if_relevant_ad(krb5_context context,
 			   &ad, &size, ret);
 	free_AuthorizationData(&ad);
 	if (ret) {
-	    krb5_set_error_string(context, "ASN.1 encode of "
-				  "AuthorizationData failed");
+	    krb5_set_error_message(context, ret, "ASN.1 encode of "
+				   "AuthorizationData failed");
 	    return ret;
 	}
 	if (ade.ad_data.length != size)
@@ -1843,7 +1843,7 @@ _kdc_tkt_add_if_relevant_ad(krb5_context context,
 	ret = add_AuthorizationData(tkt->authorization_data, &ade);
 	der_free_octet_string(&ade.ad_data);
 	if (ret) {
-	    krb5_set_error_string(context, "add AuthorizationData failed");
+	    krb5_set_error_message(context, ret, "add AuthorizationData failed");
 	    return ret;
 	}
     }

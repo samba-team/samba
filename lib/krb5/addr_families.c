@@ -1111,10 +1111,12 @@ krb5_parse_address(krb5_context context,
 
     error = getaddrinfo (string, NULL, NULL, &ai);
     if (error) {
+	krb5_error_code ret2;
 	save_errno = errno;
-	krb5_set_error_message (context, save_errno, "%s: %s",
+	ret2 = krb5_eai_to_heim_errno(error, save_errno);
+	krb5_set_error_message (context, ret2, "%s: %s",
 				string, gai_strerror(error));
-	return krb5_eai_to_heim_errno(error, save_errno);
+	return ret2;
     }
     
     n = 0;

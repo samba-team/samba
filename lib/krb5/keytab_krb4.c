@@ -134,8 +134,8 @@ krb4_kt_start_seq_get_int (krb5_context context,
     if (c->fd < 0) {
 	ret = errno;
 	free (ed);
-	krb5_set_error_string(context, "keytab krb5 open %s failed: %s", 
-			      d->filename, strerror(ret));
+	krb5_set_error_message(context, ret, "keytab krb5 open %s failed: %s", 
+			       d->filename, strerror(ret));
 	return ret;
     }
     c->sp = krb5_storage_from_fd(c->fd);
@@ -302,7 +302,7 @@ krb4_kt_add_entry (krb5_context context,
 		   O_WRONLY | O_APPEND | O_BINARY | O_CREAT, 0600);
 	if (fd < 0) {
 	    ret = errno;
-	    krb5_set_error_string(context, "open(%s): %s", d->filename,
+	    krb5_set_error_message(context, ret, "open(%s): %s", d->filename,
 				  strerror(ret));
 	    return ret;
 	}
@@ -371,7 +371,8 @@ krb4_kt_remove_entry(krb5_context context,
 	    memset(data.data, 0, data.length);
 	    krb5_data_free(&data);
 	    if(errno == EACCES || errno == EROFS) {
-		krb5_set_error_string(context, "failed to open %s for writing",
+		krb5_set_error_message(context, KRB5_KT_NOWRITE,
+				       "failed to open %s for writing",
 				      d->filename);
 		return KRB5_KT_NOWRITE;
 	    }
@@ -379,20 +380,24 @@ krb4_kt_remove_entry(krb5_context context,
 	}
 
 	if(write(fd, data.data, data.length) != data.length) {
+	    int save_errno = errno;
 	    memset(data.data, 0, data.length);
 	    krb5_data_free(&data);
 	    close(fd);
-	    krb5_set_error_string(context, "failed writing to file %s", 
-				  d->filename);
-	    return errno;
+	    krb5_set_error_message(context, save_errno,
+				   "failed writing to file %s", 
+				   d->filename);
+	    return save_errno;
 	}
 	memset(data.data, 0, data.length);
 	if(fstat(fd, &st) < 0) {
+	    int save_errno = errno;
 	    krb5_data_free(&data);
 	    close(fd);
-	    krb5_set_error_string(context, "failed getting size of file %s", 
-				  d->filename);
-	    return errno;
+	    krb5_set_error_message(context, save_errno, 
+				   "failed getting size of file %s", 
+				   d->filename);
+	    return save_errno;
 	}
 	st.st_size -= data.length;
 	memset(buf, 0, sizeof(buf));
@@ -400,32 +405,39 @@ krb4_kt_remove_entry(krb5_context context,
 	    n = min(st.st_size, sizeof(buf));
 	    n = write(fd, buf, n);
 	    if(n <= 0) {
+		int save_errno = errno;
 		krb5_data_free(&data);
 		close(fd);
-		krb5_set_error_string(context, "failed writing to file %s",
+		krb5_set_error_message(context, save_errno,
+				       "failed writing to file %s",
 				      d->filename);
-		return errno;
+		return save_errno;
 		
 	    }
 	    st.st_size -= n;
 	}
 	if(ftruncate(fd, data.length) < 0) {
+	    int save_errno = errno;
 	    krb5_data_free(&data);
 	    close(fd);
-	    krb5_set_error_string(context, "failed truncating file %s",
+	    krb5_set_error_message(context, save_errno,
+				   "failed truncating file %s",
 				  d->filename);
-	    return errno;
+	    return save_errno;
 	}
 	krb5_data_free(&data);
 	if(close(fd) < 0) {
-	    krb5_set_error_string(context, "error closing %s",
-				  d->filename);
-	    return errno;
+	    int save_errno = errno;
+	    krb5_set_error_message(context, save_errno,
+				   "error closing %s",
+				   d->filename);
+	    return save_errno;
 	}
 	return 0;
     } else {
 	krb5_storage_free(sp);
-	krb5_set_error_string(context, "Keytab entry not found");
+	krb5_set_error_message(context, KRB5_KT_NOTFOUND,
+			       "Keytab entry not found");
 	return KRB5_KT_NOTFOUND;
     }
 }

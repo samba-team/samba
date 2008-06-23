@@ -72,7 +72,8 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
 
     proto_num = string_to_proto(proto);
     if(proto_num < 0) {
-	krb5_set_error_string(context, "unknown protocol `%s'", proto);
+	krb5_set_error_message(context, EINVAL,
+			       "unknown protocol `%s'", proto);
 	return EINVAL;
     }
 
@@ -247,7 +248,7 @@ _krb5_krbhost_info_move(krb5_context context,
     /* trailing NUL is included in structure */
     *to = calloc(1, sizeof(**to) + hostnamelen); 
     if(*to == NULL) {
-	krb5_set_error_string(context, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
@@ -540,7 +541,7 @@ plugin_get_hosts(krb5_context context,
 	ret = (*service->lookup)(ctx, type, kd->realm, 0, 0, add_locate, kd);
 	(*service->fini)(ctx);
 	if (ret) {
-	    krb5_set_error_string(context, "Plugin failed to lookup");
+	    krb5_set_error_message(context, ret, "Plugin failed to lookup");
 	    break;
 	}
     }
@@ -832,7 +833,7 @@ krb5_krbhst_init_flags(krb5_context context,
 	def_port = ntohs(krb5_getportbyname (context, "krb524", "udp", 4444));
 	break;
     default:
-	krb5_set_error_string(context, "unknown krbhst type (%u)", type);
+	krb5_set_error_message(context, ENOTTY, "unknown krbhst type (%u)", type);
 	return ENOTTY;
     }
     if((kd = common_init(context, realm, flags)) == NULL)
@@ -920,7 +921,8 @@ gethostlist(krb5_context context, const char *realm,
     while(krb5_krbhst_next(context, handle, &hostinfo) == 0)
 	nhost++;
     if(nhost == 0) {
-	krb5_set_error_string(context, "No KDC found for realm %s", realm);
+	krb5_set_error_message(context, KRB5_KDC_UNREACH, 
+			       "No KDC found for realm %s", realm);
 	return KRB5_KDC_UNREACH;
     }
     *hostlist = calloc(nhost + 1, sizeof(**hostlist));

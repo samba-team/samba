@@ -103,11 +103,12 @@ krb5_recvauth_match_version(krb5_context context,
 	n = krb5_net_read (context, p_fd, &len, 4);
 	if (n < 0) {
 	    ret = errno;
-	    krb5_set_error_string (context, "read: %s", strerror(errno));
+	    krb5_set_error_message(context, ret, "read: %s", strerror(ret));
 	    return ret;
 	}
 	if (n == 0) {
-	    krb5_set_error_string (context, "Failed to receive sendauth data");
+	    krb5_set_error_message(context, KRB5_SENDAUTH_BADAUTHVERS,
+				   "Failed to receive sendauth data");
 	    return KRB5_SENDAUTH_BADAUTHVERS;
 	}
 	len = ntohl(len);
@@ -124,7 +125,7 @@ krb5_recvauth_match_version(krb5_context context,
     n = krb5_net_read (context, p_fd, &len, 4);
     if (n < 0) {
 	ret = errno;
-	krb5_set_error_string (context, "read: %s", strerror(errno));
+	krb5_set_error_message(context, ret, "read: %s", strerror(ret));
 	return ret;
     }
     if (n == 0) {
@@ -143,7 +144,8 @@ krb5_recvauth_match_version(krb5_context context,
 	|| !(*match_appl_version)(match_data, her_appl_version)) {
 	repl = 2;
 	krb5_net_write (context, p_fd, &repl, 1);
-	krb5_set_error_string (context, "wrong sendauth version (%s)",
+	krb5_set_error_message(context, KRB5_SENDAUTH_BADAPPLVERS,
+			       "wrong sendauth version (%s)",
 			       her_appl_version);
 	free (her_appl_version);
 	return KRB5_SENDAUTH_BADAPPLVERS;
@@ -153,7 +155,7 @@ krb5_recvauth_match_version(krb5_context context,
     repl = 0;
     if (krb5_net_write (context, p_fd, &repl, 1) != 1) {
 	ret = errno;
-	krb5_set_error_string (context, "write: %s", strerror(errno));
+	krb5_set_error_message(context, ret, "write: %s", strerror(ret));
 	return ret;
     }
 
@@ -193,7 +195,7 @@ krb5_recvauth_match_version(krb5_context context,
     len = 0;
     if (krb5_net_write (context, p_fd, &len, 4) != 4) {
 	ret = errno;
-	krb5_set_error_string (context, "write: %s", strerror(errno));
+	krb5_set_error_message(context, ret, "write: %s", strerror(ret));
 	return ret;
     }
 

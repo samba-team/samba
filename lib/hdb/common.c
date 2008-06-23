@@ -275,7 +275,7 @@ _hdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
 	struct timeval t;
 	entry->entry.generation = malloc(sizeof(*entry->entry.generation));
 	if(entry->entry.generation == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	gettimeofday(&t, NULL);

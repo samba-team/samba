@@ -60,8 +60,9 @@ krb5_rc_resolve_type(krb5_context context,
 {
     *id = NULL;
     if(strcmp(type, "FILE")) {
-	krb5_set_error_string (context, "replay cache type %s not supported",
-			       type);
+	krb5_set_error_message (context, KRB5_RC_TYPE_NOTFOUND,
+				"replay cache type %s not supported",
+				type);
 	return KRB5_RC_TYPE_NOTFOUND;
     }
     *id = calloc(1, sizeof(**id));
@@ -82,7 +83,8 @@ krb5_rc_resolve_full(krb5_context context,
     *id = NULL;
 
     if(strncmp(string_name, "FILE:", 5)) {
-	krb5_set_error_string (context, "replay cache type %s not supported",
+	krb5_set_error_message(context, KRB5_RC_TYPE_NOTFOUND,
+			       "replay cache type %s not supported",
 			       string_name);
 	return KRB5_RC_TYPE_NOTFOUND;
     }
@@ -132,7 +134,7 @@ krb5_rc_initialize(krb5_context context,
 
     if(f == NULL) {
 	ret = errno;
-	krb5_set_error_string (context, "open(%s): %s", id->name,
+	krb5_set_error_message(context, ret, "open(%s): %s", id->name,
 			       strerror(ret));
 	return ret;
     }
@@ -157,7 +159,7 @@ krb5_rc_destroy(krb5_context context,
 
     if(remove(id->name) < 0) {
 	ret = errno;
-	krb5_set_error_string (context, "remove(%s): %s", id->name,
+	krb5_set_error_message(context, ret, "remove(%s): %s", id->name,
 			       strerror(ret));
 	return ret;
     }
@@ -204,7 +206,7 @@ krb5_rc_store(krb5_context context,
     f = fopen(id->name, "r");
     if(f == NULL) {
 	ret = errno;
-	krb5_set_error_string (context, "open(%s): %s", id->name,
+	krb5_set_error_message(context, ret, "open(%s): %s", id->name,
 			       strerror(ret));
 	return ret;
     }
@@ -222,13 +224,15 @@ krb5_rc_store(krb5_context context,
     if(ferror(f)){
 	ret = errno;
 	fclose(f);
-	krb5_set_error_string (context, "%s: %s", id->name, strerror(ret));
+	krb5_set_error_message(context, ret, "%s: %s",
+			       id->name, strerror(ret));
 	return ret;
     }
     fclose(f);
     f = fopen(id->name, "a");
     if(f == NULL) {
-	krb5_set_error_string (context, "open(%s): %s", id->name,
+	krb5_set_error_message(context, KRB5_RC_IO_UNKNOWN,
+			       "open(%s): %s", id->name,
 			       strerror(errno));
 	return KRB5_RC_IO_UNKNOWN;
     }

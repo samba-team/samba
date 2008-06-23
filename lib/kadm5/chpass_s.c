@@ -75,8 +75,8 @@ change(void *server_handle,
     _kadm5_free_keys (context->context, num_keys, keys);
 
     if (cmp == 0) {
-	krb5_set_error_string(context->context, "Password reuse forbidden");
 	ret = KADM5_PASS_REUSE;
+	krb5_set_error_message(context->context, ret, "Password reuse forbidden");
 	goto out2;
     }
 

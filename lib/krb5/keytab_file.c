@@ -174,16 +174,16 @@ krb5_kt_ret_principal(krb5_context context,
 
     ret = krb5_ret_int16(sp, &len);
     if(ret) {
-	krb5_set_error_string(context,
-			      "Failed decoding length of keytab principal");
+	krb5_set_error_message(context, ret,
+			       "Failed decoding length of keytab principal");
 	goto out;
     }
     if(krb5_storage_is_flags(sp, KRB5_STORAGE_PRINCIPAL_WRONG_NUM_COMPONENTS))
 	len--;
     if (len < 0) {
-	krb5_set_error_string(context, 
-			      "Keytab principal contains invalid length");
 	ret = KRB5_KT_END;
+	krb5_set_error_message(context, ret,
+			       "Keytab principal contains invalid length");
 	goto out;
     }
     ret = krb5_kt_ret_string(context, sp, &p->realm);
@@ -334,8 +334,8 @@ fkt_start_seq_get_int(krb5_context context,
     c->fd = open (d->filename, flags);
     if (c->fd < 0) {
 	ret = errno;
-	krb5_set_error_string(context, "keytab %s open failed: %s", 
-			      d->filename, strerror(ret));
+	krb5_set_error_message(context, ret, "keytab %s open failed: %s",
+			       d->filename, strerror(ret));
 	return ret;
     }
     ret = _krb5_xlock(context, c->fd, exclusive, d->filename);
@@ -492,8 +492,8 @@ fkt_add_entry(krb5_context context,
 	fd = open (d->filename, O_RDWR | O_CREAT | O_EXCL | O_BINARY, 0600);
 	if (fd < 0) {
 	    ret = errno;
-	    krb5_set_error_string(context, "open(%s): %s", d->filename,
-				  strerror(ret));
+	    krb5_set_error_message(context, ret, "open(%s): %s", d->filename,
+				   strerror(ret));
 	    return ret;
 	}
 	ret = _krb5_xlock(context, fd, 1, d->filename);
@@ -523,22 +523,22 @@ fkt_add_entry(krb5_context context,
                properly */
 	    ret = fkt_setup_keytab(context, id, sp);
 	    if(ret) {
-		krb5_set_error_string(context, "%s: keytab is corrupted: %s", 
-				      d->filename, strerror(ret));
+		krb5_set_error_message(context, ret, "%s: keytab is corrupted: %s", 
+				       d->filename, strerror(ret));
 		goto out;
 	    }
 	    storage_set_flags(context, sp, id->version);
 	} else {
 	    if(pvno != 5) {
 		ret = KRB5_KEYTAB_BADVNO;
-		krb5_set_error_string(context, "%s: %s", 
-				      d->filename, strerror(ret));
+		krb5_set_error_message(context, ret, "%s: %s", 
+				       d->filename, strerror(ret));
 		goto out;
 	    }
 	    ret = krb5_ret_int8 (sp, &tag);
 	    if (ret) {
-		krb5_set_error_string(context, "%s: reading tag: %s", 
-				      d->filename, strerror(ret));
+		krb5_set_error_message(context, ret, "%s: reading tag: %s", 
+				       d->filename, strerror(ret));
 		goto out;
 	    }
 	    id->version = tag;

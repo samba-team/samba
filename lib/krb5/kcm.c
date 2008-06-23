@@ -189,7 +189,7 @@ kcm_storage_request(krb5_context context,
     *storage_p = sp;
  fail:
     if (ret) {
-	krb5_set_error_string(context, "Failed to encode request");
+	krb5_set_error_message(context, ret, "Failed to encode request");
 	krb5_storage_free(sp);
     }
    

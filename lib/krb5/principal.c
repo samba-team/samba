@@ -149,8 +149,9 @@ krb5_parse_name_flags(krb5_context context,
 #define RFLAGS (KRB5_PRINCIPAL_PARSE_NO_REALM|KRB5_PRINCIPAL_PARSE_MUST_REALM)
 
     if ((flags & RFLAGS) == RFLAGS) {
-	krb5_set_error_string(context, "Can't require both realm and "
-			      "no realm at the same time");
+	krb5_set_error_message(context, KRB5_ERR_NO_SERVICE,
+			       "Can't require both realm and "
+			       "no realm at the same time");
 	return KRB5_ERR_NO_SERVICE;
     }
 #undef RFLAGS
@@ -163,7 +164,7 @@ krb5_parse_name_flags(krb5_context context,
 	for(p = name; *p; p++){
 	    if(*p=='\\'){
 		if(!p[1]) {
-		    krb5_set_error_string (context,
+		    krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
 					   "trailing \\ in principal name");
 		    return KRB5_PARSE_MALFORMED;
 		}
@@ -200,9 +201,9 @@ krb5_parse_name_flags(krb5_context context,
 	    else if(c == '0')
 		c = '\0';
 	    else if(c == '\0') {
-		krb5_set_error_string (context,
-				       "trailing \\ in principal name");
 		ret = KRB5_PARSE_MALFORMED;
+		krb5_set_error_message(context, ret,
+				       "trailing \\ in principal name");
 		goto exit;
 	    }
 	}else if(enterprise && first_at) {
@@ -210,9 +211,9 @@ krb5_parse_name_flags(krb5_context context,
 		first_at = 0;
 	}else if((c == '/' && !enterprise) || c == '@'){
 	    if(got_realm){
-		krb5_set_error_string (context,
-				       "part after realm in principal name");
 		ret = KRB5_PARSE_MALFORMED;
+		krb5_set_error_message(context, ret,
+				       "part after realm in principal name");
 		goto exit;
 	    }else{
 		comp[n] = malloc(q - start + 1);
@@ -231,18 +232,18 @@ krb5_parse_name_flags(krb5_context context,
 	    continue;
 	}
 	if(got_realm && (c == ':' || c == '/' || c == '\0')) {
-	    krb5_set_error_string (context,
-				   "part after realm in principal name");
 	    ret = KRB5_PARSE_MALFORMED;
+	    krb5_set_error_message(context, ret,
+				   "part after realm in principal name");
 	    goto exit;
 	}
 	*q++ = c;
     }
     if(got_realm){
 	if (flags & KRB5_PRINCIPAL_PARSE_NO_REALM) {
-	    krb5_set_error_string (context, "realm found in 'short' principal "
-				   "expected to be without one");
 	    ret = KRB5_PARSE_MALFORMED;
+	    krb5_set_error_message(context, ret, "realm found in 'short' principal "
+				   "expected to be without one");
 	    goto exit;
 	}
 	realm = malloc(q - start + 1);
@@ -255,9 +256,9 @@ krb5_parse_name_flags(krb5_context context,
 	realm[q - start] = 0;
     }else{
 	if (flags & KRB5_PRINCIPAL_PARSE_MUST_REALM) {
-	    krb5_set_error_string (context, "realm NOT found in principal "
-				   "expected to be with one");
 	    ret = KRB5_PARSE_MALFORMED;
+	    krb5_set_error_message(context, ret, "realm NOT found in principal "
+				   "expected to be with one");
 	    goto exit;
 	} else if (flags & KRB5_PRINCIPAL_PARSE_NO_REALM) {
 	    realm = NULL;
@@ -350,7 +351,8 @@ unparse_name_fixed(krb5_context context,
     int display = (flags & KRB5_PRINCIPAL_UNPARSE_DISPLAY) != 0;
 
     if (!no_realm && princ_realm(principal) == NULL) {
-	krb5_set_error_string(context, "Realm missing from principal, "
+	krb5_set_error_message(context, ERANGE,
+			       "Realm missing from principal, "
 			      "can't unparse");
 	return ERANGE;
     }
@@ -360,7 +362,7 @@ unparse_name_fixed(krb5_context context,
 	    add_char(name, idx, len, '/');
 	idx = quote_string(princ_ncomp(principal, i), name, idx, len, display);
 	if(idx == len) {
-	    krb5_set_error_string(context, "Out of space printing principal");
+	    krb5_set_error_message(context, ERANGE, "Out of space printing principal");
 	    return ERANGE;
 	}
     } 
@@ -379,8 +381,8 @@ unparse_name_fixed(krb5_context context,
 	add_char(name, idx, len, '@');
 	idx = quote_string(princ_realm(principal), name, idx, len, display);
 	if(idx == len) {
-	    krb5_set_error_string(context, 
-				  "Out of space printing realm of principal");
+	    krb5_set_error_message(context, ERANGE,
+				   "Out of space printing realm of principal");
 	    return ERANGE;
 	}
     }
@@ -521,7 +523,7 @@ krb5_principal_set_realm(krb5_context context,
 
     princ_realm(principal) = strdup(realm);
     if (princ_realm(principal) == NULL) {
-	krb5_set_error_string(context, "out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     return 0;
@@ -1192,7 +1194,7 @@ krb5_524_conv_principal(krb5_context context,
 	i = principal->name.name_string.val[1];
 	break;
     default:
-	krb5_set_error_string (context,
+	krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
 			       "cannot convert a %d component principal",
 			       principal->name.name_string.len);
 	return KRB5_PARSE_MALFORMED;
@@ -1218,17 +1220,17 @@ krb5_524_conv_principal(krb5_context context,
     }
     
     if (strlcpy (name, n, aname_sz) >= aname_sz) {
-	krb5_set_error_string (context,
+	krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
 			       "too long name component to convert");
 	return KRB5_PARSE_MALFORMED;
     }
     if (strlcpy (instance, i, aname_sz) >= aname_sz) {
-	krb5_set_error_string (context,
+	krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
 			       "too long instance component to convert");
 	return KRB5_PARSE_MALFORMED;
     }
     if (strlcpy (realm, r, aname_sz) >= aname_sz) {
-	krb5_set_error_string (context,
+	krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
 			       "too long realm component to convert");
 	return KRB5_PARSE_MALFORMED;
     }
@@ -1251,7 +1253,8 @@ krb5_sname_to_principal (krb5_context context,
     char **realms, *host = NULL;
 	
     if(type != KRB5_NT_SRV_HST && type != KRB5_NT_UNKNOWN) {
-	krb5_set_error_string (context, "unsupported name type %d",
+	krb5_set_error_message(context, KRB5_SNAME_UNSUPP_NAMETYPE,
+			       "unsupported name type %d",
 			       (int)type);
 	return KRB5_SNAME_UNSUPP_NAMETYPE;
     }
@@ -1312,6 +1315,7 @@ krb5_parse_nametype(krb5_context context, const char *str, int32_t *nametype)
 	    return 0;
 	}
     }
-    krb5_set_error_string(context, "Failed to find name type %s", str);
+    krb5_set_error_message(context, KRB5_PARSE_MALFORMED,
+			   "Failed to find name type %s", str);
     return KRB5_PARSE_MALFORMED;
 }

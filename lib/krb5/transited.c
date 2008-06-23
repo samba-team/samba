@@ -443,8 +443,9 @@ krb5_check_transited(krb5_context context,
 	}
 	if(p == NULL || *p == NULL) {
 	    krb5_config_free_strings(tr_realms);
-	    krb5_set_error_string (context, "no transit through realm %s",
-				   realms[i]);
+	    krb5_set_error_message (context, KRB5KRB_AP_ERR_ILL_CR_TKT,
+				    "no transit through realm %s",
+				    realms[i]);
 	    if(bad_realm)
 		*bad_realm = i;
 	    return KRB5KRB_AP_ERR_ILL_CR_TKT;
@@ -473,9 +474,9 @@ krb5_check_transited_realms(krb5_context context,
 	char **p;
 	for(p = bad_realms; *p; p++)
 	    if(strcmp(*p, realms[i]) == 0) {
-		krb5_set_error_string (context, "no transit through realm %s",
-				       *p);
 		ret = KRB5KRB_AP_ERR_ILL_CR_TKT;
+		krb5_set_error_message (context, ret,
+					"no transit through realm %s", *p);
 		if(bad_realm)
 		    *bad_realm = i;
 		break;

@@ -72,13 +72,13 @@ get_cell_and_realm (krb5_context context, struct akf_data *d)
     f = fopen (AFS_SERVERTHISCELL, "r");
     if (f == NULL) {
 	ret = errno;
-	krb5_set_error_string (context, "open %s: %s", AFS_SERVERTHISCELL,
-			       strerror(ret));
+	krb5_set_error_message (context, ret, "open %s: %s", AFS_SERVERTHISCELL,
+				strerror(ret));
 	return ret;
     }
     if (fgets (buf, sizeof(buf), f) == NULL) {
 	fclose (f);
-	krb5_set_error_string (context, "no cell in %s", AFS_SERVERTHISCELL);
+	krb5_set_error_message (context, EINVAL, "no cell in %s", AFS_SERVERTHISCELL);
 	return EINVAL;
     }
     buf[strcspn(buf, "\n")] = '\0';
@@ -96,8 +96,8 @@ get_cell_and_realm (krb5_context context, struct akf_data *d)
 	    free (d->cell);
 	    d->cell = NULL;
 	    fclose (f);
-	    krb5_set_error_string (context, "no realm in %s",
-				   AFS_SERVERMAGICKRBCONF);
+	    krb5_set_error_message (context, EINVAL, "no realm in %s",
+				    AFS_SERVERMAGICKRBCONF);
 	    return EINVAL;
 	}
 	buf[strcspn(buf, "\n")] = '\0';
@@ -197,8 +197,8 @@ akf_start_seq_get(krb5_context context,
     c->fd = open (d->filename, O_RDONLY|O_BINARY, 0600);
     if (c->fd < 0) {
 	ret = errno;
-	krb5_set_error_string(context, "keytab afs keyfil open %s failed: %s",
-			      d->filename, strerror(ret));
+	krb5_set_error_message(context, ret, "keytab afs keyfil open %s failed: %s",
+			       d->filename, strerror(ret));
 	return ret;
     }
 
@@ -307,8 +307,8 @@ akf_add_entry(krb5_context context,
 		   O_RDWR | O_BINARY | O_CREAT | O_EXCL, 0600);
 	if (fd < 0) {
 	    ret = errno;
-	    krb5_set_error_string(context, "open(%s): %s", d->filename,
-				  strerror(ret));
+	    krb5_set_error_message(context, ret, "open(%s): %s", d->filename,
+				   strerror(ret));
 	    return ret;
 	}
 	created = 1;
@@ -327,7 +327,7 @@ akf_add_entry(krb5_context context,
 	    ret = errno;
 	    krb5_storage_free(sp);
 	    close(fd);
-	    krb5_set_error_string (context, "seek: %s", strerror(ret));
+	    krb5_set_error_message(context, ret, "seek: %s", strerror(ret));
 	    return ret;
 	}
 	    
@@ -350,11 +350,12 @@ akf_add_entry(krb5_context context,
 	for (i = 0; i < len; i++) {
 	    ret = krb5_ret_int32(sp, &kvno);
 	    if (ret) {
-		krb5_set_error_string (context, "Failed to get kvno ");
+		krb5_set_error_message (context, ret, "Failed to get kvno ");
 		goto out;
 	    }
 	    if(krb5_storage_seek(sp, 8, SEEK_CUR) < 0) {
-		krb5_set_error_string (context, "seek: %s", strerror(ret));
+		ret = errno;
+		krb5_set_error_message (context, ret, "seek: %s", strerror(ret));
 		goto out;
 	    }
 	    if (kvno == entry->vno) {
@@ -368,25 +369,26 @@ akf_add_entry(krb5_context context,
 	
     if(krb5_storage_seek(sp, 0, SEEK_SET) < 0) {
 	ret = errno;
-	krb5_set_error_string (context, "seek: %s", strerror(ret));
+	krb5_set_error_message (context, ret, "seek: %s", strerror(ret));
 	goto out;
     }
 	
     ret = krb5_store_int32(sp, len);
     if(ret) {
-	krb5_set_error_string(context, "keytab keyfile failed new length");
+	ret = errno;
+	krb5_set_error_message (context, ret, "keytab keyfile failed new length");
 	return ret;
     }
 
     if(krb5_storage_seek(sp, (len - 1) * (8 + 4), SEEK_CUR) < 0) {
 	ret = errno;
-	krb5_set_error_string (context, "seek to end: %s", strerror(ret));
+	krb5_set_error_message (context, ret, "seek to end: %s", strerror(ret));
 	goto out;
     }
 	
     ret = krb5_store_int32(sp, entry->vno);
     if(ret) {
-	krb5_set_error_string(context, "keytab keyfile failed store kvno");
+	krb5_set_error_message(context, ret, "keytab keyfile failed store kvno");
 	goto out;
     }
     ret = krb5_storage_write(sp, entry->keyblock.keyvalue.data, 
@@ -396,7 +398,7 @@ akf_add_entry(krb5_context context,
 	    ret = errno;
 	else
 	    ret = ENOTTY;
-	krb5_set_error_string(context, "keytab keyfile failed to add key");
+	krb5_set_error_message(context, ret, "keytab keyfile failed to add key");
 	goto out;
     }
     ret = 0;

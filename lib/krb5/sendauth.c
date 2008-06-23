@@ -93,7 +93,7 @@ krb5_sendauth(krb5_context context,
     if (krb5_net_write (context, p_fd, &net_len, 4) != 4
 	|| krb5_net_write (context, p_fd, version, len) != len) {
 	ret = errno;
-	krb5_set_error_string (context, "write: %s", strerror(ret));
+	krb5_set_error_message (context, ret, "write: %s", strerror(ret));
 	return ret;
     }
 
@@ -102,14 +102,14 @@ krb5_sendauth(krb5_context context,
     if (krb5_net_write (context, p_fd, &net_len, 4) != 4
 	|| krb5_net_write (context, p_fd, appl_version, len) != len) {
 	ret = errno;
-	krb5_set_error_string (context, "write: %s", strerror(ret));
+	krb5_set_error_message (context, ret, "write: %s", strerror(ret));
 	return ret;
     }
 
     sret = krb5_net_read (context, p_fd, &repl, sizeof(repl));
     if (sret < 0) {
 	ret = errno;
-	krb5_set_error_string (context, "read: %s", strerror(ret));
+	krb5_set_error_message (context, ret, "read: %s", strerror(ret));
 	return ret;
     } else if (sret != sizeof(repl)) {
 	krb5_clear_error_string (context);

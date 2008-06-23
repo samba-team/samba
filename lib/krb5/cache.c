@@ -284,7 +284,7 @@ krb5_cc_get_full_name(krb5_context context,
     }
     
     if (asprintf(str, "%s:%s", type, name) == -1) {
-	krb5_set_error_message(context, ENOMEM, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	*str = NULL;
 	return ENOMEM;
     }
@@ -356,7 +356,7 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 	if (append == NULL) {
 	    free(*res);
 	    *res = NULL;
-	    krb5_set_error_message(context, ENOMEM, "malloc - out of memory");
+	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	
@@ -367,7 +367,7 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 	    free(*res);
 	    *res = NULL;
 	    krb5_set_error_message(context, ENOMEM, 
-				   "malloc - out of memory");
+				   "malloc: out of memory");
 	    return ENOMEM;
 	}
 	*res = tmp;
@@ -488,7 +488,7 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
     }
 
     if (p == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
@@ -535,7 +535,7 @@ krb5_cc_default(krb5_context context,
     const char *p = krb5_cc_default_name(context);
 
     if (p == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     return krb5_cc_resolve(context, p, id);
@@ -907,7 +907,7 @@ krb5_cc_get_prefix_ops(krb5_context context, const char *prefix)
 
     p = strdup(prefix);
     if (p == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return NULL;
     }
     p1 = strchr(p, ':');
@@ -967,7 +967,7 @@ krb5_cc_cache_get_first (krb5_context context,
 
     *cursor = calloc(1, sizeof(**cursor));
     if (*cursor == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 

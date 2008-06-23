@@ -439,7 +439,7 @@ mcc_default_name(krb5_context context, char **str)
 {
     *str = strdup("MEMORY:");
     if (*str == NULL) {
-	krb5_set_error_string(context, ENOMEM, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     return 0;

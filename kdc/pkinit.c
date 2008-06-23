@@ -187,13 +187,13 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
     memset(&key, 0, sizeof(key));
 
     if (!DH_generate_key(client_params->dh)) {
-	krb5_set_error_string(context, "Can't generate Diffie-Hellman keys");
 	ret = KRB5KRB_ERR_GENERIC;
+	krb5_set_error_message(context, ret, "Can't generate Diffie-Hellman keys");
 	goto out;
     }
     if (client_params->dh_public_key == NULL) {
-	krb5_set_error_string(context, "dh_public_key");
 	ret = KRB5KRB_ERR_GENERIC;
+	krb5_set_error_message(context, ret, "dh_public_key");
 	goto out;
     }
 
@@ -204,8 +204,8 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
 
     dh_gen_key = malloc(size);
     if (dh_gen_key == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
 	ret = ENOMEM;
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto out;
     }
     memset(dh_gen_key, 0, size - dh_gen_keylen);
@@ -214,8 +214,8 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
 				   client_params->dh_public_key,
 				   client_params->dh);
     if (dh_gen_keylen == -1) {
-	krb5_set_error_string(context, "Can't compute Diffie-Hellman key");
 	ret = KRB5KRB_ERR_GENERIC;
+	krb5_set_error_message(context, ret, "Can't compute Diffie-Hellman key");
 	goto out;
     }
 
@@ -241,7 +241,8 @@ integer_to_BN(krb5_context context, const char *field, heim_integer *f)
 
     bn = BN_bin2bn((const unsigned char *)f->data, f->length, NULL);
     if (bn == NULL) {
-	krb5_set_error_string(context, "PKINIT: parsing BN failed %s", field);
+	krb5_set_error_message(context, KRB5_BADMSGTYPE,
+			       "PKINIT: parsing BN failed %s", field);
 	return NULL;
     }
     BN_set_negative(bn, f->negative);
@@ -261,13 +262,14 @@ get_dh_param(krb5_context context,
     memset(&dhparam, 0, sizeof(dhparam));
 
     if (der_heim_oid_cmp(&dh_key_info->algorithm.algorithm, oid_id_dhpublicnumber())) {
-	krb5_set_error_string(context,
-			      "PKINIT invalid oid in clientPublicValue");
+	krb5_set_error_message(context, KRB5_BADMSGTYPE,
+			       "PKINIT invalid oid in clientPublicValue");
 	return KRB5_BADMSGTYPE;
     }
 
     if (dh_key_info->algorithm.parameters == NULL) {
-	krb5_set_error_string(context, "PKINIT missing algorithm parameter "
+	krb5_set_error_message(context, KRB5_BADMSGTYPE,
+			       "PKINIT missing algorithm parameter "
 			      "in clientPublicValue");
 	return KRB5_BADMSGTYPE;
     }
@@ -277,15 +279,16 @@ get_dh_param(krb5_context context,
 				  &dhparam,
 				  NULL);
     if (ret) {
-	krb5_set_error_string(context, "Can't decode algorithm "
-			      "parameters in clientPublicValue");
+	krb5_set_error_message(context, ret, "Can't decode algorithm "
+			       "parameters in clientPublicValue");
 	goto out;
     }
 
     if ((dh_key_info->subjectPublicKey.length % 8) != 0) {
 	ret = KRB5_BADMSGTYPE;
-	krb5_set_error_string(context, "PKINIT: subjectPublicKey not aligned "
-			      "to 8 bit boundary");
+	krb5_set_error_message(context, ret,
+			       "PKINIT: subjectPublicKey not aligned "
+			       "to 8 bit boundary");
 	goto out;
     }
 
@@ -300,8 +303,8 @@ get_dh_param(krb5_context context,
 
     dh = DH_new();
     if (dh == NULL) {
-	krb5_set_error_string(context, "Cannot create DH structure");
 	ret = ENOMEM;
+	krb5_set_error_message(context, ret, "Cannot create DH structure");
 	goto out;
     }
     ret = KRB5_BADMSGTYPE;
@@ -332,8 +335,10 @@ get_dh_param(krb5_context context,
 						     "subjectPublicKey",
 						     &glue);
 	der_free_heim_integer(&glue);
-	if (client_params->dh_public_key == NULL)
+	if (client_params->dh_public_key == NULL) {
+	    ret = KRB5_BADMSGTYPE;
 	    goto out;
+	}
     }
 
     client_params->dh = dh;
@@ -389,8 +394,8 @@ _kdc_pk_rd_padata(krb5_context context,
 					&r,
 					NULL);
 	if (ret) {
-	    krb5_set_error_string(context, "Can't decode "
-				  "PK-AS-REQ-Win2k: %d", ret);
+	    krb5_set_error_message(context, ret, "Can't decode "
+				   "PK-AS-REQ-Win2k: %d", ret);
 	    goto out;
 	}
 	
@@ -400,7 +405,8 @@ _kdc_pk_rd_padata(krb5_context context,
 					   &have_data);
 	free_PA_PK_AS_REQ_Win2k(&r);
 	if (ret) {
-	    krb5_set_error_string(context, "Can't decode PK-AS-REQ: %d", ret);
+	    krb5_set_error_message(context, ret, 
+				   "Can't decode PK-AS-REQ: %d", ret);
 	    goto out;
 	}
 
@@ -414,7 +420,7 @@ _kdc_pk_rd_padata(krb5_context context,
 				  &r,
 				  NULL);
 	if (ret) {
-	    krb5_set_error_string(context, "Can't decode PK-AS-REQ: %d", ret);
+	    krb5_set_error_message(context, ret, "Can't decode PK-AS-REQ: %d", ret);
 	    goto out;
 	}
 	
@@ -428,7 +434,7 @@ _kdc_pk_rd_padata(krb5_context context,
 				   0, NULL,
 				   &client_params->client_anchors);
 	    if (ret) {
-		krb5_set_error_string(context, "Can't allocate client anchors: %d", ret);
+		krb5_set_error_message(context, ret, "Can't allocate client anchors: %d", ret);
 		goto out;
 
 	    }
@@ -443,7 +449,7 @@ _kdc_pk_rd_padata(krb5_context context,
 
 		ret = hx509_query_alloc(kdc_identity->hx509ctx, &q);
 		if (ret) {
-		    krb5_set_error_string(context, 
+		    krb5_set_error_message(context, ret,
 					  "Failed to allocate hx509_query");
 		    goto out;
 		}
@@ -480,7 +486,8 @@ _kdc_pk_rd_padata(krb5_context context,
 					   &have_data);
 	free_PA_PK_AS_REQ(&r);
 	if (ret) {
-	    krb5_set_error_string(context, "Can't unwrap ContentInfo: %d", ret);
+	    krb5_set_error_message(context, ret, 
+				   "Can't unwrap ContentInfo: %d", ret);
 	    goto out;
 	}
 
@@ -492,16 +499,16 @@ _kdc_pk_rd_padata(krb5_context context,
 
     ret = der_heim_oid_cmp(&contentInfoOid, oid_id_pkcs7_signedData());
     if (ret != 0) {
-	krb5_set_error_string(context, "PK-AS-REQ-Win2k invalid content "
-			      "type oid");
 	ret = KRB5KRB_ERR_GENERIC;
+	krb5_set_error_message(context, ret, 
+			       "PK-AS-REQ-Win2k invalid content type oid");
 	goto out;
     }
 	
     if (!have_data) {
-	krb5_set_error_string(context,
-			      "PK-AS-REQ-Win2k no signed auth pack");
 	ret = KRB5KRB_ERR_GENERIC;
+	krb5_set_error_message(context, ret,
+			      "PK-AS-REQ-Win2k no signed auth pack");
 	goto out;
     }
 
@@ -536,8 +543,8 @@ _kdc_pk_rd_padata(krb5_context context,
     if (der_heim_oid_cmp(&eContentType, oid_id_pkcs7_data()) != 0 &&
 	der_heim_oid_cmp(&eContentType, oid_id_pkauthdata()) != 0)
     {
-	krb5_set_error_string(context, "got wrong oid for pkauthdata");
 	ret = KRB5_BADMSGTYPE;
+	krb5_set_error_message(context, ret, "got wrong oid for pkauthdata");
 	goto out;
     }
 
@@ -549,7 +556,7 @@ _kdc_pk_rd_padata(krb5_context context,
 				    &ap,
 				    NULL);
 	if (ret) {
-	    krb5_set_error_string(context, "can't decode AuthPack: %d", ret);
+	    krb5_set_error_message(context, ret, "can't decode AuthPack: %d", ret);
 	    goto out;
 	}
   
@@ -565,8 +572,8 @@ _kdc_pk_rd_padata(krb5_context context,
 	client_params->nonce = ap.pkAuthenticator.nonce;
 
 	if (ap.clientPublicValue) {
-	    krb5_set_error_string(context, "DH not supported for windows");
 	    ret = KRB5KRB_ERR_GENERIC;
+	    krb5_set_error_message(context, ret, "DH not supported for windows");
 	    goto out;
 	}
 	free_AuthPack_Win2k(&ap);
@@ -579,7 +586,7 @@ _kdc_pk_rd_padata(krb5_context context,
 			      &ap,
 			      NULL);
 	if (ret) {
-	    krb5_set_error_string(context, "can't decode AuthPack: %d", ret);
+	    krb5_set_error_message(context, ret, "can't decode AuthPack: %d", ret);
 	    free_AuthPack(&ap);
 	    goto out;
 	}
@@ -754,8 +761,8 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	free_ReplyKeyPack(&kp);
     }
     if (ret) {
-	krb5_set_error_string(context, "ASN.1 encoding of ReplyKeyPack "
-			      "failed (%d)", ret);
+	krb5_set_error_message(context, ret, "ASN.1 encoding of ReplyKeyPack "
+			       "failed (%d)", ret);
 	goto out;
     }
     if (buf.length != size)
@@ -859,9 +866,8 @@ pk_mk_pa_reply_dh(krb5_context context,
 
     ASN1_MALLOC_ENCODE(DHPublicKey, buf.data, buf.length, &i, &size, ret);
     if (ret) {
-	krb5_set_error_string(context, "ASN.1 encoding of "
-			      "DHPublicKey failed (%d)", ret);
-	krb5_clear_error_string(context);
+	krb5_set_error_message(context, ret, "ASN.1 encoding of "
+			       "DHPublicKey failed (%d)", ret);
 	return ret;
     }
     if (buf.length != size)
@@ -875,8 +881,8 @@ pk_mk_pa_reply_dh(krb5_context context,
     ASN1_MALLOC_ENCODE(KDCDHKeyInfo, buf.data, buf.length, &dh_info, &size, 
 		       ret);
     if (ret) {
-	krb5_set_error_string(context, "ASN.1 encoding of "
-			      "KdcDHKeyInfo failed (%d)", ret);
+	krb5_set_error_message(context, ret, "ASN.1 encoding of "
+			       "KdcDHKeyInfo failed (%d)", ret);
 	goto out;
     }
     if (buf.length != size)
@@ -975,8 +981,8 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 		break;
 	if (req->req_body.etype.len <= i) {
 	    ret = KRB5KRB_ERR_GENERIC;
-	    krb5_set_error_string(context,
-				  "No valid enctype available from client");
+	    krb5_set_error_message(context, ret,
+				   "No valid enctype available from client");
 	    goto out;
 	}	
 	enctype = req->req_body.etype.val[i];
@@ -1020,8 +1026,8 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 			       ret);
 	    free_ContentInfo(&info);
 	    if (ret) {
-		krb5_set_error_string(context, "encoding of Key ContentInfo "
-				      "failed %d", ret);
+		krb5_set_error_message(context, ret, "encoding of Key ContentInfo "
+				       "failed %d", ret);
 		free_PA_PK_AS_REP(&rep);
 		goto out;
 	    }
@@ -1053,8 +1059,8 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 			       ret);
 	    free_ContentInfo(&info);
 	    if (ret) {
-		krb5_set_error_string(context, "encoding of Key ContentInfo "
-				      "failed %d", ret);
+		krb5_set_error_message(context, ret, "encoding of Key ContentInfo "
+				       "failed %d", ret);
 		free_PA_PK_AS_REP(&rep);
 		goto out;
 	    }
@@ -1070,8 +1076,8 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REP, buf, len, &rep, &size, ret);
 	free_PA_PK_AS_REP(&rep);
 	if (ret) {
-	    krb5_set_error_string(context, "encode PA-PK-AS-REP failed %d",
-				  ret);
+	    krb5_set_error_message(context, ret, "encode PA-PK-AS-REP failed %d",
+				   ret);
 	    goto out;
 	}
 	if (len != size)
@@ -1084,8 +1090,8 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	ContentInfo info;
 
 	if (client_params->dh) {
-	    krb5_set_error_string(context, "Windows PK-INIT doesn't support DH");
 	    ret = KRB5KRB_ERR_GENERIC;
+	    krb5_set_error_message(context, ret, "Windows PK-INIT doesn't support DH");
 	    goto out;
 	}
 
@@ -1116,7 +1122,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 			   ret);
 	free_ContentInfo(&info);
 	if (ret) {
-	    krb5_set_error_string(context, "encoding of Key ContentInfo "
+	    krb5_set_error_message(context, ret, "encoding of Key ContentInfo "
 				  "failed %d", ret);
 	    free_PA_PK_AS_REP_Win2k(&rep);
 	    goto out;
@@ -1127,7 +1133,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REP_Win2k, buf, len, &rep, &size, ret);
 	free_PA_PK_AS_REP_Win2k(&rep);
 	if (ret) {
-	    krb5_set_error_string(context, 
+	    krb5_set_error_message(context, ret,
 				  "encode PA-PK-AS-REP-Win2k failed %d", ret);
 	    goto out;
 	}
@@ -1140,7 +1146,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
     ret = krb5_padata_add(context, md, pa_type, buf, len);
     if (ret) {
-	krb5_set_error_string(context, "failed adding PA-PK-AS-REP %d", ret);
+	krb5_set_error_message(context, ret, "failed adding PA-PK-AS-REP %d", ret);
 	free(buf);
 	goto out;
     }
@@ -1214,8 +1220,8 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 				  KRB5_PADATA_PA_PK_OCSP_RESPONSE,
 				  ocsp.data.data, ocsp.data.length);
 	    if (ret) {
-		krb5_set_error_string(context, 
-				      "Failed adding OCSP response %d", ret);
+		krb5_set_error_message(context, ret,
+				       "Failed adding OCSP response %d", ret);
 		goto out;
 	    }
 	}
@@ -1438,7 +1444,8 @@ _kdc_pk_check_client(krb5_context context,
 	return 0;
     }
 
-    krb5_set_error_string(context,
+    ret = KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
+    krb5_set_error_message(context, ret,
 			  "PKINIT no matching principals for %s",
 			  *subject_name);
 
@@ -1449,7 +1456,7 @@ _kdc_pk_check_client(krb5_context context,
     free(*subject_name);
     *subject_name = NULL;
 
-    return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
+    return ret;
 }
 
 static krb5_error_code

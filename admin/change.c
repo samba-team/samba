@@ -61,7 +61,7 @@ change_entry (krb5_keytab keytab,
     conf.realm = strdup(realm);
     if (conf.realm == NULL) {
 	free (client_name);
-	krb5_set_error_string(context, "malloc failed");
+	krb5_set_error_message(context, ENOMEM, "malloc failed");
 	return ENOMEM;
     }
     conf.mask |= KADM5_CONFIG_REALM;
@@ -71,7 +71,7 @@ change_entry (krb5_keytab keytab,
 	if (conf.admin_server == NULL) {
 	    free(client_name);
 	    free(conf.realm);
-	    krb5_set_error_string(context, "malloc failed");
+	    krb5_set_error_message(context, ENOMEM, "malloc failed");
 	    return ENOMEM;
 	}	    
 	conf.mask |= KADM5_CONFIG_ADMIN_SERVER;

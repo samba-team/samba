@@ -63,7 +63,7 @@ get_dbinfo(krb5_context context,
 
     di = calloc(1, sizeof(*di));
     if (di == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     di->label = strdup(label);

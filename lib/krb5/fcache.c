@@ -785,7 +785,7 @@ fcc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 
     iter = calloc(1, sizeof(*iter));
     if (iter == NULL) {
-	krb5_set_error_message(context, ENOMEM, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }    
     iter->first = 1;

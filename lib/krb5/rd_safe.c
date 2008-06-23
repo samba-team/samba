@@ -99,7 +99,8 @@ krb5_rd_safe(krb5_context context,
     if ((auth_context->flags & 
 	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE)) &&
 	outdata == NULL) {
-	krb5_set_error_string(context, "rd_safe: need outdata to return data");
+	krb5_set_error_message(context, KRB5_RC_REQUIRED,
+			      "rd_safe: need outdata to return data");
 	return KRB5_RC_REQUIRED; /* XXX better error, MIT returns this */
     }
 

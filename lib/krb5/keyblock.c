@@ -116,15 +116,16 @@ krb5_keyblock_init(krb5_context context,
 	return ret;
 
     if (len != size) {
-	krb5_set_error_string(context, "Encryption key %d is %lu bytes "
-			      "long, %lu was passed in",
-			      type, (unsigned long)len, (unsigned long)size);
+	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
+			       "Encryption key %d is %lu bytes "
+			       "long, %lu was passed in",
+			       type, (unsigned long)len, (unsigned long)size);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
     ret = krb5_data_copy(&key->keyvalue, data, len);
     if(ret) {
-	krb5_set_error_string(context, "malloc failed: %lu",
-			      (unsigned long)len);
+	krb5_set_error_message(context, ret, "malloc failed: %lu",
+			       (unsigned long)len);
 	return ret;
     }
     key->keytype = type;

@@ -45,7 +45,7 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 
     c = calloc(1, sizeof(*c));
     if (c == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 

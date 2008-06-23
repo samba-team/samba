@@ -49,7 +49,7 @@ open_kadmin_connection(char *principal,
     if(realm) {
 	conf.realm = strdup(realm);
 	if (conf.realm == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, 0, "malloc: out of memory");
 	    return NULL;
 	}
 	conf.mask |= KADM5_CONFIG_REALM;

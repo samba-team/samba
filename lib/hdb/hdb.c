@@ -85,7 +85,8 @@ hdb_next_enctype2key(krb5_context context,
 	    return 0;
 	}
     }
-    krb5_set_error_string(context, "No next enctype %d for hdb-entry", 
+    krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
+			   "No next enctype %d for hdb-entry", 
 			  (int)enctype);
     return KRB5_PROG_ETYPE_NOSUPP; /* XXX */
 }
@@ -378,7 +379,7 @@ hdb_list_builtin(krb5_context context, char **list)
     len += 1;
     buf = malloc(len);
     if (buf == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     buf[0] = '\0';

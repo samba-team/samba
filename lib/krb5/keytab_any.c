@@ -87,7 +87,7 @@ any_resolve(krb5_context context, const char *name, krb5_keytab id)
 	prev = a;
     }
     if (a0 == NULL) {
-	krb5_set_error_string(context, "empty ANY: keytab");
+	krb5_set_error_message(context, ENOENT, "empty ANY: keytab");
 	return ENOENT;
     }
     id->data = a0;
@@ -206,8 +206,8 @@ any_add_entry(krb5_context context,
     while(a != NULL) {
 	ret = krb5_kt_add_entry(context, a->kt, entry);
 	if(ret != 0 && ret != KRB5_KT_NOWRITE) {
-	    krb5_set_error_string(context, "failed to add entry to %s", 
-				  a->name);
+	    krb5_set_error_message(context, ret, "failed to add entry to %s", 
+				   a->name);
 	    return ret;
 	}
 	a = a->next;
@@ -229,8 +229,9 @@ any_remove_entry(krb5_context context,
 	    found++;
 	else {
 	    if(ret != KRB5_KT_NOWRITE && ret != KRB5_KT_NOTFOUND) {
-		krb5_set_error_string(context, "failed to remove entry from %s", 
-				      a->name);
+		krb5_set_error_message(context, ret, 
+				       "Failed to remove keytab entry from %s", 
+				       a->name);
 		return ret;
 	    }
 	}

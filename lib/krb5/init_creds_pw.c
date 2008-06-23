@@ -461,8 +461,8 @@ change_password (krb5_context context,
 	strlcpy (newpw, buf1, newpw_sz);
 	ret = 0;
     } else {
-	krb5_set_error_string (context, "failed changing password");
 	ret = ENOTTY;
+	krb5_set_error_message(context, ret, "failed changing password");
     }
 
 out:
@@ -1033,7 +1033,7 @@ pa_data_to_md_pkinit(krb5_context context,
 			     ctx->pk_nonce,
 			     md);
 #else
-    krb5_set_error_string(context, "no support for PKINIT compiled in");
+    krb5_set_error_message(context, EINVAL, "no support for PKINIT compiled in");
     return EINVAL;
 #endif
 }
@@ -1188,15 +1188,15 @@ process_pa_data_to_key(krb5_context context,
 				   pa,
 				   key);
 #else
-	krb5_set_error_string(context, "no support for PKINIT compiled in");
 	ret = EINVAL;
+	krb5_set_error_message(context, ret, "no support for PKINIT compiled in");
 #endif
     } else if (ctx->password)
 	ret = pa_data_to_key_plain(context, creds->client, ctx, 
 				   paid.salt, paid.s2kparams, etype, key);
     else {
-	krb5_set_error_string(context, "No usable pa data type");
 	ret = EINVAL;
+	krb5_set_error_message(context, ret, "No usable pa data type");
     }
 
     free_paid(context, &paid);
@@ -1322,8 +1322,8 @@ init_cred_loop(krb5_context context,
 					     &md, 
 					     NULL);
 		    if (ret)
-			krb5_set_error_string(context,
-					      "failed to decode METHOD DATA");
+			krb5_set_error_message(context, ret,
+					       "failed to decode METHOD DATA");
 		} else {
 		    /* XXX guess what the server want here add add md */
 		}

@@ -108,7 +108,7 @@ check_server_referral(krb5_context context,
 	return ret;
     if (len != pa->padata_value.length) {
 	free_EncryptedData(&ed);
-	krb5_set_error_string(context, "Referral EncryptedData wrong");
+	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED, "Referral EncryptedData wrong");
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
     
@@ -135,7 +135,8 @@ check_server_referral(krb5_context context,
     
     if (strcmp(requested->realm, returned->realm) != 0) {
 	free_PA_ServerReferralData(&ref);
-	krb5_set_error_string(context, "server ref realm mismatch");
+	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
+			       "server ref realm mismatch");
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
 
@@ -148,12 +149,14 @@ check_server_referral(krb5_context context,
 	    || strcmp(*ref.referred_realm, realm) != 0)
 	{
 	    free_PA_ServerReferralData(&ref);
-	    krb5_set_error_string(context, "tgt returned with wrong ref");
+	    krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
+				   "tgt returned with wrong ref");
 	    return KRB5KRB_AP_ERR_MODIFIED;
 	}
     } else if (krb5_principal_compare(context, returned, requested) == 0) {
 	free_PA_ServerReferralData(&ref);
-	krb5_set_error_string(context, "req princ no same as returned");
+	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
+			      "req princ no same as returned");
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
 
@@ -163,12 +166,14 @@ check_server_referral(krb5_context context,
 						    ref.requested_principal_name);
 	if (!cmp) {
 	    free_PA_ServerReferralData(&ref);
-	    krb5_set_error_string(context, "compare requested failed");
+	    krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
+				   "compare requested failed");
 	    return KRB5KRB_AP_ERR_MODIFIED;
 	}
     } else if (flags & EXTRACT_TICKET_AS_REQ) {
 	free_PA_ServerReferralData(&ref);
-	krb5_set_error_string(context, "Requested principal missing on AS-REQ");
+	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
+			       "Requested principal missing on AS-REQ");
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
 
@@ -177,7 +182,8 @@ check_server_referral(krb5_context context,
     return ret;
 noreferral:
     if (krb5_principal_compare(context, requested, returned) == FALSE) {
-	krb5_set_error_string(context, "Not same server principal returned "
+	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
+			       "Not same server principal returned "
 			      "as requested");
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
@@ -218,8 +224,8 @@ check_client_referral(krb5_context context,
 					pa->padata_value.length,
 					&canon, &len);
     if (ret) {
-	krb5_set_error_string(context, "Failed to decode "
-			      "PA_ClientCanonicalized");
+	krb5_set_error_message(context, ret, "Failed to decode "
+			       "PA_ClientCanonicalized");
 	return ret;
     }
     
@@ -245,7 +251,7 @@ check_client_referral(krb5_context context,
     krb5_crypto_destroy(context, crypto);
     free(data.data);
     if (ret) {
-	krb5_set_error_string(context, "Failed to verify "
+	krb5_set_error_message(context, ret, "Failed to verify "
 			      "client canonicalized data");
 	free_PA_ClientCanonicalized(&canon);
 	return ret;
@@ -256,7 +262,8 @@ check_client_referral(krb5_context context,
 					       &canon.names.requested_name))
     {
 	free_PA_ClientCanonicalized(&canon);
-	krb5_set_error_string(context, "Requested name doesn't match"
+	krb5_set_error_message(context, KRB5_PRINC_NOMATCH,
+			       "Requested name doesn't match"
 			      " in client referral");
 	return KRB5_PRINC_NOMATCH;
     }
@@ -265,7 +272,8 @@ check_client_referral(krb5_context context,
 					       &canon.names.mapped_name))
     {
 	free_PA_ClientCanonicalized(&canon);
-	krb5_set_error_string(context, "Mapped name doesn't match"
+	krb5_set_error_message(context, KRB5_PRINC_NOMATCH,
+			       "Mapped name doesn't match"
 			      " in client referral");
 	return KRB5_PRINC_NOMATCH;
     }
@@ -274,7 +282,8 @@ check_client_referral(krb5_context context,
 
 noreferral:
     if (krb5_principal_compare(context, requested, mapped) == FALSE) {
-	krb5_set_error_string(context, "Not same client principal returned "
+	krb5_set_error_message(context, KRB5KRB_AP_ERR_MODIFIED,
+			       "Not same client principal returned "
 			      "as requested");
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
@@ -457,7 +466,7 @@ _krb5_extract_ticket(krb5_context context,
     if (creds->times.starttime == 0
 	&& abs(tmp_time - sec_now) > context->max_skew) {
 	ret = KRB5KRB_AP_ERR_SKEW;
-	krb5_set_error_string (context,
+	krb5_set_error_message (context, ret,
 			       "time skew (%d) larger than max (%d)",
 			       abs(tmp_time - sec_now),
 			       (int)context->max_skew);
@@ -798,9 +807,9 @@ init_as_req (krb5_context context,
 		   key_proc, keyseed, a->req_body.etype.val,
 		   a->req_body.etype.len, &salt);
     } else {
-	krb5_set_error_string (context, "pre-auth type %d not supported",
-			       *ptypes);
 	ret = KRB5_PREAUTH_BAD_TYPE;
+	krb5_set_error_message (context, ret, "pre-auth type %d not supported",
+			       *ptypes);
 	goto fail;
     }
     return 0;

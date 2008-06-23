@@ -80,8 +80,8 @@ find_KRB5SignedPath(krb5_context context,
 				   &child,
 				   NULL);
     if (ret) {
-	krb5_set_error_string(context, "Failed to decode "
-			      "IF_RELEVANT with %d", ret);
+	krb5_set_error_message(context, ret, "Failed to decode "
+			       "IF_RELEVANT with %d", ret);
 	return ret;
     }
 
@@ -305,8 +305,8 @@ check_PAC(krb5_context context,
 				       &child,
 				       NULL);
 	if (ret) {
-	    krb5_set_error_string(context, "Failed to decode "
-				  "IF_RELEVANT with %d", ret);
+	    krb5_set_error_message(context, ret, "Failed to decode "
+				   "IF_RELEVANT with %d", ret);
 	    return ret;
 	}
 	for (j = 0; j < child.len; j++) {
@@ -1338,7 +1338,7 @@ build_server_referral(krb5_context context,
     return 0;
 eout:
     free_PA_ServerReferralData(&ref);
-    krb5_set_error_string(context, "out of memory");
+    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
     return ENOMEM;
 }
 

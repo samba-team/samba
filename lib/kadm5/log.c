@@ -99,13 +99,15 @@ kadm5_log_init (kadm5_server_context *context)
 	return 0;
     fd = open (log_context->log_file, O_RDWR | O_CREAT, 0600);
     if (fd < 0) {
-	krb5_set_error_string(context->context, "kadm5_log_init: open %s",
+	ret = errno;
+	krb5_set_error_message(context->context, ret, "kadm5_log_init: open %s",
 			      log_context->log_file);
-	return errno;
+	return ret;
     }
     if (flock (fd, LOCK_EX) < 0) {
-	krb5_set_error_string(context->context, "kadm5_log_init: flock %s",
-			      log_context->log_file);
+	ret = errno;
+	krb5_set_error_message(context->context, ret, "kadm5_log_init: flock %s",
+			       log_context->log_file);
 	close (fd);
 	return errno;
     }
@@ -279,15 +281,15 @@ kadm5_log_replay_create (kadm5_server_context *context,
 
     ret = krb5_data_alloc (&data, len);
     if (ret) {
-	krb5_set_error_string(context->context, "out of memory");
+	krb5_set_error_message(context->context, ret, "out of memory");
 	return ret;
     }
     krb5_storage_read (sp, data.data, len);
     ret = hdb_value2entry (context->context, &data, &ent.entry);
     krb5_data_free(&data);
     if (ret) {
-	krb5_set_error_string(context->context, 
-			      "Unmarshaling hdb entry failed");
+	krb5_set_error_message(context->context, ret,
+			       "Unmarshaling hdb entry failed");
 	return ret;
     }
     ret = context->db->hdb_store(context->context, context->db, 0, &ent);
@@ -358,8 +360,8 @@ kadm5_log_replay_delete (kadm5_server_context *context,
 
     ret = krb5_ret_principal (sp, &principal);
     if (ret) {
-	krb5_set_error_string(context->context,  "Failed to read deleted "
-			      "principal from log version: %ld",  (long)ver);
+	krb5_set_error_message(context->context,  ret, "Failed to read deleted "
+			       "principal from log version: %ld",  (long)ver);
 	return ret;
     }
 
@@ -456,8 +458,8 @@ kadm5_log_replay_rename (kadm5_server_context *context,
     off = krb5_storage_seek(sp, 0, SEEK_CUR);
     ret = krb5_ret_principal (sp, &source);
     if (ret) {
-	krb5_set_error_string(context->context, "Failed to read renamed "
-			      "principal in log, version: %ld", (long)ver);
+	krb5_set_error_message(context->context, ret, "Failed to read renamed "
+			       "principal in log, version: %ld", (long)ver);
 	return ret;
     }
     princ_len = krb5_storage_seek(sp, 0, SEEK_CUR) - off;
@@ -561,7 +563,7 @@ kadm5_log_replay_modify (kadm5_server_context *context,
     len -= 4;
     ret = krb5_data_alloc (&value, len);
     if (ret) {
-	krb5_set_error_string(context->context, "out of memory");
+	krb5_set_error_message(context->context, ret, "out of memory");
 	return ret;
     }
     krb5_storage_read (sp, value.data, len);
@@ -583,8 +585,8 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	    if (ent.entry.valid_end == NULL) {
 		ent.entry.valid_end = malloc(sizeof(*ent.entry.valid_end));
 		if (ent.entry.valid_end == NULL) {
-		    krb5_set_error_string(context->context, "out of memory");
 		    ret = ENOMEM;
+		    krb5_set_error_message(context->context, ret, "out of memory");
 		    goto out;
 		}
 	    }
@@ -598,8 +600,8 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	    if (ent.entry.pw_end == NULL) {
 		ent.entry.pw_end = malloc(sizeof(*ent.entry.pw_end));
 		if (ent.entry.pw_end == NULL) {
-		    krb5_set_error_string(context->context, "out of memory");
 		    ret = ENOMEM;
+		    krb5_set_error_message(context->context, ret, "out of memory");
 		    goto out;
 		}
 	    }
@@ -619,8 +621,8 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	    if (ent.entry.max_life == NULL) {
 		ent.entry.max_life = malloc (sizeof(*ent.entry.max_life));
 		if (ent.entry.max_life == NULL) {
-		    krb5_set_error_string(context->context, "out of memory");
 		    ret = ENOMEM;
+		    krb5_set_error_message(context->context, ret, "out of memory");
 		    goto out;
 		}
 	    }
@@ -631,15 +633,15 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	if (ent.entry.modified_by == NULL) {
 	    ent.entry.modified_by = malloc(sizeof(*ent.entry.modified_by));
 	    if (ent.entry.modified_by == NULL) {
-		krb5_set_error_string(context->context, "out of memory");
 		ret = ENOMEM;
+		krb5_set_error_message(context->context, ret, "out of memory");
 		goto out;
 	    }
 	} else
 	    free_Event(ent.entry.modified_by);
 	ret = copy_Event(log_ent.entry.modified_by, ent.entry.modified_by);
 	if (ret) {
-	    krb5_set_error_string(context->context, "out of memory");
+	    krb5_set_error_message(context->context, ret, "out of memory");
 	    goto out;
 	}
     }
@@ -665,8 +667,8 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	    if (ent.entry.max_renew == NULL) {
 		ent.entry.max_renew = malloc (sizeof(*ent.entry.max_renew));
 		if (ent.entry.max_renew == NULL) {
-		    krb5_set_error_string(context->context, "out of memory");
 		    ret = ENOMEM;
+		    krb5_set_error_message(context->context, ret, "out of memory");
 		    goto out;
 		}
 	    }
@@ -695,14 +697,14 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	ent.entry.keys.len = num;
 	ent.entry.keys.val = malloc(len * sizeof(*ent.entry.keys.val));
 	if (ent.entry.keys.val == NULL) {
-	    krb5_set_error_string(context->context, "out of memory");
+	    krb5_set_error_message(context->context, ENOMEM, "out of memory");
 	    return ENOMEM;
 	}
 	for (i = 0; i < ent.entry.keys.len; ++i) {
 	    ret = copy_Key(&log_ent.entry.keys.val[i],
 			   &ent.entry.keys.val[i]);
 	    if (ret) {
-		krb5_set_error_string(context->context, "out of memory");
+		krb5_set_error_message(context->context, ret, "out of memory");
 		goto out;
 	    }
 	}
@@ -717,7 +719,7 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	ret = copy_HDB_extensions(log_ent.entry.extensions,
 				  ent.entry.extensions);
 	if (ret) {
-	    krb5_set_error_string(context->context, "out of memory");
+	    krb5_set_error_message(context->context, ret, "out of memory");
 	    free(ent.entry.extensions);
 	    ent.entry.extensions = es;
 	    goto out;
@@ -868,8 +870,9 @@ kadm5_log_previous (krb5_context context,
 	goto end_of_storage;
     if (tmp != *ver) {
 	krb5_storage_seek(sp, oldoff, SEEK_SET);
-	krb5_set_error_string(context, "kadm5_log_previous: log entry "
-			      "have consistency failure, version number wrong");
+	krb5_set_error_message(context, KADM5_BAD_DB,
+			       "kadm5_log_previous: log entry "
+			       "have consistency failure, version number wrong");
 	return KADM5_BAD_DB;
     }
     ret = krb5_ret_int32 (sp, &tmp);
@@ -883,16 +886,17 @@ kadm5_log_previous (krb5_context context,
 	goto end_of_storage;
     if (tmp != *len) {
 	krb5_storage_seek(sp, oldoff, SEEK_SET);
-	krb5_set_error_string(context, "kadm5_log_previous: log entry "
-			      "have consistency failure, length wrong");
+	krb5_set_error_message(context, KADM5_BAD_DB,
+			       "kadm5_log_previous: log entry "
+			       "have consistency failure, length wrong");
 	return KADM5_BAD_DB;
     }
     return 0;
 
  end_of_storage:
     krb5_storage_seek(sp, oldoff, SEEK_SET);
-    krb5_set_error_string(context, "kadm5_log_previous: end of storage "
-			  "reached before end");
+    krb5_set_error_message(context, ret, "kadm5_log_previous: end of storage "
+			   "reached before end");
     return ret;
 }
 
@@ -919,8 +923,8 @@ kadm5_log_replay (kadm5_server_context *context,
     case kadm_nop :
 	return kadm5_log_replay_nop (context, ver, len, sp);
     default :
-	krb5_set_error_string(context->context, 
-			      "Unsupported replay op %d", (int)op);
+	krb5_set_error_message(context->context, KADM5_FAILURE,
+			       "Unsupported replay op %d", (int)op);
 	return KADM5_FAILURE;
     }
 }

@@ -61,7 +61,7 @@ _gsskrb5i_get_initiator_subkey(const gsskrb5_ctx ctx,
 				   ctx->auth_context, 
 				   key);
     if (ret == 0 && *key == NULL) {
-	krb5_set_error_string(context, "No initiator subkey available");
+	krb5_set_error_message(context, 0, "No initiator subkey available");
 	return GSS_KRB5_S_KG_NO_SUBKEY;
     }
     return ret;
@@ -85,7 +85,7 @@ _gsskrb5i_get_acceptor_subkey(const gsskrb5_ctx ctx,
 				     key);
     }
     if (ret == 0 && *key == NULL) {
-	krb5_set_error_string(context, "No acceptor subkey available");
+	krb5_set_error_message(context, 0, "No acceptor subkey available");
 	return GSS_KRB5_S_KG_NO_SUBKEY;
     }
     return ret;
@@ -106,7 +106,7 @@ _gsskrb5i_get_token_key(const gsskrb5_ctx ctx,
 	    _gsskrb5i_get_initiator_subkey(ctx, context, key);
     }
     if (*key == NULL) {
-	krb5_set_error_string(context, "No token key available");
+	krb5_set_error_message(context, 0, "No token key available");
 	return GSS_KRB5_S_KG_NO_SUBKEY;
     }
     return 0;

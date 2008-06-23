@@ -207,7 +207,6 @@ krb5_get_forwarded_creds (krb5_context	    context,
     krb5_kdc_flags kdc_flags;
     krb5_crypto crypto;
     struct addrinfo *ai;
-    int save_errno;
     krb5_creds *ticket;
 
     paddrs = NULL;
@@ -238,10 +237,10 @@ krb5_get_forwarded_creds (krb5_context	    context,
 
 	ret = getaddrinfo (hostname, NULL, NULL, &ai);
 	if (ret) {
-	    save_errno = errno;
-	    krb5_set_error_string(context, "resolving %s: %s",
+	    krb5_error_code ret2 = krb5_eai_to_heim_errno(ret, errno);
+	    krb5_set_error_message(context, ret2, "resolving %s: %s",
 				  hostname, gai_strerror(ret));
-	    return krb5_eai_to_heim_errno(ret, save_errno);
+	    return ret2;
 	}
 	
 	ret = add_addrs (context, &addrs, ai);

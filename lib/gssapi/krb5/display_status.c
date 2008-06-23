@@ -135,7 +135,7 @@ _gsskrb5_set_status (const char *fmt, ...)
     vasprintf(&str, fmt, args);
     va_end(args);
     if (str) {
-	krb5_set_error_string(context, str);
+	krb5_set_error_message(context, 0, str);
 	free(str);
     }
 }

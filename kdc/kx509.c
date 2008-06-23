@@ -67,8 +67,9 @@ verify_req_hash(krb5_context context,
     HMAC_CTX ctx;
     
     if (req->pk_hash.length != sizeof(digest)) {
-	krb5_set_error_string(context, "pk-hash have wrong length: %lu",
-			      (unsigned long)req->pk_hash.length);
+	krb5_set_error_message(context, KRB5KDC_ERR_PREAUTH_FAILED,
+			       "pk-hash have wrong length: %lu",
+			       (unsigned long)req->pk_hash.length);
 	return KRB5KDC_ERR_PREAUTH_FAILED;
     }
 
@@ -84,7 +85,8 @@ verify_req_hash(krb5_context context,
     HMAC_CTX_cleanup(&ctx);
 
     if (memcmp(req->pk_hash.data, digest, sizeof(digest)) != 0) {
-	krb5_set_error_string(context, "pk-hash is not correct");
+	krb5_set_error_message(context, KRB5KDC_ERR_PREAUTH_FAILED,
+			       "pk-hash is not correct");
 	return KRB5KDC_ERR_PREAUTH_FAILED;
     }
     return 0;
@@ -106,7 +108,7 @@ calculate_reply_hash(krb5_context context,
     rep->hash->data = malloc(rep->hash->length);
     if (rep->hash->data == NULL) {
 	HMAC_CTX_cleanup(&ctx);
-	krb5_set_error_string(context, "out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
@@ -276,7 +278,7 @@ out:
 	hx509_cert_free(signer);
     if (hxctx)
 	hx509_context_free(&hxctx);
-    krb5_set_error_string(context, "cert creation failed");
+    krb5_set_error_message(context, ret, "cert creation failed");
     return ret;
 }
 
@@ -354,16 +356,18 @@ _kdc_do_kx509(krb5_context context,
 	krb5_free_principal(context, principal);
 	if (ret != TRUE) {
 	    ret = KRB5KDC_ERR_SERVER_NOMATCH;
-	    krb5_set_error_string(context, 
-				  "User %s used wrong Kx509 service principal",
-				  cname);
+	    krb5_set_error_message(context, ret,
+				   "User %s used wrong Kx509 service principal",
+				   cname);
 	    goto out;
 	}
     }
     
     ret = krb5_auth_con_getkey(context, ac, &key);
-    if (ret || key == NULL) {
-	krb5_set_error_string(context, "Kx509 can't get session key");
+    if (ret == 0 && key == NULL)
+	ret = KRB5KDC_ERR_NULL_KEY;
+    if (ret) {
+	krb5_set_error_message(context, ret, "Kx509 can't get session key");
 	goto out;
     }
     
@@ -414,7 +418,7 @@ _kdc_do_kx509(krb5_context context,
 	ASN1_MALLOC_ENCODE(Kx509Response, data.data, data.length, &rep,
 			   &size, ret);
 	if (ret) {
-	    krb5_set_error_string(context, "Failed to encode kx509 reply");
+	    krb5_set_error_message(context, ret, "Failed to encode kx509 reply");
 	    goto out;
 	}
 	if (size != data.length)
