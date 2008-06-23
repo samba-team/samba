@@ -5134,6 +5134,11 @@ WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 					  struct wkssvc_PasswordBuffer *pwd_buf,
 					  DATA_BLOB *session_key,
 					  char **pwd);
+DATA_BLOB decrypt_drsuapi_blob(TALLOC_CTX *mem_ctx,
+			       const DATA_BLOB *session_key,
+			       bool rcrypt,
+			       uint32_t rid,
+			       const DATA_BLOB *buffer);
 
 /* The following definitions come from libsmb/smberr.c  */
 
