@@ -47,7 +47,7 @@ krb5_rc_resolve(krb5_context context,
 {
     id->name = strdup(name);
     if(id->name == NULL) {
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_RC_MALLOC, "malloc: out of memory");
 	return KRB5_RC_MALLOC;
     }
     return 0;
@@ -66,7 +66,7 @@ krb5_rc_resolve_type(krb5_context context,
     }
     *id = calloc(1, sizeof(**id));
     if(*id == NULL) {
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, KRB5_RC_MALLOC, "malloc: out of memory");
 	return KRB5_RC_MALLOC;
     }
     return 0;
@@ -288,7 +288,7 @@ krb5_get_server_rcache(krb5_context context,
     char *name;
 
     if(tmp == NULL) {
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     strvisx(tmp, piece->data, piece->length, VIS_WHITE | VIS_OCTAL);
@@ -299,7 +299,7 @@ krb5_get_server_rcache(krb5_context context,
 #endif
     free(tmp);
     if(name == NULL) {
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
