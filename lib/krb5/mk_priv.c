@@ -138,7 +138,7 @@ krb5_mk_priv(krb5_context context,
 
     ret = krb5_data_copy(outbuf, buf + buf_size - len, len);
     if (ret) {
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	free(buf);
 	return ENOMEM;
     }
