@@ -96,7 +96,7 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
     *res = malloc(num_srv * sizeof(**res));
     if(*res == NULL) {
 	dns_free_data(r);
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
