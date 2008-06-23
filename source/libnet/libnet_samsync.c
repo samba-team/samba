@@ -163,11 +163,11 @@ static NTSTATUS samsync_fix_delta(TALLOC_CTX *mem_ctx,
  * callback need only do the printing or application logic
  */
 
-NTSTATUS samsync_fix_delta_array(TALLOC_CTX *mem_ctx,
-				 DATA_BLOB *session_key,
-				 bool rid_crypt,
-				 enum netr_SamDatabaseID database_id,
-				 struct netr_DELTA_ENUM_ARRAY *r)
+static NTSTATUS samsync_fix_delta_array(TALLOC_CTX *mem_ctx,
+					DATA_BLOB *session_key,
+					bool rid_crypt,
+					enum netr_SamDatabaseID database_id,
+					struct netr_DELTA_ENUM_ARRAY *r)
 {
 	NTSTATUS status;
 	int i;
@@ -188,14 +188,14 @@ NTSTATUS samsync_fix_delta_array(TALLOC_CTX *mem_ctx,
 }
 
 /**
- * samsync_init_context
+ * libnet_samsync_init_context
  */
 
-NTSTATUS samsync_init_context(TALLOC_CTX *mem_ctx,
-			      const struct dom_sid *domain_sid,
-			      const char *domain_name,
-			      enum net_samsync_mode mode,
-			      struct samsync_context **ctx_p)
+NTSTATUS libnet_samsync_init_context(TALLOC_CTX *mem_ctx,
+				     const struct dom_sid *domain_sid,
+				     const char *domain_name,
+				     enum net_samsync_mode mode,
+				     struct samsync_context **ctx_p)
 {
 	struct samsync_context *ctx;
 
@@ -271,13 +271,13 @@ static const char *samsync_debug_str(TALLOC_CTX *mem_ctx,
 }
 
 /**
- * samsync_process_database
+ * libnet_samsync
  */
 
-NTSTATUS samsync_process_database(struct rpc_pipe_client *pipe_hnd,
-				  enum netr_SamDatabaseID database_id,
-				  samsync_fn_t callback_fn,
-				  struct samsync_context *ctx)
+NTSTATUS libnet_samsync(struct rpc_pipe_client *pipe_hnd,
+			enum netr_SamDatabaseID database_id,
+			samsync_fn_t callback_fn,
+			struct samsync_context *ctx)
 {
 	NTSTATUS result;
 	TALLOC_CTX *mem_ctx;
@@ -292,7 +292,7 @@ NTSTATUS samsync_process_database(struct rpc_pipe_client *pipe_hnd,
 
 	ZERO_STRUCT(return_authenticator);
 
-	if (!(mem_ctx = talloc_init("samsync_process_database"))) {
+	if (!(mem_ctx = talloc_init("libnet_samsync"))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

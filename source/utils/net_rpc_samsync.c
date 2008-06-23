@@ -39,23 +39,23 @@ NTSTATUS rpc_samdump_internals(struct net_context *c,
 	struct samsync_context *ctx = NULL;
 	NTSTATUS status;
 
-	status = samsync_init_context(mem_ctx,
-				      domain_sid,
-				      domain_name,
-				      NET_SAMSYNC_MODE_DUMP,
-				      &ctx);
+	status = libnet_samsync_init_context(mem_ctx,
+					     domain_sid,
+					     domain_name,
+					     NET_SAMSYNC_MODE_DUMP,
+					     &ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	samsync_process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
-				 display_sam_entries, ctx);
+	libnet_samsync(pipe_hnd, SAM_DATABASE_DOMAIN,
+		       display_sam_entries, ctx);
 
-	samsync_process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
-				 display_sam_entries, ctx);
+	libnet_samsync(pipe_hnd, SAM_DATABASE_BUILTIN,
+		       display_sam_entries, ctx);
 
-	samsync_process_database(pipe_hnd, SAM_DATABASE_PRIVS,
-				 display_sam_entries, ctx);
+	libnet_samsync(pipe_hnd, SAM_DATABASE_PRIVS,
+		       display_sam_entries, ctx);
 
 	TALLOC_FREE(ctx);
 
@@ -97,11 +97,11 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 	NTSTATUS result;
 	struct samsync_context *ctx = NULL;
 
-	result = samsync_init_context(mem_ctx,
-				      domain_sid,
-				      domain_name,
-				      NET_SAMSYNC_MODE_FETCH_PASSDB,
-				      &ctx);
+	result = libnet_samsync_init_context(mem_ctx,
+					     domain_sid,
+					     domain_name,
+					     NET_SAMSYNC_MODE_FETCH_PASSDB,
+					     &ctx);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
@@ -122,8 +122,8 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 	}
 
 	/* fetch domain */
-	result = samsync_process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
-					  fetch_sam_entries, ctx);
+	result = libnet_samsync(pipe_hnd, SAM_DATABASE_DOMAIN,
+				fetch_sam_entries, ctx);
 
 	if (!NT_STATUS_IS_OK(result) && ctx->error_message) {
 		d_fprintf(stderr, "%s\n", ctx->error_message);
@@ -137,8 +137,8 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 	/* fetch builtin */
 	ctx->domain_sid = sid_dup_talloc(mem_ctx, &global_sid_Builtin);
 	ctx->domain_sid_str = sid_string_talloc(mem_ctx, ctx->domain_sid);
-	result = samsync_process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
-					  fetch_sam_entries, ctx);
+	result = libnet_samsync(pipe_hnd, SAM_DATABASE_BUILTIN,
+				fetch_sam_entries, ctx);
 
 	if (!NT_STATUS_IS_OK(result) && ctx->error_message) {
 		d_fprintf(stderr, "%s\n", ctx->error_message);
@@ -166,11 +166,11 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 	NTSTATUS status;
 	struct samsync_context *ctx = NULL;
 
-	status = samsync_init_context(mem_ctx,
-				      domain_sid,
-				      domain_name,
-				      NET_SAMSYNC_MODE_FETCH_LDIF,
-				      &ctx);
+	status = libnet_samsync_init_context(mem_ctx,
+					     domain_sid,
+					     domain_name,
+					     NET_SAMSYNC_MODE_FETCH_LDIF,
+					     &ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -180,8 +180,8 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 	}
 
 	/* fetch domain */
-	status = samsync_process_database(pipe_hnd, SAM_DATABASE_DOMAIN,
-					  fetch_sam_entries_ldif, ctx);
+	status = libnet_samsync(pipe_hnd, SAM_DATABASE_DOMAIN,
+				fetch_sam_entries_ldif, ctx);
 
 	if (!NT_STATUS_IS_OK(status) && ctx->error_message) {
 		d_fprintf(stderr, "%s\n", ctx->error_message);
@@ -195,8 +195,8 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 	/* fetch builtin */
 	ctx->domain_sid = sid_dup_talloc(mem_ctx, &global_sid_Builtin);
 	ctx->domain_sid_str = sid_string_talloc(mem_ctx, ctx->domain_sid);
-	status = samsync_process_database(pipe_hnd, SAM_DATABASE_BUILTIN,
-					  fetch_sam_entries_ldif, ctx);
+	status = libnet_samsync(pipe_hnd, SAM_DATABASE_BUILTIN,
+				fetch_sam_entries_ldif, ctx);
 
 	if (!NT_STATUS_IS_OK(status) && ctx->error_message) {
 		d_fprintf(stderr, "%s\n", ctx->error_message);

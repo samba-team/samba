@@ -45,20 +45,15 @@ _PUBLIC_ void ndr_print_libnet_UnjoinCtx(struct ndr_print *ndr, const char *name
 
 /* The following definitions come from libnet/libnet_samsync.c  */
 
-NTSTATUS samsync_fix_delta_array(TALLOC_CTX *mem_ctx,
-				 DATA_BLOB *session_key,
-				 bool rid_crypt,
-				 enum netr_SamDatabaseID database_id,
-				 struct netr_DELTA_ENUM_ARRAY *r);
-NTSTATUS samsync_init_context(TALLOC_CTX *mem_ctx,
-			      const struct dom_sid *domain_sid,
-			      const char *domain_name,
-			      enum net_samsync_mode mode,
-			      struct samsync_context **ctx_p);
-NTSTATUS samsync_process_database(struct rpc_pipe_client *pipe_hnd,
-				  enum netr_SamDatabaseID database_id,
-				  samsync_fn_t callback_fn,
-				  struct samsync_context *ctx);
+NTSTATUS libnet_samsync_init_context(TALLOC_CTX *mem_ctx,
+				     const struct dom_sid *domain_sid,
+				     const char *domain_name,
+				     enum net_samsync_mode mode,
+				     struct samsync_context **ctx_p);
+NTSTATUS libnet_samsync(struct rpc_pipe_client *pipe_hnd,
+			enum netr_SamDatabaseID database_id,
+			samsync_fn_t callback_fn,
+			struct samsync_context *ctx);
 NTSTATUS pull_netr_AcctLockStr(TALLOC_CTX *mem_ctx,
 			       struct lsa_BinaryString *r,
 			       struct netr_AcctLockStr **str_p);
