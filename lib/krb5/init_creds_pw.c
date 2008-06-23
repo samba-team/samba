@@ -336,7 +336,7 @@ get_init_creds_common(krb5_context context,
 	etypes = malloc((options->etype_list_length + 1)
 			* sizeof(krb5_enctype));
 	if (etypes == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	memcpy (etypes, options->etype_list,
@@ -348,7 +348,7 @@ get_init_creds_common(krb5_context context,
 	pre_auth_types = malloc((options->preauth_list_length + 1)
 				* sizeof(krb5_preauthtype));
 	if (pre_auth_types == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	memcpy (pre_auth_types, options->preauth_list,
@@ -504,8 +504,8 @@ krb5_get_init_creds_keytab(krb5_context context,
 
     a = malloc (sizeof(*a));
     if (a == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
 	ret = ENOMEM;
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto out;
     }
     a->principal = ctx.cred.client;
@@ -557,13 +557,13 @@ init_creds_init_as_req (krb5_context context,
     a->req_body.cname = malloc(sizeof(*a->req_body.cname));
     if (a->req_body.cname == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto fail;
     }
     a->req_body.sname = malloc(sizeof(*a->req_body.sname));
     if (a->req_body.sname == NULL) {
 	ret = ENOMEM;
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto fail;
     }
 
@@ -582,7 +582,7 @@ init_creds_init_as_req (krb5_context context,
 	a->req_body.from = malloc(sizeof(*a->req_body.from));
 	if (a->req_body.from == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto fail;
 	}
 	*a->req_body.from = creds->times.starttime;
@@ -595,7 +595,7 @@ init_creds_init_as_req (krb5_context context,
 	a->req_body.rtime = malloc(sizeof(*a->req_body.rtime));
 	if (a->req_body.rtime == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto fail;
 	}
 	*a->req_body.rtime = creds->times.renew_till;
@@ -618,7 +618,7 @@ init_creds_init_as_req (krb5_context context,
 	a->req_body.addresses = malloc(sizeof(*a->req_body.addresses));
 	if (a->req_body.addresses == NULL) {
 	    ret = ENOMEM;
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto fail;
 	}
 
@@ -1090,7 +1090,7 @@ process_pa_data_to_md(krb5_context context,
 
     ALLOC(*out_md, 1);
     if (*out_md == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     (*out_md)->len = 0;
