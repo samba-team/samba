@@ -190,6 +190,8 @@ krb5_free_error_message(krb5_context context, const char *msg)
     free(rk_UNCONST(msg));
 }
 
+#ifndef HEIMDAL_SMALLER
+
 /**
  * Free the error message returned by krb5_get_error_string(),
  * deprecated, use krb5_free_error_message().
@@ -226,3 +228,4 @@ krb5_vset_error_string(krb5_context context, const char *fmt, va_list args)
     return 0;
 }
 
+#endif /* !HEIMDAL_SMALLER */
