@@ -49,13 +49,13 @@ static NTSTATUS do_smb_load_module(const char *module_name, bool is_probe)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	init = (init_module_function *)sys_dlsym(handle, "init_shared_module");
+	init = (init_module_function *)sys_dlsym(handle, "init_samba_module");
 
 	/* we must check sys_dlerror() to determine if it worked, because
            sys_dlsym() can validly return NULL */
 	error = sys_dlerror();
 	if (error) {
-		DEBUG(0, ("Error trying to resolve symbol 'init_shared_module' "
+		DEBUG(0, ("Error trying to resolve symbol 'init_samba_module' "
 			  "in %s: %s\n", module_name, error));
 		sys_dlclose(handle);
 		return NT_STATUS_UNSUCCESSFUL;
