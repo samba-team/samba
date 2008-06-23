@@ -578,7 +578,7 @@ verify_logonname(krb5_context context,
 
 	ucs2 = malloc(sizeof(ucs2[0]) * ucs2len);
 	if (ucs2 == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	ret = wind_ucs2read(s, len, &flags, ucs2, &ucs2len);
@@ -598,7 +598,7 @@ verify_logonname(krb5_context context,
 	s = malloc(u8len);
 	if (s == NULL) {
 	    free(ucs2);
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	ret = wind_ucs2utf8(ucs2, ucs2len, s, &u8len);
