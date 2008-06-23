@@ -72,8 +72,8 @@ any_resolve(krb5_context context, const char *name, krb5_keytab id)
 	    a0 = a;
 	    a->name = strdup(buf);
 	    if (a->name == NULL) {
-		krb5_set_error_string(context, "malloc: out of memory");
 		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "malloc: out of memory");
 		goto fail;
 	    }
 	} else
@@ -134,7 +134,7 @@ any_start_seq_get(krb5_context context,
 
     c->data = malloc (sizeof(struct any_cursor_extra_data));
     if(c->data == NULL){
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     ed = (struct any_cursor_extra_data *)c->data;
