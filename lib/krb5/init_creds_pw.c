@@ -441,12 +441,13 @@ change_password (krb5_context context,
 	memset (buf2, 0, sizeof(buf2));
     }
     
-    ret = krb5_change_password (context,
-				&cpw_cred,
-				buf1,
-				&result_code,
-				&result_code_string,
-				&result_string);
+    ret = krb5_set_password (context,
+			     &cpw_cred,
+			     buf1,
+			     client,
+			     &result_code,
+			     &result_code_string,
+			     &result_string);
     if (ret)
 	goto out;
     asprintf (&p, "%s: %.*s\n",
