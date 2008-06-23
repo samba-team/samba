@@ -141,7 +141,8 @@ chgpw_send_request (krb5_context context,
 
     if (sendmsg (sock, &msghdr, 0) < 0) {
 	ret = errno;
-	krb5_set_error_string(context, "sendmsg %s: %s", host, strerror(ret));
+	krb5_set_error_message(context, ret, "sendmsg %s: %s",
+			       host, strerror(ret));
     }
 
     krb5_data_free (&krb_priv_data);
@@ -250,7 +251,8 @@ setpw_send_request (krb5_context context,
 
     if (sendmsg (sock, &msghdr, 0) < 0) {
 	ret = errno;
-	krb5_set_error_string(context, "sendmsg %s: %s", host, strerror(ret));
+	krb5_set_error_message(context, ret, "sendmsg %s: %s", 
+			       host, strerror(ret));
     }
 
     krb5_data_free (&krb_priv_data);
@@ -286,11 +288,12 @@ process_reply (krb5_context context,
 			    0, NULL, NULL);
 	    if (ret < 0) {
 		save_errno = errno;
-		krb5_set_error_string(context, "recvfrom %s: %s",
-				      host, strerror(save_errno));
+		krb5_set_error_message(context, save_errno,
+				       "recvfrom %s: %s",
+				       host, strerror(save_errno));
 		return save_errno;
 	    } else if (ret == 0) {
-		krb5_set_error_string(context, "recvfrom timeout %s", host);
+		krb5_set_error_string(context, 1, "recvfrom timeout %s", host);
 		return 1;
 	    }
 	    len += ret;
@@ -304,16 +307,18 @@ process_reply (krb5_context context,
 	    break;
 	}
 	if (len == sizeof(reply)) {
-	    krb5_set_error_string(context, "message too large from %s",
-				  host);
+	    krb5_set_error_message(context, ENOMEM,
+				   "message too large from %s",
+				   host);
 	    return ENOMEM;
 	}
     } else {
 	ret = recvfrom (sock, reply, sizeof(reply), 0, NULL, NULL);
 	if (ret < 0) {
 	    save_errno = errno;
-	    krb5_set_error_string(context, "recvfrom %s: %s",
-				  host, strerror(save_errno));
+	    krb5_set_error_message(context, save_errno,
+				   "recvfrom %s: %s",
+				   host, strerror(save_errno));
 	    return save_errno;
 	}
 	len = ret;
@@ -607,8 +612,9 @@ change_password_loop (krb5_context	context,
 		}
 	    
 		if (sock >= FD_SETSIZE) {
-		    krb5_set_error_string(context, "fd %d too large", sock);
 		    ret = ERANGE;
+		    krb5_set_error_message(context, ret,
+					   "fd %d too large", sock);
 		    close (sock);
 		    goto out;
 		}
@@ -649,9 +655,10 @@ change_password_loop (krb5_context	context,
     krb5_auth_con_free (context, auth_context);
 
     if (ret == KRB5_KDC_UNREACH) {
-	krb5_set_error_string(context,
-			      "unable to reach any changepw server "
-			      " in realm %s", realm);
+	krb5_set_error_message(context,
+			       ret,
+			       "unable to reach any changepw server "
+			       " in realm %s", realm);
 	*result_code = KRB5_KPASSWD_HARDERROR;
     }
     return ret;

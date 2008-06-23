@@ -295,7 +295,8 @@ krb5_config_parse_string_multi(krb5_context context,
 
     ret = krb5_config_parse_debug (&f, res, &lineno, &str);
     if (ret) {
-	krb5_set_error_string (context, "%s:%u: %s", "<constant>", lineno, str);
+	krb5_set_error_message (context, ret, "%s:%u: %s",
+				"<constant>", lineno, str);
 	return ret;
     }
     return 0;
@@ -314,7 +315,8 @@ krb5_config_parse_file_multi (krb5_context context,
     f.s = NULL;
     if(f.f == NULL) {
 	ret = errno;
-	krb5_set_error_string (context, "open %s: %s", fname, strerror(ret));
+	krb5_set_error_message (context, ret, "open %s: %s", 
+				fname, strerror(ret));
 	return ret;
     }
 

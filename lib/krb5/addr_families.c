@@ -202,7 +202,8 @@ ipv4_mask_boundary(krb5_context context, const krb5_address *inaddr,
     uint32_t l, h, m = 0xffffffff;
 
     if (len > 32) {
-	krb5_set_error_string(context, "IPv4 prefix too large (%ld)", len);
+	krb5_set_error_message(context, KRB5_PROG_ATYPE_NOSUPP,
+			       "IPv4 prefix too large (%ld)", len);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
     m = m << (32 - len);
@@ -395,12 +396,14 @@ ipv6_mask_boundary(krb5_context context, const krb5_address *inaddr,
     int i, sub_len;
 
     if (len > 128) {
-	krb5_set_error_string(context, "IPv6 prefix too large (%ld)", len);
+	krb5_set_error_message(context, KRB5_PROG_ATYPE_NOSUPP,
+			       "IPv6 prefix too large (%ld)", len);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
 
     if (inaddr->address.length != sizeof(addr)) {
-	krb5_set_error_string(context, "IPv6 addr bad length");
+	krb5_set_error_message(context, KRB5_PROG_ATYPE_NOSUPP,
+			       "IPv6 addr bad length");
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
 
@@ -786,8 +789,9 @@ krb5_sockaddr2address (krb5_context context,
 {
     struct addr_operations *a = find_af(sa->sa_family);
     if (a == NULL) {
-	krb5_set_error_string (context, "Address family %d not supported",
-			       sa->sa_family);
+	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
+				"Address family %d not supported",
+				sa->sa_family);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
     return (*a->sockaddr2addr)(sa, addr);
@@ -813,8 +817,9 @@ krb5_sockaddr2port (krb5_context context,
 {
     struct addr_operations *a = find_af(sa->sa_family);
     if (a == NULL) {
-	krb5_set_error_string (context, "Address family %d not supported",
-			       sa->sa_family);
+	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
+				"Address family %d not supported",
+				sa->sa_family);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
     return (*a->sockaddr2port)(sa, port);
@@ -851,14 +856,16 @@ krb5_addr2sockaddr (krb5_context context,
     struct addr_operations *a = find_atype(addr->addr_type);
 
     if (a == NULL) {
-	krb5_set_error_string (context, "Address type %d not supported",
-			       addr->addr_type);
+	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
+				"Address type %d not supported",
+				addr->addr_type);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
     if (a->addr2sockaddr == NULL) {
-	krb5_set_error_string (context,
-			       "Can't convert address type %d to sockaddr",
-			       addr->addr_type);
+	krb5_set_error_message (context,
+				KRB5_PROG_ATYPE_NOSUPP,
+				"Can't convert address type %d to sockaddr",
+				addr->addr_type);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
     (*a->addr2sockaddr)(addr, sa, sa_size, port);
@@ -935,7 +942,8 @@ krb5_h_addr2sockaddr (krb5_context context,
 {
     struct addr_operations *a = find_af(af);
     if (a == NULL) {
-	krb5_set_error_string (context, "Address family %d not supported", af);
+	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
+				"Address family %d not supported", af);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
     (*a->h_addr2sockaddr)(addr, sa, sa_size, port);
@@ -963,7 +971,8 @@ krb5_h_addr2addr (krb5_context context,
 {
     struct addr_operations *a = find_af(af);
     if (a == NULL) {
-	krb5_set_error_string (context, "Address family %d not supported", af);
+	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
+				"Address family %d not supported", af);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
     return (*a->h_addr2addr)(haddr, addr);
@@ -996,7 +1005,8 @@ krb5_anyaddr (krb5_context context,
     struct addr_operations *a = find_af (af);
 
     if (a == NULL) {
-	krb5_set_error_string (context, "Address family %d not supported", af);
+	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
+				"Address family %d not supported", af);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
 
@@ -1089,7 +1099,8 @@ krb5_parse_address(krb5_context context,
 	    if((*at[i].parse_addr)(context, string, &addr) == 0) {
 		ALLOC_SEQ(addresses, 1);
 		if (addresses->val == NULL) {
-		    krb5_set_error_string(context, "malloc: out of memory");
+		    krb5_set_error_message(context, ENOMEM,
+					   "malloc: out of memory");
 		    return ENOMEM;
 		}
 		addresses->val[0] = addr;
@@ -1101,7 +1112,8 @@ krb5_parse_address(krb5_context context,
     error = getaddrinfo (string, NULL, NULL, &ai);
     if (error) {
 	save_errno = errno;
-	krb5_set_error_string (context, "%s: %s", string, gai_strerror(error));
+	krb5_set_error_message (context, save_errno, "%s: %s",
+				string, gai_strerror(error));
 	return krb5_eai_to_heim_errno(error, save_errno);
     }
     
@@ -1111,7 +1123,8 @@ krb5_parse_address(krb5_context context,
 
     ALLOC_SEQ(addresses, n);
     if (addresses->val == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, 
+			       "malloc: out of memory");
 	freeaddrinfo(ai);
 	return ENOMEM;
     }
@@ -1154,15 +1167,17 @@ krb5_address_order(krb5_context context,
     struct addr_operations *a;
     a = find_atype(addr1->addr_type); 
     if(a == NULL) {
-	krb5_set_error_string (context, "Address family %d not supported", 
-			       addr1->addr_type);
+	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
+				"Address family %d not supported", 
+				addr1->addr_type);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
     if(a->order_addr != NULL) 
 	return (*a->order_addr)(context, addr1, addr2); 
     a = find_atype(addr2->addr_type); 
     if(a == NULL) {
-	krb5_set_error_string (context, "Address family %d not supported", 
+	krb5_set_error_message (context, KRB5_PROG_ATYPE_NOSUPP,
+				"Address family %d not supported", 
 			       addr2->addr_type);
 	return KRB5_PROG_ATYPE_NOSUPP;
     }
@@ -1349,7 +1364,8 @@ krb5_append_addresses(krb5_context context,
     if(source->len > 0) {
 	tmp = realloc(dest->val, (dest->len + source->len) * sizeof(*tmp));
 	if(tmp == NULL) {
-	    krb5_set_error_string(context, "realloc: out of memory");
+	    krb5_set_error_message (context, ENOMEM,
+				    "realloc: out of memory");
 	    return ENOMEM;
 	}
 	dest->val = tmp;
@@ -1391,13 +1407,15 @@ krb5_make_addrport (krb5_context context,
 
     *res = malloc (sizeof(**res));
     if (*res == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message (context, ENOMEM,
+				"malloc: out of memory");
 	return ENOMEM;
     }
     (*res)->addr_type = KRB5_ADDRESS_ADDRPORT;
     ret = krb5_data_alloc (&(*res)->address, len);
     if (ret) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message (context, ret,
+				"malloc: out of memory");
 	free (*res);
 	*res = NULL;
 	return ret;
@@ -1457,7 +1475,8 @@ krb5_address_prefixlen_boundary(krb5_context context,
     struct addr_operations *a = find_atype (inaddr->addr_type);
     if(a != NULL && a->mask_boundary != NULL)
 	return (*a->mask_boundary)(context, inaddr, prefixlen, low, high);
-    krb5_set_error_string(context, "Address family %d doesn't support "
+    krb5_set_error_message(context, KRB5_PROG_ATYPE_NOSUPP,
+			  "Address family %d doesn't support "
 			  "address mask operation", inaddr->addr_type);
     return KRB5_PROG_ATYPE_NOSUPP;
 }

@@ -115,15 +115,17 @@ init_ccapi(krb5_context context)
     cc_handle = dlopen(lib, RTLD_LAZY);
     if (cc_handle == NULL) {
 	HEIMDAL_MUTEX_unlock(&acc_mutex);
-	krb5_set_error_string(context, "Failed to load %s", lib);
+	krb5_set_error_message(context, KRB5_CC_NOSUPP, 
+			       "Failed to load %s", lib);
 	return KRB5_CC_NOSUPP;
     }
 
     init_func = (cc_initialize_func)dlsym(cc_handle, "cc_initialize");
     HEIMDAL_MUTEX_unlock(&acc_mutex);
     if (init_func == NULL) {
-	krb5_set_error_string(context, "Failed to find cc_initialize"
-			      "in %s: %s", lib, dlerror());
+	krb5_set_error_message(context, KRB5_CC_NOSUPP,
+			       "Failed to find cc_initialize"
+			       "in %s: %s", lib, dlerror());
 	dlclose(cc_handle);
 	return KRB5_CC_NOSUPP;
     }
@@ -131,7 +133,7 @@ init_ccapi(krb5_context context)
     return 0;
 #else
     HEIMDAL_MUTEX_unlock(&acc_mutex);
-    krb5_set_error_string(context, "no support for shared object");
+    krb5_set_error_message(context, KRB5_CC_NOSUPP, "no support for shared object");
     return KRB5_CC_NOSUPP;
 #endif
 }    
@@ -256,7 +258,7 @@ make_cred_from_ccred(krb5_context context,
     
 nomem:
     ret = ENOMEM;
-    krb5_set_error_string(context, "malloc - out of memory");
+    krb5_set_error_message(context, ret, "malloc - out of memory");
     
 fail:
     krb5_free_cred_contents(context, cred);
@@ -623,7 +625,8 @@ acc_store_cred(krb5_context context,
     cc_int32 error;
     
     if (a->ccache == NULL) {
-	krb5_set_error_string(context, "No API credential found");
+	krb5_set_error_message(context, KRB5_CC_NOTFOUND,
+			       "No API credential found");
 	return KRB5_CC_NOTFOUND;
     }
 
@@ -656,7 +659,8 @@ acc_get_principal(krb5_context context,
     cc_string_t name;
 
     if (a->ccache == NULL) {
-	krb5_set_error_string(context, "No API credential found");
+	krb5_set_error_message(context, KRB5_CC_NOTFOUND,
+			       "No API credential found");
 	return KRB5_CC_NOTFOUND;
     }
 
@@ -682,7 +686,8 @@ acc_get_first (krb5_context context,
     int32_t error;
     
     if (a->ccache == NULL) {
-	krb5_set_error_string(context, "No API credential found");
+	krb5_set_error_message(context, KRB5_CC_NOTFOUND,
+			       "No API credential found");
 	return KRB5_CC_NOTFOUND;
     }
 
@@ -747,7 +752,8 @@ acc_remove_cred(krb5_context context,
     char *client, *server;
     
     if (a->ccache == NULL) {
-	krb5_set_error_string(context, "No API credential found");
+	krb5_set_error_message(context, KRB5_CC_NOTFOUND,
+			       "No API credential found");
 	return KRB5_CC_NOTFOUND;
     }
 
@@ -799,8 +805,8 @@ acc_remove_cred(krb5_context context,
     (*iter->func->release)(iter);
 
     if (ret)
-	krb5_set_error_string(context, "Can't find credential %s in cache", 
-			      server);
+	krb5_set_error_message(context, ret,
+			       "Can't find credential %s in cache", server);
     free(server);
     free(client);
 
@@ -840,7 +846,7 @@ acc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 
     iter = calloc(1, sizeof(*iter));
     if (iter == NULL) {
-	krb5_set_error_string(context, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc - out of memory");
 	return ENOMEM;
     }
 
@@ -969,7 +975,7 @@ acc_get_default_name(krb5_context context, char **str)
     (*cc->func->release)(cc);
 
     if (*str == NULL) {
-	krb5_set_error_string(context, "out of memory");
+	krb5_set_error_message(context, ENOMEM, "out of memory");
 	return ENOMEM;
     }
     return 0;
@@ -982,7 +988,8 @@ acc_set_default(krb5_context context, krb5_ccache id)
     cc_int32 error;
     
     if (a->ccache == NULL) {
-	krb5_set_error_string(context, "No API credential found");
+	krb5_set_error_message(context, KRB5_CC_NOTFOUND,
+			       "No API credential found");
 	return KRB5_CC_NOTFOUND;
     }
 
