@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  libnet Support
- *  Copyright (C) Guenther Deschner 2007
+ *  Copyright (C) Guenther Deschner 2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,12 +17,21 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBNET_H__
-#define __LIBNET_H__
+struct dssync_context;
 
-#include "libnet/libnet_samsync.h"
-#include "libnet/libnet_dssync.h"
-#include "librpc/gen_ndr/libnet_join.h"
-#include "libnet/libnet_proto.h"
+typedef NTSTATUS (*dssync_processing_fn_t)(TALLOC_CTX *,
+					   struct drsuapi_DsReplicaObjectListItemEx *,
+					   struct dssync_context *ctx);
 
-#endif
+struct dssync_context {
+	const char *domain_name;
+	struct rpc_pipe_client *cli;
+	const char *nc_dn;
+	struct policy_handle bind_handle;
+	DATA_BLOB session_key;
+
+	dssync_processing_fn_t processing_fn;
+
+	char *result_message;
+	char *error_message;
+};
