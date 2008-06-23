@@ -1,5 +1,12 @@
-2008-05-23  Love Hörnquist Åstrand  <lha@kth.se>
+-2008-06-21  Love Hörnquist Åstrand  <lha@kth.se>
 
+	* ks_p12.c: pass in time_now to unevelope
+
+	* cms.c: Pass in time_now to unevelope, us verify context time in
+	verify_signed.
+
+2008-05-23  Love Hörnquist Åstrand  <lha@kth.se>
+	
 	* hx_locl.h: Include <limits.h> for TYPE_MAX defines.
 
 2008-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
