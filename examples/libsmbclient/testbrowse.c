@@ -117,6 +117,9 @@ main(int argc, char * argv[])
         smbc_setFunctionAuthData(context, get_auth_data_fn);
     }
 
+    smbc_setOptionUseKerberos(context, 1);
+    smbc_setOptionFallbackAfterKerberos(context, 1);
+
     /* If we've been asked to log to stderr instead of stdout, ... */
     if (debug_stderr) {
         /* ... then set the option to do so */
