@@ -54,7 +54,7 @@ krb5_kt_register(krb5_context context,
     tmp = realloc(context->kt_types,
 		  (context->num_kt_types + 1) * sizeof(*context->kt_types));
     if(tmp == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     memcpy(&tmp[context->num_kt_types], ops,
@@ -104,7 +104,7 @@ krb5_kt_resolve(krb5_context context,
     
     k = malloc (sizeof(*k));
     if (k == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     memcpy(k, &context->kt_types[i], sizeof(*k));
