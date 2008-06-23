@@ -986,6 +986,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 			       indata->data,
 			       indata->length,
 			       NULL,
+			       0,
 			       &contentType,
 			       &content);
     if (ret) {
