@@ -485,6 +485,12 @@ hx509_verify_set_time(hx509_verify_ctx ctx, time_t t)
     ctx->time_now = t;
 }
 
+time_t
+_hx509_verify_get_time(hx509_verify_ctx ctx)
+{
+    return ctx->time_now;
+}
+
 /**
  * Set the maximum depth of the certificate chain that the path
  * builder is going to try.
