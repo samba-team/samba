@@ -78,7 +78,7 @@
                         <row><entry>sessionid.tdb</entry><entry>N</entry>
 				<entry><para>Session information to support <literal>utmp = yes</literal> capabilities.</para></entry></row>
                         <row><entry>share_info.tdb</entry><entry>Y</entry>
-				<entry><para>Stores share-level ACL configuration settings. 
+				<entry><para>Stores share-level ACL configuration settings.
 					Default ACL is <emphasis>Everyone - Full Control</emphasis>.
 				</para></entry></row>
                         <row><entry>unexpected.tdb</entry><entry>N</entry>
@@ -127,10 +127,10 @@
 
 	<para>
 	The <command>tdbbackup</command> utility is a tool that may be used to backup samba tdb files.
-	This tool may also be used to verify the integrity of the tdb files prior to Samba startup or 
-	during normal operation. If it finds file damage it will search for a prior backup the backup 
-	file from which the damaged tdb file will be restored. The <command>tdbbackup</command> 
-	utility can safely be run at any time. It was designed so that it can be used at any time to 
+	This tool may also be used to verify the integrity of the tdb files prior to Samba startup or
+	during normal operation. If it finds file damage it will search for a prior backup the backup
+	file from which the damaged tdb file will be restored. The <command>tdbbackup</command>
+	utility can safely be run at any time. It was designed so that it can be used at any time to
 	validate the integrity of tdb files, even during Samba operation.
 	</para>
 
