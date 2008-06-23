@@ -44,7 +44,6 @@ WERROR _dfs_Add(pipes_struct *p, struct dfs_Add *r)
 	struct referral *old_referral_list = NULL;
 	bool self_ref = False;
 	int consumedcnt = 0;
-	bool exists = False;
 	char *altpath = NULL;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -76,7 +75,6 @@ WERROR _dfs_Add(pipes_struct *p, struct dfs_Add *r)
 		return ntstatus_to_werror(status);
 	}
 
-	exists = True;
 	jn->referral_count += 1;
 	old_referral_list = jn->referral_list;
 
@@ -101,7 +99,7 @@ WERROR _dfs_Add(pipes_struct *p, struct dfs_Add *r)
 	jn->referral_list[jn->referral_count-1].ttl = REFERRAL_TTL;
 	jn->referral_list[jn->referral_count-1].alternate_path = altpath;
 
-	if(!create_msdfs_link(jn, exists)) {
+	if(!create_msdfs_link(jn)) {
 		vfs_ChDir(p->conn,p->conn->connectpath);
 		return WERR_DFS_CANT_CREATE_JUNCT;
 	}
@@ -184,7 +182,7 @@ WERROR _dfs_Remove(pipes_struct *p, struct dfs_Remove *r)
 				return WERR_DFS_NO_SUCH_VOL;
 			}
 		} else {
-			if(!create_msdfs_link(jn, True)) {
+			if(!create_msdfs_link(jn)) {
 				vfs_ChDir(p->conn,p->conn->connectpath);
 				return WERR_DFS_CANT_CREATE_JUNCT;
 			}
