@@ -32,11 +32,14 @@
  */
 
 #include <config.h>
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#include <ctype.h>
 #include "misc-proto.h"
 
 RCSID("$Id$");
 
-#include <ctype.h>
 
 #define	LOWER(x) (isupper(x) ? tolower(x) : (x))
 /*
