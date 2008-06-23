@@ -48,7 +48,7 @@ krb5_password_key_proc (krb5_context context,
      
     *key = malloc (sizeof (**key));
     if (*key == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     if (password == NULL) {
