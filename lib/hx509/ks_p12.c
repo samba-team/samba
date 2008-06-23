@@ -276,6 +276,7 @@ envelopedData_parser(hx509_context context,
 			       0,
 			       data, length,
 			       NULL,
+			       0,
 			       &contentType,
 			       &content);
     if (ret) {
