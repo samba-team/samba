@@ -316,7 +316,8 @@ static void *make_internal_rpc_pipe_p(const char *pipe_name,
 
 	DLIST_ADD(InternalPipes, p);
 
-	p->conn = conn;
+	memcpy(p->client_address, conn->client_address,
+	       sizeof(p->client_address));
 
 	p->vuid  = vuid;
 
