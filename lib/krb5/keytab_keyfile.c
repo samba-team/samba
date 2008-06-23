@@ -86,7 +86,7 @@ get_cell_and_realm (krb5_context context, struct akf_data *d)
 
     d->cell = strdup (buf);
     if (d->cell == NULL) {
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
@@ -111,7 +111,7 @@ get_cell_and_realm (krb5_context context, struct akf_data *d)
     if (d->realm == NULL) {
 	free (d->cell);
 	d->cell = NULL;
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     return 0;
@@ -128,7 +128,7 @@ akf_resolve(krb5_context context, const char *name, krb5_keytab id)
     struct akf_data *d = malloc(sizeof (struct akf_data));
 
     if (d == NULL) {
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     
@@ -143,7 +143,7 @@ akf_resolve(krb5_context context, const char *name, krb5_keytab id)
 	free (d->cell);
 	free (d->realm);
 	free (d);
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     id->data = d;
@@ -250,7 +250,7 @@ akf_next_entry(krb5_context context,
     entry->keyblock.keyvalue.data   = malloc (8);
     if (entry->keyblock.keyvalue.data == NULL) {
 	krb5_free_principal (context, entry->principal);
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	ret = ENOMEM;
 	goto out;
     }
@@ -317,7 +317,7 @@ akf_add_entry(krb5_context context,
     sp = krb5_storage_from_fd(fd);
     if(sp == NULL) {
 	close(fd);
-	krb5_set_error_string (context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     if (created)
