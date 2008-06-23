@@ -47,12 +47,8 @@ _PUBLIC_ void ndr_print_libnet_UnjoinCtx(struct ndr_print *ndr, const char *name
 
 NTSTATUS libnet_samsync_init_context(TALLOC_CTX *mem_ctx,
 				     const struct dom_sid *domain_sid,
-				     const char *domain_name,
-				     enum net_samsync_mode mode,
 				     struct samsync_context **ctx_p);
-NTSTATUS libnet_samsync(struct rpc_pipe_client *pipe_hnd,
-			enum netr_SamDatabaseID database_id,
-			samsync_fn_t callback_fn,
+NTSTATUS libnet_samsync(enum netr_SamDatabaseID database_id,
 			struct samsync_context *ctx);
 NTSTATUS pull_netr_AcctLockStr(TALLOC_CTX *mem_ctx,
 			       struct lsa_BinaryString *r,
