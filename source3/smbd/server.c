@@ -92,7 +92,7 @@ struct messaging_context *smbd_messaging_context(void)
 
 	if (!ctx && !(ctx = messaging_init(NULL, server_id_self(),
 					   smbd_event_context()))) {
-		smb_panic("Could not init smbd messaging context");
+		DEBUG(0, ("Could not init smbd messaging context.\n"));
 	}
 	return ctx;
 }
