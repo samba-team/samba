@@ -52,6 +52,7 @@ static bool smbconf_reg_valname_forbidden(const char *valname)
 		"lock dir",
 		"config backend",
 		"include",
+		"includes", /* this has a special meaning internally */
 		NULL
 	};
 	const char **forbidden = NULL;
