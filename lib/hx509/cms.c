@@ -260,6 +260,7 @@ static int
 find_CMSIdentifier(hx509_context context,
 		   CMSIdentifier *client,
 		   hx509_certs certs,
+		   time_t time_now,
 		   hx509_cert *signer_cert,
 		   int match)
 {
@@ -292,7 +293,10 @@ find_CMSIdentifier(hx509_context context,
     q.match |= match;
 
     q.match |= HX509_QUERY_MATCH_TIME;
-    q.timenow = time(NULL);
+    if (time_now)
+	q.timenow = time_now;
+    else
+	q.timenow = time(NULL);
 
     ret = hx509_certs_find(context, certs, &q, &cert);
     if (ret == HX509_CERT_NOT_FOUND) {
@@ -333,6 +337,7 @@ find_CMSIdentifier(hx509_context context,
  * @param length length of the data that data point to.
  * @param encryptedContent in case of detached signature, this
  * contains the actual encrypted data, othersize its should be NULL.
+ * @param time_now set the current time, if zero the library uses now as the date.
  * @param contentType output type oid, should be freed with der_free_oid().
  * @param content the data, free with der_free_octet_string().
  *
@@ -346,6 +351,7 @@ hx509_cms_unenvelope(hx509_context context,
 		     const void *data,
 		     size_t length,
 		     const heim_octet_string *encryptedContent,
+		     time_t time_now,
 		     heim_oid *contentType,
 		     heim_octet_string *content)
 {
@@ -407,7 +413,8 @@ hx509_cms_unenvelope(hx509_context context,
 
 	ri = &ed.recipientInfos.val[i];
 
-	ret = find_CMSIdentifier(context, &ri->rid, certs, &cert,
+	ret = find_CMSIdentifier(context, &ri->rid, certs,
+				 time_now, &cert,
 				 HX509_QUERY_PRIVATE_KEY|findflags);
 	if (ret)
 	    continue;
@@ -831,7 +838,8 @@ hx509_cms_verify_signed(hx509_context context,
 	    continue;
 	}
 
-	ret = find_CMSIdentifier(context, &signer_info->sid, certs, &cert,
+	ret = find_CMSIdentifier(context, &signer_info->sid, certs, 
+				 _hx509_verify_get_time(ctx), &cert,
 				 HX509_QUERY_KU_DIGITALSIGNATURE);
 	if (ret)
 	    continue;
