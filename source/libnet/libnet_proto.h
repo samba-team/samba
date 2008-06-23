@@ -53,4 +53,12 @@ NTSTATUS libnet_samsync(enum netr_SamDatabaseID database_id,
 NTSTATUS pull_netr_AcctLockStr(TALLOC_CTX *mem_ctx,
 			       struct lsa_BinaryString *r,
 			       struct netr_AcctLockStr **str_p);
+
+/* The following definitions come from libnet/libnet_dssync.c  */
+
+NTSTATUS libnet_dssync_init_context(TALLOC_CTX *mem_ctx,
+				    struct dssync_context **ctx_p);
+NTSTATUS libnet_dssync(TALLOC_CTX *mem_ctx,
+		       struct dssync_context *ctx);
+
 #endif /*  _LIBNET_PROTO_H_  */
