@@ -211,7 +211,8 @@ struct pipe_auth_data {
 typedef struct pipes_struct {
 	struct pipes_struct *next, *prev;
 
-	connection_struct *conn;
+	char client_address[INET6_ADDRSTRLEN];
+
 	uint16 vuid; /* points to the unauthenticated user that opened this pipe. */
 
 	fstring name;

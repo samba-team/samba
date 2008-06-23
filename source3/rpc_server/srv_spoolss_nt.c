@@ -2721,9 +2721,8 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 			!get_printer_snum(p, handle, &snum, NULL) )
 		return WERR_BADFID;
 
-	if (!interpret_string_addr(&client_ss,
-				p->conn->client_address,
-				AI_NUMERICHOST)) {
+	if (!interpret_string_addr(&client_ss, p->client_address,
+				   AI_NUMERICHOST)) {
 		return WERR_SERVER_UNAVAILABLE;
 	}
 
