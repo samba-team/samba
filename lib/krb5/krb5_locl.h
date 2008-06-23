@@ -230,7 +230,7 @@ typedef struct krb5_context_data {
     struct krb5_keytab_data *kt_types;  /* registered keytab types */
     const char *date_fmt;
     char *error_string;
-    char error_buf[256];
+    krb5_error_code error_code;
     krb5_addresses *ignore_addresses;
     char *default_cc_name;
     char *default_cc_name_env;
