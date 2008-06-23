@@ -466,7 +466,7 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
     certs_strings(context, "store", certs, lock, &opt->certificate_strings);
 
     ret = hx509_cms_unenvelope(context, certs, 0, co.data, co.length,
-			       NULL, &contentType, &o);
+			       NULL, 0, &contentType, &o);
     if (co.data != p)
 	der_free_octet_string(&co);
     if (ret)
