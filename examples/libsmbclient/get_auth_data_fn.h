@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 static void
 get_auth_data_fn(const char * pServer,
                  const char * pShare,
@@ -15,6 +17,8 @@ get_auth_data_fn(const char * pServer,
     char            username[256] = { '\0' };
     char            password[256] = { '\0' };
 
+    static int krb5_set = 1;
+
     if (strcmp(server, pServer) == 0 &&
         strcmp(share, pShare) == 0 &&
         *workgroup != '\0' &&
@@ -25,7 +29,12 @@ get_auth_data_fn(const char * pServer,
         strncpy(pPassword, password, maxLenPassword - 1);
         return;
     }
-    
+
+    if (krb5_set && getenv("KRB5CCNAME")) {
+      krb5_set = 0;
+      return;
+    }
+
     fprintf(stdout, "Workgroup: [%s] ", pWorkgroup);
     fgets(temp, sizeof(temp), stdin);
     
@@ -68,4 +77,6 @@ get_auth_data_fn(const char * pServer,
     strncpy(workgroup, pWorkgroup, sizeof(workgroup) - 1);
     strncpy(username, pUsername, sizeof(username) - 1);
     strncpy(password, pPassword, sizeof(password) - 1);
+
+    krb5_set = 1;
 }
