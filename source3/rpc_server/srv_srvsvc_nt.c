@@ -259,9 +259,11 @@ static void init_srv_share_info_1(pipes_struct *p, struct srvsvc_NetShareInfo1 *
 	char *remark = talloc_strdup(p->mem_ctx, lp_comment(snum));
 
 	if (remark) {
-		remark = standard_sub_conn(p->mem_ctx,
-				p->conn,
-				remark);
+		remark = talloc_sub_advanced(
+			p->mem_ctx, lp_servicename(snum),
+			get_current_username(), lp_pathname(snum),
+			p->pipe_user.ut.uid, get_current_username(),
+			"", remark);
 	}
 
 	init_srvsvc_NetShareInfo1(r, net_name,
@@ -284,9 +286,11 @@ static void init_srv_share_info_2(pipes_struct *p, struct srvsvc_NetShareInfo2 *
 
 	remark = talloc_strdup(p->mem_ctx, lp_comment(snum));
 	if (remark) {
-		remark = standard_sub_conn(p->mem_ctx,
-				p->conn,
-				remark);
+		remark = talloc_sub_advanced(
+			p->mem_ctx, lp_servicename(snum),
+			get_current_username(), lp_pathname(snum),
+			p->pipe_user.ut.uid, get_current_username(),
+			"", remark);
 	}
 	path = talloc_asprintf(p->mem_ctx,
 			"C:%s", lp_pathname(snum));
@@ -348,7 +352,11 @@ static void init_srv_share_info_501(pipes_struct *p, struct srvsvc_NetShareInfo5
 	char *remark = talloc_strdup(p->mem_ctx, lp_comment(snum));
 
 	if (remark) {
-		remark = standard_sub_conn(p->mem_ctx, p->conn, remark);
+		remark = talloc_sub_advanced(
+			p->mem_ctx, lp_servicename(snum),
+			get_current_username(), lp_pathname(snum),
+			p->pipe_user.ut.uid, get_current_username(),
+			"", remark);
 	}
 
 	init_srvsvc_NetShareInfo501(r, net_name,
@@ -372,7 +380,11 @@ static void init_srv_share_info_502(pipes_struct *p, struct srvsvc_NetShareInfo5
 	char *remark = talloc_strdup(ctx, lp_comment(snum));;
 
 	if (remark) {
-		remark = standard_sub_conn(ctx, p->conn, remark);
+		remark = talloc_sub_advanced(
+			p->mem_ctx, lp_servicename(snum),
+			get_current_username(), lp_pathname(snum),
+			p->pipe_user.ut.uid, get_current_username(),
+			"", remark);
 	}
 	path = talloc_asprintf(ctx, "C:%s", lp_pathname(snum));
 	if (path) {
@@ -407,7 +419,11 @@ static void init_srv_share_info_1004(pipes_struct *p, struct srvsvc_NetShareInfo
 	char *remark = talloc_strdup(p->mem_ctx, lp_comment(snum));
 
 	if (remark) {
-		remark = standard_sub_conn(p->mem_ctx, p->conn, remark);
+		remark = talloc_sub_advanced(
+			p->mem_ctx, lp_servicename(snum),
+			get_current_username(), lp_pathname(snum),
+			p->pipe_user.ut.uid, get_current_username(),
+			"", remark);
 	}
 
 	init_srvsvc_NetShareInfo1004(r, remark ? remark : "");
