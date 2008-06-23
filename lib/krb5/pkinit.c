@@ -356,7 +356,7 @@ build_auth_pack(krb5_context context,
 
     ALLOC(a->pkAuthenticator.paChecksum, 1);
     if (a->pkAuthenticator.paChecksum == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
@@ -607,7 +607,8 @@ pk_mk_padata(krb5_context context,
 
 	    req.trustedCertifiers = calloc(1, sizeof(*req.trustedCertifiers));
 	    if (req.trustedCertifiers == NULL) {
-		krb5_set_error_string(context, "malloc: out of memory");
+		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "malloc: out of memory");
 		free_PA_PK_AS_REQ(&req);
 		goto out;
 	    }
@@ -798,7 +799,7 @@ get_reply_key_win(krb5_context context,
     if (*key == NULL) {
 	krb5_set_error_string(context, "PKINIT failed allocating reply key");
 	free_ReplyKeyPack_Win2k(&key_pack);
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
@@ -861,7 +862,7 @@ get_reply_key(krb5_context context,
     if (*key == NULL) {
 	krb5_set_error_string(context, "PKINIT failed allocating reply key");
 	free_ReplyKeyPack(&key_pack);
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
@@ -1214,8 +1215,8 @@ pk_rd_pa_reply_dh(krb5_context context,
 
     dh_gen_key = malloc(size);
     if (dh_gen_key == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
 	ret = ENOMEM;
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto out;
     }
     memset(dh_gen_key, 0, size - dh_gen_keylen);
@@ -1231,8 +1232,8 @@ pk_rd_pa_reply_dh(krb5_context context,
 
     *key = malloc (sizeof (**key));
     if (*key == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
 	ret = ENOMEM;
+	krb5_set_error_message(context, ret, "malloc: out of memory");
 	goto out;
     }
 
@@ -1484,7 +1485,7 @@ _krb5_pk_load_id(krb5_context context,
 
     id = calloc(1, sizeof(*id));
     if (id == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }	
 
@@ -1701,7 +1702,7 @@ _krb5_parse_moduli_line(krb5_context context,
 
     m1 = calloc(1, sizeof(*m1));
     if (m1 == NULL) {
-	krb5_set_error_string(context, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
@@ -1843,7 +1844,7 @@ _krb5_parse_moduli(krb5_context context, const char *file,
 
     m = calloc(1, sizeof(m[0]) * 3);
     if (m == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
 
@@ -1881,8 +1882,8 @@ _krb5_parse_moduli(krb5_context context, const char *file,
 
 	m2 = realloc(m, (n + 2) * sizeof(m[0]));
 	if (m2 == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
 	    _krb5_free_moduli(m);
+	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	m = m2;
@@ -1994,7 +1995,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
     opt->opt_private->pk_init_ctx = 
 	calloc(1, sizeof(*opt->opt_private->pk_init_ctx));
     if (opt->opt_private->pk_init_ctx == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     opt->opt_private->pk_init_ctx->dh = NULL;
@@ -2064,8 +2065,8 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 	
 	opt->opt_private->pk_init_ctx->dh = DH_new();
 	if (opt->opt_private->pk_init_ctx->dh == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
+	    krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	    return ENOMEM;
 	}
 
