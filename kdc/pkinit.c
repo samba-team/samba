@@ -370,7 +370,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	return 0;
     }
 
-    hx509_verify_set_time(kdc_identity->verify_ctx, _kdc_now.tv_sec);
+    hx509_verify_set_time(kdc_identity->verify_ctx, kdc_time);
 
     client_params = calloc(1, sizeof(*client_params));
     if (client_params == NULL) {
@@ -514,6 +514,7 @@ _kdc_pk_rd_padata(krb5_context context,
 				      signed_content.length,
 				      NULL,
 				      kdc_identity->certpool,
+				      kdc_time,
 				      &eContentType,
 				      &eContent,
 				      &signer_certs);
