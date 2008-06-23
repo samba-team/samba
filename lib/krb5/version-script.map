@@ -543,6 +543,7 @@ HEIMDAL_KRB5_1.0 {
 		krb5_set_default_realm;
 		krb5_set_dns_canonicalize_hostname;
 		krb5_set_error_string;
+		krb5_set_error_message;
 		krb5_set_extra_addresses;
 		krb5_set_fcache_version;
 		krb5_set_ignore_addresses;
@@ -641,6 +642,7 @@ HEIMDAL_KRB5_1.0 {
 		krb5_vlog;
 		krb5_vlog_msg;
 		krb5_vset_error_string;
+		krb5_vset_error_message;
 		krb5_vwarn;
 		krb5_vwarnx;
 		krb5_warn;
