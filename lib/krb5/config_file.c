@@ -323,7 +323,7 @@ krb5_config_parse_file_multi (krb5_context context,
     ret = krb5_config_parse_debug (&f, res, &lineno, &str);
     fclose(f.f);
     if (ret) {
-	krb5_set_error_string (context, "%s:%u: %s", fname, lineno, str);
+	krb5_set_error_message (context, ret, "%s:%u: %s", fname, lineno, str);
 	return ret;
     }
     return 0;

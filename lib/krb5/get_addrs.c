@@ -54,20 +54,20 @@ gethostname_fallback (krb5_context context, krb5_addresses *res)
 
     if (gethostname (hostname, sizeof(hostname))) {
 	ret = errno;
-	krb5_set_error_string (context, "gethostname: %s", strerror(ret));
+	krb5_set_error_message(context, ret, "gethostname: %s", strerror(ret));
 	return ret;
     }
     hostent = roken_gethostbyname (hostname);
     if (hostent == NULL) {
 	ret = errno;
-	krb5_set_error_string (context, "gethostbyname %s: %s",
-			       hostname, strerror(ret));
+	krb5_set_error_message (context, ret, "gethostbyname %s: %s",
+				hostname, strerror(ret));
 	return ret;
     }
     res->len = 1;
     res->val = malloc (sizeof(*res->val));
     if (res->val == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     res->val[0].addr_type = hostent->h_addrtype;
@@ -108,7 +108,7 @@ find_all_addresses (krb5_context context, krb5_addresses *res, int flags)
 
     if (getifaddrs(&ifa0) == -1) {
 	ret = errno;
-	krb5_set_error_string(context, "getifaddrs: %s", strerror(ret));
+	krb5_set_error_message(context, ret, "getifaddrs: %s", strerror(ret));
 	return (ret);
     }
 
@@ -120,7 +120,7 @@ find_all_addresses (krb5_context context, krb5_addresses *res, int flags)
 
     if (num == 0) {
 	freeifaddrs(ifa0);
-	krb5_set_error_string(context, "no addresses found");
+	krb5_set_error_message(context, ENXIO, "no addresses found");
 	return (ENXIO);
     }
 
@@ -136,8 +136,8 @@ find_all_addresses (krb5_context context, krb5_addresses *res, int flags)
     if (res->val == NULL) {
 	krb5_free_addresses(context, &ignore_addresses);
 	freeifaddrs(ifa0);
-	krb5_set_error_string (context, "malloc: out of memory");
-	return (ENOMEM);
+	krb5_set_error_message (context, ENOMEM, "malloc: out of memory");
+	return ENOMEM;
     }
 
     /* Now traverse the list. */

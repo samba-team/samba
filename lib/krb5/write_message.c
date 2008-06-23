@@ -49,7 +49,7 @@ krb5_write_message (krb5_context context,
     if (krb5_net_write (context, p_fd, buf, 4) != 4
 	|| krb5_net_write (context, p_fd, data->data, len) != len) {
 	ret = errno;
-	krb5_set_error_string (context, "write: %s", strerror(ret));
+	krb5_set_error_message (context, ret, "write: %s", strerror(ret));
 	return ret;
     }
     return 0;

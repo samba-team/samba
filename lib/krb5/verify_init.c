@@ -92,8 +92,8 @@ krb5_verify_init_creds(krb5_context context,
 
 	if (gethostname (local_hostname, sizeof(local_hostname)) < 0) {
 	    ret = errno;
-	    krb5_set_error_string (context, "gethostname: %s",
-				   strerror(ret));
+	    krb5_set_error_message (context, ret, "gethostname: %s",
+				    strerror(ret));
 	    return ret;
 	}
 

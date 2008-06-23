@@ -959,14 +959,15 @@ krb5_cc_cache_get_first (krb5_context context,
     }
 
     if (ops->get_cache_first == NULL) {
-	krb5_set_error_string(context, "Credential cache type %s doesn't support "
-			      "iterations over caches", ops->prefix);
+	krb5_set_error_message(context, KRB5_CC_NOSUPP,
+			       "Credential cache type %s doesn't support "
+			       "iterations over caches", ops->prefix);
 	return KRB5_CC_NOSUPP;
     }
 
     *cursor = calloc(1, sizeof(**cursor));
     if (*cursor == NULL) {
-	krb5_set_error_string(context, "malloc - out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc - out of memory");
 	return ENOMEM;
     }
 

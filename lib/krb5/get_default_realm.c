@@ -76,7 +76,7 @@ krb5_get_default_realm(krb5_context context,
 
     res = strdup (context->default_realms[0]);
     if (res == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     *realm = res;
