@@ -232,7 +232,7 @@ o   Volker Lendecke <vl@samba.org>
     * Fix warnings on Fedory Core 9.
     * Fix several memleaks.
     * Fix a segfaults in wbcLookupRids.
-    * Fix a brown segfault in clitar
+    * Fix a segfault in clitar
     * Fix the build on FreeBSD 4.6.2 and Darwin.
     * Fix a double-closedir() in form_junctions().
     * Fix a crash in _dfs_Enum.
