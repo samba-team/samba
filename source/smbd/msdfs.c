@@ -1306,8 +1306,7 @@ static bool junction_to_local_path(const struct junction_map *jucn,
 	return True;
 }
 
-bool create_msdfs_link(const struct junction_map *jucn,
-		bool exists)
+bool create_msdfs_link(const struct junction_map *jucn)
 {
 	char *path = NULL;
 	char *msdfs_link = NULL;
@@ -1360,17 +1359,18 @@ bool create_msdfs_link(const struct junction_map *jucn,
 	DEBUG(5,("create_msdfs_link: Creating new msdfs link: %s -> %s\n",
 		path, msdfs_link));
 
-	if(exists) {
-		if(SMB_VFS_UNLINK(conn,path)!=0) {
+	if(SMB_VFS_SYMLINK(conn, msdfs_link, path) < 0) {
+		if (errno == EEXIST) {
+			if(SMB_VFS_UNLINK(conn,path)!=0) {
+				goto out;
+			}
+		}
+		if (SMB_VFS_SYMLINK(conn, msdfs_link, path) < 0) {
+			DEBUG(1,("create_msdfs_link: symlink failed "
+				 "%s -> %s\nError: %s\n",
+				 path, msdfs_link, strerror(errno)));
 			goto out;
 		}
-	}
-
-	if(SMB_VFS_SYMLINK(conn, msdfs_link, path) < 0) {
-		DEBUG(1,("create_msdfs_link: symlink failed "
-			"%s -> %s\nError: %s\n", 
-			path, msdfs_link, strerror(errno)));
-		goto out;
 	}
 
 	ret = True;
