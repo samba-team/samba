@@ -81,7 +81,7 @@ krb5_copy_keyblock (krb5_context context,
 
     k = malloc (sizeof(*k));
     if (k == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     *to = k;
