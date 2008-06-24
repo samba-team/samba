@@ -100,6 +100,14 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 		     struct NetUserEnum *r);
 WERROR NetUserEnum_l(struct libnetapi_ctx *ctx,
 		     struct NetUserEnum *r);
+NET_API_STATUS NetUserChangePassword(const char * domain_name /* [in] */,
+				     const char * user_name /* [in] */,
+				     const char * old_password /* [in] */,
+				     const char * new_password /* [in] */);
+WERROR NetUserChangePassword_r(struct libnetapi_ctx *ctx,
+			       struct NetUserChangePassword *r);
+WERROR NetUserChangePassword_l(struct libnetapi_ctx *ctx,
+			       struct NetUserChangePassword *r);
 NET_API_STATUS NetQueryDisplayInformation(const char * server_name /* [in] [unique] */,
 					  uint32_t level /* [in] */,
 					  uint32_t idx /* [in] */,

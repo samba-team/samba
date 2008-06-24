@@ -586,6 +586,52 @@ NET_API_STATUS NetUserEnum(const char * server_name /* [in] [unique] */,
 }
 
 /****************************************************************
+ NetUserChangePassword
+****************************************************************/
+
+NET_API_STATUS NetUserChangePassword(const char * domain_name /* [in] */,
+				     const char * user_name /* [in] */,
+				     const char * old_password /* [in] */,
+				     const char * new_password /* [in] */)
+{
+	struct NetUserChangePassword r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.domain_name = domain_name;
+	r.in.user_name = user_name;
+	r.in.old_password = old_password;
+	r.in.new_password = new_password;
+
+	/* Out parameters */
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetUserChangePassword, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(domain_name)) {
+		werr = NetUserChangePassword_l(ctx, &r);
+	} else {
+		werr = NetUserChangePassword_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetUserChangePassword, &r);
+	}
+
+	return r.out.result;
+}
+
+/****************************************************************
  NetQueryDisplayInformation
 ****************************************************************/
 
