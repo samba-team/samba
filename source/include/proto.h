@@ -7130,7 +7130,8 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
 						const char *username,
 						const char *password,
 						NTSTATUS *perr);
-NTSTATUS cli_get_session_key(struct rpc_pipe_client *cli,
+NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
+			     struct rpc_pipe_client *cli,
 			     DATA_BLOB *session_key);
 
 
