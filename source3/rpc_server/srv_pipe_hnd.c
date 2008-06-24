@@ -314,6 +314,15 @@ static void *make_internal_rpc_pipe_p(const char *pipe_name,
 		return NULL;
 	}
 
+	p->server_info = copy_serverinfo(p, conn->server_info);
+	if (p->server_info == NULL) {
+		DEBUG(0, ("open_rpc_pipe_p: copy_serverinfo failed\n"));
+		talloc_destroy(p->mem_ctx);
+		close_policy_by_pipe(p);
+		TALLOC_FREE(p);
+		return NULL;
+	}
+
 	DLIST_ADD(InternalPipes, p);
 
 	memcpy(p->client_address, conn->client_address,

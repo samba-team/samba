@@ -215,6 +215,8 @@ typedef struct pipes_struct {
 
 	uint16 vuid; /* points to the unauthenticated user that opened this pipe. */
 
+	struct auth_serversupplied_info *server_info;
+
 	fstring name;
 	fstring pipe_srv_name;
 	

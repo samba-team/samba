@@ -694,6 +694,16 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 		return False;
 	}
 
+	TALLOC_FREE(p->server_info);
+
+	p->server_info = copy_serverinfo(p, a->server_info);
+	if (p->server_info == NULL) {
+		DEBUG(0, ("copy_serverinfo failed\n"));
+		return false;
+	}
+
+	server_info_set_session_key(p->server_info, p->session_key);
+
 	return True;
 }
 
