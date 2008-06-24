@@ -389,7 +389,7 @@ WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 		ads->auth.password = SMB_STRDUP(ctx->password);
 	}
 
-	ads_status = ads_connect(ads);
+	ads_status = ads_connect_user_creds(ads);
 	if (!ADS_ERR_OK(ads_status)) {
 		ads_destroy(&ads);
 		return WERR_DEFAULT_JOIN_REQUIRED;
