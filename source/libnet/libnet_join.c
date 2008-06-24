@@ -124,7 +124,7 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 		my_ads->auth.password = SMB_STRDUP(password);
 	}
 
-	status = ads_connect(my_ads);
+	status = ads_connect_user_creds(my_ads);
 	if (!ADS_ERR_OK(status)) {
 		ads_destroy(&my_ads);
 		return status;
