@@ -4642,7 +4642,7 @@ void reply_printopen(struct smb_request *req)
 	}
 
 	/* Open for exclusive use, write only. */
-	status = print_fsp_open(conn, NULL, &fsp);
+	status = print_fsp_open(conn, NULL, req->vuid, &fsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);

@@ -1178,7 +1178,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		DEBUG(10, ("open_file_ntcreate: printer open fname=%s\n", fname));
 
-		return print_fsp_open(conn, fname, result);
+		return print_fsp_open(conn, fname, req->vuid, result);
 	}
 
 	if (!parent_dirname_talloc(talloc_tos(), fname, &parent_dir,
