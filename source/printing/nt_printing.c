@@ -5763,7 +5763,8 @@ void map_job_permissions(SEC_DESC *sd)
     3)  "printer admins" (may result in numerous calls to winbind)
 
  ****************************************************************************/
-bool print_access_check(struct current_user *user, int snum, int access_type)
+bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
+			int access_type)
 {
 	SEC_DESC_BUF *secdesc = NULL;
 	uint32 access_granted;
@@ -5775,12 +5776,10 @@ bool print_access_check(struct current_user *user, int snum, int access_type)
 	
 	/* If user is NULL then use the current_user structure */
 
-	if (!user)
-		user = &current_user;
-
 	/* Always allow root or SE_PRINT_OPERATROR to do anything */
 
-	if ( user->ut.uid == 0 || user_has_privileges(user->nt_user_token, &se_printop ) ) {
+	if (server_info->utok.uid == 0
+	    || user_has_privileges(server_info->ptok, &se_printop ) ) {
 		return True;
 	}
 
@@ -5827,7 +5826,7 @@ bool print_access_check(struct current_user *user, int snum, int access_type)
 	}
 
 	/* Check access */
-	result = se_access_check(secdesc->sd, user->nt_user_token, access_type,
+	result = se_access_check(secdesc->sd, server_info->ptok, access_type,
 				 &access_granted, &status);
 
 	DEBUG(4, ("access check was %s\n", result ? "SUCCESS" : "FAILURE"));
@@ -5835,8 +5834,8 @@ bool print_access_check(struct current_user *user, int snum, int access_type)
         /* see if we need to try the printer admin list */
 
         if ((access_granted == 0) &&
-	    (token_contains_name_in_list(uidtoname(user->ut.uid), NULL, NULL,
-					 user->nt_user_token,
+	    (token_contains_name_in_list(uidtoname(server_info->utok.uid),
+					 NULL, NULL, server_info->ptok,
 					 lp_printer_admin(snum)))) {
 		talloc_destroy(mem_ctx);
 		return True;
