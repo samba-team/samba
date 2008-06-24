@@ -527,6 +527,18 @@ got_connection:
 }
 
 /**
+ * Connect to the LDAP server using given credentials
+ * @param ads Pointer to an existing ADS_STRUCT
+ * @return status of connection
+ **/
+ADS_STATUS ads_connect_user_creds(ADS_STRUCT *ads)
+{
+	ads->auth.flags |= ADS_AUTH_USER_CREDS;
+
+	return ads_connect(ads);
+}
+
+/**
  * Disconnect the LDAP server
  * @param ads Pointer to an existing ADS_STRUCT
  **/
