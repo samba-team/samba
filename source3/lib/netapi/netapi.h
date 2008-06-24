@@ -511,6 +511,26 @@ NET_API_STATUS NetUserEnum(const char * server_name /* [in] */,
 
 /************************************************************//**
  *
+ * NetUserChangePassword
+ *
+ * @brief Change the password for a user on a given server or in a given domain
+ *
+ * @param[in] domain_name The server or domain name to connect to
+ * @param[in] user_name The user account to change the password for
+ * @param[in] old_password The user account's old password
+ * @param[in] old_password The user account's new password
+ * @return NET_API_STATUS
+ *
+ * example user/user_chgpwd.c
+ ***************************************************************/
+
+NET_API_STATUS NetUserChangePassword(const char * domain_name /* [in] */,
+				     const char * user_name /* [in] */,
+				     const char * old_password /* [in] */,
+				     const char * new_password /* [in] */);
+
+/************************************************************//**
+ *
  * NetQueryDisplayInformation
  *
  * @brief Enumerate accounts on a server
