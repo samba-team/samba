@@ -136,7 +136,7 @@ static NTSTATUS ctdbd_connect(TALLOC_CTX *mem_ctx,
 	strncpy(addr.sun_path, sockname, sizeof(addr.sun_path));
 
 	if (sys_connect(fd, (struct sockaddr *)&addr) == -1) {
-		DEBUG(0, ("connect(%s) failed: %s\n", sockname,
+		DEBUG(1, ("connect(%s) failed: %s\n", sockname,
 			  strerror(errno)));
 		close(fd);
 		return map_nt_error_from_unix(errno);
