@@ -47,8 +47,11 @@ struct messaging_context *winbind_messaging_context(void)
 {
 	static struct messaging_context *ctx;
 
-	if (!ctx && !(ctx = messaging_init(NULL, server_id_self(),
-					   winbind_event_context()))) {
+	if (ctx == NULL) {
+		ctx = messaging_init(NULL, server_id_self(),
+				     winbind_event_context());
+	}
+	if (ctx == NULL) {
 		DEBUG(0, ("Could not init winbind messaging context.\n"));
 	}
 	return ctx;
