@@ -4206,11 +4206,11 @@ static NTSTATUS samr_SetUserInfo_internal(const char *fn_name,
 			break;
 
 		case 23:
-			if (!p->session_key.length) {
+			if (!p->server_info->user_session_key.length) {
 				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
 			SamOEMhashBlob(info->info23.password.data, 516,
-				       &p->session_key);
+				       &p->server_info->user_session_key);
 
 			dump_data(100, info->info23.password.data, 516);
 
@@ -4219,12 +4219,12 @@ static NTSTATUS samr_SetUserInfo_internal(const char *fn_name,
 			break;
 
 		case 24:
-			if (!p->session_key.length) {
+			if (!p->server_info->user_session_key.length) {
 				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
 			SamOEMhashBlob(info->info24.password.data,
 				       516,
-				       &p->session_key);
+				       &p->server_info->user_session_key);
 
 			dump_data(100, info->info24.password.data, 516);
 
@@ -4235,11 +4235,12 @@ static NTSTATUS samr_SetUserInfo_internal(const char *fn_name,
 			break;
 
 		case 25:
-			if (!p->session_key.length) {
+			if (!p->server_info->user_session_key.length) {
 				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
-			encode_or_decode_arc4_passwd_buffer(info->info25.password.data,
-							    &p->session_key);
+			encode_or_decode_arc4_passwd_buffer(
+				info->info25.password.data,
+				&p->server_info->user_session_key);
 
 			dump_data(100, info->info25.password.data, 532);
 
@@ -4255,11 +4256,12 @@ static NTSTATUS samr_SetUserInfo_internal(const char *fn_name,
 			break;
 
 		case 26:
-			if (!p->session_key.length) {
+			if (!p->server_info->user_session_key.length) {
 				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
-			encode_or_decode_arc4_passwd_buffer(info->info26.password.data,
-							    &p->session_key);
+			encode_or_decode_arc4_passwd_buffer(
+				info->info26.password.data,
+				&p->server_info->user_session_key);
 
 			dump_data(100, info->info26.password.data, 516);
 

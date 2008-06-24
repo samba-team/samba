@@ -316,10 +316,9 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p,
 		return WERR_NOT_SUPPORTED;
 	}
 
-	werr = decode_wkssvc_join_password_buffer(p->mem_ctx,
-						  r->in.encrypted_password,
-						  &p->session_key,
-						  &cleartext_pwd);
+	werr = decode_wkssvc_join_password_buffer(
+		p->mem_ctx, r->in.encrypted_password,
+		&p->server_info->user_session_key, &cleartext_pwd);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
@@ -383,10 +382,9 @@ WERROR _wkssvc_NetrUnjoinDomain2(pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 	}
 
-	werr = decode_wkssvc_join_password_buffer(p->mem_ctx,
-						  r->in.encrypted_password,
-						  &p->session_key,
-						  &cleartext_pwd);
+	werr = decode_wkssvc_join_password_buffer(
+		p->mem_ctx, r->in.encrypted_password,
+		&p->server_info->user_session_key, &cleartext_pwd);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
