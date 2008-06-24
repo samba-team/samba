@@ -54,7 +54,7 @@ struct messaging_context *nmbd_messaging_context(void)
 
 	if (!ctx && !(ctx = messaging_init(NULL, server_id_self(),
 					   nmbd_event_context()))) {
-		smb_panic("Could not init nmbd messaging context");
+		DEBUG(0, ("Could not init nmbd messaging context.\n"));
 	}
 	return ctx;
 }
