@@ -1131,7 +1131,6 @@ int main(int argc, char **argv, char **envp)
 	/* Initialise messaging system */
 
 	if (winbind_messaging_context() == NULL) {
-		DEBUG(0, ("unable to initialize messaging system\n"));
 		exit(1);
 	}
 
