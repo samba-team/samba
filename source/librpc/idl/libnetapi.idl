@@ -199,6 +199,17 @@ interface libnetapi
 		);
 
 	/*******************************************/
+	/* NetUserChangePassword                   */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetUserChangePassword(
+		[in] string domain_name,
+		[in] string user_name,
+		[in] string old_password,
+		[in] string new_password
+		);
+
+	/*******************************************/
 	/* NetQueryDisplayInformation              */
 	/*******************************************/
 
