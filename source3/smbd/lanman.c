@@ -27,8 +27,6 @@
 
 #include "includes.h"
 
-extern struct current_user current_user;
-
 #ifdef CHECK_TYPES
 #undef CHECK_TYPES
 #endif
