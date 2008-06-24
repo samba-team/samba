@@ -1911,9 +1911,9 @@ static int net_ads_search_usage(struct net_context *c, int argc, const char **ar
 {
 	d_printf(
 		"\nnet ads search <expression> <attributes...>\n"
-		"\nperform a raw LDAP search on a ADS server and dump the results\n"
+		"\nPerform a raw LDAP search on a ADS server and dump the results.\n"
 		"The expression is a standard LDAP search expression, and the\n"
-		"attributes are a list of LDAP fields to show in the results\n\n"
+		"attributes are a list of LDAP fields to show in the results.\n\n"
 		"Example: net ads search '(objectCategory=group)' sAMAccountName\n\n"
 		);
 	net_common_flags_usage(c, argc, argv);
