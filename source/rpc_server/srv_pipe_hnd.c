@@ -328,8 +328,6 @@ static void *make_internal_rpc_pipe_p(const char *pipe_name,
 	memcpy(p->client_address, conn->client_address,
 	       sizeof(p->client_address));
 
-	p->vuid  = vuid;
-
 	p->endian = RPC_LITTLE_ENDIAN;
 
 	ZERO_STRUCT(p->pipe_user);
@@ -366,8 +364,8 @@ static void set_incoming_fault(pipes_struct *p)
 	p->in_data.pdu_needed_len = 0;
 	p->in_data.pdu_received_len = 0;
 	p->fault_state = True;
-	DEBUG(10,("set_incoming_fault: Setting fault state on pipe %s : vuid = 0x%x\n",
-		p->name, p->vuid ));
+	DEBUG(10, ("set_incoming_fault: Setting fault state on pipe %s\n",
+		   p->name));
 }
 
 /****************************************************************************

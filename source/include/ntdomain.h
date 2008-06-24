@@ -213,8 +213,6 @@ typedef struct pipes_struct {
 
 	char client_address[INET6_ADDRSTRLEN];
 
-	uint16 vuid; /* points to the unauthenticated user that opened this pipe. */
-
 	struct auth_serversupplied_info *server_info;
 
 	fstring name;

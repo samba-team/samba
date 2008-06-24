@@ -1463,14 +1463,10 @@ NTSTATUS _lsa_GetUserName(pipes_struct *p,
 			  struct lsa_GetUserName *r)
 {
 	const char *username, *domname;
-	user_struct *vuser = get_valid_user_struct(p->vuid);
 	struct lsa_String *account_name = NULL;
 	struct lsa_String *authority_name = NULL;
 
-	if (vuser == NULL)
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-
-	if (vuser->server_info->guest) {
+	if (p->server_info->guest) {
 		/*
 		 * I'm 99% sure this is not the right place to do this,
 		 * global_sid_Anonymous should probably be put into the token
@@ -1481,8 +1477,8 @@ NTSTATUS _lsa_GetUserName(pipes_struct *p,
 			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
-		username = vuser->server_info->sanitized_username;
-		domname = pdb_get_domain(vuser->server_info->sam_account);
+		username = p->server_info->sanitized_username;
+		domname = pdb_get_domain(p->server_info->sam_account);
 	}
 
 	account_name = TALLOC_ZERO_P(p->mem_ctx, struct lsa_String);
