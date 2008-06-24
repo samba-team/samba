@@ -49,7 +49,7 @@ struct messaging_context *winbind_messaging_context(void)
 
 	if (!ctx && !(ctx = messaging_init(NULL, server_id_self(),
 					   winbind_event_context()))) {
-		smb_panic("Could not init winbind messaging context");
+		DEBUG(0, ("Could not init winbind messaging context.\n"));
 	}
 	return ctx;
 }
