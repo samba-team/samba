@@ -6691,7 +6691,8 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr);
 bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **secdesc_ctr);
 void map_printer_permissions(SEC_DESC *sd);
 void map_job_permissions(SEC_DESC *sd);
-bool print_access_check(struct current_user *user, int snum, int access_type);
+bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
+			int access_type);
 bool print_time_access_check(const char *servicename);
 char* get_server_name( Printer_entry *printer );
 
@@ -6747,20 +6748,27 @@ char *print_job_fname(const char* sharename, uint32 jobid);
 NT_DEVICEMODE *print_job_devmode(const char* sharename, uint32 jobid);
 bool print_job_set_place(const char *sharename, uint32 jobid, int place);
 bool print_job_set_name(const char *sharename, uint32 jobid, char *name);
-bool print_job_delete(struct current_user *user, int snum, uint32 jobid, WERROR *errcode);
-bool print_job_pause(struct current_user *user, int snum, uint32 jobid, WERROR *errcode);
-bool print_job_resume(struct current_user *user, int snum, uint32 jobid, WERROR *errcode);
+bool print_job_delete(struct auth_serversupplied_info *server_info, int snum,
+		      uint32 jobid, WERROR *errcode);
+bool print_job_pause(struct auth_serversupplied_info *server_info, int snum,
+		     uint32 jobid, WERROR *errcode);
+bool print_job_resume(struct auth_serversupplied_info *server_info, int snum,
+		      uint32 jobid, WERROR *errcode);
 ssize_t print_job_write(int snum, uint32 jobid, const char *buf, SMB_OFF_T pos, size_t size);
 int print_queue_length(int snum, print_status_struct *pstatus);
-uint32 print_job_start(struct current_user *user, int snum, char *jobname, NT_DEVICEMODE *nt_devmode );
+uint32 print_job_start(struct auth_serversupplied_info *server_info, int snum,
+		       char *jobname, NT_DEVICEMODE *nt_devmode );
 void print_job_endpage(int snum, uint32 jobid);
 bool print_job_end(int snum, uint32 jobid, enum file_close_type close_type);
 int print_queue_status(int snum, 
 		       print_queue_struct **ppqueue,
 		       print_status_struct *status);
-bool print_queue_pause(struct current_user *user, int snum, WERROR *errcode);
-bool print_queue_resume(struct current_user *user, int snum, WERROR *errcode);
-bool print_queue_purge(struct current_user *user, int snum, WERROR *errcode);
+bool print_queue_pause(struct auth_serversupplied_info *server_info, int snum,
+		       WERROR *errcode);
+bool print_queue_resume(struct auth_serversupplied_info *server_info, int snum,
+			WERROR *errcode);
+bool print_queue_purge(struct auth_serversupplied_info *server_info, int snum,
+		       WERROR *errcode);
 
 /* The following definitions come from printing/printing_db.c  */
 

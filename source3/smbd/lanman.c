@@ -2682,15 +2682,15 @@ static bool api_RDosPrintJobDel(connection_struct *conn,uint16 vuid,
 	
 	switch (function) {
 	case 81:		/* delete */ 
-		if (print_job_delete(&current_user, snum, jobid, &werr)) 
+		if (print_job_delete(conn->server_info, snum, jobid, &werr))
 			errcode = NERR_Success;
 		break;
 	case 82:		/* pause */
-		if (print_job_pause(&current_user, snum, jobid, &werr)) 
+		if (print_job_pause(conn->server_info, snum, jobid, &werr))
 			errcode = NERR_Success;
 		break;
 	case 83:		/* resume */
-		if (print_job_resume(&current_user, snum, jobid, &werr)) 
+		if (print_job_resume(conn->server_info, snum, jobid, &werr))
 			errcode = NERR_Success;
 		break;
 	}
@@ -2751,13 +2751,19 @@ static bool api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid,
 
 	switch (function) {
 	case 74: /* Pause queue */
-		if (print_queue_pause(&current_user, snum, &werr)) errcode = NERR_Success;
+		if (print_queue_pause(conn->server_info, snum, &werr)) {
+			errcode = NERR_Success;
+		}
 		break;
 	case 75: /* Resume queue */
-		if (print_queue_resume(&current_user, snum, &werr)) errcode = NERR_Success;
+		if (print_queue_resume(conn->server_info, snum, &werr)) {
+			errcode = NERR_Success;
+		}
 		break;
 	case 103: /* Purge */
-		if (print_queue_purge(&current_user, snum, &werr)) errcode = NERR_Success;
+		if (print_queue_purge(conn->server_info, snum, &werr)) {
+			errcode = NERR_Success;
+		}
 		break;
 	}
 

@@ -51,7 +51,7 @@ NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
 		fstrcat(name, p);
 	}
 
-	jobid = print_job_start(&current_user, SNUM(conn), name, NULL);
+	jobid = print_job_start(conn->server_info, SNUM(conn), name, NULL);
 	if (jobid == -1) {
 		status = map_nt_error_from_unix(errno);
 		file_free(fsp);

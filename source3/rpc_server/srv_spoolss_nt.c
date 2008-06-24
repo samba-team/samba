@@ -1706,7 +1706,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 
 		if (!user_ok_token(uidtoname(p->pipe_user.ut.uid), NULL,
 				   p->pipe_user.nt_user_token, snum) ||
-		    !print_access_check(&p->pipe_user, snum,
+		    !print_access_check(p->server_info, snum,
 					printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
 			close_printer_handle(p, handle);
@@ -5863,7 +5863,8 @@ WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 
 	jobname = unistr2_to_ascii_talloc(ctx, &info_1->docname);
 
-	Printer->jobid = print_job_start(&p->pipe_user, snum, jobname, Printer->nt_devmode);
+	Printer->jobid = print_job_start(p->server_info, snum, jobname,
+					 Printer->nt_devmode);
 
 	/* An error occured in print_job_start() so return an appropriate
 	   NT error code. */
@@ -5950,18 +5951,18 @@ static WERROR control_printer(POLICY_HND *handle, uint32 command,
 
 	switch (command) {
 	case PRINTER_CONTROL_PAUSE:
-		if (print_queue_pause(&p->pipe_user, snum, &errcode)) {
+		if (print_queue_pause(p->server_info, snum, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
 	case PRINTER_CONTROL_RESUME:
 	case PRINTER_CONTROL_UNPAUSE:
-		if (print_queue_resume(&p->pipe_user, snum, &errcode)) {
+		if (print_queue_resume(p->server_info, snum, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
 	case PRINTER_CONTROL_PURGE:
-		if (print_queue_purge(&p->pipe_user, snum, &errcode)) {
+		if (print_queue_purge(p->server_info, snum, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
@@ -5993,7 +5994,7 @@ WERROR _spoolss_abortprinter(pipes_struct *p, SPOOL_Q_ABORTPRINTER *q_u, SPOOL_R
 	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 
-	print_job_delete( &p->pipe_user, snum, Printer->jobid, &errcode );
+	print_job_delete(p->server_info, snum, Printer->jobid, &errcode );
 
 	return errcode;
 }
@@ -6886,18 +6887,18 @@ WERROR _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u
 	switch (command) {
 	case JOB_CONTROL_CANCEL:
 	case JOB_CONTROL_DELETE:
-		if (print_job_delete(&p->pipe_user, snum, jobid, &errcode)) {
+		if (print_job_delete(p->server_info, snum, jobid, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
 	case JOB_CONTROL_PAUSE:
-		if (print_job_pause(&p->pipe_user, snum, jobid, &errcode)) {
+		if (print_job_pause(p->server_info, snum, jobid, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
 	case JOB_CONTROL_RESTART:
 	case JOB_CONTROL_RESUME:
-		if (print_job_resume(&p->pipe_user, snum, jobid, &errcode)) {
+		if (print_job_resume(p->server_info, snum, jobid, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
