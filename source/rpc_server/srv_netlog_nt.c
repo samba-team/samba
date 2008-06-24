@@ -702,9 +702,6 @@ NTSTATUS _netr_LogonSamLogoff(pipes_struct *p,
 	}
 
 
-	if (!get_valid_user_struct(p->vuid))
-		return NT_STATUS_NO_SUCH_USER;
-
 	/* Using the remote machine name for the creds store: */
 	/* r->in.computer_name */
 
@@ -789,9 +786,6 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 			(int)r->in.validation_level));
 		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	if (!get_valid_user_struct(p->vuid))
-		return NT_STATUS_NO_SUCH_USER;
 
 	if (process_creds) {
 		fstring remote_machine;
