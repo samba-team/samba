@@ -268,7 +268,7 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 			ctr1 = ctr.ctr2.ctr.mszip1.ctr1;
 		}
 
-		status = cli_get_session_key(ctx->cli, &ctx->session_key);
+		status = cli_get_session_key(mem_ctx, ctx->cli, &ctx->session_key);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
