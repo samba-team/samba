@@ -2439,11 +2439,13 @@ NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
 	return NT_STATUS_NO_MEMORY;
 }
 
+#ifdef HAVE_KRB5
 static int cli_auth_kerberos_data_destructor(struct kerberos_auth_struct *auth)
 {
 	data_blob_free(&auth->session_key);
 	return 0;
 }
+#endif
 
 NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
 				   enum pipe_auth_level auth_level,
