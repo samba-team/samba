@@ -438,7 +438,7 @@ test_move(krb5_context context, const char *type)
 
     ops = krb5_cc_get_prefix_ops(context, type);
     if (ops == NULL)
-	krb5_errx(context, 1, "%s isn't a type", type);
+	return;
 
     ret = krb5_cc_gen_new(context, ops, &fromid);
     if (ret == KRB5_CC_NOSUPP)
