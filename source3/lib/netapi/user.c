@@ -833,3 +833,21 @@ WERROR NetQueryDisplayInformation_l(struct libnetapi_ctx *ctx,
 {
 	return WERR_NOT_SUPPORTED;
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserChangePassword_r(struct libnetapi_ctx *ctx,
+			       struct NetUserChangePassword *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserChangePassword_l(struct libnetapi_ctx *ctx,
+			       struct NetUserChangePassword *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
