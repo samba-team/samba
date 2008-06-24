@@ -606,9 +606,10 @@ bool create_next_pdu(pipes_struct *p)
 
 static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 {
-	DATA_BLOB reply;
+	DATA_BLOB session_key, reply;
 	NTSTATUS status;
 	AUTH_NTLMSSP_STATE *a = p->auth.a_u.auth_ntlmssp_state;
+	bool ret;
 
 	DEBUG(5,("pipe_ntlmssp_verify_final: pipe %s checking user details\n", p->name));
 
@@ -663,18 +664,6 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	p->pipe_user.ut.uid = a->server_info->utok.uid;
 	p->pipe_user.ut.gid = a->server_info->utok.gid;
 	
-	/*
-	 * We're an authenticated bind over smb, so the session key needs to
-	 * be set to "SystemLibraryDTC". Weird, but this is what Windows
-	 * does. See the RPC-SAMBA3SESSIONKEY.
-	 */
-
-	data_blob_free(&p->session_key);
-	p->session_key = generic_session_key();
-	if (!p->session_key.data) {
-		return False;
-	}
-
 	p->pipe_user.ut.ngroups = a->server_info->utok.ngroups;
 	if (p->pipe_user.ut.ngroups) {
 		if (!(p->pipe_user.ut.groups = (gid_t *)memdup(
@@ -702,7 +691,20 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 		return false;
 	}
 
-	server_info_set_session_key(p->server_info, p->session_key);
+	/*
+	 * We're an authenticated bind over smb, so the session key needs to
+	 * be set to "SystemLibraryDTC". Weird, but this is what Windows
+	 * does. See the RPC-SAMBA3SESSIONKEY.
+	 */
+
+	session_key = generic_session_key();
+	if (session_key.data == NULL) {
+		return False;
+	}
+
+	ret = server_info_set_session_key(p->server_info, session_key);
+
+	data_blob_free(&session_key);
 
 	return True;
 }
@@ -1332,6 +1334,7 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	bool ret;
 	struct dcinfo *pdcinfo;
 	uint32 flags;
+	DATA_BLOB session_key;
 
 	if (!smb_io_rpc_auth_schannel_neg("", &neg, rpc_in_p, 0)) {
 		DEBUG(0,("pipe_schannel_auth_bind: Could not unmarshal SCHANNEL auth neg\n"));
@@ -1378,12 +1381,20 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	 * anymore.
 	 */
 
-	data_blob_free(&p->session_key);
-	p->session_key = generic_session_key();
-	if (p->session_key.data == NULL) {
+	session_key = generic_session_key();
+	if (session_key.data == NULL) {
 		DEBUG(0, ("pipe_schannel_auth_bind: Could not alloc session"
 			  " key\n"));
-		return False;
+		return false;
+	}
+
+	ret = server_info_set_session_key(p->server_info, session_key);
+
+	data_blob_free(&session_key);
+
+	if (!ret) {
+		DEBUG(0, ("server_info_set_session_key failed\n"));
+		return false;
 	}
 
 	init_rpc_hdr_auth(&auth_info, RPC_SCHANNEL_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);

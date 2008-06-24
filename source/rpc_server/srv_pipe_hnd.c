@@ -339,9 +339,6 @@ static void *make_internal_rpc_pipe_p(const char *pipe_name,
 	
 	/* Store the session key and NT_TOKEN */
 	if (vuser) {
-		p->session_key = data_blob(
-			vuser->server_info->user_session_key.data,
-			vuser->server_info->user_session_key.length);
 		p->pipe_user.nt_user_token = dup_nt_token(
 			NULL, vuser->server_info->ptok);
 	}
@@ -1219,7 +1216,6 @@ static bool close_internal_rpc_pipe_hnd(void *np_conn)
 	close_policy_by_pipe(p);
 
 	TALLOC_FREE(p->pipe_user.nt_user_token);
-	data_blob_free(&p->session_key);
 	SAFE_FREE(p->pipe_user.ut.groups);
 
 	DLIST_REMOVE(InternalPipes, p);
