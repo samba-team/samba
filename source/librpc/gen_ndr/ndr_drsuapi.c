@@ -1084,9 +1084,15 @@ _PUBLIC_ void ndr_print_drsuapi_DsAttributeId(struct ndr_print *ndr, const char 
 			case DRSUAPI_ATTRIBUTE_name: val = "DRSUAPI_ATTRIBUTE_name"; break;
 			case DRSUAPI_ATTRIBUTE_userAccountControl: val = "DRSUAPI_ATTRIBUTE_userAccountControl"; break;
 			case DRSUAPI_ATTRIBUTE_currentValue: val = "DRSUAPI_ATTRIBUTE_currentValue"; break;
+			case DRSUAPI_ATTRIBUTE_homeDirectory: val = "DRSUAPI_ATTRIBUTE_homeDirectory"; break;
+			case DRSUAPI_ATTRIBUTE_homeDrive: val = "DRSUAPI_ATTRIBUTE_homeDrive"; break;
+			case DRSUAPI_ATTRIBUTE_scriptPath: val = "DRSUAPI_ATTRIBUTE_scriptPath"; break;
+			case DRSUAPI_ATTRIBUTE_profilePath: val = "DRSUAPI_ATTRIBUTE_profilePath"; break;
 			case DRSUAPI_ATTRIBUTE_objectSid: val = "DRSUAPI_ATTRIBUTE_objectSid"; break;
 			case DRSUAPI_ATTRIBUTE_schemaIDGUID: val = "DRSUAPI_ATTRIBUTE_schemaIDGUID"; break;
 			case DRSUAPI_ATTRIBUTE_dBCSPwd: val = "DRSUAPI_ATTRIBUTE_dBCSPwd"; break;
+			case DRSUAPI_ATTRIBUTE_logonHours: val = "DRSUAPI_ATTRIBUTE_logonHours"; break;
+			case DRSUAPI_ATTRIBUTE_userWorkstations: val = "DRSUAPI_ATTRIBUTE_userWorkstations"; break;
 			case DRSUAPI_ATTRIBUTE_unicodePwd: val = "DRSUAPI_ATTRIBUTE_unicodePwd"; break;
 			case DRSUAPI_ATTRIBUTE_ntPwdHistory: val = "DRSUAPI_ATTRIBUTE_ntPwdHistory"; break;
 			case DRSUAPI_ATTRIBUTE_priorValue: val = "DRSUAPI_ATTRIBUTE_priorValue"; break;
@@ -1103,8 +1109,11 @@ _PUBLIC_ void ndr_print_drsuapi_DsAttributeId(struct ndr_print *ndr, const char 
 			case DRSUAPI_ATTRIBUTE_initialAuthIncoming: val = "DRSUAPI_ATTRIBUTE_initialAuthIncoming"; break;
 			case DRSUAPI_ATTRIBUTE_initialAuthOutgoing: val = "DRSUAPI_ATTRIBUTE_initialAuthOutgoing"; break;
 			case DRSUAPI_ATTRIBUTE_wellKnownObjects: val = "DRSUAPI_ATTRIBUTE_wellKnownObjects"; break;
+			case DRSUAPI_ATTRIBUTE_dNSHostName: val = "DRSUAPI_ATTRIBUTE_dNSHostName"; break;
 			case DRSUAPI_ATTRIBUTE_isMemberOfPartialAttributeSet: val = "DRSUAPI_ATTRIBUTE_isMemberOfPartialAttributeSet"; break;
+			case DRSUAPI_ATTRIBUTE_userPrincipalName: val = "DRSUAPI_ATTRIBUTE_userPrincipalName"; break;
 			case DRSUAPI_ATTRIBUTE_groupType: val = "DRSUAPI_ATTRIBUTE_groupType"; break;
+			case DRSUAPI_ATTRIBUTE_servicePrincipalName: val = "DRSUAPI_ATTRIBUTE_servicePrincipalName"; break;
 			case DRSUAPI_ATTRIBUTE_objectCategory: val = "DRSUAPI_ATTRIBUTE_objectCategory"; break;
 			case DRSUAPI_ATTRIBUTE_gPLink: val = "DRSUAPI_ATTRIBUTE_gPLink"; break;
 			case DRSUAPI_ATTRIBUTE_msDS_Behavior_Version: val = "DRSUAPI_ATTRIBUTE_msDS_Behavior_Version"; break;

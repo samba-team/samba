@@ -230,9 +230,15 @@ enum drsuapi_DsAttributeId
 	DRSUAPI_ATTRIBUTE_name=0x00090001,
 	DRSUAPI_ATTRIBUTE_userAccountControl=0x00090008,
 	DRSUAPI_ATTRIBUTE_currentValue=0x0009001b,
+	DRSUAPI_ATTRIBUTE_homeDirectory=0x0009002c,
+	DRSUAPI_ATTRIBUTE_homeDrive=0x0009002d,
+	DRSUAPI_ATTRIBUTE_scriptPath=0x0009003e,
+	DRSUAPI_ATTRIBUTE_profilePath=0x0009008b,
 	DRSUAPI_ATTRIBUTE_objectSid=0x00090092,
 	DRSUAPI_ATTRIBUTE_schemaIDGUID=0x00090094,
 	DRSUAPI_ATTRIBUTE_dBCSPwd=0x00090037,
+	DRSUAPI_ATTRIBUTE_logonHours=0x00090040,
+	DRSUAPI_ATTRIBUTE_userWorkstations=0x00090056,
 	DRSUAPI_ATTRIBUTE_unicodePwd=0x0009005a,
 	DRSUAPI_ATTRIBUTE_ntPwdHistory=0x0009005e,
 	DRSUAPI_ATTRIBUTE_priorValue=0x00090064,
@@ -249,8 +255,11 @@ enum drsuapi_DsAttributeId
 	DRSUAPI_ATTRIBUTE_initialAuthIncoming=0x0009021b,
 	DRSUAPI_ATTRIBUTE_initialAuthOutgoing=0x0009021c,
 	DRSUAPI_ATTRIBUTE_wellKnownObjects=0x0009026a,
+	DRSUAPI_ATTRIBUTE_dNSHostName=0x0009026b,
 	DRSUAPI_ATTRIBUTE_isMemberOfPartialAttributeSet=0x0009027f,
+	DRSUAPI_ATTRIBUTE_userPrincipalName=0x00090290,
 	DRSUAPI_ATTRIBUTE_groupType=0x000902ee,
+	DRSUAPI_ATTRIBUTE_servicePrincipalName=0x00090303,
 	DRSUAPI_ATTRIBUTE_objectCategory=0x0009030e,
 	DRSUAPI_ATTRIBUTE_gPLink=0x0009037b,
 	DRSUAPI_ATTRIBUTE_msDS_Behavior_Version=0x000905b3,
@@ -285,9 +294,15 @@ enum drsuapi_DsAttributeId
 #define DRSUAPI_ATTRIBUTE_name ( 0x00090001 )
 #define DRSUAPI_ATTRIBUTE_userAccountControl ( 0x00090008 )
 #define DRSUAPI_ATTRIBUTE_currentValue ( 0x0009001b )
+#define DRSUAPI_ATTRIBUTE_homeDirectory ( 0x0009002c )
+#define DRSUAPI_ATTRIBUTE_homeDrive ( 0x0009002d )
+#define DRSUAPI_ATTRIBUTE_scriptPath ( 0x0009003e )
+#define DRSUAPI_ATTRIBUTE_profilePath ( 0x0009008b )
 #define DRSUAPI_ATTRIBUTE_objectSid ( 0x00090092 )
 #define DRSUAPI_ATTRIBUTE_schemaIDGUID ( 0x00090094 )
 #define DRSUAPI_ATTRIBUTE_dBCSPwd ( 0x00090037 )
+#define DRSUAPI_ATTRIBUTE_logonHours ( 0x00090040 )
+#define DRSUAPI_ATTRIBUTE_userWorkstations ( 0x00090056 )
 #define DRSUAPI_ATTRIBUTE_unicodePwd ( 0x0009005a )
 #define DRSUAPI_ATTRIBUTE_ntPwdHistory ( 0x0009005e )
 #define DRSUAPI_ATTRIBUTE_priorValue ( 0x00090064 )
@@ -304,8 +319,11 @@ enum drsuapi_DsAttributeId
 #define DRSUAPI_ATTRIBUTE_initialAuthIncoming ( 0x0009021b )
 #define DRSUAPI_ATTRIBUTE_initialAuthOutgoing ( 0x0009021c )
 #define DRSUAPI_ATTRIBUTE_wellKnownObjects ( 0x0009026a )
+#define DRSUAPI_ATTRIBUTE_dNSHostName ( 0x0009026b )
 #define DRSUAPI_ATTRIBUTE_isMemberOfPartialAttributeSet ( 0x0009027f )
+#define DRSUAPI_ATTRIBUTE_userPrincipalName ( 0x00090290 )
 #define DRSUAPI_ATTRIBUTE_groupType ( 0x000902ee )
+#define DRSUAPI_ATTRIBUTE_servicePrincipalName ( 0x00090303 )
 #define DRSUAPI_ATTRIBUTE_objectCategory ( 0x0009030e )
 #define DRSUAPI_ATTRIBUTE_gPLink ( 0x0009037b )
 #define DRSUAPI_ATTRIBUTE_msDS_Behavior_Version ( 0x000905b3 )
