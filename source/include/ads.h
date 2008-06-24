@@ -320,14 +320,15 @@ typedef void **ADS_MODLIST;
 #define ADS_DNS_FOREST     0x80000000  /* DnsForestName is a DNS name */
 
 /* ads auth control flags */
-#define ADS_AUTH_DISABLE_KERBEROS 0x01
-#define ADS_AUTH_NO_BIND          0x02
-#define ADS_AUTH_ANON_BIND        0x04
-#define ADS_AUTH_SIMPLE_BIND      0x08
-#define ADS_AUTH_ALLOW_NTLMSSP    0x10
-#define ADS_AUTH_SASL_SIGN        0x20
-#define ADS_AUTH_SASL_SEAL        0x40
-#define ADS_AUTH_SASL_FORCE       0x80
+#define ADS_AUTH_DISABLE_KERBEROS 0x0001
+#define ADS_AUTH_NO_BIND          0x0002
+#define ADS_AUTH_ANON_BIND        0x0004
+#define ADS_AUTH_SIMPLE_BIND      0x0008
+#define ADS_AUTH_ALLOW_NTLMSSP    0x0010
+#define ADS_AUTH_SASL_SIGN        0x0020
+#define ADS_AUTH_SASL_SEAL        0x0040
+#define ADS_AUTH_SASL_FORCE       0x0080
+#define ADS_AUTH_USER_CREDS       0x0100
 
 /* Kerberos environment variable names */
 #define KRB5_ENV_CCNAME "KRB5CCNAME"

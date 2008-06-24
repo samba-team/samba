@@ -323,6 +323,11 @@ int ads_kinit_password(ADS_STRUCT *ads)
 	const char *account_name;
 	fstring acct_name;
 
+	if (ads->auth.flags & ADS_AUTH_USER_CREDS) {
+		account_name = ads->auth.user_name;
+		goto got_accountname;
+	}
+
 	if ( IS_DC ) {
 		/* this will end up getting a ticket for DOMAIN@RUSTED.REA.LM */
 		account_name = lp_workgroup();
@@ -338,6 +343,7 @@ int ads_kinit_password(ADS_STRUCT *ads)
 			account_name = ads->auth.user_name;
 	}
 
+ got_accountname:
 	if (asprintf(&s, "%s@%s", account_name, ads->auth.realm) == -1) {
 		return KRB5_CC_NOMEM;
 	}
