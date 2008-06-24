@@ -39,6 +39,9 @@ struct samsync_context {
 	const char *domain_name;
 	const char *output_filename;
 
+	const char *username;
+	const char *password;
+
 	char *result_message;
 	char *error_message;
 
