@@ -141,6 +141,8 @@ enum netdom_domain_t { ND_TYPE_NT4, ND_TYPE_AD };
 #define NET_FLAGS_PDC 				0x00000008	/* PDC only */
 #define NET_FLAGS_ANONYMOUS 			0x00000010	/* use an anonymous connection */
 #define NET_FLAGS_NO_PIPE 			0x00000020	/* don't open an RPC pipe */
+#define NET_FLAGS_SIGN				0x00000040	/* sign RPC connection */
+#define NET_FLAGS_SEAL				0x00000080	/* seal RPC connection */
 
 /* net share operation modes */
 #define NET_MODE_SHARE_MIGRATE 1
