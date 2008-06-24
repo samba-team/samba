@@ -256,19 +256,13 @@ bool pipe_access_check(pipes_struct *p)
 	   anonymous > 0 */
 
 	if (lp_restrict_anonymous() > 0) {
-		user_struct *user = get_valid_user_struct(p->vuid);
 
 		/* schannel, so we must be ok */
 		if (p->pipe_bound && (p->auth.auth_type == PIPE_AUTH_TYPE_SCHANNEL)) {
 			return True;
 		}
 
-		if (!user) {
-			DEBUG(3, ("invalid vuid %d\n", p->vuid));
-			return False;
-		}
-
-		if (user->server_info->guest) {
+		if (p->server_info->guest) {
 			return False;
 		}
 	}
