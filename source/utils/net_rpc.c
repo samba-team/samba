@@ -165,7 +165,16 @@ int run_rpc_command(struct net_context *c,
 				return -1;
 			}
 		} else {
-			pipe_hnd = cli_rpc_pipe_open_noauth(cli, pipe_idx, &nt_status);
+			if (conn_flags & NET_FLAGS_SEAL) {
+				pipe_hnd = cli_rpc_pipe_open_ntlmssp(cli, pipe_idx,
+								     PIPE_AUTH_LEVEL_PRIVACY,
+								     lp_workgroup(),
+								     c->opt_user_name,
+								     c->opt_password,
+								     &nt_status);
+			} else {
+				pipe_hnd = cli_rpc_pipe_open_noauth(cli, pipe_idx, &nt_status);
+			}
 			if (!pipe_hnd) {
 				DEBUG(0, ("Could not initialise pipe %s. Error was %s\n",
 					cli_get_pipe_name(pipe_idx),
