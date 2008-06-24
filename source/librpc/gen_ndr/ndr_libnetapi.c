@@ -904,6 +904,31 @@ _PUBLIC_ void ndr_print_NetUserEnum(struct ndr_print *ndr, const char *name, int
 	ndr->depth--;
 }
 
+_PUBLIC_ void ndr_print_NetUserChangePassword(struct ndr_print *ndr, const char *name, int flags, const struct NetUserChangePassword *r)
+{
+	ndr_print_struct(ndr, name, "NetUserChangePassword");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "NetUserChangePassword");
+		ndr->depth++;
+		ndr_print_string(ndr, "domain_name", r->in.domain_name);
+		ndr_print_string(ndr, "user_name", r->in.user_name);
+		ndr_print_string(ndr, "old_password", r->in.old_password);
+		ndr_print_string(ndr, "new_password", r->in.new_password);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "NetUserChangePassword");
+		ndr->depth++;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 _PUBLIC_ void ndr_print_NetQueryDisplayInformation(struct ndr_print *ndr, const char *name, int flags, const struct NetQueryDisplayInformation *r)
 {
 	ndr_print_struct(ndr, name, "NetQueryDisplayInformation");

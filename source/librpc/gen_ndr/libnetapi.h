@@ -334,6 +334,21 @@ struct NetUserEnum {
 };
 
 
+struct NetUserChangePassword {
+	struct {
+		const char * domain_name;
+		const char * user_name;
+		const char * old_password;
+		const char * new_password;
+	} in;
+
+	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
 struct NetQueryDisplayInformation {
 	struct {
 		const char * server_name;/* [unique] */
