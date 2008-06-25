@@ -2522,12 +2522,12 @@ static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli,
 		goto done;
 
 	/* Change user password */
-	result = rpccli_samr_chgpasswd3(cli, mem_ctx,
-					user,
-					newpass,
-					oldpass,
-					&info,
-					&reject);
+	result = rpccli_samr_chgpasswd_user3(cli, mem_ctx,
+					     user,
+					     newpass,
+					     oldpass,
+					     &info,
+					     &reject);
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_RESTRICTION)) {
 
