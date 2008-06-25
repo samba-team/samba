@@ -9,5 +9,5 @@ ALIASES = ldapi ldaps ldap
 # End MODULE ldb_ildap
 ################################################
 
-ldb_ildap_OBJ_FILES = $(ldbdir)/ldb_ildap/ldb_ildap.o
+ldb_ildap_OBJ_FILES = $(ldbsrcdir)/ldb_ildap/ldb_ildap.o
 
