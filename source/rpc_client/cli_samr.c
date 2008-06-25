@@ -27,9 +27,62 @@
 
 NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
-				    const char *username,
+				    struct policy_handle *user_handle,
 				    const char *newpassword,
 				    const char *oldpassword)
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	struct samr_Password hash1, hash2, hash3, hash4, hash5, hash6;
+
+	uchar old_nt_hash[16];
+	uchar old_lm_hash[16];
+	uchar new_nt_hash[16];
+	uchar new_lm_hash[16];
+
+	ZERO_STRUCT(old_nt_hash);
+	ZERO_STRUCT(old_lm_hash);
+	ZERO_STRUCT(new_nt_hash);
+	ZERO_STRUCT(new_lm_hash);
+
+	DEBUG(10,("rpccli_samr_chgpasswd_user\n"));
+
+	E_md4hash(oldpassword, old_nt_hash);
+	E_md4hash(newpassword, new_nt_hash);
+
+	E_deshash(oldpassword, old_lm_hash);
+	E_deshash(newpassword, new_lm_hash);
+
+	E_old_pw_hash(new_lm_hash, old_lm_hash, hash1.hash);
+	E_old_pw_hash(old_lm_hash, new_lm_hash, hash2.hash);
+	E_old_pw_hash(new_nt_hash, old_nt_hash, hash3.hash);
+	E_old_pw_hash(old_nt_hash, new_nt_hash, hash4.hash);
+	E_old_pw_hash(old_lm_hash, new_nt_hash, hash5.hash);
+	E_old_pw_hash(old_nt_hash, new_lm_hash, hash6.hash);
+
+	result = rpccli_samr_ChangePasswordUser(cli, mem_ctx,
+						user_handle,
+						true,
+						&hash1,
+						&hash2,
+						true,
+						&hash3,
+						&hash4,
+						true,
+						&hash5,
+						true,
+						&hash6);
+
+	return result;
+}
+
+
+/* User change password */
+
+NTSTATUS rpccli_samr_chgpasswd_user2(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     const char *username,
+				     const char *newpassword,
+				     const char *oldpassword)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct samr_CryptPassword new_nt_password;
@@ -43,7 +96,7 @@ NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
 	uchar new_lanman_hash[16];
 	struct lsa_String server, account;
 
-	DEBUG(10,("rpccli_samr_chgpasswd_user\n"));
+	DEBUG(10,("rpccli_samr_chgpasswd_user2\n"));
 
 	init_lsa_String(&server, cli->srv_name_slash);
 	init_lsa_String(&account, username);
@@ -127,13 +180,13 @@ NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
 
 /* change password 3 */
 
-NTSTATUS rpccli_samr_chgpasswd3(struct rpc_pipe_client *cli,
-				TALLOC_CTX *mem_ctx,
-				const char *username,
-				const char *newpassword,
-				const char *oldpassword,
-				struct samr_DomInfo1 **dominfo1,
-				struct samr_ChangeReject **reject)
+NTSTATUS rpccli_samr_chgpasswd_user3(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     const char *username,
+				     const char *newpassword,
+				     const char *oldpassword,
+				     struct samr_DomInfo1 **dominfo1,
+				     struct samr_ChangeReject **reject)
 {
 	NTSTATUS status;
 
