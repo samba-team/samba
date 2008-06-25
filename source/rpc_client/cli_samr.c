@@ -127,13 +127,13 @@ NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
 
 /* change password 3 */
 
-NTSTATUS rpccli_samr_chgpasswd3(struct rpc_pipe_client *cli,
-				TALLOC_CTX *mem_ctx,
-				const char *username,
-				const char *newpassword,
-				const char *oldpassword,
-				struct samr_DomInfo1 **dominfo1,
-				struct samr_ChangeReject **reject)
+NTSTATUS rpccli_samr_chgpasswd_user3(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     const char *username,
+				     const char *newpassword,
+				     const char *oldpassword,
+				     struct samr_DomInfo1 **dominfo1,
+				     struct samr_ChangeReject **reject)
 {
 	NTSTATUS status;
 
@@ -149,7 +149,7 @@ NTSTATUS rpccli_samr_chgpasswd3(struct rpc_pipe_client *cli,
 
 	struct lsa_String server, account;
 
-	DEBUG(10,("rpccli_samr_chgpasswd3\n"));
+	DEBUG(10,("rpccli_samr_chgpasswd_user3\n"));
 
 	init_lsa_String(&server, cli->srv_name_slash);
 	init_lsa_String(&account, username);

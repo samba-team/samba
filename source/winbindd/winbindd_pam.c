@@ -2066,12 +2066,12 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 		goto done;
 	}
 
-	result = rpccli_samr_chgpasswd3(cli, state->mem_ctx,
-					user,
-					newpass,
-					oldpass,
-					&info,
-					&reject);
+	result = rpccli_samr_chgpasswd_user3(cli, state->mem_ctx,
+					     user,
+					     newpass,
+					     oldpass,
+					     &info,
+					     &reject);
 
  	/* Windows 2003 returns NT_STATUS_PASSWORD_RESTRICTION */
 
@@ -2098,7 +2098,7 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 		   (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED)) ||
 		   (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED))) {
 
-		DEBUG(10,("Password change with chgpasswd3 failed with: %s, retrying chgpasswd_user2\n",
+		DEBUG(10,("Password change with chgpasswd_user3 failed with: %s, retrying chgpasswd_user2\n",
 			nt_errstr(result)));
 		
 		result = rpccli_samr_chgpasswd_user2(cli, state->mem_ctx, user, newpass, oldpass);
