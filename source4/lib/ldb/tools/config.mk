@@ -1,13 +1,13 @@
 ################################################
 # Start SUBSYSTEM LIBLDB_CMDLINE
 [SUBSYSTEM::LIBLDB_CMDLINE]
-CFLAGS = -I$(ldbdir) -I$(ldbdir)/include
+CFLAGS = -I$(ldbsrcdir) -I$(ldbsrcdir)/include
 PUBLIC_DEPENDENCIES = LIBLDB LIBPOPT
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL POPT_SAMBA POPT_CREDENTIALS gensec
 # End SUBSYSTEM LIBLDB_CMDLINE
 ################################################
 
-LIBLDB_CMDLINE_OBJ_FILES = $(ldbdir)/tools/cmdline.o
+LIBLDB_CMDLINE_OBJ_FILES = $(ldbsrcdir)/tools/cmdline.o
 
 ################################################
 # Start BINARY ldbadd
@@ -19,9 +19,9 @@ PRIVATE_DEPENDENCIES = \
 ################################################
 
 
-ldbadd_OBJ_FILES = $(ldbdir)/tools/ldbadd.o
+ldbadd_OBJ_FILES = $(ldbsrcdir)/tools/ldbadd.o
 
-MANPAGES += $(ldbdir)/man/ldbadd.1
+MANPAGES += $(ldbsrcdir)/man/ldbadd.1
 
 ################################################
 # Start BINARY ldbdel
@@ -32,9 +32,9 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ldbdel
 ################################################
 
-ldbdel_OBJ_FILES = $(ldbdir)/tools/ldbdel.o
+ldbdel_OBJ_FILES = $(ldbsrcdir)/tools/ldbdel.o
 
-MANPAGES += $(ldbdir)/man/ldbdel.1
+MANPAGES += $(ldbsrcdir)/man/ldbdel.1
 
 ################################################
 # Start BINARY ldbmodify
@@ -45,8 +45,8 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ldbmodify
 ################################################
 
-ldbmodify_OBJ_FILES = $(ldbdir)/tools/ldbmodify.o
-MANPAGES += $(ldbdir)/man/ldbmodify.1
+ldbmodify_OBJ_FILES = $(ldbsrcdir)/tools/ldbmodify.o
+MANPAGES += $(ldbsrcdir)/man/ldbmodify.1
 
 ################################################
 # Start BINARY ldbsearch
@@ -57,9 +57,9 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ldbsearch
 ################################################
 
-ldbsearch_OBJ_FILES = $(ldbdir)/tools/ldbsearch.o
+ldbsearch_OBJ_FILES = $(ldbsrcdir)/tools/ldbsearch.o
 
-MANPAGES += $(ldbdir)/man/ldbsearch.1
+MANPAGES += $(ldbsrcdir)/man/ldbsearch.1
 
 ################################################
 # Start BINARY ldbedit
@@ -70,9 +70,9 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ldbedit
 ################################################
 
-ldbedit_OBJ_FILES = $(ldbdir)/tools/ldbedit.o
+ldbedit_OBJ_FILES = $(ldbsrcdir)/tools/ldbedit.o
 
-MANPAGES += $(ldbdir)/man/ldbedit.1
+MANPAGES += $(ldbsrcdir)/man/ldbedit.1
 
 ################################################
 # Start BINARY ldbrename
@@ -83,8 +83,8 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ldbrename
 ################################################
 
-ldbrename_OBJ_FILES = $(ldbdir)/tools/ldbrename.o
+ldbrename_OBJ_FILES = $(ldbsrcdir)/tools/ldbrename.o
 
-MANPAGES += $(ldbdir)/man/ldbrename.1
+MANPAGES += $(ldbsrcdir)/man/ldbrename.1
 
 
