@@ -21,4 +21,6 @@
 
 #define HDB_DB_DIR ""
 
+#undef HAVE_KRB5_ENCRYPT_BLOCK
+
 #endif
