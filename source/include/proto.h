@@ -7144,11 +7144,11 @@ uint32 reg_init_regval_buffer( REGVAL_BUFFER *buf2, REGISTRY_VALUE *val );
 
 /* The following definitions come from rpc_client/cli_samr.c  */
 
-NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx,
-				    const char *username,
-				    const char *newpassword,
-				    const char *oldpassword);
+NTSTATUS rpccli_samr_chgpasswd_user2(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     const char *username,
+				     const char *newpassword,
+				     const char *oldpassword);
 NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
 					 const char *username,

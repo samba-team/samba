@@ -25,11 +25,11 @@
 
 /* User change password */
 
-NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx,
-				    const char *username,
-				    const char *newpassword,
-				    const char *oldpassword)
+NTSTATUS rpccli_samr_chgpasswd_user2(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     const char *username,
+				     const char *newpassword,
+				     const char *oldpassword)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct samr_CryptPassword new_nt_password;
@@ -43,7 +43,7 @@ NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
 	uchar new_lanman_hash[16];
 	struct lsa_String server, account;
 
-	DEBUG(10,("rpccli_samr_chgpasswd_user\n"));
+	DEBUG(10,("rpccli_samr_chgpasswd_user2\n"));
 
 	init_lsa_String(&server, cli->srv_name_slash);
 	init_lsa_String(&account, username);
@@ -149,7 +149,7 @@ NTSTATUS rpccli_samr_chgpasswd3(struct rpc_pipe_client *cli,
 
 	struct lsa_String server, account;
 
-	DEBUG(10,("rpccli_samr_chgpasswd_user3\n"));
+	DEBUG(10,("rpccli_samr_chgpasswd3\n"));
 
 	init_lsa_String(&server, cli->srv_name_slash);
 	init_lsa_String(&account, username);
