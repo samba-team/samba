@@ -2463,7 +2463,7 @@ static NTSTATUS cmd_samr_chgpasswd2(struct rpc_pipe_client *cli,
 		goto done;
 
 	/* Change user password */
-	result = rpccli_samr_chgpasswd_user(cli, mem_ctx, user, newpass, oldpass);
+	result = rpccli_samr_chgpasswd_user2(cli, mem_ctx, user, newpass, oldpass);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
