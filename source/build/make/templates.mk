@@ -106,3 +106,6 @@ uninstallplugins::
 	@-rm $$(DESTDIR)$$(modulesdir)/$(1)/$(2)
 
 endef
+
+# abspath for older makes
+abspath := $(shell cd $(1); pwd)
