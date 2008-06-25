@@ -5380,7 +5380,7 @@ static param_opt_struct *get_parametrics(int snum, const char *type, const char 
 	}
 
 	while (data) {
-		if (strcasecmp(data->key, param_key) == 0) {
+		if (StrCaseCmp(data->key, param_key) == 0) {
 			string_free(&param_key);
 			return data;
 		}
