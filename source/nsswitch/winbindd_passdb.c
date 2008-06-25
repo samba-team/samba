@@ -29,35 +29,31 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-/* list all domain groups */
-static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
+static NTSTATUS enum_groups_internal(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				uint32 *num_entries, 
-				struct acct_info **info)
-{
-	/* We don't have domain groups */
-	*num_entries = 0;
-	*info = NULL;
-	return NT_STATUS_OK;
-}
-
-/* List all domain groups */
-
-static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				uint32 *num_entries, 
-				struct acct_info **info)
+				struct acct_info **info,
+				enum lsa_SidType sidtype)
 {
 	struct pdb_search *search;
-	struct samr_displayentry *aliases;
+	struct samr_displayentry *entries;
 	int i;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	search = pdb_search_aliases(&domain->sid);
+	if (sidtype == SID_NAME_ALIAS) {
+		search = pdb_search_aliases(&domain->sid);
+	} else {
+		search = pdb_search_groups();
+	}
+
 	if (search == NULL) goto done;
 
-	*num_entries = pdb_search_entries(search, 0, 0xffffffff, &aliases);
-	if (*num_entries == 0) goto done;
+	*num_entries = pdb_search_entries(search, 0, 0xffffffff, &entries);
+	if (*num_entries == 0) {
+		/* Zero entries isn't an error */
+		result = NT_STATUS_OK;
+		goto done;
+	}
 
 	*info = TALLOC_ARRAY(mem_ctx, struct acct_info, *num_entries);
 	if (*info == NULL) {
@@ -66,15 +62,41 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 	}
 
 	for (i=0; i<*num_entries; i++) {
-		fstrcpy((*info)[i].acct_name, aliases[i].account_name);
-		fstrcpy((*info)[i].acct_desc, aliases[i].description);
-		(*info)[i].rid = aliases[i].rid;
+		fstrcpy((*info)[i].acct_name, entries[i].account_name);
+		fstrcpy((*info)[i].acct_desc, entries[i].description);
+		(*info)[i].rid = entries[i].rid;
 	}
 
 	result = NT_STATUS_OK;
  done:
 	pdb_search_destroy(search);
 	return result;
+}
+
+/* list all domain groups */
+static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				uint32 *num_entries, 
+				struct acct_info **info)
+{
+	return enum_groups_internal(domain,
+				mem_ctx,
+				num_entries,
+				info,
+				SID_NAME_DOM_GRP);
+}
+
+/* List all local groups (aliases) */
+static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				uint32 *num_entries, 
+				struct acct_info **info)
+{
+	return enum_groups_internal(domain,
+				mem_ctx,
+				num_entries,
+				info,
+				SID_NAME_ALIAS);
 }
 
 /* convert a single name to a sid in a domain */
