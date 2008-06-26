@@ -1,3 +1,4 @@
+#!/bin/sh
 # utility functions for ctdb event scripts
 
 #######################################
