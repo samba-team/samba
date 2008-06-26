@@ -2842,7 +2842,7 @@ again:
 	ret = update_flags_on_all_nodes(ctdb, nodemap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to update flags on all nodes\n"));
-		return -1;
+		goto again;
 	}
 
 	goto again;

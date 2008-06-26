@@ -150,12 +150,13 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb)
 			_exit(0);
 		}
 
-		while (++count < 30) {
+		alarm(30);
+
+		while (count++ < 30) {
 			ret = write(fd[1], &ret, sizeof(ret));
 			if (ret == sizeof(ret)) {
 				break;
 			}
-
 			DEBUG(DEBUG_ERR, (__location__ " Failed to write to socket from freeze child. ret:%d errno:%u\n", ret, errno));
 			sleep (1);
 		}
