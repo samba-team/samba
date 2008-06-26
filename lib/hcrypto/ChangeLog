@@ -1,3 +1,8 @@
+2008-06-26  Love Hörnquist Åstrand  <lha@kth.se>
+
+	* ui.c: Send newline from use to stderr, just like the
+	prompt. From Ted Percival.
+	
 2008-05-20  Love Hörnquist Åstrand  <lha@kth.se>
 
 	* rand-fortuna.c: If we forked, force a reseed again. Add the pid
