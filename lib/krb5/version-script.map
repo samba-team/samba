@@ -671,9 +671,7 @@ HEIMDAL_KRB5_1.0 {
 		krb4_fkt_ops;
 		krb5_wrfkt_ops;
 		krb5_mkt_ops;
-		krb5_fkt_ops;
 		krb5_akf_ops;
-		krb5_srvtab_fkt_ops;
 		krb5_any_ops;
 		heimdal_version;
 		heimdal_long_version;
