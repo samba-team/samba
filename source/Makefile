@@ -246,6 +246,20 @@ uninstall:: uninstallbin uninstallman uninstallmisc uninstalllib uninstallheader
 uninstallmisc::
 	#FIXME
 
+$(DESTDIR)$(bindir)/%: bin/% installdirs
+	@mkdir -p $(@D)
+	@echo Installing $(@F) as $@
+	@if test -f $@; then; rm -f $@.old; mv $@ $@.old; fi
+	@cp $< $@
+	@chmod $(INSTALLPERMS) $@
+
+$(DESTDIR)$(sbindir)/%: bin/% installdirs
+	@mkdir -p $(@D)
+	@echo Installing $(@F) as $@
+	@if test -f $@; then; rm -f $@.old; mv $@ $@.old; fi
+	@cp $< $@
+	@chmod $(INSTALLPERMS) $@
+
 uninstallbin::
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(sbindir) $(DESTDIR)$(libdir) $(DESTDIR)$(localstatedir) $(DESTDIR)$(SBIN_PROGS)
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(bindir) $(DESTDIR)$(libdir) $(DESTDIR)$(localstatedir) $(DESTDIR)$(BIN_PROGS)
