@@ -59,6 +59,125 @@ NTSTATUS libnet_dssync_init_context(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static DATA_BLOB *decrypt_attr_val(TALLOC_CTX *mem_ctx,
+				   DATA_BLOB *session_key,
+				   uint32_t rid,
+				   enum drsuapi_DsAttributeId id,
+				   DATA_BLOB *raw_data)
+{
+	bool rcrypt = false;
+	DATA_BLOB out_data;
+
+	ZERO_STRUCT(out_data);
+
+	switch (id) {
+		case DRSUAPI_ATTRIBUTE_dBCSPwd:
+		case DRSUAPI_ATTRIBUTE_unicodePwd:
+		case DRSUAPI_ATTRIBUTE_ntPwdHistory:
+		case DRSUAPI_ATTRIBUTE_lmPwdHistory:
+			rcrypt	= true;
+			break;
+		case DRSUAPI_ATTRIBUTE_supplementalCredentials:
+		case DRSUAPI_ATTRIBUTE_priorValue:
+		case DRSUAPI_ATTRIBUTE_currentValue:
+		case DRSUAPI_ATTRIBUTE_trustAuthOutgoing:
+		case DRSUAPI_ATTRIBUTE_trustAuthIncoming:
+		case DRSUAPI_ATTRIBUTE_initialAuthOutgoing:
+		case DRSUAPI_ATTRIBUTE_initialAuthIncoming:
+			break;
+		default:
+			return raw_data;
+	}
+
+	out_data = decrypt_drsuapi_blob(mem_ctx, session_key, rcrypt,
+					  rid, raw_data);
+
+	if (out_data.length) {
+		return (DATA_BLOB *)talloc_memdup(mem_ctx, &out_data, sizeof(DATA_BLOB));
+	}
+
+	return raw_data;
+}
+
+/****************************************************************
+****************************************************************/
+
+static void parse_obj_identifier(struct drsuapi_DsReplicaObjectIdentifier *id,
+				 uint32_t *rid)
+{
+	if (!id || !rid) {
+		return;
+	}
+
+	*rid = 0;
+
+	if (id->sid.num_auths > 0) {
+		*rid = id->sid.sub_auths[id->sid.num_auths - 1];
+	}
+}
+
+/****************************************************************
+****************************************************************/
+
+static void parse_obj_attribute(TALLOC_CTX *mem_ctx,
+				DATA_BLOB *session_key,
+				uint32_t rid,
+				struct drsuapi_DsReplicaAttribute *attr)
+{
+	int i = 0;
+
+	for (i=0; i<attr->value_ctr.num_values; i++) {
+
+		DATA_BLOB *plain_data = NULL;
+
+		plain_data = decrypt_attr_val(mem_ctx,
+					      session_key,
+					      rid,
+					      attr->attid,
+					      attr->value_ctr.values[i].blob);
+
+		attr->value_ctr.values[i].blob = plain_data;
+	}
+}
+
+/****************************************************************
+****************************************************************/
+
+static void libnet_dssync_decrypt_attributes(TALLOC_CTX *mem_ctx,
+					     DATA_BLOB *session_key,
+					     struct drsuapi_DsReplicaObjectListItemEx *cur)
+{
+	for (; cur; cur = cur->next_object) {
+
+		uint32_t i;
+		uint32_t rid = 0;
+
+		parse_obj_identifier(cur->object.identifier, &rid);
+
+		for (i=0; i < cur->object.attribute_ctr.num_attributes; i++) {
+
+			struct drsuapi_DsReplicaAttribute *attr;
+
+			attr = &cur->object.attribute_ctr.attributes[i];
+
+			if (attr->value_ctr.num_values < 1) {
+				continue;
+			}
+
+			if (!attr->value_ctr.values[0].blob) {
+				continue;
+			}
+
+			parse_obj_attribute(mem_ctx,
+					    session_key,
+					    rid,
+					    attr);
+		}
+	}
+}
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS libnet_dssync_bind(TALLOC_CTX *mem_ctx,
 				   struct dssync_context *ctx)
 {
@@ -287,6 +406,10 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 				(long long)ctr1->new_highwatermark.tmp_highest_usn,
 				(long long)ctr1->new_highwatermark.highest_usn));
 
+			libnet_dssync_decrypt_attributes(mem_ctx,
+							 &ctx->session_key,
+							 ctr1->first_object);
+
 			if (ctx->processing_fn) {
 				status = ctx->processing_fn(mem_ctx,
 							    ctr1->first_object,
@@ -319,6 +442,10 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 			DEBUG(1,("end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",y,
 				(long long)ctr6->new_highwatermark.tmp_highest_usn,
 				(long long)ctr6->new_highwatermark.highest_usn));
+
+			libnet_dssync_decrypt_attributes(mem_ctx,
+							 &ctx->session_key,
+							 ctr6->first_object);
 
 			if (ctx->processing_fn) {
 				status = ctx->processing_fn(mem_ctx,
