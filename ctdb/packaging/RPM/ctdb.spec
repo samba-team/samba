@@ -90,7 +90,7 @@ fi
 %defattr(-,root,root)
 
 %config(noreplace) %{_sysconfdir}/sysconfig/ctdb
-%attr(755,root,root) %config %{initdir}/ctdb
+%attr(755,root,root) %{initdir}/ctdb
 
 %{_sysconfdir}/ctdb/functions
 %{_sysconfdir}/ctdb/events.d/README
