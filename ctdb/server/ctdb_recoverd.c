@@ -671,6 +671,23 @@ static int update_flags_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node
 	return 0;
 }
 
+static int update_our_flags_on_all_nodes(struct ctdb_context *ctdb, uint32_t pnn, struct ctdb_node_map *nodemap)
+{
+	struct ctdb_node_flag_change c;
+	TDB_DATA data;
+
+	c.pnn = nodemap->nodes[pnn].pnn;
+	c.old_flags = nodemap->nodes[pnn].flags;
+	c.new_flags = nodemap->nodes[pnn].flags;
+
+	data.dptr = (uint8_t *)&c;
+	data.dsize = sizeof(c);
+
+	ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
+			  CTDB_SRVID_NODE_FLAGS_CHANGED, data);
+
+	return 0;
+}
 
 /*
   ensure all nodes have the same vnnmap we do
@@ -2497,6 +2514,15 @@ again:
 		force_election(rec, pnn, nodemap);
 		goto again;
 	}
+
+
+	/* verify that we and the recmaster agrees on our flags */
+	if (nodemap->nodes[pnn].flags != remote_nodemap->nodes[pnn].flags) {
+		DEBUG(DEBUG_ERR, (__location__ " Recmaster disagrees on our flags flags:0x%x recmaster_flags:0x%x  Broadcasting out flags.\n", nodemap->nodes[pnn].flags, remote_nodemap->nodes[pnn].flags));
+
+		update_our_flags_on_all_nodes(ctdb, pnn, nodemap);
+	}
+
 
 	/* verify that the public ip address allocation is consistent */
 	ret = ctdb_ctrl_get_public_ips(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, &ips);
