@@ -7858,6 +7858,17 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 		goto done;
 	}
 
+        switch(level) {
+	case 3:
+		fstrcpy(driver_name,
+			driver.info_3->name ? driver.info_3->name : "");
+		break;
+	case 6:
+		fstrcpy(driver_name,
+			driver.info_6->name ?  driver.info_6->name : "");
+		break;
+        }
+
 	/*
 	 * I think this is where he DrvUpgradePrinter() hook would be
 	 * be called in a driver's interface DLL on a Windows NT 4.0/2k
