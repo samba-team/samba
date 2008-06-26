@@ -1158,7 +1158,7 @@ static NTSTATUS ldif_realloc_maps(TALLOC_CTX *mem_ctx,
 NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 				enum netr_SamDatabaseID database_id,
 				struct netr_DELTA_ENUM_ARRAY *r,
-				NTSTATUS result,
+				bool last_query,
 				struct samsync_context *ctx)
 {
 	NTSTATUS status;
@@ -1193,7 +1193,7 @@ NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 	}
 
 	/* This was the last query */
-	if (NT_STATUS_IS_OK(result)) {
+	if (last_query) {
 		ldif_write_output(database_id, ldif_ctx);
 		if (ldif_ctx->ldif_file != stdout) {
 			ctx->result_message = talloc_asprintf(mem_ctx,

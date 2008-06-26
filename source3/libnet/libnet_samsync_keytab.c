@@ -75,7 +75,7 @@ static NTSTATUS fetch_sam_entry_keytab(TALLOC_CTX *mem_ctx,
 				       enum netr_SamDatabaseID database_id,
 				       uint32_t rid,
 				       struct netr_DELTA_USER *r,
-				       NTSTATUS status,
+				       bool last_query,
 				       struct libnet_keytab_context *ctx)
 {
 	uchar nt_passwd[16];
@@ -111,7 +111,7 @@ static NTSTATUS fetch_sam_entry_keytab(TALLOC_CTX *mem_ctx,
 NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
 				  enum netr_SamDatabaseID database_id,
 				  struct netr_DELTA_ENUM_ARRAY *r,
-				  NTSTATUS result,
+				  bool last_query,
 				  struct samsync_context *ctx)
 {
 	NTSTATUS status = NT_STATUS_OK;
@@ -143,7 +143,7 @@ NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
 		status = fetch_sam_entry_keytab(mem_ctx, database_id,
 						r->delta_enum[i].delta_id_union.rid,
 						r->delta_enum[i].delta_union.user,
-						result,
+						last_query,
 						keytab_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
@@ -159,10 +159,15 @@ NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	ctx->result_message = talloc_asprintf(mem_ctx,
-		"vampired %d accounts to keytab %s",
-		keytab_ctx->count,
-		keytab_ctx->keytab_name);
+	if (last_query) {
+		ctx->result_message = talloc_asprintf(mem_ctx,
+			"Vampired %d accounts to keytab %s",
+			keytab_ctx->count,
+			keytab_ctx->keytab_name);
+		TALLOC_FREE(keytab_ctx);
+	}
+
+	return NT_STATUS_OK;
  out:
 	TALLOC_FREE(keytab_ctx);
 

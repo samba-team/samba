@@ -30,7 +30,7 @@ struct samsync_context;
 typedef NTSTATUS (*samsync_delta_fn_t)(TALLOC_CTX *,
 				       enum netr_SamDatabaseID,
 				       struct netr_DELTA_ENUM_ARRAY *,
-				       NTSTATUS,
+				       bool,
 				       struct samsync_context *);
 
 struct samsync_context {
@@ -54,20 +54,20 @@ struct samsync_context {
 NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 				enum netr_SamDatabaseID database_id,
 				struct netr_DELTA_ENUM_ARRAY *r,
-				NTSTATUS result,
+				bool last_query,
 				struct samsync_context *ctx);
 NTSTATUS fetch_sam_entries(TALLOC_CTX *mem_ctx,
 			   enum netr_SamDatabaseID database_id,
 			   struct netr_DELTA_ENUM_ARRAY *r,
-			   NTSTATUS status,
+			   bool last_query,
 			   struct samsync_context *ctx);
 NTSTATUS display_sam_entries(TALLOC_CTX *mem_ctx,
 			     enum netr_SamDatabaseID database_id,
 			     struct netr_DELTA_ENUM_ARRAY *r,
-			     NTSTATUS status,
+			     bool last_query,
 			     struct samsync_context *ctx);
 NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
 				  enum netr_SamDatabaseID database_id,
 				  struct netr_DELTA_ENUM_ARRAY *r,
-				  NTSTATUS status,
+				  bool last_query,
 				  struct samsync_context *ctx);
