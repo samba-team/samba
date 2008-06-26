@@ -3,7 +3,7 @@
 include $(top_srcdir)/Makefile.am.common
 
 lib_LTLIBRARIES = libhx509.la
-libhx509_la_LDFLAGS = -version-info 3:0:0
+libhx509_la_LDFLAGS = -version-info 4:0:0
 
 BUILT_SOURCES =				\
 	sel-gram.h			\
