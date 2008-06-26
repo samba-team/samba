@@ -104,6 +104,15 @@ void winbindd_lookupname_async(TALLOC_CTX *mem_ctx,
 			       void *private_data);
 enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
 					      struct winbindd_cli_state *state);
+void winbindd_listent_async(TALLOC_CTX *mem_ctx,
+	                       struct winbindd_domain *domain,
+	                       void (*cont)(void *private_data, bool success,
+				     fstring dom_name, char* extra_data),
+			       void *private_data, enum ent_type type);
+enum winbindd_result winbindd_dual_list_users(struct winbindd_domain *domain,
+                                              struct winbindd_cli_state *state);
+enum winbindd_result winbindd_dual_list_groups(struct winbindd_domain *domain,
+                                               struct winbindd_cli_state *state);
 bool print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 		   size_t num_sids, char **result, ssize_t *len);
 enum winbindd_result winbindd_dual_lookuprids(struct winbindd_domain *domain,
@@ -132,16 +141,6 @@ void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 				   gid_t gid,
 				   uint32 group_rid),
 		      void *private_data);
-
-void winbindd_listgroups_async(TALLOC_CTX *mem_ctx,
-	                       struct winbindd_domain *domain,
-	                       void (*cont)(void *private_data, bool success,
-				     fstring dom_name, char* extra_data),
-			       void *private_data);
-
-enum winbindd_result winbindd_dual_list_groups(struct winbindd_domain *domain,
-                                               struct winbindd_cli_state *state);
-
 
 /* The following definitions come from winbindd/winbindd_cache.c  */
 
@@ -394,6 +393,7 @@ void winbindd_dsgetdcname(struct winbindd_cli_state *state);
 void winbindd_check_machine_acct(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_dual_check_machine_acct(struct winbindd_domain *domain,
 						      struct winbindd_cli_state *state);
+void winbindd_list_ent(struct winbindd_cli_state *state, enum ent_type type);
 void winbindd_list_trusted_domains(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *domain,
 							struct winbindd_cli_state *state);
