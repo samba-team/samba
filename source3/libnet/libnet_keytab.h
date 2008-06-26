@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  libnet Support
- *  Copyright (C) Guenther Deschner 2007
+ *  Copyright (C) Guenther Deschner 2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,13 +17,24 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBNET_H__
-#define __LIBNET_H__
+#ifdef HAVE_KRB5
 
-#include "libnet/libnet_keytab.h"
-#include "libnet/libnet_samsync.h"
-#include "libnet/libnet_dssync.h"
-#include "librpc/gen_ndr/libnet_join.h"
-#include "libnet/libnet_proto.h"
+struct libnet_keytab_entry {
+	const char *name;
+	const char *principal;
+	DATA_BLOB password;
+	uint32_t kvno;
+};
 
-#endif
+struct libnet_keytab_context {
+	krb5_context context;
+	krb5_keytab keytab;
+	const char *keytab_name;
+	ADS_STRUCT *ads;
+	const char *dns_domain_name;
+	uint8_t zero_buf[16];
+	uint32_t count;
+	struct libnet_keytab_entry *entries;
+};
+
+#endif /* HAVE_KRB5 */

@@ -893,6 +893,7 @@ SMBCONFTORT_OBJ = $(SMBCONFTORT_OBJ0) \
 		  $(POPT_LIB_OBJ)
 
 LIBNET_OBJ = libnet/libnet_join.o \
+	     libnet/libnet_keytab.o \
 	     libnet/libnet_samsync.o \
 	     libnet/libnet_samsync_ldif.o \
 	     libnet/libnet_samsync_passdb.o \

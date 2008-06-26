@@ -19,109 +19,9 @@
 */
 
 #include "includes.h"
-#include "utils/net.h"
+#include "libnet/libnet.h"
 
 #if defined(HAVE_ADS) && defined(ENCTYPE_ARCFOUR_HMAC)
-
-/****************************************************************
-****************************************************************/
-
-struct samsync_keytab_entry {
-	const char *name;
-	const char *principal;
-	DATA_BLOB password;
-	uint32_t kvno;
-};
-
-struct samsync_keytab_context {
-	krb5_context context;
-	krb5_keytab keytab;
-	const char *keytab_name;
-	ADS_STRUCT *ads;
-	const char *dns_domain_name;
-	uint8_t zero_buf[16];
-	uint32_t count;
-	struct samsync_keytab_entry *entries;
-};
-
-/****************************************************************
-****************************************************************/
-
-static int keytab_close(struct samsync_keytab_context *ctx)
-{
-	if (!ctx) {
-		return 0;
-	}
-
-	if (ctx->keytab && ctx->context) {
-		krb5_kt_close(ctx->context, ctx->keytab);
-	}
-
-	if (ctx->context) {
-		krb5_free_context(ctx->context);
-	}
-
-	if (ctx->ads) {
-		ads_destroy(&ctx->ads);
-	}
-
-	TALLOC_FREE(ctx);
-
-	return 0;
-}
-
-/****************************************************************
-****************************************************************/
-
-static krb5_error_code keytab_init(TALLOC_CTX *mem_ctx,
-				   const char *keytab_name,
-				   struct samsync_keytab_context **ctx)
-{
-	krb5_error_code ret = 0;
-	krb5_context context = NULL;
-	krb5_keytab keytab = NULL;
-	const char *keytab_string = NULL;
-
-	struct samsync_keytab_context *r;
-
-	r = TALLOC_ZERO_P(mem_ctx, struct samsync_keytab_context);
-	if (!r) {
-		return ENOMEM;
-	}
-
-	talloc_set_destructor(r, keytab_close);
-
-	initialize_krb5_error_table();
-	ret = krb5_init_context(&context);
-	if (ret) {
-		DEBUG(1,("keytab_init: could not krb5_init_context: %s\n",
-			error_message(ret)));
-		return ret;
-	}
-
-	ret = smb_krb5_open_keytab(context, keytab_name, true, &keytab);
-	if (ret) {
-		DEBUG(1,("keytab_init: smb_krb5_open_keytab failed (%s)\n",
-			error_message(ret)));
-		krb5_free_context(context);
-		return ret;
-	}
-
-	ret = smb_krb5_keytab_name(mem_ctx, context, keytab, &keytab_string);
-	if (ret) {
-		krb5_kt_close(context, keytab);
-		krb5_free_context(context);
-		return ret;
-	}
-
-	r->context = context;
-	r->keytab = keytab;
-	r->keytab_name = keytab_string;
-
-	*ctx = r;
-
-	return 0;
-}
 
 /****************************************************************
 ****************************************************************/
@@ -130,7 +30,7 @@ static NTSTATUS keytab_ad_connect(TALLOC_CTX *mem_ctx,
 				  const char *domain_name,
 				  const char *username,
 				  const char *password,
-				  struct samsync_keytab_context *ctx)
+				  struct libnet_keytab_context *ctx)
 {
 	NTSTATUS status;
 	ADS_STATUS ad_status;
@@ -171,71 +71,35 @@ static NTSTATUS keytab_ad_connect(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-static krb5_error_code keytab_add(struct samsync_keytab_context *ctx)
-{
-	krb5_error_code ret = 0;
-	krb5_enctype enctypes[2] = { ENCTYPE_ARCFOUR_HMAC, 0 };
-	int i;
-
-	for (i=0; i<ctx->count; i++) {
-
-		struct samsync_keytab_entry *entry = &ctx->entries[i];
-		krb5_data password;
-		krb5_kvno kvno;
-
-		kvno = ads_get_kvno(ctx->ads, entry->name);
-
-		password.data = (char *)entry->password.data;
-		password.length = entry->password.length;
-
-		ret = smb_krb5_kt_add_entry(ctx->context,
-					    ctx->keytab,
-					    kvno,
-					    entry->principal,
-					    enctypes,
-					    password,
-					    true);
-		if (ret) {
-			DEBUG(1,("keytab_add: Failed to add entry to keytab file\n"));
-			return ret;
-		}
-	}
-
-	return ret;
-}
-
-/****************************************************************
-****************************************************************/
-
 static NTSTATUS fetch_sam_entry_keytab(TALLOC_CTX *mem_ctx,
 				       enum netr_SamDatabaseID database_id,
 				       uint32_t rid,
 				       struct netr_DELTA_USER *r,
 				       NTSTATUS status,
-				       struct samsync_keytab_context *ctx)
+				       struct libnet_keytab_context *ctx)
 {
 	uchar nt_passwd[16];
-	struct samsync_keytab_entry *entry;
+	struct libnet_keytab_entry entry;
 
 	if (memcmp(r->ntpassword.hash, ctx->zero_buf, 16) == 0) {
 		return NT_STATUS_OK;
 	}
 
-	entry = TALLOC_ZERO_P(mem_ctx, struct samsync_keytab_entry);
-	NT_STATUS_HAVE_NO_MEMORY(entry);
-
 	sam_pwd_hash(rid, r->ntpassword.hash, nt_passwd, 0);
 
-	entry->name = talloc_strdup(mem_ctx, r->account_name.string);
-	entry->principal = talloc_asprintf(mem_ctx, "%s@%s",
-					   r->account_name.string,
-					   ctx->dns_domain_name);
-	entry->password = data_blob_talloc(mem_ctx, nt_passwd, 16);
+	entry.name = talloc_strdup(mem_ctx, r->account_name.string);
+	entry.principal = talloc_asprintf(mem_ctx, "%s@%s",
+					  r->account_name.string,
+					  ctx->dns_domain_name);
+	entry.password = data_blob_talloc(mem_ctx, nt_passwd, 16);
+	entry.kvno = ads_get_kvno(ctx->ads, entry.name);
 
-	NT_STATUS_HAVE_NO_MEMORY(entry->name);
-	NT_STATUS_HAVE_NO_MEMORY(entry->principal);
+	NT_STATUS_HAVE_NO_MEMORY(entry.name);
+	NT_STATUS_HAVE_NO_MEMORY(entry.principal);
+	NT_STATUS_HAVE_NO_MEMORY(entry.password.data);
 
-	ADD_TO_ARRAY(mem_ctx, struct samsync_keytab_entry, *entry,
+
+	ADD_TO_ARRAY(mem_ctx, struct libnet_keytab_entry, entry,
 		     &ctx->entries, &ctx->count);
 
 	return NT_STATUS_OK;
@@ -252,10 +116,10 @@ NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	krb5_error_code ret = 0;
-	struct samsync_keytab_context *keytab_ctx = NULL;
+	struct libnet_keytab_context *keytab_ctx = NULL;
 	int i;
 
-	ret = keytab_init(mem_ctx, ctx->output_filename, &keytab_ctx);
+	ret = libnet_keytab_init(mem_ctx, ctx->output_filename, &keytab_ctx);
 	if (ret) {
 		status = krb5_to_nt_status(ret);
 		goto out;
@@ -286,7 +150,7 @@ NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	ret = keytab_add(keytab_ctx);
+	ret = libnet_keytab_add(keytab_ctx);
 	if (ret) {
 		status = krb5_to_nt_status(ret);
 		ctx->error_message = talloc_asprintf(mem_ctx,
