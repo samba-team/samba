@@ -18,10 +18,10 @@ PREFIX=$5
 shift 5
 failed=0
 
-samba4bindir=`dirname $0`/../../source/bin
+samba4bindir=`dirname $0`/../../bin
 smbclient=$samba4bindir/smbclient
 
-. `dirname $0`/subunit.sh
+. `dirname $0`/../../../testprogs/blackbox/subunit.sh
 
 runcmd() {
 	name="$1"
