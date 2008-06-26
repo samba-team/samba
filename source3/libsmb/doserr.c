@@ -118,6 +118,8 @@ werror_code_struct dos_errs[] =
 	{ "WERR_PASSWORD_MUST_CHANGE", WERR_PASSWORD_MUST_CHANGE },
 	{ "WERR_DOMAIN_CONTROLLER_NOT_FOUND", WERR_DOMAIN_CONTROLLER_NOT_FOUND },
 	{ "WERR_ACCOUNT_LOCKED_OUT", WERR_ACCOUNT_LOCKED_OUT },
+	{ "WERR_DS_DRA_BAD_DN", WERR_DS_DRA_BAD_DN },
+	{ "WERR_DS_DRA_BAD_NC", WERR_DS_DRA_BAD_NC },
 	{ NULL, W_ERROR(0) }
 };
 
@@ -145,6 +147,8 @@ werror_str_struct dos_err_strs[] = {
 	{ WERR_NONE_MAPPED, "Could not map names to SIDs" },
 	{ WERR_NO_SUCH_USER, "No such User" },
 	{ WERR_GROUP_EXISTS, "Group already exists" },
+	{ WERR_DS_DRA_BAD_DN, "An invalid distinguished name was specified for this replication" },
+	{ WERR_DS_DRA_BAD_NC, "An invalid naming context was specified for this replication operation" },
 };
 
 /*****************************************************************************
