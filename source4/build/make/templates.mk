@@ -22,6 +22,12 @@ define binary_link_template
 $(1): $(2) ;
 	@echo Linking $$@
 	@$$(BNLD) $$(BNLD_FLAGS) $$(INTERN_LDFLAGS) -o $$@ $$(INSTALL_LINK_FLAGS) $(3)
+
+clean::
+	@rm -f $(1)
+
+binaries:: $(1)
+
 endef
 
 # Link a host-machine binary
@@ -30,6 +36,12 @@ define host_binary_link_template
 $(1): $(2) ;
 	@echo Linking $$@
 	@$$(HOSTLD) $$(HOSTLD_FLAGS) -L$${builddir}/bin/static -o $$@ $$(INSTALL_LINK_FLAGS) $(3)
+
+clean::
+	rm -f $(1)
+
+binaries:: $(1)
+
 endef
 
 # Create a prototype header
@@ -109,3 +121,33 @@ endef
 
 # abspath for older makes
 abspath := $(shell cd $(1); pwd)
+
+define binary_install_template
+inst@allbin:: $(1) installdirs
+	@mkdir -p $$(DESTDIR)$$(bindir)
+	@$$(SHELL) $$(srcdir)/script/installbin.sh \
+		$$(INSTALLPERMS) \
+		$$(DESTDIR)$$(BASEDIR) \
+		$$(DESTDIR)$$(bindir) \
+		$$(DESTDIR)$$(libdir) \
+		$$(DESTDIR)$$(localstatedir) \
+		$$<
+				
+uninstallbin::
+	@rm -f $$(DESTDIR)$$(bindir)/$(1)
+endef
+
+define sbinary_install_template
+installsbin:: $(1) installdirs
+	@mkdir -p $$(DESTDIR)$$(sbindir)
+	@$$(SHELL) $$(srcdir)/script/installbin.sh \
+		$$(INSTALLPERMS) \
+		$$(DESTDIR)$$(BASEDIR) \
+		$$(DESTDIR)$$(sbindir) \
+		$$(DESTDIR)$$(libdir) \
+		$$(DESTDIR)$$(localstatedir) \
+		$$<
+				
+uninstallsbin::
+	@rm -f $$(DESTDIR)$$(sbindir)/$(1)
+endef

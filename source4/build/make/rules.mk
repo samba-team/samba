@@ -43,8 +43,6 @@ clean:: clean_pch
 	@-find . -name '*.o' -exec rm -f '{}' \;
 	@echo Removing hostcc objects
 	@-find . -name '*.ho' -exec rm -f '{}' \;
-	@echo Removing binaries
-	@-rm -f $(BIN_PROGS) $(SBIN_PROGS) $(BINARIES) $(TORTURE_PROGS)
 	@echo Removing libraries
 	@-rm -f $(STATIC_LIBS) $(SHARED_LIBS)
 	@-rm -f bin/static/*.a bin/shared/*.$(SHLIBEXT) bin/mergedobj/*.o
