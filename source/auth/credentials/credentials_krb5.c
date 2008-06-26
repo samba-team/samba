@@ -389,7 +389,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	}
 
 	/* don't force GSS_C_CONF_FLAG and GSS_C_INTEG_FLAG */
-	maj_stat = gss_set_cred_option(&min_stat, gcc->creds,
+	maj_stat = gss_set_cred_option(&min_stat, &gcc->creds,
 				       GSS_KRB5_CRED_NO_CI_FLAGS_X,
 				       GSS_C_NO_BUFFER);
 	if (maj_stat) {
