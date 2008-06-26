@@ -534,12 +534,6 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	}
 
 	/* some special handling when ending recovery mode */
-
-	/* force the databased to thaw */
-	if (ctdb->freeze_handle) {
-		ctdb_control_thaw(ctdb);
-	}
-
 	state = talloc(ctdb, struct ctdb_set_recmode_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
