@@ -26,10 +26,12 @@ typedef NTSTATUS (*dssync_processing_fn_t)(TALLOC_CTX *,
 
 struct dssync_context {
 	const char *domain_name;
+	const char *dns_domain_name;
 	struct rpc_pipe_client *cli;
 	const char *nc_dn;
 	struct policy_handle bind_handle;
 	DATA_BLOB session_key;
+	const char *output_filename;
 
 	dssync_processing_fn_t processing_fn;
 

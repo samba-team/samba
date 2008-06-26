@@ -298,6 +298,12 @@ static NTSTATUS libnet_dssync_lookup_nc(TALLOC_CTX *mem_ctx,
 	ctx->nc_dn = talloc_strdup(mem_ctx, ctr.ctr1->array[0].result_name);
 	NT_STATUS_HAVE_NO_MEMORY(ctx->nc_dn);
 
+	if (!ctx->dns_domain_name) {
+		ctx->dns_domain_name = talloc_strdup_upper(mem_ctx,
+			ctr.ctr1->array[0].dns_domain_name);
+		NT_STATUS_HAVE_NO_MEMORY(ctx->dns_domain_name);
+	}
+
 	return NT_STATUS_OK;
 }
 
