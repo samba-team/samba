@@ -43,6 +43,15 @@ WERROR libnet_Unjoin(TALLOC_CTX *mem_ctx,
 _PUBLIC_ void ndr_print_libnet_JoinCtx(struct ndr_print *ndr, const char *name, int flags, const struct libnet_JoinCtx *r);
 _PUBLIC_ void ndr_print_libnet_UnjoinCtx(struct ndr_print *ndr, const char *name, int flags, const struct libnet_UnjoinCtx *r);
 
+/* The following definitions come from libnet/libnet_keytab.c  */
+
+#ifdef HAVE_KRB5
+krb5_error_code libnet_keytab_init(TALLOC_CTX *mem_ctx,
+				   const char *keytab_name,
+				   struct libnet_keytab_context **ctx);
+krb5_error_code libnet_keytab_add(struct libnet_keytab_context *ctx);
+#endif
+
 /* The following definitions come from libnet/libnet_samsync.c  */
 
 NTSTATUS libnet_samsync_init_context(TALLOC_CTX *mem_ctx,
