@@ -1219,13 +1219,13 @@ void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch)
  Needed to handle the empty parameter string denoted by "NULL"
  *************************************************************************/
  
-static char* get_driver_3_param (char* str, const char* delim, UNISTR* dest)
+static char* get_driver_3_param (char* str, const char* delim, UNISTR* dest,
+				 char **saveptr)
 {
 	char	*ptr;
-	char *saveptr;
 
 	/* get the next token */
-	ptr = strtok_r(str, delim, &saveptr);
+	ptr = strtok_r(str, delim, saveptr);
 
 	/* a string of 'NULL' is used to represent an empty
 	   parameter because two consecutive delimiters
@@ -1255,17 +1255,18 @@ static bool init_drv_info_3_members ( TALLOC_CTX *mem_ctx, DRIVER_INFO_3 *info,
 	char *saveptr = NULL;
 
 	/* fill in the UNISTR fields */
-	str = get_driver_3_param (args, ":", &info->name);
-	str = get_driver_3_param (NULL, ":", &info->driverpath);
-	str = get_driver_3_param (NULL, ":", &info->datafile);
-	str = get_driver_3_param (NULL, ":", &info->configfile);
-	str = get_driver_3_param (NULL, ":", &info->helpfile);
-	str = get_driver_3_param (NULL, ":", &info->monitorname);
-	str = get_driver_3_param (NULL, ":", &info->defaultdatatype);
+	str = get_driver_3_param (args, ":", &info->name, &saveptr);
+	str = get_driver_3_param (NULL, ":", &info->driverpath, &saveptr);
+	str = get_driver_3_param (NULL, ":", &info->datafile, &saveptr);
+	str = get_driver_3_param (NULL, ":", &info->configfile, &saveptr);
+	str = get_driver_3_param (NULL, ":", &info->helpfile, &saveptr);
+	str = get_driver_3_param (NULL, ":", &info->monitorname, &saveptr);
+	str = get_driver_3_param (NULL, ":", &info->defaultdatatype, &saveptr);
 
 	/* <Comma Separated List of Dependent Files> */
-	str2 = get_driver_3_param (NULL, ":", NULL); /* save the beginning of the string */
-	str = str2;			
+	/* save the beginning of the string */
+	str2 = get_driver_3_param (NULL, ":", NULL, &saveptr);
+	str = str2;
 
 	/* begin to strip out each filename */
 	str = strtok_r(str, ",", &saveptr);
