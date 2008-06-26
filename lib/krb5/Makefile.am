@@ -123,7 +123,6 @@ dist_libkrb5_la_SOURCES =			\
 	keytab_any.c				\
 	keytab_file.c				\
 	keytab_keyfile.c			\
-	keytab_krb4.c				\
 	keytab_memory.c				\
 	krb5_locl.h				\
 	krb5-v4compat.h				\

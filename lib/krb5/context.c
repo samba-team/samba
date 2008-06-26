@@ -258,8 +258,6 @@ krb5_init_context(krb5_context *context)
     krb5_kt_register (p, &krb5_javakt_ops);
     krb5_kt_register (p, &krb5_mkt_ops);
     krb5_kt_register (p, &krb5_akf_ops);
-    krb5_kt_register (p, &krb4_fkt_ops);
-    krb5_kt_register (p, &krb5_srvtab_fkt_ops);
     krb5_kt_register (p, &krb5_any_ops);
 
 out:
