@@ -1143,7 +1143,7 @@ connection_struct *make_connection_with_chdir(const char *service_in,
 	 */
 	 
 	if ( conn && vfs_ChDir(conn,conn->connectpath) != 0 ) {
-		DEBUG(0,("move_driver_to_download_area: Can't change "
+		DEBUG(0,("make_connection_with_chdir: Can't change "
 			 "directory to %s for [print$] (%s)\n",
 			 conn->connectpath,strerror(errno)));
 		yield_connection(conn, lp_servicename(SNUM(conn)));
