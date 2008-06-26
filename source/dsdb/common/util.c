@@ -1040,7 +1040,7 @@ const struct dom_sid *samdb_domain_sid(struct ldb_context *ldb)
 	}
 
 	/* cache the domain_sid in the ldb */
-	if (ldb_set_opaque(ldb, "cache.domain_sid", domain_sid) != LDB_SUCCESS) {
+	if (ldb_set_opaque(ldb, "cache.domain_sid", discard_const_p(struct dom_sid, domain_sid)) != LDB_SUCCESS) {
 		goto failed;
 	}
 
