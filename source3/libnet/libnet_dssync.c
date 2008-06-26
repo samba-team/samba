@@ -366,6 +366,8 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 
 	for (y=0; ;y++) {
 
+		bool last_query = true;
+
 		if (level == 8) {
 			DEBUG(1,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
 				(long long)req.req8.highwatermark.tmp_highest_usn,
@@ -416,10 +418,16 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 							 &ctx->session_key,
 							 ctr1->first_object);
 
+			if (ctr1->new_highwatermark.tmp_highest_usn > ctr1->new_highwatermark.highest_usn) {
+				req.req5.highwatermark = ctr1->new_highwatermark;
+				last_query = false;
+			}
+
 			if (ctx->processing_fn) {
 				status = ctx->processing_fn(mem_ctx,
 							    ctr1->first_object,
 							    &ctr1->mapping_ctr,
+							    last_query,
 							    ctx);
 				if (!NT_STATUS_IS_OK(status)) {
 					ctx->error_message = talloc_asprintf(mem_ctx,
@@ -429,8 +437,7 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 				}
 			}
 
-			if (ctr1->new_highwatermark.tmp_highest_usn > ctr1->new_highwatermark.highest_usn) {
-				req.req5.highwatermark = ctr1->new_highwatermark;
+			if (!last_query) {
 				continue;
 			}
 		}
@@ -454,10 +461,16 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 							 &ctx->session_key,
 							 ctr6->first_object);
 
+			if (ctr6->new_highwatermark.tmp_highest_usn > ctr6->new_highwatermark.highest_usn) {
+				req.req8.highwatermark = ctr6->new_highwatermark;
+				last_query = false;
+			}
+
 			if (ctx->processing_fn) {
 				status = ctx->processing_fn(mem_ctx,
 							    ctr6->first_object,
 							    &ctr6->mapping_ctr,
+							    last_query,
 							    ctx);
 				if (!NT_STATUS_IS_OK(status)) {
 					ctx->error_message = talloc_asprintf(mem_ctx,
@@ -467,8 +480,7 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 				}
 			}
 
-			if (ctr6->new_highwatermark.tmp_highest_usn > ctr6->new_highwatermark.highest_usn) {
-				req.req8.highwatermark = ctr6->new_highwatermark;
+			if (!last_query) {
 				continue;
 			}
 		}

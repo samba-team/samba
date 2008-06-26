@@ -22,6 +22,7 @@ struct dssync_context;
 typedef NTSTATUS (*dssync_processing_fn_t)(TALLOC_CTX *,
 					   struct drsuapi_DsReplicaObjectListItemEx *,
 					   struct drsuapi_DsReplicaOIDMapping_Ctr *,
+					   bool,
 					   struct dssync_context *ctx);
 
 struct dssync_context {
