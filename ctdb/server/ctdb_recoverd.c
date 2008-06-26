@@ -2523,7 +2523,6 @@ again:
 		update_our_flags_on_all_nodes(ctdb, pnn, nodemap);
 	}
 
-
 	/* verify that the public ip address allocation is consistent */
 	ret = ctdb_ctrl_get_public_ips(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, &ips);
 	if (ret != 0) {
@@ -2833,6 +2832,17 @@ again:
 				    vnnmap, ctdb->pnn);
 		}
 #endif
+	}
+
+
+	DEBUG(DEBUG_ERR, (__location__ " Unable flags on all nodes\n"));
+	/*
+	  update all nodes to have the same flags that we have
+	 */
+	ret = update_flags_on_all_nodes(ctdb, nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to update flags on all nodes\n"));
+		return -1;
 	}
 
 	goto again;
