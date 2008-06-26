@@ -142,7 +142,7 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb)
 
 	if (h->child == 0) {
 		int ret;
-
+		int count = 0;
 		/* in the child */
 		close(fd[0]);
 		ret = ctdb_lock_all_databases(ctdb);
@@ -150,12 +150,18 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb)
 			_exit(0);
 		}
 
-try_again:
-		ret = write(fd[1], &ret, sizeof(ret));
-		if (ret != sizeof(ret)) {
+		while (++count < 30) {
+			ret = write(fd[1], &ret, sizeof(ret));
+			if (ret == sizeof(ret)) {
+				break;
+			}
+
 			DEBUG(DEBUG_ERR, (__location__ " Failed to write to socket from freeze child. ret:%d errno:%u\n", ret, errno));
 			sleep (1);
-			goto try_again;
+		}
+		if (count >= 30) {
+			DEBUG(DEBUG_ERR, (__location__ " Failed to write to socket from freeze child. Aborting freeze child\n"));
+			_exit(0);
 		}
 
 		/* the read here means we will die if the parent exits */
