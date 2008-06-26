@@ -453,8 +453,8 @@ enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
 	return WINBINDD_OK;
 }
 
-/* This is the first callback after enumerating groups from a domain */
-static void listgroups_recv(TALLOC_CTX *mem_ctx, bool success,
+/* This is the first callback after enumerating users/groups from a domain */
+static void listent_recv(TALLOC_CTX *mem_ctx, bool success,
 	                    struct winbindd_response *response,
 			    void *c, void *private_data)
 {
@@ -462,7 +462,7 @@ static void listgroups_recv(TALLOC_CTX *mem_ctx, bool success,
 		(void (*)(void *, bool, fstring, char*))c;
 
 	if (!success || response->result != WINBINDD_OK) {
-		DEBUG(5, ("list_groups() failed!\n"));
+		DEBUG(5, ("list_ent() failed!\n"));
 		cont(private_data, False, response->data.name.dom_name, NULL);
 		return;
 	}
@@ -473,20 +473,85 @@ static void listgroups_recv(TALLOC_CTX *mem_ctx, bool success,
 	SAFE_FREE(response->extra_data.data);
 }
 
-/* Request the name of all groups in a single domain */
-void winbindd_listgroups_async(TALLOC_CTX *mem_ctx,
+/* Request the name of all users/groups in a single domain */
+void winbindd_listent_async(TALLOC_CTX *mem_ctx,
 	                       struct winbindd_domain *domain,
 	                       void (*cont)(void *private_data, bool success,
 				     fstring dom_name, char* extra_data),
-			       void *private_data)
+			       void *private_data, enum ent_type type)
 {
 	struct winbindd_request request;
 
 	ZERO_STRUCT(request);
-	request.cmd = WINBINDD_LIST_GROUPS;
+	if (type == LIST_USERS)
+		request.cmd = WINBINDD_LIST_USERS;
+	else if (type == LIST_GROUPS)
+		request.cmd = WINBINDD_LIST_GROUPS;
 
-	do_async_domain(mem_ctx, domain, &request, listgroups_recv,
+	do_async_domain(mem_ctx, domain, &request, listent_recv,
 		        (void *)cont, private_data);
+}
+ 
+enum winbindd_result winbindd_dual_list_users(struct winbindd_domain *domain,
+                                              struct winbindd_cli_state *state)
+{
+	WINBIND_USERINFO *info;
+	NTSTATUS status;
+	struct winbindd_methods *methods;
+	uint32 num_entries = 0;
+	char *extra_data = NULL;
+	uint32_t extra_data_len = 0, i;
+
+	/* Must copy domain into response first for debugging in parent */
+	fstrcpy(state->response.data.name.dom_name, domain->name);
+
+	/* Query user info */
+	methods = domain->methods;
+	status = methods->query_user_list(domain, state->mem_ctx, 
+					  &num_entries, &info);
+	
+	if (!NT_STATUS_IS_OK(status))
+		return WINBINDD_ERROR;
+
+	if (num_entries == 0)
+		return WINBINDD_OK;
+
+	/* Allocate some memory for extra data.  Note that we limit
+	   account names to sizeof(fstring) = 256 characters.		
+	   +1 for the ',' between group names */
+	extra_data = (char *)SMB_REALLOC(extra_data, 
+		(sizeof(fstring) + 1) * num_entries);
+ 
+	if (!extra_data) {
+		DEBUG(0,("failed to enlarge buffer!\n"));
+		return WINBINDD_ERROR;
+	}
+
+	/* Pack user list into extra data fields */
+	for (i = 0; i < num_entries; i++) {
+		fstring acct_name, name;
+		
+		if (info[i].acct_name == NULL)
+			fstrcpy(acct_name, "");
+		else
+			fstrcpy(acct_name, info[i].acct_name);
+		
+		fill_domain_username(name, domain->name, acct_name, True);
+		/* Append to extra data */
+		memcpy(&extra_data[extra_data_len], name, strlen(name));
+		extra_data_len += strlen(name);
+		extra_data[extra_data_len++] = ',';
+	}   
+
+	/* Assign extra_data fields in response structure */
+	if (extra_data) {
+		/* remove trailing ',' */
+		extra_data[extra_data_len - 1] = '\0';
+		state->response.extra_data.data = extra_data;
+		state->response.length += extra_data_len;
+	}
+
+	return WINBINDD_OK;
 }
 
 enum winbindd_result winbindd_dual_list_groups(struct winbindd_domain *domain,
@@ -494,9 +559,9 @@ enum winbindd_result winbindd_dual_list_groups(struct winbindd_domain *domain,
 {
 	struct getent_state groups = {};
 	char *extra_data = NULL;
-	unsigned int extra_data_len = 0, i;
+	uint32_t extra_data_len = 0, i;
 
-	/* Must copy domain into response first for bookeeping in parent */
+	/* Must copy domain into response first for debugging in parent */
 	fstrcpy(state->response.data.name.dom_name, domain->name);
 	fstrcpy(groups.domain_name, domain->name);
 
