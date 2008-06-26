@@ -122,32 +122,20 @@ endef
 # abspath for older makes
 abspath := $(shell cd $(1); pwd)
 
+# Install a binary
+# Arguments: path to binary to install
 define binary_install_template
-inst@allbin:: $(1) installdirs
-	@mkdir -p $$(DESTDIR)$$(bindir)
-	@$$(SHELL) $$(srcdir)/script/installbin.sh \
-		$$(INSTALLPERMS) \
-		$$(DESTDIR)$$(BASEDIR) \
-		$$(DESTDIR)$$(bindir) \
-		$$(DESTDIR)$$(libdir) \
-		$$(DESTDIR)$$(localstatedir) \
-		$$<
-				
+installbin:: $$(DESTDIR)$$(bindir)/$(notdir $(1))
+
 uninstallbin::
+	@echo "Removing $(notdir $(1))"
 	@rm -f $$(DESTDIR)$$(bindir)/$(1)
 endef
 
 define sbinary_install_template
-installsbin:: $(1) installdirs
-	@mkdir -p $$(DESTDIR)$$(sbindir)
-	@$$(SHELL) $$(srcdir)/script/installbin.sh \
-		$$(INSTALLPERMS) \
-		$$(DESTDIR)$$(BASEDIR) \
-		$$(DESTDIR)$$(sbindir) \
-		$$(DESTDIR)$$(libdir) \
-		$$(DESTDIR)$$(localstatedir) \
-		$$<
+installsbin:: $$(DESTDIR)$$(sbindir)/$(notdir $(1)) installdirs
 				
 uninstallsbin::
+	@echo "Removing $(notdir $(1))"
 	@rm -f $$(DESTDIR)$$(sbindir)/$(1)
 endef
