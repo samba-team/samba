@@ -158,6 +158,9 @@ static NTSTATUS libnet_dssync_lookup_nc(TALLOC_CTX *mem_ctx,
 					     &ctr,
 					     &werr);
 	if (!NT_STATUS_IS_OK(status)) {
+		ctx->error_message = talloc_asprintf(mem_ctx,
+			"Failed to lookup DN for domain name: %s",
+			get_friendly_werror_msg(werr));
 		return status;
 	}
 
@@ -252,11 +255,14 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 						       &ctr,
 						       &werr);
 		if (!NT_STATUS_IS_OK(status)) {
-			werr = ntstatus_to_werror(status);
+			ctx->error_message = talloc_asprintf(mem_ctx,
+				"Failed to get NC Changes: %s",
+				get_friendly_werror_msg(werr));
 			goto out;
 		}
 
 		if (!W_ERROR_IS_OK(werr)) {
+			status = werror_to_ntstatus(werr);
 			goto out;
 		}
 
@@ -270,6 +276,9 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 
 		status = cli_get_session_key(mem_ctx, ctx->cli, &ctx->session_key);
 		if (!NT_STATUS_IS_OK(status)) {
+			ctx->error_message = talloc_asprintf(mem_ctx,
+				"Failed to get Session Key: %s",
+				nt_errstr(status));
 			return status;
 		}
 
@@ -283,6 +292,9 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 							    ctr1->first_object,
 							    ctx);
 				if (!NT_STATUS_IS_OK(status)) {
+					ctx->error_message = talloc_asprintf(mem_ctx,
+						"Failed to call processing function: %s",
+						nt_errstr(status));
 					goto out;
 				}
 			}
@@ -313,6 +325,9 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 							    ctr6->first_object,
 							    ctx);
 				if (!NT_STATUS_IS_OK(status)) {
+					ctx->error_message = talloc_asprintf(mem_ctx,
+						"Failed to call processing function: %s",
+						nt_errstr(status));
 					goto out;
 				}
 			}
