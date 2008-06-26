@@ -116,7 +116,7 @@ read_string(const char *preprompt, const char *prompt,
     *p = 0;
     
     if(echo == 0){
-	printf("\n");
+	fprintf(stderr, "\n");
 	tcsetattr(fileno(tty), TCSANOW, &t_old);
     }
     
