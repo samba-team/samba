@@ -236,6 +236,7 @@ o   Volker Lendecke <vl@samba.org>
     * Fix the build on FreeBSD 4.6.2 and Darwin.
     * Fix a double-closedir() in form_junctions().
     * Fix a crash in _dfs_Enum.
+    * Fix a segfault in rpcclient adddriver.
 
 
 o   Günther Deschner <gd@samba.org>
