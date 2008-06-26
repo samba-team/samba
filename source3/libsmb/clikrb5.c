@@ -217,7 +217,7 @@ static int create_kerberos_key_from_string_direct(krb5_context context,
 						  krb5_enctype enctype,
 						  bool no_salt)
 {
-	int ret;
+	int ret = 0;
 	krb5_data salt;
 	krb5_encrypt_block eblock;
 
