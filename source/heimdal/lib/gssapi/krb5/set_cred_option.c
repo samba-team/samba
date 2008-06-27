@@ -35,10 +35,10 @@
 RCSID("$Id: set_cred_option.c 22655 2008-02-26 12:40:35Z lha $");
 
 /* 1.2.752.43.13.17 */
-static gss_OID_desc gss_krb5_ccache_name_x_oid_desc =
+static gss_OID_desc gss_krb5_cred_no_ci_flags_x_oid_desc =
 {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x11")};
 
-gss_OID GSS_KRB5_CRED_NO_CI_FLAGS_X = &gss_krb5_ccache_name_x_oid_desc;
+gss_OID GSS_KRB5_CRED_NO_CI_FLAGS_X = &gss_krb5_cred_no_ci_flags_x_oid_desc;
 
 /* 1.2.752.43.13.18 */
 static gss_OID_desc gss_krb5_import_cred_x_oid_desc =
