@@ -218,6 +218,13 @@ const char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
 			      LDAPMessage *entry);
 
 
+#else
+#define LDAP void
+#define LDAPMod void
+#define LDAP_CONST const
+#define LDAPControl void
+struct berval;
+struct ldapsam_privates;
 #endif 	/* HAVE_LDAP */
 
 #define LDAP_DEFAULT_TIMEOUT   15

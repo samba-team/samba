@@ -179,7 +179,7 @@ NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
 NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
 				  enum netr_SamDatabaseID database_id,
 				  struct netr_DELTA_ENUM_ARRAY *r,
-				  NTSTATUS result,
+				  bool last_query,
 				  struct samsync_context *ctx)
 {
 	return NT_STATUS_NOT_SUPPORTED;
