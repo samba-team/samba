@@ -196,11 +196,10 @@ sub Binary($$)
 	my ($self,$ctx) = @_;
 
 	unless (defined($ctx->{INSTALLDIR})) {
-		$self->output("BINARIES += $ctx->{TARGET_BINARY}\n");
 	} elsif ($ctx->{INSTALLDIR} eq "SBINDIR") {
-		$self->output("SBIN_PROGS += $ctx->{RESULT_BINARY}\n");
+		$self->output("\$(eval \$(call sbinary_install_template,$ctx->{RESULT_BINARY}))\n");
 	} elsif ($ctx->{INSTALLDIR} eq "BINDIR") {
-		$self->output("BIN_PROGS += $ctx->{RESULT_BINARY}\n");
+		$self->output("\$(eval \$(call binary_install_template,$ctx->{RESULT_BINARY}))\n");
 	}
 
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
@@ -208,9 +207,9 @@ sub Binary($$)
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 	if (defined($ctx->{USE_HOSTCC}) && $ctx->{USE_HOSTCC} eq "YES") {
-$self->output("\$(call host_binary_link_template, $ctx->{RESULT_BINARY}, \$($ctx->{NAME}_FULL_OBJ_LIST) \$($ctx->{NAME}_DEPEND_LIST), \$($ctx->{NAME}_LINK_FLAGS))\n");
+$self->output("\$(eval \$(call host_binary_link_template, $ctx->{RESULT_BINARY}, \$($ctx->{NAME}_FULL_OBJ_LIST) \$($ctx->{NAME}_DEPEND_LIST), \$($ctx->{NAME}_LINK_FLAGS)))\n");
 	} else {
-$self->output("\$(call binary_link_template, $ctx->{RESULT_BINARY}, \$($ctx->{NAME}_FULL_OBJ_LIST) \$($ctx->{NAME}_DEPEND_LIST), \$($ctx->{NAME}_LINK_FLAGS))\n");
+$self->output("\$(eval \$(call binary_link_template, $ctx->{RESULT_BINARY}, \$($ctx->{NAME}_FULL_OBJ_LIST) \$($ctx->{NAME}_DEPEND_LIST), \$($ctx->{NAME}_LINK_FLAGS)))\n");
 	}
 }
 
