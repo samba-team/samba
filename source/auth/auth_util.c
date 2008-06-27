@@ -568,7 +568,7 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 		 * a PDC. JRA.
 		 */
 
-		winbind_off();
+		(void)winbind_off();
 
 		DEBUG(10, ("make_server_info_sam: our machine account %s "
 			"setting supplementary group list empty and "
