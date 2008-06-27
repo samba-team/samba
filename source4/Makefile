@@ -71,6 +71,7 @@ smbreadlinesrcdir := lib/smbreadline
 libmessagingsrcdir := lib/messaging
 libeventssrcdir := lib/events
 libcmdlinesrcdir := lib/cmdline
+poptsrcdir := lib/popt
 socketwrappersrcdir := lib/socket_wrapper
 nsswrappersrcdir := lib/nss_wrapper
 appwebsrcdir := lib/appweb
@@ -105,8 +106,6 @@ ntp_signdsrcdir := ntp_signd
 
 include data.mk
 
-BINARIES += $(BIN_PROGS) $(SBIN_PROGS)
-
 pythonmods:: $(PYTHON_PYS) $(PYTHON_SO)
 
 DEP_FILES = $(patsubst %.ho,%.hd,$(patsubst %.o,%.d,$(ALL_OBJS))) \
@@ -135,7 +134,6 @@ endif
 DEFAULT_HEADERS = $(srcdir)/lib/util/dlinklist.h \
 		  $(srcdir)/version.h
 
-binaries:: $(BINARIES)
 libraries:: $(STATIC_LIBS) $(SHARED_LIBS)
 modules:: $(PLUGINS)
 headers:: $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
@@ -212,20 +210,6 @@ installdirs::
 		$(DESTDIR)$(sysconfdir) \
 
 installbin:: $(SBIN_PROGS) $(BIN_PROGS) $(TORTURE_PROGS) installdirs
-	@$(SHELL) $(srcdir)/script/installbin.sh \
-		$(INSTALLPERMS) \
-		$(DESTDIR)$(BASEDIR) \
-		$(DESTDIR)$(sbindir) \
-		$(DESTDIR)$(libdir) \
-		$(DESTDIR)$(localstatedir) \
-		$(SBIN_PROGS)
-	@$(SHELL) $(srcdir)/script/installbin.sh \
-		$(INSTALLPERMS) \
-		$(DESTDIR)$(BASEDIR) \
-		$(DESTDIR)$(bindir) \
-		$(DESTDIR)$(libdir) \
-		$(DESTDIR)$(localstatedir) \
-		$(BIN_PROGS)
 	@$(SHELL) $(srcdir)/script/installtorture.sh \
 		$(INSTALLPERMS) \
 		$(DESTDIR)$(TORTUREDIR) \
@@ -262,6 +246,20 @@ uninstall:: uninstallbin uninstallman uninstallmisc uninstalllib uninstallheader
 uninstallmisc::
 	#FIXME
 
+$(DESTDIR)$(bindir)/%: bin/% installdirs
+	@mkdir -p $(@D)
+	@echo Installing $(@F) as $@
+	@if test -f $@; then; rm -f $@.old; mv $@ $@.old; fi
+	@cp $< $@
+	@chmod $(INSTALLPERMS) $@
+
+$(DESTDIR)$(sbindir)/%: bin/% installdirs
+	@mkdir -p $(@D)
+	@echo Installing $(@F) as $@
+	@if test -f $@; then; rm -f $@.old; mv $@ $@.old; fi
+	@cp $< $@
+	@chmod $(INSTALLPERMS) $@
+
 uninstallbin::
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(sbindir) $(DESTDIR)$(libdir) $(DESTDIR)$(localstatedir) $(DESTDIR)$(SBIN_PROGS)
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(bindir) $(DESTDIR)$(libdir) $(DESTDIR)$(localstatedir) $(DESTDIR)$(BIN_PROGS)
@@ -289,7 +287,8 @@ data.mk: config.status $(MK_FILES)
 testcov-html:: 
 
 include $(pidldir)/config.mk
-include $(srcdir)/selftest/config.mk
+selftestdir := $(srcdir)/selftest
+include $(selftestdir)/config.mk
 
 showflags::
 	@echo '  pwd        = '`/bin/pwd`

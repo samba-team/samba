@@ -202,6 +202,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	init_module_fn static_init[] = { STATIC_smbd_MODULES };
 	init_module_fn *shared_init;
 	struct event_context *event_ctx;
+	uint16_t stdin_event_flags;
 	NTSTATUS status;
 	const char *model = "standard";
 	int max_runtime = 0;
@@ -324,15 +325,20 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	cluster_ctdb_init(cmdline_lp_ctx, event_ctx, model);
 
 	if (opt_interactive) {
-		/* catch EOF on stdin */
-#ifdef SIGTTIN
-		signal(SIGTTIN, SIG_IGN);
-#endif
-		event_add_fd(event_ctx, event_ctx, 0, EVENT_FD_READ, 
-			     server_stdin_handler,
-			     discard_const(binary_name));
+		/* terminate when stdin goes away */
+		stdin_event_flags = EVENT_FD_READ;
+	} else {
+		/* stay alive forever */
+		stdin_event_flags = 0;
 	}
 
+	/* catch EOF on stdin */
+#ifdef SIGTTIN
+	signal(SIGTTIN, SIG_IGN);
+#endif
+	event_add_fd(event_ctx, event_ctx, 0, stdin_event_flags,
+		     server_stdin_handler,
+		     discard_const(binary_name));
 
 	if (max_runtime) {
 		event_add_timed(event_ctx, event_ctx, 

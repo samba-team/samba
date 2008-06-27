@@ -22,6 +22,12 @@ define binary_link_template
 $(1): $(2) ;
 	@echo Linking $$@
 	@$$(BNLD) $$(BNLD_FLAGS) $$(INTERN_LDFLAGS) -o $$@ $$(INSTALL_LINK_FLAGS) $(3)
+
+clean::
+	@rm -f $(1)
+
+binaries:: $(1)
+
 endef
 
 # Link a host-machine binary
@@ -30,6 +36,12 @@ define host_binary_link_template
 $(1): $(2) ;
 	@echo Linking $$@
 	@$$(HOSTLD) $$(HOSTLD_FLAGS) -L$${builddir}/bin/static -o $$@ $$(INSTALL_LINK_FLAGS) $(3)
+
+clean::
+	rm -f $(1)
+
+binaries:: $(1)
+
 endef
 
 # Create a prototype header
@@ -105,4 +117,25 @@ uninstallplugins::
 	@echo Uninstalling $$(DESTDIR)$$(modulesdir)/$(1)/$(2)
 	@-rm $$(DESTDIR)$$(modulesdir)/$(1)/$(2)
 
+endef
+
+# abspath for older makes
+abspath := $(shell cd $(1); pwd)
+
+# Install a binary
+# Arguments: path to binary to install
+define binary_install_template
+installbin:: $$(DESTDIR)$$(bindir)/$(notdir $(1))
+
+uninstallbin::
+	@echo "Removing $(notdir $(1))"
+	@rm -f $$(DESTDIR)$$(bindir)/$(1)
+endef
+
+define sbinary_install_template
+installsbin:: $$(DESTDIR)$$(sbindir)/$(notdir $(1)) installdirs
+				
+uninstallsbin::
+	@echo "Removing $(notdir $(1))"
+	@rm -f $$(DESTDIR)$$(sbindir)/$(1)
 endef

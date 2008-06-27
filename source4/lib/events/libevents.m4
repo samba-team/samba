@@ -1,16 +1,18 @@
 dnl find the events sources. This is meant to work both for
 dnl standalone builds, and builds of packages using libevents
-eventsdir=""
-eventspaths="$srcdir $srcdir/lib/events $srcdir/events $srcdir/../events"
-for d in $eventspaths; do
-	if test -f "$d/events.c"; then
-		eventsdir="$d"
-		AC_SUBST(eventsdir)
-		break;
-	fi
-done
 if test x"$eventsdir" = "x"; then
-   AC_MSG_ERROR([cannot find libevents source in $eventspaths])
+	eventsdir=""
+	eventspaths="$srcdir $srcdir/../samba4/source/lib/events $srcdir/lib/events $srcdir/events $srcdir/../events"
+	for d in $eventspaths; do
+		if test -f "$d/events.c"; then
+			eventsdir="$d"
+			AC_SUBST(eventsdir)
+			break;
+		fi
+	done
+	if test x"$eventsdir" = "x"; then
+	   AC_MSG_ERROR([cannot find libevents source in $eventspaths])
+	fi
 fi
 
 EVENTS_OBJ="events.o events_select.o events_signal.o events_timed.o events_standard.o events_debug.o events_util.o"

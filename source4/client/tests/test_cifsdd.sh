@@ -14,9 +14,9 @@ USERNAME=$2
 PASSWORD=$3
 DOMAIN=$4
 
-. `dirname $0`/subunit.sh
+. `dirname $0`/../../../testprogs/blackbox/subunit.sh
 
-samba4bindir=`dirname $0`/../../source/bin
+samba4bindir=`dirname $0`/../../bin
 DD=$samba4bindir/cifsdd
 
 SHARE=tmp
