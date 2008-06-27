@@ -116,13 +116,16 @@ NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	krb5_error_code ret = 0;
-	struct libnet_keytab_context *keytab_ctx = NULL;
+	static struct libnet_keytab_context *keytab_ctx = NULL;
 	int i;
 
-	ret = libnet_keytab_init(mem_ctx, ctx->output_filename, &keytab_ctx);
-	if (ret) {
-		status = krb5_to_nt_status(ret);
-		goto out;
+	if (!keytab_ctx) {
+		ret = libnet_keytab_init(mem_ctx, ctx->output_filename,
+					 &keytab_ctx);
+		if (ret) {
+			status = krb5_to_nt_status(ret);
+			goto out;
+		}
 	}
 
 	status = keytab_ad_connect(mem_ctx,
@@ -150,20 +153,22 @@ NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	ret = libnet_keytab_add(keytab_ctx);
-	if (ret) {
-		status = krb5_to_nt_status(ret);
-		ctx->error_message = talloc_asprintf(mem_ctx,
-			"Failed to add entries to keytab %s: %s",
-			keytab_ctx->keytab_name, error_message(ret));
-		goto out;
-	}
-
 	if (last_query) {
+
+		ret = libnet_keytab_add(keytab_ctx);
+		if (ret) {
+			status = krb5_to_nt_status(ret);
+			ctx->error_message = talloc_asprintf(mem_ctx,
+				"Failed to add entries to keytab %s: %s",
+				keytab_ctx->keytab_name, error_message(ret));
+			goto out;
+		}
+
 		ctx->result_message = talloc_asprintf(mem_ctx,
 			"Vampired %d accounts to keytab %s",
 			keytab_ctx->count,
 			keytab_ctx->keytab_name);
+
 		TALLOC_FREE(keytab_ctx);
 	}
 
