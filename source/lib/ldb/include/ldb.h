@@ -782,6 +782,7 @@ int ldb_set_timeout(struct ldb_context *ldb, struct ldb_request *req, int timeou
 int ldb_set_timeout_from_prev_req(struct ldb_context *ldb, struct ldb_request *oldreq, struct ldb_request *newreq);
 void ldb_set_create_perms(struct ldb_context *ldb, unsigned int perms);
 void ldb_set_modules_dir(struct ldb_context *ldb, const char *path);
+struct event_context;
 void ldb_set_event_context(struct ldb_context *ldb, struct event_context *ev);
 struct event_context * ldb_get_event_context(struct ldb_context *ldb);
 
