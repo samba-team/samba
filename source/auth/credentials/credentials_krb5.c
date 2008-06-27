@@ -359,11 +359,14 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	OM_uint32 maj_stat, min_stat;
 	struct gssapi_creds_container *gcc;
 	struct ccache_container *ccache;
+	gss_buffer_desc empty_buffer = GSS_C_EMPTY_BUFFER;
+
 	if (cred->client_gss_creds_obtained >= cred->client_gss_creds_threshold && 
 	    cred->client_gss_creds_obtained > CRED_UNINITIALISED) {
 		*_gcc = cred->client_gss_creds;
 		return 0;
 	}
+
 	ret = cli_credentials_get_ccache(cred, event_ctx, lp_ctx, 
 					 &ccache);
 	if (ret) {
@@ -391,7 +394,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	/* don't force GSS_C_CONF_FLAG and GSS_C_INTEG_FLAG */
 	maj_stat = gss_set_cred_option(&min_stat, &gcc->creds,
 				       GSS_KRB5_CRED_NO_CI_FLAGS_X,
-				       GSS_C_NO_BUFFER);
+				       &empty_buffer);
 	if (maj_stat) {
 		talloc_free(gcc);
 		if (min_stat) {
