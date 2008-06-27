@@ -5357,7 +5357,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 	union samr_UserInfo info;
 
 	if (argc != 2) {
-		d_printf("Usage: net rpc trustdom add <domain_name> <pw>\n");
+		d_printf("Usage: net rpc trustdom add <domain_name> <trust password>\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -5478,7 +5478,7 @@ static int rpc_trustdom_add(int argc, const char **argv)
 		return run_rpc_command(NULL, PI_SAMR, 0, rpc_trustdom_add_internals,
 		                       argc, argv);
 	} else {
-		d_printf("Usage: net rpc trustdom add <domain>\n");
+		d_printf("Usage: net rpc trustdom add <domain_name> <trust password>\n");
 		return -1;
 	}
 }
