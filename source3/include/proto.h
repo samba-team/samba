@@ -2063,7 +2063,6 @@ ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
 
 bool ads_sitename_match(ADS_STRUCT *ads);
 bool ads_closest_dc(ADS_STRUCT *ads);
-bool ads_try_connect(ADS_STRUCT *ads, const char *server );
 ADS_STATUS ads_connect(ADS_STRUCT *ads);
 ADS_STATUS ads_connect_user_creds(ADS_STRUCT *ads);
 void ads_disconnect(ADS_STRUCT *ads);
