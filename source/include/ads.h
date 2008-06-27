@@ -53,7 +53,9 @@ typedef struct ads_struct {
 		char *realm;
 		char *workgroup;
 		char *ldap_server;
-		int foreign; /* set to 1 if connecting to a foreign realm */
+		int foreign; /* set to 1 if connecting to a foreign
+			      * realm */
+		bool gc;     /* Is this a global catalog server? */
 	} server;
 
 	/* info needed to authenticate */

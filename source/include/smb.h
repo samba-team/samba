@@ -1847,6 +1847,7 @@ typedef struct _smb_iconv_t {
 #ifndef LDAP_PORT
 #define LDAP_PORT	389
 #endif
+#define LDAP_GC_PORT    3268
 
 /* used by the IP comparison function */
 struct ip_service {

@@ -1043,14 +1043,16 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 
 	if (lp_security() == SEC_ADS) {
 		ADS_STRUCT *ads;
+		ADS_STATUS ads_status;
 		char addr[INET6_ADDRSTRLEN];
 
 		print_sockaddr(addr, sizeof(addr), pss);
 
-		ads = ads_init(domain->alt_name, domain->name, NULL);
+		ads = ads_init(domain->alt_name, domain->name, addr);
 		ads->auth.flags |= ADS_AUTH_NO_BIND;
 
-		if (ads_try_connect(ads, addr)) {
+		ads_status = ads_connect(ads);
+		if (ADS_ERR_OK(ads_status)) {
 			/* We got a cldap packet. */
 			fstrcpy(name, ads->config.ldap_server_name);
 			namecache_store(name, 0x20, 1, &ip_list);

@@ -173,7 +173,7 @@ bool ads_closest_dc(ADS_STRUCT *ads)
   try a connection to a given ldap server, returning True and setting the servers IP
   in the ads struct if successful
  */
-bool ads_try_connect(ADS_STRUCT *ads, const char *server )
+static bool ads_try_connect(ADS_STRUCT *ads, const char *server, bool gc)
 {
 	char *srv;
 	struct nbt_cldap_netlogon_5 cldap_reply;
@@ -238,7 +238,7 @@ bool ads_try_connect(ADS_STRUCT *ads, const char *server )
 	}
 	ads->server.workgroup          = SMB_STRDUP(cldap_reply.domain);
 
-	ads->ldap.port = LDAP_PORT;
+	ads->ldap.port = gc ? LDAP_GC_PORT : LDAP_PORT;
 	if (!interpret_string_addr(&ads->ldap.ss, srv, 0)) {
 		DEBUG(1,("ads_try_connect: unable to convert %s "
 			"to an address\n",
@@ -358,7 +358,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 			}
 		}
 
-		if ( ads_try_connect(ads, server) ) {
+		if ( ads_try_connect(ads, server, false) ) {
 			SAFE_FREE(ip_list);
 			SAFE_FREE(sitename);
 			return NT_STATUS_OK;
@@ -383,6 +383,141 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 	}
 
 	return NT_STATUS_NO_LOGON_SERVERS;
+}
+
+/*********************************************************************
+ *********************************************************************/
+
+static NTSTATUS ads_lookup_site(void)
+{
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS ads_status;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	struct nbt_cldap_netlogon_5 cldap_reply;
+
+	ZERO_STRUCT(cldap_reply);
+
+	ads = ads_init(lp_realm(), NULL, NULL);
+	if (!ads) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* The NO_BIND here will find a DC and set the client site
+	   but not establish the TCP connection */
+
+	ads->auth.flags = ADS_AUTH_NO_BIND;
+	ads_status = ads_connect(ads);
+	if (!ADS_ERR_OK(ads_status)) {
+		DEBUG(4, ("ads_lookup_site: ads_connect to our realm failed! (%s)\n",
+			  ads_errstr(ads_status)));
+	}
+	nt_status = ads_ntstatus(ads_status);
+
+	if (ads) {
+		ads_destroy(&ads);
+	}
+
+	return nt_status;
+}
+
+/*********************************************************************
+ *********************************************************************/
+
+static const char* host_dns_domain(const char *fqdn)
+{
+	const char *p = fqdn;
+
+	/* go to next char following '.' */
+
+	if ((p = strchr_m(fqdn, '.')) != NULL) {
+		p++;
+	}
+
+	return p;
+}
+
+
+/**
+ * Connect to the Global Catalog server
+ * @param ads Pointer to an existing ADS_STRUCT
+ * @return status of connection
+ *
+ * Simple wrapper around ads_connect() that fills in the
+ * GC ldap server information
+ **/
+
+ADS_STATUS ads_connect_gc(ADS_STRUCT *ads)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct dns_rr_srv *gcs_list;
+	int num_gcs;
+	char *realm = ads->server.realm;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	ADS_STATUS ads_status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+	int i;
+	bool done = false;
+	char *sitename = NULL;
+
+	if (!realm)
+		realm = lp_realm();
+
+	if ((sitename = sitename_fetch(realm)) == NULL) {
+		ads_lookup_site();
+		sitename = sitename_fetch(realm);
+	}
+
+	do {
+		/* We try once with a sitename and once without
+		   (unless we don't have a sitename and then we're
+		   done */
+
+		if (sitename == NULL)
+			done = true;
+
+		nt_status = ads_dns_query_gcs(frame, realm, sitename,
+					      &gcs_list, &num_gcs);
+
+		SAFE_FREE(sitename);
+
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			ads_status = ADS_ERROR_NT(nt_status);
+			goto done;
+		}
+
+		/* Loop until we get a successful connection or have gone
+		   through them all.  When connecting a GC server, make sure that
+		   the realm is the server's DNS name and not the forest root */
+
+		for (i=0; i<num_gcs; i++) {
+			ads->server.gc = true;
+			ads->server.ldap_server = SMB_STRDUP(gcs_list[i].hostname);
+			ads->server.realm = SMB_STRDUP(host_dns_domain(ads->server.ldap_server));
+			ads_status = ads_connect(ads);
+			if (ADS_ERR_OK(ads_status)) {
+				/* Reset the bind_dn to "".  A Global Catalog server
+				   may host  multiple domain trees in a forest.
+				   Windows 2003 GC server will accept "" as the search
+				   path to imply search all domain trees in the forest */
+
+				SAFE_FREE(ads->config.bind_path);
+				ads->config.bind_path = SMB_STRDUP("");
+
+
+				goto done;
+			}
+			SAFE_FREE(ads->server.ldap_server);
+			SAFE_FREE(ads->server.realm);
+		}
+
+	        TALLOC_FREE(gcs_list);
+		num_gcs = 0;
+	} while (!done);
+
+done:
+	SAFE_FREE(sitename);
+	talloc_destroy(frame);
+
+	return ads_status;
 }
 
 
@@ -412,7 +547,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	}
 
 	if (ads->server.ldap_server &&
-	    ads_try_connect(ads, ads->server.ldap_server)) {
+	    ads_try_connect(ads, ads->server.ldap_server, ads->server.gc)) {
 		goto got_connection;
 	}
 
@@ -472,7 +607,7 @@ got_connection:
 	/* Otherwise setup the TCP LDAP session */
 
 	ads->ldap.ld = ldap_open_with_timeout(ads->config.ldap_server_name,
-					      LDAP_PORT, lp_ldap_timeout());
+					      ads->ldap.port, lp_ldap_timeout());
 	if (ads->ldap.ld == NULL) {
 		status = ADS_ERROR(LDAP_OPERATIONS_ERROR);
 		goto out;
