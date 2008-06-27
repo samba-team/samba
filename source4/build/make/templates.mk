@@ -120,7 +120,7 @@ uninstallplugins::
 endef
 
 # abspath for older makes
-abspath := $(shell cd $(1); pwd)
+abspath = $(shell cd $(dir $(1)); pwd)/$(notdir $(1))
 
 # Install a binary
 # Arguments: path to binary to install
