@@ -216,6 +216,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 5533: Fix handling of workgroup names containing a '.' in Winbindd.
     * BUG 5551: Fix group enumeration with 'wbinfo -g' on PDCs.
     * BUG 5555: Fix setting of the password last set field during domain joins.
+    * Fix gcc warnings at -O3.
 
 
 o   Michael Adam <obnox@samba.org>
@@ -237,6 +238,7 @@ o   Volker Lendecke <vl@samba.org>
     * Fix a double-closedir() in form_junctions().
     * Fix a crash in _dfs_Enum.
     * Fix a segfault in rpcclient adddriver.
+    * Fix valgrind errors in _spoolss_addprinterdriver.
 
 
 o   Günther Deschner <gd@samba.org>
