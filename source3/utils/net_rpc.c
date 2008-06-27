@@ -5647,7 +5647,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 	union samr_UserInfo info;
 
 	if (argc != 2) {
-		d_printf("Usage: net rpc trustdom add <domain_name> <pw>\n");
+		d_printf("Usage: net rpc trustdom add <domain_name> <trust password>\n")
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -5769,7 +5769,7 @@ static int rpc_trustdom_add(struct net_context *c, int argc, const char **argv)
 				       rpc_trustdom_add_internals, argc, argv);
 	} else {
 		d_printf("Usage:\n"
-			 "net rpc trustdom add <domain>\n");
+			"net rpc trustdom add <domain_name> <trust password>\n");
 		return -1;
 	}
 }
