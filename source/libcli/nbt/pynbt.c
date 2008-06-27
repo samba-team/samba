@@ -38,7 +38,7 @@ static void py_nbt_node_dealloc(PyObject *obj)
 	PyObject_Del(obj);
 }
 
-static PyObject *py_nbt_node_init(PyObject *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_nbt_node_init(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
 	struct event_context *ev;
 	nbt_node_Object *ret = PyObject_New(nbt_node_Object, &nbt_node_Type);
