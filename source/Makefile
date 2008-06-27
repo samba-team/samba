@@ -249,14 +249,14 @@ uninstallmisc::
 $(DESTDIR)$(bindir)/%: bin/% installdirs
 	@mkdir -p $(@D)
 	@echo Installing $(@F) as $@
-	@if test -f $@; then; rm -f $@.old; mv $@ $@.old; fi
+	@if test -f $@; then echo -n ""; rm -f $@.old; mv $@ $@.old; fi
 	@cp $< $@
 	@chmod $(INSTALLPERMS) $@
 
 $(DESTDIR)$(sbindir)/%: bin/% installdirs
 	@mkdir -p $(@D)
 	@echo Installing $(@F) as $@
-	@if test -f $@; then; rm -f $@.old; mv $@ $@.old; fi
+	@if test -f $@; then echo -n ""; rm -f $@.old; mv $@ $@.old; fi
 	@cp $< $@
 	@chmod $(INSTALLPERMS) $@
 
