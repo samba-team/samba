@@ -134,7 +134,7 @@ endef
 
 define sbinary_install_template
 installsbin:: $$(DESTDIR)$$(sbindir)/$(notdir $(1)) installdirs
-				
+
 uninstallsbin::
 	@echo "Removing $(notdir $(1))"
 	@rm -f $$(DESTDIR)$$(sbindir)/$(1)
