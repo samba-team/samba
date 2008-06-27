@@ -445,8 +445,8 @@ static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli, RPC_
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		if (prhdr->auth_len + RPC_HDR_AUTH_LEN < prhdr->auth_len ||
-				prhdr->auth_len + RPC_HDR_AUTH_LEN < RPC_HDR_AUTH_LEN) {
+		if (prhdr->auth_len + (unsigned int)RPC_HDR_AUTH_LEN < prhdr->auth_len ||
+				prhdr->auth_len + (unsigned int)RPC_HDR_AUTH_LEN < (unsigned int)RPC_HDR_AUTH_LEN) {
 			/* Integer wrap attempt. */
 			return NT_STATUS_INVALID_PARAMETER;
 		}
