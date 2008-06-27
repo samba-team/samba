@@ -53,8 +53,7 @@ bidi_c = generate.Implementation('%s/bidi_table.c' % sys.argv[2])
 
 bidi_h.file.write(
 '''
-#include <stdint.h>
-#include <stddef.h>
+#include <krb5-types.h>
 
 struct range_entry {
   uint32_t start;

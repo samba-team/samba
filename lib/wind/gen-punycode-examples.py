@@ -86,8 +86,7 @@ f.close()
 
 examples_h.file.write(
 '''
-#include <stddef.h>
-#include <stdint.h>
+#include <krb5-types.h>
 
 #define MAX_LENGTH 40
 

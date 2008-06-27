@@ -67,8 +67,7 @@ normalize_c = generate.Implementation('%s/normalize_table.c' % sys.argv[3])
 
 normalize_h.file.write(
 '''
-#include <stddef.h>
-#include <stdint.h>
+#include <krb5-types.h>
 
 #define MAX_LENGTH_CANON %u
 
