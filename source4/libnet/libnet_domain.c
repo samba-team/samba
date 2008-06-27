@@ -845,7 +845,7 @@ NTSTATUS libnet_DomainCloseSamr_recv(struct composite_context *c, struct libnet_
 		/* domain policy handle closed successfully */
 
 		ZERO_STRUCT(ctx->samr.handle);
-		talloc_free(ctx->samr.name);
+		talloc_free(discard_const_p(char, ctx->samr.name));
 		talloc_free(ctx->samr.sid);
 		ctx->samr.name = NULL;
 		ctx->samr.sid = NULL;
