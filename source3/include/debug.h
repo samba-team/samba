@@ -169,11 +169,19 @@ extern bool *DEBUGLEVEL_CLASS_ISSET;
 #if (__GNUC__ >= 3)
 /* the strange !! is to ensure that __builtin_expect() takes either 0 or 1
    as its first argument */
+#ifndef likely
 #define likely(x)   __builtin_expect(!!(x), 1)
+#endif
+#ifndef unlikely
 #define unlikely(x) __builtin_expect(!!(x), 0)
+#endif
 #else
+#ifndef likely
 #define likely(x) (x)
+#endif
+#ifndef unlikely
 #define unlikely(x) (x)
+#endif
 #endif
 
 #define CHECK_DEBUGLVL( level ) \
