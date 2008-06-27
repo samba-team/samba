@@ -102,8 +102,7 @@ wbcErr wbcStringToSid(const char *str,
 
 	if (!str
 	    || (str[0]!='S' && str[0]!='s')
-	    || (str[1]!='-')
-	    || (strlen(str)<2))
+	    || (str[1]!='-'))
 	{
 		wbc_status = WBC_ERR_INVALID_PARAM;
 		BAIL_ON_WBC_ERROR(wbc_status);
