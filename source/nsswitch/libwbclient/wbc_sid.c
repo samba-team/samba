@@ -141,9 +141,13 @@ wbcErr wbcStringToSid(const char *str,
 	while (sid->num_auths < WBC_MAXSUBAUTHS) {
 		if ((x=(uint32_t)strtoul(p, &q, 10)) == 0)
 			break;
+		if (q == NULL) {
+			wbc_status = WBC_ERR_INVALID_SID;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
 		sid->sub_auths[sid->num_auths++] = x;
 
-		if (q && ((*q!='-') || (*q=='\0')))
+		if ((*q!='-') || (*q=='\0'))
 			break;
 		p = q + 1;
 	}
