@@ -5446,7 +5446,7 @@ static int rpc_trustdom_add(int argc, const char **argv)
 		return run_rpc_command(NULL, PI_SAMR, 0, rpc_trustdom_add_internals,
 		                       argc, argv);
 	} else {
-		d_printf("Usage: net rpc trustdom add <domain>\n");
+		d_printf("Usage: net rpc trustdom add <domain> <trust password>\n");
 		return -1;
 	}
 }
