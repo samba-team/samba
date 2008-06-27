@@ -278,6 +278,48 @@ NTSTATUS rpc_vampire_keytab_internals(struct net_context *c,
 	return status;
 }
 
+NTSTATUS rpc_vampire_keytab_ds_internals(struct net_context *c,
+					 const DOM_SID *domain_sid,
+					 const char *domain_name,
+					 struct cli_state *cli,
+					 struct rpc_pipe_client *pipe_hnd,
+					 TALLOC_CTX *mem_ctx,
+					 int argc,
+					 const char **argv)
+{
+	NTSTATUS status;
+	struct dssync_context *ctx = NULL;
+
+	status = libnet_dssync_init_context(mem_ctx,
+					    &ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (argc >= 1) {
+		ctx->output_filename = argv[0];
+	}
+
+	ctx->cli		= pipe_hnd;
+	ctx->domain_name	= domain_name;
+	ctx->processing_fn	= libnet_dssync_dump_keytab;
+
+	status = libnet_dssync(mem_ctx, ctx);
+	if (!NT_STATUS_IS_OK(status) && ctx->error_message) {
+		d_fprintf(stderr, "%s\n", ctx->error_message);
+		goto out;
+	}
+
+	if (ctx->result_message) {
+		d_fprintf(stdout, "%s\n", ctx->result_message);
+	}
+
+ out:
+	TALLOC_FREE(ctx);
+
+	return status;
+}
+
 /**
  * Basic function for 'net rpc vampire keytab'
  *
@@ -289,10 +331,18 @@ NTSTATUS rpc_vampire_keytab_internals(struct net_context *c,
 
 int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv)
 {
+	int ret = 0;
+
 	if (c->display_usage) {
 		d_printf("Usage\n"
 			 "net rpc vampire keytab\n"
 			 "    Dump remote SAM database to Kerberos keytab file\n");
+		return 0;
+	}
+
+	ret = run_rpc_command(c, NULL, PI_DRSUAPI, NET_FLAGS_SEAL,
+			      rpc_vampire_keytab_ds_internals, argc, argv);
+	if (ret == 0) {
 		return 0;
 	}
 

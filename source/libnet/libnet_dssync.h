@@ -39,3 +39,9 @@ struct dssync_context {
 	char *result_message;
 	char *error_message;
 };
+
+NTSTATUS libnet_dssync_dump_keytab(TALLOC_CTX *mem_ctx,
+				   struct drsuapi_DsReplicaObjectListItemEx *cur,
+				   struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
+				   bool last_query,
+				   struct dssync_context *ctx);
