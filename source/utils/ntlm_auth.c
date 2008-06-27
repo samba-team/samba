@@ -328,7 +328,7 @@ static const char *get_password(struct cli_credentials *credentials)
 	char *password = NULL;
 	
 	/* Ask for a password */
-	mux_printf((unsigned int)credentials->priv_data, "PW\n");
+	mux_printf((unsigned int)(uintptr_t)credentials->priv_data, "PW\n");
 	credentials->priv_data = NULL;
 
 	manage_squid_request(cmdline_lp_ctx, NUM_HELPER_MODES /* bogus */, manage_gensec_get_pw_request, (void **)&password);
@@ -506,7 +506,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			cli_credentials_set_password(creds, state->set_password, CRED_SPECIFIED);
 		} else {
 			cli_credentials_set_password_callback(creds, get_password);
-			creds->priv_data = (void*)mux_id;
+			creds->priv_data = (void*)(uintptr_t)mux_id;
 		}
 		if (opt_workstation) {
 			cli_credentials_set_workstation(creds, opt_workstation, CRED_SPECIFIED);
