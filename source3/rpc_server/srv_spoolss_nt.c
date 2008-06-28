@@ -6155,7 +6155,6 @@ WERROR add_port_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *portname
 	char *cmd = lp_addport_cmd();
 	char *command = NULL;
 	int ret;
-	int fd;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 	bool is_print_op = False;
 
@@ -6179,7 +6178,7 @@ WERROR add_port_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *portname
 	if ( is_print_op )
 		become_root();
 
-	ret = smbrun(command, &fd);
+	ret = smbrun(command, NULL);
 
 	if ( is_print_op )
 		unbecome_root();
@@ -6191,8 +6190,6 @@ WERROR add_port_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *portname
 	TALLOC_FREE(command);
 
 	if ( ret != 0 ) {
-		if (fd != -1)
-			close(fd);
 		return WERR_ACCESS_DENIED;
 	}
 
