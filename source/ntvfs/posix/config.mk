@@ -21,8 +21,7 @@ PRIVATE_DEPENDENCIES = NDR_NFS4ACL SAMDB ntvfs_posix
 pvfs_acl_nfs4_OBJ_FILES = $(ntvfssrcdir)/posix/pvfs_acl_nfs4.o
 
 ################################################
-[MODULE::pvfs_aio]
-SUBSYSTEM = ntvfs
+[SUBSYSTEM::pvfs_aio]
 PRIVATE_DEPENDENCIES = LIBAIO_LINUX
 ################################################
 
