@@ -92,6 +92,7 @@ ldb_skel_OBJ_FILES = $(ldbsrcdir)/modules/skel.o
 SUBSYSTEM = LIBLDB
 CFLAGS = -I$(ldbsrcdir)/include
 PRIVATE_DEPENDENCIES = LIBTALLOC SQLITE3 LIBEVENTS
+INIT_FUNCTION = LDB_BACKEND(sqlite3)
 # End MODULE ldb_sqlite3
 ################################################
 
@@ -104,6 +105,7 @@ SUBSYSTEM = LIBLDB
 CFLAGS = -I$(ldbsrcdir)/include -I$(ldbsrcdir)/ldb_tdb
 PRIVATE_DEPENDENCIES = \
 		LIBTDB LIBTALLOC LIBEVENTS
+INIT_FUNCTION = LDB_BACKEND(tdb)
 # End MODULE ldb_tdb
 ################################################
 
@@ -114,7 +116,6 @@ ldb_tdb_OBJ_FILES = $(addprefix $(ldbsrcdir)/ldb_tdb/, ldb_tdb.o ldb_search.o ld
 # Start SUBSYSTEM ldb
 [LIBRARY::LIBLDB]
 CFLAGS = -I$(ldbsrcdir)/include
-INIT_FUNCTION_TYPE = extern const struct ldb_module_ops
 PUBLIC_DEPENDENCIES = \
 		LIBTALLOC LIBEVENTS
 PRIVATE_DEPENDENCIES = \
