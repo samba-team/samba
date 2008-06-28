@@ -19,6 +19,8 @@ $(dynconfigsrcdir)/dynconfig.o: CFLAGS+=-DCONFIGFILE=\"$(CONFIGFILE)\" -DBINDIR=
 	 -DPRIVATE_DIR=\"$(privatedir)\" \
 	 -DMODULESDIR=\"$(modulesdir)\" -DJSDIR=\"$(JSDIR)\" \
 	 -DTORTUREDIR=\"$(TORTUREDIR)\" \
-	 -DSETUPDIR=\"$(SETUPDIR)\" -DWINBINDD_SOCKET_DIR=\"$(winbindd_socket_dir)\" \
+	 -DSETUPDIR=\"$(SETUPDIR)\" \
+	 -DWINBINDD_PRIVILEGED_SOCKET_DIR=\"$(winbindd_privileged_socket_dir)\" \
+	 -DWINBINDD_SOCKET_DIR=\"$(winbindd_socket_dir)\" \
 	 -DNTP_SIGND_SOCKET_DIR=\"$(ntp_signd_socket_dir)\"
 
