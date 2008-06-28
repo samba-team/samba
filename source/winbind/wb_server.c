@@ -136,6 +136,13 @@ static void winbind_task_init(struct task_server *task)
 		return;
 	}
 
+	/* Make sure the directory for the Samba3 socket exists, and is of the correct permissions */
+	if (!directory_create_or_exist(lp_winbindd_privileged_socket_directory(task->lp_ctx), geteuid(), 0750)) {
+		task_server_terminate(task,
+				      "Cannot create winbindd privileged pipe directory");
+		return;
+	}
+
 	service = talloc_zero(task, struct wbsrv_service);
 	if (!service) goto nomem;
 	service->task	= task;
@@ -175,9 +182,10 @@ static void winbind_task_init(struct task_server *task)
 	/* setup the privileged samba3 socket */
 	listen_socket = talloc(service, struct wbsrv_listen_socket);
 	if (!listen_socket) goto nomem;
-	listen_socket->socket_path	=
-		smbd_tmp_path(listen_socket, task->lp_ctx, 
-			      WINBINDD_SAMBA3_PRIVILEGED_SOCKET);
+	listen_socket->socket_path	= talloc_asprintf(listen_socket, "%s/%s", 
+							  lp_winbindd_privileged_socket_directory(task->lp_ctx), 
+							  WINBINDD_SAMBA3_SOCKET);
+	if (!listen_socket->socket_path) goto nomem;
 	if (!listen_socket->socket_path) goto nomem;
 	listen_socket->service		= service;
 	listen_socket->privileged	= true;
