@@ -796,7 +796,7 @@ char *sitename_fetch(const char *realm)
 	char *key;
 
 	if (!gencache_init()) {
-		return False;
+		return NULL;
 	}
 
 	if (!realm || (strlen(realm) == 0)) {
