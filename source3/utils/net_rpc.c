@@ -5648,7 +5648,8 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 	unsigned int orig_timeout;
 
 	if (argc != 2) {
-		d_printf("Usage: net rpc trustdom add <domain_name> <trust password>\n")
+		d_printf("Usage: net rpc trustdom add <domain_name> "
+			 "<trust password>\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -5686,7 +5687,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
         /* This call can take a long time - allow the server to time out.
 	 * 35 seconds should do it. */
 
-        orig_timeout = cli_set_timeout(pipe_hnd->cli, 35000);
+        orig_timeout = rpccli_set_timeout(pipe_hnd, 35000);
 
 	/* Create trusting domain's account */
 	acb_info = ACB_NORMAL;
@@ -5706,7 +5707,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 					 &user_rid);
 
 	/* And restore our original timeout. */
-	cli_set_timeout(pipe_hnd->cli, orig_timeout);
+	rpccli_set_timeout(pipe_hnd, orig_timeout);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		d_printf("net rpc trustdom add: create user %s failed %s\n",
