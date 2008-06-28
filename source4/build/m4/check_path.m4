@@ -19,7 +19,8 @@ lockdir="${localstatedir}/locks"
 piddir="${localstatedir}/run"
 privatedir="\${prefix}/private"
 modulesdir="\${prefix}/modules"
-winbindd_socket_dir="${localstatedir}/run/winbind_pipe"
+winbindd_socket_dir="${localstatedir}/run/winbindd"
+winbindd_privileged_socket_dir="${localstatedir}/lib/winbindd_privileged"
 ntp_signd_socket_dir="${localstatedir}/run/ntp_signd"
 
 AC_ARG_WITH(fhs, 
@@ -33,7 +34,8 @@ AC_ARG_WITH(fhs,
     datadir="${datadir}/samba"
     includedir="${includedir}/samba-4.0"
     ntp_signd_socket_dir="${localstatedir}/run/samba/ntp_signd"
-    winbindd_socket_dir="${localstatedir}/run/samba/winbind_pipe"
+    winbindd_socket_dir="${localstatedir}/run/samba/winbindd"
+    winbindd_privileged_socket_dir="${localstatedir}/lib/samba/winbindd_privileged"
 )
 
 #################################################
@@ -54,6 +56,38 @@ AC_ARG_WITH(privatedir,
 
 #################################################
 # set where the winbindd socket should be put
+AC_ARG_WITH(winbindd-socket-dir,
+[  --with-winbindd-socket-dir=DIR   Where to put the winbindd socket ($winbindd_socket_dir)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-winbind-socketdir called without argument - will use default])
+  ;;
+  * )
+    winbindd_socket_dir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set where the winbindd privilaged socket should be put
+AC_ARG_WITH(winbindd-privileged-socket-dir,
+[  --with-winbindd-privileged-socket-dir=DIR   Where to put the winbindd socket ($winbindd_privileged_socket_dir)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-winbind-privileged-socketdir called without argument - will use default])
+  ;;
+  * )
+    winbindd_privileged_socket_dir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set where the winbindd privilaged socket should be put
 AC_ARG_WITH(winbindd-socket-dir,
 [  --with-winbindd-socket-dir=DIR   Where to put the winbindd socket ($ac_default_prefix/run/winbind_pipe)],
 [ case "$withval" in
@@ -140,6 +174,7 @@ AC_SUBST(privatedir)
 AC_SUBST(bindir)
 AC_SUBST(sbindir)
 AC_SUBST(winbindd_socket_dir)
+AC_SUBST(winbindd_privileged_socket_dir)
 AC_SUBST(ntp_signd_socket_dir)
 AC_SUBST(modulesdir)
 

@@ -91,6 +91,7 @@ const char *lp_wins_config_url(struct loadparm_context *);
 const char *lp_wins_url(struct loadparm_context *);
 const char *lp_winbind_separator(struct loadparm_context *);
 const char *lp_winbindd_socket_directory(struct loadparm_context *);
+const char *lp_winbindd_privileged_socket_directory(struct loadparm_context *);
 const char *lp_template_shell(struct loadparm_context *);
 const char *lp_template_homedir(struct loadparm_context *);
 bool lp_winbind_sealed_pipes(struct loadparm_context *);

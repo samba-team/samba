@@ -116,6 +116,7 @@ struct loadparm_global
 	const char **server_services;
 	char *ntptr_providor;
 	char *szWinbindSeparator;
+	char *szWinbinddPrivilegedSocketDirectory;
 	char *szWinbinddSocketDirectory;
 	char *szTemplateShell;
 	char *szTemplateHomedir;
@@ -485,6 +486,7 @@ static struct parm_struct parm_table[] = {
 	{"host msdfs", P_BOOL, P_GLOBAL, GLOBAL_VAR(bHostMSDfs), NULL, NULL},
 	{"winbind separator", P_STRING, P_GLOBAL, GLOBAL_VAR(szWinbindSeparator), NULL, NULL },
 	{"winbindd socket directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szWinbinddSocketDirectory), NULL, NULL },
+	{"winbindd privileged socket directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szWinbinddPrivilegedSocketDirectory), NULL, NULL },
 	{"winbind sealed pipes", P_BOOL, P_GLOBAL, GLOBAL_VAR(bWinbindSealedPipes), NULL, NULL },
 	{"template shell", P_STRING, P_GLOBAL, GLOBAL_VAR(szTemplateShell), NULL, NULL },
 	{"template homedir", P_STRING, P_GLOBAL, GLOBAL_VAR(szTemplateHomedir), NULL, NULL },
@@ -631,6 +633,7 @@ _PUBLIC_ FN_GLOBAL_STRING(lp_wins_config_url, szWINS_CONFIG_URL)
 _PUBLIC_ FN_GLOBAL_STRING(lp_wins_url, szWINS_URL)
 _PUBLIC_ FN_GLOBAL_CONST_STRING(lp_winbind_separator, szWinbindSeparator)
 _PUBLIC_ FN_GLOBAL_CONST_STRING(lp_winbindd_socket_directory, szWinbinddSocketDirectory)
+_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_winbindd_privileged_socket_directory, szWinbinddPrivilegedSocketDirectory)
 _PUBLIC_ FN_GLOBAL_CONST_STRING(lp_template_shell, szTemplateShell)
 _PUBLIC_ FN_GLOBAL_CONST_STRING(lp_template_homedir, szTemplateHomedir)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_winbind_sealed_pipes, bWinbindSealedPipes)
@@ -2382,6 +2385,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_do_global_parameter(lp_ctx, "winbind separator", "\\");
 	lp_do_global_parameter(lp_ctx, "winbind sealed pipes", "True");
 	lp_do_global_parameter(lp_ctx, "winbindd socket directory", dyn_WINBINDD_SOCKET_DIR);
+	lp_do_global_parameter(lp_ctx, "winbindd privileged socket directory", dyn_WINBINDD_PRIVILEGED_SOCKET_DIR);
 	lp_do_global_parameter(lp_ctx, "template shell", "/bin/false");
 	lp_do_global_parameter(lp_ctx, "template homedir", "/home/%WORKGROUP%/%ACCOUNTNAME%");
 	lp_do_global_parameter(lp_ctx, "idmap trusted only", "False");
