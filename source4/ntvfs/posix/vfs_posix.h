@@ -283,6 +283,7 @@ struct pvfs_acl_ops {
 };
 
 #include "ntvfs/posix/vfs_posix_proto.h"
+#include "ntvfs/posix/vfs_acl_proto.h"
 
 NTSTATUS pvfs_aio_pread(struct ntvfs_request *req, union smb_read *rd,
 			struct pvfs_file *f, uint32_t maxcnt);
