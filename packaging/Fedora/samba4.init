@@ -5,7 +5,7 @@
 #	       used to provide SMB network services.
 #
 # pidfile: /var/run/samba4/smbd.pid
-# config:  /etc/samba/smb.conf
+# config:  /etc/samba4/smb.conf
 
 SAMBA_NAME=samba4
 
