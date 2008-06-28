@@ -110,7 +110,7 @@ ldb_samba3sam_OBJ_FILES = \
 [MODULE::ldb_simple_ldap_map]
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
-INIT_FUNCTION = LDB_MODULE(simple_ldap_map)
+INIT_FUNCTION = LDB_MODULE(entryuuid),LDB_MODULE(nsuniqueid)
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBNDR NDR_MISC
 ENABLE = YES
 ALIASES = entryuuid nsuniqueid
@@ -238,7 +238,7 @@ SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS CREDENTIALS
 #Also depends on credentials, but that would loop
-INIT_FUNCTION = LDB_MODULE(update_kt)
+INIT_FUNCTION = LDB_MODULE(update_keytab)
 # End MODULE ldb_update_kt
 ################################################
 
