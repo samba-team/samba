@@ -24,6 +24,7 @@
 #include "vfs_posix.h"
 #include "librpc/gen_ndr/xattr.h"
 #include "libcli/security/security.h"
+#include "param/param.h"
 
 
 /* the list of currently registered ACL backends */
@@ -77,6 +78,27 @@ const struct pvfs_acl_ops *pvfs_acl_backend_byname(const char *name)
 	}
 
 	return NULL;
+}
+
+NTSTATUS pvfs_acl_init(struct loadparm_context *lp_ctx)
+{
+	static bool initialized = false;
+	extern NTSTATUS pvfs_acl_nfs4_init(void);
+	extern NTSTATUS pvfs_acl_xattr_init(void);
+	init_module_fn static_init[] = { STATIC_pvfs_acl_MODULES };
+	init_module_fn *shared_init;
+
+	if (initialized) return NT_STATUS_OK;
+	initialized = true;
+
+	shared_init = load_samba_modules(NULL, lp_ctx, "pvfs_acl");
+
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
+
+	talloc_free(shared_init);
+
+	return NT_STATUS_OK;
 }
 
 

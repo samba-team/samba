@@ -176,6 +176,13 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 	char *base_directory;
 	NTSTATUS status;
 
+	/*
+	 * TODO: call this from ntvfs_posix_init()
+	 *       but currently we don't have a lp_ctx there
+	 */
+	status = pvfs_acl_init(ntvfs->ctx->lp_ctx);
+	NT_STATUS_NOT_OK_RETURN(status);
+
 	pvfs = talloc_zero(ntvfs, struct pvfs_state);
 	NT_STATUS_HAVE_NO_MEMORY(pvfs);
 
