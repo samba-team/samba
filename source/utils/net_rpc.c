@@ -5645,6 +5645,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 	uint32 user_rid;
 	uint32_t access_granted = 0;
 	union samr_UserInfo info;
+	unsigned int orig_timeout;
 
 	if (argc != 2) {
 		d_printf("Usage: net rpc trustdom add <domain_name> <trust password>\n")
@@ -5682,6 +5683,11 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 		goto done;
 	}
 
+        /* This call can take a long time - allow the server to time out.
+	 * 35 seconds should do it. */
+
+        orig_timeout = cli_set_timeout(pipe_hnd->cli, 35000);
+
 	/* Create trusting domain's account */
 	acb_info = ACB_NORMAL;
 	acct_flags = SEC_GENERIC_READ | SEC_GENERIC_WRITE | SEC_GENERIC_EXECUTE |
@@ -5698,7 +5704,13 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 					 &user_pol,
 					 &access_granted,
 					 &user_rid);
+
+	/* And restore our original timeout. */
+	cli_set_timeout(pipe_hnd->cli, orig_timeout);
+
 	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("net rpc trustdom add: create user %s failed %s\n",
+			acct_name, nt_errstr(result));
 		goto done;
 	}
 
@@ -5851,6 +5863,8 @@ static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
 					 &name_types);
 
 	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("net rpc trustdom del: LookupNames on user %s failed %s\n",
+			acct_name, nt_errstr(result) );
 		goto done;
 	}
 
@@ -5861,6 +5875,8 @@ static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
 				      &user_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("net rpc trustdom del: OpenUser on user %s failed %s\n",
+			acct_name, nt_errstr(result) );
 		goto done;
 	}
 
@@ -5876,6 +5892,8 @@ static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
 							   &user_pol,
 							   &trust_acct_sid);
 	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("net rpc trustdom del: RemoveMemberFromForeignDomain on user %s failed %s\n",
+			acct_name, nt_errstr(result) );
 		goto done;
 	}
 
@@ -5885,13 +5903,15 @@ static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
 					&user_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("net rpc trustdom del: DeleteUser on user %s failed %s\n",
+			acct_name, nt_errstr(result) );
 		goto done;
 	}
 
 	if (!NT_STATUS_IS_OK(result)) {
-	  DEBUG(0,("Could not set trust account password: %s\n",
-		   nt_errstr(result)));
-	  goto done;
+		d_printf("Could not set trust account password: %s\n",
+		   nt_errstr(result));
+		goto done;
 	}
 
  done:
