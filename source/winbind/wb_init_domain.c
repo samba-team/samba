@@ -76,7 +76,6 @@ static void init_domain_recv_netlogonpipe(struct composite_context *ctx);
 static void init_domain_recv_lsa_pipe(struct composite_context *ctx);
 static void init_domain_recv_lsa_policy(struct rpc_request *req);
 static void init_domain_recv_queryinfo(struct rpc_request *req);
-static void init_domain_recv_ldapconn(struct composite_context *ctx);
 static void init_domain_recv_samr(struct composite_context *ctx);
 
 static struct dcerpc_binding *init_domain_binding(struct init_domain_state *state, 
@@ -400,37 +399,6 @@ static void init_domain_recv_samr(struct composite_context *ctx)
 	state->domain->libnet_ctx->samr.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	state->domain->libnet_ctx->samr.name = state->domain->info->name;
 	state->domain->libnet_ctx->samr.sid = state->domain->info->sid;
-
-	state->domain->ldap_conn =
-		ldap4_new_connection(state->domain, state->domain->libnet_ctx->lp_ctx, state->ctx->event_ctx);
-	composite_nomem(state->domain->ldap_conn, state->ctx);
-
-	ldap_url = talloc_asprintf(state, "ldap://%s/",
-				   state->domain->dc_address);
-	composite_nomem(ldap_url, state->ctx);
-
-	ctx = ldap_connect_send(state->domain->ldap_conn, ldap_url);
-	composite_continue(state->ctx, ctx, init_domain_recv_ldapconn, state);
-}
-
-static void init_domain_recv_ldapconn(struct composite_context *ctx)
-{
-	struct init_domain_state *state =
-		talloc_get_type(ctx->async.private_data,
-				struct init_domain_state);
-
-	state->ctx->status = ldap_connect_recv(ctx);
-	if (NT_STATUS_IS_OK(state->ctx->status)) {
-		state->domain->ldap_conn->host =
-			talloc_strdup(state->domain->ldap_conn,
-				      state->domain->dc_name);
-		state->ctx->status =
-			ldap_bind_sasl(state->domain->ldap_conn,
-				       state->domain->libnet_ctx->cred,
-				       state->domain->libnet_ctx->lp_ctx);
-		DEBUG(0, ("ldap_bind returned %s\n",
-			  nt_errstr(state->ctx->status)));
-	}
 
 	composite_done(state->ctx);
 }
