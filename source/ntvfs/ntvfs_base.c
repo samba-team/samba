@@ -209,8 +209,6 @@ NTSTATUS ntvfs_init(struct loadparm_context *lp_ctx)
 	extern NTSTATUS ntvfs_nbench_init(void);
 	extern NTSTATUS ntvfs_unixuid_init(void);
 	extern NTSTATUS ntvfs_ipc_init(void);
-	extern NTSTATUS pvfs_acl_nfs4_init(void);
-	extern NTSTATUS pvfs_acl_xattr_init(void);
 	extern NTSTATUS ntvfs_print_init(void);
 	extern NTSTATUS ntvfs_simple_init(void);
 	extern NTSTATUS ntvfs_cifs_posix_init(void);
