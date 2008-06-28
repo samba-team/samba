@@ -965,7 +965,6 @@ class BaseDnTests(unittest.TestCase):
                 attrs=["netlogon", "highestCommittedUSN"])
         self.assertEquals(len(res), 0)
 
-
 if not "://" in host:
     host = "ldap://%s" % host
 
@@ -974,5 +973,9 @@ gc_ldb = Ldb("%s:3268" % host, credentials=creds,
              session_info=system_session(), lp=lp)
 
 runner = SubunitTestRunner()
-runner.run(unittest.makeSuite(BaseDnTests))
-runner.run(unittest.makeSuite(BasicTests))
+rc = 0
+if not runner.run(unittest.makeSuite(BaseDnTests)).wasSuccessful():
+    rc = 1
+if not runner.run(unittest.makeSuite(BasicTests)).wasSuccessful():
+    rc = 1
+sys.exit(rc)
