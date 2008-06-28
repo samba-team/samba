@@ -69,8 +69,6 @@ struct wbsrv_domain {
 
 	struct dcerpc_binding *samr_binding;
 
-	struct ldap_connection *ldap_conn;
-
 	struct dcerpc_pipe *netlogon_pipe;
 	struct dcerpc_binding *netlogon_binding;
 };
