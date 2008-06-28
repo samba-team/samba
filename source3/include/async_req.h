@@ -22,75 +22,116 @@
 
 #include "includes.h"
 
-/*
- * An async request moves between the following 4 states.
+/**
+ * An async request moves between the following 4 states:
  */
+
 enum async_req_state {
-	ASYNC_REQ_INIT,		/* we are creating the request */
-	ASYNC_REQ_IN_PROGRESS,	/* we are waiting the request to complete */
-	ASYNC_REQ_DONE,		/* the request is finished */
-	ASYNC_REQ_ERROR };	/* an error has occured */
+	/**
+	 * we are creating the request
+	 */
+	ASYNC_REQ_INIT,
+	/**
+	 * we are waiting the request to complete
+	 */
+	ASYNC_REQ_IN_PROGRESS,
+	/**
+	 * the request is finished
+	 */
+	ASYNC_REQ_DONE,
+	/**
+	 * an error has occured
+	 */
+	ASYNC_REQ_ERROR
+};
+
+/**
+ * @brief An async request
+ *
+ * This represents an async request being processed by callbacks via an event
+ * context. A user can issue for example a write request to a socket, giving
+ * an implementation function the fd, the buffer and the number of bytes to
+ * transfer. The function issuing the request will immediately return without
+ * blocking most likely without having sent anything. The API user then fills
+ * in req->async.fn and req->async.priv, functions that are called when the
+ * request is finished.
+ *
+ * It is up to the user of the async request to talloc_free it after it has
+ * finished. This can happen while the completion function is called.
+ */
 
 struct async_req {
-	/* the external state - will be queried by the caller */
+	/**
+	 * @brief The external state - will be queried by the caller
+	 *
+	 * While the async request is being processed, state will remain in
+	 * ASYNC_REQ_IN_PROGRESS. A request is finished if
+	 * req->state>=ASYNC_REQ_DONE.
+	 */
 	enum async_req_state state;
 
-	/* a private pointer for use by the async function implementation */
+	/**
+	 * @brief Private pointer for the actual implementation
+	 *
+	 * The implementation doing the work for the async request needs a
+	 * current state like for example a fd event. The user of an async
+	 * request should not touch this.
+	 */
 	void *private_data;
 
-	/* print yourself, for debugging purposes */
+	/**
+	 * @brief Print yourself, for debugging purposes
+	 *
+	 * Async requests are opaque data structures. The implementation of an
+	 * async request can define a custom function to print more debug
+	 * info.
+	 */
 	char *(*print)(TALLOC_CTX *mem_ctx, struct async_req *);
 
-	/* status code when finished */
+	/**
+	 * @brief status code when finished
+	 *
+	 * This status can be queried in the async completion function. It
+	 * will be set to NT_STATUS_OK when everything went fine.
+	 **/
 	NTSTATUS status;
 
-	/* the event context we are using */
+	/**
+	 * @brief The event context we are using
+	 *
+	 * The event context that this async request works on.
+	 */
 	struct event_context *event_ctx;
 
-	/* information on what to do on completion */
+	/**
+	 * @brief What to do on completion
+	 *
+	 * This is used for the user of an async request, fn is called when
+	 * the request completes, either successfully or with an error.
+	 */
 	struct {
+		/**
+		 * @brief Completion function
+		 * Completion function, to be filled by the API user
+		 */
 		void (*fn)(struct async_req *);
+		/**
+		 * @brief Private data for the completion function
+		 */
 		void *priv;
 	} async;
 };
 
-/*
- * Print an async_req structure for debugging purposes
- */
-char *async_req_print(TALLOC_CTX *mem_ctx, struct async_req *req);
-
-/*
- * Create an async request
- */
 struct async_req *async_req_new(TALLOC_CTX *mem_ctx, struct event_context *ev);
 
-/*
- * An async request has successfully finished, invoke the callback
- */
+char *async_req_print(TALLOC_CTX *mem_ctx, struct async_req *req);
+
 void async_req_done(struct async_req *req);
 
-/*
- * An async request has seen an error, invoke the callback
- */
 void async_req_error(struct async_req *req, NTSTATUS status);
 
-/*
- * If a request is finished or ends in error even before it has the chance to
- * trigger the event loop, post a status. This creates an immediate timed
- * event to call the async function if there is any.
- */
 bool async_post_status(struct async_req *req, NTSTATUS status);
 
-/*
- * Convenience helper to easily check alloc failure within a callback.
- *
- * Call pattern would be
- * p = talloc(mem_ctx, bla);
- * if (async_req_nomem(p, req)) {
- *	return;
- * }
- *
- */
 bool async_req_nomem(const void *p, struct async_req *req);
 
 #endif
