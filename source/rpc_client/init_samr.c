@@ -413,6 +413,7 @@ void init_samr_user_info23(struct samr_UserInfo23 *r,
 			   uint8_t data[516],
 			   uint8_t pw_len)
 {
+	memset(r, '\0', sizeof(*r));
 	init_samr_user_info21(&r->info,
 			      last_logon,
 			      last_logoff,
