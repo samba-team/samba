@@ -16,7 +16,6 @@ $(eval $(call proto_header_template,$(nbt_serversrcdir)/wins/winsdb_proto.h,$(WI
 # Start MODULE ldb_wins_ldb
 [MODULE::ldb_wins_ldb]
 SUBSYSTEM = LIBLDB
-OUTPUT_TYPE = SHARED_LIBRARY
 INIT_FUNCTION = LDB_MODULE(wins_ldb)
 PRIVATE_DEPENDENCIES = \
 		LIBNETIF LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL
