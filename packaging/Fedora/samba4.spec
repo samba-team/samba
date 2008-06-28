@@ -142,7 +142,7 @@ cd source
 	--with-lockdir=/var/lib/%{name} \
 	--with-piddir=/var/run \
 	--with-privatedir=/var/lib/%{name}/private \
-	--with-logfilebase=/var/log/samba \
+	--with-logfilebase=/var/log/%{name} \
 	--with-configdir=%{_sysconfdir}/%{name} \
 	--with-winbindd-socket-dir=/var/run/winbind \
 	--with-ntp-signd-socket-dir=/var/run/ntp_signd \
@@ -260,7 +260,6 @@ exit 0
 %{_datadir}/samba/setup/*
 %dir /var/lib/%{name}/sysvol
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
-%dir %{_sysconfdir}/%{name}
 %attr(0700,root,root) %dir /var/log/%{name}
 %attr(0700,root,root) %dir /var/log/%{name}/old
 
@@ -271,6 +270,11 @@ exit 0
 %{_datadir}/samba/*.dat
 %{_libdir}/*.so.*
 %{_libdir}/samba
+%dir %{_sysconfdir}/%{name}
+#Need to mark this as being owned by Samba, but it is normally created
+#by the provision script, which runs best if there is no existing
+#smb.conf
+#%config(noreplace) %{_sysconfdir}/%{name}/smb.conf
 
 %files winbind
 %defattr(-,root,root)
