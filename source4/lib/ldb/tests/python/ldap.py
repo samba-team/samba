@@ -641,7 +641,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
         self.assertEquals(res[0]["objectCategory"], ("CN=Person,CN=Schema,CN=Configuration," + self.base_dn))
         self.assertEquals(int(res[0]["sAMAccountType"][0]), 805306368)
         self.assertEquals(int(res[0]["userAccountControl"][0]), 546)
-        self.assertEquals(res[0]["memberOf"][0], ("CN=ldaptestgroup2,CN=Users," + self.base_dn))
+        self.assertEquals(res[0]["memberOf"][0].upper(), ("CN=ldaptestgroup2,CN=Users," + self.base_dn).upper())
         self.assertEquals(len(res[0]["memberOf"]), 1)
      
         print "Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + self.base_dn + "))"
