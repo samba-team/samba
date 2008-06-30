@@ -442,7 +442,7 @@ static NTSTATUS expand_groups( TALLOC_CTX *ctx,
 							         &sid_mem[j],
 							         &new_groups,
 							         &new_groups_size);
-				if (NT_STATUS_IS_OK(status)) {
+				if (!NT_STATUS_IS_OK(status)) {
 					goto out;
 				}
 
