@@ -56,11 +56,7 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 		return;
 	}
 
-	samctx = samdb_connect(packet, iface->nbtsrv->task->event_ctx, iface->nbtsrv->task->lp_ctx, anonymous_session(packet, iface->nbtsrv->task->event_ctx, iface->nbtsrv->task->lp_ctx));
-	if (samctx == NULL) {
-		DEBUG(2,("Unable to open sam in getdc reply\n"));
-		return;
-	}
+	samctx = iface->nbtsrv->sam_ctx;
 
 	if (!samdb_is_pdc(samctx)) {
 		DEBUG(2, ("Not a PDC, so not processing LOGON_PRIMARY_QUERY\n"));
@@ -126,11 +122,7 @@ static void nbtd_netlogon_samlogon(struct dgram_mailslot_handler *dgmslot,
 		return;
 	}
 
-	samctx = samdb_connect(packet, iface->nbtsrv->task->event_ctx, iface->nbtsrv->task->lp_ctx, anonymous_session(packet, iface->nbtsrv->task->event_ctx, iface->nbtsrv->task->lp_ctx));
-	if (samctx == NULL) {
-		DEBUG(2,("Unable to open sam in getdc reply\n"));
-		return;
-	}
+	samctx = iface->nbtsrv->sam_ctx;
 
 	if (netlogon->req.logon.sid_size) {
 		sid = &netlogon->req.logon.sid;
