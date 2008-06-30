@@ -126,6 +126,7 @@ krb5_error_code libnet_keytab_add(struct libnet_keytab_context *ctx)
 						entry->principal,
 						enctypes,
 						password,
+						true,
 						true);
 		if (ret) {
 			DEBUG(1,("libnet_keytab_add: "

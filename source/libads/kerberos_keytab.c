@@ -38,7 +38,8 @@ int smb_krb5_kt_add_entry_ext(krb5_context context,
 			      const char *princ_s,
 			      krb5_enctype *enctypes,
 			      krb5_data password,
-			      bool no_salt)
+			      bool no_salt,
+			      bool keep_old_entries)
 {
 	krb5_error_code ret = 0;
 	krb5_kt_cursor cursor;
@@ -96,7 +97,7 @@ int smb_krb5_kt_add_entry_ext(krb5_context context,
 				if (kt_entry.vno == kvno - 1) {
 					DEBUG(5,("smb_krb5_kt_add_entry_ext: Saving previous (kvno %d) entry for principal: %s.\n",
 						kvno - 1, princ_s));
-				} else {
+				} else if (!keep_old_entries) {
 					DEBUG(5,("smb_krb5_kt_add_entry_ext: Found old entry for principal: %s (kvno %d) - trying to remove it.\n",
 						princ_s, kt_entry.vno));
 					ret = krb5_kt_end_seq_get(context, keytab, &cursor);
@@ -224,6 +225,7 @@ int smb_krb5_kt_add_entry(krb5_context context,
 					 princ_s,
 					 enctypes,
 					 password,
+					 false,
 					 false);
 }
 
