@@ -13,7 +13,7 @@ Summary: The Samba4 CIFS and AD client and server suite
 Name: samba4
 Epoch: 0
 Version: 4.0.0
-Release: 0.alpha%{alpha_version}.%{main_release}%{?dist}
+Release: 0.%{main_release}.alpha%{alpha_version}%{?dist}
 License: GPLv3+, LGPLv3+, BSD
 Group: System Environment/Daemons
 URL: http://www.samba.org/
@@ -228,7 +228,8 @@ find -type f | xargs chmod -x
 rm -rf $RPM_BUILD_ROOT
 
 %pre
-/usr/sbin/groupadd -g 88 wbpriv >/dev/null 2>&1 || :
+getent group wbpriv >/dev/null || groupadd -g 88 wbpriv
+exit 0
 
 %post
 /sbin/chkconfig --add %{name}
@@ -347,5 +348,5 @@ exit 0
 %doc WHATSNEW.txt
 
 %changelog
-* Thu Jun 26 2008 Andrew Bartlett <abartlet@samba.org> - 0:4.0.0-0.alpha4.1.fc9
+* Thu Jun 26 2008 Andrew Bartlett <abartlet@samba.org> - 0:4.0.0-0.1.alpha4.fc9
 - Rework Fedora's Samba 3.2.0-1.rc2.16 spec file for Samba4
