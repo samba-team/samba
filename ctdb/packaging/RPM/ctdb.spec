@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 42
+Release: 43
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,16 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Tue Jul 1 2008 : Version 1.0.43
+ - Updates and bugfixes to the specfile to keep rpmlint happy
+ - Force a global flags update after each recovery event.
+ - Verify that the recmaster agrees with our node flags and update the
+   recmaster othervise.
+ - When writing back to the parent from a freeze-child across the pipe,
+   loop over the write in case the write failed with an error  othervise
+   the parent will never be notified tha the child has completed the operation.
+ - Automatically thaw all databases when recmaster marks us as being in normal
+   mode instead of recovery mode.
 * Fri Jun 13 2008 : Version 1.0.42
  - When event scripts have hung/timedout more than EventScriptBanCount times
    in a row the node will ban itself.
