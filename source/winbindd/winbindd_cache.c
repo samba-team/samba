@@ -502,8 +502,14 @@ static void refresh_sequence_number(struct winbindd_domain *domain, bool force)
 	   mode domain or not.  And that we can contact it. */
 
 	if ( winbindd_can_contact_domain( domain ) ) {		
+		struct winbindd_methods *orig_backend = domain->backend;
 		status = domain->backend->sequence_number(domain, 
 							  &domain->sequence_number);
+		if (domain->backend != orig_backend) {
+			/* Try again. */
+			status = domain->backend->sequence_number(domain,
+                                                          &domain->sequence_number);
+		}
 	} else {
 		/* just use the current time */
 		status = NT_STATUS_OK;
@@ -524,7 +530,7 @@ static void refresh_sequence_number(struct winbindd_domain *domain, bool force)
 	domain->last_status = status;
 	domain->last_seq_check = time(NULL);
 	
-	/* save the new sequence number ni the cache */
+	/* save the new sequence number in the cache */
 	store_cache_seqnum( domain );
 
 done:

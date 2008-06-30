@@ -362,7 +362,12 @@ struct winbindd_tdc_domain {
 	uint32 trust_type;
 };
 
-
+/* Switch for listing users or groups */
+enum ent_type {
+	LIST_USERS = 0,
+	LIST_GROUPS,
+};
+ 
 #include "winbindd/winbindd_proto.h"
 
 #define WINBINDD_ESTABLISH_LOOP 30

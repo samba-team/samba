@@ -971,10 +971,9 @@ void winbindd_endgrent(struct winbindd_cli_state *state)
 
 /* Get the list of domain groups and domain aliases for a domain.  We fill in
    the sam_entries and num_sam_entries fields with domain group information.  
-   The dispinfo_ndx field is incremented to the index of the next group to 
-   fetch. Return True if some groups were returned, False otherwise. */
+   Return True if some groups were returned, False otherwise. */
 
-static bool get_sam_group_entries(struct getent_state *ent)
+bool get_sam_group_entries(struct getent_state *ent)
 {
 	NTSTATUS status;
 	uint32 num_entries;
@@ -1341,89 +1340,9 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 }
 
 /* List domain groups without mapping to unix ids */
-
 void winbindd_list_groups(struct winbindd_cli_state *state)
 {
-	uint32 total_entries = 0;
-	struct winbindd_domain *domain;
-	const char *which_domain;
-	char *extra_data = NULL;
-	unsigned int extra_data_len = 0, i;
-
-	DEBUG(3, ("[%5lu]: list groups\n", (unsigned long)state->pid));
-
-	/* Ensure null termination */
-	state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';	
-	which_domain = state->request.domain_name;
-	
-	/* Enumerate over trusted domains */
-
-	for (domain = domain_list(); domain; domain = domain->next) {
-		struct getent_state groups;
-
-		/* if we have a domain name restricting the request and this
-		   one in the list doesn't match, then just bypass the remainder
-		   of the loop */
-		   
-		if ( *which_domain && !strequal(which_domain, domain->name) )
-			continue;
-			
-		ZERO_STRUCT(groups);
-
-		/* Get list of sam groups */
-		
-		fstrcpy(groups.domain_name, domain->name);
-
-		get_sam_group_entries(&groups);
-			
-		if (groups.num_sam_entries == 0) {
-			/* this domain is empty or in an error state */
-			continue;
-		}
-
-		/* keep track the of the total number of groups seen so 
-		   far over all domains */
-		total_entries += groups.num_sam_entries;
-		
-		/* Allocate some memory for extra data.  Note that we limit
-		   account names to sizeof(fstring) = 128 characters.  */		
-		extra_data = (char *)SMB_REALLOC(
-			extra_data, sizeof(fstring) * total_entries);
- 
-		if (!extra_data) {
-			DEBUG(0,("failed to enlarge buffer!\n"));
-			request_error(state);
-			return;
-		}
-
-		/* Pack group list into extra data fields */
-		for (i = 0; i < groups.num_sam_entries; i++) {
-			char *group_name = ((struct acct_info *)
-					    groups.sam_entries)[i].acct_name; 
-			fstring name;
-
-			fill_domain_username(name, domain->name, group_name, True);
-			/* Append to extra data */			
-			memcpy(&extra_data[extra_data_len], name, 
-                               strlen(name));
-			extra_data_len += strlen(name);
-			extra_data[extra_data_len++] = ',';
-		}
-
-		SAFE_FREE(groups.sam_entries);
-	}
-
-	/* Assign extra_data fields in response structure */
-	if (extra_data) {
-		extra_data[extra_data_len - 1] = '\0';
-		state->response.extra_data.data = extra_data;
-		state->response.length += extra_data_len;
-	}
-
-	/* No domains may have responded but that's still OK so don't
-	   return an error. */
-
-	request_ok(state);
+	winbindd_list_ent(state, LIST_GROUPS);
 }
 
 /* Get user supplementary groups.  This is much quicker than trying to
