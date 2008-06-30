@@ -334,6 +334,29 @@ WERROR dsdb_map_int2oid(const struct dsdb_schema *schema, uint32_t in, TALLOC_CT
 	return WERR_DS_NO_MSDS_INTID;
 }
 
+/*
+ * this function is called from within a ldb transaction from the schema_fsmo module
+ */
+WERROR dsdb_create_prefix_mapping(struct ldb_context *ldb, struct dsdb_schema *schema, const char *full_oid)
+{
+	/*
+	 * TODO:
+	 *	- (maybe) read the old prefixMap attribute and parse it
+	 *
+	 *	- recheck the prefix doesn't exist (because the ldb
+	 *	  has maybe a more uptodate value than schem->prefixes
+	 *
+	 *	- calculate a new mapping for the oid prefix of full_oid
+	 *	- store the new prefixMap attribute
+	 *
+	 *	- (maybe) update schema->prefixes
+	 *	or
+	 *	- better find a way to indicate a schema reload,
+	 *	  so that other processes also notice the schema change
+	 */
+	return WERR_NOT_SUPPORTED;
+}
+
 #define GET_STRING_LDB(msg, attr, mem_ctx, p, elem, strict) do { \
 	(p)->elem = samdb_result_string(msg, attr, NULL);\
 	if (strict && (p)->elem == NULL) { \
