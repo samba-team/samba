@@ -61,6 +61,8 @@ Summary: Samba libraries
 Group: Applications/System
 Requires: libtdb >= 0:%{tdb_version}
 Requires: libtalloc >= 0:%{talloc_version}
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
 
 %description libs
 The %{name}-libs package  contains the libraries needed by programs 
@@ -76,7 +78,7 @@ The %{name}-python package contains the python libraries needed by programs
 that use SMB, RPC and other Samba provided protocols in python programs/
 
 %package devel
-Summary: Developor tools for Samba libraries
+Summary: Developer tools for Samba libraries
 Group: Development/Libraries
 Requires: %{name}-libs = %{epoch}:%{version}-%{release}
 
