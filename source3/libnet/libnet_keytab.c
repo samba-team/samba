@@ -120,13 +120,13 @@ krb5_error_code libnet_keytab_add(struct libnet_keytab_context *ctx)
 		password.data = (char *)entry->password.data;
 		password.length = entry->password.length;
 
-		ret = smb_krb5_kt_add_entry(ctx->context,
-					    ctx->keytab,
-					    entry->kvno,
-					    entry->principal,
-					    enctypes,
-					    password,
-					    true);
+		ret = smb_krb5_kt_add_entry_ext(ctx->context,
+						ctx->keytab,
+						entry->kvno,
+						entry->principal,
+						enctypes,
+						password,
+						true);
 		if (ret) {
 			DEBUG(1,("libnet_keytab_add: "
 				"Failed to add entry to keytab file\n"));

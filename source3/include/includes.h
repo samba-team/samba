@@ -1225,13 +1225,14 @@ krb5_error_code smb_krb5_keytab_name(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
 				     krb5_keytab keytab,
 				     const char **keytab_name);
-int smb_krb5_kt_add_entry(krb5_context context,
-			  krb5_keytab keytab,
-			  krb5_kvno kvno,
-			  const char *princ_s,
-			  krb5_enctype *enctypes,
-			  krb5_data password,
-			  bool no_salt);
+int smb_krb5_kt_add_entry_ext(krb5_context context,
+			      krb5_keytab keytab,
+			      krb5_kvno kvno,
+			      const char *princ_s,
+			      krb5_enctype *enctypes,
+			      krb5_data password,
+			      bool no_salt);
+
 #endif /* HAVE_KRB5 */
 
 
