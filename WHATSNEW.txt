@@ -225,6 +225,10 @@ o   Michael Adam <obnox@samba.org>
     * Add several tests to the testsuite.
 
 
+o   Günther Deschner <gd@samba.org>
+    * BUG 5542: Fix empty passwords of samsync.
+
+
 o   Volker Lendecke <vl@samba.org>
     * BUG 5500: Add missing become_root to enable access to LDAP DB.
     * Fix coverity IDs 464, 474.
@@ -244,13 +248,13 @@ o   Volker Lendecke <vl@samba.org>
     * Fix a file descriptor leak in add_port_hook.
 
 
-o   Günther Deschner <gd@samba.org>
-    * BUG 5542: Fix empty passwords of samsync.
-
-
 o   William Jojo <jojowil@hvcc.edu>
     * Fix several AIX build issues.
     * Add -brtl to the AIX linker flags.
+
+
+o   Atte Peltomäki <atte.peltomaki@f-secure.com>
+    * Fix winbindd group expansion.
 
 
 o   Andreas Schneider <anschneider@suse.de>
