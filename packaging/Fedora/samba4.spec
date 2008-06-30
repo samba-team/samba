@@ -160,7 +160,11 @@ rm -rf $RPM_BUILD_ROOT
 cd source
 
 #Don't call 'make install' as we want to call out to the PIDL install manually 
-make installbin installdat installswat installmisc installlib installheader installpc installplugins installpython DESTDIR=%{buildroot}
+make install DESTDIR=%{buildroot}
+
+#Undo the PIDL install, we want to try again with the right options
+rm -rf $RPM_BUILD_ROOT/%{_libdir}/perl5
+rm -rf $RPM_BUILD_ROOT/%{_datadir}/perl5
 
 #Install PIDL
 ( cd pidl && make install PERL_INSTALL_ROOT=$RPM_BUILD_ROOT )
@@ -214,13 +218,15 @@ rm $RPM_BUILD_ROOT/%{_bindir}/setnttoken
 rm $RPM_BUILD_ROOT/%{_bindir}/getntacl
 rm $RPM_BUILD_ROOT/%{_datadir}/samba/js/base.js
 
+#This makes the right links, as rpmlint requires that the
+#ldconfig-created links be recorded in the RPM.
 /sbin/ldconfig -N -n $RPM_BUILD_ROOT/%{_libdir}
 
 #Fix up permission on perl install
 %{_fixperms} $RPM_BUILD_ROOT/%{perl_vendorlib}
 
 #Fix up permissions in source tree, for debuginfo
-find -type f | xargs chmod -x
+find source/heimdal -type f | xargs chmod -x
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -268,7 +274,8 @@ exit 0
 %dir %{_datadir}/samba
 %{_datadir}/samba/*.dat
 %{_libdir}/*.so.*
-%{_libdir}/samba
+#Only needed if Samba's build produces plugins
+#%{_libdir}/samba
 %dir %{_sysconfdir}/%{name}
 #Need to mark this as being owned by Samba, but it is normally created
 #by the provision script, which runs best if there is no existing
@@ -346,5 +353,9 @@ exit 0
 %doc WHATSNEW.txt
 
 %changelog
+* Mon Jun 30 2008 Andrew Bartlett <abartlet@samba.org> - 0:4.0.0-0.2.alpha5.fc9
+- Update per review feedback
+- Update for alpha5
+
 * Thu Jun 26 2008 Andrew Bartlett <abartlet@samba.org> - 0:4.0.0-0.1.alpha4.fc9
 - Rework Fedora's Samba 3.2.0-1.rc2.16 spec file for Samba4
