@@ -241,7 +241,65 @@ static int schema_fsmo_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
+static int schema_fsmo_add(struct ldb_module *module, struct ldb_request *req)
+{
+	struct dsdb_schema *schema;
+	const char *attributeID = NULL;
+	const char *governsID = NULL;
+	const char *oid_attr = NULL;
+	const char *oid = NULL;
+	uint32_t id32;
+	WERROR status;
+
+	schema = dsdb_get_schema(module->ldb);
+	if (!schema) {
+		return ldb_next_request(module, req);
+	}
+
+	if (!schema->fsmo.we_are_master) {
+		ldb_debug_set(module->ldb, LDB_DEBUG_ERROR,
+			  "schema_fsmo_add: we are not master: reject request\n");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	attributeID = samdb_result_string(req->op.add.message, "attributeID", NULL);
+	governsID = samdb_result_string(req->op.add.message, "governsID", NULL);
+
+	if (attributeID) {
+		oid_attr = "attributeID";
+		oid = attributeID;
+	} else if (governsID) {
+		oid_attr = "governsID";
+		oid = governsID;
+	}
+
+	if (!oid) {
+		return ldb_next_request(module, req);
+	}
+
+	status = dsdb_map_oid2int(schema, oid, &id32);
+	if (W_ERROR_IS_OK(status)) {
+		return ldb_next_request(module, req);
+	} else if (!W_ERROR_EQUAL(WERR_DS_NO_MSDS_INTID, status)) {
+		ldb_debug_set(module->ldb, LDB_DEBUG_ERROR,
+			  "schema_fsmo_add: failed to map %s[%s]: %s\n",
+			  oid_attr, oid, win_errstr(status));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	status = dsdb_create_prefix_mapping(module->ldb, schema, oid);
+	if (!W_ERROR_IS_OK(status)) {
+		ldb_debug_set(module->ldb, LDB_DEBUG_ERROR,
+			  "schema_fsmo_add: failed to create prefix mapping for %s[%s]: %s\n",
+			  oid_attr, oid, win_errstr(status));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	return ldb_next_request(module, req);
+}
+
 _PUBLIC_ const struct ldb_module_ops ldb_schema_fsmo_module_ops = {
 	.name		= "schema_fsmo",
-	.init_context	= schema_fsmo_init
+	.init_context	= schema_fsmo_init,
+	.add		= schema_fsmo_add
 };
