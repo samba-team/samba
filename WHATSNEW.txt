@@ -225,6 +225,10 @@ o   Michael Adam <obnox@samba.org>
     * Add several tests to the testsuite.
 
 
+o   Steven Danneman <steven.danneman@isilon.com>
+    * Make winbindd enum users and groups async.
+
+
 o   Günther Deschner <gd@samba.org>
     * BUG 5542: Fix empty passwords of samsync.
 
