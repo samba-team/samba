@@ -69,7 +69,7 @@ In the time since Samba4 Alpha4 was released in June 2008, Samba has
 continued to evolve, but you may particularly notice these areas:
 
   LDAP backend support restored (issues preventing the use of the LDAP
-  backend in alpha4 have been addressed)
+  backend in alpha4 have been addressed).
 
   SMB2 Support:  The SMB2 server, while still disabled, has improved,
   and now supports SMB2 signing. 
@@ -107,7 +107,7 @@ KNOWN ISSUES
 
 - There is no printing support in the current release.
 
-- There is no netbios browsing support in the current release
+- There is no NetBIOS browsing support in the current release
 
 - The Samba4 port of the CTDB clustering support is not yet complete
 
