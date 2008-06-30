@@ -5,6 +5,7 @@
 import getopt
 import optparse
 import sys
+import time
 
 sys.path.append("bin/python")
 
@@ -578,6 +579,8 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
         self.assertEquals(str(res[0].dn), ("CN=ldaptestuser4,CN=ldaptestcontainer2," + self.base_dn))
         self.assertEquals(res[0]["memberOf"][0].upper(), ("CN=ldaptestgroup2,CN=Users," + self.base_dn).upper())
 
+        time.sleep(2)
+
         print "Testing ldb.search for (&(member=CN=ldaptestuser4,CN=ldaptestcontainer2," + self.base_dn + ")(objectclass=group)) to check subtree renames and linked attributes"
         res = ldb.search(self.base_dn, expression="(&(member=CN=ldaptestuser4,CN=ldaptestcontainer2," + self.base_dn + ")(objectclass=group))", scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 1, "Could not find (&(member=CN=ldaptestuser4,CN=ldaptestcontainer2," + self.base_dn + ")(objectclass=group)), perhaps linked attributes are not conistant with subtree renames?")
@@ -686,7 +689,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
         self.assertEquals(int(res[0]["primaryGroupID"][0]), 513)
         self.assertEquals(int(res[0]["sAMAccountType"][0]), 805306368)
         self.assertEquals(int(res[0]["userAccountControl"][0]), 546)
-        self.assertEquals(res[0]["memberOf"][0], "CN=ldaptestgroup2,CN=Users," + self.base_dn)
+        self.assertEquals(res[0]["memberOf"][0].upper(), ("CN=ldaptestgroup2,CN=Users," + self.base_dn).upper())
         self.assertEquals(len(res[0]["memberOf"]), 1)
 
         print "Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + self.base_dn + "))"
@@ -763,7 +766,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("whenCreated" in res[0])
         self.assertTrue("nTSecurityDescriptor" in res[0])
-        self.assertEquals(res[0]["memberOf"][0], ("CN=ldaptestgroup2,CN=Users," + self.base_dn))
+        self.assertEquals(res[0]["memberOf"][0].upper(), ("CN=ldaptestgroup2,CN=Users," + self.base_dn).upper())
 
         attrs = ["cn", "name", "objectClass", "objectGUID", "whenCreated", "nTSecurityDescriptor", "member"]
         print "Testing ldb.search for (&(cn=ldaptestgroup2)(objectClass=group))"
@@ -777,7 +780,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
         self.assertTrue("objectGuid" not in res[0])
         self.assertTrue("whenCreated" in res[0])
         self.assertTrue("nTSecurityDescriptor" in res[0])
-        self.assertEquals(res[0]["member"], ["CN=ldaptestuser2,CN=Users," + self.base_dn])
+        self.assertEquals(res[0]["member"][0].upper(), ("CN=ldaptestuser2,CN=Users," + self.base_dn).upper())
 
         ldb.modify_ldif("""
 dn: cn=ldaptestgroup2,cn=users,""" + self.base_dn + """
