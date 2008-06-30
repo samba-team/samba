@@ -1,5 +1,5 @@
-%define main_release 1
-%define alpha_version 4
+%define main_release 2
+%define alpha_version 5
 %define samba_version 4.0.0alpha%{alpha_version}
 %define tarball_name samba-4.0.0alpha%{alpha_version}
 
@@ -122,8 +122,6 @@ domains and to use Windows user and group accounts on Linux.
 #%setup -q
 
 # copy Red Hat specific scripts
-mkdir packaging/Fedora
-cp %{SOURCE5} packaging/Fedora/
 
 # Upstream patches
 #(none)
