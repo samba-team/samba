@@ -175,6 +175,7 @@ sub add_implicit($$)
 	$INPUT->{$n}->{LDFLAGS} = ["\$(".uc($n)."_LDFLAGS)"];
 	$INPUT->{$n}->{CFLAGS} = ["\$(".uc($n)."_CFLAGS)"];
 	$INPUT->{$n}->{CPPFLAGS} = ["\$(".uc($n)."_CPPFLAGS)"];
+	$INPUT->{$n}->{ENABLE} = "YES";
 }
 
 sub calc_unique_deps($$$$$$$$)
