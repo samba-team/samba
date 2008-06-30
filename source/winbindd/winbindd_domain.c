@@ -50,6 +50,14 @@ static const struct winbindd_child_dispatch_table domain_dispatch_table[] = {
 		.struct_cmd	= WINBINDD_LOOKUPRIDS,
 		.struct_fn	= winbindd_dual_lookuprids,
 	},{
+		.name		= "LIST_USERS",
+		.struct_cmd	= WINBINDD_LIST_USERS,
+		.struct_fn	= winbindd_dual_list_users,
+	},{
+		.name		= "LIST_GROUPS",
+		.struct_cmd	= WINBINDD_LIST_GROUPS,
+		.struct_fn	= winbindd_dual_list_groups,
+	},{
 		.name		= "LIST_TRUSTDOM",
 		.struct_cmd	= WINBINDD_LIST_TRUSTDOM,
 		.struct_fn	= winbindd_dual_list_trusted_domains,

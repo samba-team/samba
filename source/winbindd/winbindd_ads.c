@@ -393,7 +393,7 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 	 * using LDAP.
 	 *
 	 * if we ever need to enumerate domain local groups separately, 
-	 * then this the optimization in enum_dom_groups() will need 
+	 * then this optimization in enum_dom_groups() will need
 	 * to be split out
 	 */
 	*num_entries = 0;
