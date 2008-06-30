@@ -34,7 +34,6 @@ auth_anonymous_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, auth_anonymous.o)
 INIT_FUNCTION = auth_server_init
 SUBSYSTEM = auth
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBCLI_SMB
-OUTPUT_TYPE = SHARED_LIBRARY
 # End MODULE auth_server
 #######################
 

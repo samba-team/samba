@@ -120,36 +120,149 @@ const char **ldb_modules_list_from_string(struct ldb_context *ldb, TALLOC_CTX *m
 	return m;
 }
 
+static struct backends_list_entry {
+	struct ldb_backend_ops *ops;
+	struct backends_list_entry *prev, *next;
+} *ldb_backends = NULL;
+
 static struct ops_list_entry {
 	const struct ldb_module_ops *ops;
 	struct ops_list_entry *next;	
 } *registered_modules = NULL;
 
-#define LDB_MODULE(name) (&ldb_ ## name ## _module_ops)
+static const struct ldb_builtins {
+	const struct ldb_backend_ops *backend_ops;
+	const struct ldb_module_ops *module_ops;
+} builtins[];
 
-#ifndef STATIC_LIBLDB_MODULES
+static ldb_connect_fn ldb_find_backend(const char *url)
+{
+	struct backends_list_entry *backend;
+	int i;
 
-#define STATIC_LIBLDB_MODULES \
-	LDB_MODULE(operational),	\
-	LDB_MODULE(rdn_name),	\
-	LDB_MODULE(paged_results),	\
-	LDB_MODULE(server_sort),		\
-	LDB_MODULE(asq), \
-	NULL
-#endif
+	for (i = 0; builtins[i].backend_ops || builtins[i].module_ops; i++) {
+		if (builtins[i].backend_ops == NULL) continue;
 
-const static struct ldb_module_ops *builtin_modules[] = {
-	STATIC_LIBLDB_MODULES
-};
+		if (strncmp(builtins[i].backend_ops->name, url,
+			    strlen(builtins[i].backend_ops->name)) == 0) {
+			return builtins[i].backend_ops->connect_fn;
+		}
+	}
+
+	for (backend = ldb_backends; backend; backend = backend->next) {
+		if (strncmp(backend->ops->name, url,
+			    strlen(backend->ops->name)) == 0) {
+			return backend->ops->connect_fn;
+		}
+	}
+
+	return NULL;
+}
+
+/*
+ register a new ldb backend
+*/
+int ldb_register_backend(const char *url_prefix, ldb_connect_fn connectfn)
+{
+	struct ldb_backend_ops *backend;
+	struct backends_list_entry *entry;
+
+	backend = talloc(talloc_autofree_context(), struct ldb_backend_ops);
+	if (!backend) return LDB_ERR_OPERATIONS_ERROR;
+
+	entry = talloc(talloc_autofree_context(), struct backends_list_entry);
+	if (!entry) {
+		talloc_free(backend);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (ldb_find_backend(url_prefix)) {
+		return LDB_SUCCESS;
+	}
+
+	/* Maybe check for duplicity here later on? */
+
+	backend->name = talloc_strdup(backend, url_prefix);
+	backend->connect_fn = connectfn;
+	entry->ops = backend;
+	DLIST_ADD(ldb_backends, entry);
+
+	return LDB_SUCCESS;
+}
+
+/*
+   Return the ldb module form of a database.
+   The URL can either be one of the following forms
+   ldb://path
+   ldapi://path
+
+   flags is made up of LDB_FLG_*
+
+   the options are passed uninterpreted to the backend, and are
+   backend specific.
+
+   This allows modules to get at only the backend module, for example where a
+   module may wish to direct certain requests at a particular backend.
+*/
+int ldb_connect_backend(struct ldb_context *ldb,
+			const char *url,
+			const char *options[],
+			struct ldb_module **backend_module)
+{
+	int ret;
+	char *backend;
+	ldb_connect_fn fn;
+
+	if (strchr(url, ':') != NULL) {
+		backend = talloc_strndup(ldb, url, strchr(url, ':')-url);
+	} else {
+		/* Default to tdb */
+		backend = talloc_strdup(ldb, "tdb");
+	}
+
+	fn = ldb_find_backend(backend);
+
+	if (fn == NULL) {
+		struct ldb_backend_ops *ops;
+		char *symbol_name = talloc_asprintf(ldb, "ldb_%s_backend_ops", backend);
+		if (symbol_name == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		ops = ldb_dso_load_symbol(ldb, backend, symbol_name);
+		if (ops != NULL) {
+			fn = ops->connect_fn;
+		}
+		talloc_free(symbol_name);
+	}
+
+	talloc_free(backend);
+
+	if (fn == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL,
+			  "Unable to find backend for '%s'\n", url);
+		return LDB_ERR_OTHER;
+	}
+
+	ret = fn(ldb, url, ldb->flags, options, backend_module);
+
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Failed to connect to '%s'\n", url);
+		return ret;
+	}
+	return ret;
+}
 
 static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
 {
 	struct ops_list_entry *e;
 	int i;
 
-	for (i = 0; builtin_modules[i]; i++) {
-		if (strcmp(builtin_modules[i]->name, name) == 0)
-			return builtin_modules[i];
+	for (i = 0; builtins[i].backend_ops || builtins[i].module_ops; i++) {
+		if (builtins[i].module_ops == NULL) continue;
+
+		if (strcmp(builtins[i].module_ops->name, name) == 0)
+			return builtins[i].module_ops;
 	}
  
 	for (e = registered_modules; e; e = e->next) {
@@ -441,3 +554,72 @@ int ldb_next_del_trans(struct ldb_module *module)
 	FIND_OP(module, del_transaction);
 	return module->ops->del_transaction(module);
 }
+
+#ifndef STATIC_LIBLDB_MODULES
+
+#ifdef HAVE_LDB_LDAP
+#define LDAP_BACKEND LDB_BACKEND(ldap), LDB_BACKEND(ldapi), LDB_BACKEND(ldaps),
+#else
+#define LDAP_BACKEND
+#endif
+
+#ifdef HAVE_LDB_SQLITE3
+#define SQLITE3_BACKEND LDB_BACKEND(sqlite3),
+#else
+#define SQLITE3_BACKEND
+#endif
+
+#define STATIC_LIBLDB_MODULES \
+	LDB_BACKEND(tdb),	\
+	LDAP_BACKEND	\
+	SQLITE3_BACKEND	\
+	LDB_MODULE(operational),	\
+	LDB_MODULE(rdn_name),	\
+	LDB_MODULE(paged_results),	\
+	LDB_MODULE(server_sort),		\
+	LDB_MODULE(asq), \
+	NULL
+#endif
+
+/*
+ * this is a bit hacked, as STATIC_LIBLDB_MODULES contains ','
+ * between the elements and we want to autogenerate the
+ * extern struct declarations, so we do some hacks and let the
+ * ',' appear in an unused function prototype.
+ */
+#undef NULL
+#define NULL LDB_MODULE(NULL),
+
+#define LDB_BACKEND(name) \
+	int); \
+	extern const struct ldb_backend_ops ldb_ ## name ## _backend_ops;\
+	extern void ldb_noop ## name (int
+#define LDB_MODULE(name) \
+	int); \
+	extern const struct ldb_module_ops ldb_ ## name ## _module_ops;\
+	extern void ldb_noop ## name (int
+
+extern void ldb_start_noop(int,
+STATIC_LIBLDB_MODULES
+int);
+
+#undef NULL
+#define NULL { \
+	.backend_ops = (void *)0, \
+	.module_ops = (void *)0 \
+}
+
+#undef LDB_BACKEND
+#define LDB_BACKEND(name) { \
+	.backend_ops = &ldb_ ## name ## _backend_ops, \
+	.module_ops = (void *)0 \
+}
+#undef LDB_MODULE
+#define LDB_MODULE(name) { \
+	.backend_ops = (void *)0, \
+	.module_ops = &ldb_ ## name ## _module_ops \
+}
+
+static const struct ldb_builtins builtins[] = {
+	STATIC_LIBLDB_MODULES
+};

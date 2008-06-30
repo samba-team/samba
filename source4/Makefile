@@ -178,7 +178,7 @@ showflags::
 # The permissions to give the executables
 INSTALLPERMS = 0755
 
-install:: showlayout everything installbin installdat installswat installmisc \
+install:: showlayout everything installbin installsbin installdat installswat installmisc \
 	      installlib installheader installpc installplugins
 
 # DESTDIR is used here to prevent packagers wasting their time
