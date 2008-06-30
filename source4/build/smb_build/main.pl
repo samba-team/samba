@@ -32,9 +32,9 @@ my $subsys_output_type = ["MERGED_OBJ"];
 
 my $library_output_type;
 if ($config::config{USESHARED} eq "true") {
-	$library_output_type = ["SHARED_LIBRARY", "STATIC_LIBRARY"];
+	$library_output_type = ["SHARED_LIBRARY", "MERGED_OBJ"];
 } else {
-	$library_output_type = ["STATIC_LIBRARY"];
+	$library_output_type = ["MERGED_OBJ"];
 	push (@$library_output_type, "SHARED_LIBRARY") if 
 						($config::config{BLDSHARED} eq "true")
 }
