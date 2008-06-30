@@ -54,6 +54,8 @@ static int schema_fsmo_init(struct ldb_module *module)
 		NULL
 	};
 
+	module->private_data = NULL;
+
 	if (dsdb_get_schema(module->ldb)) {
 		return ldb_next_init(module);
 	}
@@ -77,7 +79,6 @@ static int schema_fsmo_init(struct ldb_module *module)
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	module->private_data = schema_fsmo;
 
 	schema = dsdb_new_schema(mem_ctx, lp_iconv_convenience(ldb_get_opaque(module->ldb, "loadparm")));
 	if (!schema) {
@@ -246,7 +247,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	talloc_steal(module, schema_fsmo);
+	module->private_data = talloc_steal(module, schema_fsmo);
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE,
 			  "schema_fsmo_init: we are master: %s\n",
