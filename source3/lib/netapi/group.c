@@ -1013,3 +1013,21 @@ WERROR NetGroupDelUser_l(struct libnetapi_ctx *ctx,
 {
 	return NetGroupDelUser_r(ctx, r);
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetGroupEnum_r(struct libnetapi_ctx *ctx,
+		      struct NetGroupEnum *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetGroupEnum_l(struct libnetapi_ctx *ctx,
+		      struct NetGroupEnum *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
