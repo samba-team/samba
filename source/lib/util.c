@@ -3458,6 +3458,16 @@ bool is_valid_policy_hnd(const POLICY_HND *hnd)
 	return (memcmp(&tmp, hnd, sizeof(tmp)) != 0);
 }
 
+bool policy_hnd_equal(const struct policy_handle *hnd1,
+		      const struct policy_handle *hnd2)
+{
+	if (!hnd1 || !hnd2) {
+		return false;
+	}
+
+	return (memcmp(hnd1, hnd2, sizeof(*hnd1)) == 0);
+}
+
 /****************************************************************
  strip off leading '\\' from a hostname
 ****************************************************************/

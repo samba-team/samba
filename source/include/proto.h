@@ -1408,6 +1408,8 @@ void *talloc_zeronull(const void *context, size_t size, const char *name);
 NTSTATUS split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
 				char **pbase, char **pstream);
 bool is_valid_policy_hnd(const POLICY_HND *hnd);
+bool policy_hnd_equal(const struct policy_handle *hnd1,
+		      const struct policy_handle *hnd2);
 const char *strip_hostname(const char *s);
 
 /* The following definitions come from lib/util_file.c  */
