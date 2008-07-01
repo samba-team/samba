@@ -29,6 +29,7 @@ PROGS = bin/getdc@EXEEXT@ \
 	bin/user_chgpwd@EXEEXT@ \
 	bin/group_add@EXEEXT@ \
 	bin/group_del@EXEEXT@ \
+	bin/group_enum@EXEEXT@ \
 	bin/group_setinfo@EXEEXT@ \
 	bin/group_getinfo@EXEEXT@ \
 	bin/group_adduser@EXEEXT@ \
@@ -78,6 +79,7 @@ USERDISPINFO_OBJ = user/user_dispinfo.o $(CMDLINE_OBJ)
 USERCHGPWD_OBJ = user/user_chgpwd.o $(CMDLINE_OBJ)
 GROUPADD_OBJ = group/group_add.o $(CMDLINE_OBJ)
 GROUPDEL_OBJ = group/group_del.o $(CMDLINE_OBJ)
+GROUPENUM_OBJ = group/group_enum.o $(CMDLINE_OBJ)
 GROUPSETINFO_OBJ = group/group_setinfo.o $(CMDLINE_OBJ)
 GROUPGETINFO_OBJ = group/group_getinfo.o $(CMDLINE_OBJ)
 GROUPADDUSER_OBJ = group/group_adduser.o $(CMDLINE_OBJ)
@@ -135,6 +137,10 @@ bin/group_add@EXEEXT@: $(BINARY_PREREQS) $(GROUPADD_OBJ)
 bin/group_del@EXEEXT@: $(BINARY_PREREQS) $(GROUPDEL_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(GROUPDEL_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
+
+bin/group_enum@EXEEXT@: $(BINARY_PREREQS) $(GROUPENUM_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(GROUPENUM_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 
 bin/group_setinfo@EXEEXT@: $(BINARY_PREREQS) $(GROUPSETINFO_OBJ)
 	@echo Linking $@
