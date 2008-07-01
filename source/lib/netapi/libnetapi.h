@@ -133,6 +133,17 @@ WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 		     struct NetGroupDel *r);
 WERROR NetGroupDel_l(struct libnetapi_ctx *ctx,
 		     struct NetGroupDel *r);
+NET_API_STATUS NetGroupEnum(const char * server_name /* [in] */,
+			    uint32_t level /* [in] */,
+			    uint8_t **buffer /* [out] [ref] */,
+			    uint32_t prefmaxlen /* [in] */,
+			    uint32_t *entries_read /* [out] [ref] */,
+			    uint32_t *total_entries /* [out] [ref] */,
+			    uint32_t *resume_handle /* [in,out] [ref] */);
+WERROR NetGroupEnum_r(struct libnetapi_ctx *ctx,
+		      struct NetGroupEnum *r);
+WERROR NetGroupEnum_l(struct libnetapi_ctx *ctx,
+		      struct NetGroupEnum *r);
 NET_API_STATUS NetGroupSetInfo(const char * server_name /* [in] */,
 			       const char * group_name /* [in] */,
 			       uint32_t level /* [in] */,
