@@ -191,6 +191,8 @@ struct libnetapi_ctx {
 	char *password;
 	char *krb5_cc_env;
 	int use_kerberos;
+
+	void *private_data;
 };
 
 /****************************************************************

@@ -30,8 +30,30 @@ static bool libnetapi_initialized = false;
 /****************************************************************
 ****************************************************************/
 
+static NET_API_STATUS libnetapi_init_private_context(struct libnetapi_ctx *ctx)
+{
+	struct libnetapi_private_ctx *priv;
+
+	if (!ctx) {
+		return W_ERROR_V(WERR_INVALID_PARAM);
+	}
+
+	priv = TALLOC_ZERO_P(ctx, struct libnetapi_private_ctx);
+	if (!priv) {
+		return W_ERROR_V(WERR_NOMEM);
+	}
+
+	ctx->private_data = priv;
+
+	return NET_API_STATUS_SUCCESS;
+}
+
+/****************************************************************
+****************************************************************/
+
 NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 {
+	NET_API_STATUS status;
 	struct libnetapi_ctx *ctx = NULL;
 	char *krb5_cc_env = NULL;
 
@@ -94,6 +116,12 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 		TALLOC_FREE(frame);
 		fprintf(stderr, "libnetapi_init: out of memory\n");
 		return W_ERROR_V(WERR_NOMEM);
+	}
+
+	status = libnetapi_init_private_context(ctx);
+	if (status != 0) {
+		TALLOC_FREE(frame);
+		return status;
 	}
 
 	libnetapi_initialized = true;
