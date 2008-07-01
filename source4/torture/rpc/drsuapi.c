@@ -549,8 +549,8 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 			}
 			r.in.req.req5.max_object_count			= 0;
 			r.in.req.req5.max_ndr_size			= 0;
-			r.in.req.req5.unknown4				= 0;
-			r.in.req.req5.h1				= 0;
+			r.in.req.req5.extended_op			= DRSUAPI_EXOP_NONE;
+			r.in.req.req5.fsmo_info				= 0;
 
 			break;
 		case 8:
@@ -579,10 +579,10 @@ static bool test_DsGetNCChanges(struct dcerpc_pipe *p, struct torture_context *t
 									;
 			r.in.req.req8.max_object_count			= 402;
 			r.in.req.req8.max_ndr_size			= 402116;
-			r.in.req.req8.unknown4				= 0;
-			r.in.req.req8.h1				= 0;
-			r.in.req.req8.unique_ptr1			= 0;
-			r.in.req.req8.unique_ptr2			= 0;
+			r.in.req.req8.extended_op			= DRSUAPI_EXOP_NONE;
+			r.in.req.req8.fsmo_info				= 0;
+			r.in.req.req8.partial_attribute_set		= NULL;
+			r.in.req.req8.partial_attribute_set_ex		= NULL;
 			r.in.req.req8.mapping_ctr.num_mappings		= 0;
 			r.in.req.req8.mapping_ctr.mappings		= NULL;
 
