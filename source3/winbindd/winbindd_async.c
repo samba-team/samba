@@ -557,9 +557,11 @@ enum winbindd_result winbindd_dual_list_users(struct winbindd_domain *domain,
 enum winbindd_result winbindd_dual_list_groups(struct winbindd_domain *domain,
                                                struct winbindd_cli_state *state)
 {
-	struct getent_state groups = {};
+	struct getent_state groups;
 	char *extra_data = NULL;
 	uint32_t extra_data_len = 0, i;
+
+	ZERO_STRUCT(groups);
 
 	/* Must copy domain into response first for debugging in parent */
 	fstrcpy(state->response.data.name.dom_name, domain->name);
