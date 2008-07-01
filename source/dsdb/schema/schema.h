@@ -150,6 +150,11 @@ struct dsdb_schema {
 	struct dsdb_attribute *attributes;
 	struct dsdb_class *classes;
 
+	struct {
+		bool we_are_master;
+		struct ldb_dn *master_dn;
+	} fsmo;
+
 	struct smb_iconv_convenience *iconv_convenience;
 };
 
