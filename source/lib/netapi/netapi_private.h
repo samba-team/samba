@@ -20,6 +20,24 @@
 #ifndef __LIB_NETAPI_PRIVATE_H__
 #define __LIB_NETAPI_PRIVATE_H__
 
+struct libnetapi_private_ctx {
+	struct {
+		const char *domain_name;
+		struct dom_sid *domain_sid;
+		struct rpc_pipe_client *cli;
+
+		uint32_t connect_mask;
+		struct policy_handle connect_handle;
+
+		uint32_t domain_mask;
+		struct policy_handle domain_handle;
+
+		uint32_t builtin_mask;
+		struct policy_handle builtin_handle;
+	} samr;
+
+};
+
 NET_API_STATUS libnetapi_get_password(struct libnetapi_ctx *ctx, char **password);
 NET_API_STATUS libnetapi_get_username(struct libnetapi_ctx *ctx, char **username);
 NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx, const char *format, ...);
