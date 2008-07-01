@@ -38,25 +38,27 @@
 
 #define NDR_NETGROUPDEL (0x0f)
 
-#define NDR_NETGROUPSETINFO (0x10)
+#define NDR_NETGROUPENUM (0x10)
 
-#define NDR_NETGROUPGETINFO (0x11)
+#define NDR_NETGROUPSETINFO (0x11)
 
-#define NDR_NETGROUPADDUSER (0x12)
+#define NDR_NETGROUPGETINFO (0x12)
 
-#define NDR_NETGROUPDELUSER (0x13)
+#define NDR_NETGROUPADDUSER (0x13)
 
-#define NDR_NETLOCALGROUPADD (0x14)
+#define NDR_NETGROUPDELUSER (0x14)
 
-#define NDR_NETLOCALGROUPDEL (0x15)
+#define NDR_NETLOCALGROUPADD (0x15)
 
-#define NDR_NETLOCALGROUPGETINFO (0x16)
+#define NDR_NETLOCALGROUPDEL (0x16)
 
-#define NDR_NETLOCALGROUPSETINFO (0x17)
+#define NDR_NETLOCALGROUPGETINFO (0x17)
 
-#define NDR_NETREMOTETOD (0x18)
+#define NDR_NETLOCALGROUPSETINFO (0x18)
 
-#define NDR_LIBNETAPI_CALL_COUNT (25)
+#define NDR_NETREMOTETOD (0x19)
+
+#define NDR_LIBNETAPI_CALL_COUNT (26)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -132,6 +134,9 @@ void ndr_print_NetGroupAdd(struct ndr_print *ndr, const char *name, int flags, c
 enum ndr_err_code ndr_push_NetGroupDel(struct ndr_push *ndr, int flags, const struct NetGroupDel *r);
 enum ndr_err_code ndr_pull_NetGroupDel(struct ndr_pull *ndr, int flags, struct NetGroupDel *r);
 void ndr_print_NetGroupDel(struct ndr_print *ndr, const char *name, int flags, const struct NetGroupDel *r);
+enum ndr_err_code ndr_push_NetGroupEnum(struct ndr_push *ndr, int flags, const struct NetGroupEnum *r);
+enum ndr_err_code ndr_pull_NetGroupEnum(struct ndr_pull *ndr, int flags, struct NetGroupEnum *r);
+void ndr_print_NetGroupEnum(struct ndr_print *ndr, const char *name, int flags, const struct NetGroupEnum *r);
 enum ndr_err_code ndr_push_NetGroupSetInfo(struct ndr_push *ndr, int flags, const struct NetGroupSetInfo *r);
 enum ndr_err_code ndr_pull_NetGroupSetInfo(struct ndr_pull *ndr, int flags, struct NetGroupSetInfo *r);
 void ndr_print_NetGroupSetInfo(struct ndr_print *ndr, const char *name, int flags, const struct NetGroupSetInfo *r);
