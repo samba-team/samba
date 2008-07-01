@@ -440,35 +440,229 @@ WERROR NetUserDel_l(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
-static WERROR convert_samr_samarray_to_USER_INFO_buffer(TALLOC_CTX *mem_ctx,
-							struct samr_SamArray *sam_array,
-							uint32_t level,
-							uint8_t **buffer)
+static NTSTATUS libnetapi_samr_lookup_user(TALLOC_CTX *mem_ctx,
+					   struct rpc_pipe_client *pipe_cli,
+					   struct policy_handle *domain_handle,
+					   struct policy_handle *builtin_handle,
+					   const char *user_name,
+					   uint32_t rid,
+					   uint32_t level,
+					   struct samr_UserInfo21 **info21,
+					   struct sec_desc_buf **sec_desc)
 {
-	struct USER_INFO_0 *info0 = NULL;
-	int i;
+	NTSTATUS status;
+
+	struct policy_handle user_handle;
+	union samr_UserInfo *user_info = NULL;
+	struct samr_RidWithAttributeArray *rid_array = NULL;
+	uint32_t access_mask = SEC_STD_READ_CONTROL |
+			       SAMR_USER_ACCESS_GET_ATTRIBUTES |
+			       SAMR_USER_ACCESS_GET_NAME_ETC;
+
+	ZERO_STRUCT(user_handle);
 
 	switch (level) {
 		case 0:
-			info0 = TALLOC_ZERO_ARRAY(mem_ctx, struct USER_INFO_0,
-						  sam_array->count);
-			W_ERROR_HAVE_NO_MEMORY(info0);
-
-			for (i=0; i<sam_array->count; i++) {
-				info0[i].usri0_name = talloc_strdup(mem_ctx,
-					sam_array->entries[i].name.string);
-				W_ERROR_HAVE_NO_MEMORY(info0[i].usri0_name);
-			}
-
-			*buffer = (uint8_t *)talloc_memdup(mem_ctx, info0,
-				sizeof(struct USER_INFO_0) * sam_array->count);
-			W_ERROR_HAVE_NO_MEMORY(*buffer);
+		case 1:
+		case 2:
+		case 3:
+		case 10:
+		case 11:
+		case 20:
+		case 23:
 			break;
 		default:
-			return WERR_NOT_SUPPORTED;
+			return NT_STATUS_INVALID_LEVEL;
 	}
 
-	return WERR_OK;
+	if (level == 0) {
+		return NT_STATUS_OK;
+	}
+
+	status = rpccli_samr_OpenUser(pipe_cli, mem_ctx,
+				      domain_handle,
+				      access_mask,
+				      rid,
+				      &user_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = rpccli_samr_QueryUserInfo(pipe_cli, mem_ctx,
+					   &user_handle,
+					   21,
+					   &user_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = rpccli_samr_QuerySecurity(pipe_cli, mem_ctx,
+					   &user_handle,
+					   SECINFO_DACL,
+					   sec_desc);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	if (level == 1) {
+		status = rpccli_samr_GetGroupsForUser(pipe_cli, mem_ctx,
+						      &user_handle,
+						      &rid_array);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+
+#if 0
+		status = rpccli_samr_GetAliasMembership(pipe_cli, ctx,
+							&builtin_handle,
+							&sids,
+							&rids);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+#endif
+	}
+
+	*info21 = &user_info->info21;
+
+ done:
+	if (is_valid_policy_hnd(&user_handle)) {
+		rpccli_samr_Close(pipe_cli, mem_ctx, &user_handle);
+	}
+
+	return status;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
+							 struct rpc_pipe_client *pipe_cli,
+							 struct dom_sid *domain_sid,
+							 struct policy_handle *domain_handle,
+							 struct policy_handle *builtin_handle,
+							 const char *user_name,
+							 uint32_t rid,
+							 uint32_t level,
+							 uint8_t **buffer,
+							 uint32_t *num_entries)
+{
+	NTSTATUS status;
+
+	struct samr_UserInfo21 *info21 = NULL;
+	struct sec_desc_buf *sec_desc = NULL;
+	struct dom_sid sid;
+
+	struct USER_INFO_0 *info0 = NULL;
+	struct USER_INFO_10 *info10 = NULL;
+	struct USER_INFO_20 *info20 = NULL;
+	struct USER_INFO_23 *info23 = NULL;
+
+	switch (level) {
+		case 0:
+		case 1:
+		case 2:
+		case 3:
+		case 10:
+		case 11:
+		case 20:
+		case 23:
+			break;
+		default:
+			return NT_STATUS_INVALID_LEVEL;
+	}
+
+	if (level == 0) {
+		info0 = TALLOC_P(mem_ctx, struct USER_INFO_0);
+		NT_STATUS_HAVE_NO_MEMORY(info0);
+
+		info0->usri0_name = talloc_strdup(mem_ctx, user_name);
+		NT_STATUS_HAVE_NO_MEMORY(info0->usri0_name);
+
+		ADD_TO_ARRAY(mem_ctx, struct USER_INFO_0, *info0,
+			     (struct USER_INFO_0 **)buffer, num_entries);
+
+		return NT_STATUS_OK;
+	}
+
+	status = libnetapi_samr_lookup_user(mem_ctx, pipe_cli,
+					    domain_handle,
+					    builtin_handle,
+					    user_name,
+					    rid,
+					    level,
+					    &info21,
+					    &sec_desc);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	switch (level) {
+		case 10:
+			info10 = TALLOC_P(mem_ctx, struct USER_INFO_10);
+			NT_STATUS_HAVE_NO_MEMORY(info10);
+
+			info10->usri10_name = talloc_strdup(mem_ctx, user_name);
+			NT_STATUS_HAVE_NO_MEMORY(info10->usri10_name);
+
+			info10->usri10_comment = talloc_strdup(mem_ctx,
+				info21->description.string);
+
+			info10->usri10_full_name = talloc_strdup(mem_ctx,
+				info21->full_name.string);
+
+			info10->usri10_usr_comment = talloc_strdup(mem_ctx,
+				info21->comment.string);
+
+			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_10, *info10,
+				     (struct USER_INFO_10 **)buffer, num_entries);
+
+			break;
+
+		case 20:
+			info20 = TALLOC_P(mem_ctx, struct USER_INFO_20);
+			NT_STATUS_HAVE_NO_MEMORY(info20);
+
+			info20->usri20_name = talloc_strdup(mem_ctx, user_name);
+			NT_STATUS_HAVE_NO_MEMORY(info20->usri20_name);
+
+			info20->usri20_comment = talloc_strdup(mem_ctx,
+				info21->description.string);
+
+			info20->usri20_flags = info21->acct_flags;
+			info20->usri20_user_id = rid;
+
+			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_20, *info20,
+				     (struct USER_INFO_20 **)buffer, num_entries);
+
+			break;
+		case 23:
+			info23 = TALLOC_P(mem_ctx, struct USER_INFO_23);
+			NT_STATUS_HAVE_NO_MEMORY(info23);
+
+			info23->usri23_name = talloc_strdup(mem_ctx, user_name);
+			NT_STATUS_HAVE_NO_MEMORY(info23->usri23_name);
+
+			info23->usri23_comment = talloc_strdup(mem_ctx,
+				info21->description.string);
+
+			info23->usri23_flags = info21->acct_flags;
+
+			if (!sid_compose(&sid, domain_sid, rid)) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			info23->usri23_user_sid =
+				(struct domsid *)sid_dup_talloc(mem_ctx, &sid);
+
+			ADD_TO_ARRAY(mem_ctx, struct USER_INFO_23, *info23,
+				     (struct USER_INFO_23 **)buffer, num_entries);
+			break;
+	}
+
+ done:
+	return status;
 }
 
 /****************************************************************
@@ -484,23 +678,32 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 	struct policy_handle domain_handle;
 	struct samr_SamArray *sam = NULL;
 	uint32_t filter = ACB_NORMAL;
+	int i;
+	uint32_t entries_read = 0;
 
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 	WERROR werr;
 
 	ZERO_STRUCT(connect_handle);
 	ZERO_STRUCT(domain_handle);
 
+	if (!r->out.buffer) {
+		return WERR_INVALID_PARAM;
+	}
+
+	*r->out.buffer = NULL;
+	*r->out.entries_read = 0;
+
 	switch (r->in.level) {
 		case 0:
+		case 10:
+		case 20:
+		case 23:
 			break;
 		case 1:
 		case 2:
 		case 3:
-		case 10:
 		case 11:
-		case 20:
-		case 23:
 		default:
 			return WERR_NOT_SUPPORTED;
 	}
@@ -555,15 +758,28 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 					     filter,
 					     &sam,
 					     r->in.prefmaxlen,
-					     r->out.entries_read);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+					     &entries_read);
+	werr = ntstatus_to_werror(status);
+	if (NT_STATUS_IS_ERR(status)) {
 		goto done;
 	}
 
-	werr = convert_samr_samarray_to_USER_INFO_buffer(ctx, sam,
-							 r->in.level,
-							 r->out.buffer);
+	for (i=0; i < sam->count; i++) {
+
+		status = libnetapi_samr_lookup_user_map_USER_INFO(ctx, pipe_cli,
+								  domain_sid,
+								  &domain_handle,
+								  NULL, /*&builtin_handle, */
+								  sam->entries[i].name.string,
+								  sam->entries[i].idx,
+								  r->in.level,
+								  r->out.buffer,
+								  r->out.entries_read);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+	}
 
  done:
 	if (!cli) {
