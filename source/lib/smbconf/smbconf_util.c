@@ -132,7 +132,7 @@ bool smbconf_find_in_array(const char *string, char **list,
 bool smbconf_reverse_find_in_array(const char *string, char **list,
 				   uint32_t num_entries, uint32_t *entry)
 {
-	uint32_t i;
+	int32_t i;
 
 	if ((string == NULL) || (list == NULL) || (num_entries == 0)) {
 		return false;
