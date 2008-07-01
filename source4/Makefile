@@ -199,6 +199,8 @@ installdirs::
 		$(DESTDIR)$(modulesdir) \
 		$(DESTDIR)$(mandir) \
 		$(DESTDIR)$(localstatedir) \
+		$(DESTDIR)$(localstatedir)/lib \
+		$(DESTDIR)$(localstatedir)/run \
 		$(DESTDIR)$(privatedir) \
 		$(DESTDIR)$(datadir) \
 		$(DESTDIR)$(piddir) \
@@ -207,7 +209,7 @@ installdirs::
 		$(DESTDIR)$(privatedir)/tls \
 		$(DESTDIR)$(includedir) \
 		$(DESTDIR)$(PKGCONFIGDIR) \
-		$(DESTDIR)$(sysconfdir) \
+		$(DESTDIR)$(sysconfdir)
 
 installbin:: $(SBIN_PROGS) $(BIN_PROGS) $(TORTURE_PROGS) installdirs
 	@$(SHELL) $(srcdir)/script/installtorture.sh \
