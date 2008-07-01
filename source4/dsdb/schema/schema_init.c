@@ -1164,6 +1164,12 @@ WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf
 
 	schema = dsdb_new_schema(mem_ctx, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")));
 
+	schema->fsmo.we_are_master = true;
+	schema->fsmo.master_dn = ldb_dn_new_fmt(schema, ldb, "@PROVISION_SCHEMA_MASTER");
+	if (!schema->fsmo.master_dn) {
+		goto nomem;
+	}
+
 	/*
 	 * load the prefixMap attribute from pf
 	 */

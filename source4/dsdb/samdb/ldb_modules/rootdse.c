@@ -164,14 +164,11 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	}
 
 	if (do_attribute_explicit(attrs, "validFSMOs")) {
-		const struct dsdb_schema_fsmo *schema_fsmo;
 		const struct dsdb_naming_fsmo *naming_fsmo;
 		const struct dsdb_pdc_fsmo *pdc_fsmo;
 		const char *dn_str;
 
-		schema_fsmo = talloc_get_type(ldb_get_opaque(module->ldb, "dsdb_schema_fsmo"),
-					      struct dsdb_schema_fsmo);
-		if (schema_fsmo && schema_fsmo->we_are_master) {
+		if (schema && schema->fsmo.we_are_master) {
 			dn_str = ldb_dn_get_linearized(samdb_schema_dn(module->ldb));
 			if (dn_str && dn_str[0]) {
 				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != 0) {
