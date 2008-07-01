@@ -184,7 +184,7 @@ static bool irix_set_kernel_oplock(files_struct *fsp, int oplock_type)
 				 strerror(errno) ));
 		} else {
 			DEBUG(5,("irix_set_kernel_oplock: Refused oplock on "
-				 "file %s, fd = %d, file_id = 5s, "
+				 "file %s, fd = %d, file_id = %s, "
 				 "gen_id = %ul. Another process had the file "
 				 "open.\n",
 				 fsp->fsp_name, fsp->fh->fd,

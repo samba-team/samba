@@ -97,7 +97,12 @@ static ssize_t client_receive_smb(struct cli_state *cli, size_t maxlen)
 			return -1;
 		}
 
-		if (len < 0) {
+		/*
+		 * I don't believe len can be < 0 with NT_STATUS_OK
+		 * returned above, but this check doesn't hurt. JRA.
+		 */
+
+		if ((ssize_t)len < 0) {
 			return len;
 		}
 
