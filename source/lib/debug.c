@@ -476,7 +476,7 @@ bool debug_parse_levels(const char *params_str)
  Receive a "set debug level" message.
 ****************************************************************************/
 
-static void debug_message(struct messaging_context *msg_ctx,
+void debug_message(struct messaging_context *msg_ctx,
 			  void *private_data, 
 			  uint32_t msg_type, 
 			  struct server_id src,

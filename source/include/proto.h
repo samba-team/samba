@@ -502,6 +502,7 @@ const char *debug_classname_from_index(int ndx);
 int debug_add_class(const char *classname);
 int debug_lookup_classname(const char *classname);
 bool debug_parse_levels(const char *params_str);
+void debug_message(struct messaging_context *msg_ctx, void *private_data, uint32_t msg_type, struct server_id src, DATA_BLOB *data);
 void debug_init(void);
 void debug_register_msgs(struct messaging_context *msg_ctx);
 void setup_logging(const char *pname, bool interactive);

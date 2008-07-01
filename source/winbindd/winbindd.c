@@ -1249,6 +1249,11 @@ int main(int argc, char **argv, char **envp)
 			   MSG_WINBIND_DUMP_DOMAIN_LIST,
 			   winbind_msg_dump_domain_list);
 
+	/* Register handler for MSG_DEBUG. */
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_DEBUG,
+			   winbind_msg_debug);
+	
 	netsamlogon_cache_init(); /* Non-critical */
 	
 	/* clear the cached list of trusted domains */
