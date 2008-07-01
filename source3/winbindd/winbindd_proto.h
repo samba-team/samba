@@ -300,6 +300,11 @@ void setup_child(struct winbindd_child *child,
 		 const char *logname);
 void winbind_child_died(pid_t pid);
 void winbindd_flush_negative_conn_cache(struct winbindd_domain *domain);
+void winbind_msg_debug(struct messaging_context *msg_ctx,
+			 void *private_data,
+			 uint32_t msg_type,
+			 struct server_id server_id,
+			 DATA_BLOB *data);
 void winbind_msg_offline(struct messaging_context *msg_ctx,
 			 void *private_data,
 			 uint32_t msg_type,
