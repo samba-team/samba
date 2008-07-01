@@ -138,7 +138,7 @@ bool smbconf_reverse_find_in_array(const char *string, char **list,
 		return false;
 	}
 
-	for (i = num_entries - 1; i >= 0; i++) {
+	for (i = num_entries - 1; i >= 0; i--) {
 		if (strequal(string, list[i])) {
 			if (entry != NULL) {
 				*entry = i;
