@@ -82,6 +82,9 @@ size_t rep_strlcat(char *d, const char *s, size_t bufsize)
 	size_t ret = len1 + len2;
 
 	if (len1+len2 >= bufsize) {
+		if (bufsize < (len1+1)) {
+			return ret;
+		}
 		len2 = bufsize - (len1+1);
 	}
 	if (len2 > 0) {
