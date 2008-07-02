@@ -469,7 +469,7 @@ static void interpret_interface(char *token)
 		token));
 
 	ZERO_STRUCT(ifs);
-	safe_strcpy(ifs.name, token, sizeof(ifs.name)-1);
+	(void)strlcpy(ifs.name, token, sizeof(ifs.name));
 	ifs.flags = IFF_BROADCAST;
 	ifs.ip = ss;
 	ifs.netmask = ss_mask;
