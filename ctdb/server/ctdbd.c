@@ -174,7 +174,8 @@ int main(int argc, const char *argv[])
 
 	DEBUG(DEBUG_NOTICE,("Starting CTDB daemon\n"));
 	gettimeofday(&ctdb->ctdbd_start_time, NULL);
-	gettimeofday(&ctdb->last_recovery_time, NULL);
+	gettimeofday(&ctdb->last_recovery_started, NULL);
+	gettimeofday(&ctdb->last_recovery_finished, NULL);
 	ctdb->recovery_mode    = CTDB_RECOVERY_NORMAL;
 	ctdb->recovery_master  = (uint32_t)-1;
 	ctdb->upcalls          = &ctdb_upcalls;

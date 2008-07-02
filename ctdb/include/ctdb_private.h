@@ -360,7 +360,8 @@ enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN
 struct ctdb_context {
 	struct event_context *ev;
 	struct timeval ctdbd_start_time;
-	struct timeval last_recovery_time;
+	struct timeval last_recovery_started;
+	struct timeval last_recovery_finished;
 	uint32_t recovery_mode;
 	TALLOC_CTX *tickle_update_context;
 	TALLOC_CTX *keepalive_ctx;

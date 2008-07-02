@@ -505,7 +505,8 @@ int ctdb_ctrl_get_server_id_list(struct ctdb_context *ctdb,
 struct ctdb_uptime {
 	struct timeval current_time;
 	struct timeval ctdbd_start_time;
-	struct timeval last_recovery_time;
+	struct timeval last_recovery_started;
+	struct timeval last_recovery_finished;
 };
 
 int ctdb_socket_connect(struct ctdb_context *ctdb);

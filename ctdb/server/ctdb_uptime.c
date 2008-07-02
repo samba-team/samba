@@ -35,8 +35,9 @@ int32_t ctdb_control_uptime(struct ctdb_context *ctdb, TDB_DATA *outdata)
 	CTDB_NO_MEMORY(ctdb, uptime);
 
 	gettimeofday(&uptime->current_time, NULL);
-	uptime->ctdbd_start_time   = ctdb->ctdbd_start_time;
-	uptime->last_recovery_time = ctdb->last_recovery_time;
+	uptime->ctdbd_start_time       = ctdb->ctdbd_start_time;
+	uptime->last_recovery_started  = ctdb->last_recovery_started;
+	uptime->last_recovery_finished = ctdb->last_recovery_finished;
 
 	outdata->dsize = sizeof(struct ctdb_uptime);
 	outdata->dptr  = (uint8_t *)uptime;

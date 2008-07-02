@@ -2284,6 +2284,112 @@ static void ctdb_update_pnn_count(struct event_context *ev, struct timed_event *
 	}
 }
 
+/* called to check that the allocation of public ip addresses is ok.
+*/
+static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct ctdb_all_public_ips *ips = NULL;
+	struct ctdb_uptime *uptime1 = NULL;
+	struct ctdb_uptime *uptime2 = NULL;
+	int ret, j;
+
+	ret = ctdb_ctrl_uptime(ctdb, ctdb, CONTROL_TIMEOUT(),
+				CTDB_CURRENT_NODE, &uptime1);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get uptime from local node %u\n", pnn));
+		talloc_free(mem_ctx);
+		return -1;
+	}
+
+	/* read the ip allocation from the local node */
+	ret = ctdb_ctrl_get_public_ips(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, &ips);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get public ips from local node %u\n", pnn));
+		talloc_free(mem_ctx);
+		return -1;
+	}
+
+	ret = ctdb_ctrl_uptime(ctdb, ctdb, CONTROL_TIMEOUT(),
+				CTDB_CURRENT_NODE, &uptime2);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get uptime from local node %u\n", pnn));
+		talloc_free(mem_ctx);
+		return -1;
+	}
+
+	/* skip the check if the startrecovery time has changed */
+	if (timeval_compare(&uptime1->last_recovery_started,
+			    &uptime2->last_recovery_started) != 0) {
+		DEBUG(DEBUG_NOTICE, (__location__ " last recovery time changed while we read the public ip list. skipping public ip address check\n"));
+		return 0;
+	}
+
+	/* skip the check if the endrecovery time has changed */
+	if (timeval_compare(&uptime1->last_recovery_finished,
+			    &uptime2->last_recovery_finished) != 0) {
+		DEBUG(DEBUG_NOTICE, (__location__ " last recovery time changed while we read the public ip list. skipping public ip address check\n"));
+		return 0;
+	}
+
+	/* skip the check if we have started but not finished recovery */
+	if (timeval_compare(&uptime1->last_recovery_finished,
+			    &uptime1->last_recovery_started) != 1) {
+		DEBUG(DEBUG_NOTICE, (__location__ " in the middle of recovery. skipping public ip address check\n"));
+
+		return 0;
+	}
+
+	/* verify that we have the ip addresses we should have
+	   and we dont have ones we shouldnt have.
+	   if we find an inconsistency we set recmode to
+	   active on the local node and wait for the recmaster
+	   to do a full blown recovery
+	*/
+	for (j=0; j<ips->num; j++) {
+		if (ips->ips[j].pnn == pnn) {
+			if (!ctdb_sys_have_ip(ips->ips[j].sin)) {
+				DEBUG(DEBUG_CRIT,("Public address '%s' is missing and we should serve this ip\n", inet_ntoa(ips->ips[j].sin.sin_addr)));
+				ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
+				if (ret != 0) {
+					DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node due to public ip address mismatches\n"));
+
+					talloc_free(mem_ctx);
+					return -1;
+				}
+				ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, CTDB_RECOVERY_ACTIVE);
+				if (ret != 0) {
+					DEBUG(DEBUG_ERR,(__location__ " Failed to activate recovery mode due to public ip address mismatches\n"));
+
+					talloc_free(mem_ctx);
+					return -1;
+				}
+			}
+		} else {
+			if (ctdb_sys_have_ip(ips->ips[j].sin)) {
+				DEBUG(DEBUG_CRIT,("We are still serving a public address '%s' that we should not be serving.\n", inet_ntoa(ips->ips[j].sin.sin_addr)));
+				ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
+				if (ret != 0) {
+					DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node due to public ip address mismatches\n"));
+
+					talloc_free(mem_ctx);
+					return -1;
+				}
+				ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, CTDB_RECOVERY_ACTIVE);
+				if (ret != 0) {
+					DEBUG(DEBUG_ERR,(__location__ " Failed to activate recovery mode due to public ip address mismatches\n"));
+
+					talloc_free(mem_ctx);
+					return -1;
+				}
+			}
+		}
+	}
+
+	talloc_free(mem_ctx);
+	return 0;
+}
+
 /*
   the main monitoring loop
  */
@@ -2298,7 +2404,6 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	int32_t debug_level;
 	int i, j, ret;
 	struct ctdb_recoverd *rec;
-	struct ctdb_all_public_ips *ips;
 	char c;
 
 	DEBUG(DEBUG_NOTICE,("monitor_cluster starting\n"));
@@ -2523,49 +2628,15 @@ again:
 		update_our_flags_on_all_nodes(ctdb, pnn, nodemap);
 	}
 
-	/* verify that the public ip address allocation is consistent */
-	ret = ctdb_ctrl_get_public_ips(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, &ips);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get public ips from node %u\n", i));
+
+	/* verify that we have all ip addresses we should have and we dont
+	 * have addresses we shouldnt have.
+	 */ 
+	if (verify_ip_allocation(ctdb, pnn) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Public IPs were inconsistent.\n"));
 		goto again;
 	}
-	for (j=0; j<ips->num; j++) {
-		/* verify that we have the ip addresses we should have
-		   and we dont have ones we shouldnt have.
-		   if we find an inconsistency we set recmode to
-		   active on the local node and wait for the recmaster
-		   to do a full blown recovery
-		*/
-		if (ips->ips[j].pnn == pnn) {
-			if (!ctdb_sys_have_ip(ips->ips[j].sin)) {
-				DEBUG(DEBUG_CRIT,("Public address '%s' is missing and we should serve this ip\n", inet_ntoa(ips->ips[j].sin.sin_addr)));
-				ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
-				if (ret != 0) {
-					DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node due to public ip address mismatches\n"));
-					goto again;
-				}
-				ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, CTDB_RECOVERY_ACTIVE);
-				if (ret != 0) {
-					DEBUG(DEBUG_ERR,(__location__ " Failed to activate recovery mode due to public ip address mismatches\n"));
-					goto again;
-				}
-			}
-		} else {
-			if (ctdb_sys_have_ip(ips->ips[j].sin)) {
-				DEBUG(DEBUG_CRIT,("We are still serving a public address '%s' that we should not be serving.\n", inet_ntoa(ips->ips[j].sin.sin_addr)));
-				ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
-				if (ret != 0) {
-					DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node due to public ip address mismatches\n"));
-					goto again;
-				}
-				ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, CTDB_RECOVERY_ACTIVE);
-				if (ret != 0) {
-					DEBUG(DEBUG_ERR,(__location__ " Failed to activate recovery mode due to public ip address mismatches\n"));
-					goto again;
-				}
-			}
-		}
-	}
+
 
 	/* if we are not the recmaster then we do not need to check
 	   if recovery is needed

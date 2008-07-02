@@ -773,7 +773,7 @@ static void ctdb_end_recovery_callback(struct ctdb_context *ctdb, int status, vo
 	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
 	talloc_free(state);
 
-	gettimeofday(&ctdb->last_recovery_time, NULL);
+	gettimeofday(&ctdb->last_recovery_finished, NULL);
 }
 
 /*
@@ -830,7 +830,7 @@ static void ctdb_start_recovery_callback(struct ctdb_context *ctdb, int status, 
 }
 
 /*
-  start a recuvery
+  run the startrecovery eventscript
  */
 int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb, 
 				struct ctdb_req_control *c,
@@ -840,6 +840,7 @@ int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb,
 	struct recovery_callback_state *state;
 
 	DEBUG(DEBUG_NOTICE,(__location__ " startrecovery eventscript has been invoked\n"));
+	gettimeofday(&ctdb->last_recovery_started, NULL);
 
 	state = talloc(ctdb, struct recovery_callback_state);
 	CTDB_NO_MEMORY(ctdb, state);

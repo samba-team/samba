@@ -248,11 +248,14 @@ static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	if (options.machinereadable){
-		printf(":Current Node Time:Ctdb Start Time:Last Recovery Time:\n");
-		printf(":%u:%u:%u:\n",
+		printf(":Current Node Time:Ctdb Start Time:Last Recovery Time:Last Recovery Duration:\n");
+		printf(":%u:%u:%u:%lf\n",
 			(unsigned int)uptime->current_time.tv_sec,
 			(unsigned int)uptime->ctdbd_start_time.tv_sec,
-			(unsigned int)uptime->last_recovery_time.tv_sec);
+			(unsigned int)uptime->last_recovery_finished.tv_sec,
+			timeval_delta(&uptime->last_recovery_finished,
+				      &uptime->last_recovery_started)
+		);
 		return 0;
 	}
 
@@ -268,7 +271,7 @@ static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv
 	days    = tmp;
 	printf("Ctdbd start time      : (%03d %02d:%02d:%02d) %s", days, hours, minutes, seconds, ctime(&uptime->ctdbd_start_time.tv_sec));
 
-	tmp = uptime->current_time.tv_sec - uptime->last_recovery_time.tv_sec;
+	tmp = uptime->current_time.tv_sec - uptime->last_recovery_finished.tv_sec;
 	seconds = tmp%60;
 	tmp    /= 60;
 	minutes = tmp%60;
@@ -276,7 +279,11 @@ static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv
 	hours   = tmp%24;
 	tmp    /= 24;
 	days    = tmp;
-	printf("Time of last recovery : (%03d %02d:%02d:%02d) %s", days, hours, minutes, seconds, ctime(&uptime->last_recovery_time.tv_sec));
+	printf("Time of last recovery : (%03d %02d:%02d:%02d) %s", days, hours, minutes, seconds, ctime(&uptime->last_recovery_finished.tv_sec));
+	
+	printf("Duration of last recovery : %lf seconds\n",
+		timeval_delta(&uptime->last_recovery_finished,
+			      &uptime->last_recovery_started));
 
 	return 0;
 }
