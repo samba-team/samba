@@ -518,7 +518,7 @@ NET_API_STATUS NetUserEnum(const char * server_name /* [in] */,
  * @param[in] domain_name The server or domain name to connect to
  * @param[in] user_name The user account to change the password for
  * @param[in] old_password The user account's old password
- * @param[in] old_password The user account's new password
+ * @param[in] new_password The user account's new password
  * @return NET_API_STATUS
  *
  * example user/user_chgpwd.c
