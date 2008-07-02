@@ -535,9 +535,8 @@ WERROR dsdb_class_from_ldb(const struct dsdb_schema *schema,
  
 	GET_STRING_LDB(msg, "subClassOf", mem_ctx, obj, subClassOf, true);
 
-	obj->systemAuxiliaryClass	= NULL;
-
-	obj->auxiliaryClass		= NULL;
+	GET_STRING_LIST_LDB(msg, "systemAuxiliaryClass", mem_ctx, obj, systemAuxiliaryClass, false);
+	GET_STRING_LIST_LDB(msg, "auxiliaryClass", mem_ctx, obj, auxiliaryClass, false);
 
 	GET_STRING_LIST_LDB(msg, "systemMustContain", mem_ctx, obj, systemMustContain, false);
 	GET_STRING_LIST_LDB(msg, "systemMayContain", mem_ctx, obj, systemMayContain, false);
