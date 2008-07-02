@@ -73,6 +73,18 @@ struct xcv_api_table {
 	WERROR(*fn) (NT_USER_TOKEN *token, RPC_BUFFER *in, RPC_BUFFER *out, uint32 *needed);
 };
 
+/********************************************************************
+ * Canonicalize servername.
+ ********************************************************************/
+
+static const char *canon_servername(const char *servername)
+{
+	const char *pservername = servername;
+	while (*pservername == '\\') {
+		pservername++;
+	}
+	return pservername;
+}
 
 /* translate between internal status numbers and NT status numbers */
 static int nt_printj_status(int v)
@@ -444,13 +456,12 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 
 	aprinter = handlename;
 	if ( *handlename == '\\' ) {
-		servername = handlename + 2;
-		if ( (aprinter = strchr_m( handlename+2, '\\' )) != NULL ) {
+		servername = canon_servername(handlename);
+		if ( (aprinter = strchr_m( servername, '\\' )) != NULL ) {
 			*aprinter = '\0';
 			aprinter++;
 		}
-	}
-	else {
+	} else {
 		servername = "";
 	}
 	
@@ -4639,20 +4650,16 @@ static WERROR enumprinters_level1( uint32 flags, fstring name,
  * handle enumeration of printers at level 2
  ********************************************************************/
 
-static WERROR enumprinters_level2( uint32 flags, fstring servername,
+static WERROR enumprinters_level2( uint32 flags, const char *servername,
 			         RPC_BUFFER *buffer, uint32 offered,
 			         uint32 *needed, uint32 *returned)
 {
-	char *s = servername;
-
 	if (flags & PRINTER_ENUM_LOCAL) {
 			return enum_all_printers_info_2(buffer, offered, needed, returned);
 	}
 
 	if (flags & PRINTER_ENUM_NAME) {
-		if ((servername[0] == '\\') && (servername[1] == '\\'))
-			s = servername + 2;
-		if (is_myname_or_ipaddr(s))
+		if (is_myname_or_ipaddr(canon_servername(servername)))
 			return enum_all_printers_info_2(buffer, offered, needed, returned);
 		else
 			return WERR_INVALID_NAME;
@@ -4668,7 +4675,7 @@ static WERROR enumprinters_level2( uint32 flags, fstring servername,
  * handle enumeration of printers at level 5
  ********************************************************************/
 
-static WERROR enumprinters_level5( uint32 flags, fstring servername,
+static WERROR enumprinters_level5( uint32 flags, const char *servername,
 			         RPC_BUFFER *buffer, uint32 offered,
 			         uint32 *needed, uint32 *returned)
 {
@@ -5046,7 +5053,7 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
  * fill a DRIVER_INFO_1 struct
  ********************************************************************/
 
-static void fill_printer_driver_info_1(DRIVER_INFO_1 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, fstring servername, fstring architecture)
+static void fill_printer_driver_info_1(DRIVER_INFO_1 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, const char *servername, fstring architecture)
 {
 	init_unistr( &info->name, driver.info_3->name);
 }
@@ -5055,7 +5062,7 @@ static void fill_printer_driver_info_1(DRIVER_INFO_1 *info, NT_PRINTER_DRIVER_IN
  * construct_printer_driver_info_1
  ********************************************************************/
 
-static WERROR construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum, fstring servername, fstring architecture, uint32 version)
+static WERROR construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum, const char *servername, fstring architecture, uint32 version)
 {	
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
@@ -5082,9 +5089,10 @@ static WERROR construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum, fst
  * fill a printer_info_2 struct
  ********************************************************************/
 
-static void fill_printer_driver_info_2(DRIVER_INFO_2 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, fstring servername)
+static void fill_printer_driver_info_2(DRIVER_INFO_2 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, const char *servername)
 {
 	pstring temp;
+	const char *cservername = canon_servername(servername);
 
 	info->version=driver.info_3->cversion;
 
@@ -5093,19 +5101,19 @@ static void fill_printer_driver_info_2(DRIVER_INFO_2 *info, NT_PRINTER_DRIVER_IN
 
 
     if (strlen(driver.info_3->driverpath)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", cservername, driver.info_3->driverpath);
 		init_unistr( &info->driverpath, temp );
     } else
         init_unistr( &info->driverpath, "" );
 
 	if (strlen(driver.info_3->datafile)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", cservername, driver.info_3->datafile);
 		init_unistr( &info->datafile, temp );
 	} else
 		init_unistr( &info->datafile, "" );
 	
 	if (strlen(driver.info_3->configfile)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", cservername, driver.info_3->configfile);
 		init_unistr( &info->configfile, temp );	
 	} else
 		init_unistr( &info->configfile, "" );
@@ -5116,7 +5124,7 @@ static void fill_printer_driver_info_2(DRIVER_INFO_2 *info, NT_PRINTER_DRIVER_IN
  * fill a printer_info_2 struct
  ********************************************************************/
 
-static WERROR construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, fstring servername, fstring architecture, uint32 version)
+static WERROR construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, const char *servername, fstring architecture, uint32 version)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
@@ -5170,7 +5178,7 @@ static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, const c
 		   the list of dependent files */
 		   
 		if ( servername )
-			slprintf( line, sizeof(line)-1, "\\\\%s%s", servername, v );
+			slprintf( line, sizeof(line)-1, "\\\\%s%s", canon_servername(servername), v );
 		else
 			pstrcpy( line, v );
 			
@@ -5209,9 +5217,10 @@ static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, const c
  * fill a printer_info_3 struct
  ********************************************************************/
 
-static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, fstring servername)
+static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, const char *servername)
 {
 	pstring temp;
+	const char *cservername = canon_servername(servername);
 
 	ZERO_STRUCTP(info);
 
@@ -5221,25 +5230,25 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, NT_PRINTER_DRIVER_IN
 	init_unistr( &info->architecture, driver.info_3->environment );
 
 	if (strlen(driver.info_3->driverpath)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", cservername, driver.info_3->driverpath);		
 		init_unistr( &info->driverpath, temp );
 	} else
 		init_unistr( &info->driverpath, "" );
     
 	if (strlen(driver.info_3->datafile)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", cservername, driver.info_3->datafile);
 		init_unistr( &info->datafile, temp );
 	} else
 		init_unistr( &info->datafile, "" );
 
 	if (strlen(driver.info_3->configfile)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", cservername, driver.info_3->configfile);
 		init_unistr( &info->configfile, temp );	
 	} else
 		init_unistr( &info->configfile, "" );
 
 	if (strlen(driver.info_3->helpfile)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", cservername, driver.info_3->helpfile);
 		init_unistr( &info->helpfile, temp );
 	} else
 		init_unistr( &info->helpfile, "" );
@@ -5248,7 +5257,7 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, NT_PRINTER_DRIVER_IN
 	init_unistr( &info->defaultdatatype, driver.info_3->defaultdatatype );
 
 	info->dependentfiles=NULL;
-	init_unistr_array(&info->dependentfiles, driver.info_3->dependentfiles, servername);
+	init_unistr_array(&info->dependentfiles, driver.info_3->dependentfiles, cservername);
 }
 
 /********************************************************************
@@ -5256,7 +5265,7 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, NT_PRINTER_DRIVER_IN
  * fill a printer_info_3 struct
  ********************************************************************/
 
-static WERROR construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, fstring servername, fstring architecture, uint32 version)
+static WERROR construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, const char *servername, fstring architecture, uint32 version)
 {	
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
@@ -5315,10 +5324,11 @@ static WERROR construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, fst
  * fill a printer_info_6 struct - we know that driver is really level 3. This sucks. JRA.
  ********************************************************************/
 
-static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, fstring servername)
+static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, const char *servername)
 {
 	pstring temp;
 	fstring nullstr;
+	const char *cservername = canon_servername(servername);
 
 	ZERO_STRUCTP(info);
 	memset(&nullstr, '\0', sizeof(fstring));
@@ -5329,25 +5339,25 @@ static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_IN
 	init_unistr( &info->architecture, driver.info_3->environment );
 
 	if (strlen(driver.info_3->driverpath)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", cservername, driver.info_3->driverpath);		
 		init_unistr( &info->driverpath, temp );
 	} else
 		init_unistr( &info->driverpath, "" );
 
 	if (strlen(driver.info_3->datafile)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", cservername, driver.info_3->datafile);
 		init_unistr( &info->datafile, temp );
 	} else
 		init_unistr( &info->datafile, "" );
 
 	if (strlen(driver.info_3->configfile)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", cservername, driver.info_3->configfile);
 		init_unistr( &info->configfile, temp );	
 	} else
 		init_unistr( &info->configfile, "" );
 
 	if (strlen(driver.info_3->helpfile)) {
-		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
+		slprintf(temp, sizeof(temp)-1, "\\\\%s%s", cservername, driver.info_3->helpfile);
 		init_unistr( &info->helpfile, temp );
 	} else
 		init_unistr( &info->helpfile, "" );
@@ -5379,7 +5389,7 @@ static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_IN
  ********************************************************************/
 
 static WERROR construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum, 
-              fstring servername, fstring architecture, uint32 version)
+              const char *servername, fstring architecture, uint32 version)
 {	
 	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
 	NT_PRINTER_DRIVER_INFO_LEVEL 	driver;
@@ -5446,7 +5456,7 @@ static void free_printer_driver_info_6(DRIVER_INFO_6 *info)
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinterdriver2_level1(fstring servername, fstring architecture, uint32 version, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinterdriver2_level1(const char *servername, fstring architecture, uint32 version, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_1 *info=NULL;
 	WERROR result;
@@ -5484,7 +5494,7 @@ out:
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinterdriver2_level2(fstring servername, fstring architecture, uint32 version, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinterdriver2_level2(const char *servername, fstring architecture, uint32 version, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_2 *info=NULL;
 	WERROR result;
@@ -5522,7 +5532,7 @@ out:
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinterdriver2_level3(fstring servername, fstring architecture, uint32 version, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinterdriver2_level3(const char *servername, fstring architecture, uint32 version, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_3 info;
 	WERROR result;
@@ -5558,7 +5568,7 @@ out:
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinterdriver2_level6(fstring servername, fstring architecture, uint32 version, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinterdriver2_level6(const char *servername, fstring architecture, uint32 version, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_6 info;
 	WERROR result;
@@ -6787,7 +6797,7 @@ WERROR _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u
  Enumerates all printer drivers at level 1.
 ****************************************************************************/
 
-static WERROR enumprinterdrivers_level1(fstring servername, fstring architecture, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprinterdrivers_level1(const char *servername, fstring architecture, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	int i;
 	int ndrivers;
@@ -6871,7 +6881,7 @@ out:
  Enumerates all printer drivers at level 2.
 ****************************************************************************/
 
-static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprinterdrivers_level2(const char *servername, fstring architecture, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	int i;
 	int ndrivers;
@@ -6956,7 +6966,7 @@ out:
  Enumerates all printer drivers at level 3.
 ****************************************************************************/
 
-static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprinterdrivers_level3(const char *servername, fstring architecture, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	int i;
 	int ndrivers;
@@ -7052,7 +7062,7 @@ WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
 	uint32 *returned = &r_u->returned;
-
+	const char *cservername;
 	fstring servername;
 	fstring architecture;
 
@@ -7073,16 +7083,18 @@ WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 	unistr2_to_ascii(architecture, &q_u->environment, sizeof(architecture)-1);
 	unistr2_to_ascii(servername, &q_u->name, sizeof(servername)-1);
 
-	if ( !is_myname_or_ipaddr( servername ) )
+	cservername = canon_servername(servername);
+
+	if (!is_myname_or_ipaddr(cservername))
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 
 	switch (level) {
 	case 1:
-		return enumprinterdrivers_level1(servername, architecture, buffer, offered, needed, returned);
+		return enumprinterdrivers_level1(cservername, architecture, buffer, offered, needed, returned);
 	case 2:
-		return enumprinterdrivers_level2(servername, architecture, buffer, offered, needed, returned);
+		return enumprinterdrivers_level2(cservername, architecture, buffer, offered, needed, returned);
 	case 3:
-		return enumprinterdrivers_level3(servername, architecture, buffer, offered, needed, returned);
+		return enumprinterdrivers_level3(cservername, architecture, buffer, offered, needed, returned);
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
@@ -7852,7 +7864,7 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	pstring path;
 	pstring long_archi;
 	fstring servername;
-	char *pservername; 
+	const char *pservername; 
 	const char *short_archi;
 	DRIVER_DIRECTORY_1 *info=NULL;
 	WERROR result = WERR_OK;
@@ -7860,13 +7872,7 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	unistr2_to_ascii(servername, name, sizeof(servername)-1);
 	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
 
-	/* check for beginning double '\'s and that the server
-	   long enough */
-
-	pservername = servername;
-	if ( *pservername == '\\' && strlen(servername)>2 ) {
-		pservername += 2;
-	} 
+	pservername = canon_servername(servername);
 	
 	if ( !is_myname_or_ipaddr( pservername ) )
 		return WERR_INVALID_PARAM;
