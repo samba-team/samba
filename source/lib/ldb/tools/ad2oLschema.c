@@ -107,6 +107,8 @@ static const char *oc_attrs[] = {
 	"governsID",
 	"description",
 	"subClassOf",
+	"systemAuxiliaryClass",
+	"auxiliaryClass",
 	NULL
 };
 
@@ -246,6 +248,78 @@ static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ct
 	talloc_free(rootdse_res);
 	return schemadn;
 }
+
+static bool merge_attr_list(TALLOC_CTX *mem_ctx, 
+			    struct ldb_message_element *attrs, struct ldb_message_element *new_attrs) 
+{
+	struct ldb_val *values;
+	if (!new_attrs) {
+		return true;
+	}
+
+	values = talloc_realloc(mem_ctx, 
+				attrs->values, struct ldb_val, attrs->num_values + new_attrs->num_values);
+	
+	attrs->values = values;
+
+	memcpy(&attrs->values[attrs->num_values], new_attrs->values, sizeof(*new_attrs->values) * new_attrs->num_values);
+	attrs->num_values = attrs->num_values + new_attrs->num_values;
+
+	/* Add sort and unique implementation here */
+
+	return true;
+}
+
+static bool find_aux_classes(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, struct ldb_dn *schema_dn,
+			     struct ldb_message_element *aux_class, struct ldb_message_element *must, 
+			     struct ldb_message_element *sys_must, struct ldb_message_element *may, 
+			     struct ldb_message_element *sys_may) 
+{
+	int i, ret;
+	struct ldb_message *msg;
+	struct ldb_result *res;
+
+	for (i=0; aux_class && i < aux_class->num_values; i++) {
+		ret = ldb_search_exp_fmt(ldb, mem_ctx, &res,
+					 schema_dn, LDB_SCOPE_SUBTREE, oc_attrs,
+					 "(&(objectClass=classSchema)(lDAPDisplayName=%s))",
+					 aux_class->values[i].data);
+		if (ret != LDB_SUCCESS) {
+			return false;
+		}
+
+		msg = res->msgs[0];
+
+		if (!merge_attr_list(mem_ctx, must, ldb_msg_find_element(msg, "mustContain"))) {
+			return false;
+		}
+		if (!merge_attr_list(mem_ctx, sys_must,  ldb_msg_find_element(msg, "systemMustContain"))) {
+			return false;
+		}
+		if (!merge_attr_list(mem_ctx, may, ldb_msg_find_element(msg, "mayContain"))) {
+			return false;
+		}
+		if (!merge_attr_list(mem_ctx, sys_may, ldb_msg_find_element(msg, "systemMayContain"))) {
+			return false;
+		}
+		
+		
+		if (res->count == 0) {
+			return false;
+		}
+
+		if (!find_aux_classes(mem_ctx, ldb, schema_dn,
+				      ldb_msg_find_element(msg, "auxiliaryClass"), must, sys_must, may, sys_may)) {
+			return false;
+		}
+		if (!find_aux_classes(mem_ctx, ldb, schema_dn,
+				      ldb_msg_find_element(msg, "systemAuxiliaryClass"), must, sys_must, may, sys_may)) {
+			return false;
+		}
+	}
+	return true;
+}
+
 
 #define IF_NULL_FAIL_RET(x) do {     \
 		if (!x) {		\
@@ -478,6 +552,8 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		struct ldb_message_element *sys_must = ldb_msg_find_element(msg, "systemMustContain");
 		struct ldb_message_element *may = ldb_msg_find_element(msg, "mayContain");
 		struct ldb_message_element *sys_may = ldb_msg_find_element(msg, "systemMayContain");
+		struct ldb_message_element *aux_class = ldb_msg_find_element(msg, "auxiliaryClass");
+		struct ldb_message_element *sys_aux_class = ldb_msg_find_element(msg, "systemAuxiliaryClass");
 		char *schema_entry = NULL;
 		int j;
 
@@ -490,6 +566,32 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		/* We have been asked to skip some attributes/objectClasses */
 		if (attrs_skip && str_list_check_ci(attrs_skip, name)) {
 			ret.skipped++;
+			continue;
+		}
+
+		if (must == NULL) {
+			must = talloc_zero(mem_ctx, struct ldb_message_element);
+		}
+
+		if (may == NULL) {
+			may = talloc_zero(mem_ctx, struct ldb_message_element);
+		}
+
+		if (sys_must == NULL) {
+			sys_must = talloc_zero(mem_ctx, struct ldb_message_element);
+		}
+
+		if (sys_may == NULL) {
+			sys_may = talloc_zero(mem_ctx, struct ldb_message_element);
+		}
+
+		if (!find_aux_classes(mem_ctx, ldb, schemadn, aux_class, must, sys_must, may, sys_may)) {
+			ret.failures++;
+			continue;
+		}
+
+		if (!find_aux_classes(mem_ctx, ldb, schemadn, sys_aux_class, must, sys_must, may, sys_may)) {
+			ret.failures++;
 			continue;
 		}
 
@@ -594,13 +696,13 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 			}						\
 		} while (0)
 
-		if (must || sys_must) {
+		if ((must && must->values) || (sys_must && sys_must->values)) {
 			schema_entry = talloc_asprintf_append(schema_entry, 
 							      "  MUST (");
 			IF_NULL_FAIL_RET(schema_entry);
 
 			APPEND_ATTRS(must);
-			if (must && sys_must) {
+			if (must && must->values && sys_must && sys_must->values) {
 				schema_entry = talloc_asprintf_append(schema_entry, \
 								      " $"); \
 			}
@@ -611,13 +713,13 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 			IF_NULL_FAIL_RET(schema_entry);
 		}
 
-		if (may || sys_may) {
+		if ((may && may->values) || (sys_may && sys_may->values)) {
 			schema_entry = talloc_asprintf_append(schema_entry, 
 							      "  MAY (");
 			IF_NULL_FAIL_RET(schema_entry);
 
 			APPEND_ATTRS(may);
-			if (may && sys_may) {
+			if (may && may->values && sys_may && sys_may->values) {
 				schema_entry = talloc_asprintf_append(schema_entry, \
 								      " $"); \
 			}
