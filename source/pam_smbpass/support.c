@@ -325,7 +325,7 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
     }
 #endif
 
-    if (!pdb_get_lanman_passwd(sampass))
+    if (!pdb_get_nt_passwd(sampass))
     {
         _log_err( LOG_DEBUG, "user %s has null SMB password"
                   , name );
@@ -347,6 +347,7 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
     data_name = SMB_MALLOC_ARRAY(char, sizeof(FAIL_PREFIX) + strlen( name ));
     if (data_name == NULL) {
         _log_err( LOG_CRIT, "no memory for data-name" );
+        return PAM_AUTH_ERR;
     }
     strncpy( data_name, FAIL_PREFIX, sizeof(FAIL_PREFIX) );
     strncpy( data_name + sizeof(FAIL_PREFIX) - 1, name, strlen( name ) + 1 );
@@ -415,13 +416,12 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
                       uidtoname(getuid()),
                       service ? service : "**unknown**", name);
             }
-        } else {
-            _log_err(LOG_NOTICE,
-                      "failed auth request by %s for service %s as %s(%d)",
-                      uidtoname(getuid()),
-                      service ? service : "**unknown**", name);
-            retval = PAM_AUTH_ERR;
         }
+        _log_err(LOG_NOTICE,
+                  "failed auth request by %s for service %s as %s(%d)",
+                  uidtoname(getuid()),
+                  service ? service : "**unknown**", name);
+        retval = PAM_AUTH_ERR;
     }
 
     _pam_delete( data_name );
@@ -450,7 +450,10 @@ int _smb_blankpasswd( unsigned int ctrl, struct samu *sampass )
 	if (on( SMB__NONULL, ctrl ))
 		return 0;		/* will fail but don't let on yet */
 
-	if (pdb_get_lanman_passwd(sampass) == NULL)
+	if (!(pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ))
+		return 0;
+
+	if (pdb_get_nt_passwd(sampass) == NULL)
 		retval = 1;
 	else
 		retval = 0;
