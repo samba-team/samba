@@ -154,6 +154,7 @@ NTSTATUS smb_register_idmap(int version, const char *name,
 	entry->name = talloc_strdup(idmap_ctx, name);
 	if ( ! entry->name) {
 		DEBUG(0,("Out of memory!\n"));
+		TALLOC_FREE(entry);
 		return NT_STATUS_NO_MEMORY;
 	}
 	entry->methods = methods;
@@ -207,6 +208,7 @@ NTSTATUS smb_register_idmap_alloc(int version, const char *name,
 	entry->name = talloc_strdup(idmap_ctx, name);
 	if ( ! entry->name) {
 		DEBUG(0,("Out of memory!\n"));
+		TALLOC_FREE(entry);
 		return NT_STATUS_NO_MEMORY;
 	}
 	entry->methods = methods;
