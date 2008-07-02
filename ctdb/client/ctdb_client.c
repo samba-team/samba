@@ -2685,7 +2685,7 @@ static void async_callback(struct ctdb_client_control_state *state)
 	*/
 	if (state->state != CTDB_CONTROL_DONE) {
 		if ( !data->dont_log_errors) {
-			DEBUG(DEBUG_ERR,("Async operation failed with state %d\n", state->state));
+			DEBUG(DEBUG_ERR,("Async operation failed with state %d\n opcode:%u", state->state, data->opcode));
 		}
 		data->fail_count++;
 		if (data->fail_callback) {
@@ -2700,7 +2700,7 @@ static void async_callback(struct ctdb_client_control_state *state)
 	ret = ctdb_control_recv(ctdb, state, data, &outdata, &res, NULL);
 	if ((ret != 0) || (res != 0)) {
 		if ( !data->dont_log_errors) {
-			DEBUG(DEBUG_ERR,("Async operation failed with ret=%d res=%d\n", ret, (int)res));
+			DEBUG(DEBUG_ERR,("Async operation failed with ret=%d res=%d opcode=%u\n", ret, (int)res, data->opcode));
 		}
 		data->fail_count++;
 		if (data->fail_callback) {
@@ -2769,6 +2769,7 @@ int ctdb_client_async_control(struct ctdb_context *ctdb,
 	async_data->callback = client_callback;
 	async_data->fail_callback = fail_callback;
 	async_data->callback_data = callback_data;
+	async_data->opcode        = opcode;
 
 	num_nodes = talloc_get_size(nodes) / sizeof(uint32_t);
 

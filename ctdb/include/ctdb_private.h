@@ -1313,6 +1313,7 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb);
 typedef void (*client_async_callback)(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data);
 
 struct client_async_data {
+	enum ctdb_controls opcode;
 	bool dont_log_errors;
 	uint32_t count;
 	uint32_t fail_count;
