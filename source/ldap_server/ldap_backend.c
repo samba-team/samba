@@ -348,7 +348,7 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
 	dn = ldb_dn_new(local_ctx, samdb, req->dn);
-	VALID_DN_SYNTAX(dn, 1);
+	VALID_DN_SYNTAX(dn, 0);
 
 	DEBUG(10, ("ModifyRequest: dn: [%s]\n", req->dn));
 
