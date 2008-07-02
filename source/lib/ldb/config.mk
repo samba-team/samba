@@ -147,32 +147,5 @@ PRIVATE_DEPENDENCIES = \
 
 ldbtest_OBJ_FILES = $(ldbsrcdir)/tools/ldbtest.o
 
-################################################
-# Start BINARY oLschema2ldif
-[BINARY::oLschema2ldif]
-INSTALLDIR = BINDIR
-PRIVATE_DEPENDENCIES = \
-		LIBLDB_CMDLINE
-# End BINARY oLschema2ldif
-################################################
-
-
-oLschema2ldif_OBJ_FILES = $(addprefix $(ldbsrcdir)/tools/, convert.o oLschema2ldif.o)
-
-MANPAGES += $(ldbsrcdir)/man/oLschema2ldif.1
-
-################################################
-# Start BINARY  ad2oLschema
-[BINARY::ad2oLschema]
-INSTALLDIR = BINDIR
-PRIVATE_DEPENDENCIES = \
-		LIBLDB_CMDLINE
-# End BINARY ad2oLschema
-################################################
-
-ad2oLschema_OBJ_FILES = $(addprefix $(ldbsrcdir)/tools/, convert.o ad2oLschema.o)
-
-MANPAGES += $(ldbsrcdir)/man/ad2oLschema.1
-
 mkinclude tools/config.mk
 mkinclude ldb_ildap/config.mk

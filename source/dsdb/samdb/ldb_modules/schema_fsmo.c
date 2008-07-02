@@ -34,17 +34,13 @@
 
 static int schema_fsmo_init(struct ldb_module *module)
 {
-	WERROR status;
 	TALLOC_CTX *mem_ctx;
 	struct ldb_dn *schema_dn;
 	struct dsdb_schema *schema;
 	struct ldb_result *schema_res;
-	const struct ldb_val *prefix_val;
-	const struct ldb_val *info_val;
-	struct ldb_val info_val_default;
 	struct ldb_result *a_res;
 	struct ldb_result *c_res;
-	uint32_t i;
+	char *error_string = NULL;
 	int ret;
 	static const char *schema_attrs[] = {
 		"prefixMap",
@@ -67,12 +63,6 @@ static int schema_fsmo_init(struct ldb_module *module)
 
 	mem_ctx = talloc_new(module);
 	if (!mem_ctx) {
-		ldb_oom(module->ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	schema = dsdb_new_schema(mem_ctx, lp_iconv_convenience(ldb_get_opaque(module->ldb, "loadparm")));
-	if (!schema) {
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -111,33 +101,6 @@ static int schema_fsmo_init(struct ldb_module *module)
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
-	prefix_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "prefixMap");
-	if (!prefix_val) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "schema_fsmo_init: no prefixMap attribute found");
-		talloc_free(mem_ctx);
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-	info_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "schemaInfo");
-	if (!info_val) {
-		info_val_default = strhex_to_data_blob("FF0000000000000000000000000000000000000000");
-		if (!info_val_default.data) {
-			ldb_oom(module->ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		talloc_steal(mem_ctx, info_val_default.data);
-		info_val = &info_val_default;
-	}
-
-	status = dsdb_load_oid_mappings_ldb(schema, prefix_val, info_val);
-	if (!W_ERROR_IS_OK(status)) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "schema_fsmo_init: failed to load oid mappings: %s",
-			      win_errstr(status));
-		talloc_free(mem_ctx);
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
 	/*
 	 * load the attribute definitions
 	 */
@@ -153,29 +116,6 @@ static int schema_fsmo_init(struct ldb_module *module)
 		return ret;
 	}
 	talloc_steal(mem_ctx, a_res);
-
-	for (i=0; i < a_res->count; i++) {
-		struct dsdb_attribute *sa;
-
-		sa = talloc_zero(schema, struct dsdb_attribute);
-		if (!sa) {
-			ldb_oom(module->ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		status = dsdb_attribute_from_ldb(schema, a_res->msgs[i], sa, sa);
-		if (!W_ERROR_IS_OK(status)) {
-			ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-				      "schema_fsmo_init: failed to load attriute definition: %s:%s",
-				      ldb_dn_get_linearized(a_res->msgs[i]->dn),
-				      win_errstr(status));
-			talloc_free(mem_ctx);
-			return LDB_ERR_CONSTRAINT_VIOLATION;
-		}
-
-		DLIST_ADD_END(schema->attributes, sa, struct dsdb_attribute *);
-	}
-	talloc_free(a_res);
 
 	/*
 	 * load the objectClass definitions
@@ -193,36 +133,17 @@ static int schema_fsmo_init(struct ldb_module *module)
 	}
 	talloc_steal(mem_ctx, c_res);
 
-	for (i=0; i < c_res->count; i++) {
-		struct dsdb_class *sc;
-
-		sc = talloc_zero(schema, struct dsdb_class);
-		if (!sc) {
-			ldb_oom(module->ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		status = dsdb_class_from_ldb(schema, c_res->msgs[i], sc, sc);
-		if (!W_ERROR_IS_OK(status)) {
-			ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-				      "schema_fsmo_init: failed to load class definition: %s:%s",
-				      ldb_dn_get_linearized(c_res->msgs[i]->dn),
-				      win_errstr(status));
-			talloc_free(mem_ctx);
-			return LDB_ERR_CONSTRAINT_VIOLATION;
-		}
-
-		DLIST_ADD_END(schema->classes, sc, struct dsdb_class *);
+	ret = dsdb_schema_from_ldb_results(mem_ctx, module->ldb,
+					   lp_iconv_convenience(ldb_get_opaque(module->ldb, "loadparm")),
+					   schema_res, a_res, c_res, &schema, &error_string);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(module->ldb, 
+				       "schema_fsmo_init: dsdb_schema load failed: %s",
+				       error_string);
+		talloc_free(mem_ctx);
+		return ret;
 	}
-	talloc_free(c_res);
-
-	schema->fsmo.master_dn = ldb_msg_find_attr_as_dn(module->ldb, schema, schema_res->msgs[0], "fSMORoleOwner");
-	if (ldb_dn_compare(samdb_ntds_settings_dn(module->ldb), schema->fsmo.master_dn) == 0) {
-		schema->fsmo.we_are_master = true;
-	} else {
-		schema->fsmo.we_are_master = false;
-	}
-
+	
 	/* dsdb_set_schema() steal schema into the ldb_context */
 	ret = dsdb_set_schema(module->ldb, schema);
 	if (ret != LDB_SUCCESS) {
@@ -232,10 +153,6 @@ static int schema_fsmo_init(struct ldb_module *module)
 		talloc_free(mem_ctx);
 		return ret;
 	}
-
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE,
-			  "schema_fsmo_init: we are master: %s\n",
-			  (schema->fsmo.we_are_master?"yes":"no"));
 
 	talloc_free(mem_ctx);
 	return ldb_next_init(module);

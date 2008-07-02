@@ -34,10 +34,11 @@
 #include "includes.h"
 #include "ldb_includes.h"
 #include "system/locale.h"
-#include "tools/cmdline.h"
-#include "tools/convert.h"
+#include "lib/ldb/tools/cmdline.h"
+#include "utils/schema_convert.h"
 #include "param/param.h"
 #include "lib/cmdline/popt_common.h"
+#include "dsdb/samdb/samdb.h"
 
 struct schema_conv {
 	int count;
@@ -70,25 +71,12 @@ static int fetch_attrs_schema(struct ldb_context *ldb, struct ldb_dn *schemadn,
 			      TALLOC_CTX *mem_ctx, 
 			      struct ldb_result **attrs_res)
 {
-	TALLOC_CTX *local_ctx = talloc_new(mem_ctx);
 	int ret;
-	const char *attrs[] = {
-		"lDAPDisplayName",
-		"isSingleValued",
-		"attributeID",
-		"attributeSyntax",
-		"description",		
-		NULL
-	};
 
-	if (!local_ctx) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
 	/* Downlaod schema */
 	ret = ldb_search(ldb, schemadn, LDB_SCOPE_SUBTREE, 
 			 "objectClass=attributeSchema", 
-			 attrs, attrs_res);
+			 NULL, attrs_res);
 	if (ret != LDB_SUCCESS) {
 		printf("Search failed: %s\n", ldb_errstring(ldb));
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -96,21 +84,6 @@ static int fetch_attrs_schema(struct ldb_context *ldb, struct ldb_dn *schemadn,
 	
 	return ret;
 }
-
-static const char *oc_attrs[] = {
-	"lDAPDisplayName",
-	"mayContain",
-	"mustContain",
-	"systemMayContain",
-	"systemMustContain",
-	"objectClassCategory",
-	"governsID",
-	"description",
-	"subClassOf",
-	"systemAuxiliaryClass",
-	"auxiliaryClass",
-	NULL
-};
 
 static int fetch_oc_recursive(struct ldb_context *ldb, struct ldb_dn *schemadn, 
 			      TALLOC_CTX *mem_ctx, 
@@ -125,7 +98,7 @@ static int fetch_oc_recursive(struct ldb_context *ldb, struct ldb_dn *schemadn,
 							       "lDAPDisplayname", NULL);
 
 		ret = ldb_search_exp_fmt(ldb, mem_ctx, &res,
-					schemadn, LDB_SCOPE_SUBTREE, oc_attrs,
+					schemadn, LDB_SCOPE_SUBTREE, NULL,
 					"(&(&(objectClass=classSchema)(subClassOf=%s))(!(lDAPDisplayName=%s)))",
 					name, name);
 		if (ret != LDB_SUCCESS) {
@@ -167,7 +140,7 @@ static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *sche
 	/* Downlaod 'top' */
 	ret = ldb_search(ldb, schemadn, LDB_SCOPE_SUBTREE, 
 			 "(&(objectClass=classSchema)(lDAPDisplayName=top))", 
-			 oc_attrs, &top_res);
+			 NULL, &top_res);
 	if (ret != LDB_SUCCESS) {
 		printf("Search failed: %s\n", ldb_errstring(ldb));
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -195,15 +168,15 @@ static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *sche
 	return ret;
 }
 
-static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx) 
+static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+				     struct ldb_result **schema_res) 
 {
 	const char *rootdse_attrs[] = {"schemaNamingContext", NULL};
-	const char *no_attrs[] = { NULL };
 	struct ldb_dn *schemadn;
 	struct ldb_dn *basedn = ldb_dn_new(mem_ctx, ldb, NULL);
 	struct ldb_result *rootdse_res;
-	struct ldb_result *schema_res;
 	int ldb_ret;
+	
 	if (!basedn) {
 		return NULL;
 	}
@@ -213,21 +186,20 @@ static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ct
 	if (ldb_ret != LDB_SUCCESS) {
 		ldb_ret = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, 
 				 "(&(objectClass=dMD)(cn=Schema))", 
-				 no_attrs, &schema_res);
+				 NULL, schema_res);
 		if (ldb_ret) {
 			printf("cn=Schema Search failed: %s\n", ldb_errstring(ldb));
 			return NULL;
 		}
 
-		talloc_steal(mem_ctx, schema_res);
+		talloc_steal(mem_ctx, *schema_res);
 
-		if (schema_res->count != 1) {
+		if ((*schema_res)->count != 1) {
 			printf("Failed to find rootDSE");
 			return NULL;
 		}
 		
-		schemadn = talloc_steal(mem_ctx, schema_res->msgs[0]->dn);
-		talloc_free(schema_res);
+		schemadn = talloc_steal(mem_ctx, (*schema_res)->msgs[0]->dn);
 		return schemadn;
 		
 	}
@@ -245,6 +217,20 @@ static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ct
 		return NULL;
 	}
 
+	ldb_ret = ldb_search(ldb, schemadn, LDB_SCOPE_BASE, 
+			     "(&(objectClass=dMD)(cn=Schema))", 
+			     NULL, schema_res);
+	if (ldb_ret) {
+		printf("cn=Schema Search failed: %s\n", ldb_errstring(ldb));
+		return NULL;
+	}
+	
+	talloc_steal(mem_ctx, *schema_res);
+
+	if ((*schema_res)->count != 1) {
+		printf("Failed to find rootDSE");
+		return NULL;
+	}
 	talloc_free(rootdse_res);
 	return schemadn;
 }
@@ -281,7 +267,7 @@ static bool find_aux_classes(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, struc
 
 	for (i=0; aux_class && i < aux_class->num_values; i++) {
 		ret = ldb_search_exp_fmt(ldb, mem_ctx, &res,
-					 schema_dn, LDB_SCOPE_SUBTREE, oc_attrs,
+					 schema_dn, LDB_SCOPE_SUBTREE, NULL,
 					 "(&(objectClass=classSchema)(lDAPDisplayName=%s))",
 					 aux_class->values[i].data);
 		if (ret != LDB_SUCCESS) {
@@ -346,9 +332,11 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		char *new_attr;
 	} *attr_map = NULL;
 	int num_attr_maps = 0;	
-	struct ldb_result *attrs_res, *objectclasses_res;
+	struct ldb_result *schema_res, *attrs_res, *objectclasses_res;
 	struct ldb_dn *schemadn;
 	struct schema_conv ret;
+	struct dsdb_schema *schema;
+	char *error_string;
 
 	int ldb_ret, i;
 
@@ -401,7 +389,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		}
 	}
 
-	schemadn = find_schema_dn(ldb, mem_ctx);
+	schemadn = find_schema_dn(ldb, mem_ctx, &schema_res);
 	if (!schemadn) {
 		printf("Failed to find schema DN: %s\n", ldb_errstring(ldb));
 		ret.failures = 1;
@@ -414,7 +402,24 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		ret.failures = 1;
 		return ret;
 	}
+
+
+	ldb_ret = fetch_objectclass_schema(ldb, schemadn, mem_ctx, &objectclasses_res);
+	if (ldb_ret != LDB_SUCCESS) {
+		printf("Failed to fetch objectClass schema elements: %s\n", ldb_errstring(ldb));
+		ret.failures = 1;
+		return ret;
+	}
 	
+	ldb_ret = dsdb_schema_from_ldb_results(mem_ctx, ldb,
+					       lp_iconv_convenience(cmdline_lp_ctx),
+					       schema_res, attrs_res, objectclasses_res, &schema, &error_string);
+	if (ldb_ret != LDB_SUCCESS) {
+		printf("Failed to load schema: %s\n", error_string);
+		ret.failures = 1;
+		return ret;
+	}
+
 	switch (target) {
 	case TARGET_OPENLDAP:
 		break;
@@ -534,13 +539,6 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		ret.count++;
 	}
 
-	ldb_ret = fetch_objectclass_schema(ldb, schemadn, mem_ctx, &objectclasses_res);
-	if (ldb_ret != LDB_SUCCESS) {
-		printf("Failed to fetch objectClass schema elements: %s\n", ldb_errstring(ldb));
-		ret.failures = 1;
-		return ret;
-	}
-	
 	for (i=0; i < objectclasses_res->count; i++) {
 		struct ldb_message *msg = objectclasses_res->msgs[i];
 		const char *name = ldb_msg_find_attr_as_string(msg, "lDAPDisplayName", NULL);

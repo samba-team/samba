@@ -563,6 +563,114 @@ WERROR dsdb_class_from_ldb(const struct dsdb_schema *schema,
 	return WERR_OK;
 }
 
+#define dsdb_oom(error_string, mem_ctx) *error_string = talloc_asprintf(mem_ctx, "dsdb out of memory at %s:%d\n", __FILE__, __LINE__)
+
+int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
+				 struct smb_iconv_convenience *iconv_convenience, 
+				 struct ldb_result *schema_res,
+				 struct ldb_result *attrs_res, struct ldb_result *objectclass_res, 
+				 struct dsdb_schema **schema_out,
+				 char **error_string)
+{
+	WERROR status;
+	uint32_t i;
+	const struct ldb_val *prefix_val;
+	const struct ldb_val *info_val;
+	struct ldb_val info_val_default;
+	struct dsdb_schema *schema;
+
+	schema = dsdb_new_schema(mem_ctx, iconv_convenience);
+	if (!schema) {
+		dsdb_oom(error_string, mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	prefix_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "prefixMap");
+	if (!prefix_val) {
+		*error_string = talloc_asprintf(mem_ctx, 
+						"schema_fsmo_init: no prefixMap attribute found");
+		talloc_free(mem_ctx);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+	info_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "schemaInfo");
+	if (!info_val) {
+		info_val_default = strhex_to_data_blob("FF0000000000000000000000000000000000000000");
+		if (!info_val_default.data) {
+			dsdb_oom(error_string, mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		talloc_steal(mem_ctx, info_val_default.data);
+		info_val = &info_val_default;
+	}
+
+	status = dsdb_load_oid_mappings_ldb(schema, prefix_val, info_val);
+	if (!W_ERROR_IS_OK(status)) {
+		*error_string = talloc_asprintf(mem_ctx, 
+			      "schema_fsmo_init: failed to load oid mappings: %s",
+			      win_errstr(status));
+		talloc_free(mem_ctx);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	for (i=0; i < attrs_res->count; i++) {
+		struct dsdb_attribute *sa;
+
+		sa = talloc_zero(schema, struct dsdb_attribute);
+		if (!sa) {
+			dsdb_oom(error_string, mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		status = dsdb_attribute_from_ldb(schema, attrs_res->msgs[i], sa, sa);
+		if (!W_ERROR_IS_OK(status)) {
+			*error_string = talloc_asprintf(mem_ctx, 
+				      "schema_fsmo_init: failed to load attriute definition: %s:%s",
+				      ldb_dn_get_linearized(attrs_res->msgs[i]->dn),
+				      win_errstr(status));
+			talloc_free(mem_ctx);
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+
+		DLIST_ADD_END(schema->attributes, sa, struct dsdb_attribute *);
+	}
+
+	for (i=0; i < objectclass_res->count; i++) {
+		struct dsdb_class *sc;
+
+		sc = talloc_zero(schema, struct dsdb_class);
+		if (!sc) {
+			dsdb_oom(error_string, mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		status = dsdb_class_from_ldb(schema, objectclass_res->msgs[i], sc, sc);
+		if (!W_ERROR_IS_OK(status)) {
+			*error_string = talloc_asprintf(mem_ctx, 
+				      "schema_fsmo_init: failed to load class definition: %s:%s",
+				      ldb_dn_get_linearized(objectclass_res->msgs[i]->dn),
+				      win_errstr(status));
+			talloc_free(mem_ctx);
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+
+		DLIST_ADD_END(schema->classes, sc, struct dsdb_class *);
+	}
+
+	schema->fsmo.master_dn = ldb_msg_find_attr_as_dn(ldb, schema, schema_res->msgs[0], "fSMORoleOwner");
+	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), schema->fsmo.master_dn) == 0) {
+		schema->fsmo.we_are_master = true;
+	} else {
+		schema->fsmo.we_are_master = false;
+	}
+
+	DEBUG(5, ("schema_fsmo_init: we are master: %s\n",
+		  (schema->fsmo.we_are_master?"yes":"no")));
+
+	*schema_out = schema;
+	return LDB_SUCCESS;
+}
+
+
 static const struct {
 	const char *name;
 	const char *oid;

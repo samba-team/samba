@@ -94,3 +94,31 @@ PRIVATE_DEPENDENCIES = \
 #################################
 
 testparm_OBJ_FILES = $(utilssrcdir)/testparm.o
+
+################################################
+# Start BINARY oLschema2ldif
+[BINARY::oLschema2ldif]
+INSTALLDIR = BINDIR
+PRIVATE_DEPENDENCIES = \
+		LIBLDB_CMDLINE
+# End BINARY oLschema2ldif
+################################################
+
+
+oLschema2ldif_OBJ_FILES = $(addprefix $(utilssrcdir)/, schema_convert.o oLschema2ldif.o)
+
+MANPAGES += $(utilssrcdir)/man/oLschema2ldif.1
+
+################################################
+# Start BINARY  ad2oLschema
+[BINARY::ad2oLschema]
+INSTALLDIR = BINDIR
+PRIVATE_DEPENDENCIES = \
+		LIBLDB_CMDLINE SAMDB 
+# End BINARY ad2oLschema
+################################################
+
+ad2oLschema_OBJ_FILES = $(addprefix $(utilssrcdir)/, schema_convert.o ad2oLschema.o)
+
+MANPAGES += $(utilssrcdir)/man/ad2oLschema.1
+

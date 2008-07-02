@@ -33,7 +33,7 @@
 
 #include "ldb_includes.h"
 #include "tools/cmdline.h"
-#include "tools/convert.h"
+#include "utils/schema_convert.h"
 
 #define SCHEMA_UNKNOWN 0
 #define SCHEMA_NAME 1
