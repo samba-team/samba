@@ -501,6 +501,36 @@ void winbindd_flush_negative_conn_cache(struct winbindd_domain *domain)
 	}
 }
 
+/* 
+ * Parent winbindd process sets its own debug level first and then
+ * sends a message to all the winbindd children to adjust their debug
+ * level to that of parents.
+ */
+
+void winbind_msg_debug(struct messaging_context *msg_ctx,
+ 			 void *private_data,
+			 uint32_t msg_type,
+			 struct server_id server_id,
+			 DATA_BLOB *data)
+{
+	struct winbindd_child *child;
+
+	DEBUG(10,("winbind_msg_debug: got debug message.\n"));
+	
+	debug_message(msg_ctx, private_data, MSG_DEBUG, server_id, data);
+
+	for (child = children; child != NULL; child = child->next) {
+
+		DEBUG(10,("winbind_msg_debug: sending message to pid %u.\n",
+			(unsigned int)child->pid));
+
+		messaging_send_buf(msg_ctx, pid_to_procid(child->pid),
+			   MSG_DEBUG,
+			   data->data,
+			   strlen((char *) data->data) + 1);
+	}
+}
+
 /* Set our domains as offline and forward the offline message to our children. */
 
 void winbind_msg_offline(struct messaging_context *msg_ctx,
@@ -1044,6 +1074,8 @@ static bool fork_domain_child(struct winbindd_child *child)
 			     MSG_DUMP_EVENT_LIST, NULL);
 	messaging_deregister(winbind_messaging_context(),
 			     MSG_WINBIND_DUMP_DOMAIN_LIST, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_DEBUG, NULL);
 
 	/* Handle online/offline messages. */
 	messaging_register(winbind_messaging_context(), NULL,
@@ -1054,6 +1086,8 @@ static bool fork_domain_child(struct winbindd_child *child)
 			   MSG_WINBIND_ONLINESTATUS, child_msg_onlinestatus);
 	messaging_register(winbind_messaging_context(), NULL,
 			   MSG_DUMP_EVENT_LIST, child_msg_dump_event_list);
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_DEBUG, debug_message);
 
 	if ( child->domain ) {
 		child->domain->startup = True;
