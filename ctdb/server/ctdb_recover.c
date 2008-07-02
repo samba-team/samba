@@ -839,7 +839,7 @@ int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb,
 	int ret;
 	struct recovery_callback_state *state;
 
-	DEBUG(DEBUG_NOTICE,("Recovery has started\n"));
+	DEBUG(DEBUG_NOTICE,(__location__ " startrecovery eventscript has been invoked\n"));
 
 	state = talloc(ctdb, struct recovery_callback_state);
 	CTDB_NO_MEMORY(ctdb, state);
