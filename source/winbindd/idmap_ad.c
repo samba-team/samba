@@ -98,7 +98,8 @@ static ADS_STRUCT *ad_idmap_cached_connection_internal(void)
 		return NULL;
 	}
 
-	/* the machine acct password might have change - fetch it every time */
+	/* the machine acct password might have changed - fetch it every
+	 * time */
 	SAFE_FREE(ads->auth.password);
 	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
 
