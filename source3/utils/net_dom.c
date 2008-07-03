@@ -40,7 +40,7 @@ static int net_dom_unjoin(struct net_context *c, int argc, const char **argv)
 	uint32_t unjoin_flags = WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE |
 				WKSSVC_JOIN_FLAGS_JOIN_TYPE;
 	struct cli_state *cli = NULL;
-	bool reboot = false;
+	bool do_reboot = false;
 	NTSTATUS ntstatus;
 	NET_API_STATUS status;
 	int ret = -1;
@@ -68,11 +68,11 @@ static int net_dom_unjoin(struct net_context *c, int argc, const char **argv)
 			}
 		}
 		if (strequal(argv[i], "reboot")) {
-			reboot = true;
+			do_reboot = true;
 		}
 	}
 
-	if (reboot) {
+	if (do_reboot) {
 		ntstatus = net_make_ipc_connection_ex(c, c->opt_workgroup,
 						      server_name, NULL, 0,
 						      &cli);
@@ -88,7 +88,7 @@ static int net_dom_unjoin(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	if (reboot) {
+	if (do_reboot) {
 		c->opt_comment = "Shutting down due to a domain membership "
 				 "change";
 		c->opt_reboot = true;
@@ -128,7 +128,7 @@ static int net_dom_join(struct net_context *c, int argc, const char **argv)
 	uint32_t join_flags = WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
 			      WKSSVC_JOIN_FLAGS_JOIN_TYPE;
 	struct cli_state *cli = NULL;
-	bool reboot = false;
+	bool do_reboot = false;
 	NTSTATUS ntstatus;
 	NET_API_STATUS status;
 	int ret = -1;
@@ -172,11 +172,11 @@ static int net_dom_join(struct net_context *c, int argc, const char **argv)
 			}
 		}
 		if (strequal(argv[i], "reboot")) {
-			reboot = true;
+			do_reboot = true;
 		}
 	}
 
-	if (reboot) {
+	if (do_reboot) {
 		ntstatus = net_make_ipc_connection_ex(c, c->opt_workgroup,
 						      server_name, NULL, 0,
 						      &cli);
@@ -195,7 +195,7 @@ static int net_dom_join(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	if (reboot) {
+	if (do_reboot) {
 		c->opt_comment = "Shutting down due to a domain membership "
 				 "change";
 		c->opt_reboot = true;
