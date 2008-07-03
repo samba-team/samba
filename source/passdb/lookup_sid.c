@@ -1109,7 +1109,7 @@ void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 }
 
 /*****************************************************************
- *THE LEGACY* convert uid_t to SID function.
+ uid_t->SID conversion used if winbind is not around
 *****************************************************************/  
 
 static void legacy_uid_to_sid(DOM_SID *psid, uid_t uid)
@@ -1143,7 +1143,7 @@ static void legacy_uid_to_sid(DOM_SID *psid, uid_t uid)
 }
 
 /*****************************************************************
- *THE LEGACY* convert gid_t to SID function.
+ gid_t->SID conversion used if winbind is not around
 *****************************************************************/  
 
 static void legacy_gid_to_sid(DOM_SID *psid, gid_t gid)
@@ -1174,7 +1174,7 @@ static void legacy_gid_to_sid(DOM_SID *psid, gid_t gid)
 }
 
 /*****************************************************************
- *THE LEGACY* convert SID to uid function.
+ SID->uid_t conversion used if winbind is not around
 *****************************************************************/  
 
 static bool legacy_sid_to_uid(const DOM_SID *psid, uid_t *puid)
@@ -1217,8 +1217,7 @@ done:
 }
 
 /*****************************************************************
- *THE LEGACY* convert SID to gid function.
- Group mapping is used for gids that maps to Wellknown SIDs
+ SID->gid_t conversion used if winbind is not around
 *****************************************************************/  
 
 static bool legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
@@ -1281,7 +1280,7 @@ static bool legacy_sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 }
 
 /*****************************************************************
- *THE CANONICAL* convert uid_t to SID function.
+ uid_t->SID conversion
 *****************************************************************/  
 
 void uid_to_sid(DOM_SID *psid, uid_t uid)
@@ -1310,7 +1309,7 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 }
 
 /*****************************************************************
- *THE CANONICAL* convert gid_t to SID function.
+ gid_t->SID conversion
 *****************************************************************/  
 
 void gid_to_sid(DOM_SID *psid, gid_t gid)
@@ -1339,7 +1338,7 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 }
 
 /*****************************************************************
- *THE CANONICAL* convert SID to uid function.
+ SID->uid_t conversion
 *****************************************************************/  
 
 bool sid_to_uid(const DOM_SID *psid, uid_t *puid)
@@ -1389,8 +1388,7 @@ bool sid_to_uid(const DOM_SID *psid, uid_t *puid)
 }
 
 /*****************************************************************
- *THE CANONICAL* convert SID to gid function.
- Group mapping is used for gids that maps to Wellknown SIDs
+ SID->gid_t conversion
 *****************************************************************/  
 
 bool sid_to_gid(const DOM_SID *psid, gid_t *pgid)
