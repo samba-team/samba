@@ -296,6 +296,14 @@ AC_ARG_ENABLE(krb5developer, [AS_HELP_STRING([--enable-krb5developer], [Turn on 
 	krb5_developer=yes
     fi])
 
+picky_developer=no
+AC_ARG_ENABLE(picky-developer, [AS_HELP_STRING([--enable-picky-developer], [Halt compilation on warnings])],
+    [if eval "test x$enable_picky_developer = xyes"; then
+        debug=yes
+        developer=yes
+        picky_developer=yes
+    fi])
+
 AC_ARG_WITH(cfenc,
 [AS_HELP_STRING([--with-cfenc=HEADERDIR], [Use internal CoreFoundation encoding API for optimization (Mac OS X/Darwin only)])],
 [

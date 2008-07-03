@@ -183,6 +183,10 @@ if test x"$ac_cv_prog_gcc" = x"yes" ; then
        if test x"$krb5_developer" != x"$yes" ; then
 	    DEVELOPER_CFLAGS="$DEVELOPER_CFLAGS -Wstrict-prototypes"
        fi
+
+       if test x"$picky_developer" = x"yes"; then
+	    DEVELOPER_CFLAGS="$DEVELOPER_CFLAGS -Werror"
+       fi
 fi
 
 AC_ARG_ENABLE(dmalloc, [AS_HELP_STRING([--enable-dmalloc], [Enable heap debugging [default=no]])])
@@ -6115,7 +6119,7 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 
 dnl Merge in developer cflags from now on
 AC_SUBST(DEVELOPER_CFLAGS)
-if test x"$krb5_developer" = x"yes" -o x"$developer" = x"yes"; then
+if test x"$krb5_developer" = x"yes" -o x"$developer" = x"yes" -o x"$picky_developer" = x"yes"; then
     CFLAGS="${CFLAGS} \$(DEVELOPER_CFLAGS)"
 fi
 
