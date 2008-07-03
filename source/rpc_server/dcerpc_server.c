@@ -886,7 +886,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB stub;
-	uint32_t total_length;
+	uint32_t total_length, chunk_size;
 	struct dcesrv_connection_context *context = call->context;
 
 	/* call the reply function */
@@ -917,20 +917,20 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 
 	total_length = stub.length;
 
+	/* we can write a full max_recv_frag size, minus the dcerpc
+	   request header size */
+	chunk_size = call->conn->cli_max_recv_frag - (DCERPC_MAX_SIGN_SIZE+DCERPC_REQUEST_LENGTH);
+
 	do {
 		uint32_t length;
 		struct data_blob_list_item *rep;
 		struct ncacn_packet pkt;
+		const uint32_t overhead = (DCERPC_MAX_SIGN_SIZE+DCERPC_RESPONSE_LENGTH);
 
 		rep = talloc(call, struct data_blob_list_item);
 		NT_STATUS_HAVE_NO_MEMORY(rep);
 
-		length = stub.length;
-		if (length + DCERPC_RESPONSE_LENGTH > call->conn->cli_max_recv_frag) {
-			/* the 32 is to cope with signing data */
-			length = call->conn->cli_max_recv_frag - 
-				(DCERPC_MAX_SIGN_SIZE+DCERPC_RESPONSE_LENGTH);
-		}
+		length = MIN(chunk_size, stub.length);
 
 		/* form the dcerpc response packet */
 		dcesrv_init_hdr(&pkt, lp_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
