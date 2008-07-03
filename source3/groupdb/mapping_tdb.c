@@ -127,7 +127,7 @@ static bool add_mapping_entry(GROUP_MAP *map, int flag)
 
 	key = group_mapping_key(talloc_tos(), &map->sid);
 	if (key == NULL) {
-		return NULL;
+		return false;
 	}
 
 	len = tdb_pack(NULL, 0, "ddff",
