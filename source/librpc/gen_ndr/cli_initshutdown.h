@@ -7,7 +7,7 @@ NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli,
 				  struct initshutdown_String *message /* [in] [unique] */,
 				  uint32_t timeout /* [in]  */,
 				  uint8_t force_apps /* [in]  */,
-				  uint8_t reboot /* [in]  */,
+				  uint8_t do_reboot /* [in]  */,
 				  WERROR *werror);
 NTSTATUS rpccli_initshutdown_Abort(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
@@ -19,7 +19,7 @@ NTSTATUS rpccli_initshutdown_InitEx(struct rpc_pipe_client *cli,
 				    struct initshutdown_String *message /* [in] [unique] */,
 				    uint32_t timeout /* [in]  */,
 				    uint8_t force_apps /* [in]  */,
-				    uint8_t reboot /* [in]  */,
+				    uint8_t do_reboot /* [in]  */,
 				    uint32_t reason /* [in]  */,
 				    WERROR *werror);
 #endif /* __CLI_INITSHUTDOWN__ */

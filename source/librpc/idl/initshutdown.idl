@@ -28,7 +28,7 @@
 		[in,unique] initshutdown_String *message,
 		[in] uint32 timeout,
 		[in] uint8 force_apps,
-		[in] uint8 reboot
+		[in] uint8 do_reboot
 	);
 
 	WERROR initshutdown_Abort(
@@ -40,7 +40,7 @@
 		[in,unique] initshutdown_String *message,
 		[in] uint32 timeout,
 		[in] uint8 force_apps,
-		[in] uint8 reboot,
+		[in] uint8 do_reboot,
 		[in] uint32 reason
 	);
 }

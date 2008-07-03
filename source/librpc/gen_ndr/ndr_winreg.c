@@ -3185,7 +3185,7 @@ static enum ndr_err_code ndr_push_winreg_InitiateSystemShutdown(struct ndr_push 
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.timeout));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.force_apps));
-		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.reboot));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.do_reboot));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -3226,7 +3226,7 @@ static enum ndr_err_code ndr_pull_winreg_InitiateSystemShutdown(struct ndr_pull 
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.timeout));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.force_apps));
-		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.reboot));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.do_reboot));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -3258,7 +3258,7 @@ _PUBLIC_ void ndr_print_winreg_InitiateSystemShutdown(struct ndr_print *ndr, con
 		ndr->depth--;
 		ndr_print_uint32(ndr, "timeout", r->in.timeout);
 		ndr_print_uint8(ndr, "force_apps", r->in.force_apps);
-		ndr_print_uint8(ndr, "reboot", r->in.reboot);
+		ndr_print_uint8(ndr, "do_reboot", r->in.do_reboot);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -3876,7 +3876,7 @@ static enum ndr_err_code ndr_push_winreg_InitiateSystemShutdownEx(struct ndr_pus
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.timeout));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.force_apps));
-		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.reboot));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.do_reboot));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.reason));
 	}
 	if (flags & NDR_OUT) {
@@ -3918,7 +3918,7 @@ static enum ndr_err_code ndr_pull_winreg_InitiateSystemShutdownEx(struct ndr_pul
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.timeout));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.force_apps));
-		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.reboot));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.do_reboot));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.reason));
 	}
 	if (flags & NDR_OUT) {
@@ -3951,7 +3951,7 @@ _PUBLIC_ void ndr_print_winreg_InitiateSystemShutdownEx(struct ndr_print *ndr, c
 		ndr->depth--;
 		ndr_print_uint32(ndr, "timeout", r->in.timeout);
 		ndr_print_uint8(ndr, "force_apps", r->in.force_apps);
-		ndr_print_uint8(ndr, "reboot", r->in.reboot);
+		ndr_print_uint8(ndr, "do_reboot", r->in.do_reboot);
 		ndr_print_uint32(ndr, "reason", r->in.reason);
 		ndr->depth--;
 	}

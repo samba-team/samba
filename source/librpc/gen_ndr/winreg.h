@@ -479,7 +479,7 @@ struct winreg_InitiateSystemShutdown {
 		struct initshutdown_String *message;/* [unique] */
 		uint32_t timeout;
 		uint8_t force_apps;
-		uint8_t reboot;
+		uint8_t do_reboot;
 	} in;
 
 	struct {
@@ -567,7 +567,7 @@ struct winreg_InitiateSystemShutdownEx {
 		struct initshutdown_String *message;/* [unique] */
 		uint32_t timeout;
 		uint8_t force_apps;
-		uint8_t reboot;
+		uint8_t do_reboot;
 		uint32_t reason;
 	} in;
 
