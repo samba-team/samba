@@ -2289,18 +2289,26 @@ static BOOL current_user_in_group(gid_t gid)
 }
 
 /****************************************************************************
- Should we override a deny ?  Check deprecated 'acl group control'
- and 'dos filemode'
+ Should we override a deny ?  Check 'acl group control' and 'dos filemode'
 ****************************************************************************/
 
-static BOOL acl_group_override(connection_struct *conn, gid_t prim_gid)
+static BOOL acl_group_override(connection_struct *conn, gid_t prim_gid, const char *fname)
 {
-	if ( (errno == EACCES || errno == EPERM) 
-		&& (lp_acl_group_control(SNUM(conn)) || lp_dos_filemode(SNUM(conn)))
-		&& current_user_in_group(prim_gid)) 
-	{
+	SMB_STRUCT_STAT sbuf;
+
+	if ((errno != EPERM) && (errno != EACCES)) {
+		return False;
+	}
+
+	/* file primary group == user primary or supplementary group */
+	if (lp_acl_group_control(SNUM(conn)) && current_user_in_group(prim_gid)) {
 		return True;
-	} 
+	}
+
+	/* user has writeable permission */
+	if (lp_dos_filemode(SNUM(conn)) && can_write_to_file(conn, fname, &sbuf)) {
+		return True;
+	}
 
 	return False;
 }
@@ -2488,7 +2496,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 				*pacl_set_support = False;
 			}
 
-			if (acl_group_override(conn, prim_gid)) {
+			if (acl_group_override(conn, prim_gid, fsp->fsp_name)) {
 				int sret;
 
 				DEBUG(5,("set_canon_ace_list: acl group control on and current user in file %s primary group.\n",
@@ -2519,7 +2527,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 				*pacl_set_support = False;
 			}
 
-			if (acl_group_override(conn, prim_gid)) {
+			if (acl_group_override(conn, prim_gid, fsp->fsp_name)) {
 				int sret;
 
 				DEBUG(5,("set_canon_ace_list: acl group control on and current user in file %s primary group.\n",
@@ -3477,7 +3485,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 					if (SMB_VFS_SYS_ACL_DELETE_DEF_FILE(conn, fsp->fsp_name) == -1) {
 						int sret = -1;
 
-						if (acl_group_override(conn, sbuf.st_gid)) {
+						if (acl_group_override(conn, sbuf.st_gid, fsp->fsp_name)) {
 							DEBUG(5,("set_nt_acl: acl group control on and "
 								"current user in file %s primary group. Override delete_def_acl\n",
 								fsp->fsp_name ));
@@ -3524,7 +3532,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 
 					if(SMB_VFS_CHMOD(conn,fsp->fsp_name, posix_perms) == -1) {
 						int sret = -1;
-						if (acl_group_override(conn, sbuf.st_gid)) {
+						if (acl_group_override(conn, sbuf.st_gid, fsp->fsp_name)) {
 							DEBUG(5,("set_nt_acl: acl group control on and "
 								"current user in file %s primary group. Override chmod\n",
 								fsp->fsp_name ));
