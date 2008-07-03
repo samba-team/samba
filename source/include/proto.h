@@ -10493,12 +10493,13 @@ char *idmap_fetch_secret(const char *backend, bool alloc,
 
 /* The following definitions come from winbindd/idmap_cache.c  */
 
-struct idmap_cache_ctx *idmap_cache_init(TALLOC_CTX *memctx);
-NTSTATUS idmap_cache_set(struct idmap_cache_ctx *cache, const struct id_map *id);
-NTSTATUS idmap_cache_set_negative_sid(struct idmap_cache_ctx *cache, const struct id_map *id);
-NTSTATUS idmap_cache_set_negative_id(struct idmap_cache_ctx *cache, const struct id_map *id);
-NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id);
-NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id);
+NTSTATUS idmap_cache_set(const struct id_map *id);
+NTSTATUS idmap_cache_set_negative_sid(const struct id_map *id);
+NTSTATUS idmap_cache_set_negative_id(const struct id_map *id);
+bool idmap_cache_map_sid(const struct dom_sid *sid, struct unixid *xid,
+			 bool *mapped, bool *expired);
+bool idmap_cache_map_id(const struct unixid *xid, struct dom_sid *psid,
+			bool *mapped, bool *expired);
 
 /* The following definitions come from winbindd/idmap_nss.c  */
 
