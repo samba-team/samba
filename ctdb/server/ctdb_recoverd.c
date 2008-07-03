@@ -361,18 +361,6 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
 		return -1;
 	}
 
-	if (rec_mode == CTDB_RECOVERY_NORMAL) {
-		if (ctdb_client_async_control(ctdb, CTDB_CONTROL_THAW,
-						nodes, CONTROL_TIMEOUT(),
-						false, tdb_null,
-						NULL, NULL,
-						NULL) != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to thaw nodes. Recovery failed.\n"));
-			talloc_free(tmp_ctx);
-			return -1;
-		}
-	}
-
 	talloc_free(tmp_ctx);
 	return 0;
 }
