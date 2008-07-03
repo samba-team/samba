@@ -31,18 +31,16 @@ NTSTATUS idmap_uid_to_sid(DOM_SID *sid, uid_t uid)
 {
 	NTSTATUS ret;
 	struct id_map map;
-	struct id_map *maps[2];
+	struct id_map *maps;
 
 	DEBUG(10,("uid = [%lu]\n", (unsigned long)uid));
 
 	map.sid = sid;
 	map.xid.type = ID_TYPE_UID;
 	map.xid.id = uid;
+	maps = &map;
 
-	maps[0] = &map;
-	maps[1] = NULL;
-
-	ret = idmap_unixids_to_sids(maps);
+	ret = idmap_unixids_to_sids(&maps, 1);
 	if ( ! NT_STATUS_IS_OK(ret)) {
 		DEBUG(10, ("error mapping uid [%lu]\n", (unsigned long)uid));
 		return ret;
@@ -65,18 +63,16 @@ NTSTATUS idmap_gid_to_sid(DOM_SID *sid, gid_t gid)
 {
 	NTSTATUS ret;
 	struct id_map map;
-	struct id_map *maps[2];
+	struct id_map *maps;
 
 	DEBUG(10,("gid = [%lu]\n", (unsigned long)gid));
 
 	map.sid = sid;
 	map.xid.type = ID_TYPE_GID;
 	map.xid.id = gid;
+	maps = &map;
 
-	maps[0] = &map;
-	maps[1] = NULL;
-
-	ret = idmap_unixids_to_sids(maps);
+	ret = idmap_unixids_to_sids(&maps, 1);
 	if ( ! NT_STATUS_IS_OK(ret)) {
 		DEBUG(10, ("error mapping gid [%lu]\n", (unsigned long)gid));
 		return ret;
@@ -99,17 +95,15 @@ NTSTATUS idmap_sid_to_uid(DOM_SID *sid, uid_t *uid)
 {
 	NTSTATUS ret;
 	struct id_map map;
-	struct id_map *maps[2];
+	struct id_map *maps;
 
 	DEBUG(10,("idmap_sid_to_uid: sid = [%s]\n", sid_string_dbg(sid)));
 
 	map.sid = sid;
-	map.xid.type = ID_TYPE_UID;	
+	map.xid.type = ID_TYPE_UID;
+	maps = &map;
 
-	maps[0] = &map;
-	maps[1] = NULL;
-
-	ret = idmap_sids_to_unixids(maps);
+	ret = idmap_sids_to_unixids(&maps, 1);
 	if ( ! NT_STATUS_IS_OK(ret)) {
 		DEBUG(10, ("error mapping sid [%s] to uid\n", 
 			   sid_string_dbg(sid)));
@@ -139,17 +133,15 @@ NTSTATUS idmap_sid_to_gid(DOM_SID *sid, gid_t *gid)
 {
 	NTSTATUS ret;
 	struct id_map map;
-	struct id_map *maps[2];
+	struct id_map *maps;
 
 	DEBUG(10,("idmap_sid_to_gid: sid = [%s]\n", sid_string_dbg(sid)));
 
 	map.sid = sid;
 	map.xid.type = ID_TYPE_GID;
+	maps = &map;
 
-	maps[0] = &map;
-	maps[1] = NULL;
-
-	ret = idmap_sids_to_unixids(maps);
+	ret = idmap_sids_to_unixids(&maps, 1);
 	if ( ! NT_STATUS_IS_OK(ret)) {
 		DEBUG(10, ("error mapping sid [%s] to gid\n", 
 			   sid_string_dbg(sid)));

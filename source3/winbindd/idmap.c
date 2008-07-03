@@ -1177,7 +1177,8 @@ done:
 	return ret;
 }
 
-static NTSTATUS idmap_backends_sids_to_unixids(struct id_map **ids)
+static NTSTATUS idmap_backends_sids_to_unixids(struct id_map **ids, int
+					       num_ids)
 {
 	struct id_map ***dom_ids;
 	struct idmap_domain *dom;
@@ -1205,7 +1206,7 @@ static NTSTATUS idmap_backends_sids_to_unixids(struct id_map **ids)
 
 	/* partition the requests by domain */
 
-	for (i = 0; ids[i]; i++) {
+	for (i = 0; i < num_ids; i++) {
 		uint32 idx;
 
 		if ((dom = find_idmap_domain_from_sid(ids[i]->sid)) == NULL) {
@@ -1245,7 +1246,7 @@ static NTSTATUS idmap_backends_sids_to_unixids(struct id_map **ids)
 	/* ok all the backends have been contacted at this point */
 	/* let's see if we have any unmapped SID left and act accordingly */
 
-	for (i = 0; ids[i]; i++) {
+	for (i = 0; i < num_ids; i++) {
 		/* NOTE: this will NOT touch ID_EXPIRED entries that the backend
 		 * was not able to confirm/deny (offline mode) */
 		if (ids[i]->status == ID_UNKNOWN ||
@@ -1278,7 +1279,7 @@ done:
  idmap interface functions
 **************************************************************************/
 
-NTSTATUS idmap_unixids_to_sids(struct id_map **ids)
+NTSTATUS idmap_unixids_to_sids(struct id_map **ids, int n_ids)
 {
 	TALLOC_CTX *ctx;
 	NTSTATUS ret;
@@ -1306,7 +1307,7 @@ NTSTATUS idmap_unixids_to_sids(struct id_map **ids)
 	bids = NULL;
 	bi = 0;
 
-	for (i = 0; ids[i]; i++) {
+	for (i = 0; i < n_ids; i++) {
 
 		bool found, mapped, expired;
 
@@ -1331,38 +1332,12 @@ NTSTATUS idmap_unixids_to_sids(struct id_map **ids)
 			 * Need to ask the backend
 			 */
 
-			if ( ! bids) {
-				/* alloc space for ids to be resolved by
-				 * backends (realloc ten by ten) */
-				bids = TALLOC_ARRAY(ctx, struct id_map *, 10);
-				if ( ! bids) {
-					DEBUG(1, ("Out of memory!\n"));
-					talloc_free(ctx);
-					return NT_STATUS_NO_MEMORY;
-				}
-				bn = 10;
+			ADD_TO_ARRAY(ctx, struct id_map *, ids[i], &bids, &bn);
+			if (bids == NULL) {
+				DEBUG(1, ("Out of memory!\n"));
+				talloc_free(ctx);
+				return NT_STATUS_NO_MEMORY;
 			}
-
-			/* add this id to the ones to be retrieved
-			 * from the backends */
-			bids[bi] = ids[i];
-			bi++;
-
-			/* check if we need to allocate new space
-			 *  on the rids array */
-			if (bi == bn) {
-				bn += 10;
-				bids = talloc_realloc(ctx, bids,
-						      struct id_map *, bn);
-				if ( ! bids) {
-					DEBUG(1, ("Out of memory!\n"));
-					talloc_free(ctx);
-					return NT_STATUS_NO_MEMORY;
-				}
-			}
-
-			/* make sure the last element is NULL */
-			bids[bi] = NULL;
 		}
 	}
 
@@ -1408,12 +1383,12 @@ done:
 	return ret;
 }
 
-NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
+NTSTATUS idmap_sids_to_unixids(struct id_map **ids, int n_ids)
 {
 	TALLOC_CTX *ctx;
 	NTSTATUS ret;
 	struct id_map **bids;
-	int i, bi;
+	int i;
 	int bn = 0;
 	struct winbindd_domain *our_domain = find_our_domain();
 
@@ -1434,9 +1409,8 @@ NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
 
 	/* no ids to be asked to the backends by default */
 	bids = NULL;
-	bi = 0;
 
-	for (i = 0; ids[i]; i++) {
+	for (i = 0; i < n_ids; i++) {
 
 		bool found, mapped, expired;
 
@@ -1461,38 +1435,12 @@ NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
 			 * Need to ask the backends
 			 */
 
-			if ( ! bids) {
-				/* alloc space for ids to be resolved
-				   by backends (realloc ten by ten) */
-				bids = TALLOC_ARRAY(ctx, struct id_map *, 10);
-				if ( ! bids) {
-					DEBUG(1, ("Out of memory!\n"));
-					talloc_free(ctx);
-					return NT_STATUS_NO_MEMORY;
-				}
-				bn = 10;
+			ADD_TO_ARRAY(ctx, struct id_map *, ids[i], &bids, &bn);
+			if (bids == NULL) {
+				DEBUG(1, ("Out of memory!\n"));
+				talloc_free(ctx);
+				return NT_STATUS_NO_MEMORY;
 			}
-
-			/* add this id to the ones to be retrieved
-			 * from the backends */
-			bids[bi] = ids[i];
-			bi++;
-
-			/* check if we need to allocate new space
-			 * on the ids array */
-			if (bi == bn) {
-				bn += 10;
-				bids = talloc_realloc(ctx, bids,
-						      struct id_map *, bn);
-				if ( ! bids) {
-					DEBUG(1, ("Out of memory!\n"));
-					talloc_free(ctx);
-					return NT_STATUS_NO_MEMORY;
-				}
-			}
-
-			/* make sure the last element is NULL */
-			bids[bi] = NULL;
 		}
 	}
 
@@ -1505,11 +1453,11 @@ NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
 			goto done;
 		}
 
-		ret = idmap_backends_sids_to_unixids(bids);
+		ret = idmap_backends_sids_to_unixids(bids, bn);
 		IDMAP_CHECK_RET(ret);
 
 		/* update the cache */
-		for (i = 0; bids[i]; i++) {
+		for (i = 0; i < bn; i++) {
 			if (bids[i]->status == ID_MAPPED) {
 				ret = idmap_cache_set(bids[i]);
 			} else if (bids[i]->status == ID_EXPIRED) {
