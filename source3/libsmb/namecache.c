@@ -200,7 +200,6 @@ bool namecache_fetch(const char *name,
 			int *num_names)
 {
 	char *key, *value;
-	time_t timeout;
 
 	/* exit now if null pointers were passed as they're required further */
 	if (!ip_list || !num_names) {
@@ -225,7 +224,7 @@ bool namecache_fetch(const char *name,
 		return False;
 	}
 
-	if (!gencache_get(key, &value, &timeout)) {
+	if (!gencache_get(key, &value, NULL)) {
 		DEBUG(5, ("no entry for %s#%02X found.\n", name, name_type));
 		SAFE_FREE(key);
 		return False;
@@ -367,7 +366,6 @@ bool namecache_status_fetch(const char *keyname,
 {
 	char *key = NULL;
 	char *value = NULL;
-	time_t timeout;
 
 	if (!gencache_init())
 		return False;
@@ -377,7 +375,7 @@ bool namecache_status_fetch(const char *keyname,
 	if (!key)
 		return False;
 
-	if (!gencache_get(key, &value, &timeout)) {
+	if (!gencache_get(key, &value, NULL)) {
 		DEBUG(5, ("namecache_status_fetch: no entry for %s found.\n",
 					key));
 		SAFE_FREE(key);
