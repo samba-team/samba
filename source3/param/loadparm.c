@@ -1507,7 +1507,7 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &sDefault.bAclGroupControl,
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE | FLAG_DEPRECATED,
+		.flags		= FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE,
 	},
 	{
 		.label		= "acl map full control",

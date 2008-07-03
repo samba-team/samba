@@ -30,8 +30,10 @@
 	</para>
 
 	<para>
-	This is parameter has been marked deprecated in Samba 3.0.23.  The same behavior is now
-	implemented by the <parameter moreinfo="none">dos filemode</parameter> option.
+	This is parameter has been was deprecated in Samba 3.0.23, but re-activated in
+	Samba 3.0.31 and above, as it now only controls permission changes if the user
+	is in the owning primary group. It is now no longer equivalent to the
+	<parameter moreinfo="none">dos filemode</parameter> option.
 	</para>
 
 </description>
