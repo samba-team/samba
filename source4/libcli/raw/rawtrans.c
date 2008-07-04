@@ -405,145 +405,176 @@ _PUBLIC_ NTSTATUS smb_raw_trans(struct smbcli_tree *tree,
 	return smb_raw_trans_recv(req, mem_ctx, parms);
 }
 
+struct smb_raw_nttrans_recv_state {
+	bool got_first;
+	uint32_t recvd_data;
+	uint32_t recvd_param;
+	struct smb_nttrans io;
+};
 
-/****************************************************************************
-  receive a SMB nttrans response allocating the necessary memory
-  ****************************************************************************/
 NTSTATUS smb_raw_nttrans_recv(struct smbcli_request *req,
 			      TALLOC_CTX *mem_ctx,
 			      struct smb_nttrans *parms)
 {
-	uint32_t total_data, recvd_data=0;
-	uint32_t total_param, recvd_param=0;
+	struct smb_raw_nttrans_recv_state *state;
 
 	if (!smbcli_request_receive(req) ||
 	    smbcli_request_is_error(req)) {
-		return smbcli_request_destroy(req);
+		goto failed;
 	}
 
-	/* sanity check */
-	if (CVAL(req->in.hdr, HDR_COM) != SMBnttrans) {
-		DEBUG(0,("smb_raw_receive_nttrans: Expected %s response, got command 0x%02x\n",
-			 "SMBnttrans", 
-			 CVAL(req->in.hdr,HDR_COM)));
-		req->status = NT_STATUS_UNSUCCESSFUL;
-		return smbcli_request_destroy(req);
-	}
+	state = talloc_get_type(req->recv_helper.private_data,
+				struct smb_raw_nttrans_recv_state);
 
-	SMBCLI_CHECK_MIN_WCT(req, 18);
+	parms->out = state->io.out;
+	talloc_steal(mem_ctx, parms->out.setup);
+	talloc_steal(mem_ctx, parms->out.params.data);
+	talloc_steal(mem_ctx, parms->out.data.data);
+	talloc_free(state);
 
-	/* parse out the lengths */
-	total_param = IVAL(req->in.vwv, 3);
-	total_data  = IVAL(req->in.vwv, 7);
-
-	parms->out.data = data_blob_talloc(mem_ctx, NULL, total_data);
-	parms->out.params = data_blob_talloc(mem_ctx, NULL, total_param);
-
-	if (parms->out.data.length != total_data ||
-	    parms->out.params.length != total_param) {
-		req->status = NT_STATUS_NO_MEMORY;
-		return smbcli_request_destroy(req);
-	}
-
-	parms->out.setup_count = CVAL(req->in.vwv, 35);
-	SMBCLI_CHECK_WCT(req, 18 + parms->out.setup_count);
-
-	if (parms->out.setup_count > 0) {
-		parms->out.setup = talloc_array(mem_ctx, uint8_t, 
-						parms->out.setup_count*2);
-		if (!parms->out.setup) {
-			req->status = NT_STATUS_NO_MEMORY;
-			return smbcli_request_destroy(req);
-		}
-		memcpy(parms->out.setup, VWV(18) + (uint8_t *)req->out.vwv,
-		       sizeof(uint16_t) * parms->out.setup_count);
-	}
-	
-	while (recvd_data < total_data || 
-	       recvd_param < total_param)  {
-		uint32_t param_count, param_ofs, param_disp;
-		uint32_t data_count, data_ofs, data_disp;
-		uint32_t total_data2, total_param2;
-
-		/* parse out the total lengths again - they can shrink! */
-		total_param2 = IVAL(req->in.vwv, 3);
-		total_data2  = IVAL(req->in.vwv, 7);
-
-		if (total_data2 > total_data ||
-		    total_param2 > total_param) {
-			/* they must *only* shrink */
-			DEBUG(1,("smb_raw_receive_nttrans: data/params expanded!\n"));
-			req->status = NT_STATUS_BUFFER_TOO_SMALL;
-			return smbcli_request_destroy(req);
-		}
-
-		total_data = total_data2;
-		total_param = total_param2;
-		parms->out.data.length = total_data;
-		parms->out.params.length = total_param;
-
-		/* parse params for this lump */
-		param_count = IVAL(req->in.vwv, 11);
-		param_ofs   = IVAL(req->in.vwv, 15);
-		param_disp  = IVAL(req->in.vwv, 19);
-
-		data_count = IVAL(req->in.vwv, 23);
-		data_ofs   = IVAL(req->in.vwv, 27);
-		data_disp  = IVAL(req->in.vwv, 31);
-
-		if (data_count + data_disp > total_data ||
-		    param_count + param_disp > total_param) {
-			DEBUG(1,("smb_raw_receive_nttrans: Buffer overflow\n"));
-			req->status = NT_STATUS_BUFFER_TOO_SMALL;
-			return smbcli_request_destroy(req);
-		}
-		
-		/* check the server isn't being nasty */
-		if (raw_trans_oob(req, param_ofs, param_count) ||
-		    raw_trans_oob(req, data_ofs, data_count)) {
-			DEBUG(1,("smb_raw_receive_nttrans: out of bounds parameters!\n"));
-			req->status = NT_STATUS_BUFFER_TOO_SMALL;
-			return smbcli_request_destroy(req);
-		}
-
-		if (data_count) {
-			memcpy(parms->out.data.data + data_disp,
-			       req->in.hdr + data_ofs, 
-			       data_count);
-		}
-
-		if (param_count) {
-			memcpy(parms->out.params.data + param_disp,
-			       req->in.hdr + param_ofs, 
-			       param_count);
-		}
-
-		recvd_param += param_count;
-		recvd_data += data_count;
-
-		if (recvd_data >= total_data &&
-		    recvd_param >= total_param) {
-			break;
-		}
-		
-		if (!smbcli_request_receive(req) ||
-		    smbcli_request_is_error(req)) {
-			return smbcli_request_destroy(req);
-		}
-		
-		/* sanity check */
-		if (CVAL(req->in.hdr, HDR_COM) != SMBnttrans) {
-			DEBUG(0,("smb_raw_receive_nttrans: Expected nttranss, got command 0x%02x\n",
-				 CVAL(req->in.hdr, HDR_COM)));
-			req->status = NT_STATUS_UNSUCCESSFUL;
-			return smbcli_request_destroy(req);
-		}
-	}
+	ZERO_STRUCT(req->recv_helper);
 
 failed:
 	return smbcli_request_destroy(req);
 }
 
+/*
+ * This helper returns SMBCLI_REQUEST_RECV until all data has arrived
+ */
+static enum smbcli_request_state smb_raw_nttrans_recv_helper(struct smbcli_request *req)
+{
+	struct smb_raw_nttrans_recv_state *state = talloc_get_type(req->recv_helper.private_data,
+						   struct smb_raw_nttrans_recv_state);
+	uint32_t param_count, param_ofs, param_disp;
+	uint32_t data_count, data_ofs, data_disp;
+	uint32_t total_data, total_param;
+	uint8_t setup_count;
+
+	/*
+	 * An NT RPC pipe call can return ERRDOS, ERRmoredata
+	 * to a trans call. This is not an error and should not
+	 * be treated as such.
+	 */
+	if (smbcli_request_is_error(req)) {
+		goto failed;
+	}
+
+	/* sanity check */
+	if (CVAL(req->in.hdr, HDR_COM) != SMBnttrans) {
+		DEBUG(0,("smb_raw_nttrans_recv_helper: Expected %s response, got command 0x%02x\n",
+			 "SMBnttrans", 
+			 CVAL(req->in.hdr,HDR_COM)));
+		req->status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto failed;
+	}
+
+	/* this is the first packet of the response */
+	SMBCLI_CHECK_MIN_WCT(req, 18);
+
+	total_param = IVAL(req->in.vwv, 3);
+	total_data  = IVAL(req->in.vwv, 7);
+	setup_count = CVAL(req->in.vwv, 35);
+
+	param_count = IVAL(req->in.vwv, 11);
+	param_ofs   = IVAL(req->in.vwv, 15);
+	param_disp  = IVAL(req->in.vwv, 19);
+
+	data_count = IVAL(req->in.vwv, 23);
+	data_ofs   = IVAL(req->in.vwv, 27);
+	data_disp  = IVAL(req->in.vwv, 31);
+
+	if (!state->got_first) {
+		if (total_param > 0) {
+			state->io.out.params = data_blob_talloc(state, NULL, total_param);
+			if (!state->io.out.params.data) {
+				goto nomem;
+			}
+		}
+
+		if (total_data > 0) {
+			state->io.out.data = data_blob_talloc(state, NULL, total_data);
+			if (!state->io.out.data.data) {
+				goto nomem;
+			}
+		}
+
+		if (setup_count > 0) {
+			SMBCLI_CHECK_WCT(req, 18 + setup_count);
+
+			state->io.out.setup_count = setup_count;
+			state->io.out.setup = talloc_array(state, uint8_t,
+							   setup_count * VWV(1));
+			if (!state->io.out.setup) {
+				goto nomem;
+			}
+			memcpy(state->io.out.setup, (uint8_t *)req->out.vwv + VWV(18),
+			       setup_count * VWV(1));
+		}
+
+		state->got_first = true;
+	}
+
+	if (total_data > state->io.out.data.length ||
+	    total_param > state->io.out.params.length) {
+		/* they must *only* shrink */
+		DEBUG(1,("smb_raw_nttrans_recv_helper: data/params expanded!\n"));
+		req->status = NT_STATUS_BUFFER_TOO_SMALL;
+		goto failed;
+	}
+
+	state->io.out.data.length = total_data;
+	state->io.out.params.length = total_param;
+
+	if (data_count + data_disp > total_data ||
+	    param_count + param_disp > total_param) {
+		DEBUG(1,("smb_raw_nttrans_recv_helper: Buffer overflow\n"));
+		req->status = NT_STATUS_BUFFER_TOO_SMALL;
+		goto failed;
+	}
+
+	/* check the server isn't being nasty */
+	if (raw_trans_oob(req, param_ofs, param_count) ||
+	    raw_trans_oob(req, data_ofs, data_count)) {
+		DEBUG(1,("smb_raw_nttrans_recv_helper: out of bounds parameters!\n"));
+		req->status = NT_STATUS_BUFFER_TOO_SMALL;
+		goto failed;
+	}
+
+	if (data_count) {
+		memcpy(state->io.out.data.data + data_disp,
+		       req->in.hdr + data_ofs,
+		       data_count);
+	}
+
+	if (param_count) {
+		memcpy(state->io.out.params.data + param_disp,
+		       req->in.hdr + param_ofs,
+		       param_count);
+	}
+
+	state->recvd_param += param_count;
+	state->recvd_data += data_count;
+
+	if (state->recvd_data < total_data ||
+	    state->recvd_param < total_param) {
+
+		/* we don't need the in buffer any more */
+		talloc_free(req->in.buffer);
+		ZERO_STRUCT(req->in);
+
+		/* we still wait for more data */
+		DEBUG(10,("smb_raw_nttrans_recv_helper: more data needed\n"));
+		return SMBCLI_REQUEST_RECV;
+	}
+
+	DEBUG(10,("smb_raw_nttrans_recv_helper: done\n"));
+	return SMBCLI_REQUEST_DONE;
+
+nomem:
+	req->status = NT_STATUS_NO_MEMORY;
+failed:
+	return SMBCLI_REQUEST_ERROR;
+}
 
 /****************************************************************************
  nttrans raw - only BLOBs used in this interface.
@@ -553,6 +584,7 @@ struct smbcli_request *smb_raw_nttrans_send(struct smbcli_tree *tree,
 					 struct smb_nttrans *parms)
 {
 	struct smbcli_request *req; 
+	struct smb_raw_nttrans_recv_state *state;
 	uint8_t *outdata, *outparam;
 	int align = 0;
 
@@ -569,7 +601,13 @@ struct smbcli_request *smb_raw_nttrans_send(struct smbcli_tree *tree,
 	if (!req) {
 		return NULL;
 	}
-	
+
+	state = talloc_zero(req, struct smb_raw_nttrans_recv_state);
+	if (!state) {
+		talloc_free(req);
+		return NULL;
+	}
+
 	/* fill in SMB parameters */
 	outparam = req->out.data + align;
 	outdata = outparam + parms->in.params.length;
@@ -598,6 +636,11 @@ struct smbcli_request *smb_raw_nttrans_send(struct smbcli_tree *tree,
 	if (parms->in.data.length) {
 		memcpy(outdata, parms->in.data.data, parms->in.data.length);
 	}
+
+	/* add the helper which will check that all multi-part replies are
+	   in before an async client callack will be issued */
+	req->recv_helper.fn = smb_raw_nttrans_recv_helper;
+	req->recv_helper.private_data = state;
 
 	if (!smbcli_request_send(req)) {
 		smbcli_request_destroy(req);
