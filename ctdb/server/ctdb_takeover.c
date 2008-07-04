@@ -1775,7 +1775,9 @@ int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb, TDB_DATA indat
 
 	/* verify the size of indata */
 	if (indata.dsize < offsetof(struct ctdb_control_gratious_arp, iface)) {
-		DEBUG(DEBUG_ERR,(__location__ " Too small indata to hold a ctdb_control_gratious_arp structure. Got %u require %u bytes\n", indata.dsize, offsetof(struct ctdb_control_gratious_arp, iface)));
+		DEBUG(DEBUG_ERR,(__location__ " Too small indata to hold a ctdb_control_gratious_arp structure. Got %u require %u bytes\n", 
+				 (unsigned)indata.dsize, 
+				 (unsigned)offsetof(struct ctdb_control_gratious_arp, iface)));
 		return -1;
 	}
 	if (indata.dsize != 
