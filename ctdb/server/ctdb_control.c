@@ -400,7 +400,6 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 }
 
-
 /*
   send a reply for a ctdb control
  */
@@ -433,8 +432,8 @@ void ctdb_request_control_reply(struct ctdb_context *ctdb, struct ctdb_req_contr
 		r->errorlen = strlen(errormsg);
 		memcpy(&r->data[r->datalen], errormsg, r->errorlen);
 	}
-	
-	ctdb_queue_packet(ctdb, &r->hdr);	
+
+	ctdb_queue_packet_opcode(ctdb, &r->hdr, c->opcode);	
 
 	talloc_free(r);
 }

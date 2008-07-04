@@ -502,3 +502,118 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 }
 
 
+
+
+/*
+  a valgrind hack to allow us to get opcode specific backtraces
+  very ugly, and relies on no compiler optimisation!
+*/
+void ctdb_queue_packet_opcode(struct ctdb_context *ctdb, struct ctdb_req_header *hdr, unsigned opcode)
+{
+	switch (opcode) {
+#define DO_OP(x) ctdb_queue_packet(ctdb, hdr); break
+		DO_OP(1);
+		DO_OP(2);
+		DO_OP(3);
+		DO_OP(4);
+		DO_OP(5);
+		DO_OP(6);
+		DO_OP(7);
+		DO_OP(8);
+		DO_OP(9);
+		DO_OP(10);
+		DO_OP(11);
+		DO_OP(12);
+		DO_OP(13);
+		DO_OP(14);
+		DO_OP(15);
+		DO_OP(16);
+		DO_OP(17);
+		DO_OP(18);
+		DO_OP(19);
+		DO_OP(20);
+		DO_OP(21);
+		DO_OP(22);
+		DO_OP(23);
+		DO_OP(24);
+		DO_OP(25);
+		DO_OP(26);
+		DO_OP(27);
+		DO_OP(28);
+		DO_OP(29);
+		DO_OP(30);
+		DO_OP(31);
+		DO_OP(32);
+		DO_OP(33);
+		DO_OP(34);
+		DO_OP(35);
+		DO_OP(36);
+		DO_OP(37);
+		DO_OP(38);
+		DO_OP(39);
+		DO_OP(40);
+		DO_OP(41);
+		DO_OP(42);
+		DO_OP(43);
+		DO_OP(44);
+		DO_OP(45);
+		DO_OP(46);
+		DO_OP(47);
+		DO_OP(48);
+		DO_OP(49);
+		DO_OP(50);
+		DO_OP(51);
+		DO_OP(52);
+		DO_OP(53);
+		DO_OP(54);
+		DO_OP(55);
+		DO_OP(56);
+		DO_OP(57);
+		DO_OP(58);
+		DO_OP(59);
+		DO_OP(60);
+		DO_OP(61);
+		DO_OP(62);
+		DO_OP(63);
+		DO_OP(64);
+		DO_OP(65);
+		DO_OP(66);
+		DO_OP(67);
+		DO_OP(68);
+		DO_OP(69);
+		DO_OP(70);
+		DO_OP(71);
+		DO_OP(72);
+		DO_OP(73);
+		DO_OP(74);
+		DO_OP(75);
+		DO_OP(76);
+		DO_OP(77);
+		DO_OP(78);
+		DO_OP(79);
+		DO_OP(80);
+		DO_OP(81);
+		DO_OP(82);
+		DO_OP(83);
+		DO_OP(84);
+		DO_OP(85);
+		DO_OP(86);
+		DO_OP(87);
+		DO_OP(88);
+		DO_OP(89);
+		DO_OP(90);
+		DO_OP(91);
+		DO_OP(92);
+		DO_OP(93);
+		DO_OP(94);
+		DO_OP(95);
+		DO_OP(96);
+		DO_OP(97);
+		DO_OP(98);
+		DO_OP(99);
+		DO_OP(100);
+	default: 
+		ctdb_queue_packet(ctdb, hdr);
+		break;
+	}
+}

@@ -811,6 +811,7 @@ int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 int ctdb_ltdb_persistent_store(struct ctdb_db_context *ctdb_db, TDB_DATA key, 
 		    struct ctdb_ltdb_header *header, TDB_DATA data);
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+void ctdb_queue_packet_opcode(struct ctdb_context *ctdb, struct ctdb_req_header *hdr, unsigned opcode);
 int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db, 
 			   TDB_DATA key, struct ctdb_req_header *hdr,
 			   void (*recv_pkt)(void *, struct ctdb_req_header *),
