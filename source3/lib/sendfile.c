@@ -383,7 +383,8 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 				hdtrl.iov_base = NULL;
 				hdtrl.iov_len = 0;
 			} else {
-				hdtrl.iov_base += nwritten;
+				hdtrl.iov_base =
+				    (caddr_t)hdtrl.iov_base + nwritten;
 				hdtrl.iov_len -= nwritten;
 				nwritten = 0;
 			}

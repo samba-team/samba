@@ -37,7 +37,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	const char *p;
 	char *pserver = NULL;
 	bool connected_ok = False;
-	struct named_mutex *mutex;
+	struct named_mutex *mutex = NULL;
 
 	if (!(cli = cli_initialise()))
 		return NULL;
