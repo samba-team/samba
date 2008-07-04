@@ -511,7 +511,7 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 void ctdb_queue_packet_opcode(struct ctdb_context *ctdb, struct ctdb_req_header *hdr, unsigned opcode)
 {
 	switch (opcode) {
-#define DO_OP(x) ctdb_queue_packet(ctdb, hdr); break
+#define DO_OP(x) case x: ctdb_queue_packet(ctdb, hdr); break
 		DO_OP(1);
 		DO_OP(2);
 		DO_OP(3);
