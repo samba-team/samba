@@ -365,19 +365,6 @@ bool smbcli_request_receive(struct smbcli_request *req)
 
 
 /*
-  receive another reply to a request - this is used for requests that
-  have multi-part replies (such as SMBtrans2)
-*/
-bool smbcli_request_receive_more(struct smbcli_request *req)
-{
-	req->state = SMBCLI_REQUEST_RECV;
-	DLIST_ADD(req->transport->pending_recv, req);
-
-	return smbcli_request_receive(req);
-}
-
-
-/*
   handle oplock break requests from the server - return true if the request was
   an oplock break
 */
