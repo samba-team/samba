@@ -493,19 +493,19 @@ static void print_share_mode_table(struct locking_data *data)
 
 static bool parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 {
-	struct locking_data *data;
+	struct locking_data data;
 	int i;
 
 	if (dbuf.dsize < sizeof(struct locking_data)) {
 		smb_panic("parse_share_modes: buffer too short");
 	}
 
-	data = (struct locking_data *)dbuf.dptr;
+	memcpy(&data, dbuf.dptr, sizeof(data));
 
-	lck->delete_on_close = data->u.s.delete_on_close;
-	lck->old_write_time = data->u.s.old_write_time;
-	lck->changed_write_time = data->u.s.changed_write_time;
-	lck->num_share_modes = data->u.s.num_share_mode_entries;
+	lck->delete_on_close = data.u.s.delete_on_close;
+	lck->old_write_time = data.u.s.old_write_time;
+	lck->changed_write_time = data.u.s.changed_write_time;
+	lck->num_share_modes = data.u.s.num_share_mode_entries;
 
 	DEBUG(10, ("parse_share_modes: delete_on_close: %d, owrt: %s, "
 		   "cwrt: %s, tok: %u, num_share_modes: %d\n",
@@ -515,7 +515,7 @@ static bool parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 		   timestring(debug_ctx(),
 			      convert_timespec_to_time_t(
 				      lck->changed_write_time)),
-		   (unsigned int)data->u.s.delete_token_size,
+		   (unsigned int)data.u.s.delete_token_size,
 		   lck->num_share_modes));
 
 	if ((lck->num_share_modes < 0) || (lck->num_share_modes > 1000000)) {
@@ -535,7 +535,8 @@ static bool parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 		}
 				  
 		lck->share_modes = (struct share_mode_entry *)
-			TALLOC_MEMDUP(lck, dbuf.dptr+sizeof(*data),
+			TALLOC_MEMDUP(lck,
+				      dbuf.dptr+sizeof(struct locking_data),
 				      lck->num_share_modes *
 				      sizeof(struct share_mode_entry));
 
@@ -545,15 +546,15 @@ static bool parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 	}
 
 	/* Get any delete token. */
-	if (data->u.s.delete_token_size) {
-		uint8 *p = dbuf.dptr + sizeof(*data) +
+	if (data.u.s.delete_token_size) {
+		uint8 *p = dbuf.dptr + sizeof(struct locking_data) +
 				(lck->num_share_modes *
 				sizeof(struct share_mode_entry));
 
-		if ((data->u.s.delete_token_size < sizeof(uid_t) + sizeof(gid_t)) ||
-				((data->u.s.delete_token_size - sizeof(uid_t)) % sizeof(gid_t)) != 0) {
+		if ((data.u.s.delete_token_size < sizeof(uid_t) + sizeof(gid_t)) ||
+				((data.u.s.delete_token_size - sizeof(uid_t)) % sizeof(gid_t)) != 0) {
 			DEBUG(0, ("parse_share_modes: invalid token size %d\n",
-				data->u.s.delete_token_size));
+				data.u.s.delete_token_size));
 			smb_panic("parse_share_modes: invalid token size");
 		}
 
@@ -569,8 +570,8 @@ static bool parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 		p += sizeof(gid_t);
 
 		/* Any supplementary groups ? */
-		lck->delete_token->ngroups = (data->u.s.delete_token_size > (sizeof(uid_t) + sizeof(gid_t))) ?
-					((data->u.s.delete_token_size -
+		lck->delete_token->ngroups = (data.u.s.delete_token_size > (sizeof(uid_t) + sizeof(gid_t))) ?
+					((data.u.s.delete_token_size -
 						(sizeof(uid_t) + sizeof(gid_t)))/sizeof(gid_t)) : 0;
 
 		if (lck->delete_token->ngroups) {
@@ -592,13 +593,13 @@ static bool parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 	}
 
 	/* Save off the associated service path and filename. */
-	lck->servicepath = (const char *)dbuf.dptr + sizeof(*data) +
+	lck->servicepath = (const char *)dbuf.dptr + sizeof(struct locking_data) +
 		(lck->num_share_modes *	sizeof(struct share_mode_entry)) +
-		data->u.s.delete_token_size;
+		data.u.s.delete_token_size;
 
-	lck->filename = (const char *)dbuf.dptr + sizeof(*data) +
+	lck->filename = (const char *)dbuf.dptr + sizeof(struct locking_data) +
 		(lck->num_share_modes *	sizeof(struct share_mode_entry)) +
-		data->u.s.delete_token_size +
+		data.u.s.delete_token_size +
 		strlen(lck->servicepath) + 1;
 
 	/*
