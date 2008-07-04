@@ -125,7 +125,7 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb)
 	struct fd_event *fde;
 
 	h = talloc_zero(ctdb, struct ctdb_freeze_handle);
-	CTDB_NO_MEMORY_VOID(ctdb, h);
+	CTDB_NO_MEMORY_NULL(ctdb, h);
 
 	h->ctdb = ctdb;
 

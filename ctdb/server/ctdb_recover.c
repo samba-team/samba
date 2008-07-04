@@ -74,7 +74,7 @@ ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA inda
 
 	len = offsetof(struct ctdb_vnn_map_wire, map) + sizeof(uint32_t)*ctdb->vnn_map->size;
 	map = talloc_size(outdata, len);
-	CTDB_NO_MEMORY_VOID(ctdb, map);
+	CTDB_NO_MEMORY(ctdb, map);
 
 	map->generation = ctdb->vnn_map->generation;
 	map->size = ctdb->vnn_map->size;

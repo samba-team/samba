@@ -25,6 +25,7 @@
 #include "lib/events/events.h"
 #include "system/network.h"
 #include "system/filesys.h"
+#include "system/locale.h"
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
 
@@ -1306,7 +1307,7 @@ int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb, struct timeval timeout, uint3
 
 	len = offsetof(struct ctdb_vnn_map_wire, map) + sizeof(uint32_t)*vnnmap->size;
 	map = talloc_size(mem_ctx, len);
-	CTDB_NO_MEMORY_VOID(ctdb, map);
+	CTDB_NO_MEMORY(ctdb, map);
 
 	map->generation = vnnmap->generation;
 	map->size = vnnmap->size;
@@ -1846,7 +1847,7 @@ static int dumpdb_fn(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, voi
 	fprintf(f, "dmaster: %u\n", h->dmaster);
 	fprintf(f, "rsn: %llu\n", (unsigned long long)h->rsn);
 
-	fprintf(f, "key(%d) = \"", key.dsize);
+	fprintf(f, "key(%u) = \"", (unsigned)key.dsize);
 	for (i=0;i<key.dsize;i++) {
 		if (isascii(key.dptr[i])) {
 			fprintf(f, "%c", key.dptr[i]);
@@ -1856,7 +1857,7 @@ static int dumpdb_fn(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, voi
 	}
 	fprintf(f, "\"\n");
 
-	fprintf(f, "data(%d) = \"", data.dsize);
+	fprintf(f, "data(%u) = \"", (unsigned)data.dsize);
 	for (i=sizeof(*h);i<data.dsize;i++) {
 		if (isascii(data.dptr[i])) {
 			fprintf(f, "%c", data.dptr[i]);
