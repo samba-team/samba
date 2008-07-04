@@ -189,7 +189,7 @@ static const char *wt_pathname =
 # endif
 
 /* BSD-like systems might want "lastlog" support. */
-/* *** Not yet implemented */
+#if 0 /* *** Not yet implemented */
 #ifndef HAVE_PUTUTLINE		/* see "pututline_my()" */
 static const char *ll_pathname =
 # if defined (_PATH_LASTLOG)	/* what other names (if any?) */
@@ -198,6 +198,7 @@ static const char *ll_pathname =
 	"" ;
 # endif	/* _PATH_LASTLOG */
 #endif	/* HAVE_PUTUTLINE */
+#endif
 
 /*
  * Get name of {u,w}tmp{,x} file.

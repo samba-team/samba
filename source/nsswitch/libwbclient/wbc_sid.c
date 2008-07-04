@@ -242,7 +242,7 @@ wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
 	char *sid_string = NULL;
 	char *domain = NULL;
 	char *name = NULL;
-	enum wbcSidType name_type;
+	enum wbcSidType name_type = WBC_SID_NAME_USE_NONE;
 
 	if (!sid) {
 		wbc_status = WBC_ERR_INVALID_PARAM;

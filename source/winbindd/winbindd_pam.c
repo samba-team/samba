@@ -1179,6 +1179,18 @@ done:
 	return result;
 }
 
+typedef	NTSTATUS (*netlogon_fn_t)(struct rpc_pipe_client *cli,
+				  TALLOC_CTX *mem_ctx,
+				  uint32 logon_parameters,
+				  const char *server,
+				  const char *username,
+				  const char *domain,
+				  const char *workstation,
+				  const uint8 chal[8],
+				  DATA_BLOB lm_response,
+				  DATA_BLOB nt_response,
+				  struct netr_SamInfo3 **info3);
+
 NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 					 struct winbindd_cli_state *state,
 					 struct netr_SamInfo3 **info3)
@@ -1285,17 +1297,7 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 	/* check authentication loop */
 
 	do {
-		NTSTATUS (*logon_fn)(struct rpc_pipe_client *cli,
-				     TALLOC_CTX *mem_ctx,
-				     uint32 logon_parameters,
-				     const char *server,
-				     const char *username,
-				     const char *ldomain,
-				     const char *workstation,
-				     const uint8 lchal[8],
-				     DATA_BLOB lm_response,
-				     DATA_BLOB nt_response,
-				     struct netr_SamInfo3 **linfo3);
+		netlogon_fn_t logon_fn;
 
 		ZERO_STRUCTP(my_info3);
 		retry = False;
@@ -1863,17 +1865,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	}
 
 	do {
-		NTSTATUS (*logon_fn)(struct rpc_pipe_client *cli,
-				     TALLOC_CTX *mem_ctx,
-				     uint32 logon_parameters,
-				     const char *server,
-				     const char *username,
-				     const char *ldomain,
-				     const char *lworkstation,
-				     const uint8 lchal[8],
-				     DATA_BLOB lm_response,
-				     DATA_BLOB nt_response,
-				     struct netr_SamInfo3 **linfo3);
+		netlogon_fn_t logon_fn;
 
 		retry = False;
 
