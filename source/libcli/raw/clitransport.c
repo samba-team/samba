@@ -480,8 +480,22 @@ async:
 	/* if this request has an async handler then call that to
 	   notify that the reply has been received. This might destroy
 	   the request so it must happen last */
-	DLIST_REMOVE(transport->pending_recv, req);
+
 	req->state = SMBCLI_REQUEST_DONE;
+
+	if (req->recv_helper.fn) {
+		/*
+		 * let the recv helper decide in
+		 * what state the request really is
+		 */
+		req->state = req->recv_helper.fn(req);
+
+		/* if more parts are needed, wait for them */
+		if (req->state <= SMBCLI_REQUEST_RECV) {
+			return NT_STATUS_OK;
+		}
+	}
+	DLIST_REMOVE(transport->pending_recv, req);
 	if (req->async.fn) {
 		req->async.fn(req);
 	}
