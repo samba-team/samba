@@ -884,6 +884,13 @@ int ctdb_control_recv(struct ctdb_context *ctdb,
 {
 	TALLOC_CTX *tmp_ctx;
 
+	if (status != NULL) {
+		*status = -1;
+	}
+	if (errormsg != NULL) {
+		*errormsg = NULL;
+	}
+
 	if (state == NULL) {
 		return -1;
 	}
