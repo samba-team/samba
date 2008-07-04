@@ -85,6 +85,9 @@ static void ctdb_freeze_lock_handler(struct event_context *ev, struct fd_event *
 
 	if (h->ctdb->freeze_mode == CTDB_FREEZE_FROZEN) {
 		DEBUG(DEBUG_INFO,("freeze child died - unfreezing\n"));
+		if (h->ctdb->freeze_handle == h) {
+			h->ctdb->freeze_handle = NULL;
+		}
 		talloc_free(h);
 		return;
 	}
