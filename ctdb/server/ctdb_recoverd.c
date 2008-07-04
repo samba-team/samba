@@ -1105,6 +1105,7 @@ static struct tdb_wrap *create_recdb(struct ctdb_context *ctdb, TALLOC_CTX *mem_
 {
 	char *name;
 	struct tdb_wrap *recdb;
+	unsigned tdb_flags;
 
 	/* open up the temporary recovery database */
 	name = talloc_asprintf(mem_ctx, "%s/recdb.tdb", ctdb->db_directory);
@@ -1112,8 +1113,14 @@ static struct tdb_wrap *create_recdb(struct ctdb_context *ctdb, TALLOC_CTX *mem_
 		return NULL;
 	}
 	unlink(name);
+
+	tdb_flags = TDB_NOLOCK;
+	if (!ctdb->do_setsched) {
+		tdb_flags |= TDB_NOMMAP;
+	}
+
 	recdb = tdb_wrap_open(mem_ctx, name, ctdb->tunable.database_hash_size, 
-			      TDB_NOLOCK, O_RDWR|O_CREAT|O_EXCL, 0600);
+			      tdb_flags, O_RDWR|O_CREAT|O_EXCL, 0600);
 	if (recdb == NULL) {
 		DEBUG(DEBUG_CRIT,(__location__ " Failed to create temp recovery database '%s'\n", name));
 	}

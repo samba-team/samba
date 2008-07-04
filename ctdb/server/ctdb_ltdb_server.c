@@ -197,6 +197,7 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, boo
 	struct ctdb_db_context *ctdb_db, *tmp_db;
 	int ret;
 	struct TDB_DATA key;
+	unsigned tdb_flags;
 
 	ctdb_db = talloc_zero(ctdb, struct ctdb_db_context);
 	CTDB_NO_MEMORY(ctdb, ctdb_db);
@@ -244,9 +245,14 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, boo
 					   persistent?ctdb->db_directory_persistent:ctdb->db_directory, 
 					   db_name, ctdb->pnn);
 
+	tdb_flags = persistent? TDB_DEFAULT : TDB_CLEAR_IF_FIRST | TDB_NOSYNC;
+	if (!ctdb->do_setsched) {
+		tdb_flags |= TDB_NOMMAP;
+	}
+
 	ctdb_db->ltdb = tdb_wrap_open(ctdb, ctdb_db->db_path, 
 				      ctdb->tunable.database_hash_size, 
-				      persistent? TDB_DEFAULT : TDB_CLEAR_IF_FIRST | TDB_NOSYNC, 
+				      tdb_flags, 
 				      O_CREAT|O_RDWR, 0666);
 	if (ctdb_db->ltdb == NULL) {
 		DEBUG(DEBUG_CRIT,("Failed to open tdb '%s'\n", ctdb_db->db_path));
