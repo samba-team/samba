@@ -571,6 +571,7 @@ static struct {
 	{ SMB_VFS_OP_PWRITE,	"pwrite" },
 	{ SMB_VFS_OP_LSEEK,	"lseek" },
 	{ SMB_VFS_OP_SENDFILE,	"sendfile" },
+	{ SMB_VFS_OP_RECVFILE,  "recvfile" },
 	{ SMB_VFS_OP_RENAME,	"rename" },
 	{ SMB_VFS_OP_FSYNC,	"fsync" },
 	{ SMB_VFS_OP_STAT,	"stat" },
