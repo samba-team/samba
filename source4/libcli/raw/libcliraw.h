@@ -231,6 +231,14 @@ struct smbcli_request {
 	struct smbcli_session *session;
 	struct smbcli_tree *tree;
 
+	/* a receive helper, smbcli_transport_finish_recv will not call
+	   req->async.fn callback handler unless the recv_helper returns
+	   a value > SMBCLI_REQUEST_RECV. */
+	struct {
+		enum smbcli_request_state (*fn)(struct smbcli_request *);
+		void *private_data;
+	} recv_helper;
+
 	/* the flags2 from the SMB request, in raw form (host byte
 	   order). Used to parse strings */
 	uint16_t flags2;
