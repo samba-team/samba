@@ -2258,7 +2258,7 @@ struct smb_nttrans {
 		uint8_t  max_setup;
 		uint32_t max_param;
 		uint32_t max_data;
-		uint32_t setup_count;
+		uint8_t setup_count;
 		uint16_t function;
 		uint8_t  *setup;
 		DATA_BLOB params;
