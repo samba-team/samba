@@ -45,8 +45,8 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -O0 -D_GNU_SOURCE -DCTDB_VERS=\"%{version}-%{relea
 	--mandir=%{_mandir} \
 	--localstatedir="/var"
 
-make showflags
-make   
+make docdir=%{_docdir} showflags
+make docdir=%{_docdir}
 
 %install
 # Clean up in case there is trash left from a previous build
@@ -56,7 +56,7 @@ rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/init.d
 
-make DESTDIR=$RPM_BUILD_ROOT install
+make DESTDIR=$RPM_BUILD_ROOT docdir=%{_docdir} install
 
 install -m644 config/ctdb.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/ctdb
 install -m755 config/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
