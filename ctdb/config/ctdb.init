@@ -14,6 +14,7 @@
 # Required-Start:      $network
 # Required-Stop:
 # Default-Stop:
+# Default-Start:       3 5
 # Short-Description:   start and stop ctdb service
 # Description:         initscript for the ctdb service
 ### END INIT INFO
