@@ -1772,6 +1772,13 @@ $(LIBNETAPI_STATIC_TARGET): $(BINARY_PREREQS) $(LIBNETAPI_OBJ1)
 
 libnetapi: $(LIBNETAPI)
 
+cleanlibnetapi::
+	-rm -f \
+		$(LIBNETAPI_SYMS) \
+		$(LIBNETAPI_STATIC_TARGET) \
+		$(LIBNETAPI_SHARED_TARGET) \
+		$(LIBNETAPI_SHARED_TARGET_SONAME)
+
 installlibnetapi:: installdirs libnetapi
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBNETAPI_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
@@ -2402,7 +2409,7 @@ uninstallpammodules::
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
-clean:: delheaders cleanlibtalloc cleanlibtdb
+clean:: delheaders cleanlibtalloc cleanlibtdb cleanlibnetapi
 	-rm -f $(PRECOMPILED_HEADER)
 	-rm -f core */*~ *~ \
 		*/*.o */*/*.o */*/*/*.o \
@@ -2411,10 +2418,10 @@ clean:: delheaders cleanlibtalloc cleanlibtdb
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) \
 		$(LIBSMBCLIENT) $(LIBADDNS) \
-		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBNETAPI) \
+		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) \
 		bin/libwbclient.so.0 bin/timelimit \
 		.headers.stamp */src/*.o proto_exists \
-		$(LIBWBCLIENT_SYMS) $(LIBNETAPI_SYMS)
+		$(LIBWBCLIENT_SYMS)
 	-rm -rf t_dir
 
 # Making this target will just make sure that the prototype files
