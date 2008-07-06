@@ -67,7 +67,25 @@ struct ctdb_freeze_handle {
  */	
 static int ctdb_freeze_handle_destructor(struct ctdb_freeze_handle *h)
 {
-	h->ctdb->freeze_mode = CTDB_FREEZE_NONE;
+	struct ctdb_context *ctdb = h->ctdb;
+	struct ctdb_db_context *ctdb_db;
+
+	/* cancel any pending transactions */
+	if (ctdb->freeze_handle && ctdb->freeze_handle->transaction_started) {
+		for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
+			tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
+			if (tdb_transaction_cancel(ctdb_db->ltdb->tdb) != 0) {
+				DEBUG(DEBUG_ERR,(__location__ " Failed to cancel transaction for db '%s'\n",
+					 ctdb_db->db_name));
+			}
+			tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
+		}
+		ctdb->freeze_handle->transaction_started = false;
+	}
+
+	ctdb->freeze_mode = CTDB_FREEZE_NONE;
+	ctdb->freeze_handle = NULL;
+
 	kill(h->child, SIGKILL);
 	waitpid(h->child, NULL, 0);
 	return 0;

@@ -1375,7 +1375,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	/* set recovery mode to active on all nodes */
 	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_ACTIVE);
-	if (ret!=0) {
+	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to active on cluster\n"));
 		return -1;
 	}
@@ -1515,7 +1515,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	/* disable recovery mode */
 	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_NORMAL);
-	if (ret!=0) {
+	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to normal on cluster\n"));
 		return -1;
 	}
@@ -1846,7 +1846,7 @@ static void force_election(struct ctdb_recoverd *rec, uint32_t pnn,
 
 	/* set all nodes to recovery mode to stop all internode traffic */
 	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_ACTIVE);
-	if (ret!=0) {
+	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to active on cluster\n"));
 		return;
 	}
