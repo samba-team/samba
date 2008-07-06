@@ -27,12 +27,12 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-static bool fillup_pw_field(const char *lp_template, 
-			    const char *username, 
+static bool fillup_pw_field(const char *lp_template,
+			    const char *username,
 			    const char *domname,
 			    uid_t uid,
 			    gid_t gid,
-			    const char *in, 
+			    const char *in,
 			    fstring out)
 {
 	char *templ;
@@ -40,43 +40,43 @@ static bool fillup_pw_field(const char *lp_template,
 	if (out == NULL)
 		return False;
 
-	/* The substitution of %U and %D in the 'template 
+	/* The substitution of %U and %D in the 'template
 	   homedir' is done by talloc_sub_specified() below.
 	   If we have an in string (which means the value has already
 	   been set in the nss_info backend), then use that.
 	   Otherwise use the template value passed in. */
 
 	if ( in && !strequal(in,"") && lp_security() == SEC_ADS ) {
-		templ = talloc_sub_specified(NULL, in, 
+		templ = talloc_sub_specified(NULL, in,
 					     username, domname,
 				     uid, gid);
 	} else {
-		templ = talloc_sub_specified(NULL, lp_template, 
+		templ = talloc_sub_specified(NULL, lp_template,
 					     username, domname,
-					     uid, gid);		
+					     uid, gid);
 	}
-		
+
 	if (!templ)
 		return False;
 
 	safe_strcpy(out, templ, sizeof(fstring) - 1);
 	TALLOC_FREE(templ);
-		
+
 	return True;
-	
+
 }
 /* Fill a pwent structure with information we have obtained */
 
-static bool winbindd_fill_pwent(char *dom_name, char *user_name, 
+static bool winbindd_fill_pwent(char *dom_name, char *user_name,
 				DOM_SID *user_sid, DOM_SID *group_sid,
 				char *full_name, char *homedir, char *shell,
 				struct winbindd_pw *pw)
 {
 	fstring output_username;
-	
+
 	if (!pw || !dom_name || !user_name)
 		return False;
-	
+
 	/* Resolve the uid number */
 
 	if (!NT_STATUS_IS_OK(idmap_sid_to_uid(user_sid, &pw->pw_uid))) {
@@ -84,8 +84,8 @@ static bool winbindd_fill_pwent(char *dom_name, char *user_name,
 			  sid_string_dbg(user_sid)));
 		return False;
 	}
-	
-	/* Resolve the gid number */   
+
+	/* Resolve the gid number */
 
 	if (!NT_STATUS_IS_OK(idmap_sid_to_gid(group_sid, &pw->pw_gid))) {
 		DEBUG(1, ("error getting group id for sid %s\n",
@@ -97,21 +97,21 @@ static bool winbindd_fill_pwent(char *dom_name, char *user_name,
 
 	/* Username */
 
-	fill_domain_username(output_username, dom_name, user_name, True); 
+	fill_domain_username(output_username, dom_name, user_name, True);
 
 	safe_strcpy(pw->pw_name, output_username, sizeof(pw->pw_name) - 1);
-	
+
 	/* Full name (gecos) */
-	
+
 	safe_strcpy(pw->pw_gecos, full_name, sizeof(pw->pw_gecos) - 1);
 
 	/* Home directory and shell */
-	
-	if (!fillup_pw_field(lp_template_homedir(), user_name, dom_name, 
+
+	if (!fillup_pw_field(lp_template_homedir(), user_name, dom_name,
 			     pw->pw_uid, pw->pw_gid, homedir, pw->pw_dir))
 		return False;
 
-	if (!fillup_pw_field(lp_template_shell(), user_name, dom_name, 
+	if (!fillup_pw_field(lp_template_shell(), user_name, dom_name,
 			     pw->pw_uid, pw->pw_gid, shell, pw->pw_shell))
 		return False;
 
@@ -135,7 +135,7 @@ enum winbindd_result winbindd_dual_userinfo(struct winbindd_domain *domain,
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
 
-	DEBUG(3, ("[%5lu]: lookupsid %s\n", (unsigned long)state->pid, 
+	DEBUG(3, ("[%5lu]: lookupsid %s\n", (unsigned long)state->pid,
 		  state->request.data.sid));
 
 	if (!string_to_sid(&sid, state->request.data.sid)) {
@@ -155,7 +155,7 @@ enum winbindd_result winbindd_dual_userinfo(struct winbindd_domain *domain,
 	fstrcpy(state->response.data.user_info.full_name, user_info.full_name);
 	fstrcpy(state->response.data.user_info.homedir, user_info.homedir);
 	fstrcpy(state->response.data.user_info.shell, user_info.shell);
-	state->response.data.user_info.primary_gid = user_info.primary_gid;	
+	state->response.data.user_info.primary_gid = user_info.primary_gid;
 	if (!sid_peek_check_rid(&domain->sid, &user_info.group_sid,
 				&state->response.data.user_info.group_rid)) {
 		DEBUG(1, ("Could not extract group rid out of %s\n",
@@ -181,7 +181,7 @@ struct getpwsid_state {
 
 static void getpwsid_queryuser_recv(void *private_data, bool success,
 				    const char *acct_name,
-				    const char *full_name, 
+				    const char *full_name,
 				    const char *homedir,
 				    const char *shell,
 				    uint32 gid,
@@ -217,10 +217,10 @@ static void winbindd_getpwsid(struct winbindd_cli_state *state,
  error:
 	request_error(state);
 }
-	
+
 static void getpwsid_queryuser_recv(void *private_data, bool success,
 				    const char *acct_name,
-				    const char *full_name, 
+				    const char *full_name,
 				    const char *homedir,
 				    const char *shell,
 				    uint32 gid,
@@ -239,43 +239,43 @@ static void getpwsid_queryuser_recv(void *private_data, bool success,
 
 	if ( acct_name && *acct_name ) {
 	fstrcpy( username, acct_name );
-	} else {		
+	} else {
 		char *domain_name = NULL;
 		enum lsa_SidType type;
 		char *user_name = NULL;
 		struct winbindd_domain *domain = NULL;
-		
+
 		domain = find_lookup_domain_from_sid(&s->user_sid);
 		if (domain == NULL) {
 			DEBUG(5, ("find_lookup_domain_from_sid(%s) failed\n",
 				  sid_string_dbg(&s->user_sid)));
 			request_error(s->state);
-			return;			
+			return;
 		}
 		winbindd_lookup_name_by_sid(s->state->mem_ctx, domain,
 					    &s->user_sid, &domain_name,
-					    &user_name, &type );		
+					    &user_name, &type );
 
 		/* If this still fails we ar4e done.  Just error out */
 		if ( !user_name ) {
 			DEBUG(5,("Could not obtain a name for SID %s\n",
 				 sid_string_dbg(&s->user_sid)));
 			request_error(s->state);
-			return;			
+			return;
 		}
 
-		fstrcpy( username, user_name );		
+		fstrcpy( username, user_name );
 	}
 
 	strlower_m( username );
 	s->username = talloc_strdup(s->state->mem_ctx, username);
 
 	ws_name_replace( s->username, WB_REPLACE_CHAR );
-	 
+
 	s->fullname = talloc_strdup(s->state->mem_ctx, full_name);
 	s->homedir = talloc_strdup(s->state->mem_ctx, homedir);
 	s->shell = talloc_strdup(s->state->mem_ctx, shell);
-	s->gid = gid;	
+	s->gid = gid;
 	sid_copy(&s->group_sid, &s->domain->sid);
 	sid_append_rid(&s->group_sid, group_rid);
 
@@ -328,18 +328,21 @@ static void getpwsid_sid2gid_recv(void *private_data, bool success, gid_t gid)
 	pw = &s->state->response.data.pw;
 	pw->pw_uid = s->uid;
 	pw->pw_gid = s->gid;
-	fill_domain_username(output_username, s->domain->name, s->username, True); 
+	fill_domain_username(output_username, s->domain->name,
+			     s->username, True);
 	safe_strcpy(pw->pw_name, output_username, sizeof(pw->pw_name) - 1);
 	safe_strcpy(pw->pw_gecos, s->fullname, sizeof(pw->pw_gecos) - 1);
 
-	if (!fillup_pw_field(lp_template_homedir(), s->username, s->domain->name, 
-			     pw->pw_uid, pw->pw_gid, s->homedir, pw->pw_dir)) {
+	if (!fillup_pw_field(lp_template_homedir(), s->username,
+			     s->domain->name, pw->pw_uid, pw->pw_gid,
+			     s->homedir, pw->pw_dir)) {
 		DEBUG(5, ("Could not compose homedir\n"));
 		goto failed;
 	}
 
-	if (!fillup_pw_field(lp_template_shell(), s->username, s->domain->name, 
-			     pw->pw_uid, pw->pw_gid, s->shell, pw->pw_shell)) {
+	if (!fillup_pw_field(lp_template_shell(), s->username,
+			     s->domain->name, pw->pw_uid, pw->pw_gid,
+			     s->shell, pw->pw_shell)) {
 		DEBUG(5, ("Could not compose shell\n"));
 		goto failed;
 	}
@@ -412,7 +415,7 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 	/* Get rid and name type from name.  The following costs 1 packet */
 
 	winbindd_lookupname_async(state->mem_ctx, domname, username,
-				  getpwnam_name2sid_recv, WINBINDD_GETPWNAM, 
+				  getpwnam_name2sid_recv, WINBINDD_GETPWNAM,
 				  state);
 }
 
@@ -421,26 +424,24 @@ static void getpwnam_name2sid_recv(void *private_data, bool success,
 {
 	struct winbindd_cli_state *state =
 		(struct winbindd_cli_state *)private_data;
-	fstring domname, username;	
+	fstring domname, username;
+	char *domuser = state->request.data.username;
 
 	if (!success) {
-		DEBUG(5, ("Could not lookup name for user %s\n",
-			  state->request.data.username));
+		DEBUG(5, ("Could not lookup name for user %s\n", domuser));
 		request_error(state);
 		return;
 	}
 
 	if ((type != SID_NAME_USER) && (type != SID_NAME_COMPUTER)) {
-		DEBUG(5, ("%s is not a user\n", state->request.data.username));
+		DEBUG(5, ("%s is not a user\n", domuser));
 		request_error(state);
 		return;
 	}
 
-	if ( parse_domain_user(state->request.data.username, domname, username) ) {
-		check_domain_trusted( domname, sid );	
+	if (parse_domain_user(domuser, domname, username)) {
+		check_domain_trusted(domname, sid);
 	}
-
-
 
 	winbindd_getpwsid(state, sid);
 }
@@ -457,7 +458,7 @@ static void getpwuid_recv(void *private_data, bool success, const char *sid)
 		request_error(state);
 		return;
 	}
-	
+
 	DEBUG(10,("uid2sid_recv: uid %lu has sid %s\n",
 		  (unsigned long)(state->request.data.uid), sid));
 
@@ -468,12 +469,16 @@ static void getpwuid_recv(void *private_data, bool success, const char *sid)
 /* Return a password structure given a uid number */
 void winbindd_getpwuid(struct winbindd_cli_state *state)
 {
-	DEBUG(3, ("[%5lu]: getpwuid %lu\n", (unsigned long)state->pid, 
-		  (unsigned long)state->request.data.uid));
+	uid_t uid = state->request.data.uid;
+
+	DEBUG(3, ("[%5lu]: getpwuid %lu\n",
+		  (unsigned long)state->pid,
+		  (unsigned long)uid));
 
 	/* always query idmap via the async interface */
-	/* if this turns to be too slow we will add here a direct query to the cache */
-	winbindd_uid2sid_async(state->mem_ctx, state->request.data.uid, getpwuid_recv, state);
+	/* if this turns to be too slow we will add here
+	 * a direct query to the cache */
+	winbindd_uid2sid_async(state->mem_ctx, uid, getpwuid_recv, state);
 }
 
 /*
@@ -485,66 +490,53 @@ void winbindd_getpwuid(struct winbindd_cli_state *state)
 static bool winbindd_setpwent_internal(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
-        
+
 	DEBUG(3, ("[%5lu]: setpwent\n", (unsigned long)state->pid));
-        
+
 	/* Check user has enabled this */
-        
+
 	if (!lp_winbind_enum_users()) {
 		return False;
 	}
 
 	/* Free old static data if it exists */
-        
+
 	if (state->getpwent_state != NULL) {
 		free_getent_state(state->getpwent_state);
 		state->getpwent_state = NULL;
 	}
 
-#if 0	/* JERRY */
-	/* add any local users we have */
-	        
-	if ( (domain_state = (struct getent_state *)malloc(sizeof(struct getent_state))) == NULL )
-		return False;
-                
-	ZERO_STRUCTP(domain_state);
-
-	/* Add to list of open domains */
-                
-	DLIST_ADD(state->getpwent_state, domain_state);
-#endif
-        
 	/* Create sam pipes for each domain we know about */
-        
+
 	for(domain = domain_list(); domain != NULL; domain = domain->next) {
 		struct getent_state *domain_state;
-                
-		
-		/* don't add our domaina if we are a PDC or if we 
+
+
+		/* don't add our domaina if we are a PDC or if we
 		   are a member of a Samba domain */
-		
-		if ( (IS_DC || lp_winbind_trusted_domains_only())
-			&& strequal(domain->name, lp_workgroup()) )
-		{
+
+		if ((IS_DC || lp_winbind_trusted_domains_only())
+			&& strequal(domain->name, lp_workgroup())) {
 			continue;
 		}
-						
+
 		/* Create a state record for this domain */
-                
-		if ((domain_state = SMB_MALLOC_P(struct getent_state)) == NULL) {
+
+		domain_state = SMB_MALLOC_P(struct getent_state);
+		if (!domain_state) {
 			DEBUG(0, ("malloc failed\n"));
 			return False;
 		}
-                
+
 		ZERO_STRUCTP(domain_state);
 
 		fstrcpy(domain_state->domain_name, domain->name);
 
 		/* Add to list of open domains */
-                
+
 		DLIST_ADD(state->getpwent_state, domain_state);
 	}
-        
+
 	state->getpwent_initialized = True;
 	return True;
 }
