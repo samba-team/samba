@@ -142,7 +142,6 @@ CODEPAGEDIR = @codepagedir@
 # the directory where pid files go
 PIDDIR = @piddir@
 
-LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 LIBADDNS=bin/libaddns.a @LIBADDNS_SHARED@
 
 FLAGS1 = $(CFLAGS) @FLAGS1@ @SAMBA_CPPFLAGS@ $(CPPFLAGS)
@@ -751,8 +750,6 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
 		  $(LIBREPLACE_OBJ) @BUILD_INIPARSER@
-
-LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o @LIBTDB_STATIC@
 
 # This shared library is intended for linking with unit test programs
 # to test Samba internals.  It's called libbigballofmud.so to
@@ -1882,7 +1879,9 @@ uninstallclientlib:: uninstalllibsmbclient
 #
 #-------------------------------------------------------------------
 
-libsmbsharemodes: $(LIBSMBSHAREMODES)
+LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o @LIBTDB_STATIC@
+
+LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 
 bin/libsmbsharemodes.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ) @LIBTALLOC_SHARED@ @LIBTDB_SHARED@
 	@echo Linking shared library $@
@@ -1894,6 +1893,18 @@ bin/libsmbsharemodes.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ) @LIBT
 bin/libsmbsharemodes.a: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBSMBSHAREMODES_OBJ)
+
+libsmbsharemodes: $(LIBSMBSHAREMODES)
+
+installlibsmbsharemodes:: installdirs libsmbsharemodes
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
+	-$(INSTALLLIBCMD_SH) bin/libsmbsharemodes.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
+	-$(INSTALLLIBCMD_A) bin/libsmbsharemodes.a $(DESTDIR)$(LIBDIR)
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/include/smb_share_modes.h $(DESTDIR)${prefix}/include
+
+uninstalllibsmbsharemodes::
+	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libsmbsharemodes.@SHLIBEXT@
+	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libsmbsharemodes.a
 
 
 #-------------------------------------------------------------------
@@ -2365,12 +2376,6 @@ installmsg:: installdirs
 installswat:: installdirs installmsg
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR) $(SWATDIR) $(srcdir)
 
-installlibsmbsharemodes:: installdirs libsmbsharemodes
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
-	-$(INSTALLLIBCMD_SH) bin/libsmbsharemodes.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
-	-$(INSTALLLIBCMD_A) bin/libsmbsharemodes.a $(DESTDIR)$(LIBDIR)
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/include/smb_share_modes.h $(DESTDIR)${prefix}/include
-
 installlibaddns:: installdirs libaddns
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libaddns.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
@@ -2445,10 +2450,6 @@ uninstallmsg::
 
 uninstallswat:: uninstallmsg
 	@$(SHELL) $(srcdir)/script/uninstallswat.sh $(DESTDIR) $(SWATDIR) $(srcdir)
-
-uninstalllibsmbsharemodes::
-	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libsmbsharemodes.@SHLIBEXT@
-	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libsmbsharemodes.a
 
 uninstalllibaddns::
 	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libaddns.@SHLIBEXT@
