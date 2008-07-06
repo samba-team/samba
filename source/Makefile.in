@@ -1591,7 +1591,20 @@ bin/ldbdel: $(BINARY_PREREQS) $(LDBDEL_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIB
 		$(LIBS) $(POPT_LIBS) $(LDAP_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(WINBIND_LIBS)
 
+
+#####################################################################
+#
+# libraries
+#
+#####################################################################
+
 MKSYMS_SH = $(srcdir)/script/mksyms.sh
+
+#-------------------------------------------------------------------
+#
+# libtalloc
+#
+#-------------------------------------------------------------------
 
 $(LIBTALLOC_SYMS): $(LIBTALLOC_HEADERS)
 	@$(MKSYMS_SH) $(AWK) $@ $(LIBTALLOC_HEADERS)
