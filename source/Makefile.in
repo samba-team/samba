@@ -159,12 +159,6 @@ LIBWBCLIENT=@LIBWBCLIENT_STATIC@ @LIBWBCLIENT_SHARED@
 LIBWBCLIENT_SYMS=$(srcdir)/exports/libwbclient.@SYMSEXT@
 LIBWBCLIENT_HEADERS=$(srcdir)/nsswitch/libwbclient/wbclient.h
 
-LIBNETAPI_SHARED_TARGET=@LIBNETAPI_SHARED_TARGET@
-LIBNETAPI_STATIC_TARGET=@LIBNETAPI_STATIC_TARGET@
-LIBNETAPI=$(LIBNETAPI_STATIC_TARGET) @LIBNETAPI_SHARED@
-LIBNETAPI_SYMS=$(srcdir)/exports/libnetapi.@SYMSEXT@
-LIBNETAPI_HEADERS=$(srcdir)/lib/netapi/netapi.h
-
 FLAGS1 = $(CFLAGS) @FLAGS1@ @SAMBA_CPPFLAGS@ $(CPPFLAGS)
 FLAGS2 =
 FLAGS3 =
@@ -829,24 +823,6 @@ CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
              $(READLINE_OBJ) $(POPT_LIB_OBJ) \
              $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ) \
 	     $(DISPLAY_SEC_OBJ) 
-
-LIBNETAPI_OBJ1 = lib/netapi/netapi.o \
-		 lib/netapi/cm.o \
-		 librpc/gen_ndr/ndr_libnetapi.o \
-		 lib/netapi/libnetapi.o \
-		 lib/netapi/joindomain.o \
-		 lib/netapi/serverinfo.o \
-		 lib/netapi/getdc.o \
-		 lib/netapi/user.o
-
-LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ1) $(LIBNET_OBJ) \
-		 $(LIBSMBCONF_OBJ) \
-		 $(REG_SMBCONF_OBJ) \
-		 $(PARAM_WITHOUT_REG_OBJ) $(LIB_NONSMBD_OBJ) \
-		 $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
-		 $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) \
-		 $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ) \
-		 $(DCUTIL_OBJ) $(LIBADS_OBJ) $(PRIVILEGES_BASIC_OBJ)
 
 LIBSMBCONF_OBJ = lib/smbconf/smbconf.o lib/smbconf/smbconf_util.o \
 		 lib/smbconf/smbconf_reg.o \
@@ -1750,7 +1726,29 @@ bin/libaddns.a: $(BINARY_PREREQS) $(LIBADDNS_OBJ0)
 #
 #-------------------------------------------------------------------
 
-libnetapi: $(LIBNETAPI)
+LIBNETAPI_OBJ1 = lib/netapi/netapi.o \
+		 lib/netapi/cm.o \
+		 librpc/gen_ndr/ndr_libnetapi.o \
+		 lib/netapi/libnetapi.o \
+		 lib/netapi/joindomain.o \
+		 lib/netapi/serverinfo.o \
+		 lib/netapi/getdc.o \
+		 lib/netapi/user.o
+
+LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ1) $(LIBNET_OBJ) \
+		 $(LIBSMBCONF_OBJ) \
+		 $(REG_SMBCONF_OBJ) \
+		 $(PARAM_WITHOUT_REG_OBJ) $(LIB_NONSMBD_OBJ) \
+		 $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
+		 $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) \
+		 $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ) \
+		 $(DCUTIL_OBJ) $(LIBADS_OBJ) $(PRIVILEGES_BASIC_OBJ)
+
+LIBNETAPI_SHARED_TARGET=@LIBNETAPI_SHARED_TARGET@
+LIBNETAPI_STATIC_TARGET=@LIBNETAPI_STATIC_TARGET@
+LIBNETAPI=$(LIBNETAPI_STATIC_TARGET) @LIBNETAPI_SHARED@
+LIBNETAPI_SYMS=$(srcdir)/exports/libnetapi.@SYMSEXT@
+LIBNETAPI_HEADERS=$(srcdir)/lib/netapi/netapi.h
 
 $(LIBNETAPI_SYMS): $(LIBNETAPI_HEADERS)
 	@$(MKSYMS_SH) $(AWK) $@ $(LIBNETAPI_HEADERS)
@@ -1766,6 +1764,15 @@ $(LIBNETAPI_SHARED_TARGET): $(BINARY_PREREQS) $(LIBNETAPI_OBJ) $(LIBNETAPI_SYMS)
 $(LIBNETAPI_STATIC_TARGET): $(BINARY_PREREQS) $(LIBNETAPI_OBJ1)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBNETAPI_OBJ1)
+
+libnetapi: $(LIBNETAPI)
+
+installlibnetapi:: installdirs libnetapi
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
+	-$(INSTALLLIBCMD_SH) $(LIBNETAPI_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
+	-$(INSTALLLIBCMD_A) $(LIBNETAPI_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/lib/netapi/netapi.h $(DESTDIR)${prefix}/include
+
 
 #-------------------------------------------------------------------
 #
@@ -2292,12 +2299,6 @@ installlibwbclient:: installdirs libwbclient
 	-$(INSTALLLIBCMD_SH) bin/libwbclient.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
 	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/nsswitch/libwbclient/wbclient.h $(DESTDIR)${prefix}/include
-
-installlibnetapi:: installdirs libnetapi
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
-	-$(INSTALLLIBCMD_SH) $(LIBNETAPI_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
-	-$(INSTALLLIBCMD_A) $(LIBNETAPI_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/lib/netapi/netapi.h $(DESTDIR)${prefix}/include
 
 installpammodules:: $(PAM_MODULES)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(PAMMODULESDIR)
