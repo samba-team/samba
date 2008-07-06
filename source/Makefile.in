@@ -149,12 +149,6 @@ CODEPAGEDIR = @codepagedir@
 # the directory where pid files go
 PIDDIR = @piddir@
 
-LIBTDB_SHARED_TARGET=@LIBTDB_SHARED_TARGET@
-LIBTDB_STATIC_TARGET=@LIBTDB_STATIC_TARGET@
-LIBTDB=$(LIBTDB_STATIC_TARGET) @LIBTDB_SHARED@
-LIBTDB_SYMS=$(srcdir)/exports/libtdb.@SYMSEXT@
-LIBTDB_HEADERS=$(srcdir)/@tdbdir@/include/tdb.h
-
 LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 LIBADDNS=bin/libaddns.a @LIBADDNS_SHARED@
@@ -249,9 +243,6 @@ MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) \
 ######################################################################
 # object file lists
 ######################################################################
-
-LIBTDB_OBJ0 = @TDB_OBJS@
-LIBTDB_OBJ = $(LIBTDB_OBJ0) $(LIBREPLACE_OBJ)
 
 TDB_OBJ = lib/util_tdb.o \
 	  lib/dbwrap.o lib/dbwrap_tdb.o \
@@ -1657,6 +1648,15 @@ uninstalllibtalloc::
 #
 #-------------------------------------------------------------------
 
+LIBTDB_OBJ0 = @TDB_OBJS@
+LIBTDB_OBJ = $(LIBTDB_OBJ0) $(LIBREPLACE_OBJ)
+
+LIBTDB_SHARED_TARGET=@LIBTDB_SHARED_TARGET@
+LIBTDB_STATIC_TARGET=@LIBTDB_STATIC_TARGET@
+LIBTDB=$(LIBTDB_STATIC_TARGET) @LIBTDB_SHARED@
+LIBTDB_SYMS=$(srcdir)/exports/libtdb.@SYMSEXT@
+LIBTDB_HEADERS=$(srcdir)/@tdbdir@/include/tdb.h
+
 libtdb: $(LIBTDB)
 
 $(LIBTDB_SYMS): $(LIBTDB_HEADERS)
@@ -1671,6 +1671,13 @@ $(LIBTDB_SHARED_TARGET): $(BINARY_PREREQS) $(LIBTDB_OBJ) $(LIBTDB_SYMS)
 $(LIBTDB_STATIC_TARGET): $(BINARY_PREREQS) $(LIBTDB_OBJ0)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBTDB_OBJ0)
+
+installlibtdb:: installdirs libtdb
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
+	-$(INSTALLLIBCMD_SH) $(LIBTDB_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
+	-$(INSTALLLIBCMD_A) $(LIBTDB_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(LIBTDB_HEADERS) $(DESTDIR)${prefix}/include
 
 
 #-------------------------------------------------------------------
@@ -2244,13 +2251,6 @@ installclientlib:: installdirs libsmbclient
 	-$(INSTALLLIBCMD_A) bin/libsmbclient.a $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
 	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/include/libsmbclient.h $(DESTDIR)${prefix}/include
-
-installlibtdb:: installdirs libtdb
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
-	-$(INSTALLLIBCMD_SH) $(LIBTDB_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
-	-$(INSTALLLIBCMD_A) $(LIBTDB_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(LIBTDB_HEADERS) $(DESTDIR)${prefix}/include
 
 installlibsmbsharemodes:: installdirs libsmbsharemodes
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
