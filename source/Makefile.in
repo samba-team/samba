@@ -1677,6 +1677,14 @@ $(LIBTDB_STATIC_TARGET): $(BINARY_PREREQS) $(LIBTDB_OBJ0)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBTDB_OBJ0)
 
+cleanlibtdb::
+	-rm -f \
+		$(LIBTDB_SYMS) \
+		$(LIBTDB_STATIC_TARGET) \
+		$(LIBTDB_SHARED_TARGET) \
+		$(LIBTDB_SHARED_TARGET_SONAME)
+
+
 installlibtdb:: installdirs libtdb
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBTDB_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
@@ -2377,7 +2385,7 @@ uninstallpammodules::
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
-clean:: delheaders cleanlibtalloc
+clean:: delheaders cleanlibtalloc cleanlibtdb
 	-rm -f $(PRECOMPILED_HEADER)
 	-rm -f core */*~ *~ \
 		*/*.o */*/*.o */*/*/*.o \
@@ -2389,7 +2397,7 @@ clean:: delheaders cleanlibtalloc
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBNETAPI) \
 		bin/libwbclient.so.0 bin/timelimit \
 		.headers.stamp */src/*.o proto_exists \
-		$(LIBWBCLIENT_SYMS) $(LIBTDB_SYMS) $(LIBNETAPI_SYMS)
+		$(LIBWBCLIENT_SYMS) $(LIBNETAPI_SYMS)
 	-rm -rf t_dir
 
 # Making this target will just make sure that the prototype files
