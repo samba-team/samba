@@ -1687,7 +1687,12 @@ cleanlibtdb::
 
 installlibtdb:: installdirs libtdb
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
-	-$(INSTALLLIBCMD_SH) $(LIBTDB_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
+	-$(INSTALLLIBCMD_SH) $(LIBTDB_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
+	@rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBTDB_SHARED_TARGET)`
+	-if test -e $(LIBTDB_SHARED_TARGET_SONAME) ; then \
+		ln -s -f `basename $(LIBTDB_SHARED_TARGET_SONAME)` \
+			$(DESTDIR)$(LIBDIR)/`basename $(LIBTDB_SHARED_TARGET)` ; \
+	fi
 	-$(INSTALLLIBCMD_A) $(LIBTDB_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
 	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(LIBTDB_HEADERS) $(DESTDIR)${prefix}/include
