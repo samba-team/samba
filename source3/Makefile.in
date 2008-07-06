@@ -1614,6 +1614,9 @@ bin/ldbdel: $(BINARY_PREREQS) $(LDBDEL_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIB
 
 MKSYMS_SH = $(srcdir)/script/mksyms.sh
 
+shlibs: $(SHLIBS)
+
+
 #-------------------------------------------------------------------
 #
 # libtalloc
@@ -1669,6 +1672,8 @@ uninstalllibtalloc::
 #
 #-------------------------------------------------------------------
 
+libtdb: $(LIBTDB)
+
 $(LIBTDB_SYMS): $(LIBTDB_HEADERS)
 	@$(MKSYMS_SH) $(AWK) $@ $(LIBTDB_HEADERS)
 
@@ -1689,6 +1694,8 @@ $(LIBTDB_STATIC_TARGET): $(BINARY_PREREQS) $(LIBTDB_OBJ0)
 #
 #-------------------------------------------------------------------
 
+libwbclient: $(LIBWBCLIENT)
+
 $(LIBWBCLIENT_SYMS): $(LIBWBCLIENT_HEADERS)
 	@$(MKSYMS_SH) $(AWK) $@ $(LIBWBCLIENT_HEADERS)
 
@@ -1708,6 +1715,8 @@ $(LIBWBCLIENT_STATIC_TARGET): $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ0) $(WBCOMMON_O
 #
 #-------------------------------------------------------------------
 
+libaddns: $(LIBADDNS)
+
 bin/libaddns.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBADDNS_OBJ) @LIBTALLOC_SHARED@
 	@echo Linking shared library $@
 	@$(SHLD_DSO) $(LIBADDNS_OBJ) $(LIBS) \
@@ -1724,6 +1733,8 @@ bin/libaddns.a: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 # libnetapi
 #
 #-------------------------------------------------------------------
+
+libnetapi: $(LIBNETAPI)
 
 $(LIBNETAPI_SYMS): $(LIBNETAPI_HEADERS)
 	@$(MKSYMS_SH) $(AWK) $@ $(LIBNETAPI_HEADERS)
@@ -1746,6 +1757,8 @@ $(LIBNETAPI_STATIC_TARGET): $(BINARY_PREREQS) $(LIBNETAPI_OBJ1)
 #
 #-------------------------------------------------------------------
 
+libsmbclient: $(LIBSMBCLIENT)
+
 bin/libsmbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ) @LIBTALLOC_SHARED@ @LIBTDB_SHARED@ @LIBWBCLIENT_SHARED@
 	@echo Linking shared library $@
 	@$(SHLD_DSO) $(LIBSMBCLIENT_OBJ) \
@@ -1763,6 +1776,8 @@ bin/libsmbclient.a: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ0)
 # libsmbsharemodes
 #
 #-------------------------------------------------------------------
+
+libsmbsharemodes: $(LIBSMBSHAREMODES)
 
 bin/libsmbsharemodes.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ) @LIBTALLOC_SHARED@ @LIBTDB_SHARED@
 	@echo Linking shared library $@
@@ -1789,14 +1804,6 @@ bin/libbigballofmud.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBBIGBALLOFMUD_OBJ) @LIBTAL
 # it can be fixed or if they just can't be called from a static
 # library.
 
-libtdb: $(LIBTDB)
-libsmbclient: $(LIBSMBCLIENT)
-libsmbsharemodes: $(LIBSMBSHAREMODES)
-libaddns: $(LIBADDNS)
-libwbclient: $(LIBWBCLIENT)
-libnetapi: $(LIBNETAPI)
-
-shlibs: $(SHLIBS)
 
 
 #####################################################################
