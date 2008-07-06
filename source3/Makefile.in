@@ -1663,6 +1663,12 @@ uninstalllibtalloc::
 	-rm -f $(DESTDIR)${prefix}/include/talloc.h
 
 
+#-------------------------------------------------------------------
+#
+# libtdb
+#
+#-------------------------------------------------------------------
+
 $(LIBTDB_SYMS): $(LIBTDB_HEADERS)
 	@$(MKSYMS_SH) $(AWK) $@ $(LIBTDB_HEADERS)
 
@@ -1675,6 +1681,13 @@ $(LIBTDB_SHARED_TARGET): $(BINARY_PREREQS) $(LIBTDB_OBJ) $(LIBTDB_SYMS)
 $(LIBTDB_STATIC_TARGET): $(BINARY_PREREQS) $(LIBTDB_OBJ0)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBTDB_OBJ0)
+
+
+#-------------------------------------------------------------------
+#
+# libwbclient
+#
+#-------------------------------------------------------------------
 
 $(LIBWBCLIENT_SYMS): $(LIBWBCLIENT_HEADERS)
 	@$(MKSYMS_SH) $(AWK) $@ $(LIBWBCLIENT_HEADERS)
@@ -1689,6 +1702,12 @@ $(LIBWBCLIENT_STATIC_TARGET): $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ0) $(WBCOMMON_O
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBWBCLIENT_OBJ0) $(WBCOMMON_OBJ)
 
+#-------------------------------------------------------------------
+#
+# libaddns
+#
+#-------------------------------------------------------------------
+
 bin/libaddns.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBADDNS_OBJ) @LIBTALLOC_SHARED@
 	@echo Linking shared library $@
 	@$(SHLD_DSO) $(LIBADDNS_OBJ) $(LIBS) \
@@ -1698,6 +1717,13 @@ bin/libaddns.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBADDNS_OBJ) @LIBTALLOC_SHARED@
 bin/libaddns.a: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBADDNS_OBJ)
+
+
+#-------------------------------------------------------------------
+#
+# libnetapi
+#
+#-------------------------------------------------------------------
 
 $(LIBNETAPI_SYMS): $(LIBNETAPI_HEADERS)
 	@$(MKSYMS_SH) $(AWK) $@ $(LIBNETAPI_HEADERS)
@@ -1714,6 +1740,12 @@ $(LIBNETAPI_STATIC_TARGET): $(BINARY_PREREQS) $(LIBNETAPI_OBJ1)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBNETAPI_OBJ1)
 
+#-------------------------------------------------------------------
+#
+# libsmbclient
+#
+#-------------------------------------------------------------------
+
 bin/libsmbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ) @LIBTALLOC_SHARED@ @LIBTDB_SHARED@ @LIBWBCLIENT_SHARED@
 	@echo Linking shared library $@
 	@$(SHLD_DSO) $(LIBSMBCLIENT_OBJ) \
@@ -1724,6 +1756,13 @@ bin/libsmbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ) @LIBTALLOC_SH
 bin/libsmbclient.a: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ0)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBSMBCLIENT_OBJ0)
+
+
+#-------------------------------------------------------------------
+#
+# libsmbsharemodes
+#
+#-------------------------------------------------------------------
 
 bin/libsmbsharemodes.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ) @LIBTALLOC_SHARED@ @LIBTDB_SHARED@
 	@echo Linking shared library $@
@@ -1758,6 +1797,13 @@ libwbclient: $(LIBWBCLIENT)
 libnetapi: $(LIBNETAPI)
 
 shlibs: $(SHLIBS)
+
+
+#####################################################################
+#
+# shared modules
+#
+#####################################################################
 
 # Linker command to link a RPC, VFS, AUTH, CHARSET or PASSDB module.
 SHLD_MODULE = $(SHLD) $(LDSHFLAGS) $(MODULE_EXPORTS) \
