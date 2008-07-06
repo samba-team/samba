@@ -1635,8 +1635,6 @@ LIBTDB=$(LIBTDB_STATIC_TARGET) @LIBTDB_SHARED@
 LIBTDB_SYMS=$(srcdir)/exports/libtdb.@SYMSEXT@
 LIBTDB_HEADERS=$(srcdir)/@tdbdir@/include/tdb.h
 
-libtdb: $(LIBTDB)
-
 $(LIBTDB_SYMS): $(LIBTDB_HEADERS)
 	@$(MKSYMS_SH) $(AWK) $@ $(LIBTDB_HEADERS)
 
@@ -1652,6 +1650,8 @@ $(LIBTDB_SHARED_TARGET): $(LIBTDB_SHARED_TARGET_SONAME)
 $(LIBTDB_STATIC_TARGET): $(BINARY_PREREQS) $(LIBTDB_OBJ0)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBTDB_OBJ0)
+
+libtdb: $(LIBTDB)
 
 cleanlibtdb::
 	-rm -f \
