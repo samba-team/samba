@@ -1791,6 +1791,12 @@ installlibnetapi:: installdirs libnetapi
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
 	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/lib/netapi/netapi.h $(DESTDIR)${prefix}/include
 
+uninstalllibnetapi::
+	-rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBNETAPI_SHARED_TARGET)`
+	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/`basename $(LIBNETAPI_SHARED_TARGET_SONAME)`
+	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBNETAPI_STATIC_TARGET)`
+	-rm -f $(DESTDIR)${prefix}/include/netapi.h
+
 
 #-------------------------------------------------------------------
 #
@@ -2400,11 +2406,6 @@ uninstalllibsmbsharemodes::
 uninstalllibaddns::
 	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libaddns.@SHLIBEXT@
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libaddns.a
-
-uninstalllibnetapi::
-	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libnetapi.@SHLIBEXT@
-	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libnetapi.a
-	-rm -f $(DESTDIR)${prefix}/include/netapi.h
 
 uninstallpammodules::
 	@for module in $(PAM_MODULES); do \
