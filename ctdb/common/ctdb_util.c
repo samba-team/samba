@@ -394,6 +394,8 @@ bool parse_ip(const char *addr, ctdb_sock_addr *saddr)
  */
 bool parse_ip_mask(const char *s, struct sockaddr_in *ip, unsigned *mask)
 {
+	ZERO_STRUCT(*ip);
+
 	if (!parse_ip_num(s, &ip->sin_addr, mask, '/')) {
 		return false;
 	}
