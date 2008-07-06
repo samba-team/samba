@@ -388,11 +388,20 @@ int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id)
 	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
 		tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
 		if (tdb_transaction_commit(ctdb_db->ltdb->tdb) != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to commit transaction for db '%s'\n",
+			DEBUG(DEBUG_ERR,(__location__ " Failed to commit transaction for db '%s'. Cancel all transactions and resetting transaction_started to false.\n",
 				 ctdb_db->db_name));
-			/* this has to be fatal to maintain integrity - it should only
-			   happen if we run out of disk space */
-			ctdb_fatal(ctdb, "Unable to commit transactions\n");
+
+			/* cancel any pending transactions */
+			for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
+				tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
+				if (tdb_transaction_cancel(ctdb_db->ltdb->tdb) != 0) {
+					DEBUG(DEBUG_ERR,(__location__ " Failed to cancel transaction for db '%s'\n",
+						 ctdb_db->db_name));
+				}
+				tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
+			}
+			ctdb->freeze_handle->transaction_started = false;
+
 			return -1;
 		}
 		tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
