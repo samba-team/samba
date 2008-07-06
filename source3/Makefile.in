@@ -1786,6 +1786,13 @@ $(LIBNETAPI_STATIC_TARGET): $(BINARY_PREREQS) $(LIBNETAPI_OBJ1)
 
 libnetapi: $(LIBNETAPI)
 
+cleanlibnetapi::
+	-rm -f \
+		$(LIBNETAPI_SYMS) \
+		$(LIBNETAPI_STATIC_TARGET) \
+		$(LIBNETAPI_SHARED_TARGET) \
+		$(LIBNETAPI_SHARED_TARGET_SONAME)
+
 installlibnetapi:: installdirs libnetapi
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBNETAPI_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
@@ -2432,7 +2439,7 @@ uninstallpammodules::
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
-clean:: cleanlibtalloc cleanlibtdb
+clean:: cleanlibtalloc cleanlibtdb cleanlibnetapi
 	-rm -f include/build_env.h
 	-rm -f smbd/build_options.c
 	-rm -f $(PRECOMPILED_HEADER)
@@ -2443,10 +2450,10 @@ clean:: cleanlibtalloc cleanlibtdb
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) \
 		$(LIBSMBCLIENT) $(LIBADDNS) \
-		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBNETAPI) \
+		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) \
 		bin/libwbclient.so.0 bin/timelimit \
 		.headers.stamp */src/*.o \
-		$(LIBWBCLIENT_SYMS) $(LIBNETAPI_SYMS)
+		$(LIBWBCLIENT_SYMS)
 	-rm -rf t_dir
 
 include/build_env.h: script/build_env.sh
