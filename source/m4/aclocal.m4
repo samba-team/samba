@@ -69,12 +69,16 @@ LIBUC[_STATIC_TARGET]=bin/LIBNAME.a
 LIBUC[_SHARED]=
 LIBUC[_STATIC]=
 LIBUC[_LIBS]=
+[INSTALL_]LIBUC=
+[UNINSTALL_]LIBUC=
 
 AC_SUBST(LIBUC[_SHARED_TARGET])
 AC_SUBST(LIBUC[_STATIC_TARGET])
 AC_SUBST(LIBUC[_SHARED])
 AC_SUBST(LIBUC[_STATIC])
 AC_SUBST(LIBUC[_LIBS])
+AC_SUBST([INSTALL_]LIBUC)
+AC_SUBST([UNINSTALL_]LIBUC)
 
 AC_MSG_CHECKING([whether to build the LIBNAME shared library])
 AC_ARG_WITH(LIBNAME,
@@ -82,11 +86,11 @@ AS_HELP_STRING([--with-]LIBNAME,
 	[Build the LIBNAME shared library (default=yes if shared libs supported)]),
 [
 case "$withval" in
-	*)
+	no)
 		AC_MSG_RESULT(no)
 		build_lib=no
 		;;
-	yes)
+	*)
 		build_lib=yes
 		;;
 esac
@@ -97,17 +101,25 @@ build_lib=yes
 ]
 )
 
-if eval test x"$build_lib" = "xyes" -a $BLDSHARED = true; then
-	LIBUC[_SHARED]=$LIBUC[_SHARED_TARGET]
-	AC_MSG_RESULT(yes)
-	if test x"$USESHARED" != x"true" -o x"$[LINK_]LIBUC" = "xSTATIC" ; then
-		LIBUC[_STATIC]=$LIBUC[_STATIC_TARGET]
+if eval test x"$build_lib" = "xyes" ; then
+	# only set the install targets if the user chose the library
+	[INSTALL_]LIBUC=[install]LIBNAME
+	[UNINSTALL_]LIBUC=[uninstall]LIBNAME
+	if eval $BLDSHARED = true; then
+		LIBUC[_SHARED]=$LIBUC[_SHARED_TARGET]
+		AC_MSG_RESULT(yes)
+		if test x"$USESHARED" != x"true" -o x"$[LINK_]LIBUC" = "xSTATIC" ; then
+			LIBUC[_STATIC]=$LIBUC[_STATIC_TARGET]
+		else
+			LIBUC[_LIBS]=LIBLIBS
+		fi
 	else
-		LIBUC[_LIBS]=LIBLIBS
+		enable_static=yes
+		AC_MSG_RESULT(no shared library support -- will supply static library)
 	fi
 else
 	enable_static=yes
-	AC_MSG_RESULT(no shared library support -- will supply static library)
+	AC_MSG_RESULT(shared library not selected, but will supply static library)
 fi
 if test $enable_static = yes; then
 	LIBUC[_STATIC]=$LIBUC[_STATIC_TARGET]
