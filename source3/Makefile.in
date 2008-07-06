@@ -1717,6 +1717,13 @@ $(LIBWBCLIENT_STATIC_TARGET): $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ0) $(WBCOMMON_O
 
 libwbclient: $(LIBWBCLIENT)
 
+cleanlibwbclient::
+	-rm -f \
+		$(LIBWBCLIENT_SYMS) \
+		$(LIBWBCLIENT_STATIC_TARGET) \
+		$(LIBWBCLIENT_SHARED_TARGET) \
+		$(LIBWBCLIENT_SHARED_TARGET_SONAME)
+
 installlibwbclient:: installdirs libwbclient
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBWBCLIENT_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
@@ -2462,7 +2469,7 @@ uninstallpammodules::
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
-clean:: cleanlibtalloc cleanlibtdb cleanlibnetapi
+clean:: cleanlibtalloc cleanlibtdb cleanlibnetapi cleanlibwbclient
 	-rm -f include/build_env.h
 	-rm -f smbd/build_options.c
 	-rm -f $(PRECOMPILED_HEADER)
@@ -2474,9 +2481,8 @@ clean:: cleanlibtalloc cleanlibtdb cleanlibnetapi
 		$(MODULES) $(TORTURE_PROGS) \
 		$(LIBSMBCLIENT) $(LIBADDNS) \
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) \
-		bin/libwbclient.so.0 bin/timelimit \
-		.headers.stamp */src/*.o \
-		$(LIBWBCLIENT_SYMS)
+		bin/timelimit \
+		.headers.stamp */src/*.o
 	-rm -rf t_dir
 
 include/build_env.h: script/build_env.sh
