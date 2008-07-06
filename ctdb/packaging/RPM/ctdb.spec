@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 43
+Release: 44
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,37 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Mon Jul 7 2008 : Version 1.0.44
+ - Add a CTDB_VALGRIND option to /etc/sysconfig/ctdb to make it start
+   ctdb under valgrind. Logs go to /var/log/ctdb_valgrind.PID
+ - Add a hack to show the control opcode that caused uninitialized data
+   in the valgrind output by encoding the opcode as the line number.
+ - Initialize structures and allocated memory in various places in
+   ctdb to make it valgrind-clean and remove all valgrind errors/warnings.
+ - If/when we destroy a lockwait child, also make sure we cancel any pending transactions
+ - If a transaction_commit fails, delete/cancel any pending transactions and
+   return an error instead of calling ctdb_fatal()
+ - When running ctdb under valgrind, make sure we run it with --nosetsched and also
+   ensure that we do not use mem-mapped i/o when accessing the tdb's.
+ - zero out ctdb->freeze_handle when we free/destroy a freeze-child.
+   This prevent a heap corruption/ctdb crash bug that could trigger
+   if the freeze child times out.
+ - we dont need to explicitely thaw the databases from the recovery daemon
+   since this is done implicitely when we restore the recovery mode back to normal.
+ - track when we start and stop a recovery. Add the 'time it took to complete the
+   recovery' to the 'ctdb uptime' output.
+   Ensure by tracking the start/stop recovery timestamps that we do not
+   check that the ip allocation is consistend from inside the recovery daemon
+   while a different node (recovery master) is performing a recovery.
+   This prevent a race that could cause a full recovery to trigger if the
+   'ctdb disable/enable' commands took very long.
+ - The freeze child indicates to the master daemon that all databases are locked
+   by writing data to the pipe shared with the master daemon.
+   This write sometimes fail and thus the master daemon never notices that the databases
+   are locked cvausing long timeouts and extra recoveries.
+   Check that the write is successful and try the write again if it failed.
+ - In each node, verify that the recmaster have the right node flags for us
+   and force a push of our flags to the recmaster if wrong.
 * Tue Jul 1 2008 : Version 1.0.43
  - Updates and bugfixes to the specfile to keep rpmlint happy
  - Force a global flags update after each recovery event.
