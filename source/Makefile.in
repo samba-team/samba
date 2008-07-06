@@ -142,7 +142,6 @@ CODEPAGEDIR = @codepagedir@
 # the directory where pid files go
 PIDDIR = @piddir@
 
-LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 LIBADDNS=bin/libaddns.a @LIBADDNS_SHARED@
 
@@ -752,26 +751,6 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
 		  $(LIBREPLACE_OBJ) @BUILD_INIPARSER@
-
-LIBSMBCLIENT_OBJ0 = \
-		    libsmb/libsmb_cache.o \
-		    libsmb/libsmb_compat.o \
-		    libsmb/libsmb_context.o \
-		    libsmb/libsmb_dir.o \
-		    libsmb/libsmb_file.o \
-		    libsmb/libsmb_misc.o \
-		    libsmb/libsmb_path.o \
-		    libsmb/libsmb_printjob.o \
-		    libsmb/libsmb_server.o \
-		    libsmb/libsmb_stat.o \
-		    libsmb/libsmb_xattr.o \
-		    libsmb/libsmb_setget.o \
-		    $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
-		    $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
-		    $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) \
-		    $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ)
-
-LIBSMBCLIENT_OBJ = $(LIBSMBCLIENT_OBJ0) @LIBWBCLIENT_STATIC@
 
 LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o @LIBTDB_STATIC@
 
@@ -1823,7 +1802,27 @@ uninstalllibnetapi::
 #
 #-------------------------------------------------------------------
 
-libsmbclient: $(LIBSMBCLIENT)
+LIBSMBCLIENT_OBJ0 = \
+		    libsmb/libsmb_cache.o \
+		    libsmb/libsmb_compat.o \
+		    libsmb/libsmb_context.o \
+		    libsmb/libsmb_dir.o \
+		    libsmb/libsmb_file.o \
+		    libsmb/libsmb_misc.o \
+		    libsmb/libsmb_path.o \
+		    libsmb/libsmb_printjob.o \
+		    libsmb/libsmb_server.o \
+		    libsmb/libsmb_stat.o \
+		    libsmb/libsmb_xattr.o \
+		    libsmb/libsmb_setget.o \
+		    $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
+		    $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
+		    $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) \
+		    $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ)
+
+LIBSMBCLIENT_OBJ = $(LIBSMBCLIENT_OBJ0) @LIBWBCLIENT_STATIC@
+
+LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 
 bin/libsmbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ) @LIBTALLOC_SHARED@ @LIBTDB_SHARED@ @LIBWBCLIENT_SHARED@
 	@echo Linking shared library $@
@@ -1835,6 +1834,20 @@ bin/libsmbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ) @LIBTALLOC_SH
 bin/libsmbclient.a: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ0)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBSMBCLIENT_OBJ0)
+
+libsmbclient: $(LIBSMBCLIENT)
+
+installclientlib:: installdirs libsmbclient
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
+	-$(INSTALLLIBCMD_SH) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
+	-$(INSTALLLIBCMD_A) bin/libsmbclient.a $(DESTDIR)$(LIBDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/include/libsmbclient.h $(DESTDIR)${prefix}/include
+
+uninstallclientlib::
+	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libsmbclient.@SHLIBEXT@
+	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libsmbclient.a
+	-rm -f $(DESTDIR)${prefix}/include/libsmbclient.h
 
 
 #-------------------------------------------------------------------
@@ -2319,13 +2332,6 @@ installmsg:: installdirs
 installswat:: installdirs installmsg
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR) $(SWATDIR) $(srcdir)
 
-installclientlib:: installdirs libsmbclient
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
-	-$(INSTALLLIBCMD_SH) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
-	-$(INSTALLLIBCMD_A) bin/libsmbclient.a $(DESTDIR)$(LIBDIR)
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/include/libsmbclient.h $(DESTDIR)${prefix}/include
-
 installlibsmbsharemodes:: installdirs libsmbsharemodes
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libsmbsharemodes.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
@@ -2406,11 +2412,6 @@ uninstallmsg::
 
 uninstallswat:: uninstallmsg
 	@$(SHELL) $(srcdir)/script/uninstallswat.sh $(DESTDIR) $(SWATDIR) $(srcdir)
-
-uninstallclientlib::
-	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libsmbclient.@SHLIBEXT@
-	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libsmbclient.a
-	-rm -f $(DESTDIR)${prefix}/include/libsmbclient.h
 
 uninstalllibsmbsharemodes::
 	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libsmbsharemodes.@SHLIBEXT@
