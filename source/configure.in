@@ -95,11 +95,6 @@ AC_SUBST(WINBIND_LIBS)
 
 AC_SUBST(LIBSAMBAUTIL_SHARED)
 
-AC_SUBST(INSTALL_LIBSMBSHAREMODES)
-AC_SUBST(UNINSTALL_LIBSMBSHAREMODES)
-AC_SUBST(LIBSMBSHAREMODES_SHARED)
-AC_SUBST(LIBSMBSHAREMODES)
-
 AC_SUBST(PRINT_LIBS)
 AC_SUBST(AUTH_LIBS)
 AC_SUBST(ACL_LIBS)
@@ -4673,6 +4668,7 @@ SMB_LIBRARY(talloc)
 SMB_LIBRARY(tdb)
 SMB_LIBRARY(netapi)
 SMB_LIBRARY(smbclient)
+SMB_LIBRARY(smbsharemodes)
 
 
 #################################################
@@ -4707,48 +4703,6 @@ AC_ARG_WITH(libaddns,
 [AC_MSG_RESULT(no)]
 )
 
-
-INSTALL_LIBSMBSHAREMODES=
-LIBSMBSHAREMODES_SHARED=
-LIBSMBSHAREMODES=
-AC_MSG_CHECKING(whether to build the libsmbsharemodes shared library)
-AC_ARG_WITH(libsmbsharemodes,
-[AS_HELP_STRING([--with-libsmbsharemodes], [Build the libsmbsharemodes shared library (default=yes if shared libs supported)])],
-[ case "$withval" in
-  no)
-     AC_MSG_RESULT(no)
-     ;;
-  *)
-     if test $BLDSHARED = true; then
-        LIBSMBSHAREMODES_SHARED=bin/libsmbsharemodes.$SHLIBEXT
-        LIBSMBSHAREMODES=libsmbsharemodes
-        AC_MSG_RESULT(yes)
-     else
-        enable_static=yes
-        AC_MSG_RESULT(no shared library support -- will supply static library)
-     fi
-     if test $enable_static = yes; then
-        LIBSMBSHAREMODES=libsmbsharemodes
-     fi
-     INSTALL_LIBSMBSHAREMODES=installlibsmbsharemodes
-     UNINSTALL_LIBSMBSHAREMODES=uninstalllibsmbsharemodes
-     ;;
-  esac ],
-[
-# if unspecified, default is to build it if possible.
-  if test $BLDSHARED = true; then
-     LIBSMBSHAREMODES_SHARED=bin/libsmbsharemodes.$SHLIBEXT
-     LIBSMBSHAREMODES=libsmbsharemodes
-     AC_MSG_RESULT(yes)
-   else
-     enable_static=yes
-     AC_MSG_RESULT(no shared library support -- will supply static library)
-   fi
-   if test $enable_static = yes; then
-     LIBSMBSHAREMODES=libsmbsharemodes
-  fi]
-  INSTALL_LIBSMBSHAREMODES=installlibsmbsharemodes
-)
 
 
 #################################################

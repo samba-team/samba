@@ -1501,7 +1501,7 @@ bin/ldbdel: $(BINARY_PREREQS) $(LDBDEL_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIB
 
 MKSYMS_SH = $(srcdir)/script/mksyms.sh
 
-SHLIBS = libtalloc libtdb @LIBWBCLIENT@ libsmbclient @LIBSMBSHAREMODES@ @LIBADDNS@ libnetapi
+SHLIBS = libtalloc libtdb @LIBWBCLIENT@ libsmbclient libsmbsharemodes @LIBADDNS@ libnetapi
 
 shlibs: $(SHLIBS)
 
@@ -1881,16 +1881,28 @@ uninstallclientlib:: uninstalllibsmbclient
 
 LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o @LIBTDB_STATIC@
 
+LIBSMBSHAREMODES_SHARED_TARGET=@LIBSMBSHAREMODES_SHARED_TARGET@
+LIBSMBSHAREMODES_SOVER=$(shell grep \^$(LIBSMBSHAREMODES_SHARED_TARGET) $(builddir)/library-versions | cut -d: -f2)
+LIBSMBSHAREMODES_SHARED_TARGET_SONAME=$(LIBSMBSHAREMODES_SHARED_TARGET).$(LIBSMBSHAREMODES_SOVER)
+LIBSMBSHAREMODES_STATIC_TARGET=@LIBSMBSHAREMODES_STATIC_TARGET@
+LIBSMBSHAREMODES=$(LIBSMBSHAREMODES_STATIC_TARGET) @LIBSMBSHAREMODES_SHARED@
+#LIBSMBSHAREMODES_SYMS=$(srcdir)/exports/libsmbsharemodes.@SYMSEXT@
+LIBSMBSHAREMODES_HEADERS=$(srcdir)/include/smb_share_modes.h
+
 LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 
-bin/libsmbsharemodes.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ) @LIBTALLOC_SHARED@ @LIBTDB_SHARED@
+$(LIBSMBSHAREMODES_SHARED_TARGET_SONAME): $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ) @LIBTALLOC_SHARED@ @LIBTDB_SHARED@
 	@echo Linking shared library $@
 	@$(SHLD_DSO) $(LIBSMBSHAREMODES_OBJ) \
 		$(LIBS) @LIBTALLOC_LIBS@ @LIBTDB_LIBS@ \
 		$(KRB5LIBS) $(LDAP_LIBS) \
-		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
+		@SONAMEFLAG@`basename $@`
 
-bin/libsmbsharemodes.a: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ)
+$(LIBSMBSHAREMODES_SHARED_TARGET): $(LIBSMBSHAREMODES_SHARED_TARGET_SONAME)
+	@rm -f $@
+	@ln -s -f `basename $(LIBSMBSHAREMODES_SHARED_TARGET_SONAME)` $@
+
+$(LIBSMBSHAREMODES_STATIC_TARGET): $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBSMBSHAREMODES_OBJ)
 
@@ -1898,13 +1910,21 @@ libsmbsharemodes: $(LIBSMBSHAREMODES)
 
 installlibsmbsharemodes:: installdirs libsmbsharemodes
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
-	-$(INSTALLLIBCMD_SH) bin/libsmbsharemodes.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
-	-$(INSTALLLIBCMD_A) bin/libsmbsharemodes.a $(DESTDIR)$(LIBDIR)
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/include/smb_share_modes.h $(DESTDIR)${prefix}/include
+	-$(INSTALLLIBCMD_SH) $(LIBSMBSHAREMODES_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
+	@rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBSMBSHAREMODES_SHARED_TARGET)`
+	-if test -e $(LIBSMBSHAREMODES_SHARED_TARGET_SONAME) ; then \
+		ln -s -f `basename $(LIBSMBSHAREMODES_SHARED_TARGET_SONAME)` \
+			$(DESTDIR)$(LIBDIR)/`basename $(LIBSMBSHAREMODES_SHARED_TARGET)` ; \
+	fi
+	-$(INSTALLLIBCMD_A) $(LIBSMBSHAREMODES_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(LIBSMBSHAREMODES_HEADERS) $(DESTDIR)${prefix}/include
 
 uninstalllibsmbsharemodes::
-	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libsmbsharemodes.@SHLIBEXT@
-	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libsmbsharemodes.a
+	-rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBSMBSHAREMODES_SHARED_TARGET)`
+	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/`basename $(LIBSMBSHAREMODES_SHARED_TARGET_SONAME)`
+	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBSMBSHAREMODES_STATIC_TARGET)`
+	-rm -f $(DESTDIR)${prefix}/include/smb_share_modes.h
 
 
 #-------------------------------------------------------------------
