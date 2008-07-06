@@ -203,8 +203,6 @@ EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
 	bin/log2pcap@EXEEXT@ bin/sharesec@EXEEXT@ bin/ndrdump@EXEEXT@ \
 	bin/vlp@EXEEXT@ bin/smbiconv@EXEEXT@
 
-SHLIBS = libtalloc libtdb @LIBWBCLIENT@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBADDNS@ libnetapi
-
 PAM_MODULES = @PAM_MODULES@
 
 NSS_MODULES = @NSS_MODULES@
@@ -1526,6 +1524,8 @@ bin/ldbdel: $(BINARY_PREREQS) $(LDBDEL_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIB
 #####################################################################
 
 MKSYMS_SH = $(srcdir)/script/mksyms.sh
+
+SHLIBS = libtalloc libtdb @LIBWBCLIENT@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBADDNS@ libnetapi
 
 shlibs: $(SHLIBS)
 
