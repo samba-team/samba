@@ -1895,6 +1895,13 @@ bin/libsmbsharemodes.a: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBSMBSHAREMODES_OBJ)
 
+
+#-------------------------------------------------------------------
+#
+# libbigballofmud
+#
+#-------------------------------------------------------------------
+
 # This is probably wrong for anything other than the GNU linker.
 bin/libbigballofmud.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBBIGBALLOFMUD_OBJ) @LIBTALLOC_SHARED@
 	@echo Linking shared library $@
