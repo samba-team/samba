@@ -564,7 +564,7 @@ void winbindd_endpwent(struct winbindd_cli_state *state)
 {
 	DEBUG(3, ("[%5lu]: endpwent\n", (unsigned long)state->pid));
 
-	free_getent_state(state->getpwent_state);    
+	free_getent_state(state->getpwent_state);
 	state->getpwent_initialized = False;
 	state->getpwent_state = NULL;
 	request_ok(state);
@@ -600,23 +600,23 @@ static bool get_sam_user_entries(struct getent_state *ent, TALLOC_CTX *mem_ctx)
 
 	SAFE_FREE(ent->sam_entries);
 	ent->num_sam_entries = 0;
-	
+
 	/* Call query_user_list to get a list of usernames and user rids */
 
 	num_entries = 0;
 
-	status = methods->query_user_list(domain, mem_ctx, &num_entries, 
-					  &info);
-		
+	status = methods->query_user_list(domain, mem_ctx, &num_entries, &info);
+
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("get_sam_user_entries: query_user_list failed with %s\n",
-			nt_errstr(status) ));
+		DEBUG(10,("get_sam_user_entries: "
+			  "query_user_list failed with %s\n",
+			  nt_errstr(status)));
 		return False;
 	}
 
 	if (num_entries) {
-		name_list = SMB_REALLOC_ARRAY(name_list, struct getpwent_user, ent->num_sam_entries + num_entries);
-		
+		name_list = SMB_REALLOC_ARRAY(name_list, struct getpwent_user,
+					    ent->num_sam_entries + num_entries);
 		if (!name_list) {
 			DEBUG(0,("get_sam_user_entries realloc failed.\n"));
 			return False;
@@ -628,40 +628,40 @@ static bool get_sam_user_entries(struct getent_state *ent, TALLOC_CTX *mem_ctx)
 		if (!info[i].acct_name) {
 			fstrcpy(name_list[ent->num_sam_entries + i].name, "");
 		} else {
-			fstrcpy(name_list[ent->num_sam_entries + i].name, 
-				info[i].acct_name); 
+			fstrcpy(name_list[ent->num_sam_entries + i].name,
+				info[i].acct_name);
 		}
 		if (!info[i].full_name) {
 			fstrcpy(name_list[ent->num_sam_entries + i].gecos, "");
 		} else {
-			fstrcpy(name_list[ent->num_sam_entries + i].gecos, 
-				info[i].full_name); 
+			fstrcpy(name_list[ent->num_sam_entries + i].gecos,
+				info[i].full_name);
 		}
 		if (!info[i].homedir) {
-			fstrcpy(name_list[ent->num_sam_entries + i].homedir, "");
+			fstrcpy(name_list[ent->num_sam_entries + i].homedir,"");
 		} else {
-			fstrcpy(name_list[ent->num_sam_entries + i].homedir, 
-				info[i].homedir); 
+			fstrcpy(name_list[ent->num_sam_entries + i].homedir,
+				info[i].homedir);
 		}
 		if (!info[i].shell) {
 			fstrcpy(name_list[ent->num_sam_entries + i].shell, "");
 		} else {
-			fstrcpy(name_list[ent->num_sam_entries + i].shell, 
-				info[i].shell); 
+			fstrcpy(name_list[ent->num_sam_entries + i].shell,
+				info[i].shell);
 		}
-	
-	
+
+
 		/* User and group ids */
 		sid_copy(&name_list[ent->num_sam_entries+i].user_sid,
 			 &info[i].user_sid);
 		sid_copy(&name_list[ent->num_sam_entries+i].group_sid,
 			 &info[i].group_sid);
 	}
-		
+
 	ent->num_sam_entries += num_entries;
-	
+
 	/* Fill in remaining fields */
-	
+
 	ent->sam_entries = name_list;
 	ent->sam_entry_index = 0;
 	return ent->num_sam_entries > 0;
@@ -694,20 +694,20 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 		request_error(state);
 		return;
 	}
-	
-	if ((state->response.extra_data.data = SMB_MALLOC_ARRAY(struct winbindd_pw, num_users)) == NULL) {
+
+	user_list = SMB_MALLOC_ARRAY(struct winbindd_pw, num_users);
+	if (!user_list) {
 		request_error(state);
 		return;
 	}
+	/* will be freed by process_request() */
+	state->response.extra_data.data = user_list;
 
-	memset(state->response.extra_data.data, 0, num_users * 
-	       sizeof(struct winbindd_pw));
-
-	user_list = (struct winbindd_pw *)state->response.extra_data.data;
+	memset(user_list, 0, num_users * sizeof(struct winbindd_pw));
 
 	if (!state->getpwent_initialized)
 		winbindd_setpwent_internal(state);
-	
+
 	if (!(ent = state->getpwent_state)) {
 		request_error(state);
 		return;
@@ -737,19 +737,19 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 				SAFE_FREE(ent);
 				ent = next_ent;
 			}
- 
+
 			/* No more domains */
 
-			if (!ent) 
+			if (!ent)
 				break;
 		}
 
 		name_list = (struct getpwent_user *)ent->sam_entries;
 
 		/* Lookup user info */
-		
+
 		result = winbindd_fill_pwent(
-			ent->domain_name, 
+			ent->domain_name,
 			name_list[ent->sam_entry_index].name,
 			&name_list[ent->sam_entry_index].user_sid,
 			&name_list[ent->sam_entry_index].group_sid,
@@ -757,22 +757,21 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 			name_list[ent->sam_entry_index].homedir,
 			name_list[ent->sam_entry_index].shell,
 			&user_list[user_list_ndx]);
-		
+
 		/* Add user to return list */
-		
+
 		if (result) {
-				
+
 			user_list_ndx++;
 			state->response.data.num_entries++;
-			state->response.length += 
-				sizeof(struct winbindd_pw);
+			state->response.length += sizeof(struct winbindd_pw);
 
 		} else
 			DEBUG(1, ("could not lookup domain user %s\n",
 				  name_list[ent->sam_entry_index].name));
 
 		ent->sam_entry_index++;
-		
+
 	}
 
 	/* Out of domains */
