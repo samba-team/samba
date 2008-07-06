@@ -1871,6 +1871,12 @@ $(LIBSMBCLIENT_STATIC_TARGET): $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ0)
 
 libsmbclient: $(LIBSMBCLIENT)
 
+cleanlibsmbclient::
+	-rm -f \
+		$(LIBSMBCLIENT_SHARED_TARGET) \
+		$(LIBSMBCLIENT_SHARED_TARGET_SONAME) \
+		$(LIBSMBCLIENT_STATIC_TARGET)
+
 installlibsmbclient:: installdirs libsmbclient
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBSMBCLIENT_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
@@ -2490,7 +2496,7 @@ uninstallpammodules::
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
-clean:: cleanlibtalloc cleanlibtdb cleanlibnetapi cleanlibwbclient
+clean:: cleanlibtalloc cleanlibtdb cleanlibnetapi cleanlibwbclient cleansmbclient
 	-rm -f include/build_env.h
 	-rm -f smbd/build_options.c
 	-rm -f $(PRECOMPILED_HEADER)
@@ -2500,7 +2506,7 @@ clean:: cleanlibtalloc cleanlibtdb cleanlibnetapi cleanlibwbclient
 		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ */*/*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) \
-		$(LIBSMBCLIENT) $(LIBADDNS) \
+		$(LIBADDNS) \
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) \
 		bin/timelimit \
 		.headers.stamp */src/*.o
