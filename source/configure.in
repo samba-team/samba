@@ -95,10 +95,6 @@ AC_SUBST(WINBIND_LIBS)
 
 AC_SUBST(LIBSAMBAUTIL_SHARED)
 
-AC_SUBST(INSTALL_LIBSMBCLIENT)
-AC_SUBST(UNINSTALL_LIBSMBCLIENT)
-AC_SUBST(LIBSMBCLIENT_SHARED)
-AC_SUBST(LIBSMBCLIENT)
 AC_SUBST(INSTALL_LIBSMBSHAREMODES)
 AC_SUBST(UNINSTALL_LIBSMBSHAREMODES)
 AC_SUBST(LIBSMBSHAREMODES_SHARED)
@@ -4671,9 +4667,12 @@ AC_ARG_WITH([static-libs],
 #
 LINK_LIBNETAPI=STATIC
 
+LINK_LIBSMBCLIENT=STATIC
+
 SMB_LIBRARY(talloc)
 SMB_LIBRARY(tdb)
 SMB_LIBRARY(netapi)
+SMB_LIBRARY(smbclient)
 
 
 #################################################
@@ -4708,52 +4707,6 @@ AC_ARG_WITH(libaddns,
 [AC_MSG_RESULT(no)]
 )
 
-#################################################
-# should we build libsmbclient?
-
-INSTALL_LIBSMBCLIENT=
-UNINSTALL_LIBSMBCLIENT=
-LIBSMBCLIENT_SHARED=
-LIBSMBCLIENT=
-AC_MSG_CHECKING(whether to build the libsmbclient shared library)
-AC_ARG_WITH(libsmbclient,
-[AS_HELP_STRING([--with-libsmbclient], [Build the libsmbclient shared library (default=yes if shared libs supported)])],
-[ case "$withval" in
-  no)
-     AC_MSG_RESULT(no)
-     ;;
-  *)
-     if test $BLDSHARED = true; then
-        LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
-        LIBSMBCLIENT=libsmbclient
-        AC_MSG_RESULT(yes)
-     else
-	enable_static=yes
-        AC_MSG_RESULT(no shared library support -- will supply static library)
-     fi
-     if test $enable_static = yes; then
-        LIBSMBCLIENT=libsmbclient
-     fi
-     INSTALL_LIBSMBCLIENT=installclientlib
-     UNINSTALL_LIBSMBCLIENT=uninstallclientlib
-     ;;
-  esac ],
-[
-# if unspecified, default is to build it if possible.
-  if test $BLDSHARED = true; then
-     LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
-     LIBSMBCLIENT=libsmbclient
-     AC_MSG_RESULT(yes)
-   else
-     enable_static=yes
-     AC_MSG_RESULT(no shared library support -- will supply static library)
-   fi
-   if test $enable_static = yes; then
-     LIBSMBCLIENT=libsmbclient
-  fi]
-  INSTALL_LIBSMBCLIENT=installclientlib
-  UNINSTALL_LIBSMBCLIENT=uninstallclientlib
-)
 
 INSTALL_LIBSMBSHAREMODES=
 LIBSMBSHAREMODES_SHARED=
