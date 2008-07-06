@@ -1622,6 +1622,14 @@ $(LIBTALLOC_STATIC_TARGET): $(BINARY_PREREQS) $(LIBTALLOC_OBJ0)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBTALLOC_OBJ0)
 
+cleanlibtalloc::
+	-rm -f \
+		$(LIBTALLOC_SYMS) \
+		$(LIBTALLOC_STATIC_TARGET) \
+		$(LIBTALLOC_SHARED_TARGET) \
+		$(LIBTALLOC_SHARED_TARGET_SONAME)
+
+
 $(LIBTDB_SYMS): $(LIBTDB_HEADERS)
 	@$(MKSYMS_SH) $(AWK) $@ $(LIBTDB_HEADERS)
 
@@ -2325,7 +2333,7 @@ uninstallpammodules::
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
-clean::
+clean:: cleanlibtalloc
 	-rm -f include/build_env.h
 	-rm -f smbd/build_options.c
 	-rm -f $(PRECOMPILED_HEADER)
@@ -2335,11 +2343,11 @@ clean::
 		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ */*/*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) \
-		$(LIBTALLOC) $(LIBSMBCLIENT) $(LIBADDNS) \
+		$(LIBSMBCLIENT) $(LIBADDNS) \
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBNETAPI) \
 		bin/libwbclient.so.0 bin/timelimit \
 		.headers.stamp */src/*.o \
-		$(LIBTALLOC_SYMS) $(LIBWBCLIENT_SYMS) $(LIBTDB_SYMS) $(LIBNETAPI_SYMS)
+		$(LIBWBCLIENT_SYMS) $(LIBTDB_SYMS) $(LIBNETAPI_SYMS)
 	-rm -rf t_dir
 
 include/build_env.h: script/build_env.sh
