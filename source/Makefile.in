@@ -1837,17 +1837,21 @@ bin/libsmbclient.a: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ0)
 
 libsmbclient: $(LIBSMBCLIENT)
 
-installclientlib:: installdirs libsmbclient
+installlibsmbclient:: installdirs libsmbclient
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) bin/libsmbclient.a $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
 	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/include/libsmbclient.h $(DESTDIR)${prefix}/include
 
-uninstallclientlib::
+installclientlib:: installlibsmbclient
+
+uninstalllibsmbclient::
 	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libsmbclient.@SHLIBEXT@
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libsmbclient.a
 	-rm -f $(DESTDIR)${prefix}/include/libsmbclient.h
+
+uninstallclientlib:: uninstalllibsmbclient
 
 
 #-------------------------------------------------------------------
