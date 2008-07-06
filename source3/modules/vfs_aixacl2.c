@@ -26,8 +26,6 @@
 #define AIXACL2_MODULE_NAME "aixacl2"
 
 extern int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid);
-extern NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp,
-	uint32 security_info_sent, SEC_DESC *psd);
 
 extern SMB_ACL_T aixacl_to_smbacl( struct acl *file_acl);
 extern struct acl *aixacl_smb_to_aixacl(SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
