@@ -1691,6 +1691,14 @@ $(LIBTDB_STATIC_TARGET): $(BINARY_PREREQS) $(LIBTDB_OBJ0)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBTDB_OBJ0)
 
+cleanlibtdb::
+	-rm -f \
+		$(LIBTDB_SYMS) \
+		$(LIBTDB_STATIC_TARGET) \
+		$(LIBTDB_SHARED_TARGET) \
+		$(LIBTDB_SHARED_TARGET_SONAME)
+
+
 installlibtdb:: installdirs libtdb
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBTDB_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
@@ -2407,7 +2415,7 @@ uninstallpammodules::
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
-clean:: cleanlibtalloc
+clean:: cleanlibtalloc cleanlibtdb
 	-rm -f include/build_env.h
 	-rm -f smbd/build_options.c
 	-rm -f $(PRECOMPILED_HEADER)
@@ -2421,7 +2429,7 @@ clean:: cleanlibtalloc
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBNETAPI) \
 		bin/libwbclient.so.0 bin/timelimit \
 		.headers.stamp */src/*.o \
-		$(LIBWBCLIENT_SYMS) $(LIBTDB_SYMS) $(LIBNETAPI_SYMS)
+		$(LIBWBCLIENT_SYMS) $(LIBNETAPI_SYMS)
 	-rm -rf t_dir
 
 include/build_env.h: script/build_env.sh
