@@ -365,23 +365,27 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 	fstring domname, username;
+	char *domuser;
+	size_t dusize;
 
-	/* Ensure null termination */
-	state->request.data.username[sizeof(state->request.data.username)-1]='\0';
+	domuser = state->request.data.username;
+	dusize = sizeof(state->request.data.username);
 
-	DEBUG(3, ("[%5lu]: getpwnam %s\n", (unsigned long)state->pid,
-		  state->request.data.username));
+	/* Ensure null termination (it's an fstring) */
+	domuser[dusize-1] = '\0';
 
-	ws_name_return( state->request.data.username, WB_REPLACE_CHAR );
+	DEBUG(3, ("[%5lu]: getpwnam %s\n",
+		  (unsigned long)state->pid,
+		  domuser));
 
-	if (!parse_domain_user(state->request.data.username, domname,
-			       username)) {
-		DEBUG(5, ("Could not parse domain user: %s\n",
-			  state->request.data.username));
+	ws_name_return(domuser, WB_REPLACE_CHAR);
+
+	if (!parse_domain_user(domuser, domname, username)) {
+		DEBUG(5, ("Could not parse domain user: %s\n", domuser));
 		request_error(state);
 		return;
 	}
-	
+
 	/* Get info for the domain */
 
 	domain = find_domain_from_name(domname);
@@ -391,17 +395,19 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 			  "Using primary domain\n", domname));
 		if ( (domain = find_our_domain()) == NULL ) {
 			DEBUG(0,("Cannot find my primary domain structure!\n"));
-		request_error(state);
-		return;
-	}
+			request_error(state);
+			return;
+		}
 	}
 
-	if ( strequal(domname, lp_workgroup()) && lp_winbind_trusted_domains_only() ) {
-		DEBUG(7,("winbindd_getpwnam: My domain -- rejecting getpwnam() for %s\\%s.\n", 
-			domname, username));
+	if (strequal(domname, lp_workgroup()) &&
+	    lp_winbind_trusted_domains_only() ) {
+		DEBUG(7,("winbindd_getpwnam: My domain -- "
+			 "rejecting getpwnam() for %s\\%s.\n",
+			 domname, username));
 		request_error(state);
 		return;
-	}	
+	}
 
 	/* Get rid and name type from name.  The following costs 1 packet */
 
