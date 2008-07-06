@@ -153,12 +153,6 @@ LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 LIBADDNS=bin/libaddns.a @LIBADDNS_SHARED@
 
-LIBWBCLIENT_SHARED_TARGET=@LIBWBCLIENT_SHARED_TARGET@
-LIBWBCLIENT_STATIC_TARGET=@LIBWBCLIENT_STATIC_TARGET@
-LIBWBCLIENT=@LIBWBCLIENT_STATIC@ @LIBWBCLIENT_SHARED@
-LIBWBCLIENT_SYMS=$(srcdir)/exports/libwbclient.@SYMSEXT@
-LIBWBCLIENT_HEADERS=$(srcdir)/nsswitch/libwbclient/wbclient.h
-
 FLAGS1 = $(CFLAGS) @FLAGS1@ @SAMBA_CPPFLAGS@ $(CPPFLAGS)
 FLAGS2 =
 FLAGS3 =
@@ -359,16 +353,6 @@ KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o
 LIBADDNS_OBJ0 = libaddns/dnsrecord.o libaddns/dnsutils.o  libaddns/dnssock.o \
 	       libaddns/dnsgss.o libaddns/dnsmarshall.o
 LIBADDNS_OBJ = $(LIBADDNS_OBJ0) $(SOCKET_WRAPPER_OBJ) @LIBTALLOC_STATIC@
-
-LIBWBCLIENT_OBJ0 = nsswitch/libwbclient/wbclient.o \
-		  nsswitch/libwbclient/wbc_util.o \
-		  nsswitch/libwbclient/wbc_pwd.o \
-		  nsswitch/libwbclient/wbc_idmap.o \
-		  nsswitch/libwbclient/wbc_sid.o \
-		  nsswitch/libwbclient/wbc_pam.o
-LIBWBCLIENT_OBJ = $(LIBWBCLIENT_OBJ0) \
-		  $(WBCOMMON_OBJ) \
-		  @LIBTALLOC_STATIC@ $(LIBREPLACE_OBJ)
 
 LIBGPO_OBJ0 = libgpo/gpo_ldap.o libgpo/gpo_ini.o libgpo/gpo_util.o \
 	      libgpo/gpo_fetch.o libgpo/gpo_filesync.o libgpo/gpo_sec.o
@@ -1686,7 +1670,21 @@ uninstalllibtdb::
 #
 #-------------------------------------------------------------------
 
-libwbclient: $(LIBWBCLIENT)
+LIBWBCLIENT_OBJ0 = nsswitch/libwbclient/wbclient.o \
+		  nsswitch/libwbclient/wbc_util.o \
+		  nsswitch/libwbclient/wbc_pwd.o \
+		  nsswitch/libwbclient/wbc_idmap.o \
+		  nsswitch/libwbclient/wbc_sid.o \
+		  nsswitch/libwbclient/wbc_pam.o
+LIBWBCLIENT_OBJ = $(LIBWBCLIENT_OBJ0) \
+		  $(WBCOMMON_OBJ) \
+		  @LIBTALLOC_STATIC@ $(LIBREPLACE_OBJ)
+
+LIBWBCLIENT_SHARED_TARGET=@LIBWBCLIENT_SHARED_TARGET@
+LIBWBCLIENT_STATIC_TARGET=@LIBWBCLIENT_STATIC_TARGET@
+LIBWBCLIENT=@LIBWBCLIENT_STATIC@ @LIBWBCLIENT_SHARED@
+LIBWBCLIENT_SYMS=$(srcdir)/exports/libwbclient.@SYMSEXT@
+LIBWBCLIENT_HEADERS=$(srcdir)/nsswitch/libwbclient/wbclient.h
 
 $(LIBWBCLIENT_SYMS): $(LIBWBCLIENT_HEADERS)
 	@$(MKSYMS_SH) $(AWK) $@ $(LIBWBCLIENT_HEADERS)
@@ -1700,6 +1698,15 @@ $(LIBWBCLIENT_SHARED_TARGET): $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ) $(LIBWBCLIENT
 $(LIBWBCLIENT_STATIC_TARGET): $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ0) $(WBCOMMON_OBJ)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBWBCLIENT_OBJ0) $(WBCOMMON_OBJ)
+
+libwbclient: $(LIBWBCLIENT)
+
+installlibwbclient:: installdirs libwbclient
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
+	-$(INSTALLLIBCMD_SH) bin/libwbclient.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/nsswitch/libwbclient/wbclient.h $(DESTDIR)${prefix}/include
+
 
 #-------------------------------------------------------------------
 #
@@ -2317,12 +2324,6 @@ installlibaddns:: installdirs libaddns
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libaddns.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) bin/libaddns.a $(DESTDIR)$(LIBDIR)
-
-installlibwbclient:: installdirs libwbclient
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
-	-$(INSTALLLIBCMD_SH) bin/libwbclient.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/nsswitch/libwbclient/wbclient.h $(DESTDIR)${prefix}/include
 
 installpammodules:: $(PAM_MODULES)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(PAMMODULESDIR)
