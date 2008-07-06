@@ -2160,6 +2160,12 @@ installlibtalloc:: installdirs libtalloc
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
 	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(LIBTALLOC_HEADERS) $(DESTDIR)${prefix}/include
 
+uninstalllibtalloc::
+	-rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBTALLOC_SHARED_TARGET)`
+	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/`basename $(LIBTALLOC_SHARED_TARGET_SONAME)`
+	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBTALLOC_STATIC_TARGET)`
+	-rm -f $(DESTDIR)${prefix}/include/talloc.h
+
 installlibtdb:: installdirs libtdb
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBTDB_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
