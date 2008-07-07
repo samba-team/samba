@@ -814,7 +814,8 @@ LIBSMBCLIENT_OBJ0 = \
 
 LIBSMBCLIENT_OBJ = $(LIBSMBCLIENT_OBJ0) @LIBWBCLIENT_STATIC@
 
-LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o @LIBTDB_STATIC@
+LIBSMBSHAREMODES_OBJ0 = libsmb/smb_share_modes.o
+LIBSMBSHAREMODES_OBJ = $(LIBSMBSHAREMODES_OBJ0) @LIBTDB_STATIC@
 
 # This shared library is intended for linking with unit test programs
 # to test Samba internals.  It's called libbigballofmud.so to
@@ -1661,9 +1662,9 @@ bin/libsmbsharemodes.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ) @LIBT
 		$(KRB5LIBS) $(LDAP_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 
-bin/libsmbsharemodes.a: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ)
+bin/libsmbsharemodes.a: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ0)
 	@echo Linking non-shared library $@
-	@-$(AR) -rc $@ $(LIBSMBSHAREMODES_OBJ)
+	@-$(AR) -rc $@ $(LIBSMBSHAREMODES_OBJ0)
 
 # This is probably wrong for anything other than the GNU linker.
 bin/libbigballofmud.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBBIGBALLOFMUD_OBJ) @LIBTALLOC_SHARED@
