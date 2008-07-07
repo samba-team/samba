@@ -2513,7 +2513,7 @@ uninstallpammodules::
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
-clean:: delheaders cleanlibtalloc cleanlibtdb cleanlibnetapi cleanlibwbclient cleansmbclient cleanlibsmbsharemodes cleanlibaddns
+clean:: delheaders cleanlibtalloc cleanlibtdb cleanlibnetapi cleanlibwbclient cleanlibsmbclient cleanlibsmbsharemodes cleanlibaddns
 	-rm -f $(PRECOMPILED_HEADER)
 	-rm -f core */*~ *~ \
 		*/*.o */*/*.o */*/*/*.o \
