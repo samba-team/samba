@@ -54,7 +54,7 @@ AC_DEFUN(SMB_SUBSYSTEM,
 ])
 
 
-dnl SMB_LIBRARY(name)
+dnl SMB_LIBRARY(name, default)
 dnl
 dnl configure build and use of an (internal) shared library
 dnl
@@ -81,6 +81,32 @@ AC_SUBST([INSTALL_]LIBUC)
 AC_SUBST([UNINSTALL_]LIBUC)
 
 AC_MSG_CHECKING([whether to build the LIBNAME shared library])
+m4_if([$2], [no], [
+dnl set the default to not build the shared lib
+AC_ARG_WITH(LIBNAME,
+AS_HELP_STRING([--with-]LIBNAME,
+	m4_if([$3], [],
+		[Build the LIBNAME shared library (default=no)],
+		[Build the LIBNAME shared library (default=no ($3))])),
+[
+case "$withval" in
+	yes)
+		build_lib=yes
+		;;
+	*)
+		AC_MSG_RESULT(yes)
+		build_lib=no
+		;;
+esac
+],
+[
+# if unspecified, default is not to build
+AC_MSG_RESULT(yes)
+build_lib=no
+]
+)
+],[
+dnl by default, try to build the shared lib
 AC_ARG_WITH(LIBNAME,
 AS_HELP_STRING([--with-]LIBNAME,
 	[Build the LIBNAME shared library (default=yes if shared libs supported)]),
@@ -100,6 +126,7 @@ esac
 build_lib=yes
 ]
 )
+])
 
 if eval test x"$build_lib" = "xyes" ; then
 	# only set the install targets if the user chose the library
