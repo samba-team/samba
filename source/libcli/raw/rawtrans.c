@@ -537,6 +537,10 @@ _PUBLIC_ NTSTATUS smb_raw_trans(struct smbcli_tree *tree,
 }
 
 struct smb_raw_nttrans_recv_state {
+	uint32_t params_total;
+	uint32_t data_total;
+	uint32_t params_left;
+	uint32_t data_left;
 	bool got_first;
 	uint32_t recvd_data;
 	uint32_t recvd_param;
@@ -569,6 +573,9 @@ failed:
 	return smbcli_request_destroy(req);
 }
 
+static enum smbcli_request_state smb_raw_nttrans_ship_rest(struct smbcli_request *req,
+							   struct smb_raw_nttrans_recv_state *state);
+
 /*
  * This helper returns SMBCLI_REQUEST_RECV until all data has arrived
  */
@@ -597,6 +604,10 @@ static enum smbcli_request_state smb_raw_nttrans_recv_helper(struct smbcli_reque
 			 CVAL(req->in.hdr,HDR_COM)));
 		req->status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		goto failed;
+	}
+
+	if (state->params_left > 0 || state->data_left > 0) {
+		return smb_raw_nttrans_ship_rest(req, state);
 	}
 
 	/* this is the first packet of the response */
@@ -716,7 +727,12 @@ struct smbcli_request *smb_raw_nttrans_send(struct smbcli_tree *tree,
 {
 	struct smbcli_request *req; 
 	struct smb_raw_nttrans_recv_state *state;
-	uint8_t *outdata, *outparam;
+	uint32_t ofs;
+	size_t space_left;
+	DATA_BLOB params_chunk;
+	uint32_t params_ofs;
+	DATA_BLOB data_chunk;
+	uint32_t data_ofs;
 	int align = 0;
 
 	/* only align if there are parameters or data */
@@ -725,10 +741,7 @@ struct smbcli_request *smb_raw_nttrans_send(struct smbcli_tree *tree,
 	}
 	
 	req = smbcli_request_setup(tree, SMBnttrans, 
-				19 + parms->in.setup_count, 
-				align +
-				parms->in.params.length +
-				parms->in.data.length);
+				19 + parms->in.setup_count, align);
 	if (!req) {
 		return NULL;
 	}
@@ -740,12 +753,63 @@ struct smbcli_request *smb_raw_nttrans_send(struct smbcli_tree *tree,
 	}
 
 	/* fill in SMB parameters */
-	outparam = req->out.data + align;
-	outdata = outparam + parms->in.params.length;
 
 	if (align != 0) {
 		memset(req->out.data, 0, align);
 	}
+
+	ofs = PTR_DIFF(req->out.data,req->out.hdr)+align;
+
+	/* see how much bytes of the params block we can ship in the first request */
+	space_left = raw_trans_space_left(req);
+
+	params_chunk.length = MIN(parms->in.params.length, space_left);
+	params_chunk.data = parms->in.params.data;
+	params_ofs = ofs;
+
+	state->params_left = parms->in.params.length - params_chunk.length;
+
+	if (state->params_left > 0) {
+		/* we copy the whole params block, if needed we can optimize that latter */
+		state->io.in.params = data_blob_talloc(state, NULL, parms->in.params.length);
+		if (!state->io.in.params.data) {
+			smbcli_request_destroy(req);
+			return NULL;
+		}
+		memcpy(state->io.in.params.data,
+		       parms->in.params.data,
+		       parms->in.params.length);
+	}
+
+	/* see how much bytes of the data block we can ship in the first request */
+	space_left -= params_chunk.length;
+
+#if TORTURE_TRANS_DATA
+	if (space_left > 1) {
+		space_left /= 2;
+	}
+#endif
+
+	data_chunk.length = MIN(parms->in.data.length, space_left);
+	data_chunk.data = parms->in.data.data;
+	data_ofs = params_ofs + params_chunk.length;
+
+	state->data_left = parms->in.data.length - data_chunk.length;
+
+	if (state->data_left > 0) {
+		/* we copy the whole params block, if needed we can optimize that latter */
+		state->io.in.data = data_blob_talloc(state, NULL, parms->in.data.length);
+		if (!state->io.in.data.data) {
+			smbcli_request_destroy(req);
+			return NULL;
+		}
+		memcpy(state->io.in.data.data,
+		       parms->in.data.data,
+		       parms->in.data.length);
+	}
+
+	state->params_total = parms->in.params.length;
+	state->data_total = parms->in.data.length;
 
 	SCVAL(req->out.vwv,  0, parms->in.max_setup);
 	SSVAL(req->out.vwv,  1, 0); /* reserved */
@@ -753,20 +817,17 @@ struct smbcli_request *smb_raw_nttrans_send(struct smbcli_tree *tree,
 	SIVAL(req->out.vwv,  7, parms->in.data.length);
 	SIVAL(req->out.vwv, 11, parms->in.max_param);
 	SIVAL(req->out.vwv, 15, parms->in.max_data);
-	SIVAL(req->out.vwv, 19, parms->in.params.length);
-	SIVAL(req->out.vwv, 23, PTR_DIFF(outparam,req->out.hdr));
-	SIVAL(req->out.vwv, 27, parms->in.data.length);
-	SIVAL(req->out.vwv, 31, PTR_DIFF(outdata,req->out.hdr));
+	SIVAL(req->out.vwv, 19, params_chunk.length);
+	SIVAL(req->out.vwv, 23, params_ofs);
+	SIVAL(req->out.vwv, 27, data_chunk.length);
+	SIVAL(req->out.vwv, 31, data_ofs);
 	SCVAL(req->out.vwv, 35, parms->in.setup_count);
 	SSVAL(req->out.vwv, 36, parms->in.function);
 	memcpy(req->out.vwv + VWV(19), parms->in.setup,
 	       sizeof(uint16_t) * parms->in.setup_count);
-	if (parms->in.params.length) {
-		memcpy(outparam, parms->in.params.data, parms->in.params.length);
-	}
-	if (parms->in.data.length) {
-		memcpy(outdata, parms->in.data.data, parms->in.data.length);
-	}
+
+	smbcli_req_append_blob(req, &params_chunk);
+	smbcli_req_append_blob(req, &data_chunk);
 
 	/* add the helper which will check that all multi-part replies are
 	   in before an async client callack will be issued */
@@ -779,6 +840,106 @@ struct smbcli_request *smb_raw_nttrans_send(struct smbcli_tree *tree,
 	}
 
 	return req;
+}
+
+static enum smbcli_request_state smb_raw_nttrans_ship_next(struct smbcli_request *req,
+							   struct smb_raw_nttrans_recv_state *state)
+{
+	struct smbcli_request *req2;
+	size_t space_left;
+	DATA_BLOB params_chunk;
+	uint32_t ofs;
+	uint32_t params_ofs = 0;
+	uint32_t params_disp = 0;
+	DATA_BLOB data_chunk;
+	uint32_t data_ofs = 0;
+	uint32_t data_disp = 0;
+
+	req2 = smbcli_request_setup(req->tree, SMBnttranss, 18, 0);
+	if (!req2) {
+		goto nomem;
+	}
+	req2->mid = req->mid;
+	SSVAL(req2->out.hdr, HDR_MID, req2->mid);
+
+	ofs = PTR_DIFF(req2->out.data,req2->out.hdr);
+
+	/* see how much bytes of the params block we can ship in the first request */
+	space_left = raw_trans_space_left(req2);
+
+	params_disp = state->io.in.params.length - state->params_left;
+	params_chunk.length = MIN(state->params_left, space_left);
+	params_chunk.data = state->io.in.params.data + params_disp;
+	params_ofs = ofs;
+
+	state->params_left -= params_chunk.length;
+
+	/* see how much bytes of the data block we can ship in the first request */
+	space_left -= params_chunk.length;
+
+#if TORTURE_TRANS_DATA
+	if (space_left > 1) {
+		space_left /= 2;
+	}
+#endif
+
+	data_disp = state->io.in.data.length - state->data_left;
+	data_chunk.length = MIN(state->data_left, space_left);
+	data_chunk.data = state->io.in.data.data + data_disp;
+	data_ofs = params_ofs+params_chunk.length;
+
+	state->data_left -= data_chunk.length;
+
+	SSVAL(req2->out.vwv,0, 0); /* reserved */
+	SCVAL(req2->out.vwv,2, 0); /* reserved */
+	SIVAL(req2->out.vwv,3, state->params_total);
+	SIVAL(req2->out.vwv,7, state->data_total);
+	SIVAL(req2->out.vwv,11, params_chunk.length);
+	SIVAL(req2->out.vwv,15, params_ofs);
+	SIVAL(req2->out.vwv,19, params_disp);
+	SIVAL(req2->out.vwv,23, data_chunk.length);
+	SIVAL(req2->out.vwv,27, data_ofs);
+	SIVAL(req2->out.vwv,31, data_disp);
+	SCVAL(req2->out.vwv,35, 0); /* reserved */
+
+	smbcli_req_append_blob(req2, &params_chunk);
+	smbcli_req_append_blob(req2, &data_chunk);
+
+	/*
+	 * it's a one way request but we need
+	 * the seq_num, so we destroy req2 by hand
+	 */
+	if (!smbcli_request_send(req2)) {
+		goto failed;
+	}
+
+	req->seq_num = req2->seq_num;
+	smbcli_request_destroy(req2);
+
+	return SMBCLI_REQUEST_RECV;
+
+nomem:
+	req->status = NT_STATUS_NO_MEMORY;
+failed:
+	if (req2) {
+		req->status = smbcli_request_destroy(req2);
+	}
+	return SMBCLI_REQUEST_ERROR;
+}
+
+static enum smbcli_request_state smb_raw_nttrans_ship_rest(struct smbcli_request *req,
+							   struct smb_raw_nttrans_recv_state *state)
+{
+	enum smbcli_request_state ret = SMBCLI_REQUEST_ERROR;
+
+	while (state->params_left > 0 || state->data_left > 0) {
+		ret = smb_raw_nttrans_ship_next(req, state);
+		if (ret != SMBCLI_REQUEST_RECV) {
+			break;
+		}
+	}
+
+	return ret;
 }
 
 
