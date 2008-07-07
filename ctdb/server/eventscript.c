@@ -257,15 +257,33 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 
 	DEBUG(DEBUG_ERR,("Event script timed out : %s count : %u\n", state->options, ctdb->event_script_timeouts));
 
-	talloc_free(state);
-	callback(ctdb, -1, private_data);
+	if (!strcmp(state->options, "monitor")) {
+		/* if it is a monitor event, we allow it to "hang" a few times
+		   before we declare it a failure and ban ourself (and make
+		   ourself unhealthy)
+		*/
+		DEBUG(DEBUG_ERR, (__location__ " eventscript for monitor event timedout.\n"));
 
-	ctdb->event_script_timeouts++;
-	if (ctdb->event_script_timeouts > ctdb->tunable.script_ban_count) {
-		ctdb->event_script_timeouts = 0;
-		DEBUG(DEBUG_ERR, ("Maximum timeout count reached for eventscript. Banning self for %d seconds\n", ctdb->tunable.recovery_ban_period));
+		ctdb->event_script_timeouts++;
+		if (ctdb->event_script_timeouts > ctdb->tunable.script_ban_count) {
+			ctdb->event_script_timeouts = 0;
+			DEBUG(DEBUG_ERR, ("Maximum timeout count %u reached for eventscript. Banning self for %d seconds\n", ctdb->tunable.script_ban_count, ctdb->tunable.recovery_ban_period));
+			ctdb_ban_self(ctdb, ctdb->tunable.recovery_ban_period);
+			callback(ctdb, -1, private_data);
+		} else {
+		  	callback(ctdb, 0, private_data);
+		}
+	} else if (!strcmp(state->options, "startup")) {
+		DEBUG(DEBUG_ERR, (__location__ " eventscript for startup event timedout.\n"));
+		callback(ctdb, -1, private_data);
+	} else {
+		/* if it is not a monitor event we ban ourself immediately */
+		DEBUG(DEBUG_ERR, (__location__ " eventscript for NON-monitor/NON-startup event timedout. Immediately banning ourself for %d seconds\n", ctdb->tunable.recovery_ban_period));
 		ctdb_ban_self(ctdb, ctdb->tunable.recovery_ban_period);
+		callback(ctdb, -1, private_data);
 	}
+
+	talloc_free(state);
 }
 
 /*
