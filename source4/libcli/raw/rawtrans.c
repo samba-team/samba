@@ -109,7 +109,7 @@ static enum smbcli_request_state smb_raw_trans2_recv_helper(struct smbcli_reques
 	uint16_t param_count, param_ofs, param_disp;
 	uint16_t data_count, data_ofs, data_disp;
 	uint16_t total_data, total_param;
-	uint16_t setup_count;
+	uint8_t setup_count;
 
 	/*
 	 * An NT RPC pipe call can return ERRDOS, ERRmoredata
@@ -128,7 +128,7 @@ static enum smbcli_request_state smb_raw_trans2_recv_helper(struct smbcli_reques
 
 	total_data = SVAL(req->in.vwv, VWV(1));
 	total_param = SVAL(req->in.vwv, VWV(0));
-	setup_count = SVAL(req->in.vwv, VWV(9));
+	setup_count = CVAL(req->in.vwv, VWV(9));
 
 	param_count = SVAL(req->in.vwv, VWV(3));
 	param_ofs   = SVAL(req->in.vwv, VWV(4));
@@ -355,7 +355,8 @@ struct smbcli_request *smb_raw_trans_send_backend(struct smbcli_tree *tree,
 	SSVAL(req->out.vwv,VWV(1),parms->in.data.length);
 	SSVAL(req->out.vwv,VWV(2),parms->in.max_param);
 	SSVAL(req->out.vwv,VWV(3),parms->in.max_data);
-	SSVAL(req->out.vwv,VWV(4),parms->in.max_setup);
+	SCVAL(req->out.vwv,VWV(4),parms->in.max_setup);
+	SCVAL(req->out.vwv,VWV(4)+1,0); /* reserved */
 	SSVAL(req->out.vwv,VWV(5),parms->in.flags);
 	SIVAL(req->out.vwv,VWV(6),parms->in.timeout);
 	SSVAL(req->out.vwv,VWV(8),0); /* reserved */
@@ -363,7 +364,8 @@ struct smbcli_request *smb_raw_trans_send_backend(struct smbcli_tree *tree,
 	SSVAL(req->out.vwv,VWV(10),params_ofs);
 	SSVAL(req->out.vwv,VWV(11),data_chunk.length);
 	SSVAL(req->out.vwv,VWV(12),data_ofs);
-	SSVAL(req->out.vwv,VWV(13),parms->in.setup_count);
+	SCVAL(req->out.vwv,VWV(13),parms->in.setup_count);
+	SCVAL(req->out.vwv,VWV(13)+1,0); /* reserved */
 	for (i=0;i<parms->in.setup_count;i++)	{
 		SSVAL(req->out.vwv,VWV(14)+VWV(i),parms->in.setup[i]);
 	}
