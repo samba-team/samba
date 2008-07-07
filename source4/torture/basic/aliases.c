@@ -90,7 +90,7 @@ static bool qfsinfo_aliases(struct torture_context *tctx, struct smbcli_state *c
 	uint16_t setup = TRANSACT2_QFSINFO;
 
 	t2.in.max_param = 0;
-	t2.in.max_data = smb_raw_max_trans_data(cli->tree, 0);
+	t2.in.max_data = UINT16_MAX;
 	t2.in.max_setup = 0;
 	t2.in.flags = 0;
 	t2.in.timeout = 0;
@@ -112,7 +112,7 @@ static bool qfileinfo_aliases(struct torture_context *tctx, struct smbcli_state 
 	int fnum;
 
 	t2.in.max_param = 2;
-	t2.in.max_data = smb_raw_max_trans_data(cli->tree, 2);
+	t2.in.max_data = UINT16_MAX;
 	t2.in.max_setup = 0;
 	t2.in.flags = 0;
 	t2.in.timeout = 0;
@@ -151,7 +151,7 @@ static bool qpathinfo_aliases(struct torture_context *tctx, struct smbcli_state 
 	int fnum;
 
 	t2.in.max_param = 2;
-	t2.in.max_data = smb_raw_max_trans_data(cli->tree, 2);
+	t2.in.max_data = UINT16_MAX;
 	t2.in.max_setup = 0;
 	t2.in.flags = 0;
 	t2.in.timeout = 0;
@@ -193,7 +193,7 @@ static bool findfirst_aliases(struct torture_context *tctx, struct smbcli_state 
 	int fnum;
 
 	t2.in.max_param = 16;
-	t2.in.max_data = smb_raw_max_trans_data(cli->tree, 16);
+	t2.in.max_data = UINT16_MAX;
 	t2.in.max_setup = 0;
 	t2.in.flags = 0;
 	t2.in.timeout = 0;
@@ -346,7 +346,7 @@ static bool setpathinfo_aliases(struct torture_context *tctx,
 	int fnum;
 
 	t2.in.max_param = 32;
-	t2.in.max_data = smb_raw_max_trans_data(cli->tree, 32);
+	t2.in.max_data = UINT16_MAX;
 	t2.in.max_setup = 0;
 	t2.in.flags = 0;
 	t2.in.timeout = 0;

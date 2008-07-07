@@ -65,8 +65,8 @@ static NTSTATUS try_trans2(struct smbcli_state *cli,
 
 	mem_ctx = talloc_init("try_trans2");
 
-	t2.in.max_param = 64;
-	t2.in.max_data = smb_raw_max_trans_data(cli->tree, 64);
+	t2.in.max_param = UINT16_MAX;
+	t2.in.max_data = UINT16_MAX;
 	t2.in.max_setup = 10;
 	t2.in.flags = 0;
 	t2.in.timeout = 0;
@@ -378,8 +378,8 @@ static NTSTATUS try_nttrans(struct smbcli_state *cli,
 	ntdata_blob.length = data_len;
 	ntdata_blob.data = data;
 
-	parms.in.max_param = 64;
-	parms.in.max_data = smb_raw_max_trans_data(cli->tree, 64);
+	parms.in.max_param = UINT32_MAX;
+	parms.in.max_data = UINT32_MAX;
 	parms.in.max_setup = 0;
 	parms.in.setup_count = 0;
 	parms.in.function = op;
