@@ -469,7 +469,13 @@ _PUBLIC_ void packet_queue_run(struct packet_context *pc)
 		if (el->nsent == el->blob.length) {
 			DLIST_REMOVE(pc->send_queue, el);
 			if (el->send_callback) {
+				pc->busy = true;
 				el->send_callback(el->send_callback_private);
+				pc->busy = false;
+				if (pc->destructor_called) {
+					talloc_free(pc);
+					return;
+				}
 			}
 			talloc_free(el);
 		}
