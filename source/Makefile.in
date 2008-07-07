@@ -1498,7 +1498,7 @@ bin/ldbdel: $(BINARY_PREREQS) $(LDBDEL_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIB
 
 MKSYMS_SH = $(srcdir)/script/mksyms.sh
 
-SHLIBS = libtalloc libtdb @LIBWBCLIENT@ libsmbclient libsmbsharemodes @LIBADDNS@ libnetapi
+SHLIBS = libtalloc libtdb @LIBWBCLIENT@ libsmbclient libsmbsharemodes libaddns libnetapi
 
 shlibs: $(SHLIBS)
 
@@ -1701,15 +1701,25 @@ uninstalllibwbclient::
 
 LIBADDNS_OBJ = $(LIBADDNS_OBJ0) @LIBTALLOC_STATIC@
 
-LIBADDNS=bin/libaddns.a @LIBADDNS_SHARED@
+LIBADDNS_SHARED_TARGET=@LIBADDNS_SHARED_TARGET@
+LIBADDNS_SOVER=$(shell grep \^$(LIBADDNS_SHARED_TARGET) $(builddir)/library-versions | cut -d: -f2)
+LIBADDNS_SHARED_TARGET_SONAME=$(LIBADDNS_SHARED_TARGET).$(LIBADDNS_SOVER)
+LIBADDNS_STATIC_TARGET=@LIBADDNS_STATIC_TARGET@
+LIBADDNS=$(LIBADDNS_STATIC_TARGET) @LIBADDNS_SHARED@
+#LIBADDNS_SYMS=$(srcdir)/exports/libaddns.@SYMSEXT@
+LIBADDNS_HEADERS=$(srcdir)/libaddns/addns.h
 
-bin/libaddns.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBADDNS_OBJ) @LIBTALLOC_SHARED@
+$(LIBADDNS_SHARED_TARGET_SONAME): $(BINARY_PREREQS) $(LIBADDNS_OBJ) @LIBTALLOC_SHARED@
 	@echo Linking shared library $@
 	@$(SHLD_DSO) $(LIBADDNS_OBJ) $(LIBS) \
 		$(KRB5LIBS) $(UUID_LIBS) @LIBTALLOC_LIBS@ \
-		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
+		@SONAMEFLAG@`basename $@`
 
-bin/libaddns.a: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
+$(LIBADDNS_SHARED_TARGET): $(LIBADDNS_SHARED_TARGET_SONAME)
+	@rm -f $@
+	@ln -s -f `basename $(LIBADDNS_SHARED_TARGET_SONAME)` $@
+
+$(LIBADDNS_STATIC_TARGET): $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBADDNS_OBJ)
 
@@ -1717,12 +1727,18 @@ libaddns: $(LIBADDNS)
 
 installlibaddns:: installdirs libaddns
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
-	-$(INSTALLLIBCMD_SH) bin/libaddns.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
-	-$(INSTALLLIBCMD_A) bin/libaddns.a $(DESTDIR)$(LIBDIR)
+	-$(INSTALLLIBCMD_SH) $(LIBADDNS_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
+	@rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBADDNS_SHARED_TARGET)`
+	-if test -e $(LIBADDNS_SHARED_TARGET_SONAME) ; then \
+		ln -s -f `basename $(LIBADDNS_SHARED_TARGET_SONAME)` \
+			$(DESTDIR)$(LIBDIR)/`basename $(LIBADDNS_SHARED_TARGET)` ; \
+	fi
+	-$(INSTALLLIBCMD_A) $(LIBADDNS_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
 
 uninstalllibaddns::
-	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libaddns.@SHLIBEXT@
-	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libaddns.a
+	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/`basename $(LIBADDNS_SHARED_TARGET_SONAME)`
+	-rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBADDNS_SHARED_TARGET)`
+	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBADDNS_STATIC_TARGET)`
 
 
 #-------------------------------------------------------------------
