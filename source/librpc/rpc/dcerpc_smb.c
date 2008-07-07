@@ -254,6 +254,7 @@ static NTSTATUS smb_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *b
         struct smb_trans2 *trans;
         uint16_t setup[2];
 	struct smb_trans_state *state;
+	uint16_t max_data;
 
 	state = talloc(smb, struct smb_trans_state);
 	if (state == NULL) {
@@ -270,8 +271,14 @@ static NTSTATUS smb_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *b
         setup[0] = TRANSACT_DCERPCCMD;
         setup[1] = smb->fnum;
 
+	if (c->srv_max_xmit_frag > 0) {
+	        max_data = MIN(UINT16_MAX, c->srv_max_xmit_frag);
+	} else {
+		max_data = UINT16_MAX;
+	}
+
         trans->in.max_param = 0;
-        trans->in.max_data = smb_raw_max_trans_data(smb->tree, 0);
+        trans->in.max_data = max_data;
         trans->in.max_setup = 0;
         trans->in.setup_count = 2;
         trans->in.flags = 0;
