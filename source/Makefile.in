@@ -1725,6 +1725,12 @@ $(LIBADDNS_STATIC_TARGET): $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 
 libaddns: $(LIBADDNS)
 
+cleanlibaddns::
+	-rm -f \
+		$(LIBADDNS_SHARED_TARGET) \
+		$(LIBADDNS_SHARED_TARGET_SONAME) \
+		$(LIBADDNS_STATIC_TARGET)
+
 installlibaddns:: installdirs libaddns
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBADDNS_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
@@ -2507,7 +2513,7 @@ uninstallpammodules::
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
-clean:: delheaders cleanlibtalloc cleanlibtdb cleanlibnetapi cleanlibwbclient cleansmbclient cleanlibsmbsharemodes
+clean:: delheaders cleanlibtalloc cleanlibtdb cleanlibnetapi cleanlibwbclient cleansmbclient cleanlibsmbsharemodes cleanlibaddns
 	-rm -f $(PRECOMPILED_HEADER)
 	-rm -f core */*~ *~ \
 		*/*.o */*/*.o */*/*/*.o \
@@ -2515,7 +2521,6 @@ clean:: delheaders cleanlibtalloc cleanlibtdb cleanlibnetapi cleanlibwbclient cl
 		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ */*/*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) \
-		$(LIBADDNS) \
 		$(EVERYTHING_PROGS) \
 		bin/timelimit \
 		.headers.stamp */src/*.o proto_exists
