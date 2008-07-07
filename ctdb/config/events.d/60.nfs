@@ -68,6 +68,27 @@ case $cmd in
 	;;
 
       monitor)
+	# check how many times in a row that nfsd has stopped responding
+	# after 3 times in a row we try to restart the full nfs service
+	NFSD_FAIL_COUNT_FILE=$CTDB_BASE/state/nfs/nfsd_fail_count
+	[ ! -f $NFSD_FAIL_COUNT_FILE ] && {
+		echo 0 > $NFSD_FAIL_COUNT_FILE
+	}
+	NFSD_FAIL_COUNT=`cat $NFSD_FAIL_COUNT_FILE`
+	[ -z "$NFSD_FAIL_COUNT" ] && {
+		echo 0 > $NFSD_FAIL_COUNT_FILE
+		NFSD_FAIL_COUNT=`cat $NFSD_FAIL_COUNT_FILE`
+	}
+	# ok it has failed a few times too many. try restarting it.
+	[ `expr "$NFSD_FAIL_COUNT" ">" "3"` != "0" ] && {
+		echo 60.nfs NFSD: trying to restart NFSD...
+		echo 0 > $NFSD_FAIL_COUNT_FILE
+		service nfs restart
+		exit 0
+	}
+	expr "$NFSD_FAIL_COUNT" "+" "1" > $NFSD_FAIL_COUNT_FILE
+
+
 	# check that statd responds to rpc requests
 	# if statd is not running we try to restart it once and wait
 	# for the next monitoring event to verify if it is running or not
@@ -93,6 +114,7 @@ case $cmd in
 	fi
 
 
+
 	# check that NFS responds to rpc requests
 	ctdb_check_rpc "NFS" 100003 3
 
@@ -114,6 +136,9 @@ case $cmd in
 		rpc.mountd $RPCMOUNTDOPTS &
 		exit 1
 	}
+	
+	# everything was ok with nfs so reset the fail count back to 0
+	echo 0 > $NFSD_FAIL_COUNT_FILE
 	;;
 
 esac
