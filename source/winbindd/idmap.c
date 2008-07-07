@@ -798,7 +798,7 @@ NTSTATUS idmap_init(void)
 		}
 	}
 
-	/* cleanpu temporary strings */
+	/* cleanup temporary strings */
 	TALLOC_FREE( compat_backend );
 
 	idmap_init_status = NT_STATUS_OK;
@@ -897,7 +897,7 @@ NTSTATUS idmap_set_gid_hwm(struct unixid *id)
 static struct idmap_domain* find_idmap_domain_from_sid( DOM_SID *account_sid )
 {
 	DOM_SID domain_sid;
-	uint32 rid;
+	uint32_t rid;
 	struct winbindd_domain *domain = NULL;
 	int i;
 
@@ -939,7 +939,7 @@ static struct idmap_domain* find_idmap_domain_from_sid( DOM_SID *account_sid )
  Lookup an index given an idmap_domain pointer
  ******************************************************************************/
 
-static uint32 find_idmap_domain_index( struct idmap_domain *id_domain)
+static uint32_t find_idmap_domain_index( struct idmap_domain *id_domain)
 {
 	int i;
 
@@ -1212,7 +1212,7 @@ static NTSTATUS idmap_backends_sids_to_unixids(struct id_map **ids)
 	/* partition the requests by domain */
 
 	for (i = 0; ids[i]; i++) {
-		uint32 idx;
+		uint32_t idx;
 
 		if ((dom = find_idmap_domain_from_sid(ids[i]->sid)) == NULL) {
 			/* no available idmap_domain.  Move on */
