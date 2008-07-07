@@ -79,10 +79,6 @@ AC_SUBST(INSTALLLIBCMD_SH)
 AC_SUBST(INSTALLLIBCMD_A)
 AC_SUBST(UNINSTALLLIBCMD_SH)
 AC_SUBST(UNINSTALLLIBCMD_A)
-AC_SUBST(INSTALL_LIBADDNS)
-AC_SUBST(UNINSTALL_LIBADDNS)
-AC_SUBST(LIBADDNS_SHARED)
-AC_SUBST(LIBADDNS)
 
 AC_SUBST(INSTALL_LIBWBCLIENT)
 AC_SUBST(UNINSTALL_LIBWBCLIENT)
@@ -4669,39 +4665,7 @@ SMB_LIBRARY(tdb)
 SMB_LIBRARY(netapi)
 SMB_LIBRARY(smbclient)
 SMB_LIBRARY(smbsharemodes)
-
-
-#################################################
-# should we build libaddns?
-INSTALL_LIBADDNS=
-UNINSTALL_LIBADDNS=
-LIBADDNS_SHARED=
-LIBADDNS=
-AC_MSG_CHECKING(whether to build the libaddns shared library)
-AC_ARG_WITH(libaddns,
-[AS_HELP_STRING([--with-libaddns], [Build the libaddns shared library (default=no undefined API)])],
-[ case "$withval" in
-  *)
-     AC_MSG_RESULT(no)
-     ;;
-  yes)
-     if test $BLDSHARED = true; then
-        LIBADDNS_SHARED=bin/libaddns.$SHLIBEXT
-        LIBADDNS=libaddns
-        AC_MSG_RESULT(yes)
-     else
-	enable_static=yes
-        AC_MSG_RESULT(no shared library support -- will supply static library)
-     fi
-     if test $enable_static = yes; then
-        LIBADDNS=libaddns
-     fi
-     INSTALL_LIBADDNS=installlibaddns
-     UNINSTALL_LIBADDNS=uninstalllibaddns
-     ;;
-  esac ],
-[AC_MSG_RESULT(no)]
-)
+SMB_LIBRARY(addns, no, [undefined API])
 
 
 
