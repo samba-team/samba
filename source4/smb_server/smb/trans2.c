@@ -1291,9 +1291,20 @@ static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
 	uint16_t param_disp, data_disp;
 	uint16_t param_total, data_total;
 	DATA_BLOB params, data;
+	uint8_t wct;
+
+	if (command == SMBtrans2) {
+		wct = 9;
+	} else {
+		wct = 8;
+	}
 
 	/* parse request */
-	if (req->in.wct < 8) {
+	if (req->in.wct != wct) {
+		/*
+		 * TODO: add some error code tests
+		 *       w2k3 returns NT_STATUS_DOS(ERRSRV, ERRerror) here
+		 */
 		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
