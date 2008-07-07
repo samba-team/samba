@@ -343,6 +343,9 @@ PARAM_OBJ = $(PARAM_WITHOUT_REG_OBJ) $(PARAM_REG_ADD_OBJ)
 
 KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o
 
+LIBADDNS_OBJ0 = libaddns/dnsrecord.o libaddns/dnsutils.o  libaddns/dnssock.o \
+	       libaddns/dnsgss.o libaddns/dnsmarshall.o
+
 GPEXT_OBJ = libgpo/gpext/gpext.o @GPEXT_STATIC@
 
 LIBGPO_OBJ0 = libgpo/gpo_ldap.o libgpo/gpo_ini.o libgpo/gpo_util.o \
@@ -1717,8 +1720,6 @@ uninstalllibwbclient::
 #
 #-------------------------------------------------------------------
 
-LIBADDNS_OBJ0 = libaddns/dnsrecord.o libaddns/dnsutils.o  libaddns/dnssock.o \
-	       libaddns/dnsgss.o libaddns/dnsmarshall.o
 LIBADDNS_OBJ = $(LIBADDNS_OBJ0) @LIBTALLOC_STATIC@
 
 LIBADDNS=bin/libaddns.a @LIBADDNS_SHARED@
