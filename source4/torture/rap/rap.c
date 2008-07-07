@@ -206,7 +206,7 @@ static NTSTATUS rap_cli_do_call(struct smbcli_tree *tree,
 	params->flags = RAPNDR_FLAGS;
 
 	trans.in.max_param = call->rcv_paramlen;
-	trans.in.max_data = smb_raw_max_trans_data(tree, call->rcv_paramlen);
+	trans.in.max_data = call->rcv_datalen;
 	trans.in.max_setup = 0;
 	trans.in.flags = 0;
 	trans.in.timeout = 0;
