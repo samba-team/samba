@@ -64,7 +64,7 @@ struct trans_op {
 /* setup a trans2 reply, given the data and params sizes */
 static NTSTATUS trans2_setup_reply(struct smb_trans2 *trans,
 				   uint16_t param_size, uint16_t data_size,
-				   uint16_t setup_count)
+				   uint8_t setup_count)
 {
 	trans->out.setup_count = setup_count;
 	if (setup_count > 0) {
@@ -1157,7 +1157,8 @@ static void reply_trans_send(struct ntvfs_request *ntvfs)
 		      PTR_DIFF(this_req->out.data + this_param, this_req->out.hdr));
 		SSVAL(this_req->out.vwv, VWV(8), PTR_DIFF(data, trans->out.data.data));
 
-		SSVAL(this_req->out.vwv, VWV(9), trans->out.setup_count);
+		SCVAL(this_req->out.vwv, VWV(9), trans->out.setup_count);
+		SCVAL(this_req->out.vwv, VWV(9)+1, 0); /* reserved */
 		for (i=0;i<trans->out.setup_count;i++) {
 			SSVAL(this_req->out.vwv, VWV(10+i), trans->out.setup[i]);
 		}
