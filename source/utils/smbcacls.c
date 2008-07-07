@@ -900,8 +900,9 @@ static struct cli_state *connect_one(const char *server, const char *share)
 		{ "numeric", 0, POPT_ARG_NONE, &numeric, True, "Don't resolve sids or masks to names" },
 		{ "test-args", 't', POPT_ARG_NONE, &test_args, True, "Test arguments"},
 		POPT_COMMON_SAMBA
+		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
-		{ NULL }
+		POPT_TABLEEND
 	};
 
 	struct cli_state *cli;
