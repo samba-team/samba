@@ -1908,6 +1908,12 @@ $(LIBSMBSHAREMODES_STATIC_TARGET): $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ)
 
 libsmbsharemodes: $(LIBSMBSHAREMODES)
 
+cleanlibsmbsharemodes::
+	-rm -f \
+		$(LIBSMBSHAREMODES_SHARED_TARGET) \
+		$(LIBSMBSHAREMODES_SHARED_TARGET_SONAME) \
+		$(LIBSMBSHAREMODES_STATIC_TARGET)
+
 installlibsmbsharemodes:: installdirs libsmbsharemodes
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBSMBSHAREMODES_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
@@ -2484,7 +2490,7 @@ uninstallpammodules::
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
-clean:: delheaders cleanlibtalloc cleanlibtdb cleanlibnetapi cleanlibwbclient cleansmbclient
+clean:: delheaders cleanlibtalloc cleanlibtdb cleanlibnetapi cleanlibwbclient cleansmbclient cleanlibsmbsharemodes
 	-rm -f $(PRECOMPILED_HEADER)
 	-rm -f core */*~ *~ \
 		*/*.o */*/*.o */*/*/*.o \
@@ -2493,7 +2499,7 @@ clean:: delheaders cleanlibtalloc cleanlibtdb cleanlibnetapi cleanlibwbclient cl
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) \
 		$(LIBADDNS) \
-		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) \
+		$(EVERYTHING_PROGS) \
 		bin/timelimit \
 		.headers.stamp */src/*.o proto_exists
 	-rm -rf t_dir
