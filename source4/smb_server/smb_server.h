@@ -355,8 +355,11 @@ struct smbsrv_connection {
 	struct smbsrv_trans_partial {
 		struct smbsrv_trans_partial *next, *prev;
 		struct smbsrv_request *req;
-		struct smb_trans2 *trans;
 		uint8_t command;
+		union {
+			struct smb_trans2 *trans;
+			struct smb_nttrans *nttrans;
+		} u;
 	} *trans_partial;
 
 	/* configuration parameters */

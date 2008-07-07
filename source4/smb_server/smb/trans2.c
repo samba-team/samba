@@ -1036,7 +1036,7 @@ static NTSTATUS trans2_backend(struct smbsrv_request *req, struct trans_op *op)
 	return NT_STATUS_FOOBAR;
 }
 
-static int smbsrv_trans_partial_destructor(struct smbsrv_trans_partial *tp)
+int smbsrv_trans_partial_destructor(struct smbsrv_trans_partial *tp)
 {
 	DLIST_REMOVE(tp->req->smb_conn->trans_partial, tp);
 	return 0;
@@ -1063,7 +1063,7 @@ static void reply_trans_continue(struct smbsrv_request *req, uint8_t command,
 	tp = talloc(req, struct smbsrv_trans_partial);
 
 	tp->req = req;
-	tp->trans = trans;
+	tp->u.trans = trans;
 	tp->command = command;
 
 	DLIST_ADD(req->smb_conn->trans_partial, tp);
@@ -1323,7 +1323,7 @@ static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
 		return;
 	}
 
-	trans = tp->trans;
+	trans = tp->u.trans;
 
 	param_total           = SVAL(req->in.vwv, VWV(0));
 	data_total            = SVAL(req->in.vwv, VWV(1));
