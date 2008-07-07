@@ -1036,6 +1036,12 @@ static NTSTATUS trans2_backend(struct smbsrv_request *req, struct trans_op *op)
 	return NT_STATUS_FOOBAR;
 }
 
+static int smbsrv_trans_partial_destructor(struct smbsrv_trans_partial *tp)
+{
+	DLIST_REMOVE(tp->req->smb_conn->trans_partial, tp);
+	return 0;
+}
+
 
 /*
   send a continue request
@@ -1043,6 +1049,7 @@ static NTSTATUS trans2_backend(struct smbsrv_request *req, struct trans_op *op)
 static void reply_trans_continue(struct smbsrv_request *req, uint8_t command,
 				 struct smb_trans2 *trans)
 {
+	struct smbsrv_request *req2;
 	struct smbsrv_trans_partial *tp;
 	int count;
 
@@ -1055,15 +1062,18 @@ static void reply_trans_continue(struct smbsrv_request *req, uint8_t command,
 
 	tp = talloc(req, struct smbsrv_trans_partial);
 
-	tp->req = talloc_reference(tp, req);
+	tp->req = req;
 	tp->trans = trans;
 	tp->command = command;
 
 	DLIST_ADD(req->smb_conn->trans_partial, tp);
+	talloc_set_destructor(tp, smbsrv_trans_partial_destructor);
+
+	req2 = smbsrv_setup_secondary_request(req);
 
 	/* send a 'please continue' reply */
-	smbsrv_setup_reply(req, 0, 0);
-	smbsrv_send_reply(req);
+	smbsrv_setup_reply(req2, 0, 0);
+	smbsrv_send_reply(req2);
 }
 
 
@@ -1334,7 +1344,8 @@ static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
 							 uint8_t, 
 							 param_disp + param_count);
 		if (trans->in.params.data == NULL) {
-			goto failed;
+			smbsrv_send_error(tp->req, NT_STATUS_NO_MEMORY);
+			return;
 		}
 		trans->in.params.length = param_disp + param_count;
 	}
@@ -1345,7 +1356,8 @@ static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
 						       uint8_t, 
 						       data_disp + data_count);
 		if (trans->in.data.data == NULL) {
-			goto failed;
+			smbsrv_send_error(tp->req, NT_STATUS_NO_MEMORY);
+			return;
 		}
 		trans->in.data.length = data_disp + data_count;
 	}
@@ -1363,16 +1375,11 @@ static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
 	if (trans->in.params.length == param_total &&
 	    trans->in.data.length == data_total) {
 		/* its now complete */
-		DLIST_REMOVE(tp->req->smb_conn->trans_partial, tp);
-		reply_trans_complete(tp->req, command, trans);
+		req = tp->req;
+		talloc_free(tp);
+		reply_trans_complete(req, command, trans);
 	}
 	return;
-
-failed:	
-	smbsrv_send_error(tp->req, NT_STATUS_NO_MEMORY);
-	DLIST_REMOVE(req->smb_conn->trans_partial, tp);
-	talloc_free(req);
-	talloc_free(tp);
 }
 
 
