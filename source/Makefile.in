@@ -1511,6 +1511,14 @@ LIBRARIES = libtalloc libtdb libwbclient libsmbclient libsmbsharemodes libaddns 
 
 libs: $(LIBRARIES)
 
+cleanlibs:: cleanlibtalloc \
+	    cleanlibtdb \
+	    cleanlibnetapi \
+	    cleanlibwbclient \
+	    cleanlibsmbclient \
+	    cleanlibsmbsharemodes \
+	    cleanlibaddns
+
 
 #-------------------------------------------------------------------
 #
@@ -2522,7 +2530,7 @@ uninstallpammodules::
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
-clean:: delheaders cleanlibtalloc cleanlibtdb cleanlibnetapi cleanlibwbclient cleanlibsmbclient cleanlibsmbsharemodes cleanlibaddns
+clean:: delheaders cleanlibs
 	-rm -f $(PRECOMPILED_HEADER)
 	-rm -f core */*~ *~ \
 		*/*.o */*/*.o */*/*/*.o \
