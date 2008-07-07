@@ -521,3 +521,83 @@ done:
 	return ret;
 }
 
+bool idmap_cache_find_sid2uid(const struct dom_sid *sid, uid_t *puid,
+			      bool *expired)
+{
+	fstring sidstr;
+	char *key;
+	char *value;
+	char *endptr;
+	time_t timeout;
+	uid_t uid;
+	bool ret;
+
+	key = talloc_asprintf(talloc_tos(), "IDMAP/SID2UID/%s",
+			      sid_to_fstring(sidstr, sid));
+	if (key == NULL) {
+		return false;
+	}
+	ret = gencache_get(key, &value, &timeout);
+	TALLOC_FREE(key);
+	if (!ret) {
+		return false;
+	}
+	uid = strtol(value, &endptr, 10);
+	ret = (*endptr == '\0');
+	SAFE_FREE(value);
+	if (ret) {
+		*puid = uid;
+		*expired = (timeout <= time(NULL));
+	}
+	return ret;
+}
+
+bool idmap_cache_find_uid2sid(uid_t uid, struct dom_sid *sid, bool *expired)
+{
+	char *key;
+	char *value;
+	time_t timeout;
+	bool ret;
+
+	key = talloc_asprintf(talloc_tos(), "IDMAP/UID2SID/%d", (int)uid);
+	if (key == NULL) {
+		return false;
+	}
+	ret = gencache_get(key, &value, &timeout);
+	TALLOC_FREE(key);
+	if (!ret) {
+		return false;
+	}
+	ZERO_STRUCTP(sid);
+	ret = string_to_sid(sid, value);
+	SAFE_FREE(value);
+	if (ret) {
+		*expired = (timeout <= time(NULL));
+	}
+	return ret;
+}
+
+void idmap_cache_set_sid2uid(const struct dom_sid *sid, uid_t uid)
+{
+	time_t now = time(NULL);
+	time_t timeout;
+	fstring sidstr, key, value;
+
+	if (!is_null_sid(sid)) {
+		fstr_sprintf(key, "IDMAP/SID2UID/%s",
+			     sid_to_fstring(sidstr, sid));
+		fstr_sprintf(value, "%d", (int)uid);
+		timeout = (uid == -1)
+			? lp_idmap_negative_cache_time()
+			: lp_idmap_cache_time();
+		gencache_set(key, value, now + timeout);
+	}
+	if (uid != -1) {
+		fstr_sprintf(key, "IDMAP/UID2SID/%d", (int)uid);
+		sid_to_fstring(value, sid);
+		timeout = is_null_sid(sid)
+			? lp_idmap_negative_cache_time()
+			: lp_idmap_cache_time();
+		gencache_set(key, value, now + timeout);
+	}
+}

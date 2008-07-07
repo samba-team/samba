@@ -379,4 +379,6 @@ enum ent_type {
 #define IS_DOMAIN_OFFLINE(x) ( lp_winbind_offline_logon() && \
 			       ( get_global_winbindd_state_offline() \
 				 || !(x)->online ) )
+#define IS_DOMAIN_ONLINE(x) (!IS_DOMAIN_OFFLINE(x))
+
 #endif /* _WINBINDD_H */
