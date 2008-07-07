@@ -1061,7 +1061,7 @@ VLP_OBJ = $(VLP_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 ######################################################################
 # now the rules...
 ######################################################################
-all:: SHOWFLAGS $(SHLIBS) $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
+all:: SHOWFLAGS $(LIBRARIES) $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
 	$(MODULES) $(NSS_MODULES) $(PAM_MODULES) @EXTRA_ALL_TARGETS@
 
 nss_modules:: $(NSS_MODULES)
@@ -1497,9 +1497,19 @@ bin/ldbdel: $(BINARY_PREREQS) $(LDBDEL_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIB
 
 MKSYMS_SH = $(srcdir)/script/mksyms.sh
 
-SHLIBS = libtalloc libtdb @LIBWBCLIENT@ libsmbclient libsmbsharemodes libaddns libnetapi
+SHLIBS = @LIBTALLOC_SHARED@ \
+	 @LIBTDB_SHARED@ \
+	 @LIBWBCLIENT_SHARED@ \
+	 @LIBSMBCLIENT_SHARED@ \
+	 @LIBSMBSHAREMODES_SHARED@ \
+	 @LIBADDNS_SHARED@ \
+	 @LIBNETAPI_SHARED@
 
 shlibs: $(SHLIBS)
+
+LIBRARIES = libtalloc libtdb libwbclient libsmbclient libsmbsharemodes libaddns libnetapi
+
+libs: $(LIBRARIES)
 
 
 #-------------------------------------------------------------------
@@ -2659,7 +2669,7 @@ test_shlibs:: $(SHLIBS)
 	@echo "Testing $(SHLIBS) "
 	@export $(LIB_PATH_VAR)=./bin && \
 	for module in $(SHLIBS); do \
-		./script/tests/dlopen.sh bin/$${module}.@SHLIBEXT@ \
+		./script/tests/dlopen.sh $${module} \
 			|| exit 1; \
 	done
 
