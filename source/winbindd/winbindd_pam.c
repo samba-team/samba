@@ -2114,10 +2114,20 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 done: 
 
 	if (NT_STATUS_IS_OK(result) && (state->request.flags & WBFLAG_PAM_CACHED_LOGIN)) {
-		
+
 		/* Update the single sign-on memory creds. */
 		result = winbindd_replace_memory_creds(state->request.data.chauthtok.user,
 							newpass);
+
+		/* When we login from gdm or xdm and password expires,
+		 * we change password, but there are no memory crendentials
+		 * So, winbindd_replace_memory_creds() returns
+		 * NT_STATUS_OBJECT_NAME_NOT_FOUND. This is not a failure.
+		 * --- BoYang
+		 * */
+		if (NT_STATUS_EQUAL(result, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			result = NT_STATUS_OK;
+		}
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to replace memory creds: %s\n", nt_errstr(result)));
@@ -2128,12 +2138,23 @@ done:
 			result = winbindd_update_creds_by_name(contact_domain,
 							 state->mem_ctx, user,
 							 newpass);
+			/* Again, this happens when we login from gdm or xdm
+			 * and the password expires, *BUT* cached crendentials
+			 * doesn't exist. winbindd_update_creds_by_name()
+			 * returns NT_STATUS_NO_SUCH_USER.
+			 * This is not a failure.
+			 * --- BoYang
+			 * */
+			if (NT_STATUS_EQUAL(result, NT_STATUS_NO_SUCH_USER)) {
+				result = NT_STATUS_OK;
+			}
+
 			if (!NT_STATUS_IS_OK(result)) {
 				DEBUG(10,("Failed to store creds: %s\n", nt_errstr(result)));
 				goto process_result;
 			}
 		}
-	}		
+	}
 
 	if (!NT_STATUS_IS_OK(result) && !got_info && contact_domain) {
 
