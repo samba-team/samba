@@ -142,8 +142,6 @@ CODEPAGEDIR = @codepagedir@
 # the directory where pid files go
 PIDDIR = @piddir@
 
-LIBADDNS=bin/libaddns.a @LIBADDNS_SHARED@
-
 FLAGS1 = $(CFLAGS) @FLAGS1@ @SAMBA_CPPFLAGS@ $(CPPFLAGS)
 FLAGS2 =
 FLAGS3 =
@@ -338,10 +336,6 @@ PARAM_REG_ADD_OBJ = $(REG_SMBCONF_OBJ) $(LIBSMBCONF_OBJ) $(PRIVILEGES_BASIC_OBJ)
 PARAM_OBJ = $(PARAM_WITHOUT_REG_OBJ) $(PARAM_REG_ADD_OBJ)
 
 KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o
-
-LIBADDNS_OBJ0 = libaddns/dnsrecord.o libaddns/dnsutils.o  libaddns/dnssock.o \
-	       libaddns/dnsgss.o libaddns/dnsmarshall.o
-LIBADDNS_OBJ = $(LIBADDNS_OBJ0) $(SOCKET_WRAPPER_OBJ) @LIBTALLOC_STATIC@
 
 LIBGPO_OBJ0 = libgpo/gpo_ldap.o libgpo/gpo_ini.o libgpo/gpo_util.o \
 	      libgpo/gpo_fetch.o libgpo/gpo_filesync.o libgpo/gpo_sec.o
@@ -1702,7 +1696,11 @@ uninstalllibwbclient::
 #
 #-------------------------------------------------------------------
 
-libaddns: $(LIBADDNS)
+LIBADDNS_OBJ0 = libaddns/dnsrecord.o libaddns/dnsutils.o  libaddns/dnssock.o \
+	       libaddns/dnsgss.o libaddns/dnsmarshall.o
+LIBADDNS_OBJ = $(LIBADDNS_OBJ0) @LIBTALLOC_STATIC@
+
+LIBADDNS=bin/libaddns.a @LIBADDNS_SHARED@
 
 bin/libaddns.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBADDNS_OBJ) @LIBTALLOC_SHARED@
 	@echo Linking shared library $@
@@ -1713,6 +1711,17 @@ bin/libaddns.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBADDNS_OBJ) @LIBTALLOC_SHARED@
 bin/libaddns.a: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBADDNS_OBJ)
+
+libaddns: $(LIBADDNS)
+
+installlibaddns:: installdirs libaddns
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
+	-$(INSTALLLIBCMD_SH) bin/libaddns.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
+	-$(INSTALLLIBCMD_A) bin/libaddns.a $(DESTDIR)$(LIBDIR)
+
+uninstalllibaddns::
+	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libaddns.@SHLIBEXT@
+	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libaddns.a
 
 
 #-------------------------------------------------------------------
@@ -2402,11 +2411,6 @@ installmsg:: installdirs
 installswat:: installdirs installmsg
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR) $(SWATDIR) $(srcdir)
 
-installlibaddns:: installdirs libaddns
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
-	-$(INSTALLLIBCMD_SH) bin/libaddns.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
-	-$(INSTALLLIBCMD_A) bin/libaddns.a $(DESTDIR)$(LIBDIR)
-
 installpammodules:: $(PAM_MODULES)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(PAMMODULESDIR)
 	@for module in $(PAM_MODULES); do \
@@ -2476,10 +2480,6 @@ uninstallmsg::
 
 uninstallswat:: uninstallmsg
 	@$(SHELL) $(srcdir)/script/uninstallswat.sh $(DESTDIR) $(SWATDIR) $(srcdir)
-
-uninstalllibaddns::
-	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libaddns.@SHLIBEXT@
-	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libaddns.a
 
 uninstallpammodules::
 	@for module in $(PAM_MODULES); do \
