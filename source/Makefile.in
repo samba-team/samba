@@ -1746,6 +1746,12 @@ $(LIBADDNS_STATIC_TARGET): $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 
 libaddns: $(LIBADDNS)
 
+cleanlibaddns::
+	-rm -f \
+		$(LIBADDNS_SHARED_TARGET) \
+		$(LIBADDNS_SHARED_TARGET_SONAME) \
+		$(LIBADDNS_STATIC_TARGET)
+
 installlibaddns:: installdirs libaddns
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBADDNS_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
@@ -2547,7 +2553,7 @@ uninstallpammodules::
 # Toplevel clean files
 TOPFILES=dynconfig.o
 
-clean:: cleanlibtalloc cleanlibtdb cleanlibnetapi cleanlibwbclient cleansmbclient cleanlibsmbsharemodes
+clean:: cleanlibtalloc cleanlibtdb cleanlibnetapi cleanlibwbclient cleansmbclient cleanlibsmbsharemodes cleanlibaddns
 	-rm -f include/build_env.h
 	-rm -f smbd/build_options.c
 	-rm -f $(PRECOMPILED_HEADER)
@@ -2557,7 +2563,6 @@ clean:: cleanlibtalloc cleanlibtdb cleanlibnetapi cleanlibwbclient cleansmbclien
 		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ */*/*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) \
-		$(LIBADDNS) \
 		$(EVERYTHING_PROGS) \
 		bin/timelimit \
 		.headers.stamp */src/*.o
