@@ -86,6 +86,7 @@ AC_SUBST(LIBWBCLIENT_SHARED_TARGET)
 AC_SUBST(LIBWBCLIENT_SHARED)
 AC_SUBST(LIBWBCLIENT_STATIC_TARGET)
 AC_SUBST(LIBWBCLIENT_STATIC)
+AC_SUBST(LIBWBCLIENT_SOVER)
 AC_SUBST(LIBWBCLIENT)
 AC_SUBST(WINBIND_LIBS)
 
@@ -4660,12 +4661,19 @@ LINK_LIBNETAPI=STATIC
 
 LINK_LIBSMBCLIENT=STATIC
 
-SMB_LIBRARY(talloc)
-SMB_LIBRARY(tdb)
-SMB_LIBRARY(netapi)
-SMB_LIBRARY(smbclient)
-SMB_LIBRARY(smbsharemodes)
-SMB_LIBRARY(addns, no, [undefined API])
+#
+#  The library versions are hardcoded here
+#  and filled into the LIBFOO_SOVER variable.
+#
+#  TODO: for talloc and tdb (at least), these should
+#  be extracted from their respective source directories
+#
+SMB_LIBRARY(talloc, 1)
+SMB_LIBRARY(tdb, 1)
+SMB_LIBRARY(netapi, 0)
+SMB_LIBRARY(smbclient, 0)
+SMB_LIBRARY(smbsharemodes, 0)
+SMB_LIBRARY(addns, 0, no, [undefined API])
 
 
 
@@ -5602,6 +5610,7 @@ fi
 
 LIBWBCLIENT_SHARED_TARGET=bin/libwbclient.$SHLIBEXT
 LIBWBCLIENT_STATIC_TARGET=bin/libwbclient.a
+LIBWBCLIENT_SOVER=0
 if test $BLDSHARED = true -a x"$HAVE_WINBIND" = x"yes" -a x"$BUILD_LIBWBCLIENT_SHARED" = x"yes"; then
 	NSS_MODULES="${WINBIND_NSS} ${WINBIND_WINS_NSS}"
 	## Only worry about libwbclient if we have shared library support
