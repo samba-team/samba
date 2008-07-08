@@ -3011,9 +3011,6 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 		exit(1);
 	}
 
-	/* we dont want any SIGCHLD */
-	signal(SIGCHLD, SIG_IGN);
-
 	monitor_cluster(ctdb);
 
 	DEBUG(DEBUG_ALERT,("ERROR: ctdb_recoverd finished!?\n"));

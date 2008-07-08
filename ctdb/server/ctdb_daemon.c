@@ -662,6 +662,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 		}
 	}
 	block_signal(SIGPIPE);
+	
+	/* we dont want any SIGCHLD */
+	signal(SIGCHLD, SIG_DFL);
 
 	if (ctdb->do_setsched) {
 		/* try to set us up as realtime */
@@ -730,9 +733,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 
 	/* start the transport going */
 	ctdb_start_transport(ctdb);
-
-	/* we dont want any SIGCHLD */
-	signal(SIGCHLD, SIG_IGN);
 
 	/* go into a wait loop to allow other nodes to complete */
 	event_loop_wait(ctdb->ev);
