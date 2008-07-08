@@ -929,21 +929,22 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 	DEBUG(11,("regdb_fetch_keys: Enter key => [%s]\n", key ? key : "NULL"));
 
 	if (!regdb_key_exists(key)) {
-		goto fail;
+		goto done;
 	}
 
 	ctr->seqnum = regdb_get_seqnum();
 
 	value = regdb_fetch_key_internal(frame, key);
 
-	buf = value.dptr;
-	buflen = value.dsize;
-
-	if ( !buf ) {
-		DEBUG(5,("regdb_fetch_keys: tdb lookup failed to locate key [%s]\n", key));
-		goto fail;
+	if (value.dptr == NULL) {
+		DEBUG(10, ("regdb_fetch_keys: no subkeys found for key [%s]\n",
+			   key));
+		ret = 0;
+		goto done;
 	}
 
+	buf = value.dptr;
+	buflen = value.dsize;
 	len = tdb_unpack( buf, buflen, "d", &num_items);
 
 	for (i=0; i<num_items; i++) {
@@ -952,14 +953,14 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(5, ("regdb_fetch_keys: regsubkey_ctr_addkey "
 				  "failed: %s\n", dos_errstr(werr)));
-			goto fail;
+			goto done;
 		}
 	}
 
 	DEBUG(11,("regdb_fetch_keys: Exit [%d] items\n", num_items));
 
 	ret = num_items;
- fail:
+done:
 	TALLOC_FREE(frame);
 	return ret;
 }
