@@ -365,7 +365,7 @@ void in_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
 {
 	struct sockaddr_in *sa = (struct sockaddr_in *)ss;
 	memset(ss, '\0', sizeof(*ss));
-	ss->ss_family = AF_INET;
+	sa->sin_family = AF_INET;
 	sa->sin_addr = ip;
 }
 
@@ -379,7 +379,7 @@ void in_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
 {
 	struct sockaddr_in6 *sa = (struct sockaddr_in6 *)ss;
 	memset(ss, '\0', sizeof(*ss));
-	ss->ss_family = AF_INET6;
+	sa->sin6_family = AF_INET6;
 	sa->sin6_addr = ip;
 }
 #endif
