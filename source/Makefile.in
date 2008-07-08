@@ -338,6 +338,7 @@ KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o
 
 LIBADDNS_OBJ0 = libaddns/dnsrecord.o libaddns/dnsutils.o  libaddns/dnssock.o \
 	       libaddns/dnsgss.o libaddns/dnsmarshall.o
+LIBADDNS_OBJ = $(LIBADDNS_OBJ0) @LIBTALLOC_STATIC@
 
 LIBGPO_OBJ0 = libgpo/gpo_ldap.o libgpo/gpo_ini.o libgpo/gpo_util.o \
 	      libgpo/gpo_fetch.o libgpo/gpo_filesync.o libgpo/gpo_sec.o
@@ -1738,7 +1739,6 @@ uninstalllibwbclient::
 #
 #-------------------------------------------------------------------
 
-LIBADDNS_OBJ = $(LIBADDNS_OBJ0) @LIBTALLOC_STATIC@
 
 LIBADDNS_SHARED_TARGET=@LIBADDNS_SHARED_TARGET@
 LIBADDNS_SOVER=@LIBADDNS_SOVER@
