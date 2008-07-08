@@ -435,7 +435,7 @@ testit "delete key with value" \
 if test "x${RPC}" = "xrpc" ; then
 testit "taking administrative rights from user ${USERNAME}" \
 	take_administrative_rights || \
-	failed=`expr $failed +1`
+	failed=`expr $failed + 1`
 fi
 
 testok $0 $failed
