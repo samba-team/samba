@@ -87,6 +87,7 @@ static int ctdb_freeze_handle_destructor(struct ctdb_freeze_handle *h)
 	ctdb->freeze_handle = NULL;
 
 	kill(h->child, SIGKILL);
+	waitpid(h->child, NULL, 0);
 	return 0;
 }
 

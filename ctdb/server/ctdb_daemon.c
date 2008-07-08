@@ -662,9 +662,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 		}
 	}
 	block_signal(SIGPIPE);
-	
-	/* we dont want any SIGCHLD */
-	signal(SIGCHLD, SIG_DFL);
 
 	if (ctdb->do_setsched) {
 		/* try to set us up as realtime */

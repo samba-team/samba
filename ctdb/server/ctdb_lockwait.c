@@ -72,6 +72,7 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 	tdb_chainlock_unmark(tdb, key);
 
 	kill(child, SIGKILL);
+	waitpid(child, NULL, 0);
 	talloc_free(tmp_ctx);
 }
 
@@ -79,6 +80,7 @@ static int lockwait_destructor(struct lockwait_handle *h)
 {
 	h->ctdb->statistics.pending_lockwait_calls--;
 	kill(h->child, SIGKILL);
+	waitpid(h->child, NULL, 0);
 	return 0;
 }
 

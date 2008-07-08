@@ -459,6 +459,7 @@ static void ctdb_set_recmode_timeout(struct event_context *ev, struct timed_even
 static int set_recmode_destructor(struct ctdb_set_recmode_state *state)
 {
 	kill(state->child, SIGKILL);
+	waitpid(state->child, NULL, 0);
 	return 0;
 }
 

@@ -2933,6 +2933,11 @@ static void ctdb_check_recd(struct event_context *ev, struct timed_event *te,
 {
 	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
 
+	/* make sure we harvest the child if signals are blocked for some
+	   reason
+	*/
+	waitpid(ctdb->recoverd_pid, 0, WNOHANG);
+
 	if (kill(ctdb->recoverd_pid, 0) != 0) {
 		DEBUG(DEBUG_ERR,("Recovery daemon (pid:%d) is no longer running. Shutting down main daemon\n", (int)ctdb->recoverd_pid));
 
