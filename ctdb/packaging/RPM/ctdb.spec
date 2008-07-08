@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 44
+Release: 45
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,15 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Tue Jul 8 2008 : Version 1.0.45
+ - Try to restart the nfs service if it has failed to respond 3 times in a row.
+ - waitpid() can block if the child does not respond promptly to SIGTERM.
+   ignore all SIGCHILD signals by setting SIGCHLD to SIG_DEF.
+   get rid of all calls to waitpid().
+ - make handling of eventscripts hanging more liberal.
+   only consider the script to have failed and making the node unhealthy
+   IF the eventscript terminated wiht an error
+   OR the eventscript hung 5 or more times in a row
 * Mon Jul 7 2008 : Version 1.0.44
  - Add a CTDB_VALGRIND option to /etc/sysconfig/ctdb to make it start
    ctdb under valgrind. Logs go to /var/log/ctdb_valgrind.PID
