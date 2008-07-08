@@ -402,7 +402,7 @@ testit "delete^2 key" \
 
 testit "enumerate nonexisting key" \
 	test_enumerate_nonexisting HKLM/testkey || \
-	failed=`expr $failed +1`
+	failed=`expr $failed + 1`
 
 testit "create key with subkey" \
 	test_createkey_with_subkey HKLM/testkey/subkey || \
