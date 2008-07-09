@@ -100,3 +100,228 @@ _PUBLIC_ void ndr_print_tdb_xattrs(struct ndr_print *ndr, const char *name, cons
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_security_descriptor_timestamp(struct ndr_push *ndr, int ndr_flags, const struct security_descriptor_timestamp *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->sd));
+		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->last_changed));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->sd) {
+			NDR_CHECK(ndr_push_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, r->sd));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor_timestamp(struct ndr_pull *ndr, int ndr_flags, struct security_descriptor_timestamp *r)
+{
+	uint32_t _ptr_sd;
+	TALLOC_CTX *_mem_save_sd_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sd));
+		if (_ptr_sd) {
+			NDR_PULL_ALLOC(ndr, r->sd);
+		} else {
+			r->sd = NULL;
+		}
+		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->last_changed));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->sd) {
+			_mem_save_sd_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->sd, 0);
+			NDR_CHECK(ndr_pull_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, r->sd));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sd_0, 0);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_security_descriptor_timestamp(struct ndr_print *ndr, const char *name, const struct security_descriptor_timestamp *r)
+{
+	ndr_print_struct(ndr, name, "security_descriptor_timestamp");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "sd", r->sd);
+	ndr->depth++;
+	if (r->sd) {
+		ndr_print_security_descriptor(ndr, "sd", r->sd);
+	}
+	ndr->depth--;
+	ndr_print_NTTIME(ndr, "last_changed", r->last_changed);
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_xattr_NTACL_Info(struct ndr_push *ndr, int ndr_flags, const union xattr_NTACL_Info *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
+		switch (level) {
+			case 1: {
+				NDR_CHECK(ndr_push_unique_ptr(ndr, r->sd));
+			break; }
+
+			case 2: {
+				NDR_CHECK(ndr_push_unique_ptr(ndr, r->sd_ts));
+			break; }
+
+			default:
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		switch (level) {
+			case 1:
+				if (r->sd) {
+					NDR_CHECK(ndr_push_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, r->sd));
+				}
+			break;
+
+			case 2:
+				if (r->sd_ts) {
+					NDR_CHECK(ndr_push_security_descriptor_timestamp(ndr, NDR_SCALARS|NDR_BUFFERS, r->sd_ts));
+				}
+			break;
+
+			default:
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_xattr_NTACL_Info(struct ndr_pull *ndr, int ndr_flags, union xattr_NTACL_Info *r)
+{
+	int level;
+	uint16_t _level;
+	TALLOC_CTX *_mem_save_sd_0;
+	TALLOC_CTX *_mem_save_sd_ts_0;
+	level = ndr_pull_get_switch_value(ndr, r);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
+		if (_level != level) {
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
+		}
+		switch (level) {
+			case 1: {
+				uint32_t _ptr_sd;
+				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sd));
+				if (_ptr_sd) {
+					NDR_PULL_ALLOC(ndr, r->sd);
+				} else {
+					r->sd = NULL;
+				}
+			break; }
+
+			case 2: {
+				uint32_t _ptr_sd_ts;
+				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sd_ts));
+				if (_ptr_sd_ts) {
+					NDR_PULL_ALLOC(ndr, r->sd_ts);
+				} else {
+					r->sd_ts = NULL;
+				}
+			break; }
+
+			default:
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		switch (level) {
+			case 1:
+				if (r->sd) {
+					_mem_save_sd_0 = NDR_PULL_GET_MEM_CTX(ndr);
+					NDR_PULL_SET_MEM_CTX(ndr, r->sd, 0);
+					NDR_CHECK(ndr_pull_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, r->sd));
+					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sd_0, 0);
+				}
+			break;
+
+			case 2:
+				if (r->sd_ts) {
+					_mem_save_sd_ts_0 = NDR_PULL_GET_MEM_CTX(ndr);
+					NDR_PULL_SET_MEM_CTX(ndr, r->sd_ts, 0);
+					NDR_CHECK(ndr_pull_security_descriptor_timestamp(ndr, NDR_SCALARS|NDR_BUFFERS, r->sd_ts));
+					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sd_ts_0, 0);
+				}
+			break;
+
+			default:
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_xattr_NTACL_Info(struct ndr_print *ndr, const char *name, const union xattr_NTACL_Info *r)
+{
+	int level;
+	level = ndr_print_get_switch_value(ndr, r);
+	ndr_print_union(ndr, name, level, "xattr_NTACL_Info");
+	switch (level) {
+		case 1:
+			ndr_print_ptr(ndr, "sd", r->sd);
+			ndr->depth++;
+			if (r->sd) {
+				ndr_print_security_descriptor(ndr, "sd", r->sd);
+			}
+			ndr->depth--;
+		break;
+
+		case 2:
+			ndr_print_ptr(ndr, "sd_ts", r->sd_ts);
+			ndr->depth++;
+			if (r->sd_ts) {
+				ndr_print_security_descriptor_timestamp(ndr, "sd_ts", r->sd_ts);
+			}
+			ndr->depth--;
+		break;
+
+		default:
+			ndr_print_bad_level(ndr, name, level);
+	}
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_xattr_NTACL(struct ndr_push *ndr, int ndr_flags, const struct xattr_NTACL *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->version));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->info, r->version));
+		NDR_CHECK(ndr_push_xattr_NTACL_Info(ndr, NDR_SCALARS, &r->info));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_push_xattr_NTACL_Info(ndr, NDR_BUFFERS, &r->info));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_xattr_NTACL(struct ndr_pull *ndr, int ndr_flags, struct xattr_NTACL *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->version));
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->info, r->version));
+		NDR_CHECK(ndr_pull_xattr_NTACL_Info(ndr, NDR_SCALARS, &r->info));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_pull_xattr_NTACL_Info(ndr, NDR_BUFFERS, &r->info));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_xattr_NTACL(struct ndr_print *ndr, const char *name, const struct xattr_NTACL *r)
+{
+	ndr_print_struct(ndr, name, "xattr_NTACL");
+	ndr->depth++;
+	ndr_print_uint16(ndr, "version", r->version);
+	ndr_print_set_switch_value(ndr, &r->info, r->version);
+	ndr_print_xattr_NTACL_Info(ndr, "info", &r->info);
+	ndr->depth--;
+}
+

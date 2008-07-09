@@ -15,4 +15,19 @@ struct tdb_xattrs {
 	struct tdb_xattr *xattrs;
 }/* [public] */;
 
+struct security_descriptor_timestamp {
+	struct security_descriptor *sd;/* [unique] */
+	NTTIME last_changed;
+}/* [public] */;
+
+union xattr_NTACL_Info {
+	struct security_descriptor *sd;/* [unique,case] */
+	struct security_descriptor_timestamp *sd_ts;/* [unique,case(2)] */
+}/* [switch_type(uint16)] */;
+
+struct xattr_NTACL {
+	uint16_t version;
+	union xattr_NTACL_Info info;/* [switch_is(version)] */
+}/* [public] */;
+
 #endif /* _HEADER_xattr */
