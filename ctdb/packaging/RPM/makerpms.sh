@@ -44,7 +44,6 @@ fi
 ## copy additional source files
 ##
 cp -p packaging/RPM/ctdb.spec ${SPECDIR}
-cp -p packaging/RPM/ctdb-dev.spec ${SPECDIR}
 
 ##
 ## Build
