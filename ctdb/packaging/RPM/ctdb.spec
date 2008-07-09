@@ -93,7 +93,7 @@ fi
 %config(noreplace) %{_sysconfdir}/ctdb/functions
 %attr(755,root,root) %{initdir}/ctdb
 
-%{_sysconfdir}/ctdb/events.d/README
+%{_docdir}/ctdb/README.eventscripts
 %{_sysconfdir}/ctdb/events.d/00.ctdb
 %{_sysconfdir}/ctdb/events.d/10.interface
 %{_sysconfdir}/ctdb/events.d/40.vsftpd
