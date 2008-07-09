@@ -9,7 +9,7 @@ loadconfig ctdb
 
 [ -x /sbin/ipvsadm ] || {
     echo "LVS configured but /sbin/ipvsadm is not installed."
-    exit 1
+    exit 0
 }
 
 
