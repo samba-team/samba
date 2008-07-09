@@ -116,8 +116,8 @@ fi
 %{_mandir}/man1/ctdb.1.gz
 %{_mandir}/man1/ctdbd.1.gz
 %{_mandir}/man1/onnode.1.gz
-# %{_includedir}/ctdb.h
-# %{_includedir}/ctdb_private.h
+%{_includedir}/ctdb.h
+%{_includedir}/ctdb_private.h
 
 %changelog
 * Tue Jul 8 2008 : Version 1.0.45
