@@ -190,13 +190,11 @@ install: all
 	${INSTALLCMD} -m 755 config/events.d/90.ipmux $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/91.lvs $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 tools/ctdb_diagnostics $(DESTDIR)$(bindir)
-	${INSTALLCMD} -m 755 tools/onnode.ssh $(DESTDIR)$(bindir)
-	${INSTALLCMD} -m 755 tools/onnode.rsh $(DESTDIR)$(bindir)
+	${INSTALLCMD} -m 755 tools/onnode $(DESTDIR)$(bindir)
 	if [ -f doc/ctdb.1 ];then ${INSTALLCMD} -d $(DESTDIR)$(mandir)/man1; fi
 	if [ -f doc/ctdb.1 ];then ${INSTALLCMD} -m 644 doc/ctdb.1 $(DESTDIR)$(mandir)/man1; fi
 	if [ -f doc/ctdbd.1 ];then ${INSTALLCMD} -m 644 doc/ctdbd.1 $(DESTDIR)$(mandir)/man1; fi
 	if [ -f doc/onnode.1 ];then ${INSTALLCMD} -m 644 doc/onnode.1 $(DESTDIR)$(mandir)/man1; fi
-	cd $(DESTDIR)$(bindir) && ln -sf onnode.ssh onnode
 
 test: all
 	tests/run_tests.sh
