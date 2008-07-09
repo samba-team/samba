@@ -723,8 +723,12 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 			goto cancel;
 		}
 		status = dbwrap_delete_bystring(regdb, path);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Deleting %s failed\n", path));
+		/* Don't fail if the subkey record was not found. */
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND))
+		{
+			DEBUG(1, ("Deleting %s failed: %s\n", path,
+				  nt_errstr(status)));
 			goto cancel;
 		}
 		TALLOC_FREE(path);
