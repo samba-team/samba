@@ -1271,6 +1271,7 @@ const char *get_cmdline_auth_info_password(void);
 void set_cmdline_auth_info_password(const char *password);
 bool set_cmdline_auth_info_signing_state(const char *arg);
 int get_cmdline_auth_info_signing_state(void);
+void set_cmdline_auth_info_use_kerberos(bool b);
 bool get_cmdline_auth_info_use_kerberos(void);
 void set_cmdline_auth_info_use_krb5_ticket(void);
 void set_cmdline_auth_info_smb_encrypt(void);

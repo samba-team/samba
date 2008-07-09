@@ -353,6 +353,11 @@ int get_cmdline_auth_info_signing_state(void)
 	return cmdline_auth_info.signing_state;
 }
 
+void set_cmdline_auth_info_use_kerberos(bool b)
+{
+        cmdline_auth_info.use_kerberos = b;
+}
+
 bool get_cmdline_auth_info_use_kerberos(void)
 {
 	return cmdline_auth_info.use_kerberos;
