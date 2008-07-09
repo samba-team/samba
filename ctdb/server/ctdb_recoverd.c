@@ -2933,11 +2933,6 @@ static void ctdb_check_recd(struct event_context *ev, struct timed_event *te,
 {
 	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
 
-	/* make sure we harvest the child if signals are blocked for some
-	   reason
-	*/
-	waitpid(ctdb->recoverd_pid, 0, WNOHANG);
-
 	if (kill(ctdb->recoverd_pid, 0) != 0) {
 		DEBUG(DEBUG_ERR,("Recovery daemon (pid:%d) is no longer running. Shutting down main daemon\n", (int)ctdb->recoverd_pid));
 
@@ -2958,6 +2953,27 @@ static void ctdb_check_recd(struct event_context *ev, struct timed_event *te,
 			ctdb_check_recd, ctdb);
 }
 
+static void recd_sig_child_handler(struct event_context *ev,
+	struct signal_event *se, int signum, int count,
+	void *dont_care, 
+	void *private_data)
+{
+//	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+	int status;
+	pid_t pid = -1;
+
+	while (pid != 0) {
+		pid = waitpid(-1, &status, WNOHANG);
+		if (pid == -1) {
+			DEBUG(DEBUG_ERR, (__location__ " waitpid() returned error. errno:%d\n", errno));
+			return;
+		}
+		if (pid > 0) {
+			DEBUG(DEBUG_DEBUG, ("RECD SIGCHLD from %d\n", (int)pid));
+		}
+	}
+}
+
 /*
   startup the recovery daemon as a child of the main ctdb daemon
  */
@@ -2965,6 +2981,7 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 {
 	int ret;
 	int fd[2];
+	struct signal_event *se;
 
 	if (pipe(fd) != 0) {
 		return -1;
@@ -3013,6 +3030,16 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 	ret = ctdb_socket_connect(ctdb);
 	if (ret != 0) {
 		DEBUG(DEBUG_ALERT, (__location__ " Failed to init ctdb\n"));
+		exit(1);
+	}
+
+	/* set up a handler to pick up sigchld */
+	se = event_add_signal(ctdb->ev, ctdb,
+				     SIGCHLD, 0,
+				     recd_sig_child_handler,
+				     ctdb);
+	if (se == NULL) {
+		DEBUG(DEBUG_CRIT,("Failed to set up signal handler for SIGCHLD in recovery daemon\n"));
 		exit(1);
 	}
 

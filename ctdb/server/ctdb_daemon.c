@@ -628,6 +628,27 @@ static int unlink_destructor(const char *name)
 	return 0;
 }
 
+static void sig_child_handler(struct event_context *ev,
+	struct signal_event *se, int signum, int count,
+	void *dont_care, 
+	void *private_data)
+{
+//	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+	int status;
+	pid_t pid = -1;
+
+	while (pid != 0) {
+		pid = waitpid(-1, &status, WNOHANG);
+		if (pid == -1) {
+			DEBUG(DEBUG_ERR, (__location__ " waitpid() returned error. errno:%d\n", errno));
+			return;
+		}
+		if (pid > 0) {
+			DEBUG(DEBUG_DEBUG, ("SIGCHLD from %d\n", (int)pid));
+		}
+	}
+}
+
 /*
   start the protocol going as a daemon
 */
@@ -636,6 +657,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	int res, ret = -1;
 	struct fd_event *fde;
 	const char *domain_socket_name;
+	struct signal_event *se;
 
 	/* get rid of any old sockets */
 	unlink(ctdb->daemon.name);
@@ -731,6 +753,16 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	/* start the transport going */
 	ctdb_start_transport(ctdb);
 
+	/* set up a handler to pick up sigchld */
+	se = event_add_signal(ctdb->ev, ctdb,
+				     SIGCHLD, 0,
+				     sig_child_handler,
+				     ctdb);
+	if (se == NULL) {
+		DEBUG(DEBUG_CRIT,("Failed to set up signal handler for SIGCHLD\n"));
+		exit(1);
+	}
+	  
 	/* go into a wait loop to allow other nodes to complete */
 	event_loop_wait(ctdb->ev);
 
