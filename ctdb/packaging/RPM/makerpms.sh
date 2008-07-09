@@ -3,6 +3,7 @@
 #               Gerald (Jerry) Carter 2003
 #		Jim McDonough 2007
 #		Andrew Tridgell 2007
+#		Ronnie Sahlberg 2008
 
 # The following allows environment variables to override the target directories
 #   the alternative is to have a file in your home directory calles .rpmmacros
@@ -28,7 +29,6 @@ SRCDIR=`rpm --eval %_sourcedir`
 
 VERSION='1.0'
 REVISION=''
-SPECFILE="ctdb.spec"
 RPMBUILD="rpmbuild"
 
 echo -n "Creating ctdb-${VERSION}.tar.gz ... "
@@ -48,9 +48,16 @@ cp -p packaging/RPM/ctdb.spec ${SPECDIR}
 ##
 ## Build
 ##
-echo "$(basename $0): Getting Ready to build release package"
+echo "$(basename $0): Getting Ready to build release packages"
 cd ${SPECDIR}
-${RPMBUILD} -ba --clean --rmsource $EXTRA_OPTIONS $SPECFILE || exit 1
+
+echo "building ctdb package"
+SPECFILE="ctdb.spec"
+${RPMBUILD} -ba $EXTRA_OPTIONS $SPECFILE || exit 1
+
+echo "building ctdb-dev package"
+SPECFILE="ctdb-dev.spec"
+${RPMBUILD} -bb --clean --rmsource $EXTRA_OPTIONS $SPECFILE || exit 1
 
 echo "$(basename $0): Done."
 
