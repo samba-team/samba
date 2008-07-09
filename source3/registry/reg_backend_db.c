@@ -701,8 +701,15 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 		if (!path) {
 			goto cancel;
 		}
-		/* Ignore errors here, we might have no values around */
-		dbwrap_delete_bystring(regdb, path);
+		status = dbwrap_delete_bystring(regdb, path);
+		/* Don't fail if there are no values around. */
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND))
+		{
+			DEBUG(1, ("Deleting %s failed: %s\n", path,
+				  nt_errstr(status)));
+			goto cancel;
+		}
 		TALLOC_FREE(path);
 
 		/* (c) Delete the list of subkeys of this key */
