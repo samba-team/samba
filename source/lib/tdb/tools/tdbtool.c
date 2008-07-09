@@ -598,7 +598,7 @@ static char *convert_string(char *instring, size_t *sizep)
 	}
 	length++;
     }
-    *sizep = length + 1;
+    *sizep = length;
     return instring;
 }
 
