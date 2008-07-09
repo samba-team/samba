@@ -2561,6 +2561,33 @@ smbc_version(void);
 }
 #endif
 
+/**@ingroup misc
+ * Set the users credentials globally so they can be used for DFS
+ * referrals. Probably best to use this function in the smbc_get_auth_data_fn
+ * callback.
+ *
+ * @param workgroup      Workgroup of the user.
+ *
+ * @param user           Username of user.
+ *
+ * @param password       Password of user.
+ *
+ * @param use_kerberos   Whether to use Kerberos
+ *
+ * @param signing_state  One of these strings (all equivalents on same line):
+ *                         "off", "no", "false"
+ *                         "on", "yes", "true", "auto"
+ *                         "force", "required", "forced"
+ */
+
+void
+smbc_set_credentials(char *workgroup,
+                     char *user,
+                     char *password,
+                     bool use_kerberos,
+                     char *signing_state);
+
+
 /**
  * @ingroup structure
  * Structure that contains a client context information 
