@@ -2787,9 +2787,17 @@ AC_CACHE_CHECK([if the realpath function allows a NULL argument],samba_cv_REALPA
 AC_TRY_RUN([
 #include <stdio.h>
 #include <limits.h>
+#include <signal.h>
+
+void exit_on_core(int ignored) {
+	exit(1);
+}
+
 main() {
-	char *newpath = realpath("/tmp", NULL);
-	exit ((newpath != NULL) ? 0 : 1);
+	char *newpath;
+	signal(SIGSEGV, exit_on_core);
+	newpath = realpath("/tmp", NULL);
+	exit((newpath != NULL) ? 0 : 1);
 }
 ],
 samba_cv_REALPATH_TAKES_NULL=yes,samba_cv_REALPATH_TAKES_NULL=no,samba_cv_REALPATH_TAKES_NULL=cross)])
