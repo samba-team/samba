@@ -1520,19 +1520,6 @@ bin/ldbdel: $(BINARY_PREREQS) $(LDBDEL_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIB
 
 MKSYMS_SH = $(srcdir)/script/mksyms.sh
 
-SHLIBS = @LIBTALLOC_SHARED@ \
-	 @LIBTDB_SHARED@ \
-	 @LIBWBCLIENT_SHARED@ \
-	 @LIBSMBCLIENT_SHARED@ \
-	 @LIBSMBSHAREMODES_SHARED@ \
-	 @LIBADDNS_SHARED@ \
-	 @LIBNETAPI_SHARED@
-
-shlibs: $(SHLIBS)
-
-
-
-
 
 #-------------------------------------------------------------------
 #
@@ -1599,6 +1586,7 @@ libs:: libtalloc
 installlibs:: @INSTALL_LIBTALLOC@
 uninstalllibs:: @UNINSTALL_LIBTALLOC@
 cleanlibs:: cleanlibtalloc
+shlibs test_shlibs: @LIBTALLOC_SHARED@
 
 #-------------------------------------------------------------------
 #
@@ -1665,6 +1653,7 @@ libs:: libtdb
 installlibs:: @INSTALL_LIBTDB@
 uninstalllibs:: @UNINSTALL_LIBTDB@
 cleanlibs:: cleanlibtdb
+shlibs test_shlibs: @LIBTDB_SHARED@
 
 #-------------------------------------------------------------------
 #
@@ -1735,6 +1724,7 @@ libs:: libwbclient
 installlibs:: @INSTALL_LIBWBCLIENT@
 uninstalllibs:: uninstalllibwbclient
 cleanlibs:: cleanlibwbclient
+shlibs test_shlibs: @LIBWBCLIENT_SHARED@
 
 
 #-------------------------------------------------------------------
@@ -1793,6 +1783,7 @@ libs:: libaddns
 installlibs:: @INSTALL_LIBADDNS@
 uninstalllibs:: @UNINSTALL_LIBADDNS@
 cleanlibs:: cleanlibaddns
+shlibs test_shlibs: @LIBADDNS_SHARED@
 
 #-------------------------------------------------------------------
 #
@@ -1875,6 +1866,7 @@ libs:: libnetapi
 installlibs:: @INSTALL_LIBNETAPI@
 uninstalllibs:: @UNINSTALL_LIBNETAPI@
 cleanlibs:: cleanlibnetapi
+shlibs test_shlibs: @LIBNETAPI_SHARED@
 
 #-------------------------------------------------------------------
 #
@@ -1939,6 +1931,7 @@ libs:: libsmbclient
 installlibs:: @INSTALL_LIBSMBCLIENT@
 uninstalllibs:: @UNINSTALL_LIBSMBCLIENT@
 cleanlibs:: cleanlibsmbclient
+shlibs test_shlibs: @LIBSMBCLIENT_SHARED@
 
 #-------------------------------------------------------------------
 #
@@ -2005,6 +1998,7 @@ libs:: libsmbsharemodes
 installlibs:: @INSTALL_LIBSMBSHAREMODES@
 uninstalllibs:: @UNINSTALL_LIBSMBSHAREMODES@
 cleanlibs:: cleanlibsmbsharemodes
+shlibs test_shlibs: @LIBSMBSHAREMODES_SHARED@
 
 #-------------------------------------------------------------------
 #
@@ -2694,10 +2688,10 @@ Makefile: $(srcdir)/Makefile.in config.status
 # Samba Testing Framework
 
 # Check shared libs for unresolved symbols
-test_shlibs:: $(SHLIBS)
-	@echo "Testing $(SHLIBS) "
+test_shlibs:
+	@echo "Testing $? "
 	@export $(LIB_PATH_VAR)=./bin && \
-	for module in $(SHLIBS); do \
+	for module in $?; do \
 		./script/tests/dlopen.sh $${module} \
 			|| exit 1; \
 	done
