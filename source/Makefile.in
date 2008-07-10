@@ -1534,13 +1534,6 @@ LIBRARIES = libtalloc libtdb libwbclient libsmbclient libsmbsharemodes libaddns 
 
 libs: $(LIBRARIES)
 
-cleanlibs:: cleanlibtalloc \
-	    cleanlibtdb \
-	    cleanlibnetapi \
-	    cleanlibwbclient \
-	    cleanlibsmbclient \
-	    cleanlibsmbsharemodes \
-	    cleanlibaddns
 
 
 #-------------------------------------------------------------------
@@ -1605,6 +1598,7 @@ uninstalllibtalloc::
 	-rm -f $(DESTDIR)${prefix}/include/talloc.h
 
 installlibs:: @INSTALL_LIBTALLOC@
+cleanlibs:: cleanlibtalloc
 
 #-------------------------------------------------------------------
 #
@@ -1668,6 +1662,7 @@ uninstalllibtdb::
 	-rm -f $(DESTDIR)${prefix}/include/tdb.h
 
 installlibs:: @INSTALL_LIBTDB@
+cleanlibs:: cleanlibtdb
 
 #-------------------------------------------------------------------
 #
@@ -1735,6 +1730,8 @@ uninstalllibwbclient::
 	-rm -f $(DESTDIR)${prefix}/include/wbclient.h
 
 installlibs:: @INSTALL_LIBWBCLIENT@
+cleanlibs:: cleanlibwbclient
+
 
 #-------------------------------------------------------------------
 #
@@ -1789,6 +1786,7 @@ uninstalllibaddns::
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBADDNS_STATIC_TARGET)`
 
 installlibs:: @INSTALL_LIBADDNS@
+cleanlibs:: cleanlibaddns
 
 #-------------------------------------------------------------------
 #
@@ -1868,6 +1866,7 @@ uninstalllibnetapi::
 	-rm -f $(DESTDIR)${prefix}/include/netapi.h
 
 installlibs:: @INSTALL_LIBNETAPI@
+cleanlibs:: cleanlibnetapi
 
 #-------------------------------------------------------------------
 #
@@ -1929,6 +1928,7 @@ uninstalllibsmbclient::
 uninstallclientlib:: uninstalllibsmbclient
 
 installlibs:: @INSTALL_LIBSMBCLIENT@
+cleanlibs:: cleanlibsmbclient
 
 #-------------------------------------------------------------------
 #
@@ -1992,6 +1992,7 @@ uninstalllibsmbsharemodes::
 	-rm -f $(DESTDIR)${prefix}/include/smb_share_modes.h
 
 installlibs:: @INSTALL_LIBSMBSHAREMODES@
+cleanlibs:: cleanlibsmbsharemodes
 
 #-------------------------------------------------------------------
 #
