@@ -80,7 +80,6 @@ extern userdom_struct current_user_info;
 
 static bool in_client = False;		/* Not in the client by default */
 static struct smbconf_csn conf_last_csn;
-static struct smbconf_ctx *conf_ctx = NULL;
 
 #define CONFIG_BACKEND_FILE 0
 #define CONFIG_BACKEND_REGISTRY 1
@@ -6503,6 +6502,47 @@ bool service_ok(int iService)
 	return (bRetval);
 }
 
+static struct smbconf_ctx *lp_smbconf_ctx(void)
+{
+	WERROR werr;
+	static struct smbconf_ctx *conf_ctx = NULL;
+
+	if (conf_ctx == NULL) {
+		werr = smbconf_init(NULL, &conf_ctx, "registry:");
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(1, ("error initializing registry configuration: "
+				  "%s\n", dos_errstr(werr)));
+			conf_ctx = NULL;
+		}
+	}
+
+	return conf_ctx;
+}
+
+static bool process_registry_service(struct smbconf_service *service)
+{
+	uint32_t count;
+	bool ret;
+
+	if (service == NULL) {
+		return false;
+	}
+
+	ret = do_section(service->name, NULL);
+	if (ret != true) {
+		return false;
+	}
+	for (count = 0; count < service->num_params; count++) {
+		ret = do_parameter(service->param_names[count],
+				   service->param_values[count],
+				   NULL);
+		if (ret != true) {
+			return false;
+		}
+	}
+	return true;
+}
+
 /*
  * process_registry_globals
  */
@@ -6510,16 +6550,17 @@ static bool process_registry_globals(void)
 {
 	WERROR werr;
 	struct smbconf_service *service = NULL;
-	uint32_t count;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	struct smbconf_ctx *conf_ctx = lp_smbconf_ctx();
 	bool ret = false;
 
 	if (conf_ctx == NULL) {
-		/* first time */
-		werr = smbconf_init(NULL, &conf_ctx, "registry:");
-		if (!W_ERROR_IS_OK(werr)) {
-			goto done;
-		}
+		goto done;
+	}
+
+	ret = do_parameter("registry shares", "yes", NULL);
+	if (!ret) {
+		goto done;
 	}
 
 	if (!smbconf_share_exists(conf_ctx, GLOBAL_NAME)) {
@@ -6534,16 +6575,50 @@ static bool process_registry_globals(void)
 		goto done;
 	}
 
-	for (count = 0; count < service->num_params; count++) {
-		ret = do_parameter(service->param_names[count],
-				   service->param_values[count],
-				   NULL);
-		if (ret != true) {
+	ret = process_registry_service(service);
+	if (!ret) {
+		goto done;
+	}
+
+	/* store the csn */
+	smbconf_changed(conf_ctx, &conf_last_csn, NULL, NULL);
+
+done:
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
+static bool process_registry_shares(void)
+{
+	WERROR werr;
+	uint32_t count;
+	struct smbconf_service **service = NULL;
+	uint32_t num_shares = 0;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	struct smbconf_ctx *conf_ctx = lp_smbconf_ctx();
+	bool ret = false;
+
+	if (conf_ctx == NULL) {
+		goto done;
+	}
+
+	werr = smbconf_get_config(conf_ctx, mem_ctx, &num_shares, &service);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	ret = true;
+
+	for (count = 0; count < num_shares; count++) {
+		if (strequal(service[count]->name, GLOBAL_NAME)) {
+			continue;
+		}
+		ret = process_registry_service(service[count]);
+		if (!ret) {
 			goto done;
 		}
 	}
 
-	ret = do_parameter("registry shares", "yes", NULL);
 	/* store the csn */
 	smbconf_changed(conf_ctx, &conf_last_csn, NULL, NULL);
 
@@ -6625,14 +6700,10 @@ bool lp_file_list_changed(void)
  	DEBUG(6, ("lp_file_list_changed()\n"));
 
 	if (lp_config_backend_is_registry()) {
+		struct smbconf_ctx *conf_ctx = lp_smbconf_ctx();
+
 		if (conf_ctx == NULL) {
-			WERROR werr;
-			werr = smbconf_init(NULL, &conf_ctx, "registry:");
-			if (!W_ERROR_IS_OK(werr)) {
-				DEBUG(0, ("error opening configuration: %s\n",
-					  dos_errstr(werr)));
-				return false;
-			}
+			return false;
 		}
 		if (smbconf_changed(conf_ctx, &conf_last_csn, NULL, NULL)) {
 			DEBUGADD(6, ("registry config changed\n"));
@@ -8670,7 +8741,8 @@ bool lp_load_ex(const char *pszFname,
 		bool save_defaults,
 		bool add_ipc,
 		bool initialize_globals,
-		bool allow_include_registry)
+		bool allow_include_registry,
+		bool allow_registry_shares)
 {
 	char *n2 = NULL;
 	bool bRetval;
@@ -8691,6 +8763,9 @@ bool lp_load_ex(const char *pszFname,
 		init_locals();
 		lp_save_defaults();
 	}
+
+	/* We get sections first, so have to start 'behind' to make up */
+	iServiceIndex = -1;
 
 	if (Globals.param_opt != NULL) {
 		data = Globals.param_opt;
@@ -8715,8 +8790,6 @@ bool lp_load_ex(const char *pszFname,
 
 		add_to_file_list(pszFname, n2);
 
-		/* We get sections first, so have to start 'behind' to make up */
-		iServiceIndex = -1;
 		bRetval = pm_process(n2, do_section, do_parameter, NULL);
 		SAFE_FREE(n2);
 
@@ -8744,7 +8817,8 @@ bool lp_load_ex(const char *pszFname,
 			lp_kill_all_services();
 			return lp_load_ex(pszFname, global_only, save_defaults,
 					  add_ipc, initialize_globals,
-					  allow_include_registry);
+					  allow_include_registry,
+					  allow_registry_shares);
 		}
 	} else if (lp_config_backend_is_registry()) {
 		bRetval = process_registry_globals();
@@ -8752,6 +8826,10 @@ bool lp_load_ex(const char *pszFname,
 		DEBUG(0, ("Illegal config  backend given: %d\n",
 			  lp_config_backend()));
 		bRetval = false;
+	}
+
+	if (bRetval && lp_registry_shares() && allow_registry_shares) {
+		bRetval = process_registry_shares();
 	}
 
 	lp_add_auto_services(lp_auto_services());
@@ -8795,7 +8873,7 @@ bool lp_load(const char *pszFname,
 			  save_defaults,
 			  add_ipc,
 			  initialize_globals,
-			  true);
+			  true, false);
 }
 
 bool lp_load_initial_only(const char *pszFname)
@@ -8805,7 +8883,23 @@ bool lp_load_initial_only(const char *pszFname)
 			  false,
 			  false,
 			  true,
+			  false,
 			  false);
+}
+
+bool lp_load_with_registry_shares(const char *pszFname,
+				  bool global_only,
+				  bool save_defaults,
+				  bool add_ipc,
+				  bool initialize_globals)
+{
+	return lp_load_ex(pszFname,
+			  global_only,
+			  save_defaults,
+			  add_ipc,
+			  initialize_globals,
+			  true,
+			  true);
 }
 
 /***************************************************************************
