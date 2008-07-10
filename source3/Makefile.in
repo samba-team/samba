@@ -1618,6 +1618,7 @@ uninstalllibtalloc::
 
 libs:: libtalloc
 installlibs:: @INSTALL_LIBTALLOC@
+uninstalllibs:: @UNINSTALL_LIBTALLOC@
 cleanlibs:: cleanlibtalloc
 
 #-------------------------------------------------------------------
@@ -1683,6 +1684,7 @@ uninstalllibtdb::
 
 libs:: libtdb
 installlibs:: @INSTALL_LIBTDB@
+uninstalllibs:: @UNINSTALL_LIBTDB@
 cleanlibs:: cleanlibtdb
 
 #-------------------------------------------------------------------
@@ -1752,6 +1754,7 @@ uninstalllibwbclient::
 
 libs:: libwbclient
 installlibs:: @INSTALL_LIBWBCLIENT@
+uninstalllibs:: uninstalllibwbclient
 cleanlibs:: cleanlibwbclient
 
 
@@ -1809,6 +1812,7 @@ uninstalllibaddns::
 
 libs:: libaddns
 installlibs:: @INSTALL_LIBADDNS@
+uninstalllibs:: @UNINSTALL_LIBADDNS@
 cleanlibs:: cleanlibaddns
 
 #-------------------------------------------------------------------
@@ -1893,6 +1897,7 @@ uninstalllibnetapi::
 
 libs:: libnetapi
 installlibs:: @INSTALL_LIBNETAPI@
+uninstalllibs:: @UNINSTALL_LIBNETAPI@
 cleanlibs:: cleanlibnetapi
 
 #-------------------------------------------------------------------
@@ -1956,6 +1961,7 @@ uninstallclientlib:: uninstalllibsmbclient
 
 libs:: libsmbclient
 installlibs:: @INSTALL_LIBSMBCLIENT@
+uninstalllibs:: @UNINSTALL_LIBSMBCLIENT@
 cleanlibs:: cleanlibsmbclient
 
 #-------------------------------------------------------------------
@@ -2021,6 +2027,7 @@ uninstalllibsmbsharemodes::
 
 libs:: libsmbsharemodes
 installlibs:: @INSTALL_LIBSMBSHAREMODES@
+uninstalllibs:: @UNINSTALL_LIBSMBSHAREMODES@
 cleanlibs:: cleanlibsmbsharemodes
 
 #-------------------------------------------------------------------
@@ -2537,7 +2544,7 @@ showlayout::
 	@echo "  swatdir:     $(SWATDIR)"
 
 
-uninstall:: uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ @UNINSTALL_CIFSSPNEGO@ uninstallscripts uninstalldat uninstallswat uninstallmodules @UNINSTALL_LIBTALLOC@ @UNINSTALL_LIBTDB@ @UNINSTALL_LIBSMBCLIENT@ @UNINSTALL_PAM_MODULES@ @UNINSTALL_LIBSMBSHAREMODES@ @UNINSTALL_LIBNETAPI@ uninstalllibwbclient
+uninstall:: uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ @UNINSTALL_CIFSSPNEGO@ uninstallscripts uninstalldat uninstallswat uninstallmodules uninstalllibs @UNINSTALL_PAM_MODULES@
 
 uninstallman::
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(srcdir) C
