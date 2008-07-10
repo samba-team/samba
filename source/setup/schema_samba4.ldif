@@ -125,21 +125,23 @@ attributeID: 1.3.6.1.4.1.7165.4.1.7
 attributeSyntax: 2.5.5.4
 oMSyntax: 20
 
-
-dn: CN=unixName,${SCHEMADN}
-cn: unixName
-name: unixName
-objectClass: top
-objectClass: attributeSchema
-lDAPDisplayName: unixName
-isSingleValued: TRUE
-systemFlags: 16
-systemOnly: FALSE
-schemaIDGUID: bf9679f2-0de6-11d0-a285-00aa003049e2
-adminDisplayName: Unix-Name
-attributeID: 1.3.6.1.4.1.7165.4.1.9
-attributeSyntax: 2.5.5.4
-oMSyntax: 20
+#
+# Not used anymore
+#
+#dn: CN=unixName,${SCHEMADN}
+#cn: unixName
+#name: unixName
+#objectClass: top
+#objectClass: attributeSchema
+#lDAPDisplayName: unixName
+#isSingleValued: TRUE
+#systemFlags: 16
+#systemOnly: FALSE
+#schemaIDGUID: bf9679f2-0de6-11d0-a285-00aa003049e2
+#adminDisplayName: Unix-Name
+#attributeID: 1.3.6.1.4.1.7165.4.1.9
+#attributeSyntax: 2.5.5.4
+#oMSyntax: 20
 
 #
 # Not used anymore
@@ -174,7 +176,6 @@ oMSyntax: 20
 #Allocated: (objectClasses) samba4ObjectClasses: 1.3.6.1.4.1.7165.4.255.5
 #Allocated: (ditContentRules) samba4DitContentRules: 1.3.6.1.4.1.7165.4.255.6
 #Allocated: (attributeTypes) samba4AttributeTypes: 1.3.6.1.4.1.7165.4.255.7
-
 
 #
 # Fedora DS uses this attribute, and we need to set it via our module stack
@@ -226,9 +227,132 @@ objectClassCategory: 1
 lDAPDisplayName: samba4LocalDomain
 schemaIDGUID: 07be1647-8310-4fba-91ae-34e55d5a8293
 systemOnly: FALSE
-systemAuxiliaryClass: samDomainBase
+systemAuxiliaryClass: samDomain
 defaultSecurityDescriptor: D:(A;;RPLCLORC;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
 defaultObjectCategory: CN=Builtin-Domain,${SCHEMADN}
+
+
+dn: CN=Samba4Top,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+subClassOf: top
+governsID: 1.3.6.1.4.1.7165.4.2.1
+mayContain: msDS-ObjectReferenceBL
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Samba4TopTop
+adminDescription: Attributes used in top in Samba4 that OpenLDAP does not
+objectClassCategory: 3
+lDAPDisplayName: samba4Top
+schemaIDGUID: 073598d0-635b-4685-a929-da731b98d84e
+systemOnly: TRUE
+systemPossSuperiors: lostAndFound
+systemMayContain: url
+systemMayContain: wWWHomePage
+systemMayContain: wellKnownObjects
+systemMayContain: wbemPath
+systemMayContain: uSNSource
+systemMayContain: uSNLastObjRem
+systemMayContain: USNIntersite
+systemMayContain: uSNDSALastObjRemoved
+systemMayContain: systemFlags
+systemMayContain: subRefs
+systemMayContain: siteObjectBL
+systemMayContain: serverReferenceBL
+systemMayContain: sDRightsEffective
+systemMayContain: revision
+systemMayContain: repsTo
+systemMayContain: repsFrom
+systemMayContain: directReports
+systemMayContain: replUpToDateVector
+systemMayContain: replPropertyMetaData
+systemMayContain: name
+systemMayContain: queryPolicyBL
+systemMayContain: proxyAddresses
+systemMayContain: proxiedObjectName
+systemMayContain: possibleInferiors
+systemMayContain: partialAttributeSet
+systemMayContain: partialAttributeDeletionList
+systemMayContain: otherWellKnownObjects
+systemMayContain: objectVersion
+systemMayContain: nonSecurityMemberBL
+systemMayContain: netbootSCPBL
+systemMayContain: ownerBL
+systemMayContain: msDS-ReplValueMetaData
+systemMayContain: msDS-ReplAttributeMetaData
+systemMayContain: msDS-NonMembersBL
+systemMayContain: msDS-NCReplOutboundNeighbors
+systemMayContain: msDS-NCReplInboundNeighbors
+systemMayContain: msDS-NCReplCursors
+systemMayContain: msDS-TasksForAzRoleBL
+systemMayContain: msDS-TasksForAzTaskBL
+systemMayContain: msDS-OperationsForAzRoleBL
+systemMayContain: msDS-OperationsForAzTaskBL
+systemMayContain: msDS-MembersForAzRoleBL
+systemMayContain: msDs-masteredBy
+systemMayContain: mS-DS-ConsistencyGuid
+systemMayContain: mS-DS-ConsistencyChildCount
+systemMayContain: msDS-Approx-Immed-Subordinates
+systemMayContain: msCOM-PartitionSetLink
+systemMayContain: msCOM-UserLink
+systemMayContain: masteredBy
+systemMayContain: managedObjects
+systemMayContain: lastKnownParent
+systemMayContain: isPrivilegeHolder
+systemMayContain: isDeleted
+systemMayContain: isCriticalSystemObject
+systemMayContain: showInAdvancedViewOnly
+systemMayContain: fSMORoleOwner
+systemMayContain: fRSMemberReferenceBL
+systemMayContain: frsComputerReferenceBL
+systemMayContain: fromEntry
+systemMayContain: flags
+systemMayContain: extensionName
+systemMayContain: dSASignature
+systemMayContain: dSCorePropagationData
+systemMayContain: displayNamePrintable
+systemMayContain: displayName
+systemMayContain: description
+systemMayContain: cn
+systemMayContain: canonicalName
+systemMayContain: bridgeheadServerListBL
+systemMayContain: allowedChildClassesEffective
+systemMayContain: allowedChildClasses
+systemMayContain: allowedAttributesEffective
+systemMayContain: allowedAttributes
+systemMayContain: adminDisplayName
+systemMayContain: adminDescription
+systemMustContain: objectCategory
+systemMustContain: nTSecurityDescriptor
+systemMustContain: instanceType
+systemAuxiliaryClass: samba4TopExtra
+defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
+systemFlags: 16
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=Samba4Top,${SCHEMADN}
+
+
+dn: CN=Samba4TopExtra,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+subClassOf: top
+governsID: 1.3.6.1.4.1.7165.4.2.3
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Samba4TopExtra
+adminDescription: Attributes used in top in Samba4 that OpenLDAP does not
+objectClassCategory: 2
+lDAPDisplayName: samba4TopExtra
+schemaIDGUID: 073598d0-635b-4685-a929-da731b98d84e
+systemOnly: TRUE
+mayContain: privilege
+systemPossSuperiors: lostAndFound
+defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
+systemFlags: 16
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=Samba4TopExtra,${SCHEMADN}
 
