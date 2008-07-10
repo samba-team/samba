@@ -158,6 +158,15 @@ struct dsdb_schema {
 	struct smb_iconv_convenience *iconv_convenience;
 };
 
+enum dsdb_attr_list_query {
+	DSDB_SCHEMA_ALL_MAY,
+	DSDB_SCHEMA_ALL_MUST,
+	DSDB_SCHEMA_SYS_MAY,
+	DSDB_SCHEMA_SYS_MUST,
+	DSDB_SCHEMA_MAY,
+	DSDB_SCHEMA_MUST
+};
+
 #include "dsdb/schema/proto.h"
 
 #endif /* _DSDB_SCHEMA_H */

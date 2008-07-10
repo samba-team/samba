@@ -37,17 +37,8 @@ static int schema_fsmo_init(struct ldb_module *module)
 	TALLOC_CTX *mem_ctx;
 	struct ldb_dn *schema_dn;
 	struct dsdb_schema *schema;
-	struct ldb_result *schema_res;
-	struct ldb_result *a_res;
-	struct ldb_result *c_res;
 	char *error_string = NULL;
 	int ret;
-	static const char *schema_attrs[] = {
-		"prefixMap",
-		"schemaInfo",
-		"fSMORoleOwner",
-		NULL
-	};
 
 	if (dsdb_get_schema(module->ldb)) {
 		return ldb_next_init(module);
@@ -67,83 +58,25 @@ static int schema_fsmo_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/*
-	 * setup the prefix mappings and schema info
-	 */
-	ret = ldb_search(module->ldb, schema_dn,
-			 LDB_SCOPE_BASE,
-			 NULL, schema_attrs,
-			 &schema_res);
+	ret = dsdb_schema_from_schema_dn(mem_ctx, module->ldb,
+					 lp_iconv_convenience(ldb_get_opaque(module->ldb, "loadparm")),
+					 schema_dn, &schema, &error_string);
+
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ldb_reset_err_string(module->ldb);
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
 			  "schema_fsmo_init: no schema head present: (skip schema loading)\n");
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);
-	} else if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(module->ldb, 
-				       "schema_fsmo_init: failed to search the schema head: %s",
-				       ldb_errstring(module->ldb));
-		talloc_free(mem_ctx);
-		return ret;
-	}
-	talloc_steal(mem_ctx, schema_res);
-	if (schema_res->count == 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
-			  "schema_fsmo_init: no schema head present: (skip schema loading)\n");
-		talloc_free(mem_ctx);
-		return ldb_next_init(module);
-	} else if (schema_res->count > 1) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
-			      "schema_fsmo_init: [%u] schema heads found on a base search",
-			      schema_res->count);
-		talloc_free(mem_ctx);
-		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
-	/*
-	 * load the attribute definitions
-	 */
-	ret = ldb_search(module->ldb, schema_dn,
-			 LDB_SCOPE_ONELEVEL,
-			 "(objectClass=attributeSchema)", NULL,
-			 &a_res);
-	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(module->ldb, 
-				       "schema_fsmo_init: failed to search attributeSchema objects: %s",
-				       ldb_errstring(module->ldb));
-		talloc_free(mem_ctx);
-		return ret;
-	}
-	talloc_steal(mem_ctx, a_res);
-
-	/*
-	 * load the objectClass definitions
-	 */
-	ret = ldb_search(module->ldb, schema_dn,
-			 LDB_SCOPE_ONELEVEL,
-			 "(objectClass=classSchema)", NULL,
-			 &c_res);
-	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(module->ldb, 
-				       "schema_fsmo_init: failed to search classSchema objects: %s",
-				       ldb_errstring(module->ldb));
-		talloc_free(mem_ctx);
-		return ret;
-	}
-	talloc_steal(mem_ctx, c_res);
-
-	ret = dsdb_schema_from_ldb_results(mem_ctx, module->ldb,
-					   lp_iconv_convenience(ldb_get_opaque(module->ldb, "loadparm")),
-					   schema_res, a_res, c_res, &schema, &error_string);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(module->ldb, 
 				       "schema_fsmo_init: dsdb_schema load failed: %s",
 				       error_string);
 		talloc_free(mem_ctx);
-		return ret;
 	}
-	
+
 	/* dsdb_set_schema() steal schema into the ldb_context */
 	ret = dsdb_set_schema(module->ldb, schema);
 	if (ret != LDB_SUCCESS) {
