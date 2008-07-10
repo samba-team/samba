@@ -32,7 +32,6 @@
  *
  */
 
-#include "includes.h"
 #include "replace.h"
 #include "lzxpress.h"
 
@@ -57,10 +56,10 @@
 ))
 #endif
 
-static uint32_t xpress_decompress(uint8_t *input,
-				uint32_t input_size,
-				uint8_t *output,
-				uint32_t output_size)
+ssize_t lzxpress_decompress(const uint8_t *input,
+			    uint32_t input_size,
+			    uint8_t *output,
+			    uint32_t max_output_size)
 {
 	uint32_t output_index, input_index;
 	uint32_t indicator, indicator_bit;
@@ -112,11 +111,11 @@ static uint32_t xpress_decompress(uint8_t *input,
 				if (length == 15) {
 					length = input[input_index];
 					input_index += sizeof(uint8_t);
-						if (length == 255) {
-							length = PULL_LE_UINT16(input, input_index);
-							input_index += sizeof(uint16_t);
-							length -= (15 + 7);
-						}
+					if (length == 255) {
+						length = PULL_LE_UINT16(input, input_index);
+						input_index += sizeof(uint16_t);
+						length -= (15 + 7);
+					}
 					length += 15;
 				}
 				length += 7;
@@ -125,20 +124,15 @@ static uint32_t xpress_decompress(uint8_t *input,
 			length += 3;
 
 			do {
-				if (output_index >= output_size) break;
+				if ((output_index >= max_output_size) || ((offset + 1) > output_index)) break;
+
 				output[output_index] = output[output_index - offset - 1];
+
 				output_index += sizeof(uint8_t);
 				length -= sizeof(uint8_t);
 			} while (length != 0);
 		}
-
-	} while ((output_index < output_size) && (input_index < input_size));
+	} while ((output_index < max_output_size) && (input_index < (input_size)));
 
 	return output_index;
-}
-
-uint32_t lzxpress_decompress(DATA_BLOB *inbuf,
-				DATA_BLOB *outbuf)
-{
-	return xpress_decompress(inbuf->data, inbuf->length, outbuf->data, outbuf->length);
 }
