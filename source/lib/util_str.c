@@ -2308,7 +2308,9 @@ char * base64_encode_data_blob(DATA_BLOB data)
 
 	out_cnt = 0;
 	len = data.length;
-	output_len = data.length * 2;
+	output_len = data.length * 2 + 4; /* Account for closing bytes. 4 is
+					   * random but should be enough for
+					   * the = and \0 */
 	result = (char *)SMB_MALLOC(output_len); /* get us plenty of space */
 
 	while (len-- && out_cnt < (data.length * 2) - 5) {
