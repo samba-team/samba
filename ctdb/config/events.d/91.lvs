@@ -9,7 +9,7 @@ loadconfig ctdb
 
 [ -x /sbin/ipvsadm ] || {
     echo "LVS configured but /sbin/ipvsadm is not installed."
-    exit 1
+    exit 0
 }
 
 
@@ -54,8 +54,11 @@ case $cmd in
 	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0
 	kill_tcp_connections $CTDB_LVS_PUBLIC_IP
 
-	# are we the recmaster ? 
-	ctdb isnotrecmaster >/dev/null 2>/dev/null || {
+	PNN=`ctdb pnn | sed -e "s/.*PNN://"`
+	LVSMASTER=`ctdb lvsmaster | sed -e "s/.*Node //" -e "s/ .*//"`
+
+	[ "$PNN" != "$LVSMASTER" ] && {
+	    # we are not the lvs master so we have to
 	    # change the ip address to have scope host so we wont respond
 	    # to arps
 	    ip addr del $CTDB_LVS_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
@@ -70,10 +73,12 @@ case $cmd in
 	ipvsadm -A -t $CTDB_LVS_PUBLIC_IP:0 -p 9999 -s lc
 	ipvsadm -A -u $CTDB_LVS_PUBLIC_IP:0 -p 9999 -s lc
 
-	ctdb status 2>/dev/null | egrep "^pnn:" | grep -v DISCONNECTED | grep -v "(THIS NODE)" | sed -e "s/^pnn:[0-9]* //" -e "s/[ 	].*//" | while read IP; do
+	# add all nodes (except ourselves) to the lvs config
+	ctdb lvs | egrep -v "^$PNN:" | sed -e "s/.*://" | while read IP; do
 		ipvsadm -a -t $CTDB_LVS_PUBLIC_IP:0 -r $IP -g
 		ipvsadm -a -u $CTDB_LVS_PUBLIC_IP:0 -r $IP -g
 	done
+	# and add the localhost too
 	ipvsadm -a -t $CTDB_LVS_PUBLIC_IP:0 -r 127.0.0.1
 	ipvsadm -a -u $CTDB_LVS_PUBLIC_IP:0 -r 127.0.0.1
 

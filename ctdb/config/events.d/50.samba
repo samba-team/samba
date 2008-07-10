@@ -113,8 +113,11 @@ case $cmd in
 	    exit 1
 	}
 
-	smb_dirs=`testparm -s 2> /dev/null | egrep '^[[:space:]]*path = '  | cut -d= -f2`
-	ctdb_check_directories "Samba" $smb_dirs	
+	[ "$CTDB_SAMBA_SKIP_SHARE_CHECK" != "yes" ] && {
+echo do da test
+		smb_dirs=`testparm -s 2> /dev/null | egrep '^[[:space:]]*path = '  | cut -d= -f2`
+		ctdb_check_directories "Samba" $smb_dirs	
+	}
 
 	smb_ports=`testparm -s --parameter-name="smb ports" 2> /dev/null`
 	ctdb_check_tcp_ports "Samba" $smb_ports

@@ -210,18 +210,16 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 {
 	struct ctdb_event_script_state *state = 
 		talloc_get_type(p, struct ctdb_event_script_state);
-	int status = -1;
 	void (*callback)(struct ctdb_context *, int, void *) = state->callback;
 	void *private_data = state->private_data;
 	struct ctdb_context *ctdb = state->ctdb;
+	signed char rt = -1;
 
-	waitpid(state->child, &status, 0);
-	if (status != -1) {
-		status = WEXITSTATUS(status);
-	}
+	read(state->fd[0], &rt, sizeof(rt));
+
 	talloc_set_destructor(state, NULL);
 	talloc_free(state);
-	callback(ctdb, status, private_data);
+	callback(ctdb, rt, private_data);
 
 	ctdb->event_script_timeouts = 0;
 }
@@ -293,7 +291,6 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
 {
 	DEBUG(DEBUG_ERR,(__location__ " Sending SIGTERM to child pid:%d\n", state->child));
 	kill(state->child, SIGTERM);
-	waitpid(state->child, NULL, 0);
 	return 0;
 }
 
@@ -336,13 +333,18 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	}
 
 	if (state->child == 0) {
+		signed char rt;
+
 		close(state->fd[0]);
 		if (ctdb->do_setsched) {
 			ctdb_restore_scheduler(ctdb);
 		}
 		set_close_on_exec(state->fd[1]);
-		ret = ctdb_event_script_v(ctdb, state->options);
-		_exit(ret);
+		rt = ctdb_event_script_v(ctdb, state->options);
+		while ((ret = write(state->fd[1], &rt, sizeof(rt))) != sizeof(rt)) {
+			sleep(1);
+		}
+		_exit(rt);
 	}
 
 	talloc_set_destructor(state, event_script_destructor);

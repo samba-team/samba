@@ -1,10 +1,12 @@
 #!gmake
 
+
 CC = @CC@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 datarootdir = @datarootdir@
 includedir = @includedir@
+docdir = /usr/share/doc
 libdir = @libdir@
 bindir = @bindir@
 sbindir = @sbindir@
@@ -170,6 +172,7 @@ install: all
 	mkdir -p $(DESTDIR)$(includedir)
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb/events.d
+	mkdir -p $(DESTDIR)$(docdir)/ctdb
 	${INSTALLCMD} -m 755 bin/ctdb $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 755 bin/ctdb_ipmux $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 755 bin/ctdbd $(DESTDIR)$(sbindir)
@@ -178,7 +181,7 @@ install: all
 	${INSTALLCMD} -m 644 include/ctdb_private.h $(DESTDIR)$(includedir) # for samba3
 	${INSTALLCMD} -m 644 config/functions $(DESTDIR)$(etcdir)/ctdb
 	${INSTALLCMD} -m 755 config/statd-callout $(DESTDIR)$(etcdir)/ctdb
-	${INSTALLCMD} -m 644 config/events.d/README $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m 644 config/events.d/README $(DESTDIR)/$(docdir)/ctdb/README.eventscripts
 	${INSTALLCMD} -m 755 config/events.d/00.ctdb $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/10.interface $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/40.vsftpd $(DESTDIR)$(etcdir)/ctdb/events.d
