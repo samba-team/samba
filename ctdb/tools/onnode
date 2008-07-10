@@ -8,6 +8,8 @@
 
 # Based on an earlier script by Andrew Tridgell and Ronnie Sahlberg.
 
+# Copyright (C) Andrew Tridgell  2007
+
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
@@ -26,17 +28,14 @@ prog=$(basename $0)
 usage ()
 {
     cat >&2 <<EOF
-Usage: onnode [ options ] <nodespec> <command>
-
-  Options:
+Usage: onnode [OPTION] ... <NODES> <COMMAND> ...
+  options:
     -c         Run in current working directory on all nodes.
     -p         Run command in parallel on specified nodes.  Implies -t.
-    -t         Force tty allocation on nodes.  Improves buffering.
-    -v         Print node address even for a single node.
     -q         Do not print node addresses (overrides -v).
-
-  <nodespec>   all or a node number (0 base); or
-               list (comma separated) of <nodespec>; or
+    -v         Print node address even for a single node.
+  <NODES>      "all" or a node number (0 base); or
+               list (comma separated) of <NODES>; or
                range (hyphen separated) of node numbers.
 EOF
     exit 1
@@ -52,7 +51,6 @@ invalid_nodespec ()
 # Defaults.
 current=false
 parallel=false
-force_tty=false
 verbose=false
 quiet=false
 
@@ -61,7 +59,7 @@ parse_options ()
     # $POSIXLY_CORRECT means that the command passed to onnode can
     # take options and getopt won't reorder things to make them
     # options ot onnode.
-    temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "cpqtv" -- "$@")
+    temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "chpqv" -l help -- "$@")
 
     [ $? != 0 ] && usage
 
@@ -70,12 +68,11 @@ parse_options ()
     while true ; do
 	case "$1" in
 	    -c) current=true ; shift ;;
-	    -p) parallel=true ; force_tty=true ; shift ;;
+	    -p) parallel=true ; shift ;;
 	    -q) quiet=true ; shift ;;
-	    -t) force_tty=true ; shift ;;
 	    -v) verbose=true ; shift ;;
 	    --) shift ; break ;;
-	    *) usage ;; # Shouldn't happen, so this is reasonable.
+	    -h|--help|*) usage ;; # Shouldn't happen, so this is reasonable.
 	esac
     done
 
@@ -150,11 +147,7 @@ SSH_OPTS=
 [ -r /etc/ctdb/onnode.conf ] && . /etc/ctdb/onnode.conf
 [ -n "$SSH" ] || SSH=ssh
 if [ "$SSH" = "ssh" ] ; then
-    if $force_tty ; then
-	ssh_opts="-t"
-    else
-	ssh_opts="-n"
-    fi
+    ssh_opts="-n"
 else
     : # rsh? All bets are off!
 fi
@@ -179,14 +172,18 @@ trap 'kill -TERM $pids 2>/dev/null' INT TERM
 # have been added to $pids and the script is interrupted.  However,
 # the part of the window where it matter is very small.
 for n in $nodes ; do
-    if $verbose ; then
-	echo >&2 ; echo ">> NODE: $n <<" >&2
-    fi
-
     if $parallel ; then
-	$SSH $ssh_opts $EXTRA_SSH_OPTS $n "$command" &
+	if $verbose ; then
+	    ($SSH $ssh_opts $EXTRA_SSH_OPTS $n "$command" 2>&1 | sed -e "s@^@[$n] @" )&
+	else
+	    $SSH $ssh_opts $EXTRA_SSH_OPTS $n "$command" &
+	fi
 	pids="${pids} $!"
     else
+	if $verbose ; then
+	    echo >&2 ; echo ">> NODE: $n <<" >&2
+	fi
+
 	$SSH $ssh_opts $EXTRA_SSH_OPTS $n "$command"
     fi
 done
