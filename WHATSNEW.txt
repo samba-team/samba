@@ -1,4 +1,130 @@
                    ===============================
+                   Release Notes for Samba 3.0.31
+                             July 10, 2008
+                   ===============================
+
+This is a bug fix release of the Samba 3.0 production series
+and is the version that servers should be run for all current
+Samba 3.0 bug fixes.
+
+User visible bug fixes in this release include:
+
+    o Correct issues with running Winbind runing on a Samba PDC.
+    o Problems with trusted Windows 2008 domains.
+    o Difficulty joining an NT4 or Windows 2000 AD domain.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.30
+--------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 5504: Fix SIGTERM handling in Winbind children so that they
+      do not remove the unix domain socket used to field client requests.
+    * Split the winbindd_passdb backend into a 'builtin' and a 'sam'
+      backend.
+    * When allocating client buffers for large read/write - make sure we 
+      take account of the large read/write SMB headers as well as the buffer
+      space.
+    * Memory leak fixes in DC location code.
+    * BUG 5533: Winbindd fails to cope correctly with a workgroup name 
+      containing a '.'
+    * BUG 5555: Don't return NT_STATUS_PASSWORD_MUST_CHANGE error on machine
+      account logon.
+    * BUG 5551: smbd recursing back into winbindd from a winbindd call.
+    * Fix usage message for "net rpc trustdom add".
+    * Ensure consistent use of pdb_get_nt_passwd instead of pdb_get_lanman_passwd.
+    * BUG 5578: Bad (non-Samba) use of strlcat gives error.
+    * Canonicalize servername in the printer functions to remove leading '\\' 
+      characters.
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * Documentation build fixes.
+    * [DOCS] Fix use of smbconfoption in samba.entities.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Return NULL in sitename_fetch() if gencache_init() fails.
+
+
+o   Steven Danneman <steven.danneman@isilon.com>
+    * Use machine account and machine password from our domain when
+      contacting trusted domains.
+    * SPNEGO SPN fix when contacting trusted domains.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * BUG 5285: Fix libcap header mismatch.
+    * Fix joining NT4 domains.
+    * Don't let winbind getgroups crash when we have no gids in the
+      token.
+    * Fallback to level 24 pwd set while joining.
+    * Fix joining w2k domains in "security = ads".
+    * Fix pam_sm_chauthtok for storing modified cached creds.
+
+
+o   SATOH Fumiyasu <fumiyas@osstech.co.jp> 
+    * BUG 5202: Re-activate "acl group control" parameter and make it
+      only apply to owning group.
+
+
+o   <hkurma@datadomain.com>
+    * BUG 5531: Fix conversion of ns units when converting from
+      nttime to timespec.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 4974: Map NT_STATUS_OBJECT_PATH_NOT_FOUND to ENOENT in libsmbclient.
+    * Fix a segfault in base64_encode_data_blob.
+
+
+o   William Jojo <jojowil@hvcc.edu>
+    * AIX build fixes.
+
+
+o   Herb Lewis <herb@samba.org>
+    * ENODATA is not defined in freeBSD 4.6.2.
+
+
+o   Jim McDonough <jmcd@samba.org>
+    * Don't reset password last set time just because the expired flag
+      is set to 0.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * Fix usage message for 'net idmap dump'.
+    * Miscellaneous man page fixes.
+    * BUG 4203: Samba3-HOWTO: Add improvements/fixes submitted by Pete Boyd.
+
+
+o   John H Terpstra <jht@samba.org>
+    * Fixes to man pages.
+    * Add tdb file documentation.
+
+
+o   Bo Yang <boyang@novell.com>
+    * Ensure that winbindd trusted domain children keep primary domain online
+      status up to date.
+    * Update cached creds during password change.
+    * Ensure that Winbind always uses set_domain_offline() to mark a domain
+      offline.
+    * Allow authentication and memory credential refresh after password change
+      from gdm/xdm.
+
+
+o   Chere Zhou <czhou@isilon.com>
+    * Memory leak fixes.
+
+
+
+Release notes for older releases follow:
+
+      --------------------------------------------------
+                   ===============================
                    Release Notes for Samba 3.0.30
                             May 28, 2008
                    ===============================
@@ -30,9 +156,6 @@ o   Jeremy Allison <jra@samba.org>
 
 o   Karolin Seeger <kseeger@samba.org>
     * Remove man pages for ldb tools not included in Samba 3.0.
-
-
-Release notes for older releases follow:
 
       --------------------------------------------------
 
