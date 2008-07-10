@@ -1,6 +1,6 @@
 [SUBSYSTEM::LIBCOMPRESSION]
 
-LIBCOMPRESSION_OBJ_FILES = $(libcompressionsrcdir)/mszip.o
+LIBCOMPRESSION_OBJ_FILES = $(libcompressionsrcdir)/mszip.o $(libcompressionsrcdir)/lzxpress.o
 
 [SUBSYSTEM::GENCACHE]
 PRIVATE_DEPENDENCIES = TDB_WRAP
