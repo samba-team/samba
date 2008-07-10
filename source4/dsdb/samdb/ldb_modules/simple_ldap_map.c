@@ -676,7 +676,7 @@ static int entryuuid_init(struct ldb_module *module)
 	struct map_private *map_private;
 	struct entryuuid_private *entryuuid_private;
 
-	ret = ldb_map_init(module, entryuuid_attributes, entryuuid_objectclasses, entryuuid_wildcard_attributes, "extensibleObject", NULL);
+	ret = ldb_map_init(module, entryuuid_attributes, entryuuid_objectclasses, entryuuid_wildcard_attributes, "samba4Top", NULL);
         if (ret != LDB_SUCCESS)
                 return ret;
 
@@ -697,7 +697,7 @@ static int nsuniqueid_init(struct ldb_module *module)
 	struct map_private *map_private;
 	struct entryuuid_private *entryuuid_private;
 
-	ret = ldb_map_init(module, nsuniqueid_attributes, NULL, nsuniqueid_wildcard_attributes, "extensibleObject", NULL);
+	ret = ldb_map_init(module, nsuniqueid_attributes, NULL, nsuniqueid_wildcard_attributes, "samba4Top", NULL);
         if (ret != LDB_SUCCESS)
                 return ret;
 
