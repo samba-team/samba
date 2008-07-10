@@ -1226,11 +1226,13 @@ static int control_getcapabilities(struct ctdb_context *ctdb, int argc, const ch
 	if (!options.machinereadable){
 		printf("RECMASTER: %s\n", (capabilities&CTDB_CAP_RECMASTER)?"YES":"NO");
 		printf("LMASTER: %s\n", (capabilities&CTDB_CAP_LMASTER)?"YES":"NO");
+		printf("LVS: %s\n", (capabilities&CTDB_CAP_LVS)?"YES":"NO");
 	} else {
-		printf(":RECMASTER:LMASTER:\n");
-		printf(":%d:%d:\n",
+		printf(":RECMASTER:LMASTER:LVS:\n");
+		printf(":%d:%d:%d:\n",
 			!!(capabilities&CTDB_CAP_RECMASTER),
-			!!(capabilities&CTDB_CAP_LMASTER));
+			!!(capabilities&CTDB_CAP_LMASTER),
+			!!(capabilities&CTDB_CAP_LVS));
 	}
 	return 0;
 }

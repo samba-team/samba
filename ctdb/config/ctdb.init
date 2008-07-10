@@ -72,6 +72,9 @@ CTDB_OPTIONS="$CTDB_OPTIONS --reclock=$CTDB_RECOVERY_LOCK"
 [ -z "$CTDB_CAPABILITY_LMASTER" ] || [ "$CTDB_CAPABILITY_LMASTER" != "no" ] || {
 	CTDB_OPTIONS="$CTDB_OPTIONS --no-lmaster"
 }
+[ -z "$CTDB_LVS_PUBLIC_IP" ] || {
+	CTDB_OPTIONS="$CTDB_OPTIONS --lvs"
+}
 
 if [ "$CTDB_VALGRIND" = "yes" ]; then
     init_style="valgrind"

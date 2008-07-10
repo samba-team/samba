@@ -45,6 +45,7 @@ static struct {
 	int         start_as_disabled;
 	int         no_lmaster;
 	int         no_recmaster;
+	int         lvs;
 } options = {
 	.nlist = ETCDIR "/ctdb/nodes",
 	.transport = "tcp",
@@ -124,6 +125,7 @@ int main(int argc, const char *argv[])
 		{ "start-as-disabled", 0, POPT_ARG_NONE, &options.start_as_disabled, 0, "Node starts in disabled state", NULL },
 		{ "no-lmaster", 0, POPT_ARG_NONE, &options.no_lmaster, 0, "disable lmaster role on this node", NULL },
 		{ "no-recmaster", 0, POPT_ARG_NONE, &options.no_recmaster, 0, "disable recmaster role on this node", NULL },
+		{ "lvs", 0, POPT_ARG_NONE, &options.lvs, 0, "lvs is enabled on this node", NULL },
 		POPT_TABLEEND
 	};
 	int opt, ret;
@@ -212,6 +214,9 @@ int main(int argc, const char *argv[])
 	}
 	if (options.no_recmaster == 0) {
 		ctdb->capabilities |= CTDB_CAP_RECMASTER;
+	}
+	if (options.lvs != 0) {
+		ctdb->capabilities |= CTDB_CAP_LVS;
 	}
 
 	/* tell ctdb what nodes are available */
