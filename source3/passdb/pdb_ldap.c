@@ -4666,7 +4666,9 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 			DEBUG(0,("unkown group type: %d\n", group_type));
 			return False;
 	}
-	
+
+	result->acct_flags = 0;
+
 	return True;
 }
 
