@@ -4973,7 +4973,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(0,("ldapsam_create_user: ldap search failed!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 	talloc_autofree_ldapmsg(tmp_ctx, result);
 
