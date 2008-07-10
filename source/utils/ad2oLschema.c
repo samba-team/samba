@@ -67,114 +67,13 @@ static void usage(void)
 	exit(1);
 }
 
-static int fetch_attrs_schema(struct ldb_context *ldb, struct ldb_dn *schemadn,
-			      TALLOC_CTX *mem_ctx, 
-			      struct ldb_result **attrs_res)
-{
-	int ret;
-
-	/* Downlaod schema */
-	ret = ldb_search(ldb, schemadn, LDB_SCOPE_SUBTREE, 
-			 "objectClass=attributeSchema", 
-			 NULL, attrs_res);
-	if (ret != LDB_SUCCESS) {
-		printf("Search failed: %s\n", ldb_errstring(ldb));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	return ret;
-}
-
-static int fetch_oc_recursive(struct ldb_context *ldb, struct ldb_dn *schemadn, 
-			      TALLOC_CTX *mem_ctx, 
-			      struct ldb_result *search_from,
-			      struct ldb_result *res_list)
-{
-	int i;
-	int ret = 0;
-	for (i=0; i < search_from->count; i++) {
-		struct ldb_result *res;
-		const char *name = ldb_msg_find_attr_as_string(search_from->msgs[i], 
-							       "lDAPDisplayname", NULL);
-
-		ret = ldb_search_exp_fmt(ldb, mem_ctx, &res,
-					schemadn, LDB_SCOPE_SUBTREE, NULL,
-					"(&(&(objectClass=classSchema)(subClassOf=%s))(!(lDAPDisplayName=%s)))",
-					name, name);
-		if (ret != LDB_SUCCESS) {
-			printf("Search failed: %s\n", ldb_errstring(ldb));
-			return ret;
-		}
-		
-		res_list->msgs = talloc_realloc(res_list, res_list->msgs, 
-						struct ldb_message *, res_list->count + 2);
-		if (!res_list->msgs) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		res_list->msgs[res_list->count] = talloc_move(res_list, 
-							      &search_from->msgs[i]);
-		res_list->count++;
-		res_list->msgs[res_list->count] = NULL;
-
-		if (res->count > 0) {
-			ret = fetch_oc_recursive(ldb, schemadn, mem_ctx, res, res_list); 
-		}
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-	return ret;
-}
-
-static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *schemadn, 
-				    TALLOC_CTX *mem_ctx, 
-				    struct ldb_result **objectclasses_res)
-{
-	TALLOC_CTX *local_ctx = talloc_new(mem_ctx);
-	struct ldb_result *top_res, *ret_res;
-	int ret;
-	if (!local_ctx) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	/* Downlaod 'top' */
-	ret = ldb_search(ldb, schemadn, LDB_SCOPE_SUBTREE, 
-			 "(&(objectClass=classSchema)(lDAPDisplayName=top))", 
-			 NULL, &top_res);
-	if (ret != LDB_SUCCESS) {
-		printf("Search failed: %s\n", ldb_errstring(ldb));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	talloc_steal(local_ctx, top_res);
-
-	if (top_res->count != 1) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret_res = talloc_zero(local_ctx, struct ldb_result);
-	if (!ret_res) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = fetch_oc_recursive(ldb, schemadn, local_ctx, top_res, ret_res); 
-
-	if (ret != LDB_SUCCESS) {
-		printf("Search failed: %s\n", ldb_errstring(ldb));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	*objectclasses_res = talloc_move(mem_ctx, &ret_res);
-	return ret;
-}
-
-static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
-				     struct ldb_result **schema_res) 
+static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx) 
 {
 	const char *rootdse_attrs[] = {"schemaNamingContext", NULL};
 	struct ldb_dn *schemadn;
 	struct ldb_dn *basedn = ldb_dn_new(mem_ctx, ldb, NULL);
 	struct ldb_result *rootdse_res;
+	struct ldb_result *schema_res;
 	int ldb_ret;
 	
 	if (!basedn) {
@@ -186,124 +85,40 @@ static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ct
 	if (ldb_ret != LDB_SUCCESS) {
 		ldb_ret = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, 
 				 "(&(objectClass=dMD)(cn=Schema))", 
-				 NULL, schema_res);
+				 NULL, &schema_res);
 		if (ldb_ret) {
 			printf("cn=Schema Search failed: %s\n", ldb_errstring(ldb));
 			return NULL;
 		}
 
-		talloc_steal(mem_ctx, *schema_res);
+		talloc_steal(mem_ctx, schema_res);
 
-		if ((*schema_res)->count != 1) {
+		if (schema_res->count != 1) {
+			talloc_free(schema_res);
 			printf("Failed to find rootDSE");
 			return NULL;
 		}
 		
-		schemadn = talloc_steal(mem_ctx, (*schema_res)->msgs[0]->dn);
+		schemadn = talloc_steal(mem_ctx, schema_res->msgs[0]->dn);
+		talloc_free(schema_res);
 		return schemadn;
-		
 	}
 	
-	talloc_steal(mem_ctx, rootdse_res);
-
 	if (rootdse_res->count != 1) {
 		printf("Failed to find rootDSE");
+		talloc_free(rootdse_res);
 		return NULL;
 	}
 	
 	/* Locate schema */
 	schemadn = ldb_msg_find_attr_as_dn(ldb, mem_ctx, rootdse_res->msgs[0], "schemaNamingContext");
+	talloc_free(rootdse_res);
+
 	if (!schemadn) {
 		return NULL;
 	}
 
-	ldb_ret = ldb_search(ldb, schemadn, LDB_SCOPE_BASE, 
-			     "(&(objectClass=dMD)(cn=Schema))", 
-			     NULL, schema_res);
-	if (ldb_ret) {
-		printf("cn=Schema Search failed: %s\n", ldb_errstring(ldb));
-		return NULL;
-	}
-	
-	talloc_steal(mem_ctx, *schema_res);
-
-	if ((*schema_res)->count != 1) {
-		printf("Failed to find rootDSE");
-		return NULL;
-	}
-	talloc_free(rootdse_res);
 	return schemadn;
-}
-
-static bool merge_attr_list(TALLOC_CTX *mem_ctx, 
-			    struct ldb_message_element *attrs, struct ldb_message_element *new_attrs) 
-{
-	struct ldb_val *values;
-	if (!new_attrs) {
-		return true;
-	}
-
-	values = talloc_realloc(mem_ctx, 
-				attrs->values, struct ldb_val, attrs->num_values + new_attrs->num_values);
-	
-	attrs->values = values;
-
-	memcpy(&attrs->values[attrs->num_values], new_attrs->values, sizeof(*new_attrs->values) * new_attrs->num_values);
-	attrs->num_values = attrs->num_values + new_attrs->num_values;
-
-	/* Add sort and unique implementation here */
-
-	return true;
-}
-
-static bool find_aux_classes(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, struct ldb_dn *schema_dn,
-			     struct ldb_message_element *aux_class, struct ldb_message_element *must, 
-			     struct ldb_message_element *sys_must, struct ldb_message_element *may, 
-			     struct ldb_message_element *sys_may) 
-{
-	int i, ret;
-	struct ldb_message *msg;
-	struct ldb_result *res;
-
-	for (i=0; aux_class && i < aux_class->num_values; i++) {
-		ret = ldb_search_exp_fmt(ldb, mem_ctx, &res,
-					 schema_dn, LDB_SCOPE_SUBTREE, NULL,
-					 "(&(objectClass=classSchema)(lDAPDisplayName=%s))",
-					 aux_class->values[i].data);
-		if (ret != LDB_SUCCESS) {
-			return false;
-		}
-
-		msg = res->msgs[0];
-
-		if (!merge_attr_list(mem_ctx, must, ldb_msg_find_element(msg, "mustContain"))) {
-			return false;
-		}
-		if (!merge_attr_list(mem_ctx, sys_must,  ldb_msg_find_element(msg, "systemMustContain"))) {
-			return false;
-		}
-		if (!merge_attr_list(mem_ctx, may, ldb_msg_find_element(msg, "mayContain"))) {
-			return false;
-		}
-		if (!merge_attr_list(mem_ctx, sys_may, ldb_msg_find_element(msg, "systemMayContain"))) {
-			return false;
-		}
-		
-		
-		if (res->count == 0) {
-			return false;
-		}
-
-		if (!find_aux_classes(mem_ctx, ldb, schema_dn,
-				      ldb_msg_find_element(msg, "auxiliaryClass"), must, sys_must, may, sys_may)) {
-			return false;
-		}
-		if (!find_aux_classes(mem_ctx, ldb, schema_dn,
-				      ldb_msg_find_element(msg, "systemAuxiliaryClass"), must, sys_must, may, sys_may)) {
-			return false;
-		}
-	}
-	return true;
 }
 
 
@@ -332,13 +147,14 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		char *new_attr;
 	} *attr_map = NULL;
 	int num_attr_maps = 0;	
-	struct ldb_result *schema_res, *attrs_res, *objectclasses_res;
+	struct dsdb_class *objectclass;
+	struct dsdb_attribute *attribute;
 	struct ldb_dn *schemadn;
 	struct schema_conv ret;
 	struct dsdb_schema *schema;
 	char *error_string;
 
-	int ldb_ret, i;
+	int ldb_ret;
 
 	ret.count = 0;
 	ret.skipped = 0;
@@ -389,31 +205,16 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		}
 	}
 
-	schemadn = find_schema_dn(ldb, mem_ctx, &schema_res);
+	schemadn = find_schema_dn(ldb, mem_ctx);
 	if (!schemadn) {
 		printf("Failed to find schema DN: %s\n", ldb_errstring(ldb));
 		ret.failures = 1;
 		return ret;
 	}
 	
-	ldb_ret = fetch_attrs_schema(ldb, schemadn, mem_ctx, &attrs_res);
-	if (ldb_ret != LDB_SUCCESS) {
-		printf("Failed to fetch attribute schema: %s\n", ldb_errstring(ldb));
-		ret.failures = 1;
-		return ret;
-	}
-
-
-	ldb_ret = fetch_objectclass_schema(ldb, schemadn, mem_ctx, &objectclasses_res);
-	if (ldb_ret != LDB_SUCCESS) {
-		printf("Failed to fetch objectClass schema elements: %s\n", ldb_errstring(ldb));
-		ret.failures = 1;
-		return ret;
-	}
-	
-	ldb_ret = dsdb_schema_from_ldb_results(mem_ctx, ldb,
-					       lp_iconv_convenience(cmdline_lp_ctx),
-					       schema_res, attrs_res, objectclasses_res, &schema, &error_string);
+	ldb_ret = dsdb_schema_from_schema_dn(mem_ctx, ldb,
+					     lp_iconv_convenience(cmdline_lp_ctx),
+					     schemadn, &schema, &error_string);
 	if (ldb_ret != LDB_SUCCESS) {
 		printf("Failed to load schema: %s\n", error_string);
 		ret.failures = 1;
@@ -428,23 +229,16 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		break;
 	}
 
-	for (i=0; i < attrs_res->count; i++) {
-		struct ldb_message *msg = attrs_res->msgs[i];
+	for (attribute=schema->attributes; attribute; attribute = attribute->next) {
+		const char *name = attribute->lDAPDisplayName;
+		const char *description = attribute->adminDescription;
+		const char *oid = attribute->attributeID_oid;
+		const char *syntax = attribute->attributeSyntax_oid;
+		bool single_value = attribute->isSingleValued;
 
-		const char *name = ldb_msg_find_attr_as_string(msg, "lDAPDisplayName", NULL);
-		const char *description = ldb_msg_find_attr_as_string(msg, "description", NULL);
-		const char *oid = ldb_msg_find_attr_as_string(msg, "attributeID", NULL);
-		const char *syntax = ldb_msg_find_attr_as_string(msg, "attributeSyntax", NULL);
-		bool single_value = ldb_msg_find_attr_as_bool(msg, "isSingleValued", false);
 		const struct syntax_map *map = find_syntax_map_by_ad_oid(syntax);
 		char *schema_entry = NULL;
 		int j;
-
-		if (!name) {
-			printf("Failed to find lDAPDisplayName for schema DN: %s\n", ldb_dn_get_linearized(msg->dn));
-			ret.failures++;
-			continue;
-		}
 
 		/* We have been asked to skip some attributes/objectClasses */
 		if (attrs_skip && str_list_check_ci(attrs_skip, name)) {
@@ -487,9 +281,11 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		IF_NULL_FAIL_RET(schema_entry);
 
 		if (description) {
+#if 0 /* If you want to re-enable this, you must first figure out a sane escaping of ' in the description */
 			schema_entry = talloc_asprintf_append(schema_entry, 
-							      "  DESC %s\n", description);
+							      "  DESC '%s'\n", description);
 			IF_NULL_FAIL_RET(schema_entry);
+#endif
 		}
 
 		if (map) {
@@ -539,59 +335,31 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 		ret.count++;
 	}
 
-	for (i=0; i < objectclasses_res->count; i++) {
-		struct ldb_message *msg = objectclasses_res->msgs[i];
-		const char *name = ldb_msg_find_attr_as_string(msg, "lDAPDisplayName", NULL);
-		const char *description = ldb_msg_find_attr_as_string(msg, "description", NULL);
-		const char *oid = ldb_msg_find_attr_as_string(msg, "governsID", NULL);
-		const char *subClassOf = ldb_msg_find_attr_as_string(msg, "subClassOf", NULL);
-		int objectClassCategory = ldb_msg_find_attr_as_int(msg, "objectClassCategory", 0);
-		struct ldb_message_element *must = ldb_msg_find_element(msg, "mustContain");
-		struct ldb_message_element *sys_must = ldb_msg_find_element(msg, "systemMustContain");
-		struct ldb_message_element *may = ldb_msg_find_element(msg, "mayContain");
-		struct ldb_message_element *sys_may = ldb_msg_find_element(msg, "systemMayContain");
-		struct ldb_message_element *aux_class = ldb_msg_find_element(msg, "auxiliaryClass");
-		struct ldb_message_element *sys_aux_class = ldb_msg_find_element(msg, "systemAuxiliaryClass");
+	/* This is already sorted to have 'top' and similar classes first */
+	for (objectclass=schema->classes; objectclass; objectclass = objectclass->next) {
+		const char *name = objectclass->lDAPDisplayName;
+		const char *description = objectclass->adminDescription;
+		const char *oid = objectclass->governsID_oid;
+		const char *subClassOf = objectclass->subClassOf;
+		int objectClassCategory = objectclass->objectClassCategory;
+		char **must;
+		char **may;
 		char *schema_entry = NULL;
+		const char *objectclass_name_as_list[] = {
+			objectclass->lDAPDisplayName,
+			NULL
+		};
 		int j;
-
-		if (!name) {
-			printf("Failed to find lDAPDisplayName for schema DN: %s\n", ldb_dn_get_linearized(msg->dn));
-			ret.failures++;
-			continue;
-		}
-
+		
 		/* We have been asked to skip some attributes/objectClasses */
 		if (attrs_skip && str_list_check_ci(attrs_skip, name)) {
 			ret.skipped++;
 			continue;
 		}
 
-		if (must == NULL) {
-			must = talloc_zero(mem_ctx, struct ldb_message_element);
-		}
+		may = dsdb_full_attribute_list(mem_ctx, schema, objectclass_name_as_list, DSDB_SCHEMA_ALL_MAY);
 
-		if (may == NULL) {
-			may = talloc_zero(mem_ctx, struct ldb_message_element);
-		}
-
-		if (sys_must == NULL) {
-			sys_must = talloc_zero(mem_ctx, struct ldb_message_element);
-		}
-
-		if (sys_may == NULL) {
-			sys_may = talloc_zero(mem_ctx, struct ldb_message_element);
-		}
-
-		if (!find_aux_classes(mem_ctx, ldb, schemadn, aux_class, must, sys_must, may, sys_may)) {
-			ret.failures++;
-			continue;
-		}
-
-		if (!find_aux_classes(mem_ctx, ldb, schemadn, sys_aux_class, must, sys_must, may, sys_may)) {
-			ret.failures++;
-			continue;
-		}
+		must = dsdb_full_attribute_list(mem_ctx, schema, objectclass_name_as_list, DSDB_SCHEMA_ALL_MUST);
 
 		/* We might have been asked to remap this oid, due to a conflict */
 		for (j=0; oid_map && oid_map[j].old_oid; j++) {
@@ -635,7 +403,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 
 		if (description) {
 			schema_entry = talloc_asprintf_append(schema_entry, 
-							      "  DESC %s\n", description);
+							      "  DESC '%s'\n", description);
 			IF_NULL_FAIL_RET(schema_entry);
 		}
 
@@ -666,9 +434,9 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 #define APPEND_ATTRS(attributes) \
 		do {						\
 			int k;						\
-			for (k=0; attributes && k < attributes->num_values; k++) { \
+			for (k=0; attributes && attributes[k]; k++) { \
 				int attr_idx; \
-				const char *attr_name = (const char *)attributes->values[k].data;  \
+				const char *attr_name = attributes[k];  \
 				/* We might have been asked to remap this name, due to a conflict */ \
 				for (attr_idx=0; attr_name && attr_map && attr_map[attr_idx].old_attr; attr_idx++) { \
 					if (strcasecmp(attr_name, attr_map[attr_idx].old_attr) == 0) { \
@@ -681,7 +449,7 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 								      " %s", \
 								      attr_name); \
 				IF_NULL_FAIL_RET(schema_entry);		\
-				if (k != (attributes->num_values - 1)) { \
+				if (attributes[k+1]) { \
 					schema_entry = talloc_asprintf_append(schema_entry, \
 									      " $"); \
 					IF_NULL_FAIL_RET(schema_entry);	\
@@ -694,35 +462,25 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 			}						\
 		} while (0)
 
-		if ((must && must->values) || (sys_must && sys_must->values)) {
+		if (must) {
 			schema_entry = talloc_asprintf_append(schema_entry, 
 							      "  MUST (");
 			IF_NULL_FAIL_RET(schema_entry);
 
 			APPEND_ATTRS(must);
-			if (must && must->values && sys_must && sys_must->values) {
-				schema_entry = talloc_asprintf_append(schema_entry, \
-								      " $"); \
-			}
-			APPEND_ATTRS(sys_must);
-			
+
 			schema_entry = talloc_asprintf_append(schema_entry, 
 							      " )\n");
 			IF_NULL_FAIL_RET(schema_entry);
 		}
 
-		if ((may && may->values) || (sys_may && sys_may->values)) {
+		if (may) {
 			schema_entry = talloc_asprintf_append(schema_entry, 
 							      "  MAY (");
 			IF_NULL_FAIL_RET(schema_entry);
 
 			APPEND_ATTRS(may);
-			if (may && may->values && sys_may && sys_may->values) {
-				schema_entry = talloc_asprintf_append(schema_entry, \
-								      " $"); \
-			}
-			APPEND_ATTRS(sys_may);
-			
+
 			schema_entry = talloc_asprintf_append(schema_entry, 
 							      " )\n");
 			IF_NULL_FAIL_RET(schema_entry);
