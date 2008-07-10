@@ -2345,7 +2345,9 @@ char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data)
 
 	out_cnt = 0;
 	len = data.length;
-	output_len = data.length * 2;
+	output_len = data.length * 2 + 4; /* Account for closing bytes. 4 is
+					   * random but should be enough for
+					   * the = and \0 */
 	result = TALLOC_ARRAY(mem_ctx, char, output_len); /* get us plenty of space */
 	SMB_ASSERT(result != NULL);
 
