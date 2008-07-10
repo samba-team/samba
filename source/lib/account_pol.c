@@ -442,7 +442,7 @@ bool cache_account_policy_get(int field, uint32 *value)
 struct db_context *get_account_pol_db( void )
 {
 
-	if ( db != NULL ) {
+	if ( db == NULL ) {
 		if ( !init_account_policy() ) {
 			return NULL;
 		}
