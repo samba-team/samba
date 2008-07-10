@@ -130,6 +130,12 @@
       These are commands used to monitor and administrate a CTDB cluster.
     </para>
 
+    <refsect2><title>pnn</title>
+      <para>
+        This command displays the pnn of the current node.
+      </para>
+    </refsect2>
+
     <refsect2><title>status</title>
       <para>
         This command shows the current status of the ctdb node.
@@ -338,6 +344,78 @@ EventScriptTimeout  = 20
 RecoveryGracePeriod = 60
 RecoveryBanPeriod   = 300
       </screen>
+    </refsect2>
+
+    <refsect2><title>lvsmaster</title>
+      <para>
+      This command shows which node is currently the LVSMASTER. The
+      LVSMASTER is the node in the cluster which drives the LVS system and
+      which receives all incoming traffic from clients.
+      </para>
+      <para>
+      LVS is the mode where the entire CTDB/Samba cluster uses a single
+      ip address for the entire cluster. In this mode all clients connect to
+      one specific node which will then multiplex/loadbalance the clients
+      evenly onto the other nodes in the cluster. This is an alternative to using
+      public ip addresses. See the manpage for ctdbd for more information
+      about LVS.
+      </para>
+    </refsect2>
+
+    <refsect2><title>lvs</title>
+      <para>
+      This command shows which nodes in the cluster are currently active in the
+      LVS configuration. I.e. which nodes we are currently loadbalancing
+      the single ip address across.
+      </para>
+
+      <para>
+      LVS will by default only loadbalance across those nodes that are both
+      LVS capable and also HEALTHY. Except if all nodes are UNHEALTHY in which
+      case LVS will loadbalance across all UNHEALTHY nodes as well.
+      LVS will never use nodes that are DISCONNECTED, BANNED or DISABLED.
+      </para>
+
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+2:10.0.0.13
+3:10.0.0.14
+      </screen>
+
+    </refsect2>
+
+
+    <refsect2><title>getcapabilities</title>
+      <para>
+      This command shows the capabilities of the current node.
+      Please see manpage for ctdbd for a full list of all capabilities and
+      more detailed description.
+      </para>
+
+      <para>
+      RECMASTER and LMASTER capabilities are primarily used when CTDBD
+      is used to create a cluster spanning across WAN links. In which case
+      ctdbd acts as a WAN accelerator.
+      </para>
+
+      <para>
+      LVS capabile means that the node is participating in LVS, a mode
+      where the entire CTDB cluster uses one single ip address for the
+      entire cluster instead of using public ip address failover.
+      This is an alternative to using a loadbalancing layer-4 switch.
+      </para>
+
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+RECMASTER: YES
+LMASTER: YES
+LVS: NO
+      </screen>
+
     </refsect2>
 
     <refsect2><title>statistics</title>

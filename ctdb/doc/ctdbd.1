@@ -1,11 +1,11 @@
 .\"     Title: ctdbd
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.71.0 <http://docbook.sf.net/>
-.\"      Date: 03/04/2008
+.\"      Date: 07/10/2008
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDBD" "1" "03/04/2008" "" ""
+.TH "CTDBD" "1" "07/10/2008" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -16,7 +16,7 @@ ctdbd \- The CTDB cluster daemon
 .HP 6
 \fBctdbd\fR
 .HP 6
-\fBctdbd\fR [\-?\ \-\-help] [\-d\ \-\-debug=<INTEGER>] {\-\-dbdir=<directory>} {\-\-dbdir\-persistent=<directory>} [\-\-event\-script\-dir=<directory>] [\-i\ \-\-interactive] [\-\-listen=<address>] [\-\-logfile=<filename>] {\-\-nlist=<filename>} [\-\-nosetsched] [\-\-public\-addresses=<filename>] [\-\-public\-interface=<interface>] {\-\-reclock=<filename>} [\-\-single\-public\-ip=<address>] [\-\-socket=<filename>] [\-\-start\-as\-disabled] [\-\-syslog] [\-\-torture] [\-\-transport=<STRING>] [\-\-usage]
+\fBctdbd\fR [\-?\ \-\-help] [\-d\ \-\-debug=<INTEGER>] {\-\-dbdir=<directory>} {\-\-dbdir\-persistent=<directory>} [\-\-event\-script\-dir=<directory>] [\-i\ \-\-interactive] [\-\-listen=<address>] [\-\-logfile=<filename>] [\-\-lvs] {\-\-nlist=<filename>} [\-\-no\-lmaster] [\-\-no\-recmaster] [\-\-nosetsched] [\-\-public\-addresses=<filename>] [\-\-public\-interface=<interface>] {\-\-reclock=<filename>} [\-\-single\-public\-ip=<address>] [\-\-socket=<filename>] [\-\-start\-as\-disabled] [\-\-syslog] [\-\-torture] [\-\-transport=<STRING>] [\-\-usage]
 .SH "DESCRIPTION"
 .PP
 ctdbd is the main ctdb daemon.
@@ -78,11 +78,30 @@ This option is only required when you want to run multiple ctdbd daemons/nodes o
 This is the file where ctdbd will write its log. This is usually /var/log/log.ctdb .
 .RE
 .PP
+\-\-lvs
+.RS 3n
+This option is used to activate the LVS capability on a CTDB node. Please see the LVS section.
+.RE
+.PP
 \-\-nlist=<filename>
 .RS 3n
 This file contains a list of the private ip addresses of every node in the cluster. There is one line/ip address for each node. This file must be the same for all nodes in the cluster.
 .sp
 This file is usually /etc/ctdb/nodes .
+.RE
+.PP
+\-\-no\-lmaster
+.RS 3n
+This argument specifies that this node can NOT become an lmaster for records in the database. This means that it will never show up in the vnnmap. This feature is primarily used for making a cluster span across a WAN link and use CTDB as a WAN\-accelerator.
+.sp
+Please see the "remote cluster nodes" section for more information.
+.RE
+.PP
+\-\-no\-recmaster
+.RS 3n
+This argument specifies that this node can NOT become a recmaster for the database. This feature is primarily used for making a cluster span across a WAN link and use CTDB as a WAN\-accelerator.
+.sp
+Please see the "remote cluster nodes" section for more information.
 .RE
 .PP
 \-\-nosetsched
@@ -126,6 +145,8 @@ All incoming packets are sent to the recmaster which will multiplex the clients 
 This feature is completely controlled from the eventscripts and does not require any CTDBD involvement. However, the CTDBD daemon does need to know that the "single public ip" exists so that the CTDBD daemon will allow clients to set up killtcp to work on this ip address.
 .sp
 CTDBD only allows clients to use killtcp to kill off (RST) tcp connections to/from an ip address that is either a normal public address or to/from the ip address specified by \-\-single\-public\-ip. No other tcp connections are allowed to be specified with killtcp.
+.sp
+Please note that ipmux is obsolete. Use LVS, not ipmux. Please see the LVS section in this manpage for instructions on how to configure and use CTDB with LVS.
 .RE
 .PP
 \-\-socket=<filename>
@@ -332,6 +353,68 @@ When set to 1, ctdb will not perform failback of ip addresses when a node become
 Use with caution! Normally when a node becomes available to the cluster ctdb will try to reassign public ip addresses onto the new node as a way to distribute the workload evenly across the clusternode. Ctdb tries to make sure that all running nodes have approximately the same number of public addresses it hosts.
 .PP
 When you enable this tunable, CTDB will no longer attempt to rebalance the cluster by failing ip addresses back to the new nodes. An unbalanced cluster will therefore remain unbalanced until there is manual intervention from the administrator. When this parameter is set, you can manually fail public ip addresses over to the new node(s) using the 'ctdb moveip' command.
+.SH "LVS"
+.PP
+LVS is a mode where CTDB presents one single ip address for the entire cluster. This is an alternative to using public ip addresses and round\-robin DNS to loadbalance clients across the cluster.
+.PP
+This is similar to using a layer\-4 loadbalancing switch but with some restrictions.
+.PP
+In this mode the cluster select a set of nodes in the cluster and loadbalance all client access to the LVS address across this set of nodes. This set of nodes are all LVS capable nodes that are HEALTHY, or if no HEALTHY nodes exists all LVS capable nodes regardless of health status. LVS will however never loadbalance traffic to nodes that are BANNED, DISABLED or DISCONNECTED. The "ctdb lvs" command is used to show which nodes are currently load\-balanced across.
+.PP
+One of the these nodes are elected as the LVSMASTER. This node receives all traffic from clients coming in to the LVS address and multiplexes it across the internal network to one of the nodes that LVS is using. When responding to the client, that node will send the data back directly to the client, bypassing the LVSMASTER node. The command "ctdb lvsmaster" will show which node is the current LVSMASTER.
+.PP
+The path used for a client i/o is thus :
+.sp
+.RS 3n
+.nf
+	(1) Client sends request packet to LVSMASTER
+	(2) LVSMASTER passes the request on to one node across the internal network.
+	(3) Selected node processes the request.
+	(4) Node responds back to client.
+    
+.fi
+.RE
+.sp
+.PP
+This means that all incoming traffic to the cluster will pass through one physical node, which limits scalability. You can send more data to the LVS address that one physical node can multiplex. This means that you should not use LVS if your I/O pattern is write\-intensive since you will be limited in the available network bandwidth that node can handle. LVS does work wery well for read\-intensive workloads where only smallish READ requests are going through the LVSMASTER bottleneck and the majority of the traffic volume (the data in the read replies) goes straight from the processing node back to the clients. For read\-intensive i/o patterns you can acheive very high throughput rates in this mode.
+.PP
+Note: you can use LVS and public addresses at the same time.
+.SS "Configuration"
+.PP
+To activate LVS on a CTDB node you must specify CTDB_PUBLIC_INTERFACE and CTDB_LVS_PUBLIC_ADDRESS in /etc/sysconfig/ctdb.
+.PP
+You must also specify the "\-\-lvs" command line argument to ctdbd to activete LVS as a capability of the node. This should be done automatically for you by the /etc/init.d/ctdb script.
+.PP
+Example:
+.sp
+.RS 3n
+.nf
+	CTDB_PUBLIC_INTERFACE=eth0
+	CTDB_LVS_PUBLIC_IP=10.0.0.237
+	
+.fi
+.RE
+.sp
+.SH "REMOTE CLUSTER NODES"
+.PP
+It is possible to have a CTDB cluster that spans across a WAN link. For example where you have a CTDB cluster in your datacentre but you also want to have one additional CTDB node located at a remote branch site. This is similar to how a WAN accelerator works but with the difference that while a WAN\-accelerator often acts as a Proxy or a MitM, in the ctdb remote cluster node configuration the Samba instance at the remote site IS the genuine server, not a proxy and not a MitM, and thus provides 100% correct CIFS semantics to clients.
+.PP
+See the cluster as one single multihomed samba server where one of the NICs (the remote node) is very far away.
+.PP
+NOTE: This does require that the cluster filesystem you use can cope with WAN\-link latencies. Not all cluster filesystems can handle WAN\-link latencies! Whether this will provide very good WAN\-accelerator performance or it will perform very poorly depends entirely on how optimized your cluster filesystem is in handling high latency for data and metadata operations.
+.PP
+To activate a node as being a remote cluster node you need to set the following two parameters in /etc/sysconfig/ctdb for the remote node:
+.sp
+.RS 3n
+.nf
+CTDB_CAPABILITY_LMASTER=no
+CTDB_CAPABILITY_RECMASTER=no
+	
+.fi
+.RE
+.sp
+.PP
+Verify with the command "ctdb getcapabilities" that that node no longer has the recmaster or the lmaster capabilities.
 .SH "SEE ALSO"
 .PP
 ctdb(1), onnode(1)
