@@ -18,6 +18,10 @@ Changes since 3.2.0
 -------------------
 
 
+o   Michael Adam <obnox@samba.org>
+    * Fix creation of libaddns.a, libsmbclient.a and libsharemodes.a.
+
+
 o   Jeremy Allison <jra@samba.org>
     * BUG 5578: Fix error from strlcat.
     * Ensure consistent use of pdb_get_nt_passwd instead of
@@ -26,6 +30,7 @@ o   Jeremy Allison <jra@samba.org>
       pseaudo interface name that's too long.
     * Canonicalize servername in the printer functions to remove leading
       '\\' characters.
+    * Fix option processing in smbcacls - add POPT_COMMON_CONNECTION.
 
 
 o   Jim Brown <jim.brown@miami.edu>
@@ -44,6 +49,14 @@ o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
       to owning group.
 
 
+o   Volker Lendecke <vl@samba.org>
+    * BUG 5512: Fix alignment problems on sparc.
+
+
+o   Zach Loafman <zachary.loafman@isilon.com>
+    * Set sin[6]_family instead of ss_family in in[6]_addr_to_sockaddr_storage.
+
+
 o   Lars Müller <lars@samba.org>
     * Fix "vfs_full_audit.c: name table not in sync with vfs.h" panic.
 
@@ -51,6 +64,10 @@ o   Lars Müller <lars@samba.org>
 o   Darshan Purandare <dpurandare@isilon.com>
     * Add broadcasting of the debug message to all winbindd children.
 
+
+o   Bo Yang <boyang@novell.com>
+    * Allow authentication and memory credential refresh after password
+      change from gdm/xdm.
 
 
 ######################################################################
