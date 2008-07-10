@@ -1530,9 +1530,7 @@ SHLIBS = @LIBTALLOC_SHARED@ \
 
 shlibs: $(SHLIBS)
 
-LIBRARIES = libtalloc libtdb libwbclient libsmbclient libsmbsharemodes libaddns libnetapi
 
-libs: $(LIBRARIES)
 
 
 
@@ -1597,6 +1595,7 @@ uninstalllibtalloc::
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBTALLOC_STATIC_TARGET)`
 	-rm -f $(DESTDIR)${prefix}/include/talloc.h
 
+libs:: libtalloc
 installlibs:: @INSTALL_LIBTALLOC@
 cleanlibs:: cleanlibtalloc
 
@@ -1661,6 +1660,7 @@ uninstalllibtdb::
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBTDB_STATIC_TARGET)`
 	-rm -f $(DESTDIR)${prefix}/include/tdb.h
 
+libs:: libtdb
 installlibs:: @INSTALL_LIBTDB@
 cleanlibs:: cleanlibtdb
 
@@ -1729,6 +1729,7 @@ uninstalllibwbclient::
 	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/`basename $(LIBWBCLIENT_SHARED_TARGET_SONAME)`
 	-rm -f $(DESTDIR)${prefix}/include/wbclient.h
 
+libs:: libwbclient
 installlibs:: @INSTALL_LIBWBCLIENT@
 cleanlibs:: cleanlibwbclient
 
@@ -1785,6 +1786,7 @@ uninstalllibaddns::
 	-rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBADDNS_SHARED_TARGET)`
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBADDNS_STATIC_TARGET)`
 
+libs:: libaddns
 installlibs:: @INSTALL_LIBADDNS@
 cleanlibs:: cleanlibaddns
 
@@ -1865,6 +1867,7 @@ uninstalllibnetapi::
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBNETAPI_STATIC_TARGET)`
 	-rm -f $(DESTDIR)${prefix}/include/netapi.h
 
+libs:: libnetapi
 installlibs:: @INSTALL_LIBNETAPI@
 cleanlibs:: cleanlibnetapi
 
@@ -1927,6 +1930,7 @@ uninstalllibsmbclient::
 
 uninstallclientlib:: uninstalllibsmbclient
 
+libs:: libsmbclient
 installlibs:: @INSTALL_LIBSMBCLIENT@
 cleanlibs:: cleanlibsmbclient
 
@@ -1991,6 +1995,7 @@ uninstalllibsmbsharemodes::
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBSMBSHAREMODES_STATIC_TARGET)`
 	-rm -f $(DESTDIR)${prefix}/include/smb_share_modes.h
 
+libs:: libsmbsharemodes
 installlibs:: @INSTALL_LIBSMBSHAREMODES@
 cleanlibs:: cleanlibsmbsharemodes
 
