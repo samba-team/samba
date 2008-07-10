@@ -1409,6 +1409,9 @@ registry.</member>
 <member>net conf setparm - Store a parameter.</member>
 <member>net conf getparm - Retrieve the value of a parameter.</member>
 <member>net conf delparm - Delete a parameter.</member>
+<member>net conf getincludes - Show the includes of a share definition.</member>
+<member>net conf setincludes - Set includes for a share.</member>
+<member>net conf delincludes - Delete includes from a share definition.</member>
 </simplelist>
 </para>
 
@@ -1509,9 +1512,46 @@ Delete a parameter stored in registry.
 </refsect3>
 
 <refsect3>
-<title></title>
+<title>CONF GETINCLUDES <replaceable>section</replaceable></title>
 
 <para>
+Get the list of includes for the provided section (global or share).
+</para>
+
+<para>
+Note that due to the nature of the registry database and the nature of include directives,
+the includes need special treatment: Parameters are stored in registry by the parameter
+name as valuename, so there is only ever one instance of a parameter per share.
+Also, a specific order like in a text file is not guaranteed. For all real
+parameters, this is perfectly ok, but the include directive is rather a meta
+parameter, for which, in the smb.conf text file, the place where it is specified
+between the other parameters is very important. This can not be achieved by the
+simple registry smbconf data model, so there is one ordered list of includes
+per share, and this list is evaluated after all the parameters of the share.
+</para>
+
+<para>
+Further note that currently, only files can be included from registry
+configuration. In the future, there will be the ability to include configuration
+data from other registry keys.
+</para>
+</refsect3>
+
+<refsect3>
+<title>CONF SETINCLUDES <replaceable>section</replaceable> [<replaceable>filename</replaceable>]+</title>
+
+<para>
+Set the list of includes for the provided section (global or share) to the given
+list of one or more filenames. The filenames may contain the usual smb.conf
+macros like %I.
+</para>
+</refsect3>
+
+<refsect3>
+<title>CONF DELINCLUDES <replaceable>section</replaceable></title>
+
+<para>
+Delete the list of includes from the provided section (global or share).
 </para>
 </refsect3>
 
