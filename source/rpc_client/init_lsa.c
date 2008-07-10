@@ -26,6 +26,8 @@
 void init_lsa_String(struct lsa_String *name, const char *s)
 {
 	name->string = s;
+	name->size = 2 * strlen_m(s);
+	name->length = name->size;
 }
 
 /*******************************************************************
