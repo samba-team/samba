@@ -110,8 +110,6 @@ fi
 %{_bindir}/smnotify
 %{_bindir}/ctdb_ipmux
 %{_bindir}/ctdb_diagnostics
-%{_bindir}/onnode.ssh
-%{_bindir}/onnode.rsh
 %{_bindir}/onnode
 %{_mandir}/man1/ctdb.1.gz
 %{_mandir}/man1/ctdbd.1.gz
@@ -120,6 +118,8 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Fri Jul 11 2008 : Version pre_1.0.47
+ - Rewrite of onnode and associated documentation.
 * Thu Jul 10 2008 : Version 1.0.46
  - Document both the LVS:cingle-ip-address and the REMOTE-NODE:wan-accelerator
    capabilities.
