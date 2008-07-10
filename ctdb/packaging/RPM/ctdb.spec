@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 45
+Release: 46
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,19 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Thu Jul 10 2008 : Version 1.0.46
+ - Document both the LVS:cingle-ip-address and the REMOTE-NODE:wan-accelerator
+   capabilities.
+ - Add commands "ctdb pnn", "ctdb lvs", "ctdb lvsmaster".
+ - LVS improvements. LVS is the single-ip-address mode for a ctdb cluster.
+ - Fixes to supress rpmlint warnings
+ - AXI compile fixes.
+ - Change \s to [[:space:]] in some scripts. Not all RHEL5 packages come
+   with a egrep that handles \s   even same version but different arch.
+ - Revert the change to NFS restart. CTDB should NOT attempt to restart
+   failed services.
+ - Rewrite of the waitpid() patch to use the eventsystem for handling
+   signals.
 * Tue Jul 8 2008 : Version 1.0.45
  - Try to restart the nfs service if it has failed to respond 3 times in a row.
  - waitpid() can block if the child does not respond promptly to SIGTERM.
