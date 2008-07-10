@@ -1389,7 +1389,9 @@ The deployment of this configuration data can be activated in two levels from th
 activated by setting <parameter>registry shares</parameter> to
 <quote>yes</quote> in the [global] section and global configuration options are
 activated by setting <smbconfoption name="include">registry</smbconfoption> in
-the [global] section.
+the [global] section for a mixed configuration or by setting
+<smbconfoption name="config backend">registry</smbconfoption> in the [global]
+section for a registry-only configuration.
 See the <citerefentry><refentrytitle>smb.conf</refentrytitle>
 <manvolnum>5</manvolnum></citerefentry> manpage for details.
 </para>
