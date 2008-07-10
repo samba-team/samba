@@ -56,6 +56,180 @@
 ))
 #endif
 
+ssize_t lzxpress_compress(const uint8_t *uncompressed,
+			  uint32_t uncompressed_size,
+			  uint8_t *compressed,
+			  uint32_t max_compressed_size)
+{
+	uint32_t uncompressed_pos, compressed_pos, byte_left;
+	uint32_t max_offset, best_offset;
+	int32_t offset;
+	uint32_t max_len, len, best_len;
+	const uint8_t *str1, *str2;
+	uint32_t indic;
+	uint8_t *indic_pos;
+	uint32_t indic_bit, nibble_index;
+
+	uint32_t metadata_size;
+	uint16_t metadata;
+	uint16_t *dest;
+
+	if (!uncompressed_size) {
+		return 0;
+	}
+
+	uncompressed_pos = 0;
+	indic = 0;
+	compressed_pos = sizeof(uint32_t);
+	indic_pos = &compressed[0];
+
+	byte_left = uncompressed_size;
+	indic_bit = 0;
+	nibble_index = 0;
+
+	if (uncompressed_pos > XPRESS_BLOCK_SIZE)
+		return 0;
+
+	do {
+		bool found = false;
+
+		max_offset = uncompressed_pos;
+
+		str1 = &uncompressed[uncompressed_pos];
+
+		best_len = 2;
+		best_offset = 0;
+
+		max_offset = MIN(0x1FFF, max_offset);
+
+		/* search for the longest match in the window for the lookahead buffer */
+		for (offset = 1; (uint32_t)offset <= max_offset; offset++) {
+			str2 = &str1[-offset];
+
+			/* maximum len we can encode into metadata */
+			max_len = MIN((255 + 15 + 7 + 3), byte_left);
+
+			for (len = 0; (len < max_len) && (str1[len] == str2[len]); len++);
+
+			/*
+			 * We check if len is better than the value found before, including the
+			 * sequence of identical bytes
+			 */
+			if (len > best_len) {
+				found = true;
+				best_len = len;
+				best_offset = offset;
+			}
+		}
+
+		if (found) {
+			metadata_size = 0;
+			dest = (uint16_t *)&compressed[compressed_pos];
+
+			if (best_len < 10) {
+				/* Classical meta-data */
+				metadata = (uint16_t)(((best_offset - 1) << 3) | (best_len - 3));
+				dest[metadata_size / sizeof(uint16_t)] = metadata;
+				metadata_size += sizeof(uint16_t);
+			} else {
+				metadata = (uint16_t)(((best_offset - 1) << 3) | 7);
+				dest[metadata_size / sizeof(uint16_t)] = metadata;
+				metadata_size = sizeof(uint16_t);
+
+				if (best_len < (15 + 7 + 3)) {
+					/* Shared byte */
+					if (!nibble_index) {
+						compressed[compressed_pos + metadata_size] = (best_len - (3 + 7)) & 0xF;
+						metadata_size += sizeof(uint8_t);
+					} else {
+						compressed[nibble_index] &= 0xF;
+						compressed[nibble_index] |= (best_len - (3 + 7)) * 16;
+					}
+				} else if (best_len < (3 + 7 + 15 + 255)) {
+					/* Shared byte */
+					if (!nibble_index) {
+						compressed[compressed_pos + metadata_size] = 15;
+						metadata_size += sizeof(uint8_t);
+					} else {
+						compressed[nibble_index] &= 0xF;
+						compressed[nibble_index] |= (15 * 16);
+					}
+
+					/* Additionnal best_len */
+					compressed[compressed_pos + metadata_size] = (best_len - (3 + 7 + 15)) & 0xFF;
+					metadata_size += sizeof(uint8_t);
+				} else {
+					/* Shared byte */
+					if (!nibble_index) {
+						compressed[compressed_pos + metadata_size] |= 15;
+						metadata_size += sizeof(uint8_t);
+					} else {
+						compressed[nibble_index] |= 15 << 4;
+					}
+
+					/* Additionnal best_len */
+					compressed[compressed_pos + metadata_size] = 255;
+
+					metadata_size += sizeof(uint8_t);
+
+					compressed[compressed_pos + metadata_size] = (best_len - 3) & 0xFF;
+					compressed[compressed_pos + metadata_size + 1] = ((best_len - 3) >> 8) & 0xFF;
+					metadata_size += sizeof(uint16_t);
+				}
+			}
+
+			indic |= 1 << (32 - ((indic_bit % 32) + 1));
+
+			if (best_len > 9) {
+				if (nibble_index == 0) {
+					nibble_index = compressed_pos + sizeof(uint16_t);
+				} else {
+					nibble_index = 0;
+				}
+			}
+
+			compressed_pos += metadata_size;
+			uncompressed_pos += best_len;
+			byte_left -= best_len;
+		} else {
+			compressed[compressed_pos++] = uncompressed[uncompressed_pos++];
+			byte_left--;
+		}
+		indic_bit++;
+
+		if ((indic_bit - 1) % 32 > (indic_bit % 32)) {
+			*(uint32_t *)indic_pos = indic;
+			indic = 0;
+			indic_pos = &compressed[compressed_pos];
+			compressed_pos += sizeof(uint32_t);
+		}
+	} while (byte_left > 3);
+
+	do {
+		compressed[compressed_pos] = uncompressed[uncompressed_pos];
+		indic_bit++;
+
+		uncompressed_pos++;
+		compressed_pos++;
+                if (((indic_bit - 1) % 32) > (indic_bit % 32)){
+			*(uint32_t *)indic_pos = indic;
+			indic = 0;
+			indic_pos = &compressed[compressed_pos];
+			compressed_pos += sizeof(uint32_t);
+		}
+	} while (uncompressed_pos < uncompressed_size);
+
+	if ((indic_bit % 32) > 0) {
+		for (; (indic_bit % 32) != 0; indic_bit++)
+			indic |= 0 << (32 - ((indic_bit % 32) + 1));
+
+		*(uint32_t *)indic_pos = indic;
+		compressed_pos += sizeof(uint32_t);
+	}
+
+	return compressed_pos;
+}
+
 ssize_t lzxpress_decompress(const uint8_t *input,
 			    uint32_t input_size,
 			    uint8_t *output,
