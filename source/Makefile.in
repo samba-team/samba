@@ -1604,6 +1604,7 @@ uninstalllibtalloc::
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBTALLOC_STATIC_TARGET)`
 	-rm -f $(DESTDIR)${prefix}/include/talloc.h
 
+installlibs:: @INSTALL_LIBTALLOC@
 
 #-------------------------------------------------------------------
 #
@@ -1666,6 +1667,7 @@ uninstalllibtdb::
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBTDB_STATIC_TARGET)`
 	-rm -f $(DESTDIR)${prefix}/include/tdb.h
 
+installlibs:: @INSTALL_LIBTDB@
 
 #-------------------------------------------------------------------
 #
@@ -1732,6 +1734,7 @@ uninstalllibwbclient::
 	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/`basename $(LIBWBCLIENT_SHARED_TARGET_SONAME)`
 	-rm -f $(DESTDIR)${prefix}/include/wbclient.h
 
+installlibs:: @INSTALL_LIBWBCLIENT@
 
 #-------------------------------------------------------------------
 #
@@ -1785,6 +1788,7 @@ uninstalllibaddns::
 	-rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBADDNS_SHARED_TARGET)`
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBADDNS_STATIC_TARGET)`
 
+installlibs:: @INSTALL_LIBADDNS@
 
 #-------------------------------------------------------------------
 #
@@ -1863,6 +1867,7 @@ uninstalllibnetapi::
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBNETAPI_STATIC_TARGET)`
 	-rm -f $(DESTDIR)${prefix}/include/netapi.h
 
+installlibs:: @INSTALL_LIBNETAPI@
 
 #-------------------------------------------------------------------
 #
@@ -1923,6 +1928,7 @@ uninstalllibsmbclient::
 
 uninstallclientlib:: uninstalllibsmbclient
 
+installlibs:: @INSTALL_LIBSMBCLIENT@
 
 #-------------------------------------------------------------------
 #
@@ -1985,6 +1991,7 @@ uninstalllibsmbsharemodes::
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/`basename $(LIBSMBSHAREMODES_STATIC_TARGET)`
 	-rm -f $(DESTDIR)${prefix}/include/smb_share_modes.h
 
+installlibs:: @INSTALL_LIBSMBSHAREMODES@
 
 #-------------------------------------------------------------------
 #
@@ -2392,10 +2399,7 @@ bin/timelimit@EXEEXT@: script/tests/timelimit.o
 
 install:: installservers installbin @INSTALL_CIFSMOUNT@ @INSTALL_CIFSSPNEGO@ installman \
 		installscripts installdat installmodules @SWAT_INSTALL_TARGETS@ \
-		@INSTALL_LIBTALLOC@ \
-		@INSTALL_LIBTDB@ \
-		@INSTALL_LIBSMBCLIENT@ @INSTALL_PAM_MODULES@ \
-		@INSTALL_LIBSMBSHAREMODES@ @INSTALL_LIBWBCLIENT@ @INSTALL_LIBNETAPI@
+		@INSTALL_PAM_MODULES@ installlibs
 
 install-everything:: install installmodules
 
