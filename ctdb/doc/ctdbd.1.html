@@ -374,7 +374,19 @@ You must also specify the "--lvs" command line argument to ctdbd to activete LVS
 	CTDB_PUBLIC_INTERFACE=eth0
 	CTDB_LVS_PUBLIC_IP=10.0.0.237
 	</pre><p>
-	</p></div></div><div class="refsect1" lang="en"><a name="id2529319"></a><h2>REMOTE CLUSTER NODES</h2><p>
+	</p></div><p>
+    If you use LVS, you must still have a real/permanent address configured
+    for the public interface on each node. This address must be routable
+    and the cluster nodes must be configured so that all traffic back to client
+    hosts are routed through this interface. This is also required in order
+    to allow samba/winbind on the node to talk to the domain controller.
+    (we can not use the lvs ip address to initiate outgoing traffic)
+    </p><p>
+    I.e. make sure that you can "ping" both the domain controller and also
+    all of the clients from the node BEFORE you enable LVS. Also make sure
+    that when you ping these hosts that the traffic is routed out through the
+    eth0 interface.
+    </p></div><div class="refsect1" lang="en"><a name="id2529338"></a><h2>REMOTE CLUSTER NODES</h2><p>
 It is possible to have a CTDB cluster that spans across a WAN link. 
 For example where you have a CTDB cluster in your datacentre but you also
 want to have one additional CTDB node located at a remote branch site.
@@ -403,10 +415,10 @@ CTDB_CAPABILITY_RECMASTER=no
     </p><p>
 	Verify with the command "ctdb getcapabilities" that that node no longer
 	has the recmaster or the lmaster capabilities.
-    </p></div><div class="refsect1" lang="en"><a name="id2529370"></a><h2>SEE ALSO</h2><p>
+    </p></div><div class="refsect1" lang="en"><a name="id2529389"></a><h2>SEE ALSO</h2><p>
       ctdb(1), onnode(1)
       <a href="http://ctdb.samba.org/" target="_top">http://ctdb.samba.org/</a>
-    </p></div><div class="refsect1" lang="en"><a name="id2529383"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
+    </p></div><div class="refsect1" lang="en"><a name="id2529402"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
 Copyright (C) Andrew Tridgell 2007<br>
 Copyright (C) Ronnie sahlberg 2007<br>
 <br>

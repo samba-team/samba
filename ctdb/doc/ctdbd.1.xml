@@ -719,6 +719,21 @@ You must also specify the "--lvs" command line argument to ctdbd to activete LVS
 	</para>
 
     </refsect2>
+
+    <para>
+    If you use LVS, you must still have a real/permanent address configured
+    for the public interface on each node. This address must be routable
+    and the cluster nodes must be configured so that all traffic back to client
+    hosts are routed through this interface. This is also required in order
+    to allow samba/winbind on the node to talk to the domain controller.
+    (we can not use the lvs ip address to initiate outgoing traffic)
+    </para>
+    <para>
+    I.e. make sure that you can "ping" both the domain controller and also
+    all of the clients from the node BEFORE you enable LVS. Also make sure
+    that when you ping these hosts that the traffic is routed out through the
+    eth0 interface.
+    </para>
   </refsect1>
     
 

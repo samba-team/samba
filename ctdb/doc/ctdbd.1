@@ -395,6 +395,10 @@ Example:
 .fi
 .RE
 .sp
+.PP
+If you use LVS, you must still have a real/permanent address configured for the public interface on each node. This address must be routable and the cluster nodes must be configured so that all traffic back to client hosts are routed through this interface. This is also required in order to allow samba/winbind on the node to talk to the domain controller. (we can not use the lvs ip address to initiate outgoing traffic)
+.PP
+I.e. make sure that you can "ping" both the domain controller and also all of the clients from the node BEFORE you enable LVS. Also make sure that when you ping these hosts that the traffic is routed out through the eth0 interface.
 .SH "REMOTE CLUSTER NODES"
 .PP
 It is possible to have a CTDB cluster that spans across a WAN link. For example where you have a CTDB cluster in your datacentre but you also want to have one additional CTDB node located at a remote branch site. This is similar to how a WAN accelerator works but with the difference that while a WAN\-accelerator often acts as a Proxy or a MitM, in the ctdb remote cluster node configuration the Samba instance at the remote site IS the genuine server, not a proxy and not a MitM, and thus provides 100% correct CIFS semantics to clients.
