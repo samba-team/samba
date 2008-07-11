@@ -301,7 +301,7 @@ failed:
 	return NT_STATUS_INTERNAL_DB_CORRUPTION;
 }
 
-/* search the cache for the SID an return a mapping if found *
+/* search the cahce for the SID an return a mapping if found *
  *
  * 4 cases are possible
  *
@@ -410,7 +410,7 @@ done:
 	return ret;
 }
 
-/* search the cache for the ID an return a mapping if found *
+/* search the cahce for the ID an return a mapping if found *
  *
  * 4 cases are possible
  *
