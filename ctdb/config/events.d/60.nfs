@@ -93,6 +93,7 @@ case $cmd in
 	fi
 
 
+
 	# check that NFS responds to rpc requests
 	ctdb_check_rpc "NFS" 100003 3
 
@@ -114,7 +115,7 @@ case $cmd in
 		rpc.mountd $RPCMOUNTDOPTS &
 		exit 1
 	}
-	;;
+       	;;
 
 esac
 

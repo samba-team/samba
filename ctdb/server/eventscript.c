@@ -210,18 +210,16 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 {
 	struct ctdb_event_script_state *state = 
 		talloc_get_type(p, struct ctdb_event_script_state);
-	int status = -1;
 	void (*callback)(struct ctdb_context *, int, void *) = state->callback;
 	void *private_data = state->private_data;
 	struct ctdb_context *ctdb = state->ctdb;
+	signed char rt = -1;
 
-	waitpid(state->child, &status, 0);
-	if (status != -1) {
-		status = WEXITSTATUS(status);
-	}
+	read(state->fd[0], &rt, sizeof(rt));
+
 	talloc_set_destructor(state, NULL);
 	talloc_free(state);
-	callback(ctdb, status, private_data);
+	callback(ctdb, rt, private_data);
 
 	ctdb->event_script_timeouts = 0;
 }
@@ -254,18 +252,41 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 	void (*callback)(struct ctdb_context *, int, void *) = state->callback;
 	void *private_data = state->private_data;
 	struct ctdb_context *ctdb = state->ctdb;
+	char *options;
 
 	DEBUG(DEBUG_ERR,("Event script timed out : %s count : %u\n", state->options, ctdb->event_script_timeouts));
 
-	talloc_free(state);
-	callback(ctdb, -1, private_data);
+	options = talloc_strdup(ctdb, state->options);
+	CTDB_NO_MEMORY_VOID(ctdb, options);
 
-	ctdb->event_script_timeouts++;
-	if (ctdb->event_script_timeouts > ctdb->tunable.script_ban_count) {
-		ctdb->event_script_timeouts = 0;
-		DEBUG(DEBUG_ERR, ("Maximum timeout count reached for eventscript. Banning self for %d seconds\n", ctdb->tunable.recovery_ban_period));
+	talloc_free(state);
+	if (!strcmp(options, "monitor")) {
+		/* if it is a monitor event, we allow it to "hang" a few times
+		   before we declare it a failure and ban ourself (and make
+		   ourself unhealthy)
+		*/
+		DEBUG(DEBUG_ERR, (__location__ " eventscript for monitor event timedout.\n"));
+
+		ctdb->event_script_timeouts++;
+		if (ctdb->event_script_timeouts > ctdb->tunable.script_ban_count) {
+			ctdb->event_script_timeouts = 0;
+			DEBUG(DEBUG_ERR, ("Maximum timeout count %u reached for eventscript. Banning self for %d seconds\n", ctdb->tunable.script_ban_count, ctdb->tunable.recovery_ban_period));
+			ctdb_ban_self(ctdb, ctdb->tunable.recovery_ban_period);
+			callback(ctdb, -1, private_data);
+		} else {
+		  	callback(ctdb, 0, private_data);
+		}
+	} else if (!strcmp(options, "startup")) {
+		DEBUG(DEBUG_ERR, (__location__ " eventscript for startup event timedout.\n"));
+		callback(ctdb, -1, private_data);
+	} else {
+		/* if it is not a monitor event we ban ourself immediately */
+		DEBUG(DEBUG_ERR, (__location__ " eventscript for NON-monitor/NON-startup event timedout. Immediately banning ourself for %d seconds\n", ctdb->tunable.recovery_ban_period));
 		ctdb_ban_self(ctdb, ctdb->tunable.recovery_ban_period);
+		callback(ctdb, -1, private_data);
 	}
+
+	talloc_free(options);
 }
 
 /*
@@ -275,7 +296,6 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
 {
 	DEBUG(DEBUG_ERR,(__location__ " Sending SIGTERM to child pid:%d\n", state->child));
 	kill(state->child, SIGTERM);
-	waitpid(state->child, NULL, 0);
 	return 0;
 }
 
@@ -318,13 +338,18 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	}
 
 	if (state->child == 0) {
+		signed char rt;
+
 		close(state->fd[0]);
 		if (ctdb->do_setsched) {
 			ctdb_restore_scheduler(ctdb);
 		}
 		set_close_on_exec(state->fd[1]);
-		ret = ctdb_event_script_v(ctdb, state->options);
-		_exit(ret);
+		rt = ctdb_event_script_v(ctdb, state->options);
+		while ((ret = write(state->fd[1], &rt, sizeof(rt))) != sizeof(rt)) {
+			sleep(1);
+		}
+		_exit(rt);
 	}
 
 	talloc_set_destructor(state, event_script_destructor);
@@ -460,7 +485,7 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 	state = talloc(ctdb->eventscripts_ctx, struct eventscript_callback_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
-	state->c = talloc_steal(ctdb, c);
+	state->c = talloc_steal(state, c);
 
 	DEBUG(DEBUG_NOTICE,("Forced running of eventscripts with arguments %s\n", indata.dptr));
 

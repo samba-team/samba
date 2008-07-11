@@ -289,6 +289,23 @@ static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv
 }
 
 /*
+  show the PNN of the current node
+ */
+static int control_pnn(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int mypnn;
+
+	mypnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
+	if (mypnn == -1) {
+		DEBUG(DEBUG_ERR, ("Unable to get pnn from local node."));
+		return -1;
+	}
+
+	printf("PNN:%d\n", mypnn);
+	return 0;
+}
+
+/*
   display remote ctdb status
  */
 static int control_status(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -1226,12 +1243,150 @@ static int control_getcapabilities(struct ctdb_context *ctdb, int argc, const ch
 	if (!options.machinereadable){
 		printf("RECMASTER: %s\n", (capabilities&CTDB_CAP_RECMASTER)?"YES":"NO");
 		printf("LMASTER: %s\n", (capabilities&CTDB_CAP_LMASTER)?"YES":"NO");
+		printf("LVS: %s\n", (capabilities&CTDB_CAP_LVS)?"YES":"NO");
 	} else {
-		printf(":RECMASTER:LMASTER:\n");
-		printf(":%d:%d:\n",
+		printf(":RECMASTER:LMASTER:LVS:\n");
+		printf(":%d:%d:%d:\n",
 			!!(capabilities&CTDB_CAP_RECMASTER),
-			!!(capabilities&CTDB_CAP_LMASTER));
+			!!(capabilities&CTDB_CAP_LMASTER),
+			!!(capabilities&CTDB_CAP_LVS));
 	}
+	return 0;
+}
+
+/*
+  display lvs configuration
+ */
+static int control_lvs(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t *capabilities;
+	struct ctdb_node_map *nodemap=NULL;
+	int i, ret;
+	int healthy_count = 0;
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
+		return ret;
+	}
+
+	capabilities = talloc_array(ctdb, uint32_t, nodemap->num);
+	CTDB_NO_MEMORY(ctdb, capabilities);
+	
+	/* collect capabilities for all connected nodes */
+	for (i=0; i<nodemap->num; i++) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		if (nodemap->nodes[i].flags & NODE_FLAGS_PERMANENTLY_DISABLED) {
+			continue;
+		}
+	
+		ret = ctdb_ctrl_getcapabilities(ctdb, TIMELIMIT(), i, &capabilities[i]);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get capabilities from node %u\n", i));
+			return ret;
+		}
+
+		if (!(capabilities[i] & CTDB_CAP_LVS)) {
+			continue;
+		}
+
+		if (!(nodemap->nodes[i].flags & NODE_FLAGS_UNHEALTHY)) {
+			healthy_count++;
+		}
+	}
+
+	/* Print all LVS nodes */
+	for (i=0; i<nodemap->num; i++) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		if (nodemap->nodes[i].flags & NODE_FLAGS_PERMANENTLY_DISABLED) {
+			continue;
+		}
+		if (!(capabilities[i] & CTDB_CAP_LVS)) {
+			continue;
+		}
+
+		if (healthy_count != 0) {
+			if (nodemap->nodes[i].flags & NODE_FLAGS_UNHEALTHY) {
+				continue;
+			}
+		}
+
+		printf("%d:%s\n", i, inet_ntoa(nodemap->nodes[i].sin.sin_addr));
+	}
+
+	return 0;
+}
+
+/*
+  display who is the lvs master
+ */
+static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t *capabilities;
+	struct ctdb_node_map *nodemap=NULL;
+	int i, ret;
+	int healthy_count = 0;
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
+		return ret;
+	}
+
+	capabilities = talloc_array(ctdb, uint32_t, nodemap->num);
+	CTDB_NO_MEMORY(ctdb, capabilities);
+	
+	/* collect capabilities for all connected nodes */
+	for (i=0; i<nodemap->num; i++) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		if (nodemap->nodes[i].flags & NODE_FLAGS_PERMANENTLY_DISABLED) {
+			continue;
+		}
+	
+		ret = ctdb_ctrl_getcapabilities(ctdb, TIMELIMIT(), i, &capabilities[i]);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get capabilities from node %u\n", i));
+			return ret;
+		}
+
+		if (!(capabilities[i] & CTDB_CAP_LVS)) {
+			continue;
+		}
+
+		if (!(nodemap->nodes[i].flags & NODE_FLAGS_UNHEALTHY)) {
+			healthy_count++;
+		}
+	}
+
+	/* find and show the lvsmaster */
+	for (i=0; i<nodemap->num; i++) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		if (nodemap->nodes[i].flags & NODE_FLAGS_PERMANENTLY_DISABLED) {
+			continue;
+		}
+		if (!(capabilities[i] & CTDB_CAP_LVS)) {
+			continue;
+		}
+
+		if (healthy_count != 0) {
+			if (nodemap->nodes[i].flags & NODE_FLAGS_UNHEALTHY) {
+				continue;
+			}
+		}
+
+		printf("Node %d is LVS master\n", i);
+		return 0;
+	}
+
+	printf("There is no LVS master\n");
 	return 0;
 }
 
@@ -1842,6 +1997,9 @@ static const struct {
 	{ "catdb",           control_catdb,             true,  "dump a database" ,                     "<dbname>"},
 	{ "getmonmode",      control_getmonmode,        true,  "show monitoring mode" },
 	{ "getcapabilities", control_getcapabilities,   true,  "show node capabilities" },
+	{ "pnn",             control_pnn,               true,  "show the pnn of the currnet node" },
+	{ "lvs",             control_lvs,               true,  "show lvs configuration" },
+	{ "lvsmaster",       control_lvsmaster,         true,  "show which node is the lvs master" },
 	{ "disablemonitor",      control_disable_monmode,        true,  "set monitoring mode to DISABLE" },
 	{ "enablemonitor",      control_enable_monmode,        true,  "set monitoring mode to ACTIVE" },
 	{ "setdebug",        control_setdebug,          true,  "set debug level",                      "<EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG>" },

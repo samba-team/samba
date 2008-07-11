@@ -15,7 +15,7 @@
 
 <refsynopsisdiv>
 	<cmdsynopsis>
-		<command>onnode NODE COMMAND ...</command>
+		<command>onnode [OPTION] ... NODES COMMAND ...</command>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -25,44 +25,127 @@
       cluster, or on all nodes.
     </para>
     <para>
-      The NODE option specifies which node to run a command on. You
+      The NODES option specifies which node to run a command on. You
       can specify a numeric node number (from 0 to N-1) or the special
-      node 'all'.
+      node 'all'.  You can also specify lists of nodes, separated by
+      commas, and ranges of numeric node numbers, separated by dashes.
+      If nodes are specified multiple times then the command will be
+      executed multiple times on those nodes.  The order of nodes is
+      significant.
     </para>
     <para>
       The COMMAND can be any shell command. The onnode utility uses
       ssh or rsh to connect to the remote nodes and run the command.
       </para>
-    <para>
-      If the COMMAND starts with a /, then the command is run via the
-      'at' service. Otherwise the command is run in the foreground.
-    </para>
+  </refsect1>
+
+  <refsect1><title>OPTIONS</title>
+
+    <variablelist>
+      <varlistentry><term>-c</term>
+        <listitem>
+          <para>
+            Execute COMMAND in the current working directory on each
+            node.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-p</term>
+        <listitem>
+          <para>
+            Run commands in parallel on the specified nodes.  In this
+            mode 
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-q</term>
+        <listitem>
+          <para>
+            Do not print node addresses.  Normally, onnode prints
+            informational node addresses if more than one node is
+            specified.  This overrides -v.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-v</term>
+        <listitem>
+          <para>
+            Print a node addresses even if only one node is specified.
+            Normally, onnode prints informational node addresses when
+            more than one node is specified.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-h, --help</term>
+        <listitem>
+          <para>
+            Show a short usage guide.
+	  </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
   </refsect1>
 
   <refsect1><title>EXAMPLES</title>
     <para>
       The following command would show the process ID of ctdb on all nodes
-      </para>
-      <screen format="linespecific">
-onnode all pidof ctdbd
-      </screen>
+    </para>
+    <screen format="linespecific">
+      onnode all pidof ctdbd
+    </screen>
 
     <para>
       The following command would show the last 5 lines of log on each
-      node, preceded by the nodes hostname
-      </para>
-      <screen format="linespecific">
-onnode all "hostname; tail -5 /var/log/log.ctdb"
-      </screen>
+      node, preceded by the node's hostname
+    </para>
+    <screen format="linespecific">
+      onnode all "hostname; tail -5 /var/log/log.ctdb"
+    </screen>
 
     <para>
       The following command would restart the ctdb service on all nodes.
-      </para>
-      <screen format="linespecific">
-onnode all service ctdb restart
-      </screen>
+    </para>
+    <screen format="linespecific">
+      onnode all service ctdb restart
+    </screen>
 
-    </refsect1>
+    <para>
+      The following command would run ./foo in the current working
+      directory, in parallel, on nodes 0, 2, 3 and 4.
+    </para>
+    <screen format="linespecific">
+      onnode -c -p 0,2-4 ./foo
+    </screen>
+  </refsect1>
+
+  <refsect1><title>FILES</title>
+
+    <variablelist>
+      <varlistentry><term>/etc/ctdb/nodes</term>
+        <listitem>
+          <para>
+            Contains a list of each node's IP address or hostname.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>/etc/ctdb/onnode.conf</term>
+        <listitem>
+          <para>
+            If this file exists it is sourced by onnode.  The main
+            purpose is to allow the administrator to set $SSH to
+            something other than "ssh".  In this case the -t option is
+            ignored.  For example, the administrator may choose to use
+            use rsh instead of ssh.
+	  </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
 
   <refsect1><title>SEE ALSO</title>
     <para>
@@ -73,6 +156,7 @@ onnode all service ctdb restart
 <literallayout>
 Copyright (C) Andrew Tridgell 2007
 Copyright (C) Ronnie sahlberg 2007
+Copyright (C) Martin Schwenke 2008
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

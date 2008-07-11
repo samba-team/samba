@@ -1,10 +1,12 @@
 #!gmake
 
+
 CC = @CC@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 datarootdir = @datarootdir@
 includedir = @includedir@
+docdir = /usr/share/doc
 libdir = @libdir@
 bindir = @bindir@
 sbindir = @sbindir@
@@ -170,15 +172,16 @@ install: all
 	mkdir -p $(DESTDIR)$(includedir)
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb/events.d
+	mkdir -p $(DESTDIR)$(docdir)/ctdb
 	${INSTALLCMD} -m 755 bin/ctdb $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 755 bin/ctdb_ipmux $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 755 bin/ctdbd $(DESTDIR)$(sbindir)
 	${INSTALLCMD} -m 755 bin/smnotify $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 644 include/ctdb.h $(DESTDIR)$(includedir)
 	${INSTALLCMD} -m 644 include/ctdb_private.h $(DESTDIR)$(includedir) # for samba3
-	${INSTALLCMD} -m 755 config/functions $(DESTDIR)$(etcdir)/ctdb
+	${INSTALLCMD} -m 644 config/functions $(DESTDIR)$(etcdir)/ctdb
 	${INSTALLCMD} -m 755 config/statd-callout $(DESTDIR)$(etcdir)/ctdb
-	${INSTALLCMD} -m 644 config/events.d/README $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m 644 config/events.d/README $(DESTDIR)/$(docdir)/ctdb/README.eventscripts
 	${INSTALLCMD} -m 755 config/events.d/00.ctdb $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/10.interface $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/40.vsftpd $(DESTDIR)$(etcdir)/ctdb/events.d
@@ -190,13 +193,11 @@ install: all
 	${INSTALLCMD} -m 755 config/events.d/90.ipmux $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/91.lvs $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 tools/ctdb_diagnostics $(DESTDIR)$(bindir)
-	${INSTALLCMD} -m 755 tools/onnode.ssh $(DESTDIR)$(bindir)
-	${INSTALLCMD} -m 755 tools/onnode.rsh $(DESTDIR)$(bindir)
+	${INSTALLCMD} -m 755 tools/onnode $(DESTDIR)$(bindir)
 	if [ -f doc/ctdb.1 ];then ${INSTALLCMD} -d $(DESTDIR)$(mandir)/man1; fi
 	if [ -f doc/ctdb.1 ];then ${INSTALLCMD} -m 644 doc/ctdb.1 $(DESTDIR)$(mandir)/man1; fi
 	if [ -f doc/ctdbd.1 ];then ${INSTALLCMD} -m 644 doc/ctdbd.1 $(DESTDIR)$(mandir)/man1; fi
 	if [ -f doc/onnode.1 ];then ${INSTALLCMD} -m 644 doc/onnode.1 $(DESTDIR)$(mandir)/man1; fi
-	cd $(DESTDIR)$(bindir) && ln -sf onnode.ssh onnode
 
 test: all
 	tests/run_tests.sh

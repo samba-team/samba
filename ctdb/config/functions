@@ -1,4 +1,3 @@
-#!/bin/sh
 # utility functions for ctdb event scripts
 
 #######################################
@@ -84,9 +83,9 @@ ctdb_wait_tcp_ports() {
 	      elif [ -x /usr/bin/nc ]; then
 	          /usr/bin/nc -z 127.0.0.1 $p > /dev/null || all_ok=0
 	      elif [ -x /usr/bin/netstat ]; then
-	          (netstat -a -n | egrep "0.0.0.0:$p\s*LISTEN" > /dev/null) || all_ok=0
+	          (netstat -a -n | egrep "0.0.0.0:$p[[:space:]]*LISTEN" > /dev/null) || all_ok=0
 	      elif [ -x /bin/netstat ]; then
-	          (netstat -a -n | egrep "0.0.0.0:$p\s*LISTEN" > /dev/null) || all_ok=0
+	          (netstat -a -n | egrep "0.0.0.0:$p[[:space:]]*LISTEN" > /dev/null) || all_ok=0
 	      else 
 		  echo "No tool to check tcp ports availabe. can not check in ctdb_wait_tcp_ports"
 		  return
@@ -211,7 +210,7 @@ kill_tcp_connections() {
 
     _killcount=0
     connfile="$CTDB_BASE/state/connections.$_IP"
-    netstat -tn |egrep "^tcp.*\s+$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' > $connfile
+    netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' > $connfile
     while read dest src; do
 	srcip=`echo $src | cut -d: -f1`
 	srcport=`echo $src | cut -d: -f2`
@@ -230,7 +229,7 @@ kill_tcp_connections() {
 	return;
     }
     _count=0
-    while netstat -tn |egrep "^tcp.*\s+$_IP:.*ESTABLISHED" > /dev/null; do
+    while netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" > /dev/null; do
 	sleep 1
 	_count=`expr $_count + 1`
 	[ $_count -gt 3 ] && {

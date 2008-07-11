@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 43
+Release: 47
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -90,10 +90,10 @@ fi
 %defattr(-,root,root)
 
 %config(noreplace) %{_sysconfdir}/sysconfig/ctdb
+%config(noreplace) %{_sysconfdir}/ctdb/functions
 %attr(755,root,root) %{initdir}/ctdb
 
-%{_sysconfdir}/ctdb/functions
-%{_sysconfdir}/ctdb/events.d/README
+%{_docdir}/ctdb/README.eventscripts
 %{_sysconfdir}/ctdb/events.d/00.ctdb
 %{_sysconfdir}/ctdb/events.d/10.interface
 %{_sysconfdir}/ctdb/events.d/40.vsftpd
@@ -110,8 +110,6 @@ fi
 %{_bindir}/smnotify
 %{_bindir}/ctdb_ipmux
 %{_bindir}/ctdb_diagnostics
-%{_bindir}/onnode.ssh
-%{_bindir}/onnode.rsh
 %{_bindir}/onnode
 %{_mandir}/man1/ctdb.1.gz
 %{_mandir}/man1/ctdbd.1.gz
@@ -120,6 +118,64 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Fri Jul 11 2008 : Version 1.0.47
+ - Fix a double free bug where if a user striggered (ctdb eventscript)
+   hung and while the timeout handler was being processed a new user
+   triggered eventscript was started we would free state twice.
+ - Rewrite of onnode and associated documentation.
+* Thu Jul 10 2008 : Version 1.0.46
+ - Document both the LVS:cingle-ip-address and the REMOTE-NODE:wan-accelerator
+   capabilities.
+ - Add commands "ctdb pnn", "ctdb lvs", "ctdb lvsmaster".
+ - LVS improvements. LVS is the single-ip-address mode for a ctdb cluster.
+ - Fixes to supress rpmlint warnings
+ - AXI compile fixes.
+ - Change \s to [[:space:]] in some scripts. Not all RHEL5 packages come
+   with a egrep that handles \s   even same version but different arch.
+ - Revert the change to NFS restart. CTDB should NOT attempt to restart
+   failed services.
+ - Rewrite of the waitpid() patch to use the eventsystem for handling
+   signals.
+* Tue Jul 8 2008 : Version 1.0.45
+ - Try to restart the nfs service if it has failed to respond 3 times in a row.
+ - waitpid() can block if the child does not respond promptly to SIGTERM.
+   ignore all SIGCHILD signals by setting SIGCHLD to SIG_DEF.
+   get rid of all calls to waitpid().
+ - make handling of eventscripts hanging more liberal.
+   only consider the script to have failed and making the node unhealthy
+   IF the eventscript terminated wiht an error
+   OR the eventscript hung 5 or more times in a row
+* Mon Jul 7 2008 : Version 1.0.44
+ - Add a CTDB_VALGRIND option to /etc/sysconfig/ctdb to make it start
+   ctdb under valgrind. Logs go to /var/log/ctdb_valgrind.PID
+ - Add a hack to show the control opcode that caused uninitialized data
+   in the valgrind output by encoding the opcode as the line number.
+ - Initialize structures and allocated memory in various places in
+   ctdb to make it valgrind-clean and remove all valgrind errors/warnings.
+ - If/when we destroy a lockwait child, also make sure we cancel any pending transactions
+ - If a transaction_commit fails, delete/cancel any pending transactions and
+   return an error instead of calling ctdb_fatal()
+ - When running ctdb under valgrind, make sure we run it with --nosetsched and also
+   ensure that we do not use mem-mapped i/o when accessing the tdb's.
+ - zero out ctdb->freeze_handle when we free/destroy a freeze-child.
+   This prevent a heap corruption/ctdb crash bug that could trigger
+   if the freeze child times out.
+ - we dont need to explicitely thaw the databases from the recovery daemon
+   since this is done implicitely when we restore the recovery mode back to normal.
+ - track when we start and stop a recovery. Add the 'time it took to complete the
+   recovery' to the 'ctdb uptime' output.
+   Ensure by tracking the start/stop recovery timestamps that we do not
+   check that the ip allocation is consistend from inside the recovery daemon
+   while a different node (recovery master) is performing a recovery.
+   This prevent a race that could cause a full recovery to trigger if the
+   'ctdb disable/enable' commands took very long.
+ - The freeze child indicates to the master daemon that all databases are locked
+   by writing data to the pipe shared with the master daemon.
+   This write sometimes fail and thus the master daemon never notices that the databases
+   are locked cvausing long timeouts and extra recoveries.
+   Check that the write is successful and try the write again if it failed.
+ - In each node, verify that the recmaster have the right node flags for us
+   and force a push of our flags to the recmaster if wrong.
 * Tue Jul 1 2008 : Version 1.0.43
  - Updates and bugfixes to the specfile to keep rpmlint happy
  - Force a global flags update after each recovery event.

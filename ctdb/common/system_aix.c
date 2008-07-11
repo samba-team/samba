@@ -23,8 +23,10 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/wait.h"
-#include <netinet/if_ether.h>
 #include "../include/ctdb_private.h"
+#include <netinet/if_ether.h>
+#include <netinet/ip6.h>
+#include <net/if_arp.h>
 #include <sys/ndd_var.h>
 #include <sys/kinfo.h>
 #include <pcap.h>
@@ -113,47 +115,71 @@ static uint16_t tcp_checksum(uint16_t *data, size_t n, struct ip *ip)
   This can also be used to send RST segments (if rst is true) and also
   if correct seq and ack numbers are provided.
  */
-int ctdb_sys_send_tcp(int s,
-		      const struct sockaddr_in *dest, 
-		      const struct sockaddr_in *src,
+int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
+		      const ctdb_sock_addr *src,
 		      uint32_t seq, uint32_t ack, int rst)
 {
-	int ret;
+	int s;
+  	int ret;
+	uint32_t one = 1;
+	ctdb_sock_addr *tmpdest;
+	
 	struct {
 		struct ip ip;
 		struct tcphdr tcp;
-	} pkt;
+	} ip4pkt;
+
 
 	/* for now, we only handle AF_INET addresses */
-	if (src->sin_family != AF_INET || dest->sin_family != AF_INET) {
+	if (src->ip.sin_family != AF_INET || dest->ip.sin_family != AF_INET) {
 		DEBUG(DEBUG_CRIT,(__location__ " not an ipv4 address\n"));
 		return -1;
 	}
 
-	memset(&pkt, 0, sizeof(pkt));
-	pkt.ip.ip_v     = 4;
-	pkt.ip.ip_hl    = sizeof(pkt.ip)/4;
-	pkt.ip.ip_len   = htons(sizeof(pkt));
-	pkt.ip.ip_ttl   = 255;
-	pkt.ip.ip_p     = IPPROTO_TCP;
-	pkt.ip.ip_src.s_addr   = src->sin_addr.s_addr;
-	pkt.ip.ip_dst.s_addr   = dest->sin_addr.s_addr;
-	pkt.ip.ip_sum   = 0;
 
-	pkt.tcp.th_sport   = src->sin_port;
-	pkt.tcp.th_dport     = dest->sin_port;
-	pkt.tcp.th_seq      = seq;
-	pkt.tcp.th_ack    = ack;
-	pkt.tcp.th_flags  = TH_ACK;
-	if (rst) {
-		pkt.tcp.th_flags      = TH_RST;
+
+	s = socket(AF_INET, SOCK_RAW, htons(IPPROTO_RAW));
+	if (s == -1) {
+		DEBUG(DEBUG_CRIT,(" failed to open raw socket (%s)\n",
+			 strerror(errno)));
+		return -1;
 	}
-	pkt.tcp.th_off    = sizeof(pkt.tcp)/4;
-	pkt.tcp.th_win   = htons(1234);
-	pkt.tcp.th_sum    = tcp_checksum((uint16_t *)&pkt.tcp, sizeof(pkt.tcp), &pkt.ip);
 
-	ret = sendto(s, &pkt, sizeof(pkt), 0, (struct sockaddr *)dest, sizeof(*dest));
-	if (ret != sizeof(pkt)) {
+	ret = setsockopt(s, IPPROTO_IP, IP_HDRINCL, &one, sizeof(one));
+	if (ret != 0) {
+		DEBUG(DEBUG_CRIT, (" failed to setup IP headers (%s)\n",
+			 strerror(errno)));
+		close(s);
+		return -1;
+	}
+
+	set_nonblocking(s);
+	set_close_on_exec(s);
+
+	memset(&ip4pkt, 0, sizeof(ip4pkt));
+	ip4pkt.ip.ip_v     = 4;
+	ip4pkt.ip.ip_hl    = sizeof(ip4pkt.ip)/4;
+	ip4pkt.ip.ip_len   = htons(sizeof(ip4pkt));
+	ip4pkt.ip.ip_ttl   = 255;
+	ip4pkt.ip.ip_p     = IPPROTO_TCP;
+	ip4pkt.ip.ip_src.s_addr   = src->ip.sin_addr.s_addr;
+	ip4pkt.ip.ip_dst.s_addr   = dest->ip.sin_addr.s_addr;
+	ip4pkt.ip.ip_sum   = 0;
+
+	ip4pkt.tcp.th_sport   = src->ip.sin_port;
+	ip4pkt.tcp.th_dport     = dest->ip.sin_port;
+	ip4pkt.tcp.th_seq      = seq;
+	ip4pkt.tcp.th_ack    = ack;
+	ip4pkt.tcp.th_flags  = TH_ACK;
+	if (rst) {
+		ip4pkt.tcp.th_flags      = TH_RST;
+	}
+	ip4pkt.tcp.th_off    = sizeof(ip4pkt.tcp)/4;
+	ip4pkt.tcp.th_win   = htons(1234);
+	ip4pkt.tcp.th_sum    = tcp_checksum((uint16_t *)&ip4pkt.tcp, sizeof(ip4pkt.tcp), &ip4pkt.ip);
+
+	ret = sendto(s, &ip4pkt, sizeof(ip4pkt), 0, (struct sockaddr *)dest, sizeof(*dest));
+	if (ret != sizeof(ip4pkt)) {
 		DEBUG(DEBUG_CRIT,(__location__ " failed sendto (%s)\n", strerror(errno)));
 		return -1;
 	}
