@@ -347,7 +347,7 @@ again:
 	if ( u_filter) {
 		filter = talloc_asprintf_append_buffer(filter, "%s))", u_filter);
 		CHECK_ALLOC_DONE(filter);
-		TALLOC_FREE(u_filter);
+			TALLOC_FREE(u_filter);
 	}
 	if ( g_filter) {
 		filter = talloc_asprintf_append_buffer(filter, "%s))", g_filter);
