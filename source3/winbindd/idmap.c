@@ -279,7 +279,7 @@ NTSTATUS idmap_init_cache(void)
 /****************************************************************************
  ****************************************************************************/
 
-static NTSTATUS idmap_init(void)
+NTSTATUS idmap_init(void)
 {
 	NTSTATUS ret;
 	static NTSTATUS idmap_init_status = NT_STATUS_UNSUCCESSFUL;
