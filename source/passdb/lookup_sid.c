@@ -1393,6 +1393,7 @@ bool sid_to_uid(const DOM_SID *psid, uid_t *puid)
 
 bool sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 {
+	uint32 rid;
 	uid_t uid;
 
 	if (fetch_gid_from_cache(pgid, psid))
