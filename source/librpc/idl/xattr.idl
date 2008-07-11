@@ -34,6 +34,8 @@ interface xattr
 		      can discard if this doesn't match the POSIX st_ctime.
         */
 
+	const char *XATTR_NTACL_NAME = "security.NTACL";
+
 	typedef [public] struct {
 		security_descriptor *sd;
 		NTTIME last_changed;
