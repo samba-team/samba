@@ -25,6 +25,7 @@
 
 #define TIMEOUT_LEN 12
 #define IDMAP_CACHE_DATA_FMT	"%12u/%s"
+#define IDMAP_READ_CACHE_DATA_FMT_TEMPLATE "%%12u/%%%us"
 
 struct idmap_cache_ctx {
 	TDB_CONTEXT *tdb;
