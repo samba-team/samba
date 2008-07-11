@@ -9,5 +9,5 @@
 	</para>
 </description>
 
-<value type="default">604800 (i.e. 1 week)</value>
+<value type="default">900</value>
 </samba:parameter>
