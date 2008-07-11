@@ -164,6 +164,7 @@ bool trustdom_cache_store(char* name, char* alt_name, const DOM_SID *sid,
 bool trustdom_cache_fetch(const char* name, DOM_SID* sid)
 {
 	char *key = NULL, *value = NULL;
+	time_t timeout;
 
 	/* init the cache */
 	if (!gencache_init())
@@ -178,7 +179,7 @@ bool trustdom_cache_fetch(const char* name, DOM_SID* sid)
 	if (!key)
 		return False;
 	
-	if (!gencache_get(key, &value, NULL)) {
+	if (!gencache_get(key, &value, &timeout)) {
 		DEBUG(5, ("no entry for trusted domain %s found.\n", name));
 		SAFE_FREE(key);
 		return False;
@@ -206,13 +207,14 @@ bool trustdom_cache_fetch(const char* name, DOM_SID* sid)
 uint32 trustdom_cache_fetch_timestamp( void )
 {
 	char *value = NULL;
+	time_t timeout;
 	uint32 timestamp;
 
 	/* init the cache */
 	if (!gencache_init()) 
 		return False;
 		
-	if (!gencache_get(TDOMTSKEY, &value, NULL)) {
+	if (!gencache_get(TDOMTSKEY, &value, &timeout)) {
 		DEBUG(5, ("no timestamp for trusted domain cache located.\n"));
 		SAFE_FREE(value);
 		return 0;
