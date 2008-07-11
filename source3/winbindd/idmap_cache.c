@@ -119,6 +119,7 @@ NTSTATUS idmap_cache_set(struct idmap_cache_ctx *cache, const struct id_map *id)
 	{
 		return NT_STATUS_OK;
 	}
+	
 
 	ret = idmap_cache_build_sidkey(cache, &sidkey, id);
 	if (!NT_STATUS_IS_OK(ret)) return ret;
@@ -258,11 +259,11 @@ static NTSTATUS idmap_cache_fill_map(struct id_map *id, const char *value)
 
 	/* see if it is a sid */
 	if ( ! strncmp("IDMAP/SID/", value, 10)) {
-
+		
 		if ( ! string_to_sid(id->sid, &value[10])) {
 			goto failed;
 		}
-
+		
 		id->status = ID_MAPPED;
 
 		return NT_STATUS_OK;
@@ -270,21 +271,21 @@ static NTSTATUS idmap_cache_fill_map(struct id_map *id, const char *value)
 
 	/* not a SID see if it is an UID or a GID */
 	if ( ! strncmp("IDMAP/UID/", value, 10)) {
-
+		
 		/* a uid */
 		id->xid.type = ID_TYPE_UID;
-
+		
 	} else if ( ! strncmp("IDMAP/GID/", value, 10)) {
-
+		
 		/* a gid */
 		id->xid.type = ID_TYPE_GID;
-
+		
 	} else {
-
+		
 		/* a completely bogus value bail out */
 		goto failed;
 	}
-
+	
 	id->xid.id = strtol(&value[10], &rem, 0);
 	if (*rem != '\0') {
 		goto failed;
@@ -327,7 +328,7 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 
 	/* make sure it is marked as not mapped by default */
 	id->status = ID_UNKNOWN;
-
+	
 	ret = idmap_cache_build_sidkey(cache, &sidkey, id);
 	if (!NT_STATUS_IS_OK(ret)) return ret;
 
@@ -375,7 +376,7 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 				DEBUG(10,("idmap_cache_map_sid: idmap is offline\n"));
 				goto done;				
 			}
-
+				
 			/* We're expired, set an error code
 			   for upper layer */
 			ret = NT_STATUS_SYNCHRONIZATION_REQUIRED;
@@ -437,7 +438,7 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 
 	/* make sure it is marked as unknown by default */
 	id->status = ID_UNKNOWN;
-
+	
 	ret = idmap_cache_build_idkey(cache, &idkey, id);
 	if (!NT_STATUS_IS_OK(ret)) return ret;
 
@@ -462,7 +463,7 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 
 	/* check it is not negative */
 	if (strcmp("IDMAP/NEGATIVE", endptr+1) != 0) {
-
+		
 		DEBUG(10, ("Returning %s cache entry: key = %s, value = %s, "
 			   "timeout = %s", t > now ? "valid" :
 			   "expired", idkey, endptr+1, ctime(&t)));
@@ -493,7 +494,7 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 
 		goto done;
 	}
-
+	
 	/* Was a negative cache hit */
 
 	/* Ignore the negative cache when offline */
@@ -501,6 +502,7 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 	if ( IS_DOMAIN_OFFLINE(our_domain) ) {
 		DEBUG(10,("idmap_cache_map_sid: idmap is offline\n"));
 		ret = NT_STATUS_NONE_MAPPED;
+		
 		goto done;
 	}
 
