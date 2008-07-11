@@ -252,10 +252,15 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 	void (*callback)(struct ctdb_context *, int, void *) = state->callback;
 	void *private_data = state->private_data;
 	struct ctdb_context *ctdb = state->ctdb;
+	char *options;
 
 	DEBUG(DEBUG_ERR,("Event script timed out : %s count : %u\n", state->options, ctdb->event_script_timeouts));
 
-	if (!strcmp(state->options, "monitor")) {
+	options = talloc_strdup(ctdb, state->options);
+	CTDB_NO_MEMORY_VOID(ctdb, options);
+
+	talloc_free(state);
+	if (!strcmp(options, "monitor")) {
 		/* if it is a monitor event, we allow it to "hang" a few times
 		   before we declare it a failure and ban ourself (and make
 		   ourself unhealthy)
@@ -271,7 +276,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 		} else {
 		  	callback(ctdb, 0, private_data);
 		}
-	} else if (!strcmp(state->options, "startup")) {
+	} else if (!strcmp(options, "startup")) {
 		DEBUG(DEBUG_ERR, (__location__ " eventscript for startup event timedout.\n"));
 		callback(ctdb, -1, private_data);
 	} else {
@@ -281,7 +286,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 		callback(ctdb, -1, private_data);
 	}
 
-	talloc_free(state);
+	talloc_free(options);
 }
 
 /*
@@ -480,7 +485,7 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 	state = talloc(ctdb->eventscripts_ctx, struct eventscript_callback_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
-	state->c = talloc_steal(ctdb, c);
+	state->c = talloc_steal(state, c);
 
 	DEBUG(DEBUG_NOTICE,("Forced running of eventscripts with arguments %s\n", indata.dptr));
 
