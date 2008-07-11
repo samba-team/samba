@@ -112,6 +112,7 @@ bool saf_delete( const char *domain )
 char *saf_fetch( const char *domain )
 {
 	char *server = NULL;
+	time_t timeout;
 	bool ret = False;
 	char *key = NULL;
 
@@ -125,7 +126,7 @@ char *saf_fetch( const char *domain )
 
 	key = saf_key( domain );
 
-	ret = gencache_get( key, &server, NULL );
+	ret = gencache_get( key, &server, &timeout );
 
 	SAFE_FREE( key );
 
