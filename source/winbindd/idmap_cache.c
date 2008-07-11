@@ -95,9 +95,14 @@ NTSTATUS idmap_cache_set(struct idmap_cache_ctx *cache, const struct id_map *id)
 	char *valstr;
 
 	/* Don't cache lookups in the S-1-22-{1,2} domain */
-
-	if (sid_check_is_in_unix_users(id->sid)
-	    || sid_check_is_in_unix_groups(id->sid)) {
+	if ( (id->xid.type == ID_TYPE_UID) && 
+	     sid_check_is_in_unix_users(id->sid) )
+	{
+		return NT_STATUS_OK;
+	}
+	if ( (id->xid.type == ID_TYPE_GID) && 
+	     sid_check_is_in_unix_groups(id->sid) )
+	{
 		return NT_STATUS_OK;
 	}
 
