@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 46
+Release: 47
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -118,7 +118,10 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
-* Fri Jul 11 2008 : Version pre_1.0.47
+* Fri Jul 11 2008 : Version 1.0.47
+ - Fix a double free bug where if a user striggered (ctdb eventscript)
+   hung and while the timeout handler was being processed a new user
+   triggered eventscript was started we would free state twice.
  - Rewrite of onnode and associated documentation.
 * Thu Jul 10 2008 : Version 1.0.46
  - Document both the LVS:cingle-ip-address and the REMOTE-NODE:wan-accelerator
