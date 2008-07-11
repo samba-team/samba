@@ -31,7 +31,7 @@ usage ()
 Usage: onnode [OPTION] ... <NODES> <COMMAND> ...
   options:
     -c         Run in current working directory on all nodes.
-    -p         Run command in parallel on specified nodes.  Implies -t.
+    -p         Run command in parallel on specified nodes.
     -q         Do not print node addresses (overrides -v).
     -v         Print node address even for a single node.
   <NODES>      "all" or a node number (0 base); or
