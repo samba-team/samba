@@ -241,31 +241,33 @@ enum winbindd_result winbindd_dual_sids2xids(struct winbindd_domain *domain,
 
 	result = idmap_sids_to_unixids(ids, num);
 
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG (2, ("idmap_sids_to_unixids returned an error: 0x%08x\n",
-			   NT_STATUS_V(result)));
-		talloc_free(ids);
-		return WINBINDD_ERROR;
-	}
+	if (NT_STATUS_IS_OK(result)) {
 
-	xids = SMB_MALLOC_ARRAY(struct unixid, num);
-	if ( ! xids) {
-		DEBUG(0, ("Out of memory!\n"));
-		talloc_free(ids);
-		return WINBINDD_ERROR;
-	}
-
-	for (i = 0; i < num; i++) {
-		if (ids[i]->status == ID_MAPPED) {
-			xids[i].type = ids[i]->xid.type;
-			xids[i].id = ids[i]->xid.id;
-		} else {
-			xids[i].type = -1;
+		xids = SMB_MALLOC_ARRAY(struct unixid, num);
+		if ( ! xids) {
+			DEBUG(0, ("Out of memory!\n"));
+			talloc_free(ids);
+			return WINBINDD_ERROR;
 		}
+
+		for (i = 0; i < num; i++) {
+			if (ids[i]->status == ID_MAPPED) {
+				xids[i].type = ids[i]->xid.type;
+				xids[i].id = ids[i]->xid.id;
+			} else {
+				xids[i].type = -1;
+			}
+		}
+
+		state->response.length = sizeof(state->response) + (sizeof(struct unixid) * num);
+		state->response.extra_data.data = xids;
+
+	} else {
+		DEBUG (2, ("idmap_sids_to_unixids returned an error: 0x%08x\n", NT_STATUS_V(result)));
+		talloc_free(ids);
+		return WINBINDD_ERROR;
 	}
 
-	state->response.length = sizeof(state->response) + (sizeof(struct unixid) * num);
-	state->response.extra_data.data = xids;
 	talloc_free(ids);
 	return WINBINDD_OK;
 }
