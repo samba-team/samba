@@ -1344,6 +1344,7 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 
 bool sid_to_uid(const DOM_SID *psid, uid_t *puid)
 {
+	uint32 rid;
 	gid_t gid;
 
 	if (fetch_uid_from_cache(puid, psid))
@@ -1355,16 +1356,13 @@ bool sid_to_uid(const DOM_SID *psid, uid_t *puid)
 
 	/* Optimize for the Unix Users Domain
 	 * as the conversion is straightforward */
-
-	if (sid_check_is_in_unix_users(psid)) {
-		uint32_t rid;
-
-		sid_peek_rid(psid, &rid);
-		*puid = (uid_t)rid;
+	if (sid_peek_check_rid(&global_sid_Unix_Users, psid, &rid)) {
+		uid_t uid = rid;
+		*puid = uid;
 
 		/* return here, don't cache */
-		DEBUG(10, ("sid %s -> uid %u\n", sid_string_dbg(psid),
-			   (unsigned int)rid));
+		DEBUG(10,("sid %s -> uid %u\n", sid_string_dbg(psid),
+			(unsigned int)*puid ));
 		return true;
 	}
 
@@ -1406,16 +1404,13 @@ bool sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 
 	/* Optimize for the Unix Groups Domain
 	 * as the conversion is straightforward */
-
-	if (sid_check_is_in_unix_groups(psid)) {
-		uint32_t rid;
-
-		sid_peek_rid(psid, &rid);
-		*pgid = (gid_t)rid;
+	if (sid_peek_check_rid(&global_sid_Unix_Groups, psid, &rid)) {
+		gid_t gid = rid;
+		*pgid = gid;
 
 		/* return here, don't cache */
-		DEBUG(10, ("sid %s -> gid %u\n", sid_string_dbg(psid),
-			   (unsigned int)rid));
+		DEBUG(10,("sid %s -> gid %u\n", sid_string_dbg(psid),
+			(unsigned int)*pgid ));
 		return true;
 	}
 
