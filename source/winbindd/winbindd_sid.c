@@ -266,14 +266,19 @@ static void sid2gid_recv(void *private_data, bool success, gid_t gid)
 {
 	struct winbindd_cli_state *state =
 		talloc_get_type_abort(private_data, struct winbindd_cli_state);
+	struct dom_sid sid;
+
+	string_to_sid(&sid, state->request.data.sid);
 
 	if (!success) {
 		DEBUG(5, ("Could not convert sid %s\n",
 			  state->request.data.sid));
+		idmap_cache_set_sid2gid(&sid, -1);
 		request_error(state);
 		return;
 	}
 
+	idmap_cache_set_sid2gid(&sid, gid);
 	state->response.data.gid = gid;
 	request_ok(state);
 }
@@ -287,11 +292,17 @@ static void sid2gid_lookupsid_recv( void *private_data, bool success,
 		talloc_get_type_abort(private_data, struct winbindd_cli_state);
 	DOM_SID sid;
 
+	if (!string_to_sid(&sid, state->request.data.sid)) {
+		DEBUG(1, ("sid2gid_lookupsid_recv: Could not get convert sid "
+			  "%s from string\n", state->request.data.sid));
+		request_error(state);
+		return;
+	}
+
 	if (!success) {
 		DEBUG(5, ("sid2gid_lookupsid_recv: Could not get sid type for %s\n",
 			  state->request.data.sid));
-		request_error(state);
-		return;
+		goto fail;
 	}
 
 	if ( (type!=SID_NAME_DOM_GRP) &&
@@ -300,24 +311,24 @@ static void sid2gid_lookupsid_recv( void *private_data, bool success,
 	{
 		DEBUG(5,("sid2gid_lookupsid_recv: Sid %s is not a group.\n", 
 			 state->request.data.sid));
-		request_error(state);
-		return;		
+		goto fail;
 	}
 
-	if (!string_to_sid(&sid, state->request.data.sid)) {
-		DEBUG(1, ("sid2gid_lookupsid_recv: Could not get convert sid %s from string\n",
-			  state->request.data.sid));
-		request_error(state);
-		return;
-	}
-	
 	/* always use the async interface (may block) */
 	winbindd_sid2gid_async(state->mem_ctx, &sid, sid2gid_recv, state);
+	return;
+
+ fail:
+	idmap_cache_set_sid2gid(&sid, -1);
+	request_error(state);
+	return;
 }
 
 void winbindd_sid_to_gid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
+	gid_t gid;
+	bool expired;
 
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
@@ -332,10 +343,29 @@ void winbindd_sid_to_gid(struct winbindd_cli_state *state)
 		return;
 	}
 
+	if (idmap_cache_find_sid2gid(&sid, &gid, &expired)) {
+		DEBUG(10, ("idmap_cache_find_sid2gid found %d%s\n",
+			   (int)gid, expired ? " (expired)": ""));
+		if (expired && IS_DOMAIN_ONLINE(find_our_domain())) {
+			DEBUG(10, ("revalidating expired entry\n"));
+			goto backend;
+		}
+		if (gid == -1) {
+			DEBUG(10, ("Returning negative cache entry\n"));
+			request_error(state);
+			return;
+		}
+		DEBUG(10, ("Returning positive cache entry\n"));
+		state->response.data.gid = gid;
+		request_ok(state);
+		return;
+	}
+
 	/* Validate the SID as a group.  Hopefully this will hit cache.
 	   Needed to prevent DoS by exhausting the uid allocation
 	   range from random SIDs. */
 
+ backend:
 	winbindd_lookupsid_async( state->mem_ctx, &sid, sid2gid_lookupsid_recv, state );	
 }
 
@@ -499,31 +529,59 @@ void winbindd_uid_to_sid(struct winbindd_cli_state *state)
 
 /* Convert a gid to a sid */
 
-static void gid2sid_recv(void *private_data, bool success, const char *sid)
+static void gid2sid_recv(void *private_data, bool success, const char *sidstr)
 {
 	struct winbindd_cli_state *state =
 		(struct winbindd_cli_state *)private_data;
+	struct dom_sid sid;
 
-	if (success) {
-		DEBUG(10,("gid2sid: gid %lu has sid %s\n",
-			  (unsigned long)(state->request.data.gid), sid));
-		fstrcpy(state->response.data.sid.sid, sid);
-		state->response.data.sid.type = SID_NAME_DOM_GRP;
-		request_ok(state);
+	if (!success || !string_to_sid(&sid, sidstr)) {
+		ZERO_STRUCT(sid);
+		idmap_cache_set_sid2gid(&sid, state->request.data.gid);
+		request_error(state);
 		return;
 	}
+	DEBUG(10,("gid2sid: gid %lu has sid %s\n",
+		  (unsigned long)(state->request.data.gid), sid));
 
-	request_error(state);
+	idmap_cache_set_sid2gid(&sid, state->request.data.gid);
+	fstrcpy(state->response.data.sid.sid, sidstr);
+	state->response.data.sid.type = SID_NAME_DOM_GRP;
+	request_ok(state);
 	return;
 }
 
 
 void winbindd_gid_to_sid(struct winbindd_cli_state *state)
 {
+	struct dom_sid sid;
+	bool expired;
+
 	DEBUG(3, ("[%5lu]: gid to sid %lu\n", (unsigned long)state->pid, 
 		  (unsigned long)state->request.data.gid));
 
+	if (idmap_cache_find_gid2sid(state->request.data.gid, &sid,
+				     &expired)) {
+		DEBUG(10, ("idmap_cache_find_gid2sid found %d%s\n",
+			   (int)state->request.data.gid,
+			   expired ? " (expired)": ""));
+		if (expired && IS_DOMAIN_ONLINE(find_our_domain())) {
+			DEBUG(10, ("revalidating expired entry\n"));
+			goto backend;
+		}
+		if (is_null_sid(&sid)) {
+			DEBUG(10, ("Returning negative cache entry\n"));
+			request_error(state);
+			return;
+		}
+		DEBUG(10, ("Returning positive cache entry\n"));
+		sid_to_fstring(state->response.data.sid.sid, &sid);
+		request_ok(state);
+		return;
+	}
+
 	/* always use async calls (may block) */
+ backend:
 	winbindd_gid2sid_async(state->mem_ctx, state->request.data.gid, gid2sid_recv, state);
 }
 
