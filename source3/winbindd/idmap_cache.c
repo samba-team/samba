@@ -396,15 +396,15 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 
 
 	/* Check for valid or expired cache hits */
-	if (t <= now) {
+		if (t <= now) {
 		/* We're expired. Return not mapped */
-		ret = NT_STATUS_NONE_MAPPED;
-	} else {
-		/* this is not mapped as it was a negative cache hit */
-		id->status = ID_UNMAPPED;
-		ret = NT_STATUS_OK;
-	}
-
+			ret = NT_STATUS_NONE_MAPPED;
+		} else {
+			/* this is not mapped as it was a negative cache hit */
+			id->status = ID_UNMAPPED;
+			ret = NT_STATUS_OK;
+		}
+	
 done:
 	SAFE_FREE(databuf.dptr);
 	talloc_free(sidkey);
@@ -508,14 +508,14 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 
 	/* Process the negative cache hit */
 
-	if (t <= now) {
+		if (t <= now) {
 		/* We're expired.  Return not mapped */
-		ret = NT_STATUS_NONE_MAPPED;
-	} else {
+			ret = NT_STATUS_NONE_MAPPED;
+		} else {
 		/* this is not mapped is it was a negative cache hit */
-		id->status = ID_UNMAPPED;
-		ret = NT_STATUS_OK;
-	}
+			id->status = ID_UNMAPPED;
+			ret = NT_STATUS_OK;
+		}
 
 done:
 	SAFE_FREE(databuf.dptr);
