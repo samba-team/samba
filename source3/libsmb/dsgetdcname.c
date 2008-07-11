@@ -159,6 +159,7 @@ static NTSTATUS dsgetdcname_cache_store(TALLOC_CTX *mem_ctx,
 {
 	time_t expire_time;
 	char *key;
+	bool ret = false;
 
 	if (!gencache_init()) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
@@ -171,8 +172,15 @@ static NTSTATUS dsgetdcname_cache_store(TALLOC_CTX *mem_ctx,
 
 	expire_time = time(NULL) + DSGETDCNAME_CACHE_TTL;
 
-	return gencache_set_data_blob(key, blob, expire_time)
-		? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	if (gencache_lock_entry(key) != 0) {
+		return NT_STATUS_LOCK_NOT_GRANTED;
+	}
+
+	ret = gencache_set_data_blob(key, blob, expire_time);
+
+	gencache_unlock_entry(key);
+
+	return ret ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************
