@@ -7,9 +7,9 @@
 	<para>
 	The idmap config prefix provides a means of managing each domain 
 	defined by the <smbconfoption name="idmap domains"/> option using Samba's
-	parameteric option support.  The idmap config prefix should be 
+	parametric option support. The idmap config prefix should be
 	followed by the name of the domain, a colon, and a setting specific to 
-	the chosen backend.  There are three options available for all domains:
+	the chosen backend. There are three options available for all domains:
 	</para>
 	<variablelist>  
 		<varlistentry>
@@ -45,9 +45,10 @@
 	The following example illustrates how to configure the <citerefentry>
 	<refentrytitle>idmap_ad</refentrytitle><manvolnum>8</manvolnum></citerefentry> 
 	for the CORP domain and the <citerefentry><refentrytitle>idmap_tdb</refentrytitle>
-	<manvolnum>8</manvolnum></citerefentry> backend for all other domains.  The 
-	TRUSTEDDOMAINS string is simply a key used to reference the &quot;idmap 
+	<manvolnum>8</manvolnum></citerefentry> backend for all other domains. The
+	TRUSTEDDOMAINS string is simply an arbitrary key used to reference the &quot;idmap
 	config&quot; settings and does not represent the actual name of a domain.
+	It is a catchall domain backend for any domain not explicitly listed.
 	</para>
 
 	<programlisting>
