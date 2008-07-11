@@ -880,27 +880,19 @@ static bool wbinfo_lookupname(const char *full_name)
 
 /* Authenticate a user with a plaintext password */
 
-static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32 flags)
+static bool wbinfo_auth_krb5(char *username, const char *pass, const char *cctype, uint32 flags)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
 	NSS_STATUS result;
-	char *p;
 
 	/* Send off request */
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	p = strchr(username, '%');
-
-	if (p) {
-		*p = 0;
-		fstrcpy(request.data.auth.user, username);
-		fstrcpy(request.data.auth.pass, p + 1);
-		*p = '%';
-	} else
-		fstrcpy(request.data.auth.user, username);
+	fstrcpy(request.data.auth.user, username);
+	fstrcpy(request.data.auth.pass, pass);
 
 	request.flags = flags;
 
@@ -941,29 +933,11 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32 flags)
 
 /* Authenticate a user with a plaintext password */
 
-static bool wbinfo_auth(char *username)
+static bool wbinfo_auth(char *username, const char *pass)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	char *s = NULL;
-	char *p = NULL;
-	const char *password = NULL;
-	char *name = NULL;
 
-	if ((s = SMB_STRDUP(username)) == NULL) {
-		return false;
-	}
-
-	if ((p = strchr(s, '%')) != NULL) {
-		*p = 0;
-		p++;
-		password = p;
-	} else {
-		password = "";
-	}
-
-	name = s;
-
-	wbc_status = wbcAuthenticateUser(name, password);
+	wbc_status = wbcAuthenticateUser(username, pass);
 
 	d_printf("plaintext password authentication %s\n",
 		 WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
@@ -976,14 +950,12 @@ static bool wbinfo_auth(char *username)
 			 response.data.auth.error_string);
 #endif
 
-	SAFE_FREE(s);
-
 	return WBC_ERROR_IS_OK(wbc_status);
 }
 
 /* Authenticate a user with a challenge/response */
 
-static bool wbinfo_auth_crap(char *username)
+static bool wbinfo_auth_crap(char *username, const char *pass)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct wbcAuthUserParams params;
@@ -993,16 +965,7 @@ static bool wbinfo_auth_crap(char *username)
 	DATA_BLOB nt = data_blob_null;
 	fstring name_user;
 	fstring name_domain;
-	fstring pass;
-	char *p;
 
-	p = strchr(username, '%');
-
-	if (p) {
-		*p = 0;
-		fstrcpy(pass, p + 1);
-	}
-		
 	parse_wbinfo_domain_user(username, name_domain, name_user);
 
 	params.account_name	= name_user;
@@ -1591,14 +1554,22 @@ int main(int argc, char **argv, char **envp)
 			break;
 		case 'a': {
 				bool got_error = false;
+				char *pass;
 
-				if (!wbinfo_auth(string_arg)) {
+				if ((pass = strchr(string_arg, '%')) != NULL) {
+					*pass = 0;
+					pass++;
+				} else {
+					pass = (char *)"";
+				}
+
+				if (!wbinfo_auth(string_arg, pass)) {
 					d_fprintf(stderr, "Could not authenticate user %s with "
 						"plaintext password\n", string_arg);
 					got_error = true;
 				}
 
-				if (!wbinfo_auth_crap(string_arg)) {
+				if (!wbinfo_auth_crap(string_arg, pass)) {
 					d_fprintf(stderr, "Could not authenticate user %s with "
 						"challenge/response\n", string_arg);
 					got_error = true;
@@ -1613,8 +1584,16 @@ int main(int argc, char **argv, char **envp)
 						WBFLAG_PAM_CACHED_LOGIN |
 						WBFLAG_PAM_FALLBACK_AFTER_KRB5 |
 						WBFLAG_PAM_INFO3_TEXT;
+				char *pass;
 
-				if (!wbinfo_auth_krb5(string_arg, "FILE", flags)) {
+				if ((pass = strchr(string_arg, '%')) != NULL) {
+					*pass = 0;
+					pass++;
+				} else {
+					pass = (char *)"";
+				}
+
+				if (!wbinfo_auth_krb5(string_arg, pass, "FILE", flags)) {
 					d_fprintf(stderr, "Could not authenticate user [%s] with "
 						"Kerberos (ccache: %s)\n", string_arg, "FILE");
 					goto done;
