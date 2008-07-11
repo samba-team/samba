@@ -164,7 +164,8 @@ enum dsdb_attr_list_query {
 	DSDB_SCHEMA_SYS_MAY,
 	DSDB_SCHEMA_SYS_MUST,
 	DSDB_SCHEMA_MAY,
-	DSDB_SCHEMA_MUST
+	DSDB_SCHEMA_MUST,
+	DSDB_SCHEMA_ALL
 };
 
 #include "dsdb/schema/proto.h"

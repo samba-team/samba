@@ -93,8 +93,9 @@ static int kludge_acl_allowedAttributes(struct ldb_context *ldb, struct ldb_mess
 	struct ldb_message_element *oc_el;
 	struct ldb_message_element *allowedAttributes;
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
-	const struct dsdb_class *class;
-	int i, j, ret;
+	TALLOC_CTX *mem_ctx;
+	char **objectclass_list, **attr_list;
+	int i, ret;
 
  	/* If we don't have a schema yet, we can't do anything... */
 	if (schema == NULL) {
@@ -108,48 +109,39 @@ static int kludge_acl_allowedAttributes(struct ldb_context *ldb, struct ldb_mess
 		return ret;
 	}
 	
+	mem_ctx = talloc_new(msg);
+	if (!mem_ctx) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	/* To ensure that oc_el is valid, we must look for it after 
 	   we alter the element array in ldb_msg_add_empty() */
 	oc_el = ldb_msg_find_element(msg, "objectClass");
+	
+	objectclass_list = talloc_array(mem_ctx, char *, oc_el->num_values + 1);
+	if (!objectclass_list) {
+		ldb_oom(ldb);
+		talloc_free(mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	for (i=0; oc_el && i < oc_el->num_values; i++) {
-		class = dsdb_class_by_lDAPDisplayName(schema, (const char *)oc_el->values[i].data);
-		if (!class) {
-			/* We don't know this class?  what is going on? */
-			continue;
-		}
-
-		for (j=0; class->mayContain && class->mayContain[j]; j++) {
-			ldb_msg_add_string(msg, attrName, class->mayContain[j]);
-		}
-		for (j=0; class->mustContain && class->mustContain[j]; j++) {
-			ldb_msg_add_string(msg, attrName, class->mustContain[j]);
-		}
-		for (j=0; class->systemMayContain && class->systemMayContain[j]; j++) {
-			ldb_msg_add_string(msg, attrName, class->systemMayContain[j]);
-		}
-		for (j=0; class->systemMustContain && class->systemMustContain[j]; j++) {
-			ldb_msg_add_string(msg, attrName, class->systemMustContain[j]);
-		}
+		objectclass_list[i] = (char *)oc_el->values[i].data;
 	}
-		
-	if (allowedAttributes->num_values > 1) {
-		qsort(allowedAttributes->values, 
-		      allowedAttributes->num_values, 
-		      sizeof(*allowedAttributes->values),
-		      (comparison_fn_t)data_blob_cmp);
-	
-		for (i=1 ; i < allowedAttributes->num_values; i++) {
-			struct ldb_val *val1 = &allowedAttributes->values[i-1];
-			struct ldb_val *val2 = &allowedAttributes->values[i];
-			if (data_blob_cmp(val1, val2) == 0) {
-				memmove(val1, val2, (allowedAttributes->num_values - i) * sizeof( struct ldb_val)); 
-				allowedAttributes->num_values--;
-				i--;
-			}
-		}
+	objectclass_list[i] = NULL;
+
+	attr_list = dsdb_full_attribute_list(mem_ctx, schema, (const char **)objectclass_list, DSDB_SCHEMA_ALL);
+	if (!attr_list) {
+		ldb_asprintf_errstring(ldb, "kludge_acl: Failed to get list of attributes create %s attribute", attrName);
+		talloc_free(mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	for (i=0; attr_list && attr_list[i]; i++) {
+		ldb_msg_add_string(msg, attrName, attr_list[i]);
+	}
+	talloc_free(mem_ctx);
 	return 0;
 
 }
