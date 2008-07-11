@@ -45,8 +45,8 @@
       <varlistentry><term>-c</term>
         <listitem>
           <para>
-            Execute COMMAND in the current working directory on each
-            node.
+            Execute COMMAND in the current working directory on the
+            specified nodes.
 	  </para>
         </listitem>
       </varlistentry>
@@ -54,8 +54,8 @@
       <varlistentry><term>-p</term>
         <listitem>
           <para>
-            Run commands in parallel on the specified nodes.  In this
-            mode 
+            Run COMMAND in parallel on the specified nodes.  The
+            default is to run COMMAND sequentially on each node.
 	  </para>
         </listitem>
       </varlistentry>
