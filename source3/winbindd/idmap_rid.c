@@ -171,8 +171,7 @@ static NTSTATUS idmap_rid_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 	NTSTATUS ret;
 	int i;
 
-	/* Initialization may have been deferred because of an error, retry or
-	 * fail */
+	/* Initilization my have been deferred because of an error, retry or fail */
 	if ( ! dom->initialized) {
 		ret = idmap_rid_initialize(dom);
 		if ( ! NT_STATUS_IS_OK(ret)) {
@@ -214,8 +213,7 @@ static NTSTATUS idmap_rid_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	NTSTATUS ret;
 	int i;
 
-	/* Initialization may have been deferred because of an error, retry or
-	 * fail */
+	/* Initilization my have been deferred because of an error, retry or fail */
 	if ( ! dom->initialized) {
 		ret = idmap_rid_initialize(dom);
 		if ( ! NT_STATUS_IS_OK(ret)) {
