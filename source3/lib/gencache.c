@@ -166,16 +166,15 @@ bool gencache_del(const char *keystr)
  *
  * @param keystr string that represents a key of this entry
  * @param valstr buffer that is allocated and filled with the entry value
- *               buffer's disposing must be done outside
- * @param timeout If == NULL, the caller is not interested in timed out
- *                entries. If != NULL, return the timeout timestamp, the
- *                caller must figure out itself if this entry is timed out.
+ *        buffer's disposing must be done outside
+ * @param timeout pointer to a time_t that is filled with entry's
+ *        timeout
  *
  * @retval true when entry is successfuly fetched
  * @retval False for failure
  **/
 
-bool gencache_get(const char *keystr, char **valstr, time_t *ptimeout)
+bool gencache_get(const char *keystr, char **valstr, time_t *timeout)
 {
 	TDB_DATA databuf;
 	time_t t;
@@ -208,13 +207,9 @@ bool gencache_get(const char *keystr, char **valstr, time_t *ptimeout)
 		   "timeout = %s", t > time(NULL) ? "valid" :
 		   "expired", keystr, endptr+1, ctime(&t)));
 
-	if ((t <= time(NULL)) && (ptimeout == NULL)) {
+	if (t <= time(NULL)) {
 
-		/*
-		 * The entry is expired, and the caller isn't interested in
-		 * timed out ones. Delete it.
-		 */
-
+		/* We're expired, delete the entry */
 		tdb_delete_bystring(cache, keystr);
 
 		SAFE_FREE(databuf.dptr);
@@ -229,15 +224,15 @@ bool gencache_get(const char *keystr, char **valstr, time_t *ptimeout)
 			return False;
 		}
 	}
-
+	
 	SAFE_FREE(databuf.dptr);
 
-	if (ptimeout) {
-		*ptimeout = t;
+	if (timeout) {
+		*timeout = t;
 	}
 
 	return True;
-}
+} 
 
 /**
  * Get existing entry from the cache file.

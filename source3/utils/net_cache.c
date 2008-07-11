@@ -225,8 +225,7 @@ static int net_cache_get(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	if (gencache_get(keystr, &valuestr, &timeout)
-	    && (timeout > time(NULL))) {
+	if (gencache_get(keystr, &valuestr, &timeout)) {
 		print_cache_entry(keystr, valuestr, timeout, NULL);
 		return 0;
 	}
