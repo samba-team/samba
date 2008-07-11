@@ -224,7 +224,7 @@ enum winbindd_result winbindd_dual_sids2xids(struct winbindd_domain *domain,
 	sids = (DOM_SID *)state->request.extra_data.data;
 	num = state->request.extra_len / sizeof(DOM_SID);
 
-	ids = TALLOC_ARRAY(state->mem_ctx, struct id_map *, num);
+	ids = TALLOC_ZERO_ARRAY(state->mem_ctx, struct id_map *, num + 1);
 	if ( ! ids) {
 		DEBUG(0, ("Out of memory!\n"));
 		return WINBINDD_ERROR;
@@ -239,7 +239,7 @@ enum winbindd_result winbindd_dual_sids2xids(struct winbindd_domain *domain,
 		ids[i]->sid = &sids[i];
 	}
 
-	result = idmap_sids_to_unixids(ids, num);
+	result = idmap_sids_to_unixids(ids);
 
 	if (NT_STATUS_IS_OK(result)) {
 
