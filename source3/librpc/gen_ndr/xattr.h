@@ -5,6 +5,7 @@
 #ifndef _HEADER_xattr
 #define _HEADER_xattr
 
+#define XATTR_NTACL_NAME	( "security.NTACL" )
 struct tdb_xattr {
 	const char * name;/* [flag(LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM)] */
 	DATA_BLOB value;
