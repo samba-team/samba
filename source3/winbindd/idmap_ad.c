@@ -77,15 +77,15 @@ static ADS_STRUCT *ad_idmap_cached_connection_internal(void)
 
 		if ( ads->config.realm && (expire > time(NULL))) {
 			return ads;
+		} else {
+			/* we own this ADS_STRUCT so make sure it goes away */
+			DEBUG(7,("Deleting expired krb5 credential cache\n"));
+			ads->is_mine = True;
+			ads_destroy( &ads );
+			ads_kdestroy(WINBIND_CCACHE_NAME);
+			ad_idmap_ads = NULL;
+			TALLOC_FREE( ad_schema );			
 		}
-
-		/* we own this ADS_STRUCT so make sure it goes away */
-		DEBUG(7,("Deleting expired krb5 credential cache\n"));
-		ads->is_mine = True;
-		ads_destroy( &ads );
-		ads_kdestroy(WINBIND_CCACHE_NAME);
-		ad_idmap_ads = NULL;
-		TALLOC_FREE( ad_schema );
 	}
 
 	if (!local) {
