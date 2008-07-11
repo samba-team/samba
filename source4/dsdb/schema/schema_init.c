@@ -1404,7 +1404,8 @@ static char **merge_attr_list(TALLOC_CTX *mem_ctx,
 	return ret_attrs;
 }
 
-char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx, struct dsdb_schema *schema, 
+char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx, 
+					 const struct dsdb_schema *schema, 
 					 const char **class_list,
 					 enum dsdb_attr_list_query query)
 {
@@ -1443,6 +1444,13 @@ char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx, struct dsdb_schema
 		case DSDB_SCHEMA_MUST:
 			attr_list = merge_attr_list(mem_ctx, attr_list, class->mustContain);
 			break;
+
+		case DSDB_SCHEMA_ALL:
+			attr_list = merge_attr_list(mem_ctx, attr_list, class->mayContain);
+			attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMayContain);
+			attr_list = merge_attr_list(mem_ctx, attr_list, class->mustContain);
+			attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMustContain);
+			break;
 		}
 
 		recursive_list = dsdb_full_attribute_list_internal(mem_ctx, schema, 
@@ -1461,7 +1469,8 @@ char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx, struct dsdb_schema
 	return attr_list;
 }
 
-char **dsdb_full_attribute_list(TALLOC_CTX *mem_ctx, struct dsdb_schema *schema, 
+char **dsdb_full_attribute_list(TALLOC_CTX *mem_ctx, 
+				const struct dsdb_schema *schema, 
 				const char **class_list,
 				enum dsdb_attr_list_query query)
 {
