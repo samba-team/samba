@@ -10486,8 +10486,8 @@ NTSTATUS idmap_allocate_uid(struct unixid *id);
 NTSTATUS idmap_allocate_gid(struct unixid *id);
 NTSTATUS idmap_set_uid_hwm(struct unixid *id);
 NTSTATUS idmap_set_gid_hwm(struct unixid *id);
-NTSTATUS idmap_unixids_to_sids(struct id_map **ids, int n_ids);
-NTSTATUS idmap_sids_to_unixids(struct id_map **ids, int n_ids);
+NTSTATUS idmap_unixids_to_sids(struct id_map **ids);
+NTSTATUS idmap_sids_to_unixids(struct id_map **ids);
 NTSTATUS idmap_set_mapping(const struct id_map *id);
 char *idmap_fetch_secret(const char *backend, bool alloc,
 			       const char *domain, const char *identity);
