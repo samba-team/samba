@@ -108,7 +108,7 @@ static ADS_STRUCT *ad_idmap_cached_connection_internal(void)
 	/* setup server affinity */
 
 	get_dc_name( NULL, ads->auth.realm, dc_name, &dc_ip );
-
+	
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(1, ("ad_idmap_init: failed to connect to AD\n"));
@@ -129,7 +129,7 @@ static ADS_STRUCT *ad_idmap_cached_connection_internal(void)
 static ADS_STRUCT *ad_idmap_cached_connection(void)
 {
 	ADS_STRUCT *ads = ad_idmap_cached_connection_internal();
-
+	
 	if ( !ads )
 		return NULL;
 
@@ -146,14 +146,14 @@ static ADS_STRUCT *ad_idmap_cached_connection(void)
 	     (ad_map_type ==  WB_POSIX_MAP_RFC2307) ) 
 	{
 		ADS_STATUS schema_status;
-
+		
 		schema_status = ads_check_posix_schema_mapping( NULL, ads, ad_map_type, &ad_schema);
 		if ( !ADS_ERR_OK(schema_status) ) {
 			DEBUG(2,("ad_idmap_cached_connection: Failed to obtain schema details!\n"));
 			return NULL;			
 		}
 	}
-
+	
 	return ads;
 }
 
@@ -320,7 +320,7 @@ again:
 							  (unsigned long)ids[idx]->xid.id);
 			CHECK_ALLOC_DONE(u_filter);
 			break;
-
+				
 		case ID_TYPE_GID:
 			if ( ! g_filter) {
 				g_filter = talloc_asprintf(memctx, "(&(|"
@@ -527,7 +527,7 @@ again:
 				 ")(|",
 				 ATYPE_NORMAL_ACCOUNT, ATYPE_WORKSTATION_TRUST, ATYPE_INTERDOMAIN_TRUST,
 				 ATYPE_SECURITY_GLOBAL_GROUP, ATYPE_SECURITY_LOCAL_GROUP);
-
+		
 	CHECK_ALLOC_DONE(filter);
 
 	bidx = idx;
@@ -535,7 +535,7 @@ again:
 
 		sidstr = sid_binstring(ids[idx]->sid);
 		filter = talloc_asprintf_append_buffer(filter, "(objectSid=%s)", sidstr);
-
+			
 		free(sidstr);
 		CHECK_ALLOC_DONE(filter);
 	}
@@ -668,7 +668,7 @@ static NTSTATUS idmap_ad_close(struct idmap_domain *dom)
 	}
 
 	TALLOC_FREE( ad_schema );
-
+	
 	return NT_STATUS_OK;
 }
 
@@ -692,7 +692,7 @@ static NTSTATUS nss_sfu_init( struct nss_domain_entry *e )
 			 "Mixed schema models not supported!\n"));
 		return NT_STATUS_NOT_SUPPORTED;
 	}
-
+	
 	ad_map_type = WB_POSIX_MAP_SFU;	
 
 	return NT_STATUS_OK;
@@ -710,7 +710,7 @@ static NTSTATUS nss_sfu20_init( struct nss_domain_entry *e )
 			 "Mixed schema models not supported!\n"));
 		return NT_STATUS_NOT_SUPPORTED;
 	}
-
+	
 	ad_map_type = WB_POSIX_MAP_SFU20;	
 
 	return NT_STATUS_OK;
@@ -720,7 +720,7 @@ static NTSTATUS nss_rfc2307_init( struct nss_domain_entry *e )
 {
 	/* Sanity check if we have previously been called with a
 	   different schema model */
-
+	 
 	if ( (ad_map_type != WB_POSIX_MAP_UNKNOWN) &&
 	     (ad_map_type != WB_POSIX_MAP_RFC2307) ) 
 	{
@@ -728,7 +728,7 @@ static NTSTATUS nss_rfc2307_init( struct nss_domain_entry *e )
 			 "Mixed schema models not supported!\n"));
 		return NT_STATUS_NOT_SUPPORTED;
 	}
-
+	
 	ad_map_type = WB_POSIX_MAP_RFC2307;
 
 	return NT_STATUS_OK;
@@ -761,19 +761,19 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 
 	if ( !ads_internal || !ad_schema )
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-
+	
 	if ( !homedir || !shell || !gecos )
 		return NT_STATUS_INVALID_PARAMETER;
 
 	*homedir = ads_pull_string( ads, ctx, msg, ad_schema->posix_homedir_attr );
 	*shell   = ads_pull_string( ads, ctx, msg, ad_schema->posix_shell_attr );
 	*gecos   = ads_pull_string( ads, ctx, msg, ad_schema->posix_gecos_attr );
-
+       
 	if ( gid ) {		
 		if ( !ads_pull_uint32(ads, msg, ad_schema->posix_gidnumber_attr, gid ) )
 			*gid = (uint32)-1;		
 	}
-
+		
 	return NT_STATUS_OK;
 }
 
@@ -800,7 +800,7 @@ static struct idmap_methods ad_methods = {
 
 /* The SFU and RFC2307 NSS plugins share everything but the init
    function which sets the intended schema model to use */
-
+  
 static struct nss_info_methods nss_rfc2307_methods = {
 	.init         = nss_rfc2307_init,
 	.get_nss_info =	nss_ad_get_info,
@@ -841,7 +841,7 @@ NTSTATUS idmap_ad_init(void)
 		if ( !NT_STATUS_IS_OK(status_idmap_ad) )
 			return status_idmap_ad;		
 	}
-
+	
 	if ( !NT_STATUS_IS_OK( status_nss_rfc2307 ) ) {
 		status_nss_rfc2307 = smb_register_idmap_nss(SMB_NSS_INFO_INTERFACE_VERSION,
 							    "rfc2307",  &nss_rfc2307_methods );		
