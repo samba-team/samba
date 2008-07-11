@@ -731,7 +731,8 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 			need_chown = True;
 		}
 		if (need_chown) {
-			if ((newUID == (uid_t)-1 || newUID == fsp->conn->server_info->uid)) {
+			if ((newUID == (uid_t)-1
+			     || newUID == fsp->conn->server_info->utok.uid)) {
 				if(try_chown(fsp->conn, fsp->fsp_name, newUID, newGID)) {
 					DEBUG(3,("chown %s, %u, %u failed. Error = %s.\n",
 						 fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID, 
