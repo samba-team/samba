@@ -1,12 +1,12 @@
 .\"     Title: onnode
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.74.0 <http://docbook.sf.net/>
-.\"      Date: 07/10/2008
+.\"      Date: 07/11/2008
 .\"    Manual: [FIXME: manual]
 .\"    Source: [FIXME: source]
 .\"  Language: English
 .\"
-.TH "ONNODE" "1" "07/10/2008" "[FIXME: source]" "[FIXME: manual]"
+.TH "ONNODE" "1" "07/11/2008" "[FIXME: source]" "[FIXME: manual]"
 .\" -----------------------------------------------------------------
 .\" * (re)Define some macros
 .\" -----------------------------------------------------------------
@@ -184,12 +184,12 @@ The COMMAND can be any shell command\&. The onnode utility uses ssh or rsh to co
 .PP
 \-c
 .RS 4
-Execute COMMAND in the current working directory on each node\&.
+Execute COMMAND in the current working directory on the specified nodes\&.
 .RE
 .PP
 \-p
 .RS 4
-Run commands in parallel on the specified nodes\&. In this mode
+Run COMMAND in parallel on the specified nodes\&. The default is to run COMMAND sequentially on each node\&.
 .RE
 .PP
 \-q
