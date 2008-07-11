@@ -40,6 +40,8 @@ struct idmap_alloc_backend {
 	struct idmap_alloc_backend *prev, *next;
 };
 
+struct idmap_cache_ctx;
+
 struct idmap_alloc_context {
 	const char *params;
 	struct idmap_alloc_methods *methods;
@@ -47,6 +49,7 @@ struct idmap_alloc_context {
 };
 
 static TALLOC_CTX *idmap_ctx = NULL;
+static struct idmap_cache_ctx *idmap_cache;
 
 static struct idmap_backend *backends = NULL;
 static struct idmap_domain **idmap_domains = NULL;
@@ -243,6 +246,7 @@ NTSTATUS idmap_close(void)
 	/* this talloc_free call will fire the talloc destructors
 	 * that will free all active backends resources */
 	TALLOC_FREE(idmap_ctx);
+	idmap_cache = NULL;
 	idmap_domains = NULL;
 	backends = NULL;
 
@@ -263,6 +267,10 @@ NTSTATUS idmap_init_cache(void)
 
 	if ( (idmap_ctx = talloc_named_const(NULL, 0, "idmap_ctx")) == NULL ) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if ( (idmap_cache = idmap_cache_init(idmap_ctx)) == NULL ) {
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	return NT_STATUS_OK;
@@ -1308,28 +1316,15 @@ NTSTATUS idmap_unixids_to_sids(struct id_map **ids)
 
 	for (i = 0; ids[i]; i++) {
 
-		bool found, mapped, expired;
-
 		if ( ! ids[i]->sid) {
 			DEBUG(1, ("invalid null SID in id_map array"));
 			talloc_free(ctx);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		ids[i]->status = ID_UNKNOWN;
+		ret = idmap_cache_map_id(idmap_cache, ids[i]);
 
-		found = idmap_cache_map_id(&ids[i]->xid, ids[i]->sid,
-					   &mapped, &expired);
-
-		if (found) {
-			ids[i]->status = mapped ? ID_MAPPED : ID_UNMAPPED;
-		}
-
-		if (!found || (expired && IS_DOMAIN_ONLINE(our_domain))) {
-
-			/*
-			 * Need to ask the backend
-			 */
+		if ( ! NT_STATUS_IS_OK(ret)) {
 
 			if ( ! bids) {
 				/* alloc space for ids to be resolved by
@@ -1381,7 +1376,7 @@ NTSTATUS idmap_unixids_to_sids(struct id_map **ids)
 		/* update the cache */
 		for (i = 0; i < bi; i++) {
 			if (bids[i]->status == ID_MAPPED) {
-				ret = idmap_cache_set(bids[i]);
+				ret = idmap_cache_set(idmap_cache, bids[i]);
 			} else if (bids[i]->status == ID_EXPIRED) {
 				/* the cache returned an expired entry and the
 				 * backend was not able to clear the situation
@@ -1396,7 +1391,8 @@ NTSTATUS idmap_unixids_to_sids(struct id_map **ids)
 				 * settle down. */
 				bids[i]->status = ID_UNMAPPED;
 			} else { /* unmapped */
-				ret = idmap_cache_set_negative_id(bids[i]);
+				ret = idmap_cache_set_negative_id(idmap_cache,
+								  bids[i]);
 			}
 			IDMAP_CHECK_RET(ret);
 		}
@@ -1438,28 +1434,15 @@ NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
 
 	for (i = 0; ids[i]; i++) {
 
-		bool found, mapped, expired;
-
 		if ( ! ids[i]->sid) {
 			DEBUG(1, ("invalid null SID in id_map array\n"));
 			talloc_free(ctx);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		ids[i]->status = ID_UNKNOWN;
+		ret = idmap_cache_map_sid(idmap_cache, ids[i]);
 
-		found = idmap_cache_map_sid(ids[i]->sid, &ids[i]->xid,
-					    &mapped, &expired);
-
-		if (found) {
-			ids[i]->status = mapped ? ID_MAPPED : ID_UNMAPPED;
-		}
-
-		if (!found || (expired && IS_DOMAIN_ONLINE(our_domain))) {
-
-			/*
-			 * Need to ask the backends
-			 */
+		if ( ! NT_STATUS_IS_OK(ret)) {
 
 			if ( ! bids) {
 				/* alloc space for ids to be resolved
@@ -1511,7 +1494,7 @@ NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
 		/* update the cache */
 		for (i = 0; bids[i]; i++) {
 			if (bids[i]->status == ID_MAPPED) {
-				ret = idmap_cache_set(bids[i]);
+				ret = idmap_cache_set(idmap_cache, bids[i]);
 			} else if (bids[i]->status == ID_EXPIRED) {
 				/* the cache returned an expired entry and the
 				 * backend was not able to clear the situation
@@ -1526,7 +1509,8 @@ NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
 				 * settle down. */
 				bids[i]->status = ID_UNMAPPED;
 			} else { /* unmapped */
-				ret = idmap_cache_set_negative_sid(bids[i]);
+				ret = idmap_cache_set_negative_sid(idmap_cache,
+								   bids[i]);
 			}
 			IDMAP_CHECK_RET(ret);
 		}
@@ -1566,7 +1550,7 @@ NTSTATUS idmap_set_mapping(const struct id_map *id)
 	IDMAP_CHECK_RET(ret);
 
 	/* set the mapping in the cache */
-	ret = idmap_cache_set(id);
+	ret = idmap_cache_set(idmap_cache, id);
 	IDMAP_CHECK_RET(ret);
 
 done:

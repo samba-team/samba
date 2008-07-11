@@ -1,8 +1,9 @@
-/*
+/* 
    Unix SMB/CIFS implementation.
    ID Mapping Cache
 
-   Copyright (C) Volker Lendecke	2008
+   based on gencache
+
    Copyright (C) Simo Sorce		2006
    Copyright (C) Rafal Szczesniak	2002
 
@@ -22,6 +23,52 @@
 #include "includes.h"
 #include "winbindd.h"
 
+#define TIMEOUT_LEN 12
+#define IDMAP_CACHE_DATA_FMT	"%12u/%s"
+
+struct idmap_cache_ctx {
+	TDB_CONTEXT *tdb;
+};
+
+static int idmap_cache_destructor(struct idmap_cache_ctx *cache)
+{
+	int ret = 0;
+
+	if (cache && cache->tdb) {
+		ret = tdb_close(cache->tdb);
+		cache->tdb = NULL;
+	}
+
+	return ret;
+}
+
+struct idmap_cache_ctx *idmap_cache_init(TALLOC_CTX *memctx)
+{
+	struct idmap_cache_ctx *cache;
+	char* cache_fname = NULL;
+
+	cache = talloc(memctx, struct idmap_cache_ctx);
+	if ( ! cache) {
+		DEBUG(0, ("Out of memory!\n"));
+		return NULL;
+	}
+
+	cache_fname = lock_path("idmap_cache.tdb");
+
+	DEBUG(10, ("Opening cache file at %s\n", cache_fname));
+
+	cache->tdb = tdb_open_log(cache_fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+
+	if (!cache->tdb) {
+		DEBUG(5, ("Attempt to open %s has failed.\n", cache_fname));
+		return NULL;
+	}
+
+	talloc_set_destructor(cache, idmap_cache_destructor);
+
+	return cache;
+}
+
 static char *idmap_cache_sidkey(TALLOC_CTX *ctx, const DOM_SID *sid)
 {
 	fstring sidstr;
@@ -30,19 +77,21 @@ static char *idmap_cache_sidkey(TALLOC_CTX *ctx, const DOM_SID *sid)
 			       sid_to_fstring(sidstr, sid));
 }
 
-static char *idmap_cache_idkey(TALLOC_CTX *ctx, const struct unixid *xid)
+static char *idmap_cache_idkey(TALLOC_CTX *ctx, const struct id_map *id)
 {
 	return talloc_asprintf(ctx, "IDMAP/%s/%lu",
-			       (xid->type==ID_TYPE_UID)?"UID":"GID",
-			       (unsigned long)xid->id);
+			       (id->xid.type==ID_TYPE_UID)?"UID":"GID",
+			       (unsigned long)id->xid.id);
 }
 
-NTSTATUS idmap_cache_set(const struct id_map *id)
+NTSTATUS idmap_cache_set(struct idmap_cache_ctx *cache, const struct id_map *id)
 {
 	NTSTATUS ret;
 	time_t timeout = time(NULL) + lp_idmap_cache_time();
+	TDB_DATA databuf;
 	char *sidkey;
 	char *idkey;
+	char *valstr;
 
 	/* Don't cache lookups in the S-1-22-{1,2} domain */
 
@@ -51,179 +100,415 @@ NTSTATUS idmap_cache_set(const struct id_map *id)
 		return NT_STATUS_OK;
 	}
 
-	sidkey = idmap_cache_sidkey(talloc_tos(), id->sid);
+	sidkey = idmap_cache_sidkey(cache, id->sid);
 	if (sidkey == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* use sidkey as the local memory ctx */
-	idkey = idmap_cache_idkey(sidkey, &id->xid);
+	idkey = idmap_cache_idkey(sidkey, id);
 	if (idkey == NULL) {
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	if (!gencache_set(idkey, sidkey, timeout)
-	    || !gencache_set(sidkey, idkey, timeout)) {
+	/* save SID -> ID */
+
+	/* use sidkey as the local memory ctx */
+	valstr = talloc_asprintf(sidkey, IDMAP_CACHE_DATA_FMT, (int)timeout, idkey);
+	if (!valstr) {
+		DEBUG(0, ("Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	databuf = string_term_tdb_data(valstr);
+	DEBUG(10, ("Adding cache entry with key = %s; value = %s and timeout ="
+	           " %s (%d seconds %s)\n", sidkey, valstr , ctime(&timeout),
+		   (int)(timeout - time(NULL)), 
+		   timeout > time(NULL) ? "ahead" : "in the past"));
+
+	if (tdb_store_bystring(cache->tdb, sidkey, databuf, TDB_REPLACE) != 0) {
 		DEBUG(3, ("Failed to store cache entry!\n"));
-		ret = NT_STATUS_ACCESS_DENIED;
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* save ID -> SID */
+
+	/* use sidkey as the local memory ctx */
+	valstr = talloc_asprintf(sidkey, IDMAP_CACHE_DATA_FMT, (int)timeout, sidkey);
+	if (!valstr) {
+		DEBUG(0, ("Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	databuf = string_term_tdb_data(valstr);
+	DEBUG(10, ("Adding cache entry with key = %s; value = %s and timeout ="
+	           " %s (%d seconds %s)\n", idkey, valstr, ctime(&timeout),
+		   (int)(timeout - time(NULL)), 
+		   timeout > time(NULL) ? "ahead" : "in the past"));
+
+	if (tdb_store_bystring(cache->tdb, idkey, databuf, TDB_REPLACE) != 0) {
+		DEBUG(3, ("Failed to store cache entry!\n"));
+		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 	ret = NT_STATUS_OK;
 
 done:
-	TALLOC_FREE(sidkey);
+	talloc_free(sidkey);
 	return ret;
 }
 
-NTSTATUS idmap_cache_set_negative_sid(const struct id_map *id)
+NTSTATUS idmap_cache_set_negative_sid(struct idmap_cache_ctx *cache, const struct id_map *id)
 {
 	NTSTATUS ret = NT_STATUS_OK;
+	time_t timeout = time(NULL) + lp_idmap_negative_cache_time();
+	TDB_DATA databuf;
 	char *sidkey;
+	char *valstr;
 
-	sidkey = idmap_cache_sidkey(talloc_tos(), id->sid);
+	sidkey = idmap_cache_sidkey(cache, id->sid);
 	if (sidkey == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!gencache_set(sidkey, "IDMAP/NEGATIVE",
-			  time(NULL) + lp_idmap_negative_cache_time())) {
+	/* use sidkey as the local memory ctx */
+	valstr = talloc_asprintf(sidkey, IDMAP_CACHE_DATA_FMT, (int)timeout, "IDMAP/NEGATIVE");
+	if (!valstr) {
+		DEBUG(0, ("Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	databuf = string_term_tdb_data(valstr);
+	DEBUG(10, ("Adding cache entry with key = %s; value = %s and timeout ="
+	           " %s (%d seconds %s)\n", sidkey, valstr, ctime(&timeout),
+		   (int)(timeout - time(NULL)), 
+		   timeout > time(NULL) ? "ahead" : "in the past"));
+
+	if (tdb_store_bystring(cache->tdb, sidkey, databuf, TDB_REPLACE) != 0) {
 		DEBUG(3, ("Failed to store cache entry!\n"));
-		ret = NT_STATUS_ACCESS_DENIED;
+		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 done:
-	TALLOC_FREE(sidkey);
+	talloc_free(sidkey);
 	return ret;
 }
 
-NTSTATUS idmap_cache_set_negative_id(const struct id_map *id)
+NTSTATUS idmap_cache_set_negative_id(struct idmap_cache_ctx *cache, const struct id_map *id)
 {
 	NTSTATUS ret = NT_STATUS_OK;
+	time_t timeout = time(NULL) + lp_idmap_negative_cache_time();
+	TDB_DATA databuf;
 	char *idkey;
+	char *valstr;
 
-	idkey = idmap_cache_idkey(talloc_tos(), &id->xid);
+	idkey = idmap_cache_idkey(cache, id);
 	if (idkey == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!gencache_set(idkey, "IDMAP/NEGATIVE",
-			  time(NULL) + lp_idmap_negative_cache_time())) {
+	/* use idkey as the local memory ctx */
+	valstr = talloc_asprintf(idkey, IDMAP_CACHE_DATA_FMT, (int)timeout, "IDMAP/NEGATIVE");
+	if (!valstr) {
+		DEBUG(0, ("Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	databuf = string_term_tdb_data(valstr);
+	DEBUG(10, ("Adding cache entry with key = %s; value = %s and timeout ="
+	           " %s (%d seconds %s)\n", idkey, valstr, ctime(&timeout),
+		   (int)(timeout - time(NULL)), 
+		   timeout > time(NULL) ? "ahead" : "in the past"));
+
+	if (tdb_store_bystring(cache->tdb, idkey, databuf, TDB_REPLACE) != 0) {
 		DEBUG(3, ("Failed to store cache entry!\n"));
-		ret = NT_STATUS_ACCESS_DENIED;
+		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 done:
-	TALLOC_FREE(idkey);
+	talloc_free(idkey);
 	return ret;
 }
 
-/*
- * search the cache for the SID an return a mapping if found
- */
-
-bool idmap_cache_map_sid(const struct dom_sid *sid, struct unixid *xid,
-			 bool *mapped, bool *expired)
+static NTSTATUS idmap_cache_fill_map(struct id_map *id, const char *value)
 {
-	bool ret = false;
-	time_t timeout;
-	char *sidkey;
-	char *value;
 	char *rem;
 
-	sidkey = idmap_cache_sidkey(talloc_tos(), sid);
+	/* see if it is a sid */
+	if ( ! strncmp("IDMAP/SID/", value, 10)) {
+
+		if ( ! string_to_sid(id->sid, &value[10])) {
+			goto failed;
+		}
+
+		id->status = ID_MAPPED;
+
+		return NT_STATUS_OK;
+	}
+
+	/* not a SID see if it is an UID or a GID */
+	if ( ! strncmp("IDMAP/UID/", value, 10)) {
+
+		/* a uid */
+		id->xid.type = ID_TYPE_UID;
+
+	} else if ( ! strncmp("IDMAP/GID/", value, 10)) {
+
+		/* a gid */
+		id->xid.type = ID_TYPE_GID;
+
+	} else {
+
+		/* a completely bogus value bail out */
+		goto failed;
+	}
+
+	id->xid.id = strtol(&value[10], &rem, 0);
+	if (*rem != '\0') {
+		goto failed;
+	}
+
+	id->status = ID_MAPPED;
+
+	return NT_STATUS_OK;
+
+failed:
+	DEBUG(1, ("invalid value: %s\n", value));
+	id->status = ID_UNKNOWN;
+	return NT_STATUS_INTERNAL_DB_CORRUPTION;
+}
+
+/* search the cache for the SID an return a mapping if found *
+ *
+ * 4 cases are possible
+ *
+ * 1 map found
+ * 	in this case id->status = ID_MAPPED and NT_STATUS_OK is returned
+ * 2 map not found
+ * 	in this case id->status = ID_UNKNOWN and NT_STATUS_NONE_MAPPED is returned
+ * 3 negative cache found
+ * 	in this case id->status = ID_UNMAPPED and NT_STATUS_OK is returned
+ * 4 map found but timer expired
+ *      in this case id->status = ID_EXPIRED and NT_STATUS_SYNCHRONIZATION_REQUIRED
+ *      is returned. In this case revalidation of the cache is needed.
+ */
+
+NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
+{
+	NTSTATUS ret = NT_STATUS_OK;
+	TDB_DATA databuf;
+	time_t t;
+	char *sidkey;
+	char *endptr;
+	struct winbindd_domain *our_domain = find_our_domain();	
+	time_t now = time(NULL);	
+
+	/* make sure it is marked as not mapped by default */
+	id->status = ID_UNKNOWN;
+
+	sidkey = idmap_cache_sidkey(cache, id->sid);
 	if (sidkey == NULL) {
-		DEBUG(0, ("idmap_cache_sidkey failed\n"));
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!gencache_get(sidkey, &value, &timeout)) {
-		TALLOC_FREE(sidkey);
-		return false;
+	databuf = tdb_fetch_bystring(cache->tdb, sidkey);
+
+	if (databuf.dptr == NULL) {
+		DEBUG(10, ("Cache entry with key = %s couldn't be found\n", sidkey));
+		ret = NT_STATUS_NONE_MAPPED;
+		goto done;
 	}
 
-	if (strcmp(value, "IDMAP/NEGATIVE") == 0) {
-		*mapped = false;
+	t = strtol((const char *)databuf.dptr, &endptr, 10);
+
+	if ((endptr == NULL) || (*endptr != '/')) {
+		DEBUG(2, ("Invalid idmap cache data format: %s\n",
+			  (const char *)databuf.dptr));
+		/* remove the entry */
+		tdb_delete_bystring(cache->tdb, sidkey);
+		ret = NT_STATUS_NONE_MAPPED;
+		goto done;
 	}
-	else if (strncmp(value, "IDMAP/UID/", 10) == 0) {
-		*mapped = true;
-		xid->type = ID_TYPE_UID;
-		xid->id = strtol(&value[10], &rem, 10);
-		if (*rem != '\0') {
-			goto fail;
+
+	/* check it is not negative */
+	if (strcmp("IDMAP/NEGATIVE", endptr+1) != 0) {
+
+		DEBUG(10, ("Returning %s cache entry: key = %s, value = %s, "
+			   "timeout = %s", t > now ? "valid" :
+			   "expired", sidkey, endptr+1, ctime(&t)));
+
+		/* this call if successful will also mark the entry as mapped */
+		ret = idmap_cache_fill_map(id, endptr+1);
+		if ( ! NT_STATUS_IS_OK(ret)) {
+			/* if not valid form delete the entry */
+			tdb_delete_bystring(cache->tdb, sidkey);
+			ret = NT_STATUS_NONE_MAPPED;
+			goto done;
 		}
-	}
-	else if (strncmp(value, "IDMAP/GID/", 10) == 0) {
-		*mapped = true;
-		xid->type = ID_TYPE_GID;
-		xid->id = strtol(&value[10], &rem, 10);
-		if (*rem != '\0') {
-			goto fail;
+
+		/* here ret == NT_STATUS_OK and id->status = ID_MAPPED */
+
+		if (t <= now) {
+			/* If we've been told to be offline - stay in 
+			   that state... */
+			if ( IS_DOMAIN_OFFLINE(our_domain) ) {
+				DEBUG(10,("idmap_cache_map_sid: idmap is offline\n"));
+				goto done;				
+			}
+
+			/* We're expired, set an error code
+			   for upper layer */
+			ret = NT_STATUS_SYNCHRONIZATION_REQUIRED;
 		}
-	}
-	else {
-		goto fail;
+
+		goto done;		
 	}
 
-	*expired = (timeout <= time(NULL));
+	/* Was a negative cache hit */
 
-	ret = true;
+	/* Ignore the negative cache when offline */
 
- fail:
-	if (!ret) {
-		DEBUG(1, ("Invalid entry %s in cache\n", value));
+	if ( IS_DOMAIN_OFFLINE(our_domain) ) {
+		DEBUG(10,("idmap_cache_map_sid: idmap is offline\n"));
+		goto done;
 	}
-	SAFE_FREE(value);
-	TALLOC_FREE(sidkey);
+
+
+	/* Check for valid or expired cache hits */
+	if (t <= now) {
+		/* We're expired. Return not mapped */
+		ret = NT_STATUS_NONE_MAPPED;
+	} else {
+		/* this is not mapped as it was a negative cache hit */
+		id->status = ID_UNMAPPED;
+		ret = NT_STATUS_OK;
+	}
+
+done:
+	SAFE_FREE(databuf.dptr);
+	talloc_free(sidkey);
 	return ret;
 }
 
-/*
- * search the cache for the ID an return a mapping if found
+/* search the cache for the ID an return a mapping if found *
+ *
+ * 4 cases are possible
+ *
+ * 1 map found
+ * 	in this case id->status = ID_MAPPED and NT_STATUS_OK is returned
+ * 2 map not found
+ * 	in this case id->status = ID_UNKNOWN and NT_STATUS_NONE_MAPPED is returned
+ * 3 negative cache found
+ * 	in this case id->status = ID_UNMAPPED and NT_STATUS_OK is returned
+ * 4 map found but timer expired
+ *      in this case id->status = ID_EXPIRED and NT_STATUS_SYNCHRONIZATION_REQUIRED
+ *      is returned. In this case revalidation of the cache is needed.
  */
 
-bool idmap_cache_map_id(const struct unixid *xid, struct dom_sid *psid,
-			bool *mapped, bool *expired)
+NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 {
-	bool ret = false;
-	time_t timeout;
+	NTSTATUS ret;
+	TDB_DATA databuf;
+	time_t t;
 	char *idkey;
-	char *value;
+	char *endptr;
+	struct winbindd_domain *our_domain = find_our_domain();	
+	time_t now = time(NULL);	
 
-	idkey = idmap_cache_idkey(talloc_tos(), xid);
+	/* make sure it is marked as unknown by default */
+	id->status = ID_UNKNOWN;
+
+	idkey = idmap_cache_idkey(cache, id);
 	if (idkey == NULL) {
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!gencache_get(idkey, &value, &timeout)) {
-		TALLOC_FREE(idkey);
-		return false;
+	databuf = tdb_fetch_bystring(cache->tdb, idkey);
+
+	if (databuf.dptr == NULL) {
+		DEBUG(10, ("Cache entry with key = %s couldn't be found\n", idkey));
+		ret = NT_STATUS_NONE_MAPPED;
+		goto done;
 	}
 
-	if (strcmp(value, "IDMAP/NEGATIVE") == 0) {
-		*mapped = false;
+	t = strtol((const char *)databuf.dptr, &endptr, 10);
+
+	if ((endptr == NULL) || (*endptr != '/')) {
+		DEBUG(2, ("Invalid idmap cache data format: %s\n",
+			  (const char *)databuf.dptr));
+		/* remove the entry */
+		tdb_delete_bystring(cache->tdb, idkey);
+		ret = NT_STATUS_NONE_MAPPED;
+		goto done;
 	}
-	else if (strncmp(value, "IDMAP/SID/", 10) == 0) {
-		*mapped = true;
-		if (!string_to_sid(psid, value+10)) {
-			goto fail;
+
+	/* check it is not negative */
+	if (strcmp("IDMAP/NEGATIVE", endptr+1) != 0) {
+
+		DEBUG(10, ("Returning %s cache entry: key = %s, value = %s, "
+			   "timeout = %s", t > now ? "valid" :
+			   "expired", idkey, endptr+1, ctime(&t)));
+
+		/* this call if successful will also mark the entry as mapped */
+		ret = idmap_cache_fill_map(id, endptr+1);
+		if ( ! NT_STATUS_IS_OK(ret)) {
+			/* if not valid form delete the entry */
+			tdb_delete_bystring(cache->tdb, idkey);
+			ret = NT_STATUS_NONE_MAPPED;
+			goto done;
 		}
-	}
-	else {
-		goto fail;
+
+		/* here ret == NT_STATUS_OK and id->mapped = ID_MAPPED */
+
+		if (t <= now) {
+			/* If we've been told to be offline - stay in
+			   that state... */
+			if ( IS_DOMAIN_OFFLINE(our_domain) ) {
+				DEBUG(10,("idmap_cache_map_sid: idmap is offline\n"));
+				goto done;
+			}
+
+			/* We're expired, set an error code
+			   for upper layer */
+			ret = NT_STATUS_SYNCHRONIZATION_REQUIRED;
+		}
+
+		goto done;
 	}
 
-	ret = true;
+	/* Was a negative cache hit */
 
- fail:
-	if (!ret) {
-		DEBUG(1, ("Invalid entry %s in cache\n", value));
+	/* Ignore the negative cache when offline */
+
+	if ( IS_DOMAIN_OFFLINE(our_domain) ) {
+		DEBUG(10,("idmap_cache_map_sid: idmap is offline\n"));
+		ret = NT_STATUS_NONE_MAPPED;
+		goto done;
 	}
-	SAFE_FREE(value);
-	TALLOC_FREE(idkey);
+
+	/* Process the negative cache hit */
+
+	if (t <= now) {
+		/* We're expired.  Return not mapped */
+		ret = NT_STATUS_NONE_MAPPED;
+	} else {
+		/* this is not mapped is it was a negative cache hit */
+		id->status = ID_UNMAPPED;
+		ret = NT_STATUS_OK;
+	}
+
+done:
+	SAFE_FREE(databuf.dptr);
+	talloc_free(idkey);
 	return ret;
 }
 
