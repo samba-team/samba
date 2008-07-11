@@ -607,16 +607,16 @@ interface drsuapi
 		uint32 decompressed_length;
 		uint32 compressed_length;
 		[subcontext(4),subcontext_size(compressed_length),
-		 compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length),
-		 flag(NDR_REMAINING)] DATA_BLOB *decompressed;
+		 compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length)]
+		 drsuapi_DsGetNCChangesCtr1 *ctr1;
 	} drsuapi_DsGetNCChangesXPRESSCtr1;
 
 	typedef struct {
 		uint32 decompressed_length;
 		uint32 compressed_length;
 		[subcontext(4),subcontext_size(compressed_length),
-		 compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length),
-		 flag(NDR_REMAINING)] DATA_BLOB *decompressed;
+		 compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length)]
+		 drsuapi_DsGetNCChangesCtr6 *ctr6;
 	} drsuapi_DsGetNCChangesXPRESSCtr6;
 
 	typedef [enum16bit] enum {
