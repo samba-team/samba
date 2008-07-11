@@ -70,19 +70,33 @@ struct idmap_cache_ctx *idmap_cache_init(TALLOC_CTX *memctx)
 	return cache;
 }
 
-static char *idmap_cache_sidkey(TALLOC_CTX *ctx, const DOM_SID *sid)
+static NTSTATUS idmap_cache_build_sidkey(TALLOC_CTX *ctx, char **sidkey,
+					 const struct id_map *id)
 {
 	fstring sidstr;
 
-	return talloc_asprintf(ctx, "IDMAP/SID/%s",
-			       sid_to_fstring(sidstr, sid));
+	*sidkey = talloc_asprintf(ctx, "IDMAP/SID/%s",
+				  sid_to_fstring(sidstr, id->sid));
+	if ( ! *sidkey) {
+		DEBUG(1, ("failed to build sidkey, OOM?\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
 }
 
-static char *idmap_cache_idkey(TALLOC_CTX *ctx, const struct id_map *id)
+static NTSTATUS idmap_cache_build_idkey(TALLOC_CTX *ctx, char **idkey,
+					const struct id_map *id)
 {
-	return talloc_asprintf(ctx, "IDMAP/%s/%lu",
-			       (id->xid.type==ID_TYPE_UID)?"UID":"GID",
-			       (unsigned long)id->xid.id);
+	*idkey = talloc_asprintf(ctx, "IDMAP/%s/%lu",
+				(id->xid.type==ID_TYPE_UID)?"UID":"GID",
+				(unsigned long)id->xid.id);
+	if ( ! *idkey) {
+		DEBUG(1, ("failed to build idkey, OOM?\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
 }
 
 NTSTATUS idmap_cache_set(struct idmap_cache_ctx *cache, const struct id_map *id)
@@ -106,15 +120,12 @@ NTSTATUS idmap_cache_set(struct idmap_cache_ctx *cache, const struct id_map *id)
 		return NT_STATUS_OK;
 	}
 
-	sidkey = idmap_cache_sidkey(cache, id->sid);
-	if (sidkey == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	ret = idmap_cache_build_sidkey(cache, &sidkey, id);
+	if (!NT_STATUS_IS_OK(ret)) return ret;
 
 	/* use sidkey as the local memory ctx */
-	idkey = idmap_cache_idkey(sidkey, id);
-	if (idkey == NULL) {
-		ret = NT_STATUS_NO_MEMORY;
+	ret = idmap_cache_build_idkey(sidkey, &idkey, id);
+	if (!NT_STATUS_IS_OK(ret)) {
 		goto done;
 	}
 
@@ -171,16 +182,14 @@ done:
 
 NTSTATUS idmap_cache_set_negative_sid(struct idmap_cache_ctx *cache, const struct id_map *id)
 {
-	NTSTATUS ret = NT_STATUS_OK;
+	NTSTATUS ret;
 	time_t timeout = time(NULL) + lp_idmap_negative_cache_time();
 	TDB_DATA databuf;
 	char *sidkey;
 	char *valstr;
 
-	sidkey = idmap_cache_sidkey(cache, id->sid);
-	if (sidkey == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	ret = idmap_cache_build_sidkey(cache, &sidkey, id);
+	if (!NT_STATUS_IS_OK(ret)) return ret;
 
 	/* use sidkey as the local memory ctx */
 	valstr = talloc_asprintf(sidkey, IDMAP_CACHE_DATA_FMT, (int)timeout, "IDMAP/NEGATIVE");
@@ -209,16 +218,14 @@ done:
 
 NTSTATUS idmap_cache_set_negative_id(struct idmap_cache_ctx *cache, const struct id_map *id)
 {
-	NTSTATUS ret = NT_STATUS_OK;
+	NTSTATUS ret;
 	time_t timeout = time(NULL) + lp_idmap_negative_cache_time();
 	TDB_DATA databuf;
 	char *idkey;
 	char *valstr;
 
-	idkey = idmap_cache_idkey(cache, id);
-	if (idkey == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	ret = idmap_cache_build_idkey(cache, &idkey, id);
+	if (!NT_STATUS_IS_OK(ret)) return ret;
 
 	/* use idkey as the local memory ctx */
 	valstr = talloc_asprintf(idkey, IDMAP_CACHE_DATA_FMT, (int)timeout, "IDMAP/NEGATIVE");
@@ -310,7 +317,7 @@ failed:
 
 NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 {
-	NTSTATUS ret = NT_STATUS_OK;
+	NTSTATUS ret;
 	TDB_DATA databuf;
 	time_t t;
 	char *sidkey;
@@ -321,10 +328,8 @@ NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id)
 	/* make sure it is marked as not mapped by default */
 	id->status = ID_UNKNOWN;
 
-	sidkey = idmap_cache_sidkey(cache, id->sid);
-	if (sidkey == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	ret = idmap_cache_build_sidkey(cache, &sidkey, id);
+	if (!NT_STATUS_IS_OK(ret)) return ret;
 
 	databuf = tdb_fetch_bystring(cache->tdb, sidkey);
 
@@ -433,10 +438,8 @@ NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id)
 	/* make sure it is marked as unknown by default */
 	id->status = ID_UNKNOWN;
 
-	idkey = idmap_cache_idkey(cache, id);
-	if (idkey == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	ret = idmap_cache_build_idkey(cache, &idkey, id);
+	if (!NT_STATUS_IS_OK(ret)) return ret;
 
 	databuf = tdb_fetch_bystring(cache->tdb, idkey);
 
