@@ -8,12 +8,12 @@
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 3 of the License, or (at your option) any later version.
-
+   
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Library General Public License for more details.
-
+   
    You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -89,12 +89,12 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 	int len;
 
 	*backend = *domain = NULL;
-
+	
 	if ( !config )
 		return False;
-
+	
 	p = strchr( config, ':' );
-
+	
 	/* if no : then the string must be the backend name only */
 
 	if ( !p ) {
@@ -107,13 +107,13 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 	if ( strlen(p+1) > 0 ) {
 		*domain = SMB_STRDUP( p+1 );
 	}
-
+	
 	len = PTR_DIFF(p,config)+1;
 	if ( (q = SMB_MALLOC_ARRAY( char, len )) == NULL ) {
 		SAFE_FREE( *backend );
 		return False;
 	}
-
+	
 	StrnCpy( q, config, len-1);
 	q[len-1] = '\0';
 	*backend = q;
@@ -139,7 +139,7 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 
 	if ( NT_STATUS_IS_OK(nss_initialized) )
 		return NT_STATUS_OK;
-
+	
 	/* The "template" backend should alqays be registered as it
 	   is a static module */
 
@@ -166,7 +166,7 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 			if ( !NT_STATUS_IS_OK(status) ) {
 				continue;
 			}
-
+			
 			/* try again */
 			if ( (nss_backend = nss_get_backend( backend )) == NULL ) {
 				DEBUG(0,("nss_init: unregistered backend %s!.  Skipping\n",
@@ -184,7 +184,7 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 			DEBUG(0,("nss_init: talloc() failure!\n"));
 			return NT_STATUS_NO_MEMORY;
 		}
-
+		
 		nss_domain->backend = nss_backend;
 		nss_domain->domain  = talloc_strdup( nss_domain, domain );
 
@@ -210,9 +210,10 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 
 		/* we shouild default to use template here */
 	}
-
+	
+		
 	nss_initialized = NT_STATUS_OK;
-
+	
 	return NT_STATUS_OK;
 }
 
@@ -230,19 +231,19 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 			 nt_errstr(status)));
 		return NULL;
 	}
-
+	
 	for ( p=nss_domain_list; p; p=p->next ) {
 		if ( strequal( p->domain, domain ) )
 			break;
 	}
-
+	
 	/* If we didn't find a match, then use the default nss info */
 
 	if ( !p ) {
 		if ( !nss_domain_list ) {
 			return NULL;
 		}
-
+		
 		p = nss_domain_list;		
 	}
 
@@ -270,7 +271,7 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 			 domain ));
 		return NT_STATUS_NOT_FOUND;
 	}
-
+		
 	m = p->backend->methods;
 
 	return m->get_nss_info( p, user_sid, ctx, ads, msg, 

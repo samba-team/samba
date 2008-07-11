@@ -41,7 +41,7 @@ NTSTATUS idmap_uid_to_sid(DOM_SID *sid, uid_t uid)
 
 	maps[0] = &map;
 	maps[1] = NULL;
-
+	
 	ret = idmap_unixids_to_sids(maps);
 	if ( ! NT_STATUS_IS_OK(ret)) {
 		DEBUG(10, ("error mapping uid [%lu]\n", (unsigned long)uid));
@@ -75,7 +75,7 @@ NTSTATUS idmap_gid_to_sid(DOM_SID *sid, gid_t gid)
 
 	maps[0] = &map;
 	maps[1] = NULL;
-
+	
 	ret = idmap_unixids_to_sids(maps);
 	if ( ! NT_STATUS_IS_OK(ret)) {
 		DEBUG(10, ("error mapping gid [%lu]\n", (unsigned long)gid));
@@ -105,10 +105,10 @@ NTSTATUS idmap_sid_to_uid(DOM_SID *sid, uid_t *uid)
 
 	map.sid = sid;
 	map.xid.type = ID_TYPE_UID;	
-
+	
 	maps[0] = &map;
 	maps[1] = NULL;
-
+	
 	ret = idmap_sids_to_unixids(maps);
 	if ( ! NT_STATUS_IS_OK(ret)) {
 		DEBUG(10, ("error mapping sid [%s] to uid\n", 
@@ -145,10 +145,10 @@ NTSTATUS idmap_sid_to_gid(DOM_SID *sid, gid_t *gid)
 
 	map.sid = sid;
 	map.xid.type = ID_TYPE_GID;
-
+	
 	maps[0] = &map;
 	maps[1] = NULL;
-
+	
 	ret = idmap_sids_to_unixids(maps);
 	if ( ! NT_STATUS_IS_OK(ret)) {
 		DEBUG(10, ("error mapping sid [%s] to gid\n", 
