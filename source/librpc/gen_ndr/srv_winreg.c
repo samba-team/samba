@@ -2768,5 +2768,5 @@ void winreg_get_pipe_fns(struct api_struct **fns, int *n_fns)
 
 NTSTATUS rpc_winreg_init(void)
 {
-	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "winreg", "winreg", api_winreg_cmds, sizeof(api_winreg_cmds) / sizeof(struct api_struct));
+	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "winreg", "winreg", &ndr_table_winreg.syntax_id, api_winreg_cmds, sizeof(api_winreg_cmds) / sizeof(struct api_struct));
 }

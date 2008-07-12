@@ -155,6 +155,9 @@ void ntsvcs2_get_pipe_fns( struct api_struct **fns, int *n_fns )
 
 NTSTATUS rpc_ntsvcs2_init(void)
 {
-  return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "ntsvcs", "ntsvcs", api_ntsvcs_cmds,
+  return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION,
+				    "ntsvcs", "ntsvcs",
+				    &ndr_table_ntsvcs.syntax_id,
+				    api_ntsvcs_cmds,
 				    sizeof(api_ntsvcs_cmds) / sizeof(struct api_struct));
 }

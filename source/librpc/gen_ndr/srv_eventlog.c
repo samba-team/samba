@@ -1838,5 +1838,5 @@ void eventlog_get_pipe_fns(struct api_struct **fns, int *n_fns)
 
 NTSTATUS rpc_eventlog_init(void)
 {
-	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "eventlog", "eventlog", api_eventlog_cmds, sizeof(api_eventlog_cmds) / sizeof(struct api_struct));
+	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "eventlog", "eventlog", &ndr_table_eventlog.syntax_id, api_eventlog_cmds, sizeof(api_eventlog_cmds) / sizeof(struct api_struct));
 }

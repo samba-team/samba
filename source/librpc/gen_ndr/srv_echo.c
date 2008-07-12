@@ -801,5 +801,5 @@ void rpcecho_get_pipe_fns(struct api_struct **fns, int *n_fns)
 
 NTSTATUS rpc_rpcecho_init(void)
 {
-	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "rpcecho", "rpcecho", api_rpcecho_cmds, sizeof(api_rpcecho_cmds) / sizeof(struct api_struct));
+	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "rpcecho", "rpcecho", &ndr_table_rpcecho.syntax_id, api_rpcecho_cmds, sizeof(api_rpcecho_cmds) / sizeof(struct api_struct));
 }

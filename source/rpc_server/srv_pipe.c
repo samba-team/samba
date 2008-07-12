@@ -718,6 +718,7 @@ struct rpc_table {
 		const char *clnt;
 		const char *srv;
 	} pipe;
+	struct ndr_syntax_id rpc_interface;
 	const struct api_struct *cmds;
 	int n_cmds;
 };
@@ -1039,7 +1040,10 @@ bool check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
  Register commands to an RPC pipe
 *******************************************************************/
 
-NTSTATUS rpc_pipe_register_commands(int version, const char *clnt, const char *srv, const struct api_struct *cmds, int size)
+NTSTATUS rpc_pipe_register_commands(int version, const char *clnt,
+				    const char *srv,
+				    const struct ndr_syntax_id *interface,
+				    const struct api_struct *cmds, int size)
 {
         struct rpc_table *rpc_entry;
 
@@ -1079,6 +1083,7 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt, const char *s
         ZERO_STRUCTP(rpc_entry);
         rpc_entry->pipe.clnt = SMB_STRDUP(clnt);
         rpc_entry->pipe.srv = SMB_STRDUP(srv);
+	rpc_entry->rpc_interface = *interface;
         rpc_entry->cmds = cmds;
         rpc_entry->n_cmds = size;
         
@@ -1575,16 +1580,22 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		goto err_exit;
 	}
 
+	if (hdr_rb.num_contexts == 0) {
+		DEBUG(0, ("api_pipe_bind_req: no rpc contexts around\n"));
+		goto err_exit;
+	}
+
 	/*
 	 * Try and find the correct pipe name to ensure
 	 * that this is a pipe name we support.
 	 */
 
-
 	for (i = 0; i < rpc_lookup_size; i++) {
-	        if (strequal(rpc_lookup[i].pipe.clnt, p->name)) {
+		if (ndr_syntax_id_equal(&rpc_lookup[i].rpc_interface,
+					&hdr_rb.rpc_context[0].abstract)) {
 			DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
 				rpc_lookup[i].pipe.clnt, rpc_lookup[i].pipe.srv));
+			fstrcpy(p->name, rpc_lookup[i].pipe.clnt);
 			fstrcpy(p->pipe_srv_name, rpc_lookup[i].pipe.srv);
 			break;
 		}

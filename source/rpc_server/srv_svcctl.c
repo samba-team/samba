@@ -266,6 +266,8 @@ void svcctl2_get_pipe_fns( struct api_struct **fns, int *n_fns )
 NTSTATUS rpc_svcctl2_init(void)
 {
 	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION,
-					  "svcctl", "ntsvcs", api_svcctl_cmds,
+					  "svcctl", "ntsvcs",
+					  &ndr_table_svcctl.syntax_id,
+					  api_svcctl_cmds,
 					  sizeof(api_svcctl_cmds) / sizeof(struct api_struct));
 }
