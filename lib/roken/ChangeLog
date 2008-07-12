@@ -1,5 +1,9 @@
-2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+2008-07-12  Love Hörnquist Åstrand  <lha@kth.se>
 
+	* rkpty.c: Always print output for status.
+
+2008-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* getaddrinfo-test.c: drop )
 
 	* Makefile.am: Add rkpty.
