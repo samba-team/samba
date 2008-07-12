@@ -64,7 +64,7 @@ static struct bitmap *bmap;
 static ssize_t read_from_internal_pipe(void *np_conn, char *data, size_t n,
 		bool *is_data_outstanding);
 static ssize_t write_to_internal_pipe(void *np_conn, char *data, size_t n);
-static bool close_internal_rpc_pipe_hnd(void *np_conn);
+static int close_internal_rpc_pipe_hnd(struct pipes_struct *pipe);
 
 /****************************************************************************
  Internal Pipe iterator functions.
@@ -213,7 +213,6 @@ smb_np_struct *open_rpc_pipe_p(const char *pipe_name,
 	p->namedpipe_create = make_internal_rpc_pipe_p;
 	p->namedpipe_read = read_from_internal_pipe;
 	p->namedpipe_write = write_to_internal_pipe;
-	p->namedpipe_close = close_internal_rpc_pipe_hnd;
 
 	p->np_state = p->namedpipe_create(pipe_name, conn->client_address,
 					  conn->server_info, vuid);
@@ -340,6 +339,8 @@ struct pipes_struct *make_internal_rpc_pipe_p(const char *pipe_name,
 	
 	DEBUG(4,("Created internal pipe %s (pipes_open=%d)\n",
 		 pipe_name, pipes_open));
+
+	talloc_set_destructor(p, close_internal_rpc_pipe_hnd);
 
 	return p;
 }
@@ -1136,7 +1137,7 @@ bool close_rpc_pipe_hnd(smb_np_struct *p)
 		return False;
 	}
 
-	p->namedpipe_close(p->np_state);
+	TALLOC_FREE(p->np_state);
 
 	bitmap_clear(bmap, p->pnum - pipe_handle_offset);
 
@@ -1179,9 +1180,8 @@ void pipe_close_conn(connection_struct *conn)
  Close an rpc pipe.
 ****************************************************************************/
 
-static bool close_internal_rpc_pipe_hnd(void *np_conn)
+static int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 {
-	pipes_struct *p = (pipes_struct *)np_conn;
 	if (!p) {
 		DEBUG(0,("Invalid pipe in close_internal_rpc_pipe_hnd\n"));
 		return False;

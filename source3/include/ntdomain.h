@@ -344,15 +344,6 @@ typedef struct smb_np_struct {
 	                           char *data, size_t max_len,
 	                           bool *pipe_outstanding);
 
-	/* call to close a namedpipe.
-	 * function is expected to perform all cleanups
-	 * necessary, free all memory etc.
-	 *
-	 * returns True if cleanup was successful (not that
-	 * we particularly care).
-	 */
-	bool     (*namedpipe_close)(void * np_state);
-
 } smb_np_struct;
 
 struct api_struct {  
