@@ -10,7 +10,7 @@ name: CASE_INSENSITIVE
 dn: CASE_INSENSITIVE
 sAMAccountName: CASE_INSENSITIVE
 objectClass: CASE_INSENSITIVE
-sambaPassword: HIDDEN
+userPassword: HIDDEN
 krb5Key: HIDDEN
 ntPwdHash: HIDDEN
 sambaNTPwdHistory: HIDDEN
@@ -27,7 +27,7 @@ dn: @OPTIONS
 checkBaseOnSearch: TRUE
 
 dn: @KLUDGEACL
-passwordAttribute: sambaPassword
+passwordAttribute: userPassword
 passwordAttribute: ntPwdHash
 passwordAttribute: sambaNTPwdHistory
 passwordAttribute: lmPwdHash

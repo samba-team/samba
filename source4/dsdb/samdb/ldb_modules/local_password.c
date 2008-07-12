@@ -24,7 +24,7 @@
  *
  *  Component: ldb local_password module
  *
- *  Description: correctly update hash values based on changes to sambaPassword and friends
+ *  Description: correctly update hash values based on changes to userPassword and friends
  *
  *  Author: Andrew Bartlett
  */
@@ -154,7 +154,7 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 		return ldb_next_request(module, req);
 	}
 
-	/* TODO: remove this when sambaPassword will be in schema */
+	/* TODO: remove this when userPassword will be in schema */
 	if (!ldb_msg_check_string_attribute(req->op.add.message, "objectClass", "person")) {
 		ldb_asprintf_errstring(module->ldb,
 					"Cannot relocate a password on entry: %s, does not have objectClass 'person'",
@@ -417,7 +417,7 @@ static int local_password_mod_local(struct ldb_handle *h) {
 	ac = talloc_get_type(h->private_data, struct lpdb_context);
 
 	/* if it is not an entry of type person this is an error */
-	/* TODO: remove this when sambaPassword will be in schema */
+	/* TODO: remove this when these things are checked in the schema */
 	if (!ac->search_res) {
 		ldb_asprintf_errstring(ac->module->ldb, 
 					"entry just modified (%s) not found!",

@@ -12,7 +12,7 @@ operatingSystem: Samba
 operatingSystemVersion: 4.0
 dNSHostName: ${DNSNAME}
 isCriticalSystemObject: TRUE
-sambaPassword:: ${MACHINEPASS_B64}
+userPassword:: ${MACHINEPASS_B64}
 servicePrincipalName: HOST/${DNSNAME}
 servicePrincipalName: HOST/${NETBIOSNAME}
 servicePrincipalName: HOST/${DNSNAME}/${REALM}
@@ -33,7 +33,7 @@ accountExpires: 9223372036854775807
 sAMAccountName: dns
 servicePrincipalName: DNS/${DNSDOMAIN}
 isCriticalSystemObject: TRUE
-sambaPassword:: ${DNSPASS_B64}
+userPassword:: ${DNSPASS_B64}
 showInAdvancedViewOnly: TRUE
 
 dn: ${SERVERDN}

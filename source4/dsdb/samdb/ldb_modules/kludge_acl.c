@@ -321,7 +321,7 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	/*  FIXME: I hink we should copy the tree and keep the original
 	 *  unmodified. SSS */
 	/* replace any attributes in the parse tree that are private,
-	   so we don't allow a search for 'sambaPassword=penguin',
+	   so we don't allow a search for 'userPassword=penguin',
 	   just as we would not allow that attribute to be returned */
 	switch (ac->user_type) {
 	case SECURITY_SYSTEM:
