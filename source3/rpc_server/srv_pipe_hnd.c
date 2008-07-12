@@ -65,8 +65,6 @@ static ssize_t read_from_internal_pipe(void *np_conn, char *data, size_t n,
 		bool *is_data_outstanding);
 static ssize_t write_to_internal_pipe(void *np_conn, char *data, size_t n);
 static bool close_internal_rpc_pipe_hnd(void *np_conn);
-static void *make_internal_rpc_pipe_p(const char *pipe_name, 
-			      connection_struct *conn, uint16 vuid);
 
 /****************************************************************************
  Internal Pipe iterator functions.
@@ -217,7 +215,8 @@ smb_np_struct *open_rpc_pipe_p(const char *pipe_name,
 	p->namedpipe_write = write_to_internal_pipe;
 	p->namedpipe_close = close_internal_rpc_pipe_hnd;
 
-	p->np_state = p->namedpipe_create(pipe_name, conn, vuid);
+	p->np_state = p->namedpipe_create(pipe_name, conn->client_address,
+					  conn->server_info, vuid);
 
 	if (p->np_state == NULL) {
 		DEBUG(0,("open_rpc_pipe_p: make_internal_rpc_pipe_p failed.\n"));
@@ -266,18 +265,14 @@ smb_np_struct *open_rpc_pipe_p(const char *pipe_name,
  Make an internal namedpipes structure
 ****************************************************************************/
 
-static void *make_internal_rpc_pipe_p(const char *pipe_name, 
-			      connection_struct *conn, uint16 vuid)
+struct pipes_struct *make_internal_rpc_pipe_p(const char *pipe_name,
+					      const char *client_address,
+					      struct auth_serversupplied_info *server_info,
+					      uint16_t vuid)
 {
 	pipes_struct *p;
-	user_struct *vuser = get_valid_user_struct(vuid);
 
 	DEBUG(4,("Create pipe requested %s\n", pipe_name));
-
-	if (!vuser && vuid != UID_FIELD_INVALID) {
-		DEBUG(0,("ERROR! vuid %d did not map to a valid vuser struct!\n", vuid));
-		return NULL;
-	}
 
 	p = TALLOC_ZERO_P(NULL, pipes_struct);
 
@@ -314,7 +309,7 @@ static void *make_internal_rpc_pipe_p(const char *pipe_name,
 		return NULL;
 	}
 
-	p->server_info = copy_serverinfo(p, conn->server_info);
+	p->server_info = copy_serverinfo(p, server_info);
 	if (p->server_info == NULL) {
 		DEBUG(0, ("open_rpc_pipe_p: copy_serverinfo failed\n"));
 		talloc_destroy(p->mem_ctx);
@@ -325,21 +320,16 @@ static void *make_internal_rpc_pipe_p(const char *pipe_name,
 
 	DLIST_ADD(InternalPipes, p);
 
-	memcpy(p->client_address, conn->client_address,
-	       sizeof(p->client_address));
+	memcpy(p->client_address, client_address, sizeof(p->client_address));
 
 	p->endian = RPC_LITTLE_ENDIAN;
 
 	ZERO_STRUCT(p->pipe_user);
 
+	p->pipe_user.vuid = vuid;
 	p->pipe_user.ut.uid = (uid_t)-1;
 	p->pipe_user.ut.gid = (gid_t)-1;
-	
-	/* Store the session key and NT_TOKEN */
-	if (vuser) {
-		p->pipe_user.nt_user_token = dup_nt_token(
-			NULL, vuser->server_info->ptok);
-	}
+	p->pipe_user.nt_user_token = dup_nt_token(NULL, server_info->ptok);
 
 	/*
 	 * Initialize the outgoing RPC data buffer with no memory.
@@ -351,7 +341,7 @@ static void *make_internal_rpc_pipe_p(const char *pipe_name,
 	DEBUG(4,("Created internal pipe %s (pipes_open=%d)\n",
 		 pipe_name, pipes_open));
 
-	return (void*)p;
+	return p;
 }
 
 /****************************************************************************

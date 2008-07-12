@@ -318,8 +318,11 @@ typedef struct smb_np_struct {
 	 * returns: state information representing the connection.
 	 *          is stored in np_state, above.
 	 */
-	void *   (*namedpipe_create)(const char *pipe_name, 
-					  connection_struct *conn, uint16 vuid);
+	struct pipes_struct *(*namedpipe_create)(
+		const char *pipe_name,
+		const char *client_address,
+		struct auth_serversupplied_info *server_info,
+		uint16_t vuid);
 
 	/* call to perform a write namedpipe operation
 	 */
