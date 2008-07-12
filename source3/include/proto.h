@@ -8849,6 +8849,9 @@ struct pipes_struct *make_internal_rpc_pipe_p(const char *pipe_name,
 					      const char *client_address,
 					      struct auth_serversupplied_info *server_info,
 					      uint16_t vuid);
+ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_t n,
+				bool *is_data_outstanding);
+ssize_t write_to_internal_pipe(struct pipes_struct *p, char *data, size_t n);
 
 /* The following definitions come from rpc_server/srv_samr_nt.c  */
 
