@@ -61,9 +61,6 @@ static struct bitmap *bmap;
  * system _anyway_.  so that's the next step...
  */
 
-static ssize_t read_from_internal_pipe(void *np_conn, char *data, size_t n,
-		bool *is_data_outstanding);
-static ssize_t write_to_internal_pipe(void *np_conn, char *data, size_t n);
 static int close_internal_rpc_pipe_hnd(struct pipes_struct *pipe);
 
 /****************************************************************************
@@ -925,9 +922,8 @@ ssize_t write_to_pipe(smb_np_struct *p, char *data, size_t n)
  Accepts incoming data on an internal rpc pipe.
 ****************************************************************************/
 
-static ssize_t write_to_internal_pipe(void *np_conn, char *data, size_t n)
+ssize_t write_to_internal_pipe(struct pipes_struct *p, char *data, size_t n)
 {
-	pipes_struct *p = (pipes_struct*)np_conn;
 	size_t data_left = n;
 
 	while(data_left) {
@@ -985,10 +981,9 @@ ssize_t read_from_pipe(smb_np_struct *p, char *data, size_t n,
  have been prepared into arrays of headers + data stream sections.
 ****************************************************************************/
 
-static ssize_t read_from_internal_pipe(void *np_conn, char *data, size_t n,
-		bool *is_data_outstanding)
+ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_t n,
+				bool *is_data_outstanding)
 {
-	pipes_struct *p = (pipes_struct*)np_conn;
 	uint32 pdu_remaining = 0;
 	ssize_t data_returned = 0;
 

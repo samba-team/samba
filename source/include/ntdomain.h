@@ -303,10 +303,8 @@ typedef struct smb_np_struct {
 
 	/*
 	 * NamedPipe state information.
-	 *
-	 * (e.g. typecast a np_struct, above).
 	 */
-	void *np_state;
+	struct pipes_struct *np_state;
 
 	/*
 	 * NamedPipe functions, to be called to perform
@@ -326,8 +324,8 @@ typedef struct smb_np_struct {
 
 	/* call to perform a write namedpipe operation
 	 */
-	ssize_t  (*namedpipe_write)(void * np_state,
-	                            char *data, size_t n);
+	ssize_t (*namedpipe_write)(struct pipes_struct *p,
+				   char *data, size_t n);
 
 	/* call to perform a read namedpipe operation.
 	 *
@@ -340,9 +338,9 @@ typedef struct smb_np_struct {
 	 * when samba is modified to use namedpipe_transact,
 	 * the pipe_outstanding argument may be removed.
 	 */
-	ssize_t  (*namedpipe_read)(void * np_state,
-	                           char *data, size_t max_len,
-	                           bool *pipe_outstanding);
+	ssize_t (*namedpipe_read)(struct pipes_struct *p,
+				  char *data, size_t max_len,
+				  bool *pipe_outstanding);
 
 } smb_np_struct;
 
