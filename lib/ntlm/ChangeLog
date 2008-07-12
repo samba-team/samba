@@ -1,4 +1,4 @@
-2008-05-14  Love Hornquist Astrand  <lha@love-hornquist-astrands-macbook-pro.local>
+2008-05-14  Love Hornquist Astrand  <lha@kth.se>
 
 	* ntlm.c: replace hashes with keys.
 
