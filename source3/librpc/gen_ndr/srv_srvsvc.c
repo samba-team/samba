@@ -4195,5 +4195,5 @@ void srvsvc_get_pipe_fns(struct api_struct **fns, int *n_fns)
 
 NTSTATUS rpc_srvsvc_init(void)
 {
-	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "srvsvc", "srvsvc", api_srvsvc_cmds, sizeof(api_srvsvc_cmds) / sizeof(struct api_struct));
+	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "srvsvc", "srvsvc", &ndr_table_srvsvc.syntax_id, api_srvsvc_cmds, sizeof(api_srvsvc_cmds) / sizeof(struct api_struct));
 }

@@ -2408,5 +2408,5 @@ void wkssvc_get_pipe_fns(struct api_struct **fns, int *n_fns)
 
 NTSTATUS rpc_wkssvc_init(void)
 {
-	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "wkssvc", "wkssvc", api_wkssvc_cmds, sizeof(api_wkssvc_cmds) / sizeof(struct api_struct));
+	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "wkssvc", "wkssvc", &ndr_table_wkssvc.syntax_id, api_wkssvc_cmds, sizeof(api_wkssvc_cmds) / sizeof(struct api_struct));
 }

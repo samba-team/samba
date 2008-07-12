@@ -841,5 +841,5 @@ void dssetup_get_pipe_fns(struct api_struct **fns, int *n_fns)
 
 NTSTATUS rpc_dssetup_init(void)
 {
-	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "dssetup", "dssetup", api_dssetup_cmds, sizeof(api_dssetup_cmds) / sizeof(struct api_struct));
+	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "dssetup", "dssetup", &ndr_table_dssetup.syntax_id, api_dssetup_cmds, sizeof(api_dssetup_cmds) / sizeof(struct api_struct));
 }

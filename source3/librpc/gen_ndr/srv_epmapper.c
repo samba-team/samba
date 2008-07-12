@@ -642,5 +642,5 @@ void epmapper_get_pipe_fns(struct api_struct **fns, int *n_fns)
 
 NTSTATUS rpc_epmapper_init(void)
 {
-	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "epmapper", "epmapper", api_epmapper_cmds, sizeof(api_epmapper_cmds) / sizeof(struct api_struct));
+	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "epmapper", "epmapper", &ndr_table_epmapper.syntax_id, api_epmapper_cmds, sizeof(api_epmapper_cmds) / sizeof(struct api_struct));
 }
