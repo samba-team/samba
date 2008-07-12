@@ -172,8 +172,7 @@ eval_parent(pid_t pid)
 	    alarm(timeout);
 	    while((sret = read(master, &in, sizeof(in))) > 0) {
 		alarm(timeout);
-		if (verbose > 1)
-		    printf("%c", in);
+		printf("%c", in);
 		if (c->str[len] != in) {
 		    len = 0;
 		    continue;
