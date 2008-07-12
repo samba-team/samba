@@ -12,8 +12,6 @@ description
 cn
 dITContentRules
 top
-#This shouldn't make it to the ldap server
-sambaPassword
 #This should be provided by the LDAP server, only in our schema to permit provision
 aci
 #Skip ObjectClasses

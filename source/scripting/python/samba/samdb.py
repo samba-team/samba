@@ -112,7 +112,7 @@ userAccountControl: %u
         #  now the real work
         self.add({"dn": user_dn, 
             "sAMAccountName": username,
-            "sambaPassword": password,
+            "userPassword": password,
             "objectClass": "user"})
 
         res = self.search(user_dn, scope=ldb.SCOPE_BASE,
@@ -163,8 +163,8 @@ userAccountControl: %u
         setpw = """
 dn: %s
 changetype: modify
-replace: sambaPassword
-sambaPassword: %s
+replace: userPassword
+userPassword: %s
 """ % (user_dn, password)
 
         self.modify_ldif(setpw)

@@ -355,15 +355,6 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 		}
 	},
 	{
-		.local_name = "sambaPassword",
-		.type = MAP_RENAME,
-		.u = {
-			.rename = {
-				 .remote_name = "userPassword"
-			 }
-		}
-	},
-	{
 		.local_name = "objectCategory",
 		.type = MAP_CONVERT,
 		.u = {
@@ -501,15 +492,6 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 		.u = {
 			.rename = {
 				 .remote_name = "modifyTimestamp"
-			 }
-		}
-	},
-	{
-		.local_name = "sambaPassword",
-		.type = MAP_RENAME,
-		.u = {
-			.rename = {
-				 .remote_name = "userPassword"
 			 }
 		}
 	},

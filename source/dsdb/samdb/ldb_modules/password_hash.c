@@ -25,7 +25,7 @@
  *
  *  Component: ldb password_hash module
  *
- *  Description: correctly update hash values based on changes to sambaPassword and friends
+ *  Description: correctly update hash values based on changes to userPassword and friends
  *
  *  Author: Andrew Bartlett
  *  Author: Stefan Metzmacher
@@ -54,7 +54,7 @@
 /* If we have decided there is reason to work on this request, then
  * setup all the password hash types correctly.
  *
- * If the administrator doesn't want the sambaPassword stored (set in the
+ * If the administrator doesn't want the userPassword stored (set in the
  * domain and per-account policies) then we must strip that out before
  * we do the first operation.
  *
@@ -1341,10 +1341,10 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	/* If no part of this ADD touches the sambaPassword, or the NT
+	/* If no part of this ADD touches the userPassword, or the NT
 	 * or LM hashes, then we don't need to make any changes.  */
 
-	sambaAttr = ldb_msg_find_element(req->op.mod.message, "sambaPassword");
+	sambaAttr = ldb_msg_find_element(req->op.mod.message, "userPassword");
 	ntAttr = ldb_msg_find_element(req->op.mod.message, "unicodePwd");
 	lmAttr = ldb_msg_find_element(req->op.mod.message, "dBCSPwd");
 
@@ -1353,16 +1353,16 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* if it is not an entry of type person its an error */
-	/* TODO: remove this when sambaPassword will be in schema */
+	/* TODO: remove this when userPassword will be in schema */
 	if (!ldb_msg_check_string_attribute(req->op.add.message, "objectClass", "person")) {
 		ldb_set_errstring(module->ldb, "Cannot set a password on entry that does not have objectClass 'person'");
 		return LDB_ERR_OBJECT_CLASS_VIOLATION;
 	}
 
-	/* check sambaPassword is single valued here */
-	/* TODO: remove this when sambaPassword will be single valued in schema */
+	/* check userPassword is single valued here */
+	/* TODO: remove this when userPassword will be single valued in schema */
 	if (sambaAttr && sambaAttr->num_values > 1) {
-		ldb_set_errstring(module->ldb, "mupltiple values for sambaPassword not allowed!\n");
+		ldb_set_errstring(module->ldb, "mupltiple values for userPassword not allowed!\n");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -1376,7 +1376,7 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	if (sambaAttr && sambaAttr->num_values == 0) {
-		ldb_set_errstring(module->ldb, "sambaPassword must have a value!\n");
+		ldb_set_errstring(module->ldb, "userPassword must have a value!\n");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -1459,12 +1459,12 @@ static int password_hash_add_do_add(struct ldb_handle *h) {
 	io.u.user_principal_name	= samdb_result_string(msg, "userPrincipalName", NULL);
 	io.u.is_computer		= ldb_msg_check_string_attribute(msg, "objectClass", "computer");
 
-	io.n.cleartext			= samdb_result_string(msg, "sambaPassword", NULL);
+	io.n.cleartext			= samdb_result_string(msg, "userPassword", NULL);
 	io.n.nt_hash			= samdb_result_hash(io.ac, msg, "unicodePwd");
 	io.n.lm_hash			= samdb_result_hash(io.ac, msg, "dBCSPwd");
 
 	/* remove attributes */
-	if (io.n.cleartext) ldb_msg_remove_attr(msg, "sambaPassword");
+	if (io.n.cleartext) ldb_msg_remove_attr(msg, "userPassword");
 	if (io.n.nt_hash) ldb_msg_remove_attr(msg, "unicodePwd");
 	if (io.n.lm_hash) ldb_msg_remove_attr(msg, "dBCSPwd");
 	ldb_msg_remove_attr(msg, "pwdLastSet");
@@ -1573,11 +1573,11 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	sambaAttr = ldb_msg_find_element(req->op.mod.message, "sambaPassword");
+	sambaAttr = ldb_msg_find_element(req->op.mod.message, "userPassword");
 	ntAttr = ldb_msg_find_element(req->op.mod.message, "unicodePwd");
 	lmAttr = ldb_msg_find_element(req->op.mod.message, "dBCSPwd");
 
-	/* If no part of this touches the sambaPassword OR unicodePwd and/or dBCSPwd, then we don't
+	/* If no part of this touches the userPassword OR unicodePwd and/or dBCSPwd, then we don't
 	 * need to make any changes.  For password changes/set there should
 	 * be a 'delete' or a 'modify' on this attribute. */
 	if ((!sambaAttr) && (!ntAttr) && (!lmAttr)) {
@@ -1619,7 +1619,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 
 	/* - remove any imodification to the password from the first commit
 	 *   we will make the real modification later */
-	if (sambaAttr) ldb_msg_remove_attr(msg, "sambaPassword");
+	if (sambaAttr) ldb_msg_remove_attr(msg, "userPassword");
 	if (ntAttr) ldb_msg_remove_attr(msg, "unicodePwd");
 	if (lmAttr) ldb_msg_remove_attr(msg, "dBCSPwd");
 
@@ -1655,7 +1655,7 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 		}
 
 		/* if it is not an entry of type person this is an error */
-		/* TODO: remove this when sambaPassword will be in schema */
+		/* TODO: remove this when userPassword will be in schema */
 		if (!ldb_msg_check_string_attribute(ares->message, "objectClass", "person")) {
 			ldb_set_errstring(ldb, "Object class violation");
 			talloc_free(ares);
@@ -1790,7 +1790,7 @@ static int password_hash_mod_do_mod(struct ldb_handle *h) {
 	io.u.user_principal_name	= samdb_result_string(searched_msg, "userPrincipalName", NULL);
 	io.u.is_computer		= ldb_msg_check_string_attribute(searched_msg, "objectClass", "computer");
 
-	io.n.cleartext			= samdb_result_string(orig_msg, "sambaPassword", NULL);
+	io.n.cleartext			= samdb_result_string(orig_msg, "userPassword", NULL);
 	io.n.nt_hash			= samdb_result_hash(io.ac, orig_msg, "unicodePwd");
 	io.n.lm_hash			= samdb_result_hash(io.ac, orig_msg, "dBCSPwd");
 

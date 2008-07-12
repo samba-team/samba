@@ -848,9 +848,9 @@ const struct ldb_map_attribute samba3_attributes[] =
 		.type = MAP_IGNORE,
 	},
 
-	/* sambaPassword */
+	/* userPassword */
 	{
-		.local_name = "sambaPassword",
+		.local_name = "userPassword",
 		.type = MAP_IGNORE,
 	},
 
