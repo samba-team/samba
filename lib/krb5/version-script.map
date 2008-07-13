@@ -272,6 +272,7 @@ HEIMDAL_KRB5_1.0 {
 		krb5_free_error;
 		krb5_free_error_contents;
 		krb5_free_error_string;
+		krb5_free_error_message;
 		krb5_free_host_realm;
 		krb5_free_kdc_rep;
 		krb5_free_keyblock;
