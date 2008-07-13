@@ -59,7 +59,7 @@ bool idmap_cache_find_uid2sid(uid_t uid, struct dom_sid *sid, bool *expired)
 	char *key;
 	char *value;
 	time_t timeout;
-	bool ret;
+	bool ret = true;
 
 	key = talloc_asprintf(talloc_tos(), "IDMAP/UID2SID/%d", (int)uid);
 	if (key == NULL) {
@@ -71,7 +71,9 @@ bool idmap_cache_find_uid2sid(uid_t uid, struct dom_sid *sid, bool *expired)
 		return false;
 	}
 	ZERO_STRUCTP(sid);
-	ret = string_to_sid(sid, value);
+	if (value[0] != '-') {
+		ret = string_to_sid(sid, value);
+	}
 	SAFE_FREE(value);
 	if (ret) {
 		*expired = (timeout <= time(NULL));
@@ -96,10 +98,15 @@ void idmap_cache_set_sid2uid(const struct dom_sid *sid, uid_t uid)
 	}
 	if (uid != -1) {
 		fstr_sprintf(key, "IDMAP/UID2SID/%d", (int)uid);
-		sid_to_fstring(value, sid);
-		timeout = is_null_sid(sid)
-			? lp_idmap_negative_cache_time()
-			: lp_idmap_cache_time();
+		if (is_null_sid(sid)) {
+			/* negative uid mapping */
+			fstrcpy(value, "-");
+			timeout = lp_idmap_negative_cache_time();
+		}
+		else {
+			sid_to_fstring(value, sid);
+			timeout = lp_idmap_cache_time();
+		}
 		gencache_set(key, value, now + timeout);
 	}
 }
@@ -140,7 +147,7 @@ bool idmap_cache_find_gid2sid(gid_t gid, struct dom_sid *sid, bool *expired)
 	char *key;
 	char *value;
 	time_t timeout;
-	bool ret;
+	bool ret = true;
 
 	key = talloc_asprintf(talloc_tos(), "IDMAP/GID2SID/%d", (int)gid);
 	if (key == NULL) {
@@ -152,7 +159,9 @@ bool idmap_cache_find_gid2sid(gid_t gid, struct dom_sid *sid, bool *expired)
 		return false;
 	}
 	ZERO_STRUCTP(sid);
-	ret = string_to_sid(sid, value);
+	if (value[0] != '-') {
+		ret = string_to_sid(sid, value);
+	}
 	SAFE_FREE(value);
 	if (ret) {
 		*expired = (timeout <= time(NULL));
@@ -177,10 +186,15 @@ void idmap_cache_set_sid2gid(const struct dom_sid *sid, gid_t gid)
 	}
 	if (gid != -1) {
 		fstr_sprintf(key, "IDMAP/GID2SID/%d", (int)gid);
-		sid_to_fstring(value, sid);
-		timeout = is_null_sid(sid)
-			? lp_idmap_negative_cache_time()
-			: lp_idmap_cache_time();
+		if (is_null_sid(sid)) {
+			/* negative gid mapping */
+			fstrcpy(value, "-");
+			timeout = lp_idmap_negative_cache_time();
+		}
+		else {
+			sid_to_fstring(value, sid);
+			timeout = lp_idmap_cache_time();
+		}
 		gencache_set(key, value, now + timeout);
 	}
 }

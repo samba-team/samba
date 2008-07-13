@@ -231,7 +231,8 @@ static bool fill_grent_mem_domusers( TALLOC_CTX *mem_ctx,
 		if (sys_getpeereid(state->sock, &ret_uid)==0) {
 			/* We know who's asking - look up their SID if
 			   it's one we've mapped before. */
-			status = idmap_uid_to_sid(&querying_user_sid, ret_uid);
+			status = idmap_uid_to_sid(domain->name,
+						  &querying_user_sid, ret_uid);
 			if (NT_STATUS_IS_OK(status)) {
 				pquerying_user_sid = &querying_user_sid;
 				DEBUG(10,("fill_grent_mem_domain_users: "
@@ -1224,7 +1225,8 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		sid_copy(&group_sid, &domain->sid);
 		sid_append_rid(&group_sid, name_list[ent->sam_entry_index].rid);
 
-		if (!NT_STATUS_IS_OK(idmap_sid_to_gid(&group_sid, &group_gid))) {
+		if (!NT_STATUS_IS_OK(idmap_sid_to_gid(domain->name, &group_sid,
+						      &group_gid))) {
 			union unid_t id;
 			enum lsa_SidType type;
 

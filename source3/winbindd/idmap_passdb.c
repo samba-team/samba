@@ -28,9 +28,8 @@
  Initialise idmap database. 
 *****************************/
 
-static NTSTATUS idmap_pdb_init(struct idmap_domain *dom)
+static NTSTATUS idmap_pdb_init(struct idmap_domain *dom, const char *params)
 {	
-	dom->initialized = True;
 	return NT_STATUS_OK;
 }
 
@@ -41,10 +40,6 @@ static NTSTATUS idmap_pdb_init(struct idmap_domain *dom)
 static NTSTATUS idmap_pdb_unixids_to_sids(struct idmap_domain *dom, struct id_map **ids)
 {
 	int i;
-
-	if (! dom->initialized) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	for (i = 0; ids[i]; i++) {
 
@@ -77,10 +72,6 @@ static NTSTATUS idmap_pdb_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 static NTSTATUS idmap_pdb_sids_to_unixids(struct idmap_domain *dom, struct id_map **ids)
 {
 	int i;
-
-	if (! dom->initialized) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	for (i = 0; ids[i]; i++) {
 		enum lsa_SidType type;

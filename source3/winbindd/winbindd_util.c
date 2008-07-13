@@ -109,6 +109,8 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 {
 	struct winbindd_domain *domain;
 	const char *alternative_name = NULL;
+	char *idmap_config_option;
+	const char *param;
 	
 	/* ignore alt_name if we are not in an AD domain */
 	
@@ -181,12 +183,44 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	if (sid) {
 		sid_copy(&domain->sid, sid);
 	}
+
 	
 	/* Link to domain list */
 	DLIST_ADD_END(_domain_list, domain, struct winbindd_domain *);
         
 	wcache_tdc_add_domain( domain );
         
+	idmap_config_option = talloc_asprintf(talloc_tos(), "idmap config %s",
+					      domain->name);
+	if (idmap_config_option == NULL) {
+		DEBUG(0, ("talloc failed, not looking for idmap config\n"));
+		goto done;
+	}
+
+	param = lp_parm_const_string(-1, idmap_config_option, "range", NULL);
+
+	DEBUG(10, ("%s : range = %s\n", idmap_config_option,
+		   param ? param : "not defined"));
+
+	if (param != NULL) {
+		unsigned low_id, high_id;
+		if (sscanf(param, "%u - %u", &low_id, &high_id) != 2) {
+			DEBUG(1, ("invalid range syntax in %s: %s\n",
+				  idmap_config_option, param));
+			goto done;
+		}
+		if (low_id > high_id) {
+			DEBUG(1, ("invalid range in %s: %s\n",
+				  idmap_config_option, param));
+			goto done;
+		}
+		domain->have_idmap_config = true;
+		domain->id_range_low = low_id;
+		domain->id_range_high = high_id;
+	}
+
+done:
+
 	DEBUG(2,("Added domain %s %s %s\n", 
 		 domain->name, domain->alt_name,
 		 &domain->sid?sid_string_dbg(&domain->sid):""));

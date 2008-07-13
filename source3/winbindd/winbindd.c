@@ -1144,12 +1144,6 @@ int main(int argc, char **argv, char **envp)
 
 	namecache_enable();
 
-	/* Winbind daemon initialisation */
-
-	if ( ! NT_STATUS_IS_OK(idmap_init_cache()) ) {
-		DEBUG(1, ("Could not init idmap cache!\n"));		
-	}
-
 	/* Unblock all signals we are interested in as they may have been
 	   blocked by the parent process. */
 

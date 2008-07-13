@@ -197,8 +197,28 @@ void winbindd_sid2uid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 			 void *private_data)
 {
 	struct winbindd_request request;
+	struct winbindd_domain *domain;
+
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_SID2UID;
+
+	domain = find_domain_from_sid(sid);
+
+	if (domain != NULL) {
+		DEBUG(10, ("winbindd_sid2uid_async found domain %s, "
+			   "have_idmap_config = %d\n", domain->name,
+			   (int)domain->have_idmap_config));
+
+	}
+	else {
+		DEBUG(10, ("winbindd_sid2uid_async did not find a domain for "
+			   "%s\n", sid_string_dbg(sid)));
+	}
+
+	if ((domain != NULL) && (domain->have_idmap_config)) {
+		fstrcpy(request.domain_name, domain->name);
+	}
+
 	sid_to_fstring(request.data.dual_sid2id.sid, sid);
 	do_async(mem_ctx, idmap_child(), &request, winbindd_sid2uid_recv,
 		 (void *)cont, private_data);
@@ -219,9 +239,12 @@ enum winbindd_result winbindd_dual_sid2uid(struct winbindd_domain *domain,
 		return WINBINDD_ERROR;
 	}
 
-	/* Find uid for this sid and return it, possibly ask the slow remote idmap */
+	result = idmap_sid_to_uid(state->request.domain_name, &sid,
+				  &state->response.data.uid);
 
-	result = idmap_sid_to_uid(&sid, &(state->response.data.uid));
+	DEBUG(10, ("winbindd_dual_sid2uid: 0x%08x - %s - %u\n",
+		   NT_STATUS_V(result), sid_string_dbg(&sid),
+		   state->response.data.uid));
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
@@ -253,8 +276,16 @@ void winbindd_sid2gid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 			 void *private_data)
 {
 	struct winbindd_request request;
+	struct winbindd_domain *domain;
+
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_SID2GID;
+
+	domain = find_domain_from_sid(sid);
+	if ((domain != NULL) && (domain->have_idmap_config)) {
+		fstrcpy(request.domain_name, domain->name);
+	}
+
 	sid_to_fstring(request.data.dual_sid2id.sid, sid);
 
 	DEBUG(7,("winbindd_sid2gid_async: Resolving %s to a gid\n",
@@ -281,7 +312,8 @@ enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
 
 	/* Find gid for this sid and return it, possibly ask the slow remote idmap */
 
-	result = idmap_sid_to_gid(&sid, &state->response.data.gid);
+	result = idmap_sid_to_gid(state->request.domain_name, &sid,
+				  &state->response.data.gid);
 
 	DEBUG(10, ("winbindd_dual_sid2gid: 0x%08x - %s - %u\n",
 		   NT_STATUS_V(result), sid_string_dbg(&sid),
@@ -319,11 +351,21 @@ void winbindd_uid2sid_async(TALLOC_CTX *mem_ctx, uid_t uid,
 			    void (*cont)(void *private_data, bool success, const char *sid),
 			    void *private_data)
 {
+	struct winbindd_domain *domain;
 	struct winbindd_request request;
 
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_UID2SID;
 	request.data.uid = uid;
+
+	for (domain = domain_list(); domain != NULL; domain = domain->next) {
+		if (domain->have_idmap_config
+		    && (uid >= domain->id_range_low)
+		    && (uid <= domain->id_range_high)) {
+			fstrcpy(request.domain_name, domain->name);
+		}
+	}
+
 	do_async(mem_ctx, idmap_child(), &request, winbindd_uid2sid_recv,
 		 (void *)cont, private_data);
 }
@@ -339,7 +381,8 @@ enum winbindd_result winbindd_dual_uid2sid(struct winbindd_domain *domain,
 		 (unsigned long) state->request.data.uid));
 
 	/* Find sid for this uid and return it, possibly ask the slow remote idmap */
-	result = idmap_uid_to_sid(&sid, state->request.data.uid);
+	result = idmap_uid_to_sid(state->request.domain_name, &sid,
+				  state->request.data.uid);
 
 	if (NT_STATUS_IS_OK(result)) {
 		sid_to_fstring(state->response.data.sid.sid, &sid);
@@ -376,11 +419,21 @@ void winbindd_gid2sid_async(TALLOC_CTX *mem_ctx, gid_t gid,
 			    void (*cont)(void *private_data, bool success, const char *sid),
 			    void *private_data)
 {
+	struct winbindd_domain *domain;
 	struct winbindd_request request;
 
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_GID2SID;
 	request.data.gid = gid;
+
+	for (domain = domain_list(); domain != NULL; domain = domain->next) {
+		if (domain->have_idmap_config
+		    && (gid >= domain->id_range_low)
+		    && (gid <= domain->id_range_high)) {
+			fstrcpy(request.domain_name, domain->name);
+		}
+	}
+
 	do_async(mem_ctx, idmap_child(), &request, winbindd_gid2sid_recv,
 		 (void *)cont, private_data);
 }
@@ -396,7 +449,8 @@ enum winbindd_result winbindd_dual_gid2sid(struct winbindd_domain *domain,
 		(unsigned long) state->request.data.gid));
 
 	/* Find sid for this gid and return it, possibly ask the slow remote idmap */
-	result = idmap_gid_to_sid(&sid, state->request.data.gid);
+	result = idmap_gid_to_sid(state->request.domain_name, &sid,
+				  state->request.data.gid);
 
 	if (NT_STATUS_IS_OK(result)) {
 		sid_to_fstring(state->response.data.sid.sid, &sid);

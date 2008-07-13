@@ -166,12 +166,10 @@ static void sid2uid_recv(void *private_data, bool success, uid_t uid)
 	if (!success) {
 		DEBUG(5, ("Could not convert sid %s\n",
 			  state->request.data.sid));
-		idmap_cache_set_sid2uid(&sid, -1);
 		request_error(state);
 		return;
 	}
 
-	idmap_cache_set_sid2uid(&sid, uid);
 	state->response.data.uid = uid;
 	request_ok(state);
 }
@@ -209,6 +207,10 @@ static void sid2uid_lookupsid_recv( void *private_data, bool success,
 	return;
 
  fail:
+	/*
+	 * We have to set the cache ourselves here, the child which is
+	 * normally responsible was not queried yet.
+	 */
 	idmap_cache_set_sid2uid(&sid, -1);
 	request_error(state);
 	return;
@@ -273,12 +275,10 @@ static void sid2gid_recv(void *private_data, bool success, gid_t gid)
 	if (!success) {
 		DEBUG(5, ("Could not convert sid %s\n",
 			  state->request.data.sid));
-		idmap_cache_set_sid2gid(&sid, -1);
 		request_error(state);
 		return;
 	}
 
-	idmap_cache_set_sid2gid(&sid, gid);
 	state->response.data.gid = gid;
 	request_ok(state);
 }
@@ -319,6 +319,10 @@ static void sid2gid_lookupsid_recv( void *private_data, bool success,
 	return;
 
  fail:
+	/*
+	 * We have to set the cache ourselves here, the child which is
+	 * normally responsible was not queried yet.
+	 */
 	idmap_cache_set_sid2gid(&sid, -1);
 	request_error(state);
 	return;
@@ -516,7 +520,7 @@ static void gid2sid_recv(void *private_data, bool success, const char *sidstr)
 		return;
 	}
 	DEBUG(10,("gid2sid: gid %lu has sid %s\n",
-		  (unsigned long)(state->request.data.gid), sid));
+		  (unsigned long)(state->request.data.gid), sidstr));
 
 	idmap_cache_set_sid2gid(&sid, state->request.data.gid);
 	fstrcpy(state->response.data.sid.sid, sidstr);
