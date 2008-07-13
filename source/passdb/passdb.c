@@ -675,7 +675,7 @@ NTSTATUS local_password_change(const char *user_name,
 				return NT_STATUS_NO_MEMORY;
 			}
 
-			result = samu_set_unix( sam_pass, pwd );
+			result = samu_alloc_rid_unix( sam_pass, pwd );
 
 			DEBUGLEVEL = tmp_debug;
 
