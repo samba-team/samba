@@ -149,11 +149,13 @@ NTSTATUS smb_register_idmap(int version, const char *name,
 	entry = talloc(idmap_ctx, struct idmap_backend);
 	if ( ! entry) {
 		DEBUG(0,("Out of memory!\n"));
+		TALLOC_FREE(entry);
 		return NT_STATUS_NO_MEMORY;
 	}
 	entry->name = talloc_strdup(idmap_ctx, name);
 	if ( ! entry->name) {
 		DEBUG(0,("Out of memory!\n"));
+		TALLOC_FREE(entry);
 		return NT_STATUS_NO_MEMORY;
 	}
 	entry->methods = methods;
