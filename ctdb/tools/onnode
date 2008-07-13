@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Run commands on CTDB nodes.
 
@@ -171,9 +171,12 @@ trap 'kill -TERM $pids 2>/dev/null' INT TERM
 # There's a small race here where the kill can fail if no processes
 # have been added to $pids and the script is interrupted.  However,
 # the part of the window where it matter is very small.
+retcode=0
 for n in $nodes ; do
     if $parallel ; then
 	if $verbose ; then
+	    # pipefail is a bashism - is there some way to do this with plain sh?
+	    set -o pipefail 2>/dev/null
 	    ($SSH $ssh_opts $EXTRA_SSH_OPTS $n "$command" 2>&1 | sed -e "s@^@[$n] @" )&
 	else
 	    $SSH $ssh_opts $EXTRA_SSH_OPTS $n "$command" &
@@ -184,8 +187,17 @@ for n in $nodes ; do
 	    echo >&2 ; echo ">> NODE: $n <<" >&2
 	fi
 
-	$SSH $ssh_opts $EXTRA_SSH_OPTS $n "$command"
+	$SSH $ssh_opts $EXTRA_SSH_OPTS $n "$command" 
+	[ $? = 0 ] || retcode=$?
     fi
 done
 
-$parallel && wait
+$parallel && {
+    for p in $pids; do
+	wait $p
+	[ $? = 0 ] || retcode=$?
+    done
+}
+
+exit $retcode
+
