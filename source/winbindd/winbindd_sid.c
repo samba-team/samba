@@ -369,32 +369,6 @@ void winbindd_sid_to_gid(struct winbindd_cli_state *state)
 	winbindd_lookupsid_async( state->mem_ctx, &sid, sid2gid_lookupsid_recv, state );	
 }
 
-static void sids2xids_recv(void *private_data, bool success, void *data, int len)
-{
-	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private_data, struct winbindd_cli_state);
-
-	if (!success) {
-		DEBUG(5, ("Could not convert sids to xids\n"));
-		request_error(state);
-		return;
-	}
-
-	state->response.extra_data.data = data;
-	state->response.length = sizeof(state->response) + len;
-	request_ok(state);
-}
-
-void winbindd_sids_to_unixids(struct winbindd_cli_state *state)
-{
-	DEBUG(3, ("[%5lu]: sids to xids\n", (unsigned long)state->pid));
-
-	winbindd_sids2xids_async(state->mem_ctx,
-			state->request.extra_data.data,
-			state->request.extra_len,
-			sids2xids_recv, state);
-}
-
 static void set_mapping_recv(void *private_data, bool success)
 {
 	struct winbindd_cli_state *state =
