@@ -170,108 +170,6 @@ enum winbindd_result winbindd_dual_set_hwm(struct winbindd_domain *domain,
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
-static void winbindd_sids2xids_recv(TALLOC_CTX *mem_ctx, bool success,
-			       struct winbindd_response *response,
-			       void *c, void *private_data)
-{
-	void (*cont)(void *priv, bool succ, void *, int) =
-		(void (*)(void *, bool, void *, int))c;
-
-	if (!success) {
-		DEBUG(5, ("Could not trigger sids2xids\n"));
-		cont(private_data, False, NULL, 0);
-		return;
-	}
-
-	if (response->result != WINBINDD_OK) {
-		DEBUG(5, ("sids2xids returned an error\n"));
-		cont(private_data, False, NULL, 0);
-		return;
-	}
-
-	cont(private_data, True, response->extra_data.data, response->length - sizeof(response));
-}
-
-void winbindd_sids2xids_async(TALLOC_CTX *mem_ctx, void *sids, int size,
-			 void (*cont)(void *private_data, bool success, void *data, int len),
-			 void *private_data)
-{
-	struct winbindd_request request;
-	ZERO_STRUCT(request);
-	request.cmd = WINBINDD_DUAL_SIDS2XIDS;
-	request.extra_data.data = (char *)sids;
-	request.extra_len = size;
-	do_async(mem_ctx, idmap_child(), &request, winbindd_sids2xids_recv,
-		 (void *)cont, private_data);
-}
-
-enum winbindd_result winbindd_dual_sids2xids(struct winbindd_domain *domain,
-					   struct winbindd_cli_state *state)
-{
-	DOM_SID *sids;
-	struct unixid *xids;
-	struct id_map **ids;
-	NTSTATUS result;
-	int num, i;
-
-	DEBUG(3, ("[%5lu]: sids to unix ids\n", (unsigned long)state->pid));
-
-	if (state->request.extra_len == 0) {
-		DEBUG(0, ("Invalid buffer size!\n"));
-		return WINBINDD_ERROR;
-	}
-
-	sids = (DOM_SID *)state->request.extra_data.data;
-	num = state->request.extra_len / sizeof(DOM_SID);
-
-	ids = TALLOC_ZERO_ARRAY(state->mem_ctx, struct id_map *, num + 1);
-	if ( ! ids) {
-		DEBUG(0, ("Out of memory!\n"));
-		return WINBINDD_ERROR;
-	}
-	for (i = 0; i < num; i++) {
-		ids[i] = TALLOC_P(ids, struct id_map);
-		if ( ! ids[i]) {
-			DEBUG(0, ("Out of memory!\n"));
-			talloc_free(ids);
-			return WINBINDD_ERROR;
-		}
-		ids[i]->sid = &sids[i];
-	}
-
-	result = idmap_sids_to_unixids(ids);
-
-	if (NT_STATUS_IS_OK(result)) {
-
-		xids = SMB_MALLOC_ARRAY(struct unixid, num);
-		if ( ! xids) {
-			DEBUG(0, ("Out of memory!\n"));
-			talloc_free(ids);
-			return WINBINDD_ERROR;
-		}
-
-		for (i = 0; i < num; i++) {
-			if (ids[i]->status == ID_MAPPED) {
-				xids[i].type = ids[i]->xid.type;
-				xids[i].id = ids[i]->xid.id;
-			} else {
-				xids[i].type = -1;
-			}
-		}
-
-		state->response.length = sizeof(state->response) + (sizeof(struct unixid) * num);
-		state->response.extra_data.data = xids;
-
-	} else {
-		DEBUG (2, ("idmap_sids_to_unixids returned an error: 0x%08x\n", NT_STATUS_V(result)));
-		talloc_free(ids);
-		return WINBINDD_ERROR;
-	}
-
-	talloc_free(ids);
-	return WINBINDD_OK;
-}
-
 static void winbindd_sid2uid_recv(TALLOC_CTX *mem_ctx, bool success,
 			       struct winbindd_response *response,
 			       void *c, void *private_data)
@@ -521,12 +419,6 @@ static const struct winbindd_child_dispatch_table idmap_dispatch_table[] = {
 		.name		= "DUAL_SID2GID",
 		.struct_cmd	= WINBINDD_DUAL_SID2GID,
 		.struct_fn	= winbindd_dual_sid2gid,
-#if 0   /* DISABLED until we fix the interface in Samba 3.0.26 --jerry */
-	},{
-		.name		= "DUAL_SIDS2XIDS",
-		.struct_cmd	= WINBINDD_DUAL_SIDS2XIDS,
-		.struct_fn	= winbindd_dual_sids2xids,
-#endif  /* end DISABLED */
 	},{
 		.name		= "DUAL_UID2SID",
 		.struct_cmd	= WINBINDD_DUAL_UID2SID,
