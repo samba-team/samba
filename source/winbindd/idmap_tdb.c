@@ -585,7 +585,7 @@ struct idmap_tdb_context {
  Initialise idmap database. 
 *****************************/
 
-static NTSTATUS idmap_tdb_db_init(struct idmap_domain *dom)
+static NTSTATUS idmap_tdb_db_init(struct idmap_domain *dom, const char *params)
 {
 	NTSTATUS ret;
 	struct idmap_tdb_context *ctx;
@@ -619,7 +619,6 @@ static NTSTATUS idmap_tdb_db_init(struct idmap_domain *dom)
 	}
 
 	dom->private_data = ctx;
-	dom->initialized = True;
 
 	talloc_free(config_option);
 	return NT_STATUS_OK;
@@ -774,14 +773,6 @@ static NTSTATUS idmap_tdb_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 	NTSTATUS ret;
 	int i;
 
-	/* make sure we initialized */
-	if ( ! dom->initialized) {
-		ret = idmap_tdb_db_init(dom);
-		if ( ! NT_STATUS_IS_OK(ret)) {
-			return ret;
-		}
-	}
-
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
 	for (i = 0; ids[i]; i++) {
@@ -819,14 +810,6 @@ static NTSTATUS idmap_tdb_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	struct idmap_tdb_context *ctx;
 	NTSTATUS ret;
 	int i;
-
-	/* make sure we initialized */
-	if ( ! dom->initialized) {
-		ret = idmap_tdb_db_init(dom);
-		if ( ! NT_STATUS_IS_OK(ret)) {
-			return ret;
-		}
-	}
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
@@ -867,14 +850,6 @@ static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom, const struct id_
 	TDB_DATA ksid, kid, data;
 	char *ksidstr, *kidstr;
 	fstring tmp;
-
-	/* make sure we initialized */
-	if ( ! dom->initialized) {
-		ret = idmap_tdb_db_init(dom);
-		if ( ! NT_STATUS_IS_OK(ret)) {
-			return ret;
-		}
-	}
 
 	if (!map || !map->sid) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -982,14 +957,6 @@ static NTSTATUS idmap_tdb_remove_mapping(struct idmap_domain *dom, const struct 
 	TDB_DATA ksid, kid, data;
 	char *ksidstr, *kidstr;
 	fstring tmp;
-
-	/* make sure we initialized */
-	if ( ! dom->initialized) {
-		ret = idmap_tdb_db_init(dom);
-		if ( ! NT_STATUS_IS_OK(ret)) {
-			return ret;
-		}
-	}
 
 	if (!map || !map->sid) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1171,14 +1138,6 @@ static NTSTATUS idmap_tdb_dump_data(struct idmap_domain *dom, struct id_map **ma
 	struct dump_data *data;
 	NTSTATUS ret = NT_STATUS_OK;
 
-	/* make sure we initialized */
-	if ( ! dom->initialized) {
-		ret = idmap_tdb_db_init(dom);
-		if ( ! NT_STATUS_IS_OK(ret)) {
-			return ret;
-		}
-	}
-
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
 	data = TALLOC_ZERO_P(ctx, struct dump_data);
@@ -1228,6 +1187,8 @@ NTSTATUS idmap_alloc_tdb_init(void)
 NTSTATUS idmap_tdb_init(void)
 {
 	NTSTATUS ret;
+
+	DEBUG(10, ("calling idmap_tdb_init\n"));
 
 	/* FIXME: bad hack to actually register also the alloc_tdb module without changining configure.in */
 	ret = idmap_alloc_tdb_init();

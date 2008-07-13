@@ -33,6 +33,29 @@
 
 #include "smbldap.h"
 
+static char *idmap_fetch_secret(const char *backend, bool alloc,
+				const char *domain, const char *identity)
+{
+	char *tmp, *ret;
+	int r;
+
+	if (alloc) {
+		r = asprintf(&tmp, "IDMAP_ALLOC_%s", backend);
+	} else {
+		r = asprintf(&tmp, "IDMAP_%s_%s", backend, domain);
+	}
+
+	if (r < 0)
+		return NULL;
+
+	strupper_m(tmp); /* make sure the key is case insensitive */
+	ret = secrets_fetch_generic(tmp, identity);
+
+	SAFE_FREE(tmp);
+
+	return ret;
+}
+
 struct idmap_ldap_context {
 	struct smbldap_state *smbldap_state;
 	char *url;
@@ -760,7 +783,8 @@ static int idmap_ldap_close_destructor(struct idmap_ldap_context *ctx)
  Initialise idmap database.
 ********************************/
 
-static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
+static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom,
+				   const char *params)
 {
 	NTSTATUS ret;
 	struct idmap_ldap_context *ctx = NULL;
@@ -798,9 +822,9 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
 		}
 	}
 
-	if (dom->params && *(dom->params)) {
+	if (params != NULL) {
 		/* assume location is the only parameter */
-		ctx->url = talloc_strdup(ctx, dom->params);
+		ctx->url = talloc_strdup(ctx, params);
 	} else {
 		tmp = lp_parm_const_string(-1, config_option, "ldap_url", NULL);
 
@@ -848,7 +872,6 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
 	talloc_set_destructor(ctx, idmap_ldap_close_destructor);
 
 	dom->private_data = ctx;
-	dom->initialized = True;
 
 	talloc_free(config_option);
 	return NT_STATUS_OK;
@@ -907,14 +930,6 @@ static NTSTATUS idmap_ldap_unixids_to_sids(struct idmap_domain *dom,
 	/* Only do query if we are online */
 	if (idmap_is_offline())	{
 		return NT_STATUS_FILE_IS_OFFLINE;
-	}
-
-	/* Initilization my have been deferred because we were offline */
-	if ( ! dom->initialized) {
-		ret = idmap_ldap_db_init(dom);
-		if ( ! NT_STATUS_IS_OK(ret)) {
-			return ret;
-		}
 	}
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_ldap_context);
@@ -1138,14 +1153,6 @@ static NTSTATUS idmap_ldap_sids_to_unixids(struct idmap_domain *dom,
 		return NT_STATUS_FILE_IS_OFFLINE;
 	}
 
-	/* Initilization my have been deferred because we were offline */
-	if ( ! dom->initialized) {
-		ret = idmap_ldap_db_init(dom);
-		if ( ! NT_STATUS_IS_OK(ret)) {
-			return ret;
-		}
-	}
-
 	ctx = talloc_get_type(dom->private_data, struct idmap_ldap_context);
 
 	memctx = talloc_new(ctx);
@@ -1348,14 +1355,6 @@ static NTSTATUS idmap_ldap_set_mapping(struct idmap_domain *dom,
 	/* Only do query if we are online */
 	if (idmap_is_offline())	{
 		return NT_STATUS_FILE_IS_OFFLINE;
-	}
-
-	/* Initilization my have been deferred because we were offline */
-	if ( ! dom->initialized) {
-		ret = idmap_ldap_db_init(dom);
-		if ( ! NT_STATUS_IS_OK(ret)) {
-			return ret;
-		}
 	}
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_ldap_context);

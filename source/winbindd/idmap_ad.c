@@ -160,7 +160,8 @@ static ADS_STRUCT *ad_idmap_cached_connection(void)
 /************************************************************************
  ***********************************************************************/
 
-static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom)
+static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom,
+				    const char *params)
 {
 	struct idmap_ad_context *ctx;
 	char *config_option;
@@ -206,7 +207,6 @@ static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom)
 	}
 
 	dom->private_data = ctx;
-	dom->initialized = True;
 
 	talloc_free(config_option);
 
@@ -275,14 +275,6 @@ static NTSTATUS idmap_ad_unixids_to_sids(struct idmap_domain *dom, struct id_map
 	/* Only do query if we are online */
 	if (idmap_is_offline())	{
 		return NT_STATUS_FILE_IS_OFFLINE;
-	}
-
-	/* Initilization my have been deferred because we were offline */
-	if ( ! dom->initialized) {
-		ret = idmap_ad_initialize(dom);
-		if ( ! NT_STATUS_IS_OK(ret)) {
-			return ret;
-		}
 	}
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);
@@ -494,14 +486,6 @@ static NTSTATUS idmap_ad_sids_to_unixids(struct idmap_domain *dom, struct id_map
 	/* Only do query if we are online */
 	if (idmap_is_offline())	{
 		return NT_STATUS_FILE_IS_OFFLINE;
-	}
-
-	/* Initilization my have been deferred because we were offline */
-	if ( ! dom->initialized) {
-		ret = idmap_ad_initialize(dom);
-		if ( ! NT_STATUS_IS_OK(ret)) {
-			return ret;
-		}
 	}
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);	

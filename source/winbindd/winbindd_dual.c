@@ -1033,6 +1033,8 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 	/* Child */
 
+	DEBUG(10, ("Child process %d\n", (int)sys_getpid()));
+
 	/* Stop zombies in children */
 	CatchChild();
 
