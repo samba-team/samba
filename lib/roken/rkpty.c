@@ -229,8 +229,7 @@ eval_parent(pid_t pid)
 	}
     }
     while(read(master, &in, sizeof(in)) > 0)
-	if (verbose > 1)
-	    printf("%c", in);
+	printf("%c", in);
 
     if (verbose)
 	printf("[end of program]\n");
