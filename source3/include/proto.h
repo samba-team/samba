@@ -10484,7 +10484,6 @@ NTSTATUS smb_register_idmap_alloc(int version, const char *name,
 				  struct idmap_alloc_methods *methods);
 NTSTATUS idmap_close(void);
 NTSTATUS idmap_init_cache(void);
-NTSTATUS idmap_init(void);
 NTSTATUS idmap_allocate_uid(struct unixid *id);
 NTSTATUS idmap_allocate_gid(struct unixid *id);
 NTSTATUS idmap_set_uid_hwm(struct unixid *id);
