@@ -1,3 +1,7 @@
+2008-07-13  Love Hörnquist Åstrand  <lha@kth.se>
+
+	* lib/krb5/version-script.map: add krb5_free_error_message
+
 2008-06-21  Love Hörnquist Åstrand  <lha@kth.se>
 
 	* lib/krb5/init_creds_pw.c: switch to krb5_set_password().
