@@ -1324,41 +1324,39 @@ NTSTATUS idmap_unixids_to_sids(struct id_map **ids)
 
 		ret = idmap_cache_map_id(idmap_cache, ids[i]);
 
-		if ( ! NT_STATUS_IS_OK(ret)) {
+		if (NT_STATUS_IS_OK(ret)) continue;
 
+		if ( ! bids) {
+			/* alloc space for ids to be resolved by
+			 * backends (realloc ten by ten) */
+			bids = TALLOC_ARRAY(ctx, struct id_map *, 10);
 			if ( ! bids) {
-				/* alloc space for ids to be resolved by
-				 * backends (realloc ten by ten) */
-				bids = TALLOC_ARRAY(ctx, struct id_map *, 10);
-				if ( ! bids) {
-					DEBUG(1, ("Out of memory!\n"));
-					talloc_free(ctx);
-					return NT_STATUS_NO_MEMORY;
-				}
-				bn = 10;
+				DEBUG(1, ("Out of memory!\n"));
+				talloc_free(ctx);
+				return NT_STATUS_NO_MEMORY;
 			}
-
-			/* add this id to the ones to be retrieved
-			 * from the backends */
-			bids[bi] = ids[i];
-			bi++;
-
-			/* check if we need to allocate new space
-			 *  on the rids array */
-			if (bi == bn) {
-				bn += 10;
-				bids = talloc_realloc(ctx, bids,
-						      struct id_map *, bn);
-				if ( ! bids) {
-					DEBUG(1, ("Out of memory!\n"));
-					talloc_free(ctx);
-					return NT_STATUS_NO_MEMORY;
-				}
-			}
-
-			/* make sure the last element is NULL */
-			bids[bi] = NULL;
+			bn = 10;
 		}
+
+		/* add this id to the ones to be retrieved
+		 * from the backends */
+		bids[bi] = ids[i];
+		bi++;
+
+		/* check if we need to allocate new space
+		 *  on the rids array */
+		if (bi == bn) {
+			bn += 10;
+			bids = talloc_realloc(ctx, bids, struct id_map *, bn);
+			if ( ! bids) {
+				DEBUG(1, ("Out of memory!\n"));
+				talloc_free(ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+
+		/* make sure the last element is NULL */
+		bids[bi] = NULL;
 	}
 
 	/* let's see if there is any id mapping to be retrieved
@@ -1442,41 +1440,39 @@ NTSTATUS idmap_sids_to_unixids(struct id_map **ids)
 
 		ret = idmap_cache_map_sid(idmap_cache, ids[i]);
 
-		if ( ! NT_STATUS_IS_OK(ret)) {
+		if (NT_STATUS_IS_OK(ret)) continue;
 
+		if ( ! bids) {
+			/* alloc space for ids to be resolved
+			   by backends (realloc ten by ten) */
+			bids = TALLOC_ARRAY(ctx, struct id_map *, 10);
 			if ( ! bids) {
-				/* alloc space for ids to be resolved
-				   by backends (realloc ten by ten) */
-				bids = TALLOC_ARRAY(ctx, struct id_map *, 10);
-				if ( ! bids) {
-					DEBUG(1, ("Out of memory!\n"));
-					talloc_free(ctx);
-					return NT_STATUS_NO_MEMORY;
-				}
-				bn = 10;
+				DEBUG(1, ("Out of memory!\n"));
+				talloc_free(ctx);
+				return NT_STATUS_NO_MEMORY;
 			}
-
-			/* add this id to the ones to be retrieved
-			 * from the backends */
-			bids[bi] = ids[i];
-			bi++;
-
-			/* check if we need to allocate new space
-			 * on the ids array */
-			if (bi == bn) {
-				bn += 10;
-				bids = talloc_realloc(ctx, bids,
-						      struct id_map *, bn);
-				if ( ! bids) {
-					DEBUG(1, ("Out of memory!\n"));
-					talloc_free(ctx);
-					return NT_STATUS_NO_MEMORY;
-				}
-			}
-
-			/* make sure the last element is NULL */
-			bids[bi] = NULL;
+			bn = 10;
 		}
+
+		/* add this id to the ones to be retrieved
+		 * from the backends */
+		bids[bi] = ids[i];
+		bi++;
+
+		/* check if we need to allocate new space
+		 * on the ids array */
+		if (bi == bn) {
+			bn += 10;
+			bids = talloc_realloc(ctx, bids, struct id_map *, bn);
+			if ( ! bids) {
+				DEBUG(1, ("Out of memory!\n"));
+				talloc_free(ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+
+		/* make sure the last element is NULL */
+		bids[bi] = NULL;
 	}
 
 	/* let's see if there is any id mapping to be retrieved
