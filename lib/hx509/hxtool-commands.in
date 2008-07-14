@@ -574,7 +574,7 @@ command = {
 	option = {
 		long = "type"
 		type = "strings"
-		help = "Type of certificate to issue"
+		help = "Types of certificate to issue (can be used more then once)"
 	}
 	option = {
 		long = "lifetime"
