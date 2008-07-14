@@ -36,6 +36,7 @@ RCSID("$Id$");
 
 #include <hxtool-commands.h>
 #include <sl.h>
+#include <rtbl.h>
 #include <parse_time.h>
 
 static hx509_context context;
@@ -1438,69 +1439,143 @@ hxtool_hex(struct hex_options *opt, int argc, char **argv)
     return 0;
 }
 
+struct cert_type_opt {
+    int pkinit;
+};
+
+
+static int
+https_server(hx509_context context, hx509_ca_tbs tbs, struct cert_type_opt *opt)
+{
+    return hx509_ca_tbs_add_eku(context, tbs, oid_id_pkix_kp_serverAuth());
+}
+
+static int
+https_client(hx509_context context, hx509_ca_tbs tbs, struct cert_type_opt *opt)
+{
+    return hx509_ca_tbs_add_eku(context, tbs, oid_id_pkix_kp_clientAuth());
+}
+
+static int
+peap_server(hx509_context context, hx509_ca_tbs tbs, struct cert_type_opt *opt)
+{
+    return hx509_ca_tbs_add_eku(context, tbs, oid_id_pkix_kp_serverAuth());
+}
+
+static int
+pkinit_kdc(hx509_context context, hx509_ca_tbs tbs, struct cert_type_opt *opt)
+{
+    opt->pkinit++;
+    return hx509_ca_tbs_add_eku(context, tbs, oid_id_pkkdcekuoid());
+}
+
+static int
+pkinit_client(hx509_context context, hx509_ca_tbs tbs, struct cert_type_opt *opt)
+{
+    int ret;
+
+    opt->pkinit++;
+
+    ret = hx509_ca_tbs_add_eku(context, tbs, oid_id_pkekuoid());
+    if (ret)
+	return ret;
+    
+    ret = hx509_ca_tbs_add_eku(context, tbs, oid_id_ms_client_authentication());
+    if (ret)
+	return ret;
+    
+    return hx509_ca_tbs_add_eku(context, tbs, oid_id_pkinit_ms_eku());
+}
+
+static int
+email_client(hx509_context context, hx509_ca_tbs tbs, struct cert_type_opt *opt)
+{
+    return hx509_ca_tbs_add_eku(context, tbs, oid_id_pkix_kp_emailProtection());
+}
+
+struct {
+    const char *type;
+    const char *desc;
+    int (*eval)(hx509_context, hx509_ca_tbs, struct cert_type_opt *);
+} certtypes[] = {
+    {
+	"https-server",
+	"Used for HTTPS server and many other TLS server certificate types", 
+	https_server
+    },
+    {
+	"https-client",
+	"Used for HTTPS client certificates", 
+	https_client
+    },
+    {
+	"email-client",
+	"Certificate will be use for email", 
+	email_client
+    },
+    {
+	"pkinit-client",
+	"Certificate used for Kerberos PK-INIT client certificates",
+	pkinit_client
+    },
+    {
+	"pkinit-kdc",
+	"Certificates used for Kerberos PK-INIT KDC certificates",
+	pkinit_kdc
+    },
+    {
+	"peap-server",
+	"Certificate used for Radius PEAP (Protected EAP)",
+	peap_server
+    }
+};
+
 static int
 eval_types(hx509_context context, 
 	   hx509_ca_tbs tbs,
 	   const struct certificate_sign_options *opt)
 {
-    int pkinit = 0;
-    int i, ret;
+    struct cert_type_opt ctopt;
+    unsigned i, j;
+    int ret;
+
+    memset(&ctopt, 0, sizeof(ctopt));
 
     for (i = 0; i < opt->type_strings.num_strings; i++) {
 	const char *type = opt->type_strings.strings[i];
 	
-	if (strcmp(type, "https-server") == 0) {
-	    ret = hx509_ca_tbs_add_eku(context, tbs, 
-				       oid_id_pkix_kp_serverAuth());
-	    if (ret)
-		hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
-	} else if (strcmp(type, "https-client") == 0) {
-	    ret = hx509_ca_tbs_add_eku(context, tbs, 
-				       oid_id_pkix_kp_clientAuth());
-	    if (ret)
-		hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
-	} else if (strcmp(type, "peap-server") == 0) {
-	    ret = hx509_ca_tbs_add_eku(context, tbs, 
-				       oid_id_pkix_kp_serverAuth());
-	    if (ret)
-		hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
-	} else if (strcmp(type, "pkinit-kdc") == 0) {
-	    pkinit++;
-	    ret = hx509_ca_tbs_add_eku(context, tbs, 
-				       oid_id_pkkdcekuoid());
-	    if (ret)
-		hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
-	} else if (strcmp(type, "pkinit-client") == 0) {
-	    pkinit++;
-	    ret = hx509_ca_tbs_add_eku(context, tbs, 
-				       oid_id_pkekuoid());
-	    if (ret)
-		hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
+	for (j = 0; j < sizeof(certtypes)/sizeof(certtypes[0]); j++) {
+	    if (strcasecmp(type, certtypes[j].type) == 0) {
+		ret = (*certtypes[j].eval)(context, tbs, &ctopt);
+		if (ret)
+		    hx509_err(context, 1, ret,
+			      "Failed to evaluate cert type %s", type);
+		break;
+	    }
+	}
+	if (j >= sizeof(certtypes)/sizeof(certtypes[0])) {
+	    rtbl_t table;
+	    fprintf(stderr, "Unknown certificate type %s\n", type);
+	    fprintf(stderr, "Available types:\n");
 
-	    ret = hx509_ca_tbs_add_eku(context, tbs, 
-				       oid_id_ms_client_authentication());
-	    if (ret)
-		hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
+	    table = rtbl_create();
+	    rtbl_add_column_by_id (table, 0, "Name", 0);
+	    rtbl_add_column_by_id (table, 1, "Description", 0);
 
-	    ret = hx509_ca_tbs_add_eku(context, tbs, 
-				       oid_id_pkinit_ms_eku());
-	    if (ret)
-		hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
+	    for (j = 0; j < sizeof(certtypes)/sizeof(certtypes[0]); j++) {
+		rtbl_add_column_entry_by_id(table, 0, certtypes[j].type);
+		rtbl_add_column_entry_by_id(table, 1, certtypes[j].desc);
+	    }
 
-	} else if (strcmp(type, "email") == 0) {
-	    ret = hx509_ca_tbs_add_eku(context, tbs, 
-				       oid_id_pkix_kp_emailProtection());
-	    if (ret)
-		hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
-	} else
-	    errx(1, "unknown type %s", type);
+	    rtbl_format (table, stderr);
+	    rtbl_destroy (table);
+
+	    exit(1);
+	}
     }
 
-    if (pkinit > 1)
-	errx(1, "More the one PK-INIT type given");
-
     if (opt->pk_init_principal_string) {
-	if (!pkinit)
+	if (!ctopt.pkinit)
 	    errx(1, "pk-init principal given but no pk-init oid");
 
 	ret = hx509_ca_tbs_add_san_pkinit(context, tbs,
@@ -1510,8 +1585,8 @@ eval_types(hx509_context context,
     }
 
     if (opt->ms_upn_string) {
-	if (!pkinit)
-	    errx(1, "MS up given but no pk-init oid");
+	if (!ctopt.pkinit)
+	    errx(1, "MS upn given but no pk-init oid");
 
 	ret = hx509_ca_tbs_add_san_ms_upn(context, tbs, opt->ms_upn_string);
 	if (ret)
