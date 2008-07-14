@@ -1683,6 +1683,9 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	if (opt->generate_key_string == NULL
 	    && opt->ca_private_key_string == NULL)
 	    errx(1, "no signing private key");
+
+	if (opt->req_string)
+	    errx(1, "can't be self-signing and have a request at the same time");
     } else
 	errx(1, "missing ca key");
 
