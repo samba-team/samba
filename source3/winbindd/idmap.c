@@ -1282,6 +1282,45 @@ done:
 	return ret;
 }
 
+NTSTATUS idmap_backends_unixid_to_sid(struct id_map *id)
+{
+	struct id_map *maps[2];
+	int i;
+
+	maps[0] = id;
+	maps[1] = NULL;
+
+	for (i = num_domains-1; i>=0; i--) {
+		struct idmap_domain *dom = idmap_domains[i];
+		NTSTATUS status;
+
+		DEBUG(10, ("Query sids from domain %s\n", dom->name));
+
+		status = dom->methods->unixids_to_sids(dom, maps);
+		if (NT_STATUS_IS_OK(status)) {
+			return NT_STATUS_OK;
+		}
+	}
+
+	return NT_STATUS_NONE_MAPPED;
+}
+
+NTSTATUS idmap_backends_sid_to_unixid(struct id_map *id)
+{
+	struct idmap_domain *dom;
+	struct id_map *maps[2];
+
+	dom = find_idmap_domain_from_sid(id->sid);
+	if (dom == NULL) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	maps[0] = id;
+	maps[1] = NULL;
+
+	return dom->methods->sids_to_unixids(dom, maps);
+}
+
 /**************************************************************************
  idmap interface functions
 **************************************************************************/
