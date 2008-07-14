@@ -114,7 +114,6 @@ case $cmd in
 	}
 
 	[ "$CTDB_SAMBA_SKIP_SHARE_CHECK" != "yes" ] && {
-echo do da test
 		smb_dirs=`testparm -s 2> /dev/null | egrep '^[[:space:]]*path = '  | cut -d= -f2`
 		ctdb_check_directories "Samba" $smb_dirs	
 	}
