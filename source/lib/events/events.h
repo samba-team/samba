@@ -53,24 +53,24 @@ void event_set_default_backend(const char *backend);
 
 struct fd_event *event_add_fd(struct event_context *ev, TALLOC_CTX *mem_ctx,
 			      int fd, uint16_t flags, event_fd_handler_t handler,
-			      void *private);
+			      void *private_data);
 
 struct timed_event *event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ctx,
 				    struct timeval next_event, 
 				    event_timed_handler_t handler, 
-				    void *private);
+				    void *private_data);
 
 struct signal_event *event_add_signal(struct event_context *ev, TALLOC_CTX *mem_ctx,
 				      int signum, int sa_flags,
 				      event_signal_handler_t handler, 
-				      void *private);
+				      void *private_data);
 
 struct iocb;
 struct aio_event *event_add_aio(struct event_context *ev,
 				TALLOC_CTX *mem_ctx,
 				struct iocb *iocb,
 				event_aio_handler_t handler,
-				void *private);
+				void *private_data);
 
 int event_loop_once(struct event_context *ev);
 int event_loop_wait(struct event_context *ev);
