@@ -1,4 +1,8 @@
--2008-06-21  Love Hörnquist Åstrand  <lha@kth.se>
+2008-07-14  Love Hörnquist Åstrand  <lha@kth.se>
+
+	* hxtool.c: Break out print_eval_types().
+	
+2008-06-21  Love Hörnquist Åstrand  <lha@kth.se>
 
 	* ks_p12.c: pass in time_now to unevelope
 
