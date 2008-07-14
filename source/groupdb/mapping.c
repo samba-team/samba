@@ -297,9 +297,12 @@ int smb_set_primary_group(const char *unix_group, const char* unix_user)
 			return -1;
 		}
 		add_script = talloc_all_string_sub(ctx,
-					add_script,
-					"%g",
-					unix_group);
+				add_script, "%g", unix_group);
+		if (!add_script) {
+			return -1;
+		}
+		add_script = talloc_string_sub(ctx,
+				add_script, "%u", unix_user);
 		if (!add_script) {
 			return -1;
 		}
