@@ -1530,6 +1530,25 @@ struct {
     }
 };
 
+static void
+print_eval_types(FILE *out)
+{
+    rtbl_t table;
+    unsigned i;
+    
+    table = rtbl_create();
+    rtbl_add_column_by_id (table, 0, "Name", 0);
+    rtbl_add_column_by_id (table, 1, "Description", 0);
+    
+    for (i = 0; i < sizeof(certtypes)/sizeof(certtypes[0]); i++) {
+	rtbl_add_column_entry_by_id(table, 0, certtypes[i].type);
+	rtbl_add_column_entry_by_id(table, 1, certtypes[i].desc);
+    }
+    
+    rtbl_format (table, out);
+    rtbl_destroy (table);
+}
+
 static int
 eval_types(hx509_context context, 
 	   hx509_ca_tbs tbs,
@@ -1554,22 +1573,9 @@ eval_types(hx509_context context,
 	    }
 	}
 	if (j >= sizeof(certtypes)/sizeof(certtypes[0])) {
-	    rtbl_t table;
-	    fprintf(stderr, "Unknown certificate type %s\n", type);
+	    fprintf(stderr, "Unknown certificate type %s\n\n", type);
 	    fprintf(stderr, "Available types:\n");
-
-	    table = rtbl_create();
-	    rtbl_add_column_by_id (table, 0, "Name", 0);
-	    rtbl_add_column_by_id (table, 1, "Description", 0);
-
-	    for (j = 0; j < sizeof(certtypes)/sizeof(certtypes[0]); j++) {
-		rtbl_add_column_entry_by_id(table, 0, certtypes[j].type);
-		rtbl_add_column_entry_by_id(table, 1, certtypes[j].desc);
-	    }
-
-	    rtbl_format (table, stderr);
-	    rtbl_destroy (table);
-
+	    print_eval_types(stderr);
 	    exit(1);
 	}
     }
