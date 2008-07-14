@@ -60,8 +60,15 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 		sockname = CTDB_PATH;
 	}
 
-	if (lp_clustering() && socket_exist(sockname)) {
+	if (lp_clustering()) {
 		const char *partname;
+
+		if (!socket_exist(sockname)) {
+			DEBUG(1, ("ctdb socket does not exist - is ctdb not "
+				  "running?\n"));
+			return NULL;
+		}
+
 		/* ctdb only wants the file part of the name */
 		partname = strrchr(name, '/');
 		if (partname) {
