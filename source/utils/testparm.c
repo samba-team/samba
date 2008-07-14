@@ -217,6 +217,7 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	const char *cname;
 	const char *caddr;
 	static int show_defaults;
+	static int skip_global_checks = 0;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -224,6 +225,7 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 		{"verbose", 'v', POPT_ARG_NONE, &show_defaults, 1, "Show default options too"},
 		{"server", 'L',POPT_ARG_STRING, &new_local_machine, 0, "Set %%L macro to servername\n"},
 		{"encoding", 't', POPT_ARG_STRING, &term_code, 0, "Print parameters with encoding"},
+		{"skip-global-checks", 'g', POPT_ARG_NONE, &skip_global_checks, 1, "Skip the global checks"},
 		{"show-all-parameters", '\0', POPT_ARG_VAL, &show_all_parameters, True, "Show the parameters, type, possible values" },
 		{"parameter-name", '\0', POPT_ARG_STRING, &parameter_name, 0, "Limit testparm to a named parameter" },
 		{"section-name", '\0', POPT_ARG_STRING, &section_name, 0, "Limit testparm to a named section" },
@@ -276,7 +278,9 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 
 	fprintf(stderr,"Loaded services file OK.\n");
 
-	ret = do_global_checks();
+	if (skip_global_checks == 0) {
+		ret = do_global_checks();
+	}
 
 	for (s=0;s<1000;s++) {
 		if (VALID_SNUM(s))
