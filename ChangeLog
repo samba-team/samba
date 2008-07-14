@@ -1,3 +1,8 @@
+2008-07-14  Love Hornquist Astrand  <lha@kth.se>
+
+	* lib/krb5/krb5_{address,ccache}.3: spelling, from openbsd via janne
+	johansson
+
 2008-07-13  Love Hörnquist Åstrand  <lha@kth.se>
 
 	* lib/krb5/version-script.map: add krb5_free_error_message
