@@ -322,7 +322,7 @@ static enum ldb_parse_op ldb_parse_filtertype(void *mem_ctx, char **type, char *
 
 	while (isspace((unsigned char)*p)) p++;
 
-	/* retieve value */
+	/* retrieve value */
 	t = p;
 
 	while (*p && ((*p != ')') || ((*p == ')') && (*(p - 1) == '\\')))) p++;
