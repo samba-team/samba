@@ -526,7 +526,7 @@ static int dopr(char *buffer, size_t maxlen, const char *format, va_list args_in
 		}
 	}
 
-	/* retieve the format arguments */
+	/* retrieve the format arguments */
 	for (pnum = 0; pnum < max_pos; pnum++) {
 		int i;
 
