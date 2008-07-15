@@ -234,7 +234,7 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 	 * Windows seem not to like double encryption */
 	old_gensec_features = cli_credentials_get_gensec_features(creds);
 	if (tls_enabled(conn->sock)) {
-		cli_credentials_set_gensec_features(creds, 0);
+		cli_credentials_set_gensec_features(creds, old_gensec_features & ~(GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL));
 	}
 
 	/* this call also sets the gensec_want_features */
@@ -245,7 +245,8 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 		goto failed;
 	}
 
-	/* reset the original gensec_features */
+	/* reset the original gensec_features (on the credentials
+	 * context, so we don't tatoo it ) */
 	cli_credentials_set_gensec_features(creds, old_gensec_features);
 
 	if (conn->host) {
@@ -393,8 +394,6 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 					    &sasl_socket);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 
-		talloc_steal(conn->sock, sasl_socket);
-		talloc_unlink(conn, conn->sock);
 		conn->sock = sasl_socket;
 		packet_set_socket(conn->packet, conn->sock);
 
