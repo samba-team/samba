@@ -21,13 +21,13 @@
 #include "ldap_server/ldap_server.h"
 #include "lib/util/dlinklist.h"
 #include "libcli/ldap/ldap.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
-#include "lib/ldb_wrap.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
 #include "smbd/service_stream.h"
+#include "dsdb/samdb/samdb.h"
+#include "lib/ldb/include/ldb_errors.h"
+#include "lib/ldb_wrap.h"
 
 #define VALID_DN_SYNTAX(dn,i) do {\
 	if (!(dn)) {\
@@ -61,7 +61,8 @@ NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn)
 				     conn->lp_ctx,
 				     lp_sam_url(conn->lp_ctx), 
 				     conn->session_info,
-				     NULL, conn->global_catalog ? LDB_FLG_RDONLY : 0, NULL);
+				     samdb_credentials(conn, conn->connection->event.ctx, conn->lp_ctx), 
+				     conn->global_catalog ? LDB_FLG_RDONLY : 0, NULL);
 	if (conn->ldb == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}

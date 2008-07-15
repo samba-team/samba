@@ -39,6 +39,8 @@
 #include "dsdb/common/flags.h"
 #include "param/param.h"
 #include "lib/events/events.h"
+#include "auth/credentials/credentials.h"
+#include "param/secrets.h"
 
 char *samdb_relative_path(struct ldb_context *ldb,
 				 TALLOC_CTX *mem_ctx, 
@@ -67,6 +69,28 @@ char *samdb_relative_path(struct ldb_context *ldb,
 	return full_name;
 }
 
+struct cli_credentials *samdb_credentials(TALLOC_CTX *mem_ctx, 
+					  struct event_context *event_ctx, 
+					  struct loadparm_context *lp_ctx) 
+{
+	struct cli_credentials *cred = cli_credentials_init(mem_ctx);
+	if (!cred) {
+		return NULL;
+	}
+	cli_credentials_set_conf(cred, lp_ctx);
+
+	/* We don't want to use krb5 to talk to our samdb - recursion
+	 * here would be bad, and this account isn't in the KDC
+	 * anyway */
+	cli_credentials_set_kerberos_state(cred, CRED_DONT_USE_KERBEROS);
+
+	if (!NT_STATUS_IS_OK(cli_credentials_set_secrets(cred, event_ctx, lp_ctx, NULL, NULL,
+							 SECRETS_LDAP_FILTER))) {
+		/* Perfectly OK - if not against an LDAP backend */
+		return NULL;
+	}
+	return cred;
+}
 
 /*
   connect to the SAM database
@@ -80,7 +104,8 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 	struct ldb_context *ldb;
 	ldb = ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, 
 			       lp_sam_url(lp_ctx), session_info,
-			       NULL, 0, NULL);
+			       samdb_credentials(mem_ctx, ev_ctx, lp_ctx), 
+			       0, NULL);
 	if (!ldb) {
 		return NULL;
 	}
