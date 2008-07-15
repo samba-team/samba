@@ -29,7 +29,6 @@
 
 #include "includes.h"
 
-extern struct pipe_id_info pipe_names[];
 extern struct current_user current_user;
 
 #undef DBGC_CLASS
@@ -986,52 +985,41 @@ bool setup_cancel_ack_reply(pipes_struct *p, prs_struct *rpc_in_p)
 bool check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
                     RPC_IFACE* transfer, uint32 context_id)
 {
-	char *pipe_name = p->name;
 	int i=0;
-	fstring pname;
-	
-	fstrcpy(pname,"\\PIPE\\");
-	fstrcat(pname,pipe_name);
+	struct pipe_rpc_fns *context_fns;
 
-	DEBUG(3,("check_bind_req for %s\n", pname));
+	DEBUG(3,("check_bind_req for %s\n", p->name));
 
 	/* we have to check all now since win2k introduced a new UUID on the lsaprpc pipe */
-		
-	for ( i=0; pipe_names[i].client_pipe; i++ ) {
-		DEBUGADD(10,("checking %s\n", pipe_names[i].client_pipe));
-		if ( strequal(pipe_names[i].client_pipe, pname)
-			&& (abstract->if_version == pipe_names[i].abstr_syntax->if_version) 
-			&& (memcmp(&abstract->uuid, &pipe_names[i].abstr_syntax->uuid, sizeof(struct GUID)) == 0)
-			&& (transfer->if_version == pipe_names[i].trans_syntax->if_version)
-			&& (memcmp(&transfer->uuid, &pipe_names[i].trans_syntax->uuid, sizeof(struct GUID)) == 0) ) {
-			struct api_struct 	*fns = NULL;
-			int 			n_fns = 0;
-			PIPE_RPC_FNS		*context_fns;
-			
-			if ( !(context_fns = SMB_MALLOC_P(PIPE_RPC_FNS)) ) {
-				DEBUG(0,("check_bind_req: malloc() failed!\n"));
-				return False;
-			}
-			
-			/* save the RPC function table associated with this bind */
-			
-			get_pipe_fns(i, &fns, &n_fns);
-			
-			context_fns->cmds = fns;
-			context_fns->n_cmds = n_fns;
-			context_fns->context_id = context_id;
-			
-			/* add to the list of open contexts */
-			
-			DLIST_ADD( p->contexts, context_fns );
-			
+
+	for (i=0; i<rpc_lookup_size; i++) {
+		DEBUGADD(10, ("checking %s\n", rpc_lookup[i].pipe.clnt));
+		if (strequal(rpc_lookup[i].pipe.clnt, p->name)
+		    && ndr_syntax_id_equal(
+			    abstract, &rpc_lookup[i].rpc_interface)
+		    && ndr_syntax_id_equal(
+			    transfer, &ndr_transfer_syntax)) {
 			break;
 		}
 	}
 
-	if(pipe_names[i].client_pipe == NULL) {
+	if (i == rpc_lookup_size) {
+		return false;
+	}
+
+	context_fns = SMB_MALLOC_P(struct pipe_rpc_fns);
+	if (context_fns == NULL) {
+		DEBUG(0,("check_bind_req: malloc() failed!\n"));
 		return False;
 	}
+
+	context_fns->cmds = rpc_lookup[i].cmds;
+	context_fns->n_cmds = rpc_lookup[i].n_cmds;
+	context_fns->context_id = context_id;
+
+	/* add to the list of open contexts */
+
+	DLIST_ADD( p->contexts, context_fns );
 
 	return True;
 }
@@ -2392,64 +2380,4 @@ bool api_rpcTNP(pipes_struct *p, const char *rpc_name,
 	}
 
 	return True;
-}
-
-/*******************************************************************
-*******************************************************************/
-
-void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
-{
-	struct api_struct *cmds = NULL;
-	int               n_cmds = 0;
-
-	switch ( idx ) {
-		case PI_LSARPC:
-			lsarpc_get_pipe_fns( &cmds, &n_cmds );
-			break;
-		case PI_DSSETUP:
-			dssetup_get_pipe_fns( &cmds, &n_cmds );
-			break;
-		case PI_SAMR:
-			samr_get_pipe_fns( &cmds, &n_cmds );
-			break;
-		case PI_NETLOGON:
-			netlogon_get_pipe_fns( &cmds, &n_cmds );
-			break;
-		case PI_SRVSVC:
-			srvsvc_get_pipe_fns( &cmds, &n_cmds );
-			break;
-		case PI_WKSSVC:
-			wkssvc_get_pipe_fns( &cmds, &n_cmds );
-			break;
-		case PI_WINREG:
-			winreg_get_pipe_fns( &cmds, &n_cmds );
-			break;
-		case PI_SPOOLSS:
-			spoolss_get_pipe_fns( &cmds, &n_cmds );
-			break;
-		case PI_NETDFS:
-			netdfs_get_pipe_fns( &cmds, &n_cmds );
-			break;
-		case PI_SVCCTL:
-			svcctl2_get_pipe_fns( &cmds, &n_cmds );
-			break;
-	        case PI_EVENTLOG:
-			eventlog2_get_pipe_fns( &cmds, &n_cmds );
-			break;
-		case PI_NTSVCS:
-			ntsvcs2_get_pipe_fns( &cmds, &n_cmds );
-			break;
-#ifdef DEVELOPER
-		case PI_RPCECHO:
-			rpcecho_get_pipe_fns( &cmds, &n_cmds );
-			break;
-#endif
-		default:
-			DEBUG(0,("get_pipe_fns: Unknown pipe index! [%d]\n", idx));
-	}
-
-	*fns = cmds;
-	*n_fns = n_cmds;
-
-	return;
 }
