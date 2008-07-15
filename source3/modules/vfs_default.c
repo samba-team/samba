@@ -657,18 +657,22 @@ static int vfswrap_ntimes(vfs_handle_struct *handle, const char *path, const str
 
 	START_PROFILE(syscall_ntimes);
 #if defined(HAVE_UTIMES)
-	{
+	if (ts != NULL) {
 		struct timeval tv[2];
 		tv[0] = convert_timespec_to_timeval(ts[0]);
 		tv[1] = convert_timespec_to_timeval(ts[1]);
 		result = utimes(path, tv);
+	} else {
+		result = utimes(path, NULL);
 	}
 #elif defined(HAVE_UTIME)
-	{
+	if (ts != NULL) {
 		struct utimbuf times;
 		times.actime = convert_timespec_to_time_t(ts[0]);
 		times.modtime = convert_timespec_to_time_t(ts[1]);
 		result = utime(path, times);
+	} else {
+		result = utime(path, NULL);
 	}
 #else
 	errno = ENOSYS;
