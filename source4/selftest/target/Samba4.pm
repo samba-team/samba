@@ -703,7 +703,7 @@ nogroup:x:65534:nobody
 	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$nsswrap_passwd\"");
 	push (@provision_options, "NSS_WRAPPER_GROUP=\"$nsswrap_group\"");
 	if (defined($ENV{GDB_PROVISION})) {
-		push (@provision_options, "gdb --args");
+		push (@provision_options, "gdb --args python");
 	}
 	if (defined($ENV{VALGRIND_PROVISION})) {
 		push (@provision_options, "valgrind");
