@@ -6166,7 +6166,6 @@ bool lp_load_with_registry_shares(const char *pszFname,
 				  bool save_defaults,
 				  bool add_ipc,
 				  bool initialize_globals);
-void lp_resetnumservices(void);
 int lp_numservices(void);
 void lp_dump(FILE *f, bool show_defaults, int maxtoprint);
 void lp_dump_one(FILE * f, bool show_defaults, int snum);
