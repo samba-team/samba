@@ -591,7 +591,7 @@ static int entryuuid_init(struct ldb_module *module)
 static int nsuniqueid_init(struct ldb_module *module)
 {
         int ret;
-	ret = ldb_map_init(module, nsuniqueid_attributes, NULL, nsuniqueid_wildcard_attributes, "samba4Top", NULL);
+	ret = ldb_map_init(module, nsuniqueid_attributes, NULL, nsuniqueid_wildcard_attributes, "extensibleObject", NULL);
         if (ret != LDB_SUCCESS)
                 return ret;
 
