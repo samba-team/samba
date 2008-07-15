@@ -32,6 +32,7 @@
  */
 
 #include "krb5_locl.h"
+#include "send_to_kdc_plugin.h"
 
 RCSID("$Id$");
 
@@ -316,6 +317,46 @@ send_via_proxy (krb5_context context,
     return 1;
 }
 
+static krb5_error_code
+send_via_plugin(krb5_context context,
+		krb5_krbhst_info *hi,
+		time_t timeout,
+		const krb5_data *send_data,
+		krb5_data *receive)
+{
+    struct krb5_plugin *list = NULL, *e;
+    krb5_error_code ret;
+
+    ret = _krb5_plugin_find(context, PLUGIN_TYPE_DATA, KRB5_PLUGIN_SEND_TO_KDC, &list);
+    if(ret != 0 || list == NULL)
+	return KRB5_PLUGIN_NO_HANDLE;
+
+    for (e = list; e != NULL; e = _krb5_plugin_get_next(e)) {
+	krb5plugin_send_to_kdc_ftable *service;
+	void *ctx;
+
+	service = _krb5_plugin_get_symbol(e);
+	if (service->minor_version != 0)
+	    continue;
+	
+	(*service->init)(context, &ctx);
+	ret = (*service->send_to_kdc)(context, ctx, hi, 
+				      timeout, send_data, receive);
+	(*service->fini)(ctx);
+	if (ret == 0)
+	    break;
+	if (ret != KRB5_PLUGIN_NO_HANDLE) {
+	    krb5_set_error_message(context, ret,
+				   "Plugin %s failed to lookup with error: %d", 
+				   KRB5_PLUGIN_SEND_TO_KDC, ret);
+	    break;
+	}
+    }
+    _krb5_plugin_free(list);
+    return KRB5_PLUGIN_NO_HANDLE;
+}
+
+
 /*
  * Send the data `send' to one host from `handle` and get back the reply
  * in `receive'.
@@ -348,6 +389,13 @@ krb5_sendto (krb5_context context,
 		     goto out;
 		 continue;
 	     }
+
+	     ret = send_via_plugin(context, hi, context->kdc_timeout,
+				   send_data, receive);
+	     if (ret == 0 && receive->length != 0)
+		 goto out;
+	     else if (ret != KRB5_PLUGIN_NO_HANDLE)
+		 continue;
 
 	     if(hi->proto == KRB5_KRBHST_HTTP && context->http_proxy) {
 		 if (send_via_proxy (context, hi, send_data, receive) == 0) {
