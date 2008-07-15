@@ -171,6 +171,12 @@ struct poptOption popt_common_version[] = {
 	POPT_TABLEEND
 };
 
+struct poptOption popt_common_debuglevel[] = {
+	{ NULL, 0, POPT_ARG_CALLBACK, (void *)popt_common_callback },
+	{ "debuglevel", 'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", "DEBUGLEVEL" },
+	POPT_TABLEEND
+};
+
 
 /* Handle command line options:
  *		--sbindir
