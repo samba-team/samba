@@ -11,6 +11,8 @@ built = \
 	combining_table.h			\
 	errorlist_table.c			\
 	errorlist_table.h			\
+	punycode_examples.h			\
+	punycode_examples.c			\
 	map_table.c				\
 	map_table.h				\
 	normalize_table.c			\
