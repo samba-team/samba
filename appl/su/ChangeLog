@@ -1,3 +1,9 @@
+2008-07-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: no krb4
+
+	* su.c: Drop kerberos 4 support.
+
 2007-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* su.c: read environment from _PATH_ETC_ENVIRONMENT
