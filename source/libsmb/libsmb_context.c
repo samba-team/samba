@@ -200,6 +200,22 @@ smbc_free_context(SMBCCTX *context,
         smbc_setUser(context, NULL);
         
         DEBUG(3, ("Context %p successfully freed\n", context));
+
+	gfree_names();
+	gfree_loadparm();
+	gfree_case_tables();
+	gfree_charcnv();
+	gfree_interfaces();
+
+	gencache_shutdown();
+	secrets_shutdown();
+
+	/* release the talloc null_context memory last */
+	talloc_disable_null_tracking();
+
+	gfree_debugsyms();
+
+        SAFE_FREE(context->internal);
         SAFE_FREE(context);
         return 0;
 }
@@ -411,6 +427,9 @@ smbc_init_context(SMBCCTX *context)
         char *user = NULL;
         char *home = NULL;
         
+        /* track talloc null_context memory */
+        talloc_enable_null_tracking();
+
         if (!context) {
                 errno = EBADF;
                 return NULL;
