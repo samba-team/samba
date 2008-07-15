@@ -38,6 +38,8 @@
 
 #include <krb5.h>
 
+#define KRB5_PLUGIN_SEND_TO_KDC "send_to_kdc"
+
 typedef krb5_error_code
 (*krb5plugin_send_to_kdc_func)(krb5_context, 
 			       void *, 
