@@ -604,6 +604,20 @@ def setup_secretsdb(path, setup_path, session_info, credentials, lp):
     secrets_ldb = Ldb(path, session_info=session_info, credentials=credentials,
                       lp=lp)
     secrets_ldb.load_ldif_file_add(setup_path("secrets.ldif"))
+
+    if credentials.authentication_requested:
+        if credentials.get_bind_dn() is not None:
+            setup_add_ldif(secrets_ldb, setup_path("secrets_simple_ldap.ldif"), {
+                    "LDAPMANAGERDN": credentials.get_bind_dn(),
+                    "LDAPMANAGERPASS_B64": b64encode(credentials.get_password())
+                    })
+        else:
+            setup_add_ldif(secrets_ldb, setup_path("secrets_sasl_ldap.ldif"), {
+                    "LDAPADMINUSER": credentials.get_username(),
+                    "LDAPADMINREALM": credentials.get_realm(),
+                    "LDAPADMINPASS_B64": b64encode(credentials.get_password())
+                    })
+
     return secrets_ldb
 
 
@@ -754,10 +768,10 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             domain_oc = "samba4LocalDomain"
 
         setup_add_ldif(samdb, setup_path("provision_basedn.ldif"), {
-            "DOMAINDN": names.domaindn,
-            "ACI": aci,
-            "DOMAIN_OC": domain_oc
-            })
+                "DOMAINDN": names.domaindn,
+                "ACI": aci,
+                "DOMAIN_OC": domain_oc
+                })
 
         message("Modifying DomainDN: " + names.domaindn + "")
         if domainguid is not None:
@@ -1265,15 +1279,30 @@ refint_attributes""" + refint_attributes + "\n"
                     "DOMAINDN": names.domaindn,
                     "CONFIGDN": names.configdn,
                     "SCHEMADN": names.schemadn,
-                    "LDAPMANAGERDN": names.ldapmanagerdn,
-                    "LDAPMANAGERPASS": adminpass,
                     "MEMBEROF_CONFIG": memberof_config})
         setup_file(setup_path("modules.conf"), paths.modulesconf,
                    {"REALM": names.realm})
         
-        setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "user")))
-        setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "config")))
-        setup_db_config(setup_path, os.path.join(paths.ldapdir, os.path.join("db", "schema")))
+        setup_db_config(setup_path, os.path.join(paths.ldapdir, "db", "user"))
+        setup_db_config(setup_path, os.path.join(paths.ldapdir, "db", "config"))
+        setup_db_config(setup_path, os.path.join(paths.ldapdir, "db", "schema"))
+
+        if not os.path.exists(os.path.join(paths.ldapdir, "db", "samba",  "cn=samba")):
+            os.makedirs(os.path.join(paths.ldapdir, "db", "samba",  "cn=samba"))
+
+        setup_file(setup_path("cn=samba.ldif"), 
+                   os.path.join(paths.ldapdir, "db", "samba",  "cn=samba.ldif"),
+                   { "UUID": str(uuid.uuid4()), 
+                     "LDAPTIME": timestring(int(time.time()))} )
+        setup_file(setup_path("cn=samba-admin.ldif"), 
+                              os.path.join(paths.ldapdir, "db", "samba",  "cn=samba", "cn=samba-admin.ldif"),
+                              {"LDAPADMINPASS_B64": b64encode(adminpass),
+                               "UUID": str(uuid.uuid4()), 
+                               "LDAPTIME": timestring(int(time.time()))} )
+
+#"LDAPMANAGERDN": names.ldapmanagerdn,
+                               
+
         mapping = "schema-map-openldap-2.3"
         backend_schema = "backend-schema.schema"
 
