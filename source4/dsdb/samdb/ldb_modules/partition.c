@@ -599,6 +599,11 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 		for (i=0; data && data->partitions && data->partitions[i]; i++) {
 			struct ldb_module *next = make_module_for_next_request(req, module->ldb, data->partitions[i]->module);
 			
+			ret = ldb_request_add_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID, false, data->partitions[i]);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+
 			ret = ldb_next_request(next, req);
 			talloc_free(next);
 			if (ret != LDB_SUCCESS) {

@@ -34,10 +34,7 @@
 
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/ndr/libndr.h"
-
-struct entryuuid_private {
-	struct ldb_dn **base_dns;
-};
+#include "dsdb/samdb/samdb.h"
 
 static struct ldb_val encode_guid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
@@ -579,95 +576,13 @@ static const char * const nsuniqueid_wildcard_attributes[] = {
 	NULL
 };
 
-static int get_remote_rootdse(struct ldb_context *ldb, void *context, 
-		       struct ldb_reply *ares) 
-{
-	struct entryuuid_private *entryuuid_private;
-	entryuuid_private = talloc_get_type(context,
-					    struct entryuuid_private);
-	if (ares->type == LDB_REPLY_ENTRY) {
-		int i;
-		struct ldb_message_element *el = ldb_msg_find_element(ares->message, "namingContexts");
-		entryuuid_private->base_dns = talloc_realloc(entryuuid_private, entryuuid_private->base_dns, struct ldb_dn *, 
-							     el->num_values + 1);
-		for (i=0; i < el->num_values; i++) {
-			if (!entryuuid_private->base_dns) {
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
-			entryuuid_private->base_dns[i] = ldb_dn_new(entryuuid_private->base_dns, ldb, (const char *)el->values[i].data);
-			if ( ! ldb_dn_validate(entryuuid_private->base_dns[i])) {
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
-		}
-		entryuuid_private->base_dns[i] = NULL;
-	}
-
-	return LDB_SUCCESS;
-}
-
-static int find_base_dns(struct ldb_module *module, 
-			  struct entryuuid_private *entryuuid_private) 
-{
-	int ret;
-	struct ldb_request *req;
-	const char *naming_context_attr[] = {
-		"namingContexts",
-		NULL
-	};
-	req = talloc(entryuuid_private, struct ldb_request);
-	if (req == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	req->operation = LDB_SEARCH;
-	req->op.search.base = ldb_dn_new(req, module->ldb, NULL);
-	req->op.search.scope = LDB_SCOPE_BASE;
-
-	req->op.search.tree = ldb_parse_tree(req, "objectClass=*");
-	if (req->op.search.tree == NULL) {
-		ldb_set_errstring(module->ldb, "Unable to parse search expression");
-		talloc_free(req);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	req->op.search.attrs = naming_context_attr;
-	req->controls = NULL;
-	req->context = entryuuid_private;
-	req->callback = get_remote_rootdse;
-	ldb_set_timeout(module->ldb, req, 0); /* use default timeout */
-
-	ret = ldb_next_request(module, req);
-	
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-	}
-	
-	talloc_free(req);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	return LDB_SUCCESS;
-}
-
 /* the context init function */
 static int entryuuid_init(struct ldb_module *module)
 {
         int ret;
-	struct map_private *map_private;
-	struct entryuuid_private *entryuuid_private;
-
 	ret = ldb_map_init(module, entryuuid_attributes, entryuuid_objectclasses, entryuuid_wildcard_attributes, "samba4Top", NULL);
         if (ret != LDB_SUCCESS)
                 return ret;
-
-	map_private = talloc_get_type(module->private_data, struct map_private);
-
-	entryuuid_private = talloc_zero(map_private, struct entryuuid_private);
-	map_private->caller_private = entryuuid_private;
-
-	ret = find_base_dns(module, entryuuid_private);
 
 	return ldb_next_init(module);
 }
@@ -676,19 +591,9 @@ static int entryuuid_init(struct ldb_module *module)
 static int nsuniqueid_init(struct ldb_module *module)
 {
         int ret;
-	struct map_private *map_private;
-	struct entryuuid_private *entryuuid_private;
-
 	ret = ldb_map_init(module, nsuniqueid_attributes, NULL, nsuniqueid_wildcard_attributes, "samba4Top", NULL);
         if (ret != LDB_SUCCESS)
                 return ret;
-
-	map_private = talloc_get_type(module->private_data, struct map_private);
-
-	entryuuid_private = talloc_zero(map_private, struct entryuuid_private);
-	map_private->caller_private = entryuuid_private;
-
-	ret = find_base_dns(module, entryuuid_private);
 
 	return ldb_next_init(module);
 }
@@ -696,13 +601,11 @@ static int nsuniqueid_init(struct ldb_module *module)
 static int get_seq(struct ldb_context *ldb, void *context, 
 		   struct ldb_reply *ares) 
 {
-	unsigned long long *max_seq = (unsigned long long *)context;
-	unsigned long long seq;
+	unsigned long long *seq = (unsigned long long *)context;
 	if (ares->type == LDB_REPLY_ENTRY) {
 		struct ldb_message_element *el = ldb_msg_find_element(ares->message, "contextCSN");
 		if (el) {
-			seq = entryCSN_to_usn_int(ares, &el->values[0]);
-			*max_seq = MAX(seq, *max_seq);
+			*seq = entryCSN_to_usn_int(ares, &el->values[0]);
 		}
 	}
 
@@ -711,69 +614,84 @@ static int get_seq(struct ldb_context *ldb, void *context,
 
 static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_request *req)
 {
-	int i, ret;
+	int ret;
 	struct map_private *map_private;
 	struct entryuuid_private *entryuuid_private;
-	unsigned long long max_seq = 0;
+	unsigned long long seq = 0;
 	struct ldb_request *search_req;
+
+	const struct ldb_control *partition_ctrl;
+	const struct dsdb_control_current_partition *partition;
+ 
+	static const char *contextCSN_attr[] = {
+		"contextCSN", NULL
+	};
+
 	map_private = talloc_get_type(module->private_data, struct map_private);
 
 	entryuuid_private = talloc_get_type(map_private->caller_private, struct entryuuid_private);
 
-	/* Search the baseDNs for a sequence number */
-	for (i=0; entryuuid_private && 
-		     entryuuid_private->base_dns && 
-		     entryuuid_private->base_dns[i];
-		i++) {
-		static const char *contextCSN_attr[] = {
-			"contextCSN", NULL
-		};
-		search_req = talloc(req, struct ldb_request);
-		if (search_req == NULL) {
-			ldb_set_errstring(module->ldb, "Out of Memory");
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		
-		search_req->operation = LDB_SEARCH;
-		search_req->op.search.base = entryuuid_private->base_dns[i];
-		search_req->op.search.scope = LDB_SCOPE_BASE;
-		
-		search_req->op.search.tree = ldb_parse_tree(search_req, "objectClass=*");
-		if (search_req->op.search.tree == NULL) {
-			ldb_set_errstring(module->ldb, "Unable to parse search expression");
-			talloc_free(search_req);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		
-		search_req->op.search.attrs = contextCSN_attr;
-		search_req->controls = NULL;
-		search_req->context = &max_seq;
-		search_req->callback = get_seq;
-		ldb_set_timeout(module->ldb, search_req, 0); /* use default timeout */
-		
-		ret = ldb_next_request(module, search_req);
-		
-		if (ret == LDB_SUCCESS) {
-			ret = ldb_wait(search_req->handle, LDB_WAIT_ALL);
-		}
-		
+	/* All this to get the DN of the parition, so we can search the right thing */
+	partition_ctrl = ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID);
+	if (!partition_ctrl) {
+		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
+			      "instancetype_add: no current partition control found");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	partition = talloc_get_type(partition_ctrl->data,
+				    struct dsdb_control_current_partition);
+	SMB_ASSERT(partition && partition->version == DSDB_CONTROL_CURRENT_PARTITION_VERSION);
+
+	search_req = talloc(req, struct ldb_request);
+	if (search_req == NULL) {
+		ldb_set_errstring(module->ldb, "Out of Memory");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
+	/* Finally, we have it.  This saves searching over more
+	 * partitions than we expose to the client, such as a cn=samba
+	 * configuration partition */
+
+	search_req->operation = LDB_SEARCH;
+	search_req->op.search.base = partition->dn;
+	search_req->op.search.scope = LDB_SCOPE_BASE;
+	
+	search_req->op.search.tree = ldb_parse_tree(search_req, "objectClass=*");
+	if (search_req->op.search.tree == NULL) {
+		ldb_set_errstring(module->ldb, "Unable to parse search expression");
 		talloc_free(search_req);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
+	search_req->op.search.attrs = contextCSN_attr;
+	search_req->controls = NULL;
+	search_req->context = &seq;
+	search_req->callback = get_seq;
+	ldb_set_timeout(module->ldb, search_req, 0); /* use default timeout */
+	
+	ret = ldb_next_request(module, search_req);
+	
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(search_req->handle, LDB_WAIT_ALL);
+	}
+	
+	talloc_free(search_req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	switch (req->op.seq_num.type) {
 	case LDB_SEQ_HIGHEST_SEQ:
-		req->op.seq_num.seq_num = max_seq;
+		req->op.seq_num.seq_num = seq;
 		break;
 	case LDB_SEQ_NEXT:
-		req->op.seq_num.seq_num = max_seq;
+		req->op.seq_num.seq_num = seq;
 		req->op.seq_num.seq_num++;
 		break;
 	case LDB_SEQ_HIGHEST_TIMESTAMP:
 	{
-		req->op.seq_num.seq_num = (max_seq >> 24);
+		req->op.seq_num.seq_num = (seq >> 24);
 		break;
 	}
 	}
