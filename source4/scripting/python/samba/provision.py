@@ -605,7 +605,7 @@ def setup_secretsdb(path, setup_path, session_info, credentials, lp):
                       lp=lp)
     secrets_ldb.load_ldif_file_add(setup_path("secrets.ldif"))
 
-    if credentials.authentication_requested:
+    if credentials is not None and credentials.authentication_requested():
         if credentials.get_bind_dn() is not None:
             setup_add_ldif(secrets_ldb, setup_path("secrets_simple_ldap.ldif"), {
                     "LDAPMANAGERDN": credentials.get_bind_dn(),
