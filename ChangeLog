@@ -1,3 +1,12 @@
+2008-07-15  Love Hornquist Astrand  <lha@kth.se>
+
+	* lib/krb5/send_to_kdc.c: Add support for the send_to_kdc plugin
+	interface.
+
+	* lib/krb5/Makefile.am: add send_to_kdc_plugin.h
+	
+	* lib/krb5/krb5_err.et: add plugin error codes
+
 2008-07-14  Love Hornquist Astrand  <lha@kth.se>
 
 	* lib/hdb/Makefile.am: EXTRA_DIST += version-script.map
