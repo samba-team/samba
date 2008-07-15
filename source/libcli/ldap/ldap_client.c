@@ -38,7 +38,6 @@
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
 
-
 /**
   create a new ldap_connection stucture. The event context is optional
 */
@@ -298,7 +297,7 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 	char protocol[11];
 	int ret;
 
-	result = talloc_zero(NULL, struct composite_context);
+	result = talloc_zero(conn, struct composite_context);
 	if (result == NULL) goto failed;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
 	result->async.fn = NULL;
@@ -336,6 +335,12 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 		SMB_ASSERT(sizeof(protocol)>10);
 		SMB_ASSERT(sizeof(path)>1024);
 	
+		/* LDAPI connections are to localhost, so give the local host name as the target for gensec */
+		conn->host = talloc_asprintf(conn, "%s.%s", lp_netbios_name(conn->lp_ctx),  lp_realm(conn->lp_ctx));
+		if (composite_nomem(conn->host, state->ctx)) {
+			return result;
+		}
+
 		/* The %c specifier doesn't null terminate :-( */
 		ZERO_STRUCT(path);
 		ret = sscanf(url, "%10[^:]://%1025c", protocol, path);
