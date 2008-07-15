@@ -1,5 +1,10 @@
 2008-07-15  Love Hornquist Astrand  <lha@kth.se>
 
+	* lib/krb5/send_to_kdc_plugin.h: add name for send_to_kdc plugin.
+	
+	* lib/krb5/krbhst.c: handle KRB5_PLUGIN_NO_HANDLE for lookup
+	plugin.
+
 	* lib/krb5/send_to_kdc.c: Add support for the send_to_kdc plugin
 	interface.
 
