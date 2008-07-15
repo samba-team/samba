@@ -293,7 +293,7 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	}
 
 	for (s=0;s<1000;s++) {
-		if (VALID_SNUM(s)) {
+		if (VALID_SNUM(s) && (skip_logic_checks == 0)) {
 			const char **deny_list = lp_hostsdeny(s);
 			const char **allow_list = lp_hostsallow(s);
 			int i;
