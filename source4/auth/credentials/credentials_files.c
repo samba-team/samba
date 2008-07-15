@@ -233,14 +233,14 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 			       &msgs, attrs,
 			       "%s", filter);
 	if (ldb_ret == 0) {
-		DEBUG(1, ("Could not find entry to match filter: '%s' base: '%s'\n",
+		DEBUG(5, ("(normal if no LDAP backend required) Could not find entry to match filter: '%s' base: '%s'\n",
 			  filter, base));
 		/* set anonymous as the fallback, if the machine account won't work */
 		cli_credentials_set_anonymous(cred);
 		talloc_free(mem_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	} else if (ldb_ret != 1) {
-		DEBUG(1, ("Found more than one (%d) entry to match filter: '%s' base: '%s'\n",
+		DEBUG(5, ("Found more than one (%d) entry to match filter: '%s' base: '%s'\n",
 			  ldb_ret, filter, base));
 		/* set anonymous as the fallback, if the machine account won't work */
 		cli_credentials_set_anonymous(cred);
@@ -259,7 +259,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 		if (!machine_account) {
 			const char *ldap_bind_dn = ldb_msg_find_attr_as_string(msgs[0], "ldapBindDn", NULL);
 			if (!ldap_bind_dn) {
-				DEBUG(5, ("(normal if no LDAP backend required) Could not find 'samAccountName', 'servicePrincipalName' or 'ldapBindDn' in secrets record: filter: '%s' base: '%s'\n",
+				DEBUG(1, ("Could not find 'samAccountName', 'servicePrincipalName' or 'ldapBindDn' in secrets record: filter: '%s' base: '%s'\n",
 					  filter, base));
 				/* set anonymous as the fallback, if the machine account won't work */
 				cli_credentials_set_anonymous(cred);
