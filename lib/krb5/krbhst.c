@@ -540,8 +540,9 @@ plugin_get_hosts(krb5_context context,
 	(*service->init)(context, &ctx);
 	ret = (*service->lookup)(ctx, type, kd->realm, 0, 0, add_locate, kd);
 	(*service->fini)(ctx);
-	if (ret) {
-	    krb5_set_error_message(context, ret, "Plugin failed to lookup");
+	if (ret && ret != KRB5_PLUGIN_NO_HANDLE) {
+	    krb5_set_error_message(context, ret, 
+				   "Locate plugin failed to lookup: %d", ret);
 	    break;
 	}
     }
