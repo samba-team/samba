@@ -78,7 +78,7 @@ int main(int argc, const char **argv)
 		if (status == 0 || status == ERROR_MORE_DATA) {
 			user = (struct NET_DISPLAY_USER *)buffer;
 			for (i=0; i<entries_read; i++) {
-				printf("user %d: %s\n", i + idx,i
+				printf("user %d: %s\n", i + idx,
 				       user->usri1_name);
 				user++;
 			}
