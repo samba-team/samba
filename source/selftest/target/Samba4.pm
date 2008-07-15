@@ -719,7 +719,7 @@ nogroup:x:65534:nobody
 	push (@provision_options, "--krbtgtpass=krbtgt$password");
 	push (@provision_options, "--machinepass=machine$password");
 	push (@provision_options, "--root=$unix_name");
-	push (@provision_options, "--simple-bind-dn=cn=Manager,$localbasedn");
+	push (@provision_options, "--username=samba-admin");
 	push (@provision_options, "--password=$password");
 	push (@provision_options, "--server-role=\"$server_role\"");
 

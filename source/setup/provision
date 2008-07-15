@@ -30,7 +30,7 @@ import os, sys
 sys.path.insert(0, "bin/python")
 
 import samba
-
+from samba.credentials import DONT_USE_KERBEROS
 from samba.auth import system_session
 import samba.getopt as options
 from samba import param
@@ -130,6 +130,8 @@ else:
         server_role = opts.server_role
 
 creds = credopts.get_credentials(lp)
+
+creds.set_kerberos_state(DONT_USE_KERBEROS)
 
 setup_dir = opts.setupdir
 if setup_dir is None:
