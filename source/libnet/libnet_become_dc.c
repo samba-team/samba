@@ -2159,7 +2159,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 	r->in.level							= 2;
 	r->in.req.req2.first_object.next_object				= NULL;
 	r->in.req.req2.first_object.object.identifier			= identifier;
-	r->in.req.req2.first_object.object.unknown1			= 0x00000000;	
+	r->in.req.req2.first_object.object.flags			= 0x00000000;
 	r->in.req.req2.first_object.object.attribute_ctr.num_attributes	= num_attrs;
 	r->in.req.req2.first_object.object.attribute_ctr.attributes	= attrs;
 
