@@ -38,6 +38,8 @@
 
 #include <krb5.h>
 
+#define KRB5_PLUGIN_LOCATE "resolve"
+
 enum locate_service_type {
     locate_service_kdc = 1,
     locate_service_master_kdc,
