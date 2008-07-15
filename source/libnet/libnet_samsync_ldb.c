@@ -1222,12 +1222,10 @@ NTSTATUS libnet_samsync_ldb(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, str
 	state->secrets         = NULL;
 	state->trusted_domains = NULL;
 
-	state->sam_ldb         = ldb_wrap_connect(mem_ctx, 
-						  ctx->event_ctx,
-						  ctx->lp_ctx, 
-						  lp_sam_url(ctx->lp_ctx), 
-						  r->in.session_info,
-						  ctx->cred, 0, NULL);
+	state->sam_ldb         = samdb_connect(mem_ctx, 
+					       ctx->event_ctx,
+					       ctx->lp_ctx, 
+					       r->in.session_info);
 
 	r2.out.error_string    = NULL;
 	r2.in.binding_string   = r->in.binding_string;
