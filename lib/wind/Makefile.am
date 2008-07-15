@@ -11,14 +11,17 @@ built = \
 	combining_table.h			\
 	errorlist_table.c			\
 	errorlist_table.h			\
-	punycode_examples.h			\
-	punycode_examples.c			\
 	map_table.c				\
 	map_table.h				\
 	normalize_table.c			\
 	normalize_table.h
 
-MAINTAINERCLEANFILES = $(built)
+built_tests = \
+	punycode_examples.h			\
+	punycode_examples.c
+
+
+MAINTAINERCLEANFILES = $(built) $(built_tests)
 
 code = \
 	bidi.c					\
@@ -34,7 +37,7 @@ code = \
 	windlocl.h				\
 	utf8.c
 
-$(code): $(built)
+$(code:.c=.lo): $(built)
 
 dist_libwind_la_SOURCES = $(code) $(built)
 
@@ -75,6 +78,8 @@ test_punycode_SOURCES =				\
 	test-punycode.c				\
 	punycode_examples.c			\
 	punycode_examples.h
+
+test-punycode.lo: $(built_tests)
 
 bin_PROGRAMS = idn-lookup
 
