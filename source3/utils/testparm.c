@@ -296,12 +296,19 @@ rameter is ignored when using CUPS libraries.\n",
 		{"parameter-name", '\0', POPT_ARG_STRING, &parameter_name, 0, "Limit testparm to a named parameter" },
 		{"section-name", '\0', POPT_ARG_STRING, &section_name, 0, "Limit testparm to a named section" },
 		POPT_COMMON_VERSION
+		POPT_COMMON_DEBUGLEVEL
 		POPT_TABLEEND
 	};
 
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	load_case_tables();
+	/*
+	 * Set the default debug level to 2.
+	 * Allow it to be overridden by the command line,
+	 * not by smb.conf.
+	 */
+	DEBUGLEVEL_CLASS[DBGC_ALL] = 2;
 
 	pc = poptGetContext(NULL, argc, argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
@@ -332,7 +339,7 @@ rameter is ignored when using CUPS libraries.\n",
 	}
 
 	dbf = x_stderr;
-	DEBUGLEVEL = 2;
+	/* Don't let the debuglevel be changed by smb.conf. */
 	AllowDebugChange = False;
 
 	fprintf(stderr,"Load smb config files from %s\n",config_file);
