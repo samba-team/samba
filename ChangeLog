@@ -1,5 +1,9 @@
 2008-07-14  Love Hornquist Astrand  <lha@kth.se>
 
+	* lib/hdb/Makefile.am: EXTRA_DIST += version-script.map
+
+2008-07-14  Love Hornquist Astrand  <lha@kth.se>
+
 	* lib/krb5/krb5_{address,ccache}.3: spelling, from openbsd via janne
 	johansson
 
