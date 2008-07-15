@@ -118,6 +118,13 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Fri Jul 11 2008 : Version 1.0.48-pre
+ - Add two new options :
+   CTDB_SAMBA_SKIP_CONF_CHECK and CTDB_SAMBA_CHECK_PORTS that can be used
+   to override what checks to do when monitoring samba health.
+   We can no longer use the smbstatus, net or testparm commands to check
+   if samba or its config is healthy since these commands may block
+   indefinitely and thus can not be used in scripts.
 * Fri Jul 11 2008 : Version 1.0.47
  - Fix a double free bug where if a user striggered (ctdb eventscript)
    hung and while the timeout handler was being processed a new user
