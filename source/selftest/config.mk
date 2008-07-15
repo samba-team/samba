@@ -78,4 +78,4 @@ gdbtest-all:: everything
 
 gdbtest-env:: everything
 	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/gdb_run $(LD_LIBPATH_OVERRIDE)" \
-	$(SELFTEST) $(SELFTEST_NOSLOW_OPTS)--socket-wrapper --testenv
+	$(SELFTEST) $(SELFTEST_NOSLOW_OPTS) --socket-wrapper --testenv
