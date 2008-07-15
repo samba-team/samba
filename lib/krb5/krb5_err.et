@@ -262,5 +262,7 @@ error_code KRB5_ERR_BAD_S2K_PARAMS, "Invalid key generation parameters from KDC"
 error_code KRB5_ERR_NO_SERVICE,	"Service not available"
 error_code KRB5_CC_NOSUPP,      "Credential cache function not supported"
 error_code KRB5_DELTAT_BADFORMAT,	"Invalid format of Kerberos lifetime or clock skew string"
+error_code KRB5_PLUGIN_NO_HANDLE,	"Supplied data not handled by this plugin"
+error_code KRB5_PLUGIN_OP_NOTSUPP,	"Plugin does not support the operaton"
 
 end
