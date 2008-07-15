@@ -240,7 +240,7 @@ receive_loop (krb5_context context,
 		       "kadm5_log_replay: %ld. Lost entry entry, "
 		       "Database out of sync ?: %s (%d)",
 			(long)vers, s ? s : "unknown error", ret);
-	    krb5_free_error_message(s);
+	    krb5_free_error_message(context, s);
 	}
 
 	{
