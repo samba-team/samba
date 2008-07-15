@@ -181,7 +181,6 @@ main(int argc, char **argv)
 
     test_empty_keytab(context, "MEMORY:foo");
     test_empty_keytab(context, "FILE:foo");
-    test_empty_keytab(context, "KRB4:foo");
 
     test_memory_keytab(context, "MEMORY:foo", "MEMORY:foo2");
 
