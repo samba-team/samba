@@ -49,6 +49,17 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 				DATA_BLOB in, DATA_BLOB *out) 
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
+	const char *domain = gensec_ntlmssp_state->domain;
+	const char *workstation = cli_credentials_get_workstation(gensec_security->credentials);
+
+	/* These don't really matter in the initial packet, so don't panic if they are not set */
+	if (!domain) {
+		domain = "";
+	}
+
+	if (!workstation) {
+		workstation = "";
+	}
 
 	if (gensec_ntlmssp_state->unicode) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
@@ -67,8 +78,8 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 		  "NTLMSSP",
 		  NTLMSSP_NEGOTIATE,
 		  gensec_ntlmssp_state->neg_flags,
-		  gensec_ntlmssp_state->domain, 
-		  cli_credentials_get_workstation(gensec_security->credentials));
+		  domain, 
+		  workstation);
 
 	gensec_ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
 
