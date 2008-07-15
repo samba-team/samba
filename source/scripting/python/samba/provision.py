@@ -1300,9 +1300,6 @@ refint_attributes""" + refint_attributes + "\n"
                                "UUID": str(uuid.uuid4()), 
                                "LDAPTIME": timestring(int(time.time()))} )
 
-#"LDAPMANAGERDN": names.ldapmanagerdn,
-                               
-
         mapping = "schema-map-openldap-2.3"
         backend_schema = "backend-schema.schema"
 
@@ -1323,7 +1320,12 @@ refint_attributes""" + refint_attributes + "\n"
     message("Hostname:            %s" % names.hostname)
     message("DNS Domain:          %s" % names.dnsdomain)
     message("Base DN:             %s" % names.domaindn)
-    message("LDAP admin DN:       %s" % names.ldapmanagerdn)
+
+    if ldap_backend_type == "openldap":
+        message("LDAP admin user:     samba-admin")
+    else:
+        message("LDAP admin DN:       %s" % names.ldapmanagerdn)
+
     message("LDAP admin password: %s" % adminpass)
     message(slapdcommand)
 
