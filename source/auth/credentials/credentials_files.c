@@ -194,6 +194,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 		"privateKeytab",
 		"krb5Keytab",
 		"servicePrincipalName",
+		"ldapBindDn",
 		NULL
 	};
 	
@@ -221,6 +222,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 			/* set anonymous as the fallback, if the machine account won't work */
 			cli_credentials_set_anonymous(cred);
 			DEBUG(1, ("Could not open secrets.ldb\n"));
+			talloc_free(mem_ctx);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
 	}
@@ -255,12 +257,15 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 		machine_account = ldb_msg_find_attr_as_string(msgs[0], "servicePrincipalName", NULL);
 		
 		if (!machine_account) {
-			DEBUG(1, ("Could not find 'samAccountName' in join record to domain: %s: filter: '%s' base: '%s'\n",
-				  cli_credentials_get_domain(cred), filter, base));
-			/* set anonymous as the fallback, if the machine account won't work */
-			cli_credentials_set_anonymous(cred);
-			talloc_free(mem_ctx);
-			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+			const char *ldap_bind_dn = ldb_msg_find_attr_as_string(msgs[0], "ldapBindDn", NULL);
+			if (!ldap_bind_dn) {
+				DEBUG(5, ("(normal if no LDAP backend required) Could not find 'samAccountName', 'servicePrincipalName' or 'ldapBindDn' in secrets record: filter: '%s' base: '%s'\n",
+					  filter, base));
+				/* set anonymous as the fallback, if the machine account won't work */
+				cli_credentials_set_anonymous(cred);
+				talloc_free(mem_ctx);
+				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+			}
 		}
 	}
 
@@ -299,7 +304,9 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 		cli_credentials_set_realm(cred, realm, CRED_SPECIFIED);
 	}
 
-	cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
+	if (machine_account) {
+		cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
+	}
 
 	cli_credentials_set_kvno(cred, ldb_msg_find_attr_as_int(msgs[0], "msDS-KeyVersionNumber", 0));
 
@@ -332,6 +339,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred,
 						      struct loadparm_context *lp_ctx)
 {
+	NTSTATUS status;
 	char *filter;
 	/* Bleh, nasty recursion issues: We are setting a machine
 	 * account here, so we don't want the 'pending' flag around
@@ -339,9 +347,13 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	cred->machine_account_pending = false;
 	filter = talloc_asprintf(cred, SECRETS_PRIMARY_DOMAIN_FILTER, 
 				       cli_credentials_get_domain(cred));
-	return cli_credentials_set_secrets(cred, event_context_find(cred), lp_ctx, NULL, 
+	status = cli_credentials_set_secrets(cred, event_context_find(cred), lp_ctx, NULL, 
 					   SECRETS_PRIMARY_DOMAIN_DN,
 					   filter);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not find machine account in secrets database: %s", nt_errstr(status)));
+	}
+	return status;
 }
 
 /**
@@ -354,6 +366,7 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred,
 			            struct event_context *event_ctx,
 				    struct loadparm_context *lp_ctx)
 {
+	NTSTATUS status;
 	char *filter;
 	/* Bleh, nasty recursion issues: We are setting a machine
 	 * account here, so we don't want the 'pending' flag around
@@ -362,13 +375,17 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred,
 	filter = talloc_asprintf(cred, SECRETS_KRBTGT_SEARCH,
 				       cli_credentials_get_realm(cred),
 				       cli_credentials_get_domain(cred));
-	return cli_credentials_set_secrets(cred, event_ctx, lp_ctx, NULL, 
+	status = cli_credentials_set_secrets(cred, event_ctx, lp_ctx, NULL, 
 					   SECRETS_PRINCIPALS_DN,
 					   filter);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not find krbtgt (master Kerberos) account in secrets database: %s", nt_errstr(status)));
+	}
+	return status;
 }
 
 /**
- * Fill in credentials for the machine trust account, from the secrets database.
+ * Fill in credentials for a particular prinicpal, from the secrets database.
  * 
  * @param cred Credentials structure to fill in
  * @retval NTSTATUS error detailing any failure
@@ -378,6 +395,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *c
 					      struct loadparm_context *lp_ctx,
 					      const char *serviceprincipal)
 {
+	NTSTATUS status;
 	char *filter;
 	/* Bleh, nasty recursion issues: We are setting a machine
 	 * account here, so we don't want the 'pending' flag around
@@ -387,8 +405,12 @@ _PUBLIC_ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *c
 				 cli_credentials_get_realm(cred),
 				 cli_credentials_get_domain(cred),
 				 serviceprincipal);
-	return cli_credentials_set_secrets(cred, event_ctx, lp_ctx, NULL, 
+	status = cli_credentials_set_secrets(cred, event_ctx, lp_ctx, NULL, 
 					   SECRETS_PRINCIPALS_DN, filter);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not find %s principal in secrets database: %s", serviceprincipal, nt_errstr(status)));
+	}
+	return status;
 }
 
 /**
