@@ -75,10 +75,13 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 	settings.domain_dn_str = p->domain->dn_str;
 	settings.config_dn_str = p->forest->config_dn_str;
 	settings.schema_dn_str = p->forest->schema_dn_str;
+	settings.server_dn_str = torture_join_server_dn_str(s->tj);
+	settings.invocation_id = &p->dest_dsa->invocation_id;
 	settings.netbios_name = p->dest_dsa->netbios_name;
+	settings.host_ip = NULL;
 	settings.realm = torture_join_dom_dns_name(s->tj);
 	settings.domain = torture_join_dom_netbios_name(s->tj);
-	settings.server_dn_str = torture_join_server_dn_str(s->tj);
+	settings.ntds_dn_str = p->dest_dsa->ntds_dn_str;
 	settings.machine_password = cli_credentials_get_password(s->machine_account);
 	settings.targetdir = s->targetdir;
 
