@@ -11,7 +11,6 @@ man_MANS = su.1
 
 LDADD = $(LIB_kafs) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
-	$(LIB_krb4) \
 	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken)
