@@ -44,7 +44,7 @@ void ndr_print_drsuapi_DsReplicaObjectListItemEx(struct ndr_print *ndr, const ch
 	ndr->depth++;
 	ndr_print_ptr(ndr, "next_object", r->next_object);
 	ndr_print_drsuapi_DsReplicaObject(ndr, "object", &r->object);
-	ndr_print_uint32(ndr, "unknown1", r->unknown1);
+	ndr_print_uint32(ndr, "is_nc_prefix", r->is_nc_prefix);
 	ndr_print_ptr(ndr, "parent_object_guid", r->parent_object_guid);
 	ndr->depth++;
 	if (r->parent_object_guid) {

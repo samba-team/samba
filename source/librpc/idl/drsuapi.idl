@@ -495,9 +495,15 @@ interface drsuapi
 		[size_is(num_attributes)]  drsuapi_DsReplicaAttribute *attributes;
 	} drsuapi_DsReplicaAttributeCtr;
 
+	typedef [public] bitmap {
+		DRSUAPI_DS_REPLICA_OBJECT_FROM_MASTER	= 0x00000001,
+		DRSUAPI_DS_REPLICA_OBJECT_DYNAMIC	= 0x00000002,
+		DRSUAPI_DS_REPLICA_OBJECT_REMOTE_MODIFY	= 0x00010000
+	} drsuapi_DsReplicaObjectFlags;
+
 	typedef [public] struct {
 		drsuapi_DsReplicaObjectIdentifier *identifier;
-		uint32 unknown1;
+		drsuapi_DsReplicaObjectFlags flags;
 		drsuapi_DsReplicaAttributeCtr attribute_ctr;
 	} drsuapi_DsReplicaObject;
 
@@ -516,7 +522,7 @@ interface drsuapi
 	typedef [public,noprint] struct {
 		drsuapi_DsReplicaObjectListItemEx *next_object;
 		drsuapi_DsReplicaObject object;
-		uint32 unknown1;
+		boolean32 is_nc_prefix;
 		GUID *parent_object_guid;
 		drsuapi_DsReplicaMetaDataCtr *meta_data_ctr;
 	} drsuapi_DsReplicaObjectListItemEx;
