@@ -118,7 +118,7 @@ struct db_context *db_open_trans(TALLOC_CTX *mem_ctx,
 	if (tdb_flags & TDB_CLEAR_IF_FIRST) {
 		DEBUG(0,("db_open_trans: called with TDB_CLEAR_IF_FIRST: %s\n",
 			 name));
-		smb_panic("db_open_trans: called with TDB_CLEAR_IF_FIRST");
+		return NULL;
 	}
 
 #ifdef CLUSTER_SUPPORT
