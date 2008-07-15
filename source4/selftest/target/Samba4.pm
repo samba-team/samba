@@ -571,7 +571,6 @@ sub provision($$$$$$)
 	server max protocol = SMB2
 	notify:inotify = false
 	ldb:nosync = true
-	system:anonymous = true
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
 	log level = $smbd_loglevel
@@ -719,8 +718,7 @@ nogroup:x:65534:nobody
 	push (@provision_options, "--krbtgtpass=krbtgt$password");
 	push (@provision_options, "--machinepass=machine$password");
 	push (@provision_options, "--root=$unix_name");
-	push (@provision_options, "--simple-bind-dn=cn=Manager,$localbasedn");
-	push (@provision_options, "--password=$password");
+
 	push (@provision_options, "--server-role=\"$server_role\"");
 
 	my $ldap_uri= "$ldapdir/ldapi";
@@ -753,15 +751,18 @@ nogroup:x:65534:nobody
 	if (defined($self->{ldap})) {
 
                 push (@provision_options, "--ldap-backend=$ldap_uri");
-	        system("$self->{setupdir}/provision-backend $configuration --ldap-manager-pass=$password --root=$unix_name --realm=$realm --domain=$domain --host-name=$netbiosname --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
+	        system("$self->{setupdir}/provision-backend $configuration --ldap-admin-pass=$password --root=$unix_name --realm=$realm --domain=$domain --host-name=$netbiosname --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
+
+	        push (@provision_options, "--password=$password");
 
 	        if ($self->{ldap} eq "openldap") {
+	               push (@provision_options, "--username=samba-admin");
 		       ($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ldapdir, $configuration) or die("Unable to create openldap directories");
 		       push (@provision_options, "--ldap-backend-type=openldap");
 	        } elsif ($self->{ldap} eq "fedora-ds") {
+	               push (@provision_options, "--simple-bind-dn=cn=Manager,$localbasedn");
 		       ($ret->{FEDORA_DS_DIR}, $ret->{FEDORA_DS_PIDFILE}) = $self->mk_fedora_ds($ldapdir, $configuration) or die("Unable to create fedora ds directories");
 		       push (@provision_options, "--ldap-backend-type=fedora-ds");
-		       push (@provision_options, "'--aci=aci:: KHRhcmdldGF0dHIgPSAiKiIpICh2ZXJzaW9uIDMuMDthY2wgImZ1bGwgYWNjZXNzIHRvIGFsbCBieSBhbGwiO2FsbG93IChhbGwpKHVzZXJkbiA9ICJsZGFwOi8vL2FueW9uZSIpOykK'");
                  }
 
 		$self->slapd_start($ret) or 
