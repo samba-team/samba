@@ -83,8 +83,7 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			if (result == NULL) {
 				DEBUG(0,("failed to attach to ctdb %s\n",
 					 partname));
-				smb_panic("failed to attach to a ctdb "
-					  "database");
+				return NULL;
 			}
 		}
 	}
