@@ -123,7 +123,6 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 {
 	WERROR status;
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
-	uint32_t total_object_count;
 	uint32_t object_count;
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;
 	struct drsuapi_DsReplicaObjectListItemEx *cur;
@@ -152,7 +151,6 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 	switch (c->ctr_level) {
 	case 1:
 		mapping_ctr			= &c->ctr1->mapping_ctr;
-		total_object_count		= c->ctr1->total_object_count;
 		object_count			= s->schema_part.object_count;
 		first_object			= s->schema_part.first_object;
 		linked_attributes_count		= 0;
@@ -164,7 +162,6 @@ static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 		break;
 	case 6:
 		mapping_ctr			= &c->ctr6->mapping_ctr;
-		total_object_count		= c->ctr6->total_object_count;
 		object_count			= s->schema_part.object_count;
 		first_object			= s->schema_part.first_object;
 		linked_attributes_count		= 0; /* TODO: ! */
@@ -360,7 +357,7 @@ static NTSTATUS test_become_dc_schema_chunk(void *private_data,
 	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
 	WERROR status;
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
-	uint32_t total_object_count;
+	uint32_t nc_object_count;
 	uint32_t object_count;
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;
 	struct drsuapi_DsReplicaObjectListItemEx *cur;
@@ -368,13 +365,13 @@ static NTSTATUS test_become_dc_schema_chunk(void *private_data,
 	switch (c->ctr_level) {
 	case 1:
 		mapping_ctr		= &c->ctr1->mapping_ctr;
-		total_object_count	= c->ctr1->total_object_count;
+		nc_object_count		= c->ctr1->extended_ret; /* maybe w2k send this unexpected? */
 		object_count		= c->ctr1->object_count;
 		first_object		= c->ctr1->first_object;
 		break;
 	case 6:
 		mapping_ctr		= &c->ctr6->mapping_ctr;
-		total_object_count	= c->ctr6->total_object_count;
+		nc_object_count		= c->ctr6->nc_object_count;
 		object_count		= c->ctr6->object_count;
 		first_object		= c->ctr6->first_object;
 		break;
@@ -382,9 +379,9 @@ static NTSTATUS test_become_dc_schema_chunk(void *private_data,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (total_object_count) {
+	if (nc_object_count) {
 		DEBUG(0,("Schema-DN[%s] objects[%u/%u]\n",
-			c->partition->nc.dn, object_count, total_object_count));
+			c->partition->nc.dn, object_count, nc_object_count));
 	} else {
 		DEBUG(0,("Schema-DN[%s] objects[%u]\n",
 		c->partition->nc.dn, object_count));
@@ -432,7 +429,7 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
 	WERROR status;
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
-	uint32_t total_object_count;
+	uint32_t nc_object_count;
 	uint32_t object_count;
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;
 	uint32_t linked_attributes_count;
@@ -451,7 +448,7 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 	switch (c->ctr_level) {
 	case 1:
 		mapping_ctr			= &c->ctr1->mapping_ctr;
-		total_object_count		= c->ctr1->total_object_count;
+		nc_object_count			= c->ctr1->extended_ret; /* maybe w2k send this unexpected? */
 		object_count			= c->ctr1->object_count;
 		first_object			= c->ctr1->first_object;
 		linked_attributes_count		= 0;
@@ -463,7 +460,7 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 		break;
 	case 6:
 		mapping_ctr			= &c->ctr6->mapping_ctr;
-		total_object_count		= c->ctr6->total_object_count;
+		nc_object_count			= c->ctr6->nc_object_count;
 		object_count			= c->ctr6->object_count;
 		first_object			= c->ctr6->first_object;
 		linked_attributes_count		= c->ctr6->linked_attributes_count;
@@ -488,9 +485,9 @@ static NTSTATUS test_become_dc_store_chunk(void *private_data,
 	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
 	s_dsa->other_info->dns_name = tmp_dns_name;
 
-	if (total_object_count) {
+	if (nc_object_count) {
 		DEBUG(0,("Partition[%s] objects[%u/%u]\n",
-			c->partition->nc.dn, object_count, total_object_count));
+			c->partition->nc.dn, object_count, nc_object_count));
 	} else {
 		DEBUG(0,("Partition[%s] objects[%u]\n",
 		c->partition->nc.dn, object_count));
