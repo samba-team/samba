@@ -429,7 +429,6 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 ****************************************************************************/
 static bool load_config(bool save_def)
 {
-	lp_resetnumservices();
 	return lp_load(get_dyn_CONFIGFILE(),False,save_def,False,True);
 }
 
@@ -739,12 +738,12 @@ static void wizard_page(void)
 
 			load_config(False);
 			lp_copy_service(GLOBAL_SECTION_SNUM, unix_share);
-			iNumNonAutoPrintServices = lp_numservices();
 			have_home = lp_servicenumber(HOMES_NAME);
 			lp_do_parameter( have_home, "read only", "No");
 			lp_do_parameter( have_home, "valid users", "%S");
 			lp_do_parameter( have_home, "browseable", "No");
 			commit_parameters(have_home);
+			save_reload(have_home);
 		}
 
 		/* Need to Delete Homes share? */
@@ -906,6 +905,7 @@ static void shares_page(void)
 	if (cgi_variable("Commit") && snum >= 0) {
 		commit_parameters(snum);
 		save_reload(0);
+		snum = lp_servicenumber(share);
 	}
 
 	if (cgi_variable("Delete") && snum >= 0) {
@@ -916,11 +916,14 @@ static void shares_page(void)
 	}
 
 	if (cgi_variable("createshare") && (share=cgi_variable("newshare"))) {
-		load_config(False);
-		lp_copy_service(GLOBAL_SECTION_SNUM, share);
-		iNumNonAutoPrintServices = lp_numservices();
-		save_reload(0);
 		snum = lp_servicenumber(share);
+		if (snum < 0) {
+			load_config(False);
+			lp_copy_service(GLOBAL_SECTION_SNUM, share);
+			snum = lp_servicenumber(share);
+			save_reload(snum);
+			snum = lp_servicenumber(share);
+		}
 	}
 
 	printf("<FORM name=\"swatform\" method=post>\n");
@@ -956,7 +959,6 @@ static void shares_page(void)
 			       (share && strcmp(share,s)==0)?"SELECTED":"",
 			       utf8_s, utf8_s);
 			SAFE_FREE(utf8_s);
-			
 		}
 	}
 	printf("</select></td>\n");
@@ -1259,6 +1261,7 @@ static void printers_page(void)
 		    save_reload(snum);
 		else
 		    save_reload(0);
+		snum = lp_servicenumber(share);
 	}
 
 	if (cgi_variable("Delete") && snum >= 0) {
@@ -1269,13 +1272,15 @@ static void printers_page(void)
 	}
 
 	if (cgi_variable("createshare") && (share=cgi_variable("newshare"))) {
-		load_config(False);
-		lp_copy_service(GLOBAL_SECTION_SNUM, share);
-		iNumNonAutoPrintServices = lp_numservices();
 		snum = lp_servicenumber(share);
-		lp_do_parameter(snum, "print ok", "Yes");
-		save_reload(0);
-		snum = lp_servicenumber(share);
+		if (snum < 0 || snum >= iNumNonAutoPrintServices) {
+			load_config(False);
+			lp_copy_service(GLOBAL_SECTION_SNUM, share);
+			snum = lp_servicenumber(share);
+			lp_do_parameter(snum, "print ok", "Yes");
+			save_reload(snum);
+			snum = lp_servicenumber(share);
+		}
 	}
 
 	printf("<FORM name=\"swatform\" method=post>\n");
