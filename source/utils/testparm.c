@@ -202,6 +202,72 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	return ret;
 }   
 
+/**
+ * per-share logic tests
+ */
+static void do_per_share_checks(int s)
+{
+	const char **deny_list = lp_hostsdeny(s);
+	const char **allow_list = lp_hostsallow(s);
+	int i;
+
+	if(deny_list) {
+		for (i=0; deny_list[i]; i++) {
+			char *hasstar = strchr_m(deny_list[i], '*');
+			char *hasquery = strchr_m(deny_list[i], '?');
+			if(hasstar || hasquery) {
+				fprintf(stderr,"Invalid character %c in hosts deny list (%s) for service %s.\n",
+					   hasstar ? *hasstar : *hasquery, deny_list[i], lp_servicename(s) );
+			}
+		}
+	}
+
+	if(allow_list) {
+		for (i=0; allow_list[i]; i++) {
+			char *hasstar = strchr_m(allow_list[i], '*');
+			char *hasquery = strchr_m(allow_list[i], '?');
+			if(hasstar || hasquery) {
+				fprintf(stderr,"Invalid character %c in hosts allow list (%s) for service %s.\n",
+					   hasstar ? *hasstar : *hasquery, allow_list[i], lp_servicename(s) );
+			}
+		}
+	}
+
+	if(lp_level2_oplocks(s) && !lp_oplocks(s)) {
+		fprintf(stderr,"Invalid combination of parameters for service %s. \
+			   Level II oplocks can only be set if oplocks are also set.\n",
+			   lp_servicename(s) );
+	}
+
+	if (lp_map_hidden(s) && !(lp_create_mask(s) & S_IXOTH)) {
+		fprintf(stderr,"Invalid combination of parameters for service %s. \
+			   Map hidden can only work if create mask includes octal 01 (S_IXOTH).\n",
+			   lp_servicename(s) );
+	}
+	if (lp_map_hidden(s) && (lp_force_create_mode(s) & S_IXOTH)) {
+		fprintf(stderr,"Invalid combination of parameters for service %s. \
+			   Map hidden can only work if force create mode excludes octal 01 (S_IXOTH).\n",
+			   lp_servicename(s) );
+	}
+	if (lp_map_system(s) && !(lp_create_mask(s) & S_IXGRP)) {
+		fprintf(stderr,"Invalid combination of parameters for service %s. \
+			   Map system can only work if create mask includes octal 010 (S_IXGRP).\n",
+			   lp_servicename(s) );
+	}
+	if (lp_map_system(s) && (lp_force_create_mode(s) & S_IXGRP)) {
+		fprintf(stderr,"Invalid combination of parameters for service %s. \
+			   Map system can only work if force create mode excludes octal 010 (S_IXGRP).\n",
+			   lp_servicename(s) );
+	}
+#ifdef HAVE_CUPS
+	if (lp_printing(s) == PRINT_CUPS && *(lp_printcommand(s)) != '\0') {
+		 fprintf(stderr,"Warning: Service %s defines a print command, but \
+rameter is ignored when using CUPS libraries.\n",
+			   lp_servicename(s) );
+	}
+#endif
+}
+
  int main(int argc, const char *argv[])
 {
 	const char *config_file = get_dyn_CONFIGFILE();
@@ -294,64 +360,7 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 
 	for (s=0;s<1000;s++) {
 		if (VALID_SNUM(s) && (skip_logic_checks == 0)) {
-			const char **deny_list = lp_hostsdeny(s);
-			const char **allow_list = lp_hostsallow(s);
-			int i;
-			if(deny_list) {
-				for (i=0; deny_list[i]; i++) {
-					char *hasstar = strchr_m(deny_list[i], '*');
-					char *hasquery = strchr_m(deny_list[i], '?');
-					if(hasstar || hasquery) {
-						fprintf(stderr,"Invalid character %c in hosts deny list (%s) for service %s.\n",
-							   hasstar ? *hasstar : *hasquery, deny_list[i], lp_servicename(s) );
-					}
-				}
-			}
-
-			if(allow_list) {
-				for (i=0; allow_list[i]; i++) {
-					char *hasstar = strchr_m(allow_list[i], '*');
-					char *hasquery = strchr_m(allow_list[i], '?');
-					if(hasstar || hasquery) {
-						fprintf(stderr,"Invalid character %c in hosts allow list (%s) for service %s.\n",
-							   hasstar ? *hasstar : *hasquery, allow_list[i], lp_servicename(s) );
-					}
-				}
-			}
-
-			if(lp_level2_oplocks(s) && !lp_oplocks(s)) {
-				fprintf(stderr,"Invalid combination of parameters for service %s. \
-					   Level II oplocks can only be set if oplocks are also set.\n",
-					   lp_servicename(s) );
-			}
-
-			if (lp_map_hidden(s) && !(lp_create_mask(s) & S_IXOTH)) {
-				fprintf(stderr,"Invalid combination of parameters for service %s. \
-					   Map hidden can only work if create mask includes octal 01 (S_IXOTH).\n",
-					   lp_servicename(s) );
-			}
-			if (lp_map_hidden(s) && (lp_force_create_mode(s) & S_IXOTH)) {
-				fprintf(stderr,"Invalid combination of parameters for service %s. \
-					   Map hidden can only work if force create mode excludes octal 01 (S_IXOTH).\n",
-					   lp_servicename(s) );
-			}
-			if (lp_map_system(s) && !(lp_create_mask(s) & S_IXGRP)) {
-				fprintf(stderr,"Invalid combination of parameters for service %s. \
-					   Map system can only work if create mask includes octal 010 (S_IXGRP).\n",
-					   lp_servicename(s) );
-			}
-			if (lp_map_system(s) && (lp_force_create_mode(s) & S_IXGRP)) {
-				fprintf(stderr,"Invalid combination of parameters for service %s. \
-					   Map system can only work if force create mode excludes octal 010 (S_IXGRP).\n",
-					   lp_servicename(s) );
-			}
-#ifdef HAVE_CUPS
-			if (lp_printing(s) == PRINT_CUPS && *(lp_printcommand(s)) != '\0') {
-				 fprintf(stderr,"Warning: Service %s defines a print command, but \
-print command parameter is ignored when using CUPS libraries.\n",
-					   lp_servicename(s) );
-			}
-#endif
+			do_per_share_checks(s);
 		}
 	}
 
