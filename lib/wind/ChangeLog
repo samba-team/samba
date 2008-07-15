@@ -1,5 +1,9 @@
 2008-07-15  Love Hörnquist Åstrand  <lha@kth.se>
 
+	* Makefile.am: Try to do depencies better.
+	
+2008-07-15  Love Hörnquist Åstrand  <lha@kth.se>
+
 	* Makefile.am: add punycode_examples.[ch] to built files.
 
 2008-06-01  Love Hörnquist Åstrand  <lha@kth.se>
