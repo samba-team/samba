@@ -157,7 +157,7 @@ typedef struct pipe_rpc_fns {
 	
 	/* RPC function table associated with the current rpc_bind (associated by context) */
 	
-	struct api_struct *cmds;
+	const struct api_struct *cmds;
 	int n_cmds;
 	uint32 context_id;
 	

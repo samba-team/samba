@@ -8825,7 +8825,6 @@ void free_pipe_rpc_context( PIPE_RPC_FNS *list );
 bool api_pipe_request(pipes_struct *p);
 bool api_rpcTNP(pipes_struct *p, const char *rpc_name, 
 		const struct api_struct *api_rpc_cmds, int n_cmds);
-void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns );
 
 /* The following definitions come from rpc_server/srv_pipe_hnd.c  */
 
