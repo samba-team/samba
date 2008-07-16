@@ -1565,6 +1565,16 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 	DEBUG(5,("api_pipe_bind_req: decode request. %d\n", __LINE__));
 
+	ZERO_STRUCT(hdr_rb);
+
+	/* decode the bind request */
+
+	if(!smb_io_rpc_hdr_rb("", &hdr_rb, rpc_in_p, 0))  {
+		DEBUG(0,("api_pipe_bind_req: unable to unmarshall RPC_HDR_RB "
+			 "struct.\n"));
+		goto err_exit;
+	}
+
 	/*
 	 * Try and find the correct pipe name to ensure
 	 * that this is a pipe name we support.
@@ -1604,14 +1614,6 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 			DEBUG(0, ("module %s doesn't provide functions for pipe %s!\n", p->name, p->name));
 			goto err_exit;
 		}
-	}
-
-	ZERO_STRUCT(hdr_rb);
-
-	/* decode the bind request */
-	if(!smb_io_rpc_hdr_rb("", &hdr_rb, rpc_in_p, 0))  {
-		DEBUG(0,("api_pipe_bind_req: unable to unmarshall RPC_HDR_RB struct.\n"));
-		goto err_exit;
 	}
 
 	/* name has to be \PIPE\xxxxx */
