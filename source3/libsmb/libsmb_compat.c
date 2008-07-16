@@ -207,7 +207,7 @@ smbc_read(int fd,
 
 ssize_t
 smbc_write(int fd,
-           void *buf,
+           const void *buf,
            size_t bufsize)
 {
 	SMBCFILE * file = find_fd(fd);
