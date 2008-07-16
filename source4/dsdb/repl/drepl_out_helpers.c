@@ -316,6 +316,11 @@ static void dreplsrv_op_pull_source_get_changes_recv(struct rpc_request *req)
 		   r->out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP) {
 		ctr_level = 6;
 		ctr6 = r->out.ctr.ctr7.ctr.mszip6.ctr6;
+	} else if (*r->out.level == 7 &&
+		   r->out.ctr.ctr7.level == 6 &&
+		   r->out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_XPRESS) {
+		ctr_level = 6;
+		ctr6 = r->out.ctr.ctr7.ctr.xpress6.ctr6;
 	} else {
 		composite_error(c, werror_to_ntstatus(WERR_BAD_NET_RESP));
 		return;
