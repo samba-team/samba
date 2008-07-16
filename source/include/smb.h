@@ -279,6 +279,7 @@ extern const DATA_BLOB data_blob_null;
 #include "librpc/gen_ndr/ntsvcs.h"
 #include "librpc/gen_ndr/nbt.h"
 #include "librpc/gen_ndr/drsuapi.h"
+#include "librpc/gen_ndr/drsblobs.h"
 
 struct lsa_dom_info {
 	bool valid;

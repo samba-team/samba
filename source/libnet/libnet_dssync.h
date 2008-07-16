@@ -20,12 +20,14 @@
 struct dssync_context;
 
 struct dssync_ops {
-	NTSTATUS (*startup)(struct dssync_context *ctx, TALLOC_CTX *mem_ctx);
+	NTSTATUS (*startup)(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
+			    struct replUpToDateVectorBlob **pold_utdv);
 	NTSTATUS (*process_objects)(struct dssync_context *ctx,
 				    TALLOC_CTX *mem_ctx,
 				    struct drsuapi_DsReplicaObjectListItemEx *objects,
 				    struct drsuapi_DsReplicaOIDMapping_Ctr *mappings);
-	NTSTATUS (*finish)(struct dssync_context *ctx, TALLOC_CTX *mem_ctx);
+	NTSTATUS (*finish)(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
+			   struct replUpToDateVectorBlob *new_utdv);
 };
 
 struct dssync_context {
