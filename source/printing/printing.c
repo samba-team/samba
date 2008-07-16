@@ -2438,8 +2438,10 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname, NT_DE
 
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
 		fstrcpy(pjob.user, lp_printjob_username(snum));
-		standard_sub_basic(vuser->user.smb_name, vuser->user.domain, 
-				   pjob.user, sizeof(pjob.user)-1);
+		standard_sub_advanced(sharename, vuser->user.smb_name, path, 
+					vuser->gid, vuser->user.smb_name, 
+					vuser->user.domain, pjob.user, 
+					sizeof(pjob.user) - 1);
 		/* ensure NULL termination */ 
 		pjob.user[sizeof(pjob.user)-1] = '\0'; 
 	} else {
