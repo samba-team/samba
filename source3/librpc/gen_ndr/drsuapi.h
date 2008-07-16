@@ -135,10 +135,10 @@ struct drsuapi_DsReplicaCursor {
 }/* [public] */;
 
 struct drsuapi_DsReplicaCursorCtrEx {
-	uint32_t u1;
-	uint32_t u2;
+	uint32_t version;/* [value] */
+	uint32_t reserved1;/* [value(0)] */
 	uint32_t count;/* [range(0,0x100000)] */
-	uint32_t u3;
+	uint32_t reserved2;/* [value(0)] */
 	struct drsuapi_DsReplicaCursor *cursors;/* [size_is(count)] */
 };
 
@@ -159,6 +159,74 @@ struct drsuapi_DsReplicaCursorCtrEx {
 #define DRSUAPI_DS_REPLICA_NEIGHBOUR_NO_CHANGE_NOTIFICATIONS ( 0x20000000 )
 #define DRSUAPI_DS_REPLICA_NEIGHBOUR_PARTIAL_ATTRIBUTE_SET ( 0x40000000 )
 
+enum drsuapi_DsExtendedOperation
+#ifndef USE_UINT_ENUMS
+ {
+	DRSUAPI_EXOP_NONE=0x00000000,
+	DRSUAPI_EXOP_FSMO_REQ_ROLE=0x00000001,
+	DRSUAPI_EXOP_FSMO_RID_ALLOC=0x00000002,
+	DRSUAPI_EXOP_FSMO_RID_REQ_ROLE=0x00000003,
+	DRSUAPI_EXOP_FSMO_REQ_PDC=0x00000004,
+	DRSUAPI_EXOP_FSMO_ABANDON_ROLE=0x00000005,
+	DRSUAPI_EXOP_REPL_OBJ=0x00000006,
+	DRSUAPI_EXOP_REPL_SECRET=0x00000007
+}
+#else
+ { __donnot_use_enum_drsuapi_DsExtendedOperation=0x7FFFFFFF}
+#define DRSUAPI_EXOP_NONE ( 0x00000000 )
+#define DRSUAPI_EXOP_FSMO_REQ_ROLE ( 0x00000001 )
+#define DRSUAPI_EXOP_FSMO_RID_ALLOC ( 0x00000002 )
+#define DRSUAPI_EXOP_FSMO_RID_REQ_ROLE ( 0x00000003 )
+#define DRSUAPI_EXOP_FSMO_REQ_PDC ( 0x00000004 )
+#define DRSUAPI_EXOP_FSMO_ABANDON_ROLE ( 0x00000005 )
+#define DRSUAPI_EXOP_REPL_OBJ ( 0x00000006 )
+#define DRSUAPI_EXOP_REPL_SECRET ( 0x00000007 )
+#endif
+;
+
+enum drsuapi_DsExtendedError
+#ifndef USE_UINT_ENUMS
+ {
+	DRSUAPI_EXOP_ERR_NONE=0x00000000,
+	DRSUAPI_EXOP_ERR_SUCCESS=0x00000001,
+	DRSUAPI_EXOP_ERR_UNKNOWN_OP=0x00000002,
+	DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER=0x00000003,
+	DRSUAPI_EXOP_ERR_UPDATE_ERR=0x00000004,
+	DRSUAPI_EXOP_ERR_EXCEPTION=0x00000005,
+	DRSUAPI_EXOP_ERR_UNKNOWN_CALLER=0x00000006,
+	DRSUAPI_EXOP_ERR_RID_ALLOC=0x00000007,
+	DRSUAPI_EXOP_ERR_FSMO_OWNER_DELETED=0x00000008,
+	DRSUAPI_EXOP_ERR_FMSO_PENDING_OP=0x00000009,
+	DRSUAPI_EXOP_ERR_MISMATCH=0x0000000A,
+	DRSUAPI_EXOP_ERR_COULDNT_CONTACT=0x0000000B,
+	DRSUAPI_EXOP_ERR_FSMO_REFUSING_ROLES=0x0000000C,
+	DRSUAPI_EXOP_ERR_DIR_ERROR=0x0000000D,
+	DRSUAPI_EXOP_ERR_FSMO_MISSING_SETTINGS=0x0000000E,
+	DRSUAPI_EXOP_ERR_ACCESS_DENIED=0x0000000F,
+	DRSUAPI_EXOP_ERR_PARAM_ERROR=0x00000010
+}
+#else
+ { __donnot_use_enum_drsuapi_DsExtendedError=0x7FFFFFFF}
+#define DRSUAPI_EXOP_ERR_NONE ( 0x00000000 )
+#define DRSUAPI_EXOP_ERR_SUCCESS ( 0x00000001 )
+#define DRSUAPI_EXOP_ERR_UNKNOWN_OP ( 0x00000002 )
+#define DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER ( 0x00000003 )
+#define DRSUAPI_EXOP_ERR_UPDATE_ERR ( 0x00000004 )
+#define DRSUAPI_EXOP_ERR_EXCEPTION ( 0x00000005 )
+#define DRSUAPI_EXOP_ERR_UNKNOWN_CALLER ( 0x00000006 )
+#define DRSUAPI_EXOP_ERR_RID_ALLOC ( 0x00000007 )
+#define DRSUAPI_EXOP_ERR_FSMO_OWNER_DELETED ( 0x00000008 )
+#define DRSUAPI_EXOP_ERR_FMSO_PENDING_OP ( 0x00000009 )
+#define DRSUAPI_EXOP_ERR_MISMATCH ( 0x0000000A )
+#define DRSUAPI_EXOP_ERR_COULDNT_CONTACT ( 0x0000000B )
+#define DRSUAPI_EXOP_ERR_FSMO_REFUSING_ROLES ( 0x0000000C )
+#define DRSUAPI_EXOP_ERR_DIR_ERROR ( 0x0000000D )
+#define DRSUAPI_EXOP_ERR_FSMO_MISSING_SETTINGS ( 0x0000000E )
+#define DRSUAPI_EXOP_ERR_ACCESS_DENIED ( 0x0000000F )
+#define DRSUAPI_EXOP_ERR_PARAM_ERROR ( 0x00000010 )
+#endif
+;
+
 struct drsuapi_DsGetNCChangesRequest5 {
 	struct GUID destination_dsa_guid;
 	struct GUID source_dsa_invocation_id;
@@ -168,8 +236,8 @@ struct drsuapi_DsGetNCChangesRequest5 {
 	uint32_t replica_flags;
 	uint32_t max_object_count;
 	uint32_t max_ndr_size;
-	uint32_t unknown4;
-	uint64_t h1;
+	enum drsuapi_DsExtendedOperation extended_op;
+	uint64_t fsmo_info;
 };
 
 struct drsuapi_DsReplicaOID {
@@ -333,6 +401,13 @@ enum drsuapi_DsAttributeId
 #endif
 ;
 
+struct drsuapi_DsPartialAttributeSet {
+	uint32_t version;/* [value] */
+	uint32_t reserved1;/* [value(0)] */
+	uint32_t num_attids;/* [range(1,0x100000)] */
+	enum drsuapi_DsAttributeId *attids;/* [size_is(num_attids)] */
+};
+
 struct drsuapi_DsGetNCChangesRequest8 {
 	struct GUID destination_dsa_guid;
 	struct GUID source_dsa_invocation_id;
@@ -342,10 +417,10 @@ struct drsuapi_DsGetNCChangesRequest8 {
 	uint32_t replica_flags;
 	uint32_t max_object_count;
 	uint32_t max_ndr_size;
-	uint32_t unknown4;
-	uint64_t h1;
-	uint32_t unique_ptr1;
-	uint32_t unique_ptr2;
+	enum drsuapi_DsExtendedOperation extended_op;
+	uint64_t fsmo_info;
+	struct drsuapi_DsPartialAttributeSet *partial_attribute_set;/* [unique] */
+	struct drsuapi_DsPartialAttributeSet *partial_attribute_set_ex;/* [unique] */
 	struct drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr;
 };
 
@@ -361,10 +436,10 @@ struct drsuapi_DsReplicaCursor2 {
 }/* [public] */;
 
 struct drsuapi_DsReplicaCursor2CtrEx {
-	uint32_t u1;
-	uint32_t u2;
+	uint32_t version;/* [value(2)] */
+	uint32_t reserved1;/* [value(0)] */
 	uint32_t count;/* [range(0,0x100000)] */
-	uint32_t u3;
+	uint32_t reserved2;/* [value(0)] */
 	struct drsuapi_DsReplicaCursor2 *cursors;/* [size_is(count)] */
 };
 
@@ -408,9 +483,14 @@ struct drsuapi_DsReplicaAttributeCtr {
 	struct drsuapi_DsReplicaAttribute *attributes;/* [unique,size_is(num_attributes)] */
 };
 
+/* bitmap drsuapi_DsReplicaObjectFlags */
+#define DRSUAPI_DS_REPLICA_OBJECT_FROM_MASTER ( 0x00000001 )
+#define DRSUAPI_DS_REPLICA_OBJECT_DYNAMIC ( 0x00000002 )
+#define DRSUAPI_DS_REPLICA_OBJECT_REMOTE_MODIFY ( 0x00010000 )
+
 struct drsuapi_DsReplicaObject {
 	struct drsuapi_DsReplicaObjectIdentifier *identifier;/* [unique] */
-	uint32_t unknown1;
+	uint32_t flags;
 	struct drsuapi_DsReplicaAttributeCtr attribute_ctr;
 }/* [public] */;
 
@@ -429,7 +509,7 @@ struct drsuapi_DsReplicaMetaDataCtr {
 struct drsuapi_DsReplicaObjectListItemEx {
 	struct drsuapi_DsReplicaObjectListItemEx *next_object;/* [unique] */
 	struct drsuapi_DsReplicaObject object;
-	uint32_t unknown1;
+	uint32_t is_nc_prefix;
 	struct GUID *parent_object_guid;/* [unique] */
 	struct drsuapi_DsReplicaMetaDataCtr *meta_data_ctr;/* [unique] */
 }/* [noprint,public] */;
@@ -442,11 +522,11 @@ struct drsuapi_DsGetNCChangesCtr1 {
 	struct drsuapi_DsReplicaHighWaterMark new_highwatermark;
 	struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector;/* [unique] */
 	struct drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr;
-	uint32_t total_object_count;
+	enum drsuapi_DsExtendedError extended_ret;
 	uint32_t object_count;
 	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_DsGetNCChangesCtr1(r,ndr->flags)+55)] */
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;/* [unique] */
-	uint32_t unknown4;
+	uint32_t more_data;
 }/* [gensize,public] */;
 
 /* bitmap drsuapi_DsLinkedAttributeFlags */
@@ -469,16 +549,16 @@ struct drsuapi_DsGetNCChangesCtr6 {
 	struct drsuapi_DsReplicaHighWaterMark new_highwatermark;
 	struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector;/* [unique] */
 	struct drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr;
-	uint32_t total_object_count;
+	enum drsuapi_DsExtendedError extended_ret;
 	uint32_t object_count;
 	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_DsGetNCChangesCtr6(r,ndr->flags)+55)] */
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;/* [unique] */
-	uint32_t unknown4;
-	uint32_t unknown5;
-	uint32_t unknown6;
+	uint32_t more_data;
+	uint32_t nc_object_count;
+	uint32_t nc_linked_attributes_count;
 	uint32_t linked_attributes_count;/* [range(0,1048576)] */
 	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;/* [unique,size_is(linked_attributes_count)] */
-	uint32_t unknown7;
+	WERROR drs_error;
 }/* [gensize,public] */;
 
 struct drsuapi_DsGetNCChangesMSZIPCtr1 {
@@ -496,13 +576,13 @@ struct drsuapi_DsGetNCChangesMSZIPCtr6 {
 struct drsuapi_DsGetNCChangesXPRESSCtr1 {
 	uint32_t decompressed_length;
 	uint32_t compressed_length;
-	DATA_BLOB *decompressed;/* [unique,compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length),subcontext_size(compressed_length),subcontext(4),flag(LIBNDR_FLAG_REMAINING)] */
+	struct drsuapi_DsGetNCChangesCtr1 *ctr1;/* [unique,compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length),subcontext_size(compressed_length),subcontext(4)] */
 };
 
 struct drsuapi_DsGetNCChangesXPRESSCtr6 {
 	uint32_t decompressed_length;
 	uint32_t compressed_length;
-	DATA_BLOB *decompressed;/* [unique,compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length),subcontext_size(compressed_length),subcontext(4),flag(LIBNDR_FLAG_REMAINING)] */
+	struct drsuapi_DsGetNCChangesCtr6 *ctr6;/* [unique,compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length),subcontext_size(compressed_length),subcontext(4)] */
 };
 
 enum drsuapi_DsGetNCChangesCompressionType

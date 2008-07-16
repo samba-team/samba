@@ -28,6 +28,7 @@ extern struct poptOption popt_common_connection[];
 extern struct poptOption popt_common_configfile[];
 extern struct poptOption popt_common_version[];
 extern struct poptOption popt_common_credentials[];
+extern struct poptOption popt_common_debuglevel[];
 extern const struct poptOption popt_common_dynconfig[];
 
 #ifndef POPT_TABLEEND
@@ -42,6 +43,7 @@ extern const struct poptOption popt_common_dynconfig[];
 #define POPT_COMMON_DYNCONFIG { NULL, 0, POPT_ARG_INCLUDE_TABLE, \
     CONST_DISCARD(poptOption *, popt_common_dynconfig), 0, \
     "Build-time configuration overrides:", NULL },
+#define POPT_COMMON_DEBUGLEVEL { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debuglevel, 0, "Common samba debugging:", NULL },
 
 struct user_auth_info {
 	char *username;

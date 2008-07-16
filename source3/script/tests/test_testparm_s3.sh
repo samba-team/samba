@@ -6,7 +6,7 @@
 # and the macro expansions.
 
 TEMP_CONFFILE=${LIBDIR}/smb.conf.tmp
-TESTPARM="$VALGRIND ${TESTPARM:-$BINDIR/testparm} --suppress-prompt"
+TESTPARM="$VALGRIND ${TESTPARM:-$BINDIR/testparm} --suppress-prompt --skip-logic-checks"
 
 incdir=`dirname $0`
 . $incdir/test_functions.sh

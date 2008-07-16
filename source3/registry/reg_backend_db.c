@@ -397,7 +397,7 @@ WERROR regdb_init(void)
 				      REG_TDB_FLAGS, O_RDWR|O_CREAT, 0600);
 		if (!regdb) {
 			werr = ntstatus_to_werror(map_nt_error_from_unix(errno));
-			DEBUG(0,("regdb_init: Failed to open registry %s (%s)\n",
+			DEBUG(1,("regdb_init: Failed to open registry %s (%s)\n",
 				state_path("registry.tdb"), strerror(errno) ));
 			return werr;
 		}
@@ -416,7 +416,7 @@ WERROR regdb_init(void)
 			   vers_id, REGVER_V1));
 		status = dbwrap_trans_store_int32(regdb, vstring, REGVER_V1);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("regdb_init: error storing %s = %d: %s\n",
+			DEBUG(1, ("regdb_init: error storing %s = %d: %s\n",
 				  vstring, REGVER_V1, nt_errstr(status)));
 			return ntstatus_to_werror(status);
 		} else {

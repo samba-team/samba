@@ -692,10 +692,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaCursorCtrEx(struct ndr_push *
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
 		NDR_CHECK(ndr_push_align(ndr, 8));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->u1));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->u2));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 1));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->u3));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		for (cntr_cursors_0 = 0; cntr_cursors_0 < r->count; cntr_cursors_0++) {
 			NDR_CHECK(ndr_push_drsuapi_DsReplicaCursor(ndr, NDR_SCALARS, &r->cursors[cntr_cursors_0]));
 		}
@@ -712,13 +712,13 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaCursorCtrEx(struct ndr_pull *
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->cursors));
 		NDR_CHECK(ndr_pull_align(ndr, 8));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->u1));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->u2));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->version));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved1));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
 		if (r->count < 0 || r->count > 0x100000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->u3));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved2));
 		NDR_PULL_ALLOC_N(ndr, r->cursors, ndr_get_array_size(ndr, &r->cursors));
 		_mem_save_cursors_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->cursors, 0);
@@ -740,10 +740,10 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaCursorCtrEx(struct ndr_print *ndr, cons
 	uint32_t cntr_cursors_0;
 	ndr_print_struct(ndr, name, "drsuapi_DsReplicaCursorCtrEx");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "u1", r->u1);
-	ndr_print_uint32(ndr, "u2", r->u2);
+	ndr_print_uint32(ndr, "version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?1:r->version);
+	ndr_print_uint32(ndr, "reserved1", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved1);
 	ndr_print_uint32(ndr, "count", r->count);
-	ndr_print_uint32(ndr, "u3", r->u3);
+	ndr_print_uint32(ndr, "reserved2", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved2);
 	ndr->print(ndr, "%s: ARRAY(%d)", "cursors", r->count);
 	ndr->depth++;
 	for (cntr_cursors_0=0;cntr_cursors_0<r->count;cntr_cursors_0++) {
@@ -793,6 +793,107 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaNeighbourFlags(struct ndr_print *ndr, c
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_drsuapi_DsExtendedOperation(struct ndr_push *ndr, int ndr_flags, enum drsuapi_DsExtendedOperation r)
+{
+	{
+		uint32_t _flags_save_ENUM = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+		ndr->flags = _flags_save_ENUM;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_drsuapi_DsExtendedOperation(struct ndr_pull *ndr, int ndr_flags, enum drsuapi_DsExtendedOperation *r)
+{
+	uint32_t v;
+	{
+		uint32_t _flags_save_ENUM = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+		*r = v;
+		ndr->flags = _flags_save_ENUM;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_drsuapi_DsExtendedOperation(struct ndr_print *ndr, const char *name, enum drsuapi_DsExtendedOperation r)
+{
+	const char *val = NULL;
+
+	{
+		uint32_t _flags_save_ENUM = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		switch (r) {
+			case DRSUAPI_EXOP_NONE: val = "DRSUAPI_EXOP_NONE"; break;
+			case DRSUAPI_EXOP_FSMO_REQ_ROLE: val = "DRSUAPI_EXOP_FSMO_REQ_ROLE"; break;
+			case DRSUAPI_EXOP_FSMO_RID_ALLOC: val = "DRSUAPI_EXOP_FSMO_RID_ALLOC"; break;
+			case DRSUAPI_EXOP_FSMO_RID_REQ_ROLE: val = "DRSUAPI_EXOP_FSMO_RID_REQ_ROLE"; break;
+			case DRSUAPI_EXOP_FSMO_REQ_PDC: val = "DRSUAPI_EXOP_FSMO_REQ_PDC"; break;
+			case DRSUAPI_EXOP_FSMO_ABANDON_ROLE: val = "DRSUAPI_EXOP_FSMO_ABANDON_ROLE"; break;
+			case DRSUAPI_EXOP_REPL_OBJ: val = "DRSUAPI_EXOP_REPL_OBJ"; break;
+			case DRSUAPI_EXOP_REPL_SECRET: val = "DRSUAPI_EXOP_REPL_SECRET"; break;
+		}
+		ndr_print_enum(ndr, name, "ENUM", val, r);
+		ndr->flags = _flags_save_ENUM;
+	}
+}
+
+static enum ndr_err_code ndr_push_drsuapi_DsExtendedError(struct ndr_push *ndr, int ndr_flags, enum drsuapi_DsExtendedError r)
+{
+	{
+		uint32_t _flags_save_ENUM = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+		ndr->flags = _flags_save_ENUM;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_drsuapi_DsExtendedError(struct ndr_pull *ndr, int ndr_flags, enum drsuapi_DsExtendedError *r)
+{
+	uint32_t v;
+	{
+		uint32_t _flags_save_ENUM = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+		*r = v;
+		ndr->flags = _flags_save_ENUM;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_drsuapi_DsExtendedError(struct ndr_print *ndr, const char *name, enum drsuapi_DsExtendedError r)
+{
+	const char *val = NULL;
+
+	{
+		uint32_t _flags_save_ENUM = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		switch (r) {
+			case DRSUAPI_EXOP_ERR_NONE: val = "DRSUAPI_EXOP_ERR_NONE"; break;
+			case DRSUAPI_EXOP_ERR_SUCCESS: val = "DRSUAPI_EXOP_ERR_SUCCESS"; break;
+			case DRSUAPI_EXOP_ERR_UNKNOWN_OP: val = "DRSUAPI_EXOP_ERR_UNKNOWN_OP"; break;
+			case DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER: val = "DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER"; break;
+			case DRSUAPI_EXOP_ERR_UPDATE_ERR: val = "DRSUAPI_EXOP_ERR_UPDATE_ERR"; break;
+			case DRSUAPI_EXOP_ERR_EXCEPTION: val = "DRSUAPI_EXOP_ERR_EXCEPTION"; break;
+			case DRSUAPI_EXOP_ERR_UNKNOWN_CALLER: val = "DRSUAPI_EXOP_ERR_UNKNOWN_CALLER"; break;
+			case DRSUAPI_EXOP_ERR_RID_ALLOC: val = "DRSUAPI_EXOP_ERR_RID_ALLOC"; break;
+			case DRSUAPI_EXOP_ERR_FSMO_OWNER_DELETED: val = "DRSUAPI_EXOP_ERR_FSMO_OWNER_DELETED"; break;
+			case DRSUAPI_EXOP_ERR_FMSO_PENDING_OP: val = "DRSUAPI_EXOP_ERR_FMSO_PENDING_OP"; break;
+			case DRSUAPI_EXOP_ERR_MISMATCH: val = "DRSUAPI_EXOP_ERR_MISMATCH"; break;
+			case DRSUAPI_EXOP_ERR_COULDNT_CONTACT: val = "DRSUAPI_EXOP_ERR_COULDNT_CONTACT"; break;
+			case DRSUAPI_EXOP_ERR_FSMO_REFUSING_ROLES: val = "DRSUAPI_EXOP_ERR_FSMO_REFUSING_ROLES"; break;
+			case DRSUAPI_EXOP_ERR_DIR_ERROR: val = "DRSUAPI_EXOP_ERR_DIR_ERROR"; break;
+			case DRSUAPI_EXOP_ERR_FSMO_MISSING_SETTINGS: val = "DRSUAPI_EXOP_ERR_FSMO_MISSING_SETTINGS"; break;
+			case DRSUAPI_EXOP_ERR_ACCESS_DENIED: val = "DRSUAPI_EXOP_ERR_ACCESS_DENIED"; break;
+			case DRSUAPI_EXOP_ERR_PARAM_ERROR: val = "DRSUAPI_EXOP_ERR_PARAM_ERROR"; break;
+		}
+		ndr_print_enum(ndr, name, "ENUM", val, r);
+		ndr->flags = _flags_save_ENUM;
+	}
+}
+
 static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesRequest5(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsGetNCChangesRequest5 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -808,8 +909,8 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesRequest5(struct ndr_push
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaNeighbourFlags(ndr, NDR_SCALARS, r->replica_flags));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->max_object_count));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->max_ndr_size));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown4));
-		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->h1));
+		NDR_CHECK(ndr_push_drsuapi_DsExtendedOperation(ndr, NDR_SCALARS, r->extended_op));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->fsmo_info));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaObjectIdentifier(ndr, NDR_SCALARS|NDR_BUFFERS, r->naming_context));
@@ -846,8 +947,8 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesRequest5(struct ndr_pull
 		NDR_CHECK(ndr_pull_drsuapi_DsReplicaNeighbourFlags(ndr, NDR_SCALARS, &r->replica_flags));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->max_object_count));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->max_ndr_size));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown4));
-		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->h1));
+		NDR_CHECK(ndr_pull_drsuapi_DsExtendedOperation(ndr, NDR_SCALARS, &r->extended_op));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->fsmo_info));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		_mem_save_naming_context_0 = NDR_PULL_GET_MEM_CTX(ndr);
@@ -884,8 +985,8 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesRequest5(struct ndr_print *ndr, co
 	ndr_print_drsuapi_DsReplicaNeighbourFlags(ndr, "replica_flags", r->replica_flags);
 	ndr_print_uint32(ndr, "max_object_count", r->max_object_count);
 	ndr_print_uint32(ndr, "max_ndr_size", r->max_ndr_size);
-	ndr_print_uint32(ndr, "unknown4", r->unknown4);
-	ndr_print_hyper(ndr, "h1", r->h1);
+	ndr_print_drsuapi_DsExtendedOperation(ndr, "extended_op", r->extended_op);
+	ndr_print_hyper(ndr, "fsmo_info", r->fsmo_info);
 	ndr->depth--;
 }
 
@@ -1126,6 +1227,74 @@ _PUBLIC_ void ndr_print_drsuapi_DsAttributeId(struct ndr_print *ndr, const char 
 	}
 }
 
+static enum ndr_err_code ndr_push_drsuapi_DsPartialAttributeSet(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsPartialAttributeSet *r)
+{
+	uint32_t cntr_attids_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_attids));
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 1));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_attids));
+		for (cntr_attids_0 = 0; cntr_attids_0 < r->num_attids; cntr_attids_0++) {
+			NDR_CHECK(ndr_push_drsuapi_DsAttributeId(ndr, NDR_SCALARS, r->attids[cntr_attids_0]));
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_drsuapi_DsPartialAttributeSet(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsPartialAttributeSet *r)
+{
+	uint32_t cntr_attids_0;
+	TALLOC_CTX *_mem_save_attids_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->attids));
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->version));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved1));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_attids));
+		if (r->num_attids < 1 || r->num_attids > 0x100000) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
+		NDR_PULL_ALLOC_N(ndr, r->attids, ndr_get_array_size(ndr, &r->attids));
+		_mem_save_attids_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->attids, 0);
+		for (cntr_attids_0 = 0; cntr_attids_0 < r->num_attids; cntr_attids_0++) {
+			NDR_CHECK(ndr_pull_drsuapi_DsAttributeId(ndr, NDR_SCALARS, &r->attids[cntr_attids_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_attids_0, 0);
+		if (r->attids) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->attids, r->num_attids));
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_drsuapi_DsPartialAttributeSet(struct ndr_print *ndr, const char *name, const struct drsuapi_DsPartialAttributeSet *r)
+{
+	uint32_t cntr_attids_0;
+	ndr_print_struct(ndr, name, "drsuapi_DsPartialAttributeSet");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?1:r->version);
+	ndr_print_uint32(ndr, "reserved1", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved1);
+	ndr_print_uint32(ndr, "num_attids", r->num_attids);
+	ndr->print(ndr, "%s: ARRAY(%d)", "attids", r->num_attids);
+	ndr->depth++;
+	for (cntr_attids_0=0;cntr_attids_0<r->num_attids;cntr_attids_0++) {
+		char *idx_0=NULL;
+		if (asprintf(&idx_0, "[%d]", cntr_attids_0) != -1) {
+			ndr_print_drsuapi_DsAttributeId(ndr, "attids", r->attids[cntr_attids_0]);
+			free(idx_0);
+		}
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesRequest8(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsGetNCChangesRequest8 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -1141,16 +1310,22 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesRequest8(struct ndr_push
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaNeighbourFlags(ndr, NDR_SCALARS, r->replica_flags));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->max_object_count));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->max_ndr_size));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown4));
-		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->h1));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unique_ptr1));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unique_ptr2));
+		NDR_CHECK(ndr_push_drsuapi_DsExtendedOperation(ndr, NDR_SCALARS, r->extended_op));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->fsmo_info));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->partial_attribute_set));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->partial_attribute_set_ex));
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaOIDMapping_Ctr(ndr, NDR_SCALARS, &r->mapping_ctr));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaObjectIdentifier(ndr, NDR_SCALARS|NDR_BUFFERS, r->naming_context));
 		if (r->uptodateness_vector) {
 			NDR_CHECK(ndr_push_drsuapi_DsReplicaCursorCtrEx(ndr, NDR_SCALARS, r->uptodateness_vector));
+		}
+		if (r->partial_attribute_set) {
+			NDR_CHECK(ndr_push_drsuapi_DsPartialAttributeSet(ndr, NDR_SCALARS, r->partial_attribute_set));
+		}
+		if (r->partial_attribute_set_ex) {
+			NDR_CHECK(ndr_push_drsuapi_DsPartialAttributeSet(ndr, NDR_SCALARS, r->partial_attribute_set_ex));
 		}
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaOIDMapping_Ctr(ndr, NDR_BUFFERS, &r->mapping_ctr));
 	}
@@ -1163,6 +1338,10 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesRequest8(struct ndr_pull
 	TALLOC_CTX *_mem_save_naming_context_0;
 	uint32_t _ptr_uptodateness_vector;
 	TALLOC_CTX *_mem_save_uptodateness_vector_0;
+	uint32_t _ptr_partial_attribute_set;
+	TALLOC_CTX *_mem_save_partial_attribute_set_0;
+	uint32_t _ptr_partial_attribute_set_ex;
+	TALLOC_CTX *_mem_save_partial_attribute_set_ex_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 8));
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->destination_dsa_guid));
@@ -1183,10 +1362,20 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesRequest8(struct ndr_pull
 		NDR_CHECK(ndr_pull_drsuapi_DsReplicaNeighbourFlags(ndr, NDR_SCALARS, &r->replica_flags));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->max_object_count));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->max_ndr_size));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown4));
-		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->h1));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unique_ptr1));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unique_ptr2));
+		NDR_CHECK(ndr_pull_drsuapi_DsExtendedOperation(ndr, NDR_SCALARS, &r->extended_op));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->fsmo_info));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_partial_attribute_set));
+		if (_ptr_partial_attribute_set) {
+			NDR_PULL_ALLOC(ndr, r->partial_attribute_set);
+		} else {
+			r->partial_attribute_set = NULL;
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_partial_attribute_set_ex));
+		if (_ptr_partial_attribute_set_ex) {
+			NDR_PULL_ALLOC(ndr, r->partial_attribute_set_ex);
+		} else {
+			r->partial_attribute_set_ex = NULL;
+		}
 		NDR_CHECK(ndr_pull_drsuapi_DsReplicaOIDMapping_Ctr(ndr, NDR_SCALARS, &r->mapping_ctr));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -1199,6 +1388,18 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesRequest8(struct ndr_pull
 			NDR_PULL_SET_MEM_CTX(ndr, r->uptodateness_vector, 0);
 			NDR_CHECK(ndr_pull_drsuapi_DsReplicaCursorCtrEx(ndr, NDR_SCALARS, r->uptodateness_vector));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_uptodateness_vector_0, 0);
+		}
+		if (r->partial_attribute_set) {
+			_mem_save_partial_attribute_set_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->partial_attribute_set, 0);
+			NDR_CHECK(ndr_pull_drsuapi_DsPartialAttributeSet(ndr, NDR_SCALARS, r->partial_attribute_set));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_partial_attribute_set_0, 0);
+		}
+		if (r->partial_attribute_set_ex) {
+			_mem_save_partial_attribute_set_ex_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->partial_attribute_set_ex, 0);
+			NDR_CHECK(ndr_pull_drsuapi_DsPartialAttributeSet(ndr, NDR_SCALARS, r->partial_attribute_set_ex));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_partial_attribute_set_ex_0, 0);
 		}
 		NDR_CHECK(ndr_pull_drsuapi_DsReplicaOIDMapping_Ctr(ndr, NDR_BUFFERS, &r->mapping_ctr));
 	}
@@ -1225,10 +1426,20 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesRequest8(struct ndr_print *ndr, co
 	ndr_print_drsuapi_DsReplicaNeighbourFlags(ndr, "replica_flags", r->replica_flags);
 	ndr_print_uint32(ndr, "max_object_count", r->max_object_count);
 	ndr_print_uint32(ndr, "max_ndr_size", r->max_ndr_size);
-	ndr_print_uint32(ndr, "unknown4", r->unknown4);
-	ndr_print_hyper(ndr, "h1", r->h1);
-	ndr_print_uint32(ndr, "unique_ptr1", r->unique_ptr1);
-	ndr_print_uint32(ndr, "unique_ptr2", r->unique_ptr2);
+	ndr_print_drsuapi_DsExtendedOperation(ndr, "extended_op", r->extended_op);
+	ndr_print_hyper(ndr, "fsmo_info", r->fsmo_info);
+	ndr_print_ptr(ndr, "partial_attribute_set", r->partial_attribute_set);
+	ndr->depth++;
+	if (r->partial_attribute_set) {
+		ndr_print_drsuapi_DsPartialAttributeSet(ndr, "partial_attribute_set", r->partial_attribute_set);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "partial_attribute_set_ex", r->partial_attribute_set_ex);
+	ndr->depth++;
+	if (r->partial_attribute_set_ex) {
+		ndr_print_drsuapi_DsPartialAttributeSet(ndr, "partial_attribute_set_ex", r->partial_attribute_set_ex);
+	}
+	ndr->depth--;
 	ndr_print_drsuapi_DsReplicaOIDMapping_Ctr(ndr, "mapping_ctr", &r->mapping_ctr);
 	ndr->depth--;
 }
@@ -1370,10 +1581,10 @@ static enum ndr_err_code ndr_push_drsuapi_DsReplicaCursor2CtrEx(struct ndr_push 
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
 		NDR_CHECK(ndr_push_align(ndr, 8));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->u1));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->u2));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 2));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->u3));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		for (cntr_cursors_0 = 0; cntr_cursors_0 < r->count; cntr_cursors_0++) {
 			NDR_CHECK(ndr_push_drsuapi_DsReplicaCursor2(ndr, NDR_SCALARS, &r->cursors[cntr_cursors_0]));
 		}
@@ -1390,13 +1601,13 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaCursor2CtrEx(struct ndr_pull 
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->cursors));
 		NDR_CHECK(ndr_pull_align(ndr, 8));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->u1));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->u2));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->version));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved1));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
 		if (r->count < 0 || r->count > 0x100000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->u3));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved2));
 		NDR_PULL_ALLOC_N(ndr, r->cursors, ndr_get_array_size(ndr, &r->cursors));
 		_mem_save_cursors_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->cursors, 0);
@@ -1418,10 +1629,10 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaCursor2CtrEx(struct ndr_print *ndr, con
 	uint32_t cntr_cursors_0;
 	ndr_print_struct(ndr, name, "drsuapi_DsReplicaCursor2CtrEx");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "u1", r->u1);
-	ndr_print_uint32(ndr, "u2", r->u2);
+	ndr_print_uint32(ndr, "version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2:r->version);
+	ndr_print_uint32(ndr, "reserved1", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved1);
 	ndr_print_uint32(ndr, "count", r->count);
-	ndr_print_uint32(ndr, "u3", r->u3);
+	ndr_print_uint32(ndr, "reserved2", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->reserved2);
 	ndr->print(ndr, "%s: ARRAY(%d)", "cursors", r->count);
 	ndr->depth++;
 	for (cntr_cursors_0=0;cntr_cursors_0<r->count;cntr_cursors_0++) {
@@ -1825,12 +2036,36 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaAttributeCtr(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsReplicaObjectFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_drsuapi_DsReplicaObjectFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_drsuapi_DsReplicaObjectFlags(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_OBJECT_FROM_MASTER", DRSUAPI_DS_REPLICA_OBJECT_FROM_MASTER, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_OBJECT_DYNAMIC", DRSUAPI_DS_REPLICA_OBJECT_DYNAMIC, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DRSUAPI_DS_REPLICA_OBJECT_REMOTE_MODIFY", DRSUAPI_DS_REPLICA_OBJECT_REMOTE_MODIFY, r);
+	ndr->depth--;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsReplicaObject(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaObject *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->identifier));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown1));
+		NDR_CHECK(ndr_push_drsuapi_DsReplicaObjectFlags(ndr, NDR_SCALARS, r->flags));
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaAttributeCtr(ndr, NDR_SCALARS, &r->attribute_ctr));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -1854,7 +2089,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_drsuapi_DsReplicaObject(struct ndr_pull *ndr
 		} else {
 			r->identifier = NULL;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
+		NDR_CHECK(ndr_pull_drsuapi_DsReplicaObjectFlags(ndr, NDR_SCALARS, &r->flags));
 		NDR_CHECK(ndr_pull_drsuapi_DsReplicaAttributeCtr(ndr, NDR_SCALARS, &r->attribute_ctr));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -1879,7 +2114,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaObject(struct ndr_print *ndr, const cha
 		ndr_print_drsuapi_DsReplicaObjectIdentifier(ndr, "identifier", r->identifier);
 	}
 	ndr->depth--;
-	ndr_print_uint32(ndr, "unknown1", r->unknown1);
+	ndr_print_drsuapi_DsReplicaObjectFlags(ndr, "flags", r->flags);
 	ndr_print_drsuapi_DsReplicaAttributeCtr(ndr, "attribute_ctr", &r->attribute_ctr);
 	ndr->depth--;
 }
@@ -1991,7 +2226,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsReplicaObjectListItemEx(struct ndr
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->next_object));
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaObject(ndr, NDR_SCALARS, &r->object));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown1));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->is_nc_prefix));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->parent_object_guid));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->meta_data_ctr));
 	}
@@ -2027,7 +2262,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_drsuapi_DsReplicaObjectListItemEx(struct ndr
 			r->next_object = NULL;
 		}
 		NDR_CHECK(ndr_pull_drsuapi_DsReplicaObject(ndr, NDR_SCALARS, &r->object));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->is_nc_prefix));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_parent_object_guid));
 		if (_ptr_parent_object_guid) {
 			NDR_PULL_ALLOC(ndr, r->parent_object_guid);
@@ -2076,11 +2311,11 @@ _PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesCtr1(struct ndr_push *
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaHighWaterMark(ndr, NDR_SCALARS, &r->new_highwatermark));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->uptodateness_vector));
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaOIDMapping_Ctr(ndr, NDR_SCALARS, &r->mapping_ctr));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->total_object_count));
+		NDR_CHECK(ndr_push_drsuapi_DsExtendedError(ndr, NDR_SCALARS, r->extended_ret));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->object_count));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_drsuapi_DsGetNCChangesCtr1(r, ndr->flags) + 55));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->first_object));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->more_data));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->naming_context) {
@@ -2124,7 +2359,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesCtr1(struct ndr_pull *
 			r->uptodateness_vector = NULL;
 		}
 		NDR_CHECK(ndr_pull_drsuapi_DsReplicaOIDMapping_Ctr(ndr, NDR_SCALARS, &r->mapping_ctr));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->total_object_count));
+		NDR_CHECK(ndr_pull_drsuapi_DsExtendedError(ndr, NDR_SCALARS, &r->extended_ret));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->object_count));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->__ndr_size));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_first_object));
@@ -2133,7 +2368,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesCtr1(struct ndr_pull *
 		} else {
 			r->first_object = NULL;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->more_data));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->naming_context) {
@@ -2180,7 +2415,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesCtr1(struct ndr_print *ndr, const 
 	}
 	ndr->depth--;
 	ndr_print_drsuapi_DsReplicaOIDMapping_Ctr(ndr, "mapping_ctr", &r->mapping_ctr);
-	ndr_print_uint32(ndr, "total_object_count", r->total_object_count);
+	ndr_print_drsuapi_DsExtendedError(ndr, "extended_ret", r->extended_ret);
 	ndr_print_uint32(ndr, "object_count", r->object_count);
 	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_drsuapi_DsGetNCChangesCtr1(r, ndr->flags) + 55:r->__ndr_size);
 	ndr_print_ptr(ndr, "first_object", r->first_object);
@@ -2189,7 +2424,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesCtr1(struct ndr_print *ndr, const 
 		ndr_print_drsuapi_DsReplicaObjectListItemEx(ndr, "first_object", r->first_object);
 	}
 	ndr->depth--;
-	ndr_print_uint32(ndr, "unknown4", r->unknown4);
+	ndr_print_uint32(ndr, "more_data", r->more_data);
 	ndr->depth--;
 }
 
@@ -2300,16 +2535,16 @@ _PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesCtr6(struct ndr_push *
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaHighWaterMark(ndr, NDR_SCALARS, &r->new_highwatermark));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->uptodateness_vector));
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaOIDMapping_Ctr(ndr, NDR_SCALARS, &r->mapping_ctr));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->total_object_count));
+		NDR_CHECK(ndr_push_drsuapi_DsExtendedError(ndr, NDR_SCALARS, r->extended_ret));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->object_count));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_drsuapi_DsGetNCChangesCtr6(r, ndr->flags) + 55));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->first_object));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown5));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown6));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->more_data));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->nc_object_count));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->nc_linked_attributes_count));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->linked_attributes_count));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->linked_attributes));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown7));
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->drs_error));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->naming_context) {
@@ -2366,7 +2601,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesCtr6(struct ndr_pull *
 			r->uptodateness_vector = NULL;
 		}
 		NDR_CHECK(ndr_pull_drsuapi_DsReplicaOIDMapping_Ctr(ndr, NDR_SCALARS, &r->mapping_ctr));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->total_object_count));
+		NDR_CHECK(ndr_pull_drsuapi_DsExtendedError(ndr, NDR_SCALARS, &r->extended_ret));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->object_count));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->__ndr_size));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_first_object));
@@ -2375,9 +2610,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesCtr6(struct ndr_pull *
 		} else {
 			r->first_object = NULL;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown5));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown6));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->more_data));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->nc_object_count));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->nc_linked_attributes_count));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->linked_attributes_count));
 		if (r->linked_attributes_count < 0 || r->linked_attributes_count > 1048576) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
@@ -2388,7 +2623,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesCtr6(struct ndr_pull *
 		} else {
 			r->linked_attributes = NULL;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown7));
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->drs_error));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->naming_context) {
@@ -2455,7 +2690,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesCtr6(struct ndr_print *ndr, const 
 	}
 	ndr->depth--;
 	ndr_print_drsuapi_DsReplicaOIDMapping_Ctr(ndr, "mapping_ctr", &r->mapping_ctr);
-	ndr_print_uint32(ndr, "total_object_count", r->total_object_count);
+	ndr_print_drsuapi_DsExtendedError(ndr, "extended_ret", r->extended_ret);
 	ndr_print_uint32(ndr, "object_count", r->object_count);
 	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_drsuapi_DsGetNCChangesCtr6(r, ndr->flags) + 55:r->__ndr_size);
 	ndr_print_ptr(ndr, "first_object", r->first_object);
@@ -2464,9 +2699,9 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesCtr6(struct ndr_print *ndr, const 
 		ndr_print_drsuapi_DsReplicaObjectListItemEx(ndr, "first_object", r->first_object);
 	}
 	ndr->depth--;
-	ndr_print_uint32(ndr, "unknown4", r->unknown4);
-	ndr_print_uint32(ndr, "unknown5", r->unknown5);
-	ndr_print_uint32(ndr, "unknown6", r->unknown6);
+	ndr_print_uint32(ndr, "more_data", r->more_data);
+	ndr_print_uint32(ndr, "nc_object_count", r->nc_object_count);
+	ndr_print_uint32(ndr, "nc_linked_attributes_count", r->nc_linked_attributes_count);
 	ndr_print_uint32(ndr, "linked_attributes_count", r->linked_attributes_count);
 	ndr_print_ptr(ndr, "linked_attributes", r->linked_attributes);
 	ndr->depth++;
@@ -2483,7 +2718,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesCtr6(struct ndr_print *ndr, const 
 		ndr->depth--;
 	}
 	ndr->depth--;
-	ndr_print_uint32(ndr, "unknown7", r->unknown7);
+	ndr_print_WERROR(ndr, "drs_error", r->drs_error);
 	ndr->depth--;
 }
 
@@ -2652,31 +2887,21 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesXPRESSCtr1(struct ndr_pu
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->decompressed_length));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->compressed_length));
-		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
-			NDR_CHECK(ndr_push_unique_ptr(ndr, r->decompressed));
-			ndr->flags = _flags_save_DATA_BLOB;
-		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr1));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
-			if (r->decompressed) {
+		if (r->ctr1) {
+			{
+				struct ndr_push *_ndr_ctr1;
+				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_ctr1, 4, r->compressed_length));
 				{
-					struct ndr_push *_ndr_decompressed;
-					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_decompressed, 4, r->compressed_length));
-					{
-						struct ndr_push *_ndr_decompressed_compressed;
-						NDR_CHECK(ndr_push_compression_start(_ndr_decompressed, &_ndr_decompressed_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
-						NDR_CHECK(ndr_push_DATA_BLOB(_ndr_decompressed_compressed, NDR_SCALARS, *r->decompressed));
-						NDR_CHECK(ndr_push_compression_end(_ndr_decompressed, _ndr_decompressed_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
-					}
-					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_decompressed, 4, r->compressed_length));
+					struct ndr_push *_ndr_ctr1_compressed;
+					NDR_CHECK(ndr_push_compression_start(_ndr_ctr1, &_ndr_ctr1_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
+					NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesCtr1(_ndr_ctr1_compressed, NDR_SCALARS|NDR_BUFFERS, r->ctr1));
+					NDR_CHECK(ndr_push_compression_end(_ndr_ctr1, _ndr_ctr1_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
 				}
+				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_ctr1, 4, r->compressed_length));
 			}
-			ndr->flags = _flags_save_DATA_BLOB;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2684,45 +2909,35 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesXPRESSCtr1(struct ndr_pu
 
 static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesXPRESSCtr1(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsGetNCChangesXPRESSCtr1 *r)
 {
-	uint32_t _ptr_decompressed;
-	TALLOC_CTX *_mem_save_decompressed_0;
+	uint32_t _ptr_ctr1;
+	TALLOC_CTX *_mem_save_ctr1_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->decompressed_length));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->compressed_length));
-		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
-			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_decompressed));
-			if (_ptr_decompressed) {
-				NDR_PULL_ALLOC(ndr, r->decompressed);
-			} else {
-				r->decompressed = NULL;
-			}
-			ndr->flags = _flags_save_DATA_BLOB;
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ctr1));
+		if (_ptr_ctr1) {
+			NDR_PULL_ALLOC(ndr, r->ctr1);
+		} else {
+			r->ctr1 = NULL;
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
-			if (r->decompressed) {
-				_mem_save_decompressed_0 = NDR_PULL_GET_MEM_CTX(ndr);
-				NDR_PULL_SET_MEM_CTX(ndr, r->decompressed, 0);
+		if (r->ctr1) {
+			_mem_save_ctr1_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->ctr1, 0);
+			{
+				struct ndr_pull *_ndr_ctr1;
+				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_ctr1, 4, r->compressed_length));
 				{
-					struct ndr_pull *_ndr_decompressed;
-					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_decompressed, 4, r->compressed_length));
-					{
-						struct ndr_pull *_ndr_decompressed_compressed;
-						NDR_CHECK(ndr_pull_compression_start(_ndr_decompressed, &_ndr_decompressed_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
-						NDR_CHECK(ndr_pull_DATA_BLOB(_ndr_decompressed_compressed, NDR_SCALARS, r->decompressed));
-						NDR_CHECK(ndr_pull_compression_end(_ndr_decompressed, _ndr_decompressed_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
-					}
-					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_decompressed, 4, r->compressed_length));
+					struct ndr_pull *_ndr_ctr1_compressed;
+					NDR_CHECK(ndr_pull_compression_start(_ndr_ctr1, &_ndr_ctr1_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
+					NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesCtr1(_ndr_ctr1_compressed, NDR_SCALARS|NDR_BUFFERS, r->ctr1));
+					NDR_CHECK(ndr_pull_compression_end(_ndr_ctr1, _ndr_ctr1_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
 				}
-				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_decompressed_0, 0);
+				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_ctr1, 4, r->compressed_length));
 			}
-			ndr->flags = _flags_save_DATA_BLOB;
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctr1_0, 0);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2734,10 +2949,10 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesXPRESSCtr1(struct ndr_print *ndr, 
 	ndr->depth++;
 	ndr_print_uint32(ndr, "decompressed_length", r->decompressed_length);
 	ndr_print_uint32(ndr, "compressed_length", r->compressed_length);
-	ndr_print_ptr(ndr, "decompressed", r->decompressed);
+	ndr_print_ptr(ndr, "ctr1", r->ctr1);
 	ndr->depth++;
-	if (r->decompressed) {
-		ndr_print_DATA_BLOB(ndr, "decompressed", *r->decompressed);
+	if (r->ctr1) {
+		ndr_print_drsuapi_DsGetNCChangesCtr1(ndr, "ctr1", r->ctr1);
 	}
 	ndr->depth--;
 	ndr->depth--;
@@ -2749,31 +2964,21 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesXPRESSCtr6(struct ndr_pu
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->decompressed_length));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->compressed_length));
-		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
-			NDR_CHECK(ndr_push_unique_ptr(ndr, r->decompressed));
-			ndr->flags = _flags_save_DATA_BLOB;
-		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr6));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
-			if (r->decompressed) {
+		if (r->ctr6) {
+			{
+				struct ndr_push *_ndr_ctr6;
+				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_ctr6, 4, r->compressed_length));
 				{
-					struct ndr_push *_ndr_decompressed;
-					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_decompressed, 4, r->compressed_length));
-					{
-						struct ndr_push *_ndr_decompressed_compressed;
-						NDR_CHECK(ndr_push_compression_start(_ndr_decompressed, &_ndr_decompressed_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
-						NDR_CHECK(ndr_push_DATA_BLOB(_ndr_decompressed_compressed, NDR_SCALARS, *r->decompressed));
-						NDR_CHECK(ndr_push_compression_end(_ndr_decompressed, _ndr_decompressed_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
-					}
-					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_decompressed, 4, r->compressed_length));
+					struct ndr_push *_ndr_ctr6_compressed;
+					NDR_CHECK(ndr_push_compression_start(_ndr_ctr6, &_ndr_ctr6_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
+					NDR_CHECK(ndr_push_drsuapi_DsGetNCChangesCtr6(_ndr_ctr6_compressed, NDR_SCALARS|NDR_BUFFERS, r->ctr6));
+					NDR_CHECK(ndr_push_compression_end(_ndr_ctr6, _ndr_ctr6_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
 				}
+				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_ctr6, 4, r->compressed_length));
 			}
-			ndr->flags = _flags_save_DATA_BLOB;
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2781,45 +2986,35 @@ static enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesXPRESSCtr6(struct ndr_pu
 
 static enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesXPRESSCtr6(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsGetNCChangesXPRESSCtr6 *r)
 {
-	uint32_t _ptr_decompressed;
-	TALLOC_CTX *_mem_save_decompressed_0;
+	uint32_t _ptr_ctr6;
+	TALLOC_CTX *_mem_save_ctr6_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->decompressed_length));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->compressed_length));
-		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
-			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_decompressed));
-			if (_ptr_decompressed) {
-				NDR_PULL_ALLOC(ndr, r->decompressed);
-			} else {
-				r->decompressed = NULL;
-			}
-			ndr->flags = _flags_save_DATA_BLOB;
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ctr6));
+		if (_ptr_ctr6) {
+			NDR_PULL_ALLOC(ndr, r->ctr6);
+		} else {
+			r->ctr6 = NULL;
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		{
-			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
-			if (r->decompressed) {
-				_mem_save_decompressed_0 = NDR_PULL_GET_MEM_CTX(ndr);
-				NDR_PULL_SET_MEM_CTX(ndr, r->decompressed, 0);
+		if (r->ctr6) {
+			_mem_save_ctr6_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->ctr6, 0);
+			{
+				struct ndr_pull *_ndr_ctr6;
+				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_ctr6, 4, r->compressed_length));
 				{
-					struct ndr_pull *_ndr_decompressed;
-					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_decompressed, 4, r->compressed_length));
-					{
-						struct ndr_pull *_ndr_decompressed_compressed;
-						NDR_CHECK(ndr_pull_compression_start(_ndr_decompressed, &_ndr_decompressed_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
-						NDR_CHECK(ndr_pull_DATA_BLOB(_ndr_decompressed_compressed, NDR_SCALARS, r->decompressed));
-						NDR_CHECK(ndr_pull_compression_end(_ndr_decompressed, _ndr_decompressed_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
-					}
-					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_decompressed, 4, r->compressed_length));
+					struct ndr_pull *_ndr_ctr6_compressed;
+					NDR_CHECK(ndr_pull_compression_start(_ndr_ctr6, &_ndr_ctr6_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
+					NDR_CHECK(ndr_pull_drsuapi_DsGetNCChangesCtr6(_ndr_ctr6_compressed, NDR_SCALARS|NDR_BUFFERS, r->ctr6));
+					NDR_CHECK(ndr_pull_compression_end(_ndr_ctr6, _ndr_ctr6_compressed, NDR_COMPRESSION_XPRESS, r->decompressed_length));
 				}
-				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_decompressed_0, 0);
+				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_ctr6, 4, r->compressed_length));
 			}
-			ndr->flags = _flags_save_DATA_BLOB;
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctr6_0, 0);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -2831,10 +3026,10 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesXPRESSCtr6(struct ndr_print *ndr, 
 	ndr->depth++;
 	ndr_print_uint32(ndr, "decompressed_length", r->decompressed_length);
 	ndr_print_uint32(ndr, "compressed_length", r->compressed_length);
-	ndr_print_ptr(ndr, "decompressed", r->decompressed);
+	ndr_print_ptr(ndr, "ctr6", r->ctr6);
 	ndr->depth++;
-	if (r->decompressed) {
-		ndr_print_DATA_BLOB(ndr, "decompressed", *r->decompressed);
+	if (r->ctr6) {
+		ndr_print_drsuapi_DsGetNCChangesCtr6(ndr, "ctr6", r->ctr6);
 	}
 	ndr->depth--;
 	ndr->depth--;
