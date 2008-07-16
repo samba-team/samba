@@ -156,15 +156,20 @@
 #define NTCREATEX_OPTIONS_DELETE_ON_CLOSE          0x1000
 #define NTCREATEX_OPTIONS_OPEN_BY_FILE_ID          0x2000
 #define NTCREATEX_OPTIONS_BACKUP_INTENT            0x4000
-#define NTCREATEX_OPTIONS_REPARSE_POINT          0x200000
-#define NTCREATEX_OPTIONS_UNKNOWN_400000         0x400000
+/* Must be ignored by the server, per MS-SMB 2.2.8 */
+#define NTCREATEX_OPTIONS_OPFILTER             0x00100000
+#define NTCREATEX_OPTIONS_REPARSE_POINT        0x00200000
+/* Don't pull this file off tape in a HSM system */
+#define NTCREATEX_OPTIONS_NO_RECALL            0x00400000
+/* Must be ignored by the server, per MS-SMB 2.2.8 */
+#define NTCREATEX_OPTIONS_FREE_SPACE_QUERY     0x00800000
 /* create options these bits are for private use by backends, they are
    not valid on the wire */
 #define NTCREATEX_OPTIONS_PRIVATE_MASK         0xFF000000
 #define NTCREATEX_OPTIONS_PRIVATE_DENY_DOS     0x01000000
 #define NTCREATEX_OPTIONS_PRIVATE_DENY_FCB     0x02000000
 
-#define NTCREATEX_OPTIONS_NOT_SUPPORTED_MASK   0x00DFA188 
+#define NTCREATEX_OPTIONS_NOT_SUPPORTED_MASK   0x000FA188 
 
 
 

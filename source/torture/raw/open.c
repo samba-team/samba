@@ -954,6 +954,62 @@ static bool test_nttrans_create(struct smbcli_state *cli, struct torture_context
 	CHECK_ALL_INFO(io.ntcreatex.out.is_directory, directory);
 	CHECK_VAL(io.ntcreatex.out.file_type, FILE_TYPE_DISK);
 	smbcli_close(cli->tree, fnum);
+
+	/* check no-recall - don't pull a file from tape on a HSM */
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_NO_RECALL;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	CHECK_VAL(io.ntcreatex.out.oplock_level, 0);
+	CHECK_VAL(io.ntcreatex.out.create_action, NTCREATEX_ACTION_EXISTED);
+	CHECK_NTTIME(io.ntcreatex.out.create_time, create_time);
+	CHECK_NTTIME(io.ntcreatex.out.access_time, access_time);
+	CHECK_NTTIME(io.ntcreatex.out.write_time, write_time);
+	CHECK_NTTIME(io.ntcreatex.out.change_time, change_time);
+	CHECK_ALL_INFO(io.ntcreatex.out.attrib, attrib);
+	CHECK_ALL_INFO(io.ntcreatex.out.alloc_size, alloc_size);
+	CHECK_ALL_INFO(io.ntcreatex.out.size, size);
+	CHECK_ALL_INFO(io.ntcreatex.out.is_directory, directory);
+	CHECK_VAL(io.ntcreatex.out.file_type, FILE_TYPE_DISK);
+	smbcli_close(cli->tree, fnum);
+
+	/* Check some create options (these all should be ignored) */
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_OPFILTER;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	CHECK_VAL(io.ntcreatex.out.oplock_level, 0);
+	CHECK_VAL(io.ntcreatex.out.create_action, NTCREATEX_ACTION_EXISTED);
+	CHECK_NTTIME(io.ntcreatex.out.create_time, create_time);
+	CHECK_NTTIME(io.ntcreatex.out.access_time, access_time);
+	CHECK_NTTIME(io.ntcreatex.out.write_time, write_time);
+	CHECK_NTTIME(io.ntcreatex.out.change_time, change_time);
+	CHECK_ALL_INFO(io.ntcreatex.out.attrib, attrib);
+	CHECK_ALL_INFO(io.ntcreatex.out.alloc_size, alloc_size);
+	CHECK_ALL_INFO(io.ntcreatex.out.size, size);
+	CHECK_ALL_INFO(io.ntcreatex.out.is_directory, directory);
+	CHECK_VAL(io.ntcreatex.out.file_type, FILE_TYPE_DISK);
+	smbcli_close(cli->tree, fnum);
+
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_FREE_SPACE_QUERY;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	CHECK_VAL(io.ntcreatex.out.oplock_level, 0);
+	CHECK_VAL(io.ntcreatex.out.create_action, NTCREATEX_ACTION_EXISTED);
+	CHECK_NTTIME(io.ntcreatex.out.create_time, create_time);
+	CHECK_NTTIME(io.ntcreatex.out.access_time, access_time);
+	CHECK_NTTIME(io.ntcreatex.out.write_time, write_time);
+	CHECK_NTTIME(io.ntcreatex.out.change_time, change_time);
+	CHECK_ALL_INFO(io.ntcreatex.out.attrib, attrib);
+	CHECK_ALL_INFO(io.ntcreatex.out.alloc_size, alloc_size);
+	CHECK_ALL_INFO(io.ntcreatex.out.size, size);
+	CHECK_ALL_INFO(io.ntcreatex.out.is_directory, directory);
+	CHECK_VAL(io.ntcreatex.out.file_type, FILE_TYPE_DISK);
+	smbcli_close(cli->tree, fnum);
+
 	smbcli_unlink(cli->tree, fname);
 
 
