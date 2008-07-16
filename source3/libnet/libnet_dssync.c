@@ -355,7 +355,7 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 	nc.guid = GUID_zero();
 	nc.sid = null_sid;
 
-	status = ctx->ops->startup(ctx, mem_ctx);
+	status = ctx->ops->startup(ctx, mem_ctx, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		ctx->error_message = talloc_asprintf(mem_ctx,
 			"Failed to call startup operation: %s",
@@ -489,7 +489,7 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		status = ctx->ops->finish(ctx, mem_ctx);
+		status = ctx->ops->finish(ctx, mem_ctx, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			ctx->error_message = talloc_asprintf(mem_ctx,
 				"Failed to call finishing operation: %s",

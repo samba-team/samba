@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
 
 #if defined(HAVE_ADS) && defined(ENCTYPE_ARCFOUR_HMAC)
 
@@ -49,10 +50,14 @@ static NTSTATUS add_to_keytab_entries(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS keytab_startup(struct dssync_context *ctx, TALLOC_CTX *mem_ctx)
+static NTSTATUS keytab_startup(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
+			       struct replUpToDateVectorBlob **pold_utdv)
 {
 	krb5_error_code ret = 0;
 	struct libnet_keytab_context *keytab_ctx;
+	struct libnet_keytab_entry *entry;
+	struct replUpToDateVectorBlob *old_utdv = NULL;
+	char *principal;
 
 	ret = libnet_keytab_init(mem_ctx, ctx->output_filename, &keytab_ctx);
 	if (ret) {
@@ -62,15 +67,65 @@ static NTSTATUS keytab_startup(struct dssync_context *ctx, TALLOC_CTX *mem_ctx)
 	keytab_ctx->dns_domain_name = ctx->dns_domain_name;
 	ctx->private_data = keytab_ctx;
 
+	principal = talloc_asprintf(mem_ctx, "UTDV/%s@%s",
+				    ctx->nc_dn, ctx->dns_domain_name);
+	NT_STATUS_HAVE_NO_MEMORY(principal);
+
+	entry = libnet_keytab_search(keytab_ctx, principal, 0, mem_ctx);
+	if (entry) {
+		enum ndr_err_code ndr_err;
+		old_utdv = talloc(mem_ctx, struct replUpToDateVectorBlob);
+
+		ndr_err = ndr_pull_struct_blob(&entry->password, old_utdv,
+				old_utdv,
+				(ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+			ctx->error_message = talloc_asprintf(mem_ctx,
+					"Failed to pull UpToDateVector: %s",
+					nt_errstr(status));
+			return status;
+		}
+
+		NDR_PRINT_DEBUG(replUpToDateVectorBlob, old_utdv);
+	}
+
+	if (pold_utdv) {
+		*pold_utdv = old_utdv;
+	}
+
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS keytab_finish(struct dssync_context *ctx, TALLOC_CTX *mem_ctx)
+static NTSTATUS keytab_finish(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
+			      struct replUpToDateVectorBlob *new_utdv)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	krb5_error_code ret = 0;
 	struct libnet_keytab_context *keytab_ctx =
 		(struct libnet_keytab_context *)ctx->private_data;
+
+	if (new_utdv) {
+		enum ndr_err_code ndr_err;
+		DATA_BLOB blob;
+
+		NDR_PRINT_DEBUG(replUpToDateVectorBlob, new_utdv);
+		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, new_utdv,
+				(ndr_push_flags_fn_t)ndr_push_replUpToDateVectorBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			status = ndr_map_error2ntstatus(ndr_err);
+			ctx->error_message = talloc_asprintf(mem_ctx,
+					"Failed to push UpToDateVector: %s",
+					nt_errstr(status));
+			goto done;
+		}
+
+		status = add_to_keytab_entries(mem_ctx, keytab_ctx, 0,
+					       ctx->nc_dn, "UTDV", blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+	}
 
 	ret = libnet_keytab_add(keytab_ctx);
 	if (ret) {
@@ -249,12 +304,14 @@ static NTSTATUS keytab_process_objects(struct dssync_context *ctx,
 
 #else
 
-static NTSTATUS keytab_startup(struct dssync_context *ctx, TALLOC_CTX *mem_ctx)
+static NTSTATUS keytab_startup(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
+			       struct replUpToDateVectorBlob **pold_utdv)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
-static NTSTATUS keytab_finish(struct dssync_context *ctx, TALLOC_CTX *mem_ctx)
+static NTSTATUS keytab_finish(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
+			      struct replUpToDateVectorBlob *new_utdv)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
