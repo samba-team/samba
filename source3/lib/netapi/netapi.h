@@ -620,12 +620,12 @@ NET_API_STATUS NetGroupSetInfo(const char * server_name /* [in] */,
  * @brief Get Domain Group Information
  *
  * @param[in] server_name The server name to connect to
- * @param[in] group_name The name of the group that is going to be modified
+ * @param[in] group_name The name of the group that is going to be queried
  * @param[in] level The level defining the requested GROUP_INFO_X structure
  * @param[out] buf The buffer containing a GROUP_INFO_X structure
  * @return NET_API_STATUS
  *
- * example group/group_del.c
+ * example group/group_getinfo.c
  ***************************************************************/
 
 NET_API_STATUS NetGroupGetInfo(const char * server_name /* [in] */,
