@@ -271,7 +271,7 @@ interface libnetapi
 	typedef struct {
 		string grpi3_name;
 		string grpi3_comment;
-		domsid grpi3_group_sid;
+		domsid *grpi3_group_sid;
 		uint32 grpi3_attributes;
 	} GROUP_INFO_3;
 
