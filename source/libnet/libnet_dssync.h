@@ -19,11 +19,14 @@
 
 struct dssync_context;
 
-typedef NTSTATUS (*dssync_processing_fn_t)(TALLOC_CTX *,
-					   struct drsuapi_DsReplicaObjectListItemEx *,
-					   struct drsuapi_DsReplicaOIDMapping_Ctr *,
-					   bool,
-					   struct dssync_context *ctx);
+struct dssync_ops {
+	NTSTATUS (*startup)(struct dssync_context *ctx, TALLOC_CTX *mem_ctx);
+	NTSTATUS (*process_objects)(struct dssync_context *ctx,
+				    TALLOC_CTX *mem_ctx,
+				    struct drsuapi_DsReplicaObjectListItemEx *objects,
+				    struct drsuapi_DsReplicaOIDMapping_Ctr *mappings);
+	NTSTATUS (*finish)(struct dssync_context *ctx, TALLOC_CTX *mem_ctx);
+};
 
 struct dssync_context {
 	const char *domain_name;
@@ -34,14 +37,12 @@ struct dssync_context {
 	DATA_BLOB session_key;
 	const char *output_filename;
 
-	dssync_processing_fn_t processing_fn;
+	void *private_data;
+
+	const struct dssync_ops *ops;
 
 	char *result_message;
 	char *error_message;
 };
 
-NTSTATUS libnet_dssync_dump_keytab(TALLOC_CTX *mem_ctx,
-				   struct drsuapi_DsReplicaObjectListItemEx *cur,
-				   struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
-				   bool last_query,
-				   struct dssync_context *ctx);
+extern const struct dssync_ops libnet_dssync_keytab_ops;

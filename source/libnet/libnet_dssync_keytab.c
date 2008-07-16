@@ -22,6 +22,48 @@
 
 #if defined(HAVE_ADS) && defined(ENCTYPE_ARCFOUR_HMAC)
 
+static NTSTATUS keytab_startup(struct dssync_context *ctx, TALLOC_CTX *mem_ctx)
+{
+	krb5_error_code ret = 0;
+	struct libnet_keytab_context *keytab_ctx;
+
+	ret = libnet_keytab_init(mem_ctx, ctx->output_filename, &keytab_ctx);
+	if (ret) {
+		return krb5_to_nt_status(ret);
+	}
+
+	keytab_ctx->dns_domain_name = ctx->dns_domain_name;
+	ctx->private_data = keytab_ctx;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS keytab_finish(struct dssync_context *ctx, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	krb5_error_code ret = 0;
+	struct libnet_keytab_context *keytab_ctx =
+		(struct libnet_keytab_context *)ctx->private_data;
+
+	ret = libnet_keytab_add(keytab_ctx);
+	if (ret) {
+		status = krb5_to_nt_status(ret);
+		ctx->error_message = talloc_asprintf(mem_ctx,
+			"Failed to add entries to keytab %s: %s",
+			keytab_ctx->keytab_name, error_message(ret));
+		goto done;
+	}
+
+	ctx->result_message = talloc_asprintf(mem_ctx,
+		"Vampired %d accounts to keytab %s",
+		keytab_ctx->count,
+		keytab_ctx->keytab_name);
+
+done:
+	TALLOC_FREE(keytab_ctx);
+	return status;
+}
+
 /****************************************************************
 ****************************************************************/
 
@@ -171,27 +213,14 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS libnet_dssync_dump_keytab(TALLOC_CTX *mem_ctx,
-				   struct drsuapi_DsReplicaObjectListItemEx *cur,
-				   struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
-				   bool last_query,
-				   struct dssync_context *ctx)
+static NTSTATUS keytab_process_objects(struct dssync_context *ctx,
+				       TALLOC_CTX *mem_ctx,
+				       struct drsuapi_DsReplicaObjectListItemEx *cur,
+				       struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	krb5_error_code ret = 0;
-	static struct libnet_keytab_context *keytab_ctx = NULL;
-
-	if (!keytab_ctx) {
-		ret = libnet_keytab_init(mem_ctx,
-					 ctx->output_filename,
-					 &keytab_ctx);
-		if (ret) {
-			status = krb5_to_nt_status(ret);
-			goto out;
-		}
-
-		keytab_ctx->dns_domain_name = ctx->dns_domain_name;
-	}
+	struct libnet_keytab_context *keytab_ctx =
+		(struct libnet_keytab_context *)ctx->private_data;
 
 	for (; cur; cur = cur->next_object) {
 		status = parse_object(mem_ctx, keytab_ctx, cur);
@@ -200,41 +229,33 @@ NTSTATUS libnet_dssync_dump_keytab(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (last_query) {
-
-		ret = libnet_keytab_add(keytab_ctx);
-		if (ret) {
-			status = krb5_to_nt_status(ret);
-			ctx->error_message = talloc_asprintf(mem_ctx,
-				"Failed to add entries to keytab %s: %s",
-				keytab_ctx->keytab_name, error_message(ret));
-			goto out;
-		}
-
-		ctx->result_message = talloc_asprintf(mem_ctx,
-			"Vampired %d accounts to keytab %s",
-			keytab_ctx->count,
-			keytab_ctx->keytab_name);
-
-		TALLOC_FREE(keytab_ctx);
-	}
-
-	return NT_STATUS_OK;
  out:
-	TALLOC_FREE(keytab_ctx);
-
 	return status;
 }
 
 #else
 
-NTSTATUS libnet_dssync_dump_keytab(TALLOC_CTX *mem_ctx,
-				   struct drsuapi_DsReplicaObjectListItemEx *cur,
-				   struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
-				   bool last_query,
-				   struct dssync_context *ctx)
+static NTSTATUS keytab_startup(struct dssync_context *ctx, TALLOC_CTX *mem_ctx)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
+static NTSTATUS keytab_finish(struct dssync_context *ctx, TALLOC_CTX *mem_ctx)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+static NTSTATUS keytab_process_objects(struct dssync_context *ctx,
+				       TALLOC_CTX *mem_ctx,
+				       struct drsuapi_DsReplicaObjectListItemEx *cur,
+				       struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
 #endif /* defined(HAVE_ADS) && defined(ENCTYPE_ARCFOUR_HMAC) */
+
+const struct dssync_ops libnet_dssync_keytab_ops = {
+	.startup		= keytab_startup,
+	.process_objects	= keytab_process_objects,
+	.finish			= keytab_finish,
+};
