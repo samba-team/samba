@@ -326,6 +326,13 @@ static void dreplsrv_op_pull_source_get_changes_recv(struct rpc_request *req)
 		return;
 	}
 
+	if (ctr_level == 6) {
+		if (!W_ERROR_IS_OK(ctr6->drs_error)) {
+			composite_error(c, werror_to_ntstatus(ctr6->drs_error));
+			return;
+		}
+	}
+
 	dreplsrv_op_pull_source_apply_changes_send(st, r, ctr_level, ctr1, ctr6);
 }
 
