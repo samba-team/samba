@@ -138,7 +138,7 @@ struct GROUP_INFO_2 {
 struct GROUP_INFO_3 {
 	const char * grpi3_name;
 	const char * grpi3_comment;
-	struct domsid grpi3_group_sid;
+	struct domsid * grpi3_group_sid;
 	uint32_t grpi3_attributes;
 };
 

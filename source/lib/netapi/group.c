@@ -593,6 +593,7 @@ static WERROR map_group_info_to_buffer(TALLOC_CTX *mem_ctx,
 	struct GROUP_INFO_1 info1;
 	struct GROUP_INFO_2 info2;
 	struct GROUP_INFO_3 info3;
+	struct dom_sid sid;
 
 	switch (level) {
 		case 0:
@@ -618,13 +619,14 @@ static WERROR map_group_info_to_buffer(TALLOC_CTX *mem_ctx,
 
 			break;
 		case 3:
+			if (!sid_compose(&sid, domain_sid, rid)) {
+				return WERR_NOMEM;
+			}
+
 			info3.grpi3_name	= info->name.string;
 			info3.grpi3_comment	= info->description.string;
 			info3.grpi3_attributes	= info->attributes;
-
-			if (!sid_compose((struct dom_sid *)&info3.grpi3_group_sid, domain_sid, rid)) {
-				return WERR_NOMEM;
-			}
+			info3.grpi3_group_sid	= (struct domsid *)sid_dup_talloc(mem_ctx, &sid);
 
 			*buffer = (uint8_t *)talloc_memdup(mem_ctx, &info3, sizeof(info3));
 
