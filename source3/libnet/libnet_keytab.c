@@ -141,4 +141,81 @@ krb5_error_code libnet_keytab_add(struct libnet_keytab_context *ctx)
 #endif /* defined(ENCTYPE_ARCFOUR_HMAC) */
 }
 
+struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *ctx,
+						 const char *principal, int kvno,
+						 TALLOC_CTX *mem_ctx)
+{
+	krb5_error_code ret = 0;
+	krb5_kt_cursor cursor;
+	krb5_keytab_entry kt_entry;
+	struct libnet_keytab_entry *entry = NULL;
+
+	ZERO_STRUCT(kt_entry);
+	ZERO_STRUCT(cursor);
+
+	ret = krb5_kt_start_seq_get(ctx->context, ctx->keytab, &cursor);
+	if (ret) {
+		return NULL;
+	}
+
+	while (krb5_kt_next_entry(ctx->context, ctx->keytab, &kt_entry, &cursor) == 0) {
+		char *princ_s = NULL;
+
+		if (kt_entry.vno != kvno) {
+			smb_krb5_kt_free_entry(ctx->context, &kt_entry);
+			continue;
+		}
+
+		ret = smb_krb5_unparse_name(ctx->context, kt_entry.principal, &princ_s);
+		if (ret) {
+			smb_krb5_kt_free_entry(ctx->context, &kt_entry);
+			continue;
+		}
+
+		if (strcmp(principal, princ_s) != 0) {
+			smb_krb5_kt_free_entry(ctx->context, &kt_entry);
+			SAFE_FREE(princ_s);
+			continue;
+		}
+
+		entry = talloc_zero(mem_ctx, struct libnet_keytab_entry);
+		if (!entry) {
+			smb_krb5_kt_free_entry(ctx->context, &kt_entry);
+			SAFE_FREE(princ_s);
+			break;
+		}
+
+		entry->name = talloc_strdup(entry, princ_s);
+		if (!entry->name) {
+			smb_krb5_kt_free_entry(ctx->context, &kt_entry);
+			SAFE_FREE(princ_s);
+			TALLOC_FREE(entry);
+			break;
+		}
+
+		entry->principal = talloc_strdup(entry, princ_s);
+		if (!entry->principal) {
+			smb_krb5_kt_free_entry(ctx->context, &kt_entry);
+			SAFE_FREE(princ_s);
+			TALLOC_FREE(entry);
+			break;
+		}
+
+		entry->password = data_blob_talloc(entry, kt_entry.key.contents, kt_entry.key.length);
+		if (!entry->password.data) {
+			smb_krb5_kt_free_entry(ctx->context, &kt_entry);
+			SAFE_FREE(princ_s);
+			TALLOC_FREE(entry);
+			break;
+		}
+
+		smb_krb5_kt_free_entry(ctx->context, &kt_entry);
+		SAFE_FREE(princ_s);
+		break;
+	}
+
+	krb5_kt_end_seq_get(ctx->context, ctx->keytab, &cursor);
+	return entry;
+}
+
 #endif /* HAVE_KRB5 */
