@@ -371,30 +371,37 @@ static NTSTATUS vampire_schema_chunk(void *private_data,
 	uint32_t object_count;
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;
 	struct drsuapi_DsReplicaObjectListItemEx *cur;
+	uint32_t nc_linked_attributes_count;
+	uint32_t linked_attributes_count;
 
 	switch (c->ctr_level) {
 	case 1:
-		mapping_ctr		= &c->ctr1->mapping_ctr;
-		nc_object_count		= c->ctr1->extended_ret; /* maybe w2k send this unexpected? */
-		object_count		= c->ctr1->object_count;
-		first_object		= c->ctr1->first_object;
+		mapping_ctr			= &c->ctr1->mapping_ctr;
+		nc_object_count			= c->ctr1->extended_ret; /* maybe w2k send this unexpected? */
+		object_count			= c->ctr1->object_count;
+		first_object			= c->ctr1->first_object;
+		nc_linked_attributes_count	= 0;
+		linked_attributes_count		= 0;
 		break;
 	case 6:
-		mapping_ctr		= &c->ctr6->mapping_ctr;
-		nc_object_count		= c->ctr6->nc_object_count;
-		object_count		= c->ctr6->object_count;
-		first_object		= c->ctr6->first_object;
+		mapping_ctr			= &c->ctr6->mapping_ctr;
+		nc_object_count			= c->ctr6->nc_object_count;
+		object_count			= c->ctr6->object_count;
+		first_object			= c->ctr6->first_object;
+		nc_linked_attributes_count	= c->ctr6->nc_linked_attributes_count;
+		linked_attributes_count		= c->ctr6->linked_attributes_count;
 		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (nc_object_count) {
-		DEBUG(0,("Schema-DN[%s] objects[%u/%u]\n",
-			c->partition->nc.dn, object_count, nc_object_count));
+		DEBUG(0,("Schema-DN[%s] objects[%u/%u] linked_values[%u/%u]\n",
+			c->partition->nc.dn, object_count, nc_object_count,
+			linked_attributes_count, nc_linked_attributes_count));
 	} else {
-		DEBUG(0,("Schema-DN[%s] objects[%u]\n",
-		c->partition->nc.dn, object_count));
+		DEBUG(0,("Schema-DN[%s] objects[%u] linked_values[%u\n",
+		c->partition->nc.dn, object_count, linked_attributes_count));
 	}
 
 	if (!s->schema) {
@@ -442,6 +449,7 @@ static NTSTATUS vampire_store_chunk(void *private_data,
 	uint32_t nc_object_count;
 	uint32_t object_count;
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;
+	uint32_t nc_linked_attributes_count;
 	uint32_t linked_attributes_count;
 	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
 	const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector;
@@ -461,6 +469,7 @@ static NTSTATUS vampire_store_chunk(void *private_data,
 		nc_object_count			= c->ctr1->extended_ret; /* maybe w2k send this unexpected? */
 		object_count			= c->ctr1->object_count;
 		first_object			= c->ctr1->first_object;
+		nc_linked_attributes_count	= 0;
 		linked_attributes_count		= 0;
 		linked_attributes		= NULL;
 		s_dsa->highwatermark		= c->ctr1->new_highwatermark;
@@ -473,6 +482,7 @@ static NTSTATUS vampire_store_chunk(void *private_data,
 		nc_object_count			= c->ctr6->nc_object_count;
 		object_count			= c->ctr6->object_count;
 		first_object			= c->ctr6->first_object;
+		nc_linked_attributes_count	= c->ctr6->nc_linked_attributes_count;
 		linked_attributes_count		= c->ctr6->linked_attributes_count;
 		linked_attributes		= c->ctr6->linked_attributes;
 		s_dsa->highwatermark		= c->ctr6->new_highwatermark;
@@ -496,11 +506,12 @@ static NTSTATUS vampire_store_chunk(void *private_data,
 	s_dsa->other_info->dns_name = tmp_dns_name;
 
 	if (nc_object_count) {
-		DEBUG(0,("Partition[%s] objects[%u/%u]\n",
-			c->partition->nc.dn, object_count, nc_object_count));
+		DEBUG(0,("Partition[%s] objects[%u/%u] linked_values[%u/%u]\n",
+			c->partition->nc.dn, object_count, nc_object_count,
+			linked_attributes_count, nc_linked_attributes_count));
 	} else {
-		DEBUG(0,("Partition[%s] objects[%u]\n",
-		c->partition->nc.dn, object_count));
+		DEBUG(0,("Partition[%s] objects[%u] linked_values[%u\n",
+		c->partition->nc.dn, object_count, linked_attributes_count));
 	}
 
 	status = dsdb_extended_replicated_objects_commit(s->ldb,
