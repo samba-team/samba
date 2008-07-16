@@ -263,50 +263,27 @@ static NTSTATUS idmap_ldap_alloc_init(const char *params)
 
 	/* load ranges */
 
-	idmap_alloc_ldap->low_uid = 0;
-	idmap_alloc_ldap->high_uid = 0;
-	idmap_alloc_ldap->low_gid = 0;
-	idmap_alloc_ldap->high_gid = 0;
-
-	range = lp_parm_const_string(-1, "idmap alloc config", "range", NULL);
-	if (range && range[0]) {
-		unsigned low_id, high_id;
-
-		if (sscanf(range, "%u - %u", &low_id, &high_id) == 2) {
-			if (low_id < high_id) {
-				idmap_alloc_ldap->low_gid = low_id;
-				idmap_alloc_ldap->low_uid = low_id;
-				idmap_alloc_ldap->high_gid = high_id;
-				idmap_alloc_ldap->high_uid = high_id;
-			} else {
-				DEBUG(1, ("ERROR: invalid idmap alloc range "
-					  "[%s]", range));
-			}
-		} else {
-			DEBUG(1, ("ERROR: invalid syntax for idmap alloc "
-				  "config:range [%s]", range));
-		}
+	if (!lp_idmap_uid(&low_uid, &high_uid)
+	    || !lp_idmap_gid(&low_gid, &high_gid)) {
+		DEBUG(1, ("idmap uid or idmap gid missing\n"));
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
-	if (lp_idmap_uid(&low_uid, &high_uid)) {
-		idmap_alloc_ldap->low_uid = low_uid;
-		idmap_alloc_ldap->high_uid = high_uid;
-	}
-
-	if (lp_idmap_gid(&low_gid, &high_gid)) {
-		idmap_alloc_ldap->low_gid = low_gid;
-		idmap_alloc_ldap->high_gid= high_gid;
-	}
+	idmap_alloc_ldap->low_uid = low_uid;
+	idmap_alloc_ldap->high_uid = high_uid;
+	idmap_alloc_ldap->low_gid = low_gid;
+	idmap_alloc_ldap->high_gid= high_gid;
 
 	if (idmap_alloc_ldap->high_uid <= idmap_alloc_ldap->low_uid) {
-		DEBUG(1, ("idmap uid range missing or invalid\n"));
+		DEBUG(1, ("idmap uid range invalid\n"));
 		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 	if (idmap_alloc_ldap->high_gid <= idmap_alloc_ldap->low_gid) {
-		DEBUG(1, ("idmap gid range missing or invalid\n"));
+		DEBUG(1, ("idmap gid range invalid\n"));
 		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
