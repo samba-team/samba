@@ -2434,6 +2434,7 @@ static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state 
 	struct GUID *source_dsa_guid;
 	struct GUID *source_dsa_invocation_id;
 	struct drsuapi_DsReplicaHighWaterMark *new_highwatermark;
+	bool more_data = false;
 	NTSTATUS nt_status;
 
 	if (!W_ERROR_IS_OK(r->out.result)) {
@@ -2474,17 +2475,20 @@ static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state 
 		source_dsa_guid			= &ctr1->source_dsa_guid;
 		source_dsa_invocation_id	= &ctr1->source_dsa_invocation_id;
 		new_highwatermark		= &ctr1->new_highwatermark;
+		more_data			= ctr1->more_data;
 		break;
 	case 6:
 		source_dsa_guid			= &ctr6->source_dsa_guid;
 		source_dsa_invocation_id	= &ctr6->source_dsa_invocation_id;
 		new_highwatermark		= &ctr6->new_highwatermark;
+		more_data			= ctr6->more_data;
 		break;
 	}
 
 	partition->highwatermark		= *new_highwatermark;
 	partition->source_dsa_guid		= *source_dsa_guid;
 	partition->source_dsa_invocation_id	= *source_dsa_invocation_id;
+	partition->more_data			= more_data;
 
 	if (!partition->store_chunk) return WERR_OK;
 
@@ -2565,7 +2569,7 @@ static void becomeDC_drsuapi3_pull_schema_recv(struct rpc_request *req)
 
 	talloc_free(r);
 
-	if (s->schema_part.highwatermark.tmp_highest_usn > s->schema_part.highwatermark.highest_usn) {
+	if (s->schema_part.more_data) {
 		becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->schema_part,
 						     becomeDC_drsuapi3_pull_schema_recv);
 		return;
@@ -2627,7 +2631,7 @@ static void becomeDC_drsuapi3_pull_config_recv(struct rpc_request *req)
 
 	talloc_free(r);
 
-	if (s->config_part.highwatermark.tmp_highest_usn > s->config_part.highwatermark.highest_usn) {
+	if (s->config_part.more_data) {
 		becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->config_part,
 						     becomeDC_drsuapi3_pull_config_recv);
 		return;
@@ -2694,7 +2698,7 @@ static void becomeDC_drsuapi3_pull_domain_recv(struct rpc_request *req)
 
 	talloc_free(r);
 
-	if (s->domain_part.highwatermark.tmp_highest_usn > s->domain_part.highwatermark.highest_usn) {
+	if (s->domain_part.more_data) {
 		becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->domain_part,
 						     becomeDC_drsuapi3_pull_domain_recv);
 		return;

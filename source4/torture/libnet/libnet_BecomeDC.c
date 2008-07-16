@@ -416,7 +416,7 @@ static NTSTATUS test_become_dc_schema_chunk(void *private_data,
 	for (cur = first_object; cur->next_object; cur = cur->next_object) {}
 	s->schema_part.last_object = cur;
 
-	if (c->partition->highwatermark.tmp_highest_usn == c->partition->highwatermark.highest_usn) {
+	if (!c->partition->more_data) {
 		return test_apply_schema(s, c);
 	}
 

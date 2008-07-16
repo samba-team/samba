@@ -365,6 +365,7 @@ static void dreplsrv_op_pull_source_apply_changes_send(struct dreplsrv_op_pull_s
 		linked_attributes		= NULL;
 		rf1.highwatermark		= ctr1->new_highwatermark;
 		uptodateness_vector		= NULL; /* TODO: map it */
+		more_data			= ctr1->more_data;
 		break;
 	case 6:
 		mapping_ctr			= &ctr6->mapping_ctr;
@@ -374,6 +375,7 @@ static void dreplsrv_op_pull_source_apply_changes_send(struct dreplsrv_op_pull_s
 		linked_attributes		= ctr6->linked_attributes;
 		rf1.highwatermark		= ctr6->new_highwatermark;
 		uptodateness_vector		= ctr6->uptodateness_vector;
+		more_data			= ctr6->more_data;
 		break;
 	default:
 		composite_error(c, werror_to_ntstatus(WERR_BAD_NET_RESP));
@@ -403,14 +405,6 @@ static void dreplsrv_op_pull_source_apply_changes_send(struct dreplsrv_op_pull_s
 	/*
 	 * TODO: update our uptodatevector!
 	 */
-
-	/*
-	 * if the tmp_highest_usn is higher than highest_usn
-	 * there's more to pull from this source_dsa
-	 */
-	if (rf1.highwatermark.tmp_highest_usn > rf1.highwatermark.highest_usn) {
-		more_data = true;
-	}
 
 	if (more_data) {
 		dreplsrv_op_pull_source_get_changes_send(st);

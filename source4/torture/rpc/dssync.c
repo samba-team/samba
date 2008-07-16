@@ -711,7 +711,7 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 
 				test_analyse_objects(tctx, ctx, &gensec_skey, ctr1->first_object);
 
-				if (ctr1->new_highwatermark.tmp_highest_usn > ctr1->new_highwatermark.highest_usn) {
+				if (ctr1->more_data) {
 					r.in.req.req5.highwatermark = ctr1->new_highwatermark;
 					continue;
 				}
@@ -739,7 +739,7 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 
 				test_analyse_objects(tctx, ctx, &gensec_skey, ctr6->first_object);
 
-				if (ctr6->new_highwatermark.tmp_highest_usn > ctr6->new_highwatermark.highest_usn) {
+				if (ctr6->more_data) {
 					r.in.req.req8.highwatermark = ctr6->new_highwatermark;
 					continue;
 				}

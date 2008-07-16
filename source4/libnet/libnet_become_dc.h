@@ -94,6 +94,7 @@ struct libnet_BecomeDC_Partition {
 	struct GUID source_dsa_guid;
 	struct GUID source_dsa_invocation_id;
 	struct drsuapi_DsReplicaHighWaterMark highwatermark;
+	bool more_data;
 	uint32_t replica_flags;
 
 	NTSTATUS (*store_chunk)(void *private_data,
