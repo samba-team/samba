@@ -1,0 +1,1848 @@
+
+
+
+Network Working Group                                        G. Richards
+Internet-Draft                         RSA, The Security Division of EMC
+Intended status: Standards Track                           July 14, 2008
+Expires: January 15, 2009
+
+
+                         OTP Pre-authentication
+                    draft-ietf-krb-wg-otp-preauth-05
+
+Status of this Memo
+
+   By submitting this Internet-Draft, each author represents that any
+   applicable patent or other IPR claims of which he or she is aware
+   have been or will be disclosed, and any of which he or she becomes
+   aware will be disclosed, in accordance with Section 6 of BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as Internet-
+   Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on January 15, 2009.
+
+Abstract
+
+   The Kerberos protocol provides a framework authenticating a client
+   using the exchange of pre-authentication data.  This document
+   describes the use of this framework to carry out One Time Password
+   (OTP) authentication.
+
+
+
+
+
+
+
+
+
+
+
+Richards                Expires January 15, 2009                [Page 1]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+Table of Contents
+
+   1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  3
+     1.1.  Scope  . . . . . . . . . . . . . . . . . . . . . . . . . .  3
+     1.2.  Overall Design . . . . . . . . . . . . . . . . . . . . . .  3
+     1.3.  Conventions Used in this Document  . . . . . . . . . . . .  4
+   2.  Usage Overview . . . . . . . . . . . . . . . . . . . . . . . .  4
+     2.1.  OTP Mechanism Support  . . . . . . . . . . . . . . . . . .  4
+     2.2.  Pre-Authentication . . . . . . . . . . . . . . . . . . . .  4
+     2.3.  PIN Change . . . . . . . . . . . . . . . . . . . . . . . .  5
+     2.4.  Re-Synchronization . . . . . . . . . . . . . . . . . . . .  6
+   3.  Pre-Authentication Protocol Details  . . . . . . . . . . . . .  6
+     3.1.  Initial Client Request . . . . . . . . . . . . . . . . . .  6
+     3.2.  KDC Challenge  . . . . . . . . . . . . . . . . . . . . . .  6
+     3.3.  Client Response  . . . . . . . . . . . . . . . . . . . . .  7
+     3.4.  Verifying the pre-auth Data  . . . . . . . . . . . . . . .  9
+     3.5.  Confirming the Reply Key Change  . . . . . . . . . . . . . 10
+     3.6.  Reply Key Generation . . . . . . . . . . . . . . . . . . . 11
+   4.  OTP Kerberos Message Types . . . . . . . . . . . . . . . . . . 13
+     4.1.  PA-OTP-CHALLENGE . . . . . . . . . . . . . . . . . . . . . 13
+     4.2.  PA-OTP-REQUEST . . . . . . . . . . . . . . . . . . . . . . 15
+     4.3.  PA-OTP-CONFIRM . . . . . . . . . . . . . . . . . . . . . . 18
+     4.4.  PA-OTP-PIN-CHANGE  . . . . . . . . . . . . . . . . . . . . 19
+   5.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . . 19
+   6.  Security Considerations  . . . . . . . . . . . . . . . . . . . 19
+     6.1.  Man-in-the-Middle  . . . . . . . . . . . . . . . . . . . . 19
+     6.2.  Reflection . . . . . . . . . . . . . . . . . . . . . . . . 20
+     6.3.  Replay . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+     6.4.  Brute Force Attack . . . . . . . . . . . . . . . . . . . . 20
+     6.5.  FAST Facilities  . . . . . . . . . . . . . . . . . . . . . 20
+   7.  Acknowledgments  . . . . . . . . . . . . . . . . . . . . . . . 21
+   8.  References . . . . . . . . . . . . . . . . . . . . . . . . . . 21
+     8.1.  Normative References . . . . . . . . . . . . . . . . . . . 21
+     8.2.  Informative References . . . . . . . . . . . . . . . . . . 21
+   Appendix A.  ASN.1 Module  . . . . . . . . . . . . . . . . . . . . 22
+   Appendix B.  Examples of OTP Pre-Authentication Exchanges  . . . . 24
+     B.1.  Four Pass Authentication . . . . . . . . . . . . . . . . . 24
+     B.2.  Two Pass Authentication  . . . . . . . . . . . . . . . . . 27
+     B.3.  Pin Change . . . . . . . . . . . . . . . . . . . . . . . . 29
+     B.4.  Resynchronization  . . . . . . . . . . . . . . . . . . . . 30
+   Author's Address . . . . . . . . . . . . . . . . . . . . . . . . . 32
+   Intellectual Property and Copyright Statements . . . . . . . . . . 33
+
+
+
+
+
+
+
+
+
+Richards                Expires January 15, 2009                [Page 2]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+1.  Introduction
+
+1.1.  Scope
+
+   This document describes a FAST [ZhHa07] factor that allows One-Time
+   Password (OTP) values to be used in the Kerberos V5 [RFC4120] pre-
+   authentication in a manner that does not require use of the user's
+   Kerberos password.  The system is designed to work with different
+   types of OTP algorithms such as time-based OTPs [RFC2808], counter-
+   based tokens [RFC4226], challenge-response and [RFC2289] type
+   systems.  It is also designed to work with tokens that are
+   electronically connected to the user's computer via means such as a
+   USB interface.
+
+   This FAST factor provides the following facilities (as defined in
+   [ZhHa07]): client-authentication, replacing-reply-key and KDC-
+   authentication.  It does not provide the strengthening-reply-key
+   facility.
+
+   This proposal is partially based upon previous work on integrating
+   single-use authentication mechanisms into Kerberos [HoReNeZo04] and
+   allows for the use of the existing password-change extensions to
+   handle PIN change as described in [RFC3244].
+
+1.2.  Overall Design
+
+   This proposal supports 4-pass and 2-pass variants.  In the 4-pass
+   system, the client sends the KDC an initial AS-REQ and the KDC
+   responds with a KRB-ERROR containing padata that includes a random
+   nonce.  The client then encrypts the nonce and returns it along with
+   its own random value to the KDC in a second AS-REQ.  Finally, the KDC
+   returns the client's random value encrypted within the padata of the
+   AS-REP.  In the 2-pass variant, the client encrypts a timestamp
+   rather than a nonce from the KDC and the encrypted data is sent to
+   the KDC in the initial AS-REQ.  This variant can be used in cases
+   where the client can determine in advance that OTP pre-authentication
+   is supported by the KDC and which OTP key should be used.
+
+   In both systems, in order to create the message sent to the KDC, the
+   client must generate the OTP value and three keys: the standard Reply
+   Key, a key to encrypt the data sent to the KDC and a final key to
+   decrypt the KDC's reply.  In most cases, the OTP value will be used
+   in the key generation but in order to support algorithms where the
+   KDC cannot obtain the value (e.g.  [RFC2289]), the system also
+   supports the option of including the OTP value in the request along
+   with the encrypted nonce.  In addition, in order to support
+   situations where the KDC is unable to obtain the plaintext OTP value,
+   the system also supports the use of hashed OTP values in the key
+
+
+
+Richards                Expires January 15, 2009                [Page 3]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+   derivation.
+
+   The message from the client to the KDC is sent within the encrypted
+   data provided by the FAST padata type of the AS-REQ.  The KDC then
+   obtains the OTP value, generates the same keys and verifies the pre-
+   authentication data by decrypting the nonce.  If the verification
+   succeeds then it confirms knowledge of the Reply Key by returning the
+   client's nonce encrypted under one of the generated keys within the
+   encrypted part of the FAST padata of the AS-REP.
+
+1.3.  Conventions Used in this Document
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+   This document assumes familiarity with the Kerberos preauthentication
+   framework [ZhHa07] and so freely uses terminology and notation from
+   this document.
+
+   The word padata is used as shorthand for pre-authentication data.
+
+
+2.  Usage Overview
+
+2.1.  OTP Mechanism Support
+
+   As described above, this document describes a generic system for
+   supporting different OTP mechanisms in Kerberos pre-authentication.
+   However, to ensure interoperability, all implementations of this
+   specification SHOULD provide a mechanism for OTP mechanism support to
+   be added or removed.
+
+2.2.  Pre-Authentication
+
+   The approach uses pre-authentication data in AS-REQ, AS-REP and KRB-
+   ERROR messages.
+
+   In the 4-pass system, the client begins by sending an initial AS-REQ
+   to the KDC that may contain pre-authentication data such as the
+   standard Kerberos password data.  The KDC will then determine, in an
+   implementation dependent fashion, whether OTP authentication is
+   required and if it is, it will respond with a KRB-ERROR message
+   containing a PA-OTP-CHALLENGE in the PA-DATA.
+
+   The PA-OTP-CHALLENGE will contain a KDC generated nonce, an
+   encryption type, an optional list of hash algorithm identifiers, an
+   optional iteration count and optional information on how the OTP
+
+
+
+Richards                Expires January 15, 2009                [Page 4]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+   should be generated by the client.  The client will then generate the
+   OTP value, its own nonce and two keys: a Client Key to encrypt the
+   KDC's nonce and a Reply Key used to decrypt the KDC's reply.
+
+   As described in Section 3.6, these keys will be generated from the
+   Armor Key (defined in [ZhHa07]) and the OTP value unless the OTP
+   algorithm does not allow the KDC to obtain the OTP value.  If hash
+   algorithm identifiers were included in the PA-OTP-CHALLENGE then the
+   client will use the hash of the OTP value rather than the plaintext
+   value in the key generation.
+
+   The generated Client Key will be used to encrypt the nonce received
+   from the KDC using the specified encryption type.  The encrypted
+   value, a random nonce generated by the client along with optional
+   information on how the OTP was generated are then sent to the KDC in
+   a PA-OTP-REQUEST element encrypted within the armored-data of a PA-
+   FX-FAST-REQUEST PA-DATA element of a second AS-REQ.
+
+   In the 2-pass system, the client sends the PA-OTP-REQUEST in the
+   initial AS-REQ instead of sending it in response to a PA-OTP-
+   CHALLENGE returned by the KDC.  Since no challenge is received from
+   the KDC, the client includes an encrypted timestamp in the request
+   rather than the encrypted KDC nonce.
+
+   In both cases, on receipt of a PA-OTP-REQUEST, the KDC generate the
+   same keys as the client, and use the generated Client Key to verify
+   the pre-authentication by decrypting the encrypted data sent by the
+   client (either nonce or timestamp).  If the validation succeeds then
+   the KDC will authenticate itself to the client and confirm that the
+   Reply Key has been updated by encrypting the client's nonce under the
+   Reply Key and returning the encrypted value in the encData of a PA-
+   OTP-CONFIRM.  The PA-OTP-CONFIRM is encrypted within the armored-data
+   of a PA-FX-FAST-REPLY PA-DATA element of the AS-REP as described in
+   [ZhHa07].
+
+2.3.  PIN Change
+
+   If, following successful validation of a PA-OTP-REQUEST in a AS-REQ,
+   the KDC requires that the user changes their PIN then it will include
+   a PA-OTP-PIN-CHANGE element in the armored data of the PA-FX-FAST-
+   REPLY PA-DATA element of the AS-REP.  This data can be used to return
+   a new PIN to the user if the KDC has updated the PIN or to indicate
+   to the user that they must change their PIN.
+
+   In the latter case, it is recommended that user PIN change be handled
+   by a PIN change service supporting the ChangePasswdData in a AP-REQ
+   as described in [RFC3244].  If a user PIN for OTP is required to
+   change and such a service is used then the KDC MUST NOT return a TGT
+
+
+
+Richards                Expires January 15, 2009                [Page 5]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+   when the user is authenticated using this PIN.  The KDC SHOULD return
+   a service ticket to the PIN change service when the existing PIN is
+   required to change, in order for the client to compute an AP-REQ
+   according to [RFC3244].  In order to complicate stealing service
+   tickets intended for the PIN change service (and the corresponding
+   session keys), the lifetime of the PIN-change service tickets should
+   be just long enough to complete the PIN change, regardless whether
+   the exiting PIN needs to be changed or not.  A 1-minute lifetime is
+   RECOMMENED.  This way the PIN change service can effectively force
+   the user to present the existing PIN in order to change to use a new
+   PIN.
+
+2.4.  Re-Synchronization
+
+   It is possible with time and event-based tokens that the OTP server
+   will lose synchronization with the current token state.  If, when
+   processing a PA-OTP-REQUEST, the pre-authentication validation fails
+   for this reason then the KDC SHALL return a KRB-ERROR message
+   containing a PA-OTP-CHALLENGE in the PA-DATA with the "nextOTP" flag
+   set.  If this flag is set then the client MUST re-try the
+   authentication using the OTP for the token "state" after that used in
+   the failed authentication attempt.
+
+
+3.  Pre-Authentication Protocol Details
+
+3.1.  Initial Client Request
+
+   In the 4-pass mode, the client begins by sending an initial AS-REQ
+   possibly containing other pre-authentication data.  If the KDC
+   determines that OTP-based pre-authentication is required and the
+   request does not contain a PA-OTP-REQUEST then it will respond as
+   described in Section 3.2.
+
+   If the client has all the necessary information, it MAY use the
+   2-pass system by constructing a PA-OTP-REQUEST as described in
+   Section 3.3 and including it in the initial request.
+
+3.2.  KDC Challenge
+
+   If the user is required to authenticate using an OTP then the KDC
+   SHALL respond to the initial AS-REQ with a KRB-ERROR containing:
+
+   o  An error code of KDC_ERR_PREAUTH_REQUIRED
+
+   o  An e-data field containing PA-DATA with a PA-OTP-CHALLENGE.
+
+   The PA-OTP-CHALLENGE SHALL contain a random nonce value to be
+
+
+
+Richards                Expires January 15, 2009                [Page 6]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+   returned encrypted in the client response and the encryption type to
+   be used by the client.
+
+   If the OTP is to be generated using an server generated challenge
+   then the value of the challenge SHALL be included in the otp-
+   challenge field.  If the OTP is to be generated by combining the
+   challenge with the token's current state (e.g. time) then the
+   "combine" flag SHALL be set.
+
+   The KDC MAY use the otp-service to identify the service provided by
+   the KDC in order to assist the client in locating the OTP token to be
+   used.  For example, this field could be used when a client has
+   multiple OTP tokens from different servers to identify the KDC.
+   Similarly, if the KDC can determine which OTP token key is the be
+   used, then the otp-keyID field MAY be used to pass that value to the
+   client.
+
+   The otp-algID field MAY be used to identify the algorithm that should
+   be used in the OTP calculation.  For example, it could be used when a
+   user has been issued with multiple tokens of different types.
+
+   In order to support connected tokens that can generate OTP values of
+   varying length, the KDC MAY include the desired length of the OTP in
+   the otp-length field.
+
+   In order to support cases where the KDC cannot obtain plaintext
+   values for the OTPs, the challenge MAY also contain a sequence of one
+   way hash function algorithm identifiers and a minimum value of the
+   iteration count to be used by the client when hashing the OTP value.
+
+3.3.  Client Response
+
+   The client response SHALL be sent to the KDC as a PA-OTP-REQUEST
+   included within the enc-fast-req of a PA-FX-FAST-REQUEST encrypted
+   under the current Armor Key as described in [ZhHa07].
+
+   In order to generate its response, the client must generate an OTP
+   value.  The OTP value MUST be based on the parameters in the KDC
+   challenge if present and the response SHOULD include any information
+   on the generated OTP value reported by the OTP token
+
+   If the "nextOTP" flag is set in the PA-OTP-CHALLENGE, then the client
+   MUST generate the OTP value in the next token state that that used in
+   the previous PA-OTP-REQUEST.  The "nextOTP" flag must also be set in
+   the PA-OTP-REQUEST.
+
+   The otp-time and otp-counter fields MAY be used to return the time
+   and counter values used by the token.  The otp-format field MAY be
+
+
+
+Richards                Expires January 15, 2009                [Page 7]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+   used to report the format of the generated OTP.  This field SHOULD be
+   used if a token can generate OTP values in multiple formats.  The
+   otp-algID field MAY be used by the client to report the algorithm
+   used in the OTP calculation and the otp-keyID MAY be used to report
+   the identifier of the OTP token key used.
+
+   If an otp-challenge is present in the PA-OTP-CHALLENGE then the OTP
+   value MUST be generated based on a challenge if the token is capable
+   of accepting a challenge.  The client MAY ignore the provided
+   challenge if and only if the token is not capable of including a
+   challenge in the OTP calculation.  If the "combine" flag is not set
+   in the PA-OTP-CHALLENGE then the OTP SHALL be calculated based only
+   the challenge and not the internal state (e.g. time or counter) of
+   the token.  If the "combine" flag is set then the OTP SHALL be
+   calculated using both the internal state and the provided challenge.
+   If the flag is set but otp-challenge is not present then the client
+   SHALL regard the request as invalid.
+
+   If the OTP value was generated by a challenge not sent by the KDC
+   then the challenge SHALL be included in the otp-challenge of the PA-
+   OTP-RESPONSE.  If the OTP was generated by combining a challenge
+   (either received from the KDC or generated by the client) with the
+   token state then the "combine" flag SHALL be set in the PA-OTP-
+   RESPONSE.
+
+   The client MUST derive the Client Key and Reply Key as described in
+   Section 3.6.  In order to support OTP algorithms where the KDC cannot
+   obtain the OTP value, the client MAY include the generated value in
+   the otp-value field of the response.  However, the client MUST NOT
+   include the OTP value in the response unless it is allowed by the
+   algorithm profile.  If it is included then the OTP value MUST NOT be
+   used in the key derivation.
+
+   If the client used hashed OTP values in the key derivation process
+   then it MUST include the hash algorithm and iteration count used in
+   the hashAlg and iterationCount fields of the PA-OTP-REQUEST.  These
+   fields MUST NOT be included if hashed OTP values were not used.  It
+   is RECOMMENDED that the iteration count used by the client be chosen
+   in such a way that it is computationally infeasible/unattractive for
+   an attacker to brute-force search for the given OTP within the
+   lifetime of that OTP.
+
+   If the PA-OTP-REQUEST is being sent in response to a PA-OTP-CHALLENGE
+   that contained hash algorithm identifiers and the OTP value is to be
+   used in the key derivation then the client MUST use hashed OTP values
+   and MUST select the first algorithm from the list that it supports.
+   However, if the algorithm identifiers do not conform to local policy
+   restrictions then the authentication attempt MUST NOT proceed.  If
+
+
+
+Richards                Expires January 15, 2009                [Page 8]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+   the iteration count specified in the PA-OTP-CHALLENGE does not
+   conform to local policy then the client MAY use a higher value but
+   MUST NOT use a lower value.  That is, the value in the KDC challenge
+   is a minimum value.
+
+   The generated Client Key is used by the client to encrypt data to be
+   included in the encData of the response to allow the KDC to
+   authenticate the user.  The key usage for this encryption is
+   KEY_USAGE_OTP_REQUEST.
+
+   o  If the response is being generated in response to a KDC challenge
+      then client encrypts a PA-OTP-ENC-REQUEST containing the value of
+      nonce from the corresponding challenge using the encryption type
+      specified in the challenge.
+
+   o  If the response is not in response to a KDC challenge then the
+      client encrypts a PA-ENC-TS-ENC containing the current time as in
+      the encrypted timestamp pre-authentication mechanism [RFC4120].
+
+   If the client is working in 2-pass mode and so is not responding to
+   an initial KDC challenge then the values of the iteration count, hash
+   algorithms and encryption type cannot be obtained from that
+   challenge.  The client SHOULD use any values obtained from a previous
+   PA-OTP-CHALLENGE or, if no values are available, it MAY use initial
+   configured values.
+
+   Finally, the client generates a random value to include in the nonce
+   of the response.  This value will then be returned encrypted by the
+   KDC.
+
+3.4.  Verifying the pre-auth Data
+
+   The KDC validates the pre-authentication data by generating the same
+   keys as the client and using the generated Client Key to decrypt the
+   value of encData from the PA-OTP-REQUEST.
+
+   If the otp-value field is included in the PA-OTP-REQUEST then the KDC
+   MUST use that value in the key generation.  Otherwise, the KDC will
+   need to generate or obtain the value.
+
+   If the otp-challenge field is present, then the OTP was calculated
+   using that challenge.  If the "combine" flag is also set, then the
+   OTP was calculated using the challenge and the token's current state.
+
+   It is RECOMMENDED that the KDC acts upon the values of otp-time, otp-
+   counter, otp-format, otp-algID and otp-keyID if they are present in
+   the PA-OTP-REQUEST.  If the KDC receives a request containing these
+   values but cannot act upon theme then they MAY be ignored.
+
+
+
+Richards                Expires January 15, 2009                [Page 9]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+   The KDC generates the Client Key and Reply Key as described in
+   Section 3.6 from the OTP value using the hash algorithm and iteration
+   count if present in the PA-OTP-REQUEST.  However, the client
+   authentication MUST fail if the KDC requires hashed OTP values and
+   the hashAlg field was not present in the PA-OTP-REQUEST, if the hash
+   algorithm identifier or the value of iterationCount included in the
+   PA-OTP-REQUEST do not conform to local KDC policy or if the value of
+   the iterationCount is less than that specified in the PA-OTP-
+   CHALLENGE.
+
+   The generated Client Key is then used to decrypt the encData from the
+   PA-OTP-REQUEST.  If the client response was sent as a result of a PA-
+   OTP-CHALLENGE then decrypted data will be a PA-OTP-ENC-REQUEST and
+   the client authentication MUST fail if the nonce value from the PA-
+   OTP-ENC-REQUEST is not the same as the nonce value sent in the PA-
+   OTP-CHALLENGE.  If the response was not sent as a result of a PA-OTP-
+   CHALLENGE then the decrypted value will be a PA-ENC-TS-ENC and the
+   authentication process will be the same as with standard encrypted
+   timestamp pre-authentication [RFC4120]
+
+   The authentication MUST fail if the encryption type used by the
+   client in the encData does not conform to policy.
+
+   If authentication fails due to the hash algorithm, iteration count or
+   encryption type used by the client then the KDC SHOULD return a PA-
+   OTP-CHALLENGE with the required values in the error response.  If the
+   authentication fails due to the token state on the server no longer
+   being synchronized with the token used then the KDC SHALL return a
+   PA-OTP-CHALLENGE with the "nextOTP" flag set as described in
+   Section 2.4.
+
+   If during the authentication process, the KDC determines that the
+   user's PIN has expired then it MAY include a PA-OTP-PIN-CHANGE in the
+   response as described in Section 2.3
+
+3.5.  Confirming the Reply Key Change
+
+   If the pre-authentication data was successfully verified, then, in
+   order to support mutual authentication, the KDC SHALL respond to the
+   client's PA-OTP-REQUEST by including in the AS-REP, a PA-OTP-CONFIRM
+   containing the client's nonce from PA-OTP-REQUEST encrypted under the
+   generated Reply Key.
+
+   The nonce SHALL be returned within a PA-OTP-ENC-CONFIRM encrypted
+   within the encData of the PA-OTP-CONFIRM.  The key usage SHALL be
+   KEY_USAGE_OTP_CONFIRM and the encryption type SHOULD be the same as
+   used by the client in the encData of the PA-OTP-REQUEST.
+
+
+
+
+Richards                Expires January 15, 2009               [Page 10]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+   The PA-OTP-CONFIRM SHALL be sent to the client within the enc-fast-
+   rep of a PA-FX-FAST-REPLY encrypted under the current Armor Key.
+
+   The client then uses its generated Reply Key to decrypt the PA-OTP-
+   ENC-CONFIRM from the encData of the PA-OTP-CONFIRM.  The client MUST
+   fail the authentication process if the nonce value in the PA-OTP-ENC-
+   CONFIRM is not the same as the nonce value sent in the PA-OTP-
+   REQUEST.
+
+3.6.  Reply Key Generation
+
+   In order to authenticate the user, the client and KDC need to
+   generate two encryption keys:
+
+   o  The Client Key to be used by the client to encrypt and by the KDC
+      to decrypt the encData in the PA-OTP-REQUEST.
+
+   o  The Reply Key to be used in the standard manner by the KDC to
+      encrypt data in the AS-REP but also to be used by the KDC to
+      encrypt and by the client to decrypt the encData value in the PA-
+      OTP-CONFIRM.
+
+   The method used to generate the three keys will depend on the OTP
+   algorithm.
+
+   o  If the OTP value is included in the otp-value of the PA-OTP-
+      REQUEST then all three keys SHALL be the same as the Armor Key
+      (defined in [ZhHa07]).
+
+   o  If the OTP value is not included in the otp-value of the PA-OTP-
+      REQUEST then the three keys SHALL be derived from the Armor Key
+      and the OTP value as described below.
+
+   If the OTP value is not included in the PA-OTP-REQUEST, then the
+   Reply Key SHALL be generated using the KRB_FX_CF2 algorithm from
+   [ZhHa07]
+
+             Client Key = KRB_FX_CF2(K1, K2, O1, O2)
+             Reply Key = KRB_FX_CF2(K1, K2, O3, O4)
+
+   The first input keys, K1, shall be the Armor Key. The second input
+   key, K2, shall be derived from the OTP value using string-to-key
+   (defined in [RFC3961]).
+
+   The octet string parameters, O1, O2, O3 and O4, shall be the ASCII
+   string "Combine1", "Combine2", "Combine3" and "Combine4" as shown
+   below:
+
+
+
+
+Richards                Expires January 15, 2009               [Page 11]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+      {0x43, 0x6f, 0x6d, 0x62, 0x69, 0x6e, 0x65, 0x31}
+      {0x43, 0x6f, 0x6d, 0x62, 0x69, 0x6e, 0x65, 0x32}
+      {0x43, 0x6f, 0x6d, 0x62, 0x69, 0x6e, 0x65, 0x33}
+      {0x43, 0x6f, 0x6d, 0x62, 0x69, 0x6e, 0x65, 0x34}
+
+   If the hash of the OTP value is to be used then K2 SHALL be derived
+   as follows:
+
+   o  An initial hash value, H, is generated:
+
+             H = hash(sname|nonce|OTP)
+
+      Where:
+      *  "|" denotes concatenation
+      *  hash is the hash algorithm selected by the client.
+      *  sname is the UTF-8 encoding of the KDC's fully qualified domain
+         name.  If the domain name is an Internationalized Domain Name
+         then the value shall be the output of nameprep [RFC3491] as
+         described in [RFC3490]
+      *  nonce is the random nonce value generated by the client to be
+         included in the PA-OTP-REQUEST.
+      *  OTP is the OTP value.
+
+   o  The initial hash value is then hashed iterationCount-1 times to
+      produce a final hash value, H'.  (Where iterationCount is the
+      value from the PA-OTP-REQUEST.)
+
+             H' = hash(hash(...(iterationCount-1 times)...(H)))
+
+   o  The value of K2 is then derived from the base64 [RFC2045] encoding
+      of this final hash value.
+
+             K2 = string-to-key(Base64(H')||"Krb-preAuth")
+
+   If the OTP value is binary and the hash value is not used, then K2
+   SHALL be derived from the base64 encoding of the OTP value.
+
+             K2 = string-to-key(Base64(OTP)||"Krb-preAuth")
+
+   If the OTP value is not binary and the hash value is not used, then
+   K2 SHALL be derived by running the OTP value once through string-to-
+   key.
+
+             K2 = string-to-key(OTP||"Krb-preAuth")
+
+   The salt and any additional parameters for string-to-key will be
+   derived as described in section 3.1.3 of [RFC4120] using preauth data
+   or default values defined for the particular enctype.  The symbol
+
+
+
+Richards                Expires January 15, 2009               [Page 12]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+   "||" denotes string concatenation.
+
+
+4.  OTP Kerberos Message Types
+
+4.1.  PA-OTP-CHALLENGE
+
+   The PA_OTP_CHALLENGE padata type is sent by the KDC to the client in
+   the PA-DATA of a KRB-ERROR when pre-authentication using an OTP value
+   is required.  The corresponding padata-value field contains the DER
+   encoding of a PA-OTP-CHALLENGE containing a server generated nonce
+   and information for the client on how to generate the OTP.
+
+             PA_OTP_CHALLENGE     << TBA >>
+
+             PA-OTP-CHALLENGE ::= SEQUENCE {
+               flags              OTPFlags,
+               nonce              UInt32,
+               etype              Int32,
+               supportedHashAlg   SEQUENCE OF AlgorithmIdentifier
+                                                  OPTIONAL,
+               iterationCount     INTEGER         OPTIONAL,
+               otp-challenge      OCTET STRING (SIZE(8..MAX)) OPTIONAL,
+               otp-length     [0] Int32           OPTIONAL,
+               otp-service        UTF8String      OPTIONAL,
+               otp-keyID      [1] OCTET STRING    OPTIONAL,
+               otp-algID          AnyURI          OPTIONAL,
+               ...
+             }
+
+             OTPFlags ::= KerberosFlags
+             -- nextOTP (0)
+             -- combine (1)
+
+   flags
+      If the "nextOTP" flag is set then the OTP SHALL be based on the
+      next token "state" rather than the current one.  As an example,
+      for a time-based token, this means the next time slot and for an
+      event-based token, this could mean the next counter value.
+
+      The "combine flag controls how the challenge included in otp-
+      challenge shall be used.  If the flag is set then OTP SHALL be
+      calculated using the challenge from otp-challenge and the internal
+      token state (e.g. time or counter).  If the "combine" flag is not
+      set then the OTP SHALL be calculated based only on the challenge.
+      If the flag is set and otp-challenge is not present then the
+      request SHALL be regarded as invalid.
+
+
+
+
+Richards                Expires January 15, 2009               [Page 13]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+   nonce
+      A KDC-supplied nonce value to be encrypted by the client in the
+      PA-OTP-REQUEST.
+
+   etype
+      The encryption type to be used by the client to encrypt the nonce
+      in the PA-OTP-REQUEST.
+
+   supportedHashAlg
+      If present then a hash of the OTP value MUST be used in the key
+      derivation rather than the plain text value.  Each
+      AlgorithmIdentifier identifies a hash algorithm that is supported
+      by the KDC in decreasing order of preference.  The client MUST
+      select the first algorithm from the list that it supports.
+      Support for SHA1 by both the client and KDC is REQUIRED.  The
+      AlgorithmIdentifer selected by the client MUST be placed in the
+      hashAlg element of the PA-OTP-REQUEST.
+
+   iterationCount
+      The minimum value of the iteration count to be used by the client
+      when hashing the OTP value.  This value MUST be present if and
+      only if supportedHashAlg is present.  If the value of this element
+      does not conform to local policy on the client then the client MAY
+      use a larger value but MUST NOT use a lower value.  The value of
+      the iteration count used by the client MUST be returned in the PA-
+      OTP-REQUEST sent to the KDC.
+
+   otp-challenge
+      The otp-challenge is used by the KDC to send a challenge value for
+      use in the OTP calculation.  The challenge is an optional octet
+      string that SHOULD be uniquely generated for each request it is
+      present in, and SHOULD be eight octets or longer when present.
+      When the challenge is not present, the OTP will be calculated on
+      the current token state only.  The client MAY ignore a provided
+      challenge if and only if the OTP token the client is interacting
+      with is not capable of including a challenge in the OTP
+      calculation.  In this case, KDC policies will determine whether to
+      accept a provided OTP value or not.
+
+   otp-length
+      Use of this field is OPTIONAL, but MAY be used by the KDC to
+      specify the desired length of the generated OTP in octets.  For
+      example, this field could be used when a token is capable of
+      producing OTP values of different lengths.
+
+
+
+
+
+
+
+Richards                Expires January 15, 2009               [Page 14]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+   otp-service
+      Use of this field is OPTIONAL, but MAY be used by the KDC to
+      identify the appropriate OTP tokens to be used.  For example, this
+      field could be used when a client has multiple OTP tokens from
+      different servers.
+
+   otp-keyID
+      Use of this field is OPTIONAL, but MAY be used by the KDC to
+      identify which token key should be used for the authentication.
+      For example, this field could be used when a user has been issued
+      multiple token keys by the same server.
+
+   otp-algID
+      use of this field is OPTIONAL, but MAY be used by the KDC to
+      identify the algorithm to use when generating the OTP.
+
+4.2.  PA-OTP-REQUEST
+
+   The padata-type PA_OTP_REQUEST is sent by the client to the KDC in
+   the KrbFastReq padata of a PA-FX-FAST-REQUEST that is included in the
+   PA-DATA of an AS-REQ.  The corresponding padata-value field contains
+   the DER encoding of a PA-OTP-REQUEST.
+
+   The message contains pre-authentication data encrypted by the client
+   using the generated Client Key and optional information on how the
+   OTP was generated.  It may also, optionally, contain the generated
+   OTP value.
+
+             PA_OTP_REQUEST     << TBA >>
+
+             PA-OTP-REQUEST ::= SEQUENCE {
+               flags             OTPFlags,
+               nonce             UInt32,
+               encData           EncryptedData,
+                                 -- PA-OTP-ENC-REQUEST or PA-ENC-TS-ENC
+                                 -- Key usage of KEY_USAGE_OTP_REQUEST
+               hashAlg           AlgorithmIdentifier OPTIONAL,
+               iterationCount    INTEGER         OPTIONAL,
+               otp-value         OCTET STRING    OPTIONAL,
+               otp-challenge [0] OCTET STRING    OPTIONAL,
+               otp-time          KerberosTime    OPTIONAL,
+               otp-counter   [1] OCTET STRING    OPTIONAL,
+               otp-format    [2] OTPFormat       OPTIONAL,
+               otp-keyID     [3] OCTET STRING    OPTIONAL,
+               otp-algID         AnyURI          OPTIONAL,
+               ...
+             }
+
+
+
+
+Richards                Expires January 15, 2009               [Page 15]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+             KEY_USAGE_OTP_REQUEST  << TBA >>
+
+
+             PA-OTP-ENC-REQUEST ::= SEQUENCE {
+               nonce     UInt32,
+               ...
+             }
+
+
+             OTPFormat ::= INTEGER {
+               decimal(0),
+               hexadecimal(1),
+               alphanumeric(2),
+               binary(3)
+             }
+
+   flags
+      If the "nextOTP" flag is set then the OTP was calculated based on
+      the next token "state" rather than the current one.  This flag
+      MUST be set if and only if it was set in a corresponding PA-OTP-
+      CHALLENGE.
+
+      If the "combine" flag is set then the OTP was calculated based on
+      a challenge and the token state.
+
+   nonce
+      A random nonce value generated by the client to be returned
+      encrypted by the KDC in the PA-OTP-CONFIRM.
+
+   encData
+      This field contains the pre-authentication data encrypted under
+      the Client Key with a key usage of KEY_USAGE_OTP_REQUEST.  If the
+      PA-OTP-REQUEST is sent as a result of a PA-OTP_CHALLENGE then this
+      MUST contain a PA-OTP-ENC-REQUEST with the nonce from the PA-OTP-
+      CHALLENGE.  If no challenge was received then this MUST contain a
+      PA-ENC-TS-ENC.
+
+   hashAlg
+      This field MUST be present if and only if a hash of the OTP value
+      was used as input to string-to-key (see Section 3.6) and MUST
+      contain the AlgorithmIdentifier of the hash algorithm used.  If
+      the PA-OTP-REQUEST is sent as a result of a PA-OTP-CHALLENGE then
+      the AlgorithmIdentifer MUST be the first one supported by the
+      client from the supportedHashAlg of the PA-OTP-CHALLENGE.
+
+
+
+
+
+
+
+Richards                Expires January 15, 2009               [Page 16]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+   iterationCount
+      This field MUST be present if and only if a hash of the OTP value
+      was used as input to string-to-key (see Section 3.6) and MUST
+      contain the iteration count used when hashing the OTP value.  If
+      the PA-OTP-REQUEST is sent as a result of a PA-OTP-CHALLENGE then
+      the value MUST NOT be less that that specified in the PA-OTP-
+      CHALLENGE.
+
+   otp-value
+      The generated OTP value.  This value MUST NOT be present unless
+      allowed by the OTP algorithm profile.
+
+   otp-challenge
+      Value used by the client in the OTP calculation.  It MUST be sent
+      to the KDC if and only if the value would otherwise be unknown to
+      the KDC.  For example, the token or client modified or generated
+      challenge.
+
+   otp-time
+      This field MAY be included by the client to carry the time value
+      as reported by the OTP token.  Use of this element is OPTIONAL but
+      it MAY be used by a client to simplify the OTP calculations of the
+      KDC.  It is RECOMMENDED that the KDC act upon this value if it is
+      present in the request and it is capable of using it in the
+      generation of the OTP value.
+
+   otp-counter
+      This field MAY be included by the client to carry the token
+      counter value, as reported by the OTP token.  Use of this element
+      is OPTIONAL but it MAY be used by a client to simplify the OTP
+      calculations of the KDC.  It is RECOMMENDED that the KDC act upon
+      this value if it is present in the request and it is capable of
+      using it in the generation of the OTP value.
+
+   otp-format
+      This field MAY be used by the client to send the format of the
+      generated OTP as reported by the OTP token.  Use of this element
+      is OPTIONAL but it MAY be used by the client to simplify the OTP
+      calculation.  It is RECOMMENDED that the KDC act upon this value
+      if it is present in the request and it is capable of using it in
+      the generation of the OTP value.
+
+   otp-keyID
+      This field MAY be used by the client to send the identifier of the
+      token key used, as reported by the OTP token.  Use of this field
+      is OPTIONAL but MAY be used by the client to simplify the
+      authentication process by identifying a particular token key
+      associated with the user.  It is RECOMMENDED that the KDC act upon
+
+
+
+Richards                Expires January 15, 2009               [Page 17]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+      this value if it is present in the request and it is capable of
+      using it in the generation of the OTP value.
+
+   otp-algID
+      This field MAY be used by the client to send the identifier of the
+      OTP algorithm used, as reported by the OTP token.  Use of this
+      element is OPTIONAL but it MAY be used by the client to simplify
+      the OTP calculation.  It is RECOMMENDED that the KDC act upon this
+      value if it is present in the request and it is capable of using
+      it in the generation of the OTP value.
+
+4.3.  PA-OTP-CONFIRM
+
+   The padata-type PA_OTP_CONFIRM is returned by the KDC in the enc-
+   fast-rep of a PA-FX-FAST-REPLY in the AS-REP of the KDC.  It is used
+   to return the client's nonce encrypted under the new Reply Key in
+   order to authenticate the KDC and confirm the Reply Key change.
+
+   The corresponding padata-value field contains the DER encoding of a
+   PA-OTP-CONFIRM.
+
+             PA_OTP_CONFIRM     << TBA >>
+
+             PA-OTP-CONFIRM ::= SEQUENCE {
+               encData        EncryptedData,
+                                   -- PA-OTP-ENC-CONFIRM
+                                   -- Key usage of KEY_USAGE_OTP_CONFIRM
+               ...
+             }
+
+             KEY_USAGE_OTP_CONFIRM  << TBA >>
+
+
+             PA-OTP-ENC-CONFIRM ::= SEQUENCE {
+               nonce     UInt32,
+               ...
+             }
+
+   encData
+      An EncryptedData containing a PA-OTP-ENC-CONFIRM containing the
+      value of the nonce from the corresponding PA-OTP-REQUEST encrypted
+      under the current Reply Key. The key usage SHALL be
+      KEY_USAGE_OTP_CONFIRM and the encryption type SHOULD be the same
+      as that used by the client in the PA-OTP-REQUEST.
+
+
+
+
+
+
+
+Richards                Expires January 15, 2009               [Page 18]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+4.4.  PA-OTP-PIN-CHANGE
+
+   The padata-type PA_OTP_PIN_CHANGE is returned by the KDC in the enc-
+   fast-rep of a PA-FX-FAST-REPLY in the AS-REP if the user must change
+   their PIN or if the user's PIN has been changed.
+
+   The corresponding padata-value field contains the DER encoding of a
+   PA-OTP-PIN-CHANGE.
+
+             PA_OTP_PIN_CHANGE     << TBA >>
+
+             PA-OTP-PIN-CHANGE ::= SEQUENCE {
+               flags         PinFlags,
+               pin           UTF8String OPTIONAL,
+               minLength     INTEGER    OPTIONAL,
+               maxLength [1] INTEGER    OPTIONAL,
+               ...
+             }
+
+             PinFlags ::= KerberosFlags
+               -- systemSetPin (0)
+
+   If the "systemSetPin" flag is set then the user's PIN has been
+   changed and the new PIN value is contained in the pin field.  The pin
+   field MUST therefore be present.
+
+   If the "systemSetPin" flag is not set then the user's PIN has not
+   been changed by the server but it MUST instead be changed by the
+   user.  Restrictions on the size of the PIN MAY be given by the
+   minLength and maxLength fields.  If the pin field is present then it
+   contains a PIN value that MAY be used by the user when changing the
+   PIN.
+
+
+5.  IANA Considerations
+
+   A registry may be required for the otp-algID values as introduced in
+   Section 4.1.  No other IANA actions are anticipated.
+
+
+6.  Security Considerations
+
+6.1.  Man-in-the-Middle
+
+   In the system described in this document, the OTP pre-authentication
+   protocol is tunnelled within the FAST Armor channel provided by the
+   pre-authentication framework.  As described in [AsNiNy02], tunneled
+   protocols are potentially vulnerable to man-in-the-middle attacks if
+
+
+
+Richards                Expires January 15, 2009               [Page 19]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+   the outer tunnel is compromised and it is generally considered good
+   practice in such cases to bind the inner encryption to the outer
+   tunnel.
+
+   Even though no such attacks are known at this point, the proposed
+   system uses the outer Armor Key in the derivation of the inner Client
+   and Reply keys and so achieve crypto-binding to the outer channel.
+
+6.2.  Reflection
+
+   The 4-pass system described above is a challenge-response protocol
+   and such protocols are potentially vulnerable to reflection attacks.
+   No such attacks are known at this point but to help mitigate against
+   such attacks, the system uses different keys to encrypt the client
+   and server nonces.
+
+6.3.  Replay
+
+   The 2-pass version of the protocol does not involve a server nonce
+   and so the client instead encrypts a timestamp.  To reduce the chance
+   of replay attacks, the KDC must check that the client time used in
+   such a request is later than that used in previous requests.
+
+6.4.  Brute Force Attack
+
+   A compromised or hostile KDC may be able to obtain the OTP value used
+   by the client via a brute force attack.  If the OTP value is short
+   then the KDC could iterate over the possible OTP values until a
+   Client Key is generated that can decrypt the encData sent in the PA-
+   OTP-REQUEST.
+
+   As described in Section 3.6, an iteration count can be used in the
+   generation of the Client Key and the value of the iteration count can
+   be controlled by local client policy.  Use of this iteration count
+   can make it computationally infeasible/unattractive for an attacker
+   to brute-force search for the given OTP within the lifetime of that
+   OTP.
+
+6.5.  FAST Facilities
+
+   The secret used to generate the OTP is known only to the client and
+   the KDC and so successful decryption of the encrypted nonce by the
+   KDC authenticates the user.  Similarly, successful decryption of the
+   encrypted nonce by the client proves that the expected KDC replied.
+   The Reply Key is replaced by a key generated from the OTP and Armor
+   Key. This FAST factor therefore provides the following facilities:
+   client-authentication, replacing-reply-key and KDC-authentication.
+
+
+
+
+Richards                Expires January 15, 2009               [Page 20]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+7.  Acknowledgments
+
+   Many significant contributions were made to this document by RSA
+   employees but special thanks go to Magnus Nystrom, John Linn, Robert
+   Polansky and Boris Khoutorski.
+
+   Many valuable suggestions were also made by members of the Kerberos
+   Working group but special thanks go to Larry Zhu, Jeffrey Hutzelman,
+   Tim Alsop, Henry Hotz and Nicolas Williams.
+
+
+8.  References
+
+8.1.  Normative References
+
+   [RFC2045]  Freed, N. and N. Borenstein, "Multipurpose Internet Mail
+              Extensions (MIME) Part One: Format of Internet Message
+              Bodies", RFC 2045, November 1996.
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC3490]  Faltstrom, P., Hoffman, P., and A. Costello,
+              "Internationalizing Domain Names in Applications (IDNA)",
+              RFC 3490, March 2003.
+
+   [RFC3491]  Hoffman, P. and M. Blanchet, "Nameprep: A Stringprep
+              Profile for Internationalized Domain Names (IDN)",
+              RFC 3491, March 2003.
+
+   [RFC3961]  Raeburn, K., "Encryption and Checksum Specifications for
+              Kerberos 5", RFC 3961, February 2005.
+
+   [RFC4120]  Neuman, C., Yu, T., Hartman, S., and K. Raeburn, "The
+              Kerberos Network Authentication Service (V5)", RFC 4120,
+              July 2005.
+
+   [ZhHa07]   Znu, L. and S. Hartman, "A generalized Framework for
+              Kerberos Pre-Authentication",
+              draft-ietf-krb-wg-preauth-framework-08 (work in progress),
+              July 2008.
+
+8.2.  Informative References
+
+   [AsNiNy02]
+              Asokan, N., Niemi, V., and K. Nyberg, "Man-in-the-Middle
+              in Tunneled Authentication Protocols", Cryptology ePrint
+              Archive Report 2002/163, November 2002.
+
+
+
+Richards                Expires January 15, 2009               [Page 21]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+   [HoReNeZo04]
+              Horstein, K., Renard, K., Neuman, C., and G. Zorn,
+              "Integrating Single-use Authentication Mechanisms with
+              Kerberos", draft-ietf-krb-wg-kerberos-sam-03 (work in
+              progress), July 2004.
+
+   [RFC2289]  Haller, N., Metz, C., Nesser, P., and M. Straw, "A One-
+              Time Password System", RFC 2289, February 1998.
+
+   [RFC2808]  Nystrom, M., "The SecurID(r) SASL Mechanism", RFC 2808,
+              April 2000.
+
+   [RFC3244]  Swift, M., Trostle, J., and J. Brezak, "Microsoft Windows
+              2000 Kerberos Change Password and Set Password Protocols",
+              RFC 3244, February 2002.
+
+   [RFC4226]  M'Raihi, D., Bellare, M., Hoornaert, F., Naccache, D., and
+              O. Ranen, "HOTP: An HMAC-Based One-Time Password
+              Algorithm", RFC 4226, December 2005.
+
+
+Appendix A.  ASN.1 Module
+
+   OTPKerberos
+   DEFINITIONS IMPLICIT TAGS ::=
+   BEGIN
+
+   IMPORTS
+       AnyURI
+       FROM XSD {joint-iso-itu-t asn1(1) specification(0)
+                 modules(0) xsd-module(1)};
+
+       KerberosTime, KerberosFlags, EncryptionKey, UInt32,
+       Int32, EncryptedData
+       FROM KerberosV5Spec2 {iso(1) identified-organization(3)
+                             dod(6) internet(1) security(5)
+                             kerberosV5(2) modules(4) krb5spec2(2)}
+                             -- as defined in RFC 4120.
+       AlgorithmIdentifier
+       FROM PKIX1Explicit88 { iso (1) identified-organization (3)
+                              dod (6) internet (1)
+                              security (5) mechanisms (5) pkix (7)
+                              id-mod (0) id-pkix1-explicit (18) };
+                              -- As defined in RFC 3280.
+
+       PA-OTP-CHALLENGE ::= SEQUENCE {
+         flags              OTPFlags,
+         nonce              UInt32,
+
+
+
+Richards                Expires January 15, 2009               [Page 22]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+         etype              Int32,
+         supportedHashAlg   SEQUENCE OF AlgorithmIdentifier
+                                            OPTIONAL,
+         iterationCount     INTEGER         OPTIONAL,
+         otp-challenge      OCTET STRING (SIZE(8..MAX)) OPTIONAL,
+         otp-length     [0] Int32           OPTIONAL,
+         otp-service        UTF8String      OPTIONAL,
+         otp-keyID      [1] OCTET STRING    OPTIONAL,
+         otp-algID          AnyURI          OPTIONAL,
+         ...
+       }
+
+       OTPFlags ::= KerberosFlags
+       -- nextOTP (0)
+       -- combine (1)
+
+       PA-OTP-REQUEST ::= SEQUENCE {
+         flags             OTPFlags,
+         nonce             UInt32,
+         encData           EncryptedData,
+                           -- PA-OTP-ENC-REQUEST or PA-ENC-TS-ENC
+                           -- Key usage of KEY_USAGE_OTP_REQUEST
+         hashAlg           AlgorithmIdentifier OPTIONAL,
+         iterationCount    INTEGER         OPTIONAL,
+         otp-value         OCTET STRING    OPTIONAL,
+         otp-challenge [0] OCTET STRING (SIZE(8..MAX)) OPTIONAL,
+         otp-time          KerberosTime    OPTIONAL,
+         otp-counter   [1] OCTET STRING    OPTIONAL,
+         otp-format    [2] OTPFormat       OPTIONAL,
+         otp-keyID     [3] OCTET STRING    OPTIONAL,
+         otp-algID         AnyURI          OPTIONAL,
+         ...
+       }
+
+       PA-OTP-ENC-REQUEST ::= SEQUENCE {
+         nonce     UInt32,
+         ...
+       }
+
+       OTPFormat ::= INTEGER {
+         decimal(0),
+         hexadecimal(1),
+         alphanumeric(2),
+         binary(3)
+       }
+
+       PA-OTP-CONFIRM ::= SEQUENCE {
+         encData        EncryptedData,
+
+
+
+Richards                Expires January 15, 2009               [Page 23]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+                        -- PA-OTP-ENC-CONFIRM
+                        -- Key usage of KEY_USAGE_OTP_CONFIRM
+         ...
+       }
+
+       PA-OTP-ENC-CONFIRM ::= SEQUENCE {
+         nonce     UInt32,
+         ...
+       }
+
+       PA-OTP-PIN-CHANGE ::= SEQUENCE {
+         flags         PinFlags,
+         pin           UTF8String OPTIONAL,
+         minLength     INTEGER    OPTIONAL,
+         maxLength [0] INTEGER    OPTIONAL,
+         ...
+       }
+
+       PinFlags ::= KerberosFlags
+       -- systemSetPin (0)
+
+   END
+
+
+Appendix B.  Examples of OTP Pre-Authentication Exchanges
+
+   This section is non-normative.
+
+B.1.  Four Pass Authentication
+
+   In this mode, the client sends an initial AS-REQ to the KDC that does
+   not contain a PA-OTP-REQUEST and the KDC responds with a KRB-ERROR
+   containing a PA-OTP-CHALLENGE.
+
+   In this example, the user has been issued with a connected, time-
+   based token and the KDC requires hashed OTP values in the key
+   generation with SHA-384 as the preferred hash algorithm and a minimum
+   of 1024 iterations.  It also requires that 256-bit AES be used to
+   encrypt the nonce.  The local policy on the client supports SHA-256
+   and requires 100,000 iterations of the OTP value.
+
+   The basic sequence of steps involved is as follows:
+
+   1.   The client obtains the user name of the user.
+
+   2.   The client sends an initial AS-REQ to the KDC that does not
+        contain a PA-OTP-REQUEST.
+
+
+
+
+Richards                Expires January 15, 2009               [Page 24]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+   3.   The KDC determines that the user identified by the AS-REQ
+        requires OTP authentication.
+
+   4.   The KDC constructs a PA-OTP-CHALLENGE as follows:
+
+        flags
+           0
+
+        nonce
+           A randomly generated value.
+
+        etype
+           aes256-cts-hmac-sha1-96
+
+        supportedHashAlg
+           AlgorithmIdentifiers for SHA-384, SHA-256 and SHA-1
+
+        iterationCount
+           1024
+
+        otp-service
+           A string that can be used by the client to assist the user in
+           locating the correct token.
+
+   5.   The KDC returns a KRB-ERROR with an error code of
+        KDC_ERR_PREAUTH_REQUIRED and the PA-OTP-CHALLENGE in the e-data.
+
+   6.   The client displays the value of otp-service and prompts the
+        user to connect the token.
+
+   7.   The client obtains the current OTP value from the token and
+        records the time as reported by the token.
+
+   8.   The client generates Client Key and Reply Key as described in
+        Section 3.6 using SHA-256 from the list of algorithms sent by
+        the KDC and the iteration count of 100,000 as required by local
+        policy.
+
+   9.   The client constructs a PA-OTP-REQUEST as follows:
+
+        flags
+           0
+
+        nonce
+           A randomly generated value.
+
+
+
+
+
+
+Richards                Expires January 15, 2009               [Page 25]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+        encData
+           An EncryptedData containing a PA-OTP-ENC-REQUEST encrypted
+           under the Client Key with a key usage of
+           KEY_USAGE_OTP_REQUEST and an encryption type of aes256-cts-
+           hmac-sha1-96.  The PA-OTP-ENC-REQUEST contains the nonce from
+           the PA-OTP-CHALLENGE.
+
+        hashAlg
+           SHA-256
+
+        iterationCount
+           100,000
+
+        otp-time
+           The time used in the OTP calculation as reported by the OTP
+           token.
+
+   10.  The client encrypts the PA-OTP-REQUEST within the enc-fast-req
+        of a PA-FX-FAST-REQUEST.
+
+   11.  The client sends an AS-REQ to the KDC containing the PA-FX-FAST-
+        REQUEST within the padata.
+
+   12.  The KDC validates the pre-authentication data in the PA-OTP-
+        REQUEST:
+
+        *  Generates the Client Key and Reply Key from the OTP value for
+           the user identified in the AS-REQ, using an iteration count
+           of 100,000 and hash algorithm of SHA-256 as specified in the
+           PA-OTP-REQUEST.
+
+        *  Uses the generated Client Key to decrypt the PA-OTP-ENC-
+           REQUEST in the encData of the PA-OTP-REQUEST.
+
+        *  Authenticates the user by comparing the nonce value from the
+           decrypted PA-OTP-ENC-REQUEST to that sent in the
+           corresponding PA-OTP-CHALLENGE.
+
+   13.  The KDC constructs a TGT for the user.
+
+   14.  The KDC constructs a PA-OTP-CONFIRM as follows:
+
+        encData
+           An EncryptedData containing a PA-OTP-ENC-CONFIRM encrypted
+           under the Reply Key with a key usage of KEY_USAGE_OTP_CONFIRM
+           and an encryption type of aes256-cts-hmac-sha1-96 (the
+           encryption type used by the client in the PA-OTP-REQUEST).
+           The PA-OTP-ENC-CONFIRM contains the nonce from the PA-OTP-
+
+
+
+Richards                Expires January 15, 2009               [Page 26]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+           REQUEST.
+
+   15.  The KDC encrypts the PA-OTP-CONFIRM within the enc-fast-rep of a
+        PA-FX-FAST-REPLY.
+
+   16.  The KDC returns an AS-REP to the client, encrypted using the
+        Reply Key, containing the TGT and padata with the PA-FX-FAST-
+        REPLY.
+
+   17.  The client authenticates the KDC and verifies the Reply Key
+        change.
+
+        *  Uses the generated Reply Key to decrypt the PA-OTP-ENC-
+           CONFIRM in the encData of the PA-OTP-CONFIRM.
+
+        *  Authenticates the KDC by comparing the nonce value from the
+           decrypted PA-OTP-ENC-CONFIRM to that sent in the
+           corresponding PA-OTP-REQUEST.
+
+B.2.  Two Pass Authentication
+
+   In this mode, the client includes a PA-OTP-REQUEST within a PA-FX-
+   FAST-REQUEST pre-auth of the initial AS-REQ sent to the KDC.
+
+   In this example, the user has been issued with a hand-held token and
+   so none of the OTP generation parameters (otp-length etc) are
+   included in the PA-OTP-RESPONSE.  The KDC does not require hashed OTP
+   values in the key generation.
+
+   It is assumed that the client has been configured with the following
+   information or has obtained it from a previous PA-OTP-CHALLENGE.
+   o  The encryption type of aes128-cts-hmac-sha1-96 to use to encrypt
+      the encData.
+   o  The fact that hashed OTP values are not required.
+
+   The basic sequence of steps involved is as follows:
+
+   1.   The client obtains the user name and OTP value from the user.
+
+   2.   The client generates Client Key and Reply Key using unhashed OTP
+        values as described in Section 3.6.
+
+   3.   The client constructs a PA-OTP-REQUEST as follows:
+
+
+
+
+
+
+
+
+Richards                Expires January 15, 2009               [Page 27]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+        flags
+           0
+
+        nonce
+           A randomly generated value.
+
+        encData
+           An EncryptedData containing a PA-ENC-TS-ENC encrypted under
+           the Client Key with a key usage of KEY_USAGE_OTP_REQUEST and
+           an encryption type of aes128-cts-hmac-sha1-96.  The PA-ENC-
+           TS-ENC contains the current client time.
+
+   4.   The client encrypts the PA-OTP-REQUEST within the enc-fast-req
+        of a PA-FX-FAST-REQUEST.
+
+   5.   The client sends an AS-REQ to the KDC containing the PA-FX-FAST-
+        REQUEST within the padata.
+
+   6.   The KDC validates the pre-authentication data:
+
+        *  Generates the Client Key and Reply Key from the unhashed OTP
+           value for the user identified in the AS-REQ.
+
+        *  Uses the generated Client Key to decrypt the PA-ENC-TS-ENC in
+           the encData of the PA-OTP-REQUEST.
+
+        *  Authenticates the user using the timestamp in the standard
+           manner.
+
+   7.   The KDC constructs a TGT for the user.
+
+   8.   The KDC constructs a PA-OTP-CONFIRM as follows:
+
+        encData
+           An EncryptedData containing a PA-OTP-ENC-CONFIRM encrypted
+           under the Reply Key with a key usage of KEY_USAGE_OTP_CONFIRM
+           and an encryption type of aes128-cts-hmac-sha1-96 (the
+           encryption type used by the client in the PA-OTP-REQUEST).
+           The PA-OTP-ENC-CONFIRM contains the nonce from the PA-OTP-
+           REQUEST.
+
+   9.   The KDC encrypts the PA-OTP-CONFIRM within the enc-fast-rep of a
+        PA-FX-FAST-REPLY.
+
+   10.  The KDC returns an AS-REP to the client, encrypted using the
+        Reply Key, containing the TGT and padata with the PA-FX-FAST-
+        REPLY.
+
+
+
+
+Richards                Expires January 15, 2009               [Page 28]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+   11.  The client authenticates the KDC and verifies the key change.
+
+        *  Uses the generated Reply Key to decrypt the PA-OTP-ENC-
+           CONFIRM in the encData of the PA-OTP-CONFIRM.
+
+        *  Authenticates the KDC by comparing the nonce value from the
+           decrypted PA-OTP-ENC-CONFIRM to that sent in the
+           corresponding PA-OTP-REQUEST.
+
+B.3.  Pin Change
+
+   This exchange follows from the point where the KDC receives the PA-
+   OTP-REQUEST from the client in the examples in Appendix B.1 and
+   Appendix B.2.  During the validation of the pre-authentication data
+   (whether encrypted nonce or encrypted timestamp), the KDC determines
+   that the user's PIN has expired and so must be changed.  The KDC
+   therefore includes a PA-OTP-PIN-CHANGE along with the PA-OTP-CONFIRM
+   in the AS-REP.
+
+   In this example, the KDC does not generate PIN values for the user
+   but requires that the user generate a new PIN that is between 4 and 8
+   characters in length.  The actual PIN change is handled by a PIN
+   change service that requires the "initial" bit to be set in the
+   service ticket.
+
+   The basic sequence of steps involved is as follows:
+
+   1.   The client constructs and sends a PA-OTP-REQUEST to the KDC as
+        described in the previous examples.
+
+   2.   The KDC validates the pre-authentication data and authenticates
+        the user as in the previous examples but determines that the
+        user's PIN has expired.
+
+   3.   KDC constructs a ticket for a PIN change service with the
+        "initial" flag set.
+
+   4.   KDC constructs a PA-OTP-CONFIRM as in the previous examples.
+
+   5.   KDC constructs a PA-OTP-PIN-CHANGE as follows:
+
+        flags
+           0
+
+
+
+
+
+
+
+
+Richards                Expires January 15, 2009               [Page 29]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+        minLength
+           4
+
+        maxLength
+           8
+
+   6.   KDC encrypts the PA-OTP-PIN-CHANGE and PA-OTP-CONFIRM within the
+        enc-fast-rep of a PA-FX-FAST-REPLY.
+
+   7.   KDC returns an AS-REP to the client containing the ticket to the
+        PIN change service and padata containing the PA-FX-FAST-REPLY.
+
+   8.   The client authenticates the KDC as in the previous examples.
+
+   9.   The client uses the ticket in the AS-REP to call the PIN change
+        service and change the user's PIN.
+
+   10.  The client sends a second AS-REQ to the KDC containing a PA-OTP-
+        REQUEST constructed using the new PIN.
+
+   11.  The KDC responds with an AS-REP containing a TGT and a PA-OTP-
+        CONFRIM.
+
+
+B.4.  Resynchronization
+
+   This exchange follows from the point where the KDC receives the PA-
+   OTP-REQUEST from the client.  During the validation of the pre-
+   authentication data (whether encrypted nonce or encrypted timestamp),
+   the KDC determines that the local record of the token's state needs
+   to be re-synchronized with the token.  The KDC therefore includes a
+   KRB-ERROR containing a PA-OTP-CHALLENGE with the "nextOTP" flag set.
+
+   The sequence of steps below follows is a variation of the four pass
+   examples shown in Appendix B.1 but the same process would also work
+   in the two-pass case.
+
+   1.   The client constructs and sends a PA-OTP-REQUEST to the KDC as
+        described in the previous examples.
+
+   2.   The KDC validates the pre-authentication data and authenticates
+        the user as in the previous examples but determines that user's
+        token requires re-synchronizing.
+
+   3.   KDC constructs a PA-OTP-CHALLENGE as follows:
+
+
+
+
+
+
+Richards                Expires January 15, 2009               [Page 30]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+        flags
+           nextOTP bit set
+
+        nonce
+           A randomly generated value.
+
+        etype
+           aes256-cts-hmac-sha1-96
+
+        supportedHashAlg
+           AlgorithmIdentifiers for SHA-256 and SHA-1
+
+        iterationCount
+           1024
+
+        otp-service
+           Set to a string that can be used by the client to assist the
+           user in locating the correct token.
+
+   4.   KDC returns a KRB-ERROR with an error code of
+        KDC_ERR_PREAUTH_REQUIRED and the PA-OTP-CHALLENGE in the e-data.
+
+   5.   The client obtains the next OTP value from the token and records
+        the time as reported by the token.
+
+   6.   The client generates Client Key Reply Key as described in
+        Section 3.6 using SHA-256 from the list of algorithms sent by
+        the KDC and the iteration count of 100,000 as required by local
+        policy.
+
+   7.   The client constructs a PA-OTP-REQUEST as follows:
+
+        flags
+           nextOTP bit set
+
+        nonce
+           A randomly generated value.
+
+        encData
+           An EncryptedData containing a PA-OTP-ENC-REQUEST encrypted
+           under the Client Key with a key usage of
+           KEY_USAGE_OTP_REQUEST and an encryption type of aes256-cts-
+           hmac-sha1-96.  The PA-OTP-ENC-REQUEST contains the nonce from
+           the PA-OTP-CHALLENGE.
+
+
+
+
+
+
+
+Richards                Expires January 15, 2009               [Page 31]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+        hashAlg
+           SHA-256
+
+        iterationCount
+           100,000
+
+        otp-time
+           The time used in the OTP calculation as reported by the OTP
+           token.
+
+   8.   The client encrypts the PA-OTP-REQUEST within the enc-fast-req
+        of a PA-FX-FAST-REQUEST.
+
+   9.   The client sends an AS-REQ to the KDC containing the PA-FX-FAST-
+        REQUEST within the padata.
+
+   10.  Authentication process now proceeds as with the standard
+        sequence.
+
+
+Author's Address
+
+   Gareth Richards
+   RSA, The Security Division of EMC
+   RSA House
+   Western Road
+   Bracknell, Berkshire  RG12 1RT
+   UK
+
+   Email: gareth.richards@rsa.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Richards                Expires January 15, 2009               [Page 32]
+
+Internet-Draft           OTP Pre-authentication                July 2008
+
+
+Full Copyright Statement
+
+   Copyright (C) The IETF Trust (2008).
+
+   This document is subject to the rights, licenses and restrictions
+   contained in BCP 78, and except as set forth therein, the authors
+   retain all their rights.
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY, THE IETF TRUST AND
+   THE INTERNET ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF
+   THE INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Intellectual Property
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+
+
+
+
+
+
+
+
+
+Richards                Expires January 15, 2009               [Page 33]
+
