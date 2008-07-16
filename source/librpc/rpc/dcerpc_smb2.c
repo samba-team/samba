@@ -427,7 +427,7 @@ struct composite_context *dcerpc_pipe_open_smb2_send(struct dcerpc_pipe *p,
 	io.in.create_disposition = NTCREATEX_DISP_OPEN;
 	io.in.create_options   = 
 		NTCREATEX_OPTIONS_NON_DIRECTORY_FILE | 
-		NTCREATEX_OPTIONS_UNKNOWN_400000;
+		NTCREATEX_OPTIONS_NO_RECALL;
 	io.in.impersonation_level = NTCREATEX_IMPERSONATION_IMPERSONATION;
 
 	if ((strncasecmp(pipe_name, "/pipe/", 6) == 0) || 
