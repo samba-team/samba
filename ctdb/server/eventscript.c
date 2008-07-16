@@ -489,6 +489,11 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 
 	DEBUG(DEBUG_NOTICE,("Forced running of eventscripts with arguments %s\n", indata.dptr));
 
+	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
+		DEBUG(DEBUG_ERR, (__location__ " Aborted running eventscript \"%s\" while in RECOVERY mode\n", indata.dptr));
+		return -1;
+	}
+
 	ctdb_disable_monitoring(ctdb);
 
 	ret = ctdb_event_script_callback(ctdb, 
