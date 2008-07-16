@@ -1204,3 +1204,21 @@ WERROR NetUserGetInfo_l(struct libnetapi_ctx *ctx,
 	return WERR_NOT_SUPPORTED;
 }
 
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
+			struct NetUserSetInfo *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserSetInfo_l(struct libnetapi_ctx *ctx,
+			struct NetUserSetInfo *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+

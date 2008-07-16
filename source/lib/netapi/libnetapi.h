@@ -116,6 +116,15 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 			struct NetUserGetInfo *r);
 WERROR NetUserGetInfo_l(struct libnetapi_ctx *ctx,
 			struct NetUserGetInfo *r);
+NET_API_STATUS NetUserSetInfo(const char * server_name /* [in] */,
+			      const char * user_name /* [in] */,
+			      uint32_t level /* [in] */,
+			      uint8_t *buffer /* [in] [ref] */,
+			      uint32_t *parm_err /* [out] [ref] */);
+WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
+			struct NetUserSetInfo *r);
+WERROR NetUserSetInfo_l(struct libnetapi_ctx *ctx,
+			struct NetUserSetInfo *r);
 NET_API_STATUS NetQueryDisplayInformation(const char * server_name /* [in] [unique] */,
 					  uint32_t level /* [in] */,
 					  uint32_t idx /* [in] */,
