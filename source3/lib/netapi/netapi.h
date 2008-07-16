@@ -257,6 +257,21 @@ NET_API_STATUS NetApiBufferFree(void *buffer);
 
 /************************************************************//**
  *
+ * ConvertSidToStringSid
+ *
+ * @brief Convert a domain sid into a string
+ *
+ * @param[in] sid A pointer to a sid structure
+ * @param[in] sid_string A pointer that holds a pointer to a sid string. Caller
+ * needs to free with free(3)
+ * @return bool
+ ***************************************************************/
+
+int  ConvertSidToStringSid(const struct domsid *sid,
+			   char **sid_string);
+
+/************************************************************//**
+ *
  * NetJoinDomain
  *
  * @brief Join a computer to a domain or workgroup
