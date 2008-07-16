@@ -32,33 +32,35 @@
 
 #define NDR_NETUSERCHANGEPASSWORD (0x0c)
 
-#define NDR_NETQUERYDISPLAYINFORMATION (0x0d)
+#define NDR_NETUSERGETINFO (0x0d)
 
-#define NDR_NETGROUPADD (0x0e)
+#define NDR_NETQUERYDISPLAYINFORMATION (0x0e)
 
-#define NDR_NETGROUPDEL (0x0f)
+#define NDR_NETGROUPADD (0x0f)
 
-#define NDR_NETGROUPENUM (0x10)
+#define NDR_NETGROUPDEL (0x10)
 
-#define NDR_NETGROUPSETINFO (0x11)
+#define NDR_NETGROUPENUM (0x11)
 
-#define NDR_NETGROUPGETINFO (0x12)
+#define NDR_NETGROUPSETINFO (0x12)
 
-#define NDR_NETGROUPADDUSER (0x13)
+#define NDR_NETGROUPGETINFO (0x13)
 
-#define NDR_NETGROUPDELUSER (0x14)
+#define NDR_NETGROUPADDUSER (0x14)
 
-#define NDR_NETLOCALGROUPADD (0x15)
+#define NDR_NETGROUPDELUSER (0x15)
 
-#define NDR_NETLOCALGROUPDEL (0x16)
+#define NDR_NETLOCALGROUPADD (0x16)
 
-#define NDR_NETLOCALGROUPGETINFO (0x17)
+#define NDR_NETLOCALGROUPDEL (0x17)
 
-#define NDR_NETLOCALGROUPSETINFO (0x18)
+#define NDR_NETLOCALGROUPGETINFO (0x18)
 
-#define NDR_NETREMOTETOD (0x19)
+#define NDR_NETLOCALGROUPSETINFO (0x19)
 
-#define NDR_LIBNETAPI_CALL_COUNT (26)
+#define NDR_NETREMOTETOD (0x1a)
+
+#define NDR_LIBNETAPI_CALL_COUNT (27)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -149,6 +151,9 @@ void ndr_print_NetUserEnum(struct ndr_print *ndr, const char *name, int flags, c
 enum ndr_err_code ndr_push_NetUserChangePassword(struct ndr_push *ndr, int flags, const struct NetUserChangePassword *r);
 enum ndr_err_code ndr_pull_NetUserChangePassword(struct ndr_pull *ndr, int flags, struct NetUserChangePassword *r);
 void ndr_print_NetUserChangePassword(struct ndr_print *ndr, const char *name, int flags, const struct NetUserChangePassword *r);
+enum ndr_err_code ndr_push_NetUserGetInfo(struct ndr_push *ndr, int flags, const struct NetUserGetInfo *r);
+enum ndr_err_code ndr_pull_NetUserGetInfo(struct ndr_pull *ndr, int flags, struct NetUserGetInfo *r);
+void ndr_print_NetUserGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct NetUserGetInfo *r);
 enum ndr_err_code ndr_push_NetQueryDisplayInformation(struct ndr_push *ndr, int flags, const struct NetQueryDisplayInformation *r);
 enum ndr_err_code ndr_pull_NetQueryDisplayInformation(struct ndr_pull *ndr, int flags, struct NetQueryDisplayInformation *r);
 void ndr_print_NetQueryDisplayInformation(struct ndr_print *ndr, const char *name, int flags, const struct NetQueryDisplayInformation *r);
