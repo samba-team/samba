@@ -835,6 +835,8 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
 
         ldb.delete(("CN=ldaptestuser2,CN=Users," + self.base_dn))
 
+        time.sleep(2)
+
         attrs = ["cn", "name", "objectClass", "objectGUID", "whenCreated", "nTSecurityDescriptor", "member"]
         print "Testing ldb.search for (&(cn=ldaptestgroup2)(objectClass=group)) to check linked delete"
         res = ldb.search(self.base_dn, expression="(&(cn=ldaptestgroup2)(objectClass=group))", scope=SCOPE_SUBTREE, attrs=attrs)
