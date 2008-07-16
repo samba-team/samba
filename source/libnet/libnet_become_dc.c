@@ -2463,6 +2463,12 @@ static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state 
 		return WERR_BAD_NET_RESP;
 	}
 
+	if (ctr_level == 6) {
+		if (!W_ERROR_IS_OK(ctr6->drs_error)) {
+			return ctr6->drs_error;
+		}
+	}
+
 	switch (ctr_level) {
 	case 1:
 		source_dsa_guid			= &ctr1->source_dsa_guid;
