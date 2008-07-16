@@ -346,7 +346,7 @@ SMBC_read_ctx(SMBCCTX *context,
 ssize_t
 SMBC_write_ctx(SMBCCTX *context,
                SMBCFILE *file,
-               void *buf,
+               const void *buf,
                size_t count);
 
 int
