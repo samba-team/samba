@@ -130,4 +130,12 @@ char *guid_binstring(const struct GUID *guid)
 	return binary_string_rfc2254((char *)guid_flat.info, UUID_FLAT_SIZE);
 }
 
-
+bool guid_equal(const struct GUID *g1, const struct GUID *g2)
+{
+	return ((g1->time_low == g2->time_low)
+		&& (g1->time_mid == g2->time_mid)
+		&& (g1->time_hi_and_version == g2->time_hi_and_version)
+		&& (memcmp(g1->clock_seq, g2->clock_seq,
+			   sizeof(g1->clock_seq)) == 0)
+		&& (memcmp(g1->node, g2->node, sizeof(g1->node)) == 0));
+}

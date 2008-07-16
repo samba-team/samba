@@ -43,6 +43,13 @@ void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *
 	ndr->print(ndr, "%-25s: %s", name, GUID_string(ndr, guid));
 }
 
+bool ndr_syntax_id_equal(const struct ndr_syntax_id *i1,
+			 const struct ndr_syntax_id *i2)
+{
+	return guid_equal(&i1->uuid, &i2->uuid)
+		&& (i1->if_version == i2->if_version);
+}
+
 enum ndr_err_code ndr_push_server_id(struct ndr_push *ndr, int ndr_flags, const struct server_id *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
