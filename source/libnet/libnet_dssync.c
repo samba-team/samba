@@ -374,6 +374,10 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 
 	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
 	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
+	struct replUpToDateVectorBlob *old_utdv = NULL;
+	struct drsuapi_DsReplicaCursorCtrEx cursors;
+	struct drsuapi_DsReplicaCursorCtrEx *pcursors = NULL;
+	struct replUpToDateVectorBlob new_utdv;
 	int32_t out_level = 0;
 	int y;
 	uint32_t replica_flags	= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE |
@@ -389,12 +393,36 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 	nc.guid = GUID_zero();
 	nc.sid = null_sid;
 
-	status = ctx->ops->startup(ctx, mem_ctx, NULL);
+	status = ctx->ops->startup(ctx, mem_ctx, &old_utdv);
 	if (!NT_STATUS_IS_OK(status)) {
 		ctx->error_message = talloc_asprintf(mem_ctx,
 			"Failed to call startup operation: %s",
 			nt_errstr(status));
 		goto out;
+	}
+
+	if (old_utdv) {
+		pcursors = &cursors;
+		ZERO_STRUCTP(pcursors);
+
+		switch (old_utdv->version) {
+		case 1:
+			pcursors->count = old_utdv->ctr.ctr1.count;
+			pcursors->cursors = old_utdv->ctr.ctr1.cursors;
+			break;
+		case 2:
+			pcursors->count = old_utdv->ctr.ctr2.count;
+			pcursors->cursors = talloc_array(mem_ctx,
+							 struct drsuapi_DsReplicaCursor,
+							 pcursors->count);
+			for (y = 0; y < pcursors->count; y++) {
+				pcursors->cursors[y].source_dsa_invocation_id =
+					old_utdv->ctr.ctr2.cursors[y].source_dsa_invocation_id;
+				pcursors->cursors[y].highest_usn =
+					old_utdv->ctr.ctr2.cursors[y].highest_usn;
+			}
+			break;
+		}
 	}
 
 	if (ctx->remote_info28.supported_extensions
@@ -405,12 +433,14 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 		req.req8.replica_flags		= replica_flags;
 		req.req8.max_object_count	= 402;
 		req.req8.max_ndr_size		= 402116;
+		req.req8.uptodateness_vector	= pcursors;
 	} else {
 		level = 5;
 		req.req5.naming_context		= &nc;
 		req.req5.replica_flags		= replica_flags;
 		req.req5.max_object_count	= 402;
 		req.req5.max_ndr_size		= 402116;
+		req.req5.uptodateness_vector	= pcursors;
 	}
 
 	for (y=0; ;y++) {
@@ -491,6 +521,11 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 			if (!last_query) {
 				continue;
 			}
+
+			ZERO_STRUCT(new_utdv);
+			new_utdv.version = 1;
+			new_utdv.ctr.ctr1.count = ctr1->uptodateness_vector->count;
+			new_utdv.ctr.ctr1.cursors = ctr1->uptodateness_vector->cursors;
 		}
 
 		if (level_out == 6) {
@@ -532,9 +567,14 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 			if (!last_query) {
 				continue;
 			}
+
+			ZERO_STRUCT(new_utdv);
+			new_utdv.version = 2;
+			new_utdv.ctr.ctr2.count = ctr6->uptodateness_vector->count;
+			new_utdv.ctr.ctr2.cursors = ctr6->uptodateness_vector->cursors;
 		}
 
-		status = ctx->ops->finish(ctx, mem_ctx, NULL);
+		status = ctx->ops->finish(ctx, mem_ctx, &new_utdv);
 		if (!NT_STATUS_IS_OK(status)) {
 			ctx->error_message = talloc_asprintf(mem_ctx,
 				"Failed to call finishing operation: %s",
