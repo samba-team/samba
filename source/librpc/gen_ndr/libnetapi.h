@@ -489,6 +489,21 @@ struct NetUserChangePassword {
 };
 
 
+struct NetUserGetInfo {
+	struct {
+		const char * server_name;
+		const char * user_name;
+		uint32_t level;
+	} in;
+
+	struct {
+		uint8_t **buffer;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
 struct NetQueryDisplayInformation {
 	struct {
 		const char * server_name;/* [unique] */
