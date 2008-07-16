@@ -246,7 +246,6 @@ done:
 static NTSTATUS idmap_ldap_alloc_init(const char *params)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	const char *range;
 	const char *tmp;
 	uid_t low_uid = 0;
 	uid_t high_uid = 0;
@@ -1458,12 +1457,13 @@ static struct idmap_alloc_methods idmap_ldap_alloc_methods = {
 	/* .dump_data = TODO */
 };
 
-NTSTATUS idmap_alloc_ldap_init(void)
+static NTSTATUS idmap_alloc_ldap_init(void)
 {
 	return smb_register_idmap_alloc(SMB_IDMAP_INTERFACE_VERSION, "ldap",
 					&idmap_ldap_alloc_methods);
 }
 
+NTSTATUS idmap_ldap_init(void);
 NTSTATUS idmap_ldap_init(void)
 {
 	NTSTATUS ret;
