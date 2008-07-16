@@ -5840,7 +5840,7 @@ bool lp_winbind_offline_logon(void);
 bool lp_winbind_normalize_names(void);
 bool lp_winbind_rpc_only(void);
 const char **lp_idmap_domains(void);
-const char **lp_idmap_backend(void);
+const char *lp_idmap_backend(void);
 char *lp_idmap_alloc_backend(void);
 int lp_idmap_cache_time(void);
 int lp_idmap_negative_cache_time(void);
@@ -10511,30 +10511,36 @@ char *get_pass( const char *prompt, bool stdin_get);
 /* The following definitions come from winbindd/idmap.c  */
 
 bool idmap_is_offline(void);
+bool idmap_is_online(void);
 NTSTATUS smb_register_idmap(int version, const char *name,
 			    struct idmap_methods *methods);
 NTSTATUS smb_register_idmap_alloc(int version, const char *name,
 				  struct idmap_alloc_methods *methods);
-NTSTATUS idmap_close(void);
+void idmap_close(void);
 NTSTATUS idmap_init_cache(void);
 NTSTATUS idmap_allocate_uid(struct unixid *id);
 NTSTATUS idmap_allocate_gid(struct unixid *id);
 NTSTATUS idmap_set_uid_hwm(struct unixid *id);
 NTSTATUS idmap_set_gid_hwm(struct unixid *id);
-NTSTATUS idmap_unixids_to_sids(struct id_map **ids);
-NTSTATUS idmap_sids_to_unixids(struct id_map **ids);
-NTSTATUS idmap_set_mapping(const struct id_map *id);
-char *idmap_fetch_secret(const char *backend, bool alloc,
-			       const char *domain, const char *identity);
+NTSTATUS idmap_backends_unixid_to_sid(const char *domname,
+				      struct id_map *id);
+NTSTATUS idmap_backends_sid_to_unixid(const char *domname,
+				      struct id_map *id);
+NTSTATUS idmap_new_mapping(const struct dom_sid *psid, enum id_type type,
+			   struct unixid *pxid);
+NTSTATUS idmap_set_mapping(const struct id_map *map);
 
 /* The following definitions come from winbindd/idmap_cache.c  */
 
-struct idmap_cache_ctx *idmap_cache_init(TALLOC_CTX *memctx);
-NTSTATUS idmap_cache_set(struct idmap_cache_ctx *cache, const struct id_map *id);
-NTSTATUS idmap_cache_set_negative_sid(struct idmap_cache_ctx *cache, const struct id_map *id);
-NTSTATUS idmap_cache_set_negative_id(struct idmap_cache_ctx *cache, const struct id_map *id);
-NTSTATUS idmap_cache_map_sid(struct idmap_cache_ctx *cache, struct id_map *id);
-NTSTATUS idmap_cache_map_id(struct idmap_cache_ctx *cache, struct id_map *id);
+bool idmap_cache_find_sid2uid(const struct dom_sid *sid, uid_t *puid,
+			      bool *expired);
+bool idmap_cache_find_uid2sid(uid_t uid, struct dom_sid *sid, bool *expired);
+void idmap_cache_set_sid2uid(const struct dom_sid *sid, uid_t uid);
+bool idmap_cache_find_sid2gid(const struct dom_sid *sid, gid_t *pgid,
+			      bool *expired);
+bool idmap_cache_find_gid2sid(gid_t gid, struct dom_sid *sid, bool *expired);
+void idmap_cache_set_sid2gid(const struct dom_sid *sid, gid_t gid);
+
 
 /* The following definitions come from winbindd/idmap_nss.c  */
 
@@ -10552,10 +10558,10 @@ NTSTATUS idmap_tdb_init(void);
 
 /* The following definitions come from winbindd/idmap_util.c  */
 
-NTSTATUS idmap_uid_to_sid(DOM_SID *sid, uid_t uid);
-NTSTATUS idmap_gid_to_sid(DOM_SID *sid, gid_t gid);
-NTSTATUS idmap_sid_to_uid(DOM_SID *sid, uid_t *uid);
-NTSTATUS idmap_sid_to_gid(DOM_SID *sid, gid_t *gid);
+NTSTATUS idmap_uid_to_sid(const char *domname, DOM_SID *sid, uid_t uid);
+NTSTATUS idmap_gid_to_sid(const char *domname, DOM_SID *sid, gid_t gid);
+NTSTATUS idmap_sid_to_uid(const char *dom_name, DOM_SID *sid, uid_t *uid);
+NTSTATUS idmap_sid_to_gid(const char *domname, DOM_SID *sid, gid_t *gid);
 
 /* The following definitions come from winbindd/nss_info.c  */
 
