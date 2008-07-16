@@ -1082,3 +1082,22 @@ WERROR NetUserChangePassword_l(struct libnetapi_ctx *ctx,
 {
 	return WERR_NOT_SUPPORTED;
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
+			struct NetUserGetInfo *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetUserGetInfo_l(struct libnetapi_ctx *ctx,
+			struct NetUserGetInfo *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
