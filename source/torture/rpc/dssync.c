@@ -725,6 +725,11 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 				   && r.out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP) {
 				out_level = 6;
 				ctr6 = r.out.ctr.ctr7.ctr.mszip6.ctr6;
+			} else if (ret == true && *r.out.level == 7
+				   && r.out.ctr.ctr7.level == 6
+				   && r.out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_XPRESS) {
+				out_level = 6;
+				ctr6 = r.out.ctr.ctr7.ctr.xpress6.ctr6;
 			}
 
 			if (out_level == 6) {
