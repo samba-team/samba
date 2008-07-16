@@ -350,6 +350,17 @@ interface libnetapi
 		);
 
 	/*******************************************/
+	/* NetUserGetInfo                          */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetUserGetInfo(
+		[in] string server_name,
+		[in] string user_name,
+		[in] uint32 level,
+		[out] uint8 **buffer
+		);
+
+	/*******************************************/
 	/* NetQueryDisplayInformation              */
 	/*******************************************/
 
