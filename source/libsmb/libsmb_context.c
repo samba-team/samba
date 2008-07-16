@@ -617,7 +617,7 @@ void
 smbc_set_credentials(char *workgroup,
                      char *user,
                      char *password,
-                     bool use_kerberos,
+                     smbc_bool use_kerberos,
                      char *signing_state)
 {
         
