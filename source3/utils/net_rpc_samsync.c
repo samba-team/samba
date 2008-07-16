@@ -302,7 +302,7 @@ static NTSTATUS rpc_vampire_keytab_ds_internals(struct net_context *c,
 
 	ctx->cli		= pipe_hnd;
 	ctx->domain_name	= domain_name;
-	ctx->processing_fn	= libnet_dssync_dump_keytab;
+	ctx->ops		= &libnet_dssync_keytab_ops;
 
 	status = libnet_dssync(mem_ctx, ctx);
 	if (!NT_STATUS_IS_OK(status) && ctx->error_message) {

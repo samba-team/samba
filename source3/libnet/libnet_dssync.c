@@ -355,6 +355,14 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 	nc.guid = GUID_zero();
 	nc.sid = null_sid;
 
+	status = ctx->ops->startup(ctx, mem_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		ctx->error_message = talloc_asprintf(mem_ctx,
+			"Failed to call startup operation: %s",
+			nt_errstr(status));
+		goto out;
+	}
+
 	req.req8.naming_context		= &nc;
 	req.req8.replica_flags		= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE |
 					  DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP |
@@ -423,12 +431,10 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 				last_query = false;
 			}
 
-			if (ctx->processing_fn) {
-				status = ctx->processing_fn(mem_ctx,
-							    ctr1->first_object,
-							    &ctr1->mapping_ctr,
-							    last_query,
-							    ctx);
+			if (ctx->ops->process_objects) {
+				status = ctx->ops->process_objects(ctx, mem_ctx,
+								   ctr1->first_object,
+								   &ctr1->mapping_ctr);
 				if (!NT_STATUS_IS_OK(status)) {
 					ctx->error_message = talloc_asprintf(mem_ctx,
 						"Failed to call processing function: %s",
@@ -466,12 +472,10 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 				last_query = false;
 			}
 
-			if (ctx->processing_fn) {
-				status = ctx->processing_fn(mem_ctx,
-							    ctr6->first_object,
-							    &ctr6->mapping_ctr,
-							    last_query,
-							    ctx);
+			if (ctx->ops->process_objects) {
+				status = ctx->ops->process_objects(ctx, mem_ctx,
+								   ctr6->first_object,
+								   &ctr6->mapping_ctr);
 				if (!NT_STATUS_IS_OK(status)) {
 					ctx->error_message = talloc_asprintf(mem_ctx,
 						"Failed to call processing function: %s",
@@ -483,6 +487,14 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 			if (!last_query) {
 				continue;
 			}
+		}
+
+		status = ctx->ops->finish(ctx, mem_ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			ctx->error_message = talloc_asprintf(mem_ctx,
+				"Failed to call finishing operation: %s",
+				nt_errstr(status));
+			goto out;
 		}
 
 		break;
