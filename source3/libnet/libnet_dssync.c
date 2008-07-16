@@ -418,7 +418,7 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 							 &ctx->session_key,
 							 ctr1->first_object);
 
-			if (ctr1->new_highwatermark.tmp_highest_usn > ctr1->new_highwatermark.highest_usn) {
+			if (ctr1->more_data) {
 				req.req5.highwatermark = ctr1->new_highwatermark;
 				last_query = false;
 			}
@@ -461,7 +461,7 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 							 &ctx->session_key,
 							 ctr6->first_object);
 
-			if (ctr6->new_highwatermark.tmp_highest_usn > ctr6->new_highwatermark.highest_usn) {
+			if (ctr6->more_data) {
 				req.req8.highwatermark = ctr6->new_highwatermark;
 				last_query = false;
 			}
