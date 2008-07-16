@@ -41,6 +41,7 @@ static NTSTATUS add_to_keytab_entries(TALLOC_CTX *mem_ctx,
 
 	ADD_TO_ARRAY(mem_ctx, struct libnet_keytab_entry, entry,
 		     &ctx->entries, &ctx->count);
+	NT_STATUS_HAVE_NO_MEMORY(ctx->entries);
 
 	return NT_STATUS_OK;
 }
