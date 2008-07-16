@@ -22,6 +22,29 @@
 
 #if defined(HAVE_ADS) && defined(ENCTYPE_ARCFOUR_HMAC)
 
+static NTSTATUS add_to_keytab_entries(TALLOC_CTX *mem_ctx,
+				      struct libnet_keytab_context *ctx,
+				      uint32_t kvno,
+				      const char *name,
+				      DATA_BLOB blob)
+{
+	struct libnet_keytab_entry entry;
+
+	entry.kvno = kvno;
+	entry.name = talloc_strdup(mem_ctx, name);
+	entry.principal = talloc_asprintf(mem_ctx, "%s@%s",
+					  name, ctx->dns_domain_name);
+	entry.password = blob;
+	NT_STATUS_HAVE_NO_MEMORY(entry.name);
+	NT_STATUS_HAVE_NO_MEMORY(entry.principal);
+	NT_STATUS_HAVE_NO_MEMORY(entry.password.data);
+
+	ADD_TO_ARRAY(mem_ctx, struct libnet_keytab_entry, entry,
+		     &ctx->entries, &ctx->count);
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS keytab_startup(struct dssync_context *ctx, TALLOC_CTX *mem_ctx)
 {
 	krb5_error_code ret = 0;
@@ -166,17 +189,12 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 	}
 	DEBUGADD(1,("\n"));
 
-	entry.kvno = kvno;
-	entry.name = talloc_strdup(mem_ctx, name);
-	entry.principal = talloc_asprintf(mem_ctx, "%s@%s",
-					  name, ctx->dns_domain_name);
-	entry.password = data_blob_talloc(mem_ctx, nt_passwd, 16);
-	NT_STATUS_HAVE_NO_MEMORY(entry.name);
-	NT_STATUS_HAVE_NO_MEMORY(entry.principal);
-	NT_STATUS_HAVE_NO_MEMORY(entry.password.data);
+	status = add_to_keytab_entries(mem_ctx, ctx, kvno, name,
+				       data_blob_talloc(mem_ctx, nt_passwd, 16));
 
-	ADD_TO_ARRAY(mem_ctx, struct libnet_keytab_entry, entry,
-		     &ctx->entries, &ctx->count);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	if ((kvno < 0) && (kvno < pwd_history_len)) {
 		return status;
