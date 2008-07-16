@@ -78,7 +78,7 @@ exit 0
 
 %postun
 if [ "$1" -ge "1" ]; then
-	%{initdir}/ctdb restart >/dev/null 2>&1
+	%{initdir}/ctdb restart >/dev/null 2>&1 || true
 fi	
 
 
