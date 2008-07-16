@@ -5382,7 +5382,7 @@ static struct param_opt_struct *get_parametrics(int snum, const char *type,
 	}
 
 	while (data) {
-		if (StrCaseCmp(data->key, param_key) == 0) {
+		if (strwicmp(data->key, param_key) == 0) {
 			string_free(&param_key);
 			return data;
 		}
@@ -5394,7 +5394,7 @@ static struct param_opt_struct *get_parametrics(int snum, const char *type,
 		/* but only if we are not already working with Globals */
 		data = Globals.param_opt;
 		while (data) {
-		        if (strcmp(data->key, param_key) == 0) {
+		        if (strwicmp(data->key, param_key) == 0) {
 			        string_free(&param_key);
 				return data;
 			}
@@ -6438,7 +6438,7 @@ static void copy_service(struct service *pserviceDest, struct service *pserviceS
 		/* Traverse destination */
 		while (pdata) {
 			/* If we already have same option, override it */
-			if (strcmp(pdata->key, data->key) == 0) {
+			if (strwicmp(pdata->key, data->key) == 0) {
 				string_free(&pdata->value);
 				TALLOC_FREE(data->list);
 				pdata->value = SMB_STRDUP(data->value);
@@ -7113,21 +7113,18 @@ void *lp_local_ptr(int snum, void *ptr)
 
 bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue)
 {
-	int parmnum, i, slen;
+	int parmnum, i;
 	void *parm_ptr = NULL;	/* where we are going to store the result */
 	void *def_ptr = NULL;
-	char *param_key = NULL;
 	struct param_opt_struct *paramo, *data;
 	bool not_added;
 
 	parmnum = map_parameter(pszParmName);
 
 	if (parmnum < 0) {
-		char *sep;
 		TALLOC_CTX *frame;
 
-		sep = strchr(pszParmName, ':');
-		if (sep == NULL) {
+		if (strchr(pszParmName, ':') == NULL) {
 			DEBUG(0, ("Ignoring unknown parameter \"%s\"\n",
 				  pszParmName));
 			return (True);
@@ -7139,26 +7136,13 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 		frame = talloc_stackframe();
 
-		*sep = '\0';
-		param_key = talloc_asprintf(frame, "%s:", pszParmName);
-		if (!param_key) {
-			TALLOC_FREE(frame);
-			return false;
-		}
-		slen = strlen(param_key);
-		param_key = talloc_asprintf_append(param_key, sep+1);
-		if (!param_key) {
-			TALLOC_FREE(frame);
-			return false;
-		}
-		trim_char(param_key+slen, ' ', ' ');
 		not_added = True;
 		data = (snum < 0)
 			? Globals.param_opt : ServicePtrs[snum]->param_opt;
 		/* Traverse destination */
 		while (data) {
 			/* If we already have same option, override it */
-			if (strcmp(data->key, param_key) == 0) {
+			if (strwicmp(data->key, pszParmName) == 0) {
 				string_free(&data->value);
 				TALLOC_FREE(data->list);
 				data->value = SMB_STRDUP(pszParmValue);
@@ -7169,7 +7153,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		}
 		if (not_added) {
 			paramo = SMB_XMALLOC_P(struct param_opt_struct);
-			paramo->key = SMB_STRDUP(param_key);
+			paramo->key = SMB_STRDUP(pszParmName);
 			paramo->value = SMB_STRDUP(pszParmValue);
 			paramo->list = NULL;
 			if (snum < 0) {
@@ -7180,7 +7164,6 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			}
 		}
 
-		*sep = ':';
 		TALLOC_FREE(frame);
 		return (True);
 	}
