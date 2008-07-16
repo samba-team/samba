@@ -7117,61 +7117,71 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	void *parm_ptr = NULL;	/* where we are going to store the result */
 	void *def_ptr = NULL;
 	char *param_key = NULL;
-	char *sep;
 	struct param_opt_struct *paramo, *data;
 	bool not_added;
 
 	parmnum = map_parameter(pszParmName);
 
 	if (parmnum < 0) {
-		if ((sep=strchr(pszParmName, ':')) != NULL) {
-			TALLOC_CTX *frame = talloc_stackframe();
+		char *sep;
+		TALLOC_CTX *frame;
 
-			*sep = '\0';
-			param_key = talloc_asprintf(frame, "%s:", pszParmName);
-			if (!param_key) {
-				TALLOC_FREE(frame);
-				return false;
-			}
-			slen = strlen(param_key);
-			param_key = talloc_asprintf_append(param_key, sep+1);
-			if (!param_key) {
-				TALLOC_FREE(frame);
-				return false;
-			}
-			trim_char(param_key+slen, ' ', ' ');
-			not_added = True;
-			data = (snum < 0) ? Globals.param_opt :
-				ServicePtrs[snum]->param_opt;
-			/* Traverse destination */
-			while (data) {
-				/* If we already have same option, override it */
-				if (strcmp(data->key, param_key) == 0) {
-					string_free(&data->value);
-					TALLOC_FREE(data->list);
-					data->value = SMB_STRDUP(pszParmValue);
-					not_added = False;
-					break;
-				}
-				data = data->next;
-			}
-			if (not_added) {
-				paramo = SMB_XMALLOC_P(struct param_opt_struct);
-				paramo->key = SMB_STRDUP(param_key);
-				paramo->value = SMB_STRDUP(pszParmValue);
-				paramo->list = NULL;
-				if (snum < 0) {
-					DLIST_ADD(Globals.param_opt, paramo);
-				} else {
-					DLIST_ADD(ServicePtrs[snum]->param_opt, paramo);
-				}
-			}
-
-			*sep = ':';
-			TALLOC_FREE(frame);
+		sep = strchr(pszParmName, ':');
+		if (sep == NULL) {
+			DEBUG(0, ("Ignoring unknown parameter \"%s\"\n",
+				  pszParmName));
 			return (True);
 		}
-		DEBUG(0, ("Ignoring unknown parameter \"%s\"\n", pszParmName));
+
+		/*
+		 * We've got a parametric option
+		 */
+
+		frame = talloc_stackframe();
+
+		*sep = '\0';
+		param_key = talloc_asprintf(frame, "%s:", pszParmName);
+		if (!param_key) {
+			TALLOC_FREE(frame);
+			return false;
+		}
+		slen = strlen(param_key);
+		param_key = talloc_asprintf_append(param_key, sep+1);
+		if (!param_key) {
+			TALLOC_FREE(frame);
+			return false;
+		}
+		trim_char(param_key+slen, ' ', ' ');
+		not_added = True;
+		data = (snum < 0)
+			? Globals.param_opt : ServicePtrs[snum]->param_opt;
+		/* Traverse destination */
+		while (data) {
+			/* If we already have same option, override it */
+			if (strcmp(data->key, param_key) == 0) {
+				string_free(&data->value);
+				TALLOC_FREE(data->list);
+				data->value = SMB_STRDUP(pszParmValue);
+				not_added = False;
+				break;
+			}
+			data = data->next;
+		}
+		if (not_added) {
+			paramo = SMB_XMALLOC_P(struct param_opt_struct);
+			paramo->key = SMB_STRDUP(param_key);
+			paramo->value = SMB_STRDUP(pszParmValue);
+			paramo->list = NULL;
+			if (snum < 0) {
+				DLIST_ADD(Globals.param_opt, paramo);
+			} else {
+				DLIST_ADD(ServicePtrs[snum]->param_opt,
+					  paramo);
+			}
+		}
+
+		*sep = ':';
+		TALLOC_FREE(frame);
 		return (True);
 	}
 
