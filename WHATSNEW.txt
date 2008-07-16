@@ -19,11 +19,20 @@ Changes since 3.2.0
 
 
 o   Michael Adam <obnox@samba.org>
+    * BUG 5608: Fix link creation for libtalloc.so.1 (and friends) on
+      Solaris 8.
+    * BUG 5594: Fix "make test" by adding and using a new testparm
+      switch "--skip-logic-checks".
     * Fix creation of libaddns.a, libsmbclient.a and libsharemodes.a.
+    * Update the section about net conf in the net(8) manpage.
+    * Improve processing of registry shares.
+    * Fix listing of registry shares with testparm.
+    * Fix several build issues.
 
 
 o   Jeremy Allison <jra@samba.org>
     * BUG 5578: Fix error from strlcat.
+    * BUG 5613: Fix flushing of smb.conf when creating a new share using SWAT.
     * Ensure consistent use of pdb_get_nt_passwd instead of
       pdb_get_lanman_passwd.
     * Remove worrying warning message when safe_strcpy tries to copy a
@@ -49,12 +58,27 @@ o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
       to owning group.
 
 
+o   Volodymyr Khomenko <Volodymyr.Khomenko@exanet.com>
+    * Make ntimes function more like POSIX and allow NULL arg.
+
+
 o   Volker Lendecke <vl@samba.org>
     * BUG 5512: Fix alignment problems on sparc.
+    * Fix a segfault in base64_encode_data_blob.
+    * Fix some uninitialized variable references via ndr_print.
+    * Fix error message if trying to join with a non-privileged user.
+    * Fix setups using "include = registry" without [global] settings
+      in the registry.
+
+
+o   Herb Lewis <herb@samba.org>
+    * Cleanup some duplicate code by passing the password to the wbinfo_auth*
+      functions.
 
 
 o   Zach Loafman <zachary.loafman@isilon.com>
     * Set sin[6]_family instead of ss_family in in[6]_addr_to_sockaddr_storage.
+    * Fix realpath() check so that it doesn't generate a core() when it fails.
 
 
 o   Lars Müller <lars@samba.org>
@@ -63,6 +87,15 @@ o   Lars Müller <lars@samba.org>
 
 o   Darshan Purandare <dpurandare@isilon.com>
     * Add broadcasting of the debug message to all winbindd children.
+
+
+o   Andreas Schneider <anschneider@suse.de>
+    * Release still reachable memory if the smbclient context is freed.
+
+
+o   Simo Sorce <idra@samba.org>
+    * BUG 5540: Fix "set primary group script" user option substitution.
+    * Fix regression in Winbindd offline mode.
 
 
 o   Bo Yang <boyang@novell.com>
