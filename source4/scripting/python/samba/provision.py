@@ -1266,12 +1266,12 @@ memberof-group-oc top
 memberof-member-ad """ + res[i]["lDAPDisplayName"][0] + """
 memberof-memberof-ad """ + target + """
 memberof-dangling-error 32
-
 """
 
-                memberof_config += """
-overlay refint
-refint_attributes""" + refint_attributes + "\n"
+                memberof_config += """overlay refint
+refint_attributes""" + refint_attributes + """
+
+"""
     
         setup_file(setup_path("slapd.conf"), paths.slapdconf,
                    {"DNSDOMAIN": names.dnsdomain,
