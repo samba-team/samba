@@ -477,7 +477,7 @@ static NTSTATUS add_socket(struct event_context *event_context,
 		}
 	}
 
-	/* Load LDAP database */
+	/* Load LDAP database, but only to read our settings */
 	ldb = samdb_connect(ldap_service, ldap_service->task->event_ctx, 
 			    lp_ctx, system_session(ldap_service, lp_ctx));
 	if (!ldb) {
@@ -496,6 +496,10 @@ static NTSTATUS add_socket(struct event_context *event_context,
 				 address, port, nt_errstr(status)));
 		}
 	}
+
+	/* And once we are bound, free the tempoary ldb, it will
+	 * connect again on each incoming LDAP connection */
+	talloc_free(ldb);
 
 	return status;
 }
