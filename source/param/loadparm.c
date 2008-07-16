@@ -97,9 +97,8 @@ extern int extra_time_offset;
 
 static bool defaults_saved = False;
 
-typedef struct _param_opt_struct param_opt_struct;
-struct _param_opt_struct {
-	param_opt_struct *prev, *next;
+struct param_opt_struct {
+	struct param_opt_struct *prev, *next;
 	char *key;
 	char *value;
 	char **list;
@@ -338,7 +337,7 @@ struct global {
 	bool bResetOnZeroVC;
 	int iKeepalive;
 	int iminreceivefile;
-	param_opt_struct *param_opt;
+	struct param_opt_struct *param_opt;
 };
 
 static struct global Globals;
@@ -482,7 +481,7 @@ struct service {
 	int iMap_readonly;
 	int iDirectoryNameCacheSize;
 	int ismb_encrypt;
-	param_opt_struct *param_opt;
+	struct param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
 };
@@ -5356,14 +5355,17 @@ static char * canonicalize_servicename(const char *name);
 static void show_parameter(int parmIndex);
 static bool is_synonym_of(int parm1, int parm2, bool *inverse);
 
-/* This is a helper function for parametrical options support. */
-/* It returns a pointer to parametrical option value if it exists or NULL otherwise */
-/* Actual parametrical functions are quite simple */
-static param_opt_struct *get_parametrics(int snum, const char *type, const char *option)
+/*
+ * This is a helper function for parametrical options support.  It returns a
+ * pointer to parametrical option value if it exists or NULL otherwise. Actual
+ * parametrical functions are quite simple
+ */
+static struct param_opt_struct *get_parametrics(int snum, const char *type,
+						const char *option)
 {
 	bool global_section = False;
 	char* param_key;
-        param_opt_struct *data;
+        struct param_opt_struct *data;
 	
 	if (snum >= iNumServices) return NULL;
 	
@@ -5497,7 +5499,7 @@ static int lp_enum(const char *s,const struct enum_list *_enum)
 /* the returned value is talloced on the talloc_tos() */
 char *lp_parm_talloc_string(int snum, const char *type, const char *option, const char *def)
 {
-	param_opt_struct *data = get_parametrics(snum, type, option);
+	struct param_opt_struct *data = get_parametrics(snum, type, option);
 	
 	if (data == NULL||data->value==NULL) {
 		if (def) {
@@ -5514,7 +5516,7 @@ char *lp_parm_talloc_string(int snum, const char *type, const char *option, cons
 /* Parametric option has following syntax: 'Type: option = value' */
 const char *lp_parm_const_string(int snum, const char *type, const char *option, const char *def)
 {
-	param_opt_struct *data = get_parametrics(snum, type, option);
+	struct param_opt_struct *data = get_parametrics(snum, type, option);
 	
 	if (data == NULL||data->value==NULL)
 		return def;
@@ -5527,7 +5529,7 @@ const char *lp_parm_const_string(int snum, const char *type, const char *option,
 
 const char **lp_parm_string_list(int snum, const char *type, const char *option, const char **def)
 {
-	param_opt_struct *data = get_parametrics(snum, type, option);
+	struct param_opt_struct *data = get_parametrics(snum, type, option);
 
 	if (data == NULL||data->value==NULL)
 		return (const char **)def;
@@ -5544,7 +5546,7 @@ const char **lp_parm_string_list(int snum, const char *type, const char *option,
 
 int lp_parm_int(int snum, const char *type, const char *option, int def)
 {
-	param_opt_struct *data = get_parametrics(snum, type, option);
+	struct param_opt_struct *data = get_parametrics(snum, type, option);
 	
 	if (data && data->value && *data->value)
 		return lp_int(data->value);
@@ -5557,7 +5559,7 @@ int lp_parm_int(int snum, const char *type, const char *option, int def)
 
 unsigned long lp_parm_ulong(int snum, const char *type, const char *option, unsigned long def)
 {
-	param_opt_struct *data = get_parametrics(snum, type, option);
+	struct param_opt_struct *data = get_parametrics(snum, type, option);
 	
 	if (data && data->value && *data->value)
 		return lp_ulong(data->value);
@@ -5570,7 +5572,7 @@ unsigned long lp_parm_ulong(int snum, const char *type, const char *option, unsi
 
 bool lp_parm_bool(int snum, const char *type, const char *option, bool def)
 {
-	param_opt_struct *data = get_parametrics(snum, type, option);
+	struct param_opt_struct *data = get_parametrics(snum, type, option);
 	
 	if (data && data->value && *data->value)
 		return lp_bool(data->value);
@@ -5584,7 +5586,7 @@ bool lp_parm_bool(int snum, const char *type, const char *option, bool def)
 int lp_parm_enum(int snum, const char *type, const char *option,
 		 const struct enum_list *_enum, int def)
 {
-	param_opt_struct *data = get_parametrics(snum, type, option);
+	struct param_opt_struct *data = get_parametrics(snum, type, option);
 	
 	if (data && data->value && *data->value && _enum)
 		return lp_enum(data->value, _enum);
@@ -5610,7 +5612,7 @@ static void init_service(struct service *pservice)
 static void free_service(struct service *pservice)
 {
 	int i;
-        param_opt_struct *data, *pdata;
+	struct param_opt_struct *data, *pdata;
 	if (!pservice)
 		return;
 
@@ -5689,7 +5691,7 @@ static int add_a_service(const struct service *pservice, const char *name)
 	int i;
 	struct service tservice;
 	int num_to_alloc = iNumServices + 1;
-	param_opt_struct *data, *pdata;
+	struct param_opt_struct *data, *pdata;
 
 	tservice = *pservice;
 
@@ -6372,7 +6374,7 @@ static void copy_service(struct service *pserviceDest, struct service *pserviceS
 {
 	int i;
 	bool bcopyall = (pcopymapDest == NULL);
-	param_opt_struct *data, *pdata, *paramo;
+	struct param_opt_struct *data, *pdata, *paramo;
 	bool not_added;
 
 	for (i = 0; parm_table[i].label; i++)
@@ -6446,7 +6448,7 @@ static void copy_service(struct service *pserviceDest, struct service *pserviceS
 			pdata = pdata->next;
 		}
 		if (not_added) {
-		    paramo = SMB_XMALLOC_P(param_opt_struct);
+		    paramo = SMB_XMALLOC_P(struct param_opt_struct);
 		    paramo->key = SMB_STRDUP(data->key);
 		    paramo->value = SMB_STRDUP(data->value);
 		    paramo->list = NULL;
@@ -7116,7 +7118,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	void *def_ptr = NULL;
 	char *param_key = NULL;
 	char *sep;
-	param_opt_struct *paramo, *data;
+	struct param_opt_struct *paramo, *data;
 	bool not_added;
 
 	parmnum = map_parameter(pszParmName);
@@ -7154,7 +7156,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 				data = data->next;
 			}
 			if (not_added) {
-				paramo = SMB_XMALLOC_P(param_opt_struct);
+				paramo = SMB_XMALLOC_P(struct param_opt_struct);
 				paramo->key = SMB_STRDUP(param_key);
 				paramo->value = SMB_STRDUP(pszParmValue);
 				paramo->list = NULL;
@@ -7485,7 +7487,7 @@ Display the contents of the global structure.
 static void dump_globals(FILE *f)
 {
 	int i;
-	param_opt_struct *data;
+	struct param_opt_struct *data;
 	
 	fprintf(f, "[global]\n");
 
@@ -7529,7 +7531,7 @@ bool lp_is_default(int snum, struct parm_struct *parm)
 static void dump_a_service(struct service *pService, FILE * f)
 {
 	int i;
-	param_opt_struct *data;
+	struct param_opt_struct *data;
 	
 	if (pService != &sDefault)
 		fprintf(f, "[%s]\n", pService->szService);
@@ -8746,7 +8748,7 @@ bool lp_load_ex(const char *pszFname,
 {
 	char *n2 = NULL;
 	bool bRetval;
-	param_opt_struct *data, *pdata;
+	struct param_opt_struct *data, *pdata;
 
 	bRetval = False;
 
