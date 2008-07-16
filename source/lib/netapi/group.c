@@ -1019,10 +1019,267 @@ WERROR NetGroupDelUser_l(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
+static WERROR convert_samr_disp_groups_to_GROUP_INFO_0_buffer(TALLOC_CTX *mem_ctx,
+							      struct samr_DispInfoFullGroups *groups,
+							      uint8_t **buffer)
+{
+	struct GROUP_INFO_0 *g0;
+	int i;
+
+	g0 = TALLOC_ZERO_ARRAY(mem_ctx, struct GROUP_INFO_0, groups->count);
+	W_ERROR_HAVE_NO_MEMORY(g0);
+
+	for (i=0; i<groups->count; i++) {
+		g0[i].grpi0_name = talloc_strdup(mem_ctx,
+			groups->entries[i].account_name.string);
+		W_ERROR_HAVE_NO_MEMORY(g0[i].grpi0_name);
+	}
+
+	*buffer = (uint8_t *)talloc_memdup(mem_ctx, g0,
+					   sizeof(struct GROUP_INFO_0) * groups->count);
+	W_ERROR_HAVE_NO_MEMORY(*buffer);
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static WERROR convert_samr_disp_groups_to_GROUP_INFO_1_buffer(TALLOC_CTX *mem_ctx,
+							      struct samr_DispInfoFullGroups *groups,
+							      uint8_t **buffer)
+{
+	struct GROUP_INFO_1 *g1;
+	int i;
+
+	g1 = TALLOC_ZERO_ARRAY(mem_ctx, struct GROUP_INFO_1, groups->count);
+	W_ERROR_HAVE_NO_MEMORY(g1);
+
+	for (i=0; i<groups->count; i++) {
+		g1[i].grpi1_name = talloc_strdup(mem_ctx,
+			groups->entries[i].account_name.string);
+		g1[i].grpi1_comment = talloc_strdup(mem_ctx,
+			groups->entries[i].description.string);
+		W_ERROR_HAVE_NO_MEMORY(g1[i].grpi1_name);
+	}
+
+	*buffer = (uint8_t *)talloc_memdup(mem_ctx, g1,
+					   sizeof(struct GROUP_INFO_1) * groups->count);
+	W_ERROR_HAVE_NO_MEMORY(*buffer);
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static WERROR convert_samr_disp_groups_to_GROUP_INFO_2_buffer(TALLOC_CTX *mem_ctx,
+							      struct samr_DispInfoFullGroups *groups,
+							      uint8_t **buffer)
+{
+	struct GROUP_INFO_2 *g2;
+	int i;
+
+	g2 = TALLOC_ZERO_ARRAY(mem_ctx, struct GROUP_INFO_2, groups->count);
+	W_ERROR_HAVE_NO_MEMORY(g2);
+
+	for (i=0; i<groups->count; i++) {
+		g2[i].grpi2_name = talloc_strdup(mem_ctx,
+			groups->entries[i].account_name.string);
+		g2[i].grpi2_comment = talloc_strdup(mem_ctx,
+			groups->entries[i].description.string);
+		g2[i].grpi2_group_id = groups->entries[i].rid;
+		g2[i].grpi2_attributes = groups->entries[i].acct_flags;
+		W_ERROR_HAVE_NO_MEMORY(g2[i].grpi2_name);
+	}
+
+	*buffer = (uint8_t *)talloc_memdup(mem_ctx, g2,
+					   sizeof(struct GROUP_INFO_2) * groups->count);
+	W_ERROR_HAVE_NO_MEMORY(*buffer);
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static WERROR convert_samr_disp_groups_to_GROUP_INFO_3_buffer(TALLOC_CTX *mem_ctx,
+							      struct samr_DispInfoFullGroups *groups,
+							      const struct dom_sid *domain_sid,
+							      uint8_t **buffer)
+{
+	struct GROUP_INFO_3 *g3;
+	int i;
+
+	g3 = TALLOC_ZERO_ARRAY(mem_ctx, struct GROUP_INFO_3, groups->count);
+	W_ERROR_HAVE_NO_MEMORY(g3);
+
+	for (i=0; i<groups->count; i++) {
+
+		struct dom_sid sid;
+
+		if (!sid_compose(&sid, domain_sid, groups->entries[i].rid)) {
+			return WERR_NOMEM;
+		}
+
+		g3[i].grpi3_name = talloc_strdup(mem_ctx,
+			groups->entries[i].account_name.string);
+		g3[i].grpi3_comment = talloc_strdup(mem_ctx,
+			groups->entries[i].description.string);
+		g3[i].grpi3_group_sid = (struct domsid *)sid_dup_talloc(mem_ctx, &sid);
+		g3[i].grpi3_attributes = groups->entries[i].acct_flags;
+		W_ERROR_HAVE_NO_MEMORY(g3[i].grpi3_name);
+	}
+
+	*buffer = (uint8_t *)talloc_memdup(mem_ctx, g3,
+					   sizeof(struct GROUP_INFO_3) * groups->count);
+	W_ERROR_HAVE_NO_MEMORY(*buffer);
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static WERROR convert_samr_disp_groups_to_GROUP_INFO_buffer(TALLOC_CTX *mem_ctx,
+							    uint32_t level,
+							    struct samr_DispInfoFullGroups *groups,
+							    const struct dom_sid *domain_sid,
+							    uint32_t *entries_read,
+							    uint8_t **buffer)
+{
+	if (entries_read) {
+		*entries_read = groups->count;
+	}
+
+	switch (level) {
+		case 0:
+			return convert_samr_disp_groups_to_GROUP_INFO_0_buffer(mem_ctx, groups, buffer);
+		case 1:
+			return convert_samr_disp_groups_to_GROUP_INFO_1_buffer(mem_ctx, groups, buffer);
+		case 2:
+			return convert_samr_disp_groups_to_GROUP_INFO_2_buffer(mem_ctx, groups, buffer);
+		case 3:
+			return convert_samr_disp_groups_to_GROUP_INFO_3_buffer(mem_ctx, groups, domain_sid, buffer);
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR NetGroupEnum_r(struct libnetapi_ctx *ctx,
 		      struct NetGroupEnum *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	struct policy_handle connect_handle;
+	struct dom_sid2 *domain_sid = NULL;
+	struct policy_handle domain_handle;
+	union samr_DispInfo info;
+	union samr_DomainInfo *domain_info = NULL;
+
+	uint32_t total_size = 0;
+	uint32_t returned_size = 0;
+
+	NTSTATUS status;
+	WERROR werr, tmp_werr;
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(domain_handle);
+
+	switch (r->in.level) {
+		case 0:
+		case 1:
+		case 2:
+		case 3:
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2 |
+					  SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS |
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	status = rpccli_samr_QueryDomainInfo(pipe_cli, ctx,
+					     &domain_handle,
+					     2,
+					     &domain_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	if (r->out.total_entries) {
+		*r->out.total_entries = domain_info->info2.num_groups;
+	}
+
+	status = rpccli_samr_QueryDisplayInfo2(pipe_cli,
+					       ctx,
+					       &domain_handle,
+					       3,
+					       r->in.resume_handle ?
+					       *r->in.resume_handle : 0,
+					       (uint32_t)-1,
+					       r->in.prefmaxlen,
+					       &total_size,
+					       &returned_size,
+					       &info);
+	werr = ntstatus_to_werror(status);
+	if (NT_STATUS_IS_ERR(status)) {
+		goto done;
+	}
+
+	if (r->out.resume_handle) {
+		*r->out.resume_handle =
+			info.info3.entries[info.info3.count-1].idx;
+	}
+
+	tmp_werr = convert_samr_disp_groups_to_GROUP_INFO_buffer(ctx,
+								 r->in.level,
+								 &info.info3,
+								 domain_sid,
+								 r->out.entries_read,
+								 r->out.buffer);
+	if (!W_ERROR_IS_OK(tmp_werr)) {
+		werr = tmp_werr;
+		goto done;
+	}
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+#if 0
+	if (is_valid_policy_hnd(&domain_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
+	}
+	if (is_valid_policy_hnd(&connect_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+	}
+#endif
+	return werr;
 }
 
 /****************************************************************
@@ -1031,5 +1288,5 @@ WERROR NetGroupEnum_r(struct libnetapi_ctx *ctx,
 WERROR NetGroupEnum_l(struct libnetapi_ctx *ctx,
 		      struct NetGroupEnum *r)
 {
-	return WERR_NOT_SUPPORTED;
+	return NetGroupEnum_r(ctx, r);
 }
