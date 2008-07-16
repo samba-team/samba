@@ -1206,9 +1206,20 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* some create options are not supported */
 	if (create_options & NTCREATEX_OPTIONS_NOT_SUPPORTED_MASK) {
 		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	/* TODO: When we implement HSM, add a hook here not to pull
+	 * the actual file off tape, when this option is passed from
+	 * the client */
+	if (create_options & NTCREATEX_OPTIONS_NO_RECALL) {
+		/* no-op */
+	}
+
+	/* These options are ignored */
+	if (create_options & (NTCREATEX_OPTIONS_FREE_SPACE_QUERY | NTCREATEX_OPTIONS_OPFILTER)) {
+		/* no-op */
 	}
 
 	/* other create options are not allowed */
