@@ -504,6 +504,22 @@ struct NetUserGetInfo {
 };
 
 
+struct NetUserSetInfo {
+	struct {
+		const char * server_name;
+		const char * user_name;
+		uint32_t level;
+		uint8_t *buffer;/* [ref] */
+	} in;
+
+	struct {
+		uint32_t *parm_err;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
 struct NetQueryDisplayInformation {
 	struct {
 		const char * server_name;/* [unique] */
