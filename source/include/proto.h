@@ -1815,6 +1815,7 @@ void smb_uuid_generate_random(struct GUID *uu);
 const char *smb_uuid_string(TALLOC_CTX *mem_ctx, const struct GUID uu);
 bool smb_string_to_uuid(const char *in, struct GUID* uu);
 char *guid_binstring(const struct GUID *guid);
+bool guid_equal(const struct GUID *g1, const struct GUID *g2);
 
 /* The following definitions come from lib/version.c  */
 
@@ -4101,6 +4102,8 @@ void ndr_print_PAC_BUFFER(struct ndr_print *ndr, const char *name, const struct 
 
 bool all_zero(const uint8_t *ptr, size_t size);
 void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid);
+bool ndr_syntax_id_equal(const struct ndr_syntax_id *i1,
+			 const struct ndr_syntax_id *i2);
 enum ndr_err_code ndr_push_server_id(struct ndr_push *ndr, int ndr_flags, const struct server_id *r);
 enum ndr_err_code ndr_pull_server_id(struct ndr_pull *ndr, int ndr_flags, struct server_id *r);
 void ndr_print_server_id(struct ndr_print *ndr, const char *name, const struct server_id *r);
