@@ -678,6 +678,54 @@ NET_API_STATUS NetUserGetInfo(const char * server_name /* [in] */,
 }
 
 /****************************************************************
+ NetUserSetInfo
+****************************************************************/
+
+NET_API_STATUS NetUserSetInfo(const char * server_name /* [in] */,
+			      const char * user_name /* [in] */,
+			      uint32_t level /* [in] */,
+			      uint8_t *buffer /* [in] [ref] */,
+			      uint32_t *parm_err /* [out] [ref] */)
+{
+	struct NetUserSetInfo r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.user_name = user_name;
+	r.in.level = level;
+	r.in.buffer = buffer;
+
+	/* Out parameters */
+	r.out.parm_err = parm_err;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetUserSetInfo, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetUserSetInfo_l(ctx, &r);
+	} else {
+		werr = NetUserSetInfo_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetUserSetInfo, &r);
+	}
+
+	return r.out.result;
+}
+
+/****************************************************************
  NetQueryDisplayInformation
 ****************************************************************/
 
