@@ -26,13 +26,16 @@ static NTSTATUS add_to_keytab_entries(TALLOC_CTX *mem_ctx,
 				      struct libnet_keytab_context *ctx,
 				      uint32_t kvno,
 				      const char *name,
+				      const char *prefix,
 				      DATA_BLOB blob)
 {
 	struct libnet_keytab_entry entry;
 
 	entry.kvno = kvno;
 	entry.name = talloc_strdup(mem_ctx, name);
-	entry.principal = talloc_asprintf(mem_ctx, "%s@%s",
+	entry.principal = talloc_asprintf(mem_ctx, "%s%s%s@%s",
+					  prefix ? prefix : "",
+					  prefix ? "/" : "",
 					  name, ctx->dns_domain_name);
 	entry.password = blob;
 	NT_STATUS_HAVE_NO_MEMORY(entry.name);
@@ -190,7 +193,7 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 	}
 	DEBUGADD(1,("\n"));
 
-	status = add_to_keytab_entries(mem_ctx, ctx, kvno, name,
+	status = add_to_keytab_entries(mem_ctx, ctx, kvno, name, NULL,
 				       data_blob_talloc(mem_ctx, nt_passwd, 16));
 
 	if (!NT_STATUS_IS_OK(status)) {
