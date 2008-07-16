@@ -39,6 +39,7 @@ int main(int argc, const char **argv)
 	struct GROUP_INFO_1 *g1;
 	struct GROUP_INFO_2 *g2;
 	struct GROUP_INFO_3 *g3;
+	char *sid_str = NULL;
 
 	poptContext pc;
 	int opt;
@@ -109,7 +110,11 @@ int main(int argc, const char **argv)
 			g3 = (struct GROUP_INFO_3 *)buffer;
 			printf("name: %s\n", g3->grpi3_name);
 			printf("comment: %s\n", g3->grpi3_comment);
-/*			printf("group_sid: %p\n", g3->grpi3_group_sid);*/
+			if (ConvertSidToStringSid(g3->grpi3_group_sid,
+						  &sid_str)) {
+				printf("group_sid: %s\n", sid_str);
+				free(sid_str);
+			}
 			printf("attributes: %d\n", g3->grpi3_attributes);
 			break;
 	}
