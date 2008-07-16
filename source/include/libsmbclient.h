@@ -796,7 +796,7 @@ void smbc_setFunctionRead(SMBCCTX *c, smbc_read_fn fn);
 
 typedef ssize_t (*smbc_write_fn)(SMBCCTX *c,
                                  SMBCFILE *file,
-                                 void *buf,
+                                 const void *buf,
                                  size_t count);
 smbc_write_fn smbc_getFunctionWrite(SMBCCTX *c);
 void smbc_setFunctionWrite(SMBCCTX *c, smbc_write_fn fn);
@@ -1240,7 +1240,7 @@ ssize_t smbc_read(int fd, void *buf, size_t bufsize);
  * @see             smbc_open(), smbc_read()
  *
  */
-ssize_t smbc_write(int fd, void *buf, size_t bufsize);
+ssize_t smbc_write(int fd, const void *buf, size_t bufsize);
 
 
 /**@ingroup file
