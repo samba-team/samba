@@ -87,11 +87,19 @@ static int ctdb_traverse_local_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DAT
 	struct ctdb_rec_data *d;
 	struct ctdb_ltdb_header *hdr;
 
-	/* filter out non-authoritative and zero-length records */
+	
 	hdr = (struct ctdb_ltdb_header *)data.dptr;
-	if (data.dsize <= sizeof(struct ctdb_ltdb_header) ||
-	    hdr->dmaster != h->ctdb_db->ctdb->pnn) {
-		return 0;
+
+	if (h->ctdb_db->persistent == 0) {
+		/* filter out zero-length records */
+		if (data.dsize <= sizeof(struct ctdb_ltdb_header)) {
+			return 0;
+		}
+
+		/* filter out non-authoritative records */
+		if (hdr->dmaster != h->ctdb_db->ctdb->pnn) {
+			return 0;
+		}
 	}
 
 	d = ctdb_marshall_record(h, 0, key, NULL, data);
@@ -174,6 +182,7 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 
 struct ctdb_traverse_all_handle {
 	struct ctdb_context *ctdb;
+	struct ctdb_db_context *ctdb_db;
 	uint32_t reqid;
 	ctdb_traverse_fn_t callback;
 	void *private_data;
@@ -224,17 +233,19 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 	int ret;
 	TDB_DATA data;
 	struct ctdb_traverse_all r;
+	uint32_t destination;
 
 	state = talloc(ctdb_db, struct ctdb_traverse_all_handle);
 	if (state == NULL) {
 		return NULL;
 	}
 
-	state->ctdb = ctdb;
-	state->reqid = ctdb_reqid_new(ctdb_db->ctdb, state);
-	state->callback = callback;
+	state->ctdb         = ctdb;
+	state->ctdb_db      = ctdb_db;
+	state->reqid        = ctdb_reqid_new(ctdb_db->ctdb, state);
+	state->callback     = callback;
 	state->private_data = private_data;
-	state->null_count = 0;
+	state->null_count   = 0;
 	
 	talloc_set_destructor(state, ctdb_traverse_all_destructor);
 
@@ -245,10 +256,37 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 	data.dptr = (uint8_t *)&r;
 	data.dsize = sizeof(r);
 
-	/* tell all the nodes in the cluster to start sending records to this node */
-	ret = ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_VNNMAP, 0, 
-				       CTDB_CONTROL_TRAVERSE_ALL,
-				       0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
+	if (ctdb_db->persistent == 0) {
+		/* normal database, traverse all nodes */	  
+		destination = CTDB_BROADCAST_VNNMAP;
+	} else {
+		int i;
+		/* persistent database, traverse one node, preferably
+		 * the local one
+		 */
+		destination = ctdb->pnn;
+		/* check we are in the vnnmap */
+		for (i=0; i < ctdb->vnn_map->size; i++) {
+			if (ctdb->vnn_map->map[i] == ctdb->pnn) {
+				break;
+			}
+		}
+		/* if we are not in the vnn map we just pick the first
+		 * node instead
+		 */
+		if (i == ctdb->vnn_map->size) {
+			destination = ctdb->vnn_map->map[0];
+		}
+	}
+
+	/* tell all the nodes in the cluster to start sending records to this
+	 * node, or if it is a persistent database, just tell the local
+	 * node
+	 */
+	ret = ctdb_daemon_send_control(ctdb, destination, 0, 
+			       CTDB_CONTROL_TRAVERSE_ALL,
+			       0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
+
 	if (ret != 0) {
 		talloc_free(state);
 		return NULL;
@@ -371,8 +409,13 @@ int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB
 
 	if (key.dsize == 0 && data.dsize == 0) {
 		state->null_count++;
-		if (state->null_count != ctdb_get_num_active_nodes(ctdb)) {
-			return 0;
+		/* Persistent databases are only scanned on one node (the local
+		 * node)
+		 */
+		if (state->ctdb_db->persistent == 0) {
+			if (state->null_count != ctdb_get_num_active_nodes(ctdb)) {
+				return 0;
+			}
 		}
 	}
 
