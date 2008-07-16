@@ -1847,6 +1847,7 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
 	return state.count;
 }
 
+#define ISASCII(x) ((x>31)&&(x<128))
 /*
   called on each key during a catdb
  */
@@ -1861,7 +1862,7 @@ static int dumpdb_fn(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, voi
 
 	fprintf(f, "key(%u) = \"", (unsigned)key.dsize);
 	for (i=0;i<key.dsize;i++) {
-		if (isascii(key.dptr[i])) {
+		if (ISASCII(key.dptr[i])) {
 			fprintf(f, "%c", key.dptr[i]);
 		} else {
 			fprintf(f, "\\%02X", key.dptr[i]);
@@ -1871,7 +1872,7 @@ static int dumpdb_fn(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, voi
 
 	fprintf(f, "data(%u) = \"", (unsigned)data.dsize);
 	for (i=sizeof(*h);i<data.dsize;i++) {
-		if (isascii(data.dptr[i])) {
+		if (ISASCII(data.dptr[i])) {
 			fprintf(f, "%c", data.dptr[i]);
 		} else {
 			fprintf(f, "\\%02X", data.dptr[i]);
