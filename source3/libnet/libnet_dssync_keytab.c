@@ -216,9 +216,6 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 				pwd_history_len = blob->length / 16;
 				pwd_history = blob->data;
 				break;
-			case DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber:
-				kvno = IVAL(blob->data, 0);
-				break;
 			case DRSUAPI_ATTRIBUTE_userPrincipalName:
 				pull_string_talloc(mem_ctx, NULL, 0, &upn,
 						   blob->data, blob->length,
