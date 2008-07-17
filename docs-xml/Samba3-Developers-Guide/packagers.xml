@@ -13,9 +13,11 @@
 <title>Versioning</title>
 
 <para>
-Please, please update the version number in <filename>source/include/version.h</filename> to include the
-versioning of your package. This makes it easier to distinguish standard samba builds from custom-build samba
-builds (distributions often patch packages). For example, a good version would be:
+Please, please set the vendor version suffix and number in <filename>source/VERSION</filename> and call
+<filename>source/script/mkvesion.sh</filename> to include the versioning of your package. There is also
+the possibility to set a function to create the vendor version. This makes it easier to distinguish
+standard samba builds from custom-build samba builds (distributions often patch packages). For example,
+a good version would be:
 </para>
 
 <para><programlisting>
