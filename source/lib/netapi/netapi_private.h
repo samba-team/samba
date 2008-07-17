@@ -66,6 +66,8 @@ WERROR libnetapi_samr_open_builtin_domain(TALLOC_CTX *mem_ctx,
 					  struct policy_handle *builtin_handle);
 void libnetapi_samr_close_domain_handle(struct libnetapi_ctx *ctx,
 					struct policy_handle *handle);
+void libnetapi_samr_close_builtin_handle(struct libnetapi_ctx *ctx,
+					 struct policy_handle *handle);
 void libnetapi_samr_close_connect_handle(struct libnetapi_ctx *ctx,
 					 struct policy_handle *handle);
 
