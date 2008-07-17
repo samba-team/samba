@@ -576,6 +576,20 @@ interface libnetapi
 		);
 
 	/*******************************************/
+	/* NetLocalGroupEnum                       */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetLocalGroupEnum(
+		[in] string server_name,
+		[in] uint32 level,
+		[out,ref] uint8 **buffer,
+		[in] uint32 prefmaxlen,
+		[out,ref] uint32 *entries_read,
+		[out,ref] uint32 *total_entries,
+		[in,out,ref] uint32 *resume_handle
+		);
+
+	/*******************************************/
 	/* NetRemoteTOD                            */
 	/*******************************************/
 
