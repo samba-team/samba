@@ -154,7 +154,7 @@ WERROR libnetapi_samr_open_domain(struct libnetapi_ctx *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-WERROR libnetapi_samr_open_builtin_domain(TALLOC_CTX *mem_ctx,
+WERROR libnetapi_samr_open_builtin_domain(struct libnetapi_ctx *mem_ctx,
 					  struct rpc_pipe_client *pipe_cli,
 					  uint32_t connect_mask,
 					  uint32_t builtin_mask,
@@ -163,6 +163,35 @@ WERROR libnetapi_samr_open_builtin_domain(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	WERROR werr;
+	struct libnetapi_private_ctx *priv;
+
+	priv = talloc_get_type_abort(mem_ctx->private_data,
+		struct libnetapi_private_ctx);
+
+	if (is_valid_policy_hnd(&priv->samr.connect_handle)) {
+		if ((priv->samr.connect_mask & connect_mask) == connect_mask) {
+			*connect_handle = priv->samr.connect_handle;
+		} else {
+			libnetapi_samr_close_connect_handle(mem_ctx,
+				&priv->samr.connect_handle);
+		}
+	}
+
+	if (is_valid_policy_hnd(&priv->samr.builtin_handle)) {
+		if ((priv->samr.builtin_mask & builtin_mask) == builtin_mask) {
+			*builtin_handle = priv->samr.builtin_handle;
+		} else {
+			libnetapi_samr_close_builtin_handle(mem_ctx,
+				&priv->samr.builtin_handle);
+		}
+	}
+
+	if (is_valid_policy_hnd(&priv->samr.connect_handle) &&
+	    ((priv->samr.connect_mask & connect_mask) == connect_mask) &&
+	    is_valid_policy_hnd(&priv->samr.builtin_handle) &&
+	    (priv->samr.builtin_mask & builtin_mask) == builtin_mask) {
+		return WERR_OK;
+	}
 
 	if (!is_valid_policy_hnd(connect_handle)) {
 		status = rpccli_try_samr_connects(pipe_cli, mem_ctx,
@@ -183,6 +212,14 @@ WERROR libnetapi_samr_open_builtin_domain(TALLOC_CTX *mem_ctx,
 		werr = ntstatus_to_werror(status);
 		goto done;
 	}
+
+	priv->samr.cli			= pipe_cli;
+
+	priv->samr.connect_mask		= connect_mask;
+	priv->samr.connect_handle	= *connect_handle;
+
+	priv->samr.builtin_mask		= builtin_mask;
+	priv->samr.builtin_handle	= *builtin_handle;
 
 	werr = WERR_OK;
 
