@@ -210,6 +210,12 @@ static int ctdb_client_destructor(struct ctdb_client *client)
 	ctdb_takeover_client_destructor_hook(client);
 	ctdb_reqid_remove(client->ctdb, client->client_id);
 	client->ctdb->statistics.num_clients--;
+
+	if (client->num_persistent_updates != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Client disconnecting with %u persistent updates in flight. Starting recovery\n", client->num_persistent_updates));
+		client->ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
+	}
+
 	return 0;
 }
 

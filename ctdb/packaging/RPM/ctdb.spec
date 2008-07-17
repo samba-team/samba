@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 47
+Release: 48
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -118,7 +118,16 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
-* Fri Jul 11 2008 : Version 1.0.48-pre
+* Thu Jul 17 2008 : Version 1.0.48
+ - Update the spec file.
+ - Do not start new user-triggered eventscripts if we are already
+   inside recovery mode.
+ - Add two new controls to start/cancel a persistent update.
+   A client such as samba can use these to tell ctdbd that it will soon
+   be writing directly to the persistent database tdb file. So if
+   samba is -9ed before it has eitehr done the persistent_store or
+   canceled the operation, ctdb knows that the persistent databases
+   'may' be out of sync and therefore a full blown recovery is called for.
  - Add two new options :
    CTDB_SAMBA_SKIP_CONF_CHECK and CTDB_SAMBA_CHECK_PORTS that can be used
    to override what checks to do when monitoring samba health.

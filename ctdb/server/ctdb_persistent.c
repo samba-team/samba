@@ -81,8 +81,15 @@ int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb,
 				      struct ctdb_req_control *c, 
 				      TDB_DATA recdata, bool *async_reply)
 {
+	struct ctdb_client *client = ctdb_reqid_find(ctdb, c->client_id, struct ctdb_client);
 	struct ctdb_persistent_state *state;
 	int i;
+
+	if (client == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " can not match persistent_store to a client. Returning error\n"));
+		return -1;
+	}
+	client->num_persistent_updates--;
 
 	state = talloc_zero(ctdb, struct ctdb_persistent_state);
 	CTDB_NO_MEMORY(ctdb, state);
@@ -407,6 +414,47 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	/* but we won't wait forever */
 	event_add_timed(ctdb->ev, state, timeval_current_ofs(ctdb->tunable.control_timeout, 0),
 			ctdb_persistent_lock_timeout, state);
+
+	return 0;
+}
+
+
+
+/*
+  start a persistent store operation. passing both the key, header and
+  data to the daemon. If the client disconnects before it has issued
+  a persistent_update call to the daemon we trigger a full recovery
+  to ensure the databases are brought back in sync.
+  for now we ignore the recdata that the client has passed to us.
+ */
+int32_t ctdb_control_start_persistent_update(struct ctdb_context *ctdb, 
+				      struct ctdb_req_control *c,
+				      TDB_DATA recdata)
+{
+	struct ctdb_client *client = ctdb_reqid_find(ctdb, c->client_id, struct ctdb_client);
+
+	if (client == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " can not match start_persistent_update to a client. Returning error\n"));
+		return -1;
+	}
+
+	client->num_persistent_updates++;
+
+	return 0;
+}
+
+int32_t ctdb_control_cancel_persistent_update(struct ctdb_context *ctdb, 
+				      struct ctdb_req_control *c,
+				      TDB_DATA recdata)
+{
+	struct ctdb_client *client = ctdb_reqid_find(ctdb, c->client_id, struct ctdb_client);
+
+	if (client == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " can not match cancel_persistent_update to a client. Returning error\n"));
+		return -1;
+	}
+
+	client->num_persistent_updates--;
 
 	return 0;
 }
