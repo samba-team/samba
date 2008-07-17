@@ -72,8 +72,6 @@ SAMBA_VERSION_IS_GIT_SNAPSHOT=yes
 
 ########################################################
 # This can be set by vendors if they want...           #
-# This can be a string constant or a function which    #
-# returns a string (const char *)                      #
 #                                                      #
 # <MAJOR>.<MINOR>.<RELEASE>[...]-<VENDOR_SUFFIX>       #
 #                                                      #
@@ -82,18 +80,26 @@ SAMBA_VERSION_IS_GIT_SNAPSHOT=yes
 # e.g. SAMBA_VERSION_VENDOR_SUFFIX="VendorVersion"     #
 #  ->  "CVS 3.0.0rc2-VendorVersion"                    #
 #                                                      #
-# Note: If you want to use a function,                 #
-#       then patch lib/version.c and add this function #
-#       there, because the symbol must be available in #
-#       binary.                                        #
+# Note: If you want to use a function, take a look at  #
+#       SAMBA_VERSION_VENDOR_FUNCTION                  #
 #                                                      #
-# const char *vendor_version(void)                     #
-# {                                                    #
-#	return "VendorVersion";                        #
-# }                                                    #
-#                                                      #
-# e.g. SAMBA_VERSION_VENDOR_SUFFIX=vendor_version()    #
-#  ->  "CVS 3.0.0rc2-VendorVersion"                    #
 ########################################################
 SAMBA_VERSION_VENDOR_SUFFIX="test"
 SAMBA_VERSION_VENDOR_PATCH=
+
+########################################################
+# This can be set by vendors if they want..            #
+# This have to be a function which returns a string    #
+# (const char *).                                      #
+#                                                      #
+# Patch for example lib/version.c and add something    #
+# like the following example:                          #
+#                                                      #
+# const char *samba_vendor_version(void)               #
+# {                                                    #
+#   return SAMBA_VERSION_OFFICIAL_STRING "-ENREDO-1.0" #
+# }                                                    #
+#                                                      #
+# -> "Version 3.2.0-ENREDO-1.0                         #
+########################################################
+SAMBA_VERSION_VENDOR_FUNCTION=
