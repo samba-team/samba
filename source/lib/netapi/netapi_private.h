@@ -51,7 +51,7 @@ WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
 			   struct cli_state *cli,
 			   int pipe_idx,
 			   struct rpc_pipe_client **pipe_cli);
-WERROR libnetapi_samr_open_domain(TALLOC_CTX *mem_ctx,
+WERROR libnetapi_samr_open_domain(struct libnetapi_ctx *mem_ctx,
 				  struct rpc_pipe_client *pipe_cli,
 				  uint32_t connect_mask,
 				  uint32_t domain_mask,

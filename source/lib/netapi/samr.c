@@ -18,11 +18,13 @@
  */
 
 #include "includes.h"
+#include "lib/netapi/netapi.h"
+#include "lib/netapi/netapi_private.h"
 
 /****************************************************************
 ****************************************************************/
 
-WERROR libnetapi_samr_open_domain(TALLOC_CTX *mem_ctx,
+WERROR libnetapi_samr_open_domain(struct libnetapi_ctx *mem_ctx,
 				  struct rpc_pipe_client *pipe_cli,
 				  uint32_t connect_mask,
 				  uint32_t domain_mask,
@@ -32,6 +34,7 @@ WERROR libnetapi_samr_open_domain(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	WERROR werr;
+	struct libnetapi_private_ctx *priv;
 	uint32_t resume_handle = 0;
 	uint32_t num_entries = 0;
 	struct samr_SamArray *sam = NULL;
@@ -39,6 +42,38 @@ WERROR libnetapi_samr_open_domain(TALLOC_CTX *mem_ctx,
 	struct lsa_String lsa_domain_name;
 	bool domain_found = true;
 	int i;
+
+	priv = talloc_get_type_abort(mem_ctx->private_data,
+		struct libnetapi_private_ctx);
+
+	if (is_valid_policy_hnd(&priv->samr.connect_handle)) {
+		if ((priv->samr.connect_mask & connect_mask) == connect_mask) {
+			*connect_handle = priv->samr.connect_handle;
+		} else {
+			libnetapi_samr_close_connect_handle(mem_ctx,
+				&priv->samr.connect_handle);
+		}
+	}
+
+	if (is_valid_policy_hnd(&priv->samr.domain_handle)) {
+		if ((priv->samr.domain_mask & domain_mask) == domain_mask) {
+			*domain_handle = priv->samr.domain_handle;
+		} else {
+			libnetapi_samr_close_domain_handle(mem_ctx,
+				&priv->samr.domain_handle);
+		}
+	}
+
+	if (priv->samr.domain_sid) {
+		*domain_sid = priv->samr.domain_sid;
+	}
+
+	if (is_valid_policy_hnd(&priv->samr.connect_handle) &&
+	    ((priv->samr.connect_mask & connect_mask) == connect_mask) &&
+	    is_valid_policy_hnd(&priv->samr.domain_handle) &&
+	    (priv->samr.domain_mask & domain_mask) == domain_mask) {
+		return WERR_OK;
+	}
 
 	if (!is_valid_policy_hnd(connect_handle)) {
 		status = rpccli_try_samr_connects(pipe_cli, mem_ctx,
@@ -98,6 +133,17 @@ WERROR libnetapi_samr_open_domain(TALLOC_CTX *mem_ctx,
 		werr = ntstatus_to_werror(status);
 		goto done;
 	}
+
+	priv->samr.cli			= pipe_cli;
+
+	priv->samr.domain_name		= domain_name;
+	priv->samr.domain_sid		= *domain_sid;
+
+	priv->samr.connect_mask		= connect_mask;
+	priv->samr.connect_handle	= *connect_handle;
+
+	priv->samr.domain_mask		= domain_mask;
+	priv->samr.domain_handle	= *domain_handle;
 
 	werr = WERR_OK;
 
