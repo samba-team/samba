@@ -1089,7 +1089,110 @@ WERROR NetUserChangePassword_l(struct libnetapi_ctx *ctx,
 WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 			struct NetUserGetInfo *r)
 {
-	return WERR_NOT_SUPPORTED;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	NTSTATUS status;
+	WERROR werr;
+
+	struct policy_handle connect_handle, domain_handle, builtin_handle, user_handle;
+	struct lsa_String lsa_account_name;
+	struct dom_sid2 *domain_sid = NULL;
+	struct samr_Ids user_rids, name_types;
+	uint32_t num_entries = 0;
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(domain_handle);
+	ZERO_STRUCT(builtin_handle);
+	ZERO_STRUCT(user_handle);
+
+	if (!r->out.buffer) {
+		return WERR_INVALID_PARAM;
+	}
+
+	switch (r->in.level) {
+		case 0:
+		/* case 1: */
+		case 10:
+		case 20:
+		case 23:
+			break;
+		default:
+			werr = WERR_NOT_SUPPORTED;
+			goto done;
+	}
+
+	werr = libnetapi_open_ipc_connection(ctx, r->in.server_name, &cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_open_pipe(ctx, cli, PI_SAMR, &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
+					  SAMR_ACCESS_ENUM_DOMAINS |
+					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					  &connect_handle,
+					  &domain_handle,
+					  &domain_sid);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnetapi_samr_open_builtin_domain(ctx, pipe_cli,
+						  SAMR_ACCESS_ENUM_DOMAINS |
+						  SAMR_ACCESS_OPEN_DOMAIN,
+						  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT |
+						  SAMR_DOMAIN_ACCESS_LOOKUP_ALIAS,
+						  &connect_handle,
+						  &builtin_handle);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	init_lsa_String(&lsa_account_name, r->in.user_name);
+
+	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+					 &domain_handle,
+					 1,
+					 &lsa_account_name,
+					 &user_rids,
+					 &name_types);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	status = libnetapi_samr_lookup_user_map_USER_INFO(ctx, pipe_cli,
+							  domain_sid,
+							  &domain_handle,
+							  &builtin_handle,
+							  r->in.user_name,
+							  user_rids.ids[0],
+							  r->in.level,
+							  r->out.buffer,
+							  &num_entries);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+ done:
+	if (!cli) {
+		return werr;
+	}
+
+	if (is_valid_policy_hnd(&user_handle)) {
+		rpccli_samr_Close(pipe_cli, ctx, &user_handle);
+	}
+
+	libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+	libnetapi_samr_close_connect_handle(ctx, &connect_handle);
+
+	return werr;
 }
 
 /****************************************************************
