@@ -161,6 +161,146 @@ interface libnetapi
 		string usri1_script_path;
 	} USER_INFO_1;
 
+	[public] typedef struct {
+		string usri2_name;
+		string usri2_password;
+		uint32 usri2_password_age;
+		uint32 usri2_priv;
+		string usri2_home_dir;
+		string usri2_comment;
+		uint32 usri2_flags;
+		string usri2_script_path;
+		uint32 usri2_auth_flags;
+		string usri2_full_name;
+		string usri2_usr_comment;
+		string usri2_parms;
+		string usri2_workstations;
+		uint32 usri2_last_logon;
+		uint32 usri2_last_logoff;
+		uint32 usri2_acct_expires;
+		uint32 usri2_max_storage;
+		uint32 usri2_units_per_week;
+		uint8 *usri2_logon_hours;
+		uint32 usri2_bad_pw_count;
+		uint32 usri2_num_logons;
+		string usri2_logon_server;
+		uint32 usri2_country_code;
+		uint32 usri2_code_page;
+	} USER_INFO_2;
+
+	[public] typedef struct {
+		string usri3_name;
+		uint32 usri3_password_age;
+		uint32 usri3_priv;
+		string usri3_home_dir;
+		string usri3_comment;
+		uint32 usri3_flags;
+		string usri3_script_path;
+		uint32 usri3_auth_flags;
+		string usri3_full_name;
+		string usri3_usr_comment;
+		string usri3_parms;
+		string usri3_workstations;
+		uint32 usri3_last_logon;
+		uint32 usri3_last_logoff;
+		uint32 usri3_acct_expires;
+		uint32 usri3_max_storage;
+		uint32 usri3_units_per_week;
+		uint8 *usri3_logon_hours;
+		uint32 usri3_bad_pw_count;
+		uint32 usri3_num_logons;
+		string usri3_logon_server;
+		uint32 usri3_country_code;
+		uint32 usri3_code_page;
+		uint32 usri3_user_id;
+		uint32 usri3_primary_group_id;
+		string usri3_profile;
+		string usri3_home_dir_drive;
+		uint32 usri3_password_expired;
+	} USER_INFO_3;
+
+	[public] typedef struct {
+		string usri4_name;
+		string usri4_password;
+		uint32 usri4_password_age;
+		uint32 usri4_priv;
+		string usri4_home_dir;
+		string usri4_comment;
+		uint32 usri4_flags;
+		string usri4_script_path;
+		uint32 usri4_auth_flags;
+		string usri4_full_name;
+		string usri4_usr_comment;
+		string usri4_parms;
+		string usri4_workstations;
+		uint32 usri4_last_logon;
+		uint32 usri4_last_logoff;
+		uint32 usri4_acct_expires;
+		uint32 usri4_max_storage;
+		uint32 usri4_units_per_week;
+		uint8 *usri4_logon_hours;
+		uint32 usri4_bad_pw_count;
+		uint32 usri4_num_logons;
+		string usri4_logon_server;
+		uint32 usri4_country_code;
+		uint32 usri4_code_page;
+		dom_sid *usri4_user_sid;
+		uint32 usri4_primary_group_id;
+		string usri4_profile;
+		string usri4_home_dir_drive;
+		uint32 usri4_password_expired;
+	} USER_INFO_4;
+
+	[public] typedef struct {
+		string usri10_name;
+		string usri10_comment;
+		string usri10_usr_comment;
+		string usri10_full_name;
+	} USER_INFO_10;
+
+	[public] typedef struct {
+		string usri11_name;
+		string usri11_comment;
+		string usri11_usr_comment;
+		string usri11_full_name;
+		uint32 usri11_priv;
+		uint32 usri11_auth_flags;
+		uint32 usri11_password_age;
+		string usri11_home_dir;
+		string usri11_parms;
+		uint32 usri11_last_logon;
+		uint32 usri11_last_logoff;
+		uint32 usri11_bad_pw_count;
+		uint32 usri11_num_logons;
+		string usri11_logon_server;
+		uint32 usri11_country_code;
+		string usri11_workstations;
+		uint32 usri11_max_storage;
+		uint32 usri11_units_per_week;
+		uint8 *usri11_logon_hours;
+		uint32 usri11_code_page;
+	} USER_INFO_11;
+
+	[public] typedef struct {
+		string usri20_name;
+		string usri20_full_name;
+		string usri20_comment;
+		uint32 usri20_flags;
+		uint32 usri20_user_id;
+	} USER_INFO_20;
+
+	[public] typedef struct {
+		string usri23_name;
+		string usri23_full_name;
+		string usri23_comment;
+		uint32 usri23_flags;
+		domsid *usri23_user_sid;
+	} USER_INFO_23;
+
+	[public] typedef struct {
+		string usri1007_comment;
+	} USER_INFO_1007;
+
 	[nopush,nopull] NET_API_STATUS NetUserAdd(
 		[in,unique] string *server_name,
 		[in] uint32 level,
