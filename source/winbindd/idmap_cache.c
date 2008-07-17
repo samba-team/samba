@@ -1,11 +1,8 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    ID Mapping Cache
 
-   based on gencache
-
-   Copyright (C) Simo Sorce		2006
-   Copyright (C) Rafal Szczesniak	2002
+   Copyright (C) Volker Lendecke	2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +19,16 @@
 
 #include "includes.h"
 #include "winbindd.h"
+
+/**
+ * Find a sid2uid mapping
+ * @param[in] sid		the sid to map
+ * @param[out] puid		where to put the result
+ * @param[out] expired		is the cache entry expired?
+ * @retval Was anything in the cache at all?
+ *
+ * If *puid == -1 this was a negative mapping.
+ */
 
 bool idmap_cache_find_sid2uid(const struct dom_sid *sid, uid_t *puid,
 			      bool *expired)
@@ -54,6 +61,16 @@ bool idmap_cache_find_sid2uid(const struct dom_sid *sid, uid_t *puid,
 	return ret;
 }
 
+/**
+ * Find a uid2sid mapping
+ * @param[in] uid		the uid to map
+ * @param[out] sid		where to put the result
+ * @param[out] expired		is the cache entry expired?
+ * @retval Was anything in the cache at all?
+ *
+ * If "is_null_sid(sid)", this was a negative mapping.
+ */
+
 bool idmap_cache_find_uid2sid(uid_t uid, struct dom_sid *sid, bool *expired)
 {
 	char *key;
@@ -80,6 +97,18 @@ bool idmap_cache_find_uid2sid(uid_t uid, struct dom_sid *sid, bool *expired)
 	}
 	return ret;
 }
+
+/**
+ * Store a mapping in the idmap cache
+ * @param[in] sid		the sid to map
+ * @param[in] uid		the uid to map
+ *
+ * If both parameters are valid values, then a positive mapping in both
+ * directions is stored. If "is_null_sid(sid)" is true, then this will be a
+ * negative mapping of uid, we want to cache that for this uid we could not
+ * find anything. Likewise if "uid==-1", then we want to cache that we did not
+ * find a mapping for the sid passed here.
+ */
 
 void idmap_cache_set_sid2uid(const struct dom_sid *sid, uid_t uid)
 {
@@ -110,6 +139,16 @@ void idmap_cache_set_sid2uid(const struct dom_sid *sid, uid_t uid)
 		gencache_set(key, value, now + timeout);
 	}
 }
+
+/**
+ * Find a sid2gid mapping
+ * @param[in] sid		the sid to map
+ * @param[out] pgid		where to put the result
+ * @param[out] expired		is the cache entry expired?
+ * @retval Was anything in the cache at all?
+ *
+ * If *pgid == -1 this was a negative mapping.
+ */
 
 bool idmap_cache_find_sid2gid(const struct dom_sid *sid, gid_t *pgid,
 			      bool *expired)
@@ -142,6 +181,16 @@ bool idmap_cache_find_sid2gid(const struct dom_sid *sid, gid_t *pgid,
 	return ret;
 }
 
+/**
+ * Find a gid2sid mapping
+ * @param[in] gid		the gid to map
+ * @param[out] sid		where to put the result
+ * @param[out] expired		is the cache entry expired?
+ * @retval Was anything in the cache at all?
+ *
+ * If "is_null_sid(sid)", this was a negative mapping.
+ */
+
 bool idmap_cache_find_gid2sid(gid_t gid, struct dom_sid *sid, bool *expired)
 {
 	char *key;
@@ -168,6 +217,18 @@ bool idmap_cache_find_gid2sid(gid_t gid, struct dom_sid *sid, bool *expired)
 	}
 	return ret;
 }
+
+/**
+ * Store a mapping in the idmap cache
+ * @param[in] sid		the sid to map
+ * @param[in] gid		the gid to map
+ *
+ * If both parameters are valid values, then a positive mapping in both
+ * directions is stored. If "is_null_sid(sid)" is true, then this will be a
+ * negative mapping of gid, we want to cache that for this gid we could not
+ * find anything. Likewise if "gid==-1", then we want to cache that we did not
+ * find a mapping for the sid passed here.
+ */
 
 void idmap_cache_set_sid2gid(const struct dom_sid *sid, gid_t gid)
 {
