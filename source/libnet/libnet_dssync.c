@@ -241,6 +241,35 @@ static NTSTATUS libnet_dssync_bind(TALLOC_CTX *mem_ctx,
 		return werror_to_ntstatus(werr);
 	}
 
+	ZERO_STRUCT(ctx->remote_info28);
+	switch (bind_info.length) {
+	case 24: {
+		struct drsuapi_DsBindInfo24 *info24;
+		info24 = &bind_info.info.info24;
+		ctx->remote_info28.site_guid		= info24->site_guid;
+		ctx->remote_info28.supported_extensions	= info24->supported_extensions;
+		ctx->remote_info28.pid			= info24->pid;
+		ctx->remote_info28.repl_epoch		= 0;
+		break;
+	}
+	case 28:
+		ctx->remote_info28 = bind_info.info.info28;
+		break;
+	case 48: {
+		struct drsuapi_DsBindInfo48 *info48;
+		info48 = &bind_info.info.info48;
+		ctx->remote_info28.site_guid		= info48->site_guid;
+		ctx->remote_info28.supported_extensions	= info48->supported_extensions;
+		ctx->remote_info28.pid			= info48->pid;
+		ctx->remote_info28.repl_epoch		= info48->repl_epoch;
+		break;
+	}
+	default:
+		DEBUG(1, ("Warning: invalid info length in bind info: %d\n",
+			  bind_info.length));
+		break;
+	}
+
 	return status;
 }
 
