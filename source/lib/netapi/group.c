@@ -313,11 +313,13 @@ WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
+#if 0
+	/* breaks against NT4 */
 	if (!(info->attributes.attributes & SE_GROUP_ENABLED)) {
 		werr = WERR_ACCESS_DENIED;
 		goto done;
 	}
-
+#endif
 	status = rpccli_samr_QueryGroupMember(pipe_cli, ctx,
 					      &group_handle,
 					      &rid_array);
