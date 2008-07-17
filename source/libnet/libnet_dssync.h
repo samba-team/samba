@@ -38,6 +38,7 @@ struct dssync_context {
 	struct policy_handle bind_handle;
 	DATA_BLOB session_key;
 	const char *output_filename;
+	struct drsuapi_DsBindInfo28 remote_info28;
 
 	void *private_data;
 
