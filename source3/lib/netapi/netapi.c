@@ -153,6 +153,8 @@ NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 		return NET_API_STATUS_SUCCESS;
 	}
 
+	libnetapi_samr_free(ctx);
+
 	libnetapi_shutdown_cm(ctx);
 
 	if (ctx->krb5_cc_env) {

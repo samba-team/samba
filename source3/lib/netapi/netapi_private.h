@@ -70,5 +70,6 @@ void libnetapi_samr_close_builtin_handle(struct libnetapi_ctx *ctx,
 					 struct policy_handle *handle);
 void libnetapi_samr_close_connect_handle(struct libnetapi_ctx *ctx,
 					 struct policy_handle *handle);
+void libnetapi_samr_free(struct libnetapi_ctx *ctx);
 
 #endif
