@@ -708,6 +708,28 @@ NET_API_STATUS NetUserGetInfo(const char * server_name /* [in] */,
 
 /************************************************************//**
  *
+ * NetUserSetInfo
+ *
+ * @brief Set User Information
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] user_name The name of the user that is going to be modified
+ * @param[in] level The level defining the requested USER_INFO_X structure
+ * @param[in] buf The buffer containing a USER_INFO_X structure
+ * @param[out] parm_err The returned parameter error number if any
+ * @return NET_API_STATUS
+ *
+ * example user/user_setinfo.c
+ ***************************************************************/
+
+NET_API_STATUS NetUserSetInfo(const char * server_name /* [in] */,
+			      const char * user_name /* [in] */,
+			      uint32_t level /* [in] */,
+			      uint8_t *buffer /* [in] [ref] */,
+			      uint32_t *parm_err /* [out] [ref] */);
+
+/************************************************************//**
+ *
  * NetQueryDisplayInformation
  *
  * @brief Enumerate accounts on a server
