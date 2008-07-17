@@ -659,6 +659,7 @@ WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 	struct samr_Ids rids;
 	struct samr_Ids types;
 	union samr_GroupInfo *info = NULL;
+	bool group_info_all = false;
 
 	ZERO_STRUCT(connect_handle);
 	ZERO_STRUCT(domain_handle);
@@ -721,13 +722,22 @@ WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 					    &group_handle,
 					    GROUPINFOALL2,
 					    &info);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
+		status = rpccli_samr_QueryGroupInfo(pipe_cli, ctx,
+						    &group_handle,
+						    GROUPINFOALL,
+						    &info);
+		group_info_all = true;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
 	werr = map_group_info_to_buffer(ctx, r->in.level,
-					&info->all2, domain_sid, rids.ids[0],
+					group_info_all ? &info->all : &info->all2,
+					domain_sid, rids.ids[0],
 					r->out.buf);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
