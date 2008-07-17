@@ -319,6 +319,13 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 	int32_t out_level = 0;
 	int y;
 
+	uint32_t supported_extensions = 0;
+	uint32_t replica_flags	= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE |
+				  DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP |
+				  DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS |
+				  DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS |
+				  DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED;
+
 	if (argc > 2) {
 		printf("usage: %s naming_context_dn\n", argv[0]);
 		return WERR_OK;
@@ -384,6 +391,12 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 		return werr;
 	}
 
+	if (bind_info.length == 24) {
+		supported_extensions = bind_info.info.info24.supported_extensions;
+	} else if (bind_info.length == 28) {
+		supported_extensions = bind_info.info.info28.supported_extensions;
+	}
+
 	if (!nc_dn) {
 
 		union drsuapi_DsNameCtr crack_ctr;
@@ -421,14 +434,19 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 	nc.guid = GUID_zero();
 	nc.sid = null_sid;
 
-	req.req8.naming_context		= &nc;
-	req.req8.replica_flags		= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE |
-					  DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP |
-					  DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS |
-					  DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS |
-					  DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED;
-	req.req8.max_object_count	= 402;
-	req.req8.max_ndr_size		= 402116;
+	if (supported_extensions & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8) {
+		level = 8;
+		req.req8.naming_context		= &nc;
+		req.req8.replica_flags		= replica_flags;
+		req.req8.max_object_count	= 402;
+		req.req8.max_ndr_size		= 402116;
+	} else {
+		level = 5;
+		req.req5.naming_context		= &nc;
+		req.req5.replica_flags		= replica_flags;
+		req.req5.max_object_count	= 402;
+		req.req5.max_ndr_size		= 402116;
+	}
 
 	for (y=0; ;y++) {
 
