@@ -28,36 +28,58 @@
 
 static_decl_idmap;
 
+/**
+ * Pointer to the backend methods. Modules register themselves here via
+ * smb_register_idmap.
+ */
+
 struct idmap_backend {
 	const char *name;
 	struct idmap_methods *methods;
 	struct idmap_backend *prev, *next;
 };
+static struct idmap_backend *backends = NULL;
 
+/**
+ * Pointer to the alloc backend methods. Modules register themselves here via
+ * smb_register_idmap_alloc.
+ */
 struct idmap_alloc_backend {
 	const char *name;
 	struct idmap_alloc_methods *methods;
 	struct idmap_alloc_backend *prev, *next;
 };
+static struct idmap_alloc_backend *alloc_backends = NULL;
 
+/**
+ * The idmap alloc context that is configured via "idmap alloc
+ * backend". Defaults to "idmap backend" in case the module (tdb, ldap) also
+ * provides alloc methods.
+ */
 struct idmap_alloc_context {
 	struct idmap_alloc_methods *methods;
 };
+static struct idmap_alloc_context *idmap_alloc_ctx = NULL;
 
-/*
- * Lists for the module initializations
+/**
+ * Default idmap domain configured via "idmap backend".
  */
-static struct idmap_backend *backends = NULL;
-static struct idmap_alloc_backend *alloc_backends = NULL;
-
-
 static struct idmap_domain *default_idmap_domain;
+
+/**
+ * Passdb idmap domain, not configurable. winbind must always give passdb a
+ * chance to map ids.
+ */
 static struct idmap_domain *passdb_idmap_domain;
 
+/**
+ * List of specially configured idmap domains. This list is filled on demand
+ * in the winbind idmap child when the parent winbind figures out via the
+ * special range parameter or via the domain SID that a special "idmap config
+ * domain" configuration is present.
+ */
 static struct idmap_domain **idmap_domains = NULL;
 static int num_domains = 0;
-
-static struct idmap_alloc_context *idmap_alloc_ctx = NULL;
 
 static struct idmap_methods *get_methods(struct idmap_backend *be,
 					 const char *name)
@@ -126,7 +148,8 @@ NTSTATUS smb_register_idmap(int version, const char *name,
 
 	for (entry = backends; entry != NULL; entry = entry->next) {
 		if (strequal(entry->name, name)) {
-			DEBUG(0,("Idmap module %s already registered!\n", name));
+			DEBUG(0,("Idmap module %s already registered!\n",
+				 name));
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 	}
@@ -151,7 +174,7 @@ NTSTATUS smb_register_idmap(int version, const char *name,
 }
 
 /**********************************************************************
- Allow a module to register itself as a method.
+ Allow a module to register itself as an alloc method.
 **********************************************************************/
 
 NTSTATUS smb_register_idmap_alloc(int version, const char *name,
@@ -249,6 +272,14 @@ static bool parse_idmap_module(TALLOC_CTX *mem_ctx, const char *param,
 	return true;
 }
 
+/**
+ * Initialize a domain structure
+ * @param[in] mem_ctx		memory context for the result
+ * @param[in] domainname	which domain is this for
+ * @param[in] modulename	which backend module
+ * @param[in] params		parameter to pass to the init function
+ * @result The initialized structure
+ */
 static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 					      const char *domainname,
 					      const char *modulename,
@@ -303,6 +334,15 @@ fail:
 	return NULL;
 }
 
+/**
+ * Initialize the default domain structure
+ * @param[in] mem_ctx		memory context for the result
+ * @result The default domain structure
+ *
+ * This routine takes the module name from the "idmap backend" parameter,
+ * passing a possible parameter like ldap:ldap://ldap-url/ to the module.
+ */
+
 static struct idmap_domain *idmap_init_default_domain(TALLOC_CTX *mem_ctx)
 {
 	struct idmap_domain *result;
@@ -336,6 +376,16 @@ fail:
 	TALLOC_FREE(result);
 	return NULL;
 }
+
+/**
+ * Initialize a named domain structure
+ * @param[in] mem_ctx		memory context for the result
+ * @param[in] domname		the domain name
+ * @result The default domain structure
+ *
+ * This routine looks at the "idmap config <domname>" parameters to figure out
+ * the configuration.
+ */
 
 static struct idmap_domain *idmap_init_named_domain(TALLOC_CTX *mem_ctx,
 						    const char *domname)
@@ -371,6 +421,14 @@ fail:
 	return NULL;
 }
 
+/**
+ * Initialize the passdb domain structure
+ * @param[in] mem_ctx		memory context for the result
+ * @result The default domain structure
+ *
+ * No config, passdb has its own configuration.
+ */
+
 static struct idmap_domain *idmap_init_passdb_domain(TALLOC_CTX *mem_ctx)
 {
 	if (passdb_idmap_domain != NULL) {
@@ -385,6 +443,21 @@ static struct idmap_domain *idmap_init_passdb_domain(TALLOC_CTX *mem_ctx)
 
 	return passdb_idmap_domain;
 }
+
+/**
+ * Find a domain struct according to a domain name
+ * @param[in] domname		Domain name to get the config for
+ * @result The default domain structure that fits
+ *
+ * This is the central routine in the winbindd-idmap child to pick the correct
+ * domain for looking up IDs. If domname is NULL or empty, we use the default
+ * domain. If it contains something, we try to use idmap_init_named_domain()
+ * to fetch the correct backend.
+ *
+ * The choice about "domname" is being made by the winbind parent, look at the
+ * "have_idmap_config" of "struct winbindd_domain" which is set in
+ * add_trusted_domain.
+ */
 
 static struct idmap_domain *idmap_find_domain(const char *domname)
 {
@@ -449,6 +522,14 @@ void idmap_close(void)
 	num_domains = 0;
 }
 
+/**
+ * Initialize the idmap alloc backend
+ * @param[out] ctx		Where to put the alloc_ctx?
+ * @result Did it work fine?
+ *
+ * This routine first looks at "idmap alloc backend" and if that is not
+ * defined, it uses "idmap backend" for the module name.
+ */
 static NTSTATUS idmap_alloc_init(struct idmap_alloc_context **ctx)
 {
 	const char *backend;
