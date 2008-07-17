@@ -752,3 +752,21 @@ WERROR NetLocalGroupSetInfo_l(struct libnetapi_ctx *ctx,
 {
 	return NetLocalGroupSetInfo_r(ctx, r);
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
+			   struct NetLocalGroupEnum *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetLocalGroupEnum_l(struct libnetapi_ctx *ctx,
+			   struct NetLocalGroupEnum *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
