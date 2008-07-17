@@ -38,6 +38,10 @@ source/cscope.out
 source/torture.tdb
 source/pkgconfig/*.pc
 source/st
+source/exports/libnetapi.syms
+source/exports/libtalloc.syms
+source/exports/libtdb.syms
+source/exports/libwbclient.syms
 examples/VFS/Makefile
 examples/VFS/config.log
 examples/VFS/config.status
