@@ -223,6 +223,17 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 			      struct NetLocalGroupSetInfo *r);
 WERROR NetLocalGroupSetInfo_l(struct libnetapi_ctx *ctx,
 			      struct NetLocalGroupSetInfo *r);
+NET_API_STATUS NetLocalGroupEnum(const char * server_name /* [in] */,
+				 uint32_t level /* [in] */,
+				 uint8_t **buffer /* [out] [ref] */,
+				 uint32_t prefmaxlen /* [in] */,
+				 uint32_t *entries_read /* [out] [ref] */,
+				 uint32_t *total_entries /* [out] [ref] */,
+				 uint32_t *resume_handle /* [in,out] [ref] */);
+WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
+			   struct NetLocalGroupEnum *r);
+WERROR NetLocalGroupEnum_l(struct libnetapi_ctx *ctx,
+			   struct NetLocalGroupEnum *r);
 NET_API_STATUS NetRemoteTOD(const char * server_name /* [in] */,
 			    uint8_t **buf /* [out] [ref] */);
 WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
