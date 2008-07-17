@@ -1516,6 +1516,15 @@ static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
 	drsuapi->s = s;
 
 	if (!drsuapi->binding) {
+		/*
+		 * Note: It's important to pass 'krb5' as auth_type here
+		 *       otherwise the replication will not work with
+		 *       Windows 2000. If NTLMSSP is used Windows 2000
+		 *       returns garbage in the DsGetNCChanges() response
+		 *       if encrypted password attributes would be in the response.
+		 *       That means the replication of the schema and configuration
+		 *       partition works fine, but it fails for the domain partition.
+		 */
 		if (lp_parm_bool(s->libnet->lp_ctx, NULL, "become_dc", "print", false)) {
 			binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[krb5,print,seal]", s->source_dsa.dns_name);
 			if (composite_nomem(binding_str, c)) return;
