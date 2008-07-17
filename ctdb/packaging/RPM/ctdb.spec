@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 48
+Release: 49
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -118,6 +118,9 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Thu Jul 17 2008 : Version 1.0.49
+ - Update the safe persistent update fix to work with unpatched samba
+   servers.
 * Thu Jul 17 2008 : Version 1.0.48
  - Update the spec file.
  - Do not start new user-triggered eventscripts if we are already
