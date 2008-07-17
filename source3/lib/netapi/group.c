@@ -204,11 +204,10 @@ WERROR NetGroupAdd_r(struct libnetapi_ctx *ctx,
 	if (is_valid_policy_hnd(&group_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
 	}
-	if (is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
-	}
-	if (is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
 	}
 
 	return werr;
@@ -374,11 +373,10 @@ WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 	if (is_valid_policy_hnd(&group_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
 	}
-	if (is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
-	}
-	if (is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
 	}
 
 	return werr;
@@ -562,11 +560,10 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 	if (is_valid_policy_hnd(&group_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
 	}
-	if (is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
-	}
-	if (is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
 	}
 
 	return werr;
@@ -750,11 +747,10 @@ WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 	if (is_valid_policy_hnd(&group_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
 	}
-	if (is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
-	}
-	if (is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
 	}
 
 	return werr;
@@ -880,11 +876,10 @@ WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 	if (is_valid_policy_hnd(&group_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
 	}
-	if (is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
-	}
-	if (is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
 	}
 
 	return werr;
@@ -1009,11 +1004,10 @@ WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 	if (is_valid_policy_hnd(&group_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
 	}
-	if (is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
-	}
-	if (is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
 	}
 
 	return werr;
@@ -1195,7 +1189,7 @@ WERROR NetGroupEnum_r(struct libnetapi_ctx *ctx,
 	uint32_t total_size = 0;
 	uint32_t returned_size = 0;
 
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 	WERROR werr, tmp_werr;
 
 	ZERO_STRUCT(connect_handle);
@@ -1283,14 +1277,17 @@ WERROR NetGroupEnum_r(struct libnetapi_ctx *ctx,
 	if (!cli) {
 		return werr;
 	}
-#if 0
-	if (is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
+
+	/* if last query */
+	if (NT_STATUS_IS_OK(status) ||
+	    NT_STATUS_IS_ERR(status)) {
+
+		if (ctx->disable_policy_handle_cache) {
+			libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+			libnetapi_samr_close_connect_handle(ctx, &connect_handle);
+		}
 	}
-	if (is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
-	}
-#endif
+
 	return werr;
 }
 
