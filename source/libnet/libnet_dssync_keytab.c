@@ -87,7 +87,9 @@ static NTSTATUS keytab_startup(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 			return status;
 		}
 
-		NDR_PRINT_DEBUG(replUpToDateVectorBlob, old_utdv);
+		if (DEBUGLEVEL >= 10) {
+			NDR_PRINT_DEBUG(replUpToDateVectorBlob, old_utdv);
+		}
 	}
 
 	if (pold_utdv) {
@@ -109,7 +111,10 @@ static NTSTATUS keytab_finish(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 		enum ndr_err_code ndr_err;
 		DATA_BLOB blob;
 
-		NDR_PRINT_DEBUG(replUpToDateVectorBlob, new_utdv);
+		if (DEBUGLEVEL >= 10) {
+			NDR_PRINT_DEBUG(replUpToDateVectorBlob, new_utdv);
+		}
+
 		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, new_utdv,
 				(ndr_push_flags_fn_t)ndr_push_replUpToDateVectorBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
