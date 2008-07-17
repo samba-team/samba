@@ -1,5 +1,10 @@
-2008-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
+2008-07-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* common.c: Try afs/cell@REALM before afs@REALM since that is what
+	OpenAFS folks have been saying is best pratices for some time
+	now. Patch from Derrick Brashear.
+
+2008-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
 	* afssys.c: Avoid using entry points depending on _IOWR if there
 	is no _IOWR (on cygwin).
 
