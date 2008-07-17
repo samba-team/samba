@@ -980,6 +980,34 @@ NET_API_STATUS NetLocalGroupSetInfo(const char * server_name /* [in] */,
 
 /************************************************************//**
  *
+ * NetLocalGroupEnum
+ *
+ * @brief Enumerate local groups on a server
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] level The enumeration level used for the query (Currently only
+ * level 0 is supported)
+ * @param[out] buffer The returned enumeration buffer
+ * @param[in] prefmaxlen The requested maximal buffer size
+ * @param[out] entries_read The number of returned entries
+ * @param[out] total_entries The number of total entries
+ * @param[in,out] resume_handle A handle passed in and returned for resuming
+ * operations
+ * @return NET_API_STATUS
+ *
+ * example localgroup/localgroup_enum.c
+ ***************************************************************/
+
+NET_API_STATUS NetLocalGroupEnum(const char * server_name /* [in] */,
+				 uint32_t level /* [in] */,
+				 uint8_t **buffer /* [out] [ref] */,
+				 uint32_t prefmaxlen /* [in] */,
+				 uint32_t *entries_read /* [out] [ref] */,
+				 uint32_t *total_entries /* [out] [ref] */,
+				 uint32_t *resume_handle /* [in,out] [ref] */);
+
+/************************************************************//**
+ *
  * NetRemoteTOD
  *
  * @brief Query remote Time of Day
