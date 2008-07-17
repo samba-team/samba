@@ -139,7 +139,8 @@ wbcErr wbcStringToSid(const char *str,
 	p = q +1;
 	sid->num_auths = 0;
 	while (sid->num_auths < WBC_MAXSUBAUTHS) {
-		if ((x=(uint32_t)strtoul(p, &q, 10)) == 0)
+		x=(uint32_t)strtoul(p, &q, 10);
+		if (p == q)
 			break;
 		if (q == NULL) {
 			wbc_status = WBC_ERR_INVALID_SID;
