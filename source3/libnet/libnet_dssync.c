@@ -378,6 +378,7 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 	struct drsuapi_DsReplicaCursorCtrEx cursors;
 	struct drsuapi_DsReplicaCursorCtrEx *pcursors = NULL;
 	struct replUpToDateVectorBlob new_utdv;
+	struct replUpToDateVectorBlob *pnew_utdv = NULL;
 	int32_t out_level = 0;
 	int y;
 	uint32_t replica_flags	= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE |
@@ -389,9 +390,17 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(null_sid);
 	ZERO_STRUCT(req);
 
-	nc.dn = ctx->nc_dn;
+	if (ctx->single && ctx->object_dn) {
+		nc.dn = ctx->object_dn;
+	} else {
+		nc.dn = ctx->nc_dn;
+	}
 	nc.guid = GUID_zero();
 	nc.sid = null_sid;
+
+	if (!ctx->single) {
+		pnew_utdv = &new_utdv;
+	}
 
 	status = ctx->ops->startup(ctx, mem_ctx, &old_utdv);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -434,6 +443,9 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 		req.req8.max_object_count	= 402;
 		req.req8.max_ndr_size		= 402116;
 		req.req8.uptodateness_vector	= pcursors;
+		if (ctx->single) {
+			req.req8.extended_op	= DRSUAPI_EXOP_REPL_OBJ;
+		}
 	} else {
 		level = 5;
 		req.req5.naming_context		= &nc;
@@ -441,6 +453,9 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 		req.req5.max_object_count	= 402;
 		req.req5.max_ndr_size		= 402116;
 		req.req5.uptodateness_vector	= pcursors;
+		if (ctx->single) {
+			req.req5.extended_op	= DRSUAPI_EXOP_REPL_OBJ;
+		}
 	}
 
 	for (y=0; ;y++) {
@@ -524,8 +539,10 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 
 			ZERO_STRUCT(new_utdv);
 			new_utdv.version = 1;
-			new_utdv.ctr.ctr1.count = ctr1->uptodateness_vector->count;
-			new_utdv.ctr.ctr1.cursors = ctr1->uptodateness_vector->cursors;
+			if (ctr1->uptodateness_vector) {
+				new_utdv.ctr.ctr1.count = ctr1->uptodateness_vector->count;
+				new_utdv.ctr.ctr1.cursors = ctr1->uptodateness_vector->cursors;
+			}
 		}
 
 		if (level_out == 6) {
@@ -570,11 +587,13 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 
 			ZERO_STRUCT(new_utdv);
 			new_utdv.version = 2;
-			new_utdv.ctr.ctr2.count = ctr6->uptodateness_vector->count;
-			new_utdv.ctr.ctr2.cursors = ctr6->uptodateness_vector->cursors;
+			if (ctr6->uptodateness_vector) {
+				new_utdv.ctr.ctr2.count = ctr6->uptodateness_vector->count;
+				new_utdv.ctr.ctr2.cursors = ctr6->uptodateness_vector->cursors;
+			}
 		}
 
-		status = ctx->ops->finish(ctx, mem_ctx, &new_utdv);
+		status = ctx->ops->finish(ctx, mem_ctx, pnew_utdv);
 		if (!NT_STATUS_IS_OK(status)) {
 			ctx->error_message = talloc_asprintf(mem_ctx,
 				"Failed to call finishing operation: %s",
@@ -610,3 +629,4 @@ NTSTATUS libnet_dssync(TALLOC_CTX *mem_ctx,
  out:
 	return status;
 }
+
