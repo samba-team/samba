@@ -46,7 +46,7 @@ struct event_context *winbind_event_context(void)
 
 /* Reload configuration */
 
-static BOOL reload_services_file(void)
+static BOOL reload_services_file(const char *logfile)
 {
 	BOOL ret;
 
@@ -61,6 +61,11 @@ static BOOL reload_services_file(void)
 
 	reopen_logs();
 	ret = lp_load(dyn_CONFIGFILE,False,False,True,True);
+
+	/* if this is a child, restore the logfile to the special
+	   name - <domain>, idmap, etc. */
+	if (logfile && *logfile)
+		lp_set_logfile(logfile);
 
 	reopen_logs();
 	load_interfaces();
@@ -188,7 +193,7 @@ static void msg_reload_services(int msg_type, struct process_id src,
 {
         /* Flush various caches */
 	flush_caches();
-	reload_services_file();
+	reload_services_file((const char *) private_data);
 }
 
 /* React on 'smbcontrol winbindd shutdown' in the same way as on SIGTERM*/
@@ -726,13 +731,13 @@ static BOOL remove_idle_client(void)
 }
 
 /* check if HUP has been received and reload files */
-void winbind_check_sighup(void)
+void winbind_check_sighup(const char *logfile)
 {
 	if (do_sighup) {
 
 		DEBUG(3, ("got SIGHUP\n"));
 
-		msg_reload_services(MSG_SMB_CONF_UPDATED, pid_to_procid(0), NULL, 0, NULL);
+		msg_reload_services(MSG_SMB_CONF_UPDATED, pid_to_procid(0), NULL, 0, logfile);
 		do_sighup = False;
 	}
 }
@@ -909,7 +914,7 @@ static void process_loop(void)
 	/* Check signal handling things */
 
 	winbind_check_sigterm(true);
-	winbind_check_sighup();
+	winbind_check_sighup(NULL);
 
 	if (do_sigusr2) {
 		print_winbindd_status();
@@ -1007,7 +1012,7 @@ int main(int argc, char **argv, char **envp)
 		  SAMBA_VERSION_STRING, 
 		  COPYRIGHT_STARTUP_MESSAGE) );
 
-	if (!reload_services_file()) {
+	if (!reload_services_file(NULL)) {
 		DEBUG(0, ("error opening config file\n"));
 		exit(1);
 	}

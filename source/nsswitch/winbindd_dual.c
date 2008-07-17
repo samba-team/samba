@@ -1024,7 +1024,8 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 
 		/* check for signals */
 		winbind_check_sigterm(false);
-		winbind_check_sighup();
+		winbind_check_sighup(override_logfile ? NULL :
+			child->logfilename);
 
 		run_events(winbind_event_context(), 0, NULL, NULL);
 
