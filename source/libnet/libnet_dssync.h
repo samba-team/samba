@@ -35,6 +35,8 @@ struct dssync_context {
 	const char *dns_domain_name;
 	struct rpc_pipe_client *cli;
 	const char *nc_dn;
+	bool single;
+	const char *object_dn;
 	struct policy_handle bind_handle;
 	DATA_BLOB session_key;
 	const char *output_filename;

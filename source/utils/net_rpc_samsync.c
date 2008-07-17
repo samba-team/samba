@@ -299,6 +299,10 @@ static NTSTATUS rpc_vampire_keytab_ds_internals(struct net_context *c,
 	if (argc >= 1) {
 		ctx->output_filename = argv[0];
 	}
+	if (argc >= 2) {
+		ctx->object_dn = argv[1];
+		ctx->single = true;
+	}
 
 	ctx->cli		= pipe_hnd;
 	ctx->domain_name	= domain_name;
