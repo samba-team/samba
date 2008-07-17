@@ -60,26 +60,6 @@
 </refsect1>
 
 <refsect1>
-	<title>EXAMPLES</title>
-
-	<para>
-	The following example is equivalent to the pre-3.0.25 default idmap
-	configuration using the &quot;idmap backend = tdb&quot; setting.
-	</para>
-
-	<programlisting>
-	[global]
-	    idmap domains = ALLDOMAINS
-	    idmap config ALLDOMAINS:default = yes
-	    idmap config ALLDOMAINS:backend = tdb
-	    idmap config ALLDOMAINS:range   = 10000 - 50000
-
-	    idmap alloc backend = tdb
-	    idmap alloc config:range = 10000 - 50000
-	</programlisting>
-</refsect1>
-
-<refsect1>
 	<title>AUTHOR</title>
 
 	<para>

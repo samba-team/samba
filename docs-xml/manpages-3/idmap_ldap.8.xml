@@ -99,16 +99,6 @@
 			should be used.
 		</para></listitem>
 		</varlistentry>
-
-                <varlistentry>
-		<term>range = low - high</term>
-                <listitem><para>
-			Defines the available matching uid and gid range from which
-			winbindd can allocate for users and groups.  If the parameter
-			is absent, Winbind fail over to use the &quot;idmap uid&quot;
-			and &quot;idmap gid&quot; options from smb.conf.
-                </para></listitem>
-                </varlistentry>
 	</variablelist>
 </refsect1>
 
@@ -116,27 +106,20 @@
 	<title>EXAMPLES</title>
 
 	<para>
-	The follow sets of a LDAP configuration which uses a slave server
-	running on localhost for fast fetching SID/gid/uid mappings, it
-	implies correct configuration of referrals.
-	The idmap alloc backend is pointed directly to the master to skip
-	the referral (and consequent reconnection to the master) that the
-	slave would return as allocation requires writing on the master.
+	The follow sets of a LDAP configuration which uses two LDAP
+	directories, one for storing the ID mappings and one for retrieving
+	new IDs.
 	</para>
 
 	<programlisting>
 	[global]
-	    idmap domains = ALLDOMAINS
-	    idmap config ALLDOMAINS:default      = yes
-	    idmap config ALLDOMAINS:backend      = ldap
-	    idmap config ALLDOMAINS:ldap_base_dn = ou=idmap,dc=example,dc=com
-	    idmap config ALLDOMAINS:ldap_url     = ldap://localhost/
-	    idmap config ALLDOMAINS:range        = 10000 - 50000
+	idmap backend = ldap:ldap://localhost/
+	idmap uid = 1000000-1999999
+	idmap gid = 1000000-1999999
 
-	    idmap alloc backend = ldap
-	    idmap alloc config:ldap_base_dn = ou=idmap,dc=example,dc=com
-	    idmap alloc config:ldap_url     = ldap://master.example.com/
-	    idmap alloc config:range        = 10000 - 50000
+	idmap alloc backend = ldap
+	idmap alloc config : ldap_url	= ldap://id-master/
+	idmap alloc config : ldap_base_dn = ou=idmap,dc=example,dc=com
 	</programlisting>
 </refsect1>
 
