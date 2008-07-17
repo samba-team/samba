@@ -298,3 +298,22 @@ void libnetapi_samr_close_connect_handle(struct libnetapi_ctx *ctx,
 
 	ZERO_STRUCT(priv->samr.connect_handle);
 }
+
+/****************************************************************
+****************************************************************/
+
+void libnetapi_samr_free(struct libnetapi_ctx *ctx)
+{
+	struct libnetapi_private_ctx *priv;
+
+	if (!ctx->private_data) {
+		return;
+	}
+
+	priv = talloc_get_type_abort(ctx->private_data,
+		struct libnetapi_private_ctx);
+
+	libnetapi_samr_close_domain_handle(ctx, &priv->samr.domain_handle);
+	libnetapi_samr_close_builtin_handle(ctx, &priv->samr.builtin_handle);
+	libnetapi_samr_close_connect_handle(ctx, &priv->samr.connect_handle);
+}
