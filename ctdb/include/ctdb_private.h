@@ -161,6 +161,7 @@ struct ctdb_client {
 	uint32_t client_id;
 	pid_t pid;
 	struct ctdb_tcp_list *tcp_list;
+	uint32_t num_persistent_updates;
 };
 
 
@@ -544,6 +545,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_DEL_PUBLIC_IP           = 78,
 		    CTDB_CONTROL_RUN_EVENTSCRIPTS        = 79,
 		    CTDB_CONTROL_GET_CAPABILITIES	 = 80,
+		    CTDB_CONTROL_START_PERSISTENT_UPDATE = 81,
+		    CTDB_CONTROL_CANCEL_PERSISTENT_UPDATE= 82,
 };	
 
 /*
@@ -812,6 +815,12 @@ int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 		    struct ctdb_ltdb_header *header, TDB_DATA data);
 int ctdb_ltdb_persistent_store(struct ctdb_db_context *ctdb_db, TDB_DATA key, 
 		    struct ctdb_ltdb_header *header, TDB_DATA data);
+int32_t ctdb_control_start_persistent_update(struct ctdb_context *ctdb, 
+			struct ctdb_req_control *c,
+			TDB_DATA recdata);
+int32_t ctdb_control_cancel_persistent_update(struct ctdb_context *ctdb, 
+			struct ctdb_req_control *c,
+			TDB_DATA recdata);
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_queue_packet_opcode(struct ctdb_context *ctdb, struct ctdb_req_header *hdr, unsigned opcode);
 int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db, 

@@ -394,6 +394,12 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_GET_CAPABILITIES:
 		return ctdb_control_get_capabilities(ctdb, outdata);
 
+	case CTDB_CONTROL_START_PERSISTENT_UPDATE:
+		return ctdb_control_start_persistent_update(ctdb, c, indata);
+
+	case CTDB_CONTROL_CANCEL_PERSISTENT_UPDATE:
+		return ctdb_control_cancel_persistent_update(ctdb, c, indata);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;
