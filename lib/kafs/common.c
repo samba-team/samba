@@ -438,17 +438,6 @@ _kafs_get_cred(struct kafs_data *data,
     _kafs_foldup(CELL, cell);
 
     /*
-     * If cell == realm we don't need no cross-cell authentication.
-     * Try afs@REALM.
-     */
-    if (strcmp(CELL, realm) == 0) {
-        ret = _kafs_try_get_cred(data, AUTH_SUPERUSER,
-				 "", realm, uid, kt);
-	if (ret == 0) return 0;
-	/* Try afs.cell@REALM below. */
-    }
-
-    /*
      * If the AFS servers have a file /usr/afs/etc/krb.conf containing
      * REALM we still don't have to resort to cross-cell authentication.
      * Try afs.cell@REALM.
@@ -456,6 +445,16 @@ _kafs_get_cred(struct kafs_data *data,
     ret = _kafs_try_get_cred(data, AUTH_SUPERUSER, 
 			     cell, realm, uid, kt);
     if (ret == 0) return 0;
+
+    /*
+     * If cell == realm we don't need no cross-cell authentication.
+     * Try afs@REALM.
+     */
+    if (strcmp(CELL, realm) == 0) {
+        ret = _kafs_try_get_cred(data, AUTH_SUPERUSER,
+				 "", realm, uid, kt);
+	if (ret == 0) return 0;
+    }
 
     /*
      * We failed to get ``first class tickets'' for afs,
