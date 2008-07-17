@@ -23,39 +23,16 @@
 
 const char *samba_version_string(void)
 {
-#ifndef SAMBA_VERSION_VENDOR_SUFFIX
+#ifdef SAMBA_VERSION_VENDOR_FUNCTION
+	return SAMBA_VERSION_VENDOR_FUNCTION;
+#else /* SAMBA_VERSION_VENDOR_FUNCTION */
+ #ifdef SAMBA_VERSION_VENDOR_SUFFIX
+  #ifdef SAMBA_VERSION_VENDOR_PATCH
+	return SAMBA_VERSION_OFFICIAL_STRING "-" SAMBA_VERSION_VENDOR_SUFFIX \
+		"-" SAMBA_VERSION_VENDOR_PATCH;
+  #endif /* SAMBA_VERSION_VENDOR_PATCH */
+	return SAMBA_VERSION_OFFICIAL_STRING "-" SAMBA_VERSION_VENDOR_SUFFIX;
+ #endif /* SAMBA_VERSION_VENDOR_SUFFIX */
+#endif /* SAMBA_VERSION_VENDOR_FUNCTION */
 	return SAMBA_VERSION_OFFICIAL_STRING;
-#else
-	static char *samba_version;
-	int res;
-#ifdef SAMBA_VERSION_VENDOR_PATCH
-	char *tmp_version;
-#endif
-
-	if (samba_version != NULL)
-		return samba_version;
-
-	res = asprintf(&samba_version, "%s-%s",
-		       SAMBA_VERSION_OFFICIAL_STRING,
-		       SAMBA_VERSION_VENDOR_SUFFIX);
-	/*
-	 * Can't use smb_panic here due to dependencies
-	 */
-	assert(res != -1);
-
-#ifdef SAMBA_VERSION_VENDOR_PATCH
-	res = asprintf(&tmp_version, "%s-%d", samba_version,
-		       SAMBA_VERSION_VENDOR_PATCH);
-	/*
-	 * Can't use smb_panic here due to dependencies
-	 */
-	assert(res != -1);
-
-	SAFE_FREE(samba_version);
-
-	samba_version = tmp_version;
-#endif
-
-	return samba_version;
-#endif
 }
