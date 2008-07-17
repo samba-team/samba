@@ -241,6 +241,21 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 						  &user_handle,
 						  25,
 						  user_info);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS(DCERPC_FAULT_INVALID_TAG))) {
+
+			user_info->info23.info = info25.info;
+
+			encode_pw_buffer(user_info->info23.password.data,
+					 info1->usri1_password, STR_UNICODE);
+			SamOEMhashBlob(user_info->info23.password.data, 516,
+				       &cli->user_session_key);
+
+			status = rpccli_samr_SetUserInfo2(pipe_cli, ctx,
+							  &user_handle,
+							  23,
+							  user_info);
+		}
 	} else {
 		user_info->info21 = info25.info;
 		status = rpccli_samr_SetUserInfo(pipe_cli, ctx,
