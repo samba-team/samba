@@ -143,3 +143,51 @@ WERROR libnetapi_samr_open_builtin_domain(TALLOC_CTX *mem_ctx,
  done:
 	return werr;
 }
+
+/****************************************************************
+****************************************************************/
+
+void libnetapi_samr_close_domain_handle(struct libnetapi_ctx *ctx,
+					struct policy_handle *handle)
+{
+	struct libnetapi_private_ctx *priv;
+
+	if (!is_valid_policy_hnd(handle)) {
+		return;
+	}
+
+	priv = talloc_get_type_abort(ctx->private_data,
+		struct libnetapi_private_ctx);
+
+	if (!policy_hnd_equal(handle, &priv->samr.domain_handle)) {
+		return;
+	}
+
+	rpccli_samr_Close(priv->samr.cli, ctx, handle);
+
+	ZERO_STRUCT(priv->samr.domain_handle);
+}
+
+/****************************************************************
+****************************************************************/
+
+void libnetapi_samr_close_connect_handle(struct libnetapi_ctx *ctx,
+					 struct policy_handle *handle)
+{
+	struct libnetapi_private_ctx *priv;
+
+	if (!is_valid_policy_hnd(handle)) {
+		return;
+	}
+
+	priv = talloc_get_type_abort(ctx->private_data,
+		struct libnetapi_private_ctx);
+
+	if (!policy_hnd_equal(handle, &priv->samr.connect_handle)) {
+		return;
+	}
+
+	rpccli_samr_Close(priv->samr.cli, ctx, handle);
+
+	ZERO_STRUCT(priv->samr.connect_handle);
+}
