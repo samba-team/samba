@@ -75,7 +75,7 @@ int main(int argc, const char **argv)
 		level = atoi(poptGetArg(pc));
 	}
 
-	/* NetUserEnum */
+	/* NetGroupEnum */
 
 	do {
 		status = NetGroupEnum(hostname,
