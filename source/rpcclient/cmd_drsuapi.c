@@ -290,6 +290,234 @@ static WERROR cmd_drsuapi_getdcinfo(struct rpc_pipe_client *cli,
 	return werr;
 }
 
+static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx, int argc,
+				       const char **argv)
+{
+	NTSTATUS status;
+	WERROR werr;
+
+	struct policy_handle bind_handle;
+
+	struct GUID bind_guid;
+	struct drsuapi_DsBindInfoCtr bind_info;
+	struct drsuapi_DsBindInfo28 info28;
+
+	const char *nc_dn = NULL;
+
+	DATA_BLOB session_key;
+
+	int32_t level = 8;
+	int32_t level_out = 0;
+	union drsuapi_DsGetNCChangesRequest req;
+	union drsuapi_DsGetNCChangesCtr ctr;
+	struct drsuapi_DsReplicaObjectIdentifier nc;
+	struct dom_sid null_sid;
+
+	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
+	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
+	int32_t out_level = 0;
+	int y;
+
+	if (argc > 2) {
+		printf("usage: %s naming_context_dn\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc >= 2) {
+		nc_dn = argv[1];
+	}
+
+	ZERO_STRUCT(info28);
+
+	ZERO_STRUCT(null_sid);
+	ZERO_STRUCT(req);
+
+	GUID_from_string(DRSUAPI_DS_BIND_GUID, &bind_guid);
+
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_BASE;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ASYNC_REPLICATION;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_REMOVEAPI;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_MOVEREQ_V2;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHG_COMPRESS;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V1;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_RESTORE_USN_OPTIMIZATION;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_KCC_EXECUTE;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY_V2;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_LINKED_VALUE_REPLICATION;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V2;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_INSTANCE_TYPE_NOT_REQ_ON_MOD;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_CRYPTO_BIND;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GET_REPL_INFO;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_STRONG_ENCRYPTION;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V01;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_TRANSITIVE_MEMBERSHIP;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADD_SID_HISTORY;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_POST_BETA3;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GET_MEMBERSHIPS2;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V6;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_NONDOMAIN_NCS;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V5;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V6;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
+	info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
+	info28.site_guid		= GUID_zero();
+	info28.u1			= 508;
+	info28.repl_epoch		= 0;
+
+	bind_info.length = 28;
+	bind_info.info.info28 = info28;
+
+	status = rpccli_drsuapi_DsBind(cli, mem_ctx,
+				       &bind_guid,
+				       &bind_info,
+				       &bind_handle,
+				       &werr);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	if (!nc_dn) {
+
+		union drsuapi_DsNameCtr crack_ctr;
+		const char *name;
+
+		name = talloc_asprintf(mem_ctx, "%s\\", lp_workgroup());
+		W_ERROR_HAVE_NO_MEMORY(name);
+
+		werr = cracknames(cli, mem_ctx,
+				  &bind_handle,
+				  DRSUAPI_DS_NAME_FORMAT_UKNOWN,
+				  DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				  1,
+				  &name,
+				  &crack_ctr);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+
+		if (crack_ctr.ctr1->count != 1) {
+			return WERR_NO_SUCH_DOMAIN;
+		}
+
+		if (crack_ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
+			return WERR_NO_SUCH_DOMAIN;
+		}
+
+		nc_dn = talloc_strdup(mem_ctx, crack_ctr.ctr1->array[0].result_name);
+		W_ERROR_HAVE_NO_MEMORY(nc_dn);
+
+		printf("using: %s\n", nc_dn);
+	}
+
+	nc.dn = nc_dn;
+	nc.guid = GUID_zero();
+	nc.sid = null_sid;
+
+	req.req8.naming_context		= &nc;
+	req.req8.replica_flags		= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE |
+					  DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP |
+					  DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS |
+					  DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS |
+					  DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED;
+	req.req8.max_object_count	= 402;
+	req.req8.max_ndr_size		= 402116;
+
+	for (y=0; ;y++) {
+
+		if (level == 8) {
+			DEBUG(1,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
+				(long long)req.req8.highwatermark.tmp_highest_usn,
+				(long long)req.req8.highwatermark.highest_usn));
+		}
+
+		status = rpccli_drsuapi_DsGetNCChanges(cli, mem_ctx,
+						       &bind_handle,
+						       level,
+						       &req,
+						       &level_out,
+						       &ctr,
+						       &werr);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("Failed to get NC Changes: %s",
+				get_friendly_werror_msg(werr));
+			goto out;
+		}
+
+		if (!W_ERROR_IS_OK(werr)) {
+			status = werror_to_ntstatus(werr);
+			goto out;
+		}
+
+		if (level_out == 1) {
+			out_level = 1;
+			ctr1 = &ctr.ctr1;
+		} else if (level_out == 2) {
+			out_level = 1;
+			ctr1 = ctr.ctr2.ctr.mszip1.ctr1;
+		}
+
+		status = cli_get_session_key(mem_ctx, cli, &session_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("Failed to get Session Key: %s",
+				nt_errstr(status));
+			return ntstatus_to_werror(status);
+		}
+
+		if (out_level == 1) {
+			DEBUG(1,("end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",y,
+				(long long)ctr1->new_highwatermark.tmp_highest_usn,
+				(long long)ctr1->new_highwatermark.highest_usn));
+#if 0
+			libnet_dssync_decrypt_attributes(mem_ctx,
+							 &session_key,
+							 ctr1->first_object);
+#endif
+			if (ctr1->more_data) {
+				req.req5.highwatermark = ctr1->new_highwatermark;
+				continue;
+			}
+		}
+
+		if (level_out == 6) {
+			out_level = 6;
+			ctr6 = &ctr.ctr6;
+		} else if (level_out == 7
+			   && ctr.ctr7.level == 6
+			   && ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP) {
+			out_level = 6;
+			ctr6 = ctr.ctr7.ctr.mszip6.ctr6;
+		}
+
+		if (out_level == 6) {
+			DEBUG(1,("end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",y,
+				(long long)ctr6->new_highwatermark.tmp_highest_usn,
+				(long long)ctr6->new_highwatermark.highest_usn));
+#if 0
+			libnet_dssync_decrypt_attributes(mem_ctx,
+							 &session_key,
+							 ctr6->first_object);
+#endif
+			if (ctr6->more_data) {
+				req.req8.highwatermark = ctr6->new_highwatermark;
+				continue;
+			}
+		}
+
+		break;
+	}
+
+ out:
+	return werr;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set drsuapi_commands[] = {
@@ -297,5 +525,6 @@ struct cmd_set drsuapi_commands[] = {
 	{ "DRSUAPI" },
 	{ "dscracknames", RPC_RTYPE_WERROR, NULL, cmd_drsuapi_cracknames, PI_DRSUAPI, NULL, "Crack Name", "" },
 	{ "dsgetdcinfo", RPC_RTYPE_WERROR, NULL, cmd_drsuapi_getdcinfo, PI_DRSUAPI, NULL, "Get Domain Controller Info", "" },
+	{ "dsgetncchanges", RPC_RTYPE_WERROR, NULL, cmd_drsuapi_getncchanges, PI_DRSUAPI, NULL, "Get NC Changes", "" },
 	{ NULL }
 };
