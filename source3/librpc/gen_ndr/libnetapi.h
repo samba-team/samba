@@ -64,6 +64,146 @@ struct USER_INFO_1 {
 	const char * usri1_script_path;
 };
 
+struct USER_INFO_2 {
+	const char * usri2_name;
+	const char * usri2_password;
+	uint32_t usri2_password_age;
+	uint32_t usri2_priv;
+	const char * usri2_home_dir;
+	const char * usri2_comment;
+	uint32_t usri2_flags;
+	const char * usri2_script_path;
+	uint32_t usri2_auth_flags;
+	const char * usri2_full_name;
+	const char * usri2_usr_comment;
+	const char * usri2_parms;
+	const char * usri2_workstations;
+	uint32_t usri2_last_logon;
+	uint32_t usri2_last_logoff;
+	uint32_t usri2_acct_expires;
+	uint32_t usri2_max_storage;
+	uint32_t usri2_units_per_week;
+	uint8_t *usri2_logon_hours;/* [unique] */
+	uint32_t usri2_bad_pw_count;
+	uint32_t usri2_num_logons;
+	const char * usri2_logon_server;
+	uint32_t usri2_country_code;
+	uint32_t usri2_code_page;
+};
+
+struct USER_INFO_3 {
+	const char * usri3_name;
+	uint32_t usri3_password_age;
+	uint32_t usri3_priv;
+	const char * usri3_home_dir;
+	const char * usri3_comment;
+	uint32_t usri3_flags;
+	const char * usri3_script_path;
+	uint32_t usri3_auth_flags;
+	const char * usri3_full_name;
+	const char * usri3_usr_comment;
+	const char * usri3_parms;
+	const char * usri3_workstations;
+	uint32_t usri3_last_logon;
+	uint32_t usri3_last_logoff;
+	uint32_t usri3_acct_expires;
+	uint32_t usri3_max_storage;
+	uint32_t usri3_units_per_week;
+	uint8_t *usri3_logon_hours;/* [unique] */
+	uint32_t usri3_bad_pw_count;
+	uint32_t usri3_num_logons;
+	const char * usri3_logon_server;
+	uint32_t usri3_country_code;
+	uint32_t usri3_code_page;
+	uint32_t usri3_user_id;
+	uint32_t usri3_primary_group_id;
+	const char * usri3_profile;
+	const char * usri3_home_dir_drive;
+	uint32_t usri3_password_expired;
+};
+
+struct USER_INFO_4 {
+	const char * usri4_name;
+	const char * usri4_password;
+	uint32_t usri4_password_age;
+	uint32_t usri4_priv;
+	const char * usri4_home_dir;
+	const char * usri4_comment;
+	uint32_t usri4_flags;
+	const char * usri4_script_path;
+	uint32_t usri4_auth_flags;
+	const char * usri4_full_name;
+	const char * usri4_usr_comment;
+	const char * usri4_parms;
+	const char * usri4_workstations;
+	uint32_t usri4_last_logon;
+	uint32_t usri4_last_logoff;
+	uint32_t usri4_acct_expires;
+	uint32_t usri4_max_storage;
+	uint32_t usri4_units_per_week;
+	uint8_t *usri4_logon_hours;/* [unique] */
+	uint32_t usri4_bad_pw_count;
+	uint32_t usri4_num_logons;
+	const char * usri4_logon_server;
+	uint32_t usri4_country_code;
+	uint32_t usri4_code_page;
+	struct dom_sid *usri4_user_sid;/* [unique] */
+	uint32_t usri4_primary_group_id;
+	const char * usri4_profile;
+	const char * usri4_home_dir_drive;
+	uint32_t usri4_password_expired;
+};
+
+struct USER_INFO_10 {
+	const char * usri10_name;
+	const char * usri10_comment;
+	const char * usri10_usr_comment;
+	const char * usri10_full_name;
+};
+
+struct USER_INFO_11 {
+	const char * usri11_name;
+	const char * usri11_comment;
+	const char * usri11_usr_comment;
+	const char * usri11_full_name;
+	uint32_t usri11_priv;
+	uint32_t usri11_auth_flags;
+	uint32_t usri11_password_age;
+	const char * usri11_home_dir;
+	const char * usri11_parms;
+	uint32_t usri11_last_logon;
+	uint32_t usri11_last_logoff;
+	uint32_t usri11_bad_pw_count;
+	uint32_t usri11_num_logons;
+	const char * usri11_logon_server;
+	uint32_t usri11_country_code;
+	const char * usri11_workstations;
+	uint32_t usri11_max_storage;
+	uint32_t usri11_units_per_week;
+	uint8_t *usri11_logon_hours;/* [unique] */
+	uint32_t usri11_code_page;
+};
+
+struct USER_INFO_20 {
+	const char * usri20_name;
+	const char * usri20_full_name;
+	const char * usri20_comment;
+	uint32_t usri20_flags;
+	uint32_t usri20_user_id;
+};
+
+struct USER_INFO_23 {
+	const char * usri23_name;
+	const char * usri23_full_name;
+	const char * usri23_comment;
+	uint32_t usri23_flags;
+	struct domsid *usri23_user_sid;/* [unique] */
+};
+
+struct USER_INFO_1007 {
+	const char * usri1007_comment;
+};
+
 struct NET_DISPLAY_USER {
 	const char * usri1_name;
 	const char * usri1_comment;
