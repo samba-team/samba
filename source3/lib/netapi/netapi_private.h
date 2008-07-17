@@ -58,7 +58,7 @@ WERROR libnetapi_samr_open_domain(struct libnetapi_ctx *mem_ctx,
 				  struct policy_handle *connect_handle,
 				  struct policy_handle *domain_handle,
 				  struct dom_sid2 **domain_sid);
-WERROR libnetapi_samr_open_builtin_domain(TALLOC_CTX *mem_ctx,
+WERROR libnetapi_samr_open_builtin_domain(struct libnetapi_ctx *mem_ctx,
 					  struct rpc_pipe_client *pipe_cli,
 					  uint32_t connect_mask,
 					  uint32_t builtin_mask,
