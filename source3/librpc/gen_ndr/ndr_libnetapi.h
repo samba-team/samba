@@ -60,9 +60,11 @@
 
 #define NDR_NETLOCALGROUPSETINFO (0x1a)
 
-#define NDR_NETREMOTETOD (0x1b)
+#define NDR_NETLOCALGROUPENUM (0x1b)
 
-#define NDR_LIBNETAPI_CALL_COUNT (28)
+#define NDR_NETREMOTETOD (0x1c)
+
+#define NDR_LIBNETAPI_CALL_COUNT (29)
 enum ndr_err_code ndr_push_NET_API_STATUS(struct ndr_push *ndr, int ndr_flags, enum NET_API_STATUS r);
 enum ndr_err_code ndr_pull_NET_API_STATUS(struct ndr_pull *ndr, int ndr_flags, enum NET_API_STATUS *r);
 void ndr_print_NET_API_STATUS(struct ndr_print *ndr, const char *name, enum NET_API_STATUS r);
@@ -195,6 +197,9 @@ void ndr_print_NetLocalGroupGetInfo(struct ndr_print *ndr, const char *name, int
 enum ndr_err_code ndr_push_NetLocalGroupSetInfo(struct ndr_push *ndr, int flags, const struct NetLocalGroupSetInfo *r);
 enum ndr_err_code ndr_pull_NetLocalGroupSetInfo(struct ndr_pull *ndr, int flags, struct NetLocalGroupSetInfo *r);
 void ndr_print_NetLocalGroupSetInfo(struct ndr_print *ndr, const char *name, int flags, const struct NetLocalGroupSetInfo *r);
+enum ndr_err_code ndr_push_NetLocalGroupEnum(struct ndr_push *ndr, int flags, const struct NetLocalGroupEnum *r);
+enum ndr_err_code ndr_pull_NetLocalGroupEnum(struct ndr_pull *ndr, int flags, struct NetLocalGroupEnum *r);
+void ndr_print_NetLocalGroupEnum(struct ndr_print *ndr, const char *name, int flags, const struct NetLocalGroupEnum *r);
 enum ndr_err_code ndr_push_NetRemoteTOD(struct ndr_push *ndr, int flags, const struct NetRemoteTOD *r);
 enum ndr_err_code ndr_pull_NetRemoteTOD(struct ndr_pull *ndr, int flags, struct NetRemoteTOD *r);
 void ndr_print_NetRemoteTOD(struct ndr_print *ndr, const char *name, int flags, const struct NetRemoteTOD *r);
