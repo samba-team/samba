@@ -89,7 +89,9 @@ int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb,
 		DEBUG(DEBUG_ERR,(__location__ " can not match persistent_store to a client. Returning error\n"));
 		return -1;
 	}
-	client->num_persistent_updates--;
+	if (client->num_persistent_updates > 0) {
+		client->num_persistent_updates--;
+	}
 
 	state = talloc_zero(ctdb, struct ctdb_persistent_state);
 	CTDB_NO_MEMORY(ctdb, state);
@@ -454,7 +456,9 @@ int32_t ctdb_control_cancel_persistent_update(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	client->num_persistent_updates--;
+	if (client->num_persistent_updates > 0) {
+		client->num_persistent_updates--;
+	}
 
 	return 0;
 }
