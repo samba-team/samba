@@ -38,17 +38,12 @@
 
 	<programlisting>
 	[global]
-	    idmap domains = SAMBA TRUSTEDDOMAINS
+	idmap backend = tdb
+	idmap uid = 1000000-1999999
+	idmap gid = 1000000-1999999
 
-	    idmap config SAMBA:backend  = nss
-	    idmap config SAMBA:readonly = yes
-
-	    idmap config TRUSTEDDOMAINS:default = yes
-	    idmap config TRUSTEDDOMAINS:backend = tdb
-	    idmap config TRUSTEDDOMAINS:range   = 10000 - 50000
-
-	    idmap alloc backend      = tdb
-	    idmap alloc config:range = 10000 - 50000
+	idmap config SAMBA : backend  = nss
+	idmap config SAMBA : range = 1000-999999
 	</programlisting>
 </refsect1>
 

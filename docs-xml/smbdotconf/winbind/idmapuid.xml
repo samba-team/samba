@@ -11,8 +11,8 @@
 	range of ids should have no existing local
 	or NIS users within it as strange conflicts can occur otherwise.</para>
 
-	<para>See also the <smbconfoption name="idmap backend"/>, <smbconfoption 
-	name="idmap domains"/>, and <smbconfoption name="idmap config"/> options.
+	<para>See also the <smbconfoption name="idmap backend"/> and
+	<smbconfoption name="idmap config"/> options.
 	</para>
 </description>
 

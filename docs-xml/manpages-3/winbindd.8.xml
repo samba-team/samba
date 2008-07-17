@@ -230,9 +230,6 @@ hosts:		files wins
 	determine which user and group ids correspond to Windows NT user
 	and group rids. </para>
 
-        <para>See the <smbconfoption name="idmap domains"/> or the old <smbconfoption name="idmap backend"/> parameters in
-        <filename>smb.conf</filename> for options for sharing this
-        database, such as via LDAP.</para>
 </refsect1>
 
 

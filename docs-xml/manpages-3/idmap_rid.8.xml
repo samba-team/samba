@@ -47,6 +47,9 @@
 			by default start at 1000 (512 hexadecimal), this means a good value
 			for base_rid can be 1000 as the resulting ID is calculated this way:
 			ID = RID - BASE_RID + LOW RANGE ID.
+		</para>
+		<para>
+			Use of this parameter is deprecated.
 		</para></listitem>
 		</varlistentry>
 	</variablelist>
@@ -54,19 +57,16 @@
 
 <refsect1>
 	<title>EXAMPLES</title>
-	<para>This example shows how to configure 2 domains with idmap_rid</para>
+	<para>This example shows how to configure a domain with idmap_rid</para>
 
 	<programlisting>
 	[global]
-	    idmap domains = MAIN TRUSTED1
+	idmap backend = tdb
+	idmap uid = 1000000-1999999
+	idmap gid = 1000000-1999999
 
-	    idmap config MAIN:backend      = rid
-	    idmap config MAIN:base_rid     = 0
-	    idmap config MAIN:range        = 10000 - 49999
-
-	    idmap config TRUSTED1:backend  = rid
-	    idmap config TRUSTED1:base_rid = 1000
-	    idmap config TRUSTED1:range    = 50000 - 99999
+	idmap config TRUSTED : backend  = rid
+	idmap config TRUSTED : range    = 50000 - 99999
 	</programlisting>
 </refsect1>
 
