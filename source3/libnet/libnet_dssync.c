@@ -376,6 +376,11 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
 	int32_t out_level = 0;
 	int y;
+	uint32_t replica_flags	= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE |
+				  DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP |
+				  DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS |
+				  DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS |
+				  DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED;
 
 	ZERO_STRUCT(null_sid);
 	ZERO_STRUCT(req);
@@ -392,14 +397,21 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	req.req8.naming_context		= &nc;
-	req.req8.replica_flags		= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE |
-					  DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP |
-					  DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS |
-					  DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS |
-					  DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED;
-	req.req8.max_object_count	= 402;
-	req.req8.max_ndr_size		= 402116;
+	if (ctx->remote_info28.supported_extensions
+	    & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8)
+	{
+		level = 8;
+		req.req8.naming_context		= &nc;
+		req.req8.replica_flags		= replica_flags;
+		req.req8.max_object_count	= 402;
+		req.req8.max_ndr_size		= 402116;
+	} else {
+		level = 5;
+		req.req5.naming_context		= &nc;
+		req.req5.replica_flags		= replica_flags;
+		req.req5.max_object_count	= 402;
+		req.req5.max_ndr_size		= 402116;
+	}
 
 	for (y=0; ;y++) {
 
@@ -409,6 +421,10 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 			DEBUG(1,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
 				(long long)req.req8.highwatermark.tmp_highest_usn,
 				(long long)req.req8.highwatermark.highest_usn));
+		} else if (level == 5) {
+			DEBUG(1,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
+				(long long)req.req5.highwatermark.tmp_highest_usn,
+				(long long)req.req5.highwatermark.highest_usn));
 		}
 
 		status = rpccli_drsuapi_DsGetNCChanges(ctx->cli, mem_ctx,
