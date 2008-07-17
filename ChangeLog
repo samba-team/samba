@@ -1,3 +1,7 @@
+2008-07-17  Love Hornquist Astrand  <lha@kth.se>
+
+	* lib/hdb/version-script.map: some random bits needed for libkadm
+
 2008-07-15  Love Hornquist Astrand  <lha@kth.se>
 
 	* lib/krb5/send_to_kdc_plugin.h: add name for send_to_kdc plugin.
