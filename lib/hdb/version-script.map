@@ -70,6 +70,20 @@ HEIMDAL_HDB_1.0 {
 		hdb_value2entry;
 		hdb_value2entry_alias;
 		hdb_write_master_key;
+
+		# some random bits needed for libkadm
+		copy_Event;
+		copy_HDB_extensions;
+		copy_Key;
+		copy_Salt;
+		decode_HDB_extension;
+		encode_HDB_Ext_Aliases;
+		free_Event;
+		free_HDB_extension;
+		free_HDB_extensions;
+		free_Key;
+		length_HDB_Ext_Aliases;
+
 	local:
 		*;
 };
