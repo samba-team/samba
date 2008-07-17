@@ -22,16 +22,20 @@ fi
 dnl readline
 
 ac_foo=no
+build_editline=no
 if test "$with_readline" = yes; then
 	:
 elif test "$ac_cv_func_readline" = yes; then
 	:
 elif test "$ac_cv_func_el_init" = yes; then
 	ac_foo=yes
+	build_editline=yes
 	LIB_readline="\$(top_builddir)/lib/editline/libel_compat.la \$(LIB_el_init) \$(LIB_tgetent)"
 else
+	build_editline=yes
 	LIB_readline="\$(top_builddir)/lib/editline/libeditline.la \$(LIB_tgetent)"
 fi
+AM_CONDITIONAL(EDITLINE "$build_editline" = yes)
 AM_CONDITIONAL(el_compat, test "$ac_foo" = yes)
 AC_DEFINE(HAVE_READLINE, 1, 
 	[Define if you have a readline compatible library.])dnl
