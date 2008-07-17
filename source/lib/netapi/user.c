@@ -284,11 +284,10 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 	if (is_valid_policy_hnd(&user_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &user_handle);
 	}
-	if (is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
-	}
-	if (is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
 	}
 
 	return werr;
@@ -410,14 +409,11 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 	if (is_valid_policy_hnd(&user_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &user_handle);
 	}
-	if (is_valid_policy_hnd(&builtin_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
-	}
-	if (is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
-	}
-	if (is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
 	}
 
 	return werr;
@@ -786,11 +782,14 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 		return werr;
 	}
 
-	if (is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
-	}
-	if (is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+	/* if last query */
+	if (NT_STATUS_IS_OK(status) ||
+	    NT_STATUS_IS_ERR(status)) {
+
+		if (ctx->disable_policy_handle_cache) {
+			libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+			libnetapi_samr_close_connect_handle(ctx, &connect_handle);
+		}
 	}
 
 	return werr;
@@ -982,7 +981,7 @@ WERROR NetQueryDisplayInformation_r(struct libnetapi_ctx *ctx,
 	uint32_t total_size = 0;
 	uint32_t returned_size = 0;
 
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 	WERROR werr;
 
 	ZERO_STRUCT(connect_handle);
@@ -1044,11 +1043,14 @@ WERROR NetQueryDisplayInformation_r(struct libnetapi_ctx *ctx,
 		return werr;
 	}
 
-	if (is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
-	}
-	if (is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+	/* if last query */
+	if (NT_STATUS_IS_OK(status) ||
+	    NT_STATUS_IS_ERR(status)) {
+
+		if (ctx->disable_policy_handle_cache) {
+			libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+			libnetapi_samr_close_connect_handle(ctx, &connect_handle);
+		}
 	}
 
 	return werr;
@@ -1189,8 +1191,10 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 		rpccli_samr_Close(pipe_cli, ctx, &user_handle);
 	}
 
-	libnetapi_samr_close_domain_handle(ctx, &domain_handle);
-	libnetapi_samr_close_connect_handle(ctx, &connect_handle);
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
+	}
 
 	return werr;
 }

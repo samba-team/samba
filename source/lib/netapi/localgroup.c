@@ -187,7 +187,9 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 						    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
 						    &alias_handle);
 
-	rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
+	}
 
 	if (W_ERROR_IS_OK(werr)) {
 		werr = WERR_ALIAS_EXISTS;
@@ -244,14 +246,11 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 	if (is_valid_policy_hnd(&alias_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &alias_handle);
 	}
-	if (is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
-	}
-	if (is_valid_policy_hnd(&builtin_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
-	}
-	if (is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
 	}
 
 	return werr;
@@ -315,7 +314,9 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 						    SEC_STD_DELETE,
 						    &alias_handle);
 
-	rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
+	}
 
 	if (W_ERROR_IS_OK(werr)) {
 		goto delete_alias;
@@ -339,7 +340,9 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 						    SEC_STD_DELETE,
 						    &alias_handle);
 
-	rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+	}
 
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -366,14 +369,11 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 	if (is_valid_policy_hnd(&alias_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &alias_handle);
 	}
-	if (is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
-	}
-	if (is_valid_policy_hnd(&builtin_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
-	}
-	if (is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
 	}
 
 	return werr;
@@ -493,7 +493,9 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 						    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
 						    &alias_handle);
 
-	rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
+	}
 
 	if (W_ERROR_IS_OK(werr)) {
 		goto query_alias;
@@ -517,7 +519,9 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 						    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
 						    &alias_handle);
 
-	rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+	}
 
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -547,14 +551,11 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 	if (is_valid_policy_hnd(&alias_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &alias_handle);
 	}
-	if (is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
-	}
-	if (is_valid_policy_hnd(&builtin_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
-	}
-	if (is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
 	}
 
 	return werr;
@@ -672,7 +673,9 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 						    SAMR_ALIAS_ACCESS_SET_INFO,
 						    &alias_handle);
 
-	rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
+	}
 
 	if (W_ERROR_IS_OK(werr)) {
 		goto set_alias;
@@ -698,7 +701,9 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+	}
 
  set_alias:
 
@@ -727,14 +732,11 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 	if (is_valid_policy_hnd(&alias_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &alias_handle);
 	}
-	if (is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &domain_handle);
-	}
-	if (is_valid_policy_hnd(&builtin_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &builtin_handle);
-	}
-	if (is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &connect_handle);
+
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
 	}
 
 	return werr;
@@ -915,9 +917,11 @@ WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
 		return werr;
 	}
 
-	libnetapi_samr_close_domain_handle(ctx, &domain_handle);
-	libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
-	libnetapi_samr_close_connect_handle(ctx, &connect_handle);
+	if (ctx->disable_policy_handle_cache) {
+		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
+		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
+		libnetapi_samr_close_connect_handle(ctx, &connect_handle);
+	}
 
 	return werr;
 }
