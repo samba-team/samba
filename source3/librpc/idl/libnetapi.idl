@@ -476,7 +476,7 @@ interface libnetapi
 	[nopush,nopull] NET_API_STATUS NetGroupAdd(
 		[in] string server_name,
 		[in] uint32 level,
-		[in] uint8 *buf,
+		[in] uint8 *buffer,
 		[out] uint32 *parm_err
 		);
 
@@ -511,7 +511,7 @@ interface libnetapi
 		[in] string server_name,
 		[in] string group_name,
 		[in] uint32 level,
-		[in] uint8 *buf,
+		[in] uint8 *buffer,
 		[out] uint32 *parm_err
 		);
 
@@ -523,7 +523,7 @@ interface libnetapi
 		[in] string server_name,
 		[in] string group_name,
 		[in] uint32 level,
-		[out] uint8 **buf
+		[out] uint8 **buffer
 		);
 
 	/*******************************************/
@@ -566,7 +566,7 @@ interface libnetapi
 	[nopush,nopull] NET_API_STATUS NetLocalGroupAdd(
 		[in] string server_name,
 		[in] uint32 level,
-		[in] uint8 *buf,
+		[in] uint8 *buffer,
 		[out,ref] uint32 *parm_err
 		);
 
@@ -587,7 +587,7 @@ interface libnetapi
 		[in] string server_name,
 		[in] string group_name,
 		[in] uint32 level,
-		[out,ref] uint8 **buf
+		[out,ref] uint8 **buffer
 		);
 
 	/*******************************************/
@@ -598,7 +598,7 @@ interface libnetapi
 		[in] string server_name,
 		[in] string group_name,
 		[in] uint32 level,
-		[in,ref] uint8 *buf,
+		[in,ref] uint8 *buffer,
 		[out,ref] uint32 *parm_err
 		);
 
@@ -637,6 +637,6 @@ interface libnetapi
 
 	[nopush,nopull] NET_API_STATUS NetRemoteTOD(
 		[in] string server_name,
-		[out,ref] uint8 **buf
+		[out,ref] uint8 **buffer
 		);
 }
