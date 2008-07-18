@@ -1654,7 +1654,7 @@ static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message
 /*
   send out an election request
  */
-static int send_election_request(struct ctdb_recoverd *rec, uint32_t pnn)
+static int send_election_request(struct ctdb_recoverd *rec, uint32_t pnn, bool update_recmaster)
 {
 	int ret;
 	TDB_DATA election_data;
@@ -1670,18 +1670,25 @@ static int send_election_request(struct ctdb_recoverd *rec, uint32_t pnn)
 	election_data.dptr  = (unsigned char *)&emsg;
 
 
-	/* first we assume we will win the election and set 
-	   recoverymaster to be ourself on the current node
-	 */
-	ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(), pnn, pnn);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " failed to send recmaster election request\n"));
-		return -1;
-	}
-
-
 	/* send an election message to all active nodes */
 	ctdb_send_message(ctdb, CTDB_BROADCAST_ALL, srvid, election_data);
+
+
+	/* A new node that is already frozen has entered the cluster.
+	   The existing nodes are not frozen and dont need to be frozen
+	   until the election has ended and we start the actual recovery
+	*/
+	if (update_recmaster == true) {
+		/* first we assume we will win the election and set 
+		   recoverymaster to be ourself on the current node
+		 */
+		ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(), pnn, pnn);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, (__location__ " failed to send recmaster election request\n"));
+			return -1;
+		}
+	}
+
 
 	return 0;
 }
@@ -1720,7 +1727,7 @@ static void election_send_request(struct event_context *ev, struct timed_event *
 	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
 	int ret;
 
-	ret = send_election_request(rec, ctdb_get_pnn(rec->ctdb));
+	ret = send_election_request(rec, ctdb_get_pnn(rec->ctdb), false);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to send election request!\n"));
 	}
@@ -1856,7 +1863,7 @@ static void force_election(struct ctdb_recoverd *rec, uint32_t pnn,
 						timeval_current_ofs(ctdb->tunable.election_timeout, 0), 
 						ctdb_election_timeout, rec);
 
-	ret = send_election_request(rec, pnn);
+	ret = send_election_request(rec, pnn, true);
 	if (ret!=0) {
 		DEBUG(DEBUG_ERR, (__location__ " failed to initiate recmaster election"));
 		return;
