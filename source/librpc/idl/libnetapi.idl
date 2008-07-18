@@ -301,6 +301,33 @@ interface libnetapi
 		string usri1007_comment;
 	} USER_INFO_1007;
 
+	[public] typedef struct {
+		string usriX_name;
+		string usriX_password;
+		uint32 usriX_password_age;
+		uint32 usriX_priv;
+		string usriX_home_dir;
+		string usriX_comment;
+		uint32 usriX_flags;
+		string usriX_script_path;
+		uint32 usriX_auth_flags;
+		string usriX_full_name;
+		string usriX_usr_comment;
+		string usriX_parms;
+		string usriX_workstations;
+		uint32 usriX_last_logon;
+		uint32 usriX_last_logoff;
+		uint32 usriX_acct_expires;
+		uint32 usriX_max_storage;
+		uint32 usriX_units_per_week;
+		uint8 *usriX_logon_hours;
+		uint32 usriX_bad_pw_count;
+		uint32 usriX_num_logons;
+		string usriX_logon_server;
+		uint32 usriX_country_code;
+		uint32 usriX_code_page;
+	} USER_INFO_X;
+
 	[nopush,nopull] NET_API_STATUS NetUserAdd(
 		[in,unique] string *server_name,
 		[in] uint32 level,
