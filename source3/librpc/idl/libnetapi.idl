@@ -657,6 +657,30 @@ interface libnetapi
 		);
 
 	/*******************************************/
+	/* NetGroupGetUsers                        */
+	/*******************************************/
+
+	[public] typedef struct {
+		string grui0_name;
+	} GROUP_USERS_INFO_0;
+
+	[public] typedef struct {
+		string grui1_name;
+		uint32 grui1_attributes;
+	} GROUP_USERS_INFO_1;
+
+	[nopush,nopull] NET_API_STATUS NetGroupGetUsers(
+		[in] string server_name,
+		[in] string group_name,
+		[in] uint32 level,
+		[out] uint8 **buffer,
+		[in] uint32 prefmaxlen,
+		[out,ref] uint32 *entries_read,
+		[out,ref] uint32 *total_entries,
+		[in,out,ref] uint32 *resume_handle
+		);
+
+	/*******************************************/
 	/* NetLocalGroupAdd                        */
 	/*******************************************/
 
