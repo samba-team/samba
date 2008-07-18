@@ -569,7 +569,7 @@ struct NetGroupAdd {
 	struct {
 		const char * server_name;
 		uint32_t level;
-		uint8_t *buf;/* [ref] */
+		uint8_t *buffer;/* [ref] */
 	} in;
 
 	struct {
@@ -617,7 +617,7 @@ struct NetGroupSetInfo {
 		const char * server_name;
 		const char * group_name;
 		uint32_t level;
-		uint8_t *buf;/* [ref] */
+		uint8_t *buffer;/* [ref] */
 	} in;
 
 	struct {
@@ -636,7 +636,7 @@ struct NetGroupGetInfo {
 	} in;
 
 	struct {
-		uint8_t **buf;/* [ref] */
+		uint8_t **buffer;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 
@@ -675,7 +675,7 @@ struct NetLocalGroupAdd {
 	struct {
 		const char * server_name;
 		uint32_t level;
-		uint8_t *buf;/* [ref] */
+		uint8_t *buffer;/* [ref] */
 	} in;
 
 	struct {
@@ -707,7 +707,7 @@ struct NetLocalGroupGetInfo {
 	} in;
 
 	struct {
-		uint8_t **buf;/* [ref] */
+		uint8_t **buffer;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 
@@ -719,7 +719,7 @@ struct NetLocalGroupSetInfo {
 		const char * server_name;
 		const char * group_name;
 		uint32_t level;
-		uint8_t *buf;/* [ref] */
+		uint8_t *buffer;/* [ref] */
 	} in;
 
 	struct {
@@ -755,7 +755,7 @@ struct NetRemoteTOD {
 	} in;
 
 	struct {
-		uint8_t **buf;/* [ref] */
+		uint8_t **buffer;/* [ref] */
 		enum NET_API_STATUS result;
 	} out;
 

@@ -1851,9 +1851,9 @@ _PUBLIC_ void ndr_print_NetGroupAdd(struct ndr_print *ndr, const char *name, int
 		ndr->depth++;
 		ndr_print_string(ndr, "server_name", r->in.server_name);
 		ndr_print_uint32(ndr, "level", r->in.level);
-		ndr_print_ptr(ndr, "buf", r->in.buf);
+		ndr_print_ptr(ndr, "buffer", r->in.buffer);
 		ndr->depth++;
-		ndr_print_uint8(ndr, "buf", *r->in.buf);
+		ndr_print_uint8(ndr, "buffer", *r->in.buffer);
 		ndr->depth--;
 		ndr->depth--;
 	}
@@ -1955,9 +1955,9 @@ _PUBLIC_ void ndr_print_NetGroupSetInfo(struct ndr_print *ndr, const char *name,
 		ndr_print_string(ndr, "server_name", r->in.server_name);
 		ndr_print_string(ndr, "group_name", r->in.group_name);
 		ndr_print_uint32(ndr, "level", r->in.level);
-		ndr_print_ptr(ndr, "buf", r->in.buf);
+		ndr_print_ptr(ndr, "buffer", r->in.buffer);
 		ndr->depth++;
-		ndr_print_uint8(ndr, "buf", *r->in.buf);
+		ndr_print_uint8(ndr, "buffer", *r->in.buffer);
 		ndr->depth--;
 		ndr->depth--;
 	}
@@ -1992,12 +1992,12 @@ _PUBLIC_ void ndr_print_NetGroupGetInfo(struct ndr_print *ndr, const char *name,
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "NetGroupGetInfo");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "buf", r->out.buf);
+		ndr_print_ptr(ndr, "buffer", r->out.buffer);
 		ndr->depth++;
-		ndr_print_ptr(ndr, "buf", *r->out.buf);
+		ndr_print_ptr(ndr, "buffer", *r->out.buffer);
 		ndr->depth++;
-		if (*r->out.buf) {
-			ndr_print_uint8(ndr, "buf", **r->out.buf);
+		if (*r->out.buffer) {
+			ndr_print_uint8(ndr, "buffer", **r->out.buffer);
 		}
 		ndr->depth--;
 		ndr->depth--;
@@ -2067,9 +2067,9 @@ _PUBLIC_ void ndr_print_NetLocalGroupAdd(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		ndr_print_string(ndr, "server_name", r->in.server_name);
 		ndr_print_uint32(ndr, "level", r->in.level);
-		ndr_print_ptr(ndr, "buf", r->in.buf);
+		ndr_print_ptr(ndr, "buffer", r->in.buffer);
 		ndr->depth++;
-		ndr_print_uint8(ndr, "buf", *r->in.buf);
+		ndr_print_uint8(ndr, "buffer", *r->in.buffer);
 		ndr->depth--;
 		ndr->depth--;
 	}
@@ -2127,12 +2127,12 @@ _PUBLIC_ void ndr_print_NetLocalGroupGetInfo(struct ndr_print *ndr, const char *
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "NetLocalGroupGetInfo");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "buf", r->out.buf);
+		ndr_print_ptr(ndr, "buffer", r->out.buffer);
 		ndr->depth++;
-		ndr_print_ptr(ndr, "buf", *r->out.buf);
+		ndr_print_ptr(ndr, "buffer", *r->out.buffer);
 		ndr->depth++;
-		if (*r->out.buf) {
-			ndr_print_uint8(ndr, "buf", **r->out.buf);
+		if (*r->out.buffer) {
+			ndr_print_uint8(ndr, "buffer", **r->out.buffer);
 		}
 		ndr->depth--;
 		ndr->depth--;
@@ -2155,9 +2155,9 @@ _PUBLIC_ void ndr_print_NetLocalGroupSetInfo(struct ndr_print *ndr, const char *
 		ndr_print_string(ndr, "server_name", r->in.server_name);
 		ndr_print_string(ndr, "group_name", r->in.group_name);
 		ndr_print_uint32(ndr, "level", r->in.level);
-		ndr_print_ptr(ndr, "buf", r->in.buf);
+		ndr_print_ptr(ndr, "buffer", r->in.buffer);
 		ndr->depth++;
-		ndr_print_uint8(ndr, "buf", *r->in.buf);
+		ndr_print_uint8(ndr, "buffer", *r->in.buffer);
 		ndr->depth--;
 		ndr->depth--;
 	}
@@ -2239,12 +2239,12 @@ _PUBLIC_ void ndr_print_NetRemoteTOD(struct ndr_print *ndr, const char *name, in
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "NetRemoteTOD");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "buf", r->out.buf);
+		ndr_print_ptr(ndr, "buffer", r->out.buffer);
 		ndr->depth++;
-		ndr_print_ptr(ndr, "buf", *r->out.buf);
+		ndr_print_ptr(ndr, "buffer", *r->out.buffer);
 		ndr->depth++;
-		if (*r->out.buf) {
-			ndr_print_uint8(ndr, "buf", **r->out.buf);
+		if (*r->out.buffer) {
+			ndr_print_uint8(ndr, "buffer", **r->out.buffer);
 		}
 		ndr->depth--;
 		ndr->depth--;
