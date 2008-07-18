@@ -153,6 +153,19 @@ def open_ldb(session_info, credentials, lp, dbname):
                    lp=lp)
 
 
+def read_and_sub_file(file, subst_vars):
+    """Read a file and sub in variables found in it
+    
+    :param file: File to be read (typically from setup directory)
+     param subst_vars: Optional variables to subsitute in the file.
+    """
+    data = open(file, 'r').read()
+    if subst_vars is not None:
+        data = substitute_var(data, subst_vars)
+    check_all_substituted(data)
+    return data
+
+
 def setup_add_ldif(ldb, ldif_path, subst_vars=None):
     """Setup a ldb in the private dir.
     
@@ -162,27 +175,18 @@ def setup_add_ldif(ldb, ldif_path, subst_vars=None):
     """
     assert isinstance(ldif_path, str)
 
-    data = open(ldif_path, 'r').read()
-    if subst_vars is not None:
-        data = substitute_var(data, subst_vars)
-
-    check_all_substituted(data)
-
+    data = read_and_sub_file(ldif_path, subst_vars)
     ldb.add_ldif(data)
 
 
-def setup_modify_ldif(ldb, ldif_path, substvars=None):
+def setup_modify_ldif(ldb, ldif_path, subst_vars=None):
     """Modify a ldb in the private dir.
     
     :param ldb: LDB object.
     :param ldif_path: LDIF file path.
-    :param substvars: Optional dictionary with substitution variables.
+    :param subst_vars: Optional dictionary with substitution variables.
     """
-    data = open(ldif_path, 'r').read()
-    if substvars is not None:
-        data = substitute_var(data, substvars)
-
-    check_all_substituted(data)
+    data = read_and_sub_file(ldif_path, subst_vars)
 
     ldb.modify_ldif(data)
 
@@ -206,23 +210,19 @@ def setup_ldb(ldb, ldif_path, subst_vars):
     ldb.transaction_commit()
 
 
-def setup_file(template, fname, substvars):
+def setup_file(template, fname, subst_vars):
     """Setup a file in the private dir.
 
     :param template: Path of the template file.
     :param fname: Path of the file to create.
-    :param substvars: Substitution variables.
+    :param subst_vars: Substitution variables.
     """
     f = fname
 
     if os.path.exists(f):
         os.unlink(f)
 
-    data = open(template, 'r').read()
-    if substvars:
-        data = substitute_var(data, substvars)
-    check_all_substituted(data)
-
+    data = read_and_sub_file(template, subst_vars)
     open(f, 'w').write(data)
 
 
@@ -1259,19 +1259,13 @@ def provision_backend(setup_dir=None, message=None,
                                         scope=SCOPE_SUBTREE)
             if target is not None:
                 refint_attributes = refint_attributes + " " + target + " " + res[i]["lDAPDisplayName"][0]
-                memberof_config += """overlay memberof
-memberof-dangling error
-memberof-refint TRUE
-memberof-group-oc top
-memberof-member-ad """ + res[i]["lDAPDisplayName"][0] + """
-memberof-memberof-ad """ + target + """
-memberof-dangling-error 32
-"""
+            
+                memberof_config += read_and_sub_file(setup_path("memberof.conf"),
+                                                     { "MEMBER_ATTR" : str(res[i]["lDAPDisplayName"][0]),
+                                                       "MEMBEROF_ATTR" : str(target) })
 
-                memberof_config += """overlay refint
-refint_attributes""" + refint_attributes + """
-
-"""
+        memberof_config += """overlay refint
+refint_attributes""" + refint_attributes
     
         setup_file(setup_path("slapd.conf"), paths.slapdconf,
                    {"DNSDOMAIN": names.dnsdomain,
